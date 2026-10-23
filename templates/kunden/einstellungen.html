@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block titel %}Einstellungen Kundenstamm{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'core:einstellungen' %}">← Einstellungen der Tafel</a></p>
+  <h1>Einstellungen Kundenstamm</h1>
+  <p class="hinweis">Abgeschaltete Angaben werden weder angezeigt noch beim Import gespeichert.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+
+<section class="karte">
+  <h2>Zusatzfelder</h2>
+  <p class="hinweis">Eigene Felder für Haushalte oder Personen. Im Import heißt die Spalte
+    <code>zusatz_</code> plus Schlüssel.</p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Bezeichnung</th><th>Importspalte</th><th>Gilt für</th><th>Typ</th><th>Hinweis</th></tr></thead>
+    <tbody>
+    {% for feld in zusatzfelder %}
+      <tr>
+        <td data-titel="Bezeichnung"><a href="{% url 'kunden:zusatzfeld' feld.pk %}">{{ feld.bezeichnung }}</a></td>
+        <td data-titel="Importspalte"><code>{{ feld.import_spalte }}</code></td>
+        <td data-titel="Gilt für">{{ feld.get_gilt_fuer_display }}</td>
+        <td data-titel="Typ">{{ feld.get_typ_display }}{% if feld.typ == "auswahl" %}: {{ feld.optionen_liste|join:", " }}{% endif %}</td>
+        <td data-titel="Hinweis">{% if feld.besondere_kategorie %}Art. 9{% endif %}{% if not feld.aktiv %} inaktiv{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5">Noch keine Zusatzfelder angelegt.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p><a class="knopf" href="{% url 'kunden:zusatzfeld_neu' %}">Zusatzfeld anlegen</a></p>
+</section>
+{% endblock %}
