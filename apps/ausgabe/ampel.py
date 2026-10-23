@@ -124,6 +124,10 @@ def bewerten(haushalt, heute: dt.date, ausgabestelle, einstellungen) -> Bewertun
         if ausgabestelle and gruppe.ausgabestelle and gruppe.ausgabestelle != ausgabestelle:
             terminregel(f"Kundengruppe gehört zur Ausgabestelle {gruppe.ausgabestelle.name}", GELB)
 
+    if haushalt.kontostand is not None and haushalt.kontostand < 0:
+        betrag = f"{-haushalt.kontostand:.2f}".replace(".", ",")
+        melden(GELB, f"Kontostand negativ: −{betrag} € (angeschrieben)")
+
     if not b.meldungen:
         melden(GRUEN, "Alles in Ordnung")
     return b

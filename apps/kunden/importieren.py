@@ -607,6 +607,17 @@ class _Pruefung:
                     f"{erfasst} am Empfang in bintafeln erfasste Einträge werden durch den "
                     "Import ersetzt und gehen verloren.",
                 )
+        # Kontobuchungen gehören zur App ausgabe; späte Einbindung vermeidet einen Kreisbezug.
+        from apps.ausgabe.models import Buchung
+
+        buchungen = Buchung.objects.filter(haushalt__isnull=False).count()
+        if buchungen:
+            self.warnung(
+                HAUSHALTE,
+                None,
+                f"{buchungen} Kontobuchungen aus bintafeln gehören danach zu keinem Haushalt "
+                "mehr; der Kontostand kommt aus dem Import. Für die Kasse bleiben sie erhalten.",
+            )
         for name, vorhanden in vorher.items():
             if vorhanden and name not in gelesen:
                 self.warnung(

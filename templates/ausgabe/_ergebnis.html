@@ -3,6 +3,17 @@
   <p class="ampel-titel">Kundennummer „{{ nicht_gefunden }}“ nicht gefunden</p>
 </section>
 {% elif h %}
+<div class="empfang-raster">
+<aside class="ampel-grafik ampel-grafik-{{ bewertung.farbe }}" role="img"
+       aria-label="Ampel: {% if bewertung.farbe == 'rot' %}rot, keine Abholung{% elif bewertung.farbe == 'gelb' %}gelb, Abholung mit Hinweis{% else %}grün, Abholung möglich{% endif %}">
+  <div class="ampel-gehaeuse">
+    <span class="lampe lampe-rot{% if bewertung.farbe == 'rot' %} an{% endif %}"></span>
+    <span class="lampe lampe-gelb{% if bewertung.farbe == 'gelb' %} an{% endif %}"></span>
+    <span class="lampe lampe-gruen{% if bewertung.farbe == 'gruen' %} an{% endif %}"></span>
+  </div>
+  <p class="ampel-wort">{% if bewertung.farbe == "rot" %}STOPP{% elif bewertung.farbe == "gelb" %}ACHTUNG{% else %}OK{% endif %}</p>
+</aside>
+<div class="empfang-inhalt">
 <section class="karte ampel ampel-{{ bewertung.farbe }}" role="status">
   <p class="ampel-titel">
     {% if bewertung.farbe == "rot" %}Keine Abholung{% elif bewertung.farbe == "gelb" %}Abholung möglich – bitte beachten{% else %}Abholung möglich{% endif %}
@@ -13,13 +24,13 @@
 </section>
 
 <section class="karte">
-  {% if meldung %}<p class="meldung" role="status">{{ meldung }}</p>{% endif %}
+  {% if meldung %}<p class="meldung kasse-meldung" role="status">{{ meldung }}</p>{% endif %}
   <h2>{{ h.kundennummer }}{% if hauptperson %} · {{ hauptperson.vorname }} {{ hauptperson.nachname }}{% endif %}</h2>
   <dl class="angaben">
     <dt>Haushalt</dt><dd>{{ erwachsene }} Erwachsene, {{ kinder }} Kind{{ kinder|pluralize:"er" }}</dd>
     <dt>Kundengruppe</dt><dd>{{ h.kundengruppe.name|default:"–" }}{% if h.kundengruppe.wochentage %} ({{ h.kundengruppe.wochentage }}{% if h.kundengruppe.uhrzeit %} {{ h.kundengruppe.uhrzeit|time:"H:i" }}{% endif %}){% endif %}</dd>
     <dt>Ausweis gültig bis</dt><dd>{{ h.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}</dd>
-    {% if einstellungen.kontostand_anzeigen %}<dt>Kontostand</dt><dd>{% if h.kontostand is not None %}{{ h.kontostand|floatformat:2 }} €{% else %}–{% endif %}</dd>{% endif %}
+    {% if einstellungen.kontostand_anzeigen %}<dt>Kontostand</dt><dd>{% if h.kontostand is not None %}<strong{% if h.kontostand < 0 %} class="fehler"{% endif %}>{{ h.kontostand|floatformat:2 }} €</strong>{% else %}–{% endif %}</dd>{% endif %}
   </dl>
 
   {% if bewertung.darf_abholen %}
@@ -28,6 +39,16 @@
     {% csrf_token %}
     <label for="beitrag">Beitrag (Euro)</label>
     <input type="text" name="beitrag" id="beitrag" value="{{ beitrag|floatformat:2 }}" inputmode="decimal" class="betrag">
+    {% if zahlweisen|length > 1 %}
+    <fieldset class="zahlweise">
+      <legend>Zahlweise</legend>
+      {% for wert, name in zahlweisen %}
+        <label><input type="radio" name="zahlweise" value="{{ wert }}"{% if wert == zahlweise_vorgabe %} checked{% endif %}> {{ name }}</label>
+      {% endfor %}
+    </fieldset>
+    {% else %}
+      <input type="hidden" name="zahlweise" value="{{ zahlweise_vorgabe }}">
+    {% endif %}
     <button type="submit" class="knopf">Abholung eintragen</button>
   </form>
   {% endif %}
@@ -51,6 +72,41 @@
   </form>
   {% endif %}
 
+  <details class="einzahlung abseits"{% if vorschlaege %} open{% endif %}>
+    <summary>Einzahlung / Vorauszahlung</summary>
+    <form method="post" action="{% url 'ausgabe:einzahlung' h.kundennummer %}" class="filter"
+          hx-post="{% url 'ausgabe:einzahlung' h.kundennummer %}" hx-target="#ergebnis">
+      {% csrf_token %}
+      <label for="einzahlung">Betrag (Euro)</label>
+      <input type="text" name="betrag" id="einzahlung" inputmode="decimal" class="betrag" required>
+      <button type="submit" class="knopf knopf-zweitrangig">Einzahlung buchen</button>
+    </form>
+    {% for v in vorschlaege %}
+      <div class="vorschlag">
+        <p><strong>Vorschlag {{ v.titel }}: {{ v.betrag|floatformat:2 }} €</strong></p>
+        <ul>{% for satz in v.erklaerung %}<li>{{ satz }}</li>{% endfor %}</ul>
+        <form method="post" action="{% url 'ausgabe:einzahlung' h.kundennummer %}" class="inline"
+              hx-post="{% url 'ausgabe:einzahlung' h.kundennummer %}" hx-target="#ergebnis"
+              hx-confirm="{{ v.betrag|floatformat:2 }} € als Vorauszahlung ({{ v.titel }}) buchen?">
+          {% csrf_token %}
+          <input type="hidden" name="betrag" value="{{ v.betrag|floatformat:2 }}">
+          <input type="hidden" name="bemerkung" value="Vorauszahlung {{ v.titel }}">
+          <button type="submit" class="knopf knopf-zweitrangig">{{ v.betrag|floatformat:2 }} € einzahlen</button>
+        </form>
+      </div>
+    {% empty %}
+      {% if vorschlag_hinweis %}<p class="hinweis">{{ vorschlag_hinweis }}</p>{% endif %}
+    {% endfor %}
+    {% for b in einzahlungen_heute %}
+      <form method="post" action="{% url 'ausgabe:einzahlung_zuruecknehmen' b.pk %}" class="inline"
+            hx-post="{% url 'ausgabe:einzahlung_zuruecknehmen' b.pk %}" hx-target="#ergebnis"
+            hx-confirm="Einzahlung über {{ b.haben|floatformat:2 }} € zurücknehmen?">
+        {% csrf_token %}
+        <button type="submit" class="knopf knopf-zweitrangig">Einzahlung {{ b.haben|floatformat:2 }} € von {{ b.zeitpunkt|time:"H:i" }} zurücknehmen</button>
+      </form>
+    {% endfor %}
+  </details>
+
   <h3>Letzte Abholungen</h3>
   {% for a in abholungen %}
     <p>{{ a.datum|date:"d.m.Y" }}{% if a.uhrzeit %} {{ a.uhrzeit|time:"H:i" }}{% endif %}{% if a.ausgabestelle %} · {{ a.ausgabestelle.name }}{% endif %}{% if a.beitrag is not None %} · {{ a.beitrag|floatformat:2 }} €{% endif %}</p>
@@ -59,4 +115,6 @@
   {% endfor %}
   <p><a href="{% url 'kunden:haushalt' h.kundennummer %}">Alle Angaben zum Haushalt</a></p>
 </section>
+</div>
+</div>
 {% endif %}

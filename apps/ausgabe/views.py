@@ -1,14 +1,15 @@
 """Empfang: Kundennummer scannen, Ampel sehen, Abholung eintragen."""
 
 from django.contrib import messages
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from apps.ausgabe import ampel
+from apps.ausgabe import ampel, konto
 from apps.ausgabe.forms import AusgabeEinstellungenForm
-from apps.ausgabe.models import AusgabeEinstellungen
+from apps.ausgabe.models import AusgabeEinstellungen, Buchung
 from apps.konten import rollen
 from apps.kunden import werte
 from apps.kunden.models import (
@@ -56,13 +57,27 @@ def _ergebnis(request, h, meldung=None):
     erwachsene, kinder = h.groesse(KundenEinstellungen.laden().kind_bis_alter, heute)
     bewertung = ampel.bewerten(h, heute, _stelle(request), einstellungen)
     abholungen = list(h.abholungen.all())
+    beitrag = einstellungen.beitrag(erwachsene, kinder)
+    vorschlaege, vorschlag_hinweis = konto.vorschlaege(h, heute, einstellungen, beitrag)
+    guthaben = (h.kontostand or 0) > 0
+    zahlweisen = [
+        (wert, name)
+        for wert, name in Buchung.Zahlweise.choices
+        if (wert != Buchung.Zahlweise.GUTHABEN or guthaben)
+        and (wert != Buchung.Zahlweise.ANSCHREIBEN or einstellungen.anschreiben_erlaubt)
+    ]
     return {
         "h": h,
         "hauptperson": next((p for p in h.personen.all() if p.ist_hauptperson), None),
         "erwachsene": erwachsene,
         "kinder": kinder,
         "bewertung": bewertung,
-        "beitrag": einstellungen.beitrag(erwachsene, kinder),
+        "beitrag": beitrag,
+        "zahlweisen": zahlweisen,
+        "zahlweise_vorgabe": zahlweisen[0][0],
+        "vorschlaege": vorschlaege,
+        "vorschlag_hinweis": vorschlag_hinweis,
+        "einzahlungen_heute": h.buchungen.filter(art=Buchung.Art.EINZAHLUNG, datum=heute),
         "einstellungen": einstellungen,
         "abholungen": abholungen[:LETZTE_ABHOLUNGEN],
         "heute_erfasst": [a for a in abholungen if a.datum == heute and a.erfasst_am],
@@ -79,6 +94,7 @@ def _antworten(request, kontext):
 
 @rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
 def empfang(request):
+    konto.buchungsfristen_anwenden()
     kontext = {
         "stelle": _stelle(request),
         "stellen": Ausgabestelle.objects.order_by("name"),
@@ -130,18 +146,41 @@ def abholung_eintragen(request, kundennummer):
         beitrag = werte.betrag(request.POST.get("beitrag", ""))
     except werte.UngueltigerWert:
         return _zurueck(request, h, "Nicht eingetragen: Beitrag ist kein Betrag.", messages.ERROR)
+    beitrag = kontext["beitrag"] if beitrag is None else beitrag
+    if beitrag < 0:
+        return _zurueck(request, h, "Nicht eingetragen: Beitrag ist negativ.", messages.ERROR)
+    zahlweise = request.POST.get("zahlweise") or Buchung.Zahlweise.GUTHABEN
+    if zahlweise not in Buchung.Zahlweise.values:
+        return _zurueck(request, h, "Nicht eingetragen: unbekannte Zahlweise.", messages.ERROR)
     jetzt = timezone.localtime()
-    Abholung.objects.create(
-        haushalt=h,
-        datum=jetzt.date(),
-        uhrzeit=jetzt.time().replace(second=0, microsecond=0),
-        beitrag=kontext["beitrag"] if beitrag is None else beitrag,
-        ausgabestelle=_stelle(request),
-        eingetragen_von=_benutzername(request.user),
-        erfasst_am=timezone.now(),
-    )
-    Haushalt.objects.filter(pk=h.pk).update(letzter_besuch=jetzt.date())
-    return _zurueck(request, h, "Abholung eingetragen.")
+    stelle = _stelle(request)
+    try:
+        with transaction.atomic():
+            abholung = Abholung.objects.create(
+                haushalt=h,
+                datum=jetzt.date(),
+                uhrzeit=jetzt.time().replace(second=0, microsecond=0),
+                beitrag=beitrag,
+                ausgabestelle=stelle,
+                eingetragen_von=_benutzername(request.user),
+                erfasst_am=timezone.now(),
+            )
+            zahlung = konto.abholung_buchen(
+                abholung,
+                beitrag,
+                zahlweise,
+                kontext["einstellungen"],
+                stelle,
+                _benutzername(request.user),
+            )
+            Haushalt.objects.filter(pk=h.pk).update(letzter_besuch=jetzt.date())
+    except konto.KontoFehler as fehler:
+        return _zurueck(request, h, f"Nicht eingetragen: {fehler}", messages.ERROR)
+    text = f"Abholung eingetragen. Bar zu zahlen: {konto.euro(zahlung.bar)}"
+    if zahlung.vom_konto:
+        text += f" ({konto.euro(zahlung.vom_konto)} vom Konto)"
+    text += f". Kontostand jetzt: {konto.euro(zahlung.kontostand)}."
+    return _zurueck(request, h, text)
 
 
 @require_POST
@@ -152,10 +191,83 @@ def abholung_zuruecknehmen(request, pk):
         Abholung, pk=pk, datum=timezone.localdate(), erfasst_am__isnull=False
     )
     h = abholung.haushalt
-    abholung.delete()
+    with transaction.atomic():
+        if hasattr(abholung, "buchung"):
+            konto.zuruecknehmen(abholung.buchung)
+        abholung.delete()
     letzte = h.abholungen.order_by("-datum").first()
     Haushalt.objects.filter(pk=h.pk).update(letzter_besuch=letzte.datum if letzte else None)
-    return _zurueck(request, h, "Abholung zurückgenommen.")
+    h.refresh_from_db()
+    return _zurueck(
+        request,
+        h,
+        f"Abholung zurückgenommen. Kontostand jetzt: {konto.euro(h.kontostand or 0)}.",
+    )
+
+
+@require_POST
+@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+def einzahlung(request, kundennummer):
+    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    try:
+        betrag = werte.betrag(request.POST.get("betrag", ""))
+        konto.einzahlen(
+            h,
+            betrag,
+            _stelle(request),
+            _benutzername(request.user),
+            request.POST.get("bemerkung", "").strip(),
+        )
+    except (werte.UngueltigerWert, konto.KontoFehler):
+        return _zurueck(
+            request, h, "Nicht gebucht: Bitte einen Betrag größer als 0 angeben.", messages.ERROR
+        )
+    h.refresh_from_db()
+    return _zurueck(
+        request,
+        h,
+        f"Einzahlung von {konto.euro(betrag)} gebucht. Bar erhalten: {konto.euro(betrag)}. "
+        f"Kontostand jetzt: {konto.euro(h.kontostand)}.",
+    )
+
+
+@require_POST
+@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+def einzahlung_zuruecknehmen(request, pk):
+    """Nimmt eine heute gebuchte Einzahlung zurück (Versehen)."""
+    buchung = get_object_or_404(
+        Buchung,
+        pk=pk,
+        art=Buchung.Art.EINZAHLUNG,
+        datum=timezone.localdate(),
+        haushalt__isnull=False,
+    )
+    h = buchung.haushalt
+    konto.zuruecknehmen(buchung)
+    h.refresh_from_db()
+    return _zurueck(
+        request,
+        h,
+        f"Einzahlung zurückgenommen. Kontostand jetzt: {konto.euro(h.kontostand or 0)}.",
+    )
+
+
+@require_POST
+@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+def korrektur(request, kundennummer):
+    """Korrekturbuchung ohne Bargeld, von der Haushaltsseite aus."""
+    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    try:
+        betrag = werte.betrag(request.POST.get("betrag", ""))
+        konto.korrigieren(
+            h, betrag, request.POST.get("begruendung", ""), _benutzername(request.user)
+        )
+    except (werte.UngueltigerWert, konto.KontoFehler) as fehler:
+        text = str(fehler) if isinstance(fehler, konto.KontoFehler) else "Kein gültiger Betrag."
+        messages.error(request, f"Nicht gebucht: {text}")
+    else:
+        messages.success(request, "Korrektur gebucht.")
+    return redirect("kunden:haushalt", kundennummer=h.kundennummer)
 
 
 @require_POST

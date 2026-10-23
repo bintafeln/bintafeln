@@ -178,8 +178,12 @@ Ausnahme für heute erteilen (Admin, Büro). Einstellbar: Höchstzahl Abholungen
 14 Tagen oder Kalendermonat; „heute nicht dran“ rot oder gelb; Vorwarnzeit für den Ausweis;
 Beitrag je Abholung, je Erwachsenem und je Kind; Anzeige des Kontostands. Eine Ausnahme für
 heute hebt die Terminregeln auf (nicht dran, Höchstzahl, Kundengruppe, Ausgabestelle), nicht
-aber Sperre, Status oder abgelaufenen Ausweis. Als Nächstes: Kundenkonto mit Buchungen und
-Vorauszahlung.
+aber Sperre, Status oder abgelaufenen Ausweis.
+
+**Kundenkonto (ADR 0014):** Buchungen mit Soll, Haben und Barbetrag. Zahlweisen je Abholung:
+aus Guthaben (Rest bar), alles bar oder, wenn erlaubt, anschreiben. Einzahlungen und
+Vorauszahlungen mit erklärtem Vorschlag für den Rest des Monats und den nächsten Monat.
+Korrekturen durch Admin und Büro. Als Nächstes: Kasse mit Tages-, Monats- und Jahresständen.
 
 - **Empfang/Kiosk-Ansicht:** Kundennummer per Scanner (arbeitet als Tastatur) oder Suche.
 - Je Tafel einstellbar, was am Empfang sichtbar ist: Adresse, Geburtsdatum, letzte Abholungen,

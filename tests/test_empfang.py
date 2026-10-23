@@ -229,6 +229,7 @@ def test_einstellungen_speichern(admin_client):
             "beitrag_je_abholung": "1,00",
             "beitrag_je_erwachsenem": "0",
             "beitrag_je_kind": "0",
+            "buchungen_aufbewahren_jahre": "10",
         },
     )
     assert antwort.status_code == 302
@@ -254,3 +255,16 @@ def test_import_warnt_vor_verlust_erfasster_abholungen(ausgabe, haushalt):
         "verloren.",
     ) in texte
     assert not any(d == "ausnahmen.csv" and "am Empfang" in t for d, t in texte)
+
+
+def test_grosse_ampel_zeigt_die_farbe(ausgabe, haushalt):
+    inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
+    assert '<span class="lampe lampe-gruen an">' in inhalt and ">OK</p>" in inhalt
+    assert '<span class="lampe lampe-rot">' in inhalt
+    inhalt = eintragen(ausgabe, haushalt).content.decode()
+    assert '<span class="lampe lampe-rot an">' in inhalt and ">STOPP</p>" in inhalt
+    haushalt.ausweis_gueltig_bis = timezone.localdate()
+    haushalt.save()
+    Abholung.objects.all().delete()
+    inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
+    assert '<span class="lampe lampe-gelb an">' in inhalt and ">ACHTUNG</p>" in inhalt

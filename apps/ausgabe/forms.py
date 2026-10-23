@@ -15,6 +15,8 @@ class AusgabeEinstellungenForm(forms.ModelForm):
             "beitrag_je_erwachsenem",
             "beitrag_je_kind",
             "kontostand_anzeigen",
+            "anschreiben_erlaubt",
+            "buchungen_aufbewahren_jahre",
         ]
         # Beträge mit Komma eingeben und anzeigen („1,50“).
         localized_fields = ["beitrag_je_abholung", "beitrag_je_erwachsenem", "beitrag_je_kind"]

@@ -181,3 +181,42 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .ampel-gruende { margin: 0; padding-left: 1.25rem; font-size: 1.1rem; }
 .grund-rot { color: #8c1d18; font-weight: 600; }
 .betrag { max-width: 8rem; }
+.kasse-meldung { font-size: 1.2rem; font-weight: 600; }
+.zahlweise { border: 1px solid var(--rand); border-radius: var(--radius); padding: .25rem .75rem; margin: 0; }
+.zahlweise label { display: block; padding: .2rem 0; }
+.einzahlung summary { font-weight: 600; cursor: pointer; padding: .5rem 0; }
+.vorschlag { background: #f4f7f4; border-radius: var(--radius); padding: .5rem .75rem; margin: .5rem 0; }
+.vorschlag ul { margin: .25rem 0 .5rem; padding-left: 1.25rem; }
+
+/* Große Ampel am Empfang: absichtlich auffällig */
+.empfang-raster { display: flex; flex-direction: column; gap: 1rem; }
+.empfang-inhalt { flex: 1; min-width: 0; }
+.ampel-grafik { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem 1rem; }
+.ampel-gehaeuse {
+  display: flex; flex-direction: row; gap: .75rem; padding: .75rem;
+  background: #1f1f1f; border-radius: 2.5rem; box-shadow: 0 4px 12px rgba(0, 0, 0, .35);
+}
+.lampe {
+  display: block; width: 3.5rem; height: 3.5rem; border-radius: 50%; flex: none;
+  border: 3px solid #000; opacity: .25;
+}
+.lampe-rot { background: #e53935; }
+.lampe-gelb { background: #fdd835; }
+.lampe-gruen { background: #43a047; }
+.lampe.an { opacity: 1; }
+.lampe-rot.an { box-shadow: 0 0 1.5rem .6rem rgba(229, 57, 53, .85); animation: blinken 1s steps(2, start) 3; }
+.lampe-gelb.an { box-shadow: 0 0 1.5rem .6rem rgba(253, 216, 53, .85); }
+.lampe-gruen.an { box-shadow: 0 0 1.5rem .6rem rgba(67, 160, 71, .85); }
+.ampel-wort { font-size: 2rem; font-weight: 800; letter-spacing: .05em; margin: 0; }
+.ampel-grafik-rot .ampel-wort { color: #b3261e; }
+.ampel-grafik-gelb .ampel-wort { color: #8a6100; }
+.ampel-grafik-gruen .ampel-wort { color: #2e7d32; }
+@keyframes blinken { to { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .lampe-rot.an { animation: none; } }
+@media (min-width: 48rem) {
+  .empfang-raster { flex-direction: row; align-items: flex-start; }
+  .ampel-grafik { flex-direction: column; position: sticky; top: 1rem; width: 11rem; }
+  .ampel-gehaeuse { flex-direction: column; padding: 1rem; border-radius: 3rem; }
+  .lampe { width: 7rem; height: 7rem; }
+  .ampel-wort { font-size: 2.5rem; }
+}

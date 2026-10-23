@@ -115,7 +115,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   schreibt einen `Zugriff`. Neue Spalten im Importformat brauchen Doku,
   Beispieldatei und Test in `tests/test_kunden_import.py`.
   `ausgabe` (Empfang; Ampel-Regeln als reine Funktion in `apps/ausgabe/ampel.py`,
-  Einstellungen in `AusgabeEinstellungen`).
+  Einstellungen in `AusgabeEinstellungen`; Kundenkonto nur über `apps/ausgabe/konto.py`
+  buchen, nie `Haushalt.kontostand` direkt ändern, ADR 0014).
 - Zugriffsschutz für Ansichten: `@rolle_erforderlich(rollen.BUERO, …)` aus `apps.konten.rollen`.
 - Zwei-Faktor: Logik in `apps/konten/zwei_faktor.py`, Durchsetzung in
   `apps.konten.middleware.ZweiFaktorMiddleware`. In Tests Benutzer mit der Fixture `anmelden`
