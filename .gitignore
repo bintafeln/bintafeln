@@ -221,3 +221,5 @@ __marimo__/
 
 # bintafeln: lokale Laufzeitdaten
 /data/
+/sicherungen/
+schluessel.txt

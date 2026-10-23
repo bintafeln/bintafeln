@@ -27,6 +27,8 @@ jobs:
         run: ruff check --output-format=github .
       - name: ruff format
         run: ruff format --check .
+      - name: shellcheck
+        run: shellcheck betrieb docker/entrypoint.sh tests/sicherung_e2e.sh && shellcheck -s sh docker/backup/sicherung.sh
 
   test:
     runs-on: ubuntu-latest
@@ -68,5 +70,5 @@ jobs:
           cp .env.example .env
           sed -i 's/^DJANGO_SECRET_KEY=$/DJANGO_SECRET_KEY=nur-ci/; s/^POSTGRES_PASSWORD=$/POSTGRES_PASSWORD=nur-ci/' .env
           docker compose config --quiet
-      - name: Image bauen
-        run: docker build -t bintafeln:ci .
+      - name: Sicherung und Wiederherstellung Ende-zu-Ende
+        run: tests/sicherung_e2e.sh

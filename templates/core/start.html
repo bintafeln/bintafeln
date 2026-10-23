@@ -6,6 +6,7 @@
   <p>Ihre Rollen:
     {% for rolle in rollen|dictsort:"0" %}<span class="marke-rolle">{{ rolle }}</span>{% empty %}keine – bitte an einen Admin wenden.{% endfor %}
   </p>
+  {% if sicherung %}{% include "core/_sicherung.html" %}{% endif %}
   <p class="hinweis">Die Fachmodule (Kundschaft, Ausgabe, Kiosk …) folgen.</p>
 </section>
 {% endblock %}
