@@ -3,7 +3,7 @@
 {% block inhalt %}
 <section class="karte">
   <h1>Kundenstamm</h1>
-  <p>{{ anzahl.haushalte }} Haushalte · {{ anzahl.personen }} Personen · {{ anzahl.kundengruppen }} Kundengruppen</p>
+  <p>{{ anzahl.haushalte }} Haushalte · {{ anzahl.personen }} Personen · {{ anzahl.kundengruppen }} Kundengruppen · {{ anzahl.abholungen }} Abholungen</p>
   <p class="hinweis">Der Kundenstamm ist ein Abbild aus dem bisherigen Programm. Jeder Import ersetzt ihn vollständig.
     Liste und Suche folgen.</p>
   <p><a class="knopf" href="{% url 'kunden:import' %}">Neuen Stand importieren</a></p>

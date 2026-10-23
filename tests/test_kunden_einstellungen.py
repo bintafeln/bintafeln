@@ -26,13 +26,19 @@ def test_einstellungen_speichern(admin_client):
     assert "Noch keine Zusatzfelder" in inhalt
     antwort = admin_client.post(
         EINSTELLUNGEN,
-        {"telefon_erfassen": "on", "bemerkungen_importieren": "on", "kind_bis_alter": "16"},
+        {
+            "telefon_erfassen": "on",
+            "bemerkungen_importieren": "on",
+            "kind_bis_alter": "16",
+            "abholungen_aufbewahren_jahre": "2",
+        },
     )
     assert antwort.status_code == 302
     e = KundenEinstellungen.laden()
     assert e.telefon_erfassen and e.bemerkungen_importieren
     assert not e.email_erfassen
     assert e.kind_bis_alter == 16
+    assert e.abholungen_aufbewahren_jahre == 2
 
 
 def test_einstellungen_ungueltig(admin_client):

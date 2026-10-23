@@ -8,7 +8,9 @@ from auditlog.models import LogEntry
 from apps.kunden import importieren
 from apps.kunden.models import (
     Abholer,
+    Abholung,
     Ausgabestelle,
+    Ausnahme,
     Bemerkung,
     Einkommensart,
     Haushalt,
@@ -73,7 +75,7 @@ def test_beispieldateien_vollstaendig(zusatzfeld_schwerbehindert):
     einstellungen.bemerkungen_importieren = True
     einstellungen.save()
     dateien = {p.name: p.read_bytes() for p in BEISPIELE.glob("*.csv")}
-    assert len(dateien) == 6
+    assert len(dateien) == 8
 
     ergebnis = importieren.pruefen(dateien, heute=HEUTE)
     assert ergebnis.fehler == []
@@ -83,6 +85,7 @@ def test_beispieldateien_vollstaendig(zusatzfeld_schwerbehindert):
 
     assert (lauf.anzahl_haushalte, lauf.anzahl_personen) == (3, 6)
     assert (lauf.anzahl_abholer, lauf.anzahl_sperren, lauf.anzahl_bemerkungen) == (1, 1, 1)
+    assert (lauf.anzahl_abholungen, lauf.anzahl_ausnahmen) == (3, 1)
     h = Haushalt.objects.get(kundennummer="1001")
     assert h.kundengruppe.kuerzel == "MO1"
     assert h.kundengruppe.ausgabestelle.name == "Ausgabestelle Mitte"
@@ -97,6 +100,12 @@ def test_beispieldateien_vollstaendig(zusatzfeld_schwerbehindert):
     assert Haushalt.objects.get(kundennummer="1005").status == "pausiert"
     assert "\n" in Bemerkung.objects.get().text
     assert Sperre.objects.get().bis == dt.date(2026, 3, 31)
+    abholung = Abholung.objects.filter(haushalt__kundennummer="1002").get()
+    assert (abholung.datum, abholung.uhrzeit) == (dt.date(2026, 5, 12), dt.time(14, 10))
+    assert abholung.beitrag == Decimal("1.50") and abholung.eingetragen_von == ""
+    assert abholung.ausgabestelle.name == "Ausgabestelle Nord"
+    assert Ausgabestelle.objects.count() == 2
+    assert Ausnahme.objects.get().haushalt.kundennummer == "1002"
     assert ImportLauf.objects.get() == lauf
     assert str(lauf).startswith("Import vom ")
 
@@ -477,3 +486,75 @@ def test_neue_gruppe_ohne_ausgabestelle_und_gemeinsame_stelle():
     assert Kundengruppe.objects.get(name="Freitag").ausgabestelle is None
     assert Ausgabestelle.objects.count() == 1
     assert Kundengruppe.objects.filter(ausgabestelle__name="Mitte").count() == 2
+
+
+# --- Abholungen und Ausnahmen ------------------------------------------------------------
+
+
+def test_abholungen_frist_und_warnungen():
+    ergebnis = pruefen(
+        haushalte_csv=MINIMAL,
+        abholungen_csv=csv(
+            "kundennummer;datum;uhrzeit;beitrag;ausgabestelle;eingetragen_von",
+            "001;15.06.2023;10:00;1;;",  # genau am Fristbeginn: bleibt
+            "001;14.06.2023;10:00;1;;",  # einen Tag älter: entfällt
+            "001;01.06.2026;25:00;viel;Neue Stelle;",
+            "002;02.06.2026;;;neue stelle;",
+        ),
+        ausnahmen_csv=csv(
+            "kundennummer;datum;begruendung",
+            "002;01.01.2020;alt",
+            "002;03.06.2026;",
+        ),
+    )
+    assert ergebnis.fehler == []
+    assert texte(ergebnis) == [
+        "Älter als die Aufbewahrungsfrist; wird nicht übernommen.",
+        "Ausgabestelle unbekannt; wird angelegt.",
+        "„beitrag“ ist kein Betrag, bleibt leer.",
+        "„uhrzeit“ ist keine Uhrzeit, bleibt leer.",
+        "Älter als die Aufbewahrungsfrist; wird nicht übernommen.",
+    ]
+    lauf = uebernehmen(ergebnis)
+    assert (lauf.anzahl_abholungen, lauf.anzahl_ausnahmen) == (3, 1)
+    neu = Abholung.objects.filter(datum=dt.date(2026, 6, 1)).get()
+    assert neu.uhrzeit is None and neu.beitrag is None
+    assert Ausgabestelle.objects.get().name == "Neue Stelle"
+    assert Abholung.objects.filter(ausgabestelle__isnull=False).count() == 2
+
+
+@pytest.mark.parametrize("datei", ["abholungen_csv", "ausnahmen_csv"])
+def test_abholdaten_fehler(datei):
+    ergebnis = pruefen(
+        haushalte_csv=MINIMAL,
+        **{datei: csv("kundennummer;datum", "001;", "001;gestern", "999;01.06.2026")},
+    )
+    assert ergebnis.daten is None
+    assert texte(ergebnis, importieren.FEHLER) == [
+        "Kundennummer gibt es nicht in haushalte.csv.",
+        "Pflichtangabe „datum“ ist leer.",
+        "„datum“ ist kein gültiges Datum.",
+    ]
+
+
+def test_frist_aus_einstellungen_und_fehlende_datei_warnt():
+    e = KundenEinstellungen.laden()
+    e.abholungen_aufbewahren_jahre = 1
+    e.save()
+    abholungen = csv("kundennummer;datum", "001;01.06.2025", "001;01.06.2026")
+    uebernehmen(pruefen(haushalte_csv=MINIMAL, abholungen_csv=abholungen))
+    assert list(Abholung.objects.values_list("datum", flat=True)) == [dt.date(2026, 6, 1)]
+
+    ergebnis = pruefen(haushalte_csv=MINIMAL)
+    assert texte(ergebnis) == [
+        "Datei fehlt; die bisher vorhandenen Angaben dieser Art werden entfernt."
+    ]
+    uebernehmen(ergebnis)
+    assert not Abholung.objects.exists()
+
+
+def test_vorbereitung_aus_aelterer_version_ohne_abholdaten():
+    ergebnis = pruefen(haushalte_csv=MINIMAL)
+    del ergebnis.daten["abholungen"], ergebnis.daten["ausnahmen"]
+    lauf = uebernehmen(ergebnis)
+    assert (lauf.anzahl_haushalte, lauf.anzahl_abholungen) == (2, 0)
