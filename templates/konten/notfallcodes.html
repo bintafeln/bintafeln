@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block titel %}Notfallcodes{% endblock %}
+{% block inhalt %}
+<section class="karte schmal">
+  <h1>Ihre Notfallcodes</h1>
+  <p>Mit jedem dieser Codes können Sie sich <strong>einmal</strong> anmelden, falls Sie das Handy
+    nicht zur Hand haben. Bitte jetzt abschreiben oder im Passwortmanager speichern. Sie werden
+    <strong>nur dieses eine Mal</strong> angezeigt.</p>
+  <ul class="notfallcodes">
+    {% for code in codes %}<li><code>{{ code }}</code></li>{% endfor %}
+  </ul>
+  <p><a class="knopf" href="{% url 'konten:mein_konto' %}">Ich habe die Codes gesichert</a></p>
+</section>
+{% endblock %}

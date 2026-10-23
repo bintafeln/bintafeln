@@ -19,6 +19,10 @@ class TafelEinstellungen(models.Model):
     ort = models.CharField("Ort", max_length=100, blank=True)
     telefon = models.CharField("Telefon", max_length=50, blank=True)
     email = models.EmailField("E-Mail", blank=True)
+    zwei_faktor_admin = models.BooleanField("Zwei-Faktor Pflicht für Admin", default=True)
+    zwei_faktor_buero = models.BooleanField("Zwei-Faktor Pflicht für Büro", default=True)
+    zwei_faktor_ausgabe = models.BooleanField("Zwei-Faktor Pflicht für Ausgabe", default=False)
+    zwei_faktor_kiosk = models.BooleanField("Zwei-Faktor Pflicht für Kiosk", default=False)
     geaendert_am = models.DateTimeField("Geändert am", auto_now=True)
 
     class Meta:
@@ -39,6 +43,17 @@ class TafelEinstellungen(models.Model):
     def laden(cls) -> "TafelEinstellungen":
         einstellungen, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
         return einstellungen
+
+    def zwei_faktor_pflicht_rollen(self) -> set[str]:
+        from apps.konten import rollen
+
+        felder = {
+            rollen.ADMIN: self.zwei_faktor_admin,
+            rollen.BUERO: self.zwei_faktor_buero,
+            rollen.AUSGABE: self.zwei_faktor_ausgabe,
+            rollen.KIOSK: self.zwei_faktor_kiosk,
+        }
+        return {rolle for rolle, pflicht in felder.items() if pflicht}
 
     @property
     def anschrift(self) -> str:

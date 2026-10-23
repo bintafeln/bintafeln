@@ -1,5 +1,7 @@
 from auditlog.registry import auditlog
 from django.contrib.auth.models import AbstractUser
+from django_otp.plugins.otp_static.models import StaticDevice
+from django_otp.plugins.otp_totp.models import TOTPDevice
 
 
 class Benutzer(AbstractUser):
@@ -14,3 +16,7 @@ class Benutzer(AbstractUser):
 
 
 auditlog.register(Benutzer, exclude_fields=["password", "last_login"], m2m_fields={"groups"})
+
+# Nur, wer wann ein Gerät eingerichtet oder entfernt hat – nie Schlüssel oder Codes.
+auditlog.register(TOTPDevice, include_fields=["user", "name", "confirmed"])
+auditlog.register(StaticDevice, include_fields=["user", "name", "confirmed"])

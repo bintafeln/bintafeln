@@ -15,12 +15,15 @@
     </a>
     {% if user.is_authenticated %}
     <nav class="navigation" aria-label="Hauptnavigation">
+      {% if not zwei_faktor_offen %}
       <a href="{% url 'core:start' %}">Start</a>
       {% if "Admin" in rollen %}
         <a href="{% url 'core:einstellungen' %}">Einstellungen</a>
         <a href="{% url 'core:protokoll' %}">Protokoll</a>
       {% endif %}
       {% if user.is_staff %}<a href="{% url 'admin:index' %}">Verwaltung</a>{% endif %}
+      <a href="{% url 'konten:mein_konto' %}">Mein Konto</a>
+      {% endif %}
       <form method="post" action="{% url 'konten:abmelden' %}" class="inline">
         {% csrf_token %}
         <button type="submit" class="link">Abmelden</button>

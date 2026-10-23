@@ -1,5 +1,7 @@
 import pytest
 from django.contrib.auth.models import Group
+from django_otp import DEVICE_ID_SESSION_KEY
+from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from apps.konten import rollen
 
@@ -29,7 +31,29 @@ def admin(django_user_model):
     return benutzer
 
 
+def code_fuer(geraet: TOTPDevice) -> str:
+    from django_otp.oath import TOTP
+
+    totp = TOTP(geraet.bin_key, geraet.step, geraet.t0, geraet.digits, geraet.drift)
+    return f"{totp.token():0{geraet.digits}d}"
+
+
 @pytest.fixture
-def admin_client(client, admin):
-    client.force_login(admin)
-    return client
+def anmelden():
+    """Meldet einen Benutzer an, wie es nach erfolgreicher Zwei-Faktor-Anmeldung aussieht."""
+
+    def ausfuehren(client, benutzer, zwei_faktor=True):
+        client.force_login(benutzer)
+        if zwei_faktor:
+            geraet = TOTPDevice.objects.create(user=benutzer, name="Test", confirmed=True)
+            sitzung = client.session
+            sitzung[DEVICE_ID_SESSION_KEY] = geraet.persistent_id
+            sitzung.save()
+        return client
+
+    return ausfuehren
+
+
+@pytest.fixture
+def admin_client(client, admin, anmelden):
+    return anmelden(client, admin)

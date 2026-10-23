@@ -52,6 +52,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "auditlog.middleware.AuditlogMiddleware",
     "apps.core.middleware.EinrichtungMiddleware",
+    "apps.konten.middleware.ZweiFaktorMiddleware",
 ]
 
 ROOT_URLCONF = "bintafeln.urls"
@@ -100,6 +101,16 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LOGIN_URL = "konten:anmelden"
+
+
+def _otp_aussteller(geraet):
+    from apps.konten.zwei_faktor import aussteller
+
+    return aussteller(geraet)
+
+
+# Name der Tafel als Aussteller in der Authenticator-App
+OTP_TOTP_ISSUER = _otp_aussteller
 LOGIN_REDIRECT_URL = "core:start"
 LOGOUT_REDIRECT_URL = "konten:anmelden"
 

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block titel %}Zwei-Faktor einrichten{% endblock %}
+{% block inhalt %}
+<section class="karte schmal">
+  <h1>Zwei-Faktor einrichten</h1>
+  {% if pflicht %}
+    <p class="sicherung">Für Ihre Rolle ist die Zwei-Faktor-Anmeldung Pflicht. Bitte richten Sie sie
+      jetzt ein.</p>
+  {% endif %}
+  <ol class="schritte">
+    <li>Eine Authenticator-App auf dem Handy öffnen, z.&nbsp;B. Aegis, FreeOTP oder
+      Google Authenticator.</li>
+    <li>Diesen QR-Code scannen.
+      <div class="qr-code">{{ qr_code }}</div>
+      <details>
+        <summary>Scannen klappt nicht?</summary>
+        <p>Auf dem Handy: <a href="{{ einrichtungs_link }}">diesen Link öffnen</a>.
+           Oder in der App diesen Schlüssel von Hand eingeben:</p>
+        <p><code class="schluessel">{{ schluessel }}</code></p>
+      </details>
+    </li>
+    <li>Den 6-stelligen Code aus der App hier eingeben:</li>
+  </ol>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Bestätigen</button>
+  </form>
+  <form method="post" action="{% url 'konten:abmelden' %}" class="abseits">
+    {% csrf_token %}
+    <button type="submit" class="link">Abbrechen und abmelden</button>
+  </form>
+</section>
+{% endblock %}
