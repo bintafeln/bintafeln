@@ -215,3 +215,31 @@ def test_kundenstamm_wird_protokolliert(haushalt):
     haushalt.save()
     eintrag = LogEntry.objects.get_for_object(haushalt).latest("timestamp")
     assert "status" in eintrag.changes_dict
+
+
+@pytest.mark.parametrize(
+    ("text", "erwartet"),
+    [
+        ("1,50 €", "1.50"),
+        ("1,5 €", "1.50"),
+        ("-3,00", "-3.00"),
+        ("1.234,56 EUR", "1234.56"),
+        ("1.5", "1.50"),
+        ("0", "0.00"),
+    ],
+)
+def test_betrag(text, erwartet):
+    from decimal import Decimal
+
+    assert werte.betrag(text) == Decimal(erwartet)
+
+
+@pytest.mark.parametrize("text", ["", "  ", None, "€"])
+def test_betrag_leer(text):
+    assert werte.betrag(text) is None
+
+
+@pytest.mark.parametrize("text", ["zehn", "1,2,3", "NaN", "Infinity"])
+def test_betrag_ungueltig(text):
+    with pytest.raises(werte.UngueltigerWert):
+        werte.betrag(text)

@@ -1,6 +1,8 @@
 """Einlesen von Werten im Format von docs/importformat.md."""
 
 import datetime as dt
+import re
+from decimal import Decimal, InvalidOperation
 
 JA = {"ja", "j", "1", "wahr", "true", "x"}
 NEIN = {"nein", "n", "0", "falsch", "false", ""}
@@ -30,3 +32,19 @@ def datum(text: str) -> dt.date | None:
         except ValueError:
             continue
     raise UngueltigerWert(f"kein Datum: {text!r}")
+
+
+def betrag(text: str) -> Decimal | None:
+    """Liest einen Euro-Betrag wie "1,50", "-3,00 €", "1.234,50" oder "1.5"; leer ergibt None."""
+    wert = re.sub(r"[\s€]|EUR", "", (text or "").strip(), flags=re.IGNORECASE)
+    if not wert:
+        return None
+    if "," in wert:
+        wert = wert.replace(".", "").replace(",", ".")
+    try:
+        ergebnis = Decimal(wert)
+    except InvalidOperation as fehler:
+        raise UngueltigerWert(f"kein Betrag: {text!r}") from fehler
+    if not ergebnis.is_finite():
+        raise UngueltigerWert(f"kein Betrag: {text!r}")
+    return ergebnis.quantize(Decimal("0.01"))

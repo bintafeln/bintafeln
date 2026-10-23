@@ -228,6 +228,14 @@ class Haushalt(models.Model):
     ort = models.CharField("Ort", max_length=100, blank=True)
     telefon = models.CharField("Telefon", max_length=50, blank=True)
     email = models.EmailField("E-Mail", blank=True)
+    kontostand = models.DecimalField(
+        "Kontostand (Euro)",
+        max_digits=8,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Stand des Kundenkontos laut Import. Buchungen folgen mit der Ausgabe.",
+    )
     # Nur gesetzt, wenn der Import keine einzelnen Angehörigen enthält.
     anzahl_erwachsene = models.PositiveSmallIntegerField("Erwachsene", null=True, blank=True)
     anzahl_kinder = models.PositiveSmallIntegerField("Kinder", null=True, blank=True)
