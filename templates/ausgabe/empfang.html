@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block titel %}Empfang{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Empfang</h1>
+  {% if stellen %}
+  <form method="post" action="{% url 'ausgabe:ausgabestelle' %}" class="filter">
+    {% csrf_token %}
+    <label for="ausgabestelle">Ausgabestelle</label>
+    <select name="ausgabestelle" id="ausgabestelle" onchange="this.form.submit()">
+      <option value="">bitte wählen</option>
+      {% for s in stellen %}<option value="{{ s.pk }}"{% if s == stelle %} selected{% endif %}>{{ s.name }}</option>{% endfor %}
+    </select>
+    <noscript><button type="submit" class="knopf knopf-zweitrangig">Übernehmen</button></noscript>
+  </form>
+  {% endif %}
+  <form method="get" action="{% url 'ausgabe:empfang' %}" class="scan"
+        hx-get="{% url 'ausgabe:empfang' %}" hx-target="#ergebnis"
+        hx-on::after-request="this.reset(); this.querySelector('input').focus()">
+    <label for="nummer">Kundennummer scannen oder eingeben</label>
+    <div class="scan-zeile">
+      <input type="text" name="nummer" id="nummer" autofocus autocomplete="off" inputmode="numeric"
+             class="scan-feld" required>
+      <button type="submit" class="knopf">Prüfen</button>
+    </div>
+  </form>
+</section>
+<div id="ergebnis">{% include "ausgabe/_ergebnis.html" %}</div>
+{% endblock %}

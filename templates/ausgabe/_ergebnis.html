@@ -1,0 +1,62 @@
+{% if nicht_gefunden %}
+<section class="karte ampel ampel-unbekannt" role="status">
+  <p class="ampel-titel">Kundennummer „{{ nicht_gefunden }}“ nicht gefunden</p>
+</section>
+{% elif h %}
+<section class="karte ampel ampel-{{ bewertung.farbe }}" role="status">
+  <p class="ampel-titel">
+    {% if bewertung.farbe == "rot" %}Keine Abholung{% elif bewertung.farbe == "gelb" %}Abholung möglich – bitte beachten{% else %}Abholung möglich{% endif %}
+  </p>
+  <ul class="ampel-gruende">
+    {% for m in bewertung.meldungen %}<li class="grund-{{ m.farbe }}">{{ m.text }}</li>{% endfor %}
+  </ul>
+</section>
+
+<section class="karte">
+  {% if meldung %}<p class="meldung" role="status">{{ meldung }}</p>{% endif %}
+  <h2>{{ h.kundennummer }}{% if hauptperson %} · {{ hauptperson.vorname }} {{ hauptperson.nachname }}{% endif %}</h2>
+  <dl class="angaben">
+    <dt>Haushalt</dt><dd>{{ erwachsene }} Erwachsene, {{ kinder }} Kind{{ kinder|pluralize:"er" }}</dd>
+    <dt>Kundengruppe</dt><dd>{{ h.kundengruppe.name|default:"–" }}{% if h.kundengruppe.wochentage %} ({{ h.kundengruppe.wochentage }}{% if h.kundengruppe.uhrzeit %} {{ h.kundengruppe.uhrzeit|time:"H:i" }}{% endif %}){% endif %}</dd>
+    <dt>Ausweis gültig bis</dt><dd>{{ h.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}</dd>
+    {% if einstellungen.kontostand_anzeigen %}<dt>Kontostand</dt><dd>{% if h.kontostand is not None %}{{ h.kontostand|floatformat:2 }} €{% else %}–{% endif %}</dd>{% endif %}
+  </dl>
+
+  {% if bewertung.darf_abholen %}
+  <form method="post" action="{% url 'ausgabe:eintragen' h.kundennummer %}" class="filter"
+        hx-post="{% url 'ausgabe:eintragen' h.kundennummer %}" hx-target="#ergebnis">
+    {% csrf_token %}
+    <label for="beitrag">Beitrag (Euro)</label>
+    <input type="text" name="beitrag" id="beitrag" value="{{ beitrag|floatformat:2 }}" inputmode="decimal" class="betrag">
+    <button type="submit" class="knopf">Abholung eintragen</button>
+  </form>
+  {% endif %}
+
+  {% for a in heute_erfasst %}
+  <form method="post" action="{% url 'ausgabe:zuruecknehmen' a.pk %}" class="inline"
+        hx-post="{% url 'ausgabe:zuruecknehmen' a.pk %}" hx-target="#ergebnis"
+        hx-confirm="Abholung von {{ a.uhrzeit|time:'H:i' }} Uhr zurücknehmen?">
+    {% csrf_token %}
+    <button type="submit" class="knopf knopf-zweitrangig">Abholung von {{ a.uhrzeit|time:"H:i" }} zurücknehmen</button>
+  </form>
+  {% endfor %}
+
+  {% if bewertung.ausnahme_hilft and darf_ausnahme %}
+  <form method="post" action="{% url 'ausgabe:ausnahme' h.kundennummer %}" class="filter abseits"
+        hx-post="{% url 'ausgabe:ausnahme' h.kundennummer %}" hx-target="#ergebnis">
+    {% csrf_token %}
+    <label for="begruendung">Ausnahme für heute, Begründung</label>
+    <input type="text" name="begruendung" id="begruendung" required maxlength="500" class="suche">
+    <button type="submit" class="knopf knopf-zweitrangig">Ausnahme erteilen</button>
+  </form>
+  {% endif %}
+
+  <h3>Letzte Abholungen</h3>
+  {% for a in abholungen %}
+    <p>{{ a.datum|date:"d.m.Y" }}{% if a.uhrzeit %} {{ a.uhrzeit|time:"H:i" }}{% endif %}{% if a.ausgabestelle %} · {{ a.ausgabestelle.name }}{% endif %}{% if a.beitrag is not None %} · {{ a.beitrag|floatformat:2 }} €{% endif %}</p>
+  {% empty %}
+    <p class="hinweis">Keine.</p>
+  {% endfor %}
+  <p><a href="{% url 'kunden:haushalt' h.kundennummer %}">Alle Angaben zum Haushalt</a></p>
+</section>
+{% endif %}

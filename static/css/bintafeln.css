@@ -163,3 +163,21 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 
 .meldung-fehler td:first-child { color: var(--fehler); font-weight: 600; }
 .inline + .inline { margin-left: .5rem; }
+
+/* Empfang */
+.scan label { font-weight: 600; display: block; margin-bottom: .25rem; }
+.scan-zeile { display: flex; gap: .5rem; }
+.scan-feld {
+  flex: 1; min-width: 0; font: inherit; font-size: 1.5rem; padding: .5rem .75rem;
+  border: 2px solid var(--akzent); border-radius: var(--radius);
+}
+.scan-zeile .knopf { width: auto; }
+.ampel { border-width: 0 0 0 .75rem; border-style: solid; }
+.ampel-titel { font-size: 1.6rem; font-weight: 700; margin: 0 0 .5rem; }
+.ampel-rot { border-color: #b3261e; background: #fbe9e8; }
+.ampel-gelb { border-color: #c98a00; background: #fff6dc; }
+.ampel-gruen { border-color: #2e7d32; background: #e7f4e8; }
+.ampel-unbekannt { border-color: var(--rand); }
+.ampel-gruende { margin: 0; padding-left: 1.25rem; font-size: 1.1rem; }
+.grund-rot { color: #8c1d18; font-weight: 600; }
+.betrag { max-width: 8rem; }

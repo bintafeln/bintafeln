@@ -395,6 +395,12 @@ class Abholung(models.Model):
         related_name="+",
     )
     eingetragen_von = models.CharField("Eingetragen von", max_length=100, blank=True)
+    erfasst_am = models.DateTimeField(
+        "In bintafeln erfasst am",
+        null=True,
+        blank=True,
+        help_text="Leer, wenn aus dem Import übernommen.",
+    )
 
     class Meta:
         verbose_name = "Abholung"
@@ -412,6 +418,12 @@ class Ausnahme(models.Model):
     datum = models.DateField("Datum")
     begruendung = models.TextField("Begründung", blank=True)
     eingetragen_von = models.CharField("Eingetragen von", max_length=100, blank=True)
+    erfasst_am = models.DateTimeField(
+        "In bintafeln erfasst am",
+        null=True,
+        blank=True,
+        help_text="Leer, wenn aus dem Import übernommen.",
+    )
 
     class Meta:
         verbose_name = "Ausnahme"
