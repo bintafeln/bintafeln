@@ -1,0 +1,3 @@
+kuerzel;name;ausgabestelle;wochentage;uhrzeit;maximum;aktiv
+MO1;Montag früh;Ausgabestelle Mitte;Mo;12:30;50;ja
+DI1;Dienstag;Ausgabestelle Nord;Di;14:00;40;ja

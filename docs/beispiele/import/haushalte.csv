@@ -1,0 +1,4 @@
+kundennummer;nachname;vorname;anrede;geburtsdatum;staatsangehoerigkeit;status;kundengruppe;kunde_seit;ausweis_gueltig_bis;einkommensart;strasse;plz;ort;telefon;email;zusatz_schwerbehindert
+1001;Mustermann;Erika;Frau;12.03.1968;deutsch;aktiv;MO1;01.02.2024;31.01.2027;Bürgergeld;Musterweg 1;12345;Musterstadt;;;nein
+1002;Beispiel;Max;Herr;1955-07-30;deutsch;aktiv;DI1;15.09.2023;14.09.2026;Rente;Beispielstraße 7a;12345;Musterstadt;0000 000000;;ja
+1005;Probe;Alex;;02.11.1990;;pausiert;MO1;10.01.2025;09.01.2027;Wohngeld;Am Testplatz 3;12346;Musterdorf;;alex.probe@example.org;

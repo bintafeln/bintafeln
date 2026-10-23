@@ -288,6 +288,8 @@ docker/             Caddyfile und Start-Skript des App-Containers
 docker/backup/      Dienst "backup" (Sicherungsskript)
 betrieb             Betriebswerkzeug: Update, Sicherung, Wiederherstellung
 docs/adr/           Architekturentscheidungen (warum bintafeln so gebaut ist)
+docs/               fachkonzept.md (kommende Module), importformat.md (Import des
+                    Kundenstamms), beispiele/ mit erfundenen Beispieldateien
 tests/              pytest-Tests und Ende-zu-Ende-Test der Sicherung
 ```
 

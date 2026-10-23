@@ -1,0 +1,4 @@
+kundennummer;nachname;vorname;anrede;geburtsdatum;staatsangehoerigkeit;zusatz_schwerbehindert
+1001;Mustermann;Paul;Herr;05.05.1966;deutsch;nein
+1001;Mustermann;Mia;;18.08.2015;deutsch;nein
+1005;Probe;Kim;;21.04.2019;;ja

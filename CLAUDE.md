@@ -83,6 +83,9 @@ Datensätze. Erst beim späteren Umstieg zu einem Stichtag übernimmt bintafeln 
 bintafeln kennt nur das eigene, neutrale Importformat. Werkzeuge, die Daten aus bestimmten
 Altsystemen in dieses Format bringen, gehören nicht in dieses Repository.
 
+Fachliche Anforderungen an die Module 2 bis 4 stehen in `docs/fachkonzept.md`, das Importformat
+in `docs/importformat.md` (verbindlich für den Import; Änderungen nur per PR mit Versionshinweis).
+
 ## Zusammenarbeit
 
 Der Maintainer prüft und mergt jeden Pull Request selbst und spielt ihn auf der Dummy-Tafel ein.
