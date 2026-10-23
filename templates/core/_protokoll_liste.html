@@ -1,0 +1,31 @@
+{% load protokoll %}<div class="tabelle-rahmen">
+<table class="tabelle">
+  <thead><tr><th>Zeitpunkt</th><th>Wer</th><th>Aktion</th><th>Datensatz</th><th>Änderungen</th></tr></thead>
+  <tbody>
+  {% for eintrag in seite %}
+    <tr>
+      <td data-titel="Zeitpunkt">{{ eintrag.timestamp|date:"d.m.Y H:i:s" }}</td>
+      <td data-titel="Wer">{{ eintrag.actor|default:"System" }}</td>
+      <td data-titel="Aktion">{% if eintrag.action == 0 %}Angelegt{% elif eintrag.action == 1 %}Geändert{% elif eintrag.action == 2 %}Gelöscht{% else %}Abgerufen{% endif %}</td>
+      <td data-titel="Datensatz">{{ eintrag.content_type.name }}: {{ eintrag.object_repr }}</td>
+      <td data-titel="Änderungen">
+        <ul class="aenderungen">
+        {% for feld, text in eintrag|aenderungen %}
+          <li><strong>{{ feld }}:</strong> {{ text }}</li>
+        {% endfor %}
+        </ul>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="5">Noch keine Einträge.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% if seite.has_other_pages %}
+<nav class="blaettern" aria-label="Seiten">
+  {% if seite.has_previous %}<a href="?seite={{ seite.previous_page_number }}&amp;modell={{ modell }}" hx-get="?seite={{ seite.previous_page_number }}&amp;modell={{ modell }}" hx-target="#protokoll-liste" hx-push-url="true">« Neuer</a>{% endif %}
+  <span>Seite {{ seite.number }} von {{ seite.paginator.num_pages }}</span>
+  {% if seite.has_next %}<a href="?seite={{ seite.next_page_number }}&amp;modell={{ modell }}" hx-get="?seite={{ seite.next_page_number }}&amp;modell={{ modell }}" hx-target="#protokoll-liste" hx-push-url="true">Älter »</a>{% endif %}
+</nav>
+{% endif %}

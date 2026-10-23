@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block titel %}Anmelden{% endblock %}
+{% block inhalt %}
+<section class="karte schmal">
+  <h1>Anmelden</h1>
+  <form method="post" action="{% url 'konten:anmelden' %}">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Anmelden</button>
+  </form>
+</section>
+{% endblock %}

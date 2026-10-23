@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block titel %}Änderungsprotokoll{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Änderungsprotokoll</h1>
+  <form class="filter" hx-get="{% url 'core:protokoll' %}" hx-target="#protokoll-liste"
+        hx-trigger="change" hx-push-url="true">
+    <label for="modell">Datensatzart</label>
+    <select name="modell" id="modell">
+      <option value="">Alle</option>
+      {% for ct in modelle %}
+        <option value="{{ ct.pk }}"{% if modell == ct.pk|stringformat:"d" %} selected{% endif %}>{{ ct.name }}</option>
+      {% endfor %}
+    </select>
+    <noscript><button type="submit" class="knopf">Filtern</button></noscript>
+  </form>
+  <div id="protokoll-liste">{% include "core/_protokoll_liste.html" %}</div>
+</section>
+{% endblock %}

@@ -1,0 +1,130 @@
+/* bintafeln – schlichtes, mobilfreundliches Grundlayout */
+:root {
+  --grund: #f5f6f4;
+  --flaeche: #ffffff;
+  --text: #1f2421;
+  --leise: #5b6660;
+  --akzent: #2f6b3a;
+  --akzent-dunkel: #24532d;
+  --rand: #d8ddd8;
+  --fehler: #a32020;
+  --erfolg: #e5f2e7;
+  --radius: 8px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--grund);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a { color: var(--akzent); }
+
+.kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem 1rem;
+  padding: .75rem 1rem;
+  background: var(--akzent);
+  color: #fff;
+}
+.kopf a { color: #fff; text-decoration: none; }
+.marke { display: flex; align-items: center; gap: .5rem; font-weight: 600; font-size: 1.15rem; }
+.logo { height: 2.25rem; width: auto; background: #fff; border-radius: 4px; padding: 2px; }
+
+.navigation { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem 1rem; }
+.navigation a, .navigation .link { padding: .5rem 0; }
+.inline { display: inline; margin: 0; }
+.link {
+  background: none; border: 0; color: inherit; font: inherit; cursor: pointer; padding: 0;
+  text-decoration: underline;
+}
+
+.inhalt { flex: 1; width: 100%; max-width: 60rem; margin: 0 auto; padding: 1rem; }
+
+.karte {
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem 1.25rem;
+  margin-bottom: 1rem;
+}
+.schmal { max-width: 28rem; margin-left: auto; margin-right: auto; }
+h1 { font-size: 1.5rem; margin: .25rem 0 1rem; }
+
+.feld { display: flex; flex-direction: column; margin-bottom: 1rem; }
+.feld label { font-weight: 600; margin-bottom: .25rem; }
+.feld input, .feld select, .filter select {
+  font: inherit;
+  padding: .65rem .75rem;
+  border: 1px solid var(--rand);
+  border-radius: var(--radius);
+  min-height: 2.75rem;
+  width: 100%;
+}
+.feld input[type="file"] { padding: .5rem 0; border: 0; }
+.feld input:focus, .feld select:focus { outline: 3px solid #9cc7a4; border-color: var(--akzent); }
+.hilfe { color: var(--leise); }
+.fehler { color: var(--fehler); }
+.hat-fehler input { border-color: var(--fehler); }
+
+.knopf {
+  font: inherit;
+  font-weight: 600;
+  background: var(--akzent);
+  color: #fff;
+  border: 0;
+  border-radius: var(--radius);
+  padding: .75rem 1.25rem;
+  min-height: 2.75rem;
+  cursor: pointer;
+  width: 100%;
+}
+.knopf:hover { background: var(--akzent-dunkel); }
+
+.meldungen { list-style: none; padding: 0; margin: 0 0 1rem; }
+.meldung { padding: .75rem 1rem; border-radius: var(--radius); background: var(--erfolg); }
+.meldung.error { background: #f8e1e1; color: var(--fehler); }
+
+.marke-rolle {
+  display: inline-block; background: var(--erfolg); border-radius: 999px;
+  padding: .1rem .6rem; margin: 0 .25rem .25rem 0; font-size: .9rem;
+}
+.hinweis { color: var(--leise); }
+.logo-vorschau { max-height: 5rem; margin-bottom: 1rem; }
+
+.filter { display: flex; flex-direction: column; gap: .25rem; margin-bottom: 1rem; }
+.tabelle-rahmen { overflow-x: auto; }
+.tabelle { width: 100%; border-collapse: collapse; font-size: .95rem; }
+.tabelle th, .tabelle td { text-align: left; padding: .5rem; border-bottom: 1px solid var(--rand); vertical-align: top; }
+.aenderungen { margin: 0; padding-left: 1rem; }
+.blaettern { display: flex; justify-content: space-between; gap: 1rem; padding-top: 1rem; }
+
+.fuss {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem;
+  padding: 1rem; color: var(--leise); font-size: .875rem;
+}
+
+/* Tabellen auf schmalen Bildschirmen als Karten */
+@media (max-width: 40rem) {
+  .tabelle thead { display: none; }
+  .tabelle tr { display: block; border-bottom: 2px solid var(--rand); padding: .5rem 0; }
+  .tabelle td { display: block; border: 0; padding: .15rem 0; }
+  .tabelle td::before { content: attr(data-titel) ": "; font-weight: 600; }
+}
+
+@media (min-width: 40rem) {
+  .knopf { width: auto; }
+  .filter { flex-direction: row; align-items: center; gap: .75rem; }
+  .filter select { width: auto; }
+}
