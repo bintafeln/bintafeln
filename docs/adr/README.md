@@ -38,3 +38,4 @@ drei Fragen: Was war das Problem? Was haben wir entschieden? Warum?
 | [0005](0005-aenderungsprotokoll.md) | Änderungsprotokoll mit django-auditlog | Angenommen |
 | [0006](0006-kundenstamm-als-snapshot.md) | Kundenstamm als Snapshot mit Vollaustausch | Angenommen |
 | [0007](0007-lizenz-agpl.md) | Lizenz AGPL-3.0 | Angenommen |
+| [0008](0008-sicherung-und-update.md) | Sicherung und Update | Angenommen |

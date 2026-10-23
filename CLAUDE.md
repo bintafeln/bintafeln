@@ -18,7 +18,7 @@ gemeinsame Verantwortung der nutzenden Tafeln übergehen.
 - **Repository:** vorerst privat; öffentlich, sobald das Grundgerüst stabil ist. Deshalb gilt
   schon jetzt: alles im Repository muss veröffentlichungsfähig sein.
 - **Technik:** Python, Django (aktuelle LTS), PostgreSQL, Auslieferung per Docker Compose
-  (`app`, `db`, `proxy` mit Caddy).
+  (`app`, `db`, `proxy` mit Caddy, `backup` für die verschlüsselte Sicherung, siehe ADR 0008).
 - **Oberfläche:** serverseitig gerendert mit Django-Templates und HTMX, kein separates
   JavaScript-Framework.
 - **Sprache der Oberfläche:** Deutsch, mobilfreundlich.
@@ -105,3 +105,7 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
 - Neue Modelle mit Personen- oder Stammdaten bei django-auditlog registrieren
   (`auditlog.register(...)`), Geheimnisse und Passwörter mit `exclude_fields` ausnehmen.
 - Betriebsmodus: `BINTAFELN_DOMAIN` leer = Entwicklung (http), gesetzt = Produktion (TLS).
+- Betrieb auf dem Server über `./betrieb` (update, sichern, wiederherstellen, schluessel, status).
+  Sicherungsskript im Dienst `backup`: `docker/backup/sicherung.sh`.
+- Shell-Skripte müssen `shellcheck` bestehen. Änderungen an Sicherung oder Wiederherstellung
+  deckt `tests/sicherung_e2e.sh` ab (läuft in CI im Job `docker`).

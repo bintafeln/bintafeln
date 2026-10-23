@@ -3,8 +3,8 @@
 Freie Verwaltungssoftware für Tafeln – lizenziert unter der
 [GNU Affero General Public License v3.0](LICENSE).
 
-> **Stand:** Grundgerüst. Anmeldung, Rollen, Einrichtung, Tafel-Einstellungen und
-> Änderungsprotokoll sind vorhanden; die Fachmodule folgen.
+> **Stand:** Grundgerüst. Anmeldung, Rollen, Einrichtung, Tafel-Einstellungen,
+> Änderungsprotokoll und Sicherung sind vorhanden; die Fachmodule folgen.
 
 ## Funktionen des Grundgerüsts
 
@@ -19,6 +19,8 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
 - **Zwei-Faktor (vorbereitet):** Hat ein Konto ein bestätigtes TOTP-Gerät
   (Authenticator-App), wird bei der Anmeldung zusätzlich ein Code verlangt. Geräte legt ein
   Admin derzeit unter „Verwaltung → TOTP devices“ an; eine Selbstverwaltung folgt.
+- **Sicherung:** täglich und verschlüsselt, mit Wiederherstellung und Update per Befehl
+  (`./betrieb`). Die Startseite zeigt Admins den Stand der Sicherung.
 - Deutsche, mobilfreundliche Oberfläche (Django-Templates + HTMX, ohne externe CDNs).
 
 ## Aufbau
@@ -28,6 +30,7 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
 | `app`   | Django-Anwendung (gunicorn). Führt beim Start die Migrationen automatisch aus. |
 | `db`    | PostgreSQL 17 |
 | `proxy` | Caddy: liefert statische Dateien aus und sorgt im Produktionsmodus für TLS. |
+| `backup` | Tägliche, verschlüsselte Sicherung von Datenbank und hochgeladenen Dateien. |
 
 Die gesamte Konfiguration steht in der Datei `.env` (Vorlage: [`.env.example`](.env.example)).
 
@@ -98,6 +101,15 @@ Im Browser `http://<IP-des-Servers>` öffnen. Die Einrichtungsseite erscheint au
 Namen der Tafel und das erste Admin-Konto eintragen. Anschrift und Logo lassen sich danach
 unter **Einstellungen** ergänzen.
 
+### 6. Sicherung einrichten
+
+```bash
+./betrieb schluessel
+```
+
+Den angezeigten privaten Schlüssel sicher und getrennt vom Server aufbewahren, siehe
+[Sicherung einrichten](#sicherung-einrichten).
+
 ## Entwicklungs- und Produktionsmodus
 
 Umgeschaltet wird über **eine** Zeile in `.env`:
@@ -123,33 +135,95 @@ Anfragen nur noch für die eingetragene Domain an.
 
 ## Betrieb
 
+Alle Betriebsaufgaben erledigt das Werkzeug `./betrieb` im Projektordner:
+
 ```bash
-docker compose ps                 # Zustand der Dienste
+./betrieb status                  # Dienste, letzte Sicherung, vorhandene Sicherungen
+./betrieb update                  # sichern, neuen Stand holen, neu bauen, starten
+./betrieb sichern                 # sofort sichern
+./betrieb schluessel              # Schlüsselpaar für die Sicherungen erzeugen
+./betrieb wiederherstellen NAME   # eine Sicherung zurückspielen
+```
+
+Weitere nützliche Befehle:
+
+```bash
 docker compose logs -f app        # Protokoll der Anwendung
+docker compose logs backup        # Protokoll der Sicherungen
 docker compose down               # anhalten (Daten bleiben erhalten)
 ```
 
-**Aktualisieren:**
+### Sicherung einrichten
+
+Der Dienst `backup` sichert jeden Tag die Datenbank und die hochgeladenen Dateien
+(Uhrzeit, Anzahl und Ablageort stehen in `.env`). Die Sicherungen werden mit
+[age](https://age-encryption.org) verschlüsselt. Auf dem Server liegt nur der **öffentliche**
+Schlüssel. Wer den Server oder die Sicherungen stiehlt, kann sie also nicht lesen. Ohne
+Schlüssel wird nicht gesichert, unverschlüsselt wird nie gesichert.
+
+Einmalig einrichten:
+
+```bash
+./betrieb schluessel
+```
+
+Das Werkzeug trägt den öffentlichen Schlüssel in `.env` ein und zeigt den **privaten**
+Schlüssel an (eine Zeile, beginnt mit `AGE-SECRET-KEY-`). Diese Zeile:
+
+- **nicht auf dem Server speichern**, sondern getrennt aufbewahren: im Passwortmanager,
+  ausgedruckt im Tresor oder auf einem USB-Stick, am besten an zwei Orten;
+- wird nur zum Wiederherstellen gebraucht. **Ohne sie lassen sich die Sicherungen nicht öffnen.**
+
+Danach zeigt die Startseite allen Admins, wann zuletzt gesichert wurde, und warnt, wenn die
+letzte erfolgreiche Sicherung älter als zwei Tage ist.
+
+Jede Sicherung ist ein Ordner in `sicherungen/` (z. B. `2026-01-31_023000`) mit
+`datenbank.dump.age`, `medien.tar.age` und `info.txt`. Ältere Stände als
+`BINTAFELN_SICHERUNG_ANZAHL` werden automatisch gelöscht.
+
+### Sicherungen auf einen anderen Rechner kopieren
+
+Eine Sicherung auf demselben Server schützt nicht vor einem Plattenschaden oder Verlust des
+Servers. Kopieren Sie den Ordner `sicherungen/` regelmäßig an einen anderen Ort. Weil die Dateien
+verschlüsselt sind, darf das auch ein fremder Speicher sein. Beispiel mit `rsync` von einem
+anderen Linux-Rechner aus, täglich per Cronjob:
+
+```bash
+rsync -a --delete benutzer@tafel-server:/opt/bintafeln/sicherungen/ /pfad/zu/tafel-sicherungen/
+```
+
+### Wiederherstellen
+
+1. Die Zeile mit dem privaten Schlüssel in eine Datei auf dem Server schreiben,
+   z. B. `schluessel.txt` (nach dem Wiederherstellen wieder löschen).
+2. Die gewünschte Sicherung aussuchen: `./betrieb status`
+3. Wiederherstellen:
+
+   ```bash
+   ./betrieb wiederherstellen 2026-01-31_023000 --schluessel schluessel.txt
+   rm schluessel.txt
+   ```
+
+Das Werkzeug prüft zuerst, ob sich die Sicherung mit dem Schlüssel öffnen lässt, fragt nach,
+**sichert den aktuellen Stand** und ersetzt dann Datenbank und hochgeladene Dateien vollständig.
+Danach startet die Anwendung wieder, Migrationen laufen automatisch.
+
+Auf einem **neuen Server**: bintafeln wie oben installieren, den Ordner `sicherungen/`
+dorthin kopieren und dann wie beschrieben wiederherstellen.
+
+### Aktualisieren
 
 ```bash
 cd /opt/bintafeln
-git pull
-docker compose up -d --build      # Migrationen laufen beim Start automatisch
+./betrieb update
 ```
 
-**Datensicherung der Datenbank:**
+Das Werkzeug sichert zuerst, holt dann den neuen Stand, aktualisiert die Images und startet neu.
+Migrationen laufen beim Start automatisch.
 
-```bash
-docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > bintafeln-$(date +%F).sql
-```
-
-Hochgeladene Dateien (z. B. das Logo) liegen im Docker-Volume `bintafeln_media`.
-
-**Wiederherstellen** (in eine leere Datenbank):
-
-```bash
-docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" "$POSTGRES_DB"' < bintafeln-JJJJ-MM-TT.sql
-```
+> **Einmalig beim Wechsel auf diese Version:** Das Werkzeug `./betrieb` gibt es erst ab hier.
+> Deshalb dieses eine Mal `git pull && docker compose up -d --build` ausführen, danach
+> `./betrieb schluessel`. Ab dann genügt `./betrieb update`.
 
 ## Entwicklung
 
@@ -175,7 +249,9 @@ docker run -d --name bintafeln-testdb -p 5432:5432 \
   -e POSTGRES_USER=bintafeln -e POSTGRES_PASSWORD=nur-lokal-test postgres:17-alpine
 ```
 
-GitHub Actions führt bei jedem Pull Request ruff, pytest und einen Docker-Build aus.
+GitHub Actions führt bei jedem Pull Request ruff, shellcheck und pytest aus und spielt mit
+`tests/sicherung_e2e.sh` eine echte Sicherung und Wiederherstellung im Docker-Aufbau durch.
+Dieses Skript überschreibt `.env`, lokal also nur in einer Wegwerf-Kopie starten.
 
 ### Verzeichnisstruktur
 
@@ -186,8 +262,10 @@ apps/konten/        Benutzer, Rollen, Anmeldung mit optionalem Zwei-Faktor
 templates/          Django-Templates
 static/             CSS und HTMX
 docker/             Caddyfile und Start-Skript des App-Containers
+docker/backup/      Dienst "backup" (Sicherungsskript)
+betrieb             Betriebswerkzeug: Update, Sicherung, Wiederherstellung
 docs/adr/           Architekturentscheidungen (warum bintafeln so gebaut ist)
-tests/              pytest-Tests
+tests/              pytest-Tests und Ende-zu-Ende-Test der Sicherung
 ```
 
 ## Grundsätze

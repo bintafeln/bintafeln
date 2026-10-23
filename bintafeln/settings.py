@@ -116,6 +116,11 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_URL = "/media/"
 MEDIA_ROOT = Path(umgebung.text("BINTAFELN_MEDIA_ROOT", str(BASE_DIR / "data" / "media")))
 
+# Statusdatei, die der Dienst "backup" nach jeder Sicherung schreibt.
+SICHERUNG_STATUSDATEI = Path(
+    umgebung.text("BINTAFELN_SICHERUNG_STATUS", str(BASE_DIR / "sicherungen" / "status.txt"))
+)
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Der Proxy (Caddy) setzt X-Forwarded-Proto; die App ist nur über ihn erreichbar.

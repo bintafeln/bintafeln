@@ -128,3 +128,7 @@ h1 { font-size: 1.5rem; margin: .25rem 0 1rem; }
   .filter { flex-direction: row; align-items: center; gap: .75rem; }
   .filter select { width: auto; }
 }
+
+.sicherung { padding: .75rem 1rem; border-radius: var(--radius); margin: 1rem 0; background: #fdf3d8; }
+.sicherung-ok { background: var(--erfolg); }
+.sicherung-fehler, .sicherung-veraltet { background: #f8e1e1; color: var(--fehler); }

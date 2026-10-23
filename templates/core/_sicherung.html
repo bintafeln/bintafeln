@@ -1,0 +1,16 @@
+<div class="sicherung sicherung-{{ sicherung.zustand }}" role="status">
+  <strong>Sicherung:</strong>
+  {% if sicherung.zustand == "ok" %}
+    letzte erfolgreiche am {{ sicherung.letzte_erfolgreiche|date:"d.m.Y \u\m H:i" }} Uhr.
+  {% elif sicherung.zustand == "veraltet" %}
+    Die letzte erfolgreiche Sicherung ist älter als zwei Tage
+    ({{ sicherung.letzte_erfolgreiche|date:"d.m.Y H:i" }} Uhr). Bitte den Dienst „backup“ prüfen.
+  {% elif sicherung.zustand == "fehler" %}
+    {{ sicherung.meldung|default:"Die letzte Sicherung ist fehlgeschlagen." }}
+    {% if sicherung.letzte_erfolgreiche %}Letzte erfolgreiche: {{ sicherung.letzte_erfolgreiche|date:"d.m.Y H:i" }} Uhr.{% endif %}
+  {% elif sicherung.zustand == "nicht_eingerichtet" %}
+    noch nicht eingerichtet. Auf dem Server im Projektordner <code>./betrieb schluessel</code> ausführen.
+  {% else %}
+    Es liegt noch keine Information vor. Läuft der Dienst „backup“?
+  {% endif %}
+</div>

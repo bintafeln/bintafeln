@@ -9,3 +9,5 @@ tests
 .ruff_cache
 .coverage
 htmlcov
+sicherungen
+schluessel.txt

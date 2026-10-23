@@ -1,4 +1,5 @@
 # bintafeln – Installation: cp .env.example .env, Werte anpassen, docker compose up -d
+# Betrieb (Update, Sicherung, Wiederherstellung): ./betrieb hilfe
 name: bintafeln
 
 services:
@@ -40,6 +41,28 @@ services:
     volumes:
       - static:/app/data/static
       - media:/app/data/media
+      # nur lesend, für die Anzeige des Sicherungsstatus
+      - ${BINTAFELN_SICHERUNG_PFAD:-./sicherungen}:/app/sicherungen:ro
+
+  backup:
+    build: docker/backup
+    image: bintafeln-backup:lokal
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGDATABASE: ${POSTGRES_DB:-bintafeln}
+      PGUSER: ${POSTGRES_USER:-bintafeln}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      TZ: ${BINTAFELN_ZEITZONE:-Europe/Berlin}
+      SICHERUNG_SCHLUESSEL: ${BINTAFELN_SICHERUNG_SCHLUESSEL:-}
+      SICHERUNG_UHRZEIT: ${BINTAFELN_SICHERUNG_UHRZEIT:-02:30}
+      SICHERUNG_ANZAHL: ${BINTAFELN_SICHERUNG_ANZAHL:-14}
+    volumes:
+      - media:/daten/media:ro
+      - ${BINTAFELN_SICHERUNG_PFAD:-./sicherungen}:/sicherungen
 
   proxy:
     image: caddy:2-alpine

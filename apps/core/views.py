@@ -10,6 +10,7 @@ from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.debug import sensitive_post_parameters
 
+from apps.core import sicherung
 from apps.core.forms import EinrichtungForm, EinstellungenForm
 from apps.core.middleware import admin_existiert
 from apps.core.models import TafelEinstellungen
@@ -22,7 +23,10 @@ def healthz(request):
 
 @login_required
 def start(request):
-    return render(request, "core/start.html")
+    kontext = {}
+    if rollen.hat_rolle(request.user, rollen.ADMIN):
+        kontext["sicherung"] = sicherung.lese_status()
+    return render(request, "core/start.html", kontext)
 
 
 @sensitive_post_parameters("password1", "password2")
