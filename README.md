@@ -180,6 +180,25 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms, nur zum Lesen.
   nur Admin). Die Einträge werden nach 365 Tagen gelöscht, einstellbar unter
   „Einstellungen → Kundenstamm“.
 
+## Empfang
+
+„Empfang“ im Menü (Admin, Büro, Ausgabe):
+
+1. Einmal die **Ausgabestelle** wählen, an der man arbeitet (gilt für die Sitzung).
+2. Kundennummer **scannen** oder eintippen und Enter. Führende Nullen sind egal.
+3. Die **Ampel** zeigt, ob abgeholt werden darf, und warum nicht:
+   - 🔴 Sperre, Status gesperrt/beendet, Ausweis abgelaufen, heute schon abgeholt, Höchstzahl
+     erreicht, keine Kundengruppe, heute nicht dran (einstellbar rot oder gelb)
+   - 🟡 Ausweis läuft bald ab oder fehlt, andere Ausgabestelle, Status pausiert
+   - 🟢 alles in Ordnung, oder eine Ausnahme für heute hebt eine Terminregel auf
+4. **Abholung eintragen**; der Beitrag ist vorgeschlagen und änderbar. Ein Versehen lässt sich am
+   selben Tag zurücknehmen. Admin und Büro können bei Rot wegen einer Terminregel eine
+   **Ausnahme für heute** erteilen.
+
+Die Regeln stehen unter „Einstellungen → Ausgabe und Ampel“. Jeder Scan steht im
+Zugriffsprotokoll. **Achtung:** Ein neuer Import des Kundenstamms ersetzt auch die am Empfang
+eingetragenen Abholungen und Ausnahmen; der Prüfbericht warnt davor (ADR 0013).
+
 ## Entwicklungs- und Produktionsmodus
 
 Umgeschaltet wird über **eine** Zeile in `.env`:

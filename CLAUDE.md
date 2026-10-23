@@ -79,6 +79,8 @@ In der ersten Ausbaustufe ist der Kundenstamm ein Snapshot aus einem Altsystem: 
 ersetzt den Bestand vollständig, im neuen System wird er nur gelesen, nicht bearbeitet. Der Import
 wird deshalb als wiederholbarer Vollaustausch gebaut, nicht als Synchronisation einzelner
 Datensätze. Erst beim späteren Umstieg zu einem Stichtag übernimmt bintafeln die Führung der Daten.
+Ausnahme: Der Empfang trägt Abholungen und Ausnahmen ein; der nächste Import ersetzt sie
+(ADR 0013).
 
 bintafeln kennt nur das eigene, neutrale Importformat. Werkzeuge, die Daten aus bestimmten
 Altsystemen in dieses Format bringen, gehören nicht in dieses Repository.
@@ -112,6 +114,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `apps/kunden/models.py` an (ADR 0011, 0012). Jeder Aufruf der Detailseite eines Haushalts
   schreibt einen `Zugriff`. Neue Spalten im Importformat brauchen Doku,
   Beispieldatei und Test in `tests/test_kunden_import.py`.
+  `ausgabe` (Empfang; Ampel-Regeln als reine Funktion in `apps/ausgabe/ampel.py`,
+  Einstellungen in `AusgabeEinstellungen`).
 - Zugriffsschutz für Ansichten: `@rolle_erforderlich(rollen.BUERO, …)` aus `apps.konten.rollen`.
 - Zwei-Faktor: Logik in `apps/konten/zwei_faktor.py`, Durchsetzung in
   `apps.konten.middleware.ZweiFaktorMiddleware`. In Tests Benutzer mit der Fixture `anmelden`

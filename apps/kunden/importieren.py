@@ -598,6 +598,15 @@ class _Pruefung:
             ABHOLUNGEN: Abholung.objects.exists(),
             AUSNAHMEN: Ausnahme.objects.exists(),
         }
+        for name, modell in ((ABHOLUNGEN, Abholung), (AUSNAHMEN, Ausnahme)):
+            erfasst = modell.objects.filter(erfasst_am__isnull=False).count()
+            if erfasst:
+                self.warnung(
+                    name,
+                    None,
+                    f"{erfasst} am Empfang in bintafeln erfasste Einträge werden durch den "
+                    "Import ersetzt und gehen verloren.",
+                )
         for name, vorhanden in vorher.items():
             if vorhanden and name not in gelesen:
                 self.warnung(

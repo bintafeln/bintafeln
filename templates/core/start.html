@@ -7,6 +7,8 @@
     {% for rolle in rollen_liste %}<span class="marke-rolle">{{ rolle }}</span>{% empty %}keine – bitte an einen Admin wenden.{% endfor %}
   </p>
   {% if sicherung %}{% include "core/_sicherung.html" %}{% endif %}
-  <p class="hinweis">Die Fachmodule (Kundschaft, Ausgabe, Kiosk …) folgen.</p>
+  {% if "Admin" in rollen or "Büro" in rollen or "Ausgabe" in rollen %}
+    <p><a class="knopf" href="{% url 'ausgabe:empfang' %}">Zum Empfang</a></p>
+  {% endif %}
 </section>
 {% endblock %}
