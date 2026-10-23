@@ -80,3 +80,17 @@ def test_zwei_faktor_wenn_geraet_eingerichtet(client, admin):
     antwort = client.post(url, {"username": "chefin", "password": PASSWORT, "otp_token": code})
     assert antwort.status_code == 302
     assert client.session.get("otp_device_id")
+
+
+def test_startseite_zeigt_eigene_rollen(client, benutzer_mit_rolle, admin, anmelden):
+    anmelden(client, admin)
+    inhalt = client.get(reverse("core:start")).content.decode()
+    for rolle in rollen.ALLE:
+        assert f'<span class="marke-rolle">{rolle}</span>' in inhalt
+    client.post(reverse("konten:abmelden"))
+
+    anmelden(client, benutzer_mit_rolle("zwei", rollen.KIOSK, rollen.AUSGABE))
+    inhalt = client.get(reverse("core:start")).content.decode()
+    # in der festen Reihenfolge der Rollen
+    assert inhalt.index(">Ausgabe<") < inhalt.index(">Kiosk<")
+    assert "keine – bitte" not in inhalt
