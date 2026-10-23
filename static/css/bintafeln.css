@@ -220,3 +220,12 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
   .lampe { width: 7rem; height: 7rem; }
   .ampel-wort { font-size: 2.5rem; }
 }
+
+/* Kasse */
+.reiter { display: flex; gap: .5rem; margin-bottom: 1rem; }
+.reiter a { padding: .35rem .9rem; border: 2px solid var(--akzent); border-radius: 999px; text-decoration: none; }
+.reiter a[aria-current="page"] { background: var(--akzent); color: #fff; }
+.kasse td { white-space: nowrap; }
+.kasse .summe td { font-weight: 700; }
+.kasse .summe { border-top: 2px solid #222; }
+@media (min-width: 40rem) { .kasse .summe td { border-top: 2px solid #222; } }

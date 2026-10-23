@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block titel %}Kasse{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Kasse</h1>
+  <nav class="reiter" aria-label="Zeitraum">
+    <a href="?ansicht=tag{% if stelle %}&amp;stelle={{ stelle.pk }}{% endif %}"{% if ansicht == "tag" %} aria-current="page"{% endif %}>Tag</a>
+    <a href="?ansicht=monat{% if stelle %}&amp;stelle={{ stelle.pk }}{% endif %}"{% if ansicht == "monat" %} aria-current="page"{% endif %}>Monat</a>
+    <a href="?ansicht=jahr{% if stelle %}&amp;stelle={{ stelle.pk }}{% endif %}"{% if ansicht == "jahr" %} aria-current="page"{% endif %}>Jahr</a>
+  </nav>
+  <form method="get" class="filter">
+    <input type="hidden" name="ansicht" value="{{ ansicht }}">
+    {% if ansicht == "tag" %}
+      <label for="datum">Tag</label>
+      <input type="date" name="datum" id="datum" value="{{ beginn|date:'Y-m-d' }}">
+    {% elif ansicht == "monat" %}
+      <label for="monat">Monat</label>
+      <input type="month" name="monat" id="monat" value="{{ beginn|date:'Y-m' }}">
+    {% else %}
+      <label for="jahr">Jahr</label>
+      <input type="number" name="jahr" id="jahr" value="{{ beginn|date:'Y' }}" min="2000" max="2100" class="betrag">
+    {% endif %}
+    <label for="stelle">Ausgabestelle</label>
+    <select name="stelle" id="stelle">
+      <option value="">alle</option>
+      {% for s in stellen %}<option value="{{ s.pk }}"{% if s == stelle %} selected{% endif %}>{{ s.name }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="knopf">Anzeigen</button>
+  </form>
+  <nav class="blaettern" aria-label="Zeitraum wechseln">
+    <a href="?{{ zurueck }}">← früher</a>
+    <strong>{{ titel }}{% if stelle %} · {{ stelle.name }}{% endif %}</strong>
+    <a href="?{{ vor }}">später →</a>
+  </nav>
+</section>
+
+<section class="karte">
+  <h2>Bar eingenommen: {{ bar_gesamt|floatformat:2 }} €</h2>
+  <div class="tabelle-rahmen">
+  <table class="tabelle kasse">
+    <thead><tr>
+      <th>{% if ansicht == "tag" %}Ausgabestelle{% elif ansicht == "monat" %}Tag{% else %}Monat{% endif %}</th>
+      {% for _, name in spalten %}<th>{{ name }}</th>{% endfor %}
+    </tr></thead>
+    <tbody>
+    {% for z in zeilen %}
+      <tr>
+        <td data-titel="{% if ansicht == "tag" %}Ausgabestelle{% elif ansicht == "monat" %}Tag{% else %}Monat{% endif %}">{% if z.link %}<a href="?{{ z.link }}">{{ z.titel }}</a>{% else %}{{ z.titel }}{% endif %}</td>
+        {% for name, wert, betrag in z.werte %}<td data-titel="{{ name }}">{% if betrag %}{{ wert|floatformat:2 }} €{% else %}{{ wert }}{% endif %}</td>{% endfor %}
+      </tr>
+    {% empty %}
+      <tr><td colspan="9">Keine Buchungen in diesem Zeitraum.</td></tr>
+    {% endfor %}
+    </tbody>
+    {% if zeilen %}
+    <tfoot>
+      <tr class="summe">
+        <td data-titel="Zeitraum">Summe</td>
+        {% for name, wert, betrag in summe %}<td data-titel="{{ name }}">{% if betrag %}{{ wert|floatformat:2 }} €{% else %}{{ wert }}{% endif %}</td>{% endfor %}
+      </tr>
+    </tfoot>
+    {% endif %}
+  </table>
+  </div>
+  <p class="hinweis">„Bar eingenommen“ = bar gezahlte Beiträge + Einzahlungen. Verrechnetes Guthaben,
+    Angeschriebenes und Korrekturen sind kein Bargeld. Abholungen ohne Beitrag erscheinen hier nicht.</p>
+</section>
+
+{% if einzelbuchungen is not None %}
+<section class="karte">
+  <h2>Buchungen des Tages</h2>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Uhrzeit</th><th>Kundennummer</th><th>Art</th><th>Soll</th><th>Haben</th><th>bar</th><th>Ausgabestelle</th><th>Von</th></tr></thead>
+    <tbody>
+    {% for b in einzelbuchungen %}
+      <tr>
+        <td data-titel="Uhrzeit">{{ b.zeitpunkt|time:"H:i" }}</td>
+        <td data-titel="Kundennummer">{% if b.haushalt_id %}<a href="{% url 'kunden:haushalt' b.kundennummer %}">{{ b.kundennummer }}</a>{% else %}{{ b.kundennummer|default:"–" }}{% endif %}</td>
+        <td data-titel="Art">{{ b.get_art_display }}{% if b.zahlweise %} ({{ b.get_zahlweise_display }}){% endif %}</td>
+        <td data-titel="Soll">{{ b.soll|floatformat:2 }} €</td>
+        <td data-titel="Haben">{{ b.haben|floatformat:2 }} €</td>
+        <td data-titel="bar">{{ b.bar|floatformat:2 }} €</td>
+        <td data-titel="Ausgabestelle">{{ b.ausgabestelle.name|default:"–" }}</td>
+        <td data-titel="Von">{{ b.eingetragen_von|default:"–" }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8">Keine.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -125,6 +125,12 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = Path(umgebung.text("BINTAFELN_STATIC_ROOT", str(BASE_DIR / "data" / "static")))
 STATICFILES_DIRS = [BASE_DIR / "static"]
+# Dateinamen mit Prüfsumme (bintafeln.3f9a1c.css): Nach einem Update lädt jeder Browser die
+# neue Fassung, obwohl Caddy statische Dateien lange zwischenspeichern lässt.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"},
+}
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = Path(umgebung.text("BINTAFELN_MEDIA_ROOT", str(BASE_DIR / "data" / "media")))
