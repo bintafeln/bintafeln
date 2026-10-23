@@ -186,6 +186,7 @@ apps/konten/        Benutzer, Rollen, Anmeldung mit optionalem Zwei-Faktor
 templates/          Django-Templates
 static/             CSS und HTMX
 docker/             Caddyfile und Start-Skript des App-Containers
+docs/adr/           Architekturentscheidungen (warum bintafeln so gebaut ist)
 tests/              pytest-Tests
 ```
 
