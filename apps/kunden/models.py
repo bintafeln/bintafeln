@@ -3,10 +3,11 @@
 import datetime as dt
 import uuid
 
+from auditlog.context import disable_auditlog
 from auditlog.registry import auditlog
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import RegexValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 from django.utils import timezone
 
@@ -33,6 +34,12 @@ class KundenEinstellungen(models.Model):
         "Kind bis unter … Jahren",
         default=18,
         help_text="Personen unter diesem Alter zählen als Kind.",
+    )
+    abholungen_aufbewahren_jahre = models.PositiveSmallIntegerField(
+        "Abholungen und Ausnahmen aufbewahren (Jahre)",
+        default=3,
+        validators=[MinValueValidator(1), MaxValueValidator(10)],
+        help_text="Ältere werden nicht importiert und automatisch gelöscht.",
     )
     besondere_kategorie_fuer_ausgabe = models.BooleanField(
         "Rolle Ausgabe sieht Zusatzfelder der besonderen Kategorie",
@@ -353,6 +360,69 @@ class Bemerkung(models.Model):
         return f"Bemerkung vom {self.datum:%d.%m.%Y}"
 
 
+class Abholung(models.Model):
+    """Eine Abholung. Wird nach der Aufbewahrungsfrist der Einstellungen gelöscht."""
+
+    haushalt = models.ForeignKey(Haushalt, on_delete=models.CASCADE, related_name="abholungen")
+    datum = models.DateField("Datum")
+    uhrzeit = models.TimeField("Uhrzeit", null=True, blank=True)
+    beitrag = models.DecimalField("Beitrag", max_digits=8, decimal_places=2, null=True, blank=True)
+    ausgabestelle = models.ForeignKey(
+        Ausgabestelle,
+        verbose_name="Ausgabestelle",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+    eingetragen_von = models.CharField("Eingetragen von", max_length=100, blank=True)
+
+    class Meta:
+        verbose_name = "Abholung"
+        verbose_name_plural = "Abholungen"
+        ordering = ["-datum", "-uhrzeit"]
+
+    def __str__(self):
+        return f"Abholung am {self.datum:%d.%m.%Y}"
+
+
+class Ausnahme(models.Model):
+    """Erlaubt eine Abholung trotz Regel, z. B. außerhalb des eigenen Termins."""
+
+    haushalt = models.ForeignKey(Haushalt, on_delete=models.CASCADE, related_name="ausnahmen")
+    datum = models.DateField("Datum")
+    begruendung = models.TextField("Begründung", blank=True)
+    eingetragen_von = models.CharField("Eingetragen von", max_length=100, blank=True)
+
+    class Meta:
+        verbose_name = "Ausnahme"
+        verbose_name_plural = "Ausnahmen"
+        ordering = ["-datum"]
+
+    def __str__(self):
+        return f"Ausnahme am {self.datum:%d.%m.%Y}"
+
+
+def abholfrist_beginn(heute: dt.date | None = None) -> dt.date:
+    """Ältester Tag, an dem Abholungen und Ausnahmen noch aufbewahrt werden."""
+    heute = heute or timezone.localdate()
+    jahre = KundenEinstellungen.laden().abholungen_aufbewahren_jahre
+    try:
+        return heute.replace(year=heute.year - jahre)
+    except ValueError:  # 29. Februar
+        return heute.replace(year=heute.year - jahre, day=28)
+
+
+def abgelaufene_abholungen_loeschen(heute: dt.date | None = None) -> int:
+    """Löscht Abholungen und Ausnahmen, deren Aufbewahrungsfrist abgelaufen ist."""
+    beginn = abholfrist_beginn(heute)
+    anzahl = 0
+    with disable_auditlog():  # Fristablauf ist kein fachliches Ereignis je Datensatz
+        for modell in (Abholung, Ausnahme):
+            anzahl += modell.objects.filter(datum__lt=beginn).delete()[0]
+    return anzahl
+
+
 class ImportVorbereitung(models.Model):
     """Geprüfte Importdaten bis zur Bestätigung. Wird spätestens nach einer Stunde gelöscht."""
 
@@ -400,6 +470,8 @@ class ImportLauf(models.Model):
     anzahl_abholer = models.PositiveIntegerField("Abholberechtigte", default=0)
     anzahl_sperren = models.PositiveIntegerField("Sperren", default=0)
     anzahl_bemerkungen = models.PositiveIntegerField("Bemerkungen", default=0)
+    anzahl_abholungen = models.PositiveIntegerField("Abholungen", default=0)
+    anzahl_ausnahmen = models.PositiveIntegerField("Ausnahmen", default=0)
     anzahl_warnungen = models.PositiveIntegerField("Warnungen", default=0)
 
     class Meta:
@@ -422,6 +494,8 @@ for modell in (
     Abholer,
     Sperre,
     Bemerkung,
+    Abholung,
+    Ausnahme,
     ImportLauf,
 ):
     auditlog.register(modell)

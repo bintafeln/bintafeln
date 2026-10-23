@@ -11,6 +11,8 @@ from apps.kunden import importieren
 from apps.kunden.forms import KundenEinstellungenForm, ZusatzfeldForm
 from apps.kunden.models import (
     Abholer,
+    Abholung,
+    Ausnahme,
     Bemerkung,
     Haushalt,
     ImportLauf,
@@ -20,6 +22,7 @@ from apps.kunden.models import (
     Person,
     Sperre,
     Zusatzfeld,
+    abgelaufene_abholungen_loeschen,
 )
 
 
@@ -65,6 +68,7 @@ def _sicherung_frisch() -> bool:
 @rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
 def uebersicht(request):
     ImportVorbereitung.abgelaufene_loeschen()
+    abgelaufene_abholungen_loeschen()
     return render(
         request,
         "kunden/uebersicht.html",
@@ -73,6 +77,7 @@ def uebersicht(request):
                 "haushalte": Haushalt.objects.count(),
                 "personen": Person.objects.count(),
                 "kundengruppen": Kundengruppe.objects.count(),
+                "abholungen": Abholung.objects.count(),
             },
             "importe": ImportLauf.objects.select_related("benutzer")[:10],
         },
@@ -133,6 +138,8 @@ def import_vorschau(request, pk):
                 "abholer": len(daten["abholer"]),
                 "sperren": len(daten["sperren"]),
                 "bemerkungen": len(daten["bemerkungen"]),
+                "abholungen": len(daten.get("abholungen", [])),
+                "ausnahmen": len(daten.get("ausnahmen", [])),
             },
             "bisher": {
                 "haushalte": Haushalt.objects.count(),
@@ -140,6 +147,8 @@ def import_vorschau(request, pk):
                 "abholer": Abholer.objects.count(),
                 "sperren": Sperre.objects.count(),
                 "bemerkungen": Bemerkung.objects.count(),
+                "abholungen": Abholung.objects.count(),
+                "ausnahmen": Ausnahme.objects.count(),
             },
             "gueltig_bis": vorbereitung.erstellt_am + ImportVorbereitung.GUELTIG,
             "sicherung_frisch": _sicherung_frisch(),

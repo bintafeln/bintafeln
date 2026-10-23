@@ -60,7 +60,15 @@ eigene Kundennummer.
 
 - **Sperre:** von, bis (optional), Begründung, eingetragen von.
 - **Ausnahme:** Datum, Begründung, eingetragen von. Erlaubt eine Abholung trotz Regel, z. B.
-  außerhalb des eigenen Termins (gehört zur Ausgabe, Modul 4).
+  außerhalb des eigenen Termins (ausgewertet in der Ausgabe, Modul 4).
+
+### Abholungen
+
+Datum, Uhrzeit, Beitrag, Ausgabestelle, eingetragen von. Im Snapshot-Betrieb werden sie aus dem
+Altsystem übernommen, ab Modul 4 entstehen sie in bintafeln. Abholungen und Ausnahmen werden nur
+für eine **Aufbewahrungsfrist** gespeichert (Einstellung je Tafel, Vorgabe 3 Jahre) und danach
+automatisch gelöscht (ADR 0011). Statistiken über längere Zeiträume entstehen aus anonymen
+Zählwerten.
 
 ### Interne Bemerkungen
 

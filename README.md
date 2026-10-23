@@ -159,6 +159,8 @@ Regeln:
 - Jeder Import erscheint im Änderungsprotokoll und unter „Kunden“ (wer, wann, wie viele
   Datensätze), nicht jeder einzelne Datensatz.
 - Importieren dürfen Admin und Büro.
+- Abholungen und Ausnahmen werden nur innerhalb der **Aufbewahrungsfrist** übernommen
+  („Einstellungen → Kundenstamm“, Vorgabe 3 Jahre). Ältere löscht bintafeln automatisch.
 
 ## Entwicklungs- und Produktionsmodus
 

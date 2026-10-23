@@ -21,7 +21,9 @@ from django.utils import timezone
 from apps.kunden import werte
 from apps.kunden.models import (
     Abholer,
+    Abholung,
     Ausgabestelle,
+    Ausnahme,
     Bemerkung,
     Einkommensart,
     Haushalt,
@@ -31,6 +33,7 @@ from apps.kunden.models import (
     Person,
     Sperre,
     Zusatzfeld,
+    abholfrist_beginn,
 )
 
 FEHLER = "fehler"
@@ -42,6 +45,8 @@ ABHOLER = "abholer.csv"
 SPERREN = "sperren.csv"
 BEMERKUNGEN = "bemerkungen.csv"
 KUNDENGRUPPEN = "kundengruppen.csv"
+ABHOLUNGEN = "abholungen.csv"
+AUSNAHMEN = "ausnahmen.csv"
 
 SPALTEN = {
     HAUSHALTE: {
@@ -87,6 +92,14 @@ SPALTEN = {
     KUNDENGRUPPEN: {
         "pflicht": ["kuerzel", "name", "ausgabestelle"],
         "optional": ["wochentage", "uhrzeit", "maximum", "aktiv"],
+    },
+    ABHOLUNGEN: {
+        "pflicht": ["kundennummer", "datum"],
+        "optional": ["uhrzeit", "beitrag", "ausgabestelle", "eingetragen_von"],
+    },
+    AUSNAHMEN: {
+        "pflicht": ["kundennummer", "datum"],
+        "optional": ["begruendung", "eingetragen_von"],
     },
 }
 
@@ -261,6 +274,14 @@ class _Pruefung:
             return None
         return iso
 
+    def uhrzeit(self, datei, nummer, zeile) -> str | None:
+        wert = zeile.get("uhrzeit", "")
+        try:
+            return dt.time.fromisoformat(wert).isoformat("minutes") if wert else None
+        except ValueError:
+            self.warnung(datei, nummer, "„uhrzeit“ ist keine Uhrzeit, bleibt leer.")
+            return None
+
     def zahl(self, datei, nummer, zeile, spalte) -> int | None:
         wert = zeile.get(spalte, "")
         if not wert:
@@ -344,12 +365,6 @@ class _Pruefung:
             if any(t not in WOCHENTAGE for t in tage):
                 self.warnung(KUNDENGRUPPEN, nummer, "Unbekannter Wochentag, Angabe bleibt leer.")
                 tage = []
-            uhrzeit = z.get("uhrzeit", "")
-            try:
-                uhrzeit = dt.time.fromisoformat(uhrzeit).isoformat("minutes") if uhrzeit else None
-            except ValueError:
-                self.warnung(KUNDENGRUPPEN, nummer, "„uhrzeit“ ist keine Uhrzeit, bleibt leer.")
-                uhrzeit = None
             try:
                 aktiv = werte.ja_nein(z.get("aktiv") or "ja")
             except werte.UngueltigerWert:
@@ -361,7 +376,7 @@ class _Pruefung:
                     "name": name,
                     "ausgabestelle": stelle,
                     "wochentage": ",".join(tage),
-                    "uhrzeit": uhrzeit,
+                    "uhrzeit": self.uhrzeit(KUNDENGRUPPEN, nummer, z),
                     "maximum": self.zahl(KUNDENGRUPPEN, nummer, z, "maximum"),
                     "aktiv": aktiv,
                 }
@@ -485,6 +500,57 @@ class _Pruefung:
             )
         return haushalte, nummern, list(neue_gruppen.values())
 
+    def abholdaten(self, gelesen) -> tuple[list[dict], list[dict]]:
+        """Abholungen und Ausnahmen; ältere als die Aufbewahrungsfrist werden ausgelassen."""
+        beginn = abholfrist_beginn(self.heute).isoformat()
+        bekannte_stellen = {
+            s.lower() for s in Ausgabestelle.objects.values_list("name", flat=True)
+        } | {g["ausgabestelle"].lower() for g in self.csv_gruppen}
+
+        abholungen = []
+        for n, z in gelesen.get(ABHOLUNGEN, []):
+            datum = self.datum(ABHOLUNGEN, n, z, "datum", pflicht=True)
+            stelle = self.text(ABHOLUNGEN, n, z, "ausgabestelle")
+            if stelle and stelle.lower() not in bekannte_stellen:
+                self.warnung(ABHOLUNGEN, n, "Ausgabestelle unbekannt; wird angelegt.")
+                bekannte_stellen.add(stelle.lower())
+            try:
+                beitrag = werte.betrag(z.get("beitrag", ""))
+            except werte.UngueltigerWert:
+                self.warnung(ABHOLUNGEN, n, "„beitrag“ ist kein Betrag, bleibt leer.")
+                beitrag = None
+            eintrag = {
+                "kundennummer": z.get("kundennummer", ""),
+                "datum": datum,
+                "uhrzeit": self.uhrzeit(ABHOLUNGEN, n, z),
+                "beitrag": str(beitrag) if beitrag is not None else None,
+                "ausgabestelle": stelle,
+                "eingetragen_von": self.text(ABHOLUNGEN, n, z, "eingetragen_von"),
+            }
+            if datum and datum < beginn:
+                self.warnung(
+                    ABHOLUNGEN, n, "Älter als die Aufbewahrungsfrist; wird nicht übernommen."
+                )
+            elif datum:
+                abholungen.append(eintrag)
+
+        ausnahmen = []
+        for n, z in gelesen.get(AUSNAHMEN, []):
+            datum = self.datum(AUSNAHMEN, n, z, "datum", pflicht=True)
+            eintrag = {
+                "kundennummer": z.get("kundennummer", ""),
+                "datum": datum,
+                "begruendung": z.get("begruendung", ""),
+                "eingetragen_von": self.text(AUSNAHMEN, n, z, "eingetragen_von"),
+            }
+            if datum and datum < beginn:
+                self.warnung(
+                    AUSNAHMEN, n, "Älter als die Aufbewahrungsfrist; wird nicht übernommen."
+                )
+            elif datum:
+                ausnahmen.append(eintrag)
+        return abholungen, ausnahmen
+
     def zugeordnet(self, datei, zeilen, nummern):
         for nummer, z in zeilen:
             if z.get("kundennummer") and z["kundennummer"] not in nummern:
@@ -529,6 +595,8 @@ class _Pruefung:
             ABHOLER: Abholer.objects.exists(),
             SPERREN: Sperre.objects.exists(),
             BEMERKUNGEN: Bemerkung.objects.exists() and bemerkungen_an,
+            ABHOLUNGEN: Abholung.objects.exists(),
+            AUSNAHMEN: Ausnahme.objects.exists(),
         }
         for name, vorhanden in vorher.items():
             if vorhanden and name not in gelesen:
@@ -538,11 +606,11 @@ class _Pruefung:
                     "Datei fehlt; die bisher vorhandenen Angaben dieser Art werden entfernt.",
                 )
 
-        csv_gruppen = self.kundengruppen(gelesen.get(KUNDENGRUPPEN, []))
+        csv_gruppen = self.csv_gruppen = self.kundengruppen(gelesen.get(KUNDENGRUPPEN, []))
         haushalte, nummern, neue_gruppen = self.haushalte(
             gelesen[HAUSHALTE], PERSONEN in gelesen, csv_gruppen
         )
-        for name in (PERSONEN, ABHOLER, SPERREN, BEMERKUNGEN):
+        for name in (PERSONEN, ABHOLER, SPERREN, BEMERKUNGEN, ABHOLUNGEN, AUSNAHMEN):
             self.zugeordnet(name, gelesen.get(name, []), nummern)
 
         personen = []
@@ -589,6 +657,8 @@ class _Pruefung:
             for n, z in gelesen.get(BEMERKUNGEN, [])
         ]
 
+        abholungen, ausnahmen = self.abholdaten(gelesen)
+
         if any(m["stufe"] == FEHLER for m in self.bericht):
             return None
         return {
@@ -599,6 +669,8 @@ class _Pruefung:
             "abholer": abholer,
             "sperren": sperren,
             "bemerkungen": bemerkungen,
+            "abholungen": abholungen,
+            "ausnahmen": ausnahmen,
         }
 
 
@@ -760,6 +832,26 @@ def uebernehmen(daten: dict, *, benutzer, dateien, pruefsumme, anzahl_warnungen)
             )
             for b in daten["bemerkungen"]
         )
+        Abholung.objects.bulk_create(
+            Abholung(
+                haushalt=nach_nummer[a["kundennummer"]],
+                datum=_datum(a["datum"]),
+                uhrzeit=dt.time.fromisoformat(a["uhrzeit"]) if a["uhrzeit"] else None,
+                beitrag=a["beitrag"],
+                ausgabestelle=stelle(a["ausgabestelle"]),
+                eingetragen_von=a["eingetragen_von"],
+            )
+            for a in daten.get("abholungen", [])
+        )
+        Ausnahme.objects.bulk_create(
+            Ausnahme(
+                haushalt=nach_nummer[a["kundennummer"]],
+                datum=_datum(a["datum"]),
+                begruendung=a["begruendung"],
+                eingetragen_von=a["eingetragen_von"],
+            )
+            for a in daten.get("ausnahmen", [])
+        )
 
     # Außerhalb von disable_auditlog: Der Import selbst erscheint im Änderungsprotokoll.
     return ImportLauf.objects.create(
@@ -771,5 +863,7 @@ def uebernehmen(daten: dict, *, benutzer, dateien, pruefsumme, anzahl_warnungen)
         anzahl_abholer=len(daten["abholer"]),
         anzahl_sperren=len(daten["sperren"]),
         anzahl_bemerkungen=len(daten["bemerkungen"]),
+        anzahl_abholungen=len(daten.get("abholungen", [])),
+        anzahl_ausnahmen=len(daten.get("ausnahmen", [])),
         anzahl_warnungen=anzahl_warnungen,
     )

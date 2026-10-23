@@ -13,6 +13,7 @@ class KundenEinstellungenForm(forms.ModelForm):
             "familienstand_erfassen",
             "bemerkungen_importieren",
             "kind_bis_alter",
+            "abholungen_aufbewahren_jahre",
             "besondere_kategorie_fuer_ausgabe",
         ]
 

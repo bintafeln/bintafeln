@@ -1,6 +1,11 @@
 # Importformat für den Kundenstamm
 
-Version 1
+Version 1.1
+
+| Version | Änderung |
+|---|---|
+| 1.1 | neue optionale Dateien `abholungen.csv` und `ausnahmen.csv`. Dateien der Version 1 bleiben gültig. |
+| 1 | erste Fassung |
 
 Dies ist das **einzige** Format, das bintafeln für den Kundenstamm einliest. Es ist offen
 dokumentiert und unabhängig von jedem Altsystem. Werkzeuge, die Daten aus einem bestimmten
@@ -34,6 +39,8 @@ Beispieldateien mit erfundenen Daten: [beispiele/import/](beispiele/import/)
 | `sperren.csv` | nein | Sperren |
 | `bemerkungen.csv` | nein | interne Bemerkungen |
 | `kundengruppen.csv` | nein | Kundengruppen mit Ausgabestelle und Termin |
+| `abholungen.csv` | nein | einzelne Abholungen innerhalb der Aufbewahrungsfrist |
+| `ausnahmen.csv` | nein | erteilte Ausnahmen innerhalb der Aufbewahrungsfrist |
 
 **Minimalfall:** Nur `haushalte.csv` mit Kundennummer, Vor- und Nachname. Alles andere ist
 optional und kann später ergänzt werden, sobald vollständigere Daten vorliegen.
@@ -146,6 +153,30 @@ Fehlt `kundengruppen.csv`, werden Kundengruppen, die in `haushalte.csv` vorkomme
 angegebenen Kürzel oder Namen und gegebenenfalls der Ausgabestelle angelegt (Warnung). Bestehende
 Kundengruppen bleiben erhalten.
 
+## abholungen.csv
+
+| Spalte | Pflicht | Hinweis |
+|---|---|---|
+| `kundennummer` | **ja** | |
+| `datum` | **ja** | Datum der Abholung |
+| `uhrzeit` | | `HH:MM` |
+| `beitrag` | | gezahlter Beitrag in Euro |
+| `ausgabestelle` | | Name der Ausgabestelle. Unbekannte werden angelegt (Warnung) |
+| `eingetragen_von` | | Name als Text |
+
+## ausnahmen.csv
+
+| Spalte | Pflicht | Hinweis |
+|---|---|---|
+| `kundennummer` | **ja** | |
+| `datum` | **ja** | Tag, für den die Ausnahme gilt |
+| `begruendung` | | |
+| `eingetragen_von` | | Name als Text |
+
+Für Abholungen und Ausnahmen gilt eine **Aufbewahrungsfrist** (Einstellung je Tafel, Vorgabe
+3 Jahre). Zeilen mit einem älteren Datum werden nicht übernommen (Warnung). In bintafeln werden
+ältere Einträge automatisch gelöscht (ADR 0011).
+
 ## Zusatzfelder
 
 Zusatzfelder legt die Tafel **vorher** in bintafeln an (Schlüssel, Bezeichnung, gilt für Haushalt
@@ -187,6 +218,7 @@ Zusatzfeld wird ignoriert (Warnung).
 - unbekannte Spalte, unpassender Zusatzfeld-Wert
 - optionale Datei fehlt, obwohl vorher Daten dieser Art vorhanden waren
 - Angabe zu einem Feld, das die Tafel abgeschaltet hat (wird nicht gespeichert)
+- Abholung oder Ausnahme älter als die Aufbewahrungsfrist (wird nicht übernommen)
 
 Der Bericht nennt zu jeder Meldung Datei und Zeilennummer, aber **keine Inhalte** der Zeile. So
 lässt er sich auch weitergeben, ohne Personendaten offenzulegen.
@@ -207,6 +239,5 @@ Viele Programme exportieren Listen als Excel-Tabelle. Damit daraus eine `haushal
 
 ## Nicht Teil des Formats
 
-Bewusst nicht vorgesehen sind: Dokumente und Ausweiskopien, Höhe des Einkommens, einzelne
-Abholungen und Kontobuchungen (folgen mit Modul 4). Vom Kundenkonto wird nur der aktuelle Stand
-übernommen.
+Bewusst nicht vorgesehen sind: Dokumente und Ausweiskopien, Höhe des Einkommens und einzelne
+Kontobuchungen. Vom Kundenkonto wird nur der aktuelle Stand übernommen.
