@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block titel %}Mein Konto{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Mein Konto</h1>
+  <p>Angemeldet als <strong>{{ user.username }}</strong>.</p>
+
+  <h2>Zwei-Faktor-Anmeldung</h2>
+  {% if zwei_faktor_aktiv %}
+    <p class="sicherung sicherung-ok">Eingeschaltet. Bei der Anmeldung wird zusätzlich ein Code aus
+      der Authenticator-App verlangt.</p>
+    <p>Noch {{ notfallcodes_uebrig }} unbenutzte Notfallcode{{ notfallcodes_uebrig|pluralize:"s" }}.</p>
+    <form method="post" action="{% url 'konten:notfallcodes_neu' %}">
+      {% csrf_token %}
+      <button type="submit" class="knopf">Neue Notfallcodes erzeugen</button>
+      <small class="hilfe">Die bisherigen Notfallcodes werden dabei ungültig.</small>
+    </form>
+
+    {% if zwei_faktor_pflicht %}
+      <p class="hinweis">Für Ihre Rolle ist die Zwei-Faktor-Anmeldung Pflicht und kann nicht
+        abgeschaltet werden. Neues Handy? Bitte einen Admin bitten, sie zurückzusetzen, und dann
+        neu einrichten.</p>
+    {% else %}
+      <h3>Abschalten</h3>
+      <form method="post" action="{% url 'konten:zwei_faktor_abschalten' %}">
+        {% csrf_token %}
+        {% include "includes/formular.html" %}
+        <button type="submit" class="knopf knopf-zweitrangig">Zwei-Faktor abschalten</button>
+      </form>
+    {% endif %}
+  {% else %}
+    <p class="sicherung">Nicht eingerichtet.{% if zwei_faktor_pflicht %} Für Ihre Rolle ist sie Pflicht.{% endif %}</p>
+    <p><a class="knopf" href="{% url 'konten:zwei_faktor_einrichten' %}">Jetzt einrichten</a></p>
+  {% endif %}
+</section>
+{% endblock %}

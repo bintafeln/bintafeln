@@ -102,6 +102,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
 - Apps unter `apps/`: `core` (Tafel-Einstellungen, Einrichtung, Protokoll),
   `konten` (Benutzermodell `konten.Benutzer`, Rollen in `apps/konten/rollen.py`, Anmeldung).
 - Zugriffsschutz für Ansichten: `@rolle_erforderlich(rollen.BUERO, …)` aus `apps.konten.rollen`.
+- Zwei-Faktor: Logik in `apps/konten/zwei_faktor.py`, Durchsetzung in
+  `apps.konten.middleware.ZweiFaktorMiddleware`. In Tests Benutzer mit der Fixture `anmelden`
+  anmelden (verifizierte Sitzung); ein bloßes `force_login` landet bei Pflicht-Rollen auf der
+  Einrichtungsseite.
 - Neue Modelle mit Personen- oder Stammdaten bei django-auditlog registrieren
   (`auditlog.register(...)`), Geheimnisse und Passwörter mit `exclude_fields` ausnehmen.
 - Betriebsmodus: `BINTAFELN_DOMAIN` leer = Entwicklung (http), gesetzt = Produktion (TLS).

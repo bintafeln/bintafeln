@@ -38,7 +38,19 @@ class EinrichtungForm(forms.Form):
 class EinstellungenForm(forms.ModelForm):
     class Meta:
         model = TafelEinstellungen
-        fields = ["name", "logo", "strasse", "plz", "ort", "telefon", "email"]
+        fields = [
+            "name",
+            "logo",
+            "strasse",
+            "plz",
+            "ort",
+            "telefon",
+            "email",
+            "zwei_faktor_admin",
+            "zwei_faktor_buero",
+            "zwei_faktor_ausgabe",
+            "zwei_faktor_kiosk",
+        ]
 
     def clean_logo(self):
         logo = self.cleaned_data.get("logo")

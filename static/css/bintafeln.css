@@ -132,3 +132,19 @@ h1 { font-size: 1.5rem; margin: .25rem 0 1rem; }
 .sicherung { padding: .75rem 1rem; border-radius: var(--radius); margin: 1rem 0; background: #fdf3d8; }
 .sicherung-ok { background: var(--erfolg); }
 .sicherung-fehler, .sicherung-veraltet { background: #f8e1e1; color: var(--fehler); }
+
+h2 { font-size: 1.2rem; margin: 1.5rem 0 .5rem; }
+h3 { font-size: 1.05rem; margin: 1.25rem 0 .5rem; }
+a.knopf { display: inline-block; text-align: center; text-decoration: none; }
+.knopf-zweitrangig { background: #fff; color: var(--akzent); border: 2px solid var(--akzent); }
+.knopf-zweitrangig:hover { background: var(--erfolg); }
+.feld-haken label { display: flex; align-items: center; gap: .6rem; font-weight: 500; }
+.feld-haken input { width: 1.4rem; height: 1.4rem; min-height: 0; flex: none; accent-color: var(--akzent); }
+.schritte { padding-left: 1.25rem; }
+.schritte li { margin-bottom: .75rem; }
+.qr-code { margin: .75rem 0; }
+.qr-code svg { width: 100%; max-width: 15rem; height: auto; display: block; }
+.schluessel { font-size: 1.05rem; word-spacing: .3rem; overflow-wrap: anywhere; }
+.notfallcodes { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: .5rem; }
+.notfallcodes code { font-size: 1.15rem; letter-spacing: .05rem; }
+.abseits { margin-top: 1rem; }

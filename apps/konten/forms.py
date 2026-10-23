@@ -2,6 +2,8 @@ from django import forms
 from django.contrib.auth import authenticate
 from django_otp import match_token, user_has_device
 
+from apps.konten.zwei_faktor import code_bereinigen
+
 
 class AnmeldeForm(forms.Form):
     """Anmeldung mit Benutzername und Passwort.
@@ -16,7 +18,8 @@ class AnmeldeForm(forms.Form):
         required=False,
         max_length=16,
         widget=forms.TextInput(attrs={"autocomplete": "one-time-code", "inputmode": "numeric"}),
-        help_text="Nur nötig, wenn für Ihr Konto Zwei-Faktor eingerichtet ist.",
+        help_text="Code aus der Authenticator-App oder ein Notfallcode. "
+        "Nur nötig, wenn für Ihr Konto Zwei-Faktor eingerichtet ist.",
     )
 
     fehler = "Benutzername, Passwort oder Code ist falsch."
@@ -36,10 +39,20 @@ class AnmeldeForm(forms.Form):
         if benutzer is None:
             raise forms.ValidationError(self.fehler)
         if user_has_device(benutzer):
-            code = (daten.get("otp_token") or "").strip()
+            code = code_bereinigen(daten.get("otp_token"))
             geraet = match_token(benutzer, code) if code else None
             if geraet is None:
                 raise forms.ValidationError(self.fehler)
             self.geraet = geraet
         self.benutzer = benutzer
         return daten
+
+
+class CodeForm(forms.Form):
+    code = forms.CharField(
+        label="Code",
+        max_length=20,
+        widget=forms.TextInput(
+            attrs={"autocomplete": "one-time-code", "inputmode": "numeric", "autofocus": True}
+        ),
+    )

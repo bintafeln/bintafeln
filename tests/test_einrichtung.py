@@ -32,8 +32,10 @@ def test_einrichtung_legt_admin_und_tafelnamen_an(client):
     assert admin.is_superuser
     assert admin.groups.filter(name="Admin").exists()
     assert TafelEinstellungen.laden().name == "Beispiel-Tafel"
-    # direkt angemeldet
-    assert client.get("/").status_code == 200
+    # direkt angemeldet; als Admin muss zuerst Zwei-Faktor eingerichtet werden
+    antwort = client.get("/")
+    assert antwort.status_code == 302
+    assert antwort.url == reverse("konten:zwei_faktor_einrichten")
 
 
 def test_einrichtung_nach_admin_gesperrt(admin_client, client):

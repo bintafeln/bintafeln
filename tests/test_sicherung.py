@@ -90,7 +90,7 @@ def test_startseite_ohne_statusdatei(admin_client, settings, tmp_path):
 
 
 @pytest.mark.django_db
-def test_startseite_ohne_status_fuer_andere_rollen(client, admin, benutzer_mit_rolle):
-    client.force_login(benutzer_mit_rolle("buero", rollen.BUERO))
+def test_startseite_ohne_status_fuer_andere_rollen(client, admin, benutzer_mit_rolle, anmelden):
+    anmelden(client, benutzer_mit_rolle("buero", rollen.BUERO))
     inhalt = client.get(reverse("core:start")).content.decode()
     assert "Sicherung:" not in inhalt

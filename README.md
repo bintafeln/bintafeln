@@ -16,9 +16,9 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
 - **Tafel-Einstellungen:** Name, Logo und Anschrift der Tafel – in der Datenbank, nicht im Code.
 - **Änderungsprotokoll:** Wer hat wann welchen Datensatz geändert (mit Feldern vorher/nachher).
   Passwörter werden nie protokolliert.
-- **Zwei-Faktor (vorbereitet):** Hat ein Konto ein bestätigtes TOTP-Gerät
-  (Authenticator-App), wird bei der Anmeldung zusätzlich ein Code verlangt. Geräte legt ein
-  Admin derzeit unter „Verwaltung → TOTP devices“ an; eine Selbstverwaltung folgt.
+- **Zwei-Faktor-Anmeldung:** Jede Person richtet sie unter „Mein Konto“ selbst ein
+  (QR-Code für die Authenticator-App, dazu 10 Notfallcodes). Für welche Rollen sie Pflicht ist,
+  legt ein Admin unter „Einstellungen“ fest; voreingestellt sind Admin und Büro.
 - **Sicherung:** täglich und verschlüsselt, mit Wiederherstellung und Update per Befehl
   (`./betrieb`). Die Startseite zeigt Admins den Stand der Sicherung.
 - Deutsche, mobilfreundliche Oberfläche (Django-Templates + HTMX, ohne externe CDNs).
@@ -98,8 +98,9 @@ Der erste Start baut das Image und dauert einige Minuten. Den Zustand zeigt
 ### 5. Einrichten
 
 Im Browser `http://<IP-des-Servers>` öffnen. Die Einrichtungsseite erscheint automatisch:
-Namen der Tafel und das erste Admin-Konto eintragen. Anschrift und Logo lassen sich danach
-unter **Einstellungen** ergänzen.
+Namen der Tafel und das erste Admin-Konto eintragen. Direkt danach richtet der Admin die
+[Zwei-Faktor-Anmeldung](#zwei-faktor-anmeldung) ein; dafür eine Authenticator-App auf dem Handy
+bereithalten. Anschrift und Logo lassen sich danach unter **Einstellungen** ergänzen.
 
 ### 6. Sicherung einrichten
 
@@ -109,6 +110,28 @@ unter **Einstellungen** ergänzen.
 
 Den angezeigten privaten Schlüssel sicher und getrennt vom Server aufbewahren, siehe
 [Sicherung einrichten](#sicherung-einrichten).
+
+## Zwei-Faktor-Anmeldung
+
+Bei der Anmeldung wird zusätzlich zum Passwort ein 6-stelliger Code aus einer
+Authenticator-App verlangt (z. B. Aegis, FreeOTP, Google Authenticator).
+
+- **Einrichten:** „Mein Konto“ → „Jetzt einrichten“, QR-Code scannen, Code eingeben. Danach
+  erscheinen einmalig **10 Notfallcodes**. Jeder funktioniert einmal anstelle der App.
+- **Pflicht je Rolle:** unter „Einstellungen“ per Häkchen. Voreingestellt: Admin und Büro.
+  Wer eine Pflicht-Rolle hat, wird nach der Anmeldung direkt zur Einrichtung geleitet und kann
+  bis dahin nichts anderes öffnen. Auch der erste Admin richtet sie direkt nach der
+  Einrichtungsseite ein.
+- **Handy verloren:**
+  1. mit einem Notfallcode anmelden und unter „Mein Konto“ neu einrichten, oder
+  2. ein Admin löscht unter „Verwaltung → TOTP devices“ das Gerät der Person, oder
+  3. als letzter Ausweg auf dem Server, falls sich kein Admin mehr anmelden kann:
+
+     ```bash
+     docker compose exec app python manage.py zwei_faktor_zuruecksetzen BENUTZERNAME
+     ```
+
+Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie.
 
 ## Entwicklungs- und Produktionsmodus
 
@@ -258,7 +281,7 @@ Dieses Skript überschreibt `.env`, lokal also nur in einer Wegwerf-Kopie starte
 ```
 bintafeln/          Django-Projekt (Einstellungen, URLs)
 apps/core/          Tafel-Einstellungen, Einrichtung, Startseite, Änderungsprotokoll
-apps/konten/        Benutzer, Rollen, Anmeldung mit optionalem Zwei-Faktor
+apps/konten/        Benutzer, Rollen, Anmeldung, Zwei-Faktor
 templates/          Django-Templates
 static/             CSS und HTMX
 docker/             Caddyfile und Start-Skript des App-Containers

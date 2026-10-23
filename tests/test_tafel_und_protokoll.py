@@ -40,8 +40,8 @@ def test_anschrift_und_str():
 
 
 @pytest.mark.parametrize("rolle", [rollen.BUERO, rollen.AUSGABE, rollen.KIOSK])
-def test_nur_admin_darf_einstellungen(client, admin, benutzer_mit_rolle, rolle):
-    client.force_login(benutzer_mit_rolle("person", rolle))
+def test_nur_admin_darf_einstellungen(client, admin, benutzer_mit_rolle, anmelden, rolle):
+    anmelden(client, benutzer_mit_rolle("person", rolle))
     assert client.get(reverse("core:einstellungen")).status_code == 403
     assert client.get(reverse("core:protokoll")).status_code == 403
 
