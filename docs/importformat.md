@@ -51,6 +51,7 @@ Prüfbericht weist darauf hin, wenn vorher Daten vorhanden waren.
 | Datum | `TT.MM.JJJJ` oder `JJJJ-MM-TT` |
 | Uhrzeit | `HH:MM` |
 | Ja/Nein | `ja`/`nein`, `1`/`0`, `wahr`/`falsch` |
+| Betrag | Euro mit Komma oder Punkt als Dezimaltrenner, z. B. `1,50`, `-3,00 €`, `1.234,50` |
 | Leere Zelle | Angabe nicht vorhanden |
 | Kundennummer | Text, höchstens 20 Zeichen. Führende Nullen bleiben erhalten (`00123` ≠ `123`) |
 | Leerzeichen | am Anfang und Ende einer Zelle werden entfernt |
@@ -78,6 +79,7 @@ Prüfbericht weist darauf hin, wenn vorher Daten vorhanden waren.
 | `ort` | | |
 | `telefon` | | als Text, damit die führende 0 erhalten bleibt |
 | `email` | | |
+| `kontostand` | | Stand des Kundenkontos in Euro, z. B. `1,50` oder `-3,00` (€-Zeichen erlaubt) |
 | `anzahl_erwachsene` | | nur wenn **keine** `personen.csv` geliefert wird; mit Hauptperson |
 | `anzahl_kinder` | | nur wenn **keine** `personen.csv` geliefert wird |
 | `zusatz_<schluessel>` | | Zusatzfeld, siehe unten. Bei Feldern „gilt für Person“ ist es der Wert der Hauptperson |
@@ -175,7 +177,7 @@ Zusatzfeld wird ignoriert (Warnung).
 
 **Warnungen** (Import möglich):
 
-- unlesbares Datum in einem optionalen Feld (Angabe wird leer gelassen)
+- unlesbares Datum oder unlesbarer Betrag in einem optionalen Feld (Angabe wird leer gelassen)
 - Geburtsdatum in der Zukunft oder mehr als 120 Jahre zurück (Angabe wird leer gelassen)
 - Ausweis abgelaufen
 - Angehörige ohne Geburtsdatum
@@ -205,5 +207,6 @@ Viele Programme exportieren Listen als Excel-Tabelle. Damit daraus eine `haushal
 
 ## Nicht Teil des Formats
 
-Bewusst nicht vorgesehen sind: Dokumente und Ausweiskopien, Höhe des Einkommens, Abholungen und
-Kundenkonto (folgen mit Modul 4).
+Bewusst nicht vorgesehen sind: Dokumente und Ausweiskopien, Höhe des Einkommens, einzelne
+Abholungen und Kontobuchungen (folgen mit Modul 4). Vom Kundenkonto wird nur der aktuelle Stand
+übernommen.

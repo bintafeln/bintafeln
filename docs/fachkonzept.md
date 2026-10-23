@@ -37,6 +37,7 @@ Ein Haushalt ist die Einheit, die zur Tafel kommt. Er hat eine **Hauptperson** u
 | Einkommensart | aus einer pflegbaren Liste (z. B. Bürgergeld, Grundsicherung, Wohngeld, Rente) |
 | Anschrift | Straße und Hausnummer, PLZ, Ort |
 | Telefon, E-Mail | je Tafel abschaltbar |
+| Kontostand | Stand des Kundenkontos in Euro (im Snapshot aus dem Altsystem; Buchungen folgen mit Modul 4) |
 
 **Nicht** erfasst wird die Höhe des Einkommens. Die Einkommensart genügt als Nachweis.
 
