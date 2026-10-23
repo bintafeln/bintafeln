@@ -65,15 +65,18 @@ Prüfbericht weist darauf hin, wenn vorher Daten vorhanden waren.
 | `anrede` | | Hauptperson, z. B. Frau, Herr, leer |
 | `geburtsdatum` | | Hauptperson |
 | `staatsangehoerigkeit` | | Hauptperson |
+| `familienstand` | | Hauptperson, z. B. ledig, verheiratet. Je Tafel abschaltbar |
 | `status` | | `aktiv`, `pausiert`, `gesperrt`, `beendet`. Leer = `aktiv` |
-| `kundengruppe` | | Kürzel einer Kundengruppe |
+| `kundengruppe` | | Kürzel **oder** Name einer Kundengruppe |
+| `ausgabestelle` | | Ausgabestelle der Kundengruppe. Wird genutzt, wenn die Kundengruppe noch nicht bekannt ist |
 | `kunde_seit` | | Datum |
 | `ausweis_gueltig_bis` | | Datum |
+| `letzter_besuch` | | Datum der letzten Abholung |
 | `einkommensart` | | Bezeichnung, z. B. „Bürgergeld“. Unbekannte Arten werden angelegt (Warnung) |
 | `strasse` | | Straße und Hausnummer |
 | `plz` | | |
 | `ort` | | |
-| `telefon` | | |
+| `telefon` | | als Text, damit die führende 0 erhalten bleibt |
 | `email` | | |
 | `anzahl_erwachsene` | | nur wenn **keine** `personen.csv` geliefert wird; mit Hauptperson |
 | `anzahl_kinder` | | nur wenn **keine** `personen.csv` geliefert wird |
@@ -137,8 +140,9 @@ Ob Bemerkungen überhaupt übernommen werden, ist eine Einstellung je Tafel. Ist
 | `maximum` | | höchstens so viele Haushalte |
 | `aktiv` | | Ja/Nein, leer = ja |
 
-Fehlt `kundengruppen.csv`, werden Kundengruppen, die in `haushalte.csv` vorkommen, nur mit ihrem
-Kürzel angelegt (Warnung). Bestehende Kundengruppen bleiben erhalten.
+Fehlt `kundengruppen.csv`, werden Kundengruppen, die in `haushalte.csv` vorkommen, mit dem dort
+angegebenen Kürzel oder Namen und gegebenenfalls der Ausgabestelle angelegt (Warnung). Bestehende
+Kundengruppen bleiben erhalten.
 
 ## Zusatzfelder
 
@@ -175,6 +179,8 @@ Zusatzfeld wird ignoriert (Warnung).
 - Geburtsdatum in der Zukunft oder mehr als 120 Jahre zurück (Angabe wird leer gelassen)
 - Ausweis abgelaufen
 - Angehörige ohne Geburtsdatum
+- Telefonnummer, die nicht mit 0 oder + beginnt (vermutlich ging beim Speichern als Zahl die
+  führende 0 verloren)
 - Kundengruppe, Ausgabestelle oder Einkommensart unbekannt (wird angelegt)
 - unbekannte Spalte, unpassender Zusatzfeld-Wert
 - optionale Datei fehlt, obwohl vorher Daten dieser Art vorhanden waren
@@ -182,6 +188,20 @@ Zusatzfeld wird ignoriert (Warnung).
 
 Der Bericht nennt zu jeder Meldung Datei und Zeilennummer, aber **keine Inhalte** der Zeile. So
 lässt er sich auch weitergeben, ohne Personendaten offenzulegen.
+
+## Hinweise für die Umwandlung aus Tabellen-Exporten
+
+Viele Programme exportieren Listen als Excel-Tabelle. Damit daraus eine `haushalte.csv` wird:
+
+1. Titel- oder Leerzeilen **über** den Spaltenüberschriften löschen. Die erste Zeile müssen die
+   Überschriften sein.
+2. Liegen mehrere Dateien vor (z. B. eine je Kundengruppe), sie untereinander zu einer
+   zusammenfügen, die Überschrift nur einmal.
+3. Spaltenüberschriften in die Namen dieses Formats umbenennen. Nicht benötigte Spalten löschen,
+   vor allem solche mit Angaben, die bintafeln bewusst nicht speichert (z. B. Einkommenshöhe).
+4. Spalten mit Kundennummer, PLZ und Telefon als **Text** formatieren, damit führende Nullen
+   erhalten bleiben.
+5. Als „CSV UTF-8 (durch Trennzeichen getrennt)“ speichern.
 
 ## Nicht Teil des Formats
 

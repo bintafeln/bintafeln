@@ -31,6 +31,7 @@ Ein Haushalt ist die Einheit, die zur Tafel kommt. Er hat eine **Hauptperson** u
 | Kundennummer | eindeutig, wird vom Altsystem übernommen; später vergibt bintafeln sie |
 | Status | aktiv, pausiert, gesperrt, beendet |
 | Kundengruppe | bestimmt Ausgabestelle, Wochentag und Uhrzeit (siehe unten) |
+| Letzter Besuch | Datum der letzten Abholung; nach dem Umstieg aus den Abholungen abgeleitet |
 | Kunde seit | Datum |
 | Ausweis gültig bis | Ablaufdatum der Berechtigung |
 | Einkommensart | aus einer pflegbaren Liste (z. B. Bürgergeld, Grundsicherung, Wohngeld, Rente) |
@@ -46,6 +47,7 @@ Ein Haushalt ist die Einheit, die zur Tafel kommt. Er hat eine **Hauptperson** u
 | Anrede, Vorname, Nachname | |
 | Geburtsdatum | genaues Datum. Daraus ergibt sich, ob jemand als Kind zählt. Die Altersgrenze („Kind bis … Jahre“) ist eine Einstellung je Tafel. |
 | Staatsangehörigkeit | je Tafel abschaltbar |
+| Familienstand | je Tafel abschaltbar |
 | Zusatzfelder | siehe unten |
 
 ### Abholberechtigte
@@ -76,7 +78,12 @@ Eine Tafel kann eigene Felder anlegen, für Haushalte oder für jede Person (auc
 | Typ | Ja/Nein, Auswahl (mit pflegbaren Optionen), Text, Datum |
 | Besondere Kategorie (Art. 9) | ja/nein. Bei „ja“: Anzeige nur für ausgewählte Rollen, jeder Zugriff wird protokolliert, Hinweis auf die nötige ausdrückliche Einwilligung. |
 
-Beispiel: Zusatzfeld „Schwerbehindert“, gilt für Personen, Typ Auswahl, besondere Kategorie: ja.
+Beispiele:
+
+- „Schwerbehindert“: gilt für Personen, Typ Auswahl, besondere Kategorie: ja (Gesundheitsdaten).
+- „Essgewohnheiten“: gilt für Haushalt oder Person, Typ Auswahl (z. B. keine Einschränkung,
+  vegetarisch, ohne Schweinefleisch). Besondere Kategorie: ja, sobald die Optionen auf die
+  Religion schließen lassen.
 
 ### Kundengruppen und Ausgabestellen
 
