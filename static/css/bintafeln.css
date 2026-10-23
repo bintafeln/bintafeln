@@ -148,3 +148,6 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .notfallcodes { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: .5rem; }
 .notfallcodes code { font-size: 1.15rem; letter-spacing: .05rem; }
 .abseits { margin-top: 1rem; }
+
+.meldung-fehler td:first-child { color: var(--fehler); font-weight: 600; }
+.inline + .inline { margin-left: .5rem; }

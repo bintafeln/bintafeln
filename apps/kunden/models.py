@@ -1,8 +1,10 @@
 """Kundenstamm (Modul 2). Fachliche Grundlage: docs/fachkonzept.md, Import: docs/importformat.md."""
 
 import datetime as dt
+import uuid
 
 from auditlog.registry import auditlog
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
@@ -351,6 +353,64 @@ class Bemerkung(models.Model):
         return f"Bemerkung vom {self.datum:%d.%m.%Y}"
 
 
+class ImportVorbereitung(models.Model):
+    """Geprüfte Importdaten bis zur Bestätigung. Wird spätestens nach einer Stunde gelöscht."""
+
+    GUELTIG = dt.timedelta(hours=1)
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    erstellt_von = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    erstellt_am = models.DateTimeField(default=timezone.now)
+    dateien = models.JSONField(default=list)
+    pruefsumme = models.CharField(max_length=64)
+    daten = models.JSONField()
+    bericht = models.JSONField(default=list)
+
+    class Meta:
+        verbose_name = "Import in Vorbereitung"
+        verbose_name_plural = "Importe in Vorbereitung"
+
+    def __str__(self):
+        return f"Import in Vorbereitung vom {timezone.localtime(self.erstellt_am):%d.%m.%Y %H:%M}"
+
+    @property
+    def abgelaufen(self) -> bool:
+        return timezone.now() - self.erstellt_am > self.GUELTIG
+
+    @classmethod
+    def abgelaufene_loeschen(cls) -> int:
+        anzahl, _ = cls.objects.filter(erstellt_am__lt=timezone.now() - cls.GUELTIG).delete()
+        return anzahl
+
+
+class ImportLauf(models.Model):
+    """Protokoll eines durchgeführten Imports, ohne Inhalte."""
+
+    zeitpunkt = models.DateTimeField("Zeitpunkt", default=timezone.now)
+    benutzer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name="Durchgeführt von",
+        null=True,
+        on_delete=models.SET_NULL,
+    )
+    dateien = models.JSONField("Dateien", default=list)
+    pruefsumme = models.CharField("Prüfsumme (SHA-256)", max_length=64)
+    anzahl_haushalte = models.PositiveIntegerField("Haushalte", default=0)
+    anzahl_personen = models.PositiveIntegerField("Personen", default=0)
+    anzahl_abholer = models.PositiveIntegerField("Abholberechtigte", default=0)
+    anzahl_sperren = models.PositiveIntegerField("Sperren", default=0)
+    anzahl_bemerkungen = models.PositiveIntegerField("Bemerkungen", default=0)
+    anzahl_warnungen = models.PositiveIntegerField("Warnungen", default=0)
+
+    class Meta:
+        verbose_name = "Import"
+        verbose_name_plural = "Importe"
+        ordering = ["-zeitpunkt"]
+
+    def __str__(self):
+        return f"Import vom {timezone.localtime(self.zeitpunkt):%d.%m.%Y %H:%M}"
+
+
 for modell in (
     KundenEinstellungen,
     Zusatzfeld,
@@ -362,5 +422,6 @@ for modell in (
     Abholer,
     Sperre,
     Bemerkung,
+    ImportLauf,
 ):
     auditlog.register(modell)

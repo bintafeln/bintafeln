@@ -1,6 +1,6 @@
 # Importformat für den Kundenstamm
 
-Version 1 · Status: Entwurf
+Version 1
 
 Dies ist das **einzige** Format, das bintafeln für den Kundenstamm einliest. Es ist offen
 dokumentiert und unabhängig von jedem Altsystem. Werkzeuge, die Daten aus einem bestimmten

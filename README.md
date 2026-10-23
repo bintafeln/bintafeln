@@ -24,7 +24,7 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
 - **Kundenstamm (im Aufbau):** Datenmodell für Haushalte, Personen, Abholberechtigte, Sperren,
   Bemerkungen und Kundengruppen. Unter „Einstellungen → Kundenstamm“ legt ein Admin fest, welche
   Angaben erfasst werden, und richtet eigene **Zusatzfelder** ein (z. B. „Schwerbehindert“).
-  Import und Ansichten folgen.
+  **Import** mit Prüfbericht unter „Kunden“; Liste und Suche folgen.
 - Deutsche, mobilfreundliche Oberfläche (Django-Templates + HTMX, ohne externe CDNs).
 
 ## Aufbau
@@ -136,6 +136,29 @@ Authenticator-App verlangt (z. B. Aegis, FreeOTP, Google Authenticator).
      ```
 
 Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie.
+
+## Kundenstamm importieren
+
+Der Kundenstamm wird aus dem bisherigen Programm übernommen, im
+[offenen Importformat](docs/importformat.md). Jeder Import ersetzt den Bestand vollständig.
+
+1. Vorher unter „Einstellungen → Kundenstamm“ festlegen, welche Angaben erfasst werden, und
+   benötigte **Zusatzfelder** anlegen (ihre Schlüssel bestimmen die Spalten `zusatz_…`).
+2. „Kunden“ → „Neuen Stand importieren“ → CSV-Dateien auswählen → **Prüfen**.
+3. Der **Prüfbericht** nennt Fehler (Import nicht möglich) und Warnungen (Import möglich), jeweils
+   mit Datei und Zeile, aber ohne Inhalte.
+4. Ohne Fehler: Vorschau mit „bisher / nach dem Import“ ansehen und **Import übernehmen**.
+
+Regeln:
+
+- Übernehmen geht nur, wenn die letzte erfolgreiche Sicherung höchstens **24 Stunden** alt ist
+  (sonst vorher `./betrieb sichern`).
+- Die geprüften Daten liegen bis zur Bestätigung höchstens **eine Stunde** in der Datenbank und
+  werden danach, beim Übernehmen oder beim Verwerfen gelöscht. Die hochgeladenen Dateien selbst
+  werden nicht gespeichert.
+- Jeder Import erscheint im Änderungsprotokoll und unter „Kunden“ (wer, wann, wie viele
+  Datensätze), nicht jeder einzelne Datensatz.
+- Importieren dürfen Admin und Büro.
 
 ## Entwicklungs- und Produktionsmodus
 

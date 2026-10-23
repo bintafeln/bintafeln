@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block titel %}Kunden{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Kundenstamm</h1>
+  <p>{{ anzahl.haushalte }} Haushalte · {{ anzahl.personen }} Personen · {{ anzahl.kundengruppen }} Kundengruppen</p>
+  <p class="hinweis">Der Kundenstamm ist ein Abbild aus dem bisherigen Programm. Jeder Import ersetzt ihn vollständig.
+    Liste und Suche folgen.</p>
+  <p><a class="knopf" href="{% url 'kunden:import' %}">Neuen Stand importieren</a></p>
+</section>
+
+<section class="karte">
+  <h2>Letzte Importe</h2>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Zeitpunkt</th><th>Von</th><th>Haushalte</th><th>Personen</th><th>Warnungen</th></tr></thead>
+    <tbody>
+    {% for lauf in importe %}
+      <tr>
+        <td data-titel="Zeitpunkt">{{ lauf.zeitpunkt|date:"d.m.Y H:i" }}</td>
+        <td data-titel="Von">{{ lauf.benutzer|default:"–" }}</td>
+        <td data-titel="Haushalte">{{ lauf.anzahl_haushalte }}</td>
+        <td data-titel="Personen">{{ lauf.anzahl_personen }}</td>
+        <td data-titel="Warnungen">{{ lauf.anzahl_warnungen }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5">Noch kein Import.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

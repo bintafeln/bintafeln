@@ -17,6 +17,7 @@
     <nav class="navigation" aria-label="Hauptnavigation">
       {% if not zwei_faktor_offen %}
       <a href="{% url 'core:start' %}">Start</a>
+      {% if "Admin" in rollen or "Büro" in rollen %}<a href="{% url 'kunden:uebersicht' %}">Kunden</a>{% endif %}
       {% if "Admin" in rollen %}
         <a href="{% url 'core:einstellungen' %}">Einstellungen</a>
         <a href="{% url 'core:protokoll' %}">Protokoll</a>

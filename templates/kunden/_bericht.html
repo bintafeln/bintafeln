@@ -1,0 +1,15 @@
+<div class="tabelle-rahmen">
+<table class="tabelle bericht">
+  <thead><tr><th>Art</th><th>Datei</th><th>Meldung</th><th>Zeilen</th></tr></thead>
+  <tbody>
+  {% for m in bericht %}
+    <tr class="meldung-{{ m.stufe }}">
+      <td data-titel="Art">{% if m.stufe == "fehler" %}Fehler{% else %}Warnung{% endif %}</td>
+      <td data-titel="Datei"><code>{{ m.datei }}</code></td>
+      <td data-titel="Meldung">{{ m.text }}</td>
+      <td data-titel="Zeilen">{% if m.zeilen %}{{ m.anzahl }}×: {{ m.zeilen_kurz }}{% else %}–{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
