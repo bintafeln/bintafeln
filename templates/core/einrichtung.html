@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block titel %}Einrichtung{% endblock %}
+{% block inhalt %}
+<section class="karte schmal">
+  <h1>Willkommen bei bintafeln</h1>
+  <p>Es gibt noch keinen Admin. Legen Sie hier den Namen Ihrer Tafel und das erste Admin-Konto an.
+     Weitere Angaben wie Anschrift und Logo können Sie danach unter „Einstellungen“ ergänzen.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Einrichtung abschließen</button>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% if form.non_field_errors %}
+  <div class="fehler" role="alert">{% for fehler in form.non_field_errors %}<p>{{ fehler }}</p>{% endfor %}</div>
+{% endif %}
+{% for feld in form %}
+  <div class="feld{% if feld.errors %} hat-fehler{% endif %}">
+    <label for="{{ feld.id_for_label }}">{{ feld.label }}{% if feld.field.required %} *{% endif %}</label>
+    {{ feld }}
+    {% if feld.help_text %}<small class="hilfe">{{ feld.help_text }}</small>{% endif %}
+    {% for fehler in feld.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
+  </div>
+{% endfor %}

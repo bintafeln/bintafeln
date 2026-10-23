@@ -1,0 +1,46 @@
+{% load static %}<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titel %}{% endblock %}{% if tafel.name %} – {{ tafel.name }}{% else %} – bintafeln{% endif %}</title>
+  <link rel="stylesheet" href="{% static 'css/bintafeln.css' %}">
+  <script src="{% static 'js/htmx.min.js' %}" defer></script>
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  <header class="kopf">
+    <a class="marke" href="{% url 'core:start' %}">
+      {% if tafel.logo %}<img src="{{ tafel.logo.url }}" alt="" class="logo">{% endif %}
+      <span>{{ tafel.name|default:"bintafeln" }}</span>
+    </a>
+    {% if user.is_authenticated %}
+    <nav class="navigation" aria-label="Hauptnavigation">
+      <a href="{% url 'core:start' %}">Start</a>
+      {% if "Admin" in rollen %}
+        <a href="{% url 'core:einstellungen' %}">Einstellungen</a>
+        <a href="{% url 'core:protokoll' %}">Protokoll</a>
+      {% endif %}
+      {% if user.is_staff %}<a href="{% url 'admin:index' %}">Verwaltung</a>{% endif %}
+      <form method="post" action="{% url 'konten:abmelden' %}" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="link">Abmelden</button>
+      </form>
+    </nav>
+    {% endif %}
+  </header>
+
+  <main class="inhalt">
+    {% if messages %}
+      <ul class="meldungen">
+        {% for meldung in messages %}<li class="meldung {{ meldung.tags }}">{{ meldung }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+    {% block inhalt %}{% endblock %}
+  </main>
+
+  <footer class="fuss">
+    {% if tafel.anschrift %}<span>{{ tafel.anschrift }}</span>{% endif %}
+    <span>bintafeln – freie Software (AGPL-3.0)</span>
+  </footer>
+</body>
+</html>
