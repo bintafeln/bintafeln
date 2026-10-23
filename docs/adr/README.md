@@ -40,3 +40,4 @@ drei Fragen: Was war das Problem? Was haben wir entschieden? Warum?
 | [0007](0007-lizenz-agpl.md) | Lizenz AGPL-3.0 | Angenommen |
 | [0008](0008-sicherung-und-update.md) | Sicherung und Update | Angenommen |
 | [0009](0009-zwei-faktor-pflicht-und-notfallcodes.md) | Zwei-Faktor: Selbsteinrichtung, Pflicht je Rolle, Notfallcodes | Angenommen |
+| [0010](0010-kundenstamm-umfang-und-zusatzfelder.md) | Kundenstamm: Umfang, Zusatzfelder und eigene Daten im Snapshot | Angenommen |
