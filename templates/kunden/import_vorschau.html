@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block titel %}Import prüfen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'kunden:import' %}">← Import</a></p>
+  <h1>Prüfbericht</h1>
+  <p class="sicherung sicherung-ok">Keine Fehler. Der Import kann übernommen werden.</p>
+  <p>Geprüft: {{ vorbereitung.dateien|join:", " }}</p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th></th><th>bisher</th><th>nach dem Import</th></tr></thead>
+    <tbody>
+      <tr><td>Haushalte</td><td data-titel="bisher">{{ bisher.haushalte }}</td><td data-titel="neu">{{ neu.haushalte }}</td></tr>
+      <tr><td>Personen</td><td data-titel="bisher">{{ bisher.personen }}</td><td data-titel="neu">{{ neu.personen }}</td></tr>
+      <tr><td>Abholberechtigte</td><td data-titel="bisher">{{ bisher.abholer }}</td><td data-titel="neu">{{ neu.abholer }}</td></tr>
+      <tr><td>Sperren</td><td data-titel="bisher">{{ bisher.sperren }}</td><td data-titel="neu">{{ neu.sperren }}</td></tr>
+      <tr><td>Bemerkungen</td><td data-titel="bisher">{{ bisher.bemerkungen }}</td><td data-titel="neu">{{ neu.bemerkungen }}</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  {% if bericht %}
+    <h2>{{ anzahl_warnungen }} Warnung{{ anzahl_warnungen|pluralize:"en" }}</h2>
+    <p class="hinweis">Warnungen verhindern den Import nicht. Betroffene Angaben werden wie beschrieben behandelt.</p>
+    {% include "kunden/_bericht.html" %}
+  {% endif %}
+
+  <p class="hinweis">Der bisherige Kundenstamm wird vollständig ersetzt. Gültig bis {{ gueltig_bis|date:"H:i" }} Uhr.</p>
+  {% if sicherung_frisch %}
+    <form method="post" action="{% url 'kunden:import_uebernehmen' vorbereitung.pk %}" class="inline">
+      {% csrf_token %}
+      <button type="submit" class="knopf">Import übernehmen</button>
+    </form>
+  {% else %}
+    <p class="sicherung sicherung-veraltet">Übernehmen ist erst möglich, wenn die letzte erfolgreiche Sicherung
+      höchstens 24 Stunden alt ist. Auf dem Server <code>./betrieb sichern</code> ausführen und diese Seite neu laden.</p>
+  {% endif %}
+  <form method="post" action="{% url 'kunden:import_verwerfen' vorbereitung.pk %}" class="inline">
+    {% csrf_token %}
+    <button type="submit" class="knopf knopf-zweitrangig">Verwerfen</button>
+  </form>
+</section>
+{% endblock %}

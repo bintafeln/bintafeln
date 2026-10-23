@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block titel %}Import{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'kunden:uebersicht' %}">← Kundenstamm</a></p>
+  <h1>Kundenstamm importieren</h1>
+  <p>Dateien im <a href="https://github.com/bintafeln/bintafeln/blob/main/docs/importformat.md">Importformat</a>
+    auswählen: <code>haushalte.csv</code> (Pflicht), optional <code>personen.csv</code>,
+    <code>abholer.csv</code>, <code>sperren.csv</code>, <code>bemerkungen.csv</code>,
+    <code>kundengruppen.csv</code>. Mehrere Dateien gleichzeitig markieren.</p>
+  <p class="hinweis">Zuerst wird nur geprüft. Übernommen wird erst nach Ihrer Bestätigung; bis dahin
+    werden die geprüften Daten höchstens eine Stunde aufbewahrt.</p>
+  {% if not sicherung_frisch %}
+    <p class="sicherung sicherung-veraltet">Die letzte erfolgreiche Sicherung ist älter als 24 Stunden.
+      Prüfen ist möglich, übernehmen erst nach einer Sicherung (auf dem Server: <code>./betrieb sichern</code>).</p>
+  {% endif %}
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="feld">
+      <label for="dateien">CSV-Dateien</label>
+      <input type="file" id="dateien" name="dateien" accept=".csv,text/csv" multiple required>
+    </div>
+    <button type="submit" class="knopf">Prüfen</button>
+  </form>
+</section>
+
+{% if bericht %}
+<section class="karte">
+  <h2>Prüfbericht: Import nicht möglich</h2>
+  <p>Geprüft: {{ dateien|join:", " }}. Bitte die Fehler in den Dateien beheben und erneut hochladen.
+    Der Bericht nennt nur Datei und Zeile, keine Inhalte.</p>
+  {% include "kunden/_bericht.html" %}
+</section>
+{% endif %}
+{% endblock %}
