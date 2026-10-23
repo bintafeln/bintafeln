@@ -14,6 +14,7 @@ class KundenEinstellungenForm(forms.ModelForm):
             "bemerkungen_importieren",
             "kind_bis_alter",
             "abholungen_aufbewahren_jahre",
+            "zugriffe_aufbewahren_tage",
             "besondere_kategorie_fuer_ausgabe",
         ]
 

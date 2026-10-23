@@ -6,6 +6,8 @@ app_name = "kunden"
 
 urlpatterns = [
     path("", views.uebersicht, name="uebersicht"),
+    path("haushalt/<path:kundennummer>/", views.haushalt, name="haushalt"),
+    path("zugriffe/", views.zugriffe, name="zugriffe"),
     path("import/", views.import_hochladen, name="import"),
     path("import/<uuid:pk>/", views.import_vorschau, name="import_vorschau"),
     path("import/<uuid:pk>/uebernehmen/", views.import_uebernehmen, name="import_uebernehmen"),

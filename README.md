@@ -162,6 +162,24 @@ Regeln:
 - Abholungen und Ausnahmen werden nur innerhalb der **Aufbewahrungsfrist** übernommen
   („Einstellungen → Kundenstamm“, Vorgabe 3 Jahre). Ältere löscht bintafeln automatisch.
 
+## Kunden ansehen
+
+Unter „Kunden“ stehen alle Haushalte des Kundenstamms, nur zum Lesen.
+
+- **Suche** nach Kundennummer oder Name; Status und Kundengruppe lassen sich filtern. Eine
+  vollständige Kundennummer mit Enter (z. B. vom Scanner) öffnet den Haushalt direkt.
+- Die **Detailseite** zeigt je nach Rolle unterschiedlich viel:
+
+  | Rolle | sieht |
+  |---|---|
+  | Admin, Büro | alles: Anschrift, Kontakt, Personen, Abholberechtigte, alle Sperren, Ausnahmen, Abholungen, Kontostand, Bemerkungen, Zusatzfelder |
+  | Ausgabe | Name, Status, Kundengruppe, Haushaltsgröße, Ausweis, aktive Sperren, Ausnahmen, die letzten 5 Abholungen, Zusatzfelder (Art. 9 nur mit Freigabe in den Einstellungen) |
+  | Kiosk | nichts |
+
+- Jeder Aufruf einer Detailseite steht im **Zugriffsprotokoll** („Kunden“ → „Zugriffsprotokoll“,
+  nur Admin). Die Einträge werden nach 365 Tagen gelöscht, einstellbar unter
+  „Einstellungen → Kundenstamm“.
+
 ## Entwicklungs- und Produktionsmodus
 
 Umgeschaltet wird über **eine** Zeile in `.env`:

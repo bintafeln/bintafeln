@@ -1,6 +1,8 @@
 import datetime as dt
 
 from django.contrib import messages
+from django.core.paginator import Paginator
+from django.db.models import OuterRef, Q, Subquery
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -21,8 +23,9 @@ from apps.kunden.models import (
     Kundengruppe,
     Person,
     Sperre,
+    Zugriff,
     Zusatzfeld,
-    abgelaufene_abholungen_loeschen,
+    fristen_anwenden,
 )
 
 
@@ -65,21 +68,151 @@ def _sicherung_frisch() -> bool:
     )
 
 
-@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+LISTE_JE_SEITE = 50
+ABHOLUNGEN_AUSGABE = 5
+ABHOLUNGEN_BUERO = 20
+
+
+def _haushalte_suchen(request):
+    """Haushalte nach Suchtext, Status und Kundengruppe; mit Name der Hauptperson."""
+    hauptperson = Person.objects.filter(haushalt=OuterRef("pk"), ist_hauptperson=True)
+    haushalte = Haushalt.objects.select_related("kundengruppe").annotate(
+        hp_vorname=Subquery(hauptperson.values("vorname")[:1]),
+        hp_nachname=Subquery(hauptperson.values("nachname")[:1]),
+    )
+    suche = request.GET.get("q", "").strip()
+    for wort in suche.split():
+        personen = Person.objects.filter(
+            Q(vorname__icontains=wort) | Q(nachname__icontains=wort)
+        ).values("haushalt")
+        haushalte = haushalte.filter(Q(kundennummer__icontains=wort) | Q(pk__in=personen))
+    status = request.GET.get("status", "")
+    if status in Haushalt.Status.values:
+        haushalte = haushalte.filter(status=status)
+    gruppe = request.GET.get("gruppe", "")
+    if gruppe.isdigit():
+        haushalte = haushalte.filter(kundengruppe_id=int(gruppe))
+    return haushalte, {"q": suche, "status": status, "gruppe": gruppe}
+
+
+@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO, rollen.AUSGABE)
 def uebersicht(request):
+    """Kundenliste mit Suche. Eine exakt passende Kundennummer (Scanner) öffnet den Haushalt."""
     ImportVorbereitung.abgelaufene_loeschen()
-    abgelaufene_abholungen_loeschen()
+    fristen_anwenden()
+    suche = request.GET.get("q", "").strip()
+    if suche and not request.headers.get("HX-Request"):
+        treffer = Haushalt.objects.filter(kundennummer__iexact=suche).first()
+        if treffer:
+            return redirect("kunden:haushalt", kundennummer=treffer.kundennummer)
+    haushalte, filter_ = _haushalte_suchen(request)
+    kontext = {
+        "seite": Paginator(haushalte, LISTE_JE_SEITE).get_page(request.GET.get("seite")),
+        "filter": filter_,
+        "status_auswahl": Haushalt.Status.choices,
+        "gruppen": Kundengruppe.objects.order_by("name"),
+        "heute": timezone.localdate(),
+        "darf_importieren": rollen.hat_rolle(request.user, rollen.ADMIN, rollen.BUERO),
+        "anzahl": {
+            "haushalte": Haushalt.objects.count(),
+            "personen": Person.objects.count(),
+            "kundengruppen": Kundengruppe.objects.count(),
+            "abholungen": Abholung.objects.count(),
+        },
+    }
+    if request.headers.get("HX-Request") and request.headers.get("HX-Target") == "kunden-liste":
+        return render(request, "kunden/_liste.html", kontext)
+    return render(request, "kunden/uebersicht.html", kontext)
+
+
+def _zusatz_anzeigen(felder, werte_) -> list[tuple[str, str, bool]]:
+    """(Bezeichnung, Wert, besondere Kategorie) für alle Felder mit Wert."""
+    ergebnis = []
+    for feld in felder:
+        anzeige = feld.wert_anzeigen(werte_.get(feld.schluessel))
+        if anzeige:
+            ergebnis.append((feld.bezeichnung, anzeige, feld.besondere_kategorie))
+    return ergebnis
+
+
+@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO, rollen.AUSGABE)
+def haushalt(request, kundennummer):
+    """Detailansicht eines Haushalts. Jeder Aufruf steht im Zugriffsprotokoll."""
+    h = get_object_or_404(
+        Haushalt.objects.select_related(
+            "kundengruppe__ausgabestelle", "einkommensart"
+        ).prefetch_related("personen", "abholer", "sperren", "ausnahmen"),
+        kundennummer=kundennummer,
+    )
+    einstellungen = KundenEinstellungen.laden()
+    buero = rollen.hat_rolle(request.user, rollen.ADMIN, rollen.BUERO)
+    art9 = buero or einstellungen.besondere_kategorie_fuer_ausgabe
+
+    felder = Zusatzfeld.objects.filter(aktiv=True)
+    if not art9:
+        felder = felder.exclude(besondere_kategorie=True)
+    haushalt_felder = [f for f in felder if f.gilt_fuer == Zusatzfeld.GiltFuer.HAUSHALT]
+    person_felder = [f for f in felder if f.gilt_fuer == Zusatzfeld.GiltFuer.PERSON]
+
+    personen = [(p, _zusatz_anzeigen(person_felder, p.zusatz)) for p in h.personen.all()]
+    haushalt_zusatz = _zusatz_anzeigen(haushalt_felder, h.zusatz)
+    heute = timezone.localdate()
+    sperren = [(s, s.ist_aktiv(heute)) for s in h.sperren.all()]
+    if not buero:
+        sperren = [(s, aktiv) for s, aktiv in sperren if aktiv]
+    abholungen = h.abholungen.select_related("ausgabestelle")
+    zeigt_art9 = any(b for _, _, b in haushalt_zusatz) or any(
+        b for _, zusatz in personen for _, _, b in zusatz
+    )
+
+    Zugriff.objects.create(
+        benutzer=request.user,
+        benutzername=request.user.get_username(),
+        kundennummer=h.kundennummer,
+        besondere_kategorie=zeigt_art9,
+    )
+    erwachsene, kinder = h.groesse(einstellungen.kind_bis_alter, heute)
     return render(
         request,
-        "kunden/uebersicht.html",
+        "kunden/haushalt.html",
         {
-            "anzahl": {
-                "haushalte": Haushalt.objects.count(),
-                "personen": Person.objects.count(),
-                "kundengruppen": Kundengruppe.objects.count(),
-                "abholungen": Abholung.objects.count(),
-            },
-            "importe": ImportLauf.objects.select_related("benutzer")[:10],
+            "h": h,
+            "buero": buero,
+            "einstellungen": einstellungen,
+            "hauptperson": next((p for p in personen if p[0].ist_hauptperson), None),
+            "angehoerige": [p for p in personen if not p[0].ist_hauptperson],
+            "haushalt_zusatz": haushalt_zusatz,
+            "erwachsene": erwachsene,
+            "kinder": kinder,
+            "sperren": sperren,
+            "ausnahmen": h.ausnahmen.all()[: None if buero else ABHOLUNGEN_AUSGABE],
+            "abholungen": abholungen[: ABHOLUNGEN_BUERO if buero else ABHOLUNGEN_AUSGABE],
+            "abholungen_gesamt": abholungen.count(),
+            "bemerkungen": h.bemerkungen.all() if buero else [],
+            "ausweis_abgelaufen": h.ausweis_gueltig_bis is not None
+            and h.ausweis_gueltig_bis < heute,
+            "heute": heute,
+        },
+    )
+
+
+@rollen.rolle_erforderlich(rollen.ADMIN)
+def zugriffe(request):
+    eintraege = Zugriff.objects.all()
+    kundennummer = request.GET.get("kundennummer", "").strip()
+    if kundennummer:
+        eintraege = eintraege.filter(kundennummer__iexact=kundennummer)
+    benutzername = request.GET.get("benutzer", "").strip()
+    if benutzername:
+        eintraege = eintraege.filter(benutzername__iexact=benutzername)
+    return render(
+        request,
+        "kunden/zugriffe.html",
+        {
+            "seite": Paginator(eintraege, LISTE_JE_SEITE).get_page(request.GET.get("seite")),
+            "kundennummer": kundennummer,
+            "benutzer": benutzername,
+            "frist": KundenEinstellungen.laden().zugriffe_aufbewahren_tage,
         },
     )
 
@@ -87,7 +220,10 @@ def uebersicht(request):
 @rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
 def import_hochladen(request):
     ImportVorbereitung.abgelaufene_loeschen()
-    kontext = {"sicherung_frisch": _sicherung_frisch()}
+    kontext = {
+        "sicherung_frisch": _sicherung_frisch(),
+        "importe": ImportLauf.objects.select_related("benutzer")[:10],
+    }
     if request.method == "POST":
         dateien = request.FILES.getlist("dateien")
         if not dateien:

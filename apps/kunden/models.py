@@ -41,6 +41,12 @@ class KundenEinstellungen(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(10)],
         help_text="Ältere werden nicht importiert und automatisch gelöscht.",
     )
+    zugriffe_aufbewahren_tage = models.PositiveSmallIntegerField(
+        "Zugriffsprotokoll aufbewahren (Tage)",
+        default=365,
+        validators=[MinValueValidator(30), MaxValueValidator(3650)],
+        help_text="Einträge, wer welchen Haushalt angesehen hat, werden danach gelöscht.",
+    )
     besondere_kategorie_fuer_ausgabe = models.BooleanField(
         "Rolle Ausgabe sieht Zusatzfelder der besonderen Kategorie",
         default=False,
@@ -140,6 +146,19 @@ class Zusatzfeld(models.Model):
                     return option
             raise werte.UngueltigerWert(f"keine gültige Option: {text!r}")
         return text
+
+    def wert_anzeigen(self, wert) -> str:
+        """Gespeicherten Wert für die Anzeige aufbereiten; None ergibt einen leeren Text."""
+        if wert is None or wert == "":
+            return ""
+        if self.typ == self.Typ.JA_NEIN:
+            return "ja" if wert else "nein"
+        if self.typ == self.Typ.DATUM:
+            try:
+                return dt.date.fromisoformat(wert).strftime("%d.%m.%Y")
+            except (TypeError, ValueError):
+                return str(wert)
+        return str(wert)
 
     @property
     def import_spalte(self) -> str:
@@ -421,6 +440,40 @@ def abgelaufene_abholungen_loeschen(heute: dt.date | None = None) -> int:
         for modell in (Abholung, Ausnahme):
             anzahl += modell.objects.filter(datum__lt=beginn).delete()[0]
     return anzahl
+
+
+class Zugriff(models.Model):
+    """Wer hat wann die Detailseite welches Haushalts angesehen (Zugriffsprotokoll).
+
+    Hängt an der Kundennummer, nicht am Datensatz, damit es einen Import übersteht.
+    """
+
+    zeitpunkt = models.DateTimeField("Zeitpunkt", default=timezone.now, db_index=True)
+    benutzer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, verbose_name="Benutzer", null=True, on_delete=models.SET_NULL
+    )
+    benutzername = models.CharField("Benutzername", max_length=150)
+    kundennummer = models.CharField("Kundennummer", max_length=20, db_index=True)
+    besondere_kategorie = models.BooleanField("Mit Angaben der besonderen Kategorie", default=False)
+
+    class Meta:
+        verbose_name = "Zugriff"
+        verbose_name_plural = "Zugriffe"
+        ordering = ["-zeitpunkt"]
+
+    def __str__(self):
+        return f"Zugriff auf {self.kundennummer} durch {self.benutzername}"
+
+
+def abgelaufene_zugriffe_loeschen() -> int:
+    tage = KundenEinstellungen.laden().zugriffe_aufbewahren_tage
+    grenze = timezone.now() - dt.timedelta(days=tage)
+    return Zugriff.objects.filter(zeitpunkt__lt=grenze).delete()[0]
+
+
+def fristen_anwenden() -> int:
+    """Löscht alles, dessen Aufbewahrungsfrist abgelaufen ist. Liefert die Anzahl."""
+    return abgelaufene_abholungen_loeschen() + abgelaufene_zugriffe_loeschen()
 
 
 class ImportVorbereitung(models.Model):

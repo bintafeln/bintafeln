@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block titel %}Haushalt {{ h.kundennummer }}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'kunden:uebersicht' %}">← Kunden</a></p>
+  <h1>{{ h.kundennummer }}{% if hauptperson %} · {{ hauptperson.0.vorname }} {{ hauptperson.0.nachname }}{% endif %}</h1>
+  {% for s, aktiv in sperren %}{% if aktiv %}
+    <p class="sicherung sicherung-fehler">Gesperrt seit {{ s.von|date:"d.m.Y" }}{% if s.bis %} bis {{ s.bis|date:"d.m.Y" }}{% endif %}{% if s.begruendung %}: {{ s.begruendung }}{% endif %}</p>
+  {% endif %}{% endfor %}
+  {% if ausweis_abgelaufen %}<p class="sicherung sicherung-veraltet">Ausweis abgelaufen am {{ h.ausweis_gueltig_bis|date:"d.m.Y" }}</p>{% endif %}
+  <dl class="angaben">
+    <dt>Status</dt><dd>{{ h.get_status_display }}</dd>
+    <dt>Kundengruppe</dt><dd>{{ h.kundengruppe.name|default:"–" }}{% if h.kundengruppe.ausgabestelle %} ({{ h.kundengruppe.ausgabestelle.name }}){% endif %}</dd>
+    <dt>Haushalt</dt><dd>{{ erwachsene }} Erwachsene, {{ kinder }} Kind{{ kinder|pluralize:"er" }}</dd>
+    <dt>Ausweis gültig bis</dt><dd>{{ h.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}</dd>
+    <dt>Letzter Besuch</dt><dd>{{ h.letzter_besuch|date:"d.m.Y"|default:"–" }}</dd>
+    {% if buero %}
+      <dt>Kunde seit</dt><dd>{{ h.kunde_seit|date:"d.m.Y"|default:"–" }}</dd>
+      <dt>Einkommensart</dt><dd>{{ h.einkommensart|default:"–" }}</dd>
+      <dt>Kontostand</dt><dd>{% if h.kontostand is not None %}{{ h.kontostand|floatformat:2 }} €{% else %}–{% endif %}</dd>
+      <dt>Anschrift</dt><dd>{{ h.strasse|default:"–" }}{% if h.plz or h.ort %}, {{ h.plz }} {{ h.ort }}{% endif %}</dd>
+      {% if einstellungen.telefon_erfassen %}<dt>Telefon</dt><dd>{{ h.telefon|default:"–" }}</dd>{% endif %}
+      {% if einstellungen.email_erfassen %}<dt>E-Mail</dt><dd>{{ h.email|default:"–" }}</dd>{% endif %}
+    {% endif %}
+    {% for bezeichnung, wert, art9 in haushalt_zusatz %}
+      <dt>{{ bezeichnung }}{% if art9 %} <span class="marke-art9" title="besondere Kategorie (Art. 9 DSGVO)">Art. 9</span>{% endif %}</dt><dd>{{ wert }}</dd>
+    {% endfor %}
+  </dl>
+  <p class="hinweis">Stand des Imports vom {{ h.importiert_am|date:"d.m.Y H:i" }}. Dieser Aufruf wird im Zugriffsprotokoll festgehalten.</p>
+  {% if "Admin" in rollen %}<p><a href="{% url 'kunden:zugriffe' %}?kundennummer={{ h.kundennummer|urlencode }}">Zugriffe auf diesen Haushalt</a></p>{% endif %}
+</section>
+
+<section class="karte">
+  <h2>Personen</h2>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Rolle</th><th>Name</th><th>Geburtsdatum</th>{% if buero and einstellungen.staatsangehoerigkeit_erfassen %}<th>Staatsangehörigkeit</th>{% endif %}{% if buero and einstellungen.familienstand_erfassen %}<th>Familienstand</th>{% endif %}<th>Weitere Angaben</th></tr></thead>
+    <tbody>
+    {% if hauptperson %}{% include "kunden/_person.html" with p=hauptperson.0 zusatz=hauptperson.1 rolle="Hauptperson" %}{% endif %}
+    {% for p, zusatz in angehoerige %}{% include "kunden/_person.html" with rolle="Angehörige" %}{% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+{% if buero %}
+<section class="karte">
+  <h2>Abholberechtigte</h2>
+  {% for a in h.abholer.all %}
+    <p>{{ a.vorname }} {{ a.nachname }}{% if a.geburtsdatum %}, geb. {{ a.geburtsdatum|date:"d.m.Y" }}{% endif %}{% if a.eigene_kundennummer %} (eigene Kundennummer {{ a.eigene_kundennummer }}){% endif %}</p>
+  {% empty %}
+    <p class="hinweis">Keine.</p>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section class="karte">
+  <h2>Sperren</h2>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Von</th><th>Bis</th><th>Begründung</th><th>Eingetragen von</th></tr></thead>
+    <tbody>
+    {% for s, aktiv in sperren %}
+      <tr{% if aktiv %} class="zeile-aktiv"{% endif %}>
+        <td data-titel="Von">{{ s.von|date:"d.m.Y" }}{% if aktiv %} <span class="marke-warnung">aktiv</span>{% endif %}</td>
+        <td data-titel="Bis">{{ s.bis|date:"d.m.Y"|default:"unbefristet" }}</td>
+        <td data-titel="Begründung">{{ s.begruendung|default:"–" }}</td>
+        <td data-titel="Eingetragen von">{{ s.eingetragen_von|default:"–" }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4">{% if buero %}Keine Sperren.{% else %}Keine aktive Sperre.{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="karte">
+  <h2>Ausnahmen</h2>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Datum</th><th>Begründung</th><th>Eingetragen von</th></tr></thead>
+    <tbody>
+    {% for a in ausnahmen %}
+      <tr>
+        <td data-titel="Datum">{{ a.datum|date:"d.m.Y" }}{% if a.datum == heute %} <span class="marke-ok">heute</span>{% endif %}</td>
+        <td data-titel="Begründung">{{ a.begruendung|default:"–" }}</td>
+        <td data-titel="Eingetragen von">{{ a.eingetragen_von|default:"–" }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="3">Keine Ausnahmen.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="karte">
+  <h2>Letzte Abholungen</h2>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Datum</th><th>Uhrzeit</th><th>Ausgabestelle</th>{% if buero %}<th>Beitrag</th><th>Eingetragen von</th>{% endif %}</tr></thead>
+    <tbody>
+    {% for a in abholungen %}
+      <tr>
+        <td data-titel="Datum">{{ a.datum|date:"d.m.Y" }}</td>
+        <td data-titel="Uhrzeit">{{ a.uhrzeit|time:"H:i"|default:"–" }}</td>
+        <td data-titel="Ausgabestelle">{{ a.ausgabestelle.name|default:"–" }}</td>
+        {% if buero %}
+        <td data-titel="Beitrag">{% if a.beitrag is not None %}{{ a.beitrag|floatformat:2 }} €{% else %}–{% endif %}</td>
+        <td data-titel="Eingetragen von">{{ a.eingetragen_von|default:"–" }}</td>
+        {% endif %}
+      </tr>
+    {% empty %}
+      <tr><td colspan="5">Keine Abholungen.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if abholungen_gesamt > abholungen|length %}<p class="hinweis">{{ abholungen|length }} von {{ abholungen_gesamt }} gespeicherten Abholungen.</p>{% endif %}
+</section>
+
+{% if buero %}
+<section class="karte">
+  <h2>Interne Bemerkungen</h2>
+  {% for b in bemerkungen %}
+    <div class="bemerkung">
+      <p class="hinweis">{{ b.datum|date:"d.m.Y" }}{% if b.verfasst_von %} · {{ b.verfasst_von }}{% endif %}</p>
+      <p>{{ b.text|linebreaksbr }}</p>
+    </div>
+  {% empty %}
+    <p class="hinweis">Keine.</p>
+  {% endfor %}
+</section>
+{% endif %}
+{% endblock %}
