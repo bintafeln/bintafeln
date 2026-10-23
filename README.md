@@ -195,6 +195,16 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms, nur zum Lesen.
    selben Tag zurücknehmen. Admin und Büro können bei Rot wegen einer Terminregel eine
    **Ausnahme für heute** erteilen.
 
+5. **Bezahlen:**
+   - Zahlweise je Abholung: **aus Guthaben, Rest bar** oder **alles bar**; wenn in den
+     Einstellungen erlaubt, auch **anschreiben**.
+   - Nach dem Eintragen steht groß da, was **bar zu zahlen** ist, und der neue Kontostand.
+6. **Einzahlung / Vorauszahlung:** Betrag frei eingeben oder einen **Vorschlag** übernehmen
+   (Rest dieses Monats, ganzer nächster Monat). Jeder Vorschlag erklärt seine Rechnung. Eine
+   Einzahlung lässt sich am selben Tag zurücknehmen.
+7. Den **Kontoverlauf** mit allen Buchungen und Korrekturbuchungen gibt es auf der Haushaltsseite
+   (Admin, Büro).
+
 Die Regeln stehen unter „Einstellungen → Ausgabe und Ampel“. Jeder Scan steht im
 Zugriffsprotokoll. **Achtung:** Ein neuer Import des Kundenstamms ersetzt auch die am Empfang
 eingetragenen Abholungen und Ausnahmen; der Prüfbericht warnt davor (ADR 0013).

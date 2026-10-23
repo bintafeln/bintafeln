@@ -23,12 +23,14 @@ def healthz(request):
 
 @login_required
 def start(request):
+    from apps.ausgabe.konto import buchungsfristen_anwenden
     from apps.kunden.models import ImportVorbereitung, fristen_anwenden
 
-    # Geprüfte, nicht übernommene Importe werden spätestens hier nach einer Stunde gelöscht,
-    # Abholungen, Ausnahmen und Zugriffsprotokoll nach ihrer Aufbewahrungsfrist.
+    # Geprüfte, nicht übernommene Importe werden spätestens hier nach einer Stunde gelöscht;
+    # Abholungen, Ausnahmen, Zugriffsprotokoll und Buchungen nach ihren Fristen.
     ImportVorbereitung.abgelaufene_loeschen()
     fristen_anwenden()
+    buchungsfristen_anwenden()
     kontext = {}
     if rollen.hat_rolle(request.user, rollen.ADMIN):
         kontext["sicherung"] = sicherung.lese_status()

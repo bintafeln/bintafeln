@@ -189,6 +189,7 @@ def haushalt(request, kundennummer):
             "abholungen": abholungen[: ABHOLUNGEN_BUERO if buero else ABHOLUNGEN_AUSGABE],
             "abholungen_gesamt": abholungen.count(),
             "bemerkungen": h.bemerkungen.all() if buero else [],
+            "buchungen": h.buchungen.all() if buero else [],
             "ausweis_abgelaufen": h.ausweis_gueltig_bis is not None
             and h.ausweis_gueltig_bis < heute,
             "heute": heute,

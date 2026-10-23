@@ -122,6 +122,39 @@
 
 {% if buero %}
 <section class="karte">
+  <h2>Kundenkonto</h2>
+  <p>Kontostand: <strong>{% if h.kontostand is not None %}{{ h.kontostand|floatformat:2 }} €{% else %}–{% endif %}</strong></p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Datum</th><th>Art</th><th>Soll</th><th>Haben</th><th>davon bar</th><th>Bemerkung</th><th>Eingetragen von</th></tr></thead>
+    <tbody>
+    {% for b in buchungen %}
+      <tr>
+        <td data-titel="Datum">{{ b.zeitpunkt|date:"d.m.Y H:i" }}</td>
+        <td data-titel="Art">{{ b.get_art_display }}{% if b.zahlweise %} ({{ b.get_zahlweise_display }}){% endif %}</td>
+        <td data-titel="Soll">{{ b.soll|floatformat:2 }} €</td>
+        <td data-titel="Haben">{{ b.haben|floatformat:2 }} €</td>
+        <td data-titel="davon bar">{{ b.bar|floatformat:2 }} €</td>
+        <td data-titel="Bemerkung">{{ b.bemerkung|default:"–" }}</td>
+        <td data-titel="Eingetragen von">{{ b.eingetragen_von|default:"–" }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7">Noch keine Buchungen in bintafeln. Der Kontostand stammt aus dem Import.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <form method="post" action="{% url 'ausgabe:korrektur' h.kundennummer %}" class="filter abseits">
+    {% csrf_token %}
+    <label for="korrektur-betrag">Korrektur (Euro, minus belastet)</label>
+    <input type="text" name="betrag" id="korrektur-betrag" inputmode="decimal" class="betrag" required>
+    <label for="korrektur-grund">Begründung</label>
+    <input type="text" name="begruendung" id="korrektur-grund" maxlength="200" required class="suche">
+    <button type="submit" class="knopf knopf-zweitrangig">Korrektur buchen</button>
+  </form>
+</section>
+
+<section class="karte">
   <h2>Interne Bemerkungen</h2>
   {% for b in bemerkungen %}
     <div class="bemerkung">
