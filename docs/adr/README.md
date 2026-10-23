@@ -42,3 +42,4 @@ drei Fragen: Was war das Problem? Was haben wir entschieden? Warum?
 | [0009](0009-zwei-faktor-pflicht-und-notfallcodes.md) | Zwei-Faktor: Selbsteinrichtung, Pflicht je Rolle, Notfallcodes | Angenommen |
 | [0010](0010-kundenstamm-umfang-und-zusatzfelder.md) | Kundenstamm: Umfang, Zusatzfelder und eigene Daten im Snapshot | Angenommen |
 | [0011](0011-abholungen-mit-aufbewahrungsfrist.md) | Abholungen und Ausnahmen mit Aufbewahrungsfrist | Angenommen |
+| [0012](0012-zugriffsprotokoll.md) | Zugriffsprotokoll für Kundendaten | Angenommen |

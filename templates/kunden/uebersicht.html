@@ -2,32 +2,40 @@
 {% block titel %}Kunden{% endblock %}
 {% block inhalt %}
 <section class="karte">
-  <h1>Kundenstamm</h1>
-  <p>{{ anzahl.haushalte }} Haushalte · {{ anzahl.personen }} Personen · {{ anzahl.kundengruppen }} Kundengruppen · {{ anzahl.abholungen }} Abholungen</p>
-  <p class="hinweis">Der Kundenstamm ist ein Abbild aus dem bisherigen Programm. Jeder Import ersetzt ihn vollständig.
-    Liste und Suche folgen.</p>
-  <p><a class="knopf" href="{% url 'kunden:import' %}">Neuen Stand importieren</a></p>
+  <h1>Kunden</h1>
+  {# Ohne hx-trigger "submit": Enter (auch vom Scanner) sendet normal und öffnet bei passender Kundennummer den Haushalt. #}
+  <form class="filter" method="get" action="{% url 'kunden:uebersicht' %}"
+        hx-get="{% url 'kunden:uebersicht' %}" hx-target="#kunden-liste" hx-push-url="true"
+        hx-trigger="input changed delay:400ms from:#q, change from:select">
+    <label for="q">Suche</label>
+    <input type="search" name="q" id="q" value="{{ filter.q }}" autofocus autocomplete="off"
+           placeholder="Kundennummer oder Name" class="suche">
+    <label for="status">Status</label>
+    <select name="status" id="status">
+      <option value="">alle</option>
+      {% for wert, name in status_auswahl %}
+        <option value="{{ wert }}"{% if filter.status == wert %} selected{% endif %}>{{ name }}</option>
+      {% endfor %}
+    </select>
+    <label for="gruppe">Kundengruppe</label>
+    <select name="gruppe" id="gruppe">
+      <option value="">alle</option>
+      {% for g in gruppen %}
+        <option value="{{ g.pk }}"{% if filter.gruppe == g.pk|stringformat:"d" %} selected{% endif %}>{{ g.name }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="knopf">Suchen</button>
+  </form>
+  <div id="kunden-liste">{% include "kunden/_liste.html" %}</div>
 </section>
 
+{% if darf_importieren %}
 <section class="karte">
-  <h2>Letzte Importe</h2>
-  <div class="tabelle-rahmen">
-  <table class="tabelle">
-    <thead><tr><th>Zeitpunkt</th><th>Von</th><th>Haushalte</th><th>Personen</th><th>Warnungen</th></tr></thead>
-    <tbody>
-    {% for lauf in importe %}
-      <tr>
-        <td data-titel="Zeitpunkt">{{ lauf.zeitpunkt|date:"d.m.Y H:i" }}</td>
-        <td data-titel="Von">{{ lauf.benutzer|default:"–" }}</td>
-        <td data-titel="Haushalte">{{ lauf.anzahl_haushalte }}</td>
-        <td data-titel="Personen">{{ lauf.anzahl_personen }}</td>
-        <td data-titel="Warnungen">{{ lauf.anzahl_warnungen }}</td>
-      </tr>
-    {% empty %}
-      <tr><td colspan="5">Noch kein Import.</td></tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  </div>
+  <h2>Kundenstamm</h2>
+  <p>{{ anzahl.haushalte }} Haushalte · {{ anzahl.personen }} Personen · {{ anzahl.kundengruppen }} Kundengruppen · {{ anzahl.abholungen }} Abholungen</p>
+  <p class="hinweis">Der Kundenstamm ist ein Abbild aus dem bisherigen Programm. Jeder Import ersetzt ihn vollständig.</p>
+  <p><a class="knopf" href="{% url 'kunden:import' %}">Neuen Stand importieren</a>
+    {% if "Admin" in rollen %}<a class="knopf knopf-zweitrangig" href="{% url 'kunden:zugriffe' %}">Zugriffsprotokoll</a>{% endif %}</p>
 </section>
+{% endif %}
 {% endblock %}

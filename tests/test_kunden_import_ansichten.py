@@ -43,17 +43,16 @@ def buero_client(client, admin, benutzer_mit_rolle, anmelden):
 
 
 @pytest.mark.parametrize("rolle", [rollen.AUSGABE, rollen.KIOSK])
-def test_nur_admin_und_buero(client, admin, benutzer_mit_rolle, anmelden, rolle):
+def test_import_nur_admin_und_buero(client, admin, benutzer_mit_rolle, anmelden, rolle):
     anmelden(client, benutzer_mit_rolle("person", rolle))
-    assert client.get(UEBERSICHT).status_code == 403
     assert client.get(IMPORT).status_code == 403
-    assert "Kunden</a>" not in client.get("/").content.decode()
 
 
 def test_buero_sieht_menue_und_uebersicht(buero_client):
     assert "Kunden</a>" in buero_client.get("/").content.decode()
     inhalt = buero_client.get(UEBERSICHT).content.decode()
-    assert "0 Haushalte" in inhalt and "Noch kein Import" in inhalt
+    assert "0 Haushalte" in inhalt and "Neuen Stand importieren" in inhalt
+    assert "Noch kein Import" in buero_client.get(IMPORT).content.decode()
 
 
 def test_ohne_dateien(buero_client):

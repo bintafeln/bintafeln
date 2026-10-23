@@ -107,9 +107,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `kunden` (Kundenstamm; Werte-Parser für den Import in `apps/kunden/werte.py`, Zusatzfeld-Werte
   als JSON in `Haushalt.zusatz` bzw. `Person.zusatz`, Schlüssel = `Zusatzfeld.schluessel`).
   Import in `apps/kunden/importieren.py`: `pruefen()` (Bericht ohne Inhalte) und `uebernehmen()`
-  (Vollaustausch in einer Transaktion, Auditlog nur für den `ImportLauf`). Abholungen und
-  Ausnahmen haben eine Aufbewahrungsfrist (`abgelaufene_abholungen_loeschen()` in
-  `apps/kunden/models.py`, ADR 0011). Neue Spalten im Importformat brauchen Doku,
+  (Vollaustausch in einer Transaktion, Auditlog nur für den `ImportLauf`). Löschfristen
+  (Abholungen, Ausnahmen, Zugriffsprotokoll) wendet `fristen_anwenden()` in
+  `apps/kunden/models.py` an (ADR 0011, 0012). Jeder Aufruf der Detailseite eines Haushalts
+  schreibt einen `Zugriff`. Neue Spalten im Importformat brauchen Doku,
   Beispieldatei und Test in `tests/test_kunden_import.py`.
 - Zugriffsschutz für Ansichten: `@rolle_erforderlich(rollen.BUERO, …)` aus `apps.konten.rollen`.
 - Zwei-Faktor: Logik in `apps/konten/zwei_faktor.py`, Durchsetzung in

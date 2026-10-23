@@ -64,7 +64,7 @@ h1 { font-size: 1.5rem; margin: .25rem 0 1rem; }
 
 .feld { display: flex; flex-direction: column; margin-bottom: 1rem; }
 .feld label { font-weight: 600; margin-bottom: .25rem; }
-.feld input, .feld select, .feld textarea, .filter select {
+.feld input, .feld select, .feld textarea, .filter select, .filter input {
   font: inherit;
   padding: .65rem .75rem;
   border: 1px solid var(--rand);
@@ -73,7 +73,7 @@ h1 { font-size: 1.5rem; margin: .25rem 0 1rem; }
   width: 100%;
 }
 .feld input[type="file"] { padding: .5rem 0; border: 0; }
-.feld input:focus, .feld select:focus, .feld textarea:focus { outline: 3px solid #9cc7a4; border-color: var(--akzent); }
+.feld input:focus, .feld select:focus, .feld textarea:focus, .filter input:focus { outline: 3px solid #9cc7a4; border-color: var(--akzent); }
 .hilfe { color: var(--leise); }
 .fehler { color: var(--fehler); }
 .hat-fehler input { border-color: var(--fehler); }
@@ -108,6 +108,17 @@ h1 { font-size: 1.5rem; margin: .25rem 0 1rem; }
 .tabelle { width: 100%; border-collapse: collapse; font-size: .95rem; }
 .tabelle th, .tabelle td { text-align: left; padding: .5rem; border-bottom: 1px solid var(--rand); vertical-align: top; }
 .aenderungen { margin: 0; padding-left: 1rem; }
+.angaben { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1rem; margin: 0 0 1rem; }
+.angaben dt { font-weight: 600; }
+.angaben dd { margin: 0; }
+.marke-warnung, .marke-ok, .marke-art9 {
+  display: inline-block; border-radius: 999px; padding: 0 .5rem; font-size: .85rem;
+}
+.marke-warnung { background: #f8e1e1; color: var(--fehler); }
+.marke-ok { background: var(--erfolg); }
+.marke-art9 { background: #ece4f7; }
+.zeile-aktiv td { background: #fdf0f0; }
+.bemerkung { border-bottom: 1px solid var(--rand); margin-bottom: .75rem; }
 .blaettern { display: flex; justify-content: space-between; gap: 1rem; padding-top: 1rem; }
 
 .fuss {
@@ -125,8 +136,9 @@ h1 { font-size: 1.5rem; margin: .25rem 0 1rem; }
 
 @media (min-width: 40rem) {
   .knopf { width: auto; }
-  .filter { flex-direction: row; align-items: center; gap: .75rem; }
-  .filter select { width: auto; }
+  .filter { flex-direction: row; flex-wrap: wrap; align-items: center; gap: .75rem; }
+  .filter select, .filter input { width: auto; }
+  .filter .suche { flex: 1 1 10rem; min-width: 0; }
 }
 
 .sicherung { padding: .75rem 1rem; border-radius: var(--radius); margin: 1rem 0; background: #fdf3d8; }

@@ -140,6 +140,15 @@ Kundennummer aus dem Import, greifen für diese Daten die Löschfristen.
 
 Zusatzfelder der besonderen Kategorie sieht nur, wer dafür ausdrücklich berechtigt ist.
 
+Die Rolle Ausgabe sieht außerdem die letzten fünf Abholungen und die Ausnahmen eines Haushalts.
+
+### Zugriffsprotokoll
+
+Jeder Aufruf der Detailseite eines Haushalts wird protokolliert: wer, wann, welche Kundennummer
+und ob dabei Angaben der besonderen Kategorie angezeigt wurden. Einsehen dürfen es nur Admins.
+Es hat eine eigene Löschfrist (Vorgabe 1 Jahr, ADR 0012). Liste und Suche werden nicht
+protokolliert.
+
 ### Auskunft
 
 Auf Anfrage einer Person werden alle zu ihr gespeicherten Daten als PDF zusammengestellt

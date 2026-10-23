@@ -23,12 +23,12 @@ def healthz(request):
 
 @login_required
 def start(request):
-    from apps.kunden.models import ImportVorbereitung, abgelaufene_abholungen_loeschen
+    from apps.kunden.models import ImportVorbereitung, fristen_anwenden
 
     # Geprüfte, nicht übernommene Importe werden spätestens hier nach einer Stunde gelöscht,
-    # Abholungen und Ausnahmen nach ihrer Aufbewahrungsfrist.
+    # Abholungen, Ausnahmen und Zugriffsprotokoll nach ihrer Aufbewahrungsfrist.
     ImportVorbereitung.abgelaufene_loeschen()
-    abgelaufene_abholungen_loeschen()
+    fristen_anwenden()
     kontext = {}
     if rollen.hat_rolle(request.user, rollen.ADMIN):
         kontext["sicherung"] = sicherung.lese_status()

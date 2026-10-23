@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block titel %}Zugriffsprotokoll{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'kunden:uebersicht' %}">← Kunden</a></p>
+  <h1>Zugriffsprotokoll</h1>
+  <p class="hinweis">Wer hat wann welchen Haushalt angesehen. Einträge werden nach {{ frist }} Tagen gelöscht
+    (einstellbar unter „Einstellungen → Kundenstamm“).</p>
+  <form class="filter" method="get">
+    <label for="kundennummer">Kundennummer</label>
+    <input type="search" name="kundennummer" id="kundennummer" value="{{ kundennummer }}">
+    <label for="benutzer">Benutzer</label>
+    <input type="search" name="benutzer" id="benutzer" value="{{ benutzer }}">
+    <button type="submit" class="knopf">Filtern</button>
+  </form>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Zeitpunkt</th><th>Benutzer</th><th>Kundennummer</th><th>Art. 9</th></tr></thead>
+    <tbody>
+    {% for z in seite %}
+      <tr>
+        <td data-titel="Zeitpunkt">{{ z.zeitpunkt|date:"d.m.Y H:i:s" }}</td>
+        <td data-titel="Benutzer">{{ z.benutzername }}</td>
+        <td data-titel="Kundennummer">{{ z.kundennummer }}</td>
+        <td data-titel="Art. 9">{{ z.besondere_kategorie|yesno:"ja,–" }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4">Keine Einträge.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if seite.has_other_pages %}
+  <nav class="blaettern" aria-label="Seiten">
+    <span>{% if seite.has_previous %}<a href="?kundennummer={{ kundennummer|urlencode }}&amp;benutzer={{ benutzer|urlencode }}&amp;seite={{ seite.previous_page_number }}">← zurück</a>{% endif %}</span>
+    <span>Seite {{ seite.number }} von {{ seite.paginator.num_pages }}</span>
+    <span>{% if seite.has_next %}<a href="?kundennummer={{ kundennummer|urlencode }}&amp;benutzer={{ benutzer|urlencode }}&amp;seite={{ seite.next_page_number }}">weiter →</a>{% endif %}</span>
+  </nav>
+  {% endif %}
+</section>
+{% endblock %}

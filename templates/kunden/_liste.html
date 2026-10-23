@@ -1,0 +1,26 @@
+<p class="hinweis">{{ seite.paginator.count }} Haushalt{{ seite.paginator.count|pluralize:"e" }}</p>
+<div class="tabelle-rahmen">
+<table class="tabelle">
+  <thead><tr><th>Nr.</th><th>Name</th><th>Kundengruppe</th><th>Status</th><th>Ausweis bis</th></tr></thead>
+  <tbody>
+  {% for h in seite %}
+    <tr>
+      <td data-titel="Nr."><a href="{% url 'kunden:haushalt' h.kundennummer %}">{{ h.kundennummer }}</a></td>
+      <td data-titel="Name"><a href="{% url 'kunden:haushalt' h.kundennummer %}">{{ h.hp_nachname|default:"" }}, {{ h.hp_vorname|default:"" }}</a></td>
+      <td data-titel="Kundengruppe">{{ h.kundengruppe.name|default:"–" }}</td>
+      <td data-titel="Status">{% if h.status != "aktiv" %}<span class="marke-warnung">{{ h.get_status_display }}</span>{% else %}{{ h.get_status_display }}{% endif %}</td>
+      <td data-titel="Ausweis bis">{% if h.ausweis_gueltig_bis and h.ausweis_gueltig_bis < heute %}<span class="marke-warnung">{{ h.ausweis_gueltig_bis|date:"d.m.Y" }}</span>{% else %}{{ h.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}{% endif %}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="5">Keine Haushalte gefunden.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% if seite.has_other_pages %}
+<nav class="blaettern" aria-label="Seiten">
+  <span>{% if seite.has_previous %}<a href="?q={{ filter.q|urlencode }}&amp;status={{ filter.status }}&amp;gruppe={{ filter.gruppe }}&amp;seite={{ seite.previous_page_number }}">← zurück</a>{% endif %}</span>
+  <span>Seite {{ seite.number }} von {{ seite.paginator.num_pages }}</span>
+  <span>{% if seite.has_next %}<a href="?q={{ filter.q|urlencode }}&amp;status={{ filter.status }}&amp;gruppe={{ filter.gruppe }}&amp;seite={{ seite.next_page_number }}">weiter →</a>{% endif %}</span>
+</nav>
+{% endif %}

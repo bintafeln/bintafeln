@@ -2,12 +2,13 @@
 {% block titel %}Import{% endblock %}
 {% block inhalt %}
 <section class="karte">
-  <p><a href="{% url 'kunden:uebersicht' %}">← Kundenstamm</a></p>
+  <p><a href="{% url 'kunden:uebersicht' %}">← Kunden</a></p>
   <h1>Kundenstamm importieren</h1>
   <p>Dateien im <a href="https://github.com/bintafeln/bintafeln/blob/main/docs/importformat.md">Importformat</a>
     auswählen: <code>haushalte.csv</code> (Pflicht), optional <code>personen.csv</code>,
     <code>abholer.csv</code>, <code>sperren.csv</code>, <code>bemerkungen.csv</code>,
-    <code>kundengruppen.csv</code>. Mehrere Dateien gleichzeitig markieren.</p>
+    <code>kundengruppen.csv</code>, <code>abholungen.csv</code>, <code>ausnahmen.csv</code>.
+    Mehrere Dateien gleichzeitig markieren.</p>
   <p class="hinweis">Zuerst wird nur geprüft. Übernommen wird erst nach Ihrer Bestätigung; bis dahin
     werden die geprüften Daten höchstens eine Stunde aufbewahrt.</p>
   {% if not sicherung_frisch %}
@@ -32,4 +33,27 @@
   {% include "kunden/_bericht.html" %}
 </section>
 {% endif %}
+
+<section class="karte">
+  <h2>Letzte Importe</h2>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Zeitpunkt</th><th>Von</th><th>Haushalte</th><th>Personen</th><th>Abholungen</th><th>Warnungen</th></tr></thead>
+    <tbody>
+    {% for lauf in importe %}
+      <tr>
+        <td data-titel="Zeitpunkt">{{ lauf.zeitpunkt|date:"d.m.Y H:i" }}</td>
+        <td data-titel="Von">{{ lauf.benutzer|default:"–" }}</td>
+        <td data-titel="Haushalte">{{ lauf.anzahl_haushalte }}</td>
+        <td data-titel="Personen">{{ lauf.anzahl_personen }}</td>
+        <td data-titel="Abholungen">{{ lauf.anzahl_abholungen }}</td>
+        <td data-titel="Warnungen">{{ lauf.anzahl_warnungen }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6">Noch kein Import.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
 {% endblock %}
