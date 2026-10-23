@@ -64,7 +64,7 @@ h1 { font-size: 1.5rem; margin: .25rem 0 1rem; }
 
 .feld { display: flex; flex-direction: column; margin-bottom: 1rem; }
 .feld label { font-weight: 600; margin-bottom: .25rem; }
-.feld input, .feld select, .filter select {
+.feld input, .feld select, .feld textarea, .filter select {
   font: inherit;
   padding: .65rem .75rem;
   border: 1px solid var(--rand);
@@ -73,7 +73,7 @@ h1 { font-size: 1.5rem; margin: .25rem 0 1rem; }
   width: 100%;
 }
 .feld input[type="file"] { padding: .5rem 0; border: 0; }
-.feld input:focus, .feld select:focus { outline: 3px solid #9cc7a4; border-color: var(--akzent); }
+.feld input:focus, .feld select:focus, .feld textarea:focus { outline: 3px solid #9cc7a4; border-color: var(--akzent); }
 .hilfe { color: var(--leise); }
 .fehler { color: var(--fehler); }
 .hat-fehler input { border-color: var(--fehler); }

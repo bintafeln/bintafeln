@@ -3,6 +3,7 @@
 {% block inhalt %}
 <section class="karte">
   <h1>Einstellungen der Tafel</h1>
+  <p>Weitere Einstellungen: <a href="{% url 'kunden:einstellungen' %}">Kundenstamm und Zusatzfelder</a></p>
   {% if form.instance.logo %}<img src="{{ form.instance.logo.url }}" alt="Aktuelles Logo" class="logo-vorschau">{% endif %}
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}

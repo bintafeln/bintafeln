@@ -21,6 +21,10 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   legt ein Admin unter „Einstellungen“ fest; voreingestellt sind Admin und Büro.
 - **Sicherung:** täglich und verschlüsselt, mit Wiederherstellung und Update per Befehl
   (`./betrieb`). Die Startseite zeigt Admins den Stand der Sicherung.
+- **Kundenstamm (im Aufbau):** Datenmodell für Haushalte, Personen, Abholberechtigte, Sperren,
+  Bemerkungen und Kundengruppen. Unter „Einstellungen → Kundenstamm“ legt ein Admin fest, welche
+  Angaben erfasst werden, und richtet eigene **Zusatzfelder** ein (z. B. „Schwerbehindert“).
+  Import und Ansichten folgen.
 - Deutsche, mobilfreundliche Oberfläche (Django-Templates + HTMX, ohne externe CDNs).
 
 ## Aufbau
@@ -282,6 +286,7 @@ Dieses Skript überschreibt `.env`, lokal also nur in einer Wegwerf-Kopie starte
 bintafeln/          Django-Projekt (Einstellungen, URLs)
 apps/core/          Tafel-Einstellungen, Einrichtung, Startseite, Änderungsprotokoll
 apps/konten/        Benutzer, Rollen, Anmeldung, Zwei-Faktor
+apps/kunden/        Kundenstamm: Haushalte, Personen, Zusatzfelder, Einstellungen
 templates/          Django-Templates
 static/             CSS und HTMX
 docker/             Caddyfile und Start-Skript des App-Containers

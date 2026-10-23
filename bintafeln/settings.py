@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "auditlog",
     "apps.konten",
     "apps.core",
+    "apps.kunden",
 ]
 
 MIDDLEWARE = [
