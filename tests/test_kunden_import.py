@@ -345,7 +345,7 @@ def test_abgeschaltete_felder_werden_nicht_gespeichert():
 def test_bemerkungen_nur_wenn_eingeschaltet():
     bemerkungen = csv("kundennummer;datum;text", "001;01.01.2026;Erfunden")
     ergebnis = pruefen(haushalte_csv=MINIMAL, bemerkungen_csv=bemerkungen)
-    assert any("Bemerkungen ist in den Einstellungen abgeschaltet" in t for t in texte(ergebnis))
+    assert any("Anmerkungen ist in den Einstellungen abgeschaltet" in t for t in texte(ergebnis))
     uebernehmen(ergebnis)
     assert not Bemerkung.objects.exists()
 

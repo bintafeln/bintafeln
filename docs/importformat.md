@@ -37,7 +37,7 @@ Beispieldateien mit erfundenen Daten: [beispiele/import/](beispiele/import/)
 | `personen.csv` | nein | Angehörige (ohne Hauptperson) |
 | `abholer.csv` | nein | Abholberechtigte |
 | `sperren.csv` | nein | Sperren |
-| `bemerkungen.csv` | nein | interne Bemerkungen |
+| `bemerkungen.csv` | nein | interne Anmerkungen |
 | `kundengruppen.csv` | nein | Kundengruppen mit Ausgabestelle und Termin |
 | `abholungen.csv` | nein | einzelne Abholungen innerhalb der Aufbewahrungsfrist |
 | `ausnahmen.csv` | nein | erteilte Ausnahmen innerhalb der Aufbewahrungsfrist |
@@ -134,7 +134,7 @@ Die Hauptperson steht immer in `haushalte.csv`, nicht hier.
 | `text` | **ja** | mehrzeilig möglich (in Anführungszeichen) |
 | `verfasst_von` | | Name als Text |
 
-Ob Bemerkungen überhaupt übernommen werden, ist eine Einstellung je Tafel. Ist sie aus, wird
+Ob Anmerkungen überhaupt übernommen werden, ist eine Einstellung je Tafel. Ist sie aus, wird
 `bemerkungen.csv` ignoriert (Warnung).
 
 ## kundengruppen.csv

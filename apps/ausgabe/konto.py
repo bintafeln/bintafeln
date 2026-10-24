@@ -1,4 +1,4 @@
-"""Kundenkonto: Buchen am Empfang, Vorschlag für Vorauszahlungen, Fristen (ADR 0014).
+"""Kundenkonto: Buchen am Einlass, Vorschlag für Vorauszahlungen, Fristen (ADR 0014).
 
 Der Kontostand steht in ``Haushalt.kontostand`` (Anfangsstand aus dem Import) und ändert sich
 mit jeder Buchung um ``haben − soll``. Alle Änderungen laufen über die Funktionen hier, in einer
@@ -39,7 +39,7 @@ def euro(betrag: Decimal) -> str:
 
 @dataclass
 class Zahlung:
-    """Ergebnis einer gebuchten Abholung für die Anzeige am Empfang."""
+    """Ergebnis einer gebuchten Abholung für die Anzeige am Einlass."""
 
     bar: Decimal
     vom_konto: Decimal

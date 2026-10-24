@@ -23,7 +23,7 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
 - **Sicherung:** täglich und verschlüsselt, mit Wiederherstellung und Update per Befehl
   (`./betrieb`). Die Startseite zeigt Admins den Stand der Sicherung.
 - **Kundenstamm (im Aufbau):** Datenmodell für Haushalte, Personen, Abholberechtigte, Sperren,
-  Bemerkungen und Kundengruppen. Unter „Einstellungen → Kundenstamm“ legt ein Admin fest, welche
+  Anmerkungen und Kundengruppen. Unter „Einstellungen → Kundenstamm“ legt ein Admin fest, welche
   Angaben erfasst werden, und richtet eigene **Zusatzfelder** ein (z. B. „Schwerbehindert“).
   **Import** mit Prüfbericht unter „Kunden“; Liste und Suche folgen.
 - Deutsche, mobilfreundliche Oberfläche (Django-Templates + HTMX, ohne externe CDNs).
@@ -224,7 +224,7 @@ Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie
 
 **Feiertage:** Unter „Einstellungen“ das **Bundesland** der Tafel wählen. Dann zählen dessen
 gesetzliche Feiertage weder als Arbeitstag (Urlaub, Krankheit, Stundenkonto) noch als Abholtag im
-Vorschlag für Vorauszahlungen am Empfang.
+Vorschlag für Vorauszahlungen am Einlass.
 
 ## E-Mail
 
@@ -273,7 +273,7 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms, nur zum Lesen.
 
   | Rolle | sieht |
   |---|---|
-  | Admin, Büro | alles: Anschrift, Kontakt, Personen, Abholberechtigte, alle Sperren, Ausnahmen, Abholungen, Kontostand, Bemerkungen, Zusatzfelder |
+  | Admin, Büro | alles: Anschrift, Kontakt, Personen, Abholberechtigte, alle Sperren, Ausnahmen, Abholungen, Kontostand, Anmerkungen, Zusatzfelder |
   | Ausgabe | Name, Status, Kundengruppe, Haushaltsgröße, Ausweis, aktive Sperren, Ausnahmen, die letzten 5 Abholungen, Zusatzfelder (Art. 9 nur mit Freigabe in den Einstellungen) |
   | Kiosk | nichts |
 
@@ -282,13 +282,13 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms, nur zum Lesen.
   „Einstellungen → Kundenstamm“.
 - Admin und Büro finden auf der Detailseite zwei PDFs:
   - **Kundenausweis drucken:** Karte im Scheckkartenformat mit Schnittmarken, mit Kundennummer
-    als Barcode für den Scanner am Empfang. In 100 % Größe drucken.
+    als Barcode für den Scanner am Einlass. In 100 % Größe drucken.
   - **Auskunft nach Art. 15 DSGVO:** alle gespeicherten Daten des Haushalts samt Hinweisen zu
     Zweck, Speicherdauer und Rechten. Der Abruf steht im Zugriffsprotokoll.
 
-## Empfang
+## Einlass
 
-„Empfang“ im Menü (Admin, Büro, Ausgabe):
+„Einlass“ im Menü (Admin, Büro, Ausgabe):
 
 1. Einmal die **Ausgabestelle** wählen, an der man arbeitet (gilt für die Sitzung).
 2. Kundennummer **scannen** oder eintippen und Enter. Führende Nullen sind egal.
@@ -312,7 +312,7 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms, nur zum Lesen.
    (Admin, Büro).
 
 Die Regeln stehen unter „Einstellungen → Ausgabe und Ampel“. Jeder Scan steht im
-Zugriffsprotokoll. **Achtung:** Ein neuer Import des Kundenstamms ersetzt auch die am Empfang
+Zugriffsprotokoll. **Achtung:** Ein neuer Import des Kundenstamms ersetzt auch die am Einlass
 eingetragenen Abholungen und Ausnahmen; der Prüfbericht warnt davor (ADR 0013).
 
 ## Kasse

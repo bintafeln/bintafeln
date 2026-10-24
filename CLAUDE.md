@@ -49,6 +49,10 @@ gemeinsame Verantwortung der nutzenden Tafeln übergehen.
   möglich sind. Sinnvoll vorbelegen (z. B. mit der angemeldeten Person). Listen zentral in
   `apps/core/auswahl.py`; gespeicherte Werte, die nicht mehr in der Liste stehen, bleiben
   wählbar.
+- **Begriffe in der Oberfläche und Doku:** „Einlass“ (nicht „Empfang“), „Anmerkung“ (nicht
+  „Bemerkung“), „Notiz“ für Notizen (nicht „Hinweis“). Namen im Code und im Importformat
+  (`empfang`, `bemerkung`, `bemerkungen.csv`) bleiben, damit URLs, Migrationen und Importdateien
+  stabil bleiben.
 - Grundlegende Entscheidungen werden als kurze ADR in `docs/adr/` festgehalten
   (Problem, Entscheidung, Begründung).
 
@@ -85,7 +89,7 @@ In der ersten Ausbaustufe ist der Kundenstamm ein Snapshot aus einem Altsystem: 
 ersetzt den Bestand vollständig, im neuen System wird er nur gelesen, nicht bearbeitet. Der Import
 wird deshalb als wiederholbarer Vollaustausch gebaut, nicht als Synchronisation einzelner
 Datensätze. Erst beim späteren Umstieg zu einem Stichtag übernimmt bintafeln die Führung der Daten.
-Ausnahme: Der Empfang trägt Abholungen und Ausnahmen ein; der nächste Import ersetzt sie
+Ausnahme: Der Einlass trägt Abholungen und Ausnahmen ein; der nächste Import ersetzt sie
 (ADR 0013).
 
 bintafeln kennt nur das eigene, neutrale Importformat. Werkzeuge, die Daten aus bestimmten
@@ -120,7 +124,7 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `apps/kunden/models.py` an (ADR 0011, 0012). Jeder Aufruf der Detailseite eines Haushalts
   schreibt einen `Zugriff`. Neue Spalten im Importformat brauchen Doku,
   Beispieldatei und Test in `tests/test_kunden_import.py`.
-  `ausgabe` (Empfang; Ampel-Regeln als reine Funktion in `apps/ausgabe/ampel.py`,
+  `ausgabe` (Einlass; Ampel-Regeln als reine Funktion in `apps/ausgabe/ampel.py`,
   Einstellungen in `AusgabeEinstellungen`; Kundenkonto nur über `apps/ausgabe/konto.py`
   buchen, nie `Haushalt.kontostand` direkt ändern, ADR 0014; Kasse-Auswertung in
   `apps/ausgabe/kasse.py`).

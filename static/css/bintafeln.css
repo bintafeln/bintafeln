@@ -164,7 +164,7 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .meldung-fehler td:first-child { color: var(--fehler); font-weight: 600; }
 .inline + .inline { margin-left: .5rem; }
 
-/* Empfang */
+/* Einlass */
 .scan label { font-weight: 600; display: block; margin-bottom: .25rem; }
 .scan-zeile { display: flex; gap: .5rem; }
 .scan-feld {
@@ -188,7 +188,7 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .vorschlag { background: #f4f7f4; border-radius: var(--radius); padding: .5rem .75rem; margin: .5rem 0; }
 .vorschlag ul { margin: .25rem 0 .5rem; padding-left: 1.25rem; }
 
-/* Große Ampel am Empfang: absichtlich auffällig */
+/* Große Ampel am Einlass: absichtlich auffällig */
 .empfang-raster { display: flex; flex-direction: column; gap: 1rem; }
 .empfang-inhalt { flex: 1; min-width: 0; }
 .ampel-grafik { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem 1rem; }

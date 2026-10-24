@@ -586,7 +586,7 @@ class _Pruefung:
             self.warnung(
                 BEMERKUNGEN,
                 None,
-                "Import von Bemerkungen ist in den Einstellungen abgeschaltet; Datei ignoriert.",
+                "Import von Anmerkungen ist in den Einstellungen abgeschaltet; Datei ignoriert.",
             )
             del gelesen[BEMERKUNGEN]
 
@@ -604,7 +604,7 @@ class _Pruefung:
                 self.warnung(
                     name,
                     None,
-                    f"{erfasst} am Empfang in bintafeln erfasste Einträge werden durch den "
+                    f"{erfasst} am Einlass in bintafeln erfasste Einträge werden durch den "
                     "Import ersetzt und gehen verloren.",
                 )
         # Kontobuchungen gehören zur App ausgabe; späte Einbindung vermeidet einen Kreisbezug.

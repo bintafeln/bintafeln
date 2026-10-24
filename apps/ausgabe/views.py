@@ -1,4 +1,4 @@
-"""Empfang: Kundennummer scannen, Ampel sehen, Abholung eintragen. Dazu die Kasse."""
+"""Einlass: Kundennummer scannen, Ampel sehen, Abholung eintragen. Dazu die Kasse."""
 
 import datetime as dt
 from urllib.parse import urlencode
@@ -190,7 +190,7 @@ def abholung_eintragen(request, kundennummer):
 @require_POST
 @rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
 def abholung_zuruecknehmen(request, pk):
-    """Nimmt eine heute am Empfang eingetragene Abholung zurück (Versehen)."""
+    """Nimmt eine heute am Einlass eingetragene Abholung zurück (Versehen)."""
     abholung = get_object_or_404(
         Abholung, pk=pk, datum=timezone.localdate(), erfasst_am__isnull=False
     )

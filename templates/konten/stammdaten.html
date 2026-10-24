@@ -60,14 +60,14 @@
   <h2>Schulungen</h2>
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Datum</th><th>Thema</th><th>Gültig bis</th><th>Bemerkung</th><th></th></tr></thead>
+    <thead><tr><th>Datum</th><th>Thema</th><th>Gültig bis</th><th>Anmerkung</th><th></th></tr></thead>
     <tbody>
     {% for sch in schulungen %}
       <tr>
         <td data-titel="Datum">{{ sch.datum|date:"d.m.Y" }}</td>
         <td data-titel="Thema">{{ sch.thema }}</td>
         <td data-titel="Gültig bis">{{ sch.gueltig_bis|date:"d.m.Y"|default:"–" }}</td>
-        <td data-titel="Bemerkung">{{ sch.bemerkung|default:"–" }}</td>
+        <td data-titel="Anmerkung">{{ sch.bemerkung|default:"–" }}</td>
         <td data-titel="Aktion">
           <form method="post" action="{% url 'konten:schulung_loeschen' ziel.pk sch.pk %}" class="inline"
                 onsubmit="return confirm('Schulung löschen?')">

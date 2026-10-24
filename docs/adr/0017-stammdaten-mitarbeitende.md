@@ -14,7 +14,7 @@ Angaben sind Personaldaten und dürfen nicht unbegrenzt gespeichert werden.
 ## Entscheidung
 
 - **Stammdaten** liegen in einem eigenen Datensatz neben dem Konto: Anrede, Geburtsdatum,
-  Anschrift, Telefon, Handy, Notfallkontakt, Eintritt, Austritt, Bemerkung. Dazu kommen der
+  Anschrift, Telefon, Handy, Notfallkontakt, Eintritt, Austritt, Anmerkung. Dazu kommen der
   **Führerschein-Vermerk** (Klassen, gültig bis, gesehen am / von) und die **IfSG-Belehrung**
   (Erstbelehrung, letzte Folgebelehrung) sowie **Schulungen** (Thema, Datum, gültig bis).
 - Sehen und bearbeiten dürfen dieselben Personen, die Mitarbeitende verwalten (Admin; das Büro

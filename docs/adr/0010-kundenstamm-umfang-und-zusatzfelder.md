@@ -19,7 +19,7 @@ entstehen, obwohl der Kundenstamm bei jedem Import ersetzt wird.
 - **Zusatzfelder** legt jede Tafel selbst an (für Haushalt oder Person, Typ Ja/Nein, Auswahl, Text
   oder Datum). Felder mit Daten besonderer Kategorien (Art. 9 DSGVO, z. B. Schwerbehinderung)
   werden als solche gekennzeichnet: Anzeige nur für berechtigte Rollen, jeder Zugriff protokolliert.
-- **Interne Bemerkungen** werden importiert, wenn die Tafel das einschaltet; sichtbar nur für Admin
+- **Interne Anmerkungen** werden importiert, wenn die Tafel das einschaltet; sichtbar nur für Admin
   und Büro.
 - Bintafeln kann **Dokumente** zu Haushalten speichern, mit Aussonderungsfrist je Dokumentart.
 - Daten, die in bintafeln selbst entstehen (Dokumente, Historie, Zugriffsprotokoll), hängen an der

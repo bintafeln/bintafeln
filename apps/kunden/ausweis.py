@@ -1,6 +1,6 @@
 """Kundenausweis als PDF: Karte im Scheckkartenformat auf A4 mit Schnittmarken (ADR 0021).
 
-Der Barcode (Code 128) enthält nur die Kundennummer. Ein Scanner am Empfang, der als Tastatur
+Der Barcode (Code 128) enthält nur die Kundennummer. Ein Scanner am Einlass, der als Tastatur
 arbeitet, tippt sie ins Suchfeld.
 """
 

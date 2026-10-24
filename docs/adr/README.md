@@ -43,7 +43,7 @@ drei Fragen: Was war das Problem? Was haben wir entschieden? Warum?
 | [0010](0010-kundenstamm-umfang-und-zusatzfelder.md) | Kundenstamm: Umfang, Zusatzfelder und eigene Daten im Snapshot | Angenommen |
 | [0011](0011-abholungen-mit-aufbewahrungsfrist.md) | Abholungen und Ausnahmen mit Aufbewahrungsfrist | Angenommen |
 | [0012](0012-zugriffsprotokoll.md) | Zugriffsprotokoll für Kundendaten | Angenommen |
-| [0013](0013-empfang-erfasst-abholungen.md) | Der Empfang erfasst Abholungen schon im Snapshot-Betrieb | Angenommen |
+| [0013](0013-empfang-erfasst-abholungen.md) | Der Einlass erfasst Abholungen schon im Snapshot-Betrieb | Angenommen |
 | [0014](0014-kundenkonto-mit-buchungen.md) | Kundenkonto mit Buchungen | Angenommen |
 | [0015](0015-mitarbeitende-verwalten.md) | Mitarbeitende in bintafeln verwalten | Angenommen |
 | [0016](0016-mailserver-und-einladungen.md) | Mailserver in der Oberfläche, Einladungen per Link | Angenommen |

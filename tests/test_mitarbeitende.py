@@ -217,7 +217,7 @@ def test_startpasswort_muss_geaendert_werden(client, admin, benutzer_mit_rolle, 
     anmelden(client, ziel, zwei_faktor=False)
     assert client.get("/").url == PASSWORT_AENDERN
     seite = client.get(PASSWORT_AENDERN).content.decode()
-    assert "Startpasswort" in seite and "Empfang</a>" not in seite
+    assert "Startpasswort" in seite and "Einlass</a>" not in seite
     falsch = client.post(
         PASSWORT_AENDERN,
         {

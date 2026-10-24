@@ -7,7 +7,7 @@
 ## Problem
 
 Ursprünglich sollten einzelne Abholungen erst mit dem Modul Ausgabe kommen. Für die Arbeit am
-Empfang und für Rückfragen („Wann war der Haushalt zuletzt da?“) braucht eine Tafel aber schon im
+Einlass und für Rückfragen („Wann war der Haushalt zuletzt da?“) braucht eine Tafel aber schon im
 Snapshot-Betrieb die letzten Abholungen und die erteilten Ausnahmen. Abholungen zeigen, wer wann
 bei der Tafel war. Das ist eine sensible Angabe, die nicht unbegrenzt gespeichert werden darf.
 
