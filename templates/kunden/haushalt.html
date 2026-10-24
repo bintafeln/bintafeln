@@ -13,8 +13,8 @@
     <dt>Ausgabestelle</dt><dd>{{ h.kundengruppe.ausgabestelle.name|default:"–" }}{% if h.kundengruppe %} · {{ h.kundengruppe.name }}{% if h.kundengruppe.wochentage %} ({{ h.kundengruppe.wochentage }}{% if h.kundengruppe.uhrzeit %} {{ h.kundengruppe.uhrzeit|time:"H:i" }}{% endif %}){% endif %}{% endif %}</dd>
     <dt>Karte gültig bis</dt><dd>{{ h.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}</dd>
     {% if kontostand_zeigen %}<dt>Kontostand</dt><dd>{% if h.kontostand is not None %}<strong{% if h.kontostand < 0 %} class="fehler"{% endif %}>{{ h.kontostand|floatformat:2 }} €</strong>{% else %}–{% endif %}</dd>{% endif %}
+    <dt>Haushalt</dt><dd>{{ erwachsene }} Erwachsene, {{ kinder }} Kind{{ kinder|pluralize:"er" }}</dd>
     {% if buero %}
-      <dt>Haushalt</dt><dd>{{ erwachsene }} Erwachsene, {{ kinder }} Kind{{ kinder|pluralize:"er" }}</dd>
       <dt>Letzter Besuch</dt><dd>{{ h.letzter_besuch|date:"d.m.Y"|default:"–" }}</dd>
       <dt>Kunde seit</dt><dd>{{ h.kunde_seit|date:"d.m.Y"|default:"–" }}</dd>
       <dt>Einkommensart</dt><dd>{{ h.einkommensart|default:"–" }}</dd>
@@ -35,13 +35,13 @@
 </section>
 
 <section class="karte">
-  <h2>{% if buero %}Personen{% else %}Hauptperson und Abholberechtigte{% endif %}</h2>
+  <h2>Personen</h2>
   <div class="tabelle-rahmen">
   <table class="tabelle">
     <thead><tr><th>Rolle</th><th>Name</th><th>Geburtsdatum</th>{% if buero %}{% if einstellungen.staatsangehoerigkeit_erfassen %}<th>Staatsangehörigkeit</th>{% endif %}{% if einstellungen.familienstand_erfassen %}<th>Familienstand</th>{% endif %}{% endif %}<th>Weitere Angaben</th></tr></thead>
     <tbody>
     {% if hauptperson %}{% include "kunden/_person.html" with p=hauptperson.0 zusatz=hauptperson.1 rolle="Hauptperson" %}{% endif %}
-    {% if buero %}{% for p, zusatz in angehoerige %}{% include "kunden/_person.html" with rolle="Angehörige" %}{% endfor %}{% endif %}
+    {% for p, zusatz in angehoerige %}{% include "kunden/_person.html" with rolle="Angehörige" %}{% endfor %}
     {% for a in h.abholer.all %}
       <tr>
         <td data-titel="Rolle">Abholberechtigt</td>

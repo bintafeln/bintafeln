@@ -27,7 +27,8 @@
   {% if meldung %}<p class="meldung kasse-meldung" role="status">{{ meldung }}</p>{% endif %}
   <h2>{{ h.kundennummer }}{% if hauptperson %} · {{ hauptperson.vorname }} {{ hauptperson.nachname }}{% endif %}</h2>
   <dl class="angaben">
-    {% if hauptperson %}<dt>Geburtsdatum</dt><dd>{{ hauptperson.geburtsdatum|date:"d.m.Y"|default:"–" }}</dd>{% endif %}
+    <dt>Haushalt</dt><dd>{{ erwachsene }} Erwachsene, {{ kinder }} Kind{{ kinder|pluralize:"er" }}</dd>
+    <dt>Personen</dt><dd>{% for p in personen %}{{ p.vorname }} {{ p.nachname }}{% if p.geburtsdatum %}, geb. {{ p.geburtsdatum|date:"d.m.Y" }}{% endif %}{% if p.ist_hauptperson %} <small class="hinweis">(Hauptperson)</small>{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}–{% endfor %}</dd>
     <dt>Ausgabestelle</dt><dd>{{ h.kundengruppe.ausgabestelle.name|default:"–" }}{% if h.kundengruppe %} · {{ h.kundengruppe.name }}{% if h.kundengruppe.wochentage %} ({{ h.kundengruppe.wochentage }}{% if h.kundengruppe.uhrzeit %} {{ h.kundengruppe.uhrzeit|time:"H:i" }}{% endif %}){% endif %}{% endif %}</dd>
     <dt>Karte gültig bis</dt><dd>{{ h.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}</dd>
     {% if einstellungen.kontostand_anzeigen %}<dt>Kontostand</dt><dd>{% if h.kontostand is not None %}<strong{% if h.kontostand < 0 %} class="fehler"{% endif %}>{{ h.kontostand|floatformat:2 }} €</strong>{% else %}–{% endif %}</dd>{% endif %}

@@ -294,7 +294,7 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
   | Rolle | sieht |
   |---|---|
   | Admin, Büro | alles: Anschrift, Kontakt, Personen, Abholberechtigte, alle Sperren, Ausnahmen, Abholungen, Kontostand, Anmerkungen, Notizen, Zusatzfelder |
-  | Ausgabe | nur, was der Einlass braucht: Kundennummer, Hauptperson mit Geburtsdatum, Abholberechtigte mit Geburtsdatum, Ausgabestelle, Karte gültig bis, Kontostand (abschaltbar), aktive Sperren, die letzten 5 Abholungen, Notizen, Zusatzfelder (Art. 9 nur mit Freigabe in den Einstellungen). Keine Anschrift, keine Kontaktdaten, keine weiteren Angehörigen, keine internen Anmerkungen |
+  | Ausgabe | nur, was der Einlass braucht: Kundennummer, Haushaltsgröße, alle Personen des Haushalts und die Abholberechtigten mit Geburtsdatum, Ausgabestelle, Karte gültig bis, Kontostand (abschaltbar), aktive Sperren, die letzten 5 Abholungen, Notizen, freigegebene Zusatzfelder (Art. 9 nur mit Freigabe in den Einstellungen). Keine Anschrift, keine Kontaktdaten, keine Ausnahmen, keine internen Anmerkungen |
   | Kiosk | nichts |
 
 - **Bearbeiten (nur Admin):** Auf der Haushaltsseite „Bearbeiten“ ändert alles zum Haushalt:
@@ -366,7 +366,7 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    - Unter „Einstellungen → Ausgabe und Ampel“: **Abholungen am selben Tag** (1 = einmal,
      2 = zweimal, 0 = beliebig oft) und **Höchstzahl je Zeitraum** (0 = keine Grenze).
    - 🟢 alles in Ordnung, oder eine Ausnahme für heute hebt eine Terminregel auf
-   Daneben stehen Hauptperson mit Geburtsdatum, Abholberechtigte mit Geburtsdatum,
+   Daneben stehen Haushaltsgröße, alle Personen und Abholberechtigten mit Geburtsdatum,
    Ausgabestelle, Karte gültig bis, Kontostand, die letzten Abholungen und die **Notizen**;
    eine neue Notiz lässt sich gleich dort speichern.
 4. **Kunde anmelden:** Das Aufrufen allein trägt nichts ein. Erst der Knopf **„Kunde anmelden

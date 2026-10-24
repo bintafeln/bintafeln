@@ -19,10 +19,10 @@ sie für die Ausgabe braucht.
   gelöscht, ebenso beim Löschen des Haushalts; ändert der Admin die Kundennummer, ziehen sie mit.
 - Notizen stehen in der Auskunft nach Art. 15 und im Änderungsprotokoll.
 - Die Rolle **Ausgabe** sieht auf der Haushaltsseite und am Einlass nur: Kundennummer,
-  Hauptperson und Abholberechtigte mit Geburtsdatum, Ausgabestelle, Karte gültig bis,
-  Kontostand (abschaltbar), aktive Sperren, letzte Abholungen, Notizen und die für sie
-  freigegebenen Zusatzfelder. Anschrift, Kontakt, weitere Angehörige, Ausnahmen und interne
-  Anmerkungen nicht.
+  Haushaltsgröße, alle Personen des Haushalts und die Abholberechtigten mit Name und
+  Geburtsdatum, Ausgabestelle, Karte gültig bis, Kontostand (abschaltbar), aktive Sperren,
+  letzte Abholungen, Notizen und die für sie freigegebenen Zusatzfelder. Anschrift, Kontakt,
+  Staatsangehörigkeit, Familienstand, Ausnahmen und interne Anmerkungen nicht.
 
 ## Begründung
 

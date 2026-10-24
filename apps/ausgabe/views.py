@@ -70,6 +70,7 @@ def _ergebnis(request, h, meldung=None):
     return {
         "h": h,
         "hauptperson": next((p for p in h.personen.all() if p.ist_hauptperson), None),
+        "personen": sorted(h.personen.all(), key=lambda p: not p.ist_hauptperson),
         "erwachsene": erwachsene,
         "kinder": kinder,
         "bewertung": bewertung,
