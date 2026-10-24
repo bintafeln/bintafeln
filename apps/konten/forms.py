@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, get_user_model
 from django_otp import match_token, user_has_device
 
 from apps.konten import rollen, verwaltung
+from apps.konten.models import PersonalEinstellungen, Schulung, Stammdaten
 from apps.konten.zwei_faktor import code_bereinigen
 
 
@@ -104,3 +105,63 @@ class MitarbeiterForm(forms.ModelForm):
         if andere.exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError("Dieser Benutzername ist bereits vergeben.")
         return name
+
+
+class _Datum(forms.DateInput):
+    input_type = "date"
+
+    def __init__(self, **kwargs):
+        super().__init__(format="%Y-%m-%d", **kwargs)
+
+
+class StammdatenForm(forms.ModelForm):
+    class Meta:
+        model = Stammdaten
+        fields = [
+            "anrede", "geburtsdatum", "strasse", "plz", "ort", "telefon", "handy",
+            "notfall_name", "notfall_telefon", "eintritt", "austritt", "bemerkung",
+            "fs_klassen", "fs_gueltig_bis", "fs_gesehen_am", "fs_gesehen_von",
+            "ifsg_erstbelehrung_am", "ifsg_belehrung_am",
+        ]  # fmt: skip
+        widgets = {
+            "geburtsdatum": _Datum(),
+            "eintritt": _Datum(),
+            "austritt": _Datum(),
+            "fs_gueltig_bis": _Datum(),
+            "fs_gesehen_am": _Datum(),
+            "ifsg_erstbelehrung_am": _Datum(),
+            "ifsg_belehrung_am": _Datum(),
+            "bemerkung": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    # Abschnitte für die Anzeige (Feldnamen in Reihenfolge).
+    ABSCHNITTE = [
+        ("Person", ["anrede", "geburtsdatum", "eintritt", "austritt"]),
+        ("Kontakt", ["strasse", "plz", "ort", "telefon", "handy"]),
+        ("Notfallkontakt", ["notfall_name", "notfall_telefon"]),
+        ("Führerschein", ["fs_klassen", "fs_gueltig_bis", "fs_gesehen_am", "fs_gesehen_von"]),
+        ("Belehrung nach Infektionsschutzgesetz", ["ifsg_erstbelehrung_am", "ifsg_belehrung_am"]),
+        ("Sonstiges", ["bemerkung"]),
+    ]
+
+    def abschnitte(self):
+        return [(titel, [self[f] for f in felder]) for titel, felder in self.ABSCHNITTE]
+
+
+class SchulungForm(forms.ModelForm):
+    class Meta:
+        model = Schulung
+        fields = ["thema", "datum", "gueltig_bis", "bemerkung"]
+        widgets = {"datum": _Datum(), "gueltig_bis": _Datum()}
+
+
+class PersonalEinstellungenForm(forms.ModelForm):
+    class Meta:
+        model = PersonalEinstellungen
+        fields = [
+            "fs_pruefung_monate",
+            "ifsg_wiederholung_monate",
+            "vorlauf_tage",
+            "fs_kopie_erlaubt",
+            "stammdaten_loeschen_jahre",
+        ]

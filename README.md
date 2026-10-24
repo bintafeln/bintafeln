@@ -161,6 +161,17 @@ Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie
   - Niemand kann sich selbst sperren oder sich die Admin-Rolle nehmen.
   - Das Büro bearbeitet keine Admin-Konten.
 - Jede Person kann unter „Mein Konto“ ihr **Passwort ändern**.
+- **Stammdaten** (Person → „Stammdaten, Führerschein, Belehrungen, Schulungen“):
+  - Anschrift, Telefon, Handy, Notfallkontakt, Eintritt und Austritt
+  - Führerschein-Vermerk (Klassen, gültig bis, gesehen am / von)
+  - Belehrung nach § 43 IfSG und Schulungen mit Ablaufdatum
+- **Fällig:** Die Liste zeigt oben, wann ein Führerschein wieder angesehen werden muss, wann
+  eine IfSG-Folgebelehrung fällig ist und welche Schulungen ablaufen. Die Startseite weist
+  darauf hin.
+- **Führerschein-Kopie** nur, wenn unter „Fristen einstellen“ erlaubt (Vorgabe: aus). Sie wird
+  verschlüsselt gespeichert, und jeder Abruf wird protokolliert.
+- **Löschfrist:** 3 Jahre (einstellbar) nach Austritt bzw. Sperre werden die persönlichen
+  Angaben geleert. Name, Rollen und Zeiträume bleiben im Archiv.
 
 ## E-Mail
 

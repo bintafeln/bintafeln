@@ -11,7 +11,21 @@
     <p class="hinweis">Gesperrte Konten werden nicht gelöscht. So bleibt auch Jahre später nachvollziehbar, wer wann
       dabei war und was eingetragen hat (Änderungsprotokoll, Abholungen, Buchungen).</p>
   {% else %}
-    <p><a class="knopf" href="{% url 'konten:mitarbeiter_neu' %}">Mitarbeiterin / Mitarbeiter anlegen</a></p>
+    <p><a class="knopf" href="{% url 'konten:mitarbeiter_neu' %}">Mitarbeiterin / Mitarbeiter anlegen</a>
+      {% if "Admin" in rollen %}<a class="knopf knopf-zweitrangig" href="{% url 'konten:personal_einstellungen' %}">Fristen einstellen</a>{% endif %}</p>
+    {% if faellig %}
+    <div class="faellig">
+      <h2>Fällig</h2>
+      <ul>
+        {% for f in faellig %}
+          <li{% if f.ueberfaellig %} class="ueberfaellig"{% endif %}>
+            <a href="{% url 'konten:stammdaten' f.benutzer.pk %}">{{ f.benutzer }}</a>: {{ f.was }}
+            {% if f.faellig_am %}– {% if f.ueberfaellig %}seit{% else %}am{% endif %} {{ f.faellig_am|date:"d.m.Y" }}{% else %}– noch nichts eingetragen{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
   {% endif %}
   <div class="tabelle-rahmen">
   <table class="tabelle">

@@ -27,6 +27,31 @@ urlpatterns = [
         name="passwort_zuruecksetzen",
     ),
     path("mitarbeitende/<int:pk>/link/", views_mitarbeitende.link_senden, name="link_senden"),
+    path("mitarbeitende/<int:pk>/stammdaten/", views_mitarbeitende.stammdaten, name="stammdaten"),
+    path("mitarbeitende/<int:pk>/kopie/", views_mitarbeitende.kopie_ansehen, name="kopie_ansehen"),
+    path(
+        "mitarbeitende/<int:pk>/kopie/hochladen/",
+        views_mitarbeitende.kopie_hochladen,
+        name="kopie_hochladen",
+    ),
+    path(
+        "mitarbeitende/<int:pk>/kopie/loeschen/",
+        views_mitarbeitende.kopie_entfernen,
+        name="kopie_entfernen",
+    ),
+    path(
+        "mitarbeitende/<int:pk>/schulungen/", views_mitarbeitende.schulung_neu, name="schulung_neu"
+    ),
+    path(
+        "mitarbeitende/<int:pk>/schulungen/<int:schulung>/loeschen/",
+        views_mitarbeitende.schulung_loeschen,
+        name="schulung_loeschen",
+    ),
+    path(
+        "mitarbeitende/einstellungen/",
+        views_mitarbeitende.personal_einstellungen,
+        name="personal_einstellungen",
+    ),
     path(
         "mitarbeitende/<int:pk>/zwei-faktor/",
         views_mitarbeitende.zwei_faktor_zuruecksetzen,

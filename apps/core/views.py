@@ -15,7 +15,7 @@ from apps.core import geheimnis, mail, sicherung
 from apps.core.forms import EinrichtungForm, EinstellungenForm, MailEinstellungenForm
 from apps.core.middleware import admin_existiert
 from apps.core.models import MailEinstellungen, TafelEinstellungen
-from apps.konten import rollen
+from apps.konten import personal, rollen
 
 
 def healthz(request):
@@ -32,7 +32,10 @@ def start(request):
     ImportVorbereitung.abgelaufene_loeschen()
     fristen_anwenden()
     buchungsfristen_anwenden()
+    personal.stammdaten_leeren()
     kontext = {}
+    if rollen.darf_mitarbeitende_verwalten(request.user):
+        kontext["faellig"] = len(personal.faelligkeiten())
     if rollen.hat_rolle(request.user, rollen.ADMIN):
         kontext["sicherung"] = sicherung.lese_status()
     return render(request, "core/start.html", kontext)

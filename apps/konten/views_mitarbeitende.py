@@ -2,18 +2,26 @@
 
 from functools import wraps
 
+from auditlog.signals import accessed
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 from django_otp import user_has_device
 
 from apps.core import mail
-from apps.konten import einladung, rollen, verwaltung, zwei_faktor
-from apps.konten.forms import MitarbeiterForm
+from apps.konten import einladung, personal, rollen, verwaltung, zwei_faktor
+from apps.konten.forms import (
+    MitarbeiterForm,
+    PersonalEinstellungenForm,
+    SchulungForm,
+    StammdatenForm,
+)
+from apps.konten.models import PersonalEinstellungen, Schulung, Stammdaten
 
 
 def verwalter_erforderlich(ansicht):
@@ -46,10 +54,15 @@ def _zeilen(benutzer):
 
 @verwalter_erforderlich
 def liste(request):
+    personal.stammdaten_leeren()
     return render(
         request,
         "konten/mitarbeitende.html",
-        {"zeilen": _zeilen(get_user_model().objects.filter(is_active=True)), "archiv": False},
+        {
+            "zeilen": _zeilen(get_user_model().objects.filter(is_active=True)),
+            "archiv": False,
+            "faellig": personal.faelligkeiten(),
+        },
     )
 
 
@@ -189,3 +202,104 @@ def passwort_zuruecksetzen(request, pk):
     ziel = _ziel(request, pk)
     passwort = verwaltung.passwort_zuruecksetzen(request.user, ziel)
     return _startpasswort_zeigen(request, ziel, passwort, neu=False)
+
+
+# --- Stammdaten, Führerschein-Kopie, Schulungen (ADR 0017) ---------------------------------
+
+
+def _stammdaten(ziel):
+    return Stammdaten.objects.get_or_create(benutzer=ziel)[0]
+
+
+@verwalter_erforderlich
+def stammdaten(request, pk):
+    ziel = _ziel(request, pk)
+    s = _stammdaten(ziel)
+    form = StammdatenForm(request.POST or None, instance=s)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, f"Stammdaten von {ziel} gespeichert.")
+        return redirect("konten:stammdaten", pk=ziel.pk)
+    return render(
+        request,
+        "konten/stammdaten.html",
+        {
+            "ziel": ziel,
+            "s": s,
+            "form": form,
+            "schulung_form": SchulungForm(),
+            "schulungen": ziel.schulungen.all(),
+            "einstellungen": PersonalEinstellungen.laden(),
+        },
+    )
+
+
+@require_POST
+@verwalter_erforderlich
+def kopie_hochladen(request, pk):
+    ziel = _ziel(request, pk)
+    datei = request.FILES.get("kopie")
+    try:
+        if datei is None:
+            raise personal.KopieFehler("Bitte eine Datei auswählen.")
+        personal.kopie_speichern(_stammdaten(ziel), datei)
+    except personal.KopieFehler as fehler:
+        messages.error(request, str(fehler))
+    else:
+        messages.success(request, "Kopie verschlüsselt gespeichert.")
+    return redirect("konten:stammdaten", pk=ziel.pk)
+
+
+@never_cache
+@verwalter_erforderlich
+def kopie_ansehen(request, pk):
+    s = _stammdaten(_ziel(request, pk))
+    inhalt = personal.kopie_lesen(s)
+    if inhalt is None:
+        raise Http404
+    accessed.send(sender=Stammdaten, instance=s)  # Abruf im Änderungsprotokoll
+    antwort = HttpResponse(inhalt, content_type=s.fs_kopie_typ)
+    antwort["Content-Disposition"] = "inline"
+    return antwort
+
+
+@require_POST
+@verwalter_erforderlich
+def kopie_entfernen(request, pk):
+    ziel = _ziel(request, pk)
+    personal.kopie_loeschen(_stammdaten(ziel))
+    messages.success(request, "Kopie gelöscht.")
+    return redirect("konten:stammdaten", pk=ziel.pk)
+
+
+@require_POST
+@verwalter_erforderlich
+def schulung_neu(request, pk):
+    ziel = _ziel(request, pk)
+    form = SchulungForm(request.POST)
+    if form.is_valid():
+        form.instance.benutzer = ziel
+        form.save()
+        messages.success(request, "Schulung eingetragen.")
+    else:
+        messages.error(request, "Schulung nicht eingetragen: Thema und Datum sind Pflicht.")
+    return redirect("konten:stammdaten", pk=ziel.pk)
+
+
+@require_POST
+@verwalter_erforderlich
+def schulung_loeschen(request, pk, schulung):
+    ziel = _ziel(request, pk)
+    get_object_or_404(Schulung, pk=schulung, benutzer=ziel).delete()
+    messages.success(request, "Schulung gelöscht.")
+    return redirect("konten:stammdaten", pk=ziel.pk)
+
+
+@rollen.rolle_erforderlich(rollen.ADMIN)
+def personal_einstellungen(request):
+    form = PersonalEinstellungenForm(request.POST or None, instance=PersonalEinstellungen.laden())
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Einstellungen gespeichert.")
+        return redirect("konten:personal_einstellungen")
+    return render(request, "konten/personal_einstellungen.html", {"form": form})
