@@ -242,7 +242,13 @@ Vorschlag für Vorauszahlungen am Einlass.
 
 Unter „Einstellungen → E-Mail“ trägt ein Admin den Mailserver der Tafel ein: Server, Port,
 Verschlüsselung, Benutzer, Passwort und Absender. Die Angaben gibt es beim Mail-Anbieter unter
-dem Stichwort „SMTP“. Danach mit **„Testmail senden“** prüfen.
+dem Stichwort „SMTP“. Nach dem Speichern im Bereich **„Testen“**:
+
+- **„Verbindung prüfen“** verbindet sich mit dem Server und meldet sich an, ohne eine Mail zu
+  senden. Klappt es nicht, steht dort verständlich, woran es liegt (Adresse/Port,
+  Verschlüsselung, Benutzername/Passwort).
+- **„Testmail senden an“** schickt eine Testmail an eine frei wählbare Adresse (vorbelegt mit der
+  eigenen, falls hinterlegt).
 
 - Das Passwort wird **verschlüsselt** gespeichert und nie wieder angezeigt. Der Schlüssel
   stammt aus `DJANGO_SECRET_KEY` in `.env`. Wird dieser geändert, muss das Passwort neu

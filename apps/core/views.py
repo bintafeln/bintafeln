@@ -4,7 +4,9 @@ from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.core.validators import validate_email
 from django.db import transaction
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
@@ -95,21 +97,33 @@ def einstellungen(request):
 def mail_einstellungen(request):
     instanz = MailEinstellungen.laden()
     form = MailEinstellungenForm(request.POST or None, instance=instanz)
-    if request.method == "POST" and "testmail" in request.POST:
-        if not request.user.email:
-            messages.error(request, "Für die Testmail bitte unter „Mitarbeitende“ Ihre eigene "
-                           "E-Mail-Adresse eintragen.")  # fmt: skip
+    if request.method == "POST" and "pruefen" in request.POST:
+        try:
+            mail.verbindung_pruefen()
+        except mail.MailFehler as fehler:
+            messages.error(request, f"Verbindung fehlgeschlagen: {fehler}")
         else:
-            try:
-                mail.senden(
-                    "Testmail von bintafeln",
-                    "Diese Mail zeigt: bintafeln kann über den eingerichteten Mailserver senden.",
-                    [request.user.email],
-                )
-            except mail.MailFehler as fehler:
-                messages.error(request, f"Testmail nicht gesendet: {fehler}")
-            else:
-                messages.success(request, f"Testmail an {request.user.email} gesendet.")
+            messages.success(request, "Verbindung und Anmeldung am Mailserver klappen.")
+        return redirect("core:mail_einstellungen")
+    if request.method == "POST" and "testmail" in request.POST:
+        an = request.POST.get("an", "").strip() or request.user.email
+        try:
+            validate_email(an)
+        except ValidationError:
+            messages.error(request, "Bitte eine gültige Empfängeradresse für die Testmail angeben.")
+            return redirect("core:mail_einstellungen")
+        try:
+            mail.senden(
+                "Testmail von bintafeln",
+                "Diese Mail zeigt: bintafeln kann über den eingerichteten Mailserver senden.",
+                [an],
+            )
+        except mail.MailFehler as fehler:
+            messages.error(request, f"Testmail nicht gesendet: {fehler}")
+        else:
+            messages.success(
+                request, f"Testmail an {an} gesendet. Bitte im Postfach (auch im Spam) nachsehen."
+            )
         return redirect("core:mail_einstellungen")
     if request.method == "POST" and form.is_valid():
         form.save()

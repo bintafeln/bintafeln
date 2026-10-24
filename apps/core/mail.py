@@ -30,8 +30,7 @@ def _verstaendlich(fehler: Exception) -> str:
     return f"Senden fehlgeschlagen ({type(fehler).__name__})."
 
 
-def senden(betreff: str, text: str, an: list[str]) -> None:
-    e = MailEinstellungen.laden()
+def _verbindung(e: MailEinstellungen):
     if not e.eingerichtet:
         raise MailFehler("Es ist kein Mailserver eingerichtet.")
     passwort = geheimnis.entschluesseln(e.passwort_verschluesselt)
@@ -40,7 +39,7 @@ def senden(betreff: str, text: str, an: list[str]) -> None:
             "Das gespeicherte Passwort des Mailservers ist nicht mehr lesbar (der geheime "
             "Schlüssel der Installation wurde geändert). Bitte neu eingeben."
         )
-    verbindung = get_connection(
+    return get_connection(
         host=e.server,
         port=e.port,
         username=e.benutzer,
@@ -49,6 +48,22 @@ def senden(betreff: str, text: str, an: list[str]) -> None:
         use_ssl=e.verschluesselung == MailEinstellungen.Verschluesselung.SSL,
         timeout=20,
     )
+
+
+def verbindung_pruefen() -> None:
+    """Verbindet sich mit dem Mailserver und meldet sich an, ohne eine Mail zu senden."""
+    verbindung = _verbindung(MailEinstellungen.laden())
+    try:
+        verbindung.open()
+    except (smtplib.SMTPException, OSError) as fehler:
+        raise MailFehler(_verstaendlich(fehler)) from fehler
+    finally:
+        verbindung.close()
+
+
+def senden(betreff: str, text: str, an: list[str]) -> None:
+    e = MailEinstellungen.laden()
+    verbindung = _verbindung(e)
     try:
         EmailMessage(betreff, text, e.absenderadresse, an, connection=verbindung).send()
     except (smtplib.SMTPException, OSError) as fehler:
