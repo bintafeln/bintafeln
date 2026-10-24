@@ -201,7 +201,7 @@ Korrekturen durch Admin und Büro.
 wählbar und nach Ausgabestelle filterbar. Grundlage sind allein die Buchungen.
 
 - **Einlass/Kiosk-Ansicht:** Kundennummer per Scanner (arbeitet als Tastatur) oder Suche.
-- Je Tafel einstellbar, was am Einlass sichtbar ist: Adresse, Geburtsdatum, letzte Abholungen,
+- **Umgesetzt:** Je Tafel einstellbar, was am Einlass sichtbar ist: Adresse, Geburtsdatum, letzte Abholungen,
   Beitrag, Personenanzahl (gesamt/Kinder), aktive Sperren, Farbe der Kundengruppe, Kundenkonto.
 - **Ampel** mit einstellbaren Meldungstexten:
   - rot: Ausweis gesperrt, bereits abgeholt, Ausweis abgelaufen, Abholung in dieser Woche nicht

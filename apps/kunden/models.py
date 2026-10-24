@@ -13,6 +13,7 @@ from django.db import models
 from django.utils import timezone
 
 from apps.core import privatdateien
+from apps.core.auswahl import GRUPPENFARBEN
 from apps.kunden import werte
 
 
@@ -210,6 +211,10 @@ class Kundengruppe(models.Model):
     wochentage = models.CharField("Wochentage", max_length=30, blank=True)
     uhrzeit = models.TimeField("Uhrzeit", null=True, blank=True)
     maximum = models.PositiveIntegerField("Maximum Haushalte", null=True, blank=True)
+    farbe = models.CharField(
+        "Farbe", max_length=10, blank=True, choices=GRUPPENFARBEN,
+        help_text="Zur schnellen Erkennung am Einlass.",
+    )  # fmt: skip
     aktiv = models.BooleanField("Aktiv", default=True)
 
     class Meta:

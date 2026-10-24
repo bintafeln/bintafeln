@@ -505,3 +505,16 @@ label.wahl { display: block; white-space: nowrap; }
 .historie { list-style: none; margin: 0; padding: 0; max-height: 24rem; overflow-y: auto; }
 .historie li { padding: .4rem 0; border-bottom: 1px solid var(--rand); }
 .historie li:last-child { border-bottom: 0; }
+
+/* Farbe der Kundengruppe (Erkennung am Einlass); feste Palette aus apps/core/auswahl.py */
+.gruppe-band { margin: 0 0 .75rem; padding: .4rem .75rem; border-radius: var(--radius); font-weight: 700; border: 1px solid rgb(0 0 0 / .15); }
+.gruppe-rot { background: #d93025; color: #fff; }
+.gruppe-orange { background: #f28c28; color: #1a1a1a; }
+.gruppe-gelb { background: #f9d71c; color: #1a1a1a; }
+.gruppe-gruen { background: #2e9d4f; color: #fff; }
+.gruppe-tuerkis { background: #1aa6a6; color: #fff; }
+.gruppe-blau { background: #2f6fd6; color: #fff; }
+.gruppe-lila { background: #8a4fc7; color: #fff; }
+.gruppe-rosa { background: #f4a6c6; color: #1a1a1a; }
+.gruppe-braun { background: #8b5a2b; color: #fff; }
+.gruppe-grau { background: #8a8f98; color: #fff; }

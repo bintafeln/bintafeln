@@ -3,6 +3,20 @@
 Gespeichert wird der angezeigte Text, damit vorhandene und importierte Werte lesbar bleiben.
 """
 
+# Farben für Kundengruppen (Erkennung am Einlass); Werte sind CSS-Klassen „gruppe-<wert>“.
+GRUPPENFARBEN = [
+    ("", "keine"),
+    ("rot", "Rot"),
+    ("orange", "Orange"),
+    ("gelb", "Gelb"),
+    ("gruen", "Grün"),
+    ("tuerkis", "Türkis"),
+    ("blau", "Blau"),
+    ("lila", "Lila"),
+    ("rosa", "Rosa"),
+    ("braun", "Braun"),
+    ("grau", "Grau"),
+]
 ANREDEN = [("", "keine Angabe"), ("Frau", "Frau"), ("Herr", "Herr"), ("Divers", "Divers")]
 
 FAMILIENSTAENDE = [

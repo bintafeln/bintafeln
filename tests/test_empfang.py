@@ -389,3 +389,48 @@ def test_beitragsfreie_zeitraeume_pflegen(admin_client):
     assert BeitragsfreierZeitraum.objects.get().bezeichnung == "Weihnachten"
     liste = admin_client.get(reverse("kunden:liste", args=["beitragsfrei"])).content.decode()
     assert "Weihnachten: 01.12.2026 bis 24.12.2026" in liste
+
+
+# --- Anzeige am Einlass (je Tafel einstellbar) ------------------------------------------------
+
+
+def test_einlass_anzeige_einstellbar(ausgabe, haushalt):
+    from apps.kunden.models import Abholer, Sperre
+
+    heute = timezone.localdate()
+    haushalt.strasse, haushalt.plz, haushalt.ort = "Erfundene Gasse 3", "12345", "Musterstadt"
+    haushalt.save()
+    haushalt.kundengruppe.farbe = "blau"
+    haushalt.kundengruppe.save()
+    Person.objects.create(haushalt=haushalt, vorname="Mia", nachname="Muster",
+                          geburtsdatum=dt.date(2015, 8, 18))  # fmt: skip
+    Abholer.objects.create(haushalt=haushalt, vorname="Otto", nachname="Nachbar")
+    Sperre.objects.create(haushalt=haushalt, von=heute, begruendung="erfundener Grund")
+
+    def seite():
+        return ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
+
+    vorher = seite()
+    assert "Erwachsene" in vorher and "18.08.2015" in vorher and "Otto Nachbar" in vorher
+    assert 'class="gruppe-band gruppe-blau"' in vorher and "erfundener Grund" in vorher
+    assert "Letzte Abholungen" in vorher and "Erfundene Gasse" not in vorher
+
+    e = AusgabeEinstellungen.laden()
+    e.einlass_haushaltsgroesse = e.einlass_geburtsdaten = e.einlass_abholer = False
+    e.einlass_sperren = e.einlass_abholungen = e.einlass_gruppenfarbe = False
+    e.einlass_anschrift = True
+    e.save()
+    nachher = seite()
+    assert "Erwachsene" not in nachher and "18.08.2015" not in nachher
+    assert "Otto Nachbar" not in nachher and "gruppe-band" not in nachher
+    assert "erfundener Grund" not in nachher and "Gesperrt seit" in nachher
+    assert "Letzte Abholungen" not in nachher
+    assert "Erfundene Gasse 3, 12345 Musterstadt" in nachher
+
+
+def test_gruppenfarbe_pflegen(admin_client, stelle):
+    admin_client.post(
+        reverse("kunden:listeneintrag_neu", args=["kundengruppen"]),
+        {"name": "Grün-Gruppe", "ausgabestelle": stelle.pk, "farbe": "gruen", "aktiv": "on"},
+    )
+    assert Kundengruppe.objects.get(name="Grün-Gruppe").farbe == "gruen"

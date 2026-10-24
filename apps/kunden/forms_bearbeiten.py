@@ -237,7 +237,10 @@ class KundengruppeForm(forms.ModelForm):
 
     class Meta:
         model = Kundengruppe
-        fields = ["kuerzel", "name", "ausgabestelle", "wochentage", "uhrzeit", "maximum", "aktiv"]
+        fields = [
+            "kuerzel", "name", "ausgabestelle", "wochentage", "uhrzeit", "maximum", "farbe",
+            "aktiv",
+        ]  # fmt: skip
         widgets = {"uhrzeit": forms.TimeInput(attrs={"type": "time"}, format="%H:%M")}
 
     def __init__(self, *args, **kwargs):

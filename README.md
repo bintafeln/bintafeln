@@ -435,7 +435,12 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    - 🟢 alles in Ordnung, oder eine Ausnahme für heute hebt eine Terminregel auf
    Daneben stehen Haushaltsgröße, alle Personen und Abholberechtigten mit Geburtsdatum,
    Ausgabestelle, Karte gültig bis, Kontostand, die letzten Abholungen und die **Notizen**;
-   eine neue Notiz lässt sich gleich dort speichern.
+   eine neue Notiz lässt sich gleich dort speichern. **Was der Einlass zeigt**, stellt der Admin
+   unter „Einstellungen → Ausgabe, Ampel und Beiträge“ ein (Haken „Einlass zeigt: …“):
+   Haushaltsgröße, Geburtsdaten, Abholberechtigte, Anschrift (Vorgabe aus), Begründung aktiver
+   Sperren, letzte Abholungen, Farbe der Kundengruppe, Kontostand. Jede **Kundengruppe** kann eine
+   **Farbe** bekommen („Einstellungen → Kundengruppen“); am Einlass erscheint dann ein farbiges
+   Band mit dem Gruppennamen.
 4. **Kunde anmelden:** Das Aufrufen allein trägt nichts ein. Erst der Knopf **„Kunde anmelden
    und Abholung buchen“** meldet den Kunden für heute an. Wird abgebrochen, einfach die nächste
    Nummer scannen; der Kunde lässt sich jederzeit wieder aufrufen. Ein Versehen lässt sich am
