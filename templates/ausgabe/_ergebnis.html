@@ -34,23 +34,19 @@
   </dl>
 
   {% if bewertung.darf_abholen %}
-  <form method="post" action="{% url 'ausgabe:eintragen' h.kundennummer %}" class="filter"
+  <form method="post" action="{% url 'ausgabe:eintragen' h.kundennummer %}" class="filter anmelden"
         hx-post="{% url 'ausgabe:eintragen' h.kundennummer %}" hx-target="#ergebnis">
     {% csrf_token %}
     <label for="beitrag">Beitrag (Euro)</label>
     <input type="text" name="beitrag" id="beitrag" value="{{ beitrag|floatformat:2 }}" inputmode="decimal" class="betrag">
-    {% if zahlweisen|length > 1 %}
-    <fieldset class="zahlweise">
-      <legend>Zahlweise</legend>
-      {% for wert, name in zahlweisen %}
-        <label><input type="radio" name="zahlweise" value="{{ wert }}"{% if wert == zahlweise_vorgabe %} checked{% endif %}> {{ name }}</label>
-      {% endfor %}
-    </fieldset>
-    {% else %}
-      <input type="hidden" name="zahlweise" value="{{ zahlweise_vorgabe }}">
-    {% endif %}
-    <button type="submit" class="knopf">Abholung eintragen</button>
+    <label for="bar">Bar auf den Tisch gelegt (Euro) *</label>
+    <input type="text" name="bar" id="bar" value="{{ bar_vorschlag|floatformat:2 }}" inputmode="decimal" class="betrag" required>
+    <small class="hilfe">Genau den Betrag eintragen, der gezahlt wurde, auch 0.
+      {% if h.kontostand and h.kontostand > 0 %}Vorgeschlagen: was nach Verrechnung des Guthabens ({{ h.kontostand|floatformat:2 }} €) noch fehlt.{% endif %}
+      Weniger als der Beitrag: Rest aus Guthaben{% if einstellungen.anschreiben_erlaubt %}, sonst angeschrieben{% endif %}. Mehr: wird Guthaben.</small>
+    <button type="submit" class="knopf">Kunde anmelden und Abholung buchen</button>
   </form>
+  <p class="hinweis">Nur das Aufrufen trägt nichts ein. Erst der Knopf meldet den Kunden für heute an.</p>
   {% endif %}
 
   {% for a in heute_erfasst %}

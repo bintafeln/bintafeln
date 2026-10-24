@@ -31,10 +31,17 @@ class AusgabeEinstellungen(models.Model):
         VIERZEHN_TAGE = "14_tage", "14 Tage (heute und die 13 Tage davor)"
         MONAT = "monat", "Kalendermonat"
 
+    max_je_tag = models.PositiveSmallIntegerField(
+        "Höchstens … Abholungen am selben Tag",
+        default=1,
+        validators=[MaxValueValidator(20)],
+        help_text="1 = einmal am Tag. 0 = beliebig oft (mehrfaches Abholen erlaubt).",
+    )
     max_abholungen = models.PositiveSmallIntegerField(
         "Höchstens … Abholungen",
         default=1,
-        validators=[MinValueValidator(1), MaxValueValidator(31)],
+        validators=[MaxValueValidator(31)],
+        help_text="0 = keine Höchstzahl je Zeitraum.",
     )
     zeitraum = models.CharField(
         "je Zeitraum", max_length=10, choices=Zeitraum.choices, default=Zeitraum.WOCHE

@@ -7,6 +7,7 @@ class AusgabeEinstellungenForm(forms.ModelForm):
     class Meta:
         model = AusgabeEinstellungen
         fields = [
+            "max_je_tag",
             "max_abholungen",
             "zeitraum",
             "nicht_dran_rot",

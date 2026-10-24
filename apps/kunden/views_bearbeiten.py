@@ -171,9 +171,7 @@ def abholung_loeschen(request, kundennummer, pk):
     h = get_object_or_404(Haushalt, kundennummer=kundennummer)
     abholung = get_object_or_404(Abholung, pk=pk, haushalt=h)
     with transaction.atomic():
-        if hasattr(abholung, "buchung"):
-            konto.zuruecknehmen(abholung.buchung)
-        abholung.delete()
+        konto.abholung_zuruecknehmen(abholung)
         letzte = h.abholungen.order_by("-datum").first()
         Haushalt.objects.filter(pk=h.pk).update(letzter_besuch=letzte.datum if letzte else None)
         geaendert(h, request)

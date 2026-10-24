@@ -163,7 +163,7 @@ def test_abholung_loeschen_nimmt_buchung_zurueck(admin_client, h):
     h.letzter_besuch = neu.datum
     h.save()
     e = AusgabeEinstellungen(anschreiben_erlaubt=True)
-    konto.abholung_buchen(neu, D("2"), Buchung.Zahlweise.ANSCHREIBEN, e, stelle, "kim")
+    konto.abholung_buchen(neu, D("2"), D("0"), e, stelle, "kim")
     h.refresh_from_db()
     assert h.kontostand == D("-2")
     assert "08.10.2026" in admin_client.get(url("bearbeiten", "2001")).content.decode()

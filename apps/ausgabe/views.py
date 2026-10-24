@@ -63,13 +63,6 @@ def _ergebnis(request, h, meldung=None):
     abholungen = list(h.abholungen.all())
     beitrag = einstellungen.beitrag(erwachsene, kinder)
     vorschlaege, vorschlag_hinweis = konto.vorschlaege(h, heute, einstellungen, beitrag)
-    guthaben = (h.kontostand or 0) > 0
-    zahlweisen = [
-        (wert, name)
-        for wert, name in Buchung.Zahlweise.choices
-        if (wert != Buchung.Zahlweise.GUTHABEN or guthaben)
-        and (wert != Buchung.Zahlweise.ANSCHREIBEN or einstellungen.anschreiben_erlaubt)
-    ]
     return {
         "h": h,
         "hauptperson": next((p for p in h.personen.all() if p.ist_hauptperson), None),
@@ -77,8 +70,7 @@ def _ergebnis(request, h, meldung=None):
         "kinder": kinder,
         "bewertung": bewertung,
         "beitrag": beitrag,
-        "zahlweisen": zahlweisen,
-        "zahlweise_vorgabe": zahlweisen[0][0],
+        "bar_vorschlag": konto.bar_vorschlag(beitrag, h.kontostand),
         "vorschlaege": vorschlaege,
         "vorschlag_hinweis": vorschlag_hinweis,
         "einzahlungen_heute": h.buchungen.filter(art=Buchung.Art.EINZAHLUNG, datum=heute),
@@ -153,9 +145,12 @@ def abholung_eintragen(request, kundennummer):
     beitrag = kontext["beitrag"] if beitrag is None else beitrag
     if beitrag < 0:
         return _zurueck(request, h, "Nicht eingetragen: Beitrag ist negativ.", messages.ERROR)
-    zahlweise = request.POST.get("zahlweise") or Buchung.Zahlweise.GUTHABEN
-    if zahlweise not in Buchung.Zahlweise.values:
-        return _zurueck(request, h, "Nicht eingetragen: unbekannte Zahlweise.", messages.ERROR)
+    try:
+        bar = werte.betrag(request.POST.get("bar", ""))
+    except werte.UngueltigerWert:
+        return _zurueck(
+            request, h, "Nicht eingetragen: Bar gezahlt ist kein Betrag.", messages.ERROR
+        )
     jetzt = timezone.localtime()
     stelle = _stelle(request)
     try:
@@ -172,7 +167,7 @@ def abholung_eintragen(request, kundennummer):
             zahlung = konto.abholung_buchen(
                 abholung,
                 beitrag,
-                zahlweise,
+                bar,
                 kontext["einstellungen"],
                 stelle,
                 _benutzername(request.user),
@@ -180,10 +175,14 @@ def abholung_eintragen(request, kundennummer):
             Haushalt.objects.filter(pk=h.pk).update(letzter_besuch=jetzt.date())
     except konto.KontoFehler as fehler:
         return _zurueck(request, h, f"Nicht eingetragen: {fehler}", messages.ERROR)
-    text = f"Abholung eingetragen. Bar zu zahlen: {konto.euro(zahlung.bar)}"
+    teile = [f"Abholung eingetragen. Bar erhalten: {konto.euro(zahlung.bar)}"]
     if zahlung.vom_konto:
-        text += f" ({konto.euro(zahlung.vom_konto)} vom Konto)"
-    text += f". Kontostand jetzt: {konto.euro(zahlung.kontostand)}."
+        teile.append(f"{konto.euro(zahlung.vom_konto)} aus Guthaben")
+    if zahlung.angeschrieben:
+        teile.append(f"{konto.euro(zahlung.angeschrieben)} angeschrieben")
+    if zahlung.gutgeschrieben:
+        teile.append(f"{konto.euro(zahlung.gutgeschrieben)} als Guthaben gebucht")
+    text = f"{', '.join(teile)}. Kontostand jetzt: {konto.euro(zahlung.kontostand)}."
     return _zurueck(request, h, text)
 
 
@@ -195,10 +194,7 @@ def abholung_zuruecknehmen(request, pk):
         Abholung, pk=pk, datum=timezone.localdate(), erfasst_am__isnull=False
     )
     h = abholung.haushalt
-    with transaction.atomic():
-        if hasattr(abholung, "buchung"):
-            konto.zuruecknehmen(abholung.buchung)
-        abholung.delete()
+    konto.abholung_zuruecknehmen(abholung)
     letzte = h.abholungen.order_by("-datum").first()
     Haushalt.objects.filter(pk=h.pk).update(letzter_besuch=letzte.datum if letzte else None)
     h.refresh_from_db()

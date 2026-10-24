@@ -41,9 +41,14 @@ def euro(betrag: Decimal) -> str:
 class Zahlung:
     """Ergebnis einer gebuchten Abholung für die Anzeige am Einlass."""
 
-    bar: Decimal
-    vom_konto: Decimal
+    bar: Decimal  # was auf dem Tisch lag
+    vom_konto: Decimal  # aus Guthaben verrechnet
+    angeschrieben: Decimal
+    gutgeschrieben: Decimal  # mehr gezahlt als der Beitrag: als Guthaben gebucht
     kontostand: Decimal
+
+
+UEBERZAHLUNG = "Überzahlung bei der Abholung"
 
 
 def _gesperrt(haushalt) -> Haushalt:
@@ -57,34 +62,53 @@ def _buchen(h: Haushalt, **felder) -> Buchung:
     return buchung
 
 
+def bar_vorschlag(beitrag: Decimal, kontostand) -> Decimal:
+    """Was bar zu zahlen ist, wenn ein vorhandenes Guthaben zuerst verrechnet wird."""
+    return max(beitrag - max(kontostand or NULL, NULL), NULL)
+
+
 @transaction.atomic
-def abholung_buchen(abholung, beitrag, zahlweise, einstellungen, stelle, von) -> Zahlung:
-    """Bucht den Beitrag einer Abholung je nach Zahlweise."""
+def abholung_buchen(abholung, beitrag, bar, einstellungen, stelle, von) -> Zahlung:
+    """Bucht eine Abholung mit genau dem Betrag, der bar auf den Tisch gelegt wurde.
+
+    Reicht das Bargeld nicht, wird Guthaben verrechnet, danach angeschrieben (wenn erlaubt).
+    Mehr als den Beitrag bucht eine eigene Einzahlung als Guthaben, damit die Kasse die
+    Beiträge richtig zählt.
+    """
+    if bar is None or bar < 0:
+        raise KontoFehler("Bitte eintragen, wie viel bar gezahlt wurde (auch 0).")
     h = _gesperrt(abholung.haushalt)
-    stand = h.kontostand or NULL
-    if zahlweise == Buchung.Zahlweise.GUTHABEN:
-        vom_konto = min(beitrag, max(stand, NULL))
-    elif zahlweise == Buchung.Zahlweise.ANSCHREIBEN:
-        if not einstellungen.anschreiben_erlaubt:
-            raise KontoFehler("Anschreiben ist in den Einstellungen nicht erlaubt.")
-        vom_konto = beitrag
-    else:
-        vom_konto = NULL
-    bar = beitrag - vom_konto
-    if beitrag:
-        _buchen(
-            h,
-            art=Buchung.Art.ABHOLUNG,
-            zahlweise=zahlweise,
-            datum=abholung.datum,
-            soll=beitrag,
-            haben=bar,
-            bar=bar,
-            abholung=abholung,
-            ausgabestelle=stelle,
-            eingetragen_von=von,
+    fuer_beitrag = min(bar, beitrag)
+    rest = beitrag - fuer_beitrag
+    vom_konto = min(rest, max(h.kontostand or NULL, NULL))
+    angeschrieben = rest - vom_konto
+    if angeschrieben and not einstellungen.anschreiben_erlaubt:
+        raise KontoFehler(
+            f"Es fehlen {euro(angeschrieben)}. Anschreiben ist in den Einstellungen nicht "
+            "erlaubt; bitte den fehlenden Betrag bar annehmen."
         )
-    return Zahlung(bar=bar, vom_konto=vom_konto, kontostand=h.kontostand or NULL)
+    if angeschrieben:
+        zahlweise = Buchung.Zahlweise.ANSCHREIBEN
+    elif vom_konto:
+        zahlweise = Buchung.Zahlweise.GUTHABEN
+    else:
+        zahlweise = Buchung.Zahlweise.BAR
+    gemeinsam = {"datum": abholung.datum, "ausgabestelle": stelle, "eingetragen_von": von}
+    if beitrag:
+        _buchen(h, art=Buchung.Art.ABHOLUNG, zahlweise=zahlweise, soll=beitrag,
+                haben=fuer_beitrag, bar=fuer_beitrag, abholung=abholung, **gemeinsam)  # fmt: skip
+    ueber = bar - fuer_beitrag
+    if ueber:
+        um = f" um {abholung.uhrzeit:%H:%M}" if abholung.uhrzeit else ""
+        _buchen(h, art=Buchung.Art.EINZAHLUNG, haben=ueber, bar=ueber,
+                bemerkung=f"{UEBERZAHLUNG}{um}", **gemeinsam)  # fmt: skip
+    return Zahlung(
+        bar=bar,
+        vom_konto=vom_konto,
+        angeschrieben=angeschrieben,
+        gutgeschrieben=ueber,
+        kontostand=h.kontostand or NULL,
+    )
 
 
 @transaction.atomic
@@ -129,6 +153,23 @@ def zuruecknehmen(buchung: Buchung) -> None:
     buchung.delete()
 
 
+@transaction.atomic
+def abholung_zuruecknehmen(abholung) -> None:
+    """Nimmt die Buchungen einer Abholung zurück (Beitrag und Überzahlung) und löscht sie."""
+    if hasattr(abholung, "buchung"):
+        zuruecknehmen(abholung.buchung)
+    um = f" um {abholung.uhrzeit:%H:%M}" if abholung.uhrzeit else ""
+    ueber = Buchung.objects.filter(
+        haushalt=abholung.haushalt,
+        art=Buchung.Art.EINZAHLUNG,
+        datum=abholung.datum,
+        bemerkung=f"{UEBERZAHLUNG}{um}",
+    ).first()
+    if ueber:
+        zuruecknehmen(ueber)
+    abholung.delete()
+
+
 # --- Vorschlag für Vorauszahlungen -------------------------------------------------------
 
 
@@ -154,6 +195,8 @@ def _begrenzen(tage, abgeholt, einstellungen) -> tuple[list[dt.date], str]:
     """Kürzt die Tage auf die erlaubte Höchstzahl; liefert dazu einen erklärenden Satz."""
     hoechst = einstellungen.max_abholungen
     zeitraum = einstellungen.zeitraum
+    if not hoechst:
+        return tage, "Keine Höchstzahl je Zeitraum eingestellt."
     if zeitraum == AusgabeEinstellungen.Zeitraum.VIERZEHN_TAGE:
         return tage, f"Die Höchstzahl ({hoechst} je 14 Tage) ist im Vorschlag nicht berücksichtigt."
     if zeitraum == AusgabeEinstellungen.Zeitraum.MONAT:
@@ -185,7 +228,7 @@ def _begrenzen(tage, abgeholt, einstellungen) -> tuple[list[dt.date], str]:
 
 
 def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]:
-    """Vorschläge für den Rest dieses und den ganzen nächsten Monat, mit Erklärung.
+    """Vorschlag für den Rest dieses Monats, mit Erklärung (nicht für den nächsten Monat).
 
     Liefert die Vorschläge und gegebenenfalls einen Hinweis, warum es keine gibt.
     """
@@ -203,8 +246,6 @@ def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]
     heute_abgeholt = heute in abgeholt
     start = heute + dt.timedelta(days=1) if heute_abgeholt else heute
     monatsende = heute.replace(day=calendar.monthrange(heute.year, heute.month)[1])
-    naechster = monatsende + dt.timedelta(days=1)
-    naechstes_ende = naechster.replace(day=calendar.monthrange(naechster.year, naechster.month)[1])
     ab_text = (
         "ab morgen, weil heute schon abgeholt wurde"
         if heute_abgeholt
@@ -212,7 +253,6 @@ def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]
     )
     zeitraeume = [
         (f"Rest {MONATE[heute.month - 1]}", start, monatsende, ab_text),
-        (f"Ganzer {MONATE[naechster.month - 1]}", naechster, naechstes_ende, None),
     ]
     ergebnis = []
     for titel, von, bis, zusatz in zeitraeume:
@@ -234,8 +274,7 @@ def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]
             f"Gezählt: {', '.join(f'{WOCHENTAGE[t.weekday()]} {t:%d.%m.}' for t in tage)} "
             f"(Kundengruppe „{gruppe.name}“: {', '.join(wochentage)})",
         ]
-        if zusatz:
-            v.erklaerung.append(f"Gezählt {zusatz}.")
+        v.erklaerung.append(f"Gezählt {zusatz}.")
         if ausweis:
             v.erklaerung.append(ausweis)
         v.erklaerung.append(grenze)
@@ -255,7 +294,7 @@ def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]
             )
         ergebnis.append(v)
     if not ergebnis:
-        return [], "Kein Vorschlag: Bis Ende des nächsten Monats ist kein Abholtag mehr möglich."
+        return [], "Kein Vorschlag: Bis Monatsende ist kein Abholtag mehr möglich."
     return ergebnis, ""
 
 
