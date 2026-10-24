@@ -78,15 +78,96 @@ EOF
     docker compose up -d
 }
 
-# Neueste Version (Tag der Form JJJJ.M.N, siehe ADR 0023); leer, wenn es noch keine gibt.
-neueste_version() {
-    git tag --list | grep -E '^[0-9]{4}\.[0-9]{1,2}\.[0-9]+$' | sort -V | tail -n 1 || true
+VERSIONSMUSTER='^[0-9]{4}\.[0-9]{1,2}\.[0-9]+$'
+
+# Veröffentlichte Versionen (Tags der Form JJJJ.M.N, ADR 0023), neueste zuerst.
+versionen() {
+    git tag --list | grep -E "$VERSIONSMUSTER" | sort -rV || true
+}
+
+installierte_version() { git describe --tags --exact-match HEAD 2>/dev/null || true; }
+
+# Zeigt die letzten Versionen zur Auswahl; ohne Eingabe nach 3 Sekunden die neueste.
+# Gibt die gewählte Version (oder "main") aus; Liste und Frage gehen nach stderr.
+version_waehlen() {
+    local installiert="$1" liste=() wahl="" nummer=1 v
+    mapfile -t liste < <(versionen | head -n 9)
+    if [[ ${#liste[@]} -eq 0 ]]; then
+        echo main
+        return
+    fi
+    if [[ ! -t 0 || "${BINTAFELN_JA:-}" == 1 ]]; then
+        echo "${liste[0]}"
+        return
+    fi
+    {
+        echo
+        echo "Welche Version installieren?"
+        for v in "${liste[@]}"; do
+            printf '  %d) %s' "$nummer" "$v"
+            [[ $nummer -eq 1 ]] && printf '  (neueste)'
+            [[ "$v" == "$installiert" ]] && printf '  (installiert)'
+            echo
+            nummer=$((nummer + 1))
+        done
+        echo "  m) Entwicklungsstand (main, zum Testen)"
+    } >&2
+    read -r -t 3 -p "Auswahl [1, nach 3 Sekunden automatisch]: " wahl || true
+    echo >&2
+    wahl="${wahl:-1}"
+    if [[ "$wahl" == [mM] ]]; then
+        echo main
+    elif [[ "$wahl" =~ ^[0-9]+$ ]] && (( wahl >= 1 && wahl <= ${#liste[@]} )); then
+        echo "${liste[$((wahl - 1))]}"
+    else
+        fehler "Ungültige Auswahl '$wahl'."
+    fi
+}
+
+# Setzt die Datenbank auf den Stand von Version $1 zurück, solange noch der neuere Code läuft:
+# je App auf die letzte Migration, die es in der älteren Version gab ("zero" = gab es nicht).
+migrationen_zuruecksetzen() {
+    local ziel="$1" ordner app letzte aktuell stand
+    hinweis "Datenbank auf den Stand von $ziel zurücksetzen"
+    docker compose stop app proxy
+    for ordner in apps/*/migrations; do
+        app=$(basename "$(dirname "$ordner")")
+        letzte=$(git ls-tree --name-only "$ziel" "$ordner/" | sed 's#.*/##' \
+            | grep -E '^[0-9]{4}_.*\.py$' | sort | tail -n 1 || true)
+        aktuell=$(find "$ordner" -maxdepth 1 -name '[0-9][0-9][0-9][0-9]_*.py' -printf '%f\n' \
+            | sort | tail -n 1)
+        stand="${letzte%.py}"
+        [[ "$stand" == "${aktuell%.py}" ]] && continue
+        echo "  $app: zurück auf ${stand:-zero}"
+        if ! docker compose run --rm --no-deps -T app \
+            python manage.py migrate "$app" "${stand:-zero}" --noinput; then
+            docker compose start app proxy
+            fehler "Zurücksetzen nicht möglich. Es bleibt beim bisherigen Stand; die Sicherung von eben enthält alles."
+        fi
+    done
 }
 
 befehl_update() {
-    local ziel="${1:-}"
-    [[ -z "$ziel" || "$ziel" == main ]] || fehler "Unbekannte Angabe '$ziel'. Möglich: ./betrieb update [main]"
+    local ziel="${1:-}" installiert rueckwaerts=""
     [[ -f .env ]] || fehler "Keine .env gefunden. Zuerst die Installation laut README durchführen."
+    hinweis "Versionen abrufen"
+    git fetch --quiet --tags --force origin
+    installiert=$(installierte_version)
+    echo "Installiert: ${installiert:-$(git rev-parse --short HEAD) (keine Version)}"
+    [[ -n "$ziel" ]] || ziel=$(version_waehlen "$installiert")
+    if [[ "$ziel" != main ]]; then
+        git rev-parse --quiet --verify "refs/tags/$ziel" >/dev/null \
+            || fehler "Version '$ziel' gibt es nicht. Möglich: ./betrieb update [VERSION|main]"
+        if ! git merge-base --is-ancestor HEAD "$ziel"; then
+            rueckwaerts=1
+            echo
+            echo "ACHTUNG: $ziel ist älter als der installierte Stand. Die Datenbank wird auf den"
+            echo "Stand dieser Version zurückgesetzt. Was nur die neuere Version speichert (z. B. neue"
+            echo "Felder oder Bereiche), geht dabei verloren. Vorher wird gesichert."
+            nachfragen "Auf $ziel zurückgehen?" || exit 1
+        fi
+    fi
+    echo "Ziel: $ziel"
     hinweis "Sicherung vor dem Update"
     if schluessel_eingetragen; then
         befehl_sichern
@@ -94,20 +175,13 @@ befehl_update() {
         echo "Es ist noch kein Sicherungsschlüssel eingetragen, vor dem Update wird nicht gesichert."
         nachfragen "Ohne Sicherung fortfahren?" || exit 1
     fi
-    hinweis "Neuen Stand holen"
-    git fetch --quiet --tags --force origin
-    local version=""
-    [[ "$ziel" == main ]] || version=$(neueste_version)
-    if [[ -n "$version" ]]; then
-        echo "Neueste Version: $version"
-        # Nie zurück auf einen älteren Stand: die Datenbank ist schon weiter migriert.
-        git merge-base --is-ancestor HEAD "$version" \
-            || fehler "Der installierte Stand ist neuer als Version $version. Weiter mit: ./betrieb update main"
-        git checkout --quiet "$version"
-    else
-        [[ "$ziel" == main ]] || echo "Noch keine Version veröffentlicht, nehme den Stand von main."
+    [[ -z "$rueckwaerts" ]] || migrationen_zuruecksetzen "$ziel"
+    hinweis "Stand $ziel holen"
+    if [[ "$ziel" == main ]]; then
         git checkout --quiet main
         git pull --ff-only origin main
+    else
+        git checkout --quiet "$ziel"
     fi
     # Die übrigen Schritte führt die gerade geholte Fassung dieses Skripts aus.
     exec ./betrieb _update_fortsetzen
@@ -208,8 +282,10 @@ befehl_hilfe() {
     cat <<'EOF'
 Betriebswerkzeug für bintafeln
 
-  ./betrieb update                     sichern, neueste Version holen, neu bauen und starten
-  ./betrieb update main                dasselbe mit dem neuesten Entwicklungsstand (zum Testen)
+  ./betrieb update                     Version wählen (nach 3 Sekunden die neueste), sichern,
+                                         holen, neu bauen und starten; auch zurück auf ältere
+  ./betrieb update VERSION             direkt diese Version, z. B. 2026.10.5
+  ./betrieb update main                neuester Entwicklungsstand (zum Testen)
   ./betrieb sichern                    sofort eine Sicherung erstellen
   ./betrieb schluessel                 Schlüsselpaar für die Sicherungen erzeugen
   ./betrieb wiederherstellen NAME [--schluessel DATEI] [--ja]

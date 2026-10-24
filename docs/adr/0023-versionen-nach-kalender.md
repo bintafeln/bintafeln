@@ -15,9 +15,12 @@ Versionsnummer, an der Tafeln und Maintainer erkennen, welcher Stand installiert
   Monat ohne führende Null, damit die Nummern auch für gängige Werkzeuge gültige Versionen sind.
 - Nach jedem Merge auf `main` legt der Workflow `version.yml` den nächsten Tag und ein
   GitHub-Release mit automatisch erzeugten Änderungsnotizen an.
-- `./betrieb update` installiert die neueste Version, `./betrieb update main` den
-  Entwicklungsstand. Auf einen älteren Stand als den installierten geht das Werkzeug nie
-  zurück, weil die Datenbank dann schon weiter migriert ist.
+- `./betrieb update` zeigt die letzten Versionen mit Nummern und nimmt ohne Eingabe nach drei
+  Sekunden die neueste; `./betrieb update VERSION` bzw. `main` wählt direkt.
+- **Zurück auf eine ältere Version** (Nachtrag Oktober 2026, vorher ausgeschlossen): nach
+  Rückfrage und Sicherung setzt der noch laufende neuere Code die Datenbank mit Django-
+  Migrationen rückwärts auf den Stand der älteren Version, erst danach wird diese gebaut. Neue
+  Migrationen müssen deshalb umkehrbar sein (RunPython immer mit Rückweg, notfalls `noop`).
 - `./betrieb update` schreibt die Version in die Datei `VERSION` (nicht im Repository). Admins
   sehen sie unten auf jeder Seite, `./betrieb status` zeigt sie ebenfalls.
 

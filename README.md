@@ -498,15 +498,31 @@ cd /opt/bintafeln
 ./betrieb update
 ```
 
-Das Werkzeug sichert zuerst, holt dann die **neueste Version**, aktualisiert die Images und
-startet neu. Migrationen laufen beim Start automatisch. `./betrieb update main` holt statt der
-Version den neuesten Entwicklungsstand (zum Testen, z. B. auf einer Probe-Installation).
+Das Werkzeug zeigt die letzten Versionen mit Nummern:
+
+```
+Welche Version installieren?
+  1) 2026.10.8  (neueste)
+  2) 2026.10.7  (installiert)
+  3) 2026.10.6
+  m) Entwicklungsstand (main, zum Testen)
+Auswahl [1, nach 3 Sekunden automatisch]:
+```
+
+Ohne Eingabe nimmt es nach **3 Sekunden die neueste Version**. Dann sichert es, holt den Stand,
+aktualisiert die Images und startet neu; Migrationen laufen beim Start automatisch. Direkt geht
+es auch mit `./betrieb update 2026.10.6` oder `./betrieb update main`.
+
+**Zurück auf eine ältere Version:** einfach deren Nummer wählen. Nach einer Rückfrage wird
+gesichert, dann setzt das noch laufende neuere Programm die Datenbank auf den Stand der älteren
+Version zurück (Migrationen rückwärts), erst danach wird die ältere Version gebaut. Was nur die
+neuere Version speichert, geht dabei verloren; alles andere bleibt. Klappt das Zurücksetzen nicht,
+bleibt alles beim bisherigen Stand, und die Sicherung von eben lässt sich wiederherstellen.
 
 **Versionen** heißen nach dem Kalender `JAHR.MONAT.NUMMER`, z. B. `2026.10.1`, `2026.10.2` …;
 im nächsten Monat beginnt die Nummer wieder bei 1 (`2026.11.1`). Nach jedem Merge auf `main`
 legt GitHub die nächste Version samt Release mit den Änderungen automatisch an (ADR 0023).
 Die installierte Version zeigt `./betrieb status`, Admins sehen sie unten auf jeder Seite.
-Auf einen älteren Stand geht `update` nie zurück.
 
 > **Einmalig beim Wechsel auf diese Version:** Das Werkzeug `./betrieb` gibt es erst ab hier.
 > Deshalb dieses eine Mal `git pull && docker compose up -d --build` ausführen, danach
