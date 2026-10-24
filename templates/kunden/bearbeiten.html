@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block titel %}Haushalt {{ h.kundennummer }} bearbeiten{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'kunden:haushalt' h.kundennummer %}">← Haushalt {{ h.kundennummer }}</a></p>
+  <h1>Haushalt {{ h.kundennummer }} bearbeiten</h1>
+  {% include "kunden/_import_hinweis.html" %}
+  {% if h.geaendert_am %}<p class="hinweis">Zuletzt in bintafeln geändert am {{ h.geaendert_am|date:"d.m.Y H:i" }} von {{ h.geaendert_von }}.</p>{% endif %}
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Haushalt speichern</button>
+  </form>
+  <p class="hinweis">Der Kontostand ändert sich nur über Buchungen: am Einlass „Korrektur“ verwenden.</p>
+</section>
+
+{% for art, titel, eintraege in teile %}
+<section class="karte">
+  <h2>{{ titel }}</h2>
+  {% if eintraege %}<ul>{% for e in eintraege %}<li><a href="{% url 'kunden:teil' h.kundennummer art e.pk %}">{% if art == "person" %}{{ e.vorname }} {{ e.nachname }}{% if e.ist_hauptperson %} (Hauptperson){% endif %}{% elif art == "abholer" %}{{ e }}{% elif art == "sperre" %}{{ e.von|date:"d.m.Y" }}–{{ e.bis|date:"d.m.Y"|default:"offen" }} {{ e.begruendung|truncatechars:40 }}{% elif art == "anmerkung" %}{{ e.datum|date:"d.m.Y" }}: {{ e.text|truncatechars:50 }}{% else %}{{ e.datum|date:"d.m.Y" }} {{ e.begruendung|truncatechars:40 }}{% endif %}</a></li>{% endfor %}</ul>
+  {% else %}<p>Keine.</p>{% endif %}
+  <p><a class="knopf knopf-zweitrangig" href="{% url 'kunden:teil_neu' h.kundennummer art %}">Hinzufügen</a></p>
+</section>
+{% endfor %}
+
+<section class="karte">
+  <h2>Abholungen</h2>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Datum</th><th>Beitrag</th><th>Ausgabestelle</th><th>Eingetragen von</th><th></th></tr></thead>
+    <tbody>
+    {% for a in abholungen %}
+      <tr>
+        <td data-titel="Datum">{{ a.datum|date:"d.m.Y" }}{% if a.uhrzeit %} {{ a.uhrzeit|time:"H:i" }}{% endif %}</td>
+        <td data-titel="Beitrag">{% if a.beitrag is not None %}{{ a.beitrag|floatformat:2 }} €{% else %}–{% endif %}</td>
+        <td data-titel="Ausgabestelle">{{ a.ausgabestelle.name|default:"–" }}</td>
+        <td data-titel="Eingetragen von">{{ a.eingetragen_von|default:"–" }}</td>
+        <td data-titel="Aktion">
+          <form method="post" action="{% url 'kunden:abholung_loeschen' h.kundennummer a.pk %}" class="inline" onsubmit="return confirm('Abholung löschen? Eine zugehörige Buchung wird zurückgenommen.')">
+            {% csrf_token %}<button type="submit" class="link">löschen</button>
+          </form>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5">Keine.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="hinweis">Neue Abholungen werden am Einlass eingetragen.</p>
+</section>
+
+<section class="karte">
+  <h2>Haushalt löschen</h2>
+  <form method="post" action="{% url 'kunden:haushalt_loeschen' h.kundennummer %}" onsubmit="return confirm('Haushalt {{ h.kundennummer }} mit allen Personen, Abholungen und Anmerkungen löschen?')">
+    {% csrf_token %}
+    <p class="hinweis">Löscht den Haushalt mit Personen, Abholberechtigten, Sperren, Ausnahmen, Abholungen und Anmerkungen.
+      Kontobuchungen bleiben für die Kasse erhalten.</p>
+    <button type="submit" class="knopf knopf-zweitrangig fehler">Haushalt löschen</button>
+  </form>
+</section>
+{% endblock %}

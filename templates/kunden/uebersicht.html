@@ -3,6 +3,7 @@
 {% block inhalt %}
 <section class="karte">
   <h1>Kunden</h1>
+  {% if "Admin" in rollen %}<p><a class="knopf knopf-zweitrangig" href="{% url 'kunden:haushalt_neu' %}">Neuer Haushalt</a></p>{% endif %}
   {# Ohne hx-trigger "submit": Enter (auch vom Scanner) sendet normal und öffnet bei passender Kundennummer den Haushalt. #}
   <form class="filter" method="get" action="{% url 'kunden:uebersicht' %}"
         hx-get="{% url 'kunden:uebersicht' %}" hx-target="#kunden-liste" hx-push-url="true"

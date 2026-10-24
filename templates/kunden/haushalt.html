@@ -27,6 +27,8 @@
     {% endfor %}
   </dl>
   <p class="hinweis">Stand des Imports vom {{ h.importiert_am|date:"d.m.Y H:i" }}. Dieser Aufruf wird im Zugriffsprotokoll festgehalten.</p>
+  {% if "Admin" in rollen %}<p><a class="knopf knopf-zweitrangig" href="{% url 'kunden:bearbeiten' h.kundennummer %}">Bearbeiten</a>
+    {% if h.geaendert_am %}<small class="hilfe">In bintafeln geändert am {{ h.geaendert_am|date:"d.m.Y" }} von {{ h.geaendert_von }}.</small>{% endif %}</p>{% endif %}
   {% if buero %}<p><a href="{% url 'kunden:ausweis' h.kundennummer %}" target="_blank" rel="noopener">Kundenausweis drucken (PDF)</a>
     · <a href="{% url 'kunden:auskunft' h.kundennummer %}" target="_blank" rel="noopener">Auskunft nach Art. 15 DSGVO (PDF)</a></p>{% endif %}
   {% if "Admin" in rollen %}<p><a href="{% url 'kunden:zugriffe' %}?kundennummer={{ h.kundennummer|urlencode }}">Zugriffe auf diesen Haushalt</a></p>{% endif %}

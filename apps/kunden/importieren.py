@@ -607,6 +607,14 @@ class _Pruefung:
                     f"{erfasst} am Einlass in bintafeln erfasste Einträge werden durch den "
                     "Import ersetzt und gehen verloren.",
                 )
+        von_hand = Haushalt.objects.filter(geaendert_am__isnull=False).count()
+        if von_hand:
+            self.warnung(
+                HAUSHALTE,
+                None,
+                f"In bintafeln von Hand geänderte oder angelegte Haushalte: {von_hand}. "
+                "Der Import ersetzt diese Änderungen.",
+            )
         # Kontobuchungen gehören zur App ausgabe; späte Einbindung vermeidet einen Kreisbezug.
         from apps.ausgabe.models import Buchung
 

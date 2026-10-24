@@ -1,0 +1,245 @@
+"""Kundenstamm bearbeiten: nur Admin (ADR 0025).
+
+Solange der Kundenstamm aus dem Altsystem kommt, ersetzt der nächste Import alle Änderungen;
+jede Seite sagt das, und der Prüfbericht des Imports warnt. Jede Änderung steht im
+Änderungsprotokoll, der Haushalt merkt sich, wann und von wem er geändert wurde.
+"""
+
+from django.contrib import messages
+from django.db import transaction
+from django.db.models import ProtectedError
+from django.http import Http404
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+
+from apps.ausgabe import konto
+from apps.konten import rollen
+from apps.kunden.forms_bearbeiten import (
+    AbholerForm,
+    AnmerkungForm,
+    AusgabestelleForm,
+    AusnahmeForm,
+    EinkommensartForm,
+    HaushaltForm,
+    KundengruppeForm,
+    PersonForm,
+    SperreForm,
+)
+from apps.kunden.models import (
+    Abholer,
+    Abholung,
+    Ausgabestelle,
+    Ausnahme,
+    Bemerkung,
+    Einkommensart,
+    Haushalt,
+    Kundengruppe,
+    Person,
+    Sperre,
+)
+
+nur_admin = rollen.rolle_erforderlich(rollen.ADMIN)
+
+# Art in der Adresse: Modell, Formular, Bezeichnung, braucht „angemeldet“
+TEILE = {
+    "person": (Person, PersonForm, "Person", False),
+    "abholer": (Abholer, AbholerForm, "Abholberechtigte Person", False),
+    "sperre": (Sperre, SperreForm, "Sperre", True),
+    "anmerkung": (Bemerkung, AnmerkungForm, "Anmerkung", True),
+    "ausnahme": (Ausnahme, AusnahmeForm, "Ausnahme", True),
+}
+
+
+def geaendert(h: Haushalt, request) -> None:
+    Haushalt.objects.filter(pk=h.pk).update(
+        geaendert_am=timezone.now(), geaendert_von=request.user.get_username()
+    )
+
+
+def _bearbeiten_url(h) -> str:
+    return reverse("kunden:bearbeiten", args=[h.kundennummer])
+
+
+@nur_admin
+def haushalt_bearbeiten(request, kundennummer):
+    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    form = HaushaltForm(request.POST or None, instance=h)
+    if request.method == "POST" and form.is_valid():
+        with transaction.atomic():
+            h = form.save()
+            geaendert(h, request)
+        messages.success(request, "Haushalt gespeichert.")
+        return redirect(_bearbeiten_url(h))
+    return render(
+        request,
+        "kunden/bearbeiten.html",
+        {
+            "h": h,
+            "form": form,
+            "teile": [
+                ("person", "Personen", h.personen.all()),
+                ("abholer", "Abholberechtigte", h.abholer.all()),
+                ("sperre", "Sperren", h.sperren.all()),
+                ("ausnahme", "Ausnahmen", h.ausnahmen.all()),
+                ("anmerkung", "Interne Anmerkungen", h.bemerkungen.all()),
+            ],
+            "abholungen": h.abholungen.select_related("ausgabestelle")[:50],
+        },
+    )
+
+
+@nur_admin
+def haushalt_neu(request):
+    form = HaushaltForm(request.POST or None, instance=Haushalt())
+    if request.method == "POST" and form.is_valid():
+        h = form.save()
+        geaendert(h, request)
+        messages.success(request, f"Haushalt {h.kundennummer} angelegt. Jetzt Personen ergänzen.")
+        return redirect(_bearbeiten_url(h))
+    return render(request, "kunden/eintrag.html", {"form": form, "titel": "Neuer Haushalt"})
+
+
+@require_POST
+@nur_admin
+def haushalt_loeschen(request, kundennummer):
+    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h.delete()  # Buchungen bleiben ohne Haushalt, aber mit Kundennummer (Kasse)
+    messages.success(
+        request,
+        f"Haushalt {kundennummer} gelöscht. Kontobuchungen bleiben ohne Haushalt für die Kasse "
+        "erhalten.",
+    )
+    return redirect("kunden:uebersicht")
+
+
+def _teil(art):
+    if art not in TEILE:
+        raise Http404
+    return TEILE[art]
+
+
+@nur_admin
+def teil_bearbeiten(request, kundennummer, art, pk=None):
+    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    modell, form_klasse, bezeichnung, mit_angemeldet = _teil(art)
+    instanz = get_object_or_404(modell, pk=pk, haushalt=h) if pk else modell(haushalt=h)
+    extra = {"angemeldet": request.user} if mit_angemeldet else {}
+    form = form_klasse(request.POST or None, instance=instanz, **extra)
+    if request.method == "POST" and form.is_valid():
+        with transaction.atomic():
+            eintrag = form.save(commit=False)
+            eintrag.haushalt = h
+            if art == "ausnahme" and not eintrag.erfasst_am:
+                eintrag.erfasst_am = timezone.now()
+            if art == "person" and eintrag.ist_hauptperson:  # nur eine Hauptperson je Haushalt
+                h.personen.exclude(pk=eintrag.pk).update(ist_hauptperson=False)
+            eintrag.save()
+            geaendert(h, request)
+        messages.success(request, f"{bezeichnung} gespeichert.")
+        return redirect(_bearbeiten_url(h))
+    return render(
+        request,
+        "kunden/eintrag.html",
+        {
+            "form": form,
+            "h": h,
+            "titel": f"{bezeichnung} {'bearbeiten' if pk else 'hinzufügen'}",
+            "loeschen": reverse("kunden:teil_loeschen", args=[h.kundennummer, art, pk])
+            if pk
+            else None,
+        },
+    )
+
+
+@require_POST
+@nur_admin
+def teil_loeschen(request, kundennummer, art, pk):
+    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    modell, _, bezeichnung, _ = _teil(art)
+    get_object_or_404(modell, pk=pk, haushalt=h).delete()
+    geaendert(h, request)
+    messages.success(request, f"{bezeichnung} gelöscht.")
+    return redirect(_bearbeiten_url(h))
+
+
+@require_POST
+@nur_admin
+def abholung_loeschen(request, kundennummer, pk):
+    """Löscht eine Abholung; eine zugehörige Buchung wird zurückgenommen (Kontostand)."""
+    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    abholung = get_object_or_404(Abholung, pk=pk, haushalt=h)
+    with transaction.atomic():
+        if hasattr(abholung, "buchung"):
+            konto.zuruecknehmen(abholung.buchung)
+        abholung.delete()
+        letzte = h.abholungen.order_by("-datum").first()
+        Haushalt.objects.filter(pk=h.pk).update(letzter_besuch=letzte.datum if letzte else None)
+        geaendert(h, request)
+    messages.success(request, "Abholung gelöscht.")
+    return redirect(_bearbeiten_url(h))
+
+
+# --- Listen ---------------------------------------------------------------------------------
+
+LISTEN = {
+    "kundengruppen": (Kundengruppe, KundengruppeForm, "Kundengruppen", "Kundengruppe"),
+    "ausgabestellen": (Ausgabestelle, AusgabestelleForm, "Ausgabestellen", "Ausgabestelle"),
+    "einkommensarten": (Einkommensart, EinkommensartForm, "Einkommensarten", "Einkommensart"),
+}
+
+
+def _liste(art):
+    if art not in LISTEN:
+        raise Http404
+    return LISTEN[art]
+
+
+@nur_admin
+def liste(request, art):
+    modell, _, titel, _ = _liste(art)
+    return render(
+        request,
+        "kunden/liste_pflegen.html",
+        {"art": art, "titel": titel, "eintraege": modell.objects.all(), "listen": LISTEN},
+    )
+
+
+@nur_admin
+def listeneintrag(request, art, pk=None):
+    modell, form_klasse, titel, einzeln = _liste(art)
+    instanz = get_object_or_404(modell, pk=pk) if pk else modell()
+    form = form_klasse(request.POST or None, instance=instanz)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, f"{einzeln} gespeichert.")
+        return redirect("kunden:liste", art=art)
+    return render(
+        request,
+        "kunden/eintrag.html",
+        {
+            "form": form,
+            "titel": f"{einzeln} {'bearbeiten' if pk else 'hinzufügen'}",
+            "zurueck": reverse("kunden:liste", args=[art]),
+            "loeschen": reverse("kunden:listeneintrag_loeschen", args=[art, pk]) if pk else None,
+        },
+    )
+
+
+@require_POST
+@nur_admin
+def listeneintrag_loeschen(request, art, pk):
+    modell, _, _, einzeln = _liste(art)
+    eintrag = get_object_or_404(modell, pk=pk)
+    try:
+        eintrag.delete()
+    except ProtectedError:
+        messages.error(
+            request,
+            f"{einzeln} wird noch verwendet und kann nicht gelöscht werden. "
+            "Stattdessen „Aktiv“ ausschalten.",
+        )
+    else:
+        messages.success(request, f"{einzeln} gelöscht.")
+    return redirect("kunden:liste", art=art)

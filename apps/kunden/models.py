@@ -269,6 +269,9 @@ class Haushalt(models.Model):
     anzahl_kinder = models.PositiveSmallIntegerField("Kinder", null=True, blank=True)
     zusatz = models.JSONField("Zusatzfelder", default=dict, blank=True)
     importiert_am = models.DateTimeField("Importiert am", default=timezone.now)
+    # In bintafeln von Hand geändert (ADR 0025); der nächste Import ersetzt die Änderungen.
+    geaendert_am = models.DateTimeField("In bintafeln geändert am", null=True, blank=True)
+    geaendert_von = models.CharField("In bintafeln geändert von", max_length=150, blank=True)
 
     class Meta:
         verbose_name = "Haushalt"
