@@ -11,8 +11,9 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
 - **Einrichtung im Browser:** Solange es keinen Admin gibt, öffnet sich automatisch
   die Einrichtungsseite. Dort werden der Name der Tafel und das erste Admin-Konto angelegt.
   Danach ist die Seite gesperrt.
-- **Rollen:** Admin, Büro, Ausgabe und Kiosk (als Django-Gruppen, werden beim ersten Start
-  automatisch angelegt). Benutzer und Rollen verwaltet ein Admin unter „Verwaltung“.
+- **Rollen:** Admin, Büro, Ausgabe, Kiosk, Fahrer und Beifahrer (als Django-Gruppen, werden
+  beim Start automatisch angelegt). Konten und Rollen verwaltet ein Admin unter
+  „Mitarbeitende“ (siehe unten).
 - **Tafel-Einstellungen:** Name, Logo und Anschrift der Tafel – in der Datenbank, nicht im Code.
 - **Änderungsprotokoll:** Wer hat wann welchen Datensatz geändert (mit Feldern vorher/nachher).
   Passwörter werden nie protokolliert.
@@ -128,7 +129,7 @@ Authenticator-App verlangt (z. B. Aegis, FreeOTP, Google Authenticator).
   Einrichtungsseite ein.
 - **Handy verloren:**
   1. mit einem Notfallcode anmelden und unter „Mein Konto“ neu einrichten, oder
-  2. ein Admin löscht unter „Verwaltung → TOTP devices“ das Gerät der Person, oder
+  2. ein Admin setzt sie unter „Mitarbeitende“ → Person → „Zwei-Faktor zurücksetzen“ zurück, oder
   3. als letzter Ausweg auf dem Server, falls sich kein Admin mehr anmelden kann:
 
      ```bash
@@ -136,6 +137,27 @@ Authenticator-App verlangt (z. B. Aegis, FreeOTP, Google Authenticator).
      ```
 
 Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie.
+
+## Mitarbeitende
+
+„Mitarbeitende“ im Menü (Admin; das Büro nur, wenn unter „Einstellungen“ freigegeben):
+
+- **Anlegen:**
+  - Benutzername, Name, E-Mail (optional), Beschäftigung (ehrenamtlich oder fest angestellt)
+    und Rollen per Häkchen.
+  - bintafeln zeigt danach **einmal** ein Startpasswort, das man persönlich weitergibt.
+  - Bei der ersten Anmeldung muss die Person ein eigenes Passwort wählen, danach gegebenenfalls
+    die Zwei-Faktor-Anmeldung einrichten.
+- **Bearbeiten:** Name, E-Mail, Beschäftigung, Rollen.
+- **Passwort zurücksetzen** (neues Startpasswort) und **Zwei-Faktor zurücksetzen** (z. B. Handy
+  verloren).
+- **Sperren statt löschen:** Die Person ist sofort abgemeldet und steht im **Archiv** mit „dabei
+  seit“, „gesperrt am“ und „gesperrt von“. So bleibt auch Jahre später nachvollziehbar, wer was
+  eingetragen hat. Ein gesperrtes Konto lässt sich wieder freischalten.
+- **Schutzregeln:**
+  - Niemand kann sich selbst sperren oder sich die Admin-Rolle nehmen.
+  - Das Büro bearbeitet keine Admin-Konten.
+- Jede Person kann unter „Mein Konto“ ihr **Passwort ändern**.
 
 ## Kundenstamm importieren
 

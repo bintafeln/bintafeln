@@ -50,6 +50,9 @@ class EinstellungenForm(forms.ModelForm):
             "zwei_faktor_buero",
             "zwei_faktor_ausgabe",
             "zwei_faktor_kiosk",
+            "zwei_faktor_fahrer",
+            "zwei_faktor_beifahrer",
+            "buero_verwaltet_mitarbeitende",
         ]
 
     def clean_logo(self):

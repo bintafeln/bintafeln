@@ -229,3 +229,16 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .kasse .summe td { font-weight: 700; }
 .kasse .summe { border-top: 2px solid #222; }
 @media (min-width: 40rem) { .kasse .summe td { border-top: 2px solid #222; } }
+
+/* Mitarbeitende */
+.aktionen { display: flex; flex-wrap: wrap; gap: .5rem; }
+.knopf-gefahr { background: #b3261e; }
+.startpasswort { font-size: 1.6rem; font-family: ui-monospace, monospace; letter-spacing: .05em; }
+/* Mehrfachauswahl als Häkchen (z. B. Rollen) */
+.feld input[type="checkbox"], .feld input[type="radio"] { width: auto; min-height: 0; padding: 0; }
+.feld div > div > label, .feld div > label:has(input[type="checkbox"]) {
+  display: flex; align-items: center; gap: .5rem; font-weight: normal; padding: .2rem 0;
+}
+.feld input[type="checkbox"] { width: 1.25rem; height: 1.25rem; }
+.aktionen .inline, .aktionen .inline + .inline { display: block; margin: 0; }
+.aktionen .knopf { width: auto; }

@@ -23,6 +23,14 @@ class TafelEinstellungen(models.Model):
     zwei_faktor_buero = models.BooleanField("Zwei-Faktor Pflicht für Büro", default=True)
     zwei_faktor_ausgabe = models.BooleanField("Zwei-Faktor Pflicht für Ausgabe", default=False)
     zwei_faktor_kiosk = models.BooleanField("Zwei-Faktor Pflicht für Kiosk", default=False)
+    zwei_faktor_fahrer = models.BooleanField("Zwei-Faktor Pflicht für Fahrer", default=False)
+    zwei_faktor_beifahrer = models.BooleanField("Zwei-Faktor Pflicht für Beifahrer", default=False)
+    buero_verwaltet_mitarbeitende = models.BooleanField(
+        "Büro darf Mitarbeitende verwalten",
+        default=False,
+        help_text="Anlegen, bearbeiten und sperren – aber keine Admin-Konten und keine "
+        "Admin-Rolle vergeben.",
+    )
     geaendert_am = models.DateTimeField("Geändert am", auto_now=True)
 
     class Meta:
@@ -52,6 +60,8 @@ class TafelEinstellungen(models.Model):
             rollen.BUERO: self.zwei_faktor_buero,
             rollen.AUSGABE: self.zwei_faktor_ausgabe,
             rollen.KIOSK: self.zwei_faktor_kiosk,
+            rollen.FAHRER: self.zwei_faktor_fahrer,
+            rollen.BEIFAHRER: self.zwei_faktor_beifahrer,
         }
         return {rolle for rolle, pflicht in felder.items() if pflicht}
 

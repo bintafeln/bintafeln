@@ -54,6 +54,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "auditlog.middleware.AuditlogMiddleware",
     "apps.core.middleware.EinrichtungMiddleware",
+    "apps.konten.middleware.PasswortAendernMiddleware",
     "apps.konten.middleware.ZweiFaktorMiddleware",
 ]
 

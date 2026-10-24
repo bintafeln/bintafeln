@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block titel %}{% if ziel %}{{ ziel }}{% else %}Neues Konto{% endif %}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% if ziel and not ziel.is_active %}{% url 'konten:mitarbeitende_archiv' %}{% else %}{% url 'konten:mitarbeitende' %}{% endif %}">← Mitarbeitende</a></p>
+  <h1>{% if ziel %}{{ ziel }}{% else %}Neues Konto{% endif %}</h1>
+  {% if ziel and not ziel.is_active %}
+    <p class="sicherung sicherung-veraltet">Gesperrt seit {{ ziel.gesperrt_am|date:"d.m.Y H:i"|default:"–" }}{% if ziel.gesperrt_von %} von {{ ziel.gesperrt_von }}{% endif %}.</p>
+  {% endif %}
+  {% if not ziel %}
+    <p class="hinweis">bintafeln erzeugt ein Startpasswort und zeigt es nach dem Speichern einmal an. Bei der ersten
+      Anmeldung muss die Person ein eigenes Passwort wählen.</p>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">{% if ziel %}Speichern{% else %}Anlegen{% endif %}</button>
+  </form>
+</section>
+
+{% if ziel %}
+<section class="karte">
+  <h2>Zugang</h2>
+  <p>Dabei seit {{ ziel.date_joined|date:"d.m.Y" }} · letzte Anmeldung {{ ziel.last_login|date:"d.m.Y H:i"|default:"noch nie" }}
+    · Zwei-Faktor {{ zwei_faktor|yesno:"eingerichtet,nicht eingerichtet" }}{% if ziel.passwort_aendern %} · Startpasswort noch nicht geändert{% endif %}</p>
+  <div class="aktionen">
+    <form method="post" action="{% url 'konten:passwort_zuruecksetzen' ziel.pk %}" class="inline"
+          onsubmit="return confirm('Neues Startpasswort für {{ ziel|escapejs }} erzeugen? Das bisherige Passwort gilt dann nicht mehr.')">
+      {% csrf_token %}
+      <button type="submit" class="knopf knopf-zweitrangig">Passwort zurücksetzen</button>
+    </form>
+    {% if zwei_faktor %}
+    <form method="post" action="{% url 'konten:zwei_faktor_zuruecksetzen' ziel.pk %}" class="inline"
+          onsubmit="return confirm('Zwei-Faktor für {{ ziel|escapejs }} zurücksetzen (z. B. Handy verloren)?')">
+      {% csrf_token %}
+      <button type="submit" class="knopf knopf-zweitrangig">Zwei-Faktor zurücksetzen</button>
+    </form>
+    {% endif %}
+    {% if ziel.is_active %}
+    <form method="post" action="{% url 'konten:sperren' ziel.pk %}" class="inline"
+          onsubmit="return confirm('{{ ziel|escapejs }} sperren? Die Person ist sofort abgemeldet und steht dann im Archiv.')">
+      {% csrf_token %}
+      <button type="submit" class="knopf knopf-gefahr">Sperren</button>
+    </form>
+    {% else %}
+    <form method="post" action="{% url 'konten:entsperren' ziel.pk %}" class="inline">
+      {% csrf_token %}
+      <button type="submit" class="knopf">Wieder freischalten</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

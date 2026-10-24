@@ -9,6 +9,24 @@ from apps.konten import zwei_faktor
 FREIE_PFADE = ("/static/", "/media/", "/healthz/")
 
 
+class PasswortAendernMiddleware:
+    """Nach einem Startpasswort muss zuerst ein eigenes Passwort gewählt werden."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        benutzer = request.user
+        if (
+            benutzer.is_authenticated
+            and benutzer.passwort_aendern
+            and not request.path.startswith(FREIE_PFADE)
+            and request.path not in (reverse("konten:passwort_aendern"), reverse("konten:abmelden"))
+        ):
+            return redirect("konten:passwort_aendern")
+        return self.get_response(request)
+
+
 class ZweiFaktorMiddleware:
     """Setzt die Zwei-Faktor-Anmeldung durch.
 
@@ -34,6 +52,7 @@ class ZweiFaktorMiddleware:
             erlaubt = (
                 reverse("konten:zwei_faktor_einrichten"),
                 reverse("konten:abmelden"),
+                reverse("konten:passwort_aendern"),
             )
             if request.path not in erlaubt and zwei_faktor.ist_pflicht(benutzer):
                 return redirect("konten:zwei_faktor_einrichten")

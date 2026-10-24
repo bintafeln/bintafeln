@@ -9,8 +9,10 @@ ADMIN = "Admin"
 BUERO = "Büro"
 AUSGABE = "Ausgabe"
 KIOSK = "Kiosk"
+FAHRER = "Fahrer"
+BEIFAHRER = "Beifahrer"
 
-ALLE = (ADMIN, BUERO, AUSGABE, KIOSK)
+ALLE = (ADMIN, BUERO, AUSGABE, KIOSK, FAHRER, BEIFAHRER)
 
 
 def rollen_von(benutzer) -> set[str]:
@@ -23,6 +25,15 @@ def rollen_von(benutzer) -> set[str]:
 
 def hat_rolle(benutzer, *rollen: str) -> bool:
     return bool(rollen_von(benutzer) & set(rollen))
+
+
+def darf_mitarbeitende_verwalten(benutzer) -> bool:
+    """Admin immer; Büro nur, wenn ein Admin es in den Tafel-Einstellungen freigegeben hat."""
+    from apps.core.models import TafelEinstellungen
+
+    if hat_rolle(benutzer, ADMIN):
+        return True
+    return hat_rolle(benutzer, BUERO) and TafelEinstellungen.laden().buero_verwaltet_mitarbeitende
 
 
 def rolle_erforderlich(*rollen: str):

@@ -1,7 +1,8 @@
 from django import forms
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
 from django_otp import match_token, user_has_device
 
+from apps.konten import rollen, verwaltung
 from apps.konten.zwei_faktor import code_bereinigen
 
 
@@ -56,3 +57,31 @@ class CodeForm(forms.Form):
             attrs={"autocomplete": "one-time-code", "inputmode": "numeric", "autofocus": True}
         ),
     )
+
+
+class MitarbeiterForm(forms.ModelForm):
+    """Konto anlegen oder bearbeiten. Rollen kommen als Häkchen dazu."""
+
+    rollen = forms.MultipleChoiceField(
+        label="Rollen", required=False, widget=forms.CheckboxSelectMultiple
+    )
+
+    class Meta:
+        model = get_user_model()
+        fields = ["username", "first_name", "last_name", "email", "beschaeftigung"]
+        help_texts = {"username": "Zum Anmelden. Buchstaben, Ziffern und @ . + - _"}
+
+    def __init__(self, *args, verwalter, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["rollen"].choices = [(r, r) for r in verwaltung.vergebbare_rollen(verwalter)]
+        if self.instance.pk:
+            self.fields["rollen"].initial = list(
+                self.instance.groups.filter(name__in=rollen.ALLE).values_list("name", flat=True)
+            )
+
+    def clean_username(self):
+        name = self.cleaned_data["username"]
+        andere = get_user_model().objects.filter(username__iexact=name)
+        if andere.exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("Dieser Benutzername ist bereits vergeben.")
+        return name

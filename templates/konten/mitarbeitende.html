@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block titel %}Mitarbeitende{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Mitarbeitende</h1>
+  <nav class="reiter" aria-label="Ansicht">
+    <a href="{% url 'konten:mitarbeitende' %}"{% if not archiv %} aria-current="page"{% endif %}>Aktiv</a>
+    <a href="{% url 'konten:mitarbeitende_archiv' %}"{% if archiv %} aria-current="page"{% endif %}>Archiv (gesperrt)</a>
+  </nav>
+  {% if archiv %}
+    <p class="hinweis">Gesperrte Konten werden nicht gelöscht. So bleibt auch Jahre später nachvollziehbar, wer wann
+      dabei war und was eingetragen hat (Änderungsprotokoll, Abholungen, Buchungen).</p>
+  {% else %}
+    <p><a class="knopf" href="{% url 'konten:mitarbeiter_neu' %}">Mitarbeiterin / Mitarbeiter anlegen</a></p>
+  {% endif %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr>
+      <th>Name</th><th>Benutzername</th><th>Rollen</th><th>Beschäftigung</th>
+      {% if archiv %}<th>Dabei seit</th><th>Gesperrt</th>{% else %}<th>Zwei-Faktor</th><th>Letzte Anmeldung</th>{% endif %}
+    </tr></thead>
+    <tbody>
+    {% for z in zeilen %}
+      <tr>
+        <td data-titel="Name"><a href="{% url 'konten:mitarbeiter' z.b.pk %}">{{ z.b.get_full_name|default:z.b.username }}</a></td>
+        <td data-titel="Benutzername">{{ z.b.username }}</td>
+        <td data-titel="Rollen">{% for r in z.rollen %}<span class="marke-rolle">{{ r }}</span>{% empty %}–{% endfor %}</td>
+        <td data-titel="Beschäftigung">{{ z.b.get_beschaeftigung_display }}</td>
+        {% if archiv %}
+          <td data-titel="Dabei seit">{{ z.b.date_joined|date:"d.m.Y" }}</td>
+          <td data-titel="Gesperrt">{{ z.b.gesperrt_am|date:"d.m.Y"|default:"–" }}{% if z.b.gesperrt_von %} von {{ z.b.gesperrt_von }}{% endif %}</td>
+        {% else %}
+          <td data-titel="Zwei-Faktor">{{ z.zwei_faktor|yesno:"eingerichtet,–" }}</td>
+          <td data-titel="Letzte Anmeldung">{{ z.b.last_login|date:"d.m.Y H:i"|default:"noch nie" }}</td>
+        {% endif %}
+      </tr>
+    {% empty %}
+      <tr><td colspan="6">{% if archiv %}Keine gesperrten Konten.{% else %}Keine aktiven Konten.{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

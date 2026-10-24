@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block titel %}Startpasswort{% endblock %}
+{% block inhalt %}
+<section class="karte schmal">
+  <h1>{% if neu %}Konto angelegt{% else %}Passwort zurückgesetzt{% endif %}</h1>
+  <p>Benutzername: <strong>{{ ziel.username }}</strong></p>
+  <p>Startpasswort:</p>
+  <p class="schluessel startpasswort">{{ passwort }}</p>
+  <p class="sicherung">Dieses Passwort wird <strong>nur jetzt</strong> angezeigt. Bitte persönlich weitergeben,
+    nicht per Messenger oder unverschlüsselter Mail. Bei der ersten Anmeldung muss
+    {{ ziel.get_full_name|default:ziel.username }} ein eigenes Passwort wählen.</p>
+  <p><a class="knopf" href="{% url 'konten:mitarbeiter' ziel.pk %}">Fertig</a></p>
+</section>
+{% endblock %}

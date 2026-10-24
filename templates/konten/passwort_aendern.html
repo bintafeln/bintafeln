@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block titel %}Passwort ändern{% endblock %}
+{% block inhalt %}
+<section class="karte schmal">
+  <h1>Passwort ändern</h1>
+  {% if pflicht %}
+    <p class="sicherung">Sie haben sich mit einem Startpasswort angemeldet. Bitte wählen Sie jetzt ein eigenes
+      Passwort. Als „altes Passwort“ geben Sie das Startpasswort ein.</p>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Passwort ändern</button>
+  </form>
+  {% if not pflicht %}<p class="abseits"><a href="{% url 'konten:mein_konto' %}">← Mein Konto</a></p>{% endif %}
+</section>
+{% endblock %}
