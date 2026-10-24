@@ -184,3 +184,12 @@ def test_auskunft_nennt_dokumente(admin_client, h, bescheid, pdf_text):
     )
     text = pdf_text(admin_client.get(reverse("kunden:auskunft", args=["3001"])))
     assert "Wohngeldbescheid" in text and "01.03.2028" in text
+
+
+def test_kundennummer_aendern_nimmt_dokumente_mit(admin_client, h, bescheid):
+    HaushaltDokument.objects.create(kundennummer="3001", art=bescheid, titel="T")
+    admin_client.post(
+        reverse("kunden:bearbeiten", args=["3001"]), {"kundennummer": "3009", "status": "aktiv"}
+    )
+    assert Haushalt.objects.get().kundennummer == "3009"
+    assert HaushaltDokument.objects.get().kundennummer == "3009"

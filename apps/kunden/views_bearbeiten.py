@@ -83,8 +83,11 @@ def haushalt_bearbeiten(request, kundennummer):
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
             h = form.save()
-            if h.kundennummer != kundennummer:  # Notizen ziehen mit um
-                Notiz.objects.filter(kundennummer=kundennummer).update(kundennummer=h.kundennummer)
+            if h.kundennummer != kundennummer:  # Notizen und Dokumente ziehen mit um
+                for modell in (Notiz, HaushaltDokument):
+                    modell.objects.filter(kundennummer=kundennummer).update(
+                        kundennummer=h.kundennummer
+                    )
             geaendert(h, request)
         messages.success(request, "Haushalt gespeichert.")
         return redirect(_bearbeiten_url(h))
