@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block titel %}Personal {{ p }}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'personal:liste' %}">← Personal</a></p>
+  <h1>{{ p }}</h1>
+  <nav class="blaettern" aria-label="Jahr wechseln">
+    <a href="?jahr={{ jahr|add:'-1' }}">← {{ jahr|add:"-1" }}</a>
+    <strong>{{ jahr }}</strong>
+    <a href="?jahr={{ jahr|add:'1' }}">{{ jahr|add:"1" }} →</a>
+  </nav>
+</section>
+
+<section class="karte">
+  <h2>Arbeitsvertrag</h2>
+  {% if aktuell %}
+    <p>Gültig heute: {{ aktuell.taetigkeit|default:"Vertrag" }}, {{ aktuell.wochenstunden|floatformat:"-2" }} Stunden pro Woche,
+      {{ aktuell.urlaubstage|floatformat:"-1" }} Urlaubstage pro Jahr{% if aktuell.stundenlohn %}, {{ aktuell.stundenlohn|floatformat:2 }} € pro Stunde{% endif %}.</p>
+  {% else %}
+    <p class="sicherung sicherung-veraltet">Heute gilt kein Arbeitsvertrag.</p>
+  {% endif %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Beginn</th><th>Ende</th><th>Tätigkeit</th><th>Std./Woche</th><th>Urlaub/Jahr</th><th>Stundenlohn</th><th>Dokument</th></tr></thead>
+    <tbody>
+    {% for v in vertraege %}
+      <tr>
+        <td data-titel="Beginn"><a href="{% url 'personal:vertrag' p.pk v.pk %}">{{ v.beginn|date:"d.m.Y" }}</a></td>
+        <td data-titel="Ende">{{ v.ende|date:"d.m.Y"|default:"unbefristet" }}</td>
+        <td data-titel="Tätigkeit">{{ v.taetigkeit|default:"–" }}</td>
+        <td data-titel="Std./Woche">{{ v.wochenstunden|floatformat:"-2" }}</td>
+        <td data-titel="Urlaub/Jahr">{{ v.urlaubstage|floatformat:"-1" }}</td>
+        <td data-titel="Stundenlohn">{% if v.stundenlohn %}{{ v.stundenlohn|floatformat:2 }} €{% else %}–{% endif %}</td>
+        <td data-titel="Dokument">{% if v.dokument_datei %}<a href="{% url 'personal:dokument_ansehen' p.pk v.pk %}" target="_blank" rel="noopener">ansehen</a>{% else %}–{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7">Noch kein Arbeitsvertrag eingetragen.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <details class="abseits">
+    <summary>Arbeitsvertrag eintragen</summary>
+    <form method="post" action="{% url 'personal:vertrag_neu' p.pk %}">
+      {% csrf_token %}<input type="hidden" name="jahr" value="{{ jahr }}">
+      {% include "includes/formular.html" with form=vertrag_form %}
+      <button type="submit" class="knopf">Eintragen</button>
+    </form>
+    <p class="hinweis">Bei einer Vertragsänderung (z. B. mehr Stunden) den alten Vertrag mit Ende versehen und einen
+      neuen eintragen. So bleiben Urlaub und Stundenkonto der Vergangenheit richtig.</p>
+  </details>
+</section>
+
+<section class="karte">
+  <h2>Urlaub {{ jahr }}</h2>
+  <dl class="angaben">
+    <dt>Anspruch</dt><dd>{{ urlaub.anspruch|floatformat:"-1" }} Tage</dd>
+    <dt>Übertrag aus {{ jahr|add:"-1" }}</dt><dd>{{ urlaub.uebertrag|floatformat:"-1" }} Tage
+      {% if urlaub.verfallen %}– davon {{ urlaub.verfallen|floatformat:"-1" }} am {{ urlaub.verfall_am|date:"d.m.Y" }} verfallen
+      {% elif urlaub.verfaellt %}– davon {{ urlaub.verfaellt|floatformat:"-1" }} verfallen am {{ urlaub.verfall_am|date:"d.m.Y" }}, wenn nicht vorher genommen{% endif %}</dd>
+    <dt>Genommen</dt><dd>{{ urlaub.genommen|floatformat:"-1" }} Tage</dd>
+    <dt>Resturlaub</dt><dd><strong{% if urlaub.rest < 0 %} class="fehler"{% endif %}>{{ urlaub.rest|floatformat:"-1" }} Tage</strong></dd>
+    <dt>Krank</dt><dd>{{ krank_tage|floatformat:"-1" }} Arbeitstage</dd>
+  </dl>
+  <details>
+    <summary>Abweichungen für {{ jahr }} (Anspruch, Verfallsdatum)</summary>
+    <form method="post" action="{% url 'personal:urlaubsjahr' p.pk %}">
+      {% csrf_token %}<input type="hidden" name="jahr" value="{{ jahr }}">
+      {% include "includes/formular.html" with form=urlaubsjahr_form %}
+      <p class="hinweis">Leer = berechnet: Anspruch anteilig nach vollen Vertragsmonaten, Verfall laut „Fristen einstellen“.</p>
+      <button type="submit" class="knopf knopf-zweitrangig">Speichern</button>
+    </form>
+  </details>
+
+  <h3>Abwesenheiten {{ jahr }}</h3>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Art</th><th>Von</th><th>Bis</th><th>Arbeitstage</th><th>Bemerkung</th><th></th></tr></thead>
+    <tbody>
+    {% for a, tage in abwesenheiten %}
+      <tr>
+        <td data-titel="Art">{{ a.get_art_display }}{% if a.art == "krank" %}{% if a.au_vorgelegt %} (AU liegt vor){% else %} <span class="marke-warnung">ohne AU</span>{% endif %}{% endif %}</td>
+        <td data-titel="Von">{{ a.von|date:"d.m.Y" }}</td>
+        <td data-titel="Bis">{{ a.bis|date:"d.m.Y" }}</td>
+        <td data-titel="Arbeitstage">{{ tage|floatformat:"-1" }}</td>
+        <td data-titel="Bemerkung">{{ a.bemerkung|default:"–" }}</td>
+        <td data-titel="Aktion">
+          <form method="post" action="{% url 'personal:loeschen' p.pk 'abwesenheit' a.pk %}" class="inline" onsubmit="return confirm('Eintrag löschen?')">
+            {% csrf_token %}<input type="hidden" name="jahr" value="{{ jahr }}"><button type="submit" class="link">löschen</button>
+          </form>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6">Keine Abwesenheiten in {{ jahr }}.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <details class="abseits">
+    <summary>Urlaub oder Krankheit eintragen</summary>
+    <form method="post" action="{% url 'personal:abwesenheit_neu' p.pk %}">
+      {% csrf_token %}<input type="hidden" name="jahr" value="{{ jahr }}">
+      {% include "includes/formular.html" with form=abwesenheit_form %}
+      <p class="hinweis">Bei Krankheit nie eine Diagnose eintragen.</p>
+      <button type="submit" class="knopf">Eintragen</button>
+    </form>
+  </details>
+</section>
+
+<section class="karte">
+  <h2>Stundenkonto {{ jahr }}</h2>
+  <p>Stand: <strong{% if konto.saldo < 0 %} class="fehler"{% endif %}>{{ konto.saldo|floatformat:2 }} Stunden</strong>
+    (Übertrag aus den Vorjahren: {{ konto.vorjahre|floatformat:2 }})</p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Monat</th><th>Soll</th><th>Ist</th><th>Urlaub</th><th>Krank</th><th>Saldo</th></tr></thead>
+    <tbody>
+    {% for m in konto.monate %}
+      <tr>
+        <td data-titel="Monat">{{ m.monat|date:"F" }}</td>
+        <td data-titel="Soll">{{ m.soll|floatformat:2 }}</td>
+        <td data-titel="Ist">{{ m.ist|floatformat:2 }}</td>
+        <td data-titel="Urlaub">{{ m.urlaub|floatformat:2 }}</td>
+        <td data-titel="Krank">{{ m.krank|floatformat:2 }}</td>
+        <td data-titel="Saldo"><span{% if m.saldo < 0 %} class="fehler"{% endif %}>{{ m.saldo|floatformat:2 }}</span></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6">In {{ jahr }} gab es (noch) keinen gültigen Arbeitsvertrag.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="hinweis">Soll = Wochenstunden ÷ 5 je Werktag (Mo–Fr) bis heute. Urlaub und Krankheit werden mit dem Tagessoll
+    gutgeschrieben. Feiertage bitte als Stunden-Korrektur eintragen. Später übernimmt das die Arbeitszeiterfassung.</p>
+
+  <h3>Eingetragene Stunden {{ jahr }}</h3>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Datum</th><th>Stunden</th><th>Bemerkung</th><th></th></tr></thead>
+    <tbody>
+    {% for s in stunden %}
+      <tr>
+        <td data-titel="Datum">{{ s.datum|date:"d.m.Y" }}</td>
+        <td data-titel="Stunden">{{ s.stunden|floatformat:2 }}</td>
+        <td data-titel="Bemerkung">{{ s.bemerkung|default:"–" }}</td>
+        <td data-titel="Aktion">
+          <form method="post" action="{% url 'personal:loeschen' p.pk 'stunden' s.pk %}" class="inline" onsubmit="return confirm('Eintrag löschen?')">
+            {% csrf_token %}<input type="hidden" name="jahr" value="{{ jahr }}"><button type="submit" class="link">löschen</button>
+          </form>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4">Keine Stunden in {{ jahr }}.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <details class="abseits" open>
+    <summary>Stunden eintragen</summary>
+    <form method="post" action="{% url 'personal:stunden_neu' p.pk %}">
+      {% csrf_token %}<input type="hidden" name="jahr" value="{{ jahr }}">
+      {% include "includes/formular.html" with form=stunden_form %}
+      <button type="submit" class="knopf">Eintragen</button>
+    </form>
+  </details>
+</section>
+{% endblock %}

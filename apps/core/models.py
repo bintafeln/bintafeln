@@ -25,6 +25,7 @@ class TafelEinstellungen(models.Model):
     zwei_faktor_kiosk = models.BooleanField("Zwei-Faktor Pflicht für Kiosk", default=False)
     zwei_faktor_fahrer = models.BooleanField("Zwei-Faktor Pflicht für Fahrer", default=False)
     zwei_faktor_beifahrer = models.BooleanField("Zwei-Faktor Pflicht für Beifahrer", default=False)
+    zwei_faktor_personal = models.BooleanField("Zwei-Faktor Pflicht für Personal", default=True)
     buero_verwaltet_mitarbeitende = models.BooleanField(
         "Büro darf Mitarbeitende verwalten",
         default=False,
@@ -62,6 +63,7 @@ class TafelEinstellungen(models.Model):
             rollen.KIOSK: self.zwei_faktor_kiosk,
             rollen.FAHRER: self.zwei_faktor_fahrer,
             rollen.BEIFAHRER: self.zwei_faktor_beifahrer,
+            rollen.PERSONAL: self.zwei_faktor_personal,
         }
         return {rolle for rolle, pflicht in felder.items() if pflicht}
 

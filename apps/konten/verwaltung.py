@@ -38,7 +38,7 @@ def ist_admin(benutzer) -> bool:
 def vergebbare_rollen(verwalter) -> list[str]:
     if rollen.hat_rolle(verwalter, rollen.ADMIN):
         return list(rollen.ALLE)
-    return [r for r in rollen.ALLE if r != rollen.ADMIN]
+    return [r for r in rollen.ALLE if r not in rollen.NUR_DURCH_ADMIN]
 
 
 def darf_bearbeiten(verwalter, ziel) -> bool:

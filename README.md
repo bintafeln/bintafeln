@@ -173,6 +173,27 @@ Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie
 - **Löschfrist:** 3 Jahre (einstellbar) nach Austritt bzw. Sperre werden die persönlichen
   Angaben geleert. Name, Rollen und Zeiträume bleiben im Archiv.
 
+## Personal
+
+„Personal“ im Menü (nur Admin und Rolle **Personal**; diese Rolle vergibt nur ein Admin):
+
+- Liste der Festangestellten mit Tätigkeit, Wochenstunden, Vertragsende, Resturlaub und
+  Stundenkonto.
+- **Arbeitsvertrag:**
+  - Beginn, Ende, Tätigkeit, Wochenstunden, Urlaubstage pro Jahr, Stundenlohn.
+  - Das Vertragsdokument (PDF oder Foto) wird verschlüsselt gespeichert.
+  - Bei einer Änderung den alten Vertrag beenden und einen neuen eintragen.
+- **Urlaub und Krankheit:**
+  - Zeitraum und Arbeitstage (ohne Angabe Mo–Fr; Feiertage und halbe Tage selbst eintragen).
+  - Bei Krankheit nur, ob eine AU-Bescheinigung vorliegt, nie eine Diagnose.
+  - Der Anspruch wird anteilig berechnet.
+  - Der Resturlaub wird automatisch übertragen und verfällt zum 31.03. Das Datum lässt sich
+    unter „Mitarbeitende → Fristen einstellen“ und je Person und Jahr ändern.
+- **Stundenkonto:**
+  - Ist-Stunden von Hand eintragen.
+  - Soll (Wochenstunden ÷ 5 je Werktag), Urlaub und Krankheit rechnet bintafeln je Monat.
+  - Der Saldo läuft über die Jahre weiter.
+
 ## E-Mail
 
 Unter „Einstellungen → E-Mail“ trägt ein Admin den Mailserver der Tafel ein: Server, Port,

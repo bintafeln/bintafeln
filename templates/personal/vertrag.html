@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block titel %}Arbeitsvertrag {{ p }}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'personal:person' p.pk %}?jahr={{ v.beginn|date:'Y' }}">← {{ p }}</a></p>
+  <h1>{{ v }}</h1>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+
+<section class="karte">
+  <h2>Vertragsdokument</h2>
+  {% if v.dokument_datei %}
+    <p><a href="{% url 'personal:dokument_ansehen' p.pk v.pk %}" target="_blank" rel="noopener">Ansehen</a> (jeder Abruf wird protokolliert)</p>
+    <form method="post" action="{% url 'personal:dokument_loeschen' p.pk v.pk %}" onsubmit="return confirm('Dokument löschen?')">
+      {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">Dokument löschen</button>
+    </form>
+  {% endif %}
+  <form method="post" action="{% url 'personal:dokument_hochladen' p.pk v.pk %}" enctype="multipart/form-data" class="abseits">
+    {% csrf_token %}
+    <div class="feld">
+      <label for="dokument">{% if v.dokument_datei %}Dokument ersetzen{% else %}Dokument hochladen{% endif %} (PDF oder Foto, höchstens 10 MB)</label>
+      <input type="file" name="dokument" id="dokument" accept="application/pdf,image/jpeg,image/png,image/webp" required>
+    </div>
+    <button type="submit" class="knopf knopf-zweitrangig">Hochladen</button>
+  </form>
+</section>
+
+<section class="karte">
+  <form method="post" action="{% url 'personal:vertrag_loeschen' p.pk v.pk %}" onsubmit="return confirm('Diesen Arbeitsvertrag endgültig löschen? Urlaub und Stundenkonto werden neu berechnet.')">
+    {% csrf_token %}<input type="hidden" name="jahr" value="{{ v.beginn|date:'Y' }}">
+    <button type="submit" class="knopf knopf-gefahr">Vertrag löschen</button>
+  </form>
+</section>
+{% endblock %}

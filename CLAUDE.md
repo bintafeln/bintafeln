@@ -126,7 +126,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   sperren; ADR 0015). `Benutzer.passwort_aendern` erzwingt über
   `PasswortAendernMiddleware` ein neues Passwort, bevor die Zwei-Faktor-Einrichtung kommt.
   Stammdaten, Wiedervorlagen, Führerschein-Kopie und Löschfrist in `apps/konten/personal.py`
-  (ADR 0017).
+  (ADR 0017). App `personal` (Rolle Personal): Verträge, Abwesenheiten, Stunden; Rechenregeln
+  in `apps/personal/berechnung.py` (ADR 0018). Verschlüsselte Dateien nur über
+  `apps.core.privatdateien`.
 - Mails nur über `apps.core.mail.senden()` (Mailserver aus der Datenbank, verständliche
   `MailFehler`). Geheimnisse in der Datenbank nur über `apps.core.geheimnis` verschlüsselt
   speichern (ADR 0016). In Tests landen Mails in `django.core.mail.outbox`.

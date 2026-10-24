@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titel %}Personal{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Personal</h1>
+  <p class="hinweis">Festangestellte und alle mit Arbeitsvertrag. Ehrenamtliche ohne Vertrag stehen unter
+    „Mitarbeitende“. Diese Seite sehen nur Admin und die Rolle Personal.</p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Name</th><th>Tätigkeit</th><th>Wochenstunden</th><th>Vertrag bis</th><th>Resturlaub {{ jahr }}</th><th>Stundenkonto</th></tr></thead>
+    <tbody>
+    {% for z in zeilen %}
+      <tr>
+        <td data-titel="Name"><a href="{% url 'personal:person' z.p.pk %}">{{ z.p }}</a>{% if not z.p.is_active %} <span class="marke-warnung">gesperrt</span>{% endif %}</td>
+        <td data-titel="Tätigkeit">{{ z.vertrag.taetigkeit|default:"–" }}</td>
+        <td data-titel="Wochenstunden">{% if z.vertrag %}{{ z.vertrag.wochenstunden|floatformat:"-2" }}{% else %}<span class="marke-warnung">kein gültiger Vertrag</span>{% endif %}</td>
+        <td data-titel="Vertrag bis">{% if z.vertrag %}{{ z.vertrag.ende|date:"d.m.Y"|default:"unbefristet" }}{% else %}–{% endif %}</td>
+        <td data-titel="Resturlaub">{{ z.urlaub.rest|floatformat:"-1" }} Tage</td>
+        <td data-titel="Stundenkonto"><span{% if z.saldo < 0 %} class="fehler"{% endif %}>{{ z.saldo|floatformat:2 }} h</span></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6">Noch niemand. Unter „Mitarbeitende“ bei der Beschäftigung „fest angestellt“ wählen.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

@@ -53,6 +53,7 @@ class EinstellungenForm(forms.ModelForm):
             "zwei_faktor_kiosk",
             "zwei_faktor_fahrer",
             "zwei_faktor_beifahrer",
+            "zwei_faktor_personal",
             "buero_verwaltet_mitarbeitende",
         ]
 

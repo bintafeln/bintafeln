@@ -107,7 +107,7 @@ class MitarbeiterForm(forms.ModelForm):
         return name
 
 
-class _Datum(forms.DateInput):
+class DatumEingabe(forms.DateInput):
     input_type = "date"
 
     def __init__(self, **kwargs):
@@ -124,13 +124,13 @@ class StammdatenForm(forms.ModelForm):
             "ifsg_erstbelehrung_am", "ifsg_belehrung_am",
         ]  # fmt: skip
         widgets = {
-            "geburtsdatum": _Datum(),
-            "eintritt": _Datum(),
-            "austritt": _Datum(),
-            "fs_gueltig_bis": _Datum(),
-            "fs_gesehen_am": _Datum(),
-            "ifsg_erstbelehrung_am": _Datum(),
-            "ifsg_belehrung_am": _Datum(),
+            "geburtsdatum": DatumEingabe(),
+            "eintritt": DatumEingabe(),
+            "austritt": DatumEingabe(),
+            "fs_gueltig_bis": DatumEingabe(),
+            "fs_gesehen_am": DatumEingabe(),
+            "ifsg_erstbelehrung_am": DatumEingabe(),
+            "ifsg_belehrung_am": DatumEingabe(),
             "bemerkung": forms.Textarea(attrs={"rows": 3}),
         }
 
@@ -152,7 +152,7 @@ class SchulungForm(forms.ModelForm):
     class Meta:
         model = Schulung
         fields = ["thema", "datum", "gueltig_bis", "bemerkung"]
-        widgets = {"datum": _Datum(), "gueltig_bis": _Datum()}
+        widgets = {"datum": DatumEingabe(), "gueltig_bis": DatumEingabe()}
 
 
 class PersonalEinstellungenForm(forms.ModelForm):
@@ -163,5 +163,7 @@ class PersonalEinstellungenForm(forms.ModelForm):
             "ifsg_wiederholung_monate",
             "vorlauf_tage",
             "fs_kopie_erlaubt",
+            "urlaub_verfall_monat",
+            "urlaub_verfall_tag",
             "stammdaten_loeschen_jahre",
         ]
