@@ -491,7 +491,10 @@ Eine bestehende einzelne Installation lässt sich später so umstellen: Proxy ei
 
 ### Öffentliche Demo
 
-Für eine Demo mit erfundenen Daten in deren `.env` zusätzlich:
+**Schritt für Schritt:** [docs/demo-einrichten.md](docs/demo-einrichten.md) – zum Ausprobieren
+neben der Dummy-Tafel (`http://IP:8080`) oder öffentlich unter einer eigenen Domain.
+
+Kurzfassung: Für eine Demo mit erfundenen Daten in deren `.env` zusätzlich:
 
 ```
 BINTAFELN_DEMO=true
