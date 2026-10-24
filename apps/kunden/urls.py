@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.kunden import views, views_bearbeiten
+from apps.kunden import views, views_bearbeiten, views_dokumente
 
 app_name = "kunden"
 
@@ -48,6 +48,13 @@ urlpatterns = [
     ),
     path("haushalt/<path:kundennummer>/notiz/", views.notiz_neu, name="notiz_neu"),
     path("notiz/<int:pk>/loeschen/", views.notiz_loeschen, name="notiz_loeschen"),
+    path(
+        "haushalt/<path:kundennummer>/dokument/",
+        views_dokumente.hochladen,
+        name="dokument_hochladen",
+    ),
+    path("dokument/<int:pk>/", views_dokumente.ansehen, name="dokument"),
+    path("dokument/<int:pk>/loeschen/", views_dokumente.loeschen, name="dokument_loeschen"),
     path("haushalt/<path:kundennummer>/auskunft/", views.auskunft, name="auskunft"),
     path("haushalt/<path:kundennummer>/ausweis/", views.ausweis, name="ausweis"),
     path("haushalt/<path:kundennummer>/", views.haushalt, name="haushalt"),

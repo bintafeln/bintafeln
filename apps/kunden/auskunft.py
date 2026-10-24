@@ -10,7 +10,14 @@ from reportlab.lib.units import mm
 
 from apps.ausgabe.konto import euro
 from apps.core.pdf import Pdf
-from apps.kunden.models import Haushalt, KundenEinstellungen, Notiz, Zugriff, Zusatzfeld
+from apps.kunden.models import (
+    Haushalt,
+    HaushaltDokument,
+    KundenEinstellungen,
+    Notiz,
+    Zugriff,
+    Zusatzfeld,
+)
 
 
 def _zusatz(felder, werte) -> list[tuple[str, str]]:
@@ -109,6 +116,16 @@ def kunde_pdf(h: Haushalt) -> bytes:
         breiten=[0.14, 0.66, 0.2],
     )  # fmt: skip
 
+    doc.ueberschrift("Dokumente")
+    dokumente = HaushaltDokument.objects.filter(kundennummer=h.kundennummer).select_related("art")
+    doc.tabelle(
+        ["Titel", "Dokumentart", "Datum", "Hochgeladen", "Löschen am"],
+        [[d.titel, str(d.art), _datum(d.datum), _datum(timezone.localdate(d.hochgeladen_am)),
+          _datum(d.loeschen_am)]
+         for d in dokumente],
+        breiten=[0.3, 0.22, 0.14, 0.17, 0.17],
+    )  # fmt: skip
+
     doc.ueberschrift("Ausnahmen")
     doc.tabelle(
         ["Datum", "Begründung", "Eingetragen von"],
@@ -169,8 +186,9 @@ def hinweise(e: KundenEinstellungen) -> list[str]:
         "Empfänger: Die Daten werden nur von berechtigten Mitarbeitenden der Tafel genutzt und "
         "nicht an Dritte weitergegeben, soweit keine gesetzliche Pflicht besteht.",
         f"Speicherdauer: Abholungen und Ausnahmen werden nach {e.abholungen_aufbewahren_jahre} "
-        f"Jahren gelöscht, das Zugriffsprotokoll nach {e.zugriffe_aufbewahren_tage} Tagen. Die "
-        "übrigen Daten werden gelöscht, wenn Sie nicht mehr Kunde der Tafel sind.",
+        f"Jahren gelöscht, das Zugriffsprotokoll nach {e.zugriffe_aufbewahren_tage} Tagen, "
+        "Dokumente an dem oben genannten Tag. Die übrigen Daten werden gelöscht, wenn Sie nicht "
+        "mehr Kunde der Tafel sind.",
         "Ihre Rechte: Sie können die Berichtigung falscher Angaben, die Löschung oder die "
         "Einschränkung der Verarbeitung verlangen und eine Einwilligung jederzeit widerrufen. "
         "Sie können sich außerdem bei einer Datenschutz-Aufsichtsbehörde beschweren.",

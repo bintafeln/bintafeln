@@ -109,6 +109,10 @@ Eine Kundengruppe ist ein fester Abholtermin:
 
 ### Dokumente
 
+**Umgesetzt (ADR 0030):** Hochladen, Ansehen und Löschen auf der Haushaltsseite (Admin, Büro),
+Dokumentarten mit Aufbewahrungsfrist in Monaten, automatische Löschung, Abruf im
+Zugriffsprotokoll, Angaben in der Auskunft.
+
 Im Altsystem gespeicherte Dokumente werden **nicht** übernommen. Bintafeln soll Dokumente zu einem
 Haushalt aber **speichern können** (z. B. Bescheide, Erklärungen, Datenschutzeinwilligung):
 

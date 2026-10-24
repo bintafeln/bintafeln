@@ -137,6 +137,8 @@
 {% include "kunden/_notizen.html" %}
 
 {% if buero %}
+{% include "kunden/_dokumente.html" %}
+
 <section class="karte breit">
   <h2>Kundenkonto</h2>
   <p>Kontostand: <strong>{% if h.kontostand is not None %}{{ h.kontostand|floatformat:2 }} €{% else %}–{% endif %}</strong></p>

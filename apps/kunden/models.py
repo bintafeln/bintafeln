@@ -1,5 +1,6 @@
 """Kundenstamm (Modul 2). Fachliche Grundlage: docs/fachkonzept.md, Import: docs/importformat.md."""
 
+import calendar
 import datetime as dt
 import uuid
 
@@ -11,6 +12,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator, RegexVa
 from django.db import models
 from django.utils import timezone
 
+from apps.core import privatdateien
 from apps.kunden import werte
 
 
@@ -451,6 +453,81 @@ def verwaiste_notizen_loeschen() -> int:
     return Notiz.objects.exclude(kundennummer__in=vorhanden).delete()[0]
 
 
+class Dokumentart(models.Model):
+    """Art eines Dokuments zum Haushalt mit eigener Aufbewahrungsfrist (ADR 0030)."""
+
+    bezeichnung = models.CharField("Bezeichnung", max_length=100, unique=True)
+    aufbewahren_monate = models.PositiveSmallIntegerField(
+        "Aufbewahren (Monate)",
+        default=24,
+        validators=[MinValueValidator(1), MaxValueValidator(240)],
+        help_text="Gezählt ab dem Dokumentdatum, ohne Datum ab dem Hochladen. Danach wird das "
+        "Dokument automatisch gelöscht.",
+    )
+    aktiv = models.BooleanField("Aktiv", default=True)
+
+    class Meta:
+        verbose_name = "Dokumentart"
+        verbose_name_plural = "Dokumentarten"
+        ordering = ["bezeichnung"]
+
+    def __str__(self):
+        return self.bezeichnung
+
+
+class HaushaltDokument(models.Model):
+    """Dokument zu einem Haushalt, verschlüsselt unter MEDIA_ROOT/privat/ (ADR 0030).
+
+    Hängt an der Kundennummer, damit es einen Import übersteht; gelöscht wird es nach der Frist
+    seiner Dokumentart.
+    """
+
+    ORDNER = "kunden-dokumente"
+
+    kundennummer = models.CharField("Kundennummer", max_length=20, db_index=True)
+    art = models.ForeignKey(Dokumentart, verbose_name="Dokumentart", on_delete=models.PROTECT)
+    titel = models.CharField("Titel", max_length=200)
+    datum = models.DateField("Dokumentdatum", null=True, blank=True)
+    datei = models.CharField(max_length=200, editable=False)
+    typ = models.CharField(max_length=100, editable=False)
+    groesse = models.PositiveIntegerField("Größe (Bytes)", default=0, editable=False)
+    hochgeladen_am = models.DateTimeField("Hochgeladen am", default=timezone.now)
+    hochgeladen_von = models.CharField("Hochgeladen von", max_length=150, blank=True)
+
+    class Meta:
+        verbose_name = "Dokument zum Haushalt"
+        verbose_name_plural = "Dokumente zu Haushalten"
+        ordering = ["-hochgeladen_am"]
+
+    def __str__(self):
+        return self.titel
+
+    @property
+    def loeschen_am(self) -> dt.date:
+        """Erster Tag, an dem das Dokument nicht mehr aufbewahrt wird."""
+        beginn = self.datum or timezone.localdate(self.hochgeladen_am)
+        jahr, monat = divmod(beginn.month - 1 + self.art.aufbewahren_monate, 12)
+        jahr, monat = beginn.year + jahr, monat + 1
+        letzter = calendar.monthrange(jahr, monat)[1]
+        return dt.date(jahr, monat, min(beginn.day, letzter))
+
+    def loeschen(self) -> None:
+        """Datei und Eintrag entfernen."""
+        privatdateien.loeschen(self.ORDNER, self.datei)
+        self.delete()
+
+
+def abgelaufene_dokumente_loeschen(heute: dt.date | None = None) -> int:
+    heute = heute or timezone.localdate()
+    anzahl = 0
+    with disable_auditlog():  # Fristablauf ist kein fachliches Ereignis je Datensatz
+        for d in HaushaltDokument.objects.select_related("art"):
+            if d.loeschen_am <= heute:
+                d.loeschen()
+                anzahl += 1
+    return anzahl
+
+
 class AusweisVorlage(models.Model):
     """Gestaltung des Kundenausweises (Singleton, ADR 0027). Elemente siehe kunden.ausweis."""
 
@@ -618,6 +695,7 @@ def fristen_anwenden() -> int:
         abgelaufene_abholungen_loeschen()
         + abgelaufene_zugriffe_loeschen()
         + verwaiste_notizen_loeschen()
+        + abgelaufene_dokumente_loeschen()
     )
 
 
@@ -698,5 +776,7 @@ for modell in (
     Abholung,
     Ausnahme,
     ImportLauf,
+    Dokumentart,
 ):
     auditlog.register(modell)
+auditlog.register(HaushaltDokument, exclude_fields=["datei"])

@@ -15,7 +15,7 @@ from apps.core import sicherung
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.kunden import auskunft as kunden_auskunft
-from apps.kunden import importieren
+from apps.kunden import importieren, views_dokumente
 from apps.kunden.ausweis import MAX_SAMMELDRUCK, ausweis_pdf, ausweise_pdf
 from apps.kunden.forms import KundenEinstellungenForm, ZusatzfeldForm
 from apps.kunden.models import (
@@ -199,6 +199,7 @@ def haushalt(request, kundennummer):
             "abholungen_gesamt": abholungen.count(),
             "bemerkungen": h.bemerkungen.all() if buero else [],
             **notizen_kontext(h.kundennummer, request.user),
+            **(views_dokumente.kontext(h.kundennummer) if buero else {}),
             "kontostand_zeigen": buero or AusgabeEinstellungen.laden().kontostand_anzeigen,
             "buchungen": h.buchungen.all() if buero else [],
             "ausweis_abgelaufen": h.ausweis_gueltig_bis is not None

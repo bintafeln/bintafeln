@@ -17,6 +17,7 @@ from django.views.decorators.http import require_POST
 from apps.ausgabe import konto
 from apps.ausgabe.forms import BeitragsfreiForm
 from apps.ausgabe.models import BeitragsfreierZeitraum
+from apps.core import privatdateien
 from apps.core.models import TafelEinstellungen
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
@@ -27,6 +28,7 @@ from apps.kunden.forms_bearbeiten import (
     AusgabestelleForm,
     AusnahmeForm,
     AusweisVorlageForm,
+    DokumentartForm,
     EinkommensartForm,
     HaushaltForm,
     KundengruppeForm,
@@ -41,8 +43,10 @@ from apps.kunden.models import (
     Ausnahme,
     AusweisVorlage,
     Bemerkung,
+    Dokumentart,
     Einkommensart,
     Haushalt,
+    HaushaltDokument,
     Kundengruppe,
     Notiz,
     NotizVorlage,
@@ -127,6 +131,7 @@ def haushalt_loeschen(request, kundennummer):
             ("Abholungen", h.abholungen.count()),
             ("Interne Anmerkungen", h.bemerkungen.count()),
             ("Notizen", Notiz.objects.filter(kundennummer=kundennummer).count()),
+            ("Dokumente", HaushaltDokument.objects.filter(kundennummer=kundennummer).count()),
         ]
         return render(
             request,
@@ -137,6 +142,12 @@ def haushalt_loeschen(request, kundennummer):
     with transaction.atomic():
         h.delete()  # Buchungen bleiben ohne Haushalt, aber mit Kundennummer (Kasse)
         Notiz.objects.filter(kundennummer=kundennummer).delete()
+        dokumente = HaushaltDokument.objects.filter(kundennummer=kundennummer)
+        dateien = list(dokumente.values_list("datei", flat=True))
+        dokumente.delete()
+        transaction.on_commit(
+            lambda: [privatdateien.loeschen(HaushaltDokument.ORDNER, d) for d in dateien]
+        )
     messages.success(
         request,
         f"Haushalt {kundennummer} gelöscht. Kontobuchungen bleiben ohne Haushalt für die Kasse "
@@ -221,6 +232,7 @@ LISTEN = {
     "ausgabestellen": (Ausgabestelle, AusgabestelleForm, "Ausgabestellen", "Ausgabestelle"),
     "einkommensarten": (Einkommensart, EinkommensartForm, "Einkommensarten", "Einkommensart"),
     "notizvorlagen": (NotizVorlage, NotizVorlageForm, "Notiz-Vorlagen", "Notiz-Vorlage"),
+    "dokumentarten": (Dokumentart, DokumentartForm, "Dokumentarten", "Dokumentart"),
     "beitragsfrei": (
         BeitragsfreierZeitraum,
         BeitragsfreiForm,

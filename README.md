@@ -300,8 +300,8 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
 
   | Rolle | sieht |
   |---|---|
-  | Admin, Büro | alles: Anschrift, Kontakt, Personen, Abholberechtigte, alle Sperren, Ausnahmen, Abholungen, Kontostand, Anmerkungen, Notizen, Zusatzfelder |
-  | Ausgabe | nur, was der Einlass braucht: Kundennummer, Haushaltsgröße, alle Personen des Haushalts und die Abholberechtigten mit Geburtsdatum, Ausgabestelle, Karte gültig bis, Kontostand (abschaltbar), aktive Sperren, die letzten 5 Abholungen, Notizen, freigegebene Zusatzfelder (Art. 9 nur mit Freigabe in den Einstellungen). Keine Anschrift, keine Kontaktdaten, keine Ausnahmen, keine internen Anmerkungen |
+  | Admin, Büro | alles: Anschrift, Kontakt, Personen, Abholberechtigte, alle Sperren, Ausnahmen, Abholungen, Kontostand, Anmerkungen, Notizen, Dokumente, Zusatzfelder |
+  | Ausgabe | nur, was der Einlass braucht: Kundennummer, Haushaltsgröße, alle Personen des Haushalts und die Abholberechtigten mit Geburtsdatum, Ausgabestelle, Karte gültig bis, Kontostand (abschaltbar), aktive Sperren, die letzten 5 Abholungen, Notizen, freigegebene Zusatzfelder (Art. 9 nur mit Freigabe in den Einstellungen). Keine Anschrift, keine Kontaktdaten, keine Ausnahmen, keine internen Anmerkungen, keine Dokumente |
   | Kiosk | nichts |
 
 - **Bearbeiten (nur Admin):** Auf der Haushaltsseite „Bearbeiten“ ändert alles zum Haushalt:
@@ -318,6 +318,15 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
   Tag (Versehen). Notizen hängen an der Kundennummer und
   bleiben beim Import erhalten; gibt es die Kundennummer nicht mehr, werden sie gelöscht
   (ADR 0026). Die **internen Anmerkungen** aus dem Altsystem sehen nur Büro und Admin.
+- **Dokumente** (Admin, Büro): Auf der Haushaltsseite unter „Dokumente“ Bescheide,
+  Einwilligungen usw. als PDF oder Foto hochladen (höchstens 10 MB), mit Dokumentart, Titel und
+  Dokumentdatum. Sie werden verschlüsselt gespeichert, nie öffentlich ausgeliefert, und jeder
+  Abruf steht im Zugriffsprotokoll und im Änderungsprotokoll. Jede **Dokumentart** hat eine
+  eigene Aufbewahrungsfrist („Einstellungen → Dokumentarten“, Admin; Vorgaben: Bescheid 24,
+  Datenschutzeinwilligung 36, Sonstiges 12 Monate), gezählt ab dem Dokumentdatum, ohne Datum ab
+  dem Hochladen. Danach löscht bintafeln das Dokument automatisch; die Tabelle zeigt den Tag.
+  Dokumente hängen an der Kundennummer und überstehen den Import; wird der Haushalt gelöscht,
+  werden sie mitgelöscht (ADR 0030).
 - Jeder Aufruf einer Detailseite steht im **Zugriffsprotokoll** („Kunden“ → „Zugriffsprotokoll“,
   nur Admin). Die Einträge werden nach 365 Tagen gelöscht, einstellbar unter
   „Einstellungen → Kundenstamm“.
