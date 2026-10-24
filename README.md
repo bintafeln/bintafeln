@@ -330,6 +330,10 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   Skripte und Ähnliches werden beim Anzeigen entfernt. Platzhalter: `{nummer}`, `{tafel}`,
   in der Mail auch `{vorname}` und `{nachname}`. „Vorschau“ zeigt alles mit Beispielwerten,
   ohne zu speichern. Ohne eigene Texte gelten die mitgelieferten.
+- **Staatsangehörigkeit** ist eine Auswahlliste aller Staaten (dazu „staatenlos“ und
+  „ungeklärt“). Gespeichert wird der deutsche Name; in anderen Sprachen zeigt der Browser den
+  Namen zusätzlich in der Sprache der Seite. Beim Bearbeiten von Personen gilt dieselbe Liste;
+  importierte Werte, die nicht darin stehen, bleiben wählbar.
 - **Eigene Gestaltung:** Im Feld „Eigene Gestaltung (CSS)“ lassen sich zusätzliche CSS-Regeln
   für das öffentliche Formular hinterlegen (nur für Kundige).
 - Nach dem Absenden sehen Antragstellende eine Bestätigungsseite mit ihrer **Antragsnummer** und

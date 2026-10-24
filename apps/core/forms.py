@@ -2,10 +2,22 @@ from django import forms
 from django.contrib.auth import get_user_model, password_validation
 
 from apps.core import geheimnis
+from apps.core.auswahl import LAENDERCODE
 from apps.core.farben import STANDARDFARBE
 from apps.core.models import MailEinstellungen, TafelEinstellungen
 
 LOGO_MAX_BYTES = 2 * 1024 * 1024
+
+
+class StaatAuswahl(forms.Select):
+    """Auswahl der Staatsangehörigkeit; jede Option trägt den Ländercode (data-land), damit der
+    Browser den Namen in der Sprache der Besucher ergänzen kann."""
+
+    def create_option(self, name, value, *args, **kwargs):
+        option = super().create_option(name, value, *args, **kwargs)
+        if value in LAENDERCODE:
+            option["attrs"]["data-land"] = LAENDERCODE[value]
+        return option
 
 
 class EinrichtungForm(forms.Form):

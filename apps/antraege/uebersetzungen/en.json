@@ -19,6 +19,8 @@
   "anrede_herr": "Mr",
   "anrede_divers": "Diverse",
   "keine_angabe": "not specified",
+  "staatenlos": "stateless",
+  "ungeklaert": "unknown",
   "vorname": "First name",
   "nachname": "Last name",
   "geburtsdatum": "Date of birth",

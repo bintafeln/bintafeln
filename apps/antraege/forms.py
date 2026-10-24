@@ -15,7 +15,8 @@ from apps.antraege.models import (
 )
 from apps.ausgabe.ampel import WOCHENTAGE
 from apps.core import privatdateien
-from apps.core.auswahl import ANREDEN, FAMILIENSTAENDE
+from apps.core.auswahl import ANREDEN, FAMILIENSTAENDE, staatsangehoerigkeiten
+from apps.core.forms import StaatAuswahl
 from apps.konten.forms import DatumEingabe
 from apps.kunden.models import Ausgabestelle
 
@@ -75,7 +76,9 @@ class AntragForm(forms.Form):
             forms.ChoiceField(choices=[("", t["keine_angabe"]), *familienstaende]),
             t["familienstand"],
         )
-        self._feld("staatsangehoerigkeit", forms.CharField(max_length=100),
+        staaten = [(w, {"staatenlos": t["staatenlos"], "ungeklärt": t["ungeklaert"]}.get(w, n))
+                   for w, n in staatsangehoerigkeiten(t["keine_angabe"])]  # fmt: skip
+        self._feld("staatsangehoerigkeit", forms.ChoiceField(choices=staaten, widget=StaatAuswahl),
                    t["staatsangehoerigkeit"])  # fmt: skip
         if einstellungen.angehoerige != Abfrage.AUS:
             for n in range(1, MAX_PERSONEN + 1):

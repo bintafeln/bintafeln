@@ -270,6 +270,18 @@ def test_mitgelieferte_mail_ist_gestaltet(client, offen, mailserver, settings):
     assert "&lt;p&gt;" not in gestaltet
 
 
+def test_staatsangehoerigkeit_als_auswahl(client, offen):
+    offen.staatsangehoerigkeit = Abfrage.OPTIONAL
+    offen.save()
+    seite = client.get(reverse("antrag:formular", args=["ar"])).content.decode()
+    assert '<option value="Syrien" data-land="SY">Syrien</option>' in seite
+    assert '<option value="staatenlos">عديم الجنسية</option>' in seite and "staaten.js" in seite
+    falsch = client.post(FORMULAR, daten(staatsangehoerigkeit="Atlantis")).content.decode()
+    assert "Bitte prüfen Sie die markierten Angaben" in falsch
+    client.post(FORMULAR, daten(staatsangehoerigkeit="Syrien"))
+    assert Antrag.objects.get().staatsangehoerigkeit == "Syrien"
+
+
 def test_form_personen_leer_ohne_angehoerige(offen):
     offen.angehoerige = Abfrage.AUS
     form = AntragForm(texte=sprachen.texte("de"), einstellungen=offen)

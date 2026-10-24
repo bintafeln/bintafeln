@@ -118,10 +118,12 @@ def test_personen(admin_client, h):
     assert max_.ist_hauptperson and max_.zusatz == {"sb": False}
     assert not Person.objects.get(vorname="Erika").ist_hauptperson
     alt = Person.objects.get(vorname="Erika")
-    alt.familienstand = "unbekannt (alt)"
+    alt.familienstand, alt.staatsangehoerigkeit = "unbekannt (alt)", "deutsch"
     alt.save()
     seite = admin_client.get(url("teil", "2001", "person", alt.pk)).content.decode()
     assert "unbekannt (alt)" in seite and "Löschen" in seite
+    assert '<option value="deutsch" selected>deutsch</option>' in seite  # Importwert bleibt
+    assert '<option value="Türkei" data-land="TR">Türkei</option>' in seite
     daten = {"vorname": "Erika", "nachname": "Test", "ist_hauptperson": "on"}
     admin_client.post(url("teil", "2001", "person", alt.pk), daten)
     assert Person.objects.get(ist_hauptperson=True) == alt
