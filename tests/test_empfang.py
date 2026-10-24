@@ -1,5 +1,6 @@
 import datetime as dt
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 from django.urls import reverse
@@ -75,6 +76,23 @@ def test_ausgabe_sieht_empfang(ausgabe, stelle):
     assert "Einlass</a>" in ausgabe.get("/").content.decode()
     inhalt = ausgabe.get(EMPFANG).content.decode()
     assert "Kundennummer scannen" in inhalt and "Ausgabestelle Mitte" in inhalt
+
+
+def test_kamera_scanner_eingebunden(ausgabe, stelle):
+    """Kamera-Knopf und mitgelieferter Barcode-Leser, ohne Zugriff auf fremde Server."""
+    from django.contrib.staticfiles import finders
+
+    inhalt = ausgabe.get(EMPFANG).content.decode()
+    assert 'data-kamera="kamera"' in inhalt and 'id="kamera-dialog"' in inhalt
+    for datei in [
+        "js/kamera_scanner.js",
+        "vendor/barcode-detector/ponyfill.js",
+        "vendor/barcode-detector/zxing_reader.wasm",
+    ]:
+        assert f"/static/{datei}" in inhalt
+        assert finders.find(datei)
+    skript = Path(finders.find("js/kamera_scanner.js")).read_text(encoding="utf-8")
+    assert "http" not in skript.replace("https)", "")
 
 
 # --- Scannen ------------------------------------------------------------------------------

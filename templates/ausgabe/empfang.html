@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block titel %}Einlass{% endblock %}
 {% block inhalt %}
 <section class="karte empfang-kopf">
@@ -9,10 +10,20 @@
     <label for="nummer">Kundennummer scannen oder eingeben</label>
     <div class="scan-zeile">
       <input type="text" name="nummer" id="nummer" autofocus autocomplete="off" inputmode="numeric"
-             class="scan-feld" required>
+             class="scan-feld" required data-kamera="kamera"
+             data-kamera-skript="{% static 'vendor/barcode-detector/ponyfill.js' %}"
+             data-kamera-wasm="{% static 'vendor/barcode-detector/zxing_reader.wasm' %}">
       <button type="submit" class="knopf">Prüfen</button>
+      <button type="button" class="knopf knopf-zweitrangig" id="kamera" hidden
+              title="Ausweis mit der Kamera scannen">📷 Kamera</button>
     </div>
   </form>
+  <dialog id="kamera-dialog" class="kamera-dialog" aria-label="Ausweis mit der Kamera scannen">
+    <p class="kamera-hilfe">Den Barcode des Ausweises in den Rahmen halten.</p>
+    <video playsinline muted></video>
+    <p class="kamera-meldung meldung error" role="alert" hidden></p>
+    <button type="button" class="knopf kamera-schliessen">Schließen</button>
+  </dialog>
   {% if stellen %}
   <form method="post" action="{% url 'ausgabe:ausgabestelle' %}" class="filter stelle-wahl">
     {% csrf_token %}
@@ -26,4 +37,5 @@
   {% endif %}
 </section>
 <div id="ergebnis">{% include "ausgabe/_ergebnis.html" %}</div>
+<script src="{% static 'js/kamera_scanner.js' %}" defer></script>
 {% endblock %}
