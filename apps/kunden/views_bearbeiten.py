@@ -21,7 +21,7 @@ from apps.core import privatdateien
 from apps.core.models import TafelEinstellungen
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
-from apps.kunden import ausweis, historie
+from apps.kunden import ausweis, historie, zugang
 from apps.kunden.forms_bearbeiten import (
     AbholerForm,
     AnmerkungForm,
@@ -85,7 +85,7 @@ def _bearbeiten_url(h) -> str:
 
 @rollen.recht_erforderlich("kunden.bearbeiten")
 def haushalt_bearbeiten(request, kundennummer):
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     form = HaushaltForm(request.POST or None, instance=h)
     if request.method == "POST" and form.is_valid():
         vorher = historie.schnappschuss(h)
@@ -133,7 +133,7 @@ def haushalt_neu(request):
 @rollen.recht_erforderlich("kunden.loeschen")
 def haushalt_loeschen(request, kundennummer):
     """Erst eine Seite, die aufzählt, was gelöscht wird; gelöscht wird nur nach Bestätigung."""
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     if request.method != "POST":
         hp = h.hauptperson
         umfang = [
@@ -187,7 +187,7 @@ def _teil(art):
 
 @rollen.recht_erforderlich("kunden.bearbeiten")
 def teil_bearbeiten(request, kundennummer, art, pk=None):
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     modell, form_klasse, bezeichnung, mit_angemeldet = _teil(art)
     instanz = get_object_or_404(modell, pk=pk, haushalt=h) if pk else modell(haushalt=h)
     extra = {"angemeldet": request.user} if mit_angemeldet else {}
@@ -227,7 +227,7 @@ def teil_bearbeiten(request, kundennummer, art, pk=None):
 @require_POST
 @rollen.recht_erforderlich("kunden.bearbeiten")
 def teil_loeschen(request, kundennummer, art, pk):
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     modell, _, bezeichnung, _ = _teil(art)
     vorher = historie.schnappschuss(h)
     get_object_or_404(modell, pk=pk, haushalt=h).delete()
@@ -241,7 +241,7 @@ def teil_loeschen(request, kundennummer, art, pk):
 @rollen.recht_erforderlich("kunden.bearbeiten")
 def abholung_loeschen(request, kundennummer, pk):
     """Löscht eine Abholung; eine zugehörige Buchung wird zurückgenommen (Kontostand)."""
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     abholung = get_object_or_404(Abholung, pk=pk, haushalt=h)
     with transaction.atomic():
         konto.abholung_zuruecknehmen(abholung)

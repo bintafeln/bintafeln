@@ -3,6 +3,8 @@
 {% block inhalt %}
 <section class="karte">
   <h1>Kunden</h1>
+  {% if eigene_stellen %}<p class="hinweis">Sie sehen nur Kunden {% if eigene_stellen|length == 1 %}der Ausgabestelle{% else %}der Ausgabestellen{% endif %}
+    {% for s in eigene_stellen %}„{{ s.name }}“{% if not forloop.last %}, {% endif %}{% endfor %}, der Sie zugeordnet sind.</p>{% endif %}
   <div class="aktionen">
     {% if "kunden.bearbeiten" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'kunden:haushalt_neu' %}">Neuer Haushalt</a>{% endif %}
   </div>

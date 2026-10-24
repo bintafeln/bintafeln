@@ -85,8 +85,16 @@ class MitarbeiterForm(forms.ModelForm):
 
     class Meta:
         model = get_user_model()
-        fields = ["username", "first_name", "last_name", "email", "beschaeftigung"]
+        fields = [
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+            "beschaeftigung",
+            "ausgabestellen",
+        ]
         help_texts = {"username": "Zum Anmelden. Buchstaben, Ziffern und @ . + - _"}
+        widgets = {"ausgabestellen": forms.CheckboxSelectMultiple}
 
     def __init__(self, *args, verwalter, mail_moeglich=False, **kwargs):
         super().__init__(*args, **kwargs)

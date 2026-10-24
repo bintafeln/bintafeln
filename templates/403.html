@@ -1,3 +1,3 @@
 {% extends "base.html" %}
 {% block titel %}Kein Zugriff{% endblock %}
-{% block inhalt %}<section class="karte schmal"><h1>Kein Zugriff</h1><p>Für diese Seite fehlt Ihnen die nötige Rolle.</p></section>{% endblock %}
+{% block inhalt %}<section class="karte schmal"><h1>Kein Zugriff</h1><p>{% if exception %}{{ exception }}{% else %}Für diese Seite fehlt Ihnen das nötige Recht. Welche Rechte Sie haben, legt ein Admin unter „Einstellungen → Rollen und Rechte“ fest.{% endif %}</p></section>{% endblock %}

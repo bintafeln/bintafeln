@@ -15,7 +15,7 @@ from apps.core import sicherung
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.kunden import auskunft as kunden_auskunft
-from apps.kunden import importieren, views_dokumente
+from apps.kunden import importieren, views_dokumente, zugang
 from apps.kunden.ausweis import MAX_SAMMELDRUCK, ausweis_pdf, ausweise_pdf
 from apps.kunden.forms import KundenEinstellungenForm, ZusatzfeldForm
 from apps.kunden.models import (
@@ -86,9 +86,13 @@ ABHOLUNGEN_BUERO = 20
 def _haushalte_suchen(request):
     """Haushalte nach Suchtext, Status und Kundengruppe; mit Name der Hauptperson."""
     hauptperson = Person.objects.filter(haushalt=OuterRef("pk"), ist_hauptperson=True)
-    haushalte = Haushalt.objects.select_related("kundengruppe").annotate(
-        hp_vorname=Subquery(hauptperson.values("vorname")[:1]),
-        hp_nachname=Subquery(hauptperson.values("nachname")[:1]),
+    haushalte = (
+        zugang.filtern(Haushalt.objects, request.user)
+        .select_related("kundengruppe")
+        .annotate(
+            hp_vorname=Subquery(hauptperson.values("vorname")[:1]),
+            hp_nachname=Subquery(hauptperson.values("nachname")[:1]),
+        )
     )
     suche = request.GET.get("q", "").strip()
     for wort in suche.split():
@@ -112,15 +116,25 @@ def uebersicht(request):
     fristen_anwenden()
     suche = request.GET.get("q", "").strip()
     if suche and not request.headers.get("HX-Request"):
-        treffer = Haushalt.objects.filter(kundennummer__iexact=suche).first()
-        if treffer:
+        treffer = (
+            Haushalt.objects.select_related("kundengruppe__ausgabestelle")
+            .filter(kundennummer__iexact=suche)
+            .first()
+        )
+        grund = zugang.sperrgrund(request.user, treffer) if treffer else ""
+        if treffer and not grund:
             return redirect("kunden:haushalt", kundennummer=treffer.kundennummer)
+        if grund:
+            messages.error(request, grund)
     haushalte, filter_ = _haushalte_suchen(request)
     kontext = {
         "seite": Paginator(haushalte, LISTE_JE_SEITE).get_page(request.GET.get("seite")),
         "filter": filter_,
         "status_auswahl": Haushalt.Status.choices,
-        "gruppen": Kundengruppe.objects.order_by("name"),
+        "gruppen": Kundengruppe.objects.order_by("name")
+        if zugang.stellen(request.user) is None
+        else Kundengruppe.objects.filter(ausgabestelle__in=zugang.stellen(request.user)),
+        "eigene_stellen": zugang.stellen(request.user),
         "heute": timezone.localdate(),
         "darf_importieren": rollen.hat_recht(request.user, "kunden.importieren"),
         "anzahl": {
@@ -148,11 +162,12 @@ def _zusatz_anzeigen(felder, werte_) -> list[tuple[str, str, bool]]:
 @rollen.recht_erforderlich("kunden.ansehen")
 def haushalt(request, kundennummer):
     """Detailansicht eines Haushalts. Jeder Aufruf steht im Zugriffsprotokoll."""
-    h = get_object_or_404(
-        Haushalt.objects.select_related(
-            "kundengruppe__ausgabestelle", "einkommensart"
-        ).prefetch_related("personen", "abholer", "sperren", "ausnahmen"),
-        kundennummer=kundennummer,
+    h = zugang.haushalt(
+        request.user,
+        kundennummer,
+        Haushalt.objects.select_related("einkommensart").prefetch_related(
+            "personen", "abholer", "sperren", "ausnahmen"
+        ),
     )
     einstellungen = KundenEinstellungen.laden()
     darf = rollen.rechte_von(request.user)
@@ -239,7 +254,7 @@ def notizen_kontext(kundennummer: str, benutzer) -> dict:
 @require_POST
 @rollen.recht_erforderlich("kunden.notizen")
 def notiz_neu(request, kundennummer):
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     if notiz_schreiben(h, request.POST.get("text", ""), request.user):
         messages.success(request, "Notiz gespeichert.")
     else:
@@ -251,6 +266,7 @@ def notiz_neu(request, kundennummer):
 @rollen.recht_erforderlich("kunden.notizen")
 def notiz_loeschen(request, pk):
     notiz = get_object_or_404(Notiz, pk=pk)
+    zugang.pruefen_nummer(request.user, notiz.kundennummer)
     if not notiz.darf_loeschen(request.user):
         raise PermissionDenied
     notiz.delete()
@@ -262,7 +278,7 @@ def notiz_loeschen(request, pk):
 @rollen.recht_erforderlich("kunden.auskunft")
 def auskunft(request, kundennummer):
     """Auskunft nach Art. 15 DSGVO als PDF; steht wie jeder Aufruf im Zugriffsprotokoll."""
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     Zugriff.objects.create(
         benutzer=request.user,
         benutzername=request.user.get_username(),
@@ -275,9 +291,7 @@ def auskunft(request, kundennummer):
 @never_cache
 @rollen.recht_erforderlich("kunden.ausweis")
 def ausweis(request, kundennummer):
-    h = get_object_or_404(
-        Haushalt.objects.select_related("kundengruppe"), kundennummer=kundennummer
-    )
+    h = zugang.haushalt(request.user, kundennummer)
     return pdf_antwort(ausweis_pdf(h), f"kundenausweis-{_dateiname(h)}.pdf")
 
 

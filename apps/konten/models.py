@@ -31,6 +31,14 @@ class Benutzer(AbstractUser):
     )
     gesperrt_am = models.DateTimeField("Gesperrt am", null=True, blank=True)
     gesperrt_von = models.CharField("Gesperrt von", max_length=150, blank=True)
+    ausgabestellen = models.ManyToManyField(
+        "kunden.Ausgabestelle",
+        blank=True,
+        related_name="mitarbeitende",
+        verbose_name="Ausgabestellen",
+        help_text="Wer einer Ausgabestelle zugeordnet ist, ruft nur deren Kunden auf – außer "
+        "mit dem Recht „Kunden aller Ausgabestellen aufrufen“. Leer: alle Kunden.",
+    )
 
     class Meta:
         verbose_name = "Benutzer"
@@ -149,7 +157,9 @@ class PersonalEinstellungen(models.Model):
         return einstellungen
 
 
-auditlog.register(Benutzer, exclude_fields=["password", "last_login"], m2m_fields={"groups"})
+auditlog.register(
+    Benutzer, exclude_fields=["password", "last_login"], m2m_fields={"groups", "ausgabestellen"}
+)
 
 
 class Schulung(models.Model):

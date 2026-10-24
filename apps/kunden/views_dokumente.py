@@ -9,8 +9,9 @@ from django.views.decorators.http import require_POST
 
 from apps.core import privatdateien
 from apps.konten import rollen
+from apps.kunden import zugang
 from apps.kunden.forms_bearbeiten import HaushaltDokumentForm
-from apps.kunden.models import Haushalt, HaushaltDokument, Zugriff
+from apps.kunden.models import HaushaltDokument, Zugriff
 
 MAX_MB = 10
 
@@ -28,7 +29,7 @@ def kontext(kundennummer: str) -> dict:
 @require_POST
 @rollen.recht_erforderlich("kunden.dokumente_verwalten")
 def hochladen(request, kundennummer):
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     form = HaushaltDokumentForm(request.POST, request.FILES)
     if not form.is_valid():
         messages.error(request, "Nicht gespeichert: Dokumentart und Datei sind Pflicht.")
@@ -55,6 +56,7 @@ def hochladen(request, kundennummer):
 @rollen.recht_erforderlich("kunden.dokumente")
 def ansehen(request, pk):
     d = get_object_or_404(HaushaltDokument, pk=pk)
+    zugang.pruefen_nummer(request.user, d.kundennummer)
     inhalt = privatdateien.lesen(HaushaltDokument.ORDNER, d.datei)
     if inhalt is None:
         raise Http404
@@ -73,6 +75,7 @@ def ansehen(request, pk):
 @rollen.recht_erforderlich("kunden.dokumente_verwalten")
 def loeschen(request, pk):
     d = get_object_or_404(HaushaltDokument, pk=pk)
+    zugang.pruefen_nummer(request.user, d.kundennummer)
     d.loeschen()
     messages.success(request, f"Dokument „{d.titel}“ gelöscht.")
     return redirect("kunden:haushalt", kundennummer=d.kundennummer)

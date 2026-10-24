@@ -2,6 +2,11 @@
 <section class="karte ampel ampel-unbekannt" role="status">
   <p class="ampel-titel">Kundennummer „{{ nicht_gefunden }}“ nicht gefunden</p>
 </section>
+{% elif nicht_erlaubt %}
+<section class="karte ampel ampel-unbekannt" role="status">
+  <p class="ampel-titel">Dieser Kunde gehört nicht zu Ihrer Ausgabestelle</p>
+  <p>{{ nicht_erlaubt }}</p>
+</section>
 {% elif h %}
 {% if meldung %}<p class="meldung kasse-meldung" role="status">{{ meldung }}</p>{% endif %}
 <div class="empfang-raster">

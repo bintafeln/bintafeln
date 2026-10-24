@@ -38,6 +38,8 @@ KATALOG = [
     Recht("sonderaktionen.verwalten", EINLASS, "Sonderaktionen anlegen, ändern und auswerten"),
     # Kunden
     Recht("kunden.liste", KUNDEN, "Kundenliste und Suche"),
+    Recht("kunden.alle_ausgabestellen", KUNDEN, "Kunden aller Ausgabestellen aufrufen",
+          "Ohne dieses Recht sieht, wer einer Ausgabestelle zugeordnet ist, nur deren Kunden."),
     Recht("kunden.ansehen", KUNDEN, "Seite eines Haushalts ansehen (Grundangaben)",
           "Kundennummer, Personen, Haushaltsgröße, Ausgabestelle, Ausweis, aktive Sperren, "
           "letzte Abholungen, Notizen"),
@@ -98,7 +100,8 @@ _EINLASS = ["einlass.nutzen", "einlass.abholung", "einlass.zahlung", "einlass.so
 VORGABEN = {
     "Büro": _EINLASS + [
         "einlass.ausnahme", "kasse.einzelbuchungen", "konto.korrektur",
-        "sonderaktionen.verwalten", "kunden.stammdaten", "kunden.kontakt",
+        "kunden.alle_ausgabestellen", "sonderaktionen.verwalten", "kunden.stammdaten",
+        "kunden.kontakt",
         "kunden.besondere_kategorie", "kunden.sperren_alle", "kunden.abholungen_alle",
         "kunden.konto", "kunden.anmerkungen", "kunden.notizen_loeschen", "kunden.dokumente",
         "kunden.dokumente_verwalten", "kunden.historie", "kunden.ausweis", "kunden.auskunft",

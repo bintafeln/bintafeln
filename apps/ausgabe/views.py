@@ -21,7 +21,7 @@ from apps.ausgabe.models import (
 )
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
-from apps.kunden import werte
+from apps.kunden import werte, zugang
 from apps.kunden.models import (
     Abholung,
     Ausgabestelle,
@@ -109,13 +109,16 @@ def empfang(request):
     konto.buchungsfristen_anwenden()
     kontext = {
         "stelle": _stelle(request),
-        "stellen": Ausgabestelle.objects.order_by("name"),
+        "stellen": zugang.stellen(request.user) or Ausgabestelle.objects.order_by("name"),
     }
     nummer = request.GET.get("nummer", "").strip()
     if nummer:
         h = _finden(nummer)
+        grund = zugang.sperrgrund(request.user, h) if h else ""
         if h is None:
             kontext["nicht_gefunden"] = nummer
+        elif grund:
+            kontext["nicht_erlaubt"] = grund
         else:
             Zugriff.objects.create(
                 benutzer=request.user,
@@ -131,6 +134,9 @@ def empfang(request):
 def ausgabestelle_waehlen(request):
     pk = request.POST.get("ausgabestelle", "")
     stelle = Ausgabestelle.objects.filter(pk=pk).first() if pk.isdigit() else None
+    eigene = zugang.stellen(request.user)
+    if stelle and eigene is not None and stelle not in eigene:
+        stelle = None
     if stelle:
         request.session[SITZUNG_STELLE] = stelle.pk
     else:
@@ -150,7 +156,7 @@ def _zurueck(request, h, text, stufe=messages.SUCCESS):
 @require_POST
 @rollen.recht_erforderlich("einlass.abholung")
 def abholung_eintragen(request, kundennummer):
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     kontext = _ergebnis(request, h)
     if not kontext["bewertung"].darf_abholen:
         return _zurueck(request, h, "Nicht eingetragen: Die Ampel steht auf Rot.", messages.ERROR)
@@ -224,7 +230,7 @@ def abholung_zuruecknehmen(request, pk):
 @require_POST
 @rollen.recht_erforderlich("einlass.sonderaktion")
 def sonderaktion_eintragen(request, kundennummer, aktion):
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     a = get_object_or_404(Sonderaktion, pk=aktion)
     auswahl = a.auswahl.filter(pk=request.POST.get("auswahl") or None).first()
     erwachsene, kinder = h.groesse(KundenEinstellungen.laden().kind_bis_alter)
@@ -243,7 +249,7 @@ def sonderaktion_eintragen(request, kundennummer, aktion):
 @rollen.recht_erforderlich("einlass.sonderaktion")
 def teilnahme_zuruecknehmen(request, pk):
     t = get_object_or_404(Teilnahme, pk=pk)
-    h = get_object_or_404(Haushalt, kundennummer=t.kundennummer)
+    h = zugang.haushalt(request.user, t.kundennummer)
     try:
         sonderaktionen.zuruecknehmen(t)
     except sonderaktionen.SonderaktionFehler as fehler:
@@ -254,7 +260,7 @@ def teilnahme_zuruecknehmen(request, pk):
 @require_POST
 @rollen.recht_erforderlich("einlass.zahlung")
 def einzahlung(request, kundennummer):
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     try:
         betrag = werte.betrag(request.POST.get("betrag", ""))
         konto.einzahlen(
@@ -302,7 +308,7 @@ def einzahlung_zuruecknehmen(request, pk):
 @rollen.recht_erforderlich("konto.korrektur")
 def korrektur(request, kundennummer):
     """Korrekturbuchung ohne Bargeld, von der Haushaltsseite aus."""
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     try:
         betrag = werte.betrag(request.POST.get("betrag", ""))
         konto.korrigieren(
@@ -319,7 +325,7 @@ def korrektur(request, kundennummer):
 @require_POST
 @rollen.recht_erforderlich("einlass.ausnahme")
 def ausnahme_erteilen(request, kundennummer):
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     begruendung = request.POST.get("begruendung", "").strip()
     if not begruendung:
         return _zurueck(request, h, "Bitte eine Begründung angeben.", messages.ERROR)
@@ -451,7 +457,7 @@ def einstellungen(request):
 @require_POST
 @rollen.recht_erforderlich("kunden.notizen")
 def notiz(request, kundennummer):
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     if notiz_schreiben(h, request.POST.get("text", ""), request.user) is None:
         return _zurueck(request, h, "Bitte einen Text für die Notiz eingeben.", messages.ERROR)
     return _zurueck(request, h, "Notiz gespeichert.")
@@ -461,7 +467,7 @@ def notiz(request, kundennummer):
 @rollen.recht_erforderlich("kunden.notizen")
 def notiz_loeschen(request, pk):
     notiz = get_object_or_404(Notiz, pk=pk)
-    h = get_object_or_404(Haushalt, kundennummer=notiz.kundennummer)
+    h = zugang.haushalt(request.user, notiz.kundennummer)
     if not notiz.darf_loeschen(request.user):
         return _zurueck(
             request, h, "Diese Notiz dürfen nur Büro und Admin löschen.", messages.ERROR

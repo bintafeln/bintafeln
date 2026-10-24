@@ -104,12 +104,14 @@ def anlegen(request):
         request.POST or None, verwalter=request.user, mail_moeglich=mail.eingerichtet()
     )
     if request.method == "POST" and form.is_valid():
-        daten = {f: form.cleaned_data[f] for f in MitarbeiterForm.Meta.fields}
+        daten = {f: form.cleaned_data[f] for f in MitarbeiterForm.Meta.fields
+                 if f != "ausgabestellen"}  # fmt: skip
         per_mail = form.cleaned_data.get("zugang") == "einladung"
         # Das Formular bietet nur erlaubte Rollen an; verwaltung.anlegen prüft es trotzdem.
         ziel, passwort = verwaltung.anlegen(
             request.user, daten, form.cleaned_data["rollen"], einladung=per_mail
         )
+        ziel.ausgabestellen.set(form.cleaned_data["ausgabestellen"])
         if not per_mail:
             return _startpasswort_zeigen(request, ziel, passwort, neu=True)
         try:
@@ -141,6 +143,7 @@ def bearbeiten(request, pk):
         except verwaltung.VerwaltungsFehler as fehler:
             form.add_error("rollen", str(fehler))
         else:
+            form.instance.ausgabestellen.set(form.cleaned_data["ausgabestellen"])
             messages.success(request, f"Änderungen an {ziel} gespeichert.")
             return redirect("konten:mitarbeitende")
     return render(

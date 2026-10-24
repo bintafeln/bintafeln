@@ -180,6 +180,16 @@ Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie
   „Ausgabe sieht Zusatzfelder der besonderen Kategorie“ sind in die Rollen gewandert
   (ADR 0033).
 
+### Mitarbeitende einer Ausgabestelle
+
+Unter „Team → Mitarbeitende“ lässt sich jedes Konto einer oder mehreren **Ausgabestellen**
+zuordnen. Wer zugeordnet ist, ruft nur Kunden auf, deren Kundengruppe zu einer dieser
+Ausgabestellen gehört: in der Kundenliste, auf der Haushaltsseite und am Einlass. Bei einem
+anderen Kunden erklärt bintafeln, warum („Kunde 200 gehört zur Ausgabestelle „Nord“ …
+Sie sind der Ausgabestelle „Mitte“ zugeordnet …“). Ohne Zuordnung gibt es keine Einschränkung;
+mit dem Recht „Kunden aller Ausgabestellen aufrufen“ (Vorgabe: Admin und Büro) ebenfalls nicht
+(ADR 0034).
+
 ## Mitarbeitende
 
 „Mitarbeitende“ im Menü (mit dem Recht „Mitarbeitende anlegen, bearbeiten, sperren“; Admin
