@@ -15,11 +15,13 @@ rückwirkend abfragbar ist. Bisher gab es nur den Kontostand aus dem Import.
 - Jede Bewegung ist eine **Buchung** mit Soll, Haben und dem dabei **bar** eingenommenen Betrag.
   Der Kontostand ändert sich um Haben − Soll. Der Kontostand aus dem Import ist der Anfangsstand.
 - Arten von Buchungen:
-  - **Abholung:** Der Beitrag steht im Soll. Je nach Zahlweise:
-    - **aus Guthaben, Rest bar:** Guthaben wird verrechnet, ein Rest wird bar gezahlt.
-    - **alles bar:** Das Konto bleibt unverändert.
-    - **anschreiben:** nur wenn in den Einstellungen erlaubt; der Kontostand darf negativ werden.
-      Die Ampel zeigt dann gelb.
+  - **Abholung:** Der Beitrag steht im Soll. Der Einlass trägt genau den Betrag ein, der bar
+    gezahlt wurde (auch 0; Nachtrag Oktober 2026, vorher Auswahl einer Zahlweise):
+    - weniger als der Beitrag: Guthaben wird verrechnet (Zahlweise „aus Guthaben“), ein
+      weiterer Rest wird angeschrieben – nur wenn in den Einstellungen erlaubt; der
+      Kontostand darf dann negativ werden, die Ampel zeigt gelb.
+    - genau der Beitrag: „alles bar“, das Konto bleibt unverändert.
+    - mehr als der Beitrag: Der Überschuss wird als eigene Einzahlung gebucht und Guthaben.
   - **Einzahlung:** bar, ins Haben.
   - **Korrektur:** ohne Bargeld, nur Admin und Büro, mit Begründung.
 - Der Einlass schlägt Vorauszahlungen vor (Rest dieses Monats; der nächste Monat bewusst nicht). Jeder

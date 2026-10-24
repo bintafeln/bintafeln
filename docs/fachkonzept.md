@@ -185,8 +185,9 @@ Beitrag je Abholung, je Erwachsenem und je Kind; Anzeige des Kontostands. Eine A
 heute hebt die Terminregeln auf (nicht dran, Höchstzahl, Kundengruppe, Ausgabestelle), nicht
 aber Sperre, Status oder abgelaufenen Ausweis.
 
-**Kundenkonto (ADR 0014):** Buchungen mit Soll, Haben und Barbetrag. Zahlweisen je Abholung:
-aus Guthaben (Rest bar), alles bar oder, wenn erlaubt, anschreiben. Einzahlungen und
+**Kundenkonto (ADR 0014):** Buchungen mit Soll, Haben und Barbetrag. Je Abholung wird
+genau der bar gezahlte Betrag eingetragen (auch 0); fehlt etwas, wird Guthaben verrechnet,
+danach, wenn erlaubt, angeschrieben; ein Überschuss wird Guthaben. Einzahlungen und
 Vorauszahlungen mit erklärtem Vorschlag für den Rest des laufenden Monats.
 Korrekturen durch Admin und Büro.
 

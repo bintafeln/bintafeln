@@ -58,6 +58,7 @@ def haushalt(stelle):
 
 
 def eintragen(client, h, **daten):
+    daten.setdefault("bar", "0")  # Pflichtfeld: was bar auf dem Tisch liegt
     return client.post(reverse("ausgabe:eintragen", args=[h.kundennummer]), daten, **HX)
 
 
@@ -155,7 +156,8 @@ def test_bei_rot_wird_nichts_eingetragen(ausgabe, haushalt):
 
 
 def test_ohne_htmx_weiterleitung_mit_meldung(ausgabe, haushalt):
-    antwort = ausgabe.post(reverse("ausgabe:eintragen", args=["00042"]), {"beitrag": "0"})
+    url = reverse("ausgabe:eintragen", args=["00042"])
+    antwort = ausgabe.post(url, {"beitrag": "0", "bar": "0"})
     assert antwort.status_code == 302 and antwort.url == f"{EMPFANG}?nummer=00042"
     assert "Abholung eingetragen." in ausgabe.get(antwort.url).content.decode()
 
@@ -200,7 +202,7 @@ def test_buero_erteilt_ausnahme(als, nicht_dran):
     assert "Begründung angeben" in buero.post(url, {"begruendung": " "}, **HX).content.decode()
     inhalt = buero.post(url, {"begruendung": "Termin verlegt"}, **HX).content.decode()
     assert "Ausnahme für heute erteilt: Termin verlegt" in inhalt
-    assert "Abholung eintragen" in inhalt
+    assert "Kunde anmelden und Abholung buchen" in inhalt
     assert Ausnahme.objects.get().eingetragen_von == "büro"
 
 

@@ -341,14 +341,19 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    - Unter „Einstellungen → Ausgabe und Ampel“: **Abholungen am selben Tag** (1 = einmal,
      2 = zweimal, 0 = beliebig oft) und **Höchstzahl je Zeitraum** (0 = keine Grenze).
    - 🟢 alles in Ordnung, oder eine Ausnahme für heute hebt eine Terminregel auf
-4. **Abholung eintragen**; der Beitrag ist vorgeschlagen und änderbar. Ein Versehen lässt sich am
+4. **Kunde anmelden:** Das Aufrufen allein trägt nichts ein. Erst der Knopf **„Kunde anmelden
+   und Abholung buchen“** meldet den Kunden für heute an. Wird abgebrochen, einfach die nächste
+   Nummer scannen; der Kunde lässt sich jederzeit wieder aufrufen. Ein Versehen lässt sich am
    selben Tag zurücknehmen. Admin und Büro können bei Rot wegen einer Terminregel eine
    **Ausnahme für heute** erteilen.
-
-5. **Bezahlen:**
-   - Zahlweise je Abholung: **aus Guthaben, Rest bar** oder **alles bar**; wenn in den
-     Einstellungen erlaubt, auch **anschreiben**.
-   - Nach dem Eintragen steht groß da, was **bar zu zahlen** ist, und der neue Kontostand.
+5. **Bezahlen:** Der Beitrag ist vorgeschlagen und änderbar. Im Pflichtfeld **„Bar auf den Tisch
+   gelegt“** steht genau der Betrag, den der Kunde zahlt, **auch 0**. Vorgeschlagen ist, was nach
+   Verrechnung des Guthabens fehlt (bei ausreichendem Guthaben also 0).
+   - weniger als der Beitrag: Rest aus Guthaben, sonst angeschrieben (nur wenn in den
+     Einstellungen erlaubt, sonst kommt eine Meldung und nichts wird gebucht)
+   - mehr als der Beitrag: der Überschuss wird Guthaben
+   - Danach steht groß da, was bar eingenommen, aus Guthaben verrechnet, angeschrieben oder
+     gutgeschrieben wurde, und der neue Kontostand.
 6. **Einzahlung / Vorauszahlung:** Betrag frei eingeben oder einen **Vorschlag** übernehmen
    (Rest dieses Monats). Jeder Vorschlag erklärt seine Rechnung. Eine
    Einzahlung lässt sich am selben Tag zurücknehmen.

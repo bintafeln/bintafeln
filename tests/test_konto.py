@@ -42,38 +42,65 @@ def stand(h):
 
 
 @pytest.mark.parametrize(
-    ("anfang", "zahlweise", "bar", "vom_konto", "ende"),
+    ("anfang", "bar", "zahlweise", "vom_konto", "angeschrieben", "ende"),
     [
-        (D("6.00"), GUTHABEN, D("0.00"), D("3.00"), D("3.00")),
-        (D("2.00"), GUTHABEN, D("1.00"), D("2.00"), D("0.00")),
-        (D("-1.00"), GUTHABEN, D("3.00"), D("0.00"), D("-1.00")),
-        (D("6.00"), BAR, D("3.00"), D("0.00"), D("6.00")),
-        (D("1.00"), ANSCHREIBEN, D("0.00"), D("3.00"), D("-2.00")),
+        (D("6.00"), D("0.00"), GUTHABEN, D("3.00"), D("0"), D("3.00")),  # ganz aus Guthaben
+        (D("2.00"), D("1.00"), GUTHABEN, D("2.00"), D("0"), D("0.00")),  # Rest bar
+        (D("6.00"), D("3.00"), BAR, D("0.00"), D("0"), D("6.00")),  # alles bar
+        (D("1.00"), D("0.00"), ANSCHREIBEN, D("1.00"), D("2.00"), D("-2.00")),
+        (D("-1.00"), D("3.00"), BAR, D("0.00"), D("0"), D("-1.00")),
     ],
 )
-def test_abholung_buchen(haushalt, einstellungen, anfang, zahlweise, bar, vom_konto, ende):
+def test_abholung_buchen(haushalt, einstellungen, anfang, bar, zahlweise, vom_konto,
+                         angeschrieben, ende):  # fmt: skip
     einstellungen.anschreiben_erlaubt = True
     haushalt.kontostand = anfang
     haushalt.save()
-    zahlung = konto.abholung_buchen(abholung(haushalt), D("3.00"), zahlweise, einstellungen,
+    zahlung = konto.abholung_buchen(abholung(haushalt), D("3.00"), bar, einstellungen,
                                     None, "Test")  # fmt: skip
-    assert (zahlung.bar, zahlung.vom_konto, zahlung.kontostand) == (bar, vom_konto, ende)
+    assert (zahlung.bar, zahlung.vom_konto, zahlung.angeschrieben, zahlung.kontostand) == (
+        bar, vom_konto, angeschrieben, ende)  # fmt: skip
     b = Buchung.objects.get()
     assert (b.soll, b.haben, b.bar, b.zahlweise) == (D("3.00"), bar, bar, zahlweise)
     assert b.kundennummer == "00042" and stand(haushalt) == ende
-    assert b.wirkung == -vom_konto and str(b).startswith("Abholung vom ")
+    assert str(b).startswith("Abholung vom ")
+
+
+def test_ueberzahlung_wird_guthaben(haushalt, einstellungen):
+    haushalt.kontostand = D("0")
+    haushalt.save()
+    a = abholung(haushalt)
+    zahlung = konto.abholung_buchen(a, D("3"), D("10"), einstellungen, None, "Test")
+    assert (zahlung.gutgeschrieben, zahlung.kontostand) == (D("7"), D("7"))
+    beitrag = Buchung.objects.get(art=Buchung.Art.ABHOLUNG)
+    ueber = Buchung.objects.get(art=Buchung.Art.EINZAHLUNG)
+    assert (beitrag.bar, ueber.bar) == (D("3"), D("7"))
+    assert ueber.bemerkung == "Überzahlung bei der Abholung"
+    konto.abholung_zuruecknehmen(a)
+    assert stand(haushalt) == D("0") and not Buchung.objects.exists()
+
+
+def test_bar_vorschlag():
+    assert konto.bar_vorschlag(D("3"), D("5")) == D("0")
+    assert konto.bar_vorschlag(D("3"), D("1")) == D("2")
+    assert konto.bar_vorschlag(D("3"), D("-4")) == D("3")
+    assert konto.bar_vorschlag(D("3"), None) == D("3")
 
 
 def test_anschreiben_nur_wenn_erlaubt(haushalt, einstellungen):
-    with pytest.raises(konto.KontoFehler):
-        konto.abholung_buchen(abholung(haushalt), D("3"), ANSCHREIBEN, einstellungen, None, "")
+    haushalt.kontostand = D("1")
+    haushalt.save()
+    with pytest.raises(konto.KontoFehler, match="Es fehlen 2,00 €"):
+        konto.abholung_buchen(abholung(haushalt), D("3"), D("0"), einstellungen, None, "")
+    with pytest.raises(konto.KontoFehler, match="auch 0"):
+        konto.abholung_buchen(abholung(haushalt), D("3"), None, einstellungen, None, "")
     assert not Buchung.objects.exists()
 
 
 def test_beitrag_null_ohne_buchung(haushalt, einstellungen):
     haushalt.kontostand = None
     haushalt.save()
-    zahlung = konto.abholung_buchen(abholung(haushalt), D("0"), GUTHABEN, einstellungen, None, "")
+    zahlung = konto.abholung_buchen(abholung(haushalt), D("0"), D("0"), einstellungen, None, "")
     assert zahlung.kontostand == D("0.00") and not Buchung.objects.exists()
     assert stand(haushalt) is None
 
@@ -251,27 +278,49 @@ def test_buchungsfristen(haushalt):
 def test_empfang_guthaben_teilweise(ausgabe, haushalt):
     haushalt.kontostand = D("2.00")
     haushalt.save()
-    inhalt = eintragen(ausgabe, haushalt, beitrag="3,00", zahlweise=GUTHABEN).content.decode()
-    assert "Bar zu zahlen: 1,00 € (2,00 € vom Konto). Kontostand jetzt: 0,00 €." in inhalt
+    e = AusgabeEinstellungen.laden()
+    e.beitrag_je_abholung = D("3")
+    e.save()
+    inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
+    assert 'name="bar" id="bar" value="1,00"' in inhalt  # Rest nach Guthaben vorgeschlagen
+    assert "Nur das Aufrufen trägt nichts ein" in inhalt and not Abholung.objects.exists()
+    inhalt = eintragen(ausgabe, haushalt, beitrag="3,00", bar="1,00").content.decode()
+    assert ("Bar erhalten: 1,00 €, 2,00 € aus Guthaben. Kontostand jetzt: 0,00 €.") in inhalt
     assert Abholung.objects.get().buchung.bar == D("1.00")
 
 
-def test_empfang_alles_bar(ausgabe, haushalt):
-    inhalt = eintragen(ausgabe, haushalt, beitrag="3", zahlweise=BAR).content.decode()
-    assert "Bar zu zahlen: 3,00 €. Kontostand jetzt: 6,00 €." in inhalt
+def test_empfang_guthaben_reicht_null_vorgeschlagen(ausgabe, haushalt):
+    inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
+    assert 'name="bar" id="bar" value="0,00"' in inhalt  # Guthaben 6 € reicht
+    inhalt = eintragen(ausgabe, haushalt, beitrag="3", bar="0").content.decode()
+    assert "Bar erhalten: 0,00 €, 3,00 € aus Guthaben. Kontostand jetzt: 3,00 €." in inhalt
 
 
-def test_empfang_anschreiben_nicht_erlaubt_traegt_nichts_ein(ausgabe, haushalt):
-    inhalt = eintragen(ausgabe, haushalt, beitrag="3", zahlweise=ANSCHREIBEN).content.decode()
-    assert "Anschreiben ist in den Einstellungen nicht erlaubt" in inhalt
+def test_empfang_mehr_bar_wird_guthaben(ausgabe, haushalt):
+    inhalt = eintragen(ausgabe, haushalt, beitrag="3", bar="5").content.decode()
+    assert "Bar erhalten: 5,00 €, 2,00 € als Guthaben gebucht. Kontostand jetzt: 8,00 €." in inhalt
+
+
+def test_empfang_anschreiben(ausgabe, haushalt):
+    haushalt.kontostand = D("0")
+    haushalt.save()
+    inhalt = eintragen(ausgabe, haushalt, beitrag="3", bar="1").content.decode()
+    assert "Es fehlen 2,00 €" in inhalt
     assert not Abholung.objects.exists() and not Buchung.objects.exists()
+    e = AusgabeEinstellungen.laden()
+    e.anschreiben_erlaubt = True
+    e.save()
+    assert "sonst angeschrieben" in ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
+    inhalt = eintragen(ausgabe, haushalt, beitrag="3", bar="1").content.decode()
+    assert "Bar erhalten: 1,00 €, 2,00 € angeschrieben. Kontostand jetzt: -2,00 €." in inhalt
 
 
 @pytest.mark.parametrize(
     ("daten", "text"),
     [
-        ({"beitrag": "-1"}, "Beitrag ist negativ"),
-        ({"beitrag": "1", "zahlweise": "gutschein"}, "unbekannte Zahlweise"),
+        ({"beitrag": "-1", "bar": "0"}, "Beitrag ist negativ"),
+        ({"beitrag": "1", "bar": "viel"}, "Bar gezahlt ist kein Betrag"),
+        ({"beitrag": "1", "bar": ""}, "auch 0"),
     ],
 )
 def test_empfang_ungueltige_eingaben(ausgabe, haushalt, daten, text):
@@ -279,22 +328,8 @@ def test_empfang_ungueltige_eingaben(ausgabe, haushalt, daten, text):
     assert not Abholung.objects.exists()
 
 
-def test_empfang_zeigt_passende_zahlweisen(ausgabe, haushalt):
-    inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
-    assert 'value="guthaben" checked' in inhalt and "anschreiben" not in inhalt
-    haushalt.kontostand = D("0")
-    haushalt.save()
-    inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
-    assert '<input type="hidden" name="zahlweise" value="bar">' in inhalt
-    e = AusgabeEinstellungen.laden()
-    e.anschreiben_erlaubt = True
-    e.save()
-    inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
-    assert 'value="bar" checked' in inhalt and 'value="anschreiben"' in inhalt
-
-
 def test_storno_nimmt_buchung_zurueck(ausgabe, haushalt):
-    eintragen(ausgabe, haushalt, beitrag="3", zahlweise=GUTHABEN)
+    eintragen(ausgabe, haushalt, beitrag="3", bar="0")
     assert stand(haushalt) == D("3.00")
     a = Abholung.objects.get()
     inhalt = ausgabe.post(reverse("ausgabe:zuruecknehmen", args=[a.pk]), **HX).content.decode()
