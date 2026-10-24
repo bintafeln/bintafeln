@@ -61,6 +61,12 @@ class AntragEinstellungen(models.Model):
     nachricht = _abfrage("Nachricht an die Tafel")
     datenschutz_url = models.URLField("Link zur Datenschutzerklärung", blank=True)
     impressum_url = models.URLField("Link zum Impressum", blank=True)
+    eigenes_css = models.TextField(
+        "Eigene Gestaltung (CSS)",
+        blank=True,
+        help_text="Nur für Kundige: zusätzliche CSS-Regeln für das öffentliche Formular, z. B. "
+        ".antrag-kopf { text-align: center; }. Leer lassen für die Standardgestaltung.",
+    )
     benachrichtigen = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         blank=True,
@@ -112,8 +118,11 @@ class AntragText(models.Model):
     """Eigene Texte der Tafel für eine Sprache; ohne Eintrag gelten die mitgelieferten."""
 
     sprache = models.CharField("Sprache", max_length=5, choices=sprachen.AUSWAHL, unique=True)
-    einleitung = models.TextField("Einleitung", blank=True)
-    bestaetigung = models.TextField("Text nach dem Absenden", blank=True)
+    ueberschrift = models.CharField("Überschrift", max_length=200, blank=True)
+    einleitung = models.TextField("Einleitung (HTML möglich)", blank=True)
+    bestaetigung = models.TextField("Seite nach dem Absenden (HTML möglich)", blank=True)
+    mail_betreff = models.CharField("Betreff der Antwortmail", max_length=200, blank=True)
+    mail_text = models.TextField("Antwortmail (HTML möglich)", blank=True)
 
     class Meta:
         verbose_name = "Text des Antragsformulars"

@@ -113,7 +113,7 @@ def test_verstaendliche_fehler(mailserver, monkeypatch, fehler, text):
     def scheitern(self, *args, **kwargs):
         raise fehler
 
-    monkeypatch.setattr(mail.EmailMessage, "send", scheitern)
+    monkeypatch.setattr(mail.EmailMultiAlternatives, "send", scheitern)
     with pytest.raises(mail.MailFehler, match=text):
         mail.senden("B", "T", ["kim@example.org"])
 
@@ -296,3 +296,20 @@ def test_vergessen_mailfehler_bleibt_unsichtbar(client, admin, mailserver, monke
     antwort = client.post(VERGESSEN, {"eingabe": "chefin"}, follow=True)
     assert "Falls es dazu ein Konto" in antwort.content.decode()
     assert "Mail zum Zurücksetzen nicht gesendet" in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("fehler", "text"),
+    [
+        (OSError(101, "Network is unreachable"), "fehlgeschlagen (Network is unreachable)"),
+        (smtplib.SMTPDataError(554, b"abgelehnt"), "SMTPDataError: (554"),
+    ],
+)
+def test_unbekannte_fehler_verstaendlich(fehler, text):
+    assert text in mail._verstaendlich(fehler)
+
+
+def test_imap_server_wird_abgelehnt(admin_client, admin):
+    daten = {"server": "imap.example.org", "port": 465, "verschluesselung": "ssl"}
+    seite = admin_client.post(MAIL_SEITE, daten).content.decode()
+    assert "Server zum Abholen von Mails" in seite and "smtp.example.org" in seite

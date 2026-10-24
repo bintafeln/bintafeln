@@ -4,14 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>{{ t.titel }}{% if tafel.name %} – {{ tafel.name }}{% endif %}</title>
+  <title>{{ ueberschrift|default:t.titel }} – {{ tafel_name }}</title>
   <link rel="stylesheet" href="{% static 'css/bintafeln.css' %}">
+  {% include "includes/farben.html" %}
+  <script src="{% static 'js/staaten.js' %}" defer></script>
+  {% if eigenes_css %}<style>{{ eigenes_css }}</style>{% endif %}
 </head>
 <body class="oeffentlich">
-  <header class="kopf">
+  <header class="kopf antrag-kopf">
     <span class="marke">
-      {% if tafel.logo %}<img src="{{ tafel.logo.url }}" alt="" class="logo">{% endif %}
-      <span>{{ tafel.name|default:"Tafel" }}</span>
+      {% if tafel.logo %}<img src="{{ tafel.logo.url }}" alt="{{ tafel_name }}" class="logo">{% endif %}
+      <span>{{ tafel_name }}</span>
     </span>
     <form method="get" action="{% url 'antrag:start' %}" class="sprachwahl">
       <label for="sprache">{{ t.sprache }}</label>
@@ -21,7 +24,7 @@
       <noscript><button type="submit" class="knopf">{{ t.sprache_wechseln }}</button></noscript>
     </form>
   </header>
-  <main class="inhalt">{% block inhalt %}{% endblock %}</main>
+  <main class="inhalt antrag">{% block inhalt %}{% endblock %}</main>
   <footer class="fuss">
     {% if tafel.anschrift %}<span>{{ tafel.anschrift }}</span>{% endif %}
     <span>{% if e.datenschutz_url %}<a href="{{ e.datenschutz_url }}">{{ t.datenschutz }}</a>{% endif %}

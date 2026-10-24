@@ -26,7 +26,8 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
 - **Rollen:** Admin, Büro, Ausgabe, Kiosk, Fahrer und Beifahrer (als Django-Gruppen, werden
   beim Start automatisch angelegt). Konten und Rollen verwaltet ein Admin unter
   „Mitarbeitende“ (siehe unten).
-- **Tafel-Einstellungen:** Name, Logo und Anschrift der Tafel – in der Datenbank, nicht im Code.
+- **Tafel-Einstellungen:** Name, Logo, Farbe (voreingestellt Tafel-Orange) und Anschrift der
+  Tafel – in der Datenbank, nicht im Code.
 - **Änderungsprotokoll:** Wer hat wann welchen Datensatz geändert (mit Feldern vorher/nachher).
   Passwörter werden nie protokolliert.
 - **Zwei-Faktor-Anmeldung:** Jede Person richtet sie unter „Mein Konto“ selbst ein
@@ -242,7 +243,8 @@ Vorschlag für Vorauszahlungen am Einlass.
 
 Unter „Einstellungen → E-Mail“ trägt ein Admin den Mailserver der Tafel ein: Server, Port,
 Verschlüsselung, Benutzer, Passwort und Absender. Die Angaben gibt es beim Mail-Anbieter unter
-dem Stichwort „SMTP“. Nach dem Speichern im Bereich **„Testen“**:
+dem Stichwort „SMTP“ – gemeint ist der Server zum **Senden** (z. B. `smtp.strato.de`, nicht
+`imap.…`). Nach dem Speichern im Bereich **„Testen“**:
 
 - **„Verbindung prüfen“** verbindet sich mit dem Server und meldet sich an, ohne eine Mail zu
   senden. Klappt es nicht, steht dort verständlich, woran es liegt (Adresse/Port,
@@ -291,8 +293,8 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
 
   | Rolle | sieht |
   |---|---|
-  | Admin, Büro | alles: Anschrift, Kontakt, Personen, Abholberechtigte, alle Sperren, Ausnahmen, Abholungen, Kontostand, Anmerkungen, Zusatzfelder |
-  | Ausgabe | Name, Status, Kundengruppe, Haushaltsgröße, Ausweis, aktive Sperren, Ausnahmen, die letzten 5 Abholungen, Zusatzfelder (Art. 9 nur mit Freigabe in den Einstellungen) |
+  | Admin, Büro | alles: Anschrift, Kontakt, Personen, Abholberechtigte, alle Sperren, Ausnahmen, Abholungen, Kontostand, Anmerkungen, Notizen, Zusatzfelder |
+  | Ausgabe | nur, was der Einlass braucht: Kundennummer, Hauptperson mit Geburtsdatum, Abholberechtigte mit Geburtsdatum, Ausgabestelle, Karte gültig bis, Kontostand (abschaltbar), aktive Sperren, die letzten 5 Abholungen, Notizen, Zusatzfelder (Art. 9 nur mit Freigabe in den Einstellungen). Keine Anschrift, keine Kontaktdaten, keine weiteren Angehörigen, keine internen Anmerkungen |
   | Kiosk | nichts |
 
 - **Bearbeiten (nur Admin):** Auf der Haushaltsseite „Bearbeiten“ ändert alles zum Haushalt:
@@ -302,6 +304,10 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
   und Einkommensarten pflegt der Admin unter „Einstellungen → Kundenstamm → Listen“.
   **Achtung:** Solange aus dem Altsystem importiert wird, ersetzt der nächste Import alle
   Änderungen; der Prüfbericht nennt die Zahl der geänderten Haushalte (ADR 0025).
+- **Notizen:** Ausgabe, Büro und Admin schreiben Notizen zum Haushalt, auf der Haushaltsseite
+  oder direkt am Einlass. Löschen können Büro und Admin. Notizen hängen an der Kundennummer und
+  bleiben beim Import erhalten; gibt es die Kundennummer nicht mehr, werden sie gelöscht
+  (ADR 0026). Die **internen Anmerkungen** aus dem Altsystem sehen nur Büro und Admin.
 - Jeder Aufruf einer Detailseite steht im **Zugriffsprotokoll** („Kunden“ → „Zugriffsprotokoll“,
   nur Admin). Die Einträge werden nach 365 Tagen gelöscht, einstellbar unter
   „Einstellungen → Kundenstamm“.
@@ -320,10 +326,23 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   festlegen, wer bei neuen Anträgen eine Mail bekommt. Danach „Online-Anträge annehmen“
   einschalten.
 - **Adresse für die Webseite der Tafel:** `https://<domain>/antrag/`. Die Seite ist in
-  **29 Sprachen** umstellbar und erkennt die Sprache des Browsers. Einleitung und Text nach dem
-  Absenden lassen sich je Sprache selbst schreiben; sonst gelten die mitgelieferten.
-- Nach dem Absenden sehen Antragstellende ihre **Antragsnummer** und bekommen eine
-  **Bestätigungsmail** in ihrer Sprache, wenn sie eine Adresse angeben (Mailserver nötig).
+  **29 Sprachen** umstellbar und erkennt die Sprache des Browsers. Oben stehen Logo und Name
+  der Tafel in der Farbe der Tafel (siehe Einstellungen).
+- **Eigene Texte je Sprache** („Texte je Sprache“): Überschrift, Einleitung, Seite nach dem
+  Absenden, Betreff und Inhalt der Antwortmail. Die Texte dürfen **HTML** enthalten
+  (Überschriften, Absätze, Listen, Links, Bilder, Tabellen, Farben über `style="…"`);
+  Skripte und Ähnliches werden beim Anzeigen entfernt. Platzhalter: `{nummer}`, `{tafel}`,
+  in der Mail auch `{vorname}` und `{nachname}`. „Vorschau“ zeigt alles mit Beispielwerten,
+  ohne zu speichern. Ohne eigene Texte gelten die mitgelieferten.
+- **Staatsangehörigkeit** ist eine Auswahlliste aller Staaten (dazu „staatenlos“ und
+  „ungeklärt“). Gespeichert wird der deutsche Name; in anderen Sprachen zeigt der Browser den
+  Namen zusätzlich in der Sprache der Seite. Beim Bearbeiten von Personen gilt dieselbe Liste;
+  importierte Werte, die nicht darin stehen, bleiben wählbar.
+- **Eigene Gestaltung:** Im Feld „Eigene Gestaltung (CSS)“ lassen sich zusätzliche CSS-Regeln
+  für das öffentliche Formular hinterlegen (nur für Kundige).
+- Nach dem Absenden sehen Antragstellende eine Bestätigungsseite mit ihrer **Antragsnummer** und
+  bekommen eine gestaltete **Antwortmail** (HTML mit Logo, dazu eine Klartextfassung) in ihrer
+  Sprache, wenn sie eine Adresse angeben (Mailserver nötig).
 - **Bearbeiten** (Admin, Büro) unter „Anträge“: Liste nach Eingang, Detailseite mit Nachweisen,
   Status, Anmerkungen, Papierkorb und Auskunft (PDF). „Diese Liste als CSV herunterladen“
   liefert die Anträge, z. B. für eine Warteliste in einem anderen Programm.
@@ -347,6 +366,9 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    - Unter „Einstellungen → Ausgabe und Ampel“: **Abholungen am selben Tag** (1 = einmal,
      2 = zweimal, 0 = beliebig oft) und **Höchstzahl je Zeitraum** (0 = keine Grenze).
    - 🟢 alles in Ordnung, oder eine Ausnahme für heute hebt eine Terminregel auf
+   Daneben stehen Hauptperson mit Geburtsdatum, Abholberechtigte mit Geburtsdatum,
+   Ausgabestelle, Karte gültig bis, Kontostand, die letzten Abholungen und die **Notizen**;
+   eine neue Notiz lässt sich gleich dort speichern.
 4. **Kunde anmelden:** Das Aufrufen allein trägt nichts ein. Erst der Knopf **„Kunde anmelden
    und Abholung buchen“** meldet den Kunden für heute an. Wird abgebrochen, einfach die nächste
    Nummer scannen; der Kunde lässt sich jederzeit wieder aufrufen. Ein Versehen lässt sich am
@@ -497,15 +519,31 @@ cd /opt/bintafeln
 ./betrieb update
 ```
 
-Das Werkzeug sichert zuerst, holt dann die **neueste Version**, aktualisiert die Images und
-startet neu. Migrationen laufen beim Start automatisch. `./betrieb update main` holt statt der
-Version den neuesten Entwicklungsstand (zum Testen, z. B. auf einer Probe-Installation).
+Das Werkzeug zeigt die letzten Versionen mit Nummern:
+
+```
+Welche Version installieren?
+  1) 2026.10.8  (neueste)
+  2) 2026.10.7  (installiert)
+  3) 2026.10.6
+  m) Entwicklungsstand (main, zum Testen)
+Auswahl [1, nach 3 Sekunden automatisch]:
+```
+
+Ohne Eingabe nimmt es nach **3 Sekunden die neueste Version**. Dann sichert es, holt den Stand,
+aktualisiert die Images und startet neu; Migrationen laufen beim Start automatisch. Direkt geht
+es auch mit `./betrieb update 2026.10.6` oder `./betrieb update main`.
+
+**Zurück auf eine ältere Version:** einfach deren Nummer wählen. Nach einer Rückfrage wird
+gesichert, dann setzt das noch laufende neuere Programm die Datenbank auf den Stand der älteren
+Version zurück (Migrationen rückwärts), erst danach wird die ältere Version gebaut. Was nur die
+neuere Version speichert, geht dabei verloren; alles andere bleibt. Klappt das Zurücksetzen nicht,
+bleibt alles beim bisherigen Stand, und die Sicherung von eben lässt sich wiederherstellen.
 
 **Versionen** heißen nach dem Kalender `JAHR.MONAT.NUMMER`, z. B. `2026.10.1`, `2026.10.2` …;
 im nächsten Monat beginnt die Nummer wieder bei 1 (`2026.11.1`). Nach jedem Merge auf `main`
 legt GitHub die nächste Version samt Release mit den Änderungen automatisch an (ADR 0023).
 Die installierte Version zeigt `./betrieb status`, Admins sehen sie unten auf jeder Seite.
-Auf einen älteren Stand geht `update` nie zurück.
 
 > **Einmalig beim Wechsel auf diese Version:** Das Werkzeug `./betrieb` gibt es erst ab hier.
 > Deshalb dieses eine Mal `git pull && docker compose up -d --build` ausführen, danach

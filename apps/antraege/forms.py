@@ -15,7 +15,8 @@ from apps.antraege.models import (
 )
 from apps.ausgabe.ampel import WOCHENTAGE
 from apps.core import privatdateien
-from apps.core.auswahl import ANREDEN, FAMILIENSTAENDE
+from apps.core.auswahl import ANREDEN, FAMILIENSTAENDE, staatsangehoerigkeiten
+from apps.core.forms import StaatAuswahl
 from apps.konten.forms import DatumEingabe
 from apps.kunden.models import Ausgabestelle
 
@@ -75,7 +76,9 @@ class AntragForm(forms.Form):
             forms.ChoiceField(choices=[("", t["keine_angabe"]), *familienstaende]),
             t["familienstand"],
         )
-        self._feld("staatsangehoerigkeit", forms.CharField(max_length=100),
+        staaten = [(w, {"staatenlos": t["staatenlos"], "ungeklärt": t["ungeklaert"]}.get(w, n))
+                   for w, n in staatsangehoerigkeiten(t["keine_angabe"])]  # fmt: skip
+        self._feld("staatsangehoerigkeit", forms.ChoiceField(choices=staaten, widget=StaatAuswahl),
                    t["staatsangehoerigkeit"])  # fmt: skip
         if einstellungen.angehoerige != Abfrage.AUS:
             for n in range(1, MAX_PERSONEN + 1):
@@ -223,10 +226,13 @@ class EinstellungenForm(forms.ModelForm):
         model = AntragEinstellungen
         fields = [
             "aktiv", "modus", *AntragEinstellungen.FELDER, "datenschutz_url", "impressum_url",
-            "benachrichtigen", "erledigt_nach_tagen", "papierkorb_nach_tagen",
+            "eigenes_css", "benachrichtigen", "erledigt_nach_tagen", "papierkorb_nach_tagen",
             "loeschen_nach_tagen",
         ]  # fmt: skip
-        widgets = {"benachrichtigen": forms.CheckboxSelectMultiple}
+        widgets = {
+            "benachrichtigen": forms.CheckboxSelectMultiple,
+            "eigenes_css": forms.Textarea(attrs={"rows": 4, "class": "html-eingabe"}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -239,11 +245,25 @@ class EinstellungenForm(forms.ModelForm):
         )
 
 
+def _html_feld(zeilen=8):
+    return forms.Textarea(attrs={"rows": zeilen, "class": "html-eingabe", "dir": "auto"})
+
+
 class TextForm(forms.ModelForm):
     class Meta:
         model = AntragText
-        fields = ["einleitung", "bestaetigung"]
+        fields = ["ueberschrift", "einleitung", "bestaetigung", "mail_betreff", "mail_text"]
         widgets = {
-            "einleitung": forms.Textarea(attrs={"rows": 4}),
-            "bestaetigung": forms.Textarea(attrs={"rows": 4}),
+            "einleitung": _html_feld(),
+            "bestaetigung": _html_feld(),
+            "mail_text": _html_feld(10),
+        }
+        help_texts = {
+            "einleitung": "Steht über dem Formular. Platzhalter: {tafel}.",
+            "bestaetigung": "Erscheint nach dem Absenden unter der Antragsnummer. Platzhalter: "
+            "{nummer}, {tafel}.",
+            "mail_betreff": "Platzhalter: {nummer}, {tafel}.",
+            "mail_text": "Ganzer Inhalt der Antwortmail, wenn ausgefüllt (sonst: Anrede, "
+            "Antragsnummer, Text nach dem Absenden, Gruß). Platzhalter: {vorname}, {nachname}, "
+            "{nummer}, {tafel}.",
         }

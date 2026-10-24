@@ -220,11 +220,16 @@ def test_ausgabe_sieht_nur_das_noetige(als, bestand):
         "0000 111111",
         "Interne Notiz",
         "Alte Sperre",
-        "Max Beispiel",
+        "Kim Mustermann",  # Angehörige ohne Abholberechtigung
+        "Arzttermin",  # Ausnahmen
         "Schwerbehindert",
+        "Erwachsene",
     ):
         assert text not in inhalt, text
     assert "bringt eigene Taschen" in inhalt and "Gesperrt seit" in inhalt
+    # Hauptperson und Abholberechtigte mit Geburtsdatum, Kontostand, Karte, Notizen
+    assert "12.03.1968" in inhalt and "Max Beispiel" in inhalt and "Abholberechtigt" in inhalt
+    assert "1,50 €" in inhalt and "Karte gültig bis" in inhalt and "Neue Notiz" in inhalt
     assert "5 von 8 gespeicherten Abholungen" in inhalt
     assert Zugriff.objects.get().besondere_kategorie is False
 

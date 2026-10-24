@@ -9,15 +9,15 @@
   {% endif %}{% endfor %}
   {% if ausweis_abgelaufen %}<p class="sicherung sicherung-veraltet">Ausweis abgelaufen am {{ h.ausweis_gueltig_bis|date:"d.m.Y" }}</p>{% endif %}
   <dl class="angaben">
-    <dt>Status</dt><dd>{{ h.get_status_display }}</dd>
-    <dt>Kundengruppe</dt><dd>{{ h.kundengruppe.name|default:"–" }}{% if h.kundengruppe.ausgabestelle %} ({{ h.kundengruppe.ausgabestelle.name }}){% endif %}</dd>
-    <dt>Haushalt</dt><dd>{{ erwachsene }} Erwachsene, {{ kinder }} Kind{{ kinder|pluralize:"er" }}</dd>
-    <dt>Ausweis gültig bis</dt><dd>{{ h.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}</dd>
-    <dt>Letzter Besuch</dt><dd>{{ h.letzter_besuch|date:"d.m.Y"|default:"–" }}</dd>
+    {% if buero %}<dt>Status</dt><dd>{{ h.get_status_display }}</dd>{% endif %}
+    <dt>Ausgabestelle</dt><dd>{{ h.kundengruppe.ausgabestelle.name|default:"–" }}{% if h.kundengruppe %} · {{ h.kundengruppe.name }}{% if h.kundengruppe.wochentage %} ({{ h.kundengruppe.wochentage }}{% if h.kundengruppe.uhrzeit %} {{ h.kundengruppe.uhrzeit|time:"H:i" }}{% endif %}){% endif %}{% endif %}</dd>
+    <dt>Karte gültig bis</dt><dd>{{ h.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}</dd>
+    {% if kontostand_zeigen %}<dt>Kontostand</dt><dd>{% if h.kontostand is not None %}<strong{% if h.kontostand < 0 %} class="fehler"{% endif %}>{{ h.kontostand|floatformat:2 }} €</strong>{% else %}–{% endif %}</dd>{% endif %}
     {% if buero %}
+      <dt>Haushalt</dt><dd>{{ erwachsene }} Erwachsene, {{ kinder }} Kind{{ kinder|pluralize:"er" }}</dd>
+      <dt>Letzter Besuch</dt><dd>{{ h.letzter_besuch|date:"d.m.Y"|default:"–" }}</dd>
       <dt>Kunde seit</dt><dd>{{ h.kunde_seit|date:"d.m.Y"|default:"–" }}</dd>
       <dt>Einkommensart</dt><dd>{{ h.einkommensart|default:"–" }}</dd>
-      <dt>Kontostand</dt><dd>{% if h.kontostand is not None %}{{ h.kontostand|floatformat:2 }} €{% else %}–{% endif %}</dd>
       <dt>Anschrift</dt><dd>{{ h.strasse|default:"–" }}{% if h.plz or h.ort %}, {{ h.plz }} {{ h.ort }}{% endif %}</dd>
       {% if einstellungen.telefon_erfassen %}<dt>Telefon</dt><dd>{{ h.telefon|default:"–" }}</dd>{% endif %}
       {% if einstellungen.email_erfassen %}<dt>E-Mail</dt><dd>{{ h.email|default:"–" }}</dd>{% endif %}
@@ -35,28 +35,25 @@
 </section>
 
 <section class="karte">
-  <h2>Personen</h2>
+  <h2>{% if buero %}Personen{% else %}Hauptperson und Abholberechtigte{% endif %}</h2>
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Rolle</th><th>Name</th><th>Geburtsdatum</th>{% if buero and einstellungen.staatsangehoerigkeit_erfassen %}<th>Staatsangehörigkeit</th>{% endif %}{% if buero and einstellungen.familienstand_erfassen %}<th>Familienstand</th>{% endif %}<th>Weitere Angaben</th></tr></thead>
+    <thead><tr><th>Rolle</th><th>Name</th><th>Geburtsdatum</th>{% if buero %}{% if einstellungen.staatsangehoerigkeit_erfassen %}<th>Staatsangehörigkeit</th>{% endif %}{% if einstellungen.familienstand_erfassen %}<th>Familienstand</th>{% endif %}{% endif %}<th>Weitere Angaben</th></tr></thead>
     <tbody>
     {% if hauptperson %}{% include "kunden/_person.html" with p=hauptperson.0 zusatz=hauptperson.1 rolle="Hauptperson" %}{% endif %}
-    {% for p, zusatz in angehoerige %}{% include "kunden/_person.html" with rolle="Angehörige" %}{% endfor %}
+    {% if buero %}{% for p, zusatz in angehoerige %}{% include "kunden/_person.html" with rolle="Angehörige" %}{% endfor %}{% endif %}
+    {% for a in h.abholer.all %}
+      <tr>
+        <td data-titel="Rolle">Abholberechtigt</td>
+        <td data-titel="Name">{{ a.vorname }} {{ a.nachname }}{% if a.eigene_kundennummer %} (eigene Kundennummer {{ a.eigene_kundennummer }}){% endif %}</td>
+        <td data-titel="Geburtsdatum">{{ a.geburtsdatum|date:"d.m.Y"|default:"–" }}</td>
+        {% if buero %}{% if einstellungen.staatsangehoerigkeit_erfassen %}<td></td>{% endif %}{% if einstellungen.familienstand_erfassen %}<td></td>{% endif %}{% endif %}<td data-titel="Weitere Angaben">–</td>
+      </tr>
+    {% endfor %}
     </tbody>
   </table>
   </div>
 </section>
-
-{% if buero %}
-<section class="karte">
-  <h2>Abholberechtigte</h2>
-  {% for a in h.abholer.all %}
-    <p>{{ a.vorname }} {{ a.nachname }}{% if a.geburtsdatum %}, geb. {{ a.geburtsdatum|date:"d.m.Y" }}{% endif %}{% if a.eigene_kundennummer %} (eigene Kundennummer {{ a.eigene_kundennummer }}){% endif %}</p>
-  {% empty %}
-    <p class="hinweis">Keine.</p>
-  {% endfor %}
-</section>
-{% endif %}
 
 <section class="karte">
   <h2>Sperren</h2>
@@ -79,6 +76,7 @@
   </div>
 </section>
 
+{% if buero %}
 <section class="karte">
   <h2>Ausnahmen</h2>
   <div class="tabelle-rahmen">
@@ -98,6 +96,7 @@
   </table>
   </div>
 </section>
+{% endif %}
 
 <section class="karte">
   <h2>Letzte Abholungen</h2>
@@ -123,6 +122,8 @@
   </div>
   {% if abholungen_gesamt > abholungen|length %}<p class="hinweis">{{ abholungen|length }} von {{ abholungen_gesamt }} gespeicherten Abholungen.</p>{% endif %}
 </section>
+
+{% include "kunden/_notizen.html" %}
 
 {% if buero %}
 <section class="karte">

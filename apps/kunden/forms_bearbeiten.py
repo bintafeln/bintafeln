@@ -10,7 +10,8 @@ from django import forms
 from django.contrib.auth import get_user_model
 
 from apps.ausgabe.ampel import WOCHENTAGE
-from apps.core.auswahl import ANREDEN, FAMILIENSTAENDE, mit_vorhandenem
+from apps.core.auswahl import ANREDEN, FAMILIENSTAENDE, mit_vorhandenem, staatsangehoerigkeiten
+from apps.core.forms import StaatAuswahl
 from apps.konten.forms import DatumEingabe
 from apps.kunden.models import (
     Abholer,
@@ -117,6 +118,9 @@ class PersonForm(ZusatzMixin, forms.ModelForm):
     zusatz_fuer = Zusatzfeld.GiltFuer.PERSON
     anrede = forms.ChoiceField(label="Anrede", required=False)
     familienstand = forms.ChoiceField(label="Familienstand", required=False)
+    staatsangehoerigkeit = forms.ChoiceField(
+        label="Staatsangehörigkeit", required=False, widget=StaatAuswahl
+    )
 
     class Meta:
         model = Person
@@ -132,6 +136,9 @@ class PersonForm(ZusatzMixin, forms.ModelForm):
         self.fields["anrede"].choices = mit_vorhandenem(ANREDEN, p.anrede)
         self.fields["familienstand"].choices = mit_vorhandenem(
             [("", "—")] + [(f, f) for f in FAMILIENSTAENDE], p.familienstand
+        )
+        self.fields["staatsangehoerigkeit"].choices = mit_vorhandenem(
+            staatsangehoerigkeiten(), p.staatsangehoerigkeit
         )
         if not e.staatsangehoerigkeit_erfassen:
             del self.fields["staatsangehoerigkeit"]

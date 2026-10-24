@@ -125,6 +125,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   schreibt einen `Zugriff`. Neue Spalten im Importformat brauchen Doku,
   Beispieldatei und Test in `tests/test_kunden_import.py`. Bearbeiten durch den Admin in
   `views_bearbeiten.py`/`forms_bearbeiten.py`; jede Änderung setzt `Haushalt.geaendert_am`.
+  Notizen (`Notiz`, ADR 0026) hängen an der Kundennummer und überstehen den Import; die Rolle
+  Ausgabe sieht nur die Angaben aus ADR 0026.
   `ausgabe` (Einlass; Ampel-Regeln als reine Funktion in `apps/ausgabe/ampel.py`,
   Einstellungen in `AusgabeEinstellungen`; Kundenkonto nur über `apps/ausgabe/konto.py`
   buchen, nie `Haushalt.kontostand` direkt ändern, ADR 0014; Kasse-Auswertung in
@@ -144,6 +146,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `apps.core.privatdateien`.
 - App `antraege` (Modul 3, ADR 0024): öffentliches Formular `/antrag/<sprache>/` in
   `views_oeffentlich.py`, Bearbeitung in `views.py`, Fristen `models.fristen_anwenden()`.
+  Eigene Texte der Tafel (`AntragText`) dürfen HTML enthalten und laufen immer durch
+  `apps.core.html.anzeigen()`/`bereinigen()` (nh3), nie ungefiltert mit `|safe`.
+  Farbe der Tafel als CSS-Variablen über `templates/includes/farben.html`
+  (`apps/core/farben.py`); in CSS nur `var(--akzent)` usw., keine festen Akzentfarben.
   Texte je Sprache in `apps/antraege/uebersetzungen/<code>.json` (Grundlage `de.json`); neue
   Texte in **allen** Sprachdateien ergänzen, `tests/test_antraege.py` prüft Vollständigkeit
   und Platzhalter.
@@ -163,8 +169,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   (`auditlog.register(...)`), Geheimnisse und Passwörter mit `exclude_fields` ausnehmen.
 - Betriebsmodus: `BINTAFELN_DOMAIN` leer = Entwicklung (http), gesetzt = Produktion (TLS).
 - Betrieb auf dem Server über `./betrieb` (update, sichern, wiederherstellen, schluessel, status).
-  Versionen `JJJJ.M.N` vergibt `.github/workflows/version.yml` nach jedem Merge, `update` holt
-  die neueste, `bintafeln/version.py` liest die Datei VERSION (ADR 0023). Mehrere
+  Versionen `JJJJ.M.N` vergibt `.github/workflows/version.yml` nach jedem Merge, `update` bietet
+  sie zur Auswahl an (auch ältere; dann Migrationen rückwärts, deshalb jede Migration
+  umkehrbar halten), `bintafeln/version.py` liest die Datei VERSION (ADR 0023). Mehrere
   Installationen hinter `docker/gemeinsamer-proxy` über `docker/hinter-proxy.yml`; Demo-Betrieb
   mit `BINTAFELN_DEMO` und `apps/core/demo.py` (ADR 0022). Was Demo-Besucher nutzen
   könnten, um andere auszusperren, mit `nicht_in_demo` sperren.

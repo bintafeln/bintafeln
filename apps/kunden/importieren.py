@@ -34,6 +34,7 @@ from apps.kunden.models import (
     Sperre,
     Zusatzfeld,
     abholfrist_beginn,
+    verwaiste_notizen_loeschen,
 )
 
 FEHLER = "fehler"
@@ -881,6 +882,7 @@ def uebernehmen(daten: dict, *, benutzer, dateien, pruefsumme, anzahl_warnungen)
             for a in daten.get("ausnahmen", [])
         )
 
+    verwaiste_notizen_loeschen()  # Notizen bleiben, solange es die Kundennummer noch gibt
     # Außerhalb von disable_auditlog: Der Import selbst erscheint im Änderungsprotokoll.
     return ImportLauf.objects.create(
         benutzer=benutzer,

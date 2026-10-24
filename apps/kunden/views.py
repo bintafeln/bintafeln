@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
+from apps.ausgabe.models import AusgabeEinstellungen
 from apps.core import sicherung
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
@@ -25,6 +26,7 @@ from apps.kunden.models import (
     ImportVorbereitung,
     KundenEinstellungen,
     Kundengruppe,
+    Notiz,
     Person,
     Sperre,
     Zugriff,
@@ -193,12 +195,43 @@ def haushalt(request, kundennummer):
             "abholungen": abholungen[: ABHOLUNGEN_BUERO if buero else ABHOLUNGEN_AUSGABE],
             "abholungen_gesamt": abholungen.count(),
             "bemerkungen": h.bemerkungen.all() if buero else [],
+            "notizen": Notiz.objects.filter(kundennummer=h.kundennummer),
+            "kontostand_zeigen": buero or AusgabeEinstellungen.laden().kontostand_anzeigen,
             "buchungen": h.buchungen.all() if buero else [],
             "ausweis_abgelaufen": h.ausweis_gueltig_bis is not None
             and h.ausweis_gueltig_bis < heute,
             "heute": heute,
         },
     )
+
+
+def notiz_schreiben(h: Haushalt, text: str, benutzer) -> Notiz | None:
+    """Legt eine Notiz an; leerer Text legt nichts an."""
+    text = text.strip()[:1000]
+    if not text:
+        return None
+    von = (benutzer.get_full_name() or benutzer.get_username())[:100]
+    return Notiz.objects.create(kundennummer=h.kundennummer, text=text, verfasst_von=von)
+
+
+@require_POST
+@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO, rollen.AUSGABE)
+def notiz_neu(request, kundennummer):
+    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    if notiz_schreiben(h, request.POST.get("text", ""), request.user):
+        messages.success(request, "Notiz gespeichert.")
+    else:
+        messages.error(request, "Bitte einen Text eingeben.")
+    return redirect("kunden:haushalt", kundennummer=h.kundennummer)
+
+
+@require_POST
+@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+def notiz_loeschen(request, pk):
+    notiz = get_object_or_404(Notiz, pk=pk)
+    notiz.delete()
+    messages.success(request, "Notiz gelöscht.")
+    return redirect("kunden:haushalt", kundennummer=notiz.kundennummer)
 
 
 @never_cache

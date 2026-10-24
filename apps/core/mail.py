@@ -4,7 +4,7 @@ import smtplib
 import socket
 import ssl
 
-from django.core.mail import EmailMessage, get_connection
+from django.core.mail import EmailMultiAlternatives, get_connection
 
 from apps.core import geheimnis
 from apps.core.models import MailEinstellungen
@@ -27,7 +27,12 @@ def _verstaendlich(fehler: Exception) -> str:
         return "Verschlüsselung passt nicht zum Server. Port und Verschlüsselung prüfen."
     if isinstance(fehler, (socket.gaierror, ConnectionError, TimeoutError, socket.timeout)):
         return "Mailserver nicht erreichbar. Adresse und Port prüfen."
-    return f"Senden fehlgeschlagen ({type(fehler).__name__})."
+    if isinstance(fehler, OSError) and fehler.strerror:
+        return (
+            f"Verbindung zum Mailserver fehlgeschlagen ({fehler.strerror}). Adresse, Port und "
+            "Verschlüsselung prüfen."
+        )
+    return f"Senden fehlgeschlagen ({type(fehler).__name__}: {fehler})."
 
 
 def _verbindung(e: MailEinstellungen):
@@ -61,10 +66,14 @@ def verbindung_pruefen() -> None:
         verbindung.close()
 
 
-def senden(betreff: str, text: str, an: list[str]) -> None:
+def senden(betreff: str, text: str, an: list[str], html: str | None = None) -> None:
+    """Sendet ``text``; mit ``html`` zusätzlich eine gestaltete Fassung (Mailprogramme wählen)."""
     e = MailEinstellungen.laden()
     verbindung = _verbindung(e)
+    nachricht = EmailMultiAlternatives(betreff, text, e.absenderadresse, an, connection=verbindung)
+    if html:
+        nachricht.attach_alternative(html, "text/html")
     try:
-        EmailMessage(betreff, text, e.absenderadresse, an, connection=verbindung).send()
+        nachricht.send()
     except (smtplib.SMTPException, OSError) as fehler:
         raise MailFehler(_verstaendlich(fehler)) from fehler

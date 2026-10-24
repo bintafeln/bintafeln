@@ -2,9 +2,22 @@ from django import forms
 from django.contrib.auth import get_user_model, password_validation
 
 from apps.core import geheimnis
+from apps.core.auswahl import LAENDERCODE
+from apps.core.farben import STANDARDFARBE
 from apps.core.models import MailEinstellungen, TafelEinstellungen
 
 LOGO_MAX_BYTES = 2 * 1024 * 1024
+
+
+class StaatAuswahl(forms.Select):
+    """Auswahl der Staatsangehörigkeit; jede Option trägt den Ländercode (data-land), damit der
+    Browser den Namen in der Sprache der Besucher ergänzen kann."""
+
+    def create_option(self, name, value, *args, **kwargs):
+        option = super().create_option(name, value, *args, **kwargs)
+        if value in LAENDERCODE:
+            option["attrs"]["data-land"] = LAENDERCODE[value]
+        return option
 
 
 class EinrichtungForm(forms.Form):
@@ -42,6 +55,7 @@ class EinstellungenForm(forms.ModelForm):
         fields = [
             "name",
             "logo",
+            "farbe",
             "strasse",
             "plz",
             "ort",
@@ -57,6 +71,14 @@ class EinstellungenForm(forms.ModelForm):
             "zwei_faktor_personal",
             "buero_verwaltet_mitarbeitende",
         ]
+        widgets = {"farbe": forms.TextInput(attrs={"type": "color"})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["farbe"].required = False
+
+    def clean_farbe(self):
+        return self.cleaned_data.get("farbe") or STANDARDFARBE
 
     def clean_logo(self):
         logo = self.cleaned_data.get("logo")
@@ -79,6 +101,16 @@ class MailEinstellungenForm(forms.ModelForm):
     class Meta:
         model = MailEinstellungen
         fields = ["server", "port", "verschluesselung", "benutzer", "absender"]
+
+    def clean_server(self):
+        server = self.cleaned_data["server"].strip()
+        if server.lower().startswith(("imap.", "pop.", "pop3.")):
+            vorschlag = "smtp." + server.split(".", 1)[1]
+            raise forms.ValidationError(
+                f"„{server}“ ist ein Server zum Abholen von Mails. Zum Senden braucht es den "
+                f"SMTP-Server, meist „{vorschlag}“."
+            )
+        return server
 
     def save(self, commit=True):
         instanz = super().save(commit=False)

@@ -1,6 +1,7 @@
 """Anträge bearbeiten (Admin, Büro) und das Formular einstellen (Admin)."""
 
 import csv
+from types import SimpleNamespace
 
 from auditlog.signals import accessed
 from django.contrib import messages
@@ -23,7 +24,7 @@ from apps.antraege.models import (
     AntragText,
     loeschen,
 )
-from apps.core import privatdateien
+from apps.core import html, privatdateien
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 
@@ -219,12 +220,30 @@ def texte(request, sprache):
         raise Http404
     instanz = AntragText.objects.filter(sprache=sprache).first() or AntragText(sprache=sprache)
     form = TextForm(request.POST or None, instance=instanz)
+    kontext = {"form": form, "s": sprachen.sprache(sprache), "t": sprachen.texte(sprache)}
     if request.method == "POST" and form.is_valid():
-        form.save()
-        messages.success(request, "Texte gespeichert.")
-        return redirect("antraege:einstellungen")
-    return render(
-        request,
-        "antraege/texte.html",
-        {"form": form, "s": sprachen.sprache(sprache), "t": sprachen.texte(sprache)},
-    )
+        if "vorschau" in request.POST:
+            kontext["vorschau"] = vorschau(request, form.save(commit=False))
+        else:
+            form.save()
+            messages.success(request, "Texte gespeichert.")
+            return redirect("antraege:einstellungen")
+    return render(request, "antraege/texte.html", kontext)
+
+
+def vorschau(request, eigene: AntragText) -> dict:
+    """Die Texte so, wie Besucher sie sehen, mit erfundenen Beispielwerten."""
+    from apps.antraege import views_oeffentlich as oe
+
+    kontext = {**oe._kontext(eigene.sprache), "eigene": eigene}
+    beispiel = SimpleNamespace(nummer="2026-00001", vorname="Erika", nachname="Beispiel")
+    betreff, _, mail_html = oe.antwortmail(request, beispiel, kontext)
+    return {
+        "ueberschrift": oe._ueberschrift(kontext),
+        "einleitung": html.anzeigen(
+            eigene.einleitung, kontext["t"]["einleitung"], tafel=kontext["tafel_name"]
+        ),  # fmt: skip
+        "bestaetigung": oe._bestaetigung(kontext, beispiel.nummer),
+        "mail_betreff": betreff,
+        "mail_html": mail_html,
+    }

@@ -382,6 +382,33 @@ class Bemerkung(models.Model):
         return f"Anmerkung vom {self.datum:%d.%m.%Y}"
 
 
+class Notiz(models.Model):
+    """Notiz zu einem Haushalt, in bintafeln geschrieben (Einlass, Büro, Admin).
+
+    Hängt an der Kundennummer, nicht am Datensatz: Der Import ersetzt die Haushalte, die
+    Notizen bleiben. Gibt es die Kundennummer nicht mehr, werden sie gelöscht.
+    """
+
+    kundennummer = models.CharField("Kundennummer", max_length=20, db_index=True)
+    text = models.TextField("Notiz", max_length=1000)
+    erstellt_am = models.DateTimeField("Geschrieben am", default=timezone.now)
+    verfasst_von = models.CharField("Verfasst von", max_length=100, blank=True)
+
+    class Meta:
+        verbose_name = "Notiz"
+        verbose_name_plural = "Notizen"
+        ordering = ["-erstellt_am"]
+
+    def __str__(self):
+        return f"Notiz vom {timezone.localtime(self.erstellt_am):%d.%m.%Y}"
+
+
+def verwaiste_notizen_loeschen() -> int:
+    """Notizen zu Kundennummern, die es nicht mehr gibt."""
+    vorhanden = Haushalt.objects.values("kundennummer")
+    return Notiz.objects.exclude(kundennummer__in=vorhanden).delete()[0]
+
+
 class Abholung(models.Model):
     """Eine Abholung. Wird nach der Aufbewahrungsfrist der Einstellungen gelöscht."""
 
@@ -488,7 +515,11 @@ def abgelaufene_zugriffe_loeschen() -> int:
 
 def fristen_anwenden() -> int:
     """Löscht alles, dessen Aufbewahrungsfrist abgelaufen ist. Liefert die Anzahl."""
-    return abgelaufene_abholungen_loeschen() + abgelaufene_zugriffe_loeschen()
+    return (
+        abgelaufene_abholungen_loeschen()
+        + abgelaufene_zugriffe_loeschen()
+        + verwaiste_notizen_loeschen()
+    )
 
 
 class ImportVorbereitung(models.Model):
@@ -562,6 +593,7 @@ for modell in (
     Abholer,
     Sperre,
     Bemerkung,
+    Notiz,
     Abholung,
     Ausnahme,
     ImportLauf,

@@ -15,7 +15,7 @@
 </section>
 <section class="karte">
   <h2>Texte je Sprache</h2>
-  <p class="hinweis">Einleitung und Text nach dem Absenden. Ohne eigene Texte erscheinen die mitgelieferten.</p>
+  <p class="hinweis">Überschrift, Einleitung, Seite nach dem Absenden und Antwortmail, auch mit HTML. Ohne eigene Texte erscheinen die mitgelieferten.</p>
   <ul class="sprachliste">
     {% for s, eigen in sprachen %}<li><a href="{% url 'antraege:texte' s.code %}">{{ s.deutsch }}</a>{% if eigen %} <span class="marke-ok">eigener Text</span>{% endif %}</li>{% endfor %}
   </ul>

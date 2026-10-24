@@ -272,3 +272,26 @@ def test_grosse_ampel_zeigt_die_farbe(ausgabe, haushalt):
     Abholung.objects.all().delete()
     inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
     assert '<span class="lampe lampe-gelb an">' in inhalt and ">ACHTUNG</p>" in inhalt
+
+
+def test_einlass_zeigt_angaben_und_notizen(ausgabe, haushalt):
+    from apps.kunden.models import Notiz
+
+    hp = haushalt.personen.get()
+    hp.geburtsdatum = dt.date(1970, 5, 6)
+    hp.save()
+    haushalt.abholer.create(vorname="Otto", nachname="Muster", geburtsdatum=dt.date(2001, 2, 3))
+    haushalt.strasse = "Erfundene Gasse 9"
+    haushalt.save()
+    inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
+    assert "06.05.1970" in inhalt and "Otto Muster, geb. 03.02.2001" in inhalt
+    assert "Ausgabestelle Mitte · Jeden Tag" in inhalt and "Karte gültig bis" in inhalt
+    assert "Erfundene Gasse" not in inhalt and "Keine Notizen." in inhalt
+    url = reverse("ausgabe:notiz", args=["00042"])
+    leer = ausgabe.post(url, {"text": "  "}, **HX).content.decode()
+    assert "Bitte einen Text" in leer and not Notiz.objects.exists()
+    inhalt = ausgabe.post(url, {"text": "Bringt Nachweis nächste Woche"}, **HX).content.decode()
+    assert "Notiz gespeichert." in inhalt and "Bringt Nachweis nächste Woche" in inhalt
+    n = Notiz.objects.get()
+    assert n.kundennummer == "00042" and n.verfasst_von == "ausgabe"
+    assert "löschen</button>" not in inhalt  # löschen nur Büro und Admin

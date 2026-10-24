@@ -4,11 +4,14 @@
   --flaeche: #ffffff;
   --text: #1f2421;
   --leise: #5b6660;
-  --akzent: #2f6b3a;
-  --akzent-dunkel: #24532d;
+  /* Voreinstellung Tafel-Orange; die Farbe der Tafel setzt includes/farben.html */
+  --akzent: #e8710a;
+  --akzent-dunkel: #974906;
+  --fokus: #f4b884;
+  --auf-akzent: #ffffff;
   --rand: #d8ddd8;
   --fehler: #a32020;
-  --erfolg: #e5f2e7;
+  --erfolg: #fcebdd;
   --radius: 8px;
 }
 
@@ -26,7 +29,7 @@ body {
   flex-direction: column;
 }
 
-a { color: var(--akzent); }
+a { color: var(--akzent-dunkel); }
 
 .kopf {
   display: flex;
@@ -36,9 +39,9 @@ a { color: var(--akzent); }
   gap: .5rem 1rem;
   padding: .75rem 1rem;
   background: var(--akzent);
-  color: #fff;
+  color: var(--auf-akzent);
 }
-.kopf a { color: #fff; text-decoration: none; }
+.kopf a { color: var(--auf-akzent); text-decoration: none; }
 .marke { display: flex; align-items: center; gap: .5rem; font-weight: 600; font-size: 1.15rem; }
 .logo { height: 2.25rem; width: auto; background: #fff; border-radius: 4px; padding: 2px; }
 
@@ -73,7 +76,7 @@ h1 { font-size: 1.5rem; margin: .25rem 0 1rem; }
   width: 100%;
 }
 .feld input[type="file"] { padding: .5rem 0; border: 0; }
-.feld input:focus, .feld select:focus, .feld textarea:focus, .filter input:focus { outline: 3px solid #9cc7a4; border-color: var(--akzent); }
+.feld input:focus, .feld select:focus, .feld textarea:focus, .filter input:focus { outline: 3px solid var(--fokus); border-color: var(--akzent); }
 .hilfe { color: var(--leise); }
 .fehler { color: var(--fehler); }
 .hat-fehler input { border-color: var(--fehler); }
@@ -82,7 +85,7 @@ h1 { font-size: 1.5rem; margin: .25rem 0 1rem; }
   font: inherit;
   font-weight: 600;
   background: var(--akzent);
-  color: #fff;
+  color: var(--auf-akzent);
   border: 0;
   border-radius: var(--radius);
   padding: .75rem 1.25rem;
@@ -148,7 +151,7 @@ h1 { font-size: 1.5rem; margin: .25rem 0 1rem; }
 h2 { font-size: 1.2rem; margin: 1.5rem 0 .5rem; }
 h3 { font-size: 1.05rem; margin: 1.25rem 0 .5rem; }
 a.knopf { display: inline-block; text-align: center; text-decoration: none; }
-.knopf-zweitrangig { background: #fff; color: var(--akzent); border: 2px solid var(--akzent); }
+.knopf-zweitrangig { background: #fff; color: var(--akzent-dunkel); border: 2px solid var(--akzent); }
 .knopf-zweitrangig:hover { background: var(--erfolg); }
 .feld-haken label { display: flex; align-items: center; gap: .6rem; font-weight: 500; }
 .feld-haken input { width: 1.4rem; height: 1.4rem; min-height: 0; flex: none; accent-color: var(--akzent); }
@@ -224,7 +227,7 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 /* Kasse */
 .reiter { display: flex; gap: .5rem; margin-bottom: 1rem; }
 .reiter a { padding: .35rem .9rem; border: 2px solid var(--akzent); border-radius: 999px; text-decoration: none; }
-.reiter a[aria-current="page"] { background: var(--akzent); color: #fff; }
+.reiter a[aria-current="page"] { background: var(--akzent); color: var(--auf-akzent); }
 .kasse td { white-space: nowrap; }
 .kasse .summe td { font-weight: 700; }
 .kasse .summe { border-top: 2px solid #222; }
@@ -232,7 +235,7 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 
 /* Mitarbeitende */
 .aktionen { display: flex; flex-wrap: wrap; gap: .5rem; }
-.knopf-gefahr { background: #b3261e; }
+.knopf-gefahr { background: #b3261e; color: #fff; }
 .startpasswort { font-size: 1.6rem; font-family: ui-monospace, monospace; letter-spacing: .05em; }
 /* Mehrfachauswahl als Häkchen (z. B. Rollen) */
 .feld input[type="checkbox"], .feld input[type="radio"] { width: auto; min-height: 0; padding: 0; }
@@ -267,3 +270,35 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .person summary { cursor: pointer; font-weight: 600; }
 [dir="rtl"] .feld-haken input { margin-left: .5rem; margin-right: 0; }
 .sprachliste { columns: 12rem; padding-left: 1.25rem; }
+
+/* Öffentliches Antragsformular: großes Logo, Felder nebeneinander (ab Tablet-Breite) */
+.antrag-kopf { padding: 1rem 1.25rem; }
+.antrag-kopf .marke { font-size: 1.35rem; }
+.antrag-kopf .logo { height: 4rem; padding: 4px; }
+.inhalt.antrag { max-width: 56rem; }
+.antrag-titel { color: var(--akzent-dunkel); font-size: 1.75rem; margin-top: 0; }
+.antrag-einleitung { margin-bottom: 1rem; }
+.antrag-einleitung img { max-width: 100%; height: auto; }
+.reihe { display: grid; gap: 0 1rem; grid-template-columns: 1fr; }
+@media (min-width: 40rem) {
+  .reihe { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .reihe-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .reihe-plz { grid-template-columns: minmax(0, 1fr) minmax(0, 3fr); }
+  .antrag-absenden { width: auto; min-width: 16rem; }
+}
+.antrag-danke { text-align: center; }
+.antrag-danke .antrag-einleitung { text-align: start; }
+.danke-zeichen {
+  width: 4rem; height: 4rem; margin: 0 auto 1rem; border-radius: 50%; display: flex;
+  align-items: center; justify-content: center; font-size: 2.25rem; font-weight: 700;
+  background: var(--akzent); color: var(--auf-akzent);
+}
+.danke-nummer {
+  display: inline-block; font-size: 1.2rem; font-weight: 600; padding: .75rem 1.25rem;
+  border-radius: var(--radius); background: var(--erfolg);
+}
+.html-vorschau { border: 1px dashed var(--rand); border-radius: var(--radius); padding: 1rem; margin: 1rem 0; }
+textarea.html-eingabe { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .95rem; }
+.mail-vorschau { width: 100%; height: 32rem; padding: 0; background: #fff; }
+.link-knopf { background: none; border: 0; padding: 0; font: inherit; color: var(--akzent-dunkel); text-decoration: underline; cursor: pointer; }
+.notiz-neu { margin-top: 1rem; }

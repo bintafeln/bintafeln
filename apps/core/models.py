@@ -1,6 +1,8 @@
 from auditlog.registry import auditlog
+from django.core.validators import RegexValidator
 from django.db import models
 
+from apps.core.farben import STANDARDFARBE, farbtoene
 from apps.core.feiertage import BUNDESLAENDER
 
 
@@ -15,6 +17,14 @@ class TafelEinstellungen(models.Model):
         upload_to="oeffentlich/logo/",
         blank=True,
         help_text="PNG, JPG oder WebP, höchstens 2 MB. Das Logo ist öffentlich abrufbar.",
+    )
+    farbe = models.CharField(
+        "Farbe",
+        max_length=7,
+        default=STANDARDFARBE,
+        validators=[RegexValidator(r"^#[0-9a-fA-F]{6}$", "Bitte eine Farbe wählen.")],
+        help_text="Kopfzeile, Knöpfe und Links der ganzen Anwendung und des Antragsformulars. "
+        "Voreingestellt ist Tafel-Orange.",
     )
     strasse = models.CharField("Straße und Hausnummer", max_length=200, blank=True)
     plz = models.CharField("PLZ", max_length=10, blank=True)
@@ -61,6 +71,10 @@ class TafelEinstellungen(models.Model):
     def laden(cls) -> "TafelEinstellungen":
         einstellungen, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
         return einstellungen
+
+    def farben(self) -> dict[str, str]:
+        """Aus der einen Farbe abgeleitete Töne für die CSS-Variablen."""
+        return farbtoene(self.farbe)
 
     def zwei_faktor_pflicht_rollen(self) -> set[str]:
         from apps.konten import rollen
