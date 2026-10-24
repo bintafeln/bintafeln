@@ -363,3 +363,10 @@ textarea.html-eingabe { font-family: ui-monospace, Menlo, Consolas, monospace; f
   .seiten-raster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .seiten-raster > .breit { grid-column: 1 / -1; }
 }
+.notiz-vorlagen { display: flex; flex-wrap: wrap; gap: .5rem; margin: .75rem 0; }
+.notiz-vorlagen .knopf-vorlage {
+  width: auto; min-height: 2.5rem; padding: .45rem .9rem; font-weight: 600;
+  background: #e3f2fd; color: #1d4a6b; border: 1px solid #64b5f6;
+}
+.notiz-vorlagen .knopf-vorlage:hover { background: #bbdefb; }
+.notiz-vorlagen .inline + .inline { margin-left: 0; }

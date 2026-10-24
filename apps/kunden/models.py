@@ -393,6 +393,10 @@ class Notiz(models.Model):
     text = models.TextField("Notiz", max_length=1000)
     erstellt_am = models.DateTimeField("Geschrieben am", default=timezone.now)
     verfasst_von = models.CharField("Verfasst von", max_length=100, blank=True)
+    benutzer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="+", verbose_name="Geschrieben von (Konto)",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Notiz"
@@ -401,6 +405,31 @@ class Notiz(models.Model):
 
     def __str__(self):
         return f"Notiz vom {timezone.localtime(self.erstellt_am):%d.%m.%Y}"
+
+    def darf_loeschen(self, benutzer) -> bool:
+        """Admin und Büro immer; sonst nur eigene Notizen vom selben Tag (Versehen)."""
+        from apps.konten import rollen
+
+        if rollen.hat_rolle(benutzer, rollen.ADMIN, rollen.BUERO):
+            return True
+        heute = timezone.localdate()
+        return self.benutzer_id == benutzer.pk and timezone.localdate(self.erstellt_am) == heute
+
+
+class NotizVorlage(models.Model):
+    """Vorgefertigter Notiztext: am Einlass mit einem Knopf als Notiz gespeichert."""
+
+    text = models.CharField("Text", max_length=200)
+    reihenfolge = models.PositiveSmallIntegerField("Reihenfolge", default=0)
+    aktiv = models.BooleanField("Aktiv", default=True)
+
+    class Meta:
+        verbose_name = "Notiz-Vorlage"
+        verbose_name_plural = "Notiz-Vorlagen"
+        ordering = ["reihenfolge", "text"]
+
+    def __str__(self):
+        return self.text
 
 
 def verwaiste_notizen_loeschen() -> int:
@@ -594,6 +623,7 @@ for modell in (
     Sperre,
     Bemerkung,
     Notiz,
+    NotizVorlage,
     Abholung,
     Ausnahme,
     ImportLauf,

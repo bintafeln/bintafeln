@@ -22,6 +22,7 @@ from apps.kunden.models import (
     Haushalt,
     KundenEinstellungen,
     Kundengruppe,
+    NotizVorlage,
     Person,
     Sperre,
     Zusatzfeld,
@@ -255,3 +256,13 @@ class EinkommensartForm(forms.ModelForm):
     class Meta:
         model = Einkommensart
         fields = ["bezeichnung", "aktiv"]
+
+
+class NotizVorlageForm(forms.ModelForm):
+    class Meta:
+        model = NotizVorlage
+        fields = ["text", "reihenfolge", "aktiv"]
+        help_texts = {
+            "text": "Erscheint am Einlass als Knopf; ein Klick speichert ihn als Notiz.",
+            "reihenfolge": "Kleinere Zahlen stehen weiter vorn.",
+        }

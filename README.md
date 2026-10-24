@@ -305,7 +305,10 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
   **Achtung:** Solange aus dem Altsystem importiert wird, ersetzt der nächste Import alle
   Änderungen; der Prüfbericht nennt die Zahl der geänderten Haushalte (ADR 0025).
 - **Notizen:** Ausgabe, Büro und Admin schreiben Notizen zum Haushalt, auf der Haushaltsseite
-  oder direkt am Einlass. Löschen können Büro und Admin. Notizen hängen an der Kundennummer und
+  oder direkt am Einlass. **Notiz-Vorlagen** („Einstellungen → Kundenstamm → Listen →
+  Notiz-Vorlagen“, Admin) erscheinen als Knöpfe: ein Klick speichert den Text als Notiz. Jede
+  Notiz lässt sich einzeln löschen: Büro und Admin jede, die Ausgabe ihre eigenen vom selben
+  Tag (Versehen). Notizen hängen an der Kundennummer und
   bleiben beim Import erhalten; gibt es die Kundennummer nicht mehr, werden sie gelöscht
   (ADR 0026). Die **internen Anmerkungen** aus dem Altsystem sehen nur Büro und Admin.
 - Jeder Aufruf einer Detailseite steht im **Zugriffsprotokoll** („Kunden“ → „Zugriffsprotokoll“,

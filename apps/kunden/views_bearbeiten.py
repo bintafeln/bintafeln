@@ -24,6 +24,7 @@ from apps.kunden.forms_bearbeiten import (
     EinkommensartForm,
     HaushaltForm,
     KundengruppeForm,
+    NotizVorlageForm,
     PersonForm,
     SperreForm,
 )
@@ -37,6 +38,7 @@ from apps.kunden.models import (
     Haushalt,
     Kundengruppe,
     Notiz,
+    NotizVorlage,
     Person,
     Sperre,
 )
@@ -190,6 +192,7 @@ LISTEN = {
     "kundengruppen": (Kundengruppe, KundengruppeForm, "Kundengruppen", "Kundengruppe"),
     "ausgabestellen": (Ausgabestelle, AusgabestelleForm, "Ausgabestellen", "Ausgabestelle"),
     "einkommensarten": (Einkommensart, EinkommensartForm, "Einkommensarten", "Einkommensart"),
+    "notizvorlagen": (NotizVorlage, NotizVorlageForm, "Notiz-Vorlagen", "Notiz-Vorlage"),
 }
 
 

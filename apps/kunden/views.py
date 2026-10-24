@@ -1,6 +1,7 @@
 import datetime as dt
 
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import OuterRef, Q, Subquery
 from django.shortcuts import get_object_or_404, redirect, render
@@ -27,6 +28,7 @@ from apps.kunden.models import (
     KundenEinstellungen,
     Kundengruppe,
     Notiz,
+    NotizVorlage,
     Person,
     Sperre,
     Zugriff,
@@ -195,7 +197,7 @@ def haushalt(request, kundennummer):
             "abholungen": abholungen[: ABHOLUNGEN_BUERO if buero else ABHOLUNGEN_AUSGABE],
             "abholungen_gesamt": abholungen.count(),
             "bemerkungen": h.bemerkungen.all() if buero else [],
-            "notizen": Notiz.objects.filter(kundennummer=h.kundennummer),
+            **notizen_kontext(h.kundennummer, request.user),
             "kontostand_zeigen": buero or AusgabeEinstellungen.laden().kontostand_anzeigen,
             "buchungen": h.buchungen.all() if buero else [],
             "ausweis_abgelaufen": h.ausweis_gueltig_bis is not None
@@ -211,7 +213,17 @@ def notiz_schreiben(h: Haushalt, text: str, benutzer) -> Notiz | None:
     if not text:
         return None
     von = (benutzer.get_full_name() or benutzer.get_username())[:100]
-    return Notiz.objects.create(kundennummer=h.kundennummer, text=text, verfasst_von=von)
+    return Notiz.objects.create(
+        kundennummer=h.kundennummer, text=text, verfasst_von=von, benutzer=benutzer
+    )
+
+
+def notizen_kontext(kundennummer: str, benutzer) -> dict:
+    """Notizen mit der Angabe, ob sie gelöscht werden dürfen, und die aktiven Vorlagen."""
+    notizen = list(Notiz.objects.filter(kundennummer=kundennummer))
+    for n in notizen:
+        n.loeschbar = n.darf_loeschen(benutzer)
+    return {"notizen": notizen, "notiz_vorlagen": NotizVorlage.objects.filter(aktiv=True)}
 
 
 @require_POST
@@ -226,9 +238,11 @@ def notiz_neu(request, kundennummer):
 
 
 @require_POST
-@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO, rollen.AUSGABE)
 def notiz_loeschen(request, pk):
     notiz = get_object_or_404(Notiz, pk=pk)
+    if not notiz.darf_loeschen(request.user):
+        raise PermissionDenied
     notiz.delete()
     messages.success(request, "Notiz gelöscht.")
     return redirect("kunden:haushalt", kundennummer=notiz.kundennummer)
