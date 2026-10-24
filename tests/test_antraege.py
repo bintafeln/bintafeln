@@ -388,11 +388,19 @@ def test_einstellungen_und_texte(admin_client, benutzer_mit_rolle):
     werte = {f: "optional" for f in AntragEinstellungen.FELDER}
     werte |= {"aktiv": "on", "modus": "beides", "benachrichtigen": [b.pk],
               "erledigt_nach_tagen": 0, "papierkorb_nach_tagen": 90, "loeschen_nach_tagen": 30,
-              "datenschutz_url": "tafel.example.org/ds"}  # fmt: skip
+              "datenschutz_url": "tafel.example.org/ds",
+              "erklaerungen_url": "tafel.example.org/ausgabe",
+              "voraussetzungen_url": "https://tafel.example.org/wer"}  # fmt: skip
     admin_client.post(url, werte)
     e = AntragEinstellungen.laden()
     assert e.aktiv and list(e.benachrichtigen.all()) == [b]
     assert e.datenschutz_url == "https://tafel.example.org/ds"
+    assert e.erklaerungen_url == "https://tafel.example.org/ausgabe"
+    formular = admin_client.get(reverse("antrag:formular", args=["en"])).content.decode()
+    assert 'href="https://tafel.example.org/wer"' in formular
+    assert (
+        "Requirements and documents" in formular and "How the food distribution works" in formular
+    )
     texte = reverse("antraege:texte", args=["ar"])
     assert 'dir="rtl"' in admin_client.get(texte).content.decode()
     vorschau = admin_client.post(

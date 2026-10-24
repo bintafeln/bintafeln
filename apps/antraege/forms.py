@@ -221,13 +221,21 @@ class EinstellungenForm(forms.ModelForm):
     impressum_url = forms.URLField(
         label="Link zum Impressum", required=False, assume_scheme="https"
     )
+    erklaerungen_url = forms.URLField(
+        label="Link zu Erklärungen", required=False, assume_scheme="https",
+        help_text=AntragEinstellungen._meta.get_field("erklaerungen_url").help_text,
+    )  # fmt: skip
+    voraussetzungen_url = forms.URLField(
+        label="Link zu Voraussetzungen", required=False, assume_scheme="https",
+        help_text=AntragEinstellungen._meta.get_field("voraussetzungen_url").help_text,
+    )  # fmt: skip
 
     class Meta:
         model = AntragEinstellungen
         fields = [
             "aktiv", "modus", *AntragEinstellungen.FELDER, "datenschutz_url", "impressum_url",
-            "eigenes_css", "benachrichtigen", "erledigt_nach_tagen", "papierkorb_nach_tagen",
-            "loeschen_nach_tagen",
+            "erklaerungen_url", "voraussetzungen_url", "eigenes_css", "benachrichtigen",
+            "erledigt_nach_tagen", "papierkorb_nach_tagen", "loeschen_nach_tagen",
         ]  # fmt: skip
         widgets = {
             "benachrichtigen": forms.CheckboxSelectMultiple,

@@ -28,7 +28,9 @@
   <footer class="fuss">
     {% if tafel.anschrift %}<span>{{ tafel.anschrift }}</span>{% endif %}
     <span>{% if e.datenschutz_url %}<a href="{{ e.datenschutz_url }}">{{ t.datenschutz }}</a>{% endif %}
-      {% if e.impressum_url %} · <a href="{{ e.impressum_url }}">{{ t.impressum }}</a>{% endif %}</span>
+      {% if e.impressum_url %} · <a href="{{ e.impressum_url }}">{{ t.impressum }}</a>{% endif %}
+      {% if e.voraussetzungen_url %} · <a href="{{ e.voraussetzungen_url }}">{{ t.voraussetzungen }}</a>{% endif %}
+      {% if e.erklaerungen_url %} · <a href="{{ e.erklaerungen_url }}">{{ t.erklaerungen }}</a>{% endif %}</span>
   </footer>
 </body>
 </html>
