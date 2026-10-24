@@ -227,7 +227,7 @@ def test_ausgabe_sieht_nur_das_noetige(als, bestand):
     assert "bringt eigene Taschen" in inhalt and "Gesperrt seit" in inhalt
     # Hauptperson und Abholberechtigte mit Geburtsdatum, Kontostand, Karte, Notizen
     assert "12.03.1968" in inhalt and "Max Beispiel" in inhalt and "Abholberechtigt" in inhalt
-    assert "1,50 €" in inhalt and "Karte gültig bis" in inhalt and "Neue Notiz" in inhalt
+    assert "1,50 €" in inhalt and "Karte gültig bis" in inhalt and "Eigene Notiz" in inhalt
     assert "Kim Mustermann" in inhalt and "01.01.2015" in inhalt and "Erwachsene" in inhalt
     assert "5 von 8 gespeicherten Abholungen" in inhalt
     assert Zugriff.objects.get().besondere_kategorie is False

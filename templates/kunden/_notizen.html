@@ -3,13 +3,42 @@
   {% for n in notizen %}
     <div class="notiz">
       <div class="notiz-kopf"><span>{{ n.erstellt_am|date:"d.m.Y H:i" }}{% if n.verfasst_von %} · {{ n.verfasst_von }}{% endif %}</span>
-        {% if buero %}<form method="post" action="{% url 'kunden:notiz_loeschen' n.pk %}" class="inline notiz-loeschen">{% csrf_token %}
-          <button type="submit" class="link-knopf" onclick="return confirm('Notiz löschen?')">löschen</button></form>{% endif %}</div>
+        {% if n.loeschbar %}
+        {% if notiz_htmx %}
+        <form method="post" action="{% url 'ausgabe:notiz_loeschen' n.pk %}" class="inline notiz-loeschen"
+              hx-post="{% url 'ausgabe:notiz_loeschen' n.pk %}" hx-target="#ergebnis" hx-confirm="Diese Notiz löschen?">
+        {% else %}
+        <form method="post" action="{% url 'kunden:notiz_loeschen' n.pk %}" class="inline notiz-loeschen"
+              onsubmit="return confirm('Diese Notiz löschen?')">
+        {% endif %}
+          {% csrf_token %}
+          <button type="submit" class="link-knopf" aria-label="Notiz vom {{ n.erstellt_am|date:'d.m.Y H:i' }} löschen">löschen</button>
+        </form>
+        {% endif %}
+      </div>
       <p class="notiz-text">{{ n.text|linebreaksbr }}</p>
     </div>
   {% empty %}
     <p class="hinweis">Keine Notizen.</p>
   {% endfor %}
+
+  {% if notiz_vorlagen %}
+  <div class="notiz-vorlagen" aria-label="Notiz mit einem Klick speichern">
+    {% for v in notiz_vorlagen %}
+    {% if notiz_htmx %}
+    <form method="post" action="{% url 'ausgabe:notiz' h.kundennummer %}" class="inline"
+          hx-post="{% url 'ausgabe:notiz' h.kundennummer %}" hx-target="#ergebnis">
+    {% else %}
+    <form method="post" action="{% url 'kunden:notiz_neu' h.kundennummer %}" class="inline">
+    {% endif %}
+      {% csrf_token %}
+      <input type="hidden" name="text" value="{{ v.text }}">
+      <button type="submit" class="knopf knopf-vorlage">{{ v.text }}</button>
+    </form>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   {% if notiz_htmx %}
   <form method="post" action="{% url 'ausgabe:notiz' h.kundennummer %}" class="notiz-neu"
         hx-post="{% url 'ausgabe:notiz' h.kundennummer %}" hx-target="#ergebnis">
@@ -18,9 +47,10 @@
   {% endif %}
     {% csrf_token %}
     <div class="feld">
-      <label for="notiz-text">Neue Notiz</label>
+      <label for="notiz-text">Eigene Notiz</label>
       <textarea name="text" id="notiz-text" rows="2" maxlength="1000" required></textarea>
     </div>
     <button type="submit" class="knopf knopf-zweitrangig">Notiz speichern</button>
   </form>
+  {% if "Admin" in rollen %}<p><small><a href="{% url 'kunden:liste' 'notizvorlagen' %}">Notiz-Vorlagen bearbeiten</a></small></p>{% endif %}
 </section>

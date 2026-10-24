@@ -53,12 +53,10 @@
 
 <section class="karte">
   <h2>Haushalt löschen</h2>
-  <form method="post" action="{% url 'kunden:haushalt_loeschen' h.kundennummer %}" onsubmit="return confirm('Haushalt {{ h.kundennummer }} mit allen Personen, Abholungen und Anmerkungen löschen?')">
-    {% csrf_token %}
-    <p class="hinweis">Löscht den Haushalt mit Personen, Abholberechtigten, Sperren, Ausnahmen, Abholungen und Anmerkungen.
-      Kontobuchungen bleiben für die Kasse erhalten.</p>
-    <button type="submit" class="knopf knopf-zweitrangig fehler">Haushalt löschen</button>
-  </form>
+  <p class="hinweis">Löscht den Haushalt mit Personen, Abholberechtigten, Sperren, Ausnahmen,
+    Abholungen, Anmerkungen und Notizen. Kontobuchungen bleiben für die Kasse erhalten. Vor dem
+    Löschen zeigt eine Seite genau, was gelöscht wird.</p>
+  <a class="knopf knopf-gefahr" href="{% url 'kunden:haushalt_loeschen' h.kundennummer %}">Haushalt löschen …</a>
 </section>
 </div>
 {% endblock %}

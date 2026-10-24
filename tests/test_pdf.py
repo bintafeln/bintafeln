@@ -83,7 +83,7 @@ def test_auskunft_kunde(admin_client, pdf_text, haushalt):
 
     Notiz.objects.create(kundennummer="T-4711", text="Testnotiz", verfasst_von="kim")
     seite = admin_client.get(reverse("kunden:haushalt", args=["T-4711"])).content.decode()
-    assert "Auskunft nach Art. 15 DSGVO (PDF)" in seite and "Kundenausweis drucken" in seite
+    assert "Auskunft nach Art. 15 DSGVO (PDF)" in seite and "Ausweis drucken</a>" in seite
     inhalt = pdf_text(admin_client.get(reverse("kunden:auskunft", args=["T-4711"])))
     for wort in ("Tafel Musterstadt", "Erfundene Gasse 1", "Erika", "Otto Abholer", "Testsperre",
                  "Testbemerkung", "Testausnahme", "Ausgabe Nord", "Nuss", "Diaet", "chefin",

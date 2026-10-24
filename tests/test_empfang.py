@@ -298,4 +298,33 @@ def test_einlass_zeigt_angaben_und_notizen(ausgabe, haushalt):
     assert '<div class="notiz">' in inhalt  # gespeicherte Notizen farbig hinterlegt
     n = Notiz.objects.get()
     assert n.kundennummer == "00042" and n.verfasst_von == "ausgabe"
-    assert "löschen</button>" not in inhalt  # löschen nur Büro und Admin
+    # eigene Notiz vom selben Tag darf die Ausgabe löschen (Versehen), fremde nicht
+    assert "löschen</button>" in inhalt
+    fremd = Notiz.objects.create(kundennummer="00042", text="Von Berta", verfasst_von="Berta")
+    inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
+    assert inhalt.count("löschen</button>") == 1
+    url = reverse("ausgabe:notiz_loeschen", args=[fremd.pk])
+    assert "nur Büro und Admin" in ausgabe.post(url, **HX).content.decode()
+    gestern = timezone.now() - dt.timedelta(days=1)
+    Notiz.objects.filter(pk=n.pk).update(erstellt_am=gestern)
+    url = reverse("ausgabe:notiz_loeschen", args=[n.pk])
+    assert "nur Büro und Admin" in ausgabe.post(url, **HX).content.decode()
+    Notiz.objects.filter(pk=n.pk).update(erstellt_am=timezone.now())
+    assert "Notiz gelöscht." in ausgabe.post(url, **HX).content.decode()
+    assert list(Notiz.objects.all()) == [fremd]
+
+
+def test_notiz_vorlagen_am_einlass(als, haushalt):
+    from apps.kunden.models import Notiz, NotizVorlage
+
+    NotizVorlage.objects.create(text="Bescheide geprüft, kann verlängert werden", reihenfolge=1)
+    NotizVorlage.objects.create(text="Alte Vorlage", aktiv=False)
+    ausgabe = als(rollen.AUSGABE)
+    inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
+    assert "Bescheide geprüft, kann verlängert werden</button>" in inhalt
+    assert "Alte Vorlage" not in inhalt and "Notiz-Vorlagen bearbeiten" not in inhalt
+    url = reverse("ausgabe:notiz", args=["00042"])
+    inhalt = ausgabe.post(url, {"text": "Bescheide geprüft, kann verlängert werden"},
+                          **HX).content.decode()  # fmt: skip
+    assert "Notiz gespeichert." in inhalt
+    assert Notiz.objects.get().text == "Bescheide geprüft, kann verlängert werden"

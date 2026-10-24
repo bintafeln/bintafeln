@@ -13,8 +13,8 @@
     <button type="submit" class="knopf">Speichern</button>
   </form>
   {% if loeschen %}
-  <form method="post" action="{{ loeschen }}" class="abseits" onsubmit="return confirm('Wirklich löschen?')">
-    {% csrf_token %}<button type="submit" class="link">Löschen</button>
+  <form method="post" action="{{ loeschen }}" class="abseits" onsubmit="return confirm(this.dataset.frage)" data-frage="{{ loeschen_frage|default:'Wirklich löschen?' }}">
+    {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Löschen</button>
   </form>
   {% endif %}
 </section>

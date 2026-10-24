@@ -155,8 +155,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   und Platzhalter.
 - PDFs nur über `apps.core.pdf` (`Pdf`-Rahmen, `pdf_antwort()` ohne Zwischenspeichern; ADR 0021).
   Auskunft Art. 15: `apps/kunden/auskunft.py` und `apps/konten/auskunft.py`, Kundenausweis
-  `apps/kunden/ausweis.py`, Kassenbericht `kasse.bericht_pdf()`. Neue gespeicherte Daten zu
-  Personen gehören auch in die Auskunft. In Tests liest die Fixture `pdf_text` den Text aus
+  `apps/kunden/ausweis.py` nach `AusweisVorlage` (ADR 0027; Kundennummer und Barcode Pflicht),
+  Kassenbericht `kasse.bericht_pdf()`. Neue gespeicherte Daten zu Personen gehören auch in die
+  Auskunft. In Tests liest die Fixture `pdf_text` den Text aus
   dem PDF.
 - Mails nur über `apps.core.mail.senden()` (Mailserver aus der Datenbank, verständliche
   `MailFehler`). Geheimnisse in der Datenbank nur über `apps.core.geheimnis` verschlüsselt

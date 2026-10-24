@@ -15,15 +15,20 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.ausgabe import konto
+from apps.core.models import TafelEinstellungen
+from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
+from apps.kunden import ausweis
 from apps.kunden.forms_bearbeiten import (
     AbholerForm,
     AnmerkungForm,
     AusgabestelleForm,
     AusnahmeForm,
+    AusweisVorlageForm,
     EinkommensartForm,
     HaushaltForm,
     KundengruppeForm,
+    NotizVorlageForm,
     PersonForm,
     SperreForm,
 )
@@ -32,11 +37,13 @@ from apps.kunden.models import (
     Abholung,
     Ausgabestelle,
     Ausnahme,
+    AusweisVorlage,
     Bemerkung,
     Einkommensart,
     Haushalt,
     Kundengruppe,
     Notiz,
+    NotizVorlage,
     Person,
     Sperre,
 )
@@ -104,10 +111,27 @@ def haushalt_neu(request):
     return render(request, "kunden/eintrag.html", {"form": form, "titel": "Neuer Haushalt"})
 
 
-@require_POST
 @nur_admin
 def haushalt_loeschen(request, kundennummer):
+    """Erst eine Seite, die aufzählt, was gelöscht wird; gelöscht wird nur nach Bestätigung."""
     h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    if request.method != "POST":
+        hp = h.hauptperson
+        umfang = [
+            ("Personen", h.personen.count()),
+            ("Abholberechtigte", h.abholer.count()),
+            ("Sperren", h.sperren.count()),
+            ("Ausnahmen", h.ausnahmen.count()),
+            ("Abholungen", h.abholungen.count()),
+            ("Interne Anmerkungen", h.bemerkungen.count()),
+            ("Notizen", Notiz.objects.filter(kundennummer=kundennummer).count()),
+        ]
+        return render(
+            request,
+            "kunden/haushalt_loeschen.html",
+            {"h": h, "name": f"{hp.vorname} {hp.nachname}" if hp else "", "umfang": umfang,
+             "buchungen": h.buchungen.count()},
+        )  # fmt: skip
     with transaction.atomic():
         h.delete()  # Buchungen bleiben ohne Haushalt, aber mit Kundennummer (Kasse)
         Notiz.objects.filter(kundennummer=kundennummer).delete()
@@ -154,6 +178,10 @@ def teil_bearbeiten(request, kundennummer, art, pk=None):
             "loeschen": reverse("kunden:teil_loeschen", args=[h.kundennummer, art, pk])
             if pk
             else None,
+            "loeschen_frage": f"{bezeichnung} „{instanz}“ aus Haushalt {h.kundennummer} "
+            "endgültig löschen?"
+            if pk
+            else "",
         },
     )
 
@@ -190,6 +218,7 @@ LISTEN = {
     "kundengruppen": (Kundengruppe, KundengruppeForm, "Kundengruppen", "Kundengruppe"),
     "ausgabestellen": (Ausgabestelle, AusgabestelleForm, "Ausgabestellen", "Ausgabestelle"),
     "einkommensarten": (Einkommensart, EinkommensartForm, "Einkommensarten", "Einkommensart"),
+    "notizvorlagen": (NotizVorlage, NotizVorlageForm, "Notiz-Vorlagen", "Notiz-Vorlage"),
 }
 
 
@@ -226,6 +255,7 @@ def listeneintrag(request, art, pk=None):
             "titel": f"{einzeln} {'bearbeiten' if pk else 'hinzufügen'}",
             "zurueck": reverse("kunden:liste", args=[art]),
             "loeschen": reverse("kunden:listeneintrag_loeschen", args=[art, pk]) if pk else None,
+            "loeschen_frage": f"{einzeln} „{instanz}“ endgültig löschen?" if pk else "",
         },
     )
 
@@ -246,3 +276,43 @@ def listeneintrag_loeschen(request, art, pk):
     else:
         messages.success(request, f"{einzeln} gelöscht.")
     return redirect("kunden:liste", art=art)
+
+
+# --- Ausweis gestalten (ADR 0027) -------------------------------------------------------------
+
+
+@nur_admin
+def ausweis_gestalten(request):
+    vorlage = AusweisVorlage.laden()
+    form = AusweisVorlageForm(request.POST or None, request.FILES or None, instance=vorlage)
+    if request.method == "POST" and form.is_valid():
+        if "vorschau" in request.POST:
+            return pdf_antwort(
+                ausweis.beispiel_pdf(form.instance, form.cleaned_data["vorne"],
+                                     form.cleaned_data["hinten"]),
+                "ausweis-vorschau.pdf",
+            )  # fmt: skip
+        if "standard" in request.POST:
+            form.instance.vorderseite = []
+            form.instance.rueckseite = []
+            AusweisVorlage.save(form.instance)
+            messages.success(request, "Ausweis auf die Standard-Gestaltung zurückgesetzt.")
+            return redirect("kunden:ausweis_gestalten")
+        form.save()
+        messages.success(request, "Ausweis gespeichert.")
+        return redirect("kunden:ausweis_gestalten")
+    vorlage = AusweisVorlage.laden()  # Bilder wie gespeichert, auch nach einem Fehler
+    tafel = TafelEinstellungen.laden()
+    daten = {
+        "typen": {t: {"name": n, "pflicht": p, "art": a} for t, (n, p, a) in ausweis.TYPEN.items()},
+        "beispiel": {**ausweis.BEISPIEL, "ausweisname": vorlage.name},
+        "platzhalter": ausweis.PLATZHALTER,
+        "masse": {"b": ausweis.BREITE_MM, "h": ausweis.HOEHE_MM,
+                  "barcode_b": ausweis.BARCODE_MIN_B, "barcode_h": ausweis.BARCODE_MIN_H},
+        "logo": tafel.logo.url if tafel.logo else "",
+        "hintergrund": vorlage.hintergrund.url if vorlage.hintergrund else "",
+        "hintergrund_hinten": vorlage.hintergrund_rueckseite.url
+        if vorlage.hintergrund_rueckseite
+        else "",
+    }  # fmt: skip
+    return render(request, "kunden/ausweis_gestalten.html", {"form": form, "daten": daten})

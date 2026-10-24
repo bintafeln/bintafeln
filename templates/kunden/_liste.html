@@ -1,4 +1,5 @@
-<p class="hinweis">{{ seite.paginator.count }} Haushalt{{ seite.paginator.count|pluralize:"e" }}</p>
+<p class="hinweis">{{ seite.paginator.count }} Haushalt{{ seite.paginator.count|pluralize:"e" }}
+  {% if darf_importieren and seite.paginator.count %} · <a href="{% url 'kunden:ausweise' %}?q={{ filter.q|urlencode }}&amp;status={{ filter.status|urlencode }}&amp;gruppe={{ filter.gruppe|urlencode }}" target="_blank" rel="noopener">Ausweise dieser {{ seite.paginator.count }} drucken (PDF)</a>{% endif %}</p>
 <div class="tabelle-rahmen">
 <table class="tabelle">
   <thead><tr><th>Nr.</th><th>Name</th><th>Kundengruppe</th><th>Status</th><th>Ausweis bis</th></tr></thead>

@@ -25,7 +25,7 @@ from apps.kunden.models import (
     Notiz,
     Zugriff,
 )
-from apps.kunden.views import notiz_schreiben
+from apps.kunden.views import notiz_schreiben, notizen_kontext
 
 EMPFANG_ROLLEN = (rollen.ADMIN, rollen.BUERO, rollen.AUSGABE)
 LETZTE_ABHOLUNGEN = 5
@@ -83,7 +83,7 @@ def _ergebnis(request, h, meldung=None):
         "abholungen": abholungen[:LETZTE_ABHOLUNGEN],
         "heute_erfasst": [a for a in abholungen if a.datum == heute and a.erfasst_am],
         "darf_ausnahme": rollen.hat_rolle(request.user, rollen.ADMIN, rollen.BUERO),
-        "notizen": Notiz.objects.filter(kundennummer=h.kundennummer),
+        **notizen_kontext(h.kundennummer, request.user),
         "meldung": meldung,
     }
 
@@ -415,3 +415,16 @@ def notiz(request, kundennummer):
     if notiz_schreiben(h, request.POST.get("text", ""), request.user) is None:
         return _zurueck(request, h, "Bitte einen Text für die Notiz eingeben.", messages.ERROR)
     return _zurueck(request, h, "Notiz gespeichert.")
+
+
+@require_POST
+@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+def notiz_loeschen(request, pk):
+    notiz = get_object_or_404(Notiz, pk=pk)
+    h = get_object_or_404(Haushalt, kundennummer=notiz.kundennummer)
+    if not notiz.darf_loeschen(request.user):
+        return _zurueck(
+            request, h, "Diese Notiz dürfen nur Büro und Admin löschen.", messages.ERROR
+        )
+    notiz.delete()
+    return _zurueck(request, h, "Notiz gelöscht.")

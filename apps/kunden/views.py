@@ -1,9 +1,11 @@
 import datetime as dt
 
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import OuterRef, Q, Subquery
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
@@ -14,7 +16,7 @@ from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.kunden import auskunft as kunden_auskunft
 from apps.kunden import importieren
-from apps.kunden.ausweis import ausweis_pdf
+from apps.kunden.ausweis import MAX_SAMMELDRUCK, ausweis_pdf, ausweise_pdf
 from apps.kunden.forms import KundenEinstellungenForm, ZusatzfeldForm
 from apps.kunden.models import (
     Abholer,
@@ -27,6 +29,7 @@ from apps.kunden.models import (
     KundenEinstellungen,
     Kundengruppe,
     Notiz,
+    NotizVorlage,
     Person,
     Sperre,
     Zugriff,
@@ -195,7 +198,7 @@ def haushalt(request, kundennummer):
             "abholungen": abholungen[: ABHOLUNGEN_BUERO if buero else ABHOLUNGEN_AUSGABE],
             "abholungen_gesamt": abholungen.count(),
             "bemerkungen": h.bemerkungen.all() if buero else [],
-            "notizen": Notiz.objects.filter(kundennummer=h.kundennummer),
+            **notizen_kontext(h.kundennummer, request.user),
             "kontostand_zeigen": buero or AusgabeEinstellungen.laden().kontostand_anzeigen,
             "buchungen": h.buchungen.all() if buero else [],
             "ausweis_abgelaufen": h.ausweis_gueltig_bis is not None
@@ -211,7 +214,17 @@ def notiz_schreiben(h: Haushalt, text: str, benutzer) -> Notiz | None:
     if not text:
         return None
     von = (benutzer.get_full_name() or benutzer.get_username())[:100]
-    return Notiz.objects.create(kundennummer=h.kundennummer, text=text, verfasst_von=von)
+    return Notiz.objects.create(
+        kundennummer=h.kundennummer, text=text, verfasst_von=von, benutzer=benutzer
+    )
+
+
+def notizen_kontext(kundennummer: str, benutzer) -> dict:
+    """Notizen mit der Angabe, ob sie gelöscht werden dürfen, und die aktiven Vorlagen."""
+    notizen = list(Notiz.objects.filter(kundennummer=kundennummer))
+    for n in notizen:
+        n.loeschbar = n.darf_loeschen(benutzer)
+    return {"notizen": notizen, "notiz_vorlagen": NotizVorlage.objects.filter(aktiv=True)}
 
 
 @require_POST
@@ -226,9 +239,11 @@ def notiz_neu(request, kundennummer):
 
 
 @require_POST
-@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO, rollen.AUSGABE)
 def notiz_loeschen(request, pk):
     notiz = get_object_or_404(Notiz, pk=pk)
+    if not notiz.darf_loeschen(request.user):
+        raise PermissionDenied
     notiz.delete()
     messages.success(request, "Notiz gelöscht.")
     return redirect("kunden:haushalt", kundennummer=notiz.kundennummer)
@@ -255,6 +270,26 @@ def ausweis(request, kundennummer):
         Haushalt.objects.select_related("kundengruppe"), kundennummer=kundennummer
     )
     return pdf_antwort(ausweis_pdf(h), f"kundenausweis-{_dateiname(h)}.pdf")
+
+
+@never_cache
+@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+def ausweise(request):
+    """Sammeldruck: Ausweise aller Haushalte der aktuellen Auswahl in der Kundenliste."""
+    haushalte, _ = _haushalte_suchen(request)
+    haushalte = list(
+        haushalte.select_related("kundengruppe__ausgabestelle").order_by("kundennummer")[
+            : MAX_SAMMELDRUCK + 1
+        ]
+    )
+    if not haushalte or len(haushalte) > MAX_SAMMELDRUCK:
+        messages.error(
+            request,
+            "Keine Haushalte ausgewählt." if not haushalte else
+            f"Mehr als {MAX_SAMMELDRUCK} Haushalte: bitte nach Kundengruppe oder Status filtern.",
+        )  # fmt: skip
+        return redirect(f"{reverse('kunden:uebersicht')}?{request.GET.urlencode()}")
+    return pdf_antwort(ausweise_pdf(haushalte), "kundenausweise.pdf")
 
 
 def _dateiname(h) -> str:

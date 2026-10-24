@@ -107,6 +107,39 @@ def test_haushalt_neu_und_loeschen(admin_client, admin):
     assert b.haushalt is None and b.kundennummer == "3001"  # Kasse bleibt vollständig
 
 
+def test_haushalt_loeschen_mit_bestaetigungsseite(admin_client, h):
+    from apps.kunden.models import Notiz
+
+    Notiz.objects.create(kundennummer="2001", text="x")
+    seite = admin_client.get(url("haushalt", "2001")).content.decode()
+    assert "Zum Einlass</a>" in seite and "Ausweis drucken</a>" in seite and "Löschen …" in seite
+    assert "/ausgabe/?nummer=2001" in seite
+    frage = admin_client.get(url("haushalt_loeschen", "2001")).content.decode()
+    assert "nicht rückgängig" in frage and "Erika Test" in frage
+    assert '<td>Personen</td><td class="zahl">1</td>' in frage
+    assert '<td>Notizen</td><td class="zahl">1</td>' in frage
+    assert Haushalt.objects.filter(kundennummer="2001").exists()  # Aufruf allein löscht nichts
+    admin_client.post(url("haushalt_loeschen", "2001"))
+    assert not Haushalt.objects.exists() and not Notiz.objects.exists()
+
+
+def test_loeschen_fragt_konkret(admin_client, h):
+    p = h.personen.get()
+    seite = admin_client.get(url("teil", "2001", "person", p.pk)).content.decode()
+    assert "Person „Erika Test“ aus Haushalt 2001 endgültig löschen?" in seite
+    stelle = Ausgabestelle.objects.create(name="Nord")
+    seite = admin_client.get(url("listeneintrag", "ausgabestellen", stelle.pk)).content.decode()
+    assert "Ausgabestelle „Nord“ endgültig löschen?" in seite
+
+
+def test_kundenseite_fuer_ausgabe(client, admin, benutzer_mit_rolle, anmelden, h):
+    anmelden(client, benutzer_mit_rolle("kim", rollen.AUSGABE))
+    seite = client.get(url("haushalt", "2001")).content.decode()
+    assert "Zum Einlass</a>" in seite and "Löschen …" not in seite
+    assert "Ausweis drucken" not in seite
+    assert client.get(url("haushalt_loeschen", "2001")).status_code == 403
+
+
 def test_personen(admin_client, h):
     Zusatzfeld.objects.create(schluessel="sb", bezeichnung="Schwerbehindert", gilt_fuer="person")
     seite = admin_client.get(url("teil_neu", "2001", "person")).content.decode()
@@ -177,6 +210,19 @@ def test_abholung_loeschen_nimmt_buchung_zurueck(admin_client, h):
     assert h.letzter_besuch is None
 
 
+def test_notiz_vorlagen_pflegen(admin_client, h):
+    from apps.kunden.models import Notiz, NotizVorlage
+
+    assert url("liste", "notizvorlagen") in admin_client.get(url("einstellungen")).content.decode()
+    admin_client.post(url("listeneintrag_neu", "notizvorlagen"),
+                      {"text": "Bescheide geprüft", "reihenfolge": 1, "aktiv": "on"})  # fmt: skip
+    assert str(NotizVorlage.objects.get()) == "Bescheide geprüft"
+    seite = admin_client.get(url("haushalt", "2001")).content.decode()
+    assert "Bescheide geprüft</button>" in seite and "Notiz-Vorlagen bearbeiten" in seite
+    admin_client.post(url("notiz_neu", "2001"), {"text": "Bescheide geprüft"})
+    assert Notiz.objects.get().text == "Bescheide geprüft"
+
+
 def test_listen_pflegen(admin_client):
     seite = admin_client.get(url("einstellungen")).content.decode()
     assert url("liste", "kundengruppen") in seite
@@ -224,7 +270,9 @@ def test_notizen_haushaltsseite_import_und_umnummern(
     client.post(url("notiz_neu", "2001"), {"text": ""})
     n = Notiz.objects.get()
     seite = client.get(url("haushalt", "2001")).content.decode()
-    assert "Erfundene Notiz" in seite and "löschen</button>" not in seite
+    assert "Erfundene Notiz" in seite and "löschen</button>" in seite  # eigene, von heute
+    Notiz.objects.filter(pk=n.pk).update(benutzer=None)  # wie von jemand anderem
+    assert "löschen</button>" not in client.get(url("haushalt", "2001")).content.decode()
     assert client.post(reverse("kunden:notiz_loeschen", args=[n.pk])).status_code == 403
     admin_client = anmelden(client, admin)
     assert "löschen</button>" in admin_client.get(url("haushalt", "2001")).content.decode()

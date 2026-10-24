@@ -57,3 +57,4 @@ drei Fragen: Was war das Problem? Was haben wir entschieden? Warum?
 | [0024](0024-online-antraege.md) | Online-Anträge in 29 Sprachen, Warteliste außerhalb | Angenommen |
 | [0025](0025-kundenstamm-bearbeiten.md) | Der Admin kann den Kundenstamm bearbeiten | Angenommen |
 | [0026](0026-notizen.md) | Notizen zum Haushalt; was die Ausgabe sieht | Angenommen |
+| [0027](0027-ausweis-gestalten.md) | Kundenausweis frei gestalten | Angenommen |

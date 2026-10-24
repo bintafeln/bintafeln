@@ -393,6 +393,10 @@ class Notiz(models.Model):
     text = models.TextField("Notiz", max_length=1000)
     erstellt_am = models.DateTimeField("Geschrieben am", default=timezone.now)
     verfasst_von = models.CharField("Verfasst von", max_length=100, blank=True)
+    benutzer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="+", verbose_name="Geschrieben von (Konto)",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Notiz"
@@ -402,11 +406,93 @@ class Notiz(models.Model):
     def __str__(self):
         return f"Notiz vom {timezone.localtime(self.erstellt_am):%d.%m.%Y}"
 
+    def darf_loeschen(self, benutzer) -> bool:
+        """Admin und Büro immer; sonst nur eigene Notizen vom selben Tag (Versehen)."""
+        from apps.konten import rollen
+
+        if rollen.hat_rolle(benutzer, rollen.ADMIN, rollen.BUERO):
+            return True
+        heute = timezone.localdate()
+        return self.benutzer_id == benutzer.pk and timezone.localdate(self.erstellt_am) == heute
+
+
+class NotizVorlage(models.Model):
+    """Vorgefertigter Notiztext: am Einlass mit einem Knopf als Notiz gespeichert."""
+
+    text = models.CharField("Text", max_length=200)
+    reihenfolge = models.PositiveSmallIntegerField("Reihenfolge", default=0)
+    aktiv = models.BooleanField("Aktiv", default=True)
+
+    class Meta:
+        verbose_name = "Notiz-Vorlage"
+        verbose_name_plural = "Notiz-Vorlagen"
+        ordering = ["reihenfolge", "text"]
+
+    def __str__(self):
+        return self.text
+
 
 def verwaiste_notizen_loeschen() -> int:
     """Notizen zu Kundennummern, die es nicht mehr gibt."""
     vorhanden = Haushalt.objects.values("kundennummer")
     return Notiz.objects.exclude(kundennummer__in=vorhanden).delete()[0]
+
+
+class AusweisVorlage(models.Model):
+    """Gestaltung des Kundenausweises (Singleton, ADR 0027). Elemente siehe kunden.ausweis."""
+
+    EINZIGE_ID = 1
+
+    class Seitenformat(models.TextChoices):
+        A4 = "a4", "A4 mit Schnittmarken (ein Ausweis je Blatt)"
+        KARTE = "karte", "Kartengröße (für Kartendrucker)"
+
+    name = models.CharField(
+        "Ausweisname", max_length=100, default="Kundenausweis",
+        help_text="z. B. „Tafelausweis Tafel Musterstadt“; als Element platzierbar.",
+    )  # fmt: skip
+    seitenformat = models.CharField(
+        "Druck", max_length=5, choices=Seitenformat.choices, default=Seitenformat.A4
+    )
+    hintergrund = models.ImageField(
+        "Hintergrundbild vorn", upload_to="oeffentlich/ausweis/", blank=True,
+        help_text="PNG oder JPG, höchstens 2 MB; wird auf Kartengröße (85,6 × 54 mm) gestreckt.",
+    )  # fmt: skip
+    rueckseite_aktiv = models.BooleanField("Rückseite drucken", default=False)
+    hintergrund_rueckseite = models.ImageField(
+        "Hintergrundbild hinten", upload_to="oeffentlich/ausweis/", blank=True
+    )
+    vorderseite = models.JSONField("Elemente vorn", default=list, blank=True)
+    rueckseite = models.JSONField("Elemente hinten", default=list, blank=True)
+    geaendert_am = models.DateTimeField("Geändert am", auto_now=True)
+
+    class Meta:
+        verbose_name = "Ausweis-Vorlage"
+        verbose_name_plural = "Ausweis-Vorlage"
+
+    def __str__(self):
+        return f"Ausweis-Vorlage „{self.name}“"
+
+    def save(self, *args, **kwargs):
+        self.pk = self.EINZIGE_ID
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def laden(cls) -> "AusweisVorlage":
+        vorlage, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
+        return vorlage
+
+    def elemente_vorne(self) -> list[dict]:
+        from apps.kunden import ausweis
+
+        return ausweis.elemente_pruefen(self.vorderseite) if self.vorderseite else (
+            ausweis.standard())  # fmt: skip
+
+    def elemente_hinten(self) -> list[dict]:
+        """Rückseite: frei, ohne Pflicht-Elemente."""
+        from apps.kunden import ausweis
+
+        return [e for e in (ausweis.element_pruefen(r) for r in self.rueckseite or []) if e]
 
 
 class Abholung(models.Model):
@@ -594,6 +680,8 @@ for modell in (
     Sperre,
     Bemerkung,
     Notiz,
+    NotizVorlage,
+    AusweisVorlage,
     Abholung,
     Ausnahme,
     ImportLauf,

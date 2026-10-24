@@ -2,13 +2,25 @@
 {% block titel %}Haushalt {{ h.kundennummer }}{% endblock %}
 {% block inhalt %}
 <div class="seiten-raster">
-<section class="karte">
-  <p><a href="{% url 'kunden:uebersicht' %}">← Kunden</a></p>
-  <h1>{{ h.kundennummer }}{% if hauptperson %} · {{ hauptperson.0.vorname }} {{ hauptperson.0.nachname }}{% endif %}</h1>
+<section class="karte breit kunden-kopf">
+  <div class="kunden-titel">
+    <p><a href="{% url 'kunden:uebersicht' %}">← Kunden</a></p>
+    <h1>{{ h.kundennummer }}{% if hauptperson %} · {{ hauptperson.0.vorname }} {{ hauptperson.0.nachname }}{% endif %}</h1>
+  </div>
+  <div class="aktionsleiste">
+    <a class="knopf" href="{% url 'ausgabe:empfang' %}?nummer={{ h.kundennummer|urlencode }}">Zum Einlass</a>
+    {% if buero %}<a class="knopf knopf-zweitrangig" href="{% url 'kunden:ausweis' h.kundennummer %}" target="_blank" rel="noopener">Ausweis drucken</a>{% endif %}
+    {% if "Admin" in rollen %}<a class="knopf knopf-zweitrangig" href="{% url 'kunden:bearbeiten' h.kundennummer %}">Bearbeiten</a>
+    <a class="knopf knopf-gefahr" href="{% url 'kunden:haushalt_loeschen' h.kundennummer %}">Löschen …</a>{% endif %}
+  </div>
   {% for s, aktiv in sperren %}{% if aktiv %}
-    <p class="sicherung sicherung-fehler">Gesperrt seit {{ s.von|date:"d.m.Y" }}{% if s.bis %} bis {{ s.bis|date:"d.m.Y" }}{% endif %}{% if s.begruendung %}: {{ s.begruendung }}{% endif %}</p>
+    <p class="sicherung sicherung-fehler kopf-meldung">Gesperrt seit {{ s.von|date:"d.m.Y" }}{% if s.bis %} bis {{ s.bis|date:"d.m.Y" }}{% endif %}{% if s.begruendung %}: {{ s.begruendung }}{% endif %}</p>
   {% endif %}{% endfor %}
-  {% if ausweis_abgelaufen %}<p class="sicherung sicherung-veraltet">Ausweis abgelaufen am {{ h.ausweis_gueltig_bis|date:"d.m.Y" }}</p>{% endif %}
+  {% if ausweis_abgelaufen %}<p class="sicherung sicherung-veraltet kopf-meldung">Ausweis abgelaufen am {{ h.ausweis_gueltig_bis|date:"d.m.Y" }}</p>{% endif %}
+</section>
+
+<section class="karte">
+  <h2>Angaben</h2>
   <dl class="angaben">
     {% if buero %}<dt>Status</dt><dd>{{ h.get_status_display }}</dd>{% endif %}
     <dt>Ausgabestelle</dt><dd>{{ h.kundengruppe.ausgabestelle.name|default:"–" }}{% if h.kundengruppe %} · {{ h.kundengruppe.name }}{% if h.kundengruppe.wochentage %} ({{ h.kundengruppe.wochentage }}{% if h.kundengruppe.uhrzeit %} {{ h.kundengruppe.uhrzeit|time:"H:i" }}{% endif %}){% endif %}{% endif %}</dd>
@@ -28,11 +40,9 @@
     {% endfor %}
   </dl>
   <p class="hinweis">Stand des Imports vom {{ h.importiert_am|date:"d.m.Y H:i" }}. Dieser Aufruf wird im Zugriffsprotokoll festgehalten.</p>
-  {% if "Admin" in rollen %}<p><a class="knopf knopf-zweitrangig" href="{% url 'kunden:bearbeiten' h.kundennummer %}">Bearbeiten</a>
-    {% if h.geaendert_am %}<small class="hilfe">In bintafeln geändert am {{ h.geaendert_am|date:"d.m.Y" }} von {{ h.geaendert_von }}.</small>{% endif %}</p>{% endif %}
-  {% if buero %}<p><a href="{% url 'kunden:ausweis' h.kundennummer %}" target="_blank" rel="noopener">Kundenausweis drucken (PDF)</a>
-    · <a href="{% url 'kunden:auskunft' h.kundennummer %}" target="_blank" rel="noopener">Auskunft nach Art. 15 DSGVO (PDF)</a></p>{% endif %}
-  {% if "Admin" in rollen %}<p><a href="{% url 'kunden:zugriffe' %}?kundennummer={{ h.kundennummer|urlencode }}">Zugriffe auf diesen Haushalt</a></p>{% endif %}
+  {% if h.geaendert_am and "Admin" in rollen %}<p><small class="hilfe">In bintafeln geändert am {{ h.geaendert_am|date:"d.m.Y" }} von {{ h.geaendert_von }}.</small></p>{% endif %}
+  {% if buero %}<p><a href="{% url 'kunden:auskunft' h.kundennummer %}" target="_blank" rel="noopener">Auskunft nach Art. 15 DSGVO (PDF)</a>
+    {% if "Admin" in rollen %} · <a href="{% url 'kunden:zugriffe' %}?kundennummer={{ h.kundennummer|urlencode }}">Zugriffe auf diesen Haushalt</a>{% endif %}</p>{% endif %}
 </section>
 
 <section class="karte">
