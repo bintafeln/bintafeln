@@ -16,7 +16,7 @@ from django.views.decorators.http import require_POST
 
 from apps.ausgabe import konto
 from apps.ausgabe.forms import BeitragsfreiForm
-from apps.ausgabe.models import BeitragsfreierZeitraum
+from apps.ausgabe.models import BeitragsfreierZeitraum, Teilnahme
 from apps.core import privatdateien
 from apps.core.models import TafelEinstellungen
 from apps.core.pdf import pdf_antwort
@@ -94,7 +94,7 @@ def haushalt_bearbeiten(request, kundennummer):
         with transaction.atomic():
             h = form.save()
             if h.kundennummer != kundennummer:  # Notizen, Dokumente, Historie ziehen mit um
-                for modell in (Notiz, HaushaltDokument, HaushaltEreignis):
+                for modell in (Notiz, HaushaltDokument, HaushaltEreignis, Teilnahme):
                     modell.objects.filter(kundennummer=kundennummer).update(
                         kundennummer=h.kundennummer
                     )
@@ -146,6 +146,10 @@ def haushalt_loeschen(request, kundennummer):
             ("Abholungen", h.abholungen.count()),
             ("Interne Anmerkungen", h.bemerkungen.count()),
             ("Notizen", Notiz.objects.filter(kundennummer=kundennummer).count()),
+            (
+                "Teilnahmen an Sonderaktionen",
+                Teilnahme.objects.filter(kundennummer=kundennummer).count(),
+            ),
             ("Dokumente", HaushaltDokument.objects.filter(kundennummer=kundennummer).count()),
             (
                 "Einträge der Historie",
@@ -162,6 +166,7 @@ def haushalt_loeschen(request, kundennummer):
         h.delete()  # Buchungen bleiben ohne Haushalt, aber mit Kundennummer (Kasse)
         Notiz.objects.filter(kundennummer=kundennummer).delete()
         HaushaltEreignis.objects.filter(kundennummer=kundennummer).delete()
+        Teilnahme.objects.filter(kundennummer=kundennummer).delete()
         dokumente = HaushaltDokument.objects.filter(kundennummer=kundennummer)
         dateien = list(dokumente.values_list("datei", flat=True))
         dokumente.delete()

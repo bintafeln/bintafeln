@@ -218,7 +218,7 @@ wählbar und nach Ausgabestelle filterbar. Grundlage sind allein die Buchungen.
 - **Status „aktiv“** wird nach dem Umstieg aus den Abholungen abgeleitet (aktiv = in den letzten
   N Tagen abgeholt).
 - **Kundenausweis:** Gültigkeitsdauer, fortlaufende Kundennummern, Ausdruck als PDF.
-- **Sonderaktionen** (z. B. Gutscheine) mit Zeitraum, Auswahlmöglichkeiten und Teilnahmen.
+- **Sonderaktionen** (z. B. Gutscheine) mit Zeitraum, Auswahlmöglichkeiten und Teilnahmen. **Umgesetzt (ADR 0032).**
 
 ## Offene Punkte
 

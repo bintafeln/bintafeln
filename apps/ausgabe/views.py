@@ -10,9 +10,15 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from apps.ausgabe import ampel, kasse, konto
+from apps.ausgabe import ampel, kasse, konto, sonderaktionen
 from apps.ausgabe.forms import AusgabeEinstellungenForm
-from apps.ausgabe.models import AusgabeEinstellungen, BeitragsfreierZeitraum, Buchung
+from apps.ausgabe.models import (
+    AusgabeEinstellungen,
+    BeitragsfreierZeitraum,
+    Buchung,
+    Sonderaktion,
+    Teilnahme,
+)
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.kunden import werte
@@ -87,6 +93,8 @@ def _ergebnis(request, h, meldung=None):
         "heute_erfasst": [a for a in abholungen if a.datum == heute and a.erfasst_am],
         "darf_ausnahme": rollen.hat_rolle(request.user, rollen.ADMIN, rollen.BUERO),
         **notizen_kontext(h.kundennummer, request.user),
+        "sonderaktionen": sonderaktionen.fuer_haushalt(h, heute, erwachsene, kinder),
+        "heute": heute,
         "meldung": meldung,
     }
 
@@ -212,6 +220,36 @@ def abholung_zuruecknehmen(request, pk):
         h,
         f"Abholung zurückgenommen. Kontostand jetzt: {konto.euro(h.kontostand or 0)}.",
     )
+
+
+@require_POST
+@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+def sonderaktion_eintragen(request, kundennummer, aktion):
+    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    a = get_object_or_404(Sonderaktion, pk=aktion)
+    auswahl = a.auswahl.filter(pk=request.POST.get("auswahl") or None).first()
+    erwachsene, kinder = h.groesse(KundenEinstellungen.laden().kind_bis_alter)
+    try:
+        t = sonderaktionen.eintragen(
+            a, h, auswahl=auswahl, erwachsene=erwachsene, kinder=kinder,
+            stelle=_stelle(request), von=_benutzername(request.user),
+        )  # fmt: skip
+    except sonderaktionen.SonderaktionFehler as fehler:
+        return _zurueck(request, h, f"Nicht eingetragen: {fehler}", messages.ERROR)
+    was = f" ({t.auswahl})" if t.auswahl else ""
+    return _zurueck(request, h, f"{a}{was} eingetragen: {t.menge}×.")
+
+
+@require_POST
+@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+def teilnahme_zuruecknehmen(request, pk):
+    t = get_object_or_404(Teilnahme, pk=pk)
+    h = get_object_or_404(Haushalt, kundennummer=t.kundennummer)
+    try:
+        sonderaktionen.zuruecknehmen(t)
+    except sonderaktionen.SonderaktionFehler as fehler:
+        return _zurueck(request, h, f"Nicht zurückgenommen: {fehler}", messages.ERROR)
+    return _zurueck(request, h, f"{t.aktion} zurückgenommen.")
 
 
 @require_POST

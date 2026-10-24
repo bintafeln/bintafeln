@@ -29,6 +29,7 @@ def healthz(request):
 def start(request):
     from apps.antraege.models import Antrag
     from apps.antraege.models import fristen_anwenden as antragsfristen_anwenden
+    from apps.ausgabe import sonderaktionen
     from apps.ausgabe.konto import buchungsfristen_anwenden
     from apps.kunden.models import ImportVorbereitung, fristen_anwenden
 
@@ -37,6 +38,7 @@ def start(request):
     ImportVorbereitung.abgelaufene_loeschen()
     fristen_anwenden()
     buchungsfristen_anwenden()
+    sonderaktionen.fristen_anwenden()
     personal.stammdaten_leeren()
     antragsfristen_anwenden()
     kontext = {}

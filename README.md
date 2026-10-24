@@ -480,6 +480,23 @@ Unter „Einstellungen → Ausgabe, Ampel und Beiträge“:
   Weihnachten): Der Einlass schlägt dann 0 € vor und zeigt „Heute beitragsfrei“; Vorschläge
   für Vorauszahlungen zählen diese Tage nicht.
 
+### Sonderaktionen
+
+„Ausgabe → Sonderaktionen“ (Admin, Büro): Aktionen neben der normalen Ausgabe, z. B.
+Weihnachtsgutscheine oder Schulranzen.
+
+- **Anlegen:** Bezeichnung, Zeitraum, wie viel je Haushalt (einmal je Haushalt, je Kind oder je
+  Person), optional „nur Haushalte mit Kindern“, ein Hinweis für den Einlass und
+  Auswahlmöglichkeiten (z. B. „Spielzeug“ und „Kleidung“, eine je Zeile).
+- **Am Einlass:** Solange eine Aktion läuft, erscheint sie bei jedem Haushalt als eigene Karte mit
+  Knöpfen („2× Spielzeug“, „2× Kleidung“). Ein Klick trägt die Teilnahme ein; jeder Haushalt kann
+  je Aktion einmal teilnehmen. Am selben Tag lässt sich die Teilnahme zurücknehmen. Danach zeigt
+  die Karte „✓ Erhalten am …“.
+- **Auswertung:** Die Seite einer Aktion zeigt Teilnahmen und Stückzahlen je Auswahl, mit
+  CSV-Export (nur Kundennummern, keine Namen).
+- Teilnahmen hängen an der Kundennummer, überstehen den Import, stehen in der Auskunft nach
+  Art. 15 und werden nach derselben Frist gelöscht wie Abholungen (ADR 0032).
+
 ## Kasse
 
 „Kasse“ im Menü (Admin, Büro, Ausgabe) wertet die Kontobuchungen aus:

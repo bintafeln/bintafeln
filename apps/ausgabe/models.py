@@ -240,3 +240,98 @@ class Buchung(models.Model):
 auditlog.register(Buchung)
 
 auditlog.register(BeitragsfreierZeitraum)
+
+
+class Sonderaktion(models.Model):
+    """Aktion neben der normalen Ausgabe, z. B. Gutscheine vor Weihnachten (ADR 0032)."""
+
+    class Menge(models.TextChoices):
+        EINMAL = "einmal", "einmal je Haushalt"
+        JE_KIND = "je_kind", "einmal je Kind"
+        JE_PERSON = "je_person", "einmal je Person"
+
+    bezeichnung = models.CharField(
+        "Bezeichnung", max_length=100, help_text="z. B. Weihnachtsgutschein"
+    )
+    von = models.DateField("Von")
+    bis = models.DateField("Bis einschließlich")
+    beschreibung = models.CharField(
+        "Hinweis für den Einlass", max_length=300, blank=True,
+        help_text="Erscheint am Einlass, z. B. „Gutschein nur gegen Unterschrift ausgeben“.",
+    )  # fmt: skip
+    menge = models.CharField(
+        "Wie viel je Haushalt", max_length=10, choices=Menge.choices, default=Menge.EINMAL
+    )
+    nur_mit_kindern = models.BooleanField(
+        "Nur Haushalte mit Kindern",
+        default=False,
+        help_text="Kinder bis zum Alter aus „Einstellungen → Kundenstamm → Kind bis“.",
+    )
+
+    class Meta:
+        verbose_name = "Sonderaktion"
+        verbose_name_plural = "Sonderaktionen"
+        ordering = ["-von", "bezeichnung"]
+
+    def __str__(self):
+        return self.bezeichnung
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if self.von and self.bis and self.bis < self.von:
+            raise ValidationError({"bis": "„Bis“ darf nicht vor „Von“ liegen."})
+
+    def laeuft(self, tag) -> bool:
+        return self.von <= tag <= self.bis
+
+
+class SonderaktionAuswahl(models.Model):
+    """Wahlmöglichkeit einer Sonderaktion, z. B. „Spielzeug“ oder „Kleidung“."""
+
+    aktion = models.ForeignKey(Sonderaktion, on_delete=models.CASCADE, related_name="auswahl")
+    bezeichnung = models.CharField("Bezeichnung", max_length=100)
+    reihenfolge = models.PositiveSmallIntegerField("Reihenfolge", default=0)
+
+    class Meta:
+        verbose_name = "Auswahl einer Sonderaktion"
+        verbose_name_plural = "Auswahl von Sonderaktionen"
+        ordering = ["reihenfolge", "pk"]
+
+    def __str__(self):
+        return self.bezeichnung
+
+
+class Teilnahme(models.Model):
+    """Ein Haushalt hat bei einer Sonderaktion etwas erhalten. Hängt an der Kundennummer."""
+
+    aktion = models.ForeignKey(Sonderaktion, on_delete=models.CASCADE, related_name="teilnahmen")
+    kundennummer = models.CharField("Kundennummer", max_length=20, db_index=True)
+    auswahl = models.ForeignKey(
+        SonderaktionAuswahl, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="teilnahmen", verbose_name="Auswahl",
+    )  # fmt: skip
+    menge = models.PositiveSmallIntegerField("Menge", default=1)
+    zeitpunkt = models.DateTimeField("Zeitpunkt", default=timezone.now)
+    ausgabestelle = models.ForeignKey(
+        Ausgabestelle, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    eingetragen_von = models.CharField("Eingetragen von", max_length=100, blank=True)
+
+    class Meta:
+        verbose_name = "Teilnahme"
+        verbose_name_plural = "Teilnahmen"
+        ordering = ["-zeitpunkt"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["aktion", "kundennummer"], name="teilnahme_einmal_je_haushalt"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.aktion}: {self.kundennummer}"
+
+
+auditlog.register(Sonderaktion)
+auditlog.register(SonderaktionAuswahl)
+auditlog.register(Teilnahme)
