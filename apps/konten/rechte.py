@@ -22,6 +22,7 @@ class Recht:
 EINLASS = "Einlass und Kasse"
 KUNDEN = "Kunden"
 ANTRAEGE = "Anträge"
+STATISTIK = "Statistik und Daten"
 TEAM = "Mitarbeitende und Personal"
 EINSTELLUNGEN = "Einstellungen"
 
@@ -72,6 +73,10 @@ KATALOG = [
     Recht("antraege.bearbeiten", ANTRAEGE, "Anträge bearbeiten, Status, Anmerkungen, Papierkorb"),
     Recht("antraege.aufnehmen", ANTRAEGE, "Anträge in den Kundenstamm aufnehmen"),
     Recht("antraege.loeschen", ANTRAEGE, "Anträge endgültig löschen"),
+    # Statistik und Daten
+    Recht("statistik.sehen", STATISTIK, "Statistik ansehen und als CSV herunterladen",
+          "Nur Summen, keine Personendaten. Wer einer Ausgabestelle zugeordnet ist, sieht nur "
+          "deren Zahlen."),
     # Mitarbeitende und Personal
     Recht("mitarbeitende.verwalten", TEAM, "Mitarbeitende anlegen, bearbeiten, sperren",
           "Rollen vergeben kann man nur, wenn man selbst alle Rechte der Rolle hat; "
@@ -111,6 +116,7 @@ VORGABEN = {
         "kunden.konto", "kunden.anmerkungen", "kunden.notizen_loeschen", "kunden.dokumente",
         "kunden.dokumente_verwalten", "kunden.historie", "kunden.ausweis", "kunden.auskunft",
         "kunden.importieren", "antraege.sehen", "antraege.bearbeiten", "antraege.aufnehmen",
+        "statistik.sehen",
     ],
     "Ausgabe": list(_EINLASS),
     "Kiosk": [],

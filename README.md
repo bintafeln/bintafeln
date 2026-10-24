@@ -556,6 +556,30 @@ Weihnachtsgutscheine oder Schulranzen.
 - Teilnahmen hängen an der Kundennummer, überstehen den Import, stehen in der Auskunft nach
   Art. 15 und werden nach derselben Frist gelöscht wie Abholungen (ADR 0032).
 
+## Statistik
+
+„Statistik“ im Menü (Recht „Statistik ansehen“, Vorgabe: Admin und Büro). Oben Zeitraum
+(dieses/letztes Jahr, letzte 12 Monate, dieser/letzter Monat, letzte 30 Tage oder eigener
+Zeitraum) und Ausgabestelle wählen.
+
+- **Kennzahlen:** Abholungen, verschiedene Haushalte, erreichte Personen (Summe der
+  Haushaltsgrößen je Abholung), Bareinnahmen, aktive Haushalte mit Personen, neue Kunden,
+  eingegangene Anträge.
+- **Diagramme:**
+  - Abholungen je Monat (bis gut drei Monate je Woche, bis 31 Tage je Tag)
+  - Abholungen je Ausgabestelle im Verlauf und insgesamt
+  - Abholungen nach Wochentag und nach Uhrzeit
+  - Bareinnahmen je Monat
+  - neue Kunden und eingegangene Anträge
+  - aktive Haushalte nach Größe, Personen nach Altersgruppe
+  - Haushalte nach Status und Einkommensart
+  - Auslastung der Kundengruppen
+  - Sonderaktionen im Zeitraum
+- Zu jedem Diagramm gibt es die Zahlen als Tabelle und als **CSV-Datei**. Beim Überfahren mit
+  der Maus zeigt jedes Diagramm die genauen Werte.
+- Nur Summen, keine Personendaten. Wer einer Ausgabestelle zugeordnet ist, sieht nur deren Zahlen.
+- Die Diagramme zeichnet bintafeln selbst (SVG), ohne fremde Dienste (ADR 0036).
+
 ## Kasse
 
 „Kasse“ im Menü (Admin, Büro, Ausgabe) wertet die Kontobuchungen aus:

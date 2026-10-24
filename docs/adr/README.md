@@ -66,3 +66,4 @@ drei Fragen: Was war das Problem? Was haben wir entschieden? Warum?
 | [0033](0033-rollen-und-rechte.md) | Frei anlegbare Rollen mit fein einstellbaren Rechten | Angenommen |
 | [0034](0034-ausgabestellen-zugang.md) | Mitarbeitende einer Ausgabestelle sehen nur deren Kunden | Angenommen |
 | [0035](0035-korrekturwuensche.md) | Rücknahmen am Einlass nur über Korrekturwünsche | Angenommen |
+| [0036](0036-statistik.md) | Statistik mit selbst gezeichneten SVG-Diagrammen | Angenommen |

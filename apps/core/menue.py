@@ -56,6 +56,7 @@ def menue(request) -> list[dict]:
             ("einstellungen.antraege", _eintrag("Formular einstellen", "antraege:einstellungen")),
             ("antraege.sehen", _eintrag("Öffentliches Formular", "antrag:start", extern=True)),
         ])  # fmt: skip
+    bereich("Statistik", [("statistik.sehen", _eintrag("Statistik", "statistik:uebersicht"))])
     bereich("Team", [
         ("mitarbeitende.verwalten", _eintrag("Mitarbeitende", "konten:mitarbeitende")),
         ("personal.sehen", _eintrag("Personal", "personal:liste", genau=True)),
