@@ -3,6 +3,13 @@ from apps.konten.rollen import ALLE, darf_mitarbeitende_verwalten, rollen_von
 from apps.konten.zwei_faktor import ist_pflicht
 
 
+def _darf_stempeln(benutzer) -> bool:
+    # Spät eingebunden: Die App personal baut auf core auf, nicht umgekehrt.
+    from apps.personal.arbeitszeit import darf_stempeln
+
+    return darf_stempeln(benutzer)
+
+
 def tafel(request):
     benutzer = getattr(request, "user", None)
     angemeldet = benutzer is not None and benutzer.is_authenticated
@@ -16,4 +23,5 @@ def tafel(request):
         "zwei_faktor_offen": angemeldet and not benutzer.is_verified() and ist_pflicht(benutzer),
         "darf_mitarbeitende": angemeldet and darf_mitarbeitende_verwalten(benutzer),
         "passwort_offen": angemeldet and benutzer.passwort_aendern,
+        "darf_stempeln": angemeldet and _darf_stempeln(benutzer),
     }

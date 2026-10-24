@@ -253,3 +253,5 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 
 /* Mehrfachauswahl kompakt als Raster (z. B. Führerscheinklassen) */
 #id_fs_klassen { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr)); gap: 0 .5rem; }
+.stempeln { font-size: 1.4rem; padding: 1rem 2rem; }
+.stempel-status { font-size: 1.2rem; }

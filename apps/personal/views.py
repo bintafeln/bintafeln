@@ -14,7 +14,7 @@ from django.views.decorators.http import require_POST
 from apps.core import privatdateien
 from apps.core.models import TafelEinstellungen
 from apps.konten import rollen, views_dokumente
-from apps.personal import berechnung
+from apps.personal import arbeitszeit, berechnung
 from apps.personal.forms import AbwesenheitForm, StundenForm, UrlaubsjahrForm, VertragForm
 from apps.personal.models import (
     DOKUMENT_ORDNER,
@@ -42,7 +42,9 @@ def liste(request):
     heute = timezone.localdate()
     personen = (
         get_user_model()
-        .objects.filter(Q(beschaeftigung="fest") | Q(vertraege__isnull=False))
+        .objects.filter(
+            Q(beschaeftigung="fest") | Q(vertraege__isnull=False) | Q(zeitbuchungen__isnull=False)
+        )
         .distinct()
         .prefetch_related("vertraege", "abwesenheiten", "urlaubsjahre", "stunden")
         .order_by("-is_active", "last_name", "first_name", "username")
@@ -56,7 +58,11 @@ def liste(request):
         }
         for p in personen
     ]
-    return render(request, "personal/liste.html", {"zeilen": zeilen, "jahr": heute.year})
+    return render(
+        request,
+        "personal/liste.html",
+        {"zeilen": zeilen, "jahr": heute.year, "vergessen": arbeitszeit.vergessen()},
+    )
 
 
 @personal_erforderlich

@@ -152,7 +152,7 @@ protokolliert.
 ### Auskunft
 
 Auf Anfrage einer Person werden alle zu ihr gespeicherten Daten als PDF zusammengestellt
-(Art. 15 DSGVO).
+(Art. 15 DSGVO). Umgesetzt für Haushalte und Mitarbeitende (ADR 0021).
 
 ## Modul 3: Neuanmeldung und Warteliste
 

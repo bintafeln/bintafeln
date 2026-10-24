@@ -4,6 +4,7 @@
 <section class="karte">
   <p><a href="{% url 'personal:liste' %}">← Personal</a></p>
   <h1>{{ p }}</h1>
+  <p><a href="{% url 'personal:zeiten' p.pk %}">Arbeitszeiten</a> · <a href="{% url 'konten:auskunft' p.pk %}">Auskunft (PDF)</a></p>
   <nav class="blaettern" aria-label="Jahr wechseln">
     <a href="?jahr={{ jahr|add:'-1' }}">← {{ jahr|add:"-1" }}</a>
     <strong>{{ jahr }}</strong>
@@ -113,28 +114,31 @@
     (Übertrag aus den Vorjahren: {{ konto.vorjahre|floatformat:2 }})</p>
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Monat</th><th>Soll</th><th>Ist</th><th>Urlaub</th><th>Krank</th><th>Saldo</th></tr></thead>
+    <thead><tr><th>Monat</th><th>Soll</th><th>Gestempelt</th><th>Nachgetragen</th><th>Urlaub</th><th>Krank</th><th>Saldo</th></tr></thead>
     <tbody>
     {% for m in konto.monate %}
       <tr>
         <td data-titel="Monat">{{ m.monat|date:"F" }}</td>
         <td data-titel="Soll">{{ m.soll|floatformat:2 }}</td>
-        <td data-titel="Ist">{{ m.ist|floatformat:2 }}</td>
+        <td data-titel="Gestempelt">{{ m.gestempelt|floatformat:2 }}</td>
+        <td data-titel="Nachgetragen">{{ m.ist|floatformat:2 }}</td>
         <td data-titel="Urlaub">{{ m.urlaub|floatformat:2 }}</td>
         <td data-titel="Krank">{{ m.krank|floatformat:2 }}</td>
         <td data-titel="Saldo"><span{% if m.saldo < 0 %} class="fehler"{% endif %}>{{ m.saldo|floatformat:2 }}</span></td>
       </tr>
     {% empty %}
-      <tr><td colspan="6">In {{ jahr }} gab es (noch) keinen gültigen Arbeitsvertrag.</td></tr>
+      <tr><td colspan="7">In {{ jahr }} gab es (noch) keinen gültigen Arbeitsvertrag.</td></tr>
     {% endfor %}
     </tbody>
   </table>
   </div>
   <p class="hinweis">Soll = Wochenstunden ÷ 5 je Arbeitstag (Mo–Fr ohne gesetzliche Feiertage{% if feiertage_land %} in {{ feiertage_land }}{% endif %}) bis heute.
-    Urlaub und Krankheit werden mit dem Tagessoll gutgeschrieben.{% if not feiertage_land %} <strong>Kein Bundesland eingestellt</strong>
+    Urlaub und Krankheit werden mit dem Tagessoll gutgeschrieben. Gestempelt = Arbeitszeiterfassung nach Pausenabzug
+    (<a href="{% url 'personal:zeiten' p.pk %}">Zeiten ansehen und korrigieren</a>), nachgetragen = Stunden unten.{% if not feiertage_land %} <strong>Kein Bundesland eingestellt</strong>
     (Einstellungen der Tafel), deshalb werden Feiertage nicht abgezogen.{% endif %}</p>
 
-  <h3>Eingetragene Stunden {{ jahr }}</h3>
+  <h3>Nachgetragene Stunden {{ jahr }}</h3>
+  <p class="hinweis">Für Zeiten außerhalb der Stempeluhr, z. B. eine Dienstreise, oder als Ausgleich (auch negativ).</p>
   <div class="tabelle-rahmen">
   <table class="tabelle">
     <thead><tr><th>Datum</th><th>Stunden</th><th>Bemerkung</th><th></th></tr></thead>
@@ -156,8 +160,8 @@
     </tbody>
   </table>
   </div>
-  <details class="abseits" open>
-    <summary>Stunden eintragen</summary>
+  <details class="abseits">
+    <summary>Stunden nachtragen</summary>
     <form method="post" action="{% url 'personal:stunden_neu' p.pk %}">
       {% csrf_token %}<input type="hidden" name="jahr" value="{{ jahr }}">
       {% include "includes/formular.html" with form=stunden_form %}

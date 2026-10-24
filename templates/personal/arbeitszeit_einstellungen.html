@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block titel %}Arbeitszeit einstellen{% endblock %}
+{% block inhalt %}
+<section class="karte schmal">
+  <p><a href="{% url 'personal:liste' %}">← Personal</a></p>
+  <h1>Arbeitszeiterfassung</h1>
+  <p class="hinweis">Fest Angestellte stempeln unter „Meine Arbeitszeit“ Kommen und Gehen, am eigenen Handy oder
+    an einem gemeinsamen Gerät nach Anmeldung. Die Zeiten fließen nach Pausenabzug ins Stundenkonto.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+{% endblock %}

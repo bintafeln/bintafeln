@@ -32,6 +32,7 @@
     <strong>{{ titel }}{% if stelle %} · {{ stelle.name }}{% endif %}</strong>
     <a href="?{{ vor }}">später →</a>
   </nav>
+  <p><a class="knopf knopf-zweitrangig" href="?{{ pdf }}" target="_blank" rel="noopener">{% if ansicht == "tag" %}Kassenabschluss{% else %}Kassenbericht{% endif %} drucken (PDF)</a></p>
 </section>
 
 <section class="karte">

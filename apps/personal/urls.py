@@ -1,11 +1,26 @@
 from django.urls import path
 
-from apps.personal import views
+from apps.personal import views, views_arbeitszeit
 
 app_name = "personal"
 
 urlpatterns = [
     path("", views.liste, name="liste"),
+    path("arbeitszeit/", views_arbeitszeit.meine, name="meine_arbeitszeit"),
+    path("arbeitszeit/stempeln/", views_arbeitszeit.stempeln, name="stempeln"),
+    path(
+        "arbeitszeit/einstellungen/",
+        views_arbeitszeit.einstellungen,
+        name="arbeitszeit_einstellungen",
+    ),
+    path("<int:pk>/zeiten/", views_arbeitszeit.zeiten, name="zeiten"),
+    path("<int:pk>/zeiten/neu/", views_arbeitszeit.zeit_bearbeiten, name="zeit_neu"),
+    path("<int:pk>/zeiten/<int:buchung>/", views_arbeitszeit.zeit_bearbeiten, name="zeit"),
+    path(
+        "<int:pk>/zeiten/<int:buchung>/loeschen/",
+        views_arbeitszeit.zeit_loeschen,
+        name="zeit_loeschen",
+    ),
     path("<int:pk>/", views.person, name="person"),
     path("<int:pk>/vertrag/", views.vertrag_neu, name="vertrag_neu"),
     path("<int:pk>/vertrag/<int:vertrag>/", views.vertrag_bearbeiten, name="vertrag"),

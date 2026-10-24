@@ -27,6 +27,8 @@ urlpatterns = [
         name="passwort_zuruecksetzen",
     ),
     path("mitarbeitende/<int:pk>/link/", views_mitarbeitende.link_senden, name="link_senden"),
+    path("mitarbeitende/<int:pk>/auskunft/", views_mitarbeitende.auskunft_ansehen, name="auskunft"),
+    path("meine-daten/", views_mitarbeitende.meine_auskunft, name="meine_auskunft"),
     path("mitarbeitende/<int:pk>/stammdaten/", views_mitarbeitende.stammdaten, name="stammdaten"),
     path("mitarbeitende/<int:pk>/kopie/", views_mitarbeitende.kopie_ansehen, name="kopie_ansehen"),
     path(

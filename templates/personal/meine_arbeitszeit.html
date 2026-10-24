@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block titel %}Meine Arbeitszeit{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Meine Arbeitszeit</h1>
+  {% if laufend %}
+    <p class="stempel-status sicherung sicherung-ok">Eingestempelt seit {{ laufend.beginn|date:"d.m." }} um {{ laufend.beginn|time:"H:i" }} Uhr.</p>
+  {% else %}
+    <p class="stempel-status">Nicht eingestempelt.</p>
+  {% endif %}
+  <form method="post" action="{% url 'personal:stempeln' %}">
+    {% csrf_token %}
+    {% if laufend %}
+      <button type="submit" name="aktion" value="gehen" class="knopf stempeln">Gehen</button>
+    {% else %}
+      <button type="submit" name="aktion" value="kommen" class="knopf stempeln">Kommen</button>
+    {% endif %}
+  </form>
+  {% for b in vergessen %}
+    <p class="sicherung sicherung-veraltet">Am {{ b.beginn|date:"d.m.Y" }} um {{ b.beginn|time:"H:i" }} fehlt das „Gehen“.
+      Diese Zeit zählt erst, wenn das Personal sie nachgetragen hat.</p>
+  {% endfor %}
+  {% if saldo is not None %}<p>Stundenkonto: <strong{% if saldo < 0 %} class="fehler"{% endif %}>{{ saldo|floatformat:2 }} Stunden</strong></p>{% endif %}
+</section>
+<section class="karte">
+  <h2>Meine Zeiten</h2>
+  {% include "personal/_tage.html" %}
+  <p class="hinweis">Falsch gestempelt? Bitte beim Personal melden; Korrekturen werden mit Namen und Grund festgehalten.</p>
+</section>
+{% endblock %}

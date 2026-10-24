@@ -11,6 +11,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.utils import timezone
 
 # Ablage der verschlüsselten Vertragsdokumente unter MEDIA_ROOT/privat/ (apps.core.privatdateien).
 DOKUMENT_ORDNER = "arbeitsvertrag"
@@ -149,6 +150,78 @@ class Stunden(models.Model):
         return f"{self.stunden} Stunden am {self.datum:%d.%m.%Y}"
 
 
+class Zeitbuchung(models.Model):
+    """Gestempelte Arbeitszeit: Kommen (Beginn) und Gehen (Ende). Offen, solange ohne Ende."""
+
+    benutzer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="zeitbuchungen"
+    )
+    beginn = models.DateTimeField("Kommen")
+    ende = models.DateTimeField("Gehen", null=True, blank=True)
+    bemerkung = models.CharField("Bemerkung", max_length=200, blank=True)
+    korrigiert_von = models.CharField("Korrigiert von", max_length=150, blank=True)
+
+    class Meta:
+        verbose_name = "Zeitbuchung"
+        verbose_name_plural = "Zeitbuchungen"
+        ordering = ["-beginn"]
+
+    def __str__(self):
+        return f"Arbeitszeit ab {timezone.localtime(self.beginn):%d.%m.%Y %H:%M}"
+
+    def clean(self):
+        if self.beginn and self.ende and self.ende <= self.beginn:
+            raise ValidationError({"ende": "„Gehen“ muss nach „Kommen“ liegen."})
+
+    @property
+    def stunden(self) -> Decimal:
+        """Dauer in Stunden (ohne Pausenabzug); offene Buchungen zählen nicht."""
+        if self.ende is None:
+            return Decimal("0")
+        return Decimal((self.ende - self.beginn).total_seconds()) / 3600
+
+
+class ArbeitszeitEinstellungen(models.Model):
+    """Einstellungen der Arbeitszeiterfassung (Singleton)."""
+
+    EINZIGE_ID = 1
+
+    ehrenamtliche_stempeln = models.BooleanField(
+        "Auch Ehrenamtliche stempeln",
+        default=False,
+        help_text="Ihre Zeiten erscheinen nur als Einsatzzeiten, nicht in einem Stundenkonto.",
+    )
+    pausen_automatisch = models.BooleanField(
+        "Pausen nach Arbeitszeitgesetz automatisch abziehen",
+        default=True,
+        help_text="Mehr als 6 Stunden: 30 Minuten, mehr als 9 Stunden: 45 Minuten, soweit "
+        "nicht schon gestempelt (Gehen und wieder Kommen).",
+    )
+    offen_hoechstens_stunden = models.PositiveSmallIntegerField(
+        "Offenes „Kommen“ gilt nach … Stunden als vergessenes „Gehen“",
+        default=14,
+        validators=[MinValueValidator(1), MaxValueValidator(24)],
+    )
+
+    class Meta:
+        verbose_name = "Einstellungen Arbeitszeit"
+        verbose_name_plural = "Einstellungen Arbeitszeit"
+
+    def __str__(self):
+        return "Einstellungen Arbeitszeit"
+
+    def save(self, *args, **kwargs):
+        self.pk = self.EINZIGE_ID
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def laden(cls) -> "ArbeitszeitEinstellungen":
+        einstellungen, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
+        return einstellungen
+
+
+auditlog.register(Zeitbuchung)
+auditlog.register(ArbeitszeitEinstellungen)
 auditlog.register(Arbeitsvertrag, exclude_fields=["dokument_datei"])
 auditlog.register(Abwesenheit)
 auditlog.register(Urlaubsjahr)

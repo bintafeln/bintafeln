@@ -5,11 +5,15 @@ from django.core.paginator import Paginator
 from django.db.models import OuterRef, Q, Subquery
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from apps.core import sicherung
+from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
+from apps.kunden import auskunft as kunden_auskunft
 from apps.kunden import importieren
+from apps.kunden.ausweis import ausweis_pdf
 from apps.kunden.forms import KundenEinstellungenForm, ZusatzfeldForm
 from apps.kunden.models import (
     Abholer,
@@ -195,6 +199,33 @@ def haushalt(request, kundennummer):
             "heute": heute,
         },
     )
+
+
+@never_cache
+@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+def auskunft(request, kundennummer):
+    """Auskunft nach Art. 15 DSGVO als PDF; steht wie jeder Aufruf im Zugriffsprotokoll."""
+    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    Zugriff.objects.create(
+        benutzer=request.user,
+        benutzername=request.user.get_username(),
+        kundennummer=h.kundennummer,
+        besondere_kategorie=kunden_auskunft.hat_besondere_kategorie(h),
+    )
+    return pdf_antwort(kunden_auskunft.kunde_pdf(h), f"auskunft-{_dateiname(h)}.pdf")
+
+
+@never_cache
+@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+def ausweis(request, kundennummer):
+    h = get_object_or_404(
+        Haushalt.objects.select_related("kundengruppe"), kundennummer=kundennummer
+    )
+    return pdf_antwort(ausweis_pdf(h), f"kundenausweis-{_dateiname(h)}.pdf")
+
+
+def _dateiname(h) -> str:
+    return "".join(z if z.isalnum() or z in "-_" else "_" for z in h.kundennummer)
 
 
 @rollen.rolle_erforderlich(rollen.ADMIN)
