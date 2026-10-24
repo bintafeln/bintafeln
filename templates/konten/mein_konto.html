@@ -4,6 +4,7 @@
 <section class="karte">
   <h1>Mein Konto</h1>
   <p>Angemeldet als <strong>{{ user.username }}</strong>.</p>
+  <p><a class="knopf knopf-zweitrangig" href="{% url 'konten:passwort_aendern' %}">Passwort ändern</a></p>
 
   <h2>Zwei-Faktor-Anmeldung</h2>
   {% if zwei_faktor_aktiv %}

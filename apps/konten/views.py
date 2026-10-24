@@ -1,6 +1,7 @@
 from django.contrib import messages
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import PasswordChangeForm
 from django.shortcuts import redirect, render
 from django.utils.cache import add_never_cache_headers
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -43,6 +44,26 @@ def anmelden(request):
 def abmelden(request):
     logout(request)
     return redirect("konten:anmelden")
+
+
+@never_cache
+@login_required
+@sensitive_post_parameters("old_password", "new_password1", "new_password2")
+def passwort_aendern(request):
+    """Eigenes Passwort ändern; Pflicht nach einem Startpasswort."""
+    form = PasswordChangeForm(request.user, request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        benutzer = form.save(commit=False)
+        benutzer.passwort_aendern = False
+        benutzer.save()
+        update_session_auth_hash(request, benutzer)  # angemeldet bleiben
+        messages.success(request, "Ihr Passwort wurde geändert.")
+        return redirect("core:start")
+    return render(
+        request,
+        "konten/passwort_aendern.html",
+        {"form": form, "pflicht": request.user.passwort_aendern},
+    )
 
 
 @login_required

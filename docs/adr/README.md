@@ -45,3 +45,4 @@ drei Fragen: Was war das Problem? Was haben wir entschieden? Warum?
 | [0012](0012-zugriffsprotokoll.md) | Zugriffsprotokoll für Kundendaten | Angenommen |
 | [0013](0013-empfang-erfasst-abholungen.md) | Der Empfang erfasst Abholungen schon im Snapshot-Betrieb | Angenommen |
 | [0014](0014-kundenkonto-mit-buchungen.md) | Kundenkonto mit Buchungen | Angenommen |
+| [0015](0015-mitarbeitende-verwalten.md) | Mitarbeitende in bintafeln verwalten | Angenommen |
