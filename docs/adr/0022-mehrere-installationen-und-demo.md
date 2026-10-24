@@ -27,7 +27,8 @@ Ports 80 und 443. Eine Demo braucht außerdem erfundene Daten, die sich regelmä
   der Anmeldeseite (Passwort aus der `.env`, nicht im Code). Passwort ändern, Zwei-Faktor und
   Mailserver sind gesperrt. `manage.py demo_zuruecksetzen` löscht alle Daten und legt die
   erfundenen Beispieldaten aus `docs/beispiele/import` und Demo-Konten an; ohne den Schalter
-  verweigert er.
+  verweigert er. Gibt es Konten, die nicht mit `demo-` beginnen, bricht er ebenfalls ab
+  (Schutz, falls er versehentlich im Ordner einer echten Installation läuft).
 
 ## Begründung
 

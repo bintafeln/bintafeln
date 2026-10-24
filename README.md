@@ -525,7 +525,8 @@ Das **löscht alle Daten** der Demo und legt die Beispieldaten aus `docs/beispie
 die Konten `demo-admin`, `demo-buero`, `demo-ausgabe`, `demo-personal` und `demo-fest` an. Jede
 Seite zeigt einen Hinweis „Demoversion“; Passwort ändern, Zwei-Faktor und Mailserver sind
 gesperrt, damit niemand andere Besucher aussperrt. Der Befehl läuft nur mit
-`BINTAFELN_DEMO=true`. Für die Demo keine Sicherung einrichten.
+`BINTAFELN_DEMO=true` und bricht ab, wenn es Konten gibt, die nicht mit `demo-` beginnen
+(Schutz vor dem Aufruf im Ordner einer echten Installation). Für die Demo keine Sicherung einrichten.
 
 ## Entwicklung
 

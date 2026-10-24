@@ -37,11 +37,24 @@ KONTEN = [
 ]
 
 
-def zuruecksetzen(heute: dt.date | None = None) -> None:
+def fremde_konten() -> list[str]:
+    """Konten, die nicht von der Demo stammen: Hinweis auf eine echte Installation."""
+    konten = get_user_model().objects.exclude(username__startswith="demo-")
+    return list(konten.order_by("username").values_list("username", flat=True)[:3])
+
+
+def zuruecksetzen(heute: dt.date | None = None, erzwingen: bool = False) -> None:
     if not settings.DEMO:
         raise ImproperlyConfigured("Nur im Demo-Betrieb (BINTAFELN_DEMO=true) erlaubt.")
     if not settings.DEMO_PASSWORT:
         raise ImproperlyConfigured("BINTAFELN_DEMO_PASSWORT fehlt in .env.")
+    fremde = fremde_konten()
+    if fremde and not erzwingen:
+        raise ImproperlyConfigured(
+            f"Abbruch: Diese Datenbank enthält Konten, die nicht aus der Demo stammen "
+            f"({', '.join(fremde)}). Das sieht nach einer echten Installation aus; es wurde "
+            "nichts gelöscht. Bitte prüfen, ob der Befehl im richtigen Ordner läuft."
+        )
     heute = heute or timezone.localdate()
     call_command("flush", interactive=False, verbosity=0)
     _medien_leeren()
