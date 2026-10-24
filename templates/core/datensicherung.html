@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block titel %}Datensicherung{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Datensicherung</h1>
+  <p class="hinweis">Ergänzt die tägliche, verschlüsselte Server-Sicherung: Hier laden Sie alle Daten oder einzelne Bereiche
+    als <strong>eine Datei</strong> herunter, um sie extern aufzubewahren (z. B. auf einem USB-Stick im Büroschrank), und
+    können sie später zurücklesen. Die Datei ist mit einem Passwort verschlüsselt, das Sie selbst festlegen –
+    ohne dieses Passwort lässt sie sich nicht öffnen, auch nicht von bintafeln.</p>
+  {% if offen %}<p class="sicherung"><a href="{% url 'core:daten_vorschau' %}">Eine geprüfte Datei wartet auf Ihre Entscheidung.</a></p>{% endif %}
+</section>
+
+{% if "daten.exportieren" in rechte %}
+<section class="karte breit">
+  <h2>Exportieren</h2>
+  <form method="post" action="{% url 'core:daten_export' %}">
+    {% csrf_token %}
+    <fieldset class="rechte-bereich">
+      <legend>Bereiche</legend>
+      {% for schluessel, name in bereiche.items %}
+      <label class="recht"><input type="checkbox" name="bereiche" value="{{ schluessel }}" checked><span>{{ name }}</span></label>
+      {% endfor %}
+      <small class="hilfe">Alle Bereiche zusammen ergeben eine vollständige Sicherung, die sich auch vollständig zurückspielen lässt.</small>
+    </fieldset>
+    <div class="formular-raster">
+      <div class="feld"><label for="passwort">Passwort für die Datei *</label>
+        <input type="password" name="passwort" id="passwort" minlength="{{ min_passwort }}" required autocomplete="new-password">
+        <small class="hilfe">Mindestens {{ min_passwort }} Zeichen. Gut aufbewahren – ohne Passwort ist die Datei wertlos.</small></div>
+      <div class="feld"><label for="passwort2">Passwort wiederholen *</label>
+        <input type="password" name="passwort2" id="passwort2" minlength="{{ min_passwort }}" required autocomplete="new-password"></div>
+    </div>
+    <button type="submit" class="knopf">Export herunterladen</button>
+  </form>
+  <p class="hinweis">Die Datei enthält Personendaten. Nur dort aufbewahren, wo Unbefugte keinen Zugriff haben. Das Passwort des
+    Mailservers bleibt mit dem Schlüssel dieses Servers verschlüsselt und muss auf einem neuen Server neu eingegeben werden.
+    Zwei-Faktor-Geräte werden nicht exportiert.</p>
+</section>
+{% endif %}
+
+{% if "daten.importieren" in rechte %}
+<section class="karte breit">
+  <h2>Zurücklesen</h2>
+  <form method="post" action="{% url 'core:daten_pruefen' %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="formular-raster">
+      <div class="feld"><label for="datei">Exportdatei *</label><input type="file" name="datei" id="datei" accept=".bintafeln" required></div>
+      <div class="feld"><label for="passwort-lesen">Passwort der Datei *</label><input type="password" name="passwort" id="passwort-lesen" required autocomplete="off"></div>
+    </div>
+    <button type="submit" class="knopf knopf-zweitrangig">Prüfen (noch nichts ändern)</button>
+  </form>
+  <p class="hinweis">Zuerst zeigt eine Vorschau, was die Datei enthält und was sich ändern würde. <strong>Aktualisieren</strong> fügt neue
+    Datensätze hinzu und überschreibt gleiche, löscht aber nichts – so lässt sich auch eine Teildatei (z. B. nur
+    Einstellungen) gefahrlos einspielen. <strong>Vollständig ersetzen</strong> gibt es nur für eine vollständige Exportdatei.</p>
+</section>
+{% endif %}
+{% endblock %}

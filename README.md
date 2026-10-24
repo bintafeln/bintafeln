@@ -599,6 +599,32 @@ Zeitraum) und Ausgabestelle wählen.
 
 Die Kasse bleibt auch nach einem Neuimport des Kundenstamms vollständig (ADR 0014).
 
+## Datensicherung in der Oberfläche (Export und Zurücklesen)
+
+„Einstellungen → Datensicherung“ (Rechte „Alle Daten exportieren“ und „Daten zurücklesen“,
+Vorgabe: nur Admin). Ergänzt die tägliche Server-Sicherung (siehe „Betrieb“) um eine Datei, die
+man selbst extern aufbewahrt.
+
+- **Exportieren:** Bereiche wählen (Einstellungen und Listen; Kunden und Ausgabe; Anträge;
+  Mitarbeitende, Rollen und Personal; Änderungsprotokoll; hochgeladene Dateien), ein Passwort
+  festlegen (mindestens 10 Zeichen) und die Datei `bintafeln-export-….bintafeln`
+  herunterladen. Sie ist mit dem Passwort verschlüsselt; ohne Passwort lässt sie sich nicht
+  öffnen. Alle Bereiche zusammen ergeben eine vollständige Sicherung.
+- **Zurücklesen:** Datei und Passwort wählen, „Prüfen“. Die Vorschau zeigt Herkunft (Tafel,
+  Datum, Version; Warnung bei einer anderen Installation) und je Tabelle, wie viele Datensätze
+  neu sind und wie viele überschrieben würden. Dann:
+  - **Aktualisieren** (immer möglich, auch mit einer Teildatei): neue Datensätze hinzufügen,
+    gleiche überschreiben, **nichts löschen**.
+  - **Vollständig ersetzen** (nur mit einer vollständigen Exportdatei, nur mit einer
+    Server-Sicherung von heute und ausdrücklicher Bestätigung): alle Daten dieser Installation
+    durch die Datei ersetzen, z. B. beim Umzug auf einen neuen Server.
+- Eine Datei aus einer neueren bintafeln-Version wird abgelehnt (erst aktualisieren). Fehlen
+  Daten, auf die eine Teildatei verweist, wird nichts verändert und bintafeln sagt, welcher
+  Bereich fehlt.
+- Nicht enthalten: Zwei-Faktor-Geräte (nach einem Umzug neu einrichten). Das Passwort des
+  Mailservers bleibt mit dem Schlüssel des alten Servers verschlüsselt und muss auf einem neuen
+  Server neu eingegeben werden (ADR 0037).
+
 ## Entwicklungs- und Produktionsmodus
 
 Umgeschaltet wird über **eine** Zeile in `.env`:

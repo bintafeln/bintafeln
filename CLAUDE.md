@@ -159,6 +159,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
 - App `statistik` (ADR 0036): Abfragen in `auswertung.py`, SVG-Diagramme in `diagramme.py`
   (feste Farbreihenfolge `reihe-0…7` in bintafeln.css, Texte immer `escape()`), jeder Abschnitt
   auch als Tabelle und CSV.
+- Datensicherung in der Oberfläche: `apps/core/datensicherung.py` (Export mit Passwort,
+  `lesen()`, `vorschau()`, `zuruecklesen(ersetzen=False)` löscht nie; ADR 0037). Neue Modelle
+  landen automatisch im passenden Bereich (`modelle()`); vorübergehende Daten in `AUSGENOMMEN`.
+  Signale auf `post_save` müssen `raw` beachten.
 - Menü links: Einträge je Rolle in `apps/core/menue.py` (neue Seiten dort eintragen statt
   Links in die Seiten zu setzen).
 - Mitarbeitende: Logik und Schutzregeln in `apps/konten/verwaltung.py` (nie löschen, nur

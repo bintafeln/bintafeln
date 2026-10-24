@@ -273,9 +273,11 @@ auditlog.register(Rolle)
 
 
 @receiver(post_save, sender=Group)
-def rolle_zur_gruppe(sender, instance, created, **kwargs):
-    """Jede Gruppe ist eine Rolle, auch wenn sie anders angelegt wurde (z. B. Django-Verwaltung)."""
-    if created:
+def rolle_zur_gruppe(sender, instance, created, raw=False, **kwargs):
+    """Jede Gruppe ist eine Rolle, auch wenn sie anders angelegt wurde (z. B. Django-Verwaltung).
+
+    Nicht beim Einlesen von Rohdaten (Datensicherung): Dort kommt die Rolle aus der Datei."""
+    if created and not raw:
         Rolle.objects.get_or_create(gruppe=instance, defaults={"zwei_faktor_pflicht": False})
 
 

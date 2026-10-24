@@ -77,6 +77,10 @@ KATALOG = [
     Recht("statistik.sehen", STATISTIK, "Statistik ansehen und als CSV herunterladen",
           "Nur Summen, keine Personendaten. Wer einer Ausgabestelle zugeordnet ist, sieht nur "
           "deren Zahlen."),
+    Recht("daten.exportieren", STATISTIK, "Alle Daten exportieren (Datensicherung)",
+          "Die Datei enthält sämtliche Personendaten, verschlüsselt mit einem Passwort."),
+    Recht("daten.importieren", STATISTIK, "Daten aus einer Exportdatei zurücklesen",
+          "Kann Daten überschreiben; „Vollständig ersetzen“ löscht alles andere."),
     # Mitarbeitende und Personal
     Recht("mitarbeitende.verwalten", TEAM, "Mitarbeitende anlegen, bearbeiten, sperren",
           "Rollen vergeben kann man nur, wenn man selbst alle Rechte der Rolle hat; "

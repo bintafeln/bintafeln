@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block titel %}Datensicherung: Vorschau{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'core:datensicherung' %}">← Datensicherung</a></p>
+  <h1>Vorschau: Was würde eingelesen?</h1>
+  <dl class="angaben">
+    <dt>Tafel</dt><dd>{{ v.tafel|default:"–" }}</dd>
+    <dt>Erstellt</dt><dd>{{ v.erstellt|slice:":16"|cut:"T"|default:"–" }}{% if v.erstellt_von %} von {{ v.erstellt_von }}{% endif %}</dd>
+    <dt>bintafeln-Version</dt><dd>{{ v.bintafeln|default:"–" }}</dd>
+    <dt>Umfang</dt><dd>{% if v.vollstaendig %}vollständige Sicherung{% else %}Teil: {{ v.bereiche|join:", " }}{% endif %}</dd>
+  </dl>
+  {% if v.andere_installation %}<p class="sicherung sicherung-veraltet">Die Datei stammt aus einer <strong>anderen Installation</strong>. Gleiche
+    Datensatznummern werden überschrieben. Zum Umzug auf einen neuen Server „Vollständig ersetzen“ wählen.</p>{% endif %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle kompakt">
+    <thead><tr><th>Daten</th><th class="zahl">neu</th><th class="zahl">schon vorhanden (wird überschrieben)</th></tr></thead>
+    <tbody>
+    {% for z in v.zeilen %}<tr><td>{{ z.name }}{% if z.unbekannt %} <small class="hinweis">(unbekannt, wird übersprungen)</small>{% endif %}</td><td class="zahl">{{ z.neu }}</td><td class="zahl">{{ z.vorhanden }}</td></tr>{% endfor %}
+    {% if v.dateien %}<tr><td>Dateien</td><td class="zahl" colspan="2">{{ v.dateien }}</td></tr>{% endif %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="karte breit">
+  <h2>Einlesen</h2>
+  <form method="post" action="{% url 'core:daten_uebernehmen' %}">
+    {% csrf_token %}
+    <label class="recht"><input type="radio" name="modus" value="aktualisieren" checked>
+      <span><strong>Aktualisieren</strong> – neue Datensätze hinzufügen, vorhandene mit gleicher Nummer überschreiben, <strong>nichts löschen</strong>.</span></label>
+    {% if v.vollstaendig %}
+    <label class="recht"><input type="radio" name="modus" value="ersetzen"{% if not sicherung_frisch %} disabled{% endif %}>
+      <span><strong>Vollständig ersetzen</strong> – alle Daten dieser Installation löschen und durch die Datei ersetzen (z. B. Umzug
+        auf einen neuen Server).{% if not sicherung_frisch %} <em>Nur möglich, wenn eine Server-Sicherung von heute vorliegt („./betrieb sichern“).</em>{% endif %}</span></label>
+    <label class="recht"><input type="checkbox" name="bestaetigt" value="ja"><span>Ja, beim Ersetzen alle bisherigen Daten löschen.</span></label>
+    {% endif %}
+    <button type="submit" class="knopf">Jetzt einlesen</button>
+  </form>
+  <form method="post" action="{% url 'core:daten_verwerfen' %}" class="abseits">
+    {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">Verwerfen</button>
+  </form>
+</section>
+{% endblock %}

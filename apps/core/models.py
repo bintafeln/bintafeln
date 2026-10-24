@@ -1,3 +1,5 @@
+import uuid
+
 from auditlog.registry import auditlog
 from django.core.validators import RegexValidator
 from django.db import models
@@ -37,6 +39,9 @@ class TafelEinstellungen(models.Model):
         choices=BUNDESLAENDER,
         blank=True,
         help_text="Für die gesetzlichen Feiertage (Urlaub, Stundenkonto, Vorauszahlung).",
+    )
+    installation = models.UUIDField(
+        "Kennung dieser Installation", default=uuid.uuid4, editable=False
     )
     geaendert_am = models.DateTimeField("Geändert am", auto_now=True)
 

@@ -67,3 +67,4 @@ drei Fragen: Was war das Problem? Was haben wir entschieden? Warum?
 | [0034](0034-ausgabestellen-zugang.md) | Mitarbeitende einer Ausgabestelle sehen nur deren Kunden | Angenommen |
 | [0035](0035-korrekturwuensche.md) | Rücknahmen am Einlass nur über Korrekturwünsche | Angenommen |
 | [0036](0036-statistik.md) | Statistik mit selbst gezeichneten SVG-Diagrammen | Angenommen |
+| [0037](0037-datensicherung-oberflaeche.md) | Datenexport und Zurücklesen in der Oberfläche | Angenommen |
