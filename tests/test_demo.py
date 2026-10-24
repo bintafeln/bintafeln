@@ -38,7 +38,11 @@ def test_zuruecksetzen(demo, admin, django_user_model, settings, capsys):
     (settings.MEDIA_ROOT / "lose.txt").write_bytes(b"x")
     Buchung.objects.create(art=Buchung.Art.EINZAHLUNG, haben=1, bar=1)
 
-    call_command("demo_zuruecksetzen")
+    with pytest.raises(CommandError, match=r"Abbruch.*\(chefin\)"):
+        call_command("demo_zuruecksetzen")
+    assert Buchung.objects.exists() and altdatei.exists()  # nichts gelöscht
+
+    call_command("demo_zuruecksetzen", "--auch-fremde-konten")
     assert "Demo zurückgesetzt" in capsys.readouterr().out
     assert not django_user_model.objects.filter(username="chefin").exists()
     assert not Buchung.objects.exists() and not any(settings.MEDIA_ROOT.iterdir())

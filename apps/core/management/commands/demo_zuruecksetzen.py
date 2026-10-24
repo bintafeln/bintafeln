@@ -10,9 +10,16 @@ class Command(BaseCommand):
         "erfundene Beispieldaten und Demo-Konten an."
     )
 
-    def handle(self, *args, **optionen):
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--auch-fremde-konten",
+            action="store_true",
+            help="Auch löschen, wenn es Konten gibt, die nicht mit demo- beginnen.",
+        )
+
+    def handle(self, *args, auch_fremde_konten=False, **optionen):
         try:
-            demo.zuruecksetzen()
+            demo.zuruecksetzen(erzwingen=auch_fremde_konten)
         except ImproperlyConfigured as fehler:
             raise CommandError(str(fehler)) from fehler
         namen = ", ".join(name for name, *_ in demo.KONTEN)

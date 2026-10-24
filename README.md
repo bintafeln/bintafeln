@@ -3,8 +3,20 @@
 Freie Verwaltungssoftware für Tafeln – lizenziert unter der
 [GNU Affero General Public License v3.0](LICENSE).
 
-> **Stand:** Grundgerüst. Anmeldung, Rollen, Einrichtung, Tafel-Einstellungen,
-> Änderungsprotokoll und Sicherung sind vorhanden; die Fachmodule folgen.
+> **Stand:** Grundgerüst, Kundenstamm (Import), Einlass mit Ampel, Kundenkonto und Kasse,
+> Mitarbeitende, Personal mit Arbeitszeiterfassung, PDFs (Kundenausweis, Kassenabschluss,
+> Auskunft nach Art. 15 DSGVO). Neuanmeldung und Warteliste folgen.
+
+**Schnell zum Ziel**
+
+- [Installation](#installation-auf-debian-13-trixie-mit-docker) – eine Tafel auf einem eigenen
+  Server einrichten
+- [Demoversion einrichten](docs/demo-einrichten.md) – mit erfundenen Daten ausprobieren, neben
+  einer bestehenden Installation oder öffentlich unter eigener Domain
+- [Mehrere Installationen auf einem Server](#mehrere-installationen-auf-einem-server)
+- [Aktualisieren und Versionen](#aktualisieren)
+- [Fachkonzept](docs/fachkonzept.md) · [Importformat](docs/importformat.md) ·
+  [Entscheidungen (ADR)](docs/adr/README.md)
 
 ## Funktionen des Grundgerüsts
 
@@ -513,7 +525,8 @@ Das **löscht alle Daten** der Demo und legt die Beispieldaten aus `docs/beispie
 die Konten `demo-admin`, `demo-buero`, `demo-ausgabe`, `demo-personal` und `demo-fest` an. Jede
 Seite zeigt einen Hinweis „Demoversion“; Passwort ändern, Zwei-Faktor und Mailserver sind
 gesperrt, damit niemand andere Besucher aussperrt. Der Befehl läuft nur mit
-`BINTAFELN_DEMO=true`. Für die Demo keine Sicherung einrichten.
+`BINTAFELN_DEMO=true` und bricht ab, wenn es Konten gibt, die nicht mit `demo-` beginnen
+(Schutz vor dem Aufruf im Ordner einer echten Installation). Für die Demo keine Sicherung einrichten.
 
 ## Entwicklung
 

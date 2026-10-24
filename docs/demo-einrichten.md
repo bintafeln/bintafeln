@@ -19,21 +19,34 @@ Voraussetzung für beide: Docker ist installiert (README, „Installation“, Sc
 
 ### 1. Eigenen Ordner anlegen
 
+Die Demo bekommt einen **eigenen Ordner**. Am einfachsten als Kopie des Ordners der
+bestehenden Installation, dann braucht es keine neuen GitHub-Zugangsdaten (Beispiel: die
+Dummy-Tafel liegt in `~/bintafeln`):
+
 ```bash
-sudo git clone https://github.com/bintafeln/bintafeln.git /opt/bintafeln-demo
-sudo chown -R "$USER": /opt/bintafeln-demo
-cd /opt/bintafeln-demo
+git clone ~/bintafeln ~/bintafeln-demo \
+  && git -C ~/bintafeln-demo remote set-url origin "$(git -C ~/bintafeln remote get-url origin)" \
+  && cd ~/bintafeln-demo && pwd
 ```
 
-(Solange das Repository privat ist, mit denselben Zugangsdaten wie bei der Dummy-Tafel.)
+Die letzte Zeile der Ausgabe muss `.../bintafeln-demo` lauten. **Nur weitermachen, wenn das so
+ist** – sonst würden die folgenden Schritte die bestehende Installation verändern.
+
+(Ohne bestehende Installation: `git clone https://github.com/bintafeln/bintafeln.git
+~/bintafeln-demo`. Solange das Repository privat ist, verlangt GitHub dabei statt des
+Passworts einen *Personal Access Token*.)
 
 ### 2. Konfiguration anlegen
 
+Der Befehl bricht ab und ändert nichts, wenn er nicht im Demo-Ordner läuft oder dort schon
+eine `.env` liegt:
+
 ```bash
-cp .env.example .env
-chmod 600 .env
-sed -i "s|^DJANGO_SECRET_KEY=.*|DJANGO_SECRET_KEY=$(openssl rand -hex 32)|" .env
-sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 24)|" .env
+[ "$(basename "$PWD")" = bintafeln-demo ] && [ ! -e .env ] \
+  && cp .env.example .env && chmod 600 .env \
+  && sed -i "s|^DJANGO_SECRET_KEY=.*|DJANGO_SECRET_KEY=$(openssl rand -hex 32)|" .env \
+  && sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 24)|" .env \
+  && echo "OK: .env angelegt" || echo "ABBRUCH: falscher Ordner oder .env existiert schon"
 ```
 
 Dann `.env` öffnen (z. B. `nano .env`) und diese Werte setzen:
@@ -88,7 +101,7 @@ crontab -e
 und diese Zeile anfügen (täglich um 3:15 Uhr):
 
 ```
-15 3 * * * cd /opt/bintafeln-demo && docker compose exec -T app python manage.py demo_zuruecksetzen > /dev/null
+15 3 * * * cd ~/bintafeln-demo && docker compose exec -T app python manage.py demo_zuruecksetzen > /dev/null
 ```
 
 Der Benutzer braucht dafür Docker-Rechte (Gruppe `docker`, siehe README). Von Hand geht das
@@ -128,7 +141,7 @@ macht kein eigenes TLS.
 ### 3. Gemeinsamen Proxy einrichten (einmal je Server)
 
 ```bash
-cd /opt/bintafeln-demo/docker/gemeinsamer-proxy
+cd ~/bintafeln-demo/docker/gemeinsamer-proxy
 cp Caddyfile.beispiel Caddyfile
 nano Caddyfile
 ```
@@ -152,7 +165,7 @@ docker compose up -d
 ### 4. Demo starten und füllen
 
 ```bash
-cd /opt/bintafeln-demo
+cd ~/bintafeln-demo
 docker compose up -d --wait
 docker compose exec -T app python manage.py demo_zuruecksetzen
 ```
@@ -170,7 +183,7 @@ Wie in **A, Schritt 5**.
 
 ## Später: weitere Tafel auf demselben Server
 
-Eine echte Tafel kommt genauso dazu: eigener Ordner (z. B. `/opt/bintafeln-tafel`), in der `.env`
+Eine echte Tafel kommt genauso dazu: eigener Ordner (z. B. `~/bintafeln-tafel`), in der `.env`
 `BINTAFELN_DOMAIN`, `COMPOSE_PROJECT_NAME=tafel` und dieselbe `COMPOSE_FILE`-Zeile, aber
 **ohne** `BINTAFELN_DEMO`. Im `Caddyfile` des gemeinsamen Proxys einen Block
 `tafel.example.org { reverse_proxy tafel:80 }` ergänzen und dort `docker compose restart`
@@ -186,6 +199,7 @@ ausführen. Für die echte Tafel die Sicherung einrichten (`./betrieb schluessel
 | Port 80 oder 8080 schon belegt | Andere Ports in `HTTP_PORT`/`HTTPS_PORT` wählen (Variante A). |
 | Seite zeigt „Bad Request (400)“ | `BINTAFELN_DOMAIN` stimmt nicht mit der aufgerufenen Adresse überein. |
 | Kein Zertifikat | DNS zeigt noch nicht auf den Server, oder Ports 80/443 sind gesperrt; Protokoll: `docker compose logs caddy` im Ordner des gemeinsamen Proxys. |
+| `Abbruch: Diese Datenbank enthält Konten, die nicht aus der Demo stammen` | Der Befehl läuft im Ordner einer echten Installation. Nichts wurde gelöscht. In den Demo-Ordner wechseln. |
 | Ein Demo-Konto funktioniert nicht mehr (z. B. gesperrt) | `demo_zuruecksetzen` von Hand ausführen. |
 
 Aktualisiert wird die Demo wie jede Installation mit `./betrieb update` in ihrem Ordner; danach
