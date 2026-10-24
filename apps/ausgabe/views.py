@@ -1,4 +1,7 @@
-"""Empfang: Kundennummer scannen, Ampel sehen, Abholung eintragen."""
+"""Empfang: Kundennummer scannen, Ampel sehen, Abholung eintragen. Dazu die Kasse."""
+
+import datetime as dt
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.db import transaction
@@ -7,7 +10,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from apps.ausgabe import ampel, konto
+from apps.ausgabe import ampel, kasse, konto
 from apps.ausgabe.forms import AusgabeEinstellungenForm
 from apps.ausgabe.models import AusgabeEinstellungen, Buchung
 from apps.konten import rollen
@@ -285,6 +288,100 @@ def ausnahme_erteilen(request, kundennummer):
         erfasst_am=timezone.now(),
     )
     return _zurueck(request, h, "Ausnahme für heute erteilt.")
+
+
+def _datum(text, muster, ersatz):
+    try:
+        return dt.datetime.strptime(text, muster).date()
+    except (TypeError, ValueError):
+        return ersatz
+
+
+def _monat_verschieben(tag: dt.date, monate: int) -> dt.date:
+    index = tag.year * 12 + tag.month - 1 + monate
+    return dt.date(index // 12, index % 12 + 1, 1)
+
+
+@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+def kasse_ansehen(request):
+    """Kasse nach Tag (je Ausgabestelle), Monat (je Tag) oder Jahr (je Monat), rückwirkend."""
+    heute = timezone.localdate()
+    ansicht = request.GET.get("ansicht", "tag")
+    stellen = Ausgabestelle.objects.order_by("name")
+    stelle_pk = request.GET.get("stelle", "")
+    stelle = stellen.filter(pk=stelle_pk).first() if stelle_pk.isdigit() else None
+    buchungen = Buchung.objects.all()
+    if stelle:
+        buchungen = buchungen.filter(ausgabestelle=stelle)
+
+    if ansicht == "jahr":
+        jahr = int(request.GET["jahr"]) if request.GET.get("jahr", "").isdigit() else heute.year
+        jahr = min(max(jahr, 2000), 2100)
+        beginn = dt.date(jahr, 1, 1)
+        buchungen = buchungen.filter(datum__year=jahr)
+        zeilen = kasse.nach_monat(buchungen)
+        titel = f"Jahr {jahr}"
+        zurueck, vor = {"jahr": jahr - 1}, {"jahr": jahr + 1}
+    elif ansicht == "monat":
+        beginn = _datum(request.GET.get("monat"), "%Y-%m", heute).replace(day=1)
+        buchungen = buchungen.filter(datum__year=beginn.year, datum__month=beginn.month)
+        zeilen = kasse.nach_tag(buchungen)
+        titel = f"{konto.MONATE[beginn.month - 1]} {beginn.year}"
+        zurueck = {"monat": f"{_monat_verschieben(beginn, -1):%Y-%m}"}
+        vor = {"monat": f"{_monat_verschieben(beginn, 1):%Y-%m}"}
+    else:
+        ansicht = "tag"
+        beginn = _datum(request.GET.get("datum"), "%Y-%m-%d", heute)
+        buchungen = buchungen.filter(datum=beginn)
+        zeilen = kasse.nach_ausgabestelle(buchungen)
+        titel = f"{ampel.WOCHENTAGE[beginn.weekday()]} {beginn:%d.%m.%Y}"
+        zurueck = {"datum": f"{beginn - dt.timedelta(days=1):%Y-%m-%d}"}
+        vor = {"datum": f"{beginn + dt.timedelta(days=1):%Y-%m-%d}"}
+
+    buero = rollen.hat_rolle(request.user, rollen.ADMIN, rollen.BUERO)
+    filter_stelle = {"stelle": stelle.pk} if stelle else {}
+
+    def zeile(z):
+        """Titel der Zeile und gegebenenfalls Link auf die feinere Ansicht."""
+        g = z["gruppe"]
+        if ansicht == "jahr":
+            titel = konto.MONATE[g.month - 1]
+            link = urlencode({"ansicht": "monat", "monat": f"{g:%Y-%m}", **filter_stelle})
+        elif ansicht == "monat":
+            titel, link = (
+                f"{ampel.WOCHENTAGE[g.weekday()]} {g:%d.%m.}",
+                urlencode({"ansicht": "tag", "datum": f"{g:%Y-%m-%d}", **filter_stelle}),
+            )
+        else:
+            titel, link = g or "ohne Ausgabestelle", None
+        return {"titel": titel, "link": link, "werte": werte(z)}
+
+    def werte(z):
+        """(Bezeichnung, Wert, ist Betrag) je Spalte."""
+        return [(name, z[k], k != "abholungen") for k, name in kasse.SPALTEN]
+
+    summe = kasse.summe(buchungen)
+    return render(
+        request,
+        "ausgabe/kasse.html",
+        {
+            "ansicht": ansicht,
+            "titel": titel,
+            "beginn": beginn,
+            "zeilen": [zeile(z) for z in zeilen],
+            "summe": werte(summe),
+            "bar_gesamt": summe["bar_gesamt"],
+            "spalten": kasse.SPALTEN,
+            "stellen": stellen,
+            "stelle": stelle,
+            "zurueck": urlencode({"ansicht": ansicht, **zurueck, **filter_stelle}),
+            "vor": urlencode({"ansicht": ansicht, **vor, **filter_stelle}),
+            # Einzelbuchungen mit Kundennummer nur für Admin und Büro, nur in der Tagesansicht.
+            "einzelbuchungen": buchungen.select_related("ausgabestelle").order_by("zeitpunkt")
+            if buero and ansicht == "tag"
+            else None,
+        },
+    )
 
 
 @rollen.rolle_erforderlich(rollen.ADMIN)

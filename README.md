@@ -209,6 +209,22 @@ Die Regeln stehen unter „Einstellungen → Ausgabe und Ampel“. Jeder Scan st
 Zugriffsprotokoll. **Achtung:** Ein neuer Import des Kundenstamms ersetzt auch die am Empfang
 eingetragenen Abholungen und Ausnahmen; der Prüfbericht warnt davor (ADR 0013).
 
+## Kasse
+
+„Kasse“ im Menü (Admin, Büro, Ausgabe) wertet die Kontobuchungen aus:
+
+- **Tag** (je Ausgabestelle), **Monat** (je Tag) und **Jahr** (je Monat). Jeder Tag, Monat und
+  jedes Jahr lässt sich rückwirkend wählen oder mit „früher“/„später“ durchblättern; ein Klick
+  auf einen Tag oder Monat öffnet die feinere Ansicht.
+- Filter nach Ausgabestelle.
+- Kennzahlen:
+  - **Bar eingenommen** (bar gezahlte Beiträge + Einzahlungen)
+  - Abholungen mit Beitrag und Beiträge gesamt, aufgeteilt in bar, aus Guthaben und angeschrieben
+  - Einzahlungen und Korrekturen
+- Admin und Büro sehen in der Tagesansicht zusätzlich die einzelnen Buchungen mit Kundennummer.
+
+Die Kasse bleibt auch nach einem Neuimport des Kundenstamms vollständig (ADR 0014).
+
 ## Entwicklungs- und Produktionsmodus
 
 Umgeschaltet wird über **eine** Zeile in `.env`:

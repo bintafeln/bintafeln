@@ -183,7 +183,10 @@ aber Sperre, Status oder abgelaufenen Ausweis.
 **Kundenkonto (ADR 0014):** Buchungen mit Soll, Haben und Barbetrag. Zahlweisen je Abholung:
 aus Guthaben (Rest bar), alles bar oder, wenn erlaubt, anschreiben. Einzahlungen und
 Vorauszahlungen mit erklärtem Vorschlag für den Rest des Monats und den nächsten Monat.
-Korrekturen durch Admin und Büro. Als Nächstes: Kasse mit Tages-, Monats- und Jahresständen.
+Korrekturen durch Admin und Büro.
+
+**Kasse:** Tages- (je Ausgabestelle), Monats- (je Tag) und Jahresstände (je Monat), rückwirkend
+wählbar und nach Ausgabestelle filterbar. Grundlage sind allein die Buchungen.
 
 - **Empfang/Kiosk-Ansicht:** Kundennummer per Scanner (arbeitet als Tastatur) oder Suche.
 - Je Tafel einstellbar, was am Empfang sichtbar ist: Adresse, Geburtsdatum, letzte Abholungen,

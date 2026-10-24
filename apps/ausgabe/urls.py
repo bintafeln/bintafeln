@@ -17,5 +17,6 @@ urlpatterns = [
         views.einzahlung_zuruecknehmen,
         name="einzahlung_zuruecknehmen",
     ),
+    path("kasse/", views.kasse_ansehen, name="kasse"),
     path("einstellungen/", views.einstellungen, name="einstellungen"),
 ]

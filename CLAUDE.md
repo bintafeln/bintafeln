@@ -116,7 +116,11 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Beispieldatei und Test in `tests/test_kunden_import.py`.
   `ausgabe` (Empfang; Ampel-Regeln als reine Funktion in `apps/ausgabe/ampel.py`,
   Einstellungen in `AusgabeEinstellungen`; Kundenkonto nur über `apps/ausgabe/konto.py`
-  buchen, nie `Haushalt.kontostand` direkt ändern, ADR 0014).
+  buchen, nie `Haushalt.kontostand` direkt ändern, ADR 0014; Kasse-Auswertung in
+  `apps/ausgabe/kasse.py`).
+- Statische Dateien laufen im Betrieb über `ManifestStaticFilesStorage` (Dateinamen mit
+  Prüfsumme), weil Caddy sie einen Tag zwischenspeichern lässt. Tests nutzen die einfache
+  Ablage.
 - Zugriffsschutz für Ansichten: `@rolle_erforderlich(rollen.BUERO, …)` aus `apps.konten.rollen`.
 - Zwei-Faktor: Logik in `apps/konten/zwei_faktor.py`, Durchsetzung in
   `apps.konten.middleware.ZweiFaktorMiddleware`. In Tests Benutzer mit der Fixture `anmelden`
