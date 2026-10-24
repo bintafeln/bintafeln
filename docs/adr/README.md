@@ -59,3 +59,4 @@ drei Fragen: Was war das Problem? Was haben wir entschieden? Warum?
 | [0026](0026-notizen.md) | Notizen zum Haushalt; was die Ausgabe sieht | Angenommen |
 | [0027](0027-ausweis-gestalten.md) | Kundenausweis frei gestalten | Angenommen |
 | [0028](0028-aufnahme-und-import-abgleich.md) | Aufnahme in bintafeln und Import-Abgleich | Angenommen |
+| [0029](0029-kamera-als-scanner.md) | Kamera als Barcode-Scanner am Einlass | Angenommen |

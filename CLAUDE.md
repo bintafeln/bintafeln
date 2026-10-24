@@ -135,7 +135,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Ampel-Regeln als reine Funktion in `apps/ausgabe/ampel.py`,
   Einstellungen in `AusgabeEinstellungen`; Kundenkonto nur über `apps/ausgabe/konto.py`
   buchen, nie `Haushalt.kontostand` direkt ändern, ADR 0014; Kasse-Auswertung in
-  `apps/ausgabe/kasse.py`).
+  `apps/ausgabe/kasse.py`; Kamera-Scanner `static/js/kamera_scanner.js` für Felder mit
+  `data-kamera`, Bibliothek fest unter `static/vendor/barcode-detector`, kein CDN, ADR 0029).
 - Statische Dateien laufen im Betrieb über `ManifestStaticFilesStorage` (Dateinamen mit
   Prüfsumme), weil Caddy sie einen Tag zwischenspeichern lässt. Tests nutzen die einfache
   Ablage.
