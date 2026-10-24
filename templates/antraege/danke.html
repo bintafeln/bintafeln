@@ -1,0 +1,9 @@
+{% extends "antraege/oeffentlich.html" %}
+{% block inhalt %}
+<section class="karte">
+  <h1>{{ t.danke_titel }}</h1>
+  {% if nummer %}<p class="kasse-meldung">{{ danke_text }}</p>{% endif %}
+  <p class="vorformatiert">{{ bestaetigung }}</p>
+  {% if mail_an %}<p>{{ mail_text }}</p>{% endif %}
+</section>
+{% endblock %}

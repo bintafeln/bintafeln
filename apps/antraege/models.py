@@ -1,0 +1,303 @@
+"""Online-Anträge auf Anmeldung oder Verlängerung (Modul 3, ADR 0024).
+
+Ein Antrag ist kein Kunde: Solange der Kundenstamm aus dem Altsystem kommt (ADR 0006), überträgt
+das Büro angenommene Anträge dorthin. Die Warteliste wird außerhalb von bintafeln abgearbeitet;
+bintafeln führt die Anträge nach Eingang und kann sie exportieren.
+"""
+
+import datetime as dt
+
+from auditlog.context import disable_auditlog
+from auditlog.registry import auditlog
+from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
+from django.utils import timezone
+
+from apps.antraege import sprachen
+
+ANHANG_ORDNER = "antraege"
+
+
+class Abfrage(models.TextChoices):
+    AUS = "aus", "nicht abfragen"
+    OPTIONAL = "optional", "abfragen, freiwillig"
+    PFLICHT = "pflicht", "abfragen, Pflicht"
+
+
+def _abfrage(name, standard=Abfrage.OPTIONAL):
+    return models.CharField(name, max_length=10, choices=Abfrage.choices, default=standard)
+
+
+class AntragEinstellungen(models.Model):
+    """Einstellungen des öffentlichen Antragsformulars (Singleton)."""
+
+    EINZIGE_ID = 1
+
+    class Modus(models.TextChoices):
+        BEIDES = "beides", "Neuanmeldung und Verlängerung"
+        NEU = "neu", "nur Neuanmeldung"
+        VERLAENGERUNG = "verlaengerung", "nur Verlängerung"
+
+    aktiv = models.BooleanField(
+        "Online-Anträge annehmen",
+        default=False,
+        help_text="Erst einschalten, wenn Texte und Datenschutzerklärung stimmen.",
+    )
+    modus = models.CharField("Art der Anträge", max_length=15, choices=Modus.choices,
+                             default=Modus.BEIDES)  # fmt: skip
+    kundennummer = _abfrage("Kundennummer (nur bei Verlängerung)")
+    anrede = _abfrage("Anrede")
+    geburtsdatum = _abfrage("Geburtsdatum", Abfrage.PFLICHT)
+    anschrift = _abfrage("Anschrift", Abfrage.PFLICHT)
+    telefon = _abfrage("Telefon")
+    email = _abfrage("E-Mail")
+    familienstand = _abfrage("Familienstand", Abfrage.AUS)
+    staatsangehoerigkeit = _abfrage("Staatsangehörigkeit", Abfrage.AUS)
+    angehoerige = _abfrage("Weitere Personen im Haushalt")
+    wochentage = _abfrage("Bevorzugte Wochentage")
+    ausgabestelle = _abfrage("Bevorzugte Ausgabestelle")
+    anhaenge = _abfrage("Nachweise hochladen")
+    nachricht = _abfrage("Nachricht an die Tafel")
+    datenschutz_url = models.URLField("Link zur Datenschutzerklärung", blank=True)
+    impressum_url = models.URLField("Link zum Impressum", blank=True)
+    benachrichtigen = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name="+",
+        verbose_name="Bei neuen Anträgen benachrichtigen",
+        help_text="Diese Mitarbeitenden erhalten eine Mail ohne persönliche Angaben, mit Link.",
+    )
+    erledigt_nach_tagen = models.PositiveSmallIntegerField(
+        "Unbearbeitete Anträge gelten nach … Tagen als erledigt",
+        default=0,
+        validators=[MaxValueValidator(3650)],
+        help_text="0 = nie.",
+    )
+    papierkorb_nach_tagen = models.PositiveSmallIntegerField(
+        "Abgeschlossene Anträge nach … Tagen in den Papierkorb",
+        default=90,
+        validators=[MinValueValidator(1), MaxValueValidator(3650)],
+    )
+    loeschen_nach_tagen = models.PositiveSmallIntegerField(
+        "Anträge im Papierkorb nach … Tagen endgültig löschen",
+        default=30,
+        validators=[MinValueValidator(1), MaxValueValidator(3650)],
+    )
+
+    FELDER = [
+        "kundennummer", "anrede", "geburtsdatum", "anschrift", "telefon", "email",
+        "familienstand", "staatsangehoerigkeit", "angehoerige", "wochentage", "ausgabestelle",
+        "anhaenge", "nachricht",
+    ]  # fmt: skip
+
+    class Meta:
+        verbose_name = "Einstellungen Anträge"
+        verbose_name_plural = "Einstellungen Anträge"
+
+    def __str__(self):
+        return "Einstellungen Anträge"
+
+    def save(self, *args, **kwargs):
+        self.pk = self.EINZIGE_ID
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def laden(cls) -> "AntragEinstellungen":
+        einstellungen, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
+        return einstellungen
+
+
+class AntragText(models.Model):
+    """Eigene Texte der Tafel für eine Sprache; ohne Eintrag gelten die mitgelieferten."""
+
+    sprache = models.CharField("Sprache", max_length=5, choices=sprachen.AUSWAHL, unique=True)
+    einleitung = models.TextField("Einleitung", blank=True)
+    bestaetigung = models.TextField("Text nach dem Absenden", blank=True)
+
+    class Meta:
+        verbose_name = "Text des Antragsformulars"
+        verbose_name_plural = "Texte des Antragsformulars"
+        ordering = ["sprache"]
+
+    def __str__(self):
+        return f"Texte {self.get_sprache_display()}"
+
+
+class Antrag(models.Model):
+    class Art(models.TextChoices):
+        NEU = "neu", "Neuanmeldung"
+        VERLAENGERUNG = "verlaengerung", "Verlängerung"
+
+    class Status(models.TextChoices):
+        NEU = "neu", "neu"
+        IN_BEARBEITUNG = "in_bearbeitung", "in Bearbeitung"
+        ERLEDIGT = "erledigt", "erledigt"
+        ABGELEHNT = "abgelehnt", "abgelehnt"
+
+    OFFEN = (Status.NEU, Status.IN_BEARBEITUNG)
+
+    eingegangen_am = models.DateTimeField("Eingegangen am", default=timezone.now, db_index=True)
+    art = models.CharField("Art", max_length=15, choices=Art.choices, default=Art.NEU)
+    sprache = models.CharField("Sprache", max_length=5, choices=sprachen.AUSWAHL, default="de")
+    status = models.CharField("Status", max_length=15, choices=Status.choices, default=Status.NEU)
+    abgeschlossen_am = models.DateTimeField("Abgeschlossen am", null=True, blank=True)
+    papierkorb_am = models.DateTimeField("In den Papierkorb am", null=True, blank=True)
+    kundennummer = models.CharField("Kundennummer", max_length=20, blank=True)
+    anrede = models.CharField("Anrede", max_length=30, blank=True)
+    vorname = models.CharField("Vorname", max_length=100)
+    nachname = models.CharField("Nachname", max_length=100)
+    geburtsdatum = models.DateField("Geburtsdatum", null=True, blank=True)
+    strasse = models.CharField("Straße und Hausnummer", max_length=200, blank=True)
+    plz = models.CharField("PLZ", max_length=10, blank=True)
+    ort = models.CharField("Ort", max_length=100, blank=True)
+    telefon = models.CharField("Telefon", max_length=50, blank=True)
+    email = models.EmailField("E-Mail", blank=True)
+    familienstand = models.CharField("Familienstand", max_length=50, blank=True)
+    staatsangehoerigkeit = models.CharField("Staatsangehörigkeit", max_length=100, blank=True)
+    wochentage = models.CharField("Bevorzugte Wochentage", max_length=30, blank=True)
+    ausgabestelle = models.CharField("Bevorzugte Ausgabestelle", max_length=100, blank=True)
+    nachricht = models.TextField("Nachricht", blank=True)
+    bearbeitet_von = models.CharField("Zuletzt bearbeitet von", max_length=150, blank=True)
+
+    class Meta:
+        verbose_name = "Antrag"
+        verbose_name_plural = "Anträge"
+        ordering = ["eingegangen_am", "pk"]  # Reihenfolge nach Eingang
+
+    def __str__(self):
+        return f"Antrag {self.nummer}"
+
+    @property
+    def nummer(self) -> str:
+        return f"{timezone.localtime(self.eingegangen_am):%Y}-{self.pk:05d}"
+
+    @property
+    def name(self) -> str:
+        return f"{self.vorname} {self.nachname}"
+
+    def status_setzen(self, status: str, von: str) -> None:
+        self.status, self.bearbeitet_von = status, von
+        self.abgeschlossen_am = None if status in self.OFFEN else timezone.now()
+        self.save()
+
+
+class AntragPerson(models.Model):
+    """Weitere Person im Haushalt."""
+
+    antrag = models.ForeignKey(Antrag, on_delete=models.CASCADE, related_name="personen")
+    vorname = models.CharField("Vorname", max_length=100)
+    nachname = models.CharField("Nachname", max_length=100, blank=True)
+    geburtsdatum = models.DateField("Geburtsdatum", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Person im Antrag"
+        verbose_name_plural = "Personen im Antrag"
+        ordering = ["pk"]
+
+    def __str__(self):
+        return f"{self.vorname} {self.nachname}".strip()
+
+
+class AntragAnhang(models.Model):
+    """Verschlüsselt abgelegter Nachweis (apps.core.privatdateien)."""
+
+    antrag = models.ForeignKey(Antrag, on_delete=models.CASCADE, related_name="anhaenge")
+    name = models.CharField("Dateiname", max_length=200)
+    datei = models.CharField(max_length=200, editable=False)
+    typ = models.CharField(max_length=100, editable=False)
+    groesse = models.PositiveIntegerField("Größe in Bytes", default=0)
+
+    class Meta:
+        verbose_name = "Nachweis"
+        verbose_name_plural = "Nachweise"
+        ordering = ["pk"]
+
+    def __str__(self):
+        return self.name
+
+
+class AntragAnmerkung(models.Model):
+    antrag = models.ForeignKey(Antrag, on_delete=models.CASCADE, related_name="anmerkungen")
+    zeitpunkt = models.DateTimeField("Zeitpunkt", default=timezone.now)
+    text = models.TextField("Anmerkung")
+    von = models.CharField("Von", max_length=150)
+
+    class Meta:
+        verbose_name = "Anmerkung zum Antrag"
+        verbose_name_plural = "Anmerkungen zu Anträgen"
+        ordering = ["zeitpunkt"]
+
+    def __str__(self):
+        return f"Anmerkung vom {timezone.localtime(self.zeitpunkt):%d.%m.%Y}"
+
+
+class AntragVersuch(models.Model):
+    """Missbrauchsschutz: Absendeversuche je Adresse, nur als Prüfsumme, nach einem Tag weg."""
+
+    schluessel = models.CharField(max_length=64, db_index=True)
+    zeitpunkt = models.DateTimeField(default=timezone.now, db_index=True)
+
+    def __str__(self):
+        return f"Versuch {timezone.localtime(self.zeitpunkt):%d.%m.%Y %H:%M}"
+
+
+auditlog.register(AntragEinstellungen, m2m_fields={"benachrichtigen"})
+auditlog.register(AntragText)
+auditlog.register(Antrag)
+auditlog.register(AntragPerson)
+auditlog.register(AntragAnhang, exclude_fields=["datei"])
+auditlog.register(AntragAnmerkung)
+
+
+def fristen_anwenden(jetzt=None) -> int:
+    """Fristen der Anträge (ADR 0024); liefert die Zahl der endgültig gelöschten.
+
+    Unbearbeitete gelten nach N Tagen als erledigt (wenn eingestellt), abgeschlossene kommen
+    nach N Tagen in den Papierkorb, aus dem Papierkorb wird nach N Tagen gelöscht, samt
+    Nachweisen. Absendeversuche (Missbrauchsschutz) bleiben einen Tag.
+    """
+    jetzt = jetzt or timezone.now()
+    e = AntragEinstellungen.laden()
+    tage = dt.timedelta
+    AntragVersuch.objects.filter(zeitpunkt__lt=jetzt - tage(days=1)).delete()
+    if e.erledigt_nach_tagen:
+        Antrag.objects.filter(
+            status__in=Antrag.OFFEN,
+            papierkorb_am__isnull=True,
+            eingegangen_am__lt=jetzt - tage(days=e.erledigt_nach_tagen),
+        ).update(status=Antrag.Status.ERLEDIGT, abgeschlossen_am=jetzt, bearbeitet_von="Frist")
+    Antrag.objects.filter(
+        papierkorb_am__isnull=True,
+        abgeschlossen_am__lt=jetzt - tage(days=e.papierkorb_nach_tagen),
+    ).update(papierkorb_am=jetzt)
+    faellig = Antrag.objects.filter(papierkorb_am__lt=jetzt - tage(days=e.loeschen_nach_tagen))
+    anzahl = 0
+    for antrag in faellig:
+        loeschen(antrag)
+        anzahl += 1
+    return anzahl
+
+
+def loeschen(antrag: Antrag) -> None:
+    """Löscht einen Antrag endgültig, mit verschlüsselten Nachweisen und Protokolleinträgen."""
+    from auditlog.models import LogEntry
+    from django.contrib.contenttypes.models import ContentType
+
+    from apps.core import privatdateien
+
+    for anhang in antrag.anhaenge.all():
+        privatdateien.loeschen(ANHANG_ORDNER, anhang.datei)
+    teile = [
+        (Antrag, [antrag.pk]),
+        (AntragPerson, list(antrag.personen.values_list("pk", flat=True))),
+        (AntragAnhang, list(antrag.anhaenge.values_list("pk", flat=True))),
+        (AntragAnmerkung, list(antrag.anmerkungen.values_list("pk", flat=True))),
+    ]
+    with disable_auditlog():
+        antrag.delete()
+    for modell, schluessel in teile:
+        LogEntry.objects.filter(
+            content_type=ContentType.objects.get_for_model(modell),
+            object_pk__in=[str(k) for k in schluessel],
+        ).delete()

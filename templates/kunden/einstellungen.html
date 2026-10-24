@@ -13,6 +13,10 @@
 </section>
 
 <section class="karte">
+  <h2>Listen</h2>
+  <p><a href="{% url 'kunden:liste' 'kundengruppen' %}">Kundengruppen</a> ·
+    <a href="{% url 'kunden:liste' 'ausgabestellen' %}">Ausgabestellen</a> ·
+    <a href="{% url 'kunden:liste' 'einkommensarten' %}">Einkommensarten</a></p>
   <h2>Zusatzfelder</h2>
   <p class="hinweis">Eigene Felder für Haushalte oder Personen. Im Import heißt die Spalte
     <code>zusatz_</code> plus Schlüssel.</p>

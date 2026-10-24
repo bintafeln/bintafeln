@@ -1,0 +1,66 @@
+{% extends "antraege/oeffentlich.html" %}
+{% block inhalt %}
+<section class="karte">
+  <h1>{{ t.titel }}</h1>
+  <p class="vorformatiert">{{ einleitung }}</p>
+  <p class="hinweis">{{ t.pflicht_hinweis }}</p>
+  {% if fehler %}<p class="sicherung sicherung-fehler" role="alert">{{ fehler }}</p>{% endif %}
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% if form.art %}{% include "antraege/_feld.html" with feld=form.art %}{% endif %}
+    <fieldset class="abschnitt">
+      <legend>{{ t.abschnitt_person }}</legend>
+      {% include "antraege/_feld.html" with feld=form.kundennummer %}
+      {% include "antraege/_feld.html" with feld=form.anrede %}
+      {% include "antraege/_feld.html" with feld=form.vorname %}
+      {% include "antraege/_feld.html" with feld=form.nachname %}
+      {% include "antraege/_feld.html" with feld=form.geburtsdatum %}
+      {% include "antraege/_feld.html" with feld=form.strasse %}
+      {% include "antraege/_feld.html" with feld=form.plz %}
+      {% include "antraege/_feld.html" with feld=form.ort %}
+      {% include "antraege/_feld.html" with feld=form.telefon %}
+      {% include "antraege/_feld.html" with feld=form.email %}
+      {% include "antraege/_feld.html" with feld=form.familienstand %}
+      {% include "antraege/_feld.html" with feld=form.staatsangehoerigkeit %}
+    </fieldset>
+    {% if form.personen_zeilen %}
+    <fieldset class="abschnitt">
+      <legend>{{ t.abschnitt_haushalt }}</legend>
+      <p class="hilfe">{{ t.haushalt_hinweis }}</p>
+      {% for n, titel, vorname, nachname, geburtsdatum in form.personen_zeilen %}
+      <details class="person"{% if n == 1 or vorname.value or vorname.errors %} open{% endif %}>
+        <summary>{{ titel }}</summary>
+        {% include "antraege/_feld.html" with feld=vorname %}
+        {% include "antraege/_feld.html" with feld=nachname %}
+        {% include "antraege/_feld.html" with feld=geburtsdatum %}
+      </details>
+      {% endfor %}
+    </fieldset>
+    {% endif %}
+    {% if form.wochentage or form.ausgabestelle %}
+    <fieldset class="abschnitt">
+      <legend>{{ t.abschnitt_wunsch }}</legend>
+      {% include "antraege/_feld.html" with feld=form.wochentage %}
+      {% include "antraege/_feld.html" with feld=form.ausgabestelle %}
+    </fieldset>
+    {% endif %}
+    {% if form.anhaenge %}
+    <fieldset class="abschnitt">
+      <legend>{{ t.abschnitt_unterlagen }}</legend>
+      {% include "antraege/_feld.html" with feld=form.anhaenge %}
+    </fieldset>
+    {% endif %}
+    {% include "antraege/_feld.html" with feld=form.nachricht %}
+    <div class="feld feld-haken{% if form.einwilligung.errors %} hat-fehler{% endif %}">
+      <label for="{{ form.einwilligung.id_for_label }}">{{ form.einwilligung }} {{ t.einwilligung }} *</label>
+      {% if e.datenschutz_url %}<small class="hilfe"><a href="{{ e.datenschutz_url }}" target="_blank" rel="noopener">{{ t.datenschutz }}</a></small>{% endif %}
+      {% for fehler in form.einwilligung.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
+    </div>
+    <div class="unsichtbar" aria-hidden="true">
+      <label for="id_webseite">Webseite</label>
+      <input type="text" name="webseite" id="id_webseite" tabindex="-1" autocomplete="off">
+    </div>
+    <button type="submit" class="knopf">{{ t.absenden }}</button>
+  </form>
+</section>
+{% endblock %}

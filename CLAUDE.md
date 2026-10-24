@@ -89,8 +89,8 @@ In der ersten Ausbaustufe ist der Kundenstamm ein Snapshot aus einem Altsystem: 
 ersetzt den Bestand vollständig, im neuen System wird er nur gelesen, nicht bearbeitet. Der Import
 wird deshalb als wiederholbarer Vollaustausch gebaut, nicht als Synchronisation einzelner
 Datensätze. Erst beim späteren Umstieg zu einem Stichtag übernimmt bintafeln die Führung der Daten.
-Ausnahme: Der Einlass trägt Abholungen und Ausnahmen ein; der nächste Import ersetzt sie
-(ADR 0013).
+Ausnahmen: Der Einlass trägt Abholungen und Ausnahmen ein (ADR 0013), und der Admin kann den
+Kundenstamm bearbeiten (ADR 0025); der nächste Import ersetzt beides und warnt vorher.
 
 bintafeln kennt nur das eigene, neutrale Importformat. Werkzeuge, die Daten aus bestimmten
 Altsystemen in dieses Format bringen, gehören nicht in dieses Repository.
@@ -123,7 +123,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   (Abholungen, Ausnahmen, Zugriffsprotokoll) wendet `fristen_anwenden()` in
   `apps/kunden/models.py` an (ADR 0011, 0012). Jeder Aufruf der Detailseite eines Haushalts
   schreibt einen `Zugriff`. Neue Spalten im Importformat brauchen Doku,
-  Beispieldatei und Test in `tests/test_kunden_import.py`.
+  Beispieldatei und Test in `tests/test_kunden_import.py`. Bearbeiten durch den Admin in
+  `views_bearbeiten.py`/`forms_bearbeiten.py`; jede Änderung setzt `Haushalt.geaendert_am`.
   `ausgabe` (Einlass; Ampel-Regeln als reine Funktion in `apps/ausgabe/ampel.py`,
   Einstellungen in `AusgabeEinstellungen`; Kundenkonto nur über `apps/ausgabe/konto.py`
   buchen, nie `Haushalt.kontostand` direkt ändern, ADR 0014; Kasse-Auswertung in
@@ -141,6 +142,11 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Gehen, Überschneidungen) in `apps/personal/arbeitszeit.py`, Pausenabzug in
   `berechnung.arbeitstag()` (ADR 0020). Verschlüsselte Dateien nur über
   `apps.core.privatdateien`.
+- App `antraege` (Modul 3, ADR 0024): öffentliches Formular `/antrag/<sprache>/` in
+  `views_oeffentlich.py`, Bearbeitung in `views.py`, Fristen `models.fristen_anwenden()`.
+  Texte je Sprache in `apps/antraege/uebersetzungen/<code>.json` (Grundlage `de.json`); neue
+  Texte in **allen** Sprachdateien ergänzen, `tests/test_antraege.py` prüft Vollständigkeit
+  und Platzhalter.
 - PDFs nur über `apps.core.pdf` (`Pdf`-Rahmen, `pdf_antwort()` ohne Zwischenspeichern; ADR 0021).
   Auskunft Art. 15: `apps/kunden/auskunft.py` und `apps/konten/auskunft.py`, Kundenausweis
   `apps/kunden/ausweis.py`, Kassenbericht `kasse.bericht_pdf()`. Neue gespeicherte Daten zu

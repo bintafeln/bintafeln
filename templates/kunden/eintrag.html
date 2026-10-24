@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block titel %}{{ titel }}{% endblock %}
+{% block inhalt %}
+<section class="karte schmal">
+  {% if h %}<p><a href="{% url 'kunden:bearbeiten' h.kundennummer %}">← Haushalt {{ h.kundennummer }} bearbeiten</a></p>
+  {% elif zurueck %}<p><a href="{{ zurueck }}">← zurück</a></p>
+  {% else %}<p><a href="{% url 'kunden:uebersicht' %}">← Kunden</a></p>{% endif %}
+  <h1>{{ titel }}</h1>
+  {% if h or not zurueck %}{% include "kunden/_import_hinweis.html" %}{% endif %}
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+  {% if loeschen %}
+  <form method="post" action="{{ loeschen }}" class="abseits" onsubmit="return confirm('Wirklich löschen?')">
+    {% csrf_token %}<button type="submit" class="link">Löschen</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

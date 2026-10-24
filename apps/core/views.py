@@ -25,6 +25,8 @@ def healthz(request):
 
 @login_required
 def start(request):
+    from apps.antraege.models import Antrag
+    from apps.antraege.models import fristen_anwenden as antragsfristen_anwenden
     from apps.ausgabe.konto import buchungsfristen_anwenden
     from apps.kunden.models import ImportVorbereitung, fristen_anwenden
 
@@ -34,7 +36,12 @@ def start(request):
     fristen_anwenden()
     buchungsfristen_anwenden()
     personal.stammdaten_leeren()
+    antragsfristen_anwenden()
     kontext = {}
+    if rollen.hat_rolle(request.user, rollen.ADMIN, rollen.BUERO):
+        kontext["neue_antraege"] = Antrag.objects.filter(
+            status=Antrag.Status.NEU, papierkorb_am__isnull=True
+        ).count()
     if rollen.darf_mitarbeitende_verwalten(request.user):
         kontext["faellig"] = len(personal.faelligkeiten())
     if rollen.hat_rolle(request.user, rollen.ADMIN):

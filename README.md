@@ -3,9 +3,9 @@
 Freie Verwaltungssoftware für Tafeln – lizenziert unter der
 [GNU Affero General Public License v3.0](LICENSE).
 
-> **Stand:** Grundgerüst, Kundenstamm (Import), Einlass mit Ampel, Kundenkonto und Kasse,
-> Mitarbeitende, Personal mit Arbeitszeiterfassung, PDFs (Kundenausweis, Kassenabschluss,
-> Auskunft nach Art. 15 DSGVO). Neuanmeldung und Warteliste folgen.
+> **Stand:** Grundgerüst, Kundenstamm (Import, Bearbeiten durch den Admin), Einlass mit Ampel,
+> Kundenkonto und Kasse, Mitarbeitende, Personal mit Arbeitszeiterfassung, PDFs (Kundenausweis,
+> Kassenabschluss, Auskunft nach Art. 15 DSGVO), Online-Anträge in 29 Sprachen.
 
 **Schnell zum Ziel**
 
@@ -275,9 +275,9 @@ Regeln:
 - Abholungen und Ausnahmen werden nur innerhalb der **Aufbewahrungsfrist** übernommen
   („Einstellungen → Kundenstamm“, Vorgabe 3 Jahre). Ältere löscht bintafeln automatisch.
 
-## Kunden ansehen
+## Kunden ansehen und bearbeiten
 
-Unter „Kunden“ stehen alle Haushalte des Kundenstamms, nur zum Lesen.
+Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
 
 - **Suche** nach Kundennummer oder Name; Status und Kundengruppe lassen sich filtern. Eine
   vollständige Kundennummer mit Enter (z. B. vom Scanner) öffnet den Haushalt direkt.
@@ -289,6 +289,13 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms, nur zum Lesen.
   | Ausgabe | Name, Status, Kundengruppe, Haushaltsgröße, Ausweis, aktive Sperren, Ausnahmen, die letzten 5 Abholungen, Zusatzfelder (Art. 9 nur mit Freigabe in den Einstellungen) |
   | Kiosk | nichts |
 
+- **Bearbeiten (nur Admin):** Auf der Haushaltsseite „Bearbeiten“ ändert alles zum Haushalt:
+  Angaben und Zusatzfelder, Personen, Abholberechtigte, Sperren, Ausnahmen, Anmerkungen;
+  Abholungen lassen sich löschen (eine zugehörige Buchung wird zurückgenommen), der ganze
+  Haushalt ebenfalls. „Neuer Haushalt“ steht in der Kundenliste. Kundengruppen, Ausgabestellen
+  und Einkommensarten pflegt der Admin unter „Einstellungen → Kundenstamm → Listen“.
+  **Achtung:** Solange aus dem Altsystem importiert wird, ersetzt der nächste Import alle
+  Änderungen; der Prüfbericht nennt die Zahl der geänderten Haushalte (ADR 0025).
 - Jeder Aufruf einer Detailseite steht im **Zugriffsprotokoll** („Kunden“ → „Zugriffsprotokoll“,
   nur Admin). Die Einträge werden nach 365 Tagen gelöscht, einstellbar unter
   „Einstellungen → Kundenstamm“.
@@ -297,6 +304,27 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms, nur zum Lesen.
     als Barcode für den Scanner am Einlass. In 100 % Größe drucken.
   - **Auskunft nach Art. 15 DSGVO:** alle gespeicherten Daten des Haushalts samt Hinweisen zu
     Zweck, Speicherdauer und Rechten. Der Abruf steht im Zugriffsprotokoll.
+
+## Online-Anträge
+
+Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 0024).
+
+- **Einschalten:** „Anträge“ → „Formular einstellen“ (Admin). Dort je Feld wählen: nicht
+  abfragen, freiwillig oder Pflicht; Links zu Datenschutzerklärung und Impressum eintragen;
+  festlegen, wer bei neuen Anträgen eine Mail bekommt. Danach „Online-Anträge annehmen“
+  einschalten.
+- **Adresse für die Webseite der Tafel:** `https://<domain>/antrag/`. Die Seite ist in
+  **29 Sprachen** umstellbar und erkennt die Sprache des Browsers. Einleitung und Text nach dem
+  Absenden lassen sich je Sprache selbst schreiben; sonst gelten die mitgelieferten.
+- Nach dem Absenden sehen Antragstellende ihre **Antragsnummer** und bekommen eine
+  **Bestätigungsmail** in ihrer Sprache, wenn sie eine Adresse angeben (Mailserver nötig).
+- **Bearbeiten** (Admin, Büro) unter „Anträge“: Liste nach Eingang, Detailseite mit Nachweisen,
+  Status, Anmerkungen, Papierkorb und Auskunft (PDF). „Diese Liste als CSV herunterladen“
+  liefert die Anträge, z. B. für eine Warteliste in einem anderen Programm.
+- Angenommene Anträge ins Altsystem übertragen; mit dem nächsten Import erscheinen sie im
+  Kundenstamm.
+- Die Übersetzungen stehen in `apps/antraege/uebersetzungen/`, eine Datei je Sprache.
+  Korrekturen von Muttersprachlern sind willkommen.
 
 ## Einlass
 

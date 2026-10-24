@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block titel %}Anträge{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Anträge</h1>
+  <p class="hinweis">Online eingegangene Anträge in der Reihenfolge des Eingangs. Das öffentliche Formular steht unter
+    <a href="{% url 'antrag:start' %}" target="_blank" rel="noopener">{{ request.scheme }}://{{ request.get_host }}{% url 'antrag:start' %}</a>.
+    {% if "Admin" in rollen %}<a href="{% url 'antraege:einstellungen' %}">Formular einstellen</a>{% endif %}</p>
+  <nav class="reiter" aria-label="Ansicht">
+    {% for k, name in ansichten %}<a href="?ansicht={{ k }}"{% if k == ansicht %} aria-current="page"{% endif %}>{{ name }}{% if k == "offen" %} ({{ offen_gesamt }}){% endif %}</a>{% endfor %}
+  </nav>
+  <form method="get" class="filter">
+    <input type="hidden" name="ansicht" value="{{ ansicht }}">
+    <label for="suche">Suche (Name, Antragsnummer, Kundennummer, E-Mail)</label>
+    <input type="search" name="suche" id="suche" value="{{ suche }}">
+    <button type="submit" class="knopf">Suchen</button>
+  </form>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Nr.</th><th>Eingang</th><th>Art</th><th>Name</th><th>Personen</th><th>Sprache</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for a in antraege %}
+      <tr>
+        <td data-titel="Nr."><a href="{% url 'antraege:antrag' a.pk %}">{{ a.nummer }}</a></td>
+        <td data-titel="Eingang">{{ a.eingegangen_am|date:"d.m.Y H:i" }}</td>
+        <td data-titel="Art">{{ a.get_art_display }}</td>
+        <td data-titel="Name">{{ a.name }}</td>
+        <td data-titel="Personen">{{ a.personen.all|length|add:1 }}</td>
+        <td data-titel="Sprache">{{ a.get_sprache_display }}</td>
+        <td data-titel="Status">{{ a.get_status_display }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7">Keine Anträge.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p><a class="knopf knopf-zweitrangig" href="{% url 'antraege:export' %}?ansicht={{ ansicht }}&amp;suche={{ suche|urlencode }}">Diese Liste als CSV herunterladen</a></p>
+  <p class="hinweis">Die CSV-Datei enthält Personendaten. Nur dort speichern, wo sie geschützt ist, und danach löschen.</p>
+</section>
+{% endblock %}
