@@ -37,6 +37,8 @@ def menue(request) -> list[dict]:
             _eintrag("Einlass", "ausgabe:empfang", genau=True),
             _eintrag("Kasse", "ausgabe:kasse"),
         ]})  # fmt: skip
+        if admin or buero:
+            bereiche[-1]["eintraege"].append(_eintrag("Sonderaktionen", "ausgabe:sonderaktionen"))
         kunden = [_eintrag("Alle Kunden", "kunden:uebersicht", genau=True)]
         kunden[0]["auch"] = [reverse("kunden:uebersicht") + "haushalt/"]
         if admin:

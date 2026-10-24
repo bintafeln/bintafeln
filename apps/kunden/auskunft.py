@@ -9,6 +9,7 @@ from django.utils import timezone
 from reportlab.lib.units import mm
 
 from apps.ausgabe.konto import euro
+from apps.ausgabe.models import Teilnahme
 from apps.core.pdf import Pdf
 from apps.kunden.models import (
     Haushalt,
@@ -168,6 +169,17 @@ def kunde_pdf(h: Haushalt) -> bytes:
         breiten=[0.14, 0.16, 0.15, 0.15, 0.4],
         rechts=[2, 3],
     )
+
+    doc.ueberschrift("Sonderaktionen")
+    doc.tabelle(
+        ["Datum", "Sonderaktion", "Auswahl", "Menge"],
+        [[_datum(timezone.localdate(t.zeitpunkt)), t.aktion.bezeichnung,
+          t.auswahl.bezeichnung if t.auswahl else "", str(t.menge)]
+         for t in Teilnahme.objects.filter(kundennummer=h.kundennummer)
+         .select_related("aktion", "auswahl")],
+        breiten=[0.14, 0.4, 0.34, 0.12],
+        rechts=[3],
+    )  # fmt: skip
 
     doc.ueberschrift("Wer die Daten aufgerufen hat")
     doc.tabelle(

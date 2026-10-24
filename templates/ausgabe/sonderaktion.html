@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block titel %}{{ aktion }}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'ausgabe:sonderaktionen' %}">← Sonderaktionen</a></p>
+  <div class="liste-kopf">
+    <h1>{{ aktion }}</h1>
+    <div class="aktionsleiste">
+      <a class="knopf knopf-zweitrangig" href="{% url 'ausgabe:sonderaktion_bearbeiten' aktion.pk %}">Bearbeiten</a>
+      <a class="knopf knopf-zweitrangig" href="?format=csv">CSV-Export</a>
+    </div>
+  </div>
+  <dl class="angaben">
+    <dt>Zeitraum</dt><dd>{{ aktion.von|date:"d.m.Y" }} – {{ aktion.bis|date:"d.m.Y" }}</dd>
+    <dt>Wie viel</dt><dd>{{ aktion.get_menge_display }}{% if aktion.nur_mit_kindern %}, nur Haushalte mit Kindern{% endif %}</dd>
+    {% if aktion.beschreibung %}<dt>Hinweis für den Einlass</dt><dd>{{ aktion.beschreibung }}</dd>{% endif %}
+    <dt>Teilnahmen</dt><dd>{{ gesamt.anzahl }} Haushalt{{ gesamt.anzahl|pluralize:"e" }}, {{ gesamt.summe|default:0 }} Stück</dd>
+  </dl>
+  {% if je_auswahl %}
+  <h2>Nach Auswahl</h2>
+  <table class="tabelle kompakt">
+    <thead><tr><th>Auswahl</th><th>Haushalte</th><th>Stück</th></tr></thead>
+    <tbody>
+    {% for a in je_auswahl %}<tr><td>{{ a.bezeichnung }}</td><td>{{ a.anzahl }}</td><td>{{ a.summe|default:0 }}</td></tr>{% endfor %}
+    {% if ohne.anzahl %}<tr><td>ohne Auswahl</td><td>{{ ohne.anzahl }}</td><td>{{ ohne.summe|default:0 }}</td></tr>{% endif %}
+    </tbody>
+  </table>
+  {% endif %}
+  <h2>Teilnahmen</h2>
+  {% if teilnahmen %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Kundennummer</th><th>Auswahl</th><th>Stück</th><th>Wann</th><th>Ausgabestelle</th><th>Von</th></tr></thead>
+    <tbody>
+    {% for t in teilnahmen %}
+      <tr>
+        <td data-titel="Kundennummer"><a href="{% url 'kunden:haushalt' t.kundennummer %}">{{ t.kundennummer }}</a></td>
+        <td data-titel="Auswahl">{{ t.auswahl|default:"–" }}</td>
+        <td data-titel="Stück">{{ t.menge }}</td>
+        <td data-titel="Wann">{{ t.zeitpunkt|date:"d.m.Y H:i" }}</td>
+        <td data-titel="Ausgabestelle">{{ t.ausgabestelle.name|default:"–" }}</td>
+        <td data-titel="Von">{{ t.eingetragen_von|default:"–" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p class="hinweis">Noch keine.</p>{% endif %}
+  <form method="post" action="{% url 'ausgabe:sonderaktion_loeschen' aktion.pk %}" class="abseits"
+        onsubmit="return confirm(this.dataset.frage)"
+        data-frage="Sonderaktion „{{ aktion }}“ mit {{ gesamt.anzahl }} Teilnahme(n) endgültig löschen?">
+    {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Sonderaktion löschen</button>
+  </form>
+</section>
+{% endblock %}

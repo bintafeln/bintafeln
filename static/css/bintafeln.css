@@ -518,3 +518,7 @@ label.wahl { display: block; white-space: nowrap; }
 .gruppe-rosa { background: #f4a6c6; color: #1a1a1a; }
 .gruppe-braun { background: #8b5a2b; color: #fff; }
 .gruppe-grau { background: #8a8f98; color: #fff; }
+
+/* Sonderaktion am Einlass */
+.sonderaktion { border-left: 6px solid var(--akzent); }
+.sonderaktion-erhalten { font-weight: 700; }
