@@ -26,7 +26,8 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
 - **Rollen:** Admin, Büro, Ausgabe, Kiosk, Fahrer und Beifahrer (als Django-Gruppen, werden
   beim Start automatisch angelegt). Konten und Rollen verwaltet ein Admin unter
   „Mitarbeitende“ (siehe unten).
-- **Tafel-Einstellungen:** Name, Logo und Anschrift der Tafel – in der Datenbank, nicht im Code.
+- **Tafel-Einstellungen:** Name, Logo, Farbe (voreingestellt Tafel-Orange) und Anschrift der
+  Tafel – in der Datenbank, nicht im Code.
 - **Änderungsprotokoll:** Wer hat wann welchen Datensatz geändert (mit Feldern vorher/nachher).
   Passwörter werden nie protokolliert.
 - **Zwei-Faktor-Anmeldung:** Jede Person richtet sie unter „Mein Konto“ selbst ein
@@ -321,10 +322,19 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   festlegen, wer bei neuen Anträgen eine Mail bekommt. Danach „Online-Anträge annehmen“
   einschalten.
 - **Adresse für die Webseite der Tafel:** `https://<domain>/antrag/`. Die Seite ist in
-  **29 Sprachen** umstellbar und erkennt die Sprache des Browsers. Einleitung und Text nach dem
-  Absenden lassen sich je Sprache selbst schreiben; sonst gelten die mitgelieferten.
-- Nach dem Absenden sehen Antragstellende ihre **Antragsnummer** und bekommen eine
-  **Bestätigungsmail** in ihrer Sprache, wenn sie eine Adresse angeben (Mailserver nötig).
+  **29 Sprachen** umstellbar und erkennt die Sprache des Browsers. Oben stehen Logo und Name
+  der Tafel in der Farbe der Tafel (siehe Einstellungen).
+- **Eigene Texte je Sprache** („Texte je Sprache“): Überschrift, Einleitung, Seite nach dem
+  Absenden, Betreff und Inhalt der Antwortmail. Die Texte dürfen **HTML** enthalten
+  (Überschriften, Absätze, Listen, Links, Bilder, Tabellen, Farben über `style="…"`);
+  Skripte und Ähnliches werden beim Anzeigen entfernt. Platzhalter: `{nummer}`, `{tafel}`,
+  in der Mail auch `{vorname}` und `{nachname}`. „Vorschau“ zeigt alles mit Beispielwerten,
+  ohne zu speichern. Ohne eigene Texte gelten die mitgelieferten.
+- **Eigene Gestaltung:** Im Feld „Eigene Gestaltung (CSS)“ lassen sich zusätzliche CSS-Regeln
+  für das öffentliche Formular hinterlegen (nur für Kundige).
+- Nach dem Absenden sehen Antragstellende eine Bestätigungsseite mit ihrer **Antragsnummer** und
+  bekommen eine gestaltete **Antwortmail** (HTML mit Logo, dazu eine Klartextfassung) in ihrer
+  Sprache, wenn sie eine Adresse angeben (Mailserver nötig).
 - **Bearbeiten** (Admin, Büro) unter „Anträge“: Liste nach Eingang, Detailseite mit Nachweisen,
   Status, Anmerkungen, Papierkorb und Auskunft (PDF). „Diese Liste als CSV herunterladen“
   liefert die Anträge, z. B. für eine Warteliste in einem anderen Programm.

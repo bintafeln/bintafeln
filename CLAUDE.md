@@ -144,6 +144,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `apps.core.privatdateien`.
 - App `antraege` (Modul 3, ADR 0024): öffentliches Formular `/antrag/<sprache>/` in
   `views_oeffentlich.py`, Bearbeitung in `views.py`, Fristen `models.fristen_anwenden()`.
+  Eigene Texte der Tafel (`AntragText`) dürfen HTML enthalten und laufen immer durch
+  `apps.core.html.anzeigen()`/`bereinigen()` (nh3), nie ungefiltert mit `|safe`.
+  Farbe der Tafel als CSS-Variablen über `templates/includes/farben.html`
+  (`apps/core/farben.py`); in CSS nur `var(--akzent)` usw., keine festen Akzentfarben.
   Texte je Sprache in `apps/antraege/uebersetzungen/<code>.json` (Grundlage `de.json`); neue
   Texte in **allen** Sprachdateien ergänzen, `tests/test_antraege.py` prüft Vollständigkeit
   und Platzhalter.

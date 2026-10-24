@@ -6,13 +6,15 @@ import logging
 
 from django.conf import settings
 from django.shortcuts import redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.html import format_html
 
 from apps.antraege import sprachen
 from apps.antraege.forms import AntragForm
 from apps.antraege.models import AntragEinstellungen, AntragText, AntragVersuch
-from apps.core import mail
+from apps.core import html, mail
 from apps.core.models import TafelEinstellungen
 
 logger = logging.getLogger(__name__)
@@ -42,16 +44,22 @@ def zu_viele(request) -> bool:
 def _kontext(code):
     s = sprachen.sprache(code)
     texte = sprachen.texte(s.code)
-    eigene = AntragText.objects.filter(sprache=s.code).first()
+    tafel = TafelEinstellungen.laden()
+    e = AntragEinstellungen.laden()
     return {
         "s": s,
         "t": texte,
         "sprachen": sprachen.SPRACHEN,
-        "einleitung": (eigene and eigene.einleitung) or texte["einleitung"],
-        "bestaetigung": (eigene and eigene.bestaetigung) or texte["bestaetigung"],
-        "e": AntragEinstellungen.laden(),
-        "tafel": TafelEinstellungen.laden(),
+        "eigene": AntragText.objects.filter(sprache=s.code).first() or AntragText(sprache=s.code),
+        "e": e,
+        "tafel": tafel,
+        "tafel_name": tafel.name or "Tafel",
+        "eigenes_css": html.css_bereinigen(e.eigenes_css),
     }
+
+
+def _ueberschrift(kontext) -> str:
+    return kontext["eigene"].ueberschrift or kontext["t"]["titel"]
 
 
 def start(request):
@@ -67,6 +75,10 @@ def formular(request, sprache):
         return redirect("antrag:start")
     kontext = _kontext(sprache)
     e, t = kontext["e"], kontext["t"]
+    kontext["ueberschrift"] = _ueberschrift(kontext)
+    kontext["einleitung"] = html.anzeigen(
+        kontext["eigene"].einleitung, t["einleitung"], tafel=kontext["tafel_name"]
+    )
     if not e.aktiv:
         return render(request, "antraege/geschlossen.html", kontext)
     form = AntragForm(request.POST or None, request.FILES or None, texte=t, einstellungen=e)
@@ -79,12 +91,22 @@ def formular(request, sprache):
         elif form.is_valid():
             antrag = form.speichern(sprache)
             request.session["antrag_nummer"] = antrag.nummer
-            request.session["antrag_mail"] = _bestaetigen(antrag, kontext)
+            request.session["antrag_mail"] = _bestaetigen(request, antrag, kontext)
             _benachrichtigen(request, antrag, e)
             return redirect("antrag:danke", sprache=sprache)
         else:
             kontext["fehler"] = t["fehler_formular"]
     return render(request, "antraege/formular.html", {**kontext, "form": form})
+
+
+def _bestaetigung(kontext, nummer: str) -> str:
+    """Text der Seite nach dem Absenden (eigen oder mitgeliefert), Platzhalter eingesetzt."""
+    return html.anzeigen(
+        kontext["eigene"].bestaetigung,
+        kontext["t"]["bestaetigung"],
+        nummer=nummer,
+        tafel=kontext["tafel_name"],
+    )
 
 
 def danke(request, sprache):
@@ -94,26 +116,47 @@ def danke(request, sprache):
     if kontext["nummer"] is None:  # direkt aufgerufen
         return redirect("antrag:formular", sprache=kontext["s"].code)
     t = kontext["t"]
+    kontext["ueberschrift"] = _ueberschrift(kontext)
+    kontext["bestaetigung"] = _bestaetigung(kontext, kontext["nummer"])
     kontext["danke_text"] = t["danke_nummer"].format(nummer=kontext["nummer"])
     kontext["mail_text"] = t["mail_gesendet"].format(email=kontext["mail_an"])
     return render(request, "antraege/danke.html", kontext)
 
 
-def _bestaetigen(antrag, kontext) -> str:
+def antwortmail(request, antrag, kontext) -> tuple[str, str, str]:
+    """Betreff, Klartext und HTML der Bestätigung (eigene Fassung oder mitgelieferte)."""
+    t, eigene, tafel = kontext["t"], kontext["eigene"], kontext["tafel_name"]
+    werte = {"nummer": antrag.nummer, "vorname": antrag.vorname, "nachname": antrag.nachname,
+             "tafel": tafel}  # fmt: skip
+    betreff = html.einsetzen(eigene.mail_betreff or t["mail_betreff"], tafel=tafel,
+                             nummer=antrag.nummer)  # fmt: skip
+    if eigene.mail_text.strip():
+        inhalt = html.anzeigen(eigene.mail_text, "", **werte)
+    else:
+        inhalt = format_html(
+            "<p>{}</p><p><strong>{}</strong></p>{}<p>{}<br>{}</p>",
+            t["mail_anrede"],
+            t["danke_nummer"].format(nummer=antrag.nummer),
+            _bestaetigung(kontext, antrag.nummer),
+            t["mail_gruss"],
+            tafel,
+        )
+    logo = kontext["tafel"].logo
+    gestaltet = render_to_string(
+        "antraege/mail.html",
+        {**kontext, "inhalt": inhalt, "betreff": betreff,
+         "logo_url": request.build_absolute_uri(logo.url) if logo else ""},
+    )  # fmt: skip
+    return betreff, html.als_text(inhalt), gestaltet
+
+
+def _bestaetigen(request, antrag, kontext) -> str:
     """Bestätigung in der Sprache des Antrags; liefert die Adresse, wenn sie verschickt wurde."""
     if not antrag.email or not mail.eingerichtet():
         return ""
-    t, tafel = kontext["t"], kontext["tafel"].name or "Tafel"
-    text = "\n\n".join(
-        [
-            t["mail_anrede"],
-            t["danke_nummer"].format(nummer=antrag.nummer),
-            kontext["bestaetigung"],
-            f"{t['mail_gruss']}\n{tafel}",
-        ]
-    )
+    betreff, text, gestaltet = antwortmail(request, antrag, kontext)
     try:
-        mail.senden(t["mail_betreff"].format(tafel=tafel), text, [antrag.email])
+        mail.senden(betreff, text, [antrag.email], html=gestaltet)
     except mail.MailFehler as fehler:
         logger.warning("Bestätigung für Antrag %s nicht gesendet: %s", antrag.nummer, fehler)
         return ""

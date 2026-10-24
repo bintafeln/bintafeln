@@ -220,12 +220,54 @@ def test_besucher_ip(rf):
 
 
 def test_eigene_texte(client, offen):
+    assert "<p>Hier können Sie sich" in client.get(FORMULAR).content.decode()
     AntragText.objects.create(sprache="de", einleitung="Willkommen bei der Testtafel.",
                               bestaetigung="Wir rufen an.")  # fmt: skip
     assert "Willkommen bei der Testtafel." in client.get(FORMULAR).content.decode()
     danke = client.post(FORMULAR, daten(), follow=True).content.decode()
     assert "Wir rufen an." in danke
     assert str(AntragText.objects.get()) == "Texte Deutsch"
+
+
+def test_eigene_html_texte_und_mail(client, offen, mailserver):
+    offen.eigenes_css = ".antrag-kopf { text-align: center }</style><script>"
+    offen.save()
+    AntragText.objects.create(
+        sprache="de", ueberschrift="Willkommen", einleitung='<h2>Hallo</h2><script>x()</script>',
+        bestaetigung="<p>Ihre Nummer: <b>{nummer}</b> bei {tafel}</p>",
+        mail_betreff="Antrag {nummer}",
+        mail_text="<p>Liebe(r) {vorname} {nachname},</p><p onclick='x'>Nr. {nummer}</p>",
+    )  # fmt: skip
+    seite = client.get(FORMULAR).content.decode()
+    assert '<h1 class="antrag-titel">Willkommen</h1>' in seite and "<h2>Hallo</h2>" in seite
+    assert "x()" not in seite and ".antrag-kopf { text-align: center }/style>" in seite
+    assert 'class="reihe reihe-3"' in seite and "--akzent:" in seite
+    antwort = client.post(FORMULAR, daten(email="erika@example.org", vorname="<Erika>"),
+                          follow=True)  # fmt: skip
+    a = Antrag.objects.get()
+    assert f"Ihre Nummer: <b>{a.nummer}</b> bei Tafel" in antwort.content.decode()
+    m = django_mail.outbox[0]
+    assert m.subject == f"Antrag {a.nummer}"
+    assert m.body.startswith("Liebe(r) <Erika> Beispiel,") and "onclick" not in m.body
+    gestaltet, typ = m.alternatives[0]
+    assert typ == "text/html" and "&lt;Erika&gt; Beispiel" in gestaltet
+    assert "onclick" not in gestaltet
+
+
+def test_mitgelieferte_mail_ist_gestaltet(client, offen, mailserver, settings):
+    from apps.core.models import TafelEinstellungen
+
+    tafel = TafelEinstellungen.laden()
+    tafel.name, tafel.ort, tafel.logo = "Testtafel", "Musterstadt", "oeffentlich/logo/l.png"
+    tafel.save()
+    client.post(FORMULAR, daten(email="erika@example.org"))
+    m = django_mail.outbox[0]
+    assert m.subject == "Ihr Antrag bei Testtafel"
+    assert m.body.startswith("Guten Tag,") and m.body.endswith("Testtafel")
+    gestaltet = m.alternatives[0][0]
+    assert "http://testserver/" in gestaltet and "l.png" in gestaltet
+    assert "Musterstadt" in gestaltet and "<p>Wir prüfen Ihren Antrag" in gestaltet
+    assert "&lt;p&gt;" not in gestaltet
 
 
 def test_form_personen_leer_ohne_angehoerige(offen):
@@ -341,6 +383,13 @@ def test_einstellungen_und_texte(admin_client, benutzer_mit_rolle):
     assert e.datenschutz_url == "https://tafel.example.org/ds"
     texte = reverse("antraege:texte", args=["ar"])
     assert 'dir="rtl"' in admin_client.get(texte).content.decode()
+    vorschau = admin_client.post(
+        texte, {"einleitung": "<h2>مرحبا</h2>", "bestaetigung": "رقم {nummer}", "vorschau": "1",
+                "mail_text": "<p>{vorname}</p>"},
+    ).content.decode()  # fmt: skip
+    assert "Vorschau (noch nicht gespeichert)" in vorschau and "<h2>مرحبا</h2>" in vorschau
+    assert "رقم 2026-00001" in vorschau and "srcdoc=" in vorschau and "Erika" in vorschau
+    assert not AntragText.objects.filter(sprache="ar").exists()
     admin_client.post(texte, {"einleitung": "مرحبا", "bestaetigung": ""})
     assert AntragText.objects.get(sprache="ar").einleitung == "مرحبا"
     assert "eigener Text" in admin_client.get(url).content.decode()

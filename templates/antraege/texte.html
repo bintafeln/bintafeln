@@ -4,15 +4,44 @@
 <section class="karte">
   <p><a href="{% url 'antraege:einstellungen' %}">← Anträge einstellen</a></p>
   <h1>Texte: {{ s.deutsch }}</h1>
-  <p class="hinweis">Leer lassen, um die mitgelieferten Texte zu verwenden. Mitgeliefert:</p>
-  <div lang="{{ s.code }}" dir="{% if s.rtl %}rtl{% else %}ltr{% endif %}">
-    <p class="vorformatiert"><strong>Einleitung:</strong> {{ t.einleitung }}</p>
-    <p class="vorformatiert"><strong>Nach dem Absenden:</strong> {{ t.bestaetigung }}</p>
-  </div>
+  <p class="hinweis">Leer lassen, um die mitgelieferten Texte zu verwenden. Einleitung, Seite nach
+    dem Absenden und Antwortmail dürfen HTML enthalten, z. B. <code>&lt;h2&gt;</code>,
+    <code>&lt;p&gt;</code>, <code>&lt;strong&gt;</code>, <code>&lt;ul&gt;</code>, Links
+    (<code>&lt;a href="…"&gt;</code>), Bilder (<code>&lt;img src="https://…"&gt;</code>),
+    Tabellen und Angaben in <code>style="…"</code> (Farbe, Schriftgröße, Ausrichtung, Abstände).
+    Skripte und Ähnliches werden beim Anzeigen entfernt. Text ohne HTML behält seine
+    Zeilenumbrüche.</p>
+  <details>
+    <summary>Mitgelieferte Texte</summary>
+    <div lang="{{ s.code }}" dir="{% if s.rtl %}rtl{% else %}ltr{% endif %}">
+      <p><strong>Überschrift:</strong> {{ t.titel }}</p>
+      <p class="vorformatiert"><strong>Einleitung:</strong> {{ t.einleitung }}</p>
+      <p class="vorformatiert"><strong>Nach dem Absenden:</strong> {{ t.bestaetigung }}</p>
+      <p><strong>Betreff der Antwortmail:</strong> {{ t.mail_betreff }}</p>
+    </div>
+  </details>
   <form method="post" lang="{{ s.code }}" dir="{% if s.rtl %}rtl{% else %}ltr{% endif %}">
     {% csrf_token %}
     {% include "includes/formular.html" %}
-    <button type="submit" class="knopf">Speichern</button>
+    <div class="aktionen">
+      <button type="submit" name="vorschau" value="1" class="knopf knopf-zweitrangig">Vorschau</button>
+      <button type="submit" class="knopf">Speichern</button>
+    </div>
   </form>
 </section>
+{% if vorschau %}
+<section class="karte" id="vorschau">
+  <h2>Vorschau (noch nicht gespeichert)</h2>
+  <p class="hinweis">Mit Beispielwerten: Antragsnummer 2026-00001, Erika Beispiel.</p>
+  <h3>Formular</h3>
+  <div class="html-vorschau" lang="{{ s.code }}" dir="{% if s.rtl %}rtl{% else %}ltr{% endif %}">
+    <h1 class="antrag-titel">{{ vorschau.ueberschrift }}</h1>
+    <div class="antrag-einleitung">{{ vorschau.einleitung }}</div>
+  </div>
+  <h3>Seite nach dem Absenden</h3>
+  <div class="html-vorschau" lang="{{ s.code }}" dir="{% if s.rtl %}rtl{% else %}ltr{% endif %}">{{ vorschau.bestaetigung }}</div>
+  <h3>Antwortmail: {{ vorschau.mail_betreff }}</h3>
+  <iframe class="html-vorschau mail-vorschau" sandbox title="Vorschau der Antwortmail" srcdoc="{{ vorschau.mail_html }}"></iframe>
+</section>
+{% endif %}
 {% endblock %}

@@ -113,7 +113,7 @@ def test_verstaendliche_fehler(mailserver, monkeypatch, fehler, text):
     def scheitern(self, *args, **kwargs):
         raise fehler
 
-    monkeypatch.setattr(mail.EmailMessage, "send", scheitern)
+    monkeypatch.setattr(mail.EmailMultiAlternatives, "send", scheitern)
     with pytest.raises(mail.MailFehler, match=text):
         mail.senden("B", "T", ["kim@example.org"])
 

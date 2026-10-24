@@ -37,3 +37,16 @@ in ihrer Sprache. Die Warteliste arbeitet die Tafel derzeit mit einem eigenen Pr
 Eigene Übersetzungen sind datenschutzfreundlich und funktionieren ohne Internetdienste. Die
 Felder und Fristen sind einstellbar, damit jede Tafel nur erhebt, was sie braucht. Die
 Warteliste bleibt vorerst im vorhandenen Programm, damit nichts doppelt gepflegt wird.
+
+## Nachtrag: eigene HTML-Texte und Farbe der Tafel
+
+Tafeln wollen Formular, Bestätigungsseite und Antwortmail so gestalten wie ihre Webseite.
+Überschrift, Einleitung, Seite nach dem Absenden und Antwortmail sind deshalb je Sprache als
+HTML einstellbar, dazu optional eigenes CSS für das Formular. Das HTML wird vor jeder Anzeige
+mit `nh3` auf eine feste Liste erlaubter Elemente, Attribute und CSS-Angaben gefiltert
+(`apps/core/html.py`); Skripte, Ereignis-Attribute und `javascript:`-Links fallen weg. So kann
+auch ein missbrauchtes Admin-Konto über diese Texte keine Besucher angreifen. Werte in
+Platzhaltern (z. B. der Name aus dem Antrag) werden maskiert. Die Antwortmail geht als HTML mit
+Klartextfassung hinaus. Die Farbe der Tafel (`TafelEinstellungen.farbe`, voreingestellt
+Tafel-Orange) gilt für die ganze Anwendung; hellere und dunklere Töne sowie die Schriftfarbe
+auf der Farbe werden daraus berechnet (`apps/core/farben.py`).

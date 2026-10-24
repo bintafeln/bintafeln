@@ -1,8 +1,8 @@
 {% extends "antraege/oeffentlich.html" %}
 {% block inhalt %}
-<section class="karte">
-  <h1>{{ t.titel }}</h1>
-  <p class="vorformatiert">{{ einleitung }}</p>
+<section class="karte antrag-karte">
+  <h1 class="antrag-titel">{{ ueberschrift }}</h1>
+  <div class="antrag-einleitung">{{ einleitung }}</div>
   <p class="hinweis">{{ t.pflicht_hinweis }}</p>
   {% if fehler %}<p class="sicherung sicherung-fehler" role="alert">{{ fehler }}</p>{% endif %}
   <form method="post" enctype="multipart/form-data" novalidate>
@@ -10,18 +10,28 @@
     {% if form.art %}{% include "antraege/_feld.html" with feld=form.art %}{% endif %}
     <fieldset class="abschnitt">
       <legend>{{ t.abschnitt_person }}</legend>
-      {% include "antraege/_feld.html" with feld=form.kundennummer %}
-      {% include "antraege/_feld.html" with feld=form.anrede %}
-      {% include "antraege/_feld.html" with feld=form.vorname %}
-      {% include "antraege/_feld.html" with feld=form.nachname %}
-      {% include "antraege/_feld.html" with feld=form.geburtsdatum %}
+      {% if form.kundennummer or form.anrede %}<div class="reihe">
+        {% include "antraege/_feld.html" with feld=form.kundennummer %}
+        {% include "antraege/_feld.html" with feld=form.anrede %}
+      </div>{% endif %}
+      <div class="reihe reihe-3">
+        {% include "antraege/_feld.html" with feld=form.vorname %}
+        {% include "antraege/_feld.html" with feld=form.nachname %}
+        {% include "antraege/_feld.html" with feld=form.geburtsdatum %}
+      </div>
       {% include "antraege/_feld.html" with feld=form.strasse %}
-      {% include "antraege/_feld.html" with feld=form.plz %}
-      {% include "antraege/_feld.html" with feld=form.ort %}
-      {% include "antraege/_feld.html" with feld=form.telefon %}
-      {% include "antraege/_feld.html" with feld=form.email %}
-      {% include "antraege/_feld.html" with feld=form.familienstand %}
-      {% include "antraege/_feld.html" with feld=form.staatsangehoerigkeit %}
+      {% if form.plz %}<div class="reihe reihe-plz">
+        {% include "antraege/_feld.html" with feld=form.plz %}
+        {% include "antraege/_feld.html" with feld=form.ort %}
+      </div>{% endif %}
+      {% if form.telefon or form.email %}<div class="reihe">
+        {% include "antraege/_feld.html" with feld=form.telefon %}
+        {% include "antraege/_feld.html" with feld=form.email %}
+      </div>{% endif %}
+      {% if form.familienstand or form.staatsangehoerigkeit %}<div class="reihe">
+        {% include "antraege/_feld.html" with feld=form.familienstand %}
+        {% include "antraege/_feld.html" with feld=form.staatsangehoerigkeit %}
+      </div>{% endif %}
     </fieldset>
     {% if form.personen_zeilen %}
     <fieldset class="abschnitt">
@@ -30,9 +40,11 @@
       {% for n, titel, vorname, nachname, geburtsdatum in form.personen_zeilen %}
       <details class="person"{% if n == 1 or vorname.value or vorname.errors %} open{% endif %}>
         <summary>{{ titel }}</summary>
-        {% include "antraege/_feld.html" with feld=vorname %}
-        {% include "antraege/_feld.html" with feld=nachname %}
-        {% include "antraege/_feld.html" with feld=geburtsdatum %}
+        <div class="reihe reihe-3">
+          {% include "antraege/_feld.html" with feld=vorname %}
+          {% include "antraege/_feld.html" with feld=nachname %}
+          {% include "antraege/_feld.html" with feld=geburtsdatum %}
+        </div>
       </details>
       {% endfor %}
     </fieldset>
@@ -60,7 +72,7 @@
       <label for="id_webseite">Webseite</label>
       <input type="text" name="webseite" id="id_webseite" tabindex="-1" autocomplete="off">
     </div>
-    <button type="submit" class="knopf">{{ t.absenden }}</button>
+    <button type="submit" class="knopf antrag-absenden">{{ t.absenden }}</button>
   </form>
 </section>
 {% endblock %}

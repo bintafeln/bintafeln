@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth import get_user_model, password_validation
 
 from apps.core import geheimnis
+from apps.core.farben import STANDARDFARBE
 from apps.core.models import MailEinstellungen, TafelEinstellungen
 
 LOGO_MAX_BYTES = 2 * 1024 * 1024
@@ -42,6 +43,7 @@ class EinstellungenForm(forms.ModelForm):
         fields = [
             "name",
             "logo",
+            "farbe",
             "strasse",
             "plz",
             "ort",
@@ -57,6 +59,14 @@ class EinstellungenForm(forms.ModelForm):
             "zwei_faktor_personal",
             "buero_verwaltet_mitarbeitende",
         ]
+        widgets = {"farbe": forms.TextInput(attrs={"type": "color"})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["farbe"].required = False
+
+    def clean_farbe(self):
+        return self.cleaned_data.get("farbe") or STANDARDFARBE
 
     def clean_logo(self):
         logo = self.cleaned_data.get("logo")
