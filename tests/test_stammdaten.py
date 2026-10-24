@@ -7,7 +7,6 @@ from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.core.models import TafelEinstellungen
 from apps.konten import personal, rollen, verwaltung
 from apps.konten.models import PersonalEinstellungen, Schulung, Stammdaten
 
@@ -183,13 +182,13 @@ def test_geleert_hinweis(admin_client, fahrer):
     )
 
 
-def test_zugriff_nur_fuer_verwaltende(client, admin, benutzer_mit_rolle, anmelden, fahrer):
+def test_zugriff_nur_fuer_verwaltende(
+    client, admin, benutzer_mit_rolle, anmelden, fahrer, recht_geben
+):
     buero = benutzer_mit_rolle("buero", rollen.BUERO)
     anmelden(client, buero)
     assert client.get(url("stammdaten", fahrer)).status_code == 403
-    e = TafelEinstellungen.laden()
-    e.buero_verwaltet_mitarbeitende = True
-    e.save()
+    recht_geben(rollen.BUERO, "mitarbeitende.verwalten")
     assert client.get(url("stammdaten", fahrer)).status_code == 200
     assert client.get(url("stammdaten", admin)).status_code == 403
     assert client.get(reverse("konten:personal_einstellungen")).status_code == 403

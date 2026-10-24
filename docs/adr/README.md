@@ -63,3 +63,4 @@ drei Fragen: Was war das Problem? Was haben wir entschieden? Warum?
 | [0030](0030-dokumente-zum-haushalt.md) | Dokumente zum Haushalt mit Frist je Dokumentart | Angenommen |
 | [0031](0031-historie.md) | Historie eines Haushalts aus Vergleich vorher/nachher | Angenommen |
 | [0032](0032-sonderaktionen.md) | Sonderaktionen mit Auswahl und Teilnahmen | Angenommen |
+| [0033](0033-rollen-und-rechte.md) | Frei anlegbare Rollen mit fein einstellbaren Rechten | Angenommen |

@@ -45,7 +45,7 @@
           <a class="symbol" href="{% url 'antraege:bearbeiten' a.pk %}" title="Bearbeiten" aria-label="Antrag {{ a.nummer }} bearbeiten">✎</a>
           <a class="symbol" href="{% url 'antraege:antrag' a.pk %}#anmerkungen" title="Anmerkung" aria-label="Anmerkung zu Antrag {{ a.nummer }}">💬</a>
           {% if ansicht == "papierkorb" %}
-            {% if "Admin" in rollen %}<form method="post" action="{% url 'antraege:loeschen' a.pk %}" class="inline"
+            {% if "antraege.loeschen" in rechte %}<form method="post" action="{% url 'antraege:loeschen' a.pk %}" class="inline"
                   onsubmit="return confirm(this.dataset.frage)" data-frage="Antrag {{ a.nummer }} von {{ a.name }} mit allen Nachweisen endgültig löschen?">
               {% csrf_token %}<button type="submit" class="symbol gefahr" title="Endgültig löschen" aria-label="Antrag {{ a.nummer }} endgültig löschen">🗑</button></form>{% endif %}
           {% else %}

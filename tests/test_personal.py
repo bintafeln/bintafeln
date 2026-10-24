@@ -8,10 +8,9 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.core import privatdateien
-from apps.core.models import TafelEinstellungen
 from apps.konten import personal as konten_personal
 from apps.konten import rollen, verwaltung
-from apps.konten.models import PersonalEinstellungen
+from apps.konten.models import PersonalEinstellungen, Rolle
 from apps.personal import berechnung
 from apps.personal.models import (
     DOKUMENT_ORDNER,
@@ -169,9 +168,9 @@ def test_nur_admin_und_personal(client, admin, benutzer_mit_rolle, anmelden, kim
 
 
 def test_personal_rolle_vergibt_nur_ein_admin(admin, benutzer_mit_rolle):
-    e = TafelEinstellungen.laden()
-    e.buero_verwaltet_mitarbeitende = True
-    e.save()
+    Rolle.objects.filter(gruppe__name="Büro").update(
+        rechte=Rolle.objects.get(gruppe__name="Büro").rechte + ["mitarbeitende.verwalten"]
+    )
     buero = benutzer_mit_rolle("buero", rollen.BUERO)
     assert rollen.PERSONAL not in verwaltung.vergebbare_rollen(buero)
     assert rollen.PERSONAL in verwaltung.vergebbare_rollen(admin)

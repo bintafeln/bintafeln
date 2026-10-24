@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.ausgabe.konto import MONATE
+from apps.konten import rollen
 from apps.personal import arbeitszeit, berechnung
 from apps.personal.forms import ArbeitszeitEinstellungenForm, ZeitbuchungForm
 from apps.personal.models import ArbeitszeitEinstellungen, Zeitbuchung
@@ -128,7 +129,7 @@ def zeit_loeschen(request, pk, buchung):
     return redirect(f"{reverse('personal:zeiten', args=[pk])}?monat={monat}")
 
 
-@personal_erforderlich
+@rollen.recht_erforderlich("einstellungen.arbeitszeit")
 def einstellungen(request):
     form = ArbeitszeitEinstellungenForm(
         request.POST or None, instance=ArbeitszeitEinstellungen.laden()

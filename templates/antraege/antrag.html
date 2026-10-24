@@ -56,7 +56,7 @@
     <div class="feld"><label for="text">Neue Anmerkung</label><textarea name="text" id="text" rows="3" required></textarea></div>
     <button type="submit" class="knopf knopf-zweitrangig">Anmerkung speichern</button>
   </form>
-  {% if a.papierkorb_am and "Admin" in rollen %}
+  {% if a.papierkorb_am and "antraege.loeschen" in rechte %}
   <form method="post" action="{% url 'antraege:loeschen' a.pk %}" onsubmit="return confirm(this.dataset.frage)" data-frage="Antrag {{ a.nummer }} von {{ a.name }} mit allen Nachweisen endgültig löschen?">
     {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Endgültig löschen</button>
   </form>

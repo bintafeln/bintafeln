@@ -12,7 +12,6 @@ from apps.konten import rollen
 from apps.kunden.forms_bearbeiten import HaushaltDokumentForm
 from apps.kunden.models import Haushalt, HaushaltDokument, Zugriff
 
-buero = rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
 MAX_MB = 10
 
 
@@ -27,7 +26,7 @@ def kontext(kundennummer: str) -> dict:
 
 
 @require_POST
-@buero
+@rollen.recht_erforderlich("kunden.dokumente_verwalten")
 def hochladen(request, kundennummer):
     h = get_object_or_404(Haushalt, kundennummer=kundennummer)
     form = HaushaltDokumentForm(request.POST, request.FILES)
@@ -53,7 +52,7 @@ def hochladen(request, kundennummer):
 
 
 @never_cache
-@buero
+@rollen.recht_erforderlich("kunden.dokumente")
 def ansehen(request, pk):
     d = get_object_or_404(HaushaltDokument, pk=pk)
     inhalt = privatdateien.lesen(HaushaltDokument.ORDNER, d.datei)
@@ -71,7 +70,7 @@ def ansehen(request, pk):
 
 
 @require_POST
-@buero
+@rollen.recht_erforderlich("kunden.dokumente_verwalten")
 def loeschen(request, pk):
     d = get_object_or_404(HaushaltDokument, pk=pk)
     d.loeschen()

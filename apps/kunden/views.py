@@ -39,7 +39,7 @@ from apps.kunden.models import (
 )
 
 
-@rollen.rolle_erforderlich(rollen.ADMIN)
+@rollen.recht_erforderlich("einstellungen.kundenstamm")
 def einstellungen(request):
     form = KundenEinstellungenForm(request.POST or None, instance=KundenEinstellungen.laden())
     if request.method == "POST" and form.is_valid():
@@ -53,7 +53,7 @@ def einstellungen(request):
     )
 
 
-@rollen.rolle_erforderlich(rollen.ADMIN)
+@rollen.recht_erforderlich("einstellungen.kundenstamm")
 def zusatzfeld_bearbeiten(request, pk=None):
     feld = get_object_or_404(Zusatzfeld, pk=pk) if pk else Zusatzfeld()
     form = ZusatzfeldForm(request.POST or None, instance=feld)
@@ -105,7 +105,7 @@ def _haushalte_suchen(request):
     return haushalte, {"q": suche, "status": status, "gruppe": gruppe}
 
 
-@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO, rollen.AUSGABE)
+@rollen.recht_erforderlich("kunden.liste")
 def uebersicht(request):
     """Kundenliste mit Suche. Eine exakt passende Kundennummer (Scanner) öffnet den Haushalt."""
     ImportVorbereitung.abgelaufene_loeschen()
@@ -122,7 +122,7 @@ def uebersicht(request):
         "status_auswahl": Haushalt.Status.choices,
         "gruppen": Kundengruppe.objects.order_by("name"),
         "heute": timezone.localdate(),
-        "darf_importieren": rollen.hat_rolle(request.user, rollen.ADMIN, rollen.BUERO),
+        "darf_importieren": rollen.hat_recht(request.user, "kunden.importieren"),
         "anzahl": {
             "haushalte": Haushalt.objects.count(),
             "personen": Person.objects.count(),
@@ -145,7 +145,7 @@ def _zusatz_anzeigen(felder, werte_) -> list[tuple[str, str, bool]]:
     return ergebnis
 
 
-@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO, rollen.AUSGABE)
+@rollen.recht_erforderlich("kunden.ansehen")
 def haushalt(request, kundennummer):
     """Detailansicht eines Haushalts. Jeder Aufruf steht im Zugriffsprotokoll."""
     h = get_object_or_404(
@@ -155,8 +155,8 @@ def haushalt(request, kundennummer):
         kundennummer=kundennummer,
     )
     einstellungen = KundenEinstellungen.laden()
-    buero = rollen.hat_rolle(request.user, rollen.ADMIN, rollen.BUERO)
-    art9 = buero or einstellungen.besondere_kategorie_fuer_ausgabe
+    darf = rollen.rechte_von(request.user)
+    art9 = "kunden.besondere_kategorie" in darf
 
     felder = Zusatzfeld.objects.filter(aktiv=True)
     if not art9:
@@ -168,7 +168,7 @@ def haushalt(request, kundennummer):
     haushalt_zusatz = _zusatz_anzeigen(haushalt_felder, h.zusatz)
     heute = timezone.localdate()
     sperren = [(s, s.ist_aktiv(heute)) for s in h.sperren.all()]
-    if not buero:
+    if "kunden.sperren_alle" not in darf:
         sperren = [(s, aktiv) for s, aktiv in sperren if aktiv]
     abholungen = h.abholungen.select_related("ausgabestelle")
     zeigt_art9 = any(b for _, _, b in haushalt_zusatz) or any(
@@ -187,7 +187,6 @@ def haushalt(request, kundennummer):
         "kunden/haushalt.html",
         {
             "h": h,
-            "buero": buero,
             "einstellungen": einstellungen,
             "hauptperson": next((p for p in personen if p[0].ist_hauptperson), None),
             "angehoerige": [p for p in personen if not p[0].ist_hauptperson],
@@ -195,17 +194,22 @@ def haushalt(request, kundennummer):
             "erwachsene": erwachsene,
             "kinder": kinder,
             "sperren": sperren,
-            "ausnahmen": h.ausnahmen.all()[: None if buero else ABHOLUNGEN_AUSGABE],
-            "abholungen": abholungen[: ABHOLUNGEN_BUERO if buero else ABHOLUNGEN_AUSGABE],
+            "ausnahmen": h.ausnahmen.all()[
+                : None if "kunden.sperren_alle" in darf else ABHOLUNGEN_AUSGABE
+            ],
+            "abholungen": abholungen[
+                : ABHOLUNGEN_BUERO if "kunden.abholungen_alle" in darf else ABHOLUNGEN_AUSGABE
+            ],
             "abholungen_gesamt": abholungen.count(),
-            "bemerkungen": h.bemerkungen.all() if buero else [],
+            "bemerkungen": h.bemerkungen.all() if "kunden.anmerkungen" in darf else [],
             **notizen_kontext(h.kundennummer, request.user),
-            **(views_dokumente.kontext(h.kundennummer) if buero else {}),
+            **(views_dokumente.kontext(h.kundennummer) if "kunden.dokumente" in darf else {}),
             "historie": HaushaltEreignis.objects.filter(kundennummer=h.kundennummer)
-            if buero
+            if "kunden.historie" in darf
             else [],
-            "kontostand_zeigen": buero or AusgabeEinstellungen.laden().kontostand_anzeigen,
-            "buchungen": h.buchungen.all() if buero else [],
+            "kontostand_zeigen": "kunden.konto" in darf
+            or AusgabeEinstellungen.laden().kontostand_anzeigen,
+            "buchungen": h.buchungen.all() if "kunden.konto" in darf else [],
             "ausweis_abgelaufen": h.ausweis_gueltig_bis is not None
             and h.ausweis_gueltig_bis < heute,
             "heute": heute,
@@ -233,7 +237,7 @@ def notizen_kontext(kundennummer: str, benutzer) -> dict:
 
 
 @require_POST
-@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO, rollen.AUSGABE)
+@rollen.recht_erforderlich("kunden.notizen")
 def notiz_neu(request, kundennummer):
     h = get_object_or_404(Haushalt, kundennummer=kundennummer)
     if notiz_schreiben(h, request.POST.get("text", ""), request.user):
@@ -244,7 +248,7 @@ def notiz_neu(request, kundennummer):
 
 
 @require_POST
-@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO, rollen.AUSGABE)
+@rollen.recht_erforderlich("kunden.notizen")
 def notiz_loeschen(request, pk):
     notiz = get_object_or_404(Notiz, pk=pk)
     if not notiz.darf_loeschen(request.user):
@@ -255,7 +259,7 @@ def notiz_loeschen(request, pk):
 
 
 @never_cache
-@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+@rollen.recht_erforderlich("kunden.auskunft")
 def auskunft(request, kundennummer):
     """Auskunft nach Art. 15 DSGVO als PDF; steht wie jeder Aufruf im Zugriffsprotokoll."""
     h = get_object_or_404(Haushalt, kundennummer=kundennummer)
@@ -269,7 +273,7 @@ def auskunft(request, kundennummer):
 
 
 @never_cache
-@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+@rollen.recht_erforderlich("kunden.ausweis")
 def ausweis(request, kundennummer):
     h = get_object_or_404(
         Haushalt.objects.select_related("kundengruppe"), kundennummer=kundennummer
@@ -278,7 +282,7 @@ def ausweis(request, kundennummer):
 
 
 @never_cache
-@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+@rollen.recht_erforderlich("kunden.ausweis")
 def ausweise(request):
     """Sammeldruck: Ausweise aller Haushalte der aktuellen Auswahl in der Kundenliste."""
     haushalte, _ = _haushalte_suchen(request)
@@ -301,7 +305,7 @@ def _dateiname(h) -> str:
     return "".join(z if z.isalnum() or z in "-_" else "_" for z in h.kundennummer)
 
 
-@rollen.rolle_erforderlich(rollen.ADMIN)
+@rollen.recht_erforderlich("kunden.zugriffsprotokoll")
 def zugriffe(request):
     eintraege = Zugriff.objects.all()
     kundennummer = request.GET.get("kundennummer", "").strip()
@@ -322,7 +326,7 @@ def zugriffe(request):
     )
 
 
-@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+@rollen.recht_erforderlich("kunden.importieren")
 def import_hochladen(request):
     ImportVorbereitung.abgelaufene_loeschen()
     kontext = {
@@ -359,7 +363,7 @@ def _vorbereitung_laden(request, pk):
     return ImportVorbereitung.objects.filter(pk=pk, erstellt_von=request.user).first()
 
 
-@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+@rollen.recht_erforderlich("kunden.importieren")
 def import_vorschau(request, pk):
     vorbereitung = _vorbereitung_laden(request, pk)
     if vorbereitung is None:
@@ -400,7 +404,7 @@ def import_vorschau(request, pk):
 
 
 @require_POST
-@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+@rollen.recht_erforderlich("kunden.importieren")
 def import_uebernehmen(request, pk):
     vorbereitung = _vorbereitung_laden(request, pk)
     if vorbereitung is None:
@@ -437,7 +441,7 @@ def import_uebernehmen(request, pk):
 
 
 @require_POST
-@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+@rollen.recht_erforderlich("kunden.importieren")
 def import_verwerfen(request, pk):
     vorbereitung = _vorbereitung_laden(request, pk)
     if vorbereitung is not None:

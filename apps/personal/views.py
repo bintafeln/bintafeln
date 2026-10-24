@@ -24,7 +24,7 @@ from apps.personal.models import (
     Urlaubsjahr,
 )
 
-personal_erforderlich = rollen.rolle_erforderlich(rollen.ADMIN, rollen.PERSONAL)
+personal_erforderlich = rollen.recht_erforderlich("personal.sehen")
 
 
 def _jahr(request) -> int:

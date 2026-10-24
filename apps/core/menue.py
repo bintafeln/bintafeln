@@ -1,4 +1,4 @@
-"""Das Menü links: Bereiche mit Unterpunkten, je nach Rolle (keine Mandantenlogik).
+"""Das Menü links: Bereiche mit Unterpunkten, je nach Rechten (ADR 0033).
 
 Ein Bereich ist aufgeklappt, wenn die aktuelle Seite darin liegt. Einträge ohne Recht fehlen;
 ein Bereich ohne Einträge fehlt ganz.
@@ -7,7 +7,6 @@ ein Bereich ohne Einträge fehlt ganz.
 from django.urls import reverse
 
 from apps.konten import rollen
-from apps.konten.rollen import darf_mitarbeitende_verwalten
 
 
 def _eintrag(titel, name, *args, extern=False, genau=False):
@@ -26,63 +25,65 @@ def menue(request) -> list[dict]:
         return []
     from apps.personal.arbeitszeit import darf_stempeln
 
-    hat = lambda *r: rollen.hat_rolle(b, *r)  # noqa: E731
-    admin, buero, ausgabe = hat(rollen.ADMIN), hat(rollen.BUERO), hat(rollen.AUSGABE)
-    personal = hat(rollen.ADMIN, rollen.PERSONAL)
+    darf = rollen.rechte_von(b)
+
+    def bereich(titel, eintraege):
+        """Nur Einträge, für die das Konto das Recht hat (None = ohne Recht sichtbar)."""
+        sichtbar = [e for recht, e in eintraege if recht is None or recht in darf]
+        if sichtbar:
+            bereiche.append({"titel": titel, "eintraege": sichtbar})
+
     bereiche = [
         {"titel": "Start", "eintraege": [_eintrag("Start", "core:start", genau=True)]},
     ]
-    if admin or buero or ausgabe:
-        bereiche.append({"titel": "Ausgabe", "eintraege": [
-            _eintrag("Einlass", "ausgabe:empfang", genau=True),
-            _eintrag("Kasse", "ausgabe:kasse"),
-        ]})  # fmt: skip
-        if admin or buero:
-            bereiche[-1]["eintraege"].append(_eintrag("Sonderaktionen", "ausgabe:sonderaktionen"))
-        kunden = [_eintrag("Alle Kunden", "kunden:uebersicht", genau=True)]
-        kunden[0]["auch"] = [reverse("kunden:uebersicht") + "haushalt/"]
-        if admin:
-            kunden.append(_eintrag("Neuer Haushalt", "kunden:haushalt_neu"))
-        if admin or buero:
-            kunden.append(_eintrag("Kundenstamm importieren", "kunden:import"))
-        if admin:
-            kunden.append(_eintrag("Zugriffsprotokoll", "kunden:zugriffe"))
-        bereiche.append({"titel": "Kunden", "eintraege": kunden})
-    if admin or buero:
-        antraege = [_eintrag("Anträge", "antraege:liste")]
-        if admin:
-            antraege.append(_eintrag("Formular einstellen", "antraege:einstellungen"))
-        antraege.append(_eintrag("Öffentliches Formular", "antrag:start", extern=True))
-        bereiche.append({"titel": "Anträge", "eintraege": antraege})
-    team = []
-    if darf_mitarbeitende_verwalten(b):
-        team.append(_eintrag("Mitarbeitende", "konten:mitarbeitende"))
-    if personal:
-        team.append(_eintrag("Personal", "personal:liste", genau=True))
-    if darf_stempeln(b):
-        team.append(_eintrag("Meine Arbeitszeit", "personal:meine_arbeitszeit"))
-    if team:
-        bereiche.append({"titel": "Team", "eintraege": team})
-    if admin:
-        bereiche.append({"titel": "Einstellungen", "eintraege": [
-            _eintrag("Tafel", "core:einstellungen", genau=True),
-            _eintrag("E-Mail", "core:mail_einstellungen"),
-            _eintrag("Kundenstamm und Zusatzfelder", "kunden:einstellungen"),
-            _eintrag("Kundengruppen", *_liste("kundengruppen")),
-            _eintrag("Ausgabestellen", *_liste("ausgabestellen")),
-            _eintrag("Einkommensarten", *_liste("einkommensarten")),
-            _eintrag("Notiz-Vorlagen", *_liste("notizvorlagen")),
-            _eintrag("Dokumentarten", *_liste("dokumentarten")),
-            _eintrag("Kundenausweis", "kunden:ausweis_gestalten"),
-            _eintrag("Ausgabe, Ampel und Beiträge", "ausgabe:einstellungen"),
-            _eintrag("Beitragsfreie Zeiträume", *_liste("beitragsfrei")),
-            _eintrag("Anträge", "antraege:einstellungen"),
-            _eintrag("Mitarbeitende und Dokumente", "konten:personal_einstellungen"),
-            _eintrag("Arbeitszeit", "personal:arbeitszeit_einstellungen"),
-            _eintrag("Änderungsprotokoll", "core:protokoll"),
-        ]})  # fmt: skip
-        if b.is_staff:
-            bereiche[-1]["eintraege"].append(_eintrag("Django-Verwaltung", "admin:index"))
+    bereich("Ausgabe", [
+        ("einlass.nutzen", _eintrag("Einlass", "ausgabe:empfang", genau=True)),
+        ("kasse.sehen", _eintrag("Kasse", "ausgabe:kasse")),
+        ("sonderaktionen.verwalten", _eintrag("Sonderaktionen", "ausgabe:sonderaktionen")),
+    ])  # fmt: skip
+    alle_kunden = _eintrag("Alle Kunden", "kunden:uebersicht", genau=True)
+    alle_kunden["auch"] = [reverse("kunden:uebersicht") + "haushalt/"]
+    bereich("Kunden", [
+        ("kunden.liste", alle_kunden),
+        ("kunden.bearbeiten", _eintrag("Neuer Haushalt", "kunden:haushalt_neu")),
+        ("kunden.importieren", _eintrag("Kundenstamm importieren", "kunden:import")),
+        ("kunden.zugriffsprotokoll", _eintrag("Zugriffsprotokoll", "kunden:zugriffe")),
+    ])  # fmt: skip
+    if "antraege.sehen" in darf:
+        bereich("Anträge", [
+            ("antraege.sehen", _eintrag("Anträge", "antraege:liste")),
+            ("einstellungen.antraege", _eintrag("Formular einstellen", "antraege:einstellungen")),
+            ("antraege.sehen", _eintrag("Öffentliches Formular", "antrag:start", extern=True)),
+        ])  # fmt: skip
+    bereich("Team", [
+        ("mitarbeitende.verwalten", _eintrag("Mitarbeitende", "konten:mitarbeitende")),
+        ("personal.sehen", _eintrag("Personal", "personal:liste", genau=True)),
+        *([(None, _eintrag("Meine Arbeitszeit", "personal:meine_arbeitszeit"))]
+          if darf_stempeln(b) else []),
+    ])  # fmt: skip
+    bereich("Einstellungen", [
+        ("einstellungen.tafel", _eintrag("Tafel", "core:einstellungen", genau=True)),
+        ("einstellungen.rollen", _eintrag("Rollen und Rechte", "konten:rollen")),
+        ("einstellungen.mail", _eintrag("E-Mail", "core:mail_einstellungen")),
+        ("einstellungen.kundenstamm",
+         _eintrag("Kundenstamm und Zusatzfelder", "kunden:einstellungen")),
+        ("einstellungen.listen", _eintrag("Kundengruppen", *_liste("kundengruppen"))),
+        ("einstellungen.listen", _eintrag("Ausgabestellen", *_liste("ausgabestellen"))),
+        ("einstellungen.listen", _eintrag("Einkommensarten", *_liste("einkommensarten"))),
+        ("einstellungen.listen", _eintrag("Notiz-Vorlagen", *_liste("notizvorlagen"))),
+        ("einstellungen.listen", _eintrag("Dokumentarten", *_liste("dokumentarten"))),
+        ("einstellungen.ausweis", _eintrag("Kundenausweis", "kunden:ausweis_gestalten")),
+        ("einstellungen.ausgabe",
+         _eintrag("Ausgabe, Ampel und Beiträge", "ausgabe:einstellungen")),
+        ("einstellungen.listen", _eintrag("Beitragsfreie Zeiträume", *_liste("beitragsfrei"))),
+        ("einstellungen.antraege", _eintrag("Anträge", "antraege:einstellungen")),
+        ("einstellungen.personal",
+         _eintrag("Mitarbeitende und Dokumente", "konten:personal_einstellungen")),
+        ("einstellungen.arbeitszeit",
+         _eintrag("Arbeitszeit", "personal:arbeitszeit_einstellungen")),
+        ("protokoll.sehen", _eintrag("Änderungsprotokoll", "core:protokoll")),
+        *([(None, _eintrag("Django-Verwaltung", "admin:index"))] if b.is_staff else []),
+    ])  # fmt: skip
     bereiche.append({"titel": "Mein Konto", "eintraege": [
         _eintrag("Mein Konto", "konten:mein_konto", genau=True),
     ]})  # fmt: skip

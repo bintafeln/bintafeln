@@ -23,16 +23,18 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
 - **Einrichtung im Browser:** Solange es keinen Admin gibt, öffnet sich automatisch
   die Einrichtungsseite. Dort werden der Name der Tafel und das erste Admin-Konto angelegt.
   Danach ist die Seite gesperrt.
-- **Rollen:** Admin, Büro, Ausgabe, Kiosk, Fahrer und Beifahrer (als Django-Gruppen, werden
-  beim Start automatisch angelegt). Konten und Rollen verwaltet ein Admin unter
-  „Mitarbeitende“ (siehe unten).
+- **Rollen und Rechte:** Rollen sind frei anlegbar und löschbar; jede Rolle bekommt einzeln
+  ausgewählte Rechte (rund 45, z. B. „Kundenliste“, „Anschrift sehen“, „Abholungen buchen“,
+  „Dokumente hochladen“). Mitgeliefert: Admin, Büro, Ausgabe, Kiosk, Fahrer, Beifahrer,
+  Personal (siehe „Rollen und Rechte“ unten). Konten bekommen ihre Rollen unter
+  „Mitarbeitende“.
 - **Tafel-Einstellungen:** Name, Logo, Farbe (voreingestellt Tafel-Orange) und Anschrift der
   Tafel – in der Datenbank, nicht im Code.
 - **Änderungsprotokoll:** Wer hat wann welchen Datensatz geändert (mit Feldern vorher/nachher).
   Passwörter werden nie protokolliert.
 - **Zwei-Faktor-Anmeldung:** Jede Person richtet sie unter „Mein Konto“ selbst ein
   (QR-Code für die Authenticator-App, dazu 10 Notfallcodes). Für welche Rollen sie Pflicht ist,
-  legt ein Admin unter „Einstellungen“ fest; voreingestellt sind Admin und Büro.
+  steht in der jeweiligen Rolle; voreingestellt sind Admin, Büro und Personal.
 - **Sicherung:** täglich und verschlüsselt, mit Wiederherstellung und Update per Befehl
   (`./betrieb`). Die Startseite zeigt Admins den Stand der Sicherung.
 - **Kundenstamm (im Aufbau):** Datenmodell für Haushalte, Personen, Abholberechtigte, Sperren,
@@ -138,7 +140,8 @@ Authenticator-App verlangt (z. B. Aegis, FreeOTP, Google Authenticator).
 
 - **Einrichten:** „Mein Konto“ → „Jetzt einrichten“, QR-Code scannen, Code eingeben. Danach
   erscheinen einmalig **10 Notfallcodes**. Jeder funktioniert einmal anstelle der App.
-- **Pflicht je Rolle:** unter „Einstellungen“ per Häkchen. Voreingestellt: Admin und Büro.
+- **Pflicht je Rolle:** in der Rolle („Einstellungen → Rollen und Rechte“) per Häkchen.
+  Voreingestellt: Admin, Büro und Personal.
   Wer eine Pflicht-Rolle hat, wird nach der Anmeldung direkt zur Einrichtung geleitet und kann
   bis dahin nichts anderes öffnen. Auch der erste Admin richtet sie direkt nach der
   Einrichtungsseite ein.
@@ -153,9 +156,35 @@ Authenticator-App verlangt (z. B. Aegis, FreeOTP, Google Authenticator).
 
 Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie.
 
+## Rollen und Rechte
+
+„Einstellungen → Rollen und Rechte“ (Admin; andere nur mit dem Recht „Rollen und Rechte“):
+
+- **Liste** aller Rollen mit Zahl der Rechte, Zahl der Konten und Pflichten.
+- **Neue Rolle** oder eine Rolle öffnen: Name, Beschreibung, Pflichten (Zwei-Faktor-Anmeldung,
+  Belehrung nach Infektionsschutzgesetz, Führerschein; die beiden letzten erzeugen
+  Wiedervorlagen bei den Mitarbeitenden) und die **Rechte**, gruppiert nach Bereich (Einlass und
+  Kasse, Kunden, Anträge, Mitarbeitende und Personal, Einstellungen) mit „alle“/„keine“ je
+  Bereich.
+- Seiten ohne Recht fehlen im Menü und lassen sich auch über die Adresse nicht öffnen; Teile
+  einer Seite (z. B. Anschrift, Kundenkonto, Dokumente) erscheinen nur mit dem passenden Recht.
+  Hat ein Konto mehrere Rollen, gelten alle ihre Rechte zusammen.
+- **Admin** hat immer alle Rechte und lässt sich weder beschneiden noch löschen, damit sich
+  niemand aussperrt.
+- **Nur eigene Rechte weitergeben:** Wer nicht Admin ist, kann nur Rechte setzen oder entfernen,
+  die er selbst hat (andere sind grau und bleiben), und nur Rollen löschen oder vergeben, deren
+  Rechte er alle selbst hat.
+- **Löschen** einer Rolle nimmt sie allen Konten weg.
+- Die mitgelieferten Rollen haben nach dem Update genau die Rechte, die sie vorher hatten. Die
+  früheren Schalter „Zwei-Faktor Pflicht für …“, „Büro darf Mitarbeitende verwalten“ und
+  „Ausgabe sieht Zusatzfelder der besonderen Kategorie“ sind in die Rollen gewandert
+  (ADR 0033).
+
 ## Mitarbeitende
 
-„Mitarbeitende“ im Menü (Admin; das Büro nur, wenn unter „Einstellungen“ freigegeben):
+„Mitarbeitende“ im Menü (mit dem Recht „Mitarbeitende anlegen, bearbeiten, sperren“; Admin
+immer). Rollen vergeben kann man nur, wenn man selbst alle Rechte der Rolle hat; Admin-Konten
+bearbeitet nur ein Admin. Rollen, die man nicht vergeben darf, bleiben beim Bearbeiten erhalten.
 
 - **Anlegen:**
   - Benutzername, Name, E-Mail (optional), Beschäftigung (ehrenamtlich oder fest angestellt)
@@ -198,7 +227,7 @@ Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie
 
 ## Personal
 
-„Personal“ im Menü (nur Admin und Rolle **Personal**; diese Rolle vergibt nur ein Admin):
+„Personal“ im Menü (mit dem Recht „Personal“, vorgegeben für Admin und Rolle **Personal**):
 
 - Liste der Festangestellten mit Tätigkeit, Wochenstunden, Vertragsende, Resturlaub und
   Stundenkonto.
@@ -296,12 +325,13 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
 
 - **Suche** nach Kundennummer oder Name; Status und Kundengruppe lassen sich filtern. Eine
   vollständige Kundennummer mit Enter (z. B. vom Scanner) öffnet den Haushalt direkt.
-- Die **Detailseite** zeigt je nach Rolle unterschiedlich viel:
+- Die **Detailseite** zeigt je nach Rechten unterschiedlich viel. Vorgaben der mitgelieferten
+  Rollen (änderbar unter „Einstellungen → Rollen und Rechte“):
 
   | Rolle | sieht |
   |---|---|
   | Admin, Büro | alles: Anschrift, Kontakt, Personen, Abholberechtigte, alle Sperren, Ausnahmen, Abholungen, Kontostand, Anmerkungen, Notizen, Dokumente, Zusatzfelder |
-  | Ausgabe | nur, was der Einlass braucht: Kundennummer, Haushaltsgröße, alle Personen des Haushalts und die Abholberechtigten mit Geburtsdatum, Ausgabestelle, Karte gültig bis, Kontostand (abschaltbar), aktive Sperren, die letzten 5 Abholungen, Notizen, freigegebene Zusatzfelder (Art. 9 nur mit Freigabe in den Einstellungen). Keine Anschrift, keine Kontaktdaten, keine Ausnahmen, keine internen Anmerkungen, keine Dokumente |
+  | Ausgabe | nur, was der Einlass braucht: Kundennummer, Haushaltsgröße, alle Personen des Haushalts und die Abholberechtigten mit Geburtsdatum, Ausgabestelle, Karte gültig bis, Kontostand (abschaltbar), aktive Sperren, die letzten 5 Abholungen, Notizen, freigegebene Zusatzfelder (Art. 9 nur mit dem Recht „besondere Kategorie“). Keine Anschrift, keine Kontaktdaten, keine Ausnahmen, keine internen Anmerkungen, keine Dokumente |
   | Kiosk | nichts |
 
 - **Bearbeiten (nur Admin):** Auf der Haushaltsseite „Bearbeiten“ ändert alles zum Haushalt:

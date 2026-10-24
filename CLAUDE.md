@@ -60,7 +60,7 @@ gemeinsame Verantwortung der nutzenden Tafeln übergehen.
 
 Kundendaten von Tafeln sind besonders schützenswert. Deshalb von Anfang an:
 
-- Rollen und Rechte je Modul (Admin, Büro, Ausgabe, Kiosk)
+- Rollen frei anlegbar, fein einstellbare Rechte je Rolle (ADR 0033)
 - Zwei-Faktor-Anmeldung
 - Änderungsprotokoll (wer hat wann was geändert)
 - Löschfristen je Datenart mit automatischer Löschung oder Anonymisierung
@@ -147,7 +147,11 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
 - Statische Dateien laufen im Betrieb über `ManifestStaticFilesStorage` (Dateinamen mit
   Prüfsumme), weil Caddy sie einen Tag zwischenspeichern lässt. Tests nutzen die einfache
   Ablage.
-- Zugriffsschutz für Ansichten: `@rolle_erforderlich(rollen.BUERO, …)` aus `apps.konten.rollen`.
+- Zugriffsschutz nur über Rechte, nie Rollennamen (ADR 0033): Ansichten mit
+  `@rollen.recht_erforderlich("kunden.liste")`, im Code `rollen.hat_recht(...)`, in Templates
+  `{% if "kunden.kontakt" in rechte %}`. Katalog und Vorgaben der mitgelieferten Rollen in
+  `apps/konten/rechte.py`; neue Rechte dort ergänzen und per Datenmigration bestehenden Rollen
+  geben. Rolle Admin hat immer alle Rechte. In Tests: Fixture `recht_geben`.
 - Menü links: Einträge je Rolle in `apps/core/menue.py` (neue Seiten dort eintragen statt
   Links in die Seiten zu setzen).
 - Mitarbeitende: Logik und Schutzregeln in `apps/konten/verwaltung.py` (nie löschen, nur

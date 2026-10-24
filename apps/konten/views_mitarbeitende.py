@@ -48,13 +48,16 @@ def verwalter_erforderlich(ansicht):
 def _zeilen(benutzer):
     """Konten mit Rollen (in fester Reihenfolge) und Zwei-Faktor-Stand für die Listen."""
     zeilen = []
+    alle = rollen.alle_rollen()
     for b in benutzer.prefetch_related("groups").order_by("last_name", "first_name", "username"):
         namen = {g.name for g in b.groups.all()}
         zeilen.append(
             {
                 "b": b,
                 "rollen": [
-                    r for r in rollen.ALLE if r in namen or (b.is_superuser and r == rollen.ADMIN)
+                    r.name
+                    for r in alle
+                    if r.name in namen or (b.is_superuser and r.name == rollen.ADMIN)
                 ],
                 "zwei_faktor": user_has_device(b),
             }
@@ -306,7 +309,7 @@ def schulung_loeschen(request, pk, schulung):
     return redirect("konten:stammdaten", pk=ziel.pk)
 
 
-@rollen.rolle_erforderlich(rollen.ADMIN)
+@rollen.recht_erforderlich("einstellungen.personal")
 def personal_einstellungen(request):
     form = PersonalEinstellungenForm(request.POST or None, instance=PersonalEinstellungen.laden())
     if request.method == "POST" and form.is_valid():

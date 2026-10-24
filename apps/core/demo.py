@@ -20,9 +20,9 @@ from django.utils import timezone
 
 from apps.core.models import TafelEinstellungen
 from apps.konten import rollen
-from apps.konten.models import DokumentKategorie, Stammdaten
+from apps.konten.models import DokumentKategorie, Rolle, Stammdaten
 from apps.kunden import importieren
-from apps.kunden.models import Zusatzfeld
+from apps.kunden.models import Dokumentart, Zusatzfeld
 from apps.personal.models import Arbeitsvertrag, Zeitbuchung
 
 BEISPIELE = Path(settings.BASE_DIR) / "docs" / "beispiele" / "import"
@@ -77,16 +77,16 @@ def _medien_leeren() -> None:
 
 def _grundlagen() -> None:
     """Was sonst die Migrationen anlegen: Rollen und Dokumentkategorien."""
-    for name in rollen.ALLE:
-        Group.objects.get_or_create(name=name)
+    rollen.vorgaben_wiederherstellen()
+    Rolle.objects.update(zwei_faktor_pflicht=False)  # Demo: Einrichtung ist gesperrt
+    for name, monate in import_module("apps.kunden.migrations.0013_dokumente").VORGABEN:
+        Dokumentart.objects.get_or_create(bezeichnung=name, defaults={"aufbewahren_monate": monate})
     for name, nur_personal in import_module("apps.konten.migrations.0006_dokumente").VORGABEN:
         DokumentKategorie.objects.get_or_create(name=name, defaults={"nur_personal": nur_personal})
     e = TafelEinstellungen.laden()
     e.name = "Demo-Tafel Musterstadt"
     e.strasse, e.plz, e.ort = "Musterweg 1", "12345", "Musterstadt"
     e.bundesland = "NW"
-    for feld in [f.name for f in e._meta.fields if f.name.startswith("zwei_faktor_")]:
-        setattr(e, feld, False)
     e.save()
 
 

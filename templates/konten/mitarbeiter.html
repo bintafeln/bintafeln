@@ -5,7 +5,7 @@
   <p><a href="{% if ziel and not ziel.is_active %}{% url 'konten:mitarbeitende_archiv' %}{% else %}{% url 'konten:mitarbeitende' %}{% endif %}">← Mitarbeitende</a></p>
   <h1>{% if ziel %}{{ ziel }}{% else %}Neues Konto{% endif %}</h1>
   {% if ziel %}<p><a class="knopf knopf-zweitrangig" href="{% url 'konten:stammdaten' ziel.pk %}">Stammdaten, Führerschein, Belehrungen, Schulungen</a>
-    {% if "Admin" in rollen or "Personal" in rollen %}<a class="knopf knopf-zweitrangig" href="{% url 'konten:auskunft' ziel.pk %}" target="_blank" rel="noopener">Auskunft (PDF)</a>{% endif %}</p>{% endif %}
+    {% if "personal.sehen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'konten:auskunft' ziel.pk %}" target="_blank" rel="noopener">Auskunft (PDF)</a>{% endif %}</p>{% endif %}
   {% if ziel and not ziel.is_active %}
     <p class="sicherung sicherung-veraltet">Gesperrt seit {{ ziel.gesperrt_am|date:"d.m.Y H:i"|default:"–" }}{% if ziel.gesperrt_von %} von {{ ziel.gesperrt_von }}{% endif %}.</p>
   {% endif %}

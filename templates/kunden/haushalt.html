@@ -9,9 +9,9 @@
   </div>
   <div class="aktionsleiste">
     <a class="knopf" href="{% url 'ausgabe:empfang' %}?nummer={{ h.kundennummer|urlencode }}">Zum Einlass</a>
-    {% if buero %}<a class="knopf knopf-zweitrangig" href="{% url 'kunden:ausweis' h.kundennummer %}" target="_blank" rel="noopener">Ausweis drucken</a>{% endif %}
-    {% if "Admin" in rollen %}<a class="knopf knopf-zweitrangig" href="{% url 'kunden:bearbeiten' h.kundennummer %}">Bearbeiten</a>
-    <a class="knopf knopf-gefahr" href="{% url 'kunden:haushalt_loeschen' h.kundennummer %}">Löschen …</a>{% endif %}
+    {% if "kunden.ausweis" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'kunden:ausweis' h.kundennummer %}" target="_blank" rel="noopener">Ausweis drucken</a>{% endif %}
+    {% if "kunden.bearbeiten" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'kunden:bearbeiten' h.kundennummer %}">Bearbeiten</a>{% endif %}
+    {% if "kunden.loeschen" in rechte %}<a class="knopf knopf-gefahr" href="{% url 'kunden:haushalt_loeschen' h.kundennummer %}">Löschen …</a>{% endif %}
   </div>
   {% for s, aktiv in sperren %}{% if aktiv %}
     <p class="sicherung sicherung-fehler kopf-meldung">Gesperrt seit {{ s.von|date:"d.m.Y" }}{% if s.bis %} bis {{ s.bis|date:"d.m.Y" }}{% endif %}{% if s.begruendung %}: {{ s.begruendung }}{% endif %}</p>
@@ -22,15 +22,17 @@
 <section class="karte">
   <h2>Angaben</h2>
   <dl class="angaben">
-    {% if buero %}<dt>Status</dt><dd>{{ h.get_status_display }}</dd>{% endif %}
+    {% if "kunden.stammdaten" in rechte %}<dt>Status</dt><dd>{{ h.get_status_display }}</dd>{% endif %}
     <dt>Ausgabestelle</dt><dd>{{ h.kundengruppe.ausgabestelle.name|default:"–" }}{% if h.kundengruppe %} · {{ h.kundengruppe.name }}{% if h.kundengruppe.wochentage %} ({{ h.kundengruppe.wochentage }}{% if h.kundengruppe.uhrzeit %} {{ h.kundengruppe.uhrzeit|time:"H:i" }}{% endif %}){% endif %}{% endif %}</dd>
     <dt>Karte gültig bis</dt><dd>{{ h.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}</dd>
     {% if kontostand_zeigen %}<dt>Kontostand</dt><dd>{% if h.kontostand is not None %}<strong{% if h.kontostand < 0 %} class="fehler"{% endif %}>{{ h.kontostand|floatformat:2 }} €</strong>{% else %}–{% endif %}</dd>{% endif %}
     <dt>Haushalt</dt><dd>{{ erwachsene }} Erwachsene, {{ kinder }} Kind{{ kinder|pluralize:"er" }}</dd>
-    {% if buero %}
+    {% if "kunden.stammdaten" in rechte %}
       <dt>Letzter Besuch</dt><dd>{{ h.letzter_besuch|date:"d.m.Y"|default:"–" }}</dd>
       <dt>Kunde seit</dt><dd>{{ h.kunde_seit|date:"d.m.Y"|default:"–" }}</dd>
       <dt>Einkommensart</dt><dd>{{ h.einkommensart|default:"–" }}</dd>
+    {% endif %}
+    {% if "kunden.kontakt" in rechte %}
       <dt>Anschrift</dt><dd>{{ h.strasse|default:"–" }}{% if h.plz or h.ort %}, {{ h.plz }} {{ h.ort }}{% endif %}</dd>
       {% if einstellungen.telefon_erfassen %}<dt>Telefon</dt><dd>{{ h.telefon|default:"–" }}</dd>{% endif %}
       {% if einstellungen.email_erfassen %}<dt>E-Mail</dt><dd>{{ h.email|default:"–" }}</dd>{% endif %}
@@ -40,16 +42,18 @@
     {% endfor %}
   </dl>
   <p class="hinweis">Stand des Imports vom {{ h.importiert_am|date:"d.m.Y H:i" }}. Dieser Aufruf wird im Zugriffsprotokoll festgehalten.</p>
-  {% if h.geaendert_am and "Admin" in rollen %}<p><small class="hilfe">In bintafeln geändert am {{ h.geaendert_am|date:"d.m.Y" }} von {{ h.geaendert_von }}.</small></p>{% endif %}
-  {% if buero %}<p><a href="{% url 'kunden:auskunft' h.kundennummer %}" target="_blank" rel="noopener">Auskunft nach Art. 15 DSGVO (PDF)</a>
-    {% if "Admin" in rollen %} · <a href="{% url 'kunden:zugriffe' %}?kundennummer={{ h.kundennummer|urlencode }}">Zugriffe auf diesen Haushalt</a>{% endif %}</p>{% endif %}
+  {% if h.geaendert_am and "kunden.bearbeiten" in rechte %}<p><small class="hilfe">In bintafeln geändert am {{ h.geaendert_am|date:"d.m.Y" }} von {{ h.geaendert_von }}.</small></p>{% endif %}
+  {% if "kunden.auskunft" in rechte or "kunden.zugriffsprotokoll" in rechte %}<p>
+    {% if "kunden.auskunft" in rechte %}<a href="{% url 'kunden:auskunft' h.kundennummer %}" target="_blank" rel="noopener">Auskunft nach Art. 15 DSGVO (PDF)</a>{% endif %}
+    {% if "kunden.auskunft" in rechte and "kunden.zugriffsprotokoll" in rechte %} · {% endif %}
+    {% if "kunden.zugriffsprotokoll" in rechte %}<a href="{% url 'kunden:zugriffe' %}?kundennummer={{ h.kundennummer|urlencode }}">Zugriffe auf diesen Haushalt</a>{% endif %}</p>{% endif %}
 </section>
 
 <section class="karte">
   <h2>Personen</h2>
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Rolle</th><th>Name</th><th>Geburtsdatum</th>{% if buero %}{% if einstellungen.staatsangehoerigkeit_erfassen %}<th>Staatsangehörigkeit</th>{% endif %}{% if einstellungen.familienstand_erfassen %}<th>Familienstand</th>{% endif %}{% endif %}<th>Weitere Angaben</th></tr></thead>
+    <thead><tr><th>Rolle</th><th>Name</th><th>Geburtsdatum</th>{% if "kunden.stammdaten" in rechte %}{% if einstellungen.staatsangehoerigkeit_erfassen %}<th>Staatsangehörigkeit</th>{% endif %}{% if einstellungen.familienstand_erfassen %}<th>Familienstand</th>{% endif %}{% endif %}<th>Weitere Angaben</th></tr></thead>
     <tbody>
     {% if hauptperson %}{% include "kunden/_person.html" with p=hauptperson.0 zusatz=hauptperson.1 rolle="Hauptperson" %}{% endif %}
     {% for p, zusatz in angehoerige %}{% include "kunden/_person.html" with rolle="Angehörige" %}{% endfor %}
@@ -58,7 +62,7 @@
         <td data-titel="Rolle">Abholberechtigt</td>
         <td data-titel="Name">{{ a.vorname }} {{ a.nachname }}{% if a.eigene_kundennummer %} (eigene Kundennummer {{ a.eigene_kundennummer }}){% endif %}</td>
         <td data-titel="Geburtsdatum">{{ a.geburtsdatum|date:"d.m.Y"|default:"–" }}</td>
-        {% if buero %}{% if einstellungen.staatsangehoerigkeit_erfassen %}<td></td>{% endif %}{% if einstellungen.familienstand_erfassen %}<td></td>{% endif %}{% endif %}<td data-titel="Weitere Angaben">–</td>
+        {% if "kunden.stammdaten" in rechte %}{% if einstellungen.staatsangehoerigkeit_erfassen %}<td></td>{% endif %}{% if einstellungen.familienstand_erfassen %}<td></td>{% endif %}{% endif %}<td data-titel="Weitere Angaben">–</td>
       </tr>
     {% endfor %}
     </tbody>
@@ -80,14 +84,14 @@
         <td data-titel="Eingetragen von">{{ s.eingetragen_von|default:"–" }}</td>
       </tr>
     {% empty %}
-      <tr><td colspan="4">{% if buero %}Keine Sperren.{% else %}Keine aktive Sperre.{% endif %}</td></tr>
+      <tr><td colspan="4">{% if "kunden.sperren_alle" in rechte %}Keine Sperren.{% else %}Keine aktive Sperre.{% endif %}</td></tr>
     {% endfor %}
     </tbody>
   </table>
   </div>
 </section>
 
-{% if buero %}
+{% if "kunden.sperren_alle" in rechte %}
 <section class="karte">
   <h2>Ausnahmen</h2>
   <div class="tabelle-rahmen">
@@ -113,14 +117,14 @@
   <h2>Letzte Abholungen</h2>
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Datum</th><th>Uhrzeit</th><th>Ausgabestelle</th>{% if buero %}<th>Beitrag</th><th>Eingetragen von</th>{% endif %}</tr></thead>
+    <thead><tr><th>Datum</th><th>Uhrzeit</th><th>Ausgabestelle</th>{% if "kunden.abholungen_alle" in rechte %}<th>Beitrag</th><th>Eingetragen von</th>{% endif %}</tr></thead>
     <tbody>
     {% for a in abholungen %}
       <tr>
         <td data-titel="Datum">{{ a.datum|date:"d.m.Y" }}</td>
         <td data-titel="Uhrzeit">{{ a.uhrzeit|time:"H:i"|default:"–" }}</td>
         <td data-titel="Ausgabestelle">{{ a.ausgabestelle.name|default:"–" }}</td>
-        {% if buero %}
+        {% if "kunden.abholungen_alle" in rechte %}
         <td data-titel="Beitrag">{% if a.beitrag is not None %}{{ a.beitrag|floatformat:2 }} €{% else %}–{% endif %}</td>
         <td data-titel="Eingetragen von">{{ a.eingetragen_von|default:"–" }}</td>
         {% endif %}
@@ -136,9 +140,9 @@
 
 {% include "kunden/_notizen.html" %}
 
-{% if buero %}
-{% include "kunden/_dokumente.html" %}
+{% if "kunden.dokumente" in rechte %}{% include "kunden/_dokumente.html" %}{% endif %}
 
+{% if "kunden.historie" in rechte %}
 <section class="karte" id="historie">
   <h2>Historie</h2>
   {% if historie %}
@@ -151,7 +155,9 @@
   <p class="hinweis">Noch keine Änderungen festgehalten. Die Historie entsteht ab jetzt bei jedem Import, jeder Aufnahme und jeder Bearbeitung.</p>
   {% endif %}
 </section>
+{% endif %}
 
+{% if "kunden.konto" in rechte %}
 <section class="karte breit">
   <h2>Kundenkonto</h2>
   <p>Kontostand: <strong>{% if h.kontostand is not None %}{{ h.kontostand|floatformat:2 }} €{% else %}–{% endif %}</strong></p>
@@ -175,6 +181,7 @@
     </tbody>
   </table>
   </div>
+  {% if "konto.korrektur" in rechte %}
   <form method="post" action="{% url 'ausgabe:korrektur' h.kundennummer %}" class="filter abseits">
     {% csrf_token %}
     <label for="korrektur-betrag">Korrektur (Euro, minus belastet)</label>
@@ -183,8 +190,11 @@
     <input type="text" name="begruendung" id="korrektur-grund" maxlength="200" required class="suche">
     <button type="submit" class="knopf knopf-zweitrangig">Korrektur buchen</button>
   </form>
+  {% endif %}
 </section>
+{% endif %}
 
+{% if "kunden.anmerkungen" in rechte %}
 <section class="karte">
   <h2>Interne Anmerkungen</h2>
   {% for b in bemerkungen %}

@@ -33,7 +33,6 @@ from apps.kunden.models import (
 )
 from apps.kunden.views import notiz_schreiben, notizen_kontext
 
-EMPFANG_ROLLEN = (rollen.ADMIN, rollen.BUERO, rollen.AUSGABE)
 LETZTE_ABHOLUNGEN = 5
 SITZUNG_STELLE = "ausgabestelle_id"
 
@@ -91,7 +90,7 @@ def _ergebnis(request, h, meldung=None):
         "einstellungen": einstellungen,
         "abholungen": abholungen[:LETZTE_ABHOLUNGEN],
         "heute_erfasst": [a for a in abholungen if a.datum == heute and a.erfasst_am],
-        "darf_ausnahme": rollen.hat_rolle(request.user, rollen.ADMIN, rollen.BUERO),
+        "darf_ausnahme": rollen.hat_recht(request.user, "einlass.ausnahme"),
         **notizen_kontext(h.kundennummer, request.user),
         "sonderaktionen": sonderaktionen.fuer_haushalt(h, heute, erwachsene, kinder),
         "heute": heute,
@@ -105,7 +104,7 @@ def _antworten(request, kontext):
     return render(request, "ausgabe/empfang.html", kontext)
 
 
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("einlass.nutzen")
 def empfang(request):
     konto.buchungsfristen_anwenden()
     kontext = {
@@ -128,7 +127,7 @@ def empfang(request):
 
 
 @require_POST
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("einlass.nutzen")
 def ausgabestelle_waehlen(request):
     pk = request.POST.get("ausgabestelle", "")
     stelle = Ausgabestelle.objects.filter(pk=pk).first() if pk.isdigit() else None
@@ -149,7 +148,7 @@ def _zurueck(request, h, text, stufe=messages.SUCCESS):
 
 
 @require_POST
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("einlass.abholung")
 def abholung_eintragen(request, kundennummer):
     h = get_object_or_404(Haushalt, kundennummer=kundennummer)
     kontext = _ergebnis(request, h)
@@ -204,7 +203,7 @@ def abholung_eintragen(request, kundennummer):
 
 
 @require_POST
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("einlass.abholung")
 def abholung_zuruecknehmen(request, pk):
     """Nimmt eine heute am Einlass eingetragene Abholung zurück (Versehen)."""
     abholung = get_object_or_404(
@@ -223,7 +222,7 @@ def abholung_zuruecknehmen(request, pk):
 
 
 @require_POST
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("einlass.sonderaktion")
 def sonderaktion_eintragen(request, kundennummer, aktion):
     h = get_object_or_404(Haushalt, kundennummer=kundennummer)
     a = get_object_or_404(Sonderaktion, pk=aktion)
@@ -241,7 +240,7 @@ def sonderaktion_eintragen(request, kundennummer, aktion):
 
 
 @require_POST
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("einlass.sonderaktion")
 def teilnahme_zuruecknehmen(request, pk):
     t = get_object_or_404(Teilnahme, pk=pk)
     h = get_object_or_404(Haushalt, kundennummer=t.kundennummer)
@@ -253,7 +252,7 @@ def teilnahme_zuruecknehmen(request, pk):
 
 
 @require_POST
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("einlass.zahlung")
 def einzahlung(request, kundennummer):
     h = get_object_or_404(Haushalt, kundennummer=kundennummer)
     try:
@@ -279,7 +278,7 @@ def einzahlung(request, kundennummer):
 
 
 @require_POST
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("einlass.zahlung")
 def einzahlung_zuruecknehmen(request, pk):
     """Nimmt eine heute gebuchte Einzahlung zurück (Versehen)."""
     buchung = get_object_or_404(
@@ -300,7 +299,7 @@ def einzahlung_zuruecknehmen(request, pk):
 
 
 @require_POST
-@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+@rollen.recht_erforderlich("konto.korrektur")
 def korrektur(request, kundennummer):
     """Korrekturbuchung ohne Bargeld, von der Haushaltsseite aus."""
     h = get_object_or_404(Haushalt, kundennummer=kundennummer)
@@ -318,7 +317,7 @@ def korrektur(request, kundennummer):
 
 
 @require_POST
-@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+@rollen.recht_erforderlich("einlass.ausnahme")
 def ausnahme_erteilen(request, kundennummer):
     h = get_object_or_404(Haushalt, kundennummer=kundennummer)
     begruendung = request.POST.get("begruendung", "").strip()
@@ -346,7 +345,7 @@ def _monat_verschieben(tag: dt.date, monate: int) -> dt.date:
     return dt.date(index // 12, index % 12 + 1, 1)
 
 
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("kasse.sehen")
 def kasse_ansehen(request):
     """Kasse nach Tag (je Ausgabestelle), Monat (je Tag) oder Jahr (je Monat), rückwirkend."""
     heute = timezone.localdate()
@@ -384,7 +383,7 @@ def kasse_ansehen(request):
         vor = {"datum": f"{beginn + dt.timedelta(days=1):%Y-%m-%d}"}
         aktuell = {"datum": f"{beginn:%Y-%m-%d}"}
 
-    buero = rollen.hat_rolle(request.user, rollen.ADMIN, rollen.BUERO)
+    einzeln = rollen.hat_recht(request.user, "kasse.einzelbuchungen")
     filter_stelle = {"stelle": stelle.pk} if stelle else {}
 
     def zeile(z):
@@ -407,10 +406,10 @@ def kasse_ansehen(request):
         return [(name, z[k], k != "abholungen") for k, name in kasse.SPALTEN]
 
     summe = kasse.summe(buchungen)
-    # Einzelbuchungen mit Kundennummer nur für Admin und Büro, nur in der Tagesansicht.
+    # Einzelbuchungen mit Kundennummer nur mit eigenem Recht, nur in der Tagesansicht.
     einzelbuchungen = (
         buchungen.select_related("ausgabestelle").order_by("zeitpunkt")
-        if buero and ansicht == "tag"
+        if einzeln and ansicht == "tag"
         else None
     )
     if request.GET.get("format") == "pdf":
@@ -439,7 +438,7 @@ def kasse_ansehen(request):
     )
 
 
-@rollen.rolle_erforderlich(rollen.ADMIN)
+@rollen.recht_erforderlich("einstellungen.ausgabe")
 def einstellungen(request):
     form = AusgabeEinstellungenForm(request.POST or None, instance=AusgabeEinstellungen.laden())
     if request.method == "POST" and form.is_valid():
@@ -450,7 +449,7 @@ def einstellungen(request):
 
 
 @require_POST
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("kunden.notizen")
 def notiz(request, kundennummer):
     h = get_object_or_404(Haushalt, kundennummer=kundennummer)
     if notiz_schreiben(h, request.POST.get("text", ""), request.user) is None:
@@ -459,7 +458,7 @@ def notiz(request, kundennummer):
 
 
 @require_POST
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("kunden.notizen")
 def notiz_loeschen(request, pk):
     notiz = get_object_or_404(Notiz, pk=pk)
     h = get_object_or_404(Haushalt, kundennummer=notiz.kundennummer)

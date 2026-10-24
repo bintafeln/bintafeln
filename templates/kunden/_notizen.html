@@ -52,5 +52,5 @@
     </div>
     <button type="submit" class="knopf knopf-zweitrangig">Notiz speichern</button>
   </form>
-  {% if "Admin" in rollen %}<p><small><a href="{% url 'kunden:liste' 'notizvorlagen' %}">Notiz-Vorlagen bearbeiten</a></small></p>{% endif %}
+  {% if "einstellungen.listen" in rechte %}<p><small><a href="{% url 'kunden:liste' 'notizvorlagen' %}">Notiz-Vorlagen bearbeiten</a></small></p>{% endif %}
 </section>

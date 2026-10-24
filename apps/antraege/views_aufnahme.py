@@ -15,7 +15,7 @@ from apps.antraege.models import Antrag
 from apps.konten import rollen
 from apps.kunden.models import Einkommensart, Haushalt, KundenEinstellungen, Kundengruppe
 
-bearbeiter = rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+bearbeiter = rollen.recht_erforderlich("antraege.aufnehmen")
 
 SCHRITTE = [
     ("kunde", "Kunde suchen"),

@@ -42,13 +42,13 @@ def start(request):
     personal.stammdaten_leeren()
     antragsfristen_anwenden()
     kontext = {}
-    if rollen.hat_rolle(request.user, rollen.ADMIN, rollen.BUERO):
+    if rollen.hat_recht(request.user, "antraege.sehen"):
         kontext["neue_antraege"] = Antrag.objects.filter(
             status=Antrag.Status.NEU, papierkorb_am__isnull=True
         ).count()
     if rollen.darf_mitarbeitende_verwalten(request.user):
         kontext["faellig"] = len(personal.faelligkeiten())
-    if rollen.hat_rolle(request.user, rollen.ADMIN):
+    if rollen.hat_recht(request.user, "system.status"):
         kontext["sicherung"] = sicherung.lese_status()
     return render(request, "core/start.html", kontext)
 
@@ -81,7 +81,7 @@ def einrichtung(request):
     return render(request, "core/einrichtung.html", {"form": form})
 
 
-@rollen.rolle_erforderlich(rollen.ADMIN)
+@rollen.recht_erforderlich("einstellungen.tafel")
 def einstellungen(request):
     instanz = TafelEinstellungen.laden()
     form = EinstellungenForm(request.POST or None, request.FILES or None, instance=instanz)
@@ -93,7 +93,7 @@ def einstellungen(request):
 
 
 @never_cache
-@rollen.rolle_erforderlich(rollen.ADMIN)
+@rollen.recht_erforderlich("einstellungen.mail")
 @nicht_in_demo
 @sensitive_post_parameters("passwort")
 def mail_einstellungen(request):
@@ -144,7 +144,7 @@ def mail_einstellungen(request):
     )
 
 
-@rollen.rolle_erforderlich(rollen.ADMIN)
+@rollen.recht_erforderlich("protokoll.sehen")
 def protokoll(request):
     eintraege = LogEntry.objects.select_related("actor", "content_type").order_by("-timestamp")
     modell = request.GET.get("modell", "")

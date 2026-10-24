@@ -74,3 +74,16 @@ def pdf_text(monkeypatch):
         return inhalt.decode("cp1252", errors="replace")
 
     return lesen
+
+
+@pytest.fixture
+def recht_geben():
+    """Gibt einer Rolle zusätzlich Rechte (ADR 0033), z. B. recht_geben("Büro", "x.y")."""
+    from apps.konten.models import Rolle
+
+    def geben(rollenname, *codes):
+        rolle = Rolle.objects.get(gruppe__name=rollenname)
+        rolle.rechte = sorted(set(rolle.rechte) | set(codes))
+        rolle.save()
+
+    return geben

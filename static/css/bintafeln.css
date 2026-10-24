@@ -522,3 +522,13 @@ label.wahl { display: block; white-space: nowrap; }
 /* Sonderaktion am Einlass */
 .sonderaktion { border-left: 6px solid var(--akzent); }
 .sonderaktion-erhalten { font-weight: 700; }
+
+/* Rollen und Rechte */
+.rechte-bereich { border: 1px solid var(--rand); border-radius: var(--radius); padding: .5rem 1rem 1rem; margin: 0 0 1rem; }
+.rechte-bereich legend { font-weight: 700; padding: 0 .25rem; }
+.rechte-alle { margin: 0 0 .5rem; font-size: .9rem; }
+.recht { display: flex; gap: .6rem; align-items: flex-start; padding: .3rem 0; }
+.recht input { margin-top: .25rem; width: auto; }
+.recht small { display: block; }
+.recht-fremd { opacity: .55; }
+@media (min-width: 64rem) { .rechte-bereich { columns: 2; column-gap: 2rem; } .recht { break-inside: avoid; } }

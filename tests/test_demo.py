@@ -7,7 +7,8 @@ from django.urls import reverse
 from apps.ausgabe.models import Buchung
 from apps.core.models import TafelEinstellungen
 from apps.konten import rollen, zwei_faktor
-from apps.kunden.models import Haushalt
+from apps.konten.models import Rolle
+from apps.kunden.models import Dokumentart, Haushalt
 from apps.personal.models import Zeitbuchung
 
 pytestmark = pytest.mark.django_db
@@ -48,7 +49,9 @@ def test_zuruecksetzen(demo, admin, django_user_model, settings, capsys):
     assert not Buchung.objects.exists() and not any(settings.MEDIA_ROOT.iterdir())
     assert Haushalt.objects.filter(kundennummer="1001").exists()
     e = TafelEinstellungen.laden()
-    assert e.name == "Demo-Tafel Musterstadt" and not e.zwei_faktor_admin
+    assert e.name == "Demo-Tafel Musterstadt"
+    assert not Rolle.objects.filter(zwei_faktor_pflicht=True).exists()
+    assert Dokumentart.objects.exists() and Rolle.objects.get(gruppe__name="Büro").rechte
     admin_konto = django_user_model.objects.get(username="demo-admin")
     assert admin_konto.is_superuser and not admin_konto.is_staff
     assert admin_konto.check_password(PASSWORT)

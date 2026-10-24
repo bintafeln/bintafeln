@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block titel %}Rollen und Rechte{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <div class="liste-kopf">
+    <h1>Rollen und Rechte</h1>
+    <a class="knopf" href="{% url 'konten:rolle_neu' %}">Neue Rolle</a>
+  </div>
+  <p class="hinweis">Jede Rolle bekommt einzelne Rechte; ein Konto kann mehrere Rollen haben und darf dann alles, was
+    eine seiner Rollen darf. Die Rolle <strong>Admin</strong> hat immer alle Rechte. Rollen vergeben Sie unter
+    „Team → Mitarbeitende“.</p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Rolle</th><th>Rechte</th><th>Konten</th><th>Pflichten</th><th>Beschreibung</th></tr></thead>
+    <tbody>
+    {% for r in eintraege %}
+      <tr>
+        <td data-titel="Rolle">{% if not r.ist_admin or "Admin" in rollen %}<a href="{% url 'konten:rolle' r.pk %}">{{ r.name }}</a>{% else %}{{ r.name }}{% endif %}</td>
+        <td data-titel="Rechte">{% if r.ist_admin %}alle{% else %}{{ r.rechte|length }} von {{ anzahl }}{% endif %}</td>
+        <td data-titel="Konten">{{ r.mitglieder }}</td>
+        <td data-titel="Pflichten">{% if r.zwei_faktor_pflicht %}<span class="marke-rolle">Zwei-Faktor</span> {% endif %}{% if r.braucht_belehrung %}<span class="marke-rolle">Belehrung</span> {% endif %}{% if r.braucht_fuehrerschein %}<span class="marke-rolle">Führerschein</span>{% endif %}</td>
+        <td data-titel="Beschreibung">{{ r.beschreibung|default:"–" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

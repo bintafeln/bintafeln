@@ -8,10 +8,9 @@ from django.utils import timezone
 
 from apps.core import privatdateien
 from apps.core.auswahl import ANREDEN, mit_vorhandenem
-from apps.core.models import TafelEinstellungen
 from apps.konten import personal, rollen, verwaltung
 from apps.konten.forms import StammdatenForm
-from apps.konten.models import Dokument, DokumentKategorie, Stammdaten
+from apps.konten.models import Dokument, DokumentKategorie, Rolle, Stammdaten
 
 pytestmark = pytest.mark.django_db
 
@@ -83,9 +82,9 @@ def test_nur_personal_dokumente(client, admin, benutzer_mit_rolle, anmelden, adm
     hochladen(admin_client, kim, "Arbeitsvertrag")
     hochladen(admin_client, kim, "Sonstiges")
     vertrag = Dokument.objects.get(kategorie__name="Arbeitsvertrag")
-    e = TafelEinstellungen.laden()
-    e.buero_verwaltet_mitarbeitende = True
-    e.save()
+    Rolle.objects.filter(gruppe__name="Büro").update(
+        rechte=Rolle.objects.get(gruppe__name="Büro").rechte + ["mitarbeitende.verwalten"]
+    )
     admin_client.logout()
 
     anmelden(client, benutzer_mit_rolle("buero", rollen.BUERO))

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block titel %}{% if rolle %}Rolle {{ rolle }}{% else %}Neue Rolle{% endif %}{% endblock %}
+{% block inhalt %}
+<form method="post" class="rolle-form">
+  {% csrf_token %}
+  <section class="karte breit">
+    <p><a href="{% url 'konten:rollen' %}">← Rollen und Rechte</a></p>
+    <h1>{% if rolle %}Rolle {{ rolle }}{% else %}Neue Rolle{% endif %}</h1>
+    {% if form.non_field_errors %}<div class="fehler" role="alert">{% for f in form.non_field_errors %}<p>{{ f }}</p>{% endfor %}</div>{% endif %}
+    <div class="formular-raster">
+      {% for feld in form %}{% if feld.name != "rechte" %}
+      {% if feld.widget_type == "checkbox" %}
+      <div class="feld feld-haken"><label for="{{ feld.id_for_label }}">{{ feld }} {{ feld.label }}</label>{% if feld.help_text %}<small class="hilfe">{{ feld.help_text }}</small>{% endif %}</div>
+      {% else %}
+      <div class="feld{% if feld.errors %} hat-fehler{% endif %}"><label for="{{ feld.id_for_label }}">{{ feld.label }}</label>{{ feld }}{% for f in feld.errors %}<small class="fehler">{{ f }}</small>{% endfor %}</div>
+      {% endif %}
+      {% endif %}{% endfor %}
+    </div>
+  </section>
+
+  <section class="karte breit">
+    <h2>Rechte</h2>
+    {% if rolle and rolle.ist_admin %}
+    <p>Die Rolle Admin hat immer <strong>alle Rechte</strong>. So kann sich niemand aussperren.</p>
+    {% else %}
+    <p class="hinweis">Häkchen setzen, was diese Rolle darf. Grau sind Rechte, die Sie selbst nicht haben; sie bleiben, wie sie sind.
+      Seiten ohne Recht erscheinen nicht im Menü und lassen sich auch über die Adresse nicht öffnen.</p>
+    {% for titel, eintraege in bereiche %}
+    <fieldset class="rechte-bereich">
+      <legend>{{ titel }}</legend>
+      <p class="rechte-alle"><button type="button" class="link-knopf" onclick="this.closest('fieldset').querySelectorAll('input:not(:disabled)').forEach(function (k) { k.checked = true; })">alle</button>
+        · <button type="button" class="link-knopf" onclick="this.closest('fieldset').querySelectorAll('input:not(:disabled)').forEach(function (k) { k.checked = false; })">keine</button></p>
+      {% for e in eintraege %}
+      <label class="recht{% if not e.aenderbar %} recht-fremd{% endif %}">
+        <input type="checkbox" name="rechte" value="{{ e.recht.code }}"{% if e.gewaehlt %} checked{% endif %}{% if not e.aenderbar %} disabled{% endif %}>
+        <span>{{ e.recht.bezeichnung }}{% if e.recht.hilfe %}<small class="hilfe">{{ e.recht.hilfe }}</small>{% endif %}</span>
+      </label>
+      {% endfor %}
+    </fieldset>
+    {% endfor %}
+    {% endif %}
+    <button type="submit" class="knopf">Speichern</button>
+  </section>
+</form>
+{% if rolle and not rolle.ist_admin %}
+<section class="karte breit">
+  <form method="post" action="{% url 'konten:rolle_loeschen' rolle.pk %}" onsubmit="return confirm(this.dataset.frage)"
+        data-frage="Rolle „{{ rolle }}“ löschen? Alle Konten verlieren diese Rolle.">
+    {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Rolle löschen</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

@@ -10,6 +10,7 @@ from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from apps.core.models import TafelEinstellungen
 from apps.konten import rollen, zwei_faktor
+from apps.konten.models import Rolle
 from tests.conftest import PASSWORT, code_fuer
 
 pytestmark = pytest.mark.django_db
@@ -41,12 +42,12 @@ def einrichten(client, benutzer):
 # --- Pflicht je Rolle --------------------------------------------------------------------
 
 
+def pflicht_rollen() -> set[str]:
+    return {r.name for r in rollen.alle_rollen() if r.zwei_faktor_pflicht}
+
+
 def test_standard_pflicht_admin_buero_und_personal():
-    assert TafelEinstellungen.laden().zwei_faktor_pflicht_rollen() == {
-        rollen.ADMIN,
-        rollen.BUERO,
-        rollen.PERSONAL,
-    }
+    assert pflicht_rollen() == {rollen.ADMIN, rollen.BUERO, rollen.PERSONAL}
 
 
 def test_pflicht_rolle_wird_zur_einrichtung_geleitet(client, buero):
@@ -68,9 +69,7 @@ def test_ohne_pflicht_freier_zugang(client, ausgabe):
 
 
 def test_pflicht_aus_einstellungen(client, ausgabe):
-    einstellungen = TafelEinstellungen.laden()
-    einstellungen.zwei_faktor_ausgabe = True
-    einstellungen.save()
+    Rolle.objects.filter(gruppe__name=rollen.AUSGABE).update(zwei_faktor_pflicht=True)
     client.force_login(ausgabe)
     assert client.get("/").url == EINRICHTEN
     assert zwei_faktor.ist_pflicht(ausgabe)
@@ -82,14 +81,14 @@ def test_ist_pflicht_anonym():
     assert not zwei_faktor.ist_pflicht(AnonymousUser())
 
 
-def test_admin_stellt_pflicht_in_einstellungen_um(admin_client):
+def test_admin_stellt_pflicht_in_der_rolle_um(admin_client):
+    kiosk = Rolle.objects.get(gruppe__name=rollen.KIOSK)
     antwort = admin_client.post(
-        reverse("core:einstellungen"),
-        {"name": "Tafel", "zwei_faktor_admin": "on", "zwei_faktor_kiosk": "on"},
+        reverse("konten:rolle", args=[kiosk.pk]),
+        {"name": rollen.KIOSK, "zwei_faktor_pflicht": "on", "reihenfolge": "30"},
     )
     assert antwort.status_code == 302
-    assert TafelEinstellungen.laden().zwei_faktor_pflicht_rollen() == {rollen.ADMIN, rollen.KIOSK}
-    assert 'type="checkbox"' in admin_client.get(reverse("core:einstellungen")).content.decode()
+    assert rollen.KIOSK in pflicht_rollen()
 
 
 # --- Einrichtung -------------------------------------------------------------------------

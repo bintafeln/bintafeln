@@ -14,11 +14,9 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.core import privatdateien
-from apps.konten import rollen
 from apps.konten.models import Dokument, PersonalEinstellungen, Schulung, Stammdaten
 
 # Wer mit Lebensmitteln umgeht und deshalb die Belehrung nach § 43 IfSG braucht.
-IFSG_ROLLEN = (rollen.AUSGABE, rollen.FAHRER, rollen.BEIFAHRER)
 
 # Felder, die die Löschfrist leert. Name, Rollen, Eintritt und Austritt bleiben im Archiv.
 PERSOENLICHE_FELDER = [
@@ -67,13 +65,13 @@ def faelligkeiten(heute: dt.date | None = None) -> list[Faelligkeit]:
         get_user_model()
         .objects.filter(is_active=True)
         .select_related("stammdaten")
-        .prefetch_related("groups", "schulungen")
+        .prefetch_related("groups__rolle", "schulungen")
         .order_by("last_name", "first_name", "username")
     )
     for b in aktive:
         s = _stammdaten(b)
-        namen = {g.name for g in b.groups.all()}
-        if rollen.FAHRER in namen:
+        pflichten = [getattr(g, "rolle", None) for g in b.groups.all()]
+        if any(r and r.braucht_fuehrerschein for r in pflichten):
             if s.fs_gueltig_bis and s.fs_gueltig_bis <= grenze:
                 ergebnis.append(Faelligkeit(b, "Führerschein läuft ab", s.fs_gueltig_bis))
             naechste = (
@@ -81,7 +79,7 @@ def faelligkeiten(heute: dt.date | None = None) -> list[Faelligkeit]:
             )
             if naechste is None or naechste <= grenze:
                 ergebnis.append(Faelligkeit(b, "Führerschein ansehen", naechste))
-        if namen & set(IFSG_ROLLEN):
+        if any(r and r.braucht_belehrung for r in pflichten):
             letzte = s.letzte_ifsg_belehrung
             naechste = monate_spaeter(letzte, e.ifsg_wiederholung_monate) if letzte else None
             if naechste is None or naechste <= grenze:
