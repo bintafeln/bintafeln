@@ -43,6 +43,12 @@ gemeinsame Verantwortung der nutzenden Tafeln übergehen.
 - Vor größeren Änderungen erst einen kurzen Plan vorschlagen und auf Bestätigung warten.
 - Änderungen, die Verhalten oder Installation betreffen, aktualisieren die Dokumentation im
   selben Pull Request.
+- **Eingabefelder: Auswahl statt Freitext.** Wo es feste Werte gibt (z. B. Anrede,
+  Führerscheinklassen, Bundesland) oder registrierte Mitarbeitende gemeint sind (z. B. „gesehen
+  von“, „eingetragen von“), immer ein Auswahlmenü anbieten; Mehrfachauswahl, wo mehrere Werte
+  möglich sind. Sinnvoll vorbelegen (z. B. mit der angemeldeten Person). Listen zentral in
+  `apps/core/auswahl.py`; gespeicherte Werte, die nicht mehr in der Liste stehen, bleiben
+  wählbar.
 - Grundlegende Entscheidungen werden als kurze ADR in `docs/adr/` festgehalten
   (Problem, Entscheidung, Begründung).
 

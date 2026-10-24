@@ -170,6 +170,14 @@ Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie
   darauf hin.
 - **Führerschein-Kopie** nur, wenn unter „Fristen einstellen“ erlaubt (Vorgabe: aus). Sie wird
   verschlüsselt gespeichert, und jeder Abruf wird protokolliert.
+- Anrede, Führerscheinklassen (Mehrfachauswahl) und „gesehen von“ (registrierte Mitarbeitende)
+  sind Auswahlfelder.
+- **Dokumente** (z. B. Schulungsnachweise, Verträge):
+  - je Person auf der Stammdaten- und der Personal-Seite
+  - verschlüsselt gespeichert, jeder Abruf protokolliert
+  - Kategorien unter „Fristen einstellen“ pflegbar; Kategorien „nur Personal“ (Vorgabe:
+    Arbeitsvertrag, Lohnunterlagen) sehen nur Admin und die Rolle Personal
+  - nach der Löschfrist gelöscht
 - **Löschfrist:** 3 Jahre (einstellbar) nach Austritt bzw. Sperre werden die persönlichen
   Angaben geleert. Name, Rollen und Zeiträume bleiben im Archiv.
 
@@ -184,15 +192,21 @@ Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie
   - Das Vertragsdokument (PDF oder Foto) wird verschlüsselt gespeichert.
   - Bei einer Änderung den alten Vertrag beenden und einen neuen eintragen.
 - **Urlaub und Krankheit:**
-  - Zeitraum und Arbeitstage (ohne Angabe Mo–Fr; Feiertage und halbe Tage selbst eintragen).
+  - Zeitraum und Arbeitstage (ohne Angabe Mo–Fr ohne gesetzliche Feiertage; halbe Tage und
+    regionale Feiertage selbst eintragen).
   - Bei Krankheit nur, ob eine AU-Bescheinigung vorliegt, nie eine Diagnose.
   - Der Anspruch wird anteilig berechnet.
   - Der Resturlaub wird automatisch übertragen und verfällt zum 31.03. Das Datum lässt sich
     unter „Mitarbeitende → Fristen einstellen“ und je Person und Jahr ändern.
 - **Stundenkonto:**
   - Ist-Stunden von Hand eintragen.
-  - Soll (Wochenstunden ÷ 5 je Werktag), Urlaub und Krankheit rechnet bintafeln je Monat.
+  - Soll (Wochenstunden ÷ 5 je Arbeitstag ohne Feiertage), Urlaub und Krankheit rechnet
+    bintafeln je Monat.
   - Der Saldo läuft über die Jahre weiter.
+
+**Feiertage:** Unter „Einstellungen“ das **Bundesland** der Tafel wählen. Dann zählen dessen
+gesetzliche Feiertage weder als Arbeitstag (Urlaub, Krankheit, Stundenkonto) noch als Abholtag im
+Vorschlag für Vorauszahlungen am Empfang.
 
 ## E-Mail
 

@@ -130,8 +130,9 @@
     </tbody>
   </table>
   </div>
-  <p class="hinweis">Soll = Wochenstunden ÷ 5 je Werktag (Mo–Fr) bis heute. Urlaub und Krankheit werden mit dem Tagessoll
-    gutgeschrieben. Feiertage bitte als Stunden-Korrektur eintragen. Später übernimmt das die Arbeitszeiterfassung.</p>
+  <p class="hinweis">Soll = Wochenstunden ÷ 5 je Arbeitstag (Mo–Fr ohne gesetzliche Feiertage{% if feiertage_land %} in {{ feiertage_land }}{% endif %}) bis heute.
+    Urlaub und Krankheit werden mit dem Tagessoll gutgeschrieben.{% if not feiertage_land %} <strong>Kein Bundesland eingestellt</strong>
+    (Einstellungen der Tafel), deshalb werden Feiertage nicht abgezogen.{% endif %}</p>
 
   <h3>Eingetragene Stunden {{ jahr }}</h3>
   <div class="tabelle-rahmen">
@@ -164,4 +165,5 @@
     </form>
   </details>
 </section>
+{% include "konten/_dokumente.html" with ziel=p %}
 {% endblock %}

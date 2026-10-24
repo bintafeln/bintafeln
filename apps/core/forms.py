@@ -47,6 +47,7 @@ class EinstellungenForm(forms.ModelForm):
             "ort",
             "telefon",
             "email",
+            "bundesland",
             "zwei_faktor_admin",
             "zwei_faktor_buero",
             "zwei_faktor_ausgabe",

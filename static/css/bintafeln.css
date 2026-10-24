@@ -250,3 +250,6 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .faellig h2 { margin: .25rem 0; font-size: 1.1rem; }
 .faellig ul { margin: 0; padding-left: 1.25rem; }
 .ueberfaellig { color: var(--fehler); font-weight: 600; }
+
+/* Mehrfachauswahl kompakt als Raster (z. B. Führerscheinklassen) */
+#id_fs_klassen { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr)); gap: 0 .5rem; }

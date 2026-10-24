@@ -15,7 +15,7 @@ from django.utils import timezone
 
 from apps.core import privatdateien
 from apps.konten import rollen
-from apps.konten.models import PersonalEinstellungen, Schulung, Stammdaten
+from apps.konten.models import Dokument, PersonalEinstellungen, Schulung, Stammdaten
 
 # Wer mit Lebensmitteln umgeht und deshalb die Belehrung nach § 43 IfSG braucht.
 IFSG_ROLLEN = (rollen.AUSGABE, rollen.FAHRER, rollen.BEIFAHRER)
@@ -175,7 +175,9 @@ def stammdaten_leeren(heute: dt.date | None = None) -> int:
             _protokoll_loeschen(Stammdaten, [s.pk])
             for v in b.vertraege.all():
                 privatdateien.loeschen(DOKUMENT_ORDNER, v.dokument_datei)
-            for modell in (Schulung, Arbeitsvertrag, Abwesenheit, Urlaubsjahr, Stunden):
+            for d in b.dokumente.all():
+                privatdateien.loeschen(Dokument.ORDNER, d.datei)
+            for modell in (Schulung, Dokument, Arbeitsvertrag, Abwesenheit, Urlaubsjahr, Stunden):
                 eintraege = modell.objects.filter(benutzer=b)
                 _protokoll_loeschen(modell, list(eintraege.values_list("pk", flat=True)))
                 eintraege.delete()

@@ -1,6 +1,8 @@
 from auditlog.registry import auditlog
 from django.db import models
 
+from apps.core.feiertage import BUNDESLAENDER
+
 
 class TafelEinstellungen(models.Model):
     """Stammdaten der Tafel. Jede Installation gehört zu genau einer Tafel (Singleton)."""
@@ -19,6 +21,13 @@ class TafelEinstellungen(models.Model):
     ort = models.CharField("Ort", max_length=100, blank=True)
     telefon = models.CharField("Telefon", max_length=50, blank=True)
     email = models.EmailField("E-Mail", blank=True)
+    bundesland = models.CharField(
+        "Bundesland",
+        max_length=2,
+        choices=BUNDESLAENDER,
+        blank=True,
+        help_text="Für die gesetzlichen Feiertage (Urlaub, Stundenkonto, Vorauszahlung).",
+    )
     zwei_faktor_admin = models.BooleanField("Zwei-Faktor Pflicht für Admin", default=True)
     zwei_faktor_buero = models.BooleanField("Zwei-Faktor Pflicht für Büro", default=True)
     zwei_faktor_ausgabe = models.BooleanField("Zwei-Faktor Pflicht für Ausgabe", default=False)

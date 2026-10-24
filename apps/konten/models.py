@@ -2,6 +2,7 @@ from auditlog.registry import auditlog
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.utils import timezone
 from django_otp.plugins.otp_static.models import StaticDevice
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
@@ -59,9 +60,7 @@ class Stammdaten(models.Model):
     eintritt = models.DateField("Eintritt", null=True, blank=True)
     austritt = models.DateField("Austritt", null=True, blank=True)
     bemerkung = models.TextField("Bemerkung", blank=True)
-    fs_klassen = models.CharField(
-        "Führerscheinklassen", max_length=50, blank=True, help_text="z. B. B, BE, C1"
-    )
+    fs_klassen = models.CharField("Führerscheinklassen", max_length=100, blank=True)
     fs_gueltig_bis = models.DateField("Führerschein gültig bis", null=True, blank=True)
     fs_gesehen_am = models.DateField("Führerschein zuletzt gesehen am", null=True, blank=True)
     fs_gesehen_von = models.CharField("gesehen von", max_length=150, blank=True)
@@ -169,7 +168,51 @@ class Schulung(models.Model):
         return f"{self.thema} am {self.datum:%d.%m.%Y}"
 
 
+class DokumentKategorie(models.Model):
+    name = models.CharField("Name", max_length=100, unique=True)
+    nur_personal = models.BooleanField(
+        "Nur für Admin und Rolle Personal sichtbar",
+        default=False,
+        help_text="Z. B. Arbeitsverträge oder Lohnunterlagen.",
+    )
+
+    class Meta:
+        verbose_name = "Dokumentkategorie"
+        verbose_name_plural = "Dokumentkategorien"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class Dokument(models.Model):
+    """Dokument zu einer Person, verschlüsselt unter MEDIA_ROOT/privat/ (ADR 0017)."""
+
+    ORDNER = "mitarbeiter-dokumente"
+
+    benutzer = models.ForeignKey(Benutzer, on_delete=models.CASCADE, related_name="dokumente")
+    kategorie = models.ForeignKey(
+        DokumentKategorie, verbose_name="Kategorie", on_delete=models.PROTECT
+    )
+    titel = models.CharField("Titel", max_length=200)
+    datum = models.DateField("Dokumentdatum", null=True, blank=True)
+    datei = models.CharField(max_length=200, editable=False)
+    typ = models.CharField(max_length=100, editable=False)
+    hochgeladen_am = models.DateTimeField("Hochgeladen am", default=timezone.now)
+    hochgeladen_von = models.CharField("Hochgeladen von", max_length=150, blank=True)
+
+    class Meta:
+        verbose_name = "Dokument"
+        verbose_name_plural = "Dokumente"
+        ordering = ["-hochgeladen_am"]
+
+    def __str__(self):
+        return self.titel
+
+
 auditlog.register(Stammdaten, exclude_fields=["fs_kopie_datei"])
+auditlog.register(DokumentKategorie)
+auditlog.register(Dokument, exclude_fields=["datei"])
 auditlog.register(Schulung)
 auditlog.register(PersonalEinstellungen)
 

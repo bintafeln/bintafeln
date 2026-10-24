@@ -16,6 +16,8 @@ from django.utils import timezone
 
 from apps.ausgabe.ampel import WOCHENTAGE
 from apps.ausgabe.models import AusgabeEinstellungen, Buchung
+from apps.core.feiertage import feiertage, ist_feiertag
+from apps.core.models import TafelEinstellungen
 from apps.kunden.models import Haushalt, abholfrist_beginn
 
 NULL = Decimal("0.00")
@@ -197,6 +199,7 @@ def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]
             "Bitte den Betrag selbst eintragen."
         )
     abgeholt = [a.datum for a in h.abholungen.all()]
+    land = TafelEinstellungen.laden().bundesland
     heute_abgeholt = heute in abgeholt
     start = heute + dt.timedelta(days=1) if heute_abgeholt else heute
     monatsende = heute.replace(day=calendar.monthrange(heute.year, heute.month)[1])
@@ -214,6 +217,8 @@ def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]
     ergebnis = []
     for titel, von, bis, zusatz in zeitraeume:
         tage = _tage(von, bis, wochentage)
+        frei = [t for t in tage if ist_feiertag(t, land)]
+        tage = [t for t in tage if t not in frei]
         if h.ausweis_gueltig_bis and any(t > h.ausweis_gueltig_bis for t in tage):
             tage = [t for t in tage if t <= h.ausweis_gueltig_bis]
             ausweis = f"Nur bis zum Ablauf des Ausweises am {h.ausweis_gueltig_bis:%d.%m.%Y}."
@@ -234,7 +239,20 @@ def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]
         if ausweis:
             v.erklaerung.append(ausweis)
         v.erklaerung.append(grenze)
-        v.erklaerung.append("Feiertage und ausfallende Ausgabetage sind nicht berücksichtigt.")
+        if frei:
+            namen = ", ".join(
+                f"{WOCHENTAGE[t.weekday()]} {t:%d.%m.} ({feiertage(t.year, land)[t]})" for t in frei
+            )
+            v.erklaerung.append(f"Nicht gezählt, weil Feiertag: {namen}.")
+        if land:
+            v.erklaerung.append(
+                "Ausfallende Ausgabetage (z. B. Betriebsferien) sind nicht berücksichtigt."
+            )
+        else:
+            v.erklaerung.append(
+                "Feiertage sind nicht berücksichtigt (in den Einstellungen der Tafel ist kein "
+                "Bundesland gewählt), ausfallende Ausgabetage ebenfalls nicht."
+            )
         ergebnis.append(v)
     if not ergebnis:
         return [], "Kein Vorschlag: Bis Ende des nächsten Monats ist kein Abholtag mehr möglich."

@@ -86,8 +86,8 @@ class Abwesenheit(models.Model):
         decimal_places=1,
         null=True,
         blank=True,
-        help_text="Leer = Montag bis Freitag im Zeitraum. Feiertage und halbe Tage bitte selbst "
-        "eintragen.",
+        help_text="Leer = Montag bis Freitag ohne gesetzliche Feiertage im Zeitraum. Halbe "
+        "Tage oder regionale Feiertage bitte selbst eintragen.",
     )
     au_vorgelegt = models.BooleanField("Arbeitsunfähigkeitsbescheinigung liegt vor", default=False)
     bemerkung = models.CharField("Bemerkung", max_length=200, blank=True)

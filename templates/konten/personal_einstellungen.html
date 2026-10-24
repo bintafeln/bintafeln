@@ -11,4 +11,33 @@
     <button type="submit" class="knopf">Speichern</button>
   </form>
 </section>
+
+<section class="karte">
+  <h2>Dokumentkategorien</h2>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Name</th><th>Sichtbar für</th><th></th></tr></thead>
+    <tbody>
+    {% for k in kategorien %}
+      <tr>
+        <td data-titel="Name">{{ k.name }}</td>
+        <td data-titel="Sichtbar für">{% if k.nur_personal %}nur Admin und Personal{% else %}alle, die Mitarbeitende verwalten{% endif %}</td>
+        <td data-titel="Aktion">
+          <form method="post" action="{% url 'konten:kategorie_loeschen' k.pk %}" class="inline">
+            {% csrf_token %}<button type="submit" class="link">löschen</button>
+          </form>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="3">Keine Kategorien.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <form method="post" action="{% url 'konten:kategorie_neu' %}" class="abseits">
+    {% csrf_token %}
+    {% include "includes/formular.html" with form=kategorie_form %}
+    <button type="submit" class="knopf knopf-zweitrangig">Kategorie anlegen</button>
+  </form>
+</section>
 {% endblock %}
