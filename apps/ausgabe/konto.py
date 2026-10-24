@@ -179,10 +179,16 @@ class Vorschlag:
     tage: list[dt.date]
     beitrag: Decimal
     erklaerung: list[str] = field(default_factory=list)
+    guthaben: Decimal = NULL
 
     @property
     def betrag(self) -> Decimal:
         return self.beitrag * len(self.tage)
+
+    @property
+    def zu_zahlen(self) -> Decimal:
+        """Was bar zu zahlen ist: der Betrag abzüglich vorhandenen Guthabens."""
+        return max(self.betrag - self.guthaben, NULL)
 
 
 def _tage(von: dt.date, bis: dt.date, wochentage: list[str]) -> list[dt.date]:
@@ -278,6 +284,11 @@ def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]
         if ausweis:
             v.erklaerung.append(ausweis)
         v.erklaerung.append(grenze)
+        v.guthaben = max(h.kontostand or NULL, NULL)
+        if v.guthaben:
+            v.erklaerung.append(
+                f"Abzüglich Guthaben {euro(v.guthaben)}: zu zahlen {euro(v.zu_zahlen)}."
+            )
         if frei:
             namen = ", ".join(
                 f"{WOCHENTAGE[t.weekday()]} {t:%d.%m.} ({feiertage(t.year, land)[t]})" for t in frei

@@ -45,10 +45,21 @@
     <input type="text" name="bar" id="bar" value="{{ bar_vorschlag|floatformat:2 }}" inputmode="decimal" class="betrag" required>
     <small class="hilfe">Genau den Betrag eintragen, der gezahlt wurde, auch 0.
       {% if h.kontostand and h.kontostand > 0 %}Vorgeschlagen: was nach Verrechnung des Guthabens ({{ h.kontostand|floatformat:2 }} €) noch fehlt.{% endif %}
-      Weniger als der Beitrag: Rest aus Guthaben{% if einstellungen.anschreiben_erlaubt %}, sonst angeschrieben{% endif %}. Mehr: wird Guthaben.</small>
+      Weniger als der Beitrag: Rest aus Guthaben{% if einstellungen.anschreiben_erlaubt %}, sonst angeschrieben{% endif %}. Mehr (z. B. Vorauszahlung): wird Guthaben.</small>
+    {% include "ausgabe/_vorschlaege.html" with feld="bar" %}
     <button type="submit" class="knopf">Kunde anmelden und Abholung buchen</button>
   </form>
   <p class="hinweis">Nur das Aufrufen trägt nichts ein. Erst der Knopf meldet den Kunden für heute an.</p>
+  {% else %}
+  <form method="post" action="{% url 'ausgabe:einzahlung' h.kundennummer %}" class="filter abseits"
+        hx-post="{% url 'ausgabe:einzahlung' h.kundennummer %}" hx-target="#ergebnis">
+    {% csrf_token %}
+    <label for="einzahlung">Gezahlt ohne Abholung (Euro)</label>
+    <input type="text" name="betrag" id="einzahlung" inputmode="decimal" class="betrag" required>
+    <small class="hilfe">Zum Beispiel eine Vorauszahlung; der Betrag wird Guthaben.</small>
+    {% include "ausgabe/_vorschlaege.html" with feld="einzahlung" %}
+    <button type="submit" class="knopf knopf-zweitrangig">Zahlung buchen</button>
+  </form>
   {% endif %}
 
   {% for a in heute_erfasst %}
@@ -70,40 +81,14 @@
   </form>
   {% endif %}
 
-  <details class="einzahlung abseits"{% if vorschlaege %} open{% endif %}>
-    <summary>Einzahlung / Vorauszahlung</summary>
-    <form method="post" action="{% url 'ausgabe:einzahlung' h.kundennummer %}" class="filter"
-          hx-post="{% url 'ausgabe:einzahlung' h.kundennummer %}" hx-target="#ergebnis">
+  {% for b in einzahlungen_heute %}
+    <form method="post" action="{% url 'ausgabe:einzahlung_zuruecknehmen' b.pk %}" class="inline"
+          hx-post="{% url 'ausgabe:einzahlung_zuruecknehmen' b.pk %}" hx-target="#ergebnis"
+          hx-confirm="Zahlung über {{ b.haben|floatformat:2 }} € zurücknehmen?">
       {% csrf_token %}
-      <label for="einzahlung">Betrag (Euro)</label>
-      <input type="text" name="betrag" id="einzahlung" inputmode="decimal" class="betrag" required>
-      <button type="submit" class="knopf knopf-zweitrangig">Einzahlung buchen</button>
+      <button type="submit" class="knopf knopf-zweitrangig">Zahlung {{ b.haben|floatformat:2 }} € von {{ b.zeitpunkt|time:"H:i" }} zurücknehmen</button>
     </form>
-    {% for v in vorschlaege %}
-      <div class="vorschlag">
-        <p><strong>Vorschlag {{ v.titel }}: {{ v.betrag|floatformat:2 }} €</strong></p>
-        <ul>{% for satz in v.erklaerung %}<li>{{ satz }}</li>{% endfor %}</ul>
-        <form method="post" action="{% url 'ausgabe:einzahlung' h.kundennummer %}" class="inline"
-              hx-post="{% url 'ausgabe:einzahlung' h.kundennummer %}" hx-target="#ergebnis"
-              hx-confirm="{{ v.betrag|floatformat:2 }} € als Vorauszahlung ({{ v.titel }}) buchen?">
-          {% csrf_token %}
-          <input type="hidden" name="betrag" value="{{ v.betrag|floatformat:2 }}">
-          <input type="hidden" name="bemerkung" value="Vorauszahlung {{ v.titel }}">
-          <button type="submit" class="knopf knopf-zweitrangig">{{ v.betrag|floatformat:2 }} € einzahlen</button>
-        </form>
-      </div>
-    {% empty %}
-      {% if vorschlag_hinweis %}<p class="hinweis">{{ vorschlag_hinweis }}</p>{% endif %}
-    {% endfor %}
-    {% for b in einzahlungen_heute %}
-      <form method="post" action="{% url 'ausgabe:einzahlung_zuruecknehmen' b.pk %}" class="inline"
-            hx-post="{% url 'ausgabe:einzahlung_zuruecknehmen' b.pk %}" hx-target="#ergebnis"
-            hx-confirm="Einzahlung über {{ b.haben|floatformat:2 }} € zurücknehmen?">
-        {% csrf_token %}
-        <button type="submit" class="knopf knopf-zweitrangig">Einzahlung {{ b.haben|floatformat:2 }} € von {{ b.zeitpunkt|time:"H:i" }} zurücknehmen</button>
-      </form>
-    {% endfor %}
-  </details>
+  {% endfor %}
 
   <h3>Letzte Abholungen</h3>
   {% for a in abholungen %}

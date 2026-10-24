@@ -384,9 +384,11 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    - mehr als der Beitrag: der Überschuss wird Guthaben
    - Danach steht groß da, was bar eingenommen, aus Guthaben verrechnet, angeschrieben oder
      gutgeschrieben wurde, und der neue Kontostand.
-6. **Einzahlung / Vorauszahlung:** Betrag frei eingeben oder einen **Vorschlag** übernehmen
-   (Rest dieses Monats). Jeder Vorschlag erklärt seine Rechnung. Eine
-   Einzahlung lässt sich am selben Tag zurücknehmen.
+6. **Vorauszahlung:** läuft ebenfalls über „Gezahlt“: Was über den Beitrag hinaus gezahlt wird,
+   wird Guthaben. Der Knopf **„Vorauszahlung Rest <Monat> eintragen“** setzt den passenden
+   Betrag ins Feld (Abholtage bis Monatsende × Beitrag, abzüglich vorhandenen Guthabens) und
+   erklärt die Rechnung. Ist heute keine Abholung möglich, gibt es stattdessen das Feld
+   **„Gezahlt ohne Abholung“**. Eine Zahlung lässt sich am selben Tag zurücknehmen.
 7. Den **Kontoverlauf** mit allen Buchungen und Korrekturbuchungen gibt es auf der Haushaltsseite
    (Admin, Büro).
 

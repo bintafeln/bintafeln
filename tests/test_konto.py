@@ -346,7 +346,15 @@ def test_empfang_einzahlung_und_vorschlag(ausgabe, haushalt):
     haushalt.kundengruppe.wochentage = "Mo,Di,Mi,Do,Fr,Sa,So"
     haushalt.kundengruppe.save()
     inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
-    assert "Vorschlag Rest " in inhalt and "Vorauszahlung Rest " in inhalt
+    # Vorauszahlung läuft über das Feld „Gezahlt“: der Knopf trägt den Betrag dort ein
+    assert "Vorauszahlung Rest " in inhalt and "document.getElementById('bar')" in inhalt
+    assert "Abzüglich Guthaben 6,00 €" in inhalt and 'id="einzahlung"' not in inhalt
+    # Ohne mögliche Abholung (hier: heute schon abgeholt) gibt es „Gezahlt ohne Abholung“
+    eintragen(ausgabe, haushalt, bar="0")
+    inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
+    assert "Gezahlt ohne Abholung" in inhalt and "document.getElementById('einzahlung')" in inhalt
+    ausgabe.post(reverse("ausgabe:zuruecknehmen", args=[Abholung.objects.get().pk]), **HX)
+    assert stand(haushalt) == D("6.00") and not Buchung.objects.exists()
 
     url = reverse("ausgabe:einzahlung", args=["00042"])
     assert "Betrag größer als 0" in ausgabe.post(url, {"betrag": "abc"}, **HX).content.decode()
@@ -354,7 +362,7 @@ def test_empfang_einzahlung_und_vorschlag(ausgabe, haushalt):
     assert "Einzahlung von 10,00 € gebucht. Bar erhalten: 10,00 €. Kontostand jetzt: 16,00 €." in (
         inhalt
     )
-    assert "Einzahlung 10,00 € von" in inhalt
+    assert "Zahlung 10,00 € von" in inhalt
     b = Buchung.objects.get()
     zurueck = ausgabe.post(reverse("ausgabe:einzahlung_zuruecknehmen", args=[b.pk]), **HX)
     assert "Kontostand jetzt: 6,00 €" in zurueck.content.decode()
