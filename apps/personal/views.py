@@ -12,6 +12,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from apps.core import privatdateien
+from apps.core.models import TafelEinstellungen
 from apps.konten import rollen
 from apps.personal import berechnung
 from apps.personal.forms import AbwesenheitForm, StundenForm, UrlaubsjahrForm, VertragForm
@@ -86,6 +87,7 @@ def person(request, pk):
                 berechnung.NULL,
             ),
             "stunden": p.stunden.filter(datum__year=jahr),
+            "feiertage_land": TafelEinstellungen.laden().get_bundesland_display(),
             "vertrag_form": VertragForm(),
             "abwesenheit_form": AbwesenheitForm(),
             "stunden_form": StundenForm(initial={"datum": heute}),
