@@ -573,3 +573,18 @@ label.wahl { display: block; white-space: nowrap; }
 .kachel-unter { color: var(--leise); font-size: .8rem; }
 .statistik-filter input[type=date] { width: auto; }
 .link-klein { font-size: .9rem; }
+
+/* Handbuch (ADR 0038) */
+.inhaltsverzeichnis { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 0 2rem; }
+.inhaltsverzeichnis h2 { font-size: 1rem; margin: 1rem 0 .25rem; }
+.inhaltsverzeichnis ol { margin: 0; padding-left: 1.25rem; }
+.inhaltsverzeichnis li { margin: .15rem 0; }
+.handbuch { line-height: 1.6; }
+.handbuch h3 { margin: 1.25rem 0 .4rem; font-size: 1.05rem; }
+.handbuch ol, .handbuch ul { padding-left: 1.4rem; }
+.handbuch li { margin: .25rem 0; }
+.handbuch-teil { margin: 0; color: var(--leise); font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; }
+.handbuch .tipp { background: var(--erfolg); border-radius: var(--radius); padding: .6rem 1rem; margin: .75rem 0; }
+.handbuch .achtung { background: #fdf3e2; border-left: 4px solid #e0a020; border-radius: var(--radius); padding: .6rem 1rem; margin: .75rem 0; }
+.handbuch kbd, .handbuch-kopf kbd { border: 1px solid var(--rand); border-bottom-width: 2px; border-radius: 4px; padding: 0 .3rem; font-size: .9em; }
+.nach-oben { margin: 1rem 0 0; font-size: .9rem; }

@@ -17,4 +17,5 @@ urlpatterns = [
     path("datensicherung/uebernehmen/", views_datensicherung.uebernehmen, name="daten_uebernehmen"),
     path("datensicherung/verwerfen/", views_datensicherung.verwerfen, name="daten_verwerfen"),
     path("healthz/", views.healthz, name="healthz"),
+    path("hilfe/", views.hilfe, name="hilfe"),
 ]

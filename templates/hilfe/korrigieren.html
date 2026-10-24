@@ -1,0 +1,14 @@
+{% if "einlass.zuruecknehmen" in rechte %}
+<p>Sie dürfen Abholungen, Zahlungen und Teilnahmen an Sonderaktionen <strong>selbst zurücknehmen</strong>, auch an
+  späteren Tagen. Am Einlass steht dafür beim Eintrag „… zurücknehmen“. Kundenkonto, letzter Besuch und Kasse werden
+  automatisch mitkorrigiert.</p>
+{% else %}
+<p>Am Einlass werden Kunden nicht nachträglich verändert. Ist etwas falsch gebucht (falscher Kunde, doppelt gebucht,
+  falscher Betrag …), bitten Sie um eine Korrektur:</p>
+<ol>
+  <li>Beim betroffenen Eintrag auf <strong>„Korrektur beantragen“</strong> klicken.</li>
+  <li>Einen <strong>Grund</strong> wählen und bei Bedarf eine kurze Anmerkung schreiben (z. B. „war Kunde 24“).</li>
+  <li>„Korrekturwunsch senden“. Der Eintrag zeigt dann „Korrektur beantragt …, wartet auf Entscheidung“.</li>
+</ol>
+<p>Ein Admin oder eine dafür berechtigte Person entscheidet und nimmt die Buchung zurück oder lehnt ab.</p>
+{% endif %}

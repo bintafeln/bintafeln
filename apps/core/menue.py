@@ -88,6 +88,7 @@ def menue(request) -> list[dict]:
          _eintrag("Datensicherung", "core:datensicherung")),
         *([(None, _eintrag("Django-Verwaltung", "admin:index"))] if b.is_staff else []),
     ])  # fmt: skip
+    bereiche.append({"titel": "Hilfe", "eintraege": [_eintrag("Hilfe", "core:hilfe")]})
     bereiche.append({"titel": "Mein Konto", "eintraege": [
         _eintrag("Mein Konto", "konten:mein_konto", genau=True),
     ]})  # fmt: skip

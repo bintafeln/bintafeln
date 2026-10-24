@@ -41,6 +41,8 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   Anmerkungen und Kundengruppen. Unter „Einstellungen → Kundenstamm“ legt ein Admin fest, welche
   Angaben erfasst werden, und richtet eigene **Zusatzfelder** ein (z. B. „Schwerbehindert“).
   **Import** mit Prüfbericht unter „Kunden“; Liste und Suche folgen.
+- **Hilfe im Programm:** ein ausführliches Handbuch („Hilfe“ im Menü), das nur die Kapitel
+  zeigt, die zu den Rechten des Kontos passen (ADR 0038).
 - **Menü links** mit aufklappbaren Bereichen (Ausgabe, Kunden, Anträge, Team, Einstellungen);
   jede Rolle sieht nur, was sie darf. Auf Handys (unter 768 Pixel Breite) öffnet „☰ Menü“ das Menü.
 - Deutsche, mobilfreundliche Oberfläche (Django-Templates + HTMX, ohne externe CDNs).

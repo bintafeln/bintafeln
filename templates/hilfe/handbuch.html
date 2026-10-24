@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block titel %}Hilfe{% endblock %}
+{% block inhalt %}
+<section class="karte breit handbuch-kopf">
+  <h1>Hilfe: So arbeiten Sie mit {{ tafel.name|default:"bintafeln" }}</h1>
+  <p>Dieses Handbuch zeigt nur die Kapitel, die zu Ihren Aufgaben passen. Sehen Sie etwas nicht, was Sie brauchen,
+    fehlt Ihnen das Recht dazu – bitte an einen Admin wenden. Mit <kbd>Strg</kbd> + <kbd>F</kbd> (am Handy: „Auf Seite
+    suchen“) finden Sie jedes Stichwort.</p>
+  <nav class="inhaltsverzeichnis" aria-label="Inhalt">
+    {% for teil, liste in teile %}
+    <div>
+      <h2>{{ teil }}</h2>
+      <ol>{% for k in liste %}<li><a href="#{{ k.kennung }}">{{ k.titel }}</a></li>{% endfor %}</ol>
+    </div>
+    {% endfor %}
+  </nav>
+</section>
+{% for k in kapitel %}
+<section class="karte breit handbuch" id="{{ k.kennung }}">
+  <p class="handbuch-teil">{{ k.teil }}</p>
+  <h2>{{ k.titel }}</h2>
+  {% include "hilfe/"|add:k.kennung|add:".html" %}
+  <p class="nach-oben"><a href="#">↑ nach oben</a></p>
+</section>
+{% endfor %}
+{% endblock %}

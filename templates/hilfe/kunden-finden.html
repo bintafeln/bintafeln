@@ -1,0 +1,20 @@
+<p>Menü „Kunden → Alle Kunden“.</p>
+<ul>
+  <li><strong>Suche</strong> nach Kundennummer oder Name (Teile genügen); Status und Kundengruppe filtern.</li>
+  <li>Eine vollständige Kundennummer mit Enter (auch vom Scanner) öffnet den Haushalt direkt.</li>
+  <li>Sind Sie einer Ausgabestelle zugeordnet, stehen nur deren Kunden in der Liste.</li>
+</ul>
+<h3>Die Seite eines Haushalts</h3>
+<p>Oben die wichtigsten Knöpfe (z. B. „Zum Einlass“{% if "kunden.ausweis" in rechte %}, „Ausweis drucken“{% endif %}{% if "kunden.bearbeiten" in rechte %}, „Bearbeiten“{% endif %}),
+  rote Hinweise bei Sperre oder abgelaufenem Ausweis. Darunter, je nach Ihren Rechten:</p>
+<ul>
+  <li>Angaben: Ausgabestelle, Kundengruppe, Ausweis gültig bis, Haushaltsgröße{% if "kunden.stammdaten" in rechte %}, Status, Kunde seit, Einkommensart{% endif %}{% if "kunden.kontakt" in rechte %}, Anschrift und Kontakt{% endif %}</li>
+  <li>Personen und Abholberechtigte</li>
+  <li>Sperren{% if "kunden.sperren_alle" in rechte %} (auch vergangene) und Ausnahmen{% else %} (nur aktive){% endif %}</li>
+  <li>Letzte Abholungen und Notizen</li>
+  {% if "kunden.dokumente" in rechte %}<li>Dokumente</li>{% endif %}
+  {% if "kunden.historie" in rechte %}<li>Historie: was sich wann geändert hat</li>{% endif %}
+  {% if "kunden.konto" in rechte %}<li>Kundenkonto mit allen Buchungen{% if "konto.korrektur" in rechte %} und Korrekturbuchung{% endif %}</li>{% endif %}
+  {% if "kunden.anmerkungen" in rechte %}<li>Interne Anmerkungen aus dem bisherigen Programm</li>{% endif %}
+</ul>
+<p>Jeder Aufruf steht im Zugriffsprotokoll.</p>

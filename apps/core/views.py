@@ -167,3 +167,16 @@ def protokoll(request):
     if request.headers.get("HX-Request") and request.headers.get("HX-Target") == "protokoll-liste":
         return render(request, "core/_protokoll_liste.html", kontext)
     return render(request, "core/protokoll.html", kontext)
+
+
+@login_required
+def hilfe(request):
+    """Handbuch: nur die Kapitel, die zu den Rechten des Kontos passen (ADR 0038)."""
+    from apps.core import hilfe as handbuch
+
+    kapitel = handbuch.sichtbar(request.user)
+    return render(
+        request,
+        "hilfe/handbuch.html",
+        {"kapitel": kapitel, "teile": handbuch.gegliedert(kapitel)},
+    )

@@ -68,3 +68,4 @@ drei Fragen: Was war das Problem? Was haben wir entschieden? Warum?
 | [0035](0035-korrekturwuensche.md) | Rücknahmen am Einlass nur über Korrekturwünsche | Angenommen |
 | [0036](0036-statistik.md) | Statistik mit selbst gezeichneten SVG-Diagrammen | Angenommen |
 | [0037](0037-datensicherung-oberflaeche.md) | Datenexport und Zurücklesen in der Oberfläche | Angenommen |
+| [0038](0038-handbuch.md) | Handbuch im Programm, nach Rechten gefiltert | Angenommen |

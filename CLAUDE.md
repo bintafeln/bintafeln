@@ -163,6 +163,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `lesen()`, `vorschau()`, `zuruecklesen(ersetzen=False)` löscht nie; ADR 0037). Neue Modelle
   landen automatisch im passenden Bereich (`modelle()`); vorübergehende Daten in `AUSGENOMMEN`.
   Signale auf `post_save` müssen `raw` beachten.
+- Handbuch im Programm (ADR 0038): Kapitel in `apps/core/hilfe.py` (mit Rechten) und
+  `templates/hilfe/<kennung>.html`. **Neue oder geänderte Funktionen aktualisieren das passende
+  Kapitel im selben PR** (wie README); `tests/test_hilfe.py` prüft Vollständigkeit.
 - Menü links: Einträge je Rolle in `apps/core/menue.py` (neue Seiten dort eintragen statt
   Links in die Seiten zu setzen).
 - Mitarbeitende: Logik und Schutzregeln in `apps/konten/verwaltung.py` (nie löschen, nur
