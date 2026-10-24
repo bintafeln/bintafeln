@@ -49,3 +49,4 @@ drei Fragen: Was war das Problem? Was haben wir entschieden? Warum?
 | [0016](0016-mailserver-und-einladungen.md) | Mailserver in der Oberfläche, Einladungen per Link | Angenommen |
 | [0017](0017-stammdaten-mitarbeitende.md) | Stammdaten der Mitarbeitenden, Wiedervorlagen und Löschfrist | Angenommen |
 | [0018](0018-personal-festangestellte.md) | Personal für Festangestellte | Angenommen |
+| [0019](0019-feiertage.md) | Gesetzliche Feiertage je Bundesland | Angenommen |

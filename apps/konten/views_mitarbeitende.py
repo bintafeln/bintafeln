@@ -14,14 +14,15 @@ from django.views.decorators.http import require_POST
 from django_otp import user_has_device
 
 from apps.core import mail
-from apps.konten import einladung, personal, rollen, verwaltung, zwei_faktor
+from apps.konten import einladung, personal, rollen, verwaltung, views_dokumente, zwei_faktor
 from apps.konten.forms import (
+    DokumentKategorieForm,
     MitarbeiterForm,
     PersonalEinstellungenForm,
     SchulungForm,
     StammdatenForm,
 )
-from apps.konten.models import PersonalEinstellungen, Schulung, Stammdaten
+from apps.konten.models import DokumentKategorie, PersonalEinstellungen, Schulung, Stammdaten
 
 
 def verwalter_erforderlich(ansicht):
@@ -215,7 +216,7 @@ def _stammdaten(ziel):
 def stammdaten(request, pk):
     ziel = _ziel(request, pk)
     s = _stammdaten(ziel)
-    form = StammdatenForm(request.POST or None, instance=s)
+    form = StammdatenForm(request.POST or None, instance=s, angemeldet=request.user)
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, f"Stammdaten von {ziel} gespeichert.")
@@ -230,6 +231,7 @@ def stammdaten(request, pk):
             "schulung_form": SchulungForm(),
             "schulungen": ziel.schulungen.all(),
             "einstellungen": PersonalEinstellungen.laden(),
+            **views_dokumente.kontext(request, ziel),
         },
     )
 
@@ -302,4 +304,12 @@ def personal_einstellungen(request):
         form.save()
         messages.success(request, "Einstellungen gespeichert.")
         return redirect("konten:personal_einstellungen")
-    return render(request, "konten/personal_einstellungen.html", {"form": form})
+    return render(
+        request,
+        "konten/personal_einstellungen.html",
+        {
+            "form": form,
+            "kategorien": DokumentKategorie.objects.all(),
+            "kategorie_form": DokumentKategorieForm(),
+        },
+    )

@@ -1,0 +1,35 @@
+<section class="karte">
+  <h2>Dokumente</h2>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Titel</th><th>Kategorie</th><th>Datum</th><th>Hochgeladen</th><th></th></tr></thead>
+    <tbody>
+    {% for d in dokumente %}
+      <tr>
+        <td data-titel="Titel"><a href="{% url 'konten:dokument_ansehen' ziel.pk d.pk %}" target="_blank" rel="noopener">{{ d.titel }}</a></td>
+        <td data-titel="Kategorie">{{ d.kategorie }}{% if d.kategorie.nur_personal %} <span class="marke-art9">nur Personal</span>{% endif %}</td>
+        <td data-titel="Datum">{{ d.datum|date:"d.m.Y"|default:"–" }}</td>
+        <td data-titel="Hochgeladen">{{ d.hochgeladen_am|date:"d.m.Y" }}{% if d.hochgeladen_von %} von {{ d.hochgeladen_von }}{% endif %}</td>
+        <td data-titel="Aktion">
+          <form method="post" action="{% url 'konten:dokument_loeschen' ziel.pk d.pk %}" class="inline" onsubmit="return confirm('Dokument endgültig löschen?')">
+            {% csrf_token %}<input type="hidden" name="weiter" value="{{ weiter }}"><button type="submit" class="link">löschen</button>
+          </form>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5">Keine Dokumente.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="hinweis">Dokumente werden verschlüsselt gespeichert, jeder Abruf wird protokolliert. Nach der Löschfrist
+    werden sie gelöscht.</p>
+  <details>
+    <summary>Dokument hochladen</summary>
+    <form method="post" action="{% url 'konten:dokument_hochladen' ziel.pk %}" enctype="multipart/form-data">
+      {% csrf_token %}<input type="hidden" name="weiter" value="{{ weiter }}">
+      {% include "includes/formular.html" with form=dokument_form %}
+      <button type="submit" class="knopf knopf-zweitrangig">Hochladen</button>
+    </form>
+  </details>
+</section>

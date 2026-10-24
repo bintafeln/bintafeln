@@ -2,8 +2,15 @@ from django import forms
 from django.contrib.auth import authenticate, get_user_model
 from django_otp import match_token, user_has_device
 
+from apps.core.auswahl import ANREDEN, FUEHRERSCHEINKLASSEN, mit_vorhandenem
 from apps.konten import rollen, verwaltung
-from apps.konten.models import PersonalEinstellungen, Schulung, Stammdaten
+from apps.konten.models import (
+    Dokument,
+    DokumentKategorie,
+    PersonalEinstellungen,
+    Schulung,
+    Stammdaten,
+)
 from apps.konten.zwei_faktor import code_bereinigen
 
 
@@ -115,6 +122,17 @@ class DatumEingabe(forms.DateInput):
 
 
 class StammdatenForm(forms.ModelForm):
+    """Feste Werte und registrierte Mitarbeitende immer als Auswahl, nie als Freitext."""
+
+    anrede = forms.ChoiceField(label="Anrede", required=False)
+    fs_klassen = forms.MultipleChoiceField(
+        label="Führerscheinklassen",
+        required=False,
+        choices=[(k, k) for k in FUEHRERSCHEINKLASSEN],
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "klassen"}),
+    )
+    fs_gesehen_von = forms.ChoiceField(label="Gesehen von", required=False)
+
     class Meta:
         model = Stammdaten
         fields = [
@@ -144,6 +162,33 @@ class StammdatenForm(forms.ModelForm):
         ("Sonstiges", ["bemerkung"]),
     ]
 
+    def __init__(self, *args, angemeldet=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        s = self.instance
+        self.fields["anrede"].choices = mit_vorhandenem(ANREDEN, s.anrede)
+        vorhanden = [k.strip() for k in s.fs_klassen.split(",") if k.strip()]
+        self.initial["fs_klassen"] = vorhanden
+        # Gespeicherte Klassen, die nicht (mehr) in der Liste stehen, bleiben wählbar.
+        self.fields["fs_klassen"].choices = [(k, k) for k in FUEHRERSCHEINKLASSEN] + [
+            (k, k) for k in vorhanden if k not in FUEHRERSCHEINKLASSEN
+        ]
+        namen = [str(b) for b in get_user_model().objects.filter(is_active=True).order_by(
+            "last_name", "first_name", "username")]  # fmt: skip
+        self.fields["fs_gesehen_von"].choices = mit_vorhandenem(
+            [("", "—")] + [(n, n) for n in namen], s.fs_gesehen_von
+        )
+        if not s.fs_gesehen_von and angemeldet is not None:
+            self.initial["fs_gesehen_von"] = str(angemeldet)  # vorbelegt: wer gerade einträgt
+
+    def clean_fs_klassen(self):
+        return ", ".join(self.cleaned_data["fs_klassen"])
+
+    def clean(self):
+        daten = super().clean()
+        if not daten.get("fs_gesehen_am"):
+            daten["fs_gesehen_von"] = ""  # die Vorbelegung zählt nur mit Datum
+        return daten
+
     def abschnitte(self):
         return [(titel, [self[f] for f in felder]) for titel, felder in self.ABSCHNITTE]
 
@@ -167,3 +212,22 @@ class PersonalEinstellungenForm(forms.ModelForm):
             "urlaub_verfall_tag",
             "stammdaten_loeschen_jahre",
         ]
+
+
+class DokumentForm(forms.ModelForm):
+    datei = forms.FileField(label="Datei (PDF oder Foto, höchstens 10 MB)")
+
+    class Meta:
+        model = Dokument
+        fields = ["kategorie", "titel", "datum"]
+        widgets = {"datum": DatumEingabe()}
+
+    def __init__(self, *args, kategorien, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["kategorie"].queryset = kategorien
+
+
+class DokumentKategorieForm(forms.ModelForm):
+    class Meta:
+        model = DokumentKategorie
+        fields = ["name", "nur_personal"]

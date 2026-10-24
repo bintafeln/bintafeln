@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.konten import views, views_mitarbeitende
+from apps.konten import views, views_dokumente, views_mitarbeitende
 
 app_name = "konten"
 
@@ -46,6 +46,27 @@ urlpatterns = [
         "mitarbeitende/<int:pk>/schulungen/<int:schulung>/loeschen/",
         views_mitarbeitende.schulung_loeschen,
         name="schulung_loeschen",
+    ),
+    path(
+        "mitarbeitende/<int:pk>/dokumente/",
+        views_dokumente.hochladen,
+        name="dokument_hochladen",
+    ),
+    path(
+        "mitarbeitende/<int:pk>/dokumente/<int:dokument>/",
+        views_dokumente.ansehen,
+        name="dokument_ansehen",
+    ),
+    path(
+        "mitarbeitende/<int:pk>/dokumente/<int:dokument>/loeschen/",
+        views_dokumente.loeschen,
+        name="dokument_loeschen",
+    ),
+    path("mitarbeitende/kategorien/", views_dokumente.kategorie_neu, name="kategorie_neu"),
+    path(
+        "mitarbeitende/kategorien/<int:kategorie>/loeschen/",
+        views_dokumente.kategorie_loeschen,
+        name="kategorie_loeschen",
     ),
     path(
         "mitarbeitende/einstellungen/",
