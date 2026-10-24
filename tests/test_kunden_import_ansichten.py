@@ -163,3 +163,50 @@ def test_uebernehmen_nur_per_post(buero_client):
         buero_client.get(reverse("kunden:import_uebernehmen", args=[uuid.uuid4()])).status_code
         == 405
     )
+
+
+def test_abgleich_mit_wahl_je_haushalt(buero_client, sicherung):
+    """Vorschau zeigt Änderungen; in bintafeln Geändertes/Aufgenommenes lässt sich behalten."""
+    from apps.kunden.models import Person
+
+    sicherung(1)
+    erster = datei("haushalte.csv", "kundennummer;nachname;vorname;strasse",
+                   "11;Alt;Anna;Weg 1", "12;Bert;Berta;Weg 2", "13;Cord;Carl;Weg 3")  # fmt: skip
+    buero_client.post(IMPORT, {"dateien": [erster]})
+    v = ImportVorbereitung.objects.get()
+    buero_client.post(reverse("kunden:import_uebernehmen", args=[v.pk]))
+    # in bintafeln geändert bzw. aufgenommen
+    Haushalt.objects.filter(kundennummer="11").update(strasse="Hand 9", geaendert_am=timezone.now())
+    neu = Haushalt.objects.create(kundennummer="99", aufgenommen_am=timezone.now())
+    Person.objects.create(haushalt=neu, ist_hauptperson=True, vorname="Nora", nachname="Neu")
+    zweiter = datei("haushalte.csv", "kundennummer;nachname;vorname;strasse",
+                    "11;Alt;Anna;Weg 1a", "12;Bert;Berta;Weg 2b", "14;Dora;Dina;Weg 4")  # fmt: skip
+    buero_client.post(IMPORT, {"dateien": [zweiter]})
+    v = ImportVorbereitung.objects.get()
+    vorschau = buero_client.get(reverse("kunden:import_vorschau", args=[v.pk])).content.decode()
+    assert "1 neu · 2 geändert · 2 entfallen · 0 unverändert" in vorschau
+    assert "2 Haushalte wurden in bintafeln geändert" in vorschau
+    assert (
+        "Anschrift: <s>Hand 9</s> → Weg 1a" in vorschau and "in bintafeln aufgenommen" in vorschau
+    )
+    assert 'name="wahl_11"' in vorschau and 'name="wahl_12"' not in vorschau
+    buero_client.post(reverse("kunden:import_uebernehmen", args=[v.pk]),
+                      {"wahl_11": "behalten", "wahl_99": "uebernehmen"})  # fmt: skip
+    nummern = set(Haushalt.objects.values_list("kundennummer", flat=True))
+    assert nummern == {"11", "12", "14"}  # 13 entfallen, 99 bewusst nicht behalten
+    assert Haushalt.objects.get(kundennummer="11").strasse == "Hand 9"  # behalten
+    assert Haushalt.objects.get(kundennummer="12").strasse == "Weg 2b"
+    assert Person.objects.filter(haushalt__kundennummer="11").count() == 1  # nicht doppelt
+    assert (
+        "1 Haushalt(e) mit bintafeln-Stand behalten"
+        in buero_client.get(UEBERSICHT).content.decode()
+    )
+
+
+def test_abgleich_alle_uebernehmen(buero_client, sicherung):
+    sicherung(1)
+    Haushalt.objects.create(kundennummer="99", aufgenommen_am=timezone.now())
+    buero_client.post(IMPORT, {"dateien": [gueltig()]})
+    v = ImportVorbereitung.objects.get()
+    buero_client.post(reverse("kunden:import_uebernehmen", args=[v.pk]), {"alle": "uebernehmen"})
+    assert not Haushalt.objects.filter(kundennummer="99").exists()

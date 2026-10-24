@@ -18,6 +18,7 @@ from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen.canvas import Canvas
 
 from apps.core.models import TafelEinstellungen
+from apps.kunden.models import KundenEinstellungen
 
 BREITE_MM, HOEHE_MM = 85.6, 54.0  # ISO/IEC 7810 ID-1
 BREITE, HOEHE = BREITE_MM * mm, HOEHE_MM * mm
@@ -39,6 +40,7 @@ TYPEN = {
     "gueltig_bis": ("Gültig bis", False, "text"),
     "kunde_seit": ("Kunde seit", False, "text"),
     "personen": ("Anzahl Personen", False, "text"),
+    "personen_kinder": ("Personen/Minderjährige (z. B. 6/3)", False, "text"),
     "freitext": ("Freier Text", False, "text"),
     "flaeche": ("Farbige Fläche", False, "flaeche"),
 }
@@ -62,7 +64,17 @@ STANDARD = [
     },  # fmt: skip
     {"typ": "hauptperson", "x": 4, "y": 17, "b": 77.6, "h": 5, "groesse": 10, "fett": True},
     {"typ": "kundengruppe", "x": 4, "y": 22, "b": 77.6, "h": 4, "groesse": 8},
-    {"typ": "gueltig_bis", "x": 4, "y": 26, "b": 77.6, "h": 4, "groesse": 8},
+    {"typ": "gueltig_bis", "x": 4, "y": 26, "b": 50, "h": 4, "groesse": 8},
+    {
+        "typ": "personen_kinder",
+        "x": 56,
+        "y": 26,
+        "b": 25.6,
+        "h": 4,
+        "groesse": 9,
+        "fett": True,
+        "ausrichtung": "rechts",
+    },  # fmt: skip
     {"typ": "barcode", "x": 8, "y": 37, "b": 69.6, "h": 13, "ausrichtung": "mitte"},
 ]
 
@@ -76,6 +88,7 @@ BEISPIEL = {
     "gueltig_bis": "Gültig bis 31.12.2027",
     "kunde_seit": "Kunde seit 01.02.2024",
     "personen": "3 Personen",
+    "personen_kinder": "6/3",
 }
 
 
@@ -137,6 +150,7 @@ def werte(h, tafel, vorlage) -> dict[str, str]:
         termin = f"Gruppe {g.name}" + (f" · {', '.join(teile)}" if teile else "")
     stelle = g.ausgabestelle.name if g and g.ausgabestelle else ""
     anzahl = h.personen.count()
+    erwachsene, kinder = h.groesse(KundenEinstellungen.laden().kind_bis_alter)
     return {
         "kundennummer": h.kundennummer,
         "ausweisname": vorlage.name,
@@ -149,6 +163,7 @@ def werte(h, tafel, vorlage) -> dict[str, str]:
         else "",
         "kunde_seit": f"Kunde seit {h.kunde_seit:%d.%m.%Y}" if h.kunde_seit else "",
         "personen": f"{anzahl} Person{'en' if anzahl != 1 else ''}" if anzahl else "",
+        "personen_kinder": f"{erwachsene + kinder}/{kinder}",
     }
 
 

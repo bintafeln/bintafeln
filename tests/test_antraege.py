@@ -388,6 +388,7 @@ def test_einstellungen_und_texte(admin_client, benutzer_mit_rolle):
     werte = {f: "optional" for f in AntragEinstellungen.FELDER}
     werte |= {"aktiv": "on", "modus": "beides", "benachrichtigen": [b.pk],
               "erledigt_nach_tagen": 0, "papierkorb_nach_tagen": 90, "loeschen_nach_tagen": 30,
+              "erste_nummer": 4201,
               "datenschutz_url": "tafel.example.org/ds",
               "erklaerungen_url": "tafel.example.org/ausgabe",
               "voraussetzungen_url": "https://tafel.example.org/wer"}  # fmt: skip
@@ -408,7 +409,7 @@ def test_einstellungen_und_texte(admin_client, benutzer_mit_rolle):
                 "mail_text": "<p>{vorname}</p>"},
     ).content.decode()  # fmt: skip
     assert "Vorschau (noch nicht gespeichert)" in vorschau and "<h2>مرحبا</h2>" in vorschau
-    assert "رقم 2026-00001" in vorschau and "srcdoc=" in vorschau and "Erika" in vorschau
+    assert "رقم 4201" in vorschau and "srcdoc=" in vorschau and "Erika" in vorschau
     assert not AntragText.objects.filter(sprache="ar").exists()
     admin_client.post(texte, {"einleitung": "مرحبا", "bestaetigung": ""})
     assert AntragText.objects.get(sprache="ar").einleitung == "مرحبا"

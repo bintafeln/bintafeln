@@ -27,16 +27,76 @@
     {% include "kunden/_bericht.html" %}
   {% endif %}
 
-  <p class="hinweis">Der bisherige Kundenstamm wird vollständig ersetzt. Gültig bis {{ gueltig_bis|date:"H:i" }} Uhr.</p>
+  <form method="post" action="{% url 'kunden:import_uebernehmen' vorbereitung.pk %}" id="import-form">
+  {% csrf_token %}
+  <h2>Abgleich mit dem jetzigen Kundenstamm</h2>
+  <p>{{ abgleich.neu|length }} neu · {{ abgleich.geaendert|length }} geändert · {{ abgleich.entfallen|length }} entfallen · {{ abgleich.unveraendert }} unverändert</p>
+
+  {% if abgleich.fragen %}
+  <div class="sicherung">
+    <p><strong>{{ abgleich.fragen|length }} Haushalt{{ abgleich.fragen|length|pluralize:"e" }} wurde{{ abgleich.fragen|length|pluralize:"n" }} in bintafeln geändert oder aufgenommen.</strong>
+      Je Haushalt wählen: <em>bintafeln-Stand behalten</em> (der Import lässt ihn aus) oder <em>Import übernehmen</em>.</p>
+    <label class="feld-haken"><input type="checkbox" name="alle" value="uebernehmen"> Für alle den Import übernehmen (z. B. beim endgültigen Umstieg)</label>
+  </div>
+  {% endif %}
+
+  {% if abgleich.geaendert %}
+  <details class="abgleich-gruppe"{% if abgleich.fragen %} open{% endif %}>
+    <summary><strong>Geändert ({{ abgleich.geaendert|length }})</strong></summary>
+    <div class="tabelle-rahmen">
+    <table class="tabelle kompakt">
+      <thead><tr><th>Kundennummer</th><th>Name</th><th>Was ändert sich</th><th>Wahl</th></tr></thead>
+      <tbody>
+      {% for e in abgleich.geaendert|slice:max_abgleich %}
+        <tr{% if e.lokal %} class="unterschied"{% endif %}>
+          <td><a href="{% url 'kunden:haushalt' e.kundennummer %}" target="_blank" rel="noopener">{{ e.kundennummer }}</a></td>
+          <td>{{ e.name }}</td>
+          <td>{% for feld, alt, neu in e.unterschiede %}{{ feld }}: <s>{{ alt|default:"–" }}</s> → {{ neu|default:"–" }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
+          <td>{% if e.lokal %}{% include "kunden/_import_wahl.html" %}{% else %}Import{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% if abgleich.geaendert|length > max_abgleich %}<p class="hinweis">Nur die ersten {{ max_abgleich }} gezeigt.</p>{% endif %}
+  </details>
+  {% endif %}
+
+  {% if abgleich.entfallen %}
+  <details class="abgleich-gruppe"{% if abgleich.fragen %} open{% endif %}>
+    <summary><strong>Entfallen ({{ abgleich.entfallen|length }})</strong> – nicht mehr im Import, werden gelöscht</summary>
+    <div class="tabelle-rahmen">
+    <table class="tabelle kompakt">
+      <thead><tr><th>Kundennummer</th><th>Name</th><th>Wahl</th></tr></thead>
+      <tbody>
+      {% for e in abgleich.entfallen|slice:max_abgleich %}
+        <tr{% if e.lokal %} class="unterschied"{% endif %}>
+          <td><a href="{% url 'kunden:haushalt' e.kundennummer %}" target="_blank" rel="noopener">{{ e.kundennummer }}</a></td>
+          <td>{{ e.name }}{% if e.aufgenommen %} <small class="hinweis">(in bintafeln aufgenommen)</small>{% endif %}</td>
+          <td>{% if e.lokal %}{% include "kunden/_import_wahl.html" %}{% else %}wird gelöscht{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </details>
+  {% endif %}
+
+  {% if abgleich.neu %}
+  <details class="abgleich-gruppe">
+    <summary><strong>Neu ({{ abgleich.neu|length }})</strong></summary>
+    <p>{% for e in abgleich.neu|slice:max_abgleich %}{{ e.kundennummer }} {{ e.name }}{% if not forloop.last %} · {% endif %}{% endfor %}</p>
+  </details>
+  {% endif %}
+
+  <p class="hinweis">Alle übrigen Haushalte werden durch den Import ersetzt. Gültig bis {{ gueltig_bis|date:"H:i" }} Uhr.</p>
   {% if sicherung_frisch %}
-    <form method="post" action="{% url 'kunden:import_uebernehmen' vorbereitung.pk %}" class="inline">
-      {% csrf_token %}
-      <button type="submit" class="knopf">Import übernehmen</button>
-    </form>
+    <button type="submit" class="knopf">Import übernehmen</button>
   {% else %}
     <p class="sicherung sicherung-veraltet">Übernehmen ist erst möglich, wenn die letzte erfolgreiche Sicherung
       höchstens 24 Stunden alt ist. Auf dem Server <code>./betrieb sichern</code> ausführen und diese Seite neu laden.</p>
   {% endif %}
+  </form>
   <form method="post" action="{% url 'kunden:import_verwerfen' vorbereitung.pk %}" class="inline">
     {% csrf_token %}
     <button type="submit" class="knopf knopf-zweitrangig">Verwerfen</button>

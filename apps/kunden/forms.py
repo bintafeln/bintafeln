@@ -13,6 +13,8 @@ class KundenEinstellungenForm(forms.ModelForm):
             "familienstand_erfassen",
             "bemerkungen_importieren",
             "kind_bis_alter",
+            "ausweis_gueltig_monate",
+            "ausweis_bis_monatsende",
             "abholungen_aufbewahren_jahre",
             "zugriffe_aufbewahren_tage",
             "besondere_kategorie_fuer_ausgabe",

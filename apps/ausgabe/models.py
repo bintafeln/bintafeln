@@ -56,9 +56,27 @@ class AusgabeEinstellungen(models.Model):
         default=14,
         validators=[MaxValueValidator(365)],
     )
-    beitrag_je_abholung = _betrag("Beitrag je Abholung (Euro)")
-    beitrag_je_erwachsenem = _betrag("zusätzlich je Erwachsenem (Euro)")
-    beitrag_je_kind = _betrag("zusätzlich je Kind (Euro)")
+    zahlt_ab_alter = models.PositiveSmallIntegerField(
+        "Beitrag zahlen Personen ab … Jahren",
+        default=18,
+        validators=[MaxValueValidator(99)],
+        help_text="Personen ohne Geburtsdatum zahlen mit.",
+    )
+    beitrag_je_person = models.DecimalField(
+        "Beitrag je zahlender Person (Euro)",
+        max_digits=6,
+        decimal_places=2,
+        default=Decimal("1.50"),
+        validators=[MinValueValidator(Decimal("0"))],
+    )
+    zusatzbeitraege = models.BooleanField(
+        "Zusatzbeiträge berechnen",
+        default=False,
+        help_text="Nur wenn eingeschaltet, kommen die drei folgenden Beträge dazu.",
+    )
+    beitrag_je_abholung = _betrag("Zusatz: je Abholung (Euro)")
+    beitrag_je_erwachsenem = _betrag("Zusatz: je Erwachsenem (Euro)")
+    beitrag_je_kind = _betrag("Zusatz: je Kind (Euro)")
     kontostand_anzeigen = models.BooleanField("Kontostand am Einlass anzeigen", default=True)
     anschreiben_erlaubt = models.BooleanField(
         "Anschreiben erlauben",
@@ -90,12 +108,55 @@ class AusgabeEinstellungen(models.Model):
         einstellungen, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
         return einstellungen
 
-    def beitrag(self, erwachsene: int, kinder: int) -> Decimal:
-        return (
-            self.beitrag_je_abholung
-            + erwachsene * self.beitrag_je_erwachsenem
-            + kinder * self.beitrag_je_kind
-        )
+    def beitrag(self, zahlende: int, erwachsene: int = 0, kinder: int = 0) -> Decimal:
+        """Zahlende Personen × Beitrag; Zusatzbeiträge nur, wenn eingeschaltet."""
+        summe = zahlende * self.beitrag_je_person
+        if self.zusatzbeitraege:
+            summe += (
+                self.beitrag_je_abholung
+                + erwachsene * self.beitrag_je_erwachsenem
+                + kinder * self.beitrag_je_kind
+            )
+        return summe
+
+    def beitrag_fuer(self, haushalt, heute, kind_bis_alter: int, frei_beachten=True) -> Decimal:
+        """Beitrag eines Haushalts an einem Tag; in beitragsfreien Zeiträumen 0."""
+        if frei_beachten and BeitragsfreierZeitraum.am(heute):
+            return Decimal("0.00")
+        zahlende, _ = haushalt.groesse(self.zahlt_ab_alter, heute)
+        erwachsene, kinder = haushalt.groesse(kind_bis_alter, heute)
+        return self.beitrag(zahlende, erwachsene, kinder)
+
+
+class BeitragsfreierZeitraum(models.Model):
+    """In diesem Zeitraum zahlen Kunden keinen Beitrag (z. B. vor Weihnachten)."""
+
+    bezeichnung = models.CharField("Bezeichnung", max_length=100, help_text="z. B. Weihnachten")
+    von = models.DateField("Von")
+    bis = models.DateField("Bis einschließlich")
+
+    class Meta:
+        verbose_name = "Beitragsfreier Zeitraum"
+        verbose_name_plural = "Beitragsfreie Zeiträume"
+        ordering = ["-von"]
+
+    def __str__(self):
+        return f"{self.bezeichnung}: {self.von:%d.%m.%Y} bis {self.bis:%d.%m.%Y}"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if self.von and self.bis and self.bis < self.von:
+            raise ValidationError({"bis": "„Bis“ darf nicht vor „Von“ liegen."})
+
+    @property
+    def aktiv(self) -> bool:
+        """Für die Listenansicht: vergangene Zeiträume gelten als inaktiv."""
+        return self.bis >= timezone.localdate()
+
+    @classmethod
+    def am(cls, tag) -> "BeitragsfreierZeitraum | None":
+        return cls.objects.filter(von__lte=tag, bis__gte=tag).first()
 
 
 auditlog.register(AusgabeEinstellungen)
@@ -155,3 +216,5 @@ class Buchung(models.Model):
 
 
 auditlog.register(Buchung)
+
+auditlog.register(BeitragsfreierZeitraum)

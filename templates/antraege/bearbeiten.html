@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block titel %}Antrag {{ a.nummer }} bearbeiten{% endblock %}
+{% block inhalt %}
+<form method="post">
+{% csrf_token %}
+<div class="seiten-raster">
+<section class="karte breit">
+  <p><a href="{% url 'antraege:antrag' a.pk %}">← Antrag {{ a.nummer }}</a></p>
+  <h1>Antrag {{ a.nummer }} bearbeiten</h1>
+  {% include "includes/formular.html" %}
+</section>
+<section class="karte breit">
+  <h2>Weitere Personen im Haushalt</h2>
+  {{ personen.management_form }}
+  {% for fehler in personen.non_form_errors %}<p class="fehler">{{ fehler }}</p>{% endfor %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Vorname</th><th>Nachname</th><th>Geburtsdatum</th><th>Entfernen</th></tr></thead>
+    <tbody>
+    {% for f in personen %}
+      <tr>
+        <td data-titel="Vorname">{% for h in f.hidden_fields %}{{ h }}{% endfor %}{{ f.vorname }}{% for e in f.vorname.errors %}<small class="fehler">{{ e }}</small>{% endfor %}</td>
+        <td data-titel="Nachname">{{ f.nachname }}</td>
+        <td data-titel="Geburtsdatum">{{ f.geburtsdatum }}{% for e in f.geburtsdatum.errors %}<small class="fehler">{{ e }}</small>{% endfor %}</td>
+        <td data-titel="Entfernen">{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="hinweis">Leere Zeilen werden ignoriert. Für mehr Personen speichern; danach erscheinen neue leere Zeilen.</p>
+</section>
+</div>
+<div class="aktionen">
+  <button type="submit" class="knopf">Speichern</button>
+  <a class="knopf knopf-zweitrangig" href="{% url 'antraege:antrag' a.pk %}">Abbrechen</a>
+</div>
+</form>
+{% endblock %}

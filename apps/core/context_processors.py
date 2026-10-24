@@ -1,5 +1,6 @@
 from django.conf import settings
 
+from apps.core.menue import menue
 from apps.core.models import TafelEinstellungen
 from apps.konten.rollen import ALLE, darf_mitarbeitende_verwalten, rollen_von
 from apps.konten.zwei_faktor import ist_pflicht
@@ -17,7 +18,11 @@ def tafel(request):
     benutzer = getattr(request, "user", None)
     angemeldet = benutzer is not None and benutzer.is_authenticated
     rollen = rollen_von(benutzer) if angemeldet else set()
+    offen = angemeldet and (
+        (not benutzer.is_verified() and ist_pflicht(benutzer)) or benutzer.passwort_aendern
+    )
     return {
+        "menue": menue(request) if angemeldet and not offen else [],
         "tafel": TafelEinstellungen.laden(),
         "rollen": rollen,
         # für die Anzeige in fester Reihenfolge

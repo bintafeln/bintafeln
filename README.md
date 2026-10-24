@@ -39,6 +39,8 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   Anmerkungen und Kundengruppen. Unter „Einstellungen → Kundenstamm“ legt ein Admin fest, welche
   Angaben erfasst werden, und richtet eigene **Zusatzfelder** ein (z. B. „Schwerbehindert“).
   **Import** mit Prüfbericht unter „Kunden“; Liste und Suche folgen.
+- **Menü links** mit aufklappbaren Bereichen (Ausgabe, Kunden, Anträge, Team, Einstellungen);
+  jede Rolle sieht nur, was sie darf. Auf schmalen Bildschirmen öffnet „☰ Menü“ das Menü.
 - Deutsche, mobilfreundliche Oberfläche (Django-Templates + HTMX, ohne externe CDNs).
 
 ## Aufbau
@@ -269,6 +271,11 @@ Der Kundenstamm wird aus dem bisherigen Programm übernommen, im
 3. Der **Prüfbericht** nennt Fehler (Import nicht möglich) und Warnungen (Import möglich), jeweils
    mit Datei und Zeile, aber ohne Inhalte.
 4. Ohne Fehler: Vorschau mit „bisher / nach dem Import“ ansehen und **Import übernehmen**.
+5. **Abgleich:** Die Vorschau zeigt, welche Haushalte neu sind, welche entfallen und was sich
+   bei den übrigen ändert (z. B. „Anschrift: alt → neu“). Bei Haushalten, die in bintafeln
+   geändert oder aufgenommen wurden, wählt man je Haushalt **bintafeln-Stand behalten** (der
+   Import lässt ihn aus) oder **Import übernehmen**; Vorgabe ist „behalten“. „Für alle den Import
+   übernehmen“ ersetzt alles, z. B. beim endgültigen Umstieg (ADR 0028).
 
 Regeln:
 
@@ -323,7 +330,8 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
   - **Kundenausweis drucken:** Karte im Scheckkartenformat, mit Kundennummer als Barcode für den
     Scanner am Einlass. In 100 % Größe drucken. **Gestalten** (Admin): „Einstellungen →
     Kundenstamm → Kundenausweis gestalten“. Elemente (Ausweisname, Name der Tafel, Logo, Name,
-    Kundengruppe, Ausgabestelle, Gültig bis, Kunde seit, Anzahl Personen, freier Text mit
+    Kundengruppe, Ausgabestelle, Gültig bis, Kunde seit, Anzahl Personen, „Personen/Minderjährige“
+    (z. B. 6/3: 6 Personen, davon 3 unter dem Alter aus „Kind bis“), freier Text mit
     Platzhaltern, farbige Fläche) einfügen, mit der Maus verschieben und in der Größe ändern;
     Hintergrundbild, optional eine Rückseite, Druck auf A4 mit Schnittmarken oder in
     Kartengröße für Kartendrucker. **Kundennummer und Barcode** sind immer auf der Vorderseite;
@@ -363,11 +371,26 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
 - Nach dem Absenden sehen Antragstellende eine Bestätigungsseite mit ihrer **Antragsnummer** und
   bekommen eine gestaltete **Antwortmail** (HTML mit Logo, dazu eine Klartextfassung) in ihrer
   Sprache, wenn sie eine Adresse angeben (Mailserver nötig).
-- **Bearbeiten** (Admin, Büro) unter „Anträge“: Liste nach Eingang, Detailseite mit Nachweisen,
-  Status, Anmerkungen, Papierkorb und Auskunft (PDF). „Diese Liste als CSV herunterladen“
-  liefert die Anträge, z. B. für eine Warteliste in einem anderen Programm.
-- Angenommene Anträge ins Altsystem übertragen; mit dem nächsten Import erscheinen sie im
-  Kundenstamm.
+- **Antragsliste** (Admin, Büro) unter „Anträge“: fortlaufende **Antragsnummern** (Startwert
+  unter „Formular einstellen“ → „Nächste Antragsnummer ab“, z. B. 4201), neueste zuerst; Spalten
+  #, Status, Kundennummer, Nachname, Vorname, Antrag vom, E-Mail, Telefon, Art,
+  Staatsangehörigkeit, letzte Anmerkung; Klick auf eine Spaltenüberschrift sortiert; Suche;
+  25/50/100/alle Zeilen; **CSV-Export** der angezeigten Liste. Je Zeile: Ansehen, Bearbeiten,
+  Anmerkung, Löschen (Papierkorb, mit Rückfrage) und **Aufnehmen**. Reiter „Papierkorb“: dort
+  endgültig löschen (Admin).
+- **Aufnehmen** (Aufnahme-Assistent, ADR 0028) führt Schritt für Schritt:
+  1. **Gibt es den Kunden schon?** Ähnliche Kunden mit Punkten, auch bei vertauschten Vor- und
+     Nachnamen und Tippfehlern, dazu Geburtsdatum (auch mit vertauschtem Tag/Monat) und
+     Anschrift. Bestehenden Kunden wählen oder „Neuer Kunde“.
+  2. **Daten abgleichen:** je Angabe Kundenstamm oder Antrag wählen; Unterschiede sind markiert.
+  3. **Angehörige** aus Haushalt und Antrag, ergänzen oder entfernen.
+  4. **Bescheid und Gültigkeit:** Bescheidart (Liste „Einkommensarten“) und Gültigkeit des
+     Ausweises; Vorschlag aus „Einstellungen → Kundenstamm“ (Vorgabe 12 Monate bis Monatsende).
+  5. **Kundengruppe:** nur Gruppen mit freiem Platz (Höchstzahl Haushalte der Kundengruppe;
+     beendete Haushalte zählen nicht).
+  6. **Prüfen und speichern:** neuer Kunde mit der nächsten freien Kundennummer oder bestehender
+     Kunde aktualisiert; der Antrag ist danach erledigt. Anschließend **Ausweis drucken** (PDF,
+     auf jedem Drucker, z. B. einem Kartendrucker in Kartengröße).
 - Die Übersetzungen stehen in `apps/antraege/uebersetzungen/`, eine Datei je Sprache.
   Korrekturen von Muttersprachlern sind willkommen.
 
@@ -413,6 +436,20 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
 Die Regeln stehen unter „Einstellungen → Ausgabe und Ampel“. Jeder Scan steht im
 Zugriffsprotokoll. **Achtung:** Ein neuer Import des Kundenstamms ersetzt auch die am Einlass
 eingetragenen Abholungen und Ausnahmen; der Prüfbericht warnt davor (ADR 0013).
+
+### Beiträge
+
+Unter „Einstellungen → Ausgabe, Ampel und Beiträge“:
+
+- **Beitrag je zahlender Person** (Vorgabe 1,50 €) und **ab welchem Alter** gezahlt wird
+  (Vorgabe 18). Personen ohne Geburtsdatum zahlen mit. Beispiel: 2 Erwachsene und 3 Kinder
+  zahlen 2 × 1,50 € = 3,00 €.
+- **Zusatzbeiträge** (je Abholung, je Erwachsenem, je Kind) gelten nur, wenn eingeschaltet
+  (Vorgabe aus). Nach dem Update behalten Installationen mit bisher eingestellten Beträgen ihre
+  Berechnung: Zusatzbeiträge sind dort eingeschaltet, der Beitrag je Person ist 0.
+- **Beitragsfreie Zeiträume** („Einstellungen → Beitragsfreie Zeiträume“, z. B. vor
+  Weihnachten): Der Einlass schlägt dann 0 € vor und zeigt „Heute beitragsfrei“; Vorschläge
+  für Vorauszahlungen zählen diese Tage nicht.
 
 ## Kasse
 

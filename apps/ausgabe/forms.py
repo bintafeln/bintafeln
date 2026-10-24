@@ -1,6 +1,7 @@
 from django import forms
 
-from apps.ausgabe.models import AusgabeEinstellungen
+from apps.ausgabe.models import AusgabeEinstellungen, BeitragsfreierZeitraum
+from apps.konten.forms import DatumEingabe
 
 
 class AusgabeEinstellungenForm(forms.ModelForm):
@@ -12,6 +13,9 @@ class AusgabeEinstellungenForm(forms.ModelForm):
             "zeitraum",
             "nicht_dran_rot",
             "vorwarnung_tage",
+            "zahlt_ab_alter",
+            "beitrag_je_person",
+            "zusatzbeitraege",
             "beitrag_je_abholung",
             "beitrag_je_erwachsenem",
             "beitrag_je_kind",
@@ -20,4 +24,13 @@ class AusgabeEinstellungenForm(forms.ModelForm):
             "buchungen_aufbewahren_jahre",
         ]
         # Beträge mit Komma eingeben und anzeigen („1,50“).
-        localized_fields = ["beitrag_je_abholung", "beitrag_je_erwachsenem", "beitrag_je_kind"]
+        localized_fields = [
+            "beitrag_je_person", "beitrag_je_abholung", "beitrag_je_erwachsenem", "beitrag_je_kind",
+        ]  # fmt: skip
+
+
+class BeitragsfreiForm(forms.ModelForm):
+    class Meta:
+        model = BeitragsfreierZeitraum
+        fields = ["bezeichnung", "von", "bis"]
+        widgets = {"von": DatumEingabe(), "bis": DatumEingabe()}

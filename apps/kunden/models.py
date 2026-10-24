@@ -47,6 +47,15 @@ class KundenEinstellungen(models.Model):
         validators=[MinValueValidator(30), MaxValueValidator(3650)],
         help_text="Einträge, wer welchen Haushalt angesehen hat, werden danach gelöscht.",
     )
+    ausweis_gueltig_monate = models.PositiveSmallIntegerField(
+        "Ausweis gültig für … Monate (Vorschlag bei der Aufnahme)",
+        default=12,
+        validators=[MinValueValidator(1), MaxValueValidator(60)],
+    )
+    ausweis_bis_monatsende = models.BooleanField(
+        "Gültigkeit bis zum Monatsende", default=True,
+        help_text="z. B. Aufnahme am 24.10.2026, 12 Monate: gültig bis 31.10.2027.",
+    )  # fmt: skip
     besondere_kategorie_fuer_ausgabe = models.BooleanField(
         "Rolle Ausgabe sieht Zusatzfelder der besonderen Kategorie",
         default=False,
@@ -270,6 +279,10 @@ class Haushalt(models.Model):
     zusatz = models.JSONField("Zusatzfelder", default=dict, blank=True)
     importiert_am = models.DateTimeField("Importiert am", default=timezone.now)
     # In bintafeln von Hand geändert (ADR 0025); der nächste Import ersetzt die Änderungen.
+    aufgenommen_am = models.DateTimeField(
+        "In bintafeln aufgenommen am", null=True, blank=True,
+        help_text="Gesetzt vom Aufnahme-Assistenten; der Import-Abgleich fragt dann nach.",
+    )  # fmt: skip
     geaendert_am = models.DateTimeField("In bintafeln geändert am", null=True, blank=True)
     geaendert_von = models.CharField("In bintafeln geändert von", max_length=150, blank=True)
 

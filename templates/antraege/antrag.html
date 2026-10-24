@@ -1,9 +1,22 @@
 {% extends "base.html" %}
 {% block titel %}Antrag {{ a.nummer }}{% endblock %}
 {% block inhalt %}
+<section class="karte kunden-kopf">
+  <div class="kunden-titel">
+    <p><a href="{% url 'antraege:liste' %}">← Anträge</a></p>
+    <h1>Antrag {{ a.nummer }} · {{ a.name }}</h1>
+  </div>
+  <div class="aktionsleiste">
+    {% if not a.papierkorb_am %}<a class="knopf" href="{% url 'antraege:aufnahme' a.pk %}">Aufnehmen</a>{% endif %}
+    <a class="knopf knopf-zweitrangig" href="{% url 'antraege:bearbeiten' a.pk %}">Bearbeiten</a>
+    <form method="post" action="{% url 'antraege:papierkorb' a.pk %}" class="inline"
+          onsubmit="return confirm(this.dataset.frage)" data-frage="{% if a.papierkorb_am %}Antrag {{ a.nummer }} aus dem Papierkorb holen?{% else %}Antrag {{ a.nummer }} von {{ a.name }} in den Papierkorb legen?{% endif %}">
+      {% csrf_token %}<button type="submit" class="knopf {% if a.papierkorb_am %}knopf-zweitrangig{% else %}knopf-gefahr{% endif %}">{% if a.papierkorb_am %}Aus dem Papierkorb holen{% else %}Löschen …{% endif %}</button>
+    </form>
+  </div>
+</section>
+
 <section class="karte">
-  <p><a href="{% url 'antraege:liste' %}">← Anträge</a></p>
-  <h1>Antrag {{ a.nummer }} · {{ a.name }}</h1>
   {% if a.papierkorb_am %}<p class="sicherung sicherung-veraltet">Im Papierkorb seit {{ a.papierkorb_am|date:"d.m.Y" }}.</p>{% endif %}
   <dl class="angaben">
     <dt>Eingegangen</dt><dd>{{ a.eingegangen_am|date:"d.m.Y H:i" }}{% if platz %} – Platz {{ platz }} der offenen Anträge{% endif %}</dd>
@@ -36,20 +49,16 @@
     <select name="status" id="status">{% for wert, name in status_auswahl %}<option value="{{ wert }}"{% if wert == a.status %} selected{% endif %}>{{ name }}</option>{% endfor %}</select>
     <button type="submit" class="knopf">Status speichern</button>
   </form>
-  <p class="hinweis">Angenommene Anträge bitte ins Altsystem übertragen; mit dem nächsten Import erscheinen sie im Kundenstamm.</p>
-  <h3>Anmerkungen</h3>
+  <h3 id="anmerkungen">Anmerkungen</h3>
   {% for x in a.anmerkungen.all %}<div class="bemerkung"><p class="vorformatiert">{{ x.text }}</p><p class="hinweis">{{ x.zeitpunkt|date:"d.m.Y H:i" }} · {{ x.von }}</p></div>{% empty %}<p>Noch keine.</p>{% endfor %}
   <form method="post" action="{% url 'antraege:anmerkung' a.pk %}">
     {% csrf_token %}
     <div class="feld"><label for="text">Neue Anmerkung</label><textarea name="text" id="text" rows="3" required></textarea></div>
     <button type="submit" class="knopf knopf-zweitrangig">Anmerkung speichern</button>
   </form>
-  <form method="post" action="{% url 'antraege:papierkorb' a.pk %}" class="abseits">
-    {% csrf_token %}<button type="submit" class="link">{% if a.papierkorb_am %}Aus dem Papierkorb holen{% else %}In den Papierkorb legen{% endif %}</button>
-  </form>
   {% if a.papierkorb_am and "Admin" in rollen %}
-  <form method="post" action="{% url 'antraege:loeschen' a.pk %}" onsubmit="return confirm('Antrag mit allen Nachweisen endgültig löschen?')">
-    {% csrf_token %}<button type="submit" class="link fehler">Endgültig löschen</button>
+  <form method="post" action="{% url 'antraege:loeschen' a.pk %}" onsubmit="return confirm(this.dataset.frage)" data-frage="Antrag {{ a.nummer }} von {{ a.name }} mit allen Nachweisen endgültig löschen?">
+    {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Endgültig löschen</button>
   </form>
   {% endif %}
 </section>

@@ -15,7 +15,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.ausgabe.ampel import WOCHENTAGE
-from apps.ausgabe.models import AusgabeEinstellungen, Buchung
+from apps.ausgabe.models import AusgabeEinstellungen, BeitragsfreierZeitraum, Buchung
 from apps.core.feiertage import feiertage, ist_feiertag
 from apps.core.models import TafelEinstellungen
 from apps.kunden.models import Haushalt, abholfrist_beginn
@@ -265,6 +265,8 @@ def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]
         tage = _tage(von, bis, wochentage)
         frei = [t for t in tage if ist_feiertag(t, land)]
         tage = [t for t in tage if t not in frei]
+        ohne_beitrag = [t for t in tage if BeitragsfreierZeitraum.am(t)]
+        tage = [t for t in tage if t not in ohne_beitrag]
         if h.ausweis_gueltig_bis and any(t > h.ausweis_gueltig_bis for t in tage):
             tage = [t for t in tage if t <= h.ausweis_gueltig_bis]
             ausweis = f"Nur bis zum Ablauf des Ausweises am {h.ausweis_gueltig_bis:%d.%m.%Y}."
@@ -289,6 +291,9 @@ def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]
             v.erklaerung.append(
                 f"Abzüglich Guthaben {euro(v.guthaben)}: zu zahlen {euro(v.zu_zahlen)}."
             )
+        if ohne_beitrag:
+            namen = ", ".join(f"{t:%d.%m.}" for t in ohne_beitrag)
+            v.erklaerung.append(f"Nicht gezählt, weil beitragsfrei: {namen}")
         if frei:
             namen = ", ".join(
                 f"{WOCHENTAGE[t.weekday()]} {t:%d.%m.} ({feiertage(t.year, land)[t]})" for t in frei

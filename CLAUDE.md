@@ -89,8 +89,11 @@ In der ersten Ausbaustufe ist der Kundenstamm ein Snapshot aus einem Altsystem: 
 ersetzt den Bestand vollständig, im neuen System wird er nur gelesen, nicht bearbeitet. Der Import
 wird deshalb als wiederholbarer Vollaustausch gebaut, nicht als Synchronisation einzelner
 Datensätze. Erst beim späteren Umstieg zu einem Stichtag übernimmt bintafeln die Führung der Daten.
-Ausnahmen: Der Einlass trägt Abholungen und Ausnahmen ein (ADR 0013), und der Admin kann den
-Kundenstamm bearbeiten (ADR 0025); der nächste Import ersetzt beides und warnt vorher.
+Ausnahmen: Der Einlass trägt Abholungen und Ausnahmen ein (ADR 0013), der Admin kann den
+Kundenstamm bearbeiten (ADR 0025), und Anträge werden mit dem Aufnahme-Assistenten in den
+Kundenstamm aufgenommen (ADR 0028). Der Import zeigt vorher einen Abgleich; in bintafeln
+geänderte oder aufgenommene Haushalte lassen sich dabei je Haushalt behalten. Einen festen
+Stichtag gibt es nicht: Irgendwann wird einmal alles übernommen, ab dann gilt dieser Stand.
 
 bintafeln kennt nur das eigene, neutrale Importformat. Werkzeuge, die Daten aus bestimmten
 Altsystemen in dieses Format bringen, gehören nicht in dieses Repository.
@@ -127,7 +130,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `views_bearbeiten.py`/`forms_bearbeiten.py`; jede Änderung setzt `Haushalt.geaendert_am`.
   Notizen (`Notiz`, ADR 0026) hängen an der Kundennummer und überstehen den Import; die Rolle
   Ausgabe sieht nur die Angaben aus ADR 0026.
-  `ausgabe` (Einlass; Ampel-Regeln als reine Funktion in `apps/ausgabe/ampel.py`,
+  `ausgabe` (Einlass; Beitrag über `AusgabeEinstellungen.beitrag_fuer()` – zahlende Personen
+  ab Alter × Betrag, Zusatzbeiträge optional, `BeitragsfreierZeitraum`;
+  Ampel-Regeln als reine Funktion in `apps/ausgabe/ampel.py`,
   Einstellungen in `AusgabeEinstellungen`; Kundenkonto nur über `apps/ausgabe/konto.py`
   buchen, nie `Haushalt.kontostand` direkt ändern, ADR 0014; Kasse-Auswertung in
   `apps/ausgabe/kasse.py`).
@@ -135,6 +140,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Prüfsumme), weil Caddy sie einen Tag zwischenspeichern lässt. Tests nutzen die einfache
   Ablage.
 - Zugriffsschutz für Ansichten: `@rolle_erforderlich(rollen.BUERO, …)` aus `apps.konten.rollen`.
+- Menü links: Einträge je Rolle in `apps/core/menue.py` (neue Seiten dort eintragen statt
+  Links in die Seiten zu setzen).
 - Mitarbeitende: Logik und Schutzregeln in `apps/konten/verwaltung.py` (nie löschen, nur
   sperren; ADR 0015). `Benutzer.passwort_aendern` erzwingt über
   `PasswortAendernMiddleware` ein neues Passwort, bevor die Zwei-Faktor-Einrichtung kommt.
@@ -146,6 +153,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `apps.core.privatdateien`.
 - App `antraege` (Modul 3, ADR 0024): öffentliches Formular `/antrag/<sprache>/` in
   `views_oeffentlich.py`, Bearbeitung in `views.py`, Fristen `models.fristen_anwenden()`.
+  Antragsnummer `Antrag.laufnummer` (fortlaufend, Startwert in `AntragEinstellungen`).
+  Aufnahme-Assistent: Logik in `aufnahme.py` (Dubletten, Gültigkeit, freie Gruppen,
+  `uebernehmen()`), Schritte in `views_aufnahme.py` (ADR 0028). Import-Abgleich:
+  `importieren.abgleich()`, `uebernehmen(..., behalten=…)`.
   Eigene Texte der Tafel (`AntragText`) dürfen HTML enthalten und laufen immer durch
   `apps.core.html.anzeigen()`/`bereinigen()` (nh3), nie ungefiltert mit `|safe`.
   Farbe der Tafel als CSS-Variablen über `templates/includes/farben.html`

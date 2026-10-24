@@ -28,6 +28,7 @@
 <section class="karte">
   {% if bewertung.darf_abholen %}
   <h2>Abholung</h2>
+  {% if beitragsfrei %}<p class="meldung" role="status">Heute beitragsfrei: {{ beitragsfrei.bezeichnung }} (bis {{ beitragsfrei.bis|date:"d.m.Y" }}).</p>{% endif %}
   <form method="post" action="{% url 'ausgabe:eintragen' h.kundennummer %}" class="anmelden"
         hx-post="{% url 'ausgabe:eintragen' h.kundennummer %}" hx-target="#ergebnis">
     {% csrf_token %}

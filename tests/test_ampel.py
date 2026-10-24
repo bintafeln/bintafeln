@@ -188,10 +188,14 @@ def test_ausnahme_hebt_sperre_nicht_auf(haushalt, einstellungen):
 
 def test_beitrag_und_einstellungen():
     e = AusgabeEinstellungen.laden()
-    assert e.beitrag(2, 1) == Decimal("0.00")
+    assert (e.zahlt_ab_alter, e.beitrag_je_person) == (18, Decimal("1.50"))
+    assert e.beitrag(2, 2, 1) == Decimal("3.00")  # 2 zahlende × 1,50
     e.beitrag_je_abholung = Decimal("1.00")
     e.beitrag_je_erwachsenem = Decimal("1.00")
     e.beitrag_je_kind = Decimal("0.50")
     e.save()
-    assert AusgabeEinstellungen.laden().beitrag(2, 1) == Decimal("3.50")
+    assert e.beitrag(2, 2, 1) == Decimal("3.00")  # Zusatzbeiträge aus (Standard)
+    e.zusatzbeitraege = True
+    e.save()
+    assert AusgabeEinstellungen.laden().beitrag(2, 2, 1) == Decimal("6.50")
     assert str(e) == "Einstellungen Ausgabe"
