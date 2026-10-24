@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block titel %}Haushalt {{ h.kundennummer }} bearbeiten{% endblock %}
 {% block inhalt %}
-<section class="karte">
+<div class="seiten-raster">
+<section class="karte breit">
   <p><a href="{% url 'kunden:haushalt' h.kundennummer %}">← Haushalt {{ h.kundennummer }}</a></p>
   <h1>Haushalt {{ h.kundennummer }} bearbeiten</h1>
   {% include "kunden/_import_hinweis.html" %}
@@ -23,7 +24,7 @@
 </section>
 {% endfor %}
 
-<section class="karte">
+<section class="karte breit">
   <h2>Abholungen</h2>
   <div class="tabelle-rahmen">
   <table class="tabelle">
@@ -59,4 +60,5 @@
     <button type="submit" class="knopf knopf-zweitrangig fehler">Haushalt löschen</button>
   </form>
 </section>
+</div>
 {% endblock %}

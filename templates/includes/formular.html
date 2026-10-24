@@ -1,6 +1,7 @@
 {% if form.non_field_errors %}
   <div class="fehler" role="alert">{% for fehler in form.non_field_errors %}<p>{{ fehler }}</p>{% endfor %}</div>
 {% endif %}
+<div class="formular-raster">
 {% for feld in form %}
   {% if feld.widget_type == "checkbox" %}
   <div class="feld feld-haken{% if feld.errors %} hat-fehler{% endif %}">
@@ -17,3 +18,4 @@
   </div>
   {% endif %}
 {% endfor %}
+</div>

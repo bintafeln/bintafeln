@@ -53,7 +53,9 @@ a { color: var(--akzent-dunkel); }
   text-decoration: underline;
 }
 
-.inhalt { flex: 1; width: 100%; max-width: 60rem; margin: 0 auto; padding: 1rem; }
+/* Breite: nutzt große Bildschirme, ohne dass Zeilen endlos lang werden */
+.inhalt { flex: 1; width: 100%; max-width: 120rem; margin: 0 auto; padding: 1rem; }
+@media (min-width: 64rem) { .inhalt { padding: 1.25rem 2rem; } }
 
 .karte {
   background: var(--flaeche);
@@ -193,7 +195,7 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 
 /* Große Ampel am Einlass: absichtlich auffällig */
 .empfang-raster { display: flex; flex-direction: column; gap: 1rem; }
-.empfang-inhalt { flex: 1; min-width: 0; }
+.empfang-spalte { flex: 1; min-width: 0; }
 .ampel-grafik { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem 1rem; }
 .ampel-gehaeuse {
   display: flex; flex-direction: row; gap: .75rem; padding: .75rem;
@@ -217,7 +219,7 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 @keyframes blinken { to { opacity: .25; } }
 @media (prefers-reduced-motion: reduce) { .lampe-rot.an { animation: none; } }
 @media (min-width: 48rem) {
-  .empfang-raster { flex-direction: row; align-items: flex-start; }
+  .empfang-raster { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
   .ampel-grafik { flex-direction: column; position: sticky; top: 1rem; width: 11rem; }
   .ampel-gehaeuse { flex-direction: column; padding: 1rem; border-radius: 3rem; }
   .lampe { width: 7rem; height: 7rem; }
@@ -305,3 +307,59 @@ textarea.html-eingabe { font-family: ui-monospace, Menlo, Consolas, monospace; f
 .antrag-links { list-style: none; padding: .75rem 1rem; margin: 0 0 1rem; border-radius: var(--radius); background: var(--erfolg); }
 .antrag-links li + li { margin-top: .25rem; }
 .antrag-links a { font-weight: 600; }
+
+/* Breite Bildschirme: Einlass in drei Spalten (Ampel | Abholung | Kunde) */
+@media (min-width: 48rem) and (max-width: 79.99rem) {
+  .empfang-spalte { flex: 1 1 calc(100% - 13rem); }
+  .empfang-spalte + .empfang-spalte { margin-left: 12rem; }
+}
+@media (min-width: 80rem) {
+  .empfang-raster { display: grid; grid-template-columns: 11rem minmax(0, 1fr) minmax(0, 1fr); gap: 1.25rem; }
+}
+.empfang-kopf { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem 2rem; }
+.empfang-kopf h1 { margin: 0; flex-basis: 100%; }
+.empfang-kopf .scan { flex: 1 1 100%; min-width: 0; margin: 0; }
+.scan-feld { min-width: 0; }
+@media (min-width: 48rem) { .empfang-kopf .scan { flex-basis: 24rem; } }
+.empfang-kopf .stelle-wahl { margin: 0; }
+@media (min-width: 64rem) { .empfang-kopf h1 { flex-basis: auto; align-self: center; } }
+.kunde-titel { font-size: 1.4rem; }
+.karte h2 { margin-top: 0; }
+.betraege { display: flex; flex-wrap: wrap; gap: 0 1.5rem; }
+.betraege .feld { margin-bottom: .5rem; }
+.knopf-gross { font-size: 1.15rem; padding: .9rem 1.5rem; margin-top: .75rem; }
+.vorschlag details { margin-top: .35rem; }
+.vorschlag summary { cursor: pointer; color: var(--leise); }
+.tabelle.kompakt td { padding: .35rem .5rem; }
+.tabelle.kompakt td::before { content: none; }
+.zahl { text-align: right; white-space: nowrap; }
+@media (max-width: 39.99rem) {
+  .tabelle.kompakt tr { display: table-row; border: 0; padding: 0; }
+  .tabelle.kompakt td { display: table-cell; border-bottom: 1px solid var(--rand); }
+}
+
+/* Notizen: farbig hinterlegt, damit sie auffallen */
+.notiz {
+  background: #e3f2fd; border-left: 4px solid #64b5f6; border-radius: var(--radius);
+  padding: .5rem .85rem; margin-bottom: .6rem;
+}
+.notiz-kopf { margin: 0 0 .2rem; align-items: baseline; font-size: .85rem; color: #37546b; display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
+.notiz-text { margin: 0; }
+.notiz-loeschen { margin-left: auto; }
+
+/* Formulare: Felder auf breiten Bildschirmen nebeneinander */
+.formular-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 0 1.5rem; }
+.formular-raster .feld-breit, .formular-raster .feld:has(textarea),
+.formular-raster .feld:has(select[multiple]), .formular-raster .feld:has(ul),
+.formular-raster .feld:has(div > div) { grid-column: 1 / -1; }
+.feld input[type="color"] { max-width: 8rem; padding: .25rem; }
+/* Häkchen bilden einen eigenen Block, statt zwischen Eingabefeldern zu stehen */
+.formular-raster .feld:not(.feld-haken) + .feld-haken,
+.formular-raster .feld-haken + .feld:not(.feld-haken) { grid-column-start: 1; }
+
+/* Seiten mit vielen Karten: zwei Spalten auf breiten Bildschirmen */
+.seiten-raster { display: grid; gap: 0 1.25rem; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 80rem) {
+  .seiten-raster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .seiten-raster > .breit { grid-column: 1 / -1; }
+}

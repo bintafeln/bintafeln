@@ -295,6 +295,7 @@ def test_einlass_zeigt_angaben_und_notizen(ausgabe, haushalt):
     assert "Bitte einen Text" in leer and not Notiz.objects.exists()
     inhalt = ausgabe.post(url, {"text": "Bringt Nachweis nächste Woche"}, **HX).content.decode()
     assert "Notiz gespeichert." in inhalt and "Bringt Nachweis nächste Woche" in inhalt
+    assert '<div class="notiz">' in inhalt  # gespeicherte Notizen farbig hinterlegt
     n = Notiz.objects.get()
     assert n.kundennummer == "00042" and n.verfasst_von == "ausgabe"
     assert "löschen</button>" not in inhalt  # löschen nur Büro und Admin

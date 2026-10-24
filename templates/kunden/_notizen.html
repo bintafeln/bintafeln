@@ -1,11 +1,11 @@
 <section class="karte notizen">
   <h2>Notizen</h2>
   {% for n in notizen %}
-    <div class="bemerkung">
-      <p class="hinweis">{{ n.erstellt_am|date:"d.m.Y H:i" }}{% if n.verfasst_von %} · {{ n.verfasst_von }}{% endif %}
-        {% if buero %}<form method="post" action="{% url 'kunden:notiz_loeschen' n.pk %}" class="inline">{% csrf_token %}
-          <button type="submit" class="link-knopf" onclick="return confirm('Notiz löschen?')">löschen</button></form>{% endif %}</p>
-      <p>{{ n.text|linebreaksbr }}</p>
+    <div class="notiz">
+      <div class="notiz-kopf"><span>{{ n.erstellt_am|date:"d.m.Y H:i" }}{% if n.verfasst_von %} · {{ n.verfasst_von }}{% endif %}</span>
+        {% if buero %}<form method="post" action="{% url 'kunden:notiz_loeschen' n.pk %}" class="inline notiz-loeschen">{% csrf_token %}
+          <button type="submit" class="link-knopf" onclick="return confirm('Notiz löschen?')">löschen</button></form>{% endif %}</div>
+      <p class="notiz-text">{{ n.text|linebreaksbr }}</p>
     </div>
   {% empty %}
     <p class="hinweis">Keine Notizen.</p>
