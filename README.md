@@ -483,8 +483,9 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    Band mit dem Gruppennamen.
 4. **Kunde anmelden:** Das Aufrufen allein trägt nichts ein. Erst der Knopf **„Kunde anmelden
    und Abholung buchen“** meldet den Kunden für heute an. Wird abgebrochen, einfach die nächste
-   Nummer scannen; der Kunde lässt sich jederzeit wieder aufrufen. Ein Versehen lässt sich am
-   selben Tag zurücknehmen. Admin und Büro können bei Rot wegen einer Terminregel eine
+   Nummer scannen; der Kunde lässt sich jederzeit wieder aufrufen. Ein Versehen nimmt nur
+   zurück, wer das Recht dazu hat (Admin immer); alle anderen schicken einen **Korrekturwunsch**
+   (siehe unten). Admin und Büro können bei Rot wegen einer Terminregel eine
    **Ausnahme für heute** erteilen.
 5. **Bezahlen:** Der Beitrag ist vorgeschlagen und änderbar. Im Pflichtfeld **„Gezahlt“** steht
    genau der Betrag, den der Kunde zahlt, **auch 0**. Vorgeschlagen ist, was nach Verrechnung des
@@ -498,7 +499,8 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    wird Guthaben. Der Knopf **„Vorauszahlung Rest <Monat> eintragen“** setzt den passenden
    Betrag ins Feld (Abholtage bis Monatsende × Beitrag, abzüglich vorhandenen Guthabens) und
    erklärt die Rechnung. Ist heute keine Abholung möglich, gibt es stattdessen das Feld
-   **„Gezahlt ohne Abholung“**. Eine Zahlung lässt sich am selben Tag zurücknehmen.
+   **„Gezahlt ohne Abholung“**. Auch eine Zahlung nimmt nur zurück, wer das Recht dazu hat;
+   sonst geht ein Korrekturwunsch.
 7. Den **Kontoverlauf** mit allen Buchungen und Korrekturbuchungen gibt es auf der Haushaltsseite
    (Admin, Büro).
 
@@ -520,6 +522,23 @@ Unter „Einstellungen → Ausgabe, Ampel und Beiträge“:
   Weihnachten): Der Einlass schlägt dann 0 € vor und zeigt „Heute beitragsfrei“; Vorschläge
   für Vorauszahlungen zählen diese Tage nicht.
 
+### Korrekturwünsche
+
+Am Einlass sollen Kunden nicht nachträglich verändert werden. Wer eine Abholung, Zahlung oder
+Sonderaktion zurücknehmen will, aber nicht das Recht „Abholungen, Zahlungen und Sonderaktionen
+selbst zurücknehmen“ hat (Vorgabe: nur Admin), klickt **„Korrektur beantragen“**, wählt einen
+Grund (z. B. „Versehentlich gebucht“, „Falscher Kunde aufgerufen“) und schreibt optional eine
+Anmerkung.
+
+- Alle mit dem Recht „Korrekturwünsche vom Einlass entscheiden“ (Admin immer; z. B. dem Büro
+  geben) bekommen eine Mail, wenn ein Mailserver eingerichtet ist, und sehen auf der Startseite
+  die Zahl der offenen Wünsche.
+- „Ausgabe → Korrekturwünsche“: **Zurücknehmen** führt die Korrektur aus (Kundenkonto und Kasse
+  werden mitkorrigiert), **Ablehnen** lässt alles, wie es ist; beides optional mit Antwort.
+- Am Einlass steht beim Eintrag „Korrektur beantragt …, wartet auf Entscheidung“.
+- Wer das Recht zum Zurücknehmen hat, kann es direkt tun, auch an späteren Tagen.
+- Entschiedene Wünsche werden nach der Frist für Abholungen gelöscht (ADR 0035).
+
 ### Sonderaktionen
 
 „Ausgabe → Sonderaktionen“ (Admin, Büro): Aktionen neben der normalen Ausgabe, z. B.
@@ -530,8 +549,8 @@ Weihnachtsgutscheine oder Schulranzen.
   Auswahlmöglichkeiten (z. B. „Spielzeug“ und „Kleidung“, eine je Zeile).
 - **Am Einlass:** Solange eine Aktion läuft, erscheint sie bei jedem Haushalt als eigene Karte mit
   Knöpfen („2× Spielzeug“, „2× Kleidung“). Ein Klick trägt die Teilnahme ein; jeder Haushalt kann
-  je Aktion einmal teilnehmen. Am selben Tag lässt sich die Teilnahme zurücknehmen. Danach zeigt
-  die Karte „✓ Erhalten am …“.
+  je Aktion einmal teilnehmen. Danach zeigt die Karte „✓ Erhalten am …“. Zurücknehmen wie bei
+  Abholungen nur mit Recht, sonst per Korrekturwunsch.
 - **Auswertung:** Die Seite einer Aktion zeigt Teilnahmen und Stückzahlen je Auswahl, mit
   CSV-Export (nur Kundennummern, keine Namen).
 - Teilnahmen hängen an der Kundennummer, überstehen den Import, stehen in der Auskunft nach

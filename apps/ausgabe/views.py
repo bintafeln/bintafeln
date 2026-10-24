@@ -5,12 +5,13 @@ from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.db import transaction
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from apps.ausgabe import ampel, kasse, konto, sonderaktionen
+from apps.ausgabe import ampel, kasse, konto, korrekturen, sonderaktionen
 from apps.ausgabe.forms import AusgabeEinstellungenForm
 from apps.ausgabe.models import (
     AusgabeEinstellungen,
@@ -19,6 +20,7 @@ from apps.ausgabe.models import (
     Sonderaktion,
     Teilnahme,
 )
+from apps.core.auswahl import KORREKTURGRUENDE
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.kunden import werte, zugang
@@ -93,6 +95,9 @@ def _ergebnis(request, h, meldung=None):
         "darf_ausnahme": rollen.hat_recht(request.user, "einlass.ausnahme"),
         **notizen_kontext(h.kundennummer, request.user),
         "sonderaktionen": sonderaktionen.fuer_haushalt(h, heute, erwachsene, kinder),
+        "darf_zuruecknehmen": rollen.hat_recht(request.user, "einlass.zuruecknehmen"),
+        "korrektur_offen": korrekturen.offene(h.kundennummer),
+        "korrekturgruende": KORREKTURGRUENDE,
         "heute": heute,
         "meldung": meldung,
     }
@@ -209,21 +214,41 @@ def abholung_eintragen(request, kundennummer):
 
 
 @require_POST
-@rollen.recht_erforderlich("einlass.abholung")
+@rollen.recht_erforderlich("einlass.zuruecknehmen")
 def abholung_zuruecknehmen(request, pk):
-    """Nimmt eine heute am Einlass eingetragene Abholung zurück (Versehen)."""
-    abholung = get_object_or_404(
-        Abholung, pk=pk, datum=timezone.localdate(), erfasst_am__isnull=False
-    )
-    h = abholung.haushalt
-    konto.abholung_zuruecknehmen(abholung)
-    letzte = h.abholungen.order_by("-datum").first()
-    Haushalt.objects.filter(pk=h.pk).update(letzter_besuch=letzte.datum if letzte else None)
+    """Nimmt eine Abholung zurück, auch an späteren Tagen (nur mit eigenem Recht, ADR 0035)."""
+    abholung = get_object_or_404(Abholung.objects.select_related("haushalt"), pk=pk)
+    h = zugang.haushalt(request.user, abholung.haushalt.kundennummer)
+    korrekturen.zuruecknehmen(korrekturen.Art.ABHOLUNG, abholung)
     h.refresh_from_db()
     return _zurueck(
         request,
         h,
         f"Abholung zurückgenommen. Kontostand jetzt: {konto.euro(h.kontostand or 0)}.",
+    )
+
+
+@require_POST
+@rollen.recht_erforderlich("einlass.nutzen")
+def korrektur_beantragen(request, art, pk):
+    """Ohne Recht zum Zurücknehmen: Bitte an Admin oder berechtigte Rolle (ADR 0035)."""
+    if art not in korrekturen.Art.values:
+        raise Http404
+    obj = korrekturen._objekt(art, pk)
+    if obj is None:
+        raise Http404
+    nummer = obj.kundennummer if hasattr(obj, "kundennummer") and obj.kundennummer else (
+        obj.haushalt.kundennummer)  # fmt: skip
+    h = zugang.haushalt(request.user, nummer)
+    try:
+        korrekturen.beantragen(
+            art, pk, grund=request.POST.get("grund", ""),
+            anmerkung=request.POST.get("anmerkung", ""), von=_benutzername(request.user),
+        )  # fmt: skip
+    except korrekturen.KorrekturFehler as fehler:
+        return _zurueck(request, h, f"Nicht gesendet: {fehler}", messages.ERROR)
+    return _zurueck(
+        request, h, "Korrekturwunsch gesendet. Ein Admin bzw. das Büro entscheidet darüber."
     )
 
 
@@ -246,14 +271,11 @@ def sonderaktion_eintragen(request, kundennummer, aktion):
 
 
 @require_POST
-@rollen.recht_erforderlich("einlass.sonderaktion")
+@rollen.recht_erforderlich("einlass.zuruecknehmen")
 def teilnahme_zuruecknehmen(request, pk):
     t = get_object_or_404(Teilnahme, pk=pk)
     h = zugang.haushalt(request.user, t.kundennummer)
-    try:
-        sonderaktionen.zuruecknehmen(t)
-    except sonderaktionen.SonderaktionFehler as fehler:
-        return _zurueck(request, h, f"Nicht zurückgenommen: {fehler}", messages.ERROR)
+    korrekturen.zuruecknehmen(korrekturen.Art.TEILNAHME, t)
     return _zurueck(request, h, f"{t.aktion} zurückgenommen.")
 
 
@@ -284,23 +306,17 @@ def einzahlung(request, kundennummer):
 
 
 @require_POST
-@rollen.recht_erforderlich("einlass.zahlung")
+@rollen.recht_erforderlich("einlass.zuruecknehmen")
 def einzahlung_zuruecknehmen(request, pk):
-    """Nimmt eine heute gebuchte Einzahlung zurück (Versehen)."""
-    buchung = get_object_or_404(
-        Buchung,
-        pk=pk,
-        art=Buchung.Art.EINZAHLUNG,
-        datum=timezone.localdate(),
-        haushalt__isnull=False,
-    )
-    h = buchung.haushalt
-    konto.zuruecknehmen(buchung)
+    """Nimmt eine Einzahlung zurück, auch an späteren Tagen (nur mit eigenem Recht)."""
+    buchung = get_object_or_404(Buchung, pk=pk, art=Buchung.Art.EINZAHLUNG, haushalt__isnull=False)
+    h = zugang.haushalt(request.user, buchung.haushalt.kundennummer)
+    korrekturen.zuruecknehmen(korrekturen.Art.ZAHLUNG, buchung)
     h.refresh_from_db()
     return _zurueck(
         request,
         h,
-        f"Einzahlung zurückgenommen. Kontostand jetzt: {konto.euro(h.kontostand or 0)}.",
+        f"Zahlung zurückgenommen. Kontostand jetzt: {konto.euro(h.kontostand or 0)}.",
     )
 
 

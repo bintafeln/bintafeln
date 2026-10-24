@@ -532,3 +532,10 @@ label.wahl { display: block; white-space: nowrap; }
 .recht small { display: block; }
 .recht-fremd { opacity: .55; }
 @media (min-width: 64rem) { .rechte-bereich { columns: 2; column-gap: 2rem; } .recht { break-inside: avoid; } }
+
+/* Korrekturwünsche */
+.zuruecknehmen { margin: .25rem 0; }
+.korrektur-wunsch summary { cursor: pointer; color: var(--akzent-dunkel); }
+.korrektur-wunsch form { display: grid; gap: .4rem; margin-top: .5rem; max-width: 28rem; }
+.korrektur-karte { border-left: 4px solid var(--akzent); padding: .25rem 0 .25rem 1rem; margin: 0 0 1rem; }
+.korrektur-karte p { margin: .2rem 0; }

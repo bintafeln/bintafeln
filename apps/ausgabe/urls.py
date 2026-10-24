@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.ausgabe import views, views_sonderaktionen
+from apps.ausgabe import views, views_korrekturen, views_sonderaktionen
 
 app_name = "ausgabe"
 
@@ -41,6 +41,13 @@ urlpatterns = [
         "sonderaktionen/<int:pk>/loeschen/",
         views_sonderaktionen.loeschen,
         name="sonderaktion_loeschen",
+    ),
+    path("korrektur/<str:art>/<int:pk>/", views.korrektur_beantragen, name="korrektur_beantragen"),
+    path("korrekturen/", views_korrekturen.liste, name="korrekturen"),
+    path(
+        "korrekturen/<int:pk>/entscheiden/",
+        views_korrekturen.entscheiden,
+        name="korrektur_entscheiden",
     ),
     path("kasse/", views.kasse_ansehen, name="kasse"),
     path("einstellungen/", views.einstellungen, name="einstellungen"),

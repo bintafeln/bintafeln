@@ -1,0 +1,31 @@
+{# Zurücknehmen (mit Recht) oder Korrekturwunsch (ohne), ADR 0035. Parameter: art, obj, ziel, titel #}
+{% load ausgabe_extras %}
+{% with offen=korrektur_offen|korrektur:art|korrektur_fuer:obj.pk %}
+<div class="zuruecknehmen">
+  {% if darf_zuruecknehmen %}
+  <form method="post" action="{{ ziel }}" class="inline" hx-post="{{ ziel }}" hx-target="#ergebnis"
+        hx-confirm="{{ titel }} zurücknehmen?">
+    {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">{{ titel }} zurücknehmen</button>
+  </form>
+  {% elif offen %}
+  <p class="hinweis">{{ titel }}: Korrektur beantragt ({{ offen.grund }}), wartet auf Entscheidung.</p>
+  {% else %}
+  <details class="korrektur-wunsch">
+    <summary>{{ titel }}: Korrektur beantragen</summary>
+    <form method="post" action="{% url 'ausgabe:korrektur_beantragen' art obj.pk %}"
+          hx-post="{% url 'ausgabe:korrektur_beantragen' art obj.pk %}" hx-target="#ergebnis">
+      {% csrf_token %}
+      <label for="grund-{{ art }}-{{ obj.pk }}">Grund</label>
+      <select name="grund" id="grund-{{ art }}-{{ obj.pk }}" required>
+        <option value="">bitte wählen</option>
+        {% for g in korrekturgruende %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
+      </select>
+      <label for="anmerkung-{{ art }}-{{ obj.pk }}">Anmerkung (optional)</label>
+      <input type="text" name="anmerkung" id="anmerkung-{{ art }}-{{ obj.pk }}" maxlength="300">
+      <button type="submit" class="knopf knopf-zweitrangig">Korrekturwunsch senden</button>
+      <small class="hilfe">Zurücknehmen dürfen Admins bzw. berechtigte Rollen; sie entscheiden über den Wunsch.</small>
+    </form>
+  </details>
+  {% endif %}
+</div>
+{% endwith %}

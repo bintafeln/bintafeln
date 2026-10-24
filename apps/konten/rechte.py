@@ -28,10 +28,15 @@ EINSTELLUNGEN = "Einstellungen"
 KATALOG = [
     # Einlass und Kasse
     Recht("einlass.nutzen", EINLASS, "Einlass öffnen und Kunden aufrufen (Ampel)"),
-    Recht("einlass.abholung", EINLASS, "Abholungen buchen und am selben Tag zurücknehmen"),
-    Recht("einlass.zahlung", EINLASS, "Zahlungen ohne Abholung buchen und zurücknehmen"),
+    Recht("einlass.abholung", EINLASS, "Abholungen buchen"),
+    Recht("einlass.zahlung", EINLASS, "Zahlungen ohne Abholung buchen"),
     Recht("einlass.ausnahme", EINLASS, "Ausnahme für heute erteilen"),
     Recht("einlass.sonderaktion", EINLASS, "Teilnahme an Sonderaktionen eintragen"),
+    Recht("einlass.zuruecknehmen", EINLASS,
+          "Abholungen, Zahlungen und Sonderaktionen selbst zurücknehmen",
+          "Auch an späteren Tagen. Ohne dieses Recht geht am Einlass nur ein Korrekturwunsch."),
+    Recht("korrekturen.entscheiden", EINLASS, "Korrekturwünsche vom Einlass entscheiden",
+          "Wer dieses Recht hat, bekommt neue Korrekturwünsche per Mail."),
     Recht("kasse.sehen", EINLASS, "Kasse und Kassenbericht ansehen"),
     Recht("kasse.einzelbuchungen", EINLASS, "In der Kasse Einzelbuchungen mit Kundennummer sehen"),
     Recht("konto.korrektur", EINLASS, "Kundenkonto korrigieren"),

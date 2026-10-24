@@ -40,6 +40,7 @@ def menue(request) -> list[dict]:
         ("einlass.nutzen", _eintrag("Einlass", "ausgabe:empfang", genau=True)),
         ("kasse.sehen", _eintrag("Kasse", "ausgabe:kasse")),
         ("sonderaktionen.verwalten", _eintrag("Sonderaktionen", "ausgabe:sonderaktionen")),
+        ("korrekturen.entscheiden", _eintrag("Korrekturwünsche", "ausgabe:korrekturen")),
     ])  # fmt: skip
     alle_kunden = _eintrag("Alle Kunden", "kunden:uebersicht", genau=True)
     alle_kunden["auch"] = [reverse("kunden:uebersicht") + "haushalt/"]

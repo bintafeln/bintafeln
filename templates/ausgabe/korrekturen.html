@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block titel %}Korrekturwünsche{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Korrekturwünsche</h1>
+  <p class="hinweis">Bitten vom Einlass, eine Abholung, Zahlung oder Sonderaktion zurückzunehmen. „Zurücknehmen“
+    führt die Korrektur aus (Kundenkonto und Kasse werden mitkorrigiert), „Ablehnen“ lässt alles, wie es ist.</p>
+  <h2>Offen</h2>
+  {% for k in offen %}
+  <div class="korrektur-karte">
+    <p><strong><a href="{% url 'kunden:haushalt' k.kundennummer %}">Kunde {{ k.kundennummer }}</a> · {{ k.beschreibung }}</strong></p>
+    <p>Grund: {{ k.grund }}{% if k.anmerkung %} – {{ k.anmerkung }}{% endif %}</p>
+    <p class="hinweis">Beantragt am {{ k.erstellt_am|date:"d.m.Y H:i" }} von {{ k.erstellt_von }}</p>
+    <form method="post" action="{% url 'ausgabe:korrektur_entscheiden' k.pk %}" class="filter">
+      {% csrf_token %}
+      <label for="antwort-{{ k.pk }}">Antwort (optional)</label>
+      <input type="text" name="antwort" id="antwort-{{ k.pk }}" maxlength="300" class="suche">
+      <button type="submit" name="entscheidung" value="zuruecknehmen" class="knopf">Zurücknehmen</button>
+      <button type="submit" name="entscheidung" value="ablehnen" class="knopf knopf-zweitrangig">Ablehnen</button>
+    </form>
+  </div>
+  {% empty %}
+  <p class="hinweis">Keine offenen Korrekturwünsche.</p>
+  {% endfor %}
+  <h2>Zuletzt entschieden</h2>
+  {% if entschieden %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Kunde</th><th>Was</th><th>Grund</th><th>Beantragt</th><th>Entscheidung</th></tr></thead>
+    <tbody>
+    {% for k in entschieden %}
+      <tr>
+        <td data-titel="Kunde">{{ k.kundennummer }}</td>
+        <td data-titel="Was">{{ k.beschreibung }}</td>
+        <td data-titel="Grund">{{ k.grund }}{% if k.anmerkung %} – {{ k.anmerkung }}{% endif %}</td>
+        <td data-titel="Beantragt">{{ k.erstellt_am|date:"d.m.Y H:i" }}, {{ k.erstellt_von }}</td>
+        <td data-titel="Entscheidung">{{ k.get_status_display }}{% if k.entschieden_am %} am {{ k.entschieden_am|date:"d.m.Y" }}{% endif %}{% if k.entschieden_von %} von {{ k.entschieden_von }}{% endif %}{% if k.antwort %}: {{ k.antwort }}{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p class="hinweis">Noch keine.</p>{% endif %}
+</section>
+{% endblock %}

@@ -17,6 +17,15 @@ GRUPPENFARBEN = [
     ("braun", "Braun"),
     ("grau", "Grau"),
 ]
+# Gründe für einen Korrekturwunsch am Einlass (Rücknahme durch Admin oder berechtigte Rolle)
+KORREKTURGRUENDE = [
+    "Versehentlich gebucht",
+    "Falscher Kunde aufgerufen",
+    "Doppelt gebucht",
+    "Kunde hat doch nichts mitgenommen",
+    "Falscher Betrag",
+    "Sonstiges",
+]
 ANREDEN = [("", "keine Angabe"), ("Frau", "Frau"), ("Herr", "Herr"), ("Divers", "Divers")]
 
 FAMILIENSTAENDE = [

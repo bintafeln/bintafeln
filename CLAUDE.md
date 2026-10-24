@@ -154,6 +154,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   geben. Rolle Admin hat immer alle Rechte. In Tests: Fixture `recht_geben`.
 - Einzelne Haushalte nur über `apps.kunden.zugang.haushalt(request.user, kundennummer)` laden
   (prüft die Zuordnung zu Ausgabestellen, ADR 0034); Listen mit `zugang.filtern()`.
+- Rücknahmen (Abholung, Zahlung, Teilnahme) nur über `apps/ausgabe/korrekturen.py`
+  (`zuruecknehmen()`, Korrekturwünsche, ADR 0035).
 - Menü links: Einträge je Rolle in `apps/core/menue.py` (neue Seiten dort eintragen statt
   Links in die Seiten zu setzen).
 - Mitarbeitende: Logik und Schutzregeln in `apps/konten/verwaltung.py` (nie löschen, nur

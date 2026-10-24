@@ -8,6 +8,7 @@
   </p>
   {% if sicherung %}{% include "core/_sicherung.html" %}{% endif %}
   {% if faellig %}<p class="sicherung"><a href="{% url 'konten:mitarbeitende' %}">{{ faellig }} Wiedervorlage{{ faellig|pluralize:"n" }} bei den Mitarbeitenden fällig</a> (Führerschein, Belehrung, Schulungen).</p>{% endif %}
+  {% if korrekturen_offen %}<p class="sicherung"><a href="{% url 'ausgabe:korrekturen' %}">Korrekturwünsche offen: {{ korrekturen_offen }}</a> </p>{% endif %}
   {% if neue_antraege %}<p class="sicherung"><a href="{% url 'antraege:liste' %}">{{ neue_antraege }} neue{{ neue_antraege|pluralize:"r,"}} Antr{{ neue_antraege|pluralize:"ag,äge" }}</a> eingegangen.</p>{% endif %}
   {% if "einlass.nutzen" in rechte %}
     <p><a class="knopf" href="{% url 'ausgabe:empfang' %}">Zum Einlass</a></p>

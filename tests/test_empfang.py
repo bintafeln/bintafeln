@@ -180,7 +180,8 @@ def test_ohne_htmx_weiterleitung_mit_meldung(ausgabe, haushalt):
     assert "Abholung eingetragen." in ausgabe.get(antwort.url).content.decode()
 
 
-def test_zuruecknehmen(ausgabe, haushalt):
+def test_zuruecknehmen(ausgabe, haushalt, recht_geben):
+    recht_geben(rollen.AUSGABE, "einlass.zuruecknehmen")
     frueher = timezone.localdate() - dt.timedelta(days=30)
     Abholung.objects.create(haushalt=haushalt, datum=frueher)
     eintragen(ausgabe, haushalt)
@@ -189,12 +190,14 @@ def test_zuruecknehmen(ausgabe, haushalt):
     assert "Abholung zurückgenommen." in inhalt and "Abholung möglich" in inhalt
     haushalt.refresh_from_db()
     assert haushalt.letzter_besuch == frueher
-    # Importierte Abholungen lassen sich nicht zurücknehmen.
+    # Mit dem Recht auch an späteren Tagen
     alte = Abholung.objects.get()
-    assert ausgabe.post(reverse("ausgabe:zuruecknehmen", args=[alte.pk])).status_code == 404
+    ausgabe.post(reverse("ausgabe:zuruecknehmen", args=[alte.pk]), **HX)
+    assert not Abholung.objects.exists()
 
 
-def test_zuruecknehmen_der_einzigen_abholung(ausgabe, haushalt):
+def test_zuruecknehmen_der_einzigen_abholung(ausgabe, haushalt, recht_geben):
+    recht_geben(rollen.AUSGABE, "einlass.zuruecknehmen")
     eintragen(ausgabe, haushalt)
     ausgabe.post(reverse("ausgabe:zuruecknehmen", args=[Abholung.objects.get().pk]), **HX)
     haushalt.refresh_from_db()

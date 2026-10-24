@@ -29,8 +29,9 @@ def healthz(request):
 def start(request):
     from apps.antraege.models import Antrag
     from apps.antraege.models import fristen_anwenden as antragsfristen_anwenden
-    from apps.ausgabe import sonderaktionen
+    from apps.ausgabe import korrekturen, sonderaktionen
     from apps.ausgabe.konto import buchungsfristen_anwenden
+    from apps.ausgabe.models import Korrekturwunsch
     from apps.kunden.models import ImportVorbereitung, fristen_anwenden
 
     # Geprüfte, nicht übernommene Importe werden spätestens hier nach einer Stunde gelöscht;
@@ -39,6 +40,7 @@ def start(request):
     fristen_anwenden()
     buchungsfristen_anwenden()
     sonderaktionen.fristen_anwenden()
+    korrekturen.fristen_anwenden()
     personal.stammdaten_leeren()
     antragsfristen_anwenden()
     kontext = {}
@@ -48,6 +50,10 @@ def start(request):
         ).count()
     if rollen.darf_mitarbeitende_verwalten(request.user):
         kontext["faellig"] = len(personal.faelligkeiten())
+    if rollen.hat_recht(request.user, "korrekturen.entscheiden"):
+        kontext["korrekturen_offen"] = Korrekturwunsch.objects.filter(
+            status=Korrekturwunsch.Status.OFFEN
+        ).count()
     if rollen.hat_recht(request.user, "system.status"):
         kontext["sicherung"] = sicherung.lese_status()
     return render(request, "core/start.html", kontext)

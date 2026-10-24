@@ -66,14 +66,6 @@ def eintragen(aktion, h, *, auswahl, erwachsene, kinder, stelle, von, heute=None
         raise SonderaktionFehler(f"„{aktion}“ ist für diesen Haushalt schon eingetragen.") from None
 
 
-def zuruecknehmen(teilnahme: Teilnahme, heute=None) -> None:
-    """Nur am selben Tag (Versehen am Einlass)."""
-    heute = heute or timezone.localdate()
-    if timezone.localdate(teilnahme.zeitpunkt) != heute:
-        raise SonderaktionFehler("Nur am selben Tag zurücknehmbar.")
-    teilnahme.delete()
-
-
 def fristen_anwenden(heute: dt.date | None = None) -> int:
     """Teilnahmen werden so lange aufbewahrt wie Abholungen."""
     grenze = timezone.make_aware(dt.datetime.combine(abholfrist_beginn(heute), dt.time()))

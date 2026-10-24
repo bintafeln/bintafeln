@@ -338,7 +338,8 @@ def test_empfang_ungueltige_eingaben(ausgabe, haushalt, daten, text):
     assert not Abholung.objects.exists()
 
 
-def test_storno_nimmt_buchung_zurueck(ausgabe, haushalt):
+def test_storno_nimmt_buchung_zurueck(ausgabe, haushalt, recht_geben):
+    recht_geben(rollen.AUSGABE, "einlass.zuruecknehmen")
     eintragen(ausgabe, haushalt, beitrag="3", bar="0")
     assert stand(haushalt) == D("3.00")
     a = Abholung.objects.get()
@@ -347,7 +348,8 @@ def test_storno_nimmt_buchung_zurueck(ausgabe, haushalt):
     assert stand(haushalt) == D("6.00") and not Buchung.objects.exists()
 
 
-def test_empfang_einzahlung_und_vorschlag(ausgabe, haushalt):
+def test_empfang_einzahlung_und_vorschlag(ausgabe, haushalt, recht_geben):
+    recht_geben(rollen.AUSGABE, "einlass.zuruecknehmen")
     e = AusgabeEinstellungen.laden()
     e.beitrag_je_abholung = D("1.50")
     e.save()
@@ -372,14 +374,15 @@ def test_empfang_einzahlung_und_vorschlag(ausgabe, haushalt):
     assert "Einzahlung von 10,00 € gebucht. Bar erhalten: 10,00 €. Kontostand jetzt: 16,00 €." in (
         inhalt
     )
-    assert "Zahlung 10,00 € von" in inhalt
+    assert "Zahlung 10,00 € zurücknehmen" in inhalt
     b = Buchung.objects.get()
     zurueck = ausgabe.post(reverse("ausgabe:einzahlung_zuruecknehmen", args=[b.pk]), **HX)
     assert "Kontostand jetzt: 6,00 €" in zurueck.content.decode()
     gestern = konto.einzahlen(haushalt, D("1"), None, "")
     Buchung.objects.filter(pk=gestern.pk).update(datum=timezone.localdate() - dt.timedelta(1))
     url = reverse("ausgabe:einzahlung_zuruecknehmen", args=[gestern.pk])
-    assert ausgabe.post(url).status_code == 404
+    assert ausgabe.post(url).status_code == 302  # mit dem Recht auch an späteren Tagen
+    assert not Buchung.objects.filter(pk=gestern.pk).exists()
 
 
 # --- Haushaltsseite und Korrektur --------------------------------------------------------
