@@ -141,6 +141,11 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Gehen, Überschneidungen) in `apps/personal/arbeitszeit.py`, Pausenabzug in
   `berechnung.arbeitstag()` (ADR 0020). Verschlüsselte Dateien nur über
   `apps.core.privatdateien`.
+- App `antraege` (Modul 3, ADR 0024): öffentliches Formular `/antrag/<sprache>/` in
+  `views_oeffentlich.py`, Bearbeitung in `views.py`, Fristen `models.fristen_anwenden()`.
+  Texte je Sprache in `apps/antraege/uebersetzungen/<code>.json` (Grundlage `de.json`); neue
+  Texte in **allen** Sprachdateien ergänzen, `tests/test_antraege.py` prüft Vollständigkeit
+  und Platzhalter.
 - PDFs nur über `apps.core.pdf` (`Pdf`-Rahmen, `pdf_antwort()` ohne Zwischenspeichern; ADR 0021).
   Auskunft Art. 15: `apps/kunden/auskunft.py` und `apps/konten/auskunft.py`, Kundenausweis
   `apps/kunden/ausweis.py`, Kassenbericht `kasse.bericht_pdf()`. Neue gespeicherte Daten zu

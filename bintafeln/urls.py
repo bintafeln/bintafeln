@@ -18,6 +18,9 @@ urlpatterns = [
     path("kunden/", include("apps.kunden.urls")),
     path("ausgabe/", include("apps.ausgabe.urls")),
     path("personal/", include("apps.personal.urls")),
+    path("antraege/", include("apps.antraege.urls")),
+    # Öffentlich, ohne Anmeldung (ADR 0024)
+    path("antrag/", include("apps.antraege.urls_oeffentlich")),
     path("", include("apps.core.urls")),
 ]
 

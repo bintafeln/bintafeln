@@ -5,6 +5,11 @@ Gespeichert wird der angezeigte Text, damit vorhandene und importierte Werte les
 
 ANREDEN = [("", "keine Angabe"), ("Frau", "Frau"), ("Herr", "Herr"), ("Divers", "Divers")]
 
+FAMILIENSTAENDE = [
+    "ledig", "verheiratet", "eingetragene Lebenspartnerschaft", "getrennt lebend", "geschieden",
+    "verwitwet",
+]  # fmt: skip
+
 # Führerscheinklassen nach Fahrerlaubnis-Verordnung, dazu die alte Klasse 3 (bis 7,5 t).
 FUEHRERSCHEINKLASSEN = [
     "AM", "A1", "A2", "A", "B", "BE", "C1", "C1E", "C", "CE",

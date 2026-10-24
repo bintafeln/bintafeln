@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block titel %}Texte {{ s.deutsch }}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'antraege:einstellungen' %}">← Anträge einstellen</a></p>
+  <h1>Texte: {{ s.deutsch }}</h1>
+  <p class="hinweis">Leer lassen, um die mitgelieferten Texte zu verwenden. Mitgeliefert:</p>
+  <div lang="{{ s.code }}" dir="{% if s.rtl %}rtl{% else %}ltr{% endif %}">
+    <p class="vorformatiert"><strong>Einleitung:</strong> {{ t.einleitung }}</p>
+    <p class="vorformatiert"><strong>Nach dem Absenden:</strong> {{ t.bestaetigung }}</p>
+  </div>
+  <form method="post" lang="{{ s.code }}" dir="{% if s.rtl %}rtl{% else %}ltr{% endif %}">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+{% endblock %}

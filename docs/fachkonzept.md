@@ -156,6 +156,10 @@ Auf Anfrage einer Person werden alle zu ihr gespeicherten Daten als PDF zusammen
 
 ## Modul 3: Neuanmeldung und Warteliste
 
+**Umgesetzt (ADR 0024):** Online-Antrag in 29 Sprachen, Bestätigung per Bildschirm und Mail,
+Bearbeitung, Fristen, Missbrauchsschutz, CSV-Export. Die Abarbeitung der Warteliste und die
+Zuteilung zu Kundengruppen bleiben vorerst in einem eigenen Programm der Tafel.
+
 - **Online-Antrag** als öffentliches Formular, das eine Tafel in ihre Webseite einbinden kann.
   Modus: Neuantrag, Verlängerung oder beides.
 - Je Feld einstellbar, ob es abgefragt wird: Kundennummer (bei Verlängerung), gewünschte

@@ -19,6 +19,7 @@
       <a href="{% url 'core:start' %}">Start</a>
       {% if "Admin" in rollen or "Büro" in rollen or "Ausgabe" in rollen %}<a href="{% url 'ausgabe:empfang' %}">Einlass</a> <a href="{% url 'ausgabe:kasse' %}">Kasse</a>{% endif %}
       {% if "Admin" in rollen or "Büro" in rollen or "Ausgabe" in rollen %}<a href="{% url 'kunden:uebersicht' %}">Kunden</a>{% endif %}
+      {% if "Admin" in rollen or "Büro" in rollen %}<a href="{% url 'antraege:liste' %}">Anträge</a>{% endif %}
       {% if darf_mitarbeitende %}<a href="{% url 'konten:mitarbeitende' %}">Mitarbeitende</a>{% endif %}
       {% if "Admin" in rollen or "Personal" in rollen %}<a href="{% url 'personal:liste' %}">Personal</a>{% endif %}
       {% if "Admin" in rollen %}

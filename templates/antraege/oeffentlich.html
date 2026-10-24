@@ -1,0 +1,31 @@
+{% load static %}<!doctype html>
+<html lang="{{ s.code }}" dir="{% if s.rtl %}rtl{% else %}ltr{% endif %}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>{{ t.titel }}{% if tafel.name %} – {{ tafel.name }}{% endif %}</title>
+  <link rel="stylesheet" href="{% static 'css/bintafeln.css' %}">
+</head>
+<body class="oeffentlich">
+  <header class="kopf">
+    <span class="marke">
+      {% if tafel.logo %}<img src="{{ tafel.logo.url }}" alt="" class="logo">{% endif %}
+      <span>{{ tafel.name|default:"Tafel" }}</span>
+    </span>
+    <form method="get" action="{% url 'antrag:start' %}" class="sprachwahl">
+      <label for="sprache">{{ t.sprache }}</label>
+      <select name="sprache" id="sprache" onchange="this.form.submit()">
+        {% for x in sprachen %}<option value="{{ x.code }}" lang="{{ x.code }}"{% if x.code == s.code %} selected{% endif %}>{{ x.name }}</option>{% endfor %}
+      </select>
+      <noscript><button type="submit" class="knopf">{{ t.sprache_wechseln }}</button></noscript>
+    </form>
+  </header>
+  <main class="inhalt">{% block inhalt %}{% endblock %}</main>
+  <footer class="fuss">
+    {% if tafel.anschrift %}<span>{{ tafel.anschrift }}</span>{% endif %}
+    <span>{% if e.datenschutz_url %}<a href="{{ e.datenschutz_url }}">{{ t.datenschutz }}</a>{% endif %}
+      {% if e.impressum_url %} · <a href="{{ e.impressum_url }}">{{ t.impressum }}</a>{% endif %}</span>
+  </footer>
+</body>
+</html>

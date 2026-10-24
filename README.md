@@ -298,6 +298,27 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms, nur zum Lesen.
   - **Auskunft nach Art. 15 DSGVO:** alle gespeicherten Daten des Haushalts samt Hinweisen zu
     Zweck, Speicherdauer und Rechten. Der Abruf steht im Zugriffsprotokoll.
 
+## Online-Anträge
+
+Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 0024).
+
+- **Einschalten:** „Anträge“ → „Formular einstellen“ (Admin). Dort je Feld wählen: nicht
+  abfragen, freiwillig oder Pflicht; Links zu Datenschutzerklärung und Impressum eintragen;
+  festlegen, wer bei neuen Anträgen eine Mail bekommt. Danach „Online-Anträge annehmen“
+  einschalten.
+- **Adresse für die Webseite der Tafel:** `https://<domain>/antrag/`. Die Seite ist in
+  **29 Sprachen** umstellbar und erkennt die Sprache des Browsers. Einleitung und Text nach dem
+  Absenden lassen sich je Sprache selbst schreiben; sonst gelten die mitgelieferten.
+- Nach dem Absenden sehen Antragstellende ihre **Antragsnummer** und bekommen eine
+  **Bestätigungsmail** in ihrer Sprache, wenn sie eine Adresse angeben (Mailserver nötig).
+- **Bearbeiten** (Admin, Büro) unter „Anträge“: Liste nach Eingang, Detailseite mit Nachweisen,
+  Status, Anmerkungen, Papierkorb und Auskunft (PDF). „Diese Liste als CSV herunterladen“
+  liefert die Anträge, z. B. für eine Warteliste in einem anderen Programm.
+- Angenommene Anträge ins Altsystem übertragen; mit dem nächsten Import erscheinen sie im
+  Kundenstamm.
+- Die Übersetzungen stehen in `apps/antraege/uebersetzungen/`, eine Datei je Sprache.
+  Korrekturen von Muttersprachlern sind willkommen.
+
 ## Einlass
 
 „Einlass“ im Menü (Admin, Büro, Ausgabe):

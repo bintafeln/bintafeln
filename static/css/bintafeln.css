@@ -257,3 +257,13 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .stempel-status { font-size: 1.2rem; }
 .demo-hinweis { margin: 0; padding: .5rem 1rem; text-align: center; background: #fff6dc; color: #6b4e00; font-weight: 600; }
 .version { opacity: .6; font-size: .8rem; }
+
+/* Öffentliches Antragsformular */
+.sprachwahl { display: flex; align-items: center; gap: .5rem; }
+.sprachwahl select { max-width: 12rem; }
+.vorformatiert { white-space: pre-line; }
+.unsichtbar { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.person { border: 1px solid var(--rand); border-radius: var(--radius); padding: .5rem .75rem; margin-bottom: .5rem; }
+.person summary { cursor: pointer; font-weight: 600; }
+[dir="rtl"] .feld-haken input { margin-left: .5rem; margin-right: 0; }
+.sprachliste { columns: 12rem; padding-left: 1.25rem; }
