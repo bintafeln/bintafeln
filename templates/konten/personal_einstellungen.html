@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block titel %}Einstellungen Personal{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'konten:mitarbeitende' %}">← Mitarbeitende</a></p>
+  <h1>Einstellungen Personal</h1>
+  <p class="hinweis">Fristen für Wiedervorlagen und für das Leeren persönlicher Angaben nach dem Austritt.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+{% endblock %}

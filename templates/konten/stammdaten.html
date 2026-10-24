@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block titel %}Stammdaten {{ ziel }}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'konten:mitarbeiter' ziel.pk %}">← {{ ziel }}</a></p>
+  <h1>Stammdaten {{ ziel }}</h1>
+  {% if s.geleert_am %}
+    <p class="sicherung">Die persönlichen Angaben wurden am {{ s.geleert_am|date:"d.m.Y" }} nach Ablauf der Löschfrist geleert.</p>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    {% for titel, felder in form.abschnitte %}
+      <fieldset class="abschnitt">
+        <legend>{{ titel }}</legend>
+        {% for feld in felder %}
+          <div class="feld{% if feld.errors %} hat-fehler{% endif %}">
+            <label for="{{ feld.id_for_label }}">{{ feld.label }}</label>
+            {{ feld }}
+            {% if feld.help_text %}<small class="hilfe">{{ feld.help_text }}</small>{% endif %}
+            {% for fehler in feld.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
+          </div>
+        {% endfor %}
+      </fieldset>
+    {% endfor %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+
+{% if einstellungen.fs_kopie_erlaubt or s.fs_kopie_datei %}
+<section class="karte">
+  <h2>Kopie des Führerscheins</h2>
+  {% if s.fs_kopie_datei %}
+    <p>Verschlüsselt gespeichert am {{ s.fs_kopie_am|date:"d.m.Y H:i" }}.
+      <a href="{% url 'konten:kopie_ansehen' ziel.pk %}" target="_blank" rel="noopener">Ansehen</a>
+      (jeder Abruf wird protokolliert)</p>
+    <form method="post" action="{% url 'konten:kopie_entfernen' ziel.pk %}"
+          onsubmit="return confirm('Kopie endgültig löschen?')">
+      {% csrf_token %}
+      <button type="submit" class="knopf knopf-zweitrangig">Kopie löschen</button>
+    </form>
+  {% endif %}
+  {% if einstellungen.fs_kopie_erlaubt %}
+    <form method="post" action="{% url 'konten:kopie_hochladen' ziel.pk %}" enctype="multipart/form-data" class="abseits">
+      {% csrf_token %}
+      <div class="feld">
+        <label for="kopie">{% if s.fs_kopie_datei %}Kopie ersetzen{% else %}Kopie hochladen{% endif %} (Foto oder PDF, höchstens 5 MB)</label>
+        <input type="file" name="kopie" id="kopie" accept="image/jpeg,image/png,image/webp,application/pdf" required>
+      </div>
+      <button type="submit" class="knopf knopf-zweitrangig">Hochladen</button>
+    </form>
+  {% else %}
+    <p class="hinweis">Neue Kopien sind in den Einstellungen abgeschaltet.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="karte">
+  <h2>Schulungen</h2>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Datum</th><th>Thema</th><th>Gültig bis</th><th>Bemerkung</th><th></th></tr></thead>
+    <tbody>
+    {% for sch in schulungen %}
+      <tr>
+        <td data-titel="Datum">{{ sch.datum|date:"d.m.Y" }}</td>
+        <td data-titel="Thema">{{ sch.thema }}</td>
+        <td data-titel="Gültig bis">{{ sch.gueltig_bis|date:"d.m.Y"|default:"–" }}</td>
+        <td data-titel="Bemerkung">{{ sch.bemerkung|default:"–" }}</td>
+        <td data-titel="Aktion">
+          <form method="post" action="{% url 'konten:schulung_loeschen' ziel.pk sch.pk %}" class="inline"
+                onsubmit="return confirm('Schulung löschen?')">
+            {% csrf_token %}<button type="submit" class="link">löschen</button>
+          </form>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5">Noch keine Schulungen eingetragen.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <h3>Schulung eintragen</h3>
+  <form method="post" action="{% url 'konten:schulung_neu' ziel.pk %}">
+    {% csrf_token %}
+    {% include "includes/formular.html" with form=schulung_form %}
+    <button type="submit" class="knopf knopf-zweitrangig">Eintragen</button>
+  </form>
+</section>
+{% endblock %}

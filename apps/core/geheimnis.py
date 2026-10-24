@@ -26,6 +26,18 @@ def verschluesseln(klartext: str) -> str:
     return _fernet().encrypt(klartext.encode()).decode() if klartext else ""
 
 
+def bytes_verschluesseln(daten: bytes) -> bytes:
+    """Für Dateien, z. B. eine Führerschein-Kopie."""
+    return _fernet().encrypt(daten)
+
+
+def bytes_entschluesseln(daten: bytes) -> bytes | None:
+    try:
+        return _fernet().decrypt(daten)
+    except InvalidToken:
+        return None
+
+
 def entschluesseln(geheimtext: str) -> str | None:
     """Klartext, leerer Text wenn nichts gespeichert ist, None wenn nicht lesbar."""
     if not geheimtext:

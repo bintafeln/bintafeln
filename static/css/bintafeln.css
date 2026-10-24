@@ -242,3 +242,11 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .feld input[type="checkbox"] { width: 1.25rem; height: 1.25rem; }
 .aktionen .inline, .aktionen .inline + .inline { display: block; margin: 0; }
 .aktionen .knopf { width: auto; }
+
+/* Stammdaten und Fälligkeiten */
+.abschnitt { border: 1px solid var(--rand); border-radius: var(--radius); padding: .5rem 1rem; margin: 0 0 1rem; }
+.abschnitt legend { font-weight: 700; padding: 0 .25rem; }
+.faellig { background: #fff6dc; border-radius: var(--radius); padding: .5rem 1rem; margin-bottom: 1rem; }
+.faellig h2 { margin: .25rem 0; font-size: 1.1rem; }
+.faellig ul { margin: 0; padding-left: 1.25rem; }
+.ueberfaellig { color: var(--fehler); font-weight: 600; }
