@@ -152,13 +152,19 @@ def test_hinweise_auf_der_seite(admin_client, mailserver):
 
 
 def test_testmail(admin_client, admin, mailserver, monkeypatch):
+    seite = admin_client.get(MAIL_SEITE).content.decode()
+    assert "Verbindung prüfen" in seite and "Testmail senden an" in seite
     seite = admin_client.post(MAIL_SEITE, {"testmail": "1"}, follow=True).content.decode()
-    assert "Ihre eigene" in seite and not django_mail.outbox
+    assert "gültige Empfängeradresse" in seite and not django_mail.outbox
+    seite = admin_client.post(MAIL_SEITE, {"testmail": "1", "an": "test@example.org"},
+                              follow=True).content.decode()  # fmt: skip
+    assert "Testmail an test@example.org gesendet." in seite
+    assert django_mail.outbox[0].to == ["test@example.org"]
     admin.email = "chefin@example.org"
     admin.save()
-    seite = admin_client.post(MAIL_SEITE, {"testmail": "1"}, follow=True).content.decode()
-    assert "Testmail an chefin@example.org gesendet." in seite
-    assert django_mail.outbox[0].to == ["chefin@example.org"]
+    assert 'value="chefin@example.org"' in admin_client.get(MAIL_SEITE).content.decode()
+    admin_client.post(MAIL_SEITE, {"testmail": "1"})
+    assert django_mail.outbox[1].to == ["chefin@example.org"]
 
     def scheitern(*args, **kwargs):
         raise mail.MailFehler("Mailserver nicht erreichbar.")
@@ -166,6 +172,32 @@ def test_testmail(admin_client, admin, mailserver, monkeypatch):
     monkeypatch.setattr(mail, "senden", scheitern)
     seite = admin_client.post(MAIL_SEITE, {"testmail": "1"}, follow=True).content.decode()
     assert "Testmail nicht gesendet: Mailserver nicht erreichbar." in seite
+
+
+def test_verbindung_pruefen(admin_client, mailserver, monkeypatch):
+    seite = admin_client.post(MAIL_SEITE, {"pruefen": "1"}, follow=True).content.decode()
+    assert "Verbindung und Anmeldung am Mailserver klappen." in seite
+    assert not django_mail.outbox  # es wird nichts gesendet
+
+    class Kaputt:
+        def open(self):
+            raise smtplib.SMTPAuthenticationError(535, b"nein")
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(mail, "get_connection", lambda **kwargs: Kaputt())
+    seite = admin_client.post(MAIL_SEITE, {"pruefen": "1"}, follow=True).content.decode()
+    assert "Verbindung fehlgeschlagen: Anmeldung am Mailserver fehlgeschlagen." in seite
+
+
+def test_test_erst_nach_einrichtung(admin_client):
+    assert (
+        "sobald Server und Absender gespeichert sind"
+        in admin_client.get(MAIL_SEITE).content.decode()
+    )
+    with pytest.raises(mail.MailFehler, match="kein Mailserver"):
+        mail.verbindung_pruefen()
 
 
 # --- Einladung beim Anlegen -------------------------------------------------------------

@@ -26,14 +26,23 @@
   </form>
 </section>
 
-{% if einstellungen.eingerichtet %}
 <section class="karte">
   <h2>Testen</h2>
-  <p>Schickt eine Testmail an Ihre eigene Adresse{% if user.email %} ({{ user.email }}){% endif %}.</p>
-  <form method="post">
+  {% if einstellungen.eingerichtet %}
+  <p>Zuerst die Einstellungen speichern, dann testen.</p>
+  <form method="post" class="filter">
     {% csrf_token %}
+    <button type="submit" name="pruefen" value="1" class="knopf knopf-zweitrangig">Verbindung prüfen</button>
+    <small class="hilfe">Verbindet sich mit dem Server und meldet sich an, ohne eine Mail zu senden.</small>
+  </form>
+  <form method="post" class="filter abseits">
+    {% csrf_token %}
+    <label for="an">Testmail senden an</label>
+    <input type="email" name="an" id="an" value="{{ user.email }}">
     <button type="submit" name="testmail" value="1" class="knopf knopf-zweitrangig">Testmail senden</button>
   </form>
+  {% else %}
+  <p class="hinweis">Der Test ist möglich, sobald Server und Absender gespeichert sind.</p>
+  {% endif %}
 </section>
-{% endif %}
 {% endblock %}
