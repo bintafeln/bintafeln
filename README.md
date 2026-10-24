@@ -352,9 +352,9 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    Nummer scannen; der Kunde lässt sich jederzeit wieder aufrufen. Ein Versehen lässt sich am
    selben Tag zurücknehmen. Admin und Büro können bei Rot wegen einer Terminregel eine
    **Ausnahme für heute** erteilen.
-5. **Bezahlen:** Der Beitrag ist vorgeschlagen und änderbar. Im Pflichtfeld **„Bar auf den Tisch
-   gelegt“** steht genau der Betrag, den der Kunde zahlt, **auch 0**. Vorgeschlagen ist, was nach
-   Verrechnung des Guthabens fehlt (bei ausreichendem Guthaben also 0).
+5. **Bezahlen:** Der Beitrag ist vorgeschlagen und änderbar. Im Pflichtfeld **„Gezahlt“** steht
+   genau der Betrag, den der Kunde zahlt, **auch 0**. Vorgeschlagen ist, was nach Verrechnung des
+   Guthabens fehlt (bei ausreichendem Guthaben also 0).
    - weniger als der Beitrag: Rest aus Guthaben, sonst angeschrieben (nur wenn in den
      Einstellungen erlaubt, sonst kommt eine Meldung und nichts wird gebucht)
    - mehr als der Beitrag: der Überschuss wird Guthaben

@@ -69,7 +69,7 @@ def bar_vorschlag(beitrag: Decimal, kontostand) -> Decimal:
 
 @transaction.atomic
 def abholung_buchen(abholung, beitrag, bar, einstellungen, stelle, von) -> Zahlung:
-    """Bucht eine Abholung mit genau dem Betrag, der bar auf den Tisch gelegt wurde.
+    """Bucht eine Abholung mit genau dem Betrag, der gezahlt wurde.
 
     Reicht das Bargeld nicht, wird Guthaben verrechnet, danach angeschrieben (wenn erlaubt).
     Mehr als den Beitrag bucht eine eigene Einzahlung als Guthaben, damit die Kasse die

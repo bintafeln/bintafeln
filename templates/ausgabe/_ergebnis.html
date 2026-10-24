@@ -39,7 +39,7 @@
     {% csrf_token %}
     <label for="beitrag">Beitrag (Euro)</label>
     <input type="text" name="beitrag" id="beitrag" value="{{ beitrag|floatformat:2 }}" inputmode="decimal" class="betrag">
-    <label for="bar">Bar auf den Tisch gelegt (Euro) *</label>
+    <label for="bar">Gezahlt (Euro) *</label>
     <input type="text" name="bar" id="bar" value="{{ bar_vorschlag|floatformat:2 }}" inputmode="decimal" class="betrag" required>
     <small class="hilfe">Genau den Betrag eintragen, der gezahlt wurde, auch 0.
       {% if h.kontostand and h.kontostand > 0 %}Vorgeschlagen: was nach Verrechnung des Guthabens ({{ h.kontostand|floatformat:2 }} €) noch fehlt.{% endif %}
