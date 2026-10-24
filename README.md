@@ -333,9 +333,13 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
 1. Einmal die **Ausgabestelle** wählen, an der man arbeitet (gilt für die Sitzung).
 2. Kundennummer **scannen** oder eintippen und Enter. Führende Nullen sind egal.
 3. Die **Ampel** zeigt, ob abgeholt werden darf, und warum nicht:
-   - 🔴 Sperre, Status gesperrt/beendet, Ausweis abgelaufen, heute schon abgeholt, Höchstzahl
-     erreicht, keine Kundengruppe, heute nicht dran (einstellbar rot oder gelb)
-   - 🟡 Ausweis läuft bald ab oder fehlt, andere Ausgabestelle, Status pausiert
+   - 🔴 Sperre, Status gesperrt/beendet, Ausweis abgelaufen, heute schon so oft abgeholt wie
+     erlaubt, Höchstzahl je Woche/14 Tage/Monat erreicht, keine Kundengruppe, heute nicht dran
+     (einstellbar rot oder gelb)
+   - 🟡 Ausweis läuft bald ab oder fehlt, andere Ausgabestelle, Status pausiert, heute schon
+     abgeholt, wenn mehrfaches Abholen erlaubt ist
+   - Unter „Einstellungen → Ausgabe und Ampel“: **Abholungen am selben Tag** (1 = einmal,
+     2 = zweimal, 0 = beliebig oft) und **Höchstzahl je Zeitraum** (0 = keine Grenze).
    - 🟢 alles in Ordnung, oder eine Ausnahme für heute hebt eine Terminregel auf
 4. **Abholung eintragen**; der Beitrag ist vorgeschlagen und änderbar. Ein Versehen lässt sich am
    selben Tag zurücknehmen. Admin und Büro können bei Rot wegen einer Terminregel eine
@@ -346,7 +350,7 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
      Einstellungen erlaubt, auch **anschreiben**.
    - Nach dem Eintragen steht groß da, was **bar zu zahlen** ist, und der neue Kontostand.
 6. **Einzahlung / Vorauszahlung:** Betrag frei eingeben oder einen **Vorschlag** übernehmen
-   (Rest dieses Monats, ganzer nächster Monat). Jeder Vorschlag erklärt seine Rechnung. Eine
+   (Rest dieses Monats). Jeder Vorschlag erklärt seine Rechnung. Eine
    Einzahlung lässt sich am selben Tag zurücknehmen.
 7. Den **Kontoverlauf** mit allen Buchungen und Korrekturbuchungen gibt es auf der Haushaltsseite
    (Admin, Büro).

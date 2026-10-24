@@ -223,6 +223,7 @@ def test_einstellungen_speichern(admin_client):
     antwort = admin_client.post(
         url,
         {
+            "max_je_tag": "2",
             "max_abholungen": "2",
             "zeitraum": "monat",
             "vorwarnung_tage": "7",
@@ -235,8 +236,9 @@ def test_einstellungen_speichern(admin_client):
     assert antwort.status_code == 302
     e = AusgabeEinstellungen.laden()
     assert (e.max_abholungen, e.zeitraum, e.nicht_dran_rot) == (2, "monat", False)
+    assert e.max_je_tag == 2
     assert e.beitrag_je_abholung == Decimal("1.00") and not e.kontostand_anzeigen
-    assert admin_client.post(url, {"max_abholungen": "0"}).status_code == 200
+    assert admin_client.post(url, {"max_abholungen": "32"}).status_code == 200
 
 
 # --- Import warnt vor dem Verlust erfasster Daten -----------------------------------------

@@ -98,14 +98,21 @@ def bewerten(haushalt, heute: dt.date, ausgabestelle, einstellungen) -> Bewertun
 
     abholungen = [a for a in haushalt.abholungen.all() if a.datum <= heute]
     heute_abgeholt = [a for a in abholungen if a.datum == heute]
-    if heute_abgeholt:
-        uhrzeit = heute_abgeholt[0].uhrzeit
-        um = f" um {uhrzeit:%H:%M}" if uhrzeit else ""
-        melden(ROT, f"Heute bereits abgeholt{um}")
+    je_tag = einstellungen.max_je_tag  # 0 = beliebig oft am selben Tag
+    if heute_abgeholt and je_tag and len(heute_abgeholt) >= je_tag:
+        uhrzeiten = [a.uhrzeit for a in heute_abgeholt if a.uhrzeit]
+        um = f" um {max(uhrzeiten):%H:%M}" if uhrzeiten else ""
+        if je_tag == 1:
+            melden(ROT, f"Heute bereits abgeholt{um}")
+        else:
+            melden(ROT, f"Heute bereits {len(heute_abgeholt)}-mal abgeholt, zuletzt{um or ' heute'}"
+                        f" (höchstens {je_tag}-mal am Tag)")  # fmt: skip
     else:
+        if heute_abgeholt:
+            melden(GELB, f"Heute schon {len(heute_abgeholt)}-mal abgeholt (mehrfach erlaubt)")
         beginn = zeitraum_beginn(heute, einstellungen.zeitraum)
         anzahl = sum(1 for a in abholungen if a.datum >= beginn)
-        if anzahl >= einstellungen.max_abholungen:
+        if einstellungen.max_abholungen and anzahl >= einstellungen.max_abholungen:
             terminregel(
                 f"Höchstzahl erreicht: {anzahl} Abholung{'en' if anzahl != 1 else ''} "
                 f"{ZEITRAUM_TEXT[einstellungen.zeitraum]}"

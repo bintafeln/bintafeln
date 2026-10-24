@@ -22,7 +22,7 @@ rückwirkend abfragbar ist. Bisher gab es nur den Kontostand aus dem Import.
       Die Ampel zeigt dann gelb.
   - **Einzahlung:** bar, ins Haben.
   - **Korrektur:** ohne Bargeld, nur Admin und Büro, mit Begründung.
-- Der Einlass schlägt Vorauszahlungen vor (Rest dieses Monats, ganzer nächster Monat). Jeder
+- Der Einlass schlägt Vorauszahlungen vor (Rest dieses Monats; der nächste Monat bewusst nicht). Jeder
   Vorschlag erklärt, wie er entsteht: gezählte Tage, Kundengruppe, Höchstzahl, Ausweisablauf
   und was nicht berücksichtigt ist.
 - Buchungen hängen am Haushalt **und** an der Kundennummer. Ein Neuimport löst die Verbindung

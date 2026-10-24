@@ -84,6 +84,23 @@ def test_heute_schon_abgeholt(haushalt, einstellungen):
     assert farbe_und_texte(haushalt, einstellungen)[1] == ["Heute bereits abgeholt"]
 
 
+def test_mehrfach_am_tag(haushalt, einstellungen):
+    einstellungen.max_je_tag, einstellungen.max_abholungen = 2, 0  # keine Grenze je Woche
+    Abholung.objects.create(haushalt=haushalt, datum=HEUTE, uhrzeit=dt.time(9, 5))
+    assert farbe_und_texte(haushalt, einstellungen) == (
+        "gelb", ["Heute schon 1-mal abgeholt (mehrfach erlaubt)"])  # fmt: skip
+    Abholung.objects.create(haushalt=haushalt, datum=HEUTE, uhrzeit=dt.time(11, 30))
+    text = "Heute bereits 2-mal abgeholt, zuletzt um 11:30 (höchstens 2-mal am Tag)"
+    assert farbe_und_texte(haushalt, einstellungen) == ("rot", [text])
+    Abholung.objects.all().update(uhrzeit=None)
+    assert "zuletzt heute" in farbe_und_texte(haushalt, einstellungen)[1][0]
+    einstellungen.max_je_tag = 0  # beliebig oft
+    assert farbe_und_texte(haushalt, einstellungen)[0] == "gelb"
+    einstellungen.max_abholungen = 2  # aber höchstens 2 je Woche
+    b = ampel.bewerten(haushalt, HEUTE, None, einstellungen)
+    assert b.farbe == "rot" and b.ausnahme_hilft
+
+
 @pytest.mark.parametrize(
     ("zeitraum", "beginn"),
     [

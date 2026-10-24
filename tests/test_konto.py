@@ -138,17 +138,16 @@ def freitagsgruppe(haushalt):
     return haushalt
 
 
-def test_vorschlag_rest_und_naechster_monat(freitagsgruppe, einstellungen):
+def test_vorschlag_nur_fuer_diesen_monat(freitagsgruppe, einstellungen):
     vorschlaege, hinweis = konto.vorschlaege(freitagsgruppe, FREITAG, einstellungen, D("1.50"))
     assert hinweis == ""
-    rest, november = vorschlaege
+    (rest,) = vorschlaege  # kein Vorschlag für den nächsten Monat
     assert rest.titel == "Rest Oktober" and len(rest.tage) == 5 and rest.betrag == D("7.50")
     assert rest.erklaerung[0] == "5 Abholtage × 1,50 € = 7,50 €"
     assert rest.erklaerung[1].startswith("Gezählt: Fr 02.10., Fr 09.10.")
     assert rest.erklaerung[1].endswith("(Kundengruppe „Freitag“: Fr)")
     assert "ab heute, weil heute noch nicht abgeholt wurde" in rest.erklaerung[2]
     assert "Höchstens 1 Abholung je Kalenderwoche ist eingehalten." in rest.erklaerung
-    assert november.titel == "Ganzer November" and len(november.tage) == 4
 
 
 def test_vorschlag_ab_morgen_wenn_heute_abgeholt(freitagsgruppe, einstellungen):
@@ -169,11 +168,17 @@ def test_vorschlag_beachtet_hoechstzahl_je_woche(freitagsgruppe, einstellungen):
 def test_vorschlag_beachtet_hoechstzahl_je_monat(freitagsgruppe, einstellungen):
     einstellungen.zeitraum = AusgabeEinstellungen.Zeitraum.MONAT
     einstellungen.max_abholungen = 2
-    rest, november = konto.vorschlaege(freitagsgruppe, FREITAG, einstellungen, D("1"))[0]
-    assert len(rest.tage) == 2 and len(november.tage) == 2
+    (rest,) = konto.vorschlaege(freitagsgruppe, FREITAG, einstellungen, D("1"))[0]
+    assert len(rest.tage) == 2
     assert "Höchstens 2 Abholungen je Kalendermonat: 3 Abholtage nicht gezählt." in (
         rest.erklaerung
     )
+
+
+def test_vorschlag_ohne_hoechstzahl(freitagsgruppe, einstellungen):
+    einstellungen.max_abholungen = 0
+    rest = konto.vorschlaege(freitagsgruppe, FREITAG, einstellungen, D("1"))[0][0]
+    assert "Keine Höchstzahl je Zeitraum eingestellt." in rest.erklaerung
 
 
 def test_vorschlag_vierzehn_tage_ohne_grenze(freitagsgruppe, einstellungen):
@@ -193,13 +198,13 @@ def test_vorschlag_endet_mit_dem_ausweis(freitagsgruppe, einstellungen):
     freitagsgruppe.ausweis_gueltig_bis = dt.date(2026, 10, 1)
     assert konto.vorschlaege(freitagsgruppe, FREITAG, einstellungen, D("1")) == (
         [],
-        "Kein Vorschlag: Bis Ende des nächsten Monats ist kein Abholtag mehr möglich.",
+        "Kein Vorschlag: Bis Monatsende ist kein Abholtag mehr möglich.",
     )
 
 
 def test_vorschlag_jahreswechsel(freitagsgruppe, einstellungen):
     vorschlaege, _ = konto.vorschlaege(freitagsgruppe, dt.date(2026, 12, 18), einstellungen, D("1"))
-    assert [v.titel for v in vorschlaege] == ["Rest Dezember", "Ganzer Januar"]
+    assert [v.titel for v in vorschlaege] == ["Rest Dezember"]
 
 
 def test_kein_vorschlag(freitagsgruppe, einstellungen):

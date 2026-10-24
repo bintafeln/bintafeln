@@ -178,15 +178,16 @@ Zuteilung zu Kundengruppen bleiben vorerst in einem eigenen Programm der Tafel.
 
 **Umgesetzt (erste Stufe, ADR 0013):** Einlass mit Kundennummer-Scan, Ampel mit den Regeln
 unten, Abholung eintragen (mit vorgeschlagenem Beitrag) und am selben Tag zurücknehmen,
-Ausnahme für heute erteilen (Admin, Büro). Einstellbar: Höchstzahl Abholungen je Kalenderwoche,
-14 Tagen oder Kalendermonat; „heute nicht dran“ rot oder gelb; Vorwarnzeit für den Ausweis;
+Ausnahme für heute erteilen (Admin, Büro). Einstellbar: Abholungen am selben Tag (einmal, mehrmals
+oder beliebig oft); Höchstzahl Abholungen je Kalenderwoche, 14 Tagen oder Kalendermonat (oder
+keine); „heute nicht dran“ rot oder gelb; Vorwarnzeit für den Ausweis;
 Beitrag je Abholung, je Erwachsenem und je Kind; Anzeige des Kontostands. Eine Ausnahme für
 heute hebt die Terminregeln auf (nicht dran, Höchstzahl, Kundengruppe, Ausgabestelle), nicht
 aber Sperre, Status oder abgelaufenen Ausweis.
 
 **Kundenkonto (ADR 0014):** Buchungen mit Soll, Haben und Barbetrag. Zahlweisen je Abholung:
 aus Guthaben (Rest bar), alles bar oder, wenn erlaubt, anschreiben. Einzahlungen und
-Vorauszahlungen mit erklärtem Vorschlag für den Rest des Monats und den nächsten Monat.
+Vorauszahlungen mit erklärtem Vorschlag für den Rest des laufenden Monats.
 Korrekturen durch Admin und Büro.
 
 **Kasse:** Tages- (je Ausgabestelle), Monats- (je Tag) und Jahresstände (je Monat), rückwirkend

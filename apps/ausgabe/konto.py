@@ -154,6 +154,8 @@ def _begrenzen(tage, abgeholt, einstellungen) -> tuple[list[dt.date], str]:
     """Kürzt die Tage auf die erlaubte Höchstzahl; liefert dazu einen erklärenden Satz."""
     hoechst = einstellungen.max_abholungen
     zeitraum = einstellungen.zeitraum
+    if not hoechst:
+        return tage, "Keine Höchstzahl je Zeitraum eingestellt."
     if zeitraum == AusgabeEinstellungen.Zeitraum.VIERZEHN_TAGE:
         return tage, f"Die Höchstzahl ({hoechst} je 14 Tage) ist im Vorschlag nicht berücksichtigt."
     if zeitraum == AusgabeEinstellungen.Zeitraum.MONAT:
@@ -185,7 +187,7 @@ def _begrenzen(tage, abgeholt, einstellungen) -> tuple[list[dt.date], str]:
 
 
 def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]:
-    """Vorschläge für den Rest dieses und den ganzen nächsten Monat, mit Erklärung.
+    """Vorschlag für den Rest dieses Monats, mit Erklärung (nicht für den nächsten Monat).
 
     Liefert die Vorschläge und gegebenenfalls einen Hinweis, warum es keine gibt.
     """
@@ -203,8 +205,6 @@ def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]
     heute_abgeholt = heute in abgeholt
     start = heute + dt.timedelta(days=1) if heute_abgeholt else heute
     monatsende = heute.replace(day=calendar.monthrange(heute.year, heute.month)[1])
-    naechster = monatsende + dt.timedelta(days=1)
-    naechstes_ende = naechster.replace(day=calendar.monthrange(naechster.year, naechster.month)[1])
     ab_text = (
         "ab morgen, weil heute schon abgeholt wurde"
         if heute_abgeholt
@@ -212,7 +212,6 @@ def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]
     )
     zeitraeume = [
         (f"Rest {MONATE[heute.month - 1]}", start, monatsende, ab_text),
-        (f"Ganzer {MONATE[naechster.month - 1]}", naechster, naechstes_ende, None),
     ]
     ergebnis = []
     for titel, von, bis, zusatz in zeitraeume:
@@ -234,8 +233,7 @@ def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]
             f"Gezählt: {', '.join(f'{WOCHENTAGE[t.weekday()]} {t:%d.%m.}' for t in tage)} "
             f"(Kundengruppe „{gruppe.name}“: {', '.join(wochentage)})",
         ]
-        if zusatz:
-            v.erklaerung.append(f"Gezählt {zusatz}.")
+        v.erklaerung.append(f"Gezählt {zusatz}.")
         if ausweis:
             v.erklaerung.append(ausweis)
         v.erklaerung.append(grenze)
@@ -255,7 +253,7 @@ def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]
             )
         ergebnis.append(v)
     if not ergebnis:
-        return [], "Kein Vorschlag: Bis Ende des nächsten Monats ist kein Abholtag mehr möglich."
+        return [], "Kein Vorschlag: Bis Monatsende ist kein Abholtag mehr möglich."
     return ergebnis, ""
 
 
