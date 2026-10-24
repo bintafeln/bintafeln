@@ -255,3 +255,5 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 #id_fs_klassen { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr)); gap: 0 .5rem; }
 .stempeln { font-size: 1.4rem; padding: 1rem 2rem; }
 .stempel-status { font-size: 1.2rem; }
+.demo-hinweis { margin: 0; padding: .5rem 1rem; text-align: center; background: #fff6dc; color: #6b4e00; font-weight: 600; }
+.version { opacity: .6; font-size: .8rem; }

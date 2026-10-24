@@ -1,0 +1,29 @@
+# Gemeinsamer Proxy für mehrere bintafeln-Installationen auf einem Server (ADR 0022).
+# Einrichtung: README „Mehrere Installationen auf einem Server“.
+#   cp Caddyfile.beispiel Caddyfile   # Domains eintragen
+#   docker compose up -d
+name: bintafeln-proxy
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./webseite:/srv/webseite:ro
+      - caddy-daten:/data
+      - caddy-config:/config
+    networks:
+      - web
+
+networks:
+  web:
+    name: bintafeln-web
+
+volumes:
+  caddy-daten:
+  caddy-config:

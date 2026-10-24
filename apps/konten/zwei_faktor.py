@@ -3,6 +3,7 @@
 import re
 
 import segno
+from django.conf import settings
 from django.db import transaction
 from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
 from django_otp.plugins.otp_totp.models import TOTPDevice
@@ -24,7 +25,7 @@ def aussteller(geraet=None) -> str:
 def ist_pflicht(benutzer) -> bool:
     from apps.core.models import TafelEinstellungen
 
-    if not benutzer.is_authenticated:
+    if not benutzer.is_authenticated or settings.DEMO:  # Demo: Einrichtung ist gesperrt
         return False
     return bool(rollen_von(benutzer) & TafelEinstellungen.laden().zwei_faktor_pflicht_rollen())
 

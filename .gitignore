@@ -223,3 +223,6 @@ __marimo__/
 /data/
 /sicherungen/
 schluessel.txt
+
+# bintafeln: von ./betrieb update geschrieben
+/VERSION

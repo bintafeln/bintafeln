@@ -52,3 +52,5 @@ drei Fragen: Was war das Problem? Was haben wir entschieden? Warum?
 | [0019](0019-feiertage.md) | Gesetzliche Feiertage je Bundesland | Angenommen |
 | [0020](0020-arbeitszeiterfassung.md) | Arbeitszeiterfassung im Browser | Angenommen |
 | [0021](0021-pdf-und-auskunft.md) | PDFs mit ReportLab, Auskunft nach Art. 15 DSGVO | Angenommen |
+| [0022](0022-mehrere-installationen-und-demo.md) | Mehrere Installationen auf einem Server, öffentliche Demo | Angenommen |
+| [0023](0023-versionen-nach-kalender.md) | Versionen nach Kalender | Angenommen |

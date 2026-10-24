@@ -1,5 +1,7 @@
 import logging
+from functools import wraps
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -48,8 +50,37 @@ def anmelden(request):
     return render(
         request,
         "konten/anmelden.html",
-        {"form": form, "next": request.GET.get("next", ""), "mail": mail.eingerichtet()},
+        {
+            "form": form,
+            "next": request.GET.get("next", ""),
+            "mail": mail.eingerichtet(),
+            **_demo_zugaenge(),
+        },
     )
+
+
+def _demo_zugaenge() -> dict:
+    if not settings.DEMO:
+        return {}
+    from apps.core.demo import KONTEN
+
+    return {
+        "demo_konten": [(name, " und ".join(namen)) for name, _, _, namen, _ in KONTEN],
+        "demo_passwort": settings.DEMO_PASSWORT,
+    }
+
+
+def nicht_in_demo(ansicht):
+    """In der öffentlichen Demo gesperrt, damit niemand andere Besucher aussperrt."""
+
+    @wraps(ansicht)
+    def pruefen(request, *args, **kwargs):
+        if settings.DEMO:
+            messages.error(request, "In der Demoversion nicht möglich.")
+            return redirect("konten:mein_konto")
+        return ansicht(request, *args, **kwargs)
+
+    return pruefen
 
 
 VERGESSEN_SPERRE = 5 * 60  # höchstens eine Mail je Konto in fünf Minuten
@@ -109,6 +140,7 @@ def abmelden(request):
 
 @never_cache
 @login_required
+@nicht_in_demo
 @sensitive_post_parameters("old_password", "new_password1", "new_password2")
 def passwort_aendern(request):
     """Eigenes Passwort ändern; Pflicht nach einem Startpasswort."""
@@ -149,6 +181,7 @@ def _codes_anzeigen(request, codes):
 
 @never_cache
 @login_required
+@nicht_in_demo
 @sensitive_post_parameters("code")
 def zwei_faktor_einrichten(request):
     if zwei_faktor.app_geraet(request.user) is not None:

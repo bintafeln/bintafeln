@@ -153,6 +153,11 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   (`auditlog.register(...)`), Geheimnisse und Passwörter mit `exclude_fields` ausnehmen.
 - Betriebsmodus: `BINTAFELN_DOMAIN` leer = Entwicklung (http), gesetzt = Produktion (TLS).
 - Betrieb auf dem Server über `./betrieb` (update, sichern, wiederherstellen, schluessel, status).
+  Versionen `JJJJ.M.N` vergibt `.github/workflows/version.yml` nach jedem Merge, `update` holt
+  die neueste, `bintafeln/version.py` liest die Datei VERSION (ADR 0023). Mehrere
+  Installationen hinter `docker/gemeinsamer-proxy` über `docker/hinter-proxy.yml`; Demo-Betrieb
+  mit `BINTAFELN_DEMO` und `apps/core/demo.py` (ADR 0022). Was Demo-Besucher nutzen
+  könnten, um andere auszusperren, mit `nicht_in_demo` sperren.
   Sicherungsskript im Dienst `backup`: `docker/backup/sicherung.sh`.
 - Shell-Skripte müssen `shellcheck` bestehen. Änderungen an Sicherung oder Wiederherstellung
   deckt `tests/sicherung_e2e.sh` ab (läuft in CI im Job `docker`).

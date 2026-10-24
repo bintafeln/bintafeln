@@ -37,6 +37,7 @@
     {% endif %}
   </header>
 
+  {% if demo %}<p class="demo-hinweis">Demoversion – alle Daten sind erfunden und werden jede Nacht zurückgesetzt. Bitte keine echten Daten eingeben.</p>{% endif %}
   <main class="inhalt">
     {% if messages %}
       <ul class="meldungen">
@@ -49,6 +50,7 @@
   <footer class="fuss">
     {% if tafel.anschrift %}<span>{{ tafel.anschrift }}</span>{% endif %}
     <span>bintafeln – freie Software (AGPL-3.0)</span>
+    {% if "Admin" in rollen %}<span class="version">Version {{ version }}</span>{% endif %}
   </footer>
 </body>
 </html>

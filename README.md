@@ -442,12 +442,75 @@ cd /opt/bintafeln
 ./betrieb update
 ```
 
-Das Werkzeug sichert zuerst, holt dann den neuen Stand, aktualisiert die Images und startet neu.
-Migrationen laufen beim Start automatisch.
+Das Werkzeug sichert zuerst, holt dann die **neueste Version**, aktualisiert die Images und
+startet neu. Migrationen laufen beim Start automatisch. `./betrieb update main` holt statt der
+Version den neuesten Entwicklungsstand (zum Testen, z. B. auf einer Probe-Installation).
+
+**Versionen** heißen nach dem Kalender `JAHR.MONAT.NUMMER`, z. B. `2026.10.1`, `2026.10.2` …;
+im nächsten Monat beginnt die Nummer wieder bei 1 (`2026.11.1`). Nach jedem Merge auf `main`
+legt GitHub die nächste Version samt Release mit den Änderungen automatisch an (ADR 0023).
+Die installierte Version zeigt `./betrieb status`, Admins sehen sie unten auf jeder Seite.
+Auf einen älteren Stand geht `update` nie zurück.
 
 > **Einmalig beim Wechsel auf diese Version:** Das Werkzeug `./betrieb` gibt es erst ab hier.
 > Deshalb dieses eine Mal `git pull && docker compose up -d --build` ausführen, danach
 > `./betrieb schluessel`. Ab dann genügt `./betrieb update`.
+
+## Mehrere Installationen auf einem Server
+
+Auf einem Server können mehrere bintafeln laufen, z. B. `tafel.example.org` und eine Demo unter
+`demo.example.org`, dazu eine einfache Webseite unter `example.org` (ADR 0022). Ein
+**gemeinsamer Proxy** belegt die Ports 80 und 443 und holt für jede Domain das Zertifikat; jede
+Installation hat ihren eigenen Ordner, ihre eigene Datenbank und ihre eigenen Sicherungen.
+
+1. Bei jeder Domain per DNS-Eintrag (A-Record) auf die IP des Servers zeigen.
+2. Den gemeinsamen Proxy einrichten (einmal):
+
+   ```bash
+   cd /opt/bintafeln/docker/gemeinsamer-proxy     # aus einer der Installationen
+   cp Caddyfile.beispiel Caddyfile                 # Domains und Namen eintragen
+   docker compose up -d
+   ```
+
+   Die Webseite liegt im Ordner `webseite/` daneben.
+3. Jede Installation wie oben in einen **eigenen Ordner** klonen (z. B. `/opt/bintafeln-demo`)
+   und in ihrer `.env` zusätzlich setzen:
+
+   ```
+   BINTAFELN_DOMAIN=demo.example.org
+   COMPOSE_PROJECT_NAME=demo
+   COMPOSE_FILE=docker-compose.yml:docker/hinter-proxy.yml
+   ```
+
+   `COMPOSE_PROJECT_NAME` ist der Name, unter dem der gemeinsame Proxy sie erreicht
+   (`reverse_proxy demo:80` in seinem Caddyfile). Danach `docker compose up -d`; `./betrieb`
+   funktioniert in jedem Ordner wie gewohnt.
+
+Eine bestehende einzelne Installation lässt sich später so umstellen: Proxy einrichten, in ihrer
+`.env` die drei Zeilen ergänzen (Name z. B. `tafel`) und `docker compose up -d`.
+
+### Öffentliche Demo
+
+Für eine Demo mit erfundenen Daten in deren `.env` zusätzlich:
+
+```
+BINTAFELN_DEMO=true
+BINTAFELN_DEMO_PASSWORT=ein-eigenes-passwort   # steht öffentlich auf der Anmeldeseite
+```
+
+Dann einmal und danach jede Nacht (Cronjob auf dem Server, z. B. `crontab -e`) zurücksetzen:
+
+```bash
+cd /opt/bintafeln-demo && docker compose exec -T app python manage.py demo_zuruecksetzen
+# Cronjob, täglich 3:15 Uhr:
+# 15 3 * * * cd /opt/bintafeln-demo && docker compose exec -T app python manage.py demo_zuruecksetzen
+```
+
+Das **löscht alle Daten** der Demo und legt die Beispieldaten aus `docs/beispiele/import` sowie
+die Konten `demo-admin`, `demo-buero`, `demo-ausgabe`, `demo-personal` und `demo-fest` an. Jede
+Seite zeigt einen Hinweis „Demoversion“; Passwort ändern, Zwei-Faktor und Mailserver sind
+gesperrt, damit niemand andere Besucher aussperrt. Der Befehl läuft nur mit
+`BINTAFELN_DEMO=true`. Für die Demo keine Sicherung einrichten.
 
 ## Entwicklung
 

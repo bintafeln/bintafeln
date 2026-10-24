@@ -9,6 +9,12 @@
     {% include "includes/formular.html" %}
     <button type="submit" class="knopf">Anmelden</button>
   </form>
+  {% if demo_konten %}
+  <div class="sicherung abseits">
+    <p><strong>Demo-Zugänge</strong> (Passwort für alle: <code>{{ demo_passwort }}</code>):</p>
+    <ul>{% for name, rolle in demo_konten %}<li><code>{{ name }}</code> – {{ rolle }}</li>{% endfor %}</ul>
+  </div>
+  {% endif %}
   {% if mail %}<p class="abseits"><a href="{% url 'konten:passwort_vergessen' %}">Passwort vergessen?</a></p>{% endif %}
 </section>
 {% endblock %}

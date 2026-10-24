@@ -2,6 +2,15 @@
 # SITE_ADDRESS kommt aus docker-compose.yml:
 #   ":80"               → Entwicklungsmodus, http://IP ohne TLS
 #   "tafel.example.org" → Produktionsmodus, automatisches TLS (Let's Encrypt)
+# Hinter einem gemeinsamen Proxy (docker/hinter-proxy.yml) ist SITE_ADDRESS ":80" und
+# BINTAFELN_VERTRAUTE_PROXYS "private_ranges": Caddy übernimmt dann https und die Adresse der
+# Besucher aus den Kopfzeilen des gemeinsamen Proxys.
+
+{
+	servers {
+		trusted_proxies static {$BINTAFELN_VERTRAUTE_PROXYS:127.0.0.1/32}
+	}
+}
 
 {$SITE_ADDRESS} {
 	encode zstd gzip

@@ -1,0 +1,25 @@
+# Zusatz für den Betrieb hinter einem gemeinsamen Proxy (mehrere Installationen auf einem
+# Server, siehe README „Mehrere Installationen auf einem Server“ und ADR 0022).
+# Einschalten in .env:  COMPOSE_FILE=docker-compose.yml:docker/hinter-proxy.yml
+#
+# Der eigene Proxy dieser Installation belegt dann keine Ports auf dem Server. Er hängt im
+# gemeinsamen Netz "bintafeln-web" und ist dort unter COMPOSE_PROJECT_NAME erreichbar. TLS macht
+# der gemeinsame Proxy (docker/gemeinsamer-proxy).
+services:
+  proxy:
+    ports: !reset []
+    environment:
+      # Ohne eigenes TLS, auch wenn BINTAFELN_DOMAIN gesetzt ist.
+      SITE_ADDRESS: ":80"
+      # Weitergeleitete Angaben (https, Adresse der Besucher) nur vom gemeinsamen Proxy annehmen.
+      BINTAFELN_VERTRAUTE_PROXYS: private_ranges
+    networks:
+      default:
+      web:
+        aliases:
+          - ${COMPOSE_PROJECT_NAME:?COMPOSE_PROJECT_NAME fehlt in .env (z. B. demo)}
+
+networks:
+  web:
+    name: bintafeln-web
+    external: true

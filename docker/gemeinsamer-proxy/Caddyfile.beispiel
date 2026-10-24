@@ -1,0 +1,19 @@
+# Gemeinsamer Proxy: je Domain ein Block. Caddy holt für jede Domain automatisch ein
+# TLS-Zertifikat (DNS muss auf diesen Server zeigen, Ports 80 und 443 offen).
+#
+# Ziel einer bintafeln-Installation ist ihr COMPOSE_PROJECT_NAME aus der .env, Port 80.
+# Beispiel-Domains – durch die eigenen ersetzen.
+
+demo.example.org {
+	reverse_proxy demo:80
+}
+
+tafel.example.org {
+	reverse_proxy tafel:80
+}
+
+# Eine einfache Webseite aus dem Ordner ./webseite (z. B. index.html)
+example.org, www.example.org {
+	root * /srv/webseite
+	file_server
+}
