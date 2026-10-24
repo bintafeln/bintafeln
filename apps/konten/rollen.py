@@ -11,8 +11,12 @@ AUSGABE = "Ausgabe"
 KIOSK = "Kiosk"
 FAHRER = "Fahrer"
 BEIFAHRER = "Beifahrer"
+# Recht auf Personaldaten Festangestellter (Vertrag, Lohn, Urlaub, Stunden; ADR 0018).
+PERSONAL = "Personal"
 
-ALLE = (ADMIN, BUERO, AUSGABE, KIOSK, FAHRER, BEIFAHRER)
+ALLE = (ADMIN, BUERO, AUSGABE, KIOSK, FAHRER, BEIFAHRER, PERSONAL)
+# Rollen, die nur ein Admin vergeben darf.
+NUR_DURCH_ADMIN = (ADMIN, PERSONAL)
 
 
 def rollen_von(benutzer) -> set[str]:

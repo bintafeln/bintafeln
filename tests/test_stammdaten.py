@@ -212,7 +212,8 @@ def test_personal_einstellungen(admin_client):
     )
     antwort = admin_client.post(
         url_, {"fs_pruefung_monate": "3", "ifsg_wiederholung_monate": "24", "vorlauf_tage": "7",
-               "fs_kopie_erlaubt": "on", "stammdaten_loeschen_jahre": "5"},
+               "fs_kopie_erlaubt": "on", "stammdaten_loeschen_jahre": "5",
+               "urlaub_verfall_monat": "3", "urlaub_verfall_tag": "31"},
     )  # fmt: skip
     assert antwort.url == url_
     e = PersonalEinstellungen.laden()

@@ -47,7 +47,7 @@ def neu(client, **daten):
 
 def test_neue_rollen_fahrer_und_beifahrer():
     assert {"Fahrer", "Beifahrer"} <= set(Group.objects.values_list("name", flat=True))
-    assert rollen.ALLE[-2:] == (rollen.FAHRER, rollen.BEIFAHRER)
+    assert rollen.ALLE[-3:] == (rollen.FAHRER, rollen.BEIFAHRER, rollen.PERSONAL)
 
 
 @pytest.mark.parametrize("rolle", [rollen.BUERO, rollen.AUSGABE, rollen.FAHRER])

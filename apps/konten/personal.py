@@ -2,25 +2,20 @@
 
 import calendar
 import datetime as dt
-import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
 from auditlog.context import disable_auditlog
 from auditlog.models import LogEntry
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from apps.core import geheimnis
+from apps.core import privatdateien
 from apps.konten import rollen
 from apps.konten.models import PersonalEinstellungen, Schulung, Stammdaten
-
-KOPIE_TYPEN = {"image/jpeg", "image/png", "image/webp", "application/pdf"}
-KOPIE_MAX = 5 * 1024 * 1024
 
 # Wer mit Lebensmitteln umgeht und deshalb die Belehrung nach § 43 IfSG braucht.
 IFSG_ROLLEN = (rollen.AUSGABE, rollen.FAHRER, rollen.BEIFAHRER)
@@ -104,26 +99,19 @@ def faelligkeiten(heute: dt.date | None = None) -> list[Faelligkeit]:
 # --- Führerschein-Kopie -----------------------------------------------------------------
 
 
-class KopieFehler(ValueError):
-    pass
+KopieFehler = privatdateien.DateiFehler
+KOPIE_ORDNER = "fuehrerschein"
 
 
 def _kopie_pfad(name: str) -> Path:
-    return Path(settings.MEDIA_ROOT) / "privat" / "fuehrerschein" / name
+    return privatdateien.pfad(KOPIE_ORDNER, name)
 
 
 def kopie_speichern(stammdaten: Stammdaten, datei) -> None:
     """Speichert eine hochgeladene Kopie verschlüsselt und ersetzt eine vorhandene."""
     if not PersonalEinstellungen.laden().fs_kopie_erlaubt:
         raise KopieFehler("Kopien sind in den Einstellungen nicht erlaubt.")
-    if datei.content_type not in KOPIE_TYPEN:
-        raise KopieFehler("Bitte ein Foto (JPG, PNG, WebP) oder ein PDF hochladen.")
-    if datei.size > KOPIE_MAX:
-        raise KopieFehler("Die Datei darf höchstens 5 MB groß sein.")
-    name = f"{uuid.uuid4().hex}.bin"
-    pfad = _kopie_pfad(name)
-    pfad.parent.mkdir(parents=True, exist_ok=True)
-    pfad.write_bytes(geheimnis.bytes_verschluesseln(datei.read()))
+    name = privatdateien.speichern(KOPIE_ORDNER, datei)
     kopie_loeschen(stammdaten, speichern=False)
     stammdaten.fs_kopie_datei, stammdaten.fs_kopie_typ = name, datei.content_type
     stammdaten.fs_kopie_am = timezone.now()
@@ -132,44 +120,64 @@ def kopie_speichern(stammdaten: Stammdaten, datei) -> None:
 
 def kopie_lesen(stammdaten: Stammdaten) -> bytes | None:
     """Entschlüsselte Kopie oder None, wenn keine da oder nicht mehr lesbar ist."""
-    if not stammdaten.fs_kopie_datei:
-        return None
-    pfad = _kopie_pfad(stammdaten.fs_kopie_datei)
-    return geheimnis.bytes_entschluesseln(pfad.read_bytes()) if pfad.exists() else None
+    return privatdateien.lesen(KOPIE_ORDNER, stammdaten.fs_kopie_datei)
 
 
 def kopie_loeschen(stammdaten: Stammdaten, speichern=True) -> None:
-    if stammdaten.fs_kopie_datei:
-        _kopie_pfad(stammdaten.fs_kopie_datei).unlink(missing_ok=True)
+    privatdateien.loeschen(KOPIE_ORDNER, stammdaten.fs_kopie_datei)
     stammdaten.fs_kopie_datei, stammdaten.fs_kopie_typ, stammdaten.fs_kopie_am = "", "", None
     if speichern:
         stammdaten.save()
 
 
+def _protokoll_loeschen(modell, schluessel) -> None:
+    """Frühere Einträge im Änderungsprotokoll enthalten die Angaben noch; sie gehen mit."""
+    LogEntry.objects.filter(
+        content_type=ContentType.objects.get_for_model(modell),
+        object_pk__in=[str(k) for k in schluessel],
+    ).delete()
+
+
 def stammdaten_leeren(heute: dt.date | None = None) -> int:
-    """Leert die persönlichen Angaben gesperrter Konten nach der Frist. Liefert die Anzahl."""
+    """Leert nach der Frist die persönlichen Angaben gesperrter Konten und löscht ihre
+    Personaldaten (Verträge, Abwesenheiten, Stunden). Liefert die Zahl der Konten."""
+    # Spät eingebunden: Die App personal baut auf konten auf, nicht umgekehrt.
+    from apps.personal.models import (
+        DOKUMENT_ORDNER,
+        Abwesenheit,
+        Arbeitsvertrag,
+        Stunden,
+        Urlaubsjahr,
+    )
+
     heute = heute or timezone.localdate()
     jahre = PersonalEinstellungen.laden().stammdaten_loeschen_jahre
     grenze = monate_spaeter(heute, -12 * jahre)
-    faellig = Stammdaten.objects.filter(benutzer__is_active=False, geleert_am__isnull=True).filter(
-        Q(austritt__lt=grenze) | Q(austritt__isnull=True, benutzer__gesperrt_am__date__lt=grenze)
+    faellig = (
+        get_user_model()
+        .objects.filter(is_active=False)
+        .filter(
+            Q(stammdaten__austritt__lt=grenze)
+            | Q(stammdaten__austritt__isnull=True, gesperrt_am__date__lt=grenze)
+        )
+        .exclude(stammdaten__geleert_am__isnull=False)
     )
     werte = {f: "" for f in PERSOENLICHE_FELDER} | {f: None for f in PERSOENLICHE_DATEN}
     anzahl = 0
-    for s in faellig.select_related("benutzer"):
+    for b in faellig:
         with transaction.atomic(), disable_auditlog():
+            s = Stammdaten.objects.get_or_create(benutzer=b)[0]
             kopie_loeschen(s, speichern=False)
             for feld, wert in werte.items():
                 setattr(s, feld, wert)
             s.geleert_am = timezone.now()
             s.save()
-            schulungen = list(s.benutzer.schulungen.values_list("pk", flat=True))
-            s.benutzer.schulungen.all().delete()
-            # Frühere Einträge im Änderungsprotokoll enthielten die Angaben noch.
-            for modell, schluessel in ((Stammdaten, [s.pk]), (Schulung, schulungen)):
-                LogEntry.objects.filter(
-                    content_type=ContentType.objects.get_for_model(modell),
-                    object_pk__in=[str(k) for k in schluessel],
-                ).delete()
+            _protokoll_loeschen(Stammdaten, [s.pk])
+            for v in b.vertraege.all():
+                privatdateien.loeschen(DOKUMENT_ORDNER, v.dokument_datei)
+            for modell in (Schulung, Arbeitsvertrag, Abwesenheit, Urlaubsjahr, Stunden):
+                eintraege = modell.objects.filter(benutzer=b)
+                _protokoll_loeschen(modell, list(eintraege.values_list("pk", flat=True)))
+                eintraege.delete()
         anzahl += 1
     return anzahl

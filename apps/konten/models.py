@@ -112,6 +112,17 @@ class PersonalEinstellungen(models.Model):
         help_text="In der Regel genügt der Vermerk „gesehen am / von“. Kopien werden "
         "verschlüsselt gespeichert, jeder Abruf wird protokolliert.",
     )
+    urlaub_verfall_monat = models.PositiveSmallIntegerField(
+        "Resturlaub verfällt im Folgejahr am … (Monat)",
+        default=3,
+        validators=[MinValueValidator(1), MaxValueValidator(12)],
+    )
+    urlaub_verfall_tag = models.PositiveSmallIntegerField(
+        "… (Tag)",
+        default=31,
+        validators=[MinValueValidator(1), MaxValueValidator(31)],
+        help_text="Vorgabe 31.03. Je Person und Jahr unter „Personal“ änderbar.",
+    )
     stammdaten_loeschen_jahre = models.PositiveSmallIntegerField(
         "Stammdaten … Jahre nach Austritt bzw. Sperre leeren",
         default=3,
