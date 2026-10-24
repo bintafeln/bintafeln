@@ -2,8 +2,10 @@
   <div class="vorschlag">
     <button type="button" class="knopf knopf-zweitrangig"
             onclick="document.getElementById('{{ feld }}').value='{{ v.zu_zahlen|floatformat:2 }}'">Vorauszahlung {{ v.titel }}: {{ v.zu_zahlen|floatformat:2 }} € eintragen</button>
-    <ul>{% for satz in v.erklaerung %}<li>{{ satz }}</li>{% endfor %}</ul>
+    <details><summary>Rechnung</summary>
+      <ul>{% for satz in v.erklaerung %}<li>{{ satz }}</li>{% endfor %}</ul>
+    </details>
   </div>
 {% empty %}
-  {% if vorschlag_hinweis %}<small class="hilfe">{{ vorschlag_hinweis }}</small>{% endif %}
+  {% if vorschlag_hinweis %}<p><small class="hilfe">{{ vorschlag_hinweis }}</small></p>{% endif %}
 {% endfor %}
