@@ -76,7 +76,7 @@
   <h3>Abwesenheiten {{ jahr }}</h3>
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Art</th><th>Von</th><th>Bis</th><th>Arbeitstage</th><th>Bemerkung</th><th></th></tr></thead>
+    <thead><tr><th>Art</th><th>Von</th><th>Bis</th><th>Arbeitstage</th><th>Anmerkung</th><th></th></tr></thead>
     <tbody>
     {% for a, tage in abwesenheiten %}
       <tr>
@@ -84,7 +84,7 @@
         <td data-titel="Von">{{ a.von|date:"d.m.Y" }}</td>
         <td data-titel="Bis">{{ a.bis|date:"d.m.Y" }}</td>
         <td data-titel="Arbeitstage">{{ tage|floatformat:"-1" }}</td>
-        <td data-titel="Bemerkung">{{ a.bemerkung|default:"–" }}</td>
+        <td data-titel="Anmerkung">{{ a.bemerkung|default:"–" }}</td>
         <td data-titel="Aktion">
           <form method="post" action="{% url 'personal:loeschen' p.pk 'abwesenheit' a.pk %}" class="inline" onsubmit="return confirm('Eintrag löschen?')">
             {% csrf_token %}<input type="hidden" name="jahr" value="{{ jahr }}"><button type="submit" class="link">löschen</button>
@@ -141,13 +141,13 @@
   <p class="hinweis">Für Zeiten außerhalb der Stempeluhr, z. B. eine Dienstreise, oder als Ausgleich (auch negativ).</p>
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Datum</th><th>Stunden</th><th>Bemerkung</th><th></th></tr></thead>
+    <thead><tr><th>Datum</th><th>Stunden</th><th>Anmerkung</th><th></th></tr></thead>
     <tbody>
     {% for s in stunden %}
       <tr>
         <td data-titel="Datum">{{ s.datum|date:"d.m.Y" }}</td>
         <td data-titel="Stunden">{{ s.stunden|floatformat:2 }}</td>
-        <td data-titel="Bemerkung">{{ s.bemerkung|default:"–" }}</td>
+        <td data-titel="Anmerkung">{{ s.bemerkung|default:"–" }}</td>
         <td data-titel="Aktion">
           <form method="post" action="{% url 'personal:loeschen' p.pk 'stunden' s.pk %}" class="inline" onsubmit="return confirm('Eintrag löschen?')">
             {% csrf_token %}<input type="hidden" name="jahr" value="{{ jahr }}"><button type="submit" class="link">löschen</button>

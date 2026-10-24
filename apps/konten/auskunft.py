@@ -69,7 +69,7 @@ def mitarbeiter_pdf(b) -> bytes:
 
     doc.ueberschrift("Schulungen und Belehrungen")
     doc.tabelle(
-        ["Thema", "Datum", "Gültig bis", "Bemerkung"],
+        ["Thema", "Datum", "Gültig bis", "Anmerkung"],
         [[x.thema, _wert(x.datum), _wert(x.gueltig_bis), x.bemerkung] for x in b.schulungen.all()],
     )
 
@@ -94,7 +94,7 @@ def mitarbeiter_pdf(b) -> bytes:
 
     doc.ueberschrift("Urlaub und Krankheit")
     doc.tabelle(
-        ["Art", "Von", "Bis", "Tage", "Bescheinigung", "Bemerkung"],
+        ["Art", "Von", "Bis", "Tage", "Bescheinigung", "Anmerkung"],
         [
             [a.get_art_display(), _wert(a.von), _wert(a.bis), _wert(a.tage),
              _wert(a.au_vorgelegt) if a.art == "krank" else "", a.bemerkung]
@@ -108,13 +108,13 @@ def mitarbeiter_pdf(b) -> bytes:
 
     doc.ueberschrift("Nachgetragene Stunden")
     doc.tabelle(
-        ["Datum", "Stunden", "Bemerkung"],
+        ["Datum", "Stunden", "Anmerkung"],
         [[_wert(x.datum), _wert(x.stunden), x.bemerkung] for x in b.stunden.all()],
     )
 
     doc.ueberschrift("Arbeitszeiten (gestempelt)")
     doc.tabelle(
-        ["Kommen", "Gehen", "Bemerkung", "Korrigiert von"],
+        ["Kommen", "Gehen", "Anmerkung", "Korrigiert von"],
         [
             [_wert(z.beginn), _wert(z.ende) or "offen", z.bemerkung, z.korrigiert_von]
             for z in b.zeitbuchungen.order_by("beginn")

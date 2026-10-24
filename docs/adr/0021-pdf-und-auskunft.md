@@ -16,7 +16,7 @@ und Mitarbeitende.
   Anschrift der Tafel, Fuß mit Erstellungszeit und Seitenzahl, Tabellen und Angabenlisten.
 - PDFs werden für jeden Abruf neu erzeugt, nie gespeichert und nie zwischengespeichert.
 - **Kundenausweis:** Karte im Scheckkartenformat auf A4 mit Schnittmarken. Der Barcode
-  (Code 128) enthält nur die Kundennummer, damit der Scanner am Empfang sie eintippt.
+  (Code 128) enthält nur die Kundennummer, damit der Scanner am Einlass sie eintippt.
 - **Auskunft:** vollständig, also auch mit Angaben der besonderen Kategorie und mit Feldern, die
   inzwischen abgeschaltet sind. Für Kunden erzeugen Admin und Büro sie (Eintrag im
   Zugriffsprotokoll). Für Mitarbeitende Admin und die Rolle Personal, weil sie Personaldaten

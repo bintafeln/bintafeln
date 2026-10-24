@@ -14,7 +14,7 @@ Kundengruppen und keine Zusatzfelder, bis die Tafel sie anlegt oder importiert.
   werden weder angezeigt noch beim Import gespeichert.
 - **Löschfristen je Datenart** mit automatischer Löschung. Bintafeln liefert sinnvolle Vorgaben
   statt leerer Felder.
-- **Nur zeigen, was gebraucht wird:** Jede Rolle und jede Ansicht (z. B. der Empfang) zeigt nur die
+- **Nur zeigen, was gebraucht wird:** Jede Rolle und jede Ansicht (z. B. der Einlass) zeigt nur die
   Angaben, die dort nötig sind.
 - **Besondere Kategorien (Art. 9 DSGVO)** wie Gesundheitsdaten werden gekennzeichnet, nur für
   ausdrücklich berechtigte Rollen angezeigt und bei jedem Zugriff protokolliert.
@@ -70,7 +70,7 @@ für eine **Aufbewahrungsfrist** gespeichert (Einstellung je Tafel, Vorgabe 3 Ja
 automatisch gelöscht (ADR 0011). Statistiken über längere Zeiträume entstehen aus anonymen
 Zählwerten.
 
-### Interne Bemerkungen
+### Interne Anmerkungen
 
 Datum, Text, verfasst von. Freitext enthält oft Sensibles. Deshalb sehen ihn nur Admin und Büro,
 und er unterliegt einer eigenen Löschfrist.
@@ -105,7 +105,7 @@ Eine Kundengruppe ist ein fester Abholtermin:
 | Wochentage, Uhrzeit | |
 | Maximum | höchstens so viele Haushalte (für Warteliste und Zuteilung) |
 | aktiv | deaktivierte Gruppen bleiben für die Historie erhalten |
-| Farbe | optional, zur schnellen Erkennung am Empfang |
+| Farbe | optional, zur schnellen Erkennung am Einlass |
 
 ### Dokumente
 
@@ -172,7 +172,7 @@ Auf Anfrage einer Person werden alle zu ihr gespeicherten Daten als PDF zusammen
 
 ## Modul 4: Ausgabe
 
-**Umgesetzt (erste Stufe, ADR 0013):** Empfang mit Kundennummer-Scan, Ampel mit den Regeln
+**Umgesetzt (erste Stufe, ADR 0013):** Einlass mit Kundennummer-Scan, Ampel mit den Regeln
 unten, Abholung eintragen (mit vorgeschlagenem Beitrag) und am selben Tag zurücknehmen,
 Ausnahme für heute erteilen (Admin, Büro). Einstellbar: Höchstzahl Abholungen je Kalenderwoche,
 14 Tagen oder Kalendermonat; „heute nicht dran“ rot oder gelb; Vorwarnzeit für den Ausweis;
@@ -188,8 +188,8 @@ Korrekturen durch Admin und Büro.
 **Kasse:** Tages- (je Ausgabestelle), Monats- (je Tag) und Jahresstände (je Monat), rückwirkend
 wählbar und nach Ausgabestelle filterbar. Grundlage sind allein die Buchungen.
 
-- **Empfang/Kiosk-Ansicht:** Kundennummer per Scanner (arbeitet als Tastatur) oder Suche.
-- Je Tafel einstellbar, was am Empfang sichtbar ist: Adresse, Geburtsdatum, letzte Abholungen,
+- **Einlass/Kiosk-Ansicht:** Kundennummer per Scanner (arbeitet als Tastatur) oder Suche.
+- Je Tafel einstellbar, was am Einlass sichtbar ist: Adresse, Geburtsdatum, letzte Abholungen,
   Beitrag, Personenanzahl (gesamt/Kinder), aktive Sperren, Farbe der Kundengruppe, Kundenkonto.
 - **Ampel** mit einstellbaren Meldungstexten:
   - rot: Ausweis gesperrt, bereits abgeholt, Ausweis abgelaufen, Abholung in dieser Woche nicht
@@ -198,7 +198,7 @@ wählbar und nach Ausgabestelle filterbar. Grundlage sind allein die Buchungen.
   - gelb: Ausgabestelle nicht vorgesehen, Ausweis läuft bald ab (Vorwarnzeit in Tagen), heute
     nicht dran (wenn nur Hinweis)
   - grün: Ausweis gültig, Ausnahme erteilt
-- **Hinweis-Knöpfe** mit vorgefertigten Texten (z. B. „Bescheide geprüft, kann verlängert
+- **Notiz-Knöpfe** mit vorgefertigten Texten (z. B. „Bescheide geprüft, kann verlängert
   werden“).
 - **Abholungen:** Datum, Uhrzeit, Ausgabestelle, Beitrag, eingetragen von.
 - **Beiträge:** pro Erwachsenem und pro Kind oder gestaffelt nach Haushaltsgröße.

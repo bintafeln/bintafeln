@@ -59,7 +59,7 @@ class Stammdaten(models.Model):
     notfall_telefon = models.CharField("Notfallkontakt: Telefon", max_length=50, blank=True)
     eintritt = models.DateField("Eintritt", null=True, blank=True)
     austritt = models.DateField("Austritt", null=True, blank=True)
-    bemerkung = models.TextField("Bemerkung", blank=True)
+    bemerkung = models.TextField("Anmerkung", blank=True)
     fs_klassen = models.CharField("Führerscheinklassen", max_length=100, blank=True)
     fs_gueltig_bis = models.DateField("Führerschein gültig bis", null=True, blank=True)
     fs_gesehen_am = models.DateField("Führerschein zuletzt gesehen am", null=True, blank=True)
@@ -157,7 +157,7 @@ class Schulung(models.Model):
     gueltig_bis = models.DateField(
         "Gültig bis", null=True, blank=True, help_text="Leer = ohne Ablauf."
     )
-    bemerkung = models.CharField("Bemerkung", max_length=200, blank=True)
+    bemerkung = models.CharField("Anmerkung", max_length=200, blank=True)
 
     class Meta:
         verbose_name = "Schulung"

@@ -197,7 +197,7 @@ def test_str_darstellungen(haushalt):
     assert str(haushalt.einkommensart) == "Bürgergeld"
     assert str(Abholer(vorname="Lena", nachname="Beispiel")) == "Lena Beispiel"
     assert str(Sperre(von=dt.date(2026, 3, 1))) == "Sperre ab 01.03.2026"
-    assert str(Bemerkung(datum=dt.date(2025, 10, 14))) == "Bemerkung vom 14.10.2025"
+    assert str(Bemerkung(datum=dt.date(2025, 10, 14))) == "Anmerkung vom 14.10.2025"
 
 
 def test_sperre_aktiv(haushalt):

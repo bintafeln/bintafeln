@@ -240,7 +240,7 @@ def test_buchungsfristen(haushalt):
     assert konto.buchungsfristen_anwenden(dt.date(2028, 2, 29)) == 0
 
 
-# --- Empfang ----------------------------------------------------------------------------
+# --- Einlass ----------------------------------------------------------------------------
 
 
 def test_empfang_guthaben_teilweise(ausgabe, haushalt):

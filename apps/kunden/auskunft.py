@@ -94,7 +94,7 @@ def kunde_pdf(h: Haushalt) -> bytes:
         breiten=[0.14, 0.14, 0.52, 0.2],
     )  # fmt: skip
 
-    doc.ueberschrift("Bemerkungen")
+    doc.ueberschrift("Anmerkungen")
     doc.tabelle(
         ["Datum", "Text", "Von"],
         [[_datum(b.datum), b.text, b.verfasst_von] for b in h.bemerkungen.all()],
@@ -126,7 +126,7 @@ def kunde_pdf(h: Haushalt) -> bytes:
 
     doc.ueberschrift("Kontobuchungen")
     doc.tabelle(
-        ["Datum", "Art", "Belastung", "Gutschrift", "Bemerkung"],
+        ["Datum", "Art", "Belastung", "Gutschrift", "Anmerkung"],
         [
             [_datum(b.datum), b.get_art_display(), euro(b.soll), euro(b.haben), b.bemerkung]
             for b in h.buchungen.all()

@@ -45,7 +45,7 @@ class Arbeitsvertrag(models.Model):
     stundenlohn = models.DecimalField(
         "Stundenlohn (Euro brutto)", max_digits=6, decimal_places=2, null=True, blank=True
     )
-    bemerkung = models.TextField("Bemerkung", blank=True)
+    bemerkung = models.TextField("Anmerkung", blank=True)
     dokument_datei = models.CharField(max_length=200, blank=True, editable=False)
     dokument_typ = models.CharField(max_length=100, blank=True, editable=False)
 
@@ -91,7 +91,7 @@ class Abwesenheit(models.Model):
         "Tage oder regionale Feiertage bitte selbst eintragen.",
     )
     au_vorgelegt = models.BooleanField("Arbeitsunfähigkeitsbescheinigung liegt vor", default=False)
-    bemerkung = models.CharField("Bemerkung", max_length=200, blank=True)
+    bemerkung = models.CharField("Anmerkung", max_length=200, blank=True)
 
     class Meta:
         verbose_name = "Abwesenheit"
@@ -139,7 +139,7 @@ class Stunden(models.Model):
     stunden = models.DecimalField(
         "Stunden", max_digits=5, decimal_places=2, help_text="Minus für Korrekturen."
     )
-    bemerkung = models.CharField("Bemerkung", max_length=200, blank=True)
+    bemerkung = models.CharField("Anmerkung", max_length=200, blank=True)
 
     class Meta:
         verbose_name = "Stunden"
@@ -158,7 +158,7 @@ class Zeitbuchung(models.Model):
     )
     beginn = models.DateTimeField("Kommen")
     ende = models.DateTimeField("Gehen", null=True, blank=True)
-    bemerkung = models.CharField("Bemerkung", max_length=200, blank=True)
+    bemerkung = models.CharField("Anmerkung", max_length=200, blank=True)
     korrigiert_von = models.CharField("Korrigiert von", max_length=150, blank=True)
 
     class Meta:

@@ -22,14 +22,14 @@ rückwirkend abfragbar ist. Bisher gab es nur den Kontostand aus dem Import.
       Die Ampel zeigt dann gelb.
   - **Einzahlung:** bar, ins Haben.
   - **Korrektur:** ohne Bargeld, nur Admin und Büro, mit Begründung.
-- Der Empfang schlägt Vorauszahlungen vor (Rest dieses Monats, ganzer nächster Monat). Jeder
+- Der Einlass schlägt Vorauszahlungen vor (Rest dieses Monats, ganzer nächster Monat). Jeder
   Vorschlag erklärt, wie er entsteht: gezählte Tage, Kundengruppe, Höchstzahl, Ausweisablauf
   und was nicht berücksichtigt ist.
 - Buchungen hängen am Haushalt **und** an der Kundennummer. Ein Neuimport löst die Verbindung
   zum Haushalt; der Kontostand kommt dann aus dem Import. Die Buchungen bleiben für die Kasse
   erhalten.
 - **Fristen:** Nach der Frist für Abholungen (Vorgabe 3 Jahre) werden Buchungen anonymisiert,
-  also ohne Haushalt, Kundennummer, Bemerkung und Namen. Nach der Buchungsfrist (Vorgabe
+  also ohne Haushalt, Kundennummer, Anmerkung und Namen. Nach der Buchungsfrist (Vorgabe
   10 Jahre) werden sie gelöscht.
 - Die Kasse (Tag, Monat, Jahr, auch rückwirkend) wertet die Buchungen aus und folgt in einem
   eigenen Pull Request.

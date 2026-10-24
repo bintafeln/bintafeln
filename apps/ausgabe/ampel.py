@@ -1,4 +1,4 @@
-"""Ampel am Empfang: Darf ein Haushalt heute abholen?
+"""Ampel am Einlass: Darf ein Haushalt heute abholen?
 
 Rot verhindert das Eintragen, gelb ist ein Hinweis, grün heißt alles in Ordnung. Eine Ausnahme
 für heute hebt die Terminregeln auf (nicht dran, Höchstzahl, andere Ausgabestelle), nicht aber

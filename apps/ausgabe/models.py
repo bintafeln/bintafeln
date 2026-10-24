@@ -1,4 +1,4 @@
-"""Ausgabe (Modul 4): Einstellungen für Empfang und Ampel. Fachliche Grundlage:
+"""Ausgabe (Modul 4): Einstellungen für Einlass und Ampel. Fachliche Grundlage:
 docs/fachkonzept.md, Entscheidung: docs/adr/0013-empfang-erfasst-abholungen.md."""
 
 from decimal import Decimal
@@ -52,7 +52,7 @@ class AusgabeEinstellungen(models.Model):
     beitrag_je_abholung = _betrag("Beitrag je Abholung (Euro)")
     beitrag_je_erwachsenem = _betrag("zusätzlich je Erwachsenem (Euro)")
     beitrag_je_kind = _betrag("zusätzlich je Kind (Euro)")
-    kontostand_anzeigen = models.BooleanField("Kontostand am Empfang anzeigen", default=True)
+    kontostand_anzeigen = models.BooleanField("Kontostand am Einlass anzeigen", default=True)
     anschreiben_erlaubt = models.BooleanField(
         "Anschreiben erlauben",
         default=False,
@@ -130,7 +130,7 @@ class Buchung(models.Model):
     ausgabestelle = models.ForeignKey(
         Ausgabestelle, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
-    bemerkung = models.CharField("Bemerkung", max_length=200, blank=True)
+    bemerkung = models.CharField("Anmerkung", max_length=200, blank=True)
     eingetragen_von = models.CharField("Eingetragen von", max_length=100, blank=True)
 
     class Meta:

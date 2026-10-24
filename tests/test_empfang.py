@@ -67,11 +67,11 @@ def eintragen(client, h, **daten):
 def test_kiosk_kein_zugriff(als):
     client = als(rollen.KIOSK)
     assert client.get(EMPFANG).status_code == 403
-    assert "Empfang</a>" not in client.get("/").content.decode()
+    assert "Einlass</a>" not in client.get("/").content.decode()
 
 
 def test_ausgabe_sieht_empfang(ausgabe, stelle):
-    assert "Empfang</a>" in ausgabe.get("/").content.decode()
+    assert "Einlass</a>" in ausgabe.get("/").content.decode()
     inhalt = ausgabe.get(EMPFANG).content.decode()
     assert "Kundennummer scannen" in inhalt and "Ausgabestelle Mitte" in inhalt
 
@@ -98,7 +98,7 @@ def test_unbekannte_nummer(ausgabe, haushalt, eingabe):
 
 def test_ohne_htmx_ganze_seite(ausgabe, haushalt):
     inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}).content.decode()
-    assert "<h1>Empfang</h1>" in inhalt and "Abholung möglich" in inhalt
+    assert "<h1>Einlass</h1>" in inhalt and "Abholung möglich" in inhalt
 
 
 def test_kontostand_abschaltbar(ausgabe, haushalt):
@@ -251,10 +251,10 @@ def test_import_warnt_vor_verlust_erfasster_abholungen(ausgabe, haushalt):
     texte = [(m["datei"], m["text"]) for m in ergebnis.warnungen]
     assert (
         "abholungen.csv",
-        "1 am Empfang in bintafeln erfasste Einträge werden durch den Import ersetzt und gehen "
+        "1 am Einlass in bintafeln erfasste Einträge werden durch den Import ersetzt und gehen "
         "verloren.",
     ) in texte
-    assert not any(d == "ausnahmen.csv" and "am Empfang" in t for d, t in texte)
+    assert not any(d == "ausnahmen.csv" and "am Einlass" in t for d, t in texte)
 
 
 def test_grosse_ampel_zeigt_die_farbe(ausgabe, haushalt):

@@ -128,7 +128,7 @@
   <p>Kontostand: <strong>{% if h.kontostand is not None %}{{ h.kontostand|floatformat:2 }} €{% else %}–{% endif %}</strong></p>
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Datum</th><th>Art</th><th>Soll</th><th>Haben</th><th>davon bar</th><th>Bemerkung</th><th>Eingetragen von</th></tr></thead>
+    <thead><tr><th>Datum</th><th>Art</th><th>Soll</th><th>Haben</th><th>davon bar</th><th>Anmerkung</th><th>Eingetragen von</th></tr></thead>
     <tbody>
     {% for b in buchungen %}
       <tr>
@@ -137,7 +137,7 @@
         <td data-titel="Soll">{{ b.soll|floatformat:2 }} €</td>
         <td data-titel="Haben">{{ b.haben|floatformat:2 }} €</td>
         <td data-titel="davon bar">{{ b.bar|floatformat:2 }} €</td>
-        <td data-titel="Bemerkung">{{ b.bemerkung|default:"–" }}</td>
+        <td data-titel="Anmerkung">{{ b.bemerkung|default:"–" }}</td>
         <td data-titel="Eingetragen von">{{ b.eingetragen_von|default:"–" }}</td>
       </tr>
     {% empty %}
@@ -157,7 +157,7 @@
 </section>
 
 <section class="karte">
-  <h2>Interne Bemerkungen</h2>
+  <h2>Interne Anmerkungen</h2>
   {% for b in bemerkungen %}
     <div class="bemerkung">
       <p class="hinweis">{{ b.datum|date:"d.m.Y" }}{% if b.verfasst_von %} · {{ b.verfasst_von }}{% endif %}</p>

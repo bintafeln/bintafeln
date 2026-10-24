@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block titel %}Empfang{% endblock %}
+{% block titel %}Einlass{% endblock %}
 {% block inhalt %}
 <section class="karte">
-  <h1>Empfang</h1>
+  <h1>Einlass</h1>
   {% if stellen %}
   <form method="post" action="{% url 'ausgabe:ausgabestelle' %}" class="filter">
     {% csrf_token %}

@@ -26,7 +26,7 @@ class KundenEinstellungen(models.Model):
     )
     familienstand_erfassen = models.BooleanField("Familienstand erfassen", default=True)
     bemerkungen_importieren = models.BooleanField(
-        "Interne Bemerkungen importieren",
+        "Interne Anmerkungen importieren",
         default=False,
         help_text="Freitext enthält oft Sensibles. Nur einschalten, wenn er gebraucht wird.",
     )
@@ -371,12 +371,12 @@ class Bemerkung(models.Model):
     verfasst_von = models.CharField("Verfasst von", max_length=100, blank=True)
 
     class Meta:
-        verbose_name = "Interne Bemerkung"
-        verbose_name_plural = "Interne Bemerkungen"
+        verbose_name = "Interne Anmerkung"
+        verbose_name_plural = "Interne Anmerkungen"
         ordering = ["-datum"]
 
     def __str__(self):
-        return f"Bemerkung vom {self.datum:%d.%m.%Y}"
+        return f"Anmerkung vom {self.datum:%d.%m.%Y}"
 
 
 class Abholung(models.Model):
@@ -534,7 +534,7 @@ class ImportLauf(models.Model):
     anzahl_personen = models.PositiveIntegerField("Personen", default=0)
     anzahl_abholer = models.PositiveIntegerField("Abholberechtigte", default=0)
     anzahl_sperren = models.PositiveIntegerField("Sperren", default=0)
-    anzahl_bemerkungen = models.PositiveIntegerField("Bemerkungen", default=0)
+    anzahl_bemerkungen = models.PositiveIntegerField("Anmerkungen", default=0)
     anzahl_abholungen = models.PositiveIntegerField("Abholungen", default=0)
     anzahl_ausnahmen = models.PositiveIntegerField("Ausnahmen", default=0)
     anzahl_warnungen = models.PositiveIntegerField("Warnungen", default=0)

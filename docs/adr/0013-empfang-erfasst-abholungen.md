@@ -1,4 +1,4 @@
-# 0013: Der Empfang erfasst Abholungen schon im Snapshot-Betrieb
+# 0013: Der Einlass erfasst Abholungen schon im Snapshot-Betrieb
 
 - Status: Angenommen
 - Datum: 2026-10-24
@@ -7,20 +7,20 @@
 ## Problem
 
 Nach ADR 0006 wird der Kundenstamm in bintafeln nur gelesen, und jeder Import ersetzt ihn
-vollständig. Der Empfang soll aber schon jetzt nicht nur prüfen (Ampel), sondern Abholungen und
+vollständig. Der Einlass soll aber schon jetzt nicht nur prüfen (Ampel), sondern Abholungen und
 Ausnahmen auch eintragen. Das kollidiert mit dem Vollaustausch.
 
 ## Entscheidung
 
-- Am Empfang eingetragene Abholungen und Ausnahmen werden in bintafeln gespeichert und mit
+- Am Einlass eingetragene Abholungen und Ausnahmen werden in bintafeln gespeichert und mit
   `erfasst_am` gekennzeichnet.
 - Ein Import ersetzt sie wie alle anderen Teile des Kundenstamms. Der Prüfbericht warnt vorher,
   wie viele in bintafeln erfasste Einträge dabei verloren gehen.
 - Personen- und Haushaltsdaten bleiben weiterhin nur lesbar. Einzige weitere Änderung durch den
-  Empfang ist das Datum „Letzter Besuch“.
+  Einlass ist das Datum „Letzter Besuch“.
 - Eine versehentlich eingetragene Abholung kann am selben Tag zurückgenommen werden. Importierte
   Abholungen lassen sich nicht löschen.
-- Ausnahmen am Empfang erteilen dürfen nur Admin und Büro.
+- Ausnahmen am Einlass erteilen dürfen nur Admin und Büro.
 
 ## Begründung
 
