@@ -53,6 +53,8 @@
   "einwilligung": "I agree that the Tafel may store my details in order to process the application.",
   "datenschutz": "Privacy policy",
   "impressum": "Legal notice",
+  "erklaerungen": "How the food distribution works",
+  "voraussetzungen": "Requirements and documents",
   "absenden": "Send application",
   "danke_titel": "Thank you!",
   "danke_nummer": "Your application has been received. Your application number: {nummer}",

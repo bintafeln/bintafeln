@@ -61,6 +61,14 @@ class AntragEinstellungen(models.Model):
     nachricht = _abfrage("Nachricht an die Tafel")
     datenschutz_url = models.URLField("Link zur Datenschutzerklärung", blank=True)
     impressum_url = models.URLField("Link zum Impressum", blank=True)
+    erklaerungen_url = models.URLField(
+        "Link zu Erklärungen", blank=True,
+        help_text="z. B. Seite der Tafel zur Lebensmittelausgabe: wie sie abläuft, was sie kostet.",
+    )  # fmt: skip
+    voraussetzungen_url = models.URLField(
+        "Link zu Voraussetzungen", blank=True,
+        help_text="Seite der Tafel: wer berechtigt ist und welche Nachweise nötig sind.",
+    )  # fmt: skip
     eigenes_css = models.TextField(
         "Eigene Gestaltung (CSS)",
         blank=True,
