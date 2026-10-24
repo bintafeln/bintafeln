@@ -12,6 +12,7 @@ urlpatterns = [
     path("abholung/<int:pk>/zuruecknehmen/", views.abholung_zuruecknehmen, name="zuruecknehmen"),
     path("haushalt/<path:kundennummer>/einzahlung/", views.einzahlung, name="einzahlung"),
     path("haushalt/<path:kundennummer>/korrektur/", views.korrektur, name="korrektur"),
+    path("haushalt/<path:kundennummer>/notiz/", views.notiz, name="notiz"),
     path(
         "einzahlung/<int:pk>/zuruecknehmen/",
         views.einzahlung_zuruecknehmen,

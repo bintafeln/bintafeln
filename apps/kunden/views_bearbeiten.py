@@ -36,6 +36,7 @@ from apps.kunden.models import (
     Einkommensart,
     Haushalt,
     Kundengruppe,
+    Notiz,
     Person,
     Sperre,
 )
@@ -69,6 +70,8 @@ def haushalt_bearbeiten(request, kundennummer):
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
             h = form.save()
+            if h.kundennummer != kundennummer:  # Notizen ziehen mit um
+                Notiz.objects.filter(kundennummer=kundennummer).update(kundennummer=h.kundennummer)
             geaendert(h, request)
         messages.success(request, "Haushalt gespeichert.")
         return redirect(_bearbeiten_url(h))
@@ -105,7 +108,9 @@ def haushalt_neu(request):
 @nur_admin
 def haushalt_loeschen(request, kundennummer):
     h = get_object_or_404(Haushalt, kundennummer=kundennummer)
-    h.delete()  # Buchungen bleiben ohne Haushalt, aber mit Kundennummer (Kasse)
+    with transaction.atomic():
+        h.delete()  # Buchungen bleiben ohne Haushalt, aber mit Kundennummer (Kasse)
+        Notiz.objects.filter(kundennummer=kundennummer).delete()
     messages.success(
         request,
         f"Haushalt {kundennummer} gelöscht. Kontobuchungen bleiben ohne Haushalt für die Kasse "

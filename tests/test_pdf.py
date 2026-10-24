@@ -79,12 +79,15 @@ def test_auskunft_kunde(admin_client, pdf_text, haushalt):
     e = TafelEinstellungen.laden()
     e.name, e.strasse, e.ort = "Tafel Musterstadt", "Testweg 2", "Musterstadt"
     e.save()
+    from apps.kunden.models import Notiz
+
+    Notiz.objects.create(kundennummer="T-4711", text="Testnotiz", verfasst_von="kim")
     seite = admin_client.get(reverse("kunden:haushalt", args=["T-4711"])).content.decode()
     assert "Auskunft nach Art. 15 DSGVO (PDF)" in seite and "Kundenausweis drucken" in seite
     inhalt = pdf_text(admin_client.get(reverse("kunden:auskunft", args=["T-4711"])))
     for wort in ("Tafel Musterstadt", "Erfundene Gasse 1", "Erika", "Otto Abholer", "Testsperre",
                  "Testbemerkung", "Testausnahme", "Ausgabe Nord", "Nuss", "Diaet", "chefin",
-                 "Ihre Rechte"):  # fmt: skip
+                 "Ihre Rechte", "Testnotiz"):  # fmt: skip
         assert wort in inhalt, wort
     z = Zugriff.objects.filter(kundennummer="T-4711").order_by("-zeitpunkt").first()
     assert z.besondere_kategorie and z.benutzername == "chefin"

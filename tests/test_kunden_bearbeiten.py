@@ -212,3 +212,36 @@ def test_import_warnt_vor_handaenderungen(h, admin):
     datei = b"kundennummer;nachname;vorname\n2001;Test;Erika\n"
     ergebnis = importieren.pruefen({"haushalte.csv": datei})
     assert any("von Hand geänderte" in m["text"] for m in ergebnis.warnungen)
+
+
+def test_notizen_haushaltsseite_import_und_umnummern(
+    client, admin, benutzer_mit_rolle, anmelden, h
+):
+    from apps.kunden.models import Notiz, fristen_anwenden
+
+    anmelden(client, benutzer_mit_rolle("kim", rollen.AUSGABE))
+    client.post(url("notiz_neu", "2001"), {"text": "Erfundene Notiz"})
+    client.post(url("notiz_neu", "2001"), {"text": ""})
+    n = Notiz.objects.get()
+    seite = client.get(url("haushalt", "2001")).content.decode()
+    assert "Erfundene Notiz" in seite and "löschen</button>" not in seite
+    assert client.post(reverse("kunden:notiz_loeschen", args=[n.pk])).status_code == 403
+    admin_client = anmelden(client, admin)
+    assert "löschen</button>" in admin_client.get(url("haushalt", "2001")).content.decode()
+    # Kundennummer ändern: Notizen ziehen mit
+    admin_client.post(url("bearbeiten", "2001"), {"kundennummer": "2009", "status": "aktiv"})
+    assert Notiz.objects.get().kundennummer == "2009"
+    # Import: Notiz bleibt, solange es die Kundennummer gibt
+    Notiz.objects.create(kundennummer="weg", text="verwaist")
+    datei = b"kundennummer;nachname;vorname\n2009;Test;Erika\n"
+    ergebnis = importieren.pruefen({"haushalte.csv": datei})
+    importieren.uebernehmen(ergebnis.daten, benutzer=None, dateien=["haushalte.csv"],
+                            pruefsumme="x", anzahl_warnungen=0)  # fmt: skip
+    assert list(Notiz.objects.values_list("text", flat=True)) == ["Erfundene Notiz"]
+    Notiz.objects.create(kundennummer="weg", text="verwaist")
+    assert fristen_anwenden() >= 1 and Notiz.objects.count() == 1
+    admin_client.post(reverse("kunden:notiz_loeschen", args=[Notiz.objects.get().pk]))
+    assert not Notiz.objects.exists()
+    Notiz.objects.create(kundennummer="2009", text="x")
+    admin_client.post(url("haushalt_loeschen", "2009"))
+    assert not Notiz.objects.exists()

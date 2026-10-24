@@ -22,8 +22,10 @@ from apps.kunden.models import (
     Ausnahme,
     Haushalt,
     KundenEinstellungen,
+    Notiz,
     Zugriff,
 )
+from apps.kunden.views import notiz_schreiben
 
 EMPFANG_ROLLEN = (rollen.ADMIN, rollen.BUERO, rollen.AUSGABE)
 LETZTE_ABHOLUNGEN = 5
@@ -55,7 +57,9 @@ def _ergebnis(request, h, meldung=None):
     einstellungen = AusgabeEinstellungen.laden()
     h = (
         Haushalt.objects.select_related("kundengruppe__ausgabestelle")
-        .prefetch_related("personen", "sperren", "ausnahmen", "abholungen__ausgabestelle")
+        .prefetch_related(
+            "personen", "abholer", "sperren", "ausnahmen", "abholungen__ausgabestelle"
+        )
         .get(pk=h.pk)
     )
     erwachsene, kinder = h.groesse(KundenEinstellungen.laden().kind_bis_alter, heute)
@@ -78,6 +82,7 @@ def _ergebnis(request, h, meldung=None):
         "abholungen": abholungen[:LETZTE_ABHOLUNGEN],
         "heute_erfasst": [a for a in abholungen if a.datum == heute and a.erfasst_am],
         "darf_ausnahme": rollen.hat_rolle(request.user, rollen.ADMIN, rollen.BUERO),
+        "notizen": Notiz.objects.filter(kundennummer=h.kundennummer),
         "meldung": meldung,
     }
 
@@ -400,3 +405,12 @@ def einstellungen(request):
         messages.success(request, "Einstellungen der Ausgabe gespeichert.")
         return redirect("ausgabe:einstellungen")
     return render(request, "ausgabe/einstellungen.html", {"form": form})
+
+
+@require_POST
+@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+def notiz(request, kundennummer):
+    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    if notiz_schreiben(h, request.POST.get("text", ""), request.user) is None:
+        return _zurueck(request, h, "Bitte einen Text für die Notiz eingeben.", messages.ERROR)
+    return _zurueck(request, h, "Notiz gespeichert.")

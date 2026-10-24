@@ -1,0 +1,26 @@
+<section class="karte notizen">
+  <h2>Notizen</h2>
+  {% for n in notizen %}
+    <div class="bemerkung">
+      <p class="hinweis">{{ n.erstellt_am|date:"d.m.Y H:i" }}{% if n.verfasst_von %} · {{ n.verfasst_von }}{% endif %}
+        {% if buero %}<form method="post" action="{% url 'kunden:notiz_loeschen' n.pk %}" class="inline">{% csrf_token %}
+          <button type="submit" class="link-knopf" onclick="return confirm('Notiz löschen?')">löschen</button></form>{% endif %}</p>
+      <p>{{ n.text|linebreaksbr }}</p>
+    </div>
+  {% empty %}
+    <p class="hinweis">Keine Notizen.</p>
+  {% endfor %}
+  {% if notiz_htmx %}
+  <form method="post" action="{% url 'ausgabe:notiz' h.kundennummer %}" class="notiz-neu"
+        hx-post="{% url 'ausgabe:notiz' h.kundennummer %}" hx-target="#ergebnis">
+  {% else %}
+  <form method="post" action="{% url 'kunden:notiz_neu' h.kundennummer %}" class="notiz-neu">
+  {% endif %}
+    {% csrf_token %}
+    <div class="feld">
+      <label for="notiz-text">Neue Notiz</label>
+      <textarea name="text" id="notiz-text" rows="2" maxlength="1000" required></textarea>
+    </div>
+    <button type="submit" class="knopf knopf-zweitrangig">Notiz speichern</button>
+  </form>
+</section>

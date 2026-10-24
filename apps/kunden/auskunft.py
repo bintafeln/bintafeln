@@ -10,7 +10,7 @@ from reportlab.lib.units import mm
 
 from apps.ausgabe.konto import euro
 from apps.core.pdf import Pdf
-from apps.kunden.models import Haushalt, KundenEinstellungen, Zugriff, Zusatzfeld
+from apps.kunden.models import Haushalt, KundenEinstellungen, Notiz, Zugriff, Zusatzfeld
 
 
 def _zusatz(felder, werte) -> list[tuple[str, str]]:
@@ -100,6 +100,14 @@ def kunde_pdf(h: Haushalt) -> bytes:
         [[_datum(b.datum), b.text, b.verfasst_von] for b in h.bemerkungen.all()],
         breiten=[0.14, 0.66, 0.2],
     )
+
+    doc.ueberschrift("Notizen")
+    doc.tabelle(
+        ["Datum", "Text", "Von"],
+        [[_datum(timezone.localtime(n.erstellt_am).date()), n.text, n.verfasst_von]
+         for n in Notiz.objects.filter(kundennummer=h.kundennummer)],
+        breiten=[0.14, 0.66, 0.2],
+    )  # fmt: skip
 
     doc.ueberschrift("Ausnahmen")
     doc.tabelle(

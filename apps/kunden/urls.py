@@ -46,6 +46,8 @@ urlpatterns = [
         views_bearbeiten.listeneintrag_loeschen,
         name="listeneintrag_loeschen",
     ),
+    path("haushalt/<path:kundennummer>/notiz/", views.notiz_neu, name="notiz_neu"),
+    path("notiz/<int:pk>/loeschen/", views.notiz_loeschen, name="notiz_loeschen"),
     path("haushalt/<path:kundennummer>/auskunft/", views.auskunft, name="auskunft"),
     path("haushalt/<path:kundennummer>/ausweis/", views.ausweis, name="ausweis"),
     path("haushalt/<path:kundennummer>/", views.haushalt, name="haushalt"),

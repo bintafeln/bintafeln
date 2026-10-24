@@ -293,8 +293,8 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
 
   | Rolle | sieht |
   |---|---|
-  | Admin, Büro | alles: Anschrift, Kontakt, Personen, Abholberechtigte, alle Sperren, Ausnahmen, Abholungen, Kontostand, Anmerkungen, Zusatzfelder |
-  | Ausgabe | Name, Status, Kundengruppe, Haushaltsgröße, Ausweis, aktive Sperren, Ausnahmen, die letzten 5 Abholungen, Zusatzfelder (Art. 9 nur mit Freigabe in den Einstellungen) |
+  | Admin, Büro | alles: Anschrift, Kontakt, Personen, Abholberechtigte, alle Sperren, Ausnahmen, Abholungen, Kontostand, Anmerkungen, Notizen, Zusatzfelder |
+  | Ausgabe | nur, was der Einlass braucht: Kundennummer, Hauptperson mit Geburtsdatum, Abholberechtigte mit Geburtsdatum, Ausgabestelle, Karte gültig bis, Kontostand (abschaltbar), aktive Sperren, die letzten 5 Abholungen, Notizen, Zusatzfelder (Art. 9 nur mit Freigabe in den Einstellungen). Keine Anschrift, keine Kontaktdaten, keine weiteren Angehörigen, keine internen Anmerkungen |
   | Kiosk | nichts |
 
 - **Bearbeiten (nur Admin):** Auf der Haushaltsseite „Bearbeiten“ ändert alles zum Haushalt:
@@ -304,6 +304,10 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
   und Einkommensarten pflegt der Admin unter „Einstellungen → Kundenstamm → Listen“.
   **Achtung:** Solange aus dem Altsystem importiert wird, ersetzt der nächste Import alle
   Änderungen; der Prüfbericht nennt die Zahl der geänderten Haushalte (ADR 0025).
+- **Notizen:** Ausgabe, Büro und Admin schreiben Notizen zum Haushalt, auf der Haushaltsseite
+  oder direkt am Einlass. Löschen können Büro und Admin. Notizen hängen an der Kundennummer und
+  bleiben beim Import erhalten; gibt es die Kundennummer nicht mehr, werden sie gelöscht
+  (ADR 0026). Die **internen Anmerkungen** aus dem Altsystem sehen nur Büro und Admin.
 - Jeder Aufruf einer Detailseite steht im **Zugriffsprotokoll** („Kunden“ → „Zugriffsprotokoll“,
   nur Admin). Die Einträge werden nach 365 Tagen gelöscht, einstellbar unter
   „Einstellungen → Kundenstamm“.
@@ -362,6 +366,9 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    - Unter „Einstellungen → Ausgabe und Ampel“: **Abholungen am selben Tag** (1 = einmal,
      2 = zweimal, 0 = beliebig oft) und **Höchstzahl je Zeitraum** (0 = keine Grenze).
    - 🟢 alles in Ordnung, oder eine Ausnahme für heute hebt eine Terminregel auf
+   Daneben stehen Hauptperson mit Geburtsdatum, Abholberechtigte mit Geburtsdatum,
+   Ausgabestelle, Karte gültig bis, Kontostand, die letzten Abholungen und die **Notizen**;
+   eine neue Notiz lässt sich gleich dort speichern.
 4. **Kunde anmelden:** Das Aufrufen allein trägt nichts ein. Erst der Knopf **„Kunde anmelden
    und Abholung buchen“** meldet den Kunden für heute an. Wird abgebrochen, einfach die nächste
    Nummer scannen; der Kunde lässt sich jederzeit wieder aufrufen. Ein Versehen lässt sich am
