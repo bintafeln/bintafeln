@@ -27,7 +27,12 @@ def _verstaendlich(fehler: Exception) -> str:
         return "Verschlüsselung passt nicht zum Server. Port und Verschlüsselung prüfen."
     if isinstance(fehler, (socket.gaierror, ConnectionError, TimeoutError, socket.timeout)):
         return "Mailserver nicht erreichbar. Adresse und Port prüfen."
-    return f"Senden fehlgeschlagen ({type(fehler).__name__})."
+    if isinstance(fehler, OSError) and fehler.strerror:
+        return (
+            f"Verbindung zum Mailserver fehlgeschlagen ({fehler.strerror}). Adresse, Port und "
+            "Verschlüsselung prüfen."
+        )
+    return f"Senden fehlgeschlagen ({type(fehler).__name__}: {fehler})."
 
 
 def _verbindung(e: MailEinstellungen):

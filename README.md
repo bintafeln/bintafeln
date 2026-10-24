@@ -242,7 +242,8 @@ Vorschlag für Vorauszahlungen am Einlass.
 
 Unter „Einstellungen → E-Mail“ trägt ein Admin den Mailserver der Tafel ein: Server, Port,
 Verschlüsselung, Benutzer, Passwort und Absender. Die Angaben gibt es beim Mail-Anbieter unter
-dem Stichwort „SMTP“. Nach dem Speichern im Bereich **„Testen“**:
+dem Stichwort „SMTP“ – gemeint ist der Server zum **Senden** (z. B. `smtp.strato.de`, nicht
+`imap.…`). Nach dem Speichern im Bereich **„Testen“**:
 
 - **„Verbindung prüfen“** verbindet sich mit dem Server und meldet sich an, ohne eine Mail zu
   senden. Klappt es nicht, steht dort verständlich, woran es liegt (Adresse/Port,

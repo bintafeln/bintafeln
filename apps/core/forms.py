@@ -80,6 +80,16 @@ class MailEinstellungenForm(forms.ModelForm):
         model = MailEinstellungen
         fields = ["server", "port", "verschluesselung", "benutzer", "absender"]
 
+    def clean_server(self):
+        server = self.cleaned_data["server"].strip()
+        if server.lower().startswith(("imap.", "pop.", "pop3.")):
+            vorschlag = "smtp." + server.split(".", 1)[1]
+            raise forms.ValidationError(
+                f"„{server}“ ist ein Server zum Abholen von Mails. Zum Senden braucht es den "
+                f"SMTP-Server, meist „{vorschlag}“."
+            )
+        return server
+
     def save(self, commit=True):
         instanz = super().save(commit=False)
         if self.cleaned_data.get("passwort_loeschen"):
