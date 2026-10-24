@@ -70,7 +70,7 @@
         <td data-titel="Anmerkung">{{ sch.bemerkung|default:"–" }}</td>
         <td data-titel="Aktion">
           <form method="post" action="{% url 'konten:schulung_loeschen' ziel.pk sch.pk %}" class="inline"
-                onsubmit="return confirm('Schulung löschen?')">
+                onsubmit="return confirm(this.dataset.frage)" data-frage="Schulung „{{ sch.thema }}“ vom {{ sch.datum|date:'d.m.Y' }} löschen?">
             {% csrf_token %}<button type="submit" class="link">löschen</button>
           </form>
         </td>

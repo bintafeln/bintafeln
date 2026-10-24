@@ -23,7 +23,8 @@
         <td data-titel="Name">{{ k.name }}</td>
         <td data-titel="Sichtbar für">{% if k.nur_personal %}nur Admin und Personal{% else %}alle, die Mitarbeitende verwalten{% endif %}</td>
         <td data-titel="Aktion">
-          <form method="post" action="{% url 'konten:kategorie_loeschen' k.pk %}" class="inline">
+          <form method="post" action="{% url 'konten:kategorie_loeschen' k.pk %}" class="inline"
+                onsubmit="return confirm(this.dataset.frage)" data-frage="Dokumentkategorie „{{ k.name }}“ löschen?">
             {% csrf_token %}<button type="submit" class="link">löschen</button>
           </form>
         </td>

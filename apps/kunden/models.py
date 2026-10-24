@@ -438,6 +438,63 @@ def verwaiste_notizen_loeschen() -> int:
     return Notiz.objects.exclude(kundennummer__in=vorhanden).delete()[0]
 
 
+class AusweisVorlage(models.Model):
+    """Gestaltung des Kundenausweises (Singleton, ADR 0027). Elemente siehe kunden.ausweis."""
+
+    EINZIGE_ID = 1
+
+    class Seitenformat(models.TextChoices):
+        A4 = "a4", "A4 mit Schnittmarken (ein Ausweis je Blatt)"
+        KARTE = "karte", "Kartengröße (für Kartendrucker)"
+
+    name = models.CharField(
+        "Ausweisname", max_length=100, default="Kundenausweis",
+        help_text="z. B. „Tafelausweis Tafel Musterstadt“; als Element platzierbar.",
+    )  # fmt: skip
+    seitenformat = models.CharField(
+        "Druck", max_length=5, choices=Seitenformat.choices, default=Seitenformat.A4
+    )
+    hintergrund = models.ImageField(
+        "Hintergrundbild vorn", upload_to="oeffentlich/ausweis/", blank=True,
+        help_text="PNG oder JPG, höchstens 2 MB; wird auf Kartengröße (85,6 × 54 mm) gestreckt.",
+    )  # fmt: skip
+    rueckseite_aktiv = models.BooleanField("Rückseite drucken", default=False)
+    hintergrund_rueckseite = models.ImageField(
+        "Hintergrundbild hinten", upload_to="oeffentlich/ausweis/", blank=True
+    )
+    vorderseite = models.JSONField("Elemente vorn", default=list, blank=True)
+    rueckseite = models.JSONField("Elemente hinten", default=list, blank=True)
+    geaendert_am = models.DateTimeField("Geändert am", auto_now=True)
+
+    class Meta:
+        verbose_name = "Ausweis-Vorlage"
+        verbose_name_plural = "Ausweis-Vorlage"
+
+    def __str__(self):
+        return f"Ausweis-Vorlage „{self.name}“"
+
+    def save(self, *args, **kwargs):
+        self.pk = self.EINZIGE_ID
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def laden(cls) -> "AusweisVorlage":
+        vorlage, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
+        return vorlage
+
+    def elemente_vorne(self) -> list[dict]:
+        from apps.kunden import ausweis
+
+        return ausweis.elemente_pruefen(self.vorderseite) if self.vorderseite else (
+            ausweis.standard())  # fmt: skip
+
+    def elemente_hinten(self) -> list[dict]:
+        """Rückseite: frei, ohne Pflicht-Elemente."""
+        from apps.kunden import ausweis
+
+        return [e for e in (ausweis.element_pruefen(r) for r in self.rueckseite or []) if e]
+
+
 class Abholung(models.Model):
     """Eine Abholung. Wird nach der Aufbewahrungsfrist der Einstellungen gelöscht."""
 
@@ -624,6 +681,7 @@ for modell in (
     Bemerkung,
     Notiz,
     NotizVorlage,
+    AusweisVorlage,
     Abholung,
     Ausnahme,
     ImportLauf,

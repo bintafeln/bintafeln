@@ -5,6 +5,7 @@ from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import OuterRef, Q, Subquery
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
@@ -15,7 +16,7 @@ from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.kunden import auskunft as kunden_auskunft
 from apps.kunden import importieren
-from apps.kunden.ausweis import ausweis_pdf
+from apps.kunden.ausweis import MAX_SAMMELDRUCK, ausweis_pdf, ausweise_pdf
 from apps.kunden.forms import KundenEinstellungenForm, ZusatzfeldForm
 from apps.kunden.models import (
     Abholer,
@@ -269,6 +270,26 @@ def ausweis(request, kundennummer):
         Haushalt.objects.select_related("kundengruppe"), kundennummer=kundennummer
     )
     return pdf_antwort(ausweis_pdf(h), f"kundenausweis-{_dateiname(h)}.pdf")
+
+
+@never_cache
+@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+def ausweise(request):
+    """Sammeldruck: Ausweise aller Haushalte der aktuellen Auswahl in der Kundenliste."""
+    haushalte, _ = _haushalte_suchen(request)
+    haushalte = list(
+        haushalte.select_related("kundengruppe__ausgabestelle").order_by("kundennummer")[
+            : MAX_SAMMELDRUCK + 1
+        ]
+    )
+    if not haushalte or len(haushalte) > MAX_SAMMELDRUCK:
+        messages.error(
+            request,
+            "Keine Haushalte ausgewählt." if not haushalte else
+            f"Mehr als {MAX_SAMMELDRUCK} Haushalte: bitte nach Kundengruppe oder Status filtern.",
+        )  # fmt: skip
+        return redirect(f"{reverse('kunden:uebersicht')}?{request.GET.urlencode()}")
+    return pdf_antwort(ausweise_pdf(haushalte), "kundenausweise.pdf")
 
 
 def _dateiname(h) -> str:

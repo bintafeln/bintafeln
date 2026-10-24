@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% load static %}
+{% block titel %}Kundenausweis gestalten{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'kunden:einstellungen' %}">← Einstellungen Kundenstamm</a></p>
+  <h1>Kundenausweis gestalten</h1>
+  <p class="hinweis">Elemente mit der Maus oder dem Finger verschieben, an der Ecke unten rechts
+    größer oder kleiner ziehen; die Pfeiltasten verschieben das gewählte Element fein
+    (mit Umschalt in größeren Schritten). <strong>Kundennummer und Barcode</strong> stehen immer
+    auf der Vorderseite; der Barcode enthält nur die Kundennummer.</p>
+  <form method="post" enctype="multipart/form-data" id="ausweis-form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="fehler" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+    {% for feld in form.hidden_fields %}{% for fehler in feld.errors %}<p class="sicherung sicherung-fehler" role="alert">{{ fehler }}</p>{% endfor %}{% endfor %}
+    <div class="formular-raster">
+      {% for feld in form.visible_fields %}
+      <div class="feld{% if feld.widget_type == 'checkbox' %} feld-haken{% endif %}{% if feld.errors %} hat-fehler{% endif %}">
+        {% if feld.widget_type == "checkbox" %}<label for="{{ feld.id_for_label }}">{{ feld }} {{ feld.label }}</label>
+        {% else %}<label for="{{ feld.id_for_label }}">{{ feld.label }}</label>{{ feld }}{% endif %}
+        {% if feld.help_text %}<small class="hilfe">{{ feld.help_text }}</small>{% endif %}
+        {% for fehler in feld.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    {{ form.vorne }}{{ form.hinten }}
+
+    <noscript><p class="sicherung sicherung-fehler">Zum Verschieben der Elemente wird JavaScript
+      benötigt. Ohne JavaScript bleibt die bisherige Gestaltung erhalten.</p></noscript>
+
+    <div class="gestalter" id="gestalter" hidden>
+      <div class="gestalter-flaeche">
+        <nav class="reiter" aria-label="Seite des Ausweises">
+          <a href="#" data-seite="vorne" aria-current="page">Vorderseite</a>
+          <a href="#" data-seite="hinten">Rückseite</a>
+        </nav>
+        <div class="ausweis-karte" id="ausweis-karte" tabindex="0" aria-label="Ausweis, Elemente verschiebbar"></div>
+        <p class="hinweis" id="rueckseite-hinweis" hidden>Die Rückseite wird nur gedruckt, wenn „Rückseite drucken“ eingeschaltet ist.</p>
+      </div>
+      <div class="gestalter-leiste">
+        <div class="feld">
+          <label for="neu-typ">Element hinzufügen</label>
+          <div class="scan-zeile">
+            <select id="neu-typ"></select>
+            <button type="button" class="knopf knopf-zweitrangig" id="neu-knopf">Hinzufügen</button>
+          </div>
+        </div>
+        <div id="eigenschaften">
+          <h2 id="eig-titel">Element wählen</h2>
+          <div class="eig-raster" id="eig-felder" hidden>
+            <div class="feld"><label for="eig-x">Links (mm)</label><input type="number" step="any" id="eig-x" form="kein-formular" data-eig="x"></div>
+            <div class="feld"><label for="eig-y">Oben (mm)</label><input type="number" step="any" id="eig-y" form="kein-formular" data-eig="y"></div>
+            <div class="feld"><label for="eig-b">Breite (mm)</label><input type="number" step="any" id="eig-b" form="kein-formular" data-eig="b"></div>
+            <div class="feld"><label for="eig-h">Höhe (mm)</label><input type="number" step="any" id="eig-h" form="kein-formular" data-eig="h"></div>
+            <div class="feld nur-text"><label for="eig-groesse">Schriftgröße (pt)</label><input type="number" step="any" min="5" max="40" id="eig-groesse" form="kein-formular" data-eig="groesse"></div>
+            <div class="feld nur-text"><label for="eig-ausrichtung">Ausrichtung</label>
+              <select id="eig-ausrichtung" form="kein-formular" data-eig="ausrichtung"><option value="links">links</option><option value="mitte">mittig</option><option value="rechts">rechts</option></select></div>
+            <div class="feld nur-farbe"><label for="eig-farbe">Farbe</label><input type="color" id="eig-farbe" form="kein-formular" data-eig="farbe"></div>
+            <div class="feld feld-haken nur-text"><label for="eig-fett"><input type="checkbox" id="eig-fett" form="kein-formular" data-eig="fett"> fett</label></div>
+            <div class="feld nur-freitext eig-breit"><label for="eig-text">Text</label><input type="text" maxlength="200" id="eig-text" form="kein-formular" data-eig="text">
+              <small class="hilfe">Platzhalter: {% for p in daten.platzhalter %}{{ "{" }}{{ p }}{{ "}" }}{% if not forloop.last %}, {% endif %}{% endfor %}</small></div>
+          </div>
+          <button type="button" class="knopf knopf-gefahr" id="eig-loeschen" hidden>Element entfernen</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="aktionen abseits">
+      <button type="submit" class="knopf">Speichern</button>
+      <button type="submit" name="vorschau" value="1" formtarget="_blank" class="knopf knopf-zweitrangig">Vorschau als PDF</button>
+      <button type="submit" name="standard" value="1" class="knopf knopf-zweitrangig"
+              onclick="return confirm('Gestaltung auf den Standard zurücksetzen? Eigene Elemente gehen verloren.')">Auf Standard zurücksetzen</button>
+    </div>
+  </form>
+</section>
+{{ daten|json_script:"ausweis-daten" }}
+<script src="{% static 'js/ausweis_gestalter.js' %}"></script>
+{% endblock %}

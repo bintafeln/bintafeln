@@ -314,9 +314,24 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
 - Jeder Aufruf einer Detailseite steht im **Zugriffsprotokoll** („Kunden“ → „Zugriffsprotokoll“,
   nur Admin). Die Einträge werden nach 365 Tagen gelöscht, einstellbar unter
   „Einstellungen → Kundenstamm“.
+- Oben auf der Detailseite stehen die wichtigsten Knöpfe: **Zum Einlass** (öffnet den Einlass
+  mit diesem Kunden), **Ausweis drucken** (Admin, Büro), **Bearbeiten** und **Löschen …**
+  (Admin). Löschen zeigt erst eine Seite, die aufzählt, was mitgelöscht wird; erst „Ja, …
+  endgültig löschen“ löscht. Auch alle anderen Löschknöpfe fragen nach und nennen, was gelöscht
+  wird.
 - Admin und Büro finden auf der Detailseite zwei PDFs:
-  - **Kundenausweis drucken:** Karte im Scheckkartenformat mit Schnittmarken, mit Kundennummer
-    als Barcode für den Scanner am Einlass. In 100 % Größe drucken.
+  - **Kundenausweis drucken:** Karte im Scheckkartenformat, mit Kundennummer als Barcode für den
+    Scanner am Einlass. In 100 % Größe drucken. **Gestalten** (Admin): „Einstellungen →
+    Kundenstamm → Kundenausweis gestalten“. Elemente (Ausweisname, Name der Tafel, Logo, Name,
+    Kundengruppe, Ausgabestelle, Gültig bis, Kunde seit, Anzahl Personen, freier Text mit
+    Platzhaltern, farbige Fläche) einfügen, mit der Maus verschieben und in der Größe ändern;
+    Hintergrundbild, optional eine Rückseite, Druck auf A4 mit Schnittmarken oder in
+    Kartengröße für Kartendrucker. **Kundennummer und Barcode** sind immer auf der Vorderseite;
+    der Barcode enthält nur die Kundennummer. „Vorschau als PDF“ zeigt den Ausweis mit
+    erfundenen Daten.
+  - **Sammeldruck:** In der Kundenliste druckt „Ausweise dieser … drucken (PDF)“ die Ausweise
+    aller Haushalte der aktuellen Suche bzw. Filter (z. B. einer Kundengruppe), einen je Seite,
+    höchstens 500 auf einmal.
   - **Auskunft nach Art. 15 DSGVO:** alle gespeicherten Daten des Haushalts samt Hinweisen zu
     Zweck, Speicherdauer und Rechten. Der Abruf steht im Zugriffsprotokoll.
 

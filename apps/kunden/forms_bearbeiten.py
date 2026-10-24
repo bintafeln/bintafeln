@@ -5,6 +5,7 @@ die nicht mehr in der Liste stehen, bleiben wählbar.
 """
 
 import datetime as dt
+import json
 
 from django import forms
 from django.contrib.auth import get_user_model
@@ -17,6 +18,7 @@ from apps.kunden.models import (
     Abholer,
     Ausgabestelle,
     Ausnahme,
+    AusweisVorlage,
     Bemerkung,
     Einkommensart,
     Haushalt,
@@ -266,3 +268,56 @@ class NotizVorlageForm(forms.ModelForm):
             "text": "Erscheint am Einlass als Knopf; ein Klick speichert ihn als Notiz.",
             "reihenfolge": "Kleinere Zahlen stehen weiter vorn.",
         }
+
+
+BILD_MAX_BYTES = 2 * 1024 * 1024
+
+
+class AusweisVorlageForm(forms.ModelForm):
+    """Einstellungen des Ausweises; die Elemente kommen als JSON aus dem Gestalter."""
+
+    vorne = forms.CharField(widget=forms.HiddenInput, required=False)
+    hinten = forms.CharField(widget=forms.HiddenInput, required=False)
+
+    class Meta:
+        model = AusweisVorlage
+        fields = ["name", "seitenformat", "rueckseite_aktiv", "hintergrund",
+                  "hintergrund_rueckseite"]  # fmt: skip
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.initial["vorne"] = json.dumps(self.instance.elemente_vorne())
+        self.initial["hinten"] = json.dumps(self.instance.elemente_hinten())
+
+    def _bild(self, name):
+        bild = self.cleaned_data.get(name)
+        if bild and getattr(bild, "size", 0) > BILD_MAX_BYTES:
+            raise forms.ValidationError("Das Bild darf höchstens 2 MB groß sein.")
+        return bild
+
+    def clean_hintergrund(self):
+        return self._bild("hintergrund")
+
+    def clean_hintergrund_rueckseite(self):
+        return self._bild("hintergrund_rueckseite")
+
+    def _elemente(self, name):
+        try:
+            return json.loads(self.cleaned_data.get(name) or "[]")
+        except ValueError:
+            raise forms.ValidationError("Die Gestaltung war nicht lesbar.") from None
+
+    def clean_vorne(self):
+        from apps.kunden import ausweis
+
+        return ausweis.elemente_pruefen(self._elemente("vorne"))
+
+    def clean_hinten(self):
+        from apps.kunden import ausweis
+
+        return [e for e in map(ausweis.element_pruefen, self._elemente("hinten")) if e]
+
+    def save(self, commit=True):
+        self.instance.vorderseite = self.cleaned_data["vorne"]
+        self.instance.rueckseite = self.cleaned_data["hinten"]
+        return super().save(commit)
