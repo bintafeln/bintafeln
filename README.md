@@ -148,9 +148,12 @@ Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie
   - bintafeln zeigt danach **einmal** ein Startpasswort, das man persönlich weitergibt.
   - Bei der ersten Anmeldung muss die Person ein eigenes Passwort wählen, danach gegebenenfalls
     die Zwei-Faktor-Anmeldung einrichten.
+- **Einladung per Mail** statt Startpasswort, wenn ein Mailserver eingerichtet ist (siehe
+  „E-Mail“): Die Person bekommt einen Link, über den sie ihr Passwort selbst festlegt. Der Link
+  gilt 3 Tage und nur einmal.
 - **Bearbeiten:** Name, E-Mail, Beschäftigung, Rollen.
-- **Passwort zurücksetzen** (neues Startpasswort) und **Zwei-Faktor zurücksetzen** (z. B. Handy
-  verloren).
+- **Passwort zurücksetzen** (neues Startpasswort), **Link zum neuen Passwort per Mail** und
+  **Zwei-Faktor zurücksetzen** (z. B. Handy verloren).
 - **Sperren statt löschen:** Die Person ist sofort abgemeldet und steht im **Archiv** mit „dabei
   seit“, „gesperrt am“ und „gesperrt von“. So bleibt auch Jahre später nachvollziehbar, wer was
   eingetragen hat. Ein gesperrtes Konto lässt sich wieder freischalten.
@@ -158,6 +161,18 @@ Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie
   - Niemand kann sich selbst sperren oder sich die Admin-Rolle nehmen.
   - Das Büro bearbeitet keine Admin-Konten.
 - Jede Person kann unter „Mein Konto“ ihr **Passwort ändern**.
+
+## E-Mail
+
+Unter „Einstellungen → E-Mail“ trägt ein Admin den Mailserver der Tafel ein: Server, Port,
+Verschlüsselung, Benutzer, Passwort und Absender. Die Angaben gibt es beim Mail-Anbieter unter
+dem Stichwort „SMTP“. Danach mit **„Testmail senden“** prüfen.
+
+- Das Passwort wird **verschlüsselt** gespeichert und nie wieder angezeigt. Der Schlüssel
+  stammt aus `DJANGO_SECRET_KEY` in `.env`. Wird dieser geändert, muss das Passwort neu
+  eingegeben werden.
+- Mit eingerichtetem Mailserver gibt es Einladungen per Mail und auf der Anmeldeseite
+  **„Passwort vergessen?“**. Beides verschickt einen Link, nie ein Passwort.
 
 ## Kundenstamm importieren
 

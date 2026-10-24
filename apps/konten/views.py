@@ -1,8 +1,15 @@
+import logging
+
 from django.contrib import messages
-from django.contrib.auth import login, logout, update_session_auth_hash
+from django.contrib.auth import get_user_model, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth.views import PasswordResetConfirmView
+from django.core.cache import cache
+from django.db.models import Q
+from django.http import Http404
 from django.shortcuts import redirect, render
+from django.urls import reverse_lazy
 from django.utils.cache import add_never_cache_headers
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.safestring import mark_safe
@@ -12,8 +19,11 @@ from django.views.decorators.http import require_POST
 from django_otp import login as otp_login
 from django_otp import match_token
 
-from apps.konten import zwei_faktor
+from apps.core import mail
+from apps.konten import einladung, zwei_faktor
 from apps.konten.forms import AnmeldeForm, CodeForm
+
+logger = logging.getLogger(__name__)
 
 
 def _ziel(request) -> str:
@@ -36,8 +46,59 @@ def anmelden(request):
             otp_login(request, form.geraet)
         return redirect(_ziel(request))
     return render(
-        request, "konten/anmelden.html", {"form": form, "next": request.GET.get("next", "")}
+        request,
+        "konten/anmelden.html",
+        {"form": form, "next": request.GET.get("next", ""), "mail": mail.eingerichtet()},
     )
+
+
+VERGESSEN_SPERRE = 5 * 60  # höchstens eine Mail je Konto in fünf Minuten
+
+
+@sensitive_post_parameters("eingabe")
+def passwort_vergessen(request):
+    """Schickt einen Link zum Zurücksetzen. Verrät nie, ob es das Konto gibt."""
+    if not mail.eingerichtet():
+        raise Http404
+    if request.method == "POST":
+        eingabe = request.POST.get("eingabe", "").strip()
+        if eingabe:
+            treffer = (
+                get_user_model()
+                .objects.filter(
+                    Q(username__iexact=eingabe) | Q(email__iexact=eingabe), is_active=True
+                )
+                .exclude(email="")
+            )
+            for benutzer in treffer:
+                if cache.add(f"passwort-vergessen:{benutzer.pk}", True, VERGESSEN_SPERRE):
+                    try:
+                        einladung.senden(request, benutzer, einladung.ZURUECKSETZEN)
+                    except mail.MailFehler:
+                        logger.warning(
+                            "Mail zum Zurücksetzen nicht gesendet (Konto %s)", benutzer.pk
+                        )
+        messages.info(
+            request,
+            "Falls es dazu ein Konto mit hinterlegter E-Mail-Adresse gibt, ist eine Mail mit "
+            "einem Link unterwegs. Bitte auch im Spam-Ordner nachsehen.",
+        )
+        return redirect("konten:anmelden")
+    return render(request, "konten/passwort_vergessen.html")
+
+
+class PasswortSetzen(PasswordResetConfirmView):
+    """Neues Passwort über den Link aus Einladung oder Zurücksetzen-Mail."""
+
+    template_name = "konten/passwort_setzen.html"
+    success_url = reverse_lazy("konten:anmelden")
+
+    def form_valid(self, form):
+        antwort = super().form_valid(form)
+        form.user.passwort_aendern = False
+        form.user.save(update_fields=["passwort_aendern"])
+        messages.success(self.request, "Ihr Passwort ist gespeichert. Bitte jetzt anmelden.")
+        return antwort
 
 
 @require_POST

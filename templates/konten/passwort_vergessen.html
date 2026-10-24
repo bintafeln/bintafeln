@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block titel %}Passwort vergessen{% endblock %}
+{% block inhalt %}
+<section class="karte schmal">
+  <h1>Passwort vergessen</h1>
+  <p>Geben Sie Ihren Benutzernamen oder Ihre E-Mail-Adresse ein. Ist für Ihr Konto eine E-Mail-Adresse
+    hinterlegt, bekommen Sie einen Link, über den Sie ein neues Passwort festlegen.</p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="feld">
+      <label for="eingabe">Benutzername oder E-Mail</label>
+      <input type="text" name="eingabe" id="eingabe" required autocomplete="username" autofocus>
+    </div>
+    <button type="submit" class="knopf">Link anfordern</button>
+  </form>
+  <p class="hinweis abseits">Keine E-Mail-Adresse hinterlegt? Bitte an einen Admin wenden.</p>
+  <p><a href="{% url 'konten:anmelden' %}">← Anmelden</a></p>
+</section>
+{% endblock %}

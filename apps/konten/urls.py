@@ -9,6 +9,12 @@ urlpatterns = [
     path("abmelden/", views.abmelden, name="abmelden"),
     path("", views.mein_konto, name="mein_konto"),
     path("passwort/", views.passwort_aendern, name="passwort_aendern"),
+    path("passwort/vergessen/", views.passwort_vergessen, name="passwort_vergessen"),
+    path(
+        "passwort/setzen/<uidb64>/<token>/",
+        views.PasswortSetzen.as_view(),
+        name="passwort_setzen",
+    ),
     path("mitarbeitende/", views_mitarbeitende.liste, name="mitarbeitende"),
     path("mitarbeitende/archiv/", views_mitarbeitende.archiv, name="mitarbeitende_archiv"),
     path("mitarbeitende/neu/", views_mitarbeitende.anlegen, name="mitarbeiter_neu"),
@@ -20,6 +26,7 @@ urlpatterns = [
         views_mitarbeitende.passwort_zuruecksetzen,
         name="passwort_zuruecksetzen",
     ),
+    path("mitarbeitende/<int:pk>/link/", views_mitarbeitende.link_senden, name="link_senden"),
     path(
         "mitarbeitende/<int:pk>/zwei-faktor/",
         views_mitarbeitende.zwei_faktor_zuruecksetzen,

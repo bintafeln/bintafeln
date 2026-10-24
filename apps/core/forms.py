@@ -1,7 +1,8 @@
 from django import forms
 from django.contrib.auth import get_user_model, password_validation
 
-from apps.core.models import TafelEinstellungen
+from apps.core import geheimnis
+from apps.core.models import MailEinstellungen, TafelEinstellungen
 
 LOGO_MAX_BYTES = 2 * 1024 * 1024
 
@@ -60,3 +61,31 @@ class EinstellungenForm(forms.ModelForm):
         if logo and getattr(logo, "size", 0) > LOGO_MAX_BYTES:
             raise forms.ValidationError("Das Logo darf höchstens 2 MB groß sein.")
         return logo
+
+
+class MailEinstellungenForm(forms.ModelForm):
+    passwort = forms.CharField(
+        label="Passwort",
+        required=False,
+        strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+        help_text="Leer lassen, um das gespeicherte Passwort zu behalten. Es wird verschlüsselt "
+        "gespeichert und nie wieder angezeigt.",
+    )
+    passwort_loeschen = forms.BooleanField(label="Gespeichertes Passwort löschen", required=False)
+
+    class Meta:
+        model = MailEinstellungen
+        fields = ["server", "port", "verschluesselung", "benutzer", "absender"]
+
+    def save(self, commit=True):
+        instanz = super().save(commit=False)
+        if self.cleaned_data.get("passwort_loeschen"):
+            instanz.passwort_verschluesselt = ""
+        elif self.cleaned_data.get("passwort"):
+            instanz.passwort_verschluesselt = geheimnis.verschluesseln(
+                self.cleaned_data["passwort"]
+            )
+        if commit:
+            instanz.save()
+        return instanz

@@ -9,5 +9,6 @@
     {% include "includes/formular.html" %}
     <button type="submit" class="knopf">Anmelden</button>
   </form>
+  {% if mail %}<p class="abseits"><a href="{% url 'konten:passwort_vergessen' %}">Passwort vergessen?</a></p>{% endif %}
 </section>
 {% endblock %}

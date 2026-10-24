@@ -3,6 +3,7 @@ Django==5.2.18
 django-auditlog==3.4.1
 django-otp==1.7.5
 segno==1.6.6
+cryptography==46.0.7
 gunicorn==26.2.0
 pillow==13.0.0
 psycopg[binary]==3.3.6
