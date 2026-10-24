@@ -6,6 +6,10 @@
   <p>Angemeldet als <strong>{{ user.username }}</strong>.</p>
   <p><a class="knopf knopf-zweitrangig" href="{% url 'konten:passwort_aendern' %}">Passwort ändern</a></p>
 
+  <h2>Meine Daten</h2>
+  <p>Alles, was die Tafel zu Ihnen gespeichert hat, als PDF (Auskunft nach Art. 15 DSGVO).</p>
+  <p><a class="knopf knopf-zweitrangig" href="{% url 'konten:meine_auskunft' %}" target="_blank" rel="noopener">Meine Daten ansehen (PDF)</a></p>
+
   <h2>Zwei-Faktor-Anmeldung</h2>
   {% if zwei_faktor_aktiv %}
     <p class="sicherung sicherung-ok">Eingeschaltet. Bei der Anmeldung wird zusätzlich ein Code aus

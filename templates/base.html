@@ -26,6 +26,7 @@
         <a href="{% url 'core:protokoll' %}">Protokoll</a>
       {% endif %}
       {% if user.is_staff %}<a href="{% url 'admin:index' %}">Verwaltung</a>{% endif %}
+      {% if darf_stempeln %}<a href="{% url 'personal:meine_arbeitszeit' %}">Meine Arbeitszeit</a>{% endif %}
       <a href="{% url 'konten:mein_konto' %}">Mein Konto</a>
       {% endif %}
       <form method="post" action="{% url 'konten:abmelden' %}" class="inline">

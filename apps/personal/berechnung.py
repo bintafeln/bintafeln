@@ -12,10 +12,12 @@ import datetime as dt
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 
+from django.utils import timezone
+
 from apps.core.feiertage import ist_feiertag
 from apps.core.models import TafelEinstellungen
 from apps.konten.models import PersonalEinstellungen
-from apps.personal.models import Abwesenheit
+from apps.personal.models import Abwesenheit, ArbeitszeitEinstellungen
 
 NULL = Decimal("0")
 
@@ -116,20 +118,71 @@ def urlaub(benutzer, jahr: int, heute: dt.date) -> Urlaubsstand:
     return stand
 
 
+# --- Arbeitszeit aus Zeitbuchungen ---------------------------------------------------------
+
+PAUSE_AB = [(Decimal("9"), Decimal("0.75")), (Decimal("6"), Decimal("0.5"))]  # § 4 ArbZG
+
+
+@dataclass
+class Arbeitstag:
+    datum: dt.date
+    buchungen: list
+    gearbeitet: Decimal  # Summe der gestempelten Zeiten
+    pause_gestempelt: Decimal  # Lücken zwischen Gehen und erneutem Kommen
+    pause_abzug: Decimal  # zusätzlich abgezogen, damit die gesetzliche Pause erreicht ist
+
+    @property
+    def netto(self) -> Decimal:
+        return self.gearbeitet - self.pause_abzug
+
+
+def _stunden(zeitspanne: dt.timedelta) -> Decimal:
+    return Decimal(zeitspanne.total_seconds()) / 3600
+
+
+def arbeitstag(datum, buchungen, pausen_automatisch=True) -> Arbeitstag:
+    """Ein Tag aus abgeschlossenen Buchungen. Fehlt gestempelte Pause, wird sie abgezogen."""
+    fertig = sorted((b for b in buchungen if b.ende), key=lambda b: b.beginn)
+    gearbeitet = sum((b.stunden for b in fertig), NULL)
+    luecken = sum(
+        (
+            _stunden(b.beginn - a.ende)
+            for a, b in zip(fertig, fertig[1:], strict=False)
+            if b.beginn > a.ende
+        ),
+        NULL,
+    )
+    pflicht = next((p for grenze, p in PAUSE_AB if gearbeitet > grenze), NULL)
+    abzug = max(pflicht - luecken, NULL) if pausen_automatisch else NULL
+    return Arbeitstag(datum, list(buchungen), gearbeitet, luecken, abzug)
+
+
+def arbeitstage_aus(buchungen, pausen_automatisch=True) -> list[Arbeitstag]:
+    """Gruppiert Buchungen nach dem Tag des Kommens (Ortszeit), neueste zuerst."""
+    tage: dict[dt.date, list] = {}
+    for b in buchungen:
+        tage.setdefault(timezone.localtime(b.beginn).date(), []).append(b)
+    return [
+        arbeitstag(d, sorted(bs, key=lambda b: b.beginn), pausen_automatisch)
+        for d, bs in sorted(tage.items(), reverse=True)
+    ]
+
+
 @dataclass
 class Monat:
     monat: dt.date
     soll: Decimal
-    ist: Decimal
+    ist: Decimal  # von Hand eingetragene Stunden (auch Korrekturen)
     urlaub: Decimal
     krank: Decimal
+    gestempelt: Decimal = NULL  # aus der Arbeitszeiterfassung, nach Pausenabzug
 
     @property
     def saldo(self) -> Decimal:
-        return self.ist + self.urlaub + self.krank - self.soll
+        return self.ist + self.gestempelt + self.urlaub + self.krank - self.soll
 
 
-def _monat(jahr, monat, vertraege, abwesenheiten, stunden, heute, land) -> Monat:
+def _monat(jahr, monat, vertraege, abwesenheiten, stunden, heute, land, tage) -> Monat:
     anfang, ende = dt.date(jahr, monat, 1), min(_monatsende(jahr, monat), heute)
     soll = NULL
     for i in range((ende - anfang).days + 1):
@@ -144,10 +197,12 @@ def _monat(jahr, monat, vertraege, abwesenheiten, stunden, heute, land) -> Monat
             if v:
                 gutschrift[a.art] += arbeitstage(a, land) * v.tagessoll
     ist = sum((s.stunden for s in stunden if anfang <= s.datum <= ende), NULL)
+    gestempelt = sum((t.netto for t in tage if anfang <= t.datum <= ende), NULL)
     return Monat(
         monat=anfang,
         soll=soll,
         ist=ist,
+        gestempelt=gestempelt,
         urlaub=gutschrift[Abwesenheit.Art.URLAUB],
         krank=gutschrift[Abwesenheit.Art.KRANK],
     )
@@ -173,9 +228,12 @@ def stundenkonto(benutzer, jahr: int, heute: dt.date) -> Stundenkonto:
     if erstes is None:
         return Stundenkonto(vorjahre, monate)
     land = bundesland()
+    tage = arbeitstage_aus(
+        benutzer.zeitbuchungen.all(), ArbeitszeitEinstellungen.laden().pausen_automatisch
+    )
     j, m = erstes.year, erstes.month
     while (j, m) <= (jahr, 12) and dt.date(j, m, 1) <= heute:
-        werte = _monat(j, m, vertraege, abwesenheiten, stunden, heute, land)
+        werte = _monat(j, m, vertraege, abwesenheiten, stunden, heute, land, tage)
         if j < jahr:
             vorjahre += werte.saldo
         else:

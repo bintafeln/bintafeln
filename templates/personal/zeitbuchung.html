@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block titel %}Zeitbuchung {{ p }}{% endblock %}
+{% block inhalt %}
+<section class="karte schmal">
+  <p><a href="{% url 'personal:zeiten' p.pk %}">← Arbeitszeiten {{ p }}</a></p>
+  <h1>{% if b.pk %}Zeitbuchung korrigieren{% else %}Zeit nachtragen{% endif %}</h1>
+  <p>{{ p }}</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+  {% if b.pk %}
+  <form method="post" action="{% url 'personal:zeit_loeschen' p.pk b.pk %}" class="abseits" onsubmit="return confirm('Zeitbuchung löschen?')">
+    {% csrf_token %}<button type="submit" class="link">Zeitbuchung löschen</button>
+  </form>
+  {% endif %}
+  <p class="hinweis">Jede Korrektur steht mit Namen im Änderungsprotokoll.</p>
+</section>
+{% endblock %}

@@ -140,7 +140,7 @@ def _protokoll_loeschen(modell, schluessel) -> None:
 
 def stammdaten_leeren(heute: dt.date | None = None) -> int:
     """Leert nach der Frist die persönlichen Angaben gesperrter Konten und löscht ihre
-    Personaldaten (Verträge, Abwesenheiten, Stunden). Liefert die Zahl der Konten."""
+    Personaldaten (Verträge, Abwesenheiten, Stunden, Arbeitszeiten). Liefert die Zahl der Konten."""
     # Spät eingebunden: Die App personal baut auf konten auf, nicht umgekehrt.
     from apps.personal.models import (
         DOKUMENT_ORDNER,
@@ -148,6 +148,7 @@ def stammdaten_leeren(heute: dt.date | None = None) -> int:
         Arbeitsvertrag,
         Stunden,
         Urlaubsjahr,
+        Zeitbuchung,
     )
 
     heute = heute or timezone.localdate()
@@ -177,7 +178,9 @@ def stammdaten_leeren(heute: dt.date | None = None) -> int:
                 privatdateien.loeschen(DOKUMENT_ORDNER, v.dokument_datei)
             for d in b.dokumente.all():
                 privatdateien.loeschen(Dokument.ORDNER, d.datei)
-            for modell in (Schulung, Dokument, Arbeitsvertrag, Abwesenheit, Urlaubsjahr, Stunden):
+            for modell in (
+                Schulung, Dokument, Arbeitsvertrag, Abwesenheit, Urlaubsjahr, Stunden, Zeitbuchung,
+            ):  # fmt: skip
                 eintraege = modell.objects.filter(benutzer=b)
                 _protokoll_loeschen(modell, list(eintraege.values_list("pk", flat=True)))
                 eintraege.delete()

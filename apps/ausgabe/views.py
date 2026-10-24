@@ -13,6 +13,7 @@ from django.views.decorators.http import require_POST
 from apps.ausgabe import ampel, kasse, konto
 from apps.ausgabe.forms import AusgabeEinstellungenForm
 from apps.ausgabe.models import AusgabeEinstellungen, Buchung
+from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.kunden import werte
 from apps.kunden.models import (
@@ -321,7 +322,7 @@ def kasse_ansehen(request):
         buchungen = buchungen.filter(datum__year=jahr)
         zeilen = kasse.nach_monat(buchungen)
         titel = f"Jahr {jahr}"
-        zurueck, vor = {"jahr": jahr - 1}, {"jahr": jahr + 1}
+        zurueck, vor, aktuell = {"jahr": jahr - 1}, {"jahr": jahr + 1}, {"jahr": jahr}
     elif ansicht == "monat":
         beginn = _datum(request.GET.get("monat"), "%Y-%m", heute).replace(day=1)
         buchungen = buchungen.filter(datum__year=beginn.year, datum__month=beginn.month)
@@ -329,6 +330,7 @@ def kasse_ansehen(request):
         titel = f"{konto.MONATE[beginn.month - 1]} {beginn.year}"
         zurueck = {"monat": f"{_monat_verschieben(beginn, -1):%Y-%m}"}
         vor = {"monat": f"{_monat_verschieben(beginn, 1):%Y-%m}"}
+        aktuell = {"monat": f"{beginn:%Y-%m}"}
     else:
         ansicht = "tag"
         beginn = _datum(request.GET.get("datum"), "%Y-%m-%d", heute)
@@ -337,6 +339,7 @@ def kasse_ansehen(request):
         titel = f"{ampel.WOCHENTAGE[beginn.weekday()]} {beginn:%d.%m.%Y}"
         zurueck = {"datum": f"{beginn - dt.timedelta(days=1):%Y-%m-%d}"}
         vor = {"datum": f"{beginn + dt.timedelta(days=1):%Y-%m-%d}"}
+        aktuell = {"datum": f"{beginn:%Y-%m-%d}"}
 
     buero = rollen.hat_rolle(request.user, rollen.ADMIN, rollen.BUERO)
     filter_stelle = {"stelle": stelle.pk} if stelle else {}
@@ -361,6 +364,17 @@ def kasse_ansehen(request):
         return [(name, z[k], k != "abholungen") for k, name in kasse.SPALTEN]
 
     summe = kasse.summe(buchungen)
+    # Einzelbuchungen mit Kundennummer nur für Admin und Büro, nur in der Tagesansicht.
+    einzelbuchungen = (
+        buchungen.select_related("ausgabestelle").order_by("zeitpunkt")
+        if buero and ansicht == "tag"
+        else None
+    )
+    if request.GET.get("format") == "pdf":
+        inhalt = kasse.bericht_pdf(
+            ansicht, titel, stelle, [zeile(z) for z in zeilen], werte(summe), einzelbuchungen
+        )
+        return pdf_antwort(inhalt, f"kasse-{ansicht}-{beginn:%Y-%m-%d}.pdf")
     return render(
         request,
         "ausgabe/kasse.html",
@@ -376,10 +390,8 @@ def kasse_ansehen(request):
             "stelle": stelle,
             "zurueck": urlencode({"ansicht": ansicht, **zurueck, **filter_stelle}),
             "vor": urlencode({"ansicht": ansicht, **vor, **filter_stelle}),
-            # Einzelbuchungen mit Kundennummer nur für Admin und Büro, nur in der Tagesansicht.
-            "einzelbuchungen": buchungen.select_related("ausgabestelle").order_by("zeitpunkt")
-            if buero and ansicht == "tag"
-            else None,
+            "einzelbuchungen": einzelbuchungen,
+            "pdf": urlencode({"ansicht": ansicht, **aktuell, **filter_stelle, "format": "pdf"}),
         },
     )
 

@@ -1,0 +1,28 @@
+<nav class="blaettern" aria-label="Monat wechseln">
+  <a href="?monat={{ frueher }}">← früher</a>
+  <strong>{{ monat_titel }}</strong>
+  <a href="?monat={{ spaeter }}">später →</a>
+</nav>
+<div class="tabelle-rahmen">
+<table class="tabelle">
+  <thead><tr><th>Tag</th><th>Kommen – Gehen</th><th>Anwesend</th><th>Pause</th><th>Arbeitszeit</th></tr></thead>
+  <tbody>
+  {% for t in tage %}
+    <tr>
+      <td data-titel="Tag">{{ t.datum|date:"D d.m." }}</td>
+      <td data-titel="Kommen – Gehen">{% for b in t.buchungen %}
+        {% if korrigieren %}<a href="{% url 'personal:zeit' p.pk b.pk %}">{% endif %}{{ b.beginn|time:"H:i" }} – {% if b.ende %}{{ b.ende|time:"H:i" }}{% else %}<span class="marke-warnung">offen</span>{% endif %}{% if korrigieren %}</a>{% endif %}{% if b.korrigiert_von %} <small class="hilfe" title="{{ b.bemerkung }}">korrigiert von {{ b.korrigiert_von }}</small>{% endif %}{% if not forloop.last %}<br>{% endif %}
+      {% endfor %}</td>
+      <td data-titel="Anwesend">{{ t.gearbeitet|floatformat:2 }} h</td>
+      <td data-titel="Pause">{{ t.pause_gestempelt|floatformat:2 }} h{% if t.pause_abzug %} + {{ t.pause_abzug|floatformat:2 }} h abgezogen{% endif %}</td>
+      <td data-titel="Arbeitszeit"><strong>{{ t.netto|floatformat:2 }} h</strong></td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="5">Keine Zeiten in diesem Monat.</td></tr>
+  {% endfor %}
+  </tbody>
+  {% if tage %}<tfoot><tr class="summe"><td data-titel="Monat" colspan="4">Summe {{ monat_titel }}</td><td data-titel="Arbeitszeit"><strong>{{ summe|floatformat:2 }} h</strong></td></tr></tfoot>{% endif %}
+</table>
+</div>
+<p class="hinweis">Pause = Zeit zwischen Gehen und erneutem Kommen. Fehlt die gesetzliche Pause (mehr als 6 Stunden: 30 Minuten,
+  mehr als 9 Stunden: 45 Minuten), wird der Rest abgezogen, sofern das eingestellt ist. Offene Buchungen zählen erst mit „Gehen“.</p>

@@ -133,8 +133,15 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `PasswortAendernMiddleware` ein neues Passwort, bevor die Zwei-Faktor-Einrichtung kommt.
   Stammdaten, Wiedervorlagen, Führerschein-Kopie und Löschfrist in `apps/konten/personal.py`
   (ADR 0017). App `personal` (Rolle Personal): Verträge, Abwesenheiten, Stunden; Rechenregeln
-  in `apps/personal/berechnung.py` (ADR 0018). Verschlüsselte Dateien nur über
+  in `apps/personal/berechnung.py` (ADR 0018). Arbeitszeiterfassung (Stempeln, vergessenes
+  Gehen, Überschneidungen) in `apps/personal/arbeitszeit.py`, Pausenabzug in
+  `berechnung.arbeitstag()` (ADR 0020). Verschlüsselte Dateien nur über
   `apps.core.privatdateien`.
+- PDFs nur über `apps.core.pdf` (`Pdf`-Rahmen, `pdf_antwort()` ohne Zwischenspeichern; ADR 0021).
+  Auskunft Art. 15: `apps/kunden/auskunft.py` und `apps/konten/auskunft.py`, Kundenausweis
+  `apps/kunden/ausweis.py`, Kassenbericht `kasse.bericht_pdf()`. Neue gespeicherte Daten zu
+  Personen gehören auch in die Auskunft. In Tests liest die Fixture `pdf_text` den Text aus
+  dem PDF.
 - Mails nur über `apps.core.mail.senden()` (Mailserver aus der Datenbank, verständliche
   `MailFehler`). Geheimnisse in der Datenbank nur über `apps.core.geheimnis` verschlüsselt
   speichern (ADR 0016). In Tests landen Mails in `django.core.mail.outbox`.

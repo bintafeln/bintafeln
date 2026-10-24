@@ -50,3 +50,5 @@ drei Fragen: Was war das Problem? Was haben wir entschieden? Warum?
 | [0017](0017-stammdaten-mitarbeitende.md) | Stammdaten der Mitarbeitenden, Wiedervorlagen und Löschfrist | Angenommen |
 | [0018](0018-personal-festangestellte.md) | Personal für Festangestellte | Angenommen |
 | [0019](0019-feiertage.md) | Gesetzliche Feiertage je Bundesland | Angenommen |
+| [0020](0020-arbeitszeiterfassung.md) | Arbeitszeiterfassung im Browser | Angenommen |
+| [0021](0021-pdf-und-auskunft.md) | PDFs mit ReportLab, Auskunft nach Art. 15 DSGVO | Angenommen |

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block titel %}Arbeitszeiten {{ p }}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'personal:person' p.pk %}">← {{ p }}</a></p>
+  <h1>Arbeitszeiten {{ p }}</h1>
+  {% for b in vergessen %}
+    <p class="sicherung sicherung-veraltet">Fehlendes „Gehen“: <a href="{% url 'personal:zeit' p.pk b.pk %}">{{ b }}</a></p>
+  {% endfor %}
+  <p><a class="knopf knopf-zweitrangig" href="{% url 'personal:zeit_neu' p.pk %}">Zeit nachtragen</a></p>
+  {% include "personal/_tage.html" with korrigieren=True %}
+</section>
+{% endblock %}

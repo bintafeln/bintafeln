@@ -57,3 +57,20 @@ def anmelden():
 @pytest.fixture
 def admin_client(client, admin, anmelden):
     return anmelden(client, admin)
+
+
+@pytest.fixture
+def pdf_text(monkeypatch):
+    """Erzeugte PDFs unkomprimiert, damit Tests den Text darin finden (WinAnsi = cp1252)."""
+    from reportlab import rl_config
+
+    monkeypatch.setattr(rl_config, "pageCompression", 0)
+
+    def lesen(antwort) -> str:
+        assert antwort.status_code == 200, antwort.status_code
+        assert antwort["Content-Type"] == "application/pdf"
+        inhalt = b"".join(antwort.streaming_content) if antwort.streaming else antwort.content
+        assert inhalt.startswith(b"%PDF")
+        return inhalt.decode("cp1252", errors="replace")
+
+    return lesen

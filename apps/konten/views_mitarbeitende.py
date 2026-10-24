@@ -14,7 +14,16 @@ from django.views.decorators.http import require_POST
 from django_otp import user_has_device
 
 from apps.core import mail
-from apps.konten import einladung, personal, rollen, verwaltung, views_dokumente, zwei_faktor
+from apps.core.pdf import pdf_antwort
+from apps.konten import (
+    auskunft,
+    einladung,
+    personal,
+    rollen,
+    verwaltung,
+    views_dokumente,
+    zwei_faktor,
+)
 from apps.konten.forms import (
     DokumentKategorieForm,
     MitarbeiterForm,
@@ -313,3 +322,26 @@ def personal_einstellungen(request):
             "kategorie_form": DokumentKategorieForm(),
         },
     )
+
+
+# --- Auskunft nach Art. 15 DSGVO ---------------------------------------------------------
+
+
+def _auskunft_antwort(ziel):
+    accessed.send(sender=get_user_model(), instance=ziel)  # Abruf im Änderungsprotokoll
+    return pdf_antwort(auskunft.mitarbeiter_pdf(ziel), f"auskunft-{ziel.username}.pdf")
+
+
+@never_cache
+@login_required
+def auskunft_ansehen(request, pk):
+    """Vollständige Auskunft; deshalb nur Admin und Personal (nicht das Büro)."""
+    if not views_dokumente.sieht_personal(request.user):
+        raise PermissionDenied
+    return _auskunft_antwort(get_object_or_404(get_user_model(), pk=pk))
+
+
+@never_cache
+@login_required
+def meine_auskunft(request):
+    return _auskunft_antwort(request.user)

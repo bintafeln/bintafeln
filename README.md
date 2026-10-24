@@ -199,10 +199,28 @@ Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie
   - Der Resturlaub wird automatisch übertragen und verfällt zum 31.03. Das Datum lässt sich
     unter „Mitarbeitende → Fristen einstellen“ und je Person und Jahr ändern.
 - **Stundenkonto:**
-  - Ist-Stunden von Hand eintragen.
+  - Gestempelte Arbeitszeit (siehe unten) zählt automatisch. Stunden außerhalb der Stempeluhr
+    (z. B. Dienstreise, Ausgleich) lassen sich von Hand nachtragen.
   - Soll (Wochenstunden ÷ 5 je Arbeitstag ohne Feiertage), Urlaub und Krankheit rechnet
     bintafeln je Monat.
   - Der Saldo läuft über die Jahre weiter.
+- **Auskunft (PDF):** alle zu einer Person gespeicherten Daten nach Art. 15 DSGVO, auch unter
+  „Mitarbeitende“. Jede Person ruft ihre eigene unter „Mein Konto → Meine Daten“ ab.
+
+### Arbeitszeit
+
+- Fest Angestellte stempeln unter **„Meine Arbeitszeit“** mit einem großen Knopf **Kommen** und
+  **Gehen**, am eigenen Handy oder an einem gemeinsamen Gerät nach Anmeldung. Darunter stehen
+  die Tage des Monats mit Pause und Arbeitszeit sowie der Stand des Stundenkontos.
+- **Pausen:** Fehlt die gesetzliche Pause (mehr als 6 Stunden: 30 Minuten, mehr als 9 Stunden:
+  45 Minuten), zieht bintafeln den Rest ab. Als Pause zählt die Zeit zwischen Gehen und erneutem
+  Kommen.
+- **Gehen vergessen?** Ein Kommen, das länger als 14 Stunden offen ist, zählt nicht. Die Person
+  kann am nächsten Tag normal stempeln; die Personal-Seite listet es zum Nachtragen.
+- **Korrigieren und nachtragen** nur durch Admin und Personal: bei der Person auf
+  „Arbeitszeiten“, mit Grund. Die Korrektur trägt den Namen und steht im Änderungsprotokoll.
+- Unter „Personal → Arbeitszeiterfassung einstellen“: auch Ehrenamtliche stempeln lassen,
+  automatischen Pausenabzug ab- oder einschalten, Grenze für vergessenes Gehen.
 
 **Feiertage:** Unter „Einstellungen“ das **Bundesland** der Tafel wählen. Dann zählen dessen
 gesetzliche Feiertage weder als Arbeitstag (Urlaub, Krankheit, Stundenkonto) noch als Abholtag im
@@ -262,6 +280,11 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms, nur zum Lesen.
 - Jeder Aufruf einer Detailseite steht im **Zugriffsprotokoll** („Kunden“ → „Zugriffsprotokoll“,
   nur Admin). Die Einträge werden nach 365 Tagen gelöscht, einstellbar unter
   „Einstellungen → Kundenstamm“.
+- Admin und Büro finden auf der Detailseite zwei PDFs:
+  - **Kundenausweis drucken:** Karte im Scheckkartenformat mit Schnittmarken, mit Kundennummer
+    als Barcode für den Scanner am Empfang. In 100 % Größe drucken.
+  - **Auskunft nach Art. 15 DSGVO:** alle gespeicherten Daten des Haushalts samt Hinweisen zu
+    Zweck, Speicherdauer und Rechten. Der Abruf steht im Zugriffsprotokoll.
 
 ## Empfang
 
@@ -305,6 +328,9 @@ eingetragenen Abholungen und Ausnahmen; der Prüfbericht warnt davor (ADR 0013).
   - Abholungen mit Beitrag und Beiträge gesamt, aufgeteilt in bar, aus Guthaben und angeschrieben
   - Einzahlungen und Korrekturen
 - Admin und Büro sehen in der Tagesansicht zusätzlich die einzelnen Buchungen mit Kundennummer.
+- **Drucken (PDF):** Die Tagesansicht ergibt den **Kassenabschluss** mit Feldern für gezähltes
+  Bargeld und Unterschriften, Monat und Jahr einen **Kassenbericht**. Der Filter nach
+  Ausgabestelle gilt mit.
 
 Die Kasse bleibt auch nach einem Neuimport des Kundenstamms vollständig (ADR 0014).
 
