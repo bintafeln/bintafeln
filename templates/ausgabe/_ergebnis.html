@@ -96,6 +96,7 @@
   {% endif %}
 </section>
 
+{% if einstellungen.einlass_abholungen %}
 <section class="karte">
   <h2>Letzte Abholungen</h2>
   {% if abholungen %}
@@ -110,15 +111,18 @@
     <p class="hinweis">Keine.</p>
   {% endif %}
 </section>
+{% endif %}
 </div>
 
 <div class="empfang-spalte">
 <section class="karte">
   <h2 class="kunde-titel">{{ h.kundennummer }}{% if hauptperson %} · {{ hauptperson.vorname }} {{ hauptperson.nachname }}{% endif %}</h2>
+  {% if einstellungen.einlass_gruppenfarbe and h.kundengruppe.farbe %}<p class="gruppe-band gruppe-{{ h.kundengruppe.farbe }}">{{ h.kundengruppe.name }}</p>{% endif %}
   <dl class="angaben">
-    <dt>Haushalt</dt><dd>{{ erwachsene }} Erwachsene, {{ kinder }} Kind{{ kinder|pluralize:"er" }}</dd>
-    <dt>Personen</dt><dd>{% for p in personen %}{{ p.vorname }} {{ p.nachname }}{% if p.geburtsdatum %}, geb. {{ p.geburtsdatum|date:"d.m.Y" }}{% endif %}{% if p.ist_hauptperson %} <small class="hinweis">(Hauptperson)</small>{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}–{% endfor %}</dd>
-    <dt>Abholberechtigt</dt><dd>{% for a in h.abholer.all %}{{ a.vorname }} {{ a.nachname }}{% if a.geburtsdatum %}, geb. {{ a.geburtsdatum|date:"d.m.Y" }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}–{% endfor %}</dd>
+    {% if einstellungen.einlass_haushaltsgroesse %}<dt>Haushalt</dt><dd>{{ erwachsene }} Erwachsene, {{ kinder }} Kind{{ kinder|pluralize:"er" }}</dd>{% endif %}
+    <dt>Personen</dt><dd>{% for p in personen %}{{ p.vorname }} {{ p.nachname }}{% if p.geburtsdatum and einstellungen.einlass_geburtsdaten %}, geb. {{ p.geburtsdatum|date:"d.m.Y" }}{% endif %}{% if p.ist_hauptperson %} <small class="hinweis">(Hauptperson)</small>{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}–{% endfor %}</dd>
+    {% if einstellungen.einlass_abholer %}<dt>Abholberechtigt</dt><dd>{% for a in h.abholer.all %}{{ a.vorname }} {{ a.nachname }}{% if a.geburtsdatum and einstellungen.einlass_geburtsdaten %}, geb. {{ a.geburtsdatum|date:"d.m.Y" }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}–{% endfor %}</dd>{% endif %}
+    {% if einstellungen.einlass_anschrift %}<dt>Anschrift</dt><dd>{% if h.strasse or h.ort %}{{ h.strasse }}{% if h.strasse and h.ort %}, {% endif %}{{ h.plz }} {{ h.ort }}{% else %}–{% endif %}</dd>{% endif %}
     <dt>Ausgabestelle</dt><dd>{{ h.kundengruppe.ausgabestelle.name|default:"–" }}{% if h.kundengruppe %} · {{ h.kundengruppe.name }}{% if h.kundengruppe.wochentage %} ({{ h.kundengruppe.wochentage }}{% if h.kundengruppe.uhrzeit %} {{ h.kundengruppe.uhrzeit|time:"H:i" }}{% endif %}){% endif %}{% endif %}</dd>
     <dt>Karte gültig bis</dt><dd>{{ h.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}</dd>
     {% if einstellungen.kontostand_anzeigen %}<dt>Kontostand</dt><dd>{% if h.kontostand is not None %}<strong{% if h.kontostand < 0 %} class="fehler"{% endif %}>{{ h.kontostand|floatformat:2 }} €</strong>{% else %}–{% endif %}</dd>{% endif %}

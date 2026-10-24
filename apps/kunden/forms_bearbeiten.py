@@ -20,8 +20,10 @@ from apps.kunden.models import (
     Ausnahme,
     AusweisVorlage,
     Bemerkung,
+    Dokumentart,
     Einkommensart,
     Haushalt,
+    HaushaltDokument,
     KundenEinstellungen,
     Kundengruppe,
     NotizVorlage,
@@ -235,7 +237,10 @@ class KundengruppeForm(forms.ModelForm):
 
     class Meta:
         model = Kundengruppe
-        fields = ["kuerzel", "name", "ausgabestelle", "wochentage", "uhrzeit", "maximum", "aktiv"]
+        fields = [
+            "kuerzel", "name", "ausgabestelle", "wochentage", "uhrzeit", "maximum", "farbe",
+            "aktiv",
+        ]  # fmt: skip
         widgets = {"uhrzeit": forms.TimeInput(attrs={"type": "time"}, format="%H:%M")}
 
     def __init__(self, *args, **kwargs):
@@ -258,6 +263,27 @@ class EinkommensartForm(forms.ModelForm):
     class Meta:
         model = Einkommensart
         fields = ["bezeichnung", "aktiv"]
+
+
+class DokumentartForm(forms.ModelForm):
+    class Meta:
+        model = Dokumentart
+        fields = ["bezeichnung", "aufbewahren_monate", "aktiv"]
+
+
+class HaushaltDokumentForm(forms.ModelForm):
+    datei = forms.FileField(label="Datei (PDF oder Foto, höchstens 10 MB)")
+
+    class Meta:
+        model = HaushaltDokument
+        fields = ["art", "titel", "datum"]
+        widgets = {"datum": DatumEingabe()}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["art"].queryset = Dokumentart.objects.filter(aktiv=True)
+        self.fields["titel"].required = False
+        self.fields["titel"].help_text = "Leer lassen: Name der Dokumentart."
 
 
 class NotizVorlageForm(forms.ModelForm):

@@ -1,0 +1,39 @@
+<section class="karte breit" id="dokumente">
+  <h2>Dokumente</h2>
+  {% if dokumente %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Titel</th><th>Dokumentart</th><th>Datum</th><th>Hochgeladen</th><th>Löschen am</th><th></th></tr></thead>
+    <tbody>
+    {% for d in dokumente %}
+      <tr>
+        <td data-titel="Titel"><a href="{% url 'kunden:dokument' d.pk %}" target="_blank" rel="noopener">{{ d.titel }}</a></td>
+        <td data-titel="Dokumentart">{{ d.art }}</td>
+        <td data-titel="Datum">{{ d.datum|date:"d.m.Y"|default:"–" }}</td>
+        <td data-titel="Hochgeladen">{{ d.hochgeladen_am|date:"d.m.Y" }}{% if d.hochgeladen_von %} von {{ d.hochgeladen_von }}{% endif %}</td>
+        <td data-titel="Löschen am">{{ d.loeschen_am|date:"d.m.Y" }}</td>
+        <td data-titel="Aktion">
+          <form method="post" action="{% url 'kunden:dokument_loeschen' d.pk %}" class="inline"
+                onsubmit="return confirm('Dokument „{{ d.titel|escapejs }}“ endgültig löschen?')">
+            {% csrf_token %}<button type="submit" class="link-knopf">löschen</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="hinweis">Keine Dokumente.</p>
+  {% endif %}
+  <p class="hinweis">Dokumente werden verschlüsselt gespeichert, jeder Abruf wird protokolliert. Nach der Frist der
+    Dokumentart werden sie automatisch gelöscht.</p>
+  <details>
+    <summary>Dokument hochladen</summary>
+    <form method="post" action="{% url 'kunden:dokument_hochladen' h.kundennummer %}" enctype="multipart/form-data">
+      {% csrf_token %}
+      {% include "includes/formular.html" with form=dokument_form %}
+      <button type="submit" class="knopf knopf-zweitrangig">Hochladen</button>
+    </form>
+  </details>
+</section>

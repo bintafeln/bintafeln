@@ -5,9 +5,10 @@
   <h1>{{ titel }}</h1>
   {% if art == "notizvorlagen" %}<p class="hinweis">Jede aktive Vorlage erscheint am Einlass und auf der Haushaltsseite als Knopf. Ein Klick speichert den Text als Notiz zum Kunden.</p>{% endif %}
   {% if art == "beitragsfrei" %}<p class="hinweis">In diesen Zeiträumen ist der Beitrag am Einlass 0 €; Vorschläge für Vorauszahlungen zählen diese Tage nicht. Vergangene Zeiträume stehen als „inaktiv“ da.</p>{% endif %}
+  {% if art == "dokumentarten" %}<p class="hinweis">Dokumente zu einem Haushalt werden nach der Frist ihrer Dokumentart automatisch gelöscht, gezählt ab dem Dokumentdatum (ohne Datum ab dem Hochladen). Eine geänderte Frist gilt auch für schon gespeicherte Dokumente.</p>{% endif %}
   {% if art == "kundengruppen" %}<p class="hinweis">Ein Import mit kundengruppen.csv überschreibt Kundengruppen mit gleichem Kürzel.</p>{% endif %}
   <ul>
-    {% for e in eintraege %}<li><a href="{% url 'kunden:listeneintrag' art e.pk %}">{{ e }}</a>{% if not e.aktiv %} <span class="marke-warnung">inaktiv</span>{% endif %}</li>{% empty %}<li>Noch keine.</li>{% endfor %}
+    {% for e in eintraege %}<li><a href="{% url 'kunden:listeneintrag' art e.pk %}">{{ e }}</a>{% if e.aufbewahren_monate %} · {{ e.aufbewahren_monate }} Monate aufbewahren{% endif %}{% if not e.aktiv %} <span class="marke-warnung">inaktiv</span>{% endif %}</li>{% empty %}<li>Noch keine.</li>{% endfor %}
   </ul>
   <p><a class="knopf knopf-zweitrangig" href="{% url 'kunden:listeneintrag_neu' art %}">Hinzufügen</a></p>
 </section>

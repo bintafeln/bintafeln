@@ -17,6 +17,7 @@ class KundenEinstellungenForm(forms.ModelForm):
             "ausweis_bis_monatsende",
             "abholungen_aufbewahren_jahre",
             "zugriffe_aufbewahren_tage",
+            "historie_aufbewahren_jahre",
             "besondere_kategorie_fuer_ausgabe",
         ]
 

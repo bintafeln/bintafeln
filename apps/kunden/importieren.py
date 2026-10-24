@@ -18,7 +18,7 @@ from django.core.validators import validate_email
 from django.db import transaction
 from django.utils import timezone
 
-from apps.kunden import werte
+from apps.kunden import historie, werte
 from apps.kunden.models import (
     Abholer,
     Abholung,
@@ -828,6 +828,7 @@ def uebernehmen(
             ).first() or Ausgabestelle.objects.create(name=name)
         return stellen[name.lower()]
 
+    vorher = historie.schnappschuesse()
     with disable_auditlog():
         Haushalt.objects.exclude(kundennummer__in=behalten).delete()
 
@@ -975,6 +976,9 @@ def uebernehmen(
         )
 
     verwaiste_notizen_loeschen()  # Notizen bleiben, solange es die Kundennummer noch gibt
+    historie.import_festhalten(
+        vorher, historie.schnappschuesse(), benutzer.get_username() if benutzer else ""
+    )
     # Außerhalb von disable_auditlog: Der Import selbst erscheint im Änderungsprotokoll.
     return ImportLauf.objects.create(
         benutzer=benutzer,

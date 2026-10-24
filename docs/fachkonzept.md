@@ -109,6 +109,10 @@ Eine Kundengruppe ist ein fester Abholtermin:
 
 ### Dokumente
 
+**Umgesetzt (ADR 0030):** Hochladen, Ansehen und Löschen auf der Haushaltsseite (Admin, Büro),
+Dokumentarten mit Aufbewahrungsfrist in Monaten, automatische Löschung, Abruf im
+Zugriffsprotokoll, Angaben in der Auskunft.
+
 Im Altsystem gespeicherte Dokumente werden **nicht** übernommen. Bintafeln soll Dokumente zu einem
 Haushalt aber **speichern können** (z. B. Bescheide, Erklärungen, Datenschutzeinwilligung):
 
@@ -118,6 +122,8 @@ Haushalt aber **speichern können** (z. B. Bescheide, Erklärungen, Datenschutze
 - nie öffentlich abrufbar, nur nach Anmeldung und mit Berechtigung; jeder Abruf wird protokolliert
 
 ### Historie
+
+**Umgesetzt (ADR 0031):** aus Import, Aufnahme und Bearbeitung, mit eigener Löschfrist.
 
 Was sich an einem Haushalt geändert hat: neu aufgenommen, Status, Kundengruppe, Ausweis verlängert,
 Personen hinzugekommen oder entfallen. Im Snapshot-Betrieb entsteht die Historie aus dem Vergleich
@@ -195,7 +201,7 @@ Korrekturen durch Admin und Büro.
 wählbar und nach Ausgabestelle filterbar. Grundlage sind allein die Buchungen.
 
 - **Einlass/Kiosk-Ansicht:** Kundennummer per Scanner (arbeitet als Tastatur) oder Suche.
-- Je Tafel einstellbar, was am Einlass sichtbar ist: Adresse, Geburtsdatum, letzte Abholungen,
+- **Umgesetzt:** Je Tafel einstellbar, was am Einlass sichtbar ist: Adresse, Geburtsdatum, letzte Abholungen,
   Beitrag, Personenanzahl (gesamt/Kinder), aktive Sperren, Farbe der Kundengruppe, Kundenkonto.
 - **Ampel** mit einstellbaren Meldungstexten:
   - rot: Ausweis gesperrt, bereits abgeholt, Ausweis abgelaufen, Abholung in dieser Woche nicht

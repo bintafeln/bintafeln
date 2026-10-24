@@ -33,6 +33,7 @@ def test_einstellungen_speichern(admin_client):
             "ausweis_gueltig_monate": "6",
             "abholungen_aufbewahren_jahre": "2",
             "zugriffe_aufbewahren_tage": "90",
+            "historie_aufbewahren_jahre": "5",
         },
     )
     assert antwort.status_code == 302
@@ -43,6 +44,7 @@ def test_einstellungen_speichern(admin_client):
     assert e.kind_bis_alter == 16
     assert e.abholungen_aufbewahren_jahre == 2
     assert e.zugriffe_aufbewahren_tage == 90
+    assert e.historie_aufbewahren_jahre == 5
 
 
 def test_einstellungen_ungueltig(admin_client):

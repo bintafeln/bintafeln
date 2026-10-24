@@ -19,8 +19,15 @@ class AusgabeEinstellungenForm(forms.ModelForm):
             "beitrag_je_abholung",
             "beitrag_je_erwachsenem",
             "beitrag_je_kind",
-            "kontostand_anzeigen",
             "anschreiben_erlaubt",
+            "kontostand_anzeigen",
+            "einlass_haushaltsgroesse",
+            "einlass_geburtsdaten",
+            "einlass_abholer",
+            "einlass_anschrift",
+            "einlass_sperren",
+            "einlass_abholungen",
+            "einlass_gruppenfarbe",
             "buchungen_aufbewahren_jahre",
         ]
         # Beträge mit Komma eingeben und anzeigen („1,50“).

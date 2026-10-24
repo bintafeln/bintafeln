@@ -85,7 +85,8 @@ def bewerten(haushalt, heute: dt.date, ausgabestelle, einstellungen) -> Bewertun
     for sperre in haushalt.sperren.all():
         if sperre.ist_aktiv(heute):
             bis = f" bis {sperre.bis:%d.%m.%Y}" if sperre.bis else ""
-            grund = f": {sperre.begruendung}" if sperre.begruendung else ""
+            zeigen = getattr(einstellungen, "einlass_sperren", True)
+            grund = f": {sperre.begruendung}" if sperre.begruendung and zeigen else ""
             melden(ROT, f"Gesperrt seit {sperre.von:%d.%m.%Y}{bis}{grund}")
 
     ausweis = haushalt.ausweis_gueltig_bis

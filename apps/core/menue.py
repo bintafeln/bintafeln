@@ -70,6 +70,7 @@ def menue(request) -> list[dict]:
             _eintrag("Ausgabestellen", *_liste("ausgabestellen")),
             _eintrag("Einkommensarten", *_liste("einkommensarten")),
             _eintrag("Notiz-Vorlagen", *_liste("notizvorlagen")),
+            _eintrag("Dokumentarten", *_liste("dokumentarten")),
             _eintrag("Kundenausweis", "kunden:ausweis_gestalten"),
             _eintrag("Ausgabe, Ampel und Beiträge", "ausgabe:einstellungen"),
             _eintrag("Beitragsfreie Zeiträume", *_liste("beitragsfrei")),

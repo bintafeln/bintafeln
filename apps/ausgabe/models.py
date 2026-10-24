@@ -78,6 +78,28 @@ class AusgabeEinstellungen(models.Model):
     beitrag_je_erwachsenem = _betrag("Zusatz: je Erwachsenem (Euro)")
     beitrag_je_kind = _betrag("Zusatz: je Kind (Euro)")
     kontostand_anzeigen = models.BooleanField("Kontostand am Einlass anzeigen", default=True)
+    # Was der Einlass zeigt (je Tafel einstellbar, Fachkonzept Modul 4)
+    einlass_haushaltsgroesse = models.BooleanField(
+        "Einlass zeigt: Haushaltsgröße (Erwachsene/Kinder)", default=True
+    )
+    einlass_geburtsdaten = models.BooleanField(
+        "Einlass zeigt: Geburtsdaten der Personen", default=True
+    )
+    einlass_abholer = models.BooleanField("Einlass zeigt: Abholberechtigte", default=True)
+    einlass_anschrift = models.BooleanField(
+        "Einlass zeigt: Anschrift",
+        default=False,
+        help_text="Nur einschalten, wenn der Einlass sie braucht (Datensparsamkeit).",
+    )
+    einlass_sperren = models.BooleanField(
+        "Einlass zeigt: aktive Sperren mit Begründung",
+        default=True,
+        help_text="Aus: Die Ampel nennt nur „gesperrt“, ohne Begründung.",
+    )
+    einlass_abholungen = models.BooleanField("Einlass zeigt: letzte Abholungen", default=True)
+    einlass_gruppenfarbe = models.BooleanField(
+        "Einlass zeigt: Farbe der Kundengruppe", default=True
+    )
     anschreiben_erlaubt = models.BooleanField(
         "Anschreiben erlauben",
         default=False,

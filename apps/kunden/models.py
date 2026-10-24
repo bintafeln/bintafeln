@@ -1,5 +1,6 @@
 """Kundenstamm (Modul 2). Fachliche Grundlage: docs/fachkonzept.md, Import: docs/importformat.md."""
 
+import calendar
 import datetime as dt
 import uuid
 
@@ -11,6 +12,8 @@ from django.core.validators import MaxValueValidator, MinValueValidator, RegexVa
 from django.db import models
 from django.utils import timezone
 
+from apps.core import privatdateien
+from apps.core.auswahl import GRUPPENFARBEN
 from apps.kunden import werte
 
 
@@ -40,6 +43,12 @@ class KundenEinstellungen(models.Model):
         default=3,
         validators=[MinValueValidator(1), MaxValueValidator(10)],
         help_text="Ältere werden nicht importiert und automatisch gelöscht.",
+    )
+    historie_aufbewahren_jahre = models.PositiveSmallIntegerField(
+        "Historie aufbewahren (Jahre)",
+        default=3,
+        validators=[MinValueValidator(1), MaxValueValidator(10)],
+        help_text="Ältere Einträge der Historie werden automatisch gelöscht.",
     )
     zugriffe_aufbewahren_tage = models.PositiveSmallIntegerField(
         "Zugriffsprotokoll aufbewahren (Tage)",
@@ -202,6 +211,10 @@ class Kundengruppe(models.Model):
     wochentage = models.CharField("Wochentage", max_length=30, blank=True)
     uhrzeit = models.TimeField("Uhrzeit", null=True, blank=True)
     maximum = models.PositiveIntegerField("Maximum Haushalte", null=True, blank=True)
+    farbe = models.CharField(
+        "Farbe", max_length=10, blank=True, choices=GRUPPENFARBEN,
+        help_text="Zur schnellen Erkennung am Einlass.",
+    )  # fmt: skip
     aktiv = models.BooleanField("Aktiv", default=True)
 
     class Meta:
@@ -451,6 +464,115 @@ def verwaiste_notizen_loeschen() -> int:
     return Notiz.objects.exclude(kundennummer__in=vorhanden).delete()[0]
 
 
+class Dokumentart(models.Model):
+    """Art eines Dokuments zum Haushalt mit eigener Aufbewahrungsfrist (ADR 0030)."""
+
+    bezeichnung = models.CharField("Bezeichnung", max_length=100, unique=True)
+    aufbewahren_monate = models.PositiveSmallIntegerField(
+        "Aufbewahren (Monate)",
+        default=24,
+        validators=[MinValueValidator(1), MaxValueValidator(240)],
+        help_text="Gezählt ab dem Dokumentdatum, ohne Datum ab dem Hochladen. Danach wird das "
+        "Dokument automatisch gelöscht.",
+    )
+    aktiv = models.BooleanField("Aktiv", default=True)
+
+    class Meta:
+        verbose_name = "Dokumentart"
+        verbose_name_plural = "Dokumentarten"
+        ordering = ["bezeichnung"]
+
+    def __str__(self):
+        return self.bezeichnung
+
+
+class HaushaltDokument(models.Model):
+    """Dokument zu einem Haushalt, verschlüsselt unter MEDIA_ROOT/privat/ (ADR 0030).
+
+    Hängt an der Kundennummer, damit es einen Import übersteht; gelöscht wird es nach der Frist
+    seiner Dokumentart.
+    """
+
+    ORDNER = "kunden-dokumente"
+
+    kundennummer = models.CharField("Kundennummer", max_length=20, db_index=True)
+    art = models.ForeignKey(Dokumentart, verbose_name="Dokumentart", on_delete=models.PROTECT)
+    titel = models.CharField("Titel", max_length=200)
+    datum = models.DateField("Dokumentdatum", null=True, blank=True)
+    datei = models.CharField(max_length=200, editable=False)
+    typ = models.CharField(max_length=100, editable=False)
+    groesse = models.PositiveIntegerField("Größe (Bytes)", default=0, editable=False)
+    hochgeladen_am = models.DateTimeField("Hochgeladen am", default=timezone.now)
+    hochgeladen_von = models.CharField("Hochgeladen von", max_length=150, blank=True)
+
+    class Meta:
+        verbose_name = "Dokument zum Haushalt"
+        verbose_name_plural = "Dokumente zu Haushalten"
+        ordering = ["-hochgeladen_am"]
+
+    def __str__(self):
+        return self.titel
+
+    @property
+    def loeschen_am(self) -> dt.date:
+        """Erster Tag, an dem das Dokument nicht mehr aufbewahrt wird."""
+        beginn = self.datum or timezone.localdate(self.hochgeladen_am)
+        jahr, monat = divmod(beginn.month - 1 + self.art.aufbewahren_monate, 12)
+        jahr, monat = beginn.year + jahr, monat + 1
+        letzter = calendar.monthrange(jahr, monat)[1]
+        return dt.date(jahr, monat, min(beginn.day, letzter))
+
+    def loeschen(self) -> None:
+        """Datei und Eintrag entfernen."""
+        privatdateien.loeschen(self.ORDNER, self.datei)
+        self.delete()
+
+
+def abgelaufene_dokumente_loeschen(heute: dt.date | None = None) -> int:
+    heute = heute or timezone.localdate()
+    anzahl = 0
+    with disable_auditlog():  # Fristablauf ist kein fachliches Ereignis je Datensatz
+        for d in HaushaltDokument.objects.select_related("art"):
+            if d.loeschen_am <= heute:
+                d.loeschen()
+                anzahl += 1
+    return anzahl
+
+
+class HaushaltEreignis(models.Model):
+    """Eine Zeile der Historie eines Haushalts (ADR 0031), an der Kundennummer."""
+
+    class Quelle(models.TextChoices):
+        IMPORT = "import", "Import"
+        AUFNAHME = "aufnahme", "Aufnahme"
+        BEARBEITUNG = "bearbeitung", "Bearbeitung"
+
+    kundennummer = models.CharField("Kundennummer", max_length=20, db_index=True)
+    zeitpunkt = models.DateTimeField("Zeitpunkt", default=timezone.now, db_index=True)
+    quelle = models.CharField("Quelle", max_length=12, choices=Quelle.choices)
+    text = models.CharField("Änderung", max_length=300)
+    von = models.CharField("Von", max_length=150, blank=True)
+
+    class Meta:
+        verbose_name = "Eintrag der Historie"
+        verbose_name_plural = "Historie"
+        ordering = ["-zeitpunkt", "-id"]
+
+    def __str__(self):
+        return f"{self.kundennummer}: {self.text}"
+
+
+def alte_historie_loeschen(heute: dt.date | None = None) -> int:
+    heute = heute or timezone.localdate()
+    jahre = KundenEinstellungen.laden().historie_aufbewahren_jahre
+    try:
+        tag = heute.replace(year=heute.year - jahre)
+    except ValueError:  # 29. Februar
+        tag = heute.replace(year=heute.year - jahre, day=28)
+    grenze = timezone.make_aware(dt.datetime.combine(tag, dt.time()))
+    return HaushaltEreignis.objects.filter(zeitpunkt__lt=grenze).delete()[0]
+
+
 class AusweisVorlage(models.Model):
     """Gestaltung des Kundenausweises (Singleton, ADR 0027). Elemente siehe kunden.ausweis."""
 
@@ -618,6 +740,8 @@ def fristen_anwenden() -> int:
         abgelaufene_abholungen_loeschen()
         + abgelaufene_zugriffe_loeschen()
         + verwaiste_notizen_loeschen()
+        + abgelaufene_dokumente_loeschen()
+        + alte_historie_loeschen()
     )
 
 
@@ -698,5 +822,7 @@ for modell in (
     Abholung,
     Ausnahme,
     ImportLauf,
+    Dokumentart,
 ):
     auditlog.register(modell)
+auditlog.register(HaushaltDokument, exclude_fields=["datei"])
