@@ -327,6 +327,12 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
   dem Hochladen. Danach löscht bintafeln das Dokument automatisch; die Tabelle zeigt den Tag.
   Dokumente hängen an der Kundennummer und überstehen den Import; wird der Haushalt gelöscht,
   werden sie mitgelöscht (ADR 0030).
+- **Historie** (Admin, Büro): unten auf der Haushaltsseite, was sich wann geändert hat: neu im
+  Kundenstamm bzw. aufgenommen (mit Antragsnummer), Status, Kundengruppe, Ausweis verlängert,
+  Personen hinzugekommen oder entfallen, jeweils mit Quelle (Import, Aufnahme, Bearbeitung) und
+  wer es war. Beim Import entsteht sie aus dem Vergleich mit dem vorherigen Stand. Sie hängt an
+  der Kundennummer und wird nach 3 Jahren gelöscht (einstellbar unter „Einstellungen →
+  Kundenstamm“; ADR 0031).
 - Jeder Aufruf einer Detailseite steht im **Zugriffsprotokoll** („Kunden“ → „Zugriffsprotokoll“,
   nur Admin). Die Einträge werden nach 365 Tagen gelöscht, einstellbar unter
   „Einstellungen → Kundenstamm“.

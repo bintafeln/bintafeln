@@ -24,6 +24,7 @@ from apps.kunden.models import (
     Ausnahme,
     Bemerkung,
     Haushalt,
+    HaushaltEreignis,
     ImportLauf,
     ImportVorbereitung,
     KundenEinstellungen,
@@ -200,6 +201,9 @@ def haushalt(request, kundennummer):
             "bemerkungen": h.bemerkungen.all() if buero else [],
             **notizen_kontext(h.kundennummer, request.user),
             **(views_dokumente.kontext(h.kundennummer) if buero else {}),
+            "historie": HaushaltEreignis.objects.filter(kundennummer=h.kundennummer)
+            if buero
+            else [],
             "kontostand_zeigen": buero or AusgabeEinstellungen.laden().kontostand_anzeigen,
             "buchungen": h.buchungen.all() if buero else [],
             "ausweis_abgelaufen": h.ausweis_gueltig_bis is not None

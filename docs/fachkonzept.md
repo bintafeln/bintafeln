@@ -123,6 +123,8 @@ Haushalt aber **speichern können** (z. B. Bescheide, Erklärungen, Datenschutze
 
 ### Historie
 
+**Umgesetzt (ADR 0031):** aus Import, Aufnahme und Bearbeitung, mit eigener Löschfrist.
+
 Was sich an einem Haushalt geändert hat: neu aufgenommen, Status, Kundengruppe, Ausweis verlängert,
 Personen hinzugekommen oder entfallen. Im Snapshot-Betrieb entsteht die Historie aus dem Vergleich
 zweier Importe.

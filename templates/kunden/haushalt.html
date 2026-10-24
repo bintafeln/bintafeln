@@ -139,6 +139,19 @@
 {% if buero %}
 {% include "kunden/_dokumente.html" %}
 
+<section class="karte" id="historie">
+  <h2>Historie</h2>
+  {% if historie %}
+  <ul class="historie">
+    {% for e in historie %}
+    <li><span class="hinweis">{{ e.zeitpunkt|date:"d.m.Y" }} · {{ e.get_quelle_display }}{% if e.von %} · {{ e.von }}{% endif %}</span><br>{{ e.text }}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="hinweis">Noch keine Änderungen festgehalten. Die Historie entsteht ab jetzt bei jedem Import, jeder Aufnahme und jeder Bearbeitung.</p>
+  {% endif %}
+</section>
+
 <section class="karte breit">
   <h2>Kundenkonto</h2>
   <p>Kontostand: <strong>{% if h.kontostand is not None %}{{ h.kontostand|floatformat:2 }} €{% else %}–{% endif %}</strong></p>

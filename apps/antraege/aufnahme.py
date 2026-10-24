@@ -15,7 +15,15 @@ from django.db import transaction
 from django.db.models import Count, Q
 from django.utils import timezone
 
-from apps.kunden.models import Einkommensart, Haushalt, KundenEinstellungen, Kundengruppe, Person
+from apps.kunden import historie
+from apps.kunden.models import (
+    Einkommensart,
+    Haushalt,
+    HaushaltEreignis,
+    KundenEinstellungen,
+    Kundengruppe,
+    Person,
+)
 
 MIN_PUNKTE = 55
 MAX_TREFFER = 10
@@ -162,6 +170,7 @@ def uebernehmen(antrag, zustand: dict, von: str) -> Haushalt:
     jetzt = timezone.now()
     h = Haushalt.objects.select_for_update().filter(kundennummer=zustand.get("haushalt")).first()
     neu = h is None
+    vorher = historie.schnappschuss(h)
     if neu:
         h = Haushalt(kundennummer=naechste_kundennummer(), kunde_seit=timezone.localdate())
         h.aufgenommen_am = jetzt
@@ -204,4 +213,9 @@ def uebernehmen(antrag, zustand: dict, von: str) -> Haushalt:
 
     antrag.kundennummer = h.kundennummer
     antrag.status_setzen(antrag.Status.ERLEDIGT, von)
+    historie.festhalten(
+        h.kundennummer, vorher, historie.schnappschuss(h),
+        quelle=HaushaltEreignis.Quelle.AUFNAHME, von=von,
+        zusatz=f"{'Aufgenommen' if neu else 'Aktualisiert'} mit Antrag {antrag.nummer}",
+    )  # fmt: skip
     return h

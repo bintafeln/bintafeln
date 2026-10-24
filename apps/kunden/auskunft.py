@@ -13,6 +13,7 @@ from apps.core.pdf import Pdf
 from apps.kunden.models import (
     Haushalt,
     HaushaltDokument,
+    HaushaltEreignis,
     KundenEinstellungen,
     Notiz,
     Zugriff,
@@ -126,6 +127,14 @@ def kunde_pdf(h: Haushalt) -> bytes:
         breiten=[0.3, 0.22, 0.14, 0.17, 0.17],
     )  # fmt: skip
 
+    doc.ueberschrift("Historie")
+    doc.tabelle(
+        ["Datum", "Änderung", "Quelle"],
+        [[_datum(timezone.localdate(e.zeitpunkt)), e.text, e.get_quelle_display()]
+         for e in HaushaltEreignis.objects.filter(kundennummer=h.kundennummer)],
+        breiten=[0.14, 0.66, 0.2],
+    )  # fmt: skip
+
     doc.ueberschrift("Ausnahmen")
     doc.tabelle(
         ["Datum", "Begründung", "Eingetragen von"],
@@ -187,7 +196,8 @@ def hinweise(e: KundenEinstellungen) -> list[str]:
         "nicht an Dritte weitergegeben, soweit keine gesetzliche Pflicht besteht.",
         f"Speicherdauer: Abholungen und Ausnahmen werden nach {e.abholungen_aufbewahren_jahre} "
         f"Jahren gelöscht, das Zugriffsprotokoll nach {e.zugriffe_aufbewahren_tage} Tagen, "
-        "Dokumente an dem oben genannten Tag. Die übrigen Daten werden gelöscht, wenn Sie nicht "
+        f"Dokumente an dem oben genannten Tag, die Historie nach {e.historie_aufbewahren_jahre} "
+        "Jahren. Die übrigen Daten werden gelöscht, wenn Sie nicht "
         "mehr Kunde der Tafel sind.",
         "Ihre Rechte: Sie können die Berichtigung falscher Angaben, die Löschung oder die "
         "Einschränkung der Verarbeitung verlangen und eine Einwilligung jederzeit widerrufen. "

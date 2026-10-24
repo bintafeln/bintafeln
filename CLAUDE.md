@@ -133,6 +133,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Dokumente zum Haushalt (`HaushaltDokument`, ADR 0030) ebenfalls an der Kundennummer,
   verschlüsselt über `apps.core.privatdateien`, Frist je `Dokumentart`, Ansichten in
   `views_dokumente.py`.
+  Historie (`HaushaltEreignis`, ADR 0031) über `apps/kunden/historie.py`: Schnappschuss vor und
+  nach jeder Änderung am Kundenstamm (`festhalten()`, beim Import `import_festhalten()`).
   `ausgabe` (Einlass; Beitrag über `AusgabeEinstellungen.beitrag_fuer()` – zahlende Personen
   ab Alter × Betrag, Zusatzbeiträge optional, `BeitragsfreierZeitraum`;
   Ampel-Regeln als reine Funktion in `apps/ausgabe/ampel.py`,

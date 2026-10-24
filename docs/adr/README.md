@@ -61,3 +61,4 @@ drei Fragen: Was war das Problem? Was haben wir entschieden? Warum?
 | [0028](0028-aufnahme-und-import-abgleich.md) | Aufnahme in bintafeln und Import-Abgleich | Angenommen |
 | [0029](0029-kamera-als-scanner.md) | Kamera als Barcode-Scanner am Einlass | Angenommen |
 | [0030](0030-dokumente-zum-haushalt.md) | Dokumente zum Haushalt mit Frist je Dokumentart | Angenommen |
+| [0031](0031-historie.md) | Historie eines Haushalts aus Vergleich vorher/nachher | Angenommen |

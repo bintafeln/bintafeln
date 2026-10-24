@@ -43,6 +43,12 @@ class KundenEinstellungen(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(10)],
         help_text="Ältere werden nicht importiert und automatisch gelöscht.",
     )
+    historie_aufbewahren_jahre = models.PositiveSmallIntegerField(
+        "Historie aufbewahren (Jahre)",
+        default=3,
+        validators=[MinValueValidator(1), MaxValueValidator(10)],
+        help_text="Ältere Einträge der Historie werden automatisch gelöscht.",
+    )
     zugriffe_aufbewahren_tage = models.PositiveSmallIntegerField(
         "Zugriffsprotokoll aufbewahren (Tage)",
         default=365,
@@ -528,6 +534,40 @@ def abgelaufene_dokumente_loeschen(heute: dt.date | None = None) -> int:
     return anzahl
 
 
+class HaushaltEreignis(models.Model):
+    """Eine Zeile der Historie eines Haushalts (ADR 0031), an der Kundennummer."""
+
+    class Quelle(models.TextChoices):
+        IMPORT = "import", "Import"
+        AUFNAHME = "aufnahme", "Aufnahme"
+        BEARBEITUNG = "bearbeitung", "Bearbeitung"
+
+    kundennummer = models.CharField("Kundennummer", max_length=20, db_index=True)
+    zeitpunkt = models.DateTimeField("Zeitpunkt", default=timezone.now, db_index=True)
+    quelle = models.CharField("Quelle", max_length=12, choices=Quelle.choices)
+    text = models.CharField("Änderung", max_length=300)
+    von = models.CharField("Von", max_length=150, blank=True)
+
+    class Meta:
+        verbose_name = "Eintrag der Historie"
+        verbose_name_plural = "Historie"
+        ordering = ["-zeitpunkt", "-id"]
+
+    def __str__(self):
+        return f"{self.kundennummer}: {self.text}"
+
+
+def alte_historie_loeschen(heute: dt.date | None = None) -> int:
+    heute = heute or timezone.localdate()
+    jahre = KundenEinstellungen.laden().historie_aufbewahren_jahre
+    try:
+        tag = heute.replace(year=heute.year - jahre)
+    except ValueError:  # 29. Februar
+        tag = heute.replace(year=heute.year - jahre, day=28)
+    grenze = timezone.make_aware(dt.datetime.combine(tag, dt.time()))
+    return HaushaltEreignis.objects.filter(zeitpunkt__lt=grenze).delete()[0]
+
+
 class AusweisVorlage(models.Model):
     """Gestaltung des Kundenausweises (Singleton, ADR 0027). Elemente siehe kunden.ausweis."""
 
@@ -696,6 +736,7 @@ def fristen_anwenden() -> int:
         + abgelaufene_zugriffe_loeschen()
         + verwaiste_notizen_loeschen()
         + abgelaufene_dokumente_loeschen()
+        + alte_historie_loeschen()
     )
 
 

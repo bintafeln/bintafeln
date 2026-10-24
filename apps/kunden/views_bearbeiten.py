@@ -21,7 +21,7 @@ from apps.core import privatdateien
 from apps.core.models import TafelEinstellungen
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
-from apps.kunden import ausweis
+from apps.kunden import ausweis, historie
 from apps.kunden.forms_bearbeiten import (
     AbholerForm,
     AnmerkungForm,
@@ -47,6 +47,7 @@ from apps.kunden.models import (
     Einkommensart,
     Haushalt,
     HaushaltDokument,
+    HaushaltEreignis,
     Kundengruppe,
     Notiz,
     NotizVorlage,
@@ -72,6 +73,14 @@ def geaendert(h: Haushalt, request) -> None:
     )
 
 
+def _festhalten(h: Haushalt, vorher, request, zusatz: str = "") -> None:
+    historie.festhalten(
+        h.kundennummer, vorher, historie.schnappschuss(h),
+        quelle=HaushaltEreignis.Quelle.BEARBEITUNG, von=request.user.get_username(),
+        zusatz=zusatz,
+    )  # fmt: skip
+
+
 def _bearbeiten_url(h) -> str:
     return reverse("kunden:bearbeiten", args=[h.kundennummer])
 
@@ -81,14 +90,16 @@ def haushalt_bearbeiten(request, kundennummer):
     h = get_object_or_404(Haushalt, kundennummer=kundennummer)
     form = HaushaltForm(request.POST or None, instance=h)
     if request.method == "POST" and form.is_valid():
+        vorher = historie.schnappschuss(h)
         with transaction.atomic():
             h = form.save()
-            if h.kundennummer != kundennummer:  # Notizen und Dokumente ziehen mit um
-                for modell in (Notiz, HaushaltDokument):
+            if h.kundennummer != kundennummer:  # Notizen, Dokumente, Historie ziehen mit um
+                for modell in (Notiz, HaushaltDokument, HaushaltEreignis):
                     modell.objects.filter(kundennummer=kundennummer).update(
                         kundennummer=h.kundennummer
                     )
             geaendert(h, request)
+            _festhalten(h, vorher, request)
         messages.success(request, "Haushalt gespeichert.")
         return redirect(_bearbeiten_url(h))
     return render(
@@ -115,6 +126,7 @@ def haushalt_neu(request):
     if request.method == "POST" and form.is_valid():
         h = form.save()
         geaendert(h, request)
+        _festhalten(h, None, request, zusatz="Angelegt")
         messages.success(request, f"Haushalt {h.kundennummer} angelegt. Jetzt Personen ergänzen.")
         return redirect(_bearbeiten_url(h))
     return render(request, "kunden/eintrag.html", {"form": form, "titel": "Neuer Haushalt"})
@@ -135,6 +147,10 @@ def haushalt_loeschen(request, kundennummer):
             ("Interne Anmerkungen", h.bemerkungen.count()),
             ("Notizen", Notiz.objects.filter(kundennummer=kundennummer).count()),
             ("Dokumente", HaushaltDokument.objects.filter(kundennummer=kundennummer).count()),
+            (
+                "Einträge der Historie",
+                HaushaltEreignis.objects.filter(kundennummer=kundennummer).count(),
+            ),
         ]
         return render(
             request,
@@ -145,6 +161,7 @@ def haushalt_loeschen(request, kundennummer):
     with transaction.atomic():
         h.delete()  # Buchungen bleiben ohne Haushalt, aber mit Kundennummer (Kasse)
         Notiz.objects.filter(kundennummer=kundennummer).delete()
+        HaushaltEreignis.objects.filter(kundennummer=kundennummer).delete()
         dokumente = HaushaltDokument.objects.filter(kundennummer=kundennummer)
         dateien = list(dokumente.values_list("datei", flat=True))
         dokumente.delete()
@@ -173,6 +190,7 @@ def teil_bearbeiten(request, kundennummer, art, pk=None):
     extra = {"angemeldet": request.user} if mit_angemeldet else {}
     form = form_klasse(request.POST or None, instance=instanz, **extra)
     if request.method == "POST" and form.is_valid():
+        vorher = historie.schnappschuss(h)
         with transaction.atomic():
             eintrag = form.save(commit=False)
             eintrag.haushalt = h
@@ -182,6 +200,7 @@ def teil_bearbeiten(request, kundennummer, art, pk=None):
                 h.personen.exclude(pk=eintrag.pk).update(ist_hauptperson=False)
             eintrag.save()
             geaendert(h, request)
+            _festhalten(h, vorher, request)
         messages.success(request, f"{bezeichnung} gespeichert.")
         return redirect(_bearbeiten_url(h))
     return render(
@@ -207,8 +226,10 @@ def teil_bearbeiten(request, kundennummer, art, pk=None):
 def teil_loeschen(request, kundennummer, art, pk):
     h = get_object_or_404(Haushalt, kundennummer=kundennummer)
     modell, _, bezeichnung, _ = _teil(art)
+    vorher = historie.schnappschuss(h)
     get_object_or_404(modell, pk=pk, haushalt=h).delete()
     geaendert(h, request)
+    _festhalten(h, vorher, request)
     messages.success(request, f"{bezeichnung} gelöscht.")
     return redirect(_bearbeiten_url(h))
 

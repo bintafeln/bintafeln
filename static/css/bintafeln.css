@@ -500,3 +500,8 @@ label.wahl { display: block; white-space: nowrap; }
   .scan-zeile .scan-feld { flex: 1 1 100%; }
   .scan-zeile .knopf { flex: 1 1 0; }
 }
+
+/* Historie eines Haushalts */
+.historie { list-style: none; margin: 0; padding: 0; max-height: 24rem; overflow-y: auto; }
+.historie li { padding: .4rem 0; border-bottom: 1px solid var(--rand); }
+.historie li:last-child { border-bottom: 0; }
