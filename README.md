@@ -40,7 +40,7 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   Angaben erfasst werden, und richtet eigene **Zusatzfelder** ein (z. B. „Schwerbehindert“).
   **Import** mit Prüfbericht unter „Kunden“; Liste und Suche folgen.
 - **Menü links** mit aufklappbaren Bereichen (Ausgabe, Kunden, Anträge, Team, Einstellungen);
-  jede Rolle sieht nur, was sie darf. Auf schmalen Bildschirmen öffnet „☰ Menü“ das Menü.
+  jede Rolle sieht nur, was sie darf. Auf Handys (unter 768 Pixel Breite) öffnet „☰ Menü“ das Menü.
 - Deutsche, mobilfreundliche Oberfläche (Django-Templates + HTMX, ohne externe CDNs).
 
 ## Aufbau
@@ -399,7 +399,16 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
 „Einlass“ im Menü (Admin, Büro, Ausgabe):
 
 1. Einmal die **Ausgabestelle** wählen, an der man arbeitet (gilt für die Sitzung).
-2. Kundennummer **scannen** oder eintippen und Enter. Führende Nullen sind egal.
+2. Kundennummer **scannen** oder eintippen und Enter. Führende Nullen sind egal. Drei Wege,
+   die sich beliebig mischen lassen; Eintippen geht immer:
+   - **Handscanner** per USB oder Bluetooth (am PC oder Handy): Er arbeitet als Tastatur, das
+     Feld hat den Fokus, der Scanner schickt die Nummer samt Enter. Im Scanner „Enter als
+     Abschluss“ (Suffix CR) einstellen.
+   - **Kamera** (Handy, Tablet oder Laptop): Knopf **📷 Kamera**, Barcode des Ausweises in den
+     Rahmen halten; die Nummer wird eingetragen und geprüft. Beim ersten Mal fragt der Browser
+     nach der Kamera-Erlaubnis. Der Browser erlaubt die Kamera nur über **https**, also im
+     Produktionsmodus (im Entwicklungsmodus mit `http://IP` erscheint ein Hinweis). Die
+     Erkennung läuft vollständig im Browser; es werden keine Bilder gespeichert oder versendet.
 3. Die **Ampel** zeigt, ob abgeholt werden darf, und warum nicht:
    - 🔴 Sperre, Status gesperrt/beendet, Ausweis abgelaufen, heute schon so oft abgeholt wie
      erlaubt, Höchstzahl je Woche/14 Tage/Monat erreicht, keine Kundengruppe, heute nicht dran

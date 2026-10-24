@@ -435,7 +435,11 @@ a.knopf-gefahr { color: #fff; }
 .seitenmenue a.aktiv { background: var(--erfolg); border-left: 4px solid var(--akzent); font-weight: 600; }
 .seitenmenue li a.aktiv { padding-left: calc(2rem - 4px); }
 .seitenmenue a.menue-oben.aktiv { padding-left: calc(1.25rem - 4px); }
-@media (max-width: 63.99rem) {
+@media (min-width: 48rem) and (max-width: 63.99rem) {
+  .seitenmenue { flex-basis: 13rem; }
+  .menue-oben, .seitenmenue li a { padding-right: .75rem; }
+}
+@media (max-width: 47.99rem) {
   .menue-knopf { display: inline-block; }
   .rahmen { position: relative; }
   .seitenmenue {
@@ -483,3 +487,16 @@ tr.wunsch td { background: var(--erfolg); }
 .abgleich-gruppe summary { cursor: pointer; padding: .35rem 0; }
 tr.unterschied td { background: #fff6dc; }
 label.wahl { display: block; white-space: nowrap; }
+
+/* Kamera als Barcode-Scanner (Einlass) */
+.kamera-dialog { width: min(36rem, calc(100vw - 2rem)); border: 0; border-radius: var(--radius); padding: 1rem; }
+.kamera-dialog::backdrop { background: rgb(0 0 0 / .6); }
+.kamera-dialog video { display: block; width: 100%; max-height: 60vh; background: #000; border-radius: var(--radius); object-fit: cover; }
+.kamera-dialog .kamera-hilfe { margin: 0 0 .5rem; }
+.kamera-dialog .kamera-meldung { margin: .75rem 0 0; }
+.kamera-dialog .kamera-schliessen { margin-top: .75rem; width: 100%; }
+@media (max-width: 30rem) {
+  .scan-zeile { flex-wrap: wrap; }
+  .scan-zeile .scan-feld { flex: 1 1 100%; }
+  .scan-zeile .knopf { flex: 1 1 0; }
+}
