@@ -280,11 +280,14 @@ def test_einlass_zeigt_angaben_und_notizen(ausgabe, haushalt):
     hp = haushalt.personen.get()
     hp.geburtsdatum = dt.date(1970, 5, 6)
     hp.save()
+    Person.objects.create(haushalt=haushalt, vorname="Kai", nachname="Muster",
+                          geburtsdatum=dt.date(2016, 1, 1))  # fmt: skip
     haushalt.abholer.create(vorname="Otto", nachname="Muster", geburtsdatum=dt.date(2001, 2, 3))
     haushalt.strasse = "Erfundene Gasse 9"
     haushalt.save()
     inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
-    assert "06.05.1970" in inhalt and "Otto Muster, geb. 03.02.2001" in inhalt
+    assert "Erika Muster, geb. 06.05.1970" in inhalt and "Otto Muster, geb. 03.02.2001" in inhalt
+    assert "1 Erwachsene, 1 Kind" in inhalt and "Kai Muster, geb. 01.01.2016" in inhalt
     assert "Ausgabestelle Mitte · Jeden Tag" in inhalt and "Karte gültig bis" in inhalt
     assert "Erfundene Gasse" not in inhalt and "Keine Notizen." in inhalt
     url = reverse("ausgabe:notiz", args=["00042"])
