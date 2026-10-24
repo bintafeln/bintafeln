@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block titel %}E-Mail{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'core:einstellungen' %}">← Einstellungen der Tafel</a></p>
+  <h1>E-Mail</h1>
+  <p class="hinweis">Damit verschickt bintafeln Einladungen und Links zum Zurücksetzen von Passwörtern. Die Zugangsdaten
+    bekommen Sie von Ihrem Mail-Anbieter (Stichwort „SMTP“).</p>
+  {% if einstellungen.eingerichtet %}
+    <p class="sicherung sicherung-ok">Eingerichtet. Absender: {{ einstellungen.absenderadresse }}</p>
+  {% elif einstellungen.server %}
+    <p class="sicherung sicherung-veraltet">Es fehlt eine Absenderadresse (hier oder als E-Mail der Tafel).</p>
+  {% else %}
+    <p class="sicherung">Noch kein Mailserver eingerichtet. Konten werden dann nur mit Startpasswort angelegt.</p>
+  {% endif %}
+  {% if passwort_unlesbar %}
+    <p class="sicherung sicherung-fehler">Das gespeicherte Passwort ist nicht mehr lesbar (der geheime Schlüssel der
+      Installation wurde geändert). Bitte neu eingeben.</p>
+  {% elif passwort_gespeichert %}
+    <p class="hinweis">Ein Passwort ist verschlüsselt gespeichert.</p>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+
+{% if einstellungen.eingerichtet %}
+<section class="karte">
+  <h2>Testen</h2>
+  <p>Schickt eine Testmail an Ihre eigene Adresse{% if user.email %} ({{ user.email }}){% endif %}.</p>
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" name="testmail" value="1" class="knopf knopf-zweitrangig">Testmail senden</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

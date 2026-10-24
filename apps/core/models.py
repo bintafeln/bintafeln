@@ -71,4 +71,57 @@ class TafelEinstellungen(models.Model):
         return ", ".join(teil for teil in (self.strasse, ort) if teil)
 
 
+class MailEinstellungen(models.Model):
+    """Zugang zum Mailserver der Tafel (Singleton). Das Passwort liegt nur verschlüsselt vor."""
+
+    EINZIGE_ID = 1
+
+    class Verschluesselung(models.TextChoices):
+        STARTTLS = "starttls", "STARTTLS (meist Port 587)"
+        SSL = "ssl", "SSL/TLS (meist Port 465)"
+        KEINE = "keine", "keine (nur im eigenen Netz)"
+
+    server = models.CharField(
+        "Mailserver (SMTP)", max_length=200, blank=True, help_text="Leer = keine Mails senden."
+    )
+    port = models.PositiveIntegerField("Port", default=587)
+    verschluesselung = models.CharField(
+        "Verschlüsselung",
+        max_length=10,
+        choices=Verschluesselung.choices,
+        default=Verschluesselung.STARTTLS,
+    )
+    benutzer = models.CharField("Benutzername", max_length=200, blank=True)
+    passwort_verschluesselt = models.TextField(blank=True, editable=False)
+    absender = models.EmailField(
+        "Absenderadresse", blank=True, help_text="Leer = E-Mail der Tafel aus den Einstellungen."
+    )
+
+    class Meta:
+        verbose_name = "E-Mail-Einstellungen"
+        verbose_name_plural = "E-Mail-Einstellungen"
+
+    def __str__(self):
+        return "E-Mail-Einstellungen"
+
+    def save(self, *args, **kwargs):
+        self.pk = self.EINZIGE_ID
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def laden(cls) -> "MailEinstellungen":
+        einstellungen, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
+        return einstellungen
+
+    @property
+    def absenderadresse(self) -> str:
+        return self.absender or TafelEinstellungen.laden().email
+
+    @property
+    def eingerichtet(self) -> bool:
+        return bool(self.server and self.absenderadresse)
+
+
 auditlog.register(TafelEinstellungen, exclude_fields=["geaendert_am"])
+# Das (verschlüsselte) Passwort gehört nicht ins Änderungsprotokoll.
+auditlog.register(MailEinstellungen, exclude_fields=["passwort_verschluesselt"])

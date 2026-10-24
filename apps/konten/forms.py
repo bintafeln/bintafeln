@@ -65,19 +65,38 @@ class MitarbeiterForm(forms.ModelForm):
     rollen = forms.MultipleChoiceField(
         label="Rollen", required=False, widget=forms.CheckboxSelectMultiple
     )
+    zugang = forms.ChoiceField(
+        label="Zugang",
+        choices=[
+            ("startpasswort", "Startpasswort anzeigen und persönlich weitergeben"),
+            ("einladung", "Einladung per Mail mit Link zum Passwort-Festlegen"),
+        ],
+        initial="startpasswort",
+        widget=forms.RadioSelect,
+    )
 
     class Meta:
         model = get_user_model()
         fields = ["username", "first_name", "last_name", "email", "beschaeftigung"]
         help_texts = {"username": "Zum Anmelden. Buchstaben, Ziffern und @ . + - _"}
 
-    def __init__(self, *args, verwalter, **kwargs):
+    def __init__(self, *args, verwalter, mail_moeglich=False, **kwargs):
         super().__init__(*args, **kwargs)
+        if self.instance.pk or not mail_moeglich:
+            del self.fields["zugang"]
         self.fields["rollen"].choices = [(r, r) for r in verwaltung.vergebbare_rollen(verwalter)]
         if self.instance.pk:
             self.fields["rollen"].initial = list(
                 self.instance.groups.filter(name__in=rollen.ALLE).values_list("name", flat=True)
             )
+
+    def clean(self):
+        daten = super().clean()
+        if daten.get("zugang") == "einladung" and not daten.get("email"):
+            self.add_error(
+                "email", "Für eine Einladung per Mail bitte eine E-Mail-Adresse angeben."
+            )
+        return daten
 
     def clean_username(self):
         name = self.cleaned_data["username"]

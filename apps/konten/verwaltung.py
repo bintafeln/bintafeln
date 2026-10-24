@@ -58,12 +58,17 @@ def _passwort_neu(ziel) -> str:
 
 
 @transaction.atomic
-def anlegen(verwalter, daten: dict, rollen_namen: list[str]) -> tuple[object, str]:
-    """Legt ein Konto an und liefert es mit dem Startpasswort (nur einmal anzeigen)."""
+def anlegen(verwalter, daten: dict, rollen_namen: list[str], einladung=False):
+    """Legt ein Konto an. Liefert es mit dem Startpasswort (nur einmal anzeigen) oder – bei
+    Einladung per Mail – mit None; das Passwort setzt die Person dann selbst über den Link."""
     if set(rollen_namen) - set(vergebbare_rollen(verwalter)):
         raise VerwaltungsFehler("Diese Rolle dürfen Sie nicht vergeben.")
     ziel = get_user_model()(**daten)
-    passwort = _passwort_neu(ziel)
+    if einladung:
+        ziel.set_unusable_password()
+        passwort = None
+    else:
+        passwort = _passwort_neu(ziel)
     ziel.save()
     ziel.groups.set(Group.objects.filter(name__in=rollen_namen))
     return ziel, passwort

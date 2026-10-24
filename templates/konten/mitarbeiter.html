@@ -8,8 +8,9 @@
     <p class="sicherung sicherung-veraltet">Gesperrt seit {{ ziel.gesperrt_am|date:"d.m.Y H:i"|default:"–" }}{% if ziel.gesperrt_von %} von {{ ziel.gesperrt_von }}{% endif %}.</p>
   {% endif %}
   {% if not ziel %}
-    <p class="hinweis">bintafeln erzeugt ein Startpasswort und zeigt es nach dem Speichern einmal an. Bei der ersten
-      Anmeldung muss die Person ein eigenes Passwort wählen.</p>
+    <p class="hinweis">Mit Startpasswort zeigt bintafeln es nach dem Speichern einmal an; bei der ersten Anmeldung
+      muss die Person ein eigenes wählen. Mit Einladung bekommt sie einen Link, über den sie ihr Passwort selbst
+      festlegt (nur, wenn unter „Einstellungen → E-Mail“ ein Mailserver eingerichtet ist).</p>
   {% endif %}
   <form method="post">
     {% csrf_token %}
@@ -29,6 +30,12 @@
       {% csrf_token %}
       <button type="submit" class="knopf knopf-zweitrangig">Passwort zurücksetzen</button>
     </form>
+    {% if mail and ziel.email %}
+    <form method="post" action="{% url 'konten:link_senden' ziel.pk %}" class="inline">
+      {% csrf_token %}
+      <button type="submit" class="knopf knopf-zweitrangig">Link zum neuen Passwort per Mail</button>
+    </form>
+    {% endif %}
     {% if zwei_faktor %}
     <form method="post" action="{% url 'konten:zwei_faktor_zuruecksetzen' ziel.pk %}" class="inline"
           onsubmit="return confirm('Zwei-Faktor für {{ ziel|escapejs }} zurücksetzen (z. B. Handy verloren)?')">

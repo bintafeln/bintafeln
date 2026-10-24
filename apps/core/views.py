@@ -8,12 +8,13 @@ from django.core.paginator import Paginator
 from django.db import transaction
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
+from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
 
-from apps.core import sicherung
-from apps.core.forms import EinrichtungForm, EinstellungenForm
+from apps.core import geheimnis, mail, sicherung
+from apps.core.forms import EinrichtungForm, EinstellungenForm, MailEinstellungenForm
 from apps.core.middleware import admin_existiert
-from apps.core.models import TafelEinstellungen
+from apps.core.models import MailEinstellungen, TafelEinstellungen
 from apps.konten import rollen
 
 
@@ -74,6 +75,45 @@ def einstellungen(request):
         messages.success(request, "Einstellungen gespeichert.")
         return redirect("core:einstellungen")
     return render(request, "core/einstellungen.html", {"form": form})
+
+
+@never_cache
+@rollen.rolle_erforderlich(rollen.ADMIN)
+@sensitive_post_parameters("passwort")
+def mail_einstellungen(request):
+    instanz = MailEinstellungen.laden()
+    form = MailEinstellungenForm(request.POST or None, instance=instanz)
+    if request.method == "POST" and "testmail" in request.POST:
+        if not request.user.email:
+            messages.error(request, "Für die Testmail bitte unter „Mitarbeitende“ Ihre eigene "
+                           "E-Mail-Adresse eintragen.")  # fmt: skip
+        else:
+            try:
+                mail.senden(
+                    "Testmail von bintafeln",
+                    "Diese Mail zeigt: bintafeln kann über den eingerichteten Mailserver senden.",
+                    [request.user.email],
+                )
+            except mail.MailFehler as fehler:
+                messages.error(request, f"Testmail nicht gesendet: {fehler}")
+            else:
+                messages.success(request, f"Testmail an {request.user.email} gesendet.")
+        return redirect("core:mail_einstellungen")
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "E-Mail-Einstellungen gespeichert.")
+        return redirect("core:mail_einstellungen")
+    lesbar = geheimnis.entschluesseln(instanz.passwort_verschluesselt)
+    return render(
+        request,
+        "core/mail_einstellungen.html",
+        {
+            "form": form,
+            "einstellungen": instanz,
+            "passwort_gespeichert": bool(instanz.passwort_verschluesselt),
+            "passwort_unlesbar": lesbar is None,
+        },
+    )
 
 
 @rollen.rolle_erforderlich(rollen.ADMIN)

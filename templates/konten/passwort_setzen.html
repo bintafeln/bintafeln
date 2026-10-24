@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block titel %}Passwort festlegen{% endblock %}
+{% block inhalt %}
+<section class="karte schmal">
+  <h1>Passwort festlegen</h1>
+  {% if validlink %}
+    <p>Benutzername: <strong>{{ form.user.username }}</strong></p>
+    <form method="post">
+      {% csrf_token %}
+      {% include "includes/formular.html" %}
+      <button type="submit" class="knopf">Passwort speichern</button>
+    </form>
+  {% else %}
+    <p class="sicherung sicherung-veraltet">Dieser Link ist abgelaufen oder wurde schon benutzt.</p>
+    <p>Bitte einen neuen Link anfordern oder an einen Admin wenden.</p>
+    <p><a href="{% url 'konten:anmelden' %}">← Anmelden</a></p>
+  {% endif %}
+</section>
+{% endblock %}

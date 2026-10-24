@@ -11,7 +11,8 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 from django_otp import user_has_device
 
-from apps.konten import rollen, verwaltung, zwei_faktor
+from apps.core import mail
+from apps.konten import einladung, rollen, verwaltung, zwei_faktor
 from apps.konten.forms import MitarbeiterForm
 
 
@@ -73,12 +74,27 @@ def _startpasswort_zeigen(request, ziel, passwort, neu):
 @never_cache
 @verwalter_erforderlich
 def anlegen(request):
-    form = MitarbeiterForm(request.POST or None, verwalter=request.user)
+    form = MitarbeiterForm(
+        request.POST or None, verwalter=request.user, mail_moeglich=mail.eingerichtet()
+    )
     if request.method == "POST" and form.is_valid():
         daten = {f: form.cleaned_data[f] for f in MitarbeiterForm.Meta.fields}
+        per_mail = form.cleaned_data.get("zugang") == "einladung"
         # Das Formular bietet nur erlaubte Rollen an; verwaltung.anlegen prüft es trotzdem.
-        ziel, passwort = verwaltung.anlegen(request.user, daten, form.cleaned_data["rollen"])
-        return _startpasswort_zeigen(request, ziel, passwort, neu=True)
+        ziel, passwort = verwaltung.anlegen(
+            request.user, daten, form.cleaned_data["rollen"], einladung=per_mail
+        )
+        if not per_mail:
+            return _startpasswort_zeigen(request, ziel, passwort, neu=True)
+        try:
+            einladung.senden(request, ziel, einladung.EINLADUNG)
+        except mail.MailFehler as fehler:
+            # Konto gibt es schon; dann eben mit Startpasswort weiter.
+            passwort = verwaltung.passwort_zuruecksetzen(request.user, ziel)
+            messages.error(request, f"Die Einladung konnte nicht gesendet werden: {fehler}")
+            return _startpasswort_zeigen(request, ziel, passwort, neu=True)
+        messages.success(request, f"{ziel} ist angelegt. Die Einladung ging an {ziel.email}.")
+        return redirect("konten:mitarbeiter", pk=ziel.pk)
     return render(request, "konten/mitarbeiter.html", {"form": form, "ziel": None})
 
 
@@ -104,7 +120,12 @@ def bearbeiten(request, pk):
     return render(
         request,
         "konten/mitarbeiter.html",
-        {"form": form, "ziel": ziel, "zwei_faktor": user_has_device(ziel)},
+        {
+            "form": form,
+            "ziel": ziel,
+            "zwei_faktor": user_has_device(ziel),
+            "mail": mail.eingerichtet(),
+        },
     )
 
 
@@ -145,6 +166,20 @@ def zwei_faktor_zuruecksetzen(request, pk):
         zuruecksetzen,
         "Zwei-Faktor für {ziel} zurückgesetzt. Bei Pflicht muss es neu eingerichtet werden.",
     )
+
+
+@require_POST
+@verwalter_erforderlich
+def link_senden(request, pk):
+    """Schickt einen Link zum Festlegen eines neuen Passworts; das alte gilt bis dahin weiter."""
+    ziel = _ziel(request, pk)
+    try:
+        einladung.senden(request, ziel, einladung.ZURUECKSETZEN)
+    except mail.MailFehler as fehler:
+        messages.error(request, f"Nicht gesendet: {fehler}")
+    else:
+        messages.success(request, f"Link zum Festlegen eines Passworts an {ziel.email} gesendet.")
+    return redirect("konten:mitarbeiter", pk=ziel.pk)
 
 
 @never_cache

@@ -104,6 +104,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LOGIN_URL = "konten:anmelden"
+# Einladungs- und Zurücksetzen-Links gelten 3 Tage (ADR 0016).
+PASSWORD_RESET_TIMEOUT = 3 * 24 * 60 * 60
 
 
 def _otp_aussteller(geraet):

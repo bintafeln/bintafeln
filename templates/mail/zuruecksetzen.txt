@@ -1,0 +1,12 @@
+{% autoescape off %}Hallo {{ benutzer.get_full_name|default:benutzer.username }},
+
+für Ihren Zugang zu {{ tafel }} (Benutzername: {{ benutzer.username }}) wurde ein neues
+Passwort angefordert. Über diesen Link legen Sie es fest:
+
+{{ link }}
+
+Der Link gilt 3 Tage und nur einmal. Ihr bisheriges Passwort gilt weiter, bis Sie ein neues
+festlegen. Falls Sie das nicht angefordert haben, können Sie diese Mail ignorieren.
+
+{{ tafel }}
+{% endautoescape %}
