@@ -117,7 +117,7 @@ def test_kundenausweis(admin_client, pdf_text, haushalt):
     assert "no-cache" in antwort["Cache-Control"]
     inhalt = pdf_text(antwort)
     for wort in ("T-4711", "Erika Beispiel", "Gruppe Dienstag", "10:30 Uhr", "31.03.2027",
-                 "Kundenausweis", "Tafel"):  # fmt: skip
+                 "Kundenausweis", "Tafel", "(2/0)"):  # fmt: skip
         assert wort in inhalt, wort
 
 

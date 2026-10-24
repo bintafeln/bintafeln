@@ -11,7 +11,7 @@ from auditlog.context import disable_auditlog
 from auditlog.registry import auditlog
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 
 from apps.antraege import sprachen
@@ -82,6 +82,12 @@ class AntragEinstellungen(models.Model):
         verbose_name="Bei neuen Anträgen benachrichtigen",
         help_text="Diese Mitarbeitenden erhalten eine Mail ohne persönliche Angaben, mit Link.",
     )
+    erste_nummer = models.PositiveIntegerField(
+        "Nächste Antragsnummer ab",
+        default=1,
+        help_text="Neue Anträge bekommen fortlaufende Nummern, mindestens ab dieser Zahl, z. B. "
+        "4201, wenn bisher bis 4200 gezählt wurde.",
+    )
     erledigt_nach_tagen = models.PositiveSmallIntegerField(
         "Unbearbeitete Anträge gelten nach … Tagen als erledigt",
         default=0,
@@ -122,6 +128,20 @@ class AntragEinstellungen(models.Model):
         return einstellungen
 
 
+def naechste_antragsnummer() -> int:
+    """Nächste freie Antragsnummer: über der höchsten vergebenen, mindestens ab der Einstellung.
+
+    Sperrt die Einstellungen-Zeile, damit zwei gleichzeitige Anträge nicht dieselbe Nummer
+    bekommen (läuft innerhalb der Transaktion des Speicherns).
+    """
+    from django.db.models import Max
+
+    e = AntragEinstellungen.objects.select_for_update().filter(pk=AntragEinstellungen.EINZIGE_ID)
+    erste = e.values_list("erste_nummer", flat=True).first() or 1
+    hoechste = Antrag.objects.aggregate(m=Max("laufnummer"))["m"] or 0
+    return max(hoechste + 1, erste)
+
+
 class AntragText(models.Model):
     """Eigene Texte der Tafel für eine Sprache; ohne Eintrag gelten die mitgelieferten."""
 
@@ -154,6 +174,7 @@ class Antrag(models.Model):
 
     OFFEN = (Status.NEU, Status.IN_BEARBEITUNG)
 
+    laufnummer = models.PositiveIntegerField("Antragsnummer", unique=True, null=True, blank=True)
     eingegangen_am = models.DateTimeField("Eingegangen am", default=timezone.now, db_index=True)
     art = models.CharField("Art", max_length=15, choices=Art.choices, default=Art.NEU)
     sprache = models.CharField("Sprache", max_length=5, choices=sprachen.AUSWAHL, default="de")
@@ -185,9 +206,16 @@ class Antrag(models.Model):
     def __str__(self):
         return f"Antrag {self.nummer}"
 
+    def save(self, *args, **kwargs):
+        if self.laufnummer:
+            return super().save(*args, **kwargs)
+        with transaction.atomic():
+            self.laufnummer = naechste_antragsnummer()
+            super().save(*args, **kwargs)
+
     @property
     def nummer(self) -> str:
-        return f"{timezone.localtime(self.eingegangen_am):%Y}-{self.pk:05d}"
+        return str(self.laufnummer) if self.laufnummer else str(self.pk)
 
     @property
     def name(self) -> str:

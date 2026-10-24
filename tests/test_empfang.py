@@ -124,7 +124,7 @@ def test_ausgabestelle_waehlen(ausgabe, stelle):
 
 def test_abholung_eintragen_mit_vorschlag(ausgabe, haushalt, stelle):
     e = AusgabeEinstellungen.laden()
-    e.beitrag_je_erwachsenem = Decimal("2.50")
+    e.beitrag_je_person = Decimal("2.50")
     e.save()
     ausgabe.post(reverse("ausgabe:ausgabestelle"), {"ausgabestelle": stelle.pk})
     vorher = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
@@ -221,7 +221,8 @@ def test_einstellungen_nur_admin(ausgabe):
 
 def test_einstellungen_speichern(admin_client):
     url = reverse("ausgabe:einstellungen")
-    assert "Ausgabe und Ampel" in admin_client.get(reverse("core:einstellungen")).content.decode()
+    seite = admin_client.get(reverse("core:einstellungen")).content.decode()
+    assert "Ausgabe, Ampel und Beiträge" in seite and "Beitragsfreie Zeiträume" in seite
     antwort = admin_client.post(
         url,
         {
@@ -229,6 +230,9 @@ def test_einstellungen_speichern(admin_client):
             "max_abholungen": "2",
             "zeitraum": "monat",
             "vorwarnung_tage": "7",
+            "zahlt_ab_alter": "16",
+            "beitrag_je_person": "2,00",
+            "zusatzbeitraege": "on",
             "beitrag_je_abholung": "1,00",
             "beitrag_je_erwachsenem": "0",
             "beitrag_je_kind": "0",
@@ -240,6 +244,7 @@ def test_einstellungen_speichern(admin_client):
     assert (e.max_abholungen, e.zeitraum, e.nicht_dran_rot) == (2, "monat", False)
     assert e.max_je_tag == 2
     assert e.beitrag_je_abholung == Decimal("1.00") and not e.kontostand_anzeigen
+    assert (e.zahlt_ab_alter, e.beitrag_je_person, e.zusatzbeitraege) == (16, Decimal("2"), True)
     assert admin_client.post(url, {"max_abholungen": "32"}).status_code == 200
 
 
@@ -328,3 +333,41 @@ def test_notiz_vorlagen_am_einlass(als, haushalt):
                           **HX).content.decode()  # fmt: skip
     assert "Notiz gespeichert." in inhalt
     assert Notiz.objects.get().text == "Bescheide geprüft, kann verlängert werden"
+
+
+def test_beitrag_ab_alter_und_beitragsfrei(als, haushalt):
+    from apps.ausgabe.models import BeitragsfreierZeitraum
+
+    heute = timezone.localdate()
+    hp = haushalt.personen.get()
+    hp.geburtsdatum = dt.date(1980, 1, 1)
+    hp.save()
+    Person.objects.create(haushalt=haushalt, vorname="Teen", nachname="Muster",
+                          geburtsdatum=dt.date(heute.year - 17, 1, 1))  # fmt: skip
+    Person.objects.create(haushalt=haushalt, vorname="Oma", nachname="Muster")  # ohne Datum
+    e = AusgabeEinstellungen.laden()
+    assert e.beitrag_fuer(haushalt, heute, 18) == Decimal("3.00")  # 2 zahlen, 17-Jährige nicht
+    e.zahlt_ab_alter = 16
+    assert e.beitrag_fuer(haushalt, heute, 18) == Decimal("4.50")
+    z = BeitragsfreierZeitraum.objects.create(bezeichnung="Weihnachten", von=heute,
+                                              bis=heute + dt.timedelta(days=3))  # fmt: skip
+    assert e.beitrag_fuer(haushalt, heute, 18) == Decimal("0.00")
+    assert z.aktiv and str(z).startswith("Weihnachten: ")
+    ausgabe = als(rollen.AUSGABE)
+    inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
+    assert (
+        "Heute beitragsfrei: Weihnachten" in inhalt
+        and 'name="beitrag" id="beitrag" value="0,00"' in inhalt
+    )
+
+
+def test_beitragsfreie_zeitraeume_pflegen(admin_client):
+    from apps.ausgabe.models import BeitragsfreierZeitraum
+
+    url = reverse("kunden:listeneintrag_neu", args=["beitragsfrei"])
+    falsch = admin_client.post(url, {"bezeichnung": "X", "von": "2026-12-20", "bis": "2026-12-01"})
+    assert "nicht vor" in falsch.content.decode()
+    admin_client.post(url, {"bezeichnung": "Weihnachten", "von": "2026-12-01", "bis": "2026-12-24"})
+    assert BeitragsfreierZeitraum.objects.get().bezeichnung == "Weihnachten"
+    liste = admin_client.get(reverse("kunden:liste", args=["beitragsfrei"])).content.decode()
+    assert "Weihnachten: 01.12.2026 bis 24.12.2026" in liste

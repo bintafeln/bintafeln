@@ -388,6 +388,8 @@ def import_vorschau(request, pk):
             },
             "gueltig_bis": vorbereitung.erstellt_am + ImportVorbereitung.GUELTIG,
             "sicherung_frisch": _sicherung_frisch(),
+            "abgleich": importieren.abgleich(daten),
+            "max_abgleich": importieren.MAX_ABGLEICH,
         },
     )
 
@@ -406,18 +408,25 @@ def import_uebernehmen(request, pk):
             "Server „./betrieb sichern“ ausführen.",
         )
         return redirect("kunden:import_vorschau", pk=pk)
+    # Haushalte, die in bintafeln geändert oder aufgenommen wurden: je Haushalt gewählt
+    fragen = {e["kundennummer"] for e in importieren.abgleich(vorbereitung.daten)["fragen"]}
+    behalten = {n for n in fragen if request.POST.get(f"wahl_{n}", "behalten") == "behalten"}
+    if request.POST.get("alle") == "uebernehmen":
+        behalten = set()
     lauf = importieren.uebernehmen(
         vorbereitung.daten,
         benutzer=request.user,
         dateien=vorbereitung.dateien,
         pruefsumme=vorbereitung.pruefsumme,
         anzahl_warnungen=len(vorbereitung.bericht),
+        behalten=behalten,
     )
     vorbereitung.delete()
     messages.success(
         request,
         f"Import abgeschlossen: {lauf.anzahl_haushalte} Haushalte, "
-        f"{lauf.anzahl_personen} Personen.",
+        f"{lauf.anzahl_personen} Personen."
+        + (f" {len(behalten)} Haushalt(e) mit bintafeln-Stand behalten." if behalten else ""),
     )
     return redirect("kunden:uebersicht")
 

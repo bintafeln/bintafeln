@@ -177,6 +177,16 @@ def test_vorschlag_nur_fuer_diesen_monat(freitagsgruppe, einstellungen):
     assert "Höchstens 1 Abholung je Kalenderwoche ist eingehalten." in rest.erklaerung
 
 
+def test_vorschlag_ohne_beitragsfreie_tage(freitagsgruppe, einstellungen):
+    from apps.ausgabe.models import BeitragsfreierZeitraum
+
+    BeitragsfreierZeitraum.objects.create(bezeichnung="Herbst", von=dt.date(2026, 10, 16),
+                                          bis=dt.date(2026, 10, 23))  # fmt: skip
+    rest = konto.vorschlaege(freitagsgruppe, FREITAG, einstellungen, D("1.50"))[0][0]
+    assert len(rest.tage) == 3 and rest.betrag == D("4.50")
+    assert "Nicht gezählt, weil beitragsfrei: 16.10., 23.10." in rest.erklaerung
+
+
 def test_vorschlag_ab_morgen_wenn_heute_abgeholt(freitagsgruppe, einstellungen):
     abholung(freitagsgruppe, FREITAG)
     rest = konto.vorschlaege(freitagsgruppe, FREITAG, einstellungen, D("1"))[0][0]
@@ -279,7 +289,7 @@ def test_empfang_guthaben_teilweise(ausgabe, haushalt):
     haushalt.kontostand = D("2.00")
     haushalt.save()
     e = AusgabeEinstellungen.laden()
-    e.beitrag_je_abholung = D("3")
+    e.beitrag_je_person = D("3")
     e.save()
     inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
     assert 'name="bar" id="bar" value="1,00"' in inhalt  # Rest nach Guthaben vorgeschlagen

@@ -12,7 +12,7 @@ from django.views.decorators.http import require_POST
 
 from apps.ausgabe import ampel, kasse, konto
 from apps.ausgabe.forms import AusgabeEinstellungenForm
-from apps.ausgabe.models import AusgabeEinstellungen, Buchung
+from apps.ausgabe.models import AusgabeEinstellungen, BeitragsfreierZeitraum, Buchung
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.kunden import werte
@@ -62,11 +62,13 @@ def _ergebnis(request, h, meldung=None):
         )
         .get(pk=h.pk)
     )
-    erwachsene, kinder = h.groesse(KundenEinstellungen.laden().kind_bis_alter, heute)
+    kind_bis = KundenEinstellungen.laden().kind_bis_alter
+    erwachsene, kinder = h.groesse(kind_bis, heute)
     bewertung = ampel.bewerten(h, heute, _stelle(request), einstellungen)
     abholungen = list(h.abholungen.all())
-    beitrag = einstellungen.beitrag(erwachsene, kinder)
-    vorschlaege, vorschlag_hinweis = konto.vorschlaege(h, heute, einstellungen, beitrag)
+    beitrag = einstellungen.beitrag_fuer(h, heute, kind_bis)
+    regulaer = einstellungen.beitrag_fuer(h, heute, kind_bis, frei_beachten=False)
+    vorschlaege, vorschlag_hinweis = konto.vorschlaege(h, heute, einstellungen, regulaer)
     return {
         "h": h,
         "hauptperson": next((p for p in h.personen.all() if p.ist_hauptperson), None),
@@ -75,6 +77,7 @@ def _ergebnis(request, h, meldung=None):
         "kinder": kinder,
         "bewertung": bewertung,
         "beitrag": beitrag,
+        "beitragsfrei": BeitragsfreierZeitraum.am(heute),
         "bar_vorschlag": konto.bar_vorschlag(beitrag, h.kontostand),
         "vorschlaege": vorschlaege,
         "vorschlag_hinweis": vorschlag_hinweis,

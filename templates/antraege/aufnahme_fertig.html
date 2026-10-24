@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block titel %}Aufnahme abgeschlossen{% endblock %}
+{% block inhalt %}
+<section class="karte schmal-breit">
+  <p class="danke-zeichen" aria-hidden="true">✓</p>
+  <h1>Kunde {{ h.kundennummer }} aufgenommen</h1>
+  <p>Antrag {{ a.nummer }} ist erledigt und mit dem Kunden verknüpft.</p>
+  <h2>Kundenausweis drucken</h2>
+  <p class="hinweis">Das PDF öffnet sich in einem neuen Fenster. Im Druckdialog den Drucker wählen,
+    z. B. den Kartendrucker, und in <strong>100 % Größe</strong> drucken. Für Kartendrucker unter
+    Einstellungen → Kundenausweis „Kartengröße“ einstellen.</p>
+  <div class="aktionen">
+    <a class="knopf knopf-gross" href="{% url 'kunden:ausweis' h.kundennummer %}" target="_blank" rel="noopener">Ausweis drucken (PDF)</a>
+    <a class="knopf knopf-zweitrangig" href="{% url 'kunden:haushalt' h.kundennummer %}">Zum Kunden</a>
+    <a class="knopf knopf-zweitrangig" href="{% url 'antraege:liste' %}">Zur Antragsliste</a>
+  </div>
+</section>
+{% endblock %}

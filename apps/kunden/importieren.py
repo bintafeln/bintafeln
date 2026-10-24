@@ -722,9 +722,101 @@ def _datum(iso):
     return dt.date.fromisoformat(iso) if iso else None
 
 
+MAX_ABGLEICH = 300  # so viele Haushalte je Gruppe zeigt die Vorschau einzeln
+
+
+def _vergleichswerte_import(h: dict, anzahl_angehoerige: int) -> dict[str, str]:
+    hp = h.get("hauptperson") or {}
+    g = h.get("kundengruppe") or {}
+    return {
+        "Status": h.get("status") or "",
+        "Kundengruppe": g.get("name") or "",
+        "Ausweis gültig bis": h.get("ausweis_gueltig_bis") or "",
+        "Einkommensart": h.get("einkommensart") or "",
+        "Name": f"{hp.get('vorname', '')} {hp.get('nachname', '')}".strip(),
+        "Geburtsdatum": hp.get("geburtsdatum") or "",
+        "Anschrift": " ".join(x for x in (h.get("strasse"), h.get("plz"), h.get("ort")) if x),
+        "Telefon": h.get("telefon") or "",
+        "E-Mail": h.get("email") or "",
+        "Personen": str(1 + anzahl_angehoerige),
+    }
+
+
+def _vergleichswerte_bestand(h: Haushalt) -> dict[str, str]:
+    hp = next((p for p in h.personen.all() if p.ist_hauptperson), None)
+    return {
+        "Status": h.status,
+        "Kundengruppe": h.kundengruppe.name if h.kundengruppe else "",
+        "Ausweis gültig bis": h.ausweis_gueltig_bis.isoformat() if h.ausweis_gueltig_bis else "",
+        "Einkommensart": h.einkommensart.bezeichnung if h.einkommensart else "",
+        "Name": f"{hp.vorname} {hp.nachname}".strip() if hp else "",
+        "Geburtsdatum": hp.geburtsdatum.isoformat() if hp and hp.geburtsdatum else "",
+        "Anschrift": " ".join(x for x in (h.strasse, h.plz, h.ort) if x),
+        "Telefon": h.telefon,
+        "E-Mail": h.email,
+        "Personen": str(len(h.personen.all())),
+    }
+
+
+def abgleich(daten: dict) -> dict:
+    """Was der Import gegenüber dem jetzigen Kundenstamm ändert.
+
+    neu: nur im Import; entfallen: nur im Bestand; geaendert: in beiden, mit Unterschieden je
+    Angabe. „lokal“ heißt: in bintafeln geändert oder aufgenommen; dort fragt die Vorschau,
+    ob der bintafeln-Stand bleiben soll.
+    """
+    angehoerige: dict[str, int] = {}
+    for p in daten["personen"]:
+        angehoerige[p["kundennummer"]] = angehoerige.get(p["kundennummer"], 0) + 1
+    importiert = {h["kundennummer"]: h for h in daten["haushalte"]}
+    bestand = {
+        h.kundennummer: h
+        for h in Haushalt.objects.select_related("kundengruppe", "einkommensart").prefetch_related(
+            "personen"
+        )
+    }
+    ergebnis = {"neu": [], "entfallen": [], "geaendert": [], "unveraendert": 0}
+    for nummer, h in importiert.items():
+        if nummer not in bestand:
+            name = _vergleichswerte_import(h, 0)["Name"]
+            ergebnis["neu"].append({"kundennummer": nummer, "name": name})
+    for nummer, h in bestand.items():
+        lokal = bool(h.geaendert_am or h.aufgenommen_am)
+        alt = _vergleichswerte_bestand(h)
+        eintrag = {"kundennummer": nummer, "name": alt["Name"], "lokal": lokal,
+                   "aufgenommen": bool(h.aufgenommen_am)}  # fmt: skip
+        if nummer not in importiert:
+            ergebnis["entfallen"].append(eintrag)
+            continue
+        neu = _vergleichswerte_import(importiert[nummer], angehoerige.get(nummer, 0))
+        unterschiede = [(k, alt[k], neu[k]) for k in alt if alt[k] != neu[k]]
+        if unterschiede:
+            ergebnis["geaendert"].append({**eintrag, "unterschiede": unterschiede})
+        else:
+            ergebnis["unveraendert"] += 1
+    for liste in ("neu", "entfallen", "geaendert"):
+        ergebnis[liste].sort(key=lambda e: (not e.get("lokal"), e["kundennummer"]))
+    ergebnis["fragen"] = [e for e in ergebnis["entfallen"] + ergebnis["geaendert"] if e["lokal"]]
+    return ergebnis
+
+
+def _ohne(liste: list[dict], nummern: set[str]) -> list[dict]:
+    return [e for e in liste if e.get("kundennummer") not in nummern]
+
+
 @transaction.atomic
-def uebernehmen(daten: dict, *, benutzer, dateien, pruefsumme, anzahl_warnungen) -> ImportLauf:
-    """Ersetzt den gesamten Kundenstamm durch ``daten`` (Ergebnis von ``pruefen``)."""
+def uebernehmen(
+    daten: dict, *, benutzer, dateien, pruefsumme, anzahl_warnungen, behalten=frozenset()
+) -> ImportLauf:
+    """Ersetzt den Kundenstamm durch ``daten`` (Ergebnis von ``pruefen``).
+
+    Haushalte in ``behalten`` (Kundennummern) bleiben mit ihrem bintafeln-Stand stehen; ihre
+    Zeilen aus dem Import werden ausgelassen (Import-Abgleich, ADR 0028).
+    """
+    behalten = set(behalten)
+    if behalten:
+        daten = {k: _ohne(v, behalten) if isinstance(v, list) and k not in (
+            "kundengruppen", "neue_gruppen") else v for k, v in daten.items()}  # fmt: skip
     stellen: dict[str, Ausgabestelle] = {}
 
     def stelle(name):
@@ -737,7 +829,7 @@ def uebernehmen(daten: dict, *, benutzer, dateien, pruefsumme, anzahl_warnungen)
         return stellen[name.lower()]
 
     with disable_auditlog():
-        Haushalt.objects.all().delete()
+        Haushalt.objects.exclude(kundennummer__in=behalten).delete()
 
         for g in daten["kundengruppen"]:
             gruppe = (
@@ -747,9 +839,9 @@ def uebernehmen(daten: dict, *, benutzer, dateien, pruefsumme, anzahl_warnungen)
             )
             # Platzhalter ohne Kürzel mit gleichem Namen (z. B. aus einem früheren Import ohne
             # kundengruppen.csv) weichen; Haushalte hängen zu diesem Zeitpunkt keine mehr daran.
-            Kundengruppe.objects.filter(name__iexact=g["name"], kuerzel="").exclude(
-                pk=gruppe.pk
-            ).delete()
+            Kundengruppe.objects.filter(
+                name__iexact=g["name"], kuerzel="", haushalte__isnull=True
+            ).exclude(pk=gruppe.pk).delete()
             gruppe.kuerzel, gruppe.name = g["kuerzel"], g["name"]
             gruppe.ausgabestelle = stelle(g["ausgabestelle"])
             gruppe.wochentage = g["wochentage"]

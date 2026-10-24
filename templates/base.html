@@ -8,29 +8,16 @@
   {% include "includes/farben.html" %}
   <script src="{% static 'js/htmx.min.js' %}" defer></script>
 </head>
-<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'{% if menue %} class="mit-menue"{% endif %}>
+  {% if menue %}<input type="checkbox" id="menue-schalter" class="menue-schalter" aria-hidden="true" tabindex="-1">{% endif %}
   <header class="kopf">
+    {% if menue %}<label for="menue-schalter" class="menue-knopf" role="button" aria-label="Menü ein- oder ausblenden">☰ Menü</label>{% endif %}
     <a class="marke" href="{% url 'core:start' %}">
       {% if tafel.logo %}<img src="{{ tafel.logo.url }}" alt="" class="logo">{% endif %}
       <span>{{ tafel.name|default:"bintafeln" }}</span>
     </a>
     {% if user.is_authenticated %}
-    <nav class="navigation" aria-label="Hauptnavigation">
-      {% if not zwei_faktor_offen and not passwort_offen %}
-      <a href="{% url 'core:start' %}">Start</a>
-      {% if "Admin" in rollen or "Büro" in rollen or "Ausgabe" in rollen %}<a href="{% url 'ausgabe:empfang' %}">Einlass</a> <a href="{% url 'ausgabe:kasse' %}">Kasse</a>{% endif %}
-      {% if "Admin" in rollen or "Büro" in rollen or "Ausgabe" in rollen %}<a href="{% url 'kunden:uebersicht' %}">Kunden</a>{% endif %}
-      {% if "Admin" in rollen or "Büro" in rollen %}<a href="{% url 'antraege:liste' %}">Anträge</a>{% endif %}
-      {% if darf_mitarbeitende %}<a href="{% url 'konten:mitarbeitende' %}">Mitarbeitende</a>{% endif %}
-      {% if "Admin" in rollen or "Personal" in rollen %}<a href="{% url 'personal:liste' %}">Personal</a>{% endif %}
-      {% if "Admin" in rollen %}
-        <a href="{% url 'core:einstellungen' %}">Einstellungen</a>
-        <a href="{% url 'core:protokoll' %}">Protokoll</a>
-      {% endif %}
-      {% if user.is_staff %}<a href="{% url 'admin:index' %}">Verwaltung</a>{% endif %}
-      {% if darf_stempeln %}<a href="{% url 'personal:meine_arbeitszeit' %}">Meine Arbeitszeit</a>{% endif %}
-      <a href="{% url 'konten:mein_konto' %}">Mein Konto</a>
-      {% endif %}
+    <nav class="navigation" aria-label="Konto">
       <form method="post" action="{% url 'konten:abmelden' %}" class="inline">
         {% csrf_token %}
         <button type="submit" class="link">Abmelden</button>
@@ -40,6 +27,23 @@
   </header>
 
   {% if demo %}<p class="demo-hinweis">Demoversion – alle Daten sind erfunden und werden jede Nacht zurückgesetzt. Bitte keine echten Daten eingeben.</p>{% endif %}
+  <div class="rahmen">
+  {% if menue %}
+  <nav class="seitenmenue" aria-label="Hauptnavigation">
+    {% for bereich in menue %}
+      {% if bereich.einzeln %}{% with e=bereich.eintraege.0 %}
+      <a href="{{ e.url }}" class="menue-oben{% if e.aktiv %} aktiv{% endif %}"{% if e.aktiv %} aria-current="page"{% endif %}>{{ e.titel }}</a>
+      {% endwith %}{% else %}
+      <details class="menue-bereich"{% if bereich.offen %} open{% endif %}>
+        <summary class="menue-oben">{{ bereich.titel }}</summary>
+        <ul>
+          {% for e in bereich.eintraege %}<li><a href="{{ e.url }}"{% if e.aktiv %} class="aktiv" aria-current="page"{% endif %}{% if e.extern %} target="_blank" rel="noopener"{% endif %}>{{ e.titel }}{% if e.extern %} ↗{% endif %}</a></li>{% endfor %}
+        </ul>
+      </details>
+      {% endif %}
+    {% endfor %}
+  </nav>
+  {% endif %}
   <main class="inhalt">
     {% if messages %}
       <ul class="meldungen">
@@ -48,6 +52,7 @@
     {% endif %}
     {% block inhalt %}{% endblock %}
   </main>
+  </div>
 
   <footer class="fuss">
     {% if tafel.anschrift %}<span>{{ tafel.anschrift }}</span>{% endif %}

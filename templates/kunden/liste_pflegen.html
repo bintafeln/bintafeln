@@ -2,12 +2,9 @@
 {% block titel %}{{ titel }}{% endblock %}
 {% block inhalt %}
 <section class="karte">
-  <p><a href="{% url 'kunden:einstellungen' %}">← Einstellungen Kundenstamm</a></p>
   <h1>{{ titel }}</h1>
-  <nav class="reiter" aria-label="Listen">
-    {% for k, werte in listen.items %}<a href="{% url 'kunden:liste' k %}"{% if k == art %} aria-current="page"{% endif %}>{{ werte.2 }}</a>{% endfor %}
-  </nav>
   {% if art == "notizvorlagen" %}<p class="hinweis">Jede aktive Vorlage erscheint am Einlass und auf der Haushaltsseite als Knopf. Ein Klick speichert den Text als Notiz zum Kunden.</p>{% endif %}
+  {% if art == "beitragsfrei" %}<p class="hinweis">In diesen Zeiträumen ist der Beitrag am Einlass 0 €; Vorschläge für Vorauszahlungen zählen diese Tage nicht. Vergangene Zeiträume stehen als „inaktiv“ da.</p>{% endif %}
   {% if art == "kundengruppen" %}<p class="hinweis">Ein Import mit kundengruppen.csv überschreibt Kundengruppen mit gleichem Kürzel.</p>{% endif %}
   <ul>
     {% for e in eintraege %}<li><a href="{% url 'kunden:listeneintrag' art e.pk %}">{{ e }}</a>{% if not e.aktiv %} <span class="marke-warnung">inaktiv</span>{% endif %}</li>{% empty %}<li>Noch keine.</li>{% endfor %}

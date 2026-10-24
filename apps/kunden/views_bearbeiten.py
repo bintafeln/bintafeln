@@ -15,6 +15,8 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.ausgabe import konto
+from apps.ausgabe.forms import BeitragsfreiForm
+from apps.ausgabe.models import BeitragsfreierZeitraum
 from apps.core.models import TafelEinstellungen
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
@@ -219,6 +221,12 @@ LISTEN = {
     "ausgabestellen": (Ausgabestelle, AusgabestelleForm, "Ausgabestellen", "Ausgabestelle"),
     "einkommensarten": (Einkommensart, EinkommensartForm, "Einkommensarten", "Einkommensart"),
     "notizvorlagen": (NotizVorlage, NotizVorlageForm, "Notiz-Vorlagen", "Notiz-Vorlage"),
+    "beitragsfrei": (
+        BeitragsfreierZeitraum,
+        BeitragsfreiForm,
+        "Beitragsfreie Zeiträume",
+        "Beitragsfreier Zeitraum",
+    ),
 }
 
 

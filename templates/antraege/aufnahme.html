@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% load aufnahme_anzeige %}
+{% block titel %}Aufnahme Antrag {{ a.nummer }}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'antraege:antrag' a.pk %}">← Antrag {{ a.nummer }}</a></p>
+  <h1>Aufnahme: Antrag {{ a.nummer }} · {{ a.name }}{% if a.geburtsdatum %}, geb. {{ a.geburtsdatum|date:"d.m.Y" }}{% endif %}</h1>
+  <ol class="schritte">
+    {% for k, titel in schritte %}<li class="{% if k == schritt %}aktuell{% elif forloop.counter < nr %}erledigt{% endif %}">{% if forloop.counter < nr %}<a href="{% url 'antraege:aufnahme_schritt' a.pk k %}">{{ titel }}</a>{% else %}{{ titel }}{% endif %}</li>{% endfor %}
+  </ol>
+  {% if fehler %}<p class="sicherung sicherung-fehler" role="alert">{{ fehler }}</p>{% endif %}
+  {% if h %}<p class="hinweis">Gewählt: bestehender Kunde <a href="{% url 'kunden:haushalt' h.kundennummer %}" target="_blank" rel="noopener">{{ h.kundennummer }}</a>.</p>{% elif "haushalt" in z %}<p class="hinweis">Gewählt: neuer Kunde.</p>{% endif %}
+</section>
+
+<form method="post">
+{% csrf_token %}
+<section class="karte">
+{% if schritt == "kunde" %}
+  <h2>1. Gibt es den Kunden schon?</h2>
+  <p class="hinweis">Gesucht wird auch bei vertauschten Vor- und Nachnamen und Tippfehlern, dazu nach
+    Geburtsdatum und Anschrift. Je höher die Punkte, desto ähnlicher.</p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th></th><th>Punkte</th><th>Kundennummer</th><th>Gefundene Person</th><th>Geburtsdatum</th><th>Anschrift</th><th>Warum</th></tr></thead>
+    <tbody>
+    {% for t in treffer %}
+      <tr>
+        <td><input type="radio" name="haushalt" value="{{ t.haushalt.kundennummer }}" id="t{{ forloop.counter }}"{% if z.haushalt == t.haushalt.kundennummer %} checked{% endif %}></td>
+        <td data-titel="Punkte"><label for="t{{ forloop.counter }}"><strong>{{ t.punkte }}</strong></label></td>
+        <td data-titel="Kundennummer"><a href="{% url 'kunden:haushalt' t.haushalt.kundennummer %}" target="_blank" rel="noopener">{{ t.haushalt.kundennummer }}</a> <small class="hinweis">{{ t.haushalt.get_status_display }}</small></td>
+        <td data-titel="Person">{{ t.person.vorname }} {{ t.person.nachname }}{% if not t.person.ist_hauptperson %} <small class="hinweis">(Angehörige)</small>{% endif %}</td>
+        <td data-titel="Geburtsdatum">{{ t.person.geburtsdatum|date:"d.m.Y"|default:"–" }}</td>
+        <td data-titel="Anschrift">{{ t.haushalt.strasse|default:"–" }}{% if t.haushalt.plz %}, {{ t.haushalt.plz }} {{ t.haushalt.ort }}{% endif %}</td>
+        <td data-titel="Warum">{{ t.gruende|join:", " }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7">Kein ähnlicher Kunde gefunden.</td></tr>
+    {% endfor %}
+      <tr class="zeile-neu">
+        <td><input type="radio" name="haushalt" value="neu" id="t-neu"{% if "haushalt" in z and not z.haushalt %} checked{% elif not treffer %} checked{% endif %}></td>
+        <td colspan="6"><label for="t-neu"><strong>Neuer Kunde</strong> – mit der nächsten freien Kundennummer anlegen</label></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+{% elif schritt == "abgleich" %}
+  <h2>2. Daten abgleichen</h2>
+  {% if neu %}<p class="hinweis">Neuer Kunde: Die Angaben aus dem Antrag werden übernommen. Falsch geschriebene Angaben vorher unter
+    <a href="{% url 'antraege:bearbeiten' a.pk %}">Antrag bearbeiten</a> korrigieren.</p>
+  {% else %}<p class="hinweis">Je Angabe wählen, welcher Wert gilt. Unterschiede sind markiert.</p>{% endif %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle abgleich">
+    <thead><tr><th>Angabe</th>{% if not neu %}<th>Im Kundenstamm</th>{% endif %}<th>Im Antrag</th></tr></thead>
+    <tbody>
+    {% for r in zeilen %}
+      <tr{% if not r.gleich and not neu %} class="unterschied"{% endif %}>
+        <td data-titel="Angabe">{{ r.titel }}</td>
+        {% if neu %}
+        <td data-titel="Im Antrag">{{ r.antrag|datum_de|default:"–" }}</td>
+        {% else %}
+        <td data-titel="Im Kundenstamm"><label><input type="radio" name="wahl_{{ r.feld }}" value="bestand"{% if r.wahl == "bestand" %} checked{% endif %}> {{ r.bestand|datum_de|default:"–" }}</label></td>
+        <td data-titel="Im Antrag"><label><input type="radio" name="wahl_{{ r.feld }}" value="antrag"{% if r.wahl == "antrag" %} checked{% endif %}> {{ r.antrag|datum_de|default:"–" }}</label></td>
+        {% endif %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+{% elif schritt == "personen" %}
+  <h2>3. Angehörige</h2>
+  <p class="hinweis">Aus dem Haushalt und dem Antrag vorausgefüllt. Zeilen ohne Vorname werden ignoriert.</p>
+  <input type="hidden" name="anzahl" value="{{ personen|length }}">
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Vorname</th><th>Nachname</th><th>Geburtsdatum</th><th>Entfernen</th></tr></thead>
+    <tbody>
+    {% for p in personen %}
+      <tr>
+        <td data-titel="Vorname"><input type="hidden" name="p{{ forloop.counter0 }}_pk" value="{{ p.pk|default:'' }}"><input type="text" name="p{{ forloop.counter0 }}_vorname" value="{{ p.vorname }}" maxlength="100" aria-label="Vorname"></td>
+        <td data-titel="Nachname"><input type="text" name="p{{ forloop.counter0 }}_nachname" value="{{ p.nachname }}" maxlength="100" aria-label="Nachname"></td>
+        <td data-titel="Geburtsdatum"><input type="date" name="p{{ forloop.counter0 }}_geburtsdatum" value="{{ p.geburtsdatum }}" aria-label="Geburtsdatum"></td>
+        <td data-titel="Entfernen">{% if p.vorname %}<input type="checkbox" name="p{{ forloop.counter0 }}_weg" aria-label="{{ p.vorname }} entfernen">{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+{% elif schritt == "bescheid" %}
+  <h2>4. Bescheid und Gültigkeit des Ausweises</h2>
+  <div class="formular-raster">
+    <div class="feld">
+      <label for="einkommensart">Bescheidart</label>
+      <select name="einkommensart" id="einkommensart">
+        <option value="">– kein Bescheid –</option>
+        {% for art in arten %}<option value="{{ art.pk }}"{% if art.pk == art_gewaehlt %} selected{% endif %}>{{ art.bezeichnung }}</option>{% endfor %}
+      </select>
+      <small class="hilfe">Die Liste pflegt der Admin unter Einstellungen → Einkommensarten.</small>
+    </div>
+    <div class="feld">
+      <label for="gueltig_bis">Ausweis gültig bis</label>
+      <select name="gueltig_bis" id="gueltig_bis">
+        {% for wert, titel in gueltigkeiten %}<option value="{{ wert }}"{% if wert == gueltig_gewaehlt %} selected{% endif %}>{{ titel }}</option>{% endfor %}
+        <option value="eigenes"{% if gueltig_eigen %} selected{% endif %}>eigenes Datum …</option>
+      </select>
+      <small class="hilfe">Gilt nur mit Bescheidart.{% if bisher_gueltig %} Bisher gültig bis {{ bisher_gueltig|date:"d.m.Y" }}.{% endif %} Den Vorschlag stellt der Admin unter Einstellungen → Kundenstamm ein.</small>
+    </div>
+    <div class="feld">
+      <label for="gueltig_eigenes">Eigenes Datum</label>
+      <input type="date" name="gueltig_eigenes" id="gueltig_eigenes" value="{{ gueltig_gewaehlt }}">
+      <small class="hilfe">Nur bei „eigenes Datum …“.</small>
+    </div>
+  </div>
+
+{% elif schritt == "gruppe" %}
+  <h2>5. Ausgabestelle und Kundengruppe</h2>
+  <p class="hinweis">Angeboten werden nur Gruppen mit freiem Platz (gezählt in Haushalten).
+    {% if wunsch or wunsch_tage %}Wunsch laut Antrag: {{ wunsch|default:"Ausgabestelle egal" }}{% if wunsch_tage %}, {{ wunsch_tage }}{% endif %}.{% endif %}</p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th></th><th>Ausgabestelle</th><th>Kundengruppe</th><th>Termin</th><th>Belegt</th><th>Frei</th></tr></thead>
+    <tbody>
+    {% for g in gruppen %}
+      <tr{% if wunsch and g.gruppe.ausgabestelle.name == wunsch %} class="wunsch"{% endif %}>
+        <td><input type="radio" name="kundengruppe" value="{{ g.gruppe.pk }}" id="g{{ g.gruppe.pk }}"{% if g.gruppe.pk == gruppe_gewaehlt %} checked{% endif %}></td>
+        <td data-titel="Ausgabestelle"><label for="g{{ g.gruppe.pk }}">{{ g.gruppe.ausgabestelle.name|default:"–" }}</label></td>
+        <td data-titel="Kundengruppe"><label for="g{{ g.gruppe.pk }}">{{ g.gruppe.name }}</label>{% if g.eigene %} <small class="hinweis">(bisherige)</small>{% endif %}</td>
+        <td data-titel="Termin">{{ g.gruppe.wochentage|default:"–" }}{% if g.gruppe.uhrzeit %} {{ g.gruppe.uhrzeit|time:"H:i" }}{% endif %}</td>
+        <td data-titel="Belegt">{{ g.belegt }}{% if g.gruppe.maximum is not None %} von {{ g.gruppe.maximum }}{% endif %}</td>
+        <td data-titel="Frei">{% if g.frei is None %}unbegrenzt{% else %}{{ g.frei }}{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6">Keine Kundengruppe mit freiem Platz.</td></tr>
+    {% endfor %}
+      <tr><td><input type="radio" name="kundengruppe" value="" id="g-keine"{% if not gruppe_gewaehlt %} checked{% endif %}></td><td colspan="5"><label for="g-keine">noch keine Gruppe (später zuordnen)</label></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+{% elif schritt == "pruefen" %}
+  <h2>6. Prüfen und speichern</h2>
+  <div class="seiten-raster">
+    <div>
+      <h3>{% if h %}Kunde {{ h.kundennummer }} wird aktualisiert{% else %}Neuer Kunde, Kundennummer {{ naechste_nummer }}{% endif %}</h3>
+      <dl class="angaben">{% for titel, wert in felder %}<dt>{{ titel }}</dt><dd>{{ wert|datum_de|default:"–" }}</dd>{% endfor %}</dl>
+    </div>
+    <div>
+      <h3>Angehörige</h3>
+      {% for p in personen_liste %}{% if forloop.first %}<ul>{% endif %}<li>{{ p.vorname }} {{ p.nachname }}{% if p.geburtsdatum %}, geb. {{ p.geburtsdatum|datum_de }}{% endif %}</li>{% if forloop.last %}</ul>{% endif %}{% empty %}<p>Keine.</p>{% endfor %}
+      <h3>Bescheid und Gruppe</h3>
+      <dl class="angaben">
+        <dt>Bescheidart</dt><dd>{{ art.bezeichnung|default:"–" }}</dd>
+        <dt>Ausweis gültig bis</dt><dd>{{ z.gueltig_bis|datum_de|default:"unverändert" }}</dd>
+        <dt>Kundengruppe</dt><dd>{% if gruppe %}{{ gruppe.ausgabestelle.name|default:"" }} · {{ gruppe.name }}{% else %}–{% endif %}</dd>
+      </dl>
+    </div>
+  </div>
+  <p class="hinweis">Mit dem Speichern wird der Antrag erledigt und mit dem Kunden verknüpft. Danach geht es zum Ausweisdruck.</p>
+{% endif %}
+</section>
+<div class="aktionen">
+  <button type="submit" class="knopf">{% if schritt == "pruefen" %}Aufnehmen und speichern{% else %}Weiter{% endif %}</button>
+  <a class="knopf knopf-zweitrangig" href="{% url 'antraege:antrag' a.pk %}">Abbrechen</a>
+</div>
+</form>
+{% endblock %}

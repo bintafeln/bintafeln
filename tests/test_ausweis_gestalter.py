@@ -137,3 +137,14 @@ def test_sammeldruck_nicht_fuer_ausgabe(client, admin, benutzer_mit_rolle, anmel
     assert client.get(reverse("kunden:ausweise")).status_code == 403
     seite = client.get(reverse("kunden:uebersicht")).content.decode()
     assert "Ausweise dieser" not in seite
+
+
+def test_personen_und_minderjaehrige(gruppe):
+    from apps.core.models import TafelEinstellungen
+
+    h = Haushalt.objects.get(kundennummer="A-1")
+    fuenf = dt.date(dt.date.today().year - 5, 1, 1)
+    Person.objects.create(haushalt=h, vorname="Kind", nachname="Test", geburtsdatum=fuenf)
+    w = ausweis.werte(h, TafelEinstellungen.laden(), AusweisVorlage.laden())
+    assert w["personen_kinder"] == "2/1" and w["personen"] == "2 Personen"
+    assert ausweis.BEISPIEL["personen_kinder"] == "6/3"

@@ -30,6 +30,7 @@ def test_einstellungen_speichern(admin_client):
             "telefon_erfassen": "on",
             "bemerkungen_importieren": "on",
             "kind_bis_alter": "16",
+            "ausweis_gueltig_monate": "6",
             "abholungen_aufbewahren_jahre": "2",
             "zugriffe_aufbewahren_tage": "90",
         },
@@ -37,6 +38,7 @@ def test_einstellungen_speichern(admin_client):
     assert antwort.status_code == 302
     e = KundenEinstellungen.laden()
     assert e.telefon_erfassen and e.bemerkungen_importieren
+    assert e.ausweis_gueltig_monate == 6 and not e.ausweis_bis_monatsende
     assert not e.email_erfassen
     assert e.kind_bis_alter == 16
     assert e.abholungen_aufbewahren_jahre == 2

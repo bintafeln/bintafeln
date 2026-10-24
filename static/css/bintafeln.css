@@ -109,7 +109,7 @@ h1 { font-size: 1.5rem; margin: .25rem 0 1rem; }
 .logo-vorschau { max-height: 5rem; margin-bottom: 1rem; }
 
 .filter { display: flex; flex-direction: column; gap: .25rem; margin-bottom: 1rem; }
-.tabelle-rahmen { overflow-x: auto; }
+.tabelle-rahmen { overflow-x: auto; position: relative; }
 .tabelle { width: 100%; border-collapse: collapse; font-size: .95rem; }
 .tabelle th, .tabelle td { text-align: left; padding: .5rem; border-bottom: 1px solid var(--rand); vertical-align: top; }
 .aenderungen { margin: 0; padding-left: 1rem; }
@@ -408,3 +408,78 @@ textarea.html-eingabe { font-family: ui-monospace, Menlo, Consolas, monospace; f
 .aktionsleiste .knopf { width: auto; }
 .kopf-meldung { flex-basis: 100%; margin: 0; }
 a.knopf-gefahr { color: #fff; }
+
+/* Menü links: aufklappbare Bereiche; auf schmalen Bildschirmen über „☰ Menü“ */
+.rahmen { flex: 1; display: flex; align-items: stretch; min-width: 0; }
+.rahmen > .inhalt { min-width: 0; }
+.angemeldet { opacity: .9; font-size: .95rem; }
+.menue-schalter { position: absolute; opacity: 0; pointer-events: none; }
+.menue-knopf {
+  display: none; cursor: pointer; font-weight: 700; padding: .35rem .75rem;
+  border: 2px solid var(--auf-akzent); border-radius: var(--radius);
+}
+.seitenmenue {
+  flex: 0 0 15rem; background: var(--flaeche); border-right: 1px solid var(--rand);
+  padding: .75rem 0; position: sticky; top: 0; align-self: flex-start;
+  max-height: 100vh; overflow-y: auto;
+}
+.seitenmenue a { color: var(--text); text-decoration: none; display: block; }
+.menue-oben { display: block; padding: .55rem 1.25rem; font-weight: 700; cursor: pointer; }
+.menue-bereich summary { list-style: none; position: relative; }
+.menue-bereich summary::-webkit-details-marker { display: none; }
+.menue-bereich summary::after { content: "›"; position: absolute; right: 1.25rem; transition: transform .15s; }
+.menue-bereich[open] summary::after { transform: rotate(90deg); }
+.seitenmenue ul { list-style: none; margin: 0 0 .5rem; padding: 0; }
+.seitenmenue li a { padding: .4rem 1.25rem .4rem 2rem; font-size: .97rem; }
+.seitenmenue a:hover, .menue-oben:hover { background: var(--erfolg); }
+.seitenmenue a.aktiv { background: var(--erfolg); border-left: 4px solid var(--akzent); font-weight: 600; }
+.seitenmenue li a.aktiv { padding-left: calc(2rem - 4px); }
+.seitenmenue a.menue-oben.aktiv { padding-left: calc(1.25rem - 4px); }
+@media (max-width: 63.99rem) {
+  .menue-knopf { display: inline-block; }
+  .rahmen { position: relative; }
+  .seitenmenue {
+    display: none; position: absolute; z-index: 20; left: 0; top: 0; width: min(20rem, 90vw);
+    max-height: none; box-shadow: 4px 0 16px rgba(0, 0, 0, .2);
+  }
+  .menue-schalter:checked ~ .rahmen .seitenmenue { display: block; }
+}
+
+/* Antragsliste */
+.liste-kopf { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; }
+.liste-kopf h1 { margin: 0; }
+.liste-filter .suche { flex: 1 1 18rem; }
+.sortieren { color: var(--text); text-decoration: none; white-space: nowrap; }
+.sortieren::after { content: " ↕"; color: var(--leise); font-weight: 400; }
+.sortieren.auf::after { content: " ▲"; color: var(--akzent-dunkel); }
+.sortieren.ab::after { content: " ▼"; color: var(--akzent-dunkel); }
+.antraege-liste td { white-space: nowrap; }
+.antraege-liste td[data-titel="Anmerkung"] { white-space: normal; min-width: 10rem; }
+.zeilen-aktionen { display: flex; gap: .25rem; }
+.symbol {
+  display: inline-flex; align-items: center; justify-content: center; width: 2.1rem; height: 2.1rem;
+  border: 1px solid var(--rand); border-radius: 6px; background: var(--flaeche); color: var(--text);
+  text-decoration: none; font: inherit; cursor: pointer; padding: 0;
+}
+.symbol:hover { background: var(--erfolg); }
+.symbol.gefahr:hover { background: #f8e1e1; }
+.symbol.aufnehmen { background: var(--akzent); color: var(--auf-akzent); border-color: var(--akzent); font-weight: 700; }
+.status { border-radius: 999px; padding: .1rem .5rem; font-size: .85rem; background: var(--erfolg); }
+.status-in_bearbeitung { background: #fff6dc; }
+.status-erledigt, .status-abgelehnt { background: #eee; }
+.blaettern { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: .75rem; }
+
+/* Aufnahme-Assistent */
+.schritte { display: flex; flex-wrap: wrap; gap: .4rem; list-style: none; padding: 0; margin: .5rem 0 0; counter-reset: s; }
+.schritte li { counter-increment: s; padding: .35rem .8rem; border-radius: 999px; background: var(--grund); border: 1px solid var(--rand); font-size: .95rem; }
+.schritte li::before { content: counter(s) ". "; font-weight: 700; }
+.schritte li.aktuell { background: var(--akzent); color: var(--auf-akzent); border-color: var(--akzent); font-weight: 600; }
+.schritte li.erledigt { background: var(--erfolg); }
+.abgleich tr.unterschied td { background: #fff6dc; }
+.abgleich label { display: flex; gap: .5rem; align-items: center; cursor: pointer; }
+tr.wunsch td { background: var(--erfolg); }
+.zeile-neu td { background: var(--grund); }
+.abgleich-gruppe { margin: .75rem 0; }
+.abgleich-gruppe summary { cursor: pointer; padding: .35rem 0; }
+tr.unterschied td { background: #fff6dc; }
+label.wahl { display: block; white-space: nowrap; }

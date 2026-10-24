@@ -5,7 +5,9 @@ from types import SimpleNamespace
 
 from auditlog.signals import accessed
 from django.contrib import messages
-from django.db.models import Q
+from django.core.paginator import Paginator
+from django.db import transaction
+from django.db.models import OuterRef, Q, Subquery
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -14,7 +16,12 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from apps.antraege import auskunft, sprachen
-from apps.antraege.forms import EinstellungenForm, TextForm
+from apps.antraege.forms import (
+    AntragBearbeitenForm,
+    AntragPersonenFormset,
+    EinstellungenForm,
+    TextForm,
+)
 from apps.antraege.models import (
     ANHANG_ORDNER,
     Antrag,
@@ -32,9 +39,15 @@ bearbeiter = rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
 
 ANSICHTEN = {
     "offen": ("Offen", Q(status__in=Antrag.OFFEN, papierkorb_am__isnull=True)),
-    "abgeschlossen": ("Abgeschlossen", Q(papierkorb_am__isnull=True) & ~Q(status__in=Antrag.OFFEN)),
     "papierkorb": ("Papierkorb", Q(papierkorb_am__isnull=False)),
 }
+# Spalte in der Adresse → Sortierfeld; Standard: neueste zuerst
+SORTIERUNG = {
+    "nummer": "laufnummer", "status": "status", "kundennummer": "kundennummer",
+    "nachname": "nachname", "vorname": "vorname", "eingang": "eingegangen_am", "email": "email",
+    "telefon": "telefon", "art": "art", "staat": "staatsangehoerigkeit",
+}  # fmt: skip
+ZEILEN = ["25", "50", "100", "alle"]
 
 
 def _gefiltert(request):
@@ -43,29 +56,71 @@ def _gefiltert(request):
         ansicht = "offen"
     antraege = Antrag.objects.filter(ANSICHTEN[ansicht][1])
     suche = request.GET.get("suche", "").strip()
-    if suche:
-        teile = Q(vorname__icontains=suche) | Q(nachname__icontains=suche)
-        teile |= Q(kundennummer__iexact=suche) | Q(email__iexact=suche)
-        if "-" in suche and suche.rsplit("-", 1)[1].isdigit():
-            teile |= Q(pk=int(suche.rsplit("-", 1)[1]))
+    for wort in suche.split():
+        teile = Q(vorname__icontains=wort) | Q(nachname__icontains=wort)
+        teile |= Q(kundennummer__iexact=wort) | Q(email__icontains=wort)
+        teile |= Q(telefon__icontains=wort) | Q(staatsangehoerigkeit__icontains=wort)
+        if wort.isdigit():
+            teile |= Q(laufnummer=int(wort))
         antraege = antraege.filter(teile)
     return ansicht, suche, antraege
+
+
+def _sortiert(request, antraege):
+    sort = request.GET.get("sort", "-nummer")
+    feld = SORTIERUNG.get(sort.lstrip("-"))
+    if not feld:
+        sort, feld = "-nummer", "laufnummer"
+    return sort, antraege.order_by(("-" if sort.startswith("-") else "") + feld, "-pk")
 
 
 @bearbeiter
 def liste(request):
     ansicht, suche, antraege = _gefiltert(request)
+    sort, antraege = _sortiert(request, antraege)
+    zeilen = request.GET.get("zeilen", "25")
+    if zeilen not in ZEILEN:
+        zeilen = "25"
+    letzte = AntragAnmerkung.objects.filter(antrag=OuterRef("pk")).order_by("-zeitpunkt")
+    antraege = antraege.annotate(kommentar=Subquery(letzte.values("text")[:1]))
+    seite = Paginator(antraege, 10**9 if zeilen == "alle" else int(zeilen)).get_page(
+        request.GET.get("seite")
+    )
+    spalten = [("nummer", "#"), ("status", "Status"), ("kundennummer", "Kundennummer"),
+               ("nachname", "Nachname"), ("vorname", "Vorname"), ("eingang", "Antrag vom"),
+               ("email", "E-Mail"), ("telefon", "Telefon"), ("art", "Art"),
+               ("staat", "Staatsangehörigkeit")]  # fmt: skip
     return render(
         request,
         "antraege/liste.html",
         {
-            "antraege": antraege.prefetch_related("personen"),
+            "seite": seite,
             "ansicht": ansicht,
             "ansichten": [(k, name) for k, (name, _) in ANSICHTEN.items()],
             "suche": suche,
+            "sort": sort,
+            "zeilen": zeilen,
+            "zeilen_auswahl": ZEILEN,
+            "spalten": spalten,
             "offen_gesamt": Antrag.objects.filter(ANSICHTEN["offen"][1]).count(),
         },
     )
+
+
+@bearbeiter
+def bearbeiten(request, pk):
+    a = get_object_or_404(Antrag, pk=pk)
+    form = AntragBearbeitenForm(request.POST or None, instance=a)
+    personen = AntragPersonenFormset(request.POST or None, instance=a, prefix="p")
+    if request.method == "POST" and form.is_valid() and personen.is_valid():
+        with transaction.atomic():
+            a = form.save(commit=False)
+            a.bearbeitet_von = request.user.get_username()
+            a.save()
+            personen.save()
+        messages.success(request, f"Antrag {a.nummer} gespeichert.")
+        return redirect("antraege:antrag", pk=a.pk)
+    return render(request, "antraege/bearbeiten.html", {"a": a, "form": form, "personen": personen})
 
 
 @bearbeiter
@@ -115,9 +170,11 @@ def papierkorb(request, pk):
     a.bearbeitet_von = request.user.get_username()
     a.save()
     if a.papierkorb_am:
-        messages.success(request, "In den Papierkorb gelegt.")
+        messages.success(request, f"Antrag {a.nummer} in den Papierkorb gelegt.")
     else:
-        messages.success(request, "Aus dem Papierkorb geholt.")
+        messages.success(request, f"Antrag {a.nummer} aus dem Papierkorb geholt.")
+    if request.POST.get("zurueck") == "liste":
+        return redirect("antraege:liste")
     return redirect("antraege:antrag", pk=a.pk)
 
 
@@ -181,6 +238,7 @@ def _wert(a, spalte):
 def export(request):
     """CSV der angezeigten Anträge in Eingangsreihenfolge, z. B. für die Warteliste."""
     ansicht, _, antraege = _gefiltert(request)
+    _, antraege = _sortiert(request, antraege)
     antwort = HttpResponse(content_type="text/csv; charset=utf-8")
     antwort["Content-Disposition"] = (
         f'attachment; filename="antraege-{ansicht}-{timezone.localdate():%Y-%m-%d}.csv"'
@@ -236,7 +294,7 @@ def vorschau(request, eigene: AntragText) -> dict:
     from apps.antraege import views_oeffentlich as oe
 
     kontext = {**oe._kontext(eigene.sprache), "eigene": eigene}
-    beispiel = SimpleNamespace(nummer="2026-00001", vorname="Erika", nachname="Beispiel")
+    beispiel = SimpleNamespace(nummer="4201", vorname="Erika", nachname="Beispiel")
     betreff, _, mail_html = oe.antwortmail(request, beispiel, kontext)
     return {
         "ueberschrift": oe._ueberschrift(kontext),

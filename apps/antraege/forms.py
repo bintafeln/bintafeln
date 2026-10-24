@@ -15,7 +15,7 @@ from apps.antraege.models import (
 )
 from apps.ausgabe.ampel import WOCHENTAGE
 from apps.core import privatdateien
-from apps.core.auswahl import ANREDEN, FAMILIENSTAENDE, staatsangehoerigkeiten
+from apps.core.auswahl import ANREDEN, FAMILIENSTAENDE, mit_vorhandenem, staatsangehoerigkeiten
 from apps.core.forms import StaatAuswahl
 from apps.konten.forms import DatumEingabe
 from apps.kunden.models import Ausgabestelle
@@ -233,7 +233,8 @@ class EinstellungenForm(forms.ModelForm):
     class Meta:
         model = AntragEinstellungen
         fields = [
-            "aktiv", "modus", *AntragEinstellungen.FELDER, "datenschutz_url", "impressum_url",
+            "aktiv", "modus", "erste_nummer", *AntragEinstellungen.FELDER, "datenschutz_url",
+            "impressum_url",
             "erklaerungen_url", "voraussetzungen_url", "eigenes_css", "benachrichtigen",
             "erledigt_nach_tagen", "papierkorb_nach_tagen", "loeschen_nach_tagen",
         ]  # fmt: skip
@@ -275,3 +276,43 @@ class TextForm(forms.ModelForm):
             "Antragsnummer, Text nach dem Absenden, Gruß). Platzhalter: {vorname}, {nachname}, "
             "{nummer}, {tafel}.",
         }
+
+
+class AntragBearbeitenForm(forms.ModelForm):
+    """Angaben eines Antrags korrigieren (Büro, Admin); Auswahl statt Freitext wie im Formular."""
+
+    anrede = forms.ChoiceField(label="Anrede", required=False, choices=ANREDEN)
+    familienstand = forms.ChoiceField(label="Familienstand", required=False)
+    staatsangehoerigkeit = forms.ChoiceField(
+        label="Staatsangehörigkeit", required=False, widget=StaatAuswahl
+    )
+
+    class Meta:
+        model = Antrag
+        fields = [
+            "art", "kundennummer", "anrede", "vorname", "nachname", "geburtsdatum", "strasse",
+            "plz", "ort", "telefon", "email", "familienstand", "staatsangehoerigkeit",
+            "wochentage", "ausgabestelle", "nachricht",
+        ]  # fmt: skip
+        widgets = {"geburtsdatum": DatumEingabe(), "nachricht": forms.Textarea(attrs={"rows": 3})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        a = self.instance
+        self.fields["anrede"].choices = mit_vorhandenem(ANREDEN, a.anrede)
+        self.fields["familienstand"].choices = mit_vorhandenem(
+            [("", "—")] + [(f, f) for f in FAMILIENSTAENDE], a.familienstand
+        )
+        self.fields["staatsangehoerigkeit"].choices = mit_vorhandenem(
+            staatsangehoerigkeiten(), a.staatsangehoerigkeit
+        )
+
+
+AntragPersonenFormset = forms.inlineformset_factory(
+    Antrag,
+    AntragPerson,
+    fields=["vorname", "nachname", "geburtsdatum"],
+    widgets={"geburtsdatum": DatumEingabe()},
+    extra=2,
+    can_delete=True,
+)
