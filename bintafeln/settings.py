@@ -17,6 +17,11 @@ DEBUG = umgebung.schalter("DJANGO_DEBUG", False)
 DOMAIN = umgebung.text("BINTAFELN_DOMAIN", "")
 PRODUKTION = bool(DOMAIN)
 
+# Öffentliche Demo mit erfundenen Daten (ADR 0022): Hinweis auf jeder Seite, Zugangsdaten auf
+# der Anmeldeseite, `manage.py demo_zuruecksetzen` erlaubt.
+DEMO = umgebung.schalter("BINTAFELN_DEMO", False)
+DEMO_PASSWORT = umgebung.text("BINTAFELN_DEMO_PASSWORT", "")
+
 if PRODUKTION:
     ALLOWED_HOSTS = umgebung.liste("DJANGO_ALLOWED_HOSTS", [DOMAIN])
     CSRF_TRUSTED_ORIGINS = umgebung.liste("DJANGO_CSRF_TRUSTED_ORIGINS", [f"https://{DOMAIN}"])

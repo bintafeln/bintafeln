@@ -78,7 +78,14 @@ EOF
     docker compose up -d
 }
 
+# Neueste Version (Tag der Form JJJJ.M.N, siehe ADR 0023); leer, wenn es noch keine gibt.
+neueste_version() {
+    git tag --list | grep -E '^[0-9]{4}\.[0-9]{1,2}\.[0-9]+$' | sort -V | tail -n 1 || true
+}
+
 befehl_update() {
+    local ziel="${1:-}"
+    [[ -z "$ziel" || "$ziel" == main ]] || fehler "Unbekannte Angabe '$ziel'. Möglich: ./betrieb update [main]"
     [[ -f .env ]] || fehler "Keine .env gefunden. Zuerst die Installation laut README durchführen."
     hinweis "Sicherung vor dem Update"
     if schluessel_eingetragen; then
@@ -88,12 +95,28 @@ befehl_update() {
         nachfragen "Ohne Sicherung fortfahren?" || exit 1
     fi
     hinweis "Neuen Stand holen"
-    git pull --ff-only
+    git fetch --quiet --tags --force origin
+    local version=""
+    [[ "$ziel" == main ]] || version=$(neueste_version)
+    if [[ -n "$version" ]]; then
+        echo "Neueste Version: $version"
+        # Nie zurück auf einen älteren Stand: die Datenbank ist schon weiter migriert.
+        git merge-base --is-ancestor HEAD "$version" \
+            || fehler "Der installierte Stand ist neuer als Version $version. Weiter mit: ./betrieb update main"
+        git checkout --quiet "$version"
+    else
+        [[ "$ziel" == main ]] || echo "Noch keine Version veröffentlicht, nehme den Stand von main."
+        git checkout --quiet main
+        git pull --ff-only origin main
+    fi
     # Die übrigen Schritte führt die gerade geholte Fassung dieses Skripts aus.
     exec ./betrieb _update_fortsetzen
 }
 
 befehl_update_fortsetzen() {
+    # Die Anwendung zeigt diese Angabe Admins in der Fußzeile.
+    git describe --tags --exact-match 2>/dev/null > VERSION \
+        || printf 'main-%s\n' "$(git rev-parse --short HEAD)" > VERSION
     hinweis "Images aktualisieren und neu bauen"
     docker compose pull db proxy
     docker compose build --pull
@@ -160,6 +183,8 @@ EOF
 }
 
 befehl_status() {
+    hinweis "Version"
+    if [[ -f VERSION ]]; then sed 's/^/  /' VERSION; else echo "  unbekannt (erst nach ./betrieb update)"; fi
     hinweis "Dienste"
     docker compose ps
     local pfad
@@ -183,7 +208,8 @@ befehl_hilfe() {
     cat <<'EOF'
 Betriebswerkzeug für bintafeln
 
-  ./betrieb update                     sichern, neuen Stand holen, neu bauen und starten
+  ./betrieb update                     sichern, neueste Version holen, neu bauen und starten
+  ./betrieb update main                dasselbe mit dem neuesten Entwicklungsstand (zum Testen)
   ./betrieb sichern                    sofort eine Sicherung erstellen
   ./betrieb schluessel                 Schlüsselpaar für die Sicherungen erzeugen
   ./betrieb wiederherstellen NAME [--schluessel DATEI] [--ja]
@@ -197,7 +223,7 @@ main() {
     local befehl="${1:-hilfe}"
     shift || true
     case "$befehl" in
-        update) befehl_update ;;
+        update) befehl_update "$@" ;;
         _update_fortsetzen) befehl_update_fortsetzen ;;
         sichern) befehl_sichern ;;
         schluessel) befehl_schluessel ;;

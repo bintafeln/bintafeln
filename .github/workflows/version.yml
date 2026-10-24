@@ -1,0 +1,35 @@
+# Vergibt nach jedem Merge auf main die nächste Version JJJJ.M.N und legt ein GitHub-Release
+# an (ADR 0023). N zählt je Monat ab 1. Monat und Jahr nach deutscher Zeit.
+name: Version
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: version
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Nächste Version bestimmen
+        id: version
+        run: |
+          set -euo pipefail
+          monat=$(TZ=Europe/Berlin date +%Y.%-m)
+          letzte=$(git tag --list "$monat.*" | grep -E "^${monat//./\\.}\.[0-9]+$" \
+            | sed "s/^$monat\.//" | sort -n | tail -n 1 || true)
+          echo "tag=$monat.$(( ${letzte:-0} + 1 ))" >> "$GITHUB_OUTPUT"
+      - name: Release anlegen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --generate-notes

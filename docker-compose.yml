@@ -20,7 +20,8 @@ services:
 
   app:
     build: .
-    image: bintafeln:lokal
+    # Je Installation ein eigenes Abbild, falls mehrere auf einem Server laufen (ADR 0022).
+    image: ${COMPOSE_PROJECT_NAME:-bintafeln}:lokal
     restart: unless-stopped
     depends_on:
       db:
@@ -33,6 +34,8 @@ services:
       BINTAFELN_DOMAIN: ${BINTAFELN_DOMAIN:-}
       BINTAFELN_ZEITZONE: ${BINTAFELN_ZEITZONE:-Europe/Berlin}
       BINTAFELN_LOGLEVEL: ${BINTAFELN_LOGLEVEL:-INFO}
+      BINTAFELN_DEMO: ${BINTAFELN_DEMO:-false}
+      BINTAFELN_DEMO_PASSWORT: ${BINTAFELN_DEMO_PASSWORT:-}
       POSTGRES_DB: ${POSTGRES_DB:-bintafeln}
       POSTGRES_USER: ${POSTGRES_USER:-bintafeln}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -46,7 +49,7 @@ services:
 
   backup:
     build: docker/backup
-    image: bintafeln-backup:lokal
+    image: ${COMPOSE_PROJECT_NAME:-bintafeln}-backup:lokal
     restart: unless-stopped
     depends_on:
       db:

@@ -1,6 +1,9 @@
+from django.conf import settings
+
 from apps.core.models import TafelEinstellungen
 from apps.konten.rollen import ALLE, darf_mitarbeitende_verwalten, rollen_von
 from apps.konten.zwei_faktor import ist_pflicht
+from bintafeln.version import version
 
 
 def _darf_stempeln(benutzer) -> bool:
@@ -24,4 +27,6 @@ def tafel(request):
         "darf_mitarbeitende": angemeldet and darf_mitarbeitende_verwalten(benutzer),
         "passwort_offen": angemeldet and benutzer.passwort_aendern,
         "darf_stempeln": angemeldet and _darf_stempeln(benutzer),
+        "demo": settings.DEMO,
+        "version": version(),
     }

@@ -16,6 +16,7 @@ from apps.core.forms import EinrichtungForm, EinstellungenForm, MailEinstellunge
 from apps.core.middleware import admin_existiert
 from apps.core.models import MailEinstellungen, TafelEinstellungen
 from apps.konten import personal, rollen
+from apps.konten.views import nicht_in_demo
 
 
 def healthz(request):
@@ -82,6 +83,7 @@ def einstellungen(request):
 
 @never_cache
 @rollen.rolle_erforderlich(rollen.ADMIN)
+@nicht_in_demo
 @sensitive_post_parameters("passwort")
 def mail_einstellungen(request):
     instanz = MailEinstellungen.laden()
