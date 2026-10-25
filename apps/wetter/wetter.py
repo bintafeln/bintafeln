@@ -103,6 +103,20 @@ def _abrufen(stand: WetterStand, stelle) -> None:
     stand.tag = bool(jetzt.get("is_day", 1))
 
 
+def anzeige(benutzer) -> dict:
+    """Für die Kopfzeile: {"wetter": …} oder {"grund": …}, warum nichts angezeigt wird."""
+    stelle = stelle_fuer(benutzer)
+    if stelle is None:
+        return {"grund": "Keine aktive Ausgabestelle mit PLZ oder Ort – bitte unter "
+                         "Einstellungen → Ausgabestellen eintragen."}  # fmt: skip
+    daten = aktuell(stelle)
+    if daten:
+        return {"wetter": daten}
+    stand = WetterStand.objects.filter(ausgabestelle=stelle).first()
+    grund = stand.fehler if stand and stand.fehler else "Noch kein aktuelles Wetter abgerufen."
+    return {"grund": f"Wetter für {stelle.name}: {grund}"}
+
+
 def aktuell(stelle) -> dict | None:
     """Wetter für die Kopfzeile oder None (keine Anschrift, Dienst nicht erreichbar)."""
     if stelle is None or not ort_von(stelle):
@@ -112,15 +126,24 @@ def aktuell(stelle) -> dict | None:
     if stand.ort != ort_von(stelle):
         stand.ort, stand.breite, stand.laenge = ort_von(stelle), None, None
         stand.temperatur = stand.code = stand.abgerufen_am = stand.fehler_am = None
+        stand.fehler = ""
     frisch = stand.abgerufen_am and jetzt - stand.abgerufen_am < GUELTIG
     pause = stand.fehler_am and jetzt - stand.fehler_am < PAUSE
     if not frisch and not pause:
         try:
             _abrufen(stand, stelle)
-            stand.abgerufen_am, stand.fehler_am = jetzt, None
-        except (OSError, ValueError, KeyError, TypeError, WetterFehler) as fehler:
+            stand.abgerufen_am, stand.fehler_am, stand.fehler = jetzt, None, ""
+        except WetterFehler as fehler:
+            log.warning("Wetter für %s nicht abrufbar: %s", stand.ort, fehler)
+            stand.fehler_am, stand.fehler = (
+                jetzt,
+                f"{fehler} – PLZ und Ort der Ausgabestelle prüfen.",
+            )
+        except (OSError, ValueError, KeyError, TypeError) as fehler:
             log.warning("Wetter für %s nicht abrufbar: %s", stand.ort, fehler)
             stand.fehler_am = jetzt
+            stand.fehler = (f"Wetterdienst nicht erreichbar ({str(fehler)[:80]}). Braucht "
+                            "Internetzugang des Servers zu open-meteo.com.")  # fmt: skip
         stand.save()
     if stand.temperatur is None or not stand.abgerufen_am:
         return None

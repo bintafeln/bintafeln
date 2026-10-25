@@ -125,8 +125,23 @@ def test_stelle_der_person(admin, stelle):
     assert wetter.stelle_fuer(admin) == nord
 
 
-def test_kopf_ohne_wetter_leer(modul_an, admin_client):
-    assert admin_client.get(reverse("wetter:kopf")).content.decode().strip() == ""
+def test_kopf_nennt_den_grund(modul_an, admin_client, monkeypatch):
+    teil = admin_client.get(reverse("wetter:kopf")).content.decode()
+    assert "🌡️ –" in teil and "Keine aktive Ausgabestelle mit PLZ oder Ort" in teil
+    Ausgabestelle.objects.create(name="Mitte", plz="12345", ort="Musterstadt")
+
+    def kein_netz(adresse, werte):
+        raise OSError("Tunnel connection failed")
+
+    monkeypatch.setattr(wetter, "_json", kein_netz)
+    teil = admin_client.get(reverse("wetter:kopf")).content.decode()
+    assert "Wetter für Mitte: Wetterdienst nicht erreichbar" in teil and "open-meteo.com" in teil
+    monkeypatch.setattr(wetter, "_json", lambda adresse, werte: {})
+    WetterStand.objects.update(fehler_am=None)
+    teil = admin_client.get(reverse("wetter:kopf")).content.decode()
+    assert "Ort „Musterstadt“ nicht gefunden – PLZ und Ort prüfen" in teil
+    WetterStand.objects.update(fehler="")
+    assert "Noch kein aktuelles Wetter" in admin_client.get(reverse("wetter:kopf")).content.decode()
 
 
 def test_kopf_nur_angemeldet(modul_an, client):

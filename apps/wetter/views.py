@@ -9,5 +9,4 @@ from apps.wetter import wetter
 @login_required
 def kopf(request):
     """Wetter für die Kopfzeile (wird per HTMX nachgeladen)."""
-    stelle = wetter.stelle_fuer(request.user)
-    return render(request, "wetter/_kopf.html", {"wetter": wetter.aktuell(stelle)})
+    return render(request, "wetter/_kopf.html", wetter.anzeige(request.user))
