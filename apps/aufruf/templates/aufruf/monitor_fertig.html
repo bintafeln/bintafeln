@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  {% include "aufruf/_kopf.html" %}
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kundenmonitor - Abgeschlossen</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial Black', Arial, sans-serif;
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .finished-container {
+            max-width: 900px;
+            padding: 80px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .icon {
+            font-size: 10em;
+            margin-bottom: 40px;
+        }
+        
+        .title {
+            font-size: 5em;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .day {
+            font-size: 3.5em;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        
+        .message {
+            font-size: 2.5em;
+            margin-bottom: 40px;
+            opacity: 0.8;
+            font-weight: normal;
+        }
+        
+        .time {
+            font-size: 2em;
+            opacity: 0.7;
+            font-weight: normal;
+            margin-top: 40px;
+        }
+        
+        /* Status-Indikator für Auto-Reload */
+        .reload-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            opacity: 0.7;
+        }
+        
+        .reload-indicator.checking {
+            background: rgba(52, 152, 219, 0.3);
+        }
+        
+        @keyframes celebration {
+            0% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.1) rotate(5deg); }
+            50% { transform: scale(1) rotate(0deg); }
+            75% { transform: scale(1.1) rotate(-5deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+        
+        .icon {
+            animation: celebration 4s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+        
+        .reload-indicator.checking {
+            animation: pulse 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="finished-container">
+        <div class="icon">✅</div>
+        <div class="title">Ausgabe beendet</div>
+        
+        <div class="message">
+            Alle Kundengruppen <br>
+            wurden abgearbeitet
+        </div>
+        
+        <div class="time" id="current-time"></div>
+    </div>
+    
+    <!-- Status-Indikator -->
+    <div class="reload-indicator" id="reloadIndicator">
+        🔄 Warte auf neue Session...
+    </div>
+
+    {% include "aufruf/_urls.html" %}
+    <script>
+        // Aktuelle Zeit anzeigen
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('de-DE', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            const timeElement = document.getElementById('current-time');
+            if (timeElement) {
+                timeElement.textContent = `Beendet um: ${timeString}`;
+            }
+        }
+        
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        // Status-Indikator Element
+        const indicator = document.getElementById('reloadIndicator');
+        
+        // Alle 10 Sekunden prüfen ob neue Session gestartet wurde
+        let checkCount = 0;
+        
+        function checkForNewSession() {
+            checkCount++;
+            
+            // Visuelles Feedback
+            if (indicator) {
+                indicator.classList.add('checking');
+                indicator.textContent = `🔄 Prüfe... (${checkCount})`;
+            }
+            
+            fetch(URLS.stand)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('📊 Refresh-Antwort:', data);
+                    
+                    // Wenn nicht mehr "finished" UND kein Error, dann neue Session
+                    if (!data.finished && !data.error) {
+                        console.log('✅ Neue Session erkannt - Reload...');
+                        if (indicator) {
+                            indicator.textContent = '✅ Neue Session - Lade neu...';
+                            indicator.style.background = 'rgba(46, 204, 113, 0.5)';
+                        }
+                        
+                        // Kurze Verzögerung für visuelles Feedback
+                        setTimeout(() => {
+                            location.reload();
+                        }, 500);
+                    } else {
+                        // Noch keine neue Session
+                        if (indicator) {
+                            indicator.classList.remove('checking');
+                            indicator.textContent = `🔄 Warte auf neue Session... (${checkCount})`;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.warn('⚠️ Refresh-Fehler:', error);
+                    
+                    if (indicator) {
+                        indicator.classList.remove('checking');
+                        indicator.textContent = `⚠️ Verbindungsfehler (${checkCount})`;
+                    }
+                    
+                    // Bei wiederholten Fehlern auch mal Reload versuchen
+                    // (könnte sein dass Server neu startet oder Session aktiv ist)
+                    if (checkCount % 6 === 0) { // Alle 60 Sekunden
+                        console.log('🔄 Versuche Reload nach mehreren Fehlern...');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    }
+                });
+        }
+        
+        // Sofort beim Laden einmal prüfen
+        setTimeout(checkForNewSession, 2000);
+        
+        // Dann alle 10 Sekunden
+        setInterval(checkForNewSession, 10000);
+        
+        // Log für Debugging
+        console.log('🎯 Monitor Finished - Auto-Reload aktiviert');
+        console.log('🔄 Prüft alle 10 Sekunden auf neue Sessions');
+    </script>
+</body>
+</html>

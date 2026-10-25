@@ -88,8 +88,29 @@ KAPITEL = [
 ]  # fmt: skip
 
 
+MODULE = "Zusätzliche Module"
+
+
+def _modul_kapitel() -> dict[str, list[Kapitel]]:
+    """Kapitel der zuschaltbaren Module (ADR 0049) je Modul; Vorlagen liegen in der App."""
+    from apps.core import module
+
+    return {m.kennung: [Kapitel(k, titel, MODULE, rechte) for k, titel, rechte in m.kapitel]
+            for m in module.alle()}  # fmt: skip
+
+
+def alle_kapitel() -> list[Kapitel]:
+    """Grundkapitel und die Kapitel aller installierten Module (auch ausgeschalteter)."""
+    return KAPITEL + [k for liste in _modul_kapitel().values() for k in liste]
+
+
 def sichtbar(benutzer) -> list[Kapitel]:
-    return [k for k in KAPITEL if not k.rechte or rollen.hat_recht(benutzer, *k.rechte)]
+    from apps.core import module
+
+    an = module.eingeschaltet()
+    kapitel = KAPITEL + [k for kennung, liste in _modul_kapitel().items() if kennung in an
+                         for k in liste]  # fmt: skip
+    return [k for k in kapitel if not k.rechte or rollen.hat_recht(benutzer, *k.rechte)]
 
 
 def gegliedert(kapitel: list[Kapitel]) -> list[tuple[str, list[Kapitel]]]:

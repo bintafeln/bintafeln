@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  {% include "aufruf/_kopf.html" %}
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aktuelle Kundennummern</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Hauptcontent Container */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            min-height: 0;
+            overflow-y: auto;
+        }
+        
+        /* Aktuelle Kundennummern Bereich */
+        .current-numbers-section {
+            width: 100%;
+            max-width: 1400px;
+            margin-bottom: 40px;
+        }
+        
+        .section-title {
+            font-size: 2.2em;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 25px;
+            color: #ffffff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+        }
+        
+        .current-numbers {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .number-card {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            border-radius: 20px;
+            padding: 30px;
+            min-width: 200px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .number-card.priority {
+            background: linear-gradient(135deg, #ffa726, #ff9800);
+            border-color: #fff3e0;
+            box-shadow: 0 15px 35px rgba(255, 152, 0, 0.4);
+        }
+        
+        .number-card.priority::before {
+            content: "♿";
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: #fff;
+            color: #ff9800;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .number-display {
+            font-size: 4.5em;
+            font-weight: 900;
+            font-family: 'Courier New', monospace;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+            margin: 10px 0;
+            letter-spacing: 2px;
+        }
+        
+        .number-label {
+            font-size: 1.1em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+        }
+        
+        /* Nächste Kundennummern Bereich - Kompakte Zeile */
+        .next-numbers-section {
+            width: 100%;
+            max-width: 1400px;
+        }
+        
+        .next-numbers-line {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .next-numbers-text {
+            font-size: 1.8em;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            color: #ffffff;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+        
+        /* Kundengruppen Info */
+        .group-info {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1.3em;
+            font-weight: 600;
+            padding: 15px 25px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            display: inline-block;
+        }
+        
+        /* Leer/Finished States */
+        .empty-state {
+            text-align: center;
+            padding: 60px 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+        }
+        
+        .empty-state h2 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #ffffff;
+        }
+        
+        .empty-state p {
+            font-size: 1.3em;
+            opacity: 0.8;
+            line-height: 1.5;
+        }
+        
+        .finished-state {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            animation: finishedGlow 3s ease-in-out infinite;
+        }
+        
+        @keyframes finishedGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(46, 204, 113, 0.4); }
+            50% { box-shadow: 0 0 40px rgba(46, 204, 113, 0.7); }
+        }
+        
+        /* Error State */
+        .error-state {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Loading Animation */
+        .loading-spinner {
+            display: inline-block;
+            width: 60px;
+            height: 60px;
+            border: 6px solid rgba(255, 255, 255, 0.3);
+            border-top: 6px solid #ffffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .current-numbers {
+                gap: 20px;
+            }
+            
+            .number-card {
+                min-width: 180px;
+                padding: 25px;
+            }
+            
+            .number-display {
+                font-size: 3.8em;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .section-title {
+                font-size: 1.8em;
+            }
+            
+            .current-numbers {
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+            }
+            
+            .number-card {
+                min-width: 250px;
+                max-width: 300px;
+            }
+            
+            .number-display {
+                font-size: 3.2em;
+            }
+            
+            .next-numbers {
+                gap: 15px;
+            }
+            
+            .next-numbers-text {
+                font-size: 1.4em;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+        }
+        
+        /* Optimiert für kleine Mobilgeräte */
+        @media (max-width: 480px) {
+            .main-content {
+                padding: 15px 10px;
+                overflow-y: auto;
+            }
+            
+            .section-title {
+                font-size: 1.4em;
+                margin-bottom: 15px;
+            }
+            
+            .number-card {
+                min-width: 160px;
+                max-width: 180px;
+                padding: 15px 10px;
+                margin: 5px;
+            }
+            
+            .number-display {
+                font-size: 2.2em;
+                margin: 5px 0;
+                letter-spacing: 1px;
+            }
+            
+            .number-label {
+                font-size: 0.9em;
+            }
+            
+            /* Nächste Nummern kompakte Zeile */
+            .next-numbers-line {
+                padding: 15px;
+            }
+            
+            .next-numbers-text {
+                font-size: 1.2em;
+                line-height: 1.3;
+            }
+            
+            .group-info {
+                font-size: 1em;
+                padding: 10px 15px;
+                margin: 15px 0;
+            }
+            
+            .empty-state {
+                padding: 30px 20px;
+            }
+            
+            .empty-state h2 {
+                font-size: 1.8em;
+                margin-bottom: 15px;
+            }
+            
+            .empty-state p {
+                font-size: 1.1em;
+            }
+        }
+        
+        /* Extra kleine Displays (unter 360px) */
+        @media (max-width: 360px) {
+            .number-card {
+                min-width: 140px;
+                max-width: 160px;
+                padding: 12px 8px;
+            }
+            
+            .number-display {
+                font-size: 1.8em;
+            }
+            
+            .next-numbers-text {
+                font-size: 1em;
+            }
+            
+            .section-title {
+                font-size: 1.2em;
+            }
+            
+            .group-info {
+                font-size: 0.9em;
+                padding: 8px 12px;
+            }
+        }
+        
+        /* Auto-Hide Cursor */
+        body.hide-cursor {
+            cursor: none;
+        }
+        
+        body.hide-cursor * {
+            cursor: none;
+        }
+        
+
+    </style>
+</head>
+<body>
+
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Content wird dynamisch gefüllt -->
+        <div id="mainContent">
+            <div class="empty-state">
+                <div class="loading-spinner"></div>
+                <h2>Lade Kundennummern...</h2>
+                <p>System wird initialisiert</p>
+            </div>
+        </div>
+    </div>
+
+    {% include "aufruf/_urls.html" %}
+    <script>
+        // Globale Variablen
+        let currentData = null;
+        let isLoading = false;
+        let reconnectAttempts = 0;
+        let maxReconnectAttempts = 5;
+        let cursorTimeout = null;
+        
+        // Aktualisierungsintervall (in Millisekunden)
+        const UPDATE_INTERVAL = 3000; // 3 Sekunden
+        const ERROR_RETRY_INTERVAL = 10000; // 10 Sekunden bei Fehlern
+        
+        // Status-Indikatoren
+        const mainContent = document.getElementById('mainContent');
+        
+        // Daten laden und anzeigen
+        async function loadAndDisplayNumbers() {
+            if (isLoading) return;
+            
+            try {
+                isLoading = true;
+                
+                const response = await fetch(URLS.stand);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${data.error || 'Unbekannter Fehler'}`);
+                }
+                
+                // Erfolgreich verbunden
+                reconnectAttempts = 0;
+                
+                // Daten verarbeiten
+                currentData = data;
+                updateDisplay(data);
+                
+                console.log('✅ Daten erfolgreich geladen:', data);
+                
+            } catch (error) {
+                console.error('❌ Fehler beim Laden der Daten:', error);
+                handleError(error);
+                
+                // Reconnect-Versuch
+                reconnectAttempts++;
+                if (reconnectAttempts <= maxReconnectAttempts) {
+                    console.log(`🔄 Reconnect-Versuch ${reconnectAttempts}/${maxReconnectAttempts} in ${ERROR_RETRY_INTERVAL/1000}s`);
+                }
+            } finally {
+                isLoading = false;
+            }
+        }
+        
+        // Display basierend auf Daten aktualisieren
+        function updateDisplay(data) {
+            let content = '';
+            
+            if (data.error) {
+                // Fehler-Status
+                content = `
+                    <div class="empty-state error-state">
+                        <h2>⚠️ Fehler</h2>
+                        <p>${data.error}</p>
+                    </div>
+                `;
+            } else if (data.finished) {
+                // Tag abgeschlossen
+                content = `
+                    <div class="empty-state finished-state">
+                        <h2>🎉 Tag abgeschlossen!</h2>
+                        <p>Alle Kundennummern für <strong>${data.selected_day}</strong> wurden bearbeitet.</p>
+                    </div>
+                `;
+            } else if (!data.current_numbers || data.current_numbers.length === 0) {
+                // Keine aktuellen Nummern
+                content = `
+                    <div class="empty-state">
+                        <h2>⏳ Bereit zur Ausgabe</h2>
+                        <p>Warten auf erste Kundennummern...</p>
+                    </div>
+                `;
+            } else {
+                // Normale Anzeige mit Kundennummern
+                content = generateNumbersDisplay(data);
+            }
+            
+            mainContent.innerHTML = content;
+        }
+        
+        // Kundennummern-Display generieren
+        function generateNumbersDisplay(data) {
+            let html = '';
+            
+            // Kundengruppen Info
+            html += `
+                <div class="group-info">
+                    📊 Kundengruppe ${data.current_slot} | Verbleibend: ${data.remaining_count || 0}
+                </div>
+            `;
+            
+            // Aktuelle Kundennummern Sektion
+            html += `
+                <div class="current-numbers-section">
+                    <div class="section-title">📢 Aktuelle Kunden</div>
+                    <div class="current-numbers">
+            `;
+            
+            // Aktuelle Nummern (max. 3)
+            if (data.current_numbers && data.current_numbers.length > 0) {
+                data.current_numbers.forEach((number, index) => {
+                    const isPriority = data.priority_flags && data.priority_flags[index];
+                    const priorityClass = isPriority ? 'priority' : '';
+                    
+                    html += `
+                        <div class="number-card ${priorityClass}">
+                            <div class="number-display">${number}</div>
+                        </div>
+                    `;
+                });
+            } else {
+                html += `
+                    <div class="number-card">
+                        <div class="number-display">-</div>
+                    </div>
+                `;
+            }
+            
+            html += `
+                    </div>
+                </div>
+            `;
+            
+            // Nächste Kundennummern Sektion (falls vorhanden) - Kompakte Zeile
+            if (data.next_numbers && data.next_numbers.length > 0) {
+                html += `
+                    <div class="next-numbers-section">
+                        <div class="section-title">➡️ Nächste Kunden</div>
+                        <div class="next-numbers-line">
+                `;
+                
+                // Kompakte Anzeige als Text-Zeile mit Rollstuhl-Symbol falls nötig
+                const nextNumbersText = data.next_numbers.slice(0, 20).map((number, index) => {
+                    // Prüfe ob Priority-Flag gesetzt ist (falls verfügbar)
+                    const isPriority = data.next_priority_flags && data.next_priority_flags[index];
+                    return isPriority ? `♿ ${number}` : number;
+                }).join(' • ');
+                
+                html += `
+                        <div class="next-numbers-text">${nextNumbersText}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            return html;
+        }
+        
+        // Fehler-Behandlung
+        function handleError(error) {
+            let errorMessage = 'Unbekannter Fehler';
+            
+            if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                errorMessage = 'Netzwerkverbindung unterbrochen';
+            } else if (error.message.includes('HTTP 404')) {
+                errorMessage = 'Server-Endpoint nicht gefunden';
+            } else if (error.message.includes('HTTP 500')) {
+                errorMessage = 'Server-Fehler';
+            } else {
+                errorMessage = error.message;
+            }
+            
+            const errorData = {
+                error: `Verbindungsfehler: ${errorMessage}`,
+                selected_day: currentData?.selected_day || 'Unbekannt',
+                current_slot: currentData?.current_slot || '-'
+            };
+            
+            updateDisplay(errorData);
+        }
+        
+        // Auto-Hide Cursor
+        function showCursor() {
+            document.body.classList.remove('hide-cursor');
+            clearTimeout(cursorTimeout);
+            cursorTimeout = setTimeout(() => {
+                document.body.classList.add('hide-cursor');
+            }, 3000); // Cursor nach 3s verstecken
+        }
+        
+        // Mouse Movement Detection
+        document.addEventListener('mousemove', showCursor);
+        document.addEventListener('keydown', showCursor);
+        document.addEventListener('touchstart', showCursor);
+        
+        // Page Visibility API - Pause bei inaktivem Tab
+        let updateInterval;
+        
+        function startUpdates() {
+            // Sofort laden
+            loadAndDisplayNumbers();
+            
+            // Dann regelmäßig aktualisieren
+            updateInterval = setInterval(() => {
+                if (reconnectAttempts > maxReconnectAttempts) {
+                    console.log('🛑 Maximale Reconnect-Versuche erreicht. Stoppe Updates.');
+                    clearInterval(updateInterval);
+                    handleError(new Error('Maximale Reconnect-Versuche erreicht'));
+                    return;
+                }
+                
+                const interval = reconnectAttempts > 0 ? ERROR_RETRY_INTERVAL : UPDATE_INTERVAL;
+                loadAndDisplayNumbers();
+            }, UPDATE_INTERVAL);
+        }
+        
+        function stopUpdates() {
+            if (updateInterval) {
+                clearInterval(updateInterval);
+                updateInterval = null;
+            }
+        }
+        
+        // Page Visibility Handling
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                console.log('📱 Seite verborgen - Updates pausiert');
+                stopUpdates();
+            } else {
+                console.log('👀 Seite sichtbar - Updates fortgesetzt');
+                startUpdates();
+            }
+        });
+        
+        // Tastatur-Shortcuts für Entwicklung/Debug
+        document.addEventListener('keydown', function(event) {
+            // F5 oder Ctrl+R: Seite neu laden
+            if (event.key === 'F5' || (event.ctrlKey && event.key === 'r')) {
+                location.reload();
+            }
+            
+            // Ctrl+Shift+D: Debug-Info in Konsole
+            if (event.ctrlKey && event.shiftKey && event.key === 'D') {
+                console.log('🔍 Debug Info:', {
+                    currentData: currentData,
+                    isLoading: isLoading,
+                    reconnectAttempts: reconnectAttempts,
+                    updateInterval: updateInterval
+                });
+            }
+        });
+        
+        // Window Error Handling
+        window.addEventListener('error', function(event) {
+            console.error('🚨 JavaScript-Fehler:', event.error);
+        });
+        
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('🚨 Unbehandelte Promise-Ablehnung:', event.reason);
+        });
+        
+        // Responsive Updates - Neuzeichnen bei Orientierungsänderung
+        window.addEventListener('orientationchange', function() {
+            setTimeout(() => {
+                if (currentData) {
+                    updateDisplay(currentData);
+                }
+            }, 500);
+        });
+        
+        window.addEventListener('resize', function() {
+            if (currentData) {
+                updateDisplay(currentData);
+            }
+        });
+        
+        // Initialisierung
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Kundennummern-Anzeige initialisiert');
+            
+            // Cursor initial verstecken
+            setTimeout(() => {
+                document.body.classList.add('hide-cursor');
+            }, 5000);
+            
+            // Updates starten
+            startUpdates();
+            
+            console.log(`⏱ Update-Intervall: ${UPDATE_INTERVAL/1000}s`);
+            console.log(`🔄 Fehler-Retry-Intervall: ${ERROR_RETRY_INTERVAL/1000}s`);
+            console.log(`🔗 Endpoint: /monitor/refresh`);
+        });
+        
+        // Cleanup bei Page Unload
+        window.addEventListener('beforeunload', function() {
+            stopUpdates();
+        });
+        
+        console.log('📱 Kundennummern-Anzeige geladen - Version 2.0 (Neue Startseite)');
+    </script>
+</body>
+</html>

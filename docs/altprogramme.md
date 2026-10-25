@@ -1,0 +1,24 @@
+# Übernahme der bisherigen Zusatzprogramme
+
+Einige Tafeln betreiben neben bintafeln eigene kleine Programme. Sie gehen Schritt für Schritt
+als **zuschaltbare Module** (ADR 0049) in bintafeln auf. Die Daten kommen dann direkt aus
+bintafeln; Downloads aus Fremdsystemen und der Austausch von Dateien entfallen.
+
+| Bisheriges Programm | In bintafeln | Stand |
+|---|---|---|
+| Kundennummern-Aufruf (Monitor, Handy, Kiosk) | Modul **Aufruf** (ADR 0050) | umgesetzt |
+| Neuanmeldungen / Warteliste mit Einladungen | Ausbau der Anträge (Modul 3) | geplant |
+| Wochenübersicht der Ausgabestellen (Soll/Ist, Selbstabholer) | Modul **Wochenübersicht** | geplant |
+| Spendenbelege und Dankesbriefe | Ausbau Spenden: Import, Dankesbrief als Serienbrief | geplant |
+| Übersicht (Linkliste) | Startseite/Menü | geplant |
+| Guthaben-Überwachung von Prepaid-Karten | nicht in bintafeln (kein Tafel-Thema) | – |
+
+Reverse-Proxy und vorgeschaltete Anmeldung der bisherigen Programme braucht es nicht: bintafeln
+bringt Caddy, Anmeldung mit Zwei-Faktor und Rechte mit.
+
+Regeln für jedes Modul:
+
+- Eigene App mit `modul.py`; Kern ohne Sonderfälle (ADR 0049).
+- Aussehen der Bildschirme, die im Netz der Tafel aufgerufen werden, bleibt wie bisher.
+- Keine festen Werte (Namen, Anschriften, Orte) – alles aus den Einstellungen.
+- Keine Personendaten, Passwörter oder Listen aus den bisherigen Programmen im Repository.

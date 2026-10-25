@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  {% include "aufruf/_kopf.html" %}
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kundennummer-Abfrage - Aufruf</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 30px 15px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            padding: 35px 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            max-width: 550px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .header .icon { font-size: 3em; margin-bottom: 10px; }
+        .header h1 { color: #2c3e50; font-size: 1.9em; margin-bottom: 5px; }
+        .header .subtitle { color: #7f8c8d; font-size: 1.05em; margin-bottom: 25px; }
+
+        .search-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 16px 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-align: center;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            min-width: 0;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+        }
+
+        .search-btn {
+            padding: 16px 25px;
+            font-size: 1.2em;
+            font-weight: bold;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        .search-btn:hover { background: linear-gradient(135deg, #2980b9, #1f5582); transform: translateY(-2px); }
+        .search-btn:active { transform: translateY(0); }
+        .search-btn:disabled { opacity: 0.6; cursor: wait; transform: none; }
+
+        .result {
+            border-radius: 15px;
+            padding: 25px 20px;
+            margin-top: 5px;
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .result.waiting  { display: block; background: linear-gradient(135deg, #3498db, #2980b9); color: white; }
+        .result.done     { display: block; background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; }
+        .result.notfound { display: block; background: linear-gradient(135deg, #e67e22, #d35400); color: white; }
+        .result.inactive { display: block; background: linear-gradient(135deg, #7f8c8d, #95a5a6); color: white; }
+        .result.error    { display: block; background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; }
+
+        .result .big-icon { font-size: 3em; margin-bottom: 10px; }
+        .result .headline { font-size: 1.6em; font-weight: bold; margin-bottom: 8px; }
+        .result .sub { font-size: 1.05em; opacity: 0.92; margin-bottom: 18px; }
+
+        .big-number {
+            font-size: 3.5em;
+            font-weight: bold;
+            line-height: 1.1;
+            margin: 10px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .big-number .label { display: block; font-size: 0.32em; font-weight: normal; opacity: 0.85; text-shadow: none; }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 18px;
+        }
+        .detail-box {
+            background: rgba(255, 255, 255, 0.18);
+            border-radius: 10px;
+            padding: 12px 8px;
+        }
+        .detail-box .value { font-size: 1.5em; font-weight: bold; }
+        .detail-box .label { font-size: 0.85em; opacity: 0.85; margin-top: 3px; }
+        .detail-box.wide { grid-column: 1 / -1; }
+
+        .hint {
+            margin-top: 25px;
+            background: #ecf0f1;
+            border-radius: 10px;
+            padding: 14px;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #7f8c8d;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .back-link:hover { color: #2c3e50; }
+
+        @media (max-width: 480px) {
+            .container { padding: 25px 18px; }
+            .search-row { flex-direction: column; }
+            .big-number { font-size: 2.8em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="icon">🔍</div>
+            <h1>Kundennummer-Abfrage</h1>
+            <div class="subtitle">Wo steht die Nummer in der heutigen Reihenfolge?</div>
+        </div>
+
+        <div class="search-row">
+            <input type="text"
+                   id="nummer"
+                   class="search-input"
+                   inputmode="numeric"
+                   placeholder="Kundennummer"
+                   maxlength="12"
+                   autofocus>
+            <button id="searchBtn" class="search-btn" onclick="abfragen()">🔍 Prüfen</button>
+        </div>
+
+        <div id="result" class="result"></div>
+
+        <div class="hint">
+            💡 Die Abfrage nutzt immer den <strong>Live-Stand</strong> der laufenden Ausgabe –
+            auch nach einem Neustart oder nachträglichem Excel-Download.
+        </div>
+
+        <a href="{{ urls.anzeige }}" class="back-link">← Zur Kundennummern-Anzeige</a>
+    </div>
+
+    {% include "aufruf/_urls.html" %}
+    <script>
+        const input  = document.getElementById('nummer');
+        const btn    = document.getElementById('searchBtn');
+        const result = document.getElementById('result');
+
+        function show(cls, html) {
+            result.className = 'result ' + cls;
+            result.innerHTML = html;
+        }
+
+        function abfragen() {
+            const nummer = input.value.trim();
+            if (!nummer) { input.focus(); return; }
+
+            btn.disabled = true;
+            btn.textContent = '⏳ ...';
+
+            fetch(URLS.abfrage + '?nummer=' + encodeURIComponent(nummer))
+                .then(r => r.json())
+                .then(d => {
+                    if (d.error) {
+                        show('error', `<div class="big-icon">❌</div>
+                            <div class="headline">Fehler</div>
+                            <div class="sub">${d.error}</div>`);
+                        return;
+                    }
+                    if (!d.active) {
+                        show('inactive', `<div class="big-icon">⏳</div>
+                            <div class="headline">Keine aktive Ausgabe</div>
+                            <div class="sub">${d.message || 'Zurzeit läuft keine Ausgabe.'}</div>`);
+                        return;
+                    }
+                    if (!d.gefunden) {
+                        show('notfound', `<div class="big-icon">🤷</div>
+                            <div class="headline">Nicht gefunden</div>
+                            <div class="sub">Kundennummer <strong>${d.nummer}</strong> ist heute (${d.tag}) nicht in der Liste.</div>`);
+                        return;
+                    }
+                    if (d.schon_dran) {
+                        show('done', `
+                            <div class="big-icon">✅</div>
+                            <div class="headline">Nummer ${d.nummer} war schon dran</div>
+                            <div class="sub">Diese Kundennummer wurde bereits aufgerufen.</div>
+                            <div class="detail-grid">
+                                <div class="detail-box">
+                                    <div class="value">${d.gruppen_platz} / ${d.gruppen_gesamt}</div>
+                                    <div class="label">Platz in Gruppe ${d.gruppe}</div>
+                                </div>
+                                <div class="detail-box">
+                                    <div class="value">${d.gesamt_platz} / ${d.gesamt_anzahl}</div>
+                                    <div class="label">Platz gesamt (${d.tag})</div>
+                                </div>
+                            </div>`);
+                        return;
+                    }
+                    // Noch nicht dran
+                    show('waiting', `
+                        <div class="big-icon">🕐</div>
+                        <div class="headline">Nummer ${d.nummer} kommt noch</div>
+                        <div class="big-number">${d.vor_der_nummer}<span class="label">Nummern davor noch dran</span></div>
+                        <div class="detail-grid">
+                            <div class="detail-box">
+                                <div class="value">${d.gruppen_platz} / ${d.gruppen_gesamt}</div>
+                                <div class="label">Platz in Gruppe ${d.gruppe}</div>
+                            </div>
+                            <div class="detail-box">
+                                <div class="value">${d.gesamt_platz} / ${d.gesamt_anzahl}</div>
+                                <div class="label">Platz gesamt (${d.tag})</div>
+                            </div>
+                            <div class="detail-box wide">
+                                <div class="value">${d.aktuelle_gruppe || '–'}</div>
+                                <div class="label">Aktuell laufende Kundengruppe</div>
+                            </div>
+                        </div>`);
+                })
+                .catch(() => {
+                    show('error', `<div class="big-icon">⚠️</div>
+                        <div class="headline">Verbindungsfehler</div>
+                        <div class="sub">Der Server ist gerade nicht erreichbar.</div>`);
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.textContent = '🔍 Prüfen';
+                    input.select();
+                });
+        }
+
+        input.addEventListener('keypress', e => { if (e.key === 'Enter') abfragen(); });
+
+        // Touch-Optimierung (Doppeltipp-Zoom verhindern)
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) event.preventDefault();
+            lastTouchEnd = now;
+        }, false);
+
+        console.log('🔍 Abfrage-Seite geladen');
+    </script>
+</body>
+</html>

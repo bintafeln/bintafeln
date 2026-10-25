@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block titel %}Aufruf, Monitor und Kiosk{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Aufruf, Monitor und Kiosk</h1>
+  <p>Der Aufruf nimmt die Kundennummern direkt aus dem Kundenstamm: alle aktiven Haushalte der Kundengruppen, die heute
+    an der Ausgabestelle dran sind. Die Geräte im Wartebereich (Monitor, Nummern-Anzeige, Kiosk) brauchen keine
+    Anmeldung; sie öffnen einen geheimen Link. Diesen Link nur auf den Geräten der Tafel speichern.</p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Ausgabestelle</th><th>Einstellungen</th><th>Links für die Geräte</th><th></th></tr></thead>
+    <tbody>
+    {% for s, e in stellen %}
+      <tr>
+        <td data-titel="Ausgabestelle"><strong>{{ s.name }}</strong></td>
+        <td data-titel="Einstellungen">{{ e.anzahl }} Nummer{{ e.anzahl|pluralize:"n" }} je Aufruf{% if e.vorrang_feld %}<br>Vorrang: {{ e.vorrang_feld }}{% endif %}{% if e.wochentag_probe is not None %}<br><span class="marke-warnung">Probelauf als {{ e.get_wochentag_probe_display }}</span>{% endif %}
+          <br><a href="{% url 'aufruf:einstellungen_stelle' s.pk %}">ändern</a></td>
+        <td data-titel="Links">
+          {% with basis=request.scheme|add:"://"|add:request.get_host %}
+          <ul style="list-style: none; padding: 0; margin: 0;">
+            <li>Monitor: <a href="{% url 'aufruf:monitor' e.schluessel %}" target="_blank">{{ basis }}{% url 'aufruf:monitor' e.schluessel %}</a></li>
+            <li>Nummern-Anzeige: <a href="{% url 'aufruf:anzeige' e.schluessel %}" target="_blank">{{ basis }}{% url 'aufruf:anzeige' e.schluessel %}</a></li>
+            <li>Kiosk (Karte scannen): <a href="{% url 'aufruf:kiosk' e.schluessel %}" target="_blank">{{ basis }}{% url 'aufruf:kiosk' e.schluessel %}</a></li>
+            <li>Abfrage: <a href="{% url 'aufruf:abfrage' e.schluessel %}" target="_blank">{{ basis }}{% url 'aufruf:abfrage' e.schluessel %}</a></li>
+          </ul>
+          {% endwith %}
+        </td>
+        <td>
+          <form method="post" action="{% url 'aufruf:schluessel_neu' s.pk %}" onsubmit="return confirm('Neue Links erzeugen? Die alten funktionieren danach nicht mehr.');">
+            {% csrf_token %}<button type="submit" class="knopf knopf-abbrechen">Neue Links erzeugen</button>
+          </form>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4">Noch keine aktive Ausgabestelle.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="karte breit">
+  <h2>Infos auf dem Monitor</h2>
+  <p>Der Monitor zeigt diese Infos im Wechsel neben den Nummern: Text, Bild, PDF oder eine Webseite (z. B. ein
+    Wetter-Widget).</p>
+  <div class="aktionsleiste"><a class="knopf" href="{% url 'aufruf:info_neu' %}">Neue Info</a></div>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Reihenfolge</th><th>Titel</th><th>Art</th><th>Dauer</th><th>Ausgabestellen</th><th>Aktiv</th></tr></thead>
+    <tbody>
+    {% for i in infos %}
+      <tr>
+        <td data-titel="Reihenfolge">{{ i.reihenfolge }}</td>
+        <td data-titel="Titel"><a href="{% url 'aufruf:info' i.pk %}">{{ i.titel }}</a></td>
+        <td data-titel="Art">{{ i.get_art_display }}</td>
+        <td data-titel="Dauer">{{ i.dauer }} s</td>
+        <td data-titel="Ausgabestellen">{% for s in i.ausgabestellen.all %}{{ s.name }}{% if not forloop.last %}, {% endif %}{% empty %}alle{% endfor %}</td>
+        <td data-titel="Aktiv">{{ i.aktiv|yesno:"ja,nein" }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6">Noch keine Infos.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

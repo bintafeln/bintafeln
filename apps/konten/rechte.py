@@ -129,8 +129,17 @@ KATALOG = [
           "Ziele, Zeitpläne und Aufbewahrung der Sicherungen auf dem Server."),
 ]  # fmt: skip
 
-NACH_CODE = {r.code: r for r in KATALOG}
-ALLE = frozenset(NACH_CODE)
+
+def _module_einsammeln() -> None:
+    """Rechte und Vorgaben der zuschaltbaren Module (ADR 0049); Bereich = Titel des Moduls."""
+    from apps.core import module
+
+    for m in module.alle():
+        KATALOG.extend(Recht(code, m.titel, bezeichnung, hilfe)
+                       for code, bezeichnung, hilfe in m.rechte)  # fmt: skip
+        for rolle, codes in m.vorgaben.items():
+            VORGABEN.setdefault(rolle, []).extend(codes)
+
 
 _EINLASS = ["einlass.nutzen", "einlass.abholung", "einlass.zahlung", "einlass.sonderaktion",
             "kasse.sehen", "kunden.liste", "kunden.ansehen", "kunden.notizen"]  # fmt: skip
@@ -156,11 +165,21 @@ VORGABEN = {
     "Personal": ["personal.sehen", "einstellungen.arbeitszeit"],
 }  # fmt: skip
 
+_module_einsammeln()
+NACH_CODE = {r.code: r for r in KATALOG}
+ALLE = frozenset(NACH_CODE)
+
 
 def bereiche(codes=None) -> list[tuple[str, list[Recht]]]:
-    """Katalog nach Bereich gruppiert, in fester Reihenfolge (für die Oberfläche)."""
+    """Katalog nach Bereich gruppiert, in fester Reihenfolge (für die Oberfläche).
+
+    Rechte ausgeschalteter Module (ADR 0049) fehlen.
+    """
+    from apps.core import module
+
+    aus = module.ausgeschaltete_rechte()
     gruppen: dict[str, list[Recht]] = {}
     for r in KATALOG:
-        if codes is None or r.code in codes:
+        if (codes is None or r.code in codes) and r.code not in aus:
             gruppen.setdefault(r.bereich, []).append(r)
     return list(gruppen.items())

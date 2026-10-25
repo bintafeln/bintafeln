@@ -27,7 +27,8 @@
 	header {
 		X-Content-Type-Options nosniff
 		Referrer-Policy same-origin
-		X-Frame-Options DENY
+		# Nur, wenn die App nichts anderes sagt (PDF-Infos des Monitors: SAMEORIGIN)
+		?X-Frame-Options DENY
 		-Server
 	}
 

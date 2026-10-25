@@ -219,5 +219,12 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Stand zurück. Update aus der Oberfläche: `apps/core/update.py` tauscht nur Dateien mit dem
   Dienst `updater` (`docker/updater/updater.sh`) aus; bintafeln selbst bekommt nie Zugriff auf
   Docker (ADR 0043).
+- Zuschaltbare Module (ADR 0049): eigene App mit `modul.py` (`apps.core.module.Modul`: Rechte,
+  Vorgaben, Menü, Hilfe-Kapitel mit Vorlage in der App, Pfade, Bereich der Datensicherung),
+  eingetragen in `settings.BINTAFELN_MODULE`; jede Tafel schaltet sie in den Tafel-Einstellungen
+  ein. Kein modulspezifischer Code im Kern; ausgeschaltete Module sperrt die `ModulMiddleware`.
+  Erstes Modul: `aufruf` (ADR 0050, Regeln in `apps/aufruf/ablauf.py`, Seiten aus dem
+  bisherigen Aufrufsystem in `apps/aufruf/templates/aufruf/`, Geräte ohne Anmeldung nur über
+  den Schlüssel im Link). Übersicht der übernommenen Altprogramme: `docs/altprogramme.md`.
 - Shell-Skripte müssen `shellcheck` bestehen. Änderungen an Sicherung oder Wiederherstellung
   deckt `tests/sicherung_e2e.sh` ab (läuft in CI im Job `docker`).

@@ -55,6 +55,10 @@ class TafelEinstellungen(models.Model):
         blank=True,
         help_text="Für die gesetzlichen Feiertage (Urlaub, Stundenkonto, Vorauszahlung).",
     )
+    module = models.JSONField(
+        "Eingeschaltete Module", default=list, blank=True,
+        help_text="Kennungen der zuschaltbaren Module (ADR 0049), z. B. „aufruf“.",
+    )  # fmt: skip
     installation = models.UUIDField(
         "Kennung dieser Installation", default=uuid.uuid4, editable=False
     )

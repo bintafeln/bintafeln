@@ -6,6 +6,7 @@ from apps.core import geheimnis
 from apps.core.auswahl import LAENDERCODE
 from apps.core.farben import STANDARDFARBE
 from apps.core.models import MailEinstellungen, SicherungsAuftrag, TafelEinstellungen
+from apps.core.module import auswahl as modul_auswahl
 
 HINTERGRUND_MAX_BYTES = 5 * 1024 * 1024
 LOGO_MAX_BYTES = 2 * 1024 * 1024
@@ -61,6 +62,12 @@ class EinrichtungForm(forms.Form):
 
 
 class EinstellungenForm(forms.ModelForm):
+    module = forms.MultipleChoiceField(
+        label="Zusätzliche Module", required=False, widget=forms.CheckboxSelectMultiple,
+        help_text="Ausgeschaltete Module erscheinen nirgends: kein Menü, keine Seiten, keine "
+        "Rechte, keine Hilfe. Ihre Daten bleiben erhalten, bis man sie wieder einschaltet.",
+    )  # fmt: skip
+
     class Meta:
         model = TafelEinstellungen
         fields = [
@@ -76,6 +83,7 @@ class EinstellungenForm(forms.ModelForm):
             "telefon",
             "email",
             "bundesland",
+            "module",
         ]
         widgets = {
             "logo": BildEingabe(),
@@ -97,6 +105,7 @@ class EinstellungenForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["module"].choices = modul_auswahl()
         self.fields["farbe"].required = False
         staerke = self.fields["hintergrund_staerke"]
         staerke.required = False

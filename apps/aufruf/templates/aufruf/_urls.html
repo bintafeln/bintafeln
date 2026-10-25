@@ -1,0 +1,7 @@
+{# Adressen und Werte für die Skripte der Aufruf-Seiten (aus dem bisherigen Aufrufsystem) #}
+{{ urls|json_script:"aufruf-urls" }}
+<script>
+    const URLS = JSON.parse(document.getElementById('aufruf-urls').textContent);
+    const CSRF = "{{ csrf_token }}";
+    const ANZAHL = {{ anzahl|default:3 }};
+</script>

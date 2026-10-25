@@ -1,0 +1,51 @@
+<p>Der Aufruf ruft die Kundinnen und Kunden im Wartebereich der Reihe nach auf. Er ersetzt das bisherige
+  Aufrufsystem mit seinen heruntergeladenen Listen: Die Kundennummern kommen direkt aus dem Kundenstamm von
+  bintafeln. Er ist ein zuschaltbares Modul (Einstellungen → Tafel → Zusätzliche Module).</p>
+
+<h3>Woher die Reihenfolge kommt</h3>
+<ul>
+  <li>Alle <strong>aktiven Haushalte</strong> der Kundengruppen, die heute an der Ausgabestelle dran sind
+    (Wochentage der Kundengruppe), Gruppe für Gruppe nach Uhrzeit.</li>
+  <li>Innerhalb einer Gruppe <strong>zufällig gemischt</strong>. Haushalte mit Vorrang (z. B. Schwerbehinderung,
+    eingestellt unter „Aufruf, Monitor und Kiosk“) kommen zuerst, ebenfalls gemischt.</li>
+  <li>Während des Tages gleicht der Aufruf laufend mit dem Kundenstamm ab: Neue Haushalte werden fair einsortiert
+    (nie vor die gerade aufgerufenen Nummern), entfernte fallen heraus.</li>
+  <li>Wer heute schon am <strong>Einlass</strong> war (eine Abholung ist gebucht, z. B. mit einer Ausnahme
+    vorgezogen), verschwindet aus der Warteschlange.</li>
+</ul>
+
+{% if "aufruf.steuern" in rechte %}
+<h3>Aufrufen</h3>
+<ol>
+  <li>Menü <strong>Aufruf → Aufruf steuern</strong>, bei mehreren Ausgabestellen die eigene wählen.</li>
+  <li><strong>Ausgabe starten</strong>. Ab jetzt zeigt der Monitor „Bitte eintreten“ mit den ersten Nummern.</li>
+  <li>Mit <strong>Weiter</strong> (oder Leertaste/Enter) sind diese erledigt, die nächsten erscheinen.
+    <strong>↩ Zurück</strong> (oder Taste U) nimmt das letzte Weiter zurück.</li>
+  <li>Am Handy: „📱 Handy-Steuerung“ öffnen. Der große Knopf schaltet weiter, darunter stehen die letzten und die
+    nächsten Kunden. Mehrere Geräte können gleichzeitig steuern.</li>
+</ol>
+<h3>Zu spät gekommen</h3>
+<p>In der Handy-Steuerung unter „Kundennummer-Abfrage“ die Nummer prüfen. War der Kunde schon dran, setzt
+  „⏱ Kunde … Plätze später einsortieren“ ihn so viele wartende Plätze hinter die aktuelle Position.</p>
+<p>„📋 Reihenfolge (CSV)“ lädt die Reihenfolge des Tages herunter (nur Kundennummern). Die Reihenfolge eines Tages
+  löscht bintafeln nach vier Wochen.</p>
+{% endif %}
+
+{% if "einstellungen.aufruf" in rechte %}
+<h3>Monitor, Nummern-Anzeige und Kiosk einrichten</h3>
+<ul>
+  <li><strong>Einstellungen → Aufruf, Monitor und Kiosk</strong> zeigt je Ausgabestelle die Links für die Geräte.
+    Die Geräte brauchen keine Anmeldung, der Link enthält einen geheimen Schlüssel. Link nur auf Geräten der Tafel
+    öffnen; „Neue Links erzeugen“ sperrt alte Links (z. B. nach dem Verlust eines Geräts).</li>
+  <li><strong>Monitor</strong>: „Bitte eintreten“ mit den aktuellen Nummern, daneben Infos im Wechsel. Das Zahnrad
+    oben stellt Breiten und Schriftgrößen ein, 🔊 schaltet den Ton ein (der Browser verlangt einen Klick).</li>
+  <li><strong>Kiosk</strong>: Kunden scannen ihre Karte (Scanner als Tastatur) oder tippen die Nummer und sehen,
+    wie viele vor ihnen sind – auf Deutsch und in der Sprache, die zur Staatsangehörigkeit passt.</li>
+  <li><strong>Infos</strong>: Text, Bild, PDF oder eine Webseite (z. B. ein Wetter-Widget), je mit Anzeigedauer
+    und auf Wunsch nur an bestimmten Ausgabestellen.</li>
+  <li><strong>Probelauf als Wochentag</strong>: zum Ausprobieren an einem Tag ohne Ausgabe. Danach wieder
+    leeren.</li>
+</ul>
+<p>Datenschutz: Die Geräte zeigen nur Kundennummern, nie Namen. Ist „Vorrang mit ♿ anzeigen“ eingeschaltet, sieht
+  man am Monitor, welche Nummer Vorrang hat.</p>
+{% endif %}

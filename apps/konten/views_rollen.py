@@ -14,6 +14,7 @@ from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from apps.core import module
 from apps.konten import rechte as katalog
 from apps.konten import rollen
 from apps.konten.models import Rolle
@@ -36,13 +37,14 @@ class RolleForm(forms.ModelForm):
 
     def __init__(self, *args, eigene, **kwargs):
         super().__init__(*args, **kwargs)
-        self.eigene = eigene
-        # Nur Rechte, die man selbst hat, lassen sich ändern.
+        # Nur Rechte, die man selbst hat, lassen sich ändern; Rechte ausgeschalteter Module
+        # bleiben unsichtbar und unverändert.
+        self.eigene = eigene - module.ausgeschaltete_rechte()
         self.fields["rechte"].choices = [(r.code, r.bezeichnung) for r in katalog.KATALOG
-                                         if r.code in eigene]  # fmt: skip
+                                         if r.code in self.eigene]  # fmt: skip
         if self.instance.pk:
             self.fields["name"].initial = self.instance.name
-            self.fields["rechte"].initial = [c for c in self.instance.rechte if c in eigene]
+            self.fields["rechte"].initial = [c for c in self.instance.rechte if c in self.eigene]
         if self.instance.pk and self.instance.ist_admin:
             self.fields["name"].disabled = True
             del self.fields["rechte"]

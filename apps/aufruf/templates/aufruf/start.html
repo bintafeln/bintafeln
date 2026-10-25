@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block titel %}Aufruf{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Aufruf</h1>
+  <p>Für welche Ausgabestelle wollen Sie Kunden aufrufen?</p>
+  <div class="aktionsleiste">
+    {% for s in stellen %}<a class="knopf" href="{% url 'aufruf:steuerung' s.pk %}">{{ s.name }}</a>
+    {% empty %}<p>Keine aktive Ausgabestelle, die Ihnen zugeordnet ist.</p>{% endfor %}
+  </div>
+</section>
+{% endblock %}

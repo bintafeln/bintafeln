@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block titel %}Aufruf {{ s.name }}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'aufruf:einstellungen' %}">← Aufruf, Monitor und Kiosk</a></p>
+  <h1>Aufruf an der Ausgabestelle {{ s.name }}</h1>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf">Speichern</button>
+      <a href="{% url 'aufruf:einstellungen' %}" class="knopf knopf-abbrechen">Abbrechen</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

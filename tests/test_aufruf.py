@@ -1,0 +1,473 @@
+"""Modul Aufruf (ADR 0049, 0050): Modulschalter, Reihenfolge aus dem Kundenstamm, Seiten."""
+
+import datetime as dt
+import json
+
+import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client
+from django.urls import reverse
+from django.utils import timezone
+
+from apps.aufruf import ablauf
+from apps.aufruf.models import AufrufEinstellungen, AufrufInfo, AufrufTag
+from apps.ausgabe.ampel import WOCHENTAGE
+from apps.core import datensicherung, hilfe, module
+from apps.core.models import TafelEinstellungen
+from apps.konten import rechte, rollen
+from apps.kunden.models import (
+    Abholung,
+    Ausgabestelle,
+    Haushalt,
+    Kundengruppe,
+    Person,
+    Zusatzfeld,
+)
+
+pytestmark = pytest.mark.django_db
+
+
+def heute():
+    return timezone.localdate()
+
+
+def kuerzel(tag=None):
+    return WOCHENTAGE[(tag or heute()).weekday()]
+
+
+@pytest.fixture
+def modul_an(admin):
+    t = TafelEinstellungen.laden()
+    t.module = ["aufruf"]
+    t.save()
+
+
+@pytest.fixture
+def mitte():
+    return Ausgabestelle.objects.create(name="Mitte")
+
+
+def gruppe(stelle, name, uhrzeit, tage=None):
+    return Kundengruppe.objects.create(
+        name=name, ausgabestelle=stelle, wochentage=tage if tage is not None else kuerzel(),
+        uhrzeit=dt.time(*uhrzeit),
+    )  # fmt: skip
+
+
+def haushalte(g, *nummern, status=Haushalt.Status.AKTIV):
+    for n in nummern:
+        h = Haushalt.objects.create(kundennummer=n, kundengruppe=g, status=status)
+        Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika", nachname="Muster")
+
+
+@pytest.fixture
+def tag_daten(mitte):
+    """Zwei Gruppen heute (12:00 mit 5, 13:00 mit 4 Haushalten), eine an einem anderen Tag."""
+    frueh = gruppe(mitte, "Früh", (12, 0))
+    spaet = gruppe(mitte, "Spät", (13, 0))
+    anders = gruppe(mitte, "Anders", (12, 0), tage=WOCHENTAGE[(heute().weekday() + 1) % 7])
+    haushalte(frueh, "101", "102", "103", "104", "105")
+    haushalte(spaet, "201", "202", "203", "204")
+    haushalte(anders, "301")
+    haushalte(frueh, "199", status=Haushalt.Status.GESPERRT)
+    return frueh, spaet
+
+
+# ── Modulschalter ────────────────────────────────────────────────────────────
+
+
+def test_modul_aus_ist_unsichtbar(admin_client):
+    assert module.aktiv("aufruf") is False
+    assert admin_client.get(reverse("aufruf:start")).status_code == 404
+    assert admin_client.get(reverse("aufruf:einstellungen")).status_code == 404
+    seite = admin_client.get(reverse("core:start")).content.decode()
+    assert "Aufruf steuern" not in seite
+    assert "aufruf.steuern" in rechte.ALLE  # im Katalog, aber nicht in der Rollenverwaltung
+    assert all(r.code != "aufruf.steuern" for _, liste in rechte.bereiche() for r in liste)
+    assert 'id="aufruf"' not in admin_client.get(reverse("core:hilfe")).content.decode()
+
+
+def test_modul_einschalten_in_den_tafel_einstellungen(admin_client):
+    seite = admin_client.get(reverse("core:einstellungen")).content.decode()
+    assert "Zusätzliche Module" in seite and "Aufruf –" in seite
+    antwort = admin_client.post(reverse("core:einstellungen"), {
+        "name": "Tafel Musterstadt", "farbe": "#e5007d", "hintergrund_staerke": 15,
+        "module": ["aufruf"],
+    })  # fmt: skip
+    assert antwort.status_code == 302
+    assert TafelEinstellungen.laden().module == ["aufruf"]
+    seite = admin_client.get(reverse("core:start")).content.decode()
+    assert "Aufruf steuern" in seite and "Aufruf, Monitor und Kiosk" in seite
+    assert any(r.code == "aufruf.steuern" for _, liste in rechte.bereiche() for r in liste)
+    assert 'id="aufruf"' in admin_client.get(reverse("core:hilfe")).content.decode()
+
+
+def test_rechte_ausgeschalteter_module_bleiben_beim_speichern_der_rolle(admin_client):
+    from apps.konten.models import Rolle
+
+    rolle = Rolle.objects.get(gruppe__name=rollen.AUSGABE)
+    assert "aufruf.steuern" in rolle.rechte  # Datenmigration
+    antwort = admin_client.post(reverse("konten:rolle", args=[rolle.pk]), {
+        "name": rolle.name, "beschreibung": "", "reihenfolge": rolle.reihenfolge,
+        "rechte": ["einlass.nutzen"],
+    })  # fmt: skip
+    assert antwort.status_code == 302
+    rolle.refresh_from_db()
+    assert "aufruf.steuern" in rolle.rechte
+
+
+def test_handbuch_kapitel_und_datensicherung():
+    kennungen = [k.kennung for k in hilfe.alle_kapitel()]
+    assert "aufruf" in kennungen and len(kennungen) == len(set(kennungen))
+    assert "aufruf" in datensicherung.EIGENE_APPS
+    assert "aufruf.aufruftag" in datensicherung.AUSGENOMMEN
+    assert AufrufEinstellungen in datensicherung.modelle("kunden")
+
+
+# ── Reihenfolge ──────────────────────────────────────────────────────────────
+
+
+def test_neuer_stand_nur_heutige_gruppen_aktive_haushalte(mitte, tag_daten):
+    e = AufrufEinstellungen.laden(mitte)
+    s = ablauf.neuer_stand(mitte, heute(), e)
+    assert [g["name"] for g in s["gruppen"]] == ["Früh", "Spät"]
+    assert sorted(s["gruppen"][0]["wartend"]) == ["101", "102", "103", "104", "105"]
+    assert sorted(s["gruppen"][1]["wartend"]) == ["201", "202", "203", "204"]
+
+
+def test_vorrang_zuerst(mitte, tag_daten):
+    feld = Zusatzfeld.objects.create(schluessel="schwerbehindert", bezeichnung="Schwerbehindert",
+                                     typ=Zusatzfeld.Typ.JA_NEIN)  # fmt: skip
+    for n in ("104", "105"):
+        p = Haushalt.objects.get(kundennummer=n).personen.get()
+        p.zusatz = {"schwerbehindert": True}
+        p.save()
+    e = AufrufEinstellungen.laden(mitte)
+    e.vorrang_feld = feld
+    e.save()
+    s = ablauf.neuer_stand(mitte, heute(), e)
+    assert set(s["gruppen"][0]["wartend"][:2]) == {"104", "105"}
+    tag = ablauf.starten(mitte, heute())
+    d = ablauf.stand_fuer_anzeige(tag, e, heute())
+    assert d["priority_flags"][:2] == [True, True] and d["priority_flags"][2] is False
+    e.vorrang_symbol = False
+    e.save()
+    assert ablauf.stand_fuer_anzeige(tag, e, heute())["priority_flags"] == [False] * 3
+
+
+def test_ablauf_starten_weiter_zurueck_fertig(mitte, tag_daten):
+    e = AufrufEinstellungen.laden(mitte)
+    with pytest.raises(ablauf.AufrufFehler):
+        ablauf.weiter(mitte, heute())
+    tag = ablauf.starten(mitte, heute())
+    d = ablauf.stand_fuer_anzeige(tag, e, heute())
+    erste = d["current_numbers"]
+    assert len(erste) == 3 and d["current_slot"] == "Früh (12:00)" and d["total_numbers"] == 9
+    tag = ablauf.weiter(mitte, heute())
+    d = ablauf.stand_fuer_anzeige(tag, e, heute())
+    assert len(d["current_numbers"]) == 2 and d["past_numbers"] == erste
+    assert d["can_undo"] and d["total_completed"] == 3
+    tag = ablauf.zurueck(mitte, heute())
+    assert ablauf.stand_fuer_anzeige(tag, e, heute())["current_numbers"] == erste
+    for _ in range(2):
+        tag = ablauf.weiter(mitte, heute())
+    d = ablauf.stand_fuer_anzeige(tag, e, heute())
+    assert d["current_slot"] == "Spät (13:00)" and d["slot_index"] == 2
+    for _ in range(2):
+        tag = ablauf.weiter(mitte, heute())
+    d = ablauf.stand_fuer_anzeige(tag, e, heute())
+    assert d["finished"] and d["total_completed"] == 9
+    tag = ablauf.zurueck(mitte, heute())  # auch der letzte Schritt lässt sich zurücknehmen
+    assert not ablauf.stand_fuer_anzeige(tag, e, heute())["finished"]
+
+
+def test_anzahl_einstellbar(mitte, tag_daten):
+    e = AufrufEinstellungen.laden(mitte)
+    e.anzahl = 2
+    e.save()
+    tag = ablauf.starten(mitte, heute())
+    assert len(ablauf.stand_fuer_anzeige(tag, e, heute())["current_numbers"]) == 2
+
+
+def test_schon_eingelassene_fallen_heraus(mitte, tag_daten):
+    tag = ablauf.starten(mitte, heute())
+    wartend = tag.stand["gruppen"][0]["wartend"]
+    aktuell, spaeter = wartend[0], wartend[4]
+    for n in (aktuell, spaeter, "203"):
+        Abholung.objects.create(haushalt=Haushalt.objects.get(kundennummer=n), datum=heute())
+    tag = ablauf.weiter(mitte, heute())
+    g = tag.stand["gruppen"]
+    assert aktuell in g[0]["aufgerufen"]  # war schon aufgerufen: bleibt bei den Erledigten
+    assert spaeter in g[0]["eingelassen"] and spaeter not in g[0]["wartend"]
+    assert "203" in g[1]["eingelassen"] and "203" not in g[1]["wartend"]
+    assert ablauf.abfrage(mitte, heute(), "203")["schon_dran"] is True
+
+
+def test_eingelassene_bleiben_wenn_ausgeschaltet(mitte, tag_daten):
+    e = AufrufEinstellungen.laden(mitte)
+    e.eingelassene_ausblenden = False
+    e.save()
+    Abholung.objects.create(haushalt=Haushalt.objects.get(kundennummer="203"), datum=heute())
+    tag = ablauf.starten(mitte, heute())
+    assert "203" in tag.stand["gruppen"][1]["wartend"]
+
+
+def test_abgleich_mit_dem_kundenstamm(mitte, tag_daten):
+    frueh, spaet = tag_daten
+    tag = ablauf.starten(mitte, heute())
+    aktuell = tag.stand["gruppen"][0]["wartend"][:3]
+    weg = tag.stand["gruppen"][0]["wartend"][0]  # gerade aufgerufen: bleibt sichtbar
+    Haushalt.objects.filter(kundennummer__in=[weg, "202"]).update(status=Haushalt.Status.BEENDET)
+    haushalte(frueh, "106", "107")
+    tag = ablauf.aktualisieren(mitte, heute())  # noch nicht: höchstens alle 20 Sekunden
+    assert "106" not in tag.stand["gruppen"][0]["wartend"]
+    tag.stand["abgeglichen"] = "2000-01-01T00:00:00+00:00"
+    tag.save()
+    tag = ablauf.aktualisieren(mitte, heute())
+    g = tag.stand["gruppen"]
+    assert g[0]["wartend"][:3] == aktuell
+    assert {"106", "107"} <= set(g[0]["wartend"][3:])
+    assert "202" not in g[1]["wartend"]
+
+
+def test_neu_mischen(mitte, tag_daten):
+    ablauf.starten(mitte, heute())
+    ablauf.weiter(mitte, heute())
+    tag = ablauf.neu_mischen(mitte, heute())
+    assert tag.stand["rueckgaengig"] == [] and len(tag.stand["gruppen"][0]["wartend"]) == 5
+
+
+def test_spaetzuender(mitte, tag_daten):
+    e = AufrufEinstellungen.laden(mitte)
+    e.spaetzuender_versatz = 4
+    e.save()
+    tag = ablauf.starten(mitte, heute())
+    zuerst = tag.stand["gruppen"][0]["wartend"][0]
+    with pytest.raises(ablauf.AufrufFehler):
+        ablauf.spaetzuender(mitte, heute(), zuerst)  # noch nicht aufgerufen
+    ablauf.weiter(mitte, heute())
+    ergebnis = ablauf.spaetzuender(mitte, heute(), zuerst)
+    assert ergebnis["bereits"] is False and ergebnis["vor_der_nummer"] == 4
+    a = ablauf.abfrage(mitte, heute(), zuerst)
+    assert a["neu_einsortiert"] is True and a["vor_der_nummer"] == 4
+    assert ablauf.spaetzuender(mitte, heute(), zuerst)["bereits"] is True
+    # „Zurück“ holt ihn nicht an den alten Platz zurück (sonst stünde er doppelt da)
+    tag = ablauf.zurueck(mitte, heute())
+    alle = [x for g in tag.stand["gruppen"] for x in g["wartend"] + g["aufgerufen"]]
+    assert alle.count(zuerst) == 1
+    zeile = next(z for z in ablauf.reihenfolge(tag) if z["nummer"] == zuerst)
+    assert "zu spät" in zeile["anmerkung"]
+
+
+def test_abfrage(mitte, tag_daten):
+    Person.objects.filter(haushalt__kundennummer="201").update(staatsangehoerigkeit="Syrien")
+    vorab = ablauf.abfrage(mitte, heute(), "201")
+    assert vorab["vorschau"] is True and vorab["gefunden"] and vorab["sprache"] == "ar"
+    platz = vorab["gesamt_platz"]
+    tag = ablauf.starten(mitte, heute())  # die vorab genannte Reihenfolge bleibt
+    assert ablauf.abfrage(mitte, heute(), "201")["gesamt_platz"] == platz
+    erster = tag.stand["gruppen"][0]["wartend"][0]
+    a = ablauf.abfrage(mitte, heute(), erster)
+    assert a["schon_dran"] is False and a["vor_der_nummer"] == 0
+    ablauf.weiter(mitte, heute())
+    assert ablauf.abfrage(mitte, heute(), erster)["schon_dran"] is True
+    assert ablauf.abfrage(mitte, heute(), "301")["gefunden"] is False
+    assert ablauf.abfrage(mitte, heute(), " 0201 ")["nummer"] == "201"
+
+
+def test_keine_gruppe_heute(mitte):
+    assert ablauf.abfrage(mitte, heute(), "1")["active"] is False
+    with pytest.raises(ablauf.AufrufFehler, match="keine Kundengruppe"):
+        ablauf.starten(mitte, heute())
+
+
+def test_probelauf_als_wochentag(mitte):
+    morgen = (heute().weekday() + 1) % 7
+    haushalte(gruppe(mitte, "Morgen", (10, 0), tage=WOCHENTAGE[morgen]), "501")
+    e = AufrufEinstellungen.laden(mitte)
+    e.wochentag_probe = morgen
+    e.save()
+    tag = ablauf.starten(mitte, heute())
+    assert tag.stand["gruppen"][0]["wartend"] == ["501"]
+
+
+def test_alte_tage_werden_geloescht(mitte, tag_daten):
+    alt = AufrufTag.objects.create(ausgabestelle=mitte, datum=heute() - dt.timedelta(days=40))
+    ablauf.starten(mitte, heute())
+    assert not AufrufTag.objects.filter(pk=alt.pk).exists()
+
+
+def test_sprachen():
+    from apps.aufruf.sprachen import sprachcode
+
+    assert sprachcode("Ukraine") == "uk" and sprachcode("Arabische Republik Syrien") == "ar"
+    assert sprachcode("Deutschland") == "de" and sprachcode("") is None
+    assert sprachcode("Atlantis") is None
+
+
+# ── Seiten mit Anmeldung ─────────────────────────────────────────────────────
+
+
+def test_steuerung_ablauf_ueber_die_seiten(modul_an, admin_client, mitte, tag_daten):
+    url = reverse("aufruf:steuerung", args=[mitte.pk])
+    assert admin_client.get(reverse("aufruf:start")).url == url  # nur eine Ausgabestelle
+    seite = admin_client.get(url).content.decode()
+    assert "Ausgabe starten" in seite and "2 Kundengruppen" in seite
+    admin_client.post(reverse("aufruf:starten", args=[mitte.pk]))
+    seite = admin_client.get(url).content.decode()
+    assert "Weiter zu den nächsten Kundennummern" in seite and "Früh (12:00)" in seite
+    admin_client.post(reverse("aufruf:weiter", args=[mitte.pk]))
+    admin_client.post(reverse("aufruf:zurueck", args=[mitte.pk]))
+    for _ in range(4):
+        admin_client.post(reverse("aufruf:weiter", args=[mitte.pk]))
+    assert "abgeschlossen" in admin_client.get(url).content.decode()
+    csv = admin_client.get(reverse("aufruf:liste", args=[mitte.pk])).content.decode("utf-8-sig")
+    assert csv.startswith("Platz gesamt;Kundengruppe") and "101" in csv and "Erika" not in csv
+
+
+def test_api_wie_bisher(modul_an, admin_client, mitte, tag_daten):
+    def post(name, **daten):
+        return admin_client.post(
+            reverse(f"aufruf:{name}", args=[mitte.pk]),
+            json.dumps(daten),
+            content_type="application/json",
+        ).json()
+
+    status = admin_client.get(reverse("aufruf:api_status", args=[mitte.pk])).json()
+    assert status["has_active_session"] is False and status["available_days"]
+    stand = admin_client.get(reverse("aufruf:api_stand", args=[mitte.pk])).json()
+    assert "error" in stand
+    assert post("api_starten")["success"] is True
+    d = post("api_weiter")
+    assert d["success"] and d["message"] == "3 Kundennummer(n) bearbeitet" and d["can_undo"]
+    assert len(d["current_numbers"]) == 2 and "upcoming_numbers" in d
+    erste = admin_client.get(reverse("aufruf:api_stand", args=[mitte.pk])).json()["past_numbers"]
+    s = post("api_spaetzuender", nummer=erste[0])
+    assert s["success"] and s["versatz"] == 30
+    assert post("api_spaetzuender")["success"] is False
+    abfrage = admin_client.get(reverse("aufruf:api_abfrage", args=[mitte.pk]),
+                               {"nummer": erste[1]}).json()  # fmt: skip
+    assert abfrage["schon_dran"] is True
+    assert post("api_zurueck")["success"] is True
+
+
+def test_mobil_und_steuerung_seiten(modul_an, admin_client, mitte, tag_daten):
+    ablauf.starten(mitte, heute())
+    seite = admin_client.get(reverse("aufruf:mobil", args=[mitte.pk])).content.decode()
+    assert "Aktuelle Kunden" in seite and "const SPAET_VERSATZ = 30;" in seite
+    assert reverse("aufruf:api_weiter", args=[mitte.pk]) in seite
+
+
+def test_nur_eigene_ausgabestelle(modul_an, client, anmelden, benutzer_mit_rolle, mitte, tag_daten):
+    andere = Ausgabestelle.objects.create(name="Nord")
+    anton = benutzer_mit_rolle("anton", rollen.AUSGABE)
+    anton.ausgabestellen.add(mitte)
+    anmelden(client, anton)
+    assert client.get(reverse("aufruf:steuerung", args=[mitte.pk])).status_code == 200
+    assert client.get(reverse("aufruf:steuerung", args=[andere.pk])).status_code == 403
+    assert client.get(reverse("aufruf:einstellungen")).status_code == 403
+
+
+# ── Anzeige-Geräte ohne Anmeldung ────────────────────────────────────────────
+
+
+def test_anzeige_nur_mit_schluessel(modul_an, mitte, tag_daten):
+    e = AufrufEinstellungen.laden(mitte)
+    c = Client()
+    assert c.get(reverse("aufruf:monitor", args=["falsch"])).status_code == 404
+    seite = c.get(reverse("aufruf:monitor", args=[e.schluessel])).content.decode()
+    assert "Ausgabe hat noch nicht begonnen" in seite
+    assert "error" in c.get(reverse("aufruf:anzeige_stand", args=[e.schluessel])).json()
+    ablauf.starten(mitte, heute())
+    seite = c.get(reverse("aufruf:monitor", args=[e.schluessel])).content.decode()
+    assert "Bitte eintreten" in seite and "--info-display-width: 45%" in seite
+    assert "Erika" not in seite
+    d = c.get(reverse("aufruf:anzeige_stand", args=[e.schluessel])).json()
+    assert len(d["current_numbers"]) == 3 and d["infos"] == []
+    for name in ("anzeige", "kiosk", "abfrage"):
+        assert c.get(reverse(f"aufruf:{name}", args=[e.schluessel])).status_code == 200
+    kiosk = c.get(reverse("aufruf:kiosk", args=[e.schluessel])).content.decode()
+    assert "Mitte" in kiosk and "Frohnhauser" not in kiosk
+    a = c.get(reverse("aufruf:anzeige_abfrage", args=[e.schluessel]), {"nummer": "201"}).json()
+    assert a["gefunden"] is True
+    while not ablauf.stand_fuer_anzeige(ablauf.weiter(mitte, heute()), e, heute())["finished"]:
+        pass
+    seite = c.get(reverse("aufruf:monitor", args=[e.schluessel])).content.decode()
+    assert "abgeschlossen" in seite.lower()
+
+
+def test_anzeige_aus_wenn_modul_aus(admin, mitte):
+    e = AufrufEinstellungen.laden(mitte)
+    assert Client().get(reverse("aufruf:monitor", args=[e.schluessel])).status_code == 404
+
+
+def test_layout_vom_monitor(modul_an, mitte):
+    e = AufrufEinstellungen.laden(mitte)
+    c = Client(enforce_csrf_checks=False)
+    url = reverse("aufruf:anzeige_layout", args=[e.schluessel])
+    antwort = c.post(url, json.dumps({"nextCustomers": 20, "currentNumbers": 40, "infoDisplay": 60,
+                                      "currentNumbersFont": 99, "headerFont": "x"}),
+                     content_type="application/json").json()  # fmt: skip
+    assert antwort["success"]
+    layout = antwort["layout"]
+    assert layout["nextCustomers"] + layout["currentNumbers"] + layout["infoDisplay"] == 100
+    assert layout["currentNumbersFont"] == 15.0 and layout["headerFont"] == 2.8
+    e.refresh_from_db()
+    assert e.layout_werte()["current_numbers_font"] == 15.0
+    assert c.post(url, "kaputt", content_type="application/json").status_code == 400
+
+
+def test_infos_auf_dem_monitor(modul_an, admin_client, mitte, tag_daten):
+    e = AufrufEinstellungen.laden(mitte)
+    nord = Ausgabestelle.objects.create(name="Nord")
+    antwort = admin_client.post(reverse("aufruf:info_neu"), {
+        "titel": "Öffnungszeiten", "art": "text", "text": "Montag bis Freitag", "dauer": 10,
+        "reihenfolge": 1, "aktiv": "on",
+    })  # fmt: skip
+    assert antwort.status_code == 302
+    bild = SimpleUploadedFile("bild.png", b"\x89PNG\r\n\x1a\n" + b"0" * 20, "image/png")
+    admin_client.post(reverse("aufruf:info_neu"), {
+        "titel": "Bild", "art": "bild", "datei": bild, "dauer": 5, "reihenfolge": 2, "aktiv": "on",
+    })  # fmt: skip
+    fehler = admin_client.post(reverse("aufruf:info_neu"), {
+        "titel": "Leer", "art": "pdf", "dauer": 5, "reihenfolge": 3, "aktiv": "on",
+    })  # fmt: skip
+    assert "Bitte ein PDF hochladen." in fehler.content.decode()
+    admin_client.post(reverse("aufruf:info_neu"), {
+        "titel": "Nur Nord", "art": "text", "text": "x", "dauer": 5, "reihenfolge": 4,
+        "aktiv": "on", "ausgabestellen": [nord.pk],
+    })  # fmt: skip
+    ablauf.starten(mitte, heute())
+    c = Client()
+    seite = c.get(reverse("aufruf:monitor", args=[e.schluessel])).content.decode()
+    assert "Montag bis Freitag" in seite and "Nur Nord" not in seite
+    info = AufrufInfo.objects.get(titel="Bild")
+    datei = c.get(reverse("aufruf:anzeige_datei", args=[e.schluessel, info.pk]))
+    assert datei.status_code == 200 and datei["X-Frame-Options"] == "SAMEORIGIN"
+    nord_e = AufrufEinstellungen.laden(nord)
+    url = reverse("aufruf:anzeige_datei", args=[nord_e.schluessel, info.pk])
+    assert c.get(url).status_code == 200
+    nur_nord = AufrufInfo.objects.get(titel="Nur Nord")
+    url = reverse("aufruf:anzeige_datei", args=[e.schluessel, nur_nord.pk])
+    assert c.get(url).status_code == 404
+    assert len(c.get(reverse("aufruf:anzeige_stand", args=[e.schluessel])).json()["infos"]) == 2
+    admin_client.post(reverse("aufruf:info_loeschen", args=[info.pk]))
+    assert not AufrufInfo.objects.filter(pk=info.pk).exists()
+
+
+def test_einstellungen_und_neue_links(modul_an, admin_client, mitte):
+    e = AufrufEinstellungen.laden(mitte)
+    seite = admin_client.get(reverse("aufruf:einstellungen")).content.decode()
+    assert reverse("aufruf:monitor", args=[e.schluessel]) in seite
+    antwort = admin_client.post(reverse("aufruf:einstellungen_stelle", args=[mitte.pk]), {
+        "anzahl": 4, "spaetzuender_versatz": 20, "vorrang_symbol": "on", "info_rotation": "on",
+        "eingelassene_ausblenden": "on", "wochentag_probe": "",
+    })  # fmt: skip
+    assert antwort.status_code == 302
+    e.refresh_from_db()
+    assert (e.anzahl, e.spaetzuender_versatz) == (4, 20)
+    alt = e.schluessel
+    admin_client.post(reverse("aufruf:schluessel_neu", args=[mitte.pk]))
+    e.refresh_from_db()
+    assert e.schluessel != alt
+    assert Client().get(reverse("aufruf:monitor", args=[alt])).status_code == 404

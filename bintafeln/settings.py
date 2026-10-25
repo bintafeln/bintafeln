@@ -56,6 +56,11 @@ INSTALLED_APPS = [
     "apps.serienbriefe",
 ]
 
+# Zuschaltbare Module (ADR 0049): eigene Apps mit modul.py; jede Tafel schaltet sie in den
+# Tafel-Einstellungen ein oder aus.
+BINTAFELN_MODULE = ["apps.aufruf"]
+INSTALLED_APPS += BINTAFELN_MODULE
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -68,6 +73,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "auditlog.middleware.AuditlogMiddleware",
     "apps.core.middleware.EinrichtungMiddleware",
+    "apps.core.module.ModulMiddleware",
     "apps.konten.middleware.PasswortAendernMiddleware",
     "apps.konten.middleware.ZweiFaktorMiddleware",
 ]
