@@ -90,7 +90,7 @@ Anmeldeseite stehen die Zugänge:
 | `demo-fest` | Ausgabe und Fahrer, fest angestellt | „Meine Arbeitszeit“ mit Stempeln |
 | Name der ersten Ausgabestelle (z. B. `Ausgabestelle Mitte`) | Konto der Ausgabestelle | Tablet am Einlass: nur deren Kunden, ohne Zwei-Faktor |
 
-Die Module Aufruf, Warteliste, Wochenübersicht und Links sind eingeschaltet und mit Beispielen
+Die Module Aufruf, Warteliste, Wochenübersicht, Links und Abrechnung sind eingeschaltet und mit Beispielen
 gefüllt (Links auf der Startseite, zwei Selbstabholer). Das Wetter bleibt aus, weil es Internet
 und einen echten Ort braucht.
 
