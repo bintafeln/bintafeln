@@ -109,10 +109,12 @@ def anmelden_code(request):
 def _demo_zugaenge() -> dict:
     if not settings.DEMO:
         return {}
-    from apps.core.demo import KONTEN
+    from apps.core.demo import KONTEN, tablet_zugang
 
+    konten = [(name, " und ".join(namen)) for name, _, _, namen, _ in KONTEN]
+    tablet = tablet_zugang()
     return {
-        "demo_konten": [(name, " und ".join(namen)) for name, _, _, namen, _ in KONTEN],
+        "demo_konten": konten + ([tablet] if tablet else []),
         "demo_passwort": settings.DEMO_PASSWORT,
     }
 

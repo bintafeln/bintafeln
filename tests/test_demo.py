@@ -8,7 +8,7 @@ from apps.ausgabe.models import Buchung
 from apps.core.models import TafelEinstellungen
 from apps.konten import rollen, zwei_faktor
 from apps.konten.models import Rolle
-from apps.kunden.models import Dokumentart, Haushalt
+from apps.kunden.models import Ausgabestelle, Dokumentart, Haushalt
 from apps.personal.models import Zeitbuchung
 
 pytestmark = pytest.mark.django_db
@@ -58,8 +58,25 @@ def test_zuruecksetzen(demo, admin, django_user_model, settings, capsys):
     fest = django_user_model.objects.get(username="demo-fest")
     assert fest.vertraege.exists() and Zeitbuchung.objects.filter(benutzer=fest).exists()
 
+    # Module eingeschaltet und mit Beispielen gefüllt (ohne Wetter)
+    from apps.links.models import Link
+    from apps.wochenuebersicht.models import Selbstabholer
+
+    assert e.module == ["aufruf", "warteliste", "wochenuebersicht", "links"]
+    assert Link.objects.filter(warnung__gt="").exists() and Selbstabholer.objects.count() == 2
+    tablet = django_user_model.objects.get(username="demo-tablet")
+    assert tablet.stelle and tablet.check_password(PASSWORT)
+    assert list(tablet.ausgabestellen.all()) == [tablet.stelle]
+    from apps.konten.views import _demo_zugaenge
+
+    assert (tablet.stelle.name, "Tablet am Einlass (Konto der Ausgabestelle)") in (
+        _demo_zugaenge()["demo_konten"])  # fmt: skip
+    # Ein von Besuchern angelegtes Konto einer Ausgabestelle blockiert das Zurücksetzen nicht
+    django_user_model.objects.create_user(username="ausgabestelle-99", stelle=Ausgabestelle.objects
+                                          .exclude(pk=tablet.stelle_id).first())  # fmt: skip
+
     call_command("demo_zuruecksetzen")  # wiederholbar
-    assert django_user_model.objects.filter(username__startswith="demo-").count() == 5
+    assert django_user_model.objects.filter(username__startswith="demo-").count() == 6
 
 
 def test_zuruecksetzen_ohne_medienordner(demo, settings):

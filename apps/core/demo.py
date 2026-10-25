@@ -38,8 +38,13 @@ KONTEN = [
 
 
 def fremde_konten() -> list[str]:
-    """Konten, die nicht von der Demo stammen: Hinweis auf eine echte Installation."""
-    konten = get_user_model().objects.exclude(username__startswith="demo-")
+    """Konten, die nicht von der Demo stammen: Hinweis auf eine echte Installation.
+
+    Konten von Ausgabestellen (ADR 0059) zählen nicht: Demo-Besucher dürfen welche anlegen.
+    """
+    konten = (
+        get_user_model().objects.exclude(username__startswith="demo-").filter(stelle__isnull=True)
+    )
     return list(konten.order_by("username").values_list("username", flat=True)[:3])
 
 
@@ -63,6 +68,58 @@ def zuruecksetzen(heute: dt.date | None = None, erzwingen: bool = False) -> None
         konten = _konten()
         _kunden(konten["demo-admin"], heute)
         _arbeitszeit(konten["demo-fest"], heute)
+        _module()
+
+
+# Module, die die Demo einschaltet; das Wetter nicht (braucht Internet und einen echten Ort).
+DEMO_MODULE = ["aufruf", "warteliste", "wochenuebersicht", "links"]
+TABLET = "demo-tablet"
+
+
+def _module() -> None:
+    """Module einschalten und mit Beispielen füllen: Links, Selbstabholer, Konto einer
+    Ausgabestelle (Anmeldung mit deren Namen und dem Demo-Passwort)."""
+    from apps.core import module
+    from apps.kunden.models import Ausgabestelle
+    from apps.links.models import Link, LinkGruppe
+    from apps.wochenuebersicht.models import Selbstabholer
+
+    vorhanden = {m.kennung for m in module.alle()}
+    e = TafelEinstellungen.laden()
+    e.module = [k for k in DEMO_MODULE if k in vorhanden]
+    e.save()
+    anzeigen = LinkGruppe.objects.create(titel="Anzeigen und Listen", reihenfolge=1)
+    technik = LinkGruppe.objects.create(titel="Technik", reihenfolge=2)
+    for titel, untertitel, beschreibung, adresse, symbol, gruppe, mehr in [
+        ("Kundennummernanzeige", "Aufruf", "Monitor, Handy-Steuerung und Kiosk", "/aufruf/", "🖥️",
+         anzeigen, {"neuer_tab": True}),
+        ("Wochenübersicht", "Soll und Ist", "Ausgabestellen je Wochentag mit Druck",
+         "/wochenuebersicht/", "📊", anzeigen, {"neuer_tab": False}),
+        ("Webseite der Tafel", "Beispiel", "Hier steht der Link zur eigenen Webseite",
+         "https://example.org", "🌐", None, {}),
+        ("Serververwaltung", "Beispiel", "Nur für Admins sichtbar", "https://example.org/server",
+         "🛠️", technik, {"warnung": "Nur für Admins – Änderungen wirken sofort",
+                         "recht": "system.update"}),
+    ]:  # fmt: skip
+        Link.objects.create(titel=titel, untertitel=untertitel, beschreibung=beschreibung,
+                            adresse=adresse, symbol=symbol, gruppe=gruppe, **mehr)  # fmt: skip
+    Selbstabholer.objects.create(name="Frauenhaus (Beispiel)", tage="Mo, Mi", personen=12)
+    Selbstabholer.objects.create(name="Jugendtreff (Beispiel)", tage="Fr", personen=25)
+    stelle = Ausgabestelle.objects.order_by("name").first()
+    if stelle:
+        tablet = get_user_model().objects.create_user(
+            username=TABLET, password=settings.DEMO_PASSWORT, first_name=stelle.name, stelle=stelle,
+        )  # fmt: skip
+        tablet.groups.set(Group.objects.filter(name=rollen.AUSGABE))
+        tablet.ausgabestellen.set([stelle])
+
+
+def tablet_zugang() -> tuple[str, str] | None:
+    """(Name der Ausgabestelle, Beschreibung) für die Anmeldeseite der Demo."""
+    konto = get_user_model().objects.filter(username=TABLET).select_related("stelle").first()
+    if konto is None or konto.stelle is None:
+        return None
+    return konto.stelle.name, "Tablet am Einlass (Konto der Ausgabestelle)"
 
 
 def _medien_leeren() -> None:
