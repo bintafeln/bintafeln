@@ -120,6 +120,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - .:/projekt
       - betrieb:/betrieb
+      # Benutzerkonten des Servers: git und Update laufen als Besitzer des Projektordners
+      - /etc/passwd:/host-passwd:ro
 
 volumes:
   db-daten:

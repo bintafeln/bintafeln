@@ -21,8 +21,12 @@ Einrichtung auf dem Server (Systemdienst o. Ä.) ist für die Tafeln keine Optio
 - Der Dienst nimmt nur Versionen an, die als Tag der Form `JJJJ.M.N` existieren, und startet
   dafür einen eigenen Container mit dem Projektordner unter demselben Pfad wie auf dem Server.
   Der führt `./betrieb update VERSION` aus (Sicherung vorher, Migrationen auch rückwärts) – nötig,
-  weil das Update den Dienst selbst neu startet. Dateien, die git als root schreibt, bekommen
-  danach wieder den Besitzer des Projektordners.
+  weil das Update den Dienst selbst neu startet.
+- `git fetch` und das Update laufen nicht als root, sondern mit Benutzer- und Gruppennummer des
+  Projektordners, dessen Home-Ordner (nur lesend, aus `/etc/passwd` des Servers) und der
+  Docker-Gruppe. So greifen die SSH-Schlüssel, `known_hosts` und git-Einstellungen, mit denen
+  der Ordner eingerichtet wurde, und alle Dateien behalten ihren Besitzer. (Erste Fassung lief
+  als root und scheiterte bei SSH-Remotes mit „Host key verification failed“.)
 - Seite „Einstellungen → Update“ mit neuem Recht `system.update` (Vorgabe Admin), Bestätigung,
   Fortschritt, Ergebnis und Protokoll; in der Demo gesperrt.
 - Der Dienst kommt einmalig mit dem nächsten `./betrieb update` auf die Server.

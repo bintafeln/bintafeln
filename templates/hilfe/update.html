@@ -15,7 +15,10 @@
   <li><strong>„Der Update-Dienst läuft noch nicht“</strong>: Einmalig auf dem Server <code>./betrieb update</code>
     ausführen; ab dann geht es hier.</li>
   <li><strong>„Neue Versionen konnten nicht abgerufen werden“</strong>: Der Server erreicht GitHub nicht (Internet,
-    Zugangsdaten).</li>
+    Zugangsdaten). Der Dienst nutzt dieselben Zugangsdaten wie die Person, der der bintafeln-Ordner auf dem Server
+    gehört. Klappt <code>git fetch</code> dort auf der Kommandozeile, klappt es auch hier. Bei „Host key verification
+    failed“ nach einem Update von einer älteren Version einmalig <code>./betrieb update</code> auf dem Server
+    ausführen.</li>
   <li><strong>Update fehlgeschlagen</strong>: Das Protokoll auf der Seite zeigt, woran es lag. Meist läuft der bisherige
     Stand weiter; die technisch verantwortliche Person kann mit dem Protokoll helfen.</li>
 </ul>
