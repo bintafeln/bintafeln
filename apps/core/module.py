@@ -50,6 +50,9 @@ class Modul:
     # Fristen und Automatik (z. B. Status nach Tagen, Löschfristen); läuft wie die Fristen der
     # übrigen Apps beim Aufruf der Startseite, nur bei eingeschaltetem Modul. Aufruf ohne Argumente.
     fristen: Callable | None = None
+    # Vorlage, die angemeldeten Personen rechts in der Kopfzeile erscheint (z. B. Wetter).
+    # Sie sollte ihren Inhalt nachladen (hx-trigger="load"), damit die Seite nicht wartet.
+    kopfzeile: str = ""
 
 
 @cache
@@ -93,6 +96,12 @@ def fristen_anwenden() -> None:
     for m in alle():
         if m.kennung in an and m.fristen:
             m.fristen()
+
+
+def kopfzeile() -> list[str]:
+    """Vorlagen der eingeschalteten Module für die Kopfzeile."""
+    an = eingeschaltet()
+    return [m.kopfzeile for m in alle() if m.kennung in an and m.kopfzeile]
 
 
 def auswahl() -> list[tuple[str, str]]:

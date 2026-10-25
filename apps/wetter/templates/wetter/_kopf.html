@@ -1,0 +1,1 @@
+{% if wetter %}<span title="Wetter an der Ausgabestelle {{ wetter.stelle }} ({{ wetter.ort }}), Stand {{ wetter.stand|time:'H:i' }} Uhr – Daten: Open-Meteo.com"><span class="kopf-wetter-symbol" aria-hidden="true">{{ wetter.symbol }}</span> <strong>{{ wetter.temperatur }} °C</strong>{% if wetter.text %}<span class="kuerz-2"> {{ wetter.text }}</span>{% endif %}</span>{% endif %}

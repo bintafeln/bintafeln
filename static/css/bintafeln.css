@@ -642,7 +642,7 @@ label.wahl { display: block; white-space: nowrap; }
 }
 
 /* Suche im Seitenkopf (ADR 0040); die Liste schließt sich, sobald der Fokus woanders ist */
-.kopf-suche { position: relative; flex: 1 1 18rem; max-width: 34rem; margin: 0; }
+.kopf-suche { position: relative; flex: 1 1 14rem; max-width: 34rem; margin: 0; }
 .kopf-suche input {
   width: 100%; min-height: 2.5rem; padding: .4rem .75rem; border: 0; border-radius: var(--radius);
   font: inherit; color: var(--text); background: var(--flaeche);
@@ -722,3 +722,17 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 .status.wl-wz_abgelaufen, .status.wl-streichen_moeglich, .status.wl-gestrichen { background: #fbe9e8; color: #8c1d18; }
 .status.wl-erschienen { background: #e7f4e8; color: #1e5b21; }
 .status.wl-aufgenommen { background: #efe7fa; color: #4b2a7a; }
+
+/* Kopfzeile: Programmname, Modul-Beiträge (Wetter) und Abmelden rechts. Ist die Zeile zu eng,
+   setzt static/js/kopfzeile.js nacheinander .kopf-kurz-1 … -5 und blendet so .kuerz-1 … -5 aus. */
+.kopf-programm { white-space: nowrap; font-size: .95rem; opacity: .95; }
+.kopf-programm strong { font-weight: 700; }
+.kopf-rechts { display: flex; align-items: center; gap: .25rem 1rem; margin-left: auto; }
+.kopf-wetter { white-space: nowrap; font-size: .95rem; }
+.kopf-wetter-symbol { font-size: 1.3rem; vertical-align: -.15rem; }
+.kopf-wetter strong { font-size: 1.05rem; }
+.kopf-kurz-1 .kuerz-1, .kopf-kurz-2 .kuerz-2, .kopf-kurz-3 .kuerz-3,
+.kopf-kurz-4 .kuerz-4, .kopf-kurz-5 .kuerz-5 { display: none; }
+/* Letzte Stufe: Der Name der Tafel darf mit „…“ enden (ganz im Tooltip), damit alles in eine Zeile passt */
+.kopf-kurz-5 .marke { flex: 1 1 0; min-width: 0; }
+.kopf-kurz-5 .marke span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

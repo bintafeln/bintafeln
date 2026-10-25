@@ -1,9 +1,11 @@
 from django.conf import settings
 
+from apps.core import module
 from apps.core.menue import menue
 from apps.core.models import TafelEinstellungen
 from apps.konten.rollen import alle_rollen, darf_mitarbeitende_verwalten, rechte_von, rollen_von
 from apps.konten.zwei_faktor import ist_pflicht
+from bintafeln import programm
 from bintafeln.version import version
 
 
@@ -36,4 +38,7 @@ def tafel(request):
         "demo": settings.DEMO,
         "heimnetz_https": settings.HEIMNETZ_ADRESSE,
         "version": version(),
+        "programm": {"name": programm.NAME, "untertitel": programm.UNTERTITEL},
+        # Beiträge eingeschalteter Module zur Kopfzeile (z. B. Wetter), nur angemeldet
+        "kopf_module": module.kopfzeile() if angemeldet and not offen else [],
     }
