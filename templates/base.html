@@ -49,7 +49,7 @@
   <nav class="seitenmenue" aria-label="Hauptnavigation">
     {% for bereich in menue %}
       {% if bereich.einzeln %}{% with e=bereich.eintraege.0 %}
-      <a href="{{ e.url }}" class="menue-oben{% if e.aktiv %} aktiv{% endif %}"{% if e.aktiv %} aria-current="page"{% endif %}>{{ e.titel }}{% if e.zahl is not None %} <span class="menue-zahl" title="{{ e.zahl_titel }}">{{ e.zahl }}</span>{% endif %}</a>
+      <a href="{{ e.url }}" class="menue-oben{% if e.aktiv %} aktiv{% endif %}"{% if e.aktiv %} aria-current="page"{% endif %}{% if e.extern %} target="_blank" rel="noopener"{% endif %}>{{ e.titel }}{% if e.extern %} ↗{% endif %}{% if e.zahl is not None %} <span class="menue-zahl" title="{{ e.zahl_titel }}">{{ e.zahl }}</span>{% endif %}</a>
       {% endwith %}{% else %}
       <details class="menue-bereich" name="menue-bereich"{% if bereich.offen %} open{% endif %}>
         <summary class="menue-oben">{{ bereich.titel }}{% if bereich.zahl is not None %} <span class="menue-zahl" title="{{ bereich.zahl_titel }}">{{ bereich.zahl }}</span>{% endif %}</summary>

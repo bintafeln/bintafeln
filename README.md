@@ -659,8 +659,8 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
 - **Immer aktuell:** Neue Haushalte werden während des Tages fair einsortiert, entfernte fallen
   heraus. Wer heute schon am Einlass war (Abholung gebucht, z. B. mit Ausnahme vorgezogen),
   verschwindet aus der Warteschlange.
-- **Steuern** (Recht „Kunden aufrufen“, Vorgabe Büro und Ausgabe): Menü „Aufruf → Aufruf
-  steuern“ am PC oder die Handy-Steuerung. Weiter, Zurück, Abfrage einer Nummer und „zu spät
+- **Steuern** (Recht „Kunden aufrufen“, Vorgabe Büro und Ausgabe): Menü
+  „Kundennummernanzeige“ (öffnet einen neuen Tab) am PC oder die Handy-Steuerung. Weiter, Zurück, Abfrage einer Nummer und „zu spät
   gekommen“ (so viele wartende Plätze nach hinten wie eingestellt). Reihenfolge des Tages als CSV.
 - **Geräte im Wartebereich:** Monitor (Nummern, Infos im Wechsel, Ton, Layout per Zahnrad),
   Nummern-Anzeige, Kiosk (Karte scannen, Antwort auf Deutsch und in der Sprache zur

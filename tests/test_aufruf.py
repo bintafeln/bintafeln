@@ -81,7 +81,7 @@ def test_modul_aus_ist_unsichtbar(admin_client):
     assert admin_client.get(reverse("aufruf:start")).status_code == 404
     assert admin_client.get(reverse("aufruf:einstellungen")).status_code == 404
     seite = admin_client.get(reverse("core:start")).content.decode()
-    assert "Aufruf steuern" not in seite
+    assert "Kundennummernanzeige" not in seite
     assert "aufruf.steuern" in rechte.ALLE  # im Katalog, aber nicht in der Rollenverwaltung
     assert all(r.code != "aufruf.steuern" for _, liste in rechte.bereiche() for r in liste)
     assert 'id="aufruf"' not in admin_client.get(reverse("core:hilfe")).content.decode()
@@ -97,7 +97,7 @@ def test_modul_einschalten_in_den_tafel_einstellungen(admin_client):
     assert antwort.status_code == 302
     assert TafelEinstellungen.laden().module == ["aufruf"]
     seite = admin_client.get(reverse("core:start")).content.decode()
-    assert "Aufruf steuern" in seite and "Aufruf, Monitor und Kiosk" in seite
+    assert "Kundennummernanzeige" in seite and "Aufruf, Monitor und Kiosk" in seite
     assert any(r.code == "aufruf.steuern" for _, liste in rechte.bereiche() for r in liste)
     assert 'id="aufruf"' in admin_client.get(reverse("core:hilfe")).content.decode()
 
@@ -540,3 +540,10 @@ def test_einlass_karte_zeigt_aufruf(modul_an, admin_client, mitte, tag_daten):
     t.save()
     seite = admin_client.get(reverse("ausgabe:empfang"), {"nummer": "201"}).content.decode()
     assert "Noch nicht aufgerufen" not in seite
+
+
+def test_menue_oeffnet_neuen_tab(modul_an, admin_client):
+    seite = admin_client.get(reverse("core:start")).content.decode()
+    link = f'href="{reverse("aufruf:start")}"'
+    stelle = seite.index(link)
+    assert 'target="_blank"' in seite[stelle : stelle + 200]
