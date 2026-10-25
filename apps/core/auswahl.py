@@ -20,6 +20,13 @@ GRUPPENFARBEN = [
 # Spenden (ADR 0045)
 ZAHLUNGSWEGE = ["Überweisung", "Bar", "Lastschrift", "Online (z. B. PayPal)", "Scheck", "Sonstiges"]
 SACH_EINHEITEN = ["Kisten", "kg", "Stück", "Paletten", "Liter", "Tüten", "Säcke", "Sonstiges"]
+# Mitglieder (ADR 0046)
+MITGLIEDSARTEN = ["Ordentliches Mitglied", "Aktives Mitglied", "Fördermitglied", "Ehrenmitglied",
+                  "Juristische Person"]  # fmt: skip
+ZAHLWEISEN = ["jährlich", "halbjährlich", "vierteljährlich", "monatlich"]
+ZAHLUNGSARTEN = ["Überweisung", "Lastschrift", "Bar", "Dauerauftrag"]
+AUSTRITTSGRUENDE = ["Kündigung", "Tod", "Ausschluss", "Streichung (Beitrag nicht gezahlt)",
+                    "Sonstiges"]  # fmt: skip
 # Gründe für einen Korrekturwunsch am Einlass (Rücknahme durch Admin oder berechtigte Rolle)
 KORREKTURGRUENDE = [
     "Versehentlich gebucht",

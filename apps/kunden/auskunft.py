@@ -191,6 +191,16 @@ def kunde_pdf(h: Haushalt) -> bytes:
         breiten=[0.3, 0.7],
     )
 
+    from apps.serienbriefe.models import Versand
+
+    versaende = Versand.objects.filter(empfaenger__contains=[f"k:{h.kundennummer}"])
+    if versaende:
+        doc.ueberschrift("Serienbriefe")
+        doc.tabelle(["Datum", "Art", "Betreff"], [
+            [f"{timezone.localtime(v.am):%d.%m.%Y}", v.get_art_display(), v.betreff]
+            for v in versaende
+        ], breiten=[0.2, 0.2, 0.6])  # fmt: skip
+
     doc.ueberschrift("Hinweise")
     for satz in hinweise(e):
         doc.absatz(satz)

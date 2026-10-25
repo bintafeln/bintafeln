@@ -52,6 +52,8 @@ INSTALLED_APPS = [
     "apps.statistik",
     "apps.adressen",
     "apps.spenden",
+    "apps.mitglieder",
+    "apps.serienbriefe",
 ]
 
 MIDDLEWARE = [

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block titel %}Serienbriefe: Vorlagen und Versände{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Vorlagen</h1>
+  <div class="aktionsleiste">
+    <a class="knopf" href="{% url 'serienbriefe:erstellen' %}">Serienbrief erstellen</a>
+    <a class="knopf knopf-zweitrangig" href="{% url 'serienbriefe:vorlage_neu' %}">Neue Vorlage</a>
+  </div>
+  <ul>
+  {% for v in vorlagen %}<li><a href="{% url 'serienbriefe:vorlage' v.pk %}">{{ v.name }}</a> – {{ v.betreff }}
+    · <a href="{% url 'serienbriefe:erstellen' %}?vorlage={{ v.pk }}">verwenden</a></li>
+  {% empty %}<li>Noch keine Vorlagen.</li>{% endfor %}
+  </ul>
+</section>
+<section class="karte breit">
+  <h2>Versände</h2>
+  {% if versaende %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Am</th><th>Art</th><th>Betreff</th><th>Empfänger</th><th class="zahl">Anzahl</th><th>Von</th></tr></thead>
+    <tbody>
+    {% for v in versaende %}
+      <tr><td data-titel="Am">{{ v.am|date:"d.m.Y H:i" }}</td><td data-titel="Art">{{ v.get_art_display }}</td>
+        <td data-titel="Betreff">{{ v.betreff }}</td><td data-titel="Empfänger">{{ v.auswahl }}</td>
+        <td data-titel="Anzahl" class="zahl">{{ v.anzahl }}</td><td data-titel="Von">{{ v.von }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p>Noch keine.</p>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block titel %}{% if m.pk %}Mitglied {{ m.nummer }} bearbeiten{% else %}Neues Mitglied{% endif %}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% if m.pk %}{% url 'mitglieder:mitglied' m.pk %}{% else %}{% url 'mitglieder:liste' %}{% endif %}">← {% if m.pk %}Mitglied {{ m.nummer }}{% else %}Mitglieder{% endif %}</a></p>
+  <h1>{% if m.pk %}Mitglied {{ m.nummer }} bearbeiten{% else %}Neues Mitglied{% endif %}</h1>
+  <p class="hinweis">Mitglieder sind Adressen aus dem Adressbuch. Austritt: Datum und Grund eintragen; die Daten bleiben
+    erhalten, bis die Mitgliedschaft gelöscht wird.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular_abschnitte.html" %}
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf">Speichern</button>
+      <a class="knopf knopf-abbrechen" href="{% if m.pk %}{% url 'mitglieder:mitglied' m.pk %}{% else %}{% url 'mitglieder:liste' %}{% endif %}">Abbrechen</a>
+    </div>
+  </form>
+  {% if m.pk %}
+  <form method="post" action="{% url 'mitglieder:loeschen' m.pk %}" class="abseits" onsubmit="return confirm('Mitgliedschaft löschen? Adresse und Zahlungen bleiben erhalten.')">
+    {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Mitgliedschaft löschen</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

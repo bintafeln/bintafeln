@@ -2,6 +2,8 @@
 
 import csv
 import io
+import re
+from decimal import Decimal
 
 from django.contrib import messages
 from django.core.paginator import Paginator
@@ -105,6 +107,11 @@ def bearbeiten(request, pk=None):
     initial = {}
     if not pk and request.GET.get("adresse", "").isdigit():
         initial["adresse"] = request.GET["adresse"]
+    if not pk and request.GET.get("mitgliedsbeitrag"):  # von der Seite eines Mitglieds
+        initial["mitgliedsbeitrag"] = True
+        initial["zweck"] = "Mitgliedsbeitrag"
+    if not pk and re.fullmatch(r"\d{1,6}(\.\d{1,2})?", request.GET.get("betrag", "")):
+        initial["betrag"] = Decimal(request.GET["betrag"])
     form = SpendeForm(request.POST or None, instance=s, initial=initial)
     if request.method == "POST" and form.is_valid():
         s = form.save(commit=False)
