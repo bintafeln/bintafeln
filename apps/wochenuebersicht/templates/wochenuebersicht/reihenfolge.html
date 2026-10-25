@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block titel %}Reihenfolge der Ausgabestellen{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'wochenuebersicht:uebersicht' %}">← Wochenübersicht</a></p>
+  <h1>Reihenfolge der Ausgabestellen</h1>
+  <p class="hinweis">Kleinere Zahlen stehen in der Wochenübersicht weiter oben; gleiche Zahlen nach Name. Kundengruppen ohne Ausgabestelle stehen am Ende.</p>
+  <form method="post">
+    {% csrf_token %}
+    <table class="tabelle kompakt">
+      <thead><tr><th>Ausgabestelle</th><th>Reihenfolge</th></tr></thead>
+      <tbody>
+        {% for wert, stelle in zeilen %}
+        <tr><td><label for="r_{{ stelle.pk }}">{{ stelle.name }}</label>{% if not stelle.aktiv %} <span class="hinweis">(inaktiv)</span>{% endif %}</td>
+          <td><input type="number" min="0" max="9999" id="r_{{ stelle.pk }}" name="r_{{ stelle.pk }}" value="{{ wert }}" class="zahl-eingabe"></td></tr>
+        {% empty %}
+        <tr><td colspan="2" class="hinweis">Noch keine Ausgabestellen.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="aktionsleiste"><button type="submit" class="knopf">Speichern</button></div>
+  </form>
+</section>
+{% endblock %}

@@ -736,3 +736,9 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 /* Letzte Stufe: Der Name der Tafel darf mit „…“ enden (ganz im Tooltip), damit alles in eine Zeile passt */
 .kopf-kurz-5 .marke { flex: 1 1 0; min-width: 0; }
 .kopf-kurz-5 .marke span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Modul Wochenübersicht (ADR 0054) */
+.wochen-tabelle td:first-child { min-width: 12rem; }
+.wochen-selbst td { background: #fff5e8; }
+.wochen-gesamt th { background: var(--akzent); color: var(--auf-akzent); }
+.zahl-eingabe { width: 6rem; }

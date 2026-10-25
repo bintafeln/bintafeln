@@ -80,7 +80,7 @@ def test_kuerzel(admin, daten):
     assert titel("t 456") == ["Kunde 1001: 0123 456789"]
     assert titel("d jobcenter") == ["Kunde 1001: Bescheid Jobcenter"]
     assert titel("m chef") == ["chefin"]
-    assert "Der Einlass Schritt für Schritt" in titel("h ampel")
+    assert any(t.startswith("Der Einlass Schritt für Schritt") for t in titel("h ampel"))
 
 
 def test_rechte_und_ausgabestelle(client, benutzer_mit_rolle, anmelden, daten):
@@ -89,7 +89,8 @@ def test_rechte_und_ausgabestelle(client, benutzer_mit_rolle, anmelden, daten):
     b.ausgabestellen.set([mitte])
     anmelden(client, b)
     e = suche.suchen(b, "mül")
-    assert [g.bereich for g in e.gruppen] == ["kunden"]  # keine Anträge, keine Mitarbeitenden
+    # keine Anträge, keine Mitarbeitenden; das Handbuch nennt „mül“ als Beispiel
+    assert [g.bereich for g in e.gruppen] == ["kunden", "hilfe"]
     titel = [t.titel for t in e.gruppen[0].treffer]
     assert "Erika Müller · Kunde 1001" in titel and not any("2002" in t for t in titel)
     assert e.gruppen[0].treffer[0].url == reverse("kunden:haushalt", args=["1001"])
@@ -126,3 +127,43 @@ def test_oberflaeche(admin_client, client, daten):
     assert "2 Treffer" in voll and "<h2>Notizen</h2>" in voll
     admin_client.logout()
     assert client.get(URL, {"q": "mül"}).status_code == 302  # nur angemeldet
+
+
+def test_programm_und_handbuch_ohne_kuerzel(admin_client, admin, daten):
+    from apps.core.menue import menue
+
+    antwort = admin_client.get(reverse("core:suche"), {"q": "ausgabestellen"})
+    e = antwort.context["e"]
+    programm = next(g for g in e.gruppen if g.bereich == "programm")
+    assert programm.treffer[0].titel == "Ausgabestellen"
+    assert programm.treffer[0].url == reverse("kunden:ausgabestellen")
+    assert programm.treffer[0].zusatz == "Menü: Kunden"
+    assert e.gruppen[0].bereich == "programm"
+    hilfe = next(g for g in e.gruppen if g.bereich == "hilfe")
+    assert hilfe.treffer[0].titel.startswith("Ausgabestellen")  # Titel vor Text
+    assert hilfe.treffer[0].url.startswith(reverse("core:hilfe") + "#")
+    # Untermenü der Einstellungen: Weg mit Gruppe; Treffer im Bereich nach Treffern im Namen
+    anfrage = antwort.wsgi_request
+    treffer = suche._programm(admin, "kunden", 50, menue=menue(anfrage))
+    titel = [t.titel for t in treffer]
+    assert titel.index("Kunden einsehen") < titel.index("Ausgabestellen")
+    gruppen = next(t for t in treffer if t.titel == "Kundengruppen")
+    assert gruppen.zusatz == "Menü: Einstellungen › Kunden"
+    assert len({t.url for t in treffer}) == len(treffer)
+    assert suche._programm(admin, "xyzxyz", 5, menue=menue(anfrage)) == []
+
+
+def test_programm_nur_mit_rechten(admin, client, benutzer_mit_rolle, anmelden, daten):
+    anmelden(client, benutzer_mit_rolle("anton", rollen.AUSGABE))
+    e = client.get(reverse("core:suche"), {"q": "p rollen"}).context["e"]
+    assert e.gruppen == []  # „Rollen und Rechte“ sieht nur, wer das Recht hat
+
+
+def test_handbuch_abschnitt_und_suchfeld(admin_client):
+    seite = admin_client.get(reverse("core:hilfe")).content.decode()
+    assert 'name="nur" value="hilfe"' in seite
+    e = admin_client.get(reverse("core:suche"), {"q": "ampel", "nur": "hilfe"}).context["e"]
+    assert e.kuerzel.bereich == "hilfe" and [g.bereich for g in e.gruppen] == ["hilfe"]
+    assert any(" › " in t.titel for t in e.gruppen[0].treffer)
+    e = admin_client.get(reverse("core:suche"), {"q": "k ampel", "nur": "hilfe"}).context["e"]
+    assert e.kuerzel.bereich == "kunden"

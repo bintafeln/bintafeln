@@ -27,3 +27,11 @@ Notizen und Anmerkungen ließen sich gar nicht durchsuchen.
 Ein Feld für alles ist schneller als Menüwege. Kurze Kürzel sind schnell getippt und leicht zu
 merken; ohne Kürzel bleibt die Suche auf Namen beschränkt, damit die Liste übersichtlich bleibt.
 Für die Datenmengen einer Tafel reicht die einfache Suche ohne eigenen Suchindex.
+
+## Nachtrag: Seiten und Handbuch ohne Kürzel (2026-10-25)
+
+Ohne Kürzel findet die Suche jetzt auch **Seiten des Programms** (Menüpunkte des Kontos, Kürzel
+`p`, mit dem Weg im Menü) und **Abschnitte des Handbuchs** (Kürzel `h`, Titel „Kapitel ›
+Abschnitt“). Gesucht wird nur im Menü, das das Konto sieht; Rechte gelten also wie im Menü. Der
+Text der Kapitel wird je Rechte-Satz zwischengespeichert. Das Handbuch hat ein eigenes Suchfeld.
+Begründung: Wer eine Einstellung sucht, kennt oft den Namen, aber nicht den Weg im Menü.

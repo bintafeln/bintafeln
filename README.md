@@ -361,9 +361,11 @@ Regeln:
 ## Suche
 
 Im Seitenkopf steht auf jeder Seite ein **Suchfeld**. Ab 3 Zeichen erscheinen die Treffer
-darunter, Enter öffnet eine Ergebnisseite. Ohne Kürzel sucht es Kunden (Vor- und Nachname, auch
-Teile wie „mül“, Kundennummer, Abholberechtigte), Anträge und Mitarbeitende. Ein Kürzel mit
-Leerzeichen davor sucht nur in einem Bereich:
+darunter, Enter öffnet eine Ergebnisseite. Ohne Kürzel sucht es **Seiten des Programms**
+(Menüpunkte, z. B. „ausgabestellen“ führt zu „Kunden → Ausgabestellen“), Kunden (Vor- und
+Nachname, auch Teile wie „mül“, Kundennummer, Abholberechtigte), Anträge, Adressen,
+Mitarbeitende und **Abschnitte des Handbuchs**. Ein Kürzel mit Leerzeichen davor sucht nur in
+einem Bereich:
 
 | Kürzel | Bereich | Beispiel |
 |---|---|---|
@@ -375,6 +377,7 @@ Leerzeichen davor sucht nur in einem Bereich:
 | `d` | Dokumente zum Haushalt (Titel) | `d jobcenter` |
 | `an` | Anträge (Name, Antragsnummer) | `an müller` |
 | `m` | Mitarbeitende | `m anna` |
+| `p` | Programm (Menüpunkte) | `p ausgabestellen` |
 | `h` | Handbuch | `h ampel` |
 
 `?` im Suchfeld zeigt die Kürzel. Jeder Bereich erscheint nur mit dem passenden Recht; wer einer
@@ -688,6 +691,20 @@ Ersetzt das bisherige Neuanmeldungs-Programm (ADR 0051) und arbeitet direkt mit 
 - Rechte „Warteliste ansehen“ und „Einladen, absagen …“ (Vorgabe Büro), Einstellungen unter
   „Einstellungen → Kunden → Warteliste und Einladungen“. Einladungen stehen in der Auskunft zum
   Antrag.
+
+### Wochenübersicht der Ausgabestellen
+
+Ersetzt die bisherige „Ausgabestellen-Übersicht“ (ADR 0054) und rechnet direkt mit dem
+Kundenstamm, ohne Import aus anderen Programmen.
+
+- Je Wochentag und Ausgabestelle: **Soll Haushalte** („Maximum“ der Kundengruppen), **Ist
+  Haushalte** (aktiv), Erwachsene, Kinder, Gesamt; Tagessummen und „GESAMT ALLE PERSONEN“. Alle
+  Kundengruppen einer Ausgabestelle an einem Tag ergeben eine Zeile; eine Gruppe zählt an jedem
+  ihrer Wochentage.
+- **Selbstabholer** (Einrichtungen mit Tagen und Personenzahl) zählen nur zu „alle Personen“.
+- Wahlweise die **Abholungen einer Kalenderwoche** je Tag und Ausgabestelle aus dem Einlass.
+- Druck als PDF im Hochformat (je Tag) oder Querformat (alles auf einem Blatt wie die bisherige
+  Excel-Liste). Rechte „Wochenübersicht ansehen“ und „… pflegen“ (Vorgabe Büro).
 
 ### Wetter in der Kopfzeile
 
@@ -1175,6 +1192,7 @@ apps/konten/        Benutzer, Rollen, Anmeldung, Zwei-Faktor
 apps/kunden/        Kundenstamm: Haushalte, Personen, Zusatzfelder, Einstellungen
 apps/aufruf/        Modul Aufruf (Monitor, Handy, Kiosk); Module beschreibt apps/core/module.py
 apps/warteliste/    Modul Warteliste (Einladungen zu Terminen, Streichungen)
+apps/wochenuebersicht/ Modul Wochenübersicht (Soll/Ist der Ausgabestellen je Wochentag)
 apps/wetter/        Modul Wetter (Außentemperatur der Ausgabestelle in der Kopfzeile)
 templates/          Django-Templates
 static/             CSS und HTMX

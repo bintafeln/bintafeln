@@ -8,7 +8,7 @@ bintafeln; Downloads aus Fremdsystemen und der Austausch von Dateien entfallen.
 |---|---|---|
 | Kundennummern-Aufruf (Monitor, Handy, Kiosk) | Modul **Aufruf** (ADR 0050) | umgesetzt |
 | Neuanmeldungen / Warteliste mit Einladungen | Modul **Warteliste** auf den Anträgen (ADR 0051) | umgesetzt |
-| Wochenübersicht der Ausgabestellen (Soll/Ist, Selbstabholer) | Modul **Wochenübersicht** | geplant |
+| Wochenübersicht der Ausgabestellen (Soll/Ist, Selbstabholer) | Modul **Wochenübersicht** (ADR 0054) | umgesetzt |
 | Spendenbelege und Dankesbriefe | Ausbau Spenden: Import, Dankesbrief als Serienbrief | geplant |
 | Übersicht (Linkliste) | Startseite/Menü | geplant |
 | Guthaben-Überwachung von Prepaid-Karten | nicht in bintafeln (kein Tafel-Thema) | – |
