@@ -74,3 +74,4 @@ drei Fragen: Was war das Problem? Was haben wir entschieden? Warum?
 | [0041](0041-https-im-heimnetz.md) | https im Heimnetz für die Kamera | Angenommen |
 | [0042](0042-sicherungsauftraege.md) | Sicherungsaufträge in der Oberfläche | Angenommen |
 | [0043](0043-update-aus-der-oberflaeche.md) | Update aus der Oberfläche | Angenommen |
+| [0044](0044-adressbuch.md) | Adressbuch als Grundlage für Modul 5 | Angenommen |

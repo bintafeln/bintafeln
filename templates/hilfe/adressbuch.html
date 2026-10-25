@@ -1,0 +1,27 @@
+<p>Das Adressbuch sammelt alle, mit denen die Tafel zu tun hat: Spender, Märkte und Lieferanten, Partner, Presse,
+  Behörden. Kunden stehen nicht hier, sondern im Kundenstamm. Menü: „Adressen → Adressbuch“.</p>
+<h3>Finden</h3>
+<p>Suche nach Name, Ort, PLZ oder E-Mail, Filter nach Kategorie und Art. Schneller geht es oben im Suchfeld: Namen
+  werden ohne Kürzel mitgesucht, mit <kbd>ad frisch</kbd> nur im Adressbuch.</p>
+{% if "adressen.bearbeiten" in rechte %}
+<h3>Anlegen und bearbeiten</h3>
+<ul>
+  <li><strong>Organisation</strong> (Markt, Firma, Verein, Behörde): Name der Organisation, dazu eine Ansprechperson.</li>
+  <li><strong>Person</strong>: mindestens der Nachname.</li>
+  <li><strong>Kategorien</strong> per Häkchen, auch mehrere. Die Liste pflegt ein Admin unter „Einstellungen →
+    Adresskategorien“.</li>
+  <li><strong>Einwilligungen</strong> mit Datum eintragen, sobald sie vorliegen: Post (z. B. für Serienbriefe), E-Mail,
+    Name veröffentlichen (z. B. Spenderliste im Jahresbericht). Leer bedeutet: keine Einwilligung.</li>
+</ul>
+{% endif %}
+{% if "adressen.importieren" in rechte %}
+<h3>Importieren</h3>
+<p>„Adressen → Adressen importieren“ liest eine CSV-Datei, z. B. aus Excel („Speichern unter → CSV“). Zuerst erscheint
+  ein Prüfbericht: was neu ist, was schon da ist (gleicher Name mit gleicher PLZ oder gleiche E-Mail) und welche Zeilen
+  Fehler haben. Erst „übernehmen“ legt die neuen Adressen an; vorhandene werden nie überschrieben. Der CSV-Export aus dem
+  Adressbuch hat dieselben Spalten und dient als Vorlage.</p>
+{% endif %}
+<h3>Datenschutz</h3>
+<p>„Auskunft (PDF)“ auf der Seite einer Adresse zeigt alle gespeicherten Angaben, z. B. für eine Anfrage nach Art. 15
+  DSGVO. Jede Änderung steht im Änderungsprotokoll.{% if "adressen.loeschen" in rechte %} Wer nicht mehr gespeichert
+  werden möchte, wird mit „Adresse löschen“ entfernt.{% endif %}</p>

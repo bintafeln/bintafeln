@@ -14,6 +14,8 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from apps.adressen.forms import AdressKategorieForm
+from apps.adressen.models import AdressKategorie
 from apps.ausgabe import konto
 from apps.ausgabe.forms import BeitragsfreiForm
 from apps.ausgabe.models import BeitragsfreierZeitraum, Teilnahme
@@ -260,6 +262,12 @@ LISTEN = {
     "einkommensarten": (Einkommensart, EinkommensartForm, "Einkommensarten", "Einkommensart"),
     "notizvorlagen": (NotizVorlage, NotizVorlageForm, "Notiz-Vorlagen", "Notiz-Vorlage"),
     "dokumentarten": (Dokumentart, DokumentartForm, "Dokumentarten", "Dokumentart"),
+    "adresskategorien": (
+        AdressKategorie,
+        AdressKategorieForm,
+        "Adresskategorien",
+        "Adresskategorie",
+    ),
     "beitragsfrei": (
         BeitragsfreierZeitraum,
         BeitragsfreiForm,

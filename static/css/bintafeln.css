@@ -658,3 +658,6 @@ label.wahl { display: block; white-space: nowrap; }
 /* Update (ADR 0043) */
 .update-version { font-size: 1.6rem; font-weight: 700; margin: 0 0 .5rem; }
 .protokoll { max-height: 30rem; overflow: auto; padding: .75rem; background: var(--grund); border-radius: var(--radius); font-size: .85rem; white-space: pre-wrap; }
+
+/* Adressbuch (ADR 0044) */
+.anschrift { font-style: normal; margin: 0 0 1rem; line-height: 1.5; }

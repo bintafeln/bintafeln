@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block titel %}{{ a.name }}{% endblock %}
+{% block inhalt %}
+<div class="seiten-raster">
+<section class="karte">
+  <p><a href="{% url 'adressen:liste' %}">← Adressbuch</a></p>
+  <h1>{{ a.name }}</h1>
+  <p>{% for k in a.kategorien.all %}<span class="marke-rolle">{{ k.name }}</span> {% endfor %}<small class="leise">{{ a.get_art_display }}</small></p>
+  <address class="anschrift">{% for z in a.anschrift_zeilen %}{{ z }}<br>{% endfor %}</address>
+  <dl class="angaben">
+    {% if a.art == "organisation" and a.personenname %}<dt>Person</dt><dd>{{ a.anrede }} {{ a.personenname }}</dd>{% endif %}
+    {% if a.telefon %}<dt>Telefon</dt><dd><a href="tel:{{ a.telefon }}">{{ a.telefon }}</a></dd>{% endif %}
+    {% if a.mobil %}<dt>Mobil</dt><dd><a href="tel:{{ a.mobil }}">{{ a.mobil }}</a></dd>{% endif %}
+    {% if a.email %}<dt>E-Mail</dt><dd><a href="mailto:{{ a.email }}">{{ a.email }}</a></dd>{% endif %}
+    {% if a.webseite %}<dt>Webseite</dt><dd><a href="{{ a.webseite }}" target="_blank" rel="noopener noreferrer">{{ a.webseite }}</a></dd>{% endif %}
+  </dl>
+  {% if a.notiz %}<div class="notiz"><p class="notiz-text">{{ a.notiz|linebreaksbr }}</p></div>{% endif %}
+  <div class="aktionsleiste">
+    {% if "adressen.bearbeiten" in rechte %}<a class="knopf" href="{% url 'adressen:bearbeiten' a.pk %}">Bearbeiten</a>{% endif %}
+    <a class="knopf knopf-zweitrangig" href="{% url 'adressen:auskunft' a.pk %}" target="_blank" rel="noopener">Auskunft (PDF)</a>
+  </div>
+</section>
+<section class="karte">
+  <h2>Einwilligungen</h2>
+  <dl class="angaben">
+    <dt>Post</dt><dd>{% if a.einwilligung_post %}ja, seit {{ a.einwilligung_post|date:"d.m.Y" }}{% else %}nein{% endif %}</dd>
+    <dt>E-Mail</dt><dd>{% if a.einwilligung_email %}ja, seit {{ a.einwilligung_email|date:"d.m.Y" }}{% else %}nein{% endif %}</dd>
+    <dt>Name veröffentlichen</dt><dd>{% if a.veroeffentlichen %}ja, seit {{ a.veroeffentlichen|date:"d.m.Y" }}{% else %}nein{% endif %}</dd>
+  </dl>
+  <p class="hinweis">Angelegt am {{ a.angelegt_am|date:"d.m.Y" }}{% if a.geaendert_am %}, zuletzt geändert am {{ a.geaendert_am|date:"d.m.Y H:i" }} von {{ a.geaendert_von }}{% endif %}.</p>
+  {% if "adressen.loeschen" in rechte %}
+  <form method="post" action="{% url 'adressen:loeschen' a.pk %}" class="abseits" onsubmit="return confirm('Adresse „{{ a.name|escapejs }}“ endgültig löschen?')">
+    {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Adresse löschen</button>
+  </form>
+  {% endif %}
+</section>
+</div>
+{% endblock %}

@@ -601,6 +601,27 @@ Weihnachtsgutscheine oder Schulranzen.
 - Teilnahmen hängen an der Kundennummer, überstehen den Import, stehen in der Auskunft nach
   Art. 15 und werden nach derselben Frist gelöscht wie Abholungen (ADR 0032).
 
+## Adressbuch
+
+„Adressen → Adressbuch“ (Rechte „Adressbuch ansehen …“, „Adressen anlegen und bearbeiten“,
+„Adressen löschen“, „Adressen importieren“; Büro hat alle außer Löschen) sammelt Spender, Märkte,
+Lieferanten, Partner, Presse und Behörden. Es ist die Grundlage für Spenden, Mitglieder und
+Serienbriefe (Modul 5, ADR 0044); Kunden stehen weiter im Kundenstamm.
+
+- **Adresse**: Organisation (mit Ansprechperson) oder Person, Anschrift, Telefon, Mobil, E-Mail,
+  Webseite, Kategorien (Mehrfachauswahl, gepflegt unter „Einstellungen → Adresskategorien“),
+  Notiz.
+- **Einwilligungen** jeweils mit Datum: Post, E-Mail, Name veröffentlichen.
+- **Liste** mit Suche und Filtern, Export als CSV (Excel), **Auskunft** nach Art. 15 als PDF,
+  jede Änderung im Änderungsprotokoll. Im Suchfeld oben mit dem Kürzel `ad`.
+- **Import** aus CSV (Semikolon, UTF-8 oder Windows-1252): Prüfbericht, dann übernehmen. Nur neue
+  Adressen werden angelegt; gleicher Name mit gleicher PLZ oder gleiche E-Mail gilt als
+  vorhanden. Spalten: `art;organisation;ansprechperson;anrede;vorname;nachname;strasse;plz;ort;`
+  `land;telefon;mobil;email;webseite;kategorien;notiz;einwilligung_post;einwilligung_email;`
+  `veroeffentlichen` (alle freiwillig außer `organisation` oder `nachname`; Kategorien durch Komma
+  getrennt, unbekannte werden angelegt; Daten als TT.MM.JJJJ). Der CSV-Export hat dieselben
+  Spalten.
+
 ## Statistik
 
 „Statistik“ im Menü (Recht „Statistik ansehen“, Vorgabe: Admin und Büro). Oben Zeitraum

@@ -40,11 +40,13 @@ KUERZEL = [
     Kuerzel("t", "kontakt", "Telefon und E-Mail", ("kunden.kontakt",)),
     Kuerzel("d", "dokumente", "Dokumente zum Haushalt: Titel", ("kunden.dokumente",)),
     Kuerzel("an", "antraege", "Anträge: Name, Antragsnummer", ("antraege.sehen",)),
+    Kuerzel("ad", "adressen", "Adressbuch: Name, Organisation, Ansprechperson, Ort, E-Mail",
+            ("adressen.sehen",)),
     Kuerzel("m", "mitarbeitende", "Mitarbeitende: Name, Benutzername",
             ("mitarbeitende.verwalten",)),
     Kuerzel("h", "hilfe", "Hilfe: Text im Handbuch", ()),
 ]  # fmt: skip
-OHNE_KUERZEL = ("kunden", "antraege", "mitarbeitende")
+OHNE_KUERZEL = ("kunden", "antraege", "adressen", "mitarbeitende")
 
 TITEL = {
     "kunden": "Kunden",
@@ -55,6 +57,7 @@ TITEL = {
     "dokumente": "Dokumente",
     "antraege": "Anträge",
     "mitarbeitende": "Mitarbeitende",
+    "adressen": "Adressbuch",
     "hilfe": "Hilfe",
 }
 
@@ -270,6 +273,21 @@ def _mitarbeitende(benutzer, begriff, grenze):
     ]  # fmt: skip
 
 
+def _adressen(benutzer, begriff, grenze):
+    from apps.adressen.models import Adresse
+
+    passend = (Q(organisation__icontains=begriff) | Q(vorname__icontains=begriff)
+               | Q(nachname__icontains=begriff) | Q(ansprechperson__icontains=begriff)
+               | Q(ort__icontains=begriff) | Q(email__icontains=begriff))  # fmt: skip
+    adressen = Adresse.objects.filter(passend).prefetch_related("kategorien")
+    return [
+        Treffer(a.name + (f" · {a.ort}" if a.ort else ""),
+                reverse("adressen:adresse", args=[a.pk]),
+                ", ".join(k.name for k in a.kategorien.all()) or a.get_art_display().split(" (")[0])
+        for a in adressen.order_by("organisation", "nachname")[: grenze + 1]
+    ]  # fmt: skip
+
+
 def _hilfe(benutzer, begriff, grenze):
     from apps.core import hilfe as handbuch
 
@@ -295,6 +313,7 @@ SUCHEN = {
     "dokumente": _dokumente,
     "antraege": _antraege,
     "mitarbeitende": _mitarbeitende,
+    "adressen": _adressen,
     "hilfe": _hilfe,
 }
 

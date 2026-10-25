@@ -24,6 +24,7 @@ KUNDEN = "Kunden"
 ANTRAEGE = "Anträge"
 STATISTIK = "Statistik und Daten"
 TEAM = "Mitarbeitende und Personal"
+ADRESSEN = "Adressen und Verein"
 EINSTELLUNGEN = "Einstellungen"
 
 KATALOG = [
@@ -87,6 +88,11 @@ KATALOG = [
           "Admin-Konten bearbeitet nur ein Admin."),
     Recht("personal.sehen", TEAM, "Personal: Verträge, Abwesenheiten, Stunden, Arbeitszeiten, "
           "vertrauliche Dokumente"),
+    # Adressen und Verein (Modul 5)
+    Recht("adressen.sehen", ADRESSEN, "Adressbuch ansehen, Adressen exportieren und Auskunft"),
+    Recht("adressen.bearbeiten", ADRESSEN, "Adressen anlegen und bearbeiten"),
+    Recht("adressen.loeschen", ADRESSEN, "Adressen löschen"),
+    Recht("adressen.importieren", ADRESSEN, "Adressen aus einer CSV-Datei importieren"),
     # Einstellungen
     Recht("einstellungen.tafel", EINSTELLUNGEN, "Tafel (Name, Farbe, Anschrift, Anmeldung)"),
     Recht("einstellungen.mail", EINSTELLUNGEN, "E-Mail-Versand"),
@@ -124,7 +130,7 @@ VORGABEN = {
         "kunden.konto", "kunden.anmerkungen", "kunden.notizen_loeschen", "kunden.dokumente",
         "kunden.dokumente_verwalten", "kunden.historie", "kunden.ausweis", "kunden.auskunft",
         "kunden.importieren", "antraege.sehen", "antraege.bearbeiten", "antraege.aufnehmen",
-        "statistik.sehen",
+        "statistik.sehen", "adressen.sehen", "adressen.bearbeiten", "adressen.importieren",
     ],
     "Ausgabe": list(_EINLASS),
     "Kiosk": [],
