@@ -522,3 +522,69 @@ label.wahl { display: block; white-space: nowrap; }
 /* Sonderaktion am Einlass */
 .sonderaktion { border-left: 6px solid var(--akzent); }
 .sonderaktion-erhalten { font-weight: 700; }
+
+/* Rollen und Rechte */
+.rechte-bereich { border: 1px solid var(--rand); border-radius: var(--radius); padding: .5rem 1rem 1rem; margin: 0 0 1rem; }
+.rechte-bereich legend { font-weight: 700; padding: 0 .25rem; }
+.rechte-alle { margin: 0 0 .5rem; font-size: .9rem; }
+.recht { display: flex; gap: .6rem; align-items: flex-start; padding: .3rem 0; }
+.recht input { margin-top: .25rem; width: auto; }
+.recht small { display: block; }
+.recht-fremd { opacity: .55; }
+@media (min-width: 64rem) { .rechte-bereich { columns: 2; column-gap: 2rem; } .recht { break-inside: avoid; } }
+
+/* Korrekturwünsche */
+.zuruecknehmen { margin: .25rem 0; }
+.korrektur-wunsch summary { cursor: pointer; color: var(--akzent-dunkel); }
+.korrektur-wunsch form { display: grid; gap: .4rem; margin-top: .5rem; max-width: 28rem; }
+.korrektur-karte { border-left: 4px solid var(--akzent); padding: .25rem 0 .25rem 1rem; margin: 0 0 1rem; }
+.korrektur-karte p { margin: .2rem 0; }
+
+/* Statistik (ADR 0036). Feste Reihenfolge der Reihenfarben, auf Farbsehschwäche geprüft
+   (dataviz-Referenzpalette, hell). Diagrammtexte in Schrifttönen, nie in Reihenfarbe. */
+.reihe-0 { fill: #2a78d6; } .linie-0 { stroke: #2a78d6; }
+.reihe-1 { fill: #eb6834; } .linie-1 { stroke: #eb6834; }
+.reihe-2 { fill: #1baf7a; } .linie-2 { stroke: #1baf7a; }
+.reihe-3 { fill: #eda100; } .linie-3 { stroke: #eda100; }
+.reihe-4 { fill: #e87ba4; } .linie-4 { stroke: #e87ba4; }
+.reihe-5 { fill: #008300; } .linie-5 { stroke: #008300; }
+.reihe-6 { fill: #6250d6; } .linie-6 { stroke: #6250d6; }
+.reihe-7 { fill: #e34948; } .linie-7 { stroke: #e34948; }
+.legende-farbe.reihe-0 { background: #2a78d6; } .legende-farbe.reihe-1 { background: #eb6834; }
+.legende-farbe.reihe-2 { background: #1baf7a; } .legende-farbe.reihe-3 { background: #eda100; }
+.legende-farbe.reihe-4 { background: #e87ba4; } .legende-farbe.reihe-5 { background: #008300; }
+.legende-farbe.reihe-6 { background: #6250d6; } .legende-farbe.reihe-7 { background: #e34948; }
+.diagramm-rahmen { margin: .5rem 0; }
+.diagramm { width: 100%; height: auto; display: block; font-family: inherit; }
+.diagramm .gitter { stroke: #e1e0d9; stroke-width: 1; }
+.diagramm .achse { stroke: #c3c2b7; stroke-width: 1; }
+.diagramm .skala, .diagramm .beschriftung { fill: #52514e; font-size: 12px; }
+.diagramm .wert { fill: #0b0b0b; font-size: 12px; font-weight: 600; }
+.diagramm .linie { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.diagramm .punkt { stroke: #fff; stroke-width: 2; }
+.diagramm path[class^="reihe-"]:hover, .diagramm .punkt:hover { opacity: .75; }
+.legende { list-style: none; display: flex; flex-wrap: wrap; gap: .25rem 1rem; padding: 0; margin: .25rem 0; font-size: .9rem; }
+.legende li { display: flex; align-items: center; gap: .4rem; }
+.legende-farbe { width: .9rem; height: .9rem; border-radius: 3px; display: inline-block; }
+.kacheln { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: .75rem; margin-top: 1rem; }
+.kachel { border: 1px solid var(--rand); border-radius: var(--radius); padding: .75rem 1rem; display: flex; flex-direction: column; gap: .15rem; }
+.kachel-titel { color: var(--leise); font-size: .9rem; }
+.kachel-wert { font-size: 1.6rem; font-weight: 700; }
+.kachel-unter { color: var(--leise); font-size: .8rem; }
+.statistik-filter input[type=date] { width: auto; }
+.link-klein { font-size: .9rem; }
+
+/* Handbuch (ADR 0038) */
+.inhaltsverzeichnis { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 0 2rem; }
+.inhaltsverzeichnis h2 { font-size: 1rem; margin: 1rem 0 .25rem; }
+.inhaltsverzeichnis ol { margin: 0; padding-left: 1.25rem; }
+.inhaltsverzeichnis li { margin: .15rem 0; }
+.handbuch { line-height: 1.6; }
+.handbuch h3 { margin: 1.25rem 0 .4rem; font-size: 1.05rem; }
+.handbuch ol, .handbuch ul { padding-left: 1.4rem; }
+.handbuch li { margin: .25rem 0; }
+.handbuch-teil { margin: 0; color: var(--leise); font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; }
+.handbuch .tipp { background: var(--erfolg); border-radius: var(--radius); padding: .6rem 1rem; margin: .75rem 0; }
+.handbuch .achtung { background: #fdf3e2; border-left: 4px solid #e0a020; border-radius: var(--radius); padding: .6rem 1rem; margin: .75rem 0; }
+.handbuch kbd, .handbuch-kopf kbd { border: 1px solid var(--rand); border-bottom-width: 2px; border-radius: 4px; padding: 0 .3rem; font-size: .9em; }
+.nach-oben { margin: 1rem 0 0; font-size: .9rem; }

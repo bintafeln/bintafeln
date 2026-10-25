@@ -2,7 +2,7 @@
   <td data-titel="Rolle">{{ rolle }}</td>
   <td data-titel="Name">{% if p.anrede %}{{ p.anrede }} {% endif %}{{ p.vorname }} {{ p.nachname }}</td>
   <td data-titel="Geburtsdatum">{{ p.geburtsdatum|date:"d.m.Y"|default:"–" }}</td>
-  {% if buero and einstellungen.staatsangehoerigkeit_erfassen %}<td data-titel="Staatsangehörigkeit">{{ p.staatsangehoerigkeit|default:"–" }}</td>{% endif %}
-  {% if buero and einstellungen.familienstand_erfassen %}<td data-titel="Familienstand">{{ p.familienstand|default:"–" }}</td>{% endif %}
+  {% if "kunden.stammdaten" in rechte and einstellungen.staatsangehoerigkeit_erfassen %}<td data-titel="Staatsangehörigkeit">{{ p.staatsangehoerigkeit|default:"–" }}</td>{% endif %}
+  {% if "kunden.stammdaten" in rechte and einstellungen.familienstand_erfassen %}<td data-titel="Familienstand">{{ p.familienstand|default:"–" }}</td>{% endif %}
   <td data-titel="Weitere Angaben">{% for bezeichnung, wert, art9 in zusatz %}{{ bezeichnung }}: {{ wert }}{% if art9 %} <span class="marke-art9" title="besondere Kategorie (Art. 9 DSGVO)">Art. 9</span>{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}–{% endfor %}</td>
 </tr>

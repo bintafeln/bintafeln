@@ -2,6 +2,11 @@
 <section class="karte ampel ampel-unbekannt" role="status">
   <p class="ampel-titel">Kundennummer „{{ nicht_gefunden }}“ nicht gefunden</p>
 </section>
+{% elif nicht_erlaubt %}
+<section class="karte ampel ampel-unbekannt" role="status">
+  <p class="ampel-titel">Dieser Kunde gehört nicht zu Ihrer Ausgabestelle</p>
+  <p>{{ nicht_erlaubt }}</p>
+</section>
 {% elif h %}
 {% if meldung %}<p class="meldung kasse-meldung" role="status">{{ meldung }}</p>{% endif %}
 <div class="empfang-raster">
@@ -67,20 +72,16 @@
   {% if heute_erfasst or einzahlungen_heute %}
   <div class="aktionen abseits">
     {% for a in heute_erfasst %}
-    <form method="post" action="{% url 'ausgabe:zuruecknehmen' a.pk %}" class="inline"
-          hx-post="{% url 'ausgabe:zuruecknehmen' a.pk %}" hx-target="#ergebnis"
-          hx-confirm="Abholung von {{ a.uhrzeit|time:'H:i' }} Uhr zurücknehmen?">
-      {% csrf_token %}
-      <button type="submit" class="knopf knopf-zweitrangig">Abholung von {{ a.uhrzeit|time:"H:i" }} zurücknehmen</button>
-    </form>
+    {% url 'ausgabe:zuruecknehmen' a.pk as ziel %}
+    {% with uhr=a.uhrzeit|time:"H:i" %}{% with titel="Abholung von "|add:uhr|add:" Uhr" %}
+    {% include "ausgabe/_zuruecknehmen.html" with art="abholung" obj=a ziel=ziel %}
+    {% endwith %}{% endwith %}
     {% endfor %}
     {% for b in einzahlungen_heute %}
-    <form method="post" action="{% url 'ausgabe:einzahlung_zuruecknehmen' b.pk %}" class="inline"
-          hx-post="{% url 'ausgabe:einzahlung_zuruecknehmen' b.pk %}" hx-target="#ergebnis"
-          hx-confirm="Zahlung über {{ b.haben|floatformat:2 }} € zurücknehmen?">
-      {% csrf_token %}
-      <button type="submit" class="knopf knopf-zweitrangig">Zahlung {{ b.haben|floatformat:2 }} € von {{ b.zeitpunkt|time:"H:i" }} zurücknehmen</button>
-    </form>
+    {% url 'ausgabe:einzahlung_zuruecknehmen' b.pk as ziel %}
+    {% with betrag=b.haben|floatformat:2 %}{% with titel="Zahlung "|add:betrag|add:" €" %}
+    {% include "ausgabe/_zuruecknehmen.html" with art="zahlung" obj=b ziel=ziel %}
+    {% endwith %}{% endwith %}
     {% endfor %}
   </div>
   {% endif %}
@@ -102,13 +103,8 @@
   {% if s.aktion.beschreibung %}<p class="hinweis">{{ s.aktion.beschreibung }}</p>{% endif %}
   {% if s.teilnahme %}
   <p class="sonderaktion-erhalten">✓ Erhalten am {{ s.teilnahme.zeitpunkt|date:"d.m.Y" }}: {{ s.teilnahme.menge }}×{% if s.teilnahme.auswahl %} {{ s.teilnahme.auswahl }}{% endif %}</p>
-  {% if s.teilnahme.zeitpunkt|date:"Y-m-d" == heute|date:"Y-m-d" %}
-  <form method="post" action="{% url 'ausgabe:teilnahme_zuruecknehmen' s.teilnahme.pk %}" class="inline"
-        hx-post="{% url 'ausgabe:teilnahme_zuruecknehmen' s.teilnahme.pk %}" hx-target="#ergebnis"
-        hx-confirm="Teilnahme an „{{ s.aktion }}“ zurücknehmen?">
-    {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">Zurücknehmen</button>
-  </form>
-  {% endif %}
+  {% url 'ausgabe:teilnahme_zuruecknehmen' s.teilnahme.pk as ziel %}
+  {% include "ausgabe/_zuruecknehmen.html" with art="teilnahme" obj=s.teilnahme ziel=ziel titel="Teilnahme" %}
   {% elif s.grund %}
   <p class="hinweis">{{ s.grund }}</p>
   {% else %}

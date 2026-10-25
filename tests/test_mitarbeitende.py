@@ -4,8 +4,8 @@ from django.contrib.auth.models import Group
 from django.urls import reverse
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
-from apps.core.models import TafelEinstellungen
 from apps.konten import rollen, verwaltung
+from apps.konten.models import Rolle
 from tests.conftest import PASSWORT
 
 pytestmark = pytest.mark.django_db
@@ -31,9 +31,9 @@ def als(client, admin, benutzer_mit_rolle, anmelden):
 
 @pytest.fixture
 def buero_freigegeben():
-    e = TafelEinstellungen.laden()
-    e.buero_verwaltet_mitarbeitende = True
-    e.save()
+    Rolle.objects.filter(gruppe__name="Büro").update(
+        rechte=Rolle.objects.get(gruppe__name="Büro").rechte + ["mitarbeitende.verwalten"]
+    )
 
 
 def neu(client, **daten):
@@ -47,7 +47,8 @@ def neu(client, **daten):
 
 def test_neue_rollen_fahrer_und_beifahrer():
     assert {"Fahrer", "Beifahrer"} <= set(Group.objects.values_list("name", flat=True))
-    assert rollen.ALLE[-3:] == (rollen.FAHRER, rollen.BEIFAHRER, rollen.PERSONAL)
+    namen = [r.name for r in rollen.alle_rollen()]
+    assert namen[-3:] == [rollen.FAHRER, rollen.BEIFAHRER, rollen.PERSONAL]
 
 
 @pytest.mark.parametrize("rolle", [rollen.BUERO, rollen.AUSGABE, rollen.FAHRER])
@@ -256,7 +257,5 @@ def test_mein_konto_verlinkt_passwort_aendern(admin_client):
 
 
 def test_zwei_faktor_pflicht_fuer_neue_rollen():
-    e = TafelEinstellungen.laden()
-    e.zwei_faktor_fahrer = True
-    assert rollen.FAHRER in e.zwei_faktor_pflicht_rollen()
-    assert rollen.BEIFAHRER not in e.zwei_faktor_pflicht_rollen()
+    pflicht = {r.name for r in rollen.alle_rollen() if r.zwei_faktor_pflicht}
+    assert rollen.FAHRER not in pflicht and rollen.BEIFAHRER not in pflicht

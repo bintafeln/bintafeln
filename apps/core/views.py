@@ -29,8 +29,9 @@ def healthz(request):
 def start(request):
     from apps.antraege.models import Antrag
     from apps.antraege.models import fristen_anwenden as antragsfristen_anwenden
-    from apps.ausgabe import sonderaktionen
+    from apps.ausgabe import korrekturen, sonderaktionen
     from apps.ausgabe.konto import buchungsfristen_anwenden
+    from apps.ausgabe.models import Korrekturwunsch
     from apps.kunden.models import ImportVorbereitung, fristen_anwenden
 
     # Geprüfte, nicht übernommene Importe werden spätestens hier nach einer Stunde gelöscht;
@@ -39,16 +40,21 @@ def start(request):
     fristen_anwenden()
     buchungsfristen_anwenden()
     sonderaktionen.fristen_anwenden()
+    korrekturen.fristen_anwenden()
     personal.stammdaten_leeren()
     antragsfristen_anwenden()
     kontext = {}
-    if rollen.hat_rolle(request.user, rollen.ADMIN, rollen.BUERO):
+    if rollen.hat_recht(request.user, "antraege.sehen"):
         kontext["neue_antraege"] = Antrag.objects.filter(
             status=Antrag.Status.NEU, papierkorb_am__isnull=True
         ).count()
     if rollen.darf_mitarbeitende_verwalten(request.user):
         kontext["faellig"] = len(personal.faelligkeiten())
-    if rollen.hat_rolle(request.user, rollen.ADMIN):
+    if rollen.hat_recht(request.user, "korrekturen.entscheiden"):
+        kontext["korrekturen_offen"] = Korrekturwunsch.objects.filter(
+            status=Korrekturwunsch.Status.OFFEN
+        ).count()
+    if rollen.hat_recht(request.user, "system.status"):
         kontext["sicherung"] = sicherung.lese_status()
     return render(request, "core/start.html", kontext)
 
@@ -81,7 +87,7 @@ def einrichtung(request):
     return render(request, "core/einrichtung.html", {"form": form})
 
 
-@rollen.rolle_erforderlich(rollen.ADMIN)
+@rollen.recht_erforderlich("einstellungen.tafel")
 def einstellungen(request):
     instanz = TafelEinstellungen.laden()
     form = EinstellungenForm(request.POST or None, request.FILES or None, instance=instanz)
@@ -93,7 +99,7 @@ def einstellungen(request):
 
 
 @never_cache
-@rollen.rolle_erforderlich(rollen.ADMIN)
+@rollen.recht_erforderlich("einstellungen.mail")
 @nicht_in_demo
 @sensitive_post_parameters("passwort")
 def mail_einstellungen(request):
@@ -144,7 +150,7 @@ def mail_einstellungen(request):
     )
 
 
-@rollen.rolle_erforderlich(rollen.ADMIN)
+@rollen.recht_erforderlich("protokoll.sehen")
 def protokoll(request):
     eintraege = LogEntry.objects.select_related("actor", "content_type").order_by("-timestamp")
     modell = request.GET.get("modell", "")
@@ -161,3 +167,16 @@ def protokoll(request):
     if request.headers.get("HX-Request") and request.headers.get("HX-Target") == "protokoll-liste":
         return render(request, "core/_protokoll_liste.html", kontext)
     return render(request, "core/protokoll.html", kontext)
+
+
+@login_required
+def hilfe(request):
+    """Handbuch: nur die Kapitel, die zu den Rechten des Kontos passen (ADR 0038)."""
+    from apps.core import hilfe as handbuch
+
+    kapitel = handbuch.sichtbar(request.user)
+    return render(
+        request,
+        "hilfe/handbuch.html",
+        {"kapitel": kapitel, "teile": handbuch.gegliedert(kapitel)},
+    )

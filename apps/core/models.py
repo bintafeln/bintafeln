@@ -1,3 +1,5 @@
+import uuid
+
 from auditlog.registry import auditlog
 from django.core.validators import RegexValidator
 from django.db import models
@@ -38,18 +40,8 @@ class TafelEinstellungen(models.Model):
         blank=True,
         help_text="Für die gesetzlichen Feiertage (Urlaub, Stundenkonto, Vorauszahlung).",
     )
-    zwei_faktor_admin = models.BooleanField("Zwei-Faktor Pflicht für Admin", default=True)
-    zwei_faktor_buero = models.BooleanField("Zwei-Faktor Pflicht für Büro", default=True)
-    zwei_faktor_ausgabe = models.BooleanField("Zwei-Faktor Pflicht für Ausgabe", default=False)
-    zwei_faktor_kiosk = models.BooleanField("Zwei-Faktor Pflicht für Kiosk", default=False)
-    zwei_faktor_fahrer = models.BooleanField("Zwei-Faktor Pflicht für Fahrer", default=False)
-    zwei_faktor_beifahrer = models.BooleanField("Zwei-Faktor Pflicht für Beifahrer", default=False)
-    zwei_faktor_personal = models.BooleanField("Zwei-Faktor Pflicht für Personal", default=True)
-    buero_verwaltet_mitarbeitende = models.BooleanField(
-        "Büro darf Mitarbeitende verwalten",
-        default=False,
-        help_text="Anlegen, bearbeiten und sperren – aber keine Admin-Konten und keine "
-        "Admin-Rolle vergeben.",
+    installation = models.UUIDField(
+        "Kennung dieser Installation", default=uuid.uuid4, editable=False
     )
     geaendert_am = models.DateTimeField("Geändert am", auto_now=True)
 
@@ -75,20 +67,6 @@ class TafelEinstellungen(models.Model):
     def farben(self) -> dict[str, str]:
         """Aus der einen Farbe abgeleitete Töne für die CSS-Variablen."""
         return farbtoene(self.farbe)
-
-    def zwei_faktor_pflicht_rollen(self) -> set[str]:
-        from apps.konten import rollen
-
-        felder = {
-            rollen.ADMIN: self.zwei_faktor_admin,
-            rollen.BUERO: self.zwei_faktor_buero,
-            rollen.AUSGABE: self.zwei_faktor_ausgabe,
-            rollen.KIOSK: self.zwei_faktor_kiosk,
-            rollen.FAHRER: self.zwei_faktor_fahrer,
-            rollen.BEIFAHRER: self.zwei_faktor_beifahrer,
-            rollen.PERSONAL: self.zwei_faktor_personal,
-        }
-        return {rolle for rolle, pflicht in felder.items() if pflicht}
 
     @property
     def anschrift(self) -> str:

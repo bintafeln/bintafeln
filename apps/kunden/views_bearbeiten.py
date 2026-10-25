@@ -1,4 +1,4 @@
-"""Kundenstamm bearbeiten: nur Admin (ADR 0025).
+"""Kundenstamm bearbeiten (ADR 0025; Rechte nach ADR 0033).
 
 Solange der Kundenstamm aus dem Altsystem kommt, ersetzt der nächste Import alle Änderungen;
 jede Seite sagt das, und der Prüfbericht des Imports warnt. Jede Änderung steht im
@@ -21,7 +21,7 @@ from apps.core import privatdateien
 from apps.core.models import TafelEinstellungen
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
-from apps.kunden import ausweis, historie
+from apps.kunden import ausweis, historie, zugang
 from apps.kunden.forms_bearbeiten import (
     AbholerForm,
     AnmerkungForm,
@@ -55,8 +55,6 @@ from apps.kunden.models import (
     Sperre,
 )
 
-nur_admin = rollen.rolle_erforderlich(rollen.ADMIN)
-
 # Art in der Adresse: Modell, Formular, Bezeichnung, braucht „angemeldet“
 TEILE = {
     "person": (Person, PersonForm, "Person", False),
@@ -85,9 +83,9 @@ def _bearbeiten_url(h) -> str:
     return reverse("kunden:bearbeiten", args=[h.kundennummer])
 
 
-@nur_admin
+@rollen.recht_erforderlich("kunden.bearbeiten")
 def haushalt_bearbeiten(request, kundennummer):
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     form = HaushaltForm(request.POST or None, instance=h)
     if request.method == "POST" and form.is_valid():
         vorher = historie.schnappschuss(h)
@@ -120,7 +118,7 @@ def haushalt_bearbeiten(request, kundennummer):
     )
 
 
-@nur_admin
+@rollen.recht_erforderlich("kunden.bearbeiten")
 def haushalt_neu(request):
     form = HaushaltForm(request.POST or None, instance=Haushalt())
     if request.method == "POST" and form.is_valid():
@@ -132,10 +130,10 @@ def haushalt_neu(request):
     return render(request, "kunden/eintrag.html", {"form": form, "titel": "Neuer Haushalt"})
 
 
-@nur_admin
+@rollen.recht_erforderlich("kunden.loeschen")
 def haushalt_loeschen(request, kundennummer):
     """Erst eine Seite, die aufzählt, was gelöscht wird; gelöscht wird nur nach Bestätigung."""
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     if request.method != "POST":
         hp = h.hauptperson
         umfang = [
@@ -187,9 +185,9 @@ def _teil(art):
     return TEILE[art]
 
 
-@nur_admin
+@rollen.recht_erforderlich("kunden.bearbeiten")
 def teil_bearbeiten(request, kundennummer, art, pk=None):
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     modell, form_klasse, bezeichnung, mit_angemeldet = _teil(art)
     instanz = get_object_or_404(modell, pk=pk, haushalt=h) if pk else modell(haushalt=h)
     extra = {"angemeldet": request.user} if mit_angemeldet else {}
@@ -227,9 +225,9 @@ def teil_bearbeiten(request, kundennummer, art, pk=None):
 
 
 @require_POST
-@nur_admin
+@rollen.recht_erforderlich("kunden.bearbeiten")
 def teil_loeschen(request, kundennummer, art, pk):
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     modell, _, bezeichnung, _ = _teil(art)
     vorher = historie.schnappschuss(h)
     get_object_or_404(modell, pk=pk, haushalt=h).delete()
@@ -240,10 +238,10 @@ def teil_loeschen(request, kundennummer, art, pk):
 
 
 @require_POST
-@nur_admin
+@rollen.recht_erforderlich("kunden.bearbeiten")
 def abholung_loeschen(request, kundennummer, pk):
     """Löscht eine Abholung; eine zugehörige Buchung wird zurückgenommen (Kontostand)."""
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     abholung = get_object_or_404(Abholung, pk=pk, haushalt=h)
     with transaction.atomic():
         konto.abholung_zuruecknehmen(abholung)
@@ -277,7 +275,7 @@ def _liste(art):
     return LISTEN[art]
 
 
-@nur_admin
+@rollen.recht_erforderlich("einstellungen.listen")
 def liste(request, art):
     modell, _, titel, _ = _liste(art)
     return render(
@@ -287,7 +285,7 @@ def liste(request, art):
     )
 
 
-@nur_admin
+@rollen.recht_erforderlich("einstellungen.listen")
 def listeneintrag(request, art, pk=None):
     modell, form_klasse, titel, einzeln = _liste(art)
     instanz = get_object_or_404(modell, pk=pk) if pk else modell()
@@ -310,7 +308,7 @@ def listeneintrag(request, art, pk=None):
 
 
 @require_POST
-@nur_admin
+@rollen.recht_erforderlich("einstellungen.listen")
 def listeneintrag_loeschen(request, art, pk):
     modell, _, _, einzeln = _liste(art)
     eintrag = get_object_or_404(modell, pk=pk)
@@ -330,7 +328,7 @@ def listeneintrag_loeschen(request, art, pk):
 # --- Ausweis gestalten (ADR 0027) -------------------------------------------------------------
 
 
-@nur_admin
+@rollen.recht_erforderlich("einstellungen.ausweis")
 def ausweis_gestalten(request):
     vorlage = AusweisVorlage.laden()
     form = AusweisVorlageForm(request.POST or None, request.FILES or None, instance=vorlage)

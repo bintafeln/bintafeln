@@ -63,3 +63,9 @@ drei Fragen: Was war das Problem? Was haben wir entschieden? Warum?
 | [0030](0030-dokumente-zum-haushalt.md) | Dokumente zum Haushalt mit Frist je Dokumentart | Angenommen |
 | [0031](0031-historie.md) | Historie eines Haushalts aus Vergleich vorher/nachher | Angenommen |
 | [0032](0032-sonderaktionen.md) | Sonderaktionen mit Auswahl und Teilnahmen | Angenommen |
+| [0033](0033-rollen-und-rechte.md) | Frei anlegbare Rollen mit fein einstellbaren Rechten | Angenommen |
+| [0034](0034-ausgabestellen-zugang.md) | Mitarbeitende einer Ausgabestelle sehen nur deren Kunden | Angenommen |
+| [0035](0035-korrekturwuensche.md) | Rücknahmen am Einlass nur über Korrekturwünsche | Angenommen |
+| [0036](0036-statistik.md) | Statistik mit selbst gezeichneten SVG-Diagrammen | Angenommen |
+| [0037](0037-datensicherung-oberflaeche.md) | Datenexport und Zurücklesen in der Oberfläche | Angenommen |
+| [0038](0038-handbuch.md) | Handbuch im Programm, nach Rechten gefiltert | Angenommen |

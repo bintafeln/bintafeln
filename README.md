@@ -23,22 +23,26 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
 - **Einrichtung im Browser:** Solange es keinen Admin gibt, öffnet sich automatisch
   die Einrichtungsseite. Dort werden der Name der Tafel und das erste Admin-Konto angelegt.
   Danach ist die Seite gesperrt.
-- **Rollen:** Admin, Büro, Ausgabe, Kiosk, Fahrer und Beifahrer (als Django-Gruppen, werden
-  beim Start automatisch angelegt). Konten und Rollen verwaltet ein Admin unter
-  „Mitarbeitende“ (siehe unten).
+- **Rollen und Rechte:** Rollen sind frei anlegbar und löschbar; jede Rolle bekommt einzeln
+  ausgewählte Rechte (rund 45, z. B. „Kundenliste“, „Anschrift sehen“, „Abholungen buchen“,
+  „Dokumente hochladen“). Mitgeliefert: Admin, Büro, Ausgabe, Kiosk, Fahrer, Beifahrer,
+  Personal (siehe „Rollen und Rechte“ unten). Konten bekommen ihre Rollen unter
+  „Mitarbeitende“.
 - **Tafel-Einstellungen:** Name, Logo, Farbe (voreingestellt Tafel-Orange) und Anschrift der
   Tafel – in der Datenbank, nicht im Code.
 - **Änderungsprotokoll:** Wer hat wann welchen Datensatz geändert (mit Feldern vorher/nachher).
   Passwörter werden nie protokolliert.
 - **Zwei-Faktor-Anmeldung:** Jede Person richtet sie unter „Mein Konto“ selbst ein
   (QR-Code für die Authenticator-App, dazu 10 Notfallcodes). Für welche Rollen sie Pflicht ist,
-  legt ein Admin unter „Einstellungen“ fest; voreingestellt sind Admin und Büro.
+  steht in der jeweiligen Rolle; voreingestellt sind Admin, Büro und Personal.
 - **Sicherung:** täglich und verschlüsselt, mit Wiederherstellung und Update per Befehl
   (`./betrieb`). Die Startseite zeigt Admins den Stand der Sicherung.
 - **Kundenstamm (im Aufbau):** Datenmodell für Haushalte, Personen, Abholberechtigte, Sperren,
   Anmerkungen und Kundengruppen. Unter „Einstellungen → Kundenstamm“ legt ein Admin fest, welche
   Angaben erfasst werden, und richtet eigene **Zusatzfelder** ein (z. B. „Schwerbehindert“).
   **Import** mit Prüfbericht unter „Kunden“; Liste und Suche folgen.
+- **Hilfe im Programm:** ein ausführliches Handbuch („Hilfe“ im Menü), das nur die Kapitel
+  zeigt, die zu den Rechten des Kontos passen (ADR 0038).
 - **Menü links** mit aufklappbaren Bereichen (Ausgabe, Kunden, Anträge, Team, Einstellungen);
   jede Rolle sieht nur, was sie darf. Auf Handys (unter 768 Pixel Breite) öffnet „☰ Menü“ das Menü.
 - Deutsche, mobilfreundliche Oberfläche (Django-Templates + HTMX, ohne externe CDNs).
@@ -138,7 +142,8 @@ Authenticator-App verlangt (z. B. Aegis, FreeOTP, Google Authenticator).
 
 - **Einrichten:** „Mein Konto“ → „Jetzt einrichten“, QR-Code scannen, Code eingeben. Danach
   erscheinen einmalig **10 Notfallcodes**. Jeder funktioniert einmal anstelle der App.
-- **Pflicht je Rolle:** unter „Einstellungen“ per Häkchen. Voreingestellt: Admin und Büro.
+- **Pflicht je Rolle:** in der Rolle („Einstellungen → Rollen und Rechte“) per Häkchen.
+  Voreingestellt: Admin, Büro und Personal.
   Wer eine Pflicht-Rolle hat, wird nach der Anmeldung direkt zur Einrichtung geleitet und kann
   bis dahin nichts anderes öffnen. Auch der erste Admin richtet sie direkt nach der
   Einrichtungsseite ein.
@@ -153,9 +158,45 @@ Authenticator-App verlangt (z. B. Aegis, FreeOTP, Google Authenticator).
 
 Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie.
 
+## Rollen und Rechte
+
+„Einstellungen → Rollen und Rechte“ (Admin; andere nur mit dem Recht „Rollen und Rechte“):
+
+- **Liste** aller Rollen mit Zahl der Rechte, Zahl der Konten und Pflichten.
+- **Neue Rolle** oder eine Rolle öffnen: Name, Beschreibung, Pflichten (Zwei-Faktor-Anmeldung,
+  Belehrung nach Infektionsschutzgesetz, Führerschein; die beiden letzten erzeugen
+  Wiedervorlagen bei den Mitarbeitenden) und die **Rechte**, gruppiert nach Bereich (Einlass und
+  Kasse, Kunden, Anträge, Mitarbeitende und Personal, Einstellungen) mit „alle“/„keine“ je
+  Bereich.
+- Seiten ohne Recht fehlen im Menü und lassen sich auch über die Adresse nicht öffnen; Teile
+  einer Seite (z. B. Anschrift, Kundenkonto, Dokumente) erscheinen nur mit dem passenden Recht.
+  Hat ein Konto mehrere Rollen, gelten alle ihre Rechte zusammen.
+- **Admin** hat immer alle Rechte und lässt sich weder beschneiden noch löschen, damit sich
+  niemand aussperrt.
+- **Nur eigene Rechte weitergeben:** Wer nicht Admin ist, kann nur Rechte setzen oder entfernen,
+  die er selbst hat (andere sind grau und bleiben), und nur Rollen löschen oder vergeben, deren
+  Rechte er alle selbst hat.
+- **Löschen** einer Rolle nimmt sie allen Konten weg.
+- Die mitgelieferten Rollen haben nach dem Update genau die Rechte, die sie vorher hatten. Die
+  früheren Schalter „Zwei-Faktor Pflicht für …“, „Büro darf Mitarbeitende verwalten“ und
+  „Ausgabe sieht Zusatzfelder der besonderen Kategorie“ sind in die Rollen gewandert
+  (ADR 0033).
+
+### Mitarbeitende einer Ausgabestelle
+
+Unter „Team → Mitarbeitende“ lässt sich jedes Konto einer oder mehreren **Ausgabestellen**
+zuordnen. Wer zugeordnet ist, ruft nur Kunden auf, deren Kundengruppe zu einer dieser
+Ausgabestellen gehört: in der Kundenliste, auf der Haushaltsseite und am Einlass. Bei einem
+anderen Kunden erklärt bintafeln, warum („Kunde 200 gehört zur Ausgabestelle „Nord“ …
+Sie sind der Ausgabestelle „Mitte“ zugeordnet …“). Ohne Zuordnung gibt es keine Einschränkung;
+mit dem Recht „Kunden aller Ausgabestellen aufrufen“ (Vorgabe: Admin und Büro) ebenfalls nicht
+(ADR 0034).
+
 ## Mitarbeitende
 
-„Mitarbeitende“ im Menü (Admin; das Büro nur, wenn unter „Einstellungen“ freigegeben):
+„Mitarbeitende“ im Menü (mit dem Recht „Mitarbeitende anlegen, bearbeiten, sperren“; Admin
+immer). Rollen vergeben kann man nur, wenn man selbst alle Rechte der Rolle hat; Admin-Konten
+bearbeitet nur ein Admin. Rollen, die man nicht vergeben darf, bleiben beim Bearbeiten erhalten.
 
 - **Anlegen:**
   - Benutzername, Name, E-Mail (optional), Beschäftigung (ehrenamtlich oder fest angestellt)
@@ -198,7 +239,7 @@ Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie
 
 ## Personal
 
-„Personal“ im Menü (nur Admin und Rolle **Personal**; diese Rolle vergibt nur ein Admin):
+„Personal“ im Menü (mit dem Recht „Personal“, vorgegeben für Admin und Rolle **Personal**):
 
 - Liste der Festangestellten mit Tätigkeit, Wochenstunden, Vertragsende, Resturlaub und
   Stundenkonto.
@@ -296,12 +337,13 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
 
 - **Suche** nach Kundennummer oder Name; Status und Kundengruppe lassen sich filtern. Eine
   vollständige Kundennummer mit Enter (z. B. vom Scanner) öffnet den Haushalt direkt.
-- Die **Detailseite** zeigt je nach Rolle unterschiedlich viel:
+- Die **Detailseite** zeigt je nach Rechten unterschiedlich viel. Vorgaben der mitgelieferten
+  Rollen (änderbar unter „Einstellungen → Rollen und Rechte“):
 
   | Rolle | sieht |
   |---|---|
   | Admin, Büro | alles: Anschrift, Kontakt, Personen, Abholberechtigte, alle Sperren, Ausnahmen, Abholungen, Kontostand, Anmerkungen, Notizen, Dokumente, Zusatzfelder |
-  | Ausgabe | nur, was der Einlass braucht: Kundennummer, Haushaltsgröße, alle Personen des Haushalts und die Abholberechtigten mit Geburtsdatum, Ausgabestelle, Karte gültig bis, Kontostand (abschaltbar), aktive Sperren, die letzten 5 Abholungen, Notizen, freigegebene Zusatzfelder (Art. 9 nur mit Freigabe in den Einstellungen). Keine Anschrift, keine Kontaktdaten, keine Ausnahmen, keine internen Anmerkungen, keine Dokumente |
+  | Ausgabe | nur, was der Einlass braucht: Kundennummer, Haushaltsgröße, alle Personen des Haushalts und die Abholberechtigten mit Geburtsdatum, Ausgabestelle, Karte gültig bis, Kontostand (abschaltbar), aktive Sperren, die letzten 5 Abholungen, Notizen, freigegebene Zusatzfelder (Art. 9 nur mit dem Recht „besondere Kategorie“). Keine Anschrift, keine Kontaktdaten, keine Ausnahmen, keine internen Anmerkungen, keine Dokumente |
   | Kiosk | nichts |
 
 - **Bearbeiten (nur Admin):** Auf der Haushaltsseite „Bearbeiten“ ändert alles zum Haushalt:
@@ -443,8 +485,9 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    Band mit dem Gruppennamen.
 4. **Kunde anmelden:** Das Aufrufen allein trägt nichts ein. Erst der Knopf **„Kunde anmelden
    und Abholung buchen“** meldet den Kunden für heute an. Wird abgebrochen, einfach die nächste
-   Nummer scannen; der Kunde lässt sich jederzeit wieder aufrufen. Ein Versehen lässt sich am
-   selben Tag zurücknehmen. Admin und Büro können bei Rot wegen einer Terminregel eine
+   Nummer scannen; der Kunde lässt sich jederzeit wieder aufrufen. Ein Versehen nimmt nur
+   zurück, wer das Recht dazu hat (Admin immer); alle anderen schicken einen **Korrekturwunsch**
+   (siehe unten). Admin und Büro können bei Rot wegen einer Terminregel eine
    **Ausnahme für heute** erteilen.
 5. **Bezahlen:** Der Beitrag ist vorgeschlagen und änderbar. Im Pflichtfeld **„Gezahlt“** steht
    genau der Betrag, den der Kunde zahlt, **auch 0**. Vorgeschlagen ist, was nach Verrechnung des
@@ -458,7 +501,8 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    wird Guthaben. Der Knopf **„Vorauszahlung Rest <Monat> eintragen“** setzt den passenden
    Betrag ins Feld (Abholtage bis Monatsende × Beitrag, abzüglich vorhandenen Guthabens) und
    erklärt die Rechnung. Ist heute keine Abholung möglich, gibt es stattdessen das Feld
-   **„Gezahlt ohne Abholung“**. Eine Zahlung lässt sich am selben Tag zurücknehmen.
+   **„Gezahlt ohne Abholung“**. Auch eine Zahlung nimmt nur zurück, wer das Recht dazu hat;
+   sonst geht ein Korrekturwunsch.
 7. Den **Kontoverlauf** mit allen Buchungen und Korrekturbuchungen gibt es auf der Haushaltsseite
    (Admin, Büro).
 
@@ -480,6 +524,23 @@ Unter „Einstellungen → Ausgabe, Ampel und Beiträge“:
   Weihnachten): Der Einlass schlägt dann 0 € vor und zeigt „Heute beitragsfrei“; Vorschläge
   für Vorauszahlungen zählen diese Tage nicht.
 
+### Korrekturwünsche
+
+Am Einlass sollen Kunden nicht nachträglich verändert werden. Wer eine Abholung, Zahlung oder
+Sonderaktion zurücknehmen will, aber nicht das Recht „Abholungen, Zahlungen und Sonderaktionen
+selbst zurücknehmen“ hat (Vorgabe: nur Admin), klickt **„Korrektur beantragen“**, wählt einen
+Grund (z. B. „Versehentlich gebucht“, „Falscher Kunde aufgerufen“) und schreibt optional eine
+Anmerkung.
+
+- Alle mit dem Recht „Korrekturwünsche vom Einlass entscheiden“ (Admin immer; z. B. dem Büro
+  geben) bekommen eine Mail, wenn ein Mailserver eingerichtet ist, und sehen auf der Startseite
+  die Zahl der offenen Wünsche.
+- „Ausgabe → Korrekturwünsche“: **Zurücknehmen** führt die Korrektur aus (Kundenkonto und Kasse
+  werden mitkorrigiert), **Ablehnen** lässt alles, wie es ist; beides optional mit Antwort.
+- Am Einlass steht beim Eintrag „Korrektur beantragt …, wartet auf Entscheidung“.
+- Wer das Recht zum Zurücknehmen hat, kann es direkt tun, auch an späteren Tagen.
+- Entschiedene Wünsche werden nach der Frist für Abholungen gelöscht (ADR 0035).
+
 ### Sonderaktionen
 
 „Ausgabe → Sonderaktionen“ (Admin, Büro): Aktionen neben der normalen Ausgabe, z. B.
@@ -490,12 +551,36 @@ Weihnachtsgutscheine oder Schulranzen.
   Auswahlmöglichkeiten (z. B. „Spielzeug“ und „Kleidung“, eine je Zeile).
 - **Am Einlass:** Solange eine Aktion läuft, erscheint sie bei jedem Haushalt als eigene Karte mit
   Knöpfen („2× Spielzeug“, „2× Kleidung“). Ein Klick trägt die Teilnahme ein; jeder Haushalt kann
-  je Aktion einmal teilnehmen. Am selben Tag lässt sich die Teilnahme zurücknehmen. Danach zeigt
-  die Karte „✓ Erhalten am …“.
+  je Aktion einmal teilnehmen. Danach zeigt die Karte „✓ Erhalten am …“. Zurücknehmen wie bei
+  Abholungen nur mit Recht, sonst per Korrekturwunsch.
 - **Auswertung:** Die Seite einer Aktion zeigt Teilnahmen und Stückzahlen je Auswahl, mit
   CSV-Export (nur Kundennummern, keine Namen).
 - Teilnahmen hängen an der Kundennummer, überstehen den Import, stehen in der Auskunft nach
   Art. 15 und werden nach derselben Frist gelöscht wie Abholungen (ADR 0032).
+
+## Statistik
+
+„Statistik“ im Menü (Recht „Statistik ansehen“, Vorgabe: Admin und Büro). Oben Zeitraum
+(dieses/letztes Jahr, letzte 12 Monate, dieser/letzter Monat, letzte 30 Tage oder eigener
+Zeitraum) und Ausgabestelle wählen.
+
+- **Kennzahlen:** Abholungen, verschiedene Haushalte, erreichte Personen (Summe der
+  Haushaltsgrößen je Abholung), Bareinnahmen, aktive Haushalte mit Personen, neue Kunden,
+  eingegangene Anträge.
+- **Diagramme:**
+  - Abholungen je Monat (bis gut drei Monate je Woche, bis 31 Tage je Tag)
+  - Abholungen je Ausgabestelle im Verlauf und insgesamt
+  - Abholungen nach Wochentag und nach Uhrzeit
+  - Bareinnahmen je Monat
+  - neue Kunden und eingegangene Anträge
+  - aktive Haushalte nach Größe, Personen nach Altersgruppe
+  - Haushalte nach Status und Einkommensart
+  - Auslastung der Kundengruppen
+  - Sonderaktionen im Zeitraum
+- Zu jedem Diagramm gibt es die Zahlen als Tabelle und als **CSV-Datei**. Beim Überfahren mit
+  der Maus zeigt jedes Diagramm die genauen Werte.
+- Nur Summen, keine Personendaten. Wer einer Ausgabestelle zugeordnet ist, sieht nur deren Zahlen.
+- Die Diagramme zeichnet bintafeln selbst (SVG), ohne fremde Dienste (ADR 0036).
 
 ## Kasse
 
@@ -515,6 +600,32 @@ Weihnachtsgutscheine oder Schulranzen.
   Ausgabestelle gilt mit.
 
 Die Kasse bleibt auch nach einem Neuimport des Kundenstamms vollständig (ADR 0014).
+
+## Datensicherung in der Oberfläche (Export und Zurücklesen)
+
+„Einstellungen → Datensicherung“ (Rechte „Alle Daten exportieren“ und „Daten zurücklesen“,
+Vorgabe: nur Admin). Ergänzt die tägliche Server-Sicherung (siehe „Betrieb“) um eine Datei, die
+man selbst extern aufbewahrt.
+
+- **Exportieren:** Bereiche wählen (Einstellungen und Listen; Kunden und Ausgabe; Anträge;
+  Mitarbeitende, Rollen und Personal; Änderungsprotokoll; hochgeladene Dateien), ein Passwort
+  festlegen (mindestens 10 Zeichen) und die Datei `bintafeln-export-….bintafeln`
+  herunterladen. Sie ist mit dem Passwort verschlüsselt; ohne Passwort lässt sie sich nicht
+  öffnen. Alle Bereiche zusammen ergeben eine vollständige Sicherung.
+- **Zurücklesen:** Datei und Passwort wählen, „Prüfen“. Die Vorschau zeigt Herkunft (Tafel,
+  Datum, Version; Warnung bei einer anderen Installation) und je Tabelle, wie viele Datensätze
+  neu sind und wie viele überschrieben würden. Dann:
+  - **Aktualisieren** (immer möglich, auch mit einer Teildatei): neue Datensätze hinzufügen,
+    gleiche überschreiben, **nichts löschen**.
+  - **Vollständig ersetzen** (nur mit einer vollständigen Exportdatei, nur mit einer
+    Server-Sicherung von heute und ausdrücklicher Bestätigung): alle Daten dieser Installation
+    durch die Datei ersetzen, z. B. beim Umzug auf einen neuen Server.
+- Eine Datei aus einer neueren bintafeln-Version wird abgelehnt (erst aktualisieren). Fehlen
+  Daten, auf die eine Teildatei verweist, wird nichts verändert und bintafeln sagt, welcher
+  Bereich fehlt.
+- Nicht enthalten: Zwei-Faktor-Geräte (nach einem Umzug neu einrichten). Das Passwort des
+  Mailservers bleibt mit dem Schlüssel des alten Servers verschlüsselt und muss auf einem neuen
+  Server neu eingegeben werden (ADR 0037).
 
 ## Entwicklungs- und Produktionsmodus
 

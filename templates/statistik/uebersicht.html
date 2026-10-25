@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block titel %}Statistik{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Statistik</h1>
+  <form method="get" class="filter statistik-filter">
+    <label for="zeitraum">Zeitraum</label>
+    <select name="zeitraum" id="zeitraum">
+      {% for schluessel, v in vorgaben.items %}<option value="{{ schluessel }}"{% if wahl == schluessel %} selected{% endif %}>{{ v.titel }}</option>{% endfor %}
+      <option value="eigen"{% if wahl == "eigen" %} selected{% endif %}>Eigener Zeitraum</option>
+    </select>
+    <label for="von">von</label>
+    <input type="date" name="von" id="von" value="{{ z.von|date:'Y-m-d' }}">
+    <label for="bis">bis</label>
+    <input type="date" name="bis" id="bis" value="{{ z.bis|date:'Y-m-d' }}">
+    <label for="stelle">Ausgabestelle</label>
+    <select name="stelle" id="stelle">
+      <option value="">{% if eingeschraenkt %}alle meine{% else %}alle{% endif %}</option>
+      {% for s in auswahl %}<option value="{{ s.pk }}"{% if gewaehlt == s.pk|stringformat:"s" %} selected{% endif %}>{{ s.name }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="knopf">Anzeigen</button>
+  </form>
+  <p class="hinweis">{{ z.titel|default:"" }} · {{ z.von|date:"d.m.Y" }} bis {{ z.bis|date:"d.m.Y" }}.
+    Datum eintragen und „Eigener Zeitraum“ wählen für einen freien Zeitraum. Alle Zahlen sind Summen ohne Personenbezug.
+    Zu jedem Diagramm gibt es die Zahlen als Tabelle und als CSV-Datei.</p>
+  <div class="kacheln">
+    {% for titel, wert, unter in kacheln %}
+    <div class="kachel"><span class="kachel-titel">{{ titel }}</span><span class="kachel-wert">{{ wert }}</span><span class="kachel-unter">{{ unter }}</span></div>
+    {% endfor %}
+  </div>
+</section>
+
+{% for a in abschnitte %}
+<section class="karte breit statistik-abschnitt" id="{{ a.id }}">
+  <div class="liste-kopf">
+    <h2>{{ a.titel }}</h2>
+    <a class="link-klein" href="?{% if abfrage %}{{ abfrage }}&amp;{% endif %}csv={{ a.id }}">CSV</a>
+  </div>
+  {% if a.text %}<p class="hinweis">{{ a.text }}</p>{% endif %}
+  {% if a.legende %}
+  <ul class="legende" aria-label="Legende">{% for name, farbe in a.legende %}<li><span class="legende-farbe reihe-{{ farbe }}"></span>{{ name }}</li>{% endfor %}</ul>
+  {% endif %}
+  {% if a.svg %}<figure class="diagramm-rahmen">{{ a.svg }}</figure>{% elif not a.zeilen %}<p class="hinweis">Keine Daten im Zeitraum.</p>{% endif %}
+  {% if a.zeilen %}
+  <details class="statistik-tabelle">
+    <summary>Zahlen als Tabelle</summary>
+    <div class="tabelle-rahmen">
+    <table class="tabelle kompakt">
+      <thead><tr>{% for k in a.kopf %}<th>{{ k }}</th>{% endfor %}</tr></thead>
+      <tbody>{% for zeile in a.zeilen %}<tr>{% for wert in zeile %}<td{% if not forloop.first %} class="zahl"{% endif %}>{{ wert }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+    </table>
+    </div>
+  </details>
+  {% endif %}
+</section>
+{% endfor %}
+{% endblock %}

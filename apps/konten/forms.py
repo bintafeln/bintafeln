@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, get_user_model
 from django_otp import match_token, user_has_device
 
 from apps.core.auswahl import ANREDEN, FUEHRERSCHEINKLASSEN, mit_vorhandenem
-from apps.konten import rollen, verwaltung
+from apps.konten import verwaltung
 from apps.konten.models import (
     Dokument,
     DokumentKategorie,
@@ -85,8 +85,16 @@ class MitarbeiterForm(forms.ModelForm):
 
     class Meta:
         model = get_user_model()
-        fields = ["username", "first_name", "last_name", "email", "beschaeftigung"]
+        fields = [
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+            "beschaeftigung",
+            "ausgabestellen",
+        ]
         help_texts = {"username": "Zum Anmelden. Buchstaben, Ziffern und @ . + - _"}
+        widgets = {"ausgabestellen": forms.CheckboxSelectMultiple}
 
     def __init__(self, *args, verwalter, mail_moeglich=False, **kwargs):
         super().__init__(*args, **kwargs)
@@ -95,7 +103,7 @@ class MitarbeiterForm(forms.ModelForm):
         self.fields["rollen"].choices = [(r, r) for r in verwaltung.vergebbare_rollen(verwalter)]
         if self.instance.pk:
             self.fields["rollen"].initial = list(
-                self.instance.groups.filter(name__in=rollen.ALLE).values_list("name", flat=True)
+                self.instance.groups.values_list("name", flat=True)
             )
 
     def clean(self):

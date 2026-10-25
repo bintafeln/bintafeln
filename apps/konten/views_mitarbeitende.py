@@ -48,13 +48,16 @@ def verwalter_erforderlich(ansicht):
 def _zeilen(benutzer):
     """Konten mit Rollen (in fester Reihenfolge) und Zwei-Faktor-Stand für die Listen."""
     zeilen = []
+    alle = rollen.alle_rollen()
     for b in benutzer.prefetch_related("groups").order_by("last_name", "first_name", "username"):
         namen = {g.name for g in b.groups.all()}
         zeilen.append(
             {
                 "b": b,
                 "rollen": [
-                    r for r in rollen.ALLE if r in namen or (b.is_superuser and r == rollen.ADMIN)
+                    r.name
+                    for r in alle
+                    if r.name in namen or (b.is_superuser and r.name == rollen.ADMIN)
                 ],
                 "zwei_faktor": user_has_device(b),
             }
@@ -101,12 +104,14 @@ def anlegen(request):
         request.POST or None, verwalter=request.user, mail_moeglich=mail.eingerichtet()
     )
     if request.method == "POST" and form.is_valid():
-        daten = {f: form.cleaned_data[f] for f in MitarbeiterForm.Meta.fields}
+        daten = {f: form.cleaned_data[f] for f in MitarbeiterForm.Meta.fields
+                 if f != "ausgabestellen"}  # fmt: skip
         per_mail = form.cleaned_data.get("zugang") == "einladung"
         # Das Formular bietet nur erlaubte Rollen an; verwaltung.anlegen prüft es trotzdem.
         ziel, passwort = verwaltung.anlegen(
             request.user, daten, form.cleaned_data["rollen"], einladung=per_mail
         )
+        ziel.ausgabestellen.set(form.cleaned_data["ausgabestellen"])
         if not per_mail:
             return _startpasswort_zeigen(request, ziel, passwort, neu=True)
         try:
@@ -138,6 +143,7 @@ def bearbeiten(request, pk):
         except verwaltung.VerwaltungsFehler as fehler:
             form.add_error("rollen", str(fehler))
         else:
+            form.instance.ausgabestellen.set(form.cleaned_data["ausgabestellen"])
             messages.success(request, f"Änderungen an {ziel} gespeichert.")
             return redirect("konten:mitarbeitende")
     return render(
@@ -306,7 +312,7 @@ def schulung_loeschen(request, pk, schulung):
     return redirect("konten:stammdaten", pk=ziel.pk)
 
 
-@rollen.rolle_erforderlich(rollen.ADMIN)
+@rollen.recht_erforderlich("einstellungen.personal")
 def personal_einstellungen(request):
     form = PersonalEinstellungenForm(request.POST or None, instance=PersonalEinstellungen.laden())
     if request.method == "POST" and form.is_valid():

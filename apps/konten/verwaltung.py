@@ -32,17 +32,28 @@ def startpasswort() -> str:
 
 
 def ist_admin(benutzer) -> bool:
-    return benutzer.is_superuser or benutzer.groups.filter(name=rollen.ADMIN).exists()
+    return rollen.ist_admin(benutzer)
 
 
 def vergebbare_rollen(verwalter) -> list[str]:
-    if rollen.hat_rolle(verwalter, rollen.ADMIN):
-        return list(rollen.ALLE)
-    return [r for r in rollen.ALLE if r not in rollen.NUR_DURCH_ADMIN]
+    """Admins vergeben alle Rollen; sonst nur Rollen, deren Rechte man selbst alle hat
+    (nie die Rolle Admin). So kann sich niemand über eine Rolle mehr Rechte verschaffen."""
+    if rollen.ist_admin(verwalter):
+        return [r.name for r in rollen.alle_rollen()]
+    eigene = rollen.rechte_von(verwalter)
+    return [r.name for r in rollen.alle_rollen() if not r.ist_admin and set(r.rechte) <= eigene]
 
 
 def darf_bearbeiten(verwalter, ziel) -> bool:
-    return rollen.hat_rolle(verwalter, rollen.ADMIN) or not ist_admin(ziel)
+    return rollen.ist_admin(verwalter) or not ist_admin(ziel)
+
+
+def _rollen_setzen(verwalter, ziel, rollen_namen) -> None:
+    """Setzt die vergebbaren Rollen; Rollen, die der Verwalter nicht vergeben darf, bleiben."""
+    erlaubt = set(vergebbare_rollen(verwalter))
+    behalten = set(ziel.groups.exclude(name__in=erlaubt).values_list("name", flat=True))
+    ziel.groups.set(Group.objects.filter(name__in=set(rollen_namen) | behalten))
+    rollen.rechte_vergessen(ziel)
 
 
 def _pruefen(verwalter, ziel):
@@ -70,7 +81,7 @@ def anlegen(verwalter, daten: dict, rollen_namen: list[str], einladung=False):
     else:
         passwort = _passwort_neu(ziel)
     ziel.save()
-    ziel.groups.set(Group.objects.filter(name__in=rollen_namen))
+    _rollen_setzen(verwalter, ziel, rollen_namen)
     return ziel, passwort
 
 
@@ -86,7 +97,7 @@ def bearbeiten(verwalter, ziel, rollen_namen: list[str]) -> None:
     if selbst and rollen.ADMIN not in rollen_namen and ist_admin(ziel):
         raise VerwaltungsFehler("Sie können sich die Admin-Rolle nicht selbst nehmen.")
     ziel.save()
-    ziel.groups.set(Group.objects.filter(name__in=rollen_namen))
+    _rollen_setzen(verwalter, ziel, rollen_namen)
 
 
 def sperren(verwalter, ziel) -> None:

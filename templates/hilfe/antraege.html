@@ -1,0 +1,10 @@
+<p>Online-Anträge kommen über das öffentliche Formular. Menü „Anträge“.</p>
+<ul>
+  <li>Die Liste zeigt offene Anträge mit fortlaufender Nummer, neueste zuerst; Spalten anklickbar zum Sortieren, Suche,
+    Zeilen je Seite, CSV-Export.</li>
+  <li>Aktionen je Zeile: ansehen 👁{% if "antraege.bearbeiten" in rechte %}, bearbeiten ✎, Anmerkung 💬, in den Papierkorb 🗑{% endif %}{% if "antraege.aufnehmen" in rechte %}, aufnehmen ➜{% endif %}.</li>
+  {% if "antraege.bearbeiten" in rechte %}<li>Status setzen und interne Anmerkungen schreiben; Tippfehler im Antrag vor der Aufnahme unter „Bearbeiten“ korrigieren.</li>{% endif %}
+  <li>Anhänge (z. B. Bescheide) öffnen sich mit einem Klick; jeder Abruf wird protokolliert.</li>
+  {% if "antraege.loeschen" in rechte %}<li>Im Papierkorb lassen sich Anträge endgültig löschen.</li>{% endif %}
+</ul>
+<p>Erledigte und abgelehnte Anträge werden nach den eingestellten Fristen automatisch gelöscht.</p>

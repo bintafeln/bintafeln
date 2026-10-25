@@ -86,21 +86,18 @@ def test_einlass(client, admin, benutzer_mit_rolle, anmelden, h):
     url = reverse("ausgabe:sonderaktion_eintragen", args=["4711", a.pk])
     seite = client.post(url, {"auswahl": kleidung.pk}, **HX).content.decode()
     assert "Weihnachtsgutschein (Kleidung) eingetragen: 2×." in seite
-    assert "✓ Erhalten am" in seite and "Zurücknehmen" in seite
+    assert "✓ Erhalten am" in seite and "Korrektur beantragen" in seite
     t = Teilnahme.objects.get()
     assert (t.kundennummer, t.menge, t.auswahl, t.eingetragen_von) == ("4711", 2, kleidung, "anton")
     seite = client.post(url, {"auswahl": kleidung.pk}, **HX).content.decode()
     assert "schon eingetragen" in seite
 
+    # Die Ausgabe nimmt nicht selbst zurück (ADR 0035), sondern bittet darum.
     zurueck = reverse("ausgabe:teilnahme_zuruecknehmen", args=[t.pk])
-    assert "zurückgenommen" in client.post(zurueck, **HX).content.decode()
-    assert not Teilnahme.objects.exists()
-
-    # Ein Tag später lässt sich nichts mehr zurücknehmen
-    t = Teilnahme.objects.create(aktion=a, kundennummer="4711",
-                                 zeitpunkt=timezone.now() - dt.timedelta(days=1))  # fmt: skip
-    seite = client.post(reverse("ausgabe:teilnahme_zuruecknehmen", args=[t.pk]), **HX)
-    assert "Nur am selben Tag" in seite.content.decode()
+    assert client.post(zurueck, **HX).status_code == 403
+    wunsch = reverse("ausgabe:korrektur_beantragen", args=["teilnahme", t.pk])
+    seite = client.post(wunsch, {"grund": "Versehentlich gebucht"}, **HX).content.decode()
+    assert "Korrekturwunsch gesendet" in seite and "wartet auf Entscheidung" in seite
     assert Teilnahme.objects.exists()
 
 

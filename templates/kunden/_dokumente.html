@@ -13,10 +13,12 @@
         <td data-titel="Hochgeladen">{{ d.hochgeladen_am|date:"d.m.Y" }}{% if d.hochgeladen_von %} von {{ d.hochgeladen_von }}{% endif %}</td>
         <td data-titel="Löschen am">{{ d.loeschen_am|date:"d.m.Y" }}</td>
         <td data-titel="Aktion">
+          {% if "kunden.dokumente_verwalten" in rechte %}
           <form method="post" action="{% url 'kunden:dokument_loeschen' d.pk %}" class="inline"
                 onsubmit="return confirm('Dokument „{{ d.titel|escapejs }}“ endgültig löschen?')">
             {% csrf_token %}<button type="submit" class="link-knopf">löschen</button>
           </form>
+          {% endif %}
         </td>
       </tr>
     {% endfor %}
@@ -28,6 +30,7 @@
   {% endif %}
   <p class="hinweis">Dokumente werden verschlüsselt gespeichert, jeder Abruf wird protokolliert. Nach der Frist der
     Dokumentart werden sie automatisch gelöscht.</p>
+  {% if "kunden.dokumente_verwalten" in rechte %}
   <details>
     <summary>Dokument hochladen</summary>
     <form method="post" action="{% url 'kunden:dokument_hochladen' h.kundennummer %}" enctype="multipart/form-data">
@@ -36,4 +39,5 @@
       <button type="submit" class="knopf knopf-zweitrangig">Hochladen</button>
     </form>
   </details>
+  {% endif %}
 </section>

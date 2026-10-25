@@ -1,0 +1,21 @@
+<p>Beim Buchen einer Abholung stehen zwei Beträge:</p>
+<ul>
+  <li><strong>Beitrag</strong>: Was diese Abholung kostet. Vorgeschlagen nach den Regeln der Tafel (z. B. 1,50 € je
+    Person ab 18), änderbar. In beitragsfreien Zeiträumen (z. B. vor Weihnachten) steht 0 € und ein Hinweis.</li>
+  <li><strong>Gezahlt</strong> (Pflicht): Genau der Betrag, den der Kunde jetzt bar gibt – <strong>auch 0</strong>.
+    Vorgeschlagen ist, was nach Verrechnung eines Guthabens noch fehlt.</li>
+</ul>
+<h3>Was passiert mit der Differenz?</h3>
+<ul>
+  <li>Weniger gezahlt als der Beitrag: Der Rest kommt aus dem Guthaben; reicht das nicht und erlaubt die Tafel
+    „Anschreiben“, wird angeschrieben (Kontostand negativ). Sonst erscheint eine Meldung und nichts wird gebucht.</li>
+  <li>Mehr gezahlt: Der Überschuss wird Guthaben (z. B. Vorauszahlung).</li>
+</ul>
+<p>Die Bestätigung nennt genau, was bar erhalten, aus dem Guthaben genommen, angeschrieben oder gutgeschrieben wurde,
+  und den neuen Kontostand.</p>
+<h3>Vorauszahlung</h3>
+<p>Unter „Gezahlt“ schlagen Knöpfe Beträge vor, z. B. „Vorauszahlung Rest Oktober“; „Rechnung“ zeigt, wie der Betrag
+  zustande kommt. Ein Klick trägt den Betrag ins Feld.</p>
+{% if "einlass.zahlung" in rechte %}<h3>Zahlung ohne Abholung</h3>
+<p>Ist heute keine Abholung möglich, gibt es das Feld „Gezahlt ohne Abholung“ – z. B. um Schulden auszugleichen oder
+  vorauszuzahlen. Der Betrag wird Guthaben.</p>{% endif %}

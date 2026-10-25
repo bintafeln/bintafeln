@@ -1,0 +1,12 @@
+{% if "kunden.bearbeiten" in rechte %}<h3>Neuer Haushalt</h3>
+<p>„Kunden → Neuer Haushalt“: Kundennummer, Status, Kundengruppe, Anschrift usw.; danach Personen ergänzen. Neue Kunden
+  aus Anträgen besser über den Aufnahme-Assistenten anlegen (Kapitel „Antrag aufnehmen“).</p>
+<h3>Bearbeiten</h3>
+<p>Auf der Haushaltsseite „Bearbeiten“: Angaben und Zusatzfelder, Personen, Abholberechtigte, Sperren, Ausnahmen und
+  Anmerkungen. Abholungen lassen sich dort löschen (das Kundenkonto wird mitkorrigiert). Jede Änderung steht in der
+  Historie und im Änderungsprotokoll.</p>
+<div class="achtung">Solange der Kundenstamm noch aus dem bisherigen Programm importiert wird, ersetzt der nächste
+  Import Änderungen – außer Sie wählen dort „bintafeln-Stand behalten“.</div>{% endif %}
+{% if "kunden.loeschen" in rechte %}<h3>Löschen</h3>
+<p>„Löschen …“ zeigt zuerst, was alles mitgelöscht wird (Personen, Abholungen, Notizen, Dokumente, Historie …). Erst
+  „Ja, … endgültig löschen“ löscht. Kontobuchungen bleiben ohne Haushalt für die Kasse erhalten.</p>{% endif %}

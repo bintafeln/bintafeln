@@ -2,7 +2,7 @@ from django.conf import settings
 
 from apps.core.menue import menue
 from apps.core.models import TafelEinstellungen
-from apps.konten.rollen import ALLE, darf_mitarbeitende_verwalten, rollen_von
+from apps.konten.rollen import alle_rollen, darf_mitarbeitende_verwalten, rechte_von, rollen_von
 from apps.konten.zwei_faktor import ist_pflicht
 from bintafeln.version import version
 
@@ -25,8 +25,9 @@ def tafel(request):
         "menue": menue(request) if angemeldet and not offen else [],
         "tafel": TafelEinstellungen.laden(),
         "rollen": rollen,
+        "rechte": rechte_von(benutzer) if angemeldet else frozenset(),
         # für die Anzeige in fester Reihenfolge
-        "rollen_liste": [rolle for rolle in ALLE if rolle in rollen],
+        "rollen_liste": [r.name for r in alle_rollen() if r.name in rollen] if angemeldet else [],
         # Solange die Pflicht-Einrichtung offen ist, zeigt das Menü nur "Abmelden".
         "zwei_faktor_offen": angemeldet and not benutzer.is_verified() and ist_pflicht(benutzer),
         "darf_mitarbeitende": angemeldet and darf_mitarbeitende_verwalten(benutzer),

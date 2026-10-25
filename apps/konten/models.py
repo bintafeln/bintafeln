@@ -1,7 +1,9 @@
 from auditlog.registry import auditlog
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils import timezone
 from django_otp.plugins.otp_static.models import StaticDevice
 from django_otp.plugins.otp_totp.models import TOTPDevice
@@ -29,6 +31,14 @@ class Benutzer(AbstractUser):
     )
     gesperrt_am = models.DateTimeField("Gesperrt am", null=True, blank=True)
     gesperrt_von = models.CharField("Gesperrt von", max_length=150, blank=True)
+    ausgabestellen = models.ManyToManyField(
+        "kunden.Ausgabestelle",
+        blank=True,
+        related_name="mitarbeitende",
+        verbose_name="Ausgabestellen",
+        help_text="Wer einer Ausgabestelle zugeordnet ist, ruft nur deren Kunden auf – außer "
+        "mit dem Recht „Kunden aller Ausgabestellen aufrufen“. Leer: alle Kunden.",
+    )
 
     class Meta:
         verbose_name = "Benutzer"
@@ -147,7 +157,9 @@ class PersonalEinstellungen(models.Model):
         return einstellungen
 
 
-auditlog.register(Benutzer, exclude_fields=["password", "last_login"], m2m_fields={"groups"})
+auditlog.register(
+    Benutzer, exclude_fields=["password", "last_login"], m2m_fields={"groups", "ausgabestellen"}
+)
 
 
 class Schulung(models.Model):
@@ -210,11 +222,64 @@ class Dokument(models.Model):
         return self.titel
 
 
+class Rolle(models.Model):
+    """Rechte und Pflichten einer Rolle (ADR 0033). Der Name ist der Name der Django-Gruppe."""
+
+    gruppe = models.OneToOneField(Group, on_delete=models.CASCADE, related_name="rolle")
+    beschreibung = models.CharField("Beschreibung", max_length=200, blank=True)
+    rechte = models.JSONField("Rechte", default=list, blank=True)
+    zwei_faktor_pflicht = models.BooleanField(
+        "Zwei-Faktor-Anmeldung Pflicht",
+        default=True,
+        help_text="Wer diese Rolle hat, muss sich mit zweitem Faktor anmelden.",
+    )
+    braucht_belehrung = models.BooleanField(
+        "Braucht Belehrung nach Infektionsschutzgesetz",
+        default=False,
+        help_text="Erinnerung an die Belehrung in den Stammdaten (z. B. Ausgabe, Fahrer).",
+    )
+    braucht_fuehrerschein = models.BooleanField(
+        "Braucht Führerschein",
+        default=False,
+        help_text="Erinnerung an die Führerscheinkontrolle in den Stammdaten.",
+    )
+    reihenfolge = models.PositiveSmallIntegerField("Reihenfolge", default=100)
+
+    class Meta:
+        verbose_name = "Rolle"
+        verbose_name_plural = "Rollen"
+        ordering = ["reihenfolge", "gruppe__name"]
+
+    def __str__(self):
+        return self.gruppe.name
+
+    @property
+    def name(self) -> str:
+        return self.gruppe.name
+
+    @property
+    def ist_admin(self) -> bool:
+        from apps.konten.rollen import ADMIN
+
+        return self.gruppe.name == ADMIN
+
+
 auditlog.register(Stammdaten, exclude_fields=["fs_kopie_datei"])
 auditlog.register(DokumentKategorie)
 auditlog.register(Dokument, exclude_fields=["datei"])
 auditlog.register(Schulung)
 auditlog.register(PersonalEinstellungen)
+auditlog.register(Rolle)
+
+
+@receiver(post_save, sender=Group)
+def rolle_zur_gruppe(sender, instance, created, raw=False, **kwargs):
+    """Jede Gruppe ist eine Rolle, auch wenn sie anders angelegt wurde (z. B. Django-Verwaltung).
+
+    Nicht beim Einlesen von Rohdaten (Datensicherung): Dort kommt die Rolle aus der Datei."""
+    if created and not raw:
+        Rolle.objects.get_or_create(gruppe=instance, defaults={"zwei_faktor_pflicht": False})
+
 
 # Nur, wer wann ein Gerät eingerichtet oder entfernt hat – nie Schlüssel oder Codes.
 auditlog.register(TOTPDevice, include_fields=["user", "name", "confirmed"])

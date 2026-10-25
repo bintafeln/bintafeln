@@ -233,10 +233,8 @@ def test_ausgabe_sieht_nur_das_noetige(als, bestand):
     assert Zugriff.objects.get().besondere_kategorie is False
 
 
-def test_ausgabe_mit_freigabe_fuer_besondere_kategorie(als, bestand):
-    e = KundenEinstellungen.laden()
-    e.besondere_kategorie_fuer_ausgabe = True
-    e.save()
+def test_ausgabe_mit_freigabe_fuer_besondere_kategorie(als, bestand, recht_geben):
+    recht_geben(rollen.AUSGABE, "kunden.besondere_kategorie")
     inhalt = als(rollen.AUSGABE).get(detail("1001")).content.decode()
     assert "Schwerbehindert: ja" in inhalt
     assert Zugriff.objects.get().besondere_kategorie is True

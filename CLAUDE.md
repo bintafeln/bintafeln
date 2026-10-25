@@ -60,7 +60,7 @@ gemeinsame Verantwortung der nutzenden Tafeln übergehen.
 
 Kundendaten von Tafeln sind besonders schützenswert. Deshalb von Anfang an:
 
-- Rollen und Rechte je Modul (Admin, Büro, Ausgabe, Kiosk)
+- Rollen frei anlegbar, fein einstellbare Rechte je Rolle (ADR 0033)
 - Zwei-Faktor-Anmeldung
 - Änderungsprotokoll (wer hat wann was geändert)
 - Löschfristen je Datenart mit automatischer Löschung oder Anonymisierung
@@ -147,7 +147,25 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
 - Statische Dateien laufen im Betrieb über `ManifestStaticFilesStorage` (Dateinamen mit
   Prüfsumme), weil Caddy sie einen Tag zwischenspeichern lässt. Tests nutzen die einfache
   Ablage.
-- Zugriffsschutz für Ansichten: `@rolle_erforderlich(rollen.BUERO, …)` aus `apps.konten.rollen`.
+- Zugriffsschutz nur über Rechte, nie Rollennamen (ADR 0033): Ansichten mit
+  `@rollen.recht_erforderlich("kunden.liste")`, im Code `rollen.hat_recht(...)`, in Templates
+  `{% if "kunden.kontakt" in rechte %}`. Katalog und Vorgaben der mitgelieferten Rollen in
+  `apps/konten/rechte.py`; neue Rechte dort ergänzen und per Datenmigration bestehenden Rollen
+  geben. Rolle Admin hat immer alle Rechte. In Tests: Fixture `recht_geben`.
+- Einzelne Haushalte nur über `apps.kunden.zugang.haushalt(request.user, kundennummer)` laden
+  (prüft die Zuordnung zu Ausgabestellen, ADR 0034); Listen mit `zugang.filtern()`.
+- Rücknahmen (Abholung, Zahlung, Teilnahme) nur über `apps/ausgabe/korrekturen.py`
+  (`zuruecknehmen()`, Korrekturwünsche, ADR 0035).
+- App `statistik` (ADR 0036): Abfragen in `auswertung.py`, SVG-Diagramme in `diagramme.py`
+  (feste Farbreihenfolge `reihe-0…7` in bintafeln.css, Texte immer `escape()`), jeder Abschnitt
+  auch als Tabelle und CSV.
+- Datensicherung in der Oberfläche: `apps/core/datensicherung.py` (Export mit Passwort,
+  `lesen()`, `vorschau()`, `zuruecklesen(ersetzen=False)` löscht nie; ADR 0037). Neue Modelle
+  landen automatisch im passenden Bereich (`modelle()`); vorübergehende Daten in `AUSGENOMMEN`.
+  Signale auf `post_save` müssen `raw` beachten.
+- Handbuch im Programm (ADR 0038): Kapitel in `apps/core/hilfe.py` (mit Rechten) und
+  `templates/hilfe/<kennung>.html`. **Neue oder geänderte Funktionen aktualisieren das passende
+  Kapitel im selben PR** (wie README); `tests/test_hilfe.py` prüft Vollständigkeit.
 - Menü links: Einträge je Rolle in `apps/core/menue.py` (neue Seiten dort eintragen statt
   Links in die Seiten zu setzen).
 - Mitarbeitende: Logik und Schutzregeln in `apps/konten/verwaltung.py` (nie löschen, nur

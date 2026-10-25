@@ -112,7 +112,6 @@ def test_einstellungen_singleton_und_vorgaben():
     e = KundenEinstellungen.laden()
     assert e.kind_bis_alter == 18
     assert e.bemerkungen_importieren is False
-    assert e.besondere_kategorie_fuer_ausgabe is False
     KundenEinstellungen(kind_bis_alter=16).save()
     assert KundenEinstellungen.objects.count() == 1
     assert KundenEinstellungen.laden().kind_bis_alter == 16

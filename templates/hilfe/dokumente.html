@@ -1,0 +1,9 @@
+<p>Bescheide, Einwilligungen u. Ä. lassen sich beim Haushalt ablegen (Karte „Dokumente“ auf der Haushaltsseite).</p>
+<ul>
+  <li>Ein Klick auf den Titel öffnet das Dokument; jeder Abruf wird protokolliert.</li>
+  {% if "kunden.dokumente_verwalten" in rechte %}<li><strong>Hochladen</strong>: „Dokument hochladen“, Dokumentart wählen, optional Titel und Dokumentdatum,
+    Datei (PDF oder Foto, höchstens 10 MB). Die Meldung nennt den Tag, an dem das Dokument automatisch gelöscht wird.</li>
+  <li><strong>Löschen</strong> mit Rückfrage.</li>{% endif %}
+  <li>Die Aufbewahrungsfrist hängt an der Dokumentart (z. B. Bescheid 24 Monate) und zählt ab dem Dokumentdatum.</li>
+</ul>
+<div class="tipp">Lieber das Dokumentdatum (z. B. Datum des Bescheids) eintragen – dann stimmt die Frist.</div>

@@ -57,7 +57,7 @@
   <footer class="fuss">
     {% if tafel.anschrift %}<span>{{ tafel.anschrift }}</span>{% endif %}
     <span>bintafeln – freie Software (AGPL-3.0)</span>
-    {% if "Admin" in rollen %}<span class="version">Version {{ version }}</span>{% endif %}
+    {% if "system.status" in rechte %}<span class="version">Version {{ version }}</span>{% endif %}
   </footer>
 </body>
 </html>

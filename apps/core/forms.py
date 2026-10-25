@@ -62,14 +62,6 @@ class EinstellungenForm(forms.ModelForm):
             "telefon",
             "email",
             "bundesland",
-            "zwei_faktor_admin",
-            "zwei_faktor_buero",
-            "zwei_faktor_ausgabe",
-            "zwei_faktor_kiosk",
-            "zwei_faktor_fahrer",
-            "zwei_faktor_beifahrer",
-            "zwei_faktor_personal",
-            "buero_verwaltet_mitarbeitende",
         ]
         widgets = {"farbe": forms.TextInput(attrs={"type": "color"})}
 

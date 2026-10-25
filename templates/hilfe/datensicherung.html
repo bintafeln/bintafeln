@@ -1,0 +1,17 @@
+<p>Der Server sichert jede Nacht automatisch und verschlüsselt. Zusätzlich können Sie unter „Einstellungen →
+  Datensicherung“ selbst eine Datei erzeugen und extern aufbewahren.</p>
+{% if "daten.exportieren" in rechte %}<h3>Exportieren</h3>
+<ol>
+  <li>Bereiche wählen (alle = vollständige Sicherung).</li>
+  <li>Ein Passwort festlegen (mindestens 10 Zeichen) – <strong>gut aufbewahren</strong>, ohne Passwort ist die Datei nicht lesbar.</li>
+  <li>„Export herunterladen“ und die Datei sicher ablegen (z. B. verschlossener USB-Stick).</li>
+</ol>{% endif %}
+{% if "daten.importieren" in rechte %}<h3>Zurücklesen</h3>
+<ol>
+  <li>Datei und Passwort wählen, „Prüfen“. Noch ändert sich nichts.</li>
+  <li>Die Vorschau zeigt, was neu ist und was überschrieben würde.</li>
+  <li><strong>Aktualisieren</strong>: fügt hinzu und überschreibt gleiche Datensätze, <strong>löscht nichts</strong> –
+    auch für Teildateien.</li>
+  <li><strong>Vollständig ersetzen</strong>: nur mit vollständiger Datei, nur mit Server-Sicherung von heute und
+    Bestätigung; z. B. beim Umzug auf einen neuen Server.</li>
+</ol>{% endif %}

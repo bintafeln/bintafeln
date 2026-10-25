@@ -335,3 +335,44 @@ class Teilnahme(models.Model):
 auditlog.register(Sonderaktion)
 auditlog.register(SonderaktionAuswahl)
 auditlog.register(Teilnahme)
+
+
+class Korrekturwunsch(models.Model):
+    """Bitte vom Einlass, eine Buchung zurückzunehmen; entscheiden Admin oder berechtigte Rolle
+    (ADR 0035). Hängt an der Kundennummer."""
+
+    class Art(models.TextChoices):
+        ABHOLUNG = "abholung", "Abholung"
+        ZAHLUNG = "zahlung", "Zahlung"
+        TEILNAHME = "teilnahme", "Sonderaktion"
+
+    class Status(models.TextChoices):
+        OFFEN = "offen", "offen"
+        ZURUECKGENOMMEN = "zurueckgenommen", "zurückgenommen"
+        ABGELEHNT = "abgelehnt", "abgelehnt"
+
+    art = models.CharField("Was", max_length=10, choices=Art.choices)
+    objekt_id = models.PositiveIntegerField("Datensatz")
+    kundennummer = models.CharField("Kundennummer", max_length=20, db_index=True)
+    beschreibung = models.CharField("Beschreibung", max_length=200)
+    grund = models.CharField("Grund", max_length=100)
+    anmerkung = models.CharField("Anmerkung", max_length=300, blank=True)
+    erstellt_am = models.DateTimeField("Beantragt am", default=timezone.now)
+    erstellt_von = models.CharField("Beantragt von", max_length=150)
+    status = models.CharField(
+        "Status", max_length=16, choices=Status.choices, default=Status.OFFEN, db_index=True
+    )
+    entschieden_am = models.DateTimeField("Entschieden am", null=True, blank=True)
+    entschieden_von = models.CharField("Entschieden von", max_length=150, blank=True)
+    antwort = models.CharField("Antwort", max_length=300, blank=True)
+
+    class Meta:
+        verbose_name = "Korrekturwunsch"
+        verbose_name_plural = "Korrekturwünsche"
+        ordering = ["-erstellt_am"]
+
+    def __str__(self):
+        return f"{self.get_art_display()} {self.kundennummer}: {self.grund}"
+
+
+auditlog.register(Korrekturwunsch)

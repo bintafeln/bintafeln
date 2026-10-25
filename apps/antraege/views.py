@@ -35,8 +35,6 @@ from apps.core import html, privatdateien
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 
-bearbeiter = rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
-
 ANSICHTEN = {
     "offen": ("Offen", Q(status__in=Antrag.OFFEN, papierkorb_am__isnull=True)),
     "papierkorb": ("Papierkorb", Q(papierkorb_am__isnull=False)),
@@ -74,7 +72,7 @@ def _sortiert(request, antraege):
     return sort, antraege.order_by(("-" if sort.startswith("-") else "") + feld, "-pk")
 
 
-@bearbeiter
+@rollen.recht_erforderlich("antraege.sehen")
 def liste(request):
     ansicht, suche, antraege = _gefiltert(request)
     sort, antraege = _sortiert(request, antraege)
@@ -107,7 +105,7 @@ def liste(request):
     )
 
 
-@bearbeiter
+@rollen.recht_erforderlich("antraege.bearbeiten")
 def bearbeiten(request, pk):
     a = get_object_or_404(Antrag, pk=pk)
     form = AntragBearbeitenForm(request.POST or None, instance=a)
@@ -123,7 +121,7 @@ def bearbeiten(request, pk):
     return render(request, "antraege/bearbeiten.html", {"a": a, "form": form, "personen": personen})
 
 
-@bearbeiter
+@rollen.recht_erforderlich("antraege.sehen")
 def antrag(request, pk):
     a = get_object_or_404(Antrag, pk=pk)
     accessed.send(sender=Antrag, instance=a)  # Aufruf im Änderungsprotokoll
@@ -141,7 +139,7 @@ def antrag(request, pk):
 
 
 @require_POST
-@bearbeiter
+@rollen.recht_erforderlich("antraege.bearbeiten")
 def status(request, pk):
     a = get_object_or_404(Antrag, pk=pk)
     neu = request.POST.get("status")
@@ -152,7 +150,7 @@ def status(request, pk):
 
 
 @require_POST
-@bearbeiter
+@rollen.recht_erforderlich("antraege.bearbeiten")
 def anmerkung(request, pk):
     a = get_object_or_404(Antrag, pk=pk)
     text = request.POST.get("text", "").strip()
@@ -163,7 +161,7 @@ def anmerkung(request, pk):
 
 
 @require_POST
-@bearbeiter
+@rollen.recht_erforderlich("antraege.bearbeiten")
 def papierkorb(request, pk):
     a = get_object_or_404(Antrag, pk=pk)
     a.papierkorb_am = None if a.papierkorb_am else timezone.now()
@@ -179,7 +177,7 @@ def papierkorb(request, pk):
 
 
 @require_POST
-@rollen.rolle_erforderlich(rollen.ADMIN)
+@rollen.recht_erforderlich("antraege.loeschen")
 def endgueltig_loeschen(request, pk):
     a = get_object_or_404(Antrag, pk=pk, papierkorb_am__isnull=False)
     nummer = a.nummer
@@ -189,7 +187,7 @@ def endgueltig_loeschen(request, pk):
 
 
 @never_cache
-@bearbeiter
+@rollen.recht_erforderlich("antraege.sehen")
 def anhang(request, pk, anhang):
     d = get_object_or_404(AntragAnhang, pk=anhang, antrag_id=pk)
     inhalt = privatdateien.lesen(ANHANG_ORDNER, d.datei)
@@ -202,7 +200,7 @@ def anhang(request, pk, anhang):
 
 
 @never_cache
-@bearbeiter
+@rollen.recht_erforderlich("antraege.sehen")
 def auskunft_pdf(request, pk):
     a = get_object_or_404(Antrag, pk=pk)
     accessed.send(sender=Antrag, instance=a)
@@ -234,7 +232,7 @@ def _wert(a, spalte):
 
 
 @never_cache
-@bearbeiter
+@rollen.recht_erforderlich("antraege.sehen")
 def export(request):
     """CSV der angezeigten Anträge in Eingangsreihenfolge, z. B. für die Warteliste."""
     ansicht, _, antraege = _gefiltert(request)
@@ -254,7 +252,7 @@ def export(request):
 # --- Einstellungen (Admin) ---------------------------------------------------------------
 
 
-@rollen.rolle_erforderlich(rollen.ADMIN)
+@rollen.recht_erforderlich("einstellungen.antraege")
 def einstellungen(request):
     form = EinstellungenForm(request.POST or None, instance=AntragEinstellungen.laden())
     if request.method == "POST" and form.is_valid():
@@ -272,7 +270,7 @@ def einstellungen(request):
     )
 
 
-@rollen.rolle_erforderlich(rollen.ADMIN)
+@rollen.recht_erforderlich("einstellungen.antraege")
 def texte(request, sprache):
     if sprache not in sprachen.NACH_CODE:
         raise Http404

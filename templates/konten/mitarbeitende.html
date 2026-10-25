@@ -12,7 +12,7 @@
       dabei war und was eingetragen hat (Änderungsprotokoll, Abholungen, Buchungen).</p>
   {% else %}
     <p><a class="knopf" href="{% url 'konten:mitarbeiter_neu' %}">Mitarbeiterin / Mitarbeiter anlegen</a>
-      {% if "Admin" in rollen %}<a class="knopf knopf-zweitrangig" href="{% url 'konten:personal_einstellungen' %}">Fristen einstellen</a>{% endif %}</p>
+      {% if "einstellungen.personal" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'konten:personal_einstellungen' %}">Fristen einstellen</a>{% endif %}</p>
     {% if faellig %}
     <div class="faellig">
       <h2>Fällig</h2>

@@ -5,12 +5,13 @@ from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.db import transaction
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from apps.ausgabe import ampel, kasse, konto, sonderaktionen
+from apps.ausgabe import ampel, kasse, konto, korrekturen, sonderaktionen
 from apps.ausgabe.forms import AusgabeEinstellungenForm
 from apps.ausgabe.models import (
     AusgabeEinstellungen,
@@ -19,9 +20,10 @@ from apps.ausgabe.models import (
     Sonderaktion,
     Teilnahme,
 )
+from apps.core.auswahl import KORREKTURGRUENDE
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
-from apps.kunden import werte
+from apps.kunden import werte, zugang
 from apps.kunden.models import (
     Abholung,
     Ausgabestelle,
@@ -33,7 +35,6 @@ from apps.kunden.models import (
 )
 from apps.kunden.views import notiz_schreiben, notizen_kontext
 
-EMPFANG_ROLLEN = (rollen.ADMIN, rollen.BUERO, rollen.AUSGABE)
 LETZTE_ABHOLUNGEN = 5
 SITZUNG_STELLE = "ausgabestelle_id"
 
@@ -91,9 +92,12 @@ def _ergebnis(request, h, meldung=None):
         "einstellungen": einstellungen,
         "abholungen": abholungen[:LETZTE_ABHOLUNGEN],
         "heute_erfasst": [a for a in abholungen if a.datum == heute and a.erfasst_am],
-        "darf_ausnahme": rollen.hat_rolle(request.user, rollen.ADMIN, rollen.BUERO),
+        "darf_ausnahme": rollen.hat_recht(request.user, "einlass.ausnahme"),
         **notizen_kontext(h.kundennummer, request.user),
         "sonderaktionen": sonderaktionen.fuer_haushalt(h, heute, erwachsene, kinder),
+        "darf_zuruecknehmen": rollen.hat_recht(request.user, "einlass.zuruecknehmen"),
+        "korrektur_offen": korrekturen.offene(h.kundennummer),
+        "korrekturgruende": KORREKTURGRUENDE,
         "heute": heute,
         "meldung": meldung,
     }
@@ -105,18 +109,21 @@ def _antworten(request, kontext):
     return render(request, "ausgabe/empfang.html", kontext)
 
 
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("einlass.nutzen")
 def empfang(request):
     konto.buchungsfristen_anwenden()
     kontext = {
         "stelle": _stelle(request),
-        "stellen": Ausgabestelle.objects.order_by("name"),
+        "stellen": zugang.stellen(request.user) or Ausgabestelle.objects.order_by("name"),
     }
     nummer = request.GET.get("nummer", "").strip()
     if nummer:
         h = _finden(nummer)
+        grund = zugang.sperrgrund(request.user, h) if h else ""
         if h is None:
             kontext["nicht_gefunden"] = nummer
+        elif grund:
+            kontext["nicht_erlaubt"] = grund
         else:
             Zugriff.objects.create(
                 benutzer=request.user,
@@ -128,10 +135,13 @@ def empfang(request):
 
 
 @require_POST
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("einlass.nutzen")
 def ausgabestelle_waehlen(request):
     pk = request.POST.get("ausgabestelle", "")
     stelle = Ausgabestelle.objects.filter(pk=pk).first() if pk.isdigit() else None
+    eigene = zugang.stellen(request.user)
+    if stelle and eigene is not None and stelle not in eigene:
+        stelle = None
     if stelle:
         request.session[SITZUNG_STELLE] = stelle.pk
     else:
@@ -149,9 +159,9 @@ def _zurueck(request, h, text, stufe=messages.SUCCESS):
 
 
 @require_POST
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("einlass.abholung")
 def abholung_eintragen(request, kundennummer):
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     kontext = _ergebnis(request, h)
     if not kontext["bewertung"].darf_abholen:
         return _zurueck(request, h, "Nicht eingetragen: Die Ampel steht auf Rot.", messages.ERROR)
@@ -204,16 +214,12 @@ def abholung_eintragen(request, kundennummer):
 
 
 @require_POST
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("einlass.zuruecknehmen")
 def abholung_zuruecknehmen(request, pk):
-    """Nimmt eine heute am Einlass eingetragene Abholung zurück (Versehen)."""
-    abholung = get_object_or_404(
-        Abholung, pk=pk, datum=timezone.localdate(), erfasst_am__isnull=False
-    )
-    h = abholung.haushalt
-    konto.abholung_zuruecknehmen(abholung)
-    letzte = h.abholungen.order_by("-datum").first()
-    Haushalt.objects.filter(pk=h.pk).update(letzter_besuch=letzte.datum if letzte else None)
+    """Nimmt eine Abholung zurück, auch an späteren Tagen (nur mit eigenem Recht, ADR 0035)."""
+    abholung = get_object_or_404(Abholung.objects.select_related("haushalt"), pk=pk)
+    h = zugang.haushalt(request.user, abholung.haushalt.kundennummer)
+    korrekturen.zuruecknehmen(korrekturen.Art.ABHOLUNG, abholung)
     h.refresh_from_db()
     return _zurueck(
         request,
@@ -223,9 +229,33 @@ def abholung_zuruecknehmen(request, pk):
 
 
 @require_POST
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("einlass.nutzen")
+def korrektur_beantragen(request, art, pk):
+    """Ohne Recht zum Zurücknehmen: Bitte an Admin oder berechtigte Rolle (ADR 0035)."""
+    if art not in korrekturen.Art.values:
+        raise Http404
+    obj = korrekturen._objekt(art, pk)
+    if obj is None:
+        raise Http404
+    nummer = obj.kundennummer if hasattr(obj, "kundennummer") and obj.kundennummer else (
+        obj.haushalt.kundennummer)  # fmt: skip
+    h = zugang.haushalt(request.user, nummer)
+    try:
+        korrekturen.beantragen(
+            art, pk, grund=request.POST.get("grund", ""),
+            anmerkung=request.POST.get("anmerkung", ""), von=_benutzername(request.user),
+        )  # fmt: skip
+    except korrekturen.KorrekturFehler as fehler:
+        return _zurueck(request, h, f"Nicht gesendet: {fehler}", messages.ERROR)
+    return _zurueck(
+        request, h, "Korrekturwunsch gesendet. Ein Admin bzw. das Büro entscheidet darüber."
+    )
+
+
+@require_POST
+@rollen.recht_erforderlich("einlass.sonderaktion")
 def sonderaktion_eintragen(request, kundennummer, aktion):
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     a = get_object_or_404(Sonderaktion, pk=aktion)
     auswahl = a.auswahl.filter(pk=request.POST.get("auswahl") or None).first()
     erwachsene, kinder = h.groesse(KundenEinstellungen.laden().kind_bis_alter)
@@ -241,21 +271,18 @@ def sonderaktion_eintragen(request, kundennummer, aktion):
 
 
 @require_POST
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("einlass.zuruecknehmen")
 def teilnahme_zuruecknehmen(request, pk):
     t = get_object_or_404(Teilnahme, pk=pk)
-    h = get_object_or_404(Haushalt, kundennummer=t.kundennummer)
-    try:
-        sonderaktionen.zuruecknehmen(t)
-    except sonderaktionen.SonderaktionFehler as fehler:
-        return _zurueck(request, h, f"Nicht zurückgenommen: {fehler}", messages.ERROR)
+    h = zugang.haushalt(request.user, t.kundennummer)
+    korrekturen.zuruecknehmen(korrekturen.Art.TEILNAHME, t)
     return _zurueck(request, h, f"{t.aktion} zurückgenommen.")
 
 
 @require_POST
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("einlass.zahlung")
 def einzahlung(request, kundennummer):
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     try:
         betrag = werte.betrag(request.POST.get("betrag", ""))
         konto.einzahlen(
@@ -279,31 +306,25 @@ def einzahlung(request, kundennummer):
 
 
 @require_POST
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("einlass.zuruecknehmen")
 def einzahlung_zuruecknehmen(request, pk):
-    """Nimmt eine heute gebuchte Einzahlung zurück (Versehen)."""
-    buchung = get_object_or_404(
-        Buchung,
-        pk=pk,
-        art=Buchung.Art.EINZAHLUNG,
-        datum=timezone.localdate(),
-        haushalt__isnull=False,
-    )
-    h = buchung.haushalt
-    konto.zuruecknehmen(buchung)
+    """Nimmt eine Einzahlung zurück, auch an späteren Tagen (nur mit eigenem Recht)."""
+    buchung = get_object_or_404(Buchung, pk=pk, art=Buchung.Art.EINZAHLUNG, haushalt__isnull=False)
+    h = zugang.haushalt(request.user, buchung.haushalt.kundennummer)
+    korrekturen.zuruecknehmen(korrekturen.Art.ZAHLUNG, buchung)
     h.refresh_from_db()
     return _zurueck(
         request,
         h,
-        f"Einzahlung zurückgenommen. Kontostand jetzt: {konto.euro(h.kontostand or 0)}.",
+        f"Zahlung zurückgenommen. Kontostand jetzt: {konto.euro(h.kontostand or 0)}.",
     )
 
 
 @require_POST
-@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+@rollen.recht_erforderlich("konto.korrektur")
 def korrektur(request, kundennummer):
     """Korrekturbuchung ohne Bargeld, von der Haushaltsseite aus."""
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     try:
         betrag = werte.betrag(request.POST.get("betrag", ""))
         konto.korrigieren(
@@ -318,9 +339,9 @@ def korrektur(request, kundennummer):
 
 
 @require_POST
-@rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+@rollen.recht_erforderlich("einlass.ausnahme")
 def ausnahme_erteilen(request, kundennummer):
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     begruendung = request.POST.get("begruendung", "").strip()
     if not begruendung:
         return _zurueck(request, h, "Bitte eine Begründung angeben.", messages.ERROR)
@@ -346,7 +367,7 @@ def _monat_verschieben(tag: dt.date, monate: int) -> dt.date:
     return dt.date(index // 12, index % 12 + 1, 1)
 
 
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("kasse.sehen")
 def kasse_ansehen(request):
     """Kasse nach Tag (je Ausgabestelle), Monat (je Tag) oder Jahr (je Monat), rückwirkend."""
     heute = timezone.localdate()
@@ -384,7 +405,7 @@ def kasse_ansehen(request):
         vor = {"datum": f"{beginn + dt.timedelta(days=1):%Y-%m-%d}"}
         aktuell = {"datum": f"{beginn:%Y-%m-%d}"}
 
-    buero = rollen.hat_rolle(request.user, rollen.ADMIN, rollen.BUERO)
+    einzeln = rollen.hat_recht(request.user, "kasse.einzelbuchungen")
     filter_stelle = {"stelle": stelle.pk} if stelle else {}
 
     def zeile(z):
@@ -407,10 +428,10 @@ def kasse_ansehen(request):
         return [(name, z[k], k != "abholungen") for k, name in kasse.SPALTEN]
 
     summe = kasse.summe(buchungen)
-    # Einzelbuchungen mit Kundennummer nur für Admin und Büro, nur in der Tagesansicht.
+    # Einzelbuchungen mit Kundennummer nur mit eigenem Recht, nur in der Tagesansicht.
     einzelbuchungen = (
         buchungen.select_related("ausgabestelle").order_by("zeitpunkt")
-        if buero and ansicht == "tag"
+        if einzeln and ansicht == "tag"
         else None
     )
     if request.GET.get("format") == "pdf":
@@ -439,7 +460,7 @@ def kasse_ansehen(request):
     )
 
 
-@rollen.rolle_erforderlich(rollen.ADMIN)
+@rollen.recht_erforderlich("einstellungen.ausgabe")
 def einstellungen(request):
     form = AusgabeEinstellungenForm(request.POST or None, instance=AusgabeEinstellungen.laden())
     if request.method == "POST" and form.is_valid():
@@ -450,19 +471,19 @@ def einstellungen(request):
 
 
 @require_POST
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("kunden.notizen")
 def notiz(request, kundennummer):
-    h = get_object_or_404(Haushalt, kundennummer=kundennummer)
+    h = zugang.haushalt(request.user, kundennummer)
     if notiz_schreiben(h, request.POST.get("text", ""), request.user) is None:
         return _zurueck(request, h, "Bitte einen Text für die Notiz eingeben.", messages.ERROR)
     return _zurueck(request, h, "Notiz gespeichert.")
 
 
 @require_POST
-@rollen.rolle_erforderlich(*EMPFANG_ROLLEN)
+@rollen.recht_erforderlich("kunden.notizen")
 def notiz_loeschen(request, pk):
     notiz = get_object_or_404(Notiz, pk=pk)
-    h = get_object_or_404(Haushalt, kundennummer=notiz.kundennummer)
+    h = zugang.haushalt(request.user, notiz.kundennummer)
     if not notiz.darf_loeschen(request.user):
         return _zurueck(
             request, h, "Diese Notiz dürfen nur Büro und Admin löschen.", messages.ERROR

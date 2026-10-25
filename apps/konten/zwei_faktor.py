@@ -23,11 +23,12 @@ def aussteller(geraet=None) -> str:
 
 
 def ist_pflicht(benutzer) -> bool:
-    from apps.core.models import TafelEinstellungen
-
     if not benutzer.is_authenticated or settings.DEMO:  # Demo: Einrichtung ist gesperrt
         return False
-    return bool(rollen_von(benutzer) & TafelEinstellungen.laden().zwei_faktor_pflicht_rollen())
+    from apps.konten.models import Rolle
+
+    namen = rollen_von(benutzer)
+    return Rolle.objects.filter(gruppe__name__in=namen, zwei_faktor_pflicht=True).exists()
 
 
 def code_bereinigen(code: str) -> str:

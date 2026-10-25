@@ -1,0 +1,17 @@
+<p>Die Ampel fasst alle Regeln zusammen. Darunter steht immer, <em>warum</em> sie so steht.</p>
+<h3>Rot – keine Abholung</h3>
+<ul>
+  <li>Sperre (mit Zeitraum und, wenn eingestellt, Begründung) oder Status „gesperrt“/„beendet“</li>
+  <li>Ausweis abgelaufen</li>
+  <li>Heute schon so oft abgeholt wie erlaubt, oder Höchstzahl je Woche/14 Tage/Monat erreicht</li>
+  <li>Keine Kundengruppe, oder heute nicht dran (wenn die Tafel das als Rot eingestellt hat)</li>
+</ul>
+<h3>Gelb – Abholung möglich, bitte beachten</h3>
+<ul>
+  <li>Ausweis läuft bald ab (Vorwarnung) – Kunden bitten, Nachweise ins Büro zu bringen</li>
+  <li>Andere Ausgabestelle als vorgesehen, oder heute nicht dran (wenn nur als Hinweis eingestellt)</li>
+  <li>Status „pausiert“</li>
+</ul>
+<h3>Grün – alles in Ordnung</h3>
+<p>Auch Grün mit dem Hinweis „Ausnahme für heute erteilt“: Büro oder Admin haben eine Terminregel für heute aufgehoben.</p>
+{% if "einlass.ausnahme" in rechte %}<p>Sie dürfen selbst eine Ausnahme erteilen – siehe Kapitel „Ausnahme für heute erteilen“.</p>{% endif %}

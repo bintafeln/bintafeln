@@ -10,7 +10,7 @@ from apps.ausgabe.models import Buchung
 from apps.core.models import TafelEinstellungen
 from apps.core.pdf import Pdf, text
 from apps.konten import rollen
-from apps.konten.models import Dokument, DokumentKategorie, Schulung, Stammdaten
+from apps.konten.models import Dokument, DokumentKategorie, Rolle, Schulung, Stammdaten
 from apps.kunden.models import (
     Abholer,
     Abholung,
@@ -230,9 +230,9 @@ def test_auskunft_mitarbeiter_ohne_stammdaten(admin_client, pdf_text, admin):
 
 def test_auskunft_mitarbeiter_nur_personal(client, admin, benutzer_mit_rolle, anmelden, pdf_text,
                                            kim):  # fmt: skip
-    e = TafelEinstellungen.laden()
-    e.buero_verwaltet_mitarbeitende = True
-    e.save()
+    Rolle.objects.filter(gruppe__name="Büro").update(
+        rechte=Rolle.objects.get(gruppe__name="Büro").rechte + ["mitarbeitende.verwalten"]
+    )
     anmelden(client, benutzer_mit_rolle("buero", rollen.BUERO))
     assert client.get(reverse("konten:auskunft", args=[kim.pk])).status_code == 403
     assert (

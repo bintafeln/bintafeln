@@ -65,11 +65,6 @@ class KundenEinstellungen(models.Model):
         "Gültigkeit bis zum Monatsende", default=True,
         help_text="z. B. Aufnahme am 24.10.2026, 12 Monate: gültig bis 31.10.2027.",
     )  # fmt: skip
-    besondere_kategorie_fuer_ausgabe = models.BooleanField(
-        "Rolle Ausgabe sieht Zusatzfelder der besonderen Kategorie",
-        default=False,
-        help_text="Admin und Büro sehen sie immer. Jeder Zugriff wird protokolliert.",
-    )
 
     class Meta:
         verbose_name = "Einstellungen Kundenstamm"
@@ -433,10 +428,10 @@ class Notiz(models.Model):
         return f"Notiz vom {timezone.localtime(self.erstellt_am):%d.%m.%Y}"
 
     def darf_loeschen(self, benutzer) -> bool:
-        """Admin und Büro immer; sonst nur eigene Notizen vom selben Tag (Versehen)."""
+        """Mit Recht „Alle Notizen löschen“ immer; sonst nur eigene vom selben Tag (Versehen)."""
         from apps.konten import rollen
 
-        if rollen.hat_rolle(benutzer, rollen.ADMIN, rollen.BUERO):
+        if rollen.hat_recht(benutzer, "kunden.notizen_loeschen"):
             return True
         heute = timezone.localdate()
         return self.benutzer_id == benutzer.pk and timezone.localdate(self.erstellt_am) == heute

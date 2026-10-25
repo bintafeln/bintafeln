@@ -22,7 +22,7 @@ from apps.konten.models import Dokument, DokumentKategorie
 
 
 def sieht_personal(benutzer) -> bool:
-    return rollen.hat_rolle(benutzer, rollen.ADMIN, rollen.PERSONAL)
+    return rollen.hat_recht(benutzer, "personal.sehen")
 
 
 def _ziel(request, pk):
@@ -118,7 +118,7 @@ def loeschen(request, pk, dokument):
 
 
 @require_POST
-@rollen.rolle_erforderlich(rollen.ADMIN)
+@rollen.recht_erforderlich("einstellungen.personal")
 def kategorie_neu(request):
     form = DokumentKategorieForm(request.POST)
     if form.is_valid():
@@ -130,7 +130,7 @@ def kategorie_neu(request):
 
 
 @require_POST
-@rollen.rolle_erforderlich(rollen.ADMIN)
+@rollen.recht_erforderlich("einstellungen.personal")
 def kategorie_loeschen(request, kategorie):
     k = get_object_or_404(DokumentKategorie, pk=kategorie)
     if k.dokument_set.exists():

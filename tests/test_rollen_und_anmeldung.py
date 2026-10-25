@@ -11,16 +11,16 @@ pytestmark = pytest.mark.django_db
 
 
 def test_rollen_als_gruppen_angelegt():
-    assert set(Group.objects.values_list("name", flat=True)) >= set(rollen.ALLE)
+    assert set(Group.objects.values_list("name", flat=True)) >= set(rollen.MITGELIEFERT)
+    assert {r.name for r in rollen.alle_rollen()} >= set(rollen.MITGELIEFERT)
 
 
 def test_rollen_von(benutzer_mit_rolle, admin):
     assert rollen.rollen_von(AnonymousUser()) == set()
-    assert rollen.rollen_von(admin) == set(rollen.ALLE)
+    assert rollen.rollen_von(admin) == {rollen.ADMIN}
     kiosk = benutzer_mit_rolle("kiosk", rollen.KIOSK)
     assert rollen.rollen_von(kiosk) == {rollen.KIOSK}
-    assert rollen.hat_rolle(kiosk, rollen.KIOSK, rollen.BUERO)
-    assert not rollen.hat_rolle(kiosk, rollen.ADMIN)
+    assert not rollen.ist_admin(kiosk) and rollen.ist_admin(admin)
 
 
 def test_anmelden_und_abmelden(client, admin):
@@ -85,8 +85,7 @@ def test_zwei_faktor_wenn_geraet_eingerichtet(client, admin):
 def test_startseite_zeigt_eigene_rollen(client, benutzer_mit_rolle, admin, anmelden):
     anmelden(client, admin)
     inhalt = client.get(reverse("core:start")).content.decode()
-    for rolle in rollen.ALLE:
-        assert f'<span class="marke-rolle">{rolle}</span>' in inhalt
+    assert '<span class="marke-rolle">Admin</span>' in inhalt
     client.post(reverse("konten:abmelden"))
 
     anmelden(client, benutzer_mit_rolle("zwei", rollen.KIOSK, rollen.AUSGABE))

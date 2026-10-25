@@ -18,7 +18,6 @@ class KundenEinstellungenForm(forms.ModelForm):
             "abholungen_aufbewahren_jahre",
             "zugriffe_aufbewahren_tage",
             "historie_aufbewahren_jahre",
-            "besondere_kategorie_fuer_ausgabe",
         ]
 
 

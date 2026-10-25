@@ -14,7 +14,7 @@ from apps.ausgabe.forms import SonderaktionForm
 from apps.ausgabe.models import Sonderaktion
 from apps.konten import rollen
 
-buero = rollen.rolle_erforderlich(rollen.ADMIN, rollen.BUERO)
+buero = rollen.recht_erforderlich("sonderaktionen.verwalten")
 
 
 @buero
