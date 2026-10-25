@@ -154,6 +154,20 @@
   {% else %}
   <p class="hinweis">Noch keine Änderungen festgehalten. Die Historie entsteht ab jetzt bei jedem Import, jeder Aufnahme und jeder Bearbeitung.</p>
   {% endif %}
+  <h3>Kundengruppen</h3>
+  {% if gruppenzeiten %}
+  <table class="tabelle kompakt">
+    <thead><tr><th>Kundengruppe</th><th>von</th><th>bis</th><th>Grund für das Ende</th></tr></thead>
+    <tbody>
+    {% for z in gruppenzeiten %}
+      <tr><td data-titel="Kundengruppe">{{ z.gruppe_name }}</td><td data-titel="von">{{ z.von|date:"d.m.Y"|default:"früher" }}</td>
+        <td data-titel="bis">{{ z.bis|date:"d.m.Y"|default:"heute" }}</td><td data-titel="Grund">{{ z.grund|default:"–" }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="hinweis">Noch in keiner Kundengruppe.</p>
+  {% endif %}
 </section>
 {% endif %}
 

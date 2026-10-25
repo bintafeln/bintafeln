@@ -25,7 +25,7 @@ from apps.core import privatdateien
 from apps.core.models import TafelEinstellungen
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
-from apps.kunden import ausweis, historie, zugang
+from apps.kunden import ausweis, gruppen, historie, zugang
 from apps.kunden.forms_bearbeiten import (
     AbholerForm,
     AnmerkungForm,
@@ -50,6 +50,7 @@ from apps.kunden.models import (
     Bemerkung,
     Dokumentart,
     Einkommensart,
+    Gruppenzeit,
     Haushalt,
     HaushaltDokument,
     HaushaltEreignis,
@@ -77,6 +78,10 @@ def geaendert(h: Haushalt, request) -> None:
 
 
 def _festhalten(h: Haushalt, vorher, request, zusatz: str = "") -> None:
+    grund = gruppen.pruefen(h)  # ohne gültigen Ausweis keine Kundengruppe (ADR 0061)
+    if grund:
+        messages.warning(request, f"Kundengruppe entfernt ({grund}). Ein Kunde ohne gültigen "
+                                  "Ausweis zählt in keiner Kundengruppe.")  # fmt: skip
     historie.festhalten(
         h.kundennummer, vorher, historie.schnappschuss(h),
         quelle=HaushaltEreignis.Quelle.BEARBEITUNG, von=request.user.get_username(),
@@ -99,7 +104,7 @@ def haushalt_bearbeiten(request, kundennummer):
         with transaction.atomic():
             h = form.save()
             if h.kundennummer != kundennummer:  # Notizen, Dokumente, Historie ziehen mit um
-                for modell in (Notiz, HaushaltDokument, HaushaltEreignis, Teilnahme):
+                for modell in (Notiz, HaushaltDokument, HaushaltEreignis, Teilnahme, Gruppenzeit):
                     modell.objects.filter(kundennummer=kundennummer).update(
                         kundennummer=h.kundennummer
                     )

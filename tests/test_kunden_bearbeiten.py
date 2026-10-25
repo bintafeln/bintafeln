@@ -53,7 +53,7 @@ def test_nur_admin(client, admin, benutzer_mit_rolle, anmelden, h):
     assert "Bearbeiten</a>" not in client.get(url("haushalt", "2001")).content.decode()
 
 
-def test_haushalt_bearbeiten(admin_client, h):
+def test_haushalt_bearbeiten(admin_client, h, gruppe_behalten):
     Zusatzfeld.objects.create(schluessel="sb", bezeichnung="Schwerbehindert",
                               gilt_fuer="haushalt", besondere_kategorie=True)  # fmt: skip
     Zusatzfeld.objects.create(schluessel="seit", bezeichnung="Seit", gilt_fuer="haushalt",

@@ -18,6 +18,7 @@ from django.core.validators import validate_email
 from django.db import transaction
 from django.utils import timezone
 
+from apps.kunden import gruppen as gruppenregel
 from apps.kunden import historie, werte
 from apps.kunden.models import (
     Abholer,
@@ -977,6 +978,9 @@ def uebernehmen(
         )
 
     verwaiste_notizen_loeschen()  # Notizen bleiben, solange es die Kundennummer noch gibt
+    # Ohne gültigen Ausweis keine Kundengruppe (ADR 0061), vor der Historie, damit sie nicht bei
+    # jedem Import „hinein“ und gleich wieder „hinaus“ zeigt
+    gruppenregel.regel_anwenden(ereignisse=False)
     historie.import_festhalten(
         vorher, historie.schnappschuesse(), benutzer.get_username() if benutzer else ""
     )

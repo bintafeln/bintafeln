@@ -151,7 +151,7 @@ def test_suche_und_filter(admin_client, bestand, parameter, erwartet):
     assert gefunden == erwartet
 
 
-def test_filter_kundengruppe(admin_client, bestand):
+def test_filter_kundengruppe(admin_client, bestand, gruppe_behalten):
     antwort = admin_client.get(LISTE, {"gruppe": bestand.kundengruppe.pk})
     assert [h.kundennummer for h in antwort.context["seite"]] == ["1001"]
 

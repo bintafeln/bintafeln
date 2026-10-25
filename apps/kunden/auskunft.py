@@ -11,6 +11,7 @@ from reportlab.lib.units import mm
 from apps.ausgabe.konto import euro
 from apps.ausgabe.models import Teilnahme
 from apps.core.pdf import Pdf
+from apps.kunden import gruppen
 from apps.kunden.models import (
     Haushalt,
     HaushaltDokument,
@@ -134,6 +135,14 @@ def kunde_pdf(h: Haushalt) -> bytes:
         [[_datum(timezone.localdate(e.zeitpunkt)), e.text, e.get_quelle_display()]
          for e in HaushaltEreignis.objects.filter(kundennummer=h.kundennummer)],
         breiten=[0.14, 0.66, 0.2],
+    )  # fmt: skip
+
+    doc.ueberschrift("Zeiten in Kundengruppen")
+    doc.tabelle(
+        ["Kundengruppe", "von", "bis", "Grund für das Ende"],
+        [[z.gruppe_name, _datum(z.von) or "früher", _datum(z.bis) or "heute", z.grund]
+         for z in gruppen.zeiten(h.kundennummer)],
+        breiten=[0.3, 0.15, 0.15, 0.4],
     )  # fmt: skip
 
     doc.ueberschrift("Ausnahmen")

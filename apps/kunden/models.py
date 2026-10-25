@@ -54,6 +54,11 @@ class KundenEinstellungen(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(10)],
         help_text="Ältere Einträge der Historie werden automatisch gelöscht.",
     )
+    gruppe_behalten = models.BooleanField(
+        "Kunden ohne gültigen Ausweis in der Kundengruppe lassen", default=False,
+        help_text="Aus: Wer pausiert, gesperrt oder beendet ist oder keinen gültigen Ausweis mehr "
+        "hat, fällt sofort aus der Kundengruppe, damit das Maximum der Gruppe stimmt.",
+    )  # fmt: skip
     zugriffe_aufbewahren_tage = models.PositiveSmallIntegerField(
         "Zugriffsprotokoll aufbewahren (Tage)",
         default=365,
@@ -649,6 +654,7 @@ class HaushaltEreignis(models.Model):
         IMPORT = "import", "Import"
         AUFNAHME = "aufnahme", "Aufnahme"
         BEARBEITUNG = "bearbeitung", "Bearbeitung"
+        AUTOMATIK = "automatik", "automatisch"
 
     kundennummer = models.CharField("Kundennummer", max_length=20, db_index=True)
     zeitpunkt = models.DateTimeField("Zeitpunkt", default=timezone.now, db_index=True)
@@ -665,6 +671,29 @@ class HaushaltEreignis(models.Model):
         return f"{self.kundennummer}: {self.text}"
 
 
+class Gruppenzeit(models.Model):
+    """Von wann bis wann ein Kunde in einer Kundengruppe war (an der Kundennummer, übersteht den
+    Import). Gepflegt von ``apps.kunden.gruppen.zeiten_abgleichen()``."""
+
+    kundennummer = models.CharField("Kundennummer", max_length=20, db_index=True)
+    kundengruppe = models.ForeignKey(Kundengruppe, on_delete=models.SET_NULL, null=True,
+                                     blank=True, related_name="+")  # fmt: skip
+    gruppe_name = models.CharField("Kundengruppe", max_length=100)
+    von = models.DateField("von", null=True, blank=True,
+                           help_text="Leer: schon vor der Einführung.")  # fmt: skip
+    bis = models.DateField("bis", null=True, blank=True)
+    grund = models.CharField("Grund für das Ende", max_length=200, blank=True)
+
+    class Meta:
+        verbose_name = "Zeit in einer Kundengruppe"
+        verbose_name_plural = "Zeiten in Kundengruppen"
+        ordering = ["-bis", "-von", "-pk"]
+        indexes = [models.Index(fields=["kundennummer", "bis"])]
+
+    def __str__(self):
+        return f"{self.kundennummer} in {self.gruppe_name}"
+
+
 def alte_historie_loeschen(heute: dt.date | None = None) -> int:
     heute = heute or timezone.localdate()
     jahre = KundenEinstellungen.laden().historie_aufbewahren_jahre
@@ -673,7 +702,8 @@ def alte_historie_loeschen(heute: dt.date | None = None) -> int:
     except ValueError:  # 29. Februar
         tag = heute.replace(year=heute.year - jahre, day=28)
     grenze = timezone.make_aware(dt.datetime.combine(tag, dt.time()))
-    return HaushaltEreignis.objects.filter(zeitpunkt__lt=grenze).delete()[0]
+    return (HaushaltEreignis.objects.filter(zeitpunkt__lt=grenze).delete()[0]
+            + Gruppenzeit.objects.filter(bis__lt=tag).delete()[0])  # fmt: skip
 
 
 class AusweisVorlage(models.Model):
@@ -846,7 +876,14 @@ def fristen_anwenden() -> int:
         + verwaiste_notizen_loeschen()
         + abgelaufene_dokumente_loeschen()
         + alte_historie_loeschen()
+        + _gruppenregel()
     )
+
+
+def _gruppenregel() -> int:
+    from apps.kunden import gruppen
+
+    return gruppen.regel_anwenden()
 
 
 class ImportVorbereitung(models.Model):

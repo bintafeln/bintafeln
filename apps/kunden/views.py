@@ -19,7 +19,7 @@ from apps.core import sicherung
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.kunden import auskunft as kunden_auskunft
-from apps.kunden import export, importieren, views_dokumente, zugang
+from apps.kunden import export, gruppen, importieren, views_dokumente, zugang
 from apps.kunden.ausweis import MAX_SAMMELDRUCK, ausweis_pdf, ausweise_pdf
 from apps.kunden.forms import KundenEinstellungenForm, ZusatzfeldForm
 from apps.kunden.models import (
@@ -288,6 +288,7 @@ def haushalt(request, kundennummer):
             "bemerkungen": h.bemerkungen.all() if "kunden.anmerkungen" in darf else [],
             **notizen_kontext(h.kundennummer, request.user),
             **(views_dokumente.kontext(h.kundennummer) if "kunden.dokumente" in darf else {}),
+            "gruppenzeiten": gruppen.zeiten(h.kundennummer) if "kunden.historie" in darf else [],
             "historie": HaushaltEreignis.objects.filter(kundennummer=h.kundennummer)
             if "kunden.historie" in darf
             else [],

@@ -136,6 +136,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `views_dokumente.py`.
   Historie (`HaushaltEreignis`, ADR 0031) über `apps/kunden/historie.py`: Schnappschuss vor und
   nach jeder Änderung am Kundenstamm (`festhalten()`, beim Import `import_festhalten()`).
+  Ohne gültigen Ausweis keine Kundengruppe (ADR 0061): `apps/kunden/gruppen.py` (`pruefen()` nach
+  jeder Änderung, `regel_anwenden()` täglich und beim Import), Zeiten in `Gruppenzeit`.
   `ausgabe` (Einlass; Beitrag über `AusgabeEinstellungen.beitrag_fuer()` – zahlende Personen
   ab Alter × Betrag, Zusatzbeiträge optional, `BeitragsfreierZeitraum`;
   Ampel-Regeln als reine Funktion in `apps/ausgabe/ampel.py`,
