@@ -1,0 +1,6 @@
+{% if widget.is_initial %}<div class="bild-aktuell">
+  <img src="{{ widget.value.url }}" alt="Aktuelles Bild" class="bild-vorschau">
+  {% if not widget.required %}<label class="bild-entfernen" for="{{ widget.checkbox_id }}"><input type="checkbox" name="{{ widget.checkbox_name }}" id="{{ widget.checkbox_id }}"{% if widget.attrs.disabled %} disabled{% endif %}> Bild entfernen (beim Speichern)</label>{% endif %}
+</div>
+<small class="hilfe">Anderes Bild wählen:</small>{% endif %}
+<input type="{{ widget.type }}" name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %}>

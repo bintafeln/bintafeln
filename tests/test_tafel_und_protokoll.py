@@ -179,6 +179,12 @@ def test_hintergrundbild(admin_client, monkeypatch):
     t = TafelEinstellungen.laden()
     assert t.hintergrund_bild == t.hintergrund and t.hintergrund_staerke == 0
     assert 'class="hintergrund"' not in admin_client.get("/").content.decode()  # 0 % = aus
+    seite = admin_client.get(url).content.decode()
+    assert 'class="bild-vorschau"' in seite and "Bild entfernen" in seite
+    assert "Zurücksetzen" not in seite and "Derzeit" not in seite
+    admin_client.post(url, {"name": "X", "hintergrund-clear": "on", "hintergrund_staerke": "0"})
+    assert not TafelEinstellungen.laden().hintergrund  # nur dieses Bild entfernt
+    assert TafelEinstellungen.laden().hintergrund_anmeldung
     monkeypatch.setattr("apps.core.forms.HINTERGRUND_MAX_BYTES", 10)
     fehler = admin_client.post(url, {"name": "X", "hintergrund": png()}).content.decode()
     assert "höchstens 5 MB" in fehler
