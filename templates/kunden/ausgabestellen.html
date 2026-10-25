@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block titel %}Ausgabestellen{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Ausgabestellen</h1>
+  {% if "einstellungen.listen" in rechte %}<div class="aktionsleiste"><a class="knopf" href="{% url 'kunden:ausgabestelle_neu' %}">Neue Ausgabestelle</a></div>{% endif %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Ausgabestelle</th><th>Anschrift</th><th>Telefon</th><th>Zeiten</th></tr></thead>
+    <tbody>
+    {% for s in stellen %}
+      <tr>
+        <td data-titel="Ausgabestelle"><a href="{% url 'kunden:ausgabestelle' s.pk %}">{{ s.name }}</a>{% if not s.aktiv %} <span class="marke-warnung">nicht aktiv</span>{% endif %}</td>
+        <td data-titel="Anschrift">{{ s.anschrift|default:"–" }}</td>
+        <td data-titel="Telefon">{% if s.telefon %}<a href="tel:{{ s.telefon }}">{{ s.telefon }}</a>{% else %}–{% endif %}</td>
+        <td data-titel="Zeiten">{% for z in s.zeiten.all %}{{ z.get_wochentag_display|slice:":2" }} {{ z.von|time:"H:i" }}{% if z.bis %}–{{ z.bis|time:"H:i" }}{% endif %} {{ z.art }}{% if not forloop.last %}<br>{% endif %}{% empty %}–{% endfor %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4">Noch keine Ausgabestellen.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

@@ -29,7 +29,9 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   Personal (siehe „Rollen und Rechte“ unten). Konten bekommen ihre Rollen unter
   „Mitarbeitende“.
 - **Tafel-Einstellungen:** Name, Logo, Farbe (voreingestellt Tafel-Orange) und Anschrift der
-  Tafel – in der Datenbank, nicht im Code.
+  Tafel – in der Datenbank, nicht im Code. Dazu ein **Hintergrundbild** für die Anmeldeseite
+  (volle Stärke) und wahlweise ein eigenes für die übrigen Seiten; dort regelt ein Schieber die
+  Stärke von 0 % (nicht sichtbar) bis 100 %. Die Inhalte stehen weiter auf weißen Karten.
 - **Änderungsprotokoll:** Wer hat wann welchen Datensatz geändert (mit Feldern vorher/nachher).
   Passwörter werden nie protokolliert.
 - **Zwei-Faktor-Anmeldung:** Jede Person richtet sie unter „Mein Konto“ selbst ein
@@ -398,6 +400,12 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
   und Einkommensarten pflegt der Admin unter „Einstellungen → Kundenstamm → Listen“.
   **Achtung:** Solange aus dem Altsystem importiert wird, ersetzt der nächste Import alle
   Änderungen; der Prüfbericht nennt die Zahl der geänderten Haushalte (ADR 0025).
+- **Ausgabestellen** („Kunden → Ausgabestellen“, ADR 0048): Übersicht und eigene Seite je
+  Ausgabestelle mit Anschrift, Telefon, E-Mail, allgemeinen Anmerkungen, Zeiten (Ausgabe,
+  Anlieferung, Sortieren …), Ansprechpartnern (Mitarbeitende per Auswahl oder extern) und ihren
+  Kundengruppen. „In Google Maps öffnen“ zeigt den Weg; die eingebettete Karte lädt erst nach
+  Klick auf „Karte anzeigen“, vorher gehen keine Daten an Google. Pflegen mit dem Recht
+  „Kundengruppen, Ausgabestellen …“ („Bearbeiten“ auf der Seite).
 - **Notizen:** Ausgabe, Büro und Admin schreiben Notizen zum Haushalt, auf der Haushaltsseite
   oder direkt am Einlass. **Notiz-Vorlagen** („Einstellungen → Kundenstamm → Listen →
   Notiz-Vorlagen“, Admin) erscheinen abgesetzt unter den Notizen als umrandete „+“-Knöpfe (deutlich anders als Notizen): ein Klick speichert den Text als Notiz. Jede
@@ -526,6 +534,9 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
      nicht prüfen, ob heute dran ist; für „jeden Tag“ alle Tage anhaken)
    - Unter „Einstellungen → Ausgabe und Ampel“: **Abholungen am selben Tag** (1 = einmal,
      2 = zweimal, 0 = beliebig oft) und **Höchstzahl je Zeitraum** (0 = keine Grenze).
+   - **Eigene Texte der Ampel:** Ebenda lässt sich jede Meldung in eigenen Worten formulieren
+     (leer = Standardtext), mit Platzhaltern wie `{datum}`, `{gruppe}` oder `{tage}`; welche
+     es gibt, steht unter jedem Feld. Farbe und Regel bleiben gleich, nur der Text ändert sich.
    - 🟢 alles in Ordnung, oder eine Ausnahme für heute hebt eine Terminregel auf
    Daneben stehen Haushaltsgröße, alle Personen und Abholberechtigten mit Geburtsdatum,
    Ausgabestelle, Karte gültig bis, Kontostand, die letzten Abholungen und die **Notizen**;
@@ -912,6 +923,23 @@ Danach startet die Anwendung wieder, Migrationen laufen automatisch.
 
 Auf einem **neuen Server**: bintafeln wie oben installieren, den Ordner `sicherungen/`
 dorthin kopieren und dann wie beschrieben wiederherstellen.
+
+### Musterdaten für eine Test-Installation
+
+Zum Ausprobieren füllt ein Befehl die Installation mit **erfundenen** Daten:
+
+```bash
+./betrieb sichern                                   # vorher sichern!
+docker compose exec app python manage.py musterdaten --ja --passwort 'Ein-Test-Passwort'
+```
+
+Er **ersetzt vollständig** Kundenstamm (150 Haushalte mit Personen, Abholungen, Kontobuchungen,
+Notizen, Anmerkungen, Sperren), Anträge, Adressen, Spenden und Mitglieder und legt
+Muster-Mitarbeitende `muster-…` in allen Rollen und Kombinationen an (auch einer Ausgabestelle
+zugeordnet, auch gesperrt), mit Stammdaten, Verträgen, Arbeitszeiten und Urlaub. Unverändert
+bleiben Tafel-Einstellungen (Name, Logo, Anschrift), Ausgabestellen, Kundengruppen, das
+Antragsformular mit seinen Texten und alle Konten, die nicht mit `muster-` beginnen. Erneut
+ausgeführt, ersetzt er die Musterdaten wieder. Nie auf einer Installation mit echten Daten!
 
 ### Aktualisieren
 

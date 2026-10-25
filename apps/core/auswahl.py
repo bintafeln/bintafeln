@@ -36,6 +36,11 @@ KORREKTURGRUENDE = [
     "Falscher Betrag",
     "Sonstiges",
 ]
+# Ausgabestellen: Arten von Zeiten und Zuständigkeiten der Ansprechpartner
+ZEITARTEN = ["Ausgabe", "Einlass", "Anlieferung", "Sortieren", "Büro / Sprechstunde",
+             "Antragsannahme", "Sonstiges"]  # fmt: skip
+ZUSTAENDIGKEITEN = ["Leitung", "Stellvertretung", "Ausgabe", "Anlieferung / Logistik",
+                    "Schlüssel", "Vermieter / Hausverwaltung", "Notfall", "Sonstiges"]  # fmt: skip
 ANREDEN = [("", "keine Angabe"), ("Frau", "Frau"), ("Herr", "Herr"), ("Divers", "Divers")]
 
 FAMILIENSTAENDE = [

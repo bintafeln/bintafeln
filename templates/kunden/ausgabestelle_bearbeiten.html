@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block titel %}{% if s.pk %}{{ s.name }} bearbeiten{% else %}Neue Ausgabestelle{% endif %}{% endblock %}
+{% block inhalt %}
+<form method="post">
+  {% csrf_token %}
+  <section class="karte breit">
+    <p><a href="{% if s.pk %}{% url 'kunden:ausgabestelle' s.pk %}{% else %}{% url 'kunden:ausgabestellen' %}{% endif %}">← {% if s.pk %}{{ s.name }}{% else %}Ausgabestellen{% endif %}</a></p>
+    <h1>{% if s.pk %}{{ s.name }} bearbeiten{% else %}Neue Ausgabestelle{% endif %}</h1>
+    {% include "includes/formular_abschnitte.html" %}
+  </section>
+  <section class="karte breit">
+    <h2>Zeiten</h2>
+    <p class="hinweis">Regelmäßige Zeiten (Ausgabe, Anlieferung …). Leere Zeilen werden übergangen; für mehr Zeilen speichern.</p>
+    {{ zeiten.management_form }}
+    <div class="tabelle-rahmen">
+    <table class="tabelle formular-tabelle">
+      <thead><tr><th>Wochentag</th><th>von</th><th>bis</th><th>Art</th><th>Hinweis</th><th>Entfernen</th></tr></thead>
+      <tbody>
+      {% for f in zeiten %}
+        <tr>
+          <td data-titel="Wochentag">{% for h in f.hidden_fields %}{{ h }}{% endfor %}{{ f.wochentag }}{% for e in f.wochentag.errors %}<small class="fehler">{{ e }}</small>{% endfor %}</td>
+          <td data-titel="von">{{ f.von }}{% for e in f.von.errors %}<small class="fehler">{{ e }}</small>{% endfor %}</td>
+          <td data-titel="bis">{{ f.bis }}{% for e in f.bis.errors %}<small class="fehler">{{ e }}</small>{% endfor %}</td>
+          <td data-titel="Art">{{ f.art }}</td>
+          <td data-titel="Hinweis">{{ f.hinweis }}</td>
+          <td data-titel="Entfernen">{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  <section class="karte breit">
+    <h2>Ansprechpartner</h2>
+    <p class="hinweis">Mitarbeitende mit Konto aus der Liste wählen; sonst „extern“ und den Namen eintragen.</p>
+    {{ kontakte.management_form }}
+    <div class="tabelle-rahmen">
+    <table class="tabelle formular-tabelle">
+      <thead><tr><th>Zuständigkeit</th><th>Mitarbeiter/in</th><th>Name (extern)</th><th>Telefon</th><th>E-Mail</th><th>Entfernen</th></tr></thead>
+      <tbody>
+      {% for f in kontakte %}
+        <tr>
+          <td data-titel="Zuständigkeit">{% for h in f.hidden_fields %}{{ h }}{% endfor %}{{ f.zustaendigkeit }}{% for e in f.non_field_errors %}<small class="fehler">{{ e }}</small>{% endfor %}</td>
+          <td data-titel="Mitarbeiter/in">{{ f.benutzer }}</td>
+          <td data-titel="Name (extern)">{{ f.name }}</td>
+          <td data-titel="Telefon">{{ f.telefon }}</td>
+          <td data-titel="E-Mail">{{ f.email }}{% for e in f.email.errors %}<small class="fehler">{{ e }}</small>{% endfor %}</td>
+          <td data-titel="Entfernen">{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf">Speichern</button>
+      <a class="knopf knopf-abbrechen" href="{% if s.pk %}{% url 'kunden:ausgabestelle' s.pk %}{% else %}{% url 'kunden:ausgabestellen' %}{% endif %}">Abbrechen</a>
+    </div>
+  </section>
+</form>
+{% if s.pk %}
+<section class="karte breit">
+  <form method="post" action="{% url 'kunden:listeneintrag_loeschen' 'ausgabestellen' s.pk %}" onsubmit="return confirm(this.dataset.frage)" data-frage="Ausgabestelle „{{ s.name }}“ endgültig löschen?">
+    {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Ausgabestelle löschen</button>
+    <small class="hinweis">Nur möglich, solange keine Kundengruppe und keine Abholung daran hängt; sonst auf „nicht aktiv“ setzen.</small>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

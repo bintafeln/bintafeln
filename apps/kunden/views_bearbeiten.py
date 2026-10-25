@@ -5,6 +5,8 @@ jede Seite sagt das, und der Prüfbericht des Imports warnt. Jede Änderung steh
 Änderungsprotokoll, der Haushalt merkt sich, wann und von wem er geändert wurde.
 """
 
+import datetime as dt
+
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import ProtectedError
@@ -304,6 +306,28 @@ LISTEN = {
 }
 
 
+# Spalten der Pflege-Listen (Überschrift, Attribut); sonst nur die Bezeichnung
+SPALTEN = {
+    "kundengruppen": [("Kürzel", "kuerzel"), ("Name", "name"), ("Ausgabestelle", "ausgabestelle"),
+                      ("Wochentage", "wochentage"), ("Uhrzeit", "uhrzeit"),
+                      ("Höchstzahl", "maximum"), ("Farbe", "get_farbe_display")],
+    "dokumentarten": [("Bezeichnung", "__str__"), ("Aufbewahren (Monate)", "aufbewahren_monate")],
+    "beitragsfrei": [("Bezeichnung", "bezeichnung"), ("von", "von"), ("bis", "bis")],
+}  # fmt: skip
+
+
+def _zelle(eintrag, attribut) -> str:
+    wert = getattr(eintrag, attribut, "")
+    wert = wert() if callable(wert) else wert
+    if wert is None or wert == "":
+        return "–"
+    if isinstance(wert, dt.time):
+        return f"{wert:%H:%M}"
+    if isinstance(wert, dt.date):
+        return f"{wert:%d.%m.%Y}"
+    return str(wert)
+
+
 def _liste(art):
     if art not in LISTEN:
         raise Http404
@@ -312,16 +336,26 @@ def _liste(art):
 
 @rollen.recht_erforderlich("einstellungen.listen")
 def liste(request, art):
+    if art == "ausgabestellen":
+        return redirect("kunden:ausgabestellen")
     modell, _, titel, _ = _liste(art)
-    return render(
-        request,
-        "kunden/liste_pflegen.html",
-        {"art": art, "titel": titel, "eintraege": modell.objects.all(), "listen": LISTEN},
-    )
+    spalten = SPALTEN.get(art, [("Bezeichnung", "__str__")])
+    zeilen = [
+        (e.pk, [(t, _zelle(e, a)) for t, a in spalten], getattr(e, "aktiv", True))
+        for e in modell.objects.all()
+    ]
+    return render(request, "kunden/liste_pflegen.html", {
+        "art": art, "titel": titel, "kopf": [t for t, _ in spalten], "zeilen": zeilen,
+        "listen": LISTEN,
+    })  # fmt: skip
 
 
 @rollen.recht_erforderlich("einstellungen.listen")
 def listeneintrag(request, art, pk=None):
+    if art == "ausgabestellen":  # eigene Seiten mit Zeiten und Ansprechpartnern (ADR 0048)
+        if pk:
+            return redirect("kunden:ausgabestelle_bearbeiten", pk=pk)
+        return redirect("kunden:ausgabestelle_neu")
     modell, form_klasse, titel, einzeln = _liste(art)
     instanz = get_object_or_404(modell, pk=pk) if pk else modell()
     form = form_klasse(request.POST or None, instance=instanz)

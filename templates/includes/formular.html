@@ -6,14 +6,14 @@
   {% if feld.widget_type == "checkbox" %}
   <div class="feld feld-haken{% if feld.errors %} hat-fehler{% endif %}">
     <label for="{{ feld.id_for_label }}">{{ feld }} {{ feld.label }}</label>
-    {% if feld.help_text %}<small class="hilfe">{{ feld.help_text }}</small>{% endif %}
+    {% if feld.help_text %}<small class="hilfe" id="{{ feld.auto_id }}_helptext">{{ feld.help_text }}</small>{% endif %}
     {% for fehler in feld.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
   </div>
   {% else %}
   <div class="feld{% if feld.errors %} hat-fehler{% endif %}">
     <label for="{{ feld.id_for_label }}">{{ feld.label }}{% if feld.field.required %} *{% endif %}</label>
     {{ feld }}
-    {% if feld.help_text %}<small class="hilfe">{{ feld.help_text }}</small>{% endif %}
+    {% if feld.help_text %}<small class="hilfe" id="{{ feld.auto_id }}_helptext">{{ feld.help_text }}</small>{% endif %}
     {% for fehler in feld.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
   </div>
   {% endif %}

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block titel %}Zeitbuchung {{ p }}{% endblock %}
 {% block inhalt %}
-<section class="karte schmal">
+<section class="karte">
   <p><a href="{% url 'personal:zeiten' p.pk %}">← Arbeitszeiten {{ p }}</a></p>
   <h1>{% if b.pk %}Zeitbuchung korrigieren{% else %}Zeit nachtragen{% endif %}</h1>
   <p>{{ p }}</p>

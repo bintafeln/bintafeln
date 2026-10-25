@@ -9,6 +9,7 @@
   <script src="{% static 'js/htmx.min.js' %}" defer></script>
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'{% if menue %} class="mit-menue"{% endif %}>
+  {% block hintergrund %}{% if tafel.hintergrund_bild and tafel.hintergrund_staerke %}<div class="hintergrund" aria-hidden="true" style="background-image: url('{{ tafel.hintergrund_bild.url }}'); opacity: {{ tafel.hintergrund_deckkraft }};"></div>{% endif %}{% endblock %}
   {% if menue %}<input type="checkbox" id="menue-schalter" class="menue-schalter" aria-hidden="true" tabindex="-1">{% endif %}
   <header class="kopf">
     {% if menue %}<label for="menue-schalter" class="menue-knopf" role="button" aria-label="Menü ein- oder ausblenden">☰ Menü</label>{% endif %}

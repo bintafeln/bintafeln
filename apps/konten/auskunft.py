@@ -62,6 +62,13 @@ def mitarbeiter_pdf(b) -> bytes:
         doc.absatz("Alle Angaben zur Mitgliedschaft und zu Beiträgen enthält die Auskunft aus "
                    "dem Adressbuch.", klein=True)  # fmt: skip
 
+    kontakte = b.ausgabestellen_kontakte.select_related("ausgabestelle")
+    if kontakte:
+        doc.ueberschrift("Ansprechpartner für Ausgabestellen")
+        doc.tabelle(["Ausgabestelle", "Zuständigkeit", "Telefon", "E-Mail"],
+                    [[k.ausgabestelle.name, k.zustaendigkeit, k.telefon, k.email]
+                     for k in kontakte])  # fmt: skip
+
     doc.ueberschrift("Stammdaten")
     s = Stammdaten.objects.filter(benutzer=b).first()
     if s is None:

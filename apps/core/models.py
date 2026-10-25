@@ -1,7 +1,7 @@
 import uuid
 
 from auditlog.registry import auditlog
-from django.core.validators import RegexValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 
 from apps.core.farben import STANDARDFARBE, farbtoene
@@ -28,6 +28,21 @@ class TafelEinstellungen(models.Model):
         help_text="Kopfzeile, Knöpfe und Links der ganzen Anwendung und des Antragsformulars. "
         "Voreingestellt ist Tafel-Orange.",
     )
+    hintergrund_anmeldung = models.ImageField(
+        "Hintergrundbild der Anmeldeseite", upload_to="oeffentlich/hintergrund/", blank=True,
+        help_text="JPG, PNG oder WebP, höchstens 5 MB. Öffentlich abrufbar (auch vor der "
+        "Anmeldung), also kein Bild mit Personen, die nicht zugestimmt haben.",
+    )  # fmt: skip
+    hintergrund = models.ImageField(
+        "Hintergrundbild der übrigen Seiten", upload_to="oeffentlich/hintergrund/", blank=True,
+        help_text="Leer = dasselbe Bild wie auf der Anmeldeseite.",
+    )  # fmt: skip
+    hintergrund_staerke = models.PositiveSmallIntegerField(
+        "Stärke des Hintergrundbilds auf den übrigen Seiten (%)", default=15,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="0 = nicht sichtbar, 100 = volle Stärke. Die Inhalte stehen immer auf weißen "
+        "Karten und bleiben lesbar.",
+    )  # fmt: skip
     strasse = models.CharField("Straße und Hausnummer", max_length=200, blank=True)
     plz = models.CharField("PLZ", max_length=10, blank=True)
     ort = models.CharField("Ort", max_length=100, blank=True)
@@ -58,6 +73,16 @@ class TafelEinstellungen(models.Model):
 
     def delete(self, *args, **kwargs):
         raise ValueError("Die Tafel-Einstellungen können nicht gelöscht werden.")
+
+    @property
+    def hintergrund_bild(self):
+        """Bild der übrigen Seiten; ohne eigenes das der Anmeldeseite."""
+        return self.hintergrund or self.hintergrund_anmeldung
+
+    @property
+    def hintergrund_deckkraft(self) -> str:
+        """Für CSS opacity, immer mit Punkt (unabhängig von der Sprache)."""
+        return f"{self.hintergrund_staerke / 100:.2f}"
 
     @classmethod
     def laden(cls) -> "TafelEinstellungen":

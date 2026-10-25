@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load static %}
+{% block titel %}{{ s.name }}{% endblock %}
+{% block inhalt %}
+<script src="{% static 'js/karte.js' %}" defer></script>
+<section class="karte breit">
+  <p><a href="{% url 'kunden:ausgabestellen' %}">← Ausgabestellen</a></p>
+  <div class="liste-kopf">
+    <h1>{{ s.name }}{% if not s.aktiv %} <span class="marke-warnung">nicht aktiv</span>{% endif %}</h1>
+    {% if "einstellungen.listen" in rechte %}<a class="knopf" href="{% url 'kunden:ausgabestelle_bearbeiten' s.pk %}">Bearbeiten</a>{% endif %}
+  </div>
+</section>
+<div class="seiten-raster">
+<section class="karte">
+  <h2>Anschrift und Kontakt</h2>
+  <dl class="angaben">
+    <dt>Anschrift</dt><dd>{% if s.anschrift %}{{ s.strasse }}<br>{{ s.plz }} {{ s.ort }}{% else %}–{% endif %}</dd>
+    <dt>Telefon</dt><dd>{% if s.telefon %}<a href="tel:{{ s.telefon }}">{{ s.telefon }}</a>{% else %}–{% endif %}</dd>
+    <dt>E-Mail</dt><dd>{% if s.email %}<a href="mailto:{{ s.email }}">{{ s.email }}</a>{% else %}–{% endif %}</dd>
+  </dl>
+  {% if s.anmerkung %}<h3>Allgemeine Anmerkungen</h3><p>{{ s.anmerkung|linebreaksbr }}</p>{% endif %}
+  <h3>Zeiten</h3>
+  {% if s.zeiten.all %}
+  <table class="tabelle kompakt">
+    <thead><tr><th>Tag</th><th>Uhrzeit</th><th>Art</th><th>Hinweis</th></tr></thead>
+    <tbody>{% for z in s.zeiten.all %}<tr><td>{{ z.get_wochentag_display }}</td><td>{{ z.von|time:"H:i" }}{% if z.bis %}–{{ z.bis|time:"H:i" }}{% endif %} Uhr</td><td>{{ z.art }}</td><td>{{ z.hinweis }}</td></tr>{% endfor %}</tbody>
+  </table>
+  {% else %}<p class="hinweis">Keine Zeiten eingetragen.</p>{% endif %}
+</section>
+<section class="karte">
+  <h2>Lage</h2>
+  {% if karte %}
+  <div class="karte-rahmen" data-karte="{{ karte.einbetten }}">
+    <p class="hinweis">Die Karte kommt von Google Maps. Erst beim Anzeigen werden Daten (z. B. Ihre IP-Adresse) an Google übertragen.</p>
+    <button type="button" class="knopf knopf-zweitrangig" data-karte-laden>Karte anzeigen</button>
+  </div>
+  <p><a href="{{ karte.oeffnen }}" target="_blank" rel="noopener noreferrer">In Google Maps öffnen (Route planen)</a></p>
+  {% else %}<p class="hinweis">Für die Karte bitte die Anschrift eintragen.</p>{% endif %}
+</section>
+<section class="karte">
+  <h2>Ansprechpartner</h2>
+  {% if s.kontakte.all %}
+  <table class="tabelle kompakt">
+    <thead><tr><th>Zuständigkeit</th><th>Name</th><th>Telefon</th><th>E-Mail</th></tr></thead>
+    <tbody>{% for k in s.kontakte.all %}<tr><td>{{ k.zustaendigkeit }}</td><td>{{ k.anzeige_name }}</td>
+      <td>{% if k.telefon %}<a href="tel:{{ k.telefon }}">{{ k.telefon }}</a>{% endif %}</td>
+      <td>{% if k.anzeige_email %}<a href="mailto:{{ k.anzeige_email }}">{{ k.anzeige_email }}</a>{% endif %}</td></tr>{% endfor %}</tbody>
+  </table>
+  {% else %}<p class="hinweis">Keine Ansprechpartner eingetragen.</p>{% endif %}
+</section>
+<section class="karte">
+  <h2>Kundengruppen</h2>
+  {% if gruppen %}
+  <table class="tabelle kompakt">
+    <thead><tr><th>Kundengruppe</th><th>Termin</th><th class="zahl">Haushalte</th></tr></thead>
+    <tbody>{% for g in gruppen %}<tr><td>{{ g.name }}</td><td>{{ g.wochentage|default:"–" }}{% if g.uhrzeit %} {{ g.uhrzeit|time:"H:i" }}{% endif %}</td><td class="zahl">{{ g.belegt }}{% if g.maximum %} von {{ g.maximum }}{% endif %}</td></tr>{% endfor %}</tbody>
+  </table>
+  {% else %}<p class="hinweis">Keine aktiven Kundengruppen.</p>{% endif %}
+</section>
+</div>
+{% endblock %}

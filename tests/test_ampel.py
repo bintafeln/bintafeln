@@ -202,3 +202,46 @@ def test_beitrag_und_einstellungen():
     e.save()
     assert AusgabeEinstellungen.laden().beitrag(2, 2, 1) == Decimal("6.50")
     assert str(e) == "Einstellungen Ausgabe"
+
+
+def test_eigene_meldungstexte(haushalt, einstellungen):
+    einstellungen.meldungstexte = {
+        "nicht_dran": "Bitte am {tage} kommen ({gruppe})",
+        "ausweis_bald": "Ausweis gilt nur noch bis {datum} – bitte ins Büro",
+        "ok": "Willkommen!",
+        "keine_gruppe": "{unbekannt} {gruppe.__class__} bleibt stehen",
+    }
+    heute = dt.date(2026, 10, 25)  # Sonntag, Gruppe ist mittwochs dran
+    farbe, texte = farbe_und_texte(haushalt, einstellungen, heute=heute)
+    assert texte == ["Bitte am Mi kommen (Mittwoch)"]
+    haushalt.ausweis_gueltig_bis = dt.date(2026, 10, 28)
+    _, texte = farbe_und_texte(haushalt, einstellungen, heute=dt.date(2026, 10, 28))
+    assert texte == ["Ausweis gilt nur noch bis 28.10.2026 – bitte ins Büro"]
+    haushalt.ausweis_gueltig_bis = dt.date(2027, 6, 30)
+    assert farbe_und_texte(haushalt, einstellungen, heute=dt.date(2026, 10, 28))[1] == [
+        "Willkommen!"]  # fmt: skip
+    haushalt.kundengruppe = None
+    assert farbe_und_texte(haushalt, einstellungen)[1] == [
+        "{unbekannt} {gruppe.__class__} bleibt stehen"]  # fmt: skip
+    # leerer eigener Text = Standard
+    einstellungen.meldungstexte = {"ok": "  "}
+    haushalt.kundengruppe = Kundengruppe.objects.get()
+    assert farbe_und_texte(haushalt, einstellungen, heute=dt.date(2026, 10, 28))[1] == [
+        "Alles in Ordnung"]  # fmt: skip
+
+
+def test_meldungstexte_in_den_einstellungen(admin_client):
+    from django.urls import reverse
+
+    from apps.ausgabe.forms import AusgabeEinstellungenForm
+
+    url = reverse("ausgabe:einstellungen")
+    seite = admin_client.get(url).content.decode()
+    assert "Text der Ampel: Heute nicht dran" in seite and "{gruppe}, {tage}" in seite
+    daten = {k: v for k, v in AusgabeEinstellungenForm(
+        instance=AusgabeEinstellungen.laden()).initial.items() if v is not None}  # fmt: skip
+    daten.update({"text_ok": "Willkommen!", "text_nicht_dran": " ", "zusatzbeitraege": "[]"})
+    daten = {k: ("on" if v is True else v) for k, v in daten.items() if v is not False}
+    admin_client.post(url, daten)
+    assert AusgabeEinstellungen.laden().meldungstexte == {"ok": "Willkommen!"}
+    assert 'value="Willkommen!"' in admin_client.get(url).content.decode()

@@ -6,6 +6,7 @@ Sperre, Status oder einen abgelaufenen Ausweis.
 """
 
 import datetime as dt
+import re
 from dataclasses import dataclass, field
 
 from apps.ausgabe.models import AusgabeEinstellungen
@@ -60,9 +61,49 @@ ZEITRAUM_TEXT = {
 }
 
 
+# Meldungen, deren Text die Tafel ändern kann: Schlüssel, Bezeichnung, Standardtext, Platzhalter.
+# Der Standardtext steht im Code (unten); leer gelassene eigene Texte verwenden ihn.
+MELDUNGEN = [
+    ("status", "Status gesperrt, beendet oder pausiert", "Status: {status}", ["status"]),
+    ("sperre", "Aktive Sperre", "Gesperrt seit {von} bis {bis}: {grund}", ["von", "bis", "grund"]),
+    ("ausweis_fehlt", "Kein Ablaufdatum des Ausweises", "Kein Ablaufdatum des Ausweises "
+     "hinterlegt", []),
+    ("ausweis_abgelaufen", "Ausweis abgelaufen", "Ausweis abgelaufen am {datum}", ["datum"]),
+    ("ausweis_bald", "Ausweis läuft bald ab", "Ausweis läuft am {datum} ab", ["datum"]),
+    ("heute_abgeholt", "Heute schon so oft abgeholt wie erlaubt", "Heute bereits abgeholt um "
+     "{uhrzeit}", ["uhrzeit", "anzahl"]),
+    ("heute_mehrfach", "Heute schon abgeholt (mehrfach erlaubt)", "Heute schon {anzahl}-mal "
+     "abgeholt (mehrfach erlaubt)", ["anzahl"]),
+    ("hoechstzahl", "Höchstzahl im Zeitraum erreicht", "Höchstzahl erreicht: {anzahl} Abholungen "
+     "{zeitraum}", ["anzahl", "zeitraum"]),
+    ("keine_gruppe", "Keine Kundengruppe", "Keine Kundengruppe zugeordnet", []),
+    ("keine_wochentage", "Kundengruppe ohne Wochentage", "Kundengruppe {gruppe} hat keine "
+     "Wochentage", ["gruppe"]),
+    ("nicht_dran", "Heute nicht dran", "Heute nicht dran (Kundengruppe {gruppe}: {tage})",
+     ["gruppe", "tage"]),
+    ("andere_stelle", "Andere Ausgabestelle", "Kundengruppe gehört zur Ausgabestelle {stelle}",
+     ["stelle"]),
+    ("konto_negativ", "Kontostand negativ", "Kontostand negativ: −{betrag} € (angeschrieben)",
+     ["betrag"]),
+    ("ok", "Alles in Ordnung", "Alles in Ordnung", []),
+]  # fmt: skip
+MELDUNGS_ARTEN = {art for art, *_ in MELDUNGEN}
+
+
+def eigener_text(vorlage: str, werte: dict) -> str:
+    """Setzt {platzhalter} ein; unbekannte bleiben stehen (kein str.format, keine Attribute)."""
+    return re.sub(r"\{(\w+)\}", lambda m: str(werte.get(m[1], m[0])), vorlage).strip()
+
+
 def bewerten(haushalt, heute: dt.date, ausgabestelle, einstellungen) -> Bewertung:
     """Bewertet einen Haushalt für heute an der gewählten Ausgabestelle (oder None)."""
     b = Bewertung()
+    eigene = getattr(einstellungen, "meldungstexte", None) or {}
+
+    def t(art, standard, **werte):
+        """Eigener Text der Tafel für diese Meldung, sonst der Standardtext."""
+        vorlage = (eigene.get(art) or "").strip()
+        return eigener_text(vorlage, werte) if vorlage else standard
 
     def melden(farbe, text, ausnahme_moeglich=False):
         b.meldungen.append(Meldung(farbe, text, ausnahme_moeglich))
@@ -78,24 +119,30 @@ def bewerten(haushalt, heute: dt.date, ausgabestelle, einstellungen) -> Bewertun
             melden(farbe, text, ausnahme_moeglich=True)
 
     if haushalt.status in ("gesperrt", "beendet"):
-        melden(ROT, f"Status: {haushalt.get_status_display()}")
+        status = haushalt.get_status_display()
+        melden(ROT, t("status", f"Status: {status}", status=status))
     elif haushalt.status == "pausiert":
-        melden(GELB, "Status: pausiert")
+        melden(GELB, t("status", "Status: pausiert", status="pausiert"))
 
     for sperre in haushalt.sperren.all():
         if sperre.ist_aktiv(heute):
             bis = f" bis {sperre.bis:%d.%m.%Y}" if sperre.bis else ""
             zeigen = getattr(einstellungen, "einlass_sperren", True)
             grund = f": {sperre.begruendung}" if sperre.begruendung and zeigen else ""
-            melden(ROT, f"Gesperrt seit {sperre.von:%d.%m.%Y}{bis}{grund}")
+            melden(ROT, t("sperre", f"Gesperrt seit {sperre.von:%d.%m.%Y}{bis}{grund}",
+                          von=f"{sperre.von:%d.%m.%Y}",
+                          bis=f"{sperre.bis:%d.%m.%Y}" if sperre.bis else "",
+                          grund=sperre.begruendung if zeigen else ""))  # fmt: skip
 
     ausweis = haushalt.ausweis_gueltig_bis
     if ausweis is None:
-        melden(GELB, "Kein Ablaufdatum des Ausweises hinterlegt")
+        melden(GELB, t("ausweis_fehlt", "Kein Ablaufdatum des Ausweises hinterlegt"))
     elif ausweis < heute:
-        melden(ROT, f"Ausweis abgelaufen am {ausweis:%d.%m.%Y}")
+        datum = f"{ausweis:%d.%m.%Y}"
+        melden(ROT, t("ausweis_abgelaufen", f"Ausweis abgelaufen am {datum}", datum=datum))
     elif ausweis <= heute + dt.timedelta(days=einstellungen.vorwarnung_tage):
-        melden(GELB, f"Ausweis läuft am {ausweis:%d.%m.%Y} ab")
+        datum = f"{ausweis:%d.%m.%Y}"
+        melden(GELB, t("ausweis_bald", f"Ausweis läuft am {datum} ab", datum=datum))
 
     abholungen = [a for a in haushalt.abholungen.all() if a.datum <= heute]
     heute_abgeholt = [a for a in abholungen if a.datum == heute]
@@ -104,44 +151,52 @@ def bewerten(haushalt, heute: dt.date, ausgabestelle, einstellungen) -> Bewertun
         uhrzeiten = [a.uhrzeit for a in heute_abgeholt if a.uhrzeit]
         um = f" um {max(uhrzeiten):%H:%M}" if uhrzeiten else ""
         if je_tag == 1:
-            melden(ROT, f"Heute bereits abgeholt{um}")
+            standard = f"Heute bereits abgeholt{um}"
         else:
-            melden(ROT, f"Heute bereits {len(heute_abgeholt)}-mal abgeholt, zuletzt{um or ' heute'}"
-                        f" (höchstens {je_tag}-mal am Tag)")  # fmt: skip
+            standard = (f"Heute bereits {len(heute_abgeholt)}-mal abgeholt, zuletzt"
+                        f"{um or ' heute'} (höchstens {je_tag}-mal am Tag)")  # fmt: skip
+        uhrzeit = f"{max(uhrzeiten):%H:%M}" if uhrzeiten else ""
+        melden(ROT, t("heute_abgeholt", standard, uhrzeit=uhrzeit, anzahl=len(heute_abgeholt)))
     else:
         if heute_abgeholt:
-            melden(GELB, f"Heute schon {len(heute_abgeholt)}-mal abgeholt (mehrfach erlaubt)")
+            n = len(heute_abgeholt)
+            melden(GELB, t("heute_mehrfach", f"Heute schon {n}-mal abgeholt (mehrfach erlaubt)",
+                           anzahl=n))  # fmt: skip
         beginn = zeitraum_beginn(heute, einstellungen.zeitraum)
         anzahl = sum(1 for a in abholungen if a.datum >= beginn)
         if einstellungen.max_abholungen and anzahl >= einstellungen.max_abholungen:
-            terminregel(
-                f"Höchstzahl erreicht: {anzahl} Abholung{'en' if anzahl != 1 else ''} "
-                f"{ZEITRAUM_TEXT[einstellungen.zeitraum]}"
-            )
+            zeitraum = ZEITRAUM_TEXT[einstellungen.zeitraum]
+            terminregel(t("hoechstzahl", f"Höchstzahl erreicht: {anzahl} Abholung"
+                          f"{'en' if anzahl != 1 else ''} {zeitraum}", anzahl=anzahl,
+                          zeitraum=zeitraum))  # fmt: skip
 
     gruppe = haushalt.kundengruppe
     if gruppe is None:
-        terminregel("Keine Kundengruppe zugeordnet")
+        terminregel(t("keine_gruppe", "Keine Kundengruppe zugeordnet"))
     else:
         tage = [t.strip() for t in gruppe.wochentage.split(",") if t.strip()]
         if not tage:
             terminregel(
-                f"Kundengruppe {gruppe.name} hat keine Wochentage – nicht prüfbar, ob heute dran "
-                "(Einstellungen → Kundengruppen)",
+                t("keine_wochentage", f"Kundengruppe {gruppe.name} hat keine Wochentage – nicht "
+                  "prüfbar, ob heute dran (Einstellungen → Kundengruppen)", gruppe=gruppe.name),
                 GELB,
-            )
+            )  # fmt: skip
         elif WOCHENTAGE[heute.weekday()] not in tage:
             terminregel(
-                f"Heute nicht dran (Kundengruppe {gruppe.name}: {', '.join(tage)})",
+                t("nicht_dran", f"Heute nicht dran (Kundengruppe {gruppe.name}: "
+                  f"{', '.join(tage)})", gruppe=gruppe.name, tage=", ".join(tage)),
                 ROT if einstellungen.nicht_dran_rot else GELB,
-            )
+            )  # fmt: skip
         if ausgabestelle and gruppe.ausgabestelle and gruppe.ausgabestelle != ausgabestelle:
-            terminregel(f"Kundengruppe gehört zur Ausgabestelle {gruppe.ausgabestelle.name}", GELB)
+            stelle = gruppe.ausgabestelle.name
+            terminregel(t("andere_stelle", f"Kundengruppe gehört zur Ausgabestelle {stelle}",
+                          stelle=stelle), GELB)  # fmt: skip
 
     if haushalt.kontostand is not None and haushalt.kontostand < 0:
         betrag = f"{-haushalt.kontostand:.2f}".replace(".", ",")
-        melden(GELB, f"Kontostand negativ: −{betrag} € (angeschrieben)")
+        melden(GELB, t("konto_negativ", f"Kontostand negativ: −{betrag} € (angeschrieben)",
+                       betrag=betrag))  # fmt: skip
 
     if not b.meldungen:
-        melden(GRUEN, "Alles in Ordnung")
+        melden(GRUEN, t("ok", "Alles in Ordnung"))
     return b
