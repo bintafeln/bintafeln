@@ -691,3 +691,8 @@ label.wahl { display: block; white-space: nowrap; }
 .hintergrund { position: fixed; inset: 0; z-index: -1; background-size: cover; background-position: center; pointer-events: none; }
 body:has(.hintergrund) .rahmen, body:has(.hintergrund) .inhalt { background: transparent; }
 body:has(.hintergrund) .fuss { background: var(--flaeche); }
+/* Bild-Felder (Logo, Hintergrund): Vorschau statt Dateipfad */
+.bild-aktuell { display: flex; align-items: center; gap: 1rem; margin-bottom: .4rem; }
+.bild-vorschau { max-width: 9rem; max-height: 5rem; object-fit: contain; border: 1px solid var(--rand); border-radius: var(--radius); background: #fff; }
+.feld .bild-entfernen { font-weight: normal; display: flex; align-items: center; gap: .4rem; margin: 0; }
+.feld .bild-entfernen input { width: auto; min-height: 0; }

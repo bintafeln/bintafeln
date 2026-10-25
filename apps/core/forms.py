@@ -11,6 +11,15 @@ HINTERGRUND_MAX_BYTES = 5 * 1024 * 1024
 LOGO_MAX_BYTES = 2 * 1024 * 1024
 
 
+class BildEingabe(forms.ClearableFileInput):
+    """Bild hochladen: aktuelles Bild als Vorschau, eindeutiges „Bild entfernen“."""
+
+    template_name = "core/widgets/bild_eingabe.html"
+
+    def __init__(self, attrs=None):
+        super().__init__({"accept": "image/jpeg,image/png,image/webp", **(attrs or {})})
+
+
 class StaatAuswahl(forms.Select):
     """Auswahl der Staatsangehörigkeit; jede Option trägt den Ländercode (data-land), damit der
     Browser den Namen in der Sprache der Besucher ergänzen kann."""
@@ -69,6 +78,9 @@ class EinstellungenForm(forms.ModelForm):
             "bundesland",
         ]
         widgets = {
+            "logo": BildEingabe(),
+            "hintergrund_anmeldung": BildEingabe(),
+            "hintergrund": BildEingabe(),
             "farbe": forms.TextInput(attrs={"type": "color"}),
             "hintergrund_staerke": forms.NumberInput(
                 attrs={
