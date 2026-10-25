@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block titel %}Warteliste und Einladungen{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Warteliste und Einladungen</h1>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular_abschnitte.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+<section class="karte breit">
+  <h2>Vorschau der Einladung</h2>
+  <p class="hinweis">Mit erfundenem Namen und heutigem Datum; zuletzt gespeicherter Stand.</p>
+  <p><strong>Betreff:</strong> {{ vorschau_betreff }}</p>
+  <pre style="white-space: pre-wrap; background: var(--grund); padding: 1rem; border-radius: var(--radius);">{{ vorschau_text }}</pre>
+</section>
+{% endblock %}

@@ -1,0 +1,40 @@
+<p>Die Warteliste ersetzt das bisherige Neuanmeldungs-Programm. Sie arbeitet mit den Anträgen aus bintafeln: Jeder
+  Antrag, der nicht im Papierkorb liegt, steht darauf. Ein Download von anderen Seiten entfällt. Sie ist ein
+  zuschaltbares Modul (Einstellungen → Tafel → Tafel und Module).</p>
+
+<h3>Ablauf</h3>
+<ol>
+  <li><strong>neu</strong> → nach einem Tag <strong>wartend</strong>.</li>
+  <li>Personen auswählen und <strong>einladen</strong>: Termin wählen oder neu anlegen. Mit E-Mail-Adresse geht die
+    Einladung per Mail hinaus; ohne Adresse steht in der Übersicht „bitte anrufen oder Brief“.</li>
+  <li>Nach dem Termin: <strong>erschienen</strong> oder <strong>entschuldigt</strong> setzen (am einfachsten auf der
+    Seite des Termins). Wer erschienen ist, wird mit dem Aufnahme-Assistenten in den Kundenstamm aufgenommen und
+    steht dann als <strong>aufgenommen</strong> in der Liste.</li>
+  <li>Ohne Rückmeldung: Nach der eingestellten Zahl von Tagen setzt bintafeln den Status auf „Streichen möglich“ –
+    oder streicht direkt, je nach Einstellung.</li>
+  <li><strong>Wartezeit bis</strong>: nicht einladen bis zu einem Datum; danach „Wartezeit abgelaufen“.</li>
+  <li><strong>Gestrichen</strong> kommt auf die Streichungsliste (als PDF druckbar) und lehnt den Antrag ab.</li>
+</ol>
+
+<h3>Termine</h3>
+<p>„Warteliste → Termine“ zeigt die Termine mit der Zahl der Eingeladenen. Auf der Seite eines Termins: Druckliste
+  (PDF), Status für mehrere Personen setzen und <strong>Absagen</strong> – die Absage geht per Mail hinaus, die
+  Personen stehen danach wieder als „wartend“ ohne Termin in der Liste.</p>
+
+{% if "warteliste.bearbeiten" in rechte %}
+<h3>Abgleich mit dem Kundenstamm</h3>
+<p>Findet zu neuen und wartenden Anträgen ähnliche Haushalte im Kundenstamm und sagt, was das bedeutet: Ausweis
+  noch gültig (Verlängerung statt Neuanmeldung), abgelaufen mit laufender Sperrzeit oder Sperrzeit vorbei. Keine
+  Sperrzeit gilt ab dem eingestellten Alter oder bei einem Ja/Nein-Zusatzfeld wie „Schwerbehindert“.</p>
+
+<h3>Doppelte Anträge</h3>
+<p>Zeigt offene Anträge mit sehr ähnlichem Namen. Einen davon streichen (der andere bekommt eine Anmerkung) oder
+  „Keine Dublette“ wählen.</p>
+{% endif %}
+
+{% if "einstellungen.warteliste" in rechte %}
+<h3>Einstellungen</h3>
+<p>Unter „Einstellungen → Kunden → Warteliste und Einladungen“: Tage bis „Streichen möglich“, automatisches
+  Streichen, Sperrzeit, Aufbewahrung der Streichungsliste sowie Ort und Texte der Einladung und Absage mit
+  Platzhaltern. Für den Versand muss unter „Einstellungen → Tafel → E-Mail“ ein Mailserver eingerichtet sein.</p>
+{% endif %}

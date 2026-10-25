@@ -660,6 +660,26 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
 - Die Geräte zeigen nur Kundennummern. Die Reihenfolge eines Tages wird nach vier Wochen
   gelöscht.
 
+### Warteliste mit Einladungen
+
+Ersetzt das bisherige Neuanmeldungs-Programm (ADR 0051) und arbeitet direkt mit den Anträgen.
+
+- **Status** je Antrag: neu → wartend → eingeladen (mit Termin) → erschienen oder entschuldigt;
+  „Wartezeit bis“ ein Datum; ohne Rückmeldung nach einstellbaren Tagen „Streichen möglich“ oder
+  direkt gestrichen; aufgenommen, sobald der Aufnahme-Assistent den Antrag übernommen hat.
+- **Einladen:** Anträge auswählen (Filter nach Status, Art, Termin, Staatsangehörigkeit „nur“ oder
+  „nicht“), Termin wählen oder neu anlegen. Einladung per Mail mit eigenen Texten und
+  Platzhaltern; ohne E-Mail-Adresse nur eintragen (anrufen oder Brief).
+- **Termine:** Liste der Eingeladenen, Druckliste (PDF), Status für mehrere setzen, **Absagen**
+  per Mail (danach wieder „wartend“).
+- **Abgleich mit dem Kundenstamm:** ähnliche Haushalte mit Hinweis, ob der Ausweis noch gilt oder
+  die Sperrzeit nach Ablauf läuft (Monate, Altersgrenze und Ausnahme-Zusatzfeld einstellbar).
+- **Doppelte Anträge** erkennen und mit Vermerk streichen; **Streichungsliste** (PDF), nach
+  einstellbaren Tagen gelöscht.
+- Rechte „Warteliste ansehen“ und „Einladen, absagen …“ (Vorgabe Büro), Einstellungen unter
+  „Einstellungen → Kunden → Warteliste und Einladungen“. Einladungen stehen in der Auskunft zum
+  Antrag.
+
 ## Adressbuch
 
 „Adressen → Adressbuch“ (Rechte „Adressbuch ansehen …“, „Adressen anlegen und bearbeiten“,
@@ -1127,6 +1147,7 @@ apps/core/          Tafel-Einstellungen, Einrichtung, Startseite, Änderungsprot
 apps/konten/        Benutzer, Rollen, Anmeldung, Zwei-Faktor
 apps/kunden/        Kundenstamm: Haushalte, Personen, Zusatzfelder, Einstellungen
 apps/aufruf/        Modul Aufruf (Monitor, Handy, Kiosk); Module beschreibt apps/core/module.py
+apps/warteliste/    Modul Warteliste (Einladungen zu Terminen, Streichungen)
 templates/          Django-Templates
 static/             CSS und HTMX
 docker/             Caddyfile und Start-Skript des App-Containers

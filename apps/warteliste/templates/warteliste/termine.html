@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block titel %}Termine{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Termine</h1>
+  {% if "warteliste.bearbeiten" in rechte %}<div class="aktionsleiste"><a class="knopf" href="{% url 'warteliste:termin_neu' %}">Neuer Termin</a></div>{% endif %}
+  <h2>Kommende Termine</h2>
+  {% include "warteliste/_termine.html" with liste=kommend %}
+  <h2>Vergangene Termine</h2>
+  {% include "warteliste/_termine.html" with liste=vergangen %}
+</section>
+{% endblock %}

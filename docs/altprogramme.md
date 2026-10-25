@@ -7,7 +7,7 @@ bintafeln; Downloads aus Fremdsystemen und der Austausch von Dateien entfallen.
 | Bisheriges Programm | In bintafeln | Stand |
 |---|---|---|
 | Kundennummern-Aufruf (Monitor, Handy, Kiosk) | Modul **Aufruf** (ADR 0050) | umgesetzt |
-| Neuanmeldungen / Warteliste mit Einladungen | Ausbau der Anträge (Modul 3) | geplant |
+| Neuanmeldungen / Warteliste mit Einladungen | Modul **Warteliste** auf den Anträgen (ADR 0051) | umgesetzt |
 | Wochenübersicht der Ausgabestellen (Soll/Ist, Selbstabholer) | Modul **Wochenübersicht** | geplant |
 | Spendenbelege und Dankesbriefe | Ausbau Spenden: Import, Dankesbrief als Serienbrief | geplant |
 | Übersicht (Linkliste) | Startseite/Menü | geplant |

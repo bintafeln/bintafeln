@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block titel %}{{ titel }}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'warteliste:liste' %}">← Warteliste</a>{% if termin %} · <a href="{% url 'warteliste:termin' termin.pk %}">Termin {{ termin }}</a>{% endif %}</p>
+  <h1>{{ titel }}</h1>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>#</th><th>Name</th><th>Telefon</th><th>Ergebnis</th></tr></thead>
+    <tbody>
+    {% for e in ergebnisse %}
+      <tr>
+        <td data-titel="#"><a href="{% url 'warteliste:eintrag' e.antrag.pk %}">{{ e.antrag.nummer }}</a></td>
+        <td data-titel="Name">{{ e.antrag.nachname }}, {{ e.antrag.vorname }}</td>
+        <td data-titel="Telefon">{{ e.antrag.telefon|default:"–" }}</td>
+        <td data-titel="Ergebnis">{% if e.ok %}✓{% else %}<strong class="grund-rot">⚠</strong>{% endif %} {{ e.hinweis }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="hinweis">Wer mit ⚠ markiert ist, hat keine Mail bekommen: bitte anrufen oder einen Brief schicken.</p>
+</section>
+{% endblock %}

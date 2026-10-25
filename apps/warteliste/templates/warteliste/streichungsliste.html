@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block titel %}Streichungsliste{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Streichungsliste</h1>
+  <p>Gestrichene Anträge der letzten {{ tage }} Tage (danach löscht bintafeln die Einträge).</p>
+  <div class="aktionsleiste"><a class="knopf knopf-zweitrangig" href="?pdf=1">Als PDF</a></div>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Gestrichen am</th><th>Antrag</th><th>Name</th><th>Letzter Termin</th><th>Wie</th><th>Von</th></tr></thead>
+    <tbody>
+    {% for s in eintraege %}
+      <tr><td data-titel="Gestrichen am">{{ s.gestrichen_am|date:"d.m.Y H:i" }}</td><td data-titel="Antrag">{{ s.antragsnummer }}</td><td data-titel="Name">{{ s.name }}</td><td data-titel="Letzter Termin">{{ s.termin_text|default:"–" }}</td><td data-titel="Wie">{{ s.get_weg_display }}</td><td data-titel="Von">{{ s.von }}</td></tr>
+    {% empty %}
+      <tr><td colspan="6">Keine Einträge.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

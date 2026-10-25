@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block titel %}Abgleich mit dem Kundenstamm{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Abgleich mit dem Kundenstamm</h1>
+  <p>Geprüft wurden {{ geprueft }} {% if alle %}offene Anträge{% else %}Anträge mit Status „neu“ oder „wartend“{% endif %}
+    (<a href="?{% if not alle %}alle=1{% endif %}">{% if alle %}nur neue und wartende{% else %}alle offenen prüfen{% endif %}</a>).
+    Angezeigt werden nur Anträge mit ähnlichem Haushalt im Kundenstamm, Fälle mit Sperrzeit zuerst.</p>
+  {% for e in ergebnis %}
+  <section class="karte{% if e.sperr %} ampel ampel-rot{% endif %}">
+    <h2><a href="{% url 'warteliste:eintrag' e.antrag.pk %}">{{ e.antrag.nachname }}, {{ e.antrag.vorname }}</a> <small>· Antrag {{ e.antrag.nummer }}{% if e.antrag.geburtsdatum %} · geb. {{ e.antrag.geburtsdatum|date:"d.m.Y" }}{% endif %}</small></h2>
+    {% include "warteliste/_treffer.html" with treffer=e.treffer %}
+  </section>
+  {% empty %}
+  <p>Kein Antrag hat einen ähnlichen Haushalt im Kundenstamm.</p>
+  {% endfor %}
+</section>
+{% endblock %}
