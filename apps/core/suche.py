@@ -1,6 +1,7 @@
 """Suche im Seitenkopf (ADR 0040): ab 3 Zeichen, mit Kürzeln für einzelne Bereiche.
 
-Ohne Kürzel sucht sie Kunden (Vor- und Nachname, Kundennummer), Anträge und Mitarbeitende.
+Ohne Kürzel sucht sie Seiten des Programms (Menüpunkte), Kunden (Vor- und Nachname,
+Kundennummer), Anträge, Adressen, Mitarbeitende und das Handbuch.
 Ein Kürzel mit Leerzeichen davor schränkt ein, z. B. „n bescheid“ sucht in Notizen. Jeder
 Bereich erscheint nur mit dem passenden Recht; Kunden nur aus den eigenen Ausgabestellen
 (ADR 0034).
@@ -8,6 +9,7 @@ Bereich erscheint nur mit dem passenden Recht; Kunden nur aus den eigenen Ausgab
 
 import re
 from dataclasses import dataclass, field
+from functools import lru_cache
 
 from django.db.models import Q
 from django.template.loader import render_to_string
@@ -44,11 +46,13 @@ KUERZEL = [
             ("adressen.sehen",)),
     Kuerzel("m", "mitarbeitende", "Mitarbeitende: Name, Benutzername",
             ("mitarbeitende.verwalten",)),
+    Kuerzel("p", "programm", "Programm: Seiten und Menüpunkte, z. B. „p ausgabestellen“", ()),
     Kuerzel("h", "hilfe", "Hilfe: Text im Handbuch", ()),
 ]  # fmt: skip
-OHNE_KUERZEL = ("kunden", "antraege", "adressen", "mitarbeitende")
+OHNE_KUERZEL = ("programm", "kunden", "antraege", "adressen", "mitarbeitende", "hilfe")
 
 TITEL = {
+    "programm": "Programm",
     "kunden": "Kunden",
     "notizen": "Notizen",
     "anmerkungen": "Anmerkungen",
@@ -288,23 +292,62 @@ def _adressen(benutzer, begriff, grenze):
     ]  # fmt: skip
 
 
-def _hilfe(benutzer, begriff, grenze):
+def _programm(benutzer, begriff, grenze, menue=()):
+    """Menüpunkte, die das Konto sieht: zuerst Treffer im Namen, dann im Bereich."""
+    begriff = begriff.lower()
+    im_namen, im_bereich, gesehen = [], [], set()
+    for bereich in menue:
+        if bereich.get("gruppen"):
+            wege = [(f"{bereich['titel']} › {g['titel']}", g["eintraege"])
+                    for g in bereich["gruppen"]]  # fmt: skip
+        else:
+            wege = [(bereich["titel"], bereich["eintraege"])]
+        for weg, eintraege in wege:
+            for e in eintraege:
+                if e["url"] in gesehen:
+                    continue
+                if begriff in e["titel"].lower():
+                    ziel = im_namen
+                elif begriff in weg.lower():
+                    ziel = im_bereich
+                else:
+                    continue
+                gesehen.add(e["url"])
+                ziel.append(Treffer(e["titel"], e["url"], f"Menü: {weg}"))
+    return (im_namen + im_bereich)[: grenze + 1]
+
+
+@lru_cache(maxsize=512)
+def _kapiteltext(kennung: str, rechte: frozenset) -> tuple[tuple[str, str], ...]:
+    """Kapitel als (Abschnitt, Text); der erste Abschnitt hat keine Überschrift."""
+    html = render_to_string(f"hilfe/{kennung}.html", {"rechte": rechte})
+    teile = re.split(r"<h3[^>]*>(.*?)</h3>", html, flags=re.S)
+    abschnitte = [("", teile[0])] + list(zip(teile[1::2], teile[2::2], strict=True))
+    return tuple((" ".join(strip_tags(u).split()), " ".join(strip_tags(t).split()))
+                 for u, t in abschnitte)  # fmt: skip
+
+
+def _hilfe(benutzer, begriff, grenze, menue=()):
+    """Je Kapitel der erste passende Abschnitt; Treffer im Kapiteltitel zuerst."""
     from apps.core import hilfe as handbuch
 
     treffer = []
-    rechte = rollen.rechte_von(benutzer)
+    rechte = frozenset(rollen.rechte_von(benutzer))
+    klein = begriff.lower()
     for k in handbuch.sichtbar(benutzer):
-        text = strip_tags(render_to_string(f"hilfe/{k.kennung}.html", {"rechte": rechte}))
-        text = re.sub(r"\s+", " ", text)
-        if begriff.lower() in (k.titel + " " + text).lower():
-            treffer.append(Treffer(k.titel, f"{reverse('core:hilfe')}#{k.kennung}",
-                                   _ausschnitt(text, begriff, 50)))  # fmt: skip
-        if len(treffer) > grenze:
-            break
-    return treffer
+        for abschnitt, text in _kapiteltext(k.kennung, rechte):
+            if klein in f"{k.titel} {abschnitt} {text}".lower():
+                titel = f"{k.titel} › {abschnitt}" if abschnitt else k.titel
+                rang = 0 if klein in k.titel.lower() else 1 if klein in abschnitt.lower() else 2
+                treffer.append((rang, Treffer(titel, f"{reverse('core:hilfe')}#{k.kennung}",
+                                              _ausschnitt(text, begriff, 50))))  # fmt: skip
+                break
+    treffer.sort(key=lambda x: x[0])
+    return [t for _, t in treffer][: grenze + 1]
 
 
 SUCHEN = {
+    "programm": _programm,
     "kunden": _kunden,
     "notizen": _notizen,
     "anmerkungen": _anmerkungen,
@@ -318,7 +361,8 @@ SUCHEN = {
 }
 
 
-def suchen(benutzer, eingabe: str, grenze: int = JE_BEREICH) -> Ergebnis:
+def suchen(benutzer, eingabe: str, grenze: int = JE_BEREICH, menue=()) -> Ergebnis:
+    """``menue``: das Menü des Kontos (``apps.core.menue.menue``) für die Suche nach Seiten."""
     kuerzel, begriff = zerlegen(eingabe or "")
     ergebnis = Ergebnis(eingabe=eingabe or "", begriff=begriff, kuerzel=kuerzel)
     if len(begriff) < MINDESTLAENGE:
@@ -329,7 +373,10 @@ def suchen(benutzer, eingabe: str, grenze: int = JE_BEREICH) -> Ergebnis:
     for bereich in bereiche:
         if bereich not in erlaubt:
             continue
-        treffer = SUCHEN[bereich](benutzer, begriff, grenze)
+        if bereich in ("programm", "hilfe"):
+            treffer = SUCHEN[bereich](benutzer, begriff, grenze, menue=menue)
+        else:
+            treffer = SUCHEN[bereich](benutzer, begriff, grenze)
         if treffer:
             ergebnis.gruppen.append(Gruppe(bereich, TITEL[bereich], treffer[:grenze],
                                            weitere=len(treffer) > grenze))  # fmt: skip

@@ -4,8 +4,14 @@
 <section class="karte breit handbuch-kopf">
   <h1>Hilfe: So arbeiten Sie mit {{ tafel.name|default:"bintafeln" }}</h1>
   <p>Dieses Handbuch zeigt nur die Kapitel, die zu Ihren Aufgaben passen. Sehen Sie etwas nicht, was Sie brauchen,
-    fehlt Ihnen das Recht dazu – bitte an einen Admin wenden. Mit <kbd>Strg</kbd> + <kbd>F</kbd> (am Handy: „Auf Seite
-    suchen“) finden Sie jedes Stichwort.</p>
+    fehlt Ihnen das Recht dazu – bitte an einen Admin wenden. Die Suche oben im Seitenkopf findet auch Abschnitte
+    dieses Handbuchs und Seiten des Programms.</p>
+  <form method="get" action="{% url 'core:suche' %}" class="aktionsleiste handbuch-suche" role="search">
+    <input type="hidden" name="nur" value="hilfe">
+    <label for="handbuch-suche" class="unsichtbar">Im Handbuch suchen</label>
+    <input type="search" id="handbuch-suche" name="q" placeholder="Im Handbuch suchen, z. B. Ampel" minlength="3" maxlength="200" required>
+    <button type="submit" class="knopf">Suchen</button>
+  </form>
   <nav class="inhaltsverzeichnis" aria-label="Inhalt">
     {% for teil, liste in teile %}
     <div>

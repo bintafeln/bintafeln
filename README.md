@@ -361,9 +361,11 @@ Regeln:
 ## Suche
 
 Im Seitenkopf steht auf jeder Seite ein **Suchfeld**. Ab 3 Zeichen erscheinen die Treffer
-darunter, Enter öffnet eine Ergebnisseite. Ohne Kürzel sucht es Kunden (Vor- und Nachname, auch
-Teile wie „mül“, Kundennummer, Abholberechtigte), Anträge und Mitarbeitende. Ein Kürzel mit
-Leerzeichen davor sucht nur in einem Bereich:
+darunter, Enter öffnet eine Ergebnisseite. Ohne Kürzel sucht es **Seiten des Programms**
+(Menüpunkte, z. B. „ausgabestellen“ führt zu „Kunden → Ausgabestellen“), Kunden (Vor- und
+Nachname, auch Teile wie „mül“, Kundennummer, Abholberechtigte), Anträge, Adressen,
+Mitarbeitende und **Abschnitte des Handbuchs**. Ein Kürzel mit Leerzeichen davor sucht nur in
+einem Bereich:
 
 | Kürzel | Bereich | Beispiel |
 |---|---|---|
@@ -375,6 +377,7 @@ Leerzeichen davor sucht nur in einem Bereich:
 | `d` | Dokumente zum Haushalt (Titel) | `d jobcenter` |
 | `an` | Anträge (Name, Antragsnummer) | `an müller` |
 | `m` | Mitarbeitende | `m anna` |
+| `p` | Programm (Menüpunkte) | `p ausgabestellen` |
 | `h` | Handbuch | `h ampel` |
 
 `?` im Suchfeld zeigt die Kürzel. Jeder Bereich erscheint nur mit dem passenden Recht; wer einer

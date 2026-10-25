@@ -189,11 +189,17 @@ def hilfe(request):
 def suche(request):
     """Suche im Seitenkopf (ADR 0040): ganze Seite, mit HTMX nur die Liste unter dem Feld."""
     from apps.core import suche as such
+    from apps.core.menue import menue
 
     eingabe = request.GET.get("q", "")[:200]
+    if request.GET.get("nur") == "hilfe" and such.zerlegen(eingabe)[0] is None:
+        eingabe = f"h {eingabe}"  # Suchfeld im Handbuch
     kurz = bool(request.headers.get("HX-Request"))
     ergebnis = such.suchen(
-        request.user, eingabe, grenze=such.JE_BEREICH if kurz else such.JE_BEREICH_SEITE
+        request.user,
+        eingabe,
+        grenze=such.JE_BEREICH if kurz else such.JE_BEREICH_SEITE,
+        menue=menue(request),
     )
     kontext = {"e": ergebnis, "kuerzel": such.kuerzel_fuer(request.user),
                "mindestlaenge": such.MINDESTLAENGE}  # fmt: skip
