@@ -47,9 +47,20 @@
       {% endwith %}{% else %}
       <details class="menue-bereich"{% if bereich.offen %} open{% endif %}>
         <summary class="menue-oben">{{ bereich.titel }}{% if bereich.zahl is not None %} <span class="menue-zahl" title="{{ bereich.zahl_titel }}">{{ bereich.zahl }}</span>{% endif %}</summary>
+        {% if bereich.gruppen %}
+        {% for g in bereich.gruppen %}
+        <details class="menue-gruppe"{% if g.offen %} open{% endif %}>
+          <summary>{{ g.titel }}</summary>
+          <ul>
+            {% for e in g.eintraege %}<li><a href="{{ e.url }}"{% if e.aktiv %} class="aktiv" aria-current="page"{% endif %}>{{ e.titel }}</a></li>{% endfor %}
+          </ul>
+        </details>
+        {% endfor %}
+        {% else %}
         <ul>
           {% for e in bereich.eintraege %}<li><a href="{{ e.url }}"{% if e.aktiv %} class="aktiv" aria-current="page"{% endif %}{% if e.extern %} target="_blank" rel="noopener"{% endif %}>{{ e.titel }}{% if e.extern %} ↗{% endif %}{% if e.zahl is not None %} <span class="menue-zahl" title="{{ e.zahl_titel }}">{{ e.zahl }}</span>{% endif %}</a></li>{% endfor %}
         </ul>
+        {% endif %}
       </details>
       {% endif %}
     {% endfor %}

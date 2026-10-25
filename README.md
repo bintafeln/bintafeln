@@ -46,7 +46,8 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
 - **Hilfe im Programm:** ein ausführliches Handbuch („Hilfe“ im Menü), das nur die Kapitel
   zeigt, die zu den Rechten des Kontos passen (ADR 0038).
 - **Menü links** mit aufklappbaren Bereichen (Ausgabe, Kunden, Anträge, Team, Einstellungen);
-  jede Rolle sieht nur, was sie darf. Auf Handys (unter 768 Pixel Breite) öffnet „☰ Menü“ das Menü.
+  die Einstellungen haben Untermenüs (Tafel, Kunden, Ausgabe, Verein, Mitarbeitende,
+  Systemsteuerung). Jede Rolle sieht nur, was sie darf. Auf Handys (unter 768 Pixel Breite) öffnet „☰ Menü“ das Menü.
 - Deutsche, mobilfreundliche Oberfläche (Django-Templates + HTMX, ohne externe CDNs).
 
 ## Aufbau
@@ -627,7 +628,7 @@ Weihnachtsgutscheine oder Schulranzen.
 ## Zusätzliche Module
 
 Programme, die nicht jede Tafel braucht, sind **zuschaltbare Module** (ADR 0049). Ein Admin
-schaltet sie unter „Einstellungen → Tafel → Zusätzliche Module“ ein. Ausgeschaltete Module
+schaltet sie unter „Einstellungen → Tafel → Tafel und Module → Zusätzliche Module“ ein. Ausgeschaltete Module
 erscheinen nirgends (kein Menü, keine Seiten, keine Rechte, keine Hilfe); ihre Daten bleiben
 erhalten. Welche bisherigen Zusatzprogramme als Module kommen, steht in `docs/altprogramme.md`.
 

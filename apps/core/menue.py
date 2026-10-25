@@ -53,8 +53,9 @@ def menue(request) -> list[dict]:
     for m in module.alle():
         if m.kennung in an and m.menue:
             for titel, eintraege in m.menue(_eintrag):
-                if titel == "Einstellungen":
-                    modul_einstellungen += eintraege
+                if titel.startswith("Einstellungen"):
+                    gruppe = titel.partition("/")[2] or "Module"
+                    modul_einstellungen.append((gruppe, eintraege))
                 else:
                     bereich(titel, eintraege)
     stellen = _eintrag("Ausgabestellen", "kunden:ausgabestellen")
@@ -110,37 +111,66 @@ def menue(request) -> list[dict]:
         *([(None, _eintrag("Meine Arbeitszeit", "personal:meine_arbeitszeit"))]
           if darf_stempeln(b) else []),
     ])  # fmt: skip
-    bereich("Einstellungen", [
-        ("einstellungen.tafel", _eintrag("Tafel", "core:einstellungen", genau=True)),
-        ("einstellungen.rollen", _eintrag("Rollen und Rechte", "konten:rollen")),
-        ("einstellungen.mail", _eintrag("E-Mail", "core:mail_einstellungen")),
-        ("einstellungen.kundenstamm",
-         _eintrag("Kundenstamm und Zusatzfelder", "kunden:einstellungen")),
-        ("einstellungen.listen", _eintrag("Kundengruppen", *_liste("kundengruppen"))),
-        ("einstellungen.listen", _eintrag("Einkommensarten", *_liste("einkommensarten"))),
-        ("einstellungen.listen", _eintrag("Notiz-Vorlagen", *_liste("notizvorlagen"))),
-        ("einstellungen.listen", _eintrag("Dokumentarten", *_liste("dokumentarten"))),
-        ("einstellungen.listen", _eintrag("Adresskategorien", *_liste("adresskategorien"))),
-        ("einstellungen.ausweis", _eintrag("Kundenausweis", "kunden:ausweis_gestalten")),
-        ("einstellungen.ausgabe",
-         _eintrag("Ausgabe, Ampel und Beiträge", "ausgabe:einstellungen")),
-        ("einstellungen.listen", _eintrag("Beitragsfreie Zeiträume", *_liste("beitragsfrei"))),
-        ("einstellungen.antraege", _eintrag("Anträge", "antraege:einstellungen")),
-        ("einstellungen.mitglieder", _eintrag("Mitglieder", "mitglieder:einstellungen")),
-        ("einstellungen.spenden",
-         _eintrag("Spenden und Zuwendungsbestätigungen", "spenden:einstellungen")),
-        ("einstellungen.personal",
-         _eintrag("Mitarbeitende und Dokumente", "konten:personal_einstellungen")),
-        ("einstellungen.arbeitszeit",
-         _eintrag("Arbeitszeit", "personal:arbeitszeit_einstellungen")),
-        *modul_einstellungen,
-        ("protokoll.sehen", _eintrag("Änderungsprotokoll", "core:protokoll")),
-        ("system.sicherung", _eintrag("Sicherungen", "core:sicherungen")),
-        ("system.update", _eintrag("Update", "core:update")),
-        ("daten.exportieren" if "daten.exportieren" in darf else "daten.importieren",
-         _eintrag("Export und Zurücklesen", "core:datensicherung")),
-        *([(None, _eintrag("Django-Verwaltung", "admin:index"))] if b.is_staff else []),
-    ])  # fmt: skip
+    # Einstellungen in Untermenüs; Module hängen ihre Einträge über "Einstellungen/<Gruppe>" an
+    export = "daten.exportieren" if "daten.exportieren" in darf else "daten.importieren"
+    gruppen_einstellungen = {
+        "Tafel": [
+            ("einstellungen.tafel", _eintrag("Tafel und Module", "core:einstellungen", genau=True)),
+            ("einstellungen.mail", _eintrag("E-Mail", "core:mail_einstellungen")),
+        ],
+        "Kunden": [
+            ("einstellungen.kundenstamm",
+             _eintrag("Kundenstamm und Zusatzfelder", "kunden:einstellungen")),
+            ("einstellungen.listen", _eintrag("Kundengruppen", *_liste("kundengruppen"))),
+            ("einstellungen.listen", _eintrag("Einkommensarten", *_liste("einkommensarten"))),
+            ("einstellungen.listen", _eintrag("Notiz-Vorlagen", *_liste("notizvorlagen"))),
+            ("einstellungen.listen", _eintrag("Dokumentarten", *_liste("dokumentarten"))),
+            ("einstellungen.ausweis", _eintrag("Kundenausweis", "kunden:ausweis_gestalten")),
+            ("einstellungen.antraege", _eintrag("Anträge", "antraege:einstellungen")),
+        ],
+        "Ausgabe": [
+            ("einstellungen.ausgabe",
+             _eintrag("Ausgabe, Ampel und Beiträge", "ausgabe:einstellungen")),
+            ("einstellungen.listen",
+             _eintrag("Beitragsfreie Zeiträume", *_liste("beitragsfrei"))),
+        ],
+        "Verein": [
+            ("einstellungen.listen", _eintrag("Adresskategorien", *_liste("adresskategorien"))),
+            ("einstellungen.mitglieder", _eintrag("Mitglieder", "mitglieder:einstellungen")),
+            ("einstellungen.spenden",
+             _eintrag("Spenden und Zuwendungsbestätigungen", "spenden:einstellungen")),
+        ],
+        "Mitarbeitende": [
+            ("einstellungen.rollen", _eintrag("Rollen und Rechte", "konten:rollen")),
+            ("einstellungen.personal",
+             _eintrag("Mitarbeitende und Dokumente", "konten:personal_einstellungen")),
+            ("einstellungen.arbeitszeit",
+             _eintrag("Arbeitszeit", "personal:arbeitszeit_einstellungen")),
+        ],
+        "Systemsteuerung": [
+            ("system.sicherung", _eintrag("Sicherungen", "core:sicherungen")),
+            (export, _eintrag("Export und Zurücklesen", "core:datensicherung")),
+            ("system.update", _eintrag("Update", "core:update")),
+            ("protokoll.sehen", _eintrag("Änderungsprotokoll", "core:protokoll")),
+            *([(None, _eintrag("Django-Verwaltung", "admin:index"))] if b.is_staff else []),
+        ],
+    }  # fmt: skip
+    for gruppe, eintraege in modul_einstellungen:
+        gruppen_einstellungen.setdefault(gruppe, []).extend(eintraege)
+    untergruppen = []
+    for titel, eintraege in gruppen_einstellungen.items():
+        sichtbar = [e for recht, e in eintraege if recht is None or recht in darf]
+        if sichtbar:
+            untergruppen.append({"titel": titel, "eintraege": sichtbar})
+    if untergruppen:
+        bereiche.append(
+            {
+                "titel": "Einstellungen",
+                "gruppen": untergruppen,
+                "zahl": None,
+                "eintraege": [e for g in untergruppen for e in g["eintraege"]],
+            }
+        )
     bereiche.append({"titel": "Hilfe", "eintraege": [_eintrag("Hilfe", "core:hilfe")]})
     bereiche.append({"titel": "Mein Konto", "eintraege": [
         _eintrag("Mein Konto", "konten:mein_konto", genau=True),
@@ -156,4 +186,6 @@ def menue(request) -> list[dict]:
                 e["aktiv"] = any(pfad.startswith(a) for a in e["auch"])
         bereich["offen"] = any(e["aktiv"] for e in bereich["eintraege"])
         bereich["einzeln"] = len(bereich["eintraege"]) == 1
+        for gruppe in bereich.get("gruppen", []):
+            gruppe["offen"] = any(e["aktiv"] for e in gruppe["eintraege"])
     return bereiche
