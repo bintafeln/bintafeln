@@ -226,7 +226,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Erstes Modul: `aufruf` (ADR 0050, Regeln in `apps/aufruf/ablauf.py`, Seiten aus dem
   bisherigen Aufrufsystem in `apps/aufruf/templates/aufruf/`, Geräte ohne Anmeldung nur über
   den Schlüssel im Link). `warteliste` (ADR 0051, Regeln in `apps/warteliste/ablauf.py`,
-  `Wartestand` je Antrag). Hooks `Modul.fristen`, `Modul.einlass`, `Modul.auskunft_antrag`.
+  `Wartestand` je Antrag). `wetter` (ADR 0053, Abruf bei Open-Meteo nur im Server in
+  `apps/wetter/wetter.py`, in Tests `wetter._json` ersetzen). Hooks `Modul.fristen`,
+  `Modul.einlass`, `Modul.auskunft_antrag`, `Modul.kopfzeile`. Programmname nur in
+  `bintafeln/programm.py`; die Kopfzeile kürzt `static/js/kopfzeile.js` über `.kuerz-1…5`.
   Übersicht der übernommenen Altprogramme: `docs/altprogramme.md`.
 - Shell-Skripte müssen `shellcheck` bestehen. Änderungen an Sicherung oder Wiederherstellung
   deckt `tests/sicherung_e2e.sh` ab (läuft in CI im Job `docker`).

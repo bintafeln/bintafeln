@@ -689,6 +689,24 @@ Ersetzt das bisherige Neuanmeldungs-Programm (ADR 0051) und arbeitet direkt mit 
   „Einstellungen → Kunden → Warteliste und Einladungen“. Einladungen stehen in der Auskunft zum
   Antrag.
 
+### Wetter in der Kopfzeile
+
+Zeigt rechts in der Kopfzeile Außentemperatur und Wetter der Ausgabestelle, z. B. „☁️ 12 °C
+bedeckt“ (ADR 0053). Ort ist die Ausgabestelle, der die angemeldete Person zugeordnet ist, sonst
+die erste aktive mit PLZ oder Ort.
+
+- Quelle: [Open-Meteo](https://open-meteo.com/) (kostenlos, ohne Schlüssel). Der **Server** fragt
+  an, höchstens alle 30 Minuten je Ausgabestelle, und übermittelt nur PLZ und Ort. Der App-Container
+  braucht dafür Zugang ins Internet (https); ohne ihn fehlt die Anzeige einfach.
+- Die Anzeige wird nachgeladen; die Seiten werden dadurch nicht langsamer.
+
+### Kopfzeile
+
+Links Menü, Name der Tafel und Suche, daneben der Programmname (einstellbar an einer Stelle:
+`bintafeln/programm.py`), rechts Beiträge der Module (Wetter) und „Abmelden“. Reicht der Platz
+nicht, kürzt `static/js/kopfzeile.js` die Zeile nach und nach: Untertitel des Programms,
+Wettertext, Programmname, Name der Tafel (wenn ein Logo da ist), das Wort „Menü“.
+
 ## Adressbuch
 
 „Adressen → Adressbuch“ (Rechte „Adressbuch ansehen …“, „Adressen anlegen und bearbeiten“,
@@ -1157,6 +1175,7 @@ apps/konten/        Benutzer, Rollen, Anmeldung, Zwei-Faktor
 apps/kunden/        Kundenstamm: Haushalte, Personen, Zusatzfelder, Einstellungen
 apps/aufruf/        Modul Aufruf (Monitor, Handy, Kiosk); Module beschreibt apps/core/module.py
 apps/warteliste/    Modul Warteliste (Einladungen zu Terminen, Streichungen)
+apps/wetter/        Modul Wetter (Außentemperatur der Ausgabestelle in der Kopfzeile)
 templates/          Django-Templates
 static/             CSS und HTMX
 docker/             Caddyfile und Start-Skript des App-Containers

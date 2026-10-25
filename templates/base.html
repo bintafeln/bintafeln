@@ -3,19 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block titel %}{% endblock %}{% if tafel.name %} – {{ tafel.name }}{% else %} – bintafeln{% endif %}</title>
+  <title>{% block titel %}{% endblock %}{% if tafel.name %} – {{ tafel.name }}{% else %} – {{ programm.name }}{% endif %}</title>
   <link rel="stylesheet" href="{% static 'css/bintafeln.css' %}">
   {% include "includes/farben.html" %}
   <script src="{% static 'js/htmx.min.js' %}" defer></script>
+  <script src="{% static 'js/kopfzeile.js' %}" defer></script>
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'{% if menue %} class="mit-menue"{% endif %}>
   {% block hintergrund %}{% if tafel.hintergrund_bild and tafel.hintergrund_staerke %}<div class="hintergrund" aria-hidden="true" style="background-image: url('{{ tafel.hintergrund_bild.url }}'); opacity: {{ tafel.hintergrund_deckkraft }};"></div>{% endif %}{% endblock %}
   {% if menue %}<input type="checkbox" id="menue-schalter" class="menue-schalter" aria-hidden="true" tabindex="-1">{% endif %}
   <header class="kopf">
-    {% if menue %}<label for="menue-schalter" class="menue-knopf" role="button" aria-label="Menü ein- oder ausblenden">☰ Menü</label>{% endif %}
-    <a class="marke" href="{% url 'core:start' %}">
+    {% if menue %}<label for="menue-schalter" class="menue-knopf" role="button" aria-label="Menü ein- oder ausblenden">☰<span class="kuerz-5"> Menü</span></label>{% endif %}
+    <a class="marke" href="{% url 'core:start' %}"{% if tafel.name %} title="{{ tafel.name }}"{% endif %}>
       {% if tafel.logo %}<img src="{{ tafel.logo.url }}" alt="" class="logo">{% endif %}
-      <span>{{ tafel.name|default:"bintafeln" }}</span>
+      <span{% if tafel.logo %} class="kuerz-4"{% endif %}>{{ tafel.name|default:programm.name }}</span>
     </a>
     {% if user.is_authenticated and menue %}
     <form method="get" action="{% url 'core:suche' %}" class="kopf-suche" role="search">
@@ -27,14 +28,19 @@
       <div id="kopf-suche-liste" aria-live="polite"></div>
     </form>
     {% endif %}
-    {% if user.is_authenticated %}
-    <nav class="navigation" aria-label="Konto">
-      <form method="post" action="{% url 'konten:abmelden' %}" class="inline">
-        {% csrf_token %}
-        <button type="submit" class="link">Abmelden</button>
-      </form>
-    </nav>
-    {% endif %}
+    {# Wird die Zeile zu eng, blendet static/js/kopfzeile.js nach und nach .kuerz-1 … .kuerz-5 aus #}
+    <span class="kopf-programm kuerz-3" title="{{ programm.name }} – {{ programm.untertitel }}"><strong>{{ programm.name }}</strong><span class="kuerz-1"> – {{ programm.untertitel }}</span></span>
+    <div class="kopf-rechts">
+      {% for vorlage in kopf_module %}{% include vorlage %}{% endfor %}
+      {% if user.is_authenticated %}
+      <nav class="navigation" aria-label="Konto">
+        <form method="post" action="{% url 'konten:abmelden' %}" class="inline">
+          {% csrf_token %}
+          <button type="submit" class="link">Abmelden</button>
+        </form>
+      </nav>
+      {% endif %}
+    </div>
   </header>
 
   {% if demo %}<p class="demo-hinweis">Demoversion – alle Daten sind erfunden und werden jede Nacht zurückgesetzt. Bitte keine echten Daten eingeben.</p>{% endif %}
@@ -78,7 +84,7 @@
 
   <footer class="fuss">
     {% if tafel.anschrift %}<span>{{ tafel.anschrift }}</span>{% endif %}
-    <span>bintafeln – freie Software (AGPL-3.0)</span>
+    <span>{{ programm.name }} – freie Software (AGPL-3.0)</span>
     {% if "system.status" in rechte %}<span class="version">Version {{ version }}</span>{% endif %}
   </footer>
 </body>
