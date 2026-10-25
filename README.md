@@ -362,7 +362,10 @@ Regeln:
 
 Im Seitenkopf steht auf jeder Seite ein **Suchfeld**. Ab 3 Zeichen erscheinen die Treffer
 darunter, Enter öffnet eine Ergebnisseite. Ohne Kürzel sucht es **Seiten des Programms**
-(Menüpunkte, z. B. „ausgabestellen“ führt zu „Kunden → Ausgabestellen“), Kunden (Vor- und
+(Menüpunkte, z. B. „ausgabestellen“ führt zu „Kunden → Ausgabestellen“), **Listen und
+Einstellungen** (Ausgabestellen, Kundengruppen, Einkommens- und Dokumentarten, Notiz- und
+Serienbrief-Vorlagen, Rollen, Mitgliedsnummern, Belegnummern von Spenden, aus Modulen z. B.
+Selbstabholer und Termine), Kunden (Vor- und
 Nachname, auch Teile wie „mül“, Kundennummer, Abholberechtigte), Anträge, Adressen,
 Mitarbeitende und **Abschnitte des Handbuchs**. Ein Kürzel mit Leerzeichen davor sucht nur in
 einem Bereich:
@@ -378,6 +381,7 @@ einem Bereich:
 | `an` | Anträge (Name, Antragsnummer) | `an müller` |
 | `m` | Mitarbeitende | `m anna` |
 | `p` | Programm (Menüpunkte) | `p ausgabestellen` |
+| `l` | Listen und Einstellungen | `l zentrale` |
 | `h` | Handbuch | `h ampel` |
 
 `?` im Suchfeld zeigt die Kürzel. Jeder Bereich erscheint nur mit dem passenden Recht; wer einer
@@ -655,8 +659,8 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
 - **Immer aktuell:** Neue Haushalte werden während des Tages fair einsortiert, entfernte fallen
   heraus. Wer heute schon am Einlass war (Abholung gebucht, z. B. mit Ausnahme vorgezogen),
   verschwindet aus der Warteschlange.
-- **Steuern** (Recht „Kunden aufrufen“, Vorgabe Büro und Ausgabe): Menü „Aufruf → Aufruf
-  steuern“ am PC oder die Handy-Steuerung. Weiter, Zurück, Abfrage einer Nummer und „zu spät
+- **Steuern** (Recht „Kunden aufrufen“, Vorgabe Büro und Ausgabe): Menü
+  „Kundennummernanzeige“ (öffnet einen neuen Tab) am PC oder die Handy-Steuerung. Weiter, Zurück, Abfrage einer Nummer und „zu spät
   gekommen“ (so viele wartende Plätze nach hinten wie eingestellt). Reihenfolge des Tages als CSV.
 - **Geräte im Wartebereich:** Monitor (Nummern, Infos im Wechsel, Ton, Layout per Zahnrad),
   Nummern-Anzeige, Kiosk (Karte scannen, Antwort auf Deutsch und in der Sprache zur
@@ -798,6 +802,15 @@ Adresse im Adressbuch (ADR 0045).
   Herkunft (Privat-/Betriebsvermögen), Unterlagen zur Wertermittlung.
 - **Übersicht** je Jahr mit Summen, Geldspenden je Monat, Filter und CSV-Export; auf der Seite
   einer Adresse deren Spenden und Summen je Jahr.
+- **Import** aus einer CSV-Datei (ADR 0055), z. B. dem Export eines Vereinsportals: Prüfbericht
+  vorab, Spender über E-Mail oder Name+PLZ zugeordnet bzw. neu angelegt, eine **Belegnummer**
+  verhindert doppelte Spenden bei erneutem Import. Spalten und Beispiel:
+  [docs/beispiele/spenden/spenden.csv](docs/beispiele/spenden/spenden.csv).
+- **Dankesbriefe** (ADR 0056) aus einer Serienbrief-Vorlage, getrennt für Einfach- und
+  Mehrfachspender, mit Zuwendungsbestätigung aus bintafeln (fehlende werden ausgestellt) und/oder
+  **hochgeladenen Belegen** aus einem anderen Programm (z. B. Vereinsportal; Zuordnung über die
+  Belegnummer im Dateinamen oder von Hand). Ein PDF für den Druck oder E-Mails mit PDF-Anhang an
+  Spender mit E-Mail-Einwilligung; danach gelten die Spenden als bedankt.
 - **Zuwendungsbestätigungen** als PDF nach den amtlichen Mustern: Einzel-, Sammel- (mit Anlage)
   und Sachbestätigung, Betrag in Ziffern und Worten, fortlaufende Nummer. „Alle ausstellen“
   erstellt am Jahresende für alle Spender auf einmal. Jede Spende wird nur einmal bestätigt;

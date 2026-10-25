@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block titel %}Spenden importieren{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'spenden:liste' %}">← Spenden</a></p>
+  <h1>Spenden importieren</h1>
+  {% if not bericht %}
+  <p>Eine CSV-Datei mit einer Kopfzeile, z. B. aus dem Export eines Vereinsportals oder einer Kontoliste
+    (in Excel „Speichern unter → CSV (Trennzeichen-getrennt)“). Bekannte Spalten:</p>
+  <p><code>{{ spalten|join:";" }}</code></p>
+  <ul>
+    <li>Pflicht: <code>datum</code> (TT.MM.JJJJ), <code>betrag</code> (z. B. 25,00) und <code>organisation</code>
+      oder <code>nachname</code>.</li>
+    <li><code>art</code>: Geld (leer) oder Sach; bei Sachspenden <code>beschreibung</code>.
+      <code>mitgliedsbeitrag</code>: ja/nein.</li>
+    <li><code>belegnummer</code>: z. B. die Nummer im Vereinsportal. Eine Spende mit einer Belegnummer, die es schon
+      gibt, wird nicht noch einmal angelegt – Sie können dieselbe Datei also gefahrlos erneut einlesen.</li>
+    <li>Der Spender wird über die E-Mail oder über Name und PLZ einer vorhandenen Adresse gefunden; sonst wird eine
+      neue Adresse angelegt. Vorhandene Adressen werden nicht verändert. Einwilligungen (Post, E-Mail) als Datum.</li>
+  </ul>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Prüfen</button>
+  </form>
+  {% else %}
+  <h2>Prüfbericht</h2>
+  <ul>
+    <li><strong>{{ bericht.spenden|length }}</strong> Spende{{ bericht.spenden|length|pluralize:"n" }} über zusammen
+      <strong>{{ bericht.summe }} €</strong> werden angelegt.</li>
+    <li>{{ bericht.vorhandene_spender|length }} Spender sind schon im Adressbuch, {{ bericht.neue_spender|length }}
+      werden neu angelegt.</li>
+    <li>{{ bericht.doppelt|length }} Spende{{ bericht.doppelt|length|pluralize:"n" }} mit bekannter Belegnummer (werden übersprungen).</li>
+    <li>{{ bericht.fehler|length }} Zeile{{ bericht.fehler|length|pluralize:"n" }} mit Fehlern (werden übersprungen).</li>
+    {% if bericht.unbekannte_spalten %}<li>Unbekannte Spalten (werden ignoriert): {{ bericht.unbekannte_spalten|join:", " }}</li>{% endif %}
+  </ul>
+  {% if bericht.fehler %}
+  <details open><summary>Fehler</summary><ul>{% for zeile, grund in bericht.fehler %}<li>Zeile {{ zeile }}: {{ grund }}</li>{% endfor %}</ul></details>
+  {% endif %}
+  {% if bericht.neue_spender %}
+  <details><summary>Neue Spender</summary><ul>{% for d in bericht.neue_spender.values %}<li>{% if d.organisation and not d.nachname %}{{ d.organisation }}{% else %}{{ d.vorname }} {{ d.nachname }}{% endif %}{% if d.ort %}, {{ d.plz }} {{ d.ort }}{% endif %}</li>{% endfor %}</ul></details>
+  {% endif %}
+  {% if bericht.doppelt %}
+  <details><summary>Schon vorhanden</summary><ul>{% for zeile, beleg in bericht.doppelt %}<li>Zeile {{ zeile }}: Belegnummer {{ beleg }}</li>{% endfor %}</ul></details>
+  {% endif %}
+  <div class="aktionsleiste">
+    {% if bericht.spenden %}
+    <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="schritt" value="uebernehmen">
+      <button type="submit" class="knopf">{{ bericht.spenden|length }} Spende{{ bericht.spenden|length|pluralize:"n" }} übernehmen</button></form>
+    {% endif %}
+    <a class="knopf knopf-abbrechen" href="{% url 'spenden:importieren' %}">Andere Datei wählen</a>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

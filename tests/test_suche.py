@@ -167,3 +167,73 @@ def test_handbuch_abschnitt_und_suchfeld(admin_client):
     assert any(" › " in t.titel for t in e.gruppen[0].treffer)
     e = admin_client.get(reverse("core:suche"), {"q": "k ampel", "nur": "hilfe"}).context["e"]
     assert e.kuerzel.bereich == "kunden"
+
+
+def test_listen_und_einstellungen_werden_gefunden(admin_client, admin, daten):
+    """„zentrale“ findet die Ausgabestelle, ihre Kundengruppen und alles, was so heißt."""
+    from decimal import Decimal
+
+    from apps.adressen.models import Adresse, AdressKategorie
+    from apps.core.models import TafelEinstellungen
+    from apps.konten.models import Rolle
+    from apps.kunden.models import Ausgabestelle, Dokumentart, Einkommensart, NotizVorlage
+    from apps.mitglieder.models import Mitglied
+    from apps.serienbriefe.models import Vorlage
+    from apps.spenden.models import Spende
+    from apps.warteliste.models import Termin
+    from apps.wochenuebersicht.models import Selbstabholer
+
+    zentrale = Ausgabestelle.objects.create(
+        name="Zentrale", strasse="Hauptstr. 1", ort="Musterstadt"
+    )
+    Kundengruppe.objects.create(name="Mi 12:30", kuerzel="Z1", ausgabestelle=zentrale,
+                                wochentage="Mi")  # fmt: skip
+    Einkommensart.objects.create(bezeichnung="Zentrale Leistung")
+    Dokumentart.objects.create(bezeichnung="Zentraler Bescheid")
+    NotizVorlage.objects.create(text="Bitte in der Zentrale melden")
+    AdressKategorie.objects.create(name="Zentrale Partner")
+    Rolle.objects.filter(gruppe__name=rollen.BUERO).update(beschreibung="Büro in der Zentrale")
+    Vorlage.objects.create(name="Zentrale Info", betreff="Neues aus der Zentrale", text="x")
+    a = Adresse.objects.create(art="person", vorname="Max", nachname="Probe")
+    Mitglied.objects.create(adresse=a, nummer="ZENTRALE-1", art="aktiv",
+                            eintritt=dt.date(2020, 1, 1))  # fmt: skip
+    Spende.objects.create(adresse=a, datum=dt.date(2025, 1, 1), betrag=Decimal("5"),
+                          belegnummer="ZENTRALE-7")  # fmt: skip
+    Selbstabholer.objects.create(name="Zentrale Frauenhaus", tage="Mi")
+    Termin.objects.create(datum=dt.date(2026, 11, 1), von=dt.time(10), ort="Zentrale, Raum 2")
+
+    def titel(q):
+        e = admin_client.get(reverse("core:suche"), {"q": q}).context["e"]
+        g = next((g for g in e.gruppen if g.bereich == "listen"), None)
+        return [t.titel for t in g.treffer] if g else []
+
+    gefunden = titel("l zentrale")
+    for erwartet in ("Zentrale", "Z1 – Mi 12:30", "Zentrale Leistung", "Zentraler Bescheid",
+                     "Bitte in der Zentrale melden", "Zentrale Partner", rollen.BUERO,
+                     "Zentrale Info", "Mitglied ZENTRALE-1 · Max Probe",
+                     "Spende ZENTRALE-7 · Max Probe"):  # fmt: skip
+        assert erwartet in gefunden, erwartet
+    assert "Zentrale Frauenhaus" not in gefunden  # Modul aus
+    TafelEinstellungen.objects.update(module=["wochenuebersicht", "warteliste"])
+    gefunden = titel("l zentrale")
+    assert "Zentrale Frauenhaus" in gefunden and any(t.startswith("Termin") for t in gefunden)
+    e = admin_client.get(reverse("core:suche"), {"q": "zentrale"}).context["e"]
+    assert "listen" in [g.bereich for g in e.gruppen]
+    url = next(t.url for g in e.gruppen for t in g.treffer if t.titel == "Zentrale")
+    assert url == reverse("kunden:ausgabestelle", args=[zentrale.pk])
+
+
+def test_listen_nur_mit_rechten(admin, client, benutzer_mit_rolle, anmelden, daten):
+    from apps.core.models import TafelEinstellungen
+    from apps.kunden.models import Ausgabestelle
+    from apps.warteliste.models import Termin
+    from apps.wochenuebersicht.models import Selbstabholer
+
+    Ausgabestelle.objects.create(name="Zentrale")
+    Kundengruppe.objects.create(name="Zentrale Mi", wochentage="Mi")
+    Selbstabholer.objects.create(name="Zentrale Frauenhaus")
+    Termin.objects.create(datum=dt.date(2026, 11, 1), von=dt.time(10), ort="Zentrale")
+    TafelEinstellungen.objects.update(module=["wochenuebersicht", "warteliste"])
+    b = benutzer_mit_rolle("kim", rollen.KIOSK)
+    titel = [t.titel for g in suche.suchen(b, "l zentrale").gruppen for t in g.treffer]
+    assert titel == []

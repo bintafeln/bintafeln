@@ -137,17 +137,30 @@ class Spende(models.Model):
         help_text="Z. B. Rechnung oder Gutachten (Sachspende).",
     )  # fmt: skip
     zweck = models.CharField("Zweck / Anmerkung", max_length=200, blank=True)
+    belegnummer = models.CharField(
+        "Belegnummer", max_length=50, blank=True,
+        help_text="Z. B. die Nummer im Vereinsportal oder auf dem Kontoauszug. Beim Import wird "
+        "eine Spende mit derselben Belegnummer nicht noch einmal angelegt.",
+    )  # fmt: skip
     bestaetigung = models.ForeignKey(
         Zuwendungsbestaetigung, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="spenden", editable=False,
     )  # fmt: skip
     eingetragen_von = models.CharField("Eingetragen von", max_length=150, blank=True)
     eingetragen_am = models.DateTimeField("Eingetragen am", auto_now_add=True)
+    bedankt_am = models.DateField(
+        "Dankesbrief am", null=True, blank=True, editable=False,
+        help_text="Wird beim Erstellen der Dankesbriefe gesetzt (ADR 0056).",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Spende"
         verbose_name_plural = "Spenden"
         ordering = ["-datum", "-pk"]
+        constraints = [
+            models.UniqueConstraint(fields=["belegnummer"], condition=~models.Q(belegnummer=""),
+                                    name="spende_belegnummer_eindeutig"),
+        ]  # fmt: skip
 
     def __str__(self):
         return f"{self.get_art_display()} vom {self.datum:%d.%m.%Y}"
@@ -164,6 +177,32 @@ class Spende(models.Model):
     def bestaetigt(self) -> bool:
         """Gültig bestätigt; eine stornierte Bestätigung zählt nicht."""
         return self.bestaetigung_id is not None and self.bestaetigung.storniert_am is None
+
+
+class SpendenBeleg(models.Model):
+    """Beleg aus einem anderen Programm, z. B. eine Zuwendungsbestätigung aus dem Vereinsportal
+    (ADR 0056). Verschlüsselt über ``apps.core.privatdateien``; liegt dem Dankesbrief bei."""
+
+    ORDNER = "spendenbelege"
+
+    adresse = models.ForeignKey(Adresse, on_delete=models.CASCADE, related_name="spendenbelege",
+                                null=True, blank=True, verbose_name="Spender")  # fmt: skip
+    spende = models.ForeignKey(Spende, on_delete=models.SET_NULL, related_name="belege",
+                               null=True, blank=True)  # fmt: skip
+    jahr = models.PositiveIntegerField("Jahr")
+    dateiname = models.CharField("Dateiname", max_length=200)
+    datei = models.CharField(max_length=100, editable=False)
+    hochgeladen_am = models.DateTimeField("Hochgeladen am", auto_now_add=True)
+    hochgeladen_von = models.CharField("Hochgeladen von", max_length=150, blank=True)
+    beigelegt_am = models.DateField("Beigelegt am", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Spendenbeleg"
+        verbose_name_plural = "Spendenbelege"
+        ordering = ["-hochgeladen_am"]
+
+    def __str__(self):
+        return self.dateiname
 
 
 def naechste_nummer() -> int:
@@ -185,3 +224,4 @@ def summe(spenden) -> Decimal:
 auditlog.register(Spende)
 auditlog.register(Zuwendungsbestaetigung)
 auditlog.register(SpendenEinstellungen)
+auditlog.register(SpendenBeleg, exclude_fields=["datei"])

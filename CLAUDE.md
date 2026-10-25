@@ -229,8 +229,11 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `Wartestand` je Antrag). `wetter` (ADR 0053, Abruf bei Open-Meteo nur im Server in
   `apps/wetter/wetter.py`, in Tests `wetter._json` ersetzen). `wochenuebersicht` (ADR 0054,
   Rechnung in `apps/wochenuebersicht/auswertung.py`, PDF hoch/quer in `pdf.py`). Hooks `Modul.fristen`,
-  `Modul.einlass`, `Modul.auskunft_antrag`, `Modul.kopfzeile`. Programmname nur in
+  `Modul.einlass`, `Modul.auskunft_antrag`, `Modul.kopfzeile`, `Modul.suchen`. Programmname nur in
   `bintafeln/programm.py`; die Kopfzeile kürzt `static/js/kopfzeile.js` über `.kuerz-1…5`.
   Übersicht der übernommenen Altprogramme: `docs/altprogramme.md`.
+- Spenden: Import in `apps/spenden/importieren.py` (ADR 0055, `belegnummer` gegen Dubletten),
+  Dankesbriefe und hochgeladene Belege in `apps/spenden/dank.py` (ADR 0056; PDFs zusammenfügen
+  mit `pypdf`, Mail-Anhänge über `mail.senden(..., anhaenge=…)`).
 - Shell-Skripte müssen `shellcheck` bestehen. Änderungen an Sicherung oder Wiederherstellung
   deckt `tests/sicherung_e2e.sh` ab (läuft in CI im Job `docker`).

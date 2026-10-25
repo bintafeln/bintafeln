@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block titel %}Dankesbriefe{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'spenden:liste' %}">← Spenden</a></p>
+  <h1>Dankesbriefe an Spender</h1>
+  <p class="hinweis">Je Spender ein Brief aus einer <a href="{% url 'serienbriefe:vorlagen' %}">Serienbrief-Vorlage</a>,
+    auf Wunsch mit Zuwendungsbestätigung aus bintafeln und mit hochgeladenen Belegen, z. B. aus dem Vereinsportal
+    (<a href="{% url 'spenden:belege' %}">Belege hochladen</a>). Erst „Vorschau“, dann PDF erstellen bzw. senden;
+    danach gelten die Spenden als bedankt.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <div class="aktionsleiste"><button type="submit" name="schritt" value="vorschau" class="knopf">Vorschau</button></div>
+
+    {% if danke is not None %}
+    <h2>{{ danke|length }} Spender</h2>
+    {% if danke %}
+    <div class="tabelle-rahmen">
+      <table class="tabelle kompakt">
+        <thead><tr><th>Spender</th><th class="zahl">Spenden im Jahr</th><th>neu bedankt</th><th>Bestätigung</th><th class="zahl">Belege</th><th>Versand</th></tr></thead>
+        <tbody>
+          {% for x in danke %}
+          <tr>
+            <td><a href="{% url 'adressen:adresse' x.adresse.pk %}">{{ x.adresse.name }}</a></td>
+            <td class="zahl">{{ x.anzahl_im_jahr }}</td>
+            <td>{% for s in x.spenden %}{{ s.datum|date:"d.m." }}{% if s.betrag %} ({{ s.betrag }} €){% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+            <td>{% for b in x.bestaetigungen %}Nr. {{ b.nummer }}{% if not forloop.last %}, {% endif %}{% empty %}<span class="hinweis">{% if d.mit_bestaetigungen %}wird ausgestellt{% else %}–{% endif %}</span>{% endfor %}</td>
+            <td class="zahl">{{ x.belege|length }}</td>
+            <td>{% if x in per_mail %}E-Mail{% else %}Brief{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="aktionsleiste">
+      {% if per_brief %}<button type="submit" name="schritt" value="pdf" class="knopf">{{ per_brief|length }} Brief{{ per_brief|length|pluralize:"e" }} als PDF erstellen</button>{% endif %}
+      {% if per_mail %}{% if mail_bereit %}<button type="submit" name="schritt" value="senden" class="knopf">{{ per_mail|length }} E-Mail{{ per_mail|length|pluralize:"s" }} senden</button>{% else %}<span class="hinweis">Für E-Mails bitte zuerst unter „Einstellungen → Tafel → E-Mail“ einen Mailserver einrichten.</span>{% endif %}{% endif %}
+    </div>
+    <p class="hinweis">Zuwendungsbestätigungen für Sachspenden stellen Sie wie bisher einzeln aus.</p>
+    {% else %}
+    <p class="hinweis">Keine passenden Spenden.</p>
+    {% endif %}
+    {% endif %}
+  </form>
+</section>
+{% endblock %}

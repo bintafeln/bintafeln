@@ -1,5 +1,6 @@
 """Spenden und Zuwendungsbestätigungen (ADR 0045)."""
 
+import base64
 import csv
 import io
 import re
@@ -15,12 +16,17 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
+from apps.adressen.forms import ImportForm
 from apps.adressen.models import Adresse
+from apps.core import geheimnis, mail, privatdateien
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
+from apps.konten.views import nicht_in_demo
 from apps.spenden import bestaetigung as bst
-from apps.spenden.forms import SpendeForm, SpendenEinstellungenForm
-from apps.spenden.models import Spende, SpendenEinstellungen, Zuwendungsbestaetigung
+from apps.spenden import dank as danken
+from apps.spenden import importieren
+from apps.spenden.forms import DankForm, SpendeForm, SpendenEinstellungenForm
+from apps.spenden.models import Spende, SpendenBeleg, SpendenEinstellungen, Zuwendungsbestaetigung
 
 
 def _jahr(request) -> int:
@@ -125,6 +131,50 @@ def bearbeiten(request, pk=None):
     return render(request, "spenden/bearbeiten.html", {"form": form, "s": s})
 
 
+SITZUNG_IMPORT = "spenden_import"
+
+
+def _bericht_aus_sitzung(request):
+    gespeichert = request.session.get(SITZUNG_IMPORT)
+    if not gespeichert:
+        return None
+    roh = geheimnis.bytes_entschluesseln(base64.b64decode(gespeichert))
+    return importieren.pruefen(importieren.text_lesen(roh)) if roh else None
+
+
+@never_cache
+@rollen.recht_erforderlich("spenden.erfassen")
+def importieren_ansicht(request):
+    """CSV prüfen (Bericht), dann übernehmen; dazwischen verschlüsselt in der Sitzung."""
+    form = ImportForm(request.POST or None, request.FILES or None)
+    bericht = None
+    if request.method == "POST" and request.POST.get("schritt") == "uebernehmen":
+        try:
+            bericht = _bericht_aus_sitzung(request)
+        except importieren.ImportFehler:
+            bericht = None
+        request.session.pop(SITZUNG_IMPORT, None)
+        if bericht is None:
+            messages.error(request, "Keine geprüfte Datei vorhanden. Bitte erneut hochladen.")
+            return redirect("spenden:importieren")
+        anzahl = importieren.uebernehmen(bericht, request.user.get_username())
+        messages.success(request, f"{anzahl} Spende{'n' if anzahl != 1 else ''} übernommen.")
+        return redirect("spenden:liste")
+    if request.method == "POST" and form.is_valid():
+        roh = form.cleaned_data["datei"].read()
+        try:
+            bericht = importieren.pruefen(importieren.text_lesen(roh))
+        except importieren.ImportFehler as fehler:
+            messages.error(request, str(fehler))
+            return redirect("spenden:importieren")
+        request.session[SITZUNG_IMPORT] = base64.b64encode(
+            geheimnis.bytes_verschluesseln(roh)
+        ).decode()
+    return render(request, "spenden/importieren.html", {
+        "form": form, "bericht": bericht, "spalten": importieren.SPALTEN,
+    })  # fmt: skip
+
+
 @require_POST
 @rollen.recht_erforderlich("spenden.erfassen")
 def loeschen(request, pk):
@@ -210,3 +260,152 @@ def einstellungen(request):
         messages.success(request, "Einstellungen gespeichert.")
         return redirect("spenden:einstellungen")
     return render(request, "spenden/einstellungen.html", {"form": form})
+
+
+# --- Dankesbriefe (ADR 0056) ---------------------------------------------------------------------
+
+
+def _versand_vermerken(request, form, anzahl, art, danke):
+    from apps.serienbriefe.models import Versand
+
+    d = form.cleaned_data
+    Versand.objects.create(
+        von=request.user.get_username(), art=art, vorlage=d["vorlage"].name,
+        betreff=d["vorlage"].betreff, anzahl=anzahl,
+        auswahl=f"Dankesbriefe {d['jahr']} · {dict(danken.ARTEN)[d['art']]}"[:300],
+        empfaenger=[f"a:{x.adresse.pk}" for x in danke],
+    )  # fmt: skip
+
+
+def _allgemein(jahr):
+    from apps.serienbriefe.views import _allgemein as allgemein
+
+    return allgemein(jahr)
+
+
+@never_cache
+@rollen.recht_erforderlich("spenden.bestaetigen")
+def dank(request):
+    daten = request.POST or None
+    form = DankForm(daten, jahre=_jahre(), initial={"jahr": _jahr(request)})
+    kontext = {"form": form, "mail_bereit": mail.eingerichtet()}
+    if not (request.method == "POST" and form.is_valid()):
+        return render(request, "spenden/dank.html", kontext)
+    d = form.cleaned_data
+    danke = danken.auswahl(d["jahr"], d["art"], d["nur_offen"])
+    per_mail = [x for x in danke if d["mail"] and x.per_mail]
+    per_brief = [x for x in danke if x not in per_mail]
+    schritt = request.POST.get("schritt", "vorschau")
+    von = request.user.get_username()
+    if schritt in ("pdf", "senden") and d["mit_bestaetigungen"]:
+        fehler = danken.fehlende_ausstellen(per_brief if schritt == "pdf" else per_mail,
+                                            d["jahr"], von)  # fmt: skip
+        if fehler:
+            for f in fehler[:5]:
+                messages.error(request, f)
+            return render(request, "spenden/dank.html", kontext | {"danke": danke})
+    if schritt == "pdf" and per_brief:
+        inhalt, warnungen = danken.briefe(per_brief, d["vorlage"], d["jahr"],
+                                          d["mit_bestaetigungen"], d["mit_belegen"],
+                                          _allgemein(d["jahr"]))  # fmt: skip
+        danken.vermerken(per_brief, d["mit_belegen"])
+        from apps.serienbriefe.models import Versand
+
+        _versand_vermerken(request, form, len(per_brief), Versand.Art.BRIEF, per_brief)
+        for w in warnungen[:10]:
+            messages.warning(request, w)
+        return pdf_antwort(inhalt, f"dankesbriefe-{d['jahr']}-{timezone.localdate():%Y-%m-%d}.pdf")
+    if schritt == "senden" and per_mail:
+        return _dank_senden(request, form, per_mail)
+    kontext |= {"danke": danke, "per_mail": per_mail, "per_brief": per_brief, "d": d}
+    return render(request, "spenden/dank.html", kontext)
+
+
+@nicht_in_demo
+def _dank_senden(request, form, per_mail):
+    from apps.serienbriefe import empfaenger as emp
+    from apps.serienbriefe.models import Versand
+
+    d = form.cleaned_data
+    allgemein, gesendet, fehler = _allgemein(d["jahr"]), [], []
+    for x in per_mail:
+        e = danken.werte(x, d["jahr"])
+        anhaenge = [
+            (n, inhalt, "application/pdf")
+            for n, inhalt in danken.anlagen(x, d["mit_bestaetigungen"], d["mit_belegen"])
+        ]
+        try:
+            mail.senden(emp.einsetzen(d["vorlage"].betreff, e, allgemein),
+                        emp.einsetzen(d["vorlage"].text, e, allgemein), [x.adresse.email],
+                        anhaenge=anhaenge)  # fmt: skip
+        except mail.MailFehler as grund:
+            fehler.append(f"{x.adresse.name}: {grund}")
+            if len(fehler) >= 3 and not gesendet:
+                break
+        else:
+            gesendet.append(x)
+    if gesendet:
+        danken.vermerken(gesendet, d["mit_belegen"])
+        _versand_vermerken(request, form, len(gesendet), Versand.Art.EMAIL, gesendet)
+        n = len(gesendet)
+        messages.success(request, f"{n} Dankesbrief{'e' if n != 1 else ''} per E-Mail gesendet. "
+                                  "Die übrigen jetzt als PDF erstellen.")  # fmt: skip
+    for f in fehler[:10]:
+        messages.error(request, f"Nicht gesendet: {f}")
+    return render(request, "spenden/dank.html", {"form": form, "mail_bereit": True})
+
+
+@never_cache
+@rollen.recht_erforderlich("spenden.bestaetigen")
+def belege(request):
+    """Belege aus anderen Programmen hochladen und Spendern zuordnen."""
+    jahr = _jahr(request)
+    von = request.user.get_username()
+    if request.method == "POST":
+        aktion = request.POST.get("aktion")
+        if aktion == "hochladen":
+            dateien = request.FILES.getlist("dateien")
+            zugeordnet, offen = 0, 0
+            for datei in dateien[:200]:
+                try:
+                    b = danken.hochladen(datei, jahr, von)
+                except privatdateien.DateiFehler as fehler:
+                    messages.error(request, f"{datei.name}: {fehler}")
+                    continue
+                zugeordnet, offen = (
+                    (zugeordnet + 1, offen) if b.adresse_id else (zugeordnet, offen + 1)
+                )
+            if zugeordnet or offen:
+                messages.success(request, f"{zugeordnet} Beleg(e) über die Belegnummer zugeordnet, "
+                                          f"{offen} bitte von Hand zuordnen.")  # fmt: skip
+        elif aktion == "zuordnen":
+            b = get_object_or_404(SpendenBeleg, pk=request.POST.get("beleg"))
+            adresse = Adresse.objects.filter(pk=request.POST.get("adresse") or 0).first()
+            if adresse:
+                b.adresse, b.spende = adresse, None
+                b.save(update_fields=["adresse", "spende"])
+                messages.success(request, f"„{b.dateiname}“ {adresse.name} zugeordnet.")
+        elif aktion == "loeschen":
+            b = get_object_or_404(SpendenBeleg, pk=request.POST.get("beleg"))
+            privatdateien.loeschen(SpendenBeleg.ORDNER, b.datei)
+            b.delete()
+            messages.success(request, f"„{b.dateiname}“ gelöscht.")
+        return redirect(f"{reverse('spenden:belege')}?jahr={jahr}")
+    spender = Adresse.objects.filter(spenden__datum__year=jahr).distinct().order_by(
+        "organisation", "nachname")  # fmt: skip
+    return render(request, "spenden/belege.html", {
+        "jahr": jahr, "jahre": _jahre(), "spender": spender,
+        "offen": SpendenBeleg.objects.filter(adresse__isnull=True),
+        "zugeordnet": SpendenBeleg.objects.filter(adresse__isnull=False, jahr=jahr)
+        .select_related("adresse", "spende"),
+    })  # fmt: skip
+
+
+@never_cache
+@rollen.recht_erforderlich("spenden.bestaetigen")
+def beleg(request, pk):
+    b = get_object_or_404(SpendenBeleg, pk=pk)
+    inhalt = privatdateien.lesen(SpendenBeleg.ORDNER, b.datei)
+    if inhalt is None:
+        raise Http404("Datei nicht mehr lesbar.")
+    return pdf_antwort(inhalt, danken._dateiname(b.dateiname))
