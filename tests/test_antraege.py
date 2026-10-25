@@ -282,6 +282,20 @@ def test_staatsangehoerigkeit_als_auswahl(client, offen):
     assert Antrag.objects.get().staatsangehoerigkeit == "Syrien"
 
 
+def test_staatsangehoerigkeit_je_person(client, offen):
+    offen.angehoerige = Abfrage.OPTIONAL
+    offen.save()
+    assert "p1_staatsangehoerigkeit" not in client.get(FORMULAR).content.decode()  # nicht abgefragt
+    offen.staatsangehoerigkeit = Abfrage.OPTIONAL
+    offen.save()
+    assert 'name="p1_staatsangehoerigkeit"' in client.get(FORMULAR).content.decode()
+    client.post(FORMULAR, daten(staatsangehoerigkeit="Deutschland", p1_vorname="Ali",
+                                p1_staatsangehoerigkeit="Türkei"))  # fmt: skip
+    a = Antrag.objects.get()
+    assert a.staatsangehoerigkeit == "Deutschland"
+    assert a.personen.get().staatsangehoerigkeit == "Türkei"
+
+
 def test_form_personen_leer_ohne_angehoerige(offen):
     offen.angehoerige = Abfrage.AUS
     form = AntragForm(texte=sprachen.texte("de"), einstellungen=offen)
@@ -295,7 +309,8 @@ def test_form_personen_leer_ohne_angehoerige(offen):
 def antrag(db):
     a = Antrag.objects.create(vorname="Erika", nachname="Beispiel", email="e@example.org",
                               kundennummer="1001", geburtsdatum=dt.date(1980, 2, 3))  # fmt: skip
-    AntragPerson.objects.create(antrag=a, vorname="Max", geburtsdatum=dt.date(2015, 5, 5))
+    AntragPerson.objects.create(antrag=a, vorname="Max", geburtsdatum=dt.date(2015, 5, 5),
+                                staatsangehoerigkeit="Polen")  # fmt: skip
     AntragPerson.objects.create(antrag=a, vorname="Mia")
     return a
 
@@ -360,12 +375,13 @@ def test_auskunft_und_export(admin_client, antrag, pdf_text):
     AntragAnhang.objects.create(antrag=antrag, name="bescheid.pdf", datei="x", typ="a",
                                 groesse=2048)  # fmt: skip
     inhalt = pdf_text(admin_client.get(reverse("antraege:auskunft", args=[antrag.pk])))
-    for wort in ("Erika", "Max", "Testanmerkung", "bescheid.pdf", "Ihre Rechte"):
+    for wort in ("Erika", "Max", "Polen", "Testanmerkung", "bescheid.pdf", "Ihre Rechte"):
         assert wort in inhalt, wort
     csv = admin_client.get(reverse("antraege:export")).content.decode("utf-8-sig")
     kopf, zeile = csv.splitlines()[:2]
     assert kopf.startswith("nummer;eingegangen_am")
-    assert antrag.nummer in zeile and "Max  2015-05-05 | Mia" in zeile and "1980-02-03" in zeile
+    assert antrag.nummer in zeile and "Max 2015-05-05 (Polen) | Mia" in zeile
+    assert "1980-02-03" in zeile
 
 
 def test_nur_admin_und_buero(client, admin, benutzer_mit_rolle, anmelden, antrag):

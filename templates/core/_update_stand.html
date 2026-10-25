@@ -1,4 +1,4 @@
-<div{% if s.beschaeftigt %} hx-get="{% url 'core:update' %}" hx-trigger="every 5s" hx-target="#update-stand"{% endif %}>
+<div{% if s.beschaeftigt or s.sucht %} hx-get="{% url 'core:update' %}" hx-trigger="every {% if s.beschaeftigt %}5{% else %}2{% endif %}s" hx-target="#update-stand"{% endif %}>
 {% if s.angefordert %}
 <p class="meldung" role="status">Update auf {{ s.angefordert }} ist angefordert und startet in wenigen Sekunden …</p>
 {% elif s.zustand == "laeuft" %}
@@ -9,6 +9,16 @@
 {% elif s.zustand == "fehler" %}
 <p class="meldung error" role="alert"><strong>{{ s.meldung }}</strong>{% if s.ende %} ({{ s.ende|date:"d.m.Y H:i" }} Uhr){% endif %}
   Der bisherige Stand läuft weiter, sofern das Protokoll nichts anderes sagt.</p>
+{% endif %}
+{% if not s.beschaeftigt %}
+{% if s.sucht and s.erreichbar %}
+<p class="meldung" role="status">Suche nach neuen Versionen läuft … (dauert meist nur wenige Sekunden)</p>
+{% elif neuere %}
+<p class="meldung update-neu" role="status"><strong>Neue Version {{ neuere.0.name }} verfügbar.</strong>
+  Installiert ist {{ s.installiert|default:"unbekannt" }}. Unten „Update starten“.</p>
+{% elif s.versionen and not s.abruf_fehler %}
+<p class="meldung" role="status">✓ bintafeln ist aktuell (Version {{ s.installiert }}).</p>
+{% endif %}
 {% endif %}
 {% if not s.erreichbar and not s.beschaeftigt %}
 <p class="meldung error" role="alert">Der Update-Dienst läuft noch nicht. Einmalig auf dem Server im Projektordner
@@ -23,7 +33,7 @@
   {% if s.abruf_fehler %}<p class="meldung error">{{ s.abruf_fehler }} Ist der Server mit dem Internet verbunden? Solange das
     Repository nicht öffentlich ist, braucht der Server dafür Zugangsdaten.</p>{% endif %}
   <form method="post" action="{% url 'core:update_abrufen' %}" class="inline">
-    {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig"{% if not s.erreichbar %} disabled{% endif %}>Jetzt nach neuen Versionen suchen</button>
+    {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig"{% if not s.erreichbar or s.sucht %} disabled{% endif %}>{% if s.sucht %}Suche läuft …{% else %}Jetzt nach neuen Versionen suchen{% endif %}</button>
   </form>
 </section>
 
@@ -66,7 +76,7 @@
 
 {% if s.protokoll %}
 <section class="karte breit">
-  <details{% if s.zustand == "fehler" %} open{% endif %}>
+  <details id="update-protokoll"{% if s.zustand == "fehler" %} open{% endif %}>
     <summary>Protokoll des letzten Updates{% if s.version %} ({{ s.version }}){% endif %}</summary>
     <pre class="protokoll">{{ s.protokoll }}</pre>
   </details>

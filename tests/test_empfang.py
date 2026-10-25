@@ -48,7 +48,8 @@ def stelle():
 def haushalt(stelle):
     """Erfundener Haushalt, heute dran, Ausweis gültig."""
     heute = timezone.localdate()
-    gruppe = Kundengruppe.objects.create(kuerzel="X", name="Jeden Tag", ausgabestelle=stelle)
+    gruppe = Kundengruppe.objects.create(kuerzel="X", name="Jeden Tag", ausgabestelle=stelle,
+                                         wochentage="Mo, Di, Mi, Do, Fr, Sa, So")  # fmt: skip
     h = Haushalt.objects.create(
         kundennummer="00042",
         kundengruppe=gruppe,

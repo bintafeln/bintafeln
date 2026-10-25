@@ -35,7 +35,7 @@
     {% if a.nachricht %}<dt>Nachricht</dt><dd class="vorformatiert">{{ a.nachricht }}</dd>{% endif %}
   </dl>
   <h2>Weitere Personen im Haushalt</h2>
-  {% for p in a.personen.all %}{% if forloop.first %}<ul>{% endif %}<li>{{ p.vorname }} {{ p.nachname }}{% if p.geburtsdatum %}, geb. {{ p.geburtsdatum|date:"d.m.Y" }}{% endif %}</li>{% if forloop.last %}</ul>{% endif %}{% empty %}<p>Keine.</p>{% endfor %}
+  {% for p in a.personen.all %}{% if forloop.first %}<ul>{% endif %}<li>{{ p.vorname }} {{ p.nachname }}{% if p.geburtsdatum %}, geb. {{ p.geburtsdatum|date:"d.m.Y" }}{% endif %}{% if p.staatsangehoerigkeit %}, {{ p.staatsangehoerigkeit }}{% endif %}</li>{% if forloop.last %}</ul>{% endif %}{% empty %}<p>Keine.</p>{% endfor %}
   <h2>Nachweise</h2>
   {% for d in a.anhaenge.all %}{% if forloop.first %}<ul>{% endif %}<li><a href="{% url 'antraege:anhang' a.pk d.pk %}" target="_blank" rel="noopener">{{ d.name }}</a> ({{ d.groesse|filesizeformat }})</li>{% if forloop.last %}</ul>{% endif %}{% empty %}<p>Keine.</p>{% endfor %}
   <p><a href="{% url 'antraege:auskunft' a.pk %}" target="_blank" rel="noopener">Auskunft nach Art. 15 DSGVO (PDF)</a></p>

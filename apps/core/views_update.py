@@ -51,6 +51,5 @@ def starten(request):
 @require_POST
 @rollen.recht_erforderlich("system.update")
 def abrufen(request):
-    update.jetzt_abrufen()
-    messages.success(request, "Es wird nach neuen Versionen gesucht.")
+    update.jetzt_abrufen()  # die Seite zeigt, solange gesucht wird, und dann das Ergebnis
     return redirect("core:update")

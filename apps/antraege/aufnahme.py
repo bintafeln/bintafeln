@@ -165,7 +165,8 @@ def uebernehmen(antrag, zustand: dict, von: str) -> Haushalt:
     """Legt den Haushalt an oder aktualisiert ihn und schließt den Antrag ab.
 
     zustand: haushalt (Kundennummer oder None), werte (Feld → Wert), personen (Liste mit pk,
-    vorname, nachname, geburtsdatum), einkommensart (pk), gueltig_bis (ISO), kundengruppe (pk).
+    vorname, nachname, geburtsdatum, staatsangehoerigkeit), einkommensart (pk), gueltig_bis (ISO),
+    kundengruppe (pk).
     """
     jetzt = timezone.now()
     h = Haushalt.objects.select_for_update().filter(kundennummer=zustand.get("haushalt")).first()
@@ -207,6 +208,8 @@ def uebernehmen(antrag, zustand: dict, von: str) -> Haushalt:
         person = person or Person(haushalt=h)
         person.vorname, person.nachname = p["vorname"].strip(), (p.get("nachname") or "").strip()
         person.geburtsdatum = _datum(p.get("geburtsdatum"))
+        if "staatsangehoerigkeit" in p:  # ältere Zwischenstände ohne das Feld ändern nichts
+            person.staatsangehoerigkeit = p["staatsangehoerigkeit"]
         person.save()
         behalten.add(person.pk)
     h.personen.filter(ist_hauptperson=False).exclude(pk__in=behalten).delete()

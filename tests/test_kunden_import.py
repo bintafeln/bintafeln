@@ -558,3 +558,17 @@ def test_vorbereitung_aus_aelterer_version_ohne_abholdaten():
     del ergebnis.daten["abholungen"], ergebnis.daten["ausnahmen"]
     lauf = uebernehmen(ergebnis)
     assert (lauf.anzahl_haushalte, lauf.anzahl_abholungen) == (2, 0)
+
+
+def test_leere_wochentage_im_import_ueberschreiben_eingetragene_nicht():
+    gruppe = Kundengruppe.objects.create(kuerzel="W5", name="Zentrale Fr 13:30", wochentage="Fr")
+    uebernehmen(
+        pruefen(
+            haushalte_csv=csv("kundennummer;nachname;vorname;kundengruppe", "001;A;B;W5"),
+            kundengruppen_csv=csv(
+                "kuerzel;name;ausgabestelle;wochentage", "W5;Zentrale Fr 13:30;Mitte;"
+            ),
+        )
+    )
+    gruppe.refresh_from_db()
+    assert gruppe.wochentage == "Fr"

@@ -1,6 +1,8 @@
 {% extends "base.html" %}
+{% load static %}
 {% block titel %}Update{% endblock %}
 {% block inhalt %}
+<script src="{% static 'js/update_seite.js' %}" defer></script>
 <section class="karte breit">
   <h1>Update</h1>
   <p>Hier spielen Sie eine neue Version von bintafeln ein, oder bei Problemen eine ältere. Vorher wird automatisch

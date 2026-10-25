@@ -74,13 +74,14 @@
   <input type="hidden" name="anzahl" value="{{ personen|length }}">
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Vorname</th><th>Nachname</th><th>Geburtsdatum</th><th>Entfernen</th></tr></thead>
+    <thead><tr><th>Vorname</th><th>Nachname</th><th>Geburtsdatum</th>{% if staaten %}<th>Staatsangehörigkeit</th>{% endif %}<th>Entfernen</th></tr></thead>
     <tbody>
     {% for p in personen %}
       <tr>
         <td data-titel="Vorname"><input type="hidden" name="p{{ forloop.counter0 }}_pk" value="{{ p.pk|default:'' }}"><input type="text" name="p{{ forloop.counter0 }}_vorname" value="{{ p.vorname }}" maxlength="100" aria-label="Vorname"></td>
         <td data-titel="Nachname"><input type="text" name="p{{ forloop.counter0 }}_nachname" value="{{ p.nachname }}" maxlength="100" aria-label="Nachname"></td>
         <td data-titel="Geburtsdatum"><input type="date" name="p{{ forloop.counter0 }}_geburtsdatum" value="{{ p.geburtsdatum }}" aria-label="Geburtsdatum"></td>
+        {% if staaten %}<td data-titel="Staatsangehörigkeit"><select name="p{{ forloop.counter0 }}_staatsangehoerigkeit" aria-label="Staatsangehörigkeit">{% for wert, name in staaten %}<option value="{{ wert }}"{% if wert == p.staatsangehoerigkeit %} selected{% endif %}>{{ name }}</option>{% endfor %}</select></td>{% endif %}
         <td data-titel="Entfernen">{% if p.vorname %}<input type="checkbox" name="p{{ forloop.counter0 }}_weg" aria-label="{{ p.vorname }} entfernen">{% endif %}</td>
       </tr>
     {% endfor %}
@@ -148,7 +149,7 @@
     </div>
     <div>
       <h3>Angehörige</h3>
-      {% for p in personen_liste %}{% if forloop.first %}<ul>{% endif %}<li>{{ p.vorname }} {{ p.nachname }}{% if p.geburtsdatum %}, geb. {{ p.geburtsdatum|datum_de }}{% endif %}</li>{% if forloop.last %}</ul>{% endif %}{% empty %}<p>Keine.</p>{% endfor %}
+      {% for p in personen_liste %}{% if forloop.first %}<ul>{% endif %}<li>{{ p.vorname }} {{ p.nachname }}{% if p.geburtsdatum %}, geb. {{ p.geburtsdatum|datum_de }}{% endif %}{% if p.staatsangehoerigkeit %}, {{ p.staatsangehoerigkeit }}{% endif %}</li>{% if forloop.last %}</ul>{% endif %}{% empty %}<p>Keine.</p>{% endfor %}
       <h3>Bescheid und Gruppe</h3>
       <dl class="angaben">
         <dt>Bescheidart</dt><dd>{{ art.bezeichnung|default:"–" }}</dd>

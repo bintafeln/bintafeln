@@ -132,6 +132,7 @@ def test_bearbeiten(admin_client):
     url = reverse("antraege:bearbeiten", args=[a.pk])
     seite = admin_client.get(url).content.decode()
     assert '<option value="deutsch" selected>deutsch</option>' in seite
+    assert 'name="p-0-staatsangehoerigkeit"' in seite
     daten = {"art": "neu", "vorname": "Erika", "nachname": "Musterfrau", "anrede": "Frau",
              "staatsangehoerigkeit": "Deutschland", "familienstand": "",
              "p-TOTAL_FORMS": "3", "p-INITIAL_FORMS": "1", "p-MIN_NUM_FORMS": "0",
@@ -139,12 +140,12 @@ def test_bearbeiten(admin_client):
              "p-0-id": a.personen.get().pk, "p-0-antrag": a.pk, "p-0-vorname": "Mia",
              "p-0-nachname": "Mustermann", "p-0-DELETE": "on",
              "p-1-vorname": "Tom", "p-1-nachname": "Test",
-             "p-1-geburtsdatum": "2016-01-02"}  # fmt: skip
+             "p-1-geburtsdatum": "2016-01-02", "p-1-staatsangehoerigkeit": "Irak"}  # fmt: skip
     antwort = admin_client.post(url, daten)
     assert antwort.status_code == 302
     a.refresh_from_db()
     assert a.nachname == "Musterfrau" and a.staatsangehoerigkeit == "Deutschland"
-    assert [p.vorname for p in a.personen.all()] == ["Tom"]
+    assert [(p.vorname, p.staatsangehoerigkeit) for p in a.personen.all()] == [("Tom", "Irak")]
 
 
 # --- Aufnahme -------------------------------------------------------------------------------
@@ -169,9 +170,11 @@ def test_aufnahme_neuer_kunde(admin_client, bestand):
     schritt(admin_client, a, "abgleich", {})
     seite = schritt(admin_client, a, "personen").content.decode()
     assert 'value="Lina"' in seite
+    assert 'name="p0_staatsangehoerigkeit"' in seite
     schritt(admin_client, a, "personen", {"anzahl": "2", "p0_vorname": "Lina",
             "p0_nachname": "Probe", "p0_geburtsdatum": "2015-06-01", "p1_vorname": "Ben",
-            "p1_geburtsdatum": "2018-02-03"})  # fmt: skip
+            "p1_geburtsdatum": "2018-02-03", "p0_staatsangehoerigkeit": "Ukraine",
+            "p1_staatsangehoerigkeit": ""})  # fmt: skip
     art = Einkommensart.objects.get()
     assert "festlegen" in schritt(admin_client, a, "bescheid",
                                   {"einkommensart": art.pk}).content.decode()  # fmt: skip
@@ -196,6 +199,7 @@ def test_aufnahme_neuer_kunde(admin_client, bestand):
     assert h.ausweis_gueltig_bis.isoformat() == bis and h.plz == "99999"
     assert h.hauptperson.vorname == "Max"
     assert sorted(p.vorname for p in h.personen.filter(ist_hauptperson=False)) == ["Ben", "Lina"]
+    assert h.personen.get(vorname="Lina").staatsangehoerigkeit == "Ukraine"
     a.refresh_from_db()
     assert a.status == Antrag.Status.ERLEDIGT and a.kundennummer == "1002"
     fertig = admin_client.get(antwort.url).content.decode()

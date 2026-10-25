@@ -1,9 +1,10 @@
 # Importformat für den Kundenstamm
 
-Version 1.1
+Version 1.2
 
 | Version | Änderung |
 |---|---|
+| 1.2 | leeres `wochentage` in `kundengruppen.csv` überschreibt keine in bintafeln eingetragenen Wochentage mehr. Dateien bleiben gültig. |
 | 1.1 | neue optionale Dateien `abholungen.csv` und `ausnahmen.csv`. Dateien der Version 1 bleiben gültig. |
 | 1 | erste Fassung |
 
@@ -144,7 +145,7 @@ Ob Anmerkungen überhaupt übernommen werden, ist eine Einstellung je Tafel. Ist
 | `kuerzel` | **ja** | eindeutig, wird in `haushalte.csv` verwendet |
 | `name` | **ja** | |
 | `ausgabestelle` | **ja** | Name der Ausgabestelle. Unbekannte werden angelegt |
-| `wochentage` | | z. B. `Mo`, `Di,Do`. Erlaubt: Mo, Di, Mi, Do, Fr, Sa, So |
+| `wochentage` | | z. B. `Mo`, `Di,Do`. Erlaubt: Mo, Di, Mi, Do, Fr, Sa, So. Leer = in bintafeln eingetragene Wochentage bleiben. Ohne Wochentage zeigt die Ampel Gelb, weil sie nicht prüfen kann, ob heute dran ist |
 | `uhrzeit` | | Beginn, z. B. `14:30` |
 | `maximum` | | höchstens so viele Haushalte |
 | `aktiv` | | Ja/Nein, leer = ja |
