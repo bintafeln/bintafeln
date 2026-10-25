@@ -95,6 +95,8 @@ def _haushalte(benutzer, p):
         qs = qs.filter(Q(letzter_besuch__lt=tag) | Q(letzter_besuch__isnull=True))
     if (tag := _datum(p.get("seit_ab"))) is not None:
         qs = qs.filter(kunde_seit__gte=tag)
+    if p.get("kontostand_minus"):
+        qs = qs.filter(kontostand__lt=0)
     if p.get("ohne_gruppe"):
         qs = qs.filter(kundengruppe__isnull=True)
     return qs.prefetch_related(Prefetch("personen", queryset=Person.objects.order_by(
@@ -182,6 +184,10 @@ def rechnen(liste: Liste, benutzer, p, auswahl=None) -> Ergebnis:
         if gruppe.schluessel == "altersgruppe":
             ordnung = [t for _, t in sp.ALTERSGRUPPEN] + ["unbekannt"]
             reihenfolge.sort(key=ordnung.index)
+        elif gruppe.schluessel == "groesse":
+            reihenfolge.sort(key=lambda t: int(t.split()[0]))
+        elif gruppe.schluessel == "seit_monat":
+            reihenfolge.sort()
         elif p.get("summen"):
             reihenfolge.sort(key=lambda t: (-len(nach[t]), t.casefold()))  # größte zuerst
         else:

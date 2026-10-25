@@ -32,6 +32,7 @@
       {% if "seit_ab" in liste.filter %}<div class="feld"><label for="f-seit">Kunde seit (ab)</label><input type="date" name="seit_ab" id="f-seit" value="{{ p.seit_ab }}"></div>{% endif %}
       {% if "personen_ab" in liste.filter %}<div class="feld"><label for="f-pers">Personen ab</label><input type="number" min="1" max="30" name="personen_ab" id="f-pers" value="{{ p.personen_ab }}"></div>{% endif %}
       {% if "kinder_unter_6" in liste.filter %}<div class="feld feld-haken"><label><input type="checkbox" name="kinder_unter_6" value="1"{% if p.kinder_unter_6 %} checked{% endif %}> nur mit Kindern unter 6</label></div>{% endif %}
+      {% if "kontostand_minus" in liste.filter %}<div class="feld feld-haken"><label><input type="checkbox" name="kontostand_minus" value="1"{% if p.kontostand_minus %} checked{% endif %}> nur Kontostand im Minus</label></div>{% endif %}
       {% if "ohne_gruppe" in liste.filter %}<div class="feld feld-haken"><label><input type="checkbox" name="ohne_gruppe" value="1"{% if p.ohne_gruppe %} checked{% endif %}> nur ohne Kundengruppe</label></div>{% endif %}
       {% if "zeitraum" in liste.filter %}<div class="feld"><label for="f-von">Abholungen von</label><input type="date" name="von" id="f-von" value="{{ p.von }}"></div>
         <div class="feld"><label for="f-bis">bis</label><input type="date" name="bis" id="f-bis" value="{{ p.bis }}"></div>{% endif %}

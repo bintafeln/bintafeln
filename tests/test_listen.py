@@ -224,3 +224,17 @@ def test_suche_und_menue(admin, admin_client):
     assert "Liste: Kinder unter 6 Jahren" in titel
     seite = admin_client.get(reverse("listen:uebersicht")).content.decode()
     assert "Alle Listen" in seite and "Kundenliste einer Ausgabestelle</a>" in seite
+
+
+def test_weitere_listen(admin_client, daten):
+    from decimal import Decimal
+
+    Haushalt.objects.filter(kundennummer="2").update(kontostand=Decimal("-3.00"),
+                                                     kunde_seit=timezone.localdate())  # fmt: skip
+    assert zeilen(admin_client.get(reverse("listen:liste", args=["negativer_kontostand"]))) == ["2"]
+    antwort = admin_client.get(*url("schulanfaenger", status="aktiv", alter_von="3", alter_bis="9"))
+    assert antwort.context["e"].anzahl == 2
+    e = admin_client.get(reverse("listen:liste", args=["zahl_groesse"])).context["e"]
+    assert [g["titel"] for g in e.gruppen] == ["1 Pers.", "3 Pers."]
+    e = admin_client.get(reverse("listen:liste", args=["zahl_neue"])).context["e"]
+    assert [g["titel"] for g in e.gruppen] == [f"{timezone.localdate():%Y-%m}"]

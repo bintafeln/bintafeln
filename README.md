@@ -779,11 +779,11 @@ und Ausgabe als CSV (Excel) oder PDF (Auswahl oder alles; jeder Export im Zugrif
 - **Kunden:** Kundenliste einer Ausgabestelle, alle Kunden, nach Einkommensart, Bürgergeld,
   Rentnerinnen und Rentner, Ausweis läuft ab, lange nicht gekommen, neue Kunden, große Haushalte,
   Haushalte mit Kindern unter 6, ohne Kundengruppe, pausiert/gesperrt/beendet, Abholungen im
-  Zeitraum, Anschriftenliste.
+  Zeitraum, Anschriftenliste, offene Beträge (Kontostand im Minus).
 - **Personen:** nach Staatsangehörigkeit, Kinder unter 6, Kinder und Jugendliche (Alter von–bis),
-  Seniorinnen und Senioren, nach Altersgruppen, alle Personen.
+  Schulanfänger, Seniorinnen und Senioren, nach Altersgruppen, alle Personen.
 - **Zählungen:** je Staatsangehörigkeit, je Altersgruppe, je Ausgabestelle, je Kundengruppe, je
-  Einkommensart.
+  Einkommensart, nach Haushaltsgröße, neue Kunden je Monat.
 - Nur Kunden der eigenen Ausgabestellen; Listen mit Staatsangehörigkeit oder Einkommensart nur
   mit „Stammdaten sehen“, Kontaktdaten und Kontostand nur mit den Rechten dazu.
 - **Eigene Listen** speichern die Einstellungen unter einem Titel (privat oder für alle).
