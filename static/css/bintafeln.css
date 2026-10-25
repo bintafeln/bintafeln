@@ -687,3 +687,7 @@ label.wahl { display: block; white-space: nowrap; }
 .liste-pflegen td.aus { color: var(--leise); }
 .abschnitt-aufklappen { margin: .5rem 0 1rem; }
 .abschnitt-aufklappen > summary { cursor: pointer; font-weight: 600; padding: .5rem 0; }
+/* Hintergrundbild der Tafel (Einstellungen → Tafel); Karten bleiben deckend und lesbar */
+.hintergrund { position: fixed; inset: 0; z-index: -1; background-size: cover; background-position: center; pointer-events: none; }
+body:has(.hintergrund) .rahmen, body:has(.hintergrund) .inhalt { background: transparent; }
+body:has(.hintergrund) .fuss { background: var(--flaeche); }

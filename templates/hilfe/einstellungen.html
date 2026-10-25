@@ -1,6 +1,8 @@
 <p>Unter „Einstellungen“ finden Sie, wofür Sie Rechte haben:</p>
 <ul>
-  {% if "einstellungen.tafel" in rechte %}<li><strong>Tafel</strong>: Name, Logo, Farbe, Anschrift, Bundesland (Feiertage).</li>{% endif %}
+  {% if "einstellungen.tafel" in rechte %}<li><strong>Tafel</strong>: Name, Logo, Farbe, Anschrift, Bundesland (Feiertage), Hintergrundbild der Anmeldeseite
+    und der übrigen Seiten (dort mit Schieber für die Stärke, 0 % = aus). Hintergrundbilder sind öffentlich abrufbar,
+    also keine Fotos von Personen ohne deren Zustimmung.</li>{% endif %}
   {% if "einstellungen.mail" in rechte %}<li><strong>E-Mail</strong>: Mailserver für Einladungen, Passwort-Links, Antragsbestätigungen und Korrekturwünsche; „Verbindung prüfen“ und Testmail.</li>{% endif %}
   {% if "einstellungen.kundenstamm" in rechte %}<li><strong>Kundenstamm und Zusatzfelder</strong>: welche Angaben erfasst werden, „Kind bis“, Gültigkeit der Ausweise, Löschfristen (Abholungen, Zugriffsprotokoll, Historie), eigene Zusatzfelder.</li>{% endif %}
   {% if "einstellungen.listen" in rechte %}<li><strong>Listen</strong>: Kundengruppen (mit Höchstzahl und Farbe), Ausgabestellen, Einkommensarten, Notiz-Vorlagen, Dokumentarten (mit Aufbewahrungsfrist), beitragsfreie Zeiträume.</li>{% endif %}

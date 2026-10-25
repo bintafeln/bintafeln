@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block titel %}Anmelden{% endblock %}
+{% block hintergrund %}{% if tafel.hintergrund_anmeldung %}<div class="hintergrund" aria-hidden="true" style="background-image: url('{{ tafel.hintergrund_anmeldung.url }}');"></div>{% endif %}{% endblock %}
 {% block inhalt %}
 <section class="karte schmal">
   <h1>Anmelden</h1>

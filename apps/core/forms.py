@@ -7,6 +7,7 @@ from apps.core.auswahl import LAENDERCODE
 from apps.core.farben import STANDARDFARBE
 from apps.core.models import MailEinstellungen, SicherungsAuftrag, TafelEinstellungen
 
+HINTERGRUND_MAX_BYTES = 5 * 1024 * 1024
 LOGO_MAX_BYTES = 2 * 1024 * 1024
 
 
@@ -57,6 +58,9 @@ class EinstellungenForm(forms.ModelForm):
             "name",
             "logo",
             "farbe",
+            "hintergrund_anmeldung",
+            "hintergrund",
+            "hintergrund_staerke",
             "strasse",
             "plz",
             "ort",
@@ -64,14 +68,46 @@ class EinstellungenForm(forms.ModelForm):
             "email",
             "bundesland",
         ]
-        widgets = {"farbe": forms.TextInput(attrs={"type": "color"})}
+        widgets = {
+            "farbe": forms.TextInput(attrs={"type": "color"}),
+            "hintergrund_staerke": forms.NumberInput(
+                attrs={
+                    "type": "range",
+                    "min": 0,
+                    "max": 100,
+                    "step": 5,
+                    "oninput": "var h = document.getElementById(this.id + '_helptext'); "
+                    "if (h) h.textContent = h.textContent.replace(/^Aktuell \\d+ %/, "
+                    "'Aktuell ' + this.value + ' %')",
+                }
+            ),  # fmt: skip
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["farbe"].required = False
+        staerke = self.fields["hintergrund_staerke"]
+        staerke.required = False
+        staerke.help_text = f"Aktuell {self.instance.hintergrund_staerke} %. {staerke.help_text}"
 
     def clean_farbe(self):
         return self.cleaned_data.get("farbe") or STANDARDFARBE
+
+    def clean_hintergrund_staerke(self):
+        wert = self.cleaned_data.get("hintergrund_staerke")
+        return self.instance.hintergrund_staerke if wert is None else wert
+
+    def _bild(self, feld):
+        bild = self.cleaned_data.get(feld)
+        if bild and getattr(bild, "size", 0) > HINTERGRUND_MAX_BYTES:
+            raise forms.ValidationError("Das Bild darf höchstens 5 MB groß sein.")
+        return bild
+
+    def clean_hintergrund_anmeldung(self):
+        return self._bild("hintergrund_anmeldung")
+
+    def clean_hintergrund(self):
+        return self._bild("hintergrund")
 
     def clean_logo(self):
         logo = self.cleaned_data.get("logo")

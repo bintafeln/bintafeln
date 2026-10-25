@@ -29,7 +29,9 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   Personal (siehe „Rollen und Rechte“ unten). Konten bekommen ihre Rollen unter
   „Mitarbeitende“.
 - **Tafel-Einstellungen:** Name, Logo, Farbe (voreingestellt Tafel-Orange) und Anschrift der
-  Tafel – in der Datenbank, nicht im Code.
+  Tafel – in der Datenbank, nicht im Code. Dazu ein **Hintergrundbild** für die Anmeldeseite
+  (volle Stärke) und wahlweise ein eigenes für die übrigen Seiten; dort regelt ein Schieber die
+  Stärke von 0 % (nicht sichtbar) bis 100 %. Die Inhalte stehen weiter auf weißen Karten.
 - **Änderungsprotokoll:** Wer hat wann welchen Datensatz geändert (mit Feldern vorher/nachher).
   Passwörter werden nie protokolliert.
 - **Zwei-Faktor-Anmeldung:** Jede Person richtet sie unter „Mein Konto“ selbst ein

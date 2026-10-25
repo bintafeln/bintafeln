@@ -160,3 +160,29 @@ def test_protokoll_zeigt_loeschen_und_abruf(admin_client, django_user_model):
     assert "hinzugefügt: Kiosk" in inhalt
     assert "Gelöscht" in inhalt
     assert "Abgerufen" in inhalt
+
+
+def test_hintergrundbild(admin_client, monkeypatch):
+    url = reverse("core:einstellungen")
+    seite = admin_client.get(url).content.decode()
+    assert 'type="range"' in seite and "Aktuell 15 %" in seite
+    assert 'class="hintergrund"' not in seite  # ohne Bild kein Hintergrund
+    admin_client.post(url, {"name": "X", "hintergrund_anmeldung": png("bild.png"),
+                            "hintergrund_staerke": "30"})  # fmt: skip
+    t = TafelEinstellungen.laden()
+    assert t.hintergrund_anmeldung.name.startswith("oeffentlich/hintergrund/")
+    assert t.hintergrund_bild == t.hintergrund_anmeldung and t.hintergrund_deckkraft == "0.30"
+    seite = admin_client.get("/").content.decode()
+    assert f"url('{t.hintergrund_anmeldung.url}'); opacity: 0.30;" in seite
+    admin_client.post(url, {"name": "X", "hintergrund": png("seiten.png"),
+                            "hintergrund_staerke": "0"})  # fmt: skip
+    t = TafelEinstellungen.laden()
+    assert t.hintergrund_bild == t.hintergrund and t.hintergrund_staerke == 0
+    assert 'class="hintergrund"' not in admin_client.get("/").content.decode()  # 0 % = aus
+    monkeypatch.setattr("apps.core.forms.HINTERGRUND_MAX_BYTES", 10)
+    fehler = admin_client.post(url, {"name": "X", "hintergrund": png()}).content.decode()
+    assert "höchstens 5 MB" in fehler
+    from django.test import Client  # admin_client ist derselbe Client wie client
+
+    anmeldung = Client().get(reverse("konten:anmelden")).content.decode()
+    assert f"url('{t.hintergrund_anmeldung.url}');\"" in anmeldung  # volle Stärke
