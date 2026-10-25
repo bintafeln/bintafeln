@@ -54,5 +54,12 @@ def test_nur_untermenues_mit_rechten(benutzer_mit_rolle, recht_geben):
 def test_untermenues_auf_der_seite(admin_client):
     seite = admin_client.get(reverse("core:start")).content.decode()
     assert (
-        '<details class="menue-gruppe">' in seite and "<summary>Systemsteuerung</summary>" in seite
+        '<details class="menue-gruppe" name="menue-gruppe">' in seite
+        and "<summary>Systemsteuerung</summary>" in seite
     )
+
+
+def test_nur_ein_bereich_offen(admin_client):
+    """Gleicher ``name`` an den <details>: Der Browser schließt beim Öffnen die anderen."""
+    seite = admin_client.get(reverse("core:start")).content.decode()
+    assert seite.count('name="menue-bereich"') > 3 and 'name="menue-gruppe"' in seite
