@@ -353,6 +353,8 @@ def test_empfang_einzahlung_und_vorschlag(ausgabe, haushalt, recht_geben):
     e = AusgabeEinstellungen.laden()
     e.beitrag_je_abholung = D("1.50")
     e.save()
+    haushalt.kundengruppe.wochentage = ""
+    haushalt.kundengruppe.save()
     inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
     assert "Kein Vorschlag: Die Kundengruppe hat keine festen Wochentage" in inhalt
     haushalt.kundengruppe.wochentage = "Mo,Di,Mi,Do,Fr,Sa,So"

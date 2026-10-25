@@ -124,7 +124,13 @@ def bewerten(haushalt, heute: dt.date, ausgabestelle, einstellungen) -> Bewertun
         terminregel("Keine Kundengruppe zugeordnet")
     else:
         tage = [t.strip() for t in gruppe.wochentage.split(",") if t.strip()]
-        if tage and WOCHENTAGE[heute.weekday()] not in tage:
+        if not tage:
+            terminregel(
+                f"Kundengruppe {gruppe.name} hat keine Wochentage – nicht prüfbar, ob heute dran "
+                "(Einstellungen → Kundengruppen)",
+                GELB,
+            )
+        elif WOCHENTAGE[heute.weekday()] not in tage:
             terminregel(
                 f"Heute nicht dran (Kundengruppe {gruppe.name}: {', '.join(tage)})",
                 ROT if einstellungen.nicht_dran_rot else GELB,

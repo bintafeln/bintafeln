@@ -845,7 +845,8 @@ def uebernehmen(
             ).exclude(pk=gruppe.pk).delete()
             gruppe.kuerzel, gruppe.name = g["kuerzel"], g["name"]
             gruppe.ausgabestelle = stelle(g["ausgabestelle"])
-            gruppe.wochentage = g["wochentage"]
+            # Leere Wochentage im Import überschreiben keine in bintafeln eingetragenen.
+            gruppe.wochentage = g["wochentage"] or gruppe.wochentage
             gruppe.uhrzeit = dt.time.fromisoformat(g["uhrzeit"]) if g["uhrzeit"] else None
             gruppe.maximum, gruppe.aktiv = g["maximum"], g["aktiv"]
             gruppe.save()

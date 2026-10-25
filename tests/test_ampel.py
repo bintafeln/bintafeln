@@ -145,8 +145,11 @@ def test_nicht_dran_rot_oder_gelb(haushalt, einstellungen):
     assert farbe_und_texte(haushalt, einstellungen, heute=donnerstag)[0] == "gelb"
 
 
-def test_gruppe_ohne_wochentage_immer_dran(haushalt, einstellungen):
+def test_gruppe_ohne_wochentage_warnt(haushalt, einstellungen):
     haushalt.kundengruppe.wochentage = ""
+    farbe, texte = farbe_und_texte(haushalt, einstellungen, heute=dt.date(2026, 10, 25))
+    assert farbe == "gelb" and "hat keine Wochentage" in texte[0]
+    haushalt.kundengruppe.wochentage = "Mo, Di, Mi, Do, Fr, Sa, So"  # „jeden Tag“
     assert farbe_und_texte(haushalt, einstellungen, heute=dt.date(2026, 10, 25))[0] == "gruen"
 
 
