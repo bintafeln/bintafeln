@@ -1,0 +1,5 @@
+<p class="suche-hinweis">Ohne Kürzel: Kunden, Anträge und Mitarbeitende. Mit Kürzel und Leerzeichen davor nur ein Bereich:</p>
+<ul class="suche-kuerzel">
+  {% for k in kuerzel %}<li><kbd>{{ k.zeichen }}</kbd> {{ k.beschreibung }}</li>{% endfor %}
+</ul>
+<p class="suche-hinweis">Beispiel: <kbd>n bescheid</kbd> findet alle Notizen mit „bescheid“.</p>

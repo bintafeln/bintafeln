@@ -18,4 +18,5 @@ urlpatterns = [
     path("datensicherung/verwerfen/", views_datensicherung.verwerfen, name="daten_verwerfen"),
     path("healthz/", views.healthz, name="healthz"),
     path("hilfe/", views.hilfe, name="hilfe"),
+    path("suche/", views.suche, name="suche"),
 ]

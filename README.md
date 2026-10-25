@@ -331,6 +331,28 @@ Regeln:
 - Abholungen und Ausnahmen werden nur innerhalb der **Aufbewahrungsfrist** übernommen
   („Einstellungen → Kundenstamm“, Vorgabe 3 Jahre). Ältere löscht bintafeln automatisch.
 
+## Suche
+
+Im Seitenkopf steht auf jeder Seite ein **Suchfeld**. Ab 3 Zeichen erscheinen die Treffer
+darunter, Enter öffnet eine Ergebnisseite. Ohne Kürzel sucht es Kunden (Vor- und Nachname, auch
+Teile wie „mül“, Kundennummer, Abholberechtigte), Anträge und Mitarbeitende. Ein Kürzel mit
+Leerzeichen davor sucht nur in einem Bereich:
+
+| Kürzel | Bereich | Beispiel |
+|---|---|---|
+| `k` | Kunden | `k müller` |
+| `n` | Notizen (Text) | `n bescheid` |
+| `a` | Anmerkungen zu Haushalten und Anträgen | `a deutsch` |
+| `s` | Anschrift (Straße, PLZ, Ort) | `s linden` |
+| `t` | Telefon und E-Mail | `t 0171` |
+| `d` | Dokumente zum Haushalt (Titel) | `d jobcenter` |
+| `an` | Anträge (Name, Antragsnummer) | `an müller` |
+| `m` | Mitarbeitende | `m anna` |
+| `h` | Handbuch | `h ampel` |
+
+`?` im Suchfeld zeigt die Kürzel. Jeder Bereich erscheint nur mit dem passenden Recht; wer einer
+Ausgabestelle zugeordnet ist, findet nur deren Kunden (ADR 0040).
+
 ## Kunden ansehen und bearbeiten
 
 Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
