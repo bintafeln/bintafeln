@@ -9,7 +9,8 @@
 # https im Heimnetz (ADR 0041): Ist BINTAFELN_HEIMNETZ_ADRESSE gesetzt (z. B. die IP der VM), liefert
 # Caddy diese Adresse zusätzlich über https mit einem selbst ausgestellten Zertifikat aus. Das
 # braucht z. B. die Kamera am Handy, die Browser nur über https freigeben. Ohne Variable
-# antworten die beiden letzten Blöcke nur auf den Platzhalter „heimnetz.invalid“, also nie.
+# (docker-compose.yml setzt dann den Platzhalter „heimnetz.invalid“) antworten die beiden letzten
+# Blöcke nur auf diesen Platzhalter, also nie. Leer darf die Variable nicht sein.
 {
 	servers {
 		trusted_proxies static {$BINTAFELN_VERTRAUTE_PROXYS:127.0.0.1/32}

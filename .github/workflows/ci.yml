@@ -80,6 +80,9 @@ jobs:
           docker run --rm -e SITE_ADDRESS=:80 -e BINTAFELN_VERTRAUTE_PROXYS=private_ranges \
             -v "$PWD/docker/Caddyfile:/etc/caddy/Caddyfile:ro" \
             caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+          docker run --rm -e SITE_ADDRESS=:80 -e BINTAFELN_HEIMNETZ_ADRESSE=heimnetz.invalid \
+            -v "$PWD/docker/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
           docker run --rm -e SITE_ADDRESS=:80 -e BINTAFELN_HEIMNETZ_ADRESSE=192.0.2.10 \
             -v "$PWD/docker/Caddyfile:/etc/caddy/Caddyfile:ro" \
             caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
