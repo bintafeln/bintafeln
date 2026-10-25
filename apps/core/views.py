@@ -56,6 +56,7 @@ def start(request):
         ).count()
     if rollen.hat_recht(request.user, "system.status"):
         kontext["sicherung"] = sicherung.lese_status()
+        kontext["sicherungsfehler"] = sicherung.auftraege_mit_fehler()
     return render(request, "core/start.html", kontext)
 
 

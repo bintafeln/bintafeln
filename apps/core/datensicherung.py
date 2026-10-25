@@ -38,7 +38,7 @@ ITERATIONEN = 480_000
 MIN_PASSWORT = 10
 EIGENE_APPS = ["core", "konten", "kunden", "ausgabe", "personal", "antraege"]
 # Vorübergehende Daten, die nicht in einen Export gehören
-AUSGENOMMEN = {"kunden.importvorbereitung", "antraege.antragversuch"}
+AUSGENOMMEN = {"kunden.importvorbereitung", "antraege.antragversuch", "core.sicherungsdienst"}
 EINSTELLUNGS_MODELLE = {
     "core.tafeleinstellungen", "core.maileinstellungen", "kunden.kundeneinstellungen",
     "kunden.zusatzfeld", "kunden.ausgabestelle", "kunden.kundengruppe", "kunden.einkommensart",

@@ -72,3 +72,4 @@ drei Fragen: Was war das Problem? Was haben wir entschieden? Warum?
 | [0039](0039-einlass-zwei-ansichten.md) | Einlass in zwei Ansichten: Suche oder Kunde | Angenommen |
 | [0040](0040-suche-im-kopf.md) | Suche im Seitenkopf mit Kürzeln | Angenommen |
 | [0041](0041-https-im-heimnetz.md) | https im Heimnetz für die Kamera | Angenommen |
+| [0042](0042-sicherungsauftraege.md) | Sicherungsaufträge in der Oberfläche | Angenommen |

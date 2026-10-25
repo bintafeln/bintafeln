@@ -67,6 +67,8 @@ KAPITEL = [
             ("einstellungen.tafel", "einstellungen.mail", "einstellungen.kundenstamm",
              "einstellungen.listen", "einstellungen.ausweis", "einstellungen.ausgabe",
              "einstellungen.antraege", "einstellungen.personal", "einstellungen.arbeitszeit")),
+    Kapitel("sicherungen", "Sicherungen: jetzt sichern, Aufträge und externe Ziele", VERWALTUNG,
+            ("system.sicherung", "system.status")),
     Kapitel("datensicherung", "Datensicherung: exportieren und zurücklesen", VERWALTUNG,
             ("daten.exportieren", "daten.importieren")),
     Kapitel("protokoll", "Änderungsprotokoll", VERWALTUNG, ("protokoll.sehen",)),

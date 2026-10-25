@@ -1,0 +1,34 @@
+<p>Der Server sichert Datenbank und hochgeladene Dateien <strong>verschlüsselt</strong>. Lesen kann die Sicherungen nur,
+  wer den privaten Sicherungsschlüssel hat; der liegt nicht auf dem Server. Menü: „Einstellungen → Sicherungen“.</p>
+{% if "system.sicherung" in rechte %}
+<h3>Jetzt sichern</h3>
+<p>Bei jedem Auftrag steht <strong>„Jetzt sichern“</strong>. Das geht immer, auch wenn der Zeitplan des Auftrags
+  ausgeschaltet ist. Die Sicherung startet nach wenigen Sekunden; die Seite zeigt „läuft …“ und danach das Ergebnis.</p>
+<h3>Sicherungsaufträge</h3>
+<p>Ein Auftrag legt fest:</p>
+<ul>
+  <li><strong>Ziel</strong>: der Sicherungsordner des Servers oder ein externes Medium, z. B. eine USB-Platte oder ein
+    Netzlaufwerk (NAS). Zur Auswahl stehen alle Ordner, die auf dem Server unter <code>/media</code> oder
+    <code>/mnt</code> eingehängt sind, mit freiem Platz. Eine gerade angesteckte Platte erscheint spätestens nach
+    30 Minuten. bintafeln legt dort einen Ordner „bintafeln“ an.</li>
+  <li><strong>Wochentage und Uhrzeit</strong>, z. B. täglich 02:30 oder sonntags 22:00.</li>
+  <li><strong>Aufbewahrung</strong>: höchstens so viele Stände und/oder so viele Tage. Ältere Stände werden gelöscht,
+    die neueste Sicherung bleibt immer.</li>
+</ul>
+<p>Je Ziel gibt es einen Auftrag. Der Auftrag „Tägliche Sicherung auf dem Server“ ist immer da: Dorthin sichert auch
+  das Update, und von dort wird wiederhergestellt. Er lässt sich ausschalten, aber nicht löschen.</p>
+<div class="tipp">Eine Sicherung nur auf dem Server schützt nicht vor einem Defekt des Servers. Am besten zusätzlich auf
+  ein externes Medium sichern, das an einem anderen Ort liegt oder regelmäßig getauscht wird.</div>
+{% endif %}
+<h3>Wenn etwas nicht stimmt</h3>
+<ul>
+  <li><strong>„Fehlgeschlagen“</strong> auf der Startseite: Die Meldung nennt den Grund, z. B. „Ziel nicht erreichbar“
+    (Platte nicht angesteckt) oder ein volles Ziel.</li>
+  <li><strong>„Der Sicherungsdienst meldet sich nicht“</strong>: Auf dem Server <code>docker compose up -d</code>; die
+    technisch verantwortliche Person sieht Details mit <code>docker compose logs backup</code>.</li>
+  <li><strong>Kein Sicherungsschlüssel</strong>: Auf dem Server einmal <code>./betrieb schluessel</code> ausführen.</li>
+</ul>
+<h3>Wiederherstellen</h3>
+<p>Wiederherstellen erledigt die technisch verantwortliche Person auf dem Server mit
+  <code>./betrieb wiederherstellen NAME</code> und dem privaten Schlüssel. Stände von einem externen Medium vorher in den
+  Sicherungsordner des Servers kopieren.</p>

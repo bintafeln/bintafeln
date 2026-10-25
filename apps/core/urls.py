@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.core import views, views_datensicherung
+from apps.core import views, views_datensicherung, views_sicherung
 
 app_name = "core"
 
@@ -19,4 +19,13 @@ urlpatterns = [
     path("healthz/", views.healthz, name="healthz"),
     path("hilfe/", views.hilfe, name="hilfe"),
     path("suche/", views.suche, name="suche"),
+    path("sicherungen/", views_sicherung.seite, name="sicherungen"),
+    path("sicherungen/neu/", views_sicherung.auftrag, name="sicherungsauftrag_neu"),
+    path("sicherungen/<int:pk>/", views_sicherung.auftrag, name="sicherungsauftrag"),
+    path(
+        "sicherungen/<int:pk>/loeschen/",
+        views_sicherung.loeschen,
+        name="sicherungsauftrag_loeschen",
+    ),
+    path("sicherungen/<int:pk>/jetzt/", views_sicherung.jetzt, name="sicherung_jetzt"),
 ]

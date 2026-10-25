@@ -8,14 +8,29 @@ cd "$(dirname "$(readlink -f "$0")")/.."
 export COMPOSE_PROJECT_NAME=bintafeln-e2e
 SCHLUESSELDATEI=$(mktemp)
 
+EXTERN=/mnt/bintafeln-e2e-ziel
+mnt_rm() { docker run --rm -v /mnt:/mnt alpine:3 rm -rf "$1" > /dev/null 2>&1 || true; }
+
 aufraeumen() {
     docker compose down -v --remove-orphans > /dev/null 2>&1 || true
     rm -f "$SCHLUESSELDATEI"
+    mnt_rm "$EXTERN"
 }
 trap aufraeumen EXIT
 
 pruefe() { echo "PRÜFE: $1"; }
 python_in_app() { docker compose exec -T app python manage.py shell -c "$1" 2> /dev/null | tail -n 1; }
+# warte SEKUNDEN PYTHON: bis der Python-Ausdruck in der App "ja" ausgibt
+warte() {
+    local _
+    for _ in $(seq 1 "$1"); do
+        [[ "$(python_in_app "$2")" == ja ]] && return 0
+        sleep 1
+    done
+    echo "Zeitüberschreitung beim Warten auf: $2"
+    return 1
+}
+AUFTRAG="from apps.core.models import SicherungsAuftrag as A"
 
 cp .env.example .env
 sed -i "s|^DJANGO_SECRET_KEY=.*|DJANGO_SECRET_KEY=nur-fuer-den-test-$RANDOM$RANDOM|" .env
@@ -77,12 +92,29 @@ pruefe "Vor dem Wiederherstellen wurde der damalige Stand gesichert"
 pruefe "Anwendung läuft wieder"
 curl -fsS "http://localhost:${E2E_HTTP_PORT:-8080}/healthz/" | grep -q ok
 
-pruefe "Aufbewahrung: nur BINTAFELN_SICHERUNG_ANZAHL Stände bleiben"
-sed -i 's|^BINTAFELN_SICHERUNG_ANZAHL=.*|BINTAFELN_SICHERUNG_ANZAHL=2|' .env
+pruefe "Aufbewahrung: nur so viele Stände wie im Standard-Auftrag eingestellt"
+python_in_app "$AUFTRAG; A.objects.filter(standard=True).update(anzahl=2)"
 sleep 1
 ./betrieb sichern > /dev/null
 [[ $(find sicherungen-e2e -mindepth 1 -maxdepth 1 -type d | wc -l) -eq 2 ]]
 [[ ! -d "sicherungen-e2e/$name" ]]
+
+pruefe "Der Dienst meldet sich und führt eine Sofort-Sicherung aus (Einstellungen → Sicherungen)"
+DIENST="from apps.core.models import SicherungsDienst as D; from django.utils import timezone as tz"
+warte 60 "$DIENST; d=D.objects.first(); print('ja' if d and d.schluessel_ok and tz.now()-d.letzter_kontakt<tz.timedelta(minutes=1) else 'nein')"
+python_in_app "$AUFTRAG; from django.utils import timezone as tz; A.objects.filter(standard=True).update(angefordert_am=tz.now(), ergebnis='')"
+warte 90 "$AUFTRAG; a=A.objects.get(standard=True); print('ja' if a.ergebnis=='ok' and not a.angefordert_am and a.staende else 'nein')"
+
+pruefe "Externes Ziel unter /mnt: erscheint zur Auswahl, Zeitplan sichert dorthin"
+docker run --rm -v /mnt:/mnt alpine:3 mkdir -p "$EXTERN"
+warte 60 "$DIENST; print('ja' if '$EXTERN|' in D.objects.first().ziele else 'nein')"
+python_in_app "$AUFTRAG; import datetime as dt; A.objects.create(name='Extern', ziel='$EXTERN', uhrzeit=dt.time(0, 0), tage=7)"
+warte 90 "$AUFTRAG; a=A.objects.get(name='Extern'); print('ja' if a.ergebnis=='ok' and a.geplant_am else 'nein')"
+docker run --rm -v /mnt:/mnt alpine:3 sh -c "ls $EXTERN/bintafeln/*/datenbank.dump.age" > /dev/null
+
+pruefe "Nicht erreichbares Ziel ergibt eine verständliche Meldung"
+python_in_app "$AUFTRAG; from django.utils import timezone as tz; import datetime as dt; A.objects.create(name='Weg', ziel='/mnt/gibt-es-nicht', uhrzeit=dt.time(23, 59), wochentage='', anzahl=1, angefordert_am=tz.now())"
+warte 60 "$AUFTRAG; a=A.objects.get(name='Weg'); print('ja' if a.ergebnis=='fehler' and 'nicht erreichbar' in a.meldung else 'nein')"
 
 sudo_rm sicherungen-e2e
 echo "Alle Prüfungen bestanden."

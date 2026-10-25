@@ -125,6 +125,106 @@ class MailEinstellungen(models.Model):
         return bool(self.server and self.absenderadresse)
 
 
+class SicherungsAuftrag(models.Model):
+    """Ein Auftrag für den Dienst "backup" (ADR 0042): wohin, wann, wie lange aufbewahren.
+
+    Die Felder ab ``angefordert_am`` schreibt der Dienst selbst (Stand des letzten Laufs). Der
+    Standard-Auftrag sichert in den Ordner aus BINTAFELN_SICHERUNG_PFAD; dorthin sichern auch
+    „./betrieb sichern“ und das Update, und von dort stellt „./betrieb wiederherstellen“ her.
+    """
+
+    WOCHENTAGE = [("1", "Mo"), ("2", "Di"), ("3", "Mi"), ("4", "Do"), ("5", "Fr"), ("6", "Sa"),
+                  ("7", "So")]  # fmt: skip
+
+    name = models.CharField("Name", max_length=100)
+    standard = models.BooleanField("Standard-Auftrag", default=False, editable=False)
+    ziel = models.CharField(
+        "Ziel", max_length=300, blank=True,
+        help_text="Leer = Sicherungsordner des Servers; sonst ein Ordner unter /media oder /mnt.",
+    )  # fmt: skip
+    aktiv = models.BooleanField("Regelmäßig ausführen", default=True)
+    wochentage = models.CharField("Wochentage", max_length=7, default="1234567")
+    uhrzeit = models.TimeField("Uhrzeit")
+    anzahl = models.PositiveSmallIntegerField(
+        "Höchstens so viele Stände aufbewahren", null=True, blank=True
+    )
+    tage = models.PositiveSmallIntegerField("Stände höchstens so viele Tage aufbewahren",
+                                            null=True, blank=True)  # fmt: skip
+    angefordert_am = models.DateTimeField("Sofort-Sicherung angefordert am", null=True,
+                                          blank=True)  # fmt: skip
+    angefordert_von = models.CharField(max_length=150, blank=True)
+    laeuft_seit = models.DateTimeField(null=True, blank=True, editable=False)
+    geplant_am = models.DateField(null=True, blank=True, editable=False)
+    letzter_versuch = models.DateTimeField(null=True, blank=True, editable=False)
+    ergebnis = models.CharField(max_length=20, blank=True, editable=False)
+    meldung = models.TextField(blank=True, editable=False)
+    letzte_erfolgreiche = models.DateTimeField(null=True, blank=True, editable=False)
+    staende = models.TextField(blank=True, editable=False)
+    frei_bytes = models.BigIntegerField(null=True, blank=True, editable=False)
+    gesamt_bytes = models.BigIntegerField(null=True, blank=True, editable=False)
+
+    class Meta:
+        verbose_name = "Sicherungsauftrag"
+        verbose_name_plural = "Sicherungsaufträge"
+        ordering = ["-standard", "name"]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def tage_namen(self) -> str:
+        namen = [n for k, n in self.WOCHENTAGE if k in self.wochentage]
+        if len(namen) == 7:
+            return "täglich"
+        if namen == ["Mo", "Di", "Mi", "Do", "Fr"]:
+            return "Mo–Fr"
+        return ", ".join(namen) or "nie"
+
+    @property
+    def staende_liste(self) -> list[tuple[str, int]]:
+        """[(Name, Größe in Bytes)], neueste zuerst, wie der Dienst sie gemeldet hat."""
+        ergebnis = []
+        for zeile in self.staende.splitlines():
+            name, _, kb = zeile.partition("|")
+            if name:
+                ergebnis.append((name, int(kb or 0) * 1024))
+        return ergebnis
+
+
+class SicherungsDienst(models.Model):
+    """Lebenszeichen des Dienstes "backup" und die Ziele, die er sieht (eine Zeile, ADR 0042)."""
+
+    EINZIGE_ID = 1
+    letzter_kontakt = models.DateTimeField(null=True, blank=True)
+    schluessel_ok = models.BooleanField(default=False)
+    ziele = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = "Sicherungsdienst"
+
+    def __str__(self):
+        return "Sicherungsdienst"
+
+    @classmethod
+    def laden(cls):
+        dienst, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
+        return dienst
+
+    def ziele_liste(self) -> list[tuple[str, int, int]]:
+        """[(Pfad, frei, gesamt)] in Bytes."""
+        ergebnis = []
+        for zeile in self.ziele.splitlines():
+            teile = zeile.split("|")
+            if len(teile) == 3 and teile[0]:
+                ergebnis.append((teile[0], int(teile[1] or 0) * 1024, int(teile[2] or 0) * 1024))
+        return ergebnis
+
+
 auditlog.register(TafelEinstellungen, exclude_fields=["geaendert_am"])
+auditlog.register(
+    SicherungsAuftrag,
+    include_fields=["name", "ziel", "aktiv", "wochentage", "uhrzeit", "anzahl", "tage",
+                    "angefordert_am", "angefordert_von"],
+)  # fmt: skip
 # Das (verschlüsselte) Passwort gehört nicht ins Änderungsprotokoll.
 auditlog.register(MailEinstellungen, exclude_fields=["passwort_verschluesselt"])

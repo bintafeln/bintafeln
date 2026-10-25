@@ -102,6 +102,8 @@ KATALOG = [
           "Nur Rechte, die man selbst hat, lassen sich weitergeben."),
     Recht("protokoll.sehen", EINSTELLUNGEN, "Änderungsprotokoll ansehen"),
     Recht("system.status", EINSTELLUNGEN, "Sicherungsstand und Version sehen"),
+    Recht("system.sicherung", EINSTELLUNGEN, "Sicherungen starten, Sicherungsaufträge einstellen",
+          "Ziele, Zeitpläne und Aufbewahrung der Sicherungen auf dem Server."),
 ]  # fmt: skip
 
 NACH_CODE = {r.code: r for r in KATALOG}
