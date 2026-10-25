@@ -470,6 +470,11 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
   wer es war. Beim Import entsteht sie aus dem Vergleich mit dem vorherigen Stand. Sie hängt an
   der Kundennummer und wird nach 3 Jahren gelöscht (einstellbar unter „Einstellungen →
   Kundenstamm“; ADR 0031).
+- **Nachrichten der Ausgabestellen** (ADR 0062): Gehört ein gesuchter Kunde nicht zur eigenen
+  Ausgabestelle, schreibt man mit „✉ Nachricht an die Verwaltung“ (Einlass und Kundenliste) eine
+  Nachricht zur Kundennummer, ohne Daten des Kunden zu sehen. Das Büro (Recht „Nachrichten der
+  Ausgabestellen zu Kunden lesen“) sieht sie unter „Kunden → Nachrichten der Ausgabestellen“, auf
+  der Startseite und auf der Haushaltsseite; erledigte werden nach 90 Tagen gelöscht.
 - **Kundengruppe nur mit gültigem Ausweis** (ADR 0061): Pausierte, gesperrte, beendete Kunden
   und Kunden mit abgelaufenem Ausweis fallen automatisch aus der Kundengruppe, bei Änderungen
   sofort, sonst täglich und beim Import. Abschaltbar unter „Einstellungen → Kunden →

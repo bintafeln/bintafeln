@@ -1,0 +1,66 @@
+"""Nachrichten der Ausgabestellen an die Verwaltung zu Kunden, die sie nicht aufrufen dürfen
+(ADR 0062). Wer schreibt, sieht keine Daten des Kunden; die Verwaltung liest und erledigt."""
+
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_POST
+
+from apps.konten import rollen
+from apps.kunden import zugang
+from apps.kunden.models import Ausgabestelle, Haushalt, Nachricht
+
+SITZUNG_STELLE = "ausgabestelle_id"  # wie apps.ausgabe.views (Ausgabestelle am Einlass)
+
+
+def _stelle(request):
+    """Ausgabestelle des Einlasses, sonst die einzige zugeordnete."""
+    pk = request.session.get(SITZUNG_STELLE)
+    stelle = Ausgabestelle.objects.filter(pk=pk).first() if pk else None
+    eigene = zugang.stellen(request.user) or []
+    return stelle or (eigene[0] if len(eigene) == 1 else None)
+
+
+@require_POST
+@rollen.recht_erforderlich("einlass.nutzen", "kunden.liste")
+def schreiben(request, kundennummer):
+    get_object_or_404(Haushalt, kundennummer=kundennummer)  # zeigt nichts vom Kunden
+    text = request.POST.get("text", "").strip()[:1000]
+    zurueck = request.POST.get("zurueck", "")
+    if not url_has_allowed_host_and_scheme(zurueck, allowed_hosts={request.get_host()}):
+        zurueck = "/"
+    if not text:
+        messages.error(request, "Bitte eine Nachricht eingeben.")
+        return redirect(zurueck)
+    von = request.user.get_full_name() or request.user.get_username()
+    Nachricht.objects.create(kundennummer=kundennummer, text=text, stelle=_stelle(request), von=von)
+    messages.success(request, f"Nachricht zu Kunde {kundennummer} an die Verwaltung gesendet.")
+    return redirect(zurueck)
+
+
+def offene() -> int:
+    return Nachricht.objects.filter(erledigt_am__isnull=True).count()
+
+
+@never_cache
+@rollen.recht_erforderlich("kunden.nachrichten")
+def liste(request):
+    if request.method == "POST":
+        n = get_object_or_404(Nachricht, pk=request.POST.get("nachricht") or 0)
+        if n.erledigt_am:
+            n.erledigt_am, n.erledigt_von = None, ""
+        else:
+            n.erledigt_am, n.erledigt_von = timezone.now(), request.user.get_username()
+        n.save()
+        weiter = request.POST.get("weiter", "")
+        if not url_has_allowed_host_and_scheme(weiter, allowed_hosts={request.get_host()}):
+            weiter = "kunden:nachrichten"
+        return redirect(weiter)
+    alle = Nachricht.objects.select_related("stelle")
+    return render(request, "kunden/nachrichten.html", {
+        "offen": alle.filter(erledigt_am__isnull=True),
+        "erledigt": alle.filter(erledigt_am__isnull=False).order_by("-erledigt_am")[:100],
+        "tage": Nachricht.AUFBEWAHREN_TAGE,
+    })  # fmt: skip

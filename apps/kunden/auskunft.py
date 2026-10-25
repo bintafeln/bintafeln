@@ -17,6 +17,7 @@ from apps.kunden.models import (
     HaushaltDokument,
     HaushaltEreignis,
     KundenEinstellungen,
+    Nachricht,
     Notiz,
     Zugriff,
     Zusatzfeld,
@@ -116,6 +117,14 @@ def kunde_pdf(h: Haushalt) -> bytes:
         ["Datum", "Text", "Von"],
         [[_datum(timezone.localtime(n.erstellt_am).date()), n.text, n.verfasst_von]
          for n in Notiz.objects.filter(kundennummer=h.kundennummer)],
+        breiten=[0.14, 0.66, 0.2],
+    )  # fmt: skip
+
+    doc.ueberschrift("Nachrichten der Ausgabestellen an die Verwaltung")
+    doc.tabelle(
+        ["Datum", "Nachricht", "Von"],
+        [[_datum(timezone.localdate(n.erstellt_am)), n.text, n.von]
+         for n in Nachricht.objects.filter(kundennummer=h.kundennummer)],
         breiten=[0.14, 0.66, 0.2],
     )  # fmt: skip
 

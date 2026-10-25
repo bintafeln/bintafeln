@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block titel %}Nachrichten der Ausgabestellen{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Nachrichten der Ausgabestellen</h1>
+  <p class="hinweis">Ausgabestellen schreiben hier zu Kunden, die sie nicht aufrufen dürfen (z. B. weil der Kunde zu einer
+    anderen Ausgabestelle gehört). Erledigte werden nach {{ tage }} Tagen gelöscht.</p>
+  <h2>Offen ({{ offen|length }})</h2>
+  {% include "kunden/_nachrichten_tabelle.html" with liste=offen %}
+  <h2>Erledigt</h2>
+  {% include "kunden/_nachrichten_tabelle.html" with liste=erledigt %}
+</section>
+{% endblock %}

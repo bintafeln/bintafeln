@@ -317,6 +317,8 @@ def _programm(benutzer, begriff, grenze, menue=()):
                     continue
                 gesehen.add(e["url"])
                 ziel.append(Treffer(e["titel"], e["url"], f"Menü: {weg}"))
+    # Name beginnt mit dem Begriff zuerst (sortiert stabil, sonst Menüreihenfolge)
+    im_namen.sort(key=lambda t: not t.titel.lower().startswith(begriff))
     return (im_namen + im_bereich)[: grenze + 1]
 
 

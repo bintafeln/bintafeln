@@ -38,6 +38,7 @@
     {% endif %}
     <button type="submit" class="knopf">Suchen</button>
   </form>
+  {% if fremd_nummer %}{% include "kunden/_nachricht.html" with nummer=fremd_nummer zurueck=request.get_full_path %}{% endif %}
   <div id="kunden-liste">{% include "kunden/_liste.html" %}</div>
 </section>
 

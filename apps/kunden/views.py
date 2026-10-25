@@ -33,6 +33,7 @@ from apps.kunden.models import (
     ImportVorbereitung,
     KundenEinstellungen,
     Kundengruppe,
+    Nachricht,
     Notiz,
     NotizVorlage,
     Person,
@@ -244,6 +245,7 @@ def uebersicht(request):
     ImportVorbereitung.abgelaufene_loeschen()
     fristen_anwenden()
     suche = request.GET.get("q", "").strip()
+    fremd = ""
     if suche and not request.headers.get("HX-Request"):
         treffer = (
             Haushalt.objects.select_related("kundengruppe__ausgabestelle")
@@ -255,6 +257,7 @@ def uebersicht(request):
             return redirect("kunden:haushalt", kundennummer=treffer.kundennummer)
         if grund:
             messages.error(request, grund)
+            fremd = treffer.kundennummer
     haushalte, filter_ = _haushalte_suchen(request)
     seite = Paginator(haushalte.select_related("kundengruppe__ausgabestelle")
                       .prefetch_related("personen"), LISTE_JE_SEITE).get_page(
@@ -264,6 +267,7 @@ def uebersicht(request):
     aus = set(request.user.kundenliste_aus or [])
     spalten = _spalten(filter_, keys, darf)
     kontext = {
+        "fremd_nummer": fremd,
         "seite": seite,
         "filter": filter_,
         "status_auswahl": Haushalt.Status.choices,
@@ -365,6 +369,11 @@ def haushalt(request, kundennummer):
             **notizen_kontext(h.kundennummer, request.user),
             **(views_dokumente.kontext(h.kundennummer) if "kunden.dokumente" in darf else {}),
             "gruppenzeiten": gruppen.zeiten(h.kundennummer) if "kunden.historie" in darf else [],
+            "nachrichten": Nachricht.objects.filter(
+                kundennummer=h.kundennummer, erledigt_am__isnull=True
+            )
+            if "kunden.nachrichten" in darf
+            else [],
             "historie": HaushaltEreignis.objects.filter(kundennummer=h.kundennummer)
             if "kunden.historie" in darf
             else [],

@@ -567,6 +567,30 @@ class NotizVorlage(models.Model):
         return self.text
 
 
+class Nachricht(models.Model):
+    """Nachricht einer Ausgabestelle an die Verwaltung zu einem Kunden, den sie nicht aufrufen darf
+    (ADR 0062). Hängt an der Kundennummer; erledigte werden nach ``AUFBEWAHREN_TAGE`` gelöscht."""
+
+    AUFBEWAHREN_TAGE = 90
+
+    kundennummer = models.CharField("Kundennummer", max_length=20, db_index=True)
+    text = models.TextField("Nachricht", max_length=1000)
+    stelle = models.ForeignKey("Ausgabestelle", null=True, blank=True, on_delete=models.SET_NULL,
+                               related_name="+", verbose_name="Ausgabestelle")  # fmt: skip
+    erstellt_am = models.DateTimeField("Geschrieben am", default=timezone.now)
+    von = models.CharField("Von", max_length=150, blank=True)
+    erledigt_am = models.DateTimeField("Erledigt am", null=True, blank=True)
+    erledigt_von = models.CharField("Erledigt von", max_length=150, blank=True)
+
+    class Meta:
+        verbose_name = "Nachricht zu einem Kunden"
+        verbose_name_plural = "Nachrichten zu Kunden"
+        ordering = ["-erstellt_am"]
+
+    def __str__(self):
+        return f"Nachricht zu {self.kundennummer}"
+
+
 def verwaiste_notizen_loeschen() -> int:
     """Notizen zu Kundennummern, die es nicht mehr gibt."""
     vorhanden = Haushalt.objects.values("kundennummer")
@@ -877,8 +901,14 @@ def fristen_anwenden() -> int:
         + verwaiste_notizen_loeschen()
         + abgelaufene_dokumente_loeschen()
         + alte_historie_loeschen()
+        + alte_nachrichten_loeschen()
         + _gruppenregel()
     )
+
+
+def alte_nachrichten_loeschen() -> int:
+    grenze = timezone.now() - dt.timedelta(days=Nachricht.AUFBEWAHREN_TAGE)
+    return Nachricht.objects.filter(erledigt_am__lt=grenze).delete()[0]
 
 
 def _gruppenregel() -> int:
@@ -970,3 +1000,4 @@ for modell in (
 ):
     auditlog.register(modell)
 auditlog.register(HaushaltDokument, exclude_fields=["datei"])
+auditlog.register(Nachricht)

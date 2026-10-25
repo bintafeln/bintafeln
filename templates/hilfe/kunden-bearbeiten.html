@@ -28,3 +28,7 @@
 {% if "kunden.loeschen" in rechte %}<h3>Löschen</h3>
 <p>„Löschen …“ zeigt zuerst, was alles mitgelöscht wird (Personen, Abholungen, Notizen, Dokumente, Historie …). Erst
   „Ja, … endgültig löschen“ löscht. Kontobuchungen bleiben ohne Haushalt für die Kasse erhalten.</p>{% endif %}
+{% if "kunden.nachrichten" in rechte %}<h3>Nachrichten der Ausgabestellen</h3>
+<p>Ausgabestellen können zu Kunden, die sie nicht aufrufen dürfen, eine Nachricht an die Verwaltung schreiben. Sie stehen
+  unter „Kunden → Nachrichten der Ausgabestellen“ (die Zahl im Menü und auf der Startseite zeigt offene) und auf der
+  Haushaltsseite. „✓ erledigt“ hakt sie ab; erledigte werden nach 90 Tagen gelöscht.</p>{% endif %}

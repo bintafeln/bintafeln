@@ -526,6 +526,8 @@ label.wahl { display: block; white-space: nowrap; }
 
 /* Kamera als Barcode-Scanner (Einlass) */
 .kamera-dialog { width: min(36rem, calc(100vw - 2rem)); border: 0; border-radius: var(--radius); padding: 1rem; }
+.nachricht-dialog { width: min(36rem, calc(100vw - 2rem)); border: 0; border-radius: var(--radius); padding: 1rem; }
+.nachricht-dialog textarea { width: 100%; }
 .kamera-dialog::backdrop { background: rgb(0 0 0 / .6); }
 .kamera-dialog video { display: block; width: 100%; max-height: 60vh; background: #000; border-radius: var(--radius); object-fit: cover; }
 .kamera-dialog .kamera-hilfe { margin: 0 0 .5rem; }
