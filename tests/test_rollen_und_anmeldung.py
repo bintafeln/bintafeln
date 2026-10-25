@@ -61,13 +61,11 @@ def test_admin_login_nutzt_eigene_anmeldung(client, admin):
 
 def test_zwei_faktor_wenn_geraet_eingerichtet(client, admin):
     geraet = TOTPDevice.objects.create(user=admin, name="Handy", confirmed=True)
-    url = reverse("konten:anmelden")
-    ohne_code = client.post(url, {"username": "chefin", "password": PASSWORT})
-    assert ohne_code.status_code == 200
+    url, code_url = reverse("konten:anmelden"), reverse("konten:anmelden_code")
+    ohne_code = client.post(url, {"username": "chefin", "password": PASSWORT, "next": "/kunden/"})
+    assert ohne_code.url == code_url and "_auth_user_id" not in client.session
 
-    falscher_code = client.post(
-        url, {"username": "chefin", "password": PASSWORT, "otp_token": "000000"}
-    )
+    falscher_code = client.post(code_url, {"otp_token": "000000"})
     assert falscher_code.status_code == 200
 
     # Nach einem Fehlversuch sperrt django-otp kurz (Schutz vor Durchprobieren).
@@ -77,8 +75,8 @@ def test_zwei_faktor_wenn_geraet_eingerichtet(client, admin):
 
     totp = TOTP(geraet.bin_key, geraet.step, geraet.t0, geraet.digits, geraet.drift)
     code = f"{totp.token():0{geraet.digits}d}"
-    antwort = client.post(url, {"username": "chefin", "password": PASSWORT, "otp_token": code})
-    assert antwort.status_code == 302
+    antwort = client.post(code_url, {"otp_token": code})
+    assert antwort.status_code == 302 and antwort.url == "/kunden/"
     assert client.session.get("otp_device_id")
 
 
@@ -93,3 +91,30 @@ def test_startseite_zeigt_eigene_rollen(client, benutzer_mit_rolle, admin, anmel
     # in der festen Reihenfolge der Rollen
     assert inhalt.index(">Ausgabe<") < inhalt.index(">Kiosk<")
     assert "keine – bitte" not in inhalt
+
+
+def test_zweiter_schritt_nur_kurz_und_mit_wenigen_versuchen(client, admin, anmelden):
+    from apps.konten import views
+
+    TOTPDevice.objects.create(user=admin, name="Handy", confirmed=True)
+    url, code_url = reverse("konten:anmelden"), reverse("konten:anmelden_code")
+    # ohne ersten Schritt geht es nicht
+    assert client.get(code_url, follow=True).redirect_chain[-1][0] == url
+    client.post(url, {"username": "chefin", "password": PASSWORT})
+    for _ in range(views.ZWEITER_SCHRITT_VERSUCHE - 1):
+        TOTPDevice.objects.update(throttling_failure_count=0, throttling_failure_timestamp=None)
+        assert client.post(code_url, {"otp_token": "000000"}).status_code == 200
+    antwort = client.post(code_url, {"otp_token": "000000"}, follow=True)
+    assert "Zu viele falsche Codes" in antwort.content.decode()
+    # nach Ablauf der Zeit wieder von vorn
+    client.post(url, {"username": "chefin", "password": PASSWORT})
+    sitzung = client.session
+    offen = sitzung[views.SITZUNG_ZWEITER_SCHRITT]
+    offen["zeit"] -= views.ZWEITER_SCHRITT_MINUTEN * 60 + 1
+    sitzung[views.SITZUNG_ZWEITER_SCHRITT] = offen
+    sitzung.save()
+    antwort = client.get(code_url, follow=True)
+    assert "Bitte zuerst Benutzername und Passwort" in antwort.content.decode()
+    # Angemeldete landen auf der Startseite
+    anmelden(client, admin)
+    assert client.get(code_url).url == reverse("core:start")

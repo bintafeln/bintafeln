@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block titel %}Zwei-Faktor-Code{% endblock %}
+{% block hintergrund %}{% if tafel.hintergrund_anmeldung %}<div class="hintergrund" aria-hidden="true" style="background-image: url('{{ tafel.hintergrund_anmeldung.url }}');"></div>{% endif %}{% endblock %}
+{% block inhalt %}
+<section class="karte schmal">
+  <h1>Zwei-Faktor-Code</h1>
+  <p>Hallo {{ benutzer.get_short_name|default:benutzer.username }}, bitte den Code aus Ihrer Authenticator-App eingeben
+    – oder einen Ihrer Notfallcodes.</p>
+  <form method="post" action="{% url 'konten:anmelden_code' %}">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Anmelden</button>
+    <a class="knopf knopf-abbrechen" href="{% url 'konten:anmelden' %}">Abbrechen</a>
+  </form>
+</section>
+{% endblock %}

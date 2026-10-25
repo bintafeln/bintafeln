@@ -24,7 +24,7 @@ from django_otp import match_token
 
 from apps.core import mail
 from apps.konten import einladung, rollen, zwei_faktor
-from apps.konten.forms import AnmeldeEinstellungenForm, AnmeldeForm, CodeForm
+from apps.konten.forms import AnmeldeEinstellungenForm, AnmeldeForm, CodeForm, ZweiterSchrittForm
 from apps.konten.models import AnmeldeEinstellungen, VertrautesGeraet
 
 logger = logging.getLogger(__name__)
@@ -39,19 +39,29 @@ def _ziel(request) -> str:
     return "core:start"
 
 
-@sensitive_post_parameters("password", "otp_token")
+SITZUNG_ZWEITER_SCHRITT = "anmeldung_zweiter_schritt"
+ZWEITER_SCHRITT_MINUTEN = 5
+ZWEITER_SCHRITT_VERSUCHE = 5
+
+
+@sensitive_post_parameters("password")
 def anmelden(request):
+    """Schritt 1: Benutzername und Passwort. Mit Zwei-Faktor-Gerät weiter zu Schritt 2."""
     if request.user.is_authenticated:
         return redirect("core:start")
     form = AnmeldeForm(request, data=request.POST or None)
     if request.method == "POST" and form.is_valid():
+        if form.braucht_code:
+            request.session.cycle_key()
+            request.session[SITZUNG_ZWEITER_SCHRITT] = {
+                "b": form.benutzer.pk, "backend": form.benutzer.backend,
+                "zeit": timezone.now().timestamp(), "next": _ziel(request), "versuche": 0,
+            }  # fmt: skip
+            return redirect("konten:anmelden_code")
         login(request, form.benutzer)
         if form.geraet is not None:
             otp_login(request, form.geraet)
-        antwort = redirect(_ziel(request))
-        if form.mit_code and form.cleaned_data.get("vertrauen"):
-            zwei_faktor.geraet_vertrauen(request, antwort, form.benutzer)
-        return antwort
+        return redirect(_ziel(request))
     return render(
         request,
         "konten/anmelden.html",
@@ -62,6 +72,38 @@ def anmelden(request):
             **_demo_zugaenge(),
         },
     )
+
+
+@sensitive_post_parameters("otp_token")
+def anmelden_code(request):
+    """Schritt 2: Zwei-Faktor-Code. Gilt nur kurz nach Schritt 1 und für wenige Versuche."""
+    if request.user.is_authenticated:
+        return redirect("core:start")
+    offen = request.session.get(SITZUNG_ZWEITER_SCHRITT)
+    benutzer = None
+    if offen and timezone.now().timestamp() - offen["zeit"] < ZWEITER_SCHRITT_MINUTEN * 60:
+        benutzer = get_user_model().objects.filter(pk=offen["b"], is_active=True).first()
+    if benutzer is None:
+        request.session.pop(SITZUNG_ZWEITER_SCHRITT, None)
+        messages.error(request, "Bitte zuerst Benutzername und Passwort eingeben.")
+        return redirect("konten:anmelden")
+    form = ZweiterSchrittForm(benutzer, data=request.POST or None)
+    if request.method == "POST":
+        if form.is_valid():
+            request.session.pop(SITZUNG_ZWEITER_SCHRITT, None)
+            login(request, benutzer, backend=offen["backend"])
+            otp_login(request, form.geraet)
+            antwort = redirect(offen["next"])
+            if form.cleaned_data.get("vertrauen"):
+                zwei_faktor.geraet_vertrauen(request, antwort, benutzer)
+            return antwort
+        offen["versuche"] += 1
+        if offen["versuche"] >= ZWEITER_SCHRITT_VERSUCHE:
+            request.session.pop(SITZUNG_ZWEITER_SCHRITT, None)
+            messages.error(request, "Zu viele falsche Codes. Bitte neu anmelden.")
+            return redirect("konten:anmelden")
+        request.session[SITZUNG_ZWEITER_SCHRITT] = offen
+    return render(request, "konten/anmelden_code.html", {"form": form, "benutzer": benutzer})
 
 
 def _demo_zugaenge() -> dict:
