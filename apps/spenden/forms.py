@@ -58,3 +58,37 @@ class SpendenEinstellungenForm(forms.ModelForm):
                   "bescheid_vom", "veranlagungszeitraum", "mitgliedsbeitraege_abziehbar",
                   "unterzeichnet_von", "ort", "naechste_nummer"]  # fmt: skip
         widgets = {"bescheid_vom": DatumEingabe(), "zwecke": forms.Textarea(attrs={"rows": 3})}
+
+
+class DankForm(forms.Form):
+    """Auswahl für Dankesbriefe (ADR 0056)."""
+
+    vorlage = forms.ModelChoiceField(
+        label="Vorlage", queryset=None,
+        help_text="Serienbrief-Vorlage, z. B. mit {anrede}, {spendensumme}, {anzahl_spenden}.",
+    )  # fmt: skip
+    jahr = forms.TypedChoiceField(label="Jahr", coerce=int)
+    art = forms.ChoiceField(label="Spender", initial="alle", widget=forms.RadioSelect)
+    nur_offen = forms.BooleanField(label="Nur Spenden ohne Dankesbrief", required=False,
+                                   initial=True)  # fmt: skip
+    mit_bestaetigungen = forms.BooleanField(
+        label="Zuwendungsbestätigungen aus bintafeln beilegen", required=False, initial=True,
+        help_text="Fehlende Bestätigungen für Geldspenden werden dabei ausgestellt.",
+    )  # fmt: skip
+    mit_belegen = forms.BooleanField(
+        label="Hochgeladene Belege beilegen (z. B. aus dem Vereinsportal)", required=False,
+        initial=True,
+    )  # fmt: skip
+    mail = forms.BooleanField(
+        label="Spender mit E-Mail-Einwilligung per E-Mail anschreiben (Anlagen als PDF)",
+        required=False, help_text="Die übrigen bekommen einen Brief.",
+    )  # fmt: skip
+
+    def __init__(self, *args, jahre=(), **kwargs):
+        from apps.serienbriefe.models import Vorlage
+        from apps.spenden.dank import ARTEN
+
+        super().__init__(*args, **kwargs)
+        self.fields["vorlage"].queryset = Vorlage.objects.all()
+        self.fields["jahr"].choices = [(j, j) for j in jahre]
+        self.fields["art"].choices = ARTEN

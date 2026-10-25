@@ -5,6 +5,7 @@ django-otp==1.7.5
 segno==1.6.6
 cryptography==46.0.7
 reportlab==4.4.10
+pypdf==6.20.1
 nh3==0.3.7
 gunicorn==26.2.0
 pillow==13.0.0

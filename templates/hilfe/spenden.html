@@ -28,3 +28,24 @@
 <p>„Spenden“ zeigt ein Jahr mit Summen (Geld, Wert der Sachspenden, Anzahl, Spender), Geldspenden je Monat und alle
   Spenden; filterbar nach Art und Suchbegriff, als CSV-Datei für Excel. Auf der Seite einer Adresse stehen deren Spenden
   und die Summen je Jahr.</p>
+{% if "spenden.bestaetigen" in rechte %}
+<h3>Dankesbriefe</h3>
+<p>„Spenden → Dankesbriefe“ schreibt jedem Spender eines Jahres einen Brief aus einer Serienbrief-Vorlage. Neue
+  Platzhalter dafür: <code>{anzahl_spenden}</code> und <code>{spendendaten}</code> (z. B. „15.01.2026, 15.02.2026“),
+  dazu wie gewohnt <code>{anrede}</code> und <code>{spendensumme}</code>.</p>
+<ol>
+  <li>Vorlage und Jahr wählen; <strong>Einfach-</strong> oder <strong>Mehrfachspender</strong> lassen sich getrennt
+    anschreiben (z. B. mit unterschiedlichen Vorlagen).</li>
+  <li>Anlagen: <strong>Zuwendungsbestätigungen aus bintafeln</strong> (fehlende werden für Geldspenden dabei
+    ausgestellt, bei mehreren Spenden als Sammelbestätigung) und/oder <strong>hochgeladene Belege</strong>, z. B. aus
+    dem Vereinsportal. Beides geht auch zusammen.</li>
+  <li>„Vorschau“ zeigt die Spender. „Briefe als PDF erstellen“ ergibt ein PDF: je Spender Brief und Anlagen
+    hintereinander. Mit dem Haken „per E-Mail“ bekommen Spender mit E-Mail-Einwilligung eine Mail mit den Anlagen als
+    PDF, die übrigen einen Brief.</li>
+  <li>Danach gelten die Spenden als bedankt; mit „Nur Spenden ohne Dankesbrief“ erscheinen sie nicht noch einmal.</li>
+</ol>
+<h3>Belege aus dem Vereinsportal</h3>
+<p>„Spenden → Belege hochladen“ nimmt mehrere PDFs auf einmal an. Steht die Belegnummer der Spende im Dateinamen
+  (z. B. „Spendenbeleg_000123.pdf“), ordnet bintafeln den Beleg selbst zu; Sammelbescheinigungen und andere ordnen Sie
+  in der Liste „Noch zuzuordnen“ dem Spender zu. Die Dateien liegen verschlüsselt auf dem Server.</p>
+{% endif %}

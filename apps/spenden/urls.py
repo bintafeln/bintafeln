@@ -15,4 +15,7 @@ urlpatterns = [
     path("bestaetigungen/pdf/", views.pdf, name="pdf"),
     path("bestaetigungen/<int:nummer>/stornieren/", views.stornieren, name="stornieren"),
     path("einstellungen/", views.einstellungen, name="einstellungen"),
+    path("dankesbriefe/", views.dank, name="dank"),
+    path("belege/", views.belege, name="belege"),
+    path("belege/<int:pk>/", views.beleg, name="beleg"),
 ]

@@ -42,12 +42,21 @@ def adresse_pdf(a) -> bytes:
     spenden = list(a.spenden.select_related("bestaetigung").order_by("datum"))
     if spenden:
         doc.ueberschrift("Spenden")
-        doc.tabelle(["Datum", "Art", "Betrag/Wert", "Bezeichnung", "Bestätigung"], [
+        doc.tabelle(["Datum", "Art", "Betrag/Wert", "Bezeichnung", "Bestätigung", "Dank"], [
             [f"{s.datum:%d.%m.%Y}", s.get_art_display(),
              f"{s.betrag:.2f} €".replace(".", ",") if s.betrag else "",
-             s.beschreibung or s.zweck, f"Nr. {s.bestaetigung.nummer}" if s.bestaetigt else ""]
+             s.beschreibung or s.zweck, f"Nr. {s.bestaetigung.nummer}" if s.bestaetigt else "",
+             f"{s.bedankt_am:%d.%m.%Y}" if s.bedankt_am else ""]
             for s in spenden
-        ], breiten=[0.15, 0.15, 0.17, 0.38, 0.15], rechts=(2,))  # fmt: skip
+        ], breiten=[0.13, 0.13, 0.15, 0.33, 0.13, 0.13], rechts=(2,))  # fmt: skip
+    belege = list(a.spendenbelege.order_by("hochgeladen_am"))
+    if belege:
+        doc.ueberschrift("Hochgeladene Spendenbelege")
+        doc.tabelle(["Datei", "Jahr", "Hochgeladen am", "Dankesbrief beigelegt"], [
+            [b.dateiname, str(b.jahr), f"{b.hochgeladen_am:%d.%m.%Y}",
+             f"{b.beigelegt_am:%d.%m.%Y}" if b.beigelegt_am else ""]
+            for b in belege
+        ], breiten=[0.45, 0.1, 0.2, 0.25])  # fmt: skip
     bestaetigungen = list(a.bestaetigungen.order_by("nummer"))
     if bestaetigungen:
         doc.ueberschrift("Zuwendungsbestätigungen")

@@ -802,6 +802,11 @@ Adresse im Adressbuch (ADR 0045).
   vorab, Spender über E-Mail oder Name+PLZ zugeordnet bzw. neu angelegt, eine **Belegnummer**
   verhindert doppelte Spenden bei erneutem Import. Spalten und Beispiel:
   [docs/beispiele/spenden/spenden.csv](docs/beispiele/spenden/spenden.csv).
+- **Dankesbriefe** (ADR 0056) aus einer Serienbrief-Vorlage, getrennt für Einfach- und
+  Mehrfachspender, mit Zuwendungsbestätigung aus bintafeln (fehlende werden ausgestellt) und/oder
+  **hochgeladenen Belegen** aus einem anderen Programm (z. B. Vereinsportal; Zuordnung über die
+  Belegnummer im Dateinamen oder von Hand). Ein PDF für den Druck oder E-Mails mit PDF-Anhang an
+  Spender mit E-Mail-Einwilligung; danach gelten die Spenden als bedankt.
 - **Zuwendungsbestätigungen** als PDF nach den amtlichen Mustern: Einzel-, Sammel- (mit Anlage)
   und Sachbestätigung, Betrag in Ziffern und Worten, fortlaufende Nummer. „Alle ausstellen“
   erstellt am Jahresende für alle Spender auf einmal. Jede Spende wird nur einmal bestätigt;

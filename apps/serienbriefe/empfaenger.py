@@ -23,7 +23,10 @@ PLATZHALTER = [
     ("name", "ganzer Name bzw. Organisation"), ("vorname", "Vorname"), ("nachname", "Nachname"),
     ("organisation", "Organisation"), ("mitgliedsnummer", "Mitgliedsnummer"),
     ("jahresbeitrag", "Jahresbeitrag"), ("beitrag_offen", "offener Beitrag im gewählten Jahr"),
-    ("spendensumme", "Geldspenden im gewählten Jahr"), ("kundennummer", "Kundennummer"),
+    ("spendensumme", "Geldspenden im gewählten Jahr"),
+    ("anzahl_spenden", "Anzahl der Spenden (Dankesbriefe)"),
+    ("spendendaten", "Daten der Spenden, z. B. „15.01.2026, 15.02.2026“ (Dankesbriefe)"),
+    ("kundennummer", "Kundennummer"),
     ("jahr", "gewähltes Jahr"), ("datum", "heutiges Datum"), ("tafel", "Name der Tafel"),
 ]  # fmt: skip
 

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block titel %}Belege hochladen{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'spenden:dank' %}">← Dankesbriefe</a></p>
+  <h1>Belege hochladen</h1>
+  <p>PDFs aus einem anderen Programm, z. B. Zuwendungsbestätigungen aus dem Vereinsportal. Sie liegen dem Dankesbrief
+    des Spenders bei. Steht die <strong>Belegnummer</strong> der Spende im Dateinamen (z. B. „Spendenbeleg_000123.pdf“
+    für Belegnummer 123), ordnet bintafeln den Beleg selbst zu; sonst wählen Sie unten den Spender.</p>
+  <form method="post" enctype="multipart/form-data" class="aktionsleiste">
+    {% csrf_token %}
+    <input type="hidden" name="aktion" value="hochladen">
+    <label>Jahr <select name="jahr" onchange="location.search='?jahr='+this.value">{% for j in jahre %}<option value="{{ j }}"{% if j == jahr %} selected{% endif %}>{{ j }}</option>{% endfor %}</select></label>
+    <label for="dateien" class="unsichtbar">PDF-Dateien</label>
+    <input type="file" id="dateien" name="dateien" accept="application/pdf" multiple required>
+    <button type="submit" class="knopf">Hochladen</button>
+  </form>
+
+  {% if offen %}
+  <h2>Noch zuzuordnen</h2>
+  <table class="tabelle kompakt">
+    <thead><tr><th>Datei</th><th>Spender</th><th></th></tr></thead>
+    <tbody>
+      {% for b in offen %}
+      <tr>
+        <td><a href="{% url 'spenden:beleg' b.pk %}" target="_blank" rel="noopener">{{ b.dateiname }}</a></td>
+        <td><form method="post" class="inline">{% csrf_token %}<input type="hidden" name="aktion" value="zuordnen"><input type="hidden" name="beleg" value="{{ b.pk }}">
+          <select name="adresse" required aria-label="Spender für {{ b.dateiname }}"><option value="">– Spender wählen –</option>{% for a in spender %}<option value="{{ a.pk }}">{{ a.name }}{% if a.ort %}, {{ a.ort }}{% endif %}</option>{% endfor %}</select>
+          <button type="submit" class="knopf knopf-zweitrangig">Zuordnen</button></form></td>
+        <td><form method="post" class="inline" onsubmit="return confirm('Beleg löschen?');">{% csrf_token %}<input type="hidden" name="aktion" value="loeschen"><input type="hidden" name="beleg" value="{{ b.pk }}"><button type="submit" class="link">löschen</button></form></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <h2>Zugeordnete Belege {{ jahr }}</h2>
+  <table class="tabelle kompakt">
+    <thead><tr><th>Datei</th><th>Spender</th><th>Spende</th><th>Beigelegt</th><th></th></tr></thead>
+    <tbody>
+      {% for b in zugeordnet %}
+      <tr>
+        <td><a href="{% url 'spenden:beleg' b.pk %}" target="_blank" rel="noopener">{{ b.dateiname }}</a></td>
+        <td>{{ b.adresse.name }}</td>
+        <td>{% if b.spende %}{{ b.spende.datum|date:"d.m.Y" }}{% if b.spende.belegnummer %} · {{ b.spende.belegnummer }}{% endif %}{% else %}–{% endif %}</td>
+        <td>{{ b.beigelegt_am|date:"d.m.Y"|default:"noch nicht" }}</td>
+        <td><form method="post" class="inline" onsubmit="return confirm('Beleg löschen?');">{% csrf_token %}<input type="hidden" name="aktion" value="loeschen"><input type="hidden" name="beleg" value="{{ b.pk }}"><button type="submit" class="link">löschen</button></form></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="hinweis">Noch keine Belege für {{ jahr }}.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

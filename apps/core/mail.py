@@ -66,13 +66,19 @@ def verbindung_pruefen() -> None:
         verbindung.close()
 
 
-def senden(betreff: str, text: str, an: list[str], html: str | None = None) -> None:
-    """Sendet ``text``; mit ``html`` zusätzlich eine gestaltete Fassung (Mailprogramme wählen)."""
+def senden(betreff: str, text: str, an: list[str], html: str | None = None,
+           anhaenge=()) -> None:  # fmt: skip
+    """Sendet ``text``; mit ``html`` zusätzlich eine gestaltete Fassung (Mailprogramme wählen).
+
+    ``anhaenge`` = [(Dateiname, Inhalt, Medientyp)], z. B. ein PDF.
+    """
     e = MailEinstellungen.laden()
     verbindung = _verbindung(e)
     nachricht = EmailMultiAlternatives(betreff, text, e.absenderadresse, an, connection=verbindung)
     if html:
         nachricht.attach_alternative(html, "text/html")
+    for name, inhalt, typ in anhaenge:
+        nachricht.attach(name, inhalt, typ)
     try:
         nachricht.send()
     except (smtplib.SMTPException, OSError) as fehler:
