@@ -50,6 +50,10 @@ def test_anlegen_und_anmelden_mit_namen(admin_client, mitte):
     assert antwort.status_code == 302 and antwort.url == "/"
     start = tablet.get("/")
     assert start.status_code == 200 and "stellen_konto.js" in start.content.decode()
+    # Keine Auskunft nach Art. 15 für das Konto einer Ausgabestelle (gehört keiner Person)
+    assert "Meine Daten" not in tablet.get(reverse("konten:mein_konto")).content.decode()
+    assert tablet.get(reverse("konten:meine_auskunft")).status_code == 404
+    assert "Meine Daten" in admin_client.get(reverse("konten:mein_konto")).content.decode()
     liste = tablet.get(reverse("kunden:uebersicht"), {"tag": ""})
     assert [h.kundennummer for h in liste.context["seite"].object_list] == ["101"]
     # In der Liste der Mitarbeitenden steht das Konto nicht; dessen Seite führt zur Stelle

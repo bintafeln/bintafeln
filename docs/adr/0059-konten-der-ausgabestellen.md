@@ -19,6 +19,7 @@ Konto verwischt dagegen, wer was darf.
 - Ausgleich für den fehlenden zweiten Faktor: Abmeldung nach 30 Minuten ohne Anfrage
   (`StellenKontoMiddleware`, die Seite lädt dann neu) und für alle Konten eine Sperre von
   15 Minuten nach 5 falschen Passwörtern.
+- Das Konto gehört keiner Person: „Meine Daten“ (Auskunft nach Art. 15) gibt es dafür nicht.
 
 ## Begründung
 
