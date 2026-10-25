@@ -115,7 +115,9 @@ def abfrage_api(request, schluessel):
     nummer = request.GET.get("nummer", "").strip()[:20]
     if not nummer:
         return JsonResponse({"error": "Keine Kundennummer angegeben"}, status=400)
-    return JsonResponse(ablauf.abfrage(e.ausgabestelle, timezone.localdate(), nummer))
+    daten = ablauf.abfrage(e.ausgabestelle, timezone.localdate(), nummer)
+    daten.pop("abgeholt_um", None)  # Geräte ohne Anmeldung: keine Uhrzeit der Abholung
+    return JsonResponse(daten)
 
 
 def layout_pruefen(daten: dict) -> dict:
