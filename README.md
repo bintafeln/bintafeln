@@ -227,7 +227,10 @@ an dem Tag Ausgabe ist). Mit dem Recht „Kundenliste als CSV-Datei exportieren�
 Ausgabe) lädt „Als CSV exportieren (Excel)“ die gefilterte Liste herunter; die Spalten wählt der
 Admin unter „Einstellungen → Kunden → Kundenstamm“, Kontaktdaten, Kontostand und Art.-9-Felder
 bleiben ohne das passende Recht leer, und jeder Export steht im Zugriffsprotokoll (ADR 0058).
-Die Spalten der Kundenliste sind per Klick sortierbar (der Export übernimmt die Sortierung),
+Die Kundenliste zeigt dieselben Spalten wie der Export (Einstellung „Spalten der Kundenliste und
+des Exports“); unter „Spalten wählen“ blendet jede Person einzelne für ihr Konto aus
+(`Benutzer.kundenliste_aus`). Die Spalten sind per Klick sortierbar (der Export übernimmt die
+Sortierung; Spalten mit Recht nur mit diesem Recht),
 „Letzter Besuch“ steht wie überall mit Uhrzeit der letzten Abholung, und in allen Listen mit
 mehreren Seiten steht die Blätterleiste oben und unten (`{% blaettern seite %}` aus
 `apps/core/templatetags/liste.py`).
@@ -238,7 +241,10 @@ mehreren Seiten steht die Blätterleiste oben und unten (`{% blaettern seite %}`
 bekommt jede Ausgabestelle unter „Team → Ausgabestellen-Konten“ ein eigenes Konto. Anmeldung mit
 dem **Namen der Ausgabestelle** und Passwort, ohne Zwei-Faktor; Rolle Ausgabe, nur Kunden dieser
 Ausgabestelle; Abmeldung nach 30 Minuten ohne Eingabe. Nach 5 falschen Passwörtern ist die
-Anmeldung eines Kontos 15 Minuten gesperrt (gilt für alle Konten).
+Anmeldung eines Kontos 15 Minuten gesperrt (gilt für alle Konten). Zwei-Faktor sehen diese
+Konten nur, wenn unter „Einstellungen → Systemsteuerung → Anmeldung und Zwei-Faktor“ freigeschaltet
+(Vorgabe aus; beim Ausschalten werden eingerichtete Geräte dieser Konten entfernt). „Meine Daten“
+(Auskunft) gibt es für sie nicht.
 
 „Mitarbeitende“ im Menü (mit dem Recht „Mitarbeitende anlegen, bearbeiten, sperren“; Admin
 immer). Rollen vergeben kann man nur, wenn man selbst alle Rechte der Rolle hat; Admin-Konten
@@ -597,6 +603,9 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    (siehe unten). Entschiedene Korrekturwünsche der letzten 14 Tage stehen auf der Einlass-Karte;
    eine zurückgenommene Abholung von heute bringt die Nummer im Aufruf an ihren alten Platz. Admin und Büro können bei Rot wegen einer Terminregel eine
    **Ausnahme für heute** erteilen.
+   Unter dem Suchfeld klappt **„Letzte Kunden heute“** die letzten 20 Kunden auf: an dieser
+   Ausgabestelle eingetragene Abholungen und die selbst aufgerufenen Kunden, mit Uhrzeit und
+   „abgeholt“ oder „aufgerufen“; ein Klick öffnet den Kunden wieder.
 5. **Bezahlen:** Der Beitrag ist vorgeschlagen und änderbar. Im Pflichtfeld **„Gezahlt“** steht
    genau der Betrag, den der Kunde zahlt, **auch 0**. Vorgeschlagen ist, was nach Verrechnung des
    Guthabens fehlt (bei ausreichendem Guthaben also 0).
@@ -746,7 +755,8 @@ Jede Ausgabestelle macht ihre Monatsabrechnung in bintafeln (ADR 0060), Menü �
   gespeichert).
 - **Einreichen** hält die Einnahmen fest und sperrt die Ausgaben; das Büro **bestätigt** oder
   **gibt zurück** (mit Grund). Übersicht aller Ausgabestellen je Monat mit Saldo, **Quittungen als
-  ZIP**, jede Abrechnung als **PDF**.
+  ZIP** (alle Ausgabestellen fürs Büro; je Abrechnung auch für die Ausgabestelle selbst), jede
+  Quittung einzeln zum Herunterladen, jede Abrechnung als **PDF**.
 - Rechte „Abrechnung der eigenen Ausgabestelle führen“ (Vorgabe Ausgabe und Büro, nur für die
   zugeordneten Ausgabestellen) und „Abrechnungen aller Ausgabestellen prüfen“ (Vorgabe Büro).
   Arten der Ausgaben und Aufbewahrung (Vorgabe 5 Jahre) unter „Einstellungen → Ausgabe →

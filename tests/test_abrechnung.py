@@ -178,9 +178,18 @@ def test_pdf_und_zip(mitte_client, stellen, admin_client, pdf_text):
     text = pdf_text(mitte_client.get(reverse("abrechnung:pdf", args=[abr.pk])))
     assert "Mitte" in text and "September 2026" in text and "Drogerie" in text
     assert "Saldo" in text and "fehlt" in text
-    # ZIP nur fürs Büro
+    # ZIP: alle Ausgabestellen nur fürs Büro, die eigene auch für die Ausgabestelle
     zip_url = reverse("abrechnung:quittungen", args=["2026-09"])
     assert mitte_client.get(zip_url).status_code == 403
+    assert mitte_client.get(zip_url, {"stelle": nord.pk}).status_code == 403
+    eigen = mitte_client.get(zip_url, {"stelle": mitte.pk})
+    assert eigen["Content-Disposition"] == 'attachment; filename="quittungen-Mitte-2026-09.zip"'
+    assert len(zipfile.ZipFile(io.BytesIO(eigen.content)).namelist()) == 1
+    monat_seite = mitte_client.get(reverse("abrechnung:monat", args=[mitte.pk, "2026-09"]))
+    assert "Alle 1 Quittungen (ZIP)" in monat_seite.content.decode()
+    p = Posten.objects.exclude(quittung="").get()
+    einzeln = mitte_client.get(reverse("abrechnung:quittung", args=[p.pk]), {"herunterladen": "1"})
+    assert einzeln["Content-Disposition"].startswith("attachment;") and einzeln.content == FOTO
     antwort = admin_client.get(zip_url)
     assert antwort["Content-Type"] == "application/zip"
     namen = zipfile.ZipFile(io.BytesIO(antwort.content)).namelist()

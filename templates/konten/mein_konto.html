@@ -12,6 +12,7 @@
   <p><a class="knopf knopf-zweitrangig" href="{% url 'konten:meine_auskunft' %}" target="_blank" rel="noopener">Meine Daten ansehen (PDF)</a></p>
   {% endif %}
 
+  {% if zwei_faktor_erlaubt %}
   <h2>Zwei-Faktor-Anmeldung</h2>
   {% if zwei_faktor_aktiv %}
     <p class="sicherung sicherung-ok">Eingeschaltet. Bei der Anmeldung wird zusätzlich ein Code aus
@@ -54,6 +55,7 @@
   {% else %}
     <p class="sicherung">Nicht eingerichtet.{% if zwei_faktor_pflicht %} Für Ihre Rolle ist sie Pflicht.{% endif %}</p>
     <p><a class="knopf" href="{% url 'konten:zwei_faktor_einrichten' %}">Jetzt einrichten</a></p>
+  {% endif %}
   {% endif %}
 </section>
 {% endblock %}

@@ -62,6 +62,24 @@ Nach dem Anmelden eines Kunden kommt wieder die Suche.
   </form>
   {% endif %}
 </section>
+{% if letzte %}
+<section class="karte letzte-kunden">
+  <details>
+    <summary>📋 Letzte Kunden heute ({{ letzte|length }})</summary>
+    <table class="tabelle kompakt">
+      <tbody>
+      {% for k in letzte %}
+        <tr>
+          <td data-titel="Uhrzeit">{{ k.zeit|time:"H:i" }}</td>
+          <td data-titel="Kunde"><a href="{% url 'ausgabe:empfang' %}?nummer={{ k.nummer|urlencode }}" hx-get="{% url 'ausgabe:empfang' %}?nummer={{ k.nummer|urlencode }}" hx-target="#einlass"><strong>{{ k.nummer }}</strong> {{ k.name }}</a></td>
+          <td data-titel="Stand">{% if k.abgeholt %}<span class="marke-ok">abgeholt</span>{% else %}<span class="hinweis">aufgerufen</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </details>
+</section>
+{% endif %}
 {% if meldung %}<p class="meldung kasse-meldung" role="status">{{ meldung }}{% if fertig %} <a href="{% url 'ausgabe:empfang' %}?nummer={{ fertig|urlencode }}" hx-get="{% url 'ausgabe:empfang' %}?nummer={{ fertig|urlencode }}" hx-target="#einlass">Kunde {{ fertig }} wieder öffnen</a>{% endif %}</p>{% endif %}
 {% include "ausgabe/_ergebnis.html" %}
 {% endif %}

@@ -34,7 +34,7 @@ FELDER = [
     ("email", "E-Mail", "kunden.kontakt"),
 ]
 VORGABE = ["kundennummer", "vorname", "nachname", "kundengruppe", "wochentage", "uhrzeit",
-           "personen"]  # fmt: skip
+           "personen", "status", "ausweis", "letzter_besuch"]  # fmt: skip
 
 
 def auswahl() -> list[tuple[str, str]]:
@@ -95,12 +95,16 @@ def _datum(d) -> str:
 
 
 def zeile(h: Haushalt, keys, darf, zusatzfelder, kind_bis, heute) -> list[str]:
-    hp = h.hauptperson
+    if hasattr(h, "hp_nachname"):  # aus der Kundenliste (Subquery), spart eine Abfrage je Zeile
+        vorname, nachname = h.hp_vorname or "", h.hp_nachname or ""
+    else:
+        hp = h.hauptperson
+        vorname, nachname = (hp.vorname, hp.nachname) if hp else ("", "")
     g = h.kundengruppe
     erwachsene, kinder = h.groesse(kind_bis, heute)
     werte = {
-        "kundennummer": h.kundennummer, "vorname": hp.vorname if hp else "",
-        "nachname": hp.nachname if hp else "", "kundengruppe": g.name if g else "",
+        "kundennummer": h.kundennummer, "vorname": vorname,
+        "nachname": nachname, "kundengruppe": g.name if g else "",
         "ausgabestelle": g.ausgabestelle.name if g and g.ausgabestelle else "",
         "wochentage": g.wochentage if g else "",
         "uhrzeit": f"{g.uhrzeit:%H:%M}" if g and g.uhrzeit else "",

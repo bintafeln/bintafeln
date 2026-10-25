@@ -4,9 +4,9 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.db.models import F, OuterRef, Q, Subquery
+from django.db.models import Count, F, OuterRef, Q, Subquery
 from django.db.models.functions import Length
-from django.http import HttpResponse
+from django.http import HttpResponse, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -118,45 +118,96 @@ def _haushalte_suchen(request):
     tag = _tag(request)
     haushalte = export.nach_tag(haushalte, tag)
     sortierung = request.GET.get("sort", "")
-    if sortierung.lstrip("-") not in SORTIERUNG:
+    if not _sortierbar(sortierung.lstrip("-"), rollen.rechte_von(request.user)):
         sortierung = ""
-    haushalte = haushalte.order_by(*_reihenfolge(sortierung or "nr"))
+    if sortierung.lstrip("-") == "personen":
+        haushalte = haushalte.annotate(anzahl_personen=Count("personen"))
+    haushalte = haushalte.order_by(*_reihenfolge(sortierung or "kundennummer"))
     return haushalte, {"q": suche, "status": status, "gruppe": gruppe, "tag": tag,
                        "sort": sortierung}  # fmt: skip
 
 
-# Sortierbare Spalten der Kundenliste: Schlüssel im Link (?sort=…, mit „-“ absteigend) → Felder
+# Sortierbare Spalten der Kundenliste (Schlüssel wie im Export, ?sort=…, mit „-“ absteigend):
+# Felder für order_by; Spalten mit Recht nur sortierbar, wenn das Konto das Recht hat.
 SORTIERUNG = {
-    "nr": ("Nr.", (Length("kundennummer"), "kundennummer")),
-    "name": ("Name", ("hp_nachname", "hp_vorname", "kundennummer")),
-    "gruppe": ("Kundengruppe", ("kundengruppe__name", "kundennummer")),
-    "status": ("Status", ("status", "kundennummer")),
-    "ausweis": ("Ausweis bis", ("ausweis_gueltig_bis", "kundennummer")),
-    "besuch": ("Letzter Besuch", ("letzter_besuch", "besuch_zeit", "kundennummer")),
+    "kundennummer": (Length("kundennummer"), "kundennummer"),
+    "vorname": ("hp_vorname", "hp_nachname"),
+    "nachname": ("hp_nachname", "hp_vorname"),
+    "kundengruppe": ("kundengruppe__name",),
+    "ausgabestelle": ("kundengruppe__ausgabestelle__name",),
+    "wochentage": ("kundengruppe__wochentage",),
+    "uhrzeit": ("kundengruppe__uhrzeit",),
+    "status": ("status",),
+    "personen": ("anzahl_personen",),
+    "ausweis": ("ausweis_gueltig_bis",),
+    "letzter_besuch": ("letzter_besuch", "besuch_zeit"),
+    "kontostand": ("kontostand",),
+    "strasse": ("strasse",),
+    "plz": ("plz",),
+    "ort": ("ort",),
+    "telefon": ("telefon",),
+    "email": ("email",),
 }
+_RECHT = {k: r for k, _, r in export.FELDER}
+
+
+def _sortierbar(schluessel: str, darf) -> bool:
+    return schluessel in SORTIERUNG and (not _RECHT.get(schluessel) or _RECHT[schluessel] in darf)
 
 
 def _reihenfolge(sortierung: str) -> list:
-    """Felder für order_by; leere Werte stehen immer am Ende."""
+    """Felder für order_by, danach die Kundennummer; leere Werte stehen immer am Ende."""
     ab = sortierung.startswith("-")
     felder = []
-    for f in SORTIERUNG[sortierung.lstrip("-")][1]:
+    for f in (*SORTIERUNG[sortierung.lstrip("-")], *SORTIERUNG["kundennummer"]):
         ausdruck = F(f) if isinstance(f, str) else f
         felder.append(ausdruck.desc(nulls_last=True) if ab else ausdruck.asc(nulls_last=True))
     return felder
 
 
-def _spalten(filter_) -> list[dict]:
+def listen_spalten(benutzer) -> list[str]:
+    """Spalten der Kundenliste: wie in den Einstellungen gewählt, ohne die selbst ausgeblendeten;
+    die Kundennummer steht immer vorn (sie öffnet den Haushalt)."""
+    aus = set(getattr(benutzer, "kundenliste_aus", None) or [])
+    keys = [k for k in export.spalten() if k not in aus and k != "kundennummer"]
+    return ["kundennummer", *keys]
+
+
+def _spalten(filter_, keys, darf) -> list[dict]:
     """Spaltenköpfe mit Link: erster Klick aufsteigend, zweiter absteigend."""
-    aktuell = filter_["sort"] or "nr"
+    aktuell = filter_["sort"] or "kundennummer"
     grund = {k: v for k, v in filter_.items() if v and k != "sort"} | {"tag": filter_["tag"]}
+    namen = dict(export.auswahl())
     spalten = []
-    for schluessel, (titel, _) in SORTIERUNG.items():
-        neu = f"-{schluessel}" if aktuell == schluessel else schluessel
-        richtung = "auf" if aktuell == schluessel else "ab" if aktuell == f"-{schluessel}" else ""
+    for k in keys:
+        titel = "Nr." if k == "kundennummer" else namen[k].removeprefix("Zusatzfeld: ")
+        if not _sortierbar(k, darf):
+            spalten.append({"titel": titel, "abfrage": "", "richtung": ""})
+            continue
+        neu = f"-{k}" if aktuell == k else k
+        richtung = "auf" if aktuell == k else "ab" if aktuell == f"-{k}" else ""
         spalten.append({"titel": titel, "abfrage": urlencode(grund | {"sort": neu}),
                         "richtung": richtung})  # fmt: skip
     return spalten
+
+
+def _zeilen(seite, keys, spalten, darf) -> list[dict]:
+    """Je Haushalt die Zellen (Text wie im Export, nur mit Rechten), mit Warnfarbe."""
+    heute = timezone.localdate()
+    zusatzfelder = {z.schluessel: z for z in Zusatzfeld.objects.all()}
+    kind_bis = KundenEinstellungen.laden().kind_bis_alter
+    zeilen = []
+    for h in seite:
+        werte = export.zeile(h, keys, darf, zusatzfelder, kind_bis, heute)
+        warnung = {
+            "status": h.status != Haushalt.Status.AKTIV,
+            "ausweis": bool(h.ausweis_gueltig_bis and h.ausweis_gueltig_bis < heute),
+        }
+        zeilen.append({"h": h, "zellen": [
+            {"titel": s["titel"], "text": w, "warnung": warnung.get(k, False),
+             "link": k in ("kundennummer", "vorname", "nachname")}
+            for k, w, s in zip(keys, werte, spalten, strict=True)]})  # fmt: skip
+    return zeilen
 
 
 def _eigene_gruppen(benutzer):
@@ -173,6 +224,18 @@ def _tag(request) -> str:
         return ""
     verfuegbar = export.verfuegbare_tage(_eigene_gruppen(request.user))
     return export.standard_tag(request.user, timezone.localdate(), verfuegbar)
+
+
+@require_POST
+@rollen.recht_erforderlich("kunden.liste")
+def spalten_waehlen(request):
+    """Eigene Auswahl der Spalten in der Kundenliste (am Konto gespeichert)."""
+    gewaehlt = set(request.POST.getlist("spalte"))
+    request.user.kundenliste_aus = [k for k in export.spalten()
+                                    if k != "kundennummer" and k not in gewaehlt]  # fmt: skip
+    request.user.save(update_fields=["kundenliste_aus"])
+    zurueck = QueryDict(request.POST.get("zurueck", "")).urlencode()  # nur Filterwerte
+    return redirect(f"{reverse('kunden:uebersicht')}?{zurueck}")
 
 
 @rollen.recht_erforderlich("kunden.liste")
@@ -193,8 +256,15 @@ def uebersicht(request):
         if grund:
             messages.error(request, grund)
     haushalte, filter_ = _haushalte_suchen(request)
+    seite = Paginator(haushalte.select_related("kundengruppe__ausgabestelle")
+                      .prefetch_related("personen"), LISTE_JE_SEITE).get_page(
+        request.GET.get("seite"))  # fmt: skip
+    darf = rollen.rechte_von(request.user)
+    keys = listen_spalten(request.user)
+    aus = set(request.user.kundenliste_aus or [])
+    spalten = _spalten(filter_, keys, darf)
     kontext = {
-        "seite": Paginator(haushalte, LISTE_JE_SEITE).get_page(request.GET.get("seite")),
+        "seite": seite,
         "filter": filter_,
         "status_auswahl": Haushalt.Status.choices,
         "gruppen": Kundengruppe.objects.order_by("name")
@@ -203,7 +273,13 @@ def uebersicht(request):
         "eigene_stellen": zugang.stellen(request.user),
         "tage": export.verfuegbare_tage(_eigene_gruppen(request.user)),
         "abfrage": urlencode({k: v for k, v in filter_.items() if v} | {"tag": filter_["tag"]}),
-        "spalten": _spalten(filter_),
+        "spalten": spalten,
+        "zeilen": _zeilen(seite, keys, spalten, darf),
+        "spalten_wahl": [
+            (k, n, k not in aus)
+            for k, n in export.auswahl()
+            if k in export.spalten() and k != "kundennummer"
+        ],
         "heute": timezone.localdate(),
         "darf_importieren": rollen.hat_recht(request.user, "kunden.importieren"),
         "anzahl": {

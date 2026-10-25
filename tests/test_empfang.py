@@ -461,3 +461,27 @@ def test_gruppenfarbe_pflegen(admin_client, stelle):
         {"name": "Grün-Gruppe", "ausgabestelle": stelle.pk, "farbe": "gruen", "aktiv": "on"},
     )
     assert Kundengruppe.objects.get(name="Grün-Gruppe").farbe == "gruen"
+
+
+def test_letzte_kunden(ausgabe, haushalt, stelle, benutzer_mit_rolle, anmelden):
+    from django.test import Client
+
+    gruppe = haushalt.kundengruppe
+    zweiter = Haushalt.objects.create(kundennummer="00043", kundengruppe=gruppe,
+                                      ausweis_gueltig_bis=haushalt.ausweis_gueltig_bis)  # fmt: skip
+    Person.objects.create(haushalt=zweiter, ist_hauptperson=True, vorname="Max", nachname="Probe")
+    assert "Letzte Kunden" not in ausgabe.get(EMPFANG).content.decode()
+    ausgabe.post(reverse("ausgabe:ausgabestelle"), {"ausgabestelle": stelle.pk})
+    ausgabe.get(EMPFANG, {"nummer": "42"}, **HX)
+    inhalt = eintragen(ausgabe, haushalt).content.decode()  # zurück zur Suche, mit Liste
+    assert "Letzte Kunden heute (1)" in inhalt and "abgeholt" in inhalt
+    ausgabe.get(EMPFANG, {"nummer": "43"}, **HX)  # nur aufgerufen
+    seite = ausgabe.get(EMPFANG).content.decode()
+    assert "Letzte Kunden heute (2)" in seite
+    assert seite.index("00043</strong> Max Probe") < seite.index("00042</strong> Erika Muster")
+    assert "aufgerufen" in seite and '?nummer=00043"' in seite
+    # Eine andere Person an derselben Ausgabestelle sieht die Abholung, nicht die Aufrufe
+    c = anmelden(Client(), benutzer_mit_rolle("berta", rollen.AUSGABE))
+    c.post(reverse("ausgabe:ausgabestelle"), {"ausgabestelle": stelle.pk})
+    seite = c.get(EMPFANG).content.decode()
+    assert "Letzte Kunden heute (1)" in seite and "00043" not in seite

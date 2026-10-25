@@ -45,8 +45,9 @@ class KundenEinstellungen(models.Model):
         help_text="Ältere werden nicht importiert und automatisch gelöscht.",
     )
     export_felder = models.JSONField(
-        "Spalten des Exports der Kundenliste", default=list, blank=True,
-        help_text="Leer = Kundennummer, Name, Kundengruppe, Ausgabetage, Uhrzeit, Personen.",
+        "Spalten der Kundenliste und des Exports", default=list, blank=True,
+        help_text="Leer = Kundennummer, Name, Kundengruppe, Ausgabetage, Uhrzeit, Personen, "
+        "Status, Ausweis, letzter Besuch.",
     )  # fmt: skip
     historie_aufbewahren_jahre = models.PositiveSmallIntegerField(
         "Historie aufbewahren (Jahre)",

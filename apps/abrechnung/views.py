@@ -86,6 +86,7 @@ def monat(request, stelle, monat):
     return render(request, "abrechnung/monat.html", {
         "abr": abr, "stelle": stelle, "name": ablauf.monatsname(abr.monat), "form": form,
         "z": ablauf.zahlen(abr), "posten": abr.posten.all(), "darf_fuehren": darf_fuehren,
+        "quittungen": abr.posten.exclude(quittung="").count(),
         "darf_pruefen": ablauf.darf_pruefen(request.user),
         "einreichen_form": EinreichenForm(initial={"anmerkung": abr.anmerkung}),
         "rueckgabe_form": RueckgabeForm(), "stellen": ablauf.stellen_fuer(request.user),
@@ -147,7 +148,8 @@ def quittung(request, pk):
     if inhalt is None:
         raise Http404("Keine lesbare Quittung.")
     antwort = HttpResponse(inhalt, content_type=posten.quittung_typ or "application/octet-stream")
-    antwort["Content-Disposition"] = f'inline; filename="{ablauf.quittung_dateiname(posten)}"'
+    art = "attachment" if request.GET.get("herunterladen") else "inline"
+    antwort["Content-Disposition"] = f'{art}; filename="{ablauf.quittung_dateiname(posten)}"'
     antwort["X-Content-Type-Options"] = "nosniff"
     return antwort
 
@@ -162,19 +164,25 @@ def als_pdf(request, pk):
 
 
 @never_cache
-@pruefen
+@fuehren_oder_pruefen
 def quittungen(request, monat):
-    """ZIP mit allen Quittungen eines Monats, auf Wunsch nur einer Ausgabestelle."""
+    """ZIP mit allen Quittungen eines Monats, auf Wunsch nur einer Ausgabestelle. Ohne das Recht
+    zu prüfen nur für eine eigene Ausgabestelle."""
     beginn = ablauf.monat_lesen(monat, timezone.localdate())
     abrechnungen = Monatsabrechnung.objects.filter(monat=beginn).select_related("stelle")
     if request.GET.get("stelle", "").isdigit():
-        abrechnungen = abrechnungen.filter(stelle_id=int(request.GET["stelle"]))
+        stelle = _stelle(request, int(request.GET["stelle"]))
+        abrechnungen = abrechnungen.filter(stelle=stelle)
+    elif not ablauf.darf_pruefen(request.user):
+        raise PermissionDenied
     inhalt, anzahl = ablauf.quittungen_zip(abrechnungen)
     if not anzahl:
         messages.info(request, "Für diese Auswahl gibt es keine Quittungen.")
         return redirect(f"{reverse('abrechnung:uebersicht')}?monat={beginn:%Y-%m}")
+    teil = f"-{ablauf._sicher(abrechnungen[0].stelle.name)}" if "stelle" in request.GET else ""
     antwort = HttpResponse(inhalt, content_type="application/zip")
-    antwort["Content-Disposition"] = f'attachment; filename="quittungen-{beginn:%Y-%m}.zip"'
+    antwort["Content-Disposition"] = (
+        f'attachment; filename="quittungen{teil}-{beginn:%Y-%m}.zip"')  # fmt: skip
     return antwort
 
 

@@ -109,8 +109,14 @@ def test_export_csv(admin, daten, benutzer_mit_rolle, anmelden):
 def test_export_vorgabe_und_admin(admin_client, daten):
     zeilen = admin_client.get(EXPORT, {"tag": "Fr"}).content.decode().lstrip("﻿")
     kopf, *rest = zeilen.splitlines()
-    assert kopf == "Kundennummer;Vorname;Nachname;Kundengruppe;Ausgabetage;Uhrzeit;Personen"
-    assert rest == ["201;Erika;M201;Mittwoch;Mi, Fr;;1", "301;Erika;M301;Nord Fr;Fr;;1"]
+    assert kopf == (
+        "Kundennummer;Vorname;Nachname;Kundengruppe;Ausgabetage;Uhrzeit;Personen;"
+        "Status;Ausweis gültig bis;Letzter Besuch"
+    )
+    assert rest == [
+        "201;Erika;M201;Mittwoch;Mi, Fr;;1;aktiv;;",
+        "301;Erika;M301;Nord Fr;Fr;;1;aktiv;;",
+    ]
     e = KundenEinstellungen.laden()
     e.export_felder = ["telefon", "ausgabestelle", "status", "erwachsene", "kinder", "ausweis",
                        "letzter_besuch", "kontostand", "strasse", "plz", "ort",
@@ -142,7 +148,7 @@ def test_einstellungen_und_mitarbeiter(admin_client, daten, admin):
         gilt_fuer=Zusatzfeld.GiltFuer.HAUSHALT,
     )
     seite = admin_client.get(reverse("kunden:einstellungen")).content.decode()
-    assert "Spalten des Exports der Kundenliste" in seite and "Zusatzfeld: Fahrrad" in seite
+    assert "Spalten der Kundenliste und des Exports" in seite and "Zusatzfeld: Fahrrad" in seite
     form = admin_client.get(reverse("kunden:einstellungen")).context["form"]
     daten_ = {k: v for k, v in form.initial.items() if v not in (None, False)}
     daten_["export_felder"] = ["telefon", "kundennummer", "zusatz:rad"]
@@ -187,16 +193,18 @@ def test_sortieren_und_blaettern(admin, daten, benutzer_mit_rolle, anmelden, mon
     c = anmelden(Client(), b)
     erste = lambda **f: nummern(c.get(LISTE, {"tag": "", **f}))  # noqa: E731
     assert erste() == ["101"]  # Kundennummer als Zahl: 1001 nach 301
-    assert erste(sort="-nr") == ["1001"]
-    assert erste(sort="name") == ["101"] and erste(sort="-name") == ["301"]
+    assert erste(sort="-kundennummer") == ["1001"]
+    assert erste(sort="nachname") == ["101"] and erste(sort="-nachname") == ["301"]
     assert erste(sort="ausweis") == ["301"]  # leere Werte stehen hinten
     assert erste(sort="-ausweis") == ["301"]
     assert erste(sort="quatsch") == ["101"]
-    seite = c.get(LISTE, {"tag": "", "sort": "name"}).content.decode()
+    seite = c.get(LISTE, {"tag": "", "sort": "nachname"}).content.decode()
     assert seite.count("Seite 1 von 4") == 2  # oben und unten
-    assert "?sort=name&amp;tag=&amp;seite=2" in seite and 'class="sortieren auf"' in seite
-    assert "sort=-name" in seite  # zweiter Klick: absteigend
-    zeilen = c.get(EXPORT, {"tag": "", "sort": "-nr"}).content.decode().lstrip("﻿").splitlines()
+    assert "?sort=nachname&amp;tag=&amp;seite=2" in seite and 'class="sortieren auf"' in seite
+    assert "sort=-nachname" in seite  # zweiter Klick: absteigend
+    zeilen = (
+        c.get(EXPORT, {"tag": "", "sort": "-kundennummer"}).content.decode().lstrip("﻿").splitlines()
+    )
     assert [z.split(";")[0] for z in zeilen[1:]] == ["1001", "301", "201", "101"]
 
 
@@ -240,3 +248,36 @@ def test_blaettern_vorlage(rf):
     assert vorlage.render(Context({"seite": leer, "request": rf.get("/")})).strip() == "|"
     ohne = Paginator(list(range(5)), 2).get_page(1)
     assert 'href="?seite=2"' in vorlage.render(Context({"seite": ohne, "request": rf.get("/")}))
+
+
+def test_spalten_aus_einstellungen_und_eigene_wahl(admin, daten, benutzer_mit_rolle, anmelden):
+    e = KundenEinstellungen.laden()
+    e.export_felder = ["nachname", "telefon", "kontostand", "personen", "status"]
+    e.save()
+    b = benutzer_mit_rolle("anton", rollen.AUSGABE)
+    c = anmelden(Client(), b)
+    antwort = c.get(LISTE, {"tag": "Mo"})
+    titel = [s["titel"] for s in antwort.context["spalten"]]
+    assert titel == ["Nr.", "Nachname", "Telefon", "Kontostand", "Personen", "Status"]
+    zellen = [z["text"] for z in antwort.context["zeilen"][0]["zellen"]]
+    assert zellen == ["101", "M101", "", "", "1", "aktiv"]  # ohne Recht keine Kontaktdaten
+    sortierbar = {s["titel"]: bool(s["abfrage"]) for s in antwort.context["spalten"]}
+    assert sortierbar == {"Nr.": True, "Nachname": True, "Telefon": False, "Kontostand": False,
+                          "Personen": True, "Status": True}  # fmt: skip
+    assert nummern(c.get(LISTE, {"tag": "", "sort": "-telefon"})) == ["101", "201", "301"]
+    assert nummern(c.get(LISTE, {"tag": "", "sort": "-personen"})) == ["301", "201", "101"]
+    # eigene Auswahl: Telefon und Status ausblenden
+    antwort = c.post(reverse("kunden:spalten"), {"spalte": ["nachname", "kontostand", "personen"],
+                                                 "zurueck": "tag=Mo&sort=nachname"})  # fmt: skip
+    assert antwort.url == LISTE + "?tag=Mo&sort=nachname"
+    b.refresh_from_db()
+    assert b.kundenliste_aus == ["telefon", "status"]
+    antwort = c.get(LISTE, {"tag": "Mo"})
+    assert [s["titel"] for s in antwort.context["spalten"]] == ["Nr.", "Nachname", "Kontostand",
+                                                                "Personen"]  # fmt: skip
+    seite = antwort.content.decode()
+    assert 'value="telefon">' in seite and 'value="nachname" checked>' in seite
+    # Export bleibt bei den Spalten der Einstellungen
+    kopf = c.get(EXPORT, {"tag": "Mo"}).content.decode().lstrip("﻿").splitlines()[0]
+    assert kopf == "Nachname;Telefon;Kontostand;Personen;Status"
+    assert c.get(reverse("kunden:spalten")).status_code == 405

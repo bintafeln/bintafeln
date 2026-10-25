@@ -220,6 +220,7 @@ def mein_konto(request):
             "form": CodeForm(),
             "geraete": _vertraute_geraete(request.user),
             "vertrauen_tage": zwei_faktor.vertrauen_tage(),
+            "zwei_faktor_erlaubt": zwei_faktor.erlaubt(request.user),
         },
     )
 
@@ -254,6 +255,8 @@ def _codes_anzeigen(request, codes):
 @nicht_in_demo
 @sensitive_post_parameters("code")
 def zwei_faktor_einrichten(request):
+    if not zwei_faktor.erlaubt(request.user):
+        raise Http404
     if zwei_faktor.app_geraet(request.user) is not None:
         return redirect("konten:mein_konto")
     geraet = zwei_faktor.neues_app_geraet(request.user)
@@ -311,6 +314,8 @@ def anmelde_einstellungen(request):
         form.save()
         if not form.instance.vertrauen_tage:
             VertrautesGeraet.objects.all().delete()  # ausgeschaltet: niemand bleibt vertraut
+        if not form.instance.stellen_zwei_faktor and zwei_faktor.stellen_abschalten():
+            messages.info(request, "Zwei-Faktor bei den Konten der Ausgabestellen entfernt.")
         messages.success(request, "Einstellungen gespeichert.")
         return redirect("konten:anmelde_einstellungen")
     anzahl = VertrautesGeraet.objects.filter(gueltig_bis__gt=timezone.now()).count()
