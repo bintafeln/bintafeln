@@ -18,7 +18,7 @@ from django.views.decorators.http import require_POST
 
 from apps.adressen.forms import ImportForm
 from apps.adressen.models import Adresse
-from apps.core import geheimnis, mail, privatdateien
+from apps.core import geheimnis, listenauswahl, mail, privatdateien
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.konten.views import nicht_in_demo
@@ -55,7 +55,7 @@ def liste(request):
             | Q(zweck__icontains=q)
         )  # fmt: skip
     if request.GET.get("csv"):
-        return _csv(spenden, jahr)
+        return _csv(listenauswahl.filtern(request, spenden), jahr)
     summen = spenden.aggregate(
         geld=Sum("betrag", filter=Q(art=Spende.Art.GELD)),
         sach=Sum("betrag", filter=Q(art=Spende.Art.SACH)),

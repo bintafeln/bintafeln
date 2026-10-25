@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block titel %}Kunden{% endblock %}
 {% block inhalt %}
 <section class="karte">
@@ -51,4 +52,5 @@
     {% if "kunden.zugriffsprotokoll" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'kunden:zugriffe' %}">Zugriffsprotokoll</a>{% endif %}</p>
 </section>
 {% endif %}
+<script src="{% static 'js/auswahl.js' %}" defer></script>
 {% endblock %}

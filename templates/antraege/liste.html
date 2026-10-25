@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load liste %}
+{% load liste static %}
 {% block titel %}Anträge{% endblock %}
 {% block inhalt %}
 <section class="karte">
@@ -19,18 +19,19 @@
     <label for="suche" class="unsichtbar">Suche</label>
     <input type="search" name="suche" id="suche" value="{{ suche }}" placeholder="Suchbegriff (Name, Nummer, E-Mail, Telefon …)" class="suche">
     <button type="submit" class="knopf">Suchen</button>
-    <a class="knopf knopf-zweitrangig" href="{% url 'antraege:export' %}?ansicht={{ ansicht }}&amp;suche={{ suche|urlencode }}&amp;sort={{ sort }}">CSV-Export</a>
+    <button type="submit" form="auswahl" class="knopf knopf-zweitrangig">CSV-Export</button> <span class="hinweis" data-auswahl-zahl="auswahl"></span>
   </form>
+  {% url 'antraege:export' as export_url %}{% auswahl_formular export_url %}
   {% blaettern seite zusatz="Anträge" %}
   <div class="tabelle-rahmen">
   <table class="tabelle antraege-liste">
-    <thead><tr>
+    <thead><tr><th class="auswahl"><input type="checkbox" data-alle="id" form="auswahl" aria-label="Alle auswählen" title="alle / keine"></th>
       {% for k, titel in spalten %}<th><a class="sortieren{% if sort == k %} auf{% elif sort == '-'|add:k %} ab{% endif %}" href="?ansicht={{ ansicht }}&amp;suche={{ suche|urlencode }}&amp;zeilen={{ zeilen }}&amp;sort={% if sort == '-'|add:k %}{{ k }}{% else %}-{{ k }}{% endif %}">{{ titel }}</a></th>{% endfor %}
       <th>Anmerkung</th><th><span class="unsichtbar">Aktionen</span></th>
     </tr></thead>
     <tbody>
     {% for a in seite %}
-      <tr>
+      <tr><td class="auswahl"><input type="checkbox" name="id" value="{{ a.pk }}" form="auswahl" aria-label="Zeile auswählen"></td>
         <td data-titel="#"><a href="{% url 'antraege:antrag' a.pk %}">{{ a.nummer }}</a></td>
         <td data-titel="Status"><span class="status status-{{ a.status }}">{{ a.get_status_display }}</span></td>
         <td data-titel="Kundennummer">{{ a.kundennummer|default:"–" }}</td>
@@ -60,7 +61,7 @@
         </td>
       </tr>
     {% empty %}
-      <tr><td colspan="12">Keine Anträge.</td></tr>
+      <tr><td colspan="13">Keine Anträge.</td></tr>
     {% endfor %}
     </tbody>
   </table>
@@ -68,4 +69,5 @@
   {% if seite.has_other_pages %}{% blaettern seite zusatz="Anträge" %}{% else %}<p class="hinweis">{{ seite.paginator.count }} Antr{{ seite.paginator.count|pluralize:"ag,äge" }}</p>{% endif %}
   <p class="hinweis">Die CSV-Datei enthält Personendaten. Nur dort speichern, wo sie geschützt ist, und danach löschen.</p>
 </section>
+<script src="{% static 'js/auswahl.js' %}" defer></script>
 {% endblock %}

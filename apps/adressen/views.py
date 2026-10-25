@@ -15,7 +15,7 @@ from apps.adressen import importieren
 from apps.adressen.auskunft import adresse_pdf
 from apps.adressen.forms import AdresseForm, ImportForm
 from apps.adressen.models import Adresse, AdressKategorie
-from apps.core import geheimnis
+from apps.core import geheimnis, listenauswahl
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 
@@ -44,6 +44,7 @@ def _gefiltert(request):
 def liste(request):
     adressen, filter_ = _gefiltert(request)
     if request.GET.get("csv"):
+        adressen = listenauswahl.filtern(request, adressen)
         antwort = HttpResponse(importieren.exportieren(adressen), content_type="text/csv")
         name = f"adressen-{timezone.localdate():%Y-%m-%d}.csv"
         antwort["Content-Disposition"] = f'attachment; filename="{name}"'

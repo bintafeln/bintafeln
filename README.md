@@ -233,7 +233,10 @@ des Exports“); unter „Spalten wählen“ blendet jede Person einzelne für i
 Sortierung; Spalten mit Recht nur mit diesem Recht),
 „Letzter Besuch“ steht wie überall mit Uhrzeit der letzten Abholung, und in allen Listen mit
 mehreren Seiten steht die Blätterleiste oben und unten (`{% blaettern seite %}` aus
-`apps/core/templatetags/liste.py`).
+`apps/core/templatetags/liste.py`). Kundenliste, Anträge, Adressen, Spenden, Mitglieder und das
+Modul Listen haben ganz links ein **Auswahlkästchen** je Zeile (im Kopf: alle/keine); Export und
+Druck nehmen die angehakten Zeilen, ohne Haken alle (`{% auswahl_formular %}`,
+`apps/core/listenauswahl.py`, `static/js/auswahl.js`).
 
 ## Mitarbeitende
 

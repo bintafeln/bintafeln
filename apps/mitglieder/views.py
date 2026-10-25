@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
+from apps.core import listenauswahl
 from apps.konten import rollen
 from apps.mitglieder.forms import MitgliederEinstellungenForm, MitgliedForm
 from apps.mitglieder.models import Mitglied, MitgliederEinstellungen, nummer_verbraucht
@@ -55,6 +56,8 @@ def liste(request):
             Q(nummer__icontains=q) | Q(adresse__organisation__icontains=q)
             | Q(adresse__nachname__icontains=q) | Q(adresse__vorname__icontains=q)
         )  # fmt: skip
+    if request.GET.get("csv"):
+        mitglieder = listenauswahl.filtern(request, mitglieder)
     beitraege = MitgliederEinstellungen.mit_beitraegen()
     if beitraege:
         zeilen = _zeilen(mitglieder, jahr)
