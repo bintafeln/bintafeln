@@ -58,6 +58,7 @@ def start(request):
     if rollen.hat_recht(request.user, "system.status"):
         kontext["sicherung"] = sicherung.lese_status()
         kontext["sicherungsfehler"] = sicherung.auftraege_mit_fehler()
+    kontext["modul_startseite"] = module.startseite(request)
     return render(request, "core/start.html", kontext)
 
 

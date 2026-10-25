@@ -1,0 +1,14 @@
+<p>Ersetzt die bisherige „App-Übersicht“: Kacheln mit Links auf der Startseite, z. B. zu Monitor und Kiosk, zur
+  Webseite der Tafel oder zu Werkzeugen. Zuschaltbares Modul (Einstellungen → Tafel → Tafel und Module).</p>
+<ul>
+  <li>Jede Kachel hat ein Symbol (Emoji), Titel, Untertitel, eine kurze Beschreibung und die Adresse. Ein
+    <strong>Warnhinweis</strong> färbt die Kachel rot, z. B. für Links zur Serververwaltung.</li>
+  <li>Kacheln lassen sich in <strong>Gruppen</strong> mit Überschrift ordnen.</li>
+  <li><strong>Sichtbar für:</strong> leer = alle Angemeldeten; sonst sehen die Kachel nur Personen mit dem gewählten
+    Recht. Die Liste ist anders als früher nicht mehr ohne Anmeldung im Netz zu sehen.</li>
+  <li>Die Suche oben findet die Links ebenfalls.</li>
+</ul>
+{% if "einstellungen.links" in rechte %}
+<p>Pflege unter „Einstellungen → Tafel → Links auf der Startseite“. Erlaubt sind Adressen mit http:// oder https://
+  und Pfade in bintafeln, die mit / beginnen.</p>
+{% endif %}

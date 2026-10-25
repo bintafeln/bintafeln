@@ -711,6 +711,15 @@ Kundenstamm, ohne Import aus anderen Programmen.
 - Druck als PDF im Hochformat (je Tag) oder Querformat (alles auf einem Blatt wie die bisherige
   Excel-Liste). Rechte „Wochenübersicht ansehen“ und „… pflegen“ (Vorgabe Büro).
 
+### Links auf der Startseite
+
+Ersetzt die bisherige „App-Übersicht“ (ADR 0057): Kacheln mit Symbol, Titel, Untertitel,
+Beschreibung und Adresse unter der Begrüßung, in Gruppen geordnet, auf Wunsch mit rotem
+Warnhinweis. „Sichtbar für“ zeigt eine Kachel nur Personen mit einem bestimmten Recht (z. B.
+Serververwaltung nur für Admins). Pflege unter „Einstellungen → Tafel → Links auf der Startseite“
+(Recht „Links auf der Startseite pflegen“, Vorgabe nur Admin). Nur http(s)-Adressen und Pfade in
+bintafeln; die Suche findet die Links mit.
+
 ### Wetter in der Kopfzeile
 
 Zeigt rechts in der Kopfzeile Außentemperatur und Wetter der Ausgabestelle, z. B. „☁️ 12 °C
@@ -1207,6 +1216,7 @@ apps/kunden/        Kundenstamm: Haushalte, Personen, Zusatzfelder, Einstellunge
 apps/aufruf/        Modul Aufruf (Monitor, Handy, Kiosk); Module beschreibt apps/core/module.py
 apps/warteliste/    Modul Warteliste (Einladungen zu Terminen, Streichungen)
 apps/wochenuebersicht/ Modul Wochenübersicht (Soll/Ist der Ausgabestellen je Wochentag)
+apps/links/         Modul Links (Kacheln auf der Startseite)
 apps/wetter/        Modul Wetter (Außentemperatur der Ausgabestelle in der Kopfzeile)
 templates/          Django-Templates
 static/             CSS und HTMX

@@ -749,3 +749,24 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 .status-abgelehnt { font-weight: 700; color: var(--fehler); }
 /* Name der Hauptperson groß neben der Kundennummer am Einlass */
 .einlass-name { font-size: 1.6em; margin-left: .6rem; color: var(--akzent-dunkel); }
+
+/* Modul Links (ADR 0057): Kacheln auf der Startseite */
+.link-bereich .link-gruppe { margin: 1.5rem 0 .6rem; font-size: 1.05rem; }
+.link-bereich .link-gruppe:first-child { margin-top: 0; }
+.link-kacheln { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem;
+                grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
+.link-kachel { display: flex; gap: .75rem; height: 100%; padding: .8rem 1rem; color: var(--text);
+               text-decoration: none; background: var(--flaeche); border: 1px solid var(--rand);
+               border-left: 4px solid var(--akzent); border-radius: var(--radius);
+               transition: transform .12s ease, box-shadow .12s ease; }
+.link-kachel:hover, .link-kachel:focus { transform: translateY(-2px);
+                                         box-shadow: 0 6px 16px rgb(0 0 0 / 12%); }
+.link-symbol { font-size: 1.8rem; line-height: 1; }
+.link-text { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+.link-untertitel { text-transform: uppercase; letter-spacing: .04em; color: var(--leise); font-size: .75rem; }
+.link-beschreibung { font-size: .9rem; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3;
+                     -webkit-box-orient: vertical; overflow: hidden; }
+.link-ziel { font-size: .8rem; color: var(--leise); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.link-warnung { border-left-color: var(--fehler); background: #fdf0f0; }
+.link-warntext { color: var(--fehler); font-weight: 600; font-size: .85rem; }
+@media (prefers-reduced-motion: reduce) { .link-kachel { transition: none; } }
