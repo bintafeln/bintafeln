@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load liste %}
 {% block titel %}Spenden {{ jahr }}{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
@@ -25,6 +26,7 @@
   {% if je_monat %}<p class="hinweis">Geldspenden je Monat: {% for monat, summe in je_monat %}{{ monat }}/{{ jahr }}: {{ summe|floatformat:2 }} €{% if not forloop.last %} · {% endif %}{% endfor %}</p>{% endif %}
   <p class="hinweis">{{ seite.paginator.count }} Spende{{ seite.paginator.count|pluralize:"n" }}{% if seite.paginator.count %} ·
     <a href="?jahr={{ jahr }}&amp;art={{ filter.art }}&amp;q={{ filter.q|urlencode }}&amp;csv=1">als CSV-Datei (Excel)</a>{% endif %}</p>
+  {% blaettern seite %}
   <div class="tabelle-rahmen">
   <table class="tabelle">
     <thead><tr><th>Datum</th><th>Spender</th><th>Art</th><th class="zahl">Betrag/Wert</th><th>Bezeichnung / Zweck</th><th>Bestätigung</th></tr></thead>
@@ -44,12 +46,6 @@
     </tbody>
   </table>
   </div>
-  {% if seite.has_other_pages %}
-  <nav class="blaettern" aria-label="Seiten">
-    <span>{% if seite.has_previous %}<a href="?jahr={{ jahr }}&amp;art={{ filter.art }}&amp;q={{ filter.q|urlencode }}&amp;seite={{ seite.previous_page_number }}">← zurück</a>{% endif %}</span>
-    <span>Seite {{ seite.number }} von {{ seite.paginator.num_pages }}</span>
-    <span>{% if seite.has_next %}<a href="?jahr={{ jahr }}&amp;art={{ filter.art }}&amp;q={{ filter.q|urlencode }}&amp;seite={{ seite.next_page_number }}">weiter →</a>{% endif %}</span>
-  </nav>
-  {% endif %}
+  {% blaettern seite %}
 </section>
 {% endblock %}

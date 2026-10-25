@@ -1,0 +1,7 @@
+{% if seite.has_other_pages %}
+<nav class="blaettern" aria-label="Seiten">
+  <span>{% if zurueck %}<a class="knopf knopf-zweitrangig" href="{{ zurueck }}"{% if ziel %} hx-get="{{ zurueck }}" hx-target="{{ ziel }}" hx-push-url="true"{% endif %}>{{ zurueck_text }}</a>{% endif %}</span>
+  <span>Seite {{ seite.number }} von {{ seite.paginator.num_pages }}{% if zusatz %} · {{ seite.paginator.count }} {{ zusatz }}{% endif %}</span>
+  <span>{% if weiter %}<a class="knopf knopf-zweitrangig" href="{{ weiter }}"{% if ziel %} hx-get="{{ weiter }}" hx-target="{{ ziel }}" hx-push-url="true"{% endif %}>{{ weiter_text }}</a>{% endif %}</span>
+</nav>
+{% endif %}

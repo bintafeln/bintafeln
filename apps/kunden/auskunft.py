@@ -61,7 +61,7 @@ def kunde_pdf(h: Haushalt) -> bytes:
             ("Kundengruppe", h.kundengruppe.name if h.kundengruppe else ""),
             ("Kunde seit", _datum(h.kunde_seit)),
             ("Ausweis gültig bis", _datum(h.ausweis_gueltig_bis)),
-            ("Letzter Besuch", _datum(h.letzter_besuch)),
+            ("Letzter Besuch", h.letzter_besuch_text or "–"),
             ("Einkommensart", h.einkommensart or ""),
             ("Anschrift", ", ".join(t for t in (h.strasse, f"{h.plz} {h.ort}".strip()) if t)),
             ("Telefon", h.telefon),

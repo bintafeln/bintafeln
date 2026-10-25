@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load liste %}
 {% block titel %}Zugriffsprotokoll{% endblock %}
 {% block inhalt %}
 <section class="karte">
@@ -13,6 +14,7 @@
     <input type="search" name="benutzer" id="benutzer" value="{{ benutzer }}">
     <button type="submit" class="knopf">Filtern</button>
   </form>
+  {% blaettern seite %}
   <div class="tabelle-rahmen">
   <table class="tabelle">
     <thead><tr><th>Zeitpunkt</th><th>Benutzer</th><th>Kundennummer</th><th>Art. 9</th><th>Art</th></tr></thead>
@@ -31,12 +33,6 @@
     </tbody>
   </table>
   </div>
-  {% if seite.has_other_pages %}
-  <nav class="blaettern" aria-label="Seiten">
-    <span>{% if seite.has_previous %}<a href="?kundennummer={{ kundennummer|urlencode }}&amp;benutzer={{ benutzer|urlencode }}&amp;seite={{ seite.previous_page_number }}">← zurück</a>{% endif %}</span>
-    <span>Seite {{ seite.number }} von {{ seite.paginator.num_pages }}</span>
-    <span>{% if seite.has_next %}<a href="?kundennummer={{ kundennummer|urlencode }}&amp;benutzer={{ benutzer|urlencode }}&amp;seite={{ seite.next_page_number }}">weiter →</a>{% endif %}</span>
-  </nav>
-  {% endif %}
+  {% blaettern seite %}
 </section>
 {% endblock %}

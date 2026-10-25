@@ -125,7 +125,8 @@ h1 { font-size: 1.5rem; margin: .25rem 0 1rem; }
 .marke-art9 { background: #ece4f7; }
 .zeile-aktiv td { background: #fdf0f0; }
 .bemerkung { border-bottom: 1px solid var(--rand); margin-bottom: .75rem; }
-.blaettern { display: flex; justify-content: space-between; gap: 1rem; padding-top: 1rem; }
+.blaettern { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .5rem 0; }
+.liste-aktionen { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin: .5rem 0; }
 
 .fuss {
   display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem;
@@ -501,7 +502,7 @@ a.knopf-gefahr { color: #fff; }
 .status { border-radius: 999px; padding: .1rem .5rem; font-size: .85rem; background: var(--erfolg); }
 .status-in_bearbeitung { background: #fff6dc; }
 .status-erledigt, .status-abgelehnt { background: #eee; }
-.blaettern { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: .75rem; }
+
 
 /* Aufnahme-Assistent */
 .schritte { display: flex; flex-wrap: wrap; gap: .4rem; list-style: none; padding: 0; margin: .5rem 0 0; counter-reset: s; }

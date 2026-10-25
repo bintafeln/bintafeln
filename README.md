@@ -227,6 +227,10 @@ an dem Tag Ausgabe ist). Mit dem Recht „Kundenliste als CSV-Datei exportieren�
 Ausgabe) lädt „Als CSV exportieren (Excel)“ die gefilterte Liste herunter; die Spalten wählt der
 Admin unter „Einstellungen → Kunden → Kundenstamm“, Kontaktdaten, Kontostand und Art.-9-Felder
 bleiben ohne das passende Recht leer, und jeder Export steht im Zugriffsprotokoll (ADR 0058).
+Die Spalten der Kundenliste sind per Klick sortierbar (der Export übernimmt die Sortierung),
+„Letzter Besuch“ steht wie überall mit Uhrzeit der letzten Abholung, und in allen Listen mit
+mehreren Seiten steht die Blätterleiste oben und unten (`{% blaettern seite %}` aus
+`apps/core/templatetags/liste.py`).
 
 ## Mitarbeitende
 

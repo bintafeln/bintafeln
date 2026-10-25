@@ -6,8 +6,11 @@
   <li><strong>Ausgabetag:</strong> Gibt Ihre Ausgabestelle an mehreren Tagen aus, wählen Sie den Tag. Die Liste startet
     mit Ihrem eigenen Ausgabetag (bei den Mitarbeitenden eingetragen; ohne Eintrag der heutige Tag). „alle Tage“ zeigt
     alle; beim Suchen nach Namen sind ohnehin alle Tage dabei.</li>
+  <li><strong>Sortieren:</strong> Ein Klick auf eine Spaltenüberschrift sortiert danach, ein zweiter Klick umgekehrt (▲/▼).
+    „Letzter Besuch“ zeigt Datum und Uhrzeit der letzten Abholung, soweit bekannt.</li>
+  <li>Die Knöpfe zum Blättern („Seite 1 von 2“, „weiter →“) stehen über und unter der Liste.</li>
   {% if "kunden.exportieren" in rechte %}<li><strong>Als CSV exportieren (Excel):</strong> lädt genau die gefilterte Liste
-    als Datei herunter, die Excel öffnet. Welche Spalten dabei sind, legt ein Admin unter „Einstellungen → Kunden →
+    in der gewählten Sortierung als Datei herunter, die Excel öffnet. Welche Spalten dabei sind, legt ein Admin unter „Einstellungen → Kunden →
     Kundenstamm“ fest. Jeder Export steht im Zugriffsprotokoll – bitte die Datei nach Gebrauch löschen und nicht
     weitergeben.</li>{% endif %}
 </ul>

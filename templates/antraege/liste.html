@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load liste %}
 {% block titel %}Anträge{% endblock %}
 {% block inhalt %}
 <section class="karte">
@@ -20,6 +21,7 @@
     <button type="submit" class="knopf">Suchen</button>
     <a class="knopf knopf-zweitrangig" href="{% url 'antraege:export' %}?ansicht={{ ansicht }}&amp;suche={{ suche|urlencode }}&amp;sort={{ sort }}">CSV-Export</a>
   </form>
+  {% blaettern seite zusatz="Anträge" %}
   <div class="tabelle-rahmen">
   <table class="tabelle antraege-liste">
     <thead><tr>
@@ -63,13 +65,7 @@
     </tbody>
   </table>
   </div>
-  {% if seite.has_other_pages %}
-  <nav class="blaettern" aria-label="Seiten">
-    {% if seite.has_previous %}<a href="?ansicht={{ ansicht }}&amp;suche={{ suche|urlencode }}&amp;sort={{ sort }}&amp;zeilen={{ zeilen }}&amp;seite={{ seite.previous_page_number }}">← zurück</a>{% endif %}
-    <span>Seite {{ seite.number }} von {{ seite.paginator.num_pages }} · {{ seite.paginator.count }} Anträge</span>
-    {% if seite.has_next %}<a href="?ansicht={{ ansicht }}&amp;suche={{ suche|urlencode }}&amp;sort={{ sort }}&amp;zeilen={{ zeilen }}&amp;seite={{ seite.next_page_number }}">weiter →</a>{% endif %}
-  </nav>
-  {% else %}<p class="hinweis">{{ seite.paginator.count }} Antr{{ seite.paginator.count|pluralize:"ag,äge" }}</p>{% endif %}
+  {% if seite.has_other_pages %}{% blaettern seite zusatz="Anträge" %}{% else %}<p class="hinweis">{{ seite.paginator.count }} Antr{{ seite.paginator.count|pluralize:"ag,äge" }}</p>{% endif %}
   <p class="hinweis">Die CSV-Datei enthält Personendaten. Nur dort speichern, wo sie geschützt ist, und danach löschen.</p>
 </section>
 {% endblock %}
