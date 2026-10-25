@@ -128,6 +128,42 @@ def _eingelassene_heraus(stand, datum, einstellungen, geschuetzt=True) -> None:
             fest = g["wartend"][:n] if i == stand["index"] else []
             g["wartend"] = fest + [x for x in frei if x not in weg]
             g["eingelassen"] += [x for x in frei if x in weg]
+            # Platz merken, falls die Abholung zurückgenommen wird (Korrekturwunsch)
+            nachfolger = stand.setdefault("nachfolger", {})
+            for k, x in enumerate(frei):
+                if x in weg:
+                    nachfolger[x] = [y for y in frei[k + 1 :] if y not in weg][:50]
+
+
+def _zurueckgenommene_hinein(stand, datum, einstellungen) -> None:
+    """Eingelassene ohne Abholung (zurückgenommen) wieder an ihren alten Platz setzen.
+
+    Alter Platz = vor dem ersten Nachfolger von damals, der noch wartet. Ist der Platz schon
+    vorbei, kommt die Nummer als nächste dran (nie vor die gerade angezeigten Nummern).
+    """
+    n = einstellungen.anzahl
+    nachfolger = stand.setdefault("nachfolger", {})
+    for i, g in enumerate(stand["gruppen"]):
+        if not g["eingelassen"]:
+            continue
+        noch = _eingelassen_heute(datum, g["eingelassen"])
+        for x in [x for x in g["eingelassen"] if x not in noch]:
+            g["eingelassen"].remove(x)
+            folgende = nachfolger.pop(x, [])
+            if stand["index"] >= len(stand["gruppen"]):  # Tag war schon fertig
+                stand["index"] = len(stand["gruppen"]) - 1
+            ziel = max(i, stand["index"])
+            wartend = stand["gruppen"][ziel]["wartend"]
+            fest = min(n, len(wartend)) if ziel == stand["index"] else 0
+            if ziel == i:
+                platz = next((k for k, y in enumerate(wartend) if k >= fest and y in folgende),
+                             None)  # fmt: skip
+                if platz is None:  # Nachfolger schon dran: als nächste; sonst war sie die letzte
+                    vorbei = any(y not in wartend for y in folgende)
+                    platz = fest if vorbei else len(wartend)
+            else:
+                platz = fest
+            wartend.insert(platz, x)
 
 
 def _index_weiter(stand) -> bool:
@@ -192,6 +228,7 @@ def abgleichen(stand, stelle, datum, einstellungen) -> None:
         g["wartend"] = fest + rest[:vorn] + neu_v + regulaer
         im_stand |= set(neu)
     stand["vorrang"] = sorted(vorrang)
+    _zurueckgenommene_hinein(stand, datum, einstellungen)
     _eingelassene_heraus(stand, datum, einstellungen)
     _index_weiter(stand)
     stand["abgeglichen"] = timezone.now().isoformat()

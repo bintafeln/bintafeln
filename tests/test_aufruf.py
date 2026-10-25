@@ -547,3 +547,70 @@ def test_menue_oeffnet_neuen_tab(modul_an, admin_client):
     link = f'href="{reverse("aufruf:start")}"'
     stelle = seite.index(link)
     assert 'target="_blank"' in seite[stelle : stelle + 200]
+
+
+def test_zurueckgenommene_abholung_kommt_an_alten_platz(mitte, tag_daten):
+    from apps.ausgabe import korrekturen
+
+    tag = ablauf.starten(mitte, heute())
+    wartend = list(tag.stand["gruppen"][0]["wartend"])  # 5 Nummern, 3 werden angezeigt
+    versehentlich, danach = wartend[3], wartend[4]
+    abholung = Abholung.objects.create(haushalt=Haushalt.objects.get(kundennummer=versehentlich),
+                                       datum=heute())  # fmt: skip
+    spaet_letzter = tag.stand["gruppen"][1]["wartend"][-1]
+    letzte = Abholung.objects.create(haushalt=Haushalt.objects.get(kundennummer=spaet_letzter),
+                                     datum=heute())  # fmt: skip
+    tag = ablauf.aktualisieren(mitte, heute())
+    tag.stand["abgeglichen"] = "2000-01-01T00:00:00+00:00"
+    tag.save()
+    tag = ablauf.aktualisieren(mitte, heute())
+    g = tag.stand["gruppen"]
+    assert versehentlich in g[0]["eingelassen"] and spaet_letzter in g[1]["eingelassen"]
+    # Korrekturwunsch genehmigt: Abholungen weg -> beim nächsten Abgleich zurück an den alten Platz
+    for a in (abholung, letzte):
+        k = korrekturen.beantragen("abholung", a.pk, grund="Versehentlich gebucht", anmerkung="",
+                                   von="anton")  # fmt: skip
+        korrekturen.entscheiden(k, annehmen=True, von="chefin")
+    tag.stand["abgeglichen"] = "2000-01-01T00:00:00+00:00"
+    tag.save()
+    tag = ablauf.aktualisieren(mitte, heute())
+    g = tag.stand["gruppen"]
+    assert versehentlich not in g[0]["eingelassen"]
+    assert g[0]["wartend"].index(versehentlich) == g[0]["wartend"].index(danach) - 1
+    assert g[1]["wartend"][-1] == spaet_letzter  # war die letzte: wieder ans Ende
+
+
+def test_zurueckgenommen_nachdem_platz_vorbei_ist(mitte, tag_daten):
+    e = AufrufEinstellungen.laden(mitte)
+    e.anzahl = 1
+    e.save()
+    tag = ablauf.starten(mitte, heute())
+    wartend = list(tag.stand["gruppen"][0]["wartend"])
+    x = wartend[2]
+    a = Abholung.objects.create(haushalt=Haushalt.objects.get(kundennummer=x), datum=heute())
+    for _ in range(3):  # 4 Nummern (auch der Nachfolger) sind dran gewesen
+        tag = ablauf.weiter(mitte, heute())
+    assert x in tag.stand["gruppen"][0]["eingelassen"]
+    a.delete()
+    tag.stand["abgeglichen"] = "2000-01-01T00:00:00+00:00"
+    tag.save()
+    tag = ablauf.aktualisieren(mitte, heute())
+    g = tag.stand["gruppen"][tag.stand["index"]]
+    assert g["wartend"][1] == x  # als nächste nach der gerade angezeigten
+
+
+def test_zurueckgenommen_wenn_gruppe_oder_tag_schon_fertig(mitte, tag_daten):
+    tag = ablauf.starten(mitte, heute())
+    x = tag.stand["gruppen"][0]["wartend"][4]
+    a = Abholung.objects.create(haushalt=Haushalt.objects.get(kundennummer=x), datum=heute())
+    while not ablauf.stand_fuer_anzeige(
+        ablauf.weiter(mitte, heute()), AufrufEinstellungen.laden(mitte), heute()
+    )["finished"]:
+        pass  # fmt: skip
+    a.delete()
+    tag = ablauf.tag_holen(mitte, heute())
+    tag.stand["abgeglichen"] = "2000-01-01T00:00:00+00:00"
+    tag.save()
+    tag = ablauf.aktualisieren(mitte, heute())
+    letzte = tag.stand["gruppen"][-1]
+    assert tag.stand["index"] == len(tag.stand["gruppen"]) - 1 and x in letzte["wartend"]

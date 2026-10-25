@@ -570,7 +570,8 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    zum Kunden). „Abbrechen“ führt ohne Eintrag zurück zur Suche; der Kunde lässt sich jederzeit
    wieder aufrufen (ADR 0039). Ein Versehen nimmt nur
    zurück, wer das Recht dazu hat (Admin immer); alle anderen schicken einen **Korrekturwunsch**
-   (siehe unten). Admin und Büro können bei Rot wegen einer Terminregel eine
+   (siehe unten). Entschiedene Korrekturwünsche der letzten 14 Tage stehen auf der Einlass-Karte;
+   eine zurückgenommene Abholung von heute bringt die Nummer im Aufruf an ihren alten Platz. Admin und Büro können bei Rot wegen einer Terminregel eine
    **Ausnahme für heute** erteilen.
 5. **Bezahlen:** Der Beitrag ist vorgeschlagen und änderbar. Im Pflichtfeld **„Gezahlt“** steht
    genau der Betrag, den der Kunde zahlt, **auch 0**. Vorgeschlagen ist, was nach Verrechnung des

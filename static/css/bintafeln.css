@@ -742,3 +742,10 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 .wochen-selbst td { background: #fff5e8; }
 .wochen-gesamt th { background: var(--akzent); color: var(--auf-akzent); }
 .zahl-eingabe { width: 6rem; }
+/* Entschiedene Korrekturen auf der Einlass-Karte */
+.korrekturen-entschieden ul { margin: 0; padding-left: 1.2rem; }
+.korrekturen-entschieden li { margin: .3rem 0; }
+.status-zurueck { font-weight: 700; color: #1e6b34; }
+.status-abgelehnt { font-weight: 700; color: var(--fehler); }
+/* Name der Hauptperson groß neben der Kundennummer am Einlass */
+.einlass-name { font-size: 1.6em; margin-left: .6rem; color: var(--akzent-dunkel); }

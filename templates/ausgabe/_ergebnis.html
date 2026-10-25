@@ -36,6 +36,19 @@
 </section>
 {% endwith %}
 {% endif %}
+{% if korrekturen_entschieden %}
+<section class="karte korrekturen-entschieden" aria-label="Entschiedene Korrekturen">
+  <h2>Korrekturen der letzten {{ korrektur_tage }} Tage</h2>
+  <ul>
+    {% for k in korrekturen_entschieden %}
+    <li class="korrektur-{{ k.status }}"><strong>{{ k.beschreibung }}</strong> –
+      {% if k.status == "zurueckgenommen" %}<span class="status-zurueck">zurückgenommen</span>{% else %}<span class="status-abgelehnt">abgelehnt</span>{% endif %}
+      am {{ k.entschieden_am|date:"d.m.Y H:i" }}{% if k.entschieden_von %} von {{ k.entschieden_von }}{% endif %}
+      <span class="hinweis">(Grund: {{ k.grund }}{% if k.antwort %}; Antwort: {{ k.antwort }}{% endif %})</span></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
 
 <section class="karte">
   {% if bewertung.darf_abholen %}

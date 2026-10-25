@@ -52,6 +52,16 @@ def offene(kundennummer) -> dict[tuple[str, int], Korrekturwunsch]:
         kundennummer=kundennummer, status=Korrekturwunsch.Status.OFFEN)}  # fmt: skip
 
 
+TAGE_ANZEIGEN = 14
+
+
+def entschiedene(kundennummer) -> list[Korrekturwunsch]:
+    """Entschiedene Wünsche eines Haushalts der letzten Tage für die Einlass-Karte."""
+    seit = timezone.now() - dt.timedelta(days=TAGE_ANZEIGEN)
+    wuensche = Korrekturwunsch.objects.filter(kundennummer=kundennummer, entschieden_am__gte=seit)
+    return list(wuensche.exclude(status=Korrekturwunsch.Status.OFFEN).order_by("-entschieden_am"))
+
+
 def empfaenger() -> list[str]:
     """Mailadressen aller aktiven Konten, die Korrekturwünsche entscheiden dürfen."""
     konten = get_user_model().objects.filter(is_active=True).exclude(email="")

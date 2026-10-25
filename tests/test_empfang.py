@@ -22,6 +22,7 @@ from apps.kunden.models import (
 
 pytestmark = pytest.mark.django_db
 
+KOPF = '<h1>Kunde 00042 <span class="einlass-name">Erika Muster</span></h1>'  # Name groß daneben
 EMPFANG = reverse("ausgabe:empfang")
 HX = {"HTTP_HX_REQUEST": "true"}
 
@@ -115,7 +116,7 @@ def test_scannen_findet_auch_ohne_fuehrende_nullen(ausgabe, haushalt, eingabe):
     antwort = ausgabe.get(EMPFANG, {"nummer": eingabe}, **HX)
     inhalt = antwort.content.decode()
     # Mit Kunde nur dessen Angaben, kein Suchfeld darüber (ADR 0039)
-    assert "<h1>Kunde 00042</h1>" in inhalt and 'name="nummer"' not in inhalt
+    assert KOPF in inhalt and 'name="nummer"' not in inhalt
     assert "Abholung eintragen" in inhalt and "Abbrechen" in inhalt and "<html" not in inhalt
     assert "Abholung möglich" in inhalt and "Erika Muster" in inhalt
     assert "6,00 €" in inhalt
@@ -131,7 +132,7 @@ def test_unbekannte_nummer(ausgabe, haushalt, eingabe):
 
 def test_ohne_htmx_ganze_seite(ausgabe, haushalt):
     inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}).content.decode()
-    assert "<h1>Kunde 00042</h1>" in inhalt and "Abholung möglich" in inhalt
+    assert KOPF in inhalt and "Abholung möglich" in inhalt
     assert 'name="nummer"' not in inhalt
     assert "<h1>Einlass</h1>" in ausgabe.get(EMPFANG).content.decode()
 

@@ -43,3 +43,10 @@ Alles in einem Programm spart den täglichen Download und seine Fehlerquellen, n
 aktuellen Kundenstamm und verbindet Einlass und Aufruf. Die gewohnten Bildschirme bleiben, damit
 Team und Kunden nicht umlernen müssen. Der Link mit Schlüssel ist für Monitore und Kiosk-Geräte
 praktikabel und lässt sich jederzeit sperren; die Geräte zeigen nur Kundennummern.
+
+## Nachtrag: zurückgenommene Abholungen (2026-10-25)
+
+Wer als eingelassen aus der Warteschlange genommen wurde und dessen Abholung danach zurückgenommen
+wird (Korrekturwunsch, ADR 0035), kommt beim nächsten Abgleich an seinen alten Platz zurück: vor
+den ersten damaligen Nachfolger, der noch wartet (`stand["nachfolger"]`). Ist der Platz schon
+vorbei, wird er als nächster aufgerufen, nie vor die gerade angezeigten Nummern.
