@@ -924,6 +924,23 @@ Danach startet die Anwendung wieder, Migrationen laufen automatisch.
 Auf einem **neuen Server**: bintafeln wie oben installieren, den Ordner `sicherungen/`
 dorthin kopieren und dann wie beschrieben wiederherstellen.
 
+### Musterdaten für eine Test-Installation
+
+Zum Ausprobieren füllt ein Befehl die Installation mit **erfundenen** Daten:
+
+```bash
+./betrieb sichern                                   # vorher sichern!
+docker compose exec app python manage.py musterdaten --ja --passwort 'Ein-Test-Passwort'
+```
+
+Er **ersetzt vollständig** Kundenstamm (150 Haushalte mit Personen, Abholungen, Kontobuchungen,
+Notizen, Anmerkungen, Sperren), Anträge, Adressen, Spenden und Mitglieder und legt
+Muster-Mitarbeitende `muster-…` in allen Rollen und Kombinationen an (auch einer Ausgabestelle
+zugeordnet, auch gesperrt), mit Stammdaten, Verträgen, Arbeitszeiten und Urlaub. Unverändert
+bleiben Tafel-Einstellungen (Name, Logo, Anschrift), Ausgabestellen, Kundengruppen, das
+Antragsformular mit seinen Texten und alle Konten, die nicht mit `muster-` beginnen. Erneut
+ausgeführt, ersetzt er die Musterdaten wieder. Nie auf einer Installation mit echten Daten!
+
 ### Aktualisieren
 
 **Am einfachsten in bintafeln selbst:** „Einstellungen → Update“ (Recht „Programm aktualisieren“,
