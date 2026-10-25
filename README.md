@@ -597,6 +597,9 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    (siehe unten). Entschiedene Korrekturwünsche der letzten 14 Tage stehen auf der Einlass-Karte;
    eine zurückgenommene Abholung von heute bringt die Nummer im Aufruf an ihren alten Platz. Admin und Büro können bei Rot wegen einer Terminregel eine
    **Ausnahme für heute** erteilen.
+   Unter dem Suchfeld klappt **„Letzte Kunden heute“** die letzten 20 Kunden auf: an dieser
+   Ausgabestelle eingetragene Abholungen und die selbst aufgerufenen Kunden, mit Uhrzeit und
+   „abgeholt“ oder „aufgerufen“; ein Klick öffnet den Kunden wieder.
 5. **Bezahlen:** Der Beitrag ist vorgeschlagen und änderbar. Im Pflichtfeld **„Gezahlt“** steht
    genau der Betrag, den der Kunde zahlt, **auch 0**. Vorgeschlagen ist, was nach Verrechnung des
    Guthabens fehlt (bei ausreichendem Guthaben also 0).

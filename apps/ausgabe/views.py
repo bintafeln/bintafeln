@@ -5,6 +5,8 @@ from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.db import transaction
+from django.db.models import OuterRef, Subquery, Value
+from django.db.models.functions import Concat
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -32,6 +34,7 @@ from apps.kunden.models import (
     Haushalt,
     KundenEinstellungen,
     Notiz,
+    Person,
     Zugriff,
 )
 from apps.kunden.views import notiz_schreiben, notizen_kontext
@@ -43,6 +46,48 @@ SITZUNG_STELLE = "ausgabestelle_id"
 def _stelle(request):
     pk = request.session.get(SITZUNG_STELLE)
     return Ausgabestelle.objects.filter(pk=pk).first() if pk else None
+
+
+LETZTE_KUNDEN = 20
+
+
+def _letzte(request, stelle) -> list[dict]:
+    """Die letzten Kunden des Tages am Einlass: hier aufgerufene (Zugriffe dieses Kontos) und an
+    der Ausgabestelle eingetragene Abholungen, neueste zuerst, je Kundennummer einmal."""
+    heute = timezone.localdate()
+    eintraege: dict[str, dict] = {}
+
+    def merken(nummer, zeit, abgeholt):
+        e = eintraege.setdefault(nummer, {"nummer": nummer, "zeit": zeit, "abgeholt": False})
+        e["zeit"] = max(e["zeit"], zeit)
+        e["abgeholt"] = e["abgeholt"] or abgeholt
+
+    abholungen = Abholung.objects.filter(datum=heute, erfasst_am__isnull=False)
+    abholungen = (abholungen.filter(ausgabestelle=stelle) if stelle
+                  else abholungen.filter(eingetragen_von=_benutzername(request.user)))  # fmt: skip
+    for nummer, zeit in abholungen.order_by("-erfasst_am").values_list(
+            "haushalt__kundennummer", "erfasst_am")[:LETZTE_KUNDEN]:  # fmt: skip
+        merken(nummer, zeit, True)
+    zugriffe = Zugriff.objects.filter(benutzer=request.user, export=False, zeitpunkt__date=heute)
+    for nummer, zeit in zugriffe.order_by("-zeitpunkt").values_list(
+            "kundennummer", "zeitpunkt")[:LETZTE_KUNDEN * 3]:  # fmt: skip
+        merken(nummer, zeit, False)
+    liste = sorted(eintraege.values(), key=lambda e: e["zeit"], reverse=True)[:LETZTE_KUNDEN]
+    hauptperson = Person.objects.filter(haushalt=OuterRef("pk"), ist_hauptperson=True)
+    namen = dict(
+        zugang.filtern(Haushalt.objects, request.user)
+        .filter(kundennummer__in=[e["nummer"] for e in liste])
+        .annotate(n=Subquery(hauptperson.values("nachname")[:1]),
+                  v=Subquery(hauptperson.values("vorname")[:1]))
+        .values_list("kundennummer", Concat("v", Value(" "), "n"))
+    )  # fmt: skip
+    return [{**e, "name": (namen[e["nummer"]] or "").strip()} for e in liste
+            if e["nummer"] in namen]  # fmt: skip
+
+
+def _suche_kontext(request) -> dict:
+    stelle = _stelle(request)
+    return {"stelle": stelle, "stellen": _stellen(request), "letzte": _letzte(request, stelle)}
 
 
 def _finden(eingabe: str):
@@ -120,11 +165,9 @@ def _stellen(request):
 @rollen.recht_erforderlich("einlass.nutzen")
 def empfang(request):
     konto.buchungsfristen_anwenden()
-    kontext = {
-        "stelle": _stelle(request),
-        "stellen": _stellen(request),
-    }
     nummer = request.GET.get("nummer", "").strip()
+    kontext = {"stelle": _stelle(request), "stellen": _stellen(request)} if nummer else (
+        _suche_kontext(request))  # fmt: skip
     if nummer:
         h = _finden(nummer)
         grund = zugang.sperrgrund(request.user, h) if h else ""
@@ -170,8 +213,7 @@ def _zur_suche(request, h, text):
     """Nach dem Anmelden eines Kunden: zurück zum Suchfeld für den nächsten Kunden."""
     text = f"Kunde {h.kundennummer}: {text}"
     if request.headers.get("HX-Request"):
-        kontext = {"stelle": _stelle(request), "stellen": _stellen(request), "meldung": text,
-                   "fertig": h.kundennummer}  # fmt: skip
+        kontext = {**_suche_kontext(request), "meldung": text, "fertig": h.kundennummer}
         return render(request, "ausgabe/_einlass.html", kontext)
     messages.success(request, text)
     return redirect("ausgabe:empfang")
