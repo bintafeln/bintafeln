@@ -13,9 +13,9 @@
       <option value="ausgetreten"{% if filter.stand == "ausgetreten" %} selected{% endif %}>ausgetretene</option>
       <option value="alle"{% if filter.stand == "alle" %} selected{% endif %}>alle</option>
     </select>
-    <label for="jahr">Beiträge</label>
+    <label for="jahr">{% if beitraege %}Beiträge{% else %}Jahr{% endif %}</label>
     <select name="jahr" id="jahr" onchange="this.form.submit()">{% for j in jahre %}<option value="{{ j }}"{% if j == jahr %} selected{% endif %}>{{ j }}</option>{% endfor %}</select>
-    <label class="filter-haken"><input type="checkbox" name="nur_offen" value="1"{% if filter.nur_offen %} checked{% endif %} onchange="this.form.submit()"> nur mit offenem Beitrag</label>
+    {% if beitraege %}<label class="filter-haken"><input type="checkbox" name="nur_offen" value="1"{% if filter.nur_offen %} checked{% endif %} onchange="this.form.submit()"> nur mit offenem Beitrag</label>{% endif %}
     <label for="q">Suche</label>
     <input type="search" name="q" id="q" value="{{ filter.q }}" class="suche" placeholder="Nummer oder Name">
     <button type="submit" class="knopf">Suchen</button>
@@ -23,14 +23,16 @@
   <div class="kacheln">
     <div class="kachel"><span class="kachel-titel">Mitglieder heute</span><span class="kachel-wert">{{ k.mitglieder }}</span></div>
     <div class="kachel"><span class="kachel-titel">Eintritte / Austritte {{ jahr }}</span><span class="kachel-wert">{{ k.eintritte }} / {{ k.austritte }}</span></div>
+    {% if beitraege %}
     <div class="kachel"><span class="kachel-titel">Beiträge {{ jahr }} (Soll)</span><span class="kachel-wert">{{ k.soll|floatformat:2 }} €</span></div>
     <div class="kachel"><span class="kachel-titel">gezahlt / offen</span><span class="kachel-wert">{{ k.gezahlt|floatformat:2 }} / {{ k.offen|floatformat:2 }} €</span><span class="kachel-unter">in der Liste unten</span></div>
+    {% endif %}
   </div>
   <p class="hinweis">{{ zeilen|length }} Mitglied{{ zeilen|length|pluralize:"er" }}{% if zeilen %} ·
     <a href="?stand={{ filter.stand }}&amp;jahr={{ jahr }}&amp;q={{ filter.q|urlencode }}&amp;nur_offen={{ filter.nur_offen }}&amp;csv=1">als CSV-Datei (Excel)</a>{% endif %}</p>
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Nr.</th><th>Name</th><th>Art</th><th>Eintritt</th><th class="zahl">Soll {{ jahr }}</th><th class="zahl">gezahlt</th><th class="zahl">offen</th></tr></thead>
+    <thead><tr><th>Nr.</th><th>Name</th><th>Art</th><th>Eintritt</th>{% if beitraege %}<th class="zahl">Soll {{ jahr }}</th><th class="zahl">gezahlt</th><th class="zahl">offen</th>{% endif %}</tr></thead>
     <tbody>
     {% for z in zeilen %}
       <tr>
@@ -38,12 +40,14 @@
         <td data-titel="Name"><a href="{% url 'mitglieder:mitglied' z.m.pk %}">{{ z.m.adresse.name }}</a>{% if z.m.austritt %} <span class="marke-warnung">ausgetreten {{ z.m.austritt|date:"d.m.Y" }}</span>{% endif %}</td>
         <td data-titel="Art">{{ z.m.art }}</td>
         <td data-titel="Eintritt">{{ z.m.eintritt|date:"d.m.Y" }}</td>
+        {% if beitraege %}
         <td data-titel="Soll" class="zahl">{{ z.soll|floatformat:2 }} €</td>
         <td data-titel="gezahlt" class="zahl">{{ z.gezahlt|floatformat:2 }} €</td>
         <td data-titel="offen" class="zahl">{% if z.offen %}<span class="marke-warnung">{{ z.offen|floatformat:2 }} €</span>{% else %}–{% endif %}</td>
+        {% endif %}
       </tr>
     {% empty %}
-      <tr><td colspan="7">Keine Mitglieder gefunden.</td></tr>
+      <tr><td colspan="{% if beitraege %}7{% else %}4{% endif %}">Keine Mitglieder gefunden.</td></tr>
     {% endfor %}
     </tbody>
   </table>

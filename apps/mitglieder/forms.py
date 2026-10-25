@@ -62,6 +62,9 @@ class MitgliedForm(forms.ModelForm):
             konten = konten | get_user_model().objects.filter(pk=m.benutzer_id)
         self.fields["benutzer"].queryset = konten.order_by("last_name", "first_name", "username")
         self.fields["benutzer"].label_from_instance = lambda b: b.get_full_name() or b.username
+        if not MitgliederEinstellungen.mit_beitraegen():
+            for name in ("jahresbeitrag", "zahlweise", "zahlungsart"):
+                del self.fields[name]
 
     def clean(self):
         daten = super().clean()
@@ -76,5 +79,10 @@ class MitgliedForm(forms.ModelForm):
 class MitgliederEinstellungenForm(forms.ModelForm):
     class Meta:
         model = MitgliederEinstellungen
-        fields = ["standard_beitrag", "anteilig", "naechste_nummer"]
+        fields = ["beitraege", "standard_beitrag", "anteilig", "naechste_nummer"]
         localized_fields = ["standard_beitrag"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.beitraege:  # erscheinen nach dem Einschalten und Speichern
+            del self.fields["standard_beitrag"], self.fields["anteilig"]

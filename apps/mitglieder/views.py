@@ -55,53 +55,56 @@ def liste(request):
             Q(nummer__icontains=q) | Q(adresse__organisation__icontains=q)
             | Q(adresse__nachname__icontains=q) | Q(adresse__vorname__icontains=q)
         )  # fmt: skip
-    zeilen = _zeilen(mitglieder, jahr)
-    if request.GET.get("nur_offen"):
-        zeilen = [z for z in zeilen if z["offen"] > 0]
+    beitraege = MitgliederEinstellungen.mit_beitraegen()
+    if beitraege:
+        zeilen = _zeilen(mitglieder, jahr)
+        if request.GET.get("nur_offen"):
+            zeilen = [z for z in zeilen if z["offen"] > 0]
+    else:
+        zeilen = [{"m": m} for m in mitglieder]
     if request.GET.get("csv"):
-        return _csv(zeilen, jahr)
+        return _csv(zeilen, jahr, beitraege)
     alle = Mitglied.objects.all()
     kennzahlen = {
         "mitglieder": sum(1 for m in alle if m.ist_mitglied(heute)),
         "eintritte": alle.filter(eintritt__year=jahr).count(),
         "austritte": alle.filter(austritt__year=jahr).count(),
-        "soll": sum(z["soll"] for z in zeilen), "gezahlt": sum(z["gezahlt"] for z in zeilen),
-        "offen": sum(z["offen"] for z in zeilen),
-    }  # fmt: skip
+    }
+    if beitraege:
+        for feld in ("soll", "gezahlt", "offen"):
+            kennzahlen[feld] = sum(z[feld] for z in zeilen)
     return render(request, "mitglieder/liste.html", {
-        "zeilen": zeilen, "jahr": jahr, "jahre": _jahre(), "k": kennzahlen,
+        "zeilen": zeilen, "jahr": jahr, "jahre": _jahre(), "k": kennzahlen, "beitraege": beitraege,
         "filter": {"stand": stand, "q": q, "nur_offen": request.GET.get("nur_offen", "")},
     })  # fmt: skip
 
 
-def _csv(zeilen, jahr):
+def _csv(zeilen, jahr, beitraege):
     puffer = io.StringIO()
     w = csv.writer(puffer, delimiter=";", lineterminator="\r\n")
-    w.writerow(["Nummer", "Name", "Anschrift", "E-Mail", "Art", "Eintritt", "Austritt",
-                "Jahresbeitrag", "Zahlungsart", f"Soll {jahr}", f"Gezahlt {jahr}",
-                f"Offen {jahr}"])  # fmt: skip
+    kopf = ["Nummer", "Name", "Anschrift", "E-Mail", "Art", "Eintritt", "Austritt"]
+    if beitraege:
+        kopf += ["Jahresbeitrag", "Zahlungsart", f"Soll {jahr}", f"Gezahlt {jahr}", f"Offen {jahr}"]
+    w.writerow(kopf)
 
     def euro(betrag):
         return f"{betrag:.2f}".replace(".", ",")
 
     for z in zeilen:
         m = z["m"]
-        w.writerow(
-            [
-                m.nummer,
-                m.adresse.name,
-                ", ".join(m.adresse.anschrift_zeilen[1:]),
-                m.adresse.email,
-                m.art,
-                f"{m.eintritt:%d.%m.%Y}",
-                f"{m.austritt:%d.%m.%Y}" if m.austritt else "",
-                euro(m.jahresbeitrag),
-                m.zahlungsart,
-                euro(z["soll"]),
-                euro(z["gezahlt"]),
-                euro(z["offen"]),
-            ]
-        )
+        zeile = [
+            m.nummer,
+            m.adresse.name,
+            ", ".join(m.adresse.anschrift_zeilen[1:]),
+            m.adresse.email,
+            m.art,
+            f"{m.eintritt:%d.%m.%Y}",
+            f"{m.austritt:%d.%m.%Y}" if m.austritt else "",
+        ]
+        if beitraege:
+            zeile += [euro(m.jahresbeitrag), m.zahlungsart, euro(z["soll"]), euro(z["gezahlt"]),
+                      euro(z["offen"])]  # fmt: skip
+        w.writerow(zeile)
     antwort = HttpResponse("﻿" + puffer.getvalue(), content_type="text/csv")
     antwort["Content-Disposition"] = f'attachment; filename="mitglieder-{jahr}.csv"'
     return antwort
@@ -110,7 +113,10 @@ def _csv(zeilen, jahr):
 @rollen.recht_erforderlich("mitglieder.sehen")
 def mitglied(request, pk):
     m = get_object_or_404(Mitglied.objects.select_related("adresse", "benutzer"), pk=pk)
-    anteilig = MitgliederEinstellungen.laden().anteilig
+    e = MitgliederEinstellungen.laden()
+    if not e.beitraege:
+        return render(request, "mitglieder/mitglied.html", {"m": m, "mit_beitraegen": False})
+    anteilig = e.anteilig
     jahre = range(timezone.localdate().year, m.eintritt.year - 1, -1)
     beitraege = []
     for jahr in jahre:
@@ -120,7 +126,7 @@ def mitglied(request, pk):
                               "offen": max(soll - gezahlt, Decimal("0"))})  # fmt: skip
     zahlungen = m.adresse.spenden.filter(mitgliedsbeitrag=True)[:30]
     return render(request, "mitglieder/mitglied.html", {
-        "m": m, "beitraege": beitraege, "zahlungen": zahlungen,
+        "m": m, "beitraege": beitraege, "zahlungen": zahlungen, "mit_beitraegen": True,
     })  # fmt: skip
 
 

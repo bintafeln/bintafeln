@@ -59,3 +59,10 @@ class AuswahlForm(forms.Form):
             self.fields["kundengruppen"].queryset = Kundengruppe.objects.all()
         else:
             del self.fields["kundengruppen"]
+        from apps.mitglieder.models import MitgliederEinstellungen
+
+        if not MitgliederEinstellungen.mit_beitraegen():
+            del self.fields["nur_offen"]
+            self.fields[
+                "jahr"
+            ].help_text = "Für Spender und die Platzhalter {spendensumme}, {jahr}."

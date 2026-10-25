@@ -28,6 +28,18 @@ PLATZHALTER = [
 ]  # fmt: skip
 
 
+BEITRAGS_PLATZHALTER = {"jahresbeitrag", "beitrag_offen"}
+
+
+def platzhalter() -> list[tuple[str, str]]:
+    """Die angebotenen Platzhalter; ohne Mitgliedsbeiträge (ADR 0046) ohne die Beitragsfelder."""
+    from apps.mitglieder.models import MitgliederEinstellungen
+
+    if MitgliederEinstellungen.mit_beitraegen():
+        return PLATZHALTER
+    return [p for p in PLATZHALTER if p[0] not in BEITRAGS_PLATZHALTER]
+
+
 @dataclass
 class Empfaenger:
     schluessel: str
