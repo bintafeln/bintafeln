@@ -6,6 +6,7 @@ app_name = "konten"
 
 urlpatterns = [
     path("anmelden/", views.anmelden, name="anmelden"),
+    path("anmelden/code/", views.anmelden_code, name="anmelden_code"),
     path("abmelden/", views.abmelden, name="abmelden"),
     path("", views.mein_konto, name="mein_konto"),
     path("passwort/", views.passwort_aendern, name="passwort_aendern"),

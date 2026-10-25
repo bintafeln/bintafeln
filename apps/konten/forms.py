@@ -16,31 +16,62 @@ from apps.konten.zwei_faktor import code_bereinigen
 
 
 class AnmeldeForm(forms.Form):
-    """Anmeldung mit Benutzername und Passwort.
+    """Erster Schritt der Anmeldung: Benutzername und Passwort.
 
-    Hat der Benutzer ein bestätigtes Zwei-Faktor-Gerät (TOTP), ist zusätzlich ein Code nötig.
+    Hat der Benutzer ein bestätigtes Zwei-Faktor-Gerät und ist dieser Browser kein vertrautes
+    Gerät, folgt ein zweiter Schritt mit dem Code (``ZweiterSchrittForm``).
     """
 
     username = forms.CharField(label="Benutzername", max_length=150)
     password = forms.CharField(label="Passwort", strip=False, widget=forms.PasswordInput)
-    otp_token = forms.CharField(
-        label="Zwei-Faktor-Code",
-        required=False,
-        max_length=16,
-        widget=forms.TextInput(attrs={"autocomplete": "one-time-code", "inputmode": "numeric"}),
-        help_text="Code aus der Authenticator-App oder ein Notfallcode. "
-        "Nur nötig, wenn für Ihr Konto Zwei-Faktor eingerichtet ist.",
-    )
 
-    vertrauen = forms.BooleanField(label="Diesem Gerät vertrauen", required=False)
-
-    fehler = "Benutzername, Passwort oder Code ist falsch."
+    fehler = "Benutzername oder Passwort ist falsch."
 
     def __init__(self, request=None, *args, **kwargs):
         self.request = request
         self.benutzer = None
+        self.geraet = None  # bei vertrautem Gerät: dieses gilt als zweiter Faktor
+        self.braucht_code = False
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        daten = super().clean()
+        benutzername, passwort = daten.get("username"), daten.get("password")
+        if not benutzername or not passwort:
+            return daten
+        benutzer = authenticate(self.request, username=benutzername, password=passwort)
+        if benutzer is None:
+            raise forms.ValidationError(self.fehler)
+        if user_has_device(benutzer):
+            if zwei_faktor.vertrautes_geraet(self.request, benutzer):
+                # Vertrautes Gerät: angemeldet wie mit Code (Gerät für django-otp)
+                self.geraet = zwei_faktor.app_geraet(benutzer) or next(
+                    iter(devices_for_user(benutzer)), None
+                )
+            else:
+                self.braucht_code = True
+        self.benutzer = benutzer
+        return daten
+
+
+class ZweiterSchrittForm(forms.Form):
+    """Zweiter Schritt: Code aus der Authenticator-App oder ein Notfallcode."""
+
+    otp_token = forms.CharField(
+        label="Zwei-Faktor-Code",
+        max_length=16,
+        widget=forms.TextInput(
+            attrs={"autocomplete": "one-time-code", "inputmode": "numeric", "autofocus": True}
+        ),  # fmt: skip
+        help_text="Code aus der Authenticator-App oder ein Notfallcode.",
+    )
+    vertrauen = forms.BooleanField(label="Diesem Gerät vertrauen", required=False)
+
+    fehler = "Der Code ist falsch oder abgelaufen."
+
+    def __init__(self, benutzer, *args, **kwargs):
+        self.benutzer = benutzer
         self.geraet = None
-        self.mit_code = False  # Code eingegeben (dann darf das Gerät vertraut werden)
         super().__init__(*args, **kwargs)
         tage = zwei_faktor.vertrauen_tage()
         if tage:
@@ -53,33 +84,12 @@ class AnmeldeForm(forms.Form):
         else:
             del self.fields["vertrauen"]
 
-    def clean(self):
-        daten = super().clean()
-        benutzername, passwort = daten.get("username"), daten.get("password")
-        if not benutzername or not passwort:
-            return daten
-        benutzer = authenticate(self.request, username=benutzername, password=passwort)
-        if benutzer is None:
+    def clean_otp_token(self):
+        code = code_bereinigen(self.cleaned_data.get("otp_token"))
+        self.geraet = match_token(self.benutzer, code) if code else None
+        if self.geraet is None:
             raise forms.ValidationError(self.fehler)
-        if user_has_device(benutzer):
-            code = code_bereinigen(daten.get("otp_token"))
-            geraet = match_token(benutzer, code) if code else None
-            if (
-                geraet is None
-                and not code
-                and zwei_faktor.vertrautes_geraet(self.request, benutzer)
-            ):
-                # Vertrautes Gerät: angemeldet wie mit Code (Gerät für django-otp)
-                geraet = zwei_faktor.app_geraet(benutzer) or next(
-                    iter(devices_for_user(benutzer)), None
-                )
-            elif geraet is not None:
-                self.mit_code = True
-            if geraet is None:
-                raise forms.ValidationError(self.fehler)
-            self.geraet = geraet
-        self.benutzer = benutzer
-        return daten
+        return code
 
 
 class AnmeldeEinstellungenForm(forms.ModelForm):

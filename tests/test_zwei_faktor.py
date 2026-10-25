@@ -18,6 +18,7 @@ pytestmark = pytest.mark.django_db
 EINRICHTEN = reverse("konten:zwei_faktor_einrichten")
 KONTO = reverse("konten:mein_konto")
 ANMELDEN = reverse("konten:anmelden")
+CODE = reverse("konten:anmelden_code")
 
 
 @pytest.fixture
@@ -151,14 +152,14 @@ def test_anmeldung_mit_app_code_und_notfallcode(client, buero):
     codes = einrichten(client, buero)
     client.post(reverse("konten:abmelden"))
 
+    # Erst Passwort, dann eigenes Fenster für den Code
     ohne = client.post(ANMELDEN, {"username": "buero", "password": PASSWORT})
-    assert ohne.status_code == 200
+    assert ohne.url == CODE and "_auth_user_id" not in client.session
+    assert "Zwei-Faktor-Code" in client.get(CODE).content.decode()
 
     # Notfallcode, auch mit Großbuchstaben und Leerzeichen eingegeben
     eingabe = f" {codes[0][:4].upper()} {codes[0][4:].upper()} "
-    antwort = client.post(
-        ANMELDEN, {"username": "buero", "password": PASSWORT, "otp_token": eingabe}
-    )
+    antwort = client.post(CODE, {"otp_token": eingabe})
     assert antwort.status_code == 302
     assert client.get("/").status_code == 200
     assert zwei_faktor.notfallcodes_uebrig(buero) == zwei_faktor.ANZAHL_NOTFALLCODES - 1
@@ -166,10 +167,9 @@ def test_anmeldung_mit_app_code_und_notfallcode(client, buero):
     # derselbe Notfallcode gilt kein zweites Mal
     client.post(reverse("konten:abmelden"))
     StaticDevice.objects.get(user=buero).throttle_reset()
-    nochmal = client.post(
-        ANMELDEN, {"username": "buero", "password": PASSWORT, "otp_token": codes[0]}
-    )
-    assert nochmal.status_code == 200
+    client.post(ANMELDEN, {"username": "buero", "password": PASSWORT})
+    nochmal = client.post(CODE, {"otp_token": codes[0]})
+    assert nochmal.status_code == 200 and "Der Code ist falsch" in nochmal.content.decode()
 
 
 def test_unverifizierte_sitzung_mit_geraet_wird_abgemeldet(client, buero):

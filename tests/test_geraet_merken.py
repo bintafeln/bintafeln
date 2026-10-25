@@ -14,6 +14,7 @@ from tests.test_zwei_faktor import einrichten
 
 pytestmark = pytest.mark.django_db
 ANMELDEN = reverse("konten:anmelden")
+CODE = reverse("konten:anmelden_code")
 
 
 @pytest.fixture
@@ -28,14 +29,20 @@ def tage(n):
 
 
 def mit_code(client, code, vertrauen=True):
-    daten = {"username": "buero", "password": PASSWORT, "otp_token": code}
+    """Beide Schritte: Passwort, dann Code (ADR 0052, zweiter Schritt eigenes Fenster)."""
+    client.post(reverse("konten:abmelden"))
+    assert client.post(ANMELDEN, {"username": "buero", "password": PASSWORT}).url == CODE
+    daten = {"otp_token": code}
     if vertrauen:
         daten["vertrauen"] = "on"
-    return client.post(ANMELDEN, daten)
+    return client.post(CODE, daten)
 
 
-def ohne_code(client):
-    return client.post(ANMELDEN, {"username": "buero", "password": PASSWORT})
+def ohne_code(client) -> bool:
+    """True, wenn das Passwort reicht (vertrautes Gerät); False, wenn der Code-Schritt folgt."""
+    antwort = client.post(ANMELDEN, {"username": "buero", "password": PASSWORT})
+    assert antwort.status_code == 302
+    return antwort.url != CODE
 
 
 def test_aus_kein_haken_und_kein_vertrauen(client, buero):
@@ -43,6 +50,8 @@ def test_aus_kein_haken_und_kein_vertrauen(client, buero):
     codes = einrichten(client, buero)
     client.post(reverse("konten:abmelden"))
     assert "vertrauen" not in client.get(ANMELDEN).content.decode()
+    client.post(ANMELDEN, {"username": "buero", "password": PASSWORT})
+    assert "vertrauen" not in client.get(CODE).content.decode()
     mit_code(client, codes[0])
     assert not VertrautesGeraet.objects.exists()
 
@@ -52,21 +61,22 @@ def test_vertrautes_geraet_braucht_keinen_code(client, buero):
     codes = einrichten(client, buero)
     client.post(reverse("konten:abmelden"))
     tage(7)
-    assert "Diesem Gerät 7 Tage vertrauen" in client.get(ANMELDEN).content.decode()
+    client.post(ANMELDEN, {"username": "buero", "password": PASSWORT})
+    assert "Diesem Gerät 7 Tage vertrauen" in client.get(CODE).content.decode()
     antwort = mit_code(client, codes[0])
     assert antwort.status_code == 302 and zwei_faktor.COOKIE in antwort.cookies
     g = VertrautesGeraet.objects.get(benutzer=buero)
     assert dt.timedelta(days=6) < g.gueltig_bis - timezone.now() <= dt.timedelta(days=7)
     client.post(reverse("konten:abmelden"))
     # ohne Code angemeldet, Sitzung gilt als verifiziert (Pflicht-Rolle Büro)
-    assert ohne_code(client).status_code == 302
+    assert ohne_code(client) is True
     assert client.get(reverse("core:start")).status_code == 200
     # Falsches Passwort hilft auch auf vertrautem Gerät nicht
     client.post(reverse("konten:abmelden"))
     falsch = client.post(ANMELDEN, {"username": "buero", "password": "falsch-falsch-1"})
     assert falsch.status_code == 200
     # Anderer Browser ohne Cookie braucht den Code
-    assert ohne_code(Client()).status_code == 200
+    assert ohne_code(Client()) is False
 
 
 def test_ungueltig_nach_ablauf_passwort_und_entfernen(client, buero):
@@ -78,14 +88,14 @@ def test_ungueltig_nach_ablauf_passwort_und_entfernen(client, buero):
     client.post(reverse("konten:abmelden"))
     # abgelaufen
     VertrautesGeraet.objects.update(gueltig_bis=timezone.now() - dt.timedelta(minutes=1))
-    assert ohne_code(client).status_code == 200
+    assert ohne_code(client) is False
     # neues Passwort
     VertrautesGeraet.objects.update(gueltig_bis=timezone.now() + dt.timedelta(days=1))
-    assert ohne_code(client).status_code == 302
+    assert ohne_code(client) is True
     client.post(reverse("konten:abmelden"))
     buero.set_password(PASSWORT)  # gleicher Text, aber neuer Hash
     buero.save()
-    assert ohne_code(client).status_code == 200
+    assert ohne_code(client) is False
     # Mein Konto: eigene Geräte sehen und entfernen
     mit_code(client, codes[1])
     seite = client.get(reverse("konten:mein_konto")).content.decode()

@@ -156,7 +156,9 @@ Den angezeigten privaten Schlüssel sicher und getrennt vom Server aufbewahren, 
 ## Zwei-Faktor-Anmeldung
 
 Bei der Anmeldung wird zusätzlich zum Passwort ein 6-stelliger Code aus einer
-Authenticator-App verlangt (z. B. Aegis, FreeOTP, Google Authenticator).
+Authenticator-App verlangt (z. B. Aegis, FreeOTP, Google Authenticator). Das Anmeldefenster
+fragt zuerst nur Benutzername und Passwort; ist Zwei-Faktor eingerichtet, folgt ein eigenes
+Fenster für den Code (5 Minuten gültig, höchstens 5 Versuche).
 
 - **Einrichten:** „Mein Konto“ → „Jetzt einrichten“, QR-Code scannen, Code eingeben. Danach
   erscheinen einmalig **10 Notfallcodes**. Jeder funktioniert einmal anstelle der App.
