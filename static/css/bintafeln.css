@@ -220,7 +220,16 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .ampel-grafik-gelb .ampel-wort { color: #8a6100; }
 .ampel-grafik-gruen .ampel-wort { color: #2e7d32; }
 @keyframes blinken { to { opacity: .25; } }
-@media (prefers-reduced-motion: reduce) { .lampe-rot.an { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .lampe-rot.an, .update-blinken { animation: none; } }
+/* Update läuft: nicht zu übersehen, der Titel blinkt rot */
+.update-laeuft {
+  border: 3px solid #b3261e; border-radius: var(--radius); background: #fbe9e8; color: #5c0f0b;
+  padding: .75rem 1rem; margin: 0 0 1rem; font-size: 1.1rem;
+}
+.update-laeuft p { margin: .25rem 0; }
+.update-laeuft-titel { font-size: 1.6rem; font-weight: 800; }
+.update-laeuft-titel small { font-size: 1rem; font-weight: 400; color: #5c0f0b; }
+.update-blinken { color: #b3261e; animation: blinken 1s steps(2, start) infinite; }
 @media (min-width: 48rem) {
   .empfang-raster { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
   .ampel-grafik { flex-direction: column; position: sticky; top: 1rem; width: 11rem; }
