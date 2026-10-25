@@ -98,6 +98,8 @@ def _ergebnis(request, h, meldung=None):
         "sonderaktionen": sonderaktionen.fuer_haushalt(h, heute, erwachsene, kinder),
         "darf_zuruecknehmen": rollen.hat_recht(request.user, "einlass.zuruecknehmen"),
         "korrektur_offen": korrekturen.offene(h.kundennummer),
+        "korrekturen_entschieden": korrekturen.entschiedene(h.kundennummer),
+        "korrektur_tage": korrekturen.TAGE_ANZEIGEN,
         "korrekturgruende": KORREKTURGRUENDE,
         "heute": heute,
         "meldung": meldung,

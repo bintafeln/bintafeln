@@ -124,3 +124,23 @@ def test_ungueltige_art(client, admin, benutzer_mit_rolle, anmelden):
     assert client.post(url, {"grund": "Sonstiges"}).status_code == 404
     url = reverse("ausgabe:korrektur_beantragen", args=["abholung", 999])
     assert client.post(url, {"grund": "Sonstiges"}).status_code == 404
+
+
+def test_entschiedene_korrekturen_auf_der_einlass_karte(admin_client, h):
+    from apps.ausgabe import korrekturen
+
+    a = Abholung.objects.create(haushalt=h, datum=dt.date(2026, 10, 1))
+    b = Abholung.objects.create(haushalt=h, datum=dt.date(2026, 10, 8))
+    k1 = korrekturen.beantragen("abholung", a.pk, grund="Versehentlich gebucht", anmerkung="",
+                                von="anton")  # fmt: skip
+    k2 = korrekturen.beantragen("abholung", b.pk, grund="Sonstiges", anmerkung="", von="anton")
+    korrekturen.entscheiden(k1, annehmen=True, von="chefin")
+    korrekturen.entscheiden(k2, annehmen=False, von="chefin", antwort="war richtig")
+    seite = admin_client.get(reverse("ausgabe:empfang"), {"nummer": "42"}, **HX).content.decode()
+    assert "Korrekturen der letzten 14 Tage" in seite
+    assert "zurückgenommen" in seite and "Versehentlich gebucht" in seite
+    assert "abgelehnt" in seite and "Antwort: war richtig" in seite and "von chefin" in seite
+    # Ältere Entscheidungen erscheinen nicht mehr
+    Korrekturwunsch.objects.update(entschieden_am=dt.datetime(2020, 1, 1, tzinfo=dt.UTC))
+    seite = admin_client.get(reverse("ausgabe:empfang"), {"nummer": "42"}, **HX).content.decode()
+    assert "Korrekturen der letzten" not in seite
