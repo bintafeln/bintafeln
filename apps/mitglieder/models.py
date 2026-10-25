@@ -37,6 +37,7 @@ class MitgliederEinstellungen(models.Model):
 
     class Meta:
         verbose_name = "Einstellungen für Mitglieder"
+        verbose_name_plural = "Einstellungen für Mitglieder"
 
     def __str__(self):
         return "Einstellungen für Mitglieder"

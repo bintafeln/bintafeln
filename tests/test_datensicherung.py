@@ -1,6 +1,7 @@
 """Datenexport und Zurücklesen (ADR 0037). Alle Daten sind erfunden."""
 
 import datetime as dt
+import re
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -108,6 +109,8 @@ def test_oberflaeche(client, admin_client, benutzer_mit_rolle, anmelden, bestand
     vorschau = admin_client.post(reverse("core:daten_pruefen"), hochladen, follow=True)
     inhalt = vorschau.content.decode()
     assert "Vorschau" in inhalt and "Teil:" in inhalt and "Vollständig ersetzen" not in inhalt
+    assert re.search(r"<dd>\d{4}-\d\d-\d\d \d\d:\d\d Uhr", inhalt)  # Datum und Uhrzeit getrennt
+    assert "Mitglieders" not in inhalt and "Spendens" not in inhalt
     falsch = admin_client.post(
         reverse("core:daten_pruefen"),
         {"datei": SimpleUploadedFile("x.bintafeln", datei), "passwort": "falsch"},

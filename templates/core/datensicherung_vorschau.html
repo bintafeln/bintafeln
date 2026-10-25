@@ -6,7 +6,7 @@
   <h1>Vorschau: Was würde eingelesen?</h1>
   <dl class="angaben">
     <dt>Tafel</dt><dd>{{ v.tafel|default:"–" }}</dd>
-    <dt>Erstellt</dt><dd>{{ v.erstellt|slice:":16"|cut:"T"|default:"–" }}{% if v.erstellt_von %} von {{ v.erstellt_von }}{% endif %}</dd>
+    <dt>Erstellt</dt><dd>{% if v.erstellt %}{{ v.erstellt|slice:":10" }} {{ v.erstellt|slice:"11:16" }} Uhr{% else %}–{% endif %}{% if v.erstellt_von %} von {{ v.erstellt_von }}{% endif %}</dd>
     <dt>bintafeln-Version</dt><dd>{{ v.bintafeln|default:"–" }}</dd>
     <dt>Umfang</dt><dd>{% if v.vollstaendig %}vollständige Sicherung{% else %}Teil: {{ v.bereiche|join:", " }}{% endif %}</dd>
   </dl>
