@@ -635,8 +635,14 @@ ist eine Adresse aus dem Adressbuch.
   CSV-Export. Beitragszahlungen sind Spenden mit dem Häkchen „Mitgliedsbeitrag“ („Zahlung
   erfassen“ auf der Seite des Mitglieds belegt alles vor) und lassen sich daher auch mit
   Zuwendungsbestätigungen bestätigen.
-- **Einstellungen → Mitglieder** (nur Admin): Vorgabe Jahresbeitrag, nächste Nummer, Beitrag im
-  Ein-/Austrittsjahr anteilig oder voll.
+- **Einstellungen → Mitglieder** (nur Admin): „Mitglieder zahlen Beiträge“ (Vorgabe aus, weil
+  die meisten Tafeln keine Beiträge erheben), nächste Nummer; bei Beiträgen zusätzlich Vorgabe
+  Jahresbeitrag und Beitrag im Ein-/Austrittsjahr anteilig oder voll. Ist „Mitglieder zahlen
+  Beiträge“ aus, erscheint nirgends etwas zu Beiträgen: kein Jahresbeitrag im Formular, kein
+  Soll/gezahlt/offen in Liste, Mitgliedsseite und CSV, kein Häkchen „Mitgliedsbeitrag“ bei
+  Spenden, keine Beitrags-Platzhalter und kein Filter „offener Beitrag“ bei Serienbriefen.
+  Bereits erfasste Werte bleiben gespeichert und erscheinen nach dem Einschalten wieder. Beim
+  Update wird die Einstellung eingeschaltet, wenn schon Beiträge erfasst sind.
 - Mitgliedschaft steht in der Auskunft der Adresse (und als Hinweis in der Auskunft eines
   verknüpften Kontos). SEPA-Lastschriften folgen später.
 

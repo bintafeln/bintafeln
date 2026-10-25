@@ -19,6 +19,12 @@ from apps.adressen.models import Adresse
 class MitgliederEinstellungen(models.Model):
     EINZIGE_ID = 1
     naechste_nummer = models.PositiveIntegerField("Nächste Mitgliedsnummer", default=1)
+    beitraege = models.BooleanField(
+        "Mitglieder zahlen Beiträge",
+        default=False,
+        help_text="Aus: Jahresbeitrag, Soll, offene Beiträge und das Häkchen „Mitgliedsbeitrag“ "
+        "bei Spenden werden nirgends angezeigt.",
+    )
     standard_beitrag = models.DecimalField(
         "Jahresbeitrag (Vorgabe für neue Mitglieder)", max_digits=8, decimal_places=2,
         default=Decimal("0"),
@@ -39,6 +45,10 @@ class MitgliederEinstellungen(models.Model):
     def laden(cls):
         einstellungen, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
         return einstellungen
+
+    @classmethod
+    def mit_beitraegen(cls) -> bool:
+        return cls.laden().beitraege
 
 
 class Mitglied(models.Model):

@@ -47,7 +47,14 @@ def test_nummern():
     assert naechste_nummer() == "5" and naechste_nummer() == "7"
 
 
+def beitraege_an():
+    e = MitgliederEinstellungen.laden()
+    e.beitraege = True
+    e.save()
+
+
 def test_anlegen_liste_beitraege(admin_client, erika):
+    beitraege_an()
     neu = reverse("mitglieder:neu")
     seite = admin_client.get(neu, {"adresse": erika.pk}).content.decode()
     assert f'<option value="{erika.pk}" selected>' in seite and "Fördermitglied" in seite
@@ -89,6 +96,50 @@ def test_anlegen_liste_beitraege(admin_client, erika):
     assert not Mitglied.objects.exists() and Spende.objects.exists()
 
 
+def test_ohne_beitraege_nichts_zu_beitraegen(admin_client, erika, pdf_text):
+    assert not MitgliederEinstellungen.mit_beitraegen()  # Vorgabe: die meisten Tafeln ohne
+    formular = admin_client.get(reverse("mitglieder:neu")).content.decode()
+    assert "Jahresbeitrag" not in formular and "Zahlweise" not in formular
+    daten = {"adresse": erika.pk, "nummer": "1", "art": "Fördermitglied", "eintritt": "2026-02-01"}
+    admin_client.post(reverse("mitglieder:neu"), daten)
+    m = Mitglied.objects.get()
+    assert m.jahresbeitrag == 0
+    for seite in (reverse("mitglieder:liste"), reverse("mitglieder:mitglied", args=[m.pk])):
+        inhalt = admin_client.get(seite).content.decode()
+        assert "Erika Muster" in inhalt
+        assert not any(
+            w in inhalt for w in ("Soll", "offenem Beitrag", "Jahresbeitrag", "Zahlung erfassen")
+        )
+    csv = admin_client.get(reverse("mitglieder:liste"), {"csv": "1"}).content.decode()
+    assert "Soll" not in csv and csv.splitlines()[1].endswith(";Fördermitglied;01.02.2026;")
+    assert "mitgliedsbeitrag" not in admin_client.get(reverse("spenden:neu")).content.decode()
+    einst = admin_client.get(reverse("mitglieder:einstellungen")).content.decode()
+    assert "Mitglieder zahlen Beiträge" in einst and "standard_beitrag" not in einst
+    serien = admin_client.get(reverse("serienbriefe:erstellen")).content.decode()
+    assert "nur_offen" not in serien
+    vorlage = admin_client.get(reverse("serienbriefe:vorlage_neu")).content.decode()
+    assert "{beitrag_offen}" not in vorlage and "{mitgliedsnummer}" in vorlage
+    text = pdf_text(admin_client.get(reverse("adressen:auskunft", args=[erika.pk])))
+    assert "Fördermitglied" in text and "Jahresbeitrag" not in text
+    # Einschalten: alles wieder da
+    admin_client.post(
+        reverse("mitglieder:einstellungen"), {"beitraege": "on", "naechste_nummer": 2}
+    )
+    assert MitgliederEinstellungen.mit_beitraegen()
+    einst = admin_client.get(reverse("mitglieder:einstellungen")).content.decode()
+    assert "standard_beitrag" in einst
+    assert "Soll" in admin_client.get(reverse("mitglieder:liste")).content.decode()
+    assert "mitgliedsbeitrag" in admin_client.get(reverse("spenden:neu")).content.decode()
+    assert "nur_offen" in admin_client.get(reverse("serienbriefe:erstellen")).content.decode()
+
+
+def test_vorhandener_mitgliedsbeitrag_bleibt_sichtbar(admin_client, erika):
+    s = Spende.objects.create(adresse=erika, datum=dt.date(2026, 3, 1), betrag=D("36"),
+                              mitgliedsbeitrag=True)  # fmt: skip
+    seite = admin_client.get(reverse("spenden:bearbeiten", args=[s.pk])).content.decode()
+    assert 'name="mitgliedsbeitrag"' in seite
+
+
 def test_auskunft(admin_client, erika, pdf_text):
     mitglied(erika)
     text = pdf_text(admin_client.get(reverse("adressen:auskunft", args=[erika.pk])))
@@ -102,3 +153,16 @@ def test_rechte(client, admin, benutzer_mit_rolle, anmelden, erika):
     client.logout()
     anmelden(client, benutzer_mit_rolle("anton", rollen.AUSGABE))
     assert client.get(reverse("mitglieder:liste")).status_code == 403
+
+
+def test_migration_behaelt_genutzte_beitraege(erika):
+    import importlib
+
+    from django.apps import apps
+
+    schritt = importlib.import_module("apps.mitglieder.migrations.0002_beitraege_einstellbar")
+    schritt.bisherige_beitraege_behalten(apps, None)
+    assert not MitgliederEinstellungen.mit_beitraegen()
+    mitglied(erika)  # Jahresbeitrag 36
+    schritt.bisherige_beitraege_behalten(apps, None)
+    assert MitgliederEinstellungen.mit_beitraegen()

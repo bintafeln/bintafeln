@@ -59,12 +59,17 @@ def adresse_pdf(a) -> bytes:
     m = getattr(a, "mitglied", None)
     if m:
         doc.ueberschrift("Mitgliedschaft")
-        doc.angaben([
+        from apps.mitglieder.models import MitgliederEinstellungen
+
+        angaben = [
             ("Mitgliedsnummer", m.nummer), ("Art", m.art), ("Eintritt", _datum(m.eintritt)),
             ("Austritt", _datum(m.austritt)), ("Grund des Austritts", m.austrittsgrund),
-            ("Jahresbeitrag", f"{m.jahresbeitrag:.2f} €".replace(".", ",")),
-            ("Zahlweise", m.zahlweise), ("Zahlungsart", m.zahlungsart), ("Notiz", m.notiz),
-        ])  # fmt: skip
+        ]  # fmt: skip
+        # Ohne Beiträge nur, was tatsächlich gespeichert ist (kein „0,00 €“).
+        if MitgliederEinstellungen.mit_beitraegen() or m.jahresbeitrag:
+            angaben.append(("Jahresbeitrag", f"{m.jahresbeitrag:.2f} €".replace(".", ",")))
+        angaben += [("Zahlweise", m.zahlweise), ("Zahlungsart", m.zahlungsart), ("Notiz", m.notiz)]
+        doc.angaben(angaben)
     from apps.serienbriefe.models import Versand
 
     versaende = Versand.objects.filter(empfaenger__contains=[f"a:{a.pk}"])

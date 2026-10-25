@@ -34,7 +34,7 @@ def vorlage(request, pk=None):
         messages.success(request, f"Vorlage „{v.name}“ gespeichert.")
         return redirect("serienbriefe:vorlagen")
     return render(request, "serienbriefe/vorlage.html", {
-        "form": form, "v": v, "platzhalter": emp.PLATZHALTER,
+        "form": form, "v": v, "platzhalter": emp.platzhalter(),
     })  # fmt: skip
 
 

@@ -22,6 +22,12 @@ Zuwendungen, die bestätigt werden können.
 - Adressen mit Mitgliedschaft sind nicht löschbar; die Mitgliedschaft lässt sich löschen,
   Adresse und Zahlungen bleiben.
 - Rechte `mitglieder.sehen`, `mitglieder.bearbeiten` (Büro beide), `einstellungen.mitglieder`.
+- **Beiträge sind abschaltbar** (`MitgliederEinstellungen.beitraege`, Vorgabe aus): Die meisten
+  Tafeln erheben keine Mitgliedsbeiträge. Ist sie aus, zeigen Formular, Liste, Mitgliedsseite,
+  CSV, Spendenformular (Häkchen „Mitgliedsbeitrag“, außer an einer Spende, die es schon trägt),
+  Serienbriefe (Platzhalter, Filter) und Auskunft (Jahresbeitrag 0) nichts zu Beiträgen.
+  Gespeicherte Werte bleiben unverändert. Die Migration schaltet sie ein, wenn schon Beiträge
+  erfasst sind (Jahresbeitrag oder Vorgabe über 0, Spenden als Mitgliedsbeitrag).
 - SEPA-Lastschriften folgen später (eigener Plan).
 
 ## Begründung

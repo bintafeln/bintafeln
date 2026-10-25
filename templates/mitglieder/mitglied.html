@@ -9,7 +9,7 @@
   <dl class="angaben">
     <dt>Art</dt><dd>{{ m.art }}</dd>
     <dt>Eintritt</dt><dd>{{ m.eintritt|date:"d.m.Y" }}</dd>
-    <dt>Jahresbeitrag</dt><dd>{{ m.jahresbeitrag|floatformat:2 }} €{% if m.zahlweise %}, {{ m.zahlweise }}{% endif %}{% if m.zahlungsart %} per {{ m.zahlungsart }}{% endif %}</dd>
+    {% if mit_beitraegen %}<dt>Jahresbeitrag</dt><dd>{{ m.jahresbeitrag|floatformat:2 }} €{% if m.zahlweise %}, {{ m.zahlweise }}{% endif %}{% if m.zahlungsart %} per {{ m.zahlungsart }}{% endif %}</dd>{% endif %}
     {% if m.benutzer %}<dt>Mitarbeiter/in</dt><dd>{{ m.benutzer.get_full_name|default:m.benutzer.username }}</dd>{% endif %}
     <dt>Adresse</dt><dd><a href="{% url 'adressen:adresse' m.adresse_id %}">{% for z in m.adresse.anschrift_zeilen %}{{ z }}{% if not forloop.last %}, {% endif %}{% endfor %}</a></dd>
     {% if m.adresse.email %}<dt>E-Mail</dt><dd><a href="mailto:{{ m.adresse.email }}">{{ m.adresse.email }}</a></dd>{% endif %}
@@ -19,6 +19,7 @@
     {% if "mitglieder.bearbeiten" in rechte %}<a class="knopf" href="{% url 'mitglieder:bearbeiten' m.pk %}">Bearbeiten</a>{% endif %}
   </div>
 </section>
+{% if mit_beitraegen %}
 <section class="karte">
   <h2>Beiträge</h2>
   {% if beitraege %}
@@ -40,5 +41,6 @@
     Zuwendungsbestätigungen bestätigen.</p>
   {% if "spenden.erfassen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'spenden:neu' %}?adresse={{ m.adresse_id }}&amp;mitgliedsbeitrag=1&amp;betrag={{ m.jahresbeitrag|stringformat:'.2f' }}">Beitragszahlung erfassen</a>{% endif %}
 </section>
+{% endif %}
 </div>
 {% endblock %}

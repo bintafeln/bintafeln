@@ -39,6 +39,10 @@ class SpendeForm(forms.ModelForm):
         self.fields["einheit"].choices = mit_vorhandenem(
             [("", "—")] + [(w, w) for w in SACH_EINHEITEN], s.einheit
         )
+        from apps.mitglieder.models import MitgliederEinstellungen
+
+        if not s.mitgliedsbeitrag and not MitgliederEinstellungen.mit_beitraegen():
+            del self.fields["mitgliedsbeitrag"]
         if not s.pk and not self.initial.get("datum"):
             self.initial["datum"] = timezone.localdate()
 
