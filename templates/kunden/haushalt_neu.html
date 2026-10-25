@@ -1,20 +1,119 @@
 {% extends "base.html" %}
 {% block titel %}Neuer Haushalt{% endblock %}
 {% block inhalt %}
-<section class="karte">
+<section class="karte breit">
   <p><a href="{% url 'kunden:uebersicht' %}">← Kunden</a></p>
   <h1>Neuer Haushalt</h1>
   {% include "kunden/_import_hinweis.html" %}
-  <p class="hinweis">Zuerst die Angaben zum Haushalt speichern; danach lassen sich Personen, Abholberechtigte,
-    Sperren und Anmerkungen ergänzen. Neue Kunden aus einem Online-Antrag nimmt man besser mit dem
-    Aufnahme-Assistenten auf („Anträge“).</p>
-  <form method="post">
-    {% csrf_token %}
-    {% include "includes/formular_abschnitte.html" %}
+  <p class="hinweis">Von oben nach unten ausfüllen. Pflichtfelder sind mit * markiert. Neue Kunden aus einem
+    Online-Antrag nimmt man besser mit dem Aufnahme-Assistenten auf („Anträge“).</p>
+</section>
+<form method="post" class="haushalt-neu">
+  {% csrf_token %}
+  {% for f in hauptperson.hidden_fields %}{{ f }}{% endfor %}
+  {% for f in haushalt.hidden_fields %}{{ f }}{% endfor %}
+  {% if hauptperson.non_field_errors or haushalt.non_field_errors %}
+  <div class="fehler" role="alert">{% for e in hauptperson.non_field_errors %}<p>{{ e }}</p>{% endfor %}{% for e in haushalt.non_field_errors %}<p>{{ e }}</p>{% endfor %}</div>
+  {% endif %}
+
+  <section class="karte breit">
+    <h2>1. Hauptperson</h2>
+    <p class="hinweis">Die Person, deren Name auf den Kundenausweis kommt.</p>
+    <div class="formular-raster">
+      {% for feld in hp_felder %}{% include "includes/feld.html" %}{% endfor %}
+    </div>
+  </section>
+
+  <section class="karte breit">
+    <h2>2. Anschrift und Kontakt</h2>
+    <div class="formular-raster">
+      {% for feld in anschrift %}{% include "includes/feld.html" %}{% endfor %}
+    </div>
+  </section>
+
+  <section class="karte breit">
+    <h2>3. Weitere Angaben</h2>
+    {% if zusatz or hp_zusatz %}
+    <div class="formular-raster">
+      {% for feld in zusatz %}{% include "includes/feld.html" %}{% endfor %}
+      {% for feld in hp_zusatz %}{% include "includes/feld.html" %}{% endfor %}
+    </div>
+    {% endif %}
+    <p class="hinweis">Welche Angaben hier stehen (z. B. Ernährung, Allergien, Haustiere), legt die Tafel selbst fest
+      und schaltet sie ein oder aus{% if "einstellungen.kundenstamm" in rechte %}: <a href="{% url 'kunden:einstellungen' %}">Einstellungen → Kundenstamm und Zusatzfelder</a>{% endif %}.</p>
+  </section>
+
+  <section class="karte breit">
+    <h2>4. Angehörige</h2>
+    <p class="hinweis">Weitere Personen im Haushalt. Leere Zeilen werden übergangen; mehr Personen später unter
+      „Bearbeiten“.</p>
+    {{ angehoerige.management_form }}
+    {% for e in angehoerige.non_form_errors %}<p class="fehler">{{ e }}</p>{% endfor %}
+    <div class="tabelle-rahmen">
+    <table class="tabelle">
+      <thead><tr><th>Vorname</th><th>Nachname (leer = wie Hauptperson)</th><th>Geburtsdatum</th>{% if angehoerige.forms.0.staatsangehoerigkeit %}<th>Staatsangehörigkeit</th>{% endif %}</tr></thead>
+      <tbody>
+      {% for f in angehoerige %}
+        <tr>
+          <td data-titel="Vorname">{% for h in f.hidden_fields %}{{ h }}{% endfor %}{{ f.vorname }}{% for e in f.vorname.errors %}<small class="fehler">{{ e }}</small>{% endfor %}</td>
+          <td data-titel="Nachname">{{ f.nachname }}{% for e in f.nachname.errors %}<small class="fehler">{{ e }}</small>{% endfor %}</td>
+          <td data-titel="Geburtsdatum">{{ f.geburtsdatum }}{% for e in f.geburtsdatum.errors %}<small class="fehler">{{ e }}</small>{% endfor %}</td>
+          {% if f.staatsangehoerigkeit %}<td data-titel="Staatsangehörigkeit">{{ f.staatsangehoerigkeit }}</td>{% endif %}
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section class="karte breit">
+    <h2>5. Bescheid und Gültigkeit des Ausweises</h2>
+    <div class="formular-raster">
+      {% with feld=haushalt.einkommensart %}{% include "includes/feld.html" %}{% endwith %}
+      {% with feld=haushalt.gueltig_bis %}{% include "includes/feld.html" %}{% endwith %}
+      {% with feld=haushalt.gueltig_eigenes %}{% include "includes/feld.html" %}{% endwith %}
+    </div>
+  </section>
+
+  <section class="karte breit">
+    <h2>6. Ausgabestelle und Kundengruppe</h2>
+    <p class="hinweis">Angeboten werden nur Gruppen mit freiem Platz (gezählt in Haushalten).</p>
+    {% with name=haushalt.kundengruppe.html_name wert=haushalt.kundengruppe.value|stringformat:"s" %}
+    <div class="tabelle-rahmen">
+    <table class="tabelle">
+      <thead><tr><th></th><th>Ausgabestelle</th><th>Kundengruppe</th><th>Termin</th><th>Belegt</th><th>Frei</th></tr></thead>
+      <tbody>
+      {% for g in haushalt.gruppen %}
+        <tr>
+          <td><input type="radio" name="{{ name }}" value="{{ g.gruppe.pk }}" id="g{{ g.gruppe.pk }}"{% if wert == g.gruppe.pk|stringformat:"s" %} checked{% endif %}></td>
+          <td data-titel="Ausgabestelle"><label for="g{{ g.gruppe.pk }}">{{ g.gruppe.ausgabestelle.name|default:"–" }}</label></td>
+          <td data-titel="Kundengruppe"><label for="g{{ g.gruppe.pk }}">{{ g.gruppe.name }}</label></td>
+          <td data-titel="Termin">{{ g.gruppe.wochentage|default:"–" }}{% if g.gruppe.uhrzeit %} {{ g.gruppe.uhrzeit|time:"H:i" }}{% endif %}</td>
+          <td data-titel="Belegt">{{ g.belegt }}{% if g.gruppe.maximum is not None %} von {{ g.gruppe.maximum }}{% endif %}</td>
+          <td data-titel="Frei">{% if g.frei is None %}unbegrenzt{% else %}{{ g.frei }}{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6">Keine Kundengruppe mit freiem Platz.</td></tr>
+      {% endfor %}
+        <tr><td><input type="radio" name="{{ name }}" value="" id="g-keine"{% if wert == "" or wert == "None" %} checked{% endif %}></td><td colspan="5"><label for="g-keine">noch keine Gruppe (später zuordnen)</label></td></tr>
+      </tbody>
+    </table>
+    </div>
+    {% for e in haushalt.kundengruppe.errors %}<small class="fehler">{{ e }}</small>{% endfor %}
+    {% endwith %}
+  </section>
+
+  <section class="karte breit">
+    <h2>Kundennummer</h2>
+    {% if haushalt.kundennummer %}
+    <div class="formular-raster">{% with feld=haushalt.kundennummer %}{% include "includes/feld.html" %}{% endwith %}</div>
+    {% else %}
+    <p>Wird beim Speichern vergeben: voraussichtlich <strong>{{ haushalt.vorschlag }}</strong>.</p>
+    {% endif %}
     <div class="aktionsleiste">
-      <button type="submit" class="knopf">Haushalt anlegen und Personen ergänzen</button>
+      <button type="submit" class="knopf">Haushalt anlegen</button>
       <a href="{% url 'kunden:uebersicht' %}" class="knopf knopf-abbrechen">Abbrechen</a>
     </div>
-  </form>
-</section>
+  </section>
+</form>
 {% endblock %}

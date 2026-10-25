@@ -39,6 +39,12 @@ def url(name, *args):
     return reverse(f"kunden:{name}", args=args)
 
 
+def neu_daten(**mehr):
+    """POST-Daten für „Neuer Haushalt“ (erfunden)."""
+    return {"hp-vorname": "Erika", "hp-nachname": "Neu", "a-TOTAL_FORMS": "0",
+            "a-INITIAL_FORMS": "0", "gueltig_bis": ""} | mehr  # fmt: skip
+
+
 def test_nur_admin(client, admin, benutzer_mit_rolle, anmelden, h):
     anmelden(client, benutzer_mit_rolle("berta", rollen.BUERO))
     assert client.get(url("bearbeiten", "2001")).status_code == 403
@@ -96,18 +102,70 @@ def test_datensparsamkeit_blendet_felder_aus(h):
 
 def test_haushalt_neu_und_loeschen(admin_client, admin):
     assert "Neuer Haushalt" in admin_client.get(url("uebersicht")).content.decode()
-    antwort = admin_client.post(url("haushalt_neu"), {"kundennummer": "3001", "status": "aktiv"})
+    antwort = admin_client.post(url("haushalt_neu"), neu_daten(kundennummer="3001"))
     h = Haushalt.objects.get(kundennummer="3001")
-    assert antwort.url == url("bearbeiten", "3001") and h.geaendert_am
+    assert antwort.url == url("haushalt", "3001") and h.geaendert_am
+    assert h.hauptperson.vorname == "Erika" and h.status == "aktiv"
     seite = admin_client.get(url("haushalt_neu")).content.decode()
-    assert "Neuer Haushalt" in seite and "<legend>Anschrift und Kontakt</legend>" in seite
-    assert "Haushalt anlegen und Personen ergänzen" in seite and 'class="karte schmal"' not in seite
+    assert "Neuer Haushalt" in seite and "2. Anschrift und Kontakt" in seite
+    assert 'name="kundennummer"' in seite and 'value="3002"' in seite  # Admin darf ändern
     assert seite.count('aria-current="page"') == 1  # nur „Neuer Haushalt“ im Menü markiert
     b = konto.einzahlen(h, D("5"), None, "chefin")
     admin_client.post(url("haushalt_loeschen", "3001"))
     assert not Haushalt.objects.exists()
     b.refresh_from_db()
     assert b.haushalt is None and b.kundennummer == "3001"  # Kasse bleibt vollständig
+
+
+def test_neuer_haushalt_in_der_reihenfolge_des_bueros(client, admin, benutzer_mit_rolle, anmelden,
+                                                     recht_geben):  # fmt: skip
+    recht_geben(rollen.BUERO, "kunden.bearbeiten")
+    anmelden(client, benutzer_mit_rolle("berta", rollen.BUERO))
+    Haushalt.objects.create(kundennummer="1041")
+    mitte = Ausgabestelle.objects.create(name="Mitte")
+    frei = Kundengruppe.objects.create(name="Fr 13:30", ausgabestelle=mitte, wochentage="Fr",
+                                       maximum=5)  # fmt: skip
+    voll = Kundengruppe.objects.create(name="Voll", ausgabestelle=mitte, maximum=1)
+    Haushalt.objects.create(kundennummer="9", kundengruppe=voll)
+    art = Einkommensart.objects.create(bezeichnung="Bürgergeld")
+    Zusatzfeld.objects.filter(schluessel="ernaehrung").update(aktiv=True)
+    seite = client.get(url("haushalt_neu")).content.decode()
+    reihenfolge = ["1. Hauptperson", "2. Anschrift", "3. Weitere Angaben", "4. Angehörige",
+                   "5. Bescheid", "6. Ausgabestelle und Kundengruppe", "Kundennummer"]  # fmt: skip
+    stellen = [seite.index(t) for t in reihenfolge]
+    assert stellen == sorted(stellen)
+    assert 'name="kundennummer"' not in seite and "voraussichtlich <strong>1042</strong>" in seite
+    assert "Fr 13:30" in seite and ">Voll<" not in seite and "Ernährung" in seite
+    assert "Kein Schweinefleisch" not in seite  # Vorschlag, aber ausgeschaltet
+    daten = neu_daten(**{
+        "kundennummer": "5555",  # ohne Recht wirkungslos
+        "hp-anrede": "Frau", "hp-geburtsdatum": "1980-01-02", "strasse": "Weg 1",
+        "zusatz_ernaehrung": "vegetarisch", "einkommensart": art.pk,
+        "gueltig_bis": "eigenes", "gueltig_eigenes": "2099-12-31", "kundengruppe": frei.pk,
+        "a-TOTAL_FORMS": "3", "a-0-vorname": "Ben", "a-0-geburtsdatum": "2015-03-04",
+        "a-0-staatsangehoerigkeit": "Ukraine", "a-1-vorname": "", "a-2-nachname": "",
+    })  # fmt: skip
+    antwort = client.post(url("haushalt_neu"), daten)
+    h = Haushalt.objects.get(kundennummer="1042")
+    assert antwort.url == url("haushalt", "1042")
+    assert (h.strasse, h.einkommensart, h.kundengruppe) == ("Weg 1", art, frei)
+    assert h.ausweis_gueltig_bis == dt.date(2099, 12, 31) and h.kunde_seit == dt.date.today()
+    assert h.zusatz == {"ernaehrung": "vegetarisch"}
+    assert h.hauptperson.nachname == "Neu" and h.hauptperson.anrede == "Frau"
+    ben = h.personen.get(ist_hauptperson=False)
+    assert (ben.vorname, ben.nachname, ben.staatsangehoerigkeit) == ("Ben", "Neu", "Ukraine")
+    # Fehler: Nachname fehlt, Angehöriger ohne Vorname, Datum in der Vergangenheit
+    fehler = client.post(url("haushalt_neu"), neu_daten(**{
+        "hp-nachname": "", "a-TOTAL_FORMS": "1", "a-0-nachname": "Ohne",
+        "gueltig_bis": "eigenes", "gueltig_eigenes": "2000-01-01"})).content.decode()  # fmt: skip
+    assert "Bitte den Vornamen angeben." in fehler and "Vergangenheit" in fehler
+    assert Haushalt.objects.count() == 3
+    # Bearbeiten: Kundennummer ohne Recht nicht änderbar
+    recht_geben(rollen.BUERO, "kunden.alle_ausgabestellen")
+    seite = client.get(url("bearbeiten", "1042")).content.decode()
+    assert 'name="kundennummer"' not in seite
+    client.post(url("bearbeiten", "1042"), {"kundennummer": "7", "status": "aktiv"})
+    assert Haushalt.objects.filter(kundennummer="1042").exists()
 
 
 def test_haushalt_loeschen_mit_bestaetigungsseite(admin_client, h):

@@ -6,6 +6,15 @@ from apps.kunden.models import KundenEinstellungen, Zusatzfeld
 
 pytestmark = pytest.mark.django_db
 
+
+@pytest.fixture(autouse=True)
+def ohne_vorschlaege():
+    """Die mitgelieferten, ausgeschalteten Zusatzfeld-Vorschläge stören hier nur."""
+    from apps.kunden.models import Zusatzfeld
+
+    Zusatzfeld.objects.all().delete()
+
+
 EINSTELLUNGEN = reverse("kunden:einstellungen")
 NEU = reverse("kunden:zusatzfeld_neu")
 

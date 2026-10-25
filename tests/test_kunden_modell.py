@@ -98,7 +98,8 @@ def test_zusatzfeld_schluessel_ungueltig(schluessel):
 
 
 @pytest.mark.django_db
-def test_zusatzfeld_str_und_sortierung():
+def test_zusatzfeld_str_und_sortierung(db):
+    Zusatzfeld.objects.all().delete()  # ohne die mitgelieferten Vorschläge
     Zusatzfeld.objects.create(schluessel="b", bezeichnung="B", reihenfolge=2)
     Zusatzfeld.objects.create(schluessel="a", bezeichnung="A", reihenfolge=1)
     assert [str(f) for f in Zusatzfeld.objects.all()] == ["A", "B"]
