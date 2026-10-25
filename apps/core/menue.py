@@ -94,8 +94,10 @@ def menue(request) -> list[dict]:
         ("einstellungen.arbeitszeit",
          _eintrag("Arbeitszeit", "personal:arbeitszeit_einstellungen")),
         ("protokoll.sehen", _eintrag("Änderungsprotokoll", "core:protokoll")),
+        ("system.sicherung", _eintrag("Sicherungen", "core:sicherungen")),
+        ("system.update", _eintrag("Update", "core:update")),
         ("daten.exportieren" if "daten.exportieren" in darf else "daten.importieren",
-         _eintrag("Datensicherung", "core:datensicherung")),
+         _eintrag("Export und Zurücklesen", "core:datensicherung")),
         *([(None, _eintrag("Django-Verwaltung", "admin:index"))] if b.is_staff else []),
     ])  # fmt: skip
     bereiche.append({"titel": "Hilfe", "eintraege": [_eintrag("Hilfe", "core:hilfe")]})

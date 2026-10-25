@@ -646,7 +646,7 @@ Die Kasse bleibt auch nach einem Neuimport des Kundenstamms vollständig (ADR 00
 
 ## Datensicherung in der Oberfläche (Export und Zurücklesen)
 
-„Einstellungen → Datensicherung“ (Rechte „Alle Daten exportieren“ und „Daten zurücklesen“,
+„Einstellungen → Export und Zurücklesen“ (Rechte „Alle Daten exportieren“ und „Daten zurücklesen“,
 Vorgabe: nur Admin). Ergänzt die tägliche Server-Sicherung (siehe „Betrieb“) um eine Datei, die
 man selbst extern aufbewahrt.
 
@@ -715,8 +715,9 @@ docker compose down               # anhalten (Daten bleiben erhalten)
 
 ### Sicherung einrichten
 
-Der Dienst `backup` sichert jeden Tag die Datenbank und die hochgeladenen Dateien
-(Uhrzeit, Anzahl und Ablageort stehen in `.env`). Die Sicherungen werden mit
+Der Dienst `backup` sichert die Datenbank und die hochgeladenen Dateien nach den
+**Sicherungsaufträgen**, die man in bintafeln unter „Einstellungen → Sicherungen“ einstellt
+(siehe [Sicherungsaufträge](#sicherungsaufträge)). Die Sicherungen werden mit
 [age](https://age-encryption.org) verschlüsselt. Auf dem Server liegt nur der **öffentliche**
 Schlüssel. Wer den Server oder die Sicherungen stiehlt, kann sie also nicht lesen. Ohne
 Schlüssel wird nicht gesichert, unverschlüsselt wird nie gesichert.
@@ -738,8 +739,43 @@ Danach zeigt die Startseite allen Admins, wann zuletzt gesichert wurde, und warn
 letzte erfolgreiche Sicherung älter als zwei Tage ist.
 
 Jede Sicherung ist ein Ordner in `sicherungen/` (z. B. `2026-01-31_023000`) mit
-`datenbank.dump.age`, `medien.tar.age` und `info.txt`. Ältere Stände als
-`BINTAFELN_SICHERUNG_ANZAHL` werden automatisch gelöscht.
+`datenbank.dump.age`, `medien.tar.age` und `info.txt`. Ältere Stände löscht der Dienst nach der
+Aufbewahrung des Auftrags.
+
+### Sicherungsaufträge
+
+Unter „Einstellungen → Sicherungen“ (Recht „Sicherungen starten, Sicherungsaufträge
+einstellen“, Vorgabe nur Admin) gibt es:
+
+- **„Jetzt sichern“** bei jedem Auftrag, immer möglich, auch bei ausgeschaltetem Zeitplan. Der
+  Dienst startet die Sicherung innerhalb von etwa 15 Sekunden; die Seite zeigt Fortschritt und
+  Ergebnis.
+- **Beliebig viele Aufträge**, je Auftrag:
+  - **Ziel**: der Sicherungsordner des Servers (`BINTAFELN_SICHERUNG_PFAD`) oder ein Ordner unter
+    `/media` oder `/mnt`, also z. B. eine USB-Platte oder ein eingehängtes NAS. Der Dienst
+    zeigt diese Ordner mit freiem Platz zur Auswahl; später angesteckte Platten erscheinen
+    spätestens nach 30 Minuten (so oft startet sich der Dienst neu, wenn er nichts zu tun hat).
+    Gesichert wird in einen Unterordner `bintafeln`.
+  - **Wochentage und Uhrzeit**.
+  - **Aufbewahrung**: höchstens so viele Stände und/oder so viele Tage. Die neueste Sicherung
+    bleibt immer.
+- **Übersicht** je Auftrag: letzte Sicherung, Ergebnis, Stände, freier Platz. Fehlgeschlagene
+  Aufträge stehen auf der Startseite.
+
+Der Auftrag „Tägliche Sicherung auf dem Server“ ist immer da (ausschaltbar, nicht löschbar):
+`./betrieb sichern`, das Update und `./betrieb wiederherstellen` arbeiten mit seinem Ordner.
+`BINTAFELN_SICHERUNG_UHRZEIT` und `BINTAFELN_SICHERUNG_ANZAHL` in `.env` gelten nur für seine
+erste Einrichtung. Stände von einem externen Ziel zum Wiederherstellen in den Sicherungsordner
+kopieren (ADR 0042).
+
+Externe Platte einhängen (Beispiel, als root auf dem Server):
+
+```bash
+mkdir -p /mnt/usb-sicherung
+mount /dev/sdb1 /mnt/usb-sicherung     # dauerhaft: Eintrag in /etc/fstab
+```
+
+Unter Debian mit Desktop hängt sich eine angesteckte Platte oft selbst unter `/media/…` ein.
 
 ### Sicherungen auf einen anderen Rechner kopieren
 
@@ -772,6 +808,20 @@ Auf einem **neuen Server**: bintafeln wie oben installieren, den Ordner `sicheru
 dorthin kopieren und dann wie beschrieben wiederherstellen.
 
 ### Aktualisieren
+
+**Am einfachsten in bintafeln selbst:** „Einstellungen → Update“ (Recht „Programm aktualisieren“,
+Vorgabe nur Admin). Die Seite zeigt die installierte Version, die verfügbaren Versionen mit ihren
+Änderungen und startet das Update auf Knopfdruck, auf Wunsch auch zurück auf eine ältere Version.
+Dahinter läuft genau `./betrieb update VERSION` (also mit Sicherung vorher). bintafeln ist dabei
+ein bis zwei Minuten nicht erreichbar; danach zeigt die Seite das Ergebnis und das Protokoll.
+
+Das erledigt der Dienst `updater` (ADR 0043). Er ist als einziger Dienst mit Docker verbunden,
+von außen nicht erreichbar und nimmt von bintafeln nur den Namen einer vorhandenen Version an.
+Er sucht alle 10 Minuten nach neuen Versionen (`git fetch`); solange das Repository privat ist,
+braucht der Server dafür Zugangsdaten für GitHub. **Einmalig** kommt der Dienst mit dem ersten
+`./betrieb update` auf der Kommandozeile dazu; danach geht jedes Update in der Oberfläche.
+
+Auf der Kommandozeile:
 
 ```bash
 cd /opt/bintafeln

@@ -1,0 +1,75 @@
+<div{% if s.beschaeftigt %} hx-get="{% url 'core:update' %}" hx-trigger="every 5s" hx-target="#update-stand"{% endif %}>
+{% if s.angefordert %}
+<p class="meldung" role="status">Update auf {{ s.angefordert }} ist angefordert und startet in wenigen Sekunden …</p>
+{% elif s.zustand == "laeuft" %}
+<p class="meldung" role="status"><strong>Update auf {{ s.version }} läuft</strong> (seit {{ s.beginn|time:"H:i" }} Uhr). bintafeln
+  ist gleich kurz nicht erreichbar; diese Seite meldet sich danach von selbst mit dem Ergebnis.</p>
+{% elif s.zustand == "ok" %}
+<p class="meldung" role="status">✓ {{ s.meldung }} ({{ s.ende|date:"d.m.Y H:i" }} Uhr) <a href="{% url 'core:update' %}">Seite neu laden</a></p>
+{% elif s.zustand == "fehler" %}
+<p class="meldung error" role="alert"><strong>{{ s.meldung }}</strong>{% if s.ende %} ({{ s.ende|date:"d.m.Y H:i" }} Uhr){% endif %}
+  Der bisherige Stand läuft weiter, sofern das Protokoll nichts anderes sagt.</p>
+{% endif %}
+{% if not s.erreichbar and not s.beschaeftigt %}
+<p class="meldung error" role="alert">Der Update-Dienst läuft noch nicht. Einmalig auf dem Server im Projektordner
+  <code>./betrieb update</code> ausführen; danach geht jedes weitere Update hier.</p>
+{% endif %}
+
+<div class="seiten-raster">
+<section class="karte">
+  <h2>Installiert</h2>
+  <p class="update-version">{{ s.installiert|default:"unbekannt" }}</p>
+  {% if s.abgerufen %}<p class="hinweis">Zuletzt nach neuen Versionen gesucht: {{ s.abgerufen|date:"d.m.Y H:i" }} Uhr.</p>{% endif %}
+  {% if s.abruf_fehler %}<p class="meldung error">{{ s.abruf_fehler }} Ist der Server mit dem Internet verbunden? Solange das
+    Repository nicht öffentlich ist, braucht der Server dafür Zugangsdaten.</p>{% endif %}
+  <form method="post" action="{% url 'core:update_abrufen' %}" class="inline">
+    {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig"{% if not s.erreichbar %} disabled{% endif %}>Jetzt nach neuen Versionen suchen</button>
+  </form>
+</section>
+
+<section class="karte">
+  <h2>{% if neuere %}Neue Version verfügbar{% else %}Version wählen{% endif %}</h2>
+  {% if not neuere %}<p>Sie haben die neueste Version.</p>{% endif %}
+  {% if s.versionen %}
+  {% if not schluessel_ok %}<p class="meldung error">Es ist noch kein Sicherungsschlüssel eingerichtet; vor dem Update wird
+    deshalb <strong>nicht</strong> gesichert. Admin: auf dem Server <code>./betrieb schluessel</code>.</p>{% endif %}
+  <form method="post" action="{% url 'core:update_starten' %}">
+    {% csrf_token %}
+    <div class="feld">
+      <label for="version">Version</label>
+      <select name="version" id="version"{% if s.beschaeftigt or not s.erreichbar %} disabled{% endif %}>
+        {% for v in neuere %}<option value="{{ v.name }}">{{ v.name }} vom {{ v.datum }}{% if forloop.first %} (neueste){% endif %}</option>{% endfor %}
+        {% for v in aeltere %}<option value="{{ v.name }}">{{ v.name }} vom {{ v.datum }} – älter, zurückgehen</option>{% endfor %}
+      </select>
+      {% if aeltere %}<small class="hilfe">Zurück auf eine ältere Version nur bei Problemen: Was nur die neuere Version
+        gespeichert hat, geht dabei verloren (vorher wird gesichert).</small>{% endif %}
+    </div>
+    <div class="feld feld-haken">
+      <label><input type="checkbox" name="bestaetigt" value="ja" required> Ich weiß: bintafeln ist ein bis zwei Minuten
+        nicht erreichbar.</label>
+    </div>
+    <button type="submit" class="knopf"{% if s.beschaeftigt or not s.erreichbar %} disabled{% endif %}>Update starten</button>
+  </form>
+  {% endif %}
+</section>
+</div>
+
+{% if neuere %}
+<section class="karte breit">
+  <h2>Was ist neu?</h2>
+  {% for v in neuere %}
+  <h3>{{ v.name }} <small class="leise">vom {{ v.datum }}</small></h3>
+  {% if v.aenderungen %}<ul>{% for a in v.aenderungen %}<li>{{ a }}</li>{% endfor %}</ul>{% else %}<p class="hinweis">Keine Beschreibung.</p>{% endif %}
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if s.protokoll %}
+<section class="karte breit">
+  <details{% if s.zustand == "fehler" %} open{% endif %}>
+    <summary>Protokoll des letzten Updates{% if s.version %} ({{ s.version }}){% endif %}</summary>
+    <pre class="protokoll">{{ s.protokoll }}</pre>
+  </details>
+</section>
+{% endif %}
+</div>

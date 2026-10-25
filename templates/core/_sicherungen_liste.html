@@ -1,0 +1,35 @@
+<div{% if beschaeftigt %} hx-get="{% url 'core:sicherungen' %}" hx-trigger="every 5s" hx-target="#sicherungen-liste"{% endif %}>
+{% if not dienst.erreichbar %}
+<p class="meldung error" role="alert">Der Sicherungsdienst meldet sich nicht{% if dienst.letzter_kontakt %} (zuletzt {{ dienst.letzter_kontakt|date:"d.m.Y H:i" }}){% endif %}.
+  Aufträge werden erst ausgeführt, wenn er wieder läuft. Admin: auf dem Server <code>docker compose up -d</code>, Details mit
+  <code>docker compose logs backup</code>.</p>
+{% elif not dienst.schluessel_ok %}
+<p class="meldung error" role="alert">Es ist noch kein Sicherungsschlüssel eingerichtet; ohne ihn wird nicht gesichert.
+  Admin: auf dem Server <code>./betrieb schluessel</code> ausführen.</p>
+{% endif %}
+<div class="seiten-raster">
+{% for a in auftraege %}
+<section class="karte sicherungsauftrag">
+  <h2>{{ a.name }}{% if not a.aktiv %} <small class="leise">(Zeitplan aus)</small>{% endif %}</h2>
+  <dl class="angaben">
+    <dt>Ziel</dt><dd>{% if a.ziel %}{{ a.ziel }}/bintafeln{% else %}Sicherungsordner des Servers{% endif %}</dd>
+    <dt>Zeitplan</dt><dd>{{ a.tage_namen }} um {{ a.uhrzeit|time:"H:i" }} Uhr</dd>
+    <dt>Aufbewahrung</dt><dd>{% if a.anzahl %}höchstens {{ a.anzahl }} Stände{% endif %}{% if a.anzahl and a.tage %}, {% endif %}{% if a.tage %}höchstens {{ a.tage }} Tage{% endif %}</dd>
+    <dt>Letzte Sicherung</dt><dd>{{ a.letzte_erfolgreiche|date:"d.m.Y H:i"|default:"noch keine" }}</dd>
+    <dt>Stände</dt><dd>{% with s=a.staende_liste %}{{ s|length }}{% if s %} (neueste {{ s.0.0 }}, {{ s.0.1|filesizeformat }}){% endif %}{% endwith %}</dd>
+    {% if a.frei_bytes is not None %}<dt>Frei am Ziel</dt><dd>{{ a.frei_bytes|filesizeformat }} von {{ a.gesamt_bytes|filesizeformat }}</dd>{% endif %}
+  </dl>
+  {% if a.laeuft_seit %}<p class="meldung" role="status">Sicherung läuft seit {{ a.laeuft_seit|time:"H:i" }} Uhr …</p>
+  {% elif a.angefordert_am %}<p class="meldung" role="status">Angefordert um {{ a.angefordert_am|time:"H:i" }} Uhr{% if a.angefordert_von %} von {{ a.angefordert_von }}{% endif %}, startet gleich …</p>
+  {% elif a.ergebnis == "fehler" %}<p class="meldung error" role="alert"><strong>Fehler am {{ a.letzter_versuch|date:"d.m.Y H:i" }}:</strong> {{ a.meldung }}</p>
+  {% elif a.ergebnis == "ok" %}<p class="meldung" role="status">✓ {{ a.meldung }}</p>{% endif %}
+  <div class="aktionsleiste">
+    <form method="post" action="{% url 'core:sicherung_jetzt' a.pk %}" class="inline">
+      {% csrf_token %}<button type="submit" class="knopf"{% if a.laeuft_seit or a.angefordert_am %} disabled{% endif %}>Jetzt sichern</button>
+    </form>
+    <a class="knopf knopf-zweitrangig" href="{% url 'core:sicherungsauftrag' a.pk %}">Bearbeiten</a>
+  </div>
+</section>
+{% endfor %}
+</div>
+</div>

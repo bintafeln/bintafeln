@@ -15,7 +15,7 @@ RUN pip install -r requirements.txt
 
 RUN groupadd --system --gid 1000 bintafeln \
     && useradd --system --uid 1000 --gid bintafeln --home /app bintafeln \
-    && mkdir -p /app/data/static /app/data/media \
+    && mkdir -p /app/data/static /app/data/media /app/data/betrieb \
     && chown -R bintafeln:bintafeln /app/data
 
 COPY --chown=bintafeln:bintafeln . .

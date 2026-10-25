@@ -93,7 +93,8 @@ def test_neuere_version_abgelehnt(bestand):
 
 def test_oberflaeche(client, admin_client, benutzer_mit_rolle, anmelden, bestand, monkeypatch):
     seite = admin_client.get(reverse("core:datensicherung")).content.decode()
-    assert "Exportieren" in seite and "Zurücklesen" in seite and "Datensicherung</a>" in seite
+    assert "Exportieren" in seite and "Zurücklesen" in seite
+    assert "Export und Zurücklesen</a>" in seite
     antwort = admin_client.post(reverse("core:daten_export"), {
         "bereiche": ["kunden", "einstellungen"], "passwort": PW, "passwort2": PW})  # fmt: skip
     assert antwort["Content-Disposition"].startswith('attachment; filename="bintafeln-export-')

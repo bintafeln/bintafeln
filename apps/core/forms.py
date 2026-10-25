@@ -1,10 +1,11 @@
 from django import forms
 from django.contrib.auth import get_user_model, password_validation
+from django.template.defaultfilters import filesizeformat
 
 from apps.core import geheimnis
 from apps.core.auswahl import LAENDERCODE
 from apps.core.farben import STANDARDFARBE
-from apps.core.models import MailEinstellungen, TafelEinstellungen
+from apps.core.models import MailEinstellungen, SicherungsAuftrag, TafelEinstellungen
 
 LOGO_MAX_BYTES = 2 * 1024 * 1024
 
@@ -115,3 +116,65 @@ class MailEinstellungenForm(forms.ModelForm):
         if commit:
             instanz.save()
         return instanz
+
+
+class SicherungsAuftragForm(forms.ModelForm):
+    """Sicherungsauftrag (ADR 0042). Ziele nur aus dem, was der Dienst unter /media, /mnt sieht."""
+
+    ziel = forms.ChoiceField(label="Ziel", required=False)
+    wochentage = forms.MultipleChoiceField(
+        label="Wochentage", choices=SicherungsAuftrag.WOCHENTAGE,
+        widget=forms.CheckboxSelectMultiple,
+    )  # fmt: skip
+
+    class Meta:
+        model = SicherungsAuftrag
+        fields = ["name", "ziel", "aktiv", "wochentage", "uhrzeit", "anzahl", "tage"]
+        widgets = {"uhrzeit": forms.TimeInput(attrs={"type": "time"}, format="%H:%M")}
+        help_texts = {
+            "anzahl": "Ältere Stände werden gelöscht. Leer = keine Grenze nach Anzahl.",
+            "tage": "Ältere Stände werden gelöscht. Leer = keine Grenze nach Alter. "
+            "Die neueste Sicherung bleibt immer erhalten.",
+        }
+
+    def __init__(self, *args, ziele=(), **kwargs):
+        super().__init__(*args, **kwargs)
+        auswahl = [("", "Sicherungsordner des Servers")]
+        for pfad, frei, _gesamt in ziele:
+            auswahl.append((pfad, f"{pfad} (frei: {filesizeformat(frei)})"))
+        gespeichert = self.instance.ziel
+        if gespeichert and gespeichert not in {p for p, _ in auswahl}:
+            auswahl.append((gespeichert, f"{gespeichert} (zurzeit nicht angeschlossen)"))
+        self.fields["ziel"].choices = auswahl
+        self.fields["ziel"].help_text = (
+            "Externe Platten und Netzlaufwerke erscheinen hier, sobald sie auf dem Server unter "
+            "/media oder /mnt eingehängt sind. bintafeln legt dort einen Ordner „bintafeln“ an."
+        )
+        self.initial["wochentage"] = list(self.instance.wochentage)
+        if self.instance.standard:
+            del self.fields["ziel"]  # Der Standard-Auftrag sichert immer in den Sicherungsordner
+
+    def clean_wochentage(self):
+        return "".join(sorted(self.cleaned_data["wochentage"]))
+
+    def clean_ziel(self):
+        ziel = self.cleaned_data.get("ziel", "")
+        if ziel and (not ziel.startswith(("/media/", "/mnt/")) or ".." in ziel.split("/")
+                     or "|" in ziel or "\n" in ziel):  # fmt: skip
+            raise forms.ValidationError("Nur Ordner unter /media oder /mnt sind möglich.")
+        andere = SicherungsAuftrag.objects.exclude(pk=self.instance.pk).filter(ziel=ziel)
+        if andere.exists():
+            raise forms.ValidationError(
+                f"In dieses Ziel sichert schon der Auftrag „{andere.first()}“. Je Ziel ein "
+                "Auftrag, damit sich die Aufbewahrung nicht gegenseitig löscht."
+            )
+        return ziel
+
+    def clean(self):
+        daten = super().clean()
+        if not daten.get("anzahl") and not daten.get("tage"):
+            raise forms.ValidationError(
+                "Bitte festlegen, wie lange Sicherungen aufbewahrt werden (Anzahl oder Tage), "
+                "damit das Ziel nicht volläuft."
+            )
+        return daten

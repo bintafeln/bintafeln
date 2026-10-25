@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block titel %}{% if a.pk %}{{ a.name }}{% else %}Neuer Sicherungsauftrag{% endif %}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'core:sicherungen' %}">← Sicherungen</a></p>
+  <h1>{% if a.pk %}Sicherungsauftrag „{{ a.name }}“{% else %}Neuer Sicherungsauftrag{% endif %}</h1>
+  {% if a.standard %}<p class="hinweis">Dieser Auftrag sichert in den Sicherungsordner des Servers. Dorthin sichern auch
+    „./betrieb sichern“ und das Update, und von dort stellt „./betrieb wiederherstellen“ wieder her. Er lässt sich
+    deshalb nicht löschen, aber ausschalten.</p>{% endif %}
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf">Speichern</button>
+      <a class="knopf knopf-abbrechen" href="{% url 'core:sicherungen' %}">Abbrechen</a>
+    </div>
+  </form>
+  {% if a.pk and not a.standard %}
+  <form method="post" action="{% url 'core:sicherungsauftrag_loeschen' a.pk %}" class="abseits"
+        onsubmit="return confirm('Auftrag löschen? Vorhandene Sicherungen am Ziel bleiben erhalten.')">
+    {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Auftrag löschen</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

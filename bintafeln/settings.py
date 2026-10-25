@@ -153,6 +153,9 @@ SICHERUNG_STATUSDATEI = Path(
     umgebung.text("BINTAFELN_SICHERUNG_STATUS", str(BASE_DIR / "sicherungen" / "status.txt"))
 )
 
+# Gemeinsamer Ordner mit dem Dienst "updater" (Update aus der Oberfläche, ADR 0043)
+BETRIEB_ORDNER = Path(umgebung.text("BINTAFELN_BETRIEB_ORDNER", str(BASE_DIR / "data" / "betrieb")))
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Der Proxy (Caddy) setzt X-Forwarded-Proto; die App ist nur über ihn erreichbar.

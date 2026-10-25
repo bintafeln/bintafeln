@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block titel %}Sicherungen{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Sicherungen</h1>
+  <p>Der Server sichert Datenbank und hochgeladene Dateien verschlüsselt. Jeder Auftrag legt fest, wohin, an welchen
+    Tagen und wie lange die Stände aufbewahrt werden. „Jetzt sichern“ geht immer, auch bei ausgeschalteten Aufträgen.
+    Wiederherstellen: <code>./betrieb wiederherstellen</code> auf dem Server (siehe Hilfe).</p>
+  <p class="aktionsleiste"><a class="knopf" href="{% url 'core:sicherungsauftrag_neu' %}">Neuer Sicherungsauftrag</a></p>
+</section>
+<div id="sicherungen-liste">{% include "core/_sicherungen_liste.html" %}</div>
+{% endblock %}

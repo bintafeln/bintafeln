@@ -33,6 +33,9 @@ services:
       DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-}
       BINTAFELN_DOMAIN: ${BINTAFELN_DOMAIN:-}
       BINTAFELN_HEIMNETZ_ADRESSE: ${BINTAFELN_HEIMNETZ_ADRESSE:-}
+      # Nur für die erste Einrichtung des Standard-Sicherungsauftrags (ADR 0042)
+      BINTAFELN_SICHERUNG_UHRZEIT: ${BINTAFELN_SICHERUNG_UHRZEIT:-02:30}
+      BINTAFELN_SICHERUNG_ANZAHL: ${BINTAFELN_SICHERUNG_ANZAHL:-14}
       BINTAFELN_ZEITZONE: ${BINTAFELN_ZEITZONE:-Europe/Berlin}
       BINTAFELN_LOGLEVEL: ${BINTAFELN_LOGLEVEL:-INFO}
       BINTAFELN_DEMO: ${BINTAFELN_DEMO:-false}
@@ -47,6 +50,8 @@ services:
       - media:/app/data/media
       # nur lesend, für die Anzeige des Sicherungsstatus
       - ${BINTAFELN_SICHERUNG_PFAD:-./sicherungen}:/app/sicherungen:ro
+      # Austausch mit dem Dienst updater (Update aus der Oberfläche, ADR 0043)
+      - betrieb:/app/data/betrieb
 
   backup:
     build: docker/backup
@@ -67,6 +72,19 @@ services:
     volumes:
       - media:/daten/media:ro
       - ${BINTAFELN_SICHERUNG_PFAD:-./sicherungen}:/sicherungen
+      # Externe Ziele für Sicherungsaufträge (USB-Platte, NAS; ADR 0042). Später eingehängte
+      # Medien sieht der Dienst nach seinem nächsten Neustart (er startet sich alle 30 Minuten
+      # neu, wenn er nichts zu tun hat).
+      - type: bind
+        source: /media
+        target: /media
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /mnt
+        target: /mnt
+        bind:
+          create_host_path: true
 
   proxy:
     image: caddy:2-alpine
@@ -91,9 +109,22 @@ services:
       - caddy-daten:/data
       - caddy-config:/config
 
+  # Führt Updates aus, die Admins in bintafeln anfordern (Einstellungen → Update, ADR 0043).
+  # Nur dieser Dienst darf Docker steuern; er ist von außen nicht erreichbar. bintafeln selbst
+  # legt nur einen Auftrag in den gemeinsamen Ordner "betrieb".
+  updater:
+    build: docker/updater
+    image: ${COMPOSE_PROJECT_NAME:-bintafeln}-updater:lokal
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - .:/projekt
+      - betrieb:/betrieb
+
 volumes:
   db-daten:
   static:
   media:
   caddy-daten:
   caddy-config:
+  betrieb:
