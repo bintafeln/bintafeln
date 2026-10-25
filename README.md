@@ -126,6 +126,21 @@ Namen der Tafel und das erste Admin-Konto eintragen. Direkt danach richtet der A
 [Zwei-Faktor-Anmeldung](#zwei-faktor-anmeldung) ein; dafür eine Authenticator-App auf dem Handy
 bereithalten. Anschrift und Logo lassen sich danach unter **Einstellungen** ergänzen.
 
+### Testen im Heimnetz mit https (für die Kamera am Handy)
+
+Im Entwicklungsmodus läuft bintafeln über `http://IP`. Browser geben die Kamera aber nur über
+https frei. Für Tests im Heimnetz in der `.env` die IP des Servers eintragen:
+
+```bash
+BINTAFELN_HEIMNETZ_ADRESSE=192.168.178.20   # Beispiel, eigene IP einsetzen
+docker compose up -d
+```
+
+Dann ist bintafeln zusätzlich unter `https://192.168.178.20` erreichbar; `http://` geht weiter.
+Caddy stellt das Zertifikat selbst aus, deshalb warnt der Browser beim ersten Aufruf: „Erweitert“
+→ „Weiter zu …“ wählen. Danach fragt das Handy wie gewohnt nach der Kamera. Im Produktionsmodus
+(`BINTAFELN_DOMAIN` gesetzt) wird die Variable nicht gebraucht (ADR 0041).
+
 ### 6. Sicherung einrichten
 
 ```bash
@@ -331,6 +346,28 @@ Regeln:
 - Abholungen und Ausnahmen werden nur innerhalb der **Aufbewahrungsfrist** übernommen
   („Einstellungen → Kundenstamm“, Vorgabe 3 Jahre). Ältere löscht bintafeln automatisch.
 
+## Suche
+
+Im Seitenkopf steht auf jeder Seite ein **Suchfeld**. Ab 3 Zeichen erscheinen die Treffer
+darunter, Enter öffnet eine Ergebnisseite. Ohne Kürzel sucht es Kunden (Vor- und Nachname, auch
+Teile wie „mül“, Kundennummer, Abholberechtigte), Anträge und Mitarbeitende. Ein Kürzel mit
+Leerzeichen davor sucht nur in einem Bereich:
+
+| Kürzel | Bereich | Beispiel |
+|---|---|---|
+| `k` | Kunden | `k müller` |
+| `n` | Notizen (Text) | `n bescheid` |
+| `a` | Anmerkungen zu Haushalten und Anträgen | `a deutsch` |
+| `s` | Anschrift (Straße, PLZ, Ort) | `s linden` |
+| `t` | Telefon und E-Mail | `t 0171` |
+| `d` | Dokumente zum Haushalt (Titel) | `d jobcenter` |
+| `an` | Anträge (Name, Antragsnummer) | `an müller` |
+| `m` | Mitarbeitende | `m anna` |
+| `h` | Handbuch | `h ampel` |
+
+`?` im Suchfeld zeigt die Kürzel. Jeder Bereich erscheint nur mit dem passenden Recht; wer einer
+Ausgabestelle zugeordnet ist, findet nur deren Kunden (ADR 0040).
+
 ## Kunden ansehen und bearbeiten
 
 Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
@@ -349,13 +386,13 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
 - **Bearbeiten (nur Admin):** Auf der Haushaltsseite „Bearbeiten“ ändert alles zum Haushalt:
   Angaben und Zusatzfelder, Personen, Abholberechtigte, Sperren, Ausnahmen, Anmerkungen;
   Abholungen lassen sich löschen (eine zugehörige Buchung wird zurückgenommen), der ganze
-  Haushalt ebenfalls. „Neuer Haushalt“ steht in der Kundenliste. Kundengruppen, Ausgabestellen
+  Haushalt ebenfalls. „Neuer Haushalt“ steht in der Kundenliste und im Menü; die Seite ist in Abschnitte gegliedert (Kunde, Haushalt und Termine, Anschrift und Kontakt, weitere Angaben). Kundengruppen, Ausgabestellen
   und Einkommensarten pflegt der Admin unter „Einstellungen → Kundenstamm → Listen“.
   **Achtung:** Solange aus dem Altsystem importiert wird, ersetzt der nächste Import alle
   Änderungen; der Prüfbericht nennt die Zahl der geänderten Haushalte (ADR 0025).
 - **Notizen:** Ausgabe, Büro und Admin schreiben Notizen zum Haushalt, auf der Haushaltsseite
   oder direkt am Einlass. **Notiz-Vorlagen** („Einstellungen → Kundenstamm → Listen →
-  Notiz-Vorlagen“, Admin) erscheinen als Knöpfe: ein Klick speichert den Text als Notiz. Jede
+  Notiz-Vorlagen“, Admin) erscheinen abgesetzt unter den Notizen als umrandete „+“-Knöpfe (deutlich anders als Notizen): ein Klick speichert den Text als Notiz. Jede
   Notiz lässt sich einzeln löschen: Büro und Admin jede, die Ausgabe ihre eigenen vom selben
   Tag (Versehen). Notizen hängen an der Kundennummer und
   bleiben beim Import erhalten; gibt es die Kundennummer nicht mehr, werden sie gelöscht
@@ -428,7 +465,7 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
 - Nach dem Absenden sehen Antragstellende eine Bestätigungsseite mit ihrer **Antragsnummer** und
   bekommen eine gestaltete **Antwortmail** (HTML mit Logo, dazu eine Klartextfassung) in ihrer
   Sprache, wenn sie eine Adresse angeben (Mailserver nötig).
-- **Antragsliste** (Admin, Büro) unter „Anträge“: fortlaufende **Antragsnummern** (Startwert
+- **Antragsliste** (Admin, Büro) unter „Anträge“ (die Zahl im Menü zeigt die offenen Anträge): fortlaufende **Antragsnummern** (Startwert
   unter „Formular einstellen“ → „Nächste Antragsnummer ab“, z. B. 4201), neueste zuerst; Spalten
   #, Status, Kundennummer, Nachname, Vorname, Antrag vom, E-Mail, Telefon, Art,
   Staatsangehörigkeit, letzte Anmerkung; Klick auf eine Spaltenüberschrift sortiert; Suche;
@@ -463,9 +500,12 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
      Abschluss“ (Suffix CR) einstellen.
    - **Kamera** (Handy, Tablet oder Laptop): Knopf **📷 Kamera**, Barcode des Ausweises in den
      Rahmen halten; die Nummer wird eingetragen und geprüft. Beim ersten Mal fragt der Browser
-     nach der Kamera-Erlaubnis. Der Browser erlaubt die Kamera nur über **https**, also im
-     Produktionsmodus (im Entwicklungsmodus mit `http://IP` erscheint ein Hinweis). Die
-     Erkennung läuft vollständig im Browser; es werden keine Bilder gespeichert oder versendet.
+     nach der Kamera-Erlaubnis; bintafeln kündigt das an. Ist die Kamera gesperrt, zeigt
+     bintafeln passend zum Gerät, wo man sie freigibt, und „Erneut versuchen“. Der Browser
+     erlaubt die Kamera nur über **https**: im Produktionsmodus immer, im Heimnetz mit
+     `BINTAFELN_HEIMNETZ_ADRESSE` (siehe „Testen im Heimnetz mit https“). Über `http://IP`
+     erscheint ein Hinweis, mit https im Heimnetz ein Knopf „Über https öffnen“. Die Erkennung
+     läuft vollständig im Browser; es werden keine Bilder gespeichert oder versendet.
 3. Die **Ampel** zeigt, ob abgeholt werden darf, und warum nicht:
    - 🔴 Sperre, Status gesperrt/beendet, Ausweis abgelaufen, heute schon so oft abgeholt wie
      erlaubt, Höchstzahl je Woche/14 Tage/Monat erreicht, keine Kundengruppe, heute nicht dran
@@ -483,9 +523,12 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    Sperren, letzte Abholungen, Farbe der Kundengruppe, Kontostand. Jede **Kundengruppe** kann eine
    **Farbe** bekommen („Einstellungen → Kundengruppen“); am Einlass erscheint dann ein farbiges
    Band mit dem Gruppennamen.
-4. **Kunde anmelden:** Das Aufrufen allein trägt nichts ein. Erst der Knopf **„Kunde anmelden
-   und Abholung buchen“** meldet den Kunden für heute an. Wird abgebrochen, einfach die nächste
-   Nummer scannen; der Kunde lässt sich jederzeit wieder aufrufen. Ein Versehen nimmt nur
+4. **Kunde anmelden:** Solange ein Kunde angezeigt wird, ist das Suchfeld ausgeblendet. Oben
+   rechts stehen Beitrag, „Gezahlt“ und die Knöpfe **„Abholung eintragen“** und **„Abbrechen“**.
+   Das Aufrufen allein trägt nichts ein; erst „Abholung eintragen“ meldet den Kunden für heute
+   an, danach erscheint sofort wieder das Suchfeld mit einer Bestätigung (und einem Link zurück
+   zum Kunden). „Abbrechen“ führt ohne Eintrag zurück zur Suche; der Kunde lässt sich jederzeit
+   wieder aufrufen (ADR 0039). Ein Versehen nimmt nur
    zurück, wer das Recht dazu hat (Admin immer); alle anderen schicken einen **Korrekturwunsch**
    (siehe unten). Admin und Büro können bei Rot wegen einer Terminregel eine
    **Ausnahme für heute** erteilen.

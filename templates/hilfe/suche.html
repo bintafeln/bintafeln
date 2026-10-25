@@ -1,0 +1,22 @@
+<p>Oben im Seitenkopf steht auf jeder Seite ein <strong>Suchfeld</strong>. Ab 3 Zeichen erscheinen die Treffer
+  sofort darunter; ein Klick öffnet sie. <kbd>Enter</kbd> zeigt alle Treffer auf einer eigenen Seite,
+  <kbd>Esc</kbd> leert das Feld.</p>
+<h3>Ohne Kürzel</h3>
+<p>Gesucht wird in Vor- und Nachnamen (auch Teile davon) und Kundennummern{% if "antraege.sehen" in rechte %}, in
+  Anträgen{% endif %}{% if "mitarbeitende.verwalten" in rechte %} und bei Mitarbeitenden{% endif %}. Beispiel:
+  <kbd>mül</kbd> findet „Müller“ im Vornamen wie im Nachnamen, auch „Abholmüller“.</p>
+<h3>Mit Kürzel</h3>
+<p>Ein Buchstabe und ein Leerzeichen vor dem Suchbegriff suchen nur in einem Bereich. <kbd>?</kbd> im Suchfeld
+  zeigt alle Kürzel, die Sie nutzen dürfen.</p>
+<ul>
+  <li><kbd>k müller</kbd> nur Kunden</li>
+  {% if "kunden.notizen" in rechte %}<li><kbd>n bescheid</kbd> alle Notizen, in denen „bescheid“ vorkommt</li>{% endif %}
+  {% if "kunden.anmerkungen" in rechte or "antraege.sehen" in rechte %}<li><kbd>a deutsch</kbd> alle Anmerkungen mit „deutsch“</li>{% endif %}
+  {% if "kunden.kontakt" in rechte %}<li><kbd>s linden</kbd> Anschrift (Straße, PLZ, Ort), <kbd>t 0171</kbd> Telefon und E-Mail</li>{% endif %}
+  {% if "kunden.dokumente" in rechte %}<li><kbd>d jobcenter</kbd> Titel von Dokumenten</li>{% endif %}
+  {% if "antraege.sehen" in rechte %}<li><kbd>an müller</kbd> nur Anträge</li>{% endif %}
+  {% if "mitarbeitende.verwalten" in rechte %}<li><kbd>m anna</kbd> nur Mitarbeitende</li>{% endif %}
+  <li><kbd>h ampel</kbd> dieses Handbuch</li>
+</ul>
+<div class="tipp">Die Suche zeigt nur, was Sie sehen dürfen. Wer einer Ausgabestelle zugeordnet ist, findet nur deren
+  Kunden.</div>

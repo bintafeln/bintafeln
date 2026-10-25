@@ -87,6 +87,32 @@ class ZusatzMixin:
 
 class HaushaltForm(ZusatzMixin, forms.ModelForm):
     zusatz_fuer = Zusatzfeld.GiltFuer.HAUSHALT
+    # Abschnitte für die Anzeige auf breiten Bildschirmen (Felder, die fehlen, entfallen)
+    ABSCHNITTE = [
+        ("Kunde", ["kundennummer", "status", "kundengruppe", "einkommensart"]),
+        (
+            "Haushalt und Termine",
+            [
+                "anzahl_erwachsene",
+                "anzahl_kinder",
+                "kunde_seit",
+                "ausweis_gueltig_bis",
+                "letzter_besuch",
+            ],
+        ),
+        ("Anschrift und Kontakt", ["strasse", "plz", "ort", "telefon", "email"]),
+    ]
+
+    def abschnitte(self):
+        """[(Titel, [Felder])]; Zusatzfelder der Tafel bilden einen eigenen Abschnitt."""
+        ergebnis = [
+            (titel, [self[n] for n in namen if n in self.fields])
+            for titel, namen in self.ABSCHNITTE
+        ]
+        zusatz = [self[n] for n in self.fields if n.startswith("zusatz_")]
+        if zusatz:
+            ergebnis.append(("Weitere Angaben", zusatz))
+        return [(titel, felder) for titel, felder in ergebnis if felder]
 
     class Meta:
         model = Haushalt

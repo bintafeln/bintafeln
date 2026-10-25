@@ -27,6 +27,7 @@ VERWALTUNG = "Einstellungen und Verwaltung"
 
 KAPITEL = [
     Kapitel("erste-schritte", "Erste Schritte: Anmelden, Menü, Mein Konto", GRUNDLAGEN),
+    Kapitel("suche", "Suchen: Kunden, Notizen, Anmerkungen und mehr", GRUNDLAGEN),
     Kapitel("zwei-faktor", "Zwei-Faktor-Anmeldung und Passwort", GRUNDLAGEN),
     Kapitel("datenschutz", "Datenschutz im Alltag", GRUNDLAGEN),
     Kapitel("einlass", "Der Einlass Schritt für Schritt", EINLASS, ("einlass.nutzen",)),

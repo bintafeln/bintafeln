@@ -58,7 +58,7 @@ def test_neue_rolle_mit_einzelnen_rechten(client, admin_client, benutzer_mit_rol
 
     anmelden(client, benutzer_mit_rolle("tom", "Telefondienst"))  # derselbe Client
     start = client.get("/").content.decode()
-    assert "Alle Kunden" in start and "Einlass</a>" not in start
+    assert "Kunden einsehen" in start and "Einlass</a>" not in start
     assert client.get(reverse("kunden:uebersicht")).status_code == 200
     assert client.get(reverse("ausgabe:empfang")).status_code == 403
     assert client.get(reverse("konten:rollen")).status_code == 403

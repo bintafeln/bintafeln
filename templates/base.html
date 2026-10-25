@@ -16,6 +16,16 @@
       {% if tafel.logo %}<img src="{{ tafel.logo.url }}" alt="" class="logo">{% endif %}
       <span>{{ tafel.name|default:"bintafeln" }}</span>
     </a>
+    {% if user.is_authenticated and menue %}
+    <form method="get" action="{% url 'core:suche' %}" class="kopf-suche" role="search">
+      <label for="kopf-suche" class="unsichtbar">Suchen</label>
+      <input type="search" name="q" id="kopf-suche" placeholder="Suchen … (z. B. mül, n bescheid, ? für Kürzel)"
+             autocomplete="off" maxlength="200"
+             hx-get="{% url 'core:suche' %}" hx-trigger="input changed delay:300ms, search" hx-target="#kopf-suche-liste"
+             hx-on:keydown="if (event.key === 'Escape') { this.value = ''; document.getElementById('kopf-suche-liste').innerHTML = ''; }">
+      <div id="kopf-suche-liste" aria-live="polite"></div>
+    </form>
+    {% endif %}
     {% if user.is_authenticated %}
     <nav class="navigation" aria-label="Konto">
       <form method="post" action="{% url 'konten:abmelden' %}" class="inline">
@@ -32,12 +42,12 @@
   <nav class="seitenmenue" aria-label="Hauptnavigation">
     {% for bereich in menue %}
       {% if bereich.einzeln %}{% with e=bereich.eintraege.0 %}
-      <a href="{{ e.url }}" class="menue-oben{% if e.aktiv %} aktiv{% endif %}"{% if e.aktiv %} aria-current="page"{% endif %}>{{ e.titel }}</a>
+      <a href="{{ e.url }}" class="menue-oben{% if e.aktiv %} aktiv{% endif %}"{% if e.aktiv %} aria-current="page"{% endif %}>{{ e.titel }}{% if e.zahl is not None %} <span class="menue-zahl" title="{{ e.zahl_titel }}">{{ e.zahl }}</span>{% endif %}</a>
       {% endwith %}{% else %}
       <details class="menue-bereich"{% if bereich.offen %} open{% endif %}>
-        <summary class="menue-oben">{{ bereich.titel }}</summary>
+        <summary class="menue-oben">{{ bereich.titel }}{% if bereich.zahl is not None %} <span class="menue-zahl" title="{{ bereich.zahl_titel }}">{{ bereich.zahl }}</span>{% endif %}</summary>
         <ul>
-          {% for e in bereich.eintraege %}<li><a href="{{ e.url }}"{% if e.aktiv %} class="aktiv" aria-current="page"{% endif %}{% if e.extern %} target="_blank" rel="noopener"{% endif %}>{{ e.titel }}{% if e.extern %} ↗{% endif %}</a></li>{% endfor %}
+          {% for e in bereich.eintraege %}<li><a href="{{ e.url }}"{% if e.aktiv %} class="aktiv" aria-current="page"{% endif %}{% if e.extern %} target="_blank" rel="noopener"{% endif %}>{{ e.titel }}{% if e.extern %} ↗{% endif %}{% if e.zahl is not None %} <span class="menue-zahl" title="{{ e.zahl_titel }}">{{ e.zahl }}</span>{% endif %}</a></li>{% endfor %}
         </ul>
       </details>
       {% endif %}

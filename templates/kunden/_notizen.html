@@ -6,7 +6,7 @@
         {% if n.loeschbar %}
         {% if notiz_htmx %}
         <form method="post" action="{% url 'ausgabe:notiz_loeschen' n.pk %}" class="inline notiz-loeschen"
-              hx-post="{% url 'ausgabe:notiz_loeschen' n.pk %}" hx-target="#ergebnis" hx-confirm="Diese Notiz löschen?">
+              hx-post="{% url 'ausgabe:notiz_loeschen' n.pk %}" hx-target="#einlass" hx-confirm="Diese Notiz löschen?">
         {% else %}
         <form method="post" action="{% url 'kunden:notiz_loeschen' n.pk %}" class="inline notiz-loeschen"
               onsubmit="return confirm('Diese Notiz löschen?')">
@@ -23,17 +23,18 @@
   {% endfor %}
 
   {% if notiz_vorlagen %}
-  <div class="notiz-vorlagen" aria-label="Notiz mit einem Klick speichern">
+  <div class="notiz-vorlagen" role="group" aria-labelledby="notiz-vorlagen-titel">
+    <p class="notiz-vorlagen-titel" id="notiz-vorlagen-titel">Neue Notiz mit einem Klick:</p>
     {% for v in notiz_vorlagen %}
     {% if notiz_htmx %}
     <form method="post" action="{% url 'ausgabe:notiz' h.kundennummer %}" class="inline"
-          hx-post="{% url 'ausgabe:notiz' h.kundennummer %}" hx-target="#ergebnis">
+          hx-post="{% url 'ausgabe:notiz' h.kundennummer %}" hx-target="#einlass">
     {% else %}
     <form method="post" action="{% url 'kunden:notiz_neu' h.kundennummer %}" class="inline">
     {% endif %}
       {% csrf_token %}
       <input type="hidden" name="text" value="{{ v.text }}">
-      <button type="submit" class="knopf knopf-vorlage">{{ v.text }}</button>
+      <button type="submit" class="knopf knopf-vorlage" title="Als Notiz speichern"><span aria-hidden="true">+ </span>{{ v.text }}</button>
     </form>
     {% endfor %}
   </div>
@@ -41,7 +42,7 @@
 
   {% if notiz_htmx %}
   <form method="post" action="{% url 'ausgabe:notiz' h.kundennummer %}" class="notiz-neu"
-        hx-post="{% url 'ausgabe:notiz' h.kundennummer %}" hx-target="#ergebnis">
+        hx-post="{% url 'ausgabe:notiz' h.kundennummer %}" hx-target="#einlass">
   {% else %}
   <form method="post" action="{% url 'kunden:notiz_neu' h.kundennummer %}" class="notiz-neu">
   {% endif %}

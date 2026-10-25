@@ -437,3 +437,22 @@ def test_fristen(antrag):
     assert fristen_anwenden(jetzt + dt.timedelta(days=11 + 91 + 31)) == 1
     assert not Antrag.objects.exists()
     assert not privatdateien.pfad(ANHANG_ORDNER, name).exists()
+
+
+def test_menue_zeigt_zahl_offener_antraege(admin_client, client, benutzer_mit_rolle, anmelden):
+    def zahl(c):
+        seite = c.get(reverse("core:start")).content.decode()
+        return seite.count('<span class="menue-zahl" title="offene Anträge">2</span>')
+
+    Antrag.objects.create(vorname="Erika", nachname="Probe")
+    Antrag.objects.create(vorname="Max", nachname="Probe", status=Antrag.Status.IN_BEARBEITUNG)
+    Antrag.objects.create(vorname="Eva", nachname="Probe", status=Antrag.Status.ERLEDIGT)
+    Antrag.objects.create(vorname="Udo", nachname="Probe", papierkorb_am=timezone.now())
+    assert zahl(admin_client) == 2  # am Bereich und am Eintrag
+    Antrag.objects.update(status=Antrag.Status.ERLEDIGT)
+    assert (
+        '<span class="menue-zahl" title="offene Anträge">0</span>'
+        in admin_client.get(reverse("core:start")).content.decode()
+    )  # die Zahl steht immer da, auch bei 0
+    anmelden(client, benutzer_mit_rolle("anton", rollen.AUSGABE))
+    assert "menue-zahl" not in client.get(reverse("core:start")).content.decode()

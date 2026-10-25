@@ -180,3 +180,20 @@ def hilfe(request):
         "hilfe/handbuch.html",
         {"kapitel": kapitel, "teile": handbuch.gegliedert(kapitel)},
     )
+
+
+@never_cache
+@login_required
+def suche(request):
+    """Suche im Seitenkopf (ADR 0040): ganze Seite, mit HTMX nur die Liste unter dem Feld."""
+    from apps.core import suche as such
+
+    eingabe = request.GET.get("q", "")[:200]
+    kurz = bool(request.headers.get("HX-Request"))
+    ergebnis = such.suchen(
+        request.user, eingabe, grenze=such.JE_BEREICH if kurz else such.JE_BEREICH_SEITE
+    )
+    kontext = {"e": ergebnis, "kuerzel": such.kuerzel_fuer(request.user),
+               "mindestlaenge": such.MINDESTLAENGE}  # fmt: skip
+    vorlage = "core/_suche.html" if kurz else "core/suche.html"
+    return render(request, vorlage, kontext)

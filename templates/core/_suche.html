@@ -1,0 +1,19 @@
+{# Liste unter dem Suchfeld im Seitenkopf (ADR 0040) #}
+{% if not e.eingabe %}{% elif e.zu_kurz %}
+<div class="suche-liste" role="status">
+  {% if e.begriff %}<p class="suche-hinweis">Bitte mindestens {{ mindestlaenge }} Zeichen eingeben.</p>{% endif %}
+  {% include "core/_suche_kuerzel.html" %}
+</div>
+{% else %}
+<div class="suche-liste" role="status">
+  {% for g in e.gruppen %}
+  <p class="suche-bereich">{{ g.titel }}</p>
+  <ul>
+    {% for t in g.treffer %}<li><a href="{{ t.url }}">{{ t.titel }}{% if t.zusatz %}<small>{{ t.zusatz }}</small>{% endif %}</a></li>{% endfor %}
+  </ul>
+  {% empty %}
+  <p class="suche-hinweis">Nichts gefunden für „{{ e.begriff }}“{% if e.kuerzel %} in {{ e.kuerzel.beschreibung|cut:":" }}{% endif %}.</p>
+  {% endfor %}
+  <p class="suche-alle"><a href="{% url 'core:suche' %}?q={{ e.eingabe|urlencode }}">Alle Treffer anzeigen</a> · <a href="{% url 'core:suche' %}">Kürzel</a></p>
+</div>
+{% endif %}

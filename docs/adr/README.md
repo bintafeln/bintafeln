@@ -69,3 +69,6 @@ drei Fragen: Was war das Problem? Was haben wir entschieden? Warum?
 | [0036](0036-statistik.md) | Statistik mit selbst gezeichneten SVG-Diagrammen | Angenommen |
 | [0037](0037-datensicherung-oberflaeche.md) | Datenexport und Zurücklesen in der Oberfläche | Angenommen |
 | [0038](0038-handbuch.md) | Handbuch im Programm, nach Rechten gefiltert | Angenommen |
+| [0039](0039-einlass-zwei-ansichten.md) | Einlass in zwei Ansichten: Suche oder Kunde | Angenommen |
+| [0040](0040-suche-im-kopf.md) | Suche im Seitenkopf mit Kürzeln | Angenommen |
+| [0041](0041-https-im-heimnetz.md) | https im Heimnetz für die Kamera | Angenommen |

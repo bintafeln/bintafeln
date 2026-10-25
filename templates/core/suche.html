@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block titel %}Suche{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Suche{% if e.begriff and not e.zu_kurz %}: „{{ e.begriff }}“{% endif %}</h1>
+  <form method="get" action="{% url 'core:suche' %}" class="filter" role="search">
+    <label for="suche-seite">Suchbegriff</label>
+    <input type="search" name="q" id="suche-seite" value="{{ e.eingabe }}" class="suche" minlength="{{ mindestlaenge }}">
+    <button type="submit" class="knopf">Suchen</button>
+  </form>
+  {% if e.zu_kurz %}
+    {% if e.begriff %}<p class="meldung error">Bitte mindestens {{ mindestlaenge }} Zeichen eingeben.</p>{% endif %}
+    {% include "core/_suche_kuerzel.html" %}
+  {% else %}
+    <p>{{ e.anzahl }} Treffer{% if e.kuerzel %} in {{ e.kuerzel.beschreibung|cut:":" }}{% endif %}.</p>
+  {% endif %}
+</section>
+{% for g in e.gruppen %}
+<section class="karte breit">
+  <h2>{{ g.titel }}</h2>
+  <ul class="suche-treffer">
+    {% for t in g.treffer %}<li><a href="{{ t.url }}">{{ t.titel }}</a>{% if t.zusatz %} <small class="leise">{{ t.zusatz }}</small>{% endif %}</li>{% endfor %}
+  </ul>
+  {% if g.weitere %}<p class="hinweis">Es gibt weitere Treffer. Bitte den Suchbegriff genauer fassen.</p>{% endif %}
+</section>
+{% endfor %}
+{% endblock %}

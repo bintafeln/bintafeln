@@ -20,6 +20,8 @@ PRODUKTION = bool(DOMAIN)
 # Öffentliche Demo mit erfundenen Daten (ADR 0022): Hinweis auf jeder Seite, Zugangsdaten auf
 # der Anmeldeseite, `manage.py demo_zuruecksetzen` erlaubt.
 DEMO = umgebung.schalter("BINTAFELN_DEMO", False)
+# Entwicklungsmodus im Heimnetz: zusätzlich https://ADRESSE mit eigenem Zertifikat (ADR 0041)
+HEIMNETZ_ADRESSE = "" if PRODUKTION else umgebung.text("BINTAFELN_HEIMNETZ_ADRESSE", "")
 DEMO_PASSWORT = umgebung.text("BINTAFELN_DEMO_PASSWORT", "")
 
 if PRODUKTION:

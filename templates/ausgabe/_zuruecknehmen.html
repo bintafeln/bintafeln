@@ -3,7 +3,7 @@
 {% with offen=korrektur_offen|korrektur:art|korrektur_fuer:obj.pk %}
 <div class="zuruecknehmen">
   {% if darf_zuruecknehmen %}
-  <form method="post" action="{{ ziel }}" class="inline" hx-post="{{ ziel }}" hx-target="#ergebnis"
+  <form method="post" action="{{ ziel }}" class="inline" hx-post="{{ ziel }}" hx-target="#einlass"
         hx-confirm="{{ titel }} zurücknehmen?">
     {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">{{ titel }} zurücknehmen</button>
   </form>
@@ -13,7 +13,7 @@
   <details class="korrektur-wunsch">
     <summary>{{ titel }}: Korrektur beantragen</summary>
     <form method="post" action="{% url 'ausgabe:korrektur_beantragen' art obj.pk %}"
-          hx-post="{% url 'ausgabe:korrektur_beantragen' art obj.pk %}" hx-target="#ergebnis">
+          hx-post="{% url 'ausgabe:korrektur_beantragen' art obj.pk %}" hx-target="#einlass">
       {% csrf_token %}
       <label for="grund-{{ art }}-{{ obj.pk }}">Grund</label>
       <select name="grund" id="grund-{{ art }}-{{ obj.pk }}" required>
