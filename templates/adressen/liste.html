@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load liste %}
 {% block titel %}Adressbuch{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
@@ -25,6 +26,7 @@
   </form>
   <p class="hinweis">{{ anzahl }} Adresse{{ anzahl|pluralize:"n" }}{% if anzahl %} ·
     <a href="?q={{ filter.q|urlencode }}&amp;kategorie={{ filter.kategorie }}&amp;art={{ filter.art }}&amp;csv=1">als CSV-Datei (Excel)</a>{% endif %}</p>
+  {% blaettern seite %}
   <div class="tabelle-rahmen">
   <table class="tabelle">
     <thead><tr><th>Name</th><th>Ort</th><th>Telefon</th><th>E-Mail</th><th>Kategorien</th></tr></thead>
@@ -43,12 +45,6 @@
     </tbody>
   </table>
   </div>
-  {% if seite.has_other_pages %}
-  <nav class="blaettern" aria-label="Seiten">
-    <span>{% if seite.has_previous %}<a href="?q={{ filter.q|urlencode }}&amp;kategorie={{ filter.kategorie }}&amp;art={{ filter.art }}&amp;seite={{ seite.previous_page_number }}">← zurück</a>{% endif %}</span>
-    <span>Seite {{ seite.number }} von {{ seite.paginator.num_pages }}</span>
-    <span>{% if seite.has_next %}<a href="?q={{ filter.q|urlencode }}&amp;kategorie={{ filter.kategorie }}&amp;art={{ filter.art }}&amp;seite={{ seite.next_page_number }}">weiter →</a>{% endif %}</span>
-  </nav>
-  {% endif %}
+  {% blaettern seite %}
 </section>
 {% endblock %}

@@ -392,6 +392,24 @@ class Haushalt(models.Model):
     def __str__(self):
         return f"Haushalt {self.kundennummer}"
 
+    def besuch_uhrzeit(self):
+        """Uhrzeit der letzten Abholung am Tag des letzten Besuchs, falls bekannt."""
+        if not self.letzter_besuch:
+            return None
+        if hasattr(self, "besuch_zeit"):  # aus der Liste (Subquery), spart Abfragen
+            return self.besuch_zeit
+        a = (self.abholungen.filter(datum=self.letzter_besuch, uhrzeit__isnull=False)
+             .order_by("-uhrzeit").first())  # fmt: skip
+        return a.uhrzeit if a else None
+
+    @property
+    def letzter_besuch_text(self) -> str:
+        """„24.10.2026 13:40“, ohne bekannte Uhrzeit nur das Datum, sonst leer."""
+        if not self.letzter_besuch:
+            return ""
+        zeit = self.besuch_uhrzeit()
+        return f"{self.letzter_besuch:%d.%m.%Y}" + (f" {zeit:%H:%M}" if zeit else "")
+
     @property
     def hauptperson(self):
         return self.personen.filter(ist_hauptperson=True).first()

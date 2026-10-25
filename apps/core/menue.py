@@ -28,8 +28,14 @@ def menue(request) -> list[dict]:
     darf = rollen.rechte_von(b)
 
     def bereich(titel, eintraege):
-        """Nur Einträge, für die das Konto das Recht hat (None = ohne Recht sichtbar)."""
-        sichtbar = [e for recht, e in eintraege if recht is None or recht in darf]
+        """Nur Einträge, für die das Konto das Recht hat (None = ohne Recht sichtbar).
+
+        Dieselbe Adresse unter mehreren Rechten erscheint nur einmal."""
+        sichtbar, adressen = [], set()
+        for recht, e in eintraege:
+            if (recht is None or recht in darf) and e["url"] not in adressen:
+                sichtbar.append(e)
+                adressen.add(e["url"])
         if sichtbar:
             # Eine Zahl am Eintrag steht auch am Bereich, damit man sie zugeklappt sieht
             gezaehlt = next((e for e in sichtbar if e.get("zahl") is not None), {})

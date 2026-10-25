@@ -6,9 +6,11 @@
   <p>Angemeldet als <strong>{{ user.username }}</strong>.</p>
   <p><a class="knopf knopf-zweitrangig" href="{% url 'konten:passwort_aendern' %}">Passwort ändern</a></p>
 
+  {% if not user.stelle_id %}{# Konto einer Ausgabestelle: keine Person, keine Auskunft (ADR 0059) #}
   <h2>Meine Daten</h2>
   <p>Alles, was die Tafel zu Ihnen gespeichert hat, als PDF (Auskunft nach Art. 15 DSGVO).</p>
   <p><a class="knopf knopf-zweitrangig" href="{% url 'konten:meine_auskunft' %}" target="_blank" rel="noopener">Meine Daten ansehen (PDF)</a></p>
+  {% endif %}
 
   <h2>Zwei-Faktor-Anmeldung</h2>
   {% if zwei_faktor_aktiv %}

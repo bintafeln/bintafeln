@@ -1,8 +1,15 @@
-<p class="hinweis">{{ seite.paginator.count }} Haushalt{{ seite.paginator.count|pluralize:"e" }}
-  {% if darf_importieren and seite.paginator.count %} · <a href="{% url 'kunden:ausweise' %}?{{ abfrage }}" target="_blank" rel="noopener">Ausweise dieser {{ seite.paginator.count }} drucken (PDF)</a>{% endif %}{% if "kunden.exportieren" in rechte and seite.paginator.count %} · <a href="{% url 'kunden:exportieren' %}?{{ abfrage }}" download>Diese {{ seite.paginator.count }} als CSV exportieren (Excel)</a>{% endif %}</p>
+{% load liste %}
+<div class="liste-aktionen">
+  <span class="hinweis">{{ seite.paginator.count }} Haushalt{{ seite.paginator.count|pluralize:"e" }}</span>
+  {% if seite.paginator.count %}
+  {% if "kunden.exportieren" in rechte %}<a class="knopf" href="{% url 'kunden:exportieren' %}?{{ abfrage }}" download title="Alle {{ seite.paginator.count }} Haushalte dieser Auswahl als CSV-Datei, öffnet in Excel oder LibreOffice">⬇ Diese {{ seite.paginator.count }} als CSV exportieren (Excel)</a>{% endif %}
+  {% if darf_importieren %}<a class="knopf knopf-zweitrangig" href="{% url 'kunden:ausweise' %}?{{ abfrage }}" target="_blank" rel="noopener">🖨 Ausweise dieser {{ seite.paginator.count }} drucken (PDF)</a>{% endif %}
+  {% endif %}
+</div>
+{% blaettern seite abfrage=abfrage %}
 <div class="tabelle-rahmen">
 <table class="tabelle">
-  <thead><tr><th>Nr.</th><th>Name</th><th>Kundengruppe</th><th>Status</th><th>Ausweis bis</th></tr></thead>
+  <thead><tr>{% for s in spalten %}<th aria-sort="{% if s.richtung == 'auf' %}ascending{% elif s.richtung == 'ab' %}descending{% else %}none{% endif %}"><a class="sortieren{% if s.richtung %} {{ s.richtung }}{% endif %}" href="?{{ s.abfrage }}" hx-get="?{{ s.abfrage }}" hx-target="#kunden-liste" hx-push-url="true" title="Nach {{ s.titel }} sortieren">{{ s.titel }}</a></th>{% endfor %}</tr></thead>
   <tbody>
   {% for h in seite %}
     <tr>
@@ -11,17 +18,12 @@
       <td data-titel="Kundengruppe">{{ h.kundengruppe.name|default:"–" }}</td>
       <td data-titel="Status">{% if h.status != "aktiv" %}<span class="marke-warnung">{{ h.get_status_display }}</span>{% else %}{{ h.get_status_display }}{% endif %}</td>
       <td data-titel="Ausweis bis">{% if h.ausweis_gueltig_bis and h.ausweis_gueltig_bis < heute %}<span class="marke-warnung">{{ h.ausweis_gueltig_bis|date:"d.m.Y" }}</span>{% else %}{{ h.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}{% endif %}</td>
+      <td data-titel="Letzter Besuch">{{ h.letzter_besuch_text|default:"–" }}</td>
     </tr>
   {% empty %}
-    <tr><td colspan="5">Keine Haushalte gefunden.</td></tr>
+    <tr><td colspan="6">Keine Haushalte gefunden.</td></tr>
   {% endfor %}
   </tbody>
 </table>
 </div>
-{% if seite.has_other_pages %}
-<nav class="blaettern" aria-label="Seiten">
-  <span>{% if seite.has_previous %}<a href="?{{ abfrage }}&amp;seite={{ seite.previous_page_number }}">← zurück</a>{% endif %}</span>
-  <span>Seite {{ seite.number }} von {{ seite.paginator.num_pages }}</span>
-  <span>{% if seite.has_next %}<a href="?{{ abfrage }}&amp;seite={{ seite.next_page_number }}">weiter →</a>{% endif %}</span>
-</nav>
-{% endif %}
+{% blaettern seite abfrage=abfrage %}

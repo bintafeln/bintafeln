@@ -374,4 +374,6 @@ def auskunft_ansehen(request, pk):
 @never_cache
 @login_required
 def meine_auskunft(request):
+    if request.user.stelle_id:  # Konto einer Ausgabestelle gehört keiner Person
+        raise Http404
     return _auskunft_antwort(request.user)

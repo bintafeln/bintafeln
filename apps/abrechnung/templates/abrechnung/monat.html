@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block titel %}Abrechnung {{ stelle.name }} {{ name }}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Abrechnung {{ stelle.name }} · {{ name }}</h1>
+  <div class="aktionsleiste">
+    <a class="knopf knopf-zweitrangig" href="{% url 'abrechnung:monat' stelle.pk zurueck %}">← Vormonat</a>
+    <a class="knopf knopf-zweitrangig" href="{% url 'abrechnung:monat' stelle.pk vor %}">Folgemonat →</a>
+    {% if stellen|length > 1 %}
+    <form method="get" class="inline filter" onchange="location.href=this.querySelector('select').value">
+      <select aria-label="Ausgabestelle">{% for s in stellen %}<option value="{% url 'abrechnung:monat' s.pk abr.monat|date:'Y-m' %}"{% if s.pk == stelle.pk %} selected{% endif %}>{{ s.name }}</option>{% endfor %}</select>
+    </form>
+    {% endif %}
+    <a class="knopf" href="{% url 'abrechnung:pdf' abr.pk %}">PDF</a>
+    {% if darf_pruefen %}<a class="knopf knopf-zweitrangig" href="{% url 'abrechnung:uebersicht' %}?monat={{ abr.monat|date:'Y-m' }}">Alle Ausgabestellen</a>{% endif %}
+  </div>
+  <p>Status: {% include "abrechnung/_status.html" %}
+    {% if abr.eingereicht_am %}<span class="hinweis">· eingereicht {{ abr.eingereicht_am|date:"d.m.Y H:i" }} von {{ abr.eingereicht_von }}</span>{% endif %}
+    {% if abr.bestaetigt_am %}<span class="hinweis">· bestätigt {{ abr.bestaetigt_am|date:"d.m.Y H:i" }} von {{ abr.bestaetigt_von }}</span>{% endif %}</p>
+  {% if abr.rueckgabe %}<div class="fehler" role="alert"><p>Vom Büro zurückgegeben: {{ abr.rueckgabe }}</p></div>{% endif %}
+  {% if abr.anmerkung %}<p><strong>Anmerkung:</strong> {{ abr.anmerkung|linebreaksbr }}</p>{% endif %}
+
+  <h2>Einnahmen</h2>
+  <table class="tabelle kompakt">
+    <tbody>
+      {% for name, wert in z.einnahmen %}<tr{% if forloop.last %} class="summe"{% endif %}><td>{{ name }}</td><td class="zahl">{{ wert|floatformat:2 }} €</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  <p class="hinweis">Aus der Kasse am Einlass{% if abr.offen %} (aktueller Stand){% else %} (Stand beim Einreichen){% endif %}.
+    {% for name, wert, betrag in z.nebenbei %}{{ name }}: {% if betrag %}{{ wert|floatformat:2 }} €{% else %}{{ wert }}{% endif %}{% if not forloop.last %} · {% endif %}{% endfor %}</p>
+
+  <h2>Ausgaben</h2>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Datum</th><th>Art</th><th>Bezahlt an</th><th>Anmerkung</th><th>Quittung</th><th class="zahl">Betrag</th><th></th></tr></thead>
+    <tbody>
+      {% for p in posten %}
+      <tr>
+        <td data-titel="Datum">{{ p.datum|date:"d.m.Y" }}</td>
+        <td data-titel="Art">{{ p.art }}</td>
+        <td data-titel="Bezahlt an">{{ p.empfaenger|default:"–" }}</td>
+        <td data-titel="Anmerkung">{{ p.anmerkung|default:"–" }}</td>
+        <td data-titel="Quittung">{% if p.quittung %}<a href="{% url 'abrechnung:quittung' p.pk %}" target="_blank" rel="noopener">ansehen</a>{% else %}<span class="marke-warnung">fehlt</span>{% endif %}</td>
+        <td data-titel="Betrag" class="zahl">{{ p.betrag|floatformat:2 }} €</td>
+        <td data-titel="Aktion">
+          {% if abr.offen and darf_fuehren %}
+          <form method="post" action="{% url 'abrechnung:posten_loeschen' p.pk %}" class="inline" onsubmit="return confirm('Diese Ausgabe löschen?')">
+            {% csrf_token %}<button type="submit" class="link-knopf">löschen</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="hinweis">Noch keine Ausgaben eingetragen.</td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><th colspan="5">Ausgaben gesamt</th><th class="zahl">{{ z.ausgaben_summe|floatformat:2 }} €</th><th></th></tr>
+      <tr><th colspan="5">Saldo (Einnahmen bar − Ausgaben)</th><th class="zahl">{{ z.saldo|floatformat:2 }} €</th><th></th></tr>
+    </tfoot>
+  </table>
+  </div>
+
+  {% if abr.offen and darf_fuehren %}
+  <h2>Ausgabe eintragen</h2>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <p class="hinweis">Mit „Quittung fotografieren“ öffnet sich am Handy oder Tablet die Kamera. Die Quittung wird verschlüsselt gespeichert.</p>
+    <button type="submit" class="knopf">Ausgabe speichern</button>
+  </form>
+
+  <h2>Abrechnung einreichen</h2>
+  <form method="post" action="{% url 'abrechnung:aktion' abr.pk 'einreichen' %}" onsubmit="return confirm('Abrechnung für {{ name|escapejs }} einreichen? Danach sind keine Änderungen mehr möglich, bis das Büro sie zurückgibt.')">
+    {% csrf_token %}
+    {% include "includes/formular.html" with form=einreichen_form %}
+    <button type="submit" class="knopf">Einreichen</button>
+  </form>
+  {% endif %}
+
+  {% if darf_pruefen and not abr.offen %}
+  <h2>Prüfen</h2>
+  <div class="aktionsleiste">
+    {% if abr.status == "eingereicht" %}
+    <form method="post" action="{% url 'abrechnung:aktion' abr.pk 'bestaetigen' %}" class="inline">
+      {% csrf_token %}<button type="submit" class="knopf">Bestätigen</button>
+    </form>
+    {% endif %}
+  </div>
+  <form method="post" action="{% url 'abrechnung:aktion' abr.pk 'zurueckgeben' %}">
+    {% csrf_token %}
+    {% include "includes/formular.html" with form=rueckgabe_form %}
+    <button type="submit" class="knopf knopf-zweitrangig">An die Ausgabestelle zurückgeben</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

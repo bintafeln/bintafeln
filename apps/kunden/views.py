@@ -4,7 +4,8 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.db.models import OuterRef, Q, Subquery
+from django.db.models import F, OuterRef, Q, Subquery
+from django.db.models.functions import Length
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -95,8 +96,13 @@ def _haushalte_suchen(request):
         .annotate(
             hp_vorname=Subquery(hauptperson.values("vorname")[:1]),
             hp_nachname=Subquery(hauptperson.values("nachname")[:1]),
+            besuch_zeit=Subquery(
+                Abholung.objects.filter(haushalt=OuterRef("pk"), datum=OuterRef("letzter_besuch"),
+                                        uhrzeit__isnull=False)
+                .order_by("-uhrzeit").values("uhrzeit")[:1]
+            ),
         )
-    )
+    )  # fmt: skip
     suche = request.GET.get("q", "").strip()
     for wort in suche.split():
         personen = Person.objects.filter(
@@ -111,7 +117,46 @@ def _haushalte_suchen(request):
         haushalte = haushalte.filter(kundengruppe_id=int(gruppe))
     tag = _tag(request)
     haushalte = export.nach_tag(haushalte, tag)
-    return haushalte, {"q": suche, "status": status, "gruppe": gruppe, "tag": tag}
+    sortierung = request.GET.get("sort", "")
+    if sortierung.lstrip("-") not in SORTIERUNG:
+        sortierung = ""
+    haushalte = haushalte.order_by(*_reihenfolge(sortierung or "nr"))
+    return haushalte, {"q": suche, "status": status, "gruppe": gruppe, "tag": tag,
+                       "sort": sortierung}  # fmt: skip
+
+
+# Sortierbare Spalten der Kundenliste: Schlüssel im Link (?sort=…, mit „-“ absteigend) → Felder
+SORTIERUNG = {
+    "nr": ("Nr.", (Length("kundennummer"), "kundennummer")),
+    "name": ("Name", ("hp_nachname", "hp_vorname", "kundennummer")),
+    "gruppe": ("Kundengruppe", ("kundengruppe__name", "kundennummer")),
+    "status": ("Status", ("status", "kundennummer")),
+    "ausweis": ("Ausweis bis", ("ausweis_gueltig_bis", "kundennummer")),
+    "besuch": ("Letzter Besuch", ("letzter_besuch", "besuch_zeit", "kundennummer")),
+}
+
+
+def _reihenfolge(sortierung: str) -> list:
+    """Felder für order_by; leere Werte stehen immer am Ende."""
+    ab = sortierung.startswith("-")
+    felder = []
+    for f in SORTIERUNG[sortierung.lstrip("-")][1]:
+        ausdruck = F(f) if isinstance(f, str) else f
+        felder.append(ausdruck.desc(nulls_last=True) if ab else ausdruck.asc(nulls_last=True))
+    return felder
+
+
+def _spalten(filter_) -> list[dict]:
+    """Spaltenköpfe mit Link: erster Klick aufsteigend, zweiter absteigend."""
+    aktuell = filter_["sort"] or "nr"
+    grund = {k: v for k, v in filter_.items() if v and k != "sort"} | {"tag": filter_["tag"]}
+    spalten = []
+    for schluessel, (titel, _) in SORTIERUNG.items():
+        neu = f"-{schluessel}" if aktuell == schluessel else schluessel
+        richtung = "auf" if aktuell == schluessel else "ab" if aktuell == f"-{schluessel}" else ""
+        spalten.append({"titel": titel, "abfrage": urlencode(grund | {"sort": neu}),
+                        "richtung": richtung})  # fmt: skip
+    return spalten
 
 
 def _eigene_gruppen(benutzer):
@@ -158,6 +203,7 @@ def uebersicht(request):
         "eigene_stellen": zugang.stellen(request.user),
         "tage": export.verfuegbare_tage(_eigene_gruppen(request.user)),
         "abfrage": urlencode({k: v for k, v in filter_.items() if v} | {"tag": filter_["tag"]}),
+        "spalten": _spalten(filter_),
         "heute": timezone.localdate(),
         "darf_importieren": rollen.hat_recht(request.user, "kunden.importieren"),
         "anzahl": {
@@ -324,7 +370,7 @@ def exportieren(request):
     """Gefilterte Kundenliste der eigenen Ausgabestellen als CSV; jeder Haushalt ins Protokoll."""
     haushalte, filter_ = _haushalte_suchen(request)
     haushalte = list(haushalte.select_related("kundengruppe__ausgabestelle")
-                     .prefetch_related("personen").order_by("kundennummer"))  # fmt: skip
+                     .prefetch_related("personen"))  # fmt: skip
     heute = timezone.localdate()
     inhalt = export.csv_text(haushalte, rollen.rechte_von(request.user), heute)
     jetzt = timezone.now()

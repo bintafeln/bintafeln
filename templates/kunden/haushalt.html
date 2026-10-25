@@ -28,7 +28,7 @@
     {% if kontostand_zeigen %}<dt>Kontostand</dt><dd>{% if h.kontostand is not None %}<strong{% if h.kontostand < 0 %} class="fehler"{% endif %}>{{ h.kontostand|floatformat:2 }} €</strong>{% else %}–{% endif %}</dd>{% endif %}
     <dt>Haushalt</dt><dd>{{ erwachsene }} Erwachsene, {{ kinder }} Kind{{ kinder|pluralize:"er" }}</dd>
     {% if "kunden.stammdaten" in rechte %}
-      <dt>Letzter Besuch</dt><dd>{{ h.letzter_besuch|date:"d.m.Y"|default:"–" }}</dd>
+      <dt>Letzter Besuch</dt><dd>{{ h.letzter_besuch_text|default:"–" }}</dd>
       <dt>Kunde seit</dt><dd>{{ h.kunde_seit|date:"d.m.Y"|default:"–" }}</dd>
       <dt>Einkommensart</dt><dd>{{ h.einkommensart|default:"–" }}</dd>
     {% endif %}

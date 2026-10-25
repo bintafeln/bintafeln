@@ -64,6 +64,7 @@ BINTAFELN_MODULE = [
     "apps.wetter",
     "apps.wochenuebersicht",
     "apps.links",
+    "apps.abrechnung",
 ]
 INSTALLED_APPS += BINTAFELN_MODULE
 
