@@ -414,7 +414,7 @@ def test_beitragsfreie_zeitraeume_pflegen(admin_client):
     admin_client.post(url, {"bezeichnung": "Weihnachten", "von": "2026-12-01", "bis": "2026-12-24"})
     assert BeitragsfreierZeitraum.objects.get().bezeichnung == "Weihnachten"
     liste = admin_client.get(reverse("kunden:liste", args=["beitragsfrei"])).content.decode()
-    assert "Weihnachten: 01.12.2026 bis 24.12.2026" in liste
+    assert "Weihnachten</a></td>" in liste and "01.12.2026" in liste and "24.12.2026" in liste
 
 
 # --- Anzeige am Einlass (je Tafel einstellbar) ------------------------------------------------

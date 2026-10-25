@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block titel %}{% if aktion %}{{ aktion }} bearbeiten{% else %}Neue Sonderaktion{% endif %}{% endblock %}
 {% block inhalt %}
-<section class="karte schmal">
+<section class="karte">
   <p><a href="{% if aktion %}{% url 'ausgabe:sonderaktion' aktion.pk %}{% else %}{% url 'ausgabe:sonderaktionen' %}{% endif %}">← zurück</a></p>
   <h1>{% if aktion %}{{ aktion }} bearbeiten{% else %}Neue Sonderaktion{% endif %}</h1>
   <form method="post">

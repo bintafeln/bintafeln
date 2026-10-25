@@ -169,7 +169,9 @@ def test_haushalt_loeschen_entfernt_dokumente(
 
 def test_dokumentarten_pflegen(admin_client):
     inhalt = admin_client.get(reverse("kunden:liste", args=["dokumentarten"])).content.decode()
-    assert "Bescheid</a> · 24 Monate aufbewahren" in inhalt
+    assert (
+        "Bescheid</a></td>" in inhalt and '<td data-titel="Aufbewahren (Monate)">24</td>' in inhalt
+    )
     admin_client.post(
         reverse("kunden:listeneintrag_neu", args=["dokumentarten"]),
         {"bezeichnung": "Mietvertrag", "aufbewahren_monate": 6, "aktiv": "on"},

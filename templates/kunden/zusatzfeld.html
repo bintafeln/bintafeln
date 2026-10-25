@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block titel %}Zusatzfeld{% endblock %}
 {% block inhalt %}
-<section class="karte schmal">
+<section class="karte">
   <p><a href="{% url 'kunden:einstellungen' %}">← Einstellungen Kundenstamm</a></p>
   <h1>{% if feld.pk %}Zusatzfeld „{{ feld.bezeichnung }}“{% else %}Neues Zusatzfeld{% endif %}</h1>
   <form method="post">

@@ -667,3 +667,23 @@ label.wahl { display: block; white-space: nowrap; }
 .haushalt-neu .tabelle input, .haushalt-neu .tabelle select { width: 100%; }
 .karte-einbettung { width: 100%; height: 22rem; border: 0; border-radius: var(--radius); }
 .formular-tabelle input, .formular-tabelle select { width: 100%; }
+
+/* Ankreuzlisten (z. B. Wochentage) nebeneinander statt untereinander */
+.feld div:has(> div > label > input[type="checkbox"]),
+.feld div:has(> div > label > input[type="radio"]) { display: flex; flex-wrap: wrap; gap: .25rem 1.5rem; }
+.feld div:has(> div > label > input[type="checkbox"]) label,
+.feld div:has(> div > label > input[type="radio"]) label { font-weight: normal; display: flex; align-items: center; gap: .4rem; }
+
+/* Große Bildschirme: dichter, damit eine Seite möglichst ohne Scrollen auf den Monitor passt */
+@media (min-width: 64rem) {
+  .feld { margin-bottom: .7rem; }
+  .feld input, .feld select, .feld textarea, .filter select, .filter input { padding: .45rem .65rem; min-height: 2.3rem; }
+  .knopf { padding: .55rem 1.1rem; min-height: 2.3rem; }
+  .karte { padding: .85rem 1.25rem 1rem; margin-bottom: .85rem; }
+  h1 { margin-bottom: .6rem; }
+  .formular-raster { grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
+}
+/* Pflege-Listen als Tabelle */
+.liste-pflegen td.aus { color: var(--leise); }
+.abschnitt-aufklappen { margin: .5rem 0 1rem; }
+.abschnitt-aufklappen > summary { cursor: pointer; font-weight: 600; padding: .5rem 0; }

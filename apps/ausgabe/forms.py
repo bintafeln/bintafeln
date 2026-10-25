@@ -54,6 +54,24 @@ class AusgabeEinstellungenForm(forms.ModelForm):
                 widget=forms.TextInput(attrs={"placeholder": "leer = Standard"}),
             )  # fmt: skip
 
+    ABSCHNITTE = [
+        ("Ampel", ["max_je_tag", "max_abholungen", "zeitraum", "nicht_dran_rot",
+                   "vorwarnung_tage"]),
+        ("Beitrag", ["zahlt_ab_alter", "beitrag_je_person", "anschreiben_erlaubt",
+                     "kontostand_anzeigen", "zusatzbeitraege", "beitrag_je_abholung",
+                     "beitrag_je_erwachsenem", "beitrag_je_kind"]),
+        ("Was der Einlass zeigt", ["einlass_haushaltsgroesse", "einlass_geburtsdaten",
+                                   "einlass_abholer", "einlass_anschrift", "einlass_sperren",
+                                   "einlass_abholungen", "einlass_gruppenfarbe"]),
+        ("Aufbewahrung", ["buchungen_aufbewahren_jahre"]),
+    ]  # fmt: skip
+
+    def abschnitte(self):
+        return [(t, [self[n] for n in namen if n in self.fields]) for t, namen in self.ABSCHNITTE]
+
+    def texte(self):
+        return [self[f"text_{art}"] for art, *_ in MELDUNGEN]
+
     def save(self, commit=True):
         self.instance.meldungstexte = {
             art: self.cleaned_data[f"text_{art}"].strip()

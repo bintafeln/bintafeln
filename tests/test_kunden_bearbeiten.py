@@ -299,7 +299,8 @@ def test_listen_pflegen(admin_client):
     seite = admin_client.get(url("listeneintrag", "kundengruppen", gruppe.pk)).content.decode()
     assert "checked" in seite
     liste = admin_client.get(url("liste", "kundengruppen")).content.decode()
-    assert "DI – Dienstag" in liste and "überschreibt Kundengruppen" in liste
+    assert ">DI</a></td>" in liste and "Dienstag" in liste and "14:00" in liste
+    assert "überschreibt Kundengruppen" in liste
     antwort = admin_client.post(url("listeneintrag_loeschen", "ausgabestellen", stelle.pk),
                                 follow=True)  # fmt: skip
     assert "wird noch verwendet" in antwort.content.decode()

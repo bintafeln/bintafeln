@@ -1,14 +1,18 @@
 {% extends "base.html" %}
 {% block titel %}Einstellungen Ausgabe{% endblock %}
 {% block inhalt %}
-<section class="karte">
+<section class="karte breit">
   <h1>Einstellungen Ausgabe</h1>
   <p class="hinweis">Regeln für die Ampel am Einlass und den vorgeschlagenen Beitrag. Der Beitrag
     lässt sich bei jeder Abholung noch ändern.</p>
   <form method="post">
     {% csrf_token %}
-    {% include "includes/formular.html" %}
-    <button type="submit" class="knopf">Speichern</button>
+    {% include "includes/formular_abschnitte.html" %}
+    <details class="abschnitt-aufklappen"{% for f in form.texte %}{% if f.value or f.errors %} open{% endif %}{% endfor %}>
+      <summary>Texte der Ampel (eigene Formulierungen, leer = Standard)</summary>
+      <div class="formular-raster">{% for feld in form.texte %}{% include "includes/feld.html" %}{% endfor %}</div>
+    </details>
+    <div class="aktionsleiste"><button type="submit" class="knopf">Speichern</button></div>
   </form>
 </section>
 {% endblock %}
