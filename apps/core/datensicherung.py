@@ -46,6 +46,7 @@ EIGENE_APPS = [
     "adressen",
     "spenden",
     "mitglieder",
+    "serienbriefe",
 ]
 # Vorübergehende Daten, die nicht in einen Export gehören
 AUSGENOMMEN = {"kunden.importvorbereitung", "antraege.antragversuch", "core.sicherungsdienst"}
@@ -77,6 +78,7 @@ APP_BEREICH = {
     "adressen": "adressen",
     "spenden": "adressen",
     "mitglieder": "adressen",
+    "serienbriefe": "adressen",
 }
 
 

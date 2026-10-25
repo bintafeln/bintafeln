@@ -640,6 +640,24 @@ ist eine Adresse aus dem Adressbuch.
 - Mitgliedschaft steht in der Auskunft der Adresse (und als Hinweis in der Auskunft eines
   verknüpften Kontos). SEPA-Lastschriften folgen später.
 
+## Serienbriefe
+
+„Serienbriefe“ (Recht „Serienbriefe und -mails …“, Büro; an Kunden zusätzlich „Serienbriefe
+auch an Kunden“, nur Admin) schreibt viele Empfänger auf einmal an (ADR 0047).
+
+- **Vorlagen** mit Betreff und Text, Platzhalter in geschweiften Klammern: `{anrede}`
+  (automatisch „Sehr geehrte Frau …,“ usw.), `{name}`, `{vorname}`, `{nachname}`,
+  `{organisation}`, `{mitgliedsnummer}`, `{jahresbeitrag}`, `{beitrag_offen}`,
+  `{spendensumme}`, `{kundennummer}`, `{jahr}`, `{datum}`, `{tafel}`. Mitgeliefert: Dank für
+  Spenden, Erinnerung Mitgliedsbeitrag, Einladung Mitgliederversammlung.
+- **Empfänger**: Adressen nach Kategorie, Mitglieder (Arten, nur offener Beitrag), Spender eines
+  Jahres (Mindestsumme), Kunden (aktive Haushalte, Kundengruppen). Für Adressen und Spender ist
+  „nur mit Einwilligung“ (Post bzw. E-Mail) vorgewählt.
+- **Vorschau** mit Empfängerliste, Übersprungenen (ohne Anschrift/E-Mail) und Beispielbrief.
+- **Briefe** als ein PDF (Anschrift für Fensterumschlag DIN lang, Faltmarken) oder **E-Mails**
+  einzeln über den eingerichteten Mailserver. Jeder Versand wird vermerkt und erscheint in der
+  Auskunft der Empfänger.
+
 ## Spenden und Zuwendungsbestätigungen
 
 „Spenden“ (Rechte „Spenden ansehen …“, „Spenden erfassen …“, „Zuwendungsbestätigungen ausstellen

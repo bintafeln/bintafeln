@@ -77,3 +77,4 @@ drei Fragen: Was war das Problem? Was haben wir entschieden? Warum?
 | [0044](0044-adressbuch.md) | Adressbuch als Grundlage für Modul 5 | Angenommen |
 | [0045](0045-spenden.md) | Spenden und Zuwendungsbestätigungen | Angenommen |
 | [0046](0046-mitglieder.md) | Mitglieder des Trägervereins | Angenommen |
+| [0047](0047-serienbriefe.md) | Serienbriefe und Serien-E-Mails | Angenommen |

@@ -79,6 +79,11 @@ def menue(request) -> list[dict]:
         ("mitglieder.sehen", mitglieder),
         ("mitglieder.bearbeiten", _eintrag("Neues Mitglied", "mitglieder:neu")),
     ])  # fmt: skip
+    bereich("Serienbriefe", [
+        ("serienbriefe.erstellen", _eintrag("Serienbrief erstellen", "serienbriefe:erstellen",
+                                            genau=True)),
+        ("serienbriefe.erstellen", _eintrag("Vorlagen und Versände", "serienbriefe:vorlagen")),
+    ])  # fmt: skip
     bereich("Spenden", [
         ("spenden.sehen", _eintrag("Spenden", "spenden:liste", genau=True)),
         ("spenden.erfassen", _eintrag("Spende erfassen", "spenden:neu")),

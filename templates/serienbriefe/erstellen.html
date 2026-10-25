@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block titel %}Serienbrief erstellen{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Serienbrief erstellen</h1>
+  <p class="hinweis">Vorlage und Empfänger wählen, „Vorschau“ zeigt, wer den Brief bekommt und wie er aussieht. Briefe
+    entstehen als ein PDF zum Drucken (Anschrift passt in Fensterumschläge DIN lang); E-Mails gehen einzeln an jeden
+    Empfänger. Jeder Versand wird vermerkt.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <div class="aktionsleiste">
+      <button type="submit" name="schritt" value="vorschau" class="knopf">Vorschau</button>
+      {% if erreichbar %}
+        {% if d.versandart == "email" %}
+          <button type="submit" name="schritt" value="senden" class="knopf knopf-eintragen"{% if not mail_bereit %} disabled{% endif %}
+                  onclick="return confirm('{{ erreichbar|length }} E-Mails jetzt senden?')">{{ erreichbar|length }} E-Mail{{ erreichbar|length|pluralize:"s" }} senden</button>
+        {% else %}
+          <button type="submit" name="schritt" value="pdf" class="knopf knopf-eintragen" formtarget="_blank">PDF mit {{ erreichbar|length }} Brief{{ erreichbar|length|pluralize:"en" }} erzeugen</button>
+        {% endif %}
+      {% endif %}
+    </div>
+  </form>
+</section>
+{% if d %}
+<div class="seiten-raster">
+<section class="karte">
+  <h2>{{ erreichbar|length }} Empfänger</h2>
+  {% if d.versandart == "email" and not mail_bereit %}<p class="meldung error">Es ist noch kein Mailserver eingerichtet („Einstellungen → E-Mail“).</p>{% endif %}
+  {% if ohne %}<p class="meldung error">{{ ohne|length }} ohne {% if d.versandart == "email" %}E-Mail-Adresse{% else %}vollständige Anschrift{% endif %} (werden übersprungen):
+    {% for e in ohne|slice:":20" %}{{ e.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if ohne|length > 20 %} …{% endif %}</p>{% endif %}
+  <ul>{% for e in erreichbar|slice:":50" %}<li>{{ e.name }}{% if d.versandart == "email" %} · {{ e.email }}{% endif %}</li>{% endfor %}</ul>
+  {% if erreichbar|length > 50 %}<p class="hinweis">… und {{ erreichbar|length|add:"-50" }} weitere.</p>{% endif %}
+</section>
+<section class="karte">
+  <h2>Vorschau{% if beispiel %}: {{ beispiel.name }}{% endif %}</h2>
+  {% if beispiel %}
+  {% if d.versandart != "email" %}<address class="anschrift">{% for z in beispiel.anschrift %}{{ z }}<br>{% endfor %}</address>{% endif %}
+  <p><strong>{{ beispiel_betreff }}</strong></p>
+  <div class="serienbrief-vorschau">{{ beispiel_text|linebreaks }}</div>
+  {% else %}<p>Keine Empfänger mit dieser Auswahl.</p>{% endif %}
+</section>
+</div>
+{% endif %}
+{% endblock %}

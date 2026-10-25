@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block titel %}{% if v.pk %}Vorlage „{{ v.name }}“{% else %}Neue Vorlage{% endif %}{% endblock %}
+{% block inhalt %}
+<div class="seiten-raster">
+<section class="karte">
+  <p><a href="{% url 'serienbriefe:vorlagen' %}">← Vorlagen</a></p>
+  <h1>{% if v.pk %}Vorlage „{{ v.name }}“{% else %}Neue Vorlage{% endif %}</h1>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf">Speichern</button>
+      <a class="knopf knopf-abbrechen" href="{% url 'serienbriefe:vorlagen' %}">Abbrechen</a>
+    </div>
+  </form>
+  {% if v.pk %}
+  <form method="post" action="{% url 'serienbriefe:vorlage_loeschen' v.pk %}" class="abseits" onsubmit="return confirm('Vorlage löschen?')">
+    {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Vorlage löschen</button>
+  </form>
+  {% endif %}
+</section>
+<section class="karte">
+  <h2>Platzhalter</h2>
+  <p class="hinweis">Diese Angaben setzt bintafeln je Empfänger ein. Was für einen Empfänger nicht passt (z. B. die
+    Mitgliedsnummer bei einem Spender), bleibt leer.</p>
+  <dl class="angaben">{% for name, erklaerung in platzhalter %}<dt><code>{{ "{" }}{{ name }}{{ "}" }}</code></dt><dd>{{ erklaerung }}</dd>{% endfor %}</dl>
+</section>
+</div>
+{% endblock %}

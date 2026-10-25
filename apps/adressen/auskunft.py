@@ -65,6 +65,15 @@ def adresse_pdf(a) -> bytes:
             ("Jahresbeitrag", f"{m.jahresbeitrag:.2f} €".replace(".", ",")),
             ("Zahlweise", m.zahlweise), ("Zahlungsart", m.zahlungsart), ("Notiz", m.notiz),
         ])  # fmt: skip
+    from apps.serienbriefe.models import Versand
+
+    versaende = Versand.objects.filter(empfaenger__contains=[f"a:{a.pk}"])
+    if versaende:
+        doc.ueberschrift("Serienbriefe")
+        doc.tabelle(["Datum", "Art", "Betreff"], [
+            [f"{timezone.localtime(v.am):%d.%m.%Y}", v.get_art_display(), v.betreff]
+            for v in versaende
+        ], breiten=[0.2, 0.2, 0.6])  # fmt: skip
     doc.ueberschrift("Verwaltung")
     doc.angaben([
         ("Angelegt am", f"{timezone.localtime(a.angelegt_am):%d.%m.%Y}"),

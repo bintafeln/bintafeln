@@ -62,6 +62,8 @@ KAPITEL = [
     Kapitel("adressbuch", "Adressbuch: Spender, Märkte, Partner", ADRESSEN, ("adressen.sehen",)),
     Kapitel("mitglieder", "Mitglieder und Beiträge", ADRESSEN,
             ("mitglieder.sehen", "einstellungen.mitglieder")),
+    Kapitel("serienbriefe", "Serienbriefe und Serien-E-Mails", ADRESSEN,
+            ("serienbriefe.erstellen",)),
     Kapitel("spenden", "Spenden erfassen", ADRESSEN, ("spenden.sehen", "spenden.erfassen")),
     Kapitel("zuwendungsbestaetigungen", "Zuwendungsbestätigungen (Spendenquittungen)", ADRESSEN,
             ("spenden.bestaetigen", "einstellungen.spenden")),
