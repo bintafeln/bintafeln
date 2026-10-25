@@ -752,7 +752,8 @@ Jede Ausgabestelle macht ihre Monatsabrechnung in bintafeln (ADR 0060), Menü �
   gespeichert).
 - **Einreichen** hält die Einnahmen fest und sperrt die Ausgaben; das Büro **bestätigt** oder
   **gibt zurück** (mit Grund). Übersicht aller Ausgabestellen je Monat mit Saldo, **Quittungen als
-  ZIP**, jede Abrechnung als **PDF**.
+  ZIP** (alle Ausgabestellen fürs Büro; je Abrechnung auch für die Ausgabestelle selbst), jede
+  Quittung einzeln zum Herunterladen, jede Abrechnung als **PDF**.
 - Rechte „Abrechnung der eigenen Ausgabestelle führen“ (Vorgabe Ausgabe und Büro, nur für die
   zugeordneten Ausgabestellen) und „Abrechnungen aller Ausgabestellen prüfen“ (Vorgabe Büro).
   Arten der Ausgaben und Aufbewahrung (Vorgabe 5 Jahre) unter „Einstellungen → Ausgabe →

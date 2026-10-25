@@ -12,6 +12,7 @@
     </form>
     {% endif %}
     <a class="knopf" href="{% url 'abrechnung:pdf' abr.pk %}">PDF</a>
+    {% if quittungen %}<a class="knopf" href="{% url 'abrechnung:quittungen' abr.monat|date:'Y-m' %}?stelle={{ stelle.pk }}">⬇ Alle {{ quittungen }} Quittungen (ZIP)</a>{% endif %}
     {% if darf_pruefen %}<a class="knopf knopf-zweitrangig" href="{% url 'abrechnung:uebersicht' %}?monat={{ abr.monat|date:'Y-m' }}">Alle Ausgabestellen</a>{% endif %}
   </div>
   <p>Status: {% include "abrechnung/_status.html" %}
@@ -40,7 +41,7 @@
         <td data-titel="Art">{{ p.art }}</td>
         <td data-titel="Bezahlt an">{{ p.empfaenger|default:"–" }}</td>
         <td data-titel="Anmerkung">{{ p.anmerkung|default:"–" }}</td>
-        <td data-titel="Quittung">{% if p.quittung %}<a href="{% url 'abrechnung:quittung' p.pk %}" target="_blank" rel="noopener">ansehen</a>{% else %}<span class="marke-warnung">fehlt</span>{% endif %}</td>
+        <td data-titel="Quittung">{% if p.quittung %}<a href="{% url 'abrechnung:quittung' p.pk %}" target="_blank" rel="noopener">ansehen</a> · <a href="{% url 'abrechnung:quittung' p.pk %}?herunterladen=1" download>⬇ herunterladen</a>{% else %}<span class="marke-warnung">fehlt</span>{% endif %}</td>
         <td data-titel="Betrag" class="zahl">{{ p.betrag|floatformat:2 }} €</td>
         <td data-titel="Aktion">
           {% if abr.offen and darf_fuehren %}
