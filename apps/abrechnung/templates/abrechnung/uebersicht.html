@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block titel %}Abrechnung{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  {% if zeilen is None %}
+  <h1>Abrechnung</h1>
+  {% for s in stellen %}
+  <p><a class="knopf" href="{% url 'abrechnung:monat' s.pk monat|date:'Y-m' %}">{{ s.name }}</a></p>
+  {% empty %}
+  <p class="hinweis">Ihr Konto ist keiner Ausgabestelle zugeordnet. Bitte wenden Sie sich an das Büro.</p>
+  {% endfor %}
+  {% else %}
+  <h1>Abrechnungen {{ name }}</h1>
+  <div class="aktionsleiste">
+    <a class="knopf knopf-zweitrangig" href="?monat={{ zurueck }}">← Vormonat</a>
+    <form method="get" class="inline"><input type="month" name="monat" value="{{ monat|date:'Y-m' }}" onchange="this.form.submit()"></form>
+    <a class="knopf knopf-zweitrangig" href="?monat={{ vor }}">Folgemonat →</a>
+    <a class="knopf" href="{% url 'abrechnung:quittungen' monat|date:'Y-m' %}">Alle Quittungen (ZIP)</a>
+  </div>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Ausgabestelle</th><th class="zahl">Einnahmen bar</th><th class="zahl">Ausgaben</th><th class="zahl">Saldo</th><th>Status</th><th class="zahl">Quittungen</th></tr></thead>
+    <tbody>
+      {% for z in zeilen %}
+      <tr>
+        <td data-titel="Ausgabestelle"><a href="{% url 'abrechnung:monat' z.stelle.pk monat|date:'Y-m' %}">{{ z.stelle.name }}</a></td>
+        <td data-titel="Einnahmen bar" class="zahl">{{ z.einnahmen_summe|floatformat:2 }} €</td>
+        <td data-titel="Ausgaben" class="zahl">{{ z.ausgaben_summe|floatformat:2 }} €</td>
+        <td data-titel="Saldo" class="zahl">{{ z.saldo|floatformat:2 }} €</td>
+        <td data-titel="Status">{% include "abrechnung/_status.html" with abr=z.abr %}</td>
+        <td data-titel="Quittungen" class="zahl">{% if z.quittungen %}<a href="{% url 'abrechnung:quittungen' monat|date:'Y-m' %}?stelle={{ z.stelle.pk }}" title="Quittungen als ZIP">{{ z.quittungen }} ⬇</a>{% else %}0{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="hinweis">Noch keine Ausgabestellen angelegt.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="hinweis">Einnahmen bar = bar gezahlte Beiträge und Einzahlungen am Einlass der Ausgabestelle (wie in der Kasse).
+    Offene Abrechnungen zeigen den aktuellen Stand, eingereichte den Stand beim Einreichen.</p>
+  {% endif %}
+</section>
+{% endblock %}

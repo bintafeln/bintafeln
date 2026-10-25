@@ -730,6 +730,23 @@ Kundenstamm, ohne Import aus anderen Programmen.
 - Druck als PDF im Hochformat (je Tag) oder Querformat (alles auf einem Blatt wie die bisherige
   Excel-Liste). Rechte „Wochenübersicht ansehen“ und „… pflegen“ (Vorgabe Büro).
 
+### Abrechnung der Ausgabestellen
+
+Jede Ausgabestelle macht ihre Monatsabrechnung in bintafeln (ADR 0060), Menü „Abrechnung“.
+
+- **Einnahmen** automatisch aus der Kasse am Einlass der Ausgabestelle: bar gezahlte Beiträge und
+  Einzahlungen; Guthaben und Angeschriebenes zur Information.
+- **Ausgaben** trägt die Ausgabestelle selbst ein (Datum, Betrag, Art, bezahlt an, Anmerkung), mit
+  **Foto der Quittung** direkt aus der Handy- oder Tablet-Kamera oder als Datei (verschlüsselt
+  gespeichert).
+- **Einreichen** hält die Einnahmen fest und sperrt die Ausgaben; das Büro **bestätigt** oder
+  **gibt zurück** (mit Grund). Übersicht aller Ausgabestellen je Monat mit Saldo, **Quittungen als
+  ZIP**, jede Abrechnung als **PDF**.
+- Rechte „Abrechnung der eigenen Ausgabestelle führen“ (Vorgabe Ausgabe und Büro, nur für die
+  zugeordneten Ausgabestellen) und „Abrechnungen aller Ausgabestellen prüfen“ (Vorgabe Büro).
+  Arten der Ausgaben und Aufbewahrung (Vorgabe 5 Jahre) unter „Einstellungen → Ausgabe →
+  Abrechnung“.
+
 ### Links auf der Startseite
 
 Ersetzt die bisherige „App-Übersicht“ (ADR 0057): Kacheln mit Symbol, Titel, Untertitel,
@@ -1236,6 +1253,7 @@ apps/aufruf/        Modul Aufruf (Monitor, Handy, Kiosk); Module beschreibt apps
 apps/warteliste/    Modul Warteliste (Einladungen zu Terminen, Streichungen)
 apps/wochenuebersicht/ Modul Wochenübersicht (Soll/Ist der Ausgabestellen je Wochentag)
 apps/links/         Modul Links (Kacheln auf der Startseite)
+apps/abrechnung/    Modul Abrechnung (Monatsabrechnung je Ausgabestelle mit Quittungen)
 apps/wetter/        Modul Wetter (Außentemperatur der Ausgabestelle in der Kopfzeile)
 templates/          Django-Templates
 static/             CSS und HTMX

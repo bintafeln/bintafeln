@@ -1,0 +1,32 @@
+<p>Jede Ausgabestelle macht ihre Monatsabrechnung direkt in bintafeln: Die Einnahmen kommen aus dem Einlass, die
+  Ausgaben trägt die Ausgabestelle selbst ein, mit einem Foto der Quittung. Das Büro prüft und bestätigt. Die
+  Abrechnung ist ein zuschaltbares Modul (Einstellungen → Tafel → Tafel und Module).</p>
+
+<h3>Einnahmen</h3>
+<p>Einnahmen sind die <strong>bar</strong> gezahlten Beiträge und Einzahlungen auf Kundenkonten am Einlass dieser
+  Ausgabestelle im Monat, genau wie in der Kasse. Beiträge aus Guthaben oder angeschriebene Beiträge stehen nur zur
+  Information darunter, weil dabei kein Bargeld fließt. Solange die Abrechnung offen ist, zeigt sie den aktuellen
+  Stand; beim Einreichen werden die Zahlen festgehalten.</p>
+
+{% if "abrechnung.fuehren" in rechte %}
+<h3>Ausgaben eintragen</h3>
+<ol>
+  <li>Menü „Abrechnung“ öffnen. Mit dem Konto einer Ausgabestelle erscheint gleich der aktuelle Monat.</li>
+  <li>Datum, Betrag (z. B. 12,50), Art und „Bezahlt an“ angeben.</li>
+  <li><strong>Quittung fotografieren</strong> öffnet am Handy oder Tablet die Kamera. Alternativ ein Foto oder PDF
+    wählen. Die Quittung wird verschlüsselt gespeichert; ohne Quittung steht „fehlt“ in der Liste.</li>
+  <li>Am Monatsende „Einreichen“. Danach sind keine Änderungen mehr möglich, bis das Büro die Abrechnung
+    zurückgibt. Der Grund der Rückgabe steht dann oben auf der Seite.</li>
+</ol>
+<p>Mit „PDF“ lässt sich die Abrechnung mit Unterschriftsfeldern drucken.</p>
+{% endif %}
+
+{% if "abrechnung.pruefen" in rechte %}
+<h3>Prüfen und Quittungen herunterladen</h3>
+<p>Die Übersicht zeigt je Monat alle Ausgabestellen mit Einnahmen, Ausgaben, Saldo und Status. Eine eingereichte
+  Abrechnung lässt sich <strong>bestätigen</strong> oder mit einem kurzen Grund <strong>zurückgeben</strong> (auch eine
+  bestätigte). „Alle Quittungen (ZIP)“ lädt die Quittungen des Monats herunter, je Ausgabestelle ein Ordner; die Zahl in
+  der Spalte „Quittungen“ lädt nur die einer Ausgabestelle.</p>
+<p>Unter Einstellungen → Ausgabe → Abrechnung pflegen Sie die Arten der Ausgaben und die Aufbewahrung. Nach so
+  vielen vollen Kalenderjahren (Vorgabe 5) werden Abrechnungen samt Quittungen automatisch gelöscht.</p>
+{% endif %}
