@@ -1,5 +1,6 @@
 from django import forms
 
+from apps.ausgabe.ampel import MELDUNGEN
 from apps.ausgabe.models import (
     AusgabeEinstellungen,
     BeitragsfreierZeitraum,
@@ -39,6 +40,27 @@ class AusgabeEinstellungenForm(forms.ModelForm):
         localized_fields = [
             "beitrag_je_person", "beitrag_je_abholung", "beitrag_je_erwachsenem", "beitrag_je_kind",
         ]  # fmt: skip
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        texte = self.instance.meldungstexte or {}
+        for art, bezeichnung, standard, platzhalter in MELDUNGEN:
+            hilfe = f"Standard: „{standard}“."
+            if platzhalter:
+                hilfe += " Platzhalter: " + ", ".join("{" + p + "}" for p in platzhalter) + "."
+            self.fields[f"text_{art}"] = forms.CharField(
+                label=f"Text der Ampel: {bezeichnung}", required=False, max_length=200,
+                help_text=hilfe, initial=texte.get(art, ""),
+                widget=forms.TextInput(attrs={"placeholder": "leer = Standard"}),
+            )  # fmt: skip
+
+    def save(self, commit=True):
+        self.instance.meldungstexte = {
+            art: self.cleaned_data[f"text_{art}"].strip()
+            for art, *_ in MELDUNGEN
+            if self.cleaned_data.get(f"text_{art}", "").strip()
+        }
+        return super().save(commit)
 
 
 class BeitragsfreiForm(forms.ModelForm):

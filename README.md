@@ -526,6 +526,9 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
      nicht prüfen, ob heute dran ist; für „jeden Tag“ alle Tage anhaken)
    - Unter „Einstellungen → Ausgabe und Ampel“: **Abholungen am selben Tag** (1 = einmal,
      2 = zweimal, 0 = beliebig oft) und **Höchstzahl je Zeitraum** (0 = keine Grenze).
+   - **Eigene Texte der Ampel:** Ebenda lässt sich jede Meldung in eigenen Worten formulieren
+     (leer = Standardtext), mit Platzhaltern wie `{datum}`, `{gruppe}` oder `{tage}`; welche
+     es gibt, steht unter jedem Feld. Farbe und Regel bleiben gleich, nur der Text ändert sich.
    - 🟢 alles in Ordnung, oder eine Ausnahme für heute hebt eine Terminregel auf
    Daneben stehen Haushaltsgröße, alle Personen und Abholberechtigten mit Geburtsdatum,
    Ausgabestelle, Karte gültig bis, Kontostand, die letzten Abholungen und die **Notizen**;

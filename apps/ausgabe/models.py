@@ -105,6 +105,10 @@ class AusgabeEinstellungen(models.Model):
         default=False,
         help_text="Abholung ohne Zahlung; der Kontostand darf dann negativ werden.",
     )
+    meldungstexte = models.JSONField(
+        "Eigene Texte der Ampel", default=dict, blank=True,
+        help_text="Je Art der Meldung (ampel.MELDUNGEN); leer = Standardtext.",
+    )  # fmt: skip
     buchungen_aufbewahren_jahre = models.PositiveSmallIntegerField(
         "Kontobuchungen aufbewahren (Jahre)",
         default=10,

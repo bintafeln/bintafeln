@@ -203,7 +203,8 @@ wählbar und nach Ausgabestelle filterbar. Grundlage sind allein die Buchungen.
 - **Einlass/Kiosk-Ansicht:** Kundennummer per Scanner (arbeitet als Tastatur) oder Suche.
 - **Umgesetzt:** Je Tafel einstellbar, was am Einlass sichtbar ist: Adresse, Geburtsdatum, letzte Abholungen,
   Beitrag, Personenanzahl (gesamt/Kinder), aktive Sperren, Farbe der Kundengruppe, Kundenkonto.
-- **Ampel** mit einstellbaren Meldungstexten:
+- **Ampel** mit einstellbaren Meldungstexten (**umgesetzt**: `AusgabeEinstellungen.meldungstexte`,
+  Katalog `ampel.MELDUNGEN`, Platzhalter):
   - rot: Ausweis gesperrt, bereits abgeholt, Ausweis abgelaufen, Abholung in dieser Woche nicht
     erlaubt, maximale Abholungen je Woche bzw. je zwei Wochen überschritten, Ausgabestelle nicht
     erlaubt, heute nicht dran, Kundengruppe fehlt
