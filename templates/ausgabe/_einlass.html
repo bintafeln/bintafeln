@@ -1,0 +1,65 @@
+{% load static %}{% comment %}
+Einlass in zwei Ansichten (ADR 0039): ohne Kunden das Suchfeld, mit Kunden nur dessen Angaben.
+Nach dem Anmelden eines Kunden kommt wieder die Suche.
+{% endcomment %}
+{% if h %}
+<section class="karte einlass-leiste">
+  <h1>Kunde {{ h.kundennummer }}{% if stelle %} <small class="leise">· {{ stelle.name }}</small>{% endif %}</h1>
+  <div class="einlass-aktion">
+    {% if bewertung.darf_abholen and "einlass.abholung" in rechte %}
+    <form method="post" action="{% url 'ausgabe:eintragen' h.kundennummer %}" class="anmelden" id="abholung-form"
+          hx-post="{% url 'ausgabe:eintragen' h.kundennummer %}" hx-target="#einlass">
+      {% csrf_token %}
+      <div class="feld">
+        <label for="beitrag">Beitrag €</label>
+        <input type="text" name="beitrag" id="beitrag" value="{{ beitrag|floatformat:2 }}" inputmode="decimal" class="betrag">
+      </div>
+      <div class="feld">
+        <label for="bar">Gezahlt € *</label>
+        <input type="text" name="bar" id="bar" value="{{ bar_vorschlag|floatformat:2 }}" inputmode="decimal" class="betrag" required>
+      </div>
+      <button type="submit" class="knopf knopf-eintragen">✓ Abholung eintragen</button>
+    </form>
+    {% endif %}
+    <a href="{% url 'ausgabe:empfang' %}" class="knopf knopf-abbrechen" title="Nichts eintragen und zurück zur Suche"
+       hx-get="{% url 'ausgabe:empfang' %}" hx-target="#einlass">✕ {% if bewertung.darf_abholen and "einlass.abholung" in rechte %}Abbrechen{% else %}Zur Suche{% endif %}</a>
+  </div>
+</section>
+{% include "ausgabe/_ergebnis.html" %}
+{% else %}
+<section class="karte empfang-kopf">
+  <h1>Einlass</h1>
+  <form method="get" action="{% url 'ausgabe:empfang' %}" class="scan"
+        hx-get="{% url 'ausgabe:empfang' %}" hx-target="#einlass">
+    <label for="nummer">Kundennummer scannen oder eingeben</label>
+    <div class="scan-zeile">
+      <input type="text" name="nummer" id="nummer" autofocus autocomplete="off" inputmode="numeric"
+             class="scan-feld" required data-kamera="kamera"
+             data-kamera-skript="{% static 'vendor/barcode-detector/ponyfill.js' %}"
+             data-kamera-wasm="{% static 'vendor/barcode-detector/zxing_reader.wasm' %}">
+      <button type="submit" class="knopf">Prüfen</button>
+      <button type="button" class="knopf knopf-zweitrangig" id="kamera" hidden
+              title="Ausweis mit der Kamera scannen">📷 Kamera</button>
+    </div>
+  </form>
+  <dialog id="kamera-dialog" class="kamera-dialog" aria-label="Ausweis mit der Kamera scannen">
+    <p class="kamera-hilfe">Den Barcode des Ausweises in den Rahmen halten.</p>
+    <video playsinline muted></video>
+    <p class="kamera-meldung meldung error" role="alert" hidden></p>
+    <button type="button" class="knopf kamera-schliessen">Schließen</button>
+  </dialog>
+  {% if stellen %}
+  <form method="post" action="{% url 'ausgabe:ausgabestelle' %}" class="filter stelle-wahl">
+    {% csrf_token %}
+    <label for="ausgabestelle">Ausgabestelle</label>
+    <select name="ausgabestelle" id="ausgabestelle" onchange="this.form.submit()">
+      <option value="">bitte wählen</option>
+      {% for s in stellen %}<option value="{{ s.pk }}"{% if s == stelle %} selected{% endif %}>{{ s.name }}</option>{% endfor %}
+    </select>
+    <noscript><button type="submit" class="knopf knopf-zweitrangig">Übernehmen</button></noscript>
+  </form>
+  {% endif %}
+</section>
+{% if meldung %}<p class="meldung kasse-meldung" role="status">{{ meldung }}{% if fertig %} <a href="{% url 'ausgabe:empfang' %}?nummer={{ fertig|urlencode }}" hx-get="{% url 'ausgabe:empfang' %}?nummer={{ fertig|urlencode }}" hx-target="#einlass">Kunde {{ fertig }} wieder öffnen</a>{% endif %}</p>{% endif %}
+{% include "ausgabe/_ergebnis.html" %}
+{% endif %}

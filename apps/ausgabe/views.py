@@ -105,8 +105,12 @@ def _ergebnis(request, h, meldung=None):
 
 def _antworten(request, kontext):
     if request.headers.get("HX-Request"):
-        return render(request, "ausgabe/_ergebnis.html", kontext)
+        return render(request, "ausgabe/_einlass.html", kontext)
     return render(request, "ausgabe/empfang.html", kontext)
+
+
+def _stellen(request):
+    return zugang.stellen(request.user) or Ausgabestelle.objects.order_by("name")
 
 
 @rollen.recht_erforderlich("einlass.nutzen")
@@ -114,7 +118,7 @@ def empfang(request):
     konto.buchungsfristen_anwenden()
     kontext = {
         "stelle": _stelle(request),
-        "stellen": zugang.stellen(request.user) or Ausgabestelle.objects.order_by("name"),
+        "stellen": _stellen(request),
     }
     nummer = request.GET.get("nummer", "").strip()
     if nummer:
@@ -153,9 +157,20 @@ def _zurueck(request, h, text, stufe=messages.SUCCESS):
     """Nach einer Aktion: HTMX bekommt die aktualisierte Karte, sonst Weiterleitung."""
     if request.headers.get("HX-Request"):
         kontext = {"stelle": _stelle(request), **_ergebnis(request, h, meldung=text)}
-        return render(request, "ausgabe/_ergebnis.html", kontext)
+        return render(request, "ausgabe/_einlass.html", kontext)
     messages.add_message(request, stufe, text)
     return redirect(f"{reverse('ausgabe:empfang')}?nummer={h.kundennummer}")
+
+
+def _zur_suche(request, h, text):
+    """Nach dem Anmelden eines Kunden: zurück zum Suchfeld für den nächsten Kunden."""
+    text = f"Kunde {h.kundennummer}: {text}"
+    if request.headers.get("HX-Request"):
+        kontext = {"stelle": _stelle(request), "stellen": _stellen(request), "meldung": text,
+                   "fertig": h.kundennummer}  # fmt: skip
+        return render(request, "ausgabe/_einlass.html", kontext)
+    messages.success(request, text)
+    return redirect("ausgabe:empfang")
 
 
 @require_POST
@@ -210,7 +225,7 @@ def abholung_eintragen(request, kundennummer):
     if zahlung.gutgeschrieben:
         teile.append(f"{konto.euro(zahlung.gutgeschrieben)} als Guthaben gebucht")
     text = f"{', '.join(teile)}. Kontostand jetzt: {konto.euro(zahlung.kontostand)}."
-    return _zurueck(request, h, text)
+    return _zur_suche(request, h, text)
 
 
 @require_POST

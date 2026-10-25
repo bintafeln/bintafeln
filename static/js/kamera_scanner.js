@@ -46,7 +46,8 @@
   function einrichten(feld) {
     var knopf = document.getElementById(feld.dataset.kamera);
     var dialog = document.getElementById(feld.dataset.kamera + "-dialog");
-    if (!knopf || !dialog) return;
+    if (!knopf || !dialog || feld.dataset.kameraBereit) return;
+    feld.dataset.kameraBereit = "1";
     var video = dialog.querySelector("video");
     var meldung = dialog.querySelector(".kamera-meldung");
     var strom = null;
@@ -128,5 +129,10 @@
     dialog.querySelector(".kamera-schliessen").addEventListener("click", schliessen);
   }
 
-  document.querySelectorAll("input[data-kamera]").forEach(einrichten);
+  function alleEinrichten() {
+    document.querySelectorAll("input[data-kamera]").forEach(einrichten);
+  }
+  alleEinrichten();
+  // Der Einlass tauscht das Suchfeld per HTMX aus (nach dem Anmelden zurück zur Suche)
+  document.addEventListener("htmx:afterSettle", alleEinrichten);
 })();

@@ -355,7 +355,7 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
   Änderungen; der Prüfbericht nennt die Zahl der geänderten Haushalte (ADR 0025).
 - **Notizen:** Ausgabe, Büro und Admin schreiben Notizen zum Haushalt, auf der Haushaltsseite
   oder direkt am Einlass. **Notiz-Vorlagen** („Einstellungen → Kundenstamm → Listen →
-  Notiz-Vorlagen“, Admin) erscheinen als Knöpfe: ein Klick speichert den Text als Notiz. Jede
+  Notiz-Vorlagen“, Admin) erscheinen abgesetzt unter den Notizen als umrandete „+“-Knöpfe (deutlich anders als Notizen): ein Klick speichert den Text als Notiz. Jede
   Notiz lässt sich einzeln löschen: Büro und Admin jede, die Ausgabe ihre eigenen vom selben
   Tag (Versehen). Notizen hängen an der Kundennummer und
   bleiben beim Import erhalten; gibt es die Kundennummer nicht mehr, werden sie gelöscht
@@ -483,9 +483,12 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    Sperren, letzte Abholungen, Farbe der Kundengruppe, Kontostand. Jede **Kundengruppe** kann eine
    **Farbe** bekommen („Einstellungen → Kundengruppen“); am Einlass erscheint dann ein farbiges
    Band mit dem Gruppennamen.
-4. **Kunde anmelden:** Das Aufrufen allein trägt nichts ein. Erst der Knopf **„Kunde anmelden
-   und Abholung buchen“** meldet den Kunden für heute an. Wird abgebrochen, einfach die nächste
-   Nummer scannen; der Kunde lässt sich jederzeit wieder aufrufen. Ein Versehen nimmt nur
+4. **Kunde anmelden:** Solange ein Kunde angezeigt wird, ist das Suchfeld ausgeblendet. Oben
+   rechts stehen Beitrag, „Gezahlt“ und die Knöpfe **„Abholung eintragen“** und **„Abbrechen“**.
+   Das Aufrufen allein trägt nichts ein; erst „Abholung eintragen“ meldet den Kunden für heute
+   an, danach erscheint sofort wieder das Suchfeld mit einer Bestätigung (und einem Link zurück
+   zum Kunden). „Abbrechen“ führt ohne Eintrag zurück zur Suche; der Kunde lässt sich jederzeit
+   wieder aufrufen (ADR 0039). Ein Versehen nimmt nur
    zurück, wer das Recht dazu hat (Admin immer); alle anderen schicken einen **Korrekturwunsch**
    (siehe unten). Admin und Büro können bei Rot wegen einer Terminregel eine
    **Ausnahme für heute** erteilen.

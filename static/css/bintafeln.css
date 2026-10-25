@@ -363,12 +363,17 @@ textarea.html-eingabe { font-family: ui-monospace, Menlo, Consolas, monospace; f
   .seiten-raster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .seiten-raster > .breit { grid-column: 1 / -1; }
 }
-.notiz-vorlagen { display: flex; flex-wrap: wrap; gap: .5rem; margin: .75rem 0; }
-.notiz-vorlagen .knopf-vorlage {
-  width: auto; min-height: 2.5rem; padding: .45rem .9rem; font-weight: 600;
-  background: #e3f2fd; color: #1d4a6b; border: 1px solid #64b5f6;
+/* Notiz-Vorlagen sind Knöpfe zum Anlegen, keine Notizen: deutlich anders als .notiz */
+.notiz-vorlagen {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .5rem;
+  margin: 1rem 0 .75rem; padding-top: .75rem; border-top: 1px solid var(--rand);
 }
-.notiz-vorlagen .knopf-vorlage:hover { background: #bbdefb; }
+.notiz-vorlagen-titel { flex-basis: 100%; margin: 0; font-size: .9rem; font-weight: 600; }
+.notiz-vorlagen .knopf-vorlage {
+  width: auto; min-height: 2.5rem; padding: .4rem .85rem; font-weight: 600;
+  background: var(--flaeche); color: var(--text); border: 1px dashed var(--leise); border-radius: 1.25rem;
+}
+.notiz-vorlagen .knopf-vorlage:hover { background: var(--erfolg); border-style: solid; }
 .notiz-vorlagen .inline + .inline { margin-left: 0; }
 
 /* Ausweis-Gestalter */
@@ -593,3 +598,22 @@ label.wahl { display: block; white-space: nowrap; }
 .handbuch .achtung { background: #fdf3e2; border-left: 4px solid #e0a020; border-radius: var(--radius); padding: .6rem 1rem; margin: .75rem 0; }
 .handbuch kbd, .handbuch-kopf kbd { border: 1px solid var(--rand); border-bottom-width: 2px; border-radius: 4px; padding: 0 .3rem; font-size: .9em; }
 .nach-oben { margin: 1rem 0 0; font-size: .9rem; }
+
+/* Einlass mit Kunde: Nummer links, Beitrag und die zwei Knöpfe oben rechts (ADR 0039) */
+.einlass-leiste {
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: .75rem 2rem;
+}
+.einlass-leiste h1 { margin: 0; align-self: center; }
+.einlass-aktion { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .75rem; margin-left: auto; }
+.einlass-aktion .anmelden { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .75rem; margin: 0; }
+.einlass-aktion .feld { margin: 0; }
+.einlass-aktion .betrag { width: 6.5rem; font-size: 1.15rem; }
+.einlass-aktion .knopf { width: auto; min-height: 3rem; font-size: 1.15rem; padding: .7rem 1.4rem; }
+.knopf-eintragen { background: #1b6e34; color: #fff; }
+.knopf-eintragen:hover { background: #124d24; }
+.knopf-abbrechen { display: inline-flex; align-items: center; background: var(--flaeche); color: var(--text); border: 2px solid var(--leise); text-decoration: none; }
+.knopf-abbrechen:hover { background: var(--grund); }
+@media (max-width: 47.99rem) {
+  .einlass-aktion, .einlass-aktion .anmelden { width: 100%; }
+  .einlass-aktion .knopf { flex: 1 1 auto; }
+}

@@ -102,7 +102,9 @@ def test_kamera_scanner_eingebunden(ausgabe, stelle):
 def test_scannen_findet_auch_ohne_fuehrende_nullen(ausgabe, haushalt, eingabe):
     antwort = ausgabe.get(EMPFANG, {"nummer": eingabe}, **HX)
     inhalt = antwort.content.decode()
-    assert "<h1>" not in inhalt  # nur die Ergebniskarte
+    # Mit Kunde nur dessen Angaben, kein Suchfeld darüber (ADR 0039)
+    assert "<h1>Kunde 00042</h1>" in inhalt and 'name="nummer"' not in inhalt
+    assert "Abholung eintragen" in inhalt and "Abbrechen" in inhalt and "<html" not in inhalt
     assert "Abholung möglich" in inhalt and "Erika Muster" in inhalt
     assert "6,00 €" in inhalt
     assert Zugriff.objects.get().kundennummer == "00042"
@@ -117,7 +119,9 @@ def test_unbekannte_nummer(ausgabe, haushalt, eingabe):
 
 def test_ohne_htmx_ganze_seite(ausgabe, haushalt):
     inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}).content.decode()
-    assert "<h1>Einlass</h1>" in inhalt and "Abholung möglich" in inhalt
+    assert "<h1>Kunde 00042</h1>" in inhalt and "Abholung möglich" in inhalt
+    assert 'name="nummer"' not in inhalt
+    assert "<h1>Einlass</h1>" in ausgabe.get(EMPFANG).content.decode()
 
 
 def test_kontostand_abschaltbar(ausgabe, haushalt):
@@ -148,7 +152,12 @@ def test_abholung_eintragen_mit_vorschlag(ausgabe, haushalt, stelle):
     vorher = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
     assert 'value="2,50"' in vorher
     inhalt = eintragen(ausgabe, haushalt, beitrag="").content.decode()
-    assert "Abholung eingetragen." in inhalt and "Heute bereits abgeholt" in inhalt
+    # Danach zurück zur Suche, mit Meldung und Link zurück zum Kunden
+    assert "Kunde 00042: Abholung eingetragen." in inhalt and 'name="nummer"' in inhalt
+    assert "Kunde 00042 wieder öffnen" in inhalt and "<h1>Einlass</h1>" in inhalt
+    wieder = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
+    assert "Heute bereits abgeholt" in wieder and "Abholung eintragen" not in wieder
+    assert "Zur Suche" in wieder
     a = Abholung.objects.get()
     assert (a.beitrag, a.ausgabestelle, a.eingetragen_von) == (Decimal("2.50"), stelle, "ausgabe")
     assert a.erfasst_am is not None and a.datum == timezone.localdate()
@@ -176,8 +185,9 @@ def test_bei_rot_wird_nichts_eingetragen(ausgabe, haushalt):
 def test_ohne_htmx_weiterleitung_mit_meldung(ausgabe, haushalt):
     url = reverse("ausgabe:eintragen", args=["00042"])
     antwort = ausgabe.post(url, {"beitrag": "0", "bar": "0"})
-    assert antwort.status_code == 302 and antwort.url == f"{EMPFANG}?nummer=00042"
-    assert "Abholung eingetragen." in ausgabe.get(antwort.url).content.decode()
+    assert antwort.status_code == 302 and antwort.url == EMPFANG
+    inhalt = ausgabe.get(antwort.url).content.decode()
+    assert "Kunde 00042: Abholung eingetragen." in inhalt and 'name="nummer"' in inhalt
 
 
 def test_zuruecknehmen(ausgabe, haushalt, recht_geben):
@@ -223,7 +233,7 @@ def test_buero_erteilt_ausnahme(als, nicht_dran):
     assert "Begründung angeben" in buero.post(url, {"begruendung": " "}, **HX).content.decode()
     inhalt = buero.post(url, {"begruendung": "Termin verlegt"}, **HX).content.decode()
     assert "Ausnahme für heute erteilt: Termin verlegt" in inhalt
-    assert "Kunde anmelden und Abholung buchen" in inhalt
+    assert "Abholung eintragen" in inhalt
     assert Ausnahme.objects.get().eingetragen_von == "büro"
 
 
@@ -291,7 +301,8 @@ def test_grosse_ampel_zeigt_die_farbe(ausgabe, haushalt):
     inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
     assert '<span class="lampe lampe-gruen an">' in inhalt and ">OK</p>" in inhalt
     assert '<span class="lampe lampe-rot">' in inhalt
-    inhalt = eintragen(ausgabe, haushalt).content.decode()
+    eintragen(ausgabe, haushalt)
+    inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
     assert '<span class="lampe lampe-rot an">' in inhalt and ">STOPP</p>" in inhalt
     haushalt.ausweis_gueltig_bis = timezone.localdate()
     haushalt.save()
