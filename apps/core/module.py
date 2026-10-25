@@ -44,6 +44,12 @@ class Modul:
     # Hinweise für die Einlass-Karte eines Haushalts: einlass(haushalt, heute, stelle) ->
     # [{"text": …, "farbe": "gruen" | "gelb" | "rot" | "info"}]
     einlass: Callable | None = None
+    # Auskunft nach Art. 15 zu einem Antrag: auskunft_antrag(antrag, pdf) schreibt eigene
+    # Abschnitte. Läuft auch bei ausgeschaltetem Modul (die Daten sind ja gespeichert).
+    auskunft_antrag: Callable | None = None
+    # Fristen und Automatik (z. B. Status nach Tagen, Löschfristen); läuft wie die Fristen der
+    # übrigen Apps beim Aufruf der Startseite, nur bei eingeschaltetem Modul. Aufruf ohne Argumente.
+    fristen: Callable | None = None
 
 
 @cache
@@ -73,6 +79,20 @@ def einlass_hinweise(haushalt, heute, stelle) -> list[dict]:
     an = eingeschaltet()
     return [{**h, "modul": m.titel} for m in alle() if m.kennung in an and m.einlass
             for h in m.einlass(haushalt, heute, stelle)]  # fmt: skip
+
+
+def auskunft_antrag(antrag, pdf) -> None:
+    for m in alle():
+        if m.auskunft_antrag:
+            m.auskunft_antrag(antrag, pdf)
+
+
+def fristen_anwenden() -> None:
+    """Fristen aller eingeschalteten Module."""
+    an = eingeschaltet()
+    for m in alle():
+        if m.kennung in an and m.fristen:
+            m.fristen()
 
 
 def auswahl() -> list[tuple[str, str]]:

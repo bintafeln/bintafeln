@@ -4,6 +4,7 @@ from django.utils import timezone
 
 from apps.antraege import sprachen
 from apps.antraege.models import AntragEinstellungen
+from apps.core import module
 from apps.core.pdf import Pdf
 
 
@@ -52,6 +53,7 @@ def antrag_pdf(a) -> bytes:
          for x in a.anmerkungen.all()],
         breiten=[0.15, 0.65, 0.2],
     )  # fmt: skip
+    module.auskunft_antrag(a, doc)  # z. B. Warteliste: Termine und Einladungen
     doc.ueberschrift("Hinweise")
     for satz in [
         "Zweck: Bearbeitung Ihres Antrags auf Berechtigung bei der Tafel "

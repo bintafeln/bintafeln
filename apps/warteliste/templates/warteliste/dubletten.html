@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block titel %}Doppelte Anträge{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Doppelte Anträge</h1>
+  <p>Offene Anträge mit sehr ähnlichem Namen. Beim Streichen bekommt der andere Antrag eine Anmerkung, der gestrichene kommt auf die Streichungsliste.</p>
+  {% for p in paare %}
+  <section class="karte">
+    <div class="abschnitte">
+      <div class="abschnitt"><strong><a href="{% url 'warteliste:eintrag' p.a.pk %}">Antrag {{ p.a.nummer }}</a></strong> vom {{ p.a.eingegangen_am|date:"d.m.Y" }}<br>{{ p.a.nachname }}, {{ p.a.vorname }}{% if p.a.geburtsdatum %} · {{ p.a.geburtsdatum|date:"d.m.Y" }}{% endif %}<br>{{ p.a.email|default:"" }} {{ p.a.telefon|default:"" }}</div>
+      <div class="abschnitt"><strong><a href="{% url 'warteliste:eintrag' p.b.pk %}">Antrag {{ p.b.nummer }}</a></strong> vom {{ p.b.eingegangen_am|date:"d.m.Y" }}<br>{{ p.b.nachname }}, {{ p.b.vorname }}{% if p.b.geburtsdatum %} · {{ p.b.geburtsdatum|date:"d.m.Y" }}{% endif %}<br>{{ p.b.email|default:"" }} {{ p.b.telefon|default:"" }}</div>
+    </div>
+    <p>{{ p.gruende|join:", " }}</p>
+    <form method="post" action="{% url 'warteliste:dublette' %}" class="aktionsleiste">
+      {% csrf_token %}<input type="hidden" name="a" value="{{ p.a.pk }}"><input type="hidden" name="b" value="{{ p.b.pk }}">
+      <button type="submit" name="aktion" value="b_streichen" class="knopf">{{ p.b.nummer }} streichen ({{ p.a.nummer }} behalten)</button>
+      <button type="submit" name="aktion" value="a_streichen" class="knopf knopf-zweitrangig">{{ p.a.nummer }} streichen ({{ p.b.nummer }} behalten)</button>
+      <button type="submit" name="aktion" value="ignorieren" class="knopf knopf-abbrechen">Keine Dublette</button>
+    </form>
+  </section>
+  {% empty %}
+  <p>Keine möglichen Dubletten.</p>
+  {% endfor %}
+</section>
+{% endblock %}

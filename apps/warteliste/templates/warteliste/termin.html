@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block titel %}Termin {{ t }}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'warteliste:termine' %}">← Termine</a></p>
+  <h1>Termin {{ t }}</h1>
+  <p>{{ ort|linebreaksbr }}{% if t.anmerkung %}<br>{{ t.anmerkung }}{% endif %}</p>
+  <div class="aktionsleiste">
+    <a class="knopf knopf-zweitrangig" href="{% url 'warteliste:druckliste' t.pk %}">Druckliste (PDF)</a>
+    {% if "warteliste.bearbeiten" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'warteliste:termin_bearbeiten' t.pk %}">Termin ändern</a>{% endif %}
+  </div>
+  <form method="post" id="auswahl">
+    {% csrf_token %}
+    <input type="hidden" name="zurueck" value="{{ request.path }}">
+    <div class="tabelle-rahmen">
+    <table class="tabelle">
+      <thead><tr><th><input type="checkbox" aria-label="Alle auswählen" onclick="document.querySelectorAll('#auswahl input[name=ids]').forEach(c => c.checked = this.checked)"></th><th>#</th><th>Name</th><th>Kontakt</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for ws in wartende %}{% with a=ws.antrag %}
+        <tr>
+          <td><input type="checkbox" name="ids" value="{{ a.pk }}" aria-label="{{ a.name }} auswählen"></td>
+          <td data-titel="#"><a href="{% url 'warteliste:eintrag' a.pk %}">{{ a.nummer }}</a></td>
+          <td data-titel="Name">{{ a.nachname }}, {{ a.vorname }}</td>
+          <td data-titel="Kontakt">{{ a.telefon|default:"" }}{% if a.telefon and a.email %} · {% endif %}{{ a.email|default:"" }}</td>
+          <td data-titel="Status">{% include "warteliste/_status.html" %}</td>
+        </tr>
+      {% endwith %}{% empty %}
+        <tr><td colspan="5">Zu diesem Termin ist niemand eingeladen.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% if "warteliste.bearbeiten" in rechte and wartende %}
+    <div class="abschnitte">
+      <fieldset class="abschnitt">
+        <legend>Status der Ausgewählten setzen</legend>
+        <div class="formular-raster">
+          {% with feld=status_form.status %}{% include "includes/feld.html" %}{% endwith %}
+          {% with feld=status_form.wartezeit_bis %}{% include "includes/feld.html" %}{% endwith %}
+        </div>
+        <button type="submit" class="knopf" formaction="{% url 'warteliste:status' %}">Status setzen</button>
+      </fieldset>
+      <fieldset class="abschnitt">
+        <legend>Termin für die Ausgewählten absagen</legend>
+        <p class="hinweis">Sie bekommen eine Absage per E-Mail (ohne Adresse: bitte anrufen) und stehen danach wieder als „wartend“ ohne Termin in der Liste.</p>
+        <button type="submit" class="knopf knopf-abbrechen" formaction="{% url 'warteliste:termin_absagen' t.pk %}" onclick="return confirm('Den Termin für die Ausgewählten absagen?')">Absagen</button>
+      </fieldset>
+    </div>
+    {% endif %}
+  </form>
+  {% if "warteliste.bearbeiten" in rechte %}
+  <form method="post" action="{% url 'warteliste:termin_loeschen' t.pk %}" onsubmit="return confirm('Termin löschen?')">
+    {% csrf_token %}<button type="submit" class="knopf knopf-abbrechen">Termin löschen</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

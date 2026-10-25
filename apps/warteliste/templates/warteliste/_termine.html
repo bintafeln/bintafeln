@@ -1,0 +1,19 @@
+<div class="tabelle-rahmen">
+<table class="tabelle">
+  <thead><tr><th>Termin</th><th>Eingeladen</th><th>Erschienen</th><th>Alle</th><th>Anmerkung</th><th></th></tr></thead>
+  <tbody>
+  {% for t in liste %}
+    <tr>
+      <td data-titel="Termin"><a href="{% url 'warteliste:termin' t.pk %}">{{ t }}</a></td>
+      <td data-titel="Eingeladen">{{ t.eingeladen }}</td>
+      <td data-titel="Erschienen">{{ t.erschienen }}</td>
+      <td data-titel="Alle">{{ t.gesamt }}</td>
+      <td data-titel="Anmerkung">{{ t.anmerkung|default:"" }}</td>
+      <td><a href="{% url 'warteliste:druckliste' t.pk %}">Druckliste (PDF)</a></td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6">Keine.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>

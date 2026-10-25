@@ -1,0 +1,1 @@
+<span class="status wl-{{ ws.status }}">{{ ws.get_status_display }}{% if ws.status == "wartezeit" and ws.wartezeit_bis %} bis {{ ws.wartezeit_bis|date:"d.m.Y" }}{% endif %}</span>

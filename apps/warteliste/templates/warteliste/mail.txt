@@ -1,0 +1,14 @@
+{% autoescape off %}{{ anrede }},
+
+{{ einleitung }}
+
+Datum:   {{ datum }}{% if absage %} – ENTFÄLLT{% endif %}
+Zeit:    {{ zeit }}
+Ort:     {{ ort|linebreaksbr|cut:"<br>" }}
+{% if schluss %}
+{{ schluss }}
+{% endif %}{% if mitbringen %}
+Bitte bringen Sie mit:
+{% for z in mitbringen %}  - {{ z }}
+{% endfor %}{% endif %}
+{{ gruss }}{% endautoescape %}

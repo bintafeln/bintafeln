@@ -1,0 +1,13 @@
+{% if treffer %}
+<ul class="treffer">
+  {% for t in treffer %}
+  <li><strong>{% if "kunden.ansehen" in rechte %}<a href="{% url 'kunden:haushalt' t.haushalt.kundennummer %}">Kunde {{ t.haushalt.kundennummer }}</a>{% else %}Kunde {{ t.haushalt.kundennummer }}{% endif %}</strong>
+    {% if t.person %}· {{ t.person.vorname }} {{ t.person.nachname }}{% if t.person.geburtsdatum %} ({{ t.person.geburtsdatum|date:"d.m.Y" }}){% endif %}{% endif %}
+    · {{ t.punkte }} Punkte ({{ t.gruende|join:", " }})
+    <ul>{% for h in t.hinweise %}<li class="{% if h.art == 'sperr' %}grund-rot{% elif h.art == 'ok' %}grund-gruen{% endif %}">{{ h.text }}</li>{% endfor %}</ul>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>Kein ähnlicher Haushalt gefunden.</p>
+{% endif %}

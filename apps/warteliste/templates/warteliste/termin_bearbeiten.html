@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block titel %}{% if t %}Termin {{ t }}{% else %}Neuer Termin{% endif %}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'warteliste:termine' %}">← Termine</a></p>
+  <h1>{% if t %}Termin {{ t }} ändern{% else %}Neuer Termin{% endif %}</h1>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf">Speichern</button>
+      <a class="knopf knopf-abbrechen" href="{% url 'warteliste:termine' %}">Abbrechen</a>
+    </div>
+  </form>
+  {% if t %}<p class="hinweis">Bereits verschickte Einladungen ändern sich dadurch nicht. Bei einer Verschiebung bitte absagen und neu einladen.</p>{% endif %}
+</section>
+{% endblock %}

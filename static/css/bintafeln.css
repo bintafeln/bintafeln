@@ -706,3 +706,10 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 .bild-vorschau { max-width: 9rem; max-height: 5rem; object-fit: contain; border: 1px solid var(--rand); border-radius: var(--radius); background: #fff; }
 .feld .bild-entfernen { font-weight: normal; display: flex; align-items: center; gap: .4rem; margin: 0; }
 .feld .bild-entfernen input { width: auto; min-height: 0; }
+/* Warteliste (Modul, ADR 0051): Farben je Status */
+.status.wl-neu { background: #eef0f2; color: #3f4650; }
+.status.wl-wartend, .status.wl-eingeladen { background: #e1effa; color: #0b4f80; }
+.status.wl-wartezeit, .status.wl-entschuldigt { background: #fff1d6; color: #7a4b00; }
+.status.wl-wz_abgelaufen, .status.wl-streichen_moeglich, .status.wl-gestrichen { background: #fbe9e8; color: #8c1d18; }
+.status.wl-erschienen { background: #e7f4e8; color: #1e5b21; }
+.status.wl-aufgenommen { background: #efe7fa; color: #4b2a7a; }

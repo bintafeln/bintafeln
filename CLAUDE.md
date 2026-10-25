@@ -225,6 +225,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   ein. Kein modulspezifischer Code im Kern; ausgeschaltete Module sperrt die `ModulMiddleware`.
   Erstes Modul: `aufruf` (ADR 0050, Regeln in `apps/aufruf/ablauf.py`, Seiten aus dem
   bisherigen Aufrufsystem in `apps/aufruf/templates/aufruf/`, Geräte ohne Anmeldung nur über
-  den Schlüssel im Link). Übersicht der übernommenen Altprogramme: `docs/altprogramme.md`.
+  den Schlüssel im Link). `warteliste` (ADR 0051, Regeln in `apps/warteliste/ablauf.py`,
+  `Wartestand` je Antrag). Hooks `Modul.fristen`, `Modul.einlass`, `Modul.auskunft_antrag`.
+  Übersicht der übernommenen Altprogramme: `docs/altprogramme.md`.
 - Shell-Skripte müssen `shellcheck` bestehen. Änderungen an Sicherung oder Wiederherstellung
   deckt `tests/sicherung_e2e.sh` ab (läuft in CI im Job `docker`).

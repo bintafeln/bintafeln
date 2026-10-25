@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="de">
+<head><meta charset="utf-8"><title>{{ betreff }}</title></head>
+{% with f=tafel.farben %}
+<body style="margin:0;padding:0;background:#f5f6f4;font-family:Arial,Helvetica,sans-serif;color:#1f2421;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f6f4;">
+    <tr><td align="center" style="padding:16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:8px;overflow:hidden;">
+        <tr><td style="background:{{ f.akzent }};color:{{ f.auf_akzent }};padding:16px 24px;font-size:20px;font-weight:bold;">{{ tafel_name }}</td></tr>
+        {% if absage %}<tr><td style="background:#b91c1c;color:#ffffff;padding:20px 24px;text-align:center;font-size:24px;font-weight:bold;">&#9888; TERMIN ENTFÄLLT</td></tr>{% endif %}
+        <tr><td style="padding:24px;font-size:16px;line-height:1.5;">
+          <p style="margin:0 0 12px;">{{ anrede }},</p>
+          <p style="margin:0 0 12px;">{{ einleitung|linebreaksbr }}</p>
+          <table cellpadding="0" cellspacing="0" width="100%" style="background:#fdf3e7;border-left:4px solid {{ f.akzent }};margin:16px 0;">
+            <tr><td style="padding:14px 18px;">
+              <table cellpadding="0" cellspacing="0">
+                <tr><td style="color:#666;font-size:13px;padding:0 20px 6px 0;vertical-align:top;">Datum</td><td style="font-weight:bold;padding-bottom:6px;{% if absage %}text-decoration:line-through;color:#999;{% endif %}">{{ datum }}</td></tr>
+                <tr><td style="color:#666;font-size:13px;padding:0 20px 6px 0;vertical-align:top;">Zeit</td><td style="font-weight:bold;padding-bottom:6px;{% if absage %}text-decoration:line-through;color:#999;{% endif %}">{{ zeit }}</td></tr>
+                <tr><td style="color:#666;font-size:13px;padding:0 20px 0 0;vertical-align:top;">Ort</td><td style="font-size:14px;{% if absage %}text-decoration:line-through;color:#999;{% endif %}">{{ ort|linebreaksbr }}</td></tr>
+              </table>
+            </td></tr>
+          </table>
+          {% if schluss %}<p style="margin:0 0 12px;">{{ schluss|linebreaksbr }}</p>{% endif %}
+          {% if mitbringen %}<p style="margin:12px 0 4px;font-weight:bold;">Bitte bringen Sie mit:</p>
+          <ul style="margin:0 0 12px;padding-left:20px;">{% for z in mitbringen %}<li>{{ z }}</li>{% endfor %}</ul>{% endif %}
+          <p style="margin:16px 0 0;">{{ gruss|linebreaksbr }}</p>
+        </td></tr>
+        {% if tafel.anschrift or tafel.telefon or tafel.email %}
+        <tr><td style="padding:12px 24px;font-size:13px;color:#5b6660;border-top:1px solid #d8ddd8;">
+          {{ tafel_name }}{% if tafel.anschrift %} · {{ tafel.anschrift }}{% endif %}{% if tafel.telefon %} · {{ tafel.telefon }}{% endif %}{% if tafel.email %} · {{ tafel.email }}{% endif %}
+        </td></tr>
+        {% endif %}
+      </table>
+    </td></tr>
+  </table>
+</body>
+{% endwith %}
+</html>
