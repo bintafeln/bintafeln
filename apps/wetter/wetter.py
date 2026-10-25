@@ -137,7 +137,7 @@ def aktuell(stelle) -> dict | None:
             log.warning("Wetter für %s nicht abrufbar: %s", stand.ort, fehler)
             stand.fehler_am, stand.fehler = (
                 jetzt,
-                f"{fehler} – PLZ und Ort der Ausgabestelle prüfen.",
+                f"{fehler} – PLZ und Ort der Ausgabestelle prüfen."[:200],
             )
         except (OSError, ValueError, KeyError, TypeError) as fehler:
             log.warning("Wetter für %s nicht abrufbar: %s", stand.ort, fehler)

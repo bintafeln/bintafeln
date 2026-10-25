@@ -139,7 +139,7 @@ def test_kopf_nennt_den_grund(modul_an, admin_client, monkeypatch):
     monkeypatch.setattr(wetter, "_json", lambda adresse, werte: {})
     WetterStand.objects.update(fehler_am=None)
     teil = admin_client.get(reverse("wetter:kopf")).content.decode()
-    assert "Ort „Musterstadt“ nicht gefunden – PLZ und Ort prüfen" in teil
+    assert "Ort „Musterstadt“ nicht gefunden – PLZ und Ort der Ausgabestelle prüfen" in teil
     WetterStand.objects.update(fehler="")
     assert "Noch kein aktuelles Wetter" in admin_client.get(reverse("wetter:kopf")).content.decode()
 
