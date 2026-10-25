@@ -45,6 +45,18 @@ def menue(request) -> list[dict]:
         ("sonderaktionen.verwalten", _eintrag("Sonderaktionen", "ausgabe:sonderaktionen")),
         ("korrekturen.entscheiden", _eintrag("Korrekturwünsche", "ausgabe:korrekturen")),
     ])  # fmt: skip
+    # Zuschaltbare Module (ADR 0049): eigene Bereiche hier, Einstellungen weiter unten
+    from apps.core import module
+
+    an = module.eingeschaltet()
+    modul_einstellungen = []
+    for m in module.alle():
+        if m.kennung in an and m.menue:
+            for titel, eintraege in m.menue(_eintrag):
+                if titel == "Einstellungen":
+                    modul_einstellungen += eintraege
+                else:
+                    bereich(titel, eintraege)
     stellen = _eintrag("Ausgabestellen", "kunden:ausgabestellen")
     alle_kunden = _eintrag("Kunden einsehen", "kunden:uebersicht", genau=True)
     alle_kunden["auch"] = [reverse("kunden:uebersicht") + "haushalt/"]
@@ -121,6 +133,7 @@ def menue(request) -> list[dict]:
          _eintrag("Mitarbeitende und Dokumente", "konten:personal_einstellungen")),
         ("einstellungen.arbeitszeit",
          _eintrag("Arbeitszeit", "personal:arbeitszeit_einstellungen")),
+        *modul_einstellungen,
         ("protokoll.sehen", _eintrag("Änderungsprotokoll", "core:protokoll")),
         ("system.sicherung", _eintrag("Sicherungen", "core:sicherungen")),
         ("system.update", _eintrag("Update", "core:update")),

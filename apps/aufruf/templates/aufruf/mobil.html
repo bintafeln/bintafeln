@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  {% include "aufruf/_kopf.html" %}
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Nächster Kunde - Mobile</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body, html {
+            min-height: 100vh;
+            width: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #6d6ed6;  /* Vollfarbe statt Gradient: deutlich schnelleres Rendering */
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            overflow-y: auto;   /* Kompakt, aber scrollbar als Sicherheitsnetz */
+            overflow-x: hidden;
+        }
+
+        /* ── Schmale Spalte, volle Höhe ausnutzen ────────────────── */
+        .app-container {
+            width: 100%;
+            max-width: 340px;
+            margin: 0 auto;
+            /* min-height entfernt: Höhe richtet sich nach dem Inhalt */
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px 8px 14px 8px;
+        }
+
+        /* ── Kopfzeile: Undo | Titel | Abmelden ──────────────────── */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .top-bar .title {
+            color: #fff;
+            font-weight: bold;
+            font-size: 0.9rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+            white-space: nowrap;
+        }
+
+        .undo-btn, .logout-btn {
+            background: rgba(255, 255, 255, 0.18);
+            color: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 20px;
+            padding: 5px 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .undo-btn:hover, .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .undo-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.35;
+        }
+
+        .undo-btn:active:not(:disabled), .logout-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* ── Kompakte Karten ─────────────────────────────────────── */
+        .card {
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 8px 12px;
+            /* Karten wachsen NICHT mehr über ihren Inhalt hinaus */
+            flex: 0 1 auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Kompakte Zahlen-Karten (Letzte / Nächste Kunden) */
+        .card-compact { padding: 4px 12px; }
+        .card-compact .card-title { margin-bottom: 3px; }
+
+        .card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            margin-bottom: 6px;
+        }
+
+        .card-numbers {
+            font-size: 1.05rem;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            line-height: 1.35;
+            word-wrap: break-word;
+        }
+
+        /* ── Status-Karte (weiß, kompakt) ────────────────────────── */
+        .status-display {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            padding: 8px 12px;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 4px 0;
+            font-size: 1rem;
+        }
+
+        .status-label { font-weight: bold; color: #555; }
+        .status-value { color: #333; font-weight: 600; }
+
+        /* ── Haupt-Button: wächst mit, aber gedeckelt ────────────── */
+        .btn-next {
+            width: 100%;
+            flex: 1 1 auto;          /* gleicher Wachstums-Anteil wie die Karten */
+            max-height: 220px;       /* Deckel: nie übertrieben groß */
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            transition: background 0.25s ease, box-shadow 0.25s ease;
+            font-weight: bold;
+            min-height: 130px;
+        }
+
+        .btn-next:hover {
+            background: linear-gradient(135deg, #218838, #1dd1a1);
+        }
+
+        .btn-next:active {
+            transform: translateY(1px);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
+
+        .btn-start:hover {
+            background: linear-gradient(135deg, #2980b9, #21618c);
+        }
+
+        .btn-next:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+        }
+
+        .btn-next-main {
+            font-size: 1.45rem !important;
+            font-weight: 900 !important;
+            line-height: 1.1 !important;
+            text-align: center !important;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.4) !important;
+        }
+
+        .btn-next-numbers {
+            font-size: 2.1rem !important;
+            font-weight: 900 !important;
+            opacity: 0.95 !important;
+            font-family: 'Courier New', monospace !important;
+            line-height: 1.3 !important;
+            min-height: 46px !important;
+            text-align: center !important;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.4) !important;
+            word-wrap: break-word !important;
+            max-width: 100% !important;
+            white-space: pre-line !important;
+        }
+
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+            background: linear-gradient(135deg, #f39c12, #e67e22) !important;
+        }
+
+        .loading::after { content: " ⏳"; }
+
+        /* ── NEU: Abfrage-Block ──────────────────────────────────── */
+        .abfrage-row {
+            display: flex;
+            gap: 6px;
+        }
+
+        .abfrage-input {
+            flex: 1;
+            min-width: 0;
+            padding: 12px 14px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.4);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.92);
+            color: #333;
+        }
+
+        .abfrage-input:focus {
+            outline: none;
+            border-color: #fff;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+        }
+
+        .abfrage-btn {
+            padding: 12px 16px;
+            font-size: 1.05rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .abfrage-btn:hover { background: linear-gradient(135deg, #2980b9, #1f5582); }
+        .abfrage-btn:active { transform: scale(0.96); }
+        .abfrage-btn:disabled { opacity: 0.6; cursor: wait; }
+
+        /* NEU: Spätzünder-Button in der Ergebnis-Karte */
+        .spaet-btn {
+            display: block;
+            width: 100%;
+            margin-top: 10px;
+            padding: 12px 14px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #e67e22, #d35400);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+        }
+        .spaet-btn:active { transform: scale(0.97); }
+        .spaet-btn:disabled { opacity: 0.6; cursor: wait; }
+
+
+        .abfrage-result {
+            margin-top: 8px;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #fff;
+            display: none;
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .abfrage-result.waiting  { display: block; background: rgba(41, 128, 185, 0.85); }
+        .abfrage-result.done     { display: block; background: rgba(39, 174, 96, 0.85); }
+        .abfrage-result.notfound { display: block; background: rgba(211, 84, 0, 0.85); }
+        .abfrage-result.inactive { display: block; background: rgba(127, 140, 141, 0.85); }
+        .abfrage-result.error    { display: block; background: rgba(192, 57, 43, 0.85); }
+
+        .abfrage-result .headline {
+            font-size: 1.15rem;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .abfrage-result .big {
+            font-size: 1.7rem;
+            font-weight: 900;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* ── Notifications (kompakter) ───────────────────────────── */
+        .notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            padding: 16px 22px;
+            border-radius: 12px;
+            z-index: 2000;
+            font-size: 1rem !important;
+            font-weight: bold;
+            box-shadow: 0 8px 22px rgba(0,0,0,0.6);
+            display: none;
+            text-align: center;
+            min-width: 240px;
+            max-width: 90vw;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .notification.success { background: rgba(39, 174, 96, 0.95); }
+        .notification.error   { background: rgba(231, 76, 60, 0.95); }
+        .notification.info    { background: rgba(52, 152, 219, 0.95); }
+
+        .notification.show {
+            display: block;
+            animation: notificationSlide 0.3s ease-out;
+        }
+
+        @keyframes notificationSlide {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        /* ── Kundengruppen-Wechsel (kompakter) ───────────────────── */
+        .group-notification {
+            position: fixed;
+            top: 25%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+            padding: 20px 25px;
+            border-radius: 14px;
+            z-index: 2500;
+            font-size: 1rem !important;
+            font-weight: bold;
+            box-shadow: 0 10px 26px rgba(0,0,0,0.7);
+            display: none;
+            text-align: center;
+            min-width: 260px;
+            max-width: 90vw;
+            border: 2px solid rgba(255,255,255,0.4);
+        }
+
+        .group-notification.show {
+            display: block;
+            animation: groupNotificationSlide 0.5s ease-out;
+        }
+
+        .group-notification-icon {
+            font-size: 1.8rem !important;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .group-notification-title { font-size: 1rem !important; margin-bottom: 6px; }
+        .group-notification-subtitle { font-size: 0.8rem !important; opacity: 0.9; margin-top: 8px; }
+
+        @keyframes groupNotificationSlide {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.7) rotateY(20deg); }
+            to   { opacity: 1; transform: translate(-50%, -50%) scale(1) rotateY(0deg); }
+        }
+
+        /* Vibration feedback */
+        @keyframes vibrate {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-3px); }
+            50% { transform: translateX(3px); }
+            75% { transform: translateX(-3px); }
+            100% { transform: translateX(0); }
+        }
+
+        .btn-next.vibrate { animation: vibrate 0.3s ease-in-out; }
+
+        /* Sehr schmale Bereiche (< 300px) */
+        @media (max-width: 300px) {
+            .btn-next-main { font-size: 1rem !important; }
+            .btn-next-numbers { font-size: 1.15rem !important; }
+            .top-bar .title { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+
+        <!-- Kopfzeile: Undo | Titel | Abmelden -->
+        <div class="top-bar">
+            <button class="undo-btn" id="undoBtn" onclick="performUndo()" title="Letzte Aktion rückgängig machen">↩ Zurück</button>
+            <span class="title">🎯 {{ stelle.name }}</span>
+            <button class="logout-btn" onclick="logout()">🚪 Abmelden</button>
+        </div>
+
+        <!-- Status Display -->
+        <div class="status-display" id="statusDisplay" style="display: none;">
+            <div class="status-row">
+                <span class="status-label">📅 Tag:</span>
+                <span class="status-value" id="statusDay">-</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">👥 Kundengruppe:</span>
+                <span class="status-value" id="statusSlot">-</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">📊 Fortschritt:</span>
+                <span class="status-value" id="statusProgress">0/0</span>
+            </div>
+        </div>
+
+        <!-- Letzte Kunden -->
+        <div class="card card-compact">
+            <div class="card-title">⬅️ Letzte Kunden</div>
+            <div id="pastCustomersDisplay" class="card-numbers">-</div>
+        </div>
+
+        <!-- Haupt-Button -->
+        <button class="btn btn-start btn-next" id="nextBtn" onclick="handleButtonClick()">
+            <span class="btn-next-main" id="btnMainText">Aktuelle Kunden</span>
+            <span class="btn-next-numbers" id="btnNumbers">-</span>
+        </button>
+
+        <!-- Nächste Kunden -->
+        <div class="card card-compact">
+            <div class="card-title">➡️ Nächste Kunden</div>
+            <div id="nextCustomersDisplay" class="card-numbers">-</div>
+        </div>
+
+        <!-- NEU: Kundennummer-Abfrage -->
+        <div class="card">
+            <div class="card-title">🔍 Kundennummer-Abfrage</div>
+            <div class="abfrage-row">
+                <input type="text"
+                       id="abfrageNummer"
+                       class="abfrage-input"
+                       inputmode="numeric"
+                       placeholder="Nummer"
+                       maxlength="12">
+                <button id="abfrageBtn" class="abfrage-btn" onclick="abfragen()">Prüfen</button>
+            </div>
+            <div id="abfrageResult" class="abfrage-result"></div>
+        </div>
+
+    </div>
+
+    <!-- Standard Notification -->
+    <div class="notification" id="notification"></div>
+
+    <!-- Kundengruppen-Hinweis -->
+    <div class="group-notification" id="groupNotification">
+        <span class="group-notification-icon">🎯</span>
+        <div class="group-notification-title" id="groupTitle">Neue Kundengruppe</div>
+        <div id="groupMessage">Kundengruppe wird gestartet...</div>
+        <div class="group-notification-subtitle" id="groupSubtitle">Monitor zeigt zunächst Infoseiten</div>
+    </div>
+
+    {% include "aufruf/_urls.html" %}
+    <script>
+        // Test-Alert beim Laden
+        console.log("🚀 MOBILE V5.0 - KOMPAKT-LAYOUT + KUNDENNUMMER-ABFRAGE - MIT UNDO-FUNKTION - ZUFALLSGENERATOR - MIT PASSWORT-SCHUTZ");
+
+        // Abmelden: über die Anmeldung von bintafeln
+        function logout() {
+            if (confirm('🚪 Möchten Sie sich wirklich abmelden?')) {
+                const f = document.createElement('form');
+                f.method = 'post';
+                f.action = URLS.abmelden;
+                const t = document.createElement('input');
+                t.type = 'hidden'; t.name = 'csrfmiddlewaretoken'; t.value = CSRF;
+                f.appendChild(t);
+                document.body.appendChild(f);
+                f.submit();
+            }
+        }
+
+        // NEU: Undo-Funktion
+        async function performUndo() {
+            if (isLoading) return;
+
+            const undoBtn = document.getElementById('undoBtn');
+            const nextBtn = document.getElementById('nextBtn');
+
+            if (undoBtn.disabled) {
+                showNotification('⚠️ Keine Aktion zum Rückgängigmachen', 'info');
+                return;
+            }
+
+            // ⚡ SOFORT-UNDO: Schnappschuss des letzten Klicks wiederherstellen,
+            // Server-Undo läuft im Hintergrund (in richtiger Reihenfolge)
+            if (clickHistory.length > 0 && currentStatus) {
+                localVersion++;
+                const snap = clickHistory.pop();
+                currentStatus.current_numbers = snap.current_numbers;
+                currentStatus.next_numbers   = snap.next_numbers;
+                currentStatus.past_numbers   = snap.past_numbers;
+                currentStatus.remaining_count = snap.remaining_count;
+                currentStatus.priority_flags  = snap.priority_flags;
+                if (snap.progress) window.cachedProgressData = snap.progress;
+
+                updateButtonDisplay(currentStatus);
+                updateStatusDisplay(currentStatus);
+                updatePastCustomersDisplay(currentStatus.past_numbers);
+                updateUndoButton(true);
+                showNotification('↩️ Rückgängig gemacht', 'success');
+
+                queueUndo();
+                return;
+            }
+
+            // Server-Pfad (kein lokaler Verlauf, z.B. nach Neuladen der Seite)
+            try {
+                isLoading = true;
+                undoBtn.disabled = true;
+                undoBtn.textContent = '⏳ …';
+                nextBtn.disabled = true;
+
+                console.log('↩️ Führe Undo aus (Server)...');
+                await postChain;  // Reihenfolge wahren
+
+                const response = await fetch(URLS.zurueck, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification(`↩️ ${data.message}`, 'success');
+                    updateButtonDisplay({
+                        current_numbers: data.current_numbers || [],
+                        current_slot: data.current_slot,
+                        priority_flags: data.priority_flags || [],
+                        finished: false
+                    });
+                    window.cachedProgressData = {
+                        total_completed: data.total_completed,
+                        total_numbers: data.total_numbers
+                    };
+                    if (currentStatus) {
+                        currentStatus.current_numbers = data.current_numbers || [];
+                        currentStatus.current_slot = data.current_slot;
+                        if (data.upcoming_numbers) currentStatus.next_numbers = data.upcoming_numbers;
+                        if (data.remaining_in_slot !== undefined) currentStatus.remaining_count = data.remaining_in_slot;
+                    }
+                    updateUndoButton(data.can_undo || false);
+                    setTimeout(loadStatus, 500);
+                } else {
+                    console.error('⚠️ Undo-Fehler:', data.error);
+                    showNotification(`⚠️ ${data.error}`, 'error');
+                    updateUndoButton(data.can_undo !== false);
+                }
+            } catch (error) {
+                console.error('⚠️ Undo-Netzwerkfehler:', error);
+                showNotification('⚠️ Verbindungsfehler beim Rückgängigmachen', 'error');
+                updateUndoButton(true);  // erneuter Versuch muss möglich bleiben
+            } finally {
+                isLoading = false;
+                undoBtn.textContent = '↩ Zurück';
+                if (isSystemStarted) nextBtn.disabled = false;
+            }
+        }
+
+        // Globale Variablen
+        let isLoading = false;
+        let currentStatus = null;
+        let isSystemStarted = false;
+        let lastKnownSlot = null;
+
+        // Status laden und anzeigen - ERWEITERT mit Undo-Support und vergangenen Kunden
+        let statusInFlight = false;  // verhindert Request-Stau auf langsamen Geräten
+        async function loadStatus() {
+            if (statusInFlight) {
+                console.log('⏭ loadStatus übersprungen (vorheriger läuft noch)');
+                return false;
+            }
+            if (typeof pendingPosts !== 'undefined' && pendingPosts > 0) {
+                console.log('⏭ loadStatus übersprungen (Hintergrund-Buchung läuft)');
+                return false;
+            }
+            statusInFlight = true;
+            const versionBeimStart = localVersion;
+            try {
+                const t0 = performance.now();
+                const response = await fetch(URLS.stand + '?t=' + Date.now(), { cache: 'no-store' });
+                const data = await response.json();
+                console.log(`⏱ /monitor/refresh: ${Math.round(performance.now() - t0)} ms`);
+                if (versionBeimStart !== localVersion) {
+                    console.log('⏭ Status-Antwort verworfen (lokal ist inzwischen mehr passiert)');
+                    statusInFlight = false;
+                    return false;
+                }
+                // Großes Vorschau-Fenster für den Sofort-Modus verwenden
+                if (data.upcoming_numbers && data.upcoming_numbers.length) {
+                    data.next_numbers = data.upcoming_numbers;
+                }
+
+                if (data.error) {
+                    updateButtonDisplay(null);
+                    updateStatusDisplay(null);
+                    updateUndoButton(false);
+                    updatePastCustomersDisplay([]);
+                    statusInFlight = false;
+                    return false;
+                }
+
+                // Fortschritt: Werte vom Server bevorzugen (damit auch Geräte, die selbst
+                // nicht klicken, den aktuellen Stand sehen); sonst lokaler Zwischenspeicher
+                if (typeof data.total_numbers === 'number') {
+                    window.cachedProgressData = {
+                        total_completed: data.total_completed,
+                        total_numbers: data.total_numbers
+                    };
+                } else if (window.cachedProgressData) {
+                    data.total_completed = window.cachedProgressData.total_completed;
+                    data.total_numbers = window.cachedProgressData.total_numbers;
+                }
+
+                // Prüfen ob neue Kundengruppe
+                if (currentStatus && currentStatus.current_slot !== data.current_slot) {
+                    showGroupChangeNotification(data.current_slot);
+                }
+
+                currentStatus = data;
+                updateButtonDisplay(data);
+                updateStatusDisplay(data);
+                updateUndoButton(data.can_undo || false);
+
+                // NEU: Vergangene Kunden anzeigen (kommen jetzt direkt vom Server)
+                updatePastCustomersDisplay(data.past_numbers || []);
+
+                statusInFlight = false;
+                return true;
+
+            } catch (error) {
+                console.error('⚠️ Status-Laden fehlgeschlagen:', error);
+                updateButtonDisplay(null);
+                updateStatusDisplay(null);
+                updateUndoButton(false);
+                updatePastCustomersDisplay([]);
+                statusInFlight = false;
+                return false;
+            }
+        }
+
+        function updateUndoButton(canUndo) {
+            const undoBtn = document.getElementById('undoBtn');
+            undoBtn.disabled = !canUndo;
+
+            if (canUndo) {
+                undoBtn.title = 'Letzte Aktion rückgängig machen';
+            } else {
+                undoBtn.title = 'Keine Aktion zum Rückgängigmachen verfügbar';
+            }
+        }
+
+        // NEU: Vergangene Kunden anzeigen
+        function updatePastCustomersDisplay(pastNumbers) {
+            const pastCustomersDisplay = document.getElementById('pastCustomersDisplay');
+
+            if (!pastNumbers || pastNumbers.length === 0) {
+                pastCustomersDisplay.textContent = '-';
+            } else {
+                const displayText = pastNumbers.join(' • ');
+                pastCustomersDisplay.textContent = displayText;
+            }
+        }
+
+        // Button-Anzeige aktualisieren
+        function updateButtonDisplay(data) {
+            const btnMainText = document.getElementById('btnMainText');
+            const btnNumbers = document.getElementById('btnNumbers');
+            const nextBtn = document.getElementById('nextBtn');
+            const nextCustomersDisplay = document.getElementById('nextCustomersDisplay');
+
+            if (!data || data.finished) {
+                // Kein Tag aktiv oder Tag abgeschlossen
+                if (!isSystemStarted) {
+                    btnMainText.textContent = 'Kundenmonitor starten';
+                    btnNumbers.textContent = 'Tag beginnen';
+                    nextBtn.className = 'btn btn-start btn-next';
+                    nextBtn.disabled = false;
+                } else {
+                    btnMainText.textContent = 'Tag abgeschlossen';
+                    btnNumbers.textContent = '🎉 Alle erledigt!';
+                    nextBtn.disabled = true;
+                }
+                nextCustomersDisplay.textContent = '-';
+                return;
+            }
+
+            // System ist gestartet
+            isSystemStarted = true;
+            nextBtn.className = 'btn btn-primary btn-next';
+
+            // Button-Kundennummern aktualisieren
+            let buttonNumbersText = '';
+
+            if (data.current_numbers && data.current_numbers.length > 0) {
+                const displayNumbers = [];
+
+                data.current_numbers.forEach((number, index) => {
+                    // Priorität prüfen
+                    if (data.priority_flags && data.priority_flags[index]) {
+                        displayNumbers.push(`♿${number}`);
+                    } else {
+                        displayNumbers.push(number);
+                    }
+                });
+
+                // Button-Text mit Kundennummern (eine pro Zeile)
+                buttonNumbersText = displayNumbers.join('\n');
+            } else {
+                buttonNumbersText = 'Keine Nummern';
+            }
+
+            btnNumbers.textContent = buttonNumbersText;
+            btnMainText.textContent = 'Aktuelle Kunden';
+            nextBtn.disabled = false;
+
+            // Nächste 10 Kunden anzeigen
+            if (data.next_numbers && data.next_numbers.length > 0) {
+                const nextNumbersText = data.next_numbers.slice(0, 10).map((number, index) => {
+                    const isPriority = data.next_priority_flags && data.next_priority_flags[index];
+                    return isPriority ? `♿ ${number}` : number;
+                }).join(' • ');
+                nextCustomersDisplay.textContent = nextNumbersText;
+            } else {
+                nextCustomersDisplay.textContent = '-';
+            }
+        }
+
+        // Status Display aktualisieren
+        function updateStatusDisplay(data) {
+            const statusDisplay = document.getElementById('statusDisplay');
+            const statusDay = document.getElementById('statusDay');
+            const statusSlot = document.getElementById('statusSlot');
+            const statusProgress = document.getElementById('statusProgress');
+
+            if (data && !data.finished && !data.error) {
+                statusDay.textContent = data.selected_day || '-';
+                statusSlot.textContent = data.current_slot || '-';
+
+                const completed = data.total_completed || 0;
+                const total = data.total_numbers || 0;
+                statusProgress.textContent = `${completed}/${total}`;
+
+                statusDisplay.style.display = 'block';
+                console.log(`📊 Status angezeigt: ${data.selected_day} | ${data.current_slot} | ${completed}/${total}`);
+            } else {
+                statusDisplay.style.display = 'none';
+                console.log('📊 Status ausgeblendet (kein aktiver Tag)');
+            }
+        }
+
+        // Kundengruppen-Wechsel Benachrichtigung
+        function showGroupChangeNotification(newSlot) {
+            const notification = document.getElementById('groupNotification');
+            const title = document.getElementById('groupTitle');
+            const message = document.getElementById('groupMessage');
+            const subtitle = document.getElementById('groupSubtitle');
+
+            title.textContent = 'Neue Kundengruppe';
+            message.textContent = `Kundengruppe: ${newSlot}`;
+            subtitle.textContent = 'Bitte Monitor beachten';
+
+            notification.classList.add('show');
+
+            // Nach 4 Sekunden ausblenden
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 4000);
+
+            console.log('🎯 Neue Kundengruppe:', newSlot);
+        }
+
+        // System-Start Benachrichtigung
+        function showSystemStartNotification(slot) {
+            const notification = document.getElementById('groupNotification');
+            const title = document.getElementById('groupTitle');
+            const message = document.getElementById('groupMessage');
+            const subtitle = document.getElementById('groupSubtitle');
+
+            title.textContent = 'Kundenmonitor gestartet';
+            message.textContent = `Erste Kundengruppe: ${slot}`;
+            subtitle.textContent = 'Monitor zeigt zunächst nur Infoseiten';
+
+            notification.classList.add('show');
+
+            // Nach 5 Sekunden ausblenden
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 5000);
+
+            console.log('🚀 System gestartet mit Kundengruppe:', slot);
+        }
+
+        // Hauptfunktion für Button-Klick
+        async function handleButtonClick() {
+            if (isLoading) return;
+
+            // Visual feedback
+            const nextBtn = document.getElementById('nextBtn');
+            nextBtn.classList.add('vibrate');
+            setTimeout(() => nextBtn.classList.remove('vibrate'), 300);
+
+            // Vibration falls unterstützt
+            if ('vibrate' in navigator) {
+                navigator.vibrate([50, 30, 50]);
+            }
+
+            // Wenn System noch nicht gestartet ist, Tag starten
+            if (!isSystemStarted) {
+                await startDay();
+            } else {
+                // Normaler "Nächster Kunde" Vorgang
+                await nextCustomer();
+            }
+        }
+
+        // Tag starten
+        async function startDay() {
+            if (isLoading) return;
+
+            const nextBtn = document.getElementById('nextBtn');
+            const btnMainText = document.getElementById('btnMainText');
+            const btnNumbers = document.getElementById('btnNumbers');
+
+            try {
+                isLoading = true;
+                nextBtn.disabled = true;
+                nextBtn.classList.add('loading');
+                btnMainText.textContent = 'Starte System...';
+                btnNumbers.textContent = '⏳';
+
+                console.log('🚀 Starte Kundennummern-System...');
+
+                // Aktuellen Tag ermitteln und starten
+                const statusResponse = await fetch(URLS.status + '?t=' + Date.now(), { cache: 'no-store' });
+                const statusData = await statusResponse.json();
+
+                if (!statusData.has_active_session && statusData.available_days.length > 0) {
+                    const currentDay = statusData.current_day;
+
+                    // Tag starten
+                    const selectResponse = await fetch(URLS.starten, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF }
+                    });
+
+                    if (selectResponse.ok) {
+                        // Kurz warten und Status laden
+                        setTimeout(async () => {
+                            const success = await loadStatus();
+                            if (success && currentStatus) {
+                                showSystemStartNotification(currentStatus.current_slot);
+                                isSystemStarted = true;
+                                showNotification(`✅ Kundenmonitor für ${currentDay} gestartet!`, 'success');
+                            } else {
+                                showNotification('⚠️ Fehler beim Laden des Status', 'error');
+                            }
+                        }, 1000);
+                    } else {
+                        showNotification('⚠️ Fehler beim Starten des Tages', 'error');
+                    }
+                } else if (statusData.has_active_session) {
+                    // Session bereits aktiv
+                    isSystemStarted = true;
+                    await loadStatus();
+                    showNotification('ℹ️ System bereits aktiv', 'info');
+                } else {
+                    showNotification('⚠️ Kein Programm für heute verfügbar', 'error');
+                }
+
+            } catch (error) {
+                console.error('⚠️ Fehler beim Starten des Systems:', error);
+                showNotification('⚠️ Verbindungsfehler beim Starten', 'error');
+            } finally {
+                isLoading = false;
+                nextBtn.classList.remove('loading');
+                if (!nextBtn.disabled && isSystemStarted) {
+                    btnMainText.textContent = '✅ Nächster Kunde';
+                }
+            }
+        }
+
+        // Nächster Kunde - ERWEITERT mit Undo-Support
+        // ═══ NEU: SOFORT-MODUS mit Hintergrund-Buchung ═══
+        // Die Seite kennt aus /monitor/refresh bereits die nächsten 10 wartenden
+        // Nummern. Ein Klick blättert deshalb SOFORT lokal weiter — die Buchung
+        // am Server läuft danach im Hintergrund und wird abgeglichen. So spielt
+        // die Netzwerk-Laufzeit (VPN, Proxy) für die Bedienung keine Rolle mehr.
+        let pendingPosts = 0;
+        let lastPostData = null;
+        let postChain = Promise.resolve();
+        let clickHistory = [];  // NEU: Zustands-Schnappschüsse für Sofort-Undo
+        let localVersion = 0;   // NEU: zählt lokale Aktionen — veraltete Status-Antworten werden verworfen
+        let syncVersionAtQueueStart = 0;  // localVersion beim Start der letzten Hintergrund-Operation
+
+        function updateSyncBadge() {
+            let b = document.getElementById('syncBadge');
+            if (!b) {
+                b = document.createElement('div');
+                b.id = 'syncBadge';
+                b.style.cssText = 'position:fixed;bottom:8px;right:10px;z-index:999;' +
+                    'background:rgba(0,0,0,.45);color:#fff;font-size:12px;font-weight:700;' +
+                    'padding:4px 10px;border-radius:12px;display:none;';
+                document.body.appendChild(b);
+            }
+            if (pendingPosts > 0) {
+                b.textContent = '☁️ Buchung läuft… (' + pendingPosts + ')';
+                b.style.display = 'block';
+            } else {
+                b.style.display = 'none';
+            }
+        }
+
+        function advanceLocal() {
+            const s = currentStatus;
+            // Schnappschuss VOR der Änderung — macht Sofort-Undo möglich
+            clickHistory.push({
+                current_numbers: s.current_numbers.slice(),
+                next_numbers: s.next_numbers.slice(),
+                past_numbers: (s.past_numbers || []).slice(),
+                remaining_count: s.remaining_count,
+                priority_flags: (s.priority_flags || []).slice(),
+                progress: window.cachedProgressData ? { ...window.cachedProgressData } : null
+            });
+            if (clickHistory.length > 500) clickHistory.shift();  // praktisch unbegrenzt (ganzer Tag)
+            localVersion++;
+
+            const removed = s.current_numbers.slice();
+            s.past_numbers = removed.concat(s.past_numbers || []).slice(0, 10);
+            s.current_numbers = s.next_numbers.slice(0, ANZAHL);
+            s.next_numbers = s.next_numbers.slice(ANZAHL);
+            s.remaining_count = Math.max(0, (s.remaining_count || removed.length) - removed.length);
+            s.priority_flags = s.current_numbers.map(() => false);  // Server korrigiert beim Abgleich
+            s.can_undo = true;   // gerade geklickt → es gibt etwas zum Rückgängigmachen
+            if (window.cachedProgressData) {
+                window.cachedProgressData.total_completed += removed.length;
+            }
+            updateButtonDisplay(s);
+            updateStatusDisplay(s);
+            updatePastCustomersDisplay(s.past_numbers);
+            updateUndoButton(true);
+        }
+
+        function queuePost() {
+            pendingPosts++;
+            syncVersionAtQueueStart = localVersion;  // Stand merken für finalizeSync
+            updateSyncBadge();
+            postChain = postChain.catch(() => {}).then(doBackgroundPost);
+        }
+
+        async function doBackgroundPost() {
+            try {
+                const t0 = performance.now();
+                const ctrl = new AbortController();
+                const timeout = setTimeout(() => ctrl.abort(), 20000);
+                const response = await fetch(URLS.weiter, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+                    signal: ctrl.signal
+                });
+                clearTimeout(timeout);
+                lastPostData = await response.json();
+                console.log(`⏱ /api/next_customer (Hintergrund): ${Math.round(performance.now() - t0)} ms`);
+            } catch (error) {
+                console.error('❌ Hintergrund-Buchung fehlgeschlagen:', error);
+                lastPostData = { success: false, error: 'Verbindungsfehler — Anzeige wird abgeglichen' };
+            } finally {
+                pendingPosts--;
+                updateSyncBadge();
+                if (pendingPosts === 0) {
+                    try { finalizeSync(); } catch (e) { console.error(e); }
+                }
+            }
+        }
+
+        function finalizeSync() {
+            const data = lastPostData;
+            lastPostData = null;
+            if (!data) return;
+
+            if (data.success) {
+                if (data.total_completed !== undefined && data.total_numbers !== undefined) {
+                    window.cachedProgressData = {
+                        total_completed: data.total_completed,
+                        total_numbers: data.total_numbers
+                    };
+                }
+                updateUndoButton(data.can_undo || false);
+
+                if (data.all_finished) {
+                    clickHistory = [];
+                    showNotification('🎉 Alle Kundengruppen abgeschlossen!', 'success');
+                    const nextBtn = document.getElementById('nextBtn');
+                    nextBtn.disabled = true;
+                    document.getElementById('btnMainText').textContent = 'Tag abgeschlossen';
+                    document.getElementById('btnNumbers').textContent = '🎉 Alle erledigt!';
+                    isSystemStarted = false;
+                    document.getElementById('statusDisplay').style.display = 'none';
+                    window.cachedProgressData = null;
+                    return;
+                }
+                // WICHTIG: Die Anzeige NUR dann mit Serverdaten neu zeichnen, wenn
+                // seit dem Absetzen der letzten Hintergrund-Operation KEINE weitere
+                // lokale Aktion (Klick/Undo) erfolgt ist. Sonst würde z.B. eine
+                // vorwärts-Buchungsantwort ein gerade erfolgtes Zurück überschreiben.
+                const darfZeichnen = (localVersion === syncVersionAtQueueStart);
+                if (data.current_numbers && currentStatus && darfZeichnen) {
+                    currentStatus.current_numbers = data.current_numbers;
+                    currentStatus.current_slot = data.current_slot;
+                    currentStatus.priority_flags = data.priority_flags || [];
+                    if (data.upcoming_numbers) {
+                        currentStatus.next_numbers = data.upcoming_numbers;
+                    }
+                    if (data.remaining_in_slot !== undefined) {
+                        currentStatus.remaining_count = data.remaining_in_slot;
+                    }
+                    updateButtonDisplay(currentStatus);
+                } else if (!darfZeichnen) {
+                    console.log('⏭ finalizeSync zeichnet NICHT neu (lokal ist inzwischen mehr passiert)');
+                }
+            } else {
+                console.error('⚠️ Buchungsfehler:', data.error);
+                clickHistory = [];  // lokaler Verlauf ist jetzt unzuverlässig
+                showNotification('⚠️ ' + (data.error || 'Fehler bei der Buchung'), 'error');
+                if (data.redirect) {
+                    setTimeout(() => { window.open(data.redirect, '_blank'); }, 2000);
+                }
+            }
+            // Volle Wahrheit nur holen, wenn nichts mehr lokal aussteht — sonst
+            // würde loadStatus die aktuelle Anzeige mit altem Serverstand ersetzen.
+            if (localVersion === syncVersionAtQueueStart) {
+                setTimeout(loadStatus, 250);
+            }
+        }
+
+        function queueUndo() {
+            pendingPosts++;
+            syncVersionAtQueueStart = localVersion;  // Stand merken für finalizeSync
+            updateSyncBadge();
+            postChain = postChain.catch(() => {}).then(doBackgroundUndo);
+        }
+
+        async function doBackgroundUndo() {
+            try {
+                const t0 = performance.now();
+                const ctrl = new AbortController();
+                const timeout = setTimeout(() => ctrl.abort(), 20000);
+                const response = await fetch(URLS.zurueck, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+                    signal: ctrl.signal
+                });
+                clearTimeout(timeout);
+                lastPostData = await response.json();
+                console.log(`⏱ /api/undo (Hintergrund): ${Math.round(performance.now() - t0)} ms`);
+            } catch (error) {
+                console.error('❌ Hintergrund-Undo fehlgeschlagen:', error);
+                lastPostData = { success: false, error: 'Verbindungsfehler — Anzeige wird abgeglichen' };
+            } finally {
+                pendingPosts--;
+                updateSyncBadge();
+                if (pendingPosts === 0) {
+                    try { finalizeSync(); } catch (e) { console.error(e); }
+                }
+            }
+        }
+
+        async function nextCustomer() {
+            if (isLoading) return;
+
+            const s = currentStatus;
+            const localOk = isSystemStarted && s && !s.finished &&
+                Array.isArray(s.current_numbers) && s.current_numbers.length > 0 &&
+                Array.isArray(s.next_numbers) && s.next_numbers.length > 0;
+
+            if (localOk) {
+                // ⚡ SOFORT: lokal weiterblättern, Server-Buchung im Hintergrund
+                advanceLocal();
+                queuePost();
+                return;
+            }
+
+            // Fallback (Gruppenwechsel / keine Vorschau-Daten): klassisch mit Warten.
+            // Erst laufende Hintergrund-Buchungen abschließen lassen, damit die
+            // Reihenfolge am Server stimmt.
+            const nextBtn = document.getElementById('nextBtn');
+            const btnMainText = nextBtn.querySelector('.btn-next-main');
+            const btnNumbers = nextBtn.querySelector('.btn-next-numbers');
+
+            try {
+                isLoading = true;
+                nextBtn.disabled = true;
+                nextBtn.classList.add('loading');
+                btnMainText.textContent = 'Verarbeite...';
+                btnNumbers.textContent = '⏳';
+
+                await postChain;  // Reihenfolge wahren
+
+                const t0 = performance.now();
+                const response = await fetch(URLS.weiter, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF }
+                });
+                const data = await response.json();
+                console.log(`⏱ /api/next_customer: ${Math.round(performance.now() - t0)} ms`);
+
+                if (data.success) {
+                    if (data.total_completed !== undefined && data.total_numbers !== undefined) {
+                        window.cachedProgressData = {
+                            total_completed: data.total_completed,
+                            total_numbers: data.total_numbers
+                        };
+                    }
+                    updateUndoButton(data.can_undo || false);
+
+                    if (data.all_finished) {
+                        showNotification('🎉 Alle Kundengruppen abgeschlossen!', 'success');
+                        btnMainText.textContent = 'Tag abgeschlossen';
+                        btnNumbers.textContent = '🎉 Alle erledigt!';
+                        nextBtn.disabled = true;
+                        isSystemStarted = false;
+                        document.getElementById('statusDisplay').style.display = 'none';
+                        window.cachedProgressData = null;
+                    } else {
+                        showNotification(`✅ ${data.message}`, 'success');
+                        if (data.current_numbers) {
+                            updateButtonDisplay({
+                                current_numbers: data.current_numbers,
+                                current_slot: data.current_slot,
+                                priority_flags: data.priority_flags || [],
+                                finished: false
+                            });
+                            updateStatusDisplay({
+                                selected_day: (currentStatus && currentStatus.selected_day) || '-',
+                                current_slot: data.current_slot,
+                                total_completed: data.total_completed,
+                                total_numbers: data.total_numbers,
+                                finished: false
+                            });
+                        }
+                        setTimeout(loadStatus, 250);
+                    }
+                } else {
+                    console.error('⚠️ Fehler:', data.error);
+                    showNotification(`⚠️ ${data.error}`, 'error');
+                    updateUndoButton(data.can_undo || false);
+                    if (data.redirect) {
+                        setTimeout(() => { window.open(data.redirect, '_blank'); }, 2000);
+                    }
+                }
+            } catch (error) {
+                console.error('⚠️ Netzwerkfehler:', error);
+                showNotification('⚠️ Verbindungsfehler zum Server', 'error');
+            } finally {
+                isLoading = false;
+                nextBtn.classList.remove('loading');
+                if (!nextBtn.disabled && isSystemStarted) {
+                    btnMainText.textContent = '✅ Nächster Kunde';
+                }
+            }
+        }
+
+        // Notification anzeigen
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // ═══ NEU: KUNDENNUMMER-ABFRAGE ═══
+        // Konfigurierte Anzahl Plätze (aus Admin-Einstellung, vom Server geliefert)
+        const SPAET_VERSATZ = {{ spaetzuender_versatz }};
+
+        function spaetzuenderEinsortieren(nummer) {
+            const btn = document.getElementById('spaetBtn');
+            if (btn) { btn.disabled = true; btn.textContent = '⏳ wird einsortiert…'; }
+
+            fetch(URLS.spaetzuender, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+                body: JSON.stringify({ nummer: nummer })
+            })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) {
+                    showAbfrageResult('waiting', `
+                        <div class="headline">↻ ${nummer} nach hinten gesetzt</div>
+                        ${d.bereits ? 'War bereits einsortiert.<br>' : ''}
+                        Kunde wurde ${d.versatz} Nummern nach hinten gesetzt (zu spät).<br>
+                        Aktuell noch <span class="big">${d.vor_der_nummer}</span> Nummern vor dem Kunden`);
+                } else {
+                    showAbfrageResult('error', `<div class="headline">⚠️ Nicht möglich</div>${d.error || 'Fehler'}`);
+                }
+            })
+            .catch(() => {
+                showAbfrageResult('error', `<div class="headline">⚠️ Verbindungsfehler</div>Server nicht erreichbar.`);
+            });
+        }
+
+        function showAbfrageResult(cls, html) {
+            const result = document.getElementById('abfrageResult');
+            result.className = 'abfrage-result ' + cls;
+            result.innerHTML = html;
+        }
+
+        function abfragen() {
+            const input = document.getElementById('abfrageNummer');
+            const btn = document.getElementById('abfrageBtn');
+            const nummer = input.value.trim();
+            if (!nummer) { input.focus(); return; }
+
+            btn.disabled = true;
+            btn.textContent = '⏳';
+
+            fetch(URLS.abfrage + '?nummer=' + encodeURIComponent(nummer) + '&t=' + Date.now(), { cache: 'no-store' })
+                .then(r => r.json())
+                .then(d => {
+                    if (d.error) {
+                        showAbfrageResult('error', `<div class="headline">❌ Fehler</div>${d.error}`);
+                        return;
+                    }
+                    if (!d.active) {
+                        showAbfrageResult('inactive', `<div class="headline">⏳ Keine aktive Ausgabe</div>${d.message || ''}`);
+                        return;
+                    }
+                    if (!d.gefunden) {
+                        showAbfrageResult('notfound', `<div class="headline">🤷 Nicht gefunden</div>Nummer <strong>${d.nummer}</strong> ist heute (${d.tag}) nicht in der Liste.`);
+                        return;
+                    }
+                    if (d.neu_einsortiert) {
+                        // Kunde wurde zu spät neu einsortiert → aktuelle Live-Position zeigen
+                        showAbfrageResult('waiting', `
+                            <div class="headline">↻ ${d.nummer} wurde nach hinten gesetzt</div>
+                            War schon dran, kam zu spät.<br>
+                            Aktuell noch <span class="big">${d.vor_der_nummer}</span> Nummern vor dem Kunden<br>
+                            Zielgruppe: ${d.gruppe || '–'}`);
+                        return;
+                    }
+                    if (d.schon_dran) {
+                        showAbfrageResult('done', `
+                            <div class="headline">✅ ${d.nummer} war schon dran</div>
+                            Gruppe ${d.gruppe}: Platz ${d.gruppen_platz}/${d.gruppen_gesamt}<br>
+                            Gesamt: Platz ${d.gesamt_platz}/${d.gesamt_anzahl}
+                            <button id="spaetBtn" class="spaet-btn" onclick="spaetzuenderEinsortieren('${d.nummer}')">
+                                ⏱ Kunde ${SPAET_VERSATZ} Plätze später einsortieren
+                            </button>`);
+                        return;
+                    }
+                    // Noch nicht dran
+                    showAbfrageResult('waiting', `
+                        <div class="headline">🕐 ${d.nummer} kommt noch</div>
+                        ${d.vorschau ? '<em>Ausgabe noch nicht gestartet – voraussichtliche Position:</em><br>' : ''}
+                        <span class="big">${d.vor_der_nummer}</span> Nummern davor noch dran<br>
+                        Gruppe ${d.gruppe}: Platz ${d.gruppen_platz}/${d.gruppen_gesamt}<br>
+                        Gesamt: Platz ${d.gesamt_platz}/${d.gesamt_anzahl}<br>
+                        Aktuelle Gruppe: ${d.aktuelle_gruppe || '–'}`);
+                })
+                .catch(() => {
+                    showAbfrageResult('error', `<div class="headline">⚠️ Verbindungsfehler</div>Server nicht erreichbar.`);
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.textContent = 'Prüfen';
+                    input.select();
+                });
+        }
+
+        // Enter im Abfrage-Feld
+        document.getElementById('abfrageNummer').addEventListener('keydown', function(event) {
+            if (event.code === 'Enter' || event.key === 'Enter') {
+                event.preventDefault();
+                event.stopPropagation();
+                abfragen();
+            }
+        });
+        // ═══ ENDE KUNDENNUMMER-ABFRAGE ═══
+
+        // Tastaturkürzel - ERWEITERT mit Undo
+        document.addEventListener('keydown', function(event) {
+            // Kürzel deaktivieren, wenn im Abfrage-Feld getippt wird
+            if (document.activeElement === document.getElementById('abfrageNummer')) {
+                return;
+            }
+            // Leertaste oder Enter für Hauptaktion
+            if ((event.code === 'Space' || event.code === 'Enter') && !isLoading) {
+                event.preventDefault();
+                handleButtonClick();
+            }
+            // ESC für Logout-Dialog
+            if (event.code === 'Escape') {
+                event.preventDefault();
+                logout();
+            }
+            // NEU: U-Taste für Undo
+            if ((event.code === 'KeyU') && !isLoading) {
+                event.preventDefault();
+                performUndo();
+            }
+        });
+
+        // Touch-Optimierung
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
+        // Initial Status prüfen
+        async function checkInitialStatus() {
+            try {
+                const response = await fetch(URLS.status + '?t=' + Date.now(), { cache: 'no-store' });
+                const data = await response.json();
+
+                if (data.has_active_session) {
+                    // System bereits aktiv
+                    isSystemStarted = true;
+                    await loadStatus();
+                    console.log('ℹ️ System bereits aktiv gefunden');
+                } else {
+                    // System nicht aktiv
+                    isSystemStarted = false;
+                    updateButtonDisplay(null);
+                    updateStatusDisplay(null);
+                    updateUndoButton(data.can_undo || false);
+                    console.log('🎯 Bereit zum Starten des Systems');
+                }
+            } catch (error) {
+                console.error('⚠️ Fehler beim Initial-Status-Check:', error);
+                isSystemStarted = false;
+                updateButtonDisplay(null);
+                updateStatusDisplay(null);
+                updateUndoButton(false);
+            }
+        }
+
+        // Fenster-Focus: Status aktualisieren
+        window.addEventListener('focus', function() {
+            if (isSystemStarted) {
+                console.log('👁️ Fenster-Focus - Status aktualisieren');
+                setTimeout(loadStatus, 500);
+            }
+        });
+
+        // Initialisierung
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Mobile Nächster-Kunde App V5.0 geladen - KOMPAKT + ABFRAGE - MIT UNDO-FUNKTION - ZUFALLSGENERATOR - MIT PASSWORT-SCHUTZ');
+
+            // Initial Status prüfen
+            checkInitialStatus();
+
+            // Status alle 10 Sekunden aktualisieren. Läuft noch kein Tag, wird
+            // weiter geprüft, ob inzwischen ein anderes Gerät den Tag gestartet hat
+            setInterval(() => {
+                if (document.hidden || isLoading) return;
+                if (isSystemStarted) {
+                    loadStatus();
+                } else {
+                    checkInitialStatus();
+                }
+            }, 10000);
+
+            // Info über Tastaturkürzel
+            console.log('⌨️ Tastaturkürzel:');
+            console.log('   Leertaste/Enter: System starten / Nächster Kunde');
+            console.log('   U: Letzte Aktion rückgängig machen');
+            console.log('   ESC: Abmelden');
+        });
+
+        console.log('🌟 Mobile App V5.0 KOMPAKT mit ABFRAGE, UNDO-FUNKTION, ZUFALLSGENERATOR und PASSWORT-SCHUTZ geladen');
+    </script>
+</body>
+</html>

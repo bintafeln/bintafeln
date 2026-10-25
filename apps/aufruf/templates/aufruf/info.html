@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block titel %}{% if info %}Info {{ info.titel }}{% else %}Neue Info{% endif %}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'aufruf:einstellungen' %}">← Aufruf, Monitor und Kiosk</a></p>
+  <h1>{% if info %}Info „{{ info.titel }}“{% else %}Neue Info für den Monitor{% endif %}</h1>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf">Speichern</button>
+      <a href="{% url 'aufruf:einstellungen' %}" class="knopf knopf-abbrechen">Abbrechen</a>
+    </div>
+  </form>
+  {% if info %}
+  <form method="post" action="{% url 'aufruf:info_loeschen' info.pk %}" onsubmit="return confirm('Info löschen?');">
+    {% csrf_token %}<button type="submit" class="knopf knopf-abbrechen">Info löschen</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  {% include "aufruf/_kopf.html" %}
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steuerung - Aufruf - {{ selected_day }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background-color: #f5f5f5;
+            min-height: 100vh;
+            font-size: 16px;
+        }
+        
+        .main-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .content-area {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 15px;
+        }
+        
+        .header h1 {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            margin: 0;
+            color: #333;
+        }
+        
+        /* NEU: Unaufffälliger Zurück-Button */
+        .undo-button {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: transparent;
+            color: #999;
+            border: 1px solid #e0e0e0;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            opacity: 0.6;
+            font-family: inherit;
+        }
+        
+        .undo-button:hover {
+            background: #f0f0f0;
+            color: #666;
+            opacity: 1;
+        }
+        
+        .undo-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.3;
+            background: transparent;
+        }
+        
+        .undo-button:active {
+            transform: scale(0.95);
+        }
+        
+        .navigation-links {
+            background: #34495e;
+            padding: 15px 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: background 0.3s ease;
+            font-weight: 500;
+            display: inline-block;
+        }
+        
+        .nav-link:hover {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .current-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+            text-align: center;
+            position: relative;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .current-info.priority {
+            background: linear-gradient(135deg, #e67e22 0%, #f39c12 100%);
+            box-shadow: 0 0 20px rgba(243, 156, 18, 0.3);
+        }
+        
+        .day-display {
+            font-size: clamp(1.1rem, 3vw, 1.4rem);
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .time-slot {
+            font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+            margin-bottom: 12px;
+            opacity: 0.9;
+        }
+        
+        .numbers-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .number-item {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 15px 10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .number-item.priority {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .number-value {
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            line-height: 1.2;
+        }
+        
+        .buttons {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: clamp(1rem, 2.5vw, 1.2rem);
+            margin: 8px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            min-height: 48px; /* Touch-freundliche Mindesthöhe */
+            min-width: 120px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn:hover, .btn:focus {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(40, 167, 69, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .preview-section {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .preview-section h4 {
+            font-size: clamp(1rem, 2.5vw, 1.2rem);
+            margin-bottom: 10px;
+        }
+        
+        .preview-numbers {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .preview-number {
+            background: #e9ecef;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: clamp(1.2rem, 3vw, 1.6rem);
+            font-weight: bold;
+            color: #495057;
+            border: 2px solid #dee2e6;
+            transition: all 0.3s ease;
+            min-height: 44px; /* Touch-freundlich */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .preview-number:hover {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+        }
+        
+        .preview-number.empty {
+            background: #f8f9fa;
+            color: #adb5bd;
+            border-color: #e9ecef;
+            font-style: italic;
+        }
+        
+        .progress-section {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .progress-item {
+            margin: 12px 0;
+        }
+        
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: clamp(0.9rem, 2vw, 1rem);
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 24px;
+            background-color: #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 12px;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+        
+        .progress-slot {
+            background: linear-gradient(90deg, #17a2b8, #138496);
+        }
+        
+        .progress-total {
+            background: linear-gradient(90deg, #28a745, #20c997);
+        }
+        
+        .finished {
+            text-align: center;
+            background: #28a745;
+            color: white;
+            padding: 30px 20px;
+            border-radius: 10px;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .finished h2 {
+            font-size: clamp(1.5rem, 4vw, 2rem);
+            margin-bottom: 10px;
+        }
+        
+        .finished p {
+            font-size: clamp(1rem, 2.5vw, 1.2rem);
+            margin-bottom: 15px;
+        }
+        
+        /* Mobile-First Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+            
+            .content-area {
+                padding: 15px;
+            }
+            
+            .current-info {
+                min-height: 180px;
+                padding: 15px;
+            }
+            
+            .finished {
+                min-height: 180px;
+                padding: 20px 15px;
+            }
+            
+            .numbers-display {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+                gap: 10px;
+            }
+            
+            .number-item {
+                min-height: 70px;
+                padding: 12px 8px;
+            }
+            
+            .preview-numbers {
+                gap: 8px;
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            }
+            
+            .preview-number {
+                padding: 10px 12px;
+                min-height: 40px;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+                margin: 5px auto;
+                display: block;
+            }
+            
+            .progress-label {
+                flex-direction: column;
+                gap: 2px;
+            }
+            
+            .navigation-links {
+                padding: 12px 15px;
+            }
+            
+            .nav-link {
+                margin: 3px;
+                padding: 8px 12px;
+                font-size: 0.9em;
+                min-width: auto;
+            }
+            
+            .undo-button {
+                top: 5px;
+                right: 10px;
+                font-size: 11px;
+                padding: 4px 8px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .current-info {
+                min-height: 160px;
+                padding: 12px;
+            }
+            
+            .finished {
+                min-height: 160px;
+                padding: 15px 10px;
+            }
+            
+            .numbers-display {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .number-item {
+                min-height: 60px;
+            }
+            
+            .number-value {
+                font-size: clamp(1.5rem, 4vw, 2rem);
+            }
+            
+            .preview-section, .progress-section {
+                padding: 12px;
+            }
+            
+            .content-area {
+                padding: 12px;
+            }
+            
+            .preview-numbers {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .navigation-links {
+                padding: 10px 12px;
+            }
+            
+            .nav-link {
+                margin: 2px;
+                padding: 6px 10px;
+                font-size: 0.85em;
+                min-width: auto;
+            }
+        }
+        
+        /* Landscape Phone */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .current-info {
+                min-height: 140px;
+                padding: 10px;
+            }
+            
+            .finished {
+                min-height: 140px;
+                padding: 15px;
+            }
+            
+            .numbers-display {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .number-value {
+                font-size: clamp(1.4rem, 4vw, 2rem);
+            }
+        }
+        
+        /* Touch-optimierte Hover-Effekte nur für Desktop */
+        @media (hover: hover) and (pointer: fine) {
+            .btn:hover {
+                transform: translateY(-2px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Hauptinhalt -->
+        <div class="content-area">
+            <!-- Unauffälliger Zurück-Button -->
+            {% if can_undo %}
+            <form method="POST" action="{{ urls.zurueck_formular }}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="undo-button" title="Letzte Aktion rückgängig machen">
+                    ↩ Zurück
+                </button>
+            </form>
+            {% else %}
+            <button class="undo-button" disabled title="Keine Aktion zum Rückgängigmachen verfügbar">
+                ↩ Zurück
+            </button>
+            {% endif %}
+            
+            <div class="header">
+                <h1>⚙️ Steuerung - Aufruf {{ stelle.name }}</h1>
+            </div>
+            
+            <div class="navigation-links">
+                <a href="{{ urls.anzeige }}" target="_blank" class="nav-link">📺 Zur Kundennummern-Anzeige</a>
+                <a href="{{ urls.monitor }}" target="_blank" class="nav-link">📺 Monitor öffnen</a>
+                <a href="{{ urls.mobil }}" class="nav-link">📱 Handy-Steuerung</a>
+                <a href="{{ urls.liste }}" class="nav-link">📋 Reihenfolge (CSV)</a>
+                <a href="{{ urls.zurueck_bintafeln }}" class="nav-link">🏠 Zurück zu bintafeln</a>
+            </div>
+
+            {% if current_numbers %}
+                <div class="current-info{% if has_any_priority %} priority{% endif %}">
+                    <div class="day-display">{{ selected_day }}</div>
+                    <div class="time-slot">📅 Kundengruppe: {{ current_slot }}</div>
+                    
+                    <div class="numbers-display">
+                        {% for p in plaetze %}
+                            {% if p.nummer %}
+                                <div class="number-item{% if p.vorrang %} priority{% endif %}">
+                                    <div class="number-value">
+                                        {% if p.vorrang %}<span style="font-size: 0.7em;">♿</span> {% endif %}{{ p.nummer }}
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="number-item">
+                                    <div class="number-value" style="color: rgba(255,255,255,0.5); font-style: italic;">—</div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="buttons">
+                    <form method="POST" action="{{ urls.weiter_formular }}" style="display: inline;" id="weiterFormular">
+                        {% csrf_token %}
+                        <button type="submit" class="btn">
+                            ✅ Weiter zu den nächsten Kundennummern
+                        </button>
+                    </form>
+                </div>
+
+                <div class="preview-section">
+                    <h4>👀 Nächste Kundennummern in dieser Kundengruppe:</h4>
+                    <div class="preview-numbers">
+                        {% for n in vorschau_nummern %}
+                            {% if n %}
+                                <span class="preview-number">{{ n }}</span>
+                            {% else %}
+                                <span class="preview-number empty">—</span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="progress-section">
+                    <div class="progress-item">
+                        <div class="progress-label">
+                            <span>📊 Aktuelle Kundengruppe</span>
+                            <span>{{ slot_completed }} / {{ slot_total }}</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill progress-slot" style="width: {{ slot_progress }}%">
+                                {{ slot_progress_text }}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-item">
+                        <div class="progress-label">
+                            <span>🎯 Gesamtfortschritt {{ selected_day }}</span>
+                            <span>{{ total_completed }} / {{ total_numbers }}</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill progress-total" style="width: {{ total_progress }}%">
+                                {{ total_progress_text }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ urls.neustart_formular }}" style="text-align: center; margin-top: 20px;"
+                      onsubmit="return confirm('Alle Kundennummern neu mischen und von vorn beginnen? Der bisherige Fortschritt geht verloren.');">
+                    {% csrf_token %}
+                    <button type="submit" class="nav-link" style="border: none; cursor: pointer; font: inherit;">🔄 Tag neu mischen</button>
+                </form>
+
+            {% else %}
+                <div class="finished">
+                    <h2>⏰ Kundengruppe abgeschlossen!</h2>
+                    <p>Alle Nummern für {{ current_slot|default:"diese Kundengruppe" }} wurden bearbeitet.</p>
+                    <form method="POST" action="{{ urls.weiter_formular }}" id="weiterFormular">
+                        {% csrf_token %}
+                        <button type="submit" class="btn">▶️ Zur nächsten Kundengruppe</button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% include "aufruf/_urls.html" %}
+    <script>
+        // Tastaturkürzel
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                const weiterBtn = document.querySelector('#weiterFormular button');
+                if (weiterBtn) {
+                    weiterBtn.click();
+                }
+            }
+            // NEU: U-Taste für Undo
+            if (event.key === 'u' || event.key === 'U') {
+                event.preventDefault();
+                const undoBtn = document.querySelector('form[action="' + URLS.zurueck_formular + '"] button');
+                if (undoBtn && !undoBtn.disabled) {
+                    undoBtn.click();
+                }
+            }
+        });
+
+        // Andere Geräte (Handy, zweite Steuerung) können weiterschalten: Stand regelmäßig abgleichen
+        let letzterStand = null;
+        function standPruefen() {
+            fetch(URLS.stand + '?t=' + Date.now(), { cache: 'no-store' })
+                .then(r => r.json())
+                .then(d => {
+                    const jetzt = JSON.stringify([d.current_numbers, d.finished, d.error, d.can_undo]);
+                    if (letzterStand !== null && jetzt !== letzterStand) location.reload();
+                    letzterStand = jetzt;
+                })
+                .catch(() => {});
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            standPruefen();
+            setInterval(standPruefen, 10000);
+            window.addEventListener('focus', function() { setTimeout(standPruefen, 500); });
+            console.log('⌨️ Tastaturkürzel: Enter/Leertaste = Weiter, U = Zurück');
+        });
+        
+        // Touch-Optimierung: Doppel-Tap Zoom verhindern
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+</body>
+</html>

@@ -624,6 +624,38 @@ Weihnachtsgutscheine oder Schulranzen.
 - Teilnahmen hängen an der Kundennummer, überstehen den Import, stehen in der Auskunft nach
   Art. 15 und werden nach derselben Frist gelöscht wie Abholungen (ADR 0032).
 
+## Zusätzliche Module
+
+Programme, die nicht jede Tafel braucht, sind **zuschaltbare Module** (ADR 0049). Ein Admin
+schaltet sie unter „Einstellungen → Tafel → Zusätzliche Module“ ein. Ausgeschaltete Module
+erscheinen nirgends (kein Menü, keine Seiten, keine Rechte, keine Hilfe); ihre Daten bleiben
+erhalten. Welche bisherigen Zusatzprogramme als Module kommen, steht in `docs/altprogramme.md`.
+
+### Aufruf (Monitor, Handy, Kiosk)
+
+Ruft die Kundinnen und Kunden im Wartebereich der Reihe nach auf (ADR 0050). Die Kundennummern
+kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
+
+- **Reihenfolge:** alle aktiven Haushalte der Kundengruppen, die heute an der Ausgabestelle dran
+  sind, Gruppe für Gruppe nach Uhrzeit, in der Gruppe zufällig gemischt. Haushalte mit Vorrang
+  (ein Ja/Nein-Zusatzfeld, z. B. „Schwerbehindert“) zuerst.
+- **Immer aktuell:** Neue Haushalte werden während des Tages fair einsortiert, entfernte fallen
+  heraus. Wer heute schon am Einlass war (Abholung gebucht, z. B. mit Ausnahme vorgezogen),
+  verschwindet aus der Warteschlange.
+- **Steuern** (Recht „Kunden aufrufen“, Vorgabe Büro und Ausgabe): Menü „Aufruf → Aufruf
+  steuern“ am PC oder die Handy-Steuerung. Weiter, Zurück, Abfrage einer Nummer und „zu spät
+  gekommen“ (so viele wartende Plätze nach hinten wie eingestellt). Reihenfolge des Tages als CSV.
+- **Geräte im Wartebereich:** Monitor (Nummern, Infos im Wechsel, Ton, Layout per Zahnrad),
+  Nummern-Anzeige, Kiosk (Karte scannen, Antwort auf Deutsch und in der Sprache zur
+  Staatsangehörigkeit) und Abfrage. Sie brauchen keine Anmeldung, sondern den geheimen Link aus
+  „Einstellungen → Aufruf, Monitor und Kiosk“; „Neue Links erzeugen“ sperrt alte Links.
+- **Einstellungen je Ausgabestelle:** Nummern je Aufruf (Vorgabe 3), Vorrang-Feld und Symbol,
+  schon Eingelassene herausnehmen, Plätze für zu spät Gekommene, Infos ein/aus, Probelauf als
+  anderer Wochentag. **Infos:** Text, Bild, PDF oder Webseite mit Anzeigedauer, für alle oder
+  bestimmte Ausgabestellen.
+- Die Geräte zeigen nur Kundennummern. Die Reihenfolge eines Tages wird nach vier Wochen
+  gelöscht.
+
 ## Adressbuch
 
 „Adressen → Adressbuch“ (Rechte „Adressbuch ansehen …“, „Adressen anlegen und bearbeiten“,
@@ -1090,6 +1122,7 @@ bintafeln/          Django-Projekt (Einstellungen, URLs)
 apps/core/          Tafel-Einstellungen, Einrichtung, Startseite, Änderungsprotokoll
 apps/konten/        Benutzer, Rollen, Anmeldung, Zwei-Faktor
 apps/kunden/        Kundenstamm: Haushalte, Personen, Zusatzfelder, Einstellungen
+apps/aufruf/        Modul Aufruf (Monitor, Handy, Kiosk); Module beschreibt apps/core/module.py
 templates/          Django-Templates
 static/             CSS und HTMX
 docker/             Caddyfile und Start-Skript des App-Containers

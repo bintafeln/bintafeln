@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  {% include "aufruf/_kopf.html" %}
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heutiger Tag - Aufruf</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .header {
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 2.5em;
+        }
+        .current-day-info {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+            font-size: 1.2em;
+        }
+        .today-display {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .date-display {
+            font-size: 1.1em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        .day-card {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 40px 30px;
+            border-radius: 15px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 12px rgba(40, 167, 69, 0.2);
+            display: inline-block;
+            margin: 20px;
+            min-width: 250px;
+        }
+        .day-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(40, 167, 69, 0.3);
+            color: white;
+            text-decoration: none;
+        }
+        .day-name {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .day-subtitle {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+            background: #fff3cd;
+            border: 2px solid #ffeaa7;
+            border-radius: 12px;
+            margin: 30px 0;
+        }
+        .empty-state h2 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+        .empty-state p {
+            color: #856404;
+        }
+        .info-box {
+            background: #e3f2fd;
+            border: 2px solid #90caf9;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+            color: #1565c0;
+        }
+        .info-box h3 {
+            margin-bottom: 15px;
+            color: #0d47a1;
+        }
+        .features {
+            text-align: left;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .feature {
+            display: flex;
+            align-items: center;
+            margin: 12px 0;
+            font-size: 1.1em;
+        }
+        .feature-icon {
+            font-size: 1.5em;
+            margin-right: 15px;
+            width: 40px;
+            text-align: center;
+        }
+        .restart-note {
+            background: #fff3e0;
+            border: 2px solid #ffb74d;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 25px 0;
+            color: #e65100;
+        }
+        .time-display {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-top: 20px;
+            color: #333;
+        }
+        @media (max-width: 600px) {
+            .today-display {
+                font-size: 2em;
+            }
+            .day-card {
+                min-width: 200px;
+                padding: 30px 20px;
+            }
+            .features {
+                text-align: center;
+            }
+            .feature {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Aufruf · {{ stelle.name }}</h1>
+        </div>
+
+        <div class="current-day-info">
+            <div class="date-display">{{ heute|date:"d.m.Y" }}</div>
+            <div class="today-display">📅 {{ current_day }}</div>
+            <p>{{ message|default:'Starten Sie die heutige Ausgabe:' }}</p>
+        </div>
+
+        {% if available_days %}
+            {% for day in available_days %}
+                <form method="post" action="{{ urls.starten_formular }}">
+                    {% csrf_token %}
+                    <button type="submit" class="day-card" style="width: 100%; border: none; font: inherit; cursor: pointer;">
+                        <div class="day-name">{{ day }}</div>
+                        <div class="day-subtitle">🚀 Ausgabe starten · {{ gruppen|length }} Kundengruppe{{ gruppen|length|pluralize:"n" }}</div>
+                    </button>
+                </form>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <h2>📁 Kein Programm für heute gefunden</h2>
+                <p>Für <strong>{{ current_day }}</strong> ist an der Ausgabestelle {{ stelle.name }} keine aktive Kundengruppe eingetragen.</p>
+                <p style="margin-top: 15px; font-size: 0.9em;">
+                    Wochentage und Ausgabestelle stehen bei den Kundengruppen (Einstellungen → Kundengruppen).
+                </p>
+            </div>
+        {% endif %}
+
+        <div class="info-box">
+            <h3>🛡️ Tagesbeschränkung aktiv</h3>
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">🗓️</div>
+                    <div>Nur der heutige Tag ({{ current_day }}) kann ausgewählt werden</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🕛</div>
+                    <div>Automatischer Reset um Mitternacht</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">💾</div>
+                    <div>Fortschritt wird für heute gespeichert</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🔄</div>
+                    <div>Abgeschlossene Tage können erneut gestartet werden</div>
+                </div>
+            </div>
+        </div>
+
+        {% if available_days %}
+        <div class="restart-note">
+            <strong>💡 Hinweis:</strong> Die Reihenfolge kommt direkt aus dem Kundenstamm. Neue Haushalte werden
+            laufend fair einsortiert; wer heute schon am Einlass war, fällt heraus.
+        </div>
+        {% endif %}
+
+        <div class="time-display" id="current-time"></div>
+    </div>
+
+    {% include "aufruf/_urls.html" %}
+    <script>
+        // Aktuelle Zeit anzeigen
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('de-DE', {
+                weekday: 'long',
+                year: 'numeric',
+                month: '2-digit', 
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('current-time').textContent = timeString;
+        }
+        
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        // Alle 30 Sekunden prüfen ob sich der Tag geändert hat
+        let lastDay = '{{ current_day|escapejs }}';
+        
+        setInterval(() => {
+            const now = new Date();
+            const currentDay = now.toLocaleDateString('de-DE', { weekday: 'long' });
+            const germanDays = {
+                'Montag': 'Montag',
+                'Dienstag': 'Dienstag', 
+                'Mittwoch': 'Mittwoch',
+                'Donnerstag': 'Donnerstag',
+                'Freitag': 'Freitag',
+                'Samstag': 'Samstag',
+                'Sonntag': 'Sonntag'
+            };
+            
+            // Bei Tagwechsel Seite neu laden
+            if (now.getHours() === 0 && now.getMinutes() === 0 && now.getSeconds() < 30) {
+                console.log('🕛 Mitternacht erreicht - Seite wird neu geladen');
+                location.reload();
+            }
+        }, 30000);
+        
+        // Touch-Optimierung
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+</body>
+</html>

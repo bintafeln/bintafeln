@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  {% include "aufruf/_kopf.html" %}
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ selected_day }} abgeschlossen - Aufruf {{ stelle.name }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .success-section {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            margin: 30px 0;
+        }
+        .success-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+        .success-title {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .success-subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        .date-info {
+            font-size: 1em;
+            opacity: 0.8;
+            margin-top: 10px;
+        }
+        .stats-summary {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 30px 0;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .stat-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e0e0e0;
+        }
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #28a745;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            color: #666;
+            font-weight: 500;
+        }
+        .actions {
+            margin: 40px 0;
+        }
+        .btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        .btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(40, 167, 69, 0.3);
+            color: white;
+        }
+        .btn-restart {
+            background: #ffc107;
+            color: #212529;
+        }
+        .btn-restart:hover {
+            background: #e0a800;
+            color: #212529;
+            box-shadow: 0 6px 12px rgba(255, 193, 7, 0.3);
+        }
+        .btn-outline {
+            background: transparent;
+            color: #6c757d;
+            border: 2px solid #6c757d;
+        }
+        .btn-outline:hover {
+            background: #6c757d;
+            color: white;
+        }
+        .today-section {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+        .today-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        .today-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .restart-info {
+            background: #e3f2fd;
+            border: 2px solid #90caf9;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 25px 0;
+            color: #1565c0;
+        }
+        .restart-info h4 {
+            color: #0d47a1;
+            margin-bottom: 10px;
+        }
+        .time-display {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-top: 30px;
+            color: #666;
+        }
+        @media (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .actions {
+                flex-direction: column;
+                align-items: center;
+            }
+            .btn {
+                width: 100%;
+                max-width: 300px;
+                margin: 8px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-section">
+            <div class="success-icon">🎉</div>
+            <div class="success-title">Perfekt!</div>
+            <div class="success-subtitle">
+                Alle Zeitfenster für <strong>{{ selected_day }}</strong> wurden erfolgreich abgearbeitet!
+            </div>
+            <div class="date-info">
+                📅 Beendet am {{ current_day|default:selected_day }}
+            </div>
+        </div>
+
+        <div class="stats-summary">
+            <h3 style="text-align: center; margin-bottom: 20px; color: #333;">
+                📊 Zusammenfassung {{ selected_day }}
+            </h3>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-number">{{ total_completed }}</div>
+                    <div class="stat-label">Kundennummern bearbeitet</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number">✅</div>
+                    <div class="stat-label">Status: Abgeschlossen</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="today-section">
+            <div class="today-card">
+                <div class="today-title">🗓️ Heutiger Tag: {{ current_day|default:selected_day }}</div>
+                <p>Sie können den heutigen Tag jederzeit erneut starten, falls weitere Ausgaben erforderlich sind.</p>
+            </div>
+            
+            <div class="actions">
+                <form method="POST" action="{{ urls.neustart_formular }}" style="display: inline;"
+                      onsubmit="return confirm('Alle Kundennummern neu mischen und von vorn beginnen?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-restart">
+                        🔄 {{ selected_day }} erneut starten
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="restart-info">
+            <h4>💡 Hinweise zum Neustart:</h4>
+            <ul style="text-align: left; margin: 10px 0;">
+                <li>Alle Kundennummern werden neu gemischt (Prioritäten bleiben)</li>
+                <li>Um Mitternacht erfolgt automatisch ein Reset für den neuen Tag</li>
+                <li>Nur der heutige Tag ({{ current_day|default:selected_day }}) kann bearbeitet werden</li>
+            </ul>
+        </div>
+
+        <div style="margin-top: 40px; padding-top: 30px; border-top: 2px solid #e0e0e0; text-align: center;">
+            <p style="color: #666; margin: 0;">
+                🎯 Ausgezeichnete Arbeit! Alle Ausgaben für {{ selected_day }} sind erledigt.
+            </p>
+            <div class="time-display" id="current-time"></div>
+        </div>
+    </div>
+
+    {% include "aufruf/_urls.html" %}
+    <script>
+        // Aktuelle Zeit anzeigen
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('de-DE', {
+                weekday: 'long',
+                year: 'numeric',
+                month: '2-digit', 
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('current-time').textContent = `Aktuell: ${timeString}`;
+        }
+        
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        // Bei Mitternacht automatisch zur Startseite
+        setInterval(() => {
+            const now = new Date();
+            if (now.getHours() === 0 && now.getMinutes() === 0 && now.getSeconds() < 30) {
+                console.log('🕛 Neuer Tag begonnen - Weiterleitung zur Startseite');
+                location.reload();
+            }
+        }, 30000);
+        
+        // Touch-Optimierung
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+</body>
+</html>

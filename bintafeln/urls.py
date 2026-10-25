@@ -4,6 +4,8 @@ from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import RedirectView
 
+from apps.core import module
+
 admin.site.site_header = "bintafeln Verwaltung"
 admin.site.site_title = "bintafeln"
 
@@ -24,6 +26,12 @@ urlpatterns = [
     path("serienbriefe/", include("apps.serienbriefe.urls")),
     path("personal/", include("apps.personal.urls")),
     path("antraege/", include("apps.antraege.urls")),
+    # Zuschaltbare Module (ADR 0049); ausgeschaltete sperrt die ModulMiddleware
+    *[
+        path(m.pfade[0].lstrip("/"), include(f"{app}.urls"))
+        for app, m in zip(settings.BINTAFELN_MODULE, module.alle(), strict=True)
+        if m.pfade
+    ],
     # Öffentlich, ohne Anmeldung (ADR 0024)
     path("antrag/", include("apps.antraege.urls_oeffentlich")),
     path("", include("apps.core.urls")),

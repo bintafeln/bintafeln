@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  {% include "aufruf/_kopf.html" %}
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kundenmonitor - {{ selected_day }}</title>
+    <style>
+        :root {
+            /* Server-seitige Layout-Einstellungen laden */
+            --next-customers-width: {{ layout.next_customers_width }}%;
+            --current-numbers-width: {{ layout.current_numbers_width }}%;
+            --info-display-width: {{ layout.info_display_width }}%;
+            
+            /* Höhen-Einstellungen */
+            --header-height: {{ layout.header_height }}px;
+            --content-area-height: calc(100vh - var(--header-height));
+            
+            /* Schriftgrößen-Einstellungen */
+            --next-customers-font-size: {{ layout.next_customers_font }}rem;
+            --current-numbers-font-size: {{ layout.current_numbers_font }}rem;
+            --info-display-font-size: {{ layout.info_display_font }}rem;
+            --header-font-size: {{ layout.header_font }}rem;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial Black', Arial, sans-serif;
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+        }
+        
+        /* Vollbild-Hinweis */
+        .fullscreen-hint {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 10000;
+            font-size: 1.2em;
+            max-width: 500px;
+            display: none;
+        }
+        
+        .fullscreen-hint.show {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .fullscreen-hint button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            margin: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        
+        .fullscreen-hint button:hover {
+            background: #2980b9;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            padding: 15px 20px;
+            text-align: center;
+            flex-shrink: 0;
+            height: var(--header-height);
+            min-height: 80px;
+            max-height: var(--header-height);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            width: 100%;
+            overflow: hidden;
+        }
+        
+        .header h1 {
+            font-size: var(--header-font-size);
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            font-weight: bold;
+        }
+        
+        /* GRID LAYOUT - OHNE GAPS/PADDING/BORDERS */
+        .main-content {
+            height: calc(100vh - var(--header-height));
+            display: grid;
+            grid-template-columns: 
+                var(--next-customers-width)
+                var(--current-numbers-width)
+                var(--info-display-width);
+            min-height: 0;
+            flex: 1;
+            overflow: hidden;
+            width: 100%;
+            max-width: 100vw;
+            max-height: calc(100vh - var(--header-height));
+        }
+        
+        .next-customers {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
+            max-width: 100%;
+            height: 100%;
+        }
+        
+        .next-customers h2 {
+            font-size: var(--next-customers-font-size);
+            margin-bottom: clamp(10px, 2vh, 20px);
+            text-align: center;
+            color: #ecf0f1;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            flex-shrink: 0;
+        }
+        
+        .customer-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+            max-height: calc(100% - 60px);
+        }
+        
+        .customer-item {
+            background: rgba(255, 255, 255, 0.15);
+            padding: clamp(6px, 1.5vh, 12px) clamp(8px, 2vw, 16px);
+            border-radius: clamp(6px, 1.5vw, 12px);
+            font-size: calc(var(--next-customers-font-size) * 0.9);
+            font-weight: bold;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            flex-shrink: 0;
+        }
+        
+        .customer-item.priority {
+            background: rgba(243, 156, 18, 0.3);
+            border-color: rgba(243, 156, 18, 0.5);
+            color: #f39c12;
+        }
+        
+        .current-customer {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            min-height: 0;
+            position: relative;
+            overflow: hidden;
+            max-width: 100%;
+            height: 100%;
+        }
+        
+        .current-numbers-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: repeat(3, 1fr);
+            gap: 8px;
+            flex: 1;
+            min-height: 0;
+            max-height: calc(100% - 100px);
+        }
+
+        .current-label {
+            font-size: calc(var(--current-numbers-font-size) * 0.4);
+            margin-bottom: clamp(8px, 1.5vh, 15px);
+            color: #ecf0f1;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        
+        .current-number-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-height: 0;
+        }
+        
+        .number-value {
+            font-size: var(--current-numbers-font-size);
+            font-weight: 900;
+            line-height: 0.9;
+            text-shadow: 6px 6px 12px rgba(0,0,0,0.8);
+            font-family: 'Courier New', monospace;
+            color: #FF6B35;
+            text-shadow: 6px 6px 12px rgba(0,0,0,0.8), 0 0 30px rgba(255, 107, 53, 0.4);
+        }
+        
+        .number-value.priority {
+            color: #FF4500;
+            text-shadow: 6px 6px 12px rgba(0,0,0,0.8), 0 0 30px rgba(255, 69, 0, 0.5);
+        }
+        
+        .waiting-message {
+            text-align: center;
+            font-size: calc(var(--current-numbers-font-size) * 0.7);
+            color: #95a5a6;
+            opacity: 0.7;
+            line-height: 1.2;
+        }
+        
+        /* PDF-SPEZIFISCHE STYLES - OPTIMIERT */
+        .info-pdf {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            max-width: 100%;
+            background: white;
+        }
+        
+        .pdf-iframe {
+            width: 100% !important;
+            height: 100% !important;
+            border: none;
+            background: white;
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        /* WEBSITE-SPEZIFISCHE STYLES - VOLLBILD */
+        .info-website {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            max-width: 100%;
+        }
+        
+        .website-iframe {
+            width: 100% !important;
+            height: 100% !important;
+            border: none;
+            background: white;
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        /* VERSTECKT - Herkunftsanzeigen */
+        .website-attribution {
+            display: none;
+        }
+        
+        .info-weather {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            max-width: 100%;
+        }
+        
+        .weather-iframe {
+            width: 100% !important;
+            height: 100% !important;
+            border: none;
+            background: white;
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        /* VERSTECKT - Herkunftsanzeigen */
+        .weather-attribution {
+            display: none;
+        }
+        
+        /* INFO-DISPLAY - VOLLBILD OHNE TITEL/PROGRESS */
+        .info-display {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            min-height: 0;
+            max-width: 100%;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .info-item {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            min-height: 0;
+            overflow: hidden;
+            max-width: 100%;
+        }
+        
+        .info-item.active {
+            display: flex;
+            opacity: 1;
+        }
+        
+        .info-item.fade-out {
+            opacity: 0;
+        }
+        
+        /* VERSTECKT - Titel */
+        .info-title {
+            display: none;
+        }
+        
+        .info-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+            overflow: hidden;
+            max-width: 100%;
+        }
+        
+        /* VERBESSERTE TEXTFORMATIERUNG - NEU */
+        .info-text {
+            font-size: var(--info-display-font-size);
+            line-height: 1.5; /* Bessere Lesbarkeit */
+            color: #ecf0f1;
+            text-align: left; /* Links statt zentriert für bessere Formatierung */
+            max-width: 100%;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            overflow: auto; /* Scrollbar wenn nötig */
+            white-space: pre-wrap; /* Behält Zeilenumbrüche und Leerzeichen bei */
+            max-height: 90%; /* Verhindert Überlauf */
+            padding: 10px; /* Etwas Abstand zu den Rändern */
+            background: rgba(255, 255, 255, 0.05); /* Leichter Hintergrund für bessere Lesbarkeit */
+            border-radius: 8px;
+            width: 100%;
+            box-sizing: border-box;
+            /* Scrollbar-Styling für besseres Aussehen */
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+        }
+        
+        /* Webkit-Scrollbar-Styling */
+        .info-text::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .info-text::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        
+        .info-text::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+        }
+        
+        .info-text::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        /* Zentrierte Texte bei kurzen Inhalten */
+        .info-text.centered {
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .info-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        /* VERSTECKT - Progress Bar */
+        .info-progress {
+            display: none;
+        }
+        
+        .info-progress-bar {
+            display: none;
+        }
+        
+        /* VERSTECKT - Counter */
+        .info-counter {
+            display: none;
+        }
+        
+        /* Layout-Einstellungen Button */
+        .layout-settings-btn {
+            position: fixed;
+            top: 8px;
+            left: 8px;
+            background: rgba(52, 73, 94, 0.8);
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .layout-settings-btn:hover {
+            background: rgba(52, 73, 94, 1);
+            transform: scale(1.05);
+        }
+        
+        /* Layout-Einstellungen Panel */
+        .layout-settings-panel {
+            position: fixed;
+            top: 40px;
+            left: 8px;
+            background: rgba(52, 73, 94, 0.95);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 999;
+            display: none;
+            min-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .layout-settings-panel.show {
+            display: block;
+        }
+        
+        .layout-setting-group {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .layout-setting-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .layout-setting-group h4 {
+            margin: 0 0 15px 0;
+            color: #ecf0f1;
+            font-size: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+            padding-bottom: 5px;
+        }
+        
+        .layout-setting-item {
+            margin-bottom: 12px;
+        }
+        
+        .layout-setting-item label {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .layout-slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.3);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .layout-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+        }
+        
+        .layout-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .layout-value {
+            font-size: 0.8rem;
+            color: #bdc3c7;
+            float: right;
+        }
+        
+        .layout-buttons {
+            margin-top: 15px;
+            text-align: center;
+        }
+        
+        .layout-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            margin: 0 4px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .layout-btn:hover {
+            background: #2980b9;
+        }
+        
+        .layout-btn.reset {
+            background: #e74c3c;
+        }
+        
+        .layout-btn.reset:hover {
+            background: #c0392b;
+        }
+        
+        /* Audio-Test Button */
+        .audio-test-btn {
+            position: fixed;
+            top: 8px;
+            right: 8px;
+            background: rgba(46, 204, 113, 0.8);
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .audio-test-btn:hover {
+            background: rgba(46, 204, 113, 1);
+            transform: scale(1.05);
+        }
+        
+        .audio-test-btn.ready {
+            background: rgba(46, 204, 113, 0.8);
+        }
+        
+        .audio-test-btn.error {
+            background: rgba(231, 76, 60, 0.8);
+        }
+        
+        /* Einheitliche Farbe für alle nächsten Kunden - keine Übergänge */
+        .customer-item {
+            border-color: rgba(255, 255, 255, 0.3) !important;
+            background: rgba(255, 255, 255, 0.15) !important;
+        }
+        
+        /* Mobile und Tablet Responsive */
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr 2fr;
+                grid-template-rows: auto auto;
+                height: auto;
+                min-height: calc(100vh - var(--header-height));
+                gap: clamp(8px, 2vh, 15px);
+                overflow-y: auto;
+            }
+            
+            .info-display {
+                grid-column: 1 / -1;
+                order: 3;
+                min-height: 300px;
+                max-height: none;
+            }
+            
+            .next-customers {
+                order: 1;
+                min-height: 250px;
+                max-height: none;
+            }
+            
+            .current-customer {
+                order: 2;
+                min-height: 350px;
+                max-height: none;
+            }
+            
+            .layout-settings-btn {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                overflow-y: auto;
+            }
+            
+            .main-content {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+                height: auto;
+                min-height: calc(100vh - var(--header-height));
+                gap: clamp(8px, 2vh, 15px);
+                padding-bottom: 30px;
+                overflow-y: auto;
+            }
+            
+            .current-customer {
+                order: 1;
+                min-height: clamp(300px, 50vh, 400px);
+            }
+            
+            .next-customers {
+                order: 2;
+                min-height: clamp(200px, 30vh, 300px);
+            }
+            
+            .info-display {
+                order: 3;
+                min-height: clamp(250px, 35vh, 350px);
+            }
+            
+            .layout-settings-btn {
+                display: none;
+            }
+            
+            :root {
+                --header-font-size: 1.8rem;
+                --next-customers-font-size: 1rem;
+                --current-numbers-font-size: 2.5rem;
+                --info-display-font-size: 1.1rem;
+            }
+            
+            .pdf-iframe, .website-iframe {
+                height: 250px !important;
+                min-height: 200px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            :root {
+                --header-font-size: 1.5rem;
+                --next-customers-font-size: 0.9rem;
+                --current-numbers-font-size: 2rem;
+                --info-display-font-size: 1rem;
+            }
+            
+            .header {
+                padding: 10px 15px;
+                min-height: 60px;
+            }
+            
+            .main-content {
+                padding: 10px 15px 20px 15px;
+            }
+            
+            .next-customers, .current-customer, .info-display {
+                padding: 15px;
+            }
+            
+            .pdf-iframe, .website-iframe {
+                height: 200px !important;
+                min-height: 180px;
+            }
+        }
+        
+        /* Landscape Phone */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .pdf-iframe, .website-iframe {
+                height: 180px !important;
+                min-height: 160px;
+            }
+        }
+        
+        /* Responsive Wetter-Widget */
+        @media (max-width: 768px) {
+            .weather-iframe {
+                width: 150px !important;
+                height: 320px !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .weather-iframe {
+                width: 130px !important;
+                height: 280px !important;
+            }
+        }
+        
+        /* Touch-optimierte Effekte nur für Desktop */
+        @media (hover: hover) and (pointer: fine) {
+            /* Keine Animationen mehr */
+        }
+    </style>
+</head>
+<body>
+    <!-- Vollbild-Hinweis -->
+    <!--<div class="fullscreen-hint" id="fullscreenHint">
+        <h3>🖥️ Kioskmodus verfügbar</h3>
+        <p>Für die beste Darstellung kann der Vollbildmodus aktiviert werden.</p>
+        <button onclick="enterFullscreen()">📺 Vollbild aktivieren</button>
+        <button onclick="dismissFullscreenHint()">❌ Schließen</button>
+        <p style="font-size: 0.9em; margin-top: 15px; opacity: 0.8;">
+            <strong>💡 Tipp:</strong> Für dauerhaften Kioskmodus verwenden Sie:<br>
+            • Chrome: <code>--kiosk --app=http://kunden.jungk.de/monitor</code><br>
+            • Firefox: F11 oder <code>--kiosk</code>
+        </p>
+    </div>-->
+    
+    <!-- Layout-Einstellungen Button -->
+    <button class="layout-settings-btn" onclick="toggleLayoutSettings()">⚙️</button>
+    
+    <!-- Layout-Einstellungen Panel -->
+    <div class="layout-settings-panel" id="layoutPanel">
+        <h4 style="margin: 0 0 15px 0; color: #ecf0f1;">🔧 Layout-Einstellungen</h4>
+        
+        <!-- Breiten-Einstellungen -->
+        <div class="layout-setting-group">
+            <h4>📏 Breiten-Verhältnisse</h4>
+            
+            <div class="layout-setting-item">
+                <label for="nextCustomersSlider">
+                    📋 Nächste Kunden: 
+                    <span class="layout-value" id="nextCustomersValue">15%</span>
+                </label>
+                <input type="range" id="nextCustomersSlider" class="layout-slider" 
+                       min="10" max="30" value="15" oninput="updateLayout()">
+            </div>
+            
+            <div class="layout-setting-item">
+                <label for="currentNumbersSlider">
+                    🎯 Kundennummern: 
+                    <span class="layout-value" id="currentNumbersValue">40%</span>
+                </label>
+                <input type="range" id="currentNumbersSlider" class="layout-slider" 
+                       min="30" max="60" value="40" oninput="updateLayout()">
+            </div>
+            
+            <div class="layout-setting-item">
+                <label for="infoDisplaySlider">
+                    💡 Infotexte: 
+                    <span class="layout-value" id="infoDisplayValue">45%</span>
+                </label>
+                <input type="range" id="infoDisplaySlider" class="layout-slider" 
+                       min="20" max="60" value="45" oninput="updateLayout()">
+            </div>
+        </div>
+        
+        <!-- Schriftgrößen-Einstellungen -->
+        <div class="layout-setting-group">
+            <h4>🔤 Schriftgrößen</h4>
+            
+            <div class="layout-setting-item">
+                <label for="headerFontSlider">
+                    🏷️ Header: 
+                    <span class="layout-value" id="headerFontValue">2.8rem</span>
+                </label>
+                <input type="range" id="headerFontSlider" class="layout-slider" 
+                       min="1.5" max="4" step="0.1" value="2.8" oninput="updateLayout()">
+            </div>
+            
+            <div class="layout-setting-item">
+                <label for="nextCustomersFontSlider">
+                    📋 Nächste Kunden: 
+                    <span class="layout-value" id="nextCustomersFontValue">1.2rem</span>
+                </label>
+                <input type="range" id="nextCustomersFontSlider" class="layout-slider" 
+                       min="0.8" max="5" step="0.1" value="1.2" oninput="updateLayout()">
+            </div>
+            
+            <div class="layout-setting-item">
+                <label for="currentNumbersFontSlider">
+                    🎯 Kundennummern: 
+                    <span class="layout-value" id="currentNumbersFontValue">3.5rem</span>
+                </label>
+                <input type="range" id="currentNumbersFontSlider" class="layout-slider" 
+                       min="2" max="15" step="0.1" value="3.5" oninput="updateLayout()">
+            </div>
+            
+            <div class="layout-setting-item">
+                <label for="infoDisplayFontSlider">
+                    💡 Infotexte: 
+                    <span class="layout-value" id="infoDisplayFontValue">1.4rem</span>
+                </label>
+                <input type="range" id="infoDisplayFontSlider" class="layout-slider" 
+                       min="0.8" max="2.5" step="0.1" value="1.4" oninput="updateLayout()">
+            </div>
+        </div>
+        
+        <!-- Höhen-Einstellungen -->
+        <div class="layout-setting-group">
+            <h4>📐 Höhen-Einstellungen</h4>
+            
+            <div class="layout-setting-item">
+                <label for="headerHeightSlider">
+                    🏷️ Header-Höhe: 
+                    <span class="layout-value" id="headerHeightValue">120px</span>
+                </label>
+                <input type="range" id="headerHeightSlider" class="layout-slider" 
+                       min="80" max="200" value="120" oninput="updateLayout()">
+            </div>
+        </div>
+        
+        <div class="layout-buttons">
+            <button class="layout-btn" onclick="saveLayout()">💾 Speichern</button>
+            <button class="layout-btn reset" onclick="resetLayout()">🔄 Reset</button>
+            <button class="layout-btn" onclick="toggleLayoutSettings()">❌ Schließen</button>
+        </div>
+    </div>
+    
+    <!-- Audio-Test Button -->
+    <button class="audio-test-btn" id="audioTestBtn" onclick="testAudio()">🔊</button>
+    
+    <div class="header">
+        <h1>Aktuelle Kundengruppe {{ selected_day }} • {{ current_slot }}</h1>
+    </div>
+
+    <div class="main-content">
+        <!-- Linke Seite: Nächste Kunden (ausgeblendet wie bisher) -->
+        <div class="next-customers">
+            <div class="customer-list" hidden></div>
+        </div> 
+
+        <!-- Mitte: Aktuelle Kunden -->
+        <div class="current-customer">
+            {% if current_numbers %}
+                <div class="current-label">Bitte eintreten</div>
+                <div class="current-numbers-grid">
+                    {% for p in plaetze %}
+                        {% if p.nummer %}
+                            <div class="current-number-item{% if p.vorrang %} priority{% endif %}">
+                                <div class="number-value{% if p.vorrang %} priority{% endif %}">
+                                    {% if p.vorrang %}<span style="font-size: 0.6em;">♿</span> {% endif %}{{ p.nummer }}
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="current-number-item">
+                                <div class="number-value" style="color: rgba(255,255,255,0.3); font-style: italic;">
+                                    —
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="waiting-message">
+                    ⏳<br>
+                    Kundengruppe wird<br>
+                    vorbereitet...
+                </div>
+            {% endif %}
+        </div>
+        
+       <!-- Rechte Seite: Info-Display VOLLBILD OHNE TITEL/PROGRESS/COUNTER -->
+        <div class="info-display">
+            {% if infos and info_rotation %}
+                {% for info in infos %}
+                    <div class="info-item" data-duration="{{ info.dauer }}" data-index="{{ forloop.counter0 }}">
+                        <div class="info-content">
+                            {% if info.art == "text" %}
+                                <div class="info-text" id="info-text-{{ forloop.counter0 }}">{{ info.text }}</div>
+                            {% elif info.art == "bild" %}
+                                <img src="{{ info.url }}" alt="{{ info.titel }}" class="info-image">
+                            {% elif info.art == "pdf" %}
+                                <div class="info-pdf">
+                                    <iframe src="{{ info.url }}#view=FitH&toolbar=0&navpanes=0&scrollbar=0" 
+                                            class="pdf-iframe"
+                                            title="{{ info.titel }}"
+                                            type="application/pdf"
+                                            loading="lazy">
+                                        <p style="color: #333; text-align: center; padding: 20px;">
+                                            Ihr Browser kann PDFs nicht anzeigen.<br>
+                                            <a href="{{ info.url }}" target="_blank" style="color: #3498db;">
+                                                PDF hier öffnen
+                                            </a>
+                                        </p>
+                                    </iframe>
+                                </div>
+                            {% elif info.art == "webseite" %}
+                                <!-- Website-Anzeige VOLLBILD -->
+                                <div class="info-website">
+                                    <iframe src="{{ info.url }}" 
+                                            class="website-iframe"
+                                            title="{{ info.titel }}"
+                                            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                                            referrerpolicy="no-referrer"
+                                            loading="lazy">
+                                    </iframe>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="info-item active">
+                    <div class="info-content">
+                        <div class="info-text">
+                            {% if not infos %}
+                                Keine Informationen verfügbar
+                            {% else %}
+                                Info-Rotation ist deaktiviert
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% include "aufruf/_urls.html" %}
+    <script>
+        // VOLLBILD-SYSTEM
+        const fullscreenManager = {
+            isSupported: document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled || document.msFullscreenEnabled,
+            isFullscreen: false,
+            
+            init() {
+                console.log('📺 Fullscreen-Manager initialisiert. Unterstützt:', this.isSupported);
+                
+                // Fullscreen-Status Events
+                document.addEventListener('fullscreenchange', this.onFullscreenChange.bind(this));
+                document.addEventListener('webkitfullscreenchange', this.onFullscreenChange.bind(this));
+                document.addEventListener('mozfullscreenchange', this.onFullscreenChange.bind(this));
+                document.addEventListener('MSFullscreenChange', this.onFullscreenChange.bind(this));
+                
+                // Zeige Hinweis nach 3 Sekunden
+                if (this.isSupported && !this.isInFullscreen()) {
+                    setTimeout(() => {
+                        this.showFullscreenHint();
+                    }, 3000);
+                }
+            },
+            
+            isInFullscreen() {
+                return !!(document.fullscreenElement || document.webkitFullscreenElement || 
+                         document.mozFullScreenElement || document.msFullscreenElement);
+            },
+            
+            async enterFullscreen() {
+                if (!this.isSupported) {
+                    alert('❌ Vollbildmodus wird von diesem Browser nicht unterstützt');
+                    return false;
+                }
+                
+                try {
+                    const element = document.documentElement;
+                    
+                    if (element.requestFullscreen) {
+                        await element.requestFullscreen();
+                    } else if (element.webkitRequestFullscreen) {
+                        await element.webkitRequestFullscreen();
+                    } else if (element.mozRequestFullScreen) {
+                        await element.mozRequestFullScreen();
+                    } else if (element.msRequestFullscreen) {
+                        await element.msRequestFullscreen();
+                    }
+                    
+                    console.log('✅ Vollbildmodus aktiviert');
+                    return true;
+                } catch (error) {
+                    console.error('❌ Vollbildmodus konnte nicht aktiviert werden:', error);
+                    return false;
+                }
+            },
+            
+            onFullscreenChange() {
+                this.isFullscreen = this.isInFullscreen();
+                console.log('📺 Vollbildmodus-Status:', this.isFullscreen ? 'AN' : 'AUS');
+                
+                const hint = document.getElementById('fullscreenHint');
+                if (this.isFullscreen && hint) {
+                    hint.classList.remove('show');
+                }
+            },
+            
+            showFullscreenHint() {
+                const hint = document.getElementById('fullscreenHint');
+                if (hint && !this.isInFullscreen()) {
+                    hint.classList.add('show');
+                    console.log('💡 Vollbild-Hinweis angezeigt');
+                }
+            }
+        };
+        
+        // Globale Funktionen
+        function enterFullscreen() {
+            fullscreenManager.enterFullscreen().then(success => {
+                if (success) {
+                    dismissFullscreenHint();
+                }
+            });
+        }
+        
+        function dismissFullscreenHint() {
+            const hint = document.getElementById('fullscreenHint');
+            if (hint) {
+                hint.classList.remove('show');
+            }
+        }
+        
+        // F11 für manuellen Vollbildmodus
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F11') {
+                e.preventDefault();
+                if (fullscreenManager.isInFullscreen()) {
+                    fullscreenManager.exitFullscreen();
+                } else {
+                    fullscreenManager.enterFullscreen();
+                }
+            }
+        });
+
+        // LAYOUT-EINSTELLUNGEN SYSTEM
+        let layoutSettings = {
+            nextCustomers: {{ layout.next_customers_width }},
+            currentNumbers: {{ layout.current_numbers_width }},
+            infoDisplay: {{ layout.info_display_width }},
+            headerHeight: {{ layout.header_height }},
+            headerFont: {{ layout.header_font }},
+            nextCustomersFont: {{ layout.next_customers_font }},
+            currentNumbersFont: {{ layout.current_numbers_font }},
+            infoDisplayFont: {{ layout.info_display_font }}
+        };
+        
+        async function loadLayoutSettings() {
+            updateSliders();
+            
+            try {
+                const response = await fetch(URLS.layout);
+                const data = await response.json();
+                
+                if (data.success && data.layout) {
+                    const serverSettings = data.layout;
+                    if (JSON.stringify(layoutSettings) !== JSON.stringify(serverSettings)) {
+                        layoutSettings = { ...layoutSettings, ...serverSettings };
+                        applyLayoutSettings();
+                        updateSliders();
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ Fehler beim Sync mit Server:', error);
+            }
+        }
+        
+        async function saveLayoutToServer(settings) {
+            try {
+                const response = await fetch(URLS.layout, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': CSRF
+                    },
+                    body: JSON.stringify(settings)
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    return true;
+                } else {
+                    return false;
+                }
+            } catch (error) {
+                return false;
+            }
+        }
+        
+        function applyLayoutSettings() {
+            document.documentElement.style.setProperty('--next-customers-width', layoutSettings.nextCustomers + '%');
+            document.documentElement.style.setProperty('--current-numbers-width', layoutSettings.currentNumbers + '%');
+            document.documentElement.style.setProperty('--info-display-width', layoutSettings.infoDisplay + '%');
+            document.documentElement.style.setProperty('--header-height', layoutSettings.headerHeight + 'px');
+            document.documentElement.style.setProperty('--content-area-height', `calc(100vh - ${layoutSettings.headerHeight}px)`);
+            document.documentElement.style.setProperty('--header-font-size', layoutSettings.headerFont + 'rem');
+            document.documentElement.style.setProperty('--next-customers-font-size', layoutSettings.nextCustomersFont + 'rem');
+            document.documentElement.style.setProperty('--current-numbers-font-size', layoutSettings.currentNumbersFont + 'rem');
+            document.documentElement.style.setProperty('--info-display-font-size', layoutSettings.infoDisplayFont + 'rem');
+        }
+        
+        function updateSliders() {
+            document.getElementById('nextCustomersSlider').value = layoutSettings.nextCustomers;
+            document.getElementById('currentNumbersSlider').value = layoutSettings.currentNumbers;
+            document.getElementById('infoDisplaySlider').value = layoutSettings.infoDisplay;
+            document.getElementById('headerHeightSlider').value = layoutSettings.headerHeight;
+            document.getElementById('headerFontSlider').value = layoutSettings.headerFont;
+            document.getElementById('nextCustomersFontSlider').value = layoutSettings.nextCustomersFont;
+            document.getElementById('currentNumbersFontSlider').value = layoutSettings.currentNumbersFont;
+            document.getElementById('infoDisplayFontSlider').value = layoutSettings.infoDisplayFont;
+            updateLayoutValues();
+        }
+        
+        function updateLayoutValues() {
+            document.getElementById('nextCustomersValue').textContent = layoutSettings.nextCustomers + '%';
+            document.getElementById('currentNumbersValue').textContent = layoutSettings.currentNumbers + '%';
+            document.getElementById('infoDisplayValue').textContent = layoutSettings.infoDisplay + '%';
+            document.getElementById('headerHeightValue').textContent = layoutSettings.headerHeight + 'px';
+            document.getElementById('headerFontValue').textContent = layoutSettings.headerFont + 'rem';
+            document.getElementById('nextCustomersFontValue').textContent = layoutSettings.nextCustomersFont + 'rem';
+            document.getElementById('currentNumbersFontValue').textContent = layoutSettings.currentNumbersFont + 'rem';
+            document.getElementById('infoDisplayFontValue').textContent = layoutSettings.infoDisplayFont + 'rem';
+        }
+        
+        function toggleLayoutSettings() {
+            const panel = document.getElementById('layoutPanel');
+            panel.classList.toggle('show');
+        }
+        
+        let updateTimeout = null;
+        function updateLayout() {
+            const nextCustomers = parseInt(document.getElementById('nextCustomersSlider').value);
+            const currentNumbers = parseInt(document.getElementById('currentNumbersSlider').value);
+            const infoDisplay = parseInt(document.getElementById('infoDisplaySlider').value);
+            const headerHeight = parseInt(document.getElementById('headerHeightSlider').value);
+            const headerFont = parseFloat(document.getElementById('headerFontSlider').value);
+            const nextCustomersFont = parseFloat(document.getElementById('nextCustomersFontSlider').value);
+            const currentNumbersFont = parseFloat(document.getElementById('currentNumbersFontSlider').value);
+            const infoDisplayFont = parseFloat(document.getElementById('infoDisplayFontSlider').value);
+            
+            const total = nextCustomers + currentNumbers + infoDisplay;
+            
+            if (total !== 100) {
+                layoutSettings.nextCustomers = Math.round((nextCustomers / total) * 100);
+                layoutSettings.currentNumbers = Math.round((currentNumbers / total) * 100);
+                layoutSettings.infoDisplay = Math.round((infoDisplay / total) * 100);
+                
+                const newTotal = layoutSettings.nextCustomers + layoutSettings.currentNumbers + layoutSettings.infoDisplay;
+                if (newTotal !== 100) {
+                    layoutSettings.infoDisplay += (100 - newTotal);
+                }
+            } else {
+                layoutSettings.nextCustomers = nextCustomers;
+                layoutSettings.currentNumbers = currentNumbers;
+                layoutSettings.infoDisplay = infoDisplay;
+            }
+            
+            layoutSettings.headerHeight = headerHeight;
+            layoutSettings.headerFont = headerFont;
+            layoutSettings.nextCustomersFont = nextCustomersFont;
+            layoutSettings.currentNumbersFont = currentNumbersFont;
+            layoutSettings.infoDisplayFont = infoDisplayFont;
+            
+            applyLayoutSettings();
+            updateLayoutValues();
+            
+            if (updateTimeout) {
+                clearTimeout(updateTimeout);
+            }
+            updateTimeout = setTimeout(() => {
+                saveLayoutToServer(layoutSettings);
+            }, 2000);
+        }
+        
+        async function saveLayout() {
+            const serverSuccess = await saveLayoutToServer(layoutSettings);
+            const btn = document.querySelector('.layout-btn:not(.reset)');
+            
+            if (btn) {
+                if (serverSuccess) {
+                    btn.textContent = '✅ Gespeichert!';
+                    btn.style.background = '#27ae60';
+                } else {
+                    btn.textContent = '⚠️ Fehler';
+                    btn.style.background = '#f39c12';
+                }
+                
+                setTimeout(() => {
+                    btn.textContent = '💾 Speichern';
+                    btn.style.background = '#3498db';
+                }, 3000);
+            }
+        }
+        
+        async function resetLayout() {
+            const defaultSettings = {
+                nextCustomers: 15,
+                currentNumbers: 40,
+                infoDisplay: 45,
+                headerHeight: 120,
+                headerFont: 2.8,
+                nextCustomersFont: 1.2,
+                currentNumbersFont: 3.5,
+                infoDisplayFont: 1.4
+            };
+            
+            layoutSettings = { ...defaultSettings };
+            applyLayoutSettings();
+            updateSliders();
+            
+            const serverSuccess = await saveLayoutToServer(layoutSettings);
+            const btn = document.querySelector('.layout-btn.reset');
+            
+            if (btn) {
+                if (serverSuccess) {
+                    btn.textContent = '✅ Zurückgesetzt!';
+                    btn.style.background = '#27ae60';
+                } else {
+                    btn.textContent = '⚠️ Fehler';
+                    btn.style.background = '#f39c12';
+                }
+                
+                setTimeout(() => {
+                    btn.textContent = '🔄 Reset';
+                    btn.style.background = '#e74c3c';
+                }, 3000);
+            }
+        }
+
+        // AUDIO-SYSTEM
+        const audioManager = {
+            audioContext: null,
+            isReady: false,
+            beepAudio: null,
+            lastCustomerNumbers: null,
+            testBtn: document.getElementById('audioTestBtn'),
+
+            init() {
+                try {
+                    this.beepAudio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhCSqH4fDJdSgFKnzK5tqhWRQFVcfW0L2uUwAM');
+                    this.beepAudio.volume = 0.6;
+                    this.beepAudio.preload = 'auto';
+                    this.beepAudio.playsInline = true; 
+                } catch (error) {
+                    console.error('❌ Audio-Initialisierung fehlgeschlagen:', error);
+                }
+            },
+
+            async enable() {
+                if (this.isReady) return true;
+                try {
+                    if (!this.audioContext) {
+                        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                    if (this.audioContext.state === 'suspended') {
+                        await this.audioContext.resume();
+                    }
+                    
+                    if (this.beepAudio && this.beepAudio.paused) {
+                        this.beepAudio.volume = 0;
+                        try {
+                            await this.beepAudio.play();
+                        } finally {
+                            this.beepAudio.pause();
+                            this.beepAudio.currentTime = 0;
+                            this.beepAudio.volume = 0.6;
+                        }
+                    }
+
+                    this.isReady = true;
+                    this.testBtn.textContent = '✅';
+                    this.testBtn.className = 'audio-test-btn ready';
+                    return true;
+
+                } catch (error) {
+                    this.testBtn.textContent = '⚠️';
+                    this.testBtn.className = 'audio-test-btn error';
+                    return false;
+                }
+            },
+
+            playPing() {
+                if (this.isReady && this.audioContext && this.audioContext.state === 'running') {
+                    try {
+                        const oscillator = this.audioContext.createOscillator();
+                        const gainNode = this.audioContext.createGain();
+                        oscillator.connect(gainNode);
+                        gainNode.connect(this.audioContext.destination);
+                        oscillator.frequency.value = 800;
+                        oscillator.type = 'sine';
+                        gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                        gainNode.gain.linearRampToValueAtTime(0.4, this.audioContext.currentTime + 0.01);
+                        gainNode.gain.exponentialRampToValueAtTime(0.0001, this.audioContext.currentTime + 0.2);
+                        oscillator.start(this.audioContext.currentTime);
+                        oscillator.stop(this.audioContext.currentTime + 0.2);
+                        return;
+                    } catch (error) {
+                        console.error('Web Audio Fehler:', error);
+                    }
+                }
+                if (this.beepAudio) {
+                    this.beepAudio.currentTime = 0;
+                    this.beepAudio.play().catch(e => console.error('HTML5 Audio Fehler:', e));
+                }
+            },
+
+            onCustomerChange(newNumbers) {
+                const cleanNewNumbers = (newNumbers || []).map(num => String(num).replace(/♿\s*/g, ''));
+                const cleanLastNumbers = (this.lastCustomerNumbers || []).map(num => String(num).replace(/♿\s*/g, ''));
+                
+                const newNumbersStr = JSON.stringify(cleanNewNumbers);
+                const lastNumbersStr = JSON.stringify(cleanLastNumbers);
+                
+                if (this.lastCustomerNumbers !== null && lastNumbersStr !== newNumbersStr) {
+                    this.playPing();
+                }
+                this.lastCustomerNumbers = cleanNewNumbers;
+            }
+        };
+
+        function testAudio() {
+            audioManager.enable().then(success => {
+                if (success) {
+                    audioManager.playPing();
+                }
+            });
+        }
+
+        document.addEventListener('click', () => audioManager.enable(), { once: true });
+        
+        // INFO-ROTATION SYSTEM - OHNE TITEL/PROGRESS/COUNTER
+        const infoRotation = {
+            currentIndex: 0,
+            infoItems: [],
+            isRunning: false,
+            currentTimer: null,
+            
+            init() {
+                this.infoItems = document.querySelectorAll('.info-item');
+                if (this.infoItems.length > 0) {
+                    // Optimiere Textformatierung nach dem Laden
+                    this.optimizeTextFormatting();
+                    this.start();
+                }
+            },
+            
+            optimizeTextFormatting() {
+                // Verbesserte Textformatierung für alle info-text Elemente
+                const textElements = document.querySelectorAll('.info-text');
+                textElements.forEach((element, index) => {
+                    const content = element.textContent.trim();
+                    
+                    // Bei kurzem Text zentrieren, bei längerem linksbündig
+                    if (content.length < 100 && !content.includes('\n')) {
+                        element.classList.add('centered');
+                    }
+                    
+                    // Scrollbar nur anzeigen wenn nötig
+                    if (element.scrollHeight > element.clientHeight) {
+                        element.style.overflowY = 'auto';
+                    }
+                });
+            },
+            
+            start() {
+                if (this.infoItems.length === 0) return;
+                this.isRunning = true;
+                this.showInfo(0);
+            },
+            
+            showInfo(index) {
+                if (!this.isRunning || index >= this.infoItems.length) return;
+                
+                this.infoItems.forEach((item, i) => {
+                    item.classList.remove('active');
+                    if (i === this.currentIndex) {
+                        item.classList.add('fade-out');
+                    }
+                });
+                
+                setTimeout(() => {
+                    this.currentIndex = index;
+                    const currentInfo = this.infoItems[this.currentIndex];
+                    
+                    currentInfo.classList.remove('fade-out');
+                    currentInfo.classList.add('active');
+                    
+                    const duration = parseInt(currentInfo.dataset.duration) * 1000 || 10000;
+                    
+                    this.currentTimer = setTimeout(() => {
+                        const nextIndex = (this.currentIndex + 1) % this.infoItems.length;
+                        this.showInfo(nextIndex);
+                    }, duration);
+                    
+                }, 300);
+            },
+            
+            stop() {
+                this.isRunning = false;
+                if (this.currentTimer) {
+                    clearTimeout(this.currentTimer);
+                    this.currentTimer = null;
+                }
+            }
+        };
+        
+        function updateDisplay(data) {
+            const headerTitle = document.querySelector('.header h1');
+            if (headerTitle) headerTitle.textContent = `Aktuelle Kundengruppe ${data.selected_day} • ${data.current_slot}`;
+            
+            const currentCustomerContainer = document.querySelector('.current-customer');
+            
+            if (data.current_numbers && data.current_numbers.length > 0) {
+                let gridHtml = '<div class="current-label">Bitte eintreten</div><div class="current-numbers-grid">';
+                
+                for (let i = 0; i < ANZAHL; i++) {
+                    const hasNumber = i < data.current_numbers.length;
+                    const isPriority = data.priority_flags && i < data.priority_flags.length && data.priority_flags[i];
+                    
+                    gridHtml += `<div class="current-number-item${isPriority ? ' priority' : ''}">`;
+                    
+                    if (hasNumber) {
+                        if (isPriority) {
+                            gridHtml += `<div class="number-value${isPriority ? ' priority' : ''}"><span style="font-size: 0.6em;">♿</span> ${data.current_numbers[i]}</div>`;
+                        } else {
+                            gridHtml += `<div class="number-value${isPriority ? ' priority' : ''}">${data.current_numbers[i]}</div>`;
+                        }
+                    } else {
+                        gridHtml += '<div class="number-value" style="color: rgba(255,255,255,0.3); font-style: italic;">—</div>';
+                    }
+                    
+                    gridHtml += '</div>';
+                }
+                
+                gridHtml += '</div>';
+                currentCustomerContainer.innerHTML = gridHtml;
+            } else {
+                currentCustomerContainer.innerHTML = `<div class="waiting-message">⏳<br>Kundengruppe wird<br>vorbereitet...</div>`;
+            }
+            
+            const nextCustomerList = document.querySelector('.customer-list');
+            if (!nextCustomerList) {
+                // Liste ist ausgeblendet
+            } else if (data.next_numbers && data.next_numbers.length > 0) {
+                nextCustomerList.innerHTML = data.next_numbers.map(number => `<div class="customer-item">${number}</div>`).join('');
+            } else {
+                nextCustomerList.innerHTML = `<div style="text-align: center; color: #95a5a6; font-size: calc(var(--next-customers-font-size) * 0.9); margin-top: clamp(20px, 5vh, 50px); opacity: 0.8;">Keine weiteren Kunden in der Warteschlange</div>`;
+            }
+            
+            if (data.infos && data.infos.length !== document.querySelectorAll('.info-item[data-duration]').length) {
+                location.reload();
+            }
+        }
+        
+        function refreshMonitor() {
+            fetch(URLS.stand).then(response => {
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                if (!response.headers.get('content-type')?.includes('application/json')) throw new Error('Response ist kein JSON');
+                return response.json();
+            }).then(data => {
+                if (data.error) { return; }
+                if (data.finished) { location.reload(); return; }
+                audioManager.onCustomerChange(data.current_numbers);
+                updateDisplay(data);
+            }).catch(error => { console.error('⚠️ Refresh-Fehler:', error.message); });
+        }
+        
+        // Panel schließen bei Klick außerhalb
+        document.addEventListener('click', function(e) {
+            const panel = document.getElementById('layoutPanel');
+            const btn = document.querySelector('.layout-settings-btn');
+            
+            if (!panel.contains(e.target) && !btn.contains(e.target) && panel.classList.contains('show')) {
+                panel.classList.remove('show');
+            }
+        });
+        
+        // INITIALISIERUNG
+        document.addEventListener('DOMContentLoaded', function() {
+            // Vollbild-Manager initialisieren
+            fullscreenManager.init();
+            
+            // Layout-Einstellungen initialisieren
+            updateSliders();
+            loadLayoutSettings();
+            
+            // Audio-Manager initialisieren
+            audioManager.init();
+            
+            // Info-Rotation initialisieren
+            infoRotation.init();
+            
+            const currentNumberElements = document.querySelectorAll('.number-value');
+            if (currentNumberElements.length > 0) {
+                const initialNumbers = Array.from(currentNumberElements)
+                    .map(el => el.textContent.trim())
+                    .filter(text => text !== '—' && text !== '')
+                    .map(text => text.replace(/♿\s*/g, ''));
+                audioManager.lastCustomerNumbers = initialNumbers;
+            }
+            
+            setInterval(refreshMonitor, 5000);
+        });
+        
+        // Sicherheits-Reload alle 10 Minuten
+        setInterval(() => { location.reload(); }, 600000);
+    </script>
+</body>
+</html>

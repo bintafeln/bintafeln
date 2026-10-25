@@ -30,7 +30,7 @@ from django.db import IntegrityError, connection, transaction
 from django.db.migrations.recorder import MigrationRecorder
 from django.utils import timezone
 
-from apps.core import geheimnis
+from apps.core import geheimnis, module
 
 KOPF = b"BINTAFELN-EXPORT-1\n"
 FORMAT, VERSION = "bintafeln-datenexport", 1
@@ -80,6 +80,11 @@ APP_BEREICH = {
     "mitglieder": "adressen",
     "serienbriefe": "adressen",
 }
+# Zuschaltbare Module (ADR 0049) bringen Bereich und Ausnahmen selbst mit
+for _m in module.alle():
+    EIGENE_APPS.append(_m.app_label)
+    APP_BEREICH[_m.app_label] = _m.sicherung_bereich
+    AUSGENOMMEN.update(_m.sicherung_ausgenommen)
 
 
 class DatensicherungsFehler(ValueError):
