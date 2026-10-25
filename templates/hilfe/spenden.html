@@ -12,6 +12,17 @@
 </ol>
 <p>Eine bestätigte Spende lässt sich nicht mehr ändern oder löschen. Ist ein Fehler passiert, zuerst die Bestätigung
   stornieren.</p>
+<h3>Spenden importieren</h3>
+<p>„Spenden → Spenden importieren“ liest eine CSV-Datei ein, z. B. den Export aus dem Vereinsportal (in Excel als CSV
+  speichern) oder eine selbst erstellte Liste vom Kontoauszug. Die Seite nennt die Spalten; Pflicht sind Datum,
+  Betrag und Name bzw. Organisation. Zuerst erscheint ein <strong>Prüfbericht</strong>: wie viele Spenden, welche
+  Summe, welche Spender neu angelegt werden und welche Zeilen Fehler haben. Erst „übernehmen“ legt alles an.</p>
+<ul>
+  <li>Spender werden über die E-Mail oder über Name und PLZ im Adressbuch gefunden; sonst wird eine neue Adresse angelegt.
+    Vorhandene Adressen ändert der Import nicht.</li>
+  <li>Mit einer <strong>Belegnummer</strong> (z. B. der Nummer im Vereinsportal) wird keine Spende doppelt angelegt.
+    Dieselbe oder eine überlappende Datei kann also gefahrlos noch einmal eingelesen werden.</li>
+</ul>
 {% endif %}
 <h3>Übersicht</h3>
 <p>„Spenden“ zeigt ein Jahr mit Summen (Geld, Wert der Sachspenden, Anzahl, Spender), Geldspenden je Monat und alle

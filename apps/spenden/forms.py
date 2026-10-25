@@ -16,14 +16,15 @@ class SpendeForm(forms.ModelForm):
     einheit = forms.ChoiceField(label="Einheit", required=False)
 
     ABSCHNITTE = [
-        ("Spende", ["art", "adresse", "datum", "betrag", "zweck"]),
+        ("Spende", ["art", "adresse", "datum", "betrag", "zweck", "belegnummer"]),
         ("Geldspende", ["zahlungsweg", "mitgliedsbeitrag", "verzicht_aufwand"]),
         ("Sachspende", ["beschreibung", "menge", "einheit", "herkunft", "unterlagen"]),
     ]
 
     class Meta:
         model = Spende
-        fields = ["art", "adresse", "datum", "betrag", "zweck", "zahlungsweg", "mitgliedsbeitrag",
+        fields = ["art", "adresse", "datum", "betrag", "zweck", "belegnummer", "zahlungsweg",
+                  "mitgliedsbeitrag",
                   "verzicht_aufwand", "beschreibung", "menge", "einheit", "herkunft",
                   "unterlagen"]  # fmt: skip
         widgets = {"datum": DatumEingabe(), "art": forms.RadioSelect}

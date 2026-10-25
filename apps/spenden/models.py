@@ -137,6 +137,11 @@ class Spende(models.Model):
         help_text="Z. B. Rechnung oder Gutachten (Sachspende).",
     )  # fmt: skip
     zweck = models.CharField("Zweck / Anmerkung", max_length=200, blank=True)
+    belegnummer = models.CharField(
+        "Belegnummer", max_length=50, blank=True,
+        help_text="Z. B. die Nummer im Vereinsportal oder auf dem Kontoauszug. Beim Import wird "
+        "eine Spende mit derselben Belegnummer nicht noch einmal angelegt.",
+    )  # fmt: skip
     bestaetigung = models.ForeignKey(
         Zuwendungsbestaetigung, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="spenden", editable=False,
@@ -148,6 +153,10 @@ class Spende(models.Model):
         verbose_name = "Spende"
         verbose_name_plural = "Spenden"
         ordering = ["-datum", "-pk"]
+        constraints = [
+            models.UniqueConstraint(fields=["belegnummer"], condition=~models.Q(belegnummer=""),
+                                    name="spende_belegnummer_eindeutig"),
+        ]  # fmt: skip
 
     def __str__(self):
         return f"{self.get_art_display()} vom {self.datum:%d.%m.%Y}"

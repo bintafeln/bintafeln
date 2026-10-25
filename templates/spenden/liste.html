@@ -4,7 +4,7 @@
 <section class="karte breit">
   <h1>Spenden {{ jahr }}</h1>
   <div class="aktionsleiste">
-    {% if "spenden.erfassen" in rechte %}<a class="knopf" href="{% url 'spenden:neu' %}">Spende erfassen</a>{% endif %}
+    {% if "spenden.erfassen" in rechte %}<a class="knopf" href="{% url 'spenden:neu' %}">Spende erfassen</a> <a class="knopf knopf-zweitrangig" href="{% url 'spenden:importieren' %}">Importieren</a>{% endif %}
     {% if "spenden.bestaetigen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'spenden:bestaetigungen' %}?jahr={{ jahr }}">Zuwendungsbestätigungen</a>{% endif %}
   </div>
   <form class="filter" method="get">

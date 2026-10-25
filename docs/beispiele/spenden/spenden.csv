@@ -1,0 +1,5 @@
+datum;betrag;art;beschreibung;zahlungsweg;zweck;belegnummer;mitgliedsbeitrag;organisation;anrede;vorname;nachname;strasse;plz;ort;email;einwilligung_post;einwilligung_email
+15.01.2026;25,00;;;Überweisung;;MV-1001;nein;;Frau;Erika;Muster;Musterweg 1;12345;Musterstadt;erika@example.org;01.01.2026;01.01.2026
+15.02.2026;25,00;;;Überweisung;;MV-1002;nein;;Frau;Erika;Muster;Musterweg 1;12345;Musterstadt;erika@example.org;01.01.2026;01.01.2026
+03.03.2026;100,00;;;Lastschrift;Weihnachtsaktion;MV-1003;nein;Beispiel GmbH;;;;Industriestr. 5;12345;Musterstadt;;;
+10.03.2026;;Sach;12 Kisten Äpfel;;;MV-1004;nein;Obsthof Beispiel;;;;Feldweg 2;12346;Musterdorf;;;

@@ -798,6 +798,10 @@ Adresse im Adressbuch (ADR 0045).
   Herkunft (Privat-/Betriebsvermögen), Unterlagen zur Wertermittlung.
 - **Übersicht** je Jahr mit Summen, Geldspenden je Monat, Filter und CSV-Export; auf der Seite
   einer Adresse deren Spenden und Summen je Jahr.
+- **Import** aus einer CSV-Datei (ADR 0055), z. B. dem Export eines Vereinsportals: Prüfbericht
+  vorab, Spender über E-Mail oder Name+PLZ zugeordnet bzw. neu angelegt, eine **Belegnummer**
+  verhindert doppelte Spenden bei erneutem Import. Spalten und Beispiel:
+  [docs/beispiele/spenden/spenden.csv](docs/beispiele/spenden/spenden.csv).
 - **Zuwendungsbestätigungen** als PDF nach den amtlichen Mustern: Einzel-, Sammel- (mit Anlage)
   und Sachbestätigung, Betrag in Ziffern und Worten, fortlaufende Nummer. „Alle ausstellen“
   erstellt am Jahresende für alle Spender auf einmal. Jede Spende wird nur einmal bestätigt;

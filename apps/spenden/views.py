@@ -1,5 +1,6 @@
 """Spenden und Zuwendungsbestätigungen (ADR 0045)."""
 
+import base64
 import csv
 import io
 import re
@@ -15,10 +16,13 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
+from apps.adressen.forms import ImportForm
 from apps.adressen.models import Adresse
+from apps.core import geheimnis
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.spenden import bestaetigung as bst
+from apps.spenden import importieren
 from apps.spenden.forms import SpendeForm, SpendenEinstellungenForm
 from apps.spenden.models import Spende, SpendenEinstellungen, Zuwendungsbestaetigung
 
@@ -123,6 +127,50 @@ def bearbeiten(request, pk=None):
             return redirect(reverse("spenden:neu"))
         return redirect("adressen:adresse", pk=s.adresse_id)
     return render(request, "spenden/bearbeiten.html", {"form": form, "s": s})
+
+
+SITZUNG_IMPORT = "spenden_import"
+
+
+def _bericht_aus_sitzung(request):
+    gespeichert = request.session.get(SITZUNG_IMPORT)
+    if not gespeichert:
+        return None
+    roh = geheimnis.bytes_entschluesseln(base64.b64decode(gespeichert))
+    return importieren.pruefen(importieren.text_lesen(roh)) if roh else None
+
+
+@never_cache
+@rollen.recht_erforderlich("spenden.erfassen")
+def importieren_ansicht(request):
+    """CSV prüfen (Bericht), dann übernehmen; dazwischen verschlüsselt in der Sitzung."""
+    form = ImportForm(request.POST or None, request.FILES or None)
+    bericht = None
+    if request.method == "POST" and request.POST.get("schritt") == "uebernehmen":
+        try:
+            bericht = _bericht_aus_sitzung(request)
+        except importieren.ImportFehler:
+            bericht = None
+        request.session.pop(SITZUNG_IMPORT, None)
+        if bericht is None:
+            messages.error(request, "Keine geprüfte Datei vorhanden. Bitte erneut hochladen.")
+            return redirect("spenden:importieren")
+        anzahl = importieren.uebernehmen(bericht, request.user.get_username())
+        messages.success(request, f"{anzahl} Spende{'n' if anzahl != 1 else ''} übernommen.")
+        return redirect("spenden:liste")
+    if request.method == "POST" and form.is_valid():
+        roh = form.cleaned_data["datei"].read()
+        try:
+            bericht = importieren.pruefen(importieren.text_lesen(roh))
+        except importieren.ImportFehler as fehler:
+            messages.error(request, str(fehler))
+            return redirect("spenden:importieren")
+        request.session[SITZUNG_IMPORT] = base64.b64encode(
+            geheimnis.bytes_verschluesseln(roh)
+        ).decode()
+    return render(request, "spenden/importieren.html", {
+        "form": form, "bericht": bericht, "spalten": importieren.SPALTEN,
+    })  # fmt: skip
 
 
 @require_POST

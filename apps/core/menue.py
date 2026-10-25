@@ -102,6 +102,7 @@ def menue(request) -> list[dict]:
     bereich("Spenden", [
         ("spenden.sehen", _eintrag("Spenden", "spenden:liste", genau=True)),
         ("spenden.erfassen", _eintrag("Spende erfassen", "spenden:neu")),
+        ("spenden.erfassen", _eintrag("Spenden importieren", "spenden:importieren")),
         ("spenden.bestaetigen", _eintrag("Zuwendungsbestätigungen", "spenden:bestaetigungen")),
     ])  # fmt: skip
     bereich("Statistik", [("statistik.sehen", _eintrag("Statistik", "statistik:uebersicht"))])
