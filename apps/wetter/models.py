@@ -19,6 +19,7 @@ class WetterStand(models.Model):
     tag = models.BooleanField(default=True)
     abgerufen_am = models.DateTimeField(null=True, blank=True)
     fehler_am = models.DateTimeField(null=True, blank=True)
+    fehler = models.CharField("Letzter Fehler", max_length=200, blank=True)
 
     class Meta:
         verbose_name = "Wetterstand"
