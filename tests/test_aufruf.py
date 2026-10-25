@@ -259,6 +259,25 @@ def test_spaetzuender(mitte, tag_daten):
     assert "zu spät" in zeile["anmerkung"]
 
 
+def test_abgeholte_nicht_neu_einsortieren(mitte, tag_daten):
+    tag = ablauf.starten(mitte, heute())
+    erster, eingelassen = tag.stand["gruppen"][0]["wartend"][0], "203"
+    ablauf.weiter(mitte, heute())
+    for n, uhr in ((erster, dt.time(13, 41)), (eingelassen, None)):
+        Abholung.objects.create(haushalt=Haushalt.objects.get(kundennummer=n), datum=heute(),
+                                uhrzeit=uhr)  # fmt: skip
+    a = ablauf.abfrage(mitte, heute(), erster)
+    assert a["abgeholt"] is True and a["abgeholt_um"] == "13:41" and a["schon_dran"] is True
+    with pytest.raises(ablauf.AufrufFehler, match="um 13:41 schon abgeholt"):
+        ablauf.spaetzuender(mitte, heute(), erster)
+    with pytest.raises(ablauf.AufrufFehler, match="heute schon abgeholt"):
+        ablauf.spaetzuender(mitte, heute(), eingelassen)
+    ablauf.weiter(mitte, heute())  # 203 wandert zu den Eingelassenen
+    b = ablauf.abfrage(mitte, heute(), eingelassen)
+    assert b["abgeholt"] is True and b["abgeholt_um"] == "" and b["eingelassen"] is True
+    assert "abgeholt" not in ablauf.abfrage(mitte, heute(), "201")
+
+
 def test_abfrage(mitte, tag_daten):
     Person.objects.filter(haushalt__kundennummer="201").update(staatsangehoerigkeit="Syrien")
     vorab = ablauf.abfrage(mitte, heute(), "201")
@@ -390,6 +409,10 @@ def test_anzeige_nur_mit_schluessel(modul_an, mitte, tag_daten):
     assert "Mitte" in kiosk and "Frohnhauser" not in kiosk
     a = c.get(reverse("aufruf:anzeige_abfrage", args=[e.schluessel]), {"nummer": "201"}).json()
     assert a["gefunden"] is True
+    Abholung.objects.create(haushalt=Haushalt.objects.get(kundennummer="201"), datum=heute(),
+                            uhrzeit=dt.time(9, 5))  # fmt: skip
+    a = c.get(reverse("aufruf:anzeige_abfrage", args=[e.schluessel]), {"nummer": "201"}).json()
+    assert a["abgeholt"] is True and "abgeholt_um" not in a  # ohne Anmeldung keine Uhrzeit
     while not ablauf.stand_fuer_anzeige(ablauf.weiter(mitte, heute()), e, heute())["finished"]:
         pass
     seite = c.get(reverse("aufruf:monitor", args=[e.schluessel])).content.decode()

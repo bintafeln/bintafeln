@@ -297,6 +297,7 @@
 
         .abfrage-result.waiting  { display: block; background: rgba(41, 128, 185, 0.85); }
         .abfrage-result.done     { display: block; background: rgba(39, 174, 96, 0.85); }
+        .abfrage-result.abgeholt { display: block; background: rgba(142, 68, 173, 0.9); }
         .abfrage-result.notfound { display: block; background: rgba(211, 84, 0, 0.85); }
         .abfrage-result.inactive { display: block; background: rgba(127, 140, 141, 0.85); }
         .abfrage-result.error    { display: block; background: rgba(192, 57, 43, 0.85); }
@@ -1256,6 +1257,14 @@
                     }
                     if (!d.gefunden) {
                         showAbfrageResult('notfound', `<div class="headline">🤷 Nicht gefunden</div>Nummer <strong>${d.nummer}</strong> ist heute (${d.tag}) nicht in der Liste.`);
+                        return;
+                    }
+                    if (d.abgeholt) {
+                        // Schon am Einlass gewesen: nicht neu einsortieren
+                        showAbfrageResult('abgeholt', `
+                            <div class="headline">🛍 ${d.nummer} hat heute schon abgeholt</div>
+                            Am Einlass eingelassen${d.abgeholt_um ? ' um ' + d.abgeholt_um + ' Uhr' : ''}.<br>
+                            Nicht neu einsortieren.`);
                         return;
                     }
                     if (d.neu_einsortiert) {

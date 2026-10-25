@@ -209,6 +209,13 @@
                             <div class="sub">Kundennummer <strong>${d.nummer}</strong> ist heute (${d.tag}) nicht in der Liste.</div>`);
                         return;
                     }
+                    if (d.abgeholt) {
+                        show('done', `
+                            <div class="big-icon">🛍</div>
+                            <div class="headline">Nummer ${d.nummer} hat heute schon abgeholt</div>
+                            <div class="sub">Diese Kundennummer wurde bereits am Einlass eingelassen.</div>`);
+                        return;
+                    }
                     if (d.schon_dran) {
                         show('done', `
                             <div class="big-icon">✅</div>

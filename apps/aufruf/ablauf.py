@@ -343,6 +343,11 @@ def spaetzuender(stelle, datum, nummer) -> dict:
     with transaction.atomic():
         tag = _gestartet_sperren(stelle, datum)
         s = tag.stand
+        abholung = _abholung_heute(nummer, datum)
+        if abholung:
+            um = f" um {abholung.uhrzeit:%H:%M}" if abholung.uhrzeit else ""
+            raise AufrufFehler(f"Kunde {nummer} hat heute{um} schon abgeholt und war am Einlass. "
+                               "Nicht neu einsortieren.")  # fmt: skip
         if nummer in {norm(x) for x in s["spaetzuender"]}:
             ergebnis = _abfrage_ergebnis(tag, nummer)
             return {"bereits": True, "neuer_platz": ergebnis.get("gesamt_platz", 0),
@@ -387,13 +392,32 @@ def spaetzuender(stelle, datum, nummer) -> dict:
                 "versatz": einstellungen.spaetzuender_versatz}  # fmt: skip
 
 
-def _sprache(nummer) -> str | None:
+def _haushalt(nummer) -> Haushalt | None:
     h = Haushalt.objects.filter(kundennummer=nummer).first()
     if h is None and nummer.isdigit():
         h = next((x for x in Haushalt.objects.filter(kundennummer__endswith=nummer)
                   if norm(x.kundennummer) == nummer), None)  # fmt: skip
+    return h
+
+
+def _sprache(nummer) -> str | None:
+    h = _haushalt(nummer)
     p = h.hauptperson if h else None
     return sprachcode(p.staatsangehoerigkeit) if p else None
+
+
+def _abholung_heute(nummer, datum) -> Abholung | None:
+    """Heutige Abholung zur Kundennummer: Der Kunde ist dann schon am Einlass gewesen."""
+    h = _haushalt(nummer)
+    if h is None:
+        return None
+    return Abholung.objects.filter(haushalt=h, datum=datum).order_by("uhrzeit").first()
+
+
+def _abgeholt(ergebnis, abholung) -> dict:
+    uhrzeit = abholung.uhrzeit.strftime("%H:%M") if abholung.uhrzeit else ""
+    return {**ergebnis, "schon_dran": True, "abgeholt": True, "abgeholt_um": uhrzeit,
+            "neu_einsortiert": False}  # fmt: skip
 
 
 def _abfrage_ergebnis(tag, nummer) -> dict:
@@ -404,12 +428,14 @@ def _abfrage_ergebnis(tag, nummer) -> dict:
     basis = {"active": True, "nummer": nummer, "tag": tag_name,
              "vorschau": tag.gestartet_am is None, "sprache": _sprache(nummer)}  # fmt: skip
     treffer = _finden(s, nummer)
+    abholung = _abholung_heute(nummer, tag.datum)
     if treffer is None:
         if any(norm(x) == nummer for g in s["gruppen"] for x in g["eingelassen"]):
-            return {**basis, "gefunden": True, "schon_dran": True, "eingelassen": True,
-                    "gruppe": "", "gruppen_platz": 0, "gruppen_gesamt": 0, "gesamt_platz": 0,
-                    "gesamt_anzahl": gesamt, "vor_der_nummer": 0,
-                    "aktuelle_gruppe": aktuell}  # fmt: skip
+            ergebnis = {**basis, "gefunden": True, "schon_dran": True, "eingelassen": True,
+                        "gruppe": "", "gruppen_platz": 0, "gruppen_gesamt": 0, "gesamt_platz": 0,
+                        "gesamt_anzahl": gesamt, "vor_der_nummer": 0,
+                        "aktuelle_gruppe": aktuell}  # fmt: skip
+            return _abgeholt(ergebnis, abholung) if abholung else ergebnis
         return {
             **basis,
             "gefunden": False,
@@ -425,6 +451,8 @@ def _abfrage_ergebnis(tag, nummer) -> dict:
                 "aktuelle_gruppe": aktuell}  # fmt: skip
     if any(norm(x) == nummer for x in s["spaetzuender"]):
         ergebnis.update(schon_dran=True, neu_einsortiert=True)
+    if abholung:
+        return _abgeholt(ergebnis, abholung)
     return ergebnis
 
 
