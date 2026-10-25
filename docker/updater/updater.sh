@@ -10,6 +10,11 @@
 # "./betrieb update VERSION" ausführt (mit Sicherung vorher). Der eigene Container ist nötig,
 # weil das Update auch diesen Dienst neu startet.
 #
+# git (Versionen abrufen) und das Update laufen als Besitzer des Projektordners, mit dessen
+# Benutzerkonto und Heimatordner vom Server (nur lesend): So gelten dieselben SSH-Schlüssel,
+# bekannten Server und Zugangsdaten wie bei "./betrieb update" von Hand, und alle Dateien behalten
+# ihren Besitzer.
+#
 # Dateien in /betrieb (Schlüssel=Wert, liest bintafeln):
 #   lebenszeichen.txt  zeit=…                    alle 5 Sekunden
 #   versionen.txt      installiert, abgerufen, fehler, je Version eine Zeile version=NAME|DATUM|ÄNDERUNGEN
@@ -55,14 +60,6 @@ status_wert() {
     sed -n "s/^$1=//p" "$BETRIEB/status.txt" 2>/dev/null | head -n 1
 }
 
-# Dateien, die git als root anlegt, wieder dem Besitzer des Projektordners geben
-besitz_zurueck() {
-    besitzer=$(stat -c %u:%g "$1")
-    chown -R "$besitzer" "$1/.git"
-    [ ! -f "$1/VERSION" ] || chown "$besitzer" "$1/VERSION"
-    (cd "$1" && git ls-files -z | xargs -0 chown -h "$besitzer") 2>/dev/null || true
-}
-
 # Angaben über den eigenen Container (Docker vergibt den Namen des Rechners = Container-ID)
 eigenes() {
     docker inspect -f "$1" "$(hostname)"
@@ -82,13 +79,36 @@ aenderungen() {
         done
 }
 
+# Heimatordner des Besitzers laut /etc/passwd des Servers (eingebunden als /host-passwd)
+heimatordner() {
+    awk -F: -v u="$1" '$3 == u { print $6; exit }' /host-passwd 2>/dev/null
+}
+
+# als_besitzer [docker-run-Optionen …] -- BEFEHL …: im Projektordner als dessen Besitzer
+als_besitzer() {
+    uid=$(stat -c %u "$PROJEKT")
+    gid=$(stat -c %g "$PROJEKT")
+    host_pfad=$(eigenes '{{range .Mounts}}{{if eq .Destination "/projekt"}}{{.Source}}{{end}}{{end}}')
+    heim=$(heimatordner "$uid")
+    set -- --user "$uid:$gid" --group-add "$(stat -c %g /var/run/docker.sock)" \
+        -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro \
+        -v /var/run/docker.sock:/var/run/docker.sock \
+        -v "$host_pfad:$host_pfad" -w "$host_pfad" \
+        -e DOCKER_CONFIG=/tmp/docker -e "HOME=${heim:-/tmp}" \
+        -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0='*' "$@"
+    if [ -n "$heim" ] && [ "$heim" != / ]; then
+        set -- -v "$heim:$heim:ro" "$@"
+    fi
+    docker run "$@"
+}
+
 versionen_abrufen() {
     fehler=""
-    if ! ausgabe=$(git -C "$PROJEKT" fetch --quiet --tags --force origin 2>&1); then
+    if ! ausgabe=$(als_besitzer --rm --entrypoint git "$(eigenes '{{.Config.Image}}')" \
+        fetch --quiet --tags --force origin 2>&1); then
         fehler="Neue Versionen konnten nicht abgerufen werden: $(echo "$ausgabe" | head -n 1)"
         log "$fehler"
     fi
-    besitz_zurueck "$PROJEKT"
     installiert=$(cat "$PROJEKT/VERSION" 2>/dev/null || true)
     {
         echo "abgerufen=$(zeit)"
@@ -116,15 +136,12 @@ lauf_aktiv() {
 # Server, damit docker compose dort alle Pfade so auflöst wie bei "./betrieb update" von Hand.
 update_starten() {
     version="$1"
-    host_pfad=$(eigenes '{{range .Mounts}}{{if eq .Destination "/projekt"}}{{.Source}}{{end}}{{end}}')
     volume=$(eigenes '{{range .Mounts}}{{if eq .Destination "/betrieb"}}{{.Name}}{{end}}{{end}}')
     image=$(eigenes '{{.Config.Image}}')
     docker rm -f "$(lauf_name)" > /dev/null 2>&1 || true
     status_setzen laeuft "$version" "$(zeit)" "" "Update auf $version läuft …"
-    : | schreiben protokoll.txt
-    docker run -d --name "$(lauf_name)" \
-        -v /var/run/docker.sock:/var/run/docker.sock \
-        -v "$host_pfad:$host_pfad" -w "$host_pfad" -v "$volume:/betrieb" \
+    rm -f "$BETRIEB/protokoll.txt"  # schreibt der Lauf als Besitzer neu
+    als_besitzer -d --name "$(lauf_name)" -v "$volume:/betrieb" \
         -e "ZIEL_VERSION=$version" -e "BEGINN=$(zeit)" \
         "$image" lauf > /dev/null
     log "Update auf $version gestartet."
@@ -180,7 +197,6 @@ lauf() {
         status_setzen fehler "$ZIEL_VERSION" "$BEGINN" "$(zeit)" \
             "Das Update auf $ZIEL_VERSION ist fehlgeschlagen. Details im Protokoll."
     fi
-    besitz_zurueck "$(pwd)"
 }
 
 case "${1:-dienst}" in

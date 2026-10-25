@@ -897,7 +897,10 @@ ein bis zwei Minuten nicht erreichbar; danach zeigt die Seite das Ergebnis und d
 Das erledigt der Dienst `updater` (ADR 0043). Er ist als einziger Dienst mit Docker verbunden,
 von außen nicht erreichbar und nimmt von bintafeln nur den Namen einer vorhandenen Version an.
 Er sucht alle 10 Minuten nach neuen Versionen (`git fetch`); solange das Repository privat ist,
-braucht der Server dafür Zugangsdaten für GitHub. **Einmalig** kommt der Dienst mit dem ersten
+braucht der Server dafür Zugangsdaten für GitHub. `git fetch` und das Update laufen dabei als
+die Person, der der Projektordner gehört, mit deren Konto und Home-Ordner (nur lesend): Es gelten
+also dieselben SSH-Schlüssel, `known_hosts` und git-Einstellungen wie beim `./betrieb update`
+auf der Kommandozeile. **Einmalig** kommt der Dienst mit dem ersten
 `./betrieb update` auf der Kommandozeile dazu; danach geht jedes Update in der Oberfläche.
 
 Auf der Kommandozeile:
