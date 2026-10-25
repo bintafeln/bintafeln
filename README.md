@@ -459,7 +459,9 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
 - **Staatsangehörigkeit** ist eine Auswahlliste aller Staaten (dazu „staatenlos“ und
   „ungeklärt“). Gespeichert wird der deutsche Name; in anderen Sprachen zeigt der Browser den
   Namen zusätzlich in der Sprache der Seite. Beim Bearbeiten von Personen gilt dieselbe Liste;
-  importierte Werte, die nicht darin stehen, bleiben wählbar.
+  importierte Werte, die nicht darin stehen, bleiben wählbar. Wird sie abgefragt, hat auch jede
+  weitere Person im Haushalt ihre eigene Staatsangehörigkeit (im Antrag, in der Bearbeitung durch
+  das Büro und im Aufnahme-Assistenten; sie geht mit in den Kundenstamm).
 - **Eigene Gestaltung:** Im Feld „Eigene Gestaltung (CSS)“ lassen sich zusätzliche CSS-Regeln
   für das öffentliche Formular hinterlegen (nur für Kundige).
 - Nach dem Absenden sehen Antragstellende eine Bestätigungsseite mit ihrer **Antragsnummer** und
@@ -477,7 +479,8 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
      Nachnamen und Tippfehlern, dazu Geburtsdatum (auch mit vertauschtem Tag/Monat) und
      Anschrift. Bestehenden Kunden wählen oder „Neuer Kunde“.
   2. **Daten abgleichen:** je Angabe Kundenstamm oder Antrag wählen; Unterschiede sind markiert.
-  3. **Angehörige** aus Haushalt und Antrag, ergänzen oder entfernen.
+  3. **Angehörige** aus Haushalt und Antrag (mit eigener Staatsangehörigkeit), ergänzen oder
+     entfernen.
   4. **Bescheid und Gültigkeit:** Bescheidart (Liste „Einkommensarten“) und Gültigkeit des
      Ausweises; Vorschlag aus „Einstellungen → Kundenstamm“ (Vorgabe 12 Monate bis Monatsende).
   5. **Kundengruppe:** nur Gruppen mit freiem Platz (Höchstzahl Haushalte der Kundengruppe;

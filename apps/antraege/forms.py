@@ -88,6 +88,10 @@ class AntragForm(forms.Form):
                     label=t["nachname"], max_length=100, required=False)  # fmt: skip
                 self.fields[f"p{n}_geburtsdatum"] = forms.DateField(
                     label=t["geburtsdatum"], required=False, widget=DatumEingabe())  # fmt: skip
+                if einstellungen.staatsangehoerigkeit != Abfrage.AUS:  # nicht immer wie Person 1
+                    self.fields[f"p{n}_staatsangehoerigkeit"] = forms.ChoiceField(
+                        label=t["staatsangehoerigkeit"], choices=staaten, required=False,
+                        widget=StaatAuswahl)  # fmt: skip
         self._feld("wochentage", forms.MultipleChoiceField(
             widget=forms.CheckboxSelectMultiple,
             choices=[(tag, t[f"tag_{tag.lower()}"]) for tag in TAGE]), t["wochentage"])  # fmt: skip
@@ -126,12 +130,14 @@ class AntragForm(forms.Form):
 
     @property
     def personen_zeilen(self):
-        """Je weitere Person die drei Felder, für die Tabelle in der Vorlage."""
+        """Je weitere Person ihre Felder (Staatsangehörigkeit nur, wenn abgefragt)."""
         if "p1_vorname" not in self.fields:
             return []
         return [
             (n, self.texte["person_n"].format(n=n), self[f"p{n}_vorname"],
-             self[f"p{n}_nachname"], self[f"p{n}_geburtsdatum"])
+             self[f"p{n}_nachname"], self[f"p{n}_geburtsdatum"],
+             self[f"p{n}_staatsangehoerigkeit"] if f"p{n}_staatsangehoerigkeit" in self.fields
+             else None)
             for n in range(1, MAX_PERSONEN + 1)
         ]  # fmt: skip
 
@@ -196,6 +202,7 @@ class AntragForm(forms.Form):
                     vorname=d[f"p{n}_vorname"],
                     nachname=d.get(f"p{n}_nachname", ""),
                     geburtsdatum=d.get(f"p{n}_geburtsdatum"),
+                    staatsangehoerigkeit=d.get(f"p{n}_staatsangehoerigkeit") or "",
                 )
         for datei in d.get("anhaenge") or []:
             AntragAnhang.objects.create(
@@ -308,11 +315,23 @@ class AntragBearbeitenForm(forms.ModelForm):
         )
 
 
+class AntragPersonForm(forms.ModelForm):
+    staatsangehoerigkeit = forms.ChoiceField(
+        label="Staatsangehörigkeit", required=False, widget=StaatAuswahl
+    )
+
+    class Meta:
+        model = AntragPerson
+        fields = ["vorname", "nachname", "geburtsdatum", "staatsangehoerigkeit"]
+        widgets = {"geburtsdatum": DatumEingabe()}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["staatsangehoerigkeit"].choices = mit_vorhandenem(
+            staatsangehoerigkeiten(), self.instance.staatsangehoerigkeit
+        )
+
+
 AntragPersonenFormset = forms.inlineformset_factory(
-    Antrag,
-    AntragPerson,
-    fields=["vorname", "nachname", "geburtsdatum"],
-    widgets={"geburtsdatum": DatumEingabe()},
-    extra=2,
-    can_delete=True,
+    Antrag, AntragPerson, form=AntragPersonForm, extra=2, can_delete=True
 )

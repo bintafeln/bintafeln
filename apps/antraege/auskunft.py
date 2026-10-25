@@ -37,8 +37,11 @@ def antrag_pdf(a) -> bytes:
     )
     doc.ueberschrift("Weitere Personen im Haushalt")
     doc.tabelle(
-        ["Vorname", "Nachname", "Geburtsdatum"],
-        [[p.vorname, p.nachname, _datum(p.geburtsdatum)] for p in a.personen.all()],
+        ["Vorname", "Nachname", "Geburtsdatum", "Staatsangehörigkeit"],
+        [
+            [p.vorname, p.nachname, _datum(p.geburtsdatum), p.staatsangehoerigkeit]
+            for p in a.personen.all()
+        ],  # fmt: skip
     )
     doc.ueberschrift("Nachweise")
     doc.tabelle(["Datei", "Größe"], [[x.name, f"{x.groesse // 1024} KB"] for x in a.anhaenge.all()])

@@ -223,9 +223,16 @@ def _wert(a, spalte):
         return f"{a.geburtsdatum:%Y-%m-%d}" if a.geburtsdatum else ""
     if spalte == "personen":
         return " | ".join(
-            f"{p.vorname} {p.nachname} {p.geburtsdatum:%Y-%m-%d}".strip()
-            if p.geburtsdatum
-            else f"{p.vorname} {p.nachname}".strip()
+            " ".join(
+                t
+                for t in (
+                    p.vorname,
+                    p.nachname,
+                    f"{p.geburtsdatum:%Y-%m-%d}" if p.geburtsdatum else "",
+                    f"({p.staatsangehoerigkeit})" if p.staatsangehoerigkeit else "",
+                )
+                if t
+            )  # fmt: skip
             for p in a.personen.all()
         )
     return getattr(a, spalte)

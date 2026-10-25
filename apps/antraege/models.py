@@ -234,6 +234,7 @@ class AntragPerson(models.Model):
     vorname = models.CharField("Vorname", max_length=100)
     nachname = models.CharField("Nachname", max_length=100, blank=True)
     geburtsdatum = models.DateField("Geburtsdatum", null=True, blank=True)
+    staatsangehoerigkeit = models.CharField("Staatsangehörigkeit", max_length=100, blank=True)
 
     class Meta:
         verbose_name = "Person im Antrag"
