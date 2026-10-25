@@ -312,6 +312,11 @@ class AnmeldeEinstellungen(models.Model):
         help_text="Wer bei der Anmeldung „Diesem Gerät vertrauen“ anhakt, braucht auf diesem "
         "Browser so lange keinen Zwei-Faktor-Code (das Passwort weiterhin). Gilt für alle Rollen.",
     )  # fmt: skip
+    stellen_zwei_faktor = models.BooleanField(
+        "Konten der Ausgabestellen dürfen Zwei-Faktor einrichten", default=False,
+        help_text="Aus: Die Konten der Ausgabestellen sehen die Zwei-Faktor-Anmeldung nicht; beim "
+        "Ausschalten werden dort eingerichtete Geräte entfernt (ADR 0059).",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Anmelde-Einstellungen"

@@ -20,6 +20,10 @@ Konto verwischt dagegen, wer was darf.
   (`StellenKontoMiddleware`, die Seite lädt dann neu) und für alle Konten eine Sperre von
   15 Minuten nach 5 falschen Passwörtern.
 - Das Konto gehört keiner Person: „Meine Daten“ (Auskunft nach Art. 15) gibt es dafür nicht.
+- Zwei-Faktor können diese Konten nur einrichten, wenn die Tafel es in den Anmelde-Einstellungen
+  freischaltet (`AnmeldeEinstellungen.stellen_zwei_faktor`, Vorgabe aus); sonst fehlt der
+  Abschnitt unter „Mein Konto“. Beim Ausschalten werden eingerichtete Geräte entfernt, damit die
+  Anmeldung am Tablet nicht an einem Code hängt.
 
 ## Begründung
 

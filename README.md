@@ -241,7 +241,10 @@ mehreren Seiten steht die Blätterleiste oben und unten (`{% blaettern seite %}`
 bekommt jede Ausgabestelle unter „Team → Ausgabestellen-Konten“ ein eigenes Konto. Anmeldung mit
 dem **Namen der Ausgabestelle** und Passwort, ohne Zwei-Faktor; Rolle Ausgabe, nur Kunden dieser
 Ausgabestelle; Abmeldung nach 30 Minuten ohne Eingabe. Nach 5 falschen Passwörtern ist die
-Anmeldung eines Kontos 15 Minuten gesperrt (gilt für alle Konten).
+Anmeldung eines Kontos 15 Minuten gesperrt (gilt für alle Konten). Zwei-Faktor sehen diese
+Konten nur, wenn unter „Einstellungen → Systemsteuerung → Anmeldung und Zwei-Faktor“ freigeschaltet
+(Vorgabe aus; beim Ausschalten werden eingerichtete Geräte dieser Konten entfernt). „Meine Daten“
+(Auskunft) gibt es für sie nicht.
 
 „Mitarbeitende“ im Menü (mit dem Recht „Mitarbeitende anlegen, bearbeiten, sperren“; Admin
 immer). Rollen vergeben kann man nur, wenn man selbst alle Rechte der Rolle hat; Admin-Konten

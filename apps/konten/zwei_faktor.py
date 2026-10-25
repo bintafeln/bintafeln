@@ -38,6 +38,27 @@ def ist_pflicht(benutzer) -> bool:
     return Rolle.objects.filter(gruppe__name__in=namen, zwei_faktor_pflicht=True).exists()
 
 
+def erlaubt(benutzer) -> bool:
+    """Konten der Ausgabestellen nur, wenn die Tafel es freigeschaltet hat (ADR 0059)."""
+    if not getattr(benutzer, "stelle_id", None):
+        return True
+    from apps.konten.models import AnmeldeEinstellungen
+
+    return AnmeldeEinstellungen.laden().stellen_zwei_faktor
+
+
+def stellen_abschalten() -> int:
+    """Entfernt die Geräte aller Konten der Ausgabestellen (beim Ausschalten der Freigabe)."""
+    from django.contrib.auth import get_user_model
+
+    konten = get_user_model().objects.filter(stelle__isnull=False)
+    betroffen = [k for k in konten if TOTPDevice.objects.filter(user=k).exists()
+                 or StaticDevice.objects.filter(user=k).exists()]  # fmt: skip
+    for k in betroffen:
+        abschalten(k)
+    return len(betroffen)
+
+
 def code_bereinigen(code: str) -> str:
     """Leerzeichen und Bindestriche entfernen; Notfallcodes sind kleingeschrieben gespeichert."""
     return re.sub(r"[\s-]", "", code or "").lower()

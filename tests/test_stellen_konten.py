@@ -121,3 +121,33 @@ def test_nur_fuer_verwalter(admin, benutzer_mit_rolle, anmelden, mitte):
     c = anmelden(Client(), benutzer_mit_rolle("anton", rollen.AUSGABE))
     assert c.get(reverse("konten:stellen")).status_code == 403
     assert c.get(reverse("konten:stelle", args=[mitte.pk])).status_code == 403
+
+
+def test_zwei_faktor_nur_mit_freigabe(admin_client, mitte):
+    from django_otp.plugins.otp_totp.models import TOTPDevice
+
+    from apps.konten.models import AnmeldeEinstellungen
+    from tests.test_zwei_faktor import einrichten
+
+    konto_anlegen(admin_client, mitte)
+    konto = get_user_model().objects.get(stelle=mitte)
+    tablet = Client()
+    tablet.post(ANMELDEN, {"username": "Carnaper Tisch", "password": PW})
+    assert "Zwei-Faktor" not in tablet.get(reverse("konten:mein_konto")).content.decode()
+    assert tablet.get(reverse("konten:zwei_faktor_einrichten")).status_code == 404
+    # freigeschaltet: sichtbar und einrichtbar (aber keine Pflicht)
+    url = reverse("konten:anmelde_einstellungen")
+    admin_client.post(url, {"vertrauen_tage": "0", "stellen_zwei_faktor": "on"})
+    assert AnmeldeEinstellungen.laden().stellen_zwei_faktor
+    assert "Zwei-Faktor" in tablet.get(reverse("konten:mein_konto")).content.decode()
+    einrichten(tablet, konto)
+    assert TOTPDevice.objects.filter(user=konto).exists()
+    # wieder aus: Geräte entfernt, Anmeldung mit Name und Passwort klappt ohne Code
+    antwort = admin_client.post(url, {"vertrauen_tage": "0"}, follow=True)
+    assert "Zwei-Faktor bei den Konten der Ausgabestellen entfernt" in antwort.content.decode()
+    assert not TOTPDevice.objects.filter(user=konto).exists()
+    neu = Client()
+    antwort = neu.post(ANMELDEN, {"username": "Carnaper Tisch", "password": PW})
+    assert antwort.status_code == 302 and antwort.url == "/"
+    # Für andere Konten ändert die Freigabe nichts
+    assert "Zwei-Faktor" in admin_client.get(reverse("konten:mein_konto")).content.decode()
