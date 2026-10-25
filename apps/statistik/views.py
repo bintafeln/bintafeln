@@ -7,11 +7,13 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
 
+from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.kunden import zugang
 from apps.kunden.models import Ausgabestelle
 from apps.statistik import auswertung as aw
 from apps.statistik import diagramme as dg
+from apps.statistik import jahresbericht as jb
 
 
 def _datum(text) -> dt.date | None:
@@ -262,25 +264,8 @@ def abschnitte(z: aw.Zeitraum, stellen, heute, benutzer=None) -> list[dict]:
     return liste
 
 
-@rollen.recht_erforderlich("statistik.sehen")
-def uebersicht(request):
-    heute = timezone.localdate()
-    wahl, z, vorgaben = _zeitraum(request, heute)
-    stellen, auswahl, gewaehlt = _stellen(request)
-    teile = abschnitte(z, stellen, heute, request.user)
-    csv_teil = request.GET.get("csv")
-    if csv_teil:
-        teil = next((t for t in teile if t["id"] == csv_teil), None)
-        if teil is not None:
-            antwort = HttpResponse(content_type="text/csv; charset=utf-8")
-            antwort["Content-Disposition"] = (
-                f'attachment; filename="statistik-{teil["id"]}-{z.von}-{z.bis}.csv"'
-            )
-            antwort.write("﻿")
-            schreiber = csv.writer(antwort, delimiter=";")
-            schreiber.writerow(teil["kopf"])
-            schreiber.writerows(teil["zeilen"])
-            return antwort
+def kennzahlen_kacheln(z: aw.Zeitraum, stellen, heute, benutzer) -> list[tuple[str, str, str]]:
+    """Kennzahlen als (Titel, Wert, Erläuterung) für die Kacheln und den Jahresbericht."""
     k = aw.kennzahlen(z, stellen)
     kacheln = [
         ("Abholungen", f"{k.abholungen:,}".replace(",", "."), "im Zeitraum"),
@@ -300,7 +285,7 @@ def uebersicht(request):
     ]
     if stellen is None:
         kacheln.append(("Anträge", f"{k.antraege:,}".replace(",", "."), "eingegangen"))
-    mit_spenden, mit_mitgliedern = _verein(request.user, stellen)
+    mit_spenden, mit_mitgliedern = _verein(benutzer, stellen)
     if mit_spenden:
         s = aw.spendenzahlen(z)
         kacheln += [
@@ -317,6 +302,29 @@ def uebersicht(request):
         if MitgliederEinstellungen.mit_beitraegen():
             beitraege = aw.spendenzahlen(z).beitraege
             kacheln.append(("Mitgliedsbeiträge", _euro(beitraege), "eingegangen"))
+    return kacheln
+
+
+@rollen.recht_erforderlich("statistik.sehen")
+def uebersicht(request):
+    heute = timezone.localdate()
+    wahl, z, vorgaben = _zeitraum(request, heute)
+    stellen, auswahl, gewaehlt = _stellen(request)
+    teile = abschnitte(z, stellen, heute, request.user)
+    csv_teil = request.GET.get("csv")
+    if csv_teil:
+        teil = next((t for t in teile if t["id"] == csv_teil), None)
+        if teil is not None:
+            antwort = HttpResponse(content_type="text/csv; charset=utf-8")
+            antwort["Content-Disposition"] = (
+                f'attachment; filename="statistik-{teil["id"]}-{z.von}-{z.bis}.csv"'
+            )
+            antwort.write("﻿")
+            schreiber = csv.writer(antwort, delimiter=";")
+            schreiber.writerow(teil["kopf"])
+            schreiber.writerows(teil["zeilen"])
+            return antwort
+    kacheln = kennzahlen_kacheln(z, stellen, heute, request.user)
     return render(
         request,
         "statistik/uebersicht.html",
@@ -330,5 +338,21 @@ def uebersicht(request):
             "kacheln": kacheln,
             "abschnitte": teile,
             "abfrage": request.GET.urlencode(),
+            "jahre": list(range(heute.year, heute.year - 6, -1)),
         },
     )
+
+
+@rollen.recht_erforderlich("statistik.sehen")
+def jahresbericht(request):
+    """Jahresbericht als PDF für ein Kalenderjahr; Ausgabestelle wie auf der Statistik-Seite."""
+    heute = timezone.localdate()
+    wert = request.GET.get("jahr", "")
+    jahr = int(wert) if wert.isdigit() and 2000 <= int(wert) <= heute.year else heute.year
+    z = jb.zeitraum(jahr, heute)
+    stellen, _, gewaehlt = _stellen(request)
+    teile = abschnitte(z, stellen, heute, request.user)
+    kacheln = kennzahlen_kacheln(z, stellen, heute, request.user)
+    stelle = stellen[0].name if gewaehlt and stellen else ""
+    inhalt = jb.erzeugen(jahr, z, kacheln, teile, stelle)
+    return pdf_antwort(inhalt, f"jahresbericht-{jahr}.pdf")
