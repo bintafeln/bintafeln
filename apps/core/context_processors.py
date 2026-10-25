@@ -34,5 +34,6 @@ def tafel(request):
         "passwort_offen": angemeldet and benutzer.passwort_aendern,
         "darf_stempeln": angemeldet and _darf_stempeln(benutzer),
         "demo": settings.DEMO,
+        "heimnetz_https": settings.HEIMNETZ_ADRESSE,
         "version": version(),
     }

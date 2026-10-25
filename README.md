@@ -126,6 +126,21 @@ Namen der Tafel und das erste Admin-Konto eintragen. Direkt danach richtet der A
 [Zwei-Faktor-Anmeldung](#zwei-faktor-anmeldung) ein; dafür eine Authenticator-App auf dem Handy
 bereithalten. Anschrift und Logo lassen sich danach unter **Einstellungen** ergänzen.
 
+### Testen im Heimnetz mit https (für die Kamera am Handy)
+
+Im Entwicklungsmodus läuft bintafeln über `http://IP`. Browser geben die Kamera aber nur über
+https frei. Für Tests im Heimnetz in der `.env` die IP des Servers eintragen:
+
+```bash
+BINTAFELN_HEIMNETZ_ADRESSE=192.168.178.20   # Beispiel, eigene IP einsetzen
+docker compose up -d
+```
+
+Dann ist bintafeln zusätzlich unter `https://192.168.178.20` erreichbar; `http://` geht weiter.
+Caddy stellt das Zertifikat selbst aus, deshalb warnt der Browser beim ersten Aufruf: „Erweitert“
+→ „Weiter zu …“ wählen. Danach fragt das Handy wie gewohnt nach der Kamera. Im Produktionsmodus
+(`BINTAFELN_DOMAIN` gesetzt) wird die Variable nicht gebraucht (ADR 0041).
+
 ### 6. Sicherung einrichten
 
 ```bash
@@ -485,9 +500,12 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
      Abschluss“ (Suffix CR) einstellen.
    - **Kamera** (Handy, Tablet oder Laptop): Knopf **📷 Kamera**, Barcode des Ausweises in den
      Rahmen halten; die Nummer wird eingetragen und geprüft. Beim ersten Mal fragt der Browser
-     nach der Kamera-Erlaubnis. Der Browser erlaubt die Kamera nur über **https**, also im
-     Produktionsmodus (im Entwicklungsmodus mit `http://IP` erscheint ein Hinweis). Die
-     Erkennung läuft vollständig im Browser; es werden keine Bilder gespeichert oder versendet.
+     nach der Kamera-Erlaubnis; bintafeln kündigt das an. Ist die Kamera gesperrt, zeigt
+     bintafeln passend zum Gerät, wo man sie freigibt, und „Erneut versuchen“. Der Browser
+     erlaubt die Kamera nur über **https**: im Produktionsmodus immer, im Heimnetz mit
+     `BINTAFELN_HEIMNETZ_ADRESSE` (siehe „Testen im Heimnetz mit https“). Über `http://IP`
+     erscheint ein Hinweis, mit https im Heimnetz ein Knopf „Über https öffnen“. Die Erkennung
+     läuft vollständig im Browser; es werden keine Bilder gespeichert oder versendet.
 3. Die **Ampel** zeigt, ob abgeholt werden darf, und warum nicht:
    - 🔴 Sperre, Status gesperrt/beendet, Ausweis abgelaufen, heute schon so oft abgeholt wie
      erlaubt, Höchstzahl je Woche/14 Tage/Monat erreicht, keine Kundengruppe, heute nicht dran

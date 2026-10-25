@@ -32,6 +32,7 @@ services:
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-}
       DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-}
       BINTAFELN_DOMAIN: ${BINTAFELN_DOMAIN:-}
+      BINTAFELN_HEIMNETZ_ADRESSE: ${BINTAFELN_HEIMNETZ_ADRESSE:-}
       BINTAFELN_ZEITZONE: ${BINTAFELN_ZEITZONE:-Europe/Berlin}
       BINTAFELN_LOGLEVEL: ${BINTAFELN_LOGLEVEL:-INFO}
       BINTAFELN_DEMO: ${BINTAFELN_DEMO:-false}
@@ -76,6 +77,8 @@ services:
     environment:
       # Leere Domain → Entwicklungsmodus ohne TLS auf Port 80.
       SITE_ADDRESS: ${BINTAFELN_DOMAIN:-:80}
+      # Optional: zusätzlich https mit eigenem Zertifikat im Heimnetz (ADR 0041)
+      BINTAFELN_HEIMNETZ_ADRESSE: ${BINTAFELN_HEIMNETZ_ADRESSE:-}
     ports:
       - "${HTTP_PORT:-80}:80"
       - "${HTTPS_PORT:-443}:443"

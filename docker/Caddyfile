@@ -5,14 +5,22 @@
 # Hinter einem gemeinsamen Proxy (docker/hinter-proxy.yml) ist SITE_ADDRESS ":80" und
 # BINTAFELN_VERTRAUTE_PROXYS "private_ranges": Caddy übernimmt dann https und die Adresse der
 # Besucher aus den Kopfzeilen des gemeinsamen Proxys.
-
+#
+# https im Heimnetz (ADR 0041): Ist BINTAFELN_HEIMNETZ_ADRESSE gesetzt (z. B. die IP der VM), liefert
+# Caddy diese Adresse zusätzlich über https mit einem selbst ausgestellten Zertifikat aus. Das
+# braucht z. B. die Kamera am Handy, die Browser nur über https freigeben. Ohne Variable
+# antworten die beiden letzten Blöcke nur auf den Platzhalter „heimnetz.invalid“, also nie.
 {
 	servers {
 		trusted_proxies static {$BINTAFELN_VERTRAUTE_PROXYS:127.0.0.1/32}
 	}
+	# Geräte im Heimnetz rufen die IP ohne Namen (SNI) auf; dann gilt das Zertifikat dieser Adresse
+	default_sni {$BINTAFELN_HEIMNETZ_ADRESSE:heimnetz.invalid}
+	# Die eigene Zertifizierungsstelle nicht im Container installieren (dort nutzlos)
+	skip_install_trust
 }
 
-{$SITE_ADDRESS} {
+(bintafeln) {
 	encode zstd gzip
 
 	header {
@@ -38,4 +46,18 @@
 	handle {
 		reverse_proxy app:8000
 	}
+}
+
+{$SITE_ADDRESS} {
+	import bintafeln
+}
+
+https://{$BINTAFELN_HEIMNETZ_ADRESSE:heimnetz.invalid} {
+	tls internal
+	import bintafeln
+}
+
+# Eigener http-Block, damit http://IP weiter ohne Umleitung auf https funktioniert
+http://{$BINTAFELN_HEIMNETZ_ADRESSE:heimnetz.invalid} {
+	import bintafeln
 }

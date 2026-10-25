@@ -1,4 +1,5 @@
 import datetime as dt
+import re
 from decimal import Decimal
 from pathlib import Path
 
@@ -92,7 +93,17 @@ def test_kamera_scanner_eingebunden(ausgabe, stelle):
         assert f"/static/{datei}" in inhalt
         assert finders.find(datei)
     skript = Path(finders.find("js/kamera_scanner.js")).read_text(encoding="utf-8")
-    assert "http" not in skript.replace("https)", "")
+    assert not re.search(r"https?://", skript)  # keine fremden Adressen
+
+
+def test_kamera_verweist_im_heimnetz_auf_https(ausgabe, settings):
+    """Über http fragt der Browser nicht nach der Kamera; im Heimnetz gibt es https (ADR 0041)."""
+    assert "data-kamera-https" not in ausgabe.get(EMPFANG).content.decode()
+    settings.HEIMNETZ_ADRESSE = "192.0.2.10"
+    inhalt = ausgabe.get(EMPFANG).content.decode()
+    assert 'data-kamera-https="https://192.0.2.10/ausgabe/"' in inhalt
+    assert "Erneut versuchen" in inhalt
+    assert "data-kamera-https" not in ausgabe.get(EMPFANG, secure=True).content.decode()
 
 
 # --- Scannen ------------------------------------------------------------------------------

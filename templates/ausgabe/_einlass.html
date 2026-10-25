@@ -36,7 +36,8 @@ Nach dem Anmelden eines Kunden kommt wieder die Suche.
       <input type="text" name="nummer" id="nummer" autofocus autocomplete="off" inputmode="numeric"
              class="scan-feld" required data-kamera="kamera"
              data-kamera-skript="{% static 'vendor/barcode-detector/ponyfill.js' %}"
-             data-kamera-wasm="{% static 'vendor/barcode-detector/zxing_reader.wasm' %}">
+             data-kamera-wasm="{% static 'vendor/barcode-detector/zxing_reader.wasm' %}"
+             {% if heimnetz_https and not request.is_secure %}data-kamera-https="https://{{ heimnetz_https }}{% url 'ausgabe:empfang' %}"{% endif %}>
       <button type="submit" class="knopf">Prüfen</button>
       <button type="button" class="knopf knopf-zweitrangig" id="kamera" hidden
               title="Ausweis mit der Kamera scannen">📷 Kamera</button>
@@ -45,8 +46,9 @@ Nach dem Anmelden eines Kunden kommt wieder die Suche.
   <dialog id="kamera-dialog" class="kamera-dialog" aria-label="Ausweis mit der Kamera scannen">
     <p class="kamera-hilfe">Den Barcode des Ausweises in den Rahmen halten.</p>
     <video playsinline muted></video>
-    <p class="kamera-meldung meldung error" role="alert" hidden></p>
-    <button type="button" class="knopf kamera-schliessen">Schließen</button>
+    <div class="kamera-meldung meldung error" role="alert" hidden></div>
+    <button type="button" class="knopf kamera-nochmal" hidden>Erneut versuchen</button>
+    <button type="button" class="knopf knopf-zweitrangig kamera-schliessen">Schließen</button>
   </dialog>
   {% if stellen %}
   <form method="post" action="{% url 'ausgabe:ausgabestelle' %}" class="filter stelle-wahl">

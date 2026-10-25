@@ -504,7 +504,10 @@ label.wahl { display: block; white-space: nowrap; }
 .kamera-dialog video { display: block; width: 100%; max-height: 60vh; background: #000; border-radius: var(--radius); object-fit: cover; }
 .kamera-dialog .kamera-hilfe { margin: 0 0 .5rem; }
 .kamera-dialog .kamera-meldung { margin: .75rem 0 0; }
-.kamera-dialog .kamera-schliessen { margin-top: .75rem; width: 100%; }
+.kamera-dialog .kamera-schliessen, .kamera-dialog .kamera-nochmal { margin-top: .75rem; width: 100%; }
+.kamera-meldung p { margin: 0 0 .35rem; font-weight: 600; }
+.kamera-meldung ol { margin: 0; padding-left: 1.25rem; }
+.kamera-meldung .kamera-https { display: block; margin-top: .75rem; text-align: center; text-decoration: none; }
 @media (max-width: 30rem) {
   .scan-zeile { flex-wrap: wrap; }
   .scan-zeile .scan-feld { flex: 1 1 100%; }
