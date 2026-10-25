@@ -29,6 +29,13 @@
         <option value="{{ g.pk }}"{% if filter.gruppe == g.pk|stringformat:"d" %} selected{% endif %}>{{ g.name }}</option>
       {% endfor %}
     </select>
+    {% if tage %}
+    <label for="tag">Ausgabetag</label>
+    <select name="tag" id="tag">
+      <option value="">alle Tage</option>
+      {% for t in tage %}<option value="{{ t }}"{% if filter.tag == t %} selected{% endif %}>{{ t }}</option>{% endfor %}
+    </select>
+    {% endif %}
     <button type="submit" class="knopf">Suchen</button>
   </form>
   <div id="kunden-liste">{% include "kunden/_liste.html" %}</div>

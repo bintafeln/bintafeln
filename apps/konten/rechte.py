@@ -45,6 +45,9 @@ KATALOG = [
     Recht("sonderaktionen.verwalten", EINLASS, "Sonderaktionen anlegen, ändern und auswerten"),
     # Kunden
     Recht("kunden.liste", KUNDEN, "Kundenliste und Suche"),
+    Recht("kunden.exportieren", KUNDEN, "Kundenliste als CSV-Datei exportieren",
+          "Nur die eigenen Ausgabestellen; Spalten unter „Einstellungen → Kunden → Kundenstamm“. "
+          "Jeder Export steht im Zugriffsprotokoll."),
     Recht("kunden.alle_ausgabestellen", KUNDEN, "Kunden aller Ausgabestellen aufrufen",
           "Ohne dieses Recht sieht, wer einer Ausgabestelle zugeordnet ist, nur deren Kunden."),
     Recht("kunden.ansehen", KUNDEN, "Seite eines Haushalts ansehen (Grundangaben)",
@@ -142,7 +145,8 @@ def _module_einsammeln() -> None:
 
 
 _EINLASS = ["einlass.nutzen", "einlass.abholung", "einlass.zahlung", "einlass.sonderaktion",
-            "kasse.sehen", "kunden.liste", "kunden.ansehen", "kunden.notizen"]  # fmt: skip
+            "kasse.sehen", "kunden.liste", "kunden.ansehen", "kunden.notizen",
+            "kunden.exportieren"]  # fmt: skip
 
 # Rechte der mitgelieferten Rollen: genau das Verhalten vor ADR 0033.
 VORGABEN = {

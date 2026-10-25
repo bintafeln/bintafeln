@@ -44,6 +44,10 @@ class KundenEinstellungen(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(10)],
         help_text="Ältere werden nicht importiert und automatisch gelöscht.",
     )
+    export_felder = models.JSONField(
+        "Spalten des Exports der Kundenliste", default=list, blank=True,
+        help_text="Leer = Kundennummer, Name, Kundengruppe, Ausgabetage, Uhrzeit, Personen.",
+    )  # fmt: skip
     historie_aufbewahren_jahre = models.PositiveSmallIntegerField(
         "Historie aufbewahren (Jahre)",
         default=3,
@@ -799,6 +803,7 @@ class Zugriff(models.Model):
     benutzername = models.CharField("Benutzername", max_length=150)
     kundennummer = models.CharField("Kundennummer", max_length=20, db_index=True)
     besondere_kategorie = models.BooleanField("Mit Angaben der besonderen Kategorie", default=False)
+    export = models.BooleanField("Export der Kundenliste", default=False)
 
     class Meta:
         verbose_name = "Zugriff"

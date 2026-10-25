@@ -47,6 +47,7 @@ def mitarbeiter_pdf(b) -> bytes:
                 ", ".join(r.name for r in rollen.alle_rollen() if r.name in rollen.rollen_von(b)),
             ),
             ("Beschäftigung", b.get_beschaeftigung_display()),
+            ("Ausgabetage", b.ausgabetage),
             ("Konto angelegt am", _wert(b.date_joined)),
             ("Zuletzt angemeldet am", _wert(b.last_login)),
             ("Zwei-Faktor-Anmeldung eingerichtet", _wert(zwei_faktor.app_geraet(b) is not None)),

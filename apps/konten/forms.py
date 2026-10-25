@@ -133,12 +133,25 @@ class MitarbeiterForm(forms.ModelForm):
             "email",
             "beschaeftigung",
             "ausgabestellen",
+            "ausgabetage",
         ]
         help_texts = {"username": "Zum Anmelden. Buchstaben, Ziffern und @ . + - _"}
         widgets = {"ausgabestellen": forms.CheckboxSelectMultiple}
 
+    ausgabetage = forms.MultipleChoiceField(
+        label="Ausgabetage", required=False, widget=forms.CheckboxSelectMultiple,
+        help_text="An welchen Tagen die Person meist arbeitet; die Kundenliste startet mit diesem "
+        "Tag.",
+    )  # fmt: skip
+
     def __init__(self, *args, verwalter, mail_moeglich=False, **kwargs):
+        from apps.ausgabe.ampel import WOCHENTAGE
+
         super().__init__(*args, **kwargs)
+        self.fields["ausgabetage"].choices = [(t, t) for t in WOCHENTAGE]
+        self.initial["ausgabetage"] = [
+            t.strip() for t in (self.instance.ausgabetage or "").split(",") if t.strip()
+        ]
         if self.instance.pk or not mail_moeglich:
             del self.fields["zugang"]
         self.fields["rollen"].choices = [(r, r) for r in verwaltung.vergebbare_rollen(verwalter)]
@@ -154,6 +167,11 @@ class MitarbeiterForm(forms.ModelForm):
                 "email", "Für eine Einladung per Mail bitte eine E-Mail-Adresse angeben."
             )
         return daten
+
+    def clean_ausgabetage(self):
+        from apps.ausgabe.ampel import WOCHENTAGE
+
+        return ", ".join(t for t in WOCHENTAGE if t in self.cleaned_data["ausgabetage"])
 
     def clean_username(self):
         name = self.cleaned_data["username"]

@@ -1,5 +1,5 @@
 <p class="hinweis">{{ seite.paginator.count }} Haushalt{{ seite.paginator.count|pluralize:"e" }}
-  {% if darf_importieren and seite.paginator.count %} · <a href="{% url 'kunden:ausweise' %}?q={{ filter.q|urlencode }}&amp;status={{ filter.status|urlencode }}&amp;gruppe={{ filter.gruppe|urlencode }}" target="_blank" rel="noopener">Ausweise dieser {{ seite.paginator.count }} drucken (PDF)</a>{% endif %}</p>
+  {% if darf_importieren and seite.paginator.count %} · <a href="{% url 'kunden:ausweise' %}?{{ abfrage }}" target="_blank" rel="noopener">Ausweise dieser {{ seite.paginator.count }} drucken (PDF)</a>{% endif %}{% if "kunden.exportieren" in rechte and seite.paginator.count %} · <a href="{% url 'kunden:exportieren' %}?{{ abfrage }}" download>Diese {{ seite.paginator.count }} als CSV exportieren (Excel)</a>{% endif %}</p>
 <div class="tabelle-rahmen">
 <table class="tabelle">
   <thead><tr><th>Nr.</th><th>Name</th><th>Kundengruppe</th><th>Status</th><th>Ausweis bis</th></tr></thead>
@@ -20,8 +20,8 @@
 </div>
 {% if seite.has_other_pages %}
 <nav class="blaettern" aria-label="Seiten">
-  <span>{% if seite.has_previous %}<a href="?q={{ filter.q|urlencode }}&amp;status={{ filter.status }}&amp;gruppe={{ filter.gruppe }}&amp;seite={{ seite.previous_page_number }}">← zurück</a>{% endif %}</span>
+  <span>{% if seite.has_previous %}<a href="?{{ abfrage }}&amp;seite={{ seite.previous_page_number }}">← zurück</a>{% endif %}</span>
   <span>Seite {{ seite.number }} von {{ seite.paginator.num_pages }}</span>
-  <span>{% if seite.has_next %}<a href="?q={{ filter.q|urlencode }}&amp;status={{ filter.status }}&amp;gruppe={{ filter.gruppe }}&amp;seite={{ seite.next_page_number }}">weiter →</a>{% endif %}</span>
+  <span>{% if seite.has_next %}<a href="?{{ abfrage }}&amp;seite={{ seite.next_page_number }}">weiter →</a>{% endif %}</span>
 </nav>
 {% endif %}

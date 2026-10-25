@@ -1,21 +1,24 @@
 import datetime as dt
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import OuterRef, Q, Subquery
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
+from apps.ausgabe.ampel import WOCHENTAGE
 from apps.ausgabe.models import AusgabeEinstellungen
 from apps.core import sicherung
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.kunden import auskunft as kunden_auskunft
-from apps.kunden import importieren, views_dokumente, zugang
+from apps.kunden import export, importieren, views_dokumente, zugang
 from apps.kunden.ausweis import MAX_SAMMELDRUCK, ausweis_pdf, ausweise_pdf
 from apps.kunden.forms import KundenEinstellungenForm, ZusatzfeldForm
 from apps.kunden.models import (
@@ -106,7 +109,25 @@ def _haushalte_suchen(request):
     gruppe = request.GET.get("gruppe", "")
     if gruppe.isdigit():
         haushalte = haushalte.filter(kundengruppe_id=int(gruppe))
-    return haushalte, {"q": suche, "status": status, "gruppe": gruppe}
+    tag = _tag(request)
+    haushalte = export.nach_tag(haushalte, tag)
+    return haushalte, {"q": suche, "status": status, "gruppe": gruppe, "tag": tag}
+
+
+def _eigene_gruppen(benutzer):
+    stellen = zugang.stellen(benutzer)
+    gruppen = Kundengruppe.objects.filter(aktiv=True)
+    return gruppen if stellen is None else gruppen.filter(ausgabestelle__in=stellen)
+
+
+def _tag(request) -> str:
+    """Gewählter Ausgabetag; ohne Angabe (und ohne Suchtext) der eigene Ausgabetag."""
+    if "tag" in request.GET:
+        return request.GET["tag"] if request.GET["tag"] in WOCHENTAGE else ""
+    if request.GET.get("q", "").strip():
+        return ""
+    verfuegbar = export.verfuegbare_tage(_eigene_gruppen(request.user))
+    return export.standard_tag(request.user, timezone.localdate(), verfuegbar)
 
 
 @rollen.recht_erforderlich("kunden.liste")
@@ -135,6 +156,8 @@ def uebersicht(request):
         if zugang.stellen(request.user) is None
         else Kundengruppe.objects.filter(ausgabestelle__in=zugang.stellen(request.user)),
         "eigene_stellen": zugang.stellen(request.user),
+        "tage": export.verfuegbare_tage(_eigene_gruppen(request.user)),
+        "abfrage": urlencode({k: v for k, v in filter_.items() if v} | {"tag": filter_["tag"]}),
         "heute": timezone.localdate(),
         "darf_importieren": rollen.hat_recht(request.user, "kunden.importieren"),
         "anzahl": {
@@ -293,6 +316,27 @@ def auskunft(request, kundennummer):
 def ausweis(request, kundennummer):
     h = zugang.haushalt(request.user, kundennummer)
     return pdf_antwort(ausweis_pdf(h), f"kundenausweis-{_dateiname(h)}.pdf")
+
+
+@never_cache
+@rollen.recht_erforderlich("kunden.exportieren")
+def exportieren(request):
+    """Gefilterte Kundenliste der eigenen Ausgabestellen als CSV; jeder Haushalt ins Protokoll."""
+    haushalte, filter_ = _haushalte_suchen(request)
+    haushalte = list(haushalte.select_related("kundengruppe__ausgabestelle")
+                     .prefetch_related("personen").order_by("kundennummer"))  # fmt: skip
+    heute = timezone.localdate()
+    inhalt = export.csv_text(haushalte, rollen.rechte_von(request.user), heute)
+    jetzt = timezone.now()
+    Zugriff.objects.bulk_create([
+        Zugriff(zeitpunkt=jetzt, benutzer=request.user, benutzername=request.user.get_username(),
+                kundennummer=h.kundennummer, export=True)
+        for h in haushalte
+    ])  # fmt: skip
+    teil = f"-{filter_['tag'].lower()}" if filter_["tag"] else ""
+    antwort = HttpResponse(inhalt, content_type="text/csv; charset=utf-8")
+    antwort["Content-Disposition"] = f'attachment; filename="kunden{teil}-{heute:%Y-%m-%d}.csv"'
+    return antwort
 
 
 @never_cache
