@@ -30,6 +30,8 @@ def aussteller(geraet=None) -> str:
 def ist_pflicht(benutzer) -> bool:
     if not benutzer.is_authenticated or settings.DEMO:  # Demo: Einrichtung ist gesperrt
         return False
+    if getattr(benutzer, "stelle_id", None):  # Konto einer Ausgabestelle (ADR 0059)
+        return False
     from apps.konten.models import Rolle
 
     namen = rollen_von(benutzer)

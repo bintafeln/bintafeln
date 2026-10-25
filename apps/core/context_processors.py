@@ -39,6 +39,8 @@ def tafel(request):
         "heimnetz_https": settings.HEIMNETZ_ADRESSE,
         "version": version(),
         "programm": {"name": programm.NAME, "untertitel": programm.UNTERTITEL},
+        # Tablet einer Ausgabestelle: Seite lädt nach Ablauf neu, die Middleware meldet ab
+        "stellen_konto_sekunden": 30 * 60 + 5 if angemeldet and benutzer.stelle_id else None,
         # Beiträge eingeschalteter Module zur Kopfzeile (z. B. Wetter), nur angemeldet
         "kopf_module": module.kopfzeile() if angemeldet and not offen else [],
     }

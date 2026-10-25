@@ -110,6 +110,7 @@ def menue(request) -> list[dict]:
     bereich("Statistik", [("statistik.sehen", _eintrag("Statistik", "statistik:uebersicht"))])
     bereich("Team", [
         ("mitarbeitende.verwalten", _eintrag("Mitarbeitende", "konten:mitarbeitende")),
+        ("mitarbeitende.verwalten", _eintrag("Ausgabestellen-Konten", "konten:stellen")),
         ("personal.sehen", _eintrag("Personal", "personal:liste", genau=True)),
         *([(None, _eintrag("Meine Arbeitszeit", "personal:meine_arbeitszeit"))]
           if darf_stempeln(b) else []),

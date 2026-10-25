@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.konten import views, views_dokumente, views_mitarbeitende, views_rollen
+from apps.konten import views, views_dokumente, views_mitarbeitende, views_rollen, views_stellen
 
 app_name = "konten"
 
@@ -21,6 +21,8 @@ urlpatterns = [
     path("rollen/<int:pk>/", views_rollen.bearbeiten, name="rolle"),
     path("rollen/<int:pk>/loeschen/", views_rollen.loeschen, name="rolle_loeschen"),
     path("mitarbeitende/", views_mitarbeitende.liste, name="mitarbeitende"),
+    path("ausgabestellen/", views_stellen.liste, name="stellen"),
+    path("ausgabestellen/<int:pk>/", views_stellen.stelle, name="stelle"),
     path("mitarbeitende/archiv/", views_mitarbeitende.archiv, name="mitarbeitende_archiv"),
     path("mitarbeitende/neu/", views_mitarbeitende.anlegen, name="mitarbeiter_neu"),
     path("mitarbeitende/<int:pk>/", views_mitarbeitende.bearbeiten, name="mitarbeiter"),

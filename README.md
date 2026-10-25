@@ -221,7 +221,20 @@ Sie sind der Ausgabestelle „Mitte“ zugeordnet …“). Ohne Zuordnung gibt e
 mit dem Recht „Kunden aller Ausgabestellen aufrufen“ (Vorgabe: Admin und Büro) ebenfalls nicht
 (ADR 0034).
 
+Gibt eine Ausgabestelle an mehreren Tagen aus, filtert die Kundenliste nach **Ausgabetag**. Sie
+startet mit dem eigenen Tag (Feld „Ausgabetage“ bei den Mitarbeitenden; sonst der heutige, falls
+an dem Tag Ausgabe ist). Mit dem Recht „Kundenliste als CSV-Datei exportieren“ (Vorgabe: Büro und
+Ausgabe) lädt „Als CSV exportieren (Excel)“ die gefilterte Liste herunter; die Spalten wählt der
+Admin unter „Einstellungen → Kunden → Kundenstamm“, Kontaktdaten, Kontostand und Art.-9-Felder
+bleiben ohne das passende Recht leer, und jeder Export steht im Zugriffsprotokoll (ADR 0058).
+
 ## Mitarbeitende
+
+**Konten der Ausgabestellen** (ADR 0059): Für Einlass-Tablets, die wechselnde Personen bedienen,
+bekommt jede Ausgabestelle unter „Team → Ausgabestellen-Konten“ ein eigenes Konto. Anmeldung mit
+dem **Namen der Ausgabestelle** und Passwort, ohne Zwei-Faktor; Rolle Ausgabe, nur Kunden dieser
+Ausgabestelle; Abmeldung nach 30 Minuten ohne Eingabe. Nach 5 falschen Passwörtern ist die
+Anmeldung eines Kontos 15 Minuten gesperrt (gilt für alle Konten).
 
 „Mitarbeitende“ im Menü (mit dem Recht „Mitarbeitende anlegen, bearbeiten, sperren“; Admin
 immer). Rollen vergeben kann man nur, wenn man selbst alle Rechte der Rolle hat; Admin-Konten

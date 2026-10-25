@@ -82,6 +82,7 @@ MIDDLEWARE = [
     "apps.core.module.ModulMiddleware",
     "apps.konten.middleware.PasswortAendernMiddleware",
     "apps.konten.middleware.ZweiFaktorMiddleware",
+    "apps.konten.middleware.StellenKontoMiddleware",
 ]
 
 ROOT_URLCONF = "bintafeln.urls"

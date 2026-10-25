@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block titel %}{{ s.name }} – Konto{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'konten:stellen' %}">← Ausgabestellen-Konten</a></p>
+  <div class="liste-kopf">
+    <h1>{{ s.name }}{% if not s.aktiv %} <span class="marke-warnung">nicht aktiv</span>{% endif %}</h1>
+    {% if "einstellungen.listen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'kunden:ausgabestelle_bearbeiten' s.pk %}">Angaben bearbeiten</a>{% endif %}
+  </div>
+</section>
+<div class="seiten-raster">
+<section class="karte">
+  <h2>Konto für die Einlass-Tablets</h2>
+  {% if konto %}
+  <dl class="angaben">
+    <dt>Anmelden mit</dt><dd><strong>{{ s.name }}</strong> und dem Passwort</dd>
+    <dt>Status</dt><dd>{% if konto.is_active %}<span class="marke-ok">aktiv</span>{% else %}<span class="marke-warnung">gesperrt seit {{ konto.gesperrt_am|date:"d.m.Y H:i" }}</span>{% endif %}</dd>
+    <dt>Zuletzt angemeldet</dt><dd>{{ konto.last_login|date:"d.m.Y H:i"|default:"noch nie" }}</dd>
+    <dt>Rolle</dt><dd>Ausgabe (Rechte unter „Einstellungen → Mitarbeitende → Rollen und Rechte“)</dd>
+  </dl>
+  <form method="post" class="inline">
+    {% csrf_token %}
+    {% if konto.is_active %}<button type="submit" name="aktion" value="sperren" class="knopf knopf-gefahr">Konto sperren</button>
+    {% else %}<button type="submit" name="aktion" value="entsperren" class="knopf">Konto entsperren</button>{% endif %}
+  </form>
+  <h3>Passwort ändern</h3>
+  {% else %}
+  <p>Noch kein Konto. Mit einem Passwort wird es angelegt; angemeldet wird dann mit „{{ s.name }}“ und diesem Passwort.</p>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">{% if konto %}Passwort speichern{% else %}Konto anlegen{% endif %}</button>
+  </form>
+</section>
+<section class="karte">
+  <h2>Angaben zur Ausgabestelle</h2>
+  <dl class="angaben">
+    <dt>Anschrift</dt><dd>{% if s.anschrift %}{{ s.strasse }}<br>{{ s.plz }} {{ s.ort }}{% else %}–{% endif %}</dd>
+    <dt>Telefon</dt><dd>{{ s.telefon|default:"–" }}</dd>
+    <dt>E-Mail</dt><dd>{{ s.email|default:"–" }}</dd>
+  </dl>
+  {% if s.anmerkung %}<h3>Allgemeine Anmerkungen</h3><p>{{ s.anmerkung|linebreaksbr }}</p>{% endif %}
+  <h3>Zeiten</h3>
+  {% if s.zeiten.all %}<ul>{% for z in s.zeiten.all %}<li>{{ z.get_wochentag_display }} {{ z.von|time:"H:i" }}{% if z.bis %}–{{ z.bis|time:"H:i" }}{% endif %} Uhr {{ z.art }}{% if z.hinweis %} ({{ z.hinweis }}){% endif %}</li>{% endfor %}</ul>
+  {% else %}<p class="hinweis">Keine Zeiten eingetragen.</p>{% endif %}
+  <h3>Ansprechpartner</h3>
+  {% if s.kontakte.all %}<ul>{% for k in s.kontakte.all %}<li>{{ k.zustaendigkeit }}: {{ k.anzeige_name }}{% if k.telefon %}, {{ k.telefon }}{% endif %}</li>{% endfor %}</ul>
+  {% else %}<p class="hinweis">Keine Ansprechpartner eingetragen.</p>{% endif %}
+  {% if "kunden.liste" in rechte %}<p><a href="{% url 'kunden:ausgabestelle' s.pk %}">Alle Angaben mit Karte und Kundengruppen</a></p>{% endif %}
+</section>
+</div>
+{% endblock %}

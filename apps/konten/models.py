@@ -40,6 +40,17 @@ class Benutzer(AbstractUser):
         help_text="Wer einer Ausgabestelle zugeordnet ist, ruft nur deren Kunden auf – außer "
         "mit dem Recht „Kunden aller Ausgabestellen aufrufen“. Leer: alle Kunden.",
     )
+    ausgabetage = models.CharField(
+        "Ausgabetage", max_length=30, blank=True,
+        help_text="An welchen Tagen die Person meist arbeitet; die Kundenliste startet mit diesem "
+        "Tag.",
+    )  # fmt: skip
+    # Konto einer Ausgabestelle für die Einlass-Tablets (ADR 0059): Anmeldung mit dem Namen der
+    # Ausgabestelle und Passwort, ohne Zwei-Faktor, Abmeldung nach 30 Minuten ohne Eingabe.
+    stelle = models.OneToOneField(
+        "kunden.Ausgabestelle", verbose_name="Konto der Ausgabestelle", null=True, blank=True,
+        on_delete=models.PROTECT, related_name="konto",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Benutzer"

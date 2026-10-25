@@ -67,6 +67,7 @@ urlpatterns = [
     path("haushalt/<path:kundennummer>/ausweis/", views.ausweis, name="ausweis"),
     path("haushalt/<path:kundennummer>/", views.haushalt, name="haushalt"),
     path("zugriffe/", views.zugriffe, name="zugriffe"),
+    path("export/", views.exportieren, name="exportieren"),
     path("ausweise/", views.ausweise, name="ausweise"),
     path("ausweis/gestalten/", views_bearbeiten.ausweis_gestalten, name="ausweis_gestalten"),
     path("import/", views.import_hochladen, name="import"),
