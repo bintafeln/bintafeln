@@ -198,3 +198,44 @@ def test_spenden_und_mitglieder_auf_der_seite(client, admin_client, benutzer_mit
     anmelden(client, benutzer_mit_rolle("anton", rollen.AUSGABE))
     inhalt = client.get(URL, zeit).content.decode()
     assert "Geldspenden" not in inhalt and "Mitglieder nach Art" not in inhalt
+
+
+def test_jahresbericht(client, admin_client, benutzer_mit_rolle, anmelden, recht_geben, daten,
+                       verein, pdf_text):  # fmt: skip
+    from django.utils import timezone
+
+    seite = admin_client.get(URL).content.decode()
+    assert "Jahresbericht erstellen" in seite
+    antwort = admin_client.get(reverse("statistik:jahresbericht"), {"jahr": "2026"})
+    assert antwort["Content-Type"] == "application/pdf"
+    text = pdf_text(antwort)
+    for wort in ("Jahresbericht 2026", "Kennzahlen", "Abholungen je Monat",
+                 "Geldspenden nach Zweck", "Weihnachten", "Mitglieder nach Art"):  # fmt: skip
+        assert wort in text, wort
+    assert "Erika" not in text and "Muster" not in text  # keine Personendaten
+    # ungültiges Jahr: laufendes Jahr
+    text = pdf_text(admin_client.get(reverse("statistik:jahresbericht"), {"jahr": "1800"}))
+    assert f"Jahresbericht {timezone.localdate().year}" in text
+    # Ausgabestelle: nur deren Zahlen, ohne Verein
+    mitte, nord = daten
+    recht_geben(rollen.AUSGABE, "statistik.sehen")
+    b = benutzer_mit_rolle("anton", rollen.AUSGABE)
+    b.ausgabestellen.set([mitte])
+    anmelden(client, b)
+    text = pdf_text(client.get(reverse("statistik:jahresbericht"), {"jahr": "2026",
+                                                                   "stelle": nord.pk}))  # fmt: skip
+    assert "Ausgabestelle Nord" not in text and "Geldspenden" not in text
+    client.logout()
+    anmelden(client, benutzer_mit_rolle("kurt", rollen.KIOSK))
+    assert client.get(reverse("statistik:jahresbericht")).status_code == 403
+
+
+def test_jahresbericht_zahlen_und_leere_diagramme():
+    from apps.statistik import jahresbericht as jb
+
+    assert jb._zahl("1.234,50") == 1234.5 and jb._zahl(3) == 3.0 and jb._zahl("25,0 %") == 25.0
+    assert jb._zahl("–") is None
+    assert jb.saeulen([("Jan", 0)], 100, "#000000") is None
+    assert jb.saeulen([("Jan", 2)], 100, "#000000") is not None
+    z = jb.zeitraum(2026, dt.date(2026, 10, 25))
+    assert (z.von, z.bis) == (dt.date(2026, 1, 1), dt.date(2026, 10, 25))

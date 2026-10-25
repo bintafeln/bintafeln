@@ -726,6 +726,10 @@ Zeitraum) und Ausgabestelle wählen.
   der Maus zeigt jedes Diagramm die genauen Werte.
 - Nur Summen, keine Personendaten. Wer einer Ausgabestelle zugeordnet ist, sieht nur deren Zahlen.
 - Die Diagramme zeichnet bintafeln selbst (SVG), ohne fremde Dienste (ADR 0036).
+- **Jahresbericht (PDF):** Auf der Statistik-Seite Jahr wählen, „Jahresbericht erstellen“. Das
+  PDF enthält alle Kennzahlen und jeden Abschnitt als Tabelle, Abschnitte mit einer Zahlenreihe
+  zusätzlich als Säulendiagramm; im laufenden Jahr bis heute. Mit gewählter Ausgabestelle nur
+  deren Zahlen. Gut als Grundlage für Mitgliederversammlung, Vorstand oder Förderanträge.
 
 ## Kasse
 

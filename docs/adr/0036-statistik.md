@@ -23,6 +23,9 @@ JavaScript-Framework und ohne fremde Server aus.
   einer Ausgabestelle (sie gehören zum Verein, nicht zu einer Stelle) und nur mit
   `spenden.sehen` bzw. `mitglieder.sehen`. Mitgliedsbeiträge zählen nicht als Geldspenden und
   erscheinen nur, wenn sie eingeschaltet sind.
+- Ergänzung Jahresbericht: `jahresbericht.py` baut aus denselben Abschnitten und Kennzahlen ein
+  PDF über `apps.core.pdf` (ADR 0021). Diagramme zeichnet dort ReportLab selbst (Säulen für
+  Abschnitte mit einer Zahlenreihe), damit keine SVG-Umwandlung als Abhängigkeit nötig ist.
 
 ## Begründung
 

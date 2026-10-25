@@ -23,6 +23,12 @@
   <p class="hinweis">{{ z.titel|default:"" }} · {{ z.von|date:"d.m.Y" }} bis {{ z.bis|date:"d.m.Y" }}.
     Datum eintragen und „Eigener Zeitraum“ wählen für einen freien Zeitraum. Alle Zahlen sind Summen ohne Personenbezug.
     Zu jedem Diagramm gibt es die Zahlen als Tabelle und als CSV-Datei.</p>
+  <form method="get" action="{% url 'statistik:jahresbericht' %}" class="filter" target="_blank">
+    <label for="jahr">Jahresbericht (PDF)</label>
+    <select name="jahr" id="jahr">{% for j in jahre %}<option value="{{ j }}">{{ j }}</option>{% endfor %}</select>
+    {% if gewaehlt %}<input type="hidden" name="stelle" value="{{ gewaehlt }}">{% endif %}
+    <button type="submit" class="knopf knopf-zweitrangig">Jahresbericht erstellen</button>
+  </form>
   <div class="kacheln">
     {% for titel, wert, unter in kacheln %}
     <div class="kachel"><span class="kachel-titel">{{ titel }}</span><span class="kachel-wert">{{ wert }}</span><span class="kachel-unter">{{ unter }}</span></div>
