@@ -47,6 +47,7 @@ class Stand:
     meldung: str = ""
     protokoll: str = ""
     angefordert: str = ""
+    sucht: bool = False  # Suche angefordert, vom Dienst noch nicht erledigt
 
     @property
     def beschaeftigt(self) -> bool:
@@ -110,6 +111,7 @@ def stand(jetzt: datetime | None = None) -> Stand:
     except OSError:
         pass
     s.angefordert = dict(_lesen("auftrag.txt")).get("version", "")
+    s.sucht = (_ordner() / "abrufen.txt").exists()
     return s
 
 

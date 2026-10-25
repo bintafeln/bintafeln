@@ -61,6 +61,20 @@ def test_seite(admin_client, ordner):
     assert "Update</a>" in seite and "2026.10.2" in seite and "Neue Version verfügbar" in seite
     assert "2026.10.10 vom 2026-10-25 (neueste)" in seite and "Suche im Seitenkopf" in seite
     assert "2026.9.1 vom 2026-09-30 – älter, zurückgehen" in seite and "every 5s" not in seite
+    assert "Neue Version 2026.10.10 verfügbar." in seite
+    v = (
+        (ordner / "versionen.txt")
+        .read_text()
+        .replace("installiert=2026.10.2", "installiert=2026.10.10")
+    )
+    (ordner / "versionen.txt").write_text(v)
+    seite = admin_client.get(URL).content.decode()
+    assert (
+        "bintafeln ist aktuell (Version 2026.10.10)" in seite and "Neue Version 2026" not in seite
+    )
+    (ordner / "versionen.txt").write_text(
+        v.replace("installiert=2026.10.10", "installiert=2026.10.2")
+    )
     # ohne Bestätigung kein Auftrag
     antwort = admin_client.post(reverse("core:update_starten"), {"version": "2026.10.10"},
                                 follow=True)  # fmt: skip
@@ -85,9 +99,16 @@ def test_seite(admin_client, ordner):
         "meldung=Das Update ist fehlgeschlagen.\n"
     )
     seite = admin_client.get(URL).content.decode()
-    assert "Das Update ist fehlgeschlagen." in seite and "<details open>" in seite
-    admin_client.post(reverse("core:update_abrufen"))
+    assert (
+        "Das Update ist fehlgeschlagen." in seite
+        and '<details id="update-protokoll" open>' in seite
+    )
+    assert "update_seite.js" in seite  # hält das Protokoll beim Nachladen offen
+    antwort = admin_client.post(reverse("core:update_abrufen"))
     assert (ordner / "abrufen.txt").exists()
+    seite = admin_client.get(antwort.url).content.decode()
+    assert "Suche nach neuen Versionen läuft" in seite and 'hx-trigger="every 2s"' in seite
+    assert "Es wird nach neuen Versionen gesucht" not in seite
 
 
 def test_ohne_dienst(admin_client, settings, tmp_path):
