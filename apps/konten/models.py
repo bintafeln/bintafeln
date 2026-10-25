@@ -40,6 +40,10 @@ class Benutzer(AbstractUser):
         help_text="Wer einer Ausgabestelle zugeordnet ist, ruft nur deren Kunden auf – außer "
         "mit dem Recht „Kunden aller Ausgabestellen aufrufen“. Leer: alle Kunden.",
     )
+    kundenliste_aus = models.JSONField(
+        "In der Kundenliste ausgeblendete Spalten", default=list, blank=True,
+        help_text="Jede Person wählt auf der Kundenliste selbst, welche Spalten sie sieht.",
+    )  # fmt: skip
     ausgabetage = models.CharField(
         "Ausgabetage", max_length=30, blank=True,
         help_text="An welchen Tagen die Person meist arbeitet; die Kundenliste startet mit diesem "
@@ -170,7 +174,9 @@ class PersonalEinstellungen(models.Model):
 
 
 auditlog.register(
-    Benutzer, exclude_fields=["password", "last_login"], m2m_fields={"groups", "ausgabestellen"}
+    Benutzer,
+    exclude_fields=["password", "last_login", "kundenliste_aus"],
+    m2m_fields={"groups", "ausgabestellen"},
 )
 
 

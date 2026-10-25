@@ -23,6 +23,10 @@ haben.
   leer.
 - Jeder exportierte Haushalt bekommt einen Eintrag im Zugriffsprotokoll (`Zugriff.export`).
 - Zunächst CSV statt .xlsx, damit keine neue Abhängigkeit nötig ist.
+- Nachtrag: Die Kundenliste zeigt dieselben Spalten wie der Export (Einstellung „Spalten der
+  Kundenliste und des Exports“, Vorgabe zusätzlich Status, Ausweis und letzter Besuch). Jede
+  Person kann einzelne Spalten für ihr Konto ausblenden (`Benutzer.kundenliste_aus`); der Export
+  bleibt bei den Spalten der Einstellungen.
 
 ## Begründung
 

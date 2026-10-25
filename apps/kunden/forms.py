@@ -5,11 +5,12 @@ from apps.kunden.models import KundenEinstellungen, Zusatzfeld
 
 class KundenEinstellungenForm(forms.ModelForm):
     export_felder = forms.MultipleChoiceField(
-        label="Spalten des Exports der Kundenliste", required=False,
+        label="Spalten der Kundenliste und des Exports", required=False,
         widget=forms.CheckboxSelectMultiple,
-        help_text="Leer = Kundennummer, Vorname, Nachname, Kundengruppe, Ausgabetage, Uhrzeit, "
-        "Personen. Kontaktdaten, Kontostand und Art.-9-Felder bleiben ohne das passende Recht "
-        "leer.",
+        help_text="Erscheinen in „Kunden einsehen“ und in der CSV-Datei; jede Person kann in der "
+        "Liste einzelne ausblenden. Leer = Kundennummer, Vorname, Nachname, Kundengruppe, "
+        "Ausgabetage, Uhrzeit, Personen, Status, Ausweis, letzter Besuch. Kontaktdaten, "
+        "Kontostand und Art.-9-Felder bleiben ohne das passende Recht leer.",
     )  # fmt: skip
 
     class Meta:

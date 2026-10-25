@@ -119,7 +119,7 @@ def test_ausgabe_sieht_liste_aber_nicht_import(als, bestand):
     client = als(rollen.AUSGABE)
     assert "Kunden einsehen</a>" in client.get("/").content.decode()
     inhalt = client.get(LISTE).content.decode()
-    assert "Mustermann, Erika" in inhalt
+    assert ">Mustermann</a>" in inhalt and ">Erika</a>" in inhalt
     assert "Neuen Stand importieren" not in inhalt
 
 
@@ -167,7 +167,7 @@ def test_htmx_liefert_nur_die_liste(admin_client, bestand):
     )
     assert antwort.status_code == 200
     inhalt = antwort.content.decode()
-    assert "<h1>" not in inhalt and "Mustermann, Erika" in inhalt
+    assert "<h1>" not in inhalt and ">Mustermann</a>" in inhalt
 
 
 def test_liste_blaettert(admin_client):
