@@ -135,3 +135,66 @@ def test_ausgabestelle_sieht_nur_eigene_zahlen(client, admin, benutzer_mit_rolle
     # Eine fremde Ausgabestelle lässt sich nicht wählen
     csv = client.get(URL, {**zeit, "stelle": nord.pk, "csv": "stellen"}).content.decode("utf-8-sig")
     assert "Nord" not in csv
+
+
+@pytest.fixture
+def verein():
+    from apps.adressen.models import Adresse
+    from apps.mitglieder.models import Mitglied
+    from apps.spenden.models import Spende
+
+    erika = Adresse.objects.create(art="person", vorname="Erika", nachname="Muster")
+    firma = Adresse.objects.create(organisation="Bäckerei Probe")
+    for tag, betrag, zweck in ((dt.date(2026, 1, 10), "50", "Weihnachten"),
+                               (dt.date(2026, 2, 10), "20", ""),
+                               (dt.date(2026, 2, 20), "30", "Weihnachten")):  # fmt: skip
+        Spende.objects.create(adresse=erika, datum=tag, betrag=Decimal(betrag), zweck=zweck)
+    Spende.objects.create(adresse=erika, datum=dt.date(2026, 1, 15), betrag=Decimal("36"),
+                          mitgliedsbeitrag=True)  # fmt: skip
+    Spende.objects.create(adresse=firma, datum=dt.date(2026, 3, 1), art="sach",
+                          beschreibung="Brot", betrag=Decimal("15"))  # fmt: skip
+    Spende.objects.create(adresse=firma, datum=dt.date(2025, 3, 1), betrag=Decimal("999"))
+    Mitglied.objects.create(adresse=erika, nummer="1", art="Ordentliches Mitglied",
+                            eintritt=dt.date(2026, 2, 1))  # fmt: skip
+    Mitglied.objects.create(adresse=firma, nummer="2", art="Fördermitglied",
+                            eintritt=dt.date(2020, 1, 1), austritt=dt.date(2026, 3, 15),
+                            austrittsgrund="Kündigung")  # fmt: skip
+
+
+def test_spenden_und_mitglieder_auswertungen(verein):
+    s = aw.spendenzahlen(Z)
+    assert (s.geld, s.geldspenden, s.sachspenden, s.sachwert, s.spender, s.beitraege) == (
+        Decimal("100"), 3, 1, Decimal("15"), 2, Decimal("36"))  # fmt: skip
+    assert aw.spenden_nach_zweck(Z) == [("Weihnachten", 80.0), ("ohne Zweck", 20.0)]
+    monate = aw.Zeitraum(dt.date(2026, 1, 1), dt.date(2026, 4, 30))
+    ein, aus = aw.mitglieder_ein_und_austritte(monate)
+    assert ein.werte == [0, 1, 0, 0] and aus.werte == [0, 0, 1, 0]
+    assert aw.mitglieder_nach_art(dt.date(2026, 3, 1)) == [
+        ("Fördermitglied", 1), ("Ordentliches Mitglied", 1)]  # fmt: skip
+    assert aw.mitglieder_nach_art(dt.date(2026, 3, 31)) == [("Ordentliches Mitglied", 1)]
+
+
+def test_spenden_und_mitglieder_auf_der_seite(client, admin_client, benutzer_mit_rolle, anmelden,
+                                              recht_geben, daten, verein):  # fmt: skip
+    from apps.mitglieder.models import MitgliederEinstellungen
+
+    zeit = {"zeitraum": "eigen", "von": "2026-01-01", "bis": "2026-03-31"}
+    inhalt = admin_client.get(URL, zeit).content.decode()
+    assert "Geldspenden je Woche" in inhalt and "Geldspenden nach Zweck" in inhalt
+    assert "100,00 €" in inhalt and "Eintritte und Austritte je Woche" in inhalt
+    assert "Mitglieder nach Art" in inhalt and "Mitgliedsbeiträge" not in inhalt  # Beiträge aus
+    csv = admin_client.get(URL, {**zeit, "csv": "spenden_zweck"}).content.decode("utf-8-sig")
+    assert "Weihnachten;80,00" in csv
+    e = MitgliederEinstellungen.laden()
+    e.beitraege = True
+    e.save()
+    assert "36,00 €" in admin_client.get(URL, zeit).content.decode()
+    # Mit gewählter Ausgabestelle: nichts vom Verein
+    mitte, _ = daten
+    inhalt = admin_client.get(URL, {**zeit, "stelle": mitte.pk}).content.decode()
+    assert "Geldspenden" not in inhalt and "Mitglieder nach Art" not in inhalt
+    # Ohne die Rechte des Bereichs: nichts vom Verein
+    recht_geben(rollen.AUSGABE, "statistik.sehen")
+    anmelden(client, benutzer_mit_rolle("anton", rollen.AUSGABE))
+    inhalt = client.get(URL, zeit).content.decode()
+    assert "Geldspenden" not in inhalt and "Mitglieder nach Art" not in inhalt
