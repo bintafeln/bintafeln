@@ -4,7 +4,7 @@ Nach dem Anmelden eines Kunden kommt wieder die Suche.
 {% endcomment %}
 {% if h %}
 <section class="karte einlass-leiste">
-  <h1>Kunde {{ h.kundennummer }}{% if stelle %} <small class="leise">· {{ stelle.name }}</small>{% endif %}</h1>
+  <h1>Kunde {{ h.kundennummer }}{% if hauptperson %} <span class="einlass-name">{{ hauptperson.vorname }} {{ hauptperson.nachname }}</span>{% endif %}{% if stelle %} <small class="leise">· {{ stelle.name }}</small>{% endif %}</h1>
   <div class="einlass-aktion">
     {% if bewertung.darf_abholen and "einlass.abholung" in rechte %}
     <form method="post" action="{% url 'ausgabe:eintragen' h.kundennummer %}" class="anmelden" id="abholung-form"
