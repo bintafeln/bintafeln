@@ -232,7 +232,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `apps/wetter/wetter.py`, in Tests `wetter._json` ersetzen). `wochenuebersicht` (ADR 0054,
   Rechnung in `apps/wochenuebersicht/auswertung.py`, PDF hoch/quer in `pdf.py`). `abrechnung`
   (ADR 0060, Regeln in `apps/abrechnung/ablauf.py`, Einnahmen aus der Kasse, beim Einreichen
-  festgehalten; Quittungen über `privatdateien`). `links`
+  festgehalten; Quittungen über `privatdateien`). `listen` (ADR 0063, Katalog in
+  `apps/listen/katalog.py`, Spalten mit Recht in `spalten.py`, Rechnen in `abfrage.py`). `links`
   (ADR 0057, Kacheln auf der Startseite, Sichtbarkeit über ein Recht). Hooks `Modul.fristen`,
   `Modul.einlass`, `Modul.auskunft_antrag`, `Modul.kopfzeile`, `Modul.suchen`, `Modul.startseite`. Programmname nur in
   `bintafeln/programm.py`; die Kopfzeile kürzt `static/js/kopfzeile.js` über `.kuerz-1…5`.

@@ -778,3 +778,12 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 .link-warnung { border-left-color: var(--fehler); background: #fdf0f0; }
 .link-warntext { color: var(--fehler); font-weight: 600; font-size: .85rem; }
 @media (prefers-reduced-motion: reduce) { .link-kachel { transition: none; } }
+
+/* Listen (ADR 0063) */
+.listen-katalog { list-style: none; padding: 0; display: grid; gap: .6rem; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); }
+.listen-katalog li { border: 1px solid var(--rand); border-radius: var(--radius); padding: .6rem .8rem; }
+.listen-katalog a { font-weight: 600; }
+.listen-filter .formular-raster { margin-bottom: .5rem; }
+.listen-gruppe th { background: var(--grund); text-align: left; }
+.listen-summe td { font-weight: 600; border-top: 1px solid var(--rand); }
+.tabelle .auswahl { width: 2rem; text-align: center; }

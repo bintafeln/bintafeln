@@ -767,6 +767,26 @@ Jede Ausgabestelle macht ihre Monatsabrechnung in bintafeln (ADR 0060), Menü �
   Arten der Ausgaben und Aufbewahrung (Vorgabe 5 Jahre) unter „Einstellungen → Ausgabe →
   Abrechnung“.
 
+### Listen
+
+Zuschaltbares Modul „Listen“ (ADR 0063): fertige Listen zum Kundenstamm, jede mit Filtern,
+wählbaren und sortierbaren Spalten, Gliederung mit Anzahl und Summen, Auswahlkästchen je Zeile
+und Ausgabe als CSV (Excel) oder PDF (Auswahl oder alles; jeder Export im Zugriffsprotokoll).
+
+- **Kunden:** Kundenliste einer Ausgabestelle, alle Kunden, nach Einkommensart, Bürgergeld,
+  Rentnerinnen und Rentner, Ausweis läuft ab, lange nicht gekommen, neue Kunden, große Haushalte,
+  Haushalte mit Kindern unter 6, ohne Kundengruppe, pausiert/gesperrt/beendet, Abholungen im
+  Zeitraum, Anschriftenliste.
+- **Personen:** nach Staatsangehörigkeit, Kinder unter 6, Kinder und Jugendliche (Alter von–bis),
+  Seniorinnen und Senioren, nach Altersgruppen, alle Personen.
+- **Zählungen:** je Staatsangehörigkeit, je Altersgruppe, je Ausgabestelle, je Kundengruppe, je
+  Einkommensart.
+- Nur Kunden der eigenen Ausgabestellen; Listen mit Staatsangehörigkeit oder Einkommensart nur
+  mit „Stammdaten sehen“, Kontaktdaten und Kontostand nur mit den Rechten dazu.
+- **Eigene Listen** speichern die Einstellungen unter einem Titel (privat oder für alle).
+- Rechte „Listen ansehen, drucken und exportieren“ (Vorgabe Büro und Ausgabe) und „Eigene Listen
+  für alle speichern“ (Büro). Neue Listen sind ein Eintrag in `apps/listen/katalog.py`.
+
 ### Links auf der Startseite
 
 Ersetzt die bisherige „App-Übersicht“ (ADR 0057): Kacheln mit Symbol, Titel, Untertitel,
@@ -1274,6 +1294,7 @@ apps/warteliste/    Modul Warteliste (Einladungen zu Terminen, Streichungen)
 apps/wochenuebersicht/ Modul Wochenübersicht (Soll/Ist der Ausgabestellen je Wochentag)
 apps/links/         Modul Links (Kacheln auf der Startseite)
 apps/abrechnung/    Modul Abrechnung (Monatsabrechnung je Ausgabestelle mit Quittungen)
+apps/listen/        Modul Listen (Katalog fertiger Listen, Spalten, Gliederung, Export)
 apps/wetter/        Modul Wetter (Außentemperatur der Ausgabestelle in der Kopfzeile)
 templates/          Django-Templates
 static/             CSS und HTMX

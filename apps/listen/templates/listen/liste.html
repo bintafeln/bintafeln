@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load static %}
+{% block titel %}{{ liste.titel }}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p class="hinweis"><a href="{% url 'listen:uebersicht' %}">← Alle Listen</a></p>
+  <h1>{{ liste.titel }}</h1>
+  <p class="hinweis">{{ liste.beschreibung }}</p>
+
+  <form method="get" class="listen-filter">
+    <input type="hidden" name="geladen" value="1">
+    <div class="formular-raster">
+      {% if "stelle" in liste.filter %}<div class="feld"><label for="f-stelle">Ausgabestelle</label>
+        <select name="stelle" id="f-stelle"><option value="">alle{% if stellen|length == 1 %} (eigene){% endif %}</option>
+          {% for s in stellen %}<option value="{{ s.pk }}"{% if p.stelle == s.pk|stringformat:"d" %} selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></div>{% endif %}
+      {% if "gruppe" in liste.filter %}<div class="feld"><label for="f-gruppe">Kundengruppe</label>
+        <select name="kundengruppe" id="f-gruppe"><option value="">alle</option>
+          {% for g in kundengruppen %}<option value="{{ g.pk }}"{% if p.kundengruppe == g.pk|stringformat:"d" %} selected{% endif %}>{{ g.name }}</option>{% endfor %}</select></div>{% endif %}
+      {% if "status" in liste.filter %}<div class="feld"><label for="f-status">Status</label>
+        <select name="status" id="f-status">{% for w, n in status_wahl %}<option value="{{ w }}"{% if p.status == w %} selected{% endif %}>{{ n }}</option>{% endfor %}</select></div>{% endif %}
+      {% if "einkommensart" in liste.filter %}<div class="feld"><label for="f-eink">Einkommensart</label>
+        <select name="einkommensart" id="f-eink"><option value="">alle</option>
+          {% for e in einkommensarten %}<option value="{{ e }}"{% if p.einkommensart == e %} selected{% endif %}>{{ e }}</option>{% endfor %}
+          {% if p.einkommensart and p.einkommensart not in einkommensarten %}<option value="{{ p.einkommensart }}" selected>enthält „{{ p.einkommensart }}“</option>{% endif %}</select></div>{% endif %}
+      {% if "staatsangehoerigkeit" in liste.filter %}<div class="feld"><label for="f-nat">Staatsangehörigkeit</label>
+        <select name="staatsangehoerigkeit" id="f-nat"><option value="">alle</option>
+          {% for n in nationen %}<option value="{{ n }}"{% if p.staatsangehoerigkeit == n %} selected{% endif %}>{{ n }}</option>{% endfor %}</select></div>{% endif %}
+      {% if "alter" in liste.filter %}<div class="feld"><label for="f-av">Alter von</label><input type="number" min="0" max="120" name="alter_von" id="f-av" value="{{ p.alter_von }}"></div>
+        <div class="feld"><label for="f-ab">Alter bis</label><input type="number" min="0" max="120" name="alter_bis" id="f-ab" value="{{ p.alter_bis }}"></div>{% endif %}
+      {% if "ausweis_bis" in liste.filter %}<div class="feld"><label for="f-aus">Ausweis gültig bis spätestens</label><input type="date" name="ausweis_bis" id="f-aus" value="{{ p.ausweis_bis }}"></div>{% endif %}
+      {% if "besuch_vor" in liste.filter %}<div class="feld"><label for="f-bes">Nicht gekommen seit</label><input type="date" name="besuch_vor" id="f-bes" value="{{ p.besuch_vor }}"></div>{% endif %}
+      {% if "seit_ab" in liste.filter %}<div class="feld"><label for="f-seit">Kunde seit (ab)</label><input type="date" name="seit_ab" id="f-seit" value="{{ p.seit_ab }}"></div>{% endif %}
+      {% if "personen_ab" in liste.filter %}<div class="feld"><label for="f-pers">Personen ab</label><input type="number" min="1" max="30" name="personen_ab" id="f-pers" value="{{ p.personen_ab }}"></div>{% endif %}
+      {% if "kinder_unter_6" in liste.filter %}<div class="feld feld-haken"><label><input type="checkbox" name="kinder_unter_6" value="1"{% if p.kinder_unter_6 %} checked{% endif %}> nur mit Kindern unter 6</label></div>{% endif %}
+      {% if "ohne_gruppe" in liste.filter %}<div class="feld feld-haken"><label><input type="checkbox" name="ohne_gruppe" value="1"{% if p.ohne_gruppe %} checked{% endif %}> nur ohne Kundengruppe</label></div>{% endif %}
+      {% if "zeitraum" in liste.filter %}<div class="feld"><label for="f-von">Abholungen von</label><input type="date" name="von" id="f-von" value="{{ p.von }}"></div>
+        <div class="feld"><label for="f-bis">bis</label><input type="date" name="bis" id="f-bis" value="{{ p.bis }}"></div>{% endif %}
+      <div class="feld"><label for="f-gliedern">Gliedern nach</label>
+        <select name="gruppe" id="f-gliedern"><option value="">nicht gliedern</option>
+          {% for k, t in gruppen_wahl %}<option value="{{ k }}"{% if gruppe == k %} selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+      <div class="feld feld-haken"><label><input type="checkbox" name="summen" value="1"{% if summen %} checked{% endif %}> nur Anzahl und Summen je Gruppe</label></div>
+    </div>
+    <details class="spalten-wahl"><summary>Spalten wählen</summary>
+      <div class="spalten-haken">{% for k, t, an in spalten_wahl %}<label><input type="checkbox" name="s" value="{{ k }}"{% if an %} checked{% endif %}> {{ t }}</label>{% endfor %}</div>
+    </details>
+    {% if p.sort %}<input type="hidden" name="sort" value="{{ p.sort }}">{% endif %}
+    <button type="submit" class="knopf">Anzeigen</button>
+    <a class="knopf knopf-zweitrangig" href="{% url 'listen:liste' liste.kennung %}">Vorgaben</a>
+  </form>
+</section>
+
+<section class="karte breit">
+  <form method="post" data-auswahl>
+    {% csrf_token %}
+    <input type="hidden" name="abfrage" value="{{ abfrage }}">
+    <div class="liste-aktionen">
+      <strong>{{ e.anzahl }} {% if liste.basis == "person" %}Person{{ e.anzahl|pluralize:"en" }}{% else %}Haushalt{{ e.anzahl|pluralize:"e" }}{% endif %}</strong>
+      <button type="submit" class="knopf" formaction="{% url 'listen:export' liste.kennung 'csv' %}">⬇ CSV (Excel)</button>
+      <button type="submit" class="knopf knopf-zweitrangig" formaction="{% url 'listen:export' liste.kennung 'pdf' %}" formtarget="_blank">🖨 PDF drucken</button>
+      {% if not summen %}<span class="hinweis" data-auswahl-zahl>keine ausgewählt – es gilt die ganze Liste</span>{% endif %}
+    </div>
+    <div class="tabelle-rahmen">
+    <table class="tabelle">
+      {% if summen %}
+      <thead><tr><th>{% if gruppe %}Gruppe{% endif %}</th><th class="zahl">Anzahl</th>{% for t in e.zahl_titel %}<th class="zahl">{{ t }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for g in e.gruppen %}<tr><td data-titel="Gruppe">{{ g.titel|default:"alle" }}</td><td class="zahl" data-titel="Anzahl">{{ g.anzahl }}</td>{% for t, w in g.zahlen %}<td class="zahl" data-titel="{{ t }}">{{ w }}</td>{% endfor %}</tr>{% endfor %}
+      </tbody>
+      <tfoot><tr><th>Summe</th><th class="zahl">{{ e.anzahl }}</th>{% for t, w in e.zahlen %}<th class="zahl">{{ w }}</th>{% endfor %}</tr></tfoot>
+      {% else %}
+      <thead><tr><th class="auswahl"><input type="checkbox" data-alle="id" aria-label="Alle auswählen" title="alle / keine"></th>{% for k in kopf %}<th aria-sort="{% if k.richtung == 'auf' %}ascending{% elif k.richtung == 'ab' %}descending{% else %}none{% endif %}"><a class="sortieren{% if k.richtung %} {{ k.richtung }}{% endif %}" href="?{{ k.abfrage }}">{{ k.titel }}</a></th>{% endfor %}</tr></thead>
+      {% for g in e.gruppen %}
+      <tbody>
+        {% if g.titel %}<tr class="listen-gruppe"><th colspan="{{ kopf|length|add:1 }}">{{ g.titel }} <span class="hinweis">({{ g.anzahl }})</span></th></tr>{% endif %}
+        {% for z in g.zeilen %}<tr><td class="auswahl"><input type="checkbox" name="id" value="{{ z.pk }}" aria-label="Zeile auswählen"></td>{% for titel, t in z.paare %}<td data-titel="{{ titel }}">{% if forloop.first and e.spalten.0.schluessel == "kundennummer" %}<a href="{% url 'kunden:haushalt' z.nummer %}">{{ t }}</a>{% else %}{{ t|default:"–" }}{% endif %}</td>{% endfor %}</tr>{% endfor %}
+        {% if g.titel and g.summen and gruppe %}{% if g.summen|join:"" %}<tr class="listen-summe"><td></td>{% for t in g.summen %}<td>{{ t }}</td>{% endfor %}</tr>{% endif %}{% endif %}
+      </tbody>
+      {% empty %}<tbody><tr><td colspan="{{ kopf|length|add:1 }}" class="hinweis">Keine Einträge.</td></tr></tbody>
+      {% endfor %}
+      {% if e.summen_zeile|join:"" %}<tfoot><tr><th></th>{% for t in e.summen_zeile %}<th>{{ t }}</th>{% endfor %}</tr></tfoot>{% endif %}
+      {% endif %}
+    </table>
+    </div>
+  </form>
+</section>
+
+<section class="karte">
+  <details>
+    <summary>Als eigene Liste speichern</summary>
+    <form method="post" action="{% url 'listen:speichern' liste.kennung %}">
+      {% csrf_token %}
+      <input type="hidden" name="abfrage" value="{{ abfrage }}">
+      <div class="feld"><label for="titel">Titel</label><input type="text" name="titel" id="titel" maxlength="100" value="{{ liste.titel }}"></div>
+      {% if darf_teilen %}<div class="feld feld-haken"><label><input type="checkbox" name="fuer_alle" value="1"> für alle sichtbar</label></div>{% endif %}
+      <button type="submit" class="knopf knopf-zweitrangig">Speichern</button>
+      <p class="hinweis">Gespeichert werden nur die Einstellungen (Filter, Spalten, Sortierung), keine Kundendaten.</p>
+    </form>
+  </details>
+</section>
+<script src="{% static 'js/auswahl.js' %}" defer></script>
+{% endblock %}
