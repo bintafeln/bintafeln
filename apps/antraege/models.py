@@ -284,6 +284,10 @@ class AntragVersuch(models.Model):
     schluessel = models.CharField(max_length=64, db_index=True)
     zeitpunkt = models.DateTimeField(default=timezone.now, db_index=True)
 
+    class Meta:
+        verbose_name = "Absendeversuch"
+        verbose_name_plural = "Absendeversuche"
+
     def __str__(self):
         return f"Versuch {timezone.localtime(self.zeitpunkt):%d.%m.%Y %H:%M}"
 

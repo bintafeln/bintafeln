@@ -56,6 +56,7 @@ class SpendenEinstellungen(models.Model):
 
     class Meta:
         verbose_name = "Einstellungen für Spenden"
+        verbose_name_plural = "Einstellungen für Spenden"
 
     def __str__(self):
         return "Einstellungen für Spenden"

@@ -226,6 +226,7 @@ class SicherungsDienst(models.Model):
 
     class Meta:
         verbose_name = "Sicherungsdienst"
+        verbose_name_plural = "Sicherungsdienst"
 
     def __str__(self):
         return "Sicherungsdienst"
