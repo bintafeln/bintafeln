@@ -34,8 +34,9 @@ class Modul:
     vorgaben: dict[str, tuple[str, ...]] = field(default_factory=dict)
     # (kennung, titel, rechte) – Vorlage ``hilfe/<kennung>.html`` liegt in der App
     kapitel: tuple[tuple[str, str, tuple[str, ...]], ...] = ()
-    # menue(eintrag) -> [(bereich, [(recht, eintrag), …]), …]; Bereich "Einstellungen" wird
-    # an die Einstellungen angehängt, jeder andere als eigener Bereich nach „Ausgabe“ eingefügt.
+    # menue(eintrag) -> [(bereich, [(recht, eintrag), …]), …]; "Einstellungen/<Gruppe>" hängt
+    # die Einträge an ein Untermenü der Einstellungen (z. B. "Einstellungen/Ausgabe"), jeder
+    # andere Bereich wird als eigener Bereich nach „Ausgabe“ eingefügt.
     menue: Callable | None = None
     # Datensicherung (ADR 0037): Bereich der Modelle und vorübergehende Modelle ("app.modell")
     sicherung_bereich: str = "einstellungen"

@@ -434,13 +434,21 @@ a.knopf-gefahr { color: #fff; }
 .menue-bereich summary { list-style: none; position: relative; }
 .menue-bereich summary::-webkit-details-marker { display: none; }
 .menue-bereich summary::after { content: "›"; position: absolute; right: 1.25rem; transition: transform .15s; }
-.menue-bereich[open] summary::after { transform: rotate(90deg); }
+.menue-bereich[open] > summary::after { transform: rotate(90deg); }
 .menue-zahl {
   display: inline-block; min-width: 1.4em; padding: 0 .4em; margin-left: .35rem;
   border-radius: .7em; background: var(--akzent-dunkel); color: #fff;
   font-size: .78rem; font-weight: 700; line-height: 1.4em; text-align: center;
 }
 .seitenmenue ul { list-style: none; margin: 0 0 .5rem; padding: 0; }
+.menue-gruppe summary { list-style: none; position: relative; cursor: pointer; padding: .4rem 1.25rem .4rem 2rem; font-weight: 600; font-size: .97rem; }
+.menue-gruppe summary::-webkit-details-marker { display: none; }
+.menue-gruppe summary::after { content: "›"; position: absolute; right: 1.25rem; transition: transform .15s; }
+.menue-gruppe[open] summary::after { transform: rotate(90deg); }
+.menue-gruppe summary:hover { background: var(--erfolg); }
+.menue-gruppe ul { margin-bottom: .25rem; }
+.seitenmenue .menue-gruppe li a { padding-left: 3rem; font-size: .93rem; }
+.seitenmenue .menue-gruppe li a.aktiv { padding-left: calc(3rem - 4px); }
 .seitenmenue li a { padding: .4rem 1.25rem .4rem 2rem; font-size: .97rem; }
 .seitenmenue a:hover, .menue-oben:hover { background: var(--erfolg); }
 .seitenmenue a.aktiv { background: var(--erfolg); border-left: 4px solid var(--akzent); font-weight: 600; }

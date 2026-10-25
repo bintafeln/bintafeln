@@ -8,7 +8,7 @@ def menue(eintrag):
         ("Aufruf", [
             ("aufruf.steuern", eintrag("Aufruf steuern", "aufruf:start")),
         ]),
-        ("Einstellungen", [
+        ("Einstellungen/Ausgabe", [
             ("einstellungen.aufruf", eintrag("Aufruf, Monitor und Kiosk", "aufruf:einstellungen")),
         ]),
     ]  # fmt: skip
