@@ -464,6 +464,11 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
   wer es war. Beim Import entsteht sie aus dem Vergleich mit dem vorherigen Stand. Sie hängt an
   der Kundennummer und wird nach 3 Jahren gelöscht (einstellbar unter „Einstellungen →
   Kundenstamm“; ADR 0031).
+- **Kundengruppe nur mit gültigem Ausweis** (ADR 0061): Pausierte, gesperrte, beendete Kunden
+  und Kunden mit abgelaufenem Ausweis fallen automatisch aus der Kundengruppe, bei Änderungen
+  sofort, sonst täglich und beim Import. Abschaltbar unter „Einstellungen → Kunden →
+  Kundenstamm“. Die Haushaltsseite zeigt unter der Historie, von wann bis wann ein Kunde in
+  welcher Kundengruppe war (auch in der Auskunft; gelöscht wie die Historie).
 - Jeder Aufruf einer Detailseite steht im **Zugriffsprotokoll** („Kunden“ → „Zugriffsprotokoll“,
   nur Admin). Die Einträge werden nach 365 Tagen gelöscht, einstellbar unter
   „Einstellungen → Kundenstamm“.

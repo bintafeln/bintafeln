@@ -26,6 +26,7 @@ class KundenEinstellungenForm(forms.ModelForm):
             "abholungen_aufbewahren_jahre",
             "zugriffe_aufbewahren_tage",
             "historie_aufbewahren_jahre",
+            "gruppe_behalten",
             "export_felder",
         ]
 

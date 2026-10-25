@@ -15,7 +15,7 @@ from django.db import transaction
 from django.db.models import Count, Q
 from django.utils import timezone
 
-from apps.kunden import historie
+from apps.kunden import gruppen, historie
 from apps.kunden.models import (
     Einkommensart,
     Haushalt,
@@ -216,6 +216,7 @@ def uebernehmen(antrag, zustand: dict, von: str) -> Haushalt:
 
     antrag.kundennummer = h.kundennummer
     antrag.status_setzen(antrag.Status.ERLEDIGT, von)
+    gruppen.pruefen(h)
     historie.festhalten(
         h.kundennummer, vorher, historie.schnappschuss(h),
         quelle=HaushaltEreignis.Quelle.AUFNAHME, von=von,

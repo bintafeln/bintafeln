@@ -81,7 +81,7 @@ def test_import_haelt_unterschiede_fest(admin):
     assert texte() == []  # gleicher Stand, nichts Neues
 
 
-def test_bearbeiten_haelt_fest(admin_client):
+def test_bearbeiten_haelt_fest(admin_client, gruppe_behalten):
     gruppe = Kundengruppe.objects.create(name="Dienstag")
     admin_client.post(reverse("kunden:haushalt_neu"), {
         "kundennummer": "77", "hp-vorname": "Erika", "hp-nachname": "Neu", "a-TOTAL_FORMS": "0",

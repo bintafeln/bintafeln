@@ -15,6 +15,14 @@
 <p>Auf der Haushaltsseite „Bearbeiten“: Angaben und Zusatzfelder, Personen, Abholberechtigte, Sperren, Ausnahmen und
   Anmerkungen. Abholungen lassen sich dort löschen (das Kundenkonto wird mitkorrigiert). Jede Änderung steht in der
   Historie und im Änderungsprotokoll.</p>
+<h3>Kundengruppe nur mit gültigem Ausweis</h3>
+<p>Wer <strong>pausiert, gesperrt oder beendet</strong> ist oder dessen <strong>Ausweis abgelaufen</strong> ist, fällt
+  automatisch aus der Kundengruppe, damit das Maximum einer Gruppe nie überschritten wird: bei einer Änderung sofort
+  (mit Meldung), beim Import und täglich für abgelaufene Ausweise. Wird der Kunde wieder aktiv oder der Ausweis
+  verlängert, die Kundengruppe neu wählen. Ohne Datum „Ausweis gültig bis“ bleibt die Gruppe. Eine Tafel kann das unter
+  „Einstellungen → Kunden → Kundenstamm“ abschalten („… in der Kundengruppe lassen“).</p>
+<p>Unter der Historie der Haushaltsseite steht, von wann bis wann der Kunde in welcher Kundengruppe war und warum es
+  endete („früher“ = schon vor Einführung dieser Liste).</p>
 <div class="achtung">Solange der Kundenstamm noch aus dem bisherigen Programm importiert wird, ersetzt der nächste
   Import Änderungen – außer Sie wählen dort „bintafeln-Stand behalten“.</div>{% endif %}
 {% if "kunden.loeschen" in rechte %}<h3>Löschen</h3>

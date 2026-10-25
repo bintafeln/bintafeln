@@ -261,7 +261,7 @@ def test_kundengruppe_name_bei_anderem_kuerzel():
 # --- Warnungen -----------------------------------------------------------------------------
 
 
-def test_warnungen_haushalte():
+def test_warnungen_haushalte(gruppe_behalten):
     Zusatzfeld.objects.create(
         schluessel="essen",
         bezeichnung="Essen",

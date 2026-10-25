@@ -100,3 +100,14 @@ def recht_geben():
         rolle.save()
 
     return geben
+
+
+@pytest.fixture
+def gruppe_behalten(db):
+    """Kunden ohne gültigen Ausweis bleiben in der Kundengruppe (ADR 0061 abgeschaltet), für
+    Tests, die etwas anderes prüfen."""
+    from apps.kunden.models import KundenEinstellungen
+
+    e = KundenEinstellungen.laden()
+    e.gruppe_behalten = True
+    e.save()
