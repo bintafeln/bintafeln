@@ -4,7 +4,7 @@ import base64
 
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import ProtectedError, Q, Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -58,7 +58,18 @@ def liste(request):
 @rollen.recht_erforderlich("adressen.sehen")
 def adresse(request, pk):
     a = get_object_or_404(Adresse.objects.prefetch_related("kategorien"), pk=pk)
-    return render(request, "adressen/adresse.html", {"a": a})
+    kontext = {"a": a}
+    if rollen.hat_recht(request.user, "spenden.sehen"):
+        from apps.spenden.models import Spende
+
+        spenden = a.spenden.select_related("bestaetigung")
+        kontext["spenden"] = spenden[:20]
+        kontext["spenden_anzahl"] = spenden.count()
+        kontext["spenden_jahre"] = (
+            spenden.filter(art=Spende.Art.GELD).values_list("datum__year")
+            .annotate(summe=Sum("betrag")).order_by("-datum__year")
+        )  # fmt: skip
+    return render(request, "adressen/adresse.html", kontext)
 
 
 @never_cache
@@ -81,7 +92,12 @@ def bearbeiten(request, pk=None):
 def loeschen(request, pk):
     a = get_object_or_404(Adresse, pk=pk)
     name = a.name
-    a.delete()
+    try:
+        a.delete()
+    except ProtectedError:
+        messages.error(request, f"„{name}“ hat Spenden oder Zuwendungsbestätigungen und lässt "
+                                "sich deshalb nicht löschen (Aufbewahrungspflicht).")  # fmt: skip
+        return redirect("adressen:adresse", pk=pk)
     messages.success(request, f"Adresse „{name}“ gelöscht.")
     return redirect("adressen:liste")
 

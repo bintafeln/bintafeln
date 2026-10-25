@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block titel %}Zuwendungsbestätigungen {{ jahr }}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Zuwendungsbestätigungen {{ jahr }}</h1>
+  <form class="filter" method="get">
+    <label for="jahr">Jahr der Spenden</label>
+    <select name="jahr" id="jahr" onchange="this.form.submit()">{% for j in jahre %}<option value="{{ j }}"{% if j == jahr %} selected{% endif %}>{{ j }}</option>{% endfor %}</select>
+  </form>
+  {% if fehlt %}<p class="meldung error" role="alert">Für Zuwendungsbestätigungen fehlen noch Angaben: {{ fehlt|join:", " }}.
+    {% if "einstellungen.spenden" in rechte %}<a href="{% url 'spenden:einstellungen' %}">Jetzt eintragen</a>{% else %}Bitte einen Admin fragen.{% endif %}</p>{% endif %}
+  {% if neu_pdf %}<p class="meldung" role="status"><a class="knopf" href="{{ neu_pdf }}" target="_blank" rel="noopener">Ausgestellte Bestätigungen als PDF öffnen</a></p>{% endif %}
+  <p class="hinweis">Mehrere Geldspenden eines Spenders im Jahr ergeben eine Sammelbestätigung, eine einzelne eine
+    Einzelbestätigung. Jede Spende wird nur einmal bestätigt; die Nummern laufen fortlaufend.</p>
+</section>
+
+<section class="karte breit">
+  <h2>Noch nicht bestätigte Geldspenden {{ jahr }}</h2>
+  {% if offen %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Spender</th><th class="zahl">Spenden</th><th class="zahl">Summe</th><th></th></tr></thead>
+    <tbody>
+    {% for a, summe, anzahl in offen %}
+      <tr>
+        <td data-titel="Spender"><a href="{% url 'adressen:adresse' a.pk %}">{{ a.name }}</a>{% if not a.strasse %} <span class="marke-warnung">Anschrift fehlt</span>{% endif %}</td>
+        <td data-titel="Spenden" class="zahl">{{ anzahl }}</td>
+        <td data-titel="Summe" class="zahl">{{ summe|floatformat:2 }} €</td>
+        <td data-titel="Aktion"><form method="post" action="{% url 'spenden:ausstellen' %}?jahr={{ jahr }}" class="inline">{% csrf_token %}
+          <input type="hidden" name="adresse" value="{{ a.pk }}"><button type="submit" class="link-knopf"{% if fehlt %} disabled{% endif %}>ausstellen</button></form></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <form method="post" action="{% url 'spenden:ausstellen' %}?jahr={{ jahr }}" onsubmit="return confirm('Für alle {{ offen|length }} Spender eine Bestätigung ausstellen?')">
+    {% csrf_token %}<button type="submit" class="knopf"{% if fehlt %} disabled{% endif %}>Alle {{ offen|length }} ausstellen</button>
+  </form>
+  {% else %}<p>Keine offenen Geldspenden.</p>{% endif %}
+</section>
+
+{% if sachspenden %}
+<section class="karte breit">
+  <h2>Sachspenden {{ jahr }} ohne Bestätigung</h2>
+  <ul>
+  {% for s in sachspenden %}
+    <li>{{ s.datum|date:"d.m.Y" }} · <a href="{% url 'adressen:adresse' s.adresse_id %}">{{ s.adresse.name }}</a> · {{ s.beschreibung }}
+      {% if s.betrag %}· Wert {{ s.betrag|floatformat:2 }} €
+      <form method="post" action="{% url 'spenden:ausstellen' %}?jahr={{ jahr }}" class="inline">{% csrf_token %}<input type="hidden" name="spende" value="{{ s.pk }}"><button type="submit" class="link-knopf"{% if fehlt %} disabled{% endif %}>Bestätigung ausstellen</button></form>
+      {% else %}<small class="leise">(ohne Wert keine Bestätigung)</small>{% endif %}</li>
+  {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="karte breit">
+  <h2>Ausgestellt {{ jahr }}</h2>
+  {% if ausgestellt %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Nr.</th><th>Spender</th><th>Art</th><th>Ausgestellt</th><th class="zahl">Betrag</th><th></th></tr></thead>
+    <tbody>
+    {% for b in ausgestellt %}
+      <tr>
+        <td data-titel="Nr."><a href="{% url 'spenden:pdf' %}?nummern={{ b.nummer }}" target="_blank" rel="noopener">{{ b.nummer }}</a></td>
+        <td data-titel="Spender">{{ b.adresse.name }}</td>
+        <td data-titel="Art">{{ b.get_art_display }}{% if b.storniert_am %} <span class="marke-warnung">storniert</span>{% endif %}</td>
+        <td data-titel="Ausgestellt">{{ b.ausgestellt_am|date:"d.m.Y" }} · {{ b.ausgestellt_von }}</td>
+        <td data-titel="Betrag" class="zahl">{{ b.betrag|floatformat:2 }} €</td>
+        <td data-titel="Aktion">{% if not b.storniert_am %}<form method="post" action="{% url 'spenden:stornieren' b.nummer %}" class="inline" onsubmit="return confirm('Bestätigung Nr. {{ b.nummer }} stornieren? Die Nummer bleibt vergeben.')">{% csrf_token %}<button type="submit" class="link-knopf">stornieren</button></form>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p>Noch keine.</p>{% endif %}
+</section>
+{% endblock %}

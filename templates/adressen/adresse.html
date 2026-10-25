@@ -34,5 +34,33 @@
   </form>
   {% endif %}
 </section>
+{% if spenden is not None %}
+<section class="karte breit">
+  <h2>Spenden{% if spenden_anzahl %} <small class="leise">({{ spenden_anzahl }})</small>{% endif %}</h2>
+  {% if spenden_jahre %}<p>Geldspenden je Jahr: {% for jahr, summe in spenden_jahre %}<strong>{{ jahr }}</strong> {{ summe|floatformat:2 }} €{% if not forloop.last %} · {% endif %}{% endfor %}</p>{% endif %}
+  {% if spenden %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Datum</th><th>Art</th><th class="zahl">Betrag/Wert</th><th>Bezeichnung</th><th>Bestätigung</th></tr></thead>
+    <tbody>
+    {% for s in spenden %}
+      <tr>
+        <td data-titel="Datum">{% if "spenden.erfassen" in rechte and not s.bestaetigt %}<a href="{% url 'spenden:bearbeiten' s.pk %}">{{ s.datum|date:"d.m.Y" }}</a>{% else %}{{ s.datum|date:"d.m.Y" }}{% endif %}</td>
+        <td data-titel="Art">{{ s.get_art_display }}{% if s.mitgliedsbeitrag %} (Mitgliedsbeitrag){% endif %}</td>
+        <td data-titel="Betrag/Wert" class="zahl">{% if s.betrag %}{{ s.betrag|floatformat:2 }} €{% else %}–{% endif %}</td>
+        <td data-titel="Bezeichnung">{{ s.beschreibung|default:s.zweck|default:"–" }}{% if s.menge %} ({{ s.menge|floatformat:"-2" }} {{ s.einheit }}){% endif %}</td>
+        <td data-titel="Bestätigung">{% if s.bestaetigt %}Nr. {{ s.bestaetigung.nummer }}{% else %}–{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p>Noch keine Spenden.</p>{% endif %}
+  <div class="aktionsleiste">
+    {% if "spenden.erfassen" in rechte %}<a class="knopf" href="{% url 'spenden:neu' %}?adresse={{ a.pk }}">Spende erfassen</a>{% endif %}
+    {% if "spenden.bestaetigen" in rechte and spenden %}<a class="knopf knopf-zweitrangig" href="{% url 'spenden:bestaetigungen' %}">Zuwendungsbestätigungen</a>{% endif %}
+  </div>
+</section>
+{% endif %}
 </div>
 {% endblock %}

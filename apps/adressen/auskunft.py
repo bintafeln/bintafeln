@@ -39,6 +39,23 @@ def adresse_pdf(a) -> bytes:
         ("E-Mail seit", _datum(a.einwilligung_email)),
         ("Name darf veröffentlicht werden seit", _datum(a.veroeffentlichen)),
     ])  # fmt: skip
+    spenden = list(a.spenden.select_related("bestaetigung").order_by("datum"))
+    if spenden:
+        doc.ueberschrift("Spenden")
+        doc.tabelle(["Datum", "Art", "Betrag/Wert", "Bezeichnung", "Bestätigung"], [
+            [f"{s.datum:%d.%m.%Y}", s.get_art_display(),
+             f"{s.betrag:.2f} €".replace(".", ",") if s.betrag else "",
+             s.beschreibung or s.zweck, f"Nr. {s.bestaetigung.nummer}" if s.bestaetigt else ""]
+            for s in spenden
+        ], breiten=[0.15, 0.15, 0.17, 0.38, 0.15], rechts=(2,))  # fmt: skip
+    bestaetigungen = list(a.bestaetigungen.order_by("nummer"))
+    if bestaetigungen:
+        doc.ueberschrift("Zuwendungsbestätigungen")
+        doc.tabelle(["Nr.", "Art", "Ausgestellt am", "Betrag", "Status"], [
+            [str(b.nummer), b.get_art_display(), f"{b.ausgestellt_am:%d.%m.%Y}",
+             f"{b.betrag:.2f} €".replace(".", ","), "storniert" if b.storniert_am else "gültig"]
+            for b in bestaetigungen
+        ], breiten=[0.1, 0.35, 0.18, 0.17, 0.2], rechts=(3,))  # fmt: skip
     doc.ueberschrift("Verwaltung")
     doc.angaben([
         ("Angelegt am", f"{timezone.localtime(a.angelegt_am):%d.%m.%Y}"),

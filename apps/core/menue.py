@@ -73,6 +73,11 @@ def menue(request) -> list[dict]:
         ("adressen.bearbeiten", _eintrag("Neue Adresse", "adressen:neu")),
         ("adressen.importieren", _eintrag("Adressen importieren", "adressen:importieren")),
     ])  # fmt: skip
+    bereich("Spenden", [
+        ("spenden.sehen", _eintrag("Spenden", "spenden:liste", genau=True)),
+        ("spenden.erfassen", _eintrag("Spende erfassen", "spenden:neu")),
+        ("spenden.bestaetigen", _eintrag("Zuwendungsbestätigungen", "spenden:bestaetigungen")),
+    ])  # fmt: skip
     bereich("Statistik", [("statistik.sehen", _eintrag("Statistik", "statistik:uebersicht"))])
     bereich("Team", [
         ("mitarbeitende.verwalten", _eintrag("Mitarbeitende", "konten:mitarbeitende")),
@@ -97,6 +102,8 @@ def menue(request) -> list[dict]:
          _eintrag("Ausgabe, Ampel und Beiträge", "ausgabe:einstellungen")),
         ("einstellungen.listen", _eintrag("Beitragsfreie Zeiträume", *_liste("beitragsfrei"))),
         ("einstellungen.antraege", _eintrag("Anträge", "antraege:einstellungen")),
+        ("einstellungen.spenden",
+         _eintrag("Spenden und Zuwendungsbestätigungen", "spenden:einstellungen")),
         ("einstellungen.personal",
          _eintrag("Mitarbeitende und Dokumente", "konten:personal_einstellungen")),
         ("einstellungen.arbeitszeit",

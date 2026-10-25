@@ -622,6 +622,28 @@ Serienbriefe (Modul 5, ADR 0044); Kunden stehen weiter im Kundenstamm.
   getrennt, unbekannte werden angelegt; Daten als TT.MM.JJJJ). Der CSV-Export hat dieselben
   Spalten.
 
+## Spenden und Zuwendungsbestätigungen
+
+„Spenden“ (Rechte „Spenden ansehen …“, „Spenden erfassen …“, „Zuwendungsbestätigungen ausstellen
+und stornieren“; Büro hat alle drei) verwaltet Geld- und Sachspenden. Jede Spende gehört zu einer
+Adresse im Adressbuch (ADR 0045).
+
+- **Geldspende**: Datum, Betrag, Zahlungsweg (Auswahl), Mitgliedsbeitrag, Verzicht auf
+  Erstattung von Aufwendungen. **Sachspende**: Bezeichnung, Menge und Einheit (Auswahl), Wert,
+  Herkunft (Privat-/Betriebsvermögen), Unterlagen zur Wertermittlung.
+- **Übersicht** je Jahr mit Summen, Geldspenden je Monat, Filter und CSV-Export; auf der Seite
+  einer Adresse deren Spenden und Summen je Jahr.
+- **Zuwendungsbestätigungen** als PDF nach den amtlichen Mustern: Einzel-, Sammel- (mit Anlage)
+  und Sachbestätigung, Betrag in Ziffern und Worten, fortlaufende Nummer. „Alle ausstellen“
+  erstellt am Jahresende für alle Spender auf einmal. Jede Spende wird nur einmal bestätigt;
+  Stornieren lässt die Nummer bestehen. Bestätigte Spenden sind nicht mehr änderbar, Adressen
+  mit Spenden nicht löschbar.
+- **Einrichten** (nur Admin) unter „Einstellungen → Spenden und Zuwendungsbestätigungen“: Name
+  und Anschrift der Körperschaft, steuerbegünstigte Zwecke, Art des Bescheids
+  (Freistellungsbescheid, Anlage zum KSt-Bescheid, Feststellung nach § 60a AO), Finanzamt,
+  Steuernummer, Datum, Veranlagungszeitraum, Unterschrift, Startnummer. Ob die Angaben zur
+  Tafel passen, bitte mit der Steuerberatung klären.
+
 ## Statistik
 
 „Statistik“ im Menü (Recht „Statistik ansehen“, Vorgabe: Admin und Büro). Oben Zeitraum
