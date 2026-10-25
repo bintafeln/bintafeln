@@ -189,7 +189,9 @@ def test_loeschen_fragt_konkret(admin_client, h):
     seite = admin_client.get(url("teil", "2001", "person", p.pk)).content.decode()
     assert "Person „Erika Test“ aus Haushalt 2001 endgültig löschen?" in seite
     stelle = Ausgabestelle.objects.create(name="Nord")
-    seite = admin_client.get(url("listeneintrag", "ausgabestellen", stelle.pk)).content.decode()
+    alt = admin_client.get(url("listeneintrag", "ausgabestellen", stelle.pk))
+    assert alt.url == url("ausgabestelle_bearbeiten", stelle.pk)  # eigene Seite (ADR 0048)
+    seite = admin_client.get(alt.url).content.decode()
     assert "Ausgabestelle „Nord“ endgültig löschen?" in seite
 
 
@@ -288,8 +290,7 @@ def test_listen_pflegen(admin_client):
     seite = admin_client.get(url("einstellungen")).content.decode()
     assert url("liste", "kundengruppen") in seite
     assert admin_client.get(url("liste", "gibtsnicht")).status_code == 404
-    admin_client.post(url("listeneintrag_neu", "ausgabestellen"), {"name": "Nord", "aktiv": "on"})
-    stelle = Ausgabestelle.objects.get()
+    stelle = Ausgabestelle.objects.create(name="Nord")
     admin_client.post(url("listeneintrag_neu", "kundengruppen"),
                       {"kuerzel": "DI", "name": "Dienstag", "ausgabestelle": stelle.pk,
                        "wochentage": ["Fr", "Di"], "uhrzeit": "14:00", "aktiv": "on"})  # fmt: skip

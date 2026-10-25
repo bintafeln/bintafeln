@@ -398,6 +398,12 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
   und Einkommensarten pflegt der Admin unter „Einstellungen → Kundenstamm → Listen“.
   **Achtung:** Solange aus dem Altsystem importiert wird, ersetzt der nächste Import alle
   Änderungen; der Prüfbericht nennt die Zahl der geänderten Haushalte (ADR 0025).
+- **Ausgabestellen** („Kunden → Ausgabestellen“, ADR 0048): Übersicht und eigene Seite je
+  Ausgabestelle mit Anschrift, Telefon, E-Mail, allgemeinen Anmerkungen, Zeiten (Ausgabe,
+  Anlieferung, Sortieren …), Ansprechpartnern (Mitarbeitende per Auswahl oder extern) und ihren
+  Kundengruppen. „In Google Maps öffnen“ zeigt den Weg; die eingebettete Karte lädt erst nach
+  Klick auf „Karte anzeigen“, vorher gehen keine Daten an Google. Pflegen mit dem Recht
+  „Kundengruppen, Ausgabestellen …“ („Bearbeiten“ auf der Seite).
 - **Notizen:** Ausgabe, Büro und Admin schreiben Notizen zum Haushalt, auf der Haushaltsseite
   oder direkt am Einlass. **Notiz-Vorlagen** („Einstellungen → Kundenstamm → Listen →
   Notiz-Vorlagen“, Admin) erscheinen abgesetzt unter den Notizen als umrandete „+“-Knöpfe (deutlich anders als Notizen): ein Klick speichert den Text als Notiz. Jede

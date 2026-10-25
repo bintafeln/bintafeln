@@ -1,0 +1,18 @@
+<p>Menü „Kunden → Ausgabestellen“ zeigt alle Ausgabestellen mit Anschrift, Telefon und Zeiten. Ein Klick auf den Namen
+  öffnet die Seite der Ausgabestelle mit:</p>
+<ul>
+  <li><strong>Anschrift und Kontakt</strong> (Telefon und E-Mail lassen sich direkt anklicken) und allgemeinen
+    Anmerkungen, z. B. Zugang, Parken oder Schlüssel.</li>
+  <li><strong>Zeiten</strong>: wann Ausgabe, Anlieferung, Sortieren usw. stattfinden.</li>
+  <li><strong>Lage</strong>: „In Google Maps öffnen“ zeigt den Weg. „Karte anzeigen“ lädt die Karte direkt auf der Seite;
+    erst dann gehen Daten an Google.</li>
+  <li><strong>Ansprechpartner</strong> mit Zuständigkeit, Telefon und E-Mail.</li>
+  <li>Die <strong>Kundengruppen</strong> der Ausgabestelle mit Termin und Belegung.</li>
+</ul>
+{% if "einstellungen.listen" in rechte %}
+<h3>Ausgabestelle pflegen</h3>
+<p>„Bearbeiten“ auf der Seite der Ausgabestelle (oder „Neue Ausgabestelle“ in der Übersicht). Zeiten und Ansprechpartner
+  stehen in Tabellen; leere Zeilen werden übergangen, für weitere Zeilen speichern. Ansprechpartner mit Konto in bintafeln
+  aus der Liste wählen, alle anderen als „extern“ mit Namen eintragen. Eine Ausgabestelle, an der Kundengruppen oder
+  Abholungen hängen, lässt sich nicht löschen, nur auf „nicht aktiv“ setzen.</p>
+{% endif %}

@@ -45,6 +45,7 @@ def menue(request) -> list[dict]:
         ("sonderaktionen.verwalten", _eintrag("Sonderaktionen", "ausgabe:sonderaktionen")),
         ("korrekturen.entscheiden", _eintrag("Korrekturwünsche", "ausgabe:korrekturen")),
     ])  # fmt: skip
+    stellen = _eintrag("Ausgabestellen", "kunden:ausgabestellen")
     alle_kunden = _eintrag("Kunden einsehen", "kunden:uebersicht", genau=True)
     alle_kunden["auch"] = [reverse("kunden:uebersicht") + "haushalt/"]
     bereich("Kunden", [
@@ -52,6 +53,7 @@ def menue(request) -> list[dict]:
         ("kunden.bearbeiten", _eintrag("Neuer Haushalt", "kunden:haushalt_neu")),
         ("kunden.importieren", _eintrag("Kundenstamm importieren", "kunden:import")),
         ("kunden.zugriffsprotokoll", _eintrag("Zugriffsprotokoll", "kunden:zugriffe")),
+        ("kunden.liste", stellen),
     ])  # fmt: skip
     if "antraege.sehen" in darf:
         from apps.antraege.models import Antrag
@@ -103,7 +105,6 @@ def menue(request) -> list[dict]:
         ("einstellungen.kundenstamm",
          _eintrag("Kundenstamm und Zusatzfelder", "kunden:einstellungen")),
         ("einstellungen.listen", _eintrag("Kundengruppen", *_liste("kundengruppen"))),
-        ("einstellungen.listen", _eintrag("Ausgabestellen", *_liste("ausgabestellen"))),
         ("einstellungen.listen", _eintrag("Einkommensarten", *_liste("einkommensarten"))),
         ("einstellungen.listen", _eintrag("Notiz-Vorlagen", *_liste("notizvorlagen"))),
         ("einstellungen.listen", _eintrag("Dokumentarten", *_liste("dokumentarten"))),

@@ -11,12 +11,21 @@ from django import forms
 from django.contrib.auth import get_user_model
 
 from apps.ausgabe.ampel import WOCHENTAGE
-from apps.core.auswahl import ANREDEN, FAMILIENSTAENDE, mit_vorhandenem, staatsangehoerigkeiten
+from apps.core.auswahl import (
+    ANREDEN,
+    FAMILIENSTAENDE,
+    ZEITARTEN,
+    ZUSTAENDIGKEITEN,
+    mit_vorhandenem,
+    staatsangehoerigkeiten,
+)
 from apps.core.forms import StaatAuswahl
 from apps.konten.forms import DatumEingabe
 from apps.kunden.models import (
     Abholer,
     Ausgabestelle,
+    AusgabestelleKontakt,
+    AusgabestelleZeit,
     Ausnahme,
     AusweisVorlage,
     Bemerkung,
@@ -280,9 +289,74 @@ class KundengruppeForm(forms.ModelForm):
 
 
 class AusgabestelleForm(forms.ModelForm):
+    ABSCHNITTE = [
+        ("Ausgabestelle", ["name", "aktiv"]),
+        ("Anschrift", ["strasse", "plz", "ort"]),
+        ("Kontakt und Anmerkungen", ["telefon", "email", "anmerkung"]),
+    ]
+
     class Meta:
         model = Ausgabestelle
-        fields = ["name", "aktiv"]
+        fields = ["name", "aktiv", "strasse", "plz", "ort", "telefon", "email", "anmerkung"]
+        widgets = {"anmerkung": forms.Textarea(attrs={"rows": 4})}
+
+    def abschnitte(self):
+        return [(t, [self[n] for n in namen]) for t, namen in self.ABSCHNITTE]
+
+
+class UhrzeitEingabe(forms.TimeInput):
+    input_type = "time"
+
+    def __init__(self, attrs=None):
+        super().__init__(attrs, format="%H:%M")
+
+
+class AusgabestelleZeitForm(forms.ModelForm):
+    art = forms.ChoiceField(label="Art", initial="Ausgabe")  # wie die Vorgabe im Modell
+
+    class Meta:
+        model = AusgabestelleZeit
+        fields = ["wochentag", "von", "bis", "art", "hinweis"]
+        widgets = {"von": UhrzeitEingabe(), "bis": UhrzeitEingabe()}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["art"].choices = mit_vorhandenem([(a, a) for a in ZEITARTEN],
+                                                     self.instance.art)  # fmt: skip
+
+    def clean(self):
+        daten = super().clean()
+        if daten.get("von") and daten.get("bis") and daten["bis"] <= daten["von"]:
+            self.add_error("bis", "„bis“ liegt nicht nach „von“.")
+        return daten
+
+
+class AusgabestelleKontaktForm(forms.ModelForm):
+    zustaendigkeit = forms.ChoiceField(label="Zuständigkeit")
+
+    class Meta:
+        model = AusgabestelleKontakt
+        fields = ["zustaendigkeit", "benutzer", "name", "telefon", "email"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["zustaendigkeit"].choices = mit_vorhandenem(
+            [("", "—")] + [(z, z) for z in ZUSTAENDIGKEITEN], self.instance.zustaendigkeit
+        )  # leere Zeilen bleiben unverändert und werden übergangen
+        konten = get_user_model().objects.filter(is_active=True)
+        if self.instance.benutzer_id:  # gespeicherte Auswahl bleibt wählbar
+            konten = konten | get_user_model().objects.filter(pk=self.instance.benutzer_id)
+        self.fields["benutzer"].queryset = konten.order_by("last_name", "first_name", "username")
+        self.fields["benutzer"].label_from_instance = lambda b: b.get_full_name() or b.username
+        self.fields["benutzer"].empty_label = "— extern (Name eintragen) —"
+
+
+ZeitenFormset = forms.inlineformset_factory(
+    Ausgabestelle, AusgabestelleZeit, form=AusgabestelleZeitForm, extra=3, can_delete=True
+)
+KontakteFormset = forms.inlineformset_factory(
+    Ausgabestelle, AusgabestelleKontakt, form=AusgabestelleKontaktForm, extra=2, can_delete=True
+)
 
 
 class EinkommensartForm(forms.ModelForm):

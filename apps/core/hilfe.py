@@ -49,6 +49,8 @@ KAPITEL = [
             ("kunden.liste", "kunden.ansehen")),
     Kapitel("kunden-bearbeiten", "Haushalte anlegen, bearbeiten und löschen", KUNDEN,
             ("kunden.bearbeiten", "kunden.loeschen")),
+    Kapitel("ausgabestellen", "Ausgabestellen: Anschrift, Zeiten, Ansprechpartner", KUNDEN,
+            ("kunden.liste",)),
     Kapitel("dokumente", "Dokumente zum Haushalt", KUNDEN, ("kunden.dokumente",)),
     Kapitel("ausweis", "Kundenausweise drucken", KUNDEN, ("kunden.ausweis",)),
     Kapitel("auskunft", "Auskunft, Historie und Zugriffsprotokoll", KUNDEN,

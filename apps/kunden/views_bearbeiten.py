@@ -312,6 +312,8 @@ def _liste(art):
 
 @rollen.recht_erforderlich("einstellungen.listen")
 def liste(request, art):
+    if art == "ausgabestellen":
+        return redirect("kunden:ausgabestellen")
     modell, _, titel, _ = _liste(art)
     return render(
         request,
@@ -322,6 +324,10 @@ def liste(request, art):
 
 @rollen.recht_erforderlich("einstellungen.listen")
 def listeneintrag(request, art, pk=None):
+    if art == "ausgabestellen":  # eigene Seiten mit Zeiten und Ansprechpartnern (ADR 0048)
+        if pk:
+            return redirect("kunden:ausgabestelle_bearbeiten", pk=pk)
+        return redirect("kunden:ausgabestelle_neu")
     modell, form_klasse, titel, einzeln = _liste(art)
     instanz = get_object_or_404(modell, pk=pk) if pk else modell()
     form = form_klasse(request.POST or None, instance=instanz)

@@ -181,6 +181,15 @@ class Zusatzfeld(models.Model):
 class Ausgabestelle(models.Model):
     name = models.CharField("Name", max_length=100, unique=True)
     aktiv = models.BooleanField("Aktiv", default=True)
+    strasse = models.CharField("Straße und Hausnummer", max_length=200, blank=True)
+    plz = models.CharField("PLZ", max_length=10, blank=True)
+    ort = models.CharField("Ort", max_length=100, blank=True)
+    telefon = models.CharField("Telefon", max_length=50, blank=True)
+    email = models.EmailField("E-Mail", blank=True)
+    anmerkung = models.TextField(
+        "Allgemeine Anmerkungen", blank=True,
+        help_text="Z. B. Zugang, Parken, Barrierefreiheit, Schlüssel, Besonderheiten.",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Ausgabestelle"
@@ -189,6 +198,83 @@ class Ausgabestelle(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def anschrift(self) -> str:
+        return ", ".join(t for t in (self.strasse, f"{self.plz} {self.ort}".strip()) if t)
+
+
+class AusgabestelleZeit(models.Model):
+    """Regelmäßige Zeit an einer Ausgabestelle (Ausgabe, Anlieferung …)."""
+
+    class Wochentag(models.IntegerChoices):
+        MO, DI, MI, DO, FR, SA, SO = (
+            (0, "Montag"),
+            (1, "Dienstag"),
+            (2, "Mittwoch"),
+            (3, "Donnerstag"),
+            (4, "Freitag"),
+            (5, "Samstag"),
+            (6, "Sonntag"),
+        )
+
+    ausgabestelle = models.ForeignKey(Ausgabestelle, on_delete=models.CASCADE,
+                                      related_name="zeiten")  # fmt: skip
+    wochentag = models.PositiveSmallIntegerField("Wochentag", choices=Wochentag.choices)
+    von = models.TimeField("von")
+    bis = models.TimeField("bis", null=True, blank=True)
+    art = models.CharField("Art", max_length=50, default="Ausgabe")
+    hinweis = models.CharField("Hinweis", max_length=100, blank=True,
+                               help_text="Z. B. „nur in geraden Kalenderwochen“.")  # fmt: skip
+
+    class Meta:
+        verbose_name = "Zeit der Ausgabestelle"
+        verbose_name_plural = "Zeiten der Ausgabestellen"
+        ordering = ["wochentag", "von"]
+
+    def __str__(self):
+        bis = f"–{self.bis:%H:%M}" if self.bis else ""
+        return f"{self.get_wochentag_display()} {self.von:%H:%M}{bis} {self.art}"
+
+
+class AusgabestelleKontakt(models.Model):
+    """Ansprechpartner einer Ausgabestelle: registrierte Mitarbeitende oder extern (Name)."""
+
+    ausgabestelle = models.ForeignKey(Ausgabestelle, on_delete=models.CASCADE,
+                                      related_name="kontakte")  # fmt: skip
+    zustaendigkeit = models.CharField("Zuständigkeit", max_length=50)
+    benutzer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="ausgabestellen_kontakte", verbose_name="Mitarbeiter/in",
+    )  # fmt: skip
+    name = models.CharField(
+        "Name (extern)", max_length=150, blank=True,
+        help_text="Nur, wenn die Person kein Konto in bintafeln hat.",
+    )  # fmt: skip
+    telefon = models.CharField("Telefon", max_length=50, blank=True)
+    email = models.EmailField("E-Mail", blank=True)
+
+    class Meta:
+        verbose_name = "Ansprechpartner der Ausgabestelle"
+        verbose_name_plural = "Ansprechpartner der Ausgabestellen"
+        ordering = ["pk"]
+
+    def __str__(self):
+        return f"{self.anzeige_name} ({self.zustaendigkeit})"
+
+    @property
+    def anzeige_name(self) -> str:
+        if self.benutzer_id:
+            return self.benutzer.get_full_name() or self.benutzer.get_username()
+        return self.name
+
+    @property
+    def anzeige_email(self) -> str:
+        return self.email or (self.benutzer.email if self.benutzer_id else "")
+
+    def clean(self):
+        if not self.benutzer_id and not self.name.strip():
+            raise ValidationError("Bitte Mitarbeiter/in wählen oder einen Namen eintragen.")
 
 
 class Kundengruppe(models.Model):
@@ -818,6 +904,8 @@ for modell in (
     Ausnahme,
     ImportLauf,
     Dokumentart,
+    AusgabestelleZeit,
+    AusgabestelleKontakt,
 ):
     auditlog.register(modell)
 auditlog.register(HaushaltDokument, exclude_fields=["datei"])
