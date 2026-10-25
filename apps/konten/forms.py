@@ -26,6 +26,10 @@ class AnmeldeForm(forms.Form):
     password = forms.CharField(label="Passwort", strip=False, widget=forms.PasswordInput)
 
     fehler = "Benutzername oder Passwort ist falsch."
+    gesperrt = ("Zu viele falsche Versuche. Bitte {minuten} Minuten warten und dann erneut "
+                "anmelden.")  # fmt: skip
+    VERSUCHE = 5
+    SPERRE_MINUTEN = 15
 
     def __init__(self, request=None, *args, **kwargs):
         self.request = request
@@ -33,15 +37,37 @@ class AnmeldeForm(forms.Form):
         self.geraet = None  # bei vertrautem Gerät: dieses gilt als zweiter Faktor
         self.braucht_code = False
         super().__init__(*args, **kwargs)
+        self.fields["username"].help_text = "Am Tablet einer Ausgabestelle: deren Name."
+
+    @staticmethod
+    def benutzername(eingabe: str) -> str:
+        """Der Name einer Ausgabestelle mit eigenem Konto steht für dessen Benutzernamen."""
+        from apps.kunden.models import Ausgabestelle
+
+        model = get_user_model()
+        if model.objects.filter(username__iexact=eingabe).exists():
+            return eingabe
+        stelle = Ausgabestelle.objects.filter(name__iexact=eingabe.strip(),
+                                              konto__isnull=False).first()  # fmt: skip
+        return stelle.konto.username if stelle else eingabe
 
     def clean(self):
+        from django.core.cache import cache
+
         daten = super().clean()
         benutzername, passwort = daten.get("username"), daten.get("password")
         if not benutzername or not passwort:
             return daten
+        benutzername = self.benutzername(benutzername)
+        schluessel = f"anmelden-fehler:{benutzername.lower()}"
+        if (cache.get(schluessel) or 0) >= self.VERSUCHE:
+            raise forms.ValidationError(self.gesperrt.format(minuten=self.SPERRE_MINUTEN))
         benutzer = authenticate(self.request, username=benutzername, password=passwort)
         if benutzer is None:
+            cache.add(schluessel, 0, self.SPERRE_MINUTEN * 60)
+            cache.incr(schluessel)
             raise forms.ValidationError(self.fehler)
+        cache.delete(schluessel)
         if user_has_device(benutzer):
             if zwei_faktor.vertrautes_geraet(self.request, benutzer):
                 # Vertrautes Gerät: angemeldet wie mit Code (Gerät für django-otp)
@@ -298,3 +324,29 @@ class DokumentKategorieForm(forms.ModelForm):
     class Meta:
         model = DokumentKategorie
         fields = ["name", "nur_personal"]
+
+
+class StellenKontoForm(forms.Form):
+    """Passwort für das Konto einer Ausgabestelle (ADR 0059)."""
+
+    passwort1 = forms.CharField(
+        label="Passwort", strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+        help_text="Bitte lang wählen (z. B. drei Wörter mit Zahl): Für diese Konten gibt es keinen "
+        "Zwei-Faktor-Code.",
+    )  # fmt: skip
+    passwort2 = forms.CharField(
+        label="Passwort wiederholen", strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+    )  # fmt: skip
+
+    def __init__(self, *args, neu=True, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not neu:
+            self.fields["passwort1"].label = "Neues Passwort"
+
+    def clean(self):
+        daten = super().clean()
+        if daten.get("passwort1") and daten.get("passwort1") != daten.get("passwort2"):
+            self.add_error("passwort2", "Die Passwörter stimmen nicht überein.")
+        return daten

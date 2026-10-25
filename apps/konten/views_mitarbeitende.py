@@ -73,7 +73,7 @@ def liste(request):
         request,
         "konten/mitarbeitende.html",
         {
-            "zeilen": _zeilen(get_user_model().objects.filter(is_active=True)),
+            "zeilen": _zeilen(get_user_model().objects.filter(is_active=True, stelle__isnull=True)),
             "archiv": False,
             "faellig": personal.faelligkeiten(),
         },
@@ -85,7 +85,12 @@ def archiv(request):
     return render(
         request,
         "konten/mitarbeitende.html",
-        {"zeilen": _zeilen(get_user_model().objects.filter(is_active=False)), "archiv": True},
+        {
+            "zeilen": _zeilen(
+                get_user_model().objects.filter(is_active=False, stelle__isnull=True)
+            ),
+            "archiv": True,
+        },
     )
 
 
@@ -137,6 +142,8 @@ def _ziel(request, pk):
 @verwalter_erforderlich
 def bearbeiten(request, pk):
     ziel = _ziel(request, pk)
+    if ziel.stelle_id:  # Konto einer Ausgabestelle: eigene Seite (ADR 0059)
+        return redirect("konten:stelle", pk=ziel.stelle_id)
     form = MitarbeiterForm(request.POST or None, instance=ziel, verwalter=request.user)
     if request.method == "POST" and form.is_valid():
         try:

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block titel %}Ausgabestellen-Konten{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Mitarbeitende</h1>
+  <nav class="reiter" aria-label="Ansicht">
+    <a href="{% url 'konten:mitarbeitende' %}">Aktiv</a>
+    <a href="{% url 'konten:mitarbeitende_archiv' %}">Archiv (gesperrt)</a>
+    <a href="{% url 'konten:stellen' %}" aria-current="page">Ausgabestellen</a>
+  </nav>
+  <p class="hinweis">Jede Ausgabestelle kann ein eigenes Konto für ihre Einlass-Tablets haben. Angemeldet wird mit dem
+    <strong>Namen der Ausgabestelle</strong> und einem Passwort – ohne Zwei-Faktor-Code. Das Konto hat die Rolle Ausgabe,
+    sieht nur die Kunden dieser Ausgabestelle und wird nach 30 Minuten ohne Eingabe abgemeldet.</p>
+  <table class="tabelle">
+    <thead><tr><th>Ausgabestelle</th><th>Anschrift</th><th>Konto</th></tr></thead>
+    <tbody>
+      {% for s in stellen %}
+      <tr><td><a href="{% url 'konten:stelle' s.pk %}">{{ s.name }}</a>{% if not s.aktiv %} <span class="hinweis">(nicht aktiv)</span>{% endif %}</td>
+        <td>{{ s.anschrift|default:"–" }}</td>
+        <td>{% if s.konto %}{% if s.konto.is_active %}<span class="marke-ok">eingerichtet</span>{% else %}<span class="marke-warnung">gesperrt</span>{% endif %}{% else %}<span class="hinweis">kein Konto</span>{% endif %}</td></tr>
+      {% empty %}
+      <tr><td colspan="3" class="hinweis">Noch keine Ausgabestellen – bitte unter „Kunden → Ausgabestellen“ anlegen.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

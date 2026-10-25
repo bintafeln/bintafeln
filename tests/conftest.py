@@ -15,6 +15,14 @@ def medien_verzeichnis(settings, tmp_path):
     settings.MEDIA_ROOT = tmp_path / "media"
 
 
+@pytest.fixture(autouse=True)
+def leerer_cache():
+    """Zähler wie die Fehlversuche bei der Anmeldung gelten nur innerhalb eines Tests."""
+    from django.core.cache import cache
+
+    cache.clear()
+
+
 @pytest.fixture
 def benutzer_mit_rolle(django_user_model):
     def anlegen(name, *rollennamen):

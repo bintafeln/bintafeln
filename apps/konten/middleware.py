@@ -57,3 +57,31 @@ class ZweiFaktorMiddleware:
             if request.path not in erlaubt and zwei_faktor.ist_pflicht(benutzer):
                 return redirect("konten:zwei_faktor_einrichten")
         return self.get_response(request)
+
+
+class StellenKontoMiddleware:
+    """Konten der Ausgabestellen (ADR 0059) werden nach 30 Minuten ohne Eingabe abgemeldet.
+
+    Jede Anfrage zählt als Eingabe; die Seite lädt sich nach Ablauf selbst neu (base.html), damit
+    auf dem Tablet keine Kundendaten stehen bleiben.
+    """
+
+    SCHLUESSEL = "stellen_konto_aktiv"
+    MINUTEN = 30
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        import time
+
+        benutzer = request.user
+        if benutzer.is_authenticated and getattr(benutzer, "stelle_id", None):
+            jetzt = time.time()
+            zuletzt = request.session.get(self.SCHLUESSEL)
+            if zuletzt and jetzt - zuletzt > self.MINUTEN * 60:
+                logout(request)
+                messages.info(request, f"Nach {self.MINUTEN} Minuten ohne Eingabe abgemeldet.")
+                return redirect("konten:anmelden")
+            request.session[self.SCHLUESSEL] = jetzt
+        return self.get_response(request)
