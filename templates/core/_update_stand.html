@@ -1,9 +1,15 @@
 <div{% if s.beschaeftigt or s.sucht %} hx-get="{% url 'core:update' %}" hx-trigger="every {% if s.beschaeftigt %}5{% else %}2{% endif %}s" hx-target="#update-stand"{% endif %}>
 {% if s.angefordert %}
-<p class="meldung" role="status">Update auf {{ s.angefordert }} ist angefordert und startet in wenigen Sekunden …</p>
+<div class="update-laeuft" role="status">
+  <p class="update-laeuft-titel"><span class="update-blinken">⚠ Update auf {{ s.angefordert }} angefordert</span></p>
+  <p>Es startet in wenigen Sekunden. bintafeln ist danach ein bis zwei Minuten nicht erreichbar.</p>
+</div>
 {% elif s.zustand == "laeuft" %}
-<p class="meldung" role="status"><strong>Update auf {{ s.version }} läuft</strong> (seit {{ s.beginn|time:"H:i" }} Uhr). bintafeln
-  ist gleich kurz nicht erreichbar; diese Seite meldet sich danach von selbst mit dem Ergebnis.</p>
+<div class="update-laeuft" role="status">
+  <p class="update-laeuft-titel"><span class="update-blinken">⚠ Update auf {{ s.version }} läuft</span> <small>seit {{ s.beginn|time:"H:i" }} Uhr</small></p>
+  <p><strong>bintafeln ist gleich kurz nicht erreichbar.</strong> Bitte nichts eingeben und die Seite offen lassen – sie
+    meldet sich danach von selbst mit dem Ergebnis.</p>
+</div>
 {% elif s.zustand == "ok" %}
 <p class="meldung" role="status">✓ {{ s.meldung }} ({{ s.ende|date:"d.m.Y H:i" }} Uhr) <a href="{% url 'core:update' %}">Seite neu laden</a></p>
 {% elif s.zustand == "fehler" %}
