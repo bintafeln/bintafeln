@@ -72,6 +72,7 @@ KAPITEL = [
     Kapitel("datensicherung", "Datensicherung: exportieren und zurücklesen", VERWALTUNG,
             ("daten.exportieren", "daten.importieren")),
     Kapitel("protokoll", "Änderungsprotokoll", VERWALTUNG, ("protokoll.sehen",)),
+    Kapitel("update", "Update: neue Version einspielen", VERWALTUNG, ("system.update",)),
     Kapitel("betrieb", "Betrieb auf dem Server", VERWALTUNG, ("system.status",)),
 ]  # fmt: skip
 

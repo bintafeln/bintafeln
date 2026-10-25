@@ -654,3 +654,7 @@ label.wahl { display: block; white-space: nowrap; }
 .abschnitt { border: 0; border-top: 2px solid var(--rand); margin: 0 0 1rem; padding: .5rem 0 0; min-width: 0; }
 .abschnitt legend { padding: 0 .5rem 0 0; font-weight: 700; font-size: 1.05rem; }
 .abschnitt .feld input:not([type="checkbox"]), .abschnitt .feld select { width: 100%; }
+
+/* Update (ADR 0043) */
+.update-version { font-size: 1.6rem; font-weight: 700; margin: 0 0 .5rem; }
+.protokoll { max-height: 30rem; overflow: auto; padding: .75rem; background: var(--grund); border-radius: var(--radius); font-size: .85rem; white-space: pre-wrap; }

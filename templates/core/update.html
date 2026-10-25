@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block titel %}Update{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Update</h1>
+  <p>Hier spielen Sie eine neue Version von bintafeln ein, oder bei Problemen eine ältere. Vorher wird automatisch
+    gesichert. Während des Updates ist bintafeln ein bis zwei Minuten nicht erreichbar; danach lädt sich diese Seite
+    selbst neu. Am besten zu einer Zeit ohne Ausgabe.</p>
+</section>
+<div id="update-stand">{% include "core/_update_stand.html" %}</div>
+{% endblock %}

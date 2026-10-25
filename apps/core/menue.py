@@ -95,6 +95,7 @@ def menue(request) -> list[dict]:
          _eintrag("Arbeitszeit", "personal:arbeitszeit_einstellungen")),
         ("protokoll.sehen", _eintrag("Änderungsprotokoll", "core:protokoll")),
         ("system.sicherung", _eintrag("Sicherungen", "core:sicherungen")),
+        ("system.update", _eintrag("Update", "core:update")),
         ("daten.exportieren" if "daten.exportieren" in darf else "daten.importieren",
          _eintrag("Export und Zurücklesen", "core:datensicherung")),
         *([(None, _eintrag("Django-Verwaltung", "admin:index"))] if b.is_staff else []),

@@ -116,5 +116,14 @@ pruefe "Nicht erreichbares Ziel ergibt eine verständliche Meldung"
 python_in_app "$AUFTRAG; from django.utils import timezone as tz; import datetime as dt; A.objects.create(name='Weg', ziel='/mnt/gibt-es-nicht', uhrzeit=dt.time(23, 59), wochentage='', anzahl=1, angefordert_am=tz.now())"
 warte 60 "$AUFTRAG; a=A.objects.get(name='Weg'); print('ja' if a.ergebnis=='fehler' and 'nicht erreichbar' in a.meldung else 'nein')"
 
+pruefe "Update-Dienst: meldet sich, liest Versionen, lehnt unbekannte Versionen ab (ADR 0043)"
+betrieb_datei() { docker compose exec -T app cat "/app/data/betrieb/$1" 2> /dev/null || true; }
+for _ in $(seq 1 30); do [[ -n "$(betrieb_datei versionen.txt)" ]] && break; sleep 1; done
+betrieb_datei lebenszeichen.txt | grep -q '^zeit='
+betrieb_datei versionen.txt | grep -q '^abgerufen='
+docker compose exec -T app sh -c 'printf "version=2099.1.1\nvon=e2e\n" > /app/data/betrieb/auftrag.txt'
+for _ in $(seq 1 30); do betrieb_datei status.txt | grep -q '^zustand=fehler' && break; sleep 1; done
+betrieb_datei status.txt | grep -q '^meldung=Die Version 2099.1.1 gibt es nicht.'
+
 sudo_rm sicherungen-e2e
 echo "Alle Prüfungen bestanden."

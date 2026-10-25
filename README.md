@@ -809,6 +809,20 @@ dorthin kopieren und dann wie beschrieben wiederherstellen.
 
 ### Aktualisieren
 
+**Am einfachsten in bintafeln selbst:** „Einstellungen → Update“ (Recht „Programm aktualisieren“,
+Vorgabe nur Admin). Die Seite zeigt die installierte Version, die verfügbaren Versionen mit ihren
+Änderungen und startet das Update auf Knopfdruck, auf Wunsch auch zurück auf eine ältere Version.
+Dahinter läuft genau `./betrieb update VERSION` (also mit Sicherung vorher). bintafeln ist dabei
+ein bis zwei Minuten nicht erreichbar; danach zeigt die Seite das Ergebnis und das Protokoll.
+
+Das erledigt der Dienst `updater` (ADR 0043). Er ist als einziger Dienst mit Docker verbunden,
+von außen nicht erreichbar und nimmt von bintafeln nur den Namen einer vorhandenen Version an.
+Er sucht alle 10 Minuten nach neuen Versionen (`git fetch`); solange das Repository privat ist,
+braucht der Server dafür Zugangsdaten für GitHub. **Einmalig** kommt der Dienst mit dem ersten
+`./betrieb update` auf der Kommandozeile dazu; danach geht jedes Update in der Oberfläche.
+
+Auf der Kommandozeile:
+
 ```bash
 cd /opt/bintafeln
 ./betrieb update

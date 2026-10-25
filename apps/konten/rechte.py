@@ -102,6 +102,8 @@ KATALOG = [
           "Nur Rechte, die man selbst hat, lassen sich weitergeben."),
     Recht("protokoll.sehen", EINSTELLUNGEN, "Änderungsprotokoll ansehen"),
     Recht("system.status", EINSTELLUNGEN, "Sicherungsstand und Version sehen"),
+    Recht("system.update", EINSTELLUNGEN, "Programm aktualisieren (Update starten)",
+          "Neue oder ältere Version einspielen. Vorher wird gesichert."),
     Recht("system.sicherung", EINSTELLUNGEN, "Sicherungen starten, Sicherungsaufträge einstellen",
           "Ziele, Zeitpläne und Aufbewahrung der Sicherungen auf dem Server."),
 ]  # fmt: skip

@@ -18,7 +18,8 @@ gemeinsame Verantwortung der nutzenden Tafeln übergehen.
 - **Repository:** vorerst privat; öffentlich, sobald das Grundgerüst stabil ist. Deshalb gilt
   schon jetzt: alles im Repository muss veröffentlichungsfähig sein.
 - **Technik:** Python, Django (aktuelle LTS), PostgreSQL, Auslieferung per Docker Compose
-  (`app`, `db`, `proxy` mit Caddy, `backup` für die verschlüsselte Sicherung, siehe ADR 0008).
+  (`app`, `db`, `proxy` mit Caddy, `backup` für die verschlüsselte Sicherung, siehe ADR 0008,
+  `updater` für das Update aus der Oberfläche, ADR 0043).
 - **Oberfläche:** serverseitig gerendert mit Django-Templates und HTMX, kein separates
   JavaScript-Framework.
 - **Sprache der Oberfläche:** Deutsch, mobilfreundlich.
@@ -213,6 +214,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Installationen hinter `docker/gemeinsamer-proxy` über `docker/hinter-proxy.yml`; Demo-Betrieb
   mit `BINTAFELN_DEMO` und `apps/core/demo.py` (ADR 0022). Was Demo-Besucher nutzen
   könnten, um andere auszusperren, mit `nicht_in_demo` sperren.
-  Sicherungsskript im Dienst `backup`: `docker/backup/sicherung.sh`.
+  Sicherungsskript im Dienst `backup`: `docker/backup/sicherung.sh`; es liest die
+  Sicherungsaufträge (`SicherungsAuftrag`, ADR 0042) per psql aus der Datenbank und meldet den
+  Stand zurück. Update aus der Oberfläche: `apps/core/update.py` tauscht nur Dateien mit dem
+  Dienst `updater` (`docker/updater/updater.sh`) aus; bintafeln selbst bekommt nie Zugriff auf
+  Docker (ADR 0043).
 - Shell-Skripte müssen `shellcheck` bestehen. Änderungen an Sicherung oder Wiederherstellung
   deckt `tests/sicherung_e2e.sh` ab (läuft in CI im Job `docker`).

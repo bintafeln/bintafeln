@@ -50,6 +50,8 @@ services:
       - media:/app/data/media
       # nur lesend, für die Anzeige des Sicherungsstatus
       - ${BINTAFELN_SICHERUNG_PFAD:-./sicherungen}:/app/sicherungen:ro
+      # Austausch mit dem Dienst updater (Update aus der Oberfläche, ADR 0043)
+      - betrieb:/app/data/betrieb
 
   backup:
     build: docker/backup
@@ -107,9 +109,22 @@ services:
       - caddy-daten:/data
       - caddy-config:/config
 
+  # Führt Updates aus, die Admins in bintafeln anfordern (Einstellungen → Update, ADR 0043).
+  # Nur dieser Dienst darf Docker steuern; er ist von außen nicht erreichbar. bintafeln selbst
+  # legt nur einen Auftrag in den gemeinsamen Ordner "betrieb".
+  updater:
+    build: docker/updater
+    image: ${COMPOSE_PROJECT_NAME:-bintafeln}-updater:lokal
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - .:/projekt
+      - betrieb:/betrieb
+
 volumes:
   db-daten:
   static:
   media:
   caddy-daten:
   caddy-config:
+  betrieb:
