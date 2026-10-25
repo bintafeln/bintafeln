@@ -23,6 +23,8 @@ Sonderfällen für jedes dieser Programme gefüllt werden.
 - Ausgeschaltet heißt: keine Menüeinträge, keine Hilfe-Kapitel, keine Rechte in der
   Rollenverwaltung (gespeicherte Rechte bleiben unverändert) und keine Seiten – die
   `ModulMiddleware` beantwortet die Adressen mit 404. Die Daten bleiben erhalten.
+- Über `Modul.einlass` kann ein Modul Hinweise auf der Einlass-Karte zeigen (ohne Einfluss auf
+  die Ampel).
 - Rechtekatalog, Menü, Handbuch, Datensicherung und URLs sammeln die Beiträge der Module ein;
   dort steht kein modulspezifischer Code. Rechte für bestehende Rollen vergibt eine
   Datenmigration im Modul selbst.

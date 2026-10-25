@@ -650,9 +650,12 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   Nummern-Anzeige, Kiosk (Karte scannen, Antwort auf Deutsch und in der Sprache zur
   Staatsangehörigkeit) und Abfrage. Sie brauchen keine Anmeldung, sondern den geheimen Link aus
   „Einstellungen → Aufruf, Monitor und Kiosk“; „Neue Links erzeugen“ sperrt alte Links.
+- **Am Einlass:** Die Einlass-Karte zeigt beim Scannen, ob und wann die Nummer aufgerufen
+  wurde, „Zu spät“ (ab einstellbarer Minutenzahl nach dem Aufruf, Vorgabe 15) oder wie viele
+  Nummern noch davor sind.
 - **Einstellungen je Ausgabestelle:** Nummern je Aufruf (Vorgabe 3), Vorrang-Feld und Symbol,
-  schon Eingelassene herausnehmen, Plätze für zu spät Gekommene, Infos ein/aus, Probelauf als
-  anderer Wochentag. **Infos:** Text, Bild, PDF oder Webseite mit Anzeigedauer, für alle oder
+  schon Eingelassene herausnehmen, Plätze für zu spät Gekommene, „zu spät“ am Einlass nach
+  Minuten, Infos ein/aus, Probelauf als anderer Wochentag. **Infos:** Text, Bild, PDF oder Webseite mit Anzeigedauer, für alle oder
   bestimmte Ausgabestellen.
 - Die Geräte zeigen nur Kundennummern. Die Reihenfolge eines Tages wird nach vier Wochen
   gelöscht.

@@ -284,6 +284,7 @@ def weiter(stelle, datum) -> AufrufTag:
         _index_weiter(s)
         s["rueckgaengig"] = [*s["rueckgaengig"], {
             "gruppe": index_vorher, "nummern": weg, "zeit": timezone.localtime().strftime("%H:%M"),
+            "zeitpunkt": timezone.now().isoformat(),
         }][-RUECKGAENGIG_MAX:]  # fmt: skip
         abgleichen(s, stelle, datum, einstellungen)
         tag.save()
@@ -375,6 +376,7 @@ def spaetzuender(stelle, datum, nummer) -> dict:
             s["index"] = k
         i, j, aufg = _finden(s, nummer)
         s["spaetzuender"][x] = {
+            "zeitpunkt": timezone.now().isoformat(),
             "neuer_platz": _gesamtplatz(s, i, j), "ziel_gruppe": s["gruppen"][k]["name"],
             "versatz": einstellungen.spaetzuender_versatz,
             "zeit": timezone.localtime().strftime("%H:%M"),
@@ -524,3 +526,60 @@ def reihenfolge(tag) -> list[dict]:
                            "nummer": x, "aufgerufen": False,
                            "anmerkung": "vorher eingelassen"})  # fmt: skip
     return zeilen
+
+
+# ── Einlass ─────────────────────────────────────────────────────────────────
+
+
+def _aufgerufen_um(s, x):
+    """Zeitpunkt (aware) des letzten Aufrufs dieser Nummer, sonst None."""
+    for schritt in reversed(s["rueckgaengig"]):
+        if x in schritt["nummern"]:
+            if schritt.get("zeitpunkt"):
+                return dt.datetime.fromisoformat(schritt["zeitpunkt"])
+            stunde, minute = (int(t) for t in schritt["zeit"].split(":"))
+            return timezone.localtime().replace(hour=stunde, minute=minute, second=0)
+    return None
+
+
+def einlass(haushalt, heute, stelle=None) -> list[dict]:
+    """Hinweis für die Einlass-Karte: wann aufgerufen, zu spät oder noch nicht dran."""
+    gruppe = haushalt.kundengruppe
+    stellen = [s for s in (gruppe.ausgabestelle if gruppe else None, stelle) if s]
+    tag = next((t for t in (tag_holen(s, heute) for s in stellen) if t), None)
+    if tag is None or tag.gestartet_am is None:
+        return []
+    e = AufrufEinstellungen.laden(tag.ausgabestelle)
+    s = tag.stand
+    nummer = norm(haushalt.kundennummer)
+    treffer = _finden(s, nummer)
+    if treffer is None:
+        if any(norm(x) == nummer for g in s["gruppen"] for x in g["eingelassen"]):
+            return []
+        return [{"text": "Nicht in der heutigen Aufruf-Liste", "farbe": "info"}]
+    i, j, aufg = treffer
+    g = s["gruppen"][i]
+    x = (g["aufgerufen"] + g["wartend"])[j]
+    if x in s["spaetzuender"]:
+        info = s["spaetzuender"][x]
+        if j >= aufg:
+            vor = _davor(s, i, j, aufg)
+            text = (f"Kam zu spät, um {info['zeit']} Uhr neu einsortiert – "
+                    + ("jetzt an der Reihe" if vor < e.anzahl and i == s["index"]
+                       else f"noch {vor} Nummern davor"))  # fmt: skip
+            return [{"text": text, "farbe": "gelb"}]
+    if j < aufg:
+        um = _aufgerufen_um(s, x)
+        if um is None:
+            return [{"text": "Schon aufgerufen", "farbe": "gruen"}]
+        minuten = int((timezone.now() - um).total_seconds() // 60)
+        uhr = timezone.localtime(um).strftime("%H:%M")
+        if e.zu_spaet_minuten and minuten > e.zu_spaet_minuten:
+            return [{"text": f"Zu spät: aufgerufen um {uhr} Uhr (vor {minuten} Minuten)",
+                     "farbe": "rot"}]  # fmt: skip
+        return [{"text": f"Aufgerufen um {uhr} Uhr (vor {minuten} Minuten)", "farbe": "gruen"}]
+    if i == s["index"] and j - aufg < e.anzahl:
+        return [{"text": "Gerade aufgerufen – „Bitte eintreten“", "farbe": "gruen"}]
+    vor = _davor(s, i, j, aufg)
+    return [{"text": f"Noch nicht aufgerufen: {vor} Nummer{'n' if vor != 1 else ''} davor "
+             f"(Kundengruppe {g['name']})", "farbe": "gelb"}]  # fmt: skip

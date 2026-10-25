@@ -41,6 +41,9 @@ class Modul:
     # Datensicherung (ADR 0037): Bereich der Modelle und vorübergehende Modelle ("app.modell")
     sicherung_bereich: str = "einstellungen"
     sicherung_ausgenommen: tuple[str, ...] = ()
+    # Hinweise für die Einlass-Karte eines Haushalts: einlass(haushalt, heute, stelle) ->
+    # [{"text": …, "farbe": "gruen" | "gelb" | "rot" | "info"}]
+    einlass: Callable | None = None
 
 
 @cache
@@ -63,6 +66,13 @@ def aktiv(kennung: str) -> bool:
 def ausgeschaltete_rechte() -> set[str]:
     an = eingeschaltet()
     return {code for m in alle() if m.kennung not in an for code, _, _ in m.rechte}
+
+
+def einlass_hinweise(haushalt, heute, stelle) -> list[dict]:
+    """Hinweise der eingeschalteten Module für die Einlass-Karte, je mit Titel des Moduls."""
+    an = eingeschaltet()
+    return [{**h, "modul": m.titel} for m in alle() if m.kennung in an and m.einlass
+            for h in m.einlass(haushalt, heute, stelle)]  # fmt: skip
 
 
 def auswahl() -> list[tuple[str, str]]:

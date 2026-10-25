@@ -29,6 +29,13 @@
     {% for m in bewertung.meldungen %}<li class="grund-{{ m.farbe }}">{{ m.text }}</li>{% endfor %}
   </ul>
 </section>
+{% if modul_hinweise %}
+{% with f=modul_hinweise.0.farbe %}
+<section class="karte ampel modul-hinweise {% if f == 'info' %}ampel-unbekannt{% else %}ampel-{{ f }}{% endif %}" role="status">
+  {% for m in modul_hinweise %}<p class="modul-hinweis grund-{{ m.farbe }}"><strong>{{ m.modul }}:</strong> {{ m.text }}</p>{% endfor %}
+</section>
+{% endwith %}
+{% endif %}
 
 <section class="karte">
   {% if bewertung.darf_abholen %}

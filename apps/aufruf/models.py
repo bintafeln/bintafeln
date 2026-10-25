@@ -78,6 +78,11 @@ class AufrufEinstellungen(models.Model):
         help_text="Wer schon aufgerufen war und später kommt, wird so viele wartende Plätze "
         "hinter der aktuellen Position neu einsortiert.",
     )  # fmt: skip
+    zu_spaet_minuten = models.PositiveSmallIntegerField(
+        "Am Einlass „zu spät“ nach (Minuten)", default=15, validators=[MaxValueValidator(600)],
+        help_text="Kommt ein Kunde so viele Minuten nach seinem Aufruf zum Einlass, zeigt die "
+        "Einlass-Karte „Zu spät“. 0 = nie.",
+    )  # fmt: skip
     wochentag_probe = models.PositiveSmallIntegerField(
         "Probelauf als Wochentag", null=True, blank=True, choices=TAGE,
         help_text="Nur zum Ausprobieren: Der Aufruf nimmt die Kundengruppen dieses Wochentags. "
