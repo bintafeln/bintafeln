@@ -16,6 +16,20 @@ def menue(eintrag):
     ]  # fmt: skip
 
 
+def suchen(benutzer, begriff, grenze):
+    from django.urls import reverse
+
+    from apps.konten import rollen
+    from apps.wochenuebersicht.models import Selbstabholer
+
+    if not rollen.hat_recht(benutzer, "wochenuebersicht.bearbeiten"):
+        return []
+    liste = Selbstabholer.objects.filter(name__icontains=begriff)[: grenze + 1]
+    return [(s.name, reverse("wochenuebersicht:selbstabholer_bearbeiten", args=[s.pk]),
+             f"Selbstabholer · {s.tage}" if s.tage else "Selbstabholer")
+            for s in liste]  # fmt: skip
+
+
 MODUL = Modul(
     kennung="wochenuebersicht",
     titel="Wochenübersicht",
@@ -33,4 +47,5 @@ MODUL = Modul(
         ("wochenuebersicht", "Wochenübersicht der Ausgabestellen", ("wochenuebersicht.sehen",)),
     ),
     menue=menue,
+    suchen=suchen,
 )  # fmt: skip

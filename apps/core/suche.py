@@ -47,12 +47,15 @@ KUERZEL = [
     Kuerzel("m", "mitarbeitende", "Mitarbeitende: Name, Benutzername",
             ("mitarbeitende.verwalten",)),
     Kuerzel("p", "programm", "Programm: Seiten und Menüpunkte, z. B. „p ausgabestellen“", ()),
+    Kuerzel("l", "listen", "Listen und Einstellungen: Ausgabestellen, Kundengruppen, Vorlagen, "
+            "Rollen, Mitglieder, Belegnummern …", ()),
     Kuerzel("h", "hilfe", "Hilfe: Text im Handbuch", ()),
 ]  # fmt: skip
-OHNE_KUERZEL = ("programm", "kunden", "antraege", "adressen", "mitarbeitende", "hilfe")
+OHNE_KUERZEL = ("programm", "listen", "kunden", "antraege", "adressen", "mitarbeitende", "hilfe")
 
 TITEL = {
     "programm": "Programm",
+    "listen": "Listen und Einstellungen",
     "kunden": "Kunden",
     "notizen": "Notizen",
     "anmerkungen": "Anmerkungen",
@@ -317,6 +320,95 @@ def _programm(benutzer, begriff, grenze, menue=()):
     return (im_namen + im_bereich)[: grenze + 1]
 
 
+def _listen(benutzer, begriff, grenze):
+    """Einträge aus Listen und Einstellungen, je nur mit dem Recht für die verlinkte Seite."""
+    from apps.adressen.models import AdressKategorie
+    from apps.ausgabe.models import BeitragsfreierZeitraum
+    from apps.core import module
+    from apps.konten.models import Rolle
+    from apps.kunden.models import (
+        Ausgabestelle,
+        Dokumentart,
+        Einkommensart,
+        Kundengruppe,
+        NotizVorlage,
+    )
+    from apps.mitglieder.models import Mitglied
+    from apps.serienbriefe.models import Vorlage
+    from apps.spenden.models import Spende
+
+    def liste(art, eintrag):
+        return reverse("kunden:listeneintrag", args=[art, eintrag.pk])
+
+    treffer = []
+    if rollen.hat_recht(benutzer, "kunden.liste"):
+        for a in Ausgabestelle.objects.filter(Q(name__icontains=begriff) | Q(ort__icontains=begriff)
+                                              | Q(strasse__icontains=begriff)):  # fmt: skip
+            treffer.append(
+                Treffer(
+                    a.name,
+                    reverse("kunden:ausgabestelle", args=[a.pk]),
+                    ", ".join(x for x in ("Ausgabestelle", a.anschrift) if x),
+                )
+            )
+    if rollen.hat_recht(benutzer, "einstellungen.listen"):
+        for g in Kundengruppe.objects.filter(
+            Q(name__icontains=begriff)
+            | Q(kuerzel__icontains=begriff)
+            | Q(ausgabestelle__name__icontains=begriff)
+        ):
+            treffer.append(Treffer(str(g), liste("kundengruppen", g),
+                                   " · ".join(x for x in ("Kundengruppe", g.wochentage,
+                                              str(g.ausgabestelle or "")) if x)))  # fmt: skip
+        quellen = [
+            (Einkommensart, "bezeichnung", "einkommensarten", "Einkommensart"),
+            (Dokumentart, "bezeichnung", "dokumentarten", "Dokumentart"),
+            (NotizVorlage, "text", "notizvorlagen", "Notiz-Vorlage"),
+            (AdressKategorie, "name", "adresskategorien", "Adresskategorie"),
+            (BeitragsfreierZeitraum, "bezeichnung", "beitragsfrei", "Beitragsfreier Zeitraum"),
+        ]
+        for modell, feld, art, art_name in quellen:
+            for e in modell.objects.filter(**{f"{feld}__icontains": begriff})[: grenze + 1]:
+                treffer.append(Treffer(str(getattr(e, feld)), liste(art, e), art_name))
+    if rollen.hat_recht(benutzer, "einstellungen.rollen"):
+        for r in Rolle.objects.filter(
+            Q(gruppe__name__icontains=begriff) | Q(beschreibung__icontains=begriff)
+        ).select_related("gruppe"):
+            treffer.append(
+                Treffer(
+                    r.gruppe.name,
+                    reverse("konten:rolle", args=[r.pk]),
+                    "Rolle" + (f" · {r.beschreibung}" if r.beschreibung else ""),
+                )
+            )
+    if rollen.hat_recht(benutzer, "serienbriefe.erstellen"):
+        for v in Vorlage.objects.filter(Q(name__icontains=begriff) | Q(betreff__icontains=begriff)):
+            treffer.append(
+                Treffer(
+                    v.name,
+                    reverse("serienbriefe:vorlage", args=[v.pk]),
+                    f"Serienbrief-Vorlage · {v.betreff}",
+                )
+            )
+    if rollen.hat_recht(benutzer, "mitglieder.sehen"):
+        for m in Mitglied.objects.filter(nummer__icontains=begriff).select_related("adresse"):
+            treffer.append(
+                Treffer(
+                    f"Mitglied {m.nummer} · {m.adresse.name}",
+                    reverse("mitglieder:mitglied", args=[m.pk]),
+                    m.art,
+                )
+            )
+    if rollen.hat_recht(benutzer, "spenden.erfassen"):
+        for sp in Spende.objects.filter(belegnummer__icontains=begriff).select_related("adresse"):
+            treffer.append(Treffer(f"Spende {sp.belegnummer} · {sp.adresse.name}",
+                                   reverse("spenden:bearbeiten", args=[sp.pk]),
+                                   f"{sp.datum:%d.%m.%Y}" + (f" · {sp.betrag} €" if sp.betrag
+                                                             else "")))  # fmt: skip
+    treffer += module.suchen(benutzer, begriff, grenze)
+    return treffer[: grenze + 1]
+
+
 @lru_cache(maxsize=512)
 def _kapiteltext(kennung: str, rechte: frozenset) -> tuple[tuple[str, str], ...]:
     """Kapitel als (Abschnitt, Text); der erste Abschnitt hat keine Überschrift."""
@@ -348,6 +440,7 @@ def _hilfe(benutzer, begriff, grenze, menue=()):
 
 SUCHEN = {
     "programm": _programm,
+    "listen": _listen,
     "kunden": _kunden,
     "notizen": _notizen,
     "anmerkungen": _anmerkungen,

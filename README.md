@@ -362,7 +362,10 @@ Regeln:
 
 Im Seitenkopf steht auf jeder Seite ein **Suchfeld**. Ab 3 Zeichen erscheinen die Treffer
 darunter, Enter öffnet eine Ergebnisseite. Ohne Kürzel sucht es **Seiten des Programms**
-(Menüpunkte, z. B. „ausgabestellen“ führt zu „Kunden → Ausgabestellen“), Kunden (Vor- und
+(Menüpunkte, z. B. „ausgabestellen“ führt zu „Kunden → Ausgabestellen“), **Listen und
+Einstellungen** (Ausgabestellen, Kundengruppen, Einkommens- und Dokumentarten, Notiz- und
+Serienbrief-Vorlagen, Rollen, Mitgliedsnummern, Belegnummern von Spenden, aus Modulen z. B.
+Selbstabholer und Termine), Kunden (Vor- und
 Nachname, auch Teile wie „mül“, Kundennummer, Abholberechtigte), Anträge, Adressen,
 Mitarbeitende und **Abschnitte des Handbuchs**. Ein Kürzel mit Leerzeichen davor sucht nur in
 einem Bereich:
@@ -378,6 +381,7 @@ einem Bereich:
 | `an` | Anträge (Name, Antragsnummer) | `an müller` |
 | `m` | Mitarbeitende | `m anna` |
 | `p` | Programm (Menüpunkte) | `p ausgabestellen` |
+| `l` | Listen und Einstellungen | `l zentrale` |
 | `h` | Handbuch | `h ampel` |
 
 `?` im Suchfeld zeigt die Kürzel. Jeder Bereich erscheint nur mit dem passenden Recht; wer einer

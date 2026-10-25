@@ -53,6 +53,9 @@ class Modul:
     # Vorlage, die angemeldeten Personen rechts in der Kopfzeile erscheint (z. B. Wetter).
     # Sie sollte ihren Inhalt nachladen (hx-trigger="load"), damit die Seite nicht wartet.
     kopfzeile: str = ""
+    # Suche im Seitenkopf (Bereich „Listen und Einstellungen“): suchen(benutzer, begriff, grenze)
+    # -> [(Titel, Adresse, Zusatz)]; das Modul prüft selbst die Rechte.
+    suchen: Callable | None = None
 
 
 @cache
@@ -96,6 +99,15 @@ def fristen_anwenden() -> None:
     for m in alle():
         if m.kennung in an and m.fristen:
             m.fristen()
+
+
+def suchen(benutzer, begriff: str, grenze: int) -> list:
+    """Treffer der eingeschalteten Module für die Suche im Seitenkopf."""
+    from apps.core.suche import Treffer
+
+    an = eingeschaltet()
+    return [Treffer(*t) for m in alle() if m.kennung in an and m.suchen
+            for t in m.suchen(benutzer, begriff, grenze)]  # fmt: skip
 
 
 def kopfzeile() -> list[str]:

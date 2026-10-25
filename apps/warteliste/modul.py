@@ -31,6 +31,20 @@ def auskunft_antrag(antrag, pdf):
     ablauf.auskunft(antrag, pdf)
 
 
+def suchen(benutzer, begriff, grenze):
+    from django.db.models import Q
+    from django.urls import reverse
+
+    from apps.konten import rollen
+    from apps.warteliste.models import Termin
+
+    if not rollen.hat_recht(benutzer, "warteliste.sehen"):
+        return []
+    termine = Termin.objects.filter(Q(ort__icontains=begriff) | Q(anmerkung__icontains=begriff))
+    return [(f"Termin {t}", reverse("warteliste:termin", args=[t.pk]), "Warteliste")
+            for t in termine[: grenze + 1]]  # fmt: skip
+
+
 MODUL = Modul(
     kennung="warteliste",
     titel="Warteliste",
@@ -51,5 +65,6 @@ MODUL = Modul(
     menue=menue,
     fristen=fristen,
     auskunft_antrag=auskunft_antrag,
+    suchen=suchen,
     sicherung_bereich="antraege",
 )  # fmt: skip

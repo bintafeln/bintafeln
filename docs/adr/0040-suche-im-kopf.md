@@ -35,3 +35,8 @@ Ohne Kürzel findet die Suche jetzt auch **Seiten des Programms** (Menüpunkte d
 Abschnitt“). Gesucht wird nur im Menü, das das Konto sieht; Rechte gelten also wie im Menü. Der
 Text der Kapitel wird je Rechte-Satz zwischengespeichert. Das Handbuch hat ein eigenes Suchfeld.
 Begründung: Wer eine Einstellung sucht, kennt oft den Namen, aber nicht den Weg im Menü.
+
+Außerdem findet sie einzelne Einträge aus **Listen und Einstellungen** (Kürzel `l`): Ausgabestellen,
+Kundengruppen, Einkommens- und Dokumentarten, Notiz- und Serienbrief-Vorlagen, Adresskategorien,
+beitragsfreie Zeiträume, Rollen, Mitgliedsnummern und Belegnummern – jeweils nur mit dem Recht für
+die verlinkte Seite. Module tragen über den Hook `Modul.suchen` bei (Selbstabholer, Termine).
