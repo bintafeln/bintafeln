@@ -386,7 +386,15 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
 - **Bearbeiten (nur Admin):** Auf der Haushaltsseite „Bearbeiten“ ändert alles zum Haushalt:
   Angaben und Zusatzfelder, Personen, Abholberechtigte, Sperren, Ausnahmen, Anmerkungen;
   Abholungen lassen sich löschen (eine zugehörige Buchung wird zurückgenommen), der ganze
-  Haushalt ebenfalls. „Neuer Haushalt“ steht in der Kundenliste und im Menü; die Seite ist in Abschnitte gegliedert (Kunde, Haushalt und Termine, Anschrift und Kontakt, weitere Angaben). Kundengruppen, Ausgabestellen
+  Haushalt ebenfalls. „Neuer Haushalt“ steht in der Kundenliste und im Menü. Die Seite folgt
+  der Reihenfolge im Büro: 1. Hauptperson (deren Name auf den Ausweis kommt), 2. Anschrift und
+  Kontakt, 3. weitere Angaben (Zusatzfelder der Tafel, z. B. Ernährung), 4. Angehörige (Nachname
+  leer = wie Hauptperson), 5. Bescheid und Gültigkeit des Ausweises, 6. Kundengruppe (nur mit
+  freiem Platz). Die **Kundennummer** vergibt bintafeln (nächste freie Zahl); ändern darf sie nur,
+  wer das Recht „Kundennummer vergeben und ändern“ hat (Vorgabe nur Admin), auch beim Bearbeiten.
+  Mitgeliefert sind ausgeschaltete Zusatzfelder als Vorschlag (Ernährung, kein Schweinefleisch,
+  Allergien, Haustiere, keine Kochmöglichkeit), einzuschalten unter „Einstellungen → Kundenstamm
+  und Zusatzfelder“; die zwei mit Art.-9-Bezug sind entsprechend markiert. Kundengruppen, Ausgabestellen
   und Einkommensarten pflegt der Admin unter „Einstellungen → Kundenstamm → Listen“.
   **Achtung:** Solange aus dem Altsystem importiert wird, ersetzt der nächste Import alle
   Änderungen; der Prüfbericht nennt die Zahl der geänderten Haushalte (ADR 0025).

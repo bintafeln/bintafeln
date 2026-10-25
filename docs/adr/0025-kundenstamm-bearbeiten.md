@@ -25,6 +25,11 @@ Tafel möchte, dass der Admin alles ändern kann.
   Haushalt merkt sich, wann und von wem er geändert wurde; die Bearbeitungsseiten sagen es,
   und der Prüfbericht des Imports nennt die Zahl der geänderten Haushalte.
 - Jede Änderung steht im Änderungsprotokoll.
+- Ergänzung: „Neuer Haushalt“ ist ein Formular in der Reihenfolge des Büros (Hauptperson,
+  Anschrift, Zusatzfelder, Angehörige, Bescheid und Gültigkeit, Kundengruppe; `forms_neu.py`).
+  Die Kundennummer vergibt bintafeln (nächste freie Zahl wie im Aufnahme-Assistenten); ändern
+  nur mit dem Recht `kunden.nummer_aendern` (ohne Vorgabe, also nur Admin), auch beim Bearbeiten.
+  Vorgeschlagene Zusatzfelder (Ernährung u. a.) kommen ausgeschaltet mit.
 
 ## Begründung
 

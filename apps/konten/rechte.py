@@ -67,6 +67,8 @@ KATALOG = [
     Recht("kunden.auskunft", KUNDEN, "Auskunft nach Art. 15 erstellen"),
     Recht("kunden.importieren", KUNDEN, "Kundenstamm importieren"),
     Recht("kunden.bearbeiten", KUNDEN, "Haushalte anlegen und bearbeiten"),
+    Recht("kunden.nummer_aendern", KUNDEN, "Kundennummer vergeben und ändern",
+          "Sonst vergibt bintafeln die nächste freie Nummer; Vorgabe nur Admin."),
     Recht("kunden.loeschen", KUNDEN, "Haushalte löschen"),
     Recht("kunden.zugriffsprotokoll", KUNDEN, "Zugriffsprotokoll ansehen"),
     # Anträge

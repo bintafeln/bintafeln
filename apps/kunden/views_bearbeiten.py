@@ -38,6 +38,7 @@ from apps.kunden.forms_bearbeiten import (
     PersonForm,
     SperreForm,
 )
+from apps.kunden.forms_neu import AngehoerigeFormset, HauptpersonForm, HaushaltNeuForm
 from apps.kunden.models import (
     Abholer,
     Abholung,
@@ -89,6 +90,8 @@ def _bearbeiten_url(h) -> str:
 def haushalt_bearbeiten(request, kundennummer):
     h = zugang.haushalt(request.user, kundennummer)
     form = HaushaltForm(request.POST or None, instance=h)
+    if not rollen.hat_recht(request.user, "kunden.nummer_aendern"):
+        del form.fields["kundennummer"]
     if request.method == "POST" and form.is_valid():
         vorher = historie.schnappschuss(h)
         with transaction.atomic():
@@ -122,14 +125,38 @@ def haushalt_bearbeiten(request, kundennummer):
 
 @rollen.recht_erforderlich("kunden.bearbeiten")
 def haushalt_neu(request):
-    form = HaushaltForm(request.POST or None, instance=Haushalt())
-    if request.method == "POST" and form.is_valid():
-        h = form.save()
-        geaendert(h, request)
-        _festhalten(h, None, request, zusatz="Angelegt")
-        messages.success(request, f"Haushalt {h.kundennummer} angelegt. Jetzt Personen ergänzen.")
-        return redirect(_bearbeiten_url(h))
-    return render(request, "kunden/haushalt_neu.html", {"form": form})
+    """Ein Formular in der Reihenfolge des Büros: Hauptperson zuerst, Kundengruppe zuletzt."""
+    daten = request.POST or None
+    nummer_aendern = rollen.hat_recht(request.user, "kunden.nummer_aendern")
+    haushalt = HaushaltNeuForm(daten, instance=Haushalt(), nummer_aendern=nummer_aendern)
+    hauptperson = HauptpersonForm(daten, prefix="hp", instance=Person(ist_hauptperson=True))
+    angehoerige = AngehoerigeFormset(daten, prefix="a", queryset=Person.objects.none())
+    if request.method == "POST" and all(
+        [haushalt.is_valid(), hauptperson.is_valid(), angehoerige.is_valid()]
+    ):
+        with transaction.atomic():
+            h = haushalt.save()
+            hp = hauptperson.save(commit=False)
+            hp.haushalt, hp.ist_hauptperson = h, True
+            hp.save()
+            for f in angehoerige.forms:
+                if f.cleaned_data.get("vorname"):
+                    p = f.save(commit=False)
+                    p.haushalt, p.ist_hauptperson = h, False
+                    p.nachname = p.nachname or hp.nachname
+                    p.save()
+            geaendert(h, request)
+            _festhalten(h, None, request, zusatz="Angelegt")
+        messages.success(request, f"Haushalt {h.kundennummer} angelegt.")
+        return redirect("kunden:haushalt", kundennummer=h.kundennummer)
+    return render(request, "kunden/haushalt_neu.html", {
+        "haushalt": haushalt, "hauptperson": hauptperson, "angehoerige": angehoerige,
+        "hp_felder": [hauptperson[n] for n in hauptperson.fields if not n.startswith("zusatz_")],
+        "anschrift": [haushalt[n] for n in ("strasse", "plz", "ort", "telefon", "email")
+                      if n in haushalt.fields],
+        "zusatz": [haushalt[n] for n in haushalt.fields if n.startswith("zusatz_")],
+        "hp_zusatz": [hauptperson[n] for n in hauptperson.fields if n.startswith("zusatz_")],
+    })  # fmt: skip
 
 
 @rollen.recht_erforderlich("kunden.loeschen")
