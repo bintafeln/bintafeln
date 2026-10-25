@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block titel %}{% if obj %}{{ obj }}{% else %}{{ name }} anlegen{% endif %}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'links:liste' %}">← Links</a></p>
+  <h1>{% if obj %}{{ name }} „{{ obj }}“ ändern{% else %}{{ name }} anlegen{% endif %}</h1>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf">Speichern</button>
+      <a class="knopf knopf-abbrechen" href="{% url 'links:liste' %}">Abbrechen</a>
+    </div>
+  </form>
+  {% if obj %}
+  <form method="post" action="{% url 'links:loeschen' name|lower obj.pk %}" onsubmit="return confirm('Wirklich löschen?');">
+    {% csrf_token %}
+    <button type="submit" class="knopf knopf-gefahr">Löschen</button>
+    {% if name == "Gruppe" %}<span class="hinweis">Die Links der Gruppe bleiben, dann ohne Gruppe.</span>{% endif %}
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

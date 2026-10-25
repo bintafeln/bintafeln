@@ -1,0 +1,19 @@
+<section class="karte breit link-bereich" aria-label="Links">
+  {% for titel, links in gruppen %}
+  {% if titel %}<h2 class="link-gruppe">{{ titel }}</h2>{% endif %}
+  <ul class="link-kacheln">
+    {% for l in links %}
+    <li><a class="link-kachel{% if l.warnung %} link-warnung{% endif %}" href="{{ l.adresse }}"{% if l.neuer_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>
+      <span class="link-symbol" aria-hidden="true">{{ l.symbol|default:"🔗" }}</span>
+      <span class="link-text">
+        <strong>{{ l.titel }}</strong>
+        {% if l.untertitel %}<small class="link-untertitel">{{ l.untertitel }}</small>{% endif %}
+        {% if l.beschreibung %}<span class="link-beschreibung">{{ l.beschreibung }}</span>{% endif %}
+        {% if l.warnung %}<span class="link-warntext">⚠ {{ l.warnung }}</span>{% endif %}
+        <span class="link-ziel">{{ l.ziel }}{% if l.neuer_tab %} ↗{% endif %}</span>
+      </span>
+    </a></li>
+    {% endfor %}
+  </ul>
+  {% endfor %}
+</section>

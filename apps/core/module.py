@@ -56,6 +56,8 @@ class Modul:
     # Suche im Seitenkopf (Bereich „Listen und Einstellungen“): suchen(benutzer, begriff, grenze)
     # -> [(Titel, Adresse, Zusatz)]; das Modul prüft selbst die Rechte.
     suchen: Callable | None = None
+    # Beitrag zur Startseite unter der Begrüßung: startseite(request) -> HTML (render_to_string)
+    startseite: Callable | None = None
 
 
 @cache
@@ -108,6 +110,13 @@ def suchen(benutzer, begriff: str, grenze: int) -> list:
     an = eingeschaltet()
     return [Treffer(*t) for m in alle() if m.kennung in an and m.suchen
             for t in m.suchen(benutzer, begriff, grenze)]  # fmt: skip
+
+
+def startseite(request) -> list[str]:
+    """HTML-Beiträge der eingeschalteten Module für die Startseite (leere fallen weg)."""
+    an = eingeschaltet()
+    teile = [m.startseite(request) for m in alle() if m.kennung in an and m.startseite]
+    return [t for t in teile if t]
 
 
 def kopfzeile() -> list[str]:

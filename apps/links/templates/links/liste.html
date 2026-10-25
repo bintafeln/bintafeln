@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titel %}Links auf der Startseite{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Links auf der Startseite</h1>
+  <p class="hinweis">Kacheln unter der Begrüßung auf der Startseite. Mit „Sichtbar für“ sehen einen Link nur Personen mit
+    dem gewählten Recht, z. B. Links zur Serververwaltung nur Admins.</p>
+  <div class="aktionsleiste">
+    <a class="knopf" href="{% url 'links:link_neu' %}">Neuer Link</a>
+    <a class="knopf knopf-zweitrangig" href="{% url 'links:gruppe_neu' %}">Neue Gruppe</a>
+  </div>
+  <table class="tabelle">
+    <thead><tr><th></th><th>Titel</th><th>Gruppe</th><th>Adresse</th><th>Sichtbar für</th><th>Aktiv</th></tr></thead>
+    <tbody>
+      {% for l in links %}
+      <tr><td>{{ l.symbol }}</td><td><a href="{% url 'links:link' l.pk %}">{{ l.titel }}</a>{% if l.warnung %} <span class="marke-warnung">Warnung</span>{% endif %}</td>
+        <td>{{ l.gruppe|default:"–" }}</td><td>{{ l.adresse|truncatechars:50 }}</td><td>{{ l.recht|default:"alle" }}</td><td>{{ l.aktiv|yesno:"ja,nein" }}</td></tr>
+      {% empty %}
+      <tr><td colspan="6" class="hinweis">Noch keine Links.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if gruppen %}
+  <h2>Gruppen</h2>
+  <ul>{% for g in gruppen %}<li><a href="{% url 'links:gruppe' g.pk %}">{{ g.titel }}</a> <span class="hinweis">(Reihenfolge {{ g.reihenfolge }})</span></li>{% endfor %}</ul>
+  {% endif %}
+</section>
+{% endblock %}

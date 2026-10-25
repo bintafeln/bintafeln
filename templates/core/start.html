@@ -15,4 +15,5 @@
     <p><a class="knopf" href="{% url 'ausgabe:empfang' %}">Zum Einlass</a></p>
   {% endif %}
 </section>
+{% for teil in modul_startseite %}{{ teil }}{% endfor %}
 {% endblock %}
