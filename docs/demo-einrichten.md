@@ -88,6 +88,11 @@ Anmeldeseite stehen die Zugänge:
 | `demo-ausgabe` | Ausgabe | Einlass mit Ampel, Kasse |
 | `demo-personal` | Personal | Personal, Urlaub, Stundenkonto, Arbeitszeiten |
 | `demo-fest` | Ausgabe und Fahrer, fest angestellt | „Meine Arbeitszeit“ mit Stempeln |
+| Name der ersten Ausgabestelle (z. B. `Ausgabestelle Mitte`) | Konto der Ausgabestelle | Tablet am Einlass: nur deren Kunden, ohne Zwei-Faktor |
+
+Die Module Aufruf, Warteliste, Wochenübersicht und Links sind eingeschaltet und mit Beispielen
+gefüllt (Links auf der Startseite, zwei Selbstabholer). Das Wetter bleibt aus, weil es Internet
+und einen echten Ort braucht.
 
 Das Passwort ist für alle Konten das aus `BINTAFELN_DEMO_PASSWORT`. Am Einlass z. B. die
 Kundennummer `1001` eingeben.
