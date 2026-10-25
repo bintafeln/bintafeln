@@ -9,6 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 from django_otp import user_has_device
@@ -153,6 +154,9 @@ def bearbeiten(request, pk):
             "form": form,
             "ziel": ziel,
             "zwei_faktor": user_has_device(ziel),
+            "vertraute_geraete": ziel.vertraute_geraete.filter(
+                gueltig_bis__gt=timezone.now()
+            ).count(),
             "mail": mail.eingerichtet(),
         },
     )
@@ -195,6 +199,19 @@ def zwei_faktor_zuruecksetzen(request, pk):
         zuruecksetzen,
         "Zwei-Faktor für {ziel} zurückgesetzt. Bei Pflicht muss es neu eingerichtet werden.",
     )
+
+
+@require_POST
+@verwalter_erforderlich
+def geraete_zuruecksetzen(request, pk):
+    def zuruecksetzen(verwalter, ziel):
+        zwei_faktor.vertrauen_entziehen(ziel)
+
+    return _aktion(
+        request, pk, zuruecksetzen,
+        "Vertraute Geräte von {ziel} entfernt: Bei der nächsten Anmeldung ist überall der Code "
+        "nötig.",
+    )  # fmt: skip
 
 
 @require_POST

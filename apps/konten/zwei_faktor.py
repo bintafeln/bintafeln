@@ -1,10 +1,15 @@
 """Zwei-Faktor-Anmeldung: Pflicht je Rolle, Einrichtung, Notfallcodes."""
 
+import datetime as dt
+import hashlib
 import re
+import secrets
 
 import segno
 from django.conf import settings
+from django.core import signing
 from django.db import transaction
+from django.utils import timezone
 from django_otp.plugins.otp_static.models import StaticDevice, StaticToken
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
@@ -45,6 +50,7 @@ def neues_app_geraet(benutzer) -> TOTPDevice:
     geraet = TOTPDevice.objects.filter(user=benutzer, confirmed=False).first()
     if geraet is None:
         geraet = TOTPDevice.objects.create(user=benutzer, name=NAME_APP, confirmed=False)
+    vertrauen_entziehen(benutzer)  # neue Einrichtung: alle Geräte fragen wieder nach dem Code
     return geraet
 
 
@@ -90,7 +96,96 @@ def einrichtung_bestaetigen(geraet: TOTPDevice, code: str) -> bool:
 @transaction.atomic
 def abschalten(benutzer) -> None:
     """Entfernt alle Zwei-Faktor-Geräte (App und Notfallcodes) des Benutzers."""
+    vertrauen_entziehen(benutzer)
     for geraet in TOTPDevice.objects.filter(user=benutzer):
         geraet.delete()
     for geraet in StaticDevice.objects.filter(user=benutzer):
         geraet.delete()
+
+
+# ── Vertraute Geräte: für einige Tage kein Code nötig ───────────────────────
+
+COOKIE = "bintafeln_geraet"
+SALZ = "bintafeln.vertrautes_geraet"
+
+
+def _pruefsumme(merkmal: str) -> str:
+    return hashlib.sha256(merkmal.encode()).hexdigest()
+
+
+def _passwort_stand(benutzer) -> str:
+    """Ändert sich mit jedem neuen Passwort (ohne das Passwort preiszugeben)."""
+    return hashlib.sha256(f"{SALZ}:{benutzer.password}".encode()).hexdigest()
+
+
+def vertrauen_tage() -> int:
+    from apps.konten.models import AnmeldeEinstellungen
+
+    return 0 if settings.DEMO else AnmeldeEinstellungen.laden().vertrauen_tage
+
+
+def geraet_vertrauen(request, antwort, benutzer) -> None:
+    """Legt das vertraute Gerät an und setzt das Cookie im Browser."""
+    from apps.konten.models import VertrautesGeraet
+
+    tage = vertrauen_tage()
+    if not tage:
+        return
+    merkmal = secrets.token_urlsafe(32)
+    agent = request.META.get("HTTP_USER_AGENT", "")
+    VertrautesGeraet.objects.create(
+        benutzer=benutzer, pruefsumme=_pruefsumme(merkmal),
+        passwort_stand=_passwort_stand(benutzer), bezeichnung=geraet_name(agent),
+        gueltig_bis=timezone.now() + dt.timedelta(days=tage),
+    )  # fmt: skip
+    antwort.set_cookie(
+        COOKIE, signing.dumps({"b": benutzer.pk, "m": merkmal}, salt=SALZ),
+        max_age=tage * 86400, httponly=True, secure=request.is_secure(), samesite="Lax",
+    )  # fmt: skip
+
+
+def vertrautes_geraet(request, benutzer):
+    """Das vertraute Gerät dieses Browsers für den Benutzer, sonst None."""
+    from apps.konten.models import VertrautesGeraet
+
+    wert = request.COOKIES.get(COOKIE)
+    if not wert or not vertrauen_tage():
+        return None
+    try:
+        daten = signing.loads(wert, salt=SALZ)
+    except signing.BadSignature:
+        return None
+    if daten.get("b") != benutzer.pk:
+        return None
+    geraet = VertrautesGeraet.objects.filter(
+        benutzer=benutzer, pruefsumme=_pruefsumme(str(daten.get("m"))),
+        gueltig_bis__gt=timezone.now(),
+    ).first()  # fmt: skip
+    if geraet is None or geraet.passwort_stand != _passwort_stand(benutzer):
+        return None
+    geraet.zuletzt_am = timezone.now()
+    geraet.save(update_fields=["zuletzt_am"])
+    return geraet
+
+
+def vertrauen_entziehen(benutzer) -> int:
+    from apps.konten.models import VertrautesGeraet
+
+    return VertrautesGeraet.objects.filter(benutzer=benutzer).delete()[0]
+
+
+def geraet_name(agent: str) -> str:
+    """Grobe Bezeichnung aus dem User-Agent, z. B. „Firefox unter Windows“."""
+    browser = next((n for k, n in [("Edg/", "Edge"), ("Firefox", "Firefox"),
+                                   ("Chrome", "Chrome"), ("Safari", "Safari")] if k in agent),
+                   "Browser")  # fmt: skip
+    system = next((n for k, n in [("Android", "Android"), ("iPhone", "iPhone"), ("iPad", "iPad"),
+                                  ("Windows", "Windows"), ("Mac OS", "macOS"),
+                                  ("Linux", "Linux")] if k in agent), "")  # fmt: skip
+    return f"{browser} unter {system}" if system else browser
+
+
+def geraete_aufraeumen() -> None:
+    from apps.konten.models import VertrautesGeraet
+
+    VertrautesGeraet.objects.filter(gueltig_bis__lt=timezone.now()).delete()

@@ -45,6 +45,13 @@
       <button type="submit" class="knopf knopf-zweitrangig">Zwei-Faktor zurücksetzen</button>
     </form>
     {% endif %}
+    {% if vertraute_geraete %}
+    <form method="post" action="{% url 'konten:geraete_zuruecksetzen' ziel.pk %}" class="inline"
+          onsubmit="return confirm('Vertraute Geräte von {{ ziel|escapejs }} entfernen? Danach ist überall wieder der Code nötig.')">
+      {% csrf_token %}
+      <button type="submit" class="knopf knopf-zweitrangig">Vertraute Geräte entfernen ({{ vertraute_geraete }})</button>
+    </form>
+    {% endif %}
     {% if ziel.is_active %}
     <form method="post" action="{% url 'konten:sperren' ziel.pk %}" class="inline"
           onsubmit="return confirm('{{ ziel|escapejs }} sperren? Die Person ist sofort abgemeldet und steht dann im Archiv.')">

@@ -87,4 +87,12 @@ urlpatterns = [
     path("zwei-faktor/einrichten/", views.zwei_faktor_einrichten, name="zwei_faktor_einrichten"),
     path("zwei-faktor/notfallcodes/", views.notfallcodes_neu, name="notfallcodes_neu"),
     path("zwei-faktor/abschalten/", views.zwei_faktor_abschalten, name="zwei_faktor_abschalten"),
+    path("geraete/entfernen/", views.geraet_entfernen, name="geraete_entfernen"),
+    path("geraete/<int:pk>/entfernen/", views.geraet_entfernen, name="geraet_entfernen"),
+    path("anmeldung/", views.anmelde_einstellungen, name="anmelde_einstellungen"),
+    path(
+        "mitarbeitende/<int:pk>/geraete/",
+        views_mitarbeitende.geraete_zuruecksetzen,
+        name="geraete_zuruecksetzen",
+    ),
 ]
