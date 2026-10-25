@@ -705,6 +705,11 @@ Zeitraum) und Ausgabestelle wählen.
   - Haushalte nach Status und Einkommensart
   - Auslastung der Kundengruppen
   - Sonderaktionen im Zeitraum
+- **Spenden und Mitglieder** (nur ohne Auswahl einer Ausgabestelle, weil sie zum Verein gehören,
+  und nur mit dem Recht „Spenden ansehen“ bzw. „Mitglieder ansehen“): Kennzahlen Geldspenden,
+  Sachspenden, Mitglieder (und Mitgliedsbeiträge, wenn eingeschaltet); Diagramme Geldspenden im
+  Verlauf (Tabelle mit Zahl der Sachspenden), Geldspenden nach Zweck, Eintritte und Austritte,
+  Mitglieder nach Art.
 - Zu jedem Diagramm gibt es die Zahlen als Tabelle und als **CSV-Datei**. Beim Überfahren mit
   der Maus zeigt jedes Diagramm die genauen Werte.
 - Nur Summen, keine Personendaten. Wer einer Ausgabestelle zugeordnet ist, sieht nur deren Zahlen.

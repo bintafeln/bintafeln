@@ -19,6 +19,10 @@ JavaScript-Framework und ohne fremde Server aus.
   geprüfte Farbreihenfolge (höchstens acht Reihen, darüber „Andere“). Jeder Abschnitt hat
   zusätzlich eine Tabelle und einen CSV-Export.
 - Wer einer Ausgabestelle zugeordnet ist (ADR 0034), sieht nur deren Zahlen.
+- Ergänzung Modul 5: Spenden (ADR 0045) und Mitglieder (ADR 0046) erscheinen nur ohne Auswahl
+  einer Ausgabestelle (sie gehören zum Verein, nicht zu einer Stelle) und nur mit
+  `spenden.sehen` bzw. `mitglieder.sehen`. Mitgliedsbeiträge zählen nicht als Geldspenden und
+  erscheinen nur, wenn sie eingeschaltet sind.
 
 ## Begründung
 

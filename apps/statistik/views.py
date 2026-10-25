@@ -49,7 +49,15 @@ def _euro(wert) -> str:
     return f"{wert:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-def abschnitte(z: aw.Zeitraum, stellen, heute) -> list[dict]:
+def _verein(benutzer, stellen) -> tuple[bool, bool]:
+    """Spenden bzw. Mitglieder zeigen? Nur ohne Ausgabestelle und mit dem Recht des Bereichs."""
+    if stellen is not None or benutzer is None:
+        return False, False
+    return (rollen.hat_recht(benutzer, "spenden.sehen"),
+            rollen.hat_recht(benutzer, "mitglieder.sehen"))  # fmt: skip
+
+
+def abschnitte(z: aw.Zeitraum, stellen, heute, benutzer=None) -> list[dict]:
     """Alle Abschnitte mit Diagramm, Tabelle und Erklärung."""
     beschriftung = [name for _, name in aw.perioden(z)]
     einheit = {"tag": "Tag", "woche": "Woche", "monat": "Monat"}[z.einheit]
@@ -202,6 +210,55 @@ def abschnitte(z: aw.Zeitraum, stellen, heute) -> list[dict]:
             ["Sonderaktion", "Zeitraum", "Haushalte", "Stück"],
             [[a["name"], a["zeitraum"], a["haushalte"], a["stueck"]] for a in aktionen],
         )
+
+    mit_spenden, mit_mitgliedern = _verein(benutzer, stellen)
+    if mit_spenden:
+        from apps.mitglieder.models import MitgliederEinstellungen
+        from apps.spenden.models import Spende
+
+        geld = aw.verlauf(aw.spenden(z, Spende.Art.GELD), z, wert="betrag")
+        sach = aw.verlauf(aw.spenden(z, Spende.Art.SACH), z)
+        daten = list(zip(beschriftung, geld, strict=True))
+        neu(
+            "spenden",
+            f"Geldspenden je {einheit}",
+            dg.saeulen(daten, "Geldspenden", " €", nachkomma=2, farbe=1),
+            [einheit, "Geldspenden (Euro)", "Sachspenden (Anzahl)"],
+            [
+                [n, f"{w:.2f}".replace(".", ","), int(s)]
+                for (n, w), s in zip(daten, sach, strict=True)
+            ],
+            ("Ohne Mitgliedsbeiträge. " if MitgliederEinstellungen.mit_beitraegen() else "")
+            + "Die Tabelle zeigt zusätzlich die Zahl der Sachspenden.",
+        )
+        zwecke = aw.spenden_nach_zweck(z)
+        neu(
+            "spenden_zweck",
+            "Geldspenden nach Zweck",
+            dg.balken(zwecke, "Geldspenden nach Zweck", " €", nachkomma=2, farbe=1),
+            ["Zweck", "Euro"],
+            [[n, f"{w:.2f}".replace(".", ",")] for n, w in zwecke],
+            "Mehr als acht Zwecke werden zu „Andere“ zusammengefasst.",
+        )
+    if mit_mitgliedern:
+        bewegung = aw.mitglieder_ein_und_austritte(z)
+        neu(
+            "mitglieder",
+            f"Eintritte und Austritte je {einheit}",
+            dg.linien(beschriftung, bewegung, "Eintritte und Austritte"),
+            [einheit, *[s.name for s in bewegung]],
+            [[b, *[int(s.werte[i]) for s in bewegung]] for i, b in enumerate(beschriftung)],
+            legende=bewegung,
+        )
+        arten = aw.mitglieder_nach_art(min(heute, z.bis))
+        neu(
+            "mitglieder_art",
+            "Mitglieder nach Art",
+            dg.balken(arten, "Mitglieder nach Art", farbe=2),
+            ["Art", "Mitglieder"],
+            [[n, w] for n, w in arten],
+            "Stand am Ende des Zeitraums.",
+        )
     return liste
 
 
@@ -210,7 +267,7 @@ def uebersicht(request):
     heute = timezone.localdate()
     wahl, z, vorgaben = _zeitraum(request, heute)
     stellen, auswahl, gewaehlt = _stellen(request)
-    teile = abschnitte(z, stellen, heute)
+    teile = abschnitte(z, stellen, heute, request.user)
     csv_teil = request.GET.get("csv")
     if csv_teil:
         teil = next((t for t in teile if t["id"] == csv_teil), None)
@@ -243,6 +300,23 @@ def uebersicht(request):
     ]
     if stellen is None:
         kacheln.append(("Anträge", f"{k.antraege:,}".replace(",", "."), "eingegangen"))
+    mit_spenden, mit_mitgliedern = _verein(request.user, stellen)
+    if mit_spenden:
+        s = aw.spendenzahlen(z)
+        kacheln += [
+            ("Geldspenden", _euro(s.geld), f"{s.geldspenden} Spenden, {s.spender} Spender gesamt"),
+            ("Sachspenden", f"{s.sachspenden:,}".replace(",", "."),
+             f"Wert {_euro(s.sachwert)}" if s.sachwert else "im Zeitraum"),
+        ]  # fmt: skip
+    if mit_mitgliedern:
+        from apps.mitglieder.models import MitgliederEinstellungen
+
+        tag = min(heute, z.bis)
+        anzahl = sum(n for _, n in aw.mitglieder_nach_art(tag))
+        kacheln.append(("Mitglieder", f"{anzahl:,}".replace(",", "."), f"am {tag:%d.%m.%Y}"))
+        if MitgliederEinstellungen.mit_beitraegen():
+            beitraege = aw.spendenzahlen(z).beitraege
+            kacheln.append(("Mitgliedsbeiträge", _euro(beitraege), "eingegangen"))
     return render(
         request,
         "statistik/uebersicht.html",

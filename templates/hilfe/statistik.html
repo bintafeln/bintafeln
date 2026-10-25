@@ -4,6 +4,10 @@
   <li><strong>Diagramme</strong>: Abholungen im Verlauf und je Ausgabestelle, nach Wochentag und Uhrzeit, Einnahmen,
     neue Kunden und Anträge, Haushaltsgrößen, Altersgruppen, Status, Einkommensarten, Auslastung der Kundengruppen,
     Sonderaktionen.</li>
+  {% if "spenden.sehen" in rechte or "mitglieder.sehen" in rechte %}<li><strong>Spenden und Mitglieder</strong> erscheinen,
+    wenn keine Ausgabestelle gewählt ist (sie gehören zum Verein): {% if "spenden.sehen" in rechte %}Geldspenden im
+    Verlauf und nach Zweck, Sachspenden{% endif %}{% if "spenden.sehen" in rechte and "mitglieder.sehen" in rechte %};
+    {% endif %}{% if "mitglieder.sehen" in rechte %}Mitglieder, Eintritte und Austritte, Mitglieder nach Art{% endif %}.</li>{% endif %}
   <li>Mit der Maus über einen Balken oder Punkt fahren zeigt den genauen Wert. „Zahlen als Tabelle“ und „CSV“ liefern
     die Zahlen, z. B. für den Jahresbericht.</li>
 </ul>

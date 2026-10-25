@@ -346,3 +346,80 @@ def kennzahlen(z: Zeitraum, stellen=None) -> Kennzahlen:
             eingegangen_am__gte=start, eingegangen_am__lt=ende
         ).count()
     return k
+
+
+# Spenden und Mitglieder (Modul 5) gehören zum Verein, nicht zu einer Ausgabestelle: Die Seite
+# zeigt sie nur ohne Auswahl einer Ausgabestelle und nur mit den Rechten des jeweiligen Bereichs.
+
+
+def spenden(z: Zeitraum, art: str, mitgliedsbeitrag=False):
+    from apps.spenden.models import Spende
+
+    return Spende.objects.filter(
+        art=art, mitgliedsbeitrag=mitgliedsbeitrag, datum__gte=z.von, datum__lte=z.bis
+    )
+
+
+def spenden_nach_zweck(z: Zeitraum) -> list[tuple[str, float]]:
+    """Geldspenden (ohne Mitgliedsbeiträge) nach Zweck; mehr als MAX_SERIEN werden „Andere“."""
+    from apps.spenden.models import Spende
+
+    summen = Counter()
+    for zweck, betrag in spenden(z, Spende.Art.GELD).values_list("zweck", "betrag"):
+        summen[zweck.strip() or "ohne Zweck"] += float(betrag or 0)
+    rangfolge = summen.most_common()
+    if len(rangfolge) > MAX_SERIEN:
+        rest = sum(w for _, w in rangfolge[MAX_SERIEN - 1 :])
+        rangfolge = [*rangfolge[: MAX_SERIEN - 1], ("Andere", rest)]
+    return rangfolge
+
+
+@dataclass
+class SpendenZahlen:
+    geld: Decimal = Decimal("0")
+    geldspenden: int = 0
+    sachspenden: int = 0
+    sachwert: Decimal = Decimal("0")
+    spender: int = 0
+    beitraege: Decimal = Decimal("0")
+
+
+def spendenzahlen(z: Zeitraum) -> SpendenZahlen:
+    from apps.spenden.models import Spende
+
+    geld, sach = spenden(z, Spende.Art.GELD), spenden(z, Spende.Art.SACH)
+    return SpendenZahlen(
+        geld=geld.aggregate(s=Sum("betrag"))["s"] or Decimal("0"),
+        geldspenden=geld.count(),
+        sachspenden=sach.count(),
+        sachwert=sach.aggregate(s=Sum("betrag"))["s"] or Decimal("0"),
+        spender=len(
+            set(geld.values_list("adresse_id", flat=True))
+            | set(sach.values_list("adresse_id", flat=True))
+        ),  # fmt: skip
+        beitraege=spenden(z, Spende.Art.GELD, mitgliedsbeitrag=True).aggregate(s=Sum("betrag"))["s"]
+        or Decimal("0"),
+    )
+
+
+def mitglieder_ein_und_austritte(z: Zeitraum) -> list[Serie]:
+    from apps.mitglieder.models import Mitglied
+
+    ein = Mitglied.objects.filter(eintritt__gte=z.von, eintritt__lte=z.bis)
+    aus = Mitglied.objects.filter(austritt__gte=z.von, austritt__lte=z.bis)
+    serien = [Serie("Eintritte", verlauf(ein, z, "eintritt"), farbe=0),
+              Serie("Austritte", verlauf(aus, z, "austritt"), farbe=1)]  # fmt: skip
+    for s in serien:
+        s.summe = sum(s.werte)
+    return serien
+
+
+def mitglieder_nach_art(tag: dt.date) -> list[tuple[str, int]]:
+    from apps.mitglieder.models import Mitglied
+
+    aktuell = Mitglied.objects.filter(Q(austritt__isnull=True) | Q(austritt__gte=tag),
+                                      eintritt__lte=tag)  # fmt: skip
+    return [
+        (g["art"], g["n"])
+        for g in aktuell.values("art").annotate(n=Count("pk")).order_by("-n", "art")
+    ]
