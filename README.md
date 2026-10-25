@@ -689,6 +689,20 @@ Ersetzt das bisherige Neuanmeldungs-Programm (ADR 0051) und arbeitet direkt mit 
   „Einstellungen → Kunden → Warteliste und Einladungen“. Einladungen stehen in der Auskunft zum
   Antrag.
 
+### Wochenübersicht der Ausgabestellen
+
+Ersetzt die bisherige „Ausgabestellen-Übersicht“ (ADR 0054) und rechnet direkt mit dem
+Kundenstamm, ohne Import aus anderen Programmen.
+
+- Je Wochentag und Ausgabestelle: **Soll Haushalte** („Maximum“ der Kundengruppen), **Ist
+  Haushalte** (aktiv), Erwachsene, Kinder, Gesamt; Tagessummen und „GESAMT ALLE PERSONEN“. Alle
+  Kundengruppen einer Ausgabestelle an einem Tag ergeben eine Zeile; eine Gruppe zählt an jedem
+  ihrer Wochentage.
+- **Selbstabholer** (Einrichtungen mit Tagen und Personenzahl) zählen nur zu „alle Personen“.
+- Wahlweise die **Abholungen einer Kalenderwoche** je Tag und Ausgabestelle aus dem Einlass.
+- Druck als PDF im Hochformat (je Tag) oder Querformat (alles auf einem Blatt wie die bisherige
+  Excel-Liste). Rechte „Wochenübersicht ansehen“ und „… pflegen“ (Vorgabe Büro).
+
 ### Wetter in der Kopfzeile
 
 Zeigt rechts in der Kopfzeile Außentemperatur und Wetter der Ausgabestelle, z. B. „☁️ 12 °C
@@ -1175,6 +1189,7 @@ apps/konten/        Benutzer, Rollen, Anmeldung, Zwei-Faktor
 apps/kunden/        Kundenstamm: Haushalte, Personen, Zusatzfelder, Einstellungen
 apps/aufruf/        Modul Aufruf (Monitor, Handy, Kiosk); Module beschreibt apps/core/module.py
 apps/warteliste/    Modul Warteliste (Einladungen zu Terminen, Streichungen)
+apps/wochenuebersicht/ Modul Wochenübersicht (Soll/Ist der Ausgabestellen je Wochentag)
 apps/wetter/        Modul Wetter (Außentemperatur der Ausgabestelle in der Kopfzeile)
 templates/          Django-Templates
 static/             CSS und HTMX

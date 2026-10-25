@@ -1,0 +1,28 @@
+<p>Die Wochenübersicht ersetzt die bisherige „Ausgabestellen-Übersicht“. Sie rechnet direkt mit dem Kundenstamm;
+  ein Herunterladen aus anderen Programmen entfällt. Sie ist ein zuschaltbares Modul (Einstellungen → Tafel →
+  Tafel und Module).</p>
+
+<h3>Was die Zahlen bedeuten</h3>
+<ul>
+  <li><strong>Soll HH:</strong> „Maximum Haushalte“ der Kundengruppen (Einstellungen → Kunden → Kundengruppen). Ist bei
+    keiner Gruppe ein Maximum eingetragen, steht „–“.</li>
+  <li><strong>Ist HH, Erw., Kinder, Gesamt:</strong> aktive Haushalte der Kundengruppen mit ihren Personen. Wer als Kind
+    zählt, steht unter Einstellungen → Kunden → Kundenstamm.</li>
+  <li>Eine Kundengruppe zählt an <strong>jedem</strong> ihrer Wochentage. Alle Gruppen einer Ausgabestelle an einem Tag
+    ergeben eine Zeile, z. B. alle Zeitfenster der Zentrale. Kundengruppen ohne Ausgabestelle stehen mit ihrem
+    Namen.</li>
+  <li><strong>Selbstabholer</strong> (🚚) stehen an ihren Tagen mit ihrer Personenzahl und zählen nur zu
+    „GESAMT ALLE PERSONEN“, nicht zur Tagessumme (dort als „+N“).</li>
+  <li><strong>Mit Abholungen der Woche:</strong> Haken setzen und Kalenderwoche wählen; die Spalte „Abgeholt“ zeigt,
+    wie viele Haushalte in dieser Woche an dem Tag an der Ausgabestelle abgeholt haben (aus dem Einlass).</li>
+</ul>
+
+<h3>Drucken</h3>
+<p>„PDF Hochformat“ druckt je Tag eine Tabelle, „PDF Querformat“ alles auf einem Blatt wie die bisherige
+  Excel-Liste: Zeilen sind die Ausgabestellen, je Tag fünf Spalten.</p>
+
+{% if "wochenuebersicht.bearbeiten" in rechte %}
+<h3>Pflege</h3>
+<p>Unter „Wochenübersicht → Selbstabholer“ legen Sie Einrichtungen mit Tagen und Personenzahl an. Unter
+  „Reihenfolge“ bestimmen Sie, in welcher Reihenfolge die Ausgabestellen stehen.</p>
+{% endif %}

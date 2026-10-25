@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block titel %}{% if s %}{{ s.name }}{% else %}Neuer Selbstabholer{% endif %}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'wochenuebersicht:selbstabholer' %}">← Selbstabholer</a></p>
+  <h1>{% if s %}{{ s.name }} ändern{% else %}Neuer Selbstabholer{% endif %}</h1>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf">Speichern</button>
+      <a class="knopf knopf-abbrechen" href="{% url 'wochenuebersicht:selbstabholer' %}">Abbrechen</a>
+    </div>
+  </form>
+  {% if s %}
+  <form method="post" action="{% url 'wochenuebersicht:selbstabholer_loeschen' s.pk %}" onsubmit="return confirm('„{{ s.name|escapejs }}“ löschen?');">
+    {% csrf_token %}
+    <button type="submit" class="knopf knopf-gefahr">Löschen</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

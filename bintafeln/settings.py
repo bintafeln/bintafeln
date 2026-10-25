@@ -58,7 +58,7 @@ INSTALLED_APPS = [
 
 # Zuschaltbare Module (ADR 0049): eigene Apps mit modul.py; jede Tafel schaltet sie in den
 # Tafel-Einstellungen ein oder aus.
-BINTAFELN_MODULE = ["apps.aufruf", "apps.warteliste", "apps.wetter"]
+BINTAFELN_MODULE = ["apps.aufruf", "apps.warteliste", "apps.wetter", "apps.wochenuebersicht"]
 INSTALLED_APPS += BINTAFELN_MODULE
 
 MIDDLEWARE = [
