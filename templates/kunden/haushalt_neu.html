@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block titel %}Neuer Haushalt{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'kunden:uebersicht' %}">← Kunden</a></p>
+  <h1>Neuer Haushalt</h1>
+  {% include "kunden/_import_hinweis.html" %}
+  <p class="hinweis">Zuerst die Angaben zum Haushalt speichern; danach lassen sich Personen, Abholberechtigte,
+    Sperren und Anmerkungen ergänzen. Neue Kunden aus einem Online-Antrag nimmt man besser mit dem
+    Aufnahme-Assistenten auf („Anträge“).</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular_abschnitte.html" %}
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf">Haushalt anlegen und Personen ergänzen</button>
+      <a href="{% url 'kunden:uebersicht' %}" class="knopf knopf-abbrechen">Abbrechen</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

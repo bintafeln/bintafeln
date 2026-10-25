@@ -648,3 +648,9 @@ label.wahl { display: block; white-space: nowrap; }
 .suche-treffer { padding-left: 1.25rem; }
 .suche-treffer li { padding: .25rem 0; }
 @media (max-width: 47.99rem) { .kopf-suche { order: 3; flex-basis: 100%; max-width: none; } }
+
+/* Formulare in Abschnitten: auf breiten Bildschirmen zwei bis drei Spalten */
+.abschnitte { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr)); gap: 0 1.5rem; }
+.abschnitt { border: 0; border-top: 2px solid var(--rand); margin: 0 0 1rem; padding: .5rem 0 0; min-width: 0; }
+.abschnitt legend { padding: 0 .5rem 0 0; font-weight: 700; font-size: 1.05rem; }
+.abschnitt .feld input:not([type="checkbox"]), .abschnitt .feld select { width: 100%; }

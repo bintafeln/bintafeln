@@ -49,7 +49,7 @@ def test_import_nur_admin_und_buero(client, admin, benutzer_mit_rolle, anmelden,
 
 
 def test_buero_sieht_menue_und_uebersicht(buero_client):
-    assert "Kunden</a>" in buero_client.get("/").content.decode()
+    assert "Kunden einsehen</a>" in buero_client.get("/").content.decode()
     inhalt = buero_client.get(UEBERSICHT).content.decode()
     assert "0 Haushalte" in inhalt and "Neuen Stand importieren" in inhalt
     assert "Noch kein Import" in buero_client.get(IMPORT).content.decode()

@@ -9,7 +9,7 @@
   {% if h.geaendert_am %}<p class="hinweis">Zuletzt in bintafeln geändert am {{ h.geaendert_am|date:"d.m.Y H:i" }} von {{ h.geaendert_von }}.</p>{% endif %}
   <form method="post">
     {% csrf_token %}
-    {% include "includes/formular.html" %}
+    {% include "includes/formular_abschnitte.html" %}
     <button type="submit" class="knopf">Haushalt speichern</button>
   </form>
   <p class="hinweis">Der Kontostand ändert sich nur über Buchungen: am Einlass „Korrektur“ verwenden.</p>

@@ -99,7 +99,10 @@ def test_haushalt_neu_und_loeschen(admin_client, admin):
     antwort = admin_client.post(url("haushalt_neu"), {"kundennummer": "3001", "status": "aktiv"})
     h = Haushalt.objects.get(kundennummer="3001")
     assert antwort.url == url("bearbeiten", "3001") and h.geaendert_am
-    assert "Neuer Haushalt" in admin_client.get(url("haushalt_neu")).content.decode()
+    seite = admin_client.get(url("haushalt_neu")).content.decode()
+    assert "Neuer Haushalt" in seite and "<legend>Anschrift und Kontakt</legend>" in seite
+    assert "Haushalt anlegen und Personen ergänzen" in seite and 'class="karte schmal"' not in seite
+    assert seite.count('aria-current="page"') == 1  # nur „Neuer Haushalt“ im Menü markiert
     b = konto.einzahlen(h, D("5"), None, "chefin")
     admin_client.post(url("haushalt_loeschen", "3001"))
     assert not Haushalt.objects.exists()

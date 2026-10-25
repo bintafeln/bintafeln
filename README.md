@@ -386,7 +386,7 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
 - **Bearbeiten (nur Admin):** Auf der Haushaltsseite „Bearbeiten“ ändert alles zum Haushalt:
   Angaben und Zusatzfelder, Personen, Abholberechtigte, Sperren, Ausnahmen, Anmerkungen;
   Abholungen lassen sich löschen (eine zugehörige Buchung wird zurückgenommen), der ganze
-  Haushalt ebenfalls. „Neuer Haushalt“ steht in der Kundenliste. Kundengruppen, Ausgabestellen
+  Haushalt ebenfalls. „Neuer Haushalt“ steht in der Kundenliste und im Menü; die Seite ist in Abschnitte gegliedert (Kunde, Haushalt und Termine, Anschrift und Kontakt, weitere Angaben). Kundengruppen, Ausgabestellen
   und Einkommensarten pflegt der Admin unter „Einstellungen → Kundenstamm → Listen“.
   **Achtung:** Solange aus dem Altsystem importiert wird, ersetzt der nächste Import alle
   Änderungen; der Prüfbericht nennt die Zahl der geänderten Haushalte (ADR 0025).

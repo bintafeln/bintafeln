@@ -45,7 +45,7 @@ def menue(request) -> list[dict]:
         ("sonderaktionen.verwalten", _eintrag("Sonderaktionen", "ausgabe:sonderaktionen")),
         ("korrekturen.entscheiden", _eintrag("Korrekturwünsche", "ausgabe:korrekturen")),
     ])  # fmt: skip
-    alle_kunden = _eintrag("Alle Kunden", "kunden:uebersicht", genau=True)
+    alle_kunden = _eintrag("Kunden einsehen", "kunden:uebersicht", genau=True)
     alle_kunden["auch"] = [reverse("kunden:uebersicht") + "haushalt/"]
     bereich("Kunden", [
         ("kunden.liste", alle_kunden),
@@ -106,9 +106,11 @@ def menue(request) -> list[dict]:
     pfad = request.path
     for bereich in bereiche:
         for e in bereich["eintraege"]:
-            e["aktiv"] = (pfad == e["url"] if e["genau"] else pfad.startswith(e["url"])) or any(
-                pfad.startswith(a) for a in e["auch"]
-            )
+            e["aktiv"] = pfad == e["url"] if e["genau"] else pfad.startswith(e["url"])
+        # „auch“ nur, wenn kein anderer Eintrag die Seite schon genau trifft (z. B. Neuer Haushalt)
+        if not any(e["aktiv"] for e in bereich["eintraege"]):
+            for e in bereich["eintraege"]:
+                e["aktiv"] = any(pfad.startswith(a) for a in e["auch"])
         bereich["offen"] = any(e["aktiv"] for e in bereich["eintraege"])
         bereich["einzeln"] = len(bereich["eintraege"]) == 1
     return bereiche

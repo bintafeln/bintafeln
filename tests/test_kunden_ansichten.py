@@ -112,12 +112,12 @@ def test_kiosk_hat_keinen_zugriff(als, bestand):
     client = als(rollen.KIOSK)
     assert client.get(LISTE).status_code == 403
     assert client.get(detail("1001")).status_code == 403
-    assert "Kunden</a>" not in client.get("/").content.decode()
+    assert "Kunden einsehen</a>" not in client.get("/").content.decode()
 
 
 def test_ausgabe_sieht_liste_aber_nicht_import(als, bestand):
     client = als(rollen.AUSGABE)
-    assert "Kunden</a>" in client.get("/").content.decode()
+    assert "Kunden einsehen</a>" in client.get("/").content.decode()
     inhalt = client.get(LISTE).content.decode()
     assert "Mustermann, Erika" in inhalt
     assert "Neuen Stand importieren" not in inhalt

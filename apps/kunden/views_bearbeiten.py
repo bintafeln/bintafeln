@@ -127,7 +127,7 @@ def haushalt_neu(request):
         _festhalten(h, None, request, zusatz="Angelegt")
         messages.success(request, f"Haushalt {h.kundennummer} angelegt. Jetzt Personen ergänzen.")
         return redirect(_bearbeiten_url(h))
-    return render(request, "kunden/eintrag.html", {"form": form, "titel": "Neuer Haushalt"})
+    return render(request, "kunden/haushalt_neu.html", {"form": form})
 
 
 @rollen.recht_erforderlich("kunden.loeschen")
