@@ -1,0 +1,23 @@
+<p>Die Mitgliederverwaltung führt die Mitglieder des Trägervereins. Ein Mitglied ist immer eine Adresse aus dem
+  Adressbuch. Menü: „Mitglieder“.</p>
+{% if "mitglieder.bearbeiten" in rechte %}
+<h3>Mitglied aufnehmen</h3>
+<ol>
+  <li>Die Person oder Organisation im Adressbuch anlegen (falls noch nicht vorhanden).</li>
+  <li>Auf ihrer Seite „Als Mitglied aufnehmen“ oder „Mitglieder → Neues Mitglied“.</li>
+  <li>Die Mitgliedsnummer ist fortlaufend vorgeschlagen. Art der Mitgliedschaft, Eintritt, Jahresbeitrag, Zahlweise und
+    Zahlungsart wählen. Ist das Mitglied zugleich Mitarbeiter/in, das Konto verknüpfen.</li>
+</ol>
+<p><strong>Austritt</strong>: Datum und Grund eintragen. Die Daten bleiben, bis die Mitgliedschaft gelöscht wird
+  (Adresse und Zahlungen bleiben auch dann erhalten).</p>
+{% endif %}
+<h3>Beiträge</h3>
+<ul>
+  <li>Die Liste zeigt je Jahr, was jedes Mitglied zahlen soll, was es gezahlt hat und was offen ist. „nur mit offenem
+    Beitrag“ zeigt, wen man erinnern muss; als CSV-Datei z. B. für einen Serienbrief.</li>
+  <li>Eine <strong>Beitragszahlung</strong> wird als Spende mit dem Häkchen „Mitgliedsbeitrag“ erfasst. Am schnellsten auf
+    der Seite des Mitglieds mit „Zahlung erfassen“: Spender, Häkchen und offener Betrag sind dann schon eingetragen.
+    Mitgliedsbeiträge erscheinen so auch in den Spenden und in Zuwendungsbestätigungen.</li>
+  {% if "einstellungen.mitglieder" in rechte %}<li>Unter „Einstellungen → Mitglieder“: Vorgabe für den Jahresbeitrag
+    neuer Mitglieder, nächste Mitgliedsnummer und ob der Beitrag im Ein- und Austrittsjahr anteilig berechnet wird.</li>{% endif %}
+</ul>

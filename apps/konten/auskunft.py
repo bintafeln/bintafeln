@@ -54,6 +54,14 @@ def mitarbeiter_pdf(b) -> bytes:
         ]
     )
 
+    m = getattr(b, "mitglied", None)
+    if m:
+        doc.ueberschrift("Mitgliedschaft im Verein")
+        doc.angaben([("Mitgliedsnummer", m.nummer), ("Art", m.art),
+                     ("Eintritt", _wert(m.eintritt)), ("Austritt", _wert(m.austritt))])  # fmt: skip
+        doc.absatz("Alle Angaben zur Mitgliedschaft und zu Beiträgen enthält die Auskunft aus "
+                   "dem Adressbuch.", klein=True)  # fmt: skip
+
     doc.ueberschrift("Stammdaten")
     s = Stammdaten.objects.filter(benutzer=b).first()
     if s is None:

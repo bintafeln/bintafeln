@@ -73,6 +73,12 @@ def menue(request) -> list[dict]:
         ("adressen.bearbeiten", _eintrag("Neue Adresse", "adressen:neu")),
         ("adressen.importieren", _eintrag("Adressen importieren", "adressen:importieren")),
     ])  # fmt: skip
+    mitglieder = _eintrag("Mitglieder", "mitglieder:liste", genau=True)
+    mitglieder["auch"] = [reverse("mitglieder:liste")]  # auch die Seite eines Mitglieds
+    bereich("Mitglieder", [
+        ("mitglieder.sehen", mitglieder),
+        ("mitglieder.bearbeiten", _eintrag("Neues Mitglied", "mitglieder:neu")),
+    ])  # fmt: skip
     bereich("Spenden", [
         ("spenden.sehen", _eintrag("Spenden", "spenden:liste", genau=True)),
         ("spenden.erfassen", _eintrag("Spende erfassen", "spenden:neu")),
@@ -102,6 +108,7 @@ def menue(request) -> list[dict]:
          _eintrag("Ausgabe, Ampel und Beiträge", "ausgabe:einstellungen")),
         ("einstellungen.listen", _eintrag("Beitragsfreie Zeiträume", *_liste("beitragsfrei"))),
         ("einstellungen.antraege", _eintrag("Anträge", "antraege:einstellungen")),
+        ("einstellungen.mitglieder", _eintrag("Mitglieder", "mitglieder:einstellungen")),
         ("einstellungen.spenden",
          _eintrag("Spenden und Zuwendungsbestätigungen", "spenden:einstellungen")),
         ("einstellungen.personal",

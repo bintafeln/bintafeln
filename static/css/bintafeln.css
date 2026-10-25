@@ -661,3 +661,4 @@ label.wahl { display: block; white-space: nowrap; }
 
 /* Adressbuch (ADR 0044) */
 .anschrift { font-style: normal; margin: 0 0 1rem; line-height: 1.5; }
+.filter .filter-haken { display: inline-flex; align-items: center; gap: .35rem; }

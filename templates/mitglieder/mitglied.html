@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block titel %}Mitglied {{ m.nummer }}{% endblock %}
+{% block inhalt %}
+<div class="seiten-raster">
+<section class="karte">
+  <p><a href="{% url 'mitglieder:liste' %}">← Mitglieder</a></p>
+  <h1>Mitglied {{ m.nummer }}: {{ m.adresse.name }}</h1>
+  {% if m.austritt %}<p class="meldung error">Ausgetreten am {{ m.austritt|date:"d.m.Y" }} ({{ m.austrittsgrund }}).</p>{% endif %}
+  <dl class="angaben">
+    <dt>Art</dt><dd>{{ m.art }}</dd>
+    <dt>Eintritt</dt><dd>{{ m.eintritt|date:"d.m.Y" }}</dd>
+    <dt>Jahresbeitrag</dt><dd>{{ m.jahresbeitrag|floatformat:2 }} €{% if m.zahlweise %}, {{ m.zahlweise }}{% endif %}{% if m.zahlungsart %} per {{ m.zahlungsart }}{% endif %}</dd>
+    {% if m.benutzer %}<dt>Mitarbeiter/in</dt><dd>{{ m.benutzer.get_full_name|default:m.benutzer.username }}</dd>{% endif %}
+    <dt>Adresse</dt><dd><a href="{% url 'adressen:adresse' m.adresse_id %}">{% for z in m.adresse.anschrift_zeilen %}{{ z }}{% if not forloop.last %}, {% endif %}{% endfor %}</a></dd>
+    {% if m.adresse.email %}<dt>E-Mail</dt><dd><a href="mailto:{{ m.adresse.email }}">{{ m.adresse.email }}</a></dd>{% endif %}
+  </dl>
+  {% if m.notiz %}<div class="notiz"><p class="notiz-text">{{ m.notiz|linebreaksbr }}</p></div>{% endif %}
+  <div class="aktionsleiste">
+    {% if "mitglieder.bearbeiten" in rechte %}<a class="knopf" href="{% url 'mitglieder:bearbeiten' m.pk %}">Bearbeiten</a>{% endif %}
+  </div>
+</section>
+<section class="karte">
+  <h2>Beiträge</h2>
+  {% if beitraege %}
+  <table class="tabelle kompakt">
+    <thead><tr><th>Jahr</th><th class="zahl">Soll</th><th class="zahl">gezahlt</th><th class="zahl">offen</th><th></th></tr></thead>
+    <tbody>
+    {% for b in beitraege %}
+      <tr><td>{{ b.jahr }}</td><td class="zahl">{{ b.soll|floatformat:2 }} €</td><td class="zahl">{{ b.gezahlt|floatformat:2 }} €</td>
+        <td class="zahl">{% if b.offen %}<span class="marke-warnung">{{ b.offen|floatformat:2 }} €</span>{% else %}–{% endif %}</td>
+        <td>{% if b.offen and "spenden.erfassen" in rechte %}<a href="{% url 'spenden:neu' %}?adresse={{ m.adresse_id }}&amp;mitgliedsbeitrag=1&amp;betrag={{ b.offen|stringformat:'.2f' }}">Zahlung erfassen</a>{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p>Kein Beitrag fällig.</p>{% endif %}
+  <h3>Zahlungen</h3>
+  {% if zahlungen %}<ul>{% for s in zahlungen %}<li>{{ s.datum|date:"d.m.Y" }}: {{ s.betrag|floatformat:2 }} €{% if s.zahlungsweg %} ({{ s.zahlungsweg }}){% endif %}{% if s.bestaetigt %} · Bestätigung Nr. {{ s.bestaetigung.nummer }}{% endif %}</li>{% endfor %}</ul>
+  {% else %}<p>Noch keine Zahlungen.</p>{% endif %}
+  <p class="hinweis">Beitragszahlungen sind Spenden mit dem Häkchen „Mitgliedsbeitrag“ und lassen sich mit
+    Zuwendungsbestätigungen bestätigen.</p>
+  {% if "spenden.erfassen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'spenden:neu' %}?adresse={{ m.adresse_id }}&amp;mitgliedsbeitrag=1&amp;betrag={{ m.jahresbeitrag|stringformat:'.2f' }}">Beitragszahlung erfassen</a>{% endif %}
+</section>
+</div>
+{% endblock %}

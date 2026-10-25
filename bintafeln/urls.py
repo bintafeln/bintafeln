@@ -20,6 +20,7 @@ urlpatterns = [
     path("statistik/", include("apps.statistik.urls")),
     path("adressen/", include("apps.adressen.urls")),
     path("spenden/", include("apps.spenden.urls")),
+    path("mitglieder/", include("apps.mitglieder.urls")),
     path("personal/", include("apps.personal.urls")),
     path("antraege/", include("apps.antraege.urls")),
     # Öffentlich, ohne Anmeldung (ADR 0024)

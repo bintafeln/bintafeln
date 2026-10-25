@@ -69,6 +69,9 @@ def adresse(request, pk):
             spenden.filter(art=Spende.Art.GELD).values_list("datum__year")
             .annotate(summe=Sum("betrag")).order_by("-datum__year")
         )  # fmt: skip
+    if rollen.hat_recht(request.user, "mitglieder.sehen"):
+        kontext["mitglied"] = getattr(a, "mitglied", None)
+        kontext["zeige_mitglied"] = True
     return render(request, "adressen/adresse.html", kontext)
 
 
@@ -95,8 +98,8 @@ def loeschen(request, pk):
     try:
         a.delete()
     except ProtectedError:
-        messages.error(request, f"„{name}“ hat Spenden oder Zuwendungsbestätigungen und lässt "
-                                "sich deshalb nicht löschen (Aufbewahrungspflicht).")  # fmt: skip
+        messages.error(request, f"„{name}“ hat Spenden, Zuwendungsbestätigungen oder eine "
+                                "Mitgliedschaft und lässt sich deshalb nicht löschen.")  # fmt: skip
         return redirect("adressen:adresse", pk=pk)
     messages.success(request, f"Adresse „{name}“ gelöscht.")
     return redirect("adressen:liste")

@@ -60,6 +60,8 @@ KAPITEL = [
     Kapitel("sonderaktionen", "Sonderaktionen anlegen und auswerten", EINLASS,
             ("sonderaktionen.verwalten",)),
     Kapitel("adressbuch", "Adressbuch: Spender, Märkte, Partner", ADRESSEN, ("adressen.sehen",)),
+    Kapitel("mitglieder", "Mitglieder und Beiträge", ADRESSEN,
+            ("mitglieder.sehen", "einstellungen.mitglieder")),
     Kapitel("spenden", "Spenden erfassen", ADRESSEN, ("spenden.sehen", "spenden.erfassen")),
     Kapitel("zuwendungsbestaetigungen", "Zuwendungsbestätigungen (Spendenquittungen)", ADRESSEN,
             ("spenden.bestaetigen", "einstellungen.spenden")),

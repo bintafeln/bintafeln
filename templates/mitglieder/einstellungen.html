@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block titel %}Einstellungen für Mitglieder{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Einstellungen für Mitglieder</h1>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+{% endblock %}

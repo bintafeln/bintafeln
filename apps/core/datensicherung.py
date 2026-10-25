@@ -36,7 +36,17 @@ KOPF = b"BINTAFELN-EXPORT-1\n"
 FORMAT, VERSION = "bintafeln-datenexport", 1
 ITERATIONEN = 480_000
 MIN_PASSWORT = 10
-EIGENE_APPS = ["core", "konten", "kunden", "ausgabe", "personal", "antraege", "adressen", "spenden"]
+EIGENE_APPS = [
+    "core",
+    "konten",
+    "kunden",
+    "ausgabe",
+    "personal",
+    "antraege",
+    "adressen",
+    "spenden",
+    "mitglieder",
+]
 # Vorübergehende Daten, die nicht in einen Export gehören
 AUSGENOMMEN = {"kunden.importvorbereitung", "antraege.antragversuch", "core.sicherungsdienst"}
 EINSTELLUNGS_MODELLE = {
@@ -46,13 +56,13 @@ EINSTELLUNGS_MODELLE = {
     "ausgabe.ausgabeeinstellungen", "ausgabe.beitragsfreierzeitraum",
     "antraege.antrageinstellungen", "antraege.antragtext", "personal.arbeitszeiteinstellungen",
     "konten.personaleinstellungen", "konten.dokumentkategorie", "adressen.adresskategorie",
-    "spenden.spendeneinstellungen",
+    "spenden.spendeneinstellungen", "mitglieder.mitgliedereinstellungen",
 }  # fmt: skip
 BEREICHE = {
     "einstellungen": "Einstellungen und Listen (Tafel, Kundengruppen, Ausgabestellen, …)",
     "kunden": "Kunden und Ausgabe (Haushalte, Abholungen, Kundenkonto, Notizen, Sonderaktionen)",
     "antraege": "Anträge",
-    "adressen": "Adressbuch und Spenden (Spender, Märkte, Partner, Zuwendungsbestätigungen)",
+    "adressen": "Adressbuch, Spenden und Mitglieder",
     "mitarbeitende": "Mitarbeitende, Rollen und Personal",
     "protokoll": "Änderungsprotokoll",
     "dateien": "Hochgeladene Dateien (Dokumente, Logo, Anhänge)",
@@ -66,6 +76,7 @@ APP_BEREICH = {
     "core": "einstellungen",
     "adressen": "adressen",
     "spenden": "adressen",
+    "mitglieder": "adressen",
 }
 
 

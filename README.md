@@ -622,6 +622,24 @@ Serienbriefe (Modul 5, ADR 0044); Kunden stehen weiter im Kundenstamm.
   getrennt, unbekannte werden angelegt; Daten als TT.MM.JJJJ). Der CSV-Export hat dieselben
   Spalten.
 
+## Mitglieder
+
+„Mitglieder“ (Rechte „Mitglieder und Beiträge ansehen …“ und „Mitglieder anlegen, bearbeiten
+und löschen“; Büro hat beide) führt die Mitglieder des Trägervereins (ADR 0046). Jedes Mitglied
+ist eine Adresse aus dem Adressbuch.
+
+- **Mitglied**: fortlaufende Mitgliedsnummer (Vorschlag), Art (Auswahl: ordentlich, aktiv,
+  Förder-, Ehrenmitglied, juristische Person), Eintritt, Austritt mit Grund, Jahresbeitrag,
+  Zahlweise, Zahlungsart, optional verknüpftes Konto (zugleich Mitarbeiter/in), Notiz.
+- **Beiträge**: Liste je Jahr mit Soll, gezahlt und offen, Filter „nur mit offenem Beitrag“,
+  CSV-Export. Beitragszahlungen sind Spenden mit dem Häkchen „Mitgliedsbeitrag“ („Zahlung
+  erfassen“ auf der Seite des Mitglieds belegt alles vor) und lassen sich daher auch mit
+  Zuwendungsbestätigungen bestätigen.
+- **Einstellungen → Mitglieder** (nur Admin): Vorgabe Jahresbeitrag, nächste Nummer, Beitrag im
+  Ein-/Austrittsjahr anteilig oder voll.
+- Mitgliedschaft steht in der Auskunft der Adresse (und als Hinweis in der Auskunft eines
+  verknüpften Kontos). SEPA-Lastschriften folgen später.
+
 ## Spenden und Zuwendungsbestätigungen
 
 „Spenden“ (Rechte „Spenden ansehen …“, „Spenden erfassen …“, „Zuwendungsbestätigungen ausstellen
