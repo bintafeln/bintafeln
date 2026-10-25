@@ -152,6 +152,8 @@ def menue(request) -> list[dict]:
             (export, _eintrag("Export und Zurücklesen", "core:datensicherung")),
             ("system.update", _eintrag("Update", "core:update")),
             ("protokoll.sehen", _eintrag("Änderungsprotokoll", "core:protokoll")),
+            ("einstellungen.rollen",
+             _eintrag("Anmeldung und Zwei-Faktor", "konten:anmelde_einstellungen")),
             *([(None, _eintrag("Django-Verwaltung", "admin:index"))] if b.is_staff else []),
         ],
     }  # fmt: skip

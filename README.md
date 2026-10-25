@@ -174,6 +174,15 @@ Authenticator-App verlangt (z. B. Aegis, FreeOTP, Google Authenticator).
      docker compose exec app python manage.py zwei_faktor_zuruecksetzen BENUTZERNAME
      ```
 
+- **Gerät merken:** Unter „Einstellungen → Systemsteuerung → Anmeldung und Zwei-Faktor“ stellt
+  ein Admin ein, wie lange ein Gerät vertraut werden darf (aus, 1, 7, 14, 30 oder 90 Tage; gilt
+  für alle Rollen). Wer bei der Anmeldung mit Code „Diesem Gerät … vertrauen“ anhakt, braucht auf
+  diesem Browser so lange keinen Code, das Passwort weiterhin. Im Browser liegt nur ein
+  signiertes Cookie, in der Datenbank eine Prüfsumme. Ungültig wird das Gerät nach Ablauf, nach
+  einer Passwortänderung, nach neuer Einrichtung oder Zurücksetzen der Zwei-Faktor-Anmeldung und
+  wenn es unter „Mein Konto“ (eigene Geräte) oder bei „Mitarbeitende“ (Admin) entfernt wird.
+  „Aus“ entfernt alle vertrauten Geräte.
+
 Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie.
 
 ## Rollen und Rechte

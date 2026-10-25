@@ -1,10 +1,11 @@
 from django import forms
 from django.contrib.auth import authenticate, get_user_model
-from django_otp import match_token, user_has_device
+from django_otp import devices_for_user, match_token, user_has_device
 
 from apps.core.auswahl import ANREDEN, FUEHRERSCHEINKLASSEN, mit_vorhandenem
-from apps.konten import verwaltung
+from apps.konten import verwaltung, zwei_faktor
 from apps.konten.models import (
+    AnmeldeEinstellungen,
     Dokument,
     DokumentKategorie,
     PersonalEinstellungen,
@@ -31,13 +32,26 @@ class AnmeldeForm(forms.Form):
         "Nur nötig, wenn für Ihr Konto Zwei-Faktor eingerichtet ist.",
     )
 
+    vertrauen = forms.BooleanField(label="Diesem Gerät vertrauen", required=False)
+
     fehler = "Benutzername, Passwort oder Code ist falsch."
 
     def __init__(self, request=None, *args, **kwargs):
         self.request = request
         self.benutzer = None
         self.geraet = None
+        self.mit_code = False  # Code eingegeben (dann darf das Gerät vertraut werden)
         super().__init__(*args, **kwargs)
+        tage = zwei_faktor.vertrauen_tage()
+        if tage:
+            self.fields[
+                "vertrauen"
+            ].label = f"Diesem Gerät {tage} Tag{'e' if tage != 1 else ''} vertrauen"
+            self.fields["vertrauen"].help_text = ("Dann ist auf diesem Browser so lange kein "
+                                                 "Zwei-Faktor-Code nötig. Nicht an fremden oder "
+                                                 "öffentlichen Geräten!")  # fmt: skip
+        else:
+            del self.fields["vertrauen"]
 
     def clean(self):
         daten = super().clean()
@@ -50,11 +64,28 @@ class AnmeldeForm(forms.Form):
         if user_has_device(benutzer):
             code = code_bereinigen(daten.get("otp_token"))
             geraet = match_token(benutzer, code) if code else None
+            if (
+                geraet is None
+                and not code
+                and zwei_faktor.vertrautes_geraet(self.request, benutzer)
+            ):
+                # Vertrautes Gerät: angemeldet wie mit Code (Gerät für django-otp)
+                geraet = zwei_faktor.app_geraet(benutzer) or next(
+                    iter(devices_for_user(benutzer)), None
+                )
+            elif geraet is not None:
+                self.mit_code = True
             if geraet is None:
                 raise forms.ValidationError(self.fehler)
             self.geraet = geraet
         self.benutzer = benutzer
         return daten
+
+
+class AnmeldeEinstellungenForm(forms.ModelForm):
+    class Meta:
+        model = AnmeldeEinstellungen
+        fields = ["vertrauen_tage"]
 
 
 class CodeForm(forms.Form):

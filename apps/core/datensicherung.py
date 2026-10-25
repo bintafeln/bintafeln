@@ -49,7 +49,8 @@ EIGENE_APPS = [
     "serienbriefe",
 ]
 # Vorübergehende Daten, die nicht in einen Export gehören
-AUSGENOMMEN = {"kunden.importvorbereitung", "antraege.antragversuch", "core.sicherungsdienst"}
+AUSGENOMMEN = {"kunden.importvorbereitung", "antraege.antragversuch", "core.sicherungsdienst",
+               "konten.vertrautesgeraet"}  # fmt: skip
 EINSTELLUNGS_MODELLE = {
     "core.tafeleinstellungen", "core.maileinstellungen", "kunden.kundeneinstellungen",
     "kunden.zusatzfeld", "kunden.ausgabestelle", "kunden.kundengruppe", "kunden.einkommensart",
@@ -58,6 +59,7 @@ EINSTELLUNGS_MODELLE = {
     "antraege.antrageinstellungen", "antraege.antragtext", "personal.arbeitszeiteinstellungen",
     "konten.personaleinstellungen", "konten.dokumentkategorie", "adressen.adresskategorie",
     "spenden.spendeneinstellungen", "mitglieder.mitgliedereinstellungen",
+    "konten.anmeldeeinstellungen",
 }  # fmt: skip
 BEREICHE = {
     "einstellungen": "Einstellungen und Listen (Tafel, Kundengruppen, Ausgabestellen, …)",

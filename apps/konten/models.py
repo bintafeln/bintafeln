@@ -1,4 +1,5 @@
 from auditlog.registry import auditlog
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser, Group
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -282,5 +283,62 @@ def rolle_zur_gruppe(sender, instance, created, raw=False, **kwargs):
 
 
 # Nur, wer wann ein Gerät eingerichtet oder entfernt hat – nie Schlüssel oder Codes.
+class AnmeldeEinstellungen(models.Model):
+    """Einstellungen der Anmeldung (Singleton), z. B. vertraute Geräte bei Zwei-Faktor."""
+
+    EINZIGE_ID = 1
+    TAGE = [(0, "aus – immer Code eingeben"), (1, "1 Tag"), (7, "7 Tage"), (14, "14 Tage"),
+            (30, "30 Tage"), (90, "90 Tage")]  # fmt: skip
+
+    vertrauen_tage = models.PositiveSmallIntegerField(
+        "Geräten vertrauen für", choices=TAGE, default=0,
+        help_text="Wer bei der Anmeldung „Diesem Gerät vertrauen“ anhakt, braucht auf diesem "
+        "Browser so lange keinen Zwei-Faktor-Code (das Passwort weiterhin). Gilt für alle Rollen.",
+    )  # fmt: skip
+
+    class Meta:
+        verbose_name = "Anmelde-Einstellungen"
+        verbose_name_plural = "Anmelde-Einstellungen"
+
+    def __str__(self):
+        return "Anmelde-Einstellungen"
+
+    def save(self, *args, **kwargs):
+        self.pk = self.EINZIGE_ID
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def laden(cls) -> "AnmeldeEinstellungen":
+        einstellungen, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
+        return einstellungen
+
+
+class VertrautesGeraet(models.Model):
+    """Browser, auf dem bis ``gueltig_bis`` kein Zwei-Faktor-Code nötig ist.
+
+    Gespeichert ist nur eine Prüfsumme des Merkmals im Browser-Cookie und ein Stand des
+    Passworts: Nach einer Passwortänderung gilt das Gerät nicht mehr.
+    """
+
+    benutzer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                 related_name="vertraute_geraete")  # fmt: skip
+    pruefsumme = models.CharField(max_length=64, unique=True)
+    passwort_stand = models.CharField(max_length=64)
+    bezeichnung = models.CharField("Gerät", max_length=150, blank=True)
+    angelegt_am = models.DateTimeField("Vertraut seit", default=timezone.now)
+    gueltig_bis = models.DateTimeField("Gültig bis")
+    zuletzt_am = models.DateTimeField("Zuletzt benutzt", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Vertrautes Gerät"
+        verbose_name_plural = "Vertraute Geräte"
+        ordering = ["-angelegt_am"]
+
+    def __str__(self):
+        return f"{self.bezeichnung or 'Gerät'} ({self.benutzer})"
+
+
+auditlog.register(AnmeldeEinstellungen)
+auditlog.register(VertrautesGeraet, exclude_fields=["pruefsumme", "passwort_stand"])
 auditlog.register(TOTPDevice, include_fields=["user", "name", "confirmed"])
 auditlog.register(StaticDevice, include_fields=["user", "name", "confirmed"])

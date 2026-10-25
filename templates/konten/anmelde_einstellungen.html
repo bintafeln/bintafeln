@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block titel %}Anmeldung und Zwei-Faktor{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Anmeldung und Zwei-Faktor</h1>
+  <p>Wer die Zwei-Faktor-Anmeldung nutzt, kann bei der Anmeldung „Diesem Gerät vertrauen“ anhaken. Dann ist auf diesem
+    Browser für den eingestellten Zeitraum kein Code nötig – das Passwort weiterhin. Nach einer Passwortänderung oder
+    einer neuen Einrichtung der Zwei-Faktor-Anmeldung gilt kein Gerät mehr. Jede Person sieht und entfernt ihre
+    Geräte unter „Mein Konto“; ein Admin kann sie bei Mitarbeitenden entfernen (z. B. verlorenes Handy).</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+  <p class="hinweis">Zurzeit vertraute Geräte: {{ anzahl }}. „Aus“ entfernt alle.</p>
+</section>
+{% endblock %}

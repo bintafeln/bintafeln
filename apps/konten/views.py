@@ -12,6 +12,7 @@ from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.utils.cache import add_never_cache_headers
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.safestring import mark_safe
@@ -22,8 +23,9 @@ from django_otp import login as otp_login
 from django_otp import match_token
 
 from apps.core import mail
-from apps.konten import einladung, zwei_faktor
-from apps.konten.forms import AnmeldeForm, CodeForm
+from apps.konten import einladung, rollen, zwei_faktor
+from apps.konten.forms import AnmeldeEinstellungenForm, AnmeldeForm, CodeForm
+from apps.konten.models import AnmeldeEinstellungen, VertrautesGeraet
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +48,10 @@ def anmelden(request):
         login(request, form.benutzer)
         if form.geraet is not None:
             otp_login(request, form.geraet)
-        return redirect(_ziel(request))
+        antwort = redirect(_ziel(request))
+        if form.mit_code and form.cleaned_data.get("vertrauen"):
+            zwei_faktor.geraet_vertrauen(request, antwort, form.benutzer)
+        return antwort
     return render(
         request,
         "konten/anmelden.html",
@@ -169,8 +174,29 @@ def mein_konto(request):
             "zwei_faktor_pflicht": zwei_faktor.ist_pflicht(request.user),
             "notfallcodes_uebrig": zwei_faktor.notfallcodes_uebrig(request.user),
             "form": CodeForm(),
+            "geraete": _vertraute_geraete(request.user),
+            "vertrauen_tage": zwei_faktor.vertrauen_tage(),
         },
     )
+
+
+def _vertraute_geraete(benutzer):
+    zwei_faktor.geraete_aufraeumen()
+    return benutzer.vertraute_geraete.all()
+
+
+@login_required
+@require_POST
+def geraet_entfernen(request, pk=None):
+    """Ein vertrautes Gerät (oder alle) des eigenen Kontos entfernen."""
+    geraete = request.user.vertraute_geraete.all()
+    if pk is not None:
+        geraete = geraete.filter(pk=pk)
+    anzahl = geraete.delete()[0]
+    if anzahl:
+        messages.success(request, "Entfernt. Dort ist bei der nächsten Anmeldung wieder ein Code "
+                         "nötig." if pk else "Alle vertrauten Geräte entfernt.")  # fmt: skip
+    return redirect("konten:mein_konto")
 
 
 def _codes_anzeigen(request, codes):
@@ -231,3 +257,17 @@ def zwei_faktor_abschalten(request):
     else:
         messages.error(request, "Der Code stimmt nicht. Zwei-Faktor bleibt eingeschaltet.")
     return redirect("konten:mein_konto")
+
+
+@never_cache
+@rollen.recht_erforderlich("einstellungen.rollen")
+def anmelde_einstellungen(request):
+    form = AnmeldeEinstellungenForm(request.POST or None, instance=AnmeldeEinstellungen.laden())
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        if not form.instance.vertrauen_tage:
+            VertrautesGeraet.objects.all().delete()  # ausgeschaltet: niemand bleibt vertraut
+        messages.success(request, "Einstellungen gespeichert.")
+        return redirect("konten:anmelde_einstellungen")
+    anzahl = VertrautesGeraet.objects.filter(gueltig_bis__gt=timezone.now()).count()
+    return render(request, "konten/anmelde_einstellungen.html", {"form": form, "anzahl": anzahl})

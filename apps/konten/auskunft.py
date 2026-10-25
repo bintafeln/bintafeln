@@ -54,6 +54,13 @@ def mitarbeiter_pdf(b) -> bytes:
         ]
     )
 
+    geraete = b.vertraute_geraete.all()
+    if geraete:
+        doc.ueberschrift("Vertraute Geräte (Anmeldung ohne Zwei-Faktor-Code)")
+        doc.tabelle(["Gerät", "Vertraut seit", "Gültig bis", "Zuletzt benutzt"],
+                    [[g.bezeichnung, _wert(g.angelegt_am), _wert(g.gueltig_bis),
+                      _wert(g.zuletzt_am)] for g in geraete])  # fmt: skip
+
     m = getattr(b, "mitglied", None)
     if m:
         doc.ueberschrift("Mitgliedschaft im Verein")
