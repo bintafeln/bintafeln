@@ -186,6 +186,8 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .ampel-unbekannt { border-color: var(--rand); }
 .ampel-gruende { margin: 0; padding-left: 1.25rem; font-size: 1.1rem; }
 .grund-rot { color: #8c1d18; font-weight: 600; }
+.modul-hinweis { font-size: 1.25rem; margin: 0; }
+.modul-hinweis + .modul-hinweis { margin-top: .25rem; }
 .betrag { max-width: 8rem; }
 .kasse-meldung { font-size: 1.2rem; font-weight: 600; }
 .zahlweise { border: 1px solid var(--rand); border-radius: var(--radius); padding: .25rem .75rem; margin: 0; }

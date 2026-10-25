@@ -461,7 +461,7 @@ def test_einstellungen_und_neue_links(modul_an, admin_client, mitte):
     assert reverse("aufruf:monitor", args=[e.schluessel]) in seite
     antwort = admin_client.post(reverse("aufruf:einstellungen_stelle", args=[mitte.pk]), {
         "anzahl": 4, "spaetzuender_versatz": 20, "vorrang_symbol": "on", "info_rotation": "on",
-        "eingelassene_ausblenden": "on", "wochentag_probe": "",
+        "eingelassene_ausblenden": "on", "wochentag_probe": "", "zu_spaet_minuten": 15,
     })  # fmt: skip
     assert antwort.status_code == 302
     e.refresh_from_db()
@@ -471,3 +471,49 @@ def test_einstellungen_und_neue_links(modul_an, admin_client, mitte):
     e.refresh_from_db()
     assert e.schluessel != alt
     assert Client().get(reverse("aufruf:monitor", args=[alt])).status_code == 404
+
+
+# ── Hinweis am Einlass ───────────────────────────────────────────────────────
+
+
+def test_einlass_hinweise(mitte, tag_daten):
+    h = Haushalt.objects.get(kundennummer="201")
+    assert ablauf.einlass(h, heute()) == []  # Aufruf nicht gestartet
+    tag = ablauf.starten(mitte, heute())
+    erster = Haushalt.objects.get(kundennummer=tag.stand["gruppen"][0]["wartend"][0])
+    assert "Gerade aufgerufen" in ablauf.einlass(erster, heute())[0]["text"]
+    hinweis = ablauf.einlass(h, heute())[0]
+    assert hinweis["farbe"] == "gelb" and "Noch nicht aufgerufen" in hinweis["text"]
+    ablauf.weiter(mitte, heute())
+    hinweis = ablauf.einlass(erster, heute())[0]
+    assert hinweis["farbe"] == "gruen" and hinweis["text"].startswith("Aufgerufen um")
+    # 20 Minuten später: zu spät (Vorgabe 15 Minuten)
+    tag = ablauf.tag_holen(mitte, heute())
+    frueher = timezone.now() - dt.timedelta(minutes=20)
+    tag.stand["rueckgaengig"][-1]["zeitpunkt"] = frueher.isoformat()
+    tag.save()
+    hinweis = ablauf.einlass(erster, heute())[0]
+    assert (
+        hinweis["farbe"] == "rot"
+        and "Zu spät" in hinweis["text"]
+        and "20 Minuten" in hinweis["text"]
+    )
+    e = AufrufEinstellungen.laden(mitte)
+    e.zu_spaet_minuten = 0
+    e.save()
+    assert ablauf.einlass(erster, heute())[0]["farbe"] == "gruen"
+    ablauf.spaetzuender(mitte, heute(), erster.kundennummer)
+    assert "neu einsortiert" in ablauf.einlass(erster, heute())[0]["text"]
+    fremd = Haushalt.objects.get(kundennummer="301")
+    assert ablauf.einlass(fremd, heute())[0]["text"] == "Nicht in der heutigen Aufruf-Liste"
+
+
+def test_einlass_karte_zeigt_aufruf(modul_an, admin_client, mitte, tag_daten):
+    ablauf.starten(mitte, heute())
+    seite = admin_client.get(reverse("ausgabe:empfang"), {"nummer": "201"}).content.decode()
+    assert "Aufruf:</strong> Noch nicht aufgerufen" in seite
+    t = TafelEinstellungen.laden()
+    t.module = []
+    t.save()
+    seite = admin_client.get(reverse("ausgabe:empfang"), {"nummer": "201"}).content.decode()
+    assert "Noch nicht aufgerufen" not in seite

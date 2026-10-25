@@ -20,6 +20,7 @@ from apps.ausgabe.models import (
     Sonderaktion,
     Teilnahme,
 )
+from apps.core import module
 from apps.core.auswahl import KORREKTURGRUENDE
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
@@ -100,6 +101,7 @@ def _ergebnis(request, h, meldung=None):
         "korrekturgruende": KORREKTURGRUENDE,
         "heute": heute,
         "meldung": meldung,
+        "modul_hinweise": module.einlass_hinweise(h, heute, _stelle(request)),
     }
 
 

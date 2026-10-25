@@ -33,6 +33,10 @@ standen weiter in der Warteschlange.
 - Infos für den Monitor (Text, Bild, PDF, Webseite) als `AufrufInfo`; Dateien liefert bintafeln
   nur mit gültigem Link aus.
 
+- Ergänzung: Module können Hinweise für die Einlass-Karte liefern (`Modul.einlass`). Der Aufruf
+  zeigt dort, ob und wann die Nummer aufgerufen wurde, „Zu spät“ ab `zu_spaet_minuten` nach dem
+  Aufruf oder wie viele Nummern noch davor sind. Die Ampel bleibt davon unberührt.
+
 ## Begründung
 
 Alles in einem Programm spart den täglichen Download und seine Fehlerquellen, nutzt immer den

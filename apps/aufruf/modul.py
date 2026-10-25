@@ -3,6 +3,12 @@
 from apps.core.module import Modul
 
 
+def einlass(haushalt, heute, stelle):
+    from apps.aufruf import ablauf
+
+    return ablauf.einlass(haushalt, heute, stelle)
+
+
 def menue(eintrag):
     return [
         ("Aufruf", [
@@ -31,6 +37,7 @@ MODUL = Modul(
          ("aufruf.steuern", "einstellungen.aufruf")),
     ),
     menue=menue,
+    einlass=einlass,
     sicherung_bereich="kunden",
     sicherung_ausgenommen=("aufruf.aufruftag",),
 )  # fmt: skip
