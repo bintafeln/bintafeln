@@ -31,7 +31,10 @@ def menue(request) -> list[dict]:
         """Nur Einträge, für die das Konto das Recht hat (None = ohne Recht sichtbar)."""
         sichtbar = [e for recht, e in eintraege if recht is None or recht in darf]
         if sichtbar:
-            bereiche.append({"titel": titel, "eintraege": sichtbar})
+            # Eine Zahl am Eintrag steht auch am Bereich, damit man sie zugeklappt sieht
+            gezaehlt = next((e for e in sichtbar if e.get("zahl") is not None), {})
+            bereiche.append({"titel": titel, "eintraege": sichtbar, "zahl": gezaehlt.get("zahl"),
+                             "zahl_titel": gezaehlt.get("zahl_titel", "")})  # fmt: skip
 
     bereiche = [
         {"titel": "Start", "eintraege": [_eintrag("Start", "core:start", genau=True)]},
@@ -51,8 +54,15 @@ def menue(request) -> list[dict]:
         ("kunden.zugriffsprotokoll", _eintrag("Zugriffsprotokoll", "kunden:zugriffe")),
     ])  # fmt: skip
     if "antraege.sehen" in darf:
+        from apps.antraege.models import Antrag
+
+        antraege = _eintrag("Anträge", "antraege:liste")
+        antraege["zahl"] = Antrag.objects.filter(
+            status__in=Antrag.OFFEN, papierkorb_am__isnull=True
+        ).count()
+        antraege["zahl_titel"] = "offene Anträge"
         bereich("Anträge", [
-            ("antraege.sehen", _eintrag("Anträge", "antraege:liste")),
+            ("antraege.sehen", antraege),
             ("einstellungen.antraege", _eintrag("Formular einstellen", "antraege:einstellungen")),
             ("antraege.sehen", _eintrag("Öffentliches Formular", "antrag:start", extern=True)),
         ])  # fmt: skip

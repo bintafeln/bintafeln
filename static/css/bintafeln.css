@@ -429,6 +429,11 @@ a.knopf-gefahr { color: #fff; }
 .menue-bereich summary::-webkit-details-marker { display: none; }
 .menue-bereich summary::after { content: "›"; position: absolute; right: 1.25rem; transition: transform .15s; }
 .menue-bereich[open] summary::after { transform: rotate(90deg); }
+.menue-zahl {
+  display: inline-block; min-width: 1.4em; padding: 0 .4em; margin-left: .35rem;
+  border-radius: .7em; background: var(--akzent-dunkel); color: #fff;
+  font-size: .78rem; font-weight: 700; line-height: 1.4em; text-align: center;
+}
 .seitenmenue ul { list-style: none; margin: 0 0 .5rem; padding: 0; }
 .seitenmenue li a { padding: .4rem 1.25rem .4rem 2rem; font-size: .97rem; }
 .seitenmenue a:hover, .menue-oben:hover { background: var(--erfolg); }

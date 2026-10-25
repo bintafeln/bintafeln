@@ -428,7 +428,7 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
 - Nach dem Absenden sehen Antragstellende eine Bestätigungsseite mit ihrer **Antragsnummer** und
   bekommen eine gestaltete **Antwortmail** (HTML mit Logo, dazu eine Klartextfassung) in ihrer
   Sprache, wenn sie eine Adresse angeben (Mailserver nötig).
-- **Antragsliste** (Admin, Büro) unter „Anträge“: fortlaufende **Antragsnummern** (Startwert
+- **Antragsliste** (Admin, Büro) unter „Anträge“ (die Zahl im Menü zeigt die offenen Anträge): fortlaufende **Antragsnummern** (Startwert
   unter „Formular einstellen“ → „Nächste Antragsnummer ab“, z. B. 4201), neueste zuerst; Spalten
   #, Status, Kundennummer, Nachname, Vorname, Antrag vom, E-Mail, Telefon, Art,
   Staatsangehörigkeit, letzte Anmerkung; Klick auf eine Spaltenüberschrift sortiert; Suche;
