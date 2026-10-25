@@ -653,8 +653,11 @@ label.wahl { display: block; white-space: nowrap; }
 .abschnitte { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr)); gap: 0 1.5rem; }
 .abschnitt { border: 0; border-top: 2px solid var(--rand); margin: 0 0 1rem; padding: .5rem 0 0; min-width: 0; }
 .abschnitt legend { padding: 0 .5rem 0 0; font-weight: 700; font-size: 1.05rem; }
-.abschnitt .feld input:not([type="checkbox"]), .abschnitt .feld select { width: 100%; }
+.abschnitt .feld input:not([type="checkbox"]):not([type="radio"]), .abschnitt .feld select { width: 100%; }
 
 /* Update (ADR 0043) */
 .update-version { font-size: 1.6rem; font-weight: 700; margin: 0 0 .5rem; }
 .protokoll { max-height: 30rem; overflow: auto; padding: .75rem; background: var(--grund); border-radius: var(--radius); font-size: .85rem; white-space: pre-wrap; }
+
+/* Adressbuch (ADR 0044) */
+.anschrift { font-style: normal; margin: 0 0 1rem; line-height: 1.5; }

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block titel %}Adressen importieren{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'adressen:liste' %}">← Adressbuch</a></p>
+  <h1>Adressen importieren</h1>
+  {% if not bericht %}
+  <p>Eine CSV-Datei (z. B. aus Excel „Speichern unter → CSV (Trennzeichen-getrennt)“) mit einer Kopfzeile. Bekannte
+    Spalten, alle freiwillig außer <code>organisation</code> oder <code>nachname</code>:</p>
+  <p><code>{{ spalten|join:";" }}</code></p>
+  <ul>
+    <li><code>art</code>: Person oder Organisation; leer = Organisation, wenn kein Nachname angegeben ist.</li>
+    <li><code>kategorien</code>: durch Komma getrennt; neue Kategorien werden angelegt.</li>
+    <li>Einwilligungen als Datum (TT.MM.JJJJ); leer = keine Einwilligung.</li>
+    <li>Vorhandene Adressen (gleicher Name und gleiche PLZ oder gleiche E-Mail) werden nicht verändert.</li>
+  </ul>
+  <p class="hinweis">Der CSV-Export des Adressbuchs hat genau diese Spalten und lässt sich als Vorlage nutzen.</p>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Prüfen</button>
+  </form>
+  {% else %}
+  <h2>Prüfbericht</h2>
+  <ul>
+    <li><strong>{{ bericht.neu|length }}</strong> neue Adresse{{ bericht.neu|length|pluralize:"n" }} werden angelegt.</li>
+    <li>{{ bericht.vorhanden|length }} schon vorhanden (werden übersprungen).</li>
+    <li>{{ bericht.fehler|length }} Zeile{{ bericht.fehler|length|pluralize:"n" }} mit Fehlern (werden übersprungen).</li>
+    {% if bericht.neue_kategorien %}<li>Neue Kategorien: {{ bericht.neue_kategorien|join:", " }}</li>{% endif %}
+    {% if bericht.unbekannte_spalten %}<li>Unbekannte Spalten (werden ignoriert): {{ bericht.unbekannte_spalten|join:", " }}</li>{% endif %}
+  </ul>
+  {% if bericht.fehler %}
+  <details open><summary>Fehler</summary><ul>{% for zeile, grund in bericht.fehler %}<li>Zeile {{ zeile }}: {{ grund }}</li>{% endfor %}</ul></details>
+  {% endif %}
+  {% if bericht.vorhanden %}
+  <details><summary>Schon vorhanden</summary><ul>{% for zeile, name in bericht.vorhanden %}<li>Zeile {{ zeile }}: {{ name }}</li>{% endfor %}</ul></details>
+  {% endif %}
+  <div class="aktionsleiste">
+    {% if bericht.neu %}
+    <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="schritt" value="uebernehmen">
+      <button type="submit" class="knopf">{{ bericht.neu|length }} Adresse{{ bericht.neu|length|pluralize:"n" }} übernehmen</button></form>
+    {% endif %}
+    <a class="knopf knopf-abbrechen" href="{% url 'adressen:importieren' %}">Andere Datei wählen</a>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

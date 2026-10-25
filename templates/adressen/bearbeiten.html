@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block titel %}{% if a.pk %}{{ a.name }} bearbeiten{% else %}Neue Adresse{% endif %}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% if a.pk %}{% url 'adressen:adresse' a.pk %}{% else %}{% url 'adressen:liste' %}{% endif %}">← {% if a.pk %}{{ a.name }}{% else %}Adressbuch{% endif %}</a></p>
+  <h1>{% if a.pk %}{{ a.name }} bearbeiten{% else %}Neue Adresse{% endif %}</h1>
+  <p class="hinweis">Bei einer Organisation genügt der Name der Organisation; bei einer Person der Nachname. Einwilligungen
+    mit dem Datum eintragen, an dem sie erteilt wurden; leer = keine Einwilligung.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular_abschnitte.html" %}
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf">Speichern</button>
+      <a class="knopf knopf-abbrechen" href="{% if a.pk %}{% url 'adressen:adresse' a.pk %}{% else %}{% url 'adressen:liste' %}{% endif %}">Abbrechen</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

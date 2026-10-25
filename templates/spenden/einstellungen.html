@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block titel %}Spenden und Zuwendungsbestätigungen{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Spenden und Zuwendungsbestätigungen</h1>
+  <p>Diese Angaben stehen auf jeder Zuwendungsbestätigung. Bitte genau so eintragen, wie sie im Bescheid des Finanzamts
+    stehen. bintafeln folgt den amtlichen Mustern; ob die Angaben steuerlich passen, klärt im Zweifel die
+    Steuerberatung der Tafel.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+{% endblock %}

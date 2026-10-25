@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block titel %}{% if s.pk %}Spende bearbeiten{% else %}Spende erfassen{% endif %}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'spenden:liste' %}">← Spenden</a></p>
+  <h1>{% if s.pk %}Spende bearbeiten{% else %}Spende erfassen{% endif %}</h1>
+  <p class="hinweis">Geldspende: Betrag und Zahlungsweg. Sachspende: was genau (mit Zustand), Menge und, falls eine
+    Zuwendungsbestätigung gewünscht ist, der Wert und die Herkunft.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular_abschnitte.html" %}
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf">Speichern</button>
+      {% if not s.pk %}<button type="submit" name="weiter" value="1" class="knopf knopf-zweitrangig">Speichern und nächste Spende</button>{% endif %}
+      <a class="knopf knopf-abbrechen" href="{% url 'spenden:liste' %}">Abbrechen</a>
+    </div>
+  </form>
+  {% if s.pk %}
+  <form method="post" action="{% url 'spenden:loeschen' s.pk %}" class="abseits" onsubmit="return confirm('Diese Spende löschen?')">
+    {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Spende löschen</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

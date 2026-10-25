@@ -1,3 +1,5 @@
+import re
+
 import pytest
 from django.contrib.auth.models import Group
 from django_otp import DEVICE_ID_SESSION_KEY
@@ -71,6 +73,9 @@ def pdf_text(monkeypatch):
         assert antwort["Content-Type"] == "application/pdf"
         inhalt = b"".join(antwort.streaming_content) if antwort.streaming else antwort.content
         assert inhalt.startswith(b"%PDF")
+        # Umlaute stehen als Oktal-Escapes im Text (z. B. \\344 = ä), Klammern als \\( \\)
+        inhalt = re.sub(rb"\\([0-7]{3})", lambda m: bytes([int(m.group(1), 8)]), inhalt)
+        inhalt = inhalt.replace(b"\\(", b"(").replace(b"\\)", b")")
         return inhalt.decode("cp1252", errors="replace")
 
     return lesen

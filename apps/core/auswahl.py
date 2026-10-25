@@ -17,6 +17,9 @@ GRUPPENFARBEN = [
     ("braun", "Braun"),
     ("grau", "Grau"),
 ]
+# Spenden (ADR 0045)
+ZAHLUNGSWEGE = ["Überweisung", "Bar", "Lastschrift", "Online (z. B. PayPal)", "Scheck", "Sonstiges"]
+SACH_EINHEITEN = ["Kisten", "kg", "Stück", "Paletten", "Liter", "Tüten", "Säcke", "Sonstiges"]
 # Gründe für einen Korrekturwunsch am Einlass (Rücknahme durch Admin oder berechtigte Rolle)
 KORREKTURGRUENDE = [
     "Versehentlich gebucht",

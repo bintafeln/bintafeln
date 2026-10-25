@@ -1,0 +1,19 @@
+<p>Jede Spende gehört zu einer Adresse im Adressbuch (Spender). Menü: „Spenden“.</p>
+{% if "spenden.erfassen" in rechte %}
+<h3>Spende erfassen</h3>
+<ol>
+  <li>„Spenden → Spende erfassen“ oder auf der Seite einer Adresse „Spende erfassen“ (dann ist der Spender schon gewählt).
+    Ist der Spender noch nicht im Adressbuch, ihn zuerst dort anlegen.</li>
+  <li><strong>Geldspende</strong>: Datum, Betrag (z. B. 50,00), Zahlungsweg. Häkchen „Mitgliedsbeitrag“ oder „Verzicht auf
+    Erstattung von Aufwendungen“ (z. B. nicht abgerechnete Fahrtkosten), wenn zutreffend.</li>
+  <li><strong>Sachspende</strong>: was genau (z. B. „12 Kisten Obst und Gemüse“), Menge und Einheit. Für eine
+    Zuwendungsbestätigung zusätzlich den Wert und die Herkunft (Privat- oder Betriebsvermögen).</li>
+  <li>„Speichern und nächste Spende“ beschleunigt das Erfassen mehrerer Spenden, z. B. vom Kontoauszug.</li>
+</ol>
+<p>Eine bestätigte Spende lässt sich nicht mehr ändern oder löschen. Ist ein Fehler passiert, zuerst die Bestätigung
+  stornieren.</p>
+{% endif %}
+<h3>Übersicht</h3>
+<p>„Spenden“ zeigt ein Jahr mit Summen (Geld, Wert der Sachspenden, Anzahl, Spender), Geldspenden je Monat und alle
+  Spenden; filterbar nach Art und Suchbegriff, als CSV-Datei für Excel. Auf der Seite einer Adresse stehen deren Spenden
+  und die Summen je Jahr.</p>

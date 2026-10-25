@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     "apps.personal",
     "apps.antraege",
     "apps.statistik",
+    "apps.adressen",
+    "apps.spenden",
 ]
 
 MIDDLEWARE = [

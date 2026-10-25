@@ -22,6 +22,7 @@ GRUNDLAGEN = "Grundlagen"
 EINLASS = "Einlass und Kasse"
 KUNDEN = "Kunden"
 ANTRAEGE = "Anträge"
+ADRESSEN = "Adressen und Verein"
 TEAM = "Mitarbeitende und Personal"
 VERWALTUNG = "Einstellungen und Verwaltung"
 
@@ -58,6 +59,10 @@ KAPITEL = [
             ("antraege.aufnehmen",)),
     Kapitel("sonderaktionen", "Sonderaktionen anlegen und auswerten", EINLASS,
             ("sonderaktionen.verwalten",)),
+    Kapitel("adressbuch", "Adressbuch: Spender, Märkte, Partner", ADRESSEN, ("adressen.sehen",)),
+    Kapitel("spenden", "Spenden erfassen", ADRESSEN, ("spenden.sehen", "spenden.erfassen")),
+    Kapitel("zuwendungsbestaetigungen", "Zuwendungsbestätigungen (Spendenquittungen)", ADRESSEN,
+            ("spenden.bestaetigen", "einstellungen.spenden")),
     Kapitel("statistik", "Statistik", VERWALTUNG, ("statistik.sehen",)),
     Kapitel("arbeitszeit", "Meine Arbeitszeit (Stempeln)", TEAM),
     Kapitel("mitarbeitende", "Mitarbeitende verwalten", TEAM, ("mitarbeitende.verwalten",)),

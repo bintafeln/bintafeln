@@ -66,6 +66,18 @@ def menue(request) -> list[dict]:
             ("einstellungen.antraege", _eintrag("Formular einstellen", "antraege:einstellungen")),
             ("antraege.sehen", _eintrag("Öffentliches Formular", "antrag:start", extern=True)),
         ])  # fmt: skip
+    adressbuch = _eintrag("Adressbuch", "adressen:liste", genau=True)
+    adressbuch["auch"] = [reverse("adressen:liste")]  # auch die Seite einer Adresse
+    bereich("Adressen", [
+        ("adressen.sehen", adressbuch),
+        ("adressen.bearbeiten", _eintrag("Neue Adresse", "adressen:neu")),
+        ("adressen.importieren", _eintrag("Adressen importieren", "adressen:importieren")),
+    ])  # fmt: skip
+    bereich("Spenden", [
+        ("spenden.sehen", _eintrag("Spenden", "spenden:liste", genau=True)),
+        ("spenden.erfassen", _eintrag("Spende erfassen", "spenden:neu")),
+        ("spenden.bestaetigen", _eintrag("Zuwendungsbestätigungen", "spenden:bestaetigungen")),
+    ])  # fmt: skip
     bereich("Statistik", [("statistik.sehen", _eintrag("Statistik", "statistik:uebersicht"))])
     bereich("Team", [
         ("mitarbeitende.verwalten", _eintrag("Mitarbeitende", "konten:mitarbeitende")),
@@ -84,11 +96,14 @@ def menue(request) -> list[dict]:
         ("einstellungen.listen", _eintrag("Einkommensarten", *_liste("einkommensarten"))),
         ("einstellungen.listen", _eintrag("Notiz-Vorlagen", *_liste("notizvorlagen"))),
         ("einstellungen.listen", _eintrag("Dokumentarten", *_liste("dokumentarten"))),
+        ("einstellungen.listen", _eintrag("Adresskategorien", *_liste("adresskategorien"))),
         ("einstellungen.ausweis", _eintrag("Kundenausweis", "kunden:ausweis_gestalten")),
         ("einstellungen.ausgabe",
          _eintrag("Ausgabe, Ampel und Beiträge", "ausgabe:einstellungen")),
         ("einstellungen.listen", _eintrag("Beitragsfreie Zeiträume", *_liste("beitragsfrei"))),
         ("einstellungen.antraege", _eintrag("Anträge", "antraege:einstellungen")),
+        ("einstellungen.spenden",
+         _eintrag("Spenden und Zuwendungsbestätigungen", "spenden:einstellungen")),
         ("einstellungen.personal",
          _eintrag("Mitarbeitende und Dokumente", "konten:personal_einstellungen")),
         ("einstellungen.arbeitszeit",

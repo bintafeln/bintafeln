@@ -1,0 +1,23 @@
+<p>Zuwendungsbestätigungen („Spendenquittungen“) erstellt bintafeln als PDF nach den amtlichen Mustern. Menü: „Spenden →
+  Zuwendungsbestätigungen“.</p>
+{% if "einstellungen.spenden" in rechte %}
+<h3>Einmal einrichten</h3>
+<p>Unter „Einstellungen → Spenden und Zuwendungsbestätigungen“ die Angaben aus dem Bescheid des Finanzamts eintragen:
+  steuerbegünstigte Zwecke (wörtlich wie im Bescheid), Art des Bescheids, Finanzamt, Steuernummer, Datum, beim
+  Freistellungsbescheid den Veranlagungszeitraum, sowie wer unterschreibt. Solange etwas fehlt, lassen sich keine
+  Bestätigungen ausstellen. Im Zweifel die Steuerberatung der Tafel fragen.</p>
+{% endif %}
+{% if "spenden.bestaetigen" in rechte %}
+<h3>Ausstellen</h3>
+<ul>
+  <li>Jahr wählen. Die Liste zeigt alle Spender mit noch nicht bestätigten Geldspenden.</li>
+  <li>„ausstellen“ für einen Spender oder <strong>„Alle ausstellen“</strong> am Jahresende. Mehrere Spenden eines
+    Spenders ergeben eine <strong>Sammelbestätigung</strong> mit Anlage, eine einzelne eine Einzelbestätigung.</li>
+  <li>Danach „Ausgestellte Bestätigungen als PDF öffnen“, drucken, unterschreiben, versenden.</li>
+  <li>Sachspenden mit Wert erscheinen darunter und werden einzeln bestätigt.</li>
+</ul>
+<div class="tipp">Jede Spende wird nur einmal bestätigt, die Nummern laufen fortlaufend. Eine falsche Bestätigung
+  „stornieren“: Die Nummer bleibt vergeben, das PDF trägt den Vermerk „STORNIERT“, und die Spenden lassen sich neu
+  bestätigen.</div>
+{% endif %}
+<p>Spender ohne Anschrift sind in der Liste markiert; eine Zuwendungsbestätigung braucht Name und Anschrift.</p>
