@@ -50,7 +50,7 @@ def stelle():
 
 def test_kopfzeile_nur_mit_modul(admin_client, stelle, dienst):
     seite = admin_client.get(reverse("core:start")).content.decode()
-    assert "ich-bin-tafeln" in seite and "freie Tafelsoftware" in seite
+    assert "bintafeln" in seite and "freie Tafelsoftware" in seite
     assert reverse("wetter:kopf") not in seite
     assert admin_client.get(reverse("wetter:kopf")).status_code == 404
     TafelEinstellungen.objects.update(module=["wetter"])
