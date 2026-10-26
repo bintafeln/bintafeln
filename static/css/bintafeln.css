@@ -391,6 +391,10 @@ textarea.html-eingabe { font-family: ui-monospace, Menlo, Consolas, monospace; f
 .notiz-an { margin: .2rem 0 0; color: #37546b; }
 .notiz-an-stelle .notiz-kopf form { margin-left: auto; }
 .notiz-neu .auswahl { display: block; margin: 0 0 .6rem; }
+.nachricht-antwort { margin-top: .4rem; }
+.nachricht-antwort summary { cursor: pointer; color: var(--akzent-dunkel); }
+.nachricht-antwort label { display: block; margin-top: .4rem; font-weight: 600; }
+.nachricht-antwort textarea { width: 100%; min-width: 14rem; margin: .25rem 0; font: inherit; }
 
 /* Formulare: Felder auf breiten Bildschirmen nebeneinander */
 .formular-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 0 1.5rem; }

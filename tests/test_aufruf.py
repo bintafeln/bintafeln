@@ -195,6 +195,11 @@ def test_schon_eingelassene_fallen_heraus(mitte, tag_daten):
     aktuell, spaeter = wartend[0], wartend[4]
     for n in (aktuell, spaeter, "203"):
         Abholung.objects.create(haushalt=Haushalt.objects.get(kundennummer=n), datum=heute())
+    # Gerade aufgerufen und schon am Einlass: sofort aus „Bitte eintreten“, Platz bleibt leer
+    e = AufrufEinstellungen.laden(mitte)
+    d = ablauf.stand_fuer_anzeige(tag, e, heute())
+    assert d["current_numbers"] == wartend[1:3] and len(d["priority_flags"]) == 2
+    assert wartend[3] not in d["current_numbers"]  # niemand wird nachgerufen
     tag = ablauf.weiter(mitte, heute())
     g = tag.stand["gruppen"]
     assert aktuell in g[0]["aufgerufen"]  # war schon aufgerufen: bleibt bei den Erledigten
@@ -210,6 +215,9 @@ def test_eingelassene_bleiben_wenn_ausgeschaltet(mitte, tag_daten):
     Abholung.objects.create(haushalt=Haushalt.objects.get(kundennummer="203"), datum=heute())
     tag = ablauf.starten(mitte, heute())
     assert "203" in tag.stand["gruppen"][1]["wartend"]
+    erster = tag.stand["gruppen"][0]["wartend"][0]
+    Abholung.objects.create(haushalt=Haushalt.objects.get(kundennummer=erster), datum=heute())
+    assert erster in ablauf.stand_fuer_anzeige(tag, e, heute())["current_numbers"]
 
 
 def test_abgleich_mit_dem_kundenstamm(mitte, tag_daten):

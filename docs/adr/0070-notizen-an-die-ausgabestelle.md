@@ -24,6 +24,9 @@ nicht alle Notizen der Verwaltung bei den Ausgabestellen auftauchen.
   wird die Antwort-Notiz geschrieben, die Meldung erledigt und die gemeldete Notiz gestrichen.
   Der Text richtet sich nach `Ausgabestelle.ausweise_hier`: „… liegt im Schrank“ (z. B.
   Zentrale) oder „… wird zur Ausgabestelle geschickt“.
+- Antwort auf eine Nachricht (Nachrichtenliste, Haushaltsseite): Notiz mit `fuer_stelle` = die
+  Ausgabestelle, die geschrieben hat; so erreicht sie auch Ausgabestellen, zu denen der Kunde
+  nicht gehört. Die Nachricht ist damit erledigt.
 - Anliegen, auf die das Programm reagiert (`FESTE_ANLIEGEN`: „verlaengern“, „ausweis“), haben je
   eine feste Notiz-Vorlage, die eine Datenmigration anlegt. Admins können ihren Text ändern,
   aber weder das Anliegen noch die Vorlage löschen. Für neue Vorlagen werden diese Anliegen

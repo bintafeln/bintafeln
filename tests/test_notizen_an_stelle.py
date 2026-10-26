@@ -111,3 +111,26 @@ def test_sammelseite_ohne_stelle(admin_client, mitte):
     Ausgabestelle.objects.create(name="Nord")
     seite = admin_client.get(reverse("kunden:notizen_an_stelle")).content.decode()
     assert "Ausgabestelle wählen" in seite
+
+
+def test_verwaltung_antwortet_auf_nachricht(admin_client, ausgabe, mitte):
+    """Antwort auf eine Nachricht: an die schreibende Ausgabestelle, auch bei fremden Kunden."""
+    fremd = haushalt("801", Ausgabestelle.objects.create(name="Nord"))
+    n = Nachricht.objects.create(kundennummer=fremd.kundennummer, anliegen="adresse",
+                                 stelle=mitte, von="anton", text="Neue Anschrift?")  # fmt: skip
+    seite = admin_client.get(reverse("kunden:nachrichten")).content.decode()
+    assert "Antwort an Mitte" in seite
+    admin_client.post(
+        reverse("kunden:nachrichten"), {"nachricht": n.pk, "antwort": "Ist erledigt."}
+    )
+    n.refresh_from_db()
+    assert n.erledigt_am is not None
+    notiz = Notiz.objects.get(kundennummer="801")
+    assert notiz.text == "Antwort zu „Neue Anschrift oder Telefon“: Ist erledigt."
+    assert notiz.an_stelle and notiz.fuer_stelle == mitte
+    assert "Ist erledigt." in ausgabe.get(START).content.decode()  # bei Mitte, nicht bei Nord
+    # Ohne Antworttext bleibt es beim Abhaken
+    m = Nachricht.objects.create(kundennummer="801", anliegen="sonstiges", stelle=mitte, text="x")
+    admin_client.post(reverse("kunden:nachrichten"), {"nachricht": m.pk, "antwort": "  "})
+    m.refresh_from_db()
+    assert m.erledigt_am and Notiz.objects.count() == 1

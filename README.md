@@ -484,7 +484,9 @@ Dokumente, Historie.
   ist gedruckt und wird zur Ausgabestelle geschickt“ bzw. „… liegt im Schrank“ bei einer
   Ausgabestelle mit „Gedruckte Ausweise liegen hier“ (z. B. Zentrale). Die Knöpfe
   „Bescheide geprüft – bitte Ausweis verlängern“ und „Neuen Ausweis drucken“ sind fest (Text
-  änderbar, Anliegen nicht, nicht löschbar).
+  änderbar, Anliegen nicht, nicht löschbar). Auf jede **Nachricht einer Ausgabestelle** kann die
+  Verwaltung mit „Antworten“ reagieren: Die Antwort steht auf der Startseite der Ausgabestelle,
+  die geschrieben hat (auch bei fremden Kunden), die Nachricht ist danach erledigt.
 - **Dokumente** (Admin, Büro): Auf der Haushaltsseite unter „Dokumente“ Bescheide,
   Einwilligungen usw. als PDF oder Foto hochladen (höchstens 10 MB), mit Dokumentart, Titel und
   Dokumentdatum. Sie werden verschlüsselt gespeichert, nie öffentlich ausgeliefert, und jeder
@@ -751,7 +753,8 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   (ein Ja/Nein-Zusatzfeld, z. B. „Schwerbehindert“) zuerst.
 - **Immer aktuell:** Neue Haushalte werden während des Tages fair einsortiert, entfernte fallen
   heraus. Wer heute schon am Einlass war (Abholung gebucht, z. B. mit Ausnahme vorgezogen),
-  verschwindet aus der Warteschlange.
+  verschwindet aus der Warteschlange – auch sofort aus „Bitte eintreten“ (der Platz bleibt bis
+  zum nächsten „Weiter“ leer, niemand wird nachgerufen).
 - **Steuern** (Recht „Kunden aufrufen“, Vorgabe Büro und Ausgabe): Menü
   „Aufruf ↗“ im Kasten unter dem Menü (öffnet die ganze Steuerung in einem neuen Tab) am PC
   oder die Handy-Steuerung. Weiter, Zurück, Abfrage einer Nummer und „zu spät

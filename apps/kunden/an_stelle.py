@@ -8,6 +8,7 @@ Einlass arbeiten, bis jemand „gelesen“ klickt; die Notiz selbst bleibt am Ha
 
 import datetime as dt
 
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.kunden.models import Haushalt, Nachricht, Notiz, NotizVorlage
@@ -20,8 +21,9 @@ def offene(stelle):
     if stelle is None:
         return Notiz.objects.none()
     nummern = Haushalt.objects.filter(kundengruppe__ausgabestelle=stelle).values("kundennummer")
-    return Notiz.objects.filter(an_stelle=True, gelesen_am__isnull=True,
-                                kundennummer__in=nummern).order_by("erstellt_am")  # fmt: skip
+    fuer = Q(fuer_stelle=stelle) | Q(fuer_stelle__isnull=True, kundennummer__in=nummern)
+    return Notiz.objects.filter(fuer, an_stelle=True, gelesen_am__isnull=True).order_by(
+        "erstellt_am")  # fmt: skip
 
 
 def gelesen(notiz: Notiz, benutzer) -> None:
@@ -62,3 +64,21 @@ def ausweis_gedruckt(haushalte, benutzer) -> int:
     Nachricht.objects.filter(pk__in=[n.pk for n in offen]).update(
         erledigt_am=jetzt, erledigt_von=benutzer.get_username()[:150])  # fmt: skip
     return len(beantwortet)
+
+
+def antworten(nachricht: Nachricht, text: str, benutzer) -> Notiz:
+    """Antwort der Verwaltung auf eine Nachricht: Notiz an die Ausgabestelle, die geschrieben hat
+    (Startseite); die Nachricht ist damit erledigt."""
+    von = (benutzer.get_full_name() or benutzer.get_username())[:100]
+    notiz = Notiz.objects.create(
+        kundennummer=nachricht.kundennummer,
+        verfasst_von=von,
+        benutzer=benutzer,
+        an_stelle=True,
+        fuer_stelle=nachricht.stelle,
+        text=f"Antwort zu „{nachricht.get_anliegen_display()}“: {text.strip()}"[:1000],
+    )
+    nachricht.erledigt_am = timezone.now()
+    nachricht.erledigt_von = benutzer.get_username()[:150]
+    nachricht.save(update_fields=["erledigt_am", "erledigt_von"])
+    return notiz
