@@ -237,3 +237,22 @@ def test_listen_nur_mit_rechten(admin, client, benutzer_mit_rolle, anmelden, dat
     b = benutzer_mit_rolle("kim", rollen.KIOSK)
     titel = [t.titel for g in suche.suchen(b, "l zentrale").gruppen for t in g.treffer]
     assert titel == []
+
+
+def test_enter_mit_kundennummer_geht_direkt_zum_kunden(admin_client, client, benutzer_mit_rolle,
+                                                      anmelden, daten):  # fmt: skip
+    """„k 10141“ bzw. nur die Nummer und Enter: gleich zum Kunden, führende Nullen egal."""
+    haushalt = reverse("kunden:haushalt", args=["1001"])
+    assert admin_client.get(URL, {"q": "k 1001"}).url == haushalt
+    assert admin_client.get(URL, {"q": "1001"}).url == haushalt
+    assert admin_client.get(URL, {"q": "k 01001"}).url == haushalt
+    # Live-Liste (HTMX), Teilnummern, andere Kürzel und fremde Ausgabestellen: keine Weiterleitung
+    assert admin_client.get(URL, {"q": "k 1001"}, **HX).status_code == 200
+    assert admin_client.get(URL, {"q": "k 100"}).status_code == 200
+    assert admin_client.get(URL, {"q": "n 1001"}).status_code == 200
+    mitte, _ = daten
+    b = benutzer_mit_rolle("anton", rollen.AUSGABE)
+    b.ausgabestellen.set([mitte])
+    anmelden(client, b)
+    assert client.get(URL, {"q": "k 2002"}).status_code == 200  # Nord: nicht seine
+    assert client.get(URL, {"q": "k 1001"}).status_code == 302

@@ -144,6 +144,20 @@ h1 { font-size: 1.5rem; margin: .25rem 0 1rem; }
   .tabelle td::before { content: attr(data-titel) ": "; font-weight: 600; }
 }
 
+/* Tabellen, die oft in schmalen Spalten stehen (z. B. Nachrichten auf der Haushaltsseite): als
+   Karten, sobald der Platz nicht reicht – nach der Breite der Spalte, nicht des Bildschirms. Auf
+   dem iPad wurde sonst rechts abgeschnitten (seitlich schieben sieht man dort nicht). */
+.tabelle-rahmen.stapelbar { container-type: inline-size; }
+@container (max-width: 46rem) {
+  .stapelbar .tabelle thead { display: none; }
+  .stapelbar .tabelle tr { display: block; border-bottom: 2px solid var(--rand); padding: .5rem 0; }
+  .stapelbar .tabelle td { display: block; border: 0; padding: .15rem 0; }
+  .stapelbar .tabelle td::before { content: attr(data-titel) ": "; font-weight: 600; }
+  .stapelbar .tabelle td[data-titel="Aktion"]::before, .stapelbar .tabelle td[colspan]::before { content: none; }
+  .stapelbar .tabelle td:empty { display: none; }
+  .stapelbar .tabelle td[data-titel="Aktion"] { padding-top: .35rem; }
+}
+
 @media (min-width: 40rem) {
   .knopf { width: auto; }
   .filter { flex-direction: row; flex-wrap: wrap; align-items: center; gap: .75rem; }
@@ -687,14 +701,15 @@ label.wahl { display: block; white-space: nowrap; }
   .einlass-aktion .knopf { flex: 1 1 auto; }
 }
 
-/* Suche im Seitenkopf (ADR 0040); die Liste schließt sich, sobald der Fokus woanders ist */
+/* Suche im Seitenkopf (ADR 0040); offen/zu über die Klasse .offen (static/js/kopfzeile.js), nicht
+   :focus-within: Safari nimmt beim Antippen eines Treffers erst den Fokus weg */
 .kopf-suche { position: relative; flex: 1 1 14rem; max-width: 34rem; margin: 0; }
 .kopf-suche input {
   width: 100%; min-height: 2.5rem; padding: .4rem .75rem; border: 0; border-radius: var(--radius);
   font: inherit; color: var(--text); background: var(--flaeche);
 }
 .kopf-suche input:focus { outline: 3px solid var(--fokus); }
-.kopf-suche:not(:focus-within) #kopf-suche-liste { display: none; }
+.kopf-suche:not(.offen) #kopf-suche-liste { display: none; }
 .suche-liste {
   position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + .25rem);
   max-height: 70vh; overflow-y: auto; padding: .5rem 0;

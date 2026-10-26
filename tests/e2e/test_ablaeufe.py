@@ -117,6 +117,30 @@ def test_suche_im_kopf(angemeldet, admin):
     expect(seite.get_by_text("00041").first).to_be_visible()
 
 
+def test_suche_treffer_antippen_wie_auf_dem_ipad(angemeldet, admin):
+    """Safari (iPad) gibt Links beim Antippen keinen Fokus: Das Suchfeld verliert ihn, bevor der
+    Klick ankommt. Die Trefferliste muss trotzdem stehen bleiben, bis der Link gewählt ist."""
+    _haushalte(1)
+    seite = angemeldet(admin)
+    seite.add_init_script("""document.addEventListener("mousedown", function (e) {
+        if (e.target.closest && e.target.closest("a")) {
+          e.preventDefault();
+          if (document.activeElement) document.activeElement.blur();
+        }
+      }, true);""")
+    seite.goto("/")
+    seite.get_by_role("searchbox").first.fill("Muster1")
+    treffer = seite.locator("#kopf-suche-liste a", has_text="Muster1").first
+    expect(treffer).to_be_visible()
+    treffer.click()
+    expect(seite).to_have_url(re.compile("00041"))
+    # Tippen außerhalb schließt die Liste
+    seite.get_by_role("searchbox").first.fill("Muster1")
+    expect(treffer).to_be_visible()
+    seite.mouse.click(1200, 800)
+    expect(seite.locator("#kopf-suche-liste")).to_be_hidden()
+
+
 def test_ausgabestelle_im_menue_und_fortschritt(angemeldet, admin, benutzer_mit_rolle):
     _haushalte(2)  # Ausgabestelle „Mitte“, beide heute dran
     Ausgabestelle.objects.create(name="Nord")

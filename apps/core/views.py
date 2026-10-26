@@ -206,6 +206,8 @@ def suche(request):
     if request.GET.get("nur") == "hilfe" and such.zerlegen(eingabe)[0] is None:
         eingabe = f"h {eingabe}"  # Suchfeld im Handbuch
     kurz = bool(request.headers.get("HX-Request"))
+    if not kurz and (ziel := such.direkt(request.user, eingabe)):
+        return redirect(ziel)  # Enter mit genauer Kundennummer: gleich zum Kunden
     ergebnis = such.suchen(
         request.user,
         eingabe,

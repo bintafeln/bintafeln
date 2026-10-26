@@ -400,7 +400,9 @@ Regeln:
 ## Suche
 
 Im Seitenkopf steht auf jeder Seite ein **Suchfeld**. Ab 3 Zeichen erscheinen die Treffer
-darunter, Enter öffnet eine Ergebnisseite. Ohne Kürzel sucht es **Seiten des Programms**
+darunter, Enter öffnet eine Ergebnisseite – bei einer genauen Kundennummer („k 10141“ oder
+nur „10141“, führende Nullen egal) gleich den Kunden. Auch auf dem iPad lassen sich die Treffer
+antippen. Ohne Kürzel sucht es **Seiten des Programms**
 (Menüpunkte, z. B. „ausgabestellen“ führt zu „Kunden → Ausgabestellen“), **Listen und
 Einstellungen** (Ausgabestellen, Kundengruppen, Einkommens- und Dokumentarten, Notiz- und
 Serienbrief-Vorlagen, Rollen, Mitgliedsnummern, Belegnummern von Spenden, aus Modulen z. B.

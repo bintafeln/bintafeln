@@ -76,6 +76,6 @@ def liste(request):
         "offen": alle.filter(erledigt_am__isnull=True),
         "erledigt": alle.filter(erledigt_am__isnull=False).order_by("-erledigt_am")[:100],
         "tage": Nachricht.AUFBEWAHREN_TAGE,
-        "anliegen": anliegen, "anliegen_liste": NACHRICHT_ANLIEGEN,
+        "anliegen": anliegen, "anliegen_liste": NACHRICHT_ANLIEGEN_WAEHLBAR,
         "darf_verlaengern": rollen.hat_recht(request.user, "kunden.bearbeiten"),
     })  # fmt: skip
