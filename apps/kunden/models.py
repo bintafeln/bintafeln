@@ -103,10 +103,23 @@ class KundenEinstellungen(models.Model):
         help_text="Hat der Haushalt eine dieser Einkommensarten, erfüllen alle Personen die "
         "Bedingung (z. B. „Grundsicherung im Alter“).",
     )  # fmt: skip
+
+    class Ablehnung(models.TextChoices):
+        NOTIZ = "notiz", "Notiz an die Ausgabestelle: Bedingung nicht erfüllt, Pause einlegen"
+        PAUSIEREN = "pausieren", "Status „pausiert“ setzen und Notiz schreiben"
+        ANZEIGEN = "anzeigen", "nur anzeigen, nichts ändern"
+
+    verlaengern_ablehnung = models.CharField(
+        "Wer die Bedingung nicht erfüllt", max_length=10, choices=Ablehnung.choices,
+        default=Ablehnung.NOTIZ,
+        help_text="Die gemeldete Notiz (z. B. „Bescheide geprüft …“) wird dabei gestrichen. Bei "
+        "„Notiz“ bleibt der Status; der Ausweis läuft zu seinem Datum ab, und der Kunde fällt "
+        "dann aus der Kundengruppe.",
+    )  # fmt: skip
     verlaengern_sonst_pausieren_monate = models.PositiveSmallIntegerField(
-        "Sonst pausieren für … Monate", default=12, validators=[MaxValueValidator(60)],
-        help_text="Vorschlag für Haushalte, die nicht verlängern können: Status „pausiert“ mit "
-        "Notiz bis wann. 0 = nur anzeigen, nicht pausieren.",
+        "Pause in Monaten", default=12, validators=[MinValueValidator(1), MaxValueValidator(60)],
+        help_text="Steht in der Notiz an die Ausgabestelle (12 = „Pausenjahr“) bzw. bestimmt, bis "
+        "wann pausiert wird.",
     )  # fmt: skip
 
     class Meta:

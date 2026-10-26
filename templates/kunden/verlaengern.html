@@ -5,7 +5,7 @@
   <h1>Ausweise verlängern</h1>
   <p class="hinweis">Hier stehen alle Haushalte, zu denen eine Ausgabestelle „Bescheid geprüft – Ausweis verlängern“
     gemeldet hat. bintafeln hat jeden nach den Bedingungen aus „Einstellungen → Kundenstamm“ geprüft.
-    {% if bedingungen %}<strong>{{ bedingungen }}.</strong>{% else %}Eingestellt ist: ohne Bedingung.{% endif %}
+    {% if bedingungen %}<strong>Verlängern nur, wenn {{ regel }}: {{ bedingungen }}.</strong>{% else %}<strong>Eingestellt ist: ohne Bedingung</strong> – jeder Haushalt gilt als verlängerbar.{% endif %}
     Verlängert wird ab dem bisherigen Ablaufdatum, ist der Ausweis schon abgelaufen, ab heute.</p>
   <form method="get" class="filter">
     <label for="monate">Verlängern um</label>
@@ -29,7 +29,9 @@
         <tr class="verlaengern-{{ p.ergebnis }}">
           <td data-titel="Wählen">
             {% if p.ergebnis == "nein" %}
-              {% if pause %}<label><input type="checkbox" name="pausieren" value="{{ p.nummer }}" checked> {{ pause }} Monate pausieren</label>{% else %}–{% endif %}
+              {% if ablehnung == "notiz" %}<label><input type="checkbox" name="ablehnen" value="{{ p.nummer }}" checked> Notiz an die Ausgabestelle</label>
+              {% elif ablehnung == "pausieren" %}<label><input type="checkbox" name="ablehnen" value="{{ p.nummer }}" checked> {{ pause }} Monate pausieren</label>
+              {% else %}–{% endif %}
             {% else %}
               <label><input type="checkbox" name="verlaengern" value="{{ p.nummer }}"{% if p.ergebnis == "ok" %} checked{% endif %}> verlängern</label>
             {% endif %}
@@ -49,9 +51,12 @@
       </tbody>
     </table>
     </div>
-    <p class="hinweis">Jede Änderung steht in der Historie des Haushalts. Die Meldungen der verlängerten und pausierten
-      Haushalte werden als erledigt markiert; nicht gewählte bleiben offen.</p>
-    <button type="submit" class="knopf">Ausgewählte verlängern bzw. pausieren</button>
+    <p class="hinweis">Jede Änderung steht in der Historie des Haushalts. Bei allen gewählten wird die gemeldete Notiz
+      (z. B. „Bescheide geprüft …“) gestrichen und die Meldung erledigt; nicht gewählte bleiben offen.
+      {% if ablehnung == "notiz" %}Wer die Bedingung nicht erfüllt, bekommt statt der Verlängerung eine Notiz an die Ausgabestelle:
+      welche Bedingung fehlt und bei wem, und dass {{ pause_text }} nötig ist. Der Status bleibt; der Ausweis läuft zu seinem
+      Datum ab.{% elif ablehnung == "pausieren" %}Wer die Bedingung nicht erfüllt, wird pausiert und bekommt eine Notiz.{% endif %}</p>
+    <button type="submit" class="knopf">Ausgewählte ausführen</button>
   </form>
   {% endif %}
 </section>

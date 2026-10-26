@@ -33,6 +33,7 @@ class KundenEinstellungenForm(forms.ModelForm):
             "verlaengern_ab_alter",
             "verlaengern_felder",
             "verlaengern_einkommensarten",
+            "verlaengern_ablehnung",
             "verlaengern_sonst_pausieren_monate",
         ]
         widgets = {

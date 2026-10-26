@@ -15,6 +15,7 @@ from apps.kunden.models import (
     KundenEinstellungen,
     Nachricht,
     Notiz,
+    NotizVorlage,
     Person,
     Sperre,
     Zusatzfeld,
@@ -24,6 +25,7 @@ pytestmark = pytest.mark.django_db
 
 HEUTE = dt.date(2026, 10, 26)
 VERLAENGERN = reverse("kunden:verlaengern")
+GEPRUEFT = "Bescheide geprüft, kann verlängert werden"
 
 
 def jahre(alter):
@@ -120,47 +122,88 @@ def gemeldet(regel, monkeypatch):
     ok = haushalt("201", (72, None), (64, None))
     nein = haushalt("202", (72, None), (35, None))
     unklar = haushalt("203", (None, None))
+    NotizVorlage.objects.create(text=GEPRUEFT, melden="verlaengern")
     for h in (ok, nein, unklar):
         Nachricht.objects.create(kundennummer=h.kundennummer, anliegen="verlaengern", von="anton")
+        Notiz.objects.create(kundennummer=h.kundennummer, text=GEPRUEFT, verfasst_von="anton")
+    Notiz.objects.create(kundennummer="202", text="Bringt nächste Woche den Bescheid")
     Nachricht.objects.create(kundennummer="201", anliegen="verlaengern", von="berta")
     Nachricht.objects.create(kundennummer="202", anliegen="sonstiges", text="Neue Telefonnummer")
     return ok, nein, unklar
 
 
-def test_sammelseite_verlaengert_und_pausiert(gemeldet, admin_client):
+def test_sammelseite_verlaengert_und_schreibt_notiz(gemeldet, admin_client):
     ok, nein, unklar = gemeldet
     start = admin_client.get("/").content.decode()
     assert "4 × Bescheid geprüft – Ausweis verlängern" in start and "1 × Sonstiges" in start
     seite = admin_client.get(VERLAENGERN).content.decode()
     assert "1 verlängerbar · 1 selbst prüfen · 1 nicht verlängerbar" in seite
+    assert (
+        "Verlängern nur, wenn jede Person im Haushalt erfüllt eine Bedingung: ab 60 Jahren "
+        "oder Schwerbehindert." in seite
+    )
     assert 'name="verlaengern" value="201" checked' in seite
     assert 'name="verlaengern" value="203">' in seite  # unklar: nicht vorbelegt
-    assert 'name="pausieren" value="202" checked' in seite
+    assert 'name="ablehnen" value="202" checked> Notiz an die Ausgabestelle' in seite
     assert "30.11.2027" in seite  # neu bis
     antwort = admin_client.post(VERLAENGERN, {"monate": "12", "verlaengern": ["201", "202"],
-                                              "pausieren": ["202"]})  # fmt: skip
+                                              "ablehnen": ["202"]})  # fmt: skip
     assert antwort.status_code == 302
     for h in gemeldet:
         h.refresh_from_db()
     assert ok.ausweis_gueltig_bis == dt.date(2027, 11, 30)
     assert nein.ausweis_gueltig_bis == dt.date(2026, 11, 30)  # nicht verlängert, obwohl gewählt
-    assert nein.status == Haushalt.Status.PAUSIERT
-    assert "Pausiert bis 26.10.2027" in Notiz.objects.get(kundennummer="202").text
+    assert nein.status == Haushalt.Status.AKTIV  # kein Statuswechsel
+    # Gemeldete Notiz gestrichen, neue Notiz an die Ausgabestelle mit Grund
+    assert not Notiz.objects.filter(kundennummer__in=["201", "202"], text=GEPRUEFT).exists()
+    assert Notiz.objects.filter(kundennummer="203", text=GEPRUEFT).exists()  # nicht gewählt
+    texte = list(Notiz.objects.filter(kundennummer="202").values_list("text", flat=True))
+    assert "Bringt nächste Woche den Bescheid" in texte
+    neu = next(t for t in texte if t.startswith("Ausweis kann nicht"))
+    assert neu == (
+        "Ausweis kann nicht verlängert werden. Bedingung nicht erfüllt (jede Person im Haushalt "
+        "erfüllt eine Bedingung: ab 60 Jahren oder Schwerbehindert). Ohne Bedingung: Vera Probe1 "
+        "(35 Jahre). Der Kunde muss ein Pausenjahr einlegen; der Ausweis gilt noch bis "
+        "30.11.2026. Danach ist eine Neuanmeldung über den Antrag möglich."
+    )
     assert unklar.ausweis_gueltig_bis == dt.date(2026, 11, 30)  # nicht gewählt
     offen = Nachricht.objects.filter(erledigt_am__isnull=True)
     assert set(offen.values_list("kundennummer", "anliegen")) == {
         ("203", "verlaengern"), ("202", "sonstiges")}  # fmt: skip
     assert HaushaltEreignis.objects.filter(
         kundennummer="201", text="Ausweis verlängert (Sammel-Verlängerung)").exists()  # fmt: skip
+    assert HaushaltEreignis.objects.filter(
+        kundennummer="202", text="Nicht verlängert (Sammel-Verlängerung)").exists()  # fmt: skip
     assert ok.geaendert_von == "chefin"
 
 
-def test_ohne_pause_nur_anzeigen(gemeldet, admin_client):
-    KundenEinstellungen.objects.update(verlaengern_sonst_pausieren_monate=0)
+def test_andere_tafeln_pausieren(gemeldet, admin_client):
+    KundenEinstellungen.objects.update(verlaengern_ablehnung="pausieren",
+                                       verlaengern_sonst_pausieren_monate=6)  # fmt: skip
     seite = admin_client.get(VERLAENGERN).content.decode()
-    assert 'name="pausieren"' not in seite
-    admin_client.post(VERLAENGERN, {"pausieren": ["202"]})
+    assert 'name="ablehnen" value="202" checked> 6 Monate pausieren' in seite
+    admin_client.post(VERLAENGERN, {"ablehnen": ["202"]})
+    h = Haushalt.objects.get(kundennummer="202")
+    assert h.status == Haushalt.Status.PAUSIERT
+    assert "Pausiert bis 26.04.2027." in Notiz.objects.filter(kundennummer="202").first().text
+    assert not Notiz.objects.filter(kundennummer="202", text=GEPRUEFT).exists()
+
+
+def test_nur_anzeigen(gemeldet, admin_client):
+    KundenEinstellungen.objects.update(verlaengern_ablehnung="anzeigen")
+    seite = admin_client.get(VERLAENGERN).content.decode()
+    assert 'name="ablehnen"' not in seite
+    admin_client.post(VERLAENGERN, {"ablehnen": ["202"]})
     assert Haushalt.objects.get(kundennummer="202").status == Haushalt.Status.AKTIV
+    assert Notiz.objects.filter(kundennummer="202", text=GEPRUEFT).exists()
+    assert Nachricht.objects.filter(kundennummer="202", erledigt_am__isnull=True).count() == 2
+
+
+def test_gesperrt_notiz_ohne_pausenjahr(gemeldet, admin_client):
+    Haushalt.objects.filter(kundennummer="201").update(status=Haushalt.Status.BEENDET)
+    admin_client.post(VERLAENGERN, {"ablehnen": ["201"]})
+    text = Notiz.objects.filter(kundennummer="201").first().text
+    assert text == "Ausweis kann nicht verlängert werden. Status „beendet“."
 
 
 def test_monate_waehlbar(gemeldet, admin_client):

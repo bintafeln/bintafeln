@@ -499,8 +499,10 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
   (Mindestalter, Ja/Nein-Zusatzfelder wie „Schwerbehindert“, Einkommensarten); gesperrte, beendete
   Haushalte und solche mit aktiver Sperre nicht, fehlende Geburtsdaten als „selbst prüfen“. Alle gewählten werden
   mit einem Klick um die gewählten Monate verlängert (ab bisherigem Ablauf, sonst ab heute); wer
-  nicht verlängern kann, lässt sich stattdessen pausieren (mit Notiz, bis wann). Jede Änderung
-  steht in der Historie, die Meldungen sind danach erledigt.
+  die Bedingung nicht erfüllt, bekommt (einstellbar) eine Notiz an die Ausgabestelle mit Grund
+  und Pausenjahr – der Status bleibt, der Ausweis läuft ab –, wird pausiert oder nur angezeigt.
+  Die gemeldete Notiz wird gestrichen. Jede Änderung steht in der Historie, die Meldungen sind
+  danach erledigt.
 - **Kundengruppe nur mit gültigem Ausweis** (ADR 0061): Pausierte, gesperrte, beendete Kunden
   und Kunden mit abgelaufenem Ausweis fallen automatisch aus der Kundengruppe, bei Änderungen
   sofort, sonst täglich und beim Import. Abschaltbar unter „Einstellungen → Kunden →
