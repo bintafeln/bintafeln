@@ -49,6 +49,12 @@ class Benutzer(AbstractUser):
         help_text="An welchen Tagen die Person meist arbeitet; die Kundenliste startet mit diesem "
         "Tag.",
     )  # fmt: skip
+    gewaehlte_stelle = models.ForeignKey(
+        "kunden.Ausgabestelle", verbose_name="Gewählte Ausgabestelle", null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="+",
+        help_text="Ausgabestelle aus dem Auswahlfeld oben im Menü; gilt bis zur nächsten Wahl "
+        "(ADR 0067).",
+    )  # fmt: skip
     # Konto einer Ausgabestelle für die Einlass-Tablets (ADR 0059): Anmeldung mit dem Namen der
     # Ausgabestelle und Passwort, ohne Zwei-Faktor, Abmeldung nach 30 Minuten ohne Eingabe.
     stelle = models.OneToOneField(

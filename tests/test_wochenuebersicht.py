@@ -163,7 +163,8 @@ def test_reihenfolge_pflegen(modul_an, admin_client, daten):
     assert StellenReihenfolge.objects.get(ausgabestelle=zentrale).reihenfolge == 5
     assert not StellenReihenfolge.objects.filter(ausgabestelle=nord).exists()
     seite = admin_client.get(reverse("wochenuebersicht:reihenfolge")).content.decode()
-    assert seite.index("Zentrale") < seite.index("Nord")
+    inhalt = seite[seite.index("<main") :]  # oben im Menü stehen die Stellen nach Namen
+    assert inhalt.index("Zentrale") < inhalt.index("Nord")
 
 
 def test_rechte_und_modulschalter(admin, benutzer_mit_rolle, anmelden, daten):

@@ -4,6 +4,8 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
+from django.contrib.auth import get_user_model
+from django.test import Client
 from django.urls import reverse
 from django.utils import timezone
 
@@ -22,7 +24,7 @@ from apps.kunden.models import (
 
 pytestmark = pytest.mark.django_db
 
-KOPF = '<h1>Kunde 00042 <span class="einlass-name">Erika Muster</span></h1>'  # Name groß daneben
+KOPF = '<h1>Kunde 00042 <span class="einlass-name">Erika Muster</span>'  # Name groß daneben
 EMPFANG = reverse("ausgabe:empfang")
 HX = {"HTTP_HX_REQUEST": "true"}
 
@@ -145,13 +147,58 @@ def test_kontostand_abschaltbar(ausgabe, haushalt):
 
 
 def test_ausgabestelle_waehlen(ausgabe, stelle):
+    """Auswahl oben im Menü, gespeichert am Benutzer (ADR 0067)."""
+    nord = Ausgabestelle.objects.create(name="Nord")
     url = reverse("ausgabe:ausgabestelle")
-    ausgabe.post(url, {"ausgabestelle": stelle.pk})
-    assert ausgabe.session["ausgabestelle_id"] == stelle.pk
-    assert ausgabe.get(EMPFANG).context["stelle"] == stelle
+    assert ausgabe.get(EMPFANG).context["stelle"] is None  # zwei Stellen: erst wählen
+    seite = ausgabe.get(EMPFANG).content.decode()
+    assert 'id="menue-stelle"' in seite and "Bitte oben im Menü die Ausgabestelle wählen" in seite
+    antwort = ausgabe.post(url, {"ausgabestelle": nord.pk, "weiter": "/kunden/"})
+    assert antwort.url == "/kunden/"
+    assert ausgabe.get(EMPFANG).context["stelle"] == nord
+    konto = get_user_model().objects.get(username="ausgabe")
+    assert konto.gewaehlte_stelle == nord  # bleibt über die Anmeldung hinaus
+    assert ausgabe.post(url, {"ausgabestelle": stelle.pk, "weiter": "https://fremd.example/"}
+                        ).url == EMPFANG  # fmt: skip
     ausgabe.post(url, {"ausgabestelle": ""})
-    assert "ausgabestelle_id" not in ausgabe.session
     assert ausgabe.get(EMPFANG).context["stelle"] is None
+
+
+def test_ausgabestelle_nur_aus_den_eigenen(als, admin, stelle, benutzer_mit_rolle, anmelden):
+    nord = Ausgabestelle.objects.create(name="Nord")
+    konto = benutzer_mit_rolle("mitte", rollen.AUSGABE)
+    konto.ausgabestellen.set([stelle])
+    c = anmelden(Client(), konto)
+    c.post(reverse("ausgabe:ausgabestelle"), {"ausgabestelle": nord.pk})
+    assert c.get(EMPFANG).context["stelle"] == stelle  # einzige eigene, ohne Auswahlfeld
+    seite = c.get(EMPFANG).content.decode()
+    assert 'id="menue-stelle"' not in seite and "<strong>Ausgabestelle Mitte</strong>" in seite
+
+
+def test_fortschritt_in_der_kopfzeile(ausgabe, haushalt, stelle):
+    """3/236: heute an der Stelle abgeholt / planmäßig heute erwartet."""
+    seite = ausgabe.get(EMPFANG).content.decode()
+    assert 'title="Ausgabestelle Mitte: 0 von 1 Haushalten heute abgeholt">0/1</span>' in seite
+    inhalt = eintragen(ausgabe, haushalt).content.decode()
+    assert 'hx-swap-oob="true"' in inhalt and ">1/1</span>" in inhalt
+    # Ausnahmen zählen vorne mit, hinten nur planmäßige Haushalte
+    andere = Kundengruppe.objects.create(name="Nie", ausgabestelle=stelle, wochentage="")
+    gast = Haushalt.objects.create(kundennummer="00077", kundengruppe=andere)
+    Abholung.objects.create(haushalt=gast, datum=timezone.localdate(), ausgabestelle=stelle)
+    assert ">2/1</span>" in ausgabe.get(EMPFANG).content.decode()
+
+
+def test_fortschritt_nur_am_ausgabetag(ausgabe, stelle):
+    Kundengruppe.objects.create(name="Nie", ausgabestelle=stelle, wochentage="")
+    seite = ausgabe.get(EMPFANG).content.decode()
+    assert 'id="ausgabe-fortschritt" class="kopf-fortschritt" hidden' in seite
+
+
+def test_ohne_einlass_keine_auswahl(admin, benutzer_mit_rolle, anmelden, stelle):
+    Ausgabestelle.objects.create(name="Nord")
+    c = anmelden(Client(), benutzer_mit_rolle("fahrer", rollen.FAHRER))
+    seite = c.get(reverse("core:start")).content.decode()
+    assert 'id="menue-stelle"' not in seite and "ausgabe-fortschritt" not in seite
 
 
 # --- Abholung eintragen und zurücknehmen --------------------------------------------------
@@ -181,7 +228,8 @@ def test_abholung_eintragen_mit_vorschlag(ausgabe, haushalt, stelle):
 def test_abholung_mit_geaendertem_beitrag(ausgabe, haushalt):
     eintragen(ausgabe, haushalt, beitrag="1,50 €")
     assert Abholung.objects.get().beitrag == Decimal("1.50")
-    assert Abholung.objects.get().ausgabestelle is None
+    # Gibt es nur eine Ausgabestelle, gilt sie ohne Wahl (ADR 0067)
+    assert Abholung.objects.get().ausgabestelle == haushalt.kundengruppe.ausgabestelle
 
 
 def test_ungueltiger_beitrag(ausgabe, haushalt):

@@ -577,7 +577,13 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
 
 „Einlass“ im Menü (Admin, Büro, Ausgabe):
 
-1. Einmal die **Ausgabestelle** wählen, an der man arbeitet (gilt für die Sitzung).
+1. Oben im linken Menü die **Ausgabestelle** wählen, an der man arbeitet. Die Wahl steht am
+   Benutzer und gilt auch nach dem Abmelden, bis man eine andere wählt; Einlass, „Nachricht an
+   die Verwaltung“ und Abrechnung nehmen sie. Konten einer Ausgabestelle und Personen mit nur
+   einer zugeordneten Stelle haben sie fest. Oben rechts steht dazu der **Fortschritt des Tages**,
+   z. B. `3/236`: heute an dieser Stelle abgeholt / planmäßig heute erwartet (aktive Haushalte,
+   deren Kundengruppe heute hier ihren Ausgabetag hat; Ausnahmen zählen nur vorne mit). Die Zahl
+   zählt nach jeder Abholung sofort weiter (ADR 0067).
 2. Kundennummer **scannen** oder eintippen und Enter. Führende Nullen sind egal. Drei Wege,
    die sich beliebig mischen lassen; Eintippen geht immer:
    - **Handscanner** per USB oder Bluetooth (am PC oder Handy): Er arbeitet als Tastatur, das

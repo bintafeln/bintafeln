@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 from apps.abrechnung import ablauf
 from apps.abrechnung.forms import EinreichenForm, EinstellungenForm, PostenForm, RueckgabeForm
 from apps.abrechnung.models import AbrechnungEinstellungen, Monatsabrechnung, Posten
+from apps.ausgabe import stelle as stelle_wahl
 from apps.core import privatdateien
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
@@ -37,8 +38,11 @@ def uebersicht(request):
     monat = ablauf.monat_lesen(request.GET.get("monat"), timezone.localdate())
     stellen = ablauf.stellen_fuer(request.user)
     if not ablauf.darf_pruefen(request.user):
-        if len(stellen) == 1:
-            return redirect("abrechnung:monat", stellen[0].pk, f"{monat:%Y-%m}")
+        # die eine eigene oder die oben im Menü gewählte Ausgabestelle (ADR 0067)
+        gewaehlt = stelle_wahl.aktuelle(request.user)
+        ziel = stellen[0] if len(stellen) == 1 else (gewaehlt if gewaehlt in stellen else None)
+        if ziel:
+            return redirect("abrechnung:monat", ziel.pk, f"{monat:%Y-%m}")
         return render(request, "abrechnung/uebersicht.html", {"stellen": stellen,
                       "monat": monat, "zeilen": None})  # fmt: skip
     vorhanden = {a.stelle_id: a for a in Monatsabrechnung.objects.filter(monat=monat)}

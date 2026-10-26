@@ -11,9 +11,11 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from apps.ausgabe import ampel, kasse, konto, korrekturen, sonderaktionen
+from apps.ausgabe import stelle as stelle_wahl
 from apps.ausgabe.forms import AusgabeEinstellungenForm
 from apps.ausgabe.models import (
     AusgabeEinstellungen,
@@ -40,12 +42,10 @@ from apps.kunden.models import (
 from apps.kunden.views import notiz_schreiben, notizen_kontext
 
 LETZTE_ABHOLUNGEN = 5
-SITZUNG_STELLE = "ausgabestelle_id"
 
 
 def _stelle(request):
-    pk = request.session.get(SITZUNG_STELLE)
-    return Ausgabestelle.objects.filter(pk=pk).first() if pk else None
+    return stelle_wahl.aktuelle(request.user)
 
 
 LETZTE_KUNDEN = 20
@@ -87,7 +87,7 @@ def _letzte(request, stelle) -> list[dict]:
 
 def _suche_kontext(request) -> dict:
     stelle = _stelle(request)
-    return {"stelle": stelle, "stellen": _stellen(request), "letzte": _letzte(request, stelle)}
+    return {"stelle": stelle, "letzte": _letzte(request, stelle)}
 
 
 def _finden(eingabe: str):
@@ -154,20 +154,16 @@ def _ergebnis(request, h, meldung=None):
 
 def _antworten(request, kontext):
     if request.headers.get("HX-Request"):
-        return render(request, "ausgabe/_einlass.html", kontext)
+        # Fortschritt in der Kopfzeile gleich mit austauschen (hx-swap-oob)
+        return render(request, "ausgabe/_einlass.html", {**kontext, "fortschritt_oob": True})
     return render(request, "ausgabe/empfang.html", kontext)
-
-
-def _stellen(request):
-    return zugang.stellen(request.user) or Ausgabestelle.objects.order_by("name")
 
 
 @rollen.recht_erforderlich("einlass.nutzen")
 def empfang(request):
     konto.buchungsfristen_anwenden()
     nummer = request.GET.get("nummer", "").strip()
-    kontext = {"stelle": _stelle(request), "stellen": _stellen(request)} if nummer else (
-        _suche_kontext(request))  # fmt: skip
+    kontext = {"stelle": _stelle(request)} if nummer else _suche_kontext(request)
     if nummer:
         h = _finden(nummer)
         grund = zugang.sperrgrund(request.user, h) if h else ""
@@ -189,23 +185,19 @@ def empfang(request):
 @require_POST
 @rollen.recht_erforderlich("einlass.nutzen")
 def ausgabestelle_waehlen(request):
-    pk = request.POST.get("ausgabestelle", "")
-    stelle = Ausgabestelle.objects.filter(pk=pk).first() if pk.isdigit() else None
-    eigene = zugang.stellen(request.user)
-    if stelle and eigene is not None and stelle not in eigene:
-        stelle = None
-    if stelle:
-        request.session[SITZUNG_STELLE] = stelle.pk
-    else:
-        request.session.pop(SITZUNG_STELLE, None)
-    return redirect("ausgabe:empfang")
+    """Auswahlfeld oben im Menü (ADR 0067): gilt bis zur nächsten Wahl, auch nach dem Abmelden."""
+    stelle_wahl.waehlen(request.user, request.POST.get("ausgabestelle", ""))
+    weiter = request.POST.get("weiter", "")
+    if not url_has_allowed_host_and_scheme(weiter, allowed_hosts={request.get_host()}):
+        weiter = reverse("ausgabe:empfang")
+    return redirect(weiter)
 
 
 def _zurueck(request, h, text, stufe=messages.SUCCESS):
     """Nach einer Aktion: HTMX bekommt die aktualisierte Karte, sonst Weiterleitung."""
     if request.headers.get("HX-Request"):
         kontext = {"stelle": _stelle(request), **_ergebnis(request, h, meldung=text)}
-        return render(request, "ausgabe/_einlass.html", kontext)
+        return render(request, "ausgabe/_einlass.html", {**kontext, "fortschritt_oob": True})
     messages.add_message(request, stufe, text)
     return redirect(f"{reverse('ausgabe:empfang')}?nummer={h.kundennummer}")
 
@@ -215,7 +207,7 @@ def _zur_suche(request, h, text):
     text = f"Kunde {h.kundennummer}: {text}"
     if request.headers.get("HX-Request"):
         kontext = {**_suche_kontext(request), "meldung": text, "fertig": h.kundennummer}
-        return render(request, "ausgabe/_einlass.html", kontext)
+        return render(request, "ausgabe/_einlass.html", {**kontext, "fortschritt_oob": True})
     messages.success(request, text)
     return redirect("ausgabe:empfang")
 

@@ -16,6 +16,13 @@ def _darf_stempeln(benutzer) -> bool:
     return darf_stempeln(benutzer)
 
 
+def _ausgabestelle(request) -> dict:
+    # Spät eingebunden: Die App ausgabe baut auf core auf, nicht umgekehrt.
+    from apps.ausgabe.stelle import kontext
+
+    return kontext(request)
+
+
 def tafel(request):
     benutzer = getattr(request, "user", None)
     angemeldet = benutzer is not None and benutzer.is_authenticated
@@ -43,4 +50,6 @@ def tafel(request):
         "stellen_konto_sekunden": 30 * 60 + 5 if angemeldet and benutzer.stelle_id else None,
         # Beiträge eingeschalteter Module zur Kopfzeile (z. B. Wetter), nur angemeldet
         "kopf_module": module.kopfzeile() if angemeldet and not offen else [],
+        # Ausgabestelle oben im Menü und Fortschritt des Tages in der Kopfzeile (ADR 0067)
+        **(_ausgabestelle(request) if angemeldet and not offen else {}),
     }
