@@ -226,8 +226,22 @@
         return;
       }
       hinweis.textContent = HINWEIS;
+      // Je Scan ein frisches Video-Element: Manche Handy-Browser zeigen sonst ab dem zweiten
+      // Öffnen nur noch Schwarz, obwohl die Kamera läuft (der Dialog wird per HTMX ausgetauscht).
+      var neu = video.cloneNode(false);
+      neu.muted = true;
+      neu.playsInline = true;
+      neu.autoplay = true;
+      video.replaceWith(neu);
+      video = neu;
+      // Erst zeichnen lassen, damit das Video im geöffneten Dialog Platz hat
+      await new Promise(function (ok) { requestAnimationFrame(function () { requestAnimationFrame(ok); }); });
       video.srcObject = strom;
       await video.play().catch(function () {});
+      // Einmal neu zeichnen lassen (hilft Browsern, die das Bild im Dialog sonst nicht zeigen)
+      video.style.display = "none";
+      void video.offsetHeight;
+      video.style.display = "";
       laeuft = true;
       try {
         lesen(await detektor(feld));
