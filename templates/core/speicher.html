@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block titel %}Speicher und Fotos{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Speicher und Fotos</h1>
+  <p class="hinweis">Hochgeladene Fotos (Quittungen, Dokumente zum Haushalt, Belege, Führerscheinkopien, Anhänge von
+    Anträgen) werden beim Speichern nach diesen Einstellungen verkleinert. PDFs bleiben, wie sie sind.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" name="aktion" value="speichern" class="knopf">Speichern</button>
+  </form>
+</section>
+
+<section class="karte">
+  <h2>Belegter Platz</h2>
+  <table class="tabelle kompakt">
+    <tbody>
+      {% if datenbank is not None %}<tr><td>Datenbank</td><td class="zahl">{{ datenbank|filesizeformat }}</td></tr>{% endif %}
+      {% for z in bestand %}<tr><td>Dateien „{{ z.ordner }}“ ({{ z.anzahl }})</td><td class="zahl">{{ z.bytes|filesizeformat }}</td></tr>{% endfor %}
+      <tr class="summe"><th>Dateien gesamt</th><th class="zahl">{{ dateien|filesizeformat }}</th></tr>
+      {% if originale %}<tr><td>Aufbewahrte Originale</td><td class="zahl">{{ originale|filesizeformat }}</td></tr>{% endif %}
+    </tbody>
+  </table>
+  <p class="hinweis">Die Sicherungen brauchen zusätzlich Platz, je nach Anzahl der aufbewahrten Stände.</p>
+</section>
+
+<section class="karte">
+  <h2>Vorhandene Fotos verkleinern</h2>
+  <p>Wendet die Einstellungen oben auf schon gespeicherte Fotos an (je Klick bis zu 200). Die Originale bleiben
+    daneben liegen; mit geänderten Einstellungen lässt sich jederzeit neu aus dem Original verkleinern. „Nicht
+    verkleinern“ stellt die Originale wieder her.</p>
+  <form method="post">{% csrf_token %}<button type="submit" name="aktion" value="verkleinern" class="knopf knopf-zweitrangig">Verkleinern</button></form>
+  {% if originale %}
+  <h3>Originale löschen</h3>
+  <p>Gibt {{ originale|filesizeformat }} frei. Danach lassen sich die Fotos nicht mehr in voller Größe herstellen.
+    {% if not sicherung_frisch %}<strong>Erst möglich, wenn eine Sicherung höchstens 24 Stunden alt ist.</strong>{% endif %}</p>
+  <form method="post" onsubmit="return confirm('Originale endgültig löschen?')">{% csrf_token %}
+    <button type="submit" name="aktion" value="originale" class="knopf knopf-zweitrangig"{% if not sicherung_frisch %} disabled{% endif %}>Originale löschen</button></form>
+  {% endif %}
+</section>
+{% endblock %}

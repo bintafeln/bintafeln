@@ -250,6 +250,47 @@ class SicherungsDienst(models.Model):
         return ergebnis
 
 
+class FotoEinstellungen(models.Model):
+    """Wie stark hochgeladene Fotos verkleinert werden (Singleton, ADR 0064): Quittungen,
+    Dokumente, Belege, Führerscheinkopien, Anhänge von Anträgen. PDFs bleiben unverändert."""
+
+    EINZIGE_ID = 1
+    KANTEN = [(0, "nicht verkleinern (Original)"), (1000, "1000 Pixel – sehr klein"),
+              (1280, "1280 Pixel – klein"), (1600, "1600 Pixel – gut lesbar (empfohlen)"),
+              (2000, "2000 Pixel – groß"), (2560, "2560 Pixel – sehr groß")]  # fmt: skip
+
+    kante = models.PositiveIntegerField(
+        "Größe (längste Seite)", choices=KANTEN, default=1600,
+        help_text="Handyfotos haben meist 4000 Pixel und 3–5 MB; mit 1600 Pixel sind Quittungen "
+        "und Bescheide gut lesbar und etwa ein Zehntel so groß.",
+    )  # fmt: skip
+    qualitaet = models.PositiveSmallIntegerField(
+        "Qualität (%)", default=75, validators=[MinValueValidator(40), MaxValueValidator(95)],
+        help_text="Für JPEG und WebP. 75 ist ein guter Mittelweg; kleiner = kleinere Dateien, "
+        "aber eher unscharf.",
+    )  # fmt: skip
+    graustufen = models.BooleanField(
+        "In Graustufen speichern", default=False,
+        help_text="Spart noch einmal Platz; Farben (z. B. Stempel) gehen verloren.",
+    )  # fmt: skip
+
+    class Meta:
+        verbose_name = "Foto-Einstellungen"
+        verbose_name_plural = "Foto-Einstellungen"
+
+    def __str__(self):
+        return "Foto-Einstellungen"
+
+    def save(self, *args, **kwargs):
+        self.pk = self.EINZIGE_ID
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def laden(cls) -> "FotoEinstellungen":
+        einstellungen, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
+        return einstellungen
+
+
 auditlog.register(TafelEinstellungen, exclude_fields=["geaendert_am"])
 auditlog.register(
     SicherungsAuftrag,
@@ -258,3 +299,4 @@ auditlog.register(
 )  # fmt: skip
 # Das (verschlüsselte) Passwort gehört nicht ins Änderungsprotokoll.
 auditlog.register(MailEinstellungen, exclude_fields=["passwort_verschluesselt"])
+auditlog.register(FotoEinstellungen)

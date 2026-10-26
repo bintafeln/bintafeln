@@ -37,6 +37,12 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   verkleinert das Update einmalig (das Original bleibt als Datei liegen). Caddy lässt sie einen
   Tag zwischenspeichern. Vorher dauerte das Anmelden mit einem Handyfoto als Hintergrund über
   eine langsame Leitung viele Sekunden.
+- **Speicher und Fotos** (ADR 0064, „Einstellungen → Systemsteuerung → Speicher und Fotos“):
+  Hochgeladene Fotos (Quittungen, Dokumente, Belege, Führerscheinkopien, Antragsanhänge) werden
+  beim Speichern verkleinert – Größe (Vorgabe 1600 Pixel), Qualität (Vorgabe 75 %) und
+  Graustufen sind einstellbar, PDFs bleiben unverändert. Die Seite zeigt den belegten Platz,
+  verkleinert vorhandene Fotos nachträglich (Originale bleiben daneben) und löscht die Originale
+  erst, wenn eine Sicherung höchstens 24 Stunden alt ist.
 - **Änderungsprotokoll:** Wer hat wann welchen Datensatz geändert (mit Feldern vorher/nachher).
   Passwörter werden nie protokolliert.
 - **Zwei-Faktor-Anmeldung:** Jede Person richtet sie unter „Mein Konto“ selbst ein

@@ -168,6 +168,7 @@ def menue(request) -> list[dict]:
             ("system.sicherung", _eintrag("Sicherungen", "core:sicherungen")),
             (export, _eintrag("Export und Zurücklesen", "core:datensicherung")),
             ("system.update", _eintrag("Update", "core:update")),
+            ("einstellungen.tafel", _eintrag("Speicher und Fotos", "core:speicher")),
             ("protokoll.sehen", _eintrag("Änderungsprotokoll", "core:protokoll")),
             ("einstellungen.rollen",
              _eintrag("Anmeldung und Zwei-Faktor", "konten:anmelde_einstellungen")),
