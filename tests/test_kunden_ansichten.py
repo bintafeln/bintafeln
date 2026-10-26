@@ -212,7 +212,8 @@ def test_buero_sieht_alles_und_zugriff_wird_protokolliert(als, bestand):
     assert "Zugriffe auf diesen Haushalt" not in inhalt
 
 
-def test_ausgabe_sieht_nur_das_noetige(als, bestand):
+def test_ausgabe_sieht_nur_das_noetige(als, bestand, recht_nehmen):
+    recht_nehmen(rollen.AUSGABE, "einlass.nutzen")  # sonst geht es gleich zum Einlass
     client = als(rollen.AUSGABE)
     inhalt = client.get(detail("1001")).content.decode()
     for text in (
@@ -233,11 +234,21 @@ def test_ausgabe_sieht_nur_das_noetige(als, bestand):
     assert Zugriff.objects.get().besondere_kategorie is False
 
 
-def test_ausgabe_mit_freigabe_fuer_besondere_kategorie(als, bestand, recht_geben):
+def test_ausgabe_mit_freigabe_fuer_besondere_kategorie(als, bestand, recht_geben, recht_nehmen):
     recht_geben(rollen.AUSGABE, "kunden.besondere_kategorie")
+    recht_nehmen(rollen.AUSGABE, "einlass.nutzen")
     inhalt = als(rollen.AUSGABE).get(detail("1001")).content.decode()
     assert "Schwerbehindert: ja" in inhalt
     assert Zugriff.objects.get().besondere_kategorie is True
+
+
+def test_ausgabestelle_geht_gleich_zum_einlass(als, bestand, admin, anmelden):
+    from django.test import Client
+
+    antwort = als(rollen.AUSGABE).get(detail("1001"))
+    assert antwort.url == "/ausgabe/?nummer=1001"
+    verwaltung = anmelden(Client(), admin)
+    assert verwaltung.get(detail("1001")).status_code == 200  # Verwaltung: Haushaltsseite
 
 
 def test_abgeschaltete_felder_werden_nicht_angezeigt(admin_client, bestand):

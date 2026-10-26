@@ -82,6 +82,15 @@ def test_kundenliste_und_detail(anton):
         antwort.content.decode()
     )
     assert anton.get(reverse("kunden:uebersicht"), {"q": "100"}).status_code == 302
+    # Ausgabestellen landen beim Aufruf eines Kunden gleich im Einlass, der die Zuordnung prüft
+    detail = anton.get(reverse("kunden:haushalt", args=["200"]), follow=True)
+    assert detail.redirect_chain == [("/ausgabe/?nummer=200", 302)]
+    assert "Dieser Kunde gehört nicht zu Ihrer Ausgabestelle" in detail.content.decode()
+    assert anton.get(reverse("kunden:haushalt", args=["100"])).url == "/ausgabe/?nummer=100"
+
+
+def test_detail_ohne_einlass_nur_eigene(anton, recht_nehmen):
+    recht_nehmen(rollen.AUSGABE, "einlass.nutzen")
     detail = anton.get(reverse("kunden:haushalt", args=["200"]))
     assert detail.status_code == 403
     assert "Kein Zugriff" in detail.content.decode() and "„Nord“" in detail.content.decode()

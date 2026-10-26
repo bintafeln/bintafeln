@@ -195,7 +195,8 @@ def test_loeschen_fragt_konkret(admin_client, h):
     assert "Ausgabestelle „Nord“ endgültig löschen?" in seite
 
 
-def test_kundenseite_fuer_ausgabe(client, admin, benutzer_mit_rolle, anmelden, h):
+def test_kundenseite_fuer_ausgabe(client, admin, benutzer_mit_rolle, anmelden, h, recht_nehmen):
+    recht_nehmen(rollen.AUSGABE, "einlass.nutzen")  # mit Einlass geht es gleich dorthin
     anmelden(client, benutzer_mit_rolle("kim", rollen.AUSGABE))
     seite = client.get(url("haushalt", "2001")).content.decode()
     assert "Zum Einlass</a>" in seite and "Löschen …" not in seite
@@ -324,10 +325,11 @@ def test_import_warnt_vor_handaenderungen(h, admin):
 
 
 def test_notizen_haushaltsseite_import_und_umnummern(
-    client, admin, benutzer_mit_rolle, anmelden, h
+    client, admin, benutzer_mit_rolle, anmelden, h, recht_nehmen
 ):
     from apps.kunden.models import Notiz, fristen_anwenden
 
+    recht_nehmen(rollen.AUSGABE, "einlass.nutzen")  # Haushaltsseite statt Einlass
     anmelden(client, benutzer_mit_rolle("kim", rollen.AUSGABE))
     client.post(url("notiz_neu", "2001"), {"text": "Erfundene Notiz"})
     client.post(url("notiz_neu", "2001"), {"text": ""})

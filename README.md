@@ -430,6 +430,12 @@ Ausgabestelle zugeordnet ist, findet nur deren Kunden (ADR 0040).
 
 Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
 
+Ausgabestellen (Recht „Einlass“, aber nicht „Status, Kunde seit, Einkommensart …“) landen beim
+Aufruf eines Kunden aus Listen oder Suche gleich im **Einlass**; dort sehen sie alles Nötige.
+Die Haushaltsseite der Verwaltung hat zwei Spalten ohne Lücken: links Angaben, Abholungen,
+Nachrichten, Anmerkungen; rechts Personen, Notizen, Sperren, Ausnahmen; darunter Kundenkonto,
+Dokumente, Historie.
+
 - **Suche** nach Kundennummer oder Name; Status und Kundengruppe lassen sich filtern. Eine
   vollständige Kundennummer mit Enter (z. B. vom Scanner) öffnet den Haushalt direkt.
 - Die **Detailseite** zeigt je nach Rechten unterschiedlich viel. Vorgaben der mitgelieferten

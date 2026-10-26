@@ -19,6 +19,8 @@
   {% if ausweis_abgelaufen %}<p class="sicherung sicherung-veraltet kopf-meldung">Ausweis abgelaufen am {{ h.ausweis_gueltig_bis|date:"d.m.Y" }}</p>{% endif %}
 </section>
 
+{# Zwei Spalten, in denen die Karten lückenlos untereinander stehen; schmal: eine Spalte #}
+<div class="seiten-spalte">
 <section class="karte">
   <h2>Angaben</h2>
   <dl class="angaben">
@@ -50,27 +52,6 @@
 </section>
 
 <section class="karte">
-  <h2>Personen</h2>
-  <div class="tabelle-rahmen">
-  <table class="tabelle">
-    <thead><tr><th>Rolle</th><th>Name</th><th>Geburtsdatum</th>{% if "kunden.stammdaten" in rechte %}{% if einstellungen.staatsangehoerigkeit_erfassen %}<th>Staatsangehörigkeit</th>{% endif %}{% if einstellungen.familienstand_erfassen %}<th>Familienstand</th>{% endif %}{% endif %}<th>Weitere Angaben</th></tr></thead>
-    <tbody>
-    {% if hauptperson %}{% include "kunden/_person.html" with p=hauptperson.0 zusatz=hauptperson.1 rolle="Hauptperson" %}{% endif %}
-    {% for p, zusatz in angehoerige %}{% include "kunden/_person.html" with rolle="Angehörige" %}{% endfor %}
-    {% for a in h.abholer.all %}
-      <tr>
-        <td data-titel="Rolle">Abholberechtigt</td>
-        <td data-titel="Name">{{ a.vorname }} {{ a.nachname }}{% if a.eigene_kundennummer %} (eigene Kundennummer {{ a.eigene_kundennummer }}){% endif %}</td>
-        <td data-titel="Geburtsdatum">{{ a.geburtsdatum|date:"d.m.Y"|default:"–" }}</td>
-        {% if "kunden.stammdaten" in rechte %}{% if einstellungen.staatsangehoerigkeit_erfassen %}<td></td>{% endif %}{% if einstellungen.familienstand_erfassen %}<td></td>{% endif %}{% endif %}<td data-titel="Weitere Angaben">–</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  </div>
-</section>
-
-<section class="karte">
   <h2>Letzte Abholungen</h2>
   <div class="tabelle-rahmen">
   <table class="tabelle">
@@ -95,8 +76,51 @@
   {% if abholungen_gesamt > abholungen|length %}<p class="hinweis">{{ abholungen|length }} von {{ abholungen_gesamt }} gespeicherten Abholungen.</p>{% endif %}
 </section>
 
-{# Rechte Spalte: Notizen, darunter Sperren und Ausnahmen (am Einlass das Wichtigste zusammen) #}
+{% if nachrichten %}
+<section class="karte" id="nachrichten">
+  <h2>Nachrichten der Ausgabestellen</h2>
+  {% include "kunden/_nachrichten_tabelle.html" with liste=nachrichten weiter=request.get_full_path %}
+</section>
+{% endif %}
+
+{% if "kunden.anmerkungen" in rechte %}
+<section class="karte">
+  <h2>Interne Anmerkungen</h2>
+  {% for b in bemerkungen %}
+    <div class="bemerkung">
+      <p class="hinweis">{{ b.datum|date:"d.m.Y" }}{% if b.verfasst_von %} · {{ b.verfasst_von }}{% endif %}</p>
+      <p>{{ b.text|linebreaksbr }}</p>
+    </div>
+  {% empty %}
+    <p class="hinweis">Keine.</p>
+  {% endfor %}
+</section>
+{% endif %}
+
+</div>
 <div class="seiten-spalte">
+<section class="karte">
+  <h2>Personen</h2>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Rolle</th><th>Name</th><th>Geburtsdatum</th>{% if "kunden.stammdaten" in rechte %}{% if einstellungen.staatsangehoerigkeit_erfassen %}<th>Staatsangehörigkeit</th>{% endif %}{% if einstellungen.familienstand_erfassen %}<th>Familienstand</th>{% endif %}{% endif %}<th>Weitere Angaben</th></tr></thead>
+    <tbody>
+    {% if hauptperson %}{% include "kunden/_person.html" with p=hauptperson.0 zusatz=hauptperson.1 rolle="Hauptperson" %}{% endif %}
+    {% for p, zusatz in angehoerige %}{% include "kunden/_person.html" with rolle="Angehörige" %}{% endfor %}
+    {% for a in h.abholer.all %}
+      <tr>
+        <td data-titel="Rolle">Abholberechtigt</td>
+        <td data-titel="Name">{{ a.vorname }} {{ a.nachname }}{% if a.eigene_kundennummer %} (eigene Kundennummer {{ a.eigene_kundennummer }}){% endif %}</td>
+        <td data-titel="Geburtsdatum">{{ a.geburtsdatum|date:"d.m.Y"|default:"–" }}</td>
+        {% if "kunden.stammdaten" in rechte %}{% if einstellungen.staatsangehoerigkeit_erfassen %}<td></td>{% endif %}{% if einstellungen.familienstand_erfassen %}<td></td>{% endif %}{% endif %}<td data-titel="Weitere Angaben">–</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+{# Notizen, darunter Sperren und Ausnahmen (am Einlass das Wichtigste zusammen) #}
 {% include "kunden/_notizen.html" %}
 
 {# Ausgabestellen (ohne Recht auf alle Sperren) sehen die Karte nur bei einer aktiven Sperre #}
@@ -146,27 +170,6 @@
 {% endif %}
 </div>
 
-{% if nachrichten %}
-<section class="karte" id="nachrichten">
-  <h2>Nachrichten der Ausgabestellen</h2>
-  {% include "kunden/_nachrichten_tabelle.html" with liste=nachrichten weiter=request.get_full_path %}
-</section>
-{% endif %}
-
-{% if "kunden.anmerkungen" in rechte %}
-<section class="karte">
-  <h2>Interne Anmerkungen</h2>
-  {% for b in bemerkungen %}
-    <div class="bemerkung">
-      <p class="hinweis">{{ b.datum|date:"d.m.Y" }}{% if b.verfasst_von %} · {{ b.verfasst_von }}{% endif %}</p>
-      <p>{{ b.text|linebreaksbr }}</p>
-    </div>
-  {% empty %}
-    <p class="hinweis">Keine.</p>
-  {% endfor %}
-</section>
-{% endif %}
-
 {% if "kunden.konto" in rechte %}
 <section class="karte breit">
   <h2>Kundenkonto</h2>
@@ -207,7 +210,7 @@
 {% if "kunden.dokumente" in rechte %}{% include "kunden/_dokumente.html" %}{% endif %}
 
 {% if "kunden.historie" in rechte %}
-<section class="karte" id="historie">
+<section class="karte breit" id="historie">
   <h2>Historie</h2>
   {% if historie %}
   <ul class="historie">

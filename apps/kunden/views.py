@@ -311,7 +311,14 @@ def _zusatz_anzeigen(felder, werte_) -> list[tuple[str, str, bool]]:
 
 @rollen.recht_erforderlich("kunden.ansehen")
 def haushalt(request, kundennummer):
-    """Detailansicht eines Haushalts. Jeder Aufruf steht im Zugriffsprotokoll."""
+    """Detailansicht eines Haushalts. Jeder Aufruf steht im Zugriffsprotokoll.
+
+    Ausgabestellen (Einlass, aber nicht die Stammdaten) landen gleich im Einlass: Dort sehen sie
+    alles, was sie brauchen, und können eintragen; der Einlass prüft Zuordnung und Protokoll."""
+    if rollen.hat_recht(request.user, "einlass.nutzen") and not rollen.hat_recht(
+        request.user, "kunden.stammdaten"
+    ):
+        return redirect(f"{reverse('ausgabe:empfang')}?{urlencode({'nummer': kundennummer})}")
     h = zugang.haushalt(
         request.user,
         kundennummer,
