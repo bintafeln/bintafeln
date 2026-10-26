@@ -118,7 +118,7 @@ def _ergebnis(request, h, meldung=None):
     kind_bis = KundenEinstellungen.laden().kind_bis_alter
     erwachsene, kinder = h.groesse(kind_bis, heute)
     hinweise = module.einlass_hinweise(h, heute, _stelle(request))
-    bewertung = ampel.noch_nicht_dran(
+    bewertung = ampel.modul_hinweise_beachten(
         ampel.bewerten(h, heute, _stelle(request), einstellungen), hinweise
     )
     abholungen = list(h.abholungen.all())

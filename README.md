@@ -743,19 +743,24 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   heraus. Wer heute schon am Einlass war (Abholung gebucht, z. B. mit Ausnahme vorgezogen),
   verschwindet aus der Warteschlange.
 - **Steuern** (Recht „Kunden aufrufen“, Vorgabe Büro und Ausgabe): Menü
-  „Kundennummernanzeige“ (öffnet einen neuen Tab) am PC oder die Handy-Steuerung. Weiter, Zurück, Abfrage einer Nummer und „zu spät
+  „Aufruf ↗“ im Kasten unter dem Menü (öffnet die ganze Steuerung in einem neuen Tab) am PC
+  oder die Handy-Steuerung. Weiter, Zurück, Abfrage einer Nummer und „zu spät
   gekommen“ (so viele wartende Plätze nach hinten wie eingestellt). Reihenfolge des Tages als CSV.
 - **Unter dem Menü:** Wer am Einlass arbeitet und aufrufen darf, sieht links unter dem Menü die
   Nummern der gewählten Ausgabestelle, die gerade eintreten sollen, und den Knopf „Nächste 3
   hereinrufen“ (Anzahl wie eingestellt), dazu „letzten Schritt zurück“ und „Aufruf starten“. Die
-  Anzeige aktualisiert sich alle 15 Sekunden, auch wenn ein anderes Gerät weiterschaltet.
+  Anzeige aktualisiert sich alle 15 Sekunden, auch wenn ein anderes Gerät weiterschaltet. Einen
+  eigenen Menüeintrag gibt es nicht mehr; die Überschrift „Aufruf ↗“ öffnet die ganze Steuerung.
 - **Geräte im Wartebereich:** Monitor (Nummern, Infos im Wechsel, Ton, Layout per Zahnrad),
   Nummern-Anzeige, Kiosk (Karte scannen, Antwort auf Deutsch und in der Sprache zur
   Staatsangehörigkeit) und Abfrage. Sie brauchen keine Anmeldung, sondern den geheimen Link aus
   „Einstellungen → Aufruf, Monitor und Kiosk“; „Neue Links erzeugen“ sperrt alte Links.
 - **Am Einlass:** Die Einlass-Karte zeigt beim Scannen, ob und wann die Nummer aufgerufen
   wurde, „Zu spät“ (ab einstellbarer Minutenzahl nach dem Aufruf, Vorgabe 15) oder wie viele
-  Nummern noch davor sind.
+  Nummern der Kunde zu früh ist. Bei „zu früh“ und „zu spät“ leuchtet die Ampel grün und Gelb
+  blinkt dazu. Bei „Zu spät“ steht darunter der
+  Knopf „15 Nummern verschieben“ (Zahl = „Plätze für zu spät Gekommene“ der Ausgabestelle), der
+  den Kunden wie am Handy neu einsortiert; die Maus darauf zeigt die genaue Erklärung.
 - **Einstellungen je Ausgabestelle:** Nummern je Aufruf (Vorgabe 3), Vorrang-Feld und Symbol,
   schon Eingelassene herausnehmen, Plätze für zu spät Gekommene, „zu spät“ am Einlass nach
   Minuten, Infos ein/aus, Probelauf als anderer Wochentag. **Infos:** Text, Bild, PDF oder Webseite mit Anzeigedauer, für alle oder

@@ -11,15 +11,15 @@
 {% elif h %}
 {% if meldung %}<p class="meldung kasse-meldung" role="status">{{ meldung }}</p>{% endif %}
 <div class="empfang-raster">
-{% with lampe=bewertung.lampe %}
-<aside class="ampel-grafik ampel-grafik-{{ lampe }}{% if bewertung.blinken %} ampel-blinkt{% endif %}" role="img"
-       aria-label="Ampel: {% if bewertung.farbe == 'rot' %}rot, keine Abholung{% elif bewertung.blinken %}gelb blinkend, noch nicht an der Reihe{% elif bewertung.farbe == 'gelb' %}gelb, Abholung mit Hinweis{% else %}grün, Abholung möglich{% endif %}">
+{% with f=bewertung.farbe %}
+<aside class="ampel-grafik ampel-grafik-{{ f }}{% if bewertung.blinken %} ampel-blinkt{% endif %}" role="img"
+       aria-label="Ampel: {% if f == 'rot' %}rot, keine Abholung{% elif f == 'gelb' %}gelb, Abholung mit Hinweis{% else %}grün, Abholung möglich{% endif %}{% if bewertung.blinken %}, dazu gelb blinkend: {{ bewertung.wort|lower }}{% endif %}">
   <div class="ampel-gehaeuse">
-    <span class="lampe lampe-rot{% if lampe == 'rot' %} an{% endif %}"></span>
-    <span class="lampe lampe-gelb{% if lampe == 'gelb' %} an{% endif %}"></span>
-    <span class="lampe lampe-gruen{% if lampe == 'gruen' %} an{% endif %}"></span>
+    <span class="lampe lampe-rot{% if f == 'rot' %} an{% endif %}"></span>
+    <span class="lampe lampe-gelb{% if f == 'gelb' or bewertung.blinken %} an{% endif %}"></span>
+    <span class="lampe lampe-gruen{% if f == 'gruen' %} an{% endif %}"></span>
   </div>
-  <p class="ampel-wort">{% if bewertung.farbe == "rot" %}STOPP{% elif bewertung.blinken %}WARTEN{% elif bewertung.farbe == "gelb" %}ACHTUNG{% else %}OK{% endif %}</p>
+  <p class="ampel-wort">{% if f == "rot" %}STOPP{% elif bewertung.blinken %}{{ bewertung.wort|default:"ACHTUNG" }}{% elif f == "gelb" %}ACHTUNG{% else %}OK{% endif %}</p>
 </aside>
 {% endwith %}
 
@@ -35,7 +35,14 @@
 {% if modul_hinweise %}
 {% with f=modul_hinweise.0.farbe %}
 <section class="karte ampel modul-hinweise {% if f == 'info' %}ampel-unbekannt{% else %}ampel-{{ f }}{% endif %}" role="status">
-  {% for m in modul_hinweise %}<p class="modul-hinweis grund-{{ m.farbe }}"><strong>{{ m.modul }}:</strong> {{ m.text }}</p>{% endfor %}
+  {% for m in modul_hinweise %}<p class="modul-hinweis grund-{{ m.farbe }}"><strong>{{ m.modul }}:</strong> {{ m.text }}</p>
+  {% if m.knopf and m.knopf.recht in rechte %}
+  <form method="post" action="{{ m.knopf.url }}" class="modul-knopf mit-blase">
+    {% csrf_token %}
+    <button type="submit" class="knopf knopf-zweitrangig" aria-describedby="modul-knopf-{{ forloop.counter }}">{{ m.knopf.text }}</button>
+    <span id="modul-knopf-{{ forloop.counter }}" class="blase" role="tooltip">{{ m.knopf.erklaerung }}</span>
+  </form>
+  {% endif %}{% endfor %}
 </section>
 {% endwith %}
 {% endif %}
@@ -110,7 +117,7 @@ Abholung, Rücknahmen von heute und die Ausnahme{% endcomment %}
   {% if s.teilnahme %}
   <p class="sonderaktion-erhalten">✓ Erhalten am {{ s.teilnahme.zeitpunkt|date:"d.m.Y" }}: {{ s.teilnahme.menge }}×{% if s.teilnahme.auswahl %} {{ s.teilnahme.auswahl }}{% endif %}</p>
   {% url 'ausgabe:teilnahme_zuruecknehmen' s.teilnahme.pk as ziel %}
-  {% include "ausgabe/_zuruecknehmen.html" with art="teilnahme" obj=s.teilnahme ziel=ziel titel="Teilnahme" %}
+  {% include "ausgabe/_zuruecknehmen.html" with art="teilnahme" obj=s.teilnahme ziel=ziel titel="Teilnahme" aufklapp="Teilnahme ist erfolgt: Korrigieren" %}
   {% elif s.grund %}
   <p class="hinweis">{{ s.grund }}</p>
   {% else %}
@@ -154,11 +161,12 @@ Abholung, Rücknahmen von heute und die Ausnahme{% endcomment %}
     <dt>Personen</dt><dd>{% for p in personen %}{{ p.vorname }} {{ p.nachname }}{% if p.geburtsdatum and einstellungen.einlass_geburtsdaten %}, geb. {{ p.geburtsdatum|date:"d.m.Y" }}{% endif %}{% if p.ist_hauptperson %} <small class="hinweis">(Hauptperson)</small>{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}–{% endfor %}</dd>
     {% if einstellungen.einlass_abholer %}<dt>Abholberechtigt</dt><dd>{% for a in h.abholer.all %}{{ a.vorname }} {{ a.nachname }}{% if a.geburtsdatum and einstellungen.einlass_geburtsdaten %}, geb. {{ a.geburtsdatum|date:"d.m.Y" }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}–{% endfor %}</dd>{% endif %}
     {% if einstellungen.einlass_anschrift %}<dt>Anschrift</dt><dd>{% if h.strasse or h.ort %}{{ h.strasse }}{% if h.strasse and h.ort %}, {% endif %}{{ h.plz }} {{ h.ort }}{% else %}–{% endif %}</dd>{% endif %}
-    <dt>Ausgabestelle</dt><dd>{{ h.kundengruppe.ausgabestelle.name|default:"–" }}{% if h.kundengruppe %} · {{ h.kundengruppe.name }}{% if h.kundengruppe.wochentage %} ({{ h.kundengruppe.wochentage }}{% if h.kundengruppe.uhrzeit %} {{ h.kundengruppe.uhrzeit|time:"H:i" }}{% endif %}){% endif %}{% endif %}</dd>
+    <dt>Ausgabestelle</dt><dd>{{ h.kundengruppe.ausgabestelle.name|default:"–" }}{% if h.kundengruppe %} · {{ h.kundengruppe.name }}{% endif %}</dd>
     <dt>Karte gültig bis</dt><dd>{{ h.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}</dd>
     {% if einstellungen.kontostand_anzeigen %}<dt>Kontostand</dt><dd>{% if h.kontostand is not None %}<strong{% if h.kontostand < 0 %} class="fehler"{% endif %}>{{ h.kontostand|floatformat:2 }} €</strong>{% else %}–{% endif %}</dd>{% endif %}
   </dl>
-  <p><a href="{% url 'kunden:haushalt' h.kundennummer %}">Alle Angaben zum Haushalt</a></p>
+  {# Ohne Stammdaten führt die Haushaltsseite ohnehin zurück zum Einlass #}
+  {% if "kunden.stammdaten" in rechte %}<p><a href="{% url 'kunden:haushalt' h.kundennummer %}">Alle Angaben zum Haushalt</a></p>{% endif %}
 </section>
 {% include "kunden/_notizen.html" with notiz_htmx=True %}
 {% url 'ausgabe:empfang' as einlass_url %}{% include "kunden/_nachricht.html" with nummer=h.kundennummer zurueck=einlass_url %}

@@ -14,6 +14,7 @@ import datetime as dt
 import random
 
 from django.db import transaction
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.aufruf.models import AufrufEinstellungen, AufrufTag
@@ -607,6 +608,28 @@ def _aufgerufen_um(s, x):
     return None
 
 
+# Für die Ampel am Einlass: grün bleibt, gelb blinkt dazu (ampel.modul_hinweise_beachten)
+ZU_FRUEH = {"ampel": "Kunde ist zu früh (Aufruf)", "wort": "ZU FRÜH"}
+ZU_SPAET = {"ampel": "Kunde ist zu spät (Aufruf)", "wort": "ZU SPÄT"}
+
+
+def _verschieben_knopf(tag, e, haushalt) -> dict:
+    """Knopf am Einlass: zu spät Gekommene neu einsortieren (wie „zu spät gekommen“ am Handy)."""
+    versatz = max(e.spaetzuender_versatz, e.anzahl)  # wie spaetzuender()
+    return {
+        "recht": "aufruf.steuern",
+        "url": reverse("aufruf:verschieben", args=[tag.ausgabestelle_id, haushalt.kundennummer]),
+        "text": f"{versatz} Nummern verschieben",
+        "erklaerung": (
+            f"Kunde {haushalt.kundennummer} kommt zurück in die Warteschlange: {versatz} wartende "
+            "Nummern hinter den gerade aufgerufenen. Monitor und Ampel zeigen ihn dann als „noch "
+            "nicht dran“, bis er wieder aufgerufen wird. Das geht einmal am Tag. Die Zahl steht "
+            "unter Einstellungen → Aufruf, Monitor und Kiosk („Zu spät Gekommene: Plätze nach "
+            "hinten“)."
+        ),
+    }
+
+
 def einlass(haushalt, heute, stelle=None) -> list[dict]:
     """Hinweis für die Einlass-Karte: wann aufgerufen, zu spät oder noch nicht dran."""
     gruppe = haushalt.kundengruppe
@@ -629,10 +652,11 @@ def einlass(haushalt, heute, stelle=None) -> list[dict]:
         info = s["spaetzuender"][x]
         if j >= aufg:
             vor = _davor(s, i, j, aufg)
-            dran = vor < e.anzahl and i == s["index"]
-            text = (f"Kam zu spät, um {info['zeit']} Uhr neu einsortiert – "
-                    + ("jetzt an der Reihe" if dran else f"noch {vor} Nummern davor"))  # fmt: skip
-            return [{"text": text, "farbe": "gelb", "warten": not dran}]
+            if vor < e.anzahl and i == s["index"]:
+                return [{"text": f"Kam zu spät, um {info['zeit']} Uhr neu einsortiert – jetzt an "
+                         "der Reihe", "farbe": "gelb"}]  # fmt: skip
+            return [{"text": f"Kam zu spät, um {info['zeit']} Uhr neu einsortiert – noch {vor} "
+                     "Nummern zu früh", "farbe": "gelb", **ZU_FRUEH}]  # fmt: skip
     if j < aufg:
         um = _aufgerufen_um(s, x)
         if um is None:
@@ -641,10 +665,11 @@ def einlass(haushalt, heute, stelle=None) -> list[dict]:
         uhr = timezone.localtime(um).strftime("%H:%M")
         if e.zu_spaet_minuten and minuten > e.zu_spaet_minuten:
             return [{"text": f"Zu spät: aufgerufen um {uhr} Uhr (vor {minuten} Minuten)",
-                     "farbe": "rot"}]  # fmt: skip
+                     "farbe": "rot", "knopf": _verschieben_knopf(tag, e, haushalt),
+                     **ZU_SPAET}]  # fmt: skip
         return [{"text": f"Aufgerufen um {uhr} Uhr (vor {minuten} Minuten)", "farbe": "gruen"}]
     if i == s["index"] and j - aufg < e.anzahl:
         return [{"text": "Gerade aufgerufen – „Bitte eintreten“", "farbe": "gruen"}]
     vor = _davor(s, i, j, aufg)
     return [{"text": f"Noch nicht aufgerufen: {vor} Nummer{'n' if vor != 1 else ''} zu früh",
-             "farbe": "gelb", "warten": True}]  # fmt: skip
+             "farbe": "gelb", **ZU_FRUEH}]  # fmt: skip

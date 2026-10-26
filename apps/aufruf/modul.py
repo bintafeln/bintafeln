@@ -11,9 +11,6 @@ def einlass(haushalt, heute, stelle):
 
 def menue(eintrag):
     return [
-        ("Kundennummernanzeige", [
-            ("aufruf.steuern", eintrag("Kundennummernanzeige", "aufruf:start", extern=True)),
-        ]),
         ("Einstellungen/Ausgabe", [
             ("einstellungen.aufruf", eintrag("Aufruf, Monitor und Kiosk", "aufruf:einstellungen")),
         ]),

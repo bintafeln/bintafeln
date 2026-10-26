@@ -1,4 +1,4 @@
-{# Zurücknehmen (mit Recht) oder Korrekturwunsch (ohne), ADR 0035. Parameter: art, obj, ziel, titel #}
+{# Zurücknehmen (mit Recht) oder Korrekturwunsch (ohne), ADR 0035. Parameter: art, obj, ziel, titel, aufklapp (optional) #}
 {% load ausgabe_extras %}
 {% with offen=korrektur_offen|korrektur:art|korrektur_fuer:obj.pk %}
 <div class="zuruecknehmen">
@@ -11,7 +11,7 @@
   <p class="hinweis">{{ titel }}: Korrektur beantragt ({{ offen.grund }}), wartet auf Entscheidung.</p>
   {% else %}
   <details class="korrektur-wunsch">
-    <summary>{{ titel }}: Korrektur beantragen</summary>
+    <summary>{% if aufklapp %}{{ aufklapp }}{% else %}{{ titel }}: Korrektur beantragen{% endif %}</summary>
     <form method="post" action="{% url 'ausgabe:korrektur_beantragen' art obj.pk %}"
           hx-post="{% url 'ausgabe:korrektur_beantragen' art obj.pk %}" hx-target="#einlass">
       {% csrf_token %}
