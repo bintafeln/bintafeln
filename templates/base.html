@@ -32,6 +32,7 @@
     {# Wird die Zeile zu eng, blendet static/js/kopfzeile.js nach und nach .kuerz-1 … .kuerz-5 aus #}
     <span class="kopf-programm kuerz-3" title="{{ programm.name }} – {{ programm.untertitel }}"><strong>{{ programm.name }}</strong><span class="kuerz-1"> – {{ programm.untertitel }}</span></span>
     <div class="kopf-rechts">
+      {% if ausgabestelle is not None or ausgabestellen_wahl %}{% include "ausgabe/_fortschritt.html" %}{% endif %}
       {% for vorlage in kopf_module %}{% include vorlage %}{% endfor %}
       {% if user.is_authenticated %}
       <nav class="navigation" aria-label="Konto">
@@ -48,6 +49,20 @@
   <div class="rahmen">
   {% if menue %}
   <nav class="seitenmenue" aria-label="Hauptnavigation">
+    {% if ausgabestellen_wahl|length > 1 %}
+    <form method="post" action="{% url 'ausgabe:ausgabestelle' %}" class="menue-stelle">
+      {% csrf_token %}
+      <input type="hidden" name="weiter" value="{{ request.get_full_path }}">
+      <label for="menue-stelle">Ausgabestelle</label>
+      <select name="ausgabestelle" id="menue-stelle" onchange="this.form.submit()">
+        <option value="">bitte wählen</option>
+        {% for s in ausgabestellen_wahl %}<option value="{{ s.pk }}"{% if s == ausgabestelle %} selected{% endif %}>{{ s.name }}</option>{% endfor %}
+      </select>
+      <noscript><button type="submit" class="knopf knopf-zweitrangig">Übernehmen</button></noscript>
+    </form>
+    {% elif ausgabestelle %}
+    <p class="menue-stelle"><span class="leise">Ausgabestelle</span><br><strong>{{ ausgabestelle.name }}</strong></p>
+    {% endif %}
     {% for bereich in menue %}
       {% if bereich.einzeln %}{% with e=bereich.eintraege.0 %}
       <a href="{{ e.url }}" class="menue-oben{% if e.aktiv %} aktiv{% endif %}"{% if e.aktiv %} aria-current="page"{% endif %}{% if e.extern %} target="_blank" rel="noopener"{% endif %}>{{ e.titel }}{% if e.extern %} ↗{% endif %}{% if e.zahl is not None %} <span class="menue-zahl" title="{{ e.zahl_titel }}">{{ e.zahl }}</span>{% endif %}</a>

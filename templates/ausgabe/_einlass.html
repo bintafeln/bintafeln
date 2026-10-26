@@ -50,17 +50,7 @@ Nach dem Anmelden eines Kunden kommt wieder die Suche.
     <button type="button" class="knopf kamera-nochmal" hidden>Erneut versuchen</button>
     <button type="button" class="knopf knopf-zweitrangig kamera-schliessen">Schließen</button>
   </dialog>
-  {% if stellen %}
-  <form method="post" action="{% url 'ausgabe:ausgabestelle' %}" class="filter stelle-wahl">
-    {% csrf_token %}
-    <label for="ausgabestelle">Ausgabestelle</label>
-    <select name="ausgabestelle" id="ausgabestelle" onchange="this.form.submit()">
-      <option value="">bitte wählen</option>
-      {% for s in stellen %}<option value="{{ s.pk }}"{% if s == stelle %} selected{% endif %}>{{ s.name }}</option>{% endfor %}
-    </select>
-    <noscript><button type="submit" class="knopf knopf-zweitrangig">Übernehmen</button></noscript>
-  </form>
-  {% endif %}
+  {% if not stelle and ausgabestellen_wahl %}<p class="hinweis">Bitte oben im Menü die Ausgabestelle wählen, an der Sie arbeiten.</p>{% endif %}
 </section>
 {% if letzte %}
 <section class="karte letzte-kunden">
@@ -83,3 +73,4 @@ Nach dem Anmelden eines Kunden kommt wieder die Suche.
 {% if meldung %}<p class="meldung kasse-meldung" role="status">{{ meldung }}{% if fertig %} <a href="{% url 'ausgabe:empfang' %}?nummer={{ fertig|urlencode }}" hx-get="{% url 'ausgabe:empfang' %}?nummer={{ fertig|urlencode }}" hx-target="#einlass">Kunde {{ fertig }} wieder öffnen</a>{% endif %}</p>{% endif %}
 {% include "ausgabe/_ergebnis.html" %}
 {% endif %}
+{% if fortschritt_oob %}{% include "ausgabe/_fortschritt.html" with oob=True %}{% endif %}

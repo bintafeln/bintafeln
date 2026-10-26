@@ -1,0 +1,2 @@
+{# Fortschritt des Tages an der gewählten Ausgabestelle (ADR 0067); per hx-swap-oob nach jeder Abholung #}
+<span id="ausgabe-fortschritt" class="kopf-fortschritt"{% if oob %} hx-swap-oob="true"{% endif %}{% if ausgabe_fortschritt %} title="{{ ausgabestelle.name }}: {{ ausgabe_fortschritt.0 }} von {{ ausgabe_fortschritt.1 }} Haushalten heute abgeholt"{% else %} hidden{% endif %}>{% if ausgabe_fortschritt %}{{ ausgabe_fortschritt.0 }}/{{ ausgabe_fortschritt.1 }}{% endif %}</span>

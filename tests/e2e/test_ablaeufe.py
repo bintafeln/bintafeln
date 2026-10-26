@@ -115,3 +115,23 @@ def test_suche_im_kopf(angemeldet, admin):
     seite.get_by_role("searchbox").first.fill("00041")
     seite.keyboard.press("Enter")
     expect(seite.get_by_text("00041").first).to_be_visible()
+
+
+def test_ausgabestelle_im_menue_und_fortschritt(angemeldet, admin, benutzer_mit_rolle):
+    _haushalte(2)  # Ausgabestelle „Mitte“, beide heute dran
+    Ausgabestelle.objects.create(name="Nord")
+    seite = angemeldet(benutzer_mit_rolle("einlass", rollen.AUSGABE))
+    seite.goto("/ausgabe/")
+    expect(seite.get_by_text("Bitte oben im Menü die Ausgabestelle wählen")).to_be_visible()
+    seite.get_by_label("Ausgabestelle").select_option(label="Mitte")
+    fortschritt = seite.locator("#ausgabe-fortschritt")
+    expect(fortschritt).to_have_text("0/2")
+    seite.get_by_label("Kundennummer scannen oder eingeben").fill("41")
+    seite.get_by_role("button", name="Prüfen").click()
+    seite.get_by_role("button", name=re.compile("Abholung eintragen")).click()
+    expect(fortschritt).to_have_text("1/2")  # ohne neues Laden der Seite
+    # Die Wahl bleibt beim nächsten Aufruf
+    seite.goto("/kunden/")
+    expect(seite.get_by_label("Ausgabestelle")).to_have_value(
+        str(Ausgabestelle.objects.get(name="Mitte").pk)
+    )

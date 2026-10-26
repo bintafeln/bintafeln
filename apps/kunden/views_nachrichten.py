@@ -9,18 +9,14 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from apps.konten import rollen
-from apps.kunden import zugang
-from apps.kunden.models import Ausgabestelle, Haushalt, Nachricht
-
-SITZUNG_STELLE = "ausgabestelle_id"  # wie apps.ausgabe.views (Ausgabestelle am Einlass)
+from apps.kunden.models import Haushalt, Nachricht
 
 
 def _stelle(request):
-    """Ausgabestelle des Einlasses, sonst die einzige zugeordnete."""
-    pk = request.session.get(SITZUNG_STELLE)
-    stelle = Ausgabestelle.objects.filter(pk=pk).first() if pk else None
-    eigene = zugang.stellen(request.user) or []
-    return stelle or (eigene[0] if len(eigene) == 1 else None)
+    """Ausgabestelle aus dem Auswahlfeld im Menü bzw. die des Kontos (ADR 0067)."""
+    from apps.ausgabe.stelle import aktuelle
+
+    return aktuelle(request.user)
 
 
 @require_POST

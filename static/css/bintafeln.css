@@ -448,6 +448,10 @@ a.knopf-gefahr { color: #fff; }
 }
 .seitenmenue a { color: var(--text); text-decoration: none; display: block; }
 .menue-oben { display: block; padding: .55rem 1.25rem; font-weight: 700; cursor: pointer; }
+/* Ausgabestelle oben im Menü (ADR 0067) */
+.menue-stelle { padding: .25rem 1.25rem .75rem; margin: 0 0 .5rem; border-bottom: 1px solid var(--rand); }
+.menue-stelle label { display: block; font-size: .85rem; }
+.menue-stelle select { width: 100%; font: inherit; padding: .35rem .5rem; border: 1px solid var(--rand); border-radius: var(--radius); background: var(--flaeche); color: var(--text); }
 .menue-bereich summary { list-style: none; position: relative; }
 .menue-bereich summary::-webkit-details-marker { display: none; }
 .menue-bereich summary::after { content: "›"; position: absolute; right: 1.25rem; transition: transform .15s; }
@@ -738,6 +742,7 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 .kopf-programm strong { font-weight: 700; }
 .kopf-rechts { display: flex; align-items: center; gap: .25rem 1rem; margin-left: auto; }
 .kopf-wetter { white-space: nowrap; font-size: .95rem; }
+.kopf-fortschritt { white-space: nowrap; font-size: .9rem; font-variant-numeric: tabular-nums; opacity: .9; }
 .kopf-wetter-symbol { font-size: 1.3rem; vertical-align: -.15rem; }
 .kopf-wetter strong { font-size: 1.05rem; }
 .kopf-kurz-1 .kuerz-1, .kopf-kurz-2 .kuerz-2, .kopf-kurz-3 .kuerz-3,
