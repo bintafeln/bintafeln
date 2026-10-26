@@ -488,7 +488,19 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
   Ausgabestelle, schreibt man mit „✉ Nachricht an die Verwaltung“ (Einlass und Kundenliste) eine
   Nachricht zur Kundennummer, ohne Daten des Kunden zu sehen. Das Büro (Recht „Nachrichten der
   Ausgabestellen zu Kunden lesen“) sieht sie unter „Kunden → Nachrichten der Ausgabestellen“, auf
-  der Startseite und auf der Haushaltsseite; erledigte werden nach 90 Tagen gelöscht.
+  der Startseite und auf der Haushaltsseite; erledigte werden nach 90 Tagen gelöscht. Am Einlass
+  geht das Fenster auch bei eigenen Kunden; jede Nachricht hat ein **Anliegen** (Liste in
+  `apps/core/auswahl.py`), die Startseite zählt die offenen je Anliegen.
+- **Ausweise zusammen verlängern** (ADR 0068): Meldet eine Ausgabestelle „Bescheid geprüft –
+  Ausweis verlängern“ (Nachrichten-Fenster oder ein Notiz-Knopf mit „Meldet der Verwaltung“ unter
+  „Einstellungen → Notiz-Vorlagen“), steht der Haushalt unter „Kunden → Ausweise verlängern“ (Recht „Haushalte
+  anlegen und bearbeiten“). Jeder wird nach den Bedingungen in „Einstellungen → Kundenstamm“
+  geprüft: ohne Bedingung, jede Person oder mindestens eine Person erfüllt eine Bedingung
+  (Mindestalter, Ja/Nein-Zusatzfelder wie „Schwerbehindert“, Einkommensarten); gesperrte, beendete
+  Haushalte und solche mit aktiver Sperre nicht, fehlende Geburtsdaten als „selbst prüfen“. Alle gewählten werden
+  mit einem Klick um die gewählten Monate verlängert (ab bisherigem Ablauf, sonst ab heute); wer
+  nicht verlängern kann, lässt sich stattdessen pausieren (mit Notiz, bis wann). Jede Änderung
+  steht in der Historie, die Meldungen sind danach erledigt.
 - **Kundengruppe nur mit gültigem Ausweis** (ADR 0061): Pausierte, gesperrte, beendete Kunden
   und Kunden mit abgelaufenem Ausweis fallen automatisch aus der Kundengruppe, bei Änderungen
   sofort, sonst täglich und beim Import. Abschaltbar unter „Einstellungen → Kunden →

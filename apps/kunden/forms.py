@@ -29,7 +29,16 @@ class KundenEinstellungenForm(forms.ModelForm):
             "historie_aufbewahren_jahre",
             "gruppe_behalten",
             "export_felder",
+            "verlaengern_regel",
+            "verlaengern_ab_alter",
+            "verlaengern_felder",
+            "verlaengern_einkommensarten",
+            "verlaengern_sonst_pausieren_monate",
         ]
+        widgets = {
+            "verlaengern_felder": forms.CheckboxSelectMultiple,
+            "verlaengern_einkommensarten": forms.CheckboxSelectMultiple,
+        }
 
     def __init__(self, *args, **kwargs):
         from apps.kunden import export

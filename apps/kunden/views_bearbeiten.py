@@ -318,6 +318,8 @@ SPALTEN = {
                       ("Höchstzahl", "maximum"), ("Farbe", "get_farbe_display")],
     "dokumentarten": [("Bezeichnung", "__str__"), ("Aufbewahren (Monate)", "aufbewahren_monate")],
     "beitragsfrei": [("Bezeichnung", "bezeichnung"), ("von", "von"), ("bis", "bis")],
+    "notizvorlagen": [("Text", "text"), ("Reihenfolge", "reihenfolge"),
+                      ("Meldet der Verwaltung", "get_melden_display")],
 }  # fmt: skip
 
 

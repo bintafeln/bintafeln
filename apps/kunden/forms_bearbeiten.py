@@ -389,7 +389,7 @@ class HaushaltDokumentForm(forms.ModelForm):
 class NotizVorlageForm(forms.ModelForm):
     class Meta:
         model = NotizVorlage
-        fields = ["text", "reihenfolge", "aktiv"]
+        fields = ["text", "reihenfolge", "aktiv", "melden"]
         help_texts = {
             "text": "Erscheint am Einlass als Knopf; ein Klick speichert ihn als Notiz.",
             "reihenfolge": "Kleinere Zahlen stehen weiter vorn.",

@@ -161,6 +161,7 @@
   <p><a href="{% url 'kunden:haushalt' h.kundennummer %}">Alle Angaben zum Haushalt</a></p>
 </section>
 {% include "kunden/_notizen.html" with notiz_htmx=True %}
+{% url 'ausgabe:empfang' as einlass_url %}{% include "kunden/_nachricht.html" with nummer=h.kundennummer zurueck=einlass_url %}
 </div>
 </div>
 {% endif %}

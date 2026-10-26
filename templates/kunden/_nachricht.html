@@ -1,15 +1,18 @@
 {% comment %}Knopf und Fenster: Nachricht an die Verwaltung zu einem Kunden, den man nicht aufrufen darf (ADR 0062).
-Erwartet: nummer, zurueck (Adresse, zu der es danach zurückgeht).{% endcomment %}
+Erwartet: nummer, zurueck (Adresse, zu der es danach zurückgeht). Anliegen aus apps/core/auswahl.py (ADR 0068).{% endcomment %}
 <p><button type="button" class="knopf knopf-zweitrangig" onclick="document.getElementById('nachricht-{{ nummer|slugify }}').showModal()">✉ Nachricht an die Verwaltung</button></p>
 <dialog id="nachricht-{{ nummer|slugify }}" class="nachricht-dialog" aria-label="Nachricht an die Verwaltung zu Kunde {{ nummer }}">
   <form method="post" action="{% url 'kunden:nachricht' nummer %}">
     {% csrf_token %}
     <input type="hidden" name="zurueck" value="{{ zurueck }}">
     <h2>Nachricht zu Kunde {{ nummer }}</h2>
-    <p class="hinweis">Die Verwaltung erhält Ihre Nachricht mit der Kundennummer, z. B. „war heute hier, gehört jetzt zu uns“
-      oder „neue Adresse“. Bitte nur Nötiges schreiben.</p>
-    <div class="feld"><label for="text-{{ nummer|slugify }}">Nachricht *</label>
-      <textarea name="text" id="text-{{ nummer|slugify }}" rows="4" maxlength="1000" required></textarea></div>
+    <p class="hinweis">Die Verwaltung erhält Ihre Nachricht mit der Kundennummer. Bitte nur Nötiges schreiben.</p>
+    <div class="feld"><label for="anliegen-{{ nummer|slugify }}">Anliegen</label>
+      <select name="anliegen" id="anliegen-{{ nummer|slugify }}">
+        {% for wert, name in nachricht_anliegen %}<option value="{{ wert }}"{% if wert == "sonstiges" %} selected{% endif %}>{{ name }}</option>{% endfor %}
+      </select></div>
+    <div class="feld"><label for="text-{{ nummer|slugify }}">Nachricht (bei „Sonstiges“ nötig)</label>
+      <textarea name="text" id="text-{{ nummer|slugify }}" rows="3" maxlength="1000"></textarea></div>
     <div class="aktionsleiste">
       <button type="submit" class="knopf">Senden</button>
       <button type="button" class="knopf knopf-zweitrangig" onclick="this.closest('dialog').close()">Abbrechen</button>

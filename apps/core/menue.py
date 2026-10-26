@@ -73,9 +73,18 @@ def menue(request) -> list[dict]:
 
         nachrichten["zahl"] = offene() or None
         nachrichten["zahl_titel"] = "offene Nachrichten"
+    verlaengern = _eintrag("Ausweise verlängern", "kunden:verlaengern")
+    if "kunden.bearbeiten" in darf:
+        from apps.kunden.models import Nachricht
+
+        gemeldet = (Nachricht.objects.filter(anliegen="verlaengern", erledigt_am__isnull=True)
+                    .values("kundennummer").distinct().count())  # fmt: skip
+        verlaengern["zahl"] = gemeldet or None
+        verlaengern["zahl_titel"] = "gemeldete Haushalte"
     bereich("Kunden", [
         ("kunden.liste", alle_kunden),
         ("kunden.bearbeiten", _eintrag("Neuer Haushalt", "kunden:haushalt_neu")),
+        ("kunden.bearbeiten", verlaengern),
         ("kunden.importieren", _eintrag("Kundenstamm importieren", "kunden:import")),
         ("kunden.zugriffsprotokoll", _eintrag("Zugriffsprotokoll", "kunden:zugriffe")),
         ("kunden.nachrichten", nachrichten),

@@ -13,7 +13,7 @@ from django.db import models
 from django.utils import timezone
 
 from apps.core import privatdateien
-from apps.core.auswahl import GRUPPENFARBEN
+from apps.core.auswahl import GRUPPENFARBEN, NACHRICHT_ANLIEGEN
 from apps.kunden import werte
 
 
@@ -74,6 +74,39 @@ class KundenEinstellungen(models.Model):
     ausweis_bis_monatsende = models.BooleanField(
         "Gültigkeit bis zum Monatsende", default=True,
         help_text="z. B. Aufnahme am 24.10.2026, 12 Monate: gültig bis 31.10.2027.",
+    )  # fmt: skip
+
+    # Sammel-Verlängerung der Ausweise (ADR 0068)
+    class Verlaengern(models.TextChoices):
+        OHNE = "ohne", "ohne Bedingung (jeder Haushalt kann verlängern)"
+        ALLE = "alle", "jede Person im Haushalt erfüllt eine Bedingung"
+        EINE = "eine", "mindestens eine Person erfüllt eine Bedingung"
+
+    verlaengern_regel = models.CharField(
+        "Verlängern nur, wenn", max_length=5, choices=Verlaengern.choices, default=Verlaengern.OHNE,
+        help_text="Bedingungen darunter. Wer sie nicht erfüllt, wird bei der Sammel-Verlängerung "
+        "nicht verlängert.",
+    )  # fmt: skip
+    verlaengern_ab_alter = models.PositiveSmallIntegerField(
+        "Bedingung: Alter ab", null=True, blank=True, default=60,
+        validators=[MaxValueValidator(120)], help_text="Leer = Alter zählt nicht.",
+    )  # fmt: skip
+    verlaengern_felder = models.ManyToManyField(
+        "Zusatzfeld", blank=True, related_name="+", verbose_name="Bedingung: Ja/Nein-Zusatzfelder",
+        limit_choices_to={"typ": "ja_nein"},
+        help_text="z. B. „Schwerbehindert“. Gilt das Feld für den Haushalt, zählt es für alle "
+        "Personen.",
+    )  # fmt: skip
+    verlaengern_einkommensarten = models.ManyToManyField(
+        "Einkommensart", blank=True, related_name="+",
+        verbose_name="Bedingung: Einkommensarten",
+        help_text="Hat der Haushalt eine dieser Einkommensarten, erfüllen alle Personen die "
+        "Bedingung (z. B. „Grundsicherung im Alter“).",
+    )  # fmt: skip
+    verlaengern_sonst_pausieren_monate = models.PositiveSmallIntegerField(
+        "Sonst pausieren für … Monate", default=12, validators=[MaxValueValidator(60)],
+        help_text="Vorschlag für Haushalte, die nicht verlängern können: Status „pausiert“ mit "
+        "Notiz bis wann. 0 = nur anzeigen, nicht pausieren.",
     )  # fmt: skip
 
     class Meta:
@@ -557,6 +590,11 @@ class NotizVorlage(models.Model):
     text = models.CharField("Text", max_length=200)
     reihenfolge = models.PositiveSmallIntegerField("Reihenfolge", default=0)
     aktiv = models.BooleanField("Aktiv", default=True)
+    melden = models.CharField(
+        "Meldet der Verwaltung", max_length=20, choices=NACHRICHT_ANLIEGEN, blank=True,
+        help_text="Leer: nur Notiz. Sonst schickt der Knopf zusätzlich eine Nachricht mit diesem "
+        "Anliegen, z. B. „Bescheid geprüft – Ausweis verlängern“ für die Sammel-Verlängerung.",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Notiz-Vorlage"
@@ -574,7 +612,9 @@ class Nachricht(models.Model):
     AUFBEWAHREN_TAGE = 90
 
     kundennummer = models.CharField("Kundennummer", max_length=20, db_index=True)
-    text = models.TextField("Nachricht", max_length=1000)
+    anliegen = models.CharField("Anliegen", max_length=20, choices=NACHRICHT_ANLIEGEN,
+                                default="sonstiges")  # fmt: skip
+    text = models.TextField("Nachricht", max_length=1000, blank=True)
     stelle = models.ForeignKey("Ausgabestelle", null=True, blank=True, on_delete=models.SET_NULL,
                                related_name="+", verbose_name="Ausgabestelle")  # fmt: skip
     erstellt_am = models.DateTimeField("Geschrieben am", default=timezone.now)

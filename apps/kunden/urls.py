@@ -6,6 +6,7 @@ from apps.kunden import (
     views_bearbeiten,
     views_dokumente,
     views_nachrichten,
+    views_verlaengerung,
 )
 
 app_name = "kunden"
@@ -77,6 +78,7 @@ urlpatterns = [
     path("spalten/", views.spalten_waehlen, name="spalten"),
     path("nachricht/<str:kundennummer>/", views_nachrichten.schreiben, name="nachricht"),
     path("nachrichten/", views_nachrichten.liste, name="nachrichten"),
+    path("verlaengern/", views_verlaengerung.verlaengern, name="verlaengern"),
     path("ausweise/", views.ausweise, name="ausweise"),
     path("ausweis/gestalten/", views_bearbeiten.ausweis_gestalten, name="ausweis_gestalten"),
     path("import/", views.import_hochladen, name="import"),

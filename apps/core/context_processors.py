@@ -1,6 +1,7 @@
 from django.conf import settings
 
 from apps.core import module
+from apps.core.auswahl import NACHRICHT_ANLIEGEN
 from apps.core.menue import menue
 from apps.core.models import TafelEinstellungen
 from apps.konten.rollen import alle_rollen, darf_mitarbeitende_verwalten, rechte_von, rollen_von
@@ -50,6 +51,7 @@ def tafel(request):
         "stellen_konto_sekunden": 30 * 60 + 5 if angemeldet and benutzer.stelle_id else None,
         # Beiträge eingeschalteter Module zur Kopfzeile (z. B. Wetter), nur angemeldet
         "kopf_module": module.kopfzeile() if angemeldet and not offen else [],
+        "nachricht_anliegen": NACHRICHT_ANLIEGEN,  # Fenster „Nachricht an die Verwaltung“
         # Ausgabestelle oben im Menü und Fortschritt des Tages in der Kopfzeile (ADR 0067)
         **(_ausgabestelle(request) if angemeldet and not offen else {}),
     }
