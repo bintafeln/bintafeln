@@ -1296,6 +1296,15 @@ docker run -d --name bintafeln-testdb -p 5432:5432 \
   -e POSTGRES_USER=bintafeln -e POSTGRES_PASSWORD=nur-lokal-test postgres:17-alpine
 ```
 
+Browser-Tests (ADR 0066) steuern einen echten Chromium durch die wichtigsten Abläufe (Anmeldung,
+Einlass, Kamera, Kundenliste, Antrag). Sie laufen nicht im normalen `pytest`, sondern so:
+
+```bash
+.venv/bin/pip install -r requirements-e2e.txt
+.venv/bin/python -m playwright install --with-deps chromium
+.venv/bin/pytest -m e2e tests/e2e
+```
+
 Ein Test geht alle Adressen des Programms durch und prüft, dass ohne Anmeldung nur die bewusst
 öffentlichen Seiten erreichbar sind und ein Konto ohne Rechte überall gesperrt ist
 (`tests/test_zugriffsschutz.py`, ADR 0065). Neue öffentliche Seiten dort eintragen.
