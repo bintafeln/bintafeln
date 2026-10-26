@@ -104,6 +104,9 @@ jobs:
           printf 'COMPOSE_PROJECT_NAME=demo\nCOMPOSE_FILE=docker-compose.yml:docker/hinter-proxy.yml\n' >> .env
           docker compose config --quiet
           sed -i '/^COMPOSE_/d' .env
+          printf 'COMPOSE_FILE=docker-compose.yml:docker/hinter-fremdem-proxy.yml\n' >> .env
+          docker compose config --quiet
+          sed -i '/^COMPOSE_/d' .env
       - name: Caddyfiles prüfen
         run: |
           docker run --rm -e SITE_ADDRESS=:80 -v "$PWD/docker/Caddyfile:/etc/caddy/Caddyfile:ro" \

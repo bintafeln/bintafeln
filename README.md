@@ -1230,6 +1230,32 @@ Die installierte Version zeigt `./betrieb status`, Admins sehen sie unten auf je
 > Deshalb dieses eine Mal `git pull && docker compose up -d --build` ausführen, danach
 > `./betrieb schluessel`. Ab dann genügt `./betrieb update`.
 
+## Hinter einem fremden Reverse Proxy (z. B. Synology)
+
+Laufen die Ports 80 und 443 der Tafel schon auf ein anderes Gerät, etwa eine Synology mit
+Reverse Proxy, gibt dieses Gerät `bintafeln` weiter, statt dass Caddy selbst das Zertifikat
+holt (ADR 0069):
+
+1. Auf dem fremden Proxy eine Regel anlegen: Quelle `HTTPS`, Hostname `tafel.example.org`,
+   Port `443` → Ziel `HTTP`, IP der bintafeln-VM, Port `80`. Das Zertifikat für die Domain holt
+   der fremde Proxy (Synology: „Sicherheit → Zertifikat → Hinzufügen → Let's Encrypt“, dann unter
+   „Einstellungen“ der Regel zuordnen). Er muss die Kopfzeilen `Host`, `X-Forwarded-Proto` und
+   `X-Forwarded-For` mitschicken; die Synology tut das von sich aus.
+2. In der `.env` von bintafeln:
+
+   ```
+   BINTAFELN_DOMAIN=tafel.example.org
+   BINTAFELN_HEIMNETZ_ADRESSE=
+   COMPOSE_FILE=docker-compose.yml:docker/hinter-fremdem-proxy.yml
+   ```
+
+3. `docker compose up -d`.
+
+Caddy antwortet dann nur auf Port 80, holt kein Zertifikat und leitet nicht um. Dass der
+Besucher https benutzt hat, übernimmt er nur von Geräten im lokalen Netz. bintafeln läuft im
+Produktionsmodus (sichere Cookies, nur die eingetragene Domain). Die VM selbst sollte von außen
+nicht direkt erreichbar sein, sondern nur über den Proxy.
+
 ## Mehrere Installationen auf einem Server
 
 Auf einem Server können mehrere bintafeln laufen, z. B. `tafel.example.org` und eine Demo unter
