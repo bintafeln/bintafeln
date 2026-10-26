@@ -17,6 +17,8 @@ des Proxys landen in einer Schleife.
 auf Port 80 antworten (`SITE_ADDRESS ":80"`) und übernimmt `X-Forwarded-Proto` und
 `X-Forwarded-For` nur von Adressen im lokalen Netz (`private_ranges`). `BINTAFELN_DOMAIN` bleibt
 gesetzt, bintafeln läuft also im Produktionsmodus (sichere Cookies, HSTS, nur diese Domain).
+Meldet der Proxy mit `X-Forwarded-Proto: http`, dass der Besucher http benutzt hat, leitet Caddy
+auf https um; so genügt auf dem Proxy eine zweite Regel für Port 80 mit demselben Ziel.
 Wie beim gemeinsamen Proxy (ADR 0022), nur ohne gemeinsames Docker-Netz, weil der Proxy auf
 einem anderen Gerät läuft.
 

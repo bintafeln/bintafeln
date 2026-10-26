@@ -5,7 +5,8 @@
 #
 # Caddy holt dann kein eigenes Zertifikat und leitet nicht auf https um, sondern antwortet auf
 # Port 80. Dass der Besucher https benutzt hat und von welcher Adresse er kommt, übernimmt er nur
-# aus den Kopfzeilen von Geräten im lokalen Netz (X-Forwarded-Proto, X-Forwarded-For).
+# aus den Kopfzeilen von Geräten im lokalen Netz (X-Forwarded-Proto, X-Forwarded-For). Meldet der
+# Proxy http, leitet Caddy auf https um (docker/Caddyfile).
 services:
   proxy:
     ports: !override

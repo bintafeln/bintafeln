@@ -1241,6 +1241,8 @@ holt (ADR 0069):
    der fremde Proxy (Synology: „Sicherheit → Zertifikat → Hinzufügen → Let's Encrypt“, dann unter
    „Einstellungen“ der Regel zuordnen). Er muss die Kopfzeilen `Host`, `X-Forwarded-Proto` und
    `X-Forwarded-For` mitschicken; die Synology tut das von sich aus.
+   Für Aufrufe ohne `https://` eine zweite Regel: Quelle `HTTP`, gleicher Hostname, Port `80` →
+   dasselbe Ziel. bintafeln leitet sie dann selbst auf https um.
 2. In der `.env` von bintafeln:
 
    ```
