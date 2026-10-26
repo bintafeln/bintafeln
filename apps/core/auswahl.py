@@ -131,14 +131,21 @@ def staatsangehoerigkeiten(leer: str = "—") -> list[tuple[str, str]]:
 
 LAENDERCODE = {name: code for code, name in STAATEN}
 # Anliegen einer Nachricht der Ausgabestelle an die Verwaltung (ADR 0062, 0068); der Schlüssel
-# „verlaengern“ führt zur Sammel-Verlängerung.
+# „verlaengern“ führt zur Sammel-Verlängerung, „ausweis“ wird beim Ausweisdruck beantwortet.
 NACHRICHT_ANLIEGEN = [
     ("verlaengern", "Bescheid geprüft – Ausweis verlängern"),
     ("adresse", "Neue Anschrift oder Telefon"),
     ("haushalt", "Haushalt hat sich verändert"),
+    ("ausweis", "Neuen Ausweis drucken"),
     ("zugehoerig", "Gehört jetzt zu unserer Ausgabestelle"),
     ("sonstiges", "Sonstiges"),
 ]
+# Anliegen, auf die das Programm selbst reagiert (Sammel-Verlängerung, Ausweisdruck): Jedes hat eine
+# feste Notiz-Vorlage (Text änderbar, Anliegen nicht, nicht löschbar), angelegt per Datenmigration.
+FESTE_ANLIEGEN = {
+    "verlaengern": "Bescheide geprüft – bitte Ausweis verlängern",
+    "ausweis": "Neuen Ausweis drucken",
+}
 # Nicht mehr angeboten; gespeicherte Nachrichten behalten ihren Namen (Liste oben).
 NACHRICHT_ANLIEGEN_ALT = {"zugehoerig"}
 NACHRICHT_ANLIEGEN_WAEHLBAR = [a for a in NACHRICHT_ANLIEGEN if a[0] not in NACHRICHT_ANLIEGEN_ALT]

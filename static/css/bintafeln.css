@@ -374,6 +374,9 @@ textarea.html-eingabe { font-family: ui-monospace, Menlo, Consolas, monospace; f
 .notiz-kopf { margin: 0 0 .2rem; align-items: baseline; font-size: .85rem; color: #37546b; display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
 .notiz-text { margin: 0; }
 .notiz-loeschen { margin-left: auto; }
+.notiz-an { margin: .2rem 0 0; color: #37546b; }
+.notiz-an-stelle .notiz-kopf form { margin-left: auto; }
+.notiz-neu .auswahl { display: block; margin: 0 0 .6rem; }
 
 /* Formulare: Felder auf breiten Bildschirmen nebeneinander */
 .formular-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 0 1.5rem; }

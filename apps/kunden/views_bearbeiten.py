@@ -377,7 +377,11 @@ def listeneintrag(request, art, pk=None):
             "form": form,
             "titel": f"{einzeln} {'bearbeiten' if pk else 'hinzufügen'}",
             "zurueck": reverse("kunden:liste", args=[art]),
-            "loeschen": reverse("kunden:listeneintrag_loeschen", args=[art, pk]) if pk else None,
+            "loeschen": (
+                reverse("kunden:listeneintrag_loeschen", args=[art, pk])
+                if pk and not getattr(instanz, "fest", False)
+                else None
+            ),  # fmt: skip
             "loeschen_frage": f"{einzeln} „{instanz}“ endgültig löschen?" if pk else "",
         },
     )
@@ -388,6 +392,9 @@ def listeneintrag(request, art, pk=None):
 def listeneintrag_loeschen(request, art, pk):
     modell, _, _, einzeln = _liste(art)
     eintrag = get_object_or_404(modell, pk=pk)
+    if getattr(eintrag, "fest", False):  # z. B. Notiz-Vorlage, auf die das Programm reagiert
+        messages.error(request, f"{einzeln} „{eintrag}“ ist fest und kann nicht gelöscht werden.")
+        return redirect("kunden:liste", art=art)
     try:
         eintrag.delete()
     except ProtectedError:
