@@ -26,6 +26,9 @@ def sieht_personal(benutzer) -> bool:
 
 
 def _ziel(request, pk):
+    # Erst das Recht prüfen, dann suchen: Wer nichts darf, erfährt nicht, welche Konten es gibt.
+    if not (sieht_personal(request.user) or rollen.darf_mitarbeitende_verwalten(request.user)):
+        raise PermissionDenied
     ziel = get_object_or_404(get_user_model(), pk=pk)
     if sieht_personal(request.user):
         return ziel

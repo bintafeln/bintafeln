@@ -155,6 +155,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `{% if "kunden.kontakt" in rechte %}`. Katalog und Vorgaben der mitgelieferten Rollen in
   `apps/konten/rechte.py`; neue Rechte dort ergänzen und per Datenmigration bestehenden Rollen
   geben. Rolle Admin hat immer alle Rechte. In Tests: Fixture `recht_geben`.
+  `tests/test_zugriffsschutz.py` prüft alle Adressen (ADR 0065): öffentliche Seiten und Seiten
+  für alle Angemeldeten dort eintragen; Rechte immer vor der Suche nach dem Datensatz prüfen.
 - Einzelne Haushalte nur über `apps.kunden.zugang.haushalt(request.user, kundennummer)` laden
   (prüft die Zuordnung zu Ausgabestellen, ADR 0034); Listen mit `zugang.filtern()`.
 - Rücknahmen (Abholung, Zahlung, Teilnahme) nur über `apps/ausgabe/korrekturen.py`
