@@ -51,6 +51,7 @@ def tafel(request):
         "stellen_konto_sekunden": 30 * 60 + 5 if angemeldet and benutzer.stelle_id else None,
         # Beiträge eingeschalteter Module zur Kopfzeile (z. B. Wetter), nur angemeldet
         "kopf_module": module.kopfzeile() if angemeldet and not offen else [],
+        "seiten_module": module.seitenleiste() if angemeldet and not offen else [],
         "nachricht_anliegen": NACHRICHT_ANLIEGEN_WAEHLBAR,  # Fenster „Nachricht an die Verwaltung“
         # Ausgabestelle oben im Menü und Fortschritt des Tages in der Kopfzeile (ADR 0067)
         **(_ausgabestelle(request) if angemeldet and not offen else {}),

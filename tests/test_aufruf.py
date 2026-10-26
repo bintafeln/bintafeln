@@ -618,3 +618,47 @@ def test_zurueckgenommen_wenn_gruppe_oder_tag_schon_fertig(mitte, tag_daten):
     tag = ablauf.aktualisieren(mitte, heute())
     letzte = tag.stand["gruppen"][-1]
     assert tag.stand["index"] == len(tag.stand["gruppen"]) - 1 and x in letzte["wartend"]
+
+
+# ── Kurz-Steuerung unter dem Menü ────────────────────────────────────────────
+
+
+def test_leiste_unter_dem_menue(modul_an, mitte, tag_daten, benutzer_mit_rolle, anmelden):
+    konto = benutzer_mit_rolle("anton", rollen.AUSGABE)
+    konto.ausgabestellen.set([mitte])
+    c = anmelden(Client(), konto)
+    url = reverse("aufruf:leiste")
+    assert f'hx-get="{url}"' in c.get(reverse("core:start")).content.decode()
+    seite = c.get(url).content.decode()
+    assert "Heute noch nicht gestartet" in seite and "Aufruf starten" in seite
+    seite = c.post(url, {"aktion": "starten"}).content.decode()
+    erste = ablauf.tag_holen(mitte, heute()).stand["gruppen"][0]["wartend"][:3]
+    assert "Bitte eintreten" in seite and all(f">{n}</span>" in seite for n in erste)
+    seite = c.post(url, {"aktion": "weiter"}).content.decode()
+    assert f">{erste[0]}</span>" not in seite and "letzten Schritt zurück" in seite
+    seite = c.post(url, {"aktion": "zurueck"}).content.decode()
+    assert f">{erste[0]}</span>" in seite
+    # Unbekannte Aktion ändert nichts; Fehler werden angezeigt
+    assert c.post(url, {"aktion": "loeschen"}).status_code == 200
+    ablauf.weiter(mitte, heute())
+    ablauf.weiter(mitte, heute())
+    ablauf.weiter(mitte, heute())
+    ablauf.weiter(mitte, heute())
+    seite = c.get(url).content.decode()
+    assert "Nummern aufgerufen" in seite
+    assert 'role="alert"' not in seite
+
+
+def test_leiste_fehler_und_ohne_stelle(modul_an, mitte, benutzer_mit_rolle, anmelden):
+    konto = benutzer_mit_rolle("anton", rollen.AUSGABE)
+    c = anmelden(Client(), konto)
+    Ausgabestelle.objects.create(name="Nord")
+    url = reverse("aufruf:leiste")
+    assert c.get(url).content == b""  # keine Stelle gewählt
+    konto.ausgabestellen.set([mitte])
+    seite = c.post(url, {"aktion": "weiter"}).content.decode()  # nicht gestartet
+    assert 'role="alert"' in seite and "Aufruf starten" not in seite  # heute keine Gruppen
+    t = TafelEinstellungen.laden()
+    t.module = []
+    t.save()
+    assert "aufruf-leiste" not in c.get(reverse("core:start")).content.decode()

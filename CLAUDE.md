@@ -242,7 +242,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   festgehalten; Quittungen über `privatdateien`). `listen` (ADR 0063, Katalog in
   `apps/listen/katalog.py`, Spalten mit Recht in `spalten.py`, Rechnen in `abfrage.py`). `links`
   (ADR 0057, Kacheln auf der Startseite, Sichtbarkeit über ein Recht). Hooks `Modul.fristen`,
-  `Modul.einlass`, `Modul.auskunft_antrag`, `Modul.kopfzeile`, `Modul.suchen`, `Modul.startseite`. Programmname nur in
+  `Modul.einlass`, `Modul.auskunft_antrag`, `Modul.kopfzeile`, `Modul.seitenleiste`, `Modul.suchen`,
+  `Modul.startseite`. Programmname nur in
   `bintafeln/programm.py`; die Kopfzeile kürzt `static/js/kopfzeile.js` über `.kuerz-1…5`.
   Übersicht der übernommenen Altprogramme: `docs/altprogramme.md`.
 - Spenden: Import in `apps/spenden/importieren.py` (ADR 0055, `belegnummer` gegen Dubletten),

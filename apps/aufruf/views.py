@@ -278,3 +278,35 @@ def liste(request, pk):
         w.writerow([z["platz"], z["gruppe"], z["gruppen_platz"], z["nummer"],
                     "ja" if z["aufgerufen"] else "", z["anmerkung"]])  # fmt: skip
     return antwort
+
+
+# ── Kurz-Steuerung unter dem Menü (Ausgabestellen) ──────────────────────────
+
+
+AKTIONEN = {"starten": ablauf.starten, "weiter": ablauf.weiter, "zurueck": ablauf.zurueck}
+
+
+@never_cache
+@steuern
+def leiste(request):
+    """Aufgerufene Nummern der gewählten Ausgabestelle und „Nächste hereinrufen“ (HTMX)."""
+    from apps.ausgabe.stelle import aktuelle
+
+    stelle = aktuelle(request.user)
+    if stelle is None or not stellen_fuer(request.user).filter(pk=stelle.pk).exists():
+        return HttpResponse("")
+    heute = timezone.localdate()
+    fehler = ""
+    if request.method == "POST" and request.POST.get("aktion") in AKTIONEN:
+        try:
+            AKTIONEN[request.POST["aktion"]](stelle, heute)
+        except ablauf.AufrufFehler as f:
+            fehler = str(f)
+    e = AufrufEinstellungen.laden(stelle)
+    tag = ablauf.aktualisieren(stelle, heute)
+    d = ablauf.stand_fuer_anzeige(tag, e, heute)
+    return render(request, "aufruf/_leiste.html", {
+        "stelle": stelle, "d": d, "anzahl": e.anzahl, "fehler": fehler,
+        "gruppen_heute": "error" in d and bool(ablauf.gruppen_heute(stelle, heute)),
+        "steuerung": reverse("aufruf:steuerung", args=[stelle.pk]),
+    })  # fmt: skip

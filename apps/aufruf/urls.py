@@ -6,6 +6,7 @@ app_name = "aufruf"
 
 urlpatterns = [
     path("", views.start, name="start"),
+    path("leiste/", views.leiste, name="leiste"),
     path("<int:pk>/", views.steuerung, name="steuerung"),
     path("<int:pk>/mobil/", views.mobil, name="mobil"),
     path("<int:pk>/starten/", views.starten, name="starten"),

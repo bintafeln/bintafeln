@@ -54,6 +54,8 @@ class Modul:
     # Vorlage, die angemeldeten Personen rechts in der Kopfzeile erscheint (z. B. Wetter).
     # Sie sollte ihren Inhalt nachladen (hx-trigger="load"), damit die Seite nicht wartet.
     kopfzeile: str = ""
+    # Vorlage unter dem Menü links (z. B. Aufruf-Steuerung); prüft selbst Rechte und lädt nach.
+    seitenleiste: str = ""
     # Suche im Seitenkopf (Bereich „Listen und Einstellungen“): suchen(benutzer, begriff, grenze)
     # -> [(Titel, Adresse, Zusatz)]; das Modul prüft selbst die Rechte.
     suchen: Callable | None = None
@@ -124,6 +126,12 @@ def kopfzeile() -> list[str]:
     """Vorlagen der eingeschalteten Module für die Kopfzeile."""
     an = eingeschaltet()
     return [m.kopfzeile for m in alle() if m.kennung in an and m.kopfzeile]
+
+
+def seitenleiste() -> list[str]:
+    """Vorlagen der eingeschalteten Module unter dem Menü links."""
+    an = eingeschaltet()
+    return [m.seitenleiste for m in alle() if m.kennung in an and m.seitenleiste]
 
 
 def auswahl() -> list[tuple[str, str]]:

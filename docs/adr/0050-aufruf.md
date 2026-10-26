@@ -37,6 +37,9 @@ standen weiter in der Warteschlange.
   zeigt dort, ob und wann die Nummer aufgerufen wurde, „Zu spät“ ab `zu_spaet_minuten` nach dem
   Aufruf oder wie viele Nummern noch davor sind. Ist der Kunde noch nicht an der Reihe, blinkt die Ampel
   gelb (Hinweis mit „warten“, `ampel.noch_nicht_dran()`); Eintragen bleibt möglich, Rot bleibt Rot.
+- Ergänzung: Kurz-Steuerung unter dem Menü (`Modul.seitenleiste`, `aufruf:leiste`) für alle mit
+  Einlass und Recht „Kunden aufrufen“: aufgerufene Nummern der gewählten Ausgabestelle, „Nächste
+  hereinrufen“, Zurück und Starten; lädt per HTMX nach und fragt alle 15 Sekunden neu.
 
 ## Begründung
 
