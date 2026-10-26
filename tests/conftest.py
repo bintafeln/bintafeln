@@ -103,6 +103,19 @@ def recht_geben():
 
 
 @pytest.fixture
+def recht_nehmen():
+    """Nimmt einer Rolle Rechte, z. B. recht_nehmen("Ausgabe", "einlass.nutzen")."""
+    from apps.konten.models import Rolle
+
+    def nehmen(rollenname, *codes):
+        rolle = Rolle.objects.get(gruppe__name=rollenname)
+        rolle.rechte = [r for r in rolle.rechte if r not in codes]
+        rolle.save()
+
+    return nehmen
+
+
+@pytest.fixture
 def gruppe_behalten(db):
     """Kunden ohne gültigen Ausweis bleiben in der Kundengruppe (ADR 0061 abgeschaltet), für
     Tests, die etwas anderes prüfen."""

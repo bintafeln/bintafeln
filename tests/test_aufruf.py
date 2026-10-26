@@ -507,6 +507,7 @@ def test_einlass_hinweise(mitte, tag_daten):
     assert "Gerade aufgerufen" in ablauf.einlass(erster, heute())[0]["text"]
     hinweis = ablauf.einlass(h, heute())[0]
     assert hinweis["farbe"] == "gelb" and "Noch nicht aufgerufen" in hinweis["text"]
+    assert hinweis["warten"]
     ablauf.weiter(mitte, heute())
     hinweis = ablauf.einlass(erster, heute())[0]
     assert hinweis["farbe"] == "gruen" and hinweis["text"].startswith("Aufgerufen um")
@@ -527,6 +528,7 @@ def test_einlass_hinweise(mitte, tag_daten):
     assert ablauf.einlass(erster, heute())[0]["farbe"] == "gruen"
     ablauf.spaetzuender(mitte, heute(), erster.kundennummer)
     assert "neu einsortiert" in ablauf.einlass(erster, heute())[0]["text"]
+    assert "warten" in ablauf.einlass(erster, heute())[0]
     fremd = Haushalt.objects.get(kundennummer="301")
     assert ablauf.einlass(fremd, heute())[0]["text"] == "Nicht in der heutigen Aufruf-Liste"
 
@@ -535,6 +537,8 @@ def test_einlass_karte_zeigt_aufruf(modul_an, admin_client, mitte, tag_daten):
     ablauf.starten(mitte, heute())
     seite = admin_client.get(reverse("ausgabe:empfang"), {"nummer": "201"}).content.decode()
     assert "Aufruf:</strong> Noch nicht aufgerufen" in seite
+    assert "ampel-blinkt" in seite and "WARTEN" in seite  # Ampel gelb blinkend, Eintragen geht
+    assert "Abholung eintragen" in seite
     t = TafelEinstellungen.laden()
     t.module = []
     t.save()

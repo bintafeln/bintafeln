@@ -629,10 +629,10 @@ def einlass(haushalt, heute, stelle=None) -> list[dict]:
         info = s["spaetzuender"][x]
         if j >= aufg:
             vor = _davor(s, i, j, aufg)
+            dran = vor < e.anzahl and i == s["index"]
             text = (f"Kam zu spät, um {info['zeit']} Uhr neu einsortiert – "
-                    + ("jetzt an der Reihe" if vor < e.anzahl and i == s["index"]
-                       else f"noch {vor} Nummern davor"))  # fmt: skip
-            return [{"text": text, "farbe": "gelb"}]
+                    + ("jetzt an der Reihe" if dran else f"noch {vor} Nummern davor"))  # fmt: skip
+            return [{"text": text, "farbe": "gelb", "warten": not dran}]
     if j < aufg:
         um = _aufgerufen_um(s, x)
         if um is None:
@@ -647,4 +647,4 @@ def einlass(haushalt, heute, stelle=None) -> list[dict]:
         return [{"text": "Gerade aufgerufen – „Bitte eintreten“", "farbe": "gruen"}]
     vor = _davor(s, i, j, aufg)
     return [{"text": f"Noch nicht aufgerufen: {vor} Nummer{'n' if vor != 1 else ''} davor "
-             f"(Kundengruppe {g['name']})", "farbe": "gelb"}]  # fmt: skip
+             f"(Kundengruppe {g['name']})", "farbe": "gelb", "warten": True}]  # fmt: skip

@@ -178,7 +178,8 @@ def test_ausgabestelle_nur_aus_den_eigenen(als, admin, stelle, benutzer_mit_roll
 def test_fortschritt_in_der_kopfzeile(ausgabe, haushalt, stelle):
     """3/236: heute an der Stelle abgeholt / planmäßig heute erwartet."""
     seite = ausgabe.get(EMPFANG).content.decode()
-    assert 'title="Ausgabestelle Mitte: 0 von 1 Haushalten heute abgeholt">0/1</span>' in seite
+    assert '"fortschritt-blase"><span class="fortschritt-zahl">0/1</span>' in seite
+    assert "<strong>Ausgabestelle Mitte: 0 von 1 Haushalten heute abgeholt.</strong>" in seite
     inhalt = eintragen(ausgabe, haushalt).content.decode()
     assert 'hx-swap-oob="true"' in inhalt and ">1/1</span>" in inhalt
     # Ausnahmen zählen vorne mit, hinten nur planmäßige Haushalte
@@ -186,6 +187,16 @@ def test_fortschritt_in_der_kopfzeile(ausgabe, haushalt, stelle):
     gast = Haushalt.objects.create(kundennummer="00077", kundengruppe=andere)
     Abholung.objects.create(haushalt=gast, datum=timezone.localdate(), ausgabestelle=stelle)
     assert ">2/1</span>" in ausgabe.get(EMPFANG).content.decode()
+
+
+def test_fortschritt_zaehlt_alle_gruppen_des_tages(ausgabe, haushalt, stelle):
+    """Alle Kundengruppen der Stelle mit heutigem Ausgabetag zählen zusammen, auch wenn der Tag
+    ausgeschrieben ist („Montag“) oder klein („mo“)."""
+    tag = ["Montag", "di", "Mi.", "Do", "Freitag", "sa", "So"][timezone.localdate().weekday()]
+    zweite = Kundengruppe.objects.create(name="Zweite", ausgabestelle=stelle, wochentage=tag)
+    Haushalt.objects.create(kundennummer="00078", kundengruppe=zweite)
+    seite = ausgabe.get(EMPFANG).content.decode()
+    assert ">0/2</span>" in seite and "Zweite" in seite
 
 
 def test_fortschritt_nur_am_ausgabetag(ausgabe, stelle):

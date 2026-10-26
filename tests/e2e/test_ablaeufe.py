@@ -124,8 +124,13 @@ def test_ausgabestelle_im_menue_und_fortschritt(angemeldet, admin, benutzer_mit_
     seite.goto("/ausgabe/")
     expect(seite.get_by_text("Bitte oben im Menü die Ausgabestelle wählen")).to_be_visible()
     seite.get_by_label("Ausgabestelle").select_option(label="Mitte")
-    fortschritt = seite.locator("#ausgabe-fortschritt")
+    fortschritt = seite.locator("#ausgabe-fortschritt .fortschritt-zahl")
     expect(fortschritt).to_have_text("0/2")
+    blase = seite.locator("#fortschritt-blase")
+    expect(blase).to_be_hidden()
+    fortschritt.hover()  # Erklärung erscheint sofort
+    expect(blase).to_be_visible()
+    expect(blase).to_contain_text("0 von 2 Haushalten heute abgeholt")
     seite.get_by_label("Kundennummer scannen oder eingeben").fill("41")
     seite.get_by_role("button", name="Prüfen").click()
     seite.get_by_role("button", name=re.compile("Abholung eintragen")).click()
@@ -135,3 +140,26 @@ def test_ausgabestelle_im_menue_und_fortschritt(angemeldet, admin, benutzer_mit_
     expect(seite.get_by_label("Ausgabestelle")).to_have_value(
         str(Ausgabestelle.objects.get(name="Mitte").pk)
     )
+
+
+def test_vorauszahlung_traegt_nur_ins_feld_ein(angemeldet, admin, benutzer_mit_rolle):
+    from apps.ausgabe.models import AusgabeEinstellungen, Buchung
+
+    _haushalte(1)
+    e = AusgabeEinstellungen.laden()
+    e.beitrag_je_abholung = 1
+    e.max_abholungen = 0
+    e.save()
+    seite = angemeldet(benutzer_mit_rolle("einlass", rollen.AUSGABE))
+    seite.goto("/ausgabe/?nummer=41")
+    knopf = seite.locator(".einlass-vorschlag")
+    heute = timezone.localdate()
+    rest = (heute.replace(day=28) + dt.timedelta(days=4)).replace(day=1) - heute
+    if rest.days < 3:  # bis Monatsende weniger als drei Abholungen: kein Vorschlag
+        expect(knopf).to_have_count(0)
+        return
+    expect(knopf).to_contain_text("Vorauszahlung Rest")
+    betrag = knopf.locator("strong").inner_text().removesuffix(" €")
+    knopf.click()
+    expect(seite.locator("#bar")).to_have_value(betrag)
+    assert not Buchung.objects.exists()  # gebucht wird erst mit „Abholung eintragen“

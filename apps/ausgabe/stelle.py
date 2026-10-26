@@ -6,10 +6,11 @@ und Abrechnung nehmen diese Stelle, die Kopfzeile zeigt dazu den Fortschritt des
 """
 
 import datetime as dt
+from dataclasses import dataclass
 
 from django.utils import timezone
 
-from apps.ausgabe.ampel import WOCHENTAGE
+from apps.ausgabe.ampel import WOCHENTAGE, wochentage
 from apps.konten import rollen
 from apps.kunden import zugang
 from apps.kunden.models import Abholung, Ausgabestelle, Haushalt, Kundengruppe
@@ -43,15 +44,23 @@ def waehlen(benutzer, pk) -> Ausgabestelle | None:
     return stelle
 
 
-def fortschritt(stelle, heute: dt.date) -> tuple[int, int] | None:
-    """(abgeholt, erwartet) für heute: erwartet sind die aktiven Haushalte, deren Kundengruppe an
-    dieser Stelle heute ihren Ausgabetag hat; abgeholt alle Haushalte mit einer heute hier
-    eingetragenen Abholung (auch mit Ausnahme). None, wenn heute kein Ausgabetag ist."""
+@dataclass
+class Fortschritt:
+    abgeholt: int
+    erwartet: int
+    gruppen: list[str]  # Namen der Kundengruppen, die heute hier dran sind
+
+
+def fortschritt(stelle, heute: dt.date) -> Fortschritt | None:
+    """Heute an der Stelle: abgeholt / erwartet. Erwartet sind die aktiven Haushalte aller
+    Kundengruppen dieser Stelle, die heute ihren Ausgabetag haben; abgeholt alle Haushalte mit
+    einer heute hier eingetragenen Abholung (auch mit Ausnahme). None, wenn heute kein
+    Ausgabetag ist."""
     if stelle is None:
         return None
     tag = WOCHENTAGE[heute.weekday()]
-    gruppen = [g.pk for g in Kundengruppe.objects.filter(ausgabestelle=stelle)
-               if tag in {t.strip() for t in (g.wochentage or "").split(",")}]  # fmt: skip
+    gruppen = Kundengruppe.objects.filter(ausgabestelle=stelle).order_by("uhrzeit", "name")
+    gruppen = [g for g in gruppen if tag in wochentage(g.wochentage)]
     if not gruppen:
         return None
     erwartet = Haushalt.objects.filter(
@@ -61,7 +70,7 @@ def fortschritt(stelle, heute: dt.date) -> tuple[int, int] | None:
         Abholung.objects.filter(datum=heute, ausgabestelle=stelle)
         .values("haushalt").distinct().count()
     )  # fmt: skip
-    return abgeholt, erwartet
+    return Fortschritt(abgeholt, erwartet, [g.name for g in gruppen])
 
 
 def kontext(request) -> dict:

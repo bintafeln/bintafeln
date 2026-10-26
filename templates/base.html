@@ -36,8 +36,9 @@
       {% for vorlage in kopf_module %}{% include vorlage %}{% endfor %}
       {% if user.is_authenticated %}
       <nav class="navigation" aria-label="Konto">
-        <form method="post" action="{% url 'konten:abmelden' %}" class="inline">
+        <form method="post" action="{% url 'konten:abmelden' %}" class="inline konto-name">
           {% csrf_token %}
+          <span class="angemeldet" title="Angemeldet als {{ user.get_full_name|default:user.get_username }}">{{ user.get_full_name|default:user.get_username }}</span>
           <button type="submit" class="link">Abmelden</button>
         </form>
       </nav>

@@ -245,3 +245,18 @@ def test_meldungstexte_in_den_einstellungen(admin_client):
     admin_client.post(url, daten)
     assert AusgabeEinstellungen.laden().meldungstexte == {"ok": "Willkommen!"}
     assert 'value="Willkommen!"' in admin_client.get(url).content.decode()
+
+
+def test_noch_nicht_dran_blinkt_gelb(haushalt, einstellungen):
+    b = ampel.bewerten(haushalt, HEUTE, None, einstellungen)
+    assert b.farbe == ampel.GRUEN
+    # Hinweis ohne „warten“ (z. B. schon aufgerufen) lässt alles grün
+    assert ampel.noch_nicht_dran(b, [{"text": "Aufgerufen", "farbe": "gruen"}]).farbe == "gruen"
+    b = ampel.noch_nicht_dran(b, [{"text": "Noch nicht aufgerufen", "warten": True}])
+    assert b.blinken and b.farbe == ampel.GELB and b.darf_abholen
+    assert [m.text for m in b.meldungen] == ["Noch nicht aufgerufen – Eintragen geht trotzdem"]
+    # Rot bleibt rot und blinkt nicht
+    Sperre.objects.create(haushalt=haushalt, von=HEUTE, begruendung="Test")
+    rot = ampel.noch_nicht_dran(ampel.bewerten(haushalt, HEUTE, None, einstellungen),
+                                [{"text": "x", "warten": True}])  # fmt: skip
+    assert rot.farbe == ampel.ROT and not rot.blinken

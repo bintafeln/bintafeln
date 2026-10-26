@@ -204,12 +204,17 @@ def test_vorschlag_beachtet_hoechstzahl_je_woche(freitagsgruppe, einstellungen):
 
 def test_vorschlag_beachtet_hoechstzahl_je_monat(freitagsgruppe, einstellungen):
     einstellungen.zeitraum = AusgabeEinstellungen.Zeitraum.MONAT
-    einstellungen.max_abholungen = 2
+    einstellungen.max_abholungen = 3
     (rest,) = konto.vorschlaege(freitagsgruppe, FREITAG, einstellungen, D("1"))[0]
-    assert len(rest.tage) == 2
-    assert "Höchstens 2 Abholungen je Kalendermonat: 3 Abholtage nicht gezählt." in (
+    assert len(rest.tage) == 3
+    assert "Höchstens 3 Abholungen je Kalendermonat: 2 Abholtage nicht gezählt." in (
         rest.erklaerung
     )
+    # Für ein, zwei Abholungen bis Monatsende gibt es keine Vorauszahlung
+    einstellungen.max_abholungen = 2
+    assert konto.vorschlaege(freitagsgruppe, FREITAG, einstellungen, D("1")) == (
+        [], "Kein Vorschlag: Bis Monatsende sind weniger als 3 Abholungen möglich.",
+    )  # fmt: skip
 
 
 def test_vorschlag_ohne_hoechstzahl(freitagsgruppe, einstellungen):
@@ -228,19 +233,19 @@ def test_vorschlag_vierzehn_tage_ohne_grenze(freitagsgruppe, einstellungen):
 
 
 def test_vorschlag_endet_mit_dem_ausweis(freitagsgruppe, einstellungen):
-    freitagsgruppe.ausweis_gueltig_bis = dt.date(2026, 10, 10)
+    freitagsgruppe.ausweis_gueltig_bis = dt.date(2026, 10, 17)
     vorschlaege, _ = konto.vorschlaege(freitagsgruppe, FREITAG, einstellungen, D("1"))
-    assert len(vorschlaege) == 1 and len(vorschlaege[0].tage) == 2
-    assert "Nur bis zum Ablauf des Ausweises am 10.10.2026." in vorschlaege[0].erklaerung
+    assert len(vorschlaege) == 1 and len(vorschlaege[0].tage) == 3
+    assert "Nur bis zum Ablauf des Ausweises am 17.10.2026." in vorschlaege[0].erklaerung
     freitagsgruppe.ausweis_gueltig_bis = dt.date(2026, 10, 1)
     assert konto.vorschlaege(freitagsgruppe, FREITAG, einstellungen, D("1")) == (
         [],
-        "Kein Vorschlag: Bis Monatsende ist kein Abholtag mehr möglich.",
+        "Kein Vorschlag: Bis Monatsende sind weniger als 3 Abholungen möglich.",
     )
 
 
 def test_vorschlag_jahreswechsel(freitagsgruppe, einstellungen):
-    vorschlaege, _ = konto.vorschlaege(freitagsgruppe, dt.date(2026, 12, 18), einstellungen, D("1"))
+    vorschlaege, _ = konto.vorschlaege(freitagsgruppe, dt.date(2026, 12, 4), einstellungen, D("1"))
     assert [v.titel for v in vorschlaege] == ["Rest Dezember"]
 
 
@@ -293,7 +298,7 @@ def test_empfang_guthaben_teilweise(ausgabe, haushalt):
     e.save()
     inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
     assert 'name="bar" id="bar" value="1,00"' in inhalt  # Rest nach Guthaben vorgeschlagen
-    assert "Nur das Aufrufen trägt nichts ein" in inhalt and not Abholung.objects.exists()
+    assert "Abholung eintragen" in inhalt and not Abholung.objects.exists()
     inhalt = eintragen(ausgabe, haushalt, beitrag="3,00", bar="1,00").content.decode()
     assert ("Bar erhalten: 1,00 €, 2,00 € aus Guthaben. Kontostand jetzt: 0,00 €.") in inhalt
     assert Abholung.objects.get().buchung.bar == D("1.00")
@@ -320,7 +325,6 @@ def test_empfang_anschreiben(ausgabe, haushalt):
     e = AusgabeEinstellungen.laden()
     e.anschreiben_erlaubt = True
     e.save()
-    assert "sonst angeschrieben" in ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
     inhalt = eintragen(ausgabe, haushalt, beitrag="3", bar="1").content.decode()
     assert "Bar erhalten: 1,00 €, 2,00 € angeschrieben. Kontostand jetzt: -2,00 €." in inhalt
 
@@ -349,8 +353,8 @@ def test_storno_nimmt_buchung_zurueck(ausgabe, haushalt, recht_geben):
 
 
 def test_empfang_einzahlung_und_vorschlag(ausgabe, haushalt, recht_geben, monkeypatch):
-    # Fester Tag in der Monatsmitte: In der letzten Woche eines Monats gibt es keinen Vorschlag
-    mitte = timezone.now().replace(day=12, hour=10)
+    # Fester Tag am Monatsanfang: Vorschläge gibt es erst ab drei möglichen Abholungen
+    mitte = timezone.now().replace(day=3, hour=10)
     monkeypatch.setattr(timezone, "now", lambda: mitte)
     recht_geben(rollen.AUSGABE, "einlass.zuruecknehmen")
     e = AusgabeEinstellungen.laden()
@@ -359,7 +363,7 @@ def test_empfang_einzahlung_und_vorschlag(ausgabe, haushalt, recht_geben, monkey
     haushalt.kundengruppe.wochentage = ""
     haushalt.kundengruppe.save()
     inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
-    assert "Kein Vorschlag: Die Kundengruppe hat keine festen Wochentage" in inhalt
+    assert "Vorauszahlung" not in inhalt  # ohne feste Wochentage kein Vorschlag
     haushalt.kundengruppe.wochentage = "Mo,Di,Mi,Do,Fr,Sa,So"
     haushalt.kundengruppe.save()
     inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()

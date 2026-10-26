@@ -47,6 +47,9 @@ a { color: var(--akzent-dunkel); }
 
 .navigation { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem 1rem; }
 .navigation a, .navigation .link { padding: .5rem 0; }
+form.konto-name { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2; }
+.konto-name .angemeldet { font-size: .8rem; opacity: .9; max-width: 14rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.konto-name .link { padding: .1rem 0 .4rem; }
 .inline { display: inline; margin: 0; }
 .link {
   background: none; border: 0; color: inherit; font: inherit; cursor: pointer; padding: 0;
@@ -221,6 +224,12 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .lampe-rot.an { box-shadow: 0 0 1.5rem .6rem rgba(229, 57, 53, .85); animation: blinken 1s steps(2, start) 3; }
 .lampe-gelb.an { box-shadow: 0 0 1.5rem .6rem rgba(253, 216, 53, .85); }
 .lampe-gruen.an { box-shadow: 0 0 1.5rem .6rem rgba(67, 160, 71, .85); }
+/* Noch nicht an der Reihe: gelb blinkt (ohne Bewegung für Menschen, die das abgeschaltet haben) */
+@keyframes ampel-blinken { 50% { opacity: .25; } }
+.ampel-blinkt .lampe-gelb.an, .ampel-blinkt .ampel-wort { animation: ampel-blinken 1s steps(1) infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .ampel-blinkt .lampe-gelb.an, .ampel-blinkt .ampel-wort { animation: none; }
+}
 .ampel-wort { font-size: 2rem; font-weight: 800; letter-spacing: .05em; margin: 0; }
 .ampel-grafik-rot .ampel-wort { color: #b3261e; }
 .ampel-grafik-gelb .ampel-wort { color: #8a6100; }
@@ -381,6 +390,8 @@ textarea.html-eingabe { font-family: ui-monospace, Menlo, Consolas, monospace; f
   .seiten-raster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .seiten-raster > .breit { grid-column: 1 / -1; }
 }
+/* Mehrere Karten untereinander in einer Spalte des Rasters (z. B. Notizen und Sperren) */
+.seiten-spalte { min-width: 0; }
 /* Notiz-Vorlagen sind Knöpfe zum Anlegen, keine Notizen: deutlich anders als .notiz */
 .notiz-vorlagen {
   display: flex; flex-wrap: wrap; align-items: center; gap: .5rem;
@@ -645,6 +656,7 @@ label.wahl { display: block; white-space: nowrap; }
 .einlass-aktion .feld { margin: 0; }
 .einlass-aktion .betrag { width: 6.5rem; font-size: 1.15rem; }
 .einlass-aktion .knopf { width: auto; min-height: 3rem; font-size: 1.15rem; padding: .7rem 1.4rem; }
+.einlass-aktion .knopf.einlass-vorschlag { font-size: .95rem; line-height: 1.25; padding: .45rem .9rem; }
 .knopf-eintragen { background: #1b6e34; color: #fff; }
 .knopf-eintragen:hover { background: #124d24; }
 .knopf-abbrechen { display: inline-flex; align-items: center; background: var(--flaeche); color: var(--text); border: 2px solid var(--leise); text-decoration: none; }
@@ -742,7 +754,17 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 .kopf-programm strong { font-weight: 700; }
 .kopf-rechts { display: flex; align-items: center; gap: .25rem 1rem; margin-left: auto; }
 .kopf-wetter { white-space: nowrap; font-size: .95rem; }
-.kopf-fortschritt { white-space: nowrap; font-size: .9rem; font-variant-numeric: tabular-nums; opacity: .9; }
+.kopf-fortschritt { position: relative; white-space: nowrap; font-size: .9rem; font-variant-numeric: tabular-nums; cursor: help; }
+/* Erklärungsblase: erscheint sofort bei Maus darüber oder beim Antippen (Fokus) */
+.blase {
+  display: none; position: absolute; top: calc(100% + .5rem); right: 0; z-index: 30; width: 18rem;
+  pointer-events: none;
+  padding: .6rem .75rem; border-radius: .5rem; background: var(--flaeche); color: var(--text);
+  border: 1px solid var(--rand); box-shadow: 0 .25rem 1rem rgb(0 0 0 / .2);
+  white-space: normal; font-size: .9rem; line-height: 1.35; font-weight: 400;
+}
+.blase strong { display: block; margin-bottom: .25rem; }
+.kopf-fortschritt:hover .blase, .kopf-fortschritt:focus .blase, .kopf-fortschritt:focus-within .blase { display: block; }
 .kopf-wetter-symbol { font-size: 1.3rem; vertical-align: -.15rem; }
 .kopf-wetter strong { font-size: 1.05rem; }
 .kopf-kurz-1 .kuerz-1, .kopf-kurz-2 .kuerz-2, .kopf-kurz-3 .kuerz-3,

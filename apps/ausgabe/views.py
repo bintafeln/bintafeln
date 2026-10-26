@@ -117,7 +117,10 @@ def _ergebnis(request, h, meldung=None):
     )
     kind_bis = KundenEinstellungen.laden().kind_bis_alter
     erwachsene, kinder = h.groesse(kind_bis, heute)
-    bewertung = ampel.bewerten(h, heute, _stelle(request), einstellungen)
+    hinweise = module.einlass_hinweise(h, heute, _stelle(request))
+    bewertung = ampel.noch_nicht_dran(
+        ampel.bewerten(h, heute, _stelle(request), einstellungen), hinweise
+    )
     abholungen = list(h.abholungen.all())
     beitrag = einstellungen.beitrag_fuer(h, heute, kind_bis)
     regulaer = einstellungen.beitrag_fuer(h, heute, kind_bis, frei_beachten=False)
@@ -148,7 +151,7 @@ def _ergebnis(request, h, meldung=None):
         "korrekturgruende": KORREKTURGRUENDE,
         "heute": heute,
         "meldung": meldung,
-        "modul_hinweise": module.einlass_hinweise(h, heute, _stelle(request)),
+        "modul_hinweise": hinweise,
     }
 
 

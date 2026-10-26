@@ -88,7 +88,8 @@ def menue(request) -> list[dict]:
         ("kunden.importieren", _eintrag("Kundenstamm importieren", "kunden:import")),
         ("kunden.zugriffsprotokoll", _eintrag("Zugriffsprotokoll", "kunden:zugriffe")),
         ("kunden.nachrichten", nachrichten),
-        ("kunden.liste", stellen),
+        # Ausgabestellen kennen ihre eigene Stelle; die Liste aller braucht die Verwaltung
+        ("kunden.alle_ausgabestellen", stellen),
     ])  # fmt: skip
     if "antraege.sehen" in darf:
         from apps.antraege.models import Antrag
