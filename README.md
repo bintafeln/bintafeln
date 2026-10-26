@@ -1296,6 +1296,10 @@ docker run -d --name bintafeln-testdb -p 5432:5432 \
   -e POSTGRES_USER=bintafeln -e POSTGRES_PASSWORD=nur-lokal-test postgres:17-alpine
 ```
 
+Ein Test geht alle Adressen des Programms durch und prüft, dass ohne Anmeldung nur die bewusst
+öffentlichen Seiten erreichbar sind und ein Konto ohne Rechte überall gesperrt ist
+(`tests/test_zugriffsschutz.py`, ADR 0065). Neue öffentliche Seiten dort eintragen.
+
 GitHub Actions führt bei jedem Pull Request ruff, shellcheck und pytest aus und spielt mit
 `tests/sicherung_e2e.sh` eine echte Sicherung und Wiederherstellung im Docker-Aufbau durch.
 Dieses Skript überschreibt `.env`, lokal also nur in einer Wegwerf-Kopie starten.
