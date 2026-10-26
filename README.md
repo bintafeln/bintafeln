@@ -745,6 +745,10 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
 - **Steuern** (Recht „Kunden aufrufen“, Vorgabe Büro und Ausgabe): Menü
   „Kundennummernanzeige“ (öffnet einen neuen Tab) am PC oder die Handy-Steuerung. Weiter, Zurück, Abfrage einer Nummer und „zu spät
   gekommen“ (so viele wartende Plätze nach hinten wie eingestellt). Reihenfolge des Tages als CSV.
+- **Unter dem Menü:** Wer am Einlass arbeitet und aufrufen darf, sieht links unter dem Menü die
+  Nummern der gewählten Ausgabestelle, die gerade eintreten sollen, und den Knopf „Nächste 3
+  hereinrufen“ (Anzahl wie eingestellt), dazu „letzten Schritt zurück“ und „Aufruf starten“. Die
+  Anzeige aktualisiert sich alle 15 Sekunden, auch wenn ein anderes Gerät weiterschaltet.
 - **Geräte im Wartebereich:** Monitor (Nummern, Infos im Wechsel, Ton, Layout per Zahnrad),
   Nummern-Anzeige, Kiosk (Karte scannen, Antwort auf Deutsch und in der Sprache zur
   Staatsangehörigkeit) und Abfrage. Sie brauchen keine Anmeldung, sondern den geheimen Link aus

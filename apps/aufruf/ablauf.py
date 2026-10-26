@@ -18,7 +18,7 @@ from django.utils import timezone
 
 from apps.aufruf.models import AufrufEinstellungen, AufrufTag
 from apps.aufruf.sprachen import sprachcode
-from apps.ausgabe.ampel import WOCHENTAGE
+from apps.ausgabe.ampel import WOCHENTAGE, wochentage
 from apps.kunden.models import Abholung, AusgabestelleZeit, Haushalt, Kundengruppe
 
 AUFBEWAHREN_TAGE = 28
@@ -54,7 +54,7 @@ def gruppen_heute(stelle, datum: dt.date) -> list[Kundengruppe]:
     kuerzel = WOCHENTAGE[wochentag(stelle, datum)]
     gruppen = [
         g for g in Kundengruppe.objects.filter(ausgabestelle=stelle, aktiv=True)
-        if kuerzel in [t.strip() for t in g.wochentage.split(",")]
+        if kuerzel in wochentage(g.wochentage)
     ]  # fmt: skip
     return sorted(gruppen, key=lambda g: (g.uhrzeit is None, g.uhrzeit or dt.time(), g.name))
 

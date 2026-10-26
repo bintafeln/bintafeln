@@ -1,0 +1,4 @@
+{# Kurz-Steuerung des Aufrufs unter dem Menü; lädt nach und aktualisiert sich, wenn andere weiterschalten #}
+{% if ausgabestelle and "aufruf.steuern" in rechte and "einlass.nutzen" in rechte %}
+<section class="aufruf-leiste" aria-label="Aufruf" hx-get="{% url 'aufruf:leiste' %}" hx-trigger="load, every 15s" hx-swap="innerHTML"></section>
+{% endif %}

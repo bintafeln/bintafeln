@@ -38,6 +38,7 @@ MODUL = Modul(
     ),
     menue=menue,
     einlass=einlass,
+    seitenleiste="aufruf/_leiste_platz.html",
     sicherung_bereich="kunden",
     sicherung_ausgenommen=("aufruf.aufruftag",),
 )  # fmt: skip

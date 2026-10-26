@@ -10,7 +10,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
-from apps.core.auswahl import NACHRICHT_ANLIEGEN
+from apps.core.auswahl import NACHRICHT_ANLIEGEN, NACHRICHT_ANLIEGEN_WAEHLBAR
 from apps.konten import rollen
 from apps.kunden.models import Haushalt, Nachricht
 
@@ -28,7 +28,7 @@ def schreiben(request, kundennummer):
     get_object_or_404(Haushalt, kundennummer=kundennummer)  # zeigt nichts vom Kunden
     text = request.POST.get("text", "").strip()[:1000]
     anliegen = request.POST.get("anliegen", "sonstiges")
-    if anliegen not in dict(NACHRICHT_ANLIEGEN):
+    if anliegen not in dict(NACHRICHT_ANLIEGEN_WAEHLBAR):
         anliegen = "sonstiges"
     zurueck = request.POST.get("zurueck", "")
     if not url_has_allowed_host_and_scheme(zurueck, allowed_hosts={request.get_host()}):

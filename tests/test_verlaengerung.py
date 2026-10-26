@@ -217,12 +217,17 @@ def test_einlass_meldet_mit_anliegen(admin, benutzer_mit_rolle, anmelden):
     c = anmelden(Client(), benutzer_mit_rolle("anton", rollen.AUSGABE))
     seite = c.get(reverse("ausgabe:empfang"), {"nummer": "301"}).content.decode()
     assert "Bescheid geprüft – Ausweis verlängern" in seite  # Fenster auch beim eigenen Kunden
+    assert "Gehört jetzt zu unserer Ausgabestelle" not in seite  # nicht mehr angeboten
     url = reverse("kunden:nachricht", args=["301"])
     c.post(url, {"anliegen": "verlaengern", "text": ""})
     c.post(url, {"anliegen": "sonstiges", "text": ""})  # ohne Text abgelehnt
     c.post(url, {"anliegen": "erfunden", "text": "x"})  # unbekannt: Sonstiges
+    c.post(url, {"anliegen": "zugehoerig", "text": "y"})  # nicht mehr angeboten: Sonstiges
     assert list(Nachricht.objects.order_by("pk").values_list("anliegen", flat=True)) == [
-        "verlaengern", "sonstiges"]  # fmt: skip
+        "verlaengern", "sonstiges", "sonstiges"]  # fmt: skip
+    # Alte Nachrichten behalten ihren Namen
+    alt = Nachricht.objects.create(kundennummer="301", anliegen="zugehoerig", text="früher")
+    assert alt.get_anliegen_display() == "Gehört jetzt zu unserer Ausgabestelle"
     assert c.get(VERLAENGERN).status_code == 403
 
 

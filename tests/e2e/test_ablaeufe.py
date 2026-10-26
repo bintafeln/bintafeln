@@ -163,3 +163,22 @@ def test_vorauszahlung_traegt_nur_ins_feld_ein(angemeldet, admin, benutzer_mit_r
     knopf.click()
     expect(seite.locator("#bar")).to_have_value(betrag)
     assert not Buchung.objects.exists()  # gebucht wird erst mit „Abholung eintragen“
+
+
+def test_aufruf_unter_dem_menue(angemeldet, admin, benutzer_mit_rolle):
+    from apps.core.models import TafelEinstellungen
+
+    _haushalte(8)
+    t = TafelEinstellungen.laden()
+    t.module = ["aufruf"]
+    t.save()
+    seite = angemeldet(benutzer_mit_rolle("einlass", rollen.AUSGABE))
+    seite.goto("/ausgabe/")  # nur eine Ausgabestelle: steht fest
+    leiste = seite.locator(".aufruf-leiste")
+    leiste.get_by_role("button", name="Aufruf starten").click()
+    expect(leiste).to_contain_text("Bitte eintreten")
+    erste = leiste.locator(".aufruf-leiste-nummern span").first.inner_text()
+    leiste.get_by_role("button", name=re.compile("Nächste . hereinrufen")).click()
+    expect(leiste.locator(".aufruf-leiste-nummern span").first).not_to_have_text(erste)
+    leiste.get_by_role("button", name=re.compile("zurück")).click()
+    expect(leiste.locator(".aufruf-leiste-nummern span").first).to_have_text(erste)

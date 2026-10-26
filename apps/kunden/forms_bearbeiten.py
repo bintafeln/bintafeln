@@ -14,6 +14,7 @@ from apps.ausgabe.ampel import WOCHENTAGE
 from apps.core.auswahl import (
     ANREDEN,
     FAMILIENSTAENDE,
+    NACHRICHT_ANLIEGEN_ALT,
     ZEITARTEN,
     ZUSTAENDIGKEITEN,
     mit_vorhandenem,
@@ -387,6 +388,14 @@ class HaushaltDokumentForm(forms.ModelForm):
 
 
 class NotizVorlageForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Nicht mehr angebotene Anliegen nur, wenn die Vorlage es schon hat
+        alt = NACHRICHT_ANLIEGEN_ALT - {self.instance.melden}
+        self.fields["melden"].choices = [
+            c for c in self.fields["melden"].choices if c[0] not in alt
+        ]
+
     class Meta:
         model = NotizVorlage
         fields = ["text", "reihenfolge", "aktiv", "melden"]
