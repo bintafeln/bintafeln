@@ -355,7 +355,7 @@ def test_einlass_zeigt_angaben_und_notizen(ausgabe, haushalt):
     assert inhalt.count("löschen</button>") == 1
     url = reverse("ausgabe:notiz_loeschen", args=[fremd.pk])
     assert "nur Büro und Admin" in ausgabe.post(url, **HX).content.decode()
-    gestern = timezone.now() - dt.timedelta(days=1)
+    gestern = timezone.now() - dt.timedelta(days=2)  # zwei Tage: auch über eine Zeitumstellung
     Notiz.objects.filter(pk=n.pk).update(erstellt_am=gestern)
     url = reverse("ausgabe:notiz_loeschen", args=[n.pk])
     assert "nur Büro und Admin" in ausgabe.post(url, **HX).content.decode()

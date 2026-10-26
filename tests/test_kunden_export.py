@@ -125,7 +125,7 @@ def test_export_vorgabe_und_admin(admin_client, daten):
     zeilen = admin_client.get(EXPORT, {"tag": "Mo"}).content.decode().lstrip("﻿")
     assert zeilen.splitlines()[1] == "0123;Mitte;aktiv;1;0;;;;Weg 1;1;Musterstadt;"
     liste = admin_client.get(LISTE, {"tag": ""}).content.decode()
-    assert "als CSV exportieren" in liste
+    assert "Als CSV exportieren" in liste and 'form="auswahl"' in liste
 
 
 def test_art9_zusatzfeld_nur_mit_recht(admin, daten, benutzer_mit_rolle, anmelden):
@@ -281,3 +281,19 @@ def test_spalten_aus_einstellungen_und_eigene_wahl(admin, daten, benutzer_mit_ro
     kopf = c.get(EXPORT, {"tag": "Mo"}).content.decode().lstrip("﻿").splitlines()[0]
     assert kopf == "Nachname;Telefon;Kontostand;Personen;Status"
     assert c.get(reverse("kunden:spalten")).status_code == 405
+
+
+def test_auswahl_export_und_ausweise(admin_client, daten, monkeypatch):
+    h = Haushalt.objects.get(kundennummer="201")
+    zeilen = admin_client.get(EXPORT, {"tag": "", "id": [h.pk, "x"]}).content.decode()
+    assert [z.split(";")[0] for z in zeilen.lstrip("﻿").splitlines()[1:]] == ["201"]
+    from apps.kunden import views
+
+    gedruckt = []
+    monkeypatch.setattr(views, "ausweise_pdf", lambda hh, *a, **k: gedruckt.extend(hh) or b"%PDF")
+    admin_client.get(reverse("kunden:ausweise"), {"tag": "", "id": [h.pk]})
+    assert [x.kundennummer for x in gedruckt] == ["201"]
+    seite = admin_client.get(LISTE, {"tag": "", "seite": "1", "q": ""}).content.decode()
+    assert '<form id="auswahl" method="get" action="/kunden/export/"' in seite
+    assert '<input type="hidden" name="tag" value="">' in seite and 'name="seite"' not in seite
+    assert f'name="id" value="{h.pk}" form="auswahl"' in seite

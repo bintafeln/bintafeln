@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block titel %}Kunden{% endblock %}
 {% block inhalt %}
 <section class="karte">
@@ -38,6 +39,7 @@
     {% endif %}
     <button type="submit" class="knopf">Suchen</button>
   </form>
+  {% if fremd_nummer %}{% include "kunden/_nachricht.html" with nummer=fremd_nummer zurueck=request.get_full_path %}{% endif %}
   <div id="kunden-liste">{% include "kunden/_liste.html" %}</div>
 </section>
 
@@ -50,4 +52,5 @@
     {% if "kunden.zugriffsprotokoll" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'kunden:zugriffe' %}">Zugriffsprotokoll</a>{% endif %}</p>
 </section>
 {% endif %}
+<script src="{% static 'js/auswahl.js' %}" defer></script>
 {% endblock %}

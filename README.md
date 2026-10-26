@@ -233,7 +233,10 @@ des Exports“); unter „Spalten wählen“ blendet jede Person einzelne für i
 Sortierung; Spalten mit Recht nur mit diesem Recht),
 „Letzter Besuch“ steht wie überall mit Uhrzeit der letzten Abholung, und in allen Listen mit
 mehreren Seiten steht die Blätterleiste oben und unten (`{% blaettern seite %}` aus
-`apps/core/templatetags/liste.py`).
+`apps/core/templatetags/liste.py`). Kundenliste, Anträge, Adressen, Spenden, Mitglieder und das
+Modul Listen haben ganz links ein **Auswahlkästchen** je Zeile (im Kopf: alle/keine); Export und
+Druck nehmen die angehakten Zeilen, ohne Haken alle (`{% auswahl_formular %}`,
+`apps/core/listenauswahl.py`, `static/js/auswahl.js`).
 
 ## Mitarbeitende
 
@@ -470,6 +473,11 @@ Unter „Kunden“ stehen alle Haushalte des Kundenstamms.
   wer es war. Beim Import entsteht sie aus dem Vergleich mit dem vorherigen Stand. Sie hängt an
   der Kundennummer und wird nach 3 Jahren gelöscht (einstellbar unter „Einstellungen →
   Kundenstamm“; ADR 0031).
+- **Nachrichten der Ausgabestellen** (ADR 0062): Gehört ein gesuchter Kunde nicht zur eigenen
+  Ausgabestelle, schreibt man mit „✉ Nachricht an die Verwaltung“ (Einlass und Kundenliste) eine
+  Nachricht zur Kundennummer, ohne Daten des Kunden zu sehen. Das Büro (Recht „Nachrichten der
+  Ausgabestellen zu Kunden lesen“) sieht sie unter „Kunden → Nachrichten der Ausgabestellen“, auf
+  der Startseite und auf der Haushaltsseite; erledigte werden nach 90 Tagen gelöscht.
 - **Kundengruppe nur mit gültigem Ausweis** (ADR 0061): Pausierte, gesperrte, beendete Kunden
   und Kunden mit abgelaufenem Ausweis fallen automatisch aus der Kundengruppe, bei Änderungen
   sofort, sonst täglich und beim Import. Abschaltbar unter „Einstellungen → Kunden →
@@ -761,6 +769,26 @@ Jede Ausgabestelle macht ihre Monatsabrechnung in bintafeln (ADR 0060), Menü �
   zugeordneten Ausgabestellen) und „Abrechnungen aller Ausgabestellen prüfen“ (Vorgabe Büro).
   Arten der Ausgaben und Aufbewahrung (Vorgabe 5 Jahre) unter „Einstellungen → Ausgabe →
   Abrechnung“.
+
+### Listen
+
+Zuschaltbares Modul „Listen“ (ADR 0063): fertige Listen zum Kundenstamm, jede mit Filtern,
+wählbaren und sortierbaren Spalten, Gliederung mit Anzahl und Summen, Auswahlkästchen je Zeile
+und Ausgabe als CSV (Excel) oder PDF (Auswahl oder alles; jeder Export im Zugriffsprotokoll).
+
+- **Kunden:** Kundenliste einer Ausgabestelle, alle Kunden, nach Einkommensart, Bürgergeld,
+  Rentnerinnen und Rentner, Ausweis läuft ab, lange nicht gekommen, neue Kunden, große Haushalte,
+  Haushalte mit Kindern unter 6, ohne Kundengruppe, pausiert/gesperrt/beendet, Abholungen im
+  Zeitraum, Anschriftenliste, offene Beträge (Kontostand im Minus).
+- **Personen:** nach Staatsangehörigkeit, Kinder unter 6, Kinder und Jugendliche (Alter von–bis),
+  Schulanfänger, Seniorinnen und Senioren, nach Altersgruppen, alle Personen.
+- **Zählungen:** je Staatsangehörigkeit, je Altersgruppe, je Ausgabestelle, je Kundengruppe, je
+  Einkommensart, nach Haushaltsgröße, neue Kunden je Monat.
+- Nur Kunden der eigenen Ausgabestellen; Listen mit Staatsangehörigkeit oder Einkommensart nur
+  mit „Stammdaten sehen“, Kontaktdaten und Kontostand nur mit den Rechten dazu.
+- **Eigene Listen** speichern die Einstellungen unter einem Titel (privat oder für alle).
+- Rechte „Listen ansehen, drucken und exportieren“ (Vorgabe Büro und Ausgabe) und „Eigene Listen
+  für alle speichern“ (Büro). Neue Listen sind ein Eintrag in `apps/listen/katalog.py`.
 
 ### Links auf der Startseite
 
@@ -1269,6 +1297,7 @@ apps/warteliste/    Modul Warteliste (Einladungen zu Terminen, Streichungen)
 apps/wochenuebersicht/ Modul Wochenübersicht (Soll/Ist der Ausgabestellen je Wochentag)
 apps/links/         Modul Links (Kacheln auf der Startseite)
 apps/abrechnung/    Modul Abrechnung (Monatsabrechnung je Ausgabestelle mit Quittungen)
+apps/listen/        Modul Listen (Katalog fertiger Listen, Spalten, Gliederung, Export)
 apps/wetter/        Modul Wetter (Außentemperatur der Ausgabestelle in der Kopfzeile)
 templates/          Django-Templates
 static/             CSS und HTMX

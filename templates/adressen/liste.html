@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load liste %}
+{% load liste static %}
 {% block titel %}Adressbuch{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
@@ -25,14 +25,15 @@
     <button type="submit" class="knopf">Suchen</button>
   </form>
   <p class="hinweis">{{ anzahl }} Adresse{{ anzahl|pluralize:"n" }}{% if anzahl %} ·
-    <a href="?q={{ filter.q|urlencode }}&amp;kategorie={{ filter.kategorie }}&amp;art={{ filter.art }}&amp;csv=1">als CSV-Datei (Excel)</a>{% endif %}</p>
+    <button type="submit" form="auswahl" class="link-knopf">als CSV-Datei (Excel)</button> <span class="hinweis" data-auswahl-zahl="auswahl"></span>{% endif %}</p>
+  {% auswahl_formular "" "csv=1" %}
   {% blaettern seite %}
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Name</th><th>Ort</th><th>Telefon</th><th>E-Mail</th><th>Kategorien</th></tr></thead>
+    <thead><tr><th class="auswahl"><input type="checkbox" data-alle="id" form="auswahl" aria-label="Alle auswählen" title="alle / keine"></th><th>Name</th><th>Ort</th><th>Telefon</th><th>E-Mail</th><th>Kategorien</th></tr></thead>
     <tbody>
     {% for a in seite %}
-      <tr>
+      <tr><td class="auswahl"><input type="checkbox" name="id" value="{{ a.pk }}" form="auswahl" aria-label="Zeile auswählen"></td>
         <td data-titel="Name"><a href="{% url 'adressen:adresse' a.pk %}">{{ a.name }}</a>{% if a.art == "organisation" and a.ansprechperson %}<br><small class="leise">{{ a.ansprechperson }}</small>{% endif %}</td>
         <td data-titel="Ort">{{ a.plz }} {{ a.ort }}</td>
         <td data-titel="Telefon">{{ a.telefon|default:a.mobil }}</td>
@@ -40,11 +41,12 @@
         <td data-titel="Kategorien">{% for k in a.kategorien.all %}<span class="marke-rolle">{{ k.name }}</span> {% endfor %}</td>
       </tr>
     {% empty %}
-      <tr><td colspan="5">Keine Adressen gefunden.</td></tr>
+      <tr><td colspan="6">Keine Adressen gefunden.</td></tr>
     {% endfor %}
     </tbody>
   </table>
   </div>
   {% blaettern seite %}
 </section>
+<script src="{% static 'js/auswahl.js' %}" defer></script>
 {% endblock %}

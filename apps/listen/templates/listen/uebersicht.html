@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block titel %}Listen{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Listen</h1>
+  <p class="hinweis">Fertige Listen zum Kundenstamm. Jede Liste lässt sich filtern, Spalten wählen, sortieren, gliedern und
+    als CSV (Excel) oder PDF ausgeben – ganz oder nur die angehakten Zeilen. Sie sehen nur Kunden Ihrer
+    Ausgabestellen.</p>
+  {% if eigene %}
+  <h2>Eigene Listen</h2>
+  <ul class="listen-katalog">
+    {% for e in eigene %}
+    <li><a href="{% url 'listen:eigene' e.pk %}">{{ e.titel }}</a>{% if e.fuer_alle %} <span class="marke-ok">für alle</span>{% endif %}
+      {% if e.benutzer_id == user.pk or "listen.teilen" in rechte %}
+      <form method="post" action="{% url 'listen:eigene_loeschen' e.pk %}" class="inline" onsubmit="return confirm('Liste „{{ e.titel|escapejs }}“ löschen?')">{% csrf_token %}<button type="submit" class="link-knopf">löschen</button></form>
+      {% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% for bereich, listen in bereiche %}{% if listen %}
+  <h2>{{ bereich }}</h2>
+  <ul class="listen-katalog">
+    {% for l in listen %}<li><a href="{% url 'listen:liste' l.kennung %}">{{ l.titel }}</a><br><span class="hinweis">{{ l.beschreibung }}</span></li>{% endfor %}
+  </ul>
+  {% endif %}{% endfor %}
+</section>
+{% endblock %}

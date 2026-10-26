@@ -15,7 +15,7 @@ from django.views.decorators.http import require_POST
 
 from apps.ausgabe.ampel import WOCHENTAGE
 from apps.ausgabe.models import AusgabeEinstellungen
-from apps.core import sicherung
+from apps.core import listenauswahl, sicherung
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.kunden import auskunft as kunden_auskunft
@@ -33,6 +33,7 @@ from apps.kunden.models import (
     ImportVorbereitung,
     KundenEinstellungen,
     Kundengruppe,
+    Nachricht,
     Notiz,
     NotizVorlage,
     Person,
@@ -244,6 +245,7 @@ def uebersicht(request):
     ImportVorbereitung.abgelaufene_loeschen()
     fristen_anwenden()
     suche = request.GET.get("q", "").strip()
+    fremd = ""
     if suche and not request.headers.get("HX-Request"):
         treffer = (
             Haushalt.objects.select_related("kundengruppe__ausgabestelle")
@@ -255,6 +257,7 @@ def uebersicht(request):
             return redirect("kunden:haushalt", kundennummer=treffer.kundennummer)
         if grund:
             messages.error(request, grund)
+            fremd = treffer.kundennummer
     haushalte, filter_ = _haushalte_suchen(request)
     seite = Paginator(haushalte.select_related("kundengruppe__ausgabestelle")
                       .prefetch_related("personen"), LISTE_JE_SEITE).get_page(
@@ -264,6 +267,7 @@ def uebersicht(request):
     aus = set(request.user.kundenliste_aus or [])
     spalten = _spalten(filter_, keys, darf)
     kontext = {
+        "fremd_nummer": fremd,
         "seite": seite,
         "filter": filter_,
         "status_auswahl": Haushalt.Status.choices,
@@ -273,6 +277,7 @@ def uebersicht(request):
         "eigene_stellen": zugang.stellen(request.user),
         "tage": export.verfuegbare_tage(_eigene_gruppen(request.user)),
         "abfrage": urlencode({k: v for k, v in filter_.items() if v} | {"tag": filter_["tag"]}),
+        "export_url": reverse("kunden:exportieren"),
         "spalten": spalten,
         "zeilen": _zeilen(seite, keys, spalten, darf),
         "spalten_wahl": [
@@ -365,6 +370,11 @@ def haushalt(request, kundennummer):
             **notizen_kontext(h.kundennummer, request.user),
             **(views_dokumente.kontext(h.kundennummer) if "kunden.dokumente" in darf else {}),
             "gruppenzeiten": gruppen.zeiten(h.kundennummer) if "kunden.historie" in darf else [],
+            "nachrichten": Nachricht.objects.filter(
+                kundennummer=h.kundennummer, erledigt_am__isnull=True
+            )
+            if "kunden.nachrichten" in darf
+            else [],
             "historie": HaushaltEreignis.objects.filter(kundennummer=h.kundennummer)
             if "kunden.historie" in darf
             else [],
@@ -446,6 +456,7 @@ def ausweis(request, kundennummer):
 def exportieren(request):
     """Gefilterte Kundenliste der eigenen Ausgabestellen als CSV; jeder Haushalt ins Protokoll."""
     haushalte, filter_ = _haushalte_suchen(request)
+    haushalte = listenauswahl.filtern(request, haushalte)
     haushalte = list(haushalte.select_related("kundengruppe__ausgabestelle")
                      .prefetch_related("personen"))  # fmt: skip
     heute = timezone.localdate()
@@ -468,9 +479,9 @@ def ausweise(request):
     """Sammeldruck: Ausweise aller Haushalte der aktuellen Auswahl in der Kundenliste."""
     haushalte, _ = _haushalte_suchen(request)
     haushalte = list(
-        haushalte.select_related("kundengruppe__ausgabestelle").order_by("kundennummer")[
-            : MAX_SAMMELDRUCK + 1
-        ]
+        listenauswahl.filtern(request, haushalte)
+        .select_related("kundengruppe__ausgabestelle")
+        .order_by("kundennummer")[: MAX_SAMMELDRUCK + 1]
     )
     if not haushalte or len(haushalte) > MAX_SAMMELDRUCK:
         messages.error(

@@ -31,7 +31,7 @@ from apps.antraege.models import (
     AntragText,
     loeschen,
 )
-from apps.core import html, privatdateien
+from apps.core import html, listenauswahl, privatdateien
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 
@@ -243,7 +243,7 @@ def _wert(a, spalte):
 def export(request):
     """CSV der angezeigten Anträge in Eingangsreihenfolge, z. B. für die Warteliste."""
     ansicht, _, antraege = _gefiltert(request)
-    _, antraege = _sortiert(request, antraege)
+    _, antraege = _sortiert(request, listenauswahl.filtern(request, antraege))
     antwort = HttpResponse(content_type="text/csv; charset=utf-8")
     antwort["Content-Disposition"] = (
         f'attachment; filename="antraege-{ansicht}-{timezone.localdate():%Y-%m-%d}.csv"'

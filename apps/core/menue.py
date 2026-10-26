@@ -67,11 +67,18 @@ def menue(request) -> list[dict]:
     stellen = _eintrag("Ausgabestellen", "kunden:ausgabestellen")
     alle_kunden = _eintrag("Kunden einsehen", "kunden:uebersicht", genau=True)
     alle_kunden["auch"] = [reverse("kunden:uebersicht") + "haushalt/"]
+    nachrichten = _eintrag("Nachrichten der Ausgabestellen", "kunden:nachrichten")
+    if "kunden.nachrichten" in darf:
+        from apps.kunden.views_nachrichten import offene
+
+        nachrichten["zahl"] = offene() or None
+        nachrichten["zahl_titel"] = "offene Nachrichten"
     bereich("Kunden", [
         ("kunden.liste", alle_kunden),
         ("kunden.bearbeiten", _eintrag("Neuer Haushalt", "kunden:haushalt_neu")),
         ("kunden.importieren", _eintrag("Kundenstamm importieren", "kunden:import")),
         ("kunden.zugriffsprotokoll", _eintrag("Zugriffsprotokoll", "kunden:zugriffe")),
+        ("kunden.nachrichten", nachrichten),
         ("kunden.liste", stellen),
     ])  # fmt: skip
     if "antraege.sehen" in darf:

@@ -28,3 +28,17 @@ def blaettern(context, seite, abfrage=None, ziel="", zusatz="", zurueck="← zur
         "zurueck": link(seite.previous_page_number()) if seite.has_previous() else "",
         "weiter": link(seite.next_page_number()) if seite.has_next() else "",
     }  # fmt: skip
+
+
+@register.inclusion_tag("includes/auswahl_formular.html", takes_context=True)
+def auswahl_formular(context, aktion, extra=""):
+    """Formular für die Auswahlkästchen einer Liste (``form="auswahl"``): schickt die aktuellen
+    Filter mit, ohne Seitenzahl. ``extra`` (z. B. „csv=1“) kommt dazu."""
+    werte = context["request"].GET.copy()
+    for name in ("seite", "id"):
+        werte.pop(name, None)
+    felder = [(k, v) for k in werte for v in werte.getlist(k)]
+    if extra:
+        k, _, v = extra.partition("=")
+        felder.append((k, v))
+    return {"aktion": aktion, "felder": felder}

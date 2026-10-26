@@ -72,7 +72,7 @@ def zuruecksetzen(heute: dt.date | None = None, erzwingen: bool = False) -> None
 
 
 # Module, die die Demo einschaltet; das Wetter nicht (braucht Internet und einen echten Ort).
-DEMO_MODULE = ["aufruf", "warteliste", "wochenuebersicht", "links", "abrechnung"]
+DEMO_MODULE = ["aufruf", "warteliste", "wochenuebersicht", "links", "abrechnung", "listen"]
 TABLET = "demo-tablet"
 
 

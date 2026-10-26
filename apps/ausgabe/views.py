@@ -175,6 +175,7 @@ def empfang(request):
             kontext["nicht_gefunden"] = nummer
         elif grund:
             kontext["nicht_erlaubt"] = grund
+            kontext["fremd_nummer"] = h.kundennummer
         else:
             Zugriff.objects.create(
                 benutzer=request.user,

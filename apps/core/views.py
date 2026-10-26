@@ -55,6 +55,10 @@ def start(request):
         kontext["korrekturen_offen"] = Korrekturwunsch.objects.filter(
             status=Korrekturwunsch.Status.OFFEN
         ).count()
+    if rollen.hat_recht(request.user, "kunden.nachrichten"):
+        from apps.kunden.views_nachrichten import offene
+
+        kontext["nachrichten_offen"] = offene()
     if rollen.hat_recht(request.user, "system.status"):
         kontext["sicherung"] = sicherung.lese_status()
         kontext["sicherungsfehler"] = sicherung.auftraege_mit_fehler()

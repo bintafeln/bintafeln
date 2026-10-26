@@ -121,7 +121,7 @@ def test_hintergrundbild_und_kartenformat(admin_client, pdf_text, gruppe):
 
 def test_sammeldruck(admin_client, pdf_text, gruppe, monkeypatch):
     seite = admin_client.get(reverse("kunden:uebersicht"), {"gruppe": gruppe.pk}).content.decode()
-    assert "Ausweise dieser 2 drucken" in seite
+    assert "Ausweise drucken (PDF)" in seite and "(2)" in seite
     url = reverse("kunden:ausweise")
     inhalt = pdf_text(admin_client.get(url, {"gruppe": gruppe.pk}))
     assert "A-1" in inhalt and "A-2" in inhalt and "B-1" not in inhalt

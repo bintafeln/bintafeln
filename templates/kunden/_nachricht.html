@@ -1,0 +1,18 @@
+{% comment %}Knopf und Fenster: Nachricht an die Verwaltung zu einem Kunden, den man nicht aufrufen darf (ADR 0062).
+Erwartet: nummer, zurueck (Adresse, zu der es danach zurückgeht).{% endcomment %}
+<p><button type="button" class="knopf knopf-zweitrangig" onclick="document.getElementById('nachricht-{{ nummer|slugify }}').showModal()">✉ Nachricht an die Verwaltung</button></p>
+<dialog id="nachricht-{{ nummer|slugify }}" class="nachricht-dialog" aria-label="Nachricht an die Verwaltung zu Kunde {{ nummer }}">
+  <form method="post" action="{% url 'kunden:nachricht' nummer %}">
+    {% csrf_token %}
+    <input type="hidden" name="zurueck" value="{{ zurueck }}">
+    <h2>Nachricht zu Kunde {{ nummer }}</h2>
+    <p class="hinweis">Die Verwaltung erhält Ihre Nachricht mit der Kundennummer, z. B. „war heute hier, gehört jetzt zu uns“
+      oder „neue Adresse“. Bitte nur Nötiges schreiben.</p>
+    <div class="feld"><label for="text-{{ nummer|slugify }}">Nachricht *</label>
+      <textarea name="text" id="text-{{ nummer|slugify }}" rows="4" maxlength="1000" required></textarea></div>
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf">Senden</button>
+      <button type="button" class="knopf knopf-zweitrangig" onclick="this.closest('dialog').close()">Abbrechen</button>
+    </div>
+  </form>
+</dialog>

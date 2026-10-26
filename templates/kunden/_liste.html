@@ -1,9 +1,11 @@
 {% load liste %}
+{% auswahl_formular export_url %}
 <div class="liste-aktionen">
   <span class="hinweis">{{ seite.paginator.count }} Haushalt{{ seite.paginator.count|pluralize:"e" }}</span>
   {% if seite.paginator.count %}
-  {% if "kunden.exportieren" in rechte %}<a class="knopf" href="{% url 'kunden:exportieren' %}?{{ abfrage }}" download title="Alle {{ seite.paginator.count }} Haushalte dieser Auswahl als CSV-Datei, öffnet in Excel oder LibreOffice">⬇ Diese {{ seite.paginator.count }} als CSV exportieren (Excel)</a>{% endif %}
-  {% if darf_importieren %}<a class="knopf knopf-zweitrangig" href="{% url 'kunden:ausweise' %}?{{ abfrage }}" target="_blank" rel="noopener">🖨 Ausweise dieser {{ seite.paginator.count }} drucken (PDF)</a>{% endif %}
+  {% if "kunden.exportieren" in rechte %}<button type="submit" form="auswahl" class="knopf" title="Angehakte Haushalte (ohne Haken: alle dieser Auswahl) als CSV-Datei, öffnet in Excel oder LibreOffice">⬇ Als CSV exportieren (Excel)</button>{% endif %}
+  {% if darf_importieren %}<button type="submit" form="auswahl" class="knopf knopf-zweitrangig" formaction="{% url 'kunden:ausweise' %}" formtarget="_blank">🖨 Ausweise drucken (PDF)</button>{% endif %}
+  <span class="hinweis" data-auswahl-zahl="auswahl">keine ausgewählt – es gilt die ganze Liste ({{ seite.paginator.count }})</span>
   {% endif %}
 </div>
 {% blaettern seite abfrage=abfrage %}
@@ -21,14 +23,15 @@
 </details>
 <div class="tabelle-rahmen">
 <table class="tabelle">
-  <thead><tr>{% for s in spalten %}<th aria-sort="{% if s.richtung == 'auf' %}ascending{% elif s.richtung == 'ab' %}descending{% else %}none{% endif %}">{% if s.abfrage %}<a class="sortieren{% if s.richtung %} {{ s.richtung }}{% endif %}" href="?{{ s.abfrage }}" hx-get="?{{ s.abfrage }}" hx-target="#kunden-liste" hx-push-url="true" title="Nach {{ s.titel }} sortieren">{{ s.titel }}</a>{% else %}{{ s.titel }}{% endif %}</th>{% endfor %}</tr></thead>
+  <thead><tr><th class="auswahl"><input type="checkbox" data-alle="id" form="auswahl" aria-label="Alle auswählen" title="alle / keine"></th>{% for s in spalten %}<th aria-sort="{% if s.richtung == 'auf' %}ascending{% elif s.richtung == 'ab' %}descending{% else %}none{% endif %}">{% if s.abfrage %}<a class="sortieren{% if s.richtung %} {{ s.richtung }}{% endif %}" href="?{{ s.abfrage }}" hx-get="?{{ s.abfrage }}" hx-target="#kunden-liste" hx-push-url="true" title="Nach {{ s.titel }} sortieren">{{ s.titel }}</a>{% else %}{{ s.titel }}{% endif %}</th>{% endfor %}</tr></thead>
   <tbody>
   {% for z in zeilen %}
     <tr>
+      <td class="auswahl"><input type="checkbox" name="id" value="{{ z.h.pk }}" form="auswahl" aria-label="Haushalt {{ z.h.kundennummer }} auswählen"></td>
       {% for c in z.zellen %}<td data-titel="{{ c.titel }}">{% if c.link %}<a href="{% url 'kunden:haushalt' z.h.kundennummer %}">{{ c.text|default:"–" }}</a>{% elif c.warnung %}<span class="marke-warnung">{{ c.text }}</span>{% else %}{{ c.text|default:"–" }}{% endif %}</td>{% endfor %}
     </tr>
   {% empty %}
-    <tr><td colspan="{{ spalten|length }}">Keine Haushalte gefunden.</td></tr>
+    <tr><td colspan="{{ spalten|length|add:1 }}">Keine Haushalte gefunden.</td></tr>
   {% endfor %}
   </tbody>
 </table>

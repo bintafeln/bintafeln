@@ -10,6 +10,7 @@
   {% for a in sicherungsfehler %}<p class="sicherung sicherung-fehler"><strong>Sicherungsauftrag „{{ a.name }}“ fehlgeschlagen</strong> ({{ a.letzter_versuch|date:"d.m.Y H:i" }}): {{ a.meldung }}{% if "system.sicherung" in rechte %} <a href="{% url 'core:sicherungen' %}">Zu den Sicherungen</a>{% endif %}</p>{% endfor %}
   {% if faellig %}<p class="sicherung"><a href="{% url 'konten:mitarbeitende' %}">{{ faellig }} Wiedervorlage{{ faellig|pluralize:"n" }} bei den Mitarbeitenden fällig</a> (Führerschein, Belehrung, Schulungen).</p>{% endif %}
   {% if korrekturen_offen %}<p class="sicherung"><a href="{% url 'ausgabe:korrekturen' %}">Korrekturwünsche offen: {{ korrekturen_offen }}</a> </p>{% endif %}
+  {% if nachrichten_offen %}<p class="sicherung"><a href="{% url 'kunden:nachrichten' %}">{{ nachrichten_offen }} Nachricht{{ nachrichten_offen|pluralize:"en" }} der Ausgabestellen zu Kunden</a></p>{% endif %}
   {% if neue_antraege %}<p class="sicherung"><a href="{% url 'antraege:liste' %}">{{ neue_antraege }} neue{{ neue_antraege|pluralize:"r,"}} Antr{{ neue_antraege|pluralize:"ag,äge" }}</a> eingegangen.</p>{% endif %}
   {% if "einlass.nutzen" in rechte %}
     <p><a class="knopf" href="{% url 'ausgabe:empfang' %}">Zum Einlass</a></p>

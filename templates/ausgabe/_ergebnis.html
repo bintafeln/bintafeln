@@ -6,6 +6,7 @@
 <section class="karte ampel ampel-unbekannt" role="status">
   <p class="ampel-titel">Dieser Kunde gehört nicht zu Ihrer Ausgabestelle</p>
   <p>{{ nicht_erlaubt }}</p>
+  {% url 'ausgabe:empfang' as einlass_url %}{% include "kunden/_nachricht.html" with nummer=fremd_nummer zurueck=einlass_url %}
 </section>
 {% elif h %}
 {% if meldung %}<p class="meldung kasse-meldung" role="status">{{ meldung }}</p>{% endif %}

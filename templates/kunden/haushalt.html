@@ -142,6 +142,13 @@
 
 {% if "kunden.dokumente" in rechte %}{% include "kunden/_dokumente.html" %}{% endif %}
 
+{% if nachrichten %}
+<section class="karte" id="nachrichten">
+  <h2>Nachrichten der Ausgabestellen</h2>
+  {% include "kunden/_nachrichten_tabelle.html" with liste=nachrichten weiter=request.get_full_path %}
+</section>
+{% endif %}
+
 {% if "kunden.historie" in rechte %}
 <section class="karte" id="historie">
   <h2>Historie</h2>
