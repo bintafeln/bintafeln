@@ -1,4 +1,4 @@
-<div class="tabelle-rahmen">
+<div class="tabelle-rahmen stapelbar">
 <table class="tabelle">
   <thead><tr><th>Geschrieben</th><th>Kunde</th><th>Von</th><th>Anliegen</th><th>Nachricht</th><th></th></tr></thead>
   <tbody>
@@ -8,7 +8,7 @@
       <td data-titel="Kunde"><a href="{% url 'kunden:haushalt' n.kundennummer %}">{{ n.kundennummer }}</a></td>
       <td data-titel="Von">{{ n.von }}{% if n.stelle %} · {{ n.stelle.name }}{% endif %}</td>
       <td data-titel="Anliegen">{{ n.get_anliegen_display }}</td>
-      <td data-titel="Nachricht">{{ n.text|linebreaksbr }}{% if n.erledigt_am %}<br><span class="hinweis">erledigt {{ n.erledigt_am|date:"d.m.Y" }} von {{ n.erledigt_von }}</span>{% endif %}</td>
+      <td data-titel="Nachricht">{{ n.text|linebreaksbr }}{% if n.erledigt_am %}{% if n.text %}<br>{% endif %}<span class="hinweis">erledigt {{ n.erledigt_am|date:"d.m.Y" }} von {{ n.erledigt_von }}</span>{% endif %}</td>
       <td data-titel="Aktion"><form method="post" action="{% url 'kunden:nachrichten' %}" class="inline">{% csrf_token %}
         <input type="hidden" name="nachricht" value="{{ n.pk }}">{% if weiter %}<input type="hidden" name="weiter" value="{{ weiter }}">{% endif %}
         <button type="submit" class="knopf knopf-zweitrangig">{% if n.erledigt_am %}wieder öffnen{% else %}✓ erledigt{% endif %}</button></form></td>

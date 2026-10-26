@@ -51,3 +51,25 @@
     if (e.target && e.target.closest && e.target.closest("header.kopf")) spaeter();
   });
 })();
+
+// Trefferliste der Suche im Seitenkopf: offen, solange in der Suche gearbeitet wird. Nicht über
+// :focus-within, denn Safari (iPad, iPhone) nimmt beim Antippen eines Treffers erst den Fokus
+// weg – die Liste verschwand, bevor der Link den Klick bekam.
+(function () {
+  "use strict";
+  document.addEventListener("DOMContentLoaded", function () {
+    var form = document.querySelector("form.kopf-suche");
+    if (!form) return;
+    function zu() { form.classList.remove("offen"); }
+    form.addEventListener("focusin", function () { form.classList.add("offen"); });
+    // Mit der Tastatur weiter (Tab): schließen, sobald der Fokus die Suche verlässt
+    form.addEventListener("focusout", function (e) {
+      if (e.relatedTarget && !form.contains(e.relatedTarget)) zu();
+    });
+    // Tippen oder Klicken außerhalb schließt; innerhalb (auf einen Treffer) nicht
+    document.addEventListener("pointerdown", function (e) {
+      if (!form.contains(e.target)) zu();
+    });
+    form.addEventListener("keydown", function (e) { if (e.key === "Escape") zu(); });
+  });
+})();

@@ -476,3 +476,18 @@ def suchen(benutzer, eingabe: str, grenze: int = JE_BEREICH, menue=()) -> Ergebn
             ergebnis.gruppen.append(Gruppe(bereich, TITEL[bereich], treffer[:grenze],
                                            weitere=len(treffer) > grenze))  # fmt: skip
     return ergebnis
+
+
+def direkt(benutzer, eingabe: str) -> str | None:
+    """Enter mit einer genauen Kundennummer („k 10141“ oder nur „10141“): gleich zum Kunden.
+    Führende Nullen sind egal (wie am Einlass); nur Haushalte, die das Konto sehen darf."""
+    kuerzel, begriff = zerlegen(eingabe or "")
+    if (kuerzel and kuerzel.bereich != "kunden") or not begriff:
+        return None
+    if "kunden" not in {k.bereich for k in kuerzel_fuer(benutzer)}:
+        return None
+    haushalte = _haushalte(benutzer)
+    treffer = haushalte.filter(kundennummer__iexact=begriff).first()
+    if treffer is None and begriff.isdigit():
+        treffer = haushalte.filter(kundennummer__regex=rf"^0*{int(begriff)}$").first()
+    return _kunden_url(benutzer, treffer.kundennummer) if treffer else None
