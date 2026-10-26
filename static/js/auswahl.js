@@ -8,7 +8,8 @@
     });
   }
   function zaehlen(form) {
-    const anzeige = document.querySelector('[data-auswahl-zahl="' + (form.id || "") + '"]') ||
+    // getAttribute statt form.id: Die Kästchen heißen "id", und form.id liefert dann sie.
+    const anzeige = document.querySelector('[data-auswahl-zahl="' + (form.getAttribute("id") || "") + '"]') ||
       form.querySelector("[data-auswahl-zahl]");
     if (!anzeige) return;
     const n = kaestchen(form, "id").filter(function (c) { return c.checked; }).length;

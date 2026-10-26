@@ -244,5 +244,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
 - Spenden: Import in `apps/spenden/importieren.py` (ADR 0055, `belegnummer` gegen Dubletten),
   Dankesbriefe und hochgeladene Belege in `apps/spenden/dank.py` (ADR 0056; PDFs zusammenfügen
   mit `pypdf`, Mail-Anhänge über `mail.senden(..., anhaenge=…)`).
+- Browser-Tests in `tests/e2e/` (Playwright, ADR 0066): nur mit `pytest -m e2e`, Abhängigkeiten in
+  `requirements-e2e.txt`, eigener CI-Job `e2e`. JavaScript-Fehler lassen sie scheitern; neue
+  JavaScript-Funktionen dort mit einem Ablauf abdecken.
 - Shell-Skripte müssen `shellcheck` bestehen. Änderungen an Sicherung oder Wiederherstellung
   deckt `tests/sicherung_e2e.sh` ab (läuft in CI im Job `docker`).
