@@ -219,7 +219,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Versionen `JJJJ.M.N` vergibt `.github/workflows/version.yml` nach jedem Merge, `update` bietet
   sie zur Auswahl an (auch ältere; dann Migrationen rückwärts, deshalb jede Migration
   umkehrbar halten), `bintafeln/version.py` liest die Datei VERSION (ADR 0023). Mehrere
-  Installationen hinter `docker/gemeinsamer-proxy` über `docker/hinter-proxy.yml`; Demo-Betrieb
+  Installationen hinter `docker/gemeinsamer-proxy` über `docker/hinter-proxy.yml`, hinter einem
+  fremden Proxy (z. B. Synology) über `docker/hinter-fremdem-proxy.yml` (ADR 0069); Demo-Betrieb
   mit `BINTAFELN_DEMO` und `apps/core/demo.py` (ADR 0022). Was Demo-Besucher nutzen
   könnten, um andere auszusperren, mit `nicht_in_demo` sperren.
   Sicherungsskript im Dienst `backup`: `docker/backup/sicherung.sh`; es liest die

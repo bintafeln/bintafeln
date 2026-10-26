@@ -25,8 +25,10 @@ USER bintafeln
 
 EXPOSE 8000
 
+# Mit gesetzter Domain nimmt Django nur Anfragen an diese Domain an (ALLOWED_HOSTS), daher als Host
+# die Domain mitschicken; ohne Domain (Entwicklungsmodus) gilt jeder Name.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz/', timeout=4)"
+    CMD python -c "import os, urllib.request as u; u.urlopen(u.Request('http://127.0.0.1:8000/healthz/', headers={'Host': os.environ.get('BINTAFELN_DOMAIN') or 'localhost'}), timeout=4)"
 
 ENTRYPOINT ["docker/entrypoint.sh"]
 CMD ["gunicorn", "bintafeln.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--no-control-socket", "--access-logfile", "-"]

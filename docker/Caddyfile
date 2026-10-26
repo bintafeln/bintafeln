@@ -24,6 +24,11 @@
 (bintafeln) {
 	encode zstd gzip
 
+	# Hinter einem fremden Proxy (docker/hinter-fremdem-proxy.yml, ADR 0069) kommt auch http dort
+	# an; der Proxy meldet es mit X-Forwarded-Proto. Dann auf https umleiten.
+	@ueber_http header X-Forwarded-Proto http
+	redir @ueber_http https://{host}{uri} 308
+
 	header {
 		X-Content-Type-Options nosniff
 		Referrer-Policy same-origin
