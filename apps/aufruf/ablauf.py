@@ -646,5 +646,5 @@ def einlass(haushalt, heute, stelle=None) -> list[dict]:
     if i == s["index"] and j - aufg < e.anzahl:
         return [{"text": "Gerade aufgerufen – „Bitte eintreten“", "farbe": "gruen"}]
     vor = _davor(s, i, j, aufg)
-    return [{"text": f"Noch nicht aufgerufen: {vor} Nummer{'n' if vor != 1 else ''} davor "
-             f"(Kundengruppe {g['name']})", "farbe": "gelb", "warten": True}]  # fmt: skip
+    return [{"text": f"Noch nicht aufgerufen: {vor} Nummer{'n' if vor != 1 else ''} zu früh",
+             "farbe": "gelb", "warten": True}]  # fmt: skip
