@@ -186,7 +186,7 @@ def test_liste(admin_client, kim, benutzer_mit_rolle):
     inhalt = admin_client.get(LISTE).content.decode()
     assert "Kim Probe" in inhalt and "Lager" in inhalt and "unbefristet" in inhalt
     assert "kein gültiger Vertrag" in inhalt  # alex
-    assert "chefin" not in inhalt
+    assert "chefin" not in inhalt.split("<main", 1)[1]  # oben steht nur der eigene Name
 
 
 def test_person_mit_jahr(admin_client, kim):

@@ -233,6 +233,10 @@ def _begrenzen(tage, abgeholt, einstellungen) -> tuple[list[dt.date], str]:
     return ergebnis, satz
 
 
+# Vorauszahlung erst ab so vielen möglichen Abholungen bis Monatsende anbieten
+VORSCHLAG_AB_TAGEN = 3
+
+
 def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]:
     """Vorschlag für den Rest dieses Monats, mit Erklärung (nicht für den nächsten Monat).
 
@@ -273,7 +277,7 @@ def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]
         else:
             ausweis = None
         tage, grenze = _begrenzen(tage, abgeholt, einstellungen)
-        if not tage:
+        if len(tage) < VORSCHLAG_AB_TAGEN:  # für ein, zwei Abholungen lohnt keine Vorauszahlung
             continue
         v = Vorschlag(titel=titel, tage=tage, beitrag=beitrag)
         v.erklaerung = [
@@ -310,7 +314,8 @@ def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]
             )
         ergebnis.append(v)
     if not ergebnis:
-        return [], "Kein Vorschlag: Bis Monatsende ist kein Abholtag mehr möglich."
+        return [], (f"Kein Vorschlag: Bis Monatsende sind weniger als {VORSCHLAG_AB_TAGEN} "
+                    "Abholungen möglich.")  # fmt: skip
     return ergebnis, ""
 
 

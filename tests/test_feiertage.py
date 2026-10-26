@@ -110,14 +110,15 @@ def test_seite_nennt_bundesland(admin_client, land, benutzer_mit_rolle):
 
 @pytest.mark.django_db
 def test_vorschlag_laesst_feiertage_aus(land):
-    gruppe = Kundengruppe.objects.create(kuerzel="FR", name="Freitag", wochentage="Fr")
+    gruppe = Kundengruppe.objects.create(kuerzel="DF", name="Do+Fr", wochentage="Do,Fr")
     h = Haushalt.objects.create(kundennummer="1", kundengruppe=gruppe)
     e = AusgabeEinstellungen.laden()
-    heute = dt.date(2026, 12, 18)  # Freitag; 25.12.2026 ist auch ein Freitag
+    e.max_abholungen = 0
+    heute = dt.date(2026, 12, 17)  # Donnerstag; 25.12.2026 ist ein Freitag
     rest = konto.vorschlaege(h, heute, e, D("1"))[0][0]
-    assert len(rest.tage) == 2 and "kein Bundesland gewählt" in rest.erklaerung[-1]
+    assert len(rest.tage) == 5 and "kein Bundesland gewählt" in rest.erklaerung[-1]
     land("NW")
     rest = konto.vorschlaege(h, heute, e, D("1"))[0][0]
-    assert rest.tage == [dt.date(2026, 12, 18)]
+    assert dt.date(2026, 12, 25) not in rest.tage and len(rest.tage) == 4
     assert "Nicht gezählt, weil Feiertag: Fr 25.12. (1. Weihnachtstag)." in rest.erklaerung
     assert "Betriebsferien" in rest.erklaerung[-1]

@@ -11,20 +11,20 @@
 {% elif h %}
 {% if meldung %}<p class="meldung kasse-meldung" role="status">{{ meldung }}</p>{% endif %}
 <div class="empfang-raster">
-<aside class="ampel-grafik ampel-grafik-{{ bewertung.farbe }}" role="img"
-       aria-label="Ampel: {% if bewertung.farbe == 'rot' %}rot, keine Abholung{% elif bewertung.farbe == 'gelb' %}gelb, Abholung mit Hinweis{% else %}grün, Abholung möglich{% endif %}">
+<aside class="ampel-grafik ampel-grafik-{{ bewertung.farbe }}{% if bewertung.blinken %} ampel-blinkt{% endif %}" role="img"
+       aria-label="Ampel: {% if bewertung.farbe == 'rot' %}rot, keine Abholung{% elif bewertung.blinken %}gelb blinkend, noch nicht an der Reihe{% elif bewertung.farbe == 'gelb' %}gelb, Abholung mit Hinweis{% else %}grün, Abholung möglich{% endif %}">
   <div class="ampel-gehaeuse">
     <span class="lampe lampe-rot{% if bewertung.farbe == 'rot' %} an{% endif %}"></span>
     <span class="lampe lampe-gelb{% if bewertung.farbe == 'gelb' %} an{% endif %}"></span>
     <span class="lampe lampe-gruen{% if bewertung.farbe == 'gruen' %} an{% endif %}"></span>
   </div>
-  <p class="ampel-wort">{% if bewertung.farbe == "rot" %}STOPP{% elif bewertung.farbe == "gelb" %}ACHTUNG{% else %}OK{% endif %}</p>
+  <p class="ampel-wort">{% if bewertung.farbe == "rot" %}STOPP{% elif bewertung.blinken %}WARTEN{% elif bewertung.farbe == "gelb" %}ACHTUNG{% else %}OK{% endif %}</p>
 </aside>
 
 <div class="empfang-spalte">
 <section class="karte ampel ampel-{{ bewertung.farbe }}" role="status">
   <p class="ampel-titel">
-    {% if bewertung.farbe == "rot" %}Keine Abholung{% elif bewertung.farbe == "gelb" %}Abholung möglich – bitte beachten{% else %}Abholung möglich{% endif %}
+    {% if bewertung.farbe == "rot" %}Keine Abholung{% elif bewertung.blinken %}Noch nicht an der Reihe{% elif bewertung.farbe == "gelb" %}Abholung möglich – bitte beachten{% else %}Abholung möglich{% endif %}
   </p>
   <ul class="ampel-gruende">
     {% for m in bewertung.meldungen %}<li class="grund-{{ m.farbe }}">{{ m.text }}</li>{% endfor %}
@@ -51,15 +51,12 @@
 </section>
 {% endif %}
 
+{% comment %}Bei möglicher Abholung steht alles oben in der Leiste; die Karte nur für Zahlung ohne
+Abholung, Rücknahmen von heute und die Ausnahme{% endcomment %}
+{% if not bewertung.darf_abholen or beitragsfrei or heute_erfasst or einzahlungen_heute or bewertung.ausnahme_hilft and darf_ausnahme %}
 <section class="karte">
   {% if bewertung.darf_abholen %}
-  <h2>Abholung</h2>
   {% if beitragsfrei %}<p class="meldung" role="status">Heute beitragsfrei: {{ beitragsfrei.bezeichnung }} (bis {{ beitragsfrei.bis|date:"d.m.Y" }}).</p>{% endif %}
-  <small class="hilfe">Beitrag und „Gezahlt“ stehen oben rechts neben „Abholung eintragen“. Genau den Betrag eintragen, der gezahlt wurde, auch 0.
-    {% if h.kontostand and h.kontostand > 0 %}Vorgeschlagen: was nach Verrechnung des Guthabens ({{ h.kontostand|floatformat:2 }} €) noch fehlt.{% endif %}
-    Weniger als der Beitrag: Rest aus Guthaben{% if einstellungen.anschreiben_erlaubt %}, sonst angeschrieben{% endif %}. Mehr (z. B. Vorauszahlung): wird Guthaben.</small>
-  {% include "ausgabe/_vorschlaege.html" with feld="bar" %}
-  <p class="hinweis">Nur das Aufrufen trägt nichts ein. Erst „Abholung eintragen“ meldet den Kunden für heute an; „Abbrechen“ geht ohne Eintrag zurück zur Suche.</p>
   {% else %}
   <h2>Zahlung</h2>
   <form method="post" action="{% url 'ausgabe:einzahlung' h.kundennummer %}"
@@ -102,6 +99,7 @@
   </form>
   {% endif %}
 </section>
+{% endif %}
 
 {% for s in sonderaktionen %}
 <section class="karte sonderaktion">

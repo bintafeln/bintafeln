@@ -35,7 +35,8 @@ standen weiter in der Warteschlange.
 
 - Ergänzung: Module können Hinweise für die Einlass-Karte liefern (`Modul.einlass`). Der Aufruf
   zeigt dort, ob und wann die Nummer aufgerufen wurde, „Zu spät“ ab `zu_spaet_minuten` nach dem
-  Aufruf oder wie viele Nummern noch davor sind. Die Ampel bleibt davon unberührt.
+  Aufruf oder wie viele Nummern noch davor sind. Ist der Kunde noch nicht an der Reihe, blinkt die Ampel
+  gelb (Hinweis mit „warten“, `ampel.noch_nicht_dran()`); Eintragen bleibt möglich, Rot bleibt Rot.
 
 ## Begründung
 

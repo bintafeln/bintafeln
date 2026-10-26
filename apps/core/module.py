@@ -42,7 +42,8 @@ class Modul:
     sicherung_bereich: str = "einstellungen"
     sicherung_ausgenommen: tuple[str, ...] = ()
     # Hinweise für die Einlass-Karte eines Haushalts: einlass(haushalt, heute, stelle) ->
-    # [{"text": …, "farbe": "gruen" | "gelb" | "rot" | "info"}]
+    # [{"text": …, "farbe": "gruen" | "gelb" | "rot" | "info", "warten": True (optional: noch
+    # nicht an der Reihe, die Ampel blinkt gelb)}]
     einlass: Callable | None = None
     # Auskunft nach Art. 15 zu einem Antrag: auskunft_antrag(antrag, pdf) schreibt eigene
     # Abschnitte. Läuft auch bei ausgeschaltetem Modul (die Daten sind ja gespeichert).

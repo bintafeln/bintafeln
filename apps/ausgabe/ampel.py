@@ -25,6 +25,9 @@ class Meldung:
 @dataclass
 class Bewertung:
     meldungen: list[Meldung] = field(default_factory=list)
+    blinken: bool = (
+        False  # Kunde ist noch nicht an der Reihe (z. B. Aufruf), Abholung bleibt möglich
+    )
 
     @property
     def farbe(self) -> str:
@@ -44,6 +47,12 @@ class Bewertung:
         """Rot nur wegen Regeln, die eine Ausnahme für heute aufhebt."""
         rote = [m for m in self.meldungen if m.farbe == ROT]
         return bool(rote) and all(m.ausnahme_moeglich for m in rote)
+
+
+def wochentage(text: str) -> list[str]:
+    """Wochentage einer Kundengruppe als Kürzel „Mo“ … „So“; nimmt auch „Montag“, „mo“, „Di.“."""
+    kuerzel = (t.strip(" .")[:2].capitalize() for t in re.split(r"[,;/\s]+", text or ""))
+    return [k for k in kuerzel if k in WOCHENTAGE]
 
 
 def zeitraum_beginn(heute: dt.date, zeitraum: str) -> dt.date:
@@ -174,7 +183,7 @@ def bewerten(haushalt, heute: dt.date, ausgabestelle, einstellungen) -> Bewertun
     if gruppe is None:
         terminregel(t("keine_gruppe", "Keine Kundengruppe zugeordnet"))
     else:
-        tage = [t.strip() for t in gruppe.wochentage.split(",") if t.strip()]
+        tage = wochentage(gruppe.wochentage)
         if not tage:
             terminregel(
                 t("keine_wochentage", f"Kundengruppe {gruppe.name} hat keine Wochentage – nicht "
@@ -199,4 +208,15 @@ def bewerten(haushalt, heute: dt.date, ausgabestelle, einstellungen) -> Bewertun
 
     if not b.meldungen:
         melden(GRUEN, t("ok", "Alles in Ordnung"))
+    return b
+
+
+def noch_nicht_dran(b: Bewertung, hinweise: list[dict]) -> Bewertung:
+    """Meldet ein Modul (z. B. Aufruf), dass der Kunde noch warten muss, wird Grün zu blinkendem
+    Gelb. Abholen bleibt möglich; Rot bleibt Rot."""
+    if b.farbe == ROT or not any(h.get("warten") for h in hinweise):
+        return b
+    b.meldungen = [m for m in b.meldungen if m.farbe != GRUEN or "Ausnahme" in m.text]
+    b.meldungen.insert(0, Meldung(GELB, "Noch nicht aufgerufen – Eintragen geht trotzdem"))
+    b.blinken = True
     return b

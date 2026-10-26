@@ -603,7 +603,10 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    einer zugeordneten Stelle haben sie fest. Oben rechts steht dazu der **Fortschritt des Tages**,
    z. B. `3/236`: heute an dieser Stelle abgeholt / planmäßig heute erwartet (aktive Haushalte,
    deren Kundengruppe heute hier ihren Ausgabetag hat; Ausnahmen zählen nur vorne mit). Die Zahl
-   zählt nach jeder Abholung sofort weiter (ADR 0067).
+   zählt nach jeder Abholung sofort weiter (ADR 0067); hinten zählen alle Kundengruppen der Stelle
+   mit heutigem Ausgabetag zusammen (Wochentage auch ausgeschrieben, z. B. „Montag“). Maus darüber
+   oder antippen zeigt eine kurze Erklärung. Über „Abmelden“ steht der Name der angemeldeten
+   Person.
 2. Kundennummer **scannen** oder eintippen und Enter. Führende Nullen sind egal. Drei Wege,
    die sich beliebig mischen lassen; Eintippen geht immer:
    - **Handscanner** per USB oder Bluetooth (am PC oder Handy): Er arbeitet als Tastatur, das
@@ -660,9 +663,10 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    - Danach steht groß da, was bar eingenommen, aus Guthaben verrechnet, angeschrieben oder
      gutgeschrieben wurde, und der neue Kontostand.
 6. **Vorauszahlung:** läuft ebenfalls über „Gezahlt“: Was über den Beitrag hinaus gezahlt wird,
-   wird Guthaben. Der Knopf **„Vorauszahlung Rest <Monat> eintragen“** setzt den passenden
-   Betrag ins Feld (Abholtage bis Monatsende × Beitrag, abzüglich vorhandenen Guthabens) und
-   erklärt die Rechnung. Ist heute keine Abholung möglich, gibt es stattdessen das Feld
+   wird Guthaben. Sind bis Monatsende noch mindestens drei Abholungen möglich, steht oben links
+   neben „Beitrag“ der Knopf **„Vorauszahlung Rest <Monat>“** mit dem Betrag (Abholtage bis
+   Monatsende × Beitrag, abzüglich vorhandenen Guthabens; die Rechnung zeigt die Maus). Er trägt
+   den Betrag nur ins Feld „Gezahlt“ ein; ins Kassenbuch kommt er erst mit „Abholung eintragen“. Ist heute keine Abholung möglich, gibt es stattdessen das Feld
    **„Gezahlt ohne Abholung“**. Auch eine Zahlung nimmt nur zurück, wer das Recht dazu hat;
    sonst geht ein Korrekturwunsch.
 7. Den **Kontoverlauf** mit allen Buchungen und Korrekturbuchungen gibt es auf der Haushaltsseite

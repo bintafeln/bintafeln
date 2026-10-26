@@ -10,6 +10,11 @@ Nach dem Anmelden eines Kunden kommt wieder die Suche.
     <form method="post" action="{% url 'ausgabe:eintragen' h.kundennummer %}" class="anmelden" id="abholung-form"
           hx-post="{% url 'ausgabe:eintragen' h.kundennummer %}" hx-target="#einlass">
       {% csrf_token %}
+      {% for v in vorschlaege %}
+      {# Trägt nur den Betrag ins Feld „Gezahlt“ ein; gebucht wird erst mit „Abholung eintragen“ #}
+      <button type="button" class="knopf knopf-zweitrangig einlass-vorschlag" title="{{ v.erklaerung|join:' ' }}"
+              onclick="document.getElementById('bar').value='{{ v.zu_zahlen|floatformat:2 }}'">Vorauszahlung {{ v.titel }}<br><strong>{{ v.zu_zahlen|floatformat:2 }} €</strong></button>
+      {% endfor %}
       <div class="feld">
         <label for="beitrag">Beitrag €</label>
         <input type="text" name="beitrag" id="beitrag" value="{{ beitrag|floatformat:2 }}" inputmode="decimal" class="betrag">
