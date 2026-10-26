@@ -30,7 +30,7 @@
     </form>
     {% endif %}
     {# Wird die Zeile zu eng, blendet static/js/kopfzeile.js nach und nach .kuerz-1 … .kuerz-5 aus #}
-    <span class="kopf-programm kuerz-3" title="{{ programm.name }} – {{ programm.untertitel }}"><strong>{{ programm.name }}</strong><span class="kuerz-1"> – {{ programm.untertitel }}</span></span>
+    <span class="kopf-programm kuerz-3" title="{{ programm.name }} – {{ programm.untertitel }}"><strong>{{ programm.name }}</strong><span class="kopf-untertitel kuerz-1">{{ programm.untertitel }}</span></span>
     <div class="kopf-rechts">
       {% if ausgabestelle is not None or ausgabestellen_wahl %}{% include "ausgabe/_fortschritt.html" %}{% endif %}
       {% for vorlage in kopf_module %}{% include vorlage %}{% endfor %}

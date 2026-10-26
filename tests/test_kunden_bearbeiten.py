@@ -9,7 +9,7 @@ from apps.ausgabe import konto
 from apps.ausgabe.models import AusgabeEinstellungen, Buchung
 from apps.konten import rollen
 from apps.kunden import importieren
-from apps.kunden.forms_bearbeiten import HaushaltForm, PersonForm
+from apps.kunden.forms_bearbeiten import HaushaltForm, NotizVorlageForm, PersonForm
 from apps.kunden.models import (
     Abholer,
     Abholung,
@@ -20,6 +20,7 @@ from apps.kunden.models import (
     Haushalt,
     KundenEinstellungen,
     Kundengruppe,
+    NotizVorlage,
     Person,
     Sperre,
     Zusatzfeld,
@@ -358,3 +359,10 @@ def test_notizen_haushaltsseite_import_und_umnummern(
     Notiz.objects.create(kundennummer="2009", text="x")
     admin_client.post(url("haushalt_loeschen", "2009"))
     assert not Notiz.objects.exists()
+
+
+def test_notiz_vorlage_bietet_alte_anliegen_nicht_mehr_an():
+    neu = dict(NotizVorlageForm().fields["melden"].choices)
+    assert "zugehoerig" not in neu and "verlaengern" in neu
+    alt = NotizVorlage(text="Gehört zu uns", melden="zugehoerig")
+    assert "zugehoerig" in dict(NotizVorlageForm(instance=alt).fields["melden"].choices)

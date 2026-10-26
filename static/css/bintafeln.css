@@ -750,8 +750,9 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 
 /* Kopfzeile: Programmname, Modul-Beiträge (Wetter) und Abmelden rechts. Ist die Zeile zu eng,
    setzt static/js/kopfzeile.js nacheinander .kopf-kurz-1 … -5 und blendet so .kuerz-1 … -5 aus. */
-.kopf-programm { white-space: nowrap; font-size: .95rem; opacity: .95; }
-.kopf-programm strong { font-weight: 700; }
+.kopf-programm { display: flex; flex-direction: column; white-space: nowrap; line-height: 1.15; }
+.kopf-programm strong { font-size: 1.15rem; font-weight: 800; }
+.kopf-untertitel { font-size: .75rem; opacity: .9; }
 .kopf-rechts { display: flex; align-items: center; gap: .25rem 1rem; margin-left: auto; }
 .kopf-wetter { white-space: nowrap; font-size: .95rem; }
 .kopf-fortschritt { position: relative; white-space: nowrap; font-size: .9rem; font-variant-numeric: tabular-nums; cursor: help; }
