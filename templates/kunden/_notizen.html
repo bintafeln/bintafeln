@@ -17,6 +17,7 @@
         {% endif %}
       </div>
       <p class="notiz-text">{{ n.text|linebreaksbr }}</p>
+      {% if n.an_stelle %}<p class="notiz-an"><small>An die Ausgabestelle · {% if n.gelesen_am %}gelesen {{ n.gelesen_am|date:"d.m.Y H:i" }}{% if n.gelesen_von %} von {{ n.gelesen_von }}{% endif %}{% else %}noch nicht gelesen{% endif %}</small></p>{% endif %}
     </div>
   {% empty %}
     <p class="hinweis">Keine Notizen.</p>
@@ -51,6 +52,9 @@
       <label for="notiz-text">Eigene Notiz</label>
       <textarea name="text" id="notiz-text" rows="2" maxlength="1000" required></textarea>
     </div>
+    {% if not notiz_htmx %}
+    <label class="auswahl"><input type="checkbox" name="an_stelle" value="1"> An die Ausgabestelle schicken (erscheint auf deren Startseite)</label>
+    {% endif %}
     <button type="submit" class="knopf knopf-zweitrangig">Notiz speichern</button>
   </form>
   {% if "einstellungen.listen" in rechte %}<p><small><a href="{% url 'kunden:liste' 'notizvorlagen' %}">Notiz-Vorlagen bearbeiten</a></small></p>{% endif %}

@@ -10,6 +10,7 @@ from django.http import HttpResponse, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
@@ -18,8 +19,8 @@ from apps.ausgabe.models import AusgabeEinstellungen
 from apps.core import listenauswahl, sicherung
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
+from apps.kunden import an_stelle, export, gruppen, importieren, views_dokumente, zugang
 from apps.kunden import auskunft as kunden_auskunft
-from apps.kunden import export, gruppen, importieren, views_dokumente, zugang
 from apps.kunden.ausweis import MAX_SAMMELDRUCK, ausweis_pdf, ausweise_pdf
 from apps.kunden.forms import KundenEinstellungenForm, ZusatzfeldForm
 from apps.kunden.models import (
@@ -395,14 +396,19 @@ def haushalt(request, kundennummer):
     )
 
 
-def notiz_schreiben(h: Haushalt, text: str, benutzer) -> Notiz | None:
-    """Legt eine Notiz an; leerer Text legt nichts an."""
+def notiz_schreiben(h: Haushalt, text: str, benutzer, an_stelle=False) -> Notiz | None:
+    """Legt eine Notiz an; leerer Text legt nichts an. ``an_stelle``: auch auf die Startseite
+    der Ausgabestelle (nur auf ausdrücklichen Wunsch der Verwaltung)."""
     text = text.strip()[:1000]
     if not text:
         return None
     von = (benutzer.get_full_name() or benutzer.get_username())[:100]
     notiz = Notiz.objects.create(
-        kundennummer=h.kundennummer, text=text, verfasst_von=von, benutzer=benutzer
+        kundennummer=h.kundennummer,
+        text=text,
+        verfasst_von=von,
+        benutzer=benutzer,
+        an_stelle=an_stelle,
     )
     _melden(h, text, benutzer, von)
     return notiz
@@ -437,8 +443,13 @@ def notizen_kontext(kundennummer: str, benutzer) -> dict:
 @rollen.recht_erforderlich("kunden.notizen")
 def notiz_neu(request, kundennummer):
     h = zugang.haushalt(request.user, kundennummer)
-    if notiz_schreiben(h, request.POST.get("text", ""), request.user):
-        messages.success(request, "Notiz gespeichert.")
+    an_ausgabestelle = bool(request.POST.get("an_stelle"))
+    if notiz_schreiben(h, request.POST.get("text", ""), request.user, an_stelle=an_ausgabestelle):
+        messages.success(
+            request,
+            "Notiz gespeichert"
+            + (" und an die Ausgabestelle geschickt." if an_ausgabestelle else "."),
+        )
     else:
         messages.error(request, "Bitte einen Text eingeben.")
     return redirect("kunden:haushalt", kundennummer=h.kundennummer)
@@ -471,9 +482,35 @@ def auskunft(request, kundennummer):
 
 
 @never_cache
+@rollen.recht_erforderlich("einlass.nutzen")
+def notizen_an_stelle(request):
+    """Gesammelte, noch nicht gelesene Notizen der Verwaltung an die gewählte Ausgabestelle."""
+    from apps.ausgabe.stelle import aktuelle
+
+    stelle = aktuelle(request.user)
+    return render(request, "kunden/notizen_an_stelle.html", {
+        "stelle": stelle, "notizen": an_stelle.offene(stelle),
+    })  # fmt: skip
+
+
+@require_POST
+@rollen.recht_erforderlich("einlass.nutzen")
+def notiz_gelesen(request, pk):
+    from apps.ausgabe.stelle import aktuelle
+
+    notiz = get_object_or_404(an_stelle.offene(aktuelle(request.user)), pk=pk)
+    an_stelle.gelesen(notiz, request.user)
+    zurueck = request.POST.get("zurueck", "")
+    if not url_has_allowed_host_and_scheme(zurueck, allowed_hosts={request.get_host()}):
+        zurueck = reverse("core:start")
+    return redirect(zurueck)
+
+
+@never_cache
 @rollen.recht_erforderlich("kunden.ausweis")
 def ausweis(request, kundennummer):
     h = zugang.haushalt(request.user, kundennummer)
+    _ausweis_gedruckt(request, [h])
     return pdf_antwort(ausweis_pdf(h), f"kundenausweis-{_dateiname(h)}.pdf")
 
 
@@ -516,7 +553,15 @@ def ausweise(request):
             f"Mehr als {MAX_SAMMELDRUCK} Haushalte: bitte nach Kundengruppe oder Status filtern.",
         )  # fmt: skip
         return redirect(f"{reverse('kunden:uebersicht')}?{request.GET.urlencode()}")
+    _ausweis_gedruckt(request, haushalte)
     return pdf_antwort(ausweise_pdf(haushalte), "kundenausweise.pdf")
+
+
+def _ausweis_gedruckt(request, haushalte) -> None:
+    """Gemeldetes „Neuen Ausweis drucken“ beantworten (Notiz an die Ausgabestelle)."""
+    if anzahl := an_stelle.ausweis_gedruckt(haushalte, request.user):
+        messages.success(request, f"{anzahl} Ausgabestelle{'n' if anzahl != 1 else ''} über den "
+                         "neuen Ausweis benachrichtigt.")  # fmt: skip
 
 
 def _dateiname(h) -> str:

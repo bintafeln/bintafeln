@@ -14,6 +14,7 @@ from apps.ausgabe.ampel import WOCHENTAGE
 from apps.core.auswahl import (
     ANREDEN,
     FAMILIENSTAENDE,
+    FESTE_ANLIEGEN,
     NACHRICHT_ANLIEGEN_ALT,
     ZEITARTEN,
     ZUSTAENDIGKEITEN,
@@ -294,11 +295,22 @@ class AusgabestelleForm(forms.ModelForm):
         ("Ausgabestelle", ["name", "aktiv"]),
         ("Anschrift", ["strasse", "plz", "ort"]),
         ("Kontakt und Anmerkungen", ["telefon", "email", "anmerkung"]),
+        ("Ausweise", ["ausweise_hier"]),
     ]
 
     class Meta:
         model = Ausgabestelle
-        fields = ["name", "aktiv", "strasse", "plz", "ort", "telefon", "email", "anmerkung"]
+        fields = [
+            "name",
+            "aktiv",
+            "strasse",
+            "plz",
+            "ort",
+            "telefon",
+            "email",
+            "anmerkung",
+            "ausweise_hier",
+        ]
         widgets = {"anmerkung": forms.Textarea(attrs={"rows": 4})}
 
     def abschnitte(self):
@@ -390,11 +402,17 @@ class HaushaltDokumentForm(forms.ModelForm):
 class NotizVorlageForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Nicht mehr angebotene Anliegen nur, wenn die Vorlage es schon hat
-        alt = NACHRICHT_ANLIEGEN_ALT - {self.instance.melden}
-        self.fields["melden"].choices = [
-            c for c in self.fields["melden"].choices if c[0] not in alt
-        ]
+        feld = self.fields["melden"]
+        if self.instance.fest:
+            # Darauf reagiert das Programm (Verlängerung, Ausweisdruck): Anliegen bleibt
+            feld.disabled = True
+            feld.help_text = ("Feste Vorlage: Der Text lässt sich ändern, das Anliegen nicht; "
+                              "löschen geht nicht.")  # fmt: skip
+            return
+        # Nicht mehr angebotene Anliegen nur, wenn die Vorlage es schon hat; die festen
+        # Anliegen haben ihre eigene Vorlage
+        weg = (NACHRICHT_ANLIEGEN_ALT | set(FESTE_ANLIEGEN)) - {self.instance.melden}
+        feld.choices = [c for c in feld.choices if c[0] not in weg]
 
     class Meta:
         model = NotizVorlage

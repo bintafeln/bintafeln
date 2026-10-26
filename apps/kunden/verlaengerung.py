@@ -194,10 +194,11 @@ def gemeldete(benutzer, heute: dt.date, monate: int) -> list[Pruefung]:
 
 
 def ausfuehren(benutzer, heute: dt.date, monate: int, verlaengern: set[str],
-               ablehnen: set[str]) -> tuple[int, int]:  # fmt: skip
+               ablehnen: set[str], an_stelle: bool = False) -> tuple[int, int]:  # fmt: skip
     """Verlängert die gewählten gemeldeten Haushalte; bei nicht verlängerbaren je nach Einstellung
     Notiz an die Ausgabestelle oder Pause. In beiden Fällen ist die Meldung danach erledigt und
-    die gemeldete Notiz gestrichen. Ergebnis: (verlängert, abgelehnt)."""
+    die gemeldete Notiz gestrichen. ``an_stelle``: die Notiz zur Ablehnung auch auf die Startseite
+    der Ausgabestelle (nur auf ausdrücklichen Wunsch). Ergebnis: (verlängert, abgelehnt)."""
     e = KundenEinstellungen.laden()
     A = KundenEinstellungen.Ablehnung
     von = benutzer.get_username()
@@ -218,7 +219,7 @@ def ausfuehren(benutzer, heute: dt.date, monate: int, verlaengern: set[str],
                     h.status = Haushalt.Status.PAUSIERT
                     bis = monat_plus(heute, e.verlaengern_sonst_pausieren_monate, False)
                 Notiz.objects.create(kundennummer=h.kundennummer, benutzer=benutzer,
-                                     verfasst_von=von[:100],
+                                     verfasst_von=von[:100], an_stelle=an_stelle,
                                      text=ablehnung_notiz(p, e, bis)[:1000])  # fmt: skip
                 zusatz = ("Nicht verlängert (Sammel-Verlängerung)" if bis is None
                           else f"Nicht verlängert, pausiert bis {bis:%d.%m.%Y}")  # fmt: skip

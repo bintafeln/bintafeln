@@ -13,7 +13,7 @@ from django.db import models
 from django.utils import timezone
 
 from apps.core import privatdateien
-from apps.core.auswahl import GRUPPENFARBEN, NACHRICHT_ANLIEGEN
+from apps.core.auswahl import FESTE_ANLIEGEN, GRUPPENFARBEN, NACHRICHT_ANLIEGEN
 from apps.kunden import werte
 
 
@@ -245,6 +245,11 @@ class Ausgabestelle(models.Model):
     anmerkung = models.TextField(
         "Allgemeine Anmerkungen", blank=True,
         help_text="Z. B. Zugang, Parken, Barrierefreiheit, Schlüssel, Besonderheiten.",
+    )  # fmt: skip
+    ausweise_hier = models.BooleanField(
+        "Gedruckte Ausweise liegen hier", default=False,
+        help_text="Z. B. die Zentrale: Nach dem Druck heißt die Nachricht „Neuer Ausweis ist "
+        "gedruckt und liegt im Schrank“ statt „… wird zur Ausgabestelle geschickt“.",
     )  # fmt: skip
 
     class Meta:
@@ -578,6 +583,11 @@ class Notiz(models.Model):
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
         related_name="+", verbose_name="Geschrieben von (Konto)",
     )  # fmt: skip
+    # Von der Verwaltung ausdrücklich an die Ausgabestelle gerichtet: steht auf deren Startseite,
+    # bis jemand dort „gelesen“ klickt
+    an_stelle = models.BooleanField("An die Ausgabestelle", default=False)
+    gelesen_am = models.DateTimeField("Gelesen am", null=True, blank=True)
+    gelesen_von = models.CharField("Gelesen von", max_length=150, blank=True)
 
     class Meta:
         verbose_name = "Notiz"
@@ -616,6 +626,11 @@ class NotizVorlage(models.Model):
 
     def __str__(self):
         return self.text
+
+    @property
+    def fest(self) -> bool:
+        """Vorlage zu einem Anliegen, auf das das Programm reagiert: nicht löschbar."""
+        return self.melden in FESTE_ANLIEGEN
 
 
 class Nachricht(models.Model):

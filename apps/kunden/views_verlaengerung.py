@@ -28,6 +28,7 @@ def verlaengern(request):
         v, p = verlaengerung.ausfuehren(
             request.user, heute, monate,
             set(request.POST.getlist("verlaengern")), set(request.POST.getlist("ablehnen")),
+            an_stelle=bool(request.POST.get("an_stelle")),
         )  # fmt: skip
         if v or p:
             text = f"{v} Ausweis{'e' if v != 1 else ''} verlängert"

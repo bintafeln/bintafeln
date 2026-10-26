@@ -60,6 +60,11 @@ def start(request):
 
         kontext["nachrichten_offen"] = offene_je_anliegen()
         kontext["darf_verlaengern"] = rollen.hat_recht(request.user, "kunden.bearbeiten")
+    if rollen.hat_recht(request.user, "einlass.nutzen"):
+        from apps.ausgabe.stelle import aktuelle
+        from apps.kunden import an_stelle
+
+        kontext["notizen_an_stelle"] = list(an_stelle.offene(aktuelle(request.user)))
     if rollen.hat_recht(request.user, "system.status"):
         kontext["sicherung"] = sicherung.lese_status()
         kontext["sicherungsfehler"] = sicherung.auftraege_mit_fehler()

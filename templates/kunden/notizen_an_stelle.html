@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block titel %}Notizen der Verwaltung{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Notizen der Verwaltung{% if stelle %} an {{ stelle.name }}{% endif %}</h1>
+  <p class="hinweis">Die Verwaltung schreibt hier zu einzelnen Kunden, z. B. wenn ein neuer Ausweis gedruckt ist. „✓ gelesen“
+    nimmt die Notiz von der Startseite; am Kunden bleibt sie stehen.</p>
+  {% if stelle is None %}<p>Bitte oben im Menü die Ausgabestelle wählen.</p>{% endif %}
+  {% for n in notizen %}{% include "kunden/_notiz_an_stelle.html" %}{% empty %}<p>Keine ungelesenen Notizen.</p>{% endfor %}
+</section>
+{% endblock %}

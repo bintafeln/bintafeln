@@ -475,6 +475,14 @@ Dokumente, Historie.
   Tag (Versehen). Notizen hängen an der Kundennummer und
   bleiben beim Import erhalten; gibt es die Kundennummer nicht mehr, werden sie gelöscht
   (ADR 0026). Die **internen Anmerkungen** aus dem Altsystem sehen nur Büro und Admin.
+- **Notizen an die Ausgabestelle** (ADR 0070): Mit dem Haken „An die Ausgabestelle schicken“
+  steht eine Notiz zusätzlich auf der Startseite der Ausgabestelle (eine ganz, mehrere als
+  Link), bis dort „✓ gelesen“ geklickt wird. Meldet die Ausgabestelle „Neuen Ausweis drucken“
+  (fester Notiz-Knopf oder Nachricht), antwortet „Ausweis drucken“ von selbst: „Neuer Ausweis
+  ist gedruckt und wird zur Ausgabestelle geschickt“ bzw. „… liegt im Schrank“ bei einer
+  Ausgabestelle mit „Gedruckte Ausweise liegen hier“ (z. B. Zentrale). Die Knöpfe
+  „Bescheide geprüft – bitte Ausweis verlängern“ und „Neuen Ausweis drucken“ sind fest (Text
+  änderbar, Anliegen nicht, nicht löschbar).
 - **Dokumente** (Admin, Büro): Auf der Haushaltsseite unter „Dokumente“ Bescheide,
   Einwilligungen usw. als PDF oder Foto hochladen (höchstens 10 MB), mit Dokumentart, Titel und
   Dokumentdatum. Sie werden verschlüsselt gespeichert, nie öffentlich ausgeliefert, und jeder

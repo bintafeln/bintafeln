@@ -201,7 +201,7 @@ def test_kundenseite_fuer_ausgabe(client, admin, benutzer_mit_rolle, anmelden, h
     anmelden(client, benutzer_mit_rolle("kim", rollen.AUSGABE))
     seite = client.get(url("haushalt", "2001")).content.decode()
     assert "Zum Einlass</a>" in seite and "Löschen …" not in seite
-    assert "Ausweis drucken" not in seite
+    assert "Ausweis drucken</a>" not in seite
     assert client.get(url("haushalt_loeschen", "2001")).status_code == 403
 
 
@@ -281,11 +281,30 @@ def test_notiz_vorlagen_pflegen(admin_client, h):
     assert url("liste", "notizvorlagen") in admin_client.get(url("einstellungen")).content.decode()
     admin_client.post(url("listeneintrag_neu", "notizvorlagen"),
                       {"text": "Bescheide geprüft", "reihenfolge": 1, "aktiv": "on"})  # fmt: skip
-    assert str(NotizVorlage.objects.get()) == "Bescheide geprüft"
+    assert str(NotizVorlage.objects.get(melden="")) == "Bescheide geprüft"
     seite = admin_client.get(url("haushalt", "2001")).content.decode()
     assert "Bescheide geprüft</button>" in seite and "Notiz-Vorlagen bearbeiten" in seite
     admin_client.post(url("notiz_neu", "2001"), {"text": "Bescheide geprüft"})
     assert Notiz.objects.get().text == "Bescheide geprüft"
+
+
+def test_feste_notiz_vorlagen(admin_client):
+    """Vorlagen zu Anliegen, auf die das Programm reagiert: Text änderbar, Anliegen nicht, nicht
+    löschbar. Angelegt per Datenmigration."""
+    v = NotizVorlage.objects.get(melden="ausweis")
+    assert v.fest and v.text == "Neuen Ausweis drucken"
+    seite = admin_client.get(url("listeneintrag", "notizvorlagen", v.pk)).content.decode()
+    assert "Feste Vorlage" in seite and "endgültig löschen" not in seite
+    admin_client.post(url("listeneintrag", "notizvorlagen", v.pk),
+                      {"text": "Bitte neue Karte", "reihenfolge": 5, "aktiv": "on",
+                       "melden": "sonstiges"})  # fmt: skip
+    v.refresh_from_db()
+    assert (v.text, v.melden) == ("Bitte neue Karte", "ausweis")  # Anliegen bleibt
+    antwort = admin_client.post(url("listeneintrag_loeschen", "notizvorlagen", v.pk), follow=True)
+    assert "ist fest" in antwort.content.decode() and NotizVorlage.objects.filter(pk=v.pk).exists()
+    andere = NotizVorlage.objects.create(text="Nur Notiz")
+    admin_client.post(url("listeneintrag_loeschen", "notizvorlagen", andere.pk))
+    assert not NotizVorlage.objects.filter(pk=andere.pk).exists()
 
 
 def test_listen_pflegen(admin_client):
@@ -363,6 +382,7 @@ def test_notizen_haushaltsseite_import_und_umnummern(
 
 def test_notiz_vorlage_bietet_alte_anliegen_nicht_mehr_an():
     neu = dict(NotizVorlageForm().fields["melden"].choices)
-    assert "zugehoerig" not in neu and "verlaengern" in neu
+    assert "zugehoerig" not in neu and "adresse" in neu
+    assert "verlaengern" not in neu and "ausweis" not in neu  # haben ihre feste Vorlage
     alt = NotizVorlage(text="Gehört zu uns", melden="zugehoerig")
     assert "zugehoerig" in dict(NotizVorlageForm(instance=alt).fields["melden"].choices)

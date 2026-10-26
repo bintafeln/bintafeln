@@ -56,6 +56,8 @@
       {% if ablehnung == "notiz" %}Wer die Bedingung nicht erfüllt, bekommt statt der Verlängerung eine Notiz an die Ausgabestelle:
       welche Bedingung fehlt und bei wem, und dass {{ pause_text }} nötig ist. Der Status bleibt; der Ausweis läuft zu seinem
       Datum ab.{% elif ablehnung == "pausieren" %}Wer die Bedingung nicht erfüllt, wird pausiert und bekommt eine Notiz.{% endif %}</p>
+    {% if ablehnung != "anzeigen" %}<p><label class="auswahl"><input type="checkbox" name="an_stelle" value="1"> Notiz zu nicht
+      verlängerten Ausweisen auch auf die Startseite der Ausgabestelle schicken</label></p>{% endif %}
     <button type="submit" class="knopf">Ausgewählte ausführen</button>
   </form>
   {% endif %}

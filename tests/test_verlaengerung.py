@@ -146,6 +146,7 @@ def test_sammelseite_verlaengert_und_schreibt_notiz(gemeldet, admin_client):
     assert 'name="verlaengern" value="203">' in seite  # unklar: nicht vorbelegt
     assert 'name="ablehnen" value="202" checked> Notiz an die Ausgabestelle' in seite
     assert "30.11.2027" in seite  # neu bis
+    assert 'name="an_stelle"' in seite  # Startseite der Ausgabestelle nur auf Wunsch
     antwort = admin_client.post(VERLAENGERN, {"monate": "12", "verlaengern": ["201", "202"],
                                               "ablehnen": ["202"]})  # fmt: skip
     assert antwort.status_code == 302
@@ -160,6 +161,9 @@ def test_sammelseite_verlaengert_und_schreibt_notiz(gemeldet, admin_client):
     texte = list(Notiz.objects.filter(kundennummer="202").values_list("text", flat=True))
     assert "Bringt nächste Woche den Bescheid" in texte
     neu = next(t for t in texte if t.startswith("Ausweis kann nicht"))
+    # Ohne Haken nicht auf der Startseite der Ausgabestelle; Verlängerte bekommen keine Notiz
+    assert not Notiz.objects.filter(an_stelle=True).exists()
+    assert not Notiz.objects.filter(kundennummer="201").exclude(text=GEPRUEFT).exists()
     assert neu == (
         "Ausweis kann nicht verlängert werden. Regel: jede Person im Haushalt erfüllt eine "
         "Bedingung (ab 60 Jahren oder Schwerbehindert). Folgende Bedingung(en) werden nicht "
@@ -252,3 +256,10 @@ def test_notiz_knopf_meldet_der_verwaltung(admin, benutzer_mit_rolle, anmelden):
     assert Notiz.objects.filter(kundennummer="401").count() == 3
     n = Nachricht.objects.get()
     assert (n.kundennummer, n.anliegen, n.von) == ("401", "verlaengern", "anton")
+
+
+def test_ablehnung_auf_wunsch_an_die_ausgabestelle(gemeldet, admin_client):
+    admin_client.post(VERLAENGERN, {"ablehnen": ["202"], "an_stelle": "1"})
+    assert Notiz.objects.get(kundennummer="202", an_stelle=True).text.startswith(
+        "Ausweis kann nicht verlängert werden"
+    )

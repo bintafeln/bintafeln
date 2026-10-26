@@ -13,6 +13,11 @@
   {% if nachrichten_offen %}<p class="sicherung">Nachrichten der Ausgabestellen:
     {% for wert, name, zahl in nachrichten_offen %}{% if not forloop.first %} · {% endif %}<a href="{% if wert == 'verlaengern' and darf_verlaengern %}{% url 'kunden:verlaengern' %}{% else %}{% url 'kunden:nachrichten' %}?anliegen={{ wert }}{% endif %}">{{ zahl }} × {{ name }}</a>{% endfor %}</p>{% endif %}
   {% if neue_antraege %}<p class="sicherung"><a href="{% url 'antraege:liste' %}">{{ neue_antraege }} neue{{ neue_antraege|pluralize:"r,"}} Antr{{ neue_antraege|pluralize:"ag,äge" }}</a> eingegangen.</p>{% endif %}
+  {% if notizen_an_stelle|length == 1 %}
+  <div class="sicherung"><strong>Notiz der Verwaltung</strong>{% with n=notizen_an_stelle.0 %}{% include "kunden/_notiz_an_stelle.html" %}{% endwith %}</div>
+  {% elif notizen_an_stelle %}
+  <p class="sicherung"><a href="{% url 'kunden:notizen_an_stelle' %}">{{ notizen_an_stelle|length }} neue Notizen der Verwaltung</a> an {{ ausgabestelle.name }}.</p>
+  {% endif %}
   {% if "einlass.nutzen" in rechte %}
     <p><a class="knopf" href="{% url 'ausgabe:empfang' %}">Zum Einlass</a></p>
   {% endif %}
