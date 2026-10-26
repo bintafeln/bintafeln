@@ -196,6 +196,10 @@ befehl_update_fortsetzen() {
     docker compose build --pull
     hinweis "Neu starten (Migrationen laufen automatisch)"
     docker compose up -d --wait
+    hinweis "Alte Images aufräumen"
+    # Nur Images ohne Namen: die durch den Neubau ersetzten Stände. Ältere Versionen lassen sich
+    # jederzeit wieder aus dem Repository bauen.
+    docker image prune -f
     befehl_status
 }
 

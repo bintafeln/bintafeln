@@ -1193,6 +1193,10 @@ Ohne Eingabe nimmt es nach **3 Sekunden die neueste Version**. Dann sichert es, 
 aktualisiert die Images und startet neu; Migrationen laufen beim Start automatisch. Direkt geht
 es auch mit `./betrieb update 2026.10.6` oder `./betrieb update main`.
 
+Nach dem Neustart räumt das Update die durch den Neubau ersetzten Images auf
+(`docker image prune`), damit die Platte nicht nach und nach volläuft. Alte Images braucht man
+nicht: Jede ältere Version baut `./betrieb update VERSION` bei Bedarf neu aus dem Repository.
+
 **Zurück auf eine ältere Version:** einfach deren Nummer wählen. Nach einer Rückfrage wird
 gesichert, dann setzt das noch laufende neuere Programm die Datenbank auf den Stand der älteren
 Version zurück (Migrationen rückwärts), erst danach wird die ältere Version gebaut. Was nur die
