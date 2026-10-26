@@ -7,7 +7,8 @@
 <ul>
   {% if "einstellungen.tafel" in rechte %}<li><strong>Tafel</strong>: Name, Logo, Farbe, Anschrift, Bundesland (Feiertage), Hintergrundbild der Anmeldeseite
     und der übrigen Seiten (dort mit Schieber für die Stärke, 0 % = aus). Hintergrundbilder sind öffentlich abrufbar,
-    also keine Fotos von Personen ohne deren Zustimmung. Unter <strong>Zusätzliche Module</strong> schalten Sie
+    also keine Fotos von Personen ohne deren Zustimmung. Bilder und Logo werden beim Hochladen automatisch verkleinert
+    (Hintergrund höchstens 1920 Pixel, Logo 800 Pixel), damit Seiten auch am Handy schnell laden. Unter <strong>Zusätzliche Module</strong> schalten Sie
     Programme ein, die nicht jede Tafel braucht (z. B. den Aufruf mit Monitor und Kiosk). Ausgeschaltete Module
     erscheinen nirgends; ihre Daten bleiben erhalten.</li>{% endif %}
   {% if "einstellungen.mail" in rechte %}<li><strong>E-Mail</strong>: Mailserver für Einladungen, Passwort-Links, Antragsbestätigungen und Korrekturwünsche; „Verbindung prüfen“ und Testmail.</li>{% endif %}

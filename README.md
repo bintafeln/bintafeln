@@ -32,6 +32,11 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   Tafel – in der Datenbank, nicht im Code. Dazu ein **Hintergrundbild** für die Anmeldeseite
   (volle Stärke) und wahlweise ein eigenes für die übrigen Seiten; dort regelt ein Schieber die
   Stärke von 0 % (nicht sichtbar) bis 100 %. Die Inhalte stehen weiter auf weißen Karten.
+  Hintergrundbilder und Logo werden beim Hochladen verkleinert (`apps/core/bilder.py`: längste
+  Seite 1920 bzw. 800 Pixel, ohne Bilddaten wie den Aufnahmeort); große, schon vorhandene Bilder
+  verkleinert das Update einmalig (das Original bleibt als Datei liegen). Caddy lässt sie einen
+  Tag zwischenspeichern. Vorher dauerte das Anmelden mit einem Handyfoto als Hintergrund über
+  eine langsame Leitung viele Sekunden.
 - **Änderungsprotokoll:** Wer hat wann welchen Datensatz geändert (mit Feldern vorher/nachher).
   Passwörter werden nie protokolliert.
 - **Zwei-Faktor-Anmeldung:** Jede Person richtet sie unter „Mein Konto“ selbst ein
