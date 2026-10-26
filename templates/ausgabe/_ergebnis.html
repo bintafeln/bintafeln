@@ -11,20 +11,22 @@
 {% elif h %}
 {% if meldung %}<p class="meldung kasse-meldung" role="status">{{ meldung }}</p>{% endif %}
 <div class="empfang-raster">
-<aside class="ampel-grafik ampel-grafik-{{ bewertung.farbe }}{% if bewertung.blinken %} ampel-blinkt{% endif %}" role="img"
+{% with lampe=bewertung.lampe %}
+<aside class="ampel-grafik ampel-grafik-{{ lampe }}{% if bewertung.blinken %} ampel-blinkt{% endif %}" role="img"
        aria-label="Ampel: {% if bewertung.farbe == 'rot' %}rot, keine Abholung{% elif bewertung.blinken %}gelb blinkend, noch nicht an der Reihe{% elif bewertung.farbe == 'gelb' %}gelb, Abholung mit Hinweis{% else %}grün, Abholung möglich{% endif %}">
   <div class="ampel-gehaeuse">
-    <span class="lampe lampe-rot{% if bewertung.farbe == 'rot' %} an{% endif %}"></span>
-    <span class="lampe lampe-gelb{% if bewertung.farbe == 'gelb' %} an{% endif %}"></span>
-    <span class="lampe lampe-gruen{% if bewertung.farbe == 'gruen' %} an{% endif %}"></span>
+    <span class="lampe lampe-rot{% if lampe == 'rot' %} an{% endif %}"></span>
+    <span class="lampe lampe-gelb{% if lampe == 'gelb' %} an{% endif %}"></span>
+    <span class="lampe lampe-gruen{% if lampe == 'gruen' %} an{% endif %}"></span>
   </div>
   <p class="ampel-wort">{% if bewertung.farbe == "rot" %}STOPP{% elif bewertung.blinken %}WARTEN{% elif bewertung.farbe == "gelb" %}ACHTUNG{% else %}OK{% endif %}</p>
 </aside>
+{% endwith %}
 
 <div class="empfang-spalte">
 <section class="karte ampel ampel-{{ bewertung.farbe }}" role="status">
   <p class="ampel-titel">
-    {% if bewertung.farbe == "rot" %}Keine Abholung{% elif bewertung.blinken %}Noch nicht an der Reihe{% elif bewertung.farbe == "gelb" %}Abholung möglich – bitte beachten{% else %}Abholung möglich{% endif %}
+    {% if bewertung.farbe == "rot" %}Keine Abholung{% elif bewertung.farbe == "gelb" %}Abholung möglich – bitte beachten{% else %}Abholung möglich{% endif %}
   </p>
   <ul class="ampel-gruende">
     {% for m in bewertung.meldungen %}<li class="grund-{{ m.farbe }}">{{ m.text }}</li>{% endfor %}

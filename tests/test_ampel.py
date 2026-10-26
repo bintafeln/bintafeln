@@ -253,10 +253,11 @@ def test_noch_nicht_dran_blinkt_gelb(haushalt, einstellungen):
     # Hinweis ohne „warten“ (z. B. schon aufgerufen) lässt alles grün
     assert ampel.noch_nicht_dran(b, [{"text": "Aufgerufen", "farbe": "gruen"}]).farbe == "gruen"
     b = ampel.noch_nicht_dran(b, [{"text": "Noch nicht aufgerufen", "warten": True}])
-    assert b.blinken and b.farbe == ampel.GELB and b.darf_abholen
-    assert [m.text for m in b.meldungen] == ["Noch nicht aufgerufen – Eintragen geht trotzdem"]
+    # Die Ampel blinkt gelb, die Bewertung bleibt grün: Abholung möglich, Kunde ist zu früh
+    assert b.blinken and b.lampe == ampel.GELB and b.farbe == ampel.GRUEN and b.darf_abholen
+    assert [m.text for m in b.meldungen] == ["Kunde ist zu früh (Aufruf)"]
     # Rot bleibt rot und blinkt nicht
     Sperre.objects.create(haushalt=haushalt, von=HEUTE, begruendung="Test")
     rot = ampel.noch_nicht_dran(ampel.bewerten(haushalt, HEUTE, None, einstellungen),
                                 [{"text": "x", "warten": True}])  # fmt: skip
-    assert rot.farbe == ampel.ROT and not rot.blinken
+    assert rot.farbe == rot.lampe == ampel.ROT and not rot.blinken

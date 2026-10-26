@@ -25,9 +25,8 @@ class Meldung:
 @dataclass
 class Bewertung:
     meldungen: list[Meldung] = field(default_factory=list)
-    blinken: bool = (
-        False  # Kunde ist noch nicht an der Reihe (z. B. Aufruf), Abholung bleibt möglich
-    )
+    # Kunde ist noch nicht an der Reihe (z. B. Aufruf): Ampel blinkt gelb, Abholung bleibt möglich
+    blinken: bool = False
 
     @property
     def farbe(self) -> str:
@@ -37,6 +36,11 @@ class Bewertung:
         if GELB in farben:
             return GELB
         return GRUEN
+
+    @property
+    def lampe(self) -> str:
+        """Farbe der Ampel-Grafik: blinkendes Gelb, solange der Kunde noch nicht dran ist."""
+        return GELB if self.blinken and self.farbe != ROT else self.farbe
 
     @property
     def darf_abholen(self) -> bool:
@@ -212,11 +216,12 @@ def bewerten(haushalt, heute: dt.date, ausgabestelle, einstellungen) -> Bewertun
 
 
 def noch_nicht_dran(b: Bewertung, hinweise: list[dict]) -> Bewertung:
-    """Meldet ein Modul (z. B. Aufruf), dass der Kunde noch warten muss, wird Grün zu blinkendem
-    Gelb. Abholen bleibt möglich; Rot bleibt Rot."""
+    """Meldet ein Modul (z. B. Aufruf), dass der Kunde noch warten muss, blinkt die Ampel gelb.
+    Die Bewertung selbst bleibt (Abholung möglich, grün oder gelb); Rot bleibt Rot."""
     if b.farbe == ROT or not any(h.get("warten") for h in hinweise):
         return b
+    # „Alles in Ordnung“ passt nicht mehr; Ausnahmen für heute bleiben stehen
     b.meldungen = [m for m in b.meldungen if m.farbe != GRUEN or "Ausnahme" in m.text]
-    b.meldungen.insert(0, Meldung(GELB, "Noch nicht aufgerufen – Eintragen geht trotzdem"))
+    b.meldungen.insert(0, Meldung(GRUEN, "Kunde ist zu früh (Aufruf)"))
     b.blinken = True
     return b
