@@ -175,7 +175,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   sperren; ADR 0015). `Benutzer.passwort_aendern` erzwingt über
   `PasswortAendernMiddleware` ein neues Passwort, bevor die Zwei-Faktor-Einrichtung kommt.
   Stammdaten, Wiedervorlagen, Führerschein-Kopie und Löschfrist in `apps/konten/personal.py`
-  (ADR 0017). App `personal` (Rolle Personal): Verträge, Abwesenheiten, Stunden; Rechenregeln
+  (ADR 0017); Fotos verkleinert `privatdateien.speichern()` nach `FotoEinstellungen` (ADR 0064).
+  App `personal` (Rolle Personal): Verträge, Abwesenheiten, Stunden; Rechenregeln
   in `apps/personal/berechnung.py` (ADR 0018). Arbeitszeiterfassung (Stempeln, vergessenes
   Gehen, Überschneidungen) in `apps/personal/arbeitszeit.py`, Pausenabzug in
   `berechnung.arbeitstag()` (ADR 0020). Verschlüsselte Dateien nur über

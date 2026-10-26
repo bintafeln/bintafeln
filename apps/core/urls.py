@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.core import views, views_datensicherung, views_sicherung, views_update
+from apps.core import views, views_datensicherung, views_sicherung, views_speicher, views_update
 
 app_name = "core"
 
@@ -9,6 +9,7 @@ urlpatterns = [
     path("einrichtung/", views.einrichtung, name="einrichtung"),
     path("einstellungen/", views.einstellungen, name="einstellungen"),
     path("einstellungen/mail/", views.mail_einstellungen, name="mail_einstellungen"),
+    path("einstellungen/speicher/", views_speicher.seite, name="speicher"),
     path("protokoll/", views.protokoll, name="protokoll"),
     path("datensicherung/", views_datensicherung.seite, name="datensicherung"),
     path("datensicherung/export/", views_datensicherung.exportieren, name="daten_export"),

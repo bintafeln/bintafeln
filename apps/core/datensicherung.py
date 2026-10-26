@@ -52,7 +52,8 @@ EIGENE_APPS = [
 AUSGENOMMEN = {"kunden.importvorbereitung", "antraege.antragversuch", "core.sicherungsdienst",
                "konten.vertrautesgeraet"}  # fmt: skip
 EINSTELLUNGS_MODELLE = {
-    "core.tafeleinstellungen", "core.maileinstellungen", "kunden.kundeneinstellungen",
+    "core.tafeleinstellungen", "core.maileinstellungen", "core.fotoeinstellungen",
+    "kunden.kundeneinstellungen",
     "kunden.zusatzfeld", "kunden.ausgabestelle", "kunden.kundengruppe", "kunden.einkommensart",
     "kunden.notizvorlage", "kunden.dokumentart", "kunden.ausweisvorlage",
     "ausgabe.ausgabeeinstellungen", "ausgabe.beitragsfreierzeitraum",
