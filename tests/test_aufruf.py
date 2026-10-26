@@ -483,7 +483,8 @@ def test_einstellungen_und_neue_links(modul_an, admin_client, mitte):
     seite = admin_client.get(reverse("aufruf:einstellungen")).content.decode()
     assert reverse("aufruf:monitor", args=[e.schluessel]) in seite
     antwort = admin_client.post(reverse("aufruf:einstellungen_stelle", args=[mitte.pk]), {
-        "anzahl": 4, "spaetzuender_versatz": 20, "vorrang_symbol": "on", "info_rotation": "on",
+        "aktiv": "on", "anzahl": 4, "spaetzuender_versatz": 20, "vorrang_symbol": "on",
+        "info_rotation": "on",
         "eingelassene_ausblenden": "on", "wochentag_probe": "", "zu_spaet_minuten": 15,
     })  # fmt: skip
     assert antwort.status_code == 302
@@ -708,3 +709,30 @@ def test_einlass_knopf_verschieben(modul_an, mitte, tag_daten, benutzer_mit_roll
     assert c.post(url).status_code == 403
     seite = c.get(reverse("ausgabe:empfang"), {"nummer": erster}).content.decode()
     assert "Nummern verschieben" not in seite
+
+
+def test_ausgabestelle_ohne_aufruf(modul_an, admin_client, mitte, tag_daten, benutzer_mit_rolle,
+                                   anmelden):  # fmt: skip
+    """Nicht jede Ausgabestelle ruft auf: aus = kein Kasten, keine Steuerung, kein Hinweis."""
+    tag = ablauf.starten(mitte, heute())
+    nummer = tag.stand["gruppen"][0]["wartend"][4]
+    admin_client.post(
+        reverse("aufruf:einstellungen_stelle", args=[mitte.pk]),
+        {
+            "anzahl": 3,
+            "spaetzuender_versatz": 30,
+            "zu_spaet_minuten": 15,
+            "wochentag_probe": "",
+        },
+    )  # fmt: skip  (ohne „aktiv“ = ausgeschaltet)
+    assert AufrufEinstellungen.laden(mitte).aktiv is False
+    assert (
+        "Kein Aufruf an dieser Ausgabestelle"
+        in admin_client.get(reverse("aufruf:einstellungen")).content.decode()
+    )
+    konto = benutzer_mit_rolle("anton", rollen.AUSGABE)
+    konto.ausgabestellen.set([mitte])
+    c = anmelden(Client(), konto)
+    assert c.get(reverse("aufruf:leiste")).content == b""
+    assert c.get(reverse("aufruf:steuerung", args=[mitte.pk])).status_code == 403
+    assert ablauf.einlass(Haushalt.objects.get(kundennummer=nummer), heute()) == []

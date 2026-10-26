@@ -638,6 +638,8 @@ def einlass(haushalt, heute, stelle=None) -> list[dict]:
     if tag is None or tag.gestartet_am is None:
         return []
     e = AufrufEinstellungen.laden(tag.ausgabestelle)
+    if not e.aktiv:
+        return []
     s = tag.stand
     nummer = norm(haushalt.kundennummer)
     treffer = _finden(s, nummer)

@@ -13,7 +13,7 @@
     {% for s, e in stellen %}
       <tr>
         <td data-titel="Ausgabestelle"><strong>{{ s.name }}</strong></td>
-        <td data-titel="Einstellungen">{{ e.anzahl }} Nummer{{ e.anzahl|pluralize:"n" }} je Aufruf{% if e.vorrang_feld %}<br>Vorrang: {{ e.vorrang_feld }}{% endif %}{% if e.wochentag_probe is not None %}<br><span class="marke-warnung">Probelauf als {{ e.get_wochentag_probe_display }}</span>{% endif %}
+        <td data-titel="Einstellungen">{% if not e.aktiv %}<strong>Kein Aufruf an dieser Ausgabestelle</strong>{% else %}{{ e.anzahl }} Nummer{{ e.anzahl|pluralize:"n" }} je Aufruf{% if e.vorrang_feld %}<br>Vorrang: {{ e.vorrang_feld }}{% endif %}{% if e.wochentag_probe is not None %}<br><span class="marke-warnung">Probelauf als {{ e.get_wochentag_probe_display }}</span>{% endif %}{% endif %}
           <br><a href="{% url 'aufruf:einstellungen_stelle' s.pk %}">ändern</a></td>
         <td data-titel="Links">
           {% with basis=request.scheme|add:"://"|add:request.get_host %}

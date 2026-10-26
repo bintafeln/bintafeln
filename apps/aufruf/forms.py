@@ -10,7 +10,7 @@ BILDTYPEN = (".jpg", ".jpeg", ".png", ".webp")
 class EinstellungenForm(forms.ModelForm):
     class Meta:
         model = AufrufEinstellungen
-        fields = ["anzahl", "vorrang_feld", "vorrang_symbol", "eingelassene_ausblenden",
+        fields = ["aktiv", "anzahl", "vorrang_feld", "vorrang_symbol", "eingelassene_ausblenden",
                   "spaetzuender_versatz", "zu_spaet_minuten", "info_rotation",
                   "wochentag_probe"]  # fmt: skip
 

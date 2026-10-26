@@ -28,7 +28,8 @@ steuern = rollen.recht_erforderlich("aufruf.steuern")
 
 def stellen_fuer(benutzer):
     eigene = zugang.stellen(benutzer)
-    stellen = Ausgabestelle.objects.filter(aktiv=True)
+    # Nur Ausgabestellen, an denen aufgerufen wird (ohne Einstellungen gilt: ja)
+    stellen = Ausgabestelle.objects.filter(aktiv=True).exclude(aufruf__aktiv=False)
     return stellen.filter(pk__in=[s.pk for s in eigene]) if eigene is not None else stellen
 
 
@@ -294,6 +295,8 @@ def leiste(request):
     from apps.ausgabe.stelle import aktuelle
 
     stelle = aktuelle(request.user)
+    if stelle is not None and not AufrufEinstellungen.laden(stelle).aktiv:
+        return HttpResponse("")  # an dieser Ausgabestelle wird nicht aufgerufen
     if stelle is None or not stellen_fuer(request.user).filter(pk=stelle.pk).exists():
         # Ohne gewählte Stelle nur der Weg zur ganzen Steuerung (ersetzt den Menüeintrag)
         return render(request, "aufruf/_leiste.html", {

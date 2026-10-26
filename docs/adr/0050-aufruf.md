@@ -41,6 +41,8 @@ standen weiter in der Warteschlange.
   früh/spät“, Rot bleibt Rot. Bei „Zu spät“ bietet
   der Hinweis einen Knopf „N Nummern verschieben“ (`knopf` im Hinweis, `aufruf:verschieben`), der
   wie „zu spät gekommen“ am Handy neu einsortiert.
+- Ergänzung: Nicht jede Ausgabestelle ruft auf: `AufrufEinstellungen.aktiv` je Ausgabestelle
+  (Vorgabe an); aus = keine Steuerung, kein Kasten, keine Hinweise am Einlass.
 - Ergänzung: Kurz-Steuerung unter dem Menü (`Modul.seitenleiste`, `aufruf:leiste`) für alle mit
   Einlass und Recht „Kunden aufrufen“: aufgerufene Nummern der gewählten Ausgabestelle, „Nächste
   hereinrufen“, Zurück und Starten; lädt per HTMX nach und fragt alle 15 Sekunden neu.
