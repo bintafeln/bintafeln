@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth import get_user_model, password_validation
 from django.template.defaultfilters import filesizeformat
 
-from apps.core import geheimnis
+from apps.core import bilder, geheimnis
 from apps.core.auswahl import LAENDERCODE
 from apps.core.farben import STANDARDFARBE
 from apps.core.models import MailEinstellungen, SicherungsAuftrag, TafelEinstellungen
@@ -10,6 +10,13 @@ from apps.core.module import auswahl as modul_auswahl
 
 HINTERGRUND_MAX_BYTES = 5 * 1024 * 1024
 LOGO_MAX_BYTES = 2 * 1024 * 1024
+
+
+def _verkleinert(bild, kante, transparenz=False):
+    """Neu hochgeladene Bilder verkleinern; gespeicherte (oder „entfernen“) bleiben."""
+    if not bild or not hasattr(bild, "content_type"):
+        return bild
+    return bilder.verkleinern(bild, kante, transparenz=transparenz) or bild
 
 
 class BildEingabe(forms.ClearableFileInput):
@@ -122,7 +129,7 @@ class EinstellungenForm(forms.ModelForm):
         bild = self.cleaned_data.get(feld)
         if bild and getattr(bild, "size", 0) > HINTERGRUND_MAX_BYTES:
             raise forms.ValidationError("Das Bild darf höchstens 5 MB groß sein.")
-        return bild
+        return _verkleinert(bild, bilder.HINTERGRUND_KANTE)
 
     def clean_hintergrund_anmeldung(self):
         return self._bild("hintergrund_anmeldung")
@@ -134,7 +141,7 @@ class EinstellungenForm(forms.ModelForm):
         logo = self.cleaned_data.get("logo")
         if logo and getattr(logo, "size", 0) > LOGO_MAX_BYTES:
             raise forms.ValidationError("Das Logo darf höchstens 2 MB groß sein.")
-        return logo
+        return _verkleinert(logo, bilder.LOGO_KANTE, transparenz=True)
 
 
 class MailEinstellungenForm(forms.ModelForm):

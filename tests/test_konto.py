@@ -348,7 +348,10 @@ def test_storno_nimmt_buchung_zurueck(ausgabe, haushalt, recht_geben):
     assert stand(haushalt) == D("6.00") and not Buchung.objects.exists()
 
 
-def test_empfang_einzahlung_und_vorschlag(ausgabe, haushalt, recht_geben):
+def test_empfang_einzahlung_und_vorschlag(ausgabe, haushalt, recht_geben, monkeypatch):
+    # Fester Tag in der Monatsmitte: In der letzten Woche eines Monats gibt es keinen Vorschlag
+    mitte = timezone.now().replace(day=12, hour=10)
+    monkeypatch.setattr(timezone, "now", lambda: mitte)
     recht_geben(rollen.AUSGABE, "einlass.zuruecknehmen")
     e = AusgabeEinstellungen.laden()
     e.beitrag_je_abholung = D("1.50")
