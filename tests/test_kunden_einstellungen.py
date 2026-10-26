@@ -45,6 +45,7 @@ def test_einstellungen_speichern(admin_client):
             "historie_aufbewahren_jahre": "5",
             "verlaengern_regel": "alle",
             "verlaengern_ab_alter": "65",
+            "verlaengern_ablehnung": "notiz",
             "verlaengern_sonst_pausieren_monate": "6",
         },
     )

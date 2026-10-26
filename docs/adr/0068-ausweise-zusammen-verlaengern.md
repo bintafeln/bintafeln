@@ -24,15 +24,18 @@ mindestens 60 Jahre alt oder schwerbehindert sind; die anderen pausieren ein Jah
   Mindestalter, Ja/Nein-Zusatzfelder, Einkommensarten). Ergebnis: verlängerbar, nicht verlängerbar
   oder „selbst prüfen“ (fehlendes Geburtsdatum).
 - Mit einem Klick werden alle gewählten verlängert (ab bisherigem Ablauf, bei abgelaufenem Ausweis
-  ab heute; Monate wählbar, Vorgabe wie bei der Aufnahme) bzw. nicht verlängerbare pausiert
-  (Status „pausiert“, Notiz mit Datum; Dauer einstellbar, 0 = nur anzeigen). Jede Änderung geht
+  ab heute; Monate wählbar, Vorgabe wie bei der Aufnahme). Für nicht verlängerbare stellt die
+  Tafel ein (`verlaengern_ablehnung`): Notiz an die Ausgabestelle mit fehlender Bedingung je
+  Person und Pause (Vorgabe; Status bleibt, der Ausweis läuft ab), Status „pausiert“ mit Notiz,
+  oder nur anzeigen. Die gemeldete Notiz wird gestrichen. Jede Änderung geht
   über Historie und Kundengruppen-Regel (ADR 0031, 0061) wie eine Bearbeitung; die Nachrichten
   sind danach erledigt.
 - Vorgabe für neue Installationen: ohne Bedingung. Die Bedingungen stellt jede Tafel selbst ein.
 
-Die Pause setzt Status „pausiert“ und eine Notiz mit Datum; der Haushalt fällt damit aus der
-Kundengruppe (ADR 0061). Nach der Pause meldet er sich über den Online-Antrag neu an; eine
-automatische Wiederaufnahme gibt es bewusst nicht. Kinder zählen bei „jede Person“ mit.
+Manche Tafeln kennen keinen Status „pausiert“: Der Ausweis läuft einfach ab, der Haushalt fällt
+dann aus der Kundengruppe (ADR 0061), und nach der Pause meldet er sich über den Online-Antrag
+neu an. Deshalb ist die Notiz an die Ausgabestelle die Vorgabe; eine automatische Wiederaufnahme
+gibt es bewusst nicht. Kinder zählen bei „jede Person“ mit.
 
 ## Begründung
 

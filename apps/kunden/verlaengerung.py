@@ -3,7 +3,8 @@
 Die Ausgabestellen melden mit einer Nachricht (Anliegen „verlaengern“), dass sie die Bescheide
 geprüft haben. Die Verwaltung bekommt alle gemeldeten Haushalte auf einer Seite, jeder geprüft
 nach den Bedingungen aus den Einstellungen des Kundenstamms, und verlängert sie zusammen. Wer die
-Bedingungen nicht erfüllt, kann stattdessen pausiert werden.
+Bedingungen nicht erfüllt, bekommt je nach Einstellung eine Notiz an die Ausgabestelle (Pause
+einlegen, Status bleibt) oder wird pausiert; die gemeldete Notiz wird dabei gestrichen.
 """
 
 import datetime as dt
@@ -20,6 +21,7 @@ from apps.kunden.models import (
     KundenEinstellungen,
     Nachricht,
     Notiz,
+    NotizVorlage,
     Zusatzfeld,
 )
 
@@ -37,6 +39,9 @@ class Pruefung:
     neu_bis: dt.date
     personen: list[tuple[str, str]] = field(default_factory=list)  # (Name, erfüllt durch / fehlt)
     gruende: list[str] = field(default_factory=list)
+    fehlt: list[str] = field(
+        default_factory=list
+    )  # Personen ohne Bedingung, z. B. „Peter (33 Jahre)“
     hinweise: list[str] = field(default_factory=list)
     nachrichten: list[Nachricht] = field(default_factory=list)
 
@@ -66,6 +71,54 @@ def _bedingung(person, h: Haushalt, heute: dt.date, e: KundenEinstellungen, feld
         if alter >= e.verlaengern_ab_alter:
             return f"{alter} Jahre"
     return ""
+
+
+def bedingungen_text(e: KundenEinstellungen) -> str:
+    """z. B. „ab 60 Jahren oder Schwerbehindert“; leer ohne Bedingung."""
+    if e.verlaengern_regel == KundenEinstellungen.Verlaengern.OHNE:
+        return ""
+    teile = []
+    if e.verlaengern_ab_alter is not None:
+        teile.append(f"ab {e.verlaengern_ab_alter} Jahren")
+    teile += [f.bezeichnung for f in e.verlaengern_felder.all()]
+    teile += [a.bezeichnung for a in e.verlaengern_einkommensarten.all()]
+    return " oder ".join(teile) or "keine Bedingung eingestellt"
+
+
+def pause_text(monate: int) -> str:
+    return "ein Pausenjahr" if monate == 12 else f"eine Pause von {monate} Monaten"
+
+
+def ablehnung_notiz(p: Pruefung, e: KundenEinstellungen, bis: dt.date | None = None) -> str:
+    """Notiz für die Ausgabestelle: was nicht erfüllt ist und was jetzt gilt."""
+    teile = ["Ausweis kann nicht verlängert werden"]
+    gruende = [g for g in p.gruende if not g.endswith("erfüllen eine Bedingung")
+               and not g.endswith("erfüllt eine Bedingung")]  # fmt: skip
+    if p.fehlt:
+        regel = e.get_verlaengern_regel_display()
+        teile.append(f"Bedingung nicht erfüllt ({regel}: {bedingungen_text(e)}). Ohne Bedingung: "
+                     + ", ".join(p.fehlt))  # fmt: skip
+    teile += gruende
+    text = ". ".join(teile) + "."
+    if bis:
+        return text + f" Pausiert bis {bis:%d.%m.%Y}."
+    if not p.fehlt:  # z. B. gesperrt oder beendet: keine Pause, nur der Grund
+        return text
+    ablauf = p.haushalt.ausweis_gueltig_bis
+    text += f" Der Kunde muss {pause_text(e.verlaengern_sonst_pausieren_monate)} einlegen"
+    if ablauf:
+        text += f"; der Ausweis gilt noch bis {ablauf:%d.%m.%Y}"
+    return text + ". Danach ist eine Neuanmeldung über den Antrag möglich."
+
+
+def gemeldete_notizen_streichen(p: Pruefung) -> int:
+    """Löscht die Notizen, mit denen gemeldet wurde (Notiz-Knopf mit „Meldet der Verwaltung“)."""
+    texte = list(NotizVorlage.objects.filter(melden=ANLIEGEN).values_list("text", flat=True))
+    if not texte or not p.nachrichten:
+        return 0
+    seit = min(n.erstellt_am for n in p.nachrichten) - dt.timedelta(minutes=5)
+    return Notiz.objects.filter(kundennummer=p.nummer, text__in=texte,
+                                erstellt_am__gte=seit).delete()[0]  # fmt: skip
 
 
 def pruefen(h: Haushalt, heute: dt.date, monate: int, e: KundenEinstellungen) -> Pruefung:
@@ -99,6 +152,7 @@ def pruefen(h: Haushalt, heute: dt.date, monate: int, e: KundenEinstellungen) ->
         else:
             alter = person.alter(heute)
             p.personen.append((name, f"✗ {alter} Jahre" if alter is not None else "✗"))
+            p.fehlt.append(f"{name} ({alter} Jahre)" if alter is not None else name)
         erfuellt.append(womit)
     if e.verlaengern_regel == KundenEinstellungen.Verlaengern.ALLE:
         nein, unklar = "" in erfuellt, None in erfuellt
@@ -140,34 +194,38 @@ def gemeldete(benutzer, heute: dt.date, monate: int) -> list[Pruefung]:
 
 
 def ausfuehren(benutzer, heute: dt.date, monate: int, verlaengern: set[str],
-               pausieren: set[str]) -> tuple[int, int]:  # fmt: skip
-    """Verlängert bzw. pausiert die gewählten gemeldeten Haushalte und erledigt deren Nachrichten.
-    Nur Haushalte, die gerade gemeldet und erlaubt sind; Ergebnis: (verlängert, pausiert)."""
+               ablehnen: set[str]) -> tuple[int, int]:  # fmt: skip
+    """Verlängert die gewählten gemeldeten Haushalte; bei nicht verlängerbaren je nach Einstellung
+    Notiz an die Ausgabestelle oder Pause. In beiden Fällen ist die Meldung danach erledigt und
+    die gemeldete Notiz gestrichen. Ergebnis: (verlängert, abgelehnt)."""
     e = KundenEinstellungen.laden()
+    A = KundenEinstellungen.Ablehnung
     von = benutzer.get_username()
     jetzt = timezone.now()
-    pause = e.verlaengern_sonst_pausieren_monate
-    v = pz = 0
+    v = ab = 0
     with transaction.atomic():
         for p in gemeldete(benutzer, heute, monate):
             h = p.haushalt
+            vorher = historie.schnappschuss(h)
             if p.nummer in verlaengern and p.ergebnis != NEIN:
-                vorher = historie.schnappschuss(h)
                 h.ausweis_gueltig_bis = p.neu_bis
                 zusatz = "Ausweis verlängert (Sammel-Verlängerung)"
                 v += 1
-            elif p.nummer in pausieren and p.ergebnis == NEIN and pause:
-                vorher = historie.schnappschuss(h)
-                h.status = Haushalt.Status.PAUSIERT
-                bis = monat_plus(heute, pause, False)
-                Notiz.objects.create(
-                    kundennummer=h.kundennummer, benutzer=benutzer, verfasst_von=von[:100],
-                    text=f"Nicht verlängert ({'; '.join(p.gruende)}). Pausiert bis {bis:%d.%m.%Y}.",
-                )  # fmt: skip
-                zusatz = f"Pausiert bis {bis:%d.%m.%Y} (Sammel-Verlängerung)"
-                pz += 1
+            elif (p.nummer in ablehnen and p.ergebnis == NEIN
+                  and e.verlaengern_ablehnung != A.ANZEIGEN):  # fmt: skip
+                bis = None
+                if e.verlaengern_ablehnung == A.PAUSIEREN:
+                    h.status = Haushalt.Status.PAUSIERT
+                    bis = monat_plus(heute, e.verlaengern_sonst_pausieren_monate, False)
+                Notiz.objects.create(kundennummer=h.kundennummer, benutzer=benutzer,
+                                     verfasst_von=von[:100],
+                                     text=ablehnung_notiz(p, e, bis)[:1000])  # fmt: skip
+                zusatz = ("Nicht verlängert (Sammel-Verlängerung)" if bis is None
+                          else f"Nicht verlängert, pausiert bis {bis:%d.%m.%Y}")  # fmt: skip
+                ab += 1
             else:
                 continue
+            gemeldete_notizen_streichen(p)
             h.geaendert_am, h.geaendert_von = jetzt, von
             h.save()
             gruppen.pruefen(h, heute)  # ohne gültigen Ausweis keine Kundengruppe (ADR 0061)
@@ -176,4 +234,4 @@ def ausfuehren(benutzer, heute: dt.date, monate: int, verlaengern: set[str],
                                 zusatz=zusatz)  # fmt: skip
             Nachricht.objects.filter(pk__in=[n.pk for n in p.nachrichten]).update(
                 erledigt_am=jetzt, erledigt_von=von)  # fmt: skip
-    return v, pz
+    return v, ab

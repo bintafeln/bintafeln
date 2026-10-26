@@ -27,12 +27,12 @@ def verlaengern(request):
     if request.method == "POST":
         v, p = verlaengerung.ausfuehren(
             request.user, heute, monate,
-            set(request.POST.getlist("verlaengern")), set(request.POST.getlist("pausieren")),
+            set(request.POST.getlist("verlaengern")), set(request.POST.getlist("ablehnen")),
         )  # fmt: skip
         if v or p:
             text = f"{v} Ausweis{'e' if v != 1 else ''} verlängert"
             if p:
-                text += f", {p} Haushalt{'e' if p != 1 else ''} pausiert"
+                text += f", {p} nicht verlängert"
             messages.success(request, text + ".")
         else:
             messages.info(request, "Nichts ausgewählt.")
@@ -43,20 +43,11 @@ def verlaengern(request):
         "monate": monate,
         "monate_auswahl": sorted({*MONATE, e.ausweis_gueltig_monate}),
         "einstellungen": e,
+        "ablehnung": e.verlaengern_ablehnung,
+        "pause_text": verlaengerung.pause_text(e.verlaengern_sonst_pausieren_monate),
         "pause": e.verlaengern_sonst_pausieren_monate,
         "anzahl": {k: sum(1 for p in liste if p.ergebnis == k)
                    for k in (verlaengerung.OK, verlaengerung.NEIN, verlaengerung.UNKLAR)},
-        "bedingungen": _bedingungen(e),
+        "bedingungen": verlaengerung.bedingungen_text(e),
+        "regel": e.get_verlaengern_regel_display(),
     })  # fmt: skip
-
-
-def _bedingungen(e: KundenEinstellungen) -> str:
-    if e.verlaengern_regel == KundenEinstellungen.Verlaengern.OHNE:
-        return ""
-    teile = []
-    if e.verlaengern_ab_alter is not None:
-        teile.append(f"ab {e.verlaengern_ab_alter} Jahren")
-    teile += [f.bezeichnung for f in e.verlaengern_felder.all()]
-    teile += [a.bezeichnung for a in e.verlaengern_einkommensarten.all()]
-    bedingungen = " oder ".join(teile) or "keine Bedingung eingestellt"
-    return f"Verlängern nur, wenn {e.get_verlaengern_regel_display()}: {bedingungen}"
