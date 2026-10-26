@@ -381,6 +381,8 @@ textarea.html-eingabe { font-family: ui-monospace, Menlo, Consolas, monospace; f
   .seiten-raster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .seiten-raster > .breit { grid-column: 1 / -1; }
 }
+/* Mehrere Karten untereinander in einer Spalte des Rasters (z. B. Notizen und Sperren) */
+.seiten-spalte { min-width: 0; }
 /* Notiz-Vorlagen sind Knöpfe zum Anlegen, keine Notizen: deutlich anders als .notiz */
 .notiz-vorlagen {
   display: flex; flex-wrap: wrap; align-items: center; gap: .5rem;

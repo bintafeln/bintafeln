@@ -41,7 +41,7 @@
       <dt>{{ bezeichnung }}{% if art9 %} <span class="marke-art9" title="besondere Kategorie (Art. 9 DSGVO)">Art. 9</span>{% endif %}</dt><dd>{{ wert }}</dd>
     {% endfor %}
   </dl>
-  <p class="hinweis">Stand des Imports vom {{ h.importiert_am|date:"d.m.Y H:i" }}. Dieser Aufruf wird im Zugriffsprotokoll festgehalten.</p>
+  {% if "kunden.importieren" in rechte or "kunden.bearbeiten" in rechte %}<p class="hinweis">Stand des Imports vom {{ h.importiert_am|date:"d.m.Y H:i" }}. Dieser Aufruf wird im Zugriffsprotokoll festgehalten.</p>{% endif %}
   {% if h.geaendert_am and "kunden.bearbeiten" in rechte %}<p><small class="hilfe">In bintafeln geändert am {{ h.geaendert_am|date:"d.m.Y" }} von {{ h.geaendert_von }}.</small></p>{% endif %}
   {% if "kunden.auskunft" in rechte or "kunden.zugriffsprotokoll" in rechte %}<p>
     {% if "kunden.auskunft" in rechte %}<a href="{% url 'kunden:auskunft' h.kundennummer %}" target="_blank" rel="noopener">Auskunft nach Art. 15 DSGVO (PDF)</a>{% endif %}
@@ -71,49 +71,6 @@
 </section>
 
 <section class="karte">
-  <h2>Sperren</h2>
-  <div class="tabelle-rahmen">
-  <table class="tabelle">
-    <thead><tr><th>Von</th><th>Bis</th><th>Begründung</th><th>Eingetragen von</th></tr></thead>
-    <tbody>
-    {% for s, aktiv in sperren %}
-      <tr{% if aktiv %} class="zeile-aktiv"{% endif %}>
-        <td data-titel="Von">{{ s.von|date:"d.m.Y" }}{% if aktiv %} <span class="marke-warnung">aktiv</span>{% endif %}</td>
-        <td data-titel="Bis">{{ s.bis|date:"d.m.Y"|default:"unbefristet" }}</td>
-        <td data-titel="Begründung">{{ s.begruendung|default:"–" }}</td>
-        <td data-titel="Eingetragen von">{{ s.eingetragen_von|default:"–" }}</td>
-      </tr>
-    {% empty %}
-      <tr><td colspan="4">{% if "kunden.sperren_alle" in rechte %}Keine Sperren.{% else %}Keine aktive Sperre.{% endif %}</td></tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  </div>
-</section>
-
-{% if "kunden.sperren_alle" in rechte %}
-<section class="karte">
-  <h2>Ausnahmen</h2>
-  <div class="tabelle-rahmen">
-  <table class="tabelle">
-    <thead><tr><th>Datum</th><th>Begründung</th><th>Eingetragen von</th></tr></thead>
-    <tbody>
-    {% for a in ausnahmen %}
-      <tr>
-        <td data-titel="Datum">{{ a.datum|date:"d.m.Y" }}{% if a.datum == heute %} <span class="marke-ok">heute</span>{% endif %}</td>
-        <td data-titel="Begründung">{{ a.begruendung|default:"–" }}</td>
-        <td data-titel="Eingetragen von">{{ a.eingetragen_von|default:"–" }}</td>
-      </tr>
-    {% empty %}
-      <tr><td colspan="3">Keine Ausnahmen.</td></tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  </div>
-</section>
-{% endif %}
-
-<section class="karte">
   <h2>Letzte Abholungen</h2>
   <div class="tabelle-rahmen">
   <table class="tabelle">
@@ -138,9 +95,56 @@
   {% if abholungen_gesamt > abholungen|length %}<p class="hinweis">{{ abholungen|length }} von {{ abholungen_gesamt }} gespeicherten Abholungen.</p>{% endif %}
 </section>
 
+{# Rechte Spalte: Notizen, darunter Sperren und Ausnahmen (am Einlass das Wichtigste zusammen) #}
+<div class="seiten-spalte">
 {% include "kunden/_notizen.html" %}
 
-{% if "kunden.dokumente" in rechte %}{% include "kunden/_dokumente.html" %}{% endif %}
+{# Ausgabestellen (ohne Recht auf alle Sperren) sehen die Karte nur bei einer aktiven Sperre #}
+{% if "kunden.sperren_alle" in rechte or sperren %}
+<section class="karte">
+  <h2>Sperren</h2>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Von</th><th>Bis</th><th>Begründung</th><th>Eingetragen von</th></tr></thead>
+    <tbody>
+    {% for s, aktiv in sperren %}
+      <tr{% if aktiv %} class="zeile-aktiv"{% endif %}>
+        <td data-titel="Von">{{ s.von|date:"d.m.Y" }}{% if aktiv %} <span class="marke-warnung">aktiv</span>{% endif %}</td>
+        <td data-titel="Bis">{{ s.bis|date:"d.m.Y"|default:"unbefristet" }}</td>
+        <td data-titel="Begründung">{{ s.begruendung|default:"–" }}</td>
+        <td data-titel="Eingetragen von">{{ s.eingetragen_von|default:"–" }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4">Keine Sperren.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endif %}
+
+{% if "kunden.sperren_alle" in rechte %}
+<section class="karte">
+  <h2>Ausnahmen</h2>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Datum</th><th>Begründung</th><th>Eingetragen von</th></tr></thead>
+    <tbody>
+    {% for a in ausnahmen %}
+      <tr>
+        <td data-titel="Datum">{{ a.datum|date:"d.m.Y" }}{% if a.datum == heute %} <span class="marke-ok">heute</span>{% endif %}</td>
+        <td data-titel="Begründung">{{ a.begruendung|default:"–" }}</td>
+        <td data-titel="Eingetragen von">{{ a.eingetragen_von|default:"–" }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="3">Keine Ausnahmen.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endif %}
+</div>
 
 {% if nachrichten %}
 <section class="karte" id="nachrichten">
@@ -149,32 +153,17 @@
 </section>
 {% endif %}
 
-{% if "kunden.historie" in rechte %}
-<section class="karte" id="historie">
-  <h2>Historie</h2>
-  {% if historie %}
-  <ul class="historie">
-    {% for e in historie %}
-    <li><span class="hinweis">{{ e.zeitpunkt|date:"d.m.Y" }} · {{ e.get_quelle_display }}{% if e.von %} · {{ e.von }}{% endif %}</span><br>{{ e.text }}</li>
-    {% endfor %}
-  </ul>
-  {% else %}
-  <p class="hinweis">Noch keine Änderungen festgehalten. Die Historie entsteht ab jetzt bei jedem Import, jeder Aufnahme und jeder Bearbeitung.</p>
-  {% endif %}
-  <h3>Kundengruppen</h3>
-  {% if gruppenzeiten %}
-  <table class="tabelle kompakt">
-    <thead><tr><th>Kundengruppe</th><th>von</th><th>bis</th><th>Grund für das Ende</th></tr></thead>
-    <tbody>
-    {% for z in gruppenzeiten %}
-      <tr><td data-titel="Kundengruppe">{{ z.gruppe_name }}</td><td data-titel="von">{{ z.von|date:"d.m.Y"|default:"früher" }}</td>
-        <td data-titel="bis">{{ z.bis|date:"d.m.Y"|default:"heute" }}</td><td data-titel="Grund">{{ z.grund|default:"–" }}</td></tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <p class="hinweis">Noch in keiner Kundengruppe.</p>
-  {% endif %}
+{% if "kunden.anmerkungen" in rechte %}
+<section class="karte">
+  <h2>Interne Anmerkungen</h2>
+  {% for b in bemerkungen %}
+    <div class="bemerkung">
+      <p class="hinweis">{{ b.datum|date:"d.m.Y" }}{% if b.verfasst_von %} · {{ b.verfasst_von }}{% endif %}</p>
+      <p>{{ b.text|linebreaksbr }}</p>
+    </div>
+  {% empty %}
+    <p class="hinweis">Keine.</p>
+  {% endfor %}
 </section>
 {% endif %}
 
@@ -215,17 +204,34 @@
 </section>
 {% endif %}
 
-{% if "kunden.anmerkungen" in rechte %}
-<section class="karte">
-  <h2>Interne Anmerkungen</h2>
-  {% for b in bemerkungen %}
-    <div class="bemerkung">
-      <p class="hinweis">{{ b.datum|date:"d.m.Y" }}{% if b.verfasst_von %} · {{ b.verfasst_von }}{% endif %}</p>
-      <p>{{ b.text|linebreaksbr }}</p>
-    </div>
-  {% empty %}
-    <p class="hinweis">Keine.</p>
-  {% endfor %}
+{% if "kunden.dokumente" in rechte %}{% include "kunden/_dokumente.html" %}{% endif %}
+
+{% if "kunden.historie" in rechte %}
+<section class="karte" id="historie">
+  <h2>Historie</h2>
+  {% if historie %}
+  <ul class="historie">
+    {% for e in historie %}
+    <li><span class="hinweis">{{ e.zeitpunkt|date:"d.m.Y" }} · {{ e.get_quelle_display }}{% if e.von %} · {{ e.von }}{% endif %}</span><br>{{ e.text }}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="hinweis">Noch keine Änderungen festgehalten. Die Historie entsteht ab jetzt bei jedem Import, jeder Aufnahme und jeder Bearbeitung.</p>
+  {% endif %}
+  <h3>Kundengruppen</h3>
+  {% if gruppenzeiten %}
+  <table class="tabelle kompakt">
+    <thead><tr><th>Kundengruppe</th><th>von</th><th>bis</th><th>Grund für das Ende</th></tr></thead>
+    <tbody>
+    {% for z in gruppenzeiten %}
+      <tr><td data-titel="Kundengruppe">{{ z.gruppe_name }}</td><td data-titel="von">{{ z.von|date:"d.m.Y"|default:"früher" }}</td>
+        <td data-titel="bis">{{ z.bis|date:"d.m.Y"|default:"heute" }}</td><td data-titel="Grund">{{ z.grund|default:"–" }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="hinweis">Noch in keiner Kundengruppe.</p>
+  {% endif %}
 </section>
 {% endif %}
 </div>

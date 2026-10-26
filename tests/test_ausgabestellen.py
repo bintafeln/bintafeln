@@ -90,7 +90,8 @@ def test_rechte_und_auskunft(client, admin, benutzer_mit_rolle, anmelden, pdf_te
     anmelden(client, b)
     seite = client.get(reverse("kunden:ausgabestelle", args=[s.pk])).content.decode()
     assert "Schlüssel" in seite and "Bearbeiten</a>" not in seite
-    assert "Ausgabestellen</a>" in client.get(reverse("core:start")).content.decode()  # Menü
+    # Im Menü nur für die Verwaltung; die Seiten selbst bleiben erreichbar (z. B. Ansprechpartner)
+    assert "Ausgabestellen</a>" not in client.get(reverse("core:start")).content.decode()
     assert client.get(reverse("kunden:ausgabestelle_bearbeiten", args=[s.pk])).status_code == 403
     client.logout()
     anmelden(client, benutzer_mit_rolle("kurt", rollen.KIOSK))
