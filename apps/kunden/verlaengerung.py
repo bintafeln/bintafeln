@@ -96,8 +96,8 @@ def ablehnung_notiz(p: Pruefung, e: KundenEinstellungen, bis: dt.date | None = N
                and not g.endswith("erfüllt eine Bedingung")]  # fmt: skip
     if p.fehlt:
         regel = e.get_verlaengern_regel_display()
-        teile.append(f"Bedingung nicht erfüllt ({regel}: {bedingungen_text(e)}). Ohne Bedingung: "
-                     + ", ".join(p.fehlt))  # fmt: skip
+        teile.append(f"Regel: {regel} ({bedingungen_text(e)}). Folgende Bedingung(en) werden "
+                     "nicht erfüllt: " + ", ".join(p.fehlt))  # fmt: skip
     teile += gruende
     text = ". ".join(teile) + "."
     if bis:

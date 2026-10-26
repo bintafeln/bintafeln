@@ -161,10 +161,10 @@ def test_sammelseite_verlaengert_und_schreibt_notiz(gemeldet, admin_client):
     assert "Bringt nächste Woche den Bescheid" in texte
     neu = next(t for t in texte if t.startswith("Ausweis kann nicht"))
     assert neu == (
-        "Ausweis kann nicht verlängert werden. Bedingung nicht erfüllt (jede Person im Haushalt "
-        "erfüllt eine Bedingung: ab 60 Jahren oder Schwerbehindert). Ohne Bedingung: Vera Probe1 "
-        "(35 Jahre). Der Kunde muss ein Pausenjahr einlegen; der Ausweis gilt noch bis "
-        "30.11.2026. Danach ist eine Neuanmeldung über den Antrag möglich."
+        "Ausweis kann nicht verlängert werden. Regel: jede Person im Haushalt erfüllt eine "
+        "Bedingung (ab 60 Jahren oder Schwerbehindert). Folgende Bedingung(en) werden nicht "
+        "erfüllt: Vera Probe1 (35 Jahre). Der Kunde muss ein Pausenjahr einlegen; der Ausweis "
+        "gilt noch bis 30.11.2026. Danach ist eine Neuanmeldung über den Antrag möglich."
     )
     assert unklar.ausweis_gueltig_bis == dt.date(2026, 11, 30)  # nicht gewählt
     offen = Nachricht.objects.filter(erledigt_am__isnull=True)
