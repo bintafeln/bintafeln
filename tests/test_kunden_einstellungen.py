@@ -43,6 +43,9 @@ def test_einstellungen_speichern(admin_client):
             "abholungen_aufbewahren_jahre": "2",
             "zugriffe_aufbewahren_tage": "90",
             "historie_aufbewahren_jahre": "5",
+            "verlaengern_regel": "alle",
+            "verlaengern_ab_alter": "65",
+            "verlaengern_sonst_pausieren_monate": "6",
         },
     )
     assert antwort.status_code == 302
@@ -54,6 +57,8 @@ def test_einstellungen_speichern(admin_client):
     assert e.abholungen_aufbewahren_jahre == 2
     assert e.zugriffe_aufbewahren_tage == 90
     assert e.historie_aufbewahren_jahre == 5
+    assert (e.verlaengern_regel, e.verlaengern_ab_alter) == ("alle", 65)
+    assert e.verlaengern_sonst_pausieren_monate == 6
 
 
 def test_einstellungen_ungueltig(admin_client):

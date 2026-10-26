@@ -394,9 +394,28 @@ def notiz_schreiben(h: Haushalt, text: str, benutzer) -> Notiz | None:
     if not text:
         return None
     von = (benutzer.get_full_name() or benutzer.get_username())[:100]
-    return Notiz.objects.create(
+    notiz = Notiz.objects.create(
         kundennummer=h.kundennummer, text=text, verfasst_von=von, benutzer=benutzer
     )
+    _melden(h, text, benutzer, von)
+    return notiz
+
+
+def _melden(h: Haushalt, text: str, benutzer, von: str) -> None:
+    """Notiz-Knopf mit „Meldet der Verwaltung“ (ADR 0068): zusätzlich eine Nachricht mit diesem
+    Anliegen, außer zu dem Haushalt ist dieselbe schon offen."""
+    from apps.ausgabe.stelle import aktuelle
+
+    vorlage = NotizVorlage.objects.filter(aktiv=True, text=text).exclude(melden="").first()
+    if (
+        vorlage is None
+        or Nachricht.objects.filter(
+            kundennummer=h.kundennummer, anliegen=vorlage.melden, erledigt_am__isnull=True
+        ).exists()
+    ):
+        return
+    Nachricht.objects.create(kundennummer=h.kundennummer, anliegen=vorlage.melden,
+                             stelle=aktuelle(benutzer), von=von[:150])  # fmt: skip
 
 
 def notizen_kontext(kundennummer: str, benutzer) -> dict:

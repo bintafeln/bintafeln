@@ -29,6 +29,24 @@
 <p>„Löschen …“ zeigt zuerst, was alles mitgelöscht wird (Personen, Abholungen, Notizen, Dokumente, Historie …). Erst
   „Ja, … endgültig löschen“ löscht. Kontobuchungen bleiben ohne Haushalt für die Kasse erhalten.</p>{% endif %}
 {% if "kunden.nachrichten" in rechte %}<h3>Nachrichten der Ausgabestellen</h3>
-<p>Ausgabestellen können zu Kunden, die sie nicht aufrufen dürfen, eine Nachricht an die Verwaltung schreiben. Sie stehen
-  unter „Kunden → Nachrichten der Ausgabestellen“ (die Zahl im Menü und auf der Startseite zeigt offene) und auf der
-  Haushaltsseite. „✓ erledigt“ hakt sie ab; erledigte werden nach 90 Tagen gelöscht.</p>{% endif %}
+<p>Ausgabestellen schreiben am Einlass eine Nachricht an die Verwaltung, zu eigenen und zu fremden Kunden, immer mit einem
+  <strong>Anliegen</strong> (z. B. „Bescheid geprüft – Ausweis verlängern“, „Neue Anschrift“) und auf Wunsch einem Text.
+  Sie stehen unter „Kunden → Nachrichten der Ausgabestellen“, nach Anliegen filterbar, und auf der Haushaltsseite. Die
+  Startseite zeigt die offenen je Anliegen. „✓ erledigt“ hakt sie ab; erledigte werden nach 90 Tagen gelöscht.</p>{% endif %}
+{% if "kunden.bearbeiten" in rechte %}<h3>Ausweise zusammen verlängern</h3>
+<p>Melden Ausgabestellen „Bescheid geprüft – Ausweis verlängern“ (im Nachrichten-Fenster oder mit einem Notiz-Knopf,
+  bei dem unter „Einstellungen → Notiz-Vorlagen“ „Meldet der Verwaltung“ gewählt ist), stehen diese Haushalte unter „Kunden → Ausweise
+  verlängern“ auf einer Seite (die Zahl im Menü zeigt, wie viele). bintafeln prüft jeden Haushalt nach den Bedingungen
+  in „Einstellungen → Kundenstamm“:</p>
+<ul>
+  <li><strong>Verlängern nur, wenn</strong>: ohne Bedingung, <em>jede</em> Person im Haushalt erfüllt eine Bedingung,
+    oder <em>mindestens eine</em> Person. Bedingungen sind ein Mindestalter (z. B. 60), Ja/Nein-Zusatzfelder wie
+    „Schwerbehindert“ und Einkommensarten (z. B. „Grundsicherung im Alter“, zählt für alle Personen).</li>
+  <li>Außerdem: gesperrte oder beendete Haushalte und Haushalte mit aktiver Sperre werden nicht verlängert. Fehlt ein
+    Geburtsdatum, steht „selbst prüfen“ da. Ist der Ausweis noch lange gültig, gibt es einen Hinweis.</li>
+</ul>
+<p>Oben wählen Sie, um wie viele Monate verlängert wird (Vorgabe aus den Einstellungen, meist 12). Verlängert wird ab
+  dem bisherigen Ablaufdatum, bei abgelaufenem Ausweis ab heute. Verlängerbare sind angehakt, „selbst prüfen“ nicht.
+  Wer nicht verlängern kann, lässt sich stattdessen <strong>pausieren</strong> (Status „pausiert“ und eine Notiz, bis
+  wann; Dauer in den Einstellungen, 0 = nur anzeigen). Ein Klick auf „Ausgewählte verlängern bzw. pausieren“ erledigt
+  alles; jede Änderung steht in der Historie, die Meldungen sind danach erledigt.</p>{% endif %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block titel %}Ausweise verlängern{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Ausweise verlängern</h1>
+  <p class="hinweis">Hier stehen alle Haushalte, zu denen eine Ausgabestelle „Bescheid geprüft – Ausweis verlängern“
+    gemeldet hat. bintafeln hat jeden nach den Bedingungen aus „Einstellungen → Kundenstamm“ geprüft.
+    {% if bedingungen %}<strong>{{ bedingungen }}.</strong>{% else %}Eingestellt ist: ohne Bedingung.{% endif %}
+    Verlängert wird ab dem bisherigen Ablaufdatum, ist der Ausweis schon abgelaufen, ab heute.</p>
+  <form method="get" class="filter">
+    <label for="monate">Verlängern um</label>
+    <select name="monate" id="monate" onchange="this.form.submit()">
+      {% for m in monate_auswahl %}<option value="{{ m }}"{% if m == monate %} selected{% endif %}>{{ m }} Monate{% if m == einstellungen.ausweis_gueltig_monate %} (Vorgabe){% endif %}</option>{% endfor %}
+    </select>
+    <noscript><button type="submit" class="knopf knopf-zweitrangig">Neu berechnen</button></noscript>
+  </form>
+  {% if not liste %}
+  <p>Zurzeit ist nichts gemeldet.</p>
+  {% else %}
+  <p>{{ anzahl.ok }} verlängerbar · {{ anzahl.unklar }} selbst prüfen · {{ anzahl.nein }} nicht verlängerbar</p>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="monate" value="{{ monate }}">
+    <div class="tabelle-rahmen">
+    <table class="tabelle">
+      <thead><tr><th>Wählen</th><th>Kunde</th><th>Prüfung</th><th>Personen</th><th>Ausweis bisher</th><th>neu bis</th><th>Gemeldet</th></tr></thead>
+      <tbody>
+      {% for p in liste %}
+        <tr class="verlaengern-{{ p.ergebnis }}">
+          <td data-titel="Wählen">
+            {% if p.ergebnis == "nein" %}
+              {% if pause %}<label><input type="checkbox" name="pausieren" value="{{ p.nummer }}" checked> {{ pause }} Monate pausieren</label>{% else %}–{% endif %}
+            {% else %}
+              <label><input type="checkbox" name="verlaengern" value="{{ p.nummer }}"{% if p.ergebnis == "ok" %} checked{% endif %}> verlängern</label>
+            {% endif %}
+          </td>
+          <td data-titel="Kunde"><a href="{% url 'kunden:haushalt' p.nummer %}">{{ p.nummer }}</a></td>
+          <td data-titel="Prüfung">
+            {% if p.ergebnis == "ok" %}<span class="marke-ok">✓ verlängerbar</span>{% elif p.ergebnis == "unklar" %}<span class="hinweis">? selbst prüfen</span>{% else %}<span class="marke-warnung">✗ nicht verlängerbar</span>{% endif %}
+            {% for g in p.gruende %}<br><small>{{ g }}</small>{% endfor %}
+            {% for g in p.hinweise %}<br><small class="leise">{{ g }}</small>{% endfor %}
+          </td>
+          <td data-titel="Personen">{% for name, womit in p.personen %}{{ name }}: {{ womit }}{% if not forloop.last %}<br>{% endif %}{% empty %}<span class="leise">–</span>{% endfor %}</td>
+          <td data-titel="Ausweis bisher">{{ p.haushalt.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}</td>
+          <td data-titel="neu bis">{% if p.ergebnis != "nein" %}{{ p.neu_bis|date:"d.m.Y" }}{% else %}–{% endif %}</td>
+          <td data-titel="Gemeldet">{% for n in p.nachrichten %}{{ n.erstellt_am|date:"d.m.Y" }}{% if n.stelle %} · {{ n.stelle.name }}{% endif %}{% if n.text %}<br><small>{{ n.text }}</small>{% endif %}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <p class="hinweis">Jede Änderung steht in der Historie des Haushalts. Die Meldungen der verlängerten und pausierten
+      Haushalte werden als erledigt markiert; nicht gewählte bleiben offen.</p>
+    <button type="submit" class="knopf">Ausgewählte verlängern bzw. pausieren</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

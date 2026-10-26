@@ -148,6 +148,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Sonderaktionen: Regeln in `apps/ausgabe/sonderaktionen.py`, `Teilnahme` an der Kundennummer,
   ADR 0032; aktuelle Ausgabestelle nur über `apps/ausgabe/stelle.py` (`aktuelle()`, Auswahl oben
   im Menü, `Benutzer.gewaehlte_stelle`, Fortschritt in der Kopfzeile, ADR 0067).
+  Sammel-Verlängerung der Ausweise: Regeln in `apps/kunden/verlaengerung.py`, Bedingungen in
+  `KundenEinstellungen.verlaengern_*`, Anliegen der `Nachricht` in `apps/core/auswahl.py` (ADR 0068).
 - Statische Dateien laufen im Betrieb über `ManifestStaticFilesStorage` (Dateinamen mit
   Prüfsumme), weil Caddy sie einen Tag zwischenspeichern lässt. Tests nutzen die einfache
   Ablage.

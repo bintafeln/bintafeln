@@ -130,3 +130,12 @@ def staatsangehoerigkeiten(leer: str = "—") -> list[tuple[str, str]]:
 
 
 LAENDERCODE = {name: code for code, name in STAATEN}
+# Anliegen einer Nachricht der Ausgabestelle an die Verwaltung (ADR 0062, 0068); der Schlüssel
+# „verlaengern“ führt zur Sammel-Verlängerung.
+NACHRICHT_ANLIEGEN = [
+    ("verlaengern", "Bescheid geprüft – Ausweis verlängern"),
+    ("adresse", "Neue Anschrift oder Telefon"),
+    ("haushalt", "Haushalt hat sich verändert"),
+    ("zugehoerig", "Gehört jetzt zu unserer Ausgabestelle"),
+    ("sonstiges", "Sonstiges"),
+]

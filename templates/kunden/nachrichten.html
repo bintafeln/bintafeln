@@ -3,8 +3,11 @@
 {% block inhalt %}
 <section class="karte breit">
   <h1>Nachrichten der Ausgabestellen</h1>
-  <p class="hinweis">Ausgabestellen schreiben hier zu Kunden, die sie nicht aufrufen dürfen (z. B. weil der Kunde zu einer
-    anderen Ausgabestelle gehört). Erledigte werden nach {{ tage }} Tagen gelöscht.</p>
+  <p class="hinweis">Ausgabestellen schreiben hier an die Verwaltung, mit einem Anliegen und auf Wunsch einem Text. Erledigte
+    werden nach {{ tage }} Tagen gelöscht.</p>
+  {% if darf_verlaengern %}<p><a class="knopf" href="{% url 'kunden:verlaengern' %}">Gemeldete Ausweise zusammen prüfen und verlängern</a></p>{% endif %}
+  <p class="filter">Anliegen: <a href="{% url 'kunden:nachrichten' %}"{% if not anliegen %} aria-current="true"{% endif %}>alle</a>
+    {% for wert, name in anliegen_liste %} · <a href="?anliegen={{ wert }}"{% if wert == anliegen %} aria-current="true"{% endif %}>{{ name }}</a>{% endfor %}</p>
   <h2>Offen ({{ offen|length }})</h2>
   {% include "kunden/_nachrichten_tabelle.html" with liste=offen %}
   <h2>Erledigt</h2>

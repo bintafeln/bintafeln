@@ -55,7 +55,7 @@ def test_einlass_und_liste(lage, admin_client):
     # Die Ausgabestelle darf die Nachrichten nicht lesen
     assert c.get(reverse("kunden:nachrichten")).status_code == 403
     # Verwaltung: Startseite, Menü, Liste, Haushaltsseite, erledigen
-    assert "2 Nachrichten der Ausgabestellen" in admin_client.get("/").content.decode()
+    assert "2 × Sonstiges" in admin_client.get("/").content.decode()  # je Anliegen (ADR 0068)
     seite = admin_client.get(reverse("kunden:nachrichten")).content.decode()
     assert "War heute hier" in seite and "anton · Mitte" in seite
     haus = admin_client.get(reverse("kunden:haushalt", args=["501"])).content.decode()
