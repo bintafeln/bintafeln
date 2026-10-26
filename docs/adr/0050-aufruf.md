@@ -35,9 +35,14 @@ standen weiter in der Warteschlange.
 
 - Ergänzung: Module können Hinweise für die Einlass-Karte liefern (`Modul.einlass`). Der Aufruf
   zeigt dort, ob und wann die Nummer aufgerufen wurde, „Zu spät“ ab `zu_spaet_minuten` nach dem
-  Aufruf oder wie viele Nummern der Kunde zu früh ist. Ist er noch nicht an der Reihe, blinkt die
-  Ampel gelb (Hinweis mit „warten“, `ampel.noch_nicht_dran()`, `Bewertung.lampe`); die Bewertung
-  daneben bleibt „Abholung möglich“ mit „Kunde ist zu früh“, Rot bleibt Rot.
+  Aufruf oder wie viele Nummern der Kunde zu früh ist. Ist er zu früh oder zu spät, leuchtet die
+  Ampel grün und Gelb blinkt dazu (Hinweis mit „ampel“ und „wort“,
+  `ampel.modul_hinweise_beachten()`); die Bewertung bleibt „Abholung möglich“ mit „Kunde ist zu
+  früh/spät“, Rot bleibt Rot. Bei „Zu spät“ bietet
+  der Hinweis einen Knopf „N Nummern verschieben“ (`knopf` im Hinweis, `aufruf:verschieben`), der
+  wie „zu spät gekommen“ am Handy neu einsortiert.
+- Ergänzung: Nicht jede Ausgabestelle ruft auf: `AufrufEinstellungen.aktiv` je Ausgabestelle
+  (Vorgabe an); aus = keine Steuerung, kein Kasten, keine Hinweise am Einlass.
 - Ergänzung: Kurz-Steuerung unter dem Menü (`Modul.seitenleiste`, `aufruf:leiste`) für alle mit
   Einlass und Recht „Kunden aufrufen“: aufgerufene Nummern der gewählten Ausgabestelle, „Nächste
   hereinrufen“, Zurück und Starten; lädt per HTMX nach und fragt alle 15 Sekunden neu.

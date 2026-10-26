@@ -86,7 +86,7 @@ def test_einlass(client, admin, benutzer_mit_rolle, anmelden, h):
     url = reverse("ausgabe:sonderaktion_eintragen", args=["4711", a.pk])
     seite = client.post(url, {"auswahl": kleidung.pk}, **HX).content.decode()
     assert "Weihnachtsgutschein (Kleidung) eingetragen: 2×." in seite
-    assert "✓ Erhalten am" in seite and "Korrektur beantragen" in seite
+    assert "✓ Erhalten am" in seite and "Teilnahme ist erfolgt: Korrigieren" in seite
     t = Teilnahme.objects.get()
     assert (t.kundennummer, t.menge, t.auswahl, t.eingetragen_von) == ("4711", 2, kleidung, "anton")
     seite = client.post(url, {"auswahl": kleidung.pk}, **HX).content.decode()

@@ -81,7 +81,7 @@ def test_modul_aus_ist_unsichtbar(admin_client):
     assert admin_client.get(reverse("aufruf:start")).status_code == 404
     assert admin_client.get(reverse("aufruf:einstellungen")).status_code == 404
     seite = admin_client.get(reverse("core:start")).content.decode()
-    assert "Kundennummernanzeige" not in seite
+    assert "aufruf-leiste" not in seite
     assert "aufruf.steuern" in rechte.ALLE  # im Katalog, aber nicht in der Rollenverwaltung
     assert all(r.code != "aufruf.steuern" for _, liste in rechte.bereiche() for r in liste)
     assert 'id="aufruf"' not in admin_client.get(reverse("core:hilfe")).content.decode()
@@ -97,7 +97,7 @@ def test_modul_einschalten_in_den_tafel_einstellungen(admin_client):
     assert antwort.status_code == 302
     assert TafelEinstellungen.laden().module == ["aufruf"]
     seite = admin_client.get(reverse("core:start")).content.decode()
-    assert "Kundennummernanzeige" in seite and "Aufruf, Monitor und Kiosk" in seite
+    assert reverse("aufruf:leiste") in seite and "Aufruf, Monitor und Kiosk" in seite
     assert any(r.code == "aufruf.steuern" for _, liste in rechte.bereiche() for r in liste)
     assert 'id="aufruf"' in admin_client.get(reverse("core:hilfe")).content.decode()
 
@@ -483,7 +483,8 @@ def test_einstellungen_und_neue_links(modul_an, admin_client, mitte):
     seite = admin_client.get(reverse("aufruf:einstellungen")).content.decode()
     assert reverse("aufruf:monitor", args=[e.schluessel]) in seite
     antwort = admin_client.post(reverse("aufruf:einstellungen_stelle", args=[mitte.pk]), {
-        "anzahl": 4, "spaetzuender_versatz": 20, "vorrang_symbol": "on", "info_rotation": "on",
+        "aktiv": "on", "anzahl": 4, "spaetzuender_versatz": 20, "vorrang_symbol": "on",
+        "info_rotation": "on",
         "eingelassene_ausblenden": "on", "wochentag_probe": "", "zu_spaet_minuten": 15,
     })  # fmt: skip
     assert antwort.status_code == 302
@@ -508,7 +509,7 @@ def test_einlass_hinweise(mitte, tag_daten):
     hinweis = ablauf.einlass(h, heute())[0]
     assert hinweis["farbe"] == "gelb" and hinweis["text"].startswith("Noch nicht aufgerufen: ")
     assert hinweis["text"].endswith("zu früh") and "Kundengruppe" not in hinweis["text"]
-    assert hinweis["warten"]
+    assert hinweis["ampel"] == "Kunde ist zu früh (Aufruf)" and hinweis["wort"] == "ZU FRÜH"
     ablauf.weiter(mitte, heute())
     hinweis = ablauf.einlass(erster, heute())[0]
     assert hinweis["farbe"] == "gruen" and hinweis["text"].startswith("Aufgerufen um")
@@ -523,13 +524,16 @@ def test_einlass_hinweise(mitte, tag_daten):
         and "Zu spät" in hinweis["text"]
         and "20 Minuten" in hinweis["text"]
     )
+    assert hinweis["knopf"]["text"] == "30 Nummern verschieben"  # Vorgabe 30 Plätze
+    assert hinweis["wort"] == "ZU SPÄT"  # grüne Ampel, Gelb blinkt dazu
+    assert "30 wartende Nummern" in hinweis["knopf"]["erklaerung"]
     e = AufrufEinstellungen.laden(mitte)
     e.zu_spaet_minuten = 0
     e.save()
     assert ablauf.einlass(erster, heute())[0]["farbe"] == "gruen"
     ablauf.spaetzuender(mitte, heute(), erster.kundennummer)
     assert "neu einsortiert" in ablauf.einlass(erster, heute())[0]["text"]
-    assert "warten" in ablauf.einlass(erster, heute())[0]
+    assert ablauf.einlass(erster, heute())[0]["wort"] == "ZU FRÜH"
     fremd = Haushalt.objects.get(kundennummer="301")
     assert ablauf.einlass(fremd, heute())[0]["text"] == "Nicht in der heutigen Aufruf-Liste"
 
@@ -538,7 +542,8 @@ def test_einlass_karte_zeigt_aufruf(modul_an, admin_client, mitte, tag_daten):
     ablauf.starten(mitte, heute())
     seite = admin_client.get(reverse("ausgabe:empfang"), {"nummer": "201"}).content.decode()
     assert "Aufruf:</strong> Noch nicht aufgerufen" in seite
-    assert "ampel-blinkt" in seite and "WARTEN" in seite  # Ampel gelb blinkend, Eintragen geht
+    assert "ampel-blinkt" in seite and "ZU FRÜH" in seite  # Grün leuchtet, Gelb blinkt dazu
+    assert "lampe lampe-gelb an" in seite
     assert "Kunde ist zu früh (Aufruf)" in seite and "Abholung möglich" in seite
     assert "Abholung eintragen" in seite
     t = TafelEinstellungen.laden()
@@ -548,11 +553,13 @@ def test_einlass_karte_zeigt_aufruf(modul_an, admin_client, mitte, tag_daten):
     assert "Noch nicht aufgerufen" not in seite
 
 
-def test_menue_oeffnet_neuen_tab(modul_an, admin_client):
-    seite = admin_client.get(reverse("core:start")).content.decode()
+def test_steuerung_ueber_die_leiste_im_neuen_tab(modul_an, admin_client):
+    """Kein eigener Menüeintrag mehr: Der Kasten „Aufruf“ unter dem Menü führt zur Steuerung."""
+    seite = admin_client.get(reverse("aufruf:leiste")).content.decode()
     link = f'href="{reverse("aufruf:start")}"'
     stelle = seite.index(link)
     assert 'target="_blank"' in seite[stelle : stelle + 200]
+    assert "oben im Menü die Ausgabestelle wählen" in seite
 
 
 def test_zurueckgenommene_abholung_kommt_an_alten_platz(mitte, tag_daten):
@@ -656,7 +663,8 @@ def test_leiste_fehler_und_ohne_stelle(modul_an, mitte, benutzer_mit_rolle, anme
     c = anmelden(Client(), konto)
     Ausgabestelle.objects.create(name="Nord")
     url = reverse("aufruf:leiste")
-    assert c.get(url).content == b""  # keine Stelle gewählt
+    seite = c.get(url).content.decode()  # keine Stelle gewählt: nur der Weg zur Steuerung
+    assert reverse("aufruf:start") in seite and "Bitte eintreten" not in seite
     konto.ausgabestellen.set([mitte])
     seite = c.post(url, {"aktion": "weiter"}).content.decode()  # nicht gestartet
     assert 'role="alert"' in seite and "Aufruf starten" not in seite  # heute keine Gruppen
@@ -664,3 +672,67 @@ def test_leiste_fehler_und_ohne_stelle(modul_an, mitte, benutzer_mit_rolle, anme
     t.module = []
     t.save()
     assert "aufruf-leiste" not in c.get(reverse("core:start")).content.decode()
+
+
+def test_einlass_knopf_verschieben(modul_an, mitte, tag_daten, benutzer_mit_rolle, anmelden,
+                                   recht_nehmen):  # fmt: skip
+    e = AufrufEinstellungen.laden(mitte)
+    e.spaetzuender_versatz = 3
+    e.save()
+    tag = ablauf.starten(mitte, heute())
+    erster = tag.stand["gruppen"][0]["wartend"][0]
+    ablauf.weiter(mitte, heute())
+    tag = ablauf.tag_holen(mitte, heute())
+    frueher = timezone.now() - dt.timedelta(minutes=20)
+    tag.stand["rueckgaengig"][-1]["zeitpunkt"] = frueher.isoformat()
+    tag.save()
+    konto = benutzer_mit_rolle("anton", rollen.AUSGABE)
+    konto.ausgabestellen.set([mitte])
+    c = anmelden(Client(), konto)
+    seite = c.get(reverse("ausgabe:empfang"), {"nummer": erster}).content.decode()
+    url = reverse("aufruf:verschieben", args=[mitte.pk, erster])
+    assert f'action="{url}"' in seite and "3 Nummern verschieben" in seite
+    assert "wartende Nummern hinter den gerade aufgerufenen" in seite  # Erklärung (Maus darüber)
+    antwort = c.post(url, follow=True)
+    seite = antwort.content.decode()
+    assert antwort.redirect_chain[-1][0].endswith(f"?nummer={erster}")
+    assert "3 Plätze später einsortiert" in seite and "Nummern zu früh" in seite
+    assert "bereits neu einsortiert" in c.post(url, follow=True).content.decode()
+    # Fehler (nicht in der Liste) als Meldung; ohne Recht kein Knopf und kein Zugriff
+    assert (
+        "noch nicht aufgerufen"
+        in c.post(
+            reverse("aufruf:verschieben", args=[mitte.pk, "999"]), follow=True
+        ).content.decode()
+    )
+    recht_nehmen(rollen.AUSGABE, "aufruf.steuern")
+    assert c.post(url).status_code == 403
+    seite = c.get(reverse("ausgabe:empfang"), {"nummer": erster}).content.decode()
+    assert "Nummern verschieben" not in seite
+
+
+def test_ausgabestelle_ohne_aufruf(modul_an, admin_client, mitte, tag_daten, benutzer_mit_rolle,
+                                   anmelden):  # fmt: skip
+    """Nicht jede Ausgabestelle ruft auf: aus = kein Kasten, keine Steuerung, kein Hinweis."""
+    tag = ablauf.starten(mitte, heute())
+    nummer = tag.stand["gruppen"][0]["wartend"][4]
+    admin_client.post(
+        reverse("aufruf:einstellungen_stelle", args=[mitte.pk]),
+        {
+            "anzahl": 3,
+            "spaetzuender_versatz": 30,
+            "zu_spaet_minuten": 15,
+            "wochentag_probe": "",
+        },
+    )  # fmt: skip  (ohne „aktiv“ = ausgeschaltet)
+    assert AufrufEinstellungen.laden(mitte).aktiv is False
+    assert (
+        "Kein Aufruf an dieser Ausgabestelle"
+        in admin_client.get(reverse("aufruf:einstellungen")).content.decode()
+    )
+    konto = benutzer_mit_rolle("anton", rollen.AUSGABE)
+    konto.ausgabestellen.set([mitte])
+    c = anmelden(Client(), konto)
+    assert c.get(reverse("aufruf:leiste")).content == b""
+    assert c.get(reverse("aufruf:steuerung", args=[mitte.pk])).status_code == 403
+    assert ablauf.einlass(Haushalt.objects.get(kundennummer=nummer), heute()) == []

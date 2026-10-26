@@ -9,6 +9,7 @@ urlpatterns = [
     path("leiste/", views.leiste, name="leiste"),
     path("<int:pk>/", views.steuerung, name="steuerung"),
     path("<int:pk>/mobil/", views.mobil, name="mobil"),
+    path("<int:pk>/verschieben/<str:nummer>/", views.verschieben, name="verschieben"),
     path("<int:pk>/starten/", views.starten, name="starten"),
     path("<int:pk>/weiter/", views.weiter, name="weiter"),
     path("<int:pk>/zurueck/", views.zurueck, name="zurueck"),

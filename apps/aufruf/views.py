@@ -6,6 +6,7 @@ Antworten im bisherigen Format (``ablauf.stand_fuer_anzeige``).
 
 import csv
 import json
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
@@ -27,7 +28,8 @@ steuern = rollen.recht_erforderlich("aufruf.steuern")
 
 def stellen_fuer(benutzer):
     eigene = zugang.stellen(benutzer)
-    stellen = Ausgabestelle.objects.filter(aktiv=True)
+    # Nur Ausgabestellen, an denen aufgerufen wird (ohne Einstellungen gilt: ja)
+    stellen = Ausgabestelle.objects.filter(aktiv=True).exclude(aufruf__aktiv=False)
     return stellen.filter(pk__in=[s.pk for s in eigene]) if eigene is not None else stellen
 
 
@@ -293,8 +295,14 @@ def leiste(request):
     from apps.ausgabe.stelle import aktuelle
 
     stelle = aktuelle(request.user)
+    if stelle is not None and not AufrufEinstellungen.laden(stelle).aktiv:
+        return HttpResponse("")  # an dieser Ausgabestelle wird nicht aufgerufen
     if stelle is None or not stellen_fuer(request.user).filter(pk=stelle.pk).exists():
-        return HttpResponse("")
+        # Ohne gewählte Stelle nur der Weg zur ganzen Steuerung (ersetzt den Menüeintrag)
+        return render(request, "aufruf/_leiste.html", {
+            "ohne_stelle": True, "steuerung": reverse("aufruf:start"),
+            "stelle_waehlen": rollen.hat_recht(request.user, "einlass.nutzen"),
+        })  # fmt: skip
     heute = timezone.localdate()
     fehler = ""
     if request.method == "POST" and request.POST.get("aktion") in AKTIONEN:
@@ -305,8 +313,28 @@ def leiste(request):
     e = AufrufEinstellungen.laden(stelle)
     tag = ablauf.aktualisieren(stelle, heute)
     d = ablauf.stand_fuer_anzeige(tag, e, heute)
+    if tag and "error" not in d and not d["finished"]:
+        d["current_slot"] = tag.stand["gruppen"][tag.stand["index"]]["name"]  # ohne Uhrzeit
     return render(request, "aufruf/_leiste.html", {
         "stelle": stelle, "d": d, "anzahl": e.anzahl, "fehler": fehler,
         "gruppen_heute": "error" in d and bool(ablauf.gruppen_heute(stelle, heute)),
         "steuerung": reverse("aufruf:steuerung", args=[stelle.pk]),
     })  # fmt: skip
+
+
+@require_POST
+@steuern
+def verschieben(request, pk, nummer):
+    """Knopf am Einlass: zu spät Gekommene neu einsortieren, dann zurück zum Kunden."""
+    stelle = _stelle(request, pk)
+    try:
+        e = ablauf.spaetzuender(stelle, timezone.localdate(), nummer)
+    except ablauf.AufrufFehler as fehler:
+        messages.error(request, str(fehler))
+    else:
+        if e["bereits"]:
+            messages.info(request, f"Kunde {nummer} wurde heute bereits neu einsortiert.")
+        else:
+            messages.success(request, f"Kunde {nummer} wurde {e['versatz']} Plätze später "
+                             f"einsortiert (neuer Platz {e['neuer_platz']}).")  # fmt: skip
+    return redirect(f"{reverse('ausgabe:empfang')}?{urlencode({'nummer': nummer})}")

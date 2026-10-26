@@ -130,7 +130,7 @@ def test_ausgabestelle_im_menue_und_fortschritt(angemeldet, admin, benutzer_mit_
     expect(blase).to_be_hidden()
     fortschritt.hover()  # Erklärung erscheint sofort
     expect(blase).to_be_visible()
-    expect(blase).to_contain_text("0 von 2 Haushalten heute abgeholt")
+    expect(blase).to_contain_text("0 von 2 möglichen Haushalten haben heute schon abgeholt.")
     seite.get_by_label("Kundennummer scannen oder eingeben").fill("41")
     seite.get_by_role("button", name="Prüfen").click()
     seite.get_by_role("button", name=re.compile("Abholung eintragen")).click()

@@ -247,17 +247,19 @@ def test_meldungstexte_in_den_einstellungen(admin_client):
     assert 'value="Willkommen!"' in admin_client.get(url).content.decode()
 
 
-def test_noch_nicht_dran_blinkt_gelb(haushalt, einstellungen):
+def test_zu_frueh_oder_zu_spaet_gruen_und_gelb_blinkt(haushalt, einstellungen):
     b = ampel.bewerten(haushalt, HEUTE, None, einstellungen)
     assert b.farbe == ampel.GRUEN
-    # Hinweis ohne „warten“ (z. B. schon aufgerufen) lässt alles grün
-    assert ampel.noch_nicht_dran(b, [{"text": "Aufgerufen", "farbe": "gruen"}]).farbe == "gruen"
-    b = ampel.noch_nicht_dran(b, [{"text": "Noch nicht aufgerufen", "warten": True}])
-    # Die Ampel blinkt gelb, die Bewertung bleibt grün: Abholung möglich, Kunde ist zu früh
-    assert b.blinken and b.lampe == ampel.GELB and b.farbe == ampel.GRUEN and b.darf_abholen
-    assert [m.text for m in b.meldungen] == ["Kunde ist zu früh (Aufruf)"]
+    # Hinweis ohne „ampel“ (z. B. schon aufgerufen) lässt alles, wie es ist
+    b = ampel.modul_hinweise_beachten(b, [{"text": "Aufgerufen", "farbe": "gruen"}])
+    assert not b.blinken and [m.text for m in b.meldungen] == ["Alles in Ordnung"]
+    hinweis = {"text": "Zu spät", "ampel": "Kunde ist zu spät (Aufruf)", "wort": "ZU SPÄT"}
+    b = ampel.modul_hinweise_beachten(b, [hinweis])
+    # Grün bleibt (Abholung möglich), Gelb blinkt dazu
+    assert b.blinken and b.farbe == ampel.GRUEN and b.darf_abholen and b.wort == "ZU SPÄT"
+    assert [m.text for m in b.meldungen] == ["Kunde ist zu spät (Aufruf)"]
     # Rot bleibt rot und blinkt nicht
     Sperre.objects.create(haushalt=haushalt, von=HEUTE, begruendung="Test")
-    rot = ampel.noch_nicht_dran(ampel.bewerten(haushalt, HEUTE, None, einstellungen),
-                                [{"text": "x", "warten": True}])  # fmt: skip
-    assert rot.farbe == rot.lampe == ampel.ROT and not rot.blinken
+    rot = ampel.modul_hinweise_beachten(ampel.bewerten(haushalt, HEUTE, None, einstellungen),
+                                        [hinweis])  # fmt: skip
+    assert rot.farbe == ampel.ROT and not rot.blinken

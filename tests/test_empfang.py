@@ -179,7 +179,7 @@ def test_fortschritt_in_der_kopfzeile(ausgabe, haushalt, stelle):
     """3/236: heute an der Stelle abgeholt / planmäßig heute erwartet."""
     seite = ausgabe.get(EMPFANG).content.decode()
     assert '"fortschritt-blase"><span class="fortschritt-zahl">0/1</span>' in seite
-    assert "<strong>Ausgabestelle Mitte: 0 von 1 Haushalten heute abgeholt.</strong>" in seite
+    assert "<strong>0 von 1 möglichen Haushalten haben heute schon abgeholt.</strong>" in seite
     inhalt = eintragen(ausgabe, haushalt).content.decode()
     assert 'hx-swap-oob="true"' in inhalt and ">1/1</span>" in inhalt
     # Ausnahmen zählen vorne mit, hinten nur planmäßige Haushalte

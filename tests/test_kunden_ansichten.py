@@ -245,10 +245,14 @@ def test_ausgabe_mit_freigabe_fuer_besondere_kategorie(als, bestand, recht_geben
 def test_ausgabestelle_geht_gleich_zum_einlass(als, bestand, admin, anmelden):
     from django.test import Client
 
-    antwort = als(rollen.AUSGABE).get(detail("1001"))
+    ausgabe = als(rollen.AUSGABE)
+    antwort = ausgabe.get(detail("1001"))
     assert antwort.url == "/ausgabe/?nummer=1001"
+    # Der Link „Alle Angaben zum Haushalt“ am Einlass führte nur im Kreis: nicht anzeigen
+    assert "Alle Angaben zum Haushalt" not in ausgabe.get(antwort.url).content.decode()
     verwaltung = anmelden(Client(), admin)
     assert verwaltung.get(detail("1001")).status_code == 200  # Verwaltung: Haushaltsseite
+    assert "Alle Angaben zum Haushalt" in verwaltung.get(antwort.url).content.decode()
 
 
 def test_abgeschaltete_felder_werden_nicht_angezeigt(admin_client, bestand):

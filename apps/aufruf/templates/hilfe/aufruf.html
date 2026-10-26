@@ -17,7 +17,8 @@
 {% if "aufruf.steuern" in rechte %}
 <h3>Aufrufen</h3>
 <ol>
-  <li>Menü <strong>Kundennummernanzeige</strong> (öffnet sich in einem neuen Tab), bei mehreren Ausgabestellen die eigene wählen.</li>
+  <li>Im blauen Kasten <strong>„Aufruf ↗“</strong> links unter dem Menü auf die Überschrift klicken (öffnet die ganze
+    Steuerung in einem neuen Tab), bei mehreren Ausgabestellen die eigene wählen.</li>
   <li><strong>Ausgabe starten</strong>. Ab jetzt zeigt der Monitor „Bitte eintreten“ mit den ersten Nummern.</li>
   <li>Mit <strong>Weiter</strong> (oder Leertaste/Enter) sind diese erledigt, die nächsten erscheinen.
     <strong>↩ Zurück</strong> (oder Taste U) nimmt das letzte Weiter zurück.</li>
@@ -33,13 +34,17 @@
 <ul>
   <li><strong>grün</strong> „Gerade aufgerufen“ oder „Aufgerufen um 10:12 Uhr (vor 5 Minuten)“,</li>
   <li><strong>rot</strong> „Zu spät: aufgerufen um 10:12 Uhr (vor 35 Minuten)“ – ab wie vielen Minuten, steht in den
-    Einstellungen (Vorgabe 15),</li>
+    Einstellungen (Vorgabe 15). Darunter der Knopf <strong>„15 Nummern verschieben“</strong>: Er sortiert den Kunden
+    so viele wartende Nummern hinter den gerade aufgerufenen neu ein (Maus darüber zeigt die genaue Erklärung).
+    Die Zahl stellen Sie je Ausgabestelle unter „Einstellungen → Aufruf, Monitor und Kiosk“ ein („Zu spät
+    Gekommene: Plätze nach hinten“).</li>
   <li><strong>gelb</strong> „Noch nicht aufgerufen: 12 Nummern zu früh“ oder „Kam zu spät, neu einsortiert …“,</li>
   <li>„Nicht in der heutigen Aufruf-Liste“, wenn die Kundengruppe heute nicht dran ist.</li>
 </ul>
-<p>Ist der Kunde noch nicht an der Reihe, <strong>blinkt die Ampel gelb</strong> („WARTEN“); daneben steht
-  „Abholung möglich – Kunde ist zu früh (Aufruf)“. Eintragen geht trotzdem;
-  ob jemand abholen darf, entscheidet weiter das Team. Erst wenn er aufgerufen ist, steht alles auf Grün.</p>
+<p>Ist der Kunde <strong>zu früh</strong> (noch nicht aufgerufen) oder <strong>zu spät</strong>, leuchtet die Ampel
+  grün und <strong>Gelb blinkt dazu</strong> („ZU FRÜH“ bzw. „ZU SPÄT“); daneben steht „Abholung möglich – Kunde ist
+  zu früh (Aufruf)“ bzw. „… zu spät“. Eintragen geht trotzdem; ob jemand abholen darf, entscheidet weiter das Team.
+  Ist er an der Reihe, steht alles auf Grün.</p>
 
 <h3>Zu spät gekommen</h3>
 <p>In der Handy-Steuerung unter „Kundennummer-Abfrage“ die Nummer prüfen. War der Kunde schon dran, setzt
@@ -56,6 +61,8 @@
 <h3>Monitor, Nummern-Anzeige und Kiosk einrichten</h3>
 <ul>
   <li><strong>Einstellungen → Aufruf, Monitor und Kiosk</strong> zeigt je Ausgabestelle die Links für die Geräte.
+    Unter „ändern“ legen Sie fest, ob an der Ausgabestelle überhaupt aufgerufen wird („Aufruf an dieser
+    Ausgabestelle“); ohne Aufruf gibt es dort keinen Kasten unter dem Menü und keine Aufruf-Hinweise am Einlass.
     Die Geräte brauchen keine Anmeldung, der Link enthält einen geheimen Schlüssel. Link nur auf Geräten der Tafel
     öffnen; „Neue Links erzeugen“ sperrt alte Links (z. B. nach dem Verlust eines Geräts).</li>
   <li><strong>Monitor</strong>: „Bitte eintreten“ mit den aktuellen Nummern, daneben Infos im Wechsel. Das Zahnrad

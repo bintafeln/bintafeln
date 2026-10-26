@@ -47,6 +47,11 @@ class AufrufEinstellungen(models.Model):
 
     ausgabestelle = models.OneToOneField(Ausgabestelle, on_delete=models.CASCADE,
                                          related_name="aufruf")  # fmt: skip
+    aktiv = models.BooleanField(
+        "Aufruf an dieser Ausgabestelle", default=True,
+        help_text="Aus: Diese Ausgabestelle ruft keine Nummern auf – kein Kasten „Aufruf“ unter "
+        "dem Menü, keine Steuerung und keine Aufruf-Hinweise am Einlass.",
+    )  # fmt: skip
     schluessel = models.CharField(
         "Schlüssel der Anzeige-Links", max_length=64, unique=True, default=neuer_schluessel,
         help_text="Steckt in den Links für Monitor, Anzeige und Kiosk. Neu erzeugen macht alte "
