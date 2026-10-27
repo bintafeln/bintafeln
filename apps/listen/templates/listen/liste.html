@@ -3,9 +3,11 @@
 {% block titel %}{{ liste.titel }}{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
-  <p class="hinweis"><a href="{% url 'listen:uebersicht' %}">← Alle Listen</a></p>
-  <h1>{{ liste.titel }}</h1>
-  <p class="hinweis">{{ liste.beschreibung }}</p>
+  <div class="titel-zeile">
+    <h1>{{ liste.titel }}</h1>
+    <a class="hinweis" href="{% url 'listen:uebersicht' %}">← Alle Listen</a>
+  </div>
+  <p class="hinweis titel-text">{{ liste.beschreibung }}</p>
 
   <form method="get" class="listen-filter">
     <input type="hidden" name="geladen" value="1">

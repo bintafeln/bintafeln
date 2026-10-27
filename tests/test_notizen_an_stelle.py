@@ -134,3 +134,13 @@ def test_verwaltung_antwortet_auf_nachricht(admin_client, ausgabe, mitte):
     admin_client.post(reverse("kunden:nachrichten"), {"nachricht": m.pk, "antwort": "  "})
     m.refresh_from_db()
     assert m.erledigt_am and Notiz.objects.count() == 1
+
+
+def test_notiztext_fett_und_maskiert():
+    from apps.core.templatetags.notiz import notiz_text, ohne_auszeichnung
+
+    html = notiz_text("Ausweis kann **NICHT!** verlängert werden.\n<b>x</b> & **y")
+    assert html == ("Ausweis kann <strong>NICHT!</strong> verlängert werden.<br>"
+                    "&lt;b&gt;x&lt;/b&gt; &amp; **y")  # fmt: skip
+    assert ohne_auszeichnung("kann **NICHT!** werden") == "kann NICHT! werden"
+    assert notiz_text(None) == ""

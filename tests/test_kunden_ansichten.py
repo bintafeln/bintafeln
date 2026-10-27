@@ -174,9 +174,15 @@ def test_htmx_liefert_nur_die_liste(admin_client, bestand):
 
 def test_liste_blaettert(admin_client):
     Haushalt.objects.bulk_create(Haushalt(kundennummer=f"{n:04d}") for n in range(55))
-    inhalt = admin_client.get(LISTE).content.decode()
-    assert "Seite 1 von 2" in inhalt and "55 Haushalte" in inhalt
-    assert "Seite 2 von 2" in admin_client.get(LISTE, {"seite": 2}).content.decode()
+    inhalt = admin_client.get(LISTE).content.decode()  # Vorgabe: 25 je Seite
+    assert "Seite 1 von 3" in inhalt and "55 Haushalte" in inhalt
+    assert '<option value="" selected>25 je Seite</option>' in inhalt
+    seite = admin_client.get(LISTE, {"seite": 2, "anzahl": "50"}).content.decode()
+    assert "Seite 2 von 2" in seite and "anzahl=50" in seite  # Wahl bleibt beim Blättern
+    assert "Seite 1 von" not in admin_client.get(LISTE, {"anzahl": "100"}).content.decode()
+    alle = admin_client.get(LISTE, {"anzahl": "alle"})
+    assert len(alle.context["zeilen"]) == 55 and "Seite 1 von" not in alle.content.decode()
+    assert admin_client.get(LISTE, {"anzahl": "7"}).context["seite"].paginator.per_page == 25
 
 
 def test_liste_kennzeichnet_abgelaufenen_ausweis(admin_client, bestand):

@@ -41,7 +41,7 @@ class Pruefung:
     gruende: list[str] = field(default_factory=list)
     fehlt: list[str] = field(
         default_factory=list
-    )  # Personen ohne Bedingung, z. B. „Peter (33 Jahre)“
+    )  # Personen ohne Bedingung, z. B. „Peter Muster: 33 Jahre, nicht schwerbehindert“
     hinweise: list[str] = field(default_factory=list)
     nachrichten: list[Nachricht] = field(default_factory=list)
 
@@ -73,6 +73,17 @@ def _bedingung(person, h: Haushalt, heute: dt.date, e: KundenEinstellungen, feld
     return ""
 
 
+def _nicht_erfuellt(person, heute: dt.date, e: KundenEinstellungen, felder) -> str:
+    """Was der Person fehlt, z. B. „33 Jahre, nicht schwerbehindert“."""
+    teile = []
+    if e.verlaengern_ab_alter is not None and (alter := person.alter(heute)) is not None:
+        teile.append(f"{alter} {'Jahr' if alter == 1 else 'Jahre'}")
+    for f in felder:
+        b = f.bezeichnung
+        teile.append(f"nicht {b.lower()}" if " " not in b.strip() else f"nicht „{b}“")
+    return ", ".join(teile)
+
+
 def bedingungen_text(e: KundenEinstellungen) -> str:
     """z. B. „ab 60 Jahren oder Schwerbehindert“; leer ohne Bedingung."""
     if e.verlaengern_regel == KundenEinstellungen.Verlaengern.OHNE:
@@ -91,23 +102,25 @@ def pause_text(monate: int) -> str:
 
 def ablehnung_notiz(p: Pruefung, e: KundenEinstellungen, bis: dt.date | None = None) -> str:
     """Notiz für die Ausgabestelle: was nicht erfüllt ist und was jetzt gilt."""
-    teile = ["Ausweis kann NICHT! verlängert werden"]
+    # **…** zeigt die Notiz fett (apps/core/templatetags/notiz.py)
+    zeilen = ["Ausweis kann **NICHT!** verlängert werden."]
     gruende = [g for g in p.gruende if not g.endswith("erfüllen eine Bedingung")
                and not g.endswith("erfüllt eine Bedingung")]  # fmt: skip
     if p.fehlt:
-        wer = ("mindestens eine Person" if e.verlaengern_regel == e.Verlaengern.EINE
-               else "jede Person")  # fmt: skip
-        teile.append(f"Es gilt die Regel: {wer} im Haushalt muss eine Bedingung für die "
-                     "Verlängerung erfüllen. Folgende Bedingung(en) werden hier nicht erfüllt: "
-                     + ", ".join(p.fehlt))  # fmt: skip
-    teile += gruende
-    text = ". ".join(teile) + "."
+        wer = ("Mindestens eine Person" if e.verlaengern_regel == e.Verlaengern.EINE
+               else "Jede Person")  # fmt: skip
+        zeilen.append(f"Die Regel besagt: {wer} im Haushalt muss eine der Bedingungen erfüllen "
+                      f"({bedingungen_text(e)}).")  # fmt: skip
+        zeilen.append("In diesem Haushalt sind folgende Kriterien nicht erfüllt:")
+        zeilen += [f"– {f}" for f in p.fehlt]
+    zeilen += [f"{g}." for g in gruende]
+    text = "\n".join(zeilen)
     if bis:
-        return text + f" Pausiert bis {bis:%d.%m.%Y}."
+        return text + f"\nPausiert bis {bis:%d.%m.%Y}."
     if not p.fehlt:  # z. B. gesperrt oder beendet: keine Pause, nur der Grund
         return text
     ablauf = p.haushalt.ausweis_gueltig_bis
-    text += f" Der Kunde muss {pause_text(e.verlaengern_sonst_pausieren_monate)} einlegen"
+    text += f"\nDer Kunde muss {pause_text(e.verlaengern_sonst_pausieren_monate)} einlegen"
     if ablauf:
         text += f"; der Ausweis gilt noch bis {ablauf:%d.%m.%Y}"
     return text + ". Danach ist eine Neuanmeldung über unsere Homepage möglich."
@@ -154,8 +167,8 @@ def pruefen(h: Haushalt, heute: dt.date, monate: int, e: KundenEinstellungen) ->
         else:
             alter = person.alter(heute)
             p.personen.append((name, f"✗ {alter} Jahre" if alter is not None else "✗"))
-            jahre = "Jahr" if alter == 1 else "Jahre"
-            p.fehlt.append(f"{name} ({alter} {jahre})" if alter is not None else name)
+            was = _nicht_erfuellt(person, heute, e, felder)
+            p.fehlt.append(f"{name}: {was}" if was else name)
         erfuellt.append(womit)
     if e.verlaengern_regel == KundenEinstellungen.Verlaengern.ALLE:
         nein, unklar = "" in erfuellt, None in erfuellt

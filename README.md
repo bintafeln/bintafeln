@@ -246,7 +246,7 @@ mit dem Recht „Kunden aller Ausgabestellen aufrufen“ (Vorgabe: Admin und Bü
 
 Gibt eine Ausgabestelle an mehreren Tagen aus, filtert die Kundenliste nach **Ausgabetag**. Sie
 startet mit dem eigenen Tag (Feld „Ausgabetage“ bei den Mitarbeitenden; sonst der heutige, falls
-an dem Tag Ausgabe ist). Mit dem Recht „Kundenliste als CSV-Datei exportieren“ (Vorgabe: Büro und
+an dem Tag Ausgabe ist). „Anzeigen“ wählt 25 (Vorgabe), 50, 100 oder alle Haushalte je Seite. Mit dem Recht „Kundenliste als CSV-Datei exportieren“ (Vorgabe: Büro und
 Ausgabe) lädt „Als CSV exportieren (Excel)“ die gefilterte Liste herunter; die Spalten wählt der
 Admin unter „Einstellungen → Kunden → Kundenstamm“, Kontaktdaten, Kontostand und Art.-9-Felder
 bleiben ohne das passende Recht leer, und jeder Export steht im Zugriffsprotokoll (ADR 0058).
@@ -538,6 +538,9 @@ Dokumente, Historie.
   mit einem Klick um die gewählten Monate verlängert (ab bisherigem Ablauf, sonst ab heute); wer
   die Bedingung nicht erfüllt, bekommt (einstellbar) eine Notiz an die Ausgabestelle mit Grund
   und Pausenjahr – der Status bleibt, der Ausweis läuft ab –, wird pausiert oder nur angezeigt.
+  Die Notiz beginnt fett mit „Ausweis kann **NICHT!** verlängert werden.“, nennt die Regel mit
+  ihren Bedingungen und je Person, was fehlt (z. B. „33 Jahre, nicht schwerbehindert“). `**…**`
+  in einer Notiz erscheint fett (`apps/core/templatetags/notiz.py`).
   Die gemeldete Notiz wird gestrichen. Jede Änderung steht in der Historie, die Meldungen sind
   danach erledigt.
 - **Kundengruppe nur mit gültigem Ausweis** (ADR 0061): Pausierte, gesperrte, beendete Kunden
@@ -782,7 +785,8 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   Nummern der gewählten Ausgabestelle, die gerade eintreten sollen, und den Knopf „Nächste 3
   hereinrufen“ (Anzahl wie eingestellt), dazu „letzten Schritt zurück“ und „Aufruf starten“; nach
   der letzten Nummer „Ausgabe beendet“ mit „neu starten“ und „letzten Schritt zurück“. Die
-  Anzeige aktualisiert sich alle 15 Sekunden, auch wenn ein anderes Gerät weiterschaltet. Einen
+  Anzeige aktualisiert sich alle 15 Sekunden, auch wenn ein anderes Gerät weiterschaltet. Hat die
+  Ausgabestelle heute keine Kundengruppe, erscheint der Kasten nicht. Einen
   eigenen Menüeintrag gibt es nicht mehr; die Überschrift „Aufruf ↗“ öffnet die ganze Steuerung.
 - **Geräte im Wartebereich:** Monitor (Nummern, Infos im Wechsel, Ton, Layout per Zahnrad),
   Nummern-Anzeige, Kiosk (Karte scannen, Antwort auf Deutsch und in der Sprache zur

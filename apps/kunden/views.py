@@ -85,6 +85,9 @@ def _sicherung_frisch() -> bool:
 
 
 LISTE_JE_SEITE = 50
+# Kundenliste: Haushalte je Seite zur Wahl (Vorgabe 25), „alle“ ohne Blättern
+ANZAHL_WAHL = ("25", "50", "100", "alle")
+KUNDENLISTE_JE_SEITE = 25
 ABHOLUNGEN_AUSGABE = 5
 ABHOLUNGEN_BUERO = 20
 
@@ -125,8 +128,10 @@ def _haushalte_suchen(request):
     if sortierung.lstrip("-") == "personen":
         haushalte = haushalte.annotate(anzahl_personen=Count("personen"))
     haushalte = haushalte.order_by(*_reihenfolge(sortierung or "kundennummer"))
+    anzahl = request.GET.get("anzahl", "")
+    anzahl = anzahl if anzahl in ANZAHL_WAHL[1:] else ""  # leer = Vorgabe 25
     return haushalte, {"q": suche, "status": status, "gruppe": gruppe, "tag": tag,
-                       "sort": sortierung}  # fmt: skip
+                       "sort": sortierung, "anzahl": anzahl}  # fmt: skip
 
 
 # Sortierbare Spalten der Kundenliste (Schlüssel wie im Export, ?sort=…, mit „-“ absteigend):
@@ -260,9 +265,10 @@ def uebersicht(request):
             messages.error(request, grund)
             fremd = treffer.kundennummer
     haushalte, filter_ = _haushalte_suchen(request)
-    seite = Paginator(haushalte.select_related("kundengruppe__ausgabestelle")
-                      .prefetch_related("personen"), LISTE_JE_SEITE).get_page(
-        request.GET.get("seite"))  # fmt: skip
+    haushalte = haushalte.select_related("kundengruppe__ausgabestelle").prefetch_related("personen")
+    je_seite = (max(haushalte.count(), 1) if filter_["anzahl"] == "alle"
+                else int(filter_["anzahl"] or KUNDENLISTE_JE_SEITE))  # fmt: skip
+    seite = Paginator(haushalte, je_seite).get_page(request.GET.get("seite"))
     darf = rollen.rechte_von(request.user)
     keys = listen_spalten(request.user)
     aus = set(request.user.kundenliste_aus or [])
@@ -272,6 +278,7 @@ def uebersicht(request):
         "seite": seite,
         "filter": filter_,
         "status_auswahl": Haushalt.Status.choices,
+        "anzahl_wahl": ANZAHL_WAHL,
         "gruppen": Kundengruppe.objects.order_by("name")
         if zugang.stellen(request.user) is None
         else Kundengruppe.objects.filter(ausgabestelle__in=zugang.stellen(request.user)),
