@@ -13,6 +13,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.ausgabe.konto import MONATE
+from apps.core import papierkorb
 from apps.konten import rollen
 from apps.personal import arbeitszeit, berechnung
 from apps.personal.forms import ArbeitszeitEinstellungenForm, ZeitbuchungForm
@@ -134,8 +135,9 @@ def zeit_bearbeiten(request, pk, buchung=None):
 def zeit_loeschen(request, pk, buchung):
     b = get_object_or_404(Zeitbuchung, pk=buchung, benutzer_id=pk)
     monat = f"{timezone.localtime(b.beginn):%Y-%m}"
-    b.delete()
-    messages.success(request, "Zeitbuchung gelöscht.")
+    papierkorb.loeschen(request.user, "Zeitbuchung", f"{b} ({b.benutzer})", b,
+                        recht="personal.sehen")  # fmt: skip
+    messages.success(request, "Zeitbuchung in den Papierkorb gelegt.")
     return redirect(f"{reverse('personal:zeiten', args=[pk])}?monat={monat}")
 
 

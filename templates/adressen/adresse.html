@@ -29,7 +29,7 @@
   </dl>
   <p class="hinweis">Angelegt am {{ a.angelegt_am|date:"d.m.Y" }}{% if a.geaendert_am %}, zuletzt geändert am {{ a.geaendert_am|date:"d.m.Y H:i" }} von {{ a.geaendert_von }}{% endif %}.</p>
   {% if "adressen.loeschen" in rechte %}
-  <form method="post" action="{% url 'adressen:loeschen' a.pk %}" class="abseits" onsubmit="return confirm('Adresse „{{ a.name|escapejs }}“ endgültig löschen?')">
+  <form method="post" action="{% url 'adressen:loeschen' a.pk %}" class="abseits" onsubmit="return confirm('Adresse „{{ a.name|escapejs }}“ in den Papierkorb legen?')">
     {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Adresse löschen</button>
   </form>
   {% endif %}

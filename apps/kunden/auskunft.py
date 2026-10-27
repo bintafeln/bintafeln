@@ -220,6 +220,20 @@ def kunde_pdf(h: Haushalt) -> bytes:
             for v in versaende
         ], breiten=[0.2, 0.2, 0.6])  # fmt: skip
 
+    from apps.core.models import PapierkorbEintrag, TafelEinstellungen
+
+    # Gelöschtes zu diesem Haushalt, das noch im Papierkorb liegt (ADR 0073)
+    korb = PapierkorbEintrag.objects.filter(kundennummer=h.kundennummer)
+    if korb:
+        tage = TafelEinstellungen.laden().papierkorb_tage
+        doc.ueberschrift("Gelöscht, noch im Papierkorb")
+        doc.absatz(f"Gelöschte Angaben bleiben {tage} Tage im Papierkorb und werden danach "
+                   "endgültig gelöscht.")  # fmt: skip
+        doc.tabelle(["Gelöscht am", "Art", "Was"], [
+            [f"{timezone.localtime(k.geloescht_am):%d.%m.%Y}", k.art, k.bezeichnung]
+            for k in korb
+        ], breiten=[0.2, 0.25, 0.55])  # fmt: skip
+
     doc.ueberschrift("Hinweise")
     for satz in hinweise(e):
         doc.absatz(satz)

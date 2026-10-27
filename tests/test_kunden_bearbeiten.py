@@ -177,7 +177,7 @@ def test_haushalt_loeschen_mit_bestaetigungsseite(admin_client, h):
     assert "Zum Einlass</a>" in seite and "Ausweis drucken</a>" in seite and "Löschen …" in seite
     assert "/ausgabe/?nummer=2001" in seite
     frage = admin_client.get(url("haushalt_loeschen", "2001")).content.decode()
-    assert "nicht rückgängig" in frage and "Erika Test" in frage
+    assert "Papierkorb" in frage and "30 Tage" in frage and "Erika Test" in frage
     assert '<td>Personen</td><td class="zahl">1</td>' in frage
     assert '<td>Notizen</td><td class="zahl">1</td>' in frage
     assert Haushalt.objects.filter(kundennummer="2001").exists()  # Aufruf allein löscht nichts
@@ -188,12 +188,12 @@ def test_haushalt_loeschen_mit_bestaetigungsseite(admin_client, h):
 def test_loeschen_fragt_konkret(admin_client, h):
     p = h.personen.get()
     seite = admin_client.get(url("teil", "2001", "person", p.pk)).content.decode()
-    assert "Person „Erika Test“ aus Haushalt 2001 endgültig löschen?" in seite
+    assert "Person „Erika Test“ aus Haushalt 2001 in den Papierkorb legen?" in seite
     stelle = Ausgabestelle.objects.create(name="Nord")
     alt = admin_client.get(url("listeneintrag", "ausgabestellen", stelle.pk))
     assert alt.url == url("ausgabestelle_bearbeiten", stelle.pk)  # eigene Seite (ADR 0048)
     seite = admin_client.get(alt.url).content.decode()
-    assert "Ausgabestelle „Nord“ endgültig löschen?" in seite
+    assert "Ausgabestelle „Nord“ in den Papierkorb legen?" in seite
 
 
 def test_kundenseite_fuer_ausgabe(client, admin, benutzer_mit_rolle, anmelden, h, recht_nehmen):

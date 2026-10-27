@@ -14,7 +14,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 from django_otp import user_has_device
 
-from apps.core import mail
+from apps.core import mail, papierkorb
 from apps.core.pdf import pdf_antwort
 from apps.konten import (
     auskunft,
@@ -331,8 +331,10 @@ def schulung_neu(request, pk):
 @verwalter_erforderlich
 def schulung_loeschen(request, pk, schulung):
     ziel = _ziel(request, pk)
-    get_object_or_404(Schulung, pk=schulung, benutzer=ziel).delete()
-    messages.success(request, "Schulung gelöscht.")
+    s = get_object_or_404(Schulung, pk=schulung, benutzer=ziel)
+    papierkorb.loeschen(request.user, "Schulung", f"{s} ({ziel})", s,
+                        recht="mitarbeitende.verwalten")  # fmt: skip
+    messages.success(request, "Schulung in den Papierkorb gelegt.")
     return redirect("konten:stammdaten", pk=ziel.pk)
 
 

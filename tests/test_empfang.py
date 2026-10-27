@@ -419,7 +419,7 @@ def test_einlass_zeigt_angaben_und_notizen(ausgabe, haushalt):
     url = reverse("ausgabe:notiz_loeschen", args=[n.pk])
     assert "nur Büro und Admin" in ausgabe.post(url, **HX).content.decode()
     Notiz.objects.filter(pk=n.pk).update(erstellt_am=timezone.now())
-    assert "Notiz gelöscht." in ausgabe.post(url, **HX).content.decode()
+    assert "Notiz in den Papierkorb gelegt." in ausgabe.post(url, **HX).content.decode()
     assert list(Notiz.objects.all()) == [fremd]
 
 

@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
-from apps.core import listenauswahl
+from apps.core import listenauswahl, papierkorb
 from apps.konten import rollen
 from apps.mitglieder.forms import MitgliederEinstellungenForm, MitgliedForm
 from apps.mitglieder.models import Mitglied, MitgliederEinstellungen, nummer_verbraucht
@@ -159,8 +159,9 @@ def bearbeiten(request, pk=None):
 def loeschen(request, pk):
     m = get_object_or_404(Mitglied, pk=pk)
     adresse = m.adresse_id
-    m.delete()
-    messages.success(request, "Mitgliedschaft gelöscht. Adresse und Zahlungen bleiben erhalten.")
+    papierkorb.loeschen(request.user, "Mitgliedschaft", str(m), m, recht="mitglieder.bearbeiten")
+    messages.success(request, "Mitgliedschaft in den Papierkorb gelegt. Adresse und Zahlungen "
+                              "bleiben erhalten.")  # fmt: skip
     return redirect("adressen:adresse", pk=adresse)
 
 

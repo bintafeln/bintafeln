@@ -9,6 +9,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from apps.antraege.models import Antrag
+from apps.core import papierkorb
 from apps.core.pdf import Pdf, pdf_antwort
 from apps.konten import rollen
 from apps.warteliste import ablauf
@@ -231,8 +232,9 @@ def termin_loeschen(request, pk):
         messages.error(request, "Zu diesem Termin sind noch Personen eingeladen. Bitte erst "
                        "absagen.")  # fmt: skip
         return redirect("warteliste:termin", t.pk)
-    t.delete()
-    messages.success(request, "Termin gelöscht.")
+    papierkorb.loeschen(request.user, "Termin der Warteliste", str(t), t,
+                        recht="warteliste.bearbeiten")  # fmt: skip
+    messages.success(request, "Termin in den Papierkorb gelegt.")
     return redirect("warteliste:termine")
 
 

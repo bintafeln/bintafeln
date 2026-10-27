@@ -21,7 +21,7 @@ from apps.adressen.models import AdressKategorie
 from apps.ausgabe import konto
 from apps.ausgabe.forms import BeitragsfreiForm, SonderausgabeForm
 from apps.ausgabe.models import BeitragsfreierZeitraum, Sonderausgabe, Teilnahme
-from apps.core import privatdateien
+from apps.core import papierkorb
 from apps.core.models import TafelEinstellungen
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
@@ -194,23 +194,24 @@ def haushalt_loeschen(request, kundennummer):
             request,
             "kunden/haushalt_loeschen.html",
             {"h": h, "name": f"{hp.vorname} {hp.nachname}" if hp else "", "umfang": umfang,
-             "buchungen": h.buchungen.count()},
+             "buchungen": h.buchungen.count(),
+             "papierkorb_tage": TafelEinstellungen.laden().papierkorb_tage},
         )  # fmt: skip
-    with transaction.atomic():
-        h.delete()  # Buchungen bleiben ohne Haushalt, aber mit Kundennummer (Kasse)
-        Notiz.objects.filter(kundennummer=kundennummer).delete()
-        HaushaltEreignis.objects.filter(kundennummer=kundennummer).delete()
-        Teilnahme.objects.filter(kundennummer=kundennummer).delete()
-        dokumente = HaushaltDokument.objects.filter(kundennummer=kundennummer)
-        dateien = list(dokumente.values_list("datei", flat=True))
-        dokumente.delete()
-        transaction.on_commit(
-            lambda: [privatdateien.loeschen(HaushaltDokument.ORDNER, d) for d in dateien]
-        )
+    hp = h.hauptperson
+    # In den Papierkorb (ADR 0073); Buchungen bleiben ohne Haushalt, aber mit Kundennummer (Kasse)
+    papierkorb.loeschen(
+        request.user, "Haushalt",
+        f"{kundennummer}{f' – {hp.vorname} {hp.nachname}' if hp else ''}",
+        h, Notiz.objects.filter(kundennummer=kundennummer),
+        HaushaltEreignis.objects.filter(kundennummer=kundennummer),
+        Teilnahme.objects.filter(kundennummer=kundennummer),
+        HaushaltDokument.objects.filter(kundennummer=kundennummer),
+        recht="kunden.loeschen", kundennummer=kundennummer,
+    )  # fmt: skip
     messages.success(
         request,
-        f"Haushalt {kundennummer} gelöscht. Kontobuchungen bleiben ohne Haushalt für die Kasse "
-        "erhalten.",
+        f"Haushalt {kundennummer} in den Papierkorb gelegt. Kontobuchungen bleiben ohne Haushalt "
+        "für die Kasse erhalten.",
     )
     return redirect("kunden:uebersicht")
 
@@ -253,7 +254,7 @@ def teil_bearbeiten(request, kundennummer, art, pk=None):
             if pk
             else None,
             "loeschen_frage": f"{bezeichnung} „{instanz}“ aus Haushalt {h.kundennummer} "
-            "endgültig löschen?"
+            "in den Papierkorb legen?"
             if pk
             else "",
         },
@@ -266,10 +267,12 @@ def teil_loeschen(request, kundennummer, art, pk):
     h = zugang.haushalt(request.user, kundennummer)
     modell, _, bezeichnung, _ = _teil(art)
     vorher = historie.schnappschuss(h)
-    get_object_or_404(modell, pk=pk, haushalt=h).delete()
+    teil = get_object_or_404(modell, pk=pk, haushalt=h)
+    papierkorb.loeschen(request.user, bezeichnung, f"{teil} (Haushalt {h.kundennummer})", teil,
+                        recht="kunden.bearbeiten", kundennummer=h.kundennummer)  # fmt: skip
     geaendert(h, request)
     _festhalten(h, vorher, request)
-    messages.success(request, f"{bezeichnung} gelöscht.")
+    messages.success(request, f"{bezeichnung} in den Papierkorb gelegt.")
     return redirect(_bearbeiten_url(h))
 
 
@@ -385,7 +388,7 @@ def listeneintrag(request, art, pk=None):
                 if pk and not getattr(instanz, "fest", False)
                 else None
             ),  # fmt: skip
-            "loeschen_frage": f"{einzeln} „{instanz}“ endgültig löschen?" if pk else "",
+            "loeschen_frage": f"{einzeln} „{instanz}“ in den Papierkorb legen?" if pk else "",
         },
     )
 
@@ -399,7 +402,8 @@ def listeneintrag_loeschen(request, art, pk):
         messages.error(request, f"{einzeln} „{eintrag}“ ist fest und kann nicht gelöscht werden.")
         return redirect("kunden:liste", art=art)
     try:
-        eintrag.delete()
+        papierkorb.loeschen(request.user, einzeln, str(eintrag), eintrag,
+                            recht="einstellungen.listen")  # fmt: skip
     except ProtectedError:
         messages.error(
             request,
@@ -407,7 +411,7 @@ def listeneintrag_loeschen(request, art, pk):
             "Stattdessen „Aktiv“ ausschalten.",
         )
     else:
-        messages.success(request, f"{einzeln} gelöscht.")
+        messages.success(request, f"{einzeln} in den Papierkorb gelegt.")
     return redirect("kunden:liste", art=art)
 
 

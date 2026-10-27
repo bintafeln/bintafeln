@@ -11,7 +11,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
-from apps.core import privatdateien
+from apps.core import papierkorb, privatdateien
 from apps.core.models import TafelEinstellungen
 from apps.konten import rollen, views_dokumente
 from apps.personal import arbeitszeit, berechnung
@@ -144,9 +144,9 @@ def vertrag_bearbeiten(request, pk, vertrag):
 @personal_erforderlich
 def vertrag_loeschen(request, pk, vertrag):
     v = get_object_or_404(Arbeitsvertrag, pk=vertrag, benutzer_id=pk)
-    privatdateien.loeschen(DOKUMENT_ORDNER, v.dokument_datei)
-    v.delete()
-    messages.success(request, "Arbeitsvertrag gelöscht.")
+    papierkorb.loeschen(request.user, "Arbeitsvertrag", f"{v} ({v.benutzer})", v,
+                        recht="personal.sehen")  # fmt: skip
+    messages.success(request, "Arbeitsvertrag in den Papierkorb gelegt.")
     return _zurueck(v.benutzer, _jahr(request))
 
 
@@ -220,6 +220,8 @@ def eintrag_loeschen(request, pk, art, eintrag):
     modell = {"abwesenheit": Abwesenheit, "stunden": Stunden}.get(art)
     if modell is None:
         raise Http404
-    get_object_or_404(modell, pk=eintrag, benutzer_id=pk).delete()
-    messages.success(request, "Eintrag gelöscht.")
+    e = get_object_or_404(modell, pk=eintrag, benutzer_id=pk)
+    papierkorb.loeschen(request.user, str(modell._meta.verbose_name), f"{e} ({e.benutzer})", e,
+                        recht="personal.sehen")  # fmt: skip
+    messages.success(request, "Eintrag in den Papierkorb gelegt.")
     return _zurueck(get_object_or_404(get_user_model(), pk=pk), _jahr(request))

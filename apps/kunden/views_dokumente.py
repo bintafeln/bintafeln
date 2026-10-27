@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
-from apps.core import privatdateien
+from apps.core import papierkorb, privatdateien
 from apps.konten import rollen
 from apps.kunden import zugang
 from apps.kunden.forms_bearbeiten import HaushaltDokumentForm
@@ -76,6 +76,8 @@ def ansehen(request, pk):
 def loeschen(request, pk):
     d = get_object_or_404(HaushaltDokument, pk=pk)
     zugang.pruefen_nummer(request.user, d.kundennummer)
-    d.loeschen()
-    messages.success(request, f"Dokument „{d.titel}“ gelöscht.")
+    papierkorb.loeschen(request.user, "Dokument", f"{d.titel} (Haushalt {d.kundennummer})", d,
+                        recht="kunden.dokumente_verwalten",
+                        kundennummer=d.kundennummer)  # fmt: skip
+    messages.success(request, f"Dokument „{d.titel}“ in den Papierkorb gelegt.")
     return redirect("kunden:haushalt", kundennummer=d.kundennummer)

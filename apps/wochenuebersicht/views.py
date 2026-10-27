@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
+from apps.core import papierkorb
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.kunden.models import Ausgabestelle
@@ -95,8 +96,10 @@ def selbstabholer_notiz(request, pk):
 def selbstabholer_notiz_loeschen(request, pk):
     notiz = get_object_or_404(SelbstabholerNotiz, pk=pk)
     ziel = notiz.selbstabholer_id
-    notiz.delete()
-    messages.success(request, "Notiz gelöscht.")
+    papierkorb.loeschen(request.user, "Notiz zu Selbstabholer",
+                        f"{notiz.text[:60]} ({notiz.selbstabholer})", notiz,
+                        recht="wochenuebersicht.bearbeiten")  # fmt: skip
+    messages.success(request, "Notiz in den Papierkorb gelegt.")
     return redirect(f"{reverse('wochenuebersicht:selbstabholer_bearbeiten', args=[ziel])}#notizen")
 
 
@@ -104,8 +107,9 @@ def selbstabholer_notiz_loeschen(request, pk):
 @bearbeiten
 def selbstabholer_loeschen(request, pk):
     s = get_object_or_404(Selbstabholer, pk=pk)
-    s.delete()
-    messages.success(request, f"„{s.name}“ gelöscht.")
+    papierkorb.loeschen(request.user, "Selbstabholer", s.name, s,
+                        recht="wochenuebersicht.bearbeiten")  # fmt: skip
+    messages.success(request, f"„{s.name}“ in den Papierkorb gelegt.")
     return redirect("wochenuebersicht:selbstabholer")
 
 

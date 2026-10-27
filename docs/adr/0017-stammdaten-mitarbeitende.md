@@ -20,8 +20,10 @@ Angaben sind Personaldaten und dürfen nicht unbegrenzt gespeichert werden.
 - Sehen und bearbeiten dürfen dieselben Personen, die Mitarbeitende verwalten (Admin; das Büro
   mit Freigabe, aber nicht bei Admin-Konten).
 - **Wiedervorlagen:**
-  - Führerschein ansehen nach N Monaten (Vorgabe 6, nur Rolle Fahrer); Ablauf des Führerscheins
-  - IfSG-Folgebelehrung nach N Monaten (Vorgabe 24, Rollen Ausgabe, Fahrer, Beifahrer)
+  - Führerschein ansehen nach N Monaten (nur Rolle Fahrer); Ablauf des Führerscheins
+  - IfSG-Folgebelehrung nach N Monaten (Rollen Ausgabe, Fahrer, Beifahrer)
+  - N = 0 schaltet die Wiedervorlage ab; seit 2026-10 Vorgabe 0 (vorher 6 bzw. 24 Monate,
+    bestehende Installationen behalten ihren Wert)
   - Ablauf von Schulungen (je Thema die jüngste)
   - Erscheinen mit Vorlauf (Vorgabe 14 Tage) unter „Mitarbeitende → Fällig“ und als Hinweis auf
     der Startseite

@@ -67,6 +67,12 @@ class TafelEinstellungen(models.Model):
         "Eingeschaltete Module", default=list, blank=True,
         help_text="Kennungen der zuschaltbaren Module (ADR 0049), z. B. „aufruf“.",
     )  # fmt: skip
+    papierkorb_tage = models.PositiveSmallIntegerField(
+        "Papierkorb leeren nach", default=30,
+        choices=[(30, "30 Tagen"), (60, "60 Tagen"), (90, "90 Tagen"), (365, "365 Tagen")],
+        help_text="Gelöschte Daten liegen so lange im Papierkorb und lassen sich wiederherstellen; "
+        "danach löscht bintafeln sie endgültig.",
+    )  # fmt: skip
     installation = models.UUIDField(
         "Kennung dieser Installation", default=uuid.uuid4, editable=False
     )
@@ -308,3 +314,31 @@ auditlog.register(
 # Das (verschlüsselte) Passwort gehört nicht ins Änderungsprotokoll.
 auditlog.register(MailEinstellungen, exclude_fields=["passwort_verschluesselt"])
 auditlog.register(FotoEinstellungen)
+
+
+class PapierkorbEintrag(models.Model):
+    """Etwas Gelöschtes mit allem, was mit ihm gelöscht wurde (ADR 0073, ``apps.core.papierkorb``).
+
+    Nicht im Änderungsprotokoll registriert: Das Löschen und Wiederherstellen der Daten selbst
+    steht dort schon, und eine Kopie der Inhalte im Protokoll bliebe nach dem Leeren übrig."""
+
+    art = models.CharField("Art", max_length=100)
+    bezeichnung = models.CharField("Bezeichnung", max_length=300)
+    recht = models.CharField("Recht", max_length=100, help_text="Wer es sehen und wiederherstellen "
+                             "darf: dasselbe Recht wie zum Löschen.")  # fmt: skip
+    kundennummer = models.CharField("Kundennummer", max_length=50, blank=True)
+    stelle_id = models.IntegerField("Ausgabestelle", null=True, blank=True)
+    geloescht_am = models.DateTimeField("Gelöscht am", auto_now_add=True)
+    geloescht_von = models.CharField("Gelöscht von", max_length=150, blank=True)
+    daten = models.JSONField("Daten", default=list)
+    verweise = models.JSONField("Verweise", default=list, help_text="Felder anderer Datensätze, "
+                                "die beim Löschen geleert wurden.")  # fmt: skip
+    dateien = models.JSONField("Verschlüsselte Dateien", default=list)
+
+    class Meta:
+        verbose_name = "Eintrag im Papierkorb"
+        verbose_name_plural = "Papierkorb"
+        ordering = ["-geloescht_am", "-pk"]
+
+    def __str__(self):
+        return f"{self.art}: {self.bezeichnung}"

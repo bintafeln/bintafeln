@@ -172,6 +172,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
 - App `statistik` (ADR 0036): Abfragen in `auswertung.py`, SVG-Diagramme in `diagramme.py`
   (feste Farbreihenfolge `reihe-0…7` in bintafeln.css, Texte immer `escape()`), jeder Abschnitt
   auch als Tabelle und CSV.
+- Löschen in der Oberfläche nur über `apps.core.papierkorb.loeschen(...)` (Papierkorb, ADR 0073;
+  `recht=` wer wiederherstellen darf, `kundennummer=` bei Kundendaten), nie direkt `delete()`;
+  verschlüsselte Datei im Modell als `PRIVATDATEI = (ordner, feld)`. Löschfristen löschen direkt.
 - Datensicherung in der Oberfläche: `apps/core/datensicherung.py` (Export mit Passwort,
   `lesen()`, `vorschau()`, `zuruecklesen(ersetzen=False)` löscht nie; ADR 0037). Neue Modelle
   landen automatisch im passenden Bereich (`modelle()`); vorübergehende Daten in `AUSGENOMMEN`.

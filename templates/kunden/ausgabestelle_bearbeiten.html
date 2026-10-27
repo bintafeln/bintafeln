@@ -59,7 +59,7 @@
 </form>
 {% if s.pk %}
 <section class="karte breit">
-  <form method="post" action="{% url 'kunden:listeneintrag_loeschen' 'ausgabestellen' s.pk %}" onsubmit="return confirm(this.dataset.frage)" data-frage="Ausgabestelle „{{ s.name }}“ endgültig löschen?">
+  <form method="post" action="{% url 'kunden:listeneintrag_loeschen' 'ausgabestellen' s.pk %}" onsubmit="return confirm(this.dataset.frage)" data-frage="Ausgabestelle „{{ s.name }}“ in den Papierkorb legen?">
     {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Ausgabestelle löschen</button>
     <small class="hinweis">Nur möglich, solange keine Kundengruppe und keine Abholung daran hängt; sonst auf „nicht aktiv“ setzen.</small>
   </form>

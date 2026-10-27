@@ -8,7 +8,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.core import privatdateien
+from apps.core import papierkorb, privatdateien
+from apps.core.models import PapierkorbEintrag
 from apps.konten import rollen
 from apps.kunden import importieren
 from apps.kunden.models import (
@@ -56,7 +57,7 @@ def test_vorgaben_aus_migration():
     }
 
 
-def test_hochladen_ansehen_loeschen(admin_client, h, bescheid):
+def test_hochladen_ansehen_loeschen(admin_client, h, bescheid, django_capture_on_commit_callbacks):
     inhalt = hochladen(admin_client, h, bescheid, datum="2026-03-15").content.decode()
     assert "verschlüsselt gespeichert, wird am 15.03.2028 gelöscht" in inhalt
     d = HaushaltDokument.objects.get()
@@ -78,6 +79,10 @@ def test_hochladen_ansehen_loeschen(admin_client, h, bescheid):
 
     admin_client.post(reverse("kunden:dokument_loeschen", args=[d.pk]))
     assert not HaushaltDokument.objects.exists()
+    # Die Datei bleibt im Papierkorb, bis er geleert wird (ADR 0073)
+    assert datei.exists()
+    with django_capture_on_commit_callbacks(execute=True):
+        papierkorb.endgueltig_loeschen(PapierkorbEintrag.objects.get())
     assert not datei.exists()
     assert admin_client.get(reverse("kunden:dokument", args=[d.pk])).status_code == 404
 
@@ -164,6 +169,10 @@ def test_haushalt_loeschen_entfernt_dokumente(
     with django_capture_on_commit_callbacks(execute=True):
         admin_client.post(url)
     assert not HaushaltDokument.objects.exists()
+    # Die Datei bleibt im Papierkorb, bis er geleert wird (ADR 0073)
+    assert datei.exists()
+    with django_capture_on_commit_callbacks(execute=True):
+        papierkorb.endgueltig_loeschen(PapierkorbEintrag.objects.get())
     assert not datei.exists()
 
 

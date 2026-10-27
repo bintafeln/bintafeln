@@ -16,7 +16,7 @@ from django.views.decorators.http import require_POST
 
 from apps.ausgabe.ampel import WOCHENTAGE
 from apps.ausgabe.models import AusgabeEinstellungen
-from apps.core import listenauswahl, sicherung
+from apps.core import listenauswahl, papierkorb, sicherung
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.kunden import an_stelle, export, gruppen, importieren, views_dokumente, zugang
@@ -465,6 +465,13 @@ def notiz_neu(request, kundennummer):
     return redirect("kunden:haushalt", kundennummer=h.kundennummer)
 
 
+def _notiz_in_papierkorb(benutzer, notiz) -> None:
+    """Auch vom Einlass aus; wiederherstellen darf, wer fremde Notizen löschen darf."""
+    papierkorb.loeschen(benutzer, "Notiz", f"{notiz.text[:60]} (Haushalt {notiz.kundennummer})",
+                        notiz, recht="kunden.notizen_loeschen",
+                        kundennummer=notiz.kundennummer)  # fmt: skip
+
+
 @require_POST
 @rollen.recht_erforderlich("kunden.notizen")
 def notiz_loeschen(request, pk):
@@ -472,8 +479,8 @@ def notiz_loeschen(request, pk):
     zugang.pruefen_nummer(request.user, notiz.kundennummer)
     if not notiz.darf_loeschen(request.user):
         raise PermissionDenied
-    notiz.delete()
-    messages.success(request, "Notiz gelöscht.")
+    _notiz_in_papierkorb(request.user, notiz)
+    messages.success(request, "Notiz in den Papierkorb gelegt.")
     return redirect("kunden:haushalt", kundennummer=notiz.kundennummer)
 
 

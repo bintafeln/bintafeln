@@ -4,7 +4,9 @@
 <section class="karte">
   <p><a href="{% url 'konten:mitarbeitende' %}">← Mitarbeitende</a></p>
   <h1>Einstellungen Personal</h1>
-  <p class="hinweis">Fristen für Wiedervorlagen und für das Leeren persönlicher Angaben nach dem Austritt.</p>
+  <p class="hinweis">Fristen für Wiedervorlagen und für das Leeren persönlicher Angaben nach dem Austritt.
+    <strong>0 Monate</strong> beim Führerschein oder bei der IfSG-Belehrung heißt: Danach wird nicht gefragt –
+    keine Erinnerung, dass ein Führerschein abläuft oder vorgelegt werden soll, bzw. keine Folgebelehrung.</p>
   <form method="post">
     {% csrf_token %}
     {% include "includes/formular.html" %}

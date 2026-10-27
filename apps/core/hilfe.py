@@ -31,6 +31,7 @@ KAPITEL = [
     Kapitel("suche", "Suchen: Kunden, Notizen, Anmerkungen und mehr", GRUNDLAGEN),
     Kapitel("zwei-faktor", "Zwei-Faktor-Anmeldung und Passwort", GRUNDLAGEN),
     Kapitel("datenschutz", "Datenschutz im Alltag", GRUNDLAGEN),
+    Kapitel("papierkorb", "Papierkorb: Gelöschtes wiederherstellen", GRUNDLAGEN),
     Kapitel("einlass", "Der Einlass Schritt für Schritt", EINLASS, ("einlass.nutzen",)),
     Kapitel("scannen", "Kundennummer scannen: Handscanner, Kamera, Tippen", EINLASS,
             ("einlass.nutzen",)),

@@ -556,5 +556,7 @@ def notiz_loeschen(request, pk):
         return _zurueck(
             request, h, "Diese Notiz dürfen nur Büro und Admin löschen.", messages.ERROR
         )
-    notiz.delete()
-    return _zurueck(request, h, "Notiz gelöscht.")
+    from apps.kunden.views import _notiz_in_papierkorb
+
+    _notiz_in_papierkorb(request.user, notiz)
+    return _zurueck(request, h, "Notiz in den Papierkorb gelegt.")

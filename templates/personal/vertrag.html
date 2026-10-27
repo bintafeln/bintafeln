@@ -30,7 +30,7 @@
 </section>
 
 <section class="karte">
-  <form method="post" action="{% url 'personal:vertrag_loeschen' p.pk v.pk %}" onsubmit="return confirm('Diesen Arbeitsvertrag endgültig löschen? Urlaub und Stundenkonto werden neu berechnet.')">
+  <form method="post" action="{% url 'personal:vertrag_loeschen' p.pk v.pk %}" onsubmit="return confirm('Diesen Arbeitsvertrag in den Papierkorb legen? Urlaub und Stundenkonto werden neu berechnet.')">
     {% csrf_token %}<input type="hidden" name="jahr" value="{{ v.beginn|date:'Y' }}">
     <button type="submit" class="knopf knopf-gefahr">Vertrag löschen</button>
   </form>

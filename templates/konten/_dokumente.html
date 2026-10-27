@@ -11,7 +11,7 @@
         <td data-titel="Datum">{{ d.datum|date:"d.m.Y"|default:"–" }}</td>
         <td data-titel="Hochgeladen">{{ d.hochgeladen_am|date:"d.m.Y" }}{% if d.hochgeladen_von %} von {{ d.hochgeladen_von }}{% endif %}</td>
         <td data-titel="Aktion">
-          <form method="post" action="{% url 'konten:dokument_loeschen' ziel.pk d.pk %}" class="inline" onsubmit="return confirm('Dokument endgültig löschen?')">
+          <form method="post" action="{% url 'konten:dokument_loeschen' ziel.pk d.pk %}" class="inline" onsubmit="return confirm('Dokument in den Papierkorb legen?')">
             {% csrf_token %}<input type="hidden" name="weiter" value="{{ weiter }}"><button type="submit" class="link">löschen</button>
           </form>
         </td>

@@ -71,7 +71,8 @@ def faelligkeiten(heute: dt.date | None = None) -> list[Faelligkeit]:
     for b in aktive:
         s = _stammdaten(b)
         pflichten = [getattr(g, "rolle", None) for g in b.groups.all()]
-        if any(r and r.braucht_fuehrerschein for r in pflichten):
+        # 0 Monate in den Einstellungen: keine Wiedervorlage zu diesem Thema
+        if e.fs_pruefung_monate and any(r and r.braucht_fuehrerschein for r in pflichten):
             if s.fs_gueltig_bis and s.fs_gueltig_bis <= grenze:
                 ergebnis.append(Faelligkeit(b, "Führerschein läuft ab", s.fs_gueltig_bis))
             naechste = (
@@ -79,7 +80,7 @@ def faelligkeiten(heute: dt.date | None = None) -> list[Faelligkeit]:
             )
             if naechste is None or naechste <= grenze:
                 ergebnis.append(Faelligkeit(b, "Führerschein ansehen", naechste))
-        if any(r and r.braucht_belehrung for r in pflichten):
+        if e.ifsg_wiederholung_monate and any(r and r.braucht_belehrung for r in pflichten):
             letzte = s.letzte_ifsg_belehrung
             naechste = monate_spaeter(letzte, e.ifsg_wiederholung_monate) if letzte else None
             if naechste is None or naechste <= grenze:

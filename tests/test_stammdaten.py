@@ -19,6 +19,15 @@ def url(name, ziel, *args):
     return reverse(f"konten:{name}", args=[ziel.pk, *args])
 
 
+@pytest.fixture(autouse=True)
+def fristen():
+    """Wiedervorlagen eingeschaltet (Vorgabe ist 0 = keine)."""
+    PersonalEinstellungen.objects.update_or_create(
+        pk=PersonalEinstellungen.EINZIGE_ID,
+        defaults={"fs_pruefung_monate": 6, "ifsg_wiederholung_monate": 24},
+    )
+
+
 @pytest.fixture
 def fahrer(benutzer_mit_rolle):
     return benutzer_mit_rolle("kim", rollen.FAHRER)
@@ -298,3 +307,11 @@ def test_schulungen_eintragen_und_loeschen(admin_client, fahrer):
     assert "Hygiene" in admin_client.get(url("stammdaten", fahrer)).content.decode()
     admin_client.post(url("schulung_loeschen", fahrer, sch.pk))
     assert not Schulung.objects.exists()
+
+
+def test_null_monate_keine_wiedervorlage(fahrer, benutzer_mit_rolle):
+    benutzer_mit_rolle("lena", rollen.AUSGABE)
+    assert was(personal.faelligkeiten(HEUTE), fahrer)  # Führerschein, Belehrung fehlen
+    PersonalEinstellungen.objects.update(fs_pruefung_monate=0, ifsg_wiederholung_monate=0)
+    assert personal.faelligkeiten(HEUTE) == []
+    assert PersonalEinstellungen._meta.get_field("fs_pruefung_monate").default == 0

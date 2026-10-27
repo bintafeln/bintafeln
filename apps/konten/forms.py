@@ -300,10 +300,10 @@ class PersonalEinstellungenForm(forms.ModelForm):
             "fs_pruefung_monate",
             "ifsg_wiederholung_monate",
             "vorlauf_tage",
-            "fs_kopie_erlaubt",
             "urlaub_verfall_monat",
             "urlaub_verfall_tag",
             "stammdaten_loeschen_jahre",
+            "fs_kopie_erlaubt",
         ]
 
 

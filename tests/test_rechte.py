@@ -131,7 +131,10 @@ def test_nicht_vergebbare_rolle_bleibt_beim_bearbeiten(benutzer_mit_rolle, recht
 
 def test_pflichten_aus_der_rolle(benutzer_mit_rolle):
     from apps.konten import personal
+    from apps.konten.models import PersonalEinstellungen
 
+    PersonalEinstellungen.laden()
+    PersonalEinstellungen.objects.update(fs_pruefung_monate=6)
     g = Group.objects.create(name="Kurier")
     Rolle.objects.filter(gruppe=g).update(braucht_fuehrerschein=True)
     benutzer_mit_rolle("karl", "Kurier")

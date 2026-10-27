@@ -184,6 +184,7 @@ class SpendenBeleg(models.Model):
     (ADR 0056). Verschlüsselt über ``apps.core.privatdateien``; liegt dem Dankesbrief bei."""
 
     ORDNER = "spendenbelege"
+    PRIVATDATEI = (ORDNER, "datei")  # Papierkorb (ADR 0073)
 
     adresse = models.ForeignKey(Adresse, on_delete=models.CASCADE, related_name="spendenbelege",
                                 null=True, blank=True, verbose_name="Spender")  # fmt: skip

@@ -15,7 +15,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
-from apps.core import privatdateien
+from apps.core import papierkorb, privatdateien
 from apps.konten import rollen, verwaltung
 from apps.konten.forms import DokumentForm, DokumentKategorieForm
 from apps.konten.models import Dokument, DokumentKategorie
@@ -111,9 +111,9 @@ def ansehen(request, pk, dokument):
 @login_required
 def loeschen(request, pk, dokument):
     ziel, d = _dokument(request, pk, dokument)
-    privatdateien.loeschen(Dokument.ORDNER, d.datei)
-    d.delete()
-    messages.success(request, "Dokument gelöscht.")
+    recht = "personal.sehen" if d.kategorie.nur_personal else "mitarbeitende.verwalten"
+    papierkorb.loeschen(request.user, "Dokument", f"{d} ({ziel})", d, recht=recht)
+    messages.success(request, "Dokument in den Papierkorb gelegt.")
     return _weiter(request, ziel)
 
 
@@ -139,6 +139,7 @@ def kategorie_loeschen(request, kategorie):
     if k.dokument_set.exists():
         messages.error(request, f"„{k}“ enthält noch Dokumente und bleibt erhalten.")
     else:
-        k.delete()
-        messages.success(request, f"Kategorie „{k}“ gelöscht.")
+        papierkorb.loeschen(request.user, "Dokumentkategorie", str(k), k,
+                            recht="einstellungen.personal")  # fmt: skip
+        messages.success(request, f"Kategorie „{k}“ in den Papierkorb gelegt.")
     return redirect("konten:personal_einstellungen")

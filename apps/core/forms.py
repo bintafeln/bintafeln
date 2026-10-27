@@ -91,6 +91,7 @@ class EinstellungenForm(forms.ModelForm):
             "telefon",
             "email",
             "bundesland",
+            "papierkorb_tage",
             "module",
         ]
         widgets = {
@@ -116,12 +117,16 @@ class EinstellungenForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["module"].choices = modul_auswahl()
         self.fields["farbe"].required = False
+        self.fields["papierkorb_tage"].required = False  # fehlt, bleibt die bisherige Zahl
         staerke = self.fields["hintergrund_staerke"]
         staerke.required = False
         staerke.help_text = f"Aktuell {self.instance.hintergrund_staerke} %. {staerke.help_text}"
 
     def clean_farbe(self):
         return self.cleaned_data.get("farbe") or STANDARDFARBE
+
+    def clean_papierkorb_tage(self):
+        return self.cleaned_data.get("papierkorb_tage") or self.instance.papierkorb_tage
 
     def clean_hintergrund_staerke(self):
         wert = self.cleaned_data.get("hintergrund_staerke")
