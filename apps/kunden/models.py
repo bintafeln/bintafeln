@@ -1100,6 +1100,9 @@ class ImportLauf(models.Model):
     anzahl_abholungen = models.PositiveIntegerField("Abholungen", default=0)
     anzahl_ausnahmen = models.PositiveIntegerField("Ausnahmen", default=0)
     anzahl_warnungen = models.PositiveIntegerField("Warnungen", default=0)
+    art = models.CharField("Art", max_length=20, default="vollaustausch",
+                           choices=[("vollaustausch", "Vollaustausch"), ("neu", "nur neue"),
+                                    ("aktualisieren", "ergänzt und aktualisiert")])  # fmt: skip
 
     class Meta:
         verbose_name = "Import"

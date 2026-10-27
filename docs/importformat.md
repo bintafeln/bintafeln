@@ -1,9 +1,10 @@
 # Importformat für den Kundenstamm
 
-Version 1.2
+Version 1.3
 
 | Version | Änderung |
 |---|---|
+| 1.3 | Das Format bleibt gleich. Neu: Der Import kann den Kundenstamm auch ergänzen statt ersetzen (siehe Grundsätze), und der Import-Assistent nimmt beliebige CSV- und Excel-Dateien und schreibt sie in dieses Format um (ADR 0078). |
 | 1.2 | leeres `wochentage` in `kundengruppen.csv` überschreibt keine in bintafeln eingetragenen Wochentage mehr. Dateien bleiben gültig. |
 | 1.1 | neue optionale Dateien `abholungen.csv` und `ausnahmen.csv`. Dateien der Version 1 bleiben gültig. |
 | 1 | erste Fassung |
@@ -16,10 +17,19 @@ Beispieldateien mit erfundenen Daten: [beispiele/import/](beispiele/import/)
 
 ## Grundsätze
 
-- **Vollaustausch:** Jeder Import ersetzt den gesamten Kundenstamm. Wer in der neuen Datei fehlt,
-  ist danach nicht mehr im Kundenstamm. Daten, die bintafeln selbst führt (Dokumente, Historie,
-  Zugriffsprotokoll), bleiben über die Kundennummer erhalten (siehe Fachkonzept).
-- **Alles oder nichts:** Entweder wird der ganze neue Bestand übernommen oder gar nichts. Ein
+- **Art des Imports:** Nach der Prüfung wird gewählt (ADR 0078):
+  - **Vollaustausch:** Der Import ersetzt den gesamten Kundenstamm. Wer in der neuen Datei fehlt,
+    ist danach nicht mehr im Kundenstamm (je Haushalt abwählbar). Daten, die bintafeln selbst führt
+    (Dokumente, Historie, Zugriffsprotokoll), bleiben über die Kundennummer erhalten (siehe
+    Fachkonzept). Die Regeln „Fehlt eine optionale Datei, wird dieser Teil geleert“ gelten nur hier.
+  - **Hinzufügen und aktualisieren:** Neue Haushalte werden angelegt, bei vorhandenen werden die
+    Unterschiede je Feld zur Wahl gestellt. Verglichen wird nur, was die Dateien liefern; leere
+    Zellen und fehlende Spalten oder Dateien ändern nichts. Angehörige, Abholberechtigte und Sperren
+    eines Haushalts werden als Ganzes übernommen, wenn man sie wählt. Abholungen, Ausnahmen und
+    Anmerkungen kommen dazu, wenn es sie (gleiches Datum bzw. gleicher Text) noch nicht gibt.
+  - **Nur neue hinzufügen:** Nur neue Haushalte; Unterschiede werden angezeigt, aber nur übernommen,
+    wenn man sie einzeln wählt.
+- **Alles oder nichts:** Entweder wird alles Gewählte übernommen oder gar nichts. Ein
   fehlerhafter Import hinterlässt den alten Stand.
 - **Erst prüfen, dann übernehmen:** Nach dem Hochladen zeigt bintafeln einen Prüfbericht. Erst nach
   Bestätigung wird importiert. **Fehler** verhindern den Import, **Warnungen** nicht.

@@ -57,6 +57,8 @@ KAPITEL = [
     Kapitel("auskunft", "Auskunft, Historie und Zugriffsprotokoll", KUNDEN,
             ("kunden.auskunft", "kunden.historie", "kunden.zugriffsprotokoll")),
     Kapitel("import", "Kundenstamm importieren", KUNDEN, ("kunden.importieren",)),
+    Kapitel("datenimport", "Daten importieren: Excel und CSV zuordnen", VERWALTUNG,
+            ("kunden.importieren", "einstellungen.listen", "mitarbeitende.verwalten")),
     Kapitel("antraege", "Anträge bearbeiten", ANTRAEGE, ("antraege.sehen",)),
     Kapitel("aufnahme", "Einen Antrag in den Kundenstamm aufnehmen", ANTRAEGE,
             ("antraege.aufnehmen",)),

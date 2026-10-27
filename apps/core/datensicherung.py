@@ -47,10 +47,11 @@ EIGENE_APPS = [
     "spenden",
     "mitglieder",
     "serienbriefe",
+    "datenimport",
 ]
 # Vorübergehende Daten, die nicht in einen Export gehören
 AUSGENOMMEN = {"kunden.importvorbereitung", "antraege.antragversuch", "core.sicherungsdienst",
-               "konten.vertrautesgeraet"}  # fmt: skip
+               "konten.vertrautesgeraet", "datenimport.importsitzung"}  # fmt: skip
 EINSTELLUNGS_MODELLE = {
     "core.tafeleinstellungen", "core.maileinstellungen", "core.fotoeinstellungen",
     "kunden.kundeneinstellungen",
@@ -82,6 +83,7 @@ APP_BEREICH = {
     "spenden": "adressen",
     "mitglieder": "adressen",
     "serienbriefe": "adressen",
+    "datenimport": "einstellungen",
 }
 # Zuschaltbare Module (ADR 0049) bringen Bereich und Ausnahmen selbst mit
 for _m in module.alle():

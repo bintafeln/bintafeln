@@ -1,0 +1,117 @@
+{% comment %}Abgleich mit Konflikten (ADR 0078). Erwartet plan, modus, modi, aktionen, max_anzeige.
+Formularfelder: f-<i>-<feld> (übernehmen), n-<i> (mögliche Dublette), w-<nr> (nicht mehr in der Datei).{% endcomment %}
+<nav class="reiter" aria-label="Art des Imports">
+  {% for k, m in modi %}<a href="?modus={{ k }}"{% if k == modus %} aria-current="page"{% endif %}>{{ m.0 }}</a>{% endfor %}
+  {% for url, titel in extra_modi %}<a href="{{ url }}">{{ titel }}</a>{% endfor %}
+</nav>
+{% for k, m in modi %}{% if k == modus %}<p class="hinweis">{{ m.1 }}</p>{% endif %}{% endfor %}
+<input type="hidden" name="modus" value="{{ modus }}">
+
+<p><strong>{{ plan.neu|length }}</strong> neu ·
+  <strong>{{ plan.geaendert|length }}</strong> mit Unterschieden ·
+  <strong>{{ plan.gleich }}</strong> unverändert ·
+  <strong>{{ plan.fehlt|length }}</strong> nicht mehr in der Datei{% if plan.doppelt %} ·
+  <strong>{{ plan.doppelt|length }}</strong> mehrfach in der Datei{% endif %}</p>
+
+{% if plan.geaendert %}
+<details class="abgleich-gruppe" open>
+  <summary><strong>Unterschiede zu vorhandenen Einträgen ({{ plan.geaendert|length }})</strong></summary>
+  <p class="hinweis">Je Feld: Haken = Wert aus der Datei übernehmen, ohne Haken bleibt der jetzige Wert.
+    <span class="konflikt-markierung">Konflikt</span> = beide Werte vorhanden und verschieden;
+    „Ergänzung“ = bisher leer. Leere Zellen der Datei überschreiben nie etwas.</p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle kompakt abgleich">
+    <thead><tr><th>Eintrag</th><th>übernehmen</th><th>Feld</th><th>jetzt</th><th>aus der Datei</th></tr></thead>
+    <tbody>
+    {% for e in plan.geaendert|slice:max_anzeige %}
+      {% for f in e.felder %}
+      <tr class="{% if f.art == 'konflikt' %}unterschied{% endif %}">
+        {% if forloop.first %}<td rowspan="{{ e.felder|length }}" data-titel="Eintrag">
+          {% if e.link %}<a href="{{ e.link }}" target="_blank" rel="noopener">{{ e.name }}</a>{% else %}{{ e.name }}{% endif %}
+          {% if e.lokal %}<br><small class="konflikt-markierung">{{ e.lokal }}</small>{% endif %}
+          <br><small class="hinweis">Zeile {{ e.zeile }}</small></td>{% endif %}
+        <td data-titel="übernehmen"><input type="checkbox" name="f-{{ e.i }}-{{ f.feld }}" value="1"{% if f.an %} checked{% endif %} aria-label="{{ f.bezeichnung }} übernehmen"></td>
+        <td data-titel="Feld">{{ f.bezeichnung }}{% if f.art == "konflikt" %} <span class="konflikt-markierung">Konflikt</span>{% else %} <small class="hinweis">Ergänzung</small>{% endif %}</td>
+        <td data-titel="jetzt">{{ f.alt|default:"–"|linebreaksbr }}</td>
+        <td data-titel="aus der Datei">{{ f.neu|linebreaksbr }}</td>
+      </tr>
+      {% endfor %}
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if plan.geaendert|length > max_anzeige %}<p class="hinweis">Nur die ersten {{ max_anzeige }} gezeigt; für die übrigen gilt die Voreinstellung der gewählten Art.</p>{% endif %}
+</details>
+{% endif %}
+
+{% if plan.neu %}
+<details class="abgleich-gruppe" open>
+  <summary><strong>Neu ({{ plan.neu|length }})</strong></summary>
+  <div class="tabelle-rahmen">
+  <table class="tabelle kompakt abgleich">
+    <thead><tr><th>Eintrag</th><th>Zeile</th><th>Wahl</th></tr></thead>
+    <tbody>
+    {% for e in plan.neu|slice:max_anzeige %}
+      {% if e.dublette %}
+      <tr class="unterschied">
+        <td data-titel="Eintrag"><strong>{{ e.name }}</strong><br>
+          <span class="konflikt-markierung">Mögliche Dublette</span> von
+          {% if e.dublette.link %}<a href="{{ e.dublette.link }}" target="_blank" rel="noopener">{{ e.dublette.name }}</a>{% else %}{{ e.dublette.name }}{% endif %}
+          <small>({{ e.dublette.grund }})</small>
+          {% if e.dublette.felder %}<ul class="kompakt">{% for f in e.dublette.felder %}
+            <li><label><input type="checkbox" name="f-{{ e.i }}-{{ f.feld }}" value="1"{% if f.an %} checked{% endif %}>
+              {{ f.bezeichnung }}: {{ f.alt|default:"–" }} → {{ f.neu }}</label></li>{% endfor %}</ul>{% endif %}
+        </td>
+        <td data-titel="Zeile">{{ e.zeile }}</td>
+        <td data-titel="Wahl">
+          <label class="wahl"><input type="radio" name="n-{{ e.i }}" value="aus"{% if e.wahl == "aus" %} checked{% endif %}> nicht anlegen</label>
+          <label class="wahl"><input type="radio" name="n-{{ e.i }}" value="gleich"{% if e.wahl == "gleich" %} checked{% endif %}> dieselbe – Haken übernehmen</label>
+          <label class="wahl"><input type="radio" name="n-{{ e.i }}" value="neu"{% if e.wahl == "neu" %} checked{% endif %}> trotzdem neu anlegen</label>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td data-titel="Eintrag">{{ e.name }}</td><td data-titel="Zeile">{{ e.zeile }}</td><td data-titel="Wahl">wird angelegt</td></tr>
+      {% endif %}
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</details>
+{% endif %}
+
+{% if plan.fehlt %}
+<details class="abgleich-gruppe" open>
+  <summary><strong>Nicht mehr in der Datei ({{ plan.fehlt|length }})</strong></summary>
+  <p class="hinweis">Je Eintrag wählen, was geschehen soll. Vorgewählt ist {% if modus == "ersetzen" %}das Entfernen (außer bei in bintafeln geänderten Einträgen){% else %}„behalten“{% endif %}.</p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle kompakt abgleich">
+    <thead><tr><th>Eintrag</th><th>Was geschieht?</th></tr></thead>
+    <tbody>
+    {% for e in plan.fehlt|slice:max_anzeige %}
+      <tr{% if e.wahl != aktionen.0.0 %} class="unterschied"{% endif %}>
+        <td data-titel="Eintrag">{% if e.link %}<a href="{{ e.link }}" target="_blank" rel="noopener">{{ e.name }}</a>{% else %}{{ e.name }}{% endif %}
+          {% if e.lokal %}<br><small class="konflikt-markierung">{{ e.lokal }}</small>{% endif %}</td>
+        <td data-titel="Was geschieht?">
+          <select name="w-{{ forloop.counter0 }}" aria-label="{{ e.name }}">
+            {% for a, text in aktionen %}<option value="{{ a }}"{% if a == e.wahl %} selected{% endif %}>{{ text }}</option>{% endfor %}
+          </select>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</details>
+{% endif %}
+
+{% if plan.doppelt %}
+<details class="abgleich-gruppe">
+  <summary><strong>Mehrfach in der Datei ({{ plan.doppelt|length }})</strong> – zu einem Eintrag zusammengeführt</summary>
+  <p class="hinweis">Spätere Zeilen füllen leere Felder der ersten. Bei Widersprüchen gilt die erste Zeile; soll eine andere gelten, die Datei korrigieren.</p>
+  <ul>
+  {% for d in plan.doppelt %}
+    <li>Zeilen {{ d.zeilen|join:", " }}{% for w in d.widersprueche %}<br><span class="konflikt-markierung">Widerspruch</span> {{ w.feld }}: „{{ w.gilt }}“ gilt, „{{ w.auch }}“ (Zeile {{ w.zeile }}) nicht{% endfor %}</li>
+  {% endfor %}
+  </ul>
+</details>
+{% endif %}

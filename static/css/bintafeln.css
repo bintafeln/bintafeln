@@ -270,7 +270,7 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 }
 
 /* Kasse */
-.reiter { display: flex; gap: .5rem; margin-bottom: 1rem; }
+.reiter { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
 .reiter a { padding: .35rem .9rem; border: 2px solid var(--akzent); border-radius: 999px; text-decoration: none; }
 .reiter a[aria-current="page"] { background: var(--akzent); color: var(--auf-akzent); }
 .kasse td { white-space: nowrap; }
@@ -605,6 +605,11 @@ tr.wunsch td { background: var(--erfolg); }
 .abgleich-gruppe summary { cursor: pointer; padding: .35rem 0; }
 tr.unterschied td { background: #fff6dc; }
 label.wahl { display: block; white-space: nowrap; }
+/* Datenimport (ADR 0078) */
+.konflikt-markierung { display: inline-block; padding: 0 .4rem; border-radius: .3rem; background: #f6c343; color: #000; font-size: .85em; font-weight: 600; }
+.zuordnung tr.ignoriert td { color: var(--leise); }
+.zuordnung select { min-width: 14rem; }
+ul.kompakt { margin: .3rem 0; padding-left: 1rem; }
 
 /* Kamera als Barcode-Scanner (Einlass) */
 .kamera-dialog { width: min(36rem, calc(100vw - 2rem)); border: 0; border-radius: var(--radius); padding: 1rem; }

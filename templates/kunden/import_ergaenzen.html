@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titel %}Import prüfen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'kunden:import' %}">← Import</a></p>
+  <h1>Kundenstamm ergänzen</h1>
+  <p class="sicherung sicherung-ok">Keine Fehler. Geprüft: {{ vorbereitung.dateien|join:", " }}</p>
+  {% if bericht %}
+    <details class="abgleich-gruppe">
+      <summary><strong>{{ anzahl_warnungen }} Warnung{{ anzahl_warnungen|pluralize:"en" }}</strong> – verhindern den Import nicht</summary>
+      {% include "kunden/_bericht.html" %}
+    </details>
+  {% endif %}
+  <form method="post" action="{% url 'kunden:import_uebernehmen' vorbereitung.pk %}" id="import-form">
+    {% csrf_token %}
+    {% include "datenimport/_abgleich.html" %}
+    {% if modus == "aktualisieren" %}<p class="hinweis">Abholungen, Ausnahmen und Anmerkungen aus der Datei werden bei vorhandenen Haushalten ergänzt, wenn es sie noch nicht gibt.</p>{% endif %}
+    <p class="hinweis">Notizen, Dokumente, Historie und Kundenkonto bleiben erhalten. Ein geänderter Kontostand wird als Korrekturbuchung eingetragen.
+      Gültig bis {{ gueltig_bis|date:"H:i" }} Uhr.</p>
+    {% if sicherung_frisch %}
+      <button type="submit" class="knopf">Import übernehmen</button>
+    {% else %}
+      <p class="sicherung sicherung-veraltet">Übernehmen ist erst möglich, wenn die letzte erfolgreiche Sicherung
+        höchstens 24 Stunden alt ist. Auf dem Server <code>./betrieb sichern</code> ausführen und diese Seite neu laden.</p>
+    {% endif %}
+  </form>
+  <form method="post" action="{% url 'kunden:import_verwerfen' vorbereitung.pk %}" class="inline">
+    {% csrf_token %}
+    <button type="submit" class="knopf knopf-zweitrangig">Verwerfen</button>
+  </form>
+</section>
+{% endblock %}

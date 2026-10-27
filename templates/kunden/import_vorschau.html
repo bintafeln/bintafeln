@@ -4,6 +4,12 @@
 <section class="karte">
   <p><a href="{% url 'kunden:import' %}">← Import</a></p>
   <h1>Prüfbericht</h1>
+  <nav class="reiter" aria-label="Art des Imports">
+    {% for k, m in modi %}<a href="?modus={{ k }}">{{ m.0 }}</a>{% endfor %}
+    <a href="?modus=vollaustausch" aria-current="page">Vollaustausch</a>
+  </nav>
+  <p class="hinweis">Vollaustausch: Der Import ersetzt den ganzen Kundenstamm. Haushalte, die nicht mehr in der Datei stehen,
+    werden gelöscht – je Haushalt abwählbar.</p>
   <p class="sicherung sicherung-ok">Keine Fehler. Der Import kann übernommen werden.</p>
   <p>Geprüft: {{ vorbereitung.dateien|join:", " }}</p>
   <div class="tabelle-rahmen">
@@ -29,6 +35,7 @@
 
   <form method="post" action="{% url 'kunden:import_uebernehmen' vorbereitung.pk %}" id="import-form">
   {% csrf_token %}
+  <input type="hidden" name="modus" value="vollaustausch">
   <h2>Abgleich mit dem jetzigen Kundenstamm</h2>
   <p>{{ abgleich.neu|length }} neu · {{ abgleich.geaendert|length }} geändert · {{ abgleich.entfallen|length }} entfallen · {{ abgleich.unveraendert }} unverändert</p>
 
@@ -64,7 +71,7 @@
 
   {% if abgleich.entfallen %}
   <details class="abgleich-gruppe"{% if abgleich.fragen %} open{% endif %}>
-    <summary><strong>Entfallen ({{ abgleich.entfallen|length }})</strong> – nicht mehr im Import, werden gelöscht</summary>
+    <summary><strong>Entfallen ({{ abgleich.entfallen|length }})</strong> – nicht mehr im Import, werden gelöscht (je Haushalt abwählbar)</summary>
     <div class="tabelle-rahmen">
     <table class="tabelle kompakt">
       <thead><tr><th>Kundennummer</th><th>Name</th><th>Wahl</th></tr></thead>
@@ -73,7 +80,8 @@
         <tr{% if e.lokal %} class="unterschied"{% endif %}>
           <td><a href="{% url 'kunden:haushalt' e.kundennummer %}" target="_blank" rel="noopener">{{ e.kundennummer }}</a></td>
           <td>{{ e.name }}{% if e.aufgenommen %} <small class="hinweis">(in bintafeln aufgenommen)</small>{% endif %}</td>
-          <td>{% if e.lokal %}{% include "kunden/_import_wahl.html" %}{% else %}wird gelöscht{% endif %}</td>
+          <td>{% if e.lokal %}{% include "kunden/_import_wahl.html" %}{% else %}<label class="wahl"><input type="radio" name="wahl_{{ e.kundennummer }}" value="uebernehmen" checked> löschen</label>
+            <label class="wahl"><input type="radio" name="wahl_{{ e.kundennummer }}" value="behalten"> behalten</label>{% endif %}</td>
         </tr>
       {% endfor %}
       </tbody>

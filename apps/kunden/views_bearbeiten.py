@@ -25,7 +25,7 @@ from apps.core import papierkorb
 from apps.core.models import TafelEinstellungen
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
-from apps.kunden import ausweis, gruppen, historie, zugang
+from apps.kunden import ausweis, entfernen, gruppen, historie, zugang
 from apps.kunden.forms_bearbeiten import (
     AbholerForm,
     AnmerkungForm,
@@ -197,17 +197,8 @@ def haushalt_loeschen(request, kundennummer):
              "buchungen": h.buchungen.count(),
              "papierkorb_tage": TafelEinstellungen.laden().papierkorb_tage},
         )  # fmt: skip
-    hp = h.hauptperson
     # In den Papierkorb (ADR 0073); Buchungen bleiben ohne Haushalt, aber mit Kundennummer (Kasse)
-    papierkorb.loeschen(
-        request.user, "Haushalt",
-        f"{kundennummer}{f' – {hp.vorname} {hp.nachname}' if hp else ''}",
-        h, Notiz.objects.filter(kundennummer=kundennummer),
-        HaushaltEreignis.objects.filter(kundennummer=kundennummer),
-        Teilnahme.objects.filter(kundennummer=kundennummer),
-        HaushaltDokument.objects.filter(kundennummer=kundennummer),
-        recht="kunden.loeschen", kundennummer=kundennummer,
-    )  # fmt: skip
+    entfernen.haushalt_loeschen(request.user, h)
     messages.success(
         request,
         f"Haushalt {kundennummer} in den Papierkorb gelegt. Kontobuchungen bleiben ohne Haushalt "

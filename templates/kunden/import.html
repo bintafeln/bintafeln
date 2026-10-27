@@ -9,6 +9,10 @@
     <code>abholer.csv</code>, <code>sperren.csv</code>, <code>bemerkungen.csv</code>,
     <code>kundengruppen.csv</code>, <code>abholungen.csv</code>, <code>ausnahmen.csv</code>.
     Mehrere Dateien gleichzeitig markieren.</p>
+  <p>Andere Spalten oder eine Excel-Datei? Der <a href="{% url 'datenimport:start' %}?ziel=kunden">Import-Assistent</a>
+    ordnet die Spalten zu und prüft danach genauso.</p>
+  <p class="hinweis">Nach der Prüfung wählen Sie, ob der Import nur neue Haushalte hinzufügt, vorhandene ergänzt und
+    aktualisiert oder den Kundenstamm vollständig ersetzt. Unterschiede und Konflikte werden je Feld angezeigt.</p>
   <p class="hinweis">Zuerst wird nur geprüft. Übernommen wird erst nach Ihrer Bestätigung; bis dahin
     werden die geprüften Daten höchstens eine Stunde aufbewahrt.</p>
   {% if not sicherung_frisch %}
@@ -38,19 +42,20 @@
   <h2>Letzte Importe</h2>
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Zeitpunkt</th><th>Von</th><th>Haushalte</th><th>Personen</th><th>Abholungen</th><th>Warnungen</th></tr></thead>
+    <thead><tr><th>Zeitpunkt</th><th>Von</th><th>Art</th><th>Haushalte</th><th>Personen</th><th>Abholungen</th><th>Warnungen</th></tr></thead>
     <tbody>
     {% for lauf in importe %}
       <tr>
         <td data-titel="Zeitpunkt">{{ lauf.zeitpunkt|date:"d.m.Y H:i" }}</td>
         <td data-titel="Von">{{ lauf.benutzer|default:"–" }}</td>
+        <td data-titel="Art">{{ lauf.get_art_display }}</td>
         <td data-titel="Haushalte">{{ lauf.anzahl_haushalte }}</td>
         <td data-titel="Personen">{{ lauf.anzahl_personen }}</td>
         <td data-titel="Abholungen">{{ lauf.anzahl_abholungen }}</td>
         <td data-titel="Warnungen">{{ lauf.anzahl_warnungen }}</td>
       </tr>
     {% empty %}
-      <tr><td colspan="6">Noch kein Import.</td></tr>
+      <tr><td colspan="7">Noch kein Import.</td></tr>
     {% endfor %}
     </tbody>
   </table>
