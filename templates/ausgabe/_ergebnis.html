@@ -13,11 +13,12 @@
 <div class="empfang-raster">
 {% with f=bewertung.farbe %}
 <aside class="ampel-grafik ampel-grafik-{{ f }}{% if bewertung.blinken %} ampel-blinkt{% endif %}" role="img"
-       aria-label="Ampel: {% if f == 'rot' %}rot, keine Abholung{% elif f == 'gelb' %}gelb, Abholung mit Hinweis{% else %}grün, Abholung möglich{% endif %}{% if bewertung.blinken %}, dazu gelb blinkend: {{ bewertung.wort|lower }}{% endif %}">
+       aria-label="Ampel: {% if f == 'rot' %}rot, keine Abholung{% elif f == 'gelb' %}gelb und grün, Abholung mit Hinweis{% else %}grün, Abholung möglich{% endif %}{% if bewertung.blinken %}, dazu gelb blinkend: {{ bewertung.wort|lower }}{% endif %}">
   <div class="ampel-gehaeuse">
     <span class="lampe lampe-rot{% if f == 'rot' %} an{% endif %}"></span>
     <span class="lampe lampe-gelb{% if f == 'gelb' or bewertung.blinken %} an{% endif %}"></span>
-    <span class="lampe lampe-gruen{% if f == 'gruen' %} an{% endif %}"></span>
+    {# Gelb mit erlaubter Abholung: Grün leuchtet mit – eintragen geht #}
+    <span class="lampe lampe-gruen{% if f == 'gruen' or f == 'gelb' and bewertung.darf_abholen %} an{% endif %}"></span>
   </div>
   <p class="ampel-wort">{% if f == "rot" %}STOPP{% elif bewertung.blinken %}{{ bewertung.wort|default:"ACHTUNG" }}{% elif f == "gelb" %}ACHTUNG{% else %}OK{% endif %}</p>
 </aside>

@@ -206,6 +206,11 @@ def test_aufruf_unter_dem_menue(angemeldet, admin, benutzer_mit_rolle):
     expect(leiste.locator(".aufruf-leiste-nummern span").first).not_to_have_text(erste)
     leiste.get_by_role("button", name=re.compile("zurück")).click()
     expect(leiste.locator(".aufruf-leiste-nummern span").first).to_have_text(erste)
+    # Abholung am Einlass: Die Nummer verschwindet sofort aus dem Kasten (nicht erst nach 5 s)
+    seite.get_by_label("Kundennummer scannen oder eingeben").fill(erste)
+    seite.get_by_role("button", name="Prüfen").click()
+    seite.get_by_role("button", name="✓ Abholung eintragen").click()
+    expect(leiste.locator(".aufruf-leiste-nummern")).not_to_contain_text(erste, timeout=3000)
 
 
 def test_handy_steuerung_zeigt_kiosk_meldungen(angemeldet, admin, benutzer_mit_rolle):

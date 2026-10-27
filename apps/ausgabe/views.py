@@ -200,11 +200,19 @@ def ausgabestelle_waehlen(request):
     return redirect(weiter)
 
 
+def _gemeldet(antwort):
+    """Ereignis für die Seite: Am Einlass hat sich etwas geändert (z. B. Abholung eingetragen).
+    Wer darauf hört (etwa der Aufruf-Kasten unter dem Menü), lädt sich sofort neu."""
+    antwort["HX-Trigger"] = "einlassGeaendert"
+    return antwort
+
+
 def _zurueck(request, h, text, stufe=messages.SUCCESS):
     """Nach einer Aktion: HTMX bekommt die aktualisierte Karte, sonst Weiterleitung."""
     if request.headers.get("HX-Request"):
         kontext = {"stelle": _stelle(request), **_ergebnis(request, h, meldung=text)}
-        return render(request, "ausgabe/_einlass.html", {**kontext, "fortschritt_oob": True})
+        return _gemeldet(render(request, "ausgabe/_einlass.html",
+                                {**kontext, "fortschritt_oob": True}))  # fmt: skip
     messages.add_message(request, stufe, text)
     return redirect(f"{reverse('ausgabe:empfang')}?nummer={h.kundennummer}")
 
@@ -214,7 +222,8 @@ def _zur_suche(request, h, text):
     text = f"Kunde {h.kundennummer}: {text}"
     if request.headers.get("HX-Request"):
         kontext = {**_suche_kontext(request), "meldung": text, "fertig": h.kundennummer}
-        return render(request, "ausgabe/_einlass.html", {**kontext, "fortschritt_oob": True})
+        return _gemeldet(render(request, "ausgabe/_einlass.html",
+                                {**kontext, "fortschritt_oob": True}))  # fmt: skip
     messages.success(request, text)
     return redirect("ausgabe:empfang")
 

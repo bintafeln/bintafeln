@@ -45,7 +45,8 @@ standen weiter in der Warteschlange.
   (Vorgabe an); aus = keine Steuerung, kein Kasten, keine Hinweise am Einlass.
 - Ergänzung: Kurz-Steuerung unter dem Menü (`Modul.seitenleiste`, `aufruf:leiste`) für alle mit
   Einlass und Recht „Kunden aufrufen“: aufgerufene Nummern der gewählten Ausgabestelle, „Nächste
-  hereinrufen“, Zurück und Starten; lädt per HTMX nach und fragt alle 15 Sekunden neu.
+  hereinrufen“, Zurück und Starten; lädt per HTMX nach und fragt alle 5 Sekunden neu, sofort nach einer Buchung am Einlass
+  (Ereignis `einlassGeaendert` über den Kopf `HX-Trigger`).
 
 ## Begründung
 
@@ -71,3 +72,11 @@ färben gemeldete Nummern grün, die übrigen dunkelrot. Solange sich am Tag nie
 bleiben die Flags `None` (Ausgabestellen ohne Kiosk sehen keine roten Nummern). Die öffentliche
 Anzeige bekommt die Flags nicht. Am Einlass Eingetragene fallen jetzt auch aus „Danach“ sofort
 heraus, nicht erst beim nächsten Abgleich.
+
+## Nachtrag: automatisch weiter (2026-10-27)
+
+Sind alle Nummern von „Bitte eintreten“ schon am Einlass eingetragen, ruft `aktualisieren()` von
+selbst „Weiter“ auf (unter Sperre noch einmal geprüft, damit zwei Geräte nicht doppelt
+weiterschalten), auch über das Ende einer Kundengruppe hinweg. Der Schritt steht wie ein
+manuelles „Weiter“ im Verlauf und lässt sich zurücknehmen. Einstellung `automatisch_weiter`
+(Vorgabe an).

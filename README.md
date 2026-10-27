@@ -804,14 +804,17 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   Nummern der gewählten Ausgabestelle, die gerade eintreten sollen, und den Knopf „Nächste 3
   hereinrufen“ (Anzahl wie eingestellt), dazu „letzten Schritt zurück“ und „Aufruf starten“; nach
   der letzten Nummer „Ausgabe beendet“ mit „neu starten“ und „letzten Schritt zurück“. Die
-  Anzeige aktualisiert sich alle 15 Sekunden, auch wenn ein anderes Gerät weiterschaltet. Hat die
+  Anzeige aktualisiert sich alle 5 Sekunden (auch wenn ein anderes Gerät weiterschaltet) und
+  sofort, wenn am Einlass eine Abholung eingetragen wird. Hat die
   Ausgabestelle heute keine Kundengruppe, erscheint der Kasten nicht. Einen
   eigenen Menüeintrag gibt es nicht mehr; die Überschrift „Aufruf ↗“ öffnet die Handy-Steuerung.
 - **Wer ist schon da:** Scannt ein Kunde am Kiosk seinen Ausweis, merkt sich bintafeln das für den
   Tag (`KioskMeldung`, am nächsten Tag gelöscht). Kasten unter dem Menü, Handy- und PC-Steuerung
   zeigen gemeldete Nummern grün, alle anderen dunkelrot – erst, wenn sich heute jemand gemeldet
   hat. Monitor und Geräte ohne Anmeldung sehen das nicht. Die Abfrage-Seite meldet nicht an.
-  Am Einlass Eingetragene verschwinden sofort aus „Bitte eintreten“ und „Danach“.
+  Am Einlass Eingetragene verschwinden sofort aus „Bitte eintreten“ und „Danach“. Sind alle
+  Aufgerufenen eingetragen, ruft der Aufruf von selbst die nächsten auf, fließend auch in die
+  nächste Kundengruppe (abschaltbar: „Automatisch weiter …“).
 - **Geräte im Wartebereich:** Monitor (Nummern, Infos im Wechsel, Ton, Layout per Zahnrad),
   Nummern-Anzeige, Kiosk (Karte scannen, Antwort auf Deutsch und in der Sprache zur
   Staatsangehörigkeit) und Abfrage. Sie brauchen keine Anmeldung, sondern den geheimen Link aus

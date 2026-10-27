@@ -77,6 +77,12 @@ class AufrufEinstellungen(models.Model):
         help_text="Haushalte, für die heute schon eine Abholung gebucht ist (z. B. mit Ausnahme "
         "vorgezogen), verschwinden aus der Warteschlange.",
     )  # fmt: skip
+    automatisch_weiter = models.BooleanField(
+        "Automatisch weiter, wenn alle Aufgerufenen schon eingelassen sind", default=True,
+        help_text="Sind alle Nummern von „Bitte eintreten“ schon am Einlass eingetragen, ruft der "
+        "Aufruf von selbst die nächsten auf – auch über das Ende einer Kundengruppe hinweg. Der "
+        "Monitor zeigt so nie leere Plätze.",
+    )  # fmt: skip
     spaetzuender_versatz = models.PositiveSmallIntegerField(
         "Zu spät Gekommene: Plätze nach hinten", default=30,
         validators=[MinValueValidator(1), MaxValueValidator(500)],

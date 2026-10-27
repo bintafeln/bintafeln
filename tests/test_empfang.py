@@ -222,7 +222,9 @@ def test_abholung_eintragen_mit_vorschlag(ausgabe, haushalt, stelle):
     ausgabe.post(reverse("ausgabe:ausgabestelle"), {"ausgabestelle": stelle.pk})
     vorher = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
     assert 'value="2,50"' in vorher
-    inhalt = eintragen(ausgabe, haushalt, beitrag="").content.decode()
+    antwort = eintragen(ausgabe, haushalt, beitrag="")
+    assert antwort["HX-Trigger"] == "einlassGeaendert"  # z. B. Aufruf-Kasten lädt sofort neu
+    inhalt = antwort.content.decode()
     # Danach zurück zur Suche, mit Meldung und Link zurück zum Kunden
     assert "Kunde 00042: Abholung eingetragen." in inhalt and 'name="nummer"' in inhalt
     assert "Kunde 00042 wieder öffnen" in inhalt and "<h1>Einlass</h1>" in inhalt
@@ -381,6 +383,7 @@ def test_grosse_ampel_zeigt_die_farbe(ausgabe, haushalt):
     Abholung.objects.all().delete()
     inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
     assert '<span class="lampe lampe-gelb an">' in inhalt and ">ACHTUNG</p>" in inhalt
+    assert '<span class="lampe lampe-gruen an">' in inhalt  # Gelb mit Abholung: Grün leuchtet mit
 
 
 def test_einlass_zeigt_angaben_und_notizen(ausgabe, haushalt):
