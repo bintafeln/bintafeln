@@ -24,6 +24,11 @@ Einlass der Überblick, wie viele Haushalte heute schon da waren.
   Kundengruppe an dieser Stelle heute ihren Ausgabetag hat; abgeholt sind alle Haushalte mit
   einer heute dort eingetragenen Abholung, auch mit Ausnahme. Nach jeder Abholung tauscht der
   Einlass die Zahl per `hx-swap-oob` aus. Ohne Ausgabetag bleibt die Stelle leer.
+- Ergänzt 2026-10: Gruppen, aus denen heute dort jemand abgeholt hat, zählen hinten mit, auch wenn
+  sie laut Plan nicht dran sind (z. B. reguläre Kunden an einem Tag mit Sonderausgabe, oder der
+  Aufruf hatte die Gruppen schon vor dem Eintragen der Sonderausgabe übernommen); Abholungen ohne
+  Gruppe ebenso. Sonst stand vorne mehr als hinten. Die Erklärung zeigt je Gruppe abgeholt/erwartet
+  und Ausnahmen.
 
 ## Begründung
 

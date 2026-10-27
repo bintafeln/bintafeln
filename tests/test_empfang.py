@@ -182,11 +182,12 @@ def test_fortschritt_in_der_kopfzeile(ausgabe, haushalt, stelle):
     assert "<strong>0 von 1 möglichen Haushalten haben heute schon abgeholt.</strong>" in seite
     inhalt = eintragen(ausgabe, haushalt).content.decode()
     assert 'hx-swap-oob="true"' in inhalt and ">1/1</span>" in inhalt
-    # Ausnahmen zählen vorne mit, hinten nur planmäßige Haushalte
+    # Wer trotzdem abholt (andere Gruppe), zählt vorne und hinten: nie mehr abgeholt als erwartet
     andere = Kundengruppe.objects.create(name="Nie", ausgabestelle=stelle, wochentage="")
     gast = Haushalt.objects.create(kundennummer="00077", kundengruppe=andere)
     Abholung.objects.create(haushalt=gast, datum=timezone.localdate(), ausgabestelle=stelle)
-    assert ">2/1</span>" in ausgabe.get(EMPFANG).content.decode()
+    seite = ausgabe.get(EMPFANG).content.decode()
+    assert ">2/2</span>" in seite and "Nie <small>(nicht geplant)</small>" in seite
 
 
 def test_fortschritt_zaehlt_alle_gruppen_des_tages(ausgabe, haushalt, stelle):

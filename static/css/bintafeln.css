@@ -873,6 +873,8 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
   white-space: normal; font-size: .9rem; line-height: 1.35; font-weight: 400;
 }
 .blase strong { display: block; margin-bottom: .25rem; }
+.blase-tabelle { display: grid; grid-template-columns: 1fr auto; gap: .1rem .75rem; margin-top: .4rem; }
+.blase-tabelle span:nth-child(even) { text-align: right; font-variant-numeric: tabular-nums; }
 .kopf-fortschritt:hover .blase, .kopf-fortschritt:focus .blase, .kopf-fortschritt:focus-within .blase { display: block; }
 .mit-blase { position: relative; }
 .mit-blase .blase { left: 0; right: auto; width: 22rem; max-width: 80vw; }
