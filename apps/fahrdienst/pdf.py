@@ -11,7 +11,7 @@ from apps.core.pdf import RAND, ZELLE, Pdf, text
 from apps.fahrdienst import plan
 from apps.fahrdienst.models import Springer
 
-GELB = colors.HexColor("#ffe94d")
+GELB = "#ffe94d"  # nur hinter dem Namen, der fehlt (wie der gelbe Aufkleber im Plan)
 GRAU = colors.HexColor("#f0f0f0")
 
 
@@ -24,11 +24,11 @@ def _platz(p) -> str:
     if p.gast:
         return f"{text(p.gast)} <font size=7>(Gast)</font>"
     if p.status == plan.UNBESETZT:
-        return "<b>unbesetzt</b>"
+        return f'<font backColor="{GELB}"><b>unbesetzt</b></font>'
     if p.wer is None:
         return ""
     if p.status == plan.OFFEN:
-        return f"<strike>{text(_name(p.wer))}</strike> <b>offen</b>"
+        return f'<font backColor="{GELB}"><strike>{text(_name(p.wer))}</strike> <b>offen</b></font>'
     if p.ersatz and p.stamm:
         return f"<b>{text(_name(p.wer))}</b> <font size=7>(für {text(_name(p.stamm))})</font>"
     return text(_name(p.wer))
@@ -51,10 +51,8 @@ def _tabelle(tage, touren, groesse, breite, zeilenhoehen=None):
     for i, (datum, zeile) in enumerate(tage, start=1):
         tag = f"{WOCHENTAGE[datum.weekday()]} {datum:%d.%m.}"
         zellen = [Paragraph(f"<b>{tag}</b>", zelle)]
-        for j, (_, plaetze) in enumerate(zeile, start=1):
+        for _, plaetze in zeile:
             zellen.append(Paragraph(" / ".join(x for x in map(_platz, plaetze) if x), zelle))
-            if any(p.fehlt for p in plaetze):
-                stil.append(("BACKGROUND", (j, i), (j, i), GELB))
         zeilen.append(zellen)
         if datum.weekday() == 0 and i > 1:  # neue Woche wie auf dem Papierplan
             stil.append(("LINEABOVE", (0, i), (-1, i), 1.5, colors.black))
