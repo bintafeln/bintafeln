@@ -36,6 +36,7 @@ class KundenEinstellungenForm(forms.ModelForm):
             "verlaengern_ablehnung",
             "verlaengern_sonst_pausieren_monate",
             "verlaengern_fruehestens_tage",
+            "krankmeldung",
         ]
         widgets = {
             "verlaengern_felder": forms.CheckboxSelectMultiple,

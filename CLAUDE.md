@@ -153,6 +153,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   mitgelieferte in `FESTE_MERKMALE` (ADR 0071).
   Sammel-Verlängerung der Ausweise: Regeln in `apps/kunden/verlaengerung.py`, Bedingungen in
   `KundenEinstellungen.verlaengern_*`, Anliegen der `Nachricht` in `apps/core/auswahl.py` (ADR 0068).
+  Krankmeldung eines Kunden: `Notiz` mit `krank_von/bis/grund`, Logik in `apps/kunden/krankmeldung.py`,
+  zuschaltbar, nach dem Ende gelöscht (ADR 0075).
   Notizen an die Ausgabestelle (`Notiz.an_stelle`, Startseite, Antwort beim Ausweisdruck) in
   `apps/kunden/an_stelle.py`; feste Notiz-Vorlagen zu `FESTE_ANLIEGEN` (ADR 0070).
 - Statische Dateien laufen im Betrieb über `ManifestStaticFilesStorage` (Dateinamen mit

@@ -162,4 +162,6 @@ FESTE_MERKMALE = [
 NACHRICHT_ANLIEGEN_ALT = {"zugehoerig"}
 NACHRICHT_ANLIEGEN_WAEHLBAR = [a for a in NACHRICHT_ANLIEGEN if a[0] not in NACHRICHT_ANLIEGEN_ALT]
 # Fahrdienst (ADR 0074): warum jemand nicht fahren kann. Den Grund sehen nur, wer plant.
+# Krankmeldung eines Kunden (ADR 0075): Gesundheitsdaten, deshalb nur grob und nur befristet
+KRANK_GRUENDE = [("krank", "krank"), ("reha", "Reha"), ("krankenhaus", "Krankenhaus")]
 FAHRDIENST_AUSFALLGRUENDE = [("krank", "krank"), ("urlaub", "Urlaub"), ("sonstiges", "Sonstiges")]

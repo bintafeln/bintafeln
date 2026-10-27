@@ -63,6 +63,7 @@ urlpatterns = [
     ),
     path("haushalt/<path:kundennummer>/notiz/", views.notiz_neu, name="notiz_neu"),
     path("notiz/<int:pk>/loeschen/", views.notiz_loeschen, name="notiz_loeschen"),
+    path("haushalt/<path:kundennummer>/krank/", views.krank_neu, name="krank_neu"),
     path(
         "haushalt/<path:kundennummer>/dokument/",
         views_dokumente.hochladen,

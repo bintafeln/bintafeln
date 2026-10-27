@@ -24,6 +24,13 @@ def _ausgabestelle(request) -> dict:
     return kontext(request)
 
 
+def _impressum() -> str:
+    """Link zum Impressum der Tafel (Einstellung der Online-Anträge), auch auf der Anmeldeseite."""
+    from apps.antraege.models import AntragEinstellungen
+
+    return AntragEinstellungen.laden().impressum_url
+
+
 def tafel(request):
     benutzer = getattr(request, "user", None)
     angemeldet = benutzer is not None and benutzer.is_authenticated
@@ -47,6 +54,7 @@ def tafel(request):
         "heimnetz_https": settings.HEIMNETZ_ADRESSE,
         "version": version(),
         "programm": {"name": programm.NAME, "untertitel": programm.UNTERTITEL},
+        "impressum_url": _impressum(),
         # Tablet einer Ausgabestelle: Seite lädt nach Ablauf neu, die Middleware meldet ab
         "stellen_konto_sekunden": 30 * 60 + 5 if angemeldet and benutzer.stelle_id else None,
         # Beiträge eingeschalteter Module zur Kopfzeile (z. B. Wetter), nur angemeldet

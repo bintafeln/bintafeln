@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from apps.ausgabe import ampel, kasse, konto, korrekturen, sonderaktionen
@@ -126,7 +127,10 @@ def _ergebnis(request, h, meldung=None):
     regulaer = einstellungen.beitrag_fuer(h, heute, kind_bis, frei_beachten=False)
     vorschlaege, vorschlag_hinweis = konto.vorschlaege(h, heute, einstellungen, regulaer)
     merkmale_zeilen, merkmale_art9 = merkmale.einlass(h, request.user)
+    from apps.kunden import krankmeldung
+
     return {
+        "krank": krankmeldung.aktuelle(h.kundennummer, heute),
         "merkmale": merkmale_zeilen,
         "merkmale_art9": merkmale_art9,
         "h": h,
@@ -198,6 +202,13 @@ def ausgabestelle_waehlen(request):
     if not url_has_allowed_host_and_scheme(weiter, allowed_hosts={request.get_host()}):
         weiter = reverse("ausgabe:empfang")
     return redirect(weiter)
+
+
+@never_cache
+@rollen.recht_erforderlich("einlass.nutzen")
+def fortschritt(request):
+    """Die Zahl oben rechts frisch (HTMX, alle 30 Sekunden): Abholungen an anderen Geräten."""
+    return render(request, "ausgabe/_fortschritt.html")
 
 
 def _gemeldet(antwort):
@@ -547,6 +558,19 @@ def notiz(request, kundennummer):
     if notiz_schreiben(h, request.POST.get("text", ""), request.user) is None:
         return _zurueck(request, h, "Bitte einen Text für die Notiz eingeben.", messages.ERROR)
     return _zurueck(request, h, "Notiz gespeichert.")
+
+
+@require_POST
+@rollen.recht_erforderlich("kunden.notizen")
+def krank(request, kundennummer):
+    from apps.kunden.krankmeldung import Fehler
+    from apps.kunden.views import krank_aus_formular
+
+    h = zugang.haushalt(request.user, kundennummer)
+    try:
+        return _zurueck(request, h, krank_aus_formular(h, request))
+    except Fehler as f:
+        return _zurueck(request, h, str(f), messages.ERROR)
 
 
 @require_POST

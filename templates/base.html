@@ -121,6 +121,7 @@
   <footer class="fuss">
     {% if tafel.anschrift %}<span>{{ tafel.anschrift }}</span>{% endif %}
     <span>{{ programm.name }} – freie Software (AGPL-3.0)</span>
+    {% if impressum_url %}<a href="{{ impressum_url }}" rel="noopener">Impressum</a>{% endif %}
     {% if "system.status" in rechte %}<span class="version">Version {{ version }}</span>{% endif %}
   </footer>
 </body>

@@ -161,3 +161,9 @@ def test_einlass_hinweis_und_kundenliste(stellen, admin, admin_client):
     Sonderausgabe.objects.update(wie_wochentag="")
     Sonderausgabe.objects.get().kundengruppen.set([g["fr"]])
     assert admin_client.get(reverse("kunden:uebersicht")).context["filter"]["tag"] == ""
+
+
+def test_fortschritt_nennt_die_sonderausgabe(stellen):
+    mitte, _, g = stellen
+    sonder(mitte, tag="Do", gruppen=[g["fr"]])
+    assert stelle_wahl.fortschritt(mitte, MITTWOCH).sonderausgabe == "Kunden vom Donnerstag + Fr"

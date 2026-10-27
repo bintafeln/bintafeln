@@ -63,6 +63,7 @@ class Fortschritt:
     gruppen: list[str]  # Namen der Kundengruppen, die heute hier dran sind
     zeilen: list[Zeile]  # je Kundengruppe: erwartet, abgeholt, mit Ausnahme
     ausnahmen: int = 0
+    sonderausgabe: str = ""  # wer heute laut Sonderausgabe dran ist, z. B. „Kunden vom Montag“
 
     @property
     def offen(self) -> int:
@@ -112,6 +113,7 @@ def fortschritt(stelle, heute: dt.date) -> Fortschritt | None:
     return Fortschritt(
         abgeholt=len(abgeholt), erwartet=sum(z.erwartet for z in zeilen),
         gruppen=[g.name for g in gruppen], zeilen=zeilen, ausnahmen=len(mit_ausnahme),
+        sonderausgabe=s.wer() if (s := ausgabetag.sonderausgabe(stelle, heute)) else "",
     )  # fmt: skip
 
 

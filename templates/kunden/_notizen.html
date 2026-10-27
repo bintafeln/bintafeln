@@ -1,7 +1,7 @@
 {% load notiz %}<section class="karte notizen">
   <h2>Notizen</h2>
   {% for n in notizen %}
-    <div class="notiz">
+    <div class="notiz{% if n.krank_bis %} notiz-krank{% endif %}">
       <div class="notiz-kopf"><span>{{ n.erstellt_am|date:"d.m.Y H:i" }}{% if n.verfasst_von %} · {{ n.verfasst_von }}{% endif %}</span>
         {% if n.loeschbar %}
         {% if notiz_htmx %}
@@ -39,6 +39,30 @@
     </form>
     {% endfor %}
   </div>
+  {% endif %}
+
+  {% if krankmeldung %}
+  <details class="krank-melden">
+    <summary>Krank gemeldet …</summary>
+    {% if notiz_htmx %}
+    <form method="post" action="{% url 'ausgabe:krank' h.kundennummer %}" hx-post="{% url 'ausgabe:krank' h.kundennummer %}" hx-target="#einlass">
+    {% else %}
+    <form method="post" action="{% url 'kunden:krank_neu' h.kundennummer %}">
+    {% endif %}
+      {% csrf_token %}
+      <div class="krank-felder">
+        <div class="feld"><label for="krank-grund">Grund</label>
+          <select name="krank_grund" id="krank-grund">{% for wert, text in krank_gruende %}<option value="{{ wert }}">{{ text }}</option>{% endfor %}</select></div>
+        <div class="feld"><label for="krank-von">Von</label><input type="date" name="krank_von" id="krank-von" value="{{ heute|date:'Y-m-d' }}" required></div>
+        <div class="feld"><label for="krank-bis">Bis</label><input type="date" name="krank_bis" id="krank-bis" required></div>
+      </div>
+      <div class="feld"><label for="krank-anmerkung">Anmerkung (freiwillig)</label>
+        <input type="text" name="krank_anmerkung" id="krank-anmerkung" maxlength="300"></div>
+      <p class="hinweis">Die Notiz verschwindet nach dem Ende von selbst. Wer in der Zeit für den Kunden abholen darf,
+        legt die Verwaltung beim Haushalt unter „Abholberechtigte“ fest.</p>
+      <button type="submit" class="knopf knopf-zweitrangig">Krankmeldung speichern</button>
+    </form>
+  </details>
   {% endif %}
 
   {% if notiz_htmx %}

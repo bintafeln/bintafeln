@@ -443,10 +443,52 @@ def _melden(h: Haushalt, text: str, benutzer, von: str) -> None:
 
 def notizen_kontext(kundennummer: str, benutzer) -> dict:
     """Notizen mit der Angabe, ob sie gelöscht werden dürfen, und die aktiven Vorlagen."""
-    notizen = list(Notiz.objects.filter(kundennummer=kundennummer))
+    from apps.core.auswahl import KRANK_GRUENDE
+    from apps.kunden import krankmeldung
+
+    heute = timezone.localdate()
+    # Abgelaufene Krankmeldungen sind nicht mehr zu sehen (gelöscht werden sie täglich)
+    notizen = list(Notiz.objects.filter(kundennummer=kundennummer)
+                   .exclude(krank_bis__lt=heute))  # fmt: skip
     for n in notizen:
         n.loeschbar = n.darf_loeschen(benutzer)
-    return {"notizen": notizen, "notiz_vorlagen": NotizVorlage.objects.filter(aktiv=True)}
+    return {
+        "notizen": notizen, "notiz_vorlagen": NotizVorlage.objects.filter(aktiv=True),
+        "krankmeldung": krankmeldung.eingeschaltet(), "krank_gruende": KRANK_GRUENDE,
+        "heute": heute,
+    }  # fmt: skip
+
+
+def krank_aus_formular(h: Haushalt, request) -> str:
+    """Krankmeldung aus dem Formular anlegen; Ergebnis: Meldung für die Oberfläche."""
+    from apps.kunden import krankmeldung
+
+    if not krankmeldung.eingeschaltet():
+        raise PermissionDenied("Krankmeldungen sind ausgeschaltet.")
+
+    def datum(name):
+        try:
+            return dt.date.fromisoformat(request.POST.get(name, ""))
+        except ValueError:
+            return None
+
+    von, bis = datum("krank_von"), datum("krank_bis")
+    krankmeldung.melden(h, request.user, von, bis or von, request.POST.get("krank_grund", ""),
+                        request.POST.get("krank_anmerkung", ""))  # fmt: skip
+    return "Krankmeldung gespeichert."
+
+
+@require_POST
+@rollen.recht_erforderlich("kunden.notizen")
+def krank_neu(request, kundennummer):
+    from apps.kunden.krankmeldung import Fehler
+
+    h = zugang.haushalt(request.user, kundennummer)
+    try:
+        messages.success(request, krank_aus_formular(h, request))
+    except Fehler as f:
+        messages.error(request, str(f))
+    return redirect("kunden:haushalt", kundennummer=h.kundennummer)
 
 
 @require_POST

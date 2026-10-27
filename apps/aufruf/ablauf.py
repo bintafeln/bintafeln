@@ -366,14 +366,6 @@ def _weiter_im_stand(s, stelle, datum, einstellungen) -> None:
     abgleichen(s, stelle, datum, einstellungen)
 
 
-def _alle_schon_da(s, einstellungen, datum) -> bool:
-    """Sind alle gerade aufgerufenen Nummern schon am Einlass eingetragen?"""
-    if s["index"] >= len(s["gruppen"]) or not einstellungen.eingelassene_ausblenden:
-        return False
-    jetzt = s["gruppen"][s["index"]]["wartend"][: einstellungen.anzahl]
-    return bool(jetzt) and len(_eingelassen_heute(datum, jetzt)) == len(jetzt)
-
-
 def zurueck(stelle, datum) -> AufrufTag:
     """Letztes „Weiter“ rückgängig machen."""
     with transaction.atomic():
@@ -558,15 +550,6 @@ def aktualisieren(stelle, datum) -> AufrufTag | None:
     if tag is None or tag.gestartet_am is None:
         return tag
     einstellungen = AufrufEinstellungen.laden(stelle)
-    # Alle Aufgerufenen schon am Einlass: von selbst die nächsten aufrufen, auch in der nächsten
-    # Kundengruppe – der Monitor zeigt so nie nur Striche (unter Sperre noch einmal geprüft)
-    if einstellungen.automatisch_weiter and _alle_schon_da(tag.stand, einstellungen, datum):
-        with transaction.atomic():
-            tag = tag_holen(stelle, datum, sperren=True)
-            if _alle_schon_da(tag.stand, einstellungen, datum):
-                _weiter_im_stand(tag.stand, stelle, datum, einstellungen)
-                tag.save()
-        return tag
     zuletzt = tag.stand.get("abgeglichen")
     if zuletzt and timezone.now() - dt.datetime.fromisoformat(zuletzt) < dt.timedelta(
         seconds=ABGLEICH_SEKUNDEN
@@ -579,8 +562,12 @@ def aktualisieren(stelle, datum) -> AufrufTag | None:
     return tag
 
 
-def stand_fuer_anzeige(tag, einstellungen, datum) -> dict:
-    """Antwort für Monitor, Anzeige und Mobil (Felder wie im bisherigen Aufrufsystem)."""
+def stand_fuer_anzeige(tag, einstellungen, datum, eingelassene_zeigen=False) -> dict:
+    """Antwort für Monitor, Anzeige und Mobil (Felder wie im bisherigen Aufrufsystem).
+
+    ``eingelassene_zeigen``: Der große Monitor draußen zeigt die aufgerufenen Nummern bis zum
+    nächsten „Weiter“, auch wenn sie schon am Einlass sind; alle anderen Anzeigen nehmen sie
+    sofort heraus. Weiter geht es nur mit dem Knopf, nie von selbst."""
     if tag is None or tag.gestartet_am is None:
         return {
             "error": f"Die Ausgabe für diesen {tagname(einstellungen.ausgabestelle, datum)} "
@@ -604,7 +591,8 @@ def stand_fuer_anzeige(tag, einstellungen, datum) -> dict:
     if einstellungen.eingelassene_ausblenden:
         # Auch aus „Danach“ sofort heraus (aus der Warteschlange erst beim nächsten Abgleich)
         schon_da = _eingelassen_heute(datum, aufgerufen + danach)
-        aufgerufen = [x for x in aufgerufen if x not in schon_da]
+        if not eingelassene_zeigen:
+            aufgerufen = [x for x in aufgerufen if x not in schon_da]
         danach = [x for x in danach if x not in schon_da]
     vergangen = []
     for schritt in reversed(s["rueckgaengig"]):
@@ -621,7 +609,7 @@ def stand_fuer_anzeige(tag, einstellungen, datum) -> dict:
         "finished": False,
         "current_numbers": aufgerufen,
         # Alle Aufgerufenen schon am Einlass: Die Gruppe läuft weiter, nur „Weiter“ drücken
-        "alle_eingelassen": bool(wartend[:n]) and not aufgerufen,
+        "alle_eingelassen": bool(wartend[:n]) and not aufgerufen and not eingelassene_zeigen,
         "next_numbers": danach[:10],
         "upcoming_numbers": danach,
         "past_numbers": vergangen[:10],

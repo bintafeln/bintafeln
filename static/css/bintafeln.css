@@ -1013,3 +1013,12 @@ a.fd-ich { font-weight: 600; text-decoration: underline dotted; }
 .fd-ersetzt .fd-weg { color: #7a5c00; background: #fff3a6; font-weight: 400; }
 .fd-trenner { color: var(--leise, #888); }
 .fd-einsaetze { padding-left: 1.2rem; }
+
+/* Krankmeldung eines Kunden (ADR 0075) */
+.notiz-krank { border-left: 4px solid var(--akzent); padding-left: .5rem; }
+.krank-hinweis { margin: 0 0 1rem; padding: .6rem .9rem; border-left: 4px solid var(--akzent); }
+.krank-melden { margin: .75rem 0; }
+.krank-melden summary { cursor: pointer; font-weight: 600; }
+.krank-felder { display: grid; gap: 0 .75rem; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); }
+.krank-melden select, .krank-melden input { font: inherit; padding: .55rem .65rem; min-height: 2.6rem;
+  border: 1px solid var(--rand); border-radius: var(--radius); width: 100%; }

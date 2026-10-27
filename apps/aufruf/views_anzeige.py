@@ -36,10 +36,11 @@ def _einstellungen(schluessel) -> AufrufEinstellungen:
     return e
 
 
-def _urls(e) -> dict:
+def _urls(e, monitor=False) -> dict:
     k = e.schluessel
+    stand = reverse("aufruf:anzeige_stand", args=[k])
     return {
-        "stand": reverse("aufruf:anzeige_stand", args=[k]),
+        "stand": f"{stand}?monitor=1" if monitor else stand,
         "abfrage": reverse("aufruf:anzeige_abfrage", args=[k]),
         "layout": reverse("aufruf:anzeige_layout", args=[k]),
         "anzeige": reverse("aufruf:anzeige", args=[k]),
@@ -62,8 +63,8 @@ def _info_daten(e, info) -> dict:
             "url": url, "dauer": info.dauer}  # fmt: skip
 
 
-def _kontext(e, **mehr) -> dict:
-    return {"stelle": e.ausgabestelle, "urls": _urls(e), "anzahl": e.anzahl, **mehr}
+def _kontext(e, monitor=False, **mehr) -> dict:
+    return {"stelle": e.ausgabestelle, "urls": _urls(e, monitor), "anzahl": e.anzahl, **mehr}
 
 
 @never_cache
@@ -75,13 +76,15 @@ def anzeige(request, schluessel):
 def monitor(request, schluessel):
     e = _einstellungen(schluessel)
     heute = timezone.localdate()
-    d = ablauf.stand_fuer_anzeige(ablauf.aktualisieren(e.ausgabestelle, heute), e, heute)
+    # Der große Monitor zeigt Aufgerufene bis zum nächsten „Weiter“, auch wenn schon eingelassen
+    d = ablauf.stand_fuer_anzeige(ablauf.aktualisieren(e.ausgabestelle, heute), e, heute,
+                                  eingelassene_zeigen=True)  # fmt: skip
     if "error" in d:
-        return render(request, "aufruf/monitor_wartet.html", _kontext(e))
+        return render(request, "aufruf/monitor_wartet.html", _kontext(e, monitor=True))
     if d["finished"]:
-        return render(request, "aufruf/monitor_fertig.html", _kontext(e, **d))
+        return render(request, "aufruf/monitor_fertig.html", _kontext(e, monitor=True, **d))
     return render(request, "aufruf/monitor.html", _kontext(
-        e, **d, plaetze=plaetze(d["current_numbers"], d["priority_flags"], e.anzahl),
+        e, monitor=True, **d, plaetze=plaetze(d["current_numbers"], d["priority_flags"], e.anzahl),
         layout={k: str(v) for k, v in e.layout_werte().items()},
         infos=[_info_daten(e, i) for i in infos(e)] if e.info_rotation else [],
         info_rotation=e.info_rotation,
@@ -102,7 +105,9 @@ def kiosk(request, schluessel):
 def stand(request, schluessel):
     e = _einstellungen(schluessel)
     heute = timezone.localdate()
-    d = ablauf.stand_fuer_anzeige(ablauf.aktualisieren(e.ausgabestelle, heute), e, heute)
+    monitor_ = request.GET.get("monitor") == "1"  # großer Monitor: Aufgerufene bleiben stehen
+    d = ablauf.stand_fuer_anzeige(ablauf.aktualisieren(e.ausgabestelle, heute), e, heute,
+                                  eingelassene_zeigen=monitor_)  # fmt: skip
     for schluessel_ in (
         "present_flags",
         "next_present_flags",

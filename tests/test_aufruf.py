@@ -2,6 +2,7 @@
 
 import datetime as dt
 import json
+import re
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -835,8 +836,6 @@ def test_alle_aufgerufenen_schon_am_einlass(modul_an, mitte, tag_daten, admin, a
     from apps.kunden.models import Abholung
 
     e = AufrufEinstellungen.laden(mitte)
-    e.automatisch_weiter = False  # erst ohne Automatik: Hinweis statt Weiterschalten
-    e.save()
     tag = ablauf.starten(mitte, heute())
     d = ablauf.stand_fuer_anzeige(tag, e, heute())
     assert d["alle_eingelassen"] is False
@@ -848,34 +847,24 @@ def test_alle_aufgerufenen_schon_am_einlass(modul_an, mitte, tag_daten, admin, a
     seite = admin_client.get(reverse("aufruf:steuerung", args=[mitte.pk])).content.decode()
     assert "Alle Aufgerufenen sind schon am Einlass" in seite
     assert "Kundengruppe abgeschlossen" not in seite and "Weiter zu den nächsten" in seite
+    # Der große Monitor draußen zeigt sie bis zum nächsten „Weiter“ weiter an
     monitor = Client().get(reverse("aufruf:monitor", args=[e.schluessel])).content.decode()
-    assert 'class="current-number-item">' in monitor  # Plätze mit Strich, nicht „vorbereitet“
+    assert all(re.search(rf'number-value">\s*{n}\s*<', monitor) for n in erste)
+    stand = reverse("aufruf:anzeige_stand", args=[e.schluessel])
+    assert f"{stand}?monitor=1" in monitor
+    d = Client().get(stand, {"monitor": "1"}).json()
+    assert d["current_numbers"] == erste and not d["alle_eingelassen"]
+    assert Client().get(stand).json()["current_numbers"] == []  # Nummern-Anzeige: sofort weg
     admin.gewaehlte_stelle = mitte
     admin.save()
     assert "Alle schon am Einlass" in admin_client.get(reverse("aufruf:leiste")).content.decode()
-
-    # Mit Automatik (Vorgabe): Die nächsten werden von selbst aufgerufen, Monitor nie leer
-    e.automatisch_weiter = True
-    e.save()
+    # Weiter geht es nie von selbst, nur mit dem Knopf
     tag = ablauf.aktualisieren(mitte, heute())
-    d = ablauf.stand_fuer_anzeige(tag, e, heute())
-    assert d["current_numbers"] and not set(d["current_numbers"]) & set(erste)
-    assert tag.stand["rueckgaengig"][-1]["nummern"] == erste  # wie ein „Weiter“ (zurücknehmbar)
-    assert ablauf.aktualisieren(mitte, heute()).stand["rueckgaengig"] == tag.stand["rueckgaengig"]
-
-
-def test_automatisch_in_die_naechste_gruppe(modul_an, mitte, tag_daten):
-    from apps.kunden.models import Abholung
-
-    e = AufrufEinstellungen.laden(mitte)
-    tag = ablauf.starten(mitte, heute())
-    # Alle der ersten Gruppe schon eingelassen: geht fließend in die zweite Gruppe über
-    for nummer in tag.stand["gruppen"][0]["wartend"]:
-        Abholung.objects.create(haushalt=Haushalt.objects.get(kundennummer=nummer), datum=heute())
-    tag = ablauf.aktualisieren(mitte, heute())
-    d = ablauf.stand_fuer_anzeige(tag, e, heute())
-    assert tag.stand["index"] == 1 and d["current_slot"].startswith("Spät")
-    assert len(d["current_numbers"]) == e.anzahl
+    assert (
+        tag.stand["rueckgaengig"] == [] and tag.stand["gruppen"][0]["wartend"][: e.anzahl] == erste
+    )
+    tag = ablauf.weiter(mitte, heute())
+    assert ablauf.stand_fuer_anzeige(tag, e, heute())["current_numbers"] != erste
 
 
 def test_gruppen_nach_beginn_auch_aus_dem_namen(modul_an, mitte):
