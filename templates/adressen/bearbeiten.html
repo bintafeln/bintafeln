@@ -9,6 +9,19 @@
   <form method="post">
     {% csrf_token %}
     {% include "includes/formular_abschnitte.html" %}
+    {% if m_form %}
+    <section class="mitglied-wahl" aria-labelledby="mitglied-titel">
+      <h2 id="mitglied-titel">Vereinsmitgliedschaft</h2>
+      {% if schon_mitglied %}
+      <input type="hidden" name="ist_mitglied" value="1">
+      <p class="hinweis">Mitglied Nr. {{ m_form.instance.nummer }} – Angaben hier ändern. Austritt: Datum und Grund eintragen;
+        die Mitgliedschaft löschen geht auf der <a href="{% url 'mitglieder:mitglied' m_form.instance.pk %}">Seite des Mitglieds</a>.</p>
+      {% else %}
+      <div class="feld feld-haken"><label><input type="checkbox" name="ist_mitglied" value="1"{% if ist_mitglied %} checked{% endif %}> Ist Vereinsmitglied – Mitgliedschaft gleich mit anlegen</label></div>
+      {% endif %}
+      <div class="mitglied-felder">{% include "includes/formular_abschnitte.html" with form=m_form %}</div>
+    </section>
+    {% endif %}
     <div class="aktionsleiste">
       <button type="submit" class="knopf">Speichern</button>
       <a class="knopf knopf-abbrechen" href="{% if a.pk %}{% url 'adressen:adresse' a.pk %}{% else %}{% url 'adressen:liste' %}{% endif %}">Abbrechen</a>

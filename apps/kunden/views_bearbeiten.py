@@ -19,8 +19,8 @@ from django.views.decorators.http import require_POST
 from apps.adressen.forms import AdressKategorieForm
 from apps.adressen.models import AdressKategorie
 from apps.ausgabe import konto
-from apps.ausgabe.forms import BeitragsfreiForm
-from apps.ausgabe.models import BeitragsfreierZeitraum, Teilnahme
+from apps.ausgabe.forms import BeitragsfreiForm, SonderausgabeForm
+from apps.ausgabe.models import BeitragsfreierZeitraum, Sonderausgabe, Teilnahme
 from apps.core import privatdateien
 from apps.core.models import TafelEinstellungen
 from apps.core.pdf import pdf_antwort
@@ -308,6 +308,7 @@ LISTEN = {
         "Beitragsfreie Zeiträume",
         "Beitragsfreier Zeitraum",
     ),
+    "sonderausgaben": (Sonderausgabe, SonderausgabeForm, "Sonderausgaben", "Sonderausgabe"),
 }
 
 
@@ -318,6 +319,8 @@ SPALTEN = {
                       ("Höchstzahl", "maximum"), ("Farbe", "get_farbe_display")],
     "dokumentarten": [("Bezeichnung", "__str__"), ("Aufbewahren (Monate)", "aufbewahren_monate")],
     "beitragsfrei": [("Bezeichnung", "bezeichnung"), ("von", "von"), ("bis", "bis")],
+    "sonderausgaben": [("Datum", "datum"), ("Ausgabestelle", "ausgabestelle"),
+                       ("Wer ist dran", "wer"), ("Anmerkung", "anmerkung")],
     "notizvorlagen": [("Text", "text"), ("Reihenfolge", "reihenfolge"),
                       ("Meldet der Verwaltung", "get_melden_display")],
 }  # fmt: skip

@@ -66,7 +66,8 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   Adressen, Serienbriefe, Team), **Auswertungen** (Statistik, Listen), Einstellungen, Hilfe.
   „Meine Arbeitszeit“ steht nur bei Mitarbeitenden, die stempeln, als eigener Punkt; „Mein
   Konto“ öffnet der eigene Name oben rechts. Module hängen sich in die passenden Bereiche ein
-  (`apps/core/menue.py`). Ein Bereich klappt erst seine Einträge und Untergruppen auf, eine
+  (`apps/core/menue.py`). Der Knopf « oben im Menü fährt es ein, » holt es zurück (Wahl bleibt im
+  Browser, `static/js/menue_einfahren.js`). Ein Bereich klappt erst seine Einträge und Untergruppen auf, eine
   Untergruppe (z. B. Wochenübersicht, Kundenstamm) erst beim Anklicken ihre Einträge. Die
   Kundenliste steht nur einmal im Menü: am Einlass (ohne „alle Ausgabestellen“) unter
   „Ausgabestelle“, sonst als „Kunden einsehen“ unter „Kunden“. Die Einstellungen haben Untermenüs (Tafel, Kunden, Ausgabe, Verein,
@@ -723,6 +724,13 @@ Unter „Einstellungen → Ausgabe, Ampel und Beiträge“:
 - **Beitragsfreie Zeiträume** („Einstellungen → Beitragsfreie Zeiträume“, z. B. vor
   Weihnachten): Der Einlass schlägt dann 0 € vor und zeigt „Heute beitragsfrei“; Vorschläge
   für Vorauszahlungen zählen diese Tage nicht.
+- **Sonderausgaben** (ADR 0072, „Einstellungen → Ausgabe → Sonderausgaben“): außerplanmäßige
+  Ausgabe an einem Datum und einer Ausgabestelle, z. B. Mi 23.12. mit den Kunden vom Donnerstag.
+  Gewählt werden ein Wochentag (alle Kundengruppen der Stelle mit diesem Ausgabetag) und/oder
+  einzelne Kundengruppen, auch mehrere und auch von anderen Ausgabestellen. An dem Tag sind genau
+  diese Kunden dran, die regulären des Tages nicht: Ampel, Zähler oben rechts, Aufruf und
+  Kundenliste richten sich danach (`apps/ausgabe/ausgabetag.py`), der Einlass zeigt oben
+  „Heute Sonderausgabe“.
 
 ### Korrekturwünsche
 
@@ -864,6 +872,10 @@ Jede Ausgabestelle macht ihre Monatsabrechnung in bintafeln (ADR 0060), Menü �
 Zuschaltbares Modul „Listen“ (ADR 0063): fertige Listen zum Kundenstamm, jede mit Filtern,
 wählbaren und sortierbaren Spalten, Gliederung mit Anzahl und Summen, Auswahlkästchen je Zeile
 und Ausgabe als CSV (Excel) oder PDF (Auswahl oder alles; jeder Export im Zugriffsprotokoll).
+Ein geändertes Kriterium zeigt die Liste sofort an (`data-sofort`, `static/js/sofort.js`; ebenso
+Statistik, Kasse, Zugriffsprotokoll, Warteliste, Wochenübersicht); nur die Spaltenwahl wartet
+auf „Anzeigen“.
+„Letzter Besuch“ steht mit Uhrzeit da (z. B. 24.10.2026 15:52), sofern die Abholung eine hat.
 Die Kundenlisten lassen sich auch nach dem Ausgabetag filtern (Wochentage der Kundengruppe); die
 Auswahl erscheint wie in der Kundenliste nur, wenn an mindestens zwei Tagen ausgegeben wird.
 
@@ -933,7 +945,11 @@ Serienbriefe (Modul 5, ADR 0044); Kunden stehen weiter im Kundenstamm.
 
 „Mitglieder“ (Rechte „Mitglieder und Beiträge ansehen …“ und „Mitglieder anlegen, bearbeiten
 und löschen“; Büro hat beide) führt die Mitglieder des Trägervereins (ADR 0046). Jedes Mitglied
-ist eine Adresse aus dem Adressbuch.
+ist eine Adresse aus dem Adressbuch. Die Mitgliedschaft lässt sich direkt beim Anlegen oder
+Bearbeiten der Adresse eintragen (Abschnitt „Vereinsmitgliedschaft“, Häkchen „Ist
+Vereinsmitglied“, Recht „Mitglieder bearbeiten“); löschen geht nur auf der Seite des Mitglieds.
+„Neues Mitglied“ führt mit „+ Neue Adresse anlegen“ dorthin. Das Adressbuch zeigt bei
+Mitgliedern „Mitglied Nr.“ mit Link, beide Listen verweisen aufeinander.
 
 - **Mitglied**: fortlaufende Mitgliedsnummer (Vorschlag), Art (Auswahl: ordentlich, aktiv,
   Förder-, Ehrenmitglied, juristische Person), Eintritt, Austritt mit Grund, Jahresbeitrag,
@@ -1006,7 +1022,8 @@ Adresse im Adressbuch (ADR 0045).
 
 „Statistik“ im Menü (Recht „Statistik ansehen“, Vorgabe: Admin und Büro). Oben Zeitraum
 (dieses/letztes Jahr, letzte 12 Monate, dieser/letzter Monat, letzte 30 Tage oder eigener
-Zeitraum) und Ausgabestelle wählen.
+Zeitraum) und Ausgabestelle wählen. Das Auswahlfeld „Springen zu“ unter den Kennzahlen führt
+direkt zu einem Abschnitt (`static/js/sprung.js`).
 
 - **Kennzahlen:** Abholungen, verschiedene Haushalte, erreichte Personen (Summe der
   Haushaltsgrößen je Abholung), Bareinnahmen, aktive Haushalte mit Personen, neue Kunden,

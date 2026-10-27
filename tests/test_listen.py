@@ -246,3 +246,16 @@ def test_weitere_listen(admin_client, daten):
     assert [g["titel"] for g in e.gruppen] == ["1 Pers.", "3 Pers."]
     e = admin_client.get(reverse("listen:liste", args=["zahl_neue"])).context["e"]
     assert [g["titel"] for g in e.gruppen] == [f"{timezone.localdate():%Y-%m}"]
+
+
+def test_letzter_besuch_mit_uhrzeit(admin_client, daten):
+    """„Letzter Besuch“ mit Uhrzeit der Abholung, sortierbar neben Einträgen ohne Uhrzeit."""
+    tag = timezone.localdate() - dt.timedelta(days=3)
+    eins = Haushalt.objects.get(kundennummer="1")
+    Abholung.objects.create(haushalt=eins, datum=tag, uhrzeit=dt.time(15, 52))
+    Haushalt.objects.filter(kundennummer="1").update(letzter_besuch=tag)
+    Haushalt.objects.filter(kundennummer="2").update(letzter_besuch=tag)  # ohne Uhrzeit
+    antwort = admin_client.get(*url("lange_nicht", besuch_vor="", sort="-letzter_besuch",
+                                    s=["kundennummer", "letzter_besuch"]))  # fmt: skip
+    paare = [z["paare"][1][1] for g in antwort.context["e"].gruppen for z in g["zeilen"]]
+    assert paare[:2] == [f"{tag:%d.%m.%Y} 15:52", f"{tag:%d.%m.%Y}"]

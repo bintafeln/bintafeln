@@ -20,7 +20,8 @@ def _auswahl(liste, wert, leer=True):
 class MitgliedForm(forms.ModelForm):
     adresse = forms.ModelChoiceField(
         label="Adresse (aus dem Adressbuch)", queryset=Adresse.objects.none(),
-        help_text="Nicht dabei? Zuerst im Adressbuch anlegen.",
+        help_text="Nicht dabei? Oben „Neue Adresse anlegen“ – dort lässt sich die Mitgliedschaft "
+        "gleich mit eintragen.",
     )  # fmt: skip
     art = forms.ChoiceField(label="Art der Mitgliedschaft")
     zahlweise = forms.ChoiceField(label="Zahlweise", required=False)
@@ -46,13 +47,16 @@ class MitgliedForm(forms.ModelForm):
         localized_fields = ["jahresbeitrag"]
         help_texts = {"nummer": "Wird beim Anlegen fortlaufend vorgeschlagen."}
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, ohne_adresse=False, **kwargs):
         super().__init__(*args, **kwargs)
         m = self.instance
-        frei = Adresse.objects.filter(mitglied__isnull=True)
-        if m.pk:
-            frei = frei | Adresse.objects.filter(pk=m.adresse_id)
-        self.fields["adresse"].queryset = frei.order_by("organisation", "nachname")
+        if ohne_adresse:  # eingebettet in „Adresse bearbeiten“: die Adresse steht schon fest
+            del self.fields["adresse"]
+        if "adresse" in self.fields:
+            frei = Adresse.objects.filter(mitglied__isnull=True)
+            if m.pk:
+                frei = frei | Adresse.objects.filter(pk=m.adresse_id)
+            self.fields["adresse"].queryset = frei.order_by("organisation", "nachname")
         self.fields["art"].choices = _auswahl(MITGLIEDSARTEN, m.art, leer=False)
         self.fields["zahlweise"].choices = _auswahl(ZAHLWEISEN, m.zahlweise)
         self.fields["zahlungsart"].choices = _auswahl(ZAHLUNGSARTEN, m.zahlungsart)
@@ -73,7 +77,9 @@ class MitgliedForm(forms.ModelForm):
         return daten
 
     def abschnitte(self):
-        return [(t, [self[n] for n in namen if n in self.fields]) for t, namen in self.ABSCHNITTE]
+        abschnitte = [(t, [self[n] for n in namen if n in self.fields])
+                      for t, namen in self.ABSCHNITTE]  # fmt: skip
+        return [(t, felder) for t, felder in abschnitte if felder]  # z. B. ohne Beiträge
 
 
 class MitgliederEinstellungenForm(forms.ModelForm):

@@ -101,13 +101,9 @@ def _haushalte_suchen(request):
         .annotate(
             hp_vorname=Subquery(hauptperson.values("vorname")[:1]),
             hp_nachname=Subquery(hauptperson.values("nachname")[:1]),
-            besuch_zeit=Subquery(
-                Abholung.objects.filter(haushalt=OuterRef("pk"), datum=OuterRef("letzter_besuch"),
-                                        uhrzeit__isnull=False)
-                .order_by("-uhrzeit").values("uhrzeit")[:1]
-            ),
         )
     )  # fmt: skip
+    haushalte = Haushalt.mit_besuch_zeit(haushalte)
     suche = request.GET.get("q", "").strip()
     for wort in suche.split():
         personen = Person.objects.filter(
@@ -230,7 +226,14 @@ def _tag(request) -> str:
     if request.GET.get("q", "").strip():
         return ""
     verfuegbar = export.waehlbare_tage(_eigene_gruppen(request.user))
-    return export.standard_tag(request.user, timezone.localdate(), verfuegbar)
+    from apps.ausgabe import ausgabetag
+    from apps.ausgabe import stelle as stelle_wahl
+
+    heute = timezone.localdate()
+    sonder = ausgabetag.sonderausgabe(stelle_wahl.aktuelle(request.user), heute)
+    if sonder is not None:  # Sonderausgabe: deren Wochentag, bei einzelnen Gruppen alle Tage
+        return sonder.wie_wochentag if sonder.wie_wochentag in verfuegbar else ""
+    return export.standard_tag(request.user, heute, verfuegbar)
 
 
 @require_POST

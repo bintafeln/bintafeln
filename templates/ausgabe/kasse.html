@@ -8,7 +8,7 @@
     <a href="?ansicht=monat{% if stelle %}&amp;stelle={{ stelle.pk }}{% endif %}"{% if ansicht == "monat" %} aria-current="page"{% endif %}>Monat</a>
     <a href="?ansicht=jahr{% if stelle %}&amp;stelle={{ stelle.pk }}{% endif %}"{% if ansicht == "jahr" %} aria-current="page"{% endif %}>Jahr</a>
   </nav>
-  <form method="get" class="filter">
+  <form method="get" class="filter" data-sofort>
     <input type="hidden" name="ansicht" value="{{ ansicht }}">
     {% if ansicht == "tag" %}
       <label for="datum">Tag</label>

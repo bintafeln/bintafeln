@@ -75,7 +75,7 @@ HAUSHALT = [
     Spalte("ab_67", "Personen ab 67",
            lambda h, k: sum(1 for a in _alter_liste(h, k) if a is not None and a >= 67), zahl=True),
     Spalte("ausweis", "Ausweis gültig bis", lambda h, k: h.ausweis_gueltig_bis),
-    Spalte("letzter_besuch", "Letzter Besuch", lambda h, k: h.letzter_besuch),
+    Spalte("letzter_besuch", "Letzter Besuch", lambda h, k: h.letzter_besuch_zeitpunkt()),
     Spalte("abholungen", "Abholungen im Zeitraum", lambda h, k: k["abholungen"].get(h.pk, 0),
            zahl=True),
     Spalte("kunde_seit", "Kunde seit", lambda h, k: h.kunde_seit, STAMMDATEN),
@@ -163,4 +163,6 @@ def sortschluessel(wert):
         return (1, "")
     if isinstance(wert, str):
         return (0, wert.casefold())
+    if isinstance(wert, dt.date) and not isinstance(wert, dt.datetime):
+        return (0, dt.datetime.combine(wert, dt.time.min))  # mit Datum+Uhrzeit vergleichbar
     return (0, wert)

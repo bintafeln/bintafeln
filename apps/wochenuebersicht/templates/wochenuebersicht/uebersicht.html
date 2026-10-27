@@ -5,7 +5,7 @@
   <h1>Wochenübersicht der Ausgabestellen</h1>
   <p class="hinweis">Stand {{ stichtag|date:"d.m.Y" }}: Soll = „Maximum Haushalte“ der Kundengruppen, Ist = aktive Haushalte.
     Eine Kundengruppe zählt an jedem ihrer Wochentage.</p>
-  <form method="get" class="aktionsleiste">
+  <form method="get" class="aktionsleiste" data-sofort>
     <label><input type="checkbox" name="abholungen" value="1"{% if woche %} checked{% endif %}> mit Abholungen der Woche</label>
     <label>Kalenderwoche <input type="week" name="kw" value="{{ kw }}"></label>
     <button type="submit" class="knopf knopf-zweit">Anzeigen</button>

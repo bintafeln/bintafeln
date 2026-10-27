@@ -480,6 +480,23 @@ class Haushalt(models.Model):
              .order_by("-uhrzeit").first())  # fmt: skip
         return a.uhrzeit if a else None
 
+    def letzter_besuch_zeitpunkt(self) -> dt.date | dt.datetime | None:
+        """Datum mit Uhrzeit, falls bekannt (z. B. 24.10.2026 15:52), sonst nur das Datum."""
+        if not self.letzter_besuch:
+            return None
+        zeit = self.besuch_uhrzeit()
+        return dt.datetime.combine(self.letzter_besuch, zeit) if zeit else self.letzter_besuch
+
+    @staticmethod
+    def mit_besuch_zeit(qs):
+        """Uhrzeit der letzten Abholung am letzten Besuchstag gleich mitladen (eine Abfrage für
+        die ganze Liste statt einer je Haushalt)."""
+        letzte = (Abholung.objects.filter(haushalt=models.OuterRef("pk"),
+                                          datum=models.OuterRef("letzter_besuch"),
+                                          uhrzeit__isnull=False)
+                  .order_by("-uhrzeit").values("uhrzeit")[:1])  # fmt: skip
+        return qs.annotate(besuch_zeit=models.Subquery(letzte))
+
     @property
     def letzter_besuch_text(self) -> str:
         """„24.10.2026 13:40“, ohne bekannte Uhrzeit nur das Datum, sonst leer."""

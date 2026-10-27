@@ -10,6 +10,8 @@
   {% include "includes/app_symbol.html" %}
   <script src="{% static 'js/htmx.min.js' %}" defer></script>
   <script src="{% static 'js/kopfzeile.js' %}" defer></script>
+  <script src="{% static 'js/sofort.js' %}" defer></script>
+  {% if menue %}<script src="{% static 'js/menue_einfahren.js' %}"></script>{% endif %}
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'{% if menue %} class="mit-menue"{% endif %}>
   {% block hintergrund %}{% if tafel.hintergrund_bild and tafel.hintergrund_staerke %}<div class="hintergrund" aria-hidden="true" style="background-image: url('{{ tafel.hintergrund_bild.url }}'); opacity: {{ tafel.hintergrund_deckkraft }};"></div>{% endif %}{% endblock %}
@@ -50,7 +52,9 @@
   {% if demo %}<p class="demo-hinweis">Demoversion – alle Daten sind erfunden und werden jede Nacht zurückgesetzt. Bitte keine echten Daten eingeben.</p>{% endif %}
   <div class="rahmen">
   {% if menue %}
-  <nav class="seitenmenue" aria-label="Hauptnavigation">
+  <button type="button" class="menue-ausfahren" data-menue-ausfahren aria-controls="seitenmenue" aria-expanded="false" title="Menü ausfahren">»<span class="unsichtbar"> Menü ausfahren</span></button>
+  <nav class="seitenmenue" id="seitenmenue" aria-label="Hauptnavigation" tabindex="-1">
+    <button type="button" class="menue-einfahren" data-menue-einfahren title="Menü einfahren (mehr Platz für die Seite)">«<span class="unsichtbar"> Menü einfahren</span></button>
     {% if ausgabestellen_wahl|length > 1 %}
     <form method="post" action="{% url 'ausgabe:ausgabestelle' %}" class="menue-stelle">
       {% csrf_token %}

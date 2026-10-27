@@ -100,6 +100,7 @@ def _haushalte(benutzer, p):
         qs = qs.filter(kontostand__lt=0)
     if p.get("ohne_gruppe"):
         qs = qs.filter(kundengruppe__isnull=True)
+    qs = Haushalt.mit_besuch_zeit(qs)
     return qs.prefetch_related(Prefetch("personen", queryset=Person.objects.order_by(
         "-ist_hauptperson", "pk")))  # fmt: skip
 

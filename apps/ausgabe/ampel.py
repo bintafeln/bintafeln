@@ -90,6 +90,8 @@ MELDUNGEN = [
      "Wochentage", ["gruppe"]),
     ("nicht_dran", "Heute nicht dran", "Heute nicht dran (Kundengruppe {gruppe}: {tage})",
      ["gruppe", "tage"]),
+    ("nicht_dran_sonder", "Heute nicht dran (Sonderausgabe)", "Heute nicht dran: Sonderausgabe "
+     "({wer}), Kundengruppe {gruppe} ist nicht dabei", ["wer", "gruppe"]),
     ("andere_stelle", "Andere Ausgabestelle", "Kundengruppe gehört zur Ausgabestelle {stelle}",
      ["stelle"]),
     ("konto_negativ", "Kontostand negativ", "Kontostand negativ: −{betrag} € (angeschrieben)",
@@ -183,20 +185,33 @@ def bewerten(haushalt, heute: dt.date, ausgabestelle, einstellungen) -> Bewertun
     if gruppe is None:
         terminregel(t("keine_gruppe", "Keine Kundengruppe zugeordnet"))
     else:
+        from apps.ausgabe import ausgabetag
+
         tage = wochentage(gruppe.wochentage)
-        if not tage:
+        ist_dran, sonder = ausgabetag.dran(gruppe, heute, ausgabestelle)
+        if sonder is not None:  # Sonderausgabe: nur die dort gewählten Kunden
+            if not ist_dran:
+                terminregel(
+                    t("nicht_dran_sonder", f"Heute nicht dran: Sonderausgabe ({sonder.wer()}), "
+                      f"Kundengruppe {gruppe.name} ist nicht dabei", gruppe=gruppe.name,
+                      wer=sonder.wer()),
+                    ROT if einstellungen.nicht_dran_rot else GELB,
+                )  # fmt: skip
+        elif not tage:
             terminregel(
                 t("keine_wochentage", f"Kundengruppe {gruppe.name} hat keine Wochentage – nicht "
                   "prüfbar, ob heute dran (Einstellungen → Kundengruppen)", gruppe=gruppe.name),
                 GELB,
             )  # fmt: skip
-        elif WOCHENTAGE[heute.weekday()] not in tage:
+        elif not ist_dran:
             terminregel(
                 t("nicht_dran", f"Heute nicht dran (Kundengruppe {gruppe.name}: "
                   f"{', '.join(tage)})", gruppe=gruppe.name, tage=", ".join(tage)),
                 ROT if einstellungen.nicht_dran_rot else GELB,
             )  # fmt: skip
-        if ausgabestelle and gruppe.ausgabestelle and gruppe.ausgabestelle != ausgabestelle:
+        gewaehlt = sonder is not None and ist_dran  # in der Sonderausgabe ausdrücklich gewählt
+        andere = ausgabestelle and gruppe.ausgabestelle and gruppe.ausgabestelle != ausgabestelle
+        if andere and not gewaehlt:
             stelle = gruppe.ausgabestelle.name
             terminregel(t("andere_stelle", f"Kundengruppe gehört zur Ausgabestelle {stelle}",
                           stelle=stelle), GELB)  # fmt: skip

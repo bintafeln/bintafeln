@@ -531,6 +531,23 @@ a.knopf-gefahr { color: #fff; }
 .seitenmenue a.aktiv { background: var(--erfolg); border-left: 4px solid var(--akzent); font-weight: 600; }
 .seitenmenue li a.aktiv { padding-left: calc(2rem - 4px); }
 .seitenmenue a.menue-oben.aktiv { padding-left: calc(1.25rem - 4px); }
+/* Menü einfahren (static/js/menue_einfahren.js): « oben im Menü, » am linken Rand zum Ausfahren */
+.menue-einfahren, .menue-ausfahren {
+  font: inherit; font-weight: 700; line-height: 1; cursor: pointer; color: var(--leise);
+  background: var(--flaeche); border: 1px solid var(--rand); border-radius: var(--radius);
+  padding: .15rem .45rem;
+}
+.menue-einfahren:hover, .menue-ausfahren:hover { color: var(--text); border-color: var(--akzent); }
+.menue-einfahren { float: right; margin: -.35rem .5rem 0 0; font-size: .9rem; }
+.menue-ausfahren { display: none; position: sticky; top: .5rem; align-self: flex-start; margin: .5rem 0 0 .25rem; z-index: 5; }
+.menue-eingefahren .seitenmenue { display: none; }
+.menue-eingefahren .menue-ausfahren { display: block; }
+@media (max-width: 47.99rem) {
+  /* Auf dem Handy öffnet „☰ Menü“; Einfahren gibt es dort nicht */
+  .menue-einfahren, .menue-eingefahren .menue-ausfahren { display: none; }
+  .menue-eingefahren .seitenmenue { display: none; }
+  .menue-eingefahren .menue-schalter:checked ~ .rahmen .seitenmenue { display: block; }
+}
 @media (min-width: 48rem) and (max-width: 63.99rem) {
   .seitenmenue { flex-basis: 13rem; }
   .menue-oben, .seitenmenue li a { padding-right: .75rem; }
@@ -668,16 +685,17 @@ label.wahl { display: block; white-space: nowrap; }
 .legende { list-style: none; display: flex; flex-wrap: wrap; gap: .25rem 1rem; padding: 0; margin: .25rem 0; font-size: .9rem; }
 .legende li { display: flex; align-items: center; gap: .4rem; }
 .legende-farbe { width: .9rem; height: .9rem; border-radius: 3px; display: inline-block; }
-.kacheln { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: .5rem; margin-top: 1rem; }
-.kachel { border: 1px solid var(--rand); border-radius: var(--radius); padding: .5rem .75rem; display: flex; flex-direction: column; gap: 0; }
-.kachel-titel { color: var(--leise); font-size: .9rem; }
-.kachel-wert { font-size: 1.4rem; font-weight: 700; line-height: 1.3; }
+.kacheln { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: .4rem; margin-top: .5rem; }
+.kachel { border: 1px solid var(--rand); border-radius: var(--radius); padding: .3rem .6rem; display: flex; flex-direction: column; gap: 0; }
+.kachel-titel { color: var(--leise); font-size: .8rem; }
+.kachel-wert { font-size: 1.15rem; font-weight: 700; line-height: 1.25; }
 .kachel-unter { color: var(--leise); font-size: .8rem; }
 .statistik-filter input[type=date] { width: auto; }
 /* Statistik: Sprungleiste, Abschnitte im Raster, Diagramme nicht größer als gezeichnet */
-.statistik-sprung { display: flex; flex-wrap: wrap; gap: .35rem .5rem; margin-top: 1rem; }
-.statistik-sprung a { padding: .2rem .65rem; border: 1px solid var(--rand); border-radius: 999px; font-size: .88rem; text-decoration: none; color: var(--text); background: var(--flaeche); }
-.statistik-sprung a:hover { border-color: var(--akzent); }
+.statistik-kopf { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 0 1.5rem; }
+.statistik-kopf .filter-kompakt { margin-bottom: .35rem; }
+.statistik-sprung { margin: .6rem 0 0; }
+.statistik-sprung .filter-feld { flex: 0 1 22rem; }
 .statistik-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 30rem), 1fr)); gap: 1rem; align-items: start; }
 .statistik-raster .karte { margin: 0; min-width: 0; scroll-margin-top: 1rem; }
 .statistik-abschnitt h2 { font-size: 1.15rem; margin: 0; }
@@ -909,3 +927,11 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 @media (max-width: 40rem) { .filter-feld { flex: 1 1 8rem; } }
 .liste-aktionen .knopf, .titel-zeile .knopf { min-height: 2rem; padding: .3rem .9rem; font-size: .92rem; }
 .liste-aktionen { gap: .4rem .75rem; }
+.titel-knoepfe { display: flex; flex-wrap: wrap; gap: .4rem; }
+.querweg { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }
+.querweg p { margin: 0; flex: 1 1 20rem; }
+a.marke-rolle { text-decoration: none; }
+/* Adresse bearbeiten: Mitgliedsangaben nur, wenn „Ist Vereinsmitglied“ angekreuzt ist */
+.mitglied-wahl { margin-top: 1rem; border-top: 1px solid var(--rand); padding-top: .5rem; }
+.mitglied-wahl h2 { font-size: 1.1rem; margin: .25rem 0 .5rem; }
+.mitglied-wahl:has(input[name="ist_mitglied"][type="checkbox"]:not(:checked)) .mitglied-felder { display: none; }

@@ -1,42 +1,51 @@
 {% extends "base.html" %}
+{% load static %}
 {% block titel %}Statistik{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
   <h1>Statistik</h1>
-  <form method="get" class="filter statistik-filter">
-    <label for="zeitraum">Zeitraum</label>
-    <select name="zeitraum" id="zeitraum">
-      {% for schluessel, v in vorgaben.items %}<option value="{{ schluessel }}"{% if wahl == schluessel %} selected{% endif %}>{{ v.titel }}</option>{% endfor %}
-      <option value="eigen"{% if wahl == "eigen" %} selected{% endif %}>Eigener Zeitraum</option>
-    </select>
-    <label for="von">von</label>
-    <input type="date" name="von" id="von" value="{{ z.von|date:'Y-m-d' }}">
-    <label for="bis">bis</label>
-    <input type="date" name="bis" id="bis" value="{{ z.bis|date:'Y-m-d' }}">
-    <label for="stelle">Ausgabestelle</label>
-    <select name="stelle" id="stelle">
-      <option value="">{% if eingeschraenkt %}alle meine{% else %}alle{% endif %}</option>
-      {% for s in auswahl %}<option value="{{ s.pk }}"{% if gewaehlt == s.pk|stringformat:"s" %} selected{% endif %}>{{ s.name }}</option>{% endfor %}
-    </select>
+  <div class="statistik-kopf">
+  <form method="get" class="filter-kompakt" data-sofort>
+    <div class="filter-feld"><label for="zeitraum">Zeitraum</label>
+      <select name="zeitraum" id="zeitraum">
+        {% for schluessel, v in vorgaben.items %}<option value="{{ schluessel }}"{% if wahl == schluessel %} selected{% endif %}>{{ v.titel }}</option>{% endfor %}
+        <option value="eigen"{% if wahl == "eigen" %} selected{% endif %}>Eigener Zeitraum</option>
+      </select></div>
+    <div class="filter-feld"><label for="von">von</label>
+      <input type="date" name="von" id="von" value="{{ z.von|date:'Y-m-d' }}"></div>
+    <div class="filter-feld"><label for="bis">bis</label>
+      <input type="date" name="bis" id="bis" value="{{ z.bis|date:'Y-m-d' }}"></div>
+    <div class="filter-feld"><label for="stelle">Ausgabestelle</label>
+      <select name="stelle" id="stelle">
+        <option value="">{% if eingeschraenkt %}alle meine{% else %}alle{% endif %}</option>
+        {% for s in auswahl %}<option value="{{ s.pk }}"{% if gewaehlt == s.pk|stringformat:"s" %} selected{% endif %}>{{ s.name }}</option>{% endfor %}
+      </select></div>
     <button type="submit" class="knopf">Anzeigen</button>
   </form>
-  <p class="hinweis">{{ z.titel|default:"" }} · {{ z.von|date:"d.m.Y" }} bis {{ z.bis|date:"d.m.Y" }} · nur Summen
-    ohne Personenbezug; je Abschnitt auch als Tabelle und CSV.</p>
-  <form method="get" action="{% url 'statistik:jahresbericht' %}" class="filter" target="_blank">
-    <label for="jahr">Jahresbericht (PDF)</label>
-    <select name="jahr" id="jahr">{% for j in jahre %}<option value="{{ j }}">{{ j }}</option>{% endfor %}</select>
+  <form method="get" action="{% url 'statistik:jahresbericht' %}" class="filter-kompakt" target="_blank">
+    <div class="filter-feld"><label for="jahr">Jahresbericht (PDF)</label>
+      <select name="jahr" id="jahr">{% for j in jahre %}<option value="{{ j }}">{{ j }}</option>{% endfor %}</select></div>
     {% if gewaehlt %}<input type="hidden" name="stelle" value="{{ gewaehlt }}">{% endif %}
-    <button type="submit" class="knopf knopf-zweitrangig">Jahresbericht erstellen</button>
+    <button type="submit" class="knopf knopf-zweitrangig">Erstellen</button>
   </form>
+  </div>
+  <p class="hinweis titel-text">{{ z.titel|default:"" }} · {{ z.von|date:"d.m.Y" }} bis {{ z.bis|date:"d.m.Y" }} · nur Summen
+    ohne Personenbezug; je Abschnitt auch als Tabelle und CSV.</p>
   <div class="kacheln">
     {% for titel, wert, unter in kacheln %}
     <div class="kachel"><span class="kachel-titel">{{ titel }}</span><span class="kachel-wert">{{ wert }}</span><span class="kachel-unter">{{ unter }}</span></div>
     {% endfor %}
   </div>
   {% if abschnitte %}
-  <nav class="statistik-sprung" aria-label="Abschnitte">
-    {% for a in abschnitte %}<a href="#{{ a.id }}">{{ a.titel }}</a>{% endfor %}
-  </nav>
+  {# Auswahl springt sofort zum Abschnitt (static/js/sprung.js) #}
+  <div class="filter-kompakt statistik-sprung">
+    <div class="filter-feld"><label for="sprung">Springen zu</label>
+      <select id="sprung" data-sprung>
+        <option value="">Statistik wählen …</option>
+        {% for a in abschnitte %}<option value="{{ a.id }}">{{ a.titel }}</option>{% endfor %}
+      </select></div>
+  </div>
+  <script src="{% static 'js/sprung.js' %}" defer></script>
   {% endif %}
 </section>
 

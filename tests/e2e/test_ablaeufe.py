@@ -223,3 +223,53 @@ def test_ausweis_gestalter_merkmale_und_einlass(angemeldet, admin):
     p.save()
     seite.goto("/ausgabe/?nummer=00041")
     expect(seite.locator(".merkmal")).to_have_text(["Vegetarier"])
+
+
+def test_statistik_springen_zu(angemeldet, admin):
+    """Auswahlfeld „Springen zu“ springt zum Abschnitt der Statistik."""
+    seite = angemeldet(admin)
+    seite.goto("/statistik/")
+    wahl = seite.locator("#sprung")
+    erster = wahl.locator("option").nth(1).get_attribute("value")
+    wahl.select_option(erster)
+    seite.wait_for_function("id => location.hash === '#' + id", arg=erster)
+    expect(wahl).to_have_value("")
+
+
+def test_menue_einfahren_und_ausfahren(angemeldet, admin):
+    """Breiter Bildschirm: « fährt das Menü ein (bleibt so beim Seitenwechsel), » wieder aus."""
+    seite = angemeldet(admin)
+    seite.goto("/")
+    menue = seite.locator("nav.seitenmenue")
+    expect(menue).to_be_visible()
+    seite.get_by_role("button", name="Menü einfahren").click()
+    expect(menue).to_be_hidden()
+    seite.goto("/kunden/")
+    expect(menue).to_be_hidden()
+    seite.get_by_role("button", name="Menü ausfahren").click()
+    expect(menue).to_be_visible()
+    seite.goto("/")
+    expect(menue).to_be_visible()
+
+
+def test_liste_zeigt_kriterium_sofort(angemeldet, admin):
+    """Listen: Ein gewähltes Kriterium zeigt das Ergebnis ohne „Anzeigen“; die Spaltenwahl nicht."""
+    from apps.core.models import TafelEinstellungen
+
+    t = TafelEinstellungen.laden()
+    t.module = ["listen"]
+    t.save()
+    _haushalte(2)
+    Haushalt.objects.filter(kundennummer="00042").update(status="pausiert")
+    seite = angemeldet(admin)
+    seite.goto("/listen/kunden_stelle/")
+    expect(seite.locator("tbody input[name=id]")).to_have_count(1)  # Vorgabe: aktiv
+    with seite.expect_navigation():
+        seite.select_option("#f-status", "")
+    expect(seite.locator("tbody input[name=id]")).to_have_count(2)
+    assert "status=&" in seite.url or seite.url.endswith("status=")
+    seite.click(".spalten-wahl summary")
+    adresse = seite.url
+    seite.locator(".spalten-haken input").first.uncheck()
+    seite.wait_for_timeout(300)
+    assert seite.url == adresse  # Spalten warten auf „Anzeigen“

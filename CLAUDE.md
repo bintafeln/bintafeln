@@ -147,7 +147,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `data-kamera`, Bibliothek fest unter `static/vendor/barcode-detector`, kein CDN, ADR 0029;
   Sonderaktionen: Regeln in `apps/ausgabe/sonderaktionen.py`, `Teilnahme` an der Kundennummer,
   ADR 0032; aktuelle Ausgabestelle nur über `apps/ausgabe/stelle.py` (`aktuelle()`, Auswahl oben
-  im Menü, `Benutzer.gewaehlte_stelle`, Fortschritt in der Kopfzeile, ADR 0067).
+  im Menü, `Benutzer.gewaehlte_stelle`, Fortschritt in der Kopfzeile, ADR 0067); wer an einem
+  Tag dran ist (auch Sonderausgaben) nur über `apps/ausgabe/ausgabetag.py` (ADR 0072).
+  Merkmale (Ja/Nein-Zusatzfelder am Einlass und auf dem Ausweis) in `apps/kunden/merkmale.py`,
+  mitgelieferte in `FESTE_MERKMALE` (ADR 0071).
   Sammel-Verlängerung der Ausweise: Regeln in `apps/kunden/verlaengerung.py`, Bedingungen in
   `KundenEinstellungen.verlaengern_*`, Anliegen der `Nachricht` in `apps/core/auswahl.py` (ADR 0068).
   Notizen an die Ausgabestelle (`Notiz.an_stelle`, Startseite, Antwort beim Ausweisdruck) in

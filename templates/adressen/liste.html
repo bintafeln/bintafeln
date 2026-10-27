@@ -3,25 +3,28 @@
 {% block titel %}Adressbuch{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
-  <h1>Adressbuch</h1>
-  <p class="hinweis">Spender, Märkte, Partner, Presse, Behörden … Kunden stehen nicht hier, sondern im Kundenstamm.</p>
-  <div class="aktionsleiste">
-    {% if "adressen.bearbeiten" in rechte %}<a class="knopf" href="{% url 'adressen:neu' %}">Neue Adresse</a>{% endif %}
-    {% if "adressen.importieren" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'adressen:importieren' %}">Importieren</a>{% endif %}
+  <div class="titel-zeile">
+    <h1>Adressbuch</h1>
+    <div class="titel-knoepfe">
+      {% if "adressen.bearbeiten" in rechte %}<a class="knopf" href="{% url 'adressen:neu' %}">+ Neue Adresse</a>{% endif %}
+      {% if "adressen.importieren" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'adressen:importieren' %}">Importieren</a>{% endif %}
+      {% if "mitglieder.sehen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'mitglieder:liste' %}">Mitglieder →</a>{% endif %}
+    </div>
   </div>
-  <form class="filter" method="get" action="{% url 'adressen:liste' %}">
-    <label for="q">Suche</label>
-    <input type="search" name="q" id="q" value="{{ filter.q }}" class="suche" placeholder="Name, Ort, PLZ oder E-Mail">
-    <label for="kategorie">Kategorie</label>
-    <select name="kategorie" id="kategorie" onchange="this.form.submit()">
-      <option value="">alle</option>
-      {% for k in kategorien %}<option value="{{ k.pk }}"{% if filter.kategorie == k.pk|stringformat:"d" %} selected{% endif %}>{{ k.name }}</option>{% endfor %}
-    </select>
-    <label for="art">Art</label>
-    <select name="art" id="art" onchange="this.form.submit()">
-      <option value="">alle</option>
-      {% for wert, name in arten %}<option value="{{ wert }}"{% if filter.art == wert %} selected{% endif %}>{{ name }}</option>{% endfor %}
-    </select>
+  <p class="hinweis titel-text">Spender, Märkte, Partner, Presse, Behörden, Mitglieder … Kunden stehen nicht hier, sondern im Kundenstamm.</p>
+  <form class="filter-kompakt" method="get" action="{% url 'adressen:liste' %}">
+    <div class="filter-feld filter-suche"><label for="q">Suche</label>
+      <input type="search" name="q" id="q" value="{{ filter.q }}" placeholder="Name, Ort, PLZ oder E-Mail"></div>
+    <div class="filter-feld"><label for="kategorie">Kategorie</label>
+      <select name="kategorie" id="kategorie" onchange="this.form.submit()">
+        <option value="">alle</option>
+        {% for k in kategorien %}<option value="{{ k.pk }}"{% if filter.kategorie == k.pk|stringformat:"d" %} selected{% endif %}>{{ k.name }}</option>{% endfor %}
+      </select></div>
+    <div class="filter-feld"><label for="art">Art</label>
+      <select name="art" id="art" onchange="this.form.submit()">
+        <option value="">alle</option>
+        {% for wert, name in arten %}<option value="{{ wert }}"{% if filter.art == wert %} selected{% endif %}>{{ name }}</option>{% endfor %}
+      </select></div>
     <button type="submit" class="knopf">Suchen</button>
   </form>
   <p class="hinweis">{{ anzahl }} Adresse{{ anzahl|pluralize:"n" }}{% if anzahl %} ·
@@ -34,7 +37,7 @@
     <tbody>
     {% for a in seite %}
       <tr><td class="auswahl"><input type="checkbox" name="id" value="{{ a.pk }}" form="auswahl" aria-label="Zeile auswählen"></td>
-        <td data-titel="Name"><a href="{% url 'adressen:adresse' a.pk %}">{{ a.name }}</a>{% if a.art == "organisation" and a.ansprechperson %}<br><small class="leise">{{ a.ansprechperson }}</small>{% endif %}</td>
+        <td data-titel="Name"><a href="{% url 'adressen:adresse' a.pk %}">{{ a.name }}</a>{% if a.mitglied and "mitglieder.sehen" in rechte %} <a class="marke-rolle" href="{% url 'mitglieder:mitglied' a.mitglied.pk %}" title="Zum Mitglied">Mitglied {{ a.mitglied.nummer }}</a>{% endif %}{% if a.art == "organisation" and a.ansprechperson %}<br><small class="leise">{{ a.ansprechperson }}</small>{% endif %}</td>
         <td data-titel="Ort">{{ a.plz }} {{ a.ort }}</td>
         <td data-titel="Telefon">{{ a.telefon|default:a.mobil }}</td>
         <td data-titel="E-Mail">{% if a.email %}<a href="mailto:{{ a.email }}">{{ a.email }}</a>{% endif %}</td>

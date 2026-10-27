@@ -3,9 +3,12 @@
 {% block titel %}Mitglieder{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
-  <h1>Mitglieder</h1>
-  <div class="aktionsleiste">
-    {% if "mitglieder.bearbeiten" in rechte %}<a class="knopf" href="{% url 'mitglieder:neu' %}">Neues Mitglied</a>{% endif %}
+  <div class="titel-zeile">
+    <h1>Mitglieder</h1>
+    <div class="titel-knoepfe">
+      {% if "mitglieder.bearbeiten" in rechte %}<a class="knopf" href="{% url 'mitglieder:neu' %}">+ Neues Mitglied</a>{% endif %}
+      {% if "adressen.sehen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'adressen:liste' %}">Adressbuch →</a>{% endif %}
+    </div>
   </div>
   <form class="filter" method="get">
     <label for="stand">Stand</label>
