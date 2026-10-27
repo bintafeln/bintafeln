@@ -20,9 +20,8 @@
     </select>
     <button type="submit" class="knopf">Anzeigen</button>
   </form>
-  <p class="hinweis">{{ z.titel|default:"" }} · {{ z.von|date:"d.m.Y" }} bis {{ z.bis|date:"d.m.Y" }}.
-    Datum eintragen und „Eigener Zeitraum“ wählen für einen freien Zeitraum. Alle Zahlen sind Summen ohne Personenbezug.
-    Zu jedem Diagramm gibt es die Zahlen als Tabelle und als CSV-Datei.</p>
+  <p class="hinweis">{{ z.titel|default:"" }} · {{ z.von|date:"d.m.Y" }} bis {{ z.bis|date:"d.m.Y" }} · nur Summen
+    ohne Personenbezug; je Abschnitt auch als Tabelle und CSV.</p>
   <form method="get" action="{% url 'statistik:jahresbericht' %}" class="filter" target="_blank">
     <label for="jahr">Jahresbericht (PDF)</label>
     <select name="jahr" id="jahr">{% for j in jahre %}<option value="{{ j }}">{{ j }}</option>{% endfor %}</select>
@@ -34,10 +33,17 @@
     <div class="kachel"><span class="kachel-titel">{{ titel }}</span><span class="kachel-wert">{{ wert }}</span><span class="kachel-unter">{{ unter }}</span></div>
     {% endfor %}
   </div>
+  {% if abschnitte %}
+  <nav class="statistik-sprung" aria-label="Abschnitte">
+    {% for a in abschnitte %}<a href="#{{ a.id }}">{{ a.titel }}</a>{% endfor %}
+  </nav>
+  {% endif %}
 </section>
 
+{# Abschnitte nebeneinander, Diagramme höchstens in ihrer eigentlichen Größe (640 Pixel) #}
+<div class="statistik-raster">
 {% for a in abschnitte %}
-<section class="karte breit statistik-abschnitt" id="{{ a.id }}">
+<section class="karte statistik-abschnitt" id="{{ a.id }}">
   <div class="liste-kopf">
     <h2>{{ a.titel }}</h2>
     <a class="link-klein" href="?{% if abfrage %}{{ abfrage }}&amp;{% endif %}csv={{ a.id }}">CSV</a>
@@ -60,4 +66,5 @@
   {% endif %}
 </section>
 {% endfor %}
+</div>
 {% endblock %}
