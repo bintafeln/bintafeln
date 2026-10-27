@@ -10,6 +10,7 @@
   {% include "includes/app_symbol.html" %}
   <script src="{% static 'js/htmx.min.js' %}" defer></script>
   <script src="{% static 'js/kopfzeile.js' %}" defer></script>
+  <script src="{% static 'js/sofort.js' %}" defer></script>
   {% if menue %}<script src="{% static 'js/menue_einfahren.js' %}"></script>{% endif %}
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'{% if menue %} class="mit-menue"{% endif %}>

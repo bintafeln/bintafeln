@@ -250,3 +250,26 @@ def test_menue_einfahren_und_ausfahren(angemeldet, admin):
     expect(menue).to_be_visible()
     seite.goto("/")
     expect(menue).to_be_visible()
+
+
+def test_liste_zeigt_kriterium_sofort(angemeldet, admin):
+    """Listen: Ein gewähltes Kriterium zeigt das Ergebnis ohne „Anzeigen“; die Spaltenwahl nicht."""
+    from apps.core.models import TafelEinstellungen
+
+    t = TafelEinstellungen.laden()
+    t.module = ["listen"]
+    t.save()
+    _haushalte(2)
+    Haushalt.objects.filter(kundennummer="00042").update(status="pausiert")
+    seite = angemeldet(admin)
+    seite.goto("/listen/kunden_stelle/")
+    expect(seite.locator("tbody input[name=id]")).to_have_count(1)  # Vorgabe: aktiv
+    with seite.expect_navigation():
+        seite.select_option("#f-status", "")
+    expect(seite.locator("tbody input[name=id]")).to_have_count(2)
+    assert "status=&" in seite.url or seite.url.endswith("status=")
+    seite.click(".spalten-wahl summary")
+    adresse = seite.url
+    seite.locator(".spalten-haken input").first.uncheck()
+    seite.wait_for_timeout(300)
+    assert seite.url == adresse  # Spalten warten auf „Anzeigen“

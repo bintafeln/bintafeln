@@ -9,7 +9,7 @@
       {% for s, label, n in status_zahlen %}{% if n %}<a href="?status={{ s }}"{% if f.status == s %} aria-current="page"{% endif %}>{{ label }} ({{ n }})</a>{% endif %}{% endfor %}
     </nav>
   </div>
-  <form method="get" class="filter liste-filter">
+  <form method="get" class="filter liste-filter" data-sofort>
     <input type="hidden" name="status" value="{{ f.status }}">
     <input type="hidden" name="sort" value="{{ f.sort }}">
     <label for="art">Art</label>
@@ -27,7 +27,7 @@
       <option value="nur"{% if f.staat_modus == "nur" %} selected{% endif %}>nur …</option>
       <option value="nicht"{% if f.staat_modus == "nicht" %} selected{% endif %}>nicht …</option>
     </select>
-    <select name="staat" multiple size="3" aria-label="Staatsangehörigkeiten">{% for s in staaten %}<option value="{{ s }}"{% if s in f.staaten %} selected{% endif %}>{{ s }}</option>{% endfor %}</select>
+    <select name="staat" multiple size="3" data-nicht-sofort aria-label="Staatsangehörigkeiten">{% for s in staaten %}<option value="{{ s }}"{% if s in f.staaten %} selected{% endif %}>{{ s }}</option>{% endfor %}</select>
     <label for="suche" class="unsichtbar">Suche</label>
     <input type="search" name="suche" id="suche" value="{{ f.suche }}" placeholder="Name, Nummer, E-Mail, Telefon …" class="suche">
     <button type="submit" class="knopf">Filtern</button>

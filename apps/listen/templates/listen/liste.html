@@ -9,7 +9,7 @@
   </div>
   <p class="hinweis titel-text">{{ liste.beschreibung }}</p>
 
-  <form method="get" class="listen-filter">
+  <form method="get" class="listen-filter" data-sofort>
     <input type="hidden" name="geladen" value="1">
     <div class="formular-raster listen-felder">
       {% if "stelle" in liste.filter %}<div class="feld"><label for="f-stelle">Ausgabestelle</label>
@@ -47,7 +47,7 @@
     </div>
     <div class="listen-fuss">
       <label class="listen-haken"><input type="checkbox" name="summen" value="1"{% if summen %} checked{% endif %}> nur Anzahl und Summen je Gruppe</label>
-      <details class="spalten-wahl"><summary>Spalten wählen</summary>
+      <details class="spalten-wahl" data-nicht-sofort><summary>Spalten wählen</summary>
         <div class="spalten-haken">{% for k, t, an in spalten_wahl %}<label><input type="checkbox" name="s" value="{{ k }}"{% if an %} checked{% endif %}> {{ t }}</label>{% endfor %}</div>
       </details>
       {% if p.sort %}<input type="hidden" name="sort" value="{{ p.sort }}">{% endif %}

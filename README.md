@@ -872,6 +872,9 @@ Jede Ausgabestelle macht ihre Monatsabrechnung in bintafeln (ADR 0060), Menü �
 Zuschaltbares Modul „Listen“ (ADR 0063): fertige Listen zum Kundenstamm, jede mit Filtern,
 wählbaren und sortierbaren Spalten, Gliederung mit Anzahl und Summen, Auswahlkästchen je Zeile
 und Ausgabe als CSV (Excel) oder PDF (Auswahl oder alles; jeder Export im Zugriffsprotokoll).
+Ein geändertes Kriterium zeigt die Liste sofort an (`data-sofort`, `static/js/sofort.js`; ebenso
+Statistik, Kasse, Zugriffsprotokoll, Warteliste, Wochenübersicht); nur die Spaltenwahl wartet
+auf „Anzeigen“.
 „Letzter Besuch“ steht mit Uhrzeit da (z. B. 24.10.2026 15:52), sofern die Abholung eine hat.
 Die Kundenlisten lassen sich auch nach dem Ausgabetag filtern (Wochentage der Kundengruppe); die
 Auswahl erscheint wie in der Kundenliste nur, wenn an mindestens zwei Tagen ausgegeben wird.

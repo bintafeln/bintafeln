@@ -5,7 +5,7 @@
 <section class="karte breit">
   <h1>Statistik</h1>
   <div class="statistik-kopf">
-  <form method="get" class="filter-kompakt">
+  <form method="get" class="filter-kompakt" data-sofort>
     <div class="filter-feld"><label for="zeitraum">Zeitraum</label>
       <select name="zeitraum" id="zeitraum">
         {% for schluessel, v in vorgaben.items %}<option value="{{ schluessel }}"{% if wahl == schluessel %} selected{% endif %}>{{ v.titel }}</option>{% endfor %}
