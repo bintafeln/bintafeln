@@ -886,3 +886,26 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 .listen-gruppe th { background: var(--grund); text-align: left; }
 .listen-summe td { font-weight: 600; border-top: 1px solid var(--rand); }
 .tabelle .auswahl { width: 2rem; text-align: center; }
+
+/* Kompakte Filter über Listen (Kundenliste, Modul Listen): kleine Beschriftung, flache Felder */
+.titel-zeile { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .25rem 1rem; }
+.titel-zeile h1 { margin: 0 0 .35rem; font-size: 1.3rem; }
+.titel-text { margin: 0 0 .5rem; }
+.filter-kompakt { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .4rem .6rem; margin-bottom: .6rem; }
+.filter-feld { display: flex; flex-direction: column; flex: 0 1 auto; min-width: 0; }
+.filter-feld.filter-suche { flex: 1 1 14rem; }
+.filter-feld label, .listen-filter .feld label { font-size: .78rem; font-weight: 600; color: var(--leise); margin-bottom: .1rem; }
+.filter-feld input, .filter-feld select,
+.listen-filter .feld input, .listen-filter .feld select {
+  font: inherit; font-size: .92rem; padding: .25rem .45rem; min-height: 2rem;
+  border: 1px solid var(--rand); border-radius: var(--radius); width: 100%;
+}
+.filter-feld input:focus, .filter-feld select:focus { outline: 3px solid var(--fokus); border-color: var(--akzent); }
+.filter-kompakt .knopf, .listen-filter .knopf { min-height: 2rem; padding: .3rem .9rem; font-size: .92rem; }
+.listen-filter .formular-raster.listen-felder { grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: 0 .6rem; margin-bottom: .1rem; }
+.listen-filter .listen-felder .feld { margin-bottom: .35rem; }
+.listen-filter .listen-haken, .listen-filter .feld-haken label { font-size: .88rem; font-weight: 600; }
+.listen-fuss { font-size: .9rem; gap: .35rem 1rem; }
+@media (max-width: 40rem) { .filter-feld { flex: 1 1 8rem; } }
+.liste-aktionen .knopf, .titel-zeile .knopf { min-height: 2rem; padding: .3rem .9rem; font-size: .92rem; }
+.liste-aktionen { gap: .4rem .75rem; }

@@ -191,7 +191,7 @@ def test_export_nur_mit_recht(admin, benutzer_mit_rolle, anmelden):
 def test_sortieren_und_blaettern(admin, daten, benutzer_mit_rolle, anmelden, monkeypatch):
     from apps.kunden import views
 
-    monkeypatch.setattr(views, "LISTE_JE_SEITE", 1)
+    monkeypatch.setattr(views, "KUNDENLISTE_JE_SEITE", 1)
     Haushalt.objects.filter(kundennummer="301").update(ausweis_gueltig_bis=dt.date(2027, 1, 1))
     Haushalt.objects.create(kundennummer="1001", kundengruppe=Kundengruppe.objects.first())
     b = benutzer_mit_rolle("berta", rollen.BUERO)

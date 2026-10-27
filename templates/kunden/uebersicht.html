@@ -3,40 +3,38 @@
 {% block titel %}Kunden{% endblock %}
 {% block inhalt %}
 <section class="karte">
-  <h1>Kunden</h1>
-  {% if eigene_stellen %}<p class="hinweis">Sie sehen nur Kunden {% if eigene_stellen|length == 1 %}der Ausgabestelle{% else %}der Ausgabestellen{% endif %}
-    {% for s in eigene_stellen %}„{{ s.name }}“{% if not forloop.last %}, {% endif %}{% endfor %}, der Sie zugeordnet sind.</p>{% endif %}
-  <div class="aktionen">
+  <div class="titel-zeile">
+    <h1>Kunden</h1>
     {% if "kunden.bearbeiten" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'kunden:haushalt_neu' %}">Neuer Haushalt</a>{% endif %}
   </div>
+  {% if eigene_stellen %}<p class="hinweis">Sie sehen nur Kunden {% if eigene_stellen|length == 1 %}der Ausgabestelle{% else %}der Ausgabestellen{% endif %}
+    {% for s in eigene_stellen %}„{{ s.name }}“{% if not forloop.last %}, {% endif %}{% endfor %}, der Sie zugeordnet sind.</p>{% endif %}
   {# Ohne hx-trigger "submit": Enter (auch vom Scanner) sendet normal und öffnet bei passender Kundennummer den Haushalt. #}
-  <form class="filter" method="get" action="{% url 'kunden:uebersicht' %}"
+  <form class="filter-kompakt" method="get" action="{% url 'kunden:uebersicht' %}"
         hx-get="{% url 'kunden:uebersicht' %}" hx-target="#kunden-liste" hx-push-url="true"
         hx-trigger="input changed delay:400ms from:#q, change from:select">
-    <label for="q">Suche</label>
-    <input type="search" name="q" id="q" value="{{ filter.q }}" autofocus autocomplete="off"
-           placeholder="Kundennummer oder Name" class="suche">
-    <label for="status">Status</label>
-    <select name="status" id="status">
-      <option value="">alle</option>
-      {% for wert, name in status_auswahl %}
-        <option value="{{ wert }}"{% if filter.status == wert %} selected{% endif %}>{{ name }}</option>
-      {% endfor %}
-    </select>
-    <label for="gruppe">Kundengruppe</label>
-    <select name="gruppe" id="gruppe">
-      <option value="">alle</option>
-      {% for g in gruppen %}
-        <option value="{{ g.pk }}"{% if filter.gruppe == g.pk|stringformat:"d" %} selected{% endif %}>{{ g.name }}</option>
-      {% endfor %}
-    </select>
-    {% if tage %}
-    <label for="tag">Ausgabetag</label>
-    <select name="tag" id="tag">
-      <option value="">alle Tage</option>
-      {% for t in tage %}<option value="{{ t }}"{% if filter.tag == t %} selected{% endif %}>{{ t }}</option>{% endfor %}
-    </select>
-    {% endif %}
+    <div class="filter-feld filter-suche"><label for="q">Suche</label>
+      <input type="search" name="q" id="q" value="{{ filter.q }}" autofocus autocomplete="off"
+             placeholder="Kundennummer oder Name"></div>
+    <div class="filter-feld"><label for="status">Status</label>
+      <select name="status" id="status">
+        <option value="">alle</option>
+        {% for wert, name in status_auswahl %}<option value="{{ wert }}"{% if filter.status == wert %} selected{% endif %}>{{ name }}</option>{% endfor %}
+      </select></div>
+    <div class="filter-feld"><label for="gruppe">Kundengruppe</label>
+      <select name="gruppe" id="gruppe">
+        <option value="">alle</option>
+        {% for g in gruppen %}<option value="{{ g.pk }}"{% if filter.gruppe == g.pk|stringformat:"d" %} selected{% endif %}>{{ g.name }}</option>{% endfor %}
+      </select></div>
+    {% if tage %}<div class="filter-feld"><label for="tag">Ausgabetag</label>
+      <select name="tag" id="tag">
+        <option value="">alle Tage</option>
+        {% for t in tage %}<option value="{{ t }}"{% if filter.tag == t %} selected{% endif %}>{{ t }}</option>{% endfor %}
+      </select></div>{% endif %}
+    <div class="filter-feld"><label for="anzahl">Anzeigen</label>
+      <select name="anzahl" id="anzahl">
+        {% for a in anzahl_wahl %}<option value="{% if not forloop.first %}{{ a }}{% endif %}"{% if filter.anzahl == a or forloop.first and not filter.anzahl %} selected{% endif %}>{% if a == "alle" %}alle{% else %}{{ a }} je Seite{% endif %}</option>{% endfor %}
+      </select></div>
     <button type="submit" class="knopf">Suchen</button>
   </form>
   {% if fremd_nummer %}{% include "kunden/_nachricht.html" with nummer=fremd_nummer zurueck=request.get_full_path %}{% endif %}

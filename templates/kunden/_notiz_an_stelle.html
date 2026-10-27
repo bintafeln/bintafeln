@@ -1,4 +1,4 @@
-{# Eine Notiz der Verwaltung an die Ausgabestelle, mit „gelesen“ (Startseite und Sammelseite) #}
+{% load notiz %}{# Eine Notiz der Verwaltung an die Ausgabestelle, mit „gelesen“ (Startseite und Sammelseite) #}
 <div class="notiz notiz-an-stelle">
   <div class="notiz-kopf">
     <span><a href="{% url 'ausgabe:empfang' %}?nummer={{ n.kundennummer|urlencode }}">Kunde {{ n.kundennummer }}</a> · {{ n.erstellt_am|date:"d.m.Y H:i" }}{% if n.verfasst_von %} · {{ n.verfasst_von }}{% endif %}</span>
@@ -7,5 +7,5 @@
       <button type="submit" class="link-knopf">✓ gelesen</button>
     </form>
   </div>
-  <p class="notiz-text">{{ n.text|linebreaksbr }}</p>
+  <p class="notiz-text">{{ n.text|notiz_text }}</p>
 </div>

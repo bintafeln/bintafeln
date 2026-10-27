@@ -305,6 +305,8 @@ def leiste(request):
             "stelle_waehlen": rollen.hat_recht(request.user, "einlass.nutzen"),
         })  # fmt: skip
     heute = timezone.localdate()
+    if not ablauf.gruppen_heute(stelle, heute):
+        return HttpResponse("")  # heute keine Ausgabe an dieser Stelle: kein Kasten
     fehler = ""
     if request.method == "POST" and request.POST.get("aktion") in AKTIONEN:
         try:
@@ -318,7 +320,6 @@ def leiste(request):
         d["current_slot"] = tag.stand["gruppen"][tag.stand["index"]]["name"]  # ohne Uhrzeit
     return render(request, "aufruf/_leiste.html", {
         "stelle": stelle, "d": d, "anzahl": e.anzahl, "fehler": fehler,
-        "gruppen_heute": "error" in d and bool(ablauf.gruppen_heute(stelle, heute)),
         "steuerung": reverse("aufruf:steuerung", args=[stelle.pk]),
     })  # fmt: skip
 

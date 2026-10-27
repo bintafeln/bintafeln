@@ -1,4 +1,4 @@
-<section class="karte notizen">
+{% load notiz %}<section class="karte notizen">
   <h2>Notizen</h2>
   {% for n in notizen %}
     <div class="notiz">
@@ -16,7 +16,7 @@
         </form>
         {% endif %}
       </div>
-      <p class="notiz-text">{{ n.text|linebreaksbr }}</p>
+      <p class="notiz-text">{{ n.text|notiz_text }}</p>
       {% if n.an_stelle %}<p class="notiz-an"><small>An die Ausgabestelle · {% if n.gelesen_am %}gelesen {{ n.gelesen_am|date:"d.m.Y H:i" }}{% if n.gelesen_von %} von {{ n.gelesen_von }}{% endif %}{% else %}noch nicht gelesen{% endif %}</small></p>{% endif %}
     </div>
   {% empty %}

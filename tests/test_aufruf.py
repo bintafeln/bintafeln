@@ -678,8 +678,12 @@ def test_leiste_fehler_und_ohne_stelle(modul_an, mitte, benutzer_mit_rolle, anme
     seite = c.get(url).content.decode()  # keine Stelle gewählt: nur der Weg zur Steuerung
     assert reverse("aufruf:start") in seite and "Bitte eintreten" not in seite
     konto.ausgabestellen.set([mitte])
+    # Heute keine Ausgabe an der Stelle: kein Kasten, auch nach „Ausgabe beendet“
+    assert c.post(url, {"aktion": "weiter"}).content == b""
+    Kundengruppe.objects.create(name="Täglich", ausgabestelle=mitte,
+                                wochentage="Mo, Di, Mi, Do, Fr, Sa, So")  # fmt: skip
     seite = c.post(url, {"aktion": "weiter"}).content.decode()  # nicht gestartet
-    assert 'role="alert"' in seite and "Aufruf starten" not in seite  # heute keine Gruppen
+    assert 'role="alert"' in seite and "Aufruf starten" in seite
     t = TafelEinstellungen.laden()
     t.module = []
     t.save()

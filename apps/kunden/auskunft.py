@@ -11,6 +11,7 @@ from reportlab.lib.units import mm
 from apps.ausgabe.konto import euro
 from apps.ausgabe.models import Teilnahme
 from apps.core.pdf import Pdf
+from apps.core.templatetags.notiz import ohne_auszeichnung
 from apps.kunden import gruppen
 from apps.kunden.models import (
     Haushalt,
@@ -115,8 +116,8 @@ def kunde_pdf(h: Haushalt) -> bytes:
     doc.ueberschrift("Notizen")
     doc.tabelle(
         ["Datum", "Text", "Von"],
-        [[_datum(timezone.localtime(n.erstellt_am).date()), n.text, n.verfasst_von]
-         for n in Notiz.objects.filter(kundennummer=h.kundennummer)],
+        [[_datum(timezone.localtime(n.erstellt_am).date()), ohne_auszeichnung(n.text),
+          n.verfasst_von] for n in Notiz.objects.filter(kundennummer=h.kundennummer)],
         breiten=[0.14, 0.66, 0.2],
     )  # fmt: skip
 
