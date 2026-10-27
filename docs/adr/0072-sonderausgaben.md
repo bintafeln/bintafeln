@@ -23,7 +23,8 @@ Kunden auf „heute nicht dran“, der Zähler oben rechts und der Aufruf passte
   mit eingestelltem Wochentag) und der Start-Ausgabetag der Kundenliste fragen dort.
 - Die Ampel meldet Nichtgewählte mit eigener, anpassbarer Meldung („nicht_dran_sonder“). Für
   ausdrücklich gewählte Gruppen anderer Ausgabestellen entfällt der Hinweis „andere
-  Ausgabestelle“. Der Einlass zeigt oben „Heute Sonderausgabe“ mit der Auswahl.
+  Ausgabestelle“. Ein eigener Hinweis oben am Einlass ist wieder
+  entfallen (2026-10): Er schob auf dem Handy die Ampel aus dem Bild.
 
 ## Begründung
 

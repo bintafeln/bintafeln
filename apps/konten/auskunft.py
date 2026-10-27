@@ -147,6 +147,10 @@ def mitarbeiter_pdf(b) -> bytes:
         ],
     )
 
+    from apps.core import module
+
+    module.auskunft_mitarbeiter(b, doc)  # z. B. Fahrdienst (ADR 0049)
+
     jahre = PersonalEinstellungen.laden().stammdaten_loeschen_jahre
     doc.ueberschrift("Hinweise")
     for satz in [

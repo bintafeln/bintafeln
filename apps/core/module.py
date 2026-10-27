@@ -50,6 +50,9 @@ class Modul:
     # Auskunft nach Art. 15 zu einem Antrag: auskunft_antrag(antrag, pdf) schreibt eigene
     # Abschnitte. Läuft auch bei ausgeschaltetem Modul (die Daten sind ja gespeichert).
     auskunft_antrag: Callable | None = None
+    # Auskunft nach Art. 15 zu Mitarbeitenden: auskunft_mitarbeiter(benutzer, pdf); läuft auch
+    # bei ausgeschaltetem Modul.
+    auskunft_mitarbeiter: Callable | None = None
     # Fristen und Automatik (z. B. Status nach Tagen, Löschfristen); läuft wie die Fristen der
     # übrigen Apps beim Aufruf der Startseite, nur bei eingeschaltetem Modul. Aufruf ohne Argumente.
     fristen: Callable | None = None
@@ -98,6 +101,12 @@ def auskunft_antrag(antrag, pdf) -> None:
     for m in alle():
         if m.auskunft_antrag:
             m.auskunft_antrag(antrag, pdf)
+
+
+def auskunft_mitarbeiter(benutzer, pdf) -> None:
+    for m in alle():
+        if m.auskunft_mitarbeiter:
+            m.auskunft_mitarbeiter(benutzer, pdf)
 
 
 def fristen_anwenden() -> None:

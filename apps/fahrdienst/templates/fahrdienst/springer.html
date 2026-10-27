@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block titel %}Springer{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'fahrdienst:einstellungen' %}">← Fahrdienst einstellen</a></p>
+  <h1>{% if springer %}Springer: {{ springer }}{% else %}Springer hinzufügen{% endif %}</h1>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+  {% if springer %}
+  <form method="post" action="{% url 'fahrdienst:springer_loeschen' springer.pk %}" class="abseits" onsubmit="return confirm('„{{ springer|escapejs }}“ wirklich als Springer löschen?')">
+    {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Kein Springer mehr</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

@@ -263,11 +263,15 @@ def menue(request) -> list[dict]:
         )
     from apps.core import papierkorb
 
-    # Nur, wer etwas darin sehen darf (gleiches Recht wie beim Löschen, ADR 0073)
-    if anzahl := papierkorb.sichtbar(b).count():
+    # Nur, wer etwas darin sehen darf (gleiches Recht wie beim Löschen, ADR 0073); die Zahl
+    # zählt nur, was seit dem letzten Blick in den Papierkorb neu dazugekommen ist
+    sichtbar = papierkorb.sichtbar(b)
+    if sichtbar.exists():
+        gesehen = b.papierkorb_gesehen_am
+        neu = sichtbar.filter(geloescht_am__gt=gesehen).count() if gesehen else sichtbar.count()
         korb = _eintrag("Papierkorb", "core:papierkorb")
-        korb.update(zahl=anzahl, zahl_titel="Einträge im Papierkorb")
-        bereiche.append({"titel": "Papierkorb", "eintraege": [korb], "zahl": anzahl,
+        korb.update(zahl=neu or None, zahl_titel="neu im Papierkorb")
+        bereiche.append({"titel": "Papierkorb", "eintraege": [korb], "zahl": neu or None,
                          "zahl_titel": korb["zahl_titel"]})  # fmt: skip
     bereiche.append({"titel": "Hilfe", "eintraege": [_eintrag("Hilfe", "core:hilfe")]})
     # „Mein Konto“ öffnet der eigene Name oben rechts

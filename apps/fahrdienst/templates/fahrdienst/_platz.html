@@ -1,0 +1,9 @@
+{# Ein Platz im Fahrerplan: gelb = fällt aus, rot = offen, grün = Ersatz #}
+{% with wer=p.wer %}
+{% if planen %}<a class="fd-platz fd-{{ p.status }}" href="{% url 'fahrdienst:platz' p.datum|date:'Y-m-d' p.tour.pk p.platz %}" title="{{ p.name }}{% if p.ausfall %}: fällt aus ({{ p.ausfall.get_grund_display }}){% endif %}">{% else %}<span class="fd-platz fd-{{ p.status }}"{% if p.ausfall %} title="fällt aus"{% endif %}>{% endif %}
+{% if p.ersatz and p.stamm %}<s class="fd-weg">{{ p.stamm.get_full_name|default:p.stamm.username }}</s> {% endif %}
+{% if p.status == "offen" %}<s>{{ wer.get_full_name|default:wer.username }}</s> <strong>offen</strong>
+{% elif wer %}{{ wer.get_full_name|default:wer.username }}
+{% else %}<span class="leise">–</span>{% endif %}
+{% if planen %}</a>{% else %}</span>{% endif %}
+{% endwith %}

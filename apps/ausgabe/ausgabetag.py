@@ -7,6 +7,7 @@ fragen nur hier nach.
 """
 
 import datetime as dt
+import re
 
 from apps.ausgabe.ampel import WOCHENTAGE, wochentage
 from apps.ausgabe.models import Sonderausgabe
@@ -17,6 +18,24 @@ def sonderausgabe(stelle, datum: dt.date) -> Sonderausgabe | None:
     if stelle is None:
         return None
     return Sonderausgabe.objects.filter(ausgabestelle=stelle, datum=datum).first()
+
+
+ZEIT_IM_NAMEN = re.compile(r"(?<!\d)([01]?\d|2[0-3])[:.]([0-5]\d)(?!\d)")
+
+
+def beginn(g: Kundengruppe) -> dt.time | None:
+    """Wann die Gruppe beginnt: die Uhrzeit, sonst die erste Zeit im Namen
+    („Zentrale 13:00-14:00“)."""
+    if g.uhrzeit is not None:
+        return g.uhrzeit
+    treffer = ZEIT_IM_NAMEN.search(f"{g.name} {g.kuerzel}")
+    return dt.time(int(treffer[1]), int(treffer[2])) if treffer else None
+
+
+def reihenfolge(g: Kundengruppe):
+    """Sortierschlüssel: nach Beginn (ohne Zeit ans Ende), dann nach Name."""
+    zeit = beginn(g)
+    return (zeit is None, zeit or dt.time(), g.name)
 
 
 def _nach_tag(stelle, kuerzel: str) -> list[Kundengruppe]:
@@ -32,7 +51,7 @@ def gruppen_am(stelle, datum: dt.date) -> list[Kundengruppe]:
     else:
         gruppen = _nach_tag(stelle, s.wie_wochentag) if s.wie_wochentag else []
         gruppen += [g for g in s.kundengruppen.filter(aktiv=True) if g not in gruppen]
-    return sorted(gruppen, key=lambda g: (g.uhrzeit is None, g.uhrzeit or dt.time(), g.name))
+    return sorted(gruppen, key=reihenfolge)
 
 
 def dran(gruppe: Kundengruppe, datum: dt.date, stelle=None) -> tuple[bool, Sonderausgabe | None]:

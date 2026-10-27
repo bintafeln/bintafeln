@@ -736,8 +736,9 @@ Unter „Einstellungen → Ausgabe, Ampel und Beiträge“:
   Gewählt werden ein Wochentag (alle Kundengruppen der Stelle mit diesem Ausgabetag) und/oder
   einzelne Kundengruppen, auch mehrere und auch von anderen Ausgabestellen. An dem Tag sind genau
   diese Kunden dran, die regulären des Tages nicht: Ampel, Zähler oben rechts, Aufruf und
-  Kundenliste richten sich danach (`apps/ausgabe/ausgabetag.py`), der Einlass zeigt oben
-  „Heute Sonderausgabe“.
+  Kundenliste richten sich danach (`apps/ausgabe/ausgabetag.py`); am Einlass nennt die Ampel
+  bei nicht gewählten Kunden die Sonderausgabe als Grund (ein eigener Hinweis oben entfällt,
+  damit auf dem Handy die Ampel gleich zu sehen ist).
 
 ### Korrekturwünsche
 
@@ -786,7 +787,9 @@ Ruft die Kundinnen und Kunden im Wartebereich der Reihe nach auf (ADR 0050). Die
 kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
 
 - **Reihenfolge:** alle aktiven Haushalte der Kundengruppen, die heute an der Ausgabestelle dran
-  sind, Gruppe für Gruppe nach Uhrzeit, in der Gruppe zufällig gemischt. Haushalte mit Vorrang
+  sind, Gruppe für Gruppe nach Uhrzeit (fehlt sie, zählt die erste Zeit im Namen, z. B.
+  „Zentrale 13:00-13:30“; noch nicht begonnene Gruppen ordnen sich beim Abgleich neu), in der
+  Gruppe zufällig gemischt. Haushalte mit Vorrang
   (ein Ja/Nein-Zusatzfeld, z. B. „Schwerbehindert“) zuerst.
 - **Immer aktuell:** Neue Haushalte werden während des Tages fair einsortiert, entfernte fallen
   heraus. Wer heute schon am Einlass war (Abholung gebucht, z. B. mit Ausnahme vorgezogen),
@@ -908,6 +911,31 @@ Auswahl erscheint wie in der Kundenliste nur, wenn an mindestens zwei Tagen ausg
 - **Eigene Listen** speichern die Einstellungen unter einem Titel (privat oder für alle).
 - Rechte „Listen ansehen, drucken und exportieren“ (Vorgabe Büro und Ausgabe) und „Eigene Listen
   für alle speichern“ (Büro). Neue Listen sind ein Eintrag in `apps/listen/katalog.py`.
+
+### Fahrdienst
+
+Ersetzt den gedruckten Fahrerplan mit den gelben Aufklebern (ADR 0074).
+
+- **Fahrerplan** (Recht „Fahrerplan sehen“, Vorgabe Fahrer, Beifahrer, Büro): ein Monat, Zeilen
+  die Fahrtage, Spalten die Touren mit Fahrer und Beifahrern. Wer ausfällt, ist gelb markiert und
+  der Platz „offen“; ein Ersatz steht grün daneben.
+- **Feste Besetzung** je Tour und Wochentag unter „Einstellungen → Mitarbeitende → Fahrdienst:
+  Touren und Springer“ (Recht „Fahrdienst planen“, Vorgabe Büro); daraus entsteht jede Woche der
+  Plan. Dazu Springer (auf jeder Tour, auf Wunsch nur an bestimmten Tagen), Fahrtage, Feiertage.
+- **Ausfall melden:** „Meine Einsätze → Ich kann nicht“ (wenn die Tafel Selbstmelden erlaubt)
+  oder durch die Fahrdienstleitung; Zeitraum und Grund (krank, Urlaub, Sonstiges). Den Grund
+  sieht nur, wer plant. Die eingestellten Personen (sonst alle, die planen) bekommen eine E-Mail
+  mit den betroffenen Einsätzen und den freien Springern.
+- **Ersatz eintragen:** im Plan auf den Namen tippen; zur Wahl stehen die an dem Tag freien
+  Springer, dann weitere freie Fahrer und Beifahrer.
+- Ausfälle und Ersatz werden nach 12 Monaten gelöscht (einstellbar) und stehen in der Auskunft
+  für Mitarbeitende.
+- **Drucken:** „Drucken (PDF)“ im Fahrerplan, A3 quer wie der bisherige Papierplan, Springer darunter.
+- **Telegram** (zusätzlich zur E-Mail): Bot-Schlüssel von @BotFather in den Einstellungen des
+  Fahrdienstes (verschlüsselt gespeichert), Empfänger schreiben dem Bot „/start“, „Chats suchen“
+  zeigt ihre Chat-IDs, „Testnachricht senden“ prüft. Telegram bekommt nie den Grund eines
+  Ausfalls. WhatsApp geht nur über die kostenpflichtige WhatsApp-Business-Plattform von Meta
+  (Firmenkonto, vorab genehmigte Nachrichtenvorlagen) und ist deshalb nicht eingebaut.
 
 ### Links auf der Startseite
 
@@ -1104,7 +1132,8 @@ Mitarbeitenden, Arbeitsverträge, Abwesenheiten, Stunden, Zeitbuchungen, Sondera
 Daten der Module (Selbstabholer, Links, Termine der Warteliste, eigene Listen, Serienbrief-Vorlagen).
 
 - Der Menüpunkt „Papierkorb“ erscheint, sobald etwas darin liegt, das man sehen darf: gleiches
-  Recht wie zum Löschen, bei Kundendaten auch nur die eigenen Ausgabestellen.
+  Recht wie zum Löschen, bei Kundendaten auch nur die eigenen Ausgabestellen. Die Zahl daneben
+  zählt nur, was seit dem letzten Öffnen des Papierkorbs neu dazugekommen ist.
 - **Wiederherstellen** legt alles mit denselben Nummern wieder an, Kontobuchungen hängen danach
   wieder am Haushalt. Ist die Kundennummer inzwischen neu vergeben oder fehlt etwas (z. B. die
   Kundengruppe), ändert sich nichts und es gibt eine Meldung. Eine Rolle stellt nur wieder her, wer

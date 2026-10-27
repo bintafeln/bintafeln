@@ -196,10 +196,13 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.4) !important;
         }
 
-        /* Am Kiosk gemeldet: grün, sonst dunkelrot (weiße Plakette, auch auf dem grünen Knopf lesbar) */
-        .nr { display: inline-block; background: #fff; border-radius: 6px; padding: 0 .25em; text-shadow: none; }
-        .nr-da { color: #1b6e34; }
-        .nr-fehlt { color: #8b1a1a; }
+        /* Am Kiosk gemeldet: grün, sonst rot – nur die Zahl, ohne Hinterlegung. Hell genug für den
+           dunklen Hintergrund; der Knopf wird dafür dunkel, sonst wäre Grün auf Grün nicht lesbar. */
+        .nr { font-weight: 800; }
+        .nr-da { color: #8ef0a8; }
+        .nr-fehlt { color: #ff9d94; }
+        .btn-next.mit-kiosk { background: linear-gradient(135deg, #2c3e50, #34495e); }
+        .btn-next.mit-kiosk:hover { background: linear-gradient(135deg, #34495e, #3d566e); }
 
         .btn-next-numbers {
             font-size: 2.1rem !important;
@@ -750,8 +753,10 @@
 
                 // Button-Text mit Kundennummern (eine pro Zeile)
                 btnNumbers.innerHTML = displayNumbers.join('<br>');
+                nextBtn.classList.toggle('mit-kiosk', !!kioskDa);
             } else {
-                btnNumbers.textContent = 'Keine Nummern';
+                // Alle Aufgerufenen schon am Einlass: Gruppe läuft weiter
+                btnNumbers.textContent = data.alle_eingelassen ? 'Alle schon da – weiter' : 'Keine Nummern';
             }
             btnMainText.textContent = 'Aktuelle Kunden';
             nextBtn.disabled = false;

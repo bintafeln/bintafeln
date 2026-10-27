@@ -249,7 +249,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   (ADR 0060, Regeln in `apps/abrechnung/ablauf.py`, Einnahmen aus der Kasse, beim Einreichen
   festgehalten; Quittungen über `privatdateien`). `listen` (ADR 0063, Katalog in
   `apps/listen/katalog.py`, Spalten mit Recht in `spalten.py`, Rechnen in `abfrage.py`). `links`
-  (ADR 0057, Kacheln auf der Startseite, Sichtbarkeit über ein Recht). Hooks `Modul.fristen`,
+  (ADR 0057, Kacheln auf der Startseite, Sichtbarkeit über ein Recht). `fahrdienst` (ADR 0074,
+  Regeln in `apps/fahrdienst/plan.py`, Plan aus fester Besetzung, Ausfall und Ersatz je Tag).
+  Hooks `Modul.fristen`, `Modul.auskunft_mitarbeiter`,
   `Modul.einlass`, `Modul.auskunft_antrag`, `Modul.kopfzeile`, `Modul.seitenleiste`, `Modul.suchen`,
   `Modul.startseite`. Programmname nur in
   `bintafeln/programm.py`; die Kopfzeile kürzt `static/js/kopfzeile.js` über `.kuerz-1…5`.

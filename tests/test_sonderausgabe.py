@@ -127,7 +127,7 @@ def test_einlass_hinweis_und_kundenliste(stellen, admin, admin_client):
     admin.save()
     sonder(mitte, datum=heute, tag="Do", anmerkung="Weihnachtsausgabe")
     seite = admin_client.get(reverse("ausgabe:empfang")).content.decode()
-    assert "Heute Sonderausgabe – Weihnachtsausgabe:</strong> Kunden vom Donnerstag" in seite
+    assert "Heute Sonderausgabe" not in seite  # kein eigener Hinweis mehr (Platz auf dem Handy)
     # Kundenliste startet mit dem Wochentag der Sonderausgabe
     antwort = admin_client.get(reverse("kunden:uebersicht"))
     assert antwort.context["filter"]["tag"] == "Do"

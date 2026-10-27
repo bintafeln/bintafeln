@@ -161,3 +161,5 @@ FESTE_MERKMALE = [
 # Nicht mehr angeboten; gespeicherte Nachrichten behalten ihren Namen (Liste oben).
 NACHRICHT_ANLIEGEN_ALT = {"zugehoerig"}
 NACHRICHT_ANLIEGEN_WAEHLBAR = [a for a in NACHRICHT_ANLIEGEN if a[0] not in NACHRICHT_ANLIEGEN_ALT]
+# Fahrdienst (ADR 0074): warum jemand nicht fahren kann. Den Grund sehen nur, wer plant.
+FAHRDIENST_AUSFALLGRUENDE = [("krank", "krank"), ("urlaub", "Urlaub"), ("sonstiges", "Sonstiges")]

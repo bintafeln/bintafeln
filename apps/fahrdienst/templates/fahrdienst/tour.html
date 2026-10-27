@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block titel %}{% if tour %}Tour {{ tour }}{% else %}Neue Tour{% endif %}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'fahrdienst:einstellungen' %}">← Fahrdienst einstellen</a></p>
+  <h1>{% if tour %}Tour {{ tour }}{% else %}Neue Tour{% endif %}</h1>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern und Besetzung festlegen</button>
+  </form>
+  {% if tour %}
+  <form method="post" action="{% url 'fahrdienst:tour_loeschen' tour.pk %}" class="abseits" onsubmit="return confirm('Tour „{{ tour.name|escapejs }}“ wirklich löschen? Sie kommt mit ihrer festen Besetzung in den Papierkorb.')">
+    {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Tour löschen</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}
