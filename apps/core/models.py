@@ -20,6 +20,14 @@ class TafelEinstellungen(models.Model):
         blank=True,
         help_text="PNG, JPG oder WebP, höchstens 2 MB. Das Logo ist öffentlich abrufbar.",
     )
+    app_symbol = models.ImageField(
+        "App-Symbol",
+        upload_to="oeffentlich/app/",
+        blank=True,
+        help_text="Quadratisches Bild für den Browser-Tab und den Startbildschirm von Handy und "
+        "Tablet (PNG, JPG oder WebP, höchstens 2 MB, am besten mindestens 512 × 512 Pixel). Leer = "
+        "das Symbol von bintafeln. Öffentlich abrufbar.",
+    )
     farbe = models.CharField(
         "Farbe",
         max_length=7,

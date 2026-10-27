@@ -7,6 +7,7 @@
   <title>{% block titel %}{% endblock %}{% if tafel.name %} – {{ tafel.name }}{% else %} – {{ programm.name }}{% endif %}</title>
   <link rel="stylesheet" href="{% static 'css/bintafeln.css' %}">
   {% include "includes/farben.html" %}
+  {% include "includes/app_symbol.html" %}
   <script src="{% static 'js/htmx.min.js' %}" defer></script>
   <script src="{% static 'js/kopfzeile.js' %}" defer></script>
 </head>

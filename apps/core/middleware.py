@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import redirect
 
-FREIE_PFADE = ("/einrichtung/", "/static/", "/media/", "/healthz/")
+FREIE_PFADE = ("/einrichtung/", "/static/", "/media/", "/healthz/", "/app/")
 
 
 def admin_existiert() -> bool:

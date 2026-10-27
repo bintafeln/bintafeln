@@ -28,6 +28,8 @@ OEFFENTLICH = {
     "konten:passwort_setzen",  # Link aus der Mail, prüft das Token
     "core:einrichtung",  # nur solange es keinen Admin gibt
     "core:healthz",
+    "core:app_symbol",  # Symbol im Browser-Tab, auch auf der Anmeldeseite
+    "core:manifest",
     "antrag:start",  # Online-Antrag (ADR 0024)
     "antrag:formular",
     "antrag:danke",

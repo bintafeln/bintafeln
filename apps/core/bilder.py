@@ -38,6 +38,42 @@ def verkleinern(datei, kante: int, *, transparenz: bool = False) -> ContentFile 
     return ContentFile(puffer.getvalue(), name=f"{name}.jpg")
 
 
+# --- App-Symbol (Browser-Tab, Startbildschirm) ------------------------------------------------
+
+SYMBOL_KANTE = 512
+SYMBOL_GROESSEN = (32, 180, 192, 512)  # Tab, iPhone/iPad, Android/Manifest
+
+
+def app_symbol(datei) -> ContentFile | None:
+    """Quadratisches PNG (512 × 512): Bild mittig, freier Rand durchsichtig. None, wenn das Bild
+    nicht lesbar ist."""
+    try:
+        datei.seek(0)
+        bild = ImageOps.exif_transpose(Image.open(datei)).convert("RGBA")
+    except (OSError, ValueError, Image.DecompressionBombError):
+        return None
+    bild.thumbnail((SYMBOL_KANTE, SYMBOL_KANTE), Image.Resampling.LANCZOS)
+    quadrat = Image.new("RGBA", (SYMBOL_KANTE, SYMBOL_KANTE), (0, 0, 0, 0))
+    quadrat.paste(bild, ((SYMBOL_KANTE - bild.width) // 2, (SYMBOL_KANTE - bild.height) // 2))
+    puffer = io.BytesIO()
+    quadrat.save(puffer, "PNG", optimize=True)
+    return ContentFile(puffer.getvalue(), name="app-symbol.png")
+
+
+def symbol_in_groesse(datei, groesse: int) -> bytes:
+    """App-Symbol in einer der SYMBOL_GROESSEN als PNG. Für iPhone/iPad (180) auf weißem Grund,
+    weil iOS durchsichtige Ränder schwarz zeigt."""
+    datei.seek(0)
+    bild = Image.open(datei).convert("RGBA")
+    bild = bild.resize((groesse, groesse), Image.Resampling.LANCZOS)
+    if groesse == 180:
+        grund = Image.new("RGBA", bild.size, (255, 255, 255, 255))
+        bild = Image.alpha_composite(grund, bild).convert("RGB")
+    puffer = io.BytesIO()
+    bild.save(puffer, "PNG", optimize=True)
+    return puffer.getvalue()
+
+
 # --- Fotos in privaten Uploads (ADR 0064) ------------------------------------------------------
 
 FORMATE = {"image/jpeg": "JPEG", "image/png": "PNG", "image/webp": "WEBP"}
