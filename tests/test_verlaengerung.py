@@ -160,15 +160,15 @@ def test_sammelseite_verlaengert_und_schreibt_notiz(gemeldet, admin_client):
     assert Notiz.objects.filter(kundennummer="203", text=GEPRUEFT).exists()  # nicht gewählt
     texte = list(Notiz.objects.filter(kundennummer="202").values_list("text", flat=True))
     assert "Bringt nächste Woche den Bescheid" in texte
-    neu = next(t for t in texte if t.startswith("Ausweis kann nicht"))
+    neu = next(t for t in texte if t.startswith("Ausweis kann NICHT!"))
     # Ohne Haken nicht auf der Startseite der Ausgabestelle; Verlängerte bekommen keine Notiz
     assert not Notiz.objects.filter(an_stelle=True).exists()
     assert not Notiz.objects.filter(kundennummer="201").exclude(text=GEPRUEFT).exists()
     assert neu == (
-        "Ausweis kann nicht verlängert werden. Regel: jede Person im Haushalt erfüllt eine "
-        "Bedingung (ab 60 Jahren oder Schwerbehindert). Folgende Bedingung(en) werden nicht "
+        "Ausweis kann NICHT! verlängert werden. Es gilt die Regel: jede Person im Haushalt muss "
+        "eine Bedingung für die Verlängerung erfüllen. Folgende Bedingung(en) werden hier nicht "
         "erfüllt: Vera Probe1 (35 Jahre). Der Kunde muss ein Pausenjahr einlegen; der Ausweis "
-        "gilt noch bis 30.11.2026. Danach ist eine Neuanmeldung über den Antrag möglich."
+        "gilt noch bis 30.11.2026. Danach ist eine Neuanmeldung über unsere Homepage möglich."
     )
     assert unklar.ausweis_gueltig_bis == dt.date(2026, 11, 30)  # nicht gewählt
     offen = Nachricht.objects.filter(erledigt_am__isnull=True)
@@ -207,7 +207,7 @@ def test_gesperrt_notiz_ohne_pausenjahr(gemeldet, admin_client):
     Haushalt.objects.filter(kundennummer="201").update(status=Haushalt.Status.BEENDET)
     admin_client.post(VERLAENGERN, {"ablehnen": ["201"]})
     text = Notiz.objects.filter(kundennummer="201").first().text
-    assert text == "Ausweis kann nicht verlängert werden. Status „beendet“."
+    assert text == "Ausweis kann NICHT! verlängert werden. Status „beendet“."
 
 
 def test_monate_waehlbar(gemeldet, admin_client):
@@ -261,5 +261,16 @@ def test_notiz_knopf_meldet_der_verwaltung(admin, benutzer_mit_rolle, anmelden):
 def test_ablehnung_auf_wunsch_an_die_ausgabestelle(gemeldet, admin_client):
     admin_client.post(VERLAENGERN, {"ablehnen": ["202"], "an_stelle": "1"})
     assert Notiz.objects.get(kundennummer="202", an_stelle=True).text.startswith(
-        "Ausweis kann nicht verlängert werden"
+        "Ausweis kann NICHT! verlängert werden"
     )
+
+
+def test_ablehnung_text_eine_person_und_ein_jahr(regel):
+    """Regel „mindestens eine Person“; ein Kind mit 1 Jahr heißt „1 Jahr“."""
+    regel.verlaengern_regel = KundenEinstellungen.Verlaengern.EINE
+    regel.save()
+    h = haushalt("901", (35, None), (1, None))
+    p = ergebnis(h, regel)
+    text = verlaengerung.ablehnung_notiz(p, regel)
+    assert "Es gilt die Regel: mindestens eine Person im Haushalt muss eine Bedingung" in text
+    assert "Vera Probe0 (35 Jahre), Vera Probe1 (1 Jahr)" in text
