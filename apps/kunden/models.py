@@ -79,23 +79,25 @@ class KundenEinstellungen(models.Model):
     # Sammel-Verlängerung der Ausweise (ADR 0068)
     class Verlaengern(models.TextChoices):
         OHNE = "ohne", "ohne Bedingung (jeder Haushalt kann verlängern)"
-        ALLE = "alle", "jede Person im Haushalt erfüllt eine Bedingung"
-        EINE = "eine", "mindestens eine Person erfüllt eine Bedingung"
+        ALLE = "alle", "jede Person im Haushalt erfüllt mindestens eine Bedingung unten"
+        EINE = "eine", "mindestens eine Person erfüllt mindestens eine Bedingung unten"
 
     verlaengern_regel = models.CharField(
         "Verlängern nur, wenn", max_length=5, choices=Verlaengern.choices, default=Verlaengern.OHNE,
-        help_text="Bedingungen darunter. Wer sie nicht erfüllt, wird bei der Sammel-Verlängerung "
-        "nicht verlängert.",
+        help_text="Die Bedingungen unten sind „oder“-verknüpft: Alter ODER eines der angehakten "
+        "Merkmale genügt. Wer keine erfüllt, wird bei der Sammel-Verlängerung nicht verlängert.",
     )  # fmt: skip
     verlaengern_ab_alter = models.PositiveSmallIntegerField(
         "Bedingung: Alter ab", null=True, blank=True, default=60,
-        validators=[MaxValueValidator(120)], help_text="Leer = Alter zählt nicht.",
+        validators=[MaxValueValidator(120)],
+        help_text="Wer so alt ist, erfüllt die Bedingung. Leer = das Alter ist keine Bedingung.",
     )  # fmt: skip
     verlaengern_felder = models.ManyToManyField(
-        "Zusatzfeld", blank=True, related_name="+", verbose_name="Bedingung: Ja/Nein-Zusatzfelder",
-        limit_choices_to={"typ": "ja_nein"},
-        help_text="z. B. „Schwerbehindert“. Gilt das Feld für den Haushalt, zählt es für alle "
-        "Personen.",
+        "Zusatzfeld", blank=True, related_name="+",
+        verbose_name="oder Bedingung: Ja/Nein-Merkmale", limit_choices_to={"typ": "ja_nein"},
+        help_text="Wer eines der angehakten Merkmale hat (z. B. „Schwerbehindert“), erfüllt die "
+        "Bedingung auch ohne das Alter. Keins angehakt = nur das Alter zählt. Gilt das Merkmal "
+        "für den Haushalt, zählt es für alle Personen.",
     )  # fmt: skip
     verlaengern_einkommensarten = models.ManyToManyField(
         "Einkommensart", blank=True, related_name="+",

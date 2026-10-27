@@ -173,8 +173,8 @@ def test_sammelseite_verlaengert_und_schreibt_notiz(gemeldet, admin_client):
     seite = admin_client.get(VERLAENGERN).content.decode()
     assert "1 verlängerbar · 1 selbst prüfen · 1 nicht verlängerbar" in seite
     assert (
-        "Verlängern nur, wenn jede Person im Haushalt erfüllt eine Bedingung: ab 60 Jahren "
-        "oder Schwerbehindert." in seite
+        "Verlängert wird, wenn jede Person im Haushalt mindestens 60 Jahre alt ist oder "
+        "„Schwerbehindert“ hat. Eine dieser Bedingungen genügt je Person." in seite
     )
     assert 'name="wahl_201" value="verlaengern" checked' in seite
     assert 'name="wahl_203" value="verlaengern">' in seite  # unklar: nicht vorbelegt
@@ -368,3 +368,32 @@ def test_nur_anzeigen_mit_begruendung(gemeldet, admin_client):
     admin_client.post(VERLAENGERN, {"wahl_202": "ablehnen", "grund_202": "Einkommen zu hoch"})
     assert Notiz.objects.filter(kundennummer="202", text__contains="Einkommen zu hoch").exists()
     assert Haushalt.objects.get(kundennummer="202").status == Haushalt.Status.AKTIV
+
+
+def test_regel_als_satz(regel, admin_client):
+    """Die Regel steht als ganzer Satz da, damit „ab 60“ nicht wie die einzige Bedingung wirkt."""
+    from apps.kunden.models import Einkommensart
+
+    satz = verlaengerung.regel_satz
+    assert satz(regel) == ("Verlängert wird, wenn jede Person im Haushalt mindestens 60 Jahre alt "
+                           "ist oder „Schwerbehindert“ hat. Eine dieser Bedingungen genügt je "
+                           "Person.")  # fmt: skip
+    regel.verlaengern_felder.clear()  # Schwerbehindert nicht mehr als Bedingung
+    regel.verlaengern_regel = KundenEinstellungen.Verlaengern.EINE
+    regel.verlaengern_einkommensarten.set(
+        [
+            Einkommensart.objects.create(bezeichnung="Wohngeld"),
+            Einkommensart.objects.create(bezeichnung="Rente"),
+        ]
+    )
+    assert satz(regel) == ("Verlängert wird, wenn mindestens eine Person im Haushalt mindestens 60 "
+                           "Jahre alt ist. Zusätzlich muss der Haushalt eine dieser "
+                           "Einkommensarten haben: Rente oder Wohngeld.")  # fmt: skip
+    regel.verlaengern_ab_alter = None
+    assert satz(regel).startswith("Für die Personen ist keine Bedingung eingestellt.")
+    regel.verlaengern_regel = KundenEinstellungen.Verlaengern.OHNE
+    assert satz(regel) == "Ohne Bedingung: Jeder gemeldete Haushalt kann verlängert werden."
+    regel.save()
+    seite = admin_client.get(reverse("kunden:einstellungen")).content.decode()
+    assert 'id="verlaengern-regel" data-autosave-aktualisieren' in seite
+    assert "Ohne Bedingung: Jeder gemeldete Haushalt" in seite

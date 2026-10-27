@@ -61,5 +61,5 @@ def verlaengern(request):
         "anzahl": {k: sum(1 for p in liste if p.ergebnis == k)
                    for k in (verlaengerung.OK, verlaengerung.NEIN, verlaengerung.UNKLAR)},
         "bedingungen": verlaengerung.bedingungen_text(e),
-        "regel": e.get_verlaengern_regel_display(),
+        "regel": e.get_verlaengern_regel_display(), "regel_satz": verlaengerung.regel_satz(e),
     })  # fmt: skip

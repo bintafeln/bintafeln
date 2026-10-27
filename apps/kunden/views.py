@@ -19,7 +19,15 @@ from apps.ausgabe.models import AusgabeEinstellungen
 from apps.core import listenauswahl, papierkorb, sicherung
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
-from apps.kunden import an_stelle, export, gruppen, importieren, views_dokumente, zugang
+from apps.kunden import (
+    an_stelle,
+    export,
+    gruppen,
+    importieren,
+    verlaengerung,
+    views_dokumente,
+    zugang,
+)
 from apps.kunden import auskunft as kunden_auskunft
 from apps.kunden.ausweis import MAX_SAMMELDRUCK, ausweis_pdf, ausweise_pdf
 from apps.kunden.forms import KundenEinstellungenForm, ZusatzfeldForm
@@ -55,7 +63,11 @@ def einstellungen(request):
     return render(
         request,
         "kunden/einstellungen.html",
-        {"form": form, "zusatzfelder": Zusatzfeld.objects.all()},
+        {
+            "form": form,
+            "zusatzfelder": Zusatzfeld.objects.all(),
+            "regel_satz": verlaengerung.regel_satz(KundenEinstellungen.laden()),
+        },  # fmt: skip
     )
 
 

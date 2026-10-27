@@ -111,6 +111,31 @@ def bedingungen_text(e: KundenEinstellungen) -> str:
     return personen or "keine Bedingung eingestellt"
 
 
+def regel_satz(e: KundenEinstellungen) -> str:
+    """Die eingestellte Regel als ganzer Satz, z. B. „Verlängert wird, wenn jede Person im Haushalt
+    mindestens 60 Jahre alt ist oder „Schwerbehindert“ hat. Zusätzlich muss …“."""
+    if e.verlaengern_regel == KundenEinstellungen.Verlaengern.OHNE:
+        return "Ohne Bedingung: Jeder gemeldete Haushalt kann verlängert werden."
+    wer = ("mindestens eine Person im Haushalt" if e.verlaengern_regel == e.Verlaengern.EINE
+           else "jede Person im Haushalt")  # fmt: skip
+    teile = (
+        [f"mindestens {e.verlaengern_ab_alter} Jahre alt ist"]
+        if (e.verlaengern_ab_alter is not None)
+        else []
+    )
+    teile += [f"„{f.bezeichnung}“ hat" for f in e.verlaengern_felder.all()]
+    einkommen = einkommen_text(e)
+    if teile:
+        satz = f"Verlängert wird, wenn {wer} {' oder '.join(teile)}."
+        if len(teile) > 1:
+            satz += " Eine dieser Bedingungen genügt je Person."
+    else:
+        satz = "Für die Personen ist keine Bedingung eingestellt."
+    if einkommen:
+        satz += f" Zusätzlich muss der Haushalt eine dieser Einkommensarten haben: {einkommen}."
+    return satz
+
+
 def pause_text(monate: int) -> str:
     return "ein Pausenjahr" if monate == 12 else f"eine Pause von {monate} Monaten"
 

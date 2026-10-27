@@ -4,11 +4,13 @@
 <section class="karte">
   <h1>Einstellungen Kundenstamm</h1>
   <p class="hinweis">Abgeschaltete Angaben werden weder angezeigt noch beim Import gespeichert.</p>
-  <form method="post">
+  <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <button type="submit" class="knopf">Speichern</button>
   </form>
+  <p class="meldung abseits" id="verlaengern-regel" data-autosave-aktualisieren><strong>Ausweise verlängern – so wird geprüft:</strong>
+    {{ regel_satz }}</p>
 </section>
 
 <section class="karte">
