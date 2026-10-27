@@ -38,6 +38,13 @@ def _monat(text: str) -> dt.date:
         return timezone.localdate().replace(day=1)
 
 
+def _gewaehlt(daten) -> dt.date:
+    """Monat aus „?monat=JJJJ-MM“ oder aus der Auswahl Monat/Jahr auf der Planseite."""
+    if daten.get("jahr") and daten.get("m"):
+        return _monat(f"{daten['jahr']}-{daten['m']}")
+    return _monat(daten.get("monat"))
+
+
 def _verschieben(erster: dt.date, monate: int) -> dt.date:
     jahr, monat = divmod(erster.year * 12 + erster.month - 1 + monate, 12)
     return dt.date(jahr, monat + 1, 1)
@@ -46,13 +53,18 @@ def _verschieben(erster: dt.date, monate: int) -> dt.date:
 @never_cache
 @sehen
 def uebersicht(request):
-    """Der Fahrerplan eines Monats: Tage × Touren, Ausfälle gelb, offene Plätze rot."""
-    erster = _monat(request.GET.get("monat"))
+    """Der Fahrerplan eines Monats: Tage × Touren, Ausfälle gelb, offene Plätze rot. Jeder Monat
+    lässt sich jederzeit wieder öffnen und ändern: Er ergibt sich aus der festen Besetzung, dazu
+    Ausfälle und Ersatz je Tag."""
+    erster = _gewaehlt(request.GET)
+    jahr = timezone.localdate().year
     letzter = _verschieben(erster, 1) - dt.timedelta(days=1)
     tage = plan.tage(plan.fahrtage(erster, letzter))
     return render(request, "fahrdienst/plan.html", {
         "tage": tage, "touren": list(Tour.objects.filter(aktiv=True)),
         "titel": f"{MONATE[erster.month - 1]} {erster.year}", "monat": f"{erster:%Y-%m}",
+        "erster": erster, "monate": list(enumerate(MONATE, start=1)),
+        "jahre": range(min(jahr - 2, erster.year), max(jahr + 1, erster.year) + 1),
         "vorher": f"{_verschieben(erster, -1):%Y-%m}",
         "nachher": f"{_verschieben(erster, 1):%Y-%m}",
         "heute": timezone.localdate(),
@@ -101,7 +113,7 @@ def platz(request, datum, tour, nr):
     springer, weitere = plan.verfuegbar(tag)
     return render(request, "fahrdienst/platz.html", {
         "p": plan.platz(tag, t, nr), "springer": springer, "weitere": weitere,
-        "zurueck": zurueck, "wochentag": WOCHENTAGE[tag.weekday()],
+        "zurueck": zurueck, "wochentag": WOCHENTAGE[tag.weekday()], "monat": f"{tag:%Y-%m}",
     })  # fmt: skip
 
 
@@ -250,6 +262,10 @@ def besetzung(request, pk):
     tage = wochentage(FahrdienstEinstellungen.laden().fahrtage)
     personen = list(aktive())
     jetzt = {(b.wochentag, b.platz): b for b in t.besetzungen.all()}
+    # Vom Fahrerplan aus geöffnet: danach zurück zu diesem Monat
+    monat = request.GET.get("monat", "")
+    zurueck = (f"{reverse('fahrdienst:plan')}?monat={_monat(monat):%Y-%m}" if monat
+               else reverse("fahrdienst:einstellungen"))  # fmt: skip
     if request.method == "POST":
         gueltig = {str(p.pk): p for p in personen}
         for tag in tage:
@@ -263,11 +279,12 @@ def besetzung(request, pk):
                 elif not wahl and alt is not None:
                     alt.delete()
         messages.success(request, f"Feste Besetzung der Tour „{t}“ gespeichert.")
-        return redirect("fahrdienst:einstellungen")
+        return redirect(zurueck)
     zeilen = [(tag, [(nr, platz_name(nr), jetzt.get((tag, nr))) for nr in range(1, t.plaetze + 1)])
               for tag in tage]  # fmt: skip
     return render(request, "fahrdienst/besetzung.html",
-                  {"tour": t, "zeilen": zeilen, "personen": personen})  # fmt: skip
+                  {"tour": t, "zeilen": zeilen, "personen": personen, "zurueck": zurueck,
+                   "vom_plan": bool(monat)})  # fmt: skip
 
 
 @never_cache

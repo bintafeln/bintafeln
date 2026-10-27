@@ -2,11 +2,12 @@
 {% block titel %}Feste Besetzung {{ tour }}{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
-  <p><a href="{% url 'fahrdienst:einstellungen' %}">← Fahrdienst einstellen</a></p>
+  <p><a href="{{ zurueck }}">← {% if vom_plan %}Fahrerplan{% else %}Fahrdienst einstellen{% endif %}</a></p>
   <h1>Feste Besetzung: {{ tour }}</h1>
   <p class="hinweis">Wer an welchem Wochentag regelmäßig fährt. Daraus entsteht jede Woche der Fahrerplan;
-    Ausfälle und Ersatz trägt man im Plan für den einzelnen Tag ein.</p>
-  <form method="post">
+    Ausfälle und Ersatz trägt man im Plan für den einzelnen Tag ein.
+    Die feste Besetzung gilt für jeden Monat; Abweichungen an einzelnen Tagen bleiben als Ersatz im Plan stehen.</p>
+  <form method="post"{% if vom_plan %} action="?monat={{ request.GET.monat|urlencode }}"{% endif %}>
     {% csrf_token %}
     <div class="tabelle-rahmen">
     <table class="tabelle">

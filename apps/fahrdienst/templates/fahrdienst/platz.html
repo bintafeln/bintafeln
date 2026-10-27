@@ -30,6 +30,8 @@
     </div>
     <button type="submit" class="knopf knopf-zweitrangig">Gast eintragen</button>
   </form>
+  <p class="hinweis abseits">Dauerhaft ändern, wer an jedem {{ wochentag }} fährt:
+    <a href="{% url 'fahrdienst:besetzung' p.tour.pk %}?monat={{ monat }}">Feste Besetzung von {{ p.tour }}</a></p>
   {% if p.ersatz %}
   <form method="post" class="abseits" onsubmit="return confirm('Eintrag zurücknehmen?')">
     {% csrf_token %}<input type="hidden" name="benutzer" value="">

@@ -32,6 +32,14 @@ mindestens 60 Jahre alt oder schwerbehindert sind; die anderen pausieren ein Jah
   oder nur anzeigen. Die gemeldete Notiz wird gestrichen. Jede Änderung geht
   über Historie und Kundengruppen-Regel (ADR 0031, 0061) wie eine Bearbeitung; die Nachrichten
   sind danach erledigt.
+- Verlängert wird höchstens `verlaengern_fruehestens_tage` vor dem Ablauf (Vorgabe 60, 0 =
+  jederzeit; ergänzt 2026-10). Zu früh Gemeldete sind nicht verlängerbar; „ablehnen“ schreibt eine
+  Notiz, ab wann es geht, ohne Pause. Die übrigen Bedingungen prüft man erst dann.
+- Die Verwaltung kann je Haushalt auch ablehnen, wenn die Bedingungen erfüllt sind (ergänzt
+  2026-10): nur mit Begründung, die als Notiz „Ausweis wird **NICHT!** verlängert. Begründung: …“
+  an die Ausgabestelle geht; Status bleibt, keine Pause. Bei nicht erfüllten Bedingungen hängt
+  eine Begründung als „Anmerkung der Verwaltung“ an der Notiz. Die Wahl je Haushalt ist
+  „verlängern“, „ablehnen“ oder „offen lassen“.
 - Vorgabe für neue Installationen: ohne Bedingung. Die Bedingungen stellt jede Tafel selbst ein.
 
 Manche Tafeln kennen keinen Status „pausiert“: Der Ausweis läuft einfach ab, der Haushalt fällt

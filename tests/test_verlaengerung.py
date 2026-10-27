@@ -130,7 +130,10 @@ def test_status_sperre_und_hinweise(regel):
     Sperre.objects.create(haushalt=h, von=HEUTE - dt.timedelta(days=1))
     p = ergebnis(h)
     assert p.ergebnis == "nein" and "Aktive Sperre" in p.gruende
-    assert "Ausweis noch gültig bis 30.06.2027" in p.hinweise
+    regel.verlaengern_fruehestens_tage = 0  # jederzeit: nur ein Hinweis
+    regel.save()
+    Sperre.objects.all().delete()
+    assert "Ausweis noch gültig bis 30.06.2027" in ergebnis(h).hinweise
     assert ergebnis(haushalt("122")).gruende == ["Keine Personen erfasst"]
 
 
@@ -173,18 +176,22 @@ def test_sammelseite_verlaengert_und_schreibt_notiz(gemeldet, admin_client):
         "Verlängern nur, wenn jede Person im Haushalt erfüllt eine Bedingung: ab 60 Jahren "
         "oder Schwerbehindert." in seite
     )
-    assert 'name="verlaengern" value="201" checked' in seite
-    assert 'name="verlaengern" value="203">' in seite  # unklar: nicht vorbelegt
-    assert 'name="ablehnen" value="202" checked> Notiz an die Ausgabestelle' in seite
+    assert 'name="wahl_201" value="verlaengern" checked' in seite
+    assert 'name="wahl_203" value="verlaengern">' in seite  # unklar: nicht vorbelegt
+    assert 'name="wahl_203" value="" checked' in seite
+    assert 'name="wahl_202" value="verlaengern"' not in seite  # nicht verlängerbar
+    assert (
+        'name="wahl_202" value="ablehnen" checked>\n              Notiz an die Ausgabestelle'
+    ) in seite
     assert "30.11.2027" in seite  # neu bis
     assert 'name="an_stelle"' in seite  # Startseite der Ausgabestelle nur auf Wunsch
-    antwort = admin_client.post(VERLAENGERN, {"monate": "12", "verlaengern": ["201", "202"],
-                                              "ablehnen": ["202"]})  # fmt: skip
+    antwort = admin_client.post(VERLAENGERN, {"monate": "12", "wahl_201": "verlaengern",
+                                              "wahl_202": "ablehnen", "wahl_203": ""})  # fmt: skip
     assert antwort.status_code == 302
     for h in gemeldet:
         h.refresh_from_db()
     assert ok.ausweis_gueltig_bis == dt.date(2027, 11, 30)
-    assert nein.ausweis_gueltig_bis == dt.date(2026, 11, 30)  # nicht verlängert, obwohl gewählt
+    assert nein.ausweis_gueltig_bis == dt.date(2026, 11, 30)  # nicht verlängert
     assert nein.status == Haushalt.Status.AKTIV  # kein Statuswechsel
     # Gemeldete Notiz gestrichen, neue Notiz an die Ausgabestelle mit Grund
     assert not Notiz.objects.filter(kundennummer__in=["201", "202"], text=GEPRUEFT).exists()
@@ -219,7 +226,7 @@ def test_andere_tafeln_pausieren(gemeldet, admin_client):
     KundenEinstellungen.objects.update(verlaengern_ablehnung="pausieren",
                                        verlaengern_sonst_pausieren_monate=6)  # fmt: skip
     seite = admin_client.get(VERLAENGERN).content.decode()
-    assert 'name="ablehnen" value="202" checked> 6 Monate pausieren' in seite
+    assert 'name="wahl_202" value="ablehnen" checked>\n              6 Monate pausieren' in seite
     admin_client.post(VERLAENGERN, {"ablehnen": ["202"]})
     h = Haushalt.objects.get(kundennummer="202")
     assert h.status == Haushalt.Status.PAUSIERT
@@ -309,3 +316,55 @@ def test_ablehnung_text_eine_person_und_ein_jahr(regel):
     assert "Die Regel besagt: Mindestens eine Person im Haushalt muss eine der Bedingungen" in text
     assert "– Vera Probe0: 35 Jahre, nicht schwerbehindert\n" in text
     assert "– Vera Probe1: 1 Jahr, nicht schwerbehindert\n" in text
+
+
+def test_zu_frueh_gemeldet_bekommt_notiz(gemeldet, admin_client):
+    """Höchstens 60 Tage (einstellbar) vor dem Ablauf wird verlängert."""
+    h = Haushalt.objects.get(kundennummer="201")
+    h.ausweis_gueltig_bis = dt.date(2027, 3, 31)
+    h.save()
+    p = ergebnis(h)
+    assert p.ergebnis == "nein" and p.zu_frueh == dt.date(2027, 1, 30)
+    seite = admin_client.get(VERLAENGERN).content.decode()
+    assert "verlängern frühestens ab 30.01.2027" in seite
+    assert 'name="wahl_201" value="verlaengern"' not in seite
+    assert "Notiz: zu früh" in seite
+    admin_client.post(VERLAENGERN, {"wahl_201": "ablehnen"})
+    h.refresh_from_db()
+    assert h.ausweis_gueltig_bis == dt.date(2027, 3, 31) and h.status == Haushalt.Status.AKTIV
+    assert Notiz.objects.filter(kundennummer="201").get().text == (
+        "Ausweis wird noch **nicht** verlängert: Er gilt noch bis 31.03.2027. Verlängert wird "
+        "frühestens ab 30.01.2027 – bitte dann erneut melden."
+    )
+    assert not Nachricht.objects.filter(kundennummer="201", erledigt_am__isnull=True).exists()
+
+
+def test_verwaltung_lehnt_trotz_erfuellter_bedingungen_ab(gemeldet, admin_client):
+    antwort = admin_client.post(VERLAENGERN, {"wahl_201": "ablehnen", "wahl_203": "ablehnen"},
+                                follow=True)  # fmt: skip
+    assert "Ohne Begründung nicht abgelehnt (die Bedingungen sind erfüllt): 201, 203" in (
+        antwort.content.decode()
+    )
+    assert Notiz.objects.filter(kundennummer="201", text=GEPRUEFT).exists()  # nichts geschehen
+    admin_client.post(VERLAENGERN, {"wahl_201": "ablehnen", "grund_201": "Umzug nach Bochum",
+                                    "an_stelle": "1"})  # fmt: skip
+    h = Haushalt.objects.get(kundennummer="201")
+    assert h.ausweis_gueltig_bis == dt.date(2026, 11, 30) and h.status == Haushalt.Status.AKTIV
+    n = Notiz.objects.get(kundennummer="201", an_stelle=True)
+    assert n.text == "Ausweis wird **NICHT!** verlängert.\nBegründung: Umzug nach Bochum"
+    text = "Nicht verlängert (Verwaltung): Umzug nach Bochum"
+    assert HaushaltEreignis.objects.filter(kundennummer="201", text=text).exists()
+
+
+def test_anmerkung_zur_ablehnung(gemeldet, admin_client):
+    admin_client.post(VERLAENGERN, {"wahl_202": "ablehnen", "grund_202": "Bitte Rücksprache"})
+    text = Notiz.objects.filter(kundennummer="202").first().text
+    assert text.startswith("Ausweis kann **NICHT!**")
+    assert text.endswith("\nAnmerkung der Verwaltung: Bitte Rücksprache")
+
+
+def test_nur_anzeigen_mit_begruendung(gemeldet, admin_client):
+    KundenEinstellungen.objects.update(verlaengern_ablehnung="anzeigen")
+    admin_client.post(VERLAENGERN, {"wahl_202": "ablehnen", "grund_202": "Einkommen zu hoch"})
+    assert Notiz.objects.filter(kundennummer="202", text__contains="Einkommen zu hoch").exists()
+    assert Haushalt.objects.get(kundennummer="202").status == Haushalt.Status.AKTIV
