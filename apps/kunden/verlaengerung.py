@@ -58,8 +58,6 @@ def neues_datum(h: Haushalt, heute: dt.date, monate: int, e: KundenEinstellungen
 
 def _bedingung(person, h: Haushalt, heute: dt.date, e: KundenEinstellungen, felder) -> str:
     """Womit die Person die Bedingung erfüllt; leer, wenn nicht; None, wenn es unklar ist."""
-    if e.verlaengern_einkommensarten.filter(pk=h.einkommensart_id).exists():
-        return h.einkommensart.bezeichnung
     for f in felder:
         quelle = h.zusatz if f.gilt_fuer == Zusatzfeld.GiltFuer.HAUSHALT else person.zusatz
         if quelle.get(f.schluessel) is True:
@@ -84,16 +82,31 @@ def _nicht_erfuellt(person, heute: dt.date, e: KundenEinstellungen, felder) -> s
     return ", ".join(teile)
 
 
-def bedingungen_text(e: KundenEinstellungen) -> str:
-    """z. B. „ab 60 Jahren oder Schwerbehindert“; leer ohne Bedingung."""
-    if e.verlaengern_regel == KundenEinstellungen.Verlaengern.OHNE:
-        return ""
+def personen_text(e: KundenEinstellungen) -> str:
+    """Bedingung je Person, z. B. „ab 60 Jahren oder Schwerbehindert“; leer ohne."""
     teile = []
     if e.verlaengern_ab_alter is not None:
         teile.append(f"ab {e.verlaengern_ab_alter} Jahren")
     teile += [f.bezeichnung for f in e.verlaengern_felder.all()]
-    teile += [a.bezeichnung for a in e.verlaengern_einkommensarten.all()]
-    return " oder ".join(teile) or "keine Bedingung eingestellt"
+    return " oder ".join(teile)
+
+
+def einkommen_text(e: KundenEinstellungen) -> str:
+    """Einkommensarten, von denen der Haushalt zusätzlich eine haben muss; leer ohne."""
+    arten = [a.bezeichnung for a in e.verlaengern_einkommensarten.all()]
+    return ", ".join(arten[:-1]) + f" oder {arten[-1]}" if len(arten) > 1 else "".join(arten)
+
+
+def bedingungen_text(e: KundenEinstellungen) -> str:
+    """z. B. „ab 60 Jahren oder Schwerbehindert; zusätzlich Einkommensart Bürgergeld oder
+    Wohngeld“; leer ohne Bedingung."""
+    if e.verlaengern_regel == KundenEinstellungen.Verlaengern.OHNE:
+        return ""
+    personen, einkommen = personen_text(e), einkommen_text(e)
+    if einkommen:
+        zusatz = f"Einkommensart {einkommen}"
+        return f"{personen}; zusätzlich {zusatz}" if personen else zusatz
+    return personen or "keine Bedingung eingestellt"
 
 
 def pause_text(monate: int) -> str:
@@ -105,12 +118,18 @@ def ablehnung_notiz(p: Pruefung, e: KundenEinstellungen, bis: dt.date | None = N
     # **…** zeigt die Notiz fett (apps/core/templatetags/notiz.py)
     zeilen = ["Ausweis kann **NICHT!** verlängert werden."]
     gruende = [g for g in p.gruende if not g.endswith("erfüllen eine Bedingung")
-               and not g.endswith("erfüllt eine Bedingung")]  # fmt: skip
+               and not g.endswith("erfüllt eine Bedingung")
+               and not g.startswith(EINKOMMEN_NEIN)]  # fmt: skip
     if p.fehlt:
         wer = ("Mindestens eine Person" if e.verlaengern_regel == e.Verlaengern.EINE
                else "Jede Person")  # fmt: skip
-        zeilen.append(f"Die Regel besagt: {wer} im Haushalt muss eine der Bedingungen erfüllen "
-                      f"({bedingungen_text(e)}).")  # fmt: skip
+        regel = []
+        if personen := personen_text(e):
+            regel.append(f"{wer} im Haushalt muss eine der Bedingungen erfüllen ({personen})")
+        if einkommen := einkommen_text(e):
+            regel.append(("und zusätzlich muss der Haushalt" if personen else "Der Haushalt muss")
+                         + f" eine dieser Einkommensarten haben: {einkommen}")  # fmt: skip
+        zeilen.append(f"Die Regel besagt: {', '.join(regel)}.")
         zeilen.append("In diesem Haushalt sind folgende Kriterien nicht erfüllt:")
         zeilen += [f"– {f}" for f in p.fehlt]
     zeilen += [f"{g}." for g in gruende]
@@ -156,6 +175,9 @@ def pruefen(h: Haushalt, heute: dt.date, monate: int, e: KundenEinstellungen) ->
         p.gruende.append("Keine Personen erfasst")
         return p
     felder = list(e.verlaengern_felder.all())
+    # Ohne Alter und Ja/Nein-Feld zählt nur die Einkommensart (unten)
+    if e.verlaengern_ab_alter is None and not felder:
+        personen = []
     erfuellt = []
     for person in personen:
         womit = _bedingung(person, h, heute, e, felder)
@@ -170,7 +192,9 @@ def pruefen(h: Haushalt, heute: dt.date, monate: int, e: KundenEinstellungen) ->
             p.personen.append((name, f"✗ {was}" if was else "✗"))
             p.fehlt.append(f"{name}: {was}" if was else name)
         erfuellt.append(womit)
-    if e.verlaengern_regel == KundenEinstellungen.Verlaengern.ALLE:
+    if not erfuellt:
+        nein = unklar = False
+    elif e.verlaengern_regel == KundenEinstellungen.Verlaengern.ALLE:
         nein, unklar = "" in erfuellt, None in erfuellt
         text = "nicht alle Personen erfüllen eine Bedingung"
     else:
@@ -183,7 +207,28 @@ def pruefen(h: Haushalt, heute: dt.date, monate: int, e: KundenEinstellungen) ->
     elif unklar and p.ergebnis == OK:
         p.ergebnis = UNKLAR
         p.gruende.append("Geburtsdatum fehlt – bitte selbst prüfen")
+    _einkommen_pruefen(p, h, e)
     return p
+
+
+EINKOMMEN_NEIN = "Einkommensart"
+
+
+def _einkommen_pruefen(p: Pruefung, h: Haushalt, e: KundenEinstellungen) -> None:
+    """Zusätzlich zur Bedingung je Person (und nicht statt ihrer): Sind Einkommensarten gewählt,
+    muss der Haushalt eine davon haben (z. B. Bürgergeld, Wohngeld)."""
+    arten = {a.pk for a in e.verlaengern_einkommensarten.all()}
+    if not arten or h.einkommensart_id in arten:
+        return
+    if h.einkommensart_id is None:
+        if p.ergebnis == OK:
+            p.ergebnis = UNKLAR
+        p.gruende.append("Einkommensart fehlt – bitte selbst prüfen")
+        return
+    p.ergebnis = NEIN
+    p.gruende.append(f"{EINKOMMEN_NEIN} „{h.einkommensart.bezeichnung}“ zählt nicht")
+    p.fehlt.append(f"Einkommensart des Haushalts: {h.einkommensart.bezeichnung} "
+                   f"(nötig: {einkommen_text(e)})")  # fmt: skip
 
 
 def gemeldete(benutzer, heute: dt.date, monate: int) -> list[Pruefung]:

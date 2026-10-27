@@ -208,6 +208,27 @@ def test_aufruf_unter_dem_menue(angemeldet, admin, benutzer_mit_rolle):
     expect(leiste.locator(".aufruf-leiste-nummern span").first).to_have_text(erste)
 
 
+def test_handy_steuerung_zeigt_kiosk_meldungen(angemeldet, admin, benutzer_mit_rolle):
+    from apps.aufruf import ablauf
+    from apps.aufruf.models import AufrufEinstellungen
+    from apps.core.models import TafelEinstellungen
+
+    stelle = _haushalte(8)
+    t = TafelEinstellungen.laden()
+    t.module = ["aufruf"]
+    t.save()
+    tag = ablauf.starten(stelle, timezone.localdate())
+    d = ablauf.stand_fuer_anzeige(tag, AufrufEinstellungen.laden(stelle), timezone.localdate())
+    da = d["current_numbers"][0]
+    ablauf.kiosk_melden(stelle, timezone.localdate(), da)
+    seite = angemeldet(admin)
+    seite.goto(f"/aufruf/{stelle.pk}/mobil/")
+    knopf = seite.locator("#btnNumbers")
+    expect(knopf.locator(".nr-da")).to_have_text(da)
+    expect(knopf.locator(".nr-fehlt")).to_have_count(len(d["current_numbers"]) - 1)
+    expect(seite.locator("#nextCustomersDisplay .nr-fehlt").first).to_be_visible()
+
+
 def test_ausweis_gestalter_merkmale_und_einlass(angemeldet, admin):
     """ADR 0071: Element „Merkmale“ im Gestalter, Merkmale am Einlass."""
     seite = angemeldet(admin)

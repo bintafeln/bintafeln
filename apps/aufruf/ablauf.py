@@ -17,7 +17,7 @@ from django.db import transaction
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.aufruf.models import AufrufEinstellungen, AufrufTag
+from apps.aufruf.models import AufrufEinstellungen, AufrufTag, KioskMeldung
 from apps.aufruf.sprachen import sprachcode
 from apps.ausgabe import ausgabetag
 from apps.ausgabe.ampel import WOCHENTAGE, wochentage
@@ -243,6 +243,27 @@ def abgleichen(stand, stelle, datum, einstellungen) -> None:
 
 def _alte_loeschen(heute) -> None:
     AufrufTag.objects.filter(datum__lt=heute - dt.timedelta(days=AUFBEWAHREN_TAGE)).delete()
+    KioskMeldung.objects.filter(datum__lt=heute).delete()
+
+
+# ── Am Kiosk gemeldet ───────────────────────────────────────────────────────
+
+
+def kiosk_melden(stelle, datum, nummer) -> None:
+    """Ausweis am Kiosk gescannt: Der Kunde ist vermutlich da (grün in der Steuerung)."""
+    KioskMeldung.objects.filter(datum__lt=datum).delete()  # nur der laufende Tag zählt
+    h = _haushalt(norm(nummer))
+    if h is not None:
+        KioskMeldung.objects.get_or_create(ausgabestelle=stelle, datum=datum,
+                                           kundennummer=h.kundennummer)  # fmt: skip
+
+
+def am_kiosk(stelle, datum) -> set[str] | None:
+    """Heute am Kiosk gemeldete Kundennummern; None, solange sich niemand gemeldet hat (dann
+    färbt die Steuerung nichts, z. B. an Ausgabestellen ohne Kiosk)."""
+    gemeldet = set(KioskMeldung.objects.filter(ausgabestelle=stelle, datum=datum)
+                   .values_list("kundennummer", flat=True))  # fmt: skip
+    return gemeldet or None
 
 
 def tag_holen(stelle, datum, sperren=False) -> AufrufTag | None:
@@ -549,25 +570,37 @@ def stand_fuer_anzeige(tag, einstellungen, datum) -> dict:
     vorrang = set(s.get("vorrang", [])) if einstellungen.vorrang_symbol else set()
     # Wer gerade aufgerufen ist und schon am Einlass war, verschwindet sofort aus „Bitte
     # eintreten“; der Platz bleibt bis zum nächsten „Weiter“ leer (keiner wird nachgerufen).
-    aufgerufen = wartend[:n]
+    aufgerufen, danach = wartend[:n], wartend[n : n + 60]
     if einstellungen.eingelassene_ausblenden:
-        schon_da = _eingelassen_heute(datum, aufgerufen)
+        # Auch aus „Danach“ sofort heraus (aus der Warteschlange erst beim nächsten Abgleich)
+        schon_da = _eingelassen_heute(datum, aufgerufen + danach)
         aufgerufen = [x for x in aufgerufen if x not in schon_da]
+        danach = [x for x in danach if x not in schon_da]
     vergangen = []
     for schritt in reversed(s["rueckgaengig"]):
         vergangen += schritt["nummern"]
         if len(vergangen) >= 10:
             break
+    # Am Kiosk gemeldet: grün, sonst dunkelrot; ohne Meldung heute keine Farben (None)
+    kiosk = am_kiosk(tag.ausgabestelle, datum)
+
+    def da(nummern):
+        return None if kiosk is None else [x in kiosk for x in nummern]
+
     return {
         "finished": False,
         "current_numbers": aufgerufen,
-        "next_numbers": wartend[n : n + 10],
-        "upcoming_numbers": wartend[n : n + 60],
+        "next_numbers": danach[:10],
+        "upcoming_numbers": danach,
         "past_numbers": vergangen[:10],
         "current_slot": gruppe_titel(g),
         "selected_day": tag_name,
         "priority_flags": [x in vorrang for x in aufgerufen],
-        "next_priority_flags": [x in vorrang for x in wartend[n : n + 60]],
+        "next_priority_flags": [x in vorrang for x in danach],
+        "present_flags": da(aufgerufen),
+        "next_present_flags": da(danach),
+        "past_present_flags": da(vergangen[:10]),
+        "kiosk_numbers": None if kiosk is None else sorted(kiosk),
         "remaining_count": len(wartend),
         "slot_index": s["index"] + 1,
         "total_slots": len(s["gruppen"]),

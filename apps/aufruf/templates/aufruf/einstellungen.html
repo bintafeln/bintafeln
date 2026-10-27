@@ -18,6 +18,8 @@
         <td data-titel="Links">
           {% with basis=request.scheme|add:"://"|add:request.get_host %}
           <ul style="list-style: none; padding: 0; margin: 0;">
+            <li>Steuerung am PC: <a href="{% url 'aufruf:steuerung' s.pk %}" target="_blank">{{ basis }}{% url 'aufruf:steuerung' s.pk %}</a></li>
+            <li>Handy-Steuerung: <a href="{% url 'aufruf:mobil' s.pk %}" target="_blank">{{ basis }}{% url 'aufruf:mobil' s.pk %}</a></li>
             <li>Monitor: <a href="{% url 'aufruf:monitor' e.schluessel %}" target="_blank">{{ basis }}{% url 'aufruf:monitor' e.schluessel %}</a></li>
             <li>Nummern-Anzeige: <a href="{% url 'aufruf:anzeige' e.schluessel %}" target="_blank">{{ basis }}{% url 'aufruf:anzeige' e.schluessel %}</a></li>
             <li>Kiosk (Karte scannen): <a href="{% url 'aufruf:kiosk' e.schluessel %}" target="_blank">{{ basis }}{% url 'aufruf:kiosk' e.schluessel %}</a></li>

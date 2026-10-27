@@ -539,7 +539,8 @@ Dokumente, Historie.
   „Einstellungen → Notiz-Vorlagen“), steht der Haushalt unter „Kunden → Ausweise verlängern“ (Recht „Haushalte
   anlegen und bearbeiten“). Jeder wird nach den Bedingungen in „Einstellungen → Kundenstamm“
   geprüft: ohne Bedingung, jede Person oder mindestens eine Person erfüllt eine Bedingung
-  (Mindestalter, Ja/Nein-Zusatzfelder wie „Schwerbehindert“, Einkommensarten); gesperrte, beendete
+  (Mindestalter oder Ja/Nein-Zusatzfelder wie „Schwerbehindert“); sind Einkommensarten gewählt,
+  muss der Haushalt **zusätzlich** eine davon haben (z. B. Bürgergeld, Wohngeld); gesperrte, beendete
   Haushalte und solche mit aktiver Sperre nicht, fehlende Geburtsdaten als „selbst prüfen“. Je Person
   steht da, womit sie die Bedingung erfüllt oder was fehlt („✗ 40 Jahre, nicht schwerbehindert“). Alle gewählten werden
   mit einem Klick um die gewählten Monate verlängert (ab bisherigem Ablauf, sonst ab heute); wer
@@ -792,8 +793,9 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   verschwindet aus der Warteschlange – auch sofort aus „Bitte eintreten“ (der Platz bleibt bis
   zum nächsten „Weiter“ leer, niemand wird nachgerufen).
 - **Steuern** (Recht „Kunden aufrufen“, Vorgabe Büro und Ausgabe): Menü
-  „Aufruf ↗“ im Kasten unter dem Menü (öffnet die ganze Steuerung in einem neuen Tab) am PC
-  oder die Handy-Steuerung. Weiter, Zurück, Abfrage einer Nummer und „zu spät
+  „Aufruf ↗“ im Kasten unter dem Menü (öffnet die Handy-Steuerung der Ausgabestelle in einem
+  neuen Tab); die ganze Steuerung am PC ist unter „Einstellungen → Aufruf, Monitor und Kiosk“
+  verlinkt. Weiter, Zurück, Abfrage einer Nummer und „zu spät
   gekommen“ (so viele wartende Plätze nach hinten wie eingestellt). Reihenfolge des Tages als CSV.
 - **Unter dem Menü:** Wer am Einlass arbeitet und aufrufen darf, sieht links unter dem Menü die
   Nummern der gewählten Ausgabestelle, die gerade eintreten sollen, und den Knopf „Nächste 3
@@ -801,7 +803,12 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   der letzten Nummer „Ausgabe beendet“ mit „neu starten“ und „letzten Schritt zurück“. Die
   Anzeige aktualisiert sich alle 15 Sekunden, auch wenn ein anderes Gerät weiterschaltet. Hat die
   Ausgabestelle heute keine Kundengruppe, erscheint der Kasten nicht. Einen
-  eigenen Menüeintrag gibt es nicht mehr; die Überschrift „Aufruf ↗“ öffnet die ganze Steuerung.
+  eigenen Menüeintrag gibt es nicht mehr; die Überschrift „Aufruf ↗“ öffnet die Handy-Steuerung.
+- **Wer ist schon da:** Scannt ein Kunde am Kiosk seinen Ausweis, merkt sich bintafeln das für den
+  Tag (`KioskMeldung`, am nächsten Tag gelöscht). Kasten unter dem Menü, Handy- und PC-Steuerung
+  zeigen gemeldete Nummern grün, alle anderen dunkelrot – erst, wenn sich heute jemand gemeldet
+  hat. Monitor und Geräte ohne Anmeldung sehen das nicht. Die Abfrage-Seite meldet nicht an.
+  Am Einlass Eingetragene verschwinden sofort aus „Bitte eintreten“ und „Danach“.
 - **Geräte im Wartebereich:** Monitor (Nummern, Infos im Wechsel, Ton, Layout per Zahnrad),
   Nummern-Anzeige, Kiosk (Karte scannen, Antwort auf Deutsch und in der Sprache zur
   Staatsangehörigkeit) und Abfrage. Sie brauchen keine Anmeldung, sondern den geheimen Link aus
@@ -1102,7 +1109,8 @@ Daten der Module (Selbstabholer, Links, Termine der Warteliste, eigene Listen, S
   wieder am Haushalt. Ist die Kundennummer inzwischen neu vergeben oder fehlt etwas (z. B. die
   Kundengruppe), ändert sich nichts und es gibt eine Meldung. Eine Rolle stellt nur wieder her, wer
   alle ihre Rechte hat.
-- Nach 30, 60, 90 oder 365 Tagen („Einstellungen der Tafel“, Vorgabe 30) löscht bintafeln
+- Nach 30, 60, 90 oder 365 Tagen („Einstellungen → Tafel → Tafel und Module“, Feld „Papierkorb
+  leeren nach“, Vorgabe 30) löscht bintafeln
   endgültig, mit den verschlüsselten Dateien; „Endgültig löschen“ geht auch sofort. Die Auskunft
   zum Haushalt nennt, was noch im Papierkorb liegt.
 - Nicht über den Papierkorb: Löschfristen, der Import, Abholungen beim Bearbeiten (die Rücknahme

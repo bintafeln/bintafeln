@@ -71,10 +71,41 @@ def test_jede_person_muss_eine_bedingung_erfuellen(regel):
     assert nein.ergebnis == "nein" and "Nicht alle Personen" in nein.gruende[0]
     assert ("Vera Probe1", "✗ 40 Jahre, nicht schwerbehindert") in nein.personen
     assert ergebnis(haushalt("103", (70, None), (None, None))).ergebnis == "unklar"
-    # Einkommensart zählt für alle Personen
-    ga = Einkommensart.objects.create(bezeichnung="Grundsicherung im Alter")
-    regel.verlaengern_einkommensarten.set([ga])
-    assert ergebnis(haushalt("104", (30, None), einkommensart=ga)).ergebnis == "ok"
+
+
+def test_einkommensart_ist_zusaetzlich_noetig(regel):
+    """Jede Person ab 60 oder schwerbehindert UND der Haushalt hat eine der Einkommensarten."""
+    bg = Einkommensart.objects.create(bezeichnung="Bürgergeld")
+    wg = Einkommensart.objects.create(bezeichnung="Wohngeld")
+    rente = Einkommensart.objects.create(bezeichnung="Rente")
+    regel.verlaengern_einkommensarten.set([bg, wg])
+    # Einkommensart allein genügt nicht mehr
+    assert ergebnis(haushalt("104", (30, None), einkommensart=bg)).ergebnis == "nein"
+    gemischt = haushalt("106", (70, None), (40, {"schwerbehindert": True}), einkommensart=wg)
+    assert ergebnis(gemischt).ergebnis == "ok"
+    p = ergebnis(haushalt("107", (70, None), (65, None), einkommensart=rente))
+    assert p.ergebnis == "nein" and "Einkommensart „Rente“ zählt nicht" in p.gruende
+    assert p.fehlt == ["Einkommensart des Haushalts: Rente (nötig: Bürgergeld oder Wohngeld)"]
+    text = verlaengerung.ablehnung_notiz(p, regel)
+    assert ("Die Regel besagt: Jede Person im Haushalt muss eine der Bedingungen erfüllen (ab 60 "
+            "Jahren oder Schwerbehindert), und zusätzlich muss der Haushalt eine dieser "
+            "Einkommensarten haben: Bürgergeld oder Wohngeld.") in text  # fmt: skip
+    assert "– Einkommensart des Haushalts: Rente" in text and "zählt nicht." not in text
+    p = ergebnis(haushalt("108", (70, None)))  # Einkommensart nicht erfasst
+    assert p.ergebnis == "unklar" and "Einkommensart fehlt – bitte selbst prüfen" in p.gruende
+    assert verlaengerung.bedingungen_text(regel) == (
+        "ab 60 Jahren oder Schwerbehindert; zusätzlich Einkommensart Bürgergeld oder Wohngeld"
+    )
+    # Nur Einkommensarten eingestellt: Alter und Merkmale zählen nicht
+    regel.verlaengern_ab_alter = None
+    regel.save()
+    regel.verlaengern_felder.clear()
+    assert ergebnis(haushalt("109", (30, None), einkommensart=bg)).ergebnis == "ok"
+    p = ergebnis(haushalt("119", (30, None), einkommensart=rente))
+    assert verlaengerung.bedingungen_text(regel) == "Einkommensart Bürgergeld oder Wohngeld"
+    assert "Die Regel besagt: Der Haushalt muss eine dieser Einkommensarten haben: " in (
+        verlaengerung.ablehnung_notiz(p, regel)
+    )
 
 
 def test_feld_fuer_den_haushalt_zaehlt_fuer_alle(regel):

@@ -5,7 +5,9 @@
   <h1>Papierkorb</h1>
   <p class="hinweis">Gelöschte Daten liegen hier {{ tage }} Tage und lassen sich mit allem, was mit ihnen gelöscht wurde,
     wiederherstellen; danach löscht bintafeln sie endgültig. Sie sehen nur, was Sie auch löschen dürften.
-    Anträge haben ihren eigenen Papierkorb in der Antragsliste.</p>
+    Anträge haben ihren eigenen Papierkorb in der Antragsliste.
+    {% if "einstellungen.tafel" in rechte %}Die Zahl der Tage stellen Sie unter
+    <a href="{% url 'core:einstellungen' %}">Einstellungen → Tafel → Tafel und Module</a> ein („Papierkorb leeren nach“).{% endif %}</p>
   {% if arten|length > 1 %}
   <form method="get" class="filter">
     <label for="art">Art</label>

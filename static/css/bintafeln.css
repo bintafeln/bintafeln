@@ -504,6 +504,10 @@ a.knopf-gefahr { color: #fff; }
   background: #fff; color: #1e5b21; font-size: 1.05rem; font-weight: 800; font-variant-numeric: tabular-nums;
 }
 .aufruf-leiste-nummern .vorrang { outline: 2px solid #c98a00; }
+/* Aufruf: am Kiosk gemeldet grün, sonst dunkelrot (nur, wenn sich heute jemand gemeldet hat) */
+.aufruf-leiste-nummern span.nr-fehlt { color: #8b1a1a; }
+.aufruf-leiste-danach .nr-da { color: #1b6e34; font-weight: 700; }
+.aufruf-leiste-danach .nr-fehlt { color: #8b1a1a; }
 .aufruf-leiste .knopf { width: 100%; margin: .25rem 0 .5rem; }
 .aufruf-leiste .link { font-size: .85rem; padding: 0 0 .5rem; }
 .aufruf-leiste-fehler { color: #8c1d18; font-size: .85rem; }
