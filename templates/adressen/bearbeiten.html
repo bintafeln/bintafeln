@@ -6,8 +6,10 @@
   <h1>{% if a.pk %}{{ a.name }} bearbeiten{% else %}Neue Adresse{% endif %}</h1>
   <p class="hinweis">Bei einer Organisation genügt der Name der Organisation; bei einer Person der Nachname. Einwilligungen
     mit dem Datum eintragen, an dem sie erteilt wurden; leer = keine Einwilligung.</p>
+  {% if fuer_mitglied %}<p class="meldung">Nach dem Speichern geht es weiter zum neuen Mitglied – diese Adresse ist dort schon gewählt.</p>{% endif %}
   <form method="post">
     {% csrf_token %}
+    {% if fuer_mitglied %}<input type="hidden" name="mitglied" value="1">{% endif %}
     {% include "includes/formular_abschnitte.html" %}
     <div class="aktionsleiste">
       <button type="submit" class="knopf">Speichern</button>

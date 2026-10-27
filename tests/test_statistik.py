@@ -129,7 +129,7 @@ def test_ausgabestelle_sieht_nur_eigene_zahlen(client, admin, benutzer_mit_rolle
     zeit = {"zeitraum": "eigen", "von": "2026-01-01", "bis": "2026-03-31"}
     inhalt = client.get(URL, zeit).content.decode()
     assert "alle meine" in inhalt and "Ausgabestelle Nord" not in inhalt
-    kacheln = inhalt.split('<div class="kacheln">')[1].split('class="statistik-sprung"')[0]
+    kacheln = inhalt.split('<div class="kacheln">')[1].split("statistik-sprung")[0]
     assert "Anträge" not in kacheln  # keine Kachel „Anträge“ für die Ausgabe
     csv = client.get(URL, {**zeit, "csv": "stellen"}).content.decode("utf-8-sig")
     assert "Mitte;2" in csv and "Nord" not in csv
@@ -206,7 +206,7 @@ def test_jahresbericht(client, admin_client, benutzer_mit_rolle, anmelden, recht
     from django.utils import timezone
 
     seite = admin_client.get(URL).content.decode()
-    assert "Jahresbericht erstellen" in seite
+    assert "Jahresbericht (PDF)" in seite
     antwort = admin_client.get(reverse("statistik:jahresbericht"), {"jahr": "2026"})
     assert antwort["Content-Type"] == "application/pdf"
     text = pdf_text(antwort)

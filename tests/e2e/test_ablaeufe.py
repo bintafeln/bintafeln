@@ -223,3 +223,30 @@ def test_ausweis_gestalter_merkmale_und_einlass(angemeldet, admin):
     p.save()
     seite.goto("/ausgabe/?nummer=00041")
     expect(seite.locator(".merkmal")).to_have_text(["Vegetarier"])
+
+
+def test_statistik_springen_zu(angemeldet, admin):
+    """Auswahlfeld „Springen zu“ springt zum Abschnitt der Statistik."""
+    seite = angemeldet(admin)
+    seite.goto("/statistik/")
+    wahl = seite.locator("#sprung")
+    erster = wahl.locator("option").nth(1).get_attribute("value")
+    wahl.select_option(erster)
+    seite.wait_for_function("id => location.hash === '#' + id", arg=erster)
+    expect(wahl).to_have_value("")
+
+
+def test_menue_einfahren_und_ausfahren(angemeldet, admin):
+    """Breiter Bildschirm: « fährt das Menü ein (bleibt so beim Seitenwechsel), » wieder aus."""
+    seite = angemeldet(admin)
+    seite.goto("/")
+    menue = seite.locator("nav.seitenmenue")
+    expect(menue).to_be_visible()
+    seite.get_by_role("button", name="Menü einfahren").click()
+    expect(menue).to_be_hidden()
+    seite.goto("/kunden/")
+    expect(menue).to_be_hidden()
+    seite.get_by_role("button", name="Menü ausfahren").click()
+    expect(menue).to_be_visible()
+    seite.goto("/")
+    expect(menue).to_be_visible()

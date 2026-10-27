@@ -20,7 +20,7 @@ def _auswahl(liste, wert, leer=True):
 class MitgliedForm(forms.ModelForm):
     adresse = forms.ModelChoiceField(
         label="Adresse (aus dem Adressbuch)", queryset=Adresse.objects.none(),
-        help_text="Nicht dabei? Zuerst im Adressbuch anlegen.",
+        help_text="Nicht dabei? Oben „Neue Adresse anlegen“ – danach geht es hier weiter.",
     )  # fmt: skip
     art = forms.ChoiceField(label="Art der Mitgliedschaft")
     zahlweise = forms.ChoiceField(label="Zahlweise", required=False)

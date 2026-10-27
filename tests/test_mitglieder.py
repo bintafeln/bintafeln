@@ -166,3 +166,37 @@ def test_migration_behaelt_genutzte_beitraege(erika):
     mitglied(erika)  # Jahresbeitrag 36
     schritt.bisherige_beitraege_behalten(apps, None)
     assert MitgliederEinstellungen.mit_beitraegen()
+
+
+def test_neues_mitglied_ueber_das_adressbuch(admin_client, benutzer_mit_rolle, anmelden, client):
+    """Neues Mitglied → „Neue Adresse anlegen“ → nach dem Speichern zurück, Adresse gewählt."""
+    seite = admin_client.get(reverse("mitglieder:neu")).content.decode()
+    assert f'href="{reverse("adressen:neu")}?mitglied=1"' in seite
+    formular = admin_client.get(reverse("adressen:neu"), {"mitglied": "1"}).content.decode()
+    assert 'name="mitglied" value="1"' in formular and "weiter zum neuen Mitglied" in formular
+    antwort = admin_client.post(reverse("adressen:neu"), {"art": "person", "nachname": "Probe",
+                                                         "mitglied": "1"})  # fmt: skip
+    a = Adresse.objects.get(nachname="Probe")
+    assert antwort.url == f"{reverse('mitglieder:neu')}?adresse={a.pk}"
+    neu = admin_client.get(antwort.url)
+    assert neu.context["form"].initial["adresse"] == str(a.pk)
+    # Querlinks: Adressbuch zeigt das Mitglied, Mitgliederliste führt ins Adressbuch
+    m = mitglied(a)
+    liste = admin_client.get(reverse("adressen:liste")).content.decode()
+    assert f'href="{reverse("mitglieder:mitglied", args=[m.pk])}"' in liste
+    assert reverse("mitglieder:liste") in liste
+    assert (
+        reverse("adressen:liste") in admin_client.get(reverse("mitglieder:liste")).content.decode()
+    )
+    # Ohne Recht auf Mitglieder: normale Adresse, kein Sprung
+    anmelden(client, benutzer_mit_rolle("bea", rollen.BUERO))
+    from apps.konten.models import Rolle
+
+    r = Rolle.objects.get(gruppe__name=rollen.BUERO)
+    r.rechte = [x for x in r.rechte if x != "mitglieder.bearbeiten"]
+    r.save()
+    antwort = client.post(reverse("adressen:neu"), {"art": "person", "nachname": "Ohne",
+                                                   "mitglied": "1"})  # fmt: skip
+    assert antwort.url == reverse(
+        "adressen:adresse", args=[Adresse.objects.get(nachname="Ohne").pk]
+    )

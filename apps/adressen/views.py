@@ -7,6 +7,7 @@ from django.core.paginator import Paginator
 from django.db.models import ProtectedError, Q, Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
@@ -49,7 +50,7 @@ def liste(request):
         name = f"adressen-{timezone.localdate():%Y-%m-%d}.csv"
         antwort["Content-Disposition"] = f'attachment; filename="{name}"'
         return antwort
-    seite = Paginator(adressen, 50).get_page(request.GET.get("seite"))
+    seite = Paginator(adressen.select_related("mitglied"), 50).get_page(request.GET.get("seite"))
     return render(request, "adressen/liste.html", {
         "seite": seite, "filter": filter_, "anzahl": seite.paginator.count,
         "kategorien": AdressKategorie.objects.all(), "arten": Adresse.Art.choices,
@@ -80,6 +81,8 @@ def adresse(request, pk):
 @rollen.recht_erforderlich("adressen.bearbeiten")
 def bearbeiten(request, pk=None):
     a = get_object_or_404(Adresse, pk=pk) if pk else Adresse()
+    fuer_mitglied = (not pk and (request.POST or request.GET).get("mitglied") == "1"
+                     and rollen.hat_recht(request.user, "mitglieder.bearbeiten"))  # fmt: skip
     form = AdresseForm(request.POST or None, instance=a)
     if request.method == "POST" and form.is_valid():
         a = form.save(commit=False)
@@ -87,8 +90,13 @@ def bearbeiten(request, pk=None):
         a.save()
         form.save_m2m()
         messages.success(request, f"Adresse „{a.name}“ gespeichert.")
+        if fuer_mitglied and not hasattr(a, "mitglied"):
+            # Vom „Neues Mitglied“ gekommen: gleich weiter, mit der neuen Adresse vorbelegt
+            return redirect(f"{reverse('mitglieder:neu')}?adresse={a.pk}")
         return redirect("adressen:adresse", pk=a.pk)
-    return render(request, "adressen/bearbeiten.html", {"form": form, "a": a})
+    return render(
+        request, "adressen/bearbeiten.html", {"form": form, "a": a, "fuer_mitglied": fuer_mitglied}
+    )
 
 
 @require_POST

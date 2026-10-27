@@ -66,7 +66,8 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   Adressen, Serienbriefe, Team), **Auswertungen** (Statistik, Listen), Einstellungen, Hilfe.
   „Meine Arbeitszeit“ steht nur bei Mitarbeitenden, die stempeln, als eigener Punkt; „Mein
   Konto“ öffnet der eigene Name oben rechts. Module hängen sich in die passenden Bereiche ein
-  (`apps/core/menue.py`). Ein Bereich klappt erst seine Einträge und Untergruppen auf, eine
+  (`apps/core/menue.py`). Der Knopf « oben im Menü fährt es ein, » holt es zurück (Wahl bleibt im
+  Browser, `static/js/menue_einfahren.js`). Ein Bereich klappt erst seine Einträge und Untergruppen auf, eine
   Untergruppe (z. B. Wochenübersicht, Kundenstamm) erst beim Anklicken ihre Einträge. Die
   Kundenliste steht nur einmal im Menü: am Einlass (ohne „alle Ausgabestellen“) unter
   „Ausgabestelle“, sonst als „Kunden einsehen“ unter „Kunden“. Die Einstellungen haben Untermenüs (Tafel, Kunden, Ausgabe, Verein,
@@ -864,6 +865,7 @@ Jede Ausgabestelle macht ihre Monatsabrechnung in bintafeln (ADR 0060), Menü �
 Zuschaltbares Modul „Listen“ (ADR 0063): fertige Listen zum Kundenstamm, jede mit Filtern,
 wählbaren und sortierbaren Spalten, Gliederung mit Anzahl und Summen, Auswahlkästchen je Zeile
 und Ausgabe als CSV (Excel) oder PDF (Auswahl oder alles; jeder Export im Zugriffsprotokoll).
+„Letzter Besuch“ steht mit Uhrzeit da (z. B. 24.10.2026 15:52), sofern die Abholung eine hat.
 Die Kundenlisten lassen sich auch nach dem Ausgabetag filtern (Wochentage der Kundengruppe); die
 Auswahl erscheint wie in der Kundenliste nur, wenn an mindestens zwei Tagen ausgegeben wird.
 
@@ -933,7 +935,9 @@ Serienbriefe (Modul 5, ADR 0044); Kunden stehen weiter im Kundenstamm.
 
 „Mitglieder“ (Rechte „Mitglieder und Beiträge ansehen …“ und „Mitglieder anlegen, bearbeiten
 und löschen“; Büro hat beide) führt die Mitglieder des Trägervereins (ADR 0046). Jedes Mitglied
-ist eine Adresse aus dem Adressbuch.
+ist eine Adresse aus dem Adressbuch. Bei „Neues Mitglied“ führt „+ Neue Adresse anlegen“ ins
+Adressbuch und nach dem Speichern mit der neuen Adresse zurück; das Adressbuch zeigt bei
+Mitgliedern „Mitglied Nr.“ mit Link, beide Listen verweisen aufeinander.
 
 - **Mitglied**: fortlaufende Mitgliedsnummer (Vorschlag), Art (Auswahl: ordentlich, aktiv,
   Förder-, Ehrenmitglied, juristische Person), Eintritt, Austritt mit Grund, Jahresbeitrag,
@@ -1006,7 +1010,8 @@ Adresse im Adressbuch (ADR 0045).
 
 „Statistik“ im Menü (Recht „Statistik ansehen“, Vorgabe: Admin und Büro). Oben Zeitraum
 (dieses/letztes Jahr, letzte 12 Monate, dieser/letzter Monat, letzte 30 Tage oder eigener
-Zeitraum) und Ausgabestelle wählen.
+Zeitraum) und Ausgabestelle wählen. Das Auswahlfeld „Springen zu“ unter den Kennzahlen führt
+direkt zu einem Abschnitt (`static/js/sprung.js`).
 
 - **Kennzahlen:** Abholungen, verschiedene Haushalte, erreichte Personen (Summe der
   Haushaltsgrößen je Abholung), Bareinnahmen, aktive Haushalte mit Personen, neue Kunden,

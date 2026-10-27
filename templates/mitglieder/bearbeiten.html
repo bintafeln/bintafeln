@@ -6,6 +6,14 @@
   <h1>{% if m.pk %}Mitglied {{ m.nummer }} bearbeiten{% else %}Neues Mitglied{% endif %}</h1>
   <p class="hinweis">Mitglieder sind Adressen aus dem Adressbuch. Austritt: Datum und Grund eintragen; die Daten bleiben
     erhalten, bis die Mitgliedschaft gelöscht wird.</p>
+  {% if not m.pk %}
+  <div class="meldung querweg">
+    <p><strong>Noch nicht im Adressbuch?</strong> Jedes Mitglied ist eine Adresse aus dem Adressbuch.
+      {% if "adressen.bearbeiten" in rechte %}Legen Sie die Adresse an – danach kommen Sie mit ihr hierher zurück.{% endif %}</p>
+    {% if "adressen.bearbeiten" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'adressen:neu' %}?mitglied=1">+ Neue Adresse anlegen</a>{% endif %}
+    {% if "adressen.sehen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'adressen:liste' %}">Adressbuch öffnen</a>{% endif %}
+  </div>
+  {% endif %}
   <form method="post">
     {% csrf_token %}
     {% include "includes/formular_abschnitte.html" %}

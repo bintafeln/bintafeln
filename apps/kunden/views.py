@@ -101,13 +101,9 @@ def _haushalte_suchen(request):
         .annotate(
             hp_vorname=Subquery(hauptperson.values("vorname")[:1]),
             hp_nachname=Subquery(hauptperson.values("nachname")[:1]),
-            besuch_zeit=Subquery(
-                Abholung.objects.filter(haushalt=OuterRef("pk"), datum=OuterRef("letzter_besuch"),
-                                        uhrzeit__isnull=False)
-                .order_by("-uhrzeit").values("uhrzeit")[:1]
-            ),
         )
     )  # fmt: skip
+    haushalte = Haushalt.mit_besuch_zeit(haushalte)
     suche = request.GET.get("q", "").strip()
     for wort in suche.split():
         personen = Person.objects.filter(
