@@ -108,6 +108,10 @@ class Stammdaten(models.Model):
     fs_kopie_am = models.DateTimeField("Kopie hochgeladen am", null=True, blank=True)
     geleert_am = models.DateTimeField("Nach Löschfrist geleert am", null=True, blank=True)
 
+    # Alle Dateien und Papierkorb (ADR 0073); Ordner wie apps.konten.personal.KOPIE_ORDNER
+    PRIVATDATEI = ("fuehrerschein", "fs_kopie_datei")
+    DATEIEN_BEREICH = "Führerscheinkopien"
+
     class Meta:
         verbose_name = "Stammdaten Mitarbeitende"
         verbose_name_plural = "Stammdaten Mitarbeitende"
@@ -233,6 +237,7 @@ class Dokument(models.Model):
 
     ORDNER = "mitarbeiter-dokumente"
     PRIVATDATEI = (ORDNER, "datei")  # Papierkorb (ADR 0073)
+    DATEIEN_BEREICH = "Dokumente zu Mitarbeitenden"
 
     benutzer = models.ForeignKey(Benutzer, on_delete=models.CASCADE, related_name="dokumente")
     kategorie = models.ForeignKey(

@@ -248,6 +248,9 @@ class AntragPerson(models.Model):
 class AntragAnhang(models.Model):
     """Verschlüsselt abgelegter Nachweis (apps.core.privatdateien)."""
 
+    PRIVATDATEI = (ANHANG_ORDNER, "datei")  # Alle Dateien, Papierkorb (ADR 0073)
+    DATEIEN_BEREICH = "Nachweise zu Anträgen"
+
     antrag = models.ForeignKey(Antrag, on_delete=models.CASCADE, related_name="anhaenge")
     name = models.CharField("Dateiname", max_length=200)
     datei = models.CharField(max_length=200, editable=False)

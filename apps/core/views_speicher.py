@@ -80,3 +80,47 @@ def _originale_loeschen(request):
     anzahl, frei = privatdateien.originale_loeschen()
     messages.success(request, f"{anzahl} Original(e) gelöscht, {filesizeformat(frei)} frei.")
     return redirect("core:speicher")
+
+
+STATUS = {"ok": "", "papierkorb": "im Papierkorb", "verwaist": "verwaist",
+          "unbekannt": "unbekannter Ordner"}  # fmt: skip
+SORTIERUNG = {"groesse": lambda d: -d["bytes"], "datum": lambda d: d["datum"],
+              "bereich": lambda d: (d["bereich"], -d["bytes"])}  # fmt: skip
+
+
+@never_cache
+@rollen.recht_erforderlich("einstellungen.tafel")
+def dateien(request):
+    """Alle Dateien (ADR 0064): was den Speicher füllt, wozu jede Datei gehört, verwaiste
+    Dateien aufräumen. Inhalte zeigt die Seite nie; geöffnet wird nur dort, wo das Recht reicht."""
+    if request.method == "POST" and request.POST.get("aktion") == "verwaiste":
+        return _verwaiste_loeschen(request)
+    alle = privatdateien.verzeichnis()
+    bereiche = sorted({d["bereich"] for d in alle})
+    gewaehlt = request.GET.get("bereich", "")
+    liste = [d for d in alle if not gewaehlt or d["bereich"] == gewaehlt]
+    sortierung = request.GET.get("sortierung", "groesse")
+    liste.sort(key=SORTIERUNG.get(sortierung, SORTIERUNG["groesse"]),
+               reverse=sortierung == "datum")  # fmt: skip
+    for d in liste:
+        d["status_text"] = STATUS[d["status"]]
+    verwaist = [d for d in alle if d["status"] == "verwaist"]
+    return render(request, "core/dateien.html", {
+        "liste": liste, "bereiche": bereiche, "gewaehlt": gewaehlt, "sortierung": sortierung,
+        "summe": sum(d["bytes"] for d in liste), "verwaist": len(verwaist),
+        "verwaist_bytes": sum(d["bytes"] for d in verwaist),
+        "sicherung_frisch": _sicherung_frisch(),
+    })  # fmt: skip
+
+
+@nicht_in_demo
+def _verwaiste_loeschen(request):
+    if not _sicherung_frisch():
+        messages.error(request, "Verwaiste Dateien werden erst gelöscht, wenn eine Sicherung "
+                                "höchstens 24 Stunden alt ist.")  # fmt: skip
+        return redirect("core:dateien")
+    anzahl, frei = privatdateien.verwaiste_loeschen()
+    messages.success(
+        request, f"{anzahl} verwaiste Datei(en) gelöscht, {filesizeformat(frei)} frei."
+    )
+    return redirect("core:dateien")

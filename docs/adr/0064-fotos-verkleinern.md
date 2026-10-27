@@ -31,3 +31,12 @@ darf, hängt von der Tafel ab (Lesbarkeit, Platz).
 Für Quittungen und Bescheide genügen 1600 Pixel; das spart etwa neun Zehntel. Weil die Tafel
 selbst entscheidet und die Originale erst nach einer Sicherung verschwinden, geht nichts
 unbemerkt verloren.
+
+## Nachtrag: Alle Dateien (2026-10-27)
+
+`privatdateien.verzeichnis()` listet alle Dateien unter `privat/` und ordnet sie über
+`PRIVATDATEI = (ordner, feld)` ihren Datensätzen zu (dazu jetzt auch Antragsnachweise und
+Führerscheinkopien). Status: gehört zu einem Datensatz, im Papierkorb, verwaist (bekannter Ordner,
+kein Datensatz) oder unbekannter Ordner. `verwaiste_loeschen()` löscht nur verwaiste Dateien, die
+älter als ein Tag sind, und nur nach einer höchstens 24 Stunden alten Sicherung; unbekannte
+Ordner nie. Die Seite zeigt keine Inhalte.

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block titel %}Alle Dateien{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'core:speicher' %}">← Speicher und Fotos</a></p>
+  <h1>Alle Dateien</h1>
+  <p class="hinweis">Alle hochgeladenen Dateien, verschlüsselt abgelegt: Dokumente zu Haushalten und Mitarbeitenden,
+    Nachweise zu Anträgen, Quittungen, Spendenbelege, Führerscheinkopien. Die Inhalte zeigt diese Seite nicht; öffnen
+    lassen sie sich nur dort, wo sie hingehören und das Recht reicht. Gelöscht werden sie mit ihrem Datensatz (dann
+    erst in den Papierkorb) oder nach ihrer Löschfrist.</p>
+  <form method="get" class="filter">
+    <label for="bereich">Bereich</label>
+    <select name="bereich" id="bereich" onchange="this.form.submit()">
+      <option value="">alle</option>
+      {% for b in bereiche %}<option{% if b == gewaehlt %} selected{% endif %}>{{ b }}</option>{% endfor %}
+    </select>
+    <label for="sortierung">Sortieren nach</label>
+    <select name="sortierung" id="sortierung" onchange="this.form.submit()">
+      <option value="groesse"{% if sortierung == "groesse" %} selected{% endif %}>Größe</option>
+      <option value="datum"{% if sortierung == "datum" %} selected{% endif %}>Datum (neueste zuerst)</option>
+      <option value="bereich"{% if sortierung == "bereich" %} selected{% endif %}>Bereich</option>
+    </select>
+    <noscript><button type="submit" class="knopf knopf-zweitrangig">Anzeigen</button></noscript>
+  </form>
+  <p>{{ liste|length }} Datei{{ liste|length|pluralize:"en" }}, zusammen {{ summe|filesizeformat }}.</p>
+  {% if liste %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Bereich</th><th>Gehört zu</th><th class="zahl">Größe</th><th>Gespeichert</th></tr></thead>
+    <tbody>
+    {% for d in liste %}
+      <tr{% if d.status == "verwaist" %} class="datei-verwaist"{% endif %}>
+        <td data-titel="Bereich">{{ d.bereich }}</td>
+        <td data-titel="Gehört zu">{% if d.gehoert_zu %}{{ d.gehoert_zu }}{% else %}<span class="leise">{{ d.status_text }}</span>{% endif %}</td>
+        <td data-titel="Größe" class="zahl">{{ d.bytes|filesizeformat }}</td>
+        <td data-titel="Gespeichert">{{ d.datum|date:"d.m.Y H:i" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}<p>Keine Dateien.</p>{% endif %}
+</section>
+
+{% if verwaist %}
+<section class="karte">
+  <h2>Verwaiste Dateien</h2>
+  <p>{{ verwaist }} Datei{{ verwaist|pluralize:"en" }} ({{ verwaist_bytes|filesizeformat }}) gehören zu keinem Datensatz mehr,
+    auch nicht im Papierkorb – etwa nach einem abgebrochenen Hochladen. Gelöscht werden nur solche, die älter als ein Tag
+    sind.{% if not sicherung_frisch %} <strong>Erst möglich, wenn eine Sicherung höchstens 24 Stunden alt ist.</strong>{% endif %}</p>
+  <form method="post" onsubmit="return confirm('Verwaiste Dateien endgültig löschen? Ja / Nein')">{% csrf_token %}
+    <button type="submit" name="aktion" value="verwaiste" class="knopf knopf-zweitrangig"{% if not sicherung_frisch %} disabled{% endif %}>Verwaiste Dateien löschen</button></form>
+</section>
+{% endif %}
+{% endblock %}

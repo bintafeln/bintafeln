@@ -160,3 +160,77 @@ def originale_loeschen() -> tuple[int, int]:
         p.unlink()
         anzahl += 1
     return anzahl, frei
+
+
+# --- Alle Dateien (Seite unter „Speicher“) -----------------------------------------------------
+
+
+def quellen() -> list[tuple[str, type, str]]:
+    """Wer Dateien ablegt: (Ordner, Modell, Feld) aller Modelle mit ``PRIVATDATEI``."""
+    from django.apps import apps
+
+    return [(m.PRIVATDATEI[0], m, m.PRIVATDATEI[1]) for m in apps.get_models()
+            if getattr(m, "PRIVATDATEI", None)]  # fmt: skip
+
+
+def bereich(modell) -> str:
+    return getattr(modell, "DATEIEN_BEREICH", str(modell._meta.verbose_name_plural))
+
+
+def verzeichnis() -> list[dict]:
+    """Alle abgelegten Dateien mit Bereich, Größe, Datum und wozu sie gehören.
+
+    ``status``: „ok“ (gehört zu einem Datensatz), „papierkorb“ (Datensatz im Papierkorb),
+    „verwaist“ (bekannter Bereich, aber kein Datensatz mehr) oder „unbekannt“ (Ordner, den kein
+    Modell nennt – wird nie gelöscht)."""
+    import datetime as dt
+
+    from django.utils import timezone
+
+    from apps.core.models import PapierkorbEintrag
+
+    bekannt, bereiche = {}, {}
+    for ordner, modell, feld in quellen():
+        bereiche[ordner] = bereich(modell)
+        for obj in modell.objects.exclude(**{feld: ""}).exclude(**{f"{feld}__isnull": True}):
+            bekannt[(ordner, getattr(obj, feld))] = obj
+    im_korb = {(o, n) for e in PapierkorbEintrag.objects.all() for o, n in e.dateien}
+    liste = []
+    for p in _dateien():
+        ordner = p.relative_to(_wurzel()).parts[0]
+        obj = bekannt.get((ordner, p.name))
+        if obj is not None:
+            status = "ok"
+        elif (ordner, p.name) in im_korb:
+            status = "papierkorb"
+        else:
+            status = "verwaist" if ordner in bereiche else "unbekannt"
+        info = p.stat()
+        liste.append({
+            "ordner": ordner, "name": p.name, "bereich": bereiche.get(ordner, ordner),
+            "bytes": info.st_size, "status": status, "gehoert_zu": str(obj) if obj else "",
+            "datum": dt.datetime.fromtimestamp(info.st_mtime, tz=dt.UTC).astimezone(
+                timezone.get_current_timezone()),
+        })  # fmt: skip
+    return liste
+
+
+def verwaiste_loeschen() -> tuple[int, int]:
+    """Löscht Dateien bekannter Bereiche, zu denen es keinen Datensatz gibt (auch nicht im
+    Papierkorb) und die älter als einen Tag sind (eine gerade hochgeladene Datei bekommt ihren
+    Datensatz erst kurz nach dem Speichern). Ergebnis: (Anzahl, freigegebene Bytes)."""
+    import datetime as dt
+
+    from django.utils import timezone
+
+    grenze = timezone.now() - dt.timedelta(days=1)
+    anzahl = frei = 0
+    for d in verzeichnis():
+        if d["status"] == "verwaist" and d["datum"] < grenze:
+            ziel = pfad(d["ordner"], d["name"])
+            original = ziel.with_name(ziel.name + ORIGINAL)
+            frei += d["bytes"] + (original.stat().st_size if original.exists() else 0)
+            ziel.unlink(missing_ok=True)
+            original.unlink(missing_ok=True)
+            anzahl += 1
+    return anzahl, frei

@@ -18,6 +18,7 @@ urlpatterns = [
     path("einstellungen/", views.einstellungen, name="einstellungen"),
     path("einstellungen/mail/", views.mail_einstellungen, name="mail_einstellungen"),
     path("einstellungen/speicher/", views_speicher.seite, name="speicher"),
+    path("einstellungen/speicher/dateien/", views_speicher.dateien, name="dateien"),
     path("protokoll/", views.protokoll, name="protokoll"),
     path("papierkorb/", views_papierkorb.liste, name="papierkorb"),
     path("papierkorb/<int:pk>/", views_papierkorb.ansehen, name="papierkorb_eintrag"),
