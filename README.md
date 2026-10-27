@@ -349,11 +349,13 @@ bearbeitet nur ein Admin. Rollen, die man nicht vergeben darf, bleiben beim Bear
   die Tage des Monats mit Pause und Arbeitszeit sowie der Stand des Stundenkontos.
 - **Pausen:** Fehlt die gesetzliche Pause (mehr als 6 Stunden: 30 Minuten, mehr als 9 Stunden:
   45 Minuten), zieht bintafeln den Rest ab. Als Pause zählt die Zeit zwischen Gehen und erneutem
-  Kommen.
+  Kommen. Eingestempelt gibt es dafür den Knopf **Pause**, danach **Pause beenden**
+  (`arbeitszeit.in_pause()`).
 - **Gehen vergessen?** Ein Kommen, das länger als 14 Stunden offen ist, zählt nicht. Die Person
   kann am nächsten Tag normal stempeln; die Personal-Seite listet es zum Nachtragen.
 - **Korrigieren und nachtragen** nur durch Admin und Personal: bei der Person auf
-  „Arbeitszeiten“, mit Grund. Die Korrektur trägt den Namen und steht im Änderungsprotokoll.
+  „Arbeitszeiten“, mit Grund; Datum, Kommen, Pause von/bis und Gehen in einer Zeile. Eine
+  eingetragene Pause teilt die Zeit in zwei Buchungen (vor und nach der Pause). Die Korrektur trägt den Namen und steht im Änderungsprotokoll.
 - Unter „Personal → Arbeitszeiterfassung einstellen“: auch Ehrenamtliche stempeln lassen,
   automatischen Pausenabzug ab- oder einschalten, Grenze für vergessenes Gehen.
 
@@ -845,6 +847,8 @@ Kundenstamm, ohne Import aus anderen Programmen.
   Kundengruppen einer Ausgabestelle an einem Tag ergeben eine Zeile; eine Gruppe zählt an jedem
   ihrer Wochentage.
 - **Selbstabholer** (Einrichtungen mit Tagen und Personenzahl) zählen nur zu „alle Personen“.
+  Je Einrichtung: Anschrift, Telefon, E-Mail, Hinweise, beliebig viele **Ansprechpersonen**
+  (Name, Funktion, Telefon, E-Mail) und **Gesprächsnotizen** mit Datum und Verfasser.
 - Wahlweise die **Abholungen einer Kalenderwoche** je Tag und Ausgabestelle aus dem Einlass.
 - Druck als PDF im Hochformat (je Tag) oder Querformat (alles auf einem Blatt wie die bisherige
   Excel-Liste). Rechte „Wochenübersicht ansehen“ und „… pflegen“ (Vorgabe Büro).
@@ -875,6 +879,7 @@ und Ausgabe als CSV (Excel) oder PDF (Auswahl oder alles; jeder Export im Zugrif
 Ein geändertes Kriterium zeigt die Liste sofort an (`data-sofort`, `static/js/sofort.js`; ebenso
 Statistik, Kasse, Zugriffsprotokoll, Warteliste, Wochenübersicht); nur die Spaltenwahl wartet
 auf „Anzeigen“.
+Die Kundennummer heißt in den Listen kurz „Nr.“ und hat eine schmale Spalte.
 „Letzter Besuch“ steht mit Uhrzeit da (z. B. 24.10.2026 15:52), sofern die Abholung eine hat.
 Die Kundenlisten lassen sich auch nach dem Ausgabetag filtern (Wochentage der Kundengruppe); die
 Auswahl erscheint wie in der Kundenliste nur, wenn an mindestens zwei Tagen ausgegeben wird.
@@ -924,13 +929,18 @@ Wettertext, Programmname, Name der Tafel (wenn ein Logo da ist), das Wort „Men
 
 „Verein → Adressen → Adressbuch“ (Rechte „Adressbuch ansehen …“, „Adressen anlegen und bearbeiten“,
 „Adressen löschen“, „Adressen importieren“; Büro hat alle außer Löschen) sammelt Spender, Märkte,
-Lieferanten, Partner, Presse und Behörden. Es ist die Grundlage für Spenden, Mitglieder und
+Lieferanten, Partner, Presse, Behörden, Mitglieder und ehrenamtliche Helfer (Kategorie
+„Ehrenamtliche Helfer“ für alle, die mithelfen, ohne Mitglied zu sein). Es ist die Grundlage für Spenden, Mitglieder und
 Serienbriefe (Modul 5, ADR 0044); Kunden stehen weiter im Kundenstamm.
 
 - **Adresse**: Organisation (mit Ansprechperson) oder Person, Anschrift, Telefon, Mobil, E-Mail,
   Webseite, Kategorien (Mehrfachauswahl, gepflegt unter „Einstellungen → Adresskategorien“),
   Notiz.
 - **Einwilligungen** jeweils mit Datum: Post, E-Mail, Name veröffentlichen.
+- **Filter „Im Verein“**: Mitglieder (aktuell), aktive Mitglieder (helfen mit), passive Mitglieder
+  (Stimmrecht, helfen nicht mit; Mitgliedsart „Passives Mitglied“), ehrenamtliche Helfer
+  (Kategorie oder aktives Mitglied) und Spender (Kategorie oder mit Spenden); die Mitglieder-Filter
+  nur mit dem Recht „Mitglieder ansehen“.
 - **Liste** mit Suche und Filtern, Export als CSV (Excel), **Auskunft** nach Art. 15 als PDF,
   jede Änderung im Änderungsprotokoll. Im Suchfeld oben mit dem Kürzel `ad`.
 - **Import** aus CSV (Semikolon, UTF-8 oder Windows-1252): Prüfbericht, dann übernehmen. Nur neue
@@ -1022,8 +1032,10 @@ Adresse im Adressbuch (ADR 0045).
 
 „Statistik“ im Menü (Recht „Statistik ansehen“, Vorgabe: Admin und Büro). Oben Zeitraum
 (dieses/letztes Jahr, letzte 12 Monate, dieser/letzter Monat, letzte 30 Tage oder eigener
-Zeitraum) und Ausgabestelle wählen. Das Auswahlfeld „Springen zu“ unter den Kennzahlen führt
-direkt zu einem Abschnitt (`static/js/sprung.js`).
+Zeitraum) und Ausgabestelle wählen. Das Auswahlfeld „Springen zu“ neben den Kennzahlen führt
+direkt zu einem Abschnitt (`static/js/sprung.js`). Ein Klick auf eine Grafik (oder „⤢ Groß“)
+zeigt sie bildschirmfüllend, „← Zurück“ schließt und lässt die Seite an ihrer Stelle
+(`static/js/diagramm_gross.js`).
 
 - **Kennzahlen:** Abholungen, verschiedene Haushalte, erreichte Personen (Summe der
   Haushaltsgrößen je Abholung), Bareinnahmen, aktive Haushalte mit Personen, neue Kunden,
@@ -1255,7 +1267,9 @@ ausgeführt, ersetzt er die Musterdaten wieder. Nie auf einer Installation mit e
 
 **Am einfachsten in bintafeln selbst:** „Einstellungen → Update“ (Recht „Programm aktualisieren“,
 Vorgabe nur Admin). Die Seite zeigt die installierte Version, die verfügbaren Versionen mit ihren
-Änderungen und startet das Update auf Knopfdruck, auf Wunsch auch zurück auf eine ältere Version.
+Änderungen („Was ist neu?“: je Pull Request der Titel und darunter die Stichpunkte „- …“ aus den
+Commit-Beschreibungen; bleibt während und nach dem Update stehen, gemerkt in `vorher.txt`) und
+startet das Update auf Knopfdruck, auf Wunsch auch zurück auf eine ältere Version.
 Dahinter läuft genau `./betrieb update VERSION` (also mit Sicherung vorher). bintafeln ist dabei
 ein bis zwei Minuten nicht erreichbar; danach zeigt die Seite das Ergebnis und das Protokoll.
 

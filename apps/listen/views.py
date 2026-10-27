@@ -83,7 +83,10 @@ def _kopf(p, liste, spalten_) -> list[dict]:
         neu["sort"] = f"-{s.schluessel}" if aktuell == s.schluessel else s.schluessel
         richtung = ("auf" if aktuell == s.schluessel else "ab" if aktuell == f"-{s.schluessel}"
                     else "")  # fmt: skip
-        kopf.append({"titel": s.titel, "abfrage": neu.urlencode(), "richtung": richtung})
+        # Kundennummer: kurz „Nr.“, die Spalte nur so breit wie fünf Ziffern
+        titel = "Nr." if s.schluessel == "kundennummer" else s.titel
+        kopf.append({"titel": titel, "abfrage": neu.urlencode(), "richtung": richtung,
+                     "schluessel": s.schluessel})  # fmt: skip
     return kopf
 
 

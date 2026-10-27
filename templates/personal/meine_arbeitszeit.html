@@ -11,7 +11,11 @@
   <form method="post" action="{% url 'personal:stempeln' %}">
     {% csrf_token %}
     {% if laufend %}
+      <button type="submit" name="aktion" value="pause" class="knopf knopf-zweitrangig stempeln">Pause</button>
       <button type="submit" name="aktion" value="gehen" class="knopf stempeln">Gehen</button>
+    {% elif in_pause %}
+      <button type="submit" name="aktion" value="kommen" class="knopf stempeln">Pause beenden</button>
+      <span class="hinweis">Pause seit {{ in_pause.ende|time:"H:i" }} Uhr – oder schon Feierabend: dann nichts mehr tun.</span>
     {% else %}
       <button type="submit" name="aktion" value="kommen" class="knopf stempeln">Kommen</button>
     {% endif %}

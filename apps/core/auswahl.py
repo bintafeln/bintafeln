@@ -21,8 +21,9 @@ GRUPPENFARBEN = [
 ZAHLUNGSWEGE = ["Überweisung", "Bar", "Lastschrift", "Online (z. B. PayPal)", "Scheck", "Sonstiges"]
 SACH_EINHEITEN = ["Kisten", "kg", "Stück", "Paletten", "Liter", "Tüten", "Säcke", "Sonstiges"]
 # Mitglieder (ADR 0046)
-MITGLIEDSARTEN = ["Ordentliches Mitglied", "Aktives Mitglied", "Fördermitglied", "Ehrenmitglied",
-                  "Juristische Person"]  # fmt: skip
+# Aktiv = arbeitet ehrenamtlich mit, passiv = Mitglied mit Stimmrecht, hilft aber nicht (mehr) mit
+MITGLIEDSARTEN = ["Ordentliches Mitglied", "Aktives Mitglied", "Passives Mitglied",
+                  "Fördermitglied", "Ehrenmitglied", "Juristische Person"]  # fmt: skip
 ZAHLWEISEN = ["jährlich", "halbjährlich", "vierteljährlich", "monatlich"]
 ZAHLUNGSARTEN = ["Überweisung", "Lastschrift", "Bar", "Dauerauftrag"]
 AUSTRITTSGRUENDE = ["Kündigung", "Tod", "Ausschluss", "Streichung (Beitrag nicht gezahlt)",

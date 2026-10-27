@@ -31,6 +31,7 @@
   </div>
   <p class="hinweis titel-text">{{ z.titel|default:"" }} · {{ z.von|date:"d.m.Y" }} bis {{ z.bis|date:"d.m.Y" }} · nur Summen
     ohne Personenbezug; je Abschnitt auch als Tabelle und CSV.</p>
+  <div class="statistik-ueberblick">
   <div class="kacheln">
     {% for titel, wert, unter in kacheln %}
     <div class="kachel"><span class="kachel-titel">{{ titel }}</span><span class="kachel-wert">{{ wert }}</span><span class="kachel-unter">{{ unter }}</span></div>
@@ -47,6 +48,7 @@
   </div>
   <script src="{% static 'js/sprung.js' %}" defer></script>
   {% endif %}
+  </div>
 </section>
 
 {# Abschnitte nebeneinander, Diagramme höchstens in ihrer eigentlichen Größe (640 Pixel) #}
@@ -55,13 +57,13 @@
 <section class="karte statistik-abschnitt" id="{{ a.id }}">
   <div class="liste-kopf">
     <h2>{{ a.titel }}</h2>
-    <a class="link-klein" href="?{% if abfrage %}{{ abfrage }}&amp;{% endif %}csv={{ a.id }}">CSV</a>
+    <span>{% if a.svg %}<button type="button" class="link link-klein" data-gross="{{ a.id }}" title="Grafik bildschirmfüllend anzeigen">⤢ Groß</button> {% endif %}<a class="link-klein" href="?{% if abfrage %}{{ abfrage }}&amp;{% endif %}csv={{ a.id }}">CSV</a></span>
   </div>
   {% if a.text %}<p class="hinweis">{{ a.text }}</p>{% endif %}
   {% if a.legende %}
   <ul class="legende" aria-label="Legende">{% for name, farbe in a.legende %}<li><span class="legende-farbe reihe-{{ farbe }}"></span>{{ name }}</li>{% endfor %}</ul>
   {% endif %}
-  {% if a.svg %}<figure class="diagramm-rahmen">{{ a.svg }}</figure>{% elif not a.zeilen %}<p class="hinweis">Keine Daten im Zeitraum.</p>{% endif %}
+  {% if a.svg %}<figure class="diagramm-rahmen" data-gross="{{ a.id }}" title="Anklicken: groß anzeigen">{{ a.svg }}</figure>{% elif not a.zeilen %}<p class="hinweis">Keine Daten im Zeitraum.</p>{% endif %}
   {% if a.zeilen %}
   <details class="statistik-tabelle">
     <summary>Zahlen als Tabelle</summary>
@@ -76,4 +78,13 @@
 </section>
 {% endfor %}
 </div>
+{# Grafik groß (static/js/diagramm_gross.js); „Zurück“ schließt, die Seite bleibt an ihrer Stelle #}
+<dialog class="diagramm-gross" id="diagramm-gross" aria-labelledby="diagramm-gross-titel">
+  <div class="diagramm-gross-kopf">
+    <button type="button" class="knopf knopf-zweitrangig" data-zurueck>← Zurück</button>
+    <h2 id="diagramm-gross-titel"></h2>
+  </div>
+  <div class="diagramm-gross-inhalt"></div>
+</dialog>
+<script src="{% static 'js/diagramm_gross.js' %}" defer></script>
 {% endblock %}

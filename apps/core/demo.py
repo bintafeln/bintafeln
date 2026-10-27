@@ -103,7 +103,10 @@ def _module() -> None:
     ]:  # fmt: skip
         Link.objects.create(titel=titel, untertitel=untertitel, beschreibung=beschreibung,
                             adresse=adresse, symbol=symbol, gruppe=gruppe, **mehr)  # fmt: skip
-    Selbstabholer.objects.create(name="Frauenhaus (Beispiel)", tage="Mo, Mi", personen=12)
+    frauenhaus = Selbstabholer.objects.create(name="Frauenhaus (Beispiel)", tage="Mo, Mi",
+                                              personen=12, ort="Musterstadt")  # fmt: skip
+    frauenhaus.kontakte.create(name="Erika Beispiel", funktion="Leitung",
+                               telefon="0000 000000", email="leitung@example.org")  # fmt: skip
     Selbstabholer.objects.create(name="Jugendtreff (Beispiel)", tage="Fr", personen=25)
     stelle = Ausgabestelle.objects.order_by("name").first()
     if stelle:

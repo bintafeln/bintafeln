@@ -26,7 +26,8 @@ def markt():
 
 def test_vorgaben_und_name():
     assert list(AdressKategorie.objects.values_list("name", flat=True)) == [
-        "Spender", "Lieferant/Markt", "Partner", "Presse", "Behörde"]  # fmt: skip
+        "Spender", "Lieferant/Markt", "Partner", "Presse", "Behörde",
+        "Ehrenamtliche Helfer"]  # fmt: skip
     p = Adresse(art=Adresse.Art.PERSON, anrede="Frau", vorname="Erika", nachname="Muster",
                 strasse="Weg 2", plz="12345", ort="Musterstadt")  # fmt: skip
     assert p.name == "Erika Muster"
@@ -138,3 +139,53 @@ def test_suche_und_rechte(client, admin, benutzer_mit_rolle, anmelden, markt):
     anmelden(client, anton)
     assert client.get(LISTE).status_code == 403
     assert not any(g.bereich == "adressen" for g in suche.suchen(anton, "frisch").gruppen)
+
+
+def test_filter_im_verein(admin_client, benutzer_mit_rolle, anmelden, client):
+    """Spender, aktive und passive Mitglieder, ehrenamtliche Helfer ohne Mitgliedschaft."""
+    import datetime as dt
+
+    from apps.mitglieder.models import Mitglied
+    from apps.spenden.models import Spende
+
+    def adresse(name, *kategorien):
+        a = Adresse.objects.create(art="person", nachname=name)
+        a.kategorien.set(AdressKategorie.objects.filter(name__in=kategorien))
+        return a
+
+    adresse("Helferin", "Ehrenamtliche Helfer")
+    aktiv = adresse("Aktiv")
+    Mitglied.objects.create(adresse=aktiv, nummer="1", art="Aktives Mitglied",
+                            eintritt=dt.date(2020, 1, 1))  # fmt: skip
+    passiv = adresse("Passiv")
+    Mitglied.objects.create(adresse=passiv, nummer="2", art="Passives Mitglied",
+                            eintritt=dt.date(2020, 1, 1))  # fmt: skip
+    alt = adresse("Ausgetreten")
+    Mitglied.objects.create(adresse=alt, nummer="3", art="Aktives Mitglied",
+                            eintritt=dt.date(2020, 1, 1), austritt=dt.date(2024, 12, 31),
+                            austrittsgrund="Umzug")  # fmt: skip
+    adresse("Spenderin", "Spender")
+    gebend = adresse("Gebend")
+    Spende.objects.create(adresse=gebend, datum=dt.date(2026, 1, 5), betrag=10)
+    adresse("Markt", "Lieferant/Markt")
+
+    def namen(**p):
+        antwort = admin_client.get(reverse("adressen:liste"), p)
+        return sorted(a.nachname for a in antwort.context["seite"])
+
+    assert namen(verein="mitglied") == ["Aktiv", "Passiv"]
+    assert namen(verein="aktiv") == ["Aktiv"]
+    assert namen(verein="passiv") == ["Passiv"]
+    assert namen(verein="helfer") == ["Aktiv", "Helferin"]
+    assert namen(verein="spender") == ["Gebend", "Spenderin"]
+    assert len(namen(verein="quatsch")) == 7
+    # Ohne Recht auf Mitglieder: nur Helfer und Spender wählbar
+    from apps.konten.models import Rolle
+
+    r = Rolle.objects.get(gruppe__name=rollen.BUERO)
+    r.rechte = [x for x in r.rechte if x != "mitglieder.sehen"]
+    r.save()
+    anmelden(client, benutzer_mit_rolle("bea", rollen.BUERO))
+    antwort = client.get(reverse("adressen:liste"), {"verein": "passiv"})
+    assert [w for w, _ in antwort.context["verein_wahl"]] == ["helfer", "spender"]
+    assert antwort.context["filter"]["verein"] == ""

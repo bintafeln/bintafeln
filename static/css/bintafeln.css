@@ -685,17 +685,28 @@ label.wahl { display: block; white-space: nowrap; }
 .legende { list-style: none; display: flex; flex-wrap: wrap; gap: .25rem 1rem; padding: 0; margin: .25rem 0; font-size: .9rem; }
 .legende li { display: flex; align-items: center; gap: .4rem; }
 .legende-farbe { width: .9rem; height: .9rem; border-radius: 3px; display: inline-block; }
-.kacheln { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: .4rem; margin-top: .5rem; }
-.kachel { border: 1px solid var(--rand); border-radius: var(--radius); padding: .3rem .6rem; display: flex; flex-direction: column; gap: 0; }
+.kacheln { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); grid-auto-rows: 1fr; gap: .4rem; margin-top: .5rem; }
+.kachel { border: 1px solid var(--rand); border-radius: var(--radius); padding: .3rem .6rem; display: flex; flex-direction: column; gap: 0; min-width: 0; overflow-wrap: anywhere; }
 .kachel-titel { color: var(--leise); font-size: .8rem; }
 .kachel-wert { font-size: 1.15rem; font-weight: 700; line-height: 1.25; }
-.kachel-unter { color: var(--leise); font-size: .8rem; }
+.kachel-unter { color: var(--leise); font-size: .75rem; line-height: 1.25; }
 .statistik-filter input[type=date] { width: auto; }
 /* Statistik: Sprungleiste, Abschnitte im Raster, Diagramme nicht größer als gezeichnet */
 .statistik-kopf { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 0 1.5rem; }
 .statistik-kopf .filter-kompakt { margin-bottom: .35rem; }
-.statistik-sprung { margin: .6rem 0 0; }
-.statistik-sprung .filter-feld { flex: 0 1 22rem; }
+/* Kacheln und „Springen zu“ nebeneinander; auf schmalen Bildschirmen untereinander */
+.statistik-ueberblick { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .5rem 1rem; }
+.statistik-ueberblick .kacheln { flex: 1 1 32rem; }
+.statistik-sprung { margin: .5rem 0 0; flex: 0 1 16rem; }
+.statistik-sprung .filter-feld { flex: 1 1 auto; }
+/* Grafik groß */
+.diagramm-rahmen[data-gross] { cursor: zoom-in; }
+.diagramm-gross { width: min(96vw, 110rem); max-width: none; height: 94vh; max-height: none; border: 0; border-radius: var(--radius); padding: 1rem 1.25rem; }
+.diagramm-gross::backdrop { background: rgba(0, 0, 0, .55); }
+.diagramm-gross-kopf { display: flex; align-items: center; gap: 1rem; margin-bottom: .5rem; }
+.diagramm-gross-kopf h2 { margin: 0; }
+.diagramm-gross-inhalt { height: calc(100% - 4rem); display: flex; flex-direction: column; }
+.diagramm-gross-inhalt svg { flex: 1; width: 100%; height: 100%; min-height: 0; }
 .statistik-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 30rem), 1fr)); gap: 1rem; align-items: start; }
 .statistik-raster .karte { margin: 0; min-width: 0; scroll-margin-top: 1rem; }
 .statistik-abschnitt h2 { font-size: 1.15rem; margin: 0; }
@@ -783,6 +794,10 @@ label.wahl { display: block; white-space: nowrap; }
 .haushalt-neu .tabelle input, .haushalt-neu .tabelle select { width: 100%; }
 .karte-einbettung { width: 100%; height: 22rem; border: 0; border-radius: var(--radius); }
 .formular-tabelle input, .formular-tabelle select { width: 100%; }
+.formular-tabelle input:not([type="checkbox"]), .formular-tabelle select {
+  font: inherit; padding: .35rem .5rem; border: 1px solid var(--rand); border-radius: var(--radius);
+  background: var(--flaeche); color: var(--text);
+}
 
 /* Ankreuzlisten (z. B. Wochentage) nebeneinander statt untereinander */
 .feld div:has(> div > label > input[type="checkbox"]),
@@ -935,3 +950,13 @@ a.marke-rolle { text-decoration: none; }
 .mitglied-wahl { margin-top: 1rem; border-top: 1px solid var(--rand); padding-top: .5rem; }
 .mitglied-wahl h2 { font-size: 1.1rem; margin: .25rem 0 .5rem; }
 .mitglied-wahl:has(input[name="ist_mitglied"][type="checkbox"]:not(:checked)) .mitglied-felder { display: none; }
+/* Update: „Was ist neu?“ mit Stichpunkten je Änderung */
+.was-ist-neu ul { padding-left: 1.25rem; }
+.was-ist-neu .neu-titel { font-weight: 600; margin-top: .4rem; }
+.was-ist-neu .neu-detail { list-style: circle; margin-left: 1.25rem; font-size: .93rem; color: var(--leise); }
+/* Zeitbuchung korrigieren: Datum, Kommen, Pause, Gehen in einer Zeile, Grund darunter */
+.zeit-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: 0 .75rem; max-width: 56rem; }
+.zeit-raster .feld-breit { grid-column: 1 / -1; }
+.zeit-raster .feld input { width: 100%; }
+/* Listen: Kundennummer höchstens fünfstellig, Spalte entsprechend schmal */
+.tabelle .spalte-nr { width: 7ch; white-space: nowrap; }

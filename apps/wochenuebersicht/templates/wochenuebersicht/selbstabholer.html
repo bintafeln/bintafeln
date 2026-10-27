@@ -6,15 +6,17 @@
   <h1>Selbstabholer</h1>
   <p class="hinweis">Einrichtungen, die an festen Tagen selbst abholen. Sie stehen in der Wochenübersicht an ihren Tagen und zählen nur zu „alle Personen“.</p>
   <div class="aktionsleiste"><a class="knopf" href="{% url 'wochenuebersicht:selbstabholer_neu' %}">Neu</a></div>
+  <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Name</th><th>Tage</th><th class="zahl">Personen</th><th>Aktiv</th><th>Notiz</th></tr></thead>
+    <thead><tr><th>Einrichtung</th><th>Tage</th><th class="zahl">Personen</th><th>Ansprechpersonen</th><th>Telefon</th><th>Aktiv</th></tr></thead>
     <tbody>
       {% for s in liste %}
-      <tr><td><a href="{% url 'wochenuebersicht:selbstabholer_bearbeiten' s.pk %}">{{ s.name }}</a></td><td>{{ s.tage|default:"–" }}</td><td class="zahl">{{ s.personen }}</td><td>{{ s.aktiv|yesno:"ja,nein" }}</td><td>{{ s.notiz|truncatechars:60 }}</td></tr>
+      <tr><td><a href="{% url 'wochenuebersicht:selbstabholer_bearbeiten' s.pk %}">{{ s.name }}</a></td><td>{{ s.tage|default:"–" }}</td><td class="zahl">{{ s.personen }}</td><td>{% for k in s.kontakte.all %}{{ k.name }}{% if k.funktion %} <small class="leise">({{ k.funktion }})</small>{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}–{% endfor %}</td><td>{% for k in s.kontakte.all %}{% if k.telefon %}<a href="tel:{{ k.telefon }}">{{ k.telefon }}</a><br>{% endif %}{% empty %}{% endfor %}{% if s.telefon %}<a href="tel:{{ s.telefon }}">{{ s.telefon }}</a>{% endif %}</td><td>{{ s.aktiv|yesno:"ja,nein" }}</td></tr>
       {% empty %}
-      <tr><td colspan="5" class="hinweis">Noch keine Selbstabholer.</td></tr>
+      <tr><td colspan="6" class="hinweis">Noch keine Selbstabholer.</td></tr>
       {% endfor %}
     </tbody>
   </table>
+  </div>
 </section>
 {% endblock %}

@@ -1,7 +1,9 @@
 import datetime as dt
 
 from django.contrib import messages
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
@@ -10,8 +12,8 @@ from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.kunden.models import Ausgabestelle
 from apps.wochenuebersicht import auswertung, pdf
-from apps.wochenuebersicht.forms import SelbstabholerForm
-from apps.wochenuebersicht.models import Selbstabholer, StellenReihenfolge
+from apps.wochenuebersicht.forms import KontakteFormset, NotizForm, SelbstabholerForm
+from apps.wochenuebersicht.models import Selbstabholer, SelbstabholerNotiz, StellenReihenfolge
 
 sehen = rollen.recht_erforderlich("wochenuebersicht.sehen")
 bearbeiten = rollen.recht_erforderlich("wochenuebersicht.bearbeiten")
@@ -50,20 +52,52 @@ def als_pdf(request, art):
 @bearbeiten
 def selbstabholer(request):
     return render(request, "wochenuebersicht/selbstabholer.html",
-                  {"liste": Selbstabholer.objects.all()})  # fmt: skip
+                  {"liste": Selbstabholer.objects.prefetch_related("kontakte")})  # fmt: skip
 
 
 @never_cache
 @bearbeiten
 def selbstabholer_bearbeiten(request, pk=None):
     s = get_object_or_404(Selbstabholer, pk=pk) if pk else Selbstabholer()
-    form = SelbstabholerForm(request.POST or None, instance=s)
-    if request.method == "POST" and form.is_valid():
-        s = form.save()
+    daten = request.POST if request.method == "POST" else None
+    form = SelbstabholerForm(daten, instance=s)
+    kontakte = KontakteFormset(daten, instance=s, prefix="k")
+    if request.method == "POST" and form.is_valid() and kontakte.is_valid():
+        with transaction.atomic():
+            s = form.save()
+            kontakte.instance = s
+            kontakte.save()
         messages.success(request, f"„{s.name}“ gespeichert.")
-        return redirect("wochenuebersicht:selbstabholer")
-    return render(request, "wochenuebersicht/selbstabholer_bearbeiten.html",
-                  {"form": form, "s": s if pk else None})  # fmt: skip
+        return redirect("wochenuebersicht:selbstabholer_bearbeiten", pk=s.pk)
+    return render(request, "wochenuebersicht/selbstabholer_bearbeiten.html", {
+        "form": form, "kontakte": kontakte, "s": s if pk else None,
+        "notizen": s.notizen.all() if pk else [], "notiz_form": NotizForm(),
+    })  # fmt: skip
+
+
+@require_POST
+@bearbeiten
+def selbstabholer_notiz(request, pk):
+    """Gesprächsnotiz anlegen (mit Datum und Verfasser)."""
+    s = get_object_or_404(Selbstabholer, pk=pk)
+    form = NotizForm(request.POST)
+    if form.is_valid() and form.cleaned_data["text"].strip():
+        notiz = form.save(commit=False)
+        notiz.selbstabholer = s
+        notiz.verfasst_von = (request.user.get_full_name() or request.user.get_username())[:150]
+        notiz.save()
+        messages.success(request, "Notiz gespeichert.")
+    return redirect(f"{reverse('wochenuebersicht:selbstabholer_bearbeiten', args=[pk])}#notizen")
+
+
+@require_POST
+@bearbeiten
+def selbstabholer_notiz_loeschen(request, pk):
+    notiz = get_object_or_404(SelbstabholerNotiz, pk=pk)
+    ziel = notiz.selbstabholer_id
+    notiz.delete()
+    messages.success(request, "Notiz gelöscht.")
+    return redirect(f"{reverse('wochenuebersicht:selbstabholer_bearbeiten', args=[ziel])}#notizen")
 
 
 @require_POST

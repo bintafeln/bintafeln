@@ -70,12 +70,13 @@
 </section>
 </div>
 
-{% if neuere %}
-<section class="karte breit">
-  <h2>Was ist neu?</h2>
-  {% for v in neuere %}
+{% if neuere or zuletzt %}
+<section class="karte breit was-ist-neu">
+  <h2>{% if neuere %}Was ist neu?{% else %}Neu mit dem Update auf {{ s.ziel }}{% endif %}</h2>
+  {% for v in neuere|default:zuletzt %}
   <h3>{{ v.name }} <small class="leise">vom {{ v.datum }}</small></h3>
-  {% if v.aenderungen %}<ul>{% for a in v.aenderungen %}<li>{{ a }}</li>{% endfor %}</ul>{% else %}<p class="hinweis">Keine Beschreibung.</p>{% endif %}
+  {# Einträge mit „· “ sind Stichpunkte zur Änderung darüber #}
+  {% if v.aenderungen %}<ul>{% for a in v.aenderungen %}{% if a|slice:":2" == "· " %}<li class="neu-detail">{{ a|slice:"2:" }}</li>{% else %}<li class="neu-titel">{{ a }}</li>{% endif %}{% endfor %}</ul>{% else %}<p class="hinweis">Keine Beschreibung.</p>{% endif %}
   {% endfor %}
 </section>
 {% endif %}

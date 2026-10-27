@@ -59,6 +59,17 @@ def gehen(benutzer, jetzt=None) -> Zeitbuchung:
     return buchung
 
 
+def in_pause(benutzer, jetzt=None) -> Zeitbuchung | None:
+    """Nicht eingestempelt, aber heute schon gearbeitet: die letzte Buchung von heute (für
+    „Pause beenden“; die Lücke bis zum nächsten Kommen zählt als Pause)."""
+    jetzt = jetzt or timezone.now()
+    if laufend(benutzer, jetzt):
+        return None
+    heute = timezone.localtime(jetzt).date()
+    letzte = benutzer.zeitbuchungen.filter(ende__isnull=False).order_by("-ende").first()
+    return letzte if letzte and timezone.localtime(letzte.ende).date() == heute else None
+
+
 def ueberschneidung(buchung: Zeitbuchung) -> Zeitbuchung | None:
     """Eine andere Buchung derselben Person, die sich mit dieser zeitlich überschneidet."""
     ende = buchung.ende or buchung.beginn + dt.timedelta(minutes=1)

@@ -20,6 +20,11 @@
         <option value="">alle</option>
         {% for k in kategorien %}<option value="{{ k.pk }}"{% if filter.kategorie == k.pk|stringformat:"d" %} selected{% endif %}>{{ k.name }}</option>{% endfor %}
       </select></div>
+    <div class="filter-feld"><label for="verein">Im Verein</label>
+      <select name="verein" id="verein" onchange="this.form.submit()">
+        <option value="">alle</option>
+        {% for wert, name in verein_wahl %}<option value="{{ wert }}"{% if filter.verein == wert %} selected{% endif %}>{{ name }}</option>{% endfor %}
+      </select></div>
     <div class="filter-feld"><label for="art">Art</label>
       <select name="art" id="art" onchange="this.form.submit()">
         <option value="">alle</option>

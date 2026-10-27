@@ -1,22 +1,66 @@
 {% extends "base.html" %}
 {% block titel %}{% if s %}{{ s.name }}{% else %}Neuer Selbstabholer{% endif %}{% endblock %}
 {% block inhalt %}
-<section class="karte breit">
-  <p><a href="{% url 'wochenuebersicht:selbstabholer' %}">← Selbstabholer</a></p>
-  <h1>{% if s %}{{ s.name }} ändern{% else %}Neuer Selbstabholer{% endif %}</h1>
-  <form method="post">
-    {% csrf_token %}
-    {% include "includes/formular.html" %}
+<form method="post">
+  {% csrf_token %}
+  <section class="karte breit">
+    <p><a href="{% url 'wochenuebersicht:selbstabholer' %}">← Selbstabholer</a></p>
+    <h1>{% if s %}{{ s.name }} ändern{% else %}Neuer Selbstabholer{% endif %}</h1>
+    {% include "includes/formular_abschnitte.html" %}
+  </section>
+
+  <section class="karte breit">
+    <h2>Ansprechpersonen</h2>
+    <p class="hinweis">Beliebig viele; nach dem Speichern kommen zwei freie Zeilen dazu. Leere Zeilen werden nicht gespeichert.</p>
+    {{ kontakte.management_form }}
+    {% for e in kontakte.non_form_errors %}<p class="fehler">{{ e }}</p>{% endfor %}
+    <div class="tabelle-rahmen">
+    <table class="tabelle formular-tabelle">
+      <thead><tr><th>Name</th><th>Funktion</th><th>Telefon</th><th>E-Mail</th><th>Entfernen</th></tr></thead>
+      <tbody>
+      {% for f in kontakte %}
+        <tr>
+          <td data-titel="Name">{% for h in f.hidden_fields %}{{ h }}{% endfor %}{{ f.name }}{% for e in f.name.errors %}<small class="fehler">{{ e }}</small>{% endfor %}</td>
+          <td data-titel="Funktion">{{ f.funktion }}</td>
+          <td data-titel="Telefon">{{ f.telefon }}</td>
+          <td data-titel="E-Mail">{{ f.email }}{% for e in f.email.errors %}<small class="fehler">{{ e }}</small>{% endfor %}</td>
+          <td data-titel="Entfernen">{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
     <div class="aktionsleiste">
       <button type="submit" class="knopf">Speichern</button>
       <a class="knopf knopf-abbrechen" href="{% url 'wochenuebersicht:selbstabholer' %}">Abbrechen</a>
     </div>
-  </form>
-  {% if s %}
-  <form method="post" action="{% url 'wochenuebersicht:selbstabholer_loeschen' s.pk %}" onsubmit="return confirm('„{{ s.name|escapejs }}“ löschen?');">
+  </section>
+</form>
+
+{% if s %}
+<section class="karte breit" id="notizen">
+  <h2>Notizen</h2>
+  <form method="post" action="{% url 'wochenuebersicht:selbstabholer_notiz' s.pk %}">
     {% csrf_token %}
-    <button type="submit" class="knopf knopf-gefahr">Löschen</button>
+    {% include "includes/formular.html" with form=notiz_form %}
+    <button type="submit" class="knopf knopf-zweitrangig">Notiz speichern</button>
   </form>
-  {% endif %}
+  {% for n in notizen %}
+  <div class="notiz">
+    <p class="notiz-text">{{ n.text|linebreaksbr }}</p>
+    <div class="hinweis">{{ n.erstellt_am|date:"d.m.Y H:i" }} Uhr{% if n.verfasst_von %} · {{ n.verfasst_von }}{% endif %} ·
+      <form method="post" action="{% url 'wochenuebersicht:selbstabholer_notiz_loeschen' n.pk %}" class="inline" onsubmit="return confirm('Notiz löschen?')">{% csrf_token %}<button type="submit" class="link">löschen</button></form></div>
+  </div>
+  {% empty %}
+  <p class="hinweis">Noch keine Notizen.</p>
+  {% endfor %}
 </section>
+
+<section class="karte breit">
+  <form method="post" action="{% url 'wochenuebersicht:selbstabholer_loeschen' s.pk %}" onsubmit="return confirm('„{{ s.name|escapejs }}“ samt Ansprechpersonen und Notizen löschen?');">
+    {% csrf_token %}
+    <button type="submit" class="knopf knopf-gefahr">Selbstabholer löschen</button>
+  </form>
+</section>
+{% endif %}
 {% endblock %}
