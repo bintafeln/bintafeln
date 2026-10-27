@@ -124,18 +124,21 @@ class PersonalEinstellungen(models.Model):
 
     fs_pruefung_monate = models.PositiveSmallIntegerField(
         "Führerschein erneut ansehen nach … Monaten",
-        default=6,
-        validators=[MinValueValidator(1), MaxValueValidator(24)],
+        default=0,
+        validators=[MaxValueValidator(24)],
+        help_text="0 = keine Wiedervorlage zum Führerschein (weder Ablauf noch Vorlegen).",
     )
     ifsg_wiederholung_monate = models.PositiveSmallIntegerField(
         "IfSG-Folgebelehrung alle … Monate",
-        default=24,
-        validators=[MinValueValidator(1), MaxValueValidator(60)],
+        default=0,
+        validators=[MaxValueValidator(60)],
+        help_text="0 = keine Wiedervorlage zur Belehrung nach Infektionsschutzgesetz.",
     )
     vorlauf_tage = models.PositiveSmallIntegerField(
         "Wiedervorlage … Tage vorher anzeigen",
         default=14,
         validators=[MaxValueValidator(90)],
+        help_text="0 = erst am Tag selbst.",
     )
     fs_kopie_erlaubt = models.BooleanField(
         "Kopie des Führerscheins speichern erlauben",

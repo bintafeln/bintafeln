@@ -302,7 +302,8 @@ bearbeitet nur ein Admin. Rollen, die man nicht vergeben darf, bleiben beim Bear
   - Belehrung nach § 43 IfSG und Schulungen mit Ablaufdatum
 - **Fällig:** Die Liste zeigt oben, wann ein Führerschein wieder angesehen werden muss, wann
   eine IfSG-Folgebelehrung fällig ist und welche Schulungen ablaufen. Die Startseite weist
-  darauf hin.
+  darauf hin. Unter „Einstellungen → Mitarbeitende und Dokumente“ heißt 0 Monate beim
+  Führerschein bzw. bei der Belehrung: keine Wiedervorlage dazu (Vorgabe für neue Installationen).
 - **Führerschein-Kopie** nur, wenn unter „Fristen einstellen“ erlaubt (Vorgabe: aus). Sie wird
   verschlüsselt gespeichert, und jeder Abruf wird protokolliert.
 - Anrede, Führerscheinklassen (Mehrfachauswahl) und „gesehen von“ (registrierte Mitarbeitende)
