@@ -5,8 +5,8 @@
   <p><a href="{{ zurueck }}">← Fahrerplan</a></p>
   <h1>{{ wochentag }} {{ p.datum|date:"d.m.Y" }} · {{ p.tour }} · {{ p.name }}</h1>
   <dl class="angaben">
-    <dt>Feste Besetzung</dt><dd>{% if p.stamm %}{{ p.stamm.get_full_name|default:p.stamm.username }}{% else %}–{% endif %}</dd>
-    {% if p.ersatz %}<dt>Ersatz</dt><dd>{{ p.ersatz.benutzer.get_full_name|default:p.ersatz.benutzer.username }} (eingetragen von {{ p.ersatz.eingetragen_von }})</dd>{% endif %}
+    <dt>Feste Besetzung</dt><dd>{% if p.stamm %}{{ p.stamm.get_full_name|default:p.stamm.username }}{% else %}–{% if p.status == "leer" %} (Platz für Gäste){% endif %}{% endif %}</dd>
+    {% if p.ersatz %}<dt>Für diesen Tag</dt><dd>{% if p.gast %}{{ p.gast }} (Gast){% else %}{{ p.ersatz.benutzer.get_full_name|default:p.ersatz.benutzer.username }}{% endif %} (eingetragen von {{ p.ersatz.eingetragen_von }})</dd>{% endif %}
     {% if p.ausfall %}<dt>Fällt aus</dt><dd>{{ p.ausfall.benutzer.get_full_name|default:p.ausfall.benutzer.username }}: {{ p.ausfall.get_grund_display }}{% if p.ausfall.anmerkung %} – {{ p.ausfall.anmerkung }}{% endif %}</dd>{% endif %}
   </dl>
   <form method="post">
@@ -22,10 +22,18 @@
     </div>
     <button type="submit" class="knopf">Ersatz eintragen</button>
   </form>
+  <form method="post" class="abseits">
+    {% csrf_token %}
+    <div class="feld">
+      <label for="gast">Oder Gast ohne eigenes Konto (z. B. Freiwillige, die einen Tag mitfahren)</label>
+      <input type="text" name="gast" id="gast" maxlength="100" placeholder="Vor- und Nachname">
+    </div>
+    <button type="submit" class="knopf knopf-zweitrangig">Gast eintragen</button>
+  </form>
   {% if p.ersatz %}
-  <form method="post" class="abseits" onsubmit="return confirm('Ersatz zurücknehmen?')">
+  <form method="post" class="abseits" onsubmit="return confirm('Eintrag zurücknehmen?')">
     {% csrf_token %}<input type="hidden" name="benutzer" value="">
-    <button type="submit" class="knopf knopf-zweitrangig">Ersatz zurücknehmen</button>
+    <button type="submit" class="knopf knopf-zweitrangig">Eintrag zurücknehmen</button>
   </form>
   {% endif %}
 </section>

@@ -53,6 +53,18 @@
 </section>
 
 <section class="karte">
+  <h2>Beispiel zum Ausprobieren</h2>
+  <p class="hinweis">Legt die Touren Katernberg, Innenstadt, Steele, Frohnhausen und Sondertour an (je 3 Plätze, mindestens 2,
+    der dritte für Gäste) und verteilt erfundene Fahrer und Beifahrer zufällig auf die Fahrtage, dazu drei Springer. Die
+    erfundenen Konten können sich nicht anmelden und lassen sich hier wieder entfernen.</p>
+  <form method="post" action="{% url 'fahrdienst:beispiel' %}" class="aktionsleiste">
+    {% csrf_token %}
+    <button type="submit" name="aktion" value="anlegen" class="knopf knopf-zweitrangig">{% if beispiel %}Beispiel neu würfeln{% else %}Beispiel anlegen{% endif %}</button>
+    {% if beispiel %}<button type="submit" name="aktion" value="entfernen" class="knopf knopf-gefahr" onclick="return confirm('Beispiel wirklich löschen? Die erfundenen Konten und ihre Einteilungen werden entfernt.')">Beispiel entfernen</button>{% endif %}
+  </form>
+</section>
+
+<section class="karte">
   <h2>Aktuelle und kommende Ausfälle</h2>
   <ul>
     {% for a in ausfaelle %}<li>{{ a.benutzer.get_full_name|default:a.benutzer.username }}: {{ a.von|date:"d.m.Y" }}{% if a.bis != a.von %} bis {{ a.bis|date:"d.m.Y" }}{% endif %} ({{ a.get_grund_display }}{% if a.anmerkung %}, {{ a.anmerkung }}{% endif %})

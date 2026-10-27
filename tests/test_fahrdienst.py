@@ -335,3 +335,61 @@ def test_plan_als_pdf(team, admin_client, pdf_text):
     FahrdienstEinstellungen.objects.update(fahrtage="")
     leer = pdf_text(admin_client.get(reverse("fahrdienst:pdf"), {"monat": "2026-11"}))
     assert "keine Fahrtage" in leer
+
+
+def test_gaeste_und_mindestbesetzung(team, admin_client, pdf_text):
+    p, mitte, steele = team
+    steele.plaetze, steele.mindestbesetzung = 3, 2
+    steele.save()
+    platz3 = plan.platz(MITTWOCH, steele, 3)
+    assert platz3.status == plan.LEER and not platz3.fehlt  # Gästeplatz, nichts fehlt
+    Besetzung.objects.filter(tour=steele, wochentag="Mi", platz=2).delete()
+    assert plan.platz(MITTWOCH, steele, 2).status == plan.UNBESETZT
+    seite = admin_client.get(PLAN, {"monat": "2026-11"}).content.decode()
+    assert "<strong>unbesetzt</strong>" in seite and "+ Gast" in seite
+    url = reverse("fahrdienst:platz", args=["2026-11-11", steele.pk, 3])
+    assert "Platz für Gäste" in admin_client.get(url).content.decode()
+    admin_client.post(url, {"benutzer": "", "gast": "  Gerda Gast  "})
+    g = plan.platz(MITTWOCH, steele, 3)
+    assert (g.gast, g.status, g.wer) == ("Gerda Gast", plan.ERSETZT, None)
+    assert str(Ersatz.objects.get()) == "11.11.2026 Steele Beifahrer: Gerda Gast (Gast)"
+    seite = admin_client.get(PLAN, {"monat": "2026-11"}).content.decode()
+    assert "Gerda Gast <small>(Gast)</small>" in seite
+    text = pdf_text(admin_client.get(reverse("fahrdienst:pdf"), {"monat": "2026-11"}))
+    assert "Gerda Gast" in text and "unbesetzt" in text
+    admin_client.post(url, {"benutzer": "", "gast": ""})  # zurücknehmen
+    assert not Ersatz.objects.exists()
+    # Mindestbesetzung nicht größer als die Zahl der Plätze
+    antwort = admin_client.post(
+        reverse("fahrdienst:tour", args=[steele.pk]),
+        {"name": "Steele", "reihenfolge": 2, "plaetze": 2, "mindestbesetzung": 3, "aktiv": "on"},
+    )
+    assert "Mehr als die Zahl der Plätze" in antwort.content.decode()
+
+
+def test_beispiel_plan(admin_client):
+    from apps.fahrdienst import beispiel
+
+    assert not beispiel.vorhanden()
+    admin_client.post(reverse("fahrdienst:beispiel"), {"aktion": "anlegen"})
+    assert beispiel.vorhanden()
+    assert list(Tour.objects.values_list("name", "plaetze", "mindestbesetzung")) == [
+        (n, 3, 2) for n in beispiel.TOUREN
+    ]
+    tage = plan.tage(plan.fahrtage(dt.date(2026, 11, 9), dt.date(2026, 11, 13)))
+    for _, zeile in tage:
+        heute = [p.wer.pk for _, plaetze in zeile for p in plaetze if p.wer]
+        assert len(heute) == len(set(heute))  # niemand zweimal am Tag
+        assert all(not p.fehlt for _, plaetze in zeile for p in plaetze)
+    from django.contrib.auth import get_user_model
+
+    konto = get_user_model().objects.filter(username__startswith=beispiel.PRAEFIX).first()
+    assert not konto.has_usable_password()  # erfundene Konten können sich nicht anmelden
+    assert Springer.objects.count() == 3
+    seite = admin_client.get(reverse("fahrdienst:einstellungen")).content.decode()
+    assert "Beispiel neu würfeln" in seite and "Beispiel entfernen" in seite
+    beispiel.anlegen(seed=1)  # wiederholbar, ohne doppelte Konten
+    assert get_user_model().objects.filter(username__startswith=beispiel.PRAEFIX).count() == 23
+    echt = Tour.objects.create(name="Echte Tour")
+    admin_client.post(reverse("fahrdienst:beispiel"), {"aktion": "entfernen"})
+    assert not beispiel.vorhanden() and list(Tour.objects.all()) == [echt]

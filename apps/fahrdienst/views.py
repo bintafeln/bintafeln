@@ -57,7 +57,7 @@ def uebersicht(request):
         "nachher": f"{_verschieben(erster, 1):%Y-%m}",
         "heute": timezone.localdate(),
         "planen": rollen.hat_recht(request.user, "fahrdienst.planen"),
-        "offen": sum(p.status == plan.OFFEN for _, z in tage for _, ps in z for p in ps),
+        "offen": sum(p.fehlt for _, z in tage for _, ps in z for p in ps),
         "darf_melden": plan.darf_selbst_melden(request.user),
     })  # fmt: skip
 
@@ -89,12 +89,14 @@ def platz(request, datum, tour, nr):
         raise Http404
     zurueck = f"{reverse('fahrdienst:plan')}?monat={tag:%Y-%m}"
     if request.method == "POST":
-        wahl = request.POST.get("benutzer", "")
+        wahl, gast = request.POST.get("benutzer", ""), request.POST.get("gast", "").strip()
         neu = get_object_or_404(aktive(), pk=wahl) if wahl else None
-        plan.ersatz_eintragen(tag, t, nr, neu, request.user.get_username())
-        messages.success(request, f"{tag:%d.%m.%Y}, {t}, {platz_name(nr)}: "
-                                  + (f"{neu.get_full_name() or neu} springt ein."
-                                     if neu else "Ersatz zurückgenommen."))  # fmt: skip
+        plan.ersatz_eintragen(tag, t, nr, neu, request.user.get_username(), gast=gast)
+        if neu:
+            text = f"{neu.get_full_name() or neu} springt ein."
+        else:
+            text = f"Gast „{gast}“ fährt mit." if gast else "Eintrag zurückgenommen."
+        messages.success(request, f"{tag:%d.%m.%Y}, {t}, {platz_name(nr)}: {text}")
         return redirect(zurueck)
     springer, weitere = plan.verfuegbar(tag)
     return render(request, "fahrdienst/platz.html", {
@@ -161,8 +163,10 @@ def einstellungen(request):
         messages.success(request, "Einstellungen gespeichert.")
         return redirect("fahrdienst:einstellungen")
     heute = timezone.localdate()
+    from apps.fahrdienst import beispiel as muster
+
     return render(request, "fahrdienst/einstellungen.html", {
-        "form": form, "touren": Tour.objects.all(),
+        "form": form, "touren": Tour.objects.all(), "beispiel": muster.vorhanden(),
         "springer": Springer.objects.select_related("benutzer"),
         "ausfaelle": Ausfall.objects.filter(bis__gte=heute).select_related("benutzer"),
     })  # fmt: skip
@@ -199,6 +203,22 @@ def telegram_pruefen(request):
     except telegram.TelegramFehler as fehler:
         messages.error(request, str(fehler))
     return redirect("fahrdienst:einstellungen")
+
+
+@require_POST
+@planen
+def beispiel(request):
+    """Beispiel-Fahrerplan zum Ausprobieren anlegen oder wieder entfernen."""
+    from apps.fahrdienst import beispiel as muster
+
+    if request.POST.get("aktion") == "entfernen":
+        anzahl = muster.entfernen()
+        messages.success(request, f"Beispiel entfernt ({anzahl} erfundene Konten gelöscht).")
+    else:
+        z = muster.anlegen()
+        messages.success(request, f"Beispiel angelegt: {z['Touren']} Touren, {z['Personen']} "
+                                  "erfundene Fahrer und Beifahrer, zufällig verteilt.")  # fmt: skip
+    return redirect("fahrdienst:plan")
 
 
 @never_cache

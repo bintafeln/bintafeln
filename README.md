@@ -931,6 +931,14 @@ Ersetzt den gedruckten Fahrerplan mit den gelben Aufklebern (ADR 0074).
   mit den betroffenen Einsätzen und den freien Springern.
 - **Ersatz eintragen:** im Plan auf den Namen tippen; zur Wahl stehen die an dem Tag freien
   Springer, dann weitere freie Fahrer und Beifahrer.
+- **Mindestbesetzung und Gäste:** Jede Tour hat Plätze (z. B. 3) und eine Mindestbesetzung
+  (z. B. 2). Ein leerer Pflichtplatz steht als „unbesetzt“ da; freie Plätze darüber sind für
+  Gäste ohne Konto (Name eintragen).
+- **Beispiel:** „Beispiel anlegen“ in den Einstellungen des Fahrdienstes (oder
+  `python manage.py fahrdienst_beispiel`) legt die Touren Katernberg, Innenstadt, Steele,
+  Frohnhausen und Sondertour mit erfundenen, zufällig verteilten Fahrern an; „Beispiel entfernen“
+  (bzw. `--entfernen`) löscht nur diese erfundenen Konten (ohne Passwort, Name beginnt mit
+  `beispiel-fd-`).
 - Ausfälle und Ersatz werden nach 12 Monaten gelöscht (einstellbar) und stehen in der Auskunft
   für Mitarbeitende.
 - **Drucken:** „Drucken (PDF)“ im Fahrerplan, A3 quer wie der bisherige Papierplan, Springer darunter.

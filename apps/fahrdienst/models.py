@@ -72,6 +72,11 @@ class Tour(models.Model):
         "Plätze", default=3, validators=[MinValueValidator(1), MaxValueValidator(6)],
         help_text="Platz 1 ist Fahrer bzw. Fahrerin, die übrigen Beifahrer.",
     )  # fmt: skip
+    mindestbesetzung = models.PositiveSmallIntegerField(
+        "Mindestbesetzung", default=2, validators=[MinValueValidator(1), MaxValueValidator(6)],
+        help_text="So viele Plätze müssen besetzt sein; die übrigen sind frei für Gäste (z. B. "
+        "Freiwillige, die einen Tag mitfahren).",
+    )  # fmt: skip
     aktiv = models.BooleanField("Aktiv", default=True)
 
     class Meta:
@@ -158,8 +163,10 @@ class Ersatz(models.Model):
     datum = models.DateField("Datum")
     tour = models.ForeignKey(Tour, on_delete=models.CASCADE, related_name="+")
     platz = models.PositiveSmallIntegerField("Platz")
-    benutzer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
-                                 related_name="fahrdienst_ersatz")  # fmt: skip
+    benutzer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True,
+                                 blank=True, related_name="fahrdienst_ersatz")  # fmt: skip
+    gast = models.CharField("Gast", max_length=100, blank=True,
+                            help_text="Name eines Gastes ohne Konto (statt Benutzer).")  # fmt: skip
     eingetragen_von = models.CharField("Eingetragen von", max_length=150, blank=True)
     eingetragen_am = models.DateTimeField("Eingetragen am", auto_now_add=True)
 
@@ -171,7 +178,8 @@ class Ersatz(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.datum:%d.%m.%Y} {self.tour} {platz_name(self.platz)}: {self.benutzer}"
+        wer = self.benutzer or f"{self.gast} (Gast)"
+        return f"{self.datum:%d.%m.%Y} {self.tour} {platz_name(self.platz)}: {wer}"
 
 
 auditlog.register(
