@@ -786,7 +786,9 @@ Ruft die Kundinnen und Kunden im Wartebereich der Reihe nach auf (ADR 0050). Die
 kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
 
 - **Reihenfolge:** alle aktiven Haushalte der Kundengruppen, die heute an der Ausgabestelle dran
-  sind, Gruppe für Gruppe nach Uhrzeit, in der Gruppe zufällig gemischt. Haushalte mit Vorrang
+  sind, Gruppe für Gruppe nach Uhrzeit (fehlt sie, zählt die erste Zeit im Namen, z. B.
+  „Zentrale 13:00-13:30“; noch nicht begonnene Gruppen ordnen sich beim Abgleich neu), in der
+  Gruppe zufällig gemischt. Haushalte mit Vorrang
   (ein Ja/Nein-Zusatzfeld, z. B. „Schwerbehindert“) zuerst.
 - **Immer aktuell:** Neue Haushalte werden während des Tages fair einsortiert, entfernte fallen
   heraus. Wer heute schon am Einlass war (Abholung gebucht, z. B. mit Ausnahme vorgezogen),
@@ -1123,7 +1125,8 @@ Mitarbeitenden, Arbeitsverträge, Abwesenheiten, Stunden, Zeitbuchungen, Sondera
 Daten der Module (Selbstabholer, Links, Termine der Warteliste, eigene Listen, Serienbrief-Vorlagen).
 
 - Der Menüpunkt „Papierkorb“ erscheint, sobald etwas darin liegt, das man sehen darf: gleiches
-  Recht wie zum Löschen, bei Kundendaten auch nur die eigenen Ausgabestellen.
+  Recht wie zum Löschen, bei Kundendaten auch nur die eigenen Ausgabestellen. Die Zahl daneben
+  zählt nur, was seit dem letzten Öffnen des Papierkorbs neu dazugekommen ist.
 - **Wiederherstellen** legt alles mit denselben Nummern wieder an, Kontobuchungen hängen danach
   wieder am Haushalt. Ist die Kundennummer inzwischen neu vergeben oder fehlt etwas (z. B. die
   Kundengruppe), ändert sich nichts und es gibt eine Meldung. Eine Rolle stellt nur wieder her, wer

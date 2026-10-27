@@ -196,10 +196,12 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.4) !important;
         }
 
-        /* Am Kiosk gemeldet: grün, sonst dunkelrot (weiße Plakette, auch auf dem grünen Knopf lesbar) */
-        .nr { display: inline-block; background: #fff; border-radius: 6px; padding: 0 .25em; text-shadow: none; }
-        .nr-da { color: #1b6e34; }
-        .nr-fehlt { color: #8b1a1a; }
+        /* Am Kiosk gemeldet: grün, sonst dunkelrot (getönte, abgerundete Marke; auch auf dem grünen Knopf lesbar) */
+        .nr { display: inline-block; border-radius: 999px; padding: .05em .6em; margin: .15em .1em;
+              font-weight: 700; line-height: 1.25; text-shadow: none; }
+        .nr-da { background: #e4f5e9; color: #145c2c; box-shadow: inset 0 0 0 2px #2e8b57; }
+        .nr-fehlt { background: #fdeceb; color: #8b1a1a; box-shadow: inset 0 0 0 2px #c0392b; }
+        .btn-next-numbers .nr { padding: .02em .7em; margin: .12em 0; }
 
         .btn-next-numbers {
             font-size: 2.1rem !important;
@@ -706,7 +708,7 @@
             if (!pastNumbers || pastNumbers.length === 0) {
                 pastCustomersDisplay.textContent = '-';
             } else {
-                pastCustomersDisplay.innerHTML = pastNumbers.map(n => nrHtml(n)).join(' • ');
+                pastCustomersDisplay.innerHTML = pastNumbers.map(n => nrHtml(n)).join(kioskDa ? ' ' : ' • ');
             }
         }
 
@@ -751,7 +753,8 @@
                 // Button-Text mit Kundennummern (eine pro Zeile)
                 btnNumbers.innerHTML = displayNumbers.join('<br>');
             } else {
-                btnNumbers.textContent = 'Keine Nummern';
+                // Alle Aufgerufenen schon am Einlass: Gruppe läuft weiter
+                btnNumbers.textContent = data.alle_eingelassen ? 'Alle schon da – weiter' : 'Keine Nummern';
             }
             btnMainText.textContent = 'Aktuelle Kunden';
             nextBtn.disabled = false;
@@ -761,7 +764,7 @@
                 nextCustomersDisplay.innerHTML = data.next_numbers.slice(0, 10).map((number, index) => {
                     const isPriority = data.next_priority_flags && data.next_priority_flags[index];
                     return nrHtml(number, isPriority ? '♿ ' : '');
-                }).join(' • ');
+                }).join(kioskDa ? ' ' : ' • ');
             } else {
                 nextCustomersDisplay.textContent = '-';
             }

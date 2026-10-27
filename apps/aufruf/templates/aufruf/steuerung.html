@@ -238,11 +238,14 @@
         }
         
         /* Am Kiosk gemeldet: grün, sonst dunkelrot (nur, wenn sich heute jemand gemeldet hat) */
-        .number-item.nr-da, .number-item.nr-fehlt { background: #fff; }
+        .number-item.nr-da { background: #e4f5e9; border-color: #2e8b57; }
+        .number-item.nr-fehlt { background: #fdeceb; border-color: #c0392b; }
         .number-item.nr-da .number-value, .preview-number.nr-da { color: #1b6e34; }
         .number-item.nr-fehlt .number-value, .preview-number.nr-fehlt { color: #8b1a1a; }
         .preview-number.nr-da { border-color: #1b6e34; }
         .preview-number.nr-fehlt { border-color: #8b1a1a; }
+
+        .alle-da { background: #e4f5e9; color: #145c2c; border-radius: 8px; padding: 10px 14px; font-weight: 700; }
 
         .preview-number.empty {
             background: #f8f9fa;
@@ -500,7 +503,8 @@
                 <a href="{{ urls.zurueck_bintafeln }}" class="nav-link">🏠 Zurück zu bintafeln</a>
             </div>
 
-            {% if current_numbers %}
+            {% if current_numbers or alle_eingelassen %}
+                {% if alle_eingelassen %}<p class="alle-da">✅ Alle Aufgerufenen sind schon am Einlass – gleich die nächsten hereinrufen.</p>{% endif %}
                 <div class="current-info{% if has_any_priority %} priority{% endif %}">
                     <div class="day-display">{{ selected_day }}</div>
                     <div class="time-slot">📅 Kundengruppe: {{ current_slot }}</div>

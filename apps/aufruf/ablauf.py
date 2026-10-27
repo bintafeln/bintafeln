@@ -60,7 +60,7 @@ def gruppen_heute(stelle, datum: dt.date) -> list[Kundengruppe]:
         g for g in Kundengruppe.objects.filter(ausgabestelle=stelle, aktiv=True)
         if kuerzel in wochentage(g.wochentage)
     ]  # fmt: skip
-    return sorted(gruppen, key=lambda g: (g.uhrzeit is None, g.uhrzeit or dt.time(), g.name))
+    return sorted(gruppen, key=ausgabetag.reihenfolge)
 
 
 def _hat_vorrang(haushalt, feld) -> bool:
@@ -89,9 +89,13 @@ def _gemischt(nummern, vorrang) -> list[str]:
     return zuerst + rest
 
 
+def _zeit(gruppe) -> str:
+    zeit = ausgabetag.beginn(gruppe)
+    return zeit.strftime("%H:%M") if zeit else ""
+
+
 def _gruppe_eintrag(gruppe, wartend) -> dict:
-    return {"pk": gruppe.pk, "name": gruppe.name,
-            "zeit": gruppe.uhrzeit.strftime("%H:%M") if gruppe.uhrzeit else "",
+    return {"pk": gruppe.pk, "name": gruppe.name, "zeit": _zeit(gruppe),
             "wartend": wartend, "aufgerufen": [], "eingelassen": []}  # fmt: skip
 
 
@@ -190,9 +194,16 @@ def abgleichen(stand, stelle, datum, einstellungen) -> None:
     n = einstellungen.anzahl
     vorrang = set(stand.get("vorrang", []))
     bekannt = {g["pk"] for g in stand["gruppen"]}
-    for gruppe in gruppen_heute(stelle, datum):
-        if gruppe.pk not in bekannt:  # heute neu dazugekommen: hinten anhängen
+    heute_dran = gruppen_heute(stelle, datum)
+    for gruppe in heute_dran:
+        if gruppe.pk not in bekannt:  # heute neu dazugekommen
             stand["gruppen"].append(_gruppe_eintrag(gruppe, []))
+    # Noch nicht begonnene Gruppen immer nach Beginn ordnen (z. B. Uhrzeit nachgetragen oder
+    # Gruppe neu dazugekommen); laufende und erledigte bleiben, wo sie sind
+    rang = {g.pk: k for k, g in enumerate(heute_dran)}
+    start = stand["index"] + 1
+    stand["gruppen"][start:] = sorted(stand["gruppen"][start:],
+                                      key=lambda g: rang.get(g["pk"], len(rang)))  # fmt: skip
     pks = [g["pk"] for g in stand["gruppen"]]
     gruppen = {g.pk: g for g in Kundengruppe.objects.filter(pk__in=pks)}
     offen = [(i, g) for i, g in enumerate(stand["gruppen"]) if i >= stand["index"]]
@@ -208,7 +219,7 @@ def abgleichen(stand, stelle, datum, einstellungen) -> None:
                 if x in set(nummern) or x in stand["spaetzuender"]]  # fmt: skip
         g["wartend"] = fest + rest
         if gruppe:
-            g["name"] = gruppe.name
+            g["name"], g["zeit"] = gruppe.name, _zeit(gruppe)
     # 2. Neue Haushalte fair einsortieren
     im_stand = {x for g in stand["gruppen"] for teil in ("wartend", "aufgerufen", "eingelassen")
                 for x in g[teil]}  # fmt: skip
@@ -590,6 +601,8 @@ def stand_fuer_anzeige(tag, einstellungen, datum) -> dict:
     return {
         "finished": False,
         "current_numbers": aufgerufen,
+        # Alle Aufgerufenen schon am Einlass: Die Gruppe läuft weiter, nur „Weiter“ drücken
+        "alle_eingelassen": bool(wartend[:n]) and not aufgerufen,
         "next_numbers": danach[:10],
         "upcoming_numbers": danach,
         "past_numbers": vergangen[:10],
@@ -613,7 +626,11 @@ def stand_fuer_anzeige(tag, einstellungen, datum) -> dict:
 
 
 def gruppe_titel(g) -> str:
-    return f"{g['name']} ({g['zeit']})" if g.get("zeit") else g["name"]
+    """Name mit Uhrzeit, außer die Zeit steht schon im Namen („Zentrale Mo 13:00-14:00“)."""
+    zeit = g.get("zeit", "")
+    if not zeit or zeit in g["name"] or zeit.replace(":", ".") in g["name"]:
+        return g["name"]
+    return f"{g['name']} ({zeit})"
 
 
 def reihenfolge(tag) -> list[dict]:

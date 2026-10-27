@@ -875,7 +875,7 @@
 
         <!-- Mitte: Aktuelle Kunden -->
         <div class="current-customer">
-            {% if current_numbers %}
+            {% if current_numbers or alle_eingelassen %}
                 <div class="current-label">Bitte eintreten</div>
                 <div class="current-numbers-grid">
                     {% for p in plaetze %}
@@ -1439,7 +1439,7 @@
             
             const currentCustomerContainer = document.querySelector('.current-customer');
             
-            if (data.current_numbers && data.current_numbers.length > 0) {
+            if ((data.current_numbers && data.current_numbers.length > 0) || data.alle_eingelassen) {
                 let gridHtml = '<div class="current-label">Bitte eintreten</div><div class="current-numbers-grid">';
                 
                 for (let i = 0; i < ANZAHL; i++) {

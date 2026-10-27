@@ -1,9 +1,11 @@
 """Papierkorb: gelöschte Daten ansehen, wiederherstellen, endgültig löschen (ADR 0073)."""
 
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import redirect, render
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
@@ -24,6 +26,8 @@ def _eintrag(request, pk):
 @login_required
 def liste(request):
     eintraege = papierkorb.sichtbar(request.user)
+    # Gesehen: Die Zahl im Menü zählt ab jetzt nur, was neu dazukommt (gelöscht wird nichts)
+    get_user_model().objects.filter(pk=request.user.pk).update(papierkorb_gesehen_am=timezone.now())
     arten = sorted(set(eintraege.values_list("art", flat=True)))
     art = request.GET.get("art", "")
     if art:

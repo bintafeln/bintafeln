@@ -827,3 +827,53 @@ def test_kiosk_meldung_faerbt_die_nummern(modul_an, mitte, tag_daten, admin, adm
     ablauf.kiosk_melden(mitte, heute(), zweite)
     assert ablauf.am_kiosk(mitte, heute()) == {zweite}
     assert KioskMeldung.objects.count() == 1
+
+
+def test_alle_aufgerufenen_schon_am_einlass(modul_an, mitte, tag_daten, admin, admin_client):
+    from apps.kunden.models import Abholung
+
+    e = AufrufEinstellungen.laden(mitte)
+    tag = ablauf.starten(mitte, heute())
+    d = ablauf.stand_fuer_anzeige(tag, e, heute())
+    assert d["alle_eingelassen"] is False
+    for nummer in d["current_numbers"]:
+        Abholung.objects.create(haushalt=Haushalt.objects.get(kundennummer=nummer), datum=heute())
+    d = ablauf.stand_fuer_anzeige(tag, e, heute())
+    assert d["current_numbers"] == [] and d["alle_eingelassen"] and not d["finished"]
+    seite = admin_client.get(reverse("aufruf:steuerung", args=[mitte.pk])).content.decode()
+    assert "Alle Aufgerufenen sind schon am Einlass" in seite
+    assert "Kundengruppe abgeschlossen" not in seite and "Weiter zu den nächsten" in seite
+    monitor = Client().get(reverse("aufruf:monitor", args=[e.schluessel])).content.decode()
+    assert 'class="current-number-item">' in monitor  # Plätze mit Strich, nicht „vorbereitet“
+    admin.gewaehlte_stelle = mitte
+    admin.save()
+    assert "Alle schon am Einlass" in admin_client.get(reverse("aufruf:leiste")).content.decode()
+
+
+def test_gruppen_nach_beginn_auch_aus_dem_namen(modul_an, mitte):
+    from apps.ausgabe import ausgabetag
+
+    for name in ("Zentrale 14:30-15:00", "Zentrale 13:00-13:30", "Zentrale 12.30-13.00"):
+        haushalte(Kundengruppe.objects.create(name=name, ausgabestelle=mitte,
+                                              wochentage=kuerzel()), name[-5:])  # fmt: skip
+    spaet = gruppe(mitte, "Ohne Zeit im Namen", (14, 0))
+    haushalte(spaet, "9")
+    assert [g.name for g in ablauf.gruppen_heute(mitte, heute())] == [
+        "Zentrale 12.30-13.00",
+        "Zentrale 13:00-13:30",
+        "Ohne Zeit im Namen",
+        "Zentrale 14:30-15:00",
+    ]
+    assert ausgabetag.beginn(Kundengruppe(name="ohne")) is None
+    tag = ablauf.starten(mitte, heute())
+    assert [g["zeit"] for g in tag.stand["gruppen"]] == ["12:30", "13:00", "14:00", "14:30"]
+    assert ablauf.gruppe_titel(tag.stand["gruppen"][0]) == "Zentrale 12.30-13.00"
+    assert ablauf.gruppe_titel(tag.stand["gruppen"][2]) == "Ohne Zeit im Namen (14:00)"
+    # Uhrzeit nachgetragen: noch nicht begonnene Gruppen ordnen sich neu
+    spaet.uhrzeit = dt.time(15, 0)
+    spaet.save()
+    stand = tag.stand
+    ablauf.abgleichen(stand, mitte, heute(), AufrufEinstellungen.laden(mitte))
+    assert [g["name"] for g in stand["gruppen"]][-2:] == ["Zentrale 14:30-15:00",
+                                                          "Ohne Zeit im Namen"]  # fmt: skip
+    assert stand["gruppen"][0]["name"] == "Zentrale 12.30-13.00"  # laufende bleibt

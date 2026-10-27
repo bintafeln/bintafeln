@@ -119,8 +119,20 @@ def test_sichtbar_nur_mit_recht_und_eigener_stelle(admin, client, benutzer_mit_r
     anton.ausgabestellen.add(stellen["Mitte"].ausgabestelle)
     sichtbar = list(papierkorb.sichtbar(anton).values_list("bezeichnung", flat=True))
     assert sichtbar == ["Mitte"]  # nur die eigene Ausgabestelle, keine Adresse
+    from apps.konten.models import Benutzer
+
+    Benutzer.objects.filter(pk=anton.pk).update(papierkorb_gesehen_am=None)  # nie angesehen
     seite = client.get(reverse("core:start")).content.decode()
-    assert 'title="Einträge im Papierkorb">1<' in seite
+    assert 'title="neu im Papierkorb">1<' in seite
+    # Einmal angesehen: keine Zahl mehr, der Eintrag bleibt; Neues zählt wieder
+    client.get(KORB)
+    seite = client.get(reverse("core:start")).content.decode()
+    assert 'title="neu im Papierkorb"' not in seite and "Papierkorb</a>" in seite
+    assert papierkorb.sichtbar(anton).count() == 1
+    papierkorb.loeschen(admin, "Haushalt", "Mitte 2", haushalt("3", stellen["Mitte"]),
+                        recht="kunden.loeschen", kundennummer="3")  # fmt: skip
+    seite = client.get(reverse("core:start")).content.decode()
+    assert 'title="neu im Papierkorb">1<' in seite
     # Filter nach Art (Admin sieht alles)
     assert set(papierkorb.sichtbar(admin).values_list("art", flat=True)) == {"Haushalt", "Adresse"}
 

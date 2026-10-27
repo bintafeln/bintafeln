@@ -55,6 +55,10 @@ class Benutzer(AbstractUser):
         help_text="Ausgabestelle aus dem Auswahlfeld oben im Menü; gilt bis zur nächsten Wahl "
         "(ADR 0067).",
     )  # fmt: skip
+    papierkorb_gesehen_am = models.DateTimeField(
+        "Papierkorb zuletzt angesehen", null=True, blank=True,
+        help_text="Die Zahl im Menü zählt nur, was danach in den Papierkorb kam (ADR 0073).",
+    )  # fmt: skip
     # Konto einer Ausgabestelle für die Einlass-Tablets (ADR 0059): Anmeldung mit dem Namen der
     # Ausgabestelle und Passwort, ohne Zwei-Faktor, Abmeldung nach 30 Minuten ohne Eingabe.
     stelle = models.OneToOneField(
