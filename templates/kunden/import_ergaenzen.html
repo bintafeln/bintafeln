@@ -2,7 +2,7 @@
 {% block titel %}Import prüfen{% endblock %}
 {% block inhalt %}
 <section class="karte">
-  <p><a href="{% url 'kunden:import' %}">← Import</a></p>
+  <p><a href="{% url 'datenimport:start' %}?ziel=kunden">← Daten importieren</a></p>
   <h1>Kundenstamm ergänzen</h1>
   <p class="sicherung sicherung-ok">Keine Fehler. Geprüft: {{ vorbereitung.dateien|join:", " }}</p>
   {% if bericht %}

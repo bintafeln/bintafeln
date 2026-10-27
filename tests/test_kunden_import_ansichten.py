@@ -11,6 +11,7 @@ from apps.kunden.models import Haushalt, ImportLauf, ImportVorbereitung
 pytestmark = pytest.mark.django_db
 
 IMPORT = reverse("kunden:import")
+START = reverse("datenimport:start") + "?ziel=kunden"
 UEBERSICHT = reverse("kunden:uebersicht")
 
 
@@ -46,13 +47,18 @@ def buero_client(client, admin, benutzer_mit_rolle, anmelden):
 def test_import_nur_admin_und_buero(client, admin, benutzer_mit_rolle, anmelden, rolle):
     anmelden(client, benutzer_mit_rolle("person", rolle))
     assert client.get(IMPORT).status_code == 403
+    assert client.get(reverse("datenimport:start")).status_code == 403
 
 
 def test_buero_sieht_menue_und_uebersicht(buero_client):
     assert "Kunden einsehen</a>" in buero_client.get("/").content.decode()
     inhalt = buero_client.get(UEBERSICHT).content.decode()
     assert "0 Haushalte" in inhalt and "Neuen Stand importieren" in inhalt
-    assert "Noch kein Import" in buero_client.get(IMPORT).content.decode()
+    # Ein Einstieg: die alte Seite führt in den Import-Assistenten, dort die letzten Importe
+    antwort = buero_client.get(IMPORT)
+    assert antwort.url == reverse("datenimport:start") + "?ziel=kunden"
+    assert "Noch kein Import" in buero_client.get(antwort.url).content.decode()
+    assert "Kundenstamm importieren</a>" not in buero_client.get("/").content.decode()
 
 
 def test_ohne_dateien(buero_client):
@@ -110,7 +116,7 @@ def test_uebernehmen_nur_mit_frischer_sicherung(
         settings.SICHERUNG_STATUSDATEI = tmp_path / "fehlt.txt"
     else:
         sicherung(stunden)
-    assert "älter als 24 Stunden" in buero_client.get(IMPORT).content.decode()
+    assert "älter als 24 Stunden" in buero_client.get(IMPORT, follow=True).content.decode()
     buero_client.post(IMPORT, {"dateien": [gueltig()]})
     vorbereitung = ImportVorbereitung.objects.get()
     vorschau = buero_client.get(reverse("kunden:import_vorschau", args=[vorbereitung.pk]))
@@ -127,10 +133,10 @@ def test_verwerfen(buero_client, sicherung):
     buero_client.post(IMPORT, {"dateien": [gueltig()]})
     pk = ImportVorbereitung.objects.get().pk
     antwort = buero_client.post(reverse("kunden:import_verwerfen", args=[pk]))
-    assert antwort.url == IMPORT
+    assert antwort.url == START
     assert not ImportVorbereitung.objects.exists()
     # zweites Verwerfen schadet nicht
-    assert buero_client.post(reverse("kunden:import_verwerfen", args=[pk])).url == IMPORT
+    assert buero_client.post(reverse("kunden:import_verwerfen", args=[pk])).url == START
 
 
 def test_fremde_und_abgelaufene_vorbereitung(buero_client, admin, sicherung, client):
@@ -144,10 +150,9 @@ def test_fremde_und_abgelaufene_vorbereitung(buero_client, admin, sicherung, cli
     andere = vorbereitung.erstellt_von.__class__.objects.get(username="chefin")
     vorbereitung.erstellt_von = andere
     vorbereitung.save()
-    assert buero_client.get(url).url == IMPORT
+    assert buero_client.get(url).url == START
     assert (
-        buero_client.post(reverse("kunden:import_uebernehmen", args=[vorbereitung.pk])).url
-        == IMPORT
+        buero_client.post(reverse("kunden:import_uebernehmen", args=[vorbereitung.pk])).url == START
     )
 
     # Nach einer Stunde gelöscht, auch beim Aufruf der Startseite

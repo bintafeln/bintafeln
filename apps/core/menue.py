@@ -141,7 +141,6 @@ def menue(request) -> list[dict]:
             ("antraege.sehen", _eintrag("Öffentliches Formular", "antrag:start", extern=True)),
         ], vorn=True)  # fmt: skip
     dazu("Kunden/Kundenstamm", [
-        ("kunden.importieren", _eintrag("Kundenstamm importieren", "kunden:import")),
         ("kunden.zugriffsprotokoll", _eintrag("Zugriffsprotokoll", "kunden:zugriffe")),
     ])  # fmt: skip
 

@@ -402,7 +402,8 @@ hinzufügen**, **hinzufügen und aktualisieren** (Vorgabe, löscht nichts) oder 
 
 1. Vorher unter „Einstellungen → Kundenstamm“ festlegen, welche Angaben erfasst werden, und
    benötigte **Zusatzfelder** anlegen (ihre Schlüssel bestimmen die Spalten `zusatz_…`).
-2. „Kunden“ → „Neuen Stand importieren“ → CSV-Dateien auswählen → **Prüfen**.
+2. „Kunden“ → „Neuen Stand importieren“ (führt in den Import-Assistenten, siehe „Daten
+   importieren“) → „Kundenstamm“, Dateien auswählen → Zuordnung prüfen → **Prüfen und abgleichen**.
 3. Der **Prüfbericht** nennt Fehler (Import nicht möglich) und Warnungen (Import möglich), jeweils
    mit Datei und Zeile, aber ohne Inhalte.
 4. Ohne Fehler: Vorschau mit „bisher / nach dem Import“ ansehen und **Import übernehmen**.

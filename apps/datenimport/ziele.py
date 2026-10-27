@@ -15,7 +15,7 @@ from django.db import transaction
 from django.db.models import ProtectedError
 
 from apps.datenimport.abgleich import Bestandseintrag, Treffer, abgleichen
-from apps.datenimport.zuordnung import Art, Feld, normalisieren
+from apps.datenimport.zuordnung import NAME_VOLL, PLZ_ORT, Art, Feld, normalisieren
 from apps.kunden import werte as wertlesen
 
 FEHLER, WARNUNG = "fehler", "warnung"
@@ -1256,9 +1256,20 @@ class Kunden(Ziel):
         return arten
 
     @staticmethod
-    def neutral(art: Art, zeilen: list[dict]) -> bytes:
-        """Zeilen ({Feld: Text}) als CSV-Datei im Importformat."""
-        spalten = [f.schluessel for f in art.felder if any(f.schluessel in z for z in zeilen)]
+    def neutral(art: Art, zeilen: list[dict], zugeordnet=()) -> bytes:
+        """Zeilen ({Feld: Text}) als CSV-Datei im Importformat. ``zugeordnet``: Felder aus der
+        Zuordnung, damit auch eine Datei ohne Datenzeilen ihre Überschriften behält (z. B. eine
+        leere Haushalte-Liste für den Vollaustausch)."""
+        da = set(zugeordnet)
+        if NAME_VOLL in da:
+            da |= {"vorname", "nachname"}
+        if PLZ_ORT in da:
+            da |= {"plz", "ort"}
+        spalten = [
+            f.schluessel
+            for f in art.felder
+            if f.schluessel in da or any(f.schluessel in z for z in zeilen)
+        ]
         puffer = io.StringIO()
         schreiber = csv.writer(puffer, delimiter=";", lineterminator="\n")
         schreiber.writerow(spalten)
