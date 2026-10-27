@@ -123,6 +123,10 @@ def start(request):
                     tabellen=tabellen,
                 )
                 return redirect("datenimport:zuordnen", pk=sitzung.pk)
+    kunden = rollen.hat_recht(request.user, "kunden.importieren")
+    if kunden:
+        from apps.kunden.models import ImportLauf
+        from apps.kunden.views import _sicherung_frisch
     return render(
         request,
         "datenimport/start.html",
@@ -130,6 +134,9 @@ def start(request):
             "ziele": ziele,
             "gewaehlt": gewaehlt,
             "sitzungen": ImportSitzung.objects.filter(benutzer=request.user),
+            # Kundenstamm: letzte Importe und Hinweis auf die Sicherung (ADR 0078)
+            "importe": ImportLauf.objects.select_related("benutzer")[:10] if kunden else None,
+            "sicherung_frisch": _sicherung_frisch() if kunden else True,
         },
     )
 

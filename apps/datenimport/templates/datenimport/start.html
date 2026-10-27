@@ -1,5 +1,31 @@
 {% extends "base.html" %}
-{% block titel %}Daten importieren{% endblock %}
+{% block titel %}Daten importieren{% if importe is not None %}
+<section class="karte">
+  <h2>Letzte Importe des Kundenstamms</h2>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Zeitpunkt</th><th>Von</th><th>Art</th><th>Haushalte</th><th>Personen</th><th>Abholungen</th><th>Buchungen</th><th>Warnungen</th></tr></thead>
+    <tbody>
+    {% for lauf in importe %}
+      <tr>
+        <td data-titel="Zeitpunkt">{{ lauf.zeitpunkt|date:"d.m.Y H:i" }}</td>
+        <td data-titel="Von">{{ lauf.benutzer|default:"–" }}</td>
+        <td data-titel="Art">{{ lauf.get_art_display }}</td>
+        <td data-titel="Haushalte">{{ lauf.anzahl_haushalte }}</td>
+        <td data-titel="Personen">{{ lauf.anzahl_personen }}</td>
+        <td data-titel="Abholungen">{{ lauf.anzahl_abholungen }}</td>
+        <td data-titel="Buchungen">{{ lauf.anzahl_buchungen }}</td>
+        <td data-titel="Warnungen">{{ lauf.anzahl_warnungen }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8">Noch kein Import.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
 {% block inhalt %}
 <section class="karte">
   <h1>Daten importieren</h1>
@@ -24,7 +50,13 @@
     </div>
     <button type="submit" class="knopf">Weiter zur Zuordnung</button>
   </form>
-  <p class="hinweis">Die hochgeladenen Daten werden höchstens zwei Stunden aufbewahrt und danach gelöscht.</p>
+  <p class="hinweis">Die hochgeladenen Daten werden höchstens zwei Stunden aufbewahrt und danach gelöscht.
+    Dateien im <a href="https://github.com/bintafeln/bintafeln/blob/main/docs/importformat.md">Importformat</a>
+    (<code>haushalte.csv</code>, <code>personen.csv</code> …) werden von selbst erkannt und zugeordnet.</p>
+  {% if not sicherung_frisch %}
+    <p class="sicherung sicherung-veraltet">Die letzte erfolgreiche Sicherung ist älter als 24 Stunden.
+      Den Kundenstamm prüfen ist möglich, übernehmen erst nach einer Sicherung (auf dem Server: <code>./betrieb sichern</code>).</p>
+  {% endif %}
 </section>
 {% if sitzungen %}
 <section class="karte">

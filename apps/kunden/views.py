@@ -660,8 +660,17 @@ def zugriffe(request):
     )
 
 
+def _zum_import():
+    """Der Import des Kundenstamms beginnt im Import-Assistenten (ADR 0078)."""
+    return redirect(f"{reverse('datenimport:start')}?ziel=kunden")
+
+
 @rollen.recht_erforderlich("kunden.importieren")
 def import_hochladen(request):
+    """Hochladen von Dateien im Importformat. In der Oberfläche führt der Import-Assistent
+    hierher nicht mehr; ein Aufruf der Seite leitet dorthin um."""
+    if request.method != "POST":
+        return _zum_import()
     ImportVorbereitung.abgelaufene_loeschen()
     kontext = {
         "sicherung_frisch": _sicherung_frisch(),
@@ -689,7 +698,6 @@ def import_hochladen(request):
             bericht=ergebnis.bericht,
         )
         return redirect("kunden:import_vorschau", pk=vorbereitung.pk)
-    return render(request, "kunden/import.html", kontext)
 
 
 def _vorbereitung_laden(request, pk):
@@ -717,7 +725,7 @@ def import_vorschau(request, pk):
     vorbereitung = _vorbereitung_laden(request, pk)
     if vorbereitung is None:
         messages.error(request, "Dieser Import ist abgelaufen oder existiert nicht mehr.")
-        return redirect("kunden:import")
+        return _zum_import()
     daten = vorbereitung.daten
     modus = _import_modus(request)
     if daten.get("nur_ergaenzen") and modus == VOLLAUSTAUSCH:
@@ -776,7 +784,7 @@ def import_uebernehmen(request, pk):
     vorbereitung = _vorbereitung_laden(request, pk)
     if vorbereitung is None:
         messages.error(request, "Dieser Import ist abgelaufen oder existiert nicht mehr.")
-        return redirect("kunden:import")
+        return _zum_import()
     modus = _import_modus(request)
     if vorbereitung.daten.get("nur_ergaenzen") and modus == VOLLAUSTAUSCH:
         modus = "aktualisieren"  # ohne haushalte.csv nur Ergänzen
@@ -847,4 +855,4 @@ def import_verwerfen(request, pk):
     if vorbereitung is not None:
         vorbereitung.delete()
     messages.info(request, "Import verworfen. Die geprüften Daten wurden gelöscht.")
-    return redirect("kunden:import")
+    return _zum_import()
