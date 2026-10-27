@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block titel %}Daten importieren{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Daten importieren</h1>
+  <p>CSV- oder Excel-Dateien (.xlsx) aus einem anderen Programm einlesen. Die Spalten dürfen
+    beliebig heißen und in beliebiger Reihenfolge stehen: Im nächsten Schritt ordnen Sie sie zu –
+    bintafeln schlägt die Zuordnung vor. Danach zeigt ein Abgleich, was neu ist, was sich ändert
+    und wo es Konflikte mit vorhandenen Daten gibt. Übernommen wird erst nach Ihrer Bestätigung.</p>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <fieldset class="feld">
+      <legend>Was wird importiert?</legend>
+      {% for z in ziele %}
+        <label class="wahl"><input type="radio" name="ziel" value="{{ z.kennung }}"{% if z.kennung == gewaehlt %} checked{% endif %}>
+          <strong>{{ z.titel }}</strong> – <small>{{ z.beschreibung }}</small></label>
+      {% endfor %}
+    </fieldset>
+    <div class="feld">
+      <label for="dateien">Dateien</label>
+      <input type="file" id="dateien" name="dateien" accept=".csv,.txt,.xlsx,.xlsm,text/csv" multiple required>
+      <small class="hinweis">Mehrere Dateien gleichzeitig markieren, z. B. eine je Kundengruppe oder Haushalte und Angehörige getrennt.
+        Bei Excel wird jedes Blatt mit Inhalt einzeln angeboten.</small>
+    </div>
+    <button type="submit" class="knopf">Weiter zur Zuordnung</button>
+  </form>
+  <p class="hinweis">Die hochgeladenen Daten werden höchstens zwei Stunden aufbewahrt und danach gelöscht.</p>
+</section>
+{% if sitzungen %}
+<section class="karte">
+  <h2>Angefangene Importe</h2>
+  <ul>
+  {% for s in sitzungen %}
+    <li><a href="{% if s.plan %}{% url 'datenimport:abgleich' s.pk %}{% else %}{% url 'datenimport:zuordnen' s.pk %}{% endif %}">{{ s.dateien|join:", " }}</a>
+      <small class="hinweis">({{ s.erstellt_am|date:"d.m.Y H:i" }})</small></li>
+  {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

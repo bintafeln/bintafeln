@@ -697,20 +697,52 @@ def _vorbereitung_laden(request, pk):
     return ImportVorbereitung.objects.filter(pk=pk, erstellt_von=request.user).first()
 
 
+VOLLAUSTAUSCH = "vollaustausch"
+
+
+def _import_modus(request) -> str:
+    from apps.kunden import import_ergaenzen
+
+    # Ohne Angabe: beim Ansehen ergänzen (löscht nichts), beim Absenden wie früher Vollaustausch
+    vorgabe = VOLLAUSTAUSCH if request.method == "POST" else "aktualisieren"
+    modus = request.POST.get("modus") or request.GET.get("modus") or vorgabe
+    return modus if modus == VOLLAUSTAUSCH or modus in import_ergaenzen.MODI else "aktualisieren"
+
+
 @rollen.recht_erforderlich("kunden.importieren")
 def import_vorschau(request, pk):
+    from apps.datenimport import abgleich as abgleich_
+    from apps.kunden import import_ergaenzen
+
     vorbereitung = _vorbereitung_laden(request, pk)
     if vorbereitung is None:
         messages.error(request, "Dieser Import ist abgelaufen oder existiert nicht mehr.")
         return redirect("kunden:import")
     daten = vorbereitung.daten
+    modus = _import_modus(request)
+    # Hinweise, die nur den Vollaustausch betreffen, fallen beim Ergänzen weg (ADR 0078)
+    bericht = [m for m in vorbereitung.bericht if modus == VOLLAUSTAUSCH or not m.get("ersetzen")]
+    kontext = {
+        "vorbereitung": vorbereitung,
+        "bericht": importieren.bericht_gruppiert(bericht),
+        "anzahl_warnungen": len(bericht),
+        "gueltig_bis": vorbereitung.erstellt_am + ImportVorbereitung.GUELTIG,
+        "sicherung_frisch": _sicherung_frisch(),
+        "modus": modus,
+        "modi": import_ergaenzen.MODI.items(),
+    }
+    if modus != VOLLAUSTAUSCH:
+        plan = abgleich_.vorgaben(import_ergaenzen.planen(daten), modus, import_ergaenzen.AKTIONEN)
+        return render(request, "kunden/import_ergaenzen.html", {
+            **kontext, "plan": plan, "aktionen": import_ergaenzen.AKTIONEN,
+            "max_anzeige": abgleich_.MAX_ANZEIGE,
+            "extra_modi": [(f"?modus={VOLLAUSTAUSCH}", "Vollaustausch")],
+        })  # fmt: skip
     return render(
         request,
         "kunden/import_vorschau.html",
         {
-            "vorbereitung": vorbereitung,
-            "bericht": importieren.bericht_gruppiert(vorbereitung.bericht),
-            "anzahl_warnungen": len(vorbereitung.bericht),
+            **kontext,
             "neu": {
                 "haushalte": len(daten["haushalte"]),
                 "personen": len(daten["haushalte"]) + len(daten["personen"]),
@@ -729,8 +761,6 @@ def import_vorschau(request, pk):
                 "abholungen": Abholung.objects.count(),
                 "ausnahmen": Ausnahme.objects.count(),
             },
-            "gueltig_bis": vorbereitung.erstellt_am + ImportVorbereitung.GUELTIG,
-            "sicherung_frisch": _sicherung_frisch(),
             "abgleich": importieren.abgleich(daten),
             "max_abgleich": importieren.MAX_ABGLEICH,
         },
@@ -744,18 +774,25 @@ def import_uebernehmen(request, pk):
     if vorbereitung is None:
         messages.error(request, "Dieser Import ist abgelaufen oder existiert nicht mehr.")
         return redirect("kunden:import")
+    modus = _import_modus(request)
     if not _sicherung_frisch():
         messages.error(
             request,
             "Die letzte erfolgreiche Sicherung ist älter als 24 Stunden. Bitte zuerst auf dem "
             "Server „./betrieb sichern“ ausführen.",
         )
-        return redirect("kunden:import_vorschau", pk=pk)
+        return redirect(f"{reverse('kunden:import_vorschau', args=[pk])}?modus={modus}")
+    if modus != VOLLAUSTAUSCH:
+        return _import_ergaenzen(request, vorbereitung, modus)
+    ab = importieren.abgleich(vorbereitung.daten)
     # Haushalte, die in bintafeln geändert oder aufgenommen wurden: je Haushalt gewählt
-    fragen = {e["kundennummer"] for e in importieren.abgleich(vorbereitung.daten)["fragen"]}
+    fragen = {e["kundennummer"] for e in ab["fragen"]}
     behalten = {n for n in fragen if request.POST.get(f"wahl_{n}", "behalten") == "behalten"}
     if request.POST.get("alle") == "uebernehmen":
         behalten = set()
+    # Entfallene Haushalte ohne Änderungen in bintafeln: Löschen ist vorgewählt, abwählbar
+    behalten |= {e["kundennummer"] for e in ab["entfallen"] if not e["lokal"]
+                 and request.POST.get(f"wahl_{e['kundennummer']}") == "behalten"}  # fmt: skip
     lauf = importieren.uebernehmen(
         vorbereitung.daten,
         benutzer=request.user,
@@ -771,6 +808,30 @@ def import_uebernehmen(request, pk):
         f"{lauf.anzahl_personen} Personen."
         + (f" {len(behalten)} Haushalt(e) mit bintafeln-Stand behalten." if behalten else ""),
     )
+    return redirect("kunden:uebersicht")
+
+
+def _import_ergaenzen(request, vorbereitung, modus):
+    from apps.datenimport import abgleich as abgleich_
+    from apps.kunden import import_ergaenzen
+
+    plan = import_ergaenzen.planen(vorbereitung.daten)
+    entscheidung = abgleich_.entscheiden(plan, modus, request.POST, import_ergaenzen.AKTIONEN)
+    bericht = [m for m in vorbereitung.bericht if not m.get("ersetzen")]
+    _, zahlen = import_ergaenzen.ergaenzen(
+        vorbereitung.daten, entscheidung, modus=modus, benutzer=request.user,
+        dateien=vorbereitung.dateien, pruefsumme=vorbereitung.pruefsumme,
+        anzahl_warnungen=len(bericht),
+    )  # fmt: skip
+    vorbereitung.delete()
+    teile = [f"{zahlen['neu']} Haushalte neu", f"{zahlen['geaendert']} aktualisiert"]
+    if zahlen["verlauf"]:
+        teile.append(f"{zahlen['verlauf']} Abholungen, Ausnahmen oder Anmerkungen ergänzt")
+    if zahlen["geloescht"]:
+        teile.append(f"{zahlen['geloescht']} in den Papierkorb gelegt")
+    if zahlen["ausgelassen"]:
+        teile.append(f"{zahlen['ausgelassen']} mögliche Dubletten ausgelassen")
+    messages.success(request, "Import abgeschlossen: " + ", ".join(teile) + ".")
     return redirect("kunden:uebersicht")
 
 

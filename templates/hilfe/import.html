@@ -1,11 +1,28 @@
-<p>Solange die Tafel noch ein anderes Programm nutzt, kommt der Kundenstamm als CSV-Dateien im offenen Importformat
-  von bintafeln. Menü „Kunden → Kundenstamm importieren“.</p>
+<p>Solange die Tafel noch ein anderes Programm nutzt, kommt der Kundenstamm als Datei herüber: entweder als CSV-Dateien im offenen
+  Importformat von bintafeln (Menü „Kunden → Kundenstamm importieren“) oder als beliebige Excel- oder CSV-Datei über den
+  Import-Assistenten (siehe „Daten importieren“).</p>
 <ol>
-  <li>Dateien wählen (mindestens <code>haushalte.csv</code>) und hochladen.</li>
+  <li>Dateien wählen (mindestens die Haushalte) und hochladen.</li>
   <li>Den <strong>Prüfbericht</strong> lesen: Fehler verhindern den Import, Warnungen nicht. Er nennt nur Zeilen und Felder,
     keine Inhalte.</li>
-  <li>Der <strong>Abgleich</strong> zeigt neue, entfallene und geänderte Haushalte. Wurden Haushalte in bintafeln geändert
-    oder aufgenommen, entscheiden Sie je Haushalt: bintafeln-Stand behalten oder Import übernehmen.</li>
+  <li>Die <strong>Art des Imports</strong> wählen:
+    <ul>
+      <li><strong>Nur neue hinzufügen:</strong> Neue Haushalte werden angelegt, vorhandene bleiben, wie sie sind.
+        Unterschiede werden trotzdem angezeigt und lassen sich einzeln übernehmen.</li>
+      <li><strong>Hinzufügen und aktualisieren</strong> (vorgewählt): Neue Haushalte werden angelegt, Unterschiede bei vorhandenen
+        übernommen – je Feld abwählbar. Leere Zellen überschreiben nichts. Abholungen, Ausnahmen und Anmerkungen aus der Datei
+        kommen dazu, wenn es sie noch nicht gibt. Ein anderer Kontostand wird als Korrekturbuchung eingetragen.</li>
+      <li><strong>Vollaustausch:</strong> Der Import ersetzt den ganzen Kundenstamm. Wer nicht mehr in der Datei steht, wird
+        gelöscht – je Haushalt abwählbar. In bintafeln geänderte oder aufgenommene Haushalte behalten ihren Stand, wenn Sie nichts
+        anderes wählen.</li>
+    </ul></li>
+  <li>Den <strong>Abgleich</strong> durchgehen. <span class="konflikt-markierung">Konflikt</span> heißt: In bintafeln und in der
+    Datei stehen verschiedene Werte. Der Haken entscheidet, ob der Wert aus der Datei übernommen wird. Bei Haushalten, die in
+    bintafeln geändert wurden, ist er nicht vorgewählt.</li>
+  <li><strong>Mögliche Dubletten</strong>: Ein Haushalt mit neuer Kundennummer, dessen Hauptperson mit Namen und Geburtsdatum schon
+    da ist. Vorgewählt ist „nicht anlegen“; Sie können ihn als denselben Haushalt behandeln (Haken übernehmen) oder trotzdem neu anlegen.</li>
+  <li><strong>Nicht mehr in der Datei</strong>: beim Ergänzen vorgewählt „behalten“; wer gelöscht werden soll, einzeln auf
+    „löschen“ stellen (Papierkorb).</li>
   <li>„Übernehmen“ – nur möglich, wenn die Server-Sicherung frisch ist.</li>
 </ol>
 <p>Notizen, Dokumente, Historie und Teilnahmen bleiben erhalten (sie hängen an der Kundennummer).</p>

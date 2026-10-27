@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block titel %}Import abgleichen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'datenimport:zuordnen' sitzung.pk %}">← Zuordnung ändern</a></p>
+  <h1>{{ ziel.titel }}: Abgleich</h1>
+  <p>Geprüft: {{ sitzung.dateien|join:", " }}</p>
+  {% if meldungen %}
+    <h2>Hinweise zur Datei</h2>
+    <div class="tabelle-rahmen">
+    <table class="tabelle bericht">
+      <thead><tr><th>Art</th><th>Tabelle</th><th>Meldung</th><th>Zeilen</th></tr></thead>
+      <tbody>
+      {% for m in meldungen %}
+        <tr class="meldung-{{ m.stufe }}">
+          <td data-titel="Art">{% if m.stufe == "fehler" %}Ausgelassen{% else %}Warnung{% endif %}</td>
+          <td data-titel="Tabelle">{{ m.tabelle }}</td>
+          <td data-titel="Meldung">{{ m.text }}</td>
+          <td data-titel="Zeilen">{{ m.anzahl }}×: {{ m.zeilen_kurz }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% endif %}
+  <form method="post" action="{{ aktion_url }}">
+    {% csrf_token %}
+    {% include "datenimport/_abgleich.html" %}
+    {% if ziel.kennung == "mitarbeitende" %}
+      <p class="hinweis">Neue Konten bekommen kein Passwort. Den Zugang vergeben Sie danach unter Mitarbeitende
+        (Link per E-Mail oder neues Passwort). Rollen werden nur neuen Konten gegeben, und nur solche, die Sie selbst vergeben dürfen.</p>
+    {% endif %}
+    <button type="submit" class="knopf">Import übernehmen</button>
+  </form>
+  <form method="post" action="{% url 'datenimport:verwerfen' sitzung.pk %}" class="inline">
+    {% csrf_token %}
+    <button type="submit" class="knopf knopf-zweitrangig">Verwerfen</button>
+  </form>
+</section>
+{% endblock %}

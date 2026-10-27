@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "apps.spenden",
     "apps.mitglieder",
     "apps.serienbriefe",
+    "apps.datenimport",
 ]
 
 # Zuschaltbare Module (ADR 0049): eigene Apps mit modul.py; jede Tafel schaltet sie in den

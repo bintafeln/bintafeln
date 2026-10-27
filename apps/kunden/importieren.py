@@ -186,14 +186,17 @@ class _Pruefung:
 
     # --- Meldungen --------------------------------------------------------------------
 
-    def melden(self, stufe, datei, zeile, text):
-        self.bericht.append({"stufe": stufe, "datei": datei, "zeile": zeile, "text": text})
+    def melden(self, stufe, datei, zeile, text, ersetzen=False):
+        meldung = {"stufe": stufe, "datei": datei, "zeile": zeile, "text": text}
+        if ersetzen:  # betrifft nur den Vollaustausch, nicht das Ergänzen (ADR 0078)
+            meldung["ersetzen"] = True
+        self.bericht.append(meldung)
 
     def fehler(self, datei, zeile, text):
         self.melden(FEHLER, datei, zeile, text)
 
-    def warnung(self, datei, zeile, text):
-        self.melden(WARNUNG, datei, zeile, text)
+    def warnung(self, datei, zeile, text, ersetzen=False):
+        self.melden(WARNUNG, datei, zeile, text, ersetzen)
 
     # --- Lesen ------------------------------------------------------------------------
 
@@ -608,6 +611,7 @@ class _Pruefung:
                     None,
                     f"{erfasst} am Einlass in bintafeln erfasste Einträge werden durch den "
                     "Import ersetzt und gehen verloren.",
+                    ersetzen=True,
                 )
         von_hand = Haushalt.objects.filter(geaendert_am__isnull=False).count()
         if von_hand:
@@ -616,6 +620,7 @@ class _Pruefung:
                 None,
                 f"In bintafeln von Hand geänderte oder angelegte Haushalte: {von_hand}. "
                 "Der Import ersetzt diese Änderungen.",
+                ersetzen=True,
             )
         # Kontobuchungen gehören zur App ausgabe; späte Einbindung vermeidet einen Kreisbezug.
         from apps.ausgabe.models import Buchung
@@ -627,6 +632,7 @@ class _Pruefung:
                 None,
                 f"{buchungen} Kontobuchungen aus bintafeln gehören danach zu keinem Haushalt "
                 "mehr; der Kontostand kommt aus dem Import. Für die Kasse bleiben sie erhalten.",
+                ersetzen=True,
             )
         for name, vorhanden in vorher.items():
             if vorhanden and name not in gelesen:
@@ -634,6 +640,7 @@ class _Pruefung:
                     name,
                     None,
                     "Datei fehlt; die bisher vorhandenen Angaben dieser Art werden entfernt.",
+                    ersetzen=True,
                 )
 
         csv_gruppen = self.csv_gruppen = self.kundengruppen(gelesen.get(KUNDENGRUPPEN, []))
@@ -701,6 +708,8 @@ class _Pruefung:
             "bemerkungen": bemerkungen,
             "abholungen": abholungen,
             "ausnahmen": ausnahmen,
+            # Welche Spalten geliefert wurden: Beim Ergänzen zählt nur, was in der Datei stand
+            "spalten": {name: sorted(z[0][1]) if z else [] for name, z in gelesen.items()},
         }
 
 
@@ -805,6 +814,174 @@ def _ohne(liste: list[dict], nummern: set[str]) -> list[dict]:
     return [e for e in liste if e.get("kundennummer") not in nummern]
 
 
+class _Bezuege:
+    """Ausgabestellen, Kundengruppen und Einkommensarten nach Namen; Unbekannte werden angelegt."""
+
+    def __init__(self):
+        self.stellen: dict[str, Ausgabestelle] = {}
+        self.arten: dict[str, Einkommensart] = {}
+        self.gruppen: dict[tuple, Kundengruppe] = {}
+
+    def stelle(self, name):
+        if not name:
+            return None
+        if name.lower() not in self.stellen:
+            self.stellen[name.lower()] = Ausgabestelle.objects.filter(
+                name__iexact=name
+            ).first() or Ausgabestelle.objects.create(name=name)
+        return self.stellen[name.lower()]
+
+    def art(self, name):
+        if not name:
+            return None
+        if name.lower() not in self.arten:
+            self.arten[name.lower()] = Einkommensart.objects.filter(
+                bezeichnung__iexact=name
+            ).first() or Einkommensart.objects.create(bezeichnung=name)
+        return self.arten[name.lower()]
+
+    def gruppen_einspielen(self, daten, nur_neue=False):
+        """Kundengruppen aus kundengruppen.csv anlegen oder aktualisieren (``nur_neue``: nur
+        anlegen), dazu die nur in haushalte.csv genannten anlegen."""
+        for g in daten["kundengruppen"]:
+            gruppe = (
+                Kundengruppe.objects.filter(kuerzel__iexact=g["kuerzel"]).first()
+                or Kundengruppe.objects.filter(name__iexact=g["name"]).first()
+                or Kundengruppe()
+            )
+            if nur_neue and gruppe.pk:
+                continue
+            # Platzhalter ohne Kürzel mit gleichem Namen (z. B. aus einem früheren Import ohne
+            # kundengruppen.csv) weichen, wenn keine Haushalte (mehr) daran hängen.
+            Kundengruppe.objects.filter(
+                name__iexact=g["name"], kuerzel="", haushalte__isnull=True
+            ).exclude(pk=gruppe.pk).delete()
+            gruppe.kuerzel, gruppe.name = g["kuerzel"], g["name"]
+            gruppe.ausgabestelle = self.stelle(g["ausgabestelle"])
+            # Leere Wochentage im Import überschreiben keine in bintafeln eingetragenen.
+            gruppe.wochentage = g["wochentage"] or gruppe.wochentage
+            gruppe.uhrzeit = dt.time.fromisoformat(g["uhrzeit"]) if g["uhrzeit"] else None
+            gruppe.maximum, gruppe.aktiv = g["maximum"], g["aktiv"]
+            gruppe.save()
+        for g in daten["neue_gruppen"]:
+            if not Kundengruppe.objects.filter(name__iexact=g["name"]).exists():
+                Kundengruppe.objects.create(
+                    name=g["name"], ausgabestelle=self.stelle(g["ausgabestelle"])
+                )
+        # Zuordnung über das Kürzel, wenn vorhanden (übersteht Umbenennungen), sonst den Namen.
+        self.gruppen = {}
+        for g in Kundengruppe.objects.all():
+            self.gruppen[("n", g.name.lower())] = g
+            if g.kuerzel:
+                self.gruppen[("k", g.kuerzel.lower())] = g
+
+    def gruppe(self, bezug):
+        if not bezug:
+            return None
+        if bezug["kuerzel"]:
+            return self.gruppen.get(("k", bezug["kuerzel"].lower()))
+        return self.gruppen.get(("n", bezug["name"].lower()))
+
+
+def _person(haushalt, p, hauptperson):
+    return Person(
+        haushalt=haushalt,
+        ist_hauptperson=hauptperson,
+        anrede=p["anrede"],
+        vorname=p["vorname"],
+        nachname=p["nachname"],
+        geburtsdatum=_datum(p["geburtsdatum"]),
+        staatsangehoerigkeit=p["staatsangehoerigkeit"],
+        familienstand=p["familienstand"],
+        zusatz=p["zusatz"],
+    )
+
+
+def _abholer(haushalt, a):
+    return Abholer(haushalt=haushalt, vorname=a["vorname"], nachname=a["nachname"],
+                   geburtsdatum=_datum(a["geburtsdatum"]),
+                   eigene_kundennummer=a["eigene_kundennummer"])  # fmt: skip
+
+
+def _sperre(haushalt, s):
+    return Sperre(haushalt=haushalt, von=_datum(s["von"]), bis=_datum(s["bis"]),
+                  begruendung=s["begruendung"], eingetragen_von=s["eingetragen_von"])  # fmt: skip
+
+
+def _bemerkung(haushalt, b):
+    return Bemerkung(haushalt=haushalt, datum=_datum(b["datum"]), text=b["text"],
+                     verfasst_von=b["verfasst_von"])  # fmt: skip
+
+
+def _abholung(haushalt, a, bezuege):
+    return Abholung(
+        haushalt=haushalt, datum=_datum(a["datum"]),
+        uhrzeit=dt.time.fromisoformat(a["uhrzeit"]) if a["uhrzeit"] else None,
+        beitrag=a["beitrag"], ausgabestelle=bezuege.stelle(a["ausgabestelle"]),
+        eingetragen_von=a["eingetragen_von"],
+    )  # fmt: skip
+
+
+def _ausnahme(haushalt, a):
+    return Ausnahme(haushalt=haushalt, datum=_datum(a["datum"]), begruendung=a["begruendung"],
+                    eingetragen_von=a["eingetragen_von"])  # fmt: skip
+
+
+def _anlegen(daten: dict, bezuege: _Bezuege) -> dict[str, Haushalt]:
+    """Legt alle Haushalte aus ``daten`` mit allem, was dazugehört, neu an."""
+    jetzt = timezone.now()
+    haushalte = Haushalt.objects.bulk_create(
+        Haushalt(
+            kundennummer=h["kundennummer"],
+            status=h["status"],
+            kundengruppe=bezuege.gruppe(h["kundengruppe"]),
+            kunde_seit=_datum(h["kunde_seit"]),
+            ausweis_gueltig_bis=_datum(h["ausweis_gueltig_bis"]),
+            letzter_besuch=_datum(h["letzter_besuch"]),
+            einkommensart=bezuege.art(h["einkommensart"]),
+            strasse=h["strasse"],
+            plz=h["plz"],
+            ort=h["ort"],
+            telefon=h["telefon"],
+            email=h["email"],
+            kontostand=h["kontostand"],
+            anzahl_erwachsene=h["anzahl_erwachsene"],
+            anzahl_kinder=h["anzahl_kinder"],
+            zusatz=h["zusatz"],
+            importiert_am=jetzt,
+        )
+        for h in daten["haushalte"]
+    )
+    nach_nummer = {h.kundennummer: h for h in haushalte}
+
+    Person.objects.bulk_create(
+        [_person(nach_nummer[h["kundennummer"]], h["hauptperson"], True)
+         for h in daten["haushalte"]]
+        + [_person(nach_nummer[p["kundennummer"]], p, False) for p in daten["personen"]]
+    )  # fmt: skip
+    Abholer.objects.bulk_create(_abholer(nach_nummer[a["kundennummer"]], a)
+                                for a in daten["abholer"])  # fmt: skip
+    Sperre.objects.bulk_create(_sperre(nach_nummer[s["kundennummer"]], s)
+                               for s in daten["sperren"])  # fmt: skip
+    Bemerkung.objects.bulk_create(_bemerkung(nach_nummer[b["kundennummer"]], b)
+                                  for b in daten["bemerkungen"])  # fmt: skip
+    Abholung.objects.bulk_create(_abholung(nach_nummer[a["kundennummer"]], a, bezuege)
+                                 for a in daten.get("abholungen", []))  # fmt: skip
+    Ausnahme.objects.bulk_create(_ausnahme(nach_nummer[a["kundennummer"]], a)
+                                 for a in daten.get("ausnahmen", []))  # fmt: skip
+    return nach_nummer
+
+
+def _nach_import(vorher, benutzer):
+    verwaiste_notizen_loeschen()  # Notizen bleiben, solange es die Kundennummer noch gibt
+    # Ohne gültigen Ausweis keine Kundengruppe (ADR 0061), vor der Historie, damit sie nicht bei
+    # jedem Import „hinein“ und gleich wieder „hinaus“ zeigt
+    gruppenregel.regel_anwenden(ereignisse=False)
+    historie.import_festhalten(
+        vorher, historie.schnappschuesse(), benutzer.get_username() if benutzer else ""
+    )
+
+
 @transaction.atomic
 def uebernehmen(
     daten: dict, *, benutzer, dateien, pruefsumme, anzahl_warnungen, behalten=frozenset()
@@ -818,172 +995,13 @@ def uebernehmen(
     if behalten:
         daten = {k: _ohne(v, behalten) if isinstance(v, list) and k not in (
             "kundengruppen", "neue_gruppen") else v for k, v in daten.items()}  # fmt: skip
-    stellen: dict[str, Ausgabestelle] = {}
-
-    def stelle(name):
-        if not name:
-            return None
-        if name.lower() not in stellen:
-            stellen[name.lower()] = Ausgabestelle.objects.filter(
-                name__iexact=name
-            ).first() or Ausgabestelle.objects.create(name=name)
-        return stellen[name.lower()]
-
+    bezuege = _Bezuege()
     vorher = historie.schnappschuesse()
     with disable_auditlog():
         Haushalt.objects.exclude(kundennummer__in=behalten).delete()
-
-        for g in daten["kundengruppen"]:
-            gruppe = (
-                Kundengruppe.objects.filter(kuerzel__iexact=g["kuerzel"]).first()
-                or Kundengruppe.objects.filter(name__iexact=g["name"]).first()
-                or Kundengruppe()
-            )
-            # Platzhalter ohne Kürzel mit gleichem Namen (z. B. aus einem früheren Import ohne
-            # kundengruppen.csv) weichen; Haushalte hängen zu diesem Zeitpunkt keine mehr daran.
-            Kundengruppe.objects.filter(
-                name__iexact=g["name"], kuerzel="", haushalte__isnull=True
-            ).exclude(pk=gruppe.pk).delete()
-            gruppe.kuerzel, gruppe.name = g["kuerzel"], g["name"]
-            gruppe.ausgabestelle = stelle(g["ausgabestelle"])
-            # Leere Wochentage im Import überschreiben keine in bintafeln eingetragenen.
-            gruppe.wochentage = g["wochentage"] or gruppe.wochentage
-            gruppe.uhrzeit = dt.time.fromisoformat(g["uhrzeit"]) if g["uhrzeit"] else None
-            gruppe.maximum, gruppe.aktiv = g["maximum"], g["aktiv"]
-            gruppe.save()
-        for g in daten["neue_gruppen"]:
-            if not Kundengruppe.objects.filter(name__iexact=g["name"]).exists():
-                Kundengruppe.objects.create(
-                    name=g["name"], ausgabestelle=stelle(g["ausgabestelle"])
-                )
-
-        # Zuordnung über das Kürzel, wenn vorhanden (übersteht Umbenennungen), sonst den Namen.
-        gruppen = {}
-        for g in Kundengruppe.objects.all():
-            gruppen[("n", g.name.lower())] = g
-            if g.kuerzel:
-                gruppen[("k", g.kuerzel.lower())] = g
-
-        def gruppe(bezug):
-            if not bezug:
-                return None
-            if bezug["kuerzel"]:
-                return gruppen.get(("k", bezug["kuerzel"].lower()))
-            return gruppen.get(("n", bezug["name"].lower()))
-
-        arten: dict[str, Einkommensart] = {}
-
-        def art(name):
-            if not name:
-                return None
-            if name.lower() not in arten:
-                arten[name.lower()] = Einkommensart.objects.filter(
-                    bezeichnung__iexact=name
-                ).first() or Einkommensart.objects.create(bezeichnung=name)
-            return arten[name.lower()]
-
-        jetzt = timezone.now()
-        haushalte = Haushalt.objects.bulk_create(
-            Haushalt(
-                kundennummer=h["kundennummer"],
-                status=h["status"],
-                kundengruppe=gruppe(h["kundengruppe"]),
-                kunde_seit=_datum(h["kunde_seit"]),
-                ausweis_gueltig_bis=_datum(h["ausweis_gueltig_bis"]),
-                letzter_besuch=_datum(h["letzter_besuch"]),
-                einkommensart=art(h["einkommensart"]),
-                strasse=h["strasse"],
-                plz=h["plz"],
-                ort=h["ort"],
-                telefon=h["telefon"],
-                email=h["email"],
-                kontostand=h["kontostand"],
-                anzahl_erwachsene=h["anzahl_erwachsene"],
-                anzahl_kinder=h["anzahl_kinder"],
-                zusatz=h["zusatz"],
-                importiert_am=jetzt,
-            )
-            for h in daten["haushalte"]
-        )
-        nach_nummer = {h.kundennummer: h for h in haushalte}
-
-        def person(haushalt, p, hauptperson):
-            return Person(
-                haushalt=haushalt,
-                ist_hauptperson=hauptperson,
-                anrede=p["anrede"],
-                vorname=p["vorname"],
-                nachname=p["nachname"],
-                geburtsdatum=_datum(p["geburtsdatum"]),
-                staatsangehoerigkeit=p["staatsangehoerigkeit"],
-                familienstand=p["familienstand"],
-                zusatz=p["zusatz"],
-            )
-
-        Person.objects.bulk_create(
-            [
-                person(nach_nummer[h["kundennummer"]], h["hauptperson"], True)
-                for h in daten["haushalte"]
-            ]
-            + [person(nach_nummer[p["kundennummer"]], p, False) for p in daten["personen"]]
-        )
-        Abholer.objects.bulk_create(
-            Abholer(
-                haushalt=nach_nummer[a["kundennummer"]],
-                vorname=a["vorname"],
-                nachname=a["nachname"],
-                geburtsdatum=_datum(a["geburtsdatum"]),
-                eigene_kundennummer=a["eigene_kundennummer"],
-            )
-            for a in daten["abholer"]
-        )
-        Sperre.objects.bulk_create(
-            Sperre(
-                haushalt=nach_nummer[s["kundennummer"]],
-                von=_datum(s["von"]),
-                bis=_datum(s["bis"]),
-                begruendung=s["begruendung"],
-                eingetragen_von=s["eingetragen_von"],
-            )
-            for s in daten["sperren"]
-        )
-        Bemerkung.objects.bulk_create(
-            Bemerkung(
-                haushalt=nach_nummer[b["kundennummer"]],
-                datum=_datum(b["datum"]),
-                text=b["text"],
-                verfasst_von=b["verfasst_von"],
-            )
-            for b in daten["bemerkungen"]
-        )
-        Abholung.objects.bulk_create(
-            Abholung(
-                haushalt=nach_nummer[a["kundennummer"]],
-                datum=_datum(a["datum"]),
-                uhrzeit=dt.time.fromisoformat(a["uhrzeit"]) if a["uhrzeit"] else None,
-                beitrag=a["beitrag"],
-                ausgabestelle=stelle(a["ausgabestelle"]),
-                eingetragen_von=a["eingetragen_von"],
-            )
-            for a in daten.get("abholungen", [])
-        )
-        Ausnahme.objects.bulk_create(
-            Ausnahme(
-                haushalt=nach_nummer[a["kundennummer"]],
-                datum=_datum(a["datum"]),
-                begruendung=a["begruendung"],
-                eingetragen_von=a["eingetragen_von"],
-            )
-            for a in daten.get("ausnahmen", [])
-        )
-
-    verwaiste_notizen_loeschen()  # Notizen bleiben, solange es die Kundennummer noch gibt
-    # Ohne gültigen Ausweis keine Kundengruppe (ADR 0061), vor der Historie, damit sie nicht bei
-    # jedem Import „hinein“ und gleich wieder „hinaus“ zeigt
-    gruppenregel.regel_anwenden(ereignisse=False)
-    historie.import_festhalten(
-        vorher, historie.schnappschuesse(), benutzer.get_username() if benutzer else ""
-    )
+        bezuege.gruppen_einspielen(daten)
+        _anlegen(daten, bezuege)
+    _nach_import(vorher, benutzer)
     # Außerhalb von disable_auditlog: Der Import selbst erscheint im Änderungsprotokoll.
     return ImportLauf.objects.create(
         benutzer=benutzer,

@@ -26,6 +26,7 @@ urlpatterns = [
     path("serienbriefe/", include("apps.serienbriefe.urls")),
     path("personal/", include("apps.personal.urls")),
     path("antraege/", include("apps.antraege.urls")),
+    path("import/", include("apps.datenimport.urls")),
     # Zuschaltbare Module (ADR 0049); ausgeschaltete sperrt die ModulMiddleware
     *[
         path(m.pfade[0].lstrip("/"), include(f"{app}.urls"))

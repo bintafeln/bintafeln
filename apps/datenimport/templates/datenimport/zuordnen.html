@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block titel %}Spalten zuordnen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'datenimport:start' %}">← Daten importieren</a></p>
+  <h1>{{ ziel.titel }}: Spalten zuordnen</h1>
+  <p>Je Spalte wählen, wohin sie gehört. Vorgeschlagen ist, was zur Überschrift passt; Spalten auf
+    „– nicht übernehmen –“ werden ignoriert (Datensparsamkeit: nur übernehmen, was gebraucht wird).
+    Zeigen mehrere Spalten auf dasselbe Feld, werden sie verbunden (z. B. Straße und Hausnummer).</p>
+  {% if ziel.kennung == "kunden" %}<p class="hinweis">Beim Kundenstamm gehört jede Tabelle zu einer Art (Haushalte, Angehörige …).
+    Haushalte sind Pflicht; mehrere Tabellen derselben Art werden untereinander zusammengefügt.</p>{% endif %}
+</section>
+
+{% if bericht %}
+<section class="karte">
+  <h2>Prüfbericht: so noch nicht möglich</h2>
+  <p>Bitte die Zuordnung oder die Datei korrigieren. Zeilen beziehen sich auf die Originaldatei.</p>
+  {% include "kunden/_bericht.html" %}
+</section>
+{% endif %}
+
+<form method="post">
+{% csrf_token %}
+{% for t in tabellen %}
+<section class="karte">
+  <h2>{{ t.name }} <small class="hinweis">{{ t.anzahl }} Zeile{{ t.anzahl|pluralize:"n" }}</small></h2>
+  {% for h in t.hinweise %}<p class="hinweis">{{ h }}</p>{% endfor %}
+  <div class="formular-raster">
+    {% if arten|length > 1 %}
+    <div class="feld">
+      <label for="a-{{ t.i }}">Art der Tabelle</label>
+      <select id="a-{{ t.i }}" name="a-{{ t.i }}">
+        {% for a in arten %}<option value="{{ a.schluessel }}"{% if a.schluessel == t.art.schluessel %} selected{% endif %}>{{ a.titel }}</option>{% endfor %}
+      </select>
+    </div>
+    {% endif %}
+    <div class="feld">
+      <label for="k-{{ t.i }}">Überschriften stehen in Zeile</label>
+      <input type="number" id="k-{{ t.i }}" name="k-{{ t.i }}" value="{{ t.kopf|add:1 }}" min="1">
+      {% if t.titelzeilen %}<small class="hinweis">Darüber stehende Zeilen werden übersprungen.</small>{% endif %}
+    </div>
+    <div class="feld feld-haken"><label><input type="checkbox" name="aus-{{ t.i }}" value="1"{% if t.aus %} checked{% endif %}> Diese Tabelle nicht importieren</label></div>
+  </div>
+  {% if not t.aus %}
+  {% if t.fehlend %}<p class="sicherung sicherung-veraltet">Noch nicht zugeordnet (Pflicht): {% for f in t.fehlend %}{{ f.bezeichnung }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle kompakt zuordnung">
+    <thead><tr><th>Spalte in der Datei</th><th>Beispiele</th><th>gehört zu</th></tr></thead>
+    <tbody>
+    {% for s in t.spalten %}
+      <tr{% if not s.wahl %} class="ignoriert"{% endif %}>
+        <td data-titel="Spalte"><strong>{{ s.kopf|default:"(ohne Überschrift)" }}</strong></td>
+        <td data-titel="Beispiele"><small>{% for b in s.beispiele %}{{ b|truncatechars:40 }}{% if not forloop.last %} · {% endif %}{% empty %}–{% endfor %}</small></td>
+        <td data-titel="gehört zu">
+          <select name="z-{{ t.i }}-{{ s.i }}" aria-label="Feld für {{ s.kopf }}">
+            <option value="">– nicht übernehmen –</option>
+            {% for f in t.art.alle_felder %}<option value="{{ f.schluessel }}"{% if f.schluessel == s.wahl %} selected{% endif %}>{{ f.bezeichnung }}{% if f.pflicht %} *{% endif %}</option>{% endfor %}
+          </select>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <div class="formular-raster">
+    {% if t.vorlagen %}
+    <div class="feld">
+      <label for="v-{{ t.i }}">Gespeicherte Zuordnung anwenden</label>
+      <select id="v-{{ t.i }}" name="v-{{ t.i }}">
+        <option value="">–</option>
+        {% for v in t.vorlagen %}<option value="{{ v.pk }}"{% if v.name == t.vorlage %} selected{% endif %}>{{ v.name }}</option>{% endfor %}
+      </select>
+      <button type="submit" name="aktion" value="vorlage-{{ t.i }}" class="knopf knopf-zweitrangig">Anwenden</button>
+    </div>
+    {% endif %}
+    <div class="feld">
+      <label for="vn-{{ t.i }}">Zuordnung speichern als</label>
+      <input type="text" id="vn-{{ t.i }}" name="vn-{{ t.i }}" maxlength="100" placeholder="z. B. Export Altprogramm">
+      <small class="hinweis">Beim nächsten Import mit denselben Überschriften wird sie von selbst vorgeschlagen.</small>
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endfor %}
+<section class="karte">
+  <button type="submit" name="aktion" value="weiter" class="knopf">Prüfen und abgleichen</button>
+  <button type="submit" name="aktion" value="aktualisieren" class="knopf knopf-zweitrangig">Ansicht aktualisieren</button>
+  <p class="hinweis">„Ansicht aktualisieren“ nach dem Ändern von Art oder Überschriftenzeile: Die Zuordnung wird dann neu vorgeschlagen.</p>
+</section>
+</form>
+<form method="post" action="{% url 'datenimport:verwerfen' sitzung.pk %}" class="karte">
+  {% csrf_token %}
+  <button type="submit" class="knopf knopf-zweitrangig">Import verwerfen</button>
+</form>
+{% endblock %}

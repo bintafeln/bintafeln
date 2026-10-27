@@ -93,8 +93,9 @@ Datensätze. Erst beim späteren Umstieg zu einem Stichtag übernimmt bintafeln 
 Ausnahmen: Der Einlass trägt Abholungen und Ausnahmen ein (ADR 0013), der Admin kann den
 Kundenstamm bearbeiten (ADR 0025), und Anträge werden mit dem Aufnahme-Assistenten in den
 Kundenstamm aufgenommen (ADR 0028). Der Import zeigt vorher einen Abgleich; in bintafeln
-geänderte oder aufgenommene Haushalte lassen sich dabei je Haushalt behalten. Einen festen
-Stichtag gibt es nicht: Irgendwann wird einmal alles übernommen, ab dann gilt dieser Stand.
+geänderte oder aufgenommene Haushalte lassen sich dabei je Haushalt behalten. Statt des
+Vollaustauschs kann ein Import auch nur ergänzen oder aktualisieren, mit Wahl je Feld (ADR 0078).
+Einen festen Stichtag gibt es nicht: Irgendwann wird einmal alles übernommen, ab dann gilt dieser Stand.
 
 bintafeln kennt nur das eigene, neutrale Importformat. Werkzeuge, die Daten aus bestimmten
 Altsystemen in dieses Format bringen, gehören nicht in dieses Repository.
@@ -262,6 +263,11 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `Modul.startseite`. Programmname nur in
   `bintafeln/programm.py`; die Kopfzeile kürzt `static/js/kopfzeile.js` über `.kuerz-1…5`.
   Übersicht der übernommenen Altprogramme: `docs/altprogramme.md`.
+- Datenimport aus CSV/Excel (ADR 0078): App `datenimport` – `lesen.py` (CSV/xlsx), `zuordnung.py`
+  (Spaltenvorschlag, Vorlagen), `abgleich.py` (neu/Konflikt/Ergänzung/Dublette/fehlt, Wahl je
+  Feld, für alle Ziele gleich), Ziele in `ziele.py` (Ausgabestellen, Mitarbeitende, Kundenstamm).
+  Neue Ziele dort ergänzen. Kundenstamm: Assistent schreibt ins Importformat um, Ergänzen in
+  `apps/kunden/import_ergaenzen.py`; Haushalt in den Papierkorb über `apps/kunden/entfernen.py`.
 - Spenden: Import in `apps/spenden/importieren.py` (ADR 0055, `belegnummer` gegen Dubletten),
   Dankesbriefe und hochgeladene Belege in `apps/spenden/dank.py` (ADR 0056; PDFs zusammenfügen
   mit `pypdf`, Mail-Anhänge über `mail.senden(..., anhaenge=…)`).

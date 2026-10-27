@@ -116,7 +116,9 @@ def test_uebernehmen_nur_mit_frischer_sicherung(
     vorschau = buero_client.get(reverse("kunden:import_vorschau", args=[vorbereitung.pk]))
     assert "Import übernehmen" not in vorschau.content.decode()
     antwort = buero_client.post(reverse("kunden:import_uebernehmen", args=[vorbereitung.pk]))
-    assert antwort.url == reverse("kunden:import_vorschau", args=[vorbereitung.pk])
+    assert antwort.url == reverse("kunden:import_vorschau", args=[vorbereitung.pk]) + (
+        "?modus=vollaustausch"
+    )
     assert not Haushalt.objects.exists()
 
 
@@ -183,7 +185,9 @@ def test_abgleich_mit_wahl_je_haushalt(buero_client, sicherung):
                     "11;Alt;Anna;Weg 1a", "12;Bert;Berta;Weg 2b", "14;Dora;Dina;Weg 4")  # fmt: skip
     buero_client.post(IMPORT, {"dateien": [zweiter]})
     v = ImportVorbereitung.objects.get()
-    vorschau = buero_client.get(reverse("kunden:import_vorschau", args=[v.pk])).content.decode()
+    vorschau = buero_client.get(
+        reverse("kunden:import_vorschau", args=[v.pk]) + "?modus=vollaustausch"
+    ).content.decode()
     assert "1 neu · 2 geändert · 2 entfallen · 0 unverändert" in vorschau
     assert "2 Haushalte wurden in bintafeln geändert" in vorschau
     assert (

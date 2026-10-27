@@ -395,7 +395,10 @@ dem Stichwort „SMTP“ – gemeint ist der Server zum **Senden** (z. B. `smtp.
 ## Kundenstamm importieren
 
 Der Kundenstamm wird aus dem bisherigen Programm übernommen, im
-[offenen Importformat](docs/importformat.md). Jeder Import ersetzt den Bestand vollständig.
+[offenen Importformat](docs/importformat.md) oder über den Import-Assistenten aus beliebigen
+Excel- und CSV-Dateien (siehe „Daten importieren“). Nach der Prüfung wählt man die Art: **nur neue
+hinzufügen**, **hinzufügen und aktualisieren** (Vorgabe, löscht nichts) oder **Vollaustausch**
+(ADR 0078).
 
 1. Vorher unter „Einstellungen → Kundenstamm“ festlegen, welche Angaben erfasst werden, und
    benötigte **Zusatzfelder** anlegen (ihre Schlüssel bestimmen die Spalten `zusatz_…`).
@@ -408,6 +411,14 @@ Der Kundenstamm wird aus dem bisherigen Programm übernommen, im
    geändert oder aufgenommen wurden, wählt man je Haushalt **bintafeln-Stand behalten** (der
    Import lässt ihn aus) oder **Import übernehmen**; Vorgabe ist „behalten“. „Für alle den Import
    übernehmen“ ersetzt alles, z. B. beim endgültigen Umstieg (ADR 0028).
+6. **Ergänzen statt ersetzen:** Bei „nur neue hinzufügen“ und „hinzufügen und aktualisieren“
+   zeigt der Abgleich je Haushalt und Feld, was sich unterscheidet; ein
+   **Konflikt** (beide Werte vorhanden, verschieden) ist markiert. Ein Haken je Feld entscheidet,
+   ob der Wert aus der Datei übernommen wird; leere Zellen überschreiben nie etwas. Mögliche
+   Dubletten (neue Kundennummer, aber gleiche Hauptperson mit Geburtsdatum) werden erst einmal
+   nicht angelegt. Haushalte, die nicht mehr in der Datei stehen, bleiben, außer man stellt sie
+   einzeln auf „löschen“ (Papierkorb). Ein anderer Kontostand wird als Korrekturbuchung
+   eingetragen.
 
 Regeln:
 
@@ -421,6 +432,31 @@ Regeln:
 - Importieren dürfen Admin und Büro.
 - Abholungen und Ausnahmen werden nur innerhalb der **Aufbewahrungsfrist** übernommen
   („Einstellungen → Kundenstamm“, Vorgabe 3 Jahre). Ältere löscht bintafeln automatisch.
+
+## Daten importieren (CSV, Excel)
+
+„Einstellungen → Systemsteuerung → Daten importieren“ übernimmt Daten aus anderen Programmen,
+ohne die Datei vorher umzubauen (ADR 0078): **Kundenstamm**, **Ausgabestellen** und
+**Mitarbeitende** mit Anschrift.
+
+1. Was importiert wird wählen, eine oder mehrere Dateien hochladen: CSV (Trennzeichen und
+   Zeichenkodierung werden erkannt) oder Excel `.xlsx` (jedes Blatt einzeln). Titelzeilen über
+   den Überschriften werden übersprungen.
+2. **Spalten zuordnen:** bintafeln schlägt je Spalte das passende Feld vor, auch bei anderen
+   Schreibweisen („Kd.-Nr.“, „Geb.-Datum“, „E-Mail-Adresse“). Zwei Spalten auf demselben Feld
+   werden verbunden (Straße + Hausnummer), „Name“ und „PLZ Ort“ lassen sich aufteilen. Nicht
+   zugeordnete Spalten werden nicht übernommen. Die Zuordnung lässt sich als Vorlage speichern und
+   wird beim nächsten Mal von selbst vorgeschlagen.
+3. **Abgleich** mit Art (nur neue / hinzufügen und aktualisieren / ersetzen), Konflikten je
+   Feld, möglichen Dubletten, mehrfachen Zeilen in der Datei und der Wahl je Eintrag, was mit
+   nicht mehr gelieferten geschieht (behalten, inaktiv, löschen in den Papierkorb; Mitarbeitende
+   nur sperren).
+
+Neue Mitarbeitende bekommen kein Passwort; den Zugang gibt man danach per Einladungslink oder
+neuem Passwort. Rollen aus der Datei bekommen nur neue Konten, und nur solche, die man selbst
+vergeben darf. Der Kundenstamm wird nach der Zuordnung wie im Importformat geprüft. Hochgeladene
+Daten werden höchstens zwei Stunden aufbewahrt. Wer es darf: Kundenstamm mit „Kundenstamm
+importieren“, Ausgabestellen mit dem Recht für Kundengruppen, Ausgabestellen und Einkommensarten, Mitarbeitende mit „Mitarbeitende verwalten“.
 
 ## Suche
 
@@ -496,8 +532,9 @@ Dokumente, Historie.
   Allergien, Haustiere, keine Kochmöglichkeit), einzuschalten unter „Einstellungen → Kundenstamm
   und Zusatzfelder“; die zwei mit Art.-9-Bezug sind entsprechend markiert. Kundengruppen, Ausgabestellen
   und Einkommensarten pflegt der Admin unter „Einstellungen → Kundenstamm → Listen“.
-  **Achtung:** Solange aus dem Altsystem importiert wird, ersetzt der nächste Import alle
-  Änderungen; der Prüfbericht nennt die Zahl der geänderten Haushalte (ADR 0025).
+  **Achtung:** Ein Vollaustausch aus dem Altsystem ersetzt alle Änderungen; der Prüfbericht nennt
+  die Zahl der geänderten Haushalte (ADR 0025). Beim Ergänzen bleiben sie, Konflikte sind je Feld
+  wählbar (ADR 0078).
 - **Ausgabestellen** („Ausgabestelle → Alle Ausgabestellen“, ADR 0048): Übersicht und eigene Seite je
   Ausgabestelle mit Anschrift, Telefon, E-Mail, allgemeinen Anmerkungen, Zeiten (Ausgabe,
   Anlieferung, Sortieren …), Ansprechpartnern (Mitarbeitende per Auswahl oder extern) und ihren
@@ -736,8 +773,9 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    (Admin, Büro).
 
 Die Regeln stehen unter „Einstellungen → Ausgabe und Ampel“. Jeder Scan steht im
-Zugriffsprotokoll. **Achtung:** Ein neuer Import des Kundenstamms ersetzt auch die am Einlass
-eingetragenen Abholungen und Ausnahmen; der Prüfbericht warnt davor (ADR 0013).
+Zugriffsprotokoll. **Achtung:** Ein Vollaustausch des Kundenstamms ersetzt auch die am Einlass
+eingetragenen Abholungen und Ausnahmen; der Prüfbericht warnt davor (ADR 0013). Beim Ergänzen
+bleiben sie.
 
 ### Beiträge
 
