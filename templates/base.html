@@ -81,10 +81,18 @@
         </details>
         {% endfor %}
         {% elif bereich.abschnitte %}
+        {% for a in bereich.abschnitte %}{% if a.titel %}
+        <details class="menue-gruppe" name="menue-gruppe"{% if a.offen %} open{% endif %}>
+          <summary>{{ a.titel }}</summary>
+          <ul>
+            {% for e in a.eintraege %}<li>{% include "includes/_menue_eintrag.html" %}</li>{% endfor %}
+          </ul>
+        </details>
+        {% else %}
         <ul>
-          {% for a in bereich.abschnitte %}{% if a.titel %}<li class="menue-zwischen" aria-hidden="true">{{ a.titel }}</li>{% endif %}
-          {% for e in a.eintraege %}<li>{% include "includes/_menue_eintrag.html" %}</li>{% endfor %}{% endfor %}
+          {% for e in a.eintraege %}<li>{% include "includes/_menue_eintrag.html" %}</li>{% endfor %}
         </ul>
+        {% endif %}{% endfor %}
         {% else %}
         <ul>
           {% for e in bereich.eintraege %}<li>{% include "includes/_menue_eintrag.html" %}</li>{% endfor %}

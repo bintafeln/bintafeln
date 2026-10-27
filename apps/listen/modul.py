@@ -5,9 +5,6 @@ from apps.core.module import Modul
 
 def menue(eintrag):
     return [
-        ("Ausgabestelle", [
-            ("listen.nutzen", eintrag("Kundenliste", "listen:liste", "kunden_stelle")),
-        ]),
         ("Auswertungen", [
             ("listen.nutzen", eintrag("Listen", "listen:uebersicht", genau=True)),
         ]),

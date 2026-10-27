@@ -117,7 +117,9 @@ def test_kiosk_hat_keinen_zugriff(als, bestand):
 
 def test_ausgabe_sieht_liste_aber_nicht_import(als, bestand):
     client = als(rollen.AUSGABE)
-    assert "Kunden einsehen</a>" in client.get("/").content.decode()
+    start = client.get("/").content.decode()
+    # nur einmal im Menü: als Kundenliste der Ausgabestelle, nicht noch unter „Kunden“
+    assert "Kundenliste</a>" in start and "Kunden einsehen" not in start
     inhalt = client.get(LISTE).content.decode()
     assert ">Mustermann</a>" in inhalt and ">Erika</a>" in inhalt
     assert "Neuen Stand importieren" not in inhalt

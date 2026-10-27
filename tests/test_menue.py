@@ -83,7 +83,7 @@ def test_neue_ordnung_fuer_die_verwaltung(admin):
     abschnitte = {a["titel"]: [e["titel"] for e in a["eintraege"]]
                   for a in b["Ausgabestelle"]["abschnitte"]}  # fmt: skip
     assert abschnitte[""][:2] == ["Einlass", "Kasse"]
-    assert {"Kundenliste", "Abrechnung"} <= set(abschnitte[""])
+    assert "Abrechnung" in abschnitte[""] and "Kundenliste" not in abschnitte[""]
     assert "Selbstabholer" in abschnitte["Wochenübersicht"]
     assert "Alle Ausgabestellen" in abschnitte["Verwaltung"]
     kunden = {a["titel"]: [e["titel"] for e in a["eintraege"]] for a in b["Kunden"]["abschnitte"]}
@@ -105,7 +105,9 @@ def test_ausgabe_sieht_keine_warteliste_und_stempeln_nur_wer_stempelt(benutzer_m
 def test_name_oben_rechts_oeffnet_mein_konto(admin_client):
     seite = admin_client.get(reverse("core:start")).content.decode()
     assert f'class="angemeldet" href="{reverse("konten:mein_konto")}"' in seite
-    assert 'class="menue-zwischen"' in seite  # Zwischenüberschriften im Bereich Kunden
+    # Bereich → Untergruppe → Einträge: Untergruppen sind zu, bis man sie wählt
+    assert '<details class="menue-gruppe" name="menue-gruppe">' in seite
+    assert "<summary>Kundenstamm</summary>" in seite
 
 
 def test_fest_angestellte_stempeln_im_menue(benutzer_mit_rolle):

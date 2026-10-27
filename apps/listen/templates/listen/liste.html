@@ -9,13 +9,16 @@
 
   <form method="get" class="listen-filter">
     <input type="hidden" name="geladen" value="1">
-    <div class="formular-raster">
+    <div class="formular-raster listen-felder">
       {% if "stelle" in liste.filter %}<div class="feld"><label for="f-stelle">Ausgabestelle</label>
         <select name="stelle" id="f-stelle"><option value="">alle{% if stellen|length == 1 %} (eigene){% endif %}</option>
           {% for s in stellen %}<option value="{{ s.pk }}"{% if p.stelle == s.pk|stringformat:"d" %} selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></div>{% endif %}
       {% if "gruppe" in liste.filter %}<div class="feld"><label for="f-gruppe">Kundengruppe</label>
         <select name="kundengruppe" id="f-gruppe"><option value="">alle</option>
           {% for g in kundengruppen %}<option value="{{ g.pk }}"{% if p.kundengruppe == g.pk|stringformat:"d" %} selected{% endif %}>{{ g.name }}</option>{% endfor %}</select></div>{% endif %}
+      {% if tage %}<div class="feld"><label for="f-tag">Ausgabetag</label>
+        <select name="tag" id="f-tag"><option value="">alle</option>
+          {% for t in tage %}<option value="{{ t }}"{% if p.tag == t %} selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>{% endif %}
       {% if "status" in liste.filter %}<div class="feld"><label for="f-status">Status</label>
         <select name="status" id="f-status">{% for w, n in status_wahl %}<option value="{{ w }}"{% if p.status == w %} selected{% endif %}>{{ n }}</option>{% endfor %}</select></div>{% endif %}
       {% if "einkommensart" in liste.filter %}<div class="feld"><label for="f-eink">Einkommensart</label>
@@ -39,14 +42,16 @@
       <div class="feld"><label for="f-gliedern">Gliedern nach</label>
         <select name="gruppe" id="f-gliedern"><option value="">nicht gliedern</option>
           {% for k, t in gruppen_wahl %}<option value="{{ k }}"{% if gruppe == k %} selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
-      <div class="feld feld-haken"><label><input type="checkbox" name="summen" value="1"{% if summen %} checked{% endif %}> nur Anzahl und Summen je Gruppe</label></div>
     </div>
-    <details class="spalten-wahl"><summary>Spalten wählen</summary>
-      <div class="spalten-haken">{% for k, t, an in spalten_wahl %}<label><input type="checkbox" name="s" value="{{ k }}"{% if an %} checked{% endif %}> {{ t }}</label>{% endfor %}</div>
-    </details>
-    {% if p.sort %}<input type="hidden" name="sort" value="{{ p.sort }}">{% endif %}
-    <button type="submit" class="knopf">Anzeigen</button>
-    <a class="knopf knopf-zweitrangig" href="{% url 'listen:liste' liste.kennung %}">Vorgaben</a>
+    <div class="listen-fuss">
+      <label class="listen-haken"><input type="checkbox" name="summen" value="1"{% if summen %} checked{% endif %}> nur Anzahl und Summen je Gruppe</label>
+      <details class="spalten-wahl"><summary>Spalten wählen</summary>
+        <div class="spalten-haken">{% for k, t, an in spalten_wahl %}<label><input type="checkbox" name="s" value="{{ k }}"{% if an %} checked{% endif %}> {{ t }}</label>{% endfor %}</div>
+      </details>
+      {% if p.sort %}<input type="hidden" name="sort" value="{{ p.sort }}">{% endif %}
+      <span class="listen-knoepfe"><button type="submit" class="knopf">Anzeigen</button>
+      <a class="knopf knopf-zweitrangig" href="{% url 'listen:liste' liste.kennung %}">Vorgaben</a></span>
+    </div>
   </form>
 </section>
 

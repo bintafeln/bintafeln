@@ -520,7 +520,6 @@ a.knopf-gefahr { color: #fff; }
 .menue-gruppe summary:hover { background: var(--erfolg); }
 .menue-gruppe ul { margin-bottom: .25rem; }
 /* Zwischenüberschrift in einem aufgeklappten Bereich (z. B. Kunden › Anträge und Warteliste) */
-.menue-zwischen { padding: .6rem 1.25rem .15rem 2rem; font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--leise); }
 .seitenmenue .menue-gruppe li a { padding-left: 3rem; font-size: .93rem; }
 .seitenmenue .menue-gruppe li a.aktiv { padding-left: calc(3rem - 4px); }
 .seitenmenue li a { padding: .4rem 1.25rem .4rem 2rem; font-size: .97rem; }
@@ -868,7 +867,18 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 .listen-katalog { list-style: none; padding: 0; display: grid; gap: .6rem; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); }
 .listen-katalog li { border: 1px solid var(--rand); border-radius: var(--radius); padding: .6rem .8rem; }
 .listen-katalog a { font-weight: 600; }
-.listen-filter .formular-raster { margin-bottom: .5rem; }
+.listen-filter .formular-raster { margin-bottom: .25rem; }
+/* Filter der Listen kompakt: schmale Felder nebeneinander, Häkchen ohne eigene Zeile */
+.listen-felder { grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr)); gap: 0 .75rem; }
+.listen-felder .feld { margin-bottom: .5rem; }
+.formular-raster.listen-felder .feld-haken,
+.formular-raster.listen-felder .feld-haken + .feld { grid-column-start: auto; }
+.listen-felder .feld-haken { align-self: end; }
+.listen-haken { font-weight: 600; }
+.listen-fuss { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.25rem; }
+.listen-fuss .spalten-wahl { margin: 0; }
+.listen-fuss .spalten-wahl[open] { flex-basis: 100%; order: 3; }
+.listen-knoepfe { margin-left: auto; display: flex; gap: .5rem; }
 .listen-gruppe th { background: var(--grund); text-align: left; }
 .listen-summe td { font-weight: 600; border-top: 1px solid var(--rand); }
 .tabelle .auswahl { width: 2rem; text-align: center; }

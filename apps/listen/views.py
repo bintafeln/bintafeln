@@ -14,6 +14,7 @@ from reportlab.lib.pagesizes import A4, landscape
 
 from apps.core.pdf import Pdf, pdf_antwort
 from apps.konten import rollen
+from apps.kunden.export import waehlbare_tage
 from apps.kunden.models import Zugriff
 from apps.listen import abfrage, katalog
 from apps.listen import spalten as sp
@@ -102,7 +103,10 @@ def liste(request, kennung):
         "gruppen_wahl": [(s.schluessel, s.titel) for s in erlaubte],
         "gruppe": p.get("gruppe", ""), "summen": p.get("summen", ""),
         "stellen": abfrage.stellen(request.user), "kundengruppen": abfrage.gruppen(request.user),
-        "status_wahl": abfrage.STATUS, "einkommensarten": abfrage.einkommensarten()
+        "status_wahl": abfrage.STATUS,
+        "tage": waehlbare_tage(abfrage.gruppen(request.user).filter(aktiv=True))
+        if "tag" in liste.filter else [],
+        "einkommensarten": abfrage.einkommensarten()
         if "einkommensart" in liste.filter else [],
         "nationen": abfrage.staatsangehoerigkeiten(request.user)
         if "staatsangehoerigkeit" in liste.filter else [],
@@ -121,7 +125,8 @@ def _protokollieren(request, ergebnis) -> None:
 
 def _beschreibung(liste, p) -> str:
     teile = []
-    for name, titel in (("status", "Status"), ("einkommensart", "Einkommensart"),
+    for name, titel in (("tag", "Ausgabetag"), ("status", "Status"),
+                        ("einkommensart", "Einkommensart"),
                         ("staatsangehoerigkeit", "Staatsangehörigkeit"),
                         ("alter_von", "Alter ab"), ("alter_bis", "Alter bis"),
                         ("ausweis_bis", "Ausweis bis"), ("besuch_vor", "nicht gekommen seit"),

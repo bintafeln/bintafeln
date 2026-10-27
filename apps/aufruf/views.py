@@ -285,7 +285,8 @@ def liste(request, pk):
 # ── Kurz-Steuerung unter dem Menü (Ausgabestellen) ──────────────────────────
 
 
-AKTIONEN = {"starten": ablauf.starten, "weiter": ablauf.weiter, "zurueck": ablauf.zurueck}
+AKTIONEN = {"starten": ablauf.starten, "weiter": ablauf.weiter, "zurueck": ablauf.zurueck,
+            "neustart": ablauf.neu_mischen}  # fmt: skip
 
 
 @never_cache
