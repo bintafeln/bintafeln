@@ -273,3 +273,29 @@ def test_liste_zeigt_kriterium_sofort(angemeldet, admin):
     seite.locator(".spalten-haken input").first.uncheck()
     seite.wait_for_timeout(300)
     assert seite.url == adresse  # Spalten warten auf „Anzeigen“
+
+
+def test_statistik_grafik_gross_und_zurueck(angemeldet, admin):
+    """Grafik anklicken: bildschirmfüllend; „Zurück“ schließt, die Seite bleibt an ihrer Stelle."""
+    from apps.kunden.models import Abholung
+
+    _haushalte(2)
+    for h in Haushalt.objects.all():
+        Abholung.objects.create(haushalt=h, datum=timezone.localdate())
+    seite = angemeldet(admin)
+    seite.goto("/statistik/")
+    grafik = seite.locator("figure.diagramm-rahmen[data-gross]").last
+    grafik.scroll_into_view_if_needed()
+    oben = seite.evaluate("window.scrollY")
+    grafik.click()
+    dialog = seite.locator("#diagramm-gross")
+    expect(dialog).to_be_visible()
+    expect(dialog.locator(".diagramm-gross-inhalt svg")).to_have_count(1)
+    seite.get_by_role("button", name="← Zurück").click()
+    expect(dialog).to_be_hidden()
+    assert seite.evaluate("window.scrollY") == oben
+    # Auch über „⤢ Groß“ und mit Esc
+    seite.locator("button[data-gross]").first.click()
+    expect(dialog).to_be_visible()
+    seite.keyboard.press("Escape")
+    expect(dialog).to_be_hidden()

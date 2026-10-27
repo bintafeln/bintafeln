@@ -877,6 +877,7 @@ und Ausgabe als CSV (Excel) oder PDF (Auswahl oder alles; jeder Export im Zugrif
 Ein geändertes Kriterium zeigt die Liste sofort an (`data-sofort`, `static/js/sofort.js`; ebenso
 Statistik, Kasse, Zugriffsprotokoll, Warteliste, Wochenübersicht); nur die Spaltenwahl wartet
 auf „Anzeigen“.
+Die Kundennummer heißt in den Listen kurz „Nr.“ und hat eine schmale Spalte.
 „Letzter Besuch“ steht mit Uhrzeit da (z. B. 24.10.2026 15:52), sofern die Abholung eine hat.
 Die Kundenlisten lassen sich auch nach dem Ausgabetag filtern (Wochentage der Kundengruppe); die
 Auswahl erscheint wie in der Kundenliste nur, wenn an mindestens zwei Tagen ausgegeben wird.
@@ -1029,8 +1030,10 @@ Adresse im Adressbuch (ADR 0045).
 
 „Statistik“ im Menü (Recht „Statistik ansehen“, Vorgabe: Admin und Büro). Oben Zeitraum
 (dieses/letztes Jahr, letzte 12 Monate, dieser/letzter Monat, letzte 30 Tage oder eigener
-Zeitraum) und Ausgabestelle wählen. Das Auswahlfeld „Springen zu“ unter den Kennzahlen führt
-direkt zu einem Abschnitt (`static/js/sprung.js`).
+Zeitraum) und Ausgabestelle wählen. Das Auswahlfeld „Springen zu“ neben den Kennzahlen führt
+direkt zu einem Abschnitt (`static/js/sprung.js`). Ein Klick auf eine Grafik (oder „⤢ Groß“)
+zeigt sie bildschirmfüllend, „← Zurück“ schließt und lässt die Seite an ihrer Stelle
+(`static/js/diagramm_gross.js`).
 
 - **Kennzahlen:** Abholungen, verschiedene Haushalte, erreichte Personen (Summe der
   Haushaltsgrößen je Abholung), Bareinnahmen, aktive Haushalte mit Personen, neue Kunden,

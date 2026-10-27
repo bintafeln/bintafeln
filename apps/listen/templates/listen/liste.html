@@ -76,11 +76,11 @@
       </tbody>
       <tfoot><tr><th>Summe</th><th class="zahl">{{ e.anzahl }}</th>{% for t, w in e.zahlen %}<th class="zahl">{{ w }}</th>{% endfor %}</tr></tfoot>
       {% else %}
-      <thead><tr><th class="auswahl"><input type="checkbox" data-alle="id" aria-label="Alle auswählen" title="alle / keine"></th>{% for k in kopf %}<th aria-sort="{% if k.richtung == 'auf' %}ascending{% elif k.richtung == 'ab' %}descending{% else %}none{% endif %}"><a class="sortieren{% if k.richtung %} {{ k.richtung }}{% endif %}" href="?{{ k.abfrage }}">{{ k.titel }}</a></th>{% endfor %}</tr></thead>
+      <thead><tr><th class="auswahl"><input type="checkbox" data-alle="id" aria-label="Alle auswählen" title="alle / keine"></th>{% for k in kopf %}<th{% if k.schluessel == "kundennummer" %} class="spalte-nr" title="Kundennummer"{% endif %} aria-sort="{% if k.richtung == 'auf' %}ascending{% elif k.richtung == 'ab' %}descending{% else %}none{% endif %}"><a class="sortieren{% if k.richtung %} {{ k.richtung }}{% endif %}" href="?{{ k.abfrage }}">{{ k.titel }}</a></th>{% endfor %}</tr></thead>
       {% for g in e.gruppen %}
       <tbody>
         {% if g.titel %}<tr class="listen-gruppe"><th colspan="{{ kopf|length|add:1 }}">{{ g.titel }} <span class="hinweis">({{ g.anzahl }})</span></th></tr>{% endif %}
-        {% for z in g.zeilen %}<tr><td class="auswahl"><input type="checkbox" name="id" value="{{ z.pk }}" aria-label="Zeile auswählen"></td>{% for titel, t in z.paare %}<td data-titel="{{ titel }}">{% if forloop.first and e.spalten.0.schluessel == "kundennummer" %}<a href="{% url 'kunden:haushalt' z.nummer %}">{{ t }}</a>{% else %}{{ t|default:"–" }}{% endif %}</td>{% endfor %}</tr>{% endfor %}
+        {% for z in g.zeilen %}<tr><td class="auswahl"><input type="checkbox" name="id" value="{{ z.pk }}" aria-label="Zeile auswählen"></td>{% for titel, t in z.paare %}<td data-titel="{{ titel }}"{% if forloop.first and e.spalten.0.schluessel == "kundennummer" %} class="spalte-nr"{% endif %}>{% if forloop.first and e.spalten.0.schluessel == "kundennummer" %}<a href="{% url 'kunden:haushalt' z.nummer %}">{{ t }}</a>{% else %}{{ t|default:"–" }}{% endif %}</td>{% endfor %}</tr>{% endfor %}
         {% if g.titel and g.summen and gruppe %}{% if g.summen|join:"" %}<tr class="listen-summe"><td></td>{% for t in g.summen %}<td>{{ t }}</td>{% endfor %}</tr>{% endif %}{% endif %}
       </tbody>
       {% empty %}<tbody><tr><td colspan="{{ kopf|length|add:1 }}" class="hinweis">Keine Einträge.</td></tr></tbody>

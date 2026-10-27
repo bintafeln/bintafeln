@@ -259,3 +259,9 @@ def test_letzter_besuch_mit_uhrzeit(admin_client, daten):
                                     s=["kundennummer", "letzter_besuch"]))  # fmt: skip
     paare = [z["paare"][1][1] for g in antwort.context["e"].gruppen for z in g["zeilen"]]
     assert paare[:2] == [f"{tag:%d.%m.%Y} 15:52", f"{tag:%d.%m.%Y}"]
+
+
+def test_nummernspalte_kurz(admin_client, daten):
+    seite = admin_client.get(reverse("listen:liste", args=["kunden_stelle"])).content.decode()
+    assert '<th class="spalte-nr" title="Kundennummer"' in seite and ">Nr.</a>" in seite
+    assert '<td data-titel="Kundennummer" class="spalte-nr">' in seite
