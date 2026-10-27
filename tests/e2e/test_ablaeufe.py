@@ -206,3 +206,20 @@ def test_aufruf_unter_dem_menue(angemeldet, admin, benutzer_mit_rolle):
     expect(leiste.locator(".aufruf-leiste-nummern span").first).not_to_have_text(erste)
     leiste.get_by_role("button", name=re.compile("zurück")).click()
     expect(leiste.locator(".aufruf-leiste-nummern span").first).to_have_text(erste)
+
+
+def test_ausweis_gestalter_merkmale_und_einlass(angemeldet, admin):
+    """ADR 0071: Element „Merkmale“ im Gestalter, Merkmale am Einlass."""
+    seite = angemeldet(admin)
+    seite.goto("/kunden/ausweis/gestalten/")
+    seite.select_option("#neu-typ", "merkmale")
+    seite.click("#neu-knopf")
+    expect(seite.locator(".ausweis-element.art-merkmale .merkmal-vorschau")).to_have_count(2)
+    expect(seite.locator("#eig-farbe")).to_have_value("#1d4f91")
+
+    _haushalte(1)
+    p = Person.objects.get(haushalt__kundennummer="00041")
+    p.zusatz = {"vegetarier": True}
+    p.save()
+    seite.goto("/ausgabe/?nummer=00041")
+    expect(seite.locator(".merkmal")).to_have_text(["Vegetarier"])

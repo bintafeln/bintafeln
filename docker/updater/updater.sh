@@ -180,8 +180,10 @@ dienst() {
         echo "zeit=$(zeit)" | schreiben lebenszeichen.txt
         jetzt=$(date +%s)
         if [ -f "$BETRIEB/abrufen.txt" ] || [ $((jetzt - letzter_abruf)) -ge "$ABRUF_ALLE" ]; then
-            rm -f "$BETRIEB/abrufen.txt"
+            # Auftrag erst nach dem Abruf löschen: solange er da ist, zeigt die Seite „Suche
+            # läuft …“ und lädt danach das Ergebnis (sonst sähe man erst beim zweiten Klick etwas)
             versionen_abrufen || log "Versionen konnten nicht gelesen werden."
+            rm -f "$BETRIEB/abrufen.txt"
             letzter_abruf=$jetzt
         fi
         auftrag_annehmen || log "Auftrag konnte nicht angenommen werden."

@@ -126,3 +126,12 @@ def test_rechte_und_demo(client, admin_client, benutzer_mit_rolle, anmelden, set
     anmelden(client, benutzer_mit_rolle("berta", rollen.BUERO))
     assert client.get(URL).status_code == 403
     assert client.post(reverse("core:update_starten")).status_code == 403
+
+
+def test_dienst_loescht_suchauftrag_erst_nach_dem_abruf():
+    """Sonst meldet die Seite die Suche als fertig, bevor die neuen Versionen da sind."""
+    from pathlib import Path
+
+    skript = Path("docker/updater/updater.sh").read_text(encoding="utf-8")
+    schleife = skript[skript.index("while true; do") :]
+    assert schleife.index("versionen_abrufen ||") < schleife.index('rm -f "$BETRIEB/abrufen.txt"')

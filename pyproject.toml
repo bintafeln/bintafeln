@@ -21,4 +21,7 @@ ignore = ["S101"]  # assert in Tests ist gewollt
 DJANGO_SETTINGS_MODULE = "bintafeln.settings_test"
 testpaths = ["tests"]
 addopts = "--strict-markers -m 'not e2e'"
-markers = ["e2e: Browser-Tests mit Playwright, nur mit pytest -m e2e (ADR 0066)"]
+markers = [
+    "e2e: Browser-Tests mit Playwright, nur mit pytest -m e2e (ADR 0066)",
+    "merkmale: mitgelieferte Merkmale (ADR 0071) im Test behalten",
+]

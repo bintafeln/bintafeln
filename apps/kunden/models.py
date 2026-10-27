@@ -181,6 +181,20 @@ class Zusatzfeld(models.Model):
     )
     reihenfolge = models.PositiveSmallIntegerField("Reihenfolge", default=0)
     aktiv = models.BooleanField("Aktiv", default=True)
+    einlass = models.BooleanField(
+        "Am Einlass anzeigen", default=False,
+        help_text="Nur Ja/Nein: Steht es bei einer Person auf „ja“, sieht der Einlass es in den "
+        "Kundendaten (Felder der besonderen Kategorie nur mit dem passenden Recht).",
+    )  # fmt: skip
+    ausweis = models.CharField(
+        "Auf dem Ausweis", max_length=10, blank=True, choices=[
+            ("", "nicht drucken"), ("rollstuhl", "Rollstuhl-Symbol"), ("kuerzel", "Kürzel")],
+        help_text="Nur Ja/Nein: wird gedruckt, wenn eine Person „ja“ hat und die Ausweis-Vorlage "
+        "das Element „Merkmale“ enthält. Achtung: Jeder, der den Ausweis sieht, sieht es dann.",
+    )  # fmt: skip
+    kuerzel = models.CharField(
+        "Kürzel", max_length=4, blank=True, help_text="Für „Kürzel“ auf dem Ausweis, z. B. V."
+    )
 
     class Meta:
         verbose_name = "Zusatzfeld"
@@ -192,6 +206,13 @@ class Zusatzfeld(models.Model):
 
     def optionen_liste(self) -> list[str]:
         return [zeile.strip() for zeile in self.optionen.splitlines() if zeile.strip()]
+
+    @property
+    def fest(self) -> bool:
+        """Mitgeliefertes Merkmal (ADR 0071): am festen Schlüssel erkannt, nicht löschbar."""
+        from apps.core.auswahl import FESTE_MERKMALE
+
+        return any(self.schluessel == s for s, *_ in FESTE_MERKMALE)
 
     def clean(self):
         if self.typ == self.Typ.AUSWAHL and not self.optionen_liste():

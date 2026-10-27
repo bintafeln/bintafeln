@@ -83,9 +83,9 @@ def test_haushalt_bearbeiten(admin_client, h, gruppe_behalten):
     assert h.geaendert_von == "chefin" and h.geaendert_am
     assert LogEntry.objects.get_for_object(h).filter(action=LogEntry.Action.UPDATE).exists()
     form = HaushaltForm(instance=h)
-    assert (form.initial["zusatz_sb"], form.initial["zusatz_seit"]) == ("ja", dt.date(2026, 1, 2))
+    assert (form.initial["zusatz_sb"], form.initial["zusatz_seit"]) == (True, dt.date(2026, 1, 2))
     h.zusatz["sb"] = False
-    assert HaushaltForm(instance=h).initial["zusatz_sb"] == "nein"
+    assert HaushaltForm(instance=h).initial["zusatz_sb"] is False
     admin_client.post(url("bearbeiten", "2001"), {"kundennummer": "2002", "status": "aktiv"})
     assert Haushalt.objects.get(pk=h.pk).kundennummer == "2002"
     assert "In bintafeln geändert" in admin_client.get(url("haushalt", "2002")).content.decode()
@@ -210,10 +210,11 @@ def test_personen(admin_client, h):
     seite = admin_client.get(url("teil_neu", "2001", "person")).content.decode()
     assert '<option value="Frau">Frau</option>' in seite and "verwitwet" in seite
     daten = {"vorname": "Max", "nachname": "Test", "ist_hauptperson": "on", "anrede": "Herr",
-             "familienstand": "ledig", "zusatz_sb": "nein"}  # fmt: skip
+             "familienstand": "ledig"}  # fmt: skip
     admin_client.post(url("teil_neu", "2001", "person"), daten)
     max_ = Person.objects.get(vorname="Max")
-    assert max_.ist_hauptperson and max_.zusatz == {"sb": False}
+    # Ja/Nein als Häkchen: nicht angekreuzt = nein, ohne einen Wert zu speichern
+    assert max_.ist_hauptperson and max_.zusatz == {}
     assert not Person.objects.get(vorname="Erika").ist_hauptperson
     alt = Person.objects.get(vorname="Erika")
     alt.familienstand, alt.staatsangehoerigkeit = "unbekannt (alt)", "deutsch"

@@ -470,7 +470,14 @@ Dokumente, Historie.
   leer = wie Hauptperson), 5. Bescheid und Gültigkeit des Ausweises, 6. Kundengruppe (nur mit
   freiem Platz). Die **Kundennummer** vergibt bintafeln (nächste freie Zahl); ändern darf sie nur,
   wer das Recht „Kundennummer vergeben und ändern“ hat (Vorgabe nur Admin), auch beim Bearbeiten.
-  Mitgeliefert sind ausgeschaltete Zusatzfelder als Vorschlag (Ernährung, kein Schweinefleisch,
+  **Merkmale** (ADR 0071): Mitgeliefert und eingeschaltet sind die Ja/Nein-Felder je Person
+  Schwerbehindert, Vegetarier, Braucht Hilfe beim Einkauf, Taub, Stumm und Blind. Beim Bearbeiten
+  sind sie Ankreuzkästchen; nicht angekreuzt heißt „nein“. Was auf „ja“ steht, sieht der Einlass
+  unter „Merkmale“; Schwerbehindert, Taub, Stumm und Blind (Art. 9) nur mit dem Recht „besondere
+  Kategorie“. Mit dem Element „Merkmale“ der Ausweis-Vorlage kommt bei „ja“ das Rollstuhl-Symbol
+  bzw. ein Kürzel auf den Ausweis. Jedes Merkmal lässt sich ab- und zuschalten, aber nicht löschen;
+  eigene legt die Tafel als Zusatzfeld an (Schalter „Am Einlass anzeigen“, „Auf dem Ausweis“).
+  Mitgeliefert sind außerdem ausgeschaltete Zusatzfelder als Vorschlag (Ernährung, kein Schweinefleisch,
   Allergien, Haustiere, keine Kochmöglichkeit), einzuschalten unter „Einstellungen → Kundenstamm
   und Zusatzfelder“; die zwei mit Art.-9-Bezug sind entsprechend markiert. Kundengruppen, Ausgabestellen
   und Einkommensarten pflegt der Admin unter „Einstellungen → Kundenstamm → Listen“.
