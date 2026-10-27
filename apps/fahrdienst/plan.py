@@ -28,7 +28,8 @@ from apps.konten import rollen
 
 log = logging.getLogger(__name__)
 
-OK, ERSETZT, OFFEN, LEER = "ok", "ersetzt", "offen", "leer"
+# LEER: freier Gästeplatz über der Mindestbesetzung; UNBESETZT: Pflichtplatz ohne Person
+OK, ERSETZT, OFFEN, LEER, UNBESETZT = "ok", "ersetzt", "offen", "leer", "unbesetzt"
 
 
 @dataclass
@@ -42,16 +43,27 @@ class Platz:
 
     @property
     def wer(self):
-        """Wer den Platz an diesem Tag hat."""
+        """Wer den Platz an diesem Tag hat (Benutzer; ein Gast hat kein Konto)."""
         return self.ersatz.benutzer if self.ersatz else self.stamm
 
     @property
+    def gast(self) -> str:
+        return self.ersatz.gast if self.ersatz and not self.ersatz.benutzer_id else ""
+
+    @property
     def status(self) -> str:
+        if self.gast:
+            return ERSETZT
         if self.wer is None:
-            return LEER
+            return LEER if self.platz > self.tour.mindestbesetzung else UNBESETZT
         if self.ausfall:
             return OFFEN
         return ERSETZT if self.ersatz else OK
+
+    @property
+    def fehlt(self) -> bool:
+        """Muss noch jemand gefunden werden?"""
+        return self.status in (OFFEN, UNBESETZT)
 
     @property
     def name(self) -> str:
@@ -144,13 +156,15 @@ def verfuegbar(datum: dt.date) -> tuple[list, list]:
     return springer, weitere
 
 
-def ersatz_eintragen(datum, tour, nr, benutzer, von) -> Ersatz | None:
-    """Ersatz für einen Platz an einem Tag; ``benutzer`` None nimmt ihn zurück."""
+def ersatz_eintragen(datum, tour, nr, benutzer, von, gast: str = "") -> Ersatz | None:
+    """Ersatz für einen Platz an einem Tag: ein Konto oder ein Gast mit Namen; ohne beides wird
+    er zurückgenommen."""
     Ersatz.objects.filter(datum=datum, tour=tour, platz=nr).delete()
-    if benutzer is None:
+    gast = gast.strip()[:100]
+    if benutzer is None and not gast:
         return None
     return Ersatz.objects.create(datum=datum, tour=tour, platz=nr, benutzer=benutzer,
-                                 eingetragen_von=von)  # fmt: skip
+                                 gast="" if benutzer else gast, eingetragen_von=von)  # fmt: skip
 
 
 def einsaetze(benutzer, von: dt.date, bis: dt.date) -> list[Platz]:

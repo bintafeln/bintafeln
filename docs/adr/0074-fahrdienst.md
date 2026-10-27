@@ -29,6 +29,13 @@ und jeden Monat wurde der Plan neu abgetippt, obwohl er sich jede Woche wiederho
   nur die kostenpflichtige WhatsApp-Business-Plattform mit Firmenkonto bei Meta und vorab
   genehmigten Vorlagen – zu viel Aufwand für eine Tafel.
 - Der Plan eines Monats als PDF (A3 quer, `apps/fahrdienst/pdf.py`).
+- `Tour.mindestbesetzung`: Plätze darüber sind für Gäste ohne Konto (`Ersatz.gast` statt
+  Benutzer, Freitext, weil es keine registrierte Person gibt). Ein leerer Pflichtplatz ist
+  „unbesetzt“ und zählt wie ein offener.
+- Beispiel-Fahrerplan (`apps/fahrdienst/beispiel.py`, Knopf und Befehl `fahrdienst_beispiel`):
+  erfundene Konten mit Präfix `beispiel-fd-` ohne Passwort. Sie werden beim Entfernen wirklich
+  gelöscht – die einzige Ausnahme von „Mitarbeitende nie löschen“ (ADR 0015), weil es nie echte
+  Personen sind.
 - Rechte `fahrdienst.sehen` (Fahrer, Beifahrer, Büro) und `fahrdienst.planen` (Büro). Den Grund
   eines Ausfalls (z. B. „krank“) sehen nur, wer plant, und die Person selbst.
 - Ausfälle und Ersatz werden nach `aufbewahren_monate` (Vorgabe 12) gelöscht; sie stehen in der

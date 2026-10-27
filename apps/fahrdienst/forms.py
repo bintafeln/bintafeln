@@ -89,7 +89,20 @@ class EinstellungenForm(forms.ModelForm):
 class TourForm(forms.ModelForm):
     class Meta:
         model = Tour
-        fields = ["name", "reihenfolge", "plaetze", "aktiv"]
+        fields = ["name", "reihenfolge", "plaetze", "mindestbesetzung", "aktiv"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["mindestbesetzung"].required = False  # leer = 2 (höchstens alle Plätze)
+
+    def clean(self):
+        daten = super().clean()
+        plaetze, mindest = daten.get("plaetze"), daten.get("mindestbesetzung")
+        if plaetze and not mindest:
+            daten["mindestbesetzung"] = mindest = min(2, plaetze)
+        if plaetze and mindest and mindest > plaetze:
+            self.add_error("mindestbesetzung", "Mehr als die Zahl der Plätze geht nicht.")
+        return daten
 
 
 class SpringerForm(forms.ModelForm):

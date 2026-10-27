@@ -19,6 +19,10 @@ def _name(b) -> str:
 
 def _platz(p) -> str:
     """Ein Platz als Absatztext: offen markiert, Ersatz mit „für …“."""
+    if p.gast:
+        return f"{text(p.gast)} <font size=7>(Gast)</font>"
+    if p.status == plan.UNBESETZT:
+        return "<b>unbesetzt</b>"
     if p.wer is None:
         return ""
     if p.status == plan.OFFEN:
@@ -44,7 +48,7 @@ def monat(titel: str, tage, touren) -> bytes:
         zellen = [Paragraph(f"<b>{tag}</b>", ZELLE)]
         for j, (_, plaetze) in enumerate(zeile, start=1):
             zellen.append(Paragraph(" / ".join(x for x in map(_platz, plaetze) if x), ZELLE))
-            if any(p.status == plan.OFFEN for p in plaetze):
+            if any(p.fehlt for p in plaetze):
                 stil.append(("BACKGROUND", (j, i), (j, i), GELB))
         zeilen.append(zellen)
         if datum.weekday() == 0 and i > 1:  # neue Woche wie auf dem Papierplan
