@@ -646,7 +646,9 @@ def test_leiste_unter_dem_menue(modul_an, mitte, tag_daten, benutzer_mit_rolle, 
     konto.ausgabestellen.set([mitte])
     c = anmelden(Client(), konto)
     url = reverse("aufruf:leiste")
-    assert f'hx-get="{url}"' in c.get(reverse("core:start")).content.decode()
+    start = c.get(reverse("core:start")).content.decode()
+    assert f'hx-get="{url}"' in start
+    assert 'hx-trigger="load, every 5s, einlassGeaendert from:body"' in start
     seite = c.get(url).content.decode()
     assert "Heute noch nicht gestartet" in seite and "Aufruf starten" in seite
     assert f'href="{reverse("aufruf:mobil", args=[mitte.pk])}"' in seite  # „Aufruf ↗“

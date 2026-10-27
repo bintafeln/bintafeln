@@ -804,7 +804,8 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   Nummern der gewählten Ausgabestelle, die gerade eintreten sollen, und den Knopf „Nächste 3
   hereinrufen“ (Anzahl wie eingestellt), dazu „letzten Schritt zurück“ und „Aufruf starten“; nach
   der letzten Nummer „Ausgabe beendet“ mit „neu starten“ und „letzten Schritt zurück“. Die
-  Anzeige aktualisiert sich alle 15 Sekunden, auch wenn ein anderes Gerät weiterschaltet. Hat die
+  Anzeige aktualisiert sich alle 5 Sekunden (auch wenn ein anderes Gerät weiterschaltet) und
+  sofort, wenn am Einlass eine Abholung eingetragen wird. Hat die
   Ausgabestelle heute keine Kundengruppe, erscheint der Kasten nicht. Einen
   eigenen Menüeintrag gibt es nicht mehr; die Überschrift „Aufruf ↗“ öffnet die Handy-Steuerung.
 - **Wer ist schon da:** Scannt ein Kunde am Kiosk seinen Ausweis, merkt sich bintafeln das für den

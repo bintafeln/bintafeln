@@ -45,7 +45,8 @@ standen weiter in der Warteschlange.
   (Vorgabe an); aus = keine Steuerung, kein Kasten, keine Hinweise am Einlass.
 - Ergänzung: Kurz-Steuerung unter dem Menü (`Modul.seitenleiste`, `aufruf:leiste`) für alle mit
   Einlass und Recht „Kunden aufrufen“: aufgerufene Nummern der gewählten Ausgabestelle, „Nächste
-  hereinrufen“, Zurück und Starten; lädt per HTMX nach und fragt alle 15 Sekunden neu.
+  hereinrufen“, Zurück und Starten; lädt per HTMX nach und fragt alle 5 Sekunden neu, sofort nach einer Buchung am Einlass
+  (Ereignis `einlassGeaendert` über den Kopf `HX-Trigger`).
 
 ## Begründung
 
