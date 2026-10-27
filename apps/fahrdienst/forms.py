@@ -91,7 +91,8 @@ class EinstellungenForm(forms.ModelForm):
 class TourForm(forms.ModelForm):
     class Meta:
         model = Tour
-        fields = ["name", "reihenfolge", "plaetze", "mindestbesetzung", "aktiv"]
+        fields = ["name", "reihenfolge", "plaetze", "mindestbesetzung", "aktiv", "ab", "bis"]
+        widgets = {"ab": DatumEingabe(), "bis": DatumEingabe()}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -104,6 +105,9 @@ class TourForm(forms.ModelForm):
             daten["mindestbesetzung"] = mindest = min(2, plaetze)
         if plaetze and mindest and mindest > plaetze:
             self.add_error("mindestbesetzung", "Mehr als die Zahl der Plätze geht nicht.")
+        ab, bis = daten.get("ab"), daten.get("bis")
+        if ab and bis and bis < ab:
+            self.add_error("bis", "Das Ende liegt vor dem Beginn.")
         return daten
 
 

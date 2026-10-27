@@ -35,7 +35,7 @@
       <tr class="{% if datum.weekday == 0 %}fd-woche{% endif %}{% if datum == heute %} fd-heute{% endif %}">
         <th scope="row">{{ datum|date:"D d.m." }}</th>
         {% for tour, plaetze in zeile %}
-        <td>{% for p in plaetze %}{% if p.status != "leer" or planen %}{% if not forloop.first %}<span class="fd-trenner"> / </span>{% endif %}{% include "fahrdienst/_platz.html" %}{% endif %}{% endfor %}</td>
+        <td>{% for p in plaetze %}{% if p.status != "leer" or planen %}{% if not forloop.first %}<span class="fd-trenner"> / </span>{% endif %}{% include "fahrdienst/_platz.html" %}{% endif %}{% empty %}<span class="leise" title="fährt an diesem Tag nicht">–</span>{% endfor %}</td>
         {% endfor %}
       </tr>
     {% empty %}

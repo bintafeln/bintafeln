@@ -47,3 +47,10 @@ und jeden Monat wurde der Plan neu abgetippt, obwohl er sich jede Woche wiederho
 Die feste Besetzung bildet den Wochenrhythmus ab, Ausfall und Ersatz sind Ausnahmen für einzelne
 Tage – wie Aufkleber auf dem Papierplan, aber mit Benachrichtigung. „Krank“ ist eine
 Gesundheitsangabe; deshalb sieht den Grund nur, wer planen muss, und die Daten sind befristet.
+
+## Nachtrag: Touren mit Zeitraum (2026-10-27)
+
+`Tour.ab` und `Tour.bis` (leer = schon immer bzw. dauerhaft). `plan.touren(von, bis)` nimmt nur
+Touren, die im Zeitraum an mindestens einem Tag fahren; an Tagen außerhalb hat die Tour keine
+Plätze (Strich im Plan und PDF, kein Ersatz eintragbar). So bleiben frühere Monate, wie sie waren,
+und neue oder wegfallende Touren lassen sich zu einem Stichtag einplanen.

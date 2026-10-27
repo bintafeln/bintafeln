@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block titel %}Dienstplan {{ ausgabestelle }}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'dienstplan:einstellungen' %}">← Dienstplan einstellen</a></p>
+  <h1>Dienstplan: {{ ausgabestelle }}</h1>
+  <form method="post" data-autosave>
+    {% csrf_token %}
+    <input type="hidden" name="aktion" value="stelle">
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+  {% if ds.aktiv and tage %}<p><a class="knopf knopf-zweitrangig" href="{% url 'dienstplan:plan' %}?stelle={{ ausgabestelle.pk }}&amp;tag={{ tag }}">Zum Dienstplan</a></p>{% endif %}
+</section>
+
+{% if tage %}
+<section class="karte breit">
+  <nav class="aktionsleiste" aria-label="Ausgabetag">{% for t in tage %}<a class="knopf{% if t != tag %} knopf-zweitrangig{% endif %}" href="?tag={{ t }}">{{ t }}</a>{% endfor %}</nav>
+  <h2>{{ tagname }}</h2>
+  <form method="post" class="abseits">
+    {% csrf_token %}
+    <input type="hidden" name="aktion" value="tag">
+    {% with form=tag_form %}{% include "includes/formular.html" %}{% endwith %}
+    <button type="submit" class="knopf knopf-zweitrangig">Teamleitung speichern</button>
+  </form>
+
+  <h3>Aufgaben und feste Besetzung</h3>
+  {% if aufgaben %}
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="aktion" value="besetzung">
+    <div class="tabelle-rahmen">
+    <table class="tabelle fd-besetzung">
+      <thead><tr><th>Aufgabe</th><th>Zeit</th><th>Wer (jeden {{ tagname }})</th></tr></thead>
+      <tbody>
+      {% for a in aufgaben %}
+        <tr>
+          <td data-titel="Aufgabe"><a href="{% url 'dienstplan:aufgabe' a.pk %}">{{ a.name|default:"…" }}</a>{% if not a.pflicht %} <small class="leise">(darf leer bleiben)</small>{% endif %}</td>
+          <td data-titel="Zeit">{{ a.zeit }}</td>
+          <td data-titel="Wer">
+            <label class="unsichtbar" for="h_{{ a.pk }}">{{ a.name }}</label>
+            <select name="h_{{ a.pk }}" id="h_{{ a.pk }}"><option value="">– frei –</option>
+              {% for h in helfer %}<option value="{{ h.pk }}"{% if a.besetzung and a.besetzung.helfer_id == h.pk %} selected{% endif %}>{{ h }}</option>{% endfor %}</select>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <button type="submit" class="knopf">Besetzung speichern</button>
+  </form>
+  {% else %}<p>Noch keine Aufgaben für {{ tagname }}.</p>{% endif %}
+
+  <h3 class="abseits">Aufgabe hinzufügen</h3>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="aktion" value="aufgabe">
+    {% with form=neu_form %}{% include "includes/formular.html" %}{% endwith %}
+    <button type="submit" class="knopf knopf-zweitrangig">Aufgabe anlegen</button>
+  </form>
+  {% if andere_tage %}
+  <form method="post" class="filter abseits" onsubmit="return confirm('Die Aufgaben von {{ tagname }} werden dabei ersetzt. Weiter?')">
+    {% csrf_token %}
+    <input type="hidden" name="aktion" value="kopieren">
+    <label for="dp-von">Aufgaben und Besetzung übernehmen von</label>
+    <select name="von" id="dp-von">{% for t in andere_tage %}<option>{{ t }}</option>{% endfor %}</select>
+    <button type="submit" class="knopf knopf-zweitrangig">übernehmen</button>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

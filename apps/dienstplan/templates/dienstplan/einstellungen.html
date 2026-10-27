@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block titel %}Dienstplan einstellen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Dienstplan einstellen</h1>
+  <form method="post" data-autosave>
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+  <h2>Telegram</h2>
+  <p class="hinweis">Zusätzlich zur E-Mail an die Teamleitung kann ein Telegram-Bot der Tafel jeden Ausfall melden (ohne
+    Grund). Einrichten wie beim Fahrdienst: Schlüssel von @BotFather oben eintragen, „/start“ an den Bot schreiben,
+    „Chats suchen“, ID eintragen, „Testnachricht senden“.</p>
+  <form method="post" action="{% url 'dienstplan:telegram' %}" class="aktionsleiste">
+    {% csrf_token %}
+    <button type="submit" name="aktion" value="suchen" class="knopf knopf-zweitrangig">Chats suchen</button>
+    <button type="submit" name="aktion" value="test" class="knopf knopf-zweitrangig">Testnachricht senden</button>
+  </form>
+</section>
+
+<section class="karte">
+  <h2>Ausgabestellen</h2>
+  <p class="hinweis">Jede Ausgabestelle macht einzeln mit oder nicht. Dort stellen Sie die Ausgabetage, je Tag die
+    Teamleitung, die Aufgaben und die feste Besetzung ein.</p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Ausgabestelle</th><th>Dienstplan</th><th>Ausgabetage</th></tr></thead>
+    <tbody>
+    {% for s, ds in stellen %}
+      <tr>
+        <td data-titel="Ausgabestelle"><a href="{% url 'dienstplan:stelle' s.pk %}">{{ s.name }}</a></td>
+        <td data-titel="Dienstplan">{% if ds.aktiv %}<span class="marke-ok">macht mit</span>{% else %}aus{% endif %}</td>
+        <td data-titel="Ausgabetage">{{ ds.tage|default:"–" }}</td>
+      </tr>
+    {% empty %}<tr><td colspan="3">Noch keine Ausgabestellen.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="karte">
+  <h2>Helfer</h2>
+  <p class="hinweis">Wer eingeteilt werden kann: mit Konto (sieht den Plan, meldet sich selbst ab) oder nur mit Name und
+    Telefon. Inaktive stehen nicht mehr zur Wahl.</p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Name</th><th>Konto</th><th>Telefon</th><th>Aktiv</th></tr></thead>
+    <tbody>
+    {% for h in helfer %}
+      <tr>
+        <td data-titel="Name"><a href="{% url 'dienstplan:helfer' h.pk %}">{{ h }}</a>{% if h.anmerkung %} <small class="leise">{{ h.anmerkung }}</small>{% endif %}</td>
+        <td data-titel="Konto">{% if h.benutzer_id %}ja{% else %}–{% endif %}</td>
+        <td data-titel="Telefon">{{ h.tel }}</td>
+        <td data-titel="Aktiv">{{ h.aktiv|yesno:"ja,nein" }}</td>
+      </tr>
+    {% empty %}<tr><td colspan="4">Noch keine Helfer.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="aktionsleiste"><a class="knopf knopf-zweitrangig" href="{% url 'dienstplan:helfer_neu' %}">Helfer anlegen</a></p>
+  <form method="post" action="{% url 'dienstplan:helfer_uebernehmen' %}" class="filter">
+    {% csrf_token %}
+    <label for="dp-rolle">Alle Konten der Rolle</label>
+    <select name="rolle" id="dp-rolle"><option>Ausgabe</option><option>Büro</option></select>
+    <button type="submit" class="knopf knopf-zweitrangig">als Helfer übernehmen</button>
+  </form>
+</section>
+
+<section class="karte">
+  <h2>Beispiel zum Ausprobieren</h2>
+  <p class="hinweis">Legt die „Beispiel-Ausgabestelle“ mit Montag, Mittwoch und Freitag an, mit den Aufgaben wie auf dem
+    Papierplan (Teamleitung, Frühdienst, Vorsortierung, Kasse, Brot, Mopro, Wurst/Fleisch, Sonderartikel, 4× Obst,
+    4× Gemüse, 3× Springer), alle Plätze mit erfundenen Namen besetzt. „Beispiel entfernen“ löscht nur das Erfundene.</p>
+  <form method="post" action="{% url 'dienstplan:beispiel' %}" class="aktionsleiste">
+    {% csrf_token %}
+    <button type="submit" name="aktion" value="anlegen" class="knopf knopf-zweitrangig">{% if beispiel %}Beispiel neu würfeln{% else %}Beispiel anlegen{% endif %}</button>
+    {% if beispiel %}<button type="submit" name="aktion" value="entfernen" class="knopf knopf-gefahr" onclick="return confirm('Beispiel wirklich löschen?')">Beispiel entfernen</button>{% endif %}
+  </form>
+</section>
+{% endblock %}

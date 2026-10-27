@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block titel %}Meine Dienste{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <div class="fd-kopf">
+    <h1>Meine Dienste</h1>
+    {% if darf_melden or planen %}<a class="knopf" href="{% url 'dienstplan:ausfall' %}">Ich kann nicht – Ausfall melden</a>{% endif %}
+  </div>
+  {% if not ich %}<p>Sie sind noch nicht als Helfer im Dienstplan eingetragen.</p>{% else %}
+  <h2>Die nächsten vier Wochen</h2>
+  <ul class="fd-einsaetze">
+    {% for p in dienste %}<li><strong>{{ p.datum|date:"D d.m." }}</strong> · {{ p.aufgabe.stelle }} · {{ p.aufgabe.name }} {{ p.aufgabe.zeit }}{% if p.ersatz %} (als Ersatz){% endif %}{% if p.ausfall %} · <span class="fd-platz fd-offen">Ausfall gemeldet</span>{% elif darf_melden %} · <a href="{% url 'dienstplan:ausfall' %}?von={{ p.datum|date:'Y-m-d' }}">kann nicht</a>{% endif %}</li>
+    {% empty %}<li>Keine Dienste eingeplant.</li>{% endfor %}
+  </ul>
+  {% if ausfaelle %}
+  <h2>Gemeldete Ausfälle</h2>
+  <ul>{% for a in ausfaelle %}<li>{{ a.von|date:"d.m.Y" }}{% if a.bis != a.von %} bis {{ a.bis|date:"d.m.Y" }}{% endif %} ({{ a.get_grund_display }})
+    {% if darf_melden or planen %}<form method="post" action="{% url 'dienstplan:ausfall_loeschen' a.pk %}" class="inline" onsubmit="return confirm('Ausfall zurücknehmen? Wirklich löschen?')">{% csrf_token %}<button type="submit" class="link">zurücknehmen</button></form>{% endif %}</li>{% endfor %}</ul>
+  {% endif %}
+  {% endif %}
+  <p><a href="{% url 'dienstplan:plan' %}">Ganzer Dienstplan</a></p>
+</section>
+{% endblock %}

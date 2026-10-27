@@ -234,8 +234,7 @@ def test_fristen_menue_und_auskunft(team, admin_client, pdf_text):
 
 
 def test_telegram_ohne_grund(team, admin_client, monkeypatch, django_capture_on_commit_callbacks):
-    from apps.core import geheimnis
-    from apps.fahrdienst import telegram
+    from apps.core import geheimnis, telegram
 
     p, _, _ = team
     gesendet = []
@@ -298,7 +297,7 @@ def test_telegram_schnittstelle(monkeypatch):
     import json
     from urllib.error import HTTPError, URLError
 
-    from apps.fahrdienst import telegram
+    from apps.core import telegram
 
     antworten = []
 
@@ -486,3 +485,34 @@ def test_wer_ausfaellt_springt_nicht_ein(team, admin_client):
     assert "Ole Hansen kann am 11.11.2026 nicht einspringen" in antwort.content.decode()
     assert not Ersatz.objects.exists()
     assert p["ole"] in sum(plan.verfuegbar(MITTWOCH + dt.timedelta(days=12)), [])  # danach wieder
+
+
+def test_tour_faehrt_ab_und_bis(team, admin_client, pdf_text):
+    """Neue Touren ab einem Stichtag, wegfallende bis zu einem Tag; frühere Monate bleiben."""
+    p, mitte, steele = team
+    neu = Tour.objects.create(name="Nordtour", reihenfolge=3, plaetze=2,
+                              ab=dt.date(2026, 11, 16))  # fmt: skip
+    Besetzung.objects.create(tour=neu, wochentag="Mi", platz=1, benutzer=p["tim"])
+    steele.bis = dt.date(2026, 11, 16)
+    steele.save()
+    assert [t.name for t in plan.touren(dt.date(2026, 10, 1), dt.date(2026, 10, 31))] == [
+        "Mitte", "Steele"]  # fmt: skip
+    assert [t.name for t in plan.touren(dt.date(2026, 12, 1), dt.date(2026, 12, 31))] == [
+        "Mitte", "Nordtour"]  # fmt: skip
+    nov = {d: dict((t.name, ps) for t, ps in z) for d, z in
+           plan.tage(plan.fahrtage(dt.date(2026, 11, 1), dt.date(2026, 11, 30)))}  # fmt: skip
+    assert nov[MITTWOCH]["Nordtour"] == [] and len(nov[MITTWOCH]["Steele"]) == 2
+    assert nov[dt.date(2026, 11, 18)]["Steele"] == []
+    assert nov[dt.date(2026, 11, 18)]["Nordtour"][0].wer == p["tim"]
+    assert p["tim"] not in sum(plan.verfuegbar(dt.date(2026, 11, 18)), [])  # eingesetzt
+    seite = admin_client.get(PLAN, {"monat": "2026-11"}).content.decode()
+    assert "Nordtour" in seite and 'title="fährt an diesem Tag nicht">–' in seite
+    assert "Nordtour" not in admin_client.get(PLAN, {"monat": "2026-10"}).content.decode()
+    zu = reverse("fahrdienst:platz", args=["2026-11-18", steele.pk, 1])
+    assert admin_client.get(zu).status_code == 404
+    assert "Nordtour" in pdf_text(admin_client.get(reverse("fahrdienst:pdf"), {"monat": "2026-11"}))
+    # Formular: Ende vor Beginn geht nicht
+    antwort = admin_client.post(reverse("fahrdienst:tour", args=[neu.pk]), {
+        "name": "Nordtour", "reihenfolge": 3, "plaetze": 2, "mindestbesetzung": 2, "aktiv": "on",
+        "ab": "2026-12-01", "bis": "2026-11-01"})  # fmt: skip
+    assert "Das Ende liegt vor dem Beginn." in antwort.content.decode()

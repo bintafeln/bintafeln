@@ -1,7 +1,8 @@
 """Benachrichtigung per Telegram (ADR 0074): ein Bot der Tafel schreibt in die eingestellten Chats.
 
-Der Bot-Schlüssel liegt verschlüsselt in den Einstellungen (``apps.core.geheimnis``). Telegram
-bekommt nur, wer ausfällt, wann und welche Touren betroffen sind – nie den Grund (z. B. „krank“).
+Genutzt von Fahrdienst und Dienstplan. ``e`` sind deren Einstellungen mit den Feldern
+``telegram_schluessel_verschluesselt`` (verschlüsselt über ``apps.core.geheimnis``) und
+``telegram_chats``. Telegram bekommt nur, wer ausfällt, wann und wo – nie den Grund (z. B. „krank“).
 """
 
 import json
@@ -83,4 +84,4 @@ def benachrichtigen(e, text: str) -> None:
     try:
         senden(e, text)
     except TelegramFehler as fehler:
-        log.warning("Fahrdienst: Telegram nicht gesendet: %s", fehler)
+        log.warning("Telegram nicht gesendet: %s", fehler)

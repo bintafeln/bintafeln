@@ -78,6 +78,18 @@ class Tour(models.Model):
         "Freiwillige, die einen Tag mitfahren).",
     )  # fmt: skip
     aktiv = models.BooleanField("Aktiv", default=True)
+    ab = models.DateField(
+        "Fährt ab",
+        null=True,
+        blank=True,
+        help_text="Leer = schon immer. Frühere Monate zeigen die Tour nicht.",
+    )
+    bis = models.DateField(
+        "Fährt bis",
+        null=True,
+        blank=True,
+        help_text="Leer = dauerhaft. Danach erscheint die Tour nicht mehr.",
+    )
 
     class Meta:
         verbose_name = "Tour"
@@ -86,6 +98,9 @@ class Tour(models.Model):
 
     def __str__(self):
         return self.name
+
+    def faehrt_am(self, datum) -> bool:
+        return (self.ab is None or self.ab <= datum) and (self.bis is None or datum <= self.bis)
 
 
 def platz_name(platz: int) -> str:

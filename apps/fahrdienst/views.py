@@ -62,7 +62,7 @@ def uebersicht(request):
     letzter = _verschieben(erster, 1) - dt.timedelta(days=1)
     tage = plan.tage(plan.fahrtage(erster, letzter))
     return render(request, "fahrdienst/plan.html", {
-        "tage": tage, "touren": list(Tour.objects.filter(aktiv=True)),
+        "tage": tage, "touren": plan.touren(erster, letzter),
         "titel": f"{MONATE[erster.month - 1]} {erster.year}", "monat": f"{erster:%Y-%m}",
         "erster": erster, "monate": list(enumerate(MONATE, start=1)),
         "jahre": range(min(jahr - 2, erster.year), max(jahr + 1, erster.year) + 1),
@@ -85,7 +85,7 @@ def plan_pdf(request):
     letzter = _verschieben(erster, 1) - dt.timedelta(days=1)
     titel = f"{MONATE[erster.month - 1]} {erster.year}"
     inhalt = pdf.monat(titel, plan.tage(plan.fahrtage(erster, letzter)),
-                       list(Tour.objects.filter(aktiv=True)))  # fmt: skip
+                       plan.touren(erster, letzter))  # fmt: skip
     return pdf_antwort(inhalt, f"fahrerplan-{erster:%Y-%m}.pdf")
 
 
@@ -98,7 +98,7 @@ def platz(request, datum, tour, nr):
     except ValueError as fehler:
         raise Http404 from fehler
     t = get_object_or_404(Tour, pk=tour)
-    if not 1 <= nr <= t.plaetze:
+    if not 1 <= nr <= t.plaetze or not t.faehrt_am(tag):
         raise Http404
     zurueck = f"{reverse('fahrdienst:plan')}?monat={tag:%Y-%m}"
     if request.method == "POST":
@@ -211,7 +211,7 @@ def einstellungen(request):
 @nicht_in_demo
 def telegram_pruefen(request):
     """„Chats suchen“ (wer dem Bot geschrieben hat) oder „Testnachricht senden“."""
-    from apps.fahrdienst import telegram
+    from apps.core import telegram
 
     e = FahrdienstEinstellungen.laden()
     if not telegram.schluessel(e):

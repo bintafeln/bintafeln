@@ -960,6 +960,8 @@ Ersetzt den gedruckten Fahrerplan mit den gelben Aufklebern (ADR 0074).
   Vormonat/Folgemonat). Der Plan wird nie abgeschlossen, er ergibt sich aus der festen Besetzung mit
   Ausfällen und Ersatz. Wer plant, kommt über den Namen der Tour (✎) direkt zu ihrer festen
   Besetzung und danach zurück zum Monat.
+- **Touren dazunehmen oder herausnehmen:** je Tour „Fährt ab“ und „Fährt bis“ (leer = immer bzw.
+  dauerhaft); frühere Monate bleiben unverändert, an Tagen außerhalb steht ein Strich.
 - **Mindestbesetzung und Gäste:** Jede Tour hat Plätze (z. B. 3) und eine Mindestbesetzung
   (z. B. 2). Ein leerer Pflichtplatz steht als „unbesetzt“ da; freie Plätze darüber sind für
   Gäste ohne Konto (Name eintragen).
@@ -977,6 +979,27 @@ Ersetzt den gedruckten Fahrerplan mit den gelben Aufklebern (ADR 0074).
   zeigt ihre Chat-IDs, „Testnachricht senden“ prüft. Telegram bekommt nie den Grund eines
   Ausfalls. WhatsApp geht nur über die kostenpflichtige WhatsApp-Business-Plattform von Meta
   (Firmenkonto, vorab genehmigte Nachrichtenvorlagen) und ist deshalb nicht eingebaut.
+
+### Dienstplan der Ausgabe
+
+Ersetzt den ausgehängten Papierplan der Ausgabe (ADR 0077), wie der Fahrdienst aufgebaut.
+
+- **Je Ausgabestelle** einzeln zuschaltbar, mit beliebigen Ausgabetagen (z. B. Mo, Mi, Fr), je Tag
+  eine **Teamleitung** und „Abmeldungen unter“ (Telefon). Einstellungen unter „Einstellungen →
+  Mitarbeitende → Dienstplan: Aufgaben und Helfer“ (Recht „Dienstplan planen“, Vorgabe Büro).
+- **Aufgaben** je Ausgabetag mit Uhrzeit (z. B. Teamleitung 09:00–15:00, Kasse, 4× Obst, Springer),
+  „muss besetzt sein“ abschaltbar; „Übernehmen von“ kopiert einen anderen Tag.
+- **Helfer** mit Konto (sehen den Plan, melden sich selbst ab) oder nur mit Name und Telefon; alle
+  Konten einer Rolle lassen sich auf einmal übernehmen.
+- **Plan** „Ausgabestelle → Dienstplan“: Ausgabestelle, Ausgabetag und Monat wählen; Zeilen Aufgaben,
+  Spalten Termine. Ausfall (krank, Urlaub, Sonstiges, wie lange) selbst oder durch die Teamleitung;
+  der Platz steht dann „offen“, Ersatz (nur wer frei ist) oder Gast eintragen.
+- **Benachrichtigung** per E-Mail an die Teamleitung des betroffenen Tages (sonst an alle, die
+  planen), auf Wunsch Telegram ohne Grund.
+- **PDF** A4 quer wie der Papierplan: je Ausgabetag eine Seite „Freitag | November“, Termine,
+  Aufgaben, Namen; fehlende gelb; unten „Abmeldungen bitte bei … unter …“.
+- **Beispiel** zum Ausprobieren (Knopf oder `python manage.py dienstplan_beispiel`, `--entfernen`).
+- Ausfälle und Ersatz werden nach 12 Monaten gelöscht (einstellbar) und stehen in der Auskunft.
 
 ### Links auf der Startseite
 

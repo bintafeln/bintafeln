@@ -95,11 +95,19 @@ def _ausfall(ausfaelle, benutzer_id, datum) -> Ausfall | None:
                  if a.benutzer_id == benutzer_id and a.von <= datum <= a.bis), None)  # fmt: skip
 
 
+def touren(von: dt.date, bis: dt.date) -> list[Tour]:
+    """Aktive Touren, die zwischen ``von`` und ``bis`` an mindestens einem Tag fahren
+    („fährt ab … bis …“; leer = schon immer bzw. dauerhaft)."""
+    return [t for t in Tour.objects.filter(aktiv=True)
+            if (t.ab is None or t.ab <= bis) and (t.bis is None or von <= t.bis)]  # fmt: skip
+
+
 def tage(tage_liste: list[dt.date]) -> list[tuple[dt.date, list[tuple[Tour, list[Platz]]]]]:
-    """Plan für die angegebenen Tage: je Tag die aktiven Touren mit ihren Plätzen."""
+    """Plan für die angegebenen Tage: je Tag die Touren mit ihren Plätzen. An Tagen außerhalb
+    von „fährt ab … bis …“ hat eine Tour keine Plätze (im Plan ein Strich)."""
     if not tage_liste:
         return []
-    touren = list(Tour.objects.filter(aktiv=True))
+    touren_ = touren(min(tage_liste), max(tage_liste))
     besetzung = {(b.tour_id, b.wochentag, b.platz): b.benutzer
                  for b in Besetzung.objects.select_related("benutzer")}  # fmt: skip
     von, bis = min(tage_liste), max(tage_liste)
@@ -109,9 +117,9 @@ def tage(tage_liste: list[dt.date]) -> list[tuple[dt.date, list[tuple[Tour, list
     ergebnis = []
     for datum in tage_liste:
         zeile = []
-        for tour in touren:
+        for tour in touren_:
             plaetze = []
-            for nr in range(1, tour.plaetze + 1):
+            for nr in range(1, (tour.plaetze if tour.faehrt_am(datum) else 0) + 1):
                 p = Platz(datum, tour, nr, stamm=besetzung.get((tour.pk, kuerzel(datum), nr)),
                           ersatz=ersatz.get((datum, tour.pk, nr)))  # fmt: skip
                 if p.wer is not None:
@@ -190,8 +198,7 @@ def empfaenger() -> list[str]:
 
 def _benachrichtigen(ausfall: Ausfall, adresse: str) -> None:
     """E-Mail (mit Grund) und Telegram (ohne Grund) an die Fahrdienstleitung."""
-    from apps.core import mail
-    from apps.fahrdienst import telegram
+    from apps.core import mail, telegram
 
     e = FahrdienstEinstellungen.laden()
     an = empfaenger() if mail.eingerichtet() else []
