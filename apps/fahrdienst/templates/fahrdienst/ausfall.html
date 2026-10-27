@@ -2,8 +2,10 @@
 {% block titel %}Ausfall melden{% endblock %}
 {% block inhalt %}
 <section class="karte">
-  <h1>Ausfall im Fahrdienst melden</h1>
-  <p class="hinweis">Für einen Tag nur „Von“ ausfüllen. Die Fahrdienstleitung bekommt eine E-Mail mit den betroffenen
+  <p><a href="{{ zurueck }}">← zurück</a></p>
+  <h1>Ich kann nicht – Ausfall melden</h1>
+  <p class="hinweis">Krank, Urlaub oder etwas anderes: „Ab“ und „Wie lange?“ wählen, z. B. 3 Wochen Urlaub. Im
+    Fahrerplan ist Ihr Name an diesen Tagen dann durchgestrichen und der Platz „offen“. Die Fahrdienstleitung bekommt eine E-Mail mit den betroffenen
     Einsätzen und den freien Springern. Den Grund sieht nur, wer den Fahrdienst plant.</p>
   <form method="post">
     {% csrf_token %}

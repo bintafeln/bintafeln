@@ -929,6 +929,8 @@ Ersetzt den gedruckten Fahrerplan mit den gelben Aufklebern (ADR 0074).
 - **Feste Besetzung** je Tour und Wochentag unter „Einstellungen → Mitarbeitende → Fahrdienst:
   Touren und Springer“ (Recht „Fahrdienst planen“, Vorgabe Büro); daraus entsteht jede Woche der
   Plan. Dazu Springer (auf jeder Tour, auf Wunsch nur an bestimmten Tagen), Fahrtage, Feiertage.
+- **Selbst austragen:** Fahrer und Beifahrer tippen im Plan auf ihren eigenen Namen (oder in „Meine
+  Einsätze“ auf „kann nicht“) und wählen, wie lange: nur dieser Tag, 1–4 Wochen oder ein genaues Ende.
 - **Ausfall melden:** „Meine Einsätze → Ich kann nicht“ (wenn die Tafel Selbstmelden erlaubt)
   oder durch die Fahrdienstleitung; Zeitraum und Grund (krank, Urlaub, Sonstiges). Den Grund
   sieht nur, wer plant. Die eingestellten Personen (sonst alle, die planen) bekommen eine E-Mail

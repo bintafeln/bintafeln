@@ -9,7 +9,7 @@
   <h2>Die nächsten vier Wochen</h2>
   {% if einsaetze %}
   <ul class="fd-einsaetze">
-    {% for p in einsaetze %}<li><strong>{{ p.datum|date:"D d.m." }}</strong> · {{ p.tour }} · {{ p.name }}{% if p.ersatz %} (als Ersatz){% endif %}{% if p.ausfall %} · <span class="fd-platz fd-offen">Ausfall gemeldet</span>{% endif %}</li>{% endfor %}
+    {% for p in einsaetze %}<li><strong>{{ p.datum|date:"D d.m." }}</strong> · {{ p.tour }} · {{ p.name }}{% if p.ersatz %} (als Ersatz){% endif %}{% if p.ausfall %} · <span class="fd-platz fd-offen">Ausfall gemeldet</span>{% elif darf_melden or planen %} · <a href="{% url 'fahrdienst:ausfall' %}?von={{ p.datum|date:'Y-m-d' }}">kann nicht</a>{% endif %}</li>{% endfor %}
   </ul>
   {% else %}<p>Keine Einsätze eingeplant.</p>{% endif %}
   {% if ausfaelle %}
