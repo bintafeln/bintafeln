@@ -24,7 +24,11 @@ def suchen(benutzer, begriff, grenze):
 
     if not rollen.hat_recht(benutzer, "wochenuebersicht.bearbeiten"):
         return []
-    liste = Selbstabholer.objects.filter(name__icontains=begriff)[: grenze + 1]
+    from django.db.models import Q
+
+    liste = Selbstabholer.objects.filter(
+        Q(name__icontains=begriff) | Q(kontakte__name__icontains=begriff)
+    ).distinct()[: grenze + 1]  # auch über die Ansprechpersonen
     return [(s.name, reverse("wochenuebersicht:selbstabholer_bearbeiten", args=[s.pk]),
              f"Selbstabholer · {s.tage}" if s.tage else "Selbstabholer")
             for s in liste]  # fmt: skip

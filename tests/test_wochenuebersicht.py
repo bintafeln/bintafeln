@@ -140,18 +140,51 @@ def test_seiten_und_pdf(modul_an, admin_client, daten, pdf_text):
     assert "Selbstabholer: Frauenhaus" in hoch and "(+12)" in hoch
 
 
+LEER = {"k-TOTAL_FORMS": "2", "k-INITIAL_FORMS": "0", "k-MIN_NUM_FORMS": "0",
+        "k-MAX_NUM_FORMS": "1000"}  # fmt: skip
+
+
 def test_selbstabholer_pflegen(modul_an, admin_client):
     antwort = admin_client.post(reverse("wochenuebersicht:selbstabholer_neu"), {
         "name": "Frauenhaus", "tage": ["Mo", "Mi"], "personen": 12, "aktiv": "on", "notiz": "",
+        "ort": "Musterstadt", "telefon": "0123 456", **LEER,
+        "k-0-name": "Erika Muster", "k-0-funktion": "Leitung", "k-0-telefon": "0123 457",
+        "k-0-email": "erika@example.org",
+        "k-1-name": "Kim Probe", "k-1-funktion": "Fahrer", "k-1-email": "kein-mail",
     })  # fmt: skip
-    assert antwort.status_code == 302
+    assert antwort.status_code == 200 and not Selbstabholer.objects.exists()  # E-Mail falsch
+    antwort = admin_client.post(reverse("wochenuebersicht:selbstabholer_neu"), {
+        "name": "Frauenhaus", "tage": ["Mo", "Mi"], "personen": 12, "aktiv": "on", "notiz": "",
+        "ort": "Musterstadt", "telefon": "0123 456", **LEER,
+        "k-0-name": "Erika Muster", "k-0-funktion": "Leitung", "k-0-telefon": "0123 457",
+        "k-0-email": "erika@example.org", "k-1-name": "Kim Probe", "k-1-funktion": "Fahrer",
+    })  # fmt: skip
     s = Selbstabholer.objects.get()
-    assert s.tage == "Mo, Mi" and s.tage_liste == ["Mo", "Mi"]
-    seite = admin_client.get(reverse("wochenuebersicht:selbstabholer_bearbeiten", args=[s.pk]))
-    assert re.search(r'value="Mi"[^>]*checked', seite.content.decode())
-    assert (
-        "Frauenhaus" in admin_client.get(reverse("wochenuebersicht:selbstabholer")).content.decode()
-    )
+    assert antwort.url == reverse("wochenuebersicht:selbstabholer_bearbeiten", args=[s.pk])
+    assert s.tage == "Mo, Mi" and s.tage_liste == ["Mo", "Mi"] and s.ort == "Musterstadt"
+    assert [k.name for k in s.kontakte.all()] == ["Erika Muster", "Kim Probe"]
+    seite = admin_client.get(antwort.url).content.decode()
+    assert re.search(r'value="Mi"[^>]*checked', seite) and 'value="Erika Muster"' in seite
+    # Leere Zusatzzeilen werden nicht gespeichert; eine Ansprechperson entfernen
+    erika, kim = s.kontakte.all()
+    admin_client.post(antwort.url, {
+        "name": "Frauenhaus", "tage": ["Mo"], "personen": 12, "aktiv": "on", "notiz": "",
+        "k-TOTAL_FORMS": "4", "k-INITIAL_FORMS": "2", "k-MIN_NUM_FORMS": "0",
+        "k-MAX_NUM_FORMS": "1000", "k-0-id": erika.pk, "k-0-name": "Erika Muster",
+        "k-1-id": kim.pk, "k-1-name": "Kim Probe", "k-1-DELETE": "on",
+    })  # fmt: skip
+    assert [k.name for k in s.kontakte.all()] == ["Erika Muster"]
+    liste = admin_client.get(reverse("wochenuebersicht:selbstabholer")).content.decode()
+    assert "Frauenhaus" in liste and "Erika Muster" in liste
+    # Gesprächsnotizen mit Datum und Verfasser
+    admin_client.post(reverse("wochenuebersicht:selbstabholer_notiz", args=[s.pk]),
+                      {"text": "Abholung künftig um 10 Uhr"})  # fmt: skip
+    admin_client.post(reverse("wochenuebersicht:selbstabholer_notiz", args=[s.pk]), {"text": " "})
+    n = s.notizen.get()
+    assert n.text == "Abholung künftig um 10 Uhr" and n.verfasst_von
+    assert "Abholung künftig um 10 Uhr" in admin_client.get(antwort.url).content.decode()
+    admin_client.post(reverse("wochenuebersicht:selbstabholer_notiz_loeschen", args=[n.pk]))
+    assert not s.notizen.exists()
     admin_client.post(reverse("wochenuebersicht:selbstabholer_loeschen", args=[s.pk]))
     assert not Selbstabholer.objects.exists()
 

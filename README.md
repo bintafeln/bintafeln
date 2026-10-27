@@ -847,6 +847,8 @@ Kundenstamm, ohne Import aus anderen Programmen.
   Kundengruppen einer Ausgabestelle an einem Tag ergeben eine Zeile; eine Gruppe zählt an jedem
   ihrer Wochentage.
 - **Selbstabholer** (Einrichtungen mit Tagen und Personenzahl) zählen nur zu „alle Personen“.
+  Je Einrichtung: Anschrift, Telefon, E-Mail, Hinweise, beliebig viele **Ansprechpersonen**
+  (Name, Funktion, Telefon, E-Mail) und **Gesprächsnotizen** mit Datum und Verfasser.
 - Wahlweise die **Abholungen einer Kalenderwoche** je Tag und Ausgabestelle aus dem Einlass.
 - Druck als PDF im Hochformat (je Tag) oder Querformat (alles auf einem Blatt wie die bisherige
   Excel-Liste). Rechte „Wochenübersicht ansehen“ und „… pflegen“ (Vorgabe Büro).

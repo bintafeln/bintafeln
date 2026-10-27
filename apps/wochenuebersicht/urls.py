@@ -17,5 +17,11 @@ urlpatterns = [
         views.selbstabholer_loeschen,
         name="selbstabholer_loeschen",
     ),
+    path("selbstabholer/<int:pk>/notiz/", views.selbstabholer_notiz, name="selbstabholer_notiz"),
+    path(
+        "selbstabholer/notiz/<int:pk>/loeschen/",
+        views.selbstabholer_notiz_loeschen,
+        name="selbstabholer_notiz_loeschen",
+    ),
     path("reihenfolge/", views.reihenfolge, name="reihenfolge"),
 ]
