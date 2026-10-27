@@ -12,6 +12,7 @@ from django.views.decorators.http import require_POST
 
 from apps.core.auswahl import NACHRICHT_ANLIEGEN, NACHRICHT_ANLIEGEN_WAEHLBAR
 from apps.konten import rollen
+from apps.kunden import an_stelle
 from apps.kunden.models import Haushalt, Nachricht
 
 
@@ -59,7 +60,11 @@ def offene_je_anliegen() -> list[tuple[str, str, int]]:
 def liste(request):
     if request.method == "POST":
         n = get_object_or_404(Nachricht, pk=request.POST.get("nachricht") or 0)
-        if n.erledigt_am:
+        if antwort := request.POST.get("antwort", "").strip():
+            an_stelle.antworten(n, antwort, request.user)
+            messages.success(request, "Antwort an " + (n.stelle.name if n.stelle else
+                             "die Ausgabestelle") + " gesendet, Nachricht erledigt.")  # fmt: skip
+        elif n.erledigt_am:
             n.erledigt_am, n.erledigt_von = None, ""
         else:
             n.erledigt_am, n.erledigt_von = timezone.now(), request.user.get_username()

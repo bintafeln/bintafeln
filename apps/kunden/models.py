@@ -586,6 +586,12 @@ class Notiz(models.Model):
     # Von der Verwaltung ausdrücklich an die Ausgabestelle gerichtet: steht auf deren Startseite,
     # bis jemand dort „gelesen“ klickt
     an_stelle = models.BooleanField("An die Ausgabestelle", default=False)
+    # Antwort auf eine Nachricht: an die Ausgabestelle, die geschrieben hat (auch bei fremden
+    # Kunden); leer = die Ausgabestelle der Kundengruppe
+    fuer_stelle = models.ForeignKey(
+        "Ausgabestelle", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+        verbose_name="Für Ausgabestelle",
+    )  # fmt: skip
     gelesen_am = models.DateTimeField("Gelesen am", null=True, blank=True)
     gelesen_von = models.CharField("Gelesen von", max_length=150, blank=True)
 

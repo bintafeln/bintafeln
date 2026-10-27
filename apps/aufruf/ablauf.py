@@ -544,6 +544,12 @@ def stand_fuer_anzeige(tag, einstellungen, datum) -> dict:
     g = s["gruppen"][s["index"]]
     wartend = g["wartend"]
     vorrang = set(s.get("vorrang", [])) if einstellungen.vorrang_symbol else set()
+    # Wer gerade aufgerufen ist und schon am Einlass war, verschwindet sofort aus „Bitte
+    # eintreten“; der Platz bleibt bis zum nächsten „Weiter“ leer (keiner wird nachgerufen).
+    aufgerufen = wartend[:n]
+    if einstellungen.eingelassene_ausblenden:
+        schon_da = _eingelassen_heute(datum, aufgerufen)
+        aufgerufen = [x for x in aufgerufen if x not in schon_da]
     vergangen = []
     for schritt in reversed(s["rueckgaengig"]):
         vergangen += schritt["nummern"]
@@ -551,13 +557,13 @@ def stand_fuer_anzeige(tag, einstellungen, datum) -> dict:
             break
     return {
         "finished": False,
-        "current_numbers": wartend[:n],
+        "current_numbers": aufgerufen,
         "next_numbers": wartend[n : n + 10],
         "upcoming_numbers": wartend[n : n + 60],
         "past_numbers": vergangen[:10],
         "current_slot": gruppe_titel(g),
         "selected_day": tag_name,
-        "priority_flags": [x in vorrang for x in wartend[:n]],
+        "priority_flags": [x in vorrang for x in aufgerufen],
         "next_priority_flags": [x in vorrang for x in wartend[n : n + 60]],
         "remaining_count": len(wartend),
         "slot_index": s["index"] + 1,

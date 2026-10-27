@@ -11,7 +11,18 @@
       <td data-titel="Nachricht">{{ n.text|linebreaksbr }}{% if n.erledigt_am %}{% if n.text %}<br>{% endif %}<span class="hinweis">erledigt {{ n.erledigt_am|date:"d.m.Y" }} von {{ n.erledigt_von }}</span>{% endif %}</td>
       <td data-titel="Aktion"><form method="post" action="{% url 'kunden:nachrichten' %}" class="inline">{% csrf_token %}
         <input type="hidden" name="nachricht" value="{{ n.pk }}">{% if weiter %}<input type="hidden" name="weiter" value="{{ weiter }}">{% endif %}
-        <button type="submit" class="knopf knopf-zweitrangig">{% if n.erledigt_am %}wieder öffnen{% else %}✓ erledigt{% endif %}</button></form></td>
+        <button type="submit" class="knopf knopf-zweitrangig">{% if n.erledigt_am %}wieder öffnen{% else %}✓ erledigt{% endif %}</button></form>
+        {% if not n.erledigt_am %}
+        <details class="nachricht-antwort">
+          <summary>Antworten</summary>
+          <form method="post" action="{% url 'kunden:nachrichten' %}">{% csrf_token %}
+            <input type="hidden" name="nachricht" value="{{ n.pk }}">{% if weiter %}<input type="hidden" name="weiter" value="{{ weiter }}">{% endif %}
+            <label for="antwort-{{ n.pk }}">Antwort an {{ n.stelle.name|default:"die Ausgabestelle" }}</label>
+            <textarea name="antwort" id="antwort-{{ n.pk }}" rows="2" maxlength="900" required></textarea>
+            <button type="submit" class="knopf">Antwort senden</button>
+            <small class="hilfe">Erscheint auf der Startseite der Ausgabestelle; die Nachricht ist danach erledigt.</small>
+          </form>
+        </details>{% endif %}</td>
     </tr>
   {% empty %}
     <tr><td colspan="6" class="hinweis">Keine.</td></tr>
