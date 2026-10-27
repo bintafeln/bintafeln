@@ -15,7 +15,7 @@ import datetime as dt
 import io
 from dataclasses import dataclass, field
 
-MAX_ZEILEN = 50_000
+MAX_ZEILEN = 300_000  # z. B. alle Abholungen von 10.000 Haushalten über drei Jahre
 TRENNER = [";", "\t", ",", "|"]
 
 
@@ -69,7 +69,7 @@ def csv_lesen(name: str, roh: bytes) -> Tabelle:
     for werte in csv.reader(io.StringIO(text, newline=""), delimiter=trenner):
         tabelle.zeilen.append([w.strip() for w in werte])
         if len(tabelle.zeilen) > MAX_ZEILEN:
-            raise LeseFehler(f"{name}: mehr als {MAX_ZEILEN} Zeilen.")
+            raise LeseFehler(f"{name}: mehr als {MAX_ZEILEN} Zeilen; bitte in Teilen importieren.")
     return tabelle
 
 
@@ -106,7 +106,9 @@ def excel_lesen(name: str, roh: bytes) -> list[Tabelle]:
             for werte in blatt.iter_rows(values_only=True):
                 zeilen.append([zelle(w) for w in werte])
                 if len(zeilen) > MAX_ZEILEN:
-                    raise LeseFehler(f"{name}: mehr als {MAX_ZEILEN} Zeilen.")
+                    raise LeseFehler(
+                        f"{name}: mehr als {MAX_ZEILEN} Zeilen; bitte in Teilen importieren."
+                    )
             while zeilen and not any(zeilen[-1]):
                 zeilen.pop()
             if zeilen:

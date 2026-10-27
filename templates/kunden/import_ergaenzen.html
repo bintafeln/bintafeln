@@ -14,7 +14,8 @@
   <form method="post" action="{% url 'kunden:import_uebernehmen' vorbereitung.pk %}" id="import-form">
     {% csrf_token %}
     {% include "datenimport/_abgleich.html" %}
-    {% if modus == "aktualisieren" %}<p class="hinweis">Abholungen, Ausnahmen und Anmerkungen aus der Datei werden bei vorhandenen Haushalten ergänzt, wenn es sie noch nicht gibt.</p>{% endif %}
+    <p class="hinweis">Abholungen, Ausnahmen, Anmerkungen und Kontobuchungen aus der Datei kommen bei vorhandenen Haushalten dazu, wenn es sie noch nicht gibt.
+      {% if vorbereitung.daten.nur_ergaenzen %}Ohne Haushalte-Datei auch Angehörige, Abholberechtigte und Sperren, die noch fehlen.{% endif %}</p>
     <p class="hinweis">Notizen, Dokumente, Historie und Kundenkonto bleiben erhalten. Ein geänderter Kontostand wird als Korrekturbuchung eingetragen.
       Gültig bis {{ gueltig_bis|date:"H:i" }} Uhr.</p>
     {% if sicherung_frisch %}

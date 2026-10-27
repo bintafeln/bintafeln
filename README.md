@@ -436,8 +436,9 @@ Regeln:
 ## Daten importieren (CSV, Excel)
 
 „Einstellungen → Systemsteuerung → Daten importieren“ übernimmt Daten aus anderen Programmen,
-ohne die Datei vorher umzubauen (ADR 0078): **Kundenstamm**, **Ausgabestellen** und
-**Mitarbeitende** mit Anschrift.
+ohne die Datei vorher umzubauen (ADR 0078): **Kundenstamm** (mit Angehörigen, Abholungen,
+Ausnahmen, Sperren, Anmerkungen und Kontobuchungen), **Ausgabestellen**, **Mitarbeitende** mit
+Anschrift, **Adressbuch** und **Mitglieder**.
 
 1. Was importiert wird wählen, eine oder mehrere Dateien hochladen: CSV (Trennzeichen und
    Zeichenkodierung werden erkannt) oder Excel `.xlsx` (jedes Blatt einzeln). Titelzeilen über
@@ -456,7 +457,16 @@ Neue Mitarbeitende bekommen kein Passwort; den Zugang gibt man danach per Einlad
 neuem Passwort. Rollen aus der Datei bekommen nur neue Konten, und nur solche, die man selbst
 vergeben darf. Der Kundenstamm wird nach der Zuordnung wie im Importformat geprüft. Hochgeladene
 Daten werden höchstens zwei Stunden aufbewahrt. Wer es darf: Kundenstamm mit „Kundenstamm
-importieren“, Ausgabestellen mit dem Recht für Kundengruppen, Ausgabestellen und Einkommensarten, Mitarbeitende mit „Mitarbeitende verwalten“.
+importieren“, Ausgabestellen mit dem Recht für Kundengruppen, Ausgabestellen und
+Einkommensarten, Mitarbeitende mit „Mitarbeitende verwalten“, Adressen mit „Adressen
+importieren“, Mitglieder mit „Mitglieder bearbeiten“.
+
+**Große Kundenstämme** (über 10.000 Haushalte mit allen Abholungen) gehen in Teilen: zuerst die
+Haushalte (auch aufgeteilt), danach Angehörige, Abholungen, Kontobuchungen usw., auch ohne
+Haushalte-Datei und je Jahr aufgeteilt – immer mit „Hinzufügen und aktualisieren“. Was es schon
+gibt, kommt nicht doppelt. Eine Datei darf bis 60 MB und 300.000 Zeilen haben; der Server wartet
+bis zu fünf Minuten auf einen Import. Abholungen und Buchungen werden nur innerhalb der
+Aufbewahrungsfristen übernommen.
 
 ## Suche
 

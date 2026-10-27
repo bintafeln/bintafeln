@@ -11,6 +11,7 @@ import datetime as dt
 import hashlib
 import io
 from dataclasses import dataclass, field
+from decimal import Decimal
 
 from auditlog.context import disable_auditlog
 from django.core.exceptions import ValidationError
@@ -49,6 +50,8 @@ BEMERKUNGEN = "bemerkungen.csv"
 KUNDENGRUPPEN = "kundengruppen.csv"
 ABHOLUNGEN = "abholungen.csv"
 AUSNAHMEN = "ausnahmen.csv"
+BUCHUNGEN = "buchungen.csv"
+BUCHUNGSARTEN = ("abholung", "einzahlung", "korrektur")
 
 SPALTEN = {
     HAUSHALTE: {
@@ -103,6 +106,10 @@ SPALTEN = {
         "pflicht": ["kundennummer", "datum"],
         "optional": ["begruendung", "eingetragen_von"],
     },
+    BUCHUNGEN: {
+        "pflicht": ["kundennummer", "datum", "betrag"],
+        "optional": ["uhrzeit", "art", "bar", "ausgabestelle", "bemerkung", "eingetragen_von"],
+    },
 }
 
 # Spalten, die die Tafel in den Einstellungen abschalten kann.
@@ -135,6 +142,7 @@ MAX_LAENGE = {
     "kuerzel": 20,
     "name": 100,
     "wochentage": 30,
+    "bemerkung": 200,
 }
 
 
@@ -556,10 +564,65 @@ class _Pruefung:
                 ausnahmen.append(eintrag)
         return abholungen, ausnahmen
 
+    def buchungen(self, zeilen) -> list[dict]:
+        """Kontobuchungen (ADR 0078); ältere als die Buchungsfrist werden ausgelassen."""
+        from apps.ausgabe.models import AusgabeEinstellungen
+
+        jahre = AusgabeEinstellungen.laden().buchungen_aufbewahren_jahre
+        try:
+            grenze = self.heute.replace(year=self.heute.year - jahre).isoformat()
+        except ValueError:  # 29. Februar
+            grenze = self.heute.replace(year=self.heute.year - jahre, day=28).isoformat()
+        ergebnis = []
+        for n, z in zeilen:
+            datum = self.datum(BUCHUNGEN, n, z, "datum", pflicht=True)
+            try:
+                betrag = werte.betrag(z.get("betrag", ""))
+            except werte.UngueltigerWert:
+                betrag = None
+            if betrag is None:
+                self.fehler(BUCHUNGEN, n, "„betrag“ fehlt oder ist kein Betrag.")
+                continue
+            try:
+                bar = werte.betrag(z.get("bar", "")) or 0
+            except werte.UngueltigerWert:
+                self.warnung(BUCHUNGEN, n, "„bar“ ist kein Betrag, gilt als 0.")
+                bar = 0
+            art = (z.get("art") or "").strip().lower()
+            if art and art not in BUCHUNGSARTEN:
+                self.warnung(BUCHUNGEN, n, "Unbekannte Art; aus dem Vorzeichen bestimmt.")
+                art = ""
+            if not art:
+                art = "einzahlung" if betrag > 0 else "abholung"
+            if datum and datum < grenze:
+                self.warnung(
+                    BUCHUNGEN, n, "Älter als die Aufbewahrungsfrist; wird nicht übernommen."
+                )
+                continue
+            if datum:
+                ergebnis.append({
+                    "kundennummer": z.get("kundennummer", ""), "datum": datum,
+                    "uhrzeit": self.uhrzeit(BUCHUNGEN, n, z), "art": art,
+                    "betrag": str(betrag), "bar": str(bar),
+                    "ausgabestelle": self.text(BUCHUNGEN, n, z, "ausgabestelle"),
+                    "bemerkung": self.text(BUCHUNGEN, n, z, "bemerkung"),
+                    "eingetragen_von": self.text(BUCHUNGEN, n, z, "eingetragen_von"),
+                })  # fmt: skip
+        return ergebnis
+
     def zugeordnet(self, datei, zeilen, nummern):
+        """Jede Zeile gehört zu einem Haushalt aus haushalte.csv – oder, zum Nachreichen in
+        Teilen (ADR 0078), zu einem schon vorhandenen Haushalt (dann nur beim Ergänzen)."""
+        if not hasattr(self, "bestand_nummern"):
+            self.bestand_nummern = set(Haushalt.objects.values_list("kundennummer", flat=True))
         for nummer, z in zeilen:
             if z.get("kundennummer") and z["kundennummer"] not in nummern:
-                self.fehler(datei, nummer, "Kundennummer gibt es nicht in haushalte.csv.")
+                if z["kundennummer"] in self.bestand_nummern:
+                    self.warnung(datei, nummer, "Haushalt steht nicht in haushalte.csv, ist aber "
+                                 "schon in bintafeln: wird beim Ergänzen zugeordnet, beim "
+                                 "Vollaustausch ausgelassen.")  # fmt: skip
+                else:
+                    self.fehler(datei, nummer, "Kundennummer gibt es nicht in haushalte.csv.")
 
     def ausfuehren(self) -> dict | None:
         bekannt = {name.lower(): name for name in SPALTEN}
@@ -571,13 +634,19 @@ class _Pruefung:
             else:
                 self.warnung(name, None, "Unbekannte Datei wird ignoriert.")
         self.roh = dateien
-        if HAUSHALTE not in dateien:
+        nur_ergaenzen = HAUSHALTE not in dateien
+        if nur_ergaenzen and not (dateien and Haushalt.objects.exists()):
             self.fehler(HAUSHALTE, None, "Pflichtdatei haushalte.csv fehlt.")
             return None
+        if nur_ergaenzen:
+            # Nachreichen in Teilen: nur zu vorhandenen Haushalten, nie als Vollaustausch
+            self.warnung(HAUSHALTE, None, "haushalte.csv fehlt: Die Angaben werden vorhandenen "
+                         "Haushalten hinzugefügt (kein Vollaustausch möglich).")  # fmt: skip
 
         gelesen = {name: self.lesen(name) for name in dateien}
         if any(v is None for v in gelesen.values()):
             return None
+        gelesen.setdefault(HAUSHALTE, [])
 
         for name, kopf_von in (
             (HAUSHALTE, (Zusatzfeld.GiltFuer.HAUSHALT, Zusatzfeld.GiltFuer.PERSON)),
@@ -647,7 +716,7 @@ class _Pruefung:
         haushalte, nummern, neue_gruppen = self.haushalte(
             gelesen[HAUSHALTE], PERSONEN in gelesen, csv_gruppen
         )
-        for name in (PERSONEN, ABHOLER, SPERREN, BEMERKUNGEN, ABHOLUNGEN, AUSNAHMEN):
+        for name in (PERSONEN, ABHOLER, SPERREN, BEMERKUNGEN, ABHOLUNGEN, AUSNAHMEN, BUCHUNGEN):
             self.zugeordnet(name, gelesen.get(name, []), nummern)
 
         personen = []
@@ -695,6 +764,25 @@ class _Pruefung:
         ]
 
         abholungen, ausnahmen = self.abholdaten(gelesen)
+        buchungen = self.buchungen(gelesen.get(BUCHUNGEN, []))
+        if buchungen:
+            # Ohne Kontostand im Import: aus den Buchungen berechnet
+            summen: dict[str, Decimal] = {}
+            for b in buchungen:
+                summen[b["kundennummer"]] = summen.get(b["kundennummer"], Decimal(0)) + Decimal(
+                    b["betrag"]
+                )
+            berechnet = 0
+            for h in haushalte:
+                if h["kontostand"] is None and h["kundennummer"] in summen:
+                    h["kontostand"] = str(summen[h["kundennummer"]])
+                    berechnet += 1
+            if berechnet:
+                self.warnung(
+                    BUCHUNGEN, None,
+                    f"Kontostand bei {berechnet} Haushalten aus den Buchungen berechnet "
+                    "(in haushalte.csv leer).",
+                )  # fmt: skip
 
         if any(m["stufe"] == FEHLER for m in self.bericht):
             return None
@@ -708,8 +796,14 @@ class _Pruefung:
             "bemerkungen": bemerkungen,
             "abholungen": abholungen,
             "ausnahmen": ausnahmen,
+            "buchungen": buchungen,
+            "nur_ergaenzen": nur_ergaenzen,
             # Welche Spalten geliefert wurden: Beim Ergänzen zählt nur, was in der Datei stand
-            "spalten": {name: sorted(z[0][1]) if z else [] for name, z in gelesen.items()},
+            "spalten": {
+                name: sorted(z[0][1]) if z else []
+                for name, z in gelesen.items()
+                if name != HAUSHALTE or not nur_ergaenzen
+            },
         }
 
 
@@ -927,6 +1021,21 @@ def _ausnahme(haushalt, a):
                     eingetragen_von=a["eingetragen_von"])  # fmt: skip
 
 
+def _buchung(haushalt, b, bezuege):
+    from apps.ausgabe.models import Buchung
+
+    betrag = Decimal(b["betrag"])
+    uhrzeit = dt.time.fromisoformat(b["uhrzeit"]) if b.get("uhrzeit") else dt.time(12, 0)
+    return Buchung(
+        haushalt=haushalt, kundennummer=haushalt.kundennummer, datum=_datum(b["datum"]),
+        zeitpunkt=timezone.make_aware(dt.datetime.combine(_datum(b["datum"]), uhrzeit)),
+        art=b["art"], soll=-betrag if betrag < 0 else Decimal(0),
+        haben=betrag if betrag > 0 else Decimal(0), bar=Decimal(b.get("bar") or 0),
+        ausgabestelle=bezuege.stelle(b.get("ausgabestelle")), bemerkung=b.get("bemerkung", ""),
+        eingetragen_von=b.get("eingetragen_von", ""), importiert=True,
+    )  # fmt: skip
+
+
 def _anlegen(daten: dict, bezuege: _Bezuege) -> dict[str, Haushalt]:
     """Legt alle Haushalte aus ``daten`` mit allem, was dazugehört, neu an."""
     jetzt = timezone.now()
@@ -965,10 +1074,22 @@ def _anlegen(daten: dict, bezuege: _Bezuege) -> dict[str, Haushalt]:
                                for s in daten["sperren"])  # fmt: skip
     Bemerkung.objects.bulk_create(_bemerkung(nach_nummer[b["kundennummer"]], b)
                                   for b in daten["bemerkungen"])  # fmt: skip
-    Abholung.objects.bulk_create(_abholung(nach_nummer[a["kundennummer"]], a, bezuege)
-                                 for a in daten.get("abholungen", []))  # fmt: skip
-    Ausnahme.objects.bulk_create(_ausnahme(nach_nummer[a["kundennummer"]], a)
-                                 for a in daten.get("ausnahmen", []))  # fmt: skip
+    Abholung.objects.bulk_create(
+        (
+            _abholung(nach_nummer[a["kundennummer"]], a, bezuege)
+            for a in daten.get("abholungen", [])
+        ),
+        batch_size=5000,
+    )
+    Ausnahme.objects.bulk_create(
+        (_ausnahme(nach_nummer[a["kundennummer"]], a) for a in daten.get("ausnahmen", [])),
+        batch_size=5000,
+    )
+    if daten.get("buchungen"):
+        from apps.ausgabe.models import Buchung
+
+        Buchung.objects.bulk_create((_buchung(nach_nummer[b["kundennummer"]], b, bezuege)
+                                     for b in daten["buchungen"]), batch_size=5000)  # fmt: skip
     return nach_nummer
 
 
@@ -991,14 +1112,25 @@ def uebernehmen(
     Haushalte in ``behalten`` (Kundennummern) bleiben mit ihrem bintafeln-Stand stehen; ihre
     Zeilen aus dem Import werden ausgelassen (Import-Abgleich, ADR 0028).
     """
+    if daten.get("nur_ergaenzen"):
+        raise ValueError("Ohne haushalte.csv ist kein Vollaustausch möglich.")
     behalten = set(behalten)
+    # Zeilen zu Haushalten, die nur in bintafeln stehen (Nachreichen beim Ergänzen), fallen weg
+    imp = {h["kundennummer"] for h in daten["haushalte"]}
+    daten = {k: [e for e in v if e.get("kundennummer") in imp - behalten]
+             if isinstance(v, list) and k not in ("kundengruppen", "neue_gruppen", "haushalte")
+             else v for k, v in daten.items()}  # fmt: skip
     if behalten:
-        daten = {k: _ohne(v, behalten) if isinstance(v, list) and k not in (
-            "kundengruppen", "neue_gruppen") else v for k, v in daten.items()}  # fmt: skip
+        daten["haushalte"] = _ohne(daten["haushalte"], behalten)
     bezuege = _Bezuege()
     vorher = historie.schnappschuesse()
     with disable_auditlog():
         Haushalt.objects.exclude(kundennummer__in=behalten).delete()
+        if BUCHUNGEN in daten.get("spalten", {}):
+            # Frühere Importbuchungen ersetzen; in bintafeln gebuchte bleiben für die Kasse
+            from apps.ausgabe.models import Buchung
+
+            Buchung.objects.filter(importiert=True).exclude(kundennummer__in=behalten).delete()
         bezuege.gruppen_einspielen(daten)
         _anlegen(daten, bezuege)
     _nach_import(vorher, benutzer)
@@ -1014,5 +1146,6 @@ def uebernehmen(
         anzahl_bemerkungen=len(daten["bemerkungen"]),
         anzahl_abholungen=len(daten.get("abholungen", [])),
         anzahl_ausnahmen=len(daten.get("ausnahmen", [])),
+        anzahl_buchungen=len(daten.get("buchungen", [])),
         anzahl_warnungen=anzahl_warnungen,
     )

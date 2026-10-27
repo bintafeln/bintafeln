@@ -226,6 +226,10 @@ class Buchung(models.Model):
     )
     bemerkung = models.CharField("Anmerkung", max_length=200, blank=True)
     eingetragen_von = models.CharField("Eingetragen von", max_length=100, blank=True)
+    importiert = models.BooleanField(
+        "Aus dem Import", default=False,
+        help_text="Aus buchungen.csv übernommen (ADR 0078); ein Vollaustausch ersetzt nur diese.",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Buchung"

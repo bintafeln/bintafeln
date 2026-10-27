@@ -10,8 +10,8 @@
       <li><strong>Nur neue hinzufügen:</strong> Neue Haushalte werden angelegt, vorhandene bleiben, wie sie sind.
         Unterschiede werden trotzdem angezeigt und lassen sich einzeln übernehmen.</li>
       <li><strong>Hinzufügen und aktualisieren</strong> (vorgewählt): Neue Haushalte werden angelegt, Unterschiede bei vorhandenen
-        übernommen – je Feld abwählbar. Leere Zellen überschreiben nichts. Abholungen, Ausnahmen und Anmerkungen aus der Datei
-        kommen dazu, wenn es sie noch nicht gibt. Ein anderer Kontostand wird als Korrekturbuchung eingetragen.</li>
+        übernommen – je Feld abwählbar. Leere Zellen überschreiben nichts. Ein anderer Kontostand wird als Korrekturbuchung
+        eingetragen.</li>
       <li><strong>Vollaustausch:</strong> Der Import ersetzt den ganzen Kundenstamm. Wer nicht mehr in der Datei steht, wird
         gelöscht – je Haushalt abwählbar. In bintafeln geänderte oder aufgenommene Haushalte behalten ihren Stand, wenn Sie nichts
         anderes wählen.</li>
@@ -25,4 +25,12 @@
     „löschen“ stellen (Papierkorb).</li>
   <li>„Übernehmen“ – nur möglich, wenn die Server-Sicherung frisch ist.</li>
 </ol>
+<p>Abholungen, Ausnahmen, Anmerkungen und Kontobuchungen aus der Datei kommen beim Ergänzen zu vorhandenen Haushalten dazu,
+  wenn es sie noch nicht gibt – nichts wird doppelt, auch wenn dieselbe Datei zweimal eingespielt wird.</p>
+<p><strong>Große Bestände in Teilen:</strong> Zuerst die Haushalte einspielen (auch aufgeteilt, z. B. je Ausgabestelle),
+  danach die übrigen Dateien – auch ohne Haushalte-Datei und auch aufgeteilt, z. B. die Abholungen je Jahr. Immer mit
+  „Hinzufügen und aktualisieren“. Ohne Haushalte-Datei gibt es keinen Vollaustausch.</p>
+<p>Kontobuchungen (<code>buchungen.csv</code>): Der Kontostand kommt aus den Haushalten; fehlt er dort, wird er aus den
+  Buchungen berechnet. Abholungen und Buchungen werden nur innerhalb der Aufbewahrungsfristen übernommen – wer ältere
+  braucht, stellt die Fristen vorher unter „Einstellungen“ länger ein.</p>
 <p>Notizen, Dokumente, Historie und Teilnahmen bleiben erhalten (sie hängen an der Kundennummer).</p>

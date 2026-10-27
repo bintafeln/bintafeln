@@ -30,6 +30,7 @@ from apps.kunden.importieren import (
     _ausnahme,
     _bemerkung,
     _Bezuege,
+    _buchung,
     _datum,
     _nach_import,
     _person,
@@ -285,12 +286,19 @@ def planen(daten: dict) -> dict:
                 )
         return None
 
+    # Nur Nachgereichtes (ohne haushalte.csv): keine Frage nach fehlenden Haushalten
+    ausnehmen = nummern if daten.get("nur_ergaenzen") else ()
     return abgleich.abgleichen(
-        saetze, bestand, felder=felder(daten.get("spalten", {})), treffer=treffer, name=_name
+        saetze,
+        bestand,
+        felder=felder(daten.get("spalten", {})),
+        treffer=treffer,
+        name=_name,
+        fehlt_ausnehmen=ausnehmen,
     ).als_dict()
 
 
-def _aendern(h: Haushalt, felder_neu: set[str], imp: dict, daten, bezuege, benutzer):
+def _aendern(h: Haushalt, felder_neu: set[str], imp: dict, gruppiert, bezuege, benutzer):
     """Übernimmt die gewählten Felder ``felder_neu`` aus dem Import-Haushalt ``imp``."""
     from apps.ausgabe import konto
 
@@ -335,47 +343,90 @@ def _aendern(h: Haushalt, felder_neu: set[str], imp: dict, daten, bezuege, benut
     if "angehoerige" in felder_neu:
         h.personen.filter(ist_hauptperson=False).delete()
         h.personen.model.objects.bulk_create(
-            _person(h, p, False) for p in daten["personen"] if p["kundennummer"] == nummer
+            _person(h, p, False) for p in gruppiert["personen"].get(nummer, [])
         )
     if "abholer" in felder_neu:
         h.abholer.all().delete()
         h.abholer.model.objects.bulk_create(
-            _abholer(h, a) for a in daten["abholer"] if a["kundennummer"] == nummer
+            _abholer(h, a) for a in gruppiert["abholer"].get(nummer, [])
         )
     if "sperren" in felder_neu:
         h.sperren.all().delete()
         h.sperren.model.objects.bulk_create(
-            _sperre(h, s) for s in daten["sperren"] if s["kundennummer"] == nummer
+            _sperre(h, s) for s in gruppiert["sperren"].get(nummer, [])
         )
 
 
-def _verlauf_ergaenzen(h: Haushalt, nummer: str, daten, bezuege) -> int:
-    """Abholungen, Ausnahmen und Anmerkungen aus dem Import, die es noch nicht gibt."""
+def _gleich(text) -> str:
+    return " ".join(str(text or "").split()).casefold()
+
+
+def _hinzufuegen(nummern: set[str], daten, bezuege, listen_auch: set[str]) -> int:
+    """Fügt Zeilen zu vorhandenen Haushalten hinzu, die es dort noch nicht gibt: Abholungen,
+    Ausnahmen, Anmerkungen und Kontobuchungen; für Haushalte in ``listen_auch`` (nicht in
+    haushalte.csv, also nachgereicht) auch Angehörige, Abholberechtigte und Sperren.
+    Alles mengenweise, damit auch zehntausende Zeilen schnell gehen."""
+    from apps.ausgabe.models import Buchung
+    from apps.kunden.models import Abholer, Abholung, Ausnahme, Bemerkung, Person, Sperre
+
+    haushalte = {h.kundennummer: h for h in Haushalt.objects.filter(kundennummer__in=nummern)}
+    if not haushalte:
+        return 0
+    filter_ = {"haushalt__kundennummer__in": list(haushalte)}
+    nr = "haushalt__kundennummer"
+    arten = [
+        ("abholungen", Abholung, lambda e: (e["kundennummer"], e["datum"]),
+         Abholung.objects.filter(**filter_).values_list(nr, "datum"),
+         lambda t: (t[0], t[1].isoformat()), lambda h, e: _abholung(h, e, bezuege)),
+        ("ausnahmen", Ausnahme, lambda e: (e["kundennummer"], e["datum"]),
+         Ausnahme.objects.filter(**filter_).values_list(nr, "datum"),
+         lambda t: (t[0], t[1].isoformat()), _ausnahme),
+        ("bemerkungen", Bemerkung, lambda e: (e["kundennummer"], e["datum"], _gleich(e["text"])),
+         Bemerkung.objects.filter(**filter_).values_list(nr, "datum", "text"),
+         lambda t: (t[0], t[1].isoformat(), _gleich(t[2])), _bemerkung),
+        ("buchungen", Buchung,
+         lambda e: (e["kundennummer"], e["datum"], Decimal(e["betrag"]), e["art"]),
+         Buchung.objects.filter(importiert=True, **filter_).values_list(
+             nr, "datum", "haben", "soll", "art"),
+         lambda t: (t[0], t[1].isoformat(), t[2] - t[3], t[4]),
+         lambda h, e: _buchung(h, e, bezuege)),
+    ]  # fmt: skip
+    if listen_auch:
+        arten += [
+            ("personen", Person,
+             lambda e: (e["kundennummer"], _gleich(e["vorname"]), _gleich(e["nachname"]),
+                        e["geburtsdatum"] or ""),
+             Person.objects.filter(**filter_).values_list(nr, "vorname", "nachname",
+                                                         "geburtsdatum"),
+             lambda t: (t[0], _gleich(t[1]), _gleich(t[2]), t[3].isoformat() if t[3] else ""),
+             lambda h, e: _person(h, e, False)),
+            ("abholer", Abholer,
+             lambda e: (e["kundennummer"], _gleich(e["vorname"]), _gleich(e["nachname"])),
+             Abholer.objects.filter(**filter_).values_list(nr, "vorname", "nachname"),
+             lambda t: (t[0], _gleich(t[1]), _gleich(t[2])), _abholer),
+            ("sperren", Sperre, lambda e: (e["kundennummer"], e["von"]),
+             Sperre.objects.filter(**filter_).values_list(nr, "von"),
+             lambda t: (t[0], t[1].isoformat()), _sperre),
+        ]  # fmt: skip
     anzahl = 0
-    tage = set(h.abholungen.values_list("datum", flat=True))
-    neue = [
-        _abholung(h, a, bezuege)
-        for a in daten.get("abholungen", [])
-        if a["kundennummer"] == nummer and _datum(a["datum"]) not in tage
-    ]
-    h.abholungen.model.objects.bulk_create(neue)
-    anzahl += len(neue)
-    tage = set(h.ausnahmen.values_list("datum", flat=True))
-    neue = [
-        _ausnahme(h, a)
-        for a in daten.get("ausnahmen", [])
-        if a["kundennummer"] == nummer and _datum(a["datum"]) not in tage
-    ]
-    h.ausnahmen.model.objects.bulk_create(neue)
-    anzahl += len(neue)
-    da = set(h.bemerkungen.values_list("datum", "text"))
-    neue = [
-        _bemerkung(h, b)
-        for b in daten["bemerkungen"]
-        if b["kundennummer"] == nummer and (_datum(b["datum"]), b["text"]) not in da
-    ]
-    h.bemerkungen.model.objects.bulk_create(neue)
-    return anzahl + len(neue)
+    for schluessel, modell, von_import, vorhanden_qs, von_bestand, bauen in arten:
+        vorhanden = {von_bestand(t) for t in vorhanden_qs}
+        neue = []
+        for e in daten.get(schluessel, []):
+            if e["kundennummer"] not in haushalte:
+                continue
+            if schluessel in ("personen", "abholer", "sperren") and (
+                e["kundennummer"] not in listen_auch
+            ):
+                continue
+            k = von_import(e)
+            if k in vorhanden:
+                continue
+            vorhanden.add(k)
+            neue.append(bauen(haushalte[e["kundennummer"]], e))
+        modell.objects.bulk_create(neue, batch_size=5000)
+        anzahl += len(neue)
+    return anzahl
 
 
 @transaction.atomic
@@ -400,6 +451,7 @@ def ergaenzen(
     teil["haushalte"] = [h for h in daten["haushalte"] if h["kundennummer"] in neu]
     _anlegen(teil, bezuege)
 
+    gruppiert = {k: _nach_nummer(daten[k]) for k in ("personen", "abholer", "sperren")}
     geaendert = 0
     for nummer, felder_neu in entscheidung.aendern.items():
         h = Haushalt.objects.filter(kundennummer=nummer).first()
@@ -407,12 +459,13 @@ def ergaenzen(
         quelle = imp.get(herkunft)
         if h is None or quelle is None:
             continue
-        _aendern(h, set(felder_neu), quelle, daten, bezuege, benutzer)
+        _aendern(h, set(felder_neu), quelle, gruppiert, bezuege, benutzer)
         geaendert += 1
-    verlauf = 0
-    if modus == abgleich.AKTUALISIEREN:
-        for h in Haushalt.objects.filter(kundennummer__in=set(imp) - neu):
-            verlauf += _verlauf_ergaenzen(h, h.kundennummer, daten, bezuege)
+    # Zu vorhandenen Haushalten nur hinzufügen, was es noch nicht gibt (auch Nachgereichtes
+    # ohne haushalte.csv); vorhandene Einträge bleiben unverändert.
+    alle = {e["kundennummer"] for k, v in daten.items() if isinstance(v, list)
+            and k not in ("kundengruppen", "neue_gruppen") for e in v} - neu  # fmt: skip
+    verlauf = _hinzufuegen(alle, daten, bezuege, listen_auch=alle - set(imp))
     geloescht = 0
     for nummer, aktion in entscheidung.fehlt.items():
         h = Haushalt.objects.filter(kundennummer=nummer).first()
@@ -432,6 +485,7 @@ def ergaenzen(
         anzahl_bemerkungen=len(teil["bemerkungen"]),
         anzahl_abholungen=len(teil.get("abholungen", [])),
         anzahl_ausnahmen=len(teil.get("ausnahmen", [])),
+        anzahl_buchungen=len(teil.get("buchungen", [])),
         anzahl_warnungen=anzahl_warnungen,
     )
     return lauf, {

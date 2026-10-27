@@ -80,7 +80,7 @@ Formularfelder: f-<i>-<feld> (übernehmen), n-<i> (mögliche Dublette), w-<nr> (
 {% endif %}
 
 {% if plan.fehlt %}
-<details class="abgleich-gruppe" open>
+<details class="abgleich-gruppe"{% if modus == "ersetzen" or plan.fehlt|length <= 50 %} open{% endif %}>
   <summary><strong>Nicht mehr in der Datei ({{ plan.fehlt|length }})</strong></summary>
   <p class="hinweis">Je Eintrag wählen, was geschehen soll. Vorgewählt ist {% if modus == "ersetzen" %}das Entfernen (außer bei in bintafeln geänderten Einträgen){% else %}„behalten“{% endif %}.</p>
   <div class="tabelle-rahmen">

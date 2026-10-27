@@ -84,7 +84,7 @@ def zusatzfeld_bearbeiten(request, pk=None):
 
 # --- Übersicht und Import ---------------------------------------------------------------
 
-MAX_DATEIGROESSE = 20 * 1024 * 1024
+MAX_DATEIGROESSE = 60 * 1024 * 1024
 MAX_SICHERUNGSALTER = dt.timedelta(hours=24)
 
 
@@ -674,7 +674,7 @@ def import_hochladen(request):
             return render(request, "kunden/import.html", kontext)
         zu_gross = [d.name for d in dateien if d.size > MAX_DATEIGROESSE]
         if zu_gross:
-            messages.error(request, "Dateien dürfen höchstens 20 MB groß sein.")
+            messages.error(request, "Dateien dürfen höchstens 60 MB groß sein.")
             return render(request, "kunden/import.html", kontext)
         ergebnis = importieren.pruefen({d.name: d.read() for d in dateien})
         if ergebnis.daten is None:
@@ -720,6 +720,8 @@ def import_vorschau(request, pk):
         return redirect("kunden:import")
     daten = vorbereitung.daten
     modus = _import_modus(request)
+    if daten.get("nur_ergaenzen") and modus == VOLLAUSTAUSCH:
+        modus = "aktualisieren"  # ohne haushalte.csv nur Ergänzen
     # Hinweise, die nur den Vollaustausch betreffen, fallen beim Ergänzen weg (ADR 0078)
     bericht = [m for m in vorbereitung.bericht if modus == VOLLAUSTAUSCH or not m.get("ersetzen")]
     kontext = {
@@ -736,7 +738,8 @@ def import_vorschau(request, pk):
         return render(request, "kunden/import_ergaenzen.html", {
             **kontext, "plan": plan, "aktionen": import_ergaenzen.AKTIONEN,
             "max_anzeige": abgleich_.MAX_ANZEIGE,
-            "extra_modi": [(f"?modus={VOLLAUSTAUSCH}", "Vollaustausch")],
+            "extra_modi": [] if daten.get("nur_ergaenzen") else [
+                (f"?modus={VOLLAUSTAUSCH}", "Vollaustausch")],
         })  # fmt: skip
     return render(
         request,
@@ -775,6 +778,8 @@ def import_uebernehmen(request, pk):
         messages.error(request, "Dieser Import ist abgelaufen oder existiert nicht mehr.")
         return redirect("kunden:import")
     modus = _import_modus(request)
+    if vorbereitung.daten.get("nur_ergaenzen") and modus == VOLLAUSTAUSCH:
+        modus = "aktualisieren"  # ohne haushalte.csv nur Ergänzen
     if not _sicherung_frisch():
         messages.error(
             request,

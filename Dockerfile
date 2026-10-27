@@ -31,4 +31,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD python -c "import os, urllib.request as u; u.urlopen(u.Request('http://127.0.0.1:8000/healthz/', headers={'Host': os.environ.get('BINTAFELN_DOMAIN') or 'localhost'}), timeout=4)"
 
 ENTRYPOINT ["docker/entrypoint.sh"]
-CMD ["gunicorn", "bintafeln.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--no-control-socket", "--access-logfile", "-"]
+CMD ["gunicorn", "bintafeln.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "300", "--no-control-socket", "--access-logfile", "-"]

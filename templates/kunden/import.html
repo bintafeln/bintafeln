@@ -7,7 +7,9 @@
   <p>Dateien im <a href="https://github.com/bintafeln/bintafeln/blob/main/docs/importformat.md">Importformat</a>
     auswählen: <code>haushalte.csv</code> (Pflicht), optional <code>personen.csv</code>,
     <code>abholer.csv</code>, <code>sperren.csv</code>, <code>bemerkungen.csv</code>,
-    <code>kundengruppen.csv</code>, <code>abholungen.csv</code>, <code>ausnahmen.csv</code>.
+    <code>kundengruppen.csv</code>, <code>abholungen.csv</code>, <code>ausnahmen.csv</code>, <code>buchungen.csv</code>.
+    Beim Ergänzen kann <code>haushalte.csv</code> fehlen: Dann werden die Dateien vorhandenen Haushalten hinzugefügt
+    (große Bestände in Teilen einspielen).
     Mehrere Dateien gleichzeitig markieren.</p>
   <p>Andere Spalten oder eine Excel-Datei? Der <a href="{% url 'datenimport:start' %}?ziel=kunden">Import-Assistent</a>
     ordnet die Spalten zu und prüft danach genauso.</p>

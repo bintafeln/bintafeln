@@ -6,6 +6,7 @@ ein Bereich ohne Einträge fehlt ganz.
 
 from django.urls import reverse
 
+from apps.datenimport.ziele import ZIELE
 from apps.konten import rollen
 
 
@@ -239,7 +240,7 @@ def menue(request) -> list[dict]:
             (export, _eintrag("Export und Zurücklesen", "core:datensicherung")),
             ("system.update", _eintrag("Update", "core:update")),
             *([(None, _eintrag("Daten importieren (CSV, Excel)", "datenimport:start"))]
-              if darf & {"kunden.importieren", "einstellungen.listen", "mitarbeitende.verwalten"}
+              if darf & {z.recht for z in ZIELE.values()}
               else []),
             ("einstellungen.tafel", _eintrag("Speicher und Fotos", "core:speicher")),
             ("protokoll.sehen", _eintrag("Änderungsprotokoll", "core:protokoll")),

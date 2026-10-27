@@ -636,6 +636,474 @@ class Mitarbeitende(Ziel):
         return hinweise
 
 
+# --- Adressbuch und Mitglieder ---------------------------------------------------------
+
+ADRESS_FELDER = [
+    Feld("art", "Art (Person oder Organisation)", ("adressart", "typ")),
+    Feld(
+        "organisation",
+        "Organisation",
+        ("firma", "verein", "markt", "einrichtung", "institution"),
+        laenge=200,
+    ),
+    Feld("anrede", "Anrede", (), laenge=30),
+    Feld("vorname", "Vorname", ("rufname",), laenge=100),
+    Feld("nachname", "Nachname", ("name", "familienname", "zuname"), laenge=100),
+    Feld(
+        "ansprechperson",
+        "Ansprechperson",
+        ("ansprechpartner", "kontakt", "kontaktperson"),
+        laenge=200,
+    ),
+    Feld(
+        "strasse",
+        "Straße und Hausnummer",
+        ("adresse", "anschrift", "str", "hausnummer", "hausnr"),
+        mehrfach=True,
+        laenge=200,
+    ),
+    Feld("plz", "PLZ", ("postleitzahl",), laenge=10),
+    Feld("ort", "Ort", ("stadt", "wohnort"), laenge=100),
+    Feld("land", "Land", (), laenge=100),
+    Feld("telefon", "Telefon", ("tel", "telefonnummer", "festnetz"), typ="telefon", laenge=50),
+    Feld("mobil", "Mobil", ("handy", "mobiltelefon", "handynummer"), typ="telefon", laenge=50),
+    Feld("email", "E-Mail", ("mail", "emailadresse"), typ="email", laenge=254),
+    Feld("webseite", "Webseite", ("homepage", "internet", "url", "web", "www")),
+    Feld(
+        "kategorien",
+        "Kategorien (werden ergänzt)",
+        ("kategorie", "gruppe", "gruppen", "verteiler"),
+        typ="liste",
+    ),
+    Feld(
+        "notiz",
+        "Notiz",
+        ("bemerkung", "bemerkungen", "anmerkung", "hinweis", "notizen"),
+        typ="langtext",
+    ),
+    Feld(
+        "einwilligung_post",
+        "Einwilligung Post seit",
+        ("einwilligungpost", "post"),
+        typ="einwilligung",
+    ),
+    Feld(
+        "einwilligung_email",
+        "Einwilligung E-Mail seit",
+        ("einwilligungemail", "newsletter"),
+        typ="einwilligung",
+    ),
+    Feld(
+        "veroeffentlichen",
+        "Name darf veröffentlicht werden seit",
+        ("veroeffentlichung", "nennung"),
+        typ="einwilligung",
+    ),
+]
+ADRESS_DATUM = {"einwilligung_post", "einwilligung_email", "veroeffentlichen"}
+ADRESS_ARTEN = {
+    "person": "Person",
+    "privat": "Person",
+    "privatperson": "Person",
+    "organisation": "Organisation",
+    "firma": "Organisation",
+    "verein": "Organisation",
+    "markt": "Organisation",
+    "behoerde": "Organisation",
+    "unternehmen": "Organisation",
+}
+
+
+def _adress_name(werte) -> str:
+    if werte.get("art") == "Organisation" or (
+        werte.get("organisation") and not werte.get("nachname")
+    ):
+        return werte.get("organisation") or ""
+    return f"{werte.get('vorname', '')} {werte.get('nachname', '')}".strip()
+
+
+def _adress_werte(a) -> dict[str, str]:
+    werte = {
+        f.schluessel: getattr(a, f.schluessel) or ""
+        for f in ADRESS_FELDER
+        if f.schluessel not in ADRESS_DATUM | {"kategorien", "art"}
+    }
+    werte["email"] = werte["email"].lower()
+    werte["art"] = "Person" if a.art == "person" else "Organisation"
+    werte["kategorien"] = ", ".join(sorted(k.name for k in a.kategorien.all()))
+    werte.update({k: _datum_text(getattr(a, k)) for k in ADRESS_DATUM})
+    return werte
+
+
+class _AdressRegeln(Ziel):
+    """Gemeinsames für Adressbuch und Mitglieder: Prüfen, Erkennen und Schreiben von Adressen."""
+
+    def wert(self, f, wert, warnen):
+        if f.typ == "einwilligung" and wert:
+            try:
+                if wertlesen.ja_nein(wert):  # „ja“ statt Datum: gilt ab heute
+                    from django.utils import timezone
+
+                    return _datum_text(timezone.localdate())
+                return ""
+            except wertlesen.UngueltigerWert:
+                return super().wert(Feld(f.schluessel, f.bezeichnung, typ="datum"), wert, warnen)
+        wert = super().wert(f, wert, warnen)
+        if f.schluessel == "art" and wert:
+            art = ADRESS_ARTEN.get(normalisieren(wert))
+            if art is None:
+                warnen("Unbekannte Art (Person oder Organisation); wird aus dem Namen bestimmt.")
+            return art or ""
+        if f.schluessel == "webseite" and wert and "://" not in wert:
+            return "https://" + wert
+        if f.schluessel == "kategorien":
+            return ", ".join(sorted({t[:100] for t in _liste(wert)}))
+        return wert
+
+    def bereinigen(self, art, zeilen, tabelle):
+        saetze, meldungen = super().bereinigen(art, zeilen, tabelle)
+        gueltig = []
+        for satz in saetze:
+            w = satz["werte"]
+            if not w.get("art"):
+                w["art"] = (
+                    "Organisation" if w.get("organisation") and not w.get("nachname") else "Person"
+                )
+            fehlt = "nachname" if w["art"] == "Person" else "organisation"
+            if not w.get(fehlt):
+                meldungen.append(
+                    {
+                        "stufe": FEHLER,
+                        "tabelle": tabelle,
+                        "zeile": satz["zeile"],
+                        "text": "Weder Nachname noch Organisation; Zeile wird ausgelassen.",
+                    }
+                )
+                continue
+            gueltig.append(satz)
+        return gueltig, meldungen
+
+    def name(self, werte):
+        return _adress_name(werte)
+
+    def schluessel(self, werte):
+        return werte.get("email") or normalisieren(self.name(werte)) + werte.get("plz", "")
+
+    def _adress_treffer(self, bestand):
+        """Treffer über E-Mail oder Name mit PLZ (sicher), sonst gleicher Name (unsicher)."""
+        nach_mail, nach_name_plz, nach_name = {}, {}, {}
+        for b in bestand:
+            if b.werte.get("email"):
+                nach_mail.setdefault(b.werte["email"], b)
+            n = normalisieren(_adress_name(b.werte))
+            nach_name_plz.setdefault(n + b.werte.get("plz", ""), b)
+            nach_name.setdefault(n, b)
+
+        def finden(werte):
+            if werte.get("email") and werte["email"] in nach_mail:
+                return Treffer(nach_mail[werte["email"]].id, True)
+            n = normalisieren(self.name(werte))
+            if n and n + werte.get("plz", "") in nach_name_plz:
+                return Treffer(nach_name_plz[n + werte.get("plz", "")].id, True)
+            if n and n in nach_name:
+                return Treffer(nach_name[n].id, False, "gleicher Name, andere Anschrift")
+            return None
+
+        return finden
+
+    @staticmethod
+    def _adresse_setzen(a, werte, verwalter):
+        from django.utils import timezone
+
+        from apps.adressen.models import AdressKategorie
+
+        for k, v in werte.items():
+            if k == "art":
+                a.art = "person" if v == "Person" else "organisation"
+            elif k in ADRESS_DATUM:
+                setattr(a, k, wertlesen.datum(v))
+            elif k != "kategorien" and k in {f.schluessel for f in ADRESS_FELDER}:
+                setattr(a, k, v)
+        a.geaendert_am, a.geaendert_von = timezone.now(), str(verwalter)[:150]
+        a.save()
+        if werte.get("kategorien"):
+            vorhanden = {k.name.lower(): k for k in AdressKategorie.objects.all()}
+            neue = []
+            for name in _liste(werte["kategorien"]):
+                k = vorhanden.get(name.lower()) or AdressKategorie.objects.create(name=name[:100])
+                vorhanden[name.lower()] = k
+                neue.append(k)
+            a.kategorien.add(*neue)  # ergänzen, nie wegnehmen
+
+    @staticmethod
+    def _adresse_finden(werte):
+        """Vorhandene Adresse zu einem neuen Mitglied (E-Mail oder Name und PLZ)."""
+        from apps.adressen.models import Adresse
+
+        kandidaten = Adresse.objects.filter(mitglied__isnull=True)
+        if werte.get("email"):
+            treffer = kandidaten.filter(email__iexact=werte["email"]).first()
+            if treffer:
+                return treffer
+        name = normalisieren(_adress_name(werte))
+        for a in kandidaten.filter(plz=werte.get("plz", "")):
+            if normalisieren(a.name) == name:
+                return a
+        return None
+
+
+class Adressbuch(_AdressRegeln):
+    kennung = "adressen"
+    titel = "Adressbuch"
+    recht = "adressen.importieren"
+    beschreibung = "Spender, Märkte, Partner, Behörden … mit Kategorien und Einwilligungen."
+    aktionen = [("behalten", "behalten"), ("loeschen", "löschen (Papierkorb)")]
+    zurueck = ("adressen:liste", "Adressbuch")
+
+    def arten(self):
+        return [Art("adressen", "Adressen", ADRESS_FELDER)]
+
+    def bestand(self, verwalter):
+        from django.urls import reverse
+
+        from apps.adressen.models import Adresse
+
+        return [
+            Bestandseintrag(
+                id=str(a.pk),
+                name=a.name,
+                werte=_adress_werte(a),
+                link=reverse("adressen:adresse", args=[a.pk]),
+            )
+            for a in Adresse.objects.prefetch_related("kategorien")
+        ]
+
+    def treffer_finder(self, bestand):
+        return self._adress_treffer(bestand)
+
+    def vergleichsfelder(self):
+        return [(f.schluessel, f.bezeichnung) for f in ADRESS_FELDER if f.schluessel != "art"]
+
+    @transaction.atomic
+    def anwenden(self, entscheidung, verwalter):
+        from apps.adressen.models import Adresse
+        from apps.core import papierkorb
+
+        for werte in entscheidung.anlegen:
+            self._adresse_setzen(Adresse(), werte, verwalter)
+        for pk, werte in entscheidung.aendern.items():
+            a = Adresse.objects.filter(pk=pk).first()
+            if a:
+                self._adresse_setzen(a, werte, verwalter)
+        geloescht = geblieben = 0
+        for pk, aktion in entscheidung.fehlt.items():
+            a = Adresse.objects.filter(pk=pk).first()
+            if a is None or aktion != "loeschen":
+                continue
+            try:
+                with transaction.atomic():
+                    papierkorb.loeschen(verwalter, "Adresse", a.name, a, recht="adressen.loeschen")
+                geloescht += 1
+            except ProtectedError:
+                geblieben += 1  # Spenden, Bestätigungen oder Mitgliedschaft hängen daran
+        hinweise = [
+            f"{len(entscheidung.anlegen)} neu angelegt",
+            f"{len(entscheidung.aendern)} aktualisiert",
+            f"{geloescht} in den Papierkorb gelegt",
+        ]
+        if geblieben:
+            hinweise.append(
+                f"{geblieben} behalten, weil Spenden oder eine Mitgliedschaft daran hängen"
+            )
+        return hinweise
+
+
+MITGLIED_FELDER = [
+    Feld(
+        "nummer",
+        "Mitgliedsnummer",
+        ("mitgliedsnr", "mitgliednr", "mitgliedsnummer", "nr", "nummer"),
+        laenge=20,
+    ),
+    Feld("mitgliedsart", "Art der Mitgliedschaft", ("mitgliedschaft", "mitgliedart", "status")),
+    Feld(
+        "eintritt", "Eintritt", ("eintrittsdatum", "beitritt", "mitgliedseit", "seit"), typ="datum"
+    ),
+    Feld("austritt", "Austritt", ("austrittsdatum", "ende", "kuendigung"), typ="datum"),
+    Feld("austrittsgrund", "Grund des Austritts", ("austrittsgrund",), laenge=50),
+    Feld("jahresbeitrag", "Jahresbeitrag", ("beitrag", "mitgliedsbeitrag", "betrag"), typ="betrag"),
+    Feld("zahlweise", "Zahlweise", ("zahlungsweise", "rhythmus", "turnus"), laenge=30),
+    Feld("zahlungsart", "Zahlungsart", ("zahlart", "zahlung"), laenge=30),
+    Feld("mitglied_notiz", "Notiz zur Mitgliedschaft", ("mitgliedsnotiz",), typ="langtext"),
+]
+MITGLIED_DATUM = {"eintritt", "austritt"}
+
+
+class Mitglieder(_AdressRegeln):
+    kennung = "mitglieder"
+    titel = "Mitglieder"
+    recht = "mitglieder.bearbeiten"
+    beschreibung = (
+        "Mitglieder des Vereins mit Anschrift, Eintritt, Art und Beitrag; die "
+        "Anschrift landet im Adressbuch."
+    )
+    aktionen = [("behalten", "behalten"), ("austritt", "Austritt mit heutigem Datum")]
+    zurueck = ("mitglieder:liste", "Mitglieder")
+
+    def arten(self):
+        return [Art("mitglieder", "Mitglieder", MITGLIED_FELDER + ADRESS_FELDER)]
+
+    def wert(self, f, wert, warnen):
+        if f.typ == "betrag" and wert:
+            try:
+                betrag = wertlesen.betrag(wert)
+            except wertlesen.UngueltigerWert:
+                warnen(f"„{f.bezeichnung}“ ist kein Betrag und bleibt leer.")
+                return ""
+            if betrag is not None and betrag < 0:
+                warnen(f"„{f.bezeichnung}“ ist negativ und bleibt leer.")
+                return ""
+            return f"{betrag:.2f}".replace(".", ",") if betrag is not None else ""
+        return super().wert(f, wert, warnen)
+
+    def schluessel(self, werte):
+        return werte.get("nummer") or super().schluessel(werte)
+
+    def vergleichsfelder(self):
+        return [
+            (f.schluessel, f.bezeichnung)
+            for f in MITGLIED_FELDER + ADRESS_FELDER
+            if f.schluessel not in ("nummer", "art")
+        ]
+
+    def _mitglieder(self):
+        from apps.mitglieder.models import Mitglied
+
+        return Mitglied.objects.select_related("adresse").prefetch_related("adresse__kategorien")
+
+    def bestand(self, verwalter):
+        from django.urls import reverse
+
+        ergebnis = []
+        for m in self._mitglieder():
+            werte = _adress_werte(m.adresse)
+            werte.update(
+                {
+                    "nummer": m.nummer,
+                    "mitgliedsart": m.art,
+                    "eintritt": _datum_text(m.eintritt),
+                    "austritt": _datum_text(m.austritt),
+                    "austrittsgrund": m.austrittsgrund,
+                    "jahresbeitrag": f"{m.jahresbeitrag:.2f}".replace(".", ","),
+                    "zahlweise": m.zahlweise,
+                    "zahlungsart": m.zahlungsart,
+                    "mitglied_notiz": m.notiz,
+                }
+            )
+            ergebnis.append(
+                Bestandseintrag(
+                    id=str(m.pk),
+                    name=f"{m.nummer} · {m.adresse.name}",
+                    werte=werte,
+                    link=reverse("mitglieder:mitglied", args=[m.pk]),
+                )
+            )
+        return ergebnis
+
+    def fehlt_ausnehmen(self, verwalter):
+        return {
+            str(pk)
+            for pk in self._mitglieder().filter(austritt__isnull=False).values_list("pk", flat=True)
+        }
+
+    def treffer_finder(self, bestand):
+        nach_nummer = {b.werte["nummer"].lower(): b for b in bestand}
+        ueber_adresse = self._adress_treffer(bestand)
+
+        def finden(werte):
+            if werte.get("nummer") and werte["nummer"].lower() in nach_nummer:
+                return Treffer(nach_nummer[werte["nummer"].lower()].id, True)
+            t = ueber_adresse(werte)
+            if t and t.sicher and werte.get("nummer"):
+                # gleiche Person, aber andere Mitgliedsnummer: lieber nachfragen
+                return Treffer(t.id, False, "gleiche Anschrift, andere Mitgliedsnummer")
+            return t
+
+        return finden
+
+    @staticmethod
+    def _mitglied_setzen(m, werte):
+        from decimal import Decimal
+
+        for k, attr in (
+            ("mitgliedsart", "art"),
+            ("austrittsgrund", "austrittsgrund"),
+            ("zahlweise", "zahlweise"),
+            ("zahlungsart", "zahlungsart"),
+            ("mitglied_notiz", "notiz"),
+        ):
+            if k in werte:
+                setattr(m, attr, werte[k])
+        for k in MITGLIED_DATUM:
+            if k in werte:
+                setattr(m, k, wertlesen.datum(werte[k]))
+        if werte.get("jahresbeitrag"):
+            m.jahresbeitrag = Decimal(werte["jahresbeitrag"].replace(",", "."))
+
+    @transaction.atomic
+    def anwenden(self, entscheidung, verwalter):
+        from django.utils import timezone
+
+        from apps.adressen.models import Adresse
+        from apps.core.auswahl import MITGLIEDSARTEN
+        from apps.mitglieder import models as mm
+
+        einstellungen = mm.MitgliederEinstellungen.laden()
+        neu = 0
+        for werte in entscheidung.anlegen:
+            adresse = self._adresse_finden(werte) or Adresse()
+            adress_werte = {
+                k: v for k, v in werte.items() if k in {f.schluessel for f in ADRESS_FELDER}
+            }
+            self._adresse_setzen(adresse, adress_werte, verwalter)
+            nummer = werte.get("nummer", "")
+            if not nummer or mm.Mitglied.objects.filter(nummer=nummer).exists():
+                nummer = mm.naechste_nummer()
+            m = mm.Mitglied(
+                adresse=adresse,
+                nummer=nummer,
+                art=MITGLIEDSARTEN[0],
+                eintritt=timezone.localdate(),
+                jahresbeitrag=einstellungen.standard_beitrag,
+            )
+            self._mitglied_setzen(m, werte)
+            m.save()
+            mm.nummer_verbraucht(nummer)
+            neu += 1
+        for pk, werte in entscheidung.aendern.items():
+            m = mm.Mitglied.objects.select_related("adresse").filter(pk=pk).first()
+            if m is None:
+                continue
+            adress_werte = {
+                k: v for k, v in werte.items() if k in {f.schluessel for f in ADRESS_FELDER}
+            }
+            if adress_werte:
+                self._adresse_setzen(m.adresse, adress_werte, verwalter)
+            self._mitglied_setzen(m, werte)
+            m.save()
+        ausgetreten = 0
+        for pk, aktion in entscheidung.fehlt.items():
+            if aktion == "austritt":
+                ausgetreten += mm.Mitglied.objects.filter(pk=pk, austritt__isnull=True).update(
+                    austritt=timezone.localdate()
+                )
+        return [
+            f"{neu} neu angelegt",
+            f"{len(entscheidung.aendern)} aktualisiert",
+            f"{ausgetreten} als ausgetreten eingetragen",
+        ]
+
+
 # --- Kundenstamm ------------------------------------------------------------------------
 
 KUNDEN_BEZEICHNUNG = {
@@ -734,6 +1202,10 @@ KUNDEN_SYNONYME = {
     "uhrzeit": ("zeit", "um"),
     "maximum": ("max", "plaetze", "hoechstzahl"),
     "beitrag": ("betrag", "bezahlt"),
+    "betrag": ("summe", "wert", "buchung", "buchungsbetrag"),
+    "art": ("buchungsart", "vorgang", "typ"),
+    "bar": ("bargeld", "barbetrag"),
+    "bemerkung": ("buchungstext", "verwendungszweck", "anmerkung"),
 }
 KUNDEN_ARTEN = {
     "haushalte.csv": "Haushalte (mit Hauptperson)",
@@ -744,6 +1216,7 @@ KUNDEN_ARTEN = {
     "kundengruppen.csv": "Kundengruppen",
     "abholungen.csv": "Abholungen",
     "ausnahmen.csv": "Ausnahmen",
+    "buchungen.csv": "Kontobuchungen",
 }
 
 
@@ -794,7 +1267,9 @@ class Kunden(Ziel):
         return puffer.getvalue().encode("utf-8")
 
 
-ZIELE = {z.kennung: z for z in (Kunden(), Ausgabestellen(), Mitarbeitende())}
+ZIELE = {
+    z.kennung: z for z in (Kunden(), Ausgabestellen(), Mitarbeitende(), Adressbuch(), Mitglieder())
+}
 
 
 def erlaubte(benutzer) -> list[Ziel]:
