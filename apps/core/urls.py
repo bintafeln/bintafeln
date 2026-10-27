@@ -1,6 +1,13 @@
 from django.urls import path
 
-from apps.core import views, views_datensicherung, views_sicherung, views_speicher, views_update
+from apps.core import (
+    views,
+    views_app,
+    views_datensicherung,
+    views_sicherung,
+    views_speicher,
+    views_update,
+)
 
 app_name = "core"
 
@@ -18,6 +25,8 @@ urlpatterns = [
     path("datensicherung/uebernehmen/", views_datensicherung.uebernehmen, name="daten_uebernehmen"),
     path("datensicherung/verwerfen/", views_datensicherung.verwerfen, name="daten_verwerfen"),
     path("healthz/", views.healthz, name="healthz"),
+    path("app/symbol-<int:groesse>.png", views_app.symbol, name="app_symbol"),
+    path("app/manifest.webmanifest", views_app.manifest, name="manifest"),
     path("hilfe/", views.hilfe, name="hilfe"),
     path("suche/", views.suche, name="suche"),
     path("update/", views_update.seite, name="update"),

@@ -80,6 +80,7 @@ class EinstellungenForm(forms.ModelForm):
         fields = [
             "name",
             "logo",
+            "app_symbol",
             "farbe",
             "hintergrund_anmeldung",
             "hintergrund",
@@ -94,6 +95,7 @@ class EinstellungenForm(forms.ModelForm):
         ]
         widgets = {
             "logo": BildEingabe(),
+            "app_symbol": BildEingabe(),
             "hintergrund_anmeldung": BildEingabe(),
             "hintergrund": BildEingabe(),
             "farbe": forms.TextInput(attrs={"type": "color"}),
@@ -136,6 +138,17 @@ class EinstellungenForm(forms.ModelForm):
 
     def clean_hintergrund(self):
         return self._bild("hintergrund")
+
+    def clean_app_symbol(self):
+        symbol = self.cleaned_data.get("app_symbol")
+        if not symbol or not hasattr(symbol, "content_type"):
+            return symbol  # unverändert oder gelöscht
+        if getattr(symbol, "size", 0) > LOGO_MAX_BYTES:
+            raise forms.ValidationError("Das App-Symbol darf höchstens 2 MB groß sein.")
+        quadrat = bilder.app_symbol(symbol)
+        if quadrat is None:
+            raise forms.ValidationError("Das Bild lässt sich nicht lesen.")
+        return quadrat
 
     def clean_logo(self):
         logo = self.cleaned_data.get("logo")

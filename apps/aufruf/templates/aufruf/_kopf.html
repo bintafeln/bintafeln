@@ -1,6 +1,6 @@
-{% if tafel.logo %}  <link rel="icon" href="{{ tafel.logo.url }}">
-  <link rel="apple-touch-icon" href="{{ tafel.logo.url }}">
-{% endif %}  <meta name="theme-color" content="#a855f7">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% url 'core:app_symbol' 32 %}?v={{ tafel.app_symbol.name|default:'bintafeln'|urlencode }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{% url 'core:app_symbol' 180 %}?v={{ tafel.app_symbol.name|default:'bintafeln'|urlencode }}">
+  <meta name="theme-color" content="#a855f7">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">

@@ -6,7 +6,7 @@ from django_otp import user_has_device
 
 from apps.konten import zwei_faktor
 
-FREIE_PFADE = ("/static/", "/media/", "/healthz/")
+FREIE_PFADE = ("/static/", "/media/", "/healthz/", "/app/")
 
 
 class PasswortAendernMiddleware:

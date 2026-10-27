@@ -1,0 +1,8 @@
+{# Symbol im Browser-Tab und auf dem Startbildschirm; ?v= erneuert es nach dem Hochladen #}
+{% with v=tafel.app_symbol.name|default:"bintafeln"|urlencode %}
+<link rel="icon" type="image/png" sizes="32x32" href="{% url 'core:app_symbol' 32 %}?v={{ v }}">
+<link rel="apple-touch-icon" sizes="180x180" href="{% url 'core:app_symbol' 180 %}?v={{ v }}">
+<link rel="manifest" href="{% url 'core:manifest' %}?v={{ v }}">
+<meta name="theme-color" content="{{ tafel.farbe|default:'#e8710a' }}">
+<meta name="apple-mobile-web-app-title" content="{{ tafel.name|default:programm.name|truncatechars:12 }}">
+{% endwith %}

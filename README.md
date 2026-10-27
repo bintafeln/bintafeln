@@ -32,6 +32,10 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   Tafel – in der Datenbank, nicht im Code. Dazu ein **Hintergrundbild** für die Anmeldeseite
   (volle Stärke) und wahlweise ein eigenes für die übrigen Seiten; dort regelt ein Schieber die
   Stärke von 0 % (nicht sichtbar) bis 100 %. Die Inhalte stehen weiter auf weißen Karten.
+  Ein eigenes **App-Symbol** (quadratisch, am besten 512 × 512 Pixel) erscheint im Browser-Tab
+  und auf dem Startbildschirm von Handy und Tablet („Zum Home-Bildschirm“); ohne eigenes Bild
+  das Symbol von bintafeln (`static/img/bintafeln-*.png`). Ausgeliefert unter
+  `/app/symbol-<32|180|192|512>.png` und `/app/manifest.webmanifest`, auch vor der Anmeldung.
   Hintergrundbilder und Logo werden beim Hochladen verkleinert (`apps/core/bilder.py`: längste
   Seite 1920 bzw. 800 Pixel, ohne Bilddaten wie den Aufnahmeort); große, schon vorhandene Bilder
   verkleinert das Update einmalig (das Original bleibt als Datei liegen). Caddy lässt sie einen
