@@ -100,14 +100,15 @@ class ZusatzMixin:
 
 class HaushaltForm(ZusatzMixin, forms.ModelForm):
     zusatz_fuer = Zusatzfeld.GiltFuer.HAUSHALT
+    # Nur Anzeige: Erwachsene und Kinder ergeben sich aus den Angehörigen (Model.groesse())
+    groesse = forms.CharField(label="Haushalt", required=False, disabled=True)
     # Abschnitte für die Anzeige auf breiten Bildschirmen (Felder, die fehlen, entfallen)
     ABSCHNITTE = [
         ("Kunde", ["kundennummer", "status", "kundengruppe", "einkommensart"]),
         (
             "Haushalt und Termine",
             [
-                "anzahl_erwachsene",
-                "anzahl_kinder",
+                "groesse",
                 "kunde_seit",
                 "ausweis_gueltig_bis",
                 "letzter_besuch",
@@ -132,7 +133,6 @@ class HaushaltForm(ZusatzMixin, forms.ModelForm):
         fields = [
             "kundennummer", "status", "kundengruppe", "kunde_seit", "ausweis_gueltig_bis",
             "letzter_besuch", "einkommensart", "strasse", "plz", "ort", "telefon", "email",
-            "anzahl_erwachsene", "anzahl_kinder",
         ]  # fmt: skip
         widgets = {
             "kunde_seit": DatumEingabe(),
@@ -143,6 +143,16 @@ class HaushaltForm(ZusatzMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         e = KundenEinstellungen.laden()
+        if self.instance.pk:
+            erwachsene, kinder = self.instance.groesse(e.kind_bis_alter)
+            self.initial["groesse"] = (f"{erwachsene} Erwachsene, {kinder} Kind"
+                                       f"{'er' if kinder != 1 else ''}")  # fmt: skip
+            self.fields["groesse"].help_text = (
+                f"Berechnet aus den Angehörigen: unter {e.kind_bis_alter} Jahren Kind, sonst "
+                "erwachsen (ohne Geburtsdatum erwachsen)."
+            )
+        else:
+            del self.fields["groesse"]
         if not e.telefon_erfassen:
             del self.fields["telefon"]
         if not e.email_erfassen:

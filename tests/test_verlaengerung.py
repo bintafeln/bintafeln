@@ -69,7 +69,7 @@ def test_jede_person_muss_eine_bedingung_erfuellen(regel):
     assert ergebnis(haushalt("101", (70, None), (40, {"schwerbehindert": True}))).ergebnis == "ok"
     nein = ergebnis(haushalt("102", (70, None), (40, None)))
     assert nein.ergebnis == "nein" and "Nicht alle Personen" in nein.gruende[0]
-    assert ("Vera Probe1", "✗ 40 Jahre") in nein.personen
+    assert ("Vera Probe1", "✗ 40 Jahre, nicht schwerbehindert") in nein.personen
     assert ergebnis(haushalt("103", (70, None), (None, None))).ergebnis == "unklar"
     # Einkommensart zählt für alle Personen
     ga = Einkommensart.objects.create(bezeichnung="Grundsicherung im Alter")

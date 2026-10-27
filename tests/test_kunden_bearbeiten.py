@@ -387,3 +387,20 @@ def test_notiz_vorlage_bietet_alte_anliegen_nicht_mehr_an():
     assert "verlaengern" not in neu and "ausweis" not in neu  # haben ihre feste Vorlage
     alt = NotizVorlage(text="Gehört zu uns", melden="zugehoerig")
     assert "zugehoerig" in dict(NotizVorlageForm(instance=alt).fields["melden"].choices)
+
+
+def test_haushaltsgroesse_wird_berechnet(admin_client, h):
+    """Erwachsene und Kinder sind keine Eingabefelder, sondern ergeben sich aus den Angehörigen."""
+    heute = dt.date.today()
+    Person.objects.create(haushalt=h, vorname="Kim", nachname="Test",
+                          geburtsdatum=heute.replace(year=heute.year - 5))  # fmt: skip
+    Person.objects.create(haushalt=h, vorname="Lou", nachname="Test",
+                          geburtsdatum=heute.replace(year=heute.year - 17))  # fmt: skip
+    form = HaushaltForm(instance=h)
+    assert "anzahl_erwachsene" not in form.fields and "anzahl_kinder" not in form.fields
+    assert form.initial["groesse"] == "1 Erwachsene, 2 Kinder"
+    assert form.fields["groesse"].disabled and "unter 18 Jahren Kind" in form.fields[
+        "groesse"].help_text  # fmt: skip
+    seite = admin_client.get(url("bearbeiten", h.kundennummer)).content.decode()
+    assert 'value="1 Erwachsene, 2 Kinder"' in seite and "disabled" in seite
+    assert "groesse" not in HaushaltForm().fields  # neuer Haushalt: noch keine Angehörigen
