@@ -232,3 +232,59 @@ def test_loeschfrist_entfernt_zeiten(admin, fest):
     )
     assert personal.stammdaten_leeren() == 1
     assert not Zeitbuchung.objects.exists()
+
+
+def test_pause_stempeln(client, admin, anmelden, fest):
+    anmelden(client, fest)
+    url = reverse("personal:meine_arbeitszeit")
+    client.post(reverse("personal:stempeln"), {"aktion": "kommen"})
+    seite = client.get(url).content.decode()
+    assert 'value="pause"' in seite and 'value="gehen"' in seite
+    pause = client.post(reverse("personal:stempeln"), {"aktion": "pause"}, follow=True)
+    inhalt = pause.content.decode()
+    assert "Pause ab" in inhalt and "Pause beenden</button>" in inhalt
+    assert arbeitszeit.in_pause(fest) is not None
+    weiter = client.post(reverse("personal:stempeln"), {"aktion": "kommen"}, follow=True)
+    assert "Eingestempelt seit" in weiter.content.decode() and Zeitbuchung.objects.count() == 2
+    assert arbeitszeit.in_pause(fest) is None  # eingestempelt
+    # Gestern gearbeitet: heute ist es keine Pause, sondern einfach „Kommen“
+    Zeitbuchung.objects.all().delete()
+    gestern = timezone.now() - dt.timedelta(days=1)
+    Zeitbuchung.objects.create(benutzer=fest, beginn=gestern - dt.timedelta(hours=2), ende=gestern)
+    assert arbeitszeit.in_pause(fest) is None
+
+
+def test_korrektur_mit_pause(admin_client, fest):
+    url = reverse("personal:zeit_neu", args=[fest.pk])
+    seite = admin_client.get(url).content.decode()
+    assert 'class="zeit-raster"' in seite and "Pause von" in seite
+    daten = {"datum": "2026-10-20", "kommen": "08:00", "pause_von": "12:00",
+             "pause_bis": "12:30", "gehen": "16:30", "bemerkung": "nachgetragen"}  # fmt: skip
+    ohne_gehen = admin_client.post(url, daten | {"gehen": ""}).content.decode()
+    assert "„Pause von“, „Pause bis“ und „Gehen“" in ohne_gehen
+    falsch = admin_client.post(url, daten | {"pause_von": "07:00"}).content.decode()
+    assert "zwischen „Kommen“ und „Gehen“" in falsch
+    assert not Zeitbuchung.objects.exists()
+    antwort = admin_client.post(url, daten, follow=True)
+    assert "mit Pause gespeichert" in antwort.content.decode()
+    zeiten = [
+        (
+            timezone.localtime(b.beginn).strftime("%H:%M"),
+            timezone.localtime(b.ende).strftime("%H:%M"),
+            b.korrigiert_von,
+        )
+        for b in Zeitbuchung.objects.order_by("beginn")
+    ]
+    assert zeiten == [("08:00", "12:00", "chefin"), ("12:30", "16:30", "chefin")]  # fmt: skip
+    tag = berechnung.arbeitstage_aus(Zeitbuchung.objects.all())[0]
+    assert (tag.pause_gestempelt, tag.netto) == (D("0.5"), D("8"))
+    # Bestehende Buchung nachträglich mit Pause teilen
+    Zeitbuchung.objects.all().delete()
+    b = buchen(fest, "08:00", "16:00")
+    bearbeiten = reverse("personal:zeit", args=[fest.pk, b.pk])
+    admin_client.post(bearbeiten, {"datum": f"{TAG:%Y-%m-%d}", "kommen": "08:00",
+                                   "pause_von": "11:00", "pause_bis": "11:45", "gehen": "16:00",
+                                   "bemerkung": "Pause vergessen"})  # fmt: skip
+    assert Zeitbuchung.objects.count() == 2
+    b.refresh_from_db()
+    assert timezone.localtime(b.ende).strftime("%H:%M") == "11:00"

@@ -349,11 +349,13 @@ bearbeitet nur ein Admin. Rollen, die man nicht vergeben darf, bleiben beim Bear
   die Tage des Monats mit Pause und Arbeitszeit sowie der Stand des Stundenkontos.
 - **Pausen:** Fehlt die gesetzliche Pause (mehr als 6 Stunden: 30 Minuten, mehr als 9 Stunden:
   45 Minuten), zieht bintafeln den Rest ab. Als Pause zählt die Zeit zwischen Gehen und erneutem
-  Kommen.
+  Kommen. Eingestempelt gibt es dafür den Knopf **Pause**, danach **Pause beenden**
+  (`arbeitszeit.in_pause()`).
 - **Gehen vergessen?** Ein Kommen, das länger als 14 Stunden offen ist, zählt nicht. Die Person
   kann am nächsten Tag normal stempeln; die Personal-Seite listet es zum Nachtragen.
 - **Korrigieren und nachtragen** nur durch Admin und Personal: bei der Person auf
-  „Arbeitszeiten“, mit Grund. Die Korrektur trägt den Namen und steht im Änderungsprotokoll.
+  „Arbeitszeiten“, mit Grund; Datum, Kommen, Pause von/bis und Gehen in einer Zeile. Eine
+  eingetragene Pause teilt die Zeit in zwei Buchungen (vor und nach der Pause). Die Korrektur trägt den Namen und steht im Änderungsprotokoll.
 - Unter „Personal → Arbeitszeiterfassung einstellen“: auch Ehrenamtliche stempeln lassen,
   automatischen Pausenabzug ab- oder einschalten, Grenze für vergessenes Gehen.
 

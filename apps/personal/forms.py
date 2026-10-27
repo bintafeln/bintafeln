@@ -67,12 +67,18 @@ class ZeitbuchungForm(forms.Form):
 
     datum = forms.DateField(label="Datum", widget=DatumEingabe())
     kommen = forms.TimeField(label="Kommen", widget=UhrzeitEingabe())
+    pause_von = forms.TimeField(label="Pause von", required=False, widget=UhrzeitEingabe())
+    pause_bis = forms.TimeField(label="Pause bis", required=False, widget=UhrzeitEingabe())
     gehen = forms.TimeField(
         label="Gehen", required=False, widget=UhrzeitEingabe(), help_text="Leer = noch offen."
     )
     bemerkung = forms.CharField(
         label="Grund der Korrektur", max_length=200, help_text="z. B. „Gehen vergessen“."
     )
+
+    # Eine Pause teilt die Zeit in zwei Buchungen: Kommen–Pause von und Pause bis–Gehen. So
+    # zählt sie wie eine gestempelte Pause (Lücke zwischen Gehen und erneutem Kommen).
+    zweite: Zeitbuchung | None = None
 
     def __init__(self, data=None, *, buchung: Zeitbuchung, **kwargs):
         self.buchung = buchung
@@ -96,13 +102,26 @@ class ZeitbuchungForm(forms.Form):
         gehen = daten.get("gehen")
         b.ende = dt.datetime.combine(daten["datum"], gehen, zeitzone) if gehen else None
         b.bemerkung = daten["bemerkung"]
+        von, bis = daten.get("pause_von"), daten.get("pause_bis")
+        if von or bis:
+            if not (von and bis and gehen):
+                raise ValidationError("Für eine Pause bitte „Pause von“, „Pause bis“ und „Gehen“ "
+                                      "eintragen.")  # fmt: skip
+            if not daten["kommen"] < von < bis < gehen:
+                raise ValidationError("Die Pause muss zwischen „Kommen“ und „Gehen“ liegen "
+                                      "(Kommen < Pause von < Pause bis < Gehen).")  # fmt: skip
+            self.zweite = Zeitbuchung(benutzer=b.benutzer, bemerkung=b.bemerkung,
+                                      beginn=dt.datetime.combine(daten["datum"], bis, zeitzone),
+                                      ende=b.ende)  # fmt: skip
+            b.ende = dt.datetime.combine(daten["datum"], von, zeitzone)
         try:
             b.clean()
         except ValidationError as fehler:
             raise ValidationError(fehler.message_dict["ende"]) from None
-        andere = arbeitszeit.ueberschneidung(b)
-        if andere:
-            raise ValidationError(f"Überschneidet sich mit der Buchung {andere}.")
+        for buchung in (b, self.zweite):
+            andere = buchung and arbeitszeit.ueberschneidung(buchung)
+            if andere and andere.pk != b.pk:
+                raise ValidationError(f"Überschneidet sich mit der Buchung {andere}.")
         return daten
 
 

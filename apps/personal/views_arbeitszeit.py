@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -62,6 +63,7 @@ def meine(request):
         "personal/meine_arbeitszeit.html",
         {
             "laufend": arbeitszeit.laufend(request.user),
+            "in_pause": arbeitszeit.in_pause(request.user),
             "vergessen": arbeitszeit.vergessen(request.user),
             "saldo": berechnung.stundenkonto(request.user, heute.year, heute).saldo
             if hat_vertrag
@@ -77,7 +79,11 @@ def stempeln(request):
     if not arbeitszeit.darf_stempeln(request.user):
         raise PermissionDenied
     try:
-        if request.POST.get("aktion") == "gehen":
+        if request.POST.get("aktion") == "pause":
+            b = arbeitszeit.gehen(request.user)
+            messages.success(request, f"Pause ab {timezone.localtime(b.ende):%H:%M} gestempelt. "
+                             "Danach „Pause beenden“.")  # fmt: skip
+        elif request.POST.get("aktion") == "gehen":
             b = arbeitszeit.gehen(request.user)
             messages.success(request, f"Gehen um {timezone.localtime(b.ende):%H:%M} gestempelt.")
         else:
@@ -111,9 +117,13 @@ def zeit_bearbeiten(request, pk, buchung=None):
     )
     form = ZeitbuchungForm(request.POST or None, buchung=b)
     if request.method == "POST" and form.is_valid():
-        b.korrigiert_von = request.user.get_username()
-        b.save()
-        messages.success(request, "Zeitbuchung gespeichert.")
+        with transaction.atomic():
+            for buchung in (b, form.zweite):
+                if buchung is not None:
+                    buchung.korrigiert_von = request.user.get_username()
+                    buchung.save()
+        messages.success(request, "Zeitbuchung mit Pause gespeichert (zwei Zeiten)." if form.zweite
+                         else "Zeitbuchung gespeichert.")  # fmt: skip
         beginn = timezone.localtime(b.beginn)
         return redirect(f"{reverse('personal:zeiten', args=[p.pk])}?monat={beginn:%Y-%m}")
     return render(request, "personal/zeitbuchung.html", {"p": p, "b": b, "form": form})

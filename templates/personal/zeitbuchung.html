@@ -7,7 +7,19 @@
   <p>{{ p }}</p>
   <form method="post">
     {% csrf_token %}
-    {% include "includes/formular.html" %}
+    {% if form.non_field_errors %}<div class="fehler" role="alert">{% for f in form.non_field_errors %}<p>{{ f }}</p>{% endfor %}</div>{% endif %}
+    <div class="zeit-raster">
+      {% for feld in form %}
+      <div class="feld{% if feld.name == "bemerkung" %} feld-breit{% endif %}{% if feld.errors %} hat-fehler{% endif %}">
+        <label for="{{ feld.id_for_label }}">{{ feld.label }}{% if feld.field.required %} *{% endif %}</label>
+        {{ feld }}
+        {% if feld.help_text %}<small class="hilfe">{{ feld.help_text }}</small>{% endif %}
+        {% for fehler in feld.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    <p class="hinweis">Pause eintragen: „Pause von“ und „Pause bis“ – die Zeit wird dann als zwei Buchungen gespeichert
+      (vor und nach der Pause).</p>
     <button type="submit" class="knopf">Speichern</button>
   </form>
   {% if b.pk %}

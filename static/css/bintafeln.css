@@ -939,3 +939,7 @@ a.marke-rolle { text-decoration: none; }
 .was-ist-neu ul { padding-left: 1.25rem; }
 .was-ist-neu .neu-titel { font-weight: 600; margin-top: .4rem; }
 .was-ist-neu .neu-detail { list-style: circle; margin-left: 1.25rem; font-size: .93rem; color: var(--leise); }
+/* Zeitbuchung korrigieren: Datum, Kommen, Pause, Gehen in einer Zeile, Grund darunter */
+.zeit-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: 0 .75rem; max-width: 56rem; }
+.zeit-raster .feld-breit { grid-column: 1 / -1; }
+.zeit-raster .feld input { width: 100%; }
