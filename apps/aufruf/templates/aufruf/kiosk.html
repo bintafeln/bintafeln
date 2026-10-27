@@ -372,7 +372,7 @@ function submitNumber() {
     buffer = '';
     renderBuffer();
 
-    fetch(URLS.abfrage + '?nummer=' + encodeURIComponent(nummer) + '&t=' + Date.now(), { cache: 'no-store' })
+    fetch(URLS.abfrage + '?nummer=' + encodeURIComponent(nummer) + '&kiosk=1&t=' + Date.now(), { cache: 'no-store' })
         .then(r => r.json())
         .then(d => showResult(nummer, d))
         .catch(() => showResult(nummer, { error: true }));

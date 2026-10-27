@@ -40,10 +40,22 @@ def _stelle(request, pk) -> Ausgabestelle:
     return stelle
 
 
-def plaetze(nummern, flags, anzahl) -> list[dict]:
+def _farbe(da, i) -> str:
+    """Am Kiosk gemeldet: grün; nicht gemeldet: dunkelrot; ohne Meldungen heute: keine Farbe."""
+    if da is None or i >= len(da):
+        return ""
+    return "nr-da" if da[i] else "nr-fehlt"
+
+
+def plaetze(nummern, flags, anzahl, da=None) -> list[dict]:
     """Feste Anzahl Plätze für „Bitte eintreten“ (leere mit Strich)."""
     return [{"nummer": nummern[i] if i < len(nummern) else "",
-             "vorrang": i < len(flags) and flags[i]} for i in range(anzahl)]  # fmt: skip
+             "vorrang": i < len(flags) and flags[i], "farbe": _farbe(da, i)}
+            for i in range(anzahl)]  # fmt: skip
+
+
+def nummern_mit_farbe(nummern, da) -> list[dict]:
+    return [{"nummer": x, "farbe": _farbe(da, i)} for i, x in enumerate(nummern)]
 
 
 def _urls(stelle, einstellungen) -> dict:
@@ -98,9 +110,11 @@ def steuerung(request, pk):
     gesamt = 100 * d["total_completed"] / d["total_numbers"] if d["total_numbers"] else 0
     return render(request, "aufruf/steuerung.html", {
         **kontext, **d,
-        "plaetze": plaetze(d["current_numbers"], d["priority_flags"], e.anzahl),
+        "plaetze": plaetze(d["current_numbers"], d["priority_flags"], e.anzahl,
+                           d["present_flags"]),
         "has_any_priority": any(d["priority_flags"]),
-        "vorschau_nummern": vorschau + [""] * (5 - len(vorschau)),
+        "vorschau_nummern": nummern_mit_farbe(vorschau + [""] * (5 - len(vorschau)),
+                                              d["next_present_flags"]),
         "slot_progress": f"{slot:.1f}", "slot_progress_text": f"{slot:.1f}".replace(".", ","),
         "total_progress": f"{gesamt:.1f}", "total_progress_text": f"{gesamt:.1f}".replace(".", ","),
     })  # fmt: skip
@@ -316,10 +330,15 @@ def leiste(request):
     e = AufrufEinstellungen.laden(stelle)
     tag = ablauf.aktualisieren(stelle, heute)
     d = ablauf.stand_fuer_anzeige(tag, e, heute)
+    aktuell = danach = []
     if tag and "error" not in d and not d["finished"]:
         d["current_slot"] = tag.stand["gruppen"][tag.stand["index"]]["name"]  # ohne Uhrzeit
+        aktuell = plaetze(d["current_numbers"], d["priority_flags"], len(d["current_numbers"]),
+                          d["present_flags"])  # fmt: skip
+        danach = nummern_mit_farbe(d["next_numbers"][:6], d["next_present_flags"])
     return render(request, "aufruf/_leiste.html", {
         "stelle": stelle, "d": d, "anzahl": e.anzahl, "fehler": fehler,
+        "aktuell": aktuell, "danach": danach,
         "steuerung": reverse("aufruf:mobil", args=[stelle.pk]),
     })  # fmt: skip
 

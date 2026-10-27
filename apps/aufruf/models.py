@@ -139,6 +139,29 @@ class AufrufTag(models.Model):
         return f"Aufruf {self.ausgabestelle} {self.datum:%d.%m.%Y}"
 
 
+class KioskMeldung(models.Model):
+    """Kundennummer heute am Kiosk gescannt: Der Kunde ist vermutlich schon da.
+
+    Nur für den laufenden Tag; ältere Meldungen löscht ``ablauf`` beim nächsten Tag."""
+
+    ausgabestelle = models.ForeignKey(Ausgabestelle, on_delete=models.CASCADE, related_name="+")
+    datum = models.DateField("Datum")
+    kundennummer = models.CharField("Kundennummer", max_length=20)
+    zeitpunkt = models.DateTimeField("Gescannt um", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Meldung am Kiosk"
+        verbose_name_plural = "Meldungen am Kiosk"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["ausgabestelle", "datum", "kundennummer"], name="kioskmeldung_eindeutig"
+            )  # fmt: skip
+        ]
+
+    def __str__(self):
+        return f"{self.kundennummer} am {self.datum:%d.%m.%Y}"
+
+
 class AufrufInfo(models.Model):
     """Eine Info, die der Monitor im Wechsel neben den Nummern zeigt."""
 

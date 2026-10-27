@@ -60,3 +60,14 @@ Wer als eingelassen aus der Warteschlange genommen wurde und dessen Abholung dan
 wird (Korrekturwunsch, ADR 0035), kommt beim nächsten Abgleich an seinen alten Platz zurück: vor
 den ersten damaligen Nachfolger, der noch wartet (`stand["nachfolger"]`). Ist der Platz schon
 vorbei, wird er als nächster aufgerufen, nie vor die gerade angezeigten Nummern.
+
+## Nachtrag: am Kiosk gemeldet (2026-10-27)
+
+Scannt ein Kunde am Kiosk seinen Ausweis (Abfrage mit `kiosk=1`, nicht die Abfrage-Seite),
+legt `ablauf.kiosk_melden()` eine `KioskMeldung` (Ausgabestelle, Tag, Kundennummer) an; ältere
+Tage werden dabei gelöscht, in der Datensicherung sind die Meldungen ausgenommen.
+`stand_fuer_anzeige()` liefert dazu `present_flags` (und für „Danach“ und „Letzte“), die Steuerungen
+färben gemeldete Nummern grün, die übrigen dunkelrot. Solange sich am Tag niemand gemeldet hat,
+bleiben die Flags `None` (Ausgabestellen ohne Kiosk sehen keine roten Nummern). Die öffentliche
+Anzeige bekommt die Flags nicht. Am Einlass Eingetragene fallen jetzt auch aus „Danach“ sofort
+heraus, nicht erst beim nächsten Abgleich.

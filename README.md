@@ -804,6 +804,11 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   Anzeige aktualisiert sich alle 15 Sekunden, auch wenn ein anderes Gerät weiterschaltet. Hat die
   Ausgabestelle heute keine Kundengruppe, erscheint der Kasten nicht. Einen
   eigenen Menüeintrag gibt es nicht mehr; die Überschrift „Aufruf ↗“ öffnet die Handy-Steuerung.
+- **Wer ist schon da:** Scannt ein Kunde am Kiosk seinen Ausweis, merkt sich bintafeln das für den
+  Tag (`KioskMeldung`, am nächsten Tag gelöscht). Kasten unter dem Menü, Handy- und PC-Steuerung
+  zeigen gemeldete Nummern grün, alle anderen dunkelrot – erst, wenn sich heute jemand gemeldet
+  hat. Monitor und Geräte ohne Anmeldung sehen das nicht. Die Abfrage-Seite meldet nicht an.
+  Am Einlass Eingetragene verschwinden sofort aus „Bitte eintreten“ und „Danach“.
 - **Geräte im Wartebereich:** Monitor (Nummern, Infos im Wechsel, Ton, Layout per Zahnrad),
   Nummern-Anzeige, Kiosk (Karte scannen, Antwort auf Deutsch und in der Sprache zur
   Staatsangehörigkeit) und Abfrage. Sie brauchen keine Anmeldung, sondern den geheimen Link aus
@@ -1104,7 +1109,8 @@ Daten der Module (Selbstabholer, Links, Termine der Warteliste, eigene Listen, S
   wieder am Haushalt. Ist die Kundennummer inzwischen neu vergeben oder fehlt etwas (z. B. die
   Kundengruppe), ändert sich nichts und es gibt eine Meldung. Eine Rolle stellt nur wieder her, wer
   alle ihre Rechte hat.
-- Nach 30, 60, 90 oder 365 Tagen („Einstellungen der Tafel“, Vorgabe 30) löscht bintafeln
+- Nach 30, 60, 90 oder 365 Tagen („Einstellungen → Tafel → Tafel und Module“, Feld „Papierkorb
+  leeren nach“, Vorgabe 30) löscht bintafeln
   endgültig, mit den verschlüsselten Dateien; „Endgültig löschen“ geht auch sofort. Die Auskunft
   zum Haushalt nennt, was noch im Papierkorb liegt.
 - Nicht über den Papierkorb: Löschfristen, der Import, Abholungen beim Bearbeiten (die Rücknahme

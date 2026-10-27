@@ -196,6 +196,11 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.4) !important;
         }
 
+        /* Am Kiosk gemeldet: grün, sonst dunkelrot (weiße Plakette, auch auf dem grünen Knopf lesbar) */
+        .nr { display: inline-block; background: #fff; border-radius: 6px; padding: 0 .25em; text-shadow: none; }
+        .nr-da { color: #1b6e34; }
+        .nr-fehlt { color: #8b1a1a; }
+
         .btn-next-numbers {
             font-size: 2.1rem !important;
             font-weight: 900 !important;
@@ -646,6 +651,7 @@
                 }
 
                 currentStatus = data;
+                kioskMerken(data);
                 updateButtonDisplay(data);
                 updateStatusDisplay(data);
                 updateUndoButton(data.can_undo || false);
@@ -679,14 +685,28 @@
         }
 
         // NEU: Vergangene Kunden anzeigen
+        // Am Kiosk gemeldete Nummern (grün), alle anderen dunkelrot; null = heute noch niemand
+        // gemeldet, dann keine Farben
+        let kioskDa = null;
+        function kioskMerken(data) {
+            if (data && 'kiosk_numbers' in data) {
+                kioskDa = data.kiosk_numbers ? new Set(data.kiosk_numbers) : null;
+            }
+        }
+        function nrHtml(nummer, vorsatz) {
+            const text = String(nummer).replace(/[&<>"']/g, z => '&#' + z.charCodeAt(0) + ';');
+            const anzeige = (vorsatz || '') + text;
+            if (!kioskDa) return anzeige;
+            return `<span class="nr ${kioskDa.has(String(nummer)) ? 'nr-da' : 'nr-fehlt'}">${anzeige}</span>`;
+        }
+
         function updatePastCustomersDisplay(pastNumbers) {
             const pastCustomersDisplay = document.getElementById('pastCustomersDisplay');
 
             if (!pastNumbers || pastNumbers.length === 0) {
                 pastCustomersDisplay.textContent = '-';
             } else {
-                const displayText = pastNumbers.join(' • ');
-                pastCustomersDisplay.textContent = displayText;
+                pastCustomersDisplay.innerHTML = pastNumbers.map(n => nrHtml(n)).join(' • ');
             }
         }
 
@@ -718,37 +738,30 @@
             nextBtn.className = 'btn btn-primary btn-next';
 
             // Button-Kundennummern aktualisieren
-            let buttonNumbersText = '';
 
             if (data.current_numbers && data.current_numbers.length > 0) {
                 const displayNumbers = [];
 
                 data.current_numbers.forEach((number, index) => {
                     // Priorität prüfen
-                    if (data.priority_flags && data.priority_flags[index]) {
-                        displayNumbers.push(`♿${number}`);
-                    } else {
-                        displayNumbers.push(number);
-                    }
+                    const vorrang = data.priority_flags && data.priority_flags[index];
+                    displayNumbers.push(nrHtml(number, vorrang ? '♿' : ''));
                 });
 
                 // Button-Text mit Kundennummern (eine pro Zeile)
-                buttonNumbersText = displayNumbers.join('\n');
+                btnNumbers.innerHTML = displayNumbers.join('<br>');
             } else {
-                buttonNumbersText = 'Keine Nummern';
+                btnNumbers.textContent = 'Keine Nummern';
             }
-
-            btnNumbers.textContent = buttonNumbersText;
             btnMainText.textContent = 'Aktuelle Kunden';
             nextBtn.disabled = false;
 
             // Nächste 10 Kunden anzeigen
             if (data.next_numbers && data.next_numbers.length > 0) {
-                const nextNumbersText = data.next_numbers.slice(0, 10).map((number, index) => {
+                nextCustomersDisplay.innerHTML = data.next_numbers.slice(0, 10).map((number, index) => {
                     const isPriority = data.next_priority_flags && data.next_priority_flags[index];
-                    return isPriority ? `♿ ${number}` : number;
+                    return nrHtml(number, isPriority ? '♿ ' : '');
                 }).join(' • ');
-                nextCustomersDisplay.textContent = nextNumbersText;
             } else {
                 nextCustomersDisplay.textContent = '-';
             }

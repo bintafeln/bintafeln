@@ -103,6 +103,13 @@ def stand(request, schluessel):
     e = _einstellungen(schluessel)
     heute = timezone.localdate()
     d = ablauf.stand_fuer_anzeige(ablauf.aktualisieren(e.ausgabestelle, heute), e, heute)
+    for schluessel_ in (
+        "present_flags",
+        "next_present_flags",
+        "past_present_flags",
+        "kiosk_numbers",
+    ):
+        d.pop(schluessel_, None)  # wer schon da ist, sieht nur das Team
     if "error" not in d:
         d["infos"] = [{"id": i.pk} for i in infos(e)] if e.info_rotation else []
         d["info_settings"] = {"rotation_enabled": e.info_rotation}
@@ -115,7 +122,11 @@ def abfrage_api(request, schluessel):
     nummer = request.GET.get("nummer", "").strip()[:20]
     if not nummer:
         return JsonResponse({"error": "Keine Kundennummer angegeben"}, status=400)
-    daten = ablauf.abfrage(e.ausgabestelle, timezone.localdate(), nummer)
+    heute = timezone.localdate()
+    daten = ablauf.abfrage(e.ausgabestelle, heute, nummer)
+    # Am Kiosk gescannt (nicht die Abfrage-Seite): Der Kunde ist da – grün in der Steuerung
+    if request.GET.get("kiosk") and daten.get("gefunden") and not daten.get("abgeholt"):
+        ablauf.kiosk_melden(e.ausgabestelle, heute, nummer)
     daten.pop("abgeholt_um", None)  # Geräte ohne Anmeldung: keine Uhrzeit der Abholung
     return JsonResponse(daten)
 

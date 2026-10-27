@@ -237,6 +237,13 @@
             border-color: #bee5eb;
         }
         
+        /* Am Kiosk gemeldet: grün, sonst dunkelrot (nur, wenn sich heute jemand gemeldet hat) */
+        .number-item.nr-da, .number-item.nr-fehlt { background: #fff; }
+        .number-item.nr-da .number-value, .preview-number.nr-da { color: #1b6e34; }
+        .number-item.nr-fehlt .number-value, .preview-number.nr-fehlt { color: #8b1a1a; }
+        .preview-number.nr-da { border-color: #1b6e34; }
+        .preview-number.nr-fehlt { border-color: #8b1a1a; }
+
         .preview-number.empty {
             background: #f8f9fa;
             color: #adb5bd;
@@ -501,7 +508,7 @@
                     <div class="numbers-display">
                         {% for p in plaetze %}
                             {% if p.nummer %}
-                                <div class="number-item{% if p.vorrang %} priority{% endif %}">
+                                <div class="number-item{% if p.vorrang %} priority{% endif %} {{ p.farbe }}">
                                     <div class="number-value">
                                         {% if p.vorrang %}<span style="font-size: 0.7em;">♿</span> {% endif %}{{ p.nummer }}
                                     </div>
@@ -528,8 +535,8 @@
                     <h4>👀 Nächste Kundennummern in dieser Kundengruppe:</h4>
                     <div class="preview-numbers">
                         {% for n in vorschau_nummern %}
-                            {% if n %}
-                                <span class="preview-number">{{ n }}</span>
+                            {% if n.nummer %}
+                                <span class="preview-number {{ n.farbe }}">{{ n.nummer }}</span>
                             {% else %}
                                 <span class="preview-number empty">—</span>
                             {% endif %}
@@ -609,7 +616,8 @@
             fetch(URLS.stand + '?t=' + Date.now(), { cache: 'no-store' })
                 .then(r => r.json())
                 .then(d => {
-                    const jetzt = JSON.stringify([d.current_numbers, d.finished, d.error, d.can_undo]);
+                    const jetzt = JSON.stringify([d.current_numbers, d.finished, d.error, d.can_undo,
+                                                  d.present_flags, (d.next_numbers || []).slice(0, 5)]);
                     if (letzterStand !== null && jetzt !== letzterStand) location.reload();
                     letzterStand = jetzt;
                 })

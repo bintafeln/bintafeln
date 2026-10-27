@@ -774,3 +774,56 @@ def test_einlass_an_stelle_ohne_aufruf_zeigt_nichts(modul_an, admin_client, mitt
     seite = admin_client.get(reverse("ausgabe:empfang"), {"nummer": nummer}).content.decode()
     assert "Aufruf:" not in seite and "ampel-blinkt" not in seite
     assert "zu früh" not in seite and "Nummern verschieben" not in seite
+
+
+# ── Am Kiosk gemeldet: grün, sonst dunkelrot ────────────────────────────────
+
+
+def test_kiosk_meldung_faerbt_die_nummern(modul_an, mitte, tag_daten, admin, admin_client):
+    from apps.aufruf.models import KioskMeldung
+    from apps.kunden.models import Abholung
+
+    e = AufrufEinstellungen.laden(mitte)
+    tag = ablauf.starten(mitte, heute())
+    d = ablauf.stand_fuer_anzeige(tag, e, heute())
+    assert d["present_flags"] is None and d["kiosk_numbers"] is None  # noch niemand gemeldet
+    erste, zweite = d["current_numbers"][:2]
+    naechste = d["next_numbers"][0]
+
+    c = Client()
+    abfrage = reverse("aufruf:anzeige_abfrage", args=[e.schluessel])
+    c.get(abfrage, {"nummer": zweite})  # Abfrage-Seite zählt nicht
+    assert not KioskMeldung.objects.exists()
+    c.get(abfrage, {"nummer": f"00{erste}", "kiosk": "1"})  # führende Nullen egal
+    c.get(abfrage, {"nummer": erste, "kiosk": "1"})  # zweimal: einmal gemeldet
+    c.get(abfrage, {"nummer": "999", "kiosk": "1"})  # unbekannt: nichts
+    assert list(KioskMeldung.objects.values_list("kundennummer", flat=True)) == [erste]
+
+    d = ablauf.stand_fuer_anzeige(tag, e, heute())
+    assert d["present_flags"][:2] == [True, False] and d["kiosk_numbers"] == [erste]
+    assert not any(d["next_present_flags"])
+    # Geräte ohne Anmeldung (Monitor) erfahren nicht, wer da ist
+    oeffentlich = c.get(reverse("aufruf:anzeige_stand", args=[e.schluessel])).json()
+    assert "present_flags" not in oeffentlich and "kiosk_numbers" not in oeffentlich
+    # Kasten unter dem Menü und Steuerung am PC: grün bzw. dunkelrot
+    admin.gewaehlte_stelle = mitte
+    admin.save()
+    leiste = admin_client.get(reverse("aufruf:leiste")).content.decode()
+    assert f'class="nr-da" title=" am Kiosk gemeldet">{erste}<' in leiste
+    assert f'class="nr-fehlt" title=" nicht am Kiosk gemeldet">{zweite}<' in leiste
+    assert f'<span class="nr-fehlt">{naechste}</span>' in leiste
+    steuerung = admin_client.get(reverse("aufruf:steuerung", args=[mitte.pk])).content.decode()
+    assert "number-item nr-da" in steuerung and "number-item nr-fehlt" in steuerung
+    assert f'preview-number nr-fehlt">{naechste}<' in steuerung
+
+    # Abgeholt: sofort auch aus „Danach“ heraus; schon Abgeholte melden sich nicht mehr an
+    h = Haushalt.objects.get(kundennummer=naechste)
+    Abholung.objects.create(haushalt=h, datum=heute())
+    assert naechste not in ablauf.stand_fuer_anzeige(tag, e, heute())["next_numbers"]
+    c.get(abfrage, {"nummer": naechste, "kiosk": "1"})
+    assert not KioskMeldung.objects.filter(kundennummer=naechste).exists()
+    # Meldungen gelten nur für den Tag
+    KioskMeldung.objects.update(datum=heute() - dt.timedelta(days=1))
+    ablauf.kiosk_melden(mitte, heute(), zweite)
+    assert ablauf.am_kiosk(mitte, heute()) == {zweite}
+    assert KioskMeldung.objects.count() == 1
