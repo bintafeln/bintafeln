@@ -539,7 +539,8 @@ Dokumente, Historie.
   „Einstellungen → Notiz-Vorlagen“), steht der Haushalt unter „Kunden → Ausweise verlängern“ (Recht „Haushalte
   anlegen und bearbeiten“). Jeder wird nach den Bedingungen in „Einstellungen → Kundenstamm“
   geprüft: ohne Bedingung, jede Person oder mindestens eine Person erfüllt eine Bedingung
-  (Mindestalter, Ja/Nein-Zusatzfelder wie „Schwerbehindert“, Einkommensarten); gesperrte, beendete
+  (Mindestalter oder Ja/Nein-Zusatzfelder wie „Schwerbehindert“); sind Einkommensarten gewählt,
+  muss der Haushalt **zusätzlich** eine davon haben (z. B. Bürgergeld, Wohngeld); gesperrte, beendete
   Haushalte und solche mit aktiver Sperre nicht, fehlende Geburtsdaten als „selbst prüfen“. Je Person
   steht da, womit sie die Bedingung erfüllt oder was fehlt („✗ 40 Jahre, nicht schwerbehindert“). Alle gewählten werden
   mit einem Klick um die gewählten Monate verlängert (ab bisherigem Ablauf, sonst ab heute); wer

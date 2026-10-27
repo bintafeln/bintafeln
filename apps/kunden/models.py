@@ -99,9 +99,9 @@ class KundenEinstellungen(models.Model):
     )  # fmt: skip
     verlaengern_einkommensarten = models.ManyToManyField(
         "Einkommensart", blank=True, related_name="+",
-        verbose_name="Bedingung: Einkommensarten",
-        help_text="Hat der Haushalt eine dieser Einkommensarten, erfüllen alle Personen die "
-        "Bedingung (z. B. „Grundsicherung im Alter“).",
+        verbose_name="Zusätzlich nötig: Einkommensarten",
+        help_text="Sind welche gewählt, muss der Haushalt außerdem eine davon haben (z. B. "
+        "Bürgergeld, Wohngeld) – zusätzlich zur Bedingung je Person, nicht stattdessen.",
     )  # fmt: skip
 
     class Ablehnung(models.TextChoices):

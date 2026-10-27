@@ -21,8 +21,10 @@ mindestens 60 Jahre alt oder schwerbehindert sind; die anderen pausieren ein Jah
 - Haushalte mit offener Nachricht „verlaengern“ stehen auf der Seite „Kunden → Ausweise
   verlängern“. `apps/kunden/verlaengerung.py` prüft jeden: Status, aktive Sperre und die
   Bedingungen aus `KundenEinstellungen` (Regel ohne / jede Person / mindestens eine Person;
-  Mindestalter, Ja/Nein-Zusatzfelder, Einkommensarten). Ergebnis: verlängerbar, nicht verlängerbar
-  oder „selbst prüfen“ (fehlendes Geburtsdatum).
+  Mindestalter oder Ja/Nein-Zusatzfelder je Person). Gewählte Einkommensarten sind eine
+  **zusätzliche** Bedingung für den Haushalt (Und, nicht Oder; korrigiert 2026-10).
+  Ergebnis: verlängerbar, nicht verlängerbar oder „selbst prüfen“ (fehlendes Geburtsdatum oder
+  fehlende Einkommensart).
 - Mit einem Klick werden alle gewählten verlängert (ab bisherigem Ablauf, bei abgelaufenem Ausweis
   ab heute; Monate wählbar, Vorgabe wie bei der Aufnahme). Für nicht verlängerbare stellt die
   Tafel ein (`verlaengern_ablehnung`): Notiz an die Ausgabestelle mit fehlender Bedingung je
