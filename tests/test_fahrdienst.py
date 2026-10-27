@@ -234,8 +234,7 @@ def test_fristen_menue_und_auskunft(team, admin_client, pdf_text):
 
 
 def test_telegram_ohne_grund(team, admin_client, monkeypatch, django_capture_on_commit_callbacks):
-    from apps.core import geheimnis
-    from apps.fahrdienst import telegram
+    from apps.core import geheimnis, telegram
 
     p, _, _ = team
     gesendet = []
@@ -298,7 +297,7 @@ def test_telegram_schnittstelle(monkeypatch):
     import json
     from urllib.error import HTTPError, URLError
 
-    from apps.fahrdienst import telegram
+    from apps.core import telegram
 
     antworten = []
 

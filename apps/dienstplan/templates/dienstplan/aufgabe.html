@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block titel %}Aufgabe {{ a }}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{{ zurueck }}">← {{ a.stelle }}</a></p>
+  <h1>Aufgabe: {{ a }}</h1>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+  <form method="post" action="{% url 'dienstplan:aufgabe_loeschen' a.pk %}" class="abseits" onsubmit="return confirm('Aufgabe wirklich löschen?')">
+    {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Aufgabe löschen</button>
+  </form>
+</section>
+{% endblock %}

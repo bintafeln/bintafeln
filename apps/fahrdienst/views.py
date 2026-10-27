@@ -211,7 +211,7 @@ def einstellungen(request):
 @nicht_in_demo
 def telegram_pruefen(request):
     """„Chats suchen“ (wer dem Bot geschrieben hat) oder „Testnachricht senden“."""
-    from apps.fahrdienst import telegram
+    from apps.core import telegram
 
     e = FahrdienstEinstellungen.laden()
     if not telegram.schluessel(e):

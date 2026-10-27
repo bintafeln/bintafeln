@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block titel %}Ausfall melden{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{{ zurueck }}">← zurück</a></p>
+  <h1>Ich kann nicht – Ausfall melden</h1>
+  <p class="hinweis">Krank, Urlaub oder etwas anderes: „Ab“ und „Wie lange?“ wählen. Im Dienstplan steht der Name an diesen
+    Tagen durchgestrichen, der Platz „offen“. Die Teamleitung des Tages bekommt eine E-Mail. Den Grund sieht nur, wer plant.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Ausfall melden</button>
+  </form>
+</section>
+{% endblock %}

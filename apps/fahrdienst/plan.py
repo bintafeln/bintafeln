@@ -198,8 +198,7 @@ def empfaenger() -> list[str]:
 
 def _benachrichtigen(ausfall: Ausfall, adresse: str) -> None:
     """E-Mail (mit Grund) und Telegram (ohne Grund) an die Fahrdienstleitung."""
-    from apps.core import mail
-    from apps.fahrdienst import telegram
+    from apps.core import mail, telegram
 
     e = FahrdienstEinstellungen.laden()
     an = empfaenger() if mail.eingerichtet() else []

@@ -1,0 +1,33 @@
+<p>Der Dienstplan ersetzt den ausgehängten Papierplan der Ausgabe: je Ausgabestelle und Ausgabetag die Aufgaben (z. B.
+  Teamleitung, Kasse, Obst, Gemüse, Springer) mit Uhrzeit und wer sie übernimmt. Wer nicht kann, meldet das; die
+  Teamleitung des Tages bekommt sofort eine E-Mail.</p>
+<h3>Dienstplan lesen</h3>
+<ul>
+  <li><strong>Ausgabestelle → Dienstplan</strong>: oben Ausgabestelle, Ausgabetag, Monat und Jahr wählen. Zeilen sind die
+    Aufgaben, Spalten die Termine des Monats – wie auf dem Papier.</li>
+  <li><span class="fd-platz fd-offen"><s>Name</s> <strong>offen</strong></span> – die Person fällt aus, noch kein Ersatz;
+    <span class="fd-platz fd-unbesetzt"><strong>unbesetzt</strong></span> – niemand eingeteilt.</li>
+  <li><strong>Meine Dienste</strong> zeigt die eigenen Dienste der nächsten vier Wochen.</li>
+  <li><strong>Drucken (PDF)</strong>: A4 quer, je Ausgabetag eine Seite mit „Freitag | November“, den Terminen und Namen,
+    unten „Abmeldungen bitte bei … unter …“ (Teamleitung des Tages). Fehlende Namen sind gelb hinterlegt.</li>
+</ul>
+<h3>Ausfall melden</h3>
+<ul>
+  <li>Im Dienstplan auf den eigenen Namen tippen oder in „Meine Dienste“ auf „kann nicht“: Grund (krank, Urlaub,
+    Sonstiges) und „Wie lange?“ wählen. Den Grund sieht nur, wer plant. Das geht für Helfer mit Konto, wenn die Tafel
+    es in den Einstellungen erlaubt; für Helfer ohne Konto trägt die Teamleitung den Ausfall ein.</li>
+  <li>Benachrichtigt wird per E-Mail die Teamleitung des betroffenen Ausgabetags (ohne Teamleitung alle, die den Dienstplan
+    planen), auf Wunsch zusätzlich ein Telegram-Chat (ohne Grund).</li>
+</ul>
+{% if "dienstplan.planen" in rechte %}<h3>Planen und einstellen</h3>
+<ul>
+  <li>Im Dienstplan auf einen Namen tippen: erst einmal nur „fällt aus“ melden, einen Ersatz wählen (nur wer an dem Tag
+    frei ist und nicht ausfällt) oder einen Gast mit Namen eintragen.</li>
+  <li><strong>Einstellungen → Mitarbeitende → Dienstplan: Aufgaben und Helfer</strong>: Benachrichtigung, Telegram,
+    Feiertage, die <strong>Helfer</strong> (mit Konto oder nur Name und Telefon; „Alle Konten der Rolle Ausgabe übernehmen“)
+    und je <strong>Ausgabestelle</strong>: mitmachen ja/nein, Ausgabetage (beliebige Wochentage), je Tag die Teamleitung und
+    „Abmeldungen unter“ (Telefon im PDF), die Aufgaben mit Uhrzeit und die feste Besetzung. „Übernehmen von“ kopiert die
+    Aufgaben eines anderen Tages.</li>
+  <li><strong>Beispiel zum Ausprobieren</strong> legt eine Beispiel-Ausgabestelle mit Mo/Mi/Fr und erfundenen Helfern an.</li>
+  <li>Ausfälle und Ersatz löscht bintafeln nach der eingestellten Zeit (Vorgabe 12 Monate).</li>
+</ul>{% endif %}

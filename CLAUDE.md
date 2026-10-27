@@ -255,6 +255,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `apps/listen/katalog.py`, Spalten mit Recht in `spalten.py`, Rechnen in `abfrage.py`). `links`
   (ADR 0057, Kacheln auf der Startseite, Sichtbarkeit über ein Recht). `fahrdienst` (ADR 0074,
   Regeln in `apps/fahrdienst/plan.py`, Plan aus fester Besetzung, Ausfall und Ersatz je Tag).
+  `dienstplan` (ADR 0077, wie Fahrdienst je Ausgabestelle und Ausgabetag, Regeln in
+  `apps/dienstplan/plan.py`, `Helfer` mit oder ohne Konto). Telegram für beide: `apps/core/telegram.py`.
   Hooks `Modul.fristen`, `Modul.auskunft_mitarbeiter`,
   `Modul.einlass`, `Modul.auskunft_antrag`, `Modul.kopfzeile`, `Modul.seitenleiste`, `Modul.suchen`,
   `Modul.startseite`. Programmname nur in

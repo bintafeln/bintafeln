@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block titel %}Dienst {{ p.datum|date:"d.m.Y" }}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{{ zurueck }}">← Dienstplan</a></p>
+  <h1>{{ tagname }} {{ p.datum|date:"d.m.Y" }} · {{ p.aufgabe.name }} {{ p.aufgabe.zeit }}</h1>
+  <dl class="angaben">
+    <dt>Ausgabestelle</dt><dd>{{ p.aufgabe.stelle }}</dd>
+    <dt>Feste Besetzung</dt><dd>{{ p.stamm|default:"–" }}</dd>
+    {% if p.ersatz %}<dt>An diesem Tag</dt><dd>{% if p.gast %}{{ p.gast }} (Gast){% else %}{{ p.ersatz.helfer }}{% endif %} (eingetragen von {{ p.ersatz.eingetragen_von }})</dd>{% endif %}
+    {% if p.ausfall %}<dt>Fällt aus</dt><dd>{{ p.ausfall.helfer }}: {{ p.ausfall.get_grund_display }}{% if p.ausfall.anmerkung %} – {{ p.ausfall.anmerkung }}{% endif %}
+      ({{ p.ausfall.von|date:"d.m." }}{% if p.ausfall.bis != p.ausfall.von %}–{{ p.ausfall.bis|date:"d.m.Y" }}{% endif %})
+      <form method="post" action="{% url 'dienstplan:ausfall_loeschen' p.ausfall.pk %}" class="inline" onsubmit="return confirm('Ausfall zurücknehmen? Wirklich löschen?')">{% csrf_token %}<input type="hidden" name="weiter" value="{{ request.get_full_path }}"><button type="submit" class="link">zurücknehmen</button></form></dd>{% endif %}
+  </dl>
+  {% if p.wer and not p.ausfall %}
+  <form method="post" action="{% url 'dienstplan:ausfall' %}">
+    {% csrf_token %}
+    <h2>Erst einmal nur: {{ p.wer }} fällt aus</h2>
+    <p class="hinweis">Ohne Ersatz – der Platz steht dann „offen“, die Teamleitung wird benachrichtigt.</p>
+    <input type="hidden" name="helfer" value="{{ p.wer.pk }}">
+    <input type="hidden" name="von" value="{{ p.datum|date:'Y-m-d' }}">
+    <input type="hidden" name="bis" value="">
+    <div class="feld"><label for="dp-grund">Grund</label>
+      <select name="grund" id="dp-grund">{% for wert, text in ausfall_form.fields.grund.choices %}<option value="{{ wert }}">{{ text }}</option>{% endfor %}</select></div>
+    <div class="feld"><label for="dp-dauer">Wie lange?</label>
+      <select name="dauer" id="dp-dauer">{% for wert, text in ausfall_form.fields.dauer.choices %}<option value="{{ wert }}">{{ text }}</option>{% endfor %}</select></div>
+    <button type="submit" class="knopf">Ausfall melden (ohne Ersatz)</button>
+  </form>
+  <h2 class="abseits">Oder gleich einen Ersatz eintragen</h2>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <div class="feld">
+      <label for="helfer">Wer springt ein?</label>
+      <select name="helfer" id="helfer" required>
+        <option value="">bitte wählen</option>
+        {% for h in frei %}<option value="{{ h.pk }}">{{ h }}</option>{% endfor %}
+      </select>
+      {% if not frei %}<small class="fehler">An diesem Tag ist niemand frei.</small>{% endif %}
+      <small class="hilfe">Zur Wahl stehen nur Helfer, die an diesem Tag keinen Ausfall gemeldet haben und noch nirgends eingeteilt sind.</small>
+    </div>
+    <button type="submit" class="knopf">Ersatz eintragen</button>
+  </form>
+  <form method="post" class="abseits">
+    {% csrf_token %}
+    <div class="feld"><label for="gast">Oder Gast ohne Eintrag (Name)</label>
+      <input type="text" name="gast" id="gast" maxlength="100" placeholder="Vor- und Nachname"></div>
+    <button type="submit" class="knopf knopf-zweitrangig">Gast eintragen</button>
+  </form>
+  {% if p.ersatz %}
+  <form method="post" class="abseits" onsubmit="return confirm('Eintrag zurücknehmen?')">
+    {% csrf_token %}<input type="hidden" name="helfer" value="">
+    <button type="submit" class="knopf knopf-zweitrangig">Eintrag zurücknehmen</button>
+  </form>
+  {% endif %}
+  <p class="hinweis abseits"><a href="{% url 'dienstplan:stelle' p.aufgabe.stelle.ausgabestelle_id %}?tag={{ p.aufgabe.wochentag }}">Feste Besetzung für jeden {{ tagname }} ändern</a></p>
+</section>
+{% endblock %}
