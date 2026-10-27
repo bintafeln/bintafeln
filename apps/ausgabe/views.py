@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
-from apps.ausgabe import ampel, ausgabetag, kasse, konto, korrekturen, sonderaktionen
+from apps.ausgabe import ampel, kasse, konto, korrekturen, sonderaktionen
 from apps.ausgabe import stelle as stelle_wahl
 from apps.ausgabe.forms import AusgabeEinstellungenForm
 from apps.ausgabe.models import (
@@ -87,13 +87,7 @@ def _letzte(request, stelle) -> list[dict]:
 
 def _suche_kontext(request) -> dict:
     stelle = _stelle(request)
-    return {"stelle": stelle, "letzte": _letzte(request, stelle),
-            "sonderausgabe": _sonderausgabe(request)}  # fmt: skip
-
-
-def _sonderausgabe(request):
-    """Heutige Sonderausgabe der Stelle am Einlass (Hinweis oben auf der Seite, ADR 0072)."""
-    return ausgabetag.sonderausgabe(_stelle(request), timezone.localdate())
+    return {"stelle": stelle, "letzte": _letzte(request, stelle)}
 
 
 def _finden(eingabe: str):
@@ -143,7 +137,6 @@ def _ergebnis(request, h, meldung=None):
         "bewertung": bewertung,
         "beitrag": beitrag,
         "beitragsfrei": BeitragsfreierZeitraum.am(heute),
-        "sonderausgabe": _sonderausgabe(request),
         "bar_vorschlag": konto.bar_vorschlag(beitrag, h.kontostand),
         "vorschlaege": vorschlaege,
         "vorschlag_hinweis": vorschlag_hinweis,

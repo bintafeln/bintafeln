@@ -736,8 +736,9 @@ Unter „Einstellungen → Ausgabe, Ampel und Beiträge“:
   Gewählt werden ein Wochentag (alle Kundengruppen der Stelle mit diesem Ausgabetag) und/oder
   einzelne Kundengruppen, auch mehrere und auch von anderen Ausgabestellen. An dem Tag sind genau
   diese Kunden dran, die regulären des Tages nicht: Ampel, Zähler oben rechts, Aufruf und
-  Kundenliste richten sich danach (`apps/ausgabe/ausgabetag.py`), der Einlass zeigt oben
-  „Heute Sonderausgabe“.
+  Kundenliste richten sich danach (`apps/ausgabe/ausgabetag.py`); am Einlass nennt die Ampel
+  bei nicht gewählten Kunden die Sonderausgabe als Grund (ein eigener Hinweis oben entfällt,
+  damit auf dem Handy die Ampel gleich zu sehen ist).
 
 ### Korrekturwünsche
 
