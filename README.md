@@ -46,7 +46,11 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   beim Speichern verkleinert – Größe (Vorgabe 1600 Pixel), Qualität (Vorgabe 75 %) und
   Graustufen sind einstellbar, PDFs bleiben unverändert. Die Seite zeigt den belegten Platz,
   verkleinert vorhandene Fotos nachträglich (Originale bleiben daneben) und löscht die Originale
-  erst, wenn eine Sicherung höchstens 24 Stunden alt ist.
+  erst, wenn eine Sicherung höchstens 24 Stunden alt ist. **Alle Dateien** listet jede
+  hochgeladene Datei mit Bereich, wozu sie gehört, Größe und Datum (filtern nach Bereich,
+  sortieren nach Größe oder Datum, ohne Inhalte). Dateien, die zu keinem Datensatz mehr gehören
+  (auch nicht im Papierkorb) und älter als ein Tag sind, lassen sich nach einer frischen
+  Sicherung löschen.
 - **Änderungsprotokoll:** Wer hat wann welchen Datensatz geändert (mit Feldern vorher/nachher).
   Passwörter werden nie protokolliert.
 - **Zwei-Faktor-Anmeldung:** Jede Person richtet sie unter „Mein Konto“ selbst ein

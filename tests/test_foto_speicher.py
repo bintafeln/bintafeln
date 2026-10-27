@@ -109,3 +109,53 @@ def test_grenze_je_klick_und_rechte(admin_client, benutzer_mit_rolle, anmelden):
     assert ergebnis["verkleinert"] == 2 and ergebnis["offen"] == 1
     c = anmelden(Client(), benutzer_mit_rolle("berta", "Büro"))
     assert c.get(URL).status_code == 403
+
+
+def test_alle_dateien_und_verwaiste(admin_client, monkeypatch):
+    import os
+
+    from apps.core.models import PapierkorbEintrag
+    from apps.kunden.models import Dokumentart, HaushaltDokument
+
+    art, _ = Dokumentart.objects.get_or_create(bezeichnung="Bescheid")
+    ordner = HaushaltDokument.ORDNER
+    da = hochladen(b"%PDF-1.4 da", "application/pdf", ordner=ordner)
+    HaushaltDokument.objects.create(kundennummer="4711", art=art, titel="Bescheid 2026", datei=da)
+    weg = hochladen(b"%PDF-1.4 weg", "application/pdf", ordner=ordner)
+    korb = hochladen(b"%PDF-1.4 korb", "application/pdf", ordner=ordner)
+    PapierkorbEintrag.objects.create(art="Dokument", bezeichnung="x", recht="kunden.bearbeiten",
+                                     dateien=[[ordner, korb]])  # fmt: skip
+    fremd = hochladen(b"%PDF-1.4 fremd", "application/pdf", ordner="irgendwas")
+    alt = (timezone.now() - dt.timedelta(days=2)).timestamp()
+    for name, o in ((weg, ordner), (korb, ordner), (fremd, "irgendwas")):
+        os.utime(privatdateien.pfad(o, name), (alt, alt))
+
+    status = {d["name"]: d["status"] for d in privatdateien.verzeichnis()}
+    assert status == {da: "ok", weg: "verwaist", korb: "papierkorb", fremd: "unbekannt"}
+    url = reverse("core:dateien")
+    seite = admin_client.get(url).content.decode()
+    assert "Dokumente zu Haushalten" in seite and "4 Dateien" in seite
+    assert "1 Datei (" in seite and "verwaist" in seite
+    gefiltert = admin_client.get(url, {"bereich": "Dokumente zu Haushalten"}).content.decode()
+    assert "3 Dateien" in gefiltert
+    # Löschen nur mit frischer Sicherung; nur die verwaiste
+    antwort = admin_client.post(url, {"aktion": "verwaiste"}, follow=True)
+    assert "höchstens 24 Stunden" in antwort.content.decode()
+    monkeypatch.setattr(sicherung, "lese_status", lambda: sicherung.SicherungsStatus(
+        sicherung.OK, timezone.now() - dt.timedelta(hours=2)))  # fmt: skip
+    antwort = admin_client.post(url, {"aktion": "verwaiste"}, follow=True)
+    assert "1 verwaiste Datei(en) gelöscht" in antwort.content.decode()
+    assert not privatdateien.pfad(ordner, weg).exists()
+    assert all(privatdateien.pfad(o, n).exists()
+               for o, n in ((ordner, da), (ordner, korb), ("irgendwas", fremd)))  # fmt: skip
+    # Eine gerade hochgeladene Datei ohne Datensatz bleibt (Datensatz kommt gleich)
+    neu = hochladen(b"%PDF-1.4 neu", "application/pdf", ordner=ordner)
+    assert privatdateien.verwaiste_loeschen() == (0, 0)
+    assert privatdateien.pfad(ordner, neu).exists()
+
+
+def test_alle_dateien_nur_mit_recht(client, admin, benutzer_mit_rolle, anmelden):
+    from apps.konten import rollen
+
+    anmelden(client, benutzer_mit_rolle("buero", rollen.BUERO))
+    assert client.get(reverse("core:dateien")).status_code == 403
