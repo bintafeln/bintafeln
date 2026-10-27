@@ -567,7 +567,8 @@ Dokumente, Historie.
   wer früher gemeldet wird, bekommt eine Notiz, ab wann es geht. Je Haushalt „verlängern“,
   „ablehnen“ oder „offen lassen“; ablehnen geht auch bei erfüllten Bedingungen, dann mit
   Begründung, die als Notiz („Ausweis wird **NICHT!** verlängert. Begründung: …“) an die
-  Ausgabestelle geht.
+  Ausgabestelle geht. Erledigte Meldungen bleiben 90 Tage unter der Liste stehen (mit Ergebnis,
+  wann, von wem); „Nochmal prüfen“ holt einen Haushalt zurück in die offene Liste.
 - **Kundengruppe nur mit gültigem Ausweis** (ADR 0061): Pausierte, gesperrte, beendete Kunden
   und Kunden mit abgelaufenem Ausweis fallen automatisch aus der Kundengruppe, bei Änderungen
   sofort, sonst täglich und beim Import. Abschaltbar unter „Einstellungen → Kunden →

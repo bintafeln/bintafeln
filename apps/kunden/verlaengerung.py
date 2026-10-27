@@ -324,6 +324,7 @@ def ausfuehren(benutzer, heute: dt.date, monate: int, verlaengern: set[str],
             if p.nummer in verlaengern and p.ergebnis != NEIN:
                 h.ausweis_gueltig_bis = p.neu_bis
                 zusatz = "Ausweis verlängert (Sammel-Verlängerung)"
+                ergebnis = f"Verlängert bis {p.neu_bis:%d.%m.%Y}"
                 v += 1
             elif p.nummer in ablehnen:
                 grund = ablehnen[p.nummer].strip()[:500]
@@ -348,6 +349,7 @@ def ausfuehren(benutzer, heute: dt.date, monate: int, verlaengern: set[str],
                 Notiz.objects.create(kundennummer=h.kundennummer, benutzer=benutzer,
                                      verfasst_von=von[:100], an_stelle=an_stelle,
                                      text=text[:1000])  # fmt: skip
+                ergebnis = zusatz.replace(" (Sammel-Verlängerung)", "")
                 ab += 1
             else:
                 continue
@@ -359,5 +361,40 @@ def ausfuehren(benutzer, heute: dt.date, monate: int, verlaengern: set[str],
                                 quelle=HaushaltEreignis.Quelle.BEARBEITUNG, von=von,
                                 zusatz=zusatz)  # fmt: skip
             Nachricht.objects.filter(pk__in=[n.pk for n in p.nachrichten]).update(
-                erledigt_am=jetzt, erledigt_von=von)  # fmt: skip
+                erledigt_am=jetzt, erledigt_von=von, ergebnis=ergebnis[:300])  # fmt: skip
     return v, ab
+
+
+def erledigte(benutzer) -> list[dict]:
+    """Schon bearbeitete Meldungen „Ausweis verlängern“ (bis sie nach
+    ``Nachricht.AUFBEWAHREN_TAGE`` gelöscht werden), je Haushalt und Bearbeitung eine Zeile,
+    neueste zuerst."""
+    from apps.kunden import zugang
+
+    erledigt = Nachricht.objects.filter(anliegen=ANLIEGEN, erledigt_am__isnull=False)
+    sichtbar = set(zugang.filtern(Haushalt.objects.all(), benutzer)
+                   .values_list("kundennummer", flat=True))  # fmt: skip
+    zeilen = {}
+    for n in erledigt.select_related("stelle").order_by("-erledigt_am", "erstellt_am"):
+        if n.kundennummer not in sichtbar:
+            continue
+        z = zeilen.setdefault((n.kundennummer, n.erledigt_am), {
+            "nummer": n.kundennummer, "erledigt_am": n.erledigt_am, "von": n.erledigt_von,
+            "ergebnis": n.ergebnis or "erledigt", "nachrichten": []})  # fmt: skip
+        z["nachrichten"].append(n)
+    return list(zeilen.values())[:300]
+
+
+def wieder_oeffnen(benutzer, pk: int) -> Nachricht | None:
+    """Holt eine bearbeitete Meldung (mit allen, die mit ihr zusammen erledigt wurden) zurück in
+    die offene Liste, um den Haushalt noch einmal zu prüfen."""
+    from apps.kunden import zugang
+
+    n = Nachricht.objects.filter(pk=pk, anliegen=ANLIEGEN, erledigt_am__isnull=False).first()
+    if n is None:
+        return None
+    zugang.pruefen_nummer(benutzer, n.kundennummer)
+    Nachricht.objects.filter(anliegen=ANLIEGEN, kundennummer=n.kundennummer,
+                             erledigt_am=n.erledigt_am).update(
+        erledigt_am=None, erledigt_von="", ergebnis="")  # fmt: skip
+    return n
