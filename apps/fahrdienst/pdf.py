@@ -52,7 +52,8 @@ def _tabelle(tage, touren, groesse, breite, zeilenhoehen=None):
         tag = f"{WOCHENTAGE[datum.weekday()]} {datum:%d.%m.}"
         zellen = [Paragraph(f"<b>{tag}</b>", zelle)]
         for _, plaetze in zeile:
-            zellen.append(Paragraph(" / ".join(x for x in map(_platz, plaetze) if x), zelle))
+            inhalt = " / ".join(x for x in map(_platz, plaetze) if x) if plaetze else "–"
+            zellen.append(Paragraph(inhalt, zelle))
         zeilen.append(zellen)
         if datum.weekday() == 0 and i > 1:  # neue Woche wie auf dem Papierplan
             stil.append(("LINEABOVE", (0, i), (-1, i), 1.5, colors.black))

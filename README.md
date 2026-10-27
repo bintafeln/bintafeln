@@ -960,6 +960,8 @@ Ersetzt den gedruckten Fahrerplan mit den gelben Aufklebern (ADR 0074).
   Vormonat/Folgemonat). Der Plan wird nie abgeschlossen, er ergibt sich aus der festen Besetzung mit
   Ausfällen und Ersatz. Wer plant, kommt über den Namen der Tour (✎) direkt zu ihrer festen
   Besetzung und danach zurück zum Monat.
+- **Touren dazunehmen oder herausnehmen:** je Tour „Fährt ab“ und „Fährt bis“ (leer = immer bzw.
+  dauerhaft); frühere Monate bleiben unverändert, an Tagen außerhalb steht ein Strich.
 - **Mindestbesetzung und Gäste:** Jede Tour hat Plätze (z. B. 3) und eine Mindestbesetzung
   (z. B. 2). Ein leerer Pflichtplatz steht als „unbesetzt“ da; freie Plätze darüber sind für
   Gäste ohne Konto (Name eintragen).

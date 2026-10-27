@@ -24,17 +24,18 @@
   <h2>Touren und feste Besetzung</h2>
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Tour</th><th>Plätze</th><th>Aktiv</th><th></th></tr></thead>
+    <thead><tr><th>Tour</th><th>Plätze</th><th>Fährt</th><th>Aktiv</th><th></th></tr></thead>
     <tbody>
     {% for t in touren %}
       <tr>
         <td data-titel="Tour"><a href="{% url 'fahrdienst:tour' t.pk %}">{{ t.name }}</a></td>
         <td data-titel="Plätze">{{ t.plaetze }}</td>
+        <td data-titel="Fährt">{% if t.ab %}ab {{ t.ab|date:"d.m.Y" }} {% endif %}{% if t.bis %}bis {{ t.bis|date:"d.m.Y" }}{% elif not t.ab %}immer{% else %}dauerhaft{% endif %}</td>
         <td data-titel="Aktiv">{{ t.aktiv|yesno:"ja,nein" }}</td>
         <td data-titel="Aktion"><a href="{% url 'fahrdienst:besetzung' t.pk %}">feste Besetzung</a></td>
       </tr>
     {% empty %}
-      <tr><td colspan="4">Noch keine Touren.</td></tr>
+      <tr><td colspan="5">Noch keine Touren.</td></tr>
     {% endfor %}
     </tbody>
   </table>
