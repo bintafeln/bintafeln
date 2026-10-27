@@ -91,13 +91,15 @@ def pause_text(monate: int) -> str:
 
 def ablehnung_notiz(p: Pruefung, e: KundenEinstellungen, bis: dt.date | None = None) -> str:
     """Notiz für die Ausgabestelle: was nicht erfüllt ist und was jetzt gilt."""
-    teile = ["Ausweis kann nicht verlängert werden"]
+    teile = ["Ausweis kann NICHT! verlängert werden"]
     gruende = [g for g in p.gruende if not g.endswith("erfüllen eine Bedingung")
                and not g.endswith("erfüllt eine Bedingung")]  # fmt: skip
     if p.fehlt:
-        regel = e.get_verlaengern_regel_display()
-        teile.append(f"Regel: {regel} ({bedingungen_text(e)}). Folgende Bedingung(en) werden "
-                     "nicht erfüllt: " + ", ".join(p.fehlt))  # fmt: skip
+        wer = ("mindestens eine Person" if e.verlaengern_regel == e.Verlaengern.EINE
+               else "jede Person")  # fmt: skip
+        teile.append(f"Es gilt die Regel: {wer} im Haushalt muss eine Bedingung für die "
+                     "Verlängerung erfüllen. Folgende Bedingung(en) werden hier nicht erfüllt: "
+                     + ", ".join(p.fehlt))  # fmt: skip
     teile += gruende
     text = ". ".join(teile) + "."
     if bis:
@@ -108,7 +110,7 @@ def ablehnung_notiz(p: Pruefung, e: KundenEinstellungen, bis: dt.date | None = N
     text += f" Der Kunde muss {pause_text(e.verlaengern_sonst_pausieren_monate)} einlegen"
     if ablauf:
         text += f"; der Ausweis gilt noch bis {ablauf:%d.%m.%Y}"
-    return text + ". Danach ist eine Neuanmeldung über den Antrag möglich."
+    return text + ". Danach ist eine Neuanmeldung über unsere Homepage möglich."
 
 
 def gemeldete_notizen_streichen(p: Pruefung) -> int:
@@ -152,7 +154,8 @@ def pruefen(h: Haushalt, heute: dt.date, monate: int, e: KundenEinstellungen) ->
         else:
             alter = person.alter(heute)
             p.personen.append((name, f"✗ {alter} Jahre" if alter is not None else "✗"))
-            p.fehlt.append(f"{name} ({alter} Jahre)" if alter is not None else name)
+            jahre = "Jahr" if alter == 1 else "Jahre"
+            p.fehlt.append(f"{name} ({alter} {jahre})" if alter is not None else name)
         erfuellt.append(womit)
     if e.verlaengern_regel == KundenEinstellungen.Verlaengern.ALLE:
         nein, unklar = "" in erfuellt, None in erfuellt
