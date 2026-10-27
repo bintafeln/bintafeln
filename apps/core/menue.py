@@ -27,31 +27,48 @@ def menue(request) -> list[dict]:
 
     darf = rollen.rechte_von(b)
 
-    def bereich(titel, eintraege):
-        """Nur Einträge, für die das Konto das Recht hat (None = ohne Recht sichtbar).
-
-        Dieselbe Adresse unter mehreren Rechten erscheint nur einmal."""
-        sichtbar, adressen = [], set()
+    def sichtbar_machen(eintraege, adressen):
+        """Nur Einträge, für die das Konto das Recht hat (None = ohne Recht sichtbar); dieselbe
+        Adresse unter mehreren Rechten erscheint nur einmal."""
+        sichtbar = []
         for recht, e in eintraege:
             if (recht is None or recht in darf) and e["url"] not in adressen:
                 sichtbar.append(e)
                 adressen.add(e["url"])
-        if sichtbar:
-            # Eine Zahl am Eintrag steht auch am Bereich, damit man sie zugeklappt sieht
-            gezaehlt = next((e for e in sichtbar if e.get("zahl") is not None), {})
-            bereiche.append({"titel": titel, "eintraege": sichtbar, "zahl": gezaehlt.get("zahl"),
-                             "zahl_titel": gezaehlt.get("zahl_titel", "")})  # fmt: skip
+        return sichtbar
 
-    bereiche = [
-        {"titel": "Start", "eintraege": [_eintrag("Start", "core:start", genau=True)]},
-    ]
-    bereich("Ausgabe", [
-        ("einlass.nutzen", _eintrag("Einlass", "ausgabe:empfang", genau=True)),
-        ("kasse.sehen", _eintrag("Kasse", "ausgabe:kasse")),
-        ("sonderaktionen.verwalten", _eintrag("Sonderaktionen", "ausgabe:sonderaktionen")),
-        ("korrekturen.entscheiden", _eintrag("Korrekturwünsche", "ausgabe:korrekturen")),
-    ])  # fmt: skip
-    # Zuschaltbare Module (ADR 0049): eigene Bereiche hier, Einstellungen weiter unten
+    def zahl_von(eintraege):
+        # Zahlen an Einträgen stehen zusammengezählt auch am Bereich (zugeklappt sichtbar)
+        gezaehlt = [e for e in eintraege if e.get("zahl") is not None]
+        if not gezaehlt:
+            return {"zahl": None, "zahl_titel": ""}
+        return {
+            "zahl": sum(e["zahl"] for e in gezaehlt),
+            "zahl_titel": ", ".join(f"{e['zahl']} {e['zahl_titel']}" for e in gezaehlt),
+        }
+
+    # Bereiche mit Abschnitten: {bereich: {abschnitt: [(recht, eintrag), …]}}. Abschnitt "" steht
+    # oben ohne Überschrift. Module hängen sich mit "Bereich" oder "Bereich/Abschnitt" ein.
+    inhalt = {
+        "Ausgabestelle": {"": [], "Wochenübersicht": [], "Verwaltung": []},
+        "Meine Arbeitszeit": {"": []},
+        "Kunden": {"": [], "Anträge und Warteliste": [], "Kundenstamm": []},
+        "Verein": {"Mitglieder": [], "Spenden": [], "Adressen": [], "Serienbriefe": [],
+                   "Team": []},
+        "Auswertungen": {"": []},
+    }  # fmt: skip
+    # Bereiche, deren Abschnitte sich einzeln auf- und zuklappen (viele Einträge)
+    aufklappbar = {"Verein"}
+
+    def dazu(ziel, eintraege, vorn=False):
+        titel, _, abschnitt = ziel.partition("/")
+        liste = inhalt.setdefault(titel, {}).setdefault(abschnitt, [])
+        if vorn:
+            liste[:0] = eintraege
+        else:
+            liste.extend(eintraege)
+
+    # Zuschaltbare Module (ADR 0049): in die passenden Bereiche, Einstellungen weiter unten
     from apps.core import module
 
     an = module.eingeschaltet()
@@ -63,8 +80,25 @@ def menue(request) -> list[dict]:
                     gruppe = titel.partition("/")[2] or "Module"
                     modul_einstellungen.append((gruppe, eintraege))
                 else:
-                    bereich(titel, eintraege)
-    stellen = _eintrag("Ausgabestellen", "kunden:ausgabestellen")
+                    dazu(titel, eintraege)
+
+    # Ausgabestelle: was die Ausgabestellen täglich brauchen; Module (Kundenliste, Abrechnung)
+    # stehen hinter Einlass und Kasse
+    dazu("Ausgabestelle", [
+        ("einlass.nutzen", _eintrag("Einlass", "ausgabe:empfang", genau=True)),
+        ("kasse.sehen", _eintrag("Kasse", "ausgabe:kasse")),
+    ], vorn=True)  # fmt: skip
+    dazu("Ausgabestelle/Verwaltung", [
+        ("sonderaktionen.verwalten", _eintrag("Sonderaktionen", "ausgabe:sonderaktionen")),
+        ("korrekturen.entscheiden", _eintrag("Korrekturwünsche", "ausgabe:korrekturen")),
+        # Ausgabestellen kennen ihre eigene Stelle; die Liste aller braucht die Verwaltung
+        ("kunden.alle_ausgabestellen", _eintrag("Alle Ausgabestellen", "kunden:ausgabestellen")),
+    ])  # fmt: skip
+    if darf_stempeln(b):  # nur, wer selbst stempelt
+        dazu("Meine Arbeitszeit", [
+            (None, _eintrag("Meine Arbeitszeit", "personal:meine_arbeitszeit")),
+        ])  # fmt: skip
+
     alle_kunden = _eintrag("Kunden einsehen", "kunden:uebersicht", genau=True)
     alle_kunden["auch"] = [reverse("kunden:uebersicht") + "haushalt/"]
     nachrichten = _eintrag("Nachrichten der Ausgabestellen", "kunden:nachrichten")
@@ -81,16 +115,12 @@ def menue(request) -> list[dict]:
                     .values("kundennummer").distinct().count())  # fmt: skip
         verlaengern["zahl"] = gemeldet or None
         verlaengern["zahl_titel"] = "gemeldete Haushalte"
-    bereich("Kunden", [
+    dazu("Kunden", [
         ("kunden.liste", alle_kunden),
         ("kunden.bearbeiten", _eintrag("Neuer Haushalt", "kunden:haushalt_neu")),
         ("kunden.bearbeiten", verlaengern),
-        ("kunden.importieren", _eintrag("Kundenstamm importieren", "kunden:import")),
-        ("kunden.zugriffsprotokoll", _eintrag("Zugriffsprotokoll", "kunden:zugriffe")),
         ("kunden.nachrichten", nachrichten),
-        # Ausgabestellen kennen ihre eigene Stelle; die Liste aller braucht die Verwaltung
-        ("kunden.alle_ausgabestellen", stellen),
-    ])  # fmt: skip
+    ], vorn=True)  # fmt: skip
     if "antraege.sehen" in darf:
         from apps.antraege.models import Antrag
 
@@ -99,30 +129,22 @@ def menue(request) -> list[dict]:
             status__in=Antrag.OFFEN, papierkorb_am__isnull=True
         ).count()
         antraege["zahl_titel"] = "offene Anträge"
-        bereich("Anträge", [
+        dazu("Kunden/Anträge und Warteliste", [
             ("antraege.sehen", antraege),
-            ("einstellungen.antraege", _eintrag("Formular einstellen", "antraege:einstellungen")),
             ("antraege.sehen", _eintrag("Öffentliches Formular", "antrag:start", extern=True)),
-        ])  # fmt: skip
-    adressbuch = _eintrag("Adressbuch", "adressen:liste", genau=True)
-    adressbuch["auch"] = [reverse("adressen:liste")]  # auch die Seite einer Adresse
-    bereich("Adressen", [
-        ("adressen.sehen", adressbuch),
-        ("adressen.bearbeiten", _eintrag("Neue Adresse", "adressen:neu")),
-        ("adressen.importieren", _eintrag("Adressen importieren", "adressen:importieren")),
+        ], vorn=True)  # fmt: skip
+    dazu("Kunden/Kundenstamm", [
+        ("kunden.importieren", _eintrag("Kundenstamm importieren", "kunden:import")),
+        ("kunden.zugriffsprotokoll", _eintrag("Zugriffsprotokoll", "kunden:zugriffe")),
     ])  # fmt: skip
+
     mitglieder = _eintrag("Mitglieder", "mitglieder:liste", genau=True)
     mitglieder["auch"] = [reverse("mitglieder:liste")]  # auch die Seite eines Mitglieds
-    bereich("Mitglieder", [
+    dazu("Verein/Mitglieder", [
         ("mitglieder.sehen", mitglieder),
         ("mitglieder.bearbeiten", _eintrag("Neues Mitglied", "mitglieder:neu")),
     ])  # fmt: skip
-    bereich("Serienbriefe", [
-        ("serienbriefe.erstellen", _eintrag("Serienbrief erstellen", "serienbriefe:erstellen",
-                                            genau=True)),
-        ("serienbriefe.erstellen", _eintrag("Vorlagen und Versände", "serienbriefe:vorlagen")),
-    ])  # fmt: skip
-    bereich("Spenden", [
+    dazu("Verein/Spenden", [
         ("spenden.sehen", _eintrag("Spenden", "spenden:liste", genau=True)),
         ("spenden.erfassen", _eintrag("Spende erfassen", "spenden:neu")),
         ("spenden.erfassen", _eintrag("Spenden importieren", "spenden:importieren")),
@@ -130,14 +152,45 @@ def menue(request) -> list[dict]:
         ("spenden.bestaetigen", _eintrag("Dankesbriefe", "spenden:dank")),
         ("spenden.bestaetigen", _eintrag("Belege hochladen", "spenden:belege")),
     ])  # fmt: skip
-    bereich("Statistik", [("statistik.sehen", _eintrag("Statistik", "statistik:uebersicht"))])
-    bereich("Team", [
+    adressbuch = _eintrag("Adressbuch", "adressen:liste", genau=True)
+    adressbuch["auch"] = [reverse("adressen:liste")]  # auch die Seite einer Adresse
+    dazu("Verein/Adressen", [
+        ("adressen.sehen", adressbuch),
+        ("adressen.bearbeiten", _eintrag("Neue Adresse", "adressen:neu")),
+        ("adressen.importieren", _eintrag("Adressen importieren", "adressen:importieren")),
+    ])  # fmt: skip
+    dazu("Verein/Serienbriefe", [
+        ("serienbriefe.erstellen", _eintrag("Serienbrief erstellen", "serienbriefe:erstellen",
+                                            genau=True)),
+        ("serienbriefe.erstellen", _eintrag("Vorlagen und Versände", "serienbriefe:vorlagen")),
+    ])  # fmt: skip
+    dazu("Verein/Team", [
         ("mitarbeitende.verwalten", _eintrag("Mitarbeitende", "konten:mitarbeitende")),
         ("mitarbeitende.verwalten", _eintrag("Ausgabestellen-Konten", "konten:stellen")),
         ("personal.sehen", _eintrag("Personal", "personal:liste", genau=True)),
-        *([(None, _eintrag("Meine Arbeitszeit", "personal:meine_arbeitszeit"))]
-          if darf_stempeln(b) else []),
     ])  # fmt: skip
+    dazu("Auswertungen", [
+        ("statistik.sehen", _eintrag("Statistik", "statistik:uebersicht")),
+    ], vorn=True)  # fmt: skip
+
+    bereiche = [
+        {"titel": "Start", "eintraege": [_eintrag("Start", "core:start", genau=True)]},
+    ]
+    for titel, abschnitte in inhalt.items():
+        adressen = set()
+        teile = [{"titel": a, "eintraege": sichtbar_machen(e, adressen)}
+                 for a, e in abschnitte.items()]  # fmt: skip
+        teile = [t for t in teile if t["eintraege"]]
+        if not teile:
+            continue
+        alle = [e for t in teile for e in t["eintraege"]]
+        b_ = {"titel": titel, "eintraege": alle, **zahl_von(alle)}
+        if titel in aufklappbar:
+            b_["gruppen"] = teile
+        elif len(teile) > 1 or teile[0]["titel"]:
+            b_["abschnitte"] = teile
+        bereiche.append(b_)
+
     # Einstellungen in Untermenüs; Module hängen ihre Einträge über "Einstellungen/<Gruppe>" an
     export = "daten.exportieren" if "daten.exportieren" in darf else "daten.importieren"
     gruppen_einstellungen = {
@@ -202,9 +255,7 @@ def menue(request) -> list[dict]:
             }
         )
     bereiche.append({"titel": "Hilfe", "eintraege": [_eintrag("Hilfe", "core:hilfe")]})
-    bereiche.append({"titel": "Mein Konto", "eintraege": [
-        _eintrag("Mein Konto", "konten:mein_konto", genau=True),
-    ]})  # fmt: skip
+    # „Mein Konto“ öffnet der eigene Name oben rechts
 
     pfad = request.path
     for bereich in bereiche:

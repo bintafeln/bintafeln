@@ -245,9 +245,9 @@ def test_menue_und_modul_aus(admin_client, stellen):
     from apps.core.menue import menue
 
     antwort = admin_client.get(reverse("abrechnung:uebersicht"))
-    eintraege = [e["titel"] for b in menue(antwort.wsgi_request) if b["titel"] == "Abrechnung"
+    eintraege = [e["titel"] for b in menue(antwort.wsgi_request) if b["titel"] == "Ausgabestelle"
                  for e in b["eintraege"]]  # fmt: skip
-    assert eintraege == ["Abrechnung"]  # zwei Rechte, ein Eintrag
+    assert eintraege.count("Abrechnung") == 1  # zwei Rechte, ein Eintrag
     t = TafelEinstellungen.laden()
     t.module = []
     t.save()

@@ -2,7 +2,7 @@
 {% if "spenden.erfassen" in rechte %}
 <h3>Spende erfassen</h3>
 <ol>
-  <li>„Spenden → Spende erfassen“ oder auf der Seite einer Adresse „Spende erfassen“ (dann ist der Spender schon gewählt).
+  <li>„Verein → Spenden → Spende erfassen“ oder auf der Seite einer Adresse „Spende erfassen“ (dann ist der Spender schon gewählt).
     Ist der Spender noch nicht im Adressbuch, ihn zuerst dort anlegen.</li>
   <li><strong>Geldspende</strong>: Datum, Betrag (z. B. 50,00), Zahlungsweg. Häkchen „Mitgliedsbeitrag“ oder „Verzicht auf
     Erstattung von Aufwendungen“ (z. B. nicht abgerechnete Fahrtkosten), wenn zutreffend.</li>
@@ -13,7 +13,7 @@
 <p>Eine bestätigte Spende lässt sich nicht mehr ändern oder löschen. Ist ein Fehler passiert, zuerst die Bestätigung
   stornieren.</p>
 <h3>Spenden importieren</h3>
-<p>„Spenden → Spenden importieren“ liest eine CSV-Datei ein, z. B. den Export aus dem Vereinsportal (in Excel als CSV
+<p>„Verein → Spenden → Spenden importieren“ liest eine CSV-Datei ein, z. B. den Export aus dem Vereinsportal (in Excel als CSV
   speichern) oder eine selbst erstellte Liste vom Kontoauszug. Die Seite nennt die Spalten; Pflicht sind Datum,
   Betrag und Name bzw. Organisation. Zuerst erscheint ein <strong>Prüfbericht</strong>: wie viele Spenden, welche
   Summe, welche Spender neu angelegt werden und welche Zeilen Fehler haben. Erst „übernehmen“ legt alles an.</p>
@@ -30,7 +30,7 @@
   und die Summen je Jahr.</p>
 {% if "spenden.bestaetigen" in rechte %}
 <h3>Dankesbriefe</h3>
-<p>„Spenden → Dankesbriefe“ schreibt jedem Spender eines Jahres einen Brief aus einer Serienbrief-Vorlage. Neue
+<p>„Verein → Spenden → Dankesbriefe“ schreibt jedem Spender eines Jahres einen Brief aus einer Serienbrief-Vorlage. Neue
   Platzhalter dafür: <code>{anzahl_spenden}</code> und <code>{spendendaten}</code> (z. B. „15.01.2026, 15.02.2026“),
   dazu wie gewohnt <code>{anrede}</code> und <code>{spendensumme}</code>.</p>
 <ol>
@@ -45,7 +45,7 @@
   <li>Danach gelten die Spenden als bedankt; mit „Nur Spenden ohne Dankesbrief“ erscheinen sie nicht noch einmal.</li>
 </ol>
 <h3>Belege aus dem Vereinsportal</h3>
-<p>„Spenden → Belege hochladen“ nimmt mehrere PDFs auf einmal an. Steht die Belegnummer der Spende im Dateinamen
+<p>„Verein → Spenden → Belege hochladen“ nimmt mehrere PDFs auf einmal an. Steht die Belegnummer der Spende im Dateinamen
   (z. B. „Spendenbeleg_000123.pdf“), ordnet bintafeln den Beleg selbst zu; Sammelbescheinigungen und andere ordnen Sie
   in der Liste „Noch zuzuordnen“ dem Spender zu. Die Dateien liegen verschlüsselt auf dem Server.</p>
 {% endif %}

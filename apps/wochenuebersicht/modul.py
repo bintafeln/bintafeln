@@ -5,7 +5,7 @@ from apps.core.module import Modul
 
 def menue(eintrag):
     return [
-        ("Wochenübersicht", [
+        ("Ausgabestelle/Wochenübersicht", [
             ("wochenuebersicht.sehen", eintrag("Soll und Ist je Tag", "wochenuebersicht:uebersicht",
                                                genau=True)),
             ("wochenuebersicht.bearbeiten",

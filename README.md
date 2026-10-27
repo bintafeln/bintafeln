@@ -56,9 +56,14 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   **Import** mit Prüfbericht unter „Kunden“; Liste und Suche folgen.
 - **Hilfe im Programm:** ein ausführliches Handbuch („Hilfe“ im Menü), das nur die Kapitel
   zeigt, die zu den Rechten des Kontos passen (ADR 0038).
-- **Menü links** mit aufklappbaren Bereichen (Ausgabe, Kunden, Anträge, Team, Einstellungen);
-  die Einstellungen haben Untermenüs (Tafel, Kunden, Ausgabe, Verein, Mitarbeitende,
-  Systemsteuerung). Jede Rolle sieht nur, was sie darf. Auf Handys (unter 768 Pixel Breite) öffnet „☰ Menü“ das Menü.
+- **Menü links** mit wenigen, aufklappbaren Bereichen: Start, **Ausgabestelle** (Einlass, Kasse,
+  Kundenliste, Abrechnung, Wochenübersicht, Sonderaktionen, Korrekturwünsche, alle
+  Ausgabestellen), **Kunden** (mit Anträgen und Warteliste), **Verein** (Mitglieder, Spenden,
+  Adressen, Serienbriefe, Team), **Auswertungen** (Statistik, Listen), Einstellungen, Hilfe.
+  „Meine Arbeitszeit“ steht nur bei Mitarbeitenden, die stempeln, als eigener Punkt; „Mein
+  Konto“ öffnet der eigene Name oben rechts. Module hängen sich in die passenden Bereiche ein
+  (`apps/core/menue.py`). Die Einstellungen haben Untermenüs (Tafel, Kunden, Ausgabe, Verein,
+  Mitarbeitende, Systemsteuerung). Jede Rolle sieht nur, was sie darf. Auf Handys (unter 768 Pixel Breite) öffnet „☰ Menü“ das Menü.
 - Deutsche, mobilfreundliche Oberfläche (Django-Templates + HTMX, ohne externe CDNs).
 
 ## Aufbau
@@ -224,7 +229,7 @@ Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie
 
 ### Mitarbeitende einer Ausgabestelle
 
-Unter „Team → Mitarbeitende“ lässt sich jedes Konto einer oder mehreren **Ausgabestellen**
+Unter „Verein → Team → Mitarbeitende“ lässt sich jedes Konto einer oder mehreren **Ausgabestellen**
 zuordnen. Wer zugeordnet ist, ruft nur Kunden auf, deren Kundengruppe zu einer dieser
 Ausgabestellen gehört: in der Kundenliste, auf der Haushaltsseite und am Einlass. Bei einem
 anderen Kunden erklärt bintafeln, warum („Kunde 200 gehört zur Ausgabestelle „Nord“ …
@@ -252,7 +257,7 @@ Druck nehmen die angehakten Zeilen, ohne Haken alle (`{% auswahl_formular %}`,
 ## Mitarbeitende
 
 **Konten der Ausgabestellen** (ADR 0059): Für Einlass-Tablets, die wechselnde Personen bedienen,
-bekommt jede Ausgabestelle unter „Team → Ausgabestellen-Konten“ ein eigenes Konto. Anmeldung mit
+bekommt jede Ausgabestelle unter „Verein → Team → Ausgabestellen-Konten“ ein eigenes Konto. Anmeldung mit
 dem **Namen der Ausgabestelle** und Passwort, ohne Zwei-Faktor; Rolle Ausgabe, nur Kunden dieser
 Ausgabestelle; Abmeldung nach 30 Minuten ohne Eingabe. Nach 5 falschen Passwörtern ist die
 Anmeldung eines Kontos 15 Minuten gesperrt (gilt für alle Konten). Zwei-Faktor sehen diese
@@ -403,7 +408,7 @@ Im Seitenkopf steht auf jeder Seite ein **Suchfeld**. Ab 3 Zeichen erscheinen di
 darunter, Enter öffnet eine Ergebnisseite – bei einer genauen Kundennummer („k 10141“ oder
 nur „10141“, führende Nullen egal) gleich den Kunden. Auch auf dem iPad lassen sich die Treffer
 antippen. Ohne Kürzel sucht es **Seiten des Programms**
-(Menüpunkte, z. B. „ausgabestellen“ führt zu „Kunden → Ausgabestellen“), **Listen und
+(Menüpunkte, z. B. „ausgabestellen“ führt zu „Ausgabestelle → Alle Ausgabestellen“), **Listen und
 Einstellungen** (Ausgabestellen, Kundengruppen, Einkommens- und Dokumentarten, Notiz- und
 Serienbrief-Vorlagen, Rollen, Mitgliedsnummern, Belegnummern von Spenden, aus Modulen z. B.
 Selbstabholer und Termine), Kunden (Vor- und
@@ -464,7 +469,7 @@ Dokumente, Historie.
   und Einkommensarten pflegt der Admin unter „Einstellungen → Kundenstamm → Listen“.
   **Achtung:** Solange aus dem Altsystem importiert wird, ersetzt der nächste Import alle
   Änderungen; der Prüfbericht nennt die Zahl der geänderten Haushalte (ADR 0025).
-- **Ausgabestellen** („Kunden → Ausgabestellen“, ADR 0048): Übersicht und eigene Seite je
+- **Ausgabestellen** („Ausgabestelle → Alle Ausgabestellen“, ADR 0048): Übersicht und eigene Seite je
   Ausgabestelle mit Anschrift, Telefon, E-Mail, allgemeinen Anmerkungen, Zeiten (Ausgabe,
   Anlieferung, Sortieren …), Ansprechpartnern (Mitarbeitende per Auswahl oder extern) und ihren
   Kundengruppen. „In Google Maps öffnen“ zeigt den Weg; die eingebettete Karte lädt erst nach
@@ -713,7 +718,7 @@ Anmerkung.
 - Alle mit dem Recht „Korrekturwünsche vom Einlass entscheiden“ (Admin immer; z. B. dem Büro
   geben) bekommen eine Mail, wenn ein Mailserver eingerichtet ist, und sehen auf der Startseite
   die Zahl der offenen Wünsche.
-- „Ausgabe → Korrekturwünsche“: **Zurücknehmen** führt die Korrektur aus (Kundenkonto und Kasse
+- „Ausgabestelle → Korrekturwünsche“: **Zurücknehmen** führt die Korrektur aus (Kundenkonto und Kasse
   werden mitkorrigiert), **Ablehnen** lässt alles, wie es ist; beides optional mit Antwort.
 - Am Einlass steht beim Eintrag „Korrektur beantragt …, wartet auf Entscheidung“.
 - Wer das Recht zum Zurücknehmen hat, kann es direkt tun, auch an späteren Tagen.
@@ -721,7 +726,7 @@ Anmerkung.
 
 ### Sonderaktionen
 
-„Ausgabe → Sonderaktionen“ (Admin, Büro): Aktionen neben der normalen Ausgabe, z. B.
+„Ausgabestelle → Sonderaktionen“ (Admin, Büro): Aktionen neben der normalen Ausgabe, z. B.
 Weihnachtsgutscheine oder Schulranzen.
 
 - **Anlegen:** Bezeichnung, Zeitraum, wie viel je Haushalt (einmal je Haushalt, je Kind oder je
@@ -819,7 +824,7 @@ Kundenstamm, ohne Import aus anderen Programmen.
 
 ### Abrechnung der Ausgabestellen
 
-Jede Ausgabestelle macht ihre Monatsabrechnung in bintafeln (ADR 0060), Menü „Abrechnung“.
+Jede Ausgabestelle macht ihre Monatsabrechnung in bintafeln (ADR 0060), Menü „Ausgabestelle → Abrechnung“.
 
 - **Einnahmen** automatisch aus der Kasse am Einlass der Ausgabestelle: bar gezahlte Beiträge und
   Einzahlungen; Guthaben und Angeschriebenes zur Information.
@@ -884,7 +889,7 @@ Wettertext, Programmname, Name der Tafel (wenn ein Logo da ist), das Wort „Men
 
 ## Adressbuch
 
-„Adressen → Adressbuch“ (Rechte „Adressbuch ansehen …“, „Adressen anlegen und bearbeiten“,
+„Verein → Adressen → Adressbuch“ (Rechte „Adressbuch ansehen …“, „Adressen anlegen und bearbeiten“,
 „Adressen löschen“, „Adressen importieren“; Büro hat alle außer Löschen) sammelt Spender, Märkte,
 Lieferanten, Partner, Presse und Behörden. Es ist die Grundlage für Spenden, Mitglieder und
 Serienbriefe (Modul 5, ADR 0044); Kunden stehen weiter im Kundenstamm.

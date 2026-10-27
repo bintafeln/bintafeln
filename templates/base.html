@@ -38,7 +38,7 @@
       <nav class="navigation" aria-label="Konto">
         <form method="post" action="{% url 'konten:abmelden' %}" class="inline konto-name">
           {% csrf_token %}
-          <span class="angemeldet" title="Angemeldet als {{ user.get_full_name|default:user.get_username }}">{{ user.get_full_name|default:user.get_username }}</span>
+          {% if menue %}<a class="angemeldet" href="{% url 'konten:mein_konto' %}" title="Mein Konto (angemeldet als {{ user.get_full_name|default:user.get_username }})">{{ user.get_full_name|default:user.get_username }}</a>{% else %}<span class="angemeldet">{{ user.get_full_name|default:user.get_username }}</span>{% endif %}
           <button type="submit" class="link">Abmelden</button>
         </form>
       </nav>
@@ -75,13 +75,18 @@
         <details class="menue-gruppe" name="menue-gruppe"{% if g.offen %} open{% endif %}>
           <summary>{{ g.titel }}</summary>
           <ul>
-            {% for e in g.eintraege %}<li><a href="{{ e.url }}"{% if e.aktiv %} class="aktiv" aria-current="page"{% endif %}>{{ e.titel }}</a></li>{% endfor %}
+            {% for e in g.eintraege %}<li>{% include "includes/_menue_eintrag.html" %}</li>{% endfor %}
           </ul>
         </details>
         {% endfor %}
+        {% elif bereich.abschnitte %}
+        <ul>
+          {% for a in bereich.abschnitte %}{% if a.titel %}<li class="menue-zwischen" aria-hidden="true">{{ a.titel }}</li>{% endif %}
+          {% for e in a.eintraege %}<li>{% include "includes/_menue_eintrag.html" %}</li>{% endfor %}{% endfor %}
+        </ul>
         {% else %}
         <ul>
-          {% for e in bereich.eintraege %}<li><a href="{{ e.url }}"{% if e.aktiv %} class="aktiv" aria-current="page"{% endif %}{% if e.extern %} target="_blank" rel="noopener"{% endif %}>{{ e.titel }}{% if e.extern %} ↗{% endif %}{% if e.zahl is not None %} <span class="menue-zahl" title="{{ e.zahl_titel }}">{{ e.zahl }}</span>{% endif %}</a></li>{% endfor %}
+          {% for e in bereich.eintraege %}<li>{% include "includes/_menue_eintrag.html" %}</li>{% endfor %}
         </ul>
         {% endif %}
       </details>

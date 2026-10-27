@@ -5,7 +5,7 @@ from apps.core.module import Modul
 
 def menue(eintrag):
     return [
-        ("Warteliste", [
+        ("Kunden/Anträge und Warteliste", [
             ("warteliste.sehen", eintrag("Warteliste", "warteliste:liste", genau=True)),
             ("warteliste.sehen", eintrag("Termine", "warteliste:termine")),
             ("warteliste.bearbeiten", eintrag("Abgleich mit Kundenstamm", "warteliste:abgleich")),

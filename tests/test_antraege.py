@@ -458,7 +458,9 @@ def test_fristen(antrag):
 def test_menue_zeigt_zahl_offener_antraege(admin_client, client, benutzer_mit_rolle, anmelden):
     def zahl(c):
         seite = c.get(reverse("core:start")).content.decode()
-        return seite.count('<span class="menue-zahl" title="offene Anträge">2</span>')
+        return seite.count(
+            '<span class="menue-zahl" title="offene Anträge">2</span>'
+        ) + seite.count('<span class="menue-zahl" title="2 offene Anträge">2</span>')
 
     Antrag.objects.create(vorname="Erika", nachname="Probe")
     Antrag.objects.create(vorname="Max", nachname="Probe", status=Antrag.Status.IN_BEARBEITUNG)
