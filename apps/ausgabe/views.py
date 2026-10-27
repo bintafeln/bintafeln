@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from apps.ausgabe import ampel, kasse, konto, korrekturen, sonderaktionen
@@ -201,6 +202,13 @@ def ausgabestelle_waehlen(request):
     if not url_has_allowed_host_and_scheme(weiter, allowed_hosts={request.get_host()}):
         weiter = reverse("ausgabe:empfang")
     return redirect(weiter)
+
+
+@never_cache
+@rollen.recht_erforderlich("einlass.nutzen")
+def fortschritt(request):
+    """Die Zahl oben rechts frisch (HTMX, alle 30 Sekunden): Abholungen an anderen Geräten."""
+    return render(request, "ausgabe/_fortschritt.html")
 
 
 def _gemeldet(antwort):

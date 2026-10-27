@@ -118,3 +118,17 @@ def test_zweiter_schritt_nur_kurz_und_mit_wenigen_versuchen(client, admin, anmel
     # Angemeldete landen auf der Startseite
     anmelden(client, admin)
     assert client.get(code_url).url == reverse("core:start")
+
+
+def test_impressum_auf_der_anmeldeseite(client, admin):
+    from apps.antraege.models import AntragEinstellungen
+    from apps.core.models import TafelEinstellungen
+
+    assert "Impressum" not in client.get(reverse("konten:anmelden")).content.decode()
+    e = AntragEinstellungen.laden()
+    e.impressum_url = "https://tafel.example.org/impressum"
+    e.save()
+    TafelEinstellungen.objects.update(name="Tafel Musterstadt")
+    seite = client.get(reverse("konten:anmelden")).content.decode()
+    assert 'href="https://tafel.example.org/impressum" rel="noopener">Impressum der Tafel ' in seite
+    assert seite.count("https://tafel.example.org/impressum") == 2  # auch unten in der Fußzeile

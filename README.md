@@ -596,7 +596,8 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
 - **Einschalten:** „Anträge“ → „Formular einstellen“ (Admin). Dort je Feld wählen: nicht
   abfragen, freiwillig oder Pflicht; Links zu Datenschutzerklärung, Impressum, Erklärungen
   (z. B. Ablauf der Lebensmittelausgabe) und Voraussetzungen (wer berechtigt ist, welche
-  Nachweise nötig sind) eintragen; die beiden letzten stehen gut sichtbar über dem Formular;
+  Nachweise nötig sind) eintragen (der Impressum-Link steht auch auf der Anmeldeseite und unten
+  auf jeder Seite); die beiden letzten stehen gut sichtbar über dem Formular;
   festlegen, wer bei neuen Anträgen eine Mail bekommt. Danach „Online-Anträge annehmen“
   einschalten.
 - **Adresse für die Webseite der Tafel:** `https://<domain>/antrag/`. Die Seite ist in
@@ -655,7 +656,9 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    Kundengruppen zusammen, die heute hier dran sind (regulär oder per Sonderausgabe), dazu jede
    Gruppe, aus der heute hier trotzdem jemand abgeholt hat, und Abholungen ohne Kundengruppe; vorne
    ist also nie mehr als hinten. Die Zahl zählt nach jeder Abholung sofort weiter (ADR 0067). Maus
-   darüber oder antippen zeigt je Kundengruppe abgeholt/erwartet, Ausnahmen und wer noch fehlt. Über „Abmelden“ steht der Name der angemeldeten
+   darüber oder antippen zeigt je Kundengruppe abgeholt/erwartet, Ausnahmen und wer noch fehlt,
+   bei einer Sonderausgabe auch, wer laut Sonderausgabe dran ist. Die Zahl lädt sich alle 30
+   Sekunden neu (Abholungen an anderen Geräten). Über „Abmelden“ steht der Name der angemeldeten
    Person.
 2. Kundennummer **scannen** oder eintippen und Enter. Führende Nullen sind egal. Drei Wege,
    die sich beliebig mischen lassen; Eintippen geht immer:
@@ -958,6 +961,7 @@ Ersetzt den gedruckten Fahrerplan mit den gelben Aufklebern (ADR 0074).
 - Ausfälle und Ersatz werden nach 12 Monaten gelöscht (einstellbar) und stehen in der Auskunft
   für Mitarbeitende.
 - **Drucken:** „Drucken (PDF)“ im Fahrerplan, A3 quer wie der bisherige Papierplan, Springer darunter.
+  Der Plan füllt die Seite: die größte Schrift, mit der der Monat auf eine Seite passt.
 - **Telegram** (zusätzlich zur E-Mail): Bot-Schlüssel von @BotFather in den Einstellungen des
   Fahrdienstes (verschlüsselt gespeichert), Empfänger schreiben dem Bot „/start“, „Chats suchen“
   zeigt ihre Chat-IDs, „Testnachricht senden“ prüft. Telegram bekommt nie den Grund eines

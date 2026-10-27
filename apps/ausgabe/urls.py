@@ -7,6 +7,7 @@ app_name = "ausgabe"
 urlpatterns = [
     path("", views.empfang, name="empfang"),
     path("ausgabestelle/", views.ausgabestelle_waehlen, name="ausgabestelle"),
+    path("fortschritt/", views.fortschritt, name="fortschritt"),
     path("haushalt/<path:kundennummer>/abholung/", views.abholung_eintragen, name="eintragen"),
     path("haushalt/<path:kundennummer>/ausnahme/", views.ausnahme_erteilen, name="ausnahme"),
     path("abholung/<int:pk>/zuruecknehmen/", views.abholung_zuruecknehmen, name="zuruecknehmen"),

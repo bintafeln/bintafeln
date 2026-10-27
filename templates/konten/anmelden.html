@@ -17,5 +17,6 @@
   </div>
   {% endif %}
   {% if mail %}<p class="abseits"><a href="{% url 'konten:passwort_vergessen' %}">Passwort vergessen?</a></p>{% endif %}
+  {% if impressum_url %}<p class="abseits anmelden-impressum"><small>Wer steht dahinter? <a href="{{ impressum_url }}" rel="noopener">Impressum{% if tafel.name %} der {{ tafel.name }}{% endif %}</a></small></p>{% endif %}
 </section>
 {% endblock %}

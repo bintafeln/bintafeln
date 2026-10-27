@@ -203,7 +203,7 @@ def test_fortschritt_zaehlt_alle_gruppen_des_tages(ausgabe, haushalt, stelle):
 def test_fortschritt_nur_am_ausgabetag(ausgabe, stelle):
     Kundengruppe.objects.create(name="Nie", ausgabestelle=stelle, wochentage="")
     seite = ausgabe.get(EMPFANG).content.decode()
-    assert 'id="ausgabe-fortschritt" class="kopf-fortschritt" hidden' in seite
+    assert re.search(r'id="ausgabe-fortschritt" class="kopf-fortschritt" [^>]* hidden>', seite)
 
 
 def test_ohne_einlass_keine_auswahl(admin, benutzer_mit_rolle, anmelden, stelle):
@@ -548,3 +548,13 @@ def test_letzte_kunden(ausgabe, haushalt, stelle, benutzer_mit_rolle, anmelden):
     c.post(reverse("ausgabe:ausgabestelle"), {"ausgabestelle": stelle.pk})
     seite = c.get(EMPFANG).content.decode()
     assert "Letzte Kunden heute (1)" in seite and "00043" not in seite
+
+
+def test_fortschritt_laedt_sich_selbst_neu(ausgabe, haushalt, stelle):
+    """Die Zahl oben rechts fragt alle 30 Sekunden nach (Abholungen an anderen Geräten)."""
+    url = reverse("ausgabe:fortschritt")
+    seite = ausgabe.get(EMPFANG).content.decode()
+    assert f'hx-get="{url}" hx-trigger="every 30s' in seite
+    assert ">0/1</span>" in ausgabe.get(url).content.decode()
+    Abholung.objects.create(haushalt=haushalt, datum=timezone.localdate(), ausgabestelle=stelle)
+    assert ">1/1</span>" in ausgabe.get(url).content.decode()
