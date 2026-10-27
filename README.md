@@ -820,9 +820,9 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   Tag (`KioskMeldung`, am nächsten Tag gelöscht). Kasten unter dem Menü, Handy- und PC-Steuerung
   zeigen gemeldete Nummern grün, alle anderen dunkelrot – erst, wenn sich heute jemand gemeldet
   hat. Monitor und Geräte ohne Anmeldung sehen das nicht. Die Abfrage-Seite meldet nicht an.
-  Am Einlass Eingetragene verschwinden sofort aus „Bitte eintreten“ und „Danach“. Sind alle
-  Aufgerufenen eingetragen, ruft der Aufruf von selbst die nächsten auf, fließend auch in die
-  nächste Kundengruppe (abschaltbar: „Automatisch weiter …“).
+  Am Einlass Eingetragene verschwinden sofort aus „Bitte eintreten“ und „Danach“; nur der große
+  Monitor zeigt die aufgerufenen Nummern bis zum nächsten „Weiter“. Weiter geht es immer nur mit
+  dem Knopf, nie von selbst.
 - **Geräte im Wartebereich:** Monitor (Nummern, Infos im Wechsel, Ton, Layout per Zahnrad),
   Nummern-Anzeige, Kiosk (Karte scannen, Antwort auf Deutsch und in der Sprache zur
   Staatsangehörigkeit) und Abfrage. Sie brauchen keine Anmeldung, sondern den geheimen Link aus

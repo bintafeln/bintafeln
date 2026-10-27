@@ -80,3 +80,10 @@ selbst „Weiter“ auf (unter Sperre noch einmal geprüft, damit zwei Geräte n
 weiterschalten), auch über das Ende einer Kundengruppe hinweg. Der Schritt steht wie ein
 manuelles „Weiter“ im Verlauf und lässt sich zurücknehmen. Einstellung `automatisch_weiter`
 (Vorgabe an).
+
+**Zurückgenommen (2026-10-27):** Das automatische Weiterschalten ist wieder entfernt (Migration
+`aufruf.0007`). Die Nummern ruft immer jemand mit „Weiter“ herein. Dafür zeigt der große Monitor
+(`/anzeige/<schlüssel>/monitor/`, Stand mit `?monitor=1`) die aufgerufenen Nummern bis zum
+nächsten „Weiter“, auch wenn sie schon am Einlass eingetragen sind
+(`stand_fuer_anzeige(..., eingelassene_zeigen=True)`); alle anderen Anzeigen nehmen sie sofort
+heraus.
