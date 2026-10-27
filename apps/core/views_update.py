@@ -15,9 +15,13 @@ from apps.konten.views import nicht_in_demo
 @rollen.recht_erforderlich("system.update")
 def seite(request):
     stand = update.stand()
+    neuere = [v for v in stand.versionen if stand.ist_neuer(v)]
+    # Während und nach einem Update: weiter zeigen, was es gebracht hat
+    zuletzt = [] if neuere or stand.zustand == "fehler" else stand.neu_seit_auftrag()
     kontext = {
         "s": stand,
-        "neuere": [v for v in stand.versionen if stand.ist_neuer(v)],
+        "neuere": neuere,
+        "zuletzt": zuletzt,
         "aeltere": [
             v for v in stand.versionen if not stand.ist_neuer(v) and v.name != stand.installiert
         ],  # fmt: skip

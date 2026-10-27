@@ -48,6 +48,8 @@ class Stand:
     protokoll: str = ""
     angefordert: str = ""
     sucht: bool = False  # Suche angefordert, vom Dienst noch nicht erledigt
+    vorher: str = ""  # beim letzten Auftrag installierte Version (für „Was ist neu?“)
+    ziel: str = ""  # Version des letzten Auftrags
 
     @property
     def beschaeftigt(self) -> bool:
@@ -56,6 +58,17 @@ class Stand:
     @property
     def neueste(self) -> Version | None:
         return self.versionen[0] if self.versionen else None
+
+    def neu_seit_auftrag(self) -> list[Version]:
+        """Versionen des letzten Updates (nach „vorher“ bis einschließlich Ziel). Während und nach
+        dem Update gilt das Ziel schon als installiert; „Was ist neu?“ bleibt so stehen."""
+        if not self.ziel or self.ziel not in {v.name for v in self.versionen}:
+            return []
+        ziel = next(v for v in self.versionen if v.name == self.ziel)
+        if not VERSIONSMUSTER.match(self.vorher):
+            return [ziel]
+        von = tuple(int(t) for t in self.vorher.split("."))
+        return [v for v in self.versionen if von < v.schluessel <= ziel.schluessel]
 
     def ist_neuer(self, version: Version) -> bool:
         if not VERSIONSMUSTER.match(self.installiert):
@@ -111,6 +124,8 @@ def stand(jetzt: datetime | None = None) -> Stand:
     except OSError:
         pass
     s.angefordert = dict(_lesen("auftrag.txt")).get("version", "")
+    vorher = dict(_lesen("vorher.txt"))
+    s.vorher, s.ziel = vorher.get("von", "").strip(), vorher.get("ziel", "").strip()
     s.sucht = (_ordner() / "abrufen.txt").exists()
     return s
 
@@ -133,6 +148,7 @@ def anfordern(version: str, von: str) -> None:
     if version not in {v.name for v in s.versionen}:
         raise UpdateFehler(f"Die Version {version} ist nicht verfügbar.")
     von = re.sub(r"[\r\n=]", " ", von)
+    _schreiben("vorher.txt", f"von={s.installiert}\nziel={version}\n")
     _schreiben("auftrag.txt", f"version={version}\nvon={von}\n")
 
 

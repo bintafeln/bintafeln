@@ -135,3 +135,73 @@ def test_dienst_loescht_suchauftrag_erst_nach_dem_abruf():
     skript = Path("docker/updater/updater.sh").read_text(encoding="utf-8")
     schleife = skript[skript.index("while true; do") :]
     assert schleife.index("versionen_abrufen ||") < schleife.index('rm -f "$BETRIEB/abrufen.txt"')
+
+
+def test_was_ist_neu_bleibt_waehrend_und_nach_dem_update(admin_client, ordner):
+    """Während des Updates gilt das Ziel schon als installiert; die Änderungen bleiben stehen,
+    mit den Stichpunkten („· “) eingerückt."""
+    v = (ordner / "versionen.txt").read_text()
+    v = v.replace("Suche im Seitenkopf\tEinlass klarer", "Suche im Seitenkopf\t· Kürzel wie k\t"
+                  "Einlass klarer")  # fmt: skip
+    (ordner / "versionen.txt").write_text(v)
+    admin_client.post(reverse("core:update_starten"), {"version": "2026.10.10",
+                                                        "bestaetigt": "ja"})  # fmt: skip
+    assert (ordner / "vorher.txt").read_text() == "von=2026.10.2\nziel=2026.10.10\n"
+    (ordner / "auftrag.txt").unlink()
+    (ordner / "versionen.txt").write_text(v.replace("installiert=2026.10.2",
+                                                    "installiert=2026.10.10"))  # fmt: skip
+    for zustand in ("laeuft", "ok"):
+        (ordner / "status.txt").write_text(f"zustand={zustand}\nversion=2026.10.10\nbeginn=\n"
+                                           "ende=\nmeldung=Update abgeschlossen.\n")  # fmt: skip
+        seite = admin_client.get(URL).content.decode()
+        assert "Neu mit dem Update auf 2026.10.10" in seite
+        assert '<li class="neu-titel">Suche im Seitenkopf</li>' in seite
+        assert '<li class="neu-detail">Kürzel wie k</li>' in seite
+        assert "Statistik</li>" not in seite  # war schon vorher installiert
+    (ordner / "status.txt").write_text("zustand=fehler\nversion=2026.10.10\nbeginn=\nende=\n"
+                                       "meldung=kaputt\n")  # fmt: skip
+    assert "Neu mit dem Update" not in admin_client.get(URL).content.decode()
+    # Unbekannte Ausgangsversion (z. B. Entwicklungsstand): nur die Zielversion
+    (ordner / "vorher.txt").write_text("von=Entwicklungsstand\nziel=2026.10.2\n")
+    assert [x.name for x in update.stand().neu_seit_auftrag()] == ["2026.10.2"]
+    (ordner / "vorher.txt").write_text("von=2026.9.1\nziel=gibtsnicht\n")
+    assert update.stand().neu_seit_auftrag() == []
+
+
+def test_dienst_liest_stichpunkte_aus_den_commits(tmp_path):
+    """aenderungen() im Dienst: Titel des Pull Requests, darunter seine Stichpunkte."""
+    import shutil
+    import subprocess
+    from pathlib import Path
+
+    git_pfad, sh_pfad = shutil.which("git"), shutil.which("sh")
+    if not git_pfad or not sh_pfad:
+        pytest.skip("git oder sh fehlt")
+    skript = Path("docker/updater/updater.sh").read_text(encoding="utf-8")
+    teile = [skript[skript.index(f"{n}() {{") :] for n in ("stichpunkte", "aenderungen")]
+    funktionen = "\n".join(t[: t.index("\n}\n") + 3] for t in teile)
+
+    def git(*a):
+        subprocess.run([git_pfad, "-c", "user.name=Test", "-c", "user.email=t@example.org", *a],  # noqa: S603 – feste Testbefehle
+                       cwd=tmp_path, check=True, capture_output=True)  # fmt: skip
+
+    git("init", "-q", "-b", "main")
+    git("commit", "-q", "--allow-empty", "-m", "Anfang")
+    git("tag", "v1")
+    git("checkout", "-q", "-b", "zweig")
+    git("commit", "-q", "--allow-empty", "-m",
+        "Listen schneller\n\n- Filter sofort, auch\n  in der Statistik\n- Spalten | wählbar\n\n"
+        "Co-Authored-By: Jemand <x@example.org>")  # fmt: skip
+    git("checkout", "-q", "main")
+    git("merge", "-q", "--no-ff", "zweig", "-m",
+        "Merge pull request #1 from x/zweig\n\nListen schneller und bequemer")  # fmt: skip
+    ergebnis = subprocess.run(  # noqa: S603 – Funktionen aus dem eigenen Skript
+        [sh_pfad, "-c", f"PROJEKT=.\n{funktionen}\naenderungen v1..HEAD"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    assert ergebnis.split("\t") == ["Listen schneller und bequemer",
+                                    "· Filter sofort, auch in der Statistik",
+                                    "· Spalten / wählbar", ""]  # fmt: skip

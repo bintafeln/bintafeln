@@ -257,5 +257,7 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
 - Browser-Tests in `tests/e2e/` (Playwright, ADR 0066): nur mit `pytest -m e2e`, Abhängigkeiten in
   `requirements-e2e.txt`, eigener CI-Job `e2e`. JavaScript-Fehler lassen sie scheitern; neue
   JavaScript-Funktionen dort mit einem Ablauf abdecken.
+- Commit-Beschreibungen: Stichpunkte mit „- “ erscheinen auf der Update-Seite unter „Was ist neu?“
+  (`aenderungen()` in `docker/updater/updater.sh`), also verständlich für die Tafeln formulieren.
 - Shell-Skripte müssen `shellcheck` bestehen. Änderungen an Sicherung oder Wiederherstellung
   deckt `tests/sicherung_e2e.sh` ab (läuft in CI im Job `docker`).

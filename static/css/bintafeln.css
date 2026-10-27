@@ -935,3 +935,7 @@ a.marke-rolle { text-decoration: none; }
 .mitglied-wahl { margin-top: 1rem; border-top: 1px solid var(--rand); padding-top: .5rem; }
 .mitglied-wahl h2 { font-size: 1.1rem; margin: .25rem 0 .5rem; }
 .mitglied-wahl:has(input[name="ist_mitglied"][type="checkbox"]:not(:checked)) .mitglied-felder { display: none; }
+/* Update: „Was ist neu?“ mit Stichpunkten je Änderung */
+.was-ist-neu ul { padding-left: 1.25rem; }
+.was-ist-neu .neu-titel { font-weight: 600; margin-top: .4rem; }
+.was-ist-neu .neu-detail { list-style: circle; margin-left: 1.25rem; font-size: .93rem; color: var(--leise); }

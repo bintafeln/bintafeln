@@ -1260,7 +1260,9 @@ ausgeführt, ersetzt er die Musterdaten wieder. Nie auf einer Installation mit e
 
 **Am einfachsten in bintafeln selbst:** „Einstellungen → Update“ (Recht „Programm aktualisieren“,
 Vorgabe nur Admin). Die Seite zeigt die installierte Version, die verfügbaren Versionen mit ihren
-Änderungen und startet das Update auf Knopfdruck, auf Wunsch auch zurück auf eine ältere Version.
+Änderungen („Was ist neu?“: je Pull Request der Titel und darunter die Stichpunkte „- …“ aus den
+Commit-Beschreibungen; bleibt während und nach dem Update stehen, gemerkt in `vorher.txt`) und
+startet das Update auf Knopfdruck, auf Wunsch auch zurück auf eine ältere Version.
 Dahinter läuft genau `./betrieb update VERSION` (also mit Sicherung vorher). bintafeln ist dabei
 ein bis zwei Minuten nicht erreichbar; danach zeigt die Seite das Ergebnis und das Protokoll.
 

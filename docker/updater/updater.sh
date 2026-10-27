@@ -66,6 +66,17 @@ eigenes() {
 }
 
 # Titel der Änderungen in BEREICH (Pull-Request-Titel aus Merge-Commits), getrennt durch Tab
+# Stichpunkte („- …“, eingerückte Folgezeilen gehören dazu) aus den Beschreibungen der Commits
+stichpunkte() {
+    git -C "$PROJEKT" log --no-merges --reverse --format='%b' "$@" 2>/dev/null \
+        | awk '/^- / { if (p != "") print p; p = substr($0, 3); next }
+               /^  +[^ ]/ && p != "" { sub(/^ +/, ""); p = p " " $0; next }
+               { if (p != "") print p; p = "" }
+               END { if (p != "") print p }' | head -n 20
+}
+
+# Änderungen einer Version: je Pull Request der Titel, darunter seine Stichpunkte mit „· “
+# (die Update-Seite zeigt sie eingerückt). Tab trennt die Einträge, „|“ ist Feldtrenner.
 aenderungen() {
     git -C "$PROJEKT" log --first-parent --format='%H' "$1" 2>/dev/null | head -n 15 \
         | while read -r commit; do
@@ -73,9 +84,16 @@ aenderungen() {
             case "$titel" in
                 "Merge pull request"*)
                     titel=$(git -C "$PROJEKT" log -1 --format='%b' "$commit" | sed -n '/./{p;q}')
+                    details=$(stichpunkte "$commit^1..$commit^2")
+                    ;;
+                *)
+                    details=$(stichpunkte -1 "$commit")
                     ;;
             esac
-            [ -n "$titel" ] && printf '%s\t' "$titel" | tr '|' '/'
+            [ -n "$titel" ] && printf '%s\t' "$(printf '%s' "$titel" | tr '|' '/')"
+            printf '%s\n' "$details" | while IFS= read -r zeile; do
+                [ -n "$zeile" ] && printf '· %s\t' "$(printf '%s' "$zeile" | tr '|\t' '/ ')"
+            done
         done
 }
 
