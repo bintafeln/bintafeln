@@ -8,7 +8,7 @@ from django.views.decorators.cache import never_cache
 
 from apps.konten import rollen
 from apps.kunden import verlaengerung
-from apps.kunden.models import KundenEinstellungen
+from apps.kunden.models import KundenEinstellungen, Nachricht
 
 MONATE = [3, 6, 12, 24]
 
@@ -24,6 +24,12 @@ def verlaengern(request):
     heute = timezone.localdate()
     daten = request.POST if request.method == "POST" else request.GET
     monate = _monate(daten.get("monate", ""), e.ausweis_gueltig_monate)
+    if request.method == "POST" and request.POST.get("wieder_oeffnen"):
+        wahl = request.POST["wieder_oeffnen"]
+        n = verlaengerung.wieder_oeffnen(request.user, int(wahl)) if wahl.isdigit() else None
+        if n:
+            messages.success(request, f"Kunde {n.kundennummer} steht wieder oben zum Prüfen.")
+        return redirect(f"{reverse('kunden:verlaengern')}?monate={monate}")
     if request.method == "POST":
         wahl = {k[5:]: w for k, w in request.POST.items() if k.startswith("wahl_")}
         verlaengern = {n for n, w in wahl.items() if w == "verlaengern"}
@@ -62,4 +68,6 @@ def verlaengern(request):
                    for k in (verlaengerung.OK, verlaengerung.NEIN, verlaengerung.UNKLAR)},
         "bedingungen": verlaengerung.bedingungen_text(e),
         "regel": e.get_verlaengern_regel_display(), "regel_satz": verlaengerung.regel_satz(e),
+        "erledigte": verlaengerung.erledigte(request.user),
+        "aufbewahren": Nachricht.AUFBEWAHREN_TAGE,
     })  # fmt: skip

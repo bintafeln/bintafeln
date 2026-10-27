@@ -397,3 +397,20 @@ def test_regel_als_satz(regel, admin_client):
     seite = admin_client.get(reverse("kunden:einstellungen")).content.decode()
     assert 'id="verlaengern-regel" data-autosave-aktualisieren' in seite
     assert "Ohne Bedingung: Jeder gemeldete Haushalt" in seite
+
+
+def test_erledigte_bleiben_sichtbar_und_lassen_sich_wieder_oeffnen(gemeldet, admin_client):
+    admin_client.post(VERLAENGERN, {"wahl_201": "verlaengern", "wahl_202": "ablehnen"})
+    seite = admin_client.get(VERLAENGERN).content.decode()
+    assert "Erledigt (2)" in seite
+    assert "Verlängert bis 30.11.2027" in seite and "Nicht verlängert" in seite
+    n = Nachricht.objects.filter(kundennummer="201").first()
+    assert n.ergebnis == "Verlängert bis 30.11.2027" and n.erledigt_von == "chefin"
+    # Nochmal prüfen: beide Meldungen zu 201 stehen wieder oben
+    antwort = admin_client.post(VERLAENGERN, {"wieder_oeffnen": str(n.pk)}, follow=True)
+    assert "Kunde 201 steht wieder oben zum Prüfen." in antwort.content.decode()
+    assert Nachricht.objects.filter(kundennummer="201", anliegen="verlaengern",
+                                    erledigt_am__isnull=True).count() == 2  # fmt: skip
+    seite = admin_client.get(VERLAENGERN).content.decode()
+    assert "Erledigt (1)" in seite and 'name="wahl_201"' in seite
+    assert admin_client.post(VERLAENGERN, {"wieder_oeffnen": "x"}).status_code == 302

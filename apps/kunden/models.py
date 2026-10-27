@@ -709,6 +709,8 @@ class Nachricht(models.Model):
     von = models.CharField("Von", max_length=150, blank=True)
     erledigt_am = models.DateTimeField("Erledigt am", null=True, blank=True)
     erledigt_von = models.CharField("Erledigt von", max_length=150, blank=True)
+    # Was die Verwaltung getan hat, z. B. „Ausweis verlängert bis 30.11.2027“ (ADR 0068)
+    ergebnis = models.CharField("Ergebnis", max_length=300, blank=True)
 
     class Meta:
         verbose_name = "Nachricht zu einem Kunden"

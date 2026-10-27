@@ -124,7 +124,8 @@ def kunde_pdf(h: Haushalt) -> bytes:
     doc.ueberschrift("Nachrichten der Ausgabestellen an die Verwaltung")
     doc.tabelle(
         ["Datum", "Nachricht", "Von"],
-        [[_datum(timezone.localdate(n.erstellt_am)), n.text, n.von]
+        [[_datum(timezone.localdate(n.erstellt_am)),
+          " – ".join(x for x in (n.get_anliegen_display(), n.text, n.ergebnis) if x), n.von]
          for n in Nachricht.objects.filter(kundennummer=h.kundennummer)],
         breiten=[0.14, 0.66, 0.2],
     )  # fmt: skip

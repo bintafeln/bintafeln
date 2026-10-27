@@ -40,6 +40,10 @@ mindestens 60 Jahre alt oder schwerbehindert sind; die anderen pausieren ein Jah
   an die Ausgabestelle geht; Status bleibt, keine Pause. Bei nicht erfüllten Bedingungen hängt
   eine Begründung als „Anmerkung der Verwaltung“ an der Notiz. Die Wahl je Haushalt ist
   „verlängern“, „ablehnen“ oder „offen lassen“.
+- Erledigte Meldungen bleiben sichtbar (ergänzt 2026-10): `Nachricht.ergebnis` hält fest, was
+  geschah (z. B. „Verlängert bis …“). Die Seite listet sie unter den offenen, bis sie nach
+  `Nachricht.AUFBEWAHREN_TAGE` gelöscht werden; „Nochmal prüfen“ setzt sie wieder auf offen
+  (`verlaengerung.wieder_oeffnen()`).
 - Vorgabe für neue Installationen: ohne Bedingung. Die Bedingungen stellt jede Tafel selbst ein.
 
 Manche Tafeln kennen keinen Status „pausiert“: Der Ausweis läuft einfach ab, der Haushalt fällt

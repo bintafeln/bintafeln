@@ -63,4 +63,29 @@
   </form>
   {% endif %}
 </section>
+
+{% if erledigte %}
+<section class="karte breit">
+  <h2>Erledigt ({{ erledigte|length }})</h2>
+  <p class="hinweis">Schon bearbeitete Meldungen, neueste zuerst. Sie bleiben {{ aufbewahren }} Tage hier stehen.
+    „Nochmal prüfen“ holt den Haushalt zurück in die Liste oben, z. B. wenn ein neuer Bescheid kommt.</p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Kunde</th><th>Ergebnis</th><th>Erledigt</th><th>Gemeldet</th><th></th></tr></thead>
+    <tbody>
+    {% for z in erledigte %}
+      <tr>
+        <td data-titel="Kunde"><a href="{% url 'kunden:haushalt' z.nummer %}">{{ z.nummer }}</a></td>
+        <td data-titel="Ergebnis">{{ z.ergebnis }}</td>
+        <td data-titel="Erledigt">{{ z.erledigt_am|date:"d.m.Y H:i" }}{% if z.von %} · {{ z.von }}{% endif %}</td>
+        <td data-titel="Gemeldet">{% for n in z.nachrichten %}{{ n.erstellt_am|date:"d.m.Y" }}{% if n.stelle %} · {{ n.stelle.name }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
+        <td><form method="post" class="inline">{% csrf_token %}<input type="hidden" name="monate" value="{{ monate }}">
+          <button type="submit" name="wieder_oeffnen" value="{{ z.nachrichten.0.pk }}" class="link">Nochmal prüfen</button></form></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endif %}
 {% endblock %}
