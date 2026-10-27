@@ -48,7 +48,8 @@ a { color: var(--akzent-dunkel); }
 .navigation { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem 1rem; }
 .navigation a, .navigation .link { padding: .5rem 0; }
 form.konto-name { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2; }
-.konto-name .angemeldet { font-size: .8rem; opacity: .9; max-width: 14rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.konto-name .angemeldet { font-size: .8rem; opacity: .9; max-width: 14rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: inherit; text-decoration: none; }
+.konto-name a.angemeldet:hover, .konto-name a.angemeldet:focus { text-decoration: underline; opacity: 1; }
 .konto-name .link { padding: .1rem 0 .4rem; }
 .inline { display: inline; margin: 0; }
 .link {
@@ -518,6 +519,8 @@ a.knopf-gefahr { color: #fff; }
 .menue-gruppe[open] summary::after { transform: rotate(90deg); }
 .menue-gruppe summary:hover { background: var(--erfolg); }
 .menue-gruppe ul { margin-bottom: .25rem; }
+/* Zwischenüberschrift in einem aufgeklappten Bereich (z. B. Kunden › Anträge und Warteliste) */
+.menue-zwischen { padding: .6rem 1.25rem .15rem 2rem; font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--leise); }
 .seitenmenue .menue-gruppe li a { padding-left: 3rem; font-size: .93rem; }
 .seitenmenue .menue-gruppe li a.aktiv { padding-left: calc(3rem - 4px); }
 .seitenmenue li a { padding: .4rem 1.25rem .4rem 2rem; font-size: .97rem; }

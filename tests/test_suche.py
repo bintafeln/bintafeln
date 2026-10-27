@@ -135,9 +135,9 @@ def test_programm_und_handbuch_ohne_kuerzel(admin_client, admin, daten):
     antwort = admin_client.get(reverse("core:suche"), {"q": "ausgabestellen"})
     e = antwort.context["e"]
     programm = next(g for g in e.gruppen if g.bereich == "programm")
-    assert programm.treffer[0].titel == "Ausgabestellen"
-    assert programm.treffer[0].url == reverse("kunden:ausgabestellen")
-    assert programm.treffer[0].zusatz == "Menü: Kunden"
+    alle = next(t for t in programm.treffer if t.url == reverse("kunden:ausgabestellen"))
+    assert alle.titel == "Alle Ausgabestellen"
+    assert alle.zusatz == "Menü: Ausgabestelle › Verwaltung"
     assert e.gruppen[0].bereich == "programm"
     hilfe = next(g for g in e.gruppen if g.bereich == "hilfe")
     assert hilfe.treffer[0].titel.startswith("Ausgabestellen")  # Titel vor Text
@@ -146,7 +146,9 @@ def test_programm_und_handbuch_ohne_kuerzel(admin_client, admin, daten):
     anfrage = antwort.wsgi_request
     treffer = suche._programm(admin, "kunden", 50, menue=menue(anfrage))
     titel = [t.titel for t in treffer]
-    assert titel.index("Kunden einsehen") < titel.index("Ausgabestellen")
+    assert titel.index("Kunden einsehen") < titel.index("Anträge")  # Anträge: im Bereich Kunden
+    antraege = next(t for t in treffer if t.titel == "Anträge")
+    assert antraege.zusatz == "Menü: Kunden › Anträge und Warteliste"
     gruppen = next(t for t in treffer if t.titel == "Kundengruppen")
     assert gruppen.zusatz == "Menü: Einstellungen › Kunden"
     assert len({t.url for t in treffer}) == len(treffer)

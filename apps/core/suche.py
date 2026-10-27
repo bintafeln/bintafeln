@@ -300,9 +300,10 @@ def _programm(benutzer, begriff, grenze, menue=()):
     begriff = begriff.lower()
     im_namen, im_bereich, gesehen = [], [], set()
     for bereich in menue:
-        if bereich.get("gruppen"):
-            wege = [(f"{bereich['titel']} › {g['titel']}", g["eintraege"])
-                    for g in bereich["gruppen"]]  # fmt: skip
+        if bereich.get("gruppen") or bereich.get("abschnitte"):
+            wege = [(f"{bereich['titel']} › {g['titel']}" if g["titel"] else bereich["titel"],
+                     g["eintraege"])
+                    for g in bereich.get("gruppen") or bereich["abschnitte"]]  # fmt: skip
         else:
             wege = [(bereich["titel"], bereich["eintraege"])]
         for weg, eintraege in wege:

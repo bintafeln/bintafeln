@@ -223,7 +223,7 @@ def test_suche_und_menue(admin, admin_client):
     titel = [t for t, _, _ in suchen(admin, "kinder", 10)]
     assert "Liste: Kinder unter 6 Jahren" in titel
     seite = admin_client.get(reverse("listen:uebersicht")).content.decode()
-    assert "Alle Listen" in seite and "Kundenliste einer Ausgabestelle</a>" in seite
+    assert "Listen</a>" in seite and "Kundenliste</a>" in seite  # Auswertungen, Ausgabestelle
 
 
 def test_weitere_listen(admin_client, daten):

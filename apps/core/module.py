@@ -35,8 +35,9 @@ class Modul:
     # (kennung, titel, rechte) – Vorlage ``hilfe/<kennung>.html`` liegt in der App
     kapitel: tuple[tuple[str, str, tuple[str, ...]], ...] = ()
     # menue(eintrag) -> [(bereich, [(recht, eintrag), …]), …]; "Einstellungen/<Gruppe>" hängt
-    # die Einträge an ein Untermenü der Einstellungen (z. B. "Einstellungen/Ausgabe"), jeder
-    # andere Bereich wird als eigener Bereich nach „Ausgabe“ eingefügt.
+    # die Einträge an ein Untermenü der Einstellungen (z. B. "Einstellungen/Ausgabe"). Sonst
+    # "Bereich" oder "Bereich/Abschnitt" des Menüs (Ausgabestelle, Kunden, Verein, Auswertungen,
+    # apps/core/menue.py); ein unbekannter Bereich kommt als eigener Bereich dazu.
     menue: Callable | None = None
     # Datensicherung (ADR 0037): Bereich der Modelle und vorübergehende Modelle ("app.modell")
     sicherung_bereich: str = "einstellungen"

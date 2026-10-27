@@ -5,7 +5,7 @@ from apps.core.module import Modul
 
 def menue(eintrag):
     return [
-        ("Abrechnung", [
+        ("Ausgabestelle", [
             ("abrechnung.fuehren", eintrag("Abrechnung", "abrechnung:uebersicht")),
             ("abrechnung.pruefen", eintrag("Abrechnung", "abrechnung:uebersicht")),
         ]),

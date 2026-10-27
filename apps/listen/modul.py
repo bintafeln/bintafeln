@@ -5,10 +5,11 @@ from apps.core.module import Modul
 
 def menue(eintrag):
     return [
-        ("Listen", [
-            ("listen.nutzen", eintrag("Alle Listen", "listen:uebersicht", genau=True)),
-            ("listen.nutzen", eintrag("Kundenliste einer Ausgabestelle", "listen:liste",
-                                      "kunden_stelle")),
+        ("Ausgabestelle", [
+            ("listen.nutzen", eintrag("Kundenliste", "listen:liste", "kunden_stelle")),
+        ]),
+        ("Auswertungen", [
+            ("listen.nutzen", eintrag("Listen", "listen:uebersicht", genau=True)),
         ]),
     ]  # fmt: skip
 
