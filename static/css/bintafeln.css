@@ -985,6 +985,9 @@ a.marke-rolle { text-decoration: none; }
 /* Fahrdienst (ADR 0074): Fahrerplan Tage × Touren; gelb = fällt aus/offen, grün = Ersatz */
 .fd-kopf { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; }
 .fd-kopf h1 { margin-bottom: .5rem; }
+.fd-monat { display: flex; gap: .35rem; }
+.fd-monat select { width: auto; padding: .4rem .5rem; border: 1px solid var(--rand); border-radius: .4rem; background: var(--flaeche); color: inherit; font: inherit; }
+.fd-plan thead a { color: inherit; }
 .fd-rahmen { overflow-x: auto; }
 .fd-plan { border-collapse: collapse; width: 100%; min-width: 48rem; font-size: .95rem; }
 .fd-plan th, .fd-plan td { border: 1px solid var(--rand); padding: .35rem .5rem; text-align: left; vertical-align: top; }

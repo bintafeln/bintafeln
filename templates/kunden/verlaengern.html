@@ -27,14 +27,13 @@
       <tbody>
       {% for p in liste %}
         <tr class="verlaengern-{{ p.ergebnis }}">
-          <td data-titel="Wählen">
-            {% if p.ergebnis == "nein" %}
-              {% if ablehnung == "notiz" %}<label><input type="checkbox" name="ablehnen" value="{{ p.nummer }}" checked> Notiz an die Ausgabestelle</label>
-              {% elif ablehnung == "pausieren" %}<label><input type="checkbox" name="ablehnen" value="{{ p.nummer }}" checked> {{ pause }} Monate pausieren</label>
-              {% else %}–{% endif %}
-            {% else %}
-              <label><input type="checkbox" name="verlaengern" value="{{ p.nummer }}"{% if p.ergebnis == "ok" %} checked{% endif %}> verlängern</label>
-            {% endif %}
+          <td data-titel="Wählen" class="verlaengern-wahl">
+            {% if p.ergebnis != "nein" %}<label><input type="radio" name="wahl_{{ p.nummer }}" value="verlaengern"{% if p.ergebnis == "ok" %} checked{% endif %}> verlängern</label><br>{% endif %}
+            <label><input type="radio" name="wahl_{{ p.nummer }}" value="ablehnen"{% if p.ergebnis == "nein" and ablehnung != "anzeigen" %} checked{% endif %}>
+              {% if p.zu_frueh %}Notiz: zu früh{% elif p.ergebnis != "nein" %}ablehnen (mit Begründung){% elif ablehnung == "pausieren" %}{{ pause }} Monate pausieren{% else %}Notiz an die Ausgabestelle{% endif %}</label><br>
+            <label><input type="radio" name="wahl_{{ p.nummer }}" value=""{% if p.ergebnis == "unklar" or p.ergebnis == "nein" and ablehnung == "anzeigen" %} checked{% endif %}> offen lassen</label>
+            <input type="text" name="grund_{{ p.nummer }}" maxlength="500" aria-label="Begründung für Kunde {{ p.nummer }}"
+                   placeholder="{% if p.ergebnis == 'nein' %}Anmerkung (freiwillig){% else %}Begründung beim Ablehnen{% endif %}">
           </td>
           <td data-titel="Kunde"><a href="{% url 'kunden:haushalt' p.nummer %}">{{ p.nummer }}</a></td>
           <td data-titel="Prüfung">
@@ -51,8 +50,10 @@
       </tbody>
     </table>
     </div>
-    <p class="hinweis">Jede Änderung steht in der Historie des Haushalts. Bei allen gewählten wird die gemeldete Notiz
-      (z. B. „Bescheide geprüft …“) gestrichen und die Meldung erledigt; nicht gewählte bleiben offen.
+    <p class="hinweis">„Ablehnen“ geht bei jedem Haushalt: Erfüllt er die Bedingungen, braucht es eine Begründung, die als Notiz
+      an die Ausgabestelle geht. Zu früh Gemeldete bekommen eine Notiz, ab wann verlängert werden kann.
+      Jede Änderung steht in der Historie des Haushalts. Bei allen gewählten wird die gemeldete Notiz
+      (z. B. „Bescheide geprüft …“) gestrichen und die Meldung erledigt; „offen lassen“ bleibt offen.
       {% if ablehnung == "notiz" %}Wer die Bedingung nicht erfüllt, bekommt statt der Verlängerung eine Notiz an die Ausgabestelle:
       welche Bedingung fehlt und bei wem, und dass {{ pause_text }} nötig ist. Der Status bleibt; der Ausweis läuft zu seinem
       Datum ab.{% elif ablehnung == "pausieren" %}Wer die Bedingung nicht erfüllt, wird pausiert und bekommt eine Notiz.{% endif %}</p>

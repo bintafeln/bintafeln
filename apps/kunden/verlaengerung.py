@@ -28,6 +28,7 @@ from apps.kunden.models import (
 ANLIEGEN = "verlaengern"
 # Steht der Ausweis noch so lange, ist die Meldung vermutlich zu früh
 NOCH_LANGE_TAGE = 60
+ZU_FRUEH = "Zu früh gemeldet"
 
 OK, NEIN, UNKLAR = "ok", "nein", "unklar"
 
@@ -44,6 +45,7 @@ class Pruefung:
     )  # Personen ohne Bedingung, z. B. „Peter Muster: 33 Jahre, nicht schwerbehindert“
     hinweise: list[str] = field(default_factory=list)
     nachrichten: list[Nachricht] = field(default_factory=list)
+    zu_frueh: dt.date | None = None  # zu früh gemeldet: ab diesem Tag kann verlängert werden
 
     @property
     def nummer(self) -> str:
@@ -145,6 +147,17 @@ def ablehnung_notiz(p: Pruefung, e: KundenEinstellungen, bis: dt.date | None = N
     return text + ". Danach ist eine Neuanmeldung über unsere Homepage möglich."
 
 
+def zu_frueh_notiz(p: Pruefung) -> str:
+    return (f"Ausweis wird noch **nicht** verlängert: Er gilt noch bis "
+            f"{p.haushalt.ausweis_gueltig_bis:%d.%m.%Y}. Verlängert wird frühestens ab "
+            f"{p.zu_frueh:%d.%m.%Y} – bitte dann erneut melden.")  # fmt: skip
+
+
+def manuell_notiz(grund: str) -> str:
+    """Die Verwaltung lehnt ab, obwohl die Bedingungen erfüllt wären."""
+    return f"Ausweis wird **NICHT!** verlängert.\nBegründung: {grund}"
+
+
 def gemeldete_notizen_streichen(p: Pruefung) -> int:
     """Löscht die Notizen, mit denen gemeldet wurde (Notiz-Knopf mit „Meldet der Verwaltung“)."""
     texte = list(NotizVorlage.objects.filter(melden=ANLIEGEN).values_list("text", flat=True))
@@ -163,8 +176,16 @@ def pruefen(h: Haushalt, heute: dt.date, monate: int, e: KundenEinstellungen) ->
     if any(s.ist_aktiv(heute) for s in h.sperren.all()):
         p.ergebnis = NEIN
         p.gruende.append("Aktive Sperre")
-    if h.ausweis_gueltig_bis and (h.ausweis_gueltig_bis - heute).days > NOCH_LANGE_TAGE:
-        p.hinweise.append(f"Ausweis noch gültig bis {h.ausweis_gueltig_bis:%d.%m.%Y}")
+    ablauf, tage = h.ausweis_gueltig_bis, e.verlaengern_fruehestens_tage
+    if ablauf and tage and (ablauf - heute).days > tage:
+        # Zu früh: höchstens so viele Tage vor dem Ablauf wird verlängert
+        p.ergebnis = NEIN
+        p.zu_frueh = ablauf - dt.timedelta(days=tage)
+        p.gruende.append(f"{ZU_FRUEH}: Ausweis gilt noch bis {ablauf:%d.%m.%Y}, verlängern "
+                         f"frühestens ab {p.zu_frueh:%d.%m.%Y}")  # fmt: skip
+        return p  # die übrigen Bedingungen prüft man erst, wenn es so weit ist
+    elif ablauf and (ablauf - heute).days > NOCH_LANGE_TAGE:
+        p.hinweise.append(f"Ausweis noch gültig bis {ablauf:%d.%m.%Y}")
     if h.status == Haushalt.Status.PAUSIERT:
         p.hinweise.append("Status „pausiert“ bleibt – bei Bedarf im Haushalt ändern")
     if e.verlaengern_regel == KundenEinstellungen.Verlaengern.OHNE:
@@ -255,11 +276,17 @@ def gemeldete(benutzer, heute: dt.date, monate: int) -> list[Pruefung]:
 
 
 def ausfuehren(benutzer, heute: dt.date, monate: int, verlaengern: set[str],
-               ablehnen: set[str], an_stelle: bool = False) -> tuple[int, int]:  # fmt: skip
-    """Verlängert die gewählten gemeldeten Haushalte; bei nicht verlängerbaren je nach Einstellung
-    Notiz an die Ausgabestelle oder Pause. In beiden Fällen ist die Meldung danach erledigt und
-    die gemeldete Notiz gestrichen. ``an_stelle``: die Notiz zur Ablehnung auch auf die Startseite
-    der Ausgabestelle (nur auf ausdrücklichen Wunsch). Ergebnis: (verlängert, abgelehnt)."""
+               ablehnen: dict[str, str] | set[str],
+               an_stelle: bool = False) -> tuple[int, int]:  # fmt: skip
+    """Verlängert die gewählten gemeldeten Haushalte. Abgelehnte (``ablehnen``: Kundennummer ->
+    Begründung der Verwaltung) bekommen eine Notiz an die Ausgabestelle:
+    - zu früh gemeldet: ab wann es geht (keine Pause);
+    - Bedingung nicht erfüllt: je nach Einstellung Notiz oder Pause, die Begründung dazu;
+    - Bedingungen erfüllt, Verwaltung lehnt trotzdem ab: nur mit Begründung (Notiz, keine Pause).
+    Danach ist die Meldung erledigt und die gemeldete Notiz gestrichen. ``an_stelle``: die Notiz
+    auch auf die Startseite der Ausgabestelle. Ergebnis: (verlängert, abgelehnt)."""
+    if not isinstance(ablehnen, dict):
+        ablehnen = dict.fromkeys(ablehnen, "")
     e = KundenEinstellungen.laden()
     A = KundenEinstellungen.Ablehnung
     von = benutzer.get_username()
@@ -273,17 +300,29 @@ def ausfuehren(benutzer, heute: dt.date, monate: int, verlaengern: set[str],
                 h.ausweis_gueltig_bis = p.neu_bis
                 zusatz = "Ausweis verlängert (Sammel-Verlängerung)"
                 v += 1
-            elif (p.nummer in ablehnen and p.ergebnis == NEIN
-                  and e.verlaengern_ablehnung != A.ANZEIGEN):  # fmt: skip
-                bis = None
-                if e.verlaengern_ablehnung == A.PAUSIEREN:
-                    h.status = Haushalt.Status.PAUSIERT
-                    bis = monat_plus(heute, e.verlaengern_sonst_pausieren_monate, False)
+            elif p.nummer in ablehnen:
+                grund = ablehnen[p.nummer].strip()[:500]
+                anmerkung = f"\nAnmerkung der Verwaltung: {grund}" if grund else ""
+                if p.zu_frueh:
+                    text = zu_frueh_notiz(p) + anmerkung
+                    zusatz = "Nicht verlängert: zu früh gemeldet"
+                elif p.ergebnis == NEIN:
+                    if e.verlaengern_ablehnung == A.ANZEIGEN and not grund:
+                        continue  # „nur anzeigen“: nichts tun, außer die Verwaltung begründet
+                    bis = None
+                    if e.verlaengern_ablehnung == A.PAUSIEREN:
+                        h.status = Haushalt.Status.PAUSIERT
+                        bis = monat_plus(heute, e.verlaengern_sonst_pausieren_monate, False)
+                    text = ablehnung_notiz(p, e, bis) + anmerkung
+                    zusatz = ("Nicht verlängert (Sammel-Verlängerung)" if bis is None
+                              else f"Nicht verlängert, pausiert bis {bis:%d.%m.%Y}")  # fmt: skip
+                elif grund:
+                    text, zusatz = manuell_notiz(grund), f"Nicht verlängert (Verwaltung): {grund}"
+                else:
+                    continue  # Bedingungen erfüllt: ablehnen nur mit Begründung
                 Notiz.objects.create(kundennummer=h.kundennummer, benutzer=benutzer,
                                      verfasst_von=von[:100], an_stelle=an_stelle,
-                                     text=ablehnung_notiz(p, e, bis)[:1000])  # fmt: skip
-                zusatz = ("Nicht verlängert (Sammel-Verlängerung)" if bis is None
-                          else f"Nicht verlängert, pausiert bis {bis:%d.%m.%Y}")  # fmt: skip
+                                     text=text[:1000])  # fmt: skip
                 ab += 1
             else:
                 continue

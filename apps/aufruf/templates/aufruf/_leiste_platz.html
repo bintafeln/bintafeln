@@ -1,5 +1,5 @@
-{# Kurz-Steuerung des Aufrufs unter dem Menü; lädt alle 5 Sekunden nach (andere schalten weiter) und sofort,
-   wenn am Einlass etwas eingetragen wurde (Ereignis „einlassGeaendert“ aus apps/ausgabe/views.py) #}
+{% comment %}Kurz-Steuerung des Aufrufs unter dem Menü; lädt alle 5 Sekunden nach (andere schalten weiter) und sofort,
+   wenn am Einlass etwas eingetragen wurde (Ereignis „einlassGeaendert“ aus apps/ausgabe/views.py){% endcomment %}
 {% if "aufruf.steuern" in rechte %}
 <section class="aufruf-leiste" aria-label="Aufruf" hx-get="{% url 'aufruf:leiste' %}" hx-trigger="load, every 5s, einlassGeaendert from:body" hx-swap="innerHTML"></section>
 {% endif %}

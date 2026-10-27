@@ -393,3 +393,22 @@ def test_beispiel_plan(admin_client):
     echt = Tour.objects.create(name="Echte Tour")
     admin_client.post(reverse("fahrdienst:beispiel"), {"aktion": "entfernen"})
     assert not beispiel.vorhanden() and list(Tour.objects.all()) == [echt]
+
+
+def test_monat_oeffnen_und_besetzung_vom_plan_aendern(team, admin_client, anmelden, client):
+    """Jeder Monat lässt sich wieder öffnen; die feste Besetzung ist vom Plan aus erreichbar."""
+    p, mitte, steele = team
+    seite = admin_client.get(PLAN, {"m": "03", "jahr": "2025"}).content.decode()
+    assert "Fahrerplan März 2025" in seite
+    assert '<option value="03" selected>März</option>' in seite and "<option selected>2025" in seite
+    besetzung = reverse("fahrdienst:besetzung", args=[steele.pk])
+    assert f'href="{besetzung}?monat=2025-03"' in seite
+    zurueck = admin_client.get(besetzung, {"monat": "2025-03"}).content.decode()
+    assert f'href="{PLAN}?monat=2025-03">← Fahrerplan' in zurueck
+    antwort = admin_client.post(f"{besetzung}?monat=2025-03", {"b_Mo_1": p["max"].pk})
+    assert antwort.url == f"{PLAN}?monat=2025-03"
+    assert admin_client.post(besetzung, {}).url == reverse("fahrdienst:einstellungen")
+    platz = reverse("fahrdienst:platz", args=["2026-11-11", steele.pk, 1])
+    assert f'href="{besetzung}?monat=2026-11"' in admin_client.get(platz).content.decode()
+    anmelden(client, p["eva"])  # ohne Planungsrecht keine Links zur Besetzung
+    assert besetzung not in client.get(PLAN, {"monat": "2026-11"}).content.decode()

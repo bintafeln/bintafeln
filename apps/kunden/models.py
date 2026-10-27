@@ -121,6 +121,11 @@ class KundenEinstellungen(models.Model):
         help_text="Steht in der Notiz an die Ausgabestelle (12 = „Pausenjahr“) bzw. bestimmt, bis "
         "wann pausiert wird.",
     )  # fmt: skip
+    verlaengern_fruehestens_tage = models.PositiveSmallIntegerField(
+        "Verlängern frühestens … Tage vor Ablauf", default=60, validators=[MaxValueValidator(365)],
+        help_text="Wer früher gemeldet wird, wird nicht verlängert; die Ausgabestelle bekommt eine "
+        "Notiz, ab wann es geht. 0 = jederzeit.",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Einstellungen Kundenstamm"

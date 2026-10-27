@@ -25,18 +25,29 @@ def verlaengern(request):
     daten = request.POST if request.method == "POST" else request.GET
     monate = _monate(daten.get("monate", ""), e.ausweis_gueltig_monate)
     if request.method == "POST":
-        v, p = verlaengerung.ausfuehren(
-            request.user, heute, monate,
-            set(request.POST.getlist("verlaengern")), set(request.POST.getlist("ablehnen")),
-            an_stelle=bool(request.POST.get("an_stelle")),
-        )  # fmt: skip
+        wahl = {k[5:]: w for k, w in request.POST.items() if k.startswith("wahl_")}
+        verlaengern = {n for n, w in wahl.items() if w == "verlaengern"}
+        # bisherige Form (Häkchen) wird weiter verstanden
+        verlaengern |= set(request.POST.getlist("verlaengern"))
+        ablehnen = {
+            n: request.POST.get(f"grund_{n}", "") for n, w in wahl.items() if w == "ablehnen"
+        }
+        ablehnen |= {n: "" for n in request.POST.getlist("ablehnen") if n not in ablehnen}
+        erfuellt = {p.nummer for p in verlaengerung.gemeldete(request.user, heute, monate)
+                    if p.ergebnis != verlaengerung.NEIN}  # fmt: skip
+        ohne_grund = sorted(n for n, g in ablehnen.items() if n in erfuellt and not g.strip())
+        v, p = verlaengerung.ausfuehren(request.user, heute, monate, verlaengern, ablehnen,
+                                        an_stelle=bool(request.POST.get("an_stelle")))  # fmt: skip
         if v or p:
             text = f"{v} Ausweis{'e' if v != 1 else ''} verlängert"
             if p:
                 text += f", {p} nicht verlängert"
             messages.success(request, text + ".")
-        else:
+        elif not ohne_grund:
             messages.info(request, "Nichts ausgewählt.")
+        if ohne_grund:
+            messages.error(request, "Ohne Begründung nicht abgelehnt (die Bedingungen sind "
+                                    f"erfüllt): {', '.join(ohne_grund)}")  # fmt: skip
         return redirect(f"{reverse('kunden:verlaengern')}?monate={monate}")
     liste = verlaengerung.gemeldete(request.user, heute, monate)
     return render(request, "kunden/verlaengern.html", {

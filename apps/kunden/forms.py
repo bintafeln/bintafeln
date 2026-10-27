@@ -35,6 +35,7 @@ class KundenEinstellungenForm(forms.ModelForm):
             "verlaengern_einkommensarten",
             "verlaengern_ablehnung",
             "verlaengern_sonst_pausieren_monate",
+            "verlaengern_fruehestens_tage",
         ]
         widgets = {
             "verlaengern_felder": forms.CheckboxSelectMultiple,

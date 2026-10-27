@@ -550,7 +550,11 @@ Dokumente, Historie.
   ihren Bedingungen und je Person, was fehlt (z. B. „33 Jahre, nicht schwerbehindert“). `**…**`
   in einer Notiz erscheint fett (`apps/core/templatetags/notiz.py`).
   Die gemeldete Notiz wird gestrichen. Jede Änderung steht in der Historie, die Meldungen sind
-  danach erledigt.
+  danach erledigt. Verlängert wird höchstens 60 Tage (einstellbar, 0 = jederzeit) vor dem Ablauf;
+  wer früher gemeldet wird, bekommt eine Notiz, ab wann es geht. Je Haushalt „verlängern“,
+  „ablehnen“ oder „offen lassen“; ablehnen geht auch bei erfüllten Bedingungen, dann mit
+  Begründung, die als Notiz („Ausweis wird **NICHT!** verlängert. Begründung: …“) an die
+  Ausgabestelle geht.
 - **Kundengruppe nur mit gültigem Ausweis** (ADR 0061): Pausierte, gesperrte, beendete Kunden
   und Kunden mit abgelaufenem Ausweis fallen automatisch aus der Kundengruppe, bei Änderungen
   sofort, sonst täglich und beim Import. Abschaltbar unter „Einstellungen → Kunden →
@@ -931,6 +935,10 @@ Ersetzt den gedruckten Fahrerplan mit den gelben Aufklebern (ADR 0074).
   mit den betroffenen Einsätzen und den freien Springern.
 - **Ersatz eintragen:** im Plan auf den Namen tippen; zur Wahl stehen die an dem Tag freien
   Springer, dann weitere freie Fahrer und Beifahrer.
+- **Jeden Monat öffnen und bearbeiten:** Monat und Jahr oben im Fahrerplan wählen (oder
+  Vormonat/Folgemonat). Der Plan wird nie abgeschlossen, er ergibt sich aus der festen Besetzung mit
+  Ausfällen und Ersatz. Wer plant, kommt über den Namen der Tour (✎) direkt zu ihrer festen
+  Besetzung und danach zurück zum Monat.
 - **Mindestbesetzung und Gäste:** Jede Tour hat Plätze (z. B. 3) und eine Mindestbesetzung
   (z. B. 2). Ein leerer Pflichtplatz steht als „unbesetzt“ da; freie Plätze darüber sind für
   Gäste ohne Konto (Name eintragen).
