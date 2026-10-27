@@ -8,7 +8,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 
-from apps.kunden.models import Abholung, Ausgabestelle, Haushalt
+from apps.kunden.models import Abholung, Ausgabestelle, Haushalt, Kundengruppe
 
 
 def _betrag(name):
@@ -244,6 +244,58 @@ class Buchung(models.Model):
 auditlog.register(Buchung)
 
 auditlog.register(BeitragsfreierZeitraum)
+
+
+class Sonderausgabe(models.Model):
+    """Außerplanmäßige Ausgabe (ADR 0072): An diesem Tag sind an der Ausgabestelle genau die
+    gewählten Kunden dran – die Kundengruppen eines Wochentags und/oder einzelne Kundengruppen –,
+    die regulären Kunden des Tages nicht. Regeln in ``apps/ausgabe/ausgabetag.py``."""
+
+    TAGE = [("Mo", "Montag"), ("Di", "Dienstag"), ("Mi", "Mittwoch"), ("Do", "Donnerstag"),
+            ("Fr", "Freitag"), ("Sa", "Samstag"), ("So", "Sonntag")]  # fmt: skip
+
+    datum = models.DateField("Datum")
+    ausgabestelle = models.ForeignKey(
+        Ausgabestelle,
+        on_delete=models.CASCADE,
+        related_name="sonderausgaben",
+        verbose_name="Ausgabestelle",
+    )
+    wie_wochentag = models.CharField(
+        "Kunden vom Wochentag", max_length=2, blank=True, choices=TAGE,
+        help_text="Alle Kundengruppen dieser Ausgabestelle mit diesem Ausgabetag.",
+    )  # fmt: skip
+    kundengruppen = models.ManyToManyField(
+        Kundengruppe, blank=True, related_name="+", verbose_name="Einzelne Kundengruppen",
+        help_text="Zusätzlich oder statt des Wochentags; auch mehrere.",
+    )  # fmt: skip
+    anmerkung = models.CharField("Anmerkung", max_length=100, blank=True,
+                                 help_text="z. B. Weihnachtsausgabe")  # fmt: skip
+
+    class Meta:
+        verbose_name = "Sonderausgabe"
+        verbose_name_plural = "Sonderausgaben"
+        ordering = ["-datum", "ausgabestelle__name"]
+        constraints = [models.UniqueConstraint(fields=["datum", "ausgabestelle"],
+                                               name="sonderausgabe_je_tag_und_stelle")]  # fmt: skip
+
+    def __str__(self):
+        return f"{self.datum:%d.%m.%Y} {self.ausgabestelle}"
+
+    def wer(self) -> str:
+        """z. B. „Kunden vom Donnerstag + Gruppe B, Gruppe C“."""
+        teile = [f"Kunden vom {self.get_wie_wochentag_display()}"] if self.wie_wochentag else []
+        if self.pk:
+            teile += [g.name for g in self.kundengruppen.all()]
+        return " + ".join(teile) or "niemand gewählt"
+
+    @property
+    def aktiv(self) -> bool:
+        """Für die Listenansicht: vergangene Sonderausgaben gelten als inaktiv."""
+        return self.datum >= timezone.localdate()
+
+
+auditlog.register(Sonderausgabe, m2m_fields={"kundengruppen"})
 
 
 class Sonderaktion(models.Model):

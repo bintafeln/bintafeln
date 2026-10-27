@@ -724,6 +724,13 @@ Unter „Einstellungen → Ausgabe, Ampel und Beiträge“:
 - **Beitragsfreie Zeiträume** („Einstellungen → Beitragsfreie Zeiträume“, z. B. vor
   Weihnachten): Der Einlass schlägt dann 0 € vor und zeigt „Heute beitragsfrei“; Vorschläge
   für Vorauszahlungen zählen diese Tage nicht.
+- **Sonderausgaben** (ADR 0072, „Einstellungen → Ausgabe → Sonderausgaben“): außerplanmäßige
+  Ausgabe an einem Datum und einer Ausgabestelle, z. B. Mi 23.12. mit den Kunden vom Donnerstag.
+  Gewählt werden ein Wochentag (alle Kundengruppen der Stelle mit diesem Ausgabetag) und/oder
+  einzelne Kundengruppen, auch mehrere und auch von anderen Ausgabestellen. An dem Tag sind genau
+  diese Kunden dran, die regulären des Tages nicht: Ampel, Zähler oben rechts, Aufruf und
+  Kundenliste richten sich danach (`apps/ausgabe/ausgabetag.py`), der Einlass zeigt oben
+  „Heute Sonderausgabe“.
 
 ### Korrekturwünsche
 

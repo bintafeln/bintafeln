@@ -19,6 +19,7 @@ from django.utils import timezone
 
 from apps.aufruf.models import AufrufEinstellungen, AufrufTag
 from apps.aufruf.sprachen import sprachcode
+from apps.ausgabe import ausgabetag
 from apps.ausgabe.ampel import WOCHENTAGE, wochentage
 from apps.kunden.models import Abholung, AusgabestelleZeit, Haushalt, Kundengruppe
 
@@ -52,7 +53,9 @@ def tagname(stelle, datum: dt.date) -> str:
 
 
 def gruppen_heute(stelle, datum: dt.date) -> list[Kundengruppe]:
-    kuerzel = WOCHENTAGE[wochentag(stelle, datum)]
+    if AufrufEinstellungen.laden(stelle).wochentag_probe is None:
+        return ausgabetag.gruppen_am(stelle, datum)  # mit Sonderausgaben (ADR 0072)
+    kuerzel = WOCHENTAGE[wochentag(stelle, datum)]  # Probelauf: eingestellter Wochentag
     gruppen = [
         g for g in Kundengruppe.objects.filter(ausgabestelle=stelle, aktiv=True)
         if kuerzel in wochentage(g.wochentage)

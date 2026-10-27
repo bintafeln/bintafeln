@@ -10,10 +10,9 @@ from dataclasses import dataclass
 
 from django.utils import timezone
 
-from apps.ausgabe.ampel import WOCHENTAGE, wochentage
 from apps.konten import rollen
 from apps.kunden import zugang
-from apps.kunden.models import Abholung, Ausgabestelle, Haushalt, Kundengruppe
+from apps.kunden.models import Abholung, Ausgabestelle, Haushalt
 
 
 def waehlbar(benutzer) -> list[Ausgabestelle]:
@@ -58,9 +57,9 @@ def fortschritt(stelle, heute: dt.date) -> Fortschritt | None:
     Ausgabetag ist."""
     if stelle is None:
         return None
-    tag = WOCHENTAGE[heute.weekday()]
-    gruppen = Kundengruppe.objects.filter(ausgabestelle=stelle).order_by("uhrzeit", "name")
-    gruppen = [g for g in gruppen if tag in wochentage(g.wochentage)]
+    from apps.ausgabe import ausgabetag
+
+    gruppen = ausgabetag.gruppen_am(stelle, heute)  # auch Sonderausgaben (ADR 0072)
     if not gruppen:
         return None
     erwartet = Haushalt.objects.filter(

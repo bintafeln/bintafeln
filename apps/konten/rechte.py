@@ -115,7 +115,7 @@ KATALOG = [
     Recht("einstellungen.mail", EINSTELLUNGEN, "E-Mail-Versand"),
     Recht("einstellungen.kundenstamm", EINSTELLUNGEN, "Kundenstamm und Zusatzfelder"),
     Recht("einstellungen.listen", EINSTELLUNGEN, "Kundengruppen, Ausgabestellen, Einkommensarten, "
-          "Notiz-Vorlagen, Dokumentarten, beitragsfreie Zeiträume"),
+          "Notiz-Vorlagen, Dokumentarten, beitragsfreie Zeiträume, Sonderausgaben"),
     Recht("einstellungen.ausweis", EINSTELLUNGEN, "Kundenausweis gestalten"),
     Recht("einstellungen.ausgabe", EINSTELLUNGEN, "Ausgabe, Ampel und Beiträge"),
     Recht("einstellungen.antraege", EINSTELLUNGEN, "Antragsformular und Texte"),

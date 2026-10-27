@@ -6,8 +6,10 @@ from apps.ausgabe.models import (
     BeitragsfreierZeitraum,
     Sonderaktion,
     SonderaktionAuswahl,
+    Sonderausgabe,
 )
 from apps.konten.forms import DatumEingabe
+from apps.kunden.models import Ausgabestelle, Kundengruppe
 
 
 class AusgabeEinstellungenForm(forms.ModelForm):
@@ -86,6 +88,46 @@ class BeitragsfreiForm(forms.ModelForm):
         model = BeitragsfreierZeitraum
         fields = ["bezeichnung", "von", "bis"]
         widgets = {"von": DatumEingabe(), "bis": DatumEingabe()}
+
+
+class GruppenAuswahl(forms.ModelMultipleChoiceField):
+    def label_from_instance(self, g):
+        teile = [t for t in (g.ausgabestelle.name if g.ausgabestelle else "", g.wochentage) if t]
+        return f"{g.name} ({', '.join(teile)})" if teile else g.name
+
+
+class SonderausgabeForm(forms.ModelForm):
+    """Außerplanmäßige Ausgabe (ADR 0072): Wochentag und/oder einzelne Kundengruppen."""
+
+    kundengruppen = GruppenAuswahl(
+        queryset=Kundengruppe.objects.none(), required=False, label="Einzelne Kundengruppen",
+        widget=forms.CheckboxSelectMultiple,
+        help_text="Zusätzlich oder statt des Wochentags; auch mehrere.",
+    )  # fmt: skip
+
+    class Meta:
+        model = Sonderausgabe
+        fields = ["datum", "ausgabestelle", "wie_wochentag", "kundengruppen", "anmerkung"]
+        widgets = {"datum": DatumEingabe()}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["ausgabestelle"].queryset = Ausgabestelle.objects.order_by("name")
+        gruppen = Kundengruppe.objects.filter(aktiv=True)
+        if self.instance.pk:  # schon gewählte, inzwischen inaktive Gruppen bleiben wählbar
+            gruppen = gruppen | self.instance.kundengruppen.all()
+        gruppen = gruppen.distinct().select_related("ausgabestelle")
+        self.fields["kundengruppen"].queryset = gruppen.order_by("ausgabestelle__name", "name")
+        self.fields["wie_wochentag"].choices = [("", "– keiner –"), *Sonderausgabe.TAGE]
+
+    def clean(self):
+        daten = super().clean()
+        if not daten.get("wie_wochentag") and not daten.get("kundengruppen"):
+            raise forms.ValidationError(
+                "Bitte einen Wochentag oder mindestens eine Kundengruppe wählen – sonst ist an "
+                "diesem Tag niemand dran."
+            )
+        return daten
 
 
 class SonderaktionForm(forms.ModelForm):

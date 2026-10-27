@@ -226,7 +226,14 @@ def _tag(request) -> str:
     if request.GET.get("q", "").strip():
         return ""
     verfuegbar = export.waehlbare_tage(_eigene_gruppen(request.user))
-    return export.standard_tag(request.user, timezone.localdate(), verfuegbar)
+    from apps.ausgabe import ausgabetag
+    from apps.ausgabe import stelle as stelle_wahl
+
+    heute = timezone.localdate()
+    sonder = ausgabetag.sonderausgabe(stelle_wahl.aktuelle(request.user), heute)
+    if sonder is not None:  # Sonderausgabe: deren Wochentag, bei einzelnen Gruppen alle Tage
+        return sonder.wie_wochentag if sonder.wie_wochentag in verfuegbar else ""
+    return export.standard_tag(request.user, heute, verfuegbar)
 
 
 @require_POST
