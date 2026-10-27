@@ -91,7 +91,7 @@ BEISPIEL = {
     "kunde_seit": "Kunde seit 01.02.2024",
     "personen": "3 Personen",
     "personen_kinder": "6/3",
-    "merkmale": [("rollstuhl", ""), ("kuerzel", "V")],
+    "merkmale": [("rollstuhl", "")],
 }
 MERKMAL_FARBE = "#1d4f91"  # Blau des Rollstuhl-Symbols (ISO 7001)
 

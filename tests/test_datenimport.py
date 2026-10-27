@@ -463,3 +463,182 @@ def test_vollaustausch_entfallene_behalten(admin_client, sicherung):
         {"modus": "vollaustausch", "wahl_2": "behalten"},
     )
     assert set(Haushalt.objects.values_list("kundennummer", flat=True)) == {"1", "2"}
+
+
+# --- Adressbuch und Mitglieder ----------------------------------------------------------
+
+
+def _alles_uebernehmen(client, sitzung, modus="aktualisieren", **extra):
+    """Abgleich absenden, alle vorgeschlagenen Haken gesetzt."""
+    sitzung.refresh_from_db()
+    ziel = ZIELE[sitzung.ziel]
+    plan = abgleich.vorgaben(sitzung.plan, modus, ziel.aktionen)
+    wahl = {
+        f"f-{e['i']}-{f['feld']}": "1" for e in plan["geaendert"] for f in e["felder"] if f["an"]
+    }
+    return client.post(
+        reverse("datenimport:abgleich", args=[sitzung.pk]), {"modus": modus, **wahl, **extra}
+    )
+
+
+def test_adressbuch_aus_excel(admin_client):
+    from apps.adressen.models import Adresse, AdressKategorie
+    from apps.mitglieder.models import Mitglied
+
+    markt = Adresse.objects.create(organisation="Markt Nord", email="markt@example.org")
+    markt.kategorien.add(AdressKategorie.objects.create(name="Lebensmittel"))
+    weg = Adresse.objects.create(art="person", vorname="Willi", nachname="Weg")
+    mitglied = Adresse.objects.create(art="person", vorname="Mia", nachname="Mitglied")
+    Mitglied.objects.create(adresse=mitglied, nummer="1", art="x", eintritt=dt.date(2020, 1, 1))
+    datei = excel_datei(
+        "adressen.xlsx",
+        {
+            "Adressen": [
+                ["Firma", "Name", "Vorname", "E-Mail", "Telefon", "Kategorie", "Newsletter"],
+                ["Markt Nord", "", "", "MARKT@example.org", "0201 9", "Spender; Presse", "ja"],
+                ["", "Neu", "Nina", "", "", "Spender", ""],
+            ]
+        },
+    )
+    sitzung = hochladen(admin_client, "adressen", datei)
+    assert sitzung.tabellen[0]["zuordnung"][:2] == ["organisation", "nachname"]
+    weiter(admin_client, sitzung)
+    sitzung.refresh_from_db()
+    fehlt = [e["name"] for e in sitzung.plan["fehlt"]]
+    assert set(fehlt) == {"Willi Weg", "Mia Mitglied"}
+    wahl = {f"w-{i}": "loeschen" for i in range(len(fehlt))}
+    _alles_uebernehmen(admin_client, sitzung, "ersetzen", **wahl)
+    markt.refresh_from_db()
+    assert markt.telefon == "0201 9" and markt.einwilligung_email == timezone.localdate()
+    assert sorted(k.name for k in markt.kategorien.all()) == ["Lebensmittel", "Presse", "Spender"]
+    assert Adresse.objects.filter(nachname="Neu", art="person").exists()
+    assert not Adresse.objects.filter(pk=weg.pk).exists()
+    assert Adresse.objects.filter(pk=mitglied.pk).exists()  # Mitgliedschaft hängt daran
+
+
+def test_mitglieder_mit_vorhandener_adresse(admin_client):
+    from apps.adressen.models import Adresse
+    from apps.mitglieder.models import Mitglied
+
+    alt = Mitglied.objects.create(
+        adresse=Adresse.objects.create(art="person", vorname="Alma", nachname="Alt"),
+        nummer="7",
+        art="Ordentliches Mitglied",
+        eintritt=dt.date(2010, 1, 1),
+    )
+    raus = Mitglied.objects.create(
+        adresse=Adresse.objects.create(art="person", vorname="Rolf", nachname="Raus"),
+        nummer="8",
+        art="Ordentliches Mitglied",
+        eintritt=dt.date(2010, 1, 1),
+    )
+    spender = Adresse.objects.create(
+        art="person", vorname="Sina", nachname="Spender", email="sina@example.org"
+    )
+    datei = csv_datei(
+        "mitglieder.csv",
+        "Mitglieds-Nr.;Name;Vorname;E-Mail;Mitglied seit;Beitrag",
+        "7;Alt;Alma;alma@example.org;01.01.2010;24",
+        ";Spender;Sina;sina@example.org;01.03.2026;12,50",
+    )
+    sitzung = hochladen(admin_client, "mitglieder", datei)
+    assert sitzung.tabellen[0]["zuordnung"] == [
+        "nummer",
+        "nachname",
+        "vorname",
+        "email",
+        "eintritt",
+        "jahresbeitrag",
+    ]
+    weiter(admin_client, sitzung)
+    sitzung.refresh_from_db()
+    i = next(i for i, e in enumerate(sitzung.plan["fehlt"]) if e["id"] == str(raus.pk))
+    _alles_uebernehmen(admin_client, sitzung, **{f"w-{i}": "austritt"})
+    alt.refresh_from_db()
+    assert alt.adresse.email == "alma@example.org" and alt.jahresbeitrag == Decimal("24.00")
+    neu = Mitglied.objects.get(adresse=spender)  # vorhandene Adresse weiterverwendet
+    assert neu.eintritt == dt.date(2026, 3, 1) and neu.jahresbeitrag == Decimal("12.50")
+    assert Adresse.objects.filter(nachname="Spender").count() == 1
+    raus.refresh_from_db()
+    assert raus.austritt == timezone.localdate()
+
+
+# --- Kundenstamm: Kontobuchungen und Nachreichen in Teilen ------------------------------
+
+
+def test_buchungen_im_vollaustausch():
+    from apps.ausgabe import konto
+    from apps.ausgabe.models import Buchung
+    from apps.kunden import importieren
+
+    heute = timezone.localdate()
+    dateien = {
+        "haushalte.csv": b"kundennummer;nachname;vorname\n1;A;B\n",
+        "buchungen.csv": (
+            "kundennummer;datum;betrag;art\n"
+            f"1;{heute:%d.%m.%Y};5,00;einzahlung\n"
+            f"1;{heute:%d.%m.%Y};-1,50;\n"
+            "1;01.01.2000;3;einzahlung\n"
+        ).encode(),
+    }
+    ergebnis = importieren.pruefen(dateien)
+    texte = [m["text"] for m in ergebnis.bericht]
+    assert any("aus den Buchungen berechnet" in t for t in texte)
+    assert any("Aufbewahrungsfrist" in t for t in texte)
+    for _ in range(2):  # wiederholter Import ersetzt, verdoppelt nicht
+        importieren.uebernehmen(
+            importieren.pruefen(dateien).daten,
+            benutzer=None,
+            dateien=[],
+            pruefsumme="",
+            anzahl_warnungen=0,
+        )
+    h = Haushalt.objects.get()
+    assert h.kontostand == Decimal("3.50")
+    assert sorted(b.art for b in h.buchungen.all()) == ["abholung", "einzahlung"]
+    konto.einzahlen(h, Decimal("1"), None, "")  # in bintafeln gebucht: bleibt für die Kasse
+    importieren.uebernehmen(
+        importieren.pruefen(dateien).daten,
+        benutzer=None,
+        dateien=[],
+        pruefsumme="",
+        anzahl_warnungen=0,
+    )
+    assert Buchung.objects.filter(importiert=False).count() == 1
+    assert Buchung.objects.filter(importiert=True).count() == 2
+
+
+def test_kunden_in_teilen_nachreichen(admin_client, sicherung):
+    from apps.ausgabe.models import Buchung
+    from apps.kunden.models import Abholung, ImportVorbereitung
+
+    _haushalt("1", "Anna", "Alt")
+    heute = timezone.localdate()
+    teil2 = [
+        csv_datei(
+            "abholungen.csv",
+            "kundennummer;datum",
+            f"1;{heute:%d.%m.%Y}",
+            f"1;{heute - dt.timedelta(days=7):%d.%m.%Y}",
+        ),
+        csv_datei("personen.csv", "kundennummer;nachname;vorname;geburtsdatum", "1;Alt;Kai;"),
+        csv_datei("buchungen.csv", "kundennummer;datum;betrag", f"1;{heute:%d.%m.%Y};2"),
+    ]
+    for durchgang in range(2):  # zweimal: nichts doppelt
+        admin_client.post(reverse("kunden:import"), {"dateien": teil2})
+        for d in teil2:
+            d.seek(0)
+        v = ImportVorbereitung.objects.get()
+        assert v.daten["nur_ergaenzen"]
+        inhalt = admin_client.get(
+            reverse("kunden:import_vorschau", args=[v.pk]) + "?modus=vollaustausch"
+        ).content.decode()
+        assert "Kundenstamm ergänzen" in inhalt and "?modus=vollaustausch" not in inhalt
+        admin_client.post(
+            reverse("kunden:import_uebernehmen", args=[v.pk]), {"modus": "vollaustausch"}
+        )
+        assert Haushalt.objects.count() == 1, durchgang
+    h = Haushalt.objects.get()
+    assert Abholung.objects.filter(haushalt=h).count() == 2
+    assert h.personen.count() == 2
+    assert Buchung.objects.filter(haushalt=h, importiert=True).count() == 1

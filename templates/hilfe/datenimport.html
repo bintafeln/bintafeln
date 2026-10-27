@@ -1,5 +1,6 @@
 <p>Menü „Einstellungen → Systemsteuerung → Daten importieren (CSV, Excel)“. Damit lassen sich Daten aus einem anderen Programm
-  übernehmen, ohne die Datei vorher umzubauen: Kundenstamm, Ausgabestellen und Mitarbeitende (mit Anschrift).</p>
+  übernehmen, ohne die Datei vorher umzubauen: Kundenstamm (mit Abholungen und Kontobuchungen), Ausgabestellen,
+  Mitarbeitende (mit Anschrift), Adressbuch und Mitglieder.</p>
 <ol>
   <li><strong>Hochladen:</strong> Was importiert wird wählen und eine oder mehrere Dateien hochladen – CSV (Semikolon, Komma
     oder Tabulator, auch aus älteren Excel-Versionen) oder Excel (.xlsx; jedes Blatt einzeln). Titelzeilen über den
@@ -15,12 +16,18 @@
     und verschieden. Mögliche Dubletten (z. B. gleicher Name ohne gleiche E-Mail) werden nie stillschweigend zusammengeführt.
     Kommt ein Eintrag in der Datei mehrfach vor, werden die Zeilen zusammengeführt und Widersprüche angezeigt.</li>
   <li><strong>Nicht mehr in der Datei:</strong> Je Eintrag wählen: behalten, bei Ausgabestellen auf inaktiv setzen oder löschen
-    (Papierkorb; hängen noch Kundengruppen daran, wird sie nur inaktiv), bei Mitarbeitenden sperren. Mitarbeitende werden nie
-    gelöscht, das eigene Konto steht nie zur Wahl.</li>
+    (Papierkorb; hängen noch Kundengruppen daran, wird sie nur inaktiv), bei Mitarbeitenden sperren, bei Mitgliedern den
+    Austritt mit heutigem Datum eintragen. Mitarbeitende werden nie gelöscht, das eigene Konto steht nie zur Wahl. Adressen,
+    an denen Spenden oder eine Mitgliedschaft hängen, bleiben.</li>
 </ol>
 <p><strong>Mitarbeitende:</strong> Neue Konten bekommen kein Passwort. Den Zugang geben Sie danach unter „Mitarbeitende“ (Link
   per E-Mail oder neues Passwort). Erkannt werden vorhandene Konten am Benutzernamen, an der E-Mail-Adresse oder an Name und
   Geburtsdatum. Rollen aus der Datei bekommen nur neue Konten, und nur solche, die Sie selbst vergeben dürfen.</p>
+<p><strong>Adressbuch:</strong> Erkannt wird an der E-Mail-Adresse oder an Name und PLZ. Kategorien aus der Datei kommen dazu
+  (vorhandene bleiben), unbekannte werden angelegt. Bei den Einwilligungen genügt „ja“: Dann gilt sie ab heute.</p>
+<p><strong>Mitglieder:</strong> Die Anschrift kommt ins Adressbuch; steht die Person dort schon, wird diese Adresse
+  verwendet. Erkannt wird an der Mitgliedsnummer, sonst an der Anschrift. Ohne Nummer vergibt bintafeln die nächste freie,
+  ohne Eintritt gilt der heutige Tag.</p>
 <p><strong>Kundenstamm:</strong> Nach der Zuordnung prüft bintafeln die Daten genauso wie beim Importformat und zeigt dann den
   Abgleich aus „Kundenstamm importieren“.</p>
 <p>Hochgeladene Daten werden höchstens zwei Stunden aufbewahrt und nach dem Übernehmen oder Verwerfen gelöscht.</p>

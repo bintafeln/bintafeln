@@ -181,6 +181,10 @@ BETRIEB_ORDNER = Path(umgebung.text("BINTAFELN_BETRIEB_ORDNER", str(BASE_DIR / "
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Der Proxy (Caddy) setzt X-Forwarded-Proto; die App ist nur über ihn erreichbar.
+# Der Import-Abgleich schickt je Feld und Eintrag eine Wahl (ADR 0078); Djangos Vorgabe von
+# 1000 Formularfeldern reicht dafür nicht.
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 20_000
+
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"

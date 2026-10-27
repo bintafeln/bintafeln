@@ -13,7 +13,7 @@ from apps.datenimport.models import ImportSitzung, ImportVorlage
 from apps.datenimport.ziele import ZIELE, erlaubte
 from apps.konten import rollen
 
-MAX_DATEIGROESSE = 20 * 1024 * 1024
+MAX_DATEIGROESSE = 60 * 1024 * 1024  # große Kundenstämme mit allen Abholungen
 VORSCHAU_ZEILEN = 5
 KUNDEN_DATEINAMEN = [
     ("haushalt", "haushalte.csv"),
@@ -99,7 +99,9 @@ def start(request):
         if not dateien:
             messages.error(request, "Bitte mindestens eine Datei auswählen.")
         elif any(d.size > MAX_DATEIGROESSE for d in dateien):
-            messages.error(request, "Dateien dürfen höchstens 20 MB groß sein.")
+            messages.error(
+                request, "Dateien dürfen höchstens 60 MB groß sein (sonst in Teilen importieren)."
+            )
         else:
             tabellen = []
             try:

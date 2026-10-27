@@ -1,9 +1,10 @@
 # Importformat für den Kundenstamm
 
-Version 1.3
+Version 1.4
 
 | Version | Änderung |
 |---|---|
+| 1.4 | neue optionale Datei `buchungen.csv` (Kontobuchungen). Beim Ergänzen darf `haushalte.csv` fehlen: Dann werden die übrigen Dateien vorhandenen Haushalten hinzugefügt (Nachreichen in Teilen). Dateien der Version 1.3 bleiben gültig. |
 | 1.3 | Das Format bleibt gleich. Neu: Der Import kann den Kundenstamm auch ergänzen statt ersetzen (siehe Grundsätze), und der Import-Assistent nimmt beliebige CSV- und Excel-Dateien und schreibt sie in dieses Format um (ADR 0078). |
 | 1.2 | leeres `wochentage` in `kundengruppen.csv` überschreibt keine in bintafeln eingetragenen Wochentage mehr. Dateien bleiben gültig. |
 | 1.1 | neue optionale Dateien `abholungen.csv` und `ausnahmen.csv`. Dateien der Version 1 bleiben gültig. |
@@ -26,9 +27,11 @@ Beispieldateien mit erfundenen Daten: [beispiele/import/](beispiele/import/)
     Unterschiede je Feld zur Wahl gestellt. Verglichen wird nur, was die Dateien liefern; leere
     Zellen und fehlende Spalten oder Dateien ändern nichts. Angehörige, Abholberechtigte und Sperren
     eines Haushalts werden als Ganzes übernommen, wenn man sie wählt. Abholungen, Ausnahmen und
-    Anmerkungen kommen dazu, wenn es sie (gleiches Datum bzw. gleicher Text) noch nicht gibt.
+    Anmerkungen und Kontobuchungen kommen dazu, wenn es sie (gleiches Datum bzw. gleicher Text)
+    noch nicht gibt.
   - **Nur neue hinzufügen:** Nur neue Haushalte; Unterschiede werden angezeigt, aber nur übernommen,
-    wenn man sie einzeln wählt.
+    wenn man sie einzeln wählt. Abholungen, Ausnahmen, Anmerkungen und Buchungen, die es noch nicht
+    gibt, kommen auch hier dazu (es sind neue Einträge, nichts wird geändert).
 - **Alles oder nichts:** Entweder wird alles Gewählte übernommen oder gar nichts. Ein
   fehlerhafter Import hinterlässt den alten Stand.
 - **Erst prüfen, dann übernehmen:** Nach dem Hochladen zeigt bintafeln einen Prüfbericht. Erst nach
@@ -52,6 +55,7 @@ Beispieldateien mit erfundenen Daten: [beispiele/import/](beispiele/import/)
 | `kundengruppen.csv` | nein | Kundengruppen mit Ausgabestelle und Termin |
 | `abholungen.csv` | nein | einzelne Abholungen innerhalb der Aufbewahrungsfrist |
 | `ausnahmen.csv` | nein | erteilte Ausnahmen innerhalb der Aufbewahrungsfrist |
+| `buchungen.csv` | nein | Kontobuchungen (Kundenkonto) innerhalb der Aufbewahrungsfrist |
 
 **Minimalfall:** Nur `haushalte.csv` mit Kundennummer, Vor- und Nachname. Alles andere ist
 optional und kann später ergänzt werden, sobald vollständigere Daten vorliegen.
@@ -188,6 +192,39 @@ Für Abholungen und Ausnahmen gilt eine **Aufbewahrungsfrist** (Einstellung je T
 3 Jahre). Zeilen mit einem älteren Datum werden nicht übernommen (Warnung). In bintafeln werden
 ältere Einträge automatisch gelöscht (ADR 0011).
 
+## buchungen.csv
+
+| Spalte | Pflicht | Hinweis |
+|---|---|---|
+| `kundennummer` | **ja** | |
+| `datum` | **ja** | Datum der Buchung |
+| `betrag` | **ja** | positiv = Gutschrift (z. B. Einzahlung), negativ = Belastung (z. B. Abholung auf Rechnung) |
+| `uhrzeit` | | `HH:MM` |
+| `art` | | `abholung`, `einzahlung` oder `korrektur`. Leer: aus dem Vorzeichen (positiv = Einzahlung, negativ = Abholung) |
+| `bar` | | dabei bar eingenommener Betrag; leer = 0 |
+| `ausgabestelle` | | Name der Ausgabestelle. Unbekannte werden angelegt |
+| `bemerkung` | | höchstens 200 Zeichen |
+| `eingetragen_von` | | Name als Text |
+
+Der **Kontostand** kommt weiter aus `haushalte.csv`. Ist er dort leer, berechnet bintafeln ihn aus
+den Buchungen (Warnung). Buchungen älter als die Aufbewahrungsfrist für Buchungen (Einstellung
+„Ausgabe“, Vorgabe 10 Jahre) werden nicht übernommen. Ein Vollaustausch mit `buchungen.csv`
+ersetzt nur früher importierte Buchungen; in bintafeln gebuchte bleiben für die Kasse erhalten.
+Beim Ergänzen kommen nur Buchungen dazu, die es noch nicht gibt (gleiches Datum, Betrag und Art).
+
+## In Teilen importieren
+
+Große Bestände (z. B. über 10.000 Haushalte mit allen Abholungen) lassen sich in Teilen einspielen,
+jeweils mit „Hinzufügen und aktualisieren“:
+
+1. zuerst `haushalte.csv` (auch aufgeteilt, z. B. je Ausgabestelle; nicht gelieferte Haushalte
+   bleiben stehen),
+2. danach die übrigen Dateien, auch ohne `haushalte.csv` und auch aufgeteilt (z. B. Abholungen je
+   Jahr). Sie werden vorhandenen Haushalten hinzugefügt; was es schon gibt, kommt nicht doppelt.
+
+Ohne `haushalte.csv` ist kein Vollaustausch möglich. Eine Kundennummer, die weder in der Datei noch
+in bintafeln vorkommt, bleibt ein Fehler.
+
 ## Zusatzfelder
 
 Zusatzfelder legt die Tafel **vorher** in bintafeln an (Schlüssel, Bezeichnung, gilt für Haushalt
@@ -217,7 +254,7 @@ nicht.
 - Datei nicht in UTF-8 lesbar oder kein Semikolon als Trennzeichen erkennbar
 - leere Pflichtangabe in einer Zeile
 - doppelte Kundennummer in `haushalte.csv`
-- Kundennummer in einer anderen Datei, die es in `haushalte.csv` nicht gibt
+- Kundennummer in einer anderen Datei, die es weder in `haushalte.csv` noch in bintafeln gibt
 - unlesbares Datum in einem Pflichtfeld
 - doppeltes Kürzel in `kundengruppen.csv`
 - unbekannter Status
@@ -255,5 +292,4 @@ Viele Programme exportieren Listen als Excel-Tabelle. Damit daraus eine `haushal
 
 ## Nicht Teil des Formats
 
-Bewusst nicht vorgesehen sind: Dokumente und Ausweiskopien, Höhe des Einkommens und einzelne
-Kontobuchungen. Vom Kundenkonto wird nur der aktuelle Stand übernommen.
+Bewusst nicht vorgesehen sind: Dokumente und Ausweiskopien und die Höhe des Einkommens.

@@ -54,3 +54,22 @@ gemeinsamer Abgleich für alle Ziele sorgt dafür, dass Konflikte überall gleic
 gelöst werden. „Hinzufügen und aktualisieren“ als Vorgabe löscht nie etwas; der Vollaustausch
 bleibt für die Phase, in der das Altsystem führt (siehe Festlegung zum Kundenstamm in CLAUDE.md),
 muss aber bewusst gewählt werden.
+
+## Nachtrag: Adressbuch, Mitglieder, Kontobuchungen, große Bestände
+
+- Weitere Ziele im Assistenten: **Adressbuch** (Treffer über E-Mail oder Name und PLZ, Kategorien
+  werden ergänzt, nie entfernt; „ja“ bei einer Einwilligung gilt ab heute; fehlende: behalten oder
+  löschen, Adressen mit Spenden oder Mitgliedschaft bleiben) und **Mitglieder** (Anschrift im
+  Adressbuch, vorhandene Adresse wird weiterverwendet; Treffer über die Mitgliedsnummer; fehlende:
+  behalten oder Austritt mit heutigem Datum). Der alte CSV-Import des Adressbuchs bleibt.
+- Kundenstamm: neue optionale Datei **`buchungen.csv`** (Importformat 1.4). `Buchung.importiert`
+  markiert importierte Buchungen; ein Vollaustausch ersetzt nur diese, in bintafeln gebuchte
+  bleiben für die Kasse (ADR 0014). Der Kontostand kommt weiter aus `haushalte.csv`, nur wenn er
+  dort fehlt, aus der Summe der Buchungen.
+- **In Teilen importieren:** Beim Ergänzen darf `haushalte.csv` fehlen; dann gehören die Zeilen zu
+  vorhandenen Haushalten (`daten["nur_ergaenzen"]`, kein Vollaustausch). Abholungen, Ausnahmen,
+  Anmerkungen und Buchungen kommen in beiden Ergänzen-Arten dazu, wenn es sie noch nicht gibt;
+  nachgereichte Angehörige, Abholberechtigte und Sperren ebenso. Das geschieht mengenweise
+  (wenige Abfragen statt mehrerer je Haushalt).
+- Grenzen für große Bestände: 300.000 Zeilen und 60 MB je Datei, `DATA_UPLOAD_MAX_NUMBER_FIELDS`
+  20.000 (eine Wahl je Feld im Abgleich), gunicorn wartet bis 300 Sekunden.

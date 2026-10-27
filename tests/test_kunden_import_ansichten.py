@@ -63,7 +63,7 @@ def test_ohne_dateien(buero_client):
 def test_zu_grosse_datei(buero_client, monkeypatch):
     monkeypatch.setattr("apps.kunden.views.MAX_DATEIGROESSE", 5)
     antwort = buero_client.post(IMPORT, {"dateien": [gueltig()]})
-    assert "höchstens 20 MB" in antwort.content.decode()
+    assert "höchstens 60 MB" in antwort.content.decode()
     assert not ImportVorbereitung.objects.exists()
 
 

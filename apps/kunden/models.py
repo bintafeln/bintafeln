@@ -1099,6 +1099,7 @@ class ImportLauf(models.Model):
     anzahl_bemerkungen = models.PositiveIntegerField("Anmerkungen", default=0)
     anzahl_abholungen = models.PositiveIntegerField("Abholungen", default=0)
     anzahl_ausnahmen = models.PositiveIntegerField("Ausnahmen", default=0)
+    anzahl_buchungen = models.PositiveIntegerField("Kontobuchungen", default=0)
     anzahl_warnungen = models.PositiveIntegerField("Warnungen", default=0)
     art = models.CharField("Art", max_length=20, default="vollaustausch",
                            choices=[("vollaustausch", "Vollaustausch"), ("neu", "nur neue"),
