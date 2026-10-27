@@ -470,3 +470,19 @@ def test_planung_meldet_nur_ausfall_ohne_ersatz(team, admin_client):
     assert admin_client.post(fremd, {"weiter": "https://example.org/"}).url == reverse(
         "fahrdienst:meine"
     )
+
+
+def test_wer_ausfaellt_springt_nicht_ein(team, admin_client):
+    """Wer sich für einen Zeitraum abgemeldet hat, ist dort weder in der Auswahl noch eintragbar."""
+    p, mitte, steele = team
+    plan.ausfall_melden(p["ole"], MITTWOCH - dt.timedelta(days=2), MITTWOCH + dt.timedelta(days=7),
+                        "urlaub", "", "ole")  # fmt: skip
+    plan.ausfall_melden(p["kai"], MITTWOCH, None, "krank", "", "kai")
+    springer, weitere = plan.verfuegbar(MITTWOCH)
+    assert p["ole"] not in springer + weitere
+    url = reverse("fahrdienst:platz", args=[MITTWOCH.isoformat(), steele.pk, 1])
+    assert "Ole Hansen" not in admin_client.get(url).content.decode()
+    antwort = admin_client.post(url, {"benutzer": p["ole"].pk}, follow=True)
+    assert "Ole Hansen kann am 11.11.2026 nicht einspringen" in antwort.content.decode()
+    assert not Ersatz.objects.exists()
+    assert p["ole"] in sum(plan.verfuegbar(MITTWOCH + dt.timedelta(days=12)), [])  # danach wieder
