@@ -662,8 +662,12 @@ def test_leiste_unter_dem_menue(modul_an, mitte, tag_daten, benutzer_mit_rolle, 
     ablauf.weiter(mitte, heute())
     ablauf.weiter(mitte, heute())
     seite = c.get(url).content.decode()
-    assert "Nummern aufgerufen" in seite
+    assert "Ausgabe beendet" in seite and "Nummern aufgerufen" in seite
+    assert "neu starten" in seite and "letzten Schritt zurück" in seite
     assert 'role="alert"' not in seite
+    # neu starten: wieder von vorn
+    seite = c.post(url, {"aktion": "neustart"}).content.decode()
+    assert "Bitte eintreten" in seite and "Ausgabe beendet" not in seite
 
 
 def test_leiste_fehler_und_ohne_stelle(modul_an, mitte, benutzer_mit_rolle, anmelden):

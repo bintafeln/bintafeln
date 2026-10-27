@@ -66,6 +66,13 @@ def verfuegbare_tage(gruppen) -> list[str]:
     return [t for t in WOCHENTAGE if t in belegt]
 
 
+def waehlbare_tage(gruppen) -> list[str]:
+    """Tage für die Auswahl „Ausgabetag“: nur sinnvoll, wenn an mindestens zwei Tagen
+    ausgegeben wird; sonst leer (keine Auswahl, kein Filter)."""
+    tage = verfuegbare_tage(gruppen)
+    return tage if len(tage) > 1 else []
+
+
 def standard_tag(benutzer, heute: dt.date, verfuegbar: list[str]) -> str:
     """Eigener Ausgabetag: heute, wenn es einer ist, sonst der erste; ohne Angabe heute; sonst
     „alle“ (leer)."""

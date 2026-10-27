@@ -66,7 +66,10 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   Adressen, Serienbriefe, Team), **Auswertungen** (Statistik, Listen), Einstellungen, Hilfe.
   „Meine Arbeitszeit“ steht nur bei Mitarbeitenden, die stempeln, als eigener Punkt; „Mein
   Konto“ öffnet der eigene Name oben rechts. Module hängen sich in die passenden Bereiche ein
-  (`apps/core/menue.py`). Die Einstellungen haben Untermenüs (Tafel, Kunden, Ausgabe, Verein,
+  (`apps/core/menue.py`). Ein Bereich klappt erst seine Einträge und Untergruppen auf, eine
+  Untergruppe (z. B. Wochenübersicht, Kundenstamm) erst beim Anklicken ihre Einträge. Die
+  Kundenliste steht nur einmal im Menü: am Einlass (ohne „alle Ausgabestellen“) unter
+  „Ausgabestelle“, sonst als „Kunden einsehen“ unter „Kunden“. Die Einstellungen haben Untermenüs (Tafel, Kunden, Ausgabe, Verein,
   Mitarbeitende, Systemsteuerung). Jede Rolle sieht nur, was sie darf. Auf Handys (unter 768 Pixel Breite) öffnet „☰ Menü“ das Menü.
 - Deutsche, mobilfreundliche Oberfläche (Django-Templates + HTMX, ohne externe CDNs).
 
@@ -770,7 +773,8 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   gekommen“ (so viele wartende Plätze nach hinten wie eingestellt). Reihenfolge des Tages als CSV.
 - **Unter dem Menü:** Wer am Einlass arbeitet und aufrufen darf, sieht links unter dem Menü die
   Nummern der gewählten Ausgabestelle, die gerade eintreten sollen, und den Knopf „Nächste 3
-  hereinrufen“ (Anzahl wie eingestellt), dazu „letzten Schritt zurück“ und „Aufruf starten“. Die
+  hereinrufen“ (Anzahl wie eingestellt), dazu „letzten Schritt zurück“ und „Aufruf starten“; nach
+  der letzten Nummer „Ausgabe beendet“ mit „neu starten“ und „letzten Schritt zurück“. Die
   Anzeige aktualisiert sich alle 15 Sekunden, auch wenn ein anderes Gerät weiterschaltet. Einen
   eigenen Menüeintrag gibt es nicht mehr; die Überschrift „Aufruf ↗“ öffnet die ganze Steuerung.
 - **Geräte im Wartebereich:** Monitor (Nummern, Infos im Wechsel, Ton, Layout per Zahnrad),
@@ -849,6 +853,8 @@ Jede Ausgabestelle macht ihre Monatsabrechnung in bintafeln (ADR 0060), Menü �
 Zuschaltbares Modul „Listen“ (ADR 0063): fertige Listen zum Kundenstamm, jede mit Filtern,
 wählbaren und sortierbaren Spalten, Gliederung mit Anzahl und Summen, Auswahlkästchen je Zeile
 und Ausgabe als CSV (Excel) oder PDF (Auswahl oder alles; jeder Export im Zugriffsprotokoll).
+Die Kundenlisten lassen sich auch nach dem Ausgabetag filtern (Wochentage der Kundengruppe); die
+Auswahl erscheint wie in der Kundenliste nur, wenn an mindestens zwei Tagen ausgegeben wird.
 
 - **Kunden:** Kundenliste einer Ausgabestelle, alle Kunden, nach Einkommensart, Bürgergeld,
   Rentnerinnen und Rentner, Ausweis läuft ab, lange nicht gekommen, neue Kunden, große Haushalte,

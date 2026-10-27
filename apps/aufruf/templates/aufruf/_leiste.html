@@ -8,8 +8,10 @@
   <button type="button" class="knopf" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "starten"}' hx-target="closest .aufruf-leiste">Aufruf starten</button>
   {% endif %}
 {% elif d.finished %}
-  <p>Alle {{ d.total_numbers }} Nummern aufgerufen.</p>
-  {% if d.can_undo %}<button type="button" class="link" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "zurueck"}' hx-target="closest .aufruf-leiste">↶ zurück</button>{% endif %}
+  <p class="aufruf-leiste-titel">Ausgabe beendet</p>
+  <p class="leise">Alle {{ d.total_numbers }} Nummern aufgerufen.</p>
+  <button type="button" class="knopf knopf-zweitrangig" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "neustart"}' hx-target="closest .aufruf-leiste" hx-confirm="Alle Kundennummern neu mischen und von vorn aufrufen? Der bisherige Fortschritt geht verloren.">🔄 neu starten</button>
+  {% if d.can_undo %}<button type="button" class="link aufruf-leiste-zurueck" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "zurueck"}' hx-target="closest .aufruf-leiste">↶ letzten Schritt zurück</button>{% endif %}
 {% else %}
   <p class="leise aufruf-leiste-gruppe">{{ d.current_slot }} · {{ d.total_completed }}/{{ d.total_numbers }}</p>
   <p class="aufruf-leiste-titel">Bitte eintreten:</p>

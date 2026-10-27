@@ -75,6 +75,11 @@ def test_tagesfilter_der_ausgabestelle(admin, daten, benutzer_mit_rolle, anmelde
     assert nummern(c.get(LISTE, {"q": "Erika"})) == ["101", "201"]
     seite = c.get(LISTE).content.decode()
     assert '<option value="Mo" selected>Mo</option>' in seite and "tag=Mo" in seite
+    # Nur ein Ausgabetag: keine Auswahl und kein Filter
+    Kundengruppe.objects.filter(ausgabestelle=mitte).update(wochentage="Mo")
+    antwort = c.get(LISTE)
+    assert antwort.context["tage"] == [] and antwort.context["filter"]["tag"] == ""
+    assert 'name="tag"' not in antwort.content.decode()
 
 
 def test_export_csv(admin, daten, benutzer_mit_rolle, anmelden):

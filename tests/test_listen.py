@@ -107,6 +107,14 @@ def test_vorgaben_und_filter(admin_client, daten):
     assert [g["titel"] for g in antwort.context["e"].gruppen] == ["Mo"]
     mitte, nord = daten
     assert zeilen(admin_client.get(*url("alle_kunden", stelle=nord.pk))) == ["3"]
+    # Ausgabetag aus den Wochentagen der Kundengruppe
+    assert zeilen(admin_client.get(*url("alle_kunden", tag="Fr"))) == ["3"]
+    assert zeilen(admin_client.get(*url("alle_kunden", tag="Di"))) == []
+    assert sorted(zeilen(admin_client.get(*url("alle_kunden", tag="")))) == ["1", "2", "3"]
+    antwort = admin_client.get(*url("kunden_stelle", tag="Mo", status="aktiv"))
+    assert sorted(zeilen(antwort)) == ["1", "2"] and 'name="tag"' in antwort.text
+    Kundengruppe.objects.update(wochentage="Mo")  # nur ein Ausgabetag: keine Auswahl
+    assert 'name="tag"' not in admin_client.get(*url("kunden_stelle")).text
     assert zeilen(admin_client.get(*url("buergergeld", status="aktiv",
                                         einkommensart="Bürgergeld"))) == ["1"]  # fmt: skip
     # Vorgabe „rente“ wird auf „Altersrente“ abgebildet
@@ -223,7 +231,7 @@ def test_suche_und_menue(admin, admin_client):
     titel = [t for t, _, _ in suchen(admin, "kinder", 10)]
     assert "Liste: Kinder unter 6 Jahren" in titel
     seite = admin_client.get(reverse("listen:uebersicht")).content.decode()
-    assert "Listen</a>" in seite and "Kundenliste</a>" in seite  # Auswertungen, Ausgabestelle
+    assert "Listen</a>" in seite  # unter Auswertungen
 
 
 def test_weitere_listen(admin_client, daten):

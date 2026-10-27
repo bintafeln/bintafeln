@@ -82,11 +82,19 @@ def menue(request) -> list[dict]:
                 else:
                     dazu(titel, eintraege)
 
-    # Ausgabestelle: was die Ausgabestellen täglich brauchen; Module (Kundenliste, Abrechnung)
-    # stehen hinter Einlass und Kasse
+    # Ausgabestelle: was die Ausgabestellen täglich brauchen; Module (z. B. Abrechnung) stehen
+    # hinter Einlass, Kasse und Kundenliste
+    # Die Kundenliste (mit Suche und Ausgabetag) steht nur einmal im Menü: am Einlass unter
+    # „Ausgabestelle“, für die Verwaltung unter „Kunden“
+    alle_kunden = _eintrag("Kunden einsehen", "kunden:uebersicht", genau=True)
+    alle_kunden["auch"] = [reverse("kunden:uebersicht") + "haushalt/"]
+    an_der_stelle = "einlass.nutzen" in darf and "kunden.alle_ausgabestellen" not in darf
+    if an_der_stelle:
+        alle_kunden["titel"] = "Kundenliste"
     dazu("Ausgabestelle", [
         ("einlass.nutzen", _eintrag("Einlass", "ausgabe:empfang", genau=True)),
         ("kasse.sehen", _eintrag("Kasse", "ausgabe:kasse")),
+        *([("kunden.liste", alle_kunden)] if an_der_stelle else []),
     ], vorn=True)  # fmt: skip
     dazu("Ausgabestelle/Verwaltung", [
         ("sonderaktionen.verwalten", _eintrag("Sonderaktionen", "ausgabe:sonderaktionen")),
@@ -99,8 +107,6 @@ def menue(request) -> list[dict]:
             (None, _eintrag("Meine Arbeitszeit", "personal:meine_arbeitszeit")),
         ])  # fmt: skip
 
-    alle_kunden = _eintrag("Kunden einsehen", "kunden:uebersicht", genau=True)
-    alle_kunden["auch"] = [reverse("kunden:uebersicht") + "haushalt/"]
     nachrichten = _eintrag("Nachrichten der Ausgabestellen", "kunden:nachrichten")
     if "kunden.nachrichten" in darf:
         from apps.kunden.views_nachrichten import offene
@@ -116,7 +122,7 @@ def menue(request) -> list[dict]:
         verlaengern["zahl"] = gemeldet or None
         verlaengern["zahl_titel"] = "gemeldete Haushalte"
     dazu("Kunden", [
-        ("kunden.liste", alle_kunden),
+        *([] if an_der_stelle else [("kunden.liste", alle_kunden)]),
         ("kunden.bearbeiten", _eintrag("Neuer Haushalt", "kunden:haushalt_neu")),
         ("kunden.bearbeiten", verlaengern),
         ("kunden.nachrichten", nachrichten),
@@ -267,6 +273,7 @@ def menue(request) -> list[dict]:
                 e["aktiv"] = any(pfad.startswith(a) for a in e["auch"])
         bereich["offen"] = any(e["aktiv"] for e in bereich["eintraege"])
         bereich["einzeln"] = len(bereich["eintraege"]) == 1
-        for gruppe in bereich.get("gruppen", []):
+        # Unterpunkte (dritte Ebene) klappen erst auf, wenn man sie wählt
+        for gruppe in [*bereich.get("gruppen", []), *bereich.get("abschnitte", [])]:
             gruppe["offen"] = any(e["aktiv"] for e in gruppe["eintraege"])
     return bereiche

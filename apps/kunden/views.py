@@ -224,7 +224,7 @@ def _tag(request) -> str:
         return request.GET["tag"] if request.GET["tag"] in WOCHENTAGE else ""
     if request.GET.get("q", "").strip():
         return ""
-    verfuegbar = export.verfuegbare_tage(_eigene_gruppen(request.user))
+    verfuegbar = export.waehlbare_tage(_eigene_gruppen(request.user))
     return export.standard_tag(request.user, timezone.localdate(), verfuegbar)
 
 
@@ -276,7 +276,7 @@ def uebersicht(request):
         if zugang.stellen(request.user) is None
         else Kundengruppe.objects.filter(ausgabestelle__in=zugang.stellen(request.user)),
         "eigene_stellen": zugang.stellen(request.user),
-        "tage": export.verfuegbare_tage(_eigene_gruppen(request.user)),
+        "tage": export.waehlbare_tage(_eigene_gruppen(request.user)),
         "abfrage": urlencode({k: v for k, v in filter_.items() if v} | {"tag": filter_["tag"]}),
         "export_url": reverse("kunden:exportieren"),
         "spalten": spalten,

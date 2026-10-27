@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from django.db.models import Count, Prefetch, Q
 from django.utils import timezone
 
+from apps.ausgabe.ampel import WOCHENTAGE, wochentage
 from apps.konten import rollen
 from apps.kunden import zugang
 from apps.kunden.models import (
@@ -121,6 +122,8 @@ def objekte(liste: Liste, benutzer, p, mit_abholungen=False) -> tuple[list, dict
     hh = list(haushalte)
     if (ab := _zahl(p.get("personen_ab"))) is not None:
         hh = [h for h in hh if sum(h.groesse(k["kind_bis"], heute)) >= ab]
+    if (tag := p.get("tag")) in WOCHENTAGE:
+        hh = [h for h in hh if h.kundengruppe and tag in wochentage(h.kundengruppe.wochentage)]
     if p.get("kinder_unter_6"):
         hh = [h for h in hh if any((a := q.alter(heute)) is not None and a < 6
                                    for q in h.personen.all())]  # fmt: skip
