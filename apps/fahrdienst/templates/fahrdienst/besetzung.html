@@ -10,7 +10,7 @@
   <form method="post"{% if vom_plan %} action="?monat={{ request.GET.monat|urlencode }}"{% endif %}>
     {% csrf_token %}
     <div class="tabelle-rahmen">
-    <table class="tabelle">
+    <table class="tabelle fd-besetzung">
       <thead><tr><th>Tag</th>{% for nr, name, _ in zeilen.0.1 %}<th>{{ name }}</th>{% endfor %}</tr></thead>
       <tbody>
       {% for tag, plaetze in zeilen %}

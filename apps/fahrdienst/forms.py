@@ -1,3 +1,5 @@
+import datetime as dt
+
 from django import forms
 from django.contrib.auth import get_user_model
 
@@ -124,12 +126,19 @@ class AusfallForm(forms.ModelForm):
     """Wer fällt aus? Wer plant, wählt die Person; sonst ist es das eigene Konto."""
 
     benutzer = Person(label="Wer fällt aus?", queryset=aktive())
+    dauer = forms.TypedChoiceField(
+        label="Wie lange?", coerce=int, required=False, empty_value=1,
+        choices=[(1, "nur dieser Tag"), (7, "1 Woche"), (14, "2 Wochen"), (21, "3 Wochen"),
+                 (28, "4 Wochen")],
+        help_text="Oder unten ein genaues Ende eintragen.",
+    )  # fmt: skip
 
     class Meta:
         model = Ausfall
-        fields = ["benutzer", "von", "bis", "grund", "anmerkung"]
+        fields = ["benutzer", "von", "dauer", "bis", "grund", "anmerkung"]
         widgets = {"von": DatumEingabe(), "bis": DatumEingabe()}
-        help_texts = {"bis": "Leer = nur der eine Tag."}
+        labels = {"von": "Ab", "bis": "Bis (genau)"}
+        help_texts = {"bis": "Leer = so lange wie oben gewählt."}
 
     def __init__(self, *args, planen=False, **kwargs):
         super().__init__(*args, **kwargs)
@@ -141,7 +150,7 @@ class AusfallForm(forms.ModelForm):
         daten = super().clean()
         von, bis = daten.get("von"), daten.get("bis")
         if von and not bis:
-            daten["bis"] = von
+            daten["bis"] = von + dt.timedelta(days=(daten.get("dauer") or 1) - 1)
         elif von and bis and bis < von:
             self.add_error("bis", "Das Ende liegt vor dem Anfang.")
         return daten

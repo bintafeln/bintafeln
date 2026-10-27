@@ -412,3 +412,31 @@ def test_monat_oeffnen_und_besetzung_vom_plan_aendern(team, admin_client, anmeld
     assert f'href="{besetzung}?monat=2026-11"' in admin_client.get(platz).content.decode()
     anmelden(client, p["eva"])  # ohne Planungsrecht keine Links zur Besetzung
     assert besetzung not in client.get(PLAN, {"monat": "2026-11"}).content.decode()
+
+
+def test_fahrer_traegt_sich_selbst_aus(team, admin, client, anmelden):
+    """Eigenen Namen im Plan antippen → Ausfall ab diesem Tag, z. B. 3 Wochen Urlaub."""
+    p, mitte, steele = team
+    anmelden(client, p["eva"])
+    seite = client.get(PLAN, {"monat": "2026-11"}).content.decode()
+    ausfall = reverse("fahrdienst:ausfall")
+    assert f'href="{ausfall}?von=2026-11-11" title="Ich kann nicht – austragen"' in seite
+    assert (
+        f'href="{ausfall}?von=2026-11-11"'
+        in client.get(reverse("fahrdienst:meine")).content.decode()
+    )
+    formular = client.get(ausfall, {"von": "2026-11-11"}).content.decode()
+    assert 'value="2026-11-11"' in formular and "3 Wochen" in formular
+    assert client.get(ausfall, {"von": "kaputt"}).status_code == 200
+    client.post(ausfall, {"von": "2026-11-11", "dauer": "21", "bis": "", "grund": "urlaub"})
+    a = Ausfall.objects.get(benutzer=p["eva"])
+    assert (a.von, a.bis) == (dt.date(2026, 11, 11), dt.date(2026, 12, 1))
+    assert len(plan.einsaetze(p["eva"], a.von, a.bis)) == 6  # Mo und Mi in 3 Wochen
+    seite = client.get(PLAN, {"monat": "2026-11"}).content.decode()
+    assert f'href="{ausfall}?von=2026-11-11"' not in seite  # schon ausgetragen
+    # Genaues Ende geht vor; ohne Selbstmelden kein Link
+    client.post(ausfall, {"von": "2026-12-07", "dauer": "28", "bis": "2026-12-09",
+                          "grund": "krank"})  # fmt: skip
+    assert Ausfall.objects.get(benutzer=p["eva"], grund="krank").bis == dt.date(2026, 12, 9)
+    FahrdienstEinstellungen.objects.update(selbst_melden=False)
+    assert ausfall not in client.get(PLAN, {"monat": "2026-11"}).content.decode()

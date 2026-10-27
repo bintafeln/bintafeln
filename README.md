@@ -647,11 +647,11 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    Benutzer und gilt auch nach dem Abmelden, bis man eine andere wählt; Einlass, „Nachricht an
    die Verwaltung“ und Abrechnung nehmen sie. Konten einer Ausgabestelle und Personen mit nur
    einer zugeordneten Stelle haben sie fest. Oben rechts steht dazu der **Fortschritt des Tages**,
-   z. B. `3/236`: heute an dieser Stelle abgeholt / planmäßig heute erwartet (aktive Haushalte,
-   deren Kundengruppe heute hier ihren Ausgabetag hat; Ausnahmen zählen nur vorne mit). Die Zahl
-   zählt nach jeder Abholung sofort weiter (ADR 0067); hinten zählen alle Kundengruppen der Stelle
-   mit heutigem Ausgabetag zusammen (Wochentage auch ausgeschrieben, z. B. „Montag“). Maus darüber
-   oder antippen zeigt eine kurze Erklärung. Über „Abmelden“ steht der Name der angemeldeten
+   z. B. `3/236`: heute an dieser Stelle abgeholt / heute erwartet. Hinten zählen alle
+   Kundengruppen zusammen, die heute hier dran sind (regulär oder per Sonderausgabe), dazu jede
+   Gruppe, aus der heute hier trotzdem jemand abgeholt hat, und Abholungen ohne Kundengruppe; vorne
+   ist also nie mehr als hinten. Die Zahl zählt nach jeder Abholung sofort weiter (ADR 0067). Maus
+   darüber oder antippen zeigt je Kundengruppe abgeholt/erwartet, Ausnahmen und wer noch fehlt. Über „Abmelden“ steht der Name der angemeldeten
    Person.
 2. Kundennummer **scannen** oder eintippen und Enter. Führende Nullen sind egal. Drei Wege,
    die sich beliebig mischen lassen; Eintippen geht immer:
@@ -929,6 +929,8 @@ Ersetzt den gedruckten Fahrerplan mit den gelben Aufklebern (ADR 0074).
 - **Feste Besetzung** je Tour und Wochentag unter „Einstellungen → Mitarbeitende → Fahrdienst:
   Touren und Springer“ (Recht „Fahrdienst planen“, Vorgabe Büro); daraus entsteht jede Woche der
   Plan. Dazu Springer (auf jeder Tour, auf Wunsch nur an bestimmten Tagen), Fahrtage, Feiertage.
+- **Selbst austragen:** Fahrer und Beifahrer tippen im Plan auf ihren eigenen Namen (oder in „Meine
+  Einsätze“ auf „kann nicht“) und wählen, wie lange: nur dieser Tag, 1–4 Wochen oder ein genaues Ende.
 - **Ausfall melden:** „Meine Einsätze → Ich kann nicht“ (wenn die Tafel Selbstmelden erlaubt)
   oder durch die Fahrdienstleitung; Zeitraum und Grund (krank, Urlaub, Sonstiges). Den Grund
   sieht nur, wer plant. Die eingestellten Personen (sonst alle, die planen) bekommen eine E-Mail

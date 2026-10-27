@@ -124,6 +124,7 @@ def meine(request):
     heute = timezone.localdate()
     return render(request, "fahrdienst/meine.html", {
         "einsaetze": plan.einsaetze(request.user, heute, heute + dt.timedelta(days=27)),
+        "heute": heute,
         "ausfaelle": Ausfall.objects.filter(benutzer=request.user, bis__gte=heute),
         "darf_melden": plan.darf_selbst_melden(request.user),
         "planen": rollen.hat_recht(request.user, "fahrdienst.planen"),
@@ -136,7 +137,12 @@ def ausfall(request):
     darf_planen = rollen.hat_recht(request.user, "fahrdienst.planen")
     if not darf_planen and not plan.darf_selbst_melden(request.user):
         raise PermissionDenied
-    vorbelegt = {"von": timezone.localdate(), "benutzer": request.user.pk}
+    heute = timezone.localdate()
+    try:  # aus dem Plan oder „Meine Einsätze“: der angetippte Tag
+        von = max(dt.date.fromisoformat(request.GET.get("von", "")), heute)
+    except ValueError:
+        von = heute
+    vorbelegt = {"von": von, "benutzer": request.user.pk}
     form = AusfallForm(request.POST or None, planen=darf_planen, initial=vorbelegt)
     if request.method == "POST" and form.is_valid():
         d = form.cleaned_data
@@ -149,7 +155,9 @@ def ausfall(request):
         messages.success(request, f"Ausfall eingetragen ({betroffen} Einsatz/Einsätze betroffen). "
                                   "Die Fahrdienstleitung wird benachrichtigt.")  # fmt: skip
         return redirect("fahrdienst:plan" if darf_planen else "fahrdienst:meine")
-    return render(request, "fahrdienst/ausfall.html", {"form": form})
+    return render(request, "fahrdienst/ausfall.html", {
+        "form": form, "zurueck": reverse("fahrdienst:plan" if darf_planen else "fahrdienst:meine"),
+    })  # fmt: skip
 
 
 @require_POST

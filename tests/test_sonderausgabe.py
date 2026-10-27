@@ -99,6 +99,33 @@ def test_fortschritt_und_aufruf(stellen):
     assert namen(ablauf.gruppen_heute(mitte, MITTWOCH)) == ["Do spät", "Do früh", "Fr"]
 
 
+def test_fortschritt_zaehlt_alle_gruppen_des_tages(stellen):
+    """Alle Kundengruppen des Tages zusammen; wer trotzdem abholt (z. B. reguläre Kunden trotz
+    Sonderausgabe, Ausnahme, ohne Gruppe), zählt mit – abgeholt ist nie mehr als erwartet."""
+    from apps.kunden.models import Abholung, Ausnahme
+
+    mitte, nord, g = stellen
+    sonder(mitte, gruppen=[g["fr"], g["do"]])
+    fr = [haushalt(f"f{i}", g["fr"]) for i in range(3)]
+    do = haushalt("d1", g["do"])
+    mi = [haushalt(f"m{i}", g["mi"]) for i in range(2)]  # regulär Mi, heute nicht geplant
+    ohne = haushalt("x1", None)
+    for h in (fr[0], fr[1], mi[0], ohne):
+        Abholung.objects.create(haushalt=h, datum=MITTWOCH, ausgabestelle=mitte)
+    Abholung.objects.create(haushalt=do, datum=MITTWOCH, ausgabestelle=nord)  # andere Stelle
+    Ausnahme.objects.create(haushalt=mi[0], datum=MITTWOCH)
+    f = stelle_wahl.fortschritt(mitte, MITTWOCH)
+    assert [(z.name, z.abgeholt, z.erwartet, z.ausnahmen, z.geplant) for z in f.zeilen] == [
+        ("Do früh", 0, 1, 0, True),
+        ("Fr", 2, 3, 0, True),
+        ("Mi früh", 1, 2, 1, False),
+        ("ohne Kundengruppe", 1, 1, 0, False),
+    ]
+    assert (f.abgeholt, f.erwartet, f.ausnahmen, f.offen) == (4, 7, 1, 3)
+    assert stelle_wahl.fortschritt(nord, MITTWOCH).zeilen[0].name == "Do früh"  # nur abgeholt
+    assert stelle_wahl.fortschritt(nord, MITTWOCH + dt.timedelta(days=1)) is None
+
+
 def test_formular_und_einstellungen(stellen, admin_client):
     mitte, _, g = stellen
     leer = SonderausgabeForm({"datum": "2026-12-23", "ausgabestelle": mitte.pk})
