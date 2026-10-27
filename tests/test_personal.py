@@ -7,7 +7,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.core import privatdateien
+from apps.core import papierkorb, privatdateien
+from apps.core.models import PapierkorbEintrag
 from apps.konten import personal as konten_personal
 from apps.konten import rollen, verwaltung
 from apps.konten.models import PersonalEinstellungen, Rolle
@@ -252,14 +253,19 @@ def test_vertragsdokument(admin_client, kim):
     assert admin_client.get(url("dokument_ansehen", kim.pk, v.pk)).status_code == 404
 
 
-def test_vertrag_loeschen_entfernt_dokument(admin_client, kim):
+def test_vertrag_loeschen_entfernt_dokument(admin_client, kim, django_capture_on_commit_callbacks):
     v = vertrag(kim, dt.date(2026, 1, 1))
     pdf = SimpleUploadedFile("v.pdf", b"%PDF", content_type="application/pdf")
     admin_client.post(url("dokument_hochladen", kim.pk, v.pk), {"dokument": pdf})
     v.refresh_from_db()
     datei = privatdateien.pfad(DOKUMENT_ORDNER, v.dokument_datei)
     admin_client.post(url("vertrag_loeschen", kim.pk, v.pk))
-    assert not Arbeitsvertrag.objects.exists() and not datei.exists()
+    assert not Arbeitsvertrag.objects.exists()
+    # Die Datei bleibt im Papierkorb, bis er geleert wird (ADR 0073)
+    assert datei.exists()
+    with django_capture_on_commit_callbacks(execute=True):
+        papierkorb.endgueltig_loeschen(PapierkorbEintrag.objects.get())
+    assert not datei.exists()
 
 
 # --- Seiten: Abwesenheiten, Urlaubsjahr, Stunden ------------------------------------------

@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
-from apps.core import mail
+from apps.core import mail, papierkorb
 from apps.core.models import TafelEinstellungen
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
@@ -42,8 +42,9 @@ def vorlage(request, pk=None):
 @rollen.recht_erforderlich("serienbriefe.erstellen")
 def vorlage_loeschen(request, pk):
     v = get_object_or_404(Vorlage, pk=pk)
-    v.delete()
-    messages.success(request, f"Vorlage „{v.name}“ gelöscht.")
+    papierkorb.loeschen(request.user, "Serienbrief-Vorlage", v.name, v,
+                        recht="serienbriefe.erstellen")  # fmt: skip
+    messages.success(request, f"Vorlage „{v.name}“ in den Papierkorb gelegt.")
     return redirect("serienbriefe:vorlagen")
 
 

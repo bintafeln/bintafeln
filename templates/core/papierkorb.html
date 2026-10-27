@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block titel %}Papierkorb{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Papierkorb</h1>
+  <p class="hinweis">Gelöschte Daten liegen hier {{ tage }} Tage und lassen sich mit allem, was mit ihnen gelöscht wurde,
+    wiederherstellen; danach löscht bintafeln sie endgültig. Sie sehen nur, was Sie auch löschen dürften.
+    Anträge haben ihren eigenen Papierkorb in der Antragsliste.</p>
+  {% if arten|length > 1 %}
+  <form method="get" class="filter">
+    <label for="art">Art</label>
+    <select name="art" id="art" data-sofort>
+      <option value="">Alle</option>
+      {% for a in arten %}<option{% if a == art %} selected{% endif %}>{{ a }}</option>{% endfor %}
+    </select>
+    <noscript><button type="submit" class="knopf knopf-zweitrangig">Anzeigen</button></noscript>
+  </form>
+  {% endif %}
+  {% if eintraege %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Art</th><th>Was</th><th>Gelöscht</th><th>Endgültig weg</th><th></th></tr></thead>
+    <tbody>
+    {% for e in eintraege %}
+      <tr>
+        <td data-titel="Art">{{ e.art }}</td>
+        <td data-titel="Was"><a href="{% url 'core:papierkorb_eintrag' e.pk %}">{{ e.bezeichnung }}</a></td>
+        <td data-titel="Gelöscht">{{ e.geloescht_am|date:"d.m.Y H:i" }}{% if e.geloescht_von %} von {{ e.geloescht_von }}{% endif %}</td>
+        <td data-titel="Endgültig weg">{{ e.endgueltig_am|date:"d.m.Y" }}</td>
+        <td>
+          <form method="post" action="{% url 'core:papierkorb_wiederherstellen' e.pk %}" class="inline">
+            {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">Wiederherstellen</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p>Der Papierkorb ist leer.</p>
+  {% endif %}
+</section>
+{% endblock %}

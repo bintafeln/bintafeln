@@ -13,7 +13,7 @@ from django.shortcuts import redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
 
-from apps.core import geheimnis, mail, module, sicherung
+from apps.core import geheimnis, mail, module, papierkorb, sicherung
 from apps.core.forms import EinrichtungForm, EinstellungenForm, MailEinstellungenForm
 from apps.core.middleware import admin_existiert
 from apps.core.models import MailEinstellungen, TafelEinstellungen
@@ -44,6 +44,7 @@ def start(request):
     personal.stammdaten_leeren()
     antragsfristen_anwenden()
     module.fristen_anwenden()
+    papierkorb.fristen_anwenden()
     kontext = {}
     if rollen.hat_recht(request.user, "antraege.sehen"):
         kontext["neue_antraege"] = Antrag.objects.filter(

@@ -14,7 +14,7 @@ from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from apps.core import module
+from apps.core import module, papierkorb
 from apps.konten import rechte as katalog
 from apps.konten import rollen
 from apps.konten.models import Rolle
@@ -138,6 +138,8 @@ def loeschen(request, pk):
         messages.error(request, "Diese Rolle hat Rechte, die Sie nicht haben, und bleibt.")
         return redirect("konten:rollen")
     name, anzahl = rolle.name, rolle.gruppe.user_set.count()
-    rolle.gruppe.delete()  # löscht die Rolle mit
-    messages.success(request, f"Rolle „{name}“ gelöscht ({anzahl} Konto/Konten ohne diese Rolle).")
+    # Die Gruppe löscht die Rolle und die Zuordnung zu den Konten mit; alles in den Papierkorb
+    papierkorb.loeschen(request.user, "Rolle", name, rolle.gruppe, recht="einstellungen.rollen")
+    messages.success(request, f"Rolle „{name}“ in den Papierkorb gelegt ({anzahl} Konto/Konten "
+                              "ohne diese Rolle).")  # fmt: skip
     return redirect("konten:rollen")

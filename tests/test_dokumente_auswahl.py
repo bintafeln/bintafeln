@@ -6,8 +6,9 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.core import privatdateien
+from apps.core import papierkorb, privatdateien
 from apps.core.auswahl import ANREDEN, mit_vorhandenem
+from apps.core.models import PapierkorbEintrag
 from apps.konten import personal, rollen, verwaltung
 from apps.konten.forms import StammdatenForm
 from apps.konten.models import Dokument, DokumentKategorie, Rolle, Stammdaten
@@ -43,7 +44,7 @@ def test_vorgabe_kategorien():
     assert str(kategorie("Sonstiges")) == "Sonstiges"
 
 
-def test_hochladen_ansehen_loeschen(admin_client, kim):
+def test_hochladen_ansehen_loeschen(admin_client, kim, django_capture_on_commit_callbacks):
     seite = reverse("konten:stammdaten", args=[kim.pk])
     antwort = hochladen(admin_client, kim, weiter=seite, datum="2026-10-01")
     assert "Dokument verschlüsselt gespeichert." in antwort.content.decode()
@@ -56,7 +57,12 @@ def test_hochladen_ansehen_loeschen(admin_client, kim):
     assert "Testdokument Sonstiges" in admin_client.get(seite).content.decode()
     admin_client.post(reverse("konten:dokument_loeschen", args=[kim.pk, d.pk]))
     assert not Dokument.objects.exists()
-    assert not privatdateien.pfad(Dokument.ORDNER, d.datei).exists()
+    datei = privatdateien.pfad(Dokument.ORDNER, d.datei)
+    # Die Datei bleibt im Papierkorb, bis er geleert wird (ADR 0073)
+    assert datei.exists()
+    with django_capture_on_commit_callbacks(execute=True):
+        papierkorb.endgueltig_loeschen(PapierkorbEintrag.objects.get())
+    assert not datei.exists()
 
 
 def test_hochladen_fehler_und_fremde_weiterleitung(admin_client, kim):

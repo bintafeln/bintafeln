@@ -18,7 +18,7 @@ from django.views.decorators.http import require_POST
 
 from apps.adressen.forms import ImportForm
 from apps.adressen.models import Adresse
-from apps.core import geheimnis, listenauswahl, mail, privatdateien
+from apps.core import geheimnis, listenauswahl, mail, papierkorb, privatdateien
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.konten.views import nicht_in_demo
@@ -182,8 +182,9 @@ def loeschen(request, pk):
     if s.bestaetigt:
         messages.error(request, "Bestätigte Spenden lassen sich nicht löschen.")
     else:
-        s.delete()
-        messages.success(request, "Spende gelöscht.")
+        papierkorb.loeschen(request.user, "Spende", f"{s} ({s.adresse})", s,
+                            recht="spenden.erfassen")  # fmt: skip
+        messages.success(request, "Spende in den Papierkorb gelegt.")
     return redirect("adressen:adresse", pk=s.adresse_id)
 
 
@@ -387,9 +388,9 @@ def belege(request):
                 messages.success(request, f"„{b.dateiname}“ {adresse.name} zugeordnet.")
         elif aktion == "loeschen":
             b = get_object_or_404(SpendenBeleg, pk=request.POST.get("beleg"))
-            privatdateien.loeschen(SpendenBeleg.ORDNER, b.datei)
-            b.delete()
-            messages.success(request, f"„{b.dateiname}“ gelöscht.")
+            papierkorb.loeschen(request.user, "Spendenbeleg", b.dateiname, b,
+                                recht="spenden.bestaetigen")  # fmt: skip
+            messages.success(request, f"„{b.dateiname}“ in den Papierkorb gelegt.")
         return redirect(f"{reverse('spenden:belege')}?jahr={jahr}")
     spender = Adresse.objects.filter(spenden__datum__year=jahr).distinct().order_by(
         "organisation", "nachname")  # fmt: skip

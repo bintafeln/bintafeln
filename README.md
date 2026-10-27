@@ -1086,6 +1086,31 @@ zeigt sie bildschirmfüllend, „← Zurück“ schließt und lässt die Seite a
 
 Die Kasse bleibt auch nach einem Neuimport des Kundenstamms vollständig (ADR 0014).
 
+## Papierkorb
+
+Gelöschtes kommt mit allem, was dazugehört, in den Papierkorb (ADR 0073): Haushalte samt Personen,
+Abholungen, Notizen, Dokumenten und Historie, Teile eines Haushalts, Notizen, Adressen,
+Mitgliedschaften, Spenden und Belege, Ausgabestellen, Kundengruppen und die übrigen
+Einstellungslisten, Rollen samt Zuordnung zu den Konten, Dokumente und Schulungen von
+Mitarbeitenden, Arbeitsverträge, Abwesenheiten, Stunden, Zeitbuchungen, Sonderaktionen und die
+Daten der Module (Selbstabholer, Links, Termine der Warteliste, eigene Listen, Serienbrief-Vorlagen).
+
+- Der Menüpunkt „Papierkorb“ erscheint, sobald etwas darin liegt, das man sehen darf: gleiches
+  Recht wie zum Löschen, bei Kundendaten auch nur die eigenen Ausgabestellen.
+- **Wiederherstellen** legt alles mit denselben Nummern wieder an, Kontobuchungen hängen danach
+  wieder am Haushalt. Ist die Kundennummer inzwischen neu vergeben oder fehlt etwas (z. B. die
+  Kundengruppe), ändert sich nichts und es gibt eine Meldung. Eine Rolle stellt nur wieder her, wer
+  alle ihre Rechte hat.
+- Nach 30, 60, 90 oder 365 Tagen („Einstellungen der Tafel“, Vorgabe 30) löscht bintafeln
+  endgültig, mit den verschlüsselten Dateien; „Endgültig löschen“ geht auch sofort. Die Auskunft
+  zum Haushalt nennt, was noch im Papierkorb liegt.
+- Nicht über den Papierkorb: Löschfristen, der Import, Abholungen beim Bearbeiten (die Rücknahme
+  bucht das Konto zurück), Anträge (eigener Papierkorb), Mitarbeitende (nur sperren) und
+  Sicherungsaufträge.
+- Für Entwickler: in Ansichten `papierkorb.loeschen(benutzer, art, bezeichnung, *objekte,
+  recht=…, kundennummer=…)` statt `delete()`; Modelle mit verschlüsselter Datei nennen sie in
+  `PRIVATDATEI = (ordner, feld)`.
+
 ## Datensicherung in der Oberfläche (Export und Zurücklesen)
 
 „Einstellungen → Export und Zurücklesen“ (Rechte „Alle Daten exportieren“ und „Daten zurücklesen“,

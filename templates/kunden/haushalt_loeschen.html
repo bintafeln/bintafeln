@@ -4,8 +4,8 @@
 <section class="karte schmal-breit">
   <p><a href="{% url 'kunden:haushalt' h.kundennummer %}">← Zurück zum Haushalt</a></p>
   <h1>Haushalt {{ h.kundennummer }}{% if name %} · {{ name }}{% endif %} löschen?</h1>
-  <p class="sicherung sicherung-fehler"><strong>Das lässt sich nicht rückgängig machen.</strong>
-    Gelöscht wird der Haushalt mit:</p>
+  <p class="sicherung sicherung-fehler">Der Haushalt kommt mit allem Folgenden in den <strong>Papierkorb</strong>
+    und lässt sich dort {{ papierkorb_tage }} Tage lang wiederherstellen; danach ist er endgültig gelöscht:</p>
   <table class="tabelle kompakt loesch-umfang">
     <tbody>
     {% for was, anzahl in umfang %}<tr><td>{{ was }}</td><td class="zahl">{{ anzahl }}</td></tr>{% endfor %}
@@ -15,7 +15,7 @@
     Solange der Kundenstamm importiert wird, legt der nächste Import den Haushalt wieder an, wenn er im Altsystem noch steht.</p>
   <form method="post" class="aktionen">
     {% csrf_token %}
-    <button type="submit" class="knopf knopf-gefahr">Ja, Haushalt {{ h.kundennummer }} endgültig löschen</button>
+    <button type="submit" class="knopf knopf-gefahr">Ja, Haushalt {{ h.kundennummer }} in den Papierkorb legen</button>
     <a class="knopf knopf-zweitrangig" href="{% url 'kunden:haushalt' h.kundennummer %}">Abbrechen</a>
   </form>
 </section>

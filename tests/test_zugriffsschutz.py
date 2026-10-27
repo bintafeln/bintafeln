@@ -60,6 +60,11 @@ ALLE_ANGEMELDETEN = {
     "core:hilfe",
     "core:suche",
     "wetter:kopf",
+    # Papierkorb: jedes Konto sieht nur Einträge mit seinen Rechten (ADR 0073)
+    "core:papierkorb",
+    "core:papierkorb_eintrag",
+    "core:papierkorb_wiederherstellen",
+    "core:papierkorb_loeschen",
 }
 
 PLATZHALTER = {

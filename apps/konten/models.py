@@ -225,6 +225,7 @@ class Dokument(models.Model):
     """Dokument zu einer Person, verschlüsselt unter MEDIA_ROOT/privat/ (ADR 0017)."""
 
     ORDNER = "mitarbeiter-dokumente"
+    PRIVATDATEI = (ORDNER, "datei")  # Papierkorb (ADR 0073)
 
     benutzer = models.ForeignKey(Benutzer, on_delete=models.CASCADE, related_name="dokumente")
     kategorie = models.ForeignKey(

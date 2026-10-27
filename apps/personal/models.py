@@ -18,6 +18,8 @@ DOKUMENT_ORDNER = "arbeitsvertrag"
 
 
 class Arbeitsvertrag(models.Model):
+    PRIVATDATEI = (DOKUMENT_ORDNER, "dokument_datei")  # Papierkorb (ADR 0073)
+
     benutzer = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="vertraege"
     )

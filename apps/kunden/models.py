@@ -739,6 +739,7 @@ class HaushaltDokument(models.Model):
     """
 
     ORDNER = "kunden-dokumente"
+    PRIVATDATEI = (ORDNER, "datei")  # Papierkorb (ADR 0073)
 
     kundennummer = models.CharField("Kundennummer", max_length=20, db_index=True)
     art = models.ForeignKey(Dokumentart, verbose_name="Dokumentart", on_delete=models.PROTECT)

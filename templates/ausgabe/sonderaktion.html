@@ -48,7 +48,7 @@
   {% else %}<p class="hinweis">Noch keine.</p>{% endif %}
   <form method="post" action="{% url 'ausgabe:sonderaktion_loeschen' aktion.pk %}" class="abseits"
         onsubmit="return confirm(this.dataset.frage)"
-        data-frage="Sonderaktion „{{ aktion }}“ mit {{ gesamt.anzahl }} Teilnahme(n) endgültig löschen?">
+        data-frage="Sonderaktion „{{ aktion }}“ mit {{ gesamt.anzahl }} Teilnahme(n) in den Papierkorb legen?">
     {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Sonderaktion löschen</button>
   </form>
 </section>

@@ -16,7 +16,7 @@ from apps.adressen import importieren
 from apps.adressen.auskunft import adresse_pdf
 from apps.adressen.forms import AdresseForm, ImportForm
 from apps.adressen.models import Adresse, AdressKategorie
-from apps.core import geheimnis, listenauswahl
+from apps.core import geheimnis, listenauswahl, papierkorb
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 
@@ -175,12 +175,12 @@ def loeschen(request, pk):
     a = get_object_or_404(Adresse, pk=pk)
     name = a.name
     try:
-        a.delete()
+        papierkorb.loeschen(request.user, "Adresse", name, a, recht="adressen.loeschen")
     except ProtectedError:
         messages.error(request, f"„{name}“ hat Spenden, Zuwendungsbestätigungen oder eine "
                                 "Mitgliedschaft und lässt sich deshalb nicht löschen.")  # fmt: skip
         return redirect("adressen:adresse", pk=pk)
-    messages.success(request, f"Adresse „{name}“ gelöscht.")
+    messages.success(request, f"Adresse „{name}“ in den Papierkorb gelegt.")
     return redirect("adressen:liste")
 
 

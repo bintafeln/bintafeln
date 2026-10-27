@@ -12,6 +12,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 from reportlab.lib.pagesizes import A4, landscape
 
+from apps.core import papierkorb
 from apps.core.pdf import Pdf, pdf_antwort
 from apps.konten import rollen
 from apps.kunden.export import waehlbare_tage
@@ -235,6 +236,7 @@ def eigene_loeschen(request, pk):
     e = get_object_or_404(EigeneListe, pk=pk)
     if e.benutzer_id != request.user.pk and not rollen.hat_recht(request.user, "listen.teilen"):
         raise PermissionDenied
-    e.delete()
-    messages.success(request, f"Liste „{e.titel}“ gelöscht.")
+    # Wiederherstellen darf, wer auch fremde Listen verwaltet (eigene Listen anderer sind privat)
+    papierkorb.loeschen(request.user, "Eigene Liste", e.titel, e, recht="listen.teilen")
+    messages.success(request, f"Liste „{e.titel}“ in den Papierkorb gelegt.")
     return redirect("listen:uebersicht")

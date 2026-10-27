@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
+from apps.core import papierkorb
 from apps.konten import rollen
 from apps.links.forms import GruppeForm, LinkForm
 from apps.links.models import Link, LinkGruppe
@@ -48,6 +49,7 @@ def gruppe(request, pk=None):
 def loeschen(request, art, pk):
     modell = Link if art == "link" else LinkGruppe
     obj = get_object_or_404(modell, pk=pk)
-    obj.delete()
-    messages.success(request, f"„{obj}“ gelöscht.")
+    papierkorb.loeschen(request.user, str(modell._meta.verbose_name), str(obj), obj,
+                        recht="einstellungen.links")  # fmt: skip
+    messages.success(request, f"„{obj}“ in den Papierkorb gelegt.")
     return redirect("links:liste")

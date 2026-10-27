@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block titel %}Papierkorb: {{ eintrag.bezeichnung }}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'core:papierkorb' %}">← Papierkorb</a></p>
+  <h1>{{ eintrag.art }}: {{ eintrag.bezeichnung }}</h1>
+  <p>Gelöscht am {{ eintrag.geloescht_am|date:"d.m.Y H:i" }}{% if eintrag.geloescht_von %} von {{ eintrag.geloescht_von }}{% endif %}.
+    Wird am {{ eintrag.endgueltig_am|date:"d.m.Y" }} endgültig gelöscht.</p>
+  <div class="aktionen">
+    <form method="post" action="{% url 'core:papierkorb_wiederherstellen' eintrag.pk %}" class="inline">
+      {% csrf_token %}<button type="submit" class="knopf">Wiederherstellen</button>
+    </form>
+    <form method="post" action="{% url 'core:papierkorb_loeschen' eintrag.pk %}" class="inline" onsubmit="return confirm('Endgültig löschen? Das lässt sich nicht rückgängig machen.')">
+      {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Endgültig löschen</button>
+    </form>
+  </div>
+  <h2>Was mit gelöscht wurde ({{ inhalt|length }})</h2>
+  {% if details %}
+  {% for d in inhalt %}
+  <details{% if forloop.first %} open{% endif %}>
+    <summary>{{ d.art }}</summary>
+    <dl class="angaben">
+      {% for titel, wert in d.felder %}<dt>{{ titel }}</dt><dd>{{ wert }}</dd>{% endfor %}
+    </dl>
+  </details>
+  {% endfor %}
+  {% else %}
+  <ul>{% for d in inhalt %}<li>{{ d.art }}</li>{% endfor %}</ul>
+  <p class="hinweis">Die Inhalte sieht nur, wer Angaben der besonderen Kategorie sehen darf.</p>
+  {% endif %}
+  {% if eintrag.dateien %}<p class="hinweis">Dazu {{ eintrag.dateien|length }} verschlüsselte Datei{{ eintrag.dateien|length|pluralize:"en" }}; sie kommen beim Wiederherstellen mit zurück.</p>{% endif %}
+</section>
+{% endblock %}

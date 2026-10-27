@@ -93,6 +93,7 @@ class Posten(models.Model):
     """Eine Ausgabe der Ausgabestelle, gegebenenfalls mit Quittung."""
 
     ORDNER = "quittungen"
+    PRIVATDATEI = (ORDNER, "quittung")  # Papierkorb (ADR 0073)
 
     abrechnung = models.ForeignKey(Monatsabrechnung, on_delete=models.CASCADE,
                                    related_name="posten")  # fmt: skip

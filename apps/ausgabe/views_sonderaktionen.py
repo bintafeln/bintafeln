@@ -12,6 +12,7 @@ from django.views.decorators.http import require_POST
 
 from apps.ausgabe.forms import SonderaktionForm
 from apps.ausgabe.models import Sonderaktion
+from apps.core import papierkorb
 from apps.konten import rollen
 
 buero = rollen.recht_erforderlich("sonderaktionen.verwalten")
@@ -93,6 +94,8 @@ def _csv(aktion, teilnahmen):
 def loeschen(request, pk):
     aktion = get_object_or_404(Sonderaktion, pk=pk)
     anzahl = aktion.teilnahmen.count()
-    aktion.delete()
-    messages.success(request, f"Sonderaktion „{aktion}“ mit {anzahl} Teilnahme(n) gelöscht.")
+    papierkorb.loeschen(request.user, "Sonderaktion", str(aktion), aktion,
+                        recht="sonderaktionen.verwalten")  # fmt: skip
+    messages.success(request, f"Sonderaktion „{aktion}“ mit {anzahl} Teilnahme(n) in den "
+                              "Papierkorb gelegt.")  # fmt: skip
     return redirect("ausgabe:sonderaktionen")
