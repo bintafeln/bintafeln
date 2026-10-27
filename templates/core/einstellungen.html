@@ -4,7 +4,7 @@
 <section class="karte">
   <h1>Einstellungen der Tafel</h1>
   {% if form.instance.logo %}<img src="{{ form.instance.logo.url }}" alt="Aktuelles Logo" class="logo-vorschau">{% endif %}
-  <form method="post" enctype="multipart/form-data">
+  <form method="post" data-autosave enctype="multipart/form-data">
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <button type="submit" class="knopf">Speichern</button>

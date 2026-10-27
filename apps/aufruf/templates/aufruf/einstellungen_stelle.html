@@ -4,7 +4,7 @@
 <section class="karte breit">
   <p><a href="{% url 'aufruf:einstellungen' %}">← Aufruf, Monitor und Kiosk</a></p>
   <h1>Aufruf an der Ausgabestelle {{ s.name }}</h1>
-  <form method="post">
+  <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <div class="aktionsleiste">

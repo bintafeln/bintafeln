@@ -104,6 +104,13 @@ def platz(request, datum, tour, nr):
     if request.method == "POST":
         wahl, gast = request.POST.get("benutzer", ""), request.POST.get("gast", "").strip()
         neu = get_object_or_404(aktive(), pk=wahl) if wahl else None
+        springer, weitere = plan.verfuegbar(tag)
+        if neu is not None and neu not in springer + weitere:
+            # z. B. selbst als ausgefallen gemeldet oder an dem Tag schon eingeteilt
+            name = neu.get_full_name() or neu
+            messages.error(request, f"{name} kann am {tag:%d.%m.%Y} nicht einspringen "
+                                    "(Ausfall gemeldet oder schon eingeteilt).")  # fmt: skip
+            return redirect(request.path)
         plan.ersatz_eintragen(tag, t, nr, neu, request.user.get_username(), gast=gast)
         if neu:
             text = f"{neu.get_full_name() or neu} springt ein."

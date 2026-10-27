@@ -20,6 +20,11 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
 
 ## Funktionen des Grundgerüsts
 
+- **Einstellungen ohne Speichern-Knopf** (ADR 0076): Auf allen Einstellungsseiten wird jede
+  Änderung sofort gespeichert (Häkchen und Auswahl gleich, Textfelder kurz nach dem Tippen),
+  neben dem Feld steht kurz „✓ gespeichert“; ungültige Werte zeigen eine rote Meldung am Feld,
+  gespeichert bleibt der alte Wert. Nur Löschen fragt nach. Ohne JavaScript bleibt der Knopf.
+
 - **Einrichtung im Browser:** Solange es keinen Admin gibt, öffnet sich automatisch
   die Einrichtungsseite. Dort werden der Name der Tafel und das erste Admin-Konto angelegt.
   Danach ist die Seite gesperrt.

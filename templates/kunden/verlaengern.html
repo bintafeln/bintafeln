@@ -5,7 +5,7 @@
   <h1>Ausweise verlängern</h1>
   <p class="hinweis">Hier stehen alle Haushalte, zu denen eine Ausgabestelle „Bescheid geprüft – Ausweis verlängern“
     gemeldet hat. bintafeln hat jeden nach den Bedingungen aus „Einstellungen → Kundenstamm“ geprüft.
-    {% if bedingungen %}<strong>Verlängern nur, wenn {{ regel }}: {{ bedingungen }}.</strong>{% else %}<strong>Eingestellt ist: ohne Bedingung</strong> – jeder Haushalt gilt als verlängerbar.{% endif %}
+    <strong>{{ regel_satz }}</strong>
     Verlängert wird ab dem bisherigen Ablaufdatum, ist der Ausweis schon abgelaufen, ab heute.</p>
   <form method="get" class="filter">
     <label for="monate">Verlängern um</label>

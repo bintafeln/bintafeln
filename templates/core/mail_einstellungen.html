@@ -18,7 +18,7 @@
   {% elif passwort_gespeichert %}
     <p class="hinweis">Ein Passwort ist verschlüsselt gespeichert.</p>
   {% endif %}
-  <form method="post">
+  <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <button type="submit" class="knopf">Speichern</button>
