@@ -7,8 +7,31 @@
   <dl class="angaben">
     <dt>Feste Besetzung</dt><dd>{% if p.stamm %}{{ p.stamm.get_full_name|default:p.stamm.username }}{% else %}–{% if p.status == "leer" %} (Platz für Gäste){% endif %}{% endif %}</dd>
     {% if p.ersatz %}<dt>Für diesen Tag</dt><dd>{% if p.gast %}{{ p.gast }} (Gast){% else %}{{ p.ersatz.benutzer.get_full_name|default:p.ersatz.benutzer.username }}{% endif %} (eingetragen von {{ p.ersatz.eingetragen_von }})</dd>{% endif %}
-    {% if p.ausfall %}<dt>Fällt aus</dt><dd>{{ p.ausfall.benutzer.get_full_name|default:p.ausfall.benutzer.username }}: {{ p.ausfall.get_grund_display }}{% if p.ausfall.anmerkung %} – {{ p.ausfall.anmerkung }}{% endif %}</dd>{% endif %}
+    {% if p.ausfall %}<dt>Fällt aus</dt><dd>{{ p.ausfall.benutzer.get_full_name|default:p.ausfall.benutzer.username }}: {{ p.ausfall.get_grund_display }}{% if p.ausfall.anmerkung %} – {{ p.ausfall.anmerkung }}{% endif %}
+      ({{ p.ausfall.von|date:"d.m." }}{% if p.ausfall.bis != p.ausfall.von %}–{{ p.ausfall.bis|date:"d.m.Y" }}{% endif %})
+      <form method="post" action="{% url 'fahrdienst:ausfall_loeschen' p.ausfall.pk %}" class="inline" onsubmit="return confirm('Ausfall zurücknehmen? Wirklich löschen?')">{% csrf_token %}<input type="hidden" name="weiter" value="{{ zurueck }}"><button type="submit" class="link">zurücknehmen</button></form></dd>{% endif %}
   </dl>
+  {% if p.wer and not p.ausfall %}
+  <form method="post" action="{% url 'fahrdienst:ausfall' %}" class="fd-nur-ausfall">
+    {% csrf_token %}
+    <h2>Erst einmal nur: {{ p.wer.get_full_name|default:p.wer.username }} fällt aus</h2>
+    <p class="hinweis">Ohne Ersatz – der Platz steht dann im Plan „offen“, die Fahrdienstleitung wird benachrichtigt.
+      Einen Ersatz kann man später eintragen.</p>
+    <input type="hidden" name="benutzer" value="{{ p.wer.pk }}">
+    <input type="hidden" name="von" value="{{ p.datum|date:'Y-m-d' }}">
+    <input type="hidden" name="bis" value="">
+    <div class="feld">
+      <label for="ausfall-grund">Grund</label>
+      <select name="grund" id="ausfall-grund">{% for wert, text in ausfall_form.fields.grund.choices %}{% if wert %}<option value="{{ wert }}">{{ text }}</option>{% endif %}{% endfor %}</select>
+    </div>
+    <div class="feld">
+      <label for="ausfall-dauer">Wie lange?</label>
+      <select name="dauer" id="ausfall-dauer">{% for wert, text in ausfall_form.fields.dauer.choices %}<option value="{{ wert }}">{{ text }}</option>{% endfor %}</select>
+    </div>
+    <button type="submit" class="knopf">Ausfall melden (ohne Ersatz)</button>
+  </form>
+  <h2 class="abseits">Oder gleich einen Ersatz eintragen</h2>
+  {% endif %}
   <form method="post">
     {% csrf_token %}
     <div class="feld">
