@@ -642,3 +642,18 @@ def test_kunden_in_teilen_nachreichen(admin_client, sicherung):
     assert Abholung.objects.filter(haushalt=h).count() == 2
     assert h.personen.count() == 2
     assert Buchung.objects.filter(haushalt=h, importiert=True).count() == 1
+
+
+def test_leere_haushalte_liste_im_assistenten(admin_client, sicherung):
+    """Nur Überschriften: im Assistenten wie beim Importformat ein gültiger Vollaustausch."""
+    from apps.kunden.models import ImportVorbereitung
+
+    _haushalt("1", "Anna", "Alt")
+    sitzung = hochladen(
+        admin_client, "kunden", csv_datei("haushalte.csv", "Kundennummer;Vorname;Nachname")
+    )
+    antwort = weiter(admin_client, sitzung)
+    assert antwort.status_code == 302, antwort.content.decode()[:3000]
+    v = ImportVorbereitung.objects.get()
+    admin_client.post(reverse("kunden:import_uebernehmen", args=[v.pk]), {"modus": "vollaustausch"})
+    assert not Haushalt.objects.exists()

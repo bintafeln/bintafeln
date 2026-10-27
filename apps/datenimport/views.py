@@ -231,13 +231,19 @@ def _kunden_pruefen(request, sitzung, ziel):
 
     je_art: dict[str, list] = {}
     herkunft: dict[str, list] = {}
+    zugeordnet: dict[str, set] = {}
     for t in sitzung.tabellen:
         if t.get("aus"):
             continue
+        # auch ohne Datenzeilen: eine leere Haushalte-Liste ist ein gültiger Vollaustausch
+        je_art.setdefault(t["art"], [])
+        zugeordnet.setdefault(t["art"], set()).update(z for z in t["zuordnung"] if z)
         for nummer, werte in _zeilen(t):
             je_art.setdefault(t["art"], []).append(werte)
             herkunft.setdefault(t["art"], []).append((t["name"], nummer))
-    dateien = {art: ziel.neutral(ziel.art(art), zeilen) for art, zeilen in je_art.items()}
+    dateien = {
+        art: ziel.neutral(ziel.art(art), zeilen, zugeordnet[art]) for art, zeilen in je_art.items()
+    }
     ergebnis = importieren.pruefen(dateien)
     for m in ergebnis.bericht:  # Zeilen der umgeschriebenen Datei → Zeile der Originaldatei
         quelle = herkunft.get(m["datei"])
