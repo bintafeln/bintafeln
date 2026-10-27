@@ -945,8 +945,10 @@ Serienbriefe (Modul 5, ADR 0044); Kunden stehen weiter im Kundenstamm.
 
 „Mitglieder“ (Rechte „Mitglieder und Beiträge ansehen …“ und „Mitglieder anlegen, bearbeiten
 und löschen“; Büro hat beide) führt die Mitglieder des Trägervereins (ADR 0046). Jedes Mitglied
-ist eine Adresse aus dem Adressbuch. Bei „Neues Mitglied“ führt „+ Neue Adresse anlegen“ ins
-Adressbuch und nach dem Speichern mit der neuen Adresse zurück; das Adressbuch zeigt bei
+ist eine Adresse aus dem Adressbuch. Die Mitgliedschaft lässt sich direkt beim Anlegen oder
+Bearbeiten der Adresse eintragen (Abschnitt „Vereinsmitgliedschaft“, Häkchen „Ist
+Vereinsmitglied“, Recht „Mitglieder bearbeiten“); löschen geht nur auf der Seite des Mitglieds.
+„Neues Mitglied“ führt mit „+ Neue Adresse anlegen“ dorthin. Das Adressbuch zeigt bei
 Mitgliedern „Mitglied Nr.“ mit Link, beide Listen verweisen aufeinander.
 
 - **Mitglied**: fortlaufende Mitgliedsnummer (Vorschlag), Art (Auswahl: ordentlich, aktiv,

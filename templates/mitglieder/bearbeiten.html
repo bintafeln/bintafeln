@@ -9,7 +9,7 @@
   {% if not m.pk %}
   <div class="meldung querweg">
     <p><strong>Noch nicht im Adressbuch?</strong> Jedes Mitglied ist eine Adresse aus dem Adressbuch.
-      {% if "adressen.bearbeiten" in rechte %}Legen Sie die Adresse an – danach kommen Sie mit ihr hierher zurück.{% endif %}</p>
+      {% if "adressen.bearbeiten" in rechte %}Legen Sie die Adresse an und tragen Sie die Mitgliedschaft gleich dort mit ein.{% endif %}</p>
     {% if "adressen.bearbeiten" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'adressen:neu' %}?mitglied=1">+ Neue Adresse anlegen</a>{% endif %}
     {% if "adressen.sehen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'adressen:liste' %}">Adressbuch öffnen</a>{% endif %}
   </div>

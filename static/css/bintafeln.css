@@ -931,3 +931,7 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 .querweg { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }
 .querweg p { margin: 0; flex: 1 1 20rem; }
 a.marke-rolle { text-decoration: none; }
+/* Adresse bearbeiten: Mitgliedsangaben nur, wenn „Ist Vereinsmitglied“ angekreuzt ist */
+.mitglied-wahl { margin-top: 1rem; border-top: 1px solid var(--rand); padding-top: .5rem; }
+.mitglied-wahl h2 { font-size: 1.1rem; margin: .25rem 0 .5rem; }
+.mitglied-wahl:has(input[name="ist_mitglied"][type="checkbox"]:not(:checked)) .mitglied-felder { display: none; }

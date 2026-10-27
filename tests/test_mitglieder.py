@@ -168,35 +168,52 @@ def test_migration_behaelt_genutzte_beitraege(erika):
     assert MitgliederEinstellungen.mit_beitraegen()
 
 
-def test_neues_mitglied_ueber_das_adressbuch(admin_client, benutzer_mit_rolle, anmelden, client):
-    """Neues Mitglied → „Neue Adresse anlegen“ → nach dem Speichern zurück, Adresse gewählt."""
+def test_mitgliedschaft_direkt_bei_der_adresse(admin_client, benutzer_mit_rolle, anmelden, client):
+    """Adresse bearbeiten mit Abschnitt „Vereinsmitgliedschaft“; Querlinks in beide Richtungen."""
     seite = admin_client.get(reverse("mitglieder:neu")).content.decode()
     assert f'href="{reverse("adressen:neu")}?mitglied=1"' in seite
     formular = admin_client.get(reverse("adressen:neu"), {"mitglied": "1"}).content.decode()
-    assert 'name="mitglied" value="1"' in formular and "weiter zum neuen Mitglied" in formular
-    antwort = admin_client.post(reverse("adressen:neu"), {"art": "person", "nachname": "Probe",
-                                                         "mitglied": "1"})  # fmt: skip
+    assert 'name="ist_mitglied" value="1" checked' in formular and 'name="m-nummer"' in formular
+    # Ohne Häkchen: nur die Adresse, Mitgliedsfelder werden nicht geprüft
+    admin_client.post(reverse("adressen:neu"), {"art": "person", "nachname": "Nur",
+                                                "m-nummer": ""})  # fmt: skip
+    assert not Mitglied.objects.exists()
+    # Mit Häkchen, aber fehlender Art: nichts gespeichert, Fehler am Feld
+    fehlt = admin_client.post(reverse("adressen:neu"), {"art": "person", "nachname": "Probe",
+                                                        "ist_mitglied": "1", "m-nummer": "77",
+                                                        "m-eintritt": "2026-01-01"})  # fmt: skip
+    assert fehlt.status_code == 200 and not Adresse.objects.filter(nachname="Probe").exists()
+    daten = {"art": "person", "nachname": "Probe", "ist_mitglied": "1", "m-nummer": "77",
+             "m-art": "Fördermitglied", "m-eintritt": "2026-01-01"}  # fmt: skip
+    antwort = admin_client.post(reverse("adressen:neu"), daten)
     a = Adresse.objects.get(nachname="Probe")
-    assert antwort.url == f"{reverse('mitglieder:neu')}?adresse={a.pk}"
-    neu = admin_client.get(antwort.url)
-    assert neu.context["form"].initial["adresse"] == str(a.pk)
+    m = Mitglied.objects.get(adresse=a)
+    assert antwort.url == reverse("adressen:adresse", args=[a.pk])
+    assert (m.nummer, m.art, m.eintritt) == ("77", "Fördermitglied", dt.date(2026, 1, 1))
+    assert MitgliederEinstellungen.laden().naechste_nummer == 78
+    # Bearbeiten: Mitgliedsangaben stehen dabei und lassen sich ändern
+    url = reverse("adressen:bearbeiten", args=[a.pk])
+    seite = admin_client.get(url).content.decode()
+    assert 'name="ist_mitglied" value="1">' in seite and "Mitglied Nr. 77" in seite
+    admin_client.post(url, {**daten, "m-art": "Ehrenmitglied", "m-austritt": "2026-06-30",
+                            "m-austrittsgrund": ""})  # fmt: skip
+    assert Mitglied.objects.get(pk=m.pk).art == "Fördermitglied"  # Grund fehlt: nicht gespeichert
+    admin_client.post(url, {**daten, "m-art": "Ehrenmitglied"})
+    assert Mitglied.objects.get(pk=m.pk).art == "Ehrenmitglied" and Mitglied.objects.count() == 1
     # Querlinks: Adressbuch zeigt das Mitglied, Mitgliederliste führt ins Adressbuch
-    m = mitglied(a)
     liste = admin_client.get(reverse("adressen:liste")).content.decode()
     assert f'href="{reverse("mitglieder:mitglied", args=[m.pk])}"' in liste
     assert reverse("mitglieder:liste") in liste
-    assert (
-        reverse("adressen:liste") in admin_client.get(reverse("mitglieder:liste")).content.decode()
-    )
-    # Ohne Recht auf Mitglieder: normale Adresse, kein Sprung
+    mitglieder = admin_client.get(reverse("mitglieder:liste")).content.decode()
+    assert reverse("adressen:liste") in mitglieder
+    # Ohne Recht „Mitglieder bearbeiten“: kein Abschnitt, Häkchen wirkt nicht
     anmelden(client, benutzer_mit_rolle("bea", rollen.BUERO))
     from apps.konten.models import Rolle
 
     r = Rolle.objects.get(gruppe__name=rollen.BUERO)
     r.rechte = [x for x in r.rechte if x != "mitglieder.bearbeiten"]
     r.save()
-    antwort = client.post(reverse("adressen:neu"), {"art": "person", "nachname": "Ohne",
-                                                   "mitglied": "1"})  # fmt: skip
-    assert antwort.url == reverse(
-        "adressen:adresse", args=[Adresse.objects.get(nachname="Ohne").pk]
-    )
+    assert "Vereinsmitgliedschaft" not in client.get(reverse("adressen:neu")).content.decode()
+    client.post(reverse("adressen:neu"), {"art": "person", "nachname": "Ohne", **{
+        k: v for k, v in daten.items() if k.startswith("m-") or k == "ist_mitglied"}})  # fmt: skip
+    assert not Mitglied.objects.filter(adresse__nachname="Ohne").exists()

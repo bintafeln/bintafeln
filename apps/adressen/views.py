@@ -4,10 +4,10 @@ import base64
 
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import ProtectedError, Q, Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
@@ -81,22 +81,55 @@ def adresse(request, pk):
 @rollen.recht_erforderlich("adressen.bearbeiten")
 def bearbeiten(request, pk=None):
     a = get_object_or_404(Adresse, pk=pk) if pk else Adresse()
-    fuer_mitglied = (not pk and (request.POST or request.GET).get("mitglied") == "1"
-                     and rollen.hat_recht(request.user, "mitglieder.bearbeiten"))  # fmt: skip
     form = AdresseForm(request.POST or None, instance=a)
-    if request.method == "POST" and form.is_valid():
-        a = form.save(commit=False)
-        a.geaendert_am, a.geaendert_von = timezone.now(), request.user.get_username()
-        a.save()
-        form.save_m2m()
-        messages.success(request, f"Adresse „{a.name}“ gespeichert.")
-        if fuer_mitglied and not hasattr(a, "mitglied"):
-            # Vom „Neues Mitglied“ gekommen: gleich weiter, mit der neuen Adresse vorbelegt
-            return redirect(f"{reverse('mitglieder:neu')}?adresse={a.pk}")
+    m_form, ist_mitglied = _mitglied_formular(request, a)
+    gueltig = form.is_valid() and (not ist_mitglied or m_form.is_valid())
+    if request.method == "POST" and gueltig:
+        with transaction.atomic():
+            a = form.save(commit=False)
+            a.geaendert_am, a.geaendert_von = timezone.now(), request.user.get_username()
+            a.save()
+            form.save_m2m()
+            if m_form is not None and ist_mitglied:
+                from apps.mitglieder.models import nummer_verbraucht
+
+                m = m_form.save(commit=False)
+                m.adresse = a
+                m.save()
+                nummer_verbraucht(m.nummer)
+        text = f"Adresse „{a.name}“ gespeichert"
+        messages.success(request, f"{text} (Mitglied {m.nummer})." if m_form is not None
+                         and ist_mitglied else f"{text}.")  # fmt: skip
         return redirect("adressen:adresse", pk=a.pk)
-    return render(
-        request, "adressen/bearbeiten.html", {"form": form, "a": a, "fuer_mitglied": fuer_mitglied}
-    )
+    return render(request, "adressen/bearbeiten.html", {
+        "form": form, "a": a, "m_form": m_form, "ist_mitglied": ist_mitglied,
+        "schon_mitglied": m_form is not None and m_form.instance.pk is not None,
+    })  # fmt: skip
+
+
+def _mitglied_formular(request, a: Adresse):
+    """Mitgliedschaft direkt bei der Adresse (Recht „Mitglieder bearbeiten“): bei Mitgliedern
+    immer, sonst über das Häkchen „Ist Vereinsmitglied“. Löschen geht nur auf der Mitgliedsseite.
+    Ergebnis: (Formular oder None, ob die Mitgliedsangaben gelten)."""
+    if not rollen.hat_recht(request.user, "mitglieder.bearbeiten"):
+        return None, False
+    from apps.mitglieder.forms import MitgliedForm
+    from apps.mitglieder.models import Mitglied, MitgliederEinstellungen
+
+    m = Mitglied.objects.filter(adresse=a).first() if a.pk else None
+    initial = {}
+    if m is None:
+        e = MitgliederEinstellungen.laden()
+        m = Mitglied(eintritt=timezone.localdate(), jahresbeitrag=e.standard_beitrag)
+        initial["nummer"] = e.naechste_nummer
+    if m.pk:
+        ist = True
+    elif request.method == "POST":
+        ist = request.POST.get("ist_mitglied") == "1"
+    else:
+        ist = request.GET.get("mitglied") == "1"  # vom „Neues Mitglied“ gekommen
+    daten = request.POST if request.method == "POST" and ist else None
+    return MitgliedForm(daten, instance=m, initial=initial, prefix="m", ohne_adresse=True), ist
 
 
 @require_POST
