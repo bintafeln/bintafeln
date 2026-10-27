@@ -744,3 +744,23 @@ def test_ausgabestelle_ohne_aufruf(modul_an, admin_client, mitte, tag_daten, ben
     assert c.get(reverse("aufruf:leiste")).content == b""
     assert c.get(reverse("aufruf:steuerung", args=[mitte.pk])).status_code == 403
     assert ablauf.einlass(Haushalt.objects.get(kundennummer=nummer), heute()) == []
+
+
+def test_einlass_an_stelle_ohne_aufruf_zeigt_nichts(modul_an, admin_client, mitte, tag_daten):
+    """Aufruf an der Einlass-Stelle aus: kein „zu früh“, kein Blinken, kein Verschieben – auch
+    nicht für Kunden einer anderen Stelle, an der der Aufruf läuft."""
+    tag = ablauf.starten(mitte, heute())
+    nummer = tag.stand["gruppen"][0]["wartend"][4]
+    h = Haushalt.objects.get(kundennummer=nummer)
+    nord = Ausgabestelle.objects.create(name="Nord")
+    assert ablauf.einlass(h, heute(), nord)  # Aufruf an Nord an: Hinweis von Mitte
+    e = AufrufEinstellungen.laden(nord)
+    e.aktiv = False
+    e.save()
+    assert ablauf.einlass(h, heute(), nord) == []
+    admin = admin_client.get(reverse("core:start")).wsgi_request.user
+    admin.gewaehlte_stelle = nord
+    admin.save()
+    seite = admin_client.get(reverse("ausgabe:empfang"), {"nummer": nummer}).content.decode()
+    assert "Aufruf:" not in seite and "ampel-blinkt" not in seite
+    assert "zu früh" not in seite and "Nummern verschieben" not in seite

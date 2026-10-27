@@ -775,7 +775,8 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   Knopf „15 Nummern verschieben“ (Zahl = „Plätze für zu spät Gekommene“ der Ausgabestelle), der
   den Kunden wie am Handy neu einsortiert; die Maus darauf zeigt die genaue Erklärung.
 - **Einstellungen je Ausgabestelle:** „Aufruf an dieser Ausgabestelle“ (aus: kein Kasten unter dem
-  Menü, keine Steuerung, keine Aufruf-Hinweise am Einlass), Nummern je Aufruf (Vorgabe 3), Vorrang-Feld und Symbol,
+  Menü, keine Steuerung, am Einlass dieser Stelle nichts vom Aufruf – auch nicht für Kunden
+  anderer Stellen), Nummern je Aufruf (Vorgabe 3), Vorrang-Feld und Symbol,
   schon Eingelassene herausnehmen, Plätze für zu spät Gekommene, „zu spät“ am Einlass nach
   Minuten, Infos ein/aus, Probelauf als anderer Wochentag. **Infos:** Text, Bild, PDF oder Webseite mit Anzeigedauer, für alle oder
   bestimmte Ausgabestellen.

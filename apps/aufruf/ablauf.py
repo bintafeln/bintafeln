@@ -637,7 +637,10 @@ def _verschieben_knopf(tag, e, haushalt) -> dict:
 
 
 def einlass(haushalt, heute, stelle=None) -> list[dict]:
-    """Hinweis für die Einlass-Karte: wann aufgerufen, zu spät oder noch nicht dran."""
+    """Hinweis für die Einlass-Karte: wann aufgerufen, zu spät oder noch nicht dran. An einer
+    Ausgabestelle ohne Aufruf erscheint nichts, auch nicht für Kunden anderer Stellen."""
+    if stelle is not None and not AufrufEinstellungen.laden(stelle).aktiv:
+        return []
     gruppe = haushalt.kundengruppe
     stellen = [s for s in (gruppe.ausgabestelle if gruppe else None, stelle) if s]
     tag = next((t for t in (tag_holen(s, heute) for s in stellen) if t), None)
