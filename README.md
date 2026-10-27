@@ -924,13 +924,18 @@ Wettertext, Programmname, Name der Tafel (wenn ein Logo da ist), das Wort „Men
 
 „Verein → Adressen → Adressbuch“ (Rechte „Adressbuch ansehen …“, „Adressen anlegen und bearbeiten“,
 „Adressen löschen“, „Adressen importieren“; Büro hat alle außer Löschen) sammelt Spender, Märkte,
-Lieferanten, Partner, Presse und Behörden. Es ist die Grundlage für Spenden, Mitglieder und
+Lieferanten, Partner, Presse, Behörden, Mitglieder und ehrenamtliche Helfer (Kategorie
+„Ehrenamtliche Helfer“ für alle, die mithelfen, ohne Mitglied zu sein). Es ist die Grundlage für Spenden, Mitglieder und
 Serienbriefe (Modul 5, ADR 0044); Kunden stehen weiter im Kundenstamm.
 
 - **Adresse**: Organisation (mit Ansprechperson) oder Person, Anschrift, Telefon, Mobil, E-Mail,
   Webseite, Kategorien (Mehrfachauswahl, gepflegt unter „Einstellungen → Adresskategorien“),
   Notiz.
 - **Einwilligungen** jeweils mit Datum: Post, E-Mail, Name veröffentlichen.
+- **Filter „Im Verein“**: Mitglieder (aktuell), aktive Mitglieder (helfen mit), passive Mitglieder
+  (Stimmrecht, helfen nicht mit; Mitgliedsart „Passives Mitglied“), ehrenamtliche Helfer
+  (Kategorie oder aktives Mitglied) und Spender (Kategorie oder mit Spenden); die Mitglieder-Filter
+  nur mit dem Recht „Mitglieder ansehen“.
 - **Liste** mit Suche und Filtern, Export als CSV (Excel), **Auskunft** nach Art. 15 als PDF,
   jede Änderung im Änderungsprotokoll. Im Suchfeld oben mit dem Kürzel `ad`.
 - **Import** aus CSV (Semikolon, UTF-8 oder Windows-1252): Prüfbericht, dann übernehmen. Nur neue

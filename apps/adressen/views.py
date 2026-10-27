@@ -21,6 +21,38 @@ from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 
 SITZUNG_IMPORT = "adressen_import"
+HELFER = "Ehrenamtliche Helfer"  # Kategorie aus Migration 0003
+
+# Filter „Im Verein“: (Schlüssel, Bezeichnung, nötiges Recht)
+VEREIN = [
+    ("mitglied", "Mitglieder (aktuell)", "mitglieder.sehen"),
+    ("aktiv", "aktive Mitglieder (helfen mit)", "mitglieder.sehen"),
+    ("passiv", "passive Mitglieder", "mitglieder.sehen"),
+    ("helfer", "ehrenamtliche Helfer (auch aktive Mitglieder)", None),
+    ("spender", "Spender", None),
+]
+
+
+def _verein_wahl(benutzer) -> list[tuple[str, str]]:
+    return [(k, t) for k, t, recht in VEREIN if recht is None or rollen.hat_recht(benutzer, recht)]
+
+
+def _im_verein(adressen, wahl: str):
+    heute = timezone.localdate()
+    mitglied = Q(mitglied__isnull=False) & (Q(mitglied__austritt__isnull=True)
+                                            | Q(mitglied__austritt__gt=heute))  # fmt: skip
+    if wahl == "mitglied":
+        return adressen.filter(mitglied)
+    if wahl == "aktiv":
+        return adressen.filter(mitglied, mitglied__art="Aktives Mitglied")
+    if wahl == "passiv":
+        return adressen.filter(mitglied, mitglied__art="Passives Mitglied")
+    if wahl == "helfer":
+        return adressen.filter(Q(kategorien__name=HELFER)
+                               | (mitglied & Q(mitglied__art="Aktives Mitglied")))  # fmt: skip
+    if wahl == "spender":
+        return adressen.filter(Q(kategorien__name="Spender") | Q(spenden__isnull=False))
+    return adressen
 
 
 def _gefiltert(request):
@@ -38,7 +70,11 @@ def _gefiltert(request):
     art = request.GET.get("art", "")
     if art in Adresse.Art.values:
         adressen = adressen.filter(art=art)
-    return adressen.distinct(), {"q": q, "kategorie": kategorie, "art": art}
+    verein = request.GET.get("verein", "")
+    if verein not in dict(_verein_wahl(request.user)):
+        verein = ""
+    adressen = _im_verein(adressen, verein)
+    return adressen.distinct(), {"q": q, "kategorie": kategorie, "art": art, "verein": verein}
 
 
 @rollen.recht_erforderlich("adressen.sehen")
@@ -54,6 +90,7 @@ def liste(request):
     return render(request, "adressen/liste.html", {
         "seite": seite, "filter": filter_, "anzahl": seite.paginator.count,
         "kategorien": AdressKategorie.objects.all(), "arten": Adresse.Art.choices,
+        "verein_wahl": _verein_wahl(request.user),
     })  # fmt: skip
 
 
