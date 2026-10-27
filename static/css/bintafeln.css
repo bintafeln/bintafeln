@@ -1022,3 +1022,8 @@ a.fd-ich { font-weight: 600; text-decoration: underline dotted; }
 .krank-felder { display: grid; gap: 0 .75rem; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); }
 .krank-melden select, .krank-melden input { font: inherit; padding: .55rem .65rem; min-height: 2.6rem;
   border: 1px solid var(--rand); border-radius: var(--radius); width: 100%; }
+
+/* Einstellungen speichern sofort (static/js/autosave.js) */
+.autosave-meldung { display: block; margin-top: .2rem; font-size: .85rem; transition: opacity .8s; }
+.autosave-ok { align-self: flex-start; padding: .05rem .5rem; border-radius: 999px; background: var(--erfolg); font-weight: 600; }
+.autosave-weg { opacity: 0; }

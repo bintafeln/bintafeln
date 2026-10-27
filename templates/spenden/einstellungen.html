@@ -6,7 +6,7 @@
   <p>Diese Angaben stehen auf jeder Zuwendungsbestätigung. Bitte genau so eintragen, wie sie im Bescheid des Finanzamts
     stehen. bintafeln folgt den amtlichen Mustern; ob die Angaben steuerlich passen, klärt im Zweifel die
     Steuerberatung der Tafel.</p>
-  <form method="post">
+  <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <button type="submit" class="knopf">Speichern</button>

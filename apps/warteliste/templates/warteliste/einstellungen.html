@@ -3,7 +3,7 @@
 {% block inhalt %}
 <section class="karte breit">
   <h1>Warteliste und Einladungen</h1>
-  <form method="post">
+  <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular_abschnitte.html" %}
     <button type="submit" class="knopf">Speichern</button>

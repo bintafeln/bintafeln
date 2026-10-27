@@ -325,3 +325,33 @@ def test_statistik_grafik_gross_und_zurueck(angemeldet, admin):
     expect(dialog).to_be_visible()
     seite.keyboard.press("Escape")
     expect(dialog).to_be_hidden()
+
+
+def test_einstellungen_speichern_sofort(angemeldet, admin):
+    """Einstellungen ohne Speichern-Knopf: jede Änderung gleich gespeichert, Fehler am Feld."""
+    from apps.kunden.models import KundenEinstellungen
+
+    seite = angemeldet(admin)
+    seite.goto("/kunden/einstellungen/")
+    expect(seite.get_by_role("button", name="Speichern")).to_be_hidden()
+    haken = seite.get_by_label("Telefon erfassen")
+    vorher = KundenEinstellungen.laden().telefon_erfassen
+    haken.click()
+    expect(seite.locator(".autosave-ok").first).to_have_text("✓ gespeichert")
+    assert KundenEinstellungen.laden().telefon_erfassen is not vorher
+    feld = seite.get_by_label("Verlängern frühestens … Tage vor Ablauf")
+    feld.fill("999")
+    feld.press("Tab")
+    expect(seite.locator(".autosave-meldung.fehler")).to_contain_text("365")
+    assert KundenEinstellungen.laden().verlaengern_fruehestens_tage == 60  # alter Wert bleibt
+    feld.fill("45")
+    feld.press("Tab")
+    rahmen = seite.locator(".feld", has=feld)
+    expect(rahmen.locator(".autosave-ok")).to_be_visible()
+    expect(rahmen.locator(".fehler")).to_have_count(0)
+    assert KundenEinstellungen.laden().verlaengern_fruehestens_tage == 45
+    # Die Regel als Satz passt sich sofort an
+    regel = seite.locator("#verlaengern-regel")
+    expect(regel).to_contain_text("Ohne Bedingung")
+    seite.get_by_label("Verlängern nur, wenn").select_option("alle")
+    expect(regel).to_contain_text("Verlängert wird, wenn jede Person im Haushalt mindestens 60")

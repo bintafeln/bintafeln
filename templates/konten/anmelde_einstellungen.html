@@ -7,7 +7,7 @@
     Browser für den eingestellten Zeitraum kein Code nötig – das Passwort weiterhin. Nach einer Passwortänderung oder
     einer neuen Einrichtung der Zwei-Faktor-Anmeldung gilt kein Gerät mehr. Jede Person sieht und entfernt ihre
     Geräte unter „Mein Konto“; ein Admin kann sie bei Mitarbeitenden entfernen (z. B. verlorenes Handy).</p>
-  <form method="post">
+  <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <button type="submit" class="knopf">Speichern</button>

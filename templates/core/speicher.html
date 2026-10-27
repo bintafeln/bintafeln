@@ -5,7 +5,7 @@
   <h1>Speicher und Fotos</h1>
   <p class="hinweis">Hochgeladene Fotos (Quittungen, Dokumente zum Haushalt, Belege, Führerscheinkopien, Anhänge von
     Anträgen) werden beim Speichern nach diesen Einstellungen verkleinert. PDFs bleiben, wie sie sind.</p>
-  <form method="post">
+  <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <button type="submit" name="aktion" value="speichern" class="knopf">Speichern</button>
