@@ -66,10 +66,10 @@ def _urls(stelle, einstellungen) -> dict:
 
 @steuern
 def start(request):
-    """Ausgabestelle wählen; bei nur einer gleich zur Steuerung."""
+    """Ausgabestelle wählen; bei nur einer gleich zur Handy-Steuerung."""
     stellen = list(stellen_fuer(request.user))
     if len(stellen) == 1:
-        return redirect("aufruf:steuerung", stellen[0].pk)
+        return redirect("aufruf:mobil", stellen[0].pk)
     return render(request, "aufruf/start.html", {"stellen": stellen})
 
 
@@ -320,7 +320,7 @@ def leiste(request):
         d["current_slot"] = tag.stand["gruppen"][tag.stand["index"]]["name"]  # ohne Uhrzeit
     return render(request, "aufruf/_leiste.html", {
         "stelle": stelle, "d": d, "anzahl": e.anzahl, "fehler": fehler,
-        "steuerung": reverse("aufruf:steuerung", args=[stelle.pk]),
+        "steuerung": reverse("aufruf:mobil", args=[stelle.pk]),
     })  # fmt: skip
 
 

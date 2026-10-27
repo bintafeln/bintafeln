@@ -792,8 +792,9 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   verschwindet aus der Warteschlange – auch sofort aus „Bitte eintreten“ (der Platz bleibt bis
   zum nächsten „Weiter“ leer, niemand wird nachgerufen).
 - **Steuern** (Recht „Kunden aufrufen“, Vorgabe Büro und Ausgabe): Menü
-  „Aufruf ↗“ im Kasten unter dem Menü (öffnet die ganze Steuerung in einem neuen Tab) am PC
-  oder die Handy-Steuerung. Weiter, Zurück, Abfrage einer Nummer und „zu spät
+  „Aufruf ↗“ im Kasten unter dem Menü (öffnet die Handy-Steuerung der Ausgabestelle in einem
+  neuen Tab); die ganze Steuerung am PC ist unter „Einstellungen → Aufruf, Monitor und Kiosk“
+  verlinkt. Weiter, Zurück, Abfrage einer Nummer und „zu spät
   gekommen“ (so viele wartende Plätze nach hinten wie eingestellt). Reihenfolge des Tages als CSV.
 - **Unter dem Menü:** Wer am Einlass arbeitet und aufrufen darf, sieht links unter dem Menü die
   Nummern der gewählten Ausgabestelle, die gerade eintreten sollen, und den Knopf „Nächste 3
@@ -801,7 +802,7 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   der letzten Nummer „Ausgabe beendet“ mit „neu starten“ und „letzten Schritt zurück“. Die
   Anzeige aktualisiert sich alle 15 Sekunden, auch wenn ein anderes Gerät weiterschaltet. Hat die
   Ausgabestelle heute keine Kundengruppe, erscheint der Kasten nicht. Einen
-  eigenen Menüeintrag gibt es nicht mehr; die Überschrift „Aufruf ↗“ öffnet die ganze Steuerung.
+  eigenen Menüeintrag gibt es nicht mehr; die Überschrift „Aufruf ↗“ öffnet die Handy-Steuerung.
 - **Geräte im Wartebereich:** Monitor (Nummern, Infos im Wechsel, Ton, Layout per Zahnrad),
   Nummern-Anzeige, Kiosk (Karte scannen, Antwort auf Deutsch und in der Sprache zur
   Staatsangehörigkeit) und Abfrage. Sie brauchen keine Anmeldung, sondern den geheimen Link aus

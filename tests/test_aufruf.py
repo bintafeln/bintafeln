@@ -337,7 +337,8 @@ def test_sprachen():
 
 def test_steuerung_ablauf_ueber_die_seiten(modul_an, admin_client, mitte, tag_daten):
     url = reverse("aufruf:steuerung", args=[mitte.pk])
-    assert admin_client.get(reverse("aufruf:start")).url == url  # nur eine Ausgabestelle
+    # Nur eine Ausgabestelle: gleich zur Handy-Steuerung
+    assert admin_client.get(reverse("aufruf:start")).url == reverse("aufruf:mobil", args=[mitte.pk])
     seite = admin_client.get(url).content.decode()
     assert "Ausgabe starten" in seite and "2 Kundengruppen" in seite
     admin_client.post(reverse("aufruf:starten", args=[mitte.pk]))
@@ -648,6 +649,7 @@ def test_leiste_unter_dem_menue(modul_an, mitte, tag_daten, benutzer_mit_rolle, 
     assert f'hx-get="{url}"' in c.get(reverse("core:start")).content.decode()
     seite = c.get(url).content.decode()
     assert "Heute noch nicht gestartet" in seite and "Aufruf starten" in seite
+    assert f'href="{reverse("aufruf:mobil", args=[mitte.pk])}"' in seite  # „Aufruf ↗“
     seite = c.post(url, {"aktion": "starten"}).content.decode()
     erste = ablauf.tag_holen(mitte, heute()).stand["gruppen"][0]["wartend"][:3]
     assert "Bitte eintreten" in seite and all(f">{n}</span>" in seite for n in erste)

@@ -1,7 +1,7 @@
-<h2><a href="{{ steuerung }}" target="_blank" rel="noopener" title="Ganze Steuerung öffnen">Aufruf ↗</a></h2>
+<h2><a href="{{ steuerung }}" target="_blank" rel="noopener" title="Handy-Steuerung öffnen">Aufruf ↗</a></h2>
 {% if fehler %}<p class="aufruf-leiste-fehler" role="alert">{{ fehler }}</p>{% endif %}
 {% if ohne_stelle %}
-  <p class="leise">Ganze Steuerung mit Monitor und Handy. {% if stelle_waehlen %}Für die Kurz-Steuerung hier oben im Menü die Ausgabestelle wählen.{% endif %}</p>
+  <p class="leise">Handy-Steuerung des Aufrufs. {% if stelle_waehlen %}Für die Kurz-Steuerung hier oben im Menü die Ausgabestelle wählen.{% endif %}</p>
 {% elif d.error %}
   <p class="leise">Heute noch nicht gestartet.</p>
   <button type="button" class="knopf" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "starten"}' hx-target="closest .aufruf-leiste">Aufruf starten</button>
