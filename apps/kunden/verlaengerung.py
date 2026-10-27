@@ -165,9 +165,9 @@ def pruefen(h: Haushalt, heute: dt.date, monate: int, e: KundenEinstellungen) ->
         elif womit:
             p.personen.append((name, f"✓ {womit}"))
         else:
-            alter = person.alter(heute)
-            p.personen.append((name, f"✗ {alter} Jahre" if alter is not None else "✗"))
+            # Alle nicht erfüllten Bedingungen, z. B. „✗ 40 Jahre, nicht schwerbehindert“
             was = _nicht_erfuellt(person, heute, e, felder)
+            p.personen.append((name, f"✗ {was}" if was else "✗"))
             p.fehlt.append(f"{name}: {was}" if was else name)
         erfuellt.append(womit)
     if e.verlaengern_regel == KundenEinstellungen.Verlaengern.ALLE:

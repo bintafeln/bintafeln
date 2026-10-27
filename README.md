@@ -465,7 +465,9 @@ Dokumente, Historie.
   | Kiosk | nichts |
 
 - **Bearbeiten (nur Admin):** Auf der Haushaltsseite „Bearbeiten“ ändert alles zum Haushalt:
-  Angaben und Zusatzfelder, Personen, Abholberechtigte, Sperren, Ausnahmen, Anmerkungen;
+  Angaben und Zusatzfelder, Personen, Abholberechtigte, Sperren, Ausnahmen, Anmerkungen
+  (Erwachsene und Kinder sind kein Eingabefeld mehr: bintafeln zählt sie aus den Angehörigen,
+  nach „Kind bis“; nur ohne erfasste Angehörige gelten die Zahlen aus dem Altsystem);
   Abholungen lassen sich löschen (eine zugehörige Buchung wird zurückgenommen), der ganze
   Haushalt ebenfalls. „Neuer Haushalt“ steht in der Kundenliste und im Menü. Die Seite folgt
   der Reihenfolge im Büro: 1. Hauptperson (deren Name auf den Ausweis kommt), 2. Anschrift und
@@ -537,7 +539,8 @@ Dokumente, Historie.
   anlegen und bearbeiten“). Jeder wird nach den Bedingungen in „Einstellungen → Kundenstamm“
   geprüft: ohne Bedingung, jede Person oder mindestens eine Person erfüllt eine Bedingung
   (Mindestalter, Ja/Nein-Zusatzfelder wie „Schwerbehindert“, Einkommensarten); gesperrte, beendete
-  Haushalte und solche mit aktiver Sperre nicht, fehlende Geburtsdaten als „selbst prüfen“. Alle gewählten werden
+  Haushalte und solche mit aktiver Sperre nicht, fehlende Geburtsdaten als „selbst prüfen“. Je Person
+  steht da, womit sie die Bedingung erfüllt oder was fehlt („✗ 40 Jahre, nicht schwerbehindert“). Alle gewählten werden
   mit einem Klick um die gewählten Monate verlängert (ab bisherigem Ablauf, sonst ab heute); wer
   die Bedingung nicht erfüllt, bekommt (einstellbar) eine Notiz an die Ausgabestelle mit Grund
   und Pausenjahr – der Status bleibt, der Ausweis läuft ab –, wird pausiert oder nur angezeigt.
