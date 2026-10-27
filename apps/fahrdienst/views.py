@@ -6,6 +6,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
@@ -114,6 +115,7 @@ def platz(request, datum, tour, nr):
     return render(request, "fahrdienst/platz.html", {
         "p": plan.platz(tag, t, nr), "springer": springer, "weitere": weitere,
         "zurueck": zurueck, "wochentag": WOCHENTAGE[tag.weekday()], "monat": f"{tag:%Y-%m}",
+        "ausfall_form": AusfallForm(planen=True),
     })  # fmt: skip
 
 
@@ -154,7 +156,9 @@ def ausfall(request):
         betroffen = len(plan.einsaetze(wer, a.von, a.bis))
         messages.success(request, f"Ausfall eingetragen ({betroffen} Einsatz/Einsätze betroffen). "
                                   "Die Fahrdienstleitung wird benachrichtigt.")  # fmt: skip
-        return redirect("fahrdienst:plan" if darf_planen else "fahrdienst:meine")
+        if darf_planen:
+            return redirect(f"{reverse('fahrdienst:plan')}?monat={a.von:%Y-%m}")
+        return redirect("fahrdienst:meine")
     return render(request, "fahrdienst/ausfall.html", {
         "form": form, "zurueck": reverse("fahrdienst:plan" if darf_planen else "fahrdienst:meine"),
     })  # fmt: skip
@@ -170,7 +174,10 @@ def ausfall_loeschen(request, pk):
     papierkorb.loeschen(request.user, "Ausfall im Fahrdienst", str(a), a,
                         recht="fahrdienst.planen")  # fmt: skip
     messages.success(request, "Ausfall zurückgenommen.")
-    return redirect(request.POST.get("weiter") or "fahrdienst:meine")
+    weiter = request.POST.get("weiter", "")
+    if not url_has_allowed_host_and_scheme(weiter, {request.get_host()}):
+        weiter = reverse("fahrdienst:meine")  # nur Adressen dieser Installation
+    return redirect(weiter)
 
 
 @never_cache

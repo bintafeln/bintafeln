@@ -440,3 +440,33 @@ def test_fahrer_traegt_sich_selbst_aus(team, admin, client, anmelden):
     assert Ausfall.objects.get(benutzer=p["eva"], grund="krank").bis == dt.date(2026, 12, 9)
     FahrdienstEinstellungen.objects.update(selbst_melden=False)
     assert ausfall not in client.get(PLAN, {"monat": "2026-11"}).content.decode()
+
+
+def test_planung_meldet_nur_ausfall_ohne_ersatz(team, admin_client):
+    """Im Plan den Namen antippen: erst einmal nur „krank“, Ersatz später."""
+    p, mitte, steele = team
+    url = reverse("fahrdienst:platz", args=["2026-11-11", steele.pk, 1])
+    seite = admin_client.get(url).content.decode()
+    assert "Erst einmal nur: Kai Nordmann fällt aus" in seite
+    assert f'name="benutzer" value="{p["kai"].pk}"' in seite
+    daten = {
+        "benutzer": p["kai"].pk,
+        "von": "2026-11-11",
+        "bis": "",
+        "dauer": "7",
+        "grund": "krank",
+    }
+    antwort = admin_client.post(reverse("fahrdienst:ausfall"), daten)
+    assert antwort.url == f"{PLAN}?monat=2026-11"
+    a = Ausfall.objects.get(benutzer=p["kai"])
+    assert (a.von, a.bis, a.grund) == (dt.date(2026, 11, 11), dt.date(2026, 11, 17), "krank")
+    assert plan.platz(MITTWOCH, steele, 1).status == plan.OFFEN and not Ersatz.objects.exists()
+    seite = admin_client.get(url).content.decode()
+    assert "Erst einmal nur" not in seite and "zurücknehmen" in seite
+    loeschen = reverse("fahrdienst:ausfall_loeschen", args=[a.pk])
+    assert admin_client.post(loeschen, {"weiter": url}).url == url
+    a = Ausfall.objects.create(benutzer=p["kai"], von=MITTWOCH, bis=MITTWOCH, grund="krank")
+    fremd = reverse("fahrdienst:ausfall_loeschen", args=[a.pk])
+    assert admin_client.post(fremd, {"weiter": "https://example.org/"}).url == reverse(
+        "fahrdienst:meine"
+    )

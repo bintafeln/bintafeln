@@ -935,6 +935,8 @@ Ersetzt den gedruckten Fahrerplan mit den gelben Aufklebern (ADR 0074).
   oder durch die Fahrdienstleitung; Zeitraum und Grund (krank, Urlaub, Sonstiges). Den Grund
   sieht nur, wer plant. Die eingestellten Personen (sonst alle, die planen) bekommen eine E-Mail
   mit den betroffenen Einsätzen und den freien Springern.
+- **Nur Ausfall melden:** Wer plant, tippt im Plan auf den Namen und meldet erst einmal nur den
+  Ausfall (Grund, wie lange), ohne Ersatz; der Platz steht dann „offen“.
 - **Ersatz eintragen:** im Plan auf den Namen tippen; zur Wahl stehen die an dem Tag freien
   Springer, dann weitere freie Fahrer und Beifahrer.
 - **Jeden Monat öffnen und bearbeiten:** Monat und Jahr oben im Fahrerplan wählen (oder
