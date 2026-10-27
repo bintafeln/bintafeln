@@ -835,10 +835,13 @@ def test_alle_aufgerufenen_schon_am_einlass(modul_an, mitte, tag_daten, admin, a
     from apps.kunden.models import Abholung
 
     e = AufrufEinstellungen.laden(mitte)
+    e.automatisch_weiter = False  # erst ohne Automatik: Hinweis statt Weiterschalten
+    e.save()
     tag = ablauf.starten(mitte, heute())
     d = ablauf.stand_fuer_anzeige(tag, e, heute())
     assert d["alle_eingelassen"] is False
-    for nummer in d["current_numbers"]:
+    erste = d["current_numbers"]
+    for nummer in erste:
         Abholung.objects.create(haushalt=Haushalt.objects.get(kundennummer=nummer), datum=heute())
     d = ablauf.stand_fuer_anzeige(tag, e, heute())
     assert d["current_numbers"] == [] and d["alle_eingelassen"] and not d["finished"]
@@ -850,6 +853,29 @@ def test_alle_aufgerufenen_schon_am_einlass(modul_an, mitte, tag_daten, admin, a
     admin.gewaehlte_stelle = mitte
     admin.save()
     assert "Alle schon am Einlass" in admin_client.get(reverse("aufruf:leiste")).content.decode()
+
+    # Mit Automatik (Vorgabe): Die nächsten werden von selbst aufgerufen, Monitor nie leer
+    e.automatisch_weiter = True
+    e.save()
+    tag = ablauf.aktualisieren(mitte, heute())
+    d = ablauf.stand_fuer_anzeige(tag, e, heute())
+    assert d["current_numbers"] and not set(d["current_numbers"]) & set(erste)
+    assert tag.stand["rueckgaengig"][-1]["nummern"] == erste  # wie ein „Weiter“ (zurücknehmbar)
+    assert ablauf.aktualisieren(mitte, heute()).stand["rueckgaengig"] == tag.stand["rueckgaengig"]
+
+
+def test_automatisch_in_die_naechste_gruppe(modul_an, mitte, tag_daten):
+    from apps.kunden.models import Abholung
+
+    e = AufrufEinstellungen.laden(mitte)
+    tag = ablauf.starten(mitte, heute())
+    # Alle der ersten Gruppe schon eingelassen: geht fließend in die zweite Gruppe über
+    for nummer in tag.stand["gruppen"][0]["wartend"]:
+        Abholung.objects.create(haushalt=Haushalt.objects.get(kundennummer=nummer), datum=heute())
+    tag = ablauf.aktualisieren(mitte, heute())
+    d = ablauf.stand_fuer_anzeige(tag, e, heute())
+    assert tag.stand["index"] == 1 and d["current_slot"].startswith("Spät")
+    assert len(d["current_numbers"]) == e.anzahl
 
 
 def test_gruppen_nach_beginn_auch_aus_dem_namen(modul_an, mitte):

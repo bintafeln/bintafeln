@@ -383,6 +383,7 @@ def test_grosse_ampel_zeigt_die_farbe(ausgabe, haushalt):
     Abholung.objects.all().delete()
     inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
     assert '<span class="lampe lampe-gelb an">' in inhalt and ">ACHTUNG</p>" in inhalt
+    assert '<span class="lampe lampe-gruen an">' in inhalt  # Gelb mit Abholung: Grün leuchtet mit
 
 
 def test_einlass_zeigt_angaben_und_notizen(ausgabe, haushalt):

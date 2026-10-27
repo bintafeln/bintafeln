@@ -345,23 +345,33 @@ def weiter(stelle, datum) -> AufrufTag:
     einstellungen = AufrufEinstellungen.laden(stelle)
     with transaction.atomic():
         tag = _gestartet_sperren(stelle, datum)
-        s = tag.stand
-        if s["index"] >= len(s["gruppen"]):
-            return tag
-        g = s["gruppen"][s["index"]]
-        weg = g["wartend"][: einstellungen.anzahl]
-        g["wartend"] = g["wartend"][len(weg) :]
-        g["aufgerufen"] += weg
-        index_vorher = s["index"]
-        _eingelassene_heraus(s, datum, einstellungen, geschuetzt=False)  # vor dem Anzeigen
-        _index_weiter(s)
-        s["rueckgaengig"] = [*s["rueckgaengig"], {
-            "gruppe": index_vorher, "nummern": weg, "zeit": timezone.localtime().strftime("%H:%M"),
-            "zeitpunkt": timezone.now().isoformat(),
-        }][-RUECKGAENGIG_MAX:]  # fmt: skip
-        abgleichen(s, stelle, datum, einstellungen)
-        tag.save()
+        if tag.stand["index"] < len(tag.stand["gruppen"]):
+            _weiter_im_stand(tag.stand, stelle, datum, einstellungen)
+            tag.save()
     return tag
+
+
+def _weiter_im_stand(s, stelle, datum, einstellungen) -> None:
+    g = s["gruppen"][s["index"]]
+    weg = g["wartend"][: einstellungen.anzahl]
+    g["wartend"] = g["wartend"][len(weg) :]
+    g["aufgerufen"] += weg
+    index_vorher = s["index"]
+    _eingelassene_heraus(s, datum, einstellungen, geschuetzt=False)  # vor dem Anzeigen
+    _index_weiter(s)
+    s["rueckgaengig"] = [*s["rueckgaengig"], {
+        "gruppe": index_vorher, "nummern": weg, "zeit": timezone.localtime().strftime("%H:%M"),
+        "zeitpunkt": timezone.now().isoformat(),
+    }][-RUECKGAENGIG_MAX:]  # fmt: skip
+    abgleichen(s, stelle, datum, einstellungen)
+
+
+def _alle_schon_da(s, einstellungen, datum) -> bool:
+    """Sind alle gerade aufgerufenen Nummern schon am Einlass eingetragen?"""
+    if s["index"] >= len(s["gruppen"]) or not einstellungen.eingelassene_ausblenden:
+        return False
+    jetzt = s["gruppen"][s["index"]]["wartend"][: einstellungen.anzahl]
+    return bool(jetzt) and len(_eingelassen_heute(datum, jetzt)) == len(jetzt)
 
 
 def zurueck(stelle, datum) -> AufrufTag:
@@ -547,12 +557,21 @@ def aktualisieren(stelle, datum) -> AufrufTag | None:
     tag = tag_holen(stelle, datum)
     if tag is None or tag.gestartet_am is None:
         return tag
+    einstellungen = AufrufEinstellungen.laden(stelle)
+    # Alle Aufgerufenen schon am Einlass: von selbst die nächsten aufrufen, auch in der nächsten
+    # Kundengruppe – der Monitor zeigt so nie nur Striche (unter Sperre noch einmal geprüft)
+    if einstellungen.automatisch_weiter and _alle_schon_da(tag.stand, einstellungen, datum):
+        with transaction.atomic():
+            tag = tag_holen(stelle, datum, sperren=True)
+            if _alle_schon_da(tag.stand, einstellungen, datum):
+                _weiter_im_stand(tag.stand, stelle, datum, einstellungen)
+                tag.save()
+        return tag
     zuletzt = tag.stand.get("abgeglichen")
     if zuletzt and timezone.now() - dt.datetime.fromisoformat(zuletzt) < dt.timedelta(
         seconds=ABGLEICH_SEKUNDEN
     ):
         return tag
-    einstellungen = AufrufEinstellungen.laden(stelle)
     with transaction.atomic():
         tag = tag_holen(stelle, datum, sperren=True)
         abgleichen(tag.stand, stelle, datum, einstellungen)

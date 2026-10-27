@@ -11,7 +11,7 @@ class EinstellungenForm(forms.ModelForm):
     class Meta:
         model = AufrufEinstellungen
         fields = ["aktiv", "anzahl", "vorrang_feld", "vorrang_symbol", "eingelassene_ausblenden",
-                  "spaetzuender_versatz", "zu_spaet_minuten", "info_rotation",
+                  "automatisch_weiter", "spaetzuender_versatz", "zu_spaet_minuten", "info_rotation",
                   "wochentag_probe"]  # fmt: skip
 
     def __init__(self, *args, **kwargs):
