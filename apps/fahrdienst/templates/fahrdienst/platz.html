@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titel %}Ersatz eintragen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{{ zurueck }}">← Fahrerplan</a></p>
+  <h1>{{ wochentag }} {{ p.datum|date:"d.m.Y" }} · {{ p.tour }} · {{ p.name }}</h1>
+  <dl class="angaben">
+    <dt>Feste Besetzung</dt><dd>{% if p.stamm %}{{ p.stamm.get_full_name|default:p.stamm.username }}{% else %}–{% endif %}</dd>
+    {% if p.ersatz %}<dt>Ersatz</dt><dd>{{ p.ersatz.benutzer.get_full_name|default:p.ersatz.benutzer.username }} (eingetragen von {{ p.ersatz.eingetragen_von }})</dd>{% endif %}
+    {% if p.ausfall %}<dt>Fällt aus</dt><dd>{{ p.ausfall.benutzer.get_full_name|default:p.ausfall.benutzer.username }}: {{ p.ausfall.get_grund_display }}{% if p.ausfall.anmerkung %} – {{ p.ausfall.anmerkung }}{% endif %}</dd>{% endif %}
+  </dl>
+  <form method="post">
+    {% csrf_token %}
+    <div class="feld">
+      <label for="benutzer">Wer springt ein?</label>
+      <select name="benutzer" id="benutzer" required>
+        <option value="">bitte wählen</option>
+        {% if springer %}<optgroup label="Springer (frei an diesem Tag)">{% for b in springer %}<option value="{{ b.pk }}">{{ b.get_full_name|default:b.username }}</option>{% endfor %}</optgroup>{% endif %}
+        {% if weitere %}<optgroup label="Weitere Fahrer und Beifahrer (frei)">{% for b in weitere %}<option value="{{ b.pk }}">{{ b.get_full_name|default:b.username }}</option>{% endfor %}</optgroup>{% endif %}
+      </select>
+      {% if not springer and not weitere %}<small class="fehler">An diesem Tag ist niemand frei.</small>{% endif %}
+    </div>
+    <button type="submit" class="knopf">Ersatz eintragen</button>
+  </form>
+  {% if p.ersatz %}
+  <form method="post" class="abseits" onsubmit="return confirm('Ersatz zurücknehmen?')">
+    {% csrf_token %}<input type="hidden" name="benutzer" value="">
+    <button type="submit" class="knopf knopf-zweitrangig">Ersatz zurücknehmen</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

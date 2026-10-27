@@ -909,6 +909,25 @@ Auswahl erscheint wie in der Kundenliste nur, wenn an mindestens zwei Tagen ausg
 - Rechte „Listen ansehen, drucken und exportieren“ (Vorgabe Büro und Ausgabe) und „Eigene Listen
   für alle speichern“ (Büro). Neue Listen sind ein Eintrag in `apps/listen/katalog.py`.
 
+### Fahrdienst
+
+Ersetzt den gedruckten Fahrerplan mit den gelben Aufklebern (ADR 0074).
+
+- **Fahrerplan** (Recht „Fahrerplan sehen“, Vorgabe Fahrer, Beifahrer, Büro): ein Monat, Zeilen
+  die Fahrtage, Spalten die Touren mit Fahrer und Beifahrern. Wer ausfällt, ist gelb markiert und
+  der Platz „offen“; ein Ersatz steht grün daneben.
+- **Feste Besetzung** je Tour und Wochentag unter „Einstellungen → Mitarbeitende → Fahrdienst:
+  Touren und Springer“ (Recht „Fahrdienst planen“, Vorgabe Büro); daraus entsteht jede Woche der
+  Plan. Dazu Springer (auf jeder Tour, auf Wunsch nur an bestimmten Tagen), Fahrtage, Feiertage.
+- **Ausfall melden:** „Meine Einsätze → Ich kann nicht“ (wenn die Tafel Selbstmelden erlaubt)
+  oder durch die Fahrdienstleitung; Zeitraum und Grund (krank, Urlaub, Sonstiges). Den Grund
+  sieht nur, wer plant. Die eingestellten Personen (sonst alle, die planen) bekommen eine E-Mail
+  mit den betroffenen Einsätzen und den freien Springern.
+- **Ersatz eintragen:** im Plan auf den Namen tippen; zur Wahl stehen die an dem Tag freien
+  Springer, dann weitere freie Fahrer und Beifahrer.
+- Ausfälle und Ersatz werden nach 12 Monaten gelöscht (einstellbar) und stehen in der Auskunft
+  für Mitarbeitende. Telegram-Benachrichtigung und Druck als PDF folgen.
+
 ### Links auf der Startseite
 
 Ersetzt die bisherige „App-Übersicht“ (ADR 0057): Kacheln mit Symbol, Titel, Untertitel,

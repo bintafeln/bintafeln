@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block titel %}Ausfall melden{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Ausfall im Fahrdienst melden</h1>
+  <p class="hinweis">Für einen Tag nur „Von“ ausfüllen. Die Fahrdienstleitung bekommt eine E-Mail mit den betroffenen
+    Einsätzen und den freien Springern. Den Grund sieht nur, wer den Fahrdienst plant.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Ausfall melden</button>
+  </form>
+</section>
+{% endblock %}

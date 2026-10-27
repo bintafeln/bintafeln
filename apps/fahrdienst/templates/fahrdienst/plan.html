@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block titel %}Fahrerplan {{ titel }}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <div class="fd-kopf">
+    <h1>Fahrerplan {{ titel }}</h1>
+    <div class="aktionsleiste">
+      <a class="knopf knopf-zweitrangig" href="?monat={{ vorher }}">← Vormonat</a>
+      <a class="knopf knopf-zweitrangig" href="?monat={{ nachher }}">Folgemonat →</a>
+      {% if planen or darf_melden %}<a class="knopf" href="{% url 'fahrdienst:ausfall' %}">Ausfall melden</a>{% endif %}
+    </div>
+  </div>
+  <p class="hinweis"><span class="fd-platz fd-offen"><s>Name</s> <strong>offen</strong></span> fällt aus, noch kein Ersatz ·
+    <span class="fd-platz fd-ersetzt"><s class="fd-weg">Name</s> Ersatz</span> springt ein{% if planen %} ·
+    Auf einen Namen tippen, um einen Ersatz einzutragen.{% endif %}
+    {% if offen %}<br><strong class="fd-offen-text">{{ offen }} offene Plätze in diesem Monat.</strong>{% endif %}</p>
+  {% if not touren %}
+  <p>Noch keine Touren angelegt.{% if planen %} <a href="{% url 'fahrdienst:einstellungen' %}">Touren und Besetzung einstellen</a>{% endif %}</p>
+  {% else %}
+  <div class="fd-rahmen">
+  <table class="fd-plan">
+    <thead><tr><th>Tag</th>{% for t in touren %}<th>{{ t.name }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for datum, zeile in tage %}
+      <tr class="{% if datum.weekday == 0 %}fd-woche{% endif %}{% if datum == heute %} fd-heute{% endif %}">
+        <th scope="row">{{ datum|date:"D d.m." }}</th>
+        {% for tour, plaetze in zeile %}
+        <td>{% for p in plaetze %}{% include "fahrdienst/_platz.html" %}{% if not forloop.last %}<span class="fd-trenner"> / </span>{% endif %}{% endfor %}</td>
+        {% endfor %}
+      </tr>
+    {% empty %}
+      <tr><td colspan="{{ touren|length|add:1 }}">In diesem Monat sind keine Fahrtage.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

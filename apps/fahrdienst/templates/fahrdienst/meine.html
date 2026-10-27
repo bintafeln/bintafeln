@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block titel %}Meine Einsätze{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <div class="fd-kopf">
+    <h1>Meine Einsätze</h1>
+    {% if darf_melden or planen %}<a class="knopf" href="{% url 'fahrdienst:ausfall' %}">Ich kann nicht – Ausfall melden</a>{% endif %}
+  </div>
+  <h2>Die nächsten vier Wochen</h2>
+  {% if einsaetze %}
+  <ul class="fd-einsaetze">
+    {% for p in einsaetze %}<li><strong>{{ p.datum|date:"D d.m." }}</strong> · {{ p.tour }} · {{ p.name }}{% if p.ersatz %} (als Ersatz){% endif %}{% if p.ausfall %} · <span class="fd-platz fd-offen">Ausfall gemeldet</span>{% endif %}</li>{% endfor %}
+  </ul>
+  {% else %}<p>Keine Einsätze eingeplant.</p>{% endif %}
+  {% if ausfaelle %}
+  <h2>Gemeldete Ausfälle</h2>
+  <ul>
+    {% for a in ausfaelle %}<li>{{ a.von|date:"d.m.Y" }}{% if a.bis != a.von %} bis {{ a.bis|date:"d.m.Y" }}{% endif %} ({{ a.get_grund_display }})
+      {% if darf_melden or planen %}<form method="post" action="{% url 'fahrdienst:ausfall_loeschen' a.pk %}" class="inline" onsubmit="return confirm('Ausfall zurücknehmen? Wirklich löschen?')">{% csrf_token %}<button type="submit" class="link">zurücknehmen</button></form>{% endif %}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  <p><a href="{% url 'fahrdienst:plan' %}">Ganzer Fahrerplan</a></p>
+</section>
+{% endblock %}

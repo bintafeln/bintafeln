@@ -1,0 +1,220 @@
+"""Regeln des Fahrdienstes (ADR 0074): Plan je Tag, freie Leute für einen Ersatz, Benachrichtigung.
+
+Ein Platz ist an einem Tag mit der Person der festen Besetzung belegt, außer ein Ersatz ist für
+diesen Tag eingetragen. Fällt die Person aus, die den Platz an dem Tag hat, ist er „offen“.
+"""
+
+import datetime as dt
+import logging
+from dataclasses import dataclass
+
+from django.contrib.auth import get_user_model
+from django.db import transaction
+from django.db.models import Q
+from django.utils import timezone
+
+from apps.ausgabe.ampel import WOCHENTAGE, wochentage
+from apps.core.feiertage import ist_feiertag
+from apps.fahrdienst.models import (
+    Ausfall,
+    Besetzung,
+    Ersatz,
+    FahrdienstEinstellungen,
+    Springer,
+    Tour,
+    platz_name,
+)
+from apps.konten import rollen
+
+log = logging.getLogger(__name__)
+
+OK, ERSETZT, OFFEN, LEER = "ok", "ersetzt", "offen", "leer"
+
+
+@dataclass
+class Platz:
+    datum: dt.date
+    tour: Tour
+    platz: int
+    stamm: object = None  # Benutzer der festen Besetzung
+    ersatz: Ersatz | None = None
+    ausfall: Ausfall | None = None  # der Person, die den Platz an dem Tag hat
+
+    @property
+    def wer(self):
+        """Wer den Platz an diesem Tag hat."""
+        return self.ersatz.benutzer if self.ersatz else self.stamm
+
+    @property
+    def status(self) -> str:
+        if self.wer is None:
+            return LEER
+        if self.ausfall:
+            return OFFEN
+        return ERSETZT if self.ersatz else OK
+
+    @property
+    def name(self) -> str:
+        return platz_name(self.platz)
+
+
+def kuerzel(datum: dt.date) -> str:
+    return WOCHENTAGE[datum.weekday()]
+
+
+def faehrt(datum: dt.date, e: FahrdienstEinstellungen, land: str = "") -> bool:
+    """Fahren die Touren an diesem Tag?"""
+    if kuerzel(datum) not in wochentage(e.fahrtage):
+        return False
+    return not (e.feiertage_frei and land and ist_feiertag(datum, land))
+
+
+def fahrtage(von: dt.date, bis: dt.date, e: FahrdienstEinstellungen | None = None) -> list:
+    from apps.core.models import TafelEinstellungen
+
+    e = e or FahrdienstEinstellungen.laden()
+    land = TafelEinstellungen.laden().bundesland
+    tage = [von + dt.timedelta(days=i) for i in range((bis - von).days + 1)]
+    return [t for t in tage if faehrt(t, e, land)]
+
+
+def _ausfall(ausfaelle, benutzer_id, datum) -> Ausfall | None:
+    return next((a for a in ausfaelle
+                 if a.benutzer_id == benutzer_id and a.von <= datum <= a.bis), None)  # fmt: skip
+
+
+def tage(tage_liste: list[dt.date]) -> list[tuple[dt.date, list[tuple[Tour, list[Platz]]]]]:
+    """Plan für die angegebenen Tage: je Tag die aktiven Touren mit ihren Plätzen."""
+    if not tage_liste:
+        return []
+    touren = list(Tour.objects.filter(aktiv=True))
+    besetzung = {(b.tour_id, b.wochentag, b.platz): b.benutzer
+                 for b in Besetzung.objects.select_related("benutzer")}  # fmt: skip
+    von, bis = min(tage_liste), max(tage_liste)
+    eingetragen = Ersatz.objects.filter(datum__range=(von, bis)).select_related("benutzer")
+    ersatz = {(x.datum, x.tour_id, x.platz): x for x in eingetragen}
+    ausfaelle = list(Ausfall.objects.filter(von__lte=bis, bis__gte=von))
+    ergebnis = []
+    for datum in tage_liste:
+        zeile = []
+        for tour in touren:
+            plaetze = []
+            for nr in range(1, tour.plaetze + 1):
+                p = Platz(datum, tour, nr, stamm=besetzung.get((tour.pk, kuerzel(datum), nr)),
+                          ersatz=ersatz.get((datum, tour.pk, nr)))  # fmt: skip
+                if p.wer is not None:
+                    p.ausfall = _ausfall(ausfaelle, p.wer.pk, datum)
+                plaetze.append(p)
+            zeile.append((tour, plaetze))
+        ergebnis.append((datum, zeile))
+    return ergebnis
+
+
+def platz(datum: dt.date, tour: Tour, nr: int) -> Platz:
+    for t, plaetze in tage([datum])[0][1]:
+        if t.pk == tour.pk:
+            return plaetze[nr - 1]
+    return Platz(datum, tour, nr)
+
+
+def eingesetzt(datum: dt.date) -> set[int]:
+    """Benutzer, die an dem Tag schon einen Platz haben (fest oder als Ersatz)."""
+    return {p.wer.pk for _, zeile in tage([datum]) for _, plaetze in zeile for p in plaetze
+            if p.wer is not None}  # fmt: skip
+
+
+def verfuegbar(datum: dt.date) -> tuple[list, list]:
+    """Wer an dem Tag einspringen kann: (Springer, weitere Fahrer und Beifahrer).
+
+    Nicht dabei: wer ausfällt oder an dem Tag schon einen Platz hat."""
+    belegt = eingesetzt(datum)
+    belegt |= set(Ausfall.objects.filter(von__lte=datum, bis__gte=datum)
+                  .values_list("benutzer_id", flat=True))  # fmt: skip
+    tag = kuerzel(datum)
+    springer = [s.benutzer for s in Springer.objects.select_related("benutzer")
+                if s.benutzer.is_active and s.benutzer.pk not in belegt
+                and (not s.wochentage.strip() or tag in wochentage(s.wochentage))]  # fmt: skip
+    # Springer stehen nur an ihren Tagen zur Wahl, auch nicht unter „weitere“
+    schon = set(Springer.objects.values_list("benutzer_id", flat=True)) | belegt
+    weitere = [b for b in get_user_model().objects.filter(
+                   is_active=True, groups__name__in=[rollen.FAHRER, rollen.BEIFAHRER])
+               .distinct().order_by("last_name", "first_name", "username")
+               if b.pk not in schon]  # fmt: skip
+    springer.sort(key=lambda b: (b.last_name, b.first_name, b.username))
+    return springer, weitere
+
+
+def ersatz_eintragen(datum, tour, nr, benutzer, von) -> Ersatz | None:
+    """Ersatz für einen Platz an einem Tag; ``benutzer`` None nimmt ihn zurück."""
+    Ersatz.objects.filter(datum=datum, tour=tour, platz=nr).delete()
+    if benutzer is None:
+        return None
+    return Ersatz.objects.create(datum=datum, tour=tour, platz=nr, benutzer=benutzer,
+                                 eingetragen_von=von)  # fmt: skip
+
+
+def einsaetze(benutzer, von: dt.date, bis: dt.date) -> list[Platz]:
+    """Alle Plätze, die die Person zwischen ``von`` und ``bis`` hat (fest oder als Ersatz)."""
+    return [p for _, zeile in tage(fahrtage(von, bis)) for _, plaetze in zeile for p in plaetze
+            if p.wer is not None and p.wer.pk == benutzer.pk]  # fmt: skip
+
+
+def darf_selbst_melden(benutzer) -> bool:
+    return (FahrdienstEinstellungen.laden().selbst_melden
+            and rollen.hat_recht(benutzer, "fahrdienst.sehen"))  # fmt: skip
+
+
+def empfaenger() -> list[str]:
+    """Mailadressen für Ausfälle: die eingestellten Personen, sonst alle, die planen dürfen."""
+    gewaehlt = FahrdienstEinstellungen.laden().benachrichtigen.filter(is_active=True)
+    if gewaehlt.exists():
+        return sorted({b.email for b in gewaehlt if b.email})
+    konten = get_user_model().objects.filter(is_active=True).exclude(email="")
+    konten = konten.filter(Q(is_superuser=True) | Q(groups__rolle__isnull=False)).distinct()
+    return sorted({k.email for k in konten if rollen.hat_recht(k, "fahrdienst.planen")})
+
+
+def _benachrichtigen(ausfall: Ausfall, adresse: str) -> None:
+    from apps.core import mail
+
+    an = empfaenger()
+    if not an or not mail.eingerichtet():
+        return
+    betroffen = einsaetze(ausfall.benutzer, ausfall.von, ausfall.bis)
+    zeilen = []
+    for p in betroffen:
+        springer, _ = verfuegbar(p.datum)
+        frei = ", ".join(str(b) for b in springer) or "keiner frei"
+        zeilen.append(f"- {WOCHENTAGE[p.datum.weekday()]} {p.datum:%d.%m.%Y}, Tour {p.tour}, "
+                      f"{p.name}. Freie Springer: {frei}")  # fmt: skip
+    zeit = (f"am {ausfall.von:%d.%m.%Y}" if ausfall.von == ausfall.bis
+            else f"vom {ausfall.von:%d.%m.%Y} bis {ausfall.bis:%d.%m.%Y}")  # fmt: skip
+    text = (f"{ausfall.benutzer} fällt im Fahrdienst aus: {zeit} ({ausfall.get_grund_display()}).\n"
+            + (f"Anmerkung: {ausfall.anmerkung}\n" if ausfall.anmerkung else "")
+            + f"Eingetragen von: {ausfall.eingetragen_von}\n\n"
+            + ("Betroffene Einsätze:\n" + "\n".join(zeilen) if zeilen
+               else "Keine Einsätze in diesem Zeitraum.")
+            + (f"\n\nErsatz eintragen: {adresse}" if adresse else ""))  # fmt: skip
+    try:
+        mail.senden(f"Fahrdienst: Ausfall {ausfall.benutzer} {zeit}", text, an)
+    except mail.MailFehler as fehler:  # Der Ausfall steht trotzdem im Plan
+        log.warning("Fahrdienst-Ausfall %s: Mail nicht gesendet: %s", ausfall.pk, fehler)
+
+
+def ausfall_melden(benutzer, von, bis, grund, anmerkung, eingetragen_von,
+                   adresse: str = "") -> Ausfall:  # fmt: skip
+    """Ausfall eintragen und die Fahrdienstleitung benachrichtigen. ``adresse``: Link zum Plan."""
+    a = Ausfall.objects.create(benutzer=benutzer, von=von, bis=bis or von, grund=grund,
+                               anmerkung=anmerkung, eingetragen_von=eingetragen_von)  # fmt: skip
+    transaction.on_commit(lambda: _benachrichtigen(a, adresse))
+    return a
+
+
+def fristen_anwenden(heute: dt.date | None = None) -> int:
+    """Alte Ausfälle und Ersatz-Einträge löschen (Datensparsamkeit)."""
+    heute = heute or timezone.localdate()
+    monate = FahrdienstEinstellungen.laden().aufbewahren_monate
+    jahr, monat = divmod(heute.year * 12 + heute.month - 1 - monate, 12)
+    grenze = dt.date(jahr, monat + 1, 1)
+    weg = Ausfall.objects.filter(bis__lt=grenze).delete()[0]
+    return weg + Ersatz.objects.filter(datum__lt=grenze).delete()[0]

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block titel %}Fahrdienst einstellen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Fahrdienst einstellen</h1>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+
+<section class="karte">
+  <h2>Touren und feste Besetzung</h2>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Tour</th><th>Plätze</th><th>Aktiv</th><th></th></tr></thead>
+    <tbody>
+    {% for t in touren %}
+      <tr>
+        <td data-titel="Tour"><a href="{% url 'fahrdienst:tour' t.pk %}">{{ t.name }}</a></td>
+        <td data-titel="Plätze">{{ t.plaetze }}</td>
+        <td data-titel="Aktiv">{{ t.aktiv|yesno:"ja,nein" }}</td>
+        <td data-titel="Aktion"><a href="{% url 'fahrdienst:besetzung' t.pk %}">feste Besetzung</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4">Noch keine Touren.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p><a class="knopf knopf-zweitrangig" href="{% url 'fahrdienst:tour_neu' %}">Neue Tour</a></p>
+</section>
+
+<section class="karte">
+  <h2>Springer</h2>
+  <p class="hinweis">Springer können auf jeder Tour einspringen.</p>
+  <ul>
+    {% for s in springer %}<li><a href="{% url 'fahrdienst:springer' s.pk %}">{{ s.benutzer.get_full_name|default:s.benutzer.username }}</a>{% if s.wochentage %} (nur {{ s.wochentage }}){% endif %}{% if s.anmerkung %} – {{ s.anmerkung }}{% endif %}</li>
+    {% empty %}<li>Noch keine Springer.</li>{% endfor %}
+  </ul>
+  <p><a class="knopf knopf-zweitrangig" href="{% url 'fahrdienst:springer_neu' %}">Springer hinzufügen</a></p>
+</section>
+
+<section class="karte">
+  <h2>Aktuelle und kommende Ausfälle</h2>
+  <ul>
+    {% for a in ausfaelle %}<li>{{ a.benutzer.get_full_name|default:a.benutzer.username }}: {{ a.von|date:"d.m.Y" }}{% if a.bis != a.von %} bis {{ a.bis|date:"d.m.Y" }}{% endif %} ({{ a.get_grund_display }}{% if a.anmerkung %}, {{ a.anmerkung }}{% endif %})
+      <form method="post" action="{% url 'fahrdienst:ausfall_loeschen' a.pk %}" class="inline" onsubmit="return confirm('Ausfall wirklich löschen?')">{% csrf_token %}<input type="hidden" name="weiter" value="{% url 'fahrdienst:einstellungen' %}"><button type="submit" class="link">löschen</button></form></li>
+    {% empty %}<li>Keine.</li>{% endfor %}
+  </ul>
+  <p><a class="knopf knopf-zweitrangig" href="{% url 'fahrdienst:ausfall' %}">Ausfall eintragen</a></p>
+</section>
+{% endblock %}
