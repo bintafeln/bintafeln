@@ -44,16 +44,46 @@ class EinstellungenForm(forms.ModelForm):
         "den Fahrdienst planen dürfen.",
     )  # fmt: skip
 
+    telegram_schluessel = forms.CharField(
+        label="Telegram: Bot-Schlüssel", required=False, widget=forms.PasswordInput,
+        help_text="Von @BotFather in Telegram („/newbot“). Wird verschlüsselt gespeichert; leer "
+        "lassen = bleibt wie er ist.",
+    )  # fmt: skip
+    telegram_schluessel_loeschen = forms.BooleanField(
+        label="Gespeicherten Bot-Schlüssel löschen", required=False
+    )
+
     class Meta:
         model = FahrdienstEinstellungen
         fields = ["selbst_melden", "benachrichtigen", "fahrtage", "feiertage_frei",
-                  "aufbewahren_monate"]  # fmt: skip
+                  "aufbewahren_monate", "telegram_chats"]  # fmt: skip
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["benachrichtigen"].label_from_instance = lambda b: (
             f"{b.get_full_name() or b.username} ({b.email})"
         )
+        if self.instance.telegram_schluessel_verschluesselt:
+            self.fields["telegram_schluessel"].help_text = (
+                "Ein Schlüssel ist gespeichert. " + self.fields["telegram_schluessel"].help_text
+            )
+        else:
+            del self.fields["telegram_schluessel_loeschen"]
+
+    def save(self, commit=True):
+        from apps.core import geheimnis
+
+        e = super().save(commit=False)
+        if self.cleaned_data.get("telegram_schluessel_loeschen"):
+            e.telegram_schluessel_verschluesselt = ""
+        elif self.cleaned_data.get("telegram_schluessel"):
+            e.telegram_schluessel_verschluesselt = geheimnis.verschluesseln(
+                self.cleaned_data["telegram_schluessel"].strip()
+            )
+        if commit:
+            e.save()
+            self.save_m2m()
+        return e
 
 
 class TourForm(forms.ModelForm):

@@ -6,6 +6,8 @@ app_name = "fahrdienst"
 
 urlpatterns = [
     path("", views.uebersicht, name="plan"),
+    path("pdf/", views.plan_pdf, name="pdf"),
+    path("telegram/", views.telegram_pruefen, name="telegram"),
     path("platz/<str:datum>/<int:tour>/<int:nr>/", views.platz, name="platz"),
     path("meine/", views.meine, name="meine"),
     path("ausfall/", views.ausfall, name="ausfall"),

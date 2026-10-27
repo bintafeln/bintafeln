@@ -196,12 +196,13 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.4) !important;
         }
 
-        /* Am Kiosk gemeldet: grün, sonst dunkelrot (getönte, abgerundete Marke; auch auf dem grünen Knopf lesbar) */
-        .nr { display: inline-block; border-radius: 999px; padding: .05em .6em; margin: .15em .1em;
-              font-weight: 700; line-height: 1.25; text-shadow: none; }
-        .nr-da { background: #e4f5e9; color: #145c2c; box-shadow: inset 0 0 0 2px #2e8b57; }
-        .nr-fehlt { background: #fdeceb; color: #8b1a1a; box-shadow: inset 0 0 0 2px #c0392b; }
-        .btn-next-numbers .nr { padding: .02em .7em; margin: .12em 0; }
+        /* Am Kiosk gemeldet: grün, sonst rot – nur die Zahl, ohne Hinterlegung. Hell genug für den
+           dunklen Hintergrund; der Knopf wird dafür dunkel, sonst wäre Grün auf Grün nicht lesbar. */
+        .nr { font-weight: 800; }
+        .nr-da { color: #8ef0a8; }
+        .nr-fehlt { color: #ff9d94; }
+        .btn-next.mit-kiosk { background: linear-gradient(135deg, #2c3e50, #34495e); }
+        .btn-next.mit-kiosk:hover { background: linear-gradient(135deg, #34495e, #3d566e); }
 
         .btn-next-numbers {
             font-size: 2.1rem !important;
@@ -708,7 +709,7 @@
             if (!pastNumbers || pastNumbers.length === 0) {
                 pastCustomersDisplay.textContent = '-';
             } else {
-                pastCustomersDisplay.innerHTML = pastNumbers.map(n => nrHtml(n)).join(kioskDa ? ' ' : ' • ');
+                pastCustomersDisplay.innerHTML = pastNumbers.map(n => nrHtml(n)).join(' • ');
             }
         }
 
@@ -752,6 +753,7 @@
 
                 // Button-Text mit Kundennummern (eine pro Zeile)
                 btnNumbers.innerHTML = displayNumbers.join('<br>');
+                nextBtn.classList.toggle('mit-kiosk', !!kioskDa);
             } else {
                 // Alle Aufgerufenen schon am Einlass: Gruppe läuft weiter
                 btnNumbers.textContent = data.alle_eingelassen ? 'Alle schon da – weiter' : 'Keine Nummern';
@@ -764,7 +766,7 @@
                 nextCustomersDisplay.innerHTML = data.next_numbers.slice(0, 10).map((number, index) => {
                     const isPriority = data.next_priority_flags && data.next_priority_flags[index];
                     return nrHtml(number, isPriority ? '♿ ' : '');
-                }).join(kioskDa ? ' ' : ' • ');
+                }).join(' • ');
             } else {
                 nextCustomersDisplay.textContent = '-';
             }

@@ -8,6 +8,16 @@
     {% include "includes/formular.html" %}
     <button type="submit" class="knopf">Speichern</button>
   </form>
+  <h2>Telegram</h2>
+  <p class="hinweis">Zusätzlich zur E-Mail kann ein Telegram-Bot der Tafel jeden Ausfall melden (ohne Grund). So geht's:
+    1. In Telegram mit @BotFather „/newbot“ anlegen und den Schlüssel oben eintragen, speichern.
+    2. Wer benachrichtigt werden soll, schreibt dem Bot „/start“. 3. „Chats suchen“, die ID oben bei „Telegram-Chats“
+    eintragen, speichern. 4. „Testnachricht senden“.</p>
+  <form method="post" action="{% url 'fahrdienst:telegram' %}" class="aktionsleiste">
+    {% csrf_token %}
+    <button type="submit" name="aktion" value="suchen" class="knopf knopf-zweitrangig">Chats suchen</button>
+    <button type="submit" name="aktion" value="test" class="knopf knopf-zweitrangig">Testnachricht senden</button>
+  </form>
 </section>
 
 <section class="karte">

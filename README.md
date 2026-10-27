@@ -928,7 +928,13 @@ Ersetzt den gedruckten Fahrerplan mit den gelben Aufklebern (ADR 0074).
 - **Ersatz eintragen:** im Plan auf den Namen tippen; zur Wahl stehen die an dem Tag freien
   Springer, dann weitere freie Fahrer und Beifahrer.
 - Ausfälle und Ersatz werden nach 12 Monaten gelöscht (einstellbar) und stehen in der Auskunft
-  für Mitarbeitende. Telegram-Benachrichtigung und Druck als PDF folgen.
+  für Mitarbeitende.
+- **Drucken:** „Drucken (PDF)“ im Fahrerplan, A3 quer wie der bisherige Papierplan, Springer darunter.
+- **Telegram** (zusätzlich zur E-Mail): Bot-Schlüssel von @BotFather in den Einstellungen des
+  Fahrdienstes (verschlüsselt gespeichert), Empfänger schreiben dem Bot „/start“, „Chats suchen“
+  zeigt ihre Chat-IDs, „Testnachricht senden“ prüft. Telegram bekommt nie den Grund eines
+  Ausfalls. WhatsApp geht nur über die kostenpflichtige WhatsApp-Business-Plattform von Meta
+  (Firmenkonto, vorab genehmigte Nachrichtenvorlagen) und ist deshalb nicht eingebaut.
 
 ### Links auf der Startseite
 

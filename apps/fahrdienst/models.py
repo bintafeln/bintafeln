@@ -36,6 +36,12 @@ class FahrdienstEinstellungen(models.Model):
         "An Feiertagen keine Touren", default=True,
         help_text="Gesetzliche Feiertage des Bundeslands aus den Einstellungen der Tafel.",
     )  # fmt: skip
+    telegram_schluessel_verschluesselt = models.TextField(blank=True, editable=False)
+    telegram_chats = models.CharField(
+        "Telegram-Chats", max_length=200, blank=True,
+        help_text="Chat-IDs, mehrere mit Komma. Am einfachsten: Die Person schreibt dem Bot "
+        "„/start“, dann unten „Chats suchen“.",
+    )  # fmt: skip
     aufbewahren_monate = models.PositiveSmallIntegerField(
         "Ausfälle und Ersatz aufbewahren (Monate)", default=12,
         validators=[MinValueValidator(1), MaxValueValidator(60)],
@@ -168,7 +174,11 @@ class Ersatz(models.Model):
         return f"{self.datum:%d.%m.%Y} {self.tour} {platz_name(self.platz)}: {self.benutzer}"
 
 
-auditlog.register(FahrdienstEinstellungen, m2m_fields={"benachrichtigen"})
+auditlog.register(
+    FahrdienstEinstellungen,
+    m2m_fields={"benachrichtigen"},
+    exclude_fields=["telegram_schluessel_verschluesselt"],
+)
 auditlog.register(Tour)
 auditlog.register(Besetzung)
 auditlog.register(Springer)

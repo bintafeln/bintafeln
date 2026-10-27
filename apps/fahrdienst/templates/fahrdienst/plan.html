@@ -7,6 +7,7 @@
     <div class="aktionsleiste">
       <a class="knopf knopf-zweitrangig" href="?monat={{ vorher }}">← Vormonat</a>
       <a class="knopf knopf-zweitrangig" href="?monat={{ nachher }}">Folgemonat →</a>
+      <a class="knopf knopf-zweitrangig" href="{% url 'fahrdienst:pdf' %}?monat={{ monat }}">Drucken (PDF)</a>
       {% if planen or darf_melden %}<a class="knopf" href="{% url 'fahrdienst:ausfall' %}">Ausfall melden</a>{% endif %}
     </div>
   </div>

@@ -175,26 +175,37 @@ def empfaenger() -> list[str]:
 
 
 def _benachrichtigen(ausfall: Ausfall, adresse: str) -> None:
+    """E-Mail (mit Grund) und Telegram (ohne Grund) an die Fahrdienstleitung."""
     from apps.core import mail
+    from apps.fahrdienst import telegram
 
-    an = empfaenger()
-    if not an or not mail.eingerichtet():
+    e = FahrdienstEinstellungen.laden()
+    an = empfaenger() if mail.eingerichtet() else []
+    if not an and not telegram.eingerichtet(e):
         return
-    betroffen = einsaetze(ausfall.benutzer, ausfall.von, ausfall.bis)
     zeilen = []
-    for p in betroffen:
+    for p in einsaetze(ausfall.benutzer, ausfall.von, ausfall.bis):
         springer, _ = verfuegbar(p.datum)
         frei = ", ".join(str(b) for b in springer) or "keiner frei"
         zeilen.append(f"- {WOCHENTAGE[p.datum.weekday()]} {p.datum:%d.%m.%Y}, Tour {p.tour}, "
                       f"{p.name}. Freie Springer: {frei}")  # fmt: skip
     zeit = (f"am {ausfall.von:%d.%m.%Y}" if ausfall.von == ausfall.bis
             else f"vom {ausfall.von:%d.%m.%Y} bis {ausfall.bis:%d.%m.%Y}")  # fmt: skip
-    text = (f"{ausfall.benutzer} fällt im Fahrdienst aus: {zeit} ({ausfall.get_grund_display()}).\n"
-            + (f"Anmerkung: {ausfall.anmerkung}\n" if ausfall.anmerkung else "")
-            + f"Eingetragen von: {ausfall.eingetragen_von}\n\n"
-            + ("Betroffene Einsätze:\n" + "\n".join(zeilen) if zeilen
-               else "Keine Einsätze in diesem Zeitraum.")
-            + (f"\n\nErsatz eintragen: {adresse}" if adresse else ""))  # fmt: skip
+    einsaetze_text = ("Betroffene Einsätze:\n" + "\n".join(zeilen) if zeilen
+                      else "Keine Einsätze in diesem Zeitraum.")  # fmt: skip
+    link = f"\n\nErsatz eintragen: {adresse}" if adresse else ""
+    # Telegram läuft über fremde Server: ohne Grund und Anmerkung (z. B. „krank“)
+    telegram.benachrichtigen(e, f"🟨 Fahrdienst: {ausfall.benutzer} fällt aus {zeit}.\n\n"
+                                + einsaetze_text + link)  # fmt: skip
+    if not an:
+        return
+    text = (
+        f"{ausfall.benutzer} fällt im Fahrdienst aus: {zeit} ({ausfall.get_grund_display()}).\n"
+        + (f"Anmerkung: {ausfall.anmerkung}\n" if ausfall.anmerkung else "")
+        + f"Eingetragen von: {ausfall.eingetragen_von}\n\n"
+        + einsaetze_text
+        + link
+    )
     try:
         mail.senden(f"Fahrdienst: Ausfall {ausfall.benutzer} {zeit}", text, an)
     except mail.MailFehler as fehler:  # Der Ausfall steht trotzdem im Plan

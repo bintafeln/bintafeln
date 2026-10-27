@@ -238,12 +238,11 @@
         }
         
         /* Am Kiosk gemeldet: grün, sonst dunkelrot (nur, wenn sich heute jemand gemeldet hat) */
-        .number-item.nr-da { background: #e4f5e9; border-color: #2e8b57; }
-        .number-item.nr-fehlt { background: #fdeceb; border-color: #c0392b; }
-        .number-item.nr-da .number-value, .preview-number.nr-da { color: #1b6e34; }
-        .number-item.nr-fehlt .number-value, .preview-number.nr-fehlt { color: #8b1a1a; }
-        .preview-number.nr-da { border-color: #1b6e34; }
-        .preview-number.nr-fehlt { border-color: #8b1a1a; }
+        /* nur die Zahl färben: hell auf der dunklen Karte, dunkel in der hellen Vorschau */
+        .number-item.nr-da .number-value { color: #8ef0a8; }
+        .number-item.nr-fehlt .number-value { color: #ff9d94; }
+        .preview-number.nr-da { color: #1b6e34; }
+        .preview-number.nr-fehlt { color: #8b1a1a; }
 
         .alle-da { background: #e4f5e9; color: #145c2c; border-radius: 8px; padding: 10px 14px; font-weight: 700; }
 

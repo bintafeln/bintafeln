@@ -231,3 +231,107 @@ def test_fristen_menue_und_auskunft(team, admin_client, pdf_text):
     assert "Fahrerplan" in start and "Fahrdienst: Touren und Springer" in start
     text = pdf_text(admin_client.get(reverse("konten:auskunft", args=[p["kai"].pk])))
     assert "Fahrdienst" in text and "Steele" in text and "Urlaub" in text
+
+
+def test_telegram_ohne_grund(team, admin_client, monkeypatch, django_capture_on_commit_callbacks):
+    from apps.core import geheimnis
+    from apps.fahrdienst import telegram
+
+    p, _, _ = team
+    gesendet = []
+
+    def aufruf(schluessel, methode, daten=None):
+        if schluessel != "123:ABC":
+            raise telegram.TelegramFehler("Telegram kennt diesen Bot-Schlüssel nicht.")
+        if methode == "getUpdates":
+            chat = {"id": 4711, "first_name": "Lea", "last_name": "Leitung"}
+            return [{"message": {"chat": chat}}, {"update_id": 2}]
+        gesendet.append(daten)
+        return {}
+
+    monkeypatch.setattr(telegram, "_aufruf", aufruf)
+    seite = reverse("fahrdienst:einstellungen")
+    tg = reverse("fahrdienst:telegram")
+    antwort = admin_client.post(tg, {"aktion": "suchen"}, follow=True)
+    assert "zuerst den Bot-Schlüssel" in antwort.content.decode()
+    admin_client.post(seite, {"fahrtage": ["Mo", "Mi"], "aufbewahren_monate": 12,
+                              "telegram_schluessel": " 123:ABC "})  # fmt: skip
+    e = FahrdienstEinstellungen.laden()
+    assert geheimnis.entschluesseln(e.telegram_schluessel_verschluesselt) == "123:ABC"
+    assert "123:ABC" not in admin_client.get(seite).content.decode()  # nie im Klartext zurück
+    assert "Ein Schlüssel ist gespeichert" in admin_client.get(seite).content.decode()
+    antwort = admin_client.post(tg, {"aktion": "suchen"}, follow=True).content.decode()
+    assert "Lea Leitung: 4711" in antwort
+    antwort = admin_client.post(tg, {"aktion": "test"}, follow=True).content.decode()
+    assert "mindestens eine Chat-ID" in antwort
+    admin_client.post(seite, {"fahrtage": ["Mo", "Mi"], "aufbewahren_monate": 12,
+                              "telegram_chats": "4711; 815"})  # fmt: skip
+    e.refresh_from_db()
+    assert telegram.chats(e) == ["4711", "815"] and telegram.schluessel(e) == "123:ABC"
+    assert "an 2 Chat(s)" in admin_client.post(tg, {"aktion": "test"}, follow=True).content.decode()
+    gesendet.clear()
+    with django_capture_on_commit_callbacks(execute=True):
+        plan.ausfall_melden(p["kai"], MITTWOCH, None, "krank", "Rücken", "kai")
+    assert [d["chat_id"] for d in gesendet] == ["4711", "815"]
+    text = gesendet[0]["text"]
+    assert "Kai Nordmann fällt aus am 11.11.2026" in text and "Tour Steele" in text
+    assert "krank" not in text and "Rücken" not in text  # Gesundheitsangaben nicht zu Telegram
+    # Telegram-Fehler: Ausfall bleibt, nur Protokoll
+    monkeypatch.setattr(
+        telegram,
+        "_aufruf",
+        lambda *a, **k: (_ for _ in ()).throw(telegram.TelegramFehler("nicht erreichbar")),
+    )
+    with django_capture_on_commit_callbacks(execute=True):
+        plan.ausfall_melden(p["eva"], MITTWOCH, None, "urlaub", "", "eva")
+    assert Ausfall.objects.filter(benutzer=p["eva"]).exists()
+    assert "nicht erreichbar" in admin_client.post(tg, {"aktion": "test"}, follow=True
+                                                   ).content.decode()  # fmt: skip
+    admin_client.post(seite, {"fahrtage": ["Mo"], "aufbewahren_monate": 12,
+                              "telegram_schluessel_loeschen": "on"})  # fmt: skip
+    e.refresh_from_db()
+    assert e.telegram_schluessel_verschluesselt == "" and not telegram.eingerichtet(e)
+
+
+def test_telegram_schnittstelle(monkeypatch):
+    import io
+    import json
+    from urllib.error import HTTPError, URLError
+
+    from apps.fahrdienst import telegram
+
+    antworten = []
+
+    def urlopen(anfrage, timeout):
+        antworten.append(anfrage.full_url)
+        wert = antworten_queue.pop(0)
+        if isinstance(wert, Exception):
+            raise wert
+        return io.BytesIO(json.dumps(wert).encode())
+
+    antworten_queue = [{"ok": True, "result": [1]}, {"ok": False, "description": "chat not found"},
+                       HTTPError("u", 401, "x", {}, None), HTTPError("u", 500, "x", {}, None),
+                       URLError("weg")]  # fmt: skip
+    monkeypatch.setattr(telegram, "urlopen", urlopen)
+    assert telegram._aufruf("1:A", "getUpdates") == [1]
+    assert antworten[0] == "https://api.telegram.org/bot1:A/getUpdates"
+    for erwartet in ("chat not found", "kennt diesen Bot-Schlüssel nicht", "Fehler 500",
+                     "nicht erreichbar"):  # fmt: skip
+        with pytest.raises(telegram.TelegramFehler, match=erwartet):
+            telegram._aufruf("1:A", "sendMessage", {"chat_id": "1"})
+
+
+def test_plan_als_pdf(team, admin_client, pdf_text):
+    p, _, steele = team
+    Ausfall.objects.create(benutzer=p["kai"], von=MITTWOCH, bis=MITTWOCH, grund="krank")
+    plan.ersatz_eintragen(MITTWOCH, steele, 2, p["ole"], "chefin")
+    antwort = admin_client.get(reverse("fahrdienst:pdf"), {"monat": "2026-11"})
+    assert antwort["Content-Disposition"].endswith('fahrerplan-2026-11.pdf"')
+    text = pdf_text(antwort)
+    assert "Fahrerplan November 2026" in text and "offen" in text and "Ole Hansen" in text
+    assert "(für Eva Lindner)" in text and "Springer" in text and "nur Fr" in text
+    assert "krank" not in text
+    assert "Drucken (PDF)" in admin_client.get(PLAN).content.decode()
+    FahrdienstEinstellungen.objects.update(fahrtage="")
+    leer = pdf_text(admin_client.get(reverse("fahrdienst:pdf"), {"monat": "2026-11"}))
+    assert "keine Fahrtage" in leer

@@ -23,8 +23,12 @@ und jeden Monat wurde der Plan neu abgetippt, obwohl er sich jede Woche wiederho
   Beifahrer; wer ausfällt oder schon eingeteilt ist, nicht.
 - Ob Fahrer und Beifahrer ihren Ausfall selbst melden, stellt die Tafel ein. Jeder Ausfall
   schickt eine E-Mail an die eingestellten Personen (normalerweise eine), sonst an alle mit
-  „Fahrdienst planen“, mit betroffenen Einsätzen und freien Springern. Telegram ist vorgesehen,
-  aber noch nicht gebaut.
+  „Fahrdienst planen“, mit betroffenen Einsätzen und freien Springern. Zusätzlich optional
+  Telegram (`apps/fahrdienst/telegram.py`, Bot-Schlüssel über `apps.core.geheimnis`): ohne Grund
+  und Anmerkung, weil die Nachricht über Server von Telegram läuft. WhatsApp nicht: Es gibt dafür
+  nur die kostenpflichtige WhatsApp-Business-Plattform mit Firmenkonto bei Meta und vorab
+  genehmigten Vorlagen – zu viel Aufwand für eine Tafel.
+- Der Plan eines Monats als PDF (A3 quer, `apps/fahrdienst/pdf.py`).
 - Rechte `fahrdienst.sehen` (Fahrer, Beifahrer, Büro) und `fahrdienst.planen` (Büro). Den Grund
   eines Ausfalls (z. B. „krank“) sehen nur, wer plant, und die Person selbst.
 - Ausfälle und Ersatz werden nach `aufbewahren_monate` (Vorgabe 12) gelöscht; sie stehen in der

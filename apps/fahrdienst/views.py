@@ -11,6 +11,7 @@ from django.views.decorators.http import require_POST
 
 from apps.ausgabe.ampel import WOCHENTAGE, wochentage
 from apps.core import papierkorb
+from apps.core.pdf import pdf_antwort
 from apps.fahrdienst import plan
 from apps.fahrdienst.forms import AusfallForm, EinstellungenForm, SpringerForm, TourForm, aktive
 from apps.fahrdienst.models import (
@@ -22,6 +23,7 @@ from apps.fahrdienst.models import (
     platz_name,
 )
 from apps.konten import rollen
+from apps.konten.views import nicht_in_demo
 
 sehen = rollen.recht_erforderlich("fahrdienst.sehen")
 planen = rollen.recht_erforderlich("fahrdienst.planen")
@@ -50,7 +52,7 @@ def uebersicht(request):
     tage = plan.tage(plan.fahrtage(erster, letzter))
     return render(request, "fahrdienst/plan.html", {
         "tage": tage, "touren": list(Tour.objects.filter(aktiv=True)),
-        "titel": f"{MONATE[erster.month - 1]} {erster.year}",
+        "titel": f"{MONATE[erster.month - 1]} {erster.year}", "monat": f"{erster:%Y-%m}",
         "vorher": f"{_verschieben(erster, -1):%Y-%m}",
         "nachher": f"{_verschieben(erster, 1):%Y-%m}",
         "heute": timezone.localdate(),
@@ -58,6 +60,20 @@ def uebersicht(request):
         "offen": sum(p.status == plan.OFFEN for _, z in tage for _, ps in z for p in ps),
         "darf_melden": plan.darf_selbst_melden(request.user),
     })  # fmt: skip
+
+
+@never_cache
+@sehen
+def plan_pdf(request):
+    """Der Monat als PDF zum Aushängen (A3 quer)."""
+    from apps.fahrdienst import pdf
+
+    erster = _monat(request.GET.get("monat"))
+    letzter = _verschieben(erster, 1) - dt.timedelta(days=1)
+    titel = f"{MONATE[erster.month - 1]} {erster.year}"
+    inhalt = pdf.monat(titel, plan.tage(plan.fahrtage(erster, letzter)),
+                       list(Tour.objects.filter(aktiv=True)))  # fmt: skip
+    return pdf_antwort(inhalt, f"fahrerplan-{erster:%Y-%m}.pdf")
 
 
 @never_cache
@@ -150,6 +166,39 @@ def einstellungen(request):
         "springer": Springer.objects.select_related("benutzer"),
         "ausfaelle": Ausfall.objects.filter(bis__gte=heute).select_related("benutzer"),
     })  # fmt: skip
+
+
+@require_POST
+@planen
+@nicht_in_demo
+def telegram_pruefen(request):
+    """„Chats suchen“ (wer dem Bot geschrieben hat) oder „Testnachricht senden“."""
+    from apps.fahrdienst import telegram
+
+    e = FahrdienstEinstellungen.laden()
+    if not telegram.schluessel(e):
+        messages.error(request, "Bitte zuerst den Bot-Schlüssel speichern.")
+        return redirect("fahrdienst:einstellungen")
+    try:
+        if request.POST.get("aktion") == "test":
+            if not telegram.chats(e):
+                raise telegram.TelegramFehler("Bitte zuerst mindestens eine Chat-ID eintragen.")
+            anzahl = telegram.senden(e, "✅ bintafeln: Testnachricht vom Fahrdienst.")
+            messages.success(request, f"Testnachricht an {anzahl} Chat(s) gesendet.")
+        else:
+            gefunden = telegram.gefundene_chats(e)
+            if gefunden:
+                messages.info(
+                    request,
+                    "Gefundene Chats (ID für „Telegram-Chats“): "
+                    + "; ".join(f"{name}: {chat}" for chat, name in gefunden),
+                )
+            else:
+                messages.info(request, "Noch keine Chats. Die Person schreibt dem Bot in Telegram "
+                                       "„/start“; dann noch einmal suchen.")  # fmt: skip
+    except telegram.TelegramFehler as fehler:
+        messages.error(request, str(fehler))
+    return redirect("fahrdienst:einstellungen")
 
 
 @never_cache
