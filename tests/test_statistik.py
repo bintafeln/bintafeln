@@ -129,7 +129,8 @@ def test_ausgabestelle_sieht_nur_eigene_zahlen(client, admin, benutzer_mit_rolle
     zeit = {"zeitraum": "eigen", "von": "2026-01-01", "bis": "2026-03-31"}
     inhalt = client.get(URL, zeit).content.decode()
     assert "alle meine" in inhalt and "Ausgabestelle Nord" not in inhalt
-    assert "Anträge" not in inhalt.split("Statistik</h1>")[1].split("</section>")[0]
+    kacheln = inhalt.split('<div class="kacheln">')[1].split('class="statistik-sprung"')[0]
+    assert "Anträge" not in kacheln  # keine Kachel „Anträge“ für die Ausgabe
     csv = client.get(URL, {**zeit, "csv": "stellen"}).content.decode("utf-8-sig")
     assert "Mitte;2" in csv and "Nord" not in csv
     # Eine fremde Ausgabestelle lässt sich nicht wählen

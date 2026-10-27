@@ -657,20 +657,28 @@ label.wahl { display: block; white-space: nowrap; }
 .diagramm { width: 100%; height: auto; display: block; font-family: inherit; }
 .diagramm .gitter { stroke: #e1e0d9; stroke-width: 1; }
 .diagramm .achse { stroke: #c3c2b7; stroke-width: 1; }
-.diagramm .skala, .diagramm .beschriftung { fill: #52514e; font-size: 12px; }
-.diagramm .wert { fill: #0b0b0b; font-size: 12px; font-weight: 600; }
+.diagramm .skala, .diagramm .beschriftung { fill: #52514e; font-size: 13px; }
+.diagramm .wert { fill: #0b0b0b; font-size: 13px; font-weight: 600; }
 .diagramm .linie { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .diagramm .punkt { stroke: #fff; stroke-width: 2; }
 .diagramm path[class^="reihe-"]:hover, .diagramm .punkt:hover { opacity: .75; }
 .legende { list-style: none; display: flex; flex-wrap: wrap; gap: .25rem 1rem; padding: 0; margin: .25rem 0; font-size: .9rem; }
 .legende li { display: flex; align-items: center; gap: .4rem; }
 .legende-farbe { width: .9rem; height: .9rem; border-radius: 3px; display: inline-block; }
-.kacheln { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: .75rem; margin-top: 1rem; }
-.kachel { border: 1px solid var(--rand); border-radius: var(--radius); padding: .75rem 1rem; display: flex; flex-direction: column; gap: .15rem; }
+.kacheln { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: .5rem; margin-top: 1rem; }
+.kachel { border: 1px solid var(--rand); border-radius: var(--radius); padding: .5rem .75rem; display: flex; flex-direction: column; gap: 0; }
 .kachel-titel { color: var(--leise); font-size: .9rem; }
-.kachel-wert { font-size: 1.6rem; font-weight: 700; }
+.kachel-wert { font-size: 1.4rem; font-weight: 700; line-height: 1.3; }
 .kachel-unter { color: var(--leise); font-size: .8rem; }
 .statistik-filter input[type=date] { width: auto; }
+/* Statistik: Sprungleiste, Abschnitte im Raster, Diagramme nicht größer als gezeichnet */
+.statistik-sprung { display: flex; flex-wrap: wrap; gap: .35rem .5rem; margin-top: 1rem; }
+.statistik-sprung a { padding: .2rem .65rem; border: 1px solid var(--rand); border-radius: 999px; font-size: .88rem; text-decoration: none; color: var(--text); background: var(--flaeche); }
+.statistik-sprung a:hover { border-color: var(--akzent); }
+.statistik-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 30rem), 1fr)); gap: 1rem; align-items: start; }
+.statistik-raster .karte { margin: 0; min-width: 0; scroll-margin-top: 1rem; }
+.statistik-abschnitt h2 { font-size: 1.15rem; margin: 0; }
+.statistik-abschnitt .diagramm { max-width: 640px; margin: 0 auto; }
 .link-klein { font-size: .9rem; }
 
 /* Handbuch (ADR 0038) */
