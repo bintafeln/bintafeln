@@ -67,6 +67,9 @@ class ZusatzfeldForm(forms.ModelForm):
             "besondere_kategorie",
             "reihenfolge",
             "aktiv",
+            "einlass",
+            "ausweis",
+            "kuerzel",
         ]
         widgets = {"optionen": forms.Textarea(attrs={"rows": 4})}
 
@@ -75,3 +78,15 @@ class ZusatzfeldForm(forms.ModelForm):
         if self.instance.pk:
             # Der Schlüssel verbindet gespeicherte Werte und Importspalte; nicht mehr änderbar.
             self.fields["schluessel"].disabled = True
+        if self.instance.fest:
+            # Mitgelieferte Merkmale: Art bleibt fest, damit Einlass und Ausweis sie verstehen
+            for name in ("gilt_fuer", "typ", "optionen"):
+                self.fields[name].disabled = True
+
+    def clean(self):
+        daten = super().clean()
+        if daten.get("typ") != Zusatzfeld.Typ.JA_NEIN:
+            daten["einlass"], daten["ausweis"] = False, ""
+        if daten.get("ausweis") == "kuerzel" and not daten.get("kuerzel"):
+            self.add_error("kuerzel", "Bitte ein Kürzel für den Ausweis angeben.")
+        return daten

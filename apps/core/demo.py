@@ -21,8 +21,8 @@ from django.utils import timezone
 from apps.core.models import TafelEinstellungen
 from apps.konten import rollen
 from apps.konten.models import DokumentKategorie, Rolle, Stammdaten
-from apps.kunden import importieren
-from apps.kunden.models import Dokumentart, Zusatzfeld
+from apps.kunden import importieren, merkmale
+from apps.kunden.models import Dokumentart
 from apps.personal.models import Arbeitsvertrag, Zeitbuchung
 
 BEISPIELE = Path(settings.BASE_DIR) / "docs" / "beispiele" / "import"
@@ -168,10 +168,7 @@ def _konten() -> dict:
 
 
 def _kunden(admin, heute) -> None:
-    Zusatzfeld.objects.create(
-        schluessel="schwerbehindert", bezeichnung="Schwerbehindert",
-        gilt_fuer=Zusatzfeld.GiltFuer.PERSON, typ=Zusatzfeld.Typ.JA_NEIN,
-    )  # fmt: skip
+    merkmale.feste_anlegen()  # u. a. „schwerbehindert“ für die Beispieldaten
     dateien = {d.name: d.read_bytes() for d in sorted(BEISPIELE.glob("*.csv"))}
     ergebnis = importieren.pruefen(dateien, heute)
     if ergebnis.fehler:

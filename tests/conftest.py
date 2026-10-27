@@ -23,6 +23,29 @@ def leerer_cache():
     cache.clear()
 
 
+@pytest.fixture(autouse=True)
+def ohne_feste_merkmale(request):
+    """Die mitgelieferten Merkmale (ADR 0071) legt eine Migration an. Ältere Tests legen ihre
+    Zusatzfelder selbst an; dort stören sie. Tests mit @pytest.mark.merkmale behalten sie."""
+    marker = request.node.get_closest_marker("django_db")
+    if marker and marker.kwargs.get("transaction") or "transactional_db" in request.fixturenames:
+        return  # löscht ohnehin alles hinterher; ein Löschen hier stört das Leeren
+    if request.node.get_closest_marker("merkmale"):
+        return
+    if "db" not in request.fixturenames and not marker:
+        return
+    request.getfixturevalue("db")
+    from django.db import connection
+
+    from apps.core.auswahl import FESTE_MERKMALE
+    from apps.kunden.models import Zusatzfeld
+
+    Zusatzfeld.objects.filter(schluessel__in=[s for s, *_ in FESTE_MERKMALE]).delete()
+    with connection.cursor() as c:  # offene Prüfungen gleich erledigen (sonst scheitert „flush“)
+        c.execute("SET CONSTRAINTS ALL IMMEDIATE")
+        c.execute("SET CONSTRAINTS ALL DEFERRED")
+
+
 @pytest.fixture
 def benutzer_mit_rolle(django_user_model):
     def anlegen(name, *rollennamen):

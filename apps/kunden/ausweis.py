@@ -18,6 +18,7 @@ from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen.canvas import Canvas
 
 from apps.core.models import TafelEinstellungen
+from apps.kunden import merkmale
 from apps.kunden.models import KundenEinstellungen
 
 BREITE_MM, HOEHE_MM = 85.6, 54.0  # ISO/IEC 7810 ID-1
@@ -42,6 +43,7 @@ TYPEN = {
     "personen": ("Anzahl Personen", False, "text"),
     "personen_kinder": ("Personen/Minderjährige (z. B. 6/3)", False, "text"),
     "freitext": ("Freier Text", False, "text"),
+    "merkmale": ("Merkmale (z. B. Rollstuhl-Symbol)", False, "merkmale"),
     "flaeche": ("Farbige Fläche", False, "flaeche"),
 }
 PLATZHALTER = [t for t, (_, _, art) in TYPEN.items() if art == "text" and t != "freitext"]
@@ -89,7 +91,9 @@ BEISPIEL = {
     "kunde_seit": "Kunde seit 01.02.2024",
     "personen": "3 Personen",
     "personen_kinder": "6/3",
+    "merkmale": [("rollstuhl", ""), ("kuerzel", "V")],
 }
+MERKMAL_FARBE = "#1d4f91"  # Blau des Rollstuhl-Symbols (ISO 7001)
 
 
 def _zahl(wert, standard, kleinste, groesste) -> float:
@@ -117,8 +121,8 @@ def element_pruefen(roh) -> dict | None:
     ausrichtung = roh.get("ausrichtung")
     e["ausrichtung"] = ausrichtung if ausrichtung in AUSRICHTUNGEN else "links"
     farbe = roh.get("farbe")
-    e["farbe"] = farbe if isinstance(farbe, str) and FARBE.match(farbe) else (
-        "#e8710a" if art == "flaeche" else "#000000")  # fmt: skip
+    vorgabe = {"flaeche": "#e8710a", "merkmale": MERKMAL_FARBE}.get(art, "#000000")
+    e["farbe"] = farbe if isinstance(farbe, str) and FARBE.match(farbe) else vorgabe
     if art == "text":
         e["groesse"] = _zahl(roh.get("groesse"), 9, 5, 40)
         e["fett"] = bool(roh.get("fett"))
@@ -164,6 +168,7 @@ def werte(h, tafel, vorlage) -> dict[str, str]:
         "kunde_seit": f"Kunde seit {h.kunde_seit:%d.%m.%Y}" if h.kunde_seit else "",
         "personen": f"{anzahl} Person{'en' if anzahl != 1 else ''}" if anzahl else "",
         "personen_kinder": f"{erwachsene + kinder}/{kinder}",
+        "merkmale": merkmale.ausweis(h),
     }
 
 
@@ -207,6 +212,8 @@ def _seite(c: Canvas, elemente, hintergrund, logo, w, x0, y0) -> None:
             _barcode(c, w["kundennummer"], x, y, b, h, e["ausrichtung"])
         elif art == "text":
             _text(c, text_von(e, w), e, x, y, b, h)
+        elif art == "merkmale":
+            _merkmale(c, w.get("merkmale") or [], e, x, y, b, h)
 
 
 def _text(c: Canvas, text, e, x, y, b, h) -> None:
@@ -225,6 +232,60 @@ def _text(c: Canvas, text, e, x, y, b, h) -> None:
         c.drawRightString(x + b, grundlinie, text)
     else:
         c.drawString(x, grundlinie, text)
+
+
+def _merkmale(c: Canvas, symbole, e, x, y, b, h) -> None:
+    """Je Merkmal ein Quadrat in der Farbe des Elements: Rollstuhl-Symbol oder Kürzel, weiß."""
+    if not symbole:
+        return
+    seite = min(h, b)
+    abstand = 1 * mm
+    passen = max(1, int((b + abstand) // (seite + abstand)))
+    symbole = symbole[:passen]
+    breite = len(symbole) * seite + (len(symbole) - 1) * abstand
+    links = x + {"links": 0, "mitte": (b - breite) / 2, "rechts": b - breite}[e["ausrichtung"]]
+    unten = y + (h - seite) / 2
+    for i, (art, kuerzel) in enumerate(symbole):
+        sx = links + i * (seite + abstand)
+        c.setFillColor(colors.HexColor(e["farbe"]))
+        c.roundRect(sx, unten, seite, seite, seite * 0.12, stroke=0, fill=1)
+        if art == "rollstuhl":
+            _rollstuhl(c, sx, unten, seite)
+        else:
+            schrift, groesse = "Helvetica-Bold", seite * 0.6
+            while groesse > 3 and stringWidth(kuerzel, schrift, groesse) > seite * 0.85:
+                groesse -= 0.5
+            c.setFont(schrift, groesse)
+            c.setFillColor(colors.white)
+            c.drawCentredString(sx + seite / 2, unten + (seite - groesse * 0.7) / 2, kuerzel)
+
+
+def _rollstuhl(c: Canvas, x, y, s) -> None:
+    """Vereinfachtes Rollstuhl-Symbol (weiß) im Quadrat mit Kantenlänge s ab (x, y)."""
+
+    def p(px, py):
+        return x + px * s, y + py * s
+
+    c.setFillColor(colors.white)
+    c.setStrokeColor(colors.white)
+    c.circle(*p(0.42, 0.82), 0.075 * s, stroke=0, fill=1)  # Kopf
+    c.setLineWidth(0.085 * s)
+    c.setLineCap(1)
+    c.setLineJoin(1)
+    weg = c.beginPath()  # Rücken, Sitz und Bein
+    weg.moveTo(*p(0.40, 0.68))
+    weg.lineTo(*p(0.38, 0.46))
+    weg.lineTo(*p(0.62, 0.46))
+    weg.lineTo(*p(0.72, 0.22))
+    weg.lineTo(*p(0.82, 0.22))
+    c.drawPath(weg, stroke=1, fill=0)
+    c.line(*p(0.39, 0.60), *p(0.58, 0.60))  # Arm
+    c.setLineWidth(0.07 * s)
+    mx, my = p(0.40, 0.36)
+    r = 0.22 * s
+    c.arc(mx - r, my - r, mx + r, my + r, 120, 260)  # Rad, oben offen
+    c.setLineCap(0)
+    c.setLineJoin(0)
 
 
 def _barcode(c: Canvas, nummer, x, y, b, h, ausrichtung) -> None:

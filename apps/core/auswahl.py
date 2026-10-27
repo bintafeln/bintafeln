@@ -146,6 +146,17 @@ FESTE_ANLIEGEN = {
     "verlaengern": "Bescheide geprüft – bitte Ausweis verlängern",
     "ausweis": "Neuen Ausweis drucken",
 }
+# Mitgelieferte Merkmale (Zusatzfelder Ja/Nein je Person, ADR 0071): Schlüssel, Bezeichnung,
+# besondere Kategorie (Art. 9), Symbol auf dem Ausweis. Die Tafel kann jedes ab- und eigene
+# Merkmale dazuschalten; löschen lassen sich die mitgelieferten nicht.
+FESTE_MERKMALE = [
+    ("schwerbehindert", "Schwerbehindert", True, "rollstuhl"),
+    ("vegetarier", "Vegetarier", False, ""),
+    ("hilfe_einkauf", "Braucht Hilfe beim Einkauf", False, ""),
+    ("taub", "Taub", True, ""),
+    ("stumm", "Stumm", True, ""),
+    ("blind", "Blind", True, ""),
+]
 # Nicht mehr angeboten; gespeicherte Nachrichten behalten ihren Namen (Liste oben).
 NACHRICHT_ANLIEGEN_ALT = {"zugehoerig"}
 NACHRICHT_ANLIEGEN_WAEHLBAR = [a for a in NACHRICHT_ANLIEGEN if a[0] not in NACHRICHT_ANLIEGEN_ALT]

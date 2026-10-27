@@ -73,6 +73,18 @@
         } else {
           d.textContent = "Logo";
         }
+      } else if (art === "merkmale") {
+        // Vorschau: Rollstuhl-Symbol und ein Kürzel als Beispiel
+        ["\u267F", "V"].forEach(function (z) {
+          var q = document.createElement("span");
+          q.className = "merkmal-vorschau";
+          q.textContent = z;
+          q.style.background = e.farbe;
+          q.style.width = q.style.height = Math.min(e.h, e.b) * k + "px";
+          q.style.fontSize = Math.min(e.h, e.b) * k * 0.7 + "px";
+          d.appendChild(q);
+        });
+        d.style.justifyContent = { links: "flex-start", mitte: "center", rechts: "flex-end" }[e.ausrichtung];
       } else if (art === "barcode") {
         var balken = document.createElement("span");
         balken.className = "balken";
@@ -155,7 +167,7 @@
       else if (document.activeElement !== f) f.value = wert === undefined ? "" : wert;
     });
     eigFelder.querySelectorAll(".nur-text").forEach(function (f) { f.hidden = art !== "text"; });
-    eigFelder.querySelectorAll(".nur-farbe").forEach(function (f) { f.hidden = art !== "text" && art !== "flaeche"; });
+    eigFelder.querySelectorAll(".nur-farbe").forEach(function (f) { f.hidden = art !== "text" && art !== "flaeche" && art !== "merkmale"; });
     eigFelder.querySelectorAll(".nur-freitext").forEach(function (f) { f.hidden = e.typ !== "freitext"; });
     var ausrichtung = eigFelder.querySelector("#eig-ausrichtung").closest(".feld");
     ausrichtung.hidden = art === "flaeche";
@@ -205,8 +217,9 @@
     var t = neuTyp.value;
     if (!t) return;
     var art = daten.typen[t].art;
-    var e = { typ: t, x: 4, y: 4, b: art === "barcode" ? 50 : 30, h: art === "barcode" ? 12 : 5,
-              ausrichtung: "links", farbe: art === "flaeche" ? "#e8710a" : "#000000" };
+    var e = { typ: t, x: 4, y: 4, b: art === "barcode" ? 50 : art === "merkmale" ? 14 : 30,
+              h: art === "barcode" ? 12 : art === "merkmale" ? 6 : 5, ausrichtung: "links",
+              farbe: art === "flaeche" ? "#e8710a" : art === "merkmale" ? "#1d4f91" : "#000000" };
     if (art === "text") { e.groesse = 9; e.fett = false; }
     if (t === "freitext") e.text = "";
     grenzen(e);

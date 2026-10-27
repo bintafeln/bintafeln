@@ -43,8 +43,6 @@ from apps.kunden.models import (
     Zusatzfeld,
 )
 
-JA_NEIN = [("", "—"), ("ja", "ja"), ("nein", "nein")]
-
 
 def mitarbeitende(wert: str) -> list[tuple[str, str]]:
     namen = [str(b) for b in get_user_model().objects.filter(is_active=True).order_by(
@@ -64,8 +62,9 @@ class ZusatzMixin:
             name, wert = f"zusatz_{z.schluessel}", werte.get(z.schluessel)
             label = z.bezeichnung + (" (Art. 9)" if z.besondere_kategorie else "")
             if z.typ == Zusatzfeld.Typ.JA_NEIN:
-                feld = forms.ChoiceField(choices=JA_NEIN)
-                anfang = "" if wert is None else ("ja" if wert else "nein")
+                # Ankreuzen = ja, leer = nein (Standard)
+                feld = forms.BooleanField()
+                anfang = wert is True
             elif z.typ == Zusatzfeld.Typ.DATUM:
                 feld = forms.DateField(widget=DatumEingabe())
                 anfang = dt.date.fromisoformat(wert) if wert else None
@@ -85,10 +84,13 @@ class ZusatzMixin:
         werte = dict(self.instance.zusatz or {})
         for z in self.zusatzfelder:
             wert = self.cleaned_data.get(f"zusatz_{z.schluessel}")
-            if wert in (None, ""):
+            if z.typ == Zusatzfeld.Typ.JA_NEIN:
+                if wert:
+                    werte[z.schluessel] = True
+                elif werte.get(z.schluessel) is not None:  # war gesetzt: jetzt nein
+                    werte[z.schluessel] = False
+            elif wert in (None, ""):
                 werte.pop(z.schluessel, None)
-            elif z.typ == Zusatzfeld.Typ.JA_NEIN:
-                werte[z.schluessel] = wert == "ja"
             elif z.typ == Zusatzfeld.Typ.DATUM:
                 werte[z.schluessel] = wert.isoformat()
             else:

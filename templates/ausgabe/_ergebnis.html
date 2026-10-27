@@ -159,6 +159,7 @@ Abholung, Rücknahmen von heute und die Ausnahme{% endcomment %}
   <dl class="angaben">
     {% if einstellungen.einlass_haushaltsgroesse %}<dt>Haushalt</dt><dd>{{ erwachsene }} Erwachsene, {{ kinder }} Kind{{ kinder|pluralize:"er" }}</dd>{% endif %}
     <dt>Personen</dt><dd>{% for p in personen %}{{ p.vorname }} {{ p.nachname }}{% if p.geburtsdatum and einstellungen.einlass_geburtsdaten %}, geb. {{ p.geburtsdatum|date:"d.m.Y" }}{% endif %}{% if p.ist_hauptperson %} <small class="hinweis">(Hauptperson)</small>{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}–{% endfor %}</dd>
+    {% if merkmale %}<dt>Merkmale</dt><dd class="merkmale">{% for z in merkmale %}<span class="merkmal-zeile">{% if z.name and personen|length > 1 %}{{ z.name }}: {% endif %}{% for m in z.merkmale %}<span class="merkmal">{{ m }}</span>{% endfor %}</span>{% endfor %}</dd>{% endif %}
     {% if einstellungen.einlass_abholer %}<dt>Abholberechtigt</dt><dd>{% for a in h.abholer.all %}{{ a.vorname }} {{ a.nachname }}{% if a.geburtsdatum and einstellungen.einlass_geburtsdaten %}, geb. {{ a.geburtsdatum|date:"d.m.Y" }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% empty %}–{% endfor %}</dd>{% endif %}
     {% if einstellungen.einlass_anschrift %}<dt>Anschrift</dt><dd>{% if h.strasse or h.ort %}{{ h.strasse }}{% if h.strasse and h.ort %}, {% endif %}{{ h.plz }} {{ h.ort }}{% else %}–{% endif %}</dd>{% endif %}
     <dt>Ausgabestelle</dt><dd>{{ h.kundengruppe.ausgabestelle.name|default:"–" }}{% if h.kundengruppe %} · {{ h.kundengruppe.name }}{% endif %}</dd>

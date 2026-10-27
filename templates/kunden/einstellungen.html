@@ -14,7 +14,9 @@
 <section class="karte">
   <h2>Zusatzfelder</h2>
   <p class="hinweis">Eigene Felder für Haushalte oder Personen. Im Import heißt die Spalte
-    <code>zusatz_</code> plus Schlüssel.</p>
+    <code>zusatz_</code> plus Schlüssel. Mitgeliefert sind die Merkmale Schwerbehindert, Vegetarier,
+    Braucht Hilfe beim Einkauf, Taub, Stumm und Blind; jedes lässt sich mit „Aktiv“ ab- und
+    zuschalten, aber nicht löschen.</p>
   <div class="tabelle-rahmen">
   <table class="tabelle">
     <thead><tr><th>Bezeichnung</th><th>Importspalte</th><th>Gilt für</th><th>Typ</th><th>Hinweis</th></tr></thead>
@@ -25,7 +27,7 @@
         <td data-titel="Importspalte"><code>{{ feld.import_spalte }}</code></td>
         <td data-titel="Gilt für">{{ feld.get_gilt_fuer_display }}</td>
         <td data-titel="Typ">{{ feld.get_typ_display }}{% if feld.typ == "auswahl" %}: {{ feld.optionen_liste|join:", " }}{% endif %}</td>
-        <td data-titel="Hinweis">{% if feld.besondere_kategorie %}Art. 9{% endif %}{% if not feld.aktiv %} inaktiv{% endif %}</td>
+        <td data-titel="Hinweis">{% if feld.fest %}mitgeliefert {% endif %}{% if feld.besondere_kategorie %}Art. 9 {% endif %}{% if feld.einlass %}Einlass {% endif %}{% if feld.ausweis %}Ausweis {% endif %}{% if not feld.aktiv %}<strong>inaktiv</strong>{% endif %}</td>
       </tr>
     {% empty %}
       <tr><td colspan="5">Noch keine Zusatzfelder angelegt.</td></tr>

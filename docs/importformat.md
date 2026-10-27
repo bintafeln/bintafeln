@@ -194,6 +194,11 @@ oder Person, Typ, gegebenenfalls Auswahloptionen, besondere Kategorie). Im Impor
 Ein Wert, der nicht passt, wird nicht übernommen (Warnung). Eine Spalte `zusatz_…` ohne angelegtes
 Zusatzfeld wird ignoriert (Warnung).
 
+Mitgeliefert und ohne Einrichtung nutzbar sind die Merkmale (Ja/Nein, gilt für Person; ADR 0071)
+`zusatz_schwerbehindert`, `zusatz_vegetarier`, `zusatz_hilfe_einkauf`, `zusatz_taub`,
+`zusatz_stumm` und `zusatz_blind`. Leer bedeutet „nein“. Das Format selbst ändert sich dadurch
+nicht.
+
 ## Prüfbericht
 
 **Fehler** (Import nicht möglich):

@@ -28,7 +28,7 @@ from apps.core import module
 from apps.core.auswahl import KORREKTURGRUENDE
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
-from apps.kunden import werte, zugang
+from apps.kunden import merkmale, werte, zugang
 from apps.kunden.models import (
     Abholung,
     Ausgabestelle,
@@ -125,7 +125,10 @@ def _ergebnis(request, h, meldung=None):
     beitrag = einstellungen.beitrag_fuer(h, heute, kind_bis)
     regulaer = einstellungen.beitrag_fuer(h, heute, kind_bis, frei_beachten=False)
     vorschlaege, vorschlag_hinweis = konto.vorschlaege(h, heute, einstellungen, regulaer)
+    merkmale_zeilen, merkmale_art9 = merkmale.einlass(h, request.user)
     return {
+        "merkmale": merkmale_zeilen,
+        "merkmale_art9": merkmale_art9,
         "h": h,
         "hauptperson": next((p for p in h.personen.all() if p.ist_hauptperson), None),
         "personen": sorted(h.personen.all(), key=lambda p: not p.ist_hauptperson),
@@ -176,12 +179,13 @@ def empfang(request):
             kontext["nicht_erlaubt"] = grund
             kontext["fremd_nummer"] = h.kundennummer
         else:
+            kontext.update(_ergebnis(request, h))
             Zugriff.objects.create(
                 benutzer=request.user,
                 benutzername=request.user.get_username(),
                 kundennummer=h.kundennummer,
+                besondere_kategorie=kontext["merkmale_art9"],
             )
-            kontext.update(_ergebnis(request, h))
     return _antworten(request, kontext)
 
 
