@@ -13,7 +13,7 @@ from django.db import models
 from django.utils import timezone
 
 from apps.core import privatdateien
-from apps.core.auswahl import FESTE_ANLIEGEN, GRUPPENFARBEN, NACHRICHT_ANLIEGEN
+from apps.core.auswahl import FESTE_ANLIEGEN, GRUPPENFARBEN, KRANK_GRUENDE, NACHRICHT_ANLIEGEN
 from apps.kunden import werte
 
 
@@ -125,6 +125,11 @@ class KundenEinstellungen(models.Model):
         "Verlängern frühestens … Tage vor Ablauf", default=60, validators=[MaxValueValidator(365)],
         help_text="Wer früher gemeldet wird, wird nicht verlängert; die Ausgabestelle bekommt eine "
         "Notiz, ab wann es geht. 0 = jederzeit.",
+    )  # fmt: skip
+    krankmeldung = models.BooleanField(
+        "Krankmeldungen von Kunden", default=False,
+        help_text="Einlass und Verwaltung können eintragen, dass ein Kunde für eine Zeit krank, in "
+        "Reha oder im Krankenhaus ist. Die Notiz verschwindet nach dem Ende von selbst.",
     )  # fmt: skip
 
     class Meta:
@@ -637,6 +642,10 @@ class Notiz(models.Model):
     )  # fmt: skip
     gelesen_am = models.DateTimeField("Gelesen am", null=True, blank=True)
     gelesen_von = models.CharField("Gelesen von", max_length=150, blank=True)
+    # Krankmeldung (ADR 0075): gilt von … bis; wird nach dem Ende gelöscht
+    krank_von = models.DateField("Krank von", null=True, blank=True)
+    krank_bis = models.DateField("Krank bis", null=True, blank=True)
+    krank_grund = models.CharField("Grund", max_length=20, blank=True, choices=KRANK_GRUENDE)
 
     class Meta:
         verbose_name = "Notiz"
@@ -709,9 +718,11 @@ class Nachricht(models.Model):
 
 
 def verwaiste_notizen_loeschen() -> int:
-    """Notizen zu Kundennummern, die es nicht mehr gibt."""
+    """Notizen zu Kundennummern, die es nicht mehr gibt, und abgelaufene Krankmeldungen
+    (Gesundheitsdaten nur so lange wie nötig, ADR 0075)."""
     vorhanden = Haushalt.objects.values("kundennummer")
-    return Notiz.objects.exclude(kundennummer__in=vorhanden).delete()[0]
+    weg = Notiz.objects.exclude(kundennummer__in=vorhanden).delete()[0]
+    return weg + Notiz.objects.filter(krank_bis__lt=timezone.localdate()).delete()[0]
 
 
 class Dokumentart(models.Model):

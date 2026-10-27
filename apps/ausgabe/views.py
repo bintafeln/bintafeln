@@ -126,7 +126,10 @@ def _ergebnis(request, h, meldung=None):
     regulaer = einstellungen.beitrag_fuer(h, heute, kind_bis, frei_beachten=False)
     vorschlaege, vorschlag_hinweis = konto.vorschlaege(h, heute, einstellungen, regulaer)
     merkmale_zeilen, merkmale_art9 = merkmale.einlass(h, request.user)
+    from apps.kunden import krankmeldung
+
     return {
+        "krank": krankmeldung.aktuelle(h.kundennummer, heute),
         "merkmale": merkmale_zeilen,
         "merkmale_art9": merkmale_art9,
         "h": h,
@@ -547,6 +550,19 @@ def notiz(request, kundennummer):
     if notiz_schreiben(h, request.POST.get("text", ""), request.user) is None:
         return _zurueck(request, h, "Bitte einen Text für die Notiz eingeben.", messages.ERROR)
     return _zurueck(request, h, "Notiz gespeichert.")
+
+
+@require_POST
+@rollen.recht_erforderlich("kunden.notizen")
+def krank(request, kundennummer):
+    from apps.kunden.krankmeldung import Fehler
+    from apps.kunden.views import krank_aus_formular
+
+    h = zugang.haushalt(request.user, kundennummer)
+    try:
+        return _zurueck(request, h, krank_aus_formular(h, request))
+    except Fehler as f:
+        return _zurueck(request, h, str(f), messages.ERROR)
 
 
 @require_POST

@@ -14,6 +14,7 @@ urlpatterns = [
     path("haushalt/<path:kundennummer>/korrektur/", views.korrektur, name="korrektur"),
     path("haushalt/<path:kundennummer>/notiz/", views.notiz, name="notiz"),
     path("notiz/<int:pk>/loeschen/", views.notiz_loeschen, name="notiz_loeschen"),
+    path("haushalt/<path:kundennummer>/krank/", views.krank, name="krank"),
     path(
         "einzahlung/<int:pk>/zuruecknehmen/",
         views.einzahlung_zuruecknehmen,

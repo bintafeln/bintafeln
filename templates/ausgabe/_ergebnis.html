@@ -33,6 +33,8 @@
     {% for m in bewertung.meldungen %}<li class="grund-{{ m.farbe }}">{{ m.text }}</li>{% endfor %}
   </ul>
 </section>
+{% if krank %}<p class="karte krank-hinweis" role="status"><strong>Krank gemeldet</strong> ({{ krank.get_krank_grund_display }})
+  bis {{ krank.krank_bis|date:"d.m.Y" }}. Abholen darf nur, wer beim Haushalt als abholberechtigt eingetragen ist.</p>{% endif %}
 {% if modul_hinweise %}
 {% with f=modul_hinweise.0.farbe %}
 <section class="karte ampel modul-hinweise {% if f == 'info' %}ampel-unbekannt{% else %}ampel-{{ f }}{% endif %}" role="status">
