@@ -516,3 +516,25 @@ def test_tour_faehrt_ab_und_bis(team, admin_client, pdf_text):
         "name": "Nordtour", "reihenfolge": 3, "plaetze": 2, "mindestbesetzung": 2, "aktiv": "on",
         "ab": "2026-12-01", "bis": "2026-11-01"})  # fmt: skip
     assert "Das Ende liegt vor dem Beginn." in antwort.content.decode()
+
+
+def test_handy_ansicht_ein_tag_je_karte(team, admin_client, monkeypatch):
+    """Schmale Bildschirme: eine Karte je Fahrtag, nur Touren, die an dem Tag fahren, vergangene
+    Tage unter „Frühere Tage“, der nächste Fahrtag aufgeklappt."""
+    p, mitte, steele = team
+    monkeypatch.setattr("django.utils.timezone.localdate", lambda *args: MITTWOCH)
+    antwort = admin_client.get(PLAN, {"monat": "2026-11"})
+    frueher, karten = antwort.context["karten_frueher"], antwort.context["karten"]
+    assert all(k["datum"] < MITTWOCH for k in frueher) and frueher
+    assert karten[0]["datum"] == MITTWOCH and karten[0]["offen"]
+    assert not any(k["offen"] for k in karten[1:] + frueher)
+    assert [t.name for t, _ in karten[0]["touren"]] == ["Mitte", "Steele"]
+    seite = antwort.content.decode()
+    assert f"Frühere Tage ({len(frueher)})" in seite and "Mittwoch, 11.11." in seite
+
+
+def test_handy_ansicht_vergangener_monat_alles_eingeklappt(team, admin_client, monkeypatch):
+    monkeypatch.setattr("django.utils.timezone.localdate", lambda *args: MITTWOCH)
+    antwort = admin_client.get(PLAN, {"monat": "2026-10"})
+    assert antwort.context["karten"] == [] and antwort.context["karten_frueher"]
+    assert "In diesem Monat sind keine Fahrtage." not in antwort.content.decode()

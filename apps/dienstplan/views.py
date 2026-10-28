@@ -116,7 +116,28 @@ def uebersicht(request):
         "ich": plan.helfer_von(request.user),
         "offen": sum(p.fehlt for _, ps in zeilen for p in ps),
         "diensttag": Diensttag.objects.filter(stelle=stelle, wochentag=tag).first(),
+        **_karten(daten, zeilen),
     })  # fmt: skip
+
+
+def _karten(daten, zeilen) -> dict:
+    """Derselbe Plan für schmale Bildschirme: eine Karte je Datum, gleichnamige Aufgaben
+    zusammen (z. B. „Obst“ mit vier Namen). Aufgeklappt ist der nächste Ausgabetag; vergangene
+    Tage stehen eingeklappt unter „Frühere Tage“."""
+    heute = timezone.localdate()
+    naechster = next((d for d in daten if d >= heute), None)
+    karten = []
+    for i, datum in enumerate(daten):
+        gruppen = []
+        for a, plaetze in zeilen:
+            if gruppen and (gruppen[-1]["name"], gruppen[-1]["zeit"]) == (a.name, a.zeit):
+                gruppen[-1]["plaetze"].append(plaetze[i])
+            else:
+                gruppen.append({"name": a.name, "zeit": a.zeit, "plaetze": [plaetze[i]]})
+        karten.append({"datum": datum, "gruppen": gruppen, "offen": datum == naechster,
+                       "fehlen": sum(ps[i].fehlt for _, ps in zeilen)})  # fmt: skip
+    return {"karten_frueher": [k for k in karten if k["datum"] < heute],
+            "karten": [k for k in karten if k["datum"] >= heute]}  # fmt: skip
 
 
 @never_cache

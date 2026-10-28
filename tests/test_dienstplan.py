@@ -210,3 +210,21 @@ def test_rechte(team, client, anmelden, benutzer_mit_rolle, admin):
     anmelden(client, benutzer_mit_rolle("ausgabe2", rollen.AUSGABE))
     assert client.get(PLAN).status_code == 200
     assert client.get(reverse("dienstplan:einstellungen")).status_code == 403
+
+
+def test_handy_ansicht_ein_tag_je_karte(team, admin_client, monkeypatch):
+    """Schmale Bildschirme: eine Karte je Ausgabetag, gleichnamige Aufgaben zusammen, vergangene
+    Tage unter „Frühere Tage“, der nächste Ausgabetag aufgeklappt."""
+    ds, h, a = team
+    monkeypatch.setattr("django.utils.timezone.localdate", lambda *args: FREITAG)
+    antwort = admin_client.get(
+        PLAN, {"stelle": ds.ausgabestelle_id, "tag": "Fr", "monat": "2026-11"}
+    )
+    frueher, karten = antwort.context["karten_frueher"], antwort.context["karten"]
+    assert [k["datum"].day for k in frueher] == [6]
+    assert [(k["datum"].day, k["offen"]) for k in karten] == [(13, True), (20, False), (27, False)]
+    assert [(g["name"], len(g["plaetze"])) for g in karten[0]["gruppen"]] == [
+        ("Kasse", 1), ("Obst", 2), ("Springer", 1)]  # fmt: skip
+    assert karten[0]["fehlen"] == 1  # zweites Obst ist unbesetzt
+    seite = antwort.content.decode()
+    assert "Frühere Tage (1)" in seite and "Freitag, 13.11." in seite

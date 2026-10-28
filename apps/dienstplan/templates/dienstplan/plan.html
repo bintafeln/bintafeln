@@ -6,32 +6,35 @@
   <h1>Dienstplan</h1>
   <p>Noch keine Ausgabestelle macht beim Dienstplan mit.{% if planen %} <a href="{% url 'dienstplan:einstellungen' %}">Dienstplan einstellen</a>{% endif %}</p>
   {% else %}
-  <div class="fd-kopf">
-    <h1>Dienstplan {{ tagname }} · {{ titel }}</h1>
-    <div class="aktionsleiste">
-      <form method="get" class="fd-monat">
-        <label class="unsichtbar" for="dp-stelle">Ausgabestelle</label>
-        <select name="stelle" id="dp-stelle" onchange="this.form.submit()">{% for s in stellen %}<option value="{{ s.ausgabestelle_id }}"{% if s.pk == stelle.pk %} selected{% endif %}>{{ s }}</option>{% endfor %}</select>
-        <label class="unsichtbar" for="dp-tag">Ausgabetag</label>
-        <select name="tag" id="dp-tag" onchange="this.form.submit()">{% for t in tage %}<option{% if t == tag %} selected{% endif %}>{{ t }}</option>{% endfor %}</select>
-        <label class="unsichtbar" for="dp-m">Monat</label>
-        <select name="m" id="dp-m" onchange="this.form.submit()">{% for nr, name in monate %}<option value="{{ nr|stringformat:'02d' }}"{% if nr == erster.month %} selected{% endif %}>{{ name }}</option>{% endfor %}</select>
-        <label class="unsichtbar" for="dp-j">Jahr</label>
-        <select name="jahr" id="dp-j" onchange="this.form.submit()">{% for j in jahre %}<option{% if j == erster.year %} selected{% endif %}>{{ j }}</option>{% endfor %}</select>
-        <noscript><button type="submit" class="knopf knopf-zweitrangig">Öffnen</button></noscript>
-      </form>
-      <a class="knopf knopf-zweitrangig" href="?stelle={{ stelle.ausgabestelle_id }}&amp;tag={{ tag }}&amp;monat={{ vorher }}">← Vormonat</a>
-      <a class="knopf knopf-zweitrangig" href="?stelle={{ stelle.ausgabestelle_id }}&amp;tag={{ tag }}&amp;monat={{ nachher }}">Folgemonat →</a>
-      <a class="knopf knopf-zweitrangig" href="{% url 'dienstplan:pdf' %}?stelle={{ stelle.ausgabestelle_id }}&amp;monat={{ monat }}">Drucken (PDF, alle Tage)</a>
-      {% if planen or darf_melden %}<a class="knopf" href="{% url 'dienstplan:ausfall' %}">Ich kann nicht – Ausfall melden</a>{% endif %}
-    </div>
+  <h1>Dienstplan {{ tagname }} · {{ titel }}</h1>
+  <form method="get" class="fd-monat">
+    <label class="unsichtbar" for="dp-stelle">Ausgabestelle</label>
+    <select name="stelle" id="dp-stelle" onchange="this.form.submit()">{% for s in stellen %}<option value="{{ s.ausgabestelle_id }}"{% if s.pk == stelle.pk %} selected{% endif %}>{{ s }}</option>{% endfor %}</select>
+    <label class="unsichtbar" for="dp-tag">Ausgabetag</label>
+    <select name="tag" id="dp-tag" onchange="this.form.submit()">{% for t in tage %}<option{% if t == tag %} selected{% endif %}>{{ t }}</option>{% endfor %}</select>
+    <span class="fd-blaettern">
+      <a class="knopf knopf-zweitrangig" href="?stelle={{ stelle.ausgabestelle_id }}&amp;tag={{ tag }}&amp;monat={{ vorher }}" title="Vormonat">←<span class="fd-lang"> Vormonat</span></a>
+      <label class="unsichtbar" for="dp-m">Monat</label>
+      <select name="m" id="dp-m" onchange="this.form.submit()">{% for nr, name in monate %}<option value="{{ nr|stringformat:'02d' }}"{% if nr == erster.month %} selected{% endif %}>{{ name }}</option>{% endfor %}</select>
+      <label class="unsichtbar" for="dp-j">Jahr</label>
+      <select name="jahr" id="dp-j" onchange="this.form.submit()">{% for j in jahre %}<option{% if j == erster.year %} selected{% endif %}>{{ j }}</option>{% endfor %}</select>
+      <a class="knopf knopf-zweitrangig" href="?stelle={{ stelle.ausgabestelle_id }}&amp;tag={{ tag }}&amp;monat={{ nachher }}" title="Folgemonat"><span class="fd-lang">Folgemonat </span>→</a>
+    </span>
+    <noscript><button type="submit" class="knopf knopf-zweitrangig">Öffnen</button></noscript>
+  </form>
+  <div class="aktionsleiste fd-aktionen">
+    {% if planen or darf_melden %}<a class="knopf" href="{% url 'dienstplan:ausfall' %}">Ich kann nicht – Ausfall melden</a>{% endif %}
+    <a class="knopf knopf-zweitrangig" href="{% url 'dienstplan:pdf' %}?stelle={{ stelle.ausgabestelle_id }}&amp;monat={{ monat }}">Drucken (PDF, alle Tage)</a>
   </div>
-  <p class="hinweis">{{ stelle }}{% if diensttag.teamleitung %} · Teamleitung: {{ diensttag.teamleitung }}{% endif %} ·
-    <span class="fd-platz fd-offen"><s>Name</s> <strong>offen</strong></span> fällt aus ·
-    <span class="fd-platz fd-ersetzt">Name</span> springt ein{% if planen %} · Auf einen Namen tippen: Ausfall melden, Ersatz
-    oder Gast eintragen. <a href="{% url 'dienstplan:stelle' stelle.ausgabestelle_id %}?tag={{ tag }}">Aufgaben und feste Besetzung ✎</a>{% elif darf_melden %} ·
-    Auf den eigenen Namen tippen, um sich auszutragen.{% endif %}
-    {% if offen %}<br><strong class="fd-offen-text">{{ offen }} offene Plätze.</strong>{% endif %}</p>
+  <p class="hinweis">{{ stelle }}{% if diensttag.teamleitung %} · Teamleitung: {{ diensttag.teamleitung }}{% endif %}
+    {% if offen %}· <strong class="fd-offen-text">{{ offen }} offene Plätze</strong>{% endif %}</p>
+  <details class="fd-anleitung">
+    <summary>Farben und Ändern</summary>
+    <p><span class="fd-platz fd-offen"><s>Name</s> <strong>offen</strong></span> fällt aus ·
+      <span class="fd-platz fd-ersetzt">Name</span> springt ein{% if planen %} · Auf einen Namen tippen: Ausfall melden, Ersatz
+      oder Gast eintragen. <a href="{% url 'dienstplan:stelle' stelle.ausgabestelle_id %}?tag={{ tag }}">Aufgaben und feste Besetzung ✎</a>{% elif darf_melden %} ·
+      Auf den eigenen Namen tippen, um sich auszutragen.{% endif %}</p>
+  </details>
   {% if not tag %}<p>An dieser Ausgabestelle sind noch keine Ausgabetage eingestellt.</p>
   {% elif not zeilen %}<p>Für {{ tagname }} sind noch keine Aufgaben angelegt.</p>
   {% else %}
@@ -48,6 +51,18 @@
     {% endfor %}
     </tbody>
   </table>
+  </div>
+  {# Schmale Bildschirme: ein Ausgabetag je Karte, der nächste aufgeklappt #}
+  <div class="fd-karten">
+    {% if karten_frueher %}
+    <details class="fd-frueher">
+      <summary>Frühere Tage ({{ karten_frueher|length }})</summary>
+      {% for k in karten_frueher %}{% include "dienstplan/_tag.html" %}{% endfor %}
+    </details>
+    {% endif %}
+    {% for k in karten %}{% include "dienstplan/_tag.html" %}
+    {% empty %}{% if not karten_frueher %}<p>In diesem Monat ist am {{ tagname }} keine Ausgabe.</p>{% endif %}
+    {% endfor %}
   </div>
   {% endif %}
   {% endif %}
