@@ -355,3 +355,12 @@ def test_einstellungen_speichern_sofort(angemeldet, admin):
     expect(regel).to_contain_text("Ohne Bedingung")
     seite.get_by_label("Verlängern nur, wenn").select_option("alle")
     expect(regel).to_contain_text("Verlängert wird, wenn jede Person im Haushalt mindestens 60")
+
+
+def test_suchfeld_der_listen_auf_dem_handy_einzeilig(angemeldet, admin):
+    """Auf schmalen Bildschirmen stehen die Filter untereinander; das Suchfeld bleibt eine
+    normale Zeile hoch (vorher machte flex-basis daraus eine riesige Fläche)."""
+    seite = angemeldet(admin)
+    seite.set_viewport_size({"width": 390, "height": 800})
+    seite.goto("/antraege/")
+    assert seite.locator("input#suche").bounding_box()["height"] < 80

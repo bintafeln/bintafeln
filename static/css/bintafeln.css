@@ -570,7 +570,8 @@ a.knopf-gefahr { color: #fff; }
 /* Antragsliste */
 .liste-kopf { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; }
 .liste-kopf h1 { margin: 0; }
-.liste-filter .suche { flex: 1 1 18rem; }
+/* nur nebeneinander: untereinander (Handy) würde flex-basis zur Höhe des Suchfelds */
+@media (min-width: 40rem) { .liste-filter .suche { flex: 1 1 18rem; } }
 .sortieren { color: var(--text); text-decoration: none; white-space: nowrap; }
 .sortieren::after { content: " ↕"; color: var(--leise); font-weight: 400; }
 .sortieren.auf::after { content: " ▲"; color: var(--akzent-dunkel); }
