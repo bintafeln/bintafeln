@@ -436,3 +436,84 @@ def test_werkseinstellungen_vergessen_eingefahrenes_menue(angemeldet, admin, ben
     expect(seite.locator("html")).not_to_have_class(re.compile("menue-eingefahren"))
     seite.reload()  # bleibt ausgefahren (der neue Stand ist gemerkt)
     expect(seite.locator(".seitenmenue")).to_be_visible()
+
+
+def test_aushang_monitor_wechselt_passt_ein_und_sperrt_alten_link(seite, admin):
+    from apps.aushang import pin
+    from apps.aushang.models import Aushang, AushangSeite, neuer_schluessel
+    from apps.core.models import TafelEinstellungen
+    from apps.dienstplan import beispiel as dp_beispiel
+    from apps.fahrdienst import beispiel as fd_beispiel
+    from apps.fahrdienst import plan as fd_plan
+
+    t = TafelEinstellungen.laden()
+    t.module, t.bundesland = ["aushang", "dienstplan", "fahrdienst"], "NW"
+    t.save()
+    dp_beispiel.anlegen(seed=1)
+    fd_beispiel.anlegen(seed=1)
+    stelle = Ausgabestelle.objects.get(name=dp_beispiel.STELLE)
+    aushang = Aushang.objects.create(name="Monitor Fahrerraum", sekunden=5)
+    AushangSeite.objects.create(aushang=aushang, art="dienstplan", wert=str(stelle.pk), monate=2)
+    AushangSeite.objects.create(aushang=aushang, art="fahrdienst", monate=2, reihenfolge=1)
+    # Der erste Platz ab heute: diese Person bekommt eine PIN und trägt sich am Monitor aus
+    heute = timezone.localdate()
+    tag = fd_plan.fahrtage(heute, heute + dt.timedelta(days=14))[0]
+    p = next(p for _, plaetze in fd_plan.tage([tag])[0][1] for p in plaetze if p.wer)
+    pin.setzen(p.wer, "482915")
+
+    seite.set_viewport_size({"width": 1280, "height": 720})
+    seite.clock.install()
+    seite.goto(f"/aushang/zeigen/{aushang.schluessel}/")
+    sichtbar = seite.locator(".aushang-folie.sichtbar")
+    expect(sichtbar).to_have_count(1)
+    erste = sichtbar.locator("h1").inner_text()
+    # Die Schrift ist so gewählt, dass die ganze Seite ohne Scrollen zu sehen ist
+    passt = seite.evaluate("""() => {
+        const i = document.querySelector('.aushang-folie.sichtbar .aushang-inhalt');
+        return i.scrollHeight <= i.clientHeight + 1 && parseFloat(i.style.fontSize) >= 6; }""")
+    assert passt
+    expect(seite.locator(".aushang-punkt.aktiv")).to_have_count(1)
+    seite.clock.run_for(5_000)
+    expect(sichtbar.locator("h1")).not_to_have_text(erste)
+
+    # Antippen zeigt den Plan groß; „Übersicht“ oder 30 Sekunden Ruhe führen zurück
+    sichtbar.click()
+    expect(seite.locator("body.aushang-gross")).to_have_count(1)
+    expect(seite.get_by_role("button", name="← Übersicht")).to_be_visible()
+    expect(sichtbar.locator(".aushang-qr svg")).to_be_visible()
+    seite.clock.run_for(20_000)
+    expect(seite.locator("body.aushang-gross")).to_have_count(1)  # kein Wechsel in groß
+    seite.get_by_role("button", name="← Übersicht").click()
+    expect(seite.locator("body.aushang-gross")).to_have_count(0)
+    sichtbar.click()
+    seite.clock.run_for(31_000)
+    expect(seite.locator("body.aushang-gross")).to_have_count(0)
+
+    # Austragen am Monitor mit persönlicher PIN
+    fahrerplan = seite.locator(".aushang-folie", has_text="Fahrerplan").first
+    nr = int(fahrerplan.get_attribute("data-nr"))
+    seite.evaluate(f"() => document.querySelector('.aushang-folie[data-nr=\"{nr}\"]').click()")
+    expect(seite.locator("body.aushang-gross")).to_have_count(1)
+    kennung = f"fahrdienst|{tag:%Y-%m-%d}|{p.tour.pk}|{p.platz}"
+    seite.locator(f'[data-platz="{kennung}"]').click()
+    dialog = seite.locator("#aushang-dialog")
+    expect(dialog).to_contain_text(f"Ich bin {p.wer.get_full_name()}")
+    dialog.get_by_label("Meine PIN").first.fill("000000")
+    dialog.get_by_role("button", name="Austragen").click()
+    expect(dialog.get_by_text("Die PIN stimmt nicht.")).to_be_visible()
+    dialog.get_by_label("Meine PIN").first.fill("482915")
+    dialog.get_by_role("button", name="Austragen").click()
+    expect(seite.locator("#aushang-meldung")).to_contain_text("fällt am")
+    expect(seite.locator(f'[data-platz="{kennung}"]')).to_contain_text("offen")
+
+    aushang.nebeneinander = 2
+    aushang.save()
+    seite.reload()
+    expect(seite.locator(".aushang-folie.sichtbar")).to_have_count(2)
+
+    # Neuer Link: Der alte Monitor leert sich beim nächsten Abruf (spätestens nach einer Minute)
+    aushang.schluessel = neuer_schluessel()
+    aushang.save()
+    seite.clock.run_for(61_000)
+    expect(seite.get_by_text("Dieser Link ist nicht mehr gültig.")).to_be_visible()
+    expect(seite.locator("table")).to_have_count(0)

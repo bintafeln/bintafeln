@@ -1,0 +1,43 @@
+{% load static %}<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{{ aushang }}</title>
+  <link rel="stylesheet" href="{% static 'css/bintafeln.css' %}">
+  {% include "includes/farben.html" %}
+  <script src="{% static 'js/aushang.js' %}" defer></script>
+</head>
+{# Aushang-Monitor (ADR 0080): ganzseitig, ohne Menü. aushang.js wechselt die Seiten, passt die Schrift an, lädt jede Minute neu; Antippen zeigt einen Plan groß, dort lässt er sich mit persönlicher PIN ändern #}
+<body class="aushang" data-sekunden="{{ aushang.sekunden }}" data-nebeneinander="{{ aushang.nebeneinander }}"
+      data-aendern="{{ aushang.aendern|yesno:'1,' }}" data-platz-url="{{ platz_url }}">
+  {% csrf_token %}
+  <header class="aushang-kopf">
+    <span class="aushang-uebersicht-nur">{{ jetzt|date:"l, d.m.Y" }}</span>
+    <button type="button" class="aushang-zurueck" id="aushang-zurueck">← Übersicht</button>
+    <span><span id="aushang-stand">Stand {{ jetzt|time:"H:i" }} Uhr</span>
+      <button type="button" class="aushang-vollbild" id="aushang-vollbild" hidden>Vollbild</button></span>
+  </header>
+  <main id="aushang-folien" class="aushang-folien">
+    {% for titel, html, qr in folien %}
+    <section class="aushang-folie{% if forloop.first %} sichtbar{% endif %}" data-nr="{{ forloop.counter0 }}">
+      <div class="aushang-titel">
+        <h1>{{ titel }}</h1>
+        {% if qr %}<figure class="aushang-qr">{{ qr|safe }}<figcaption>Am Handy ändern</figcaption></figure>{% endif %}
+      </div>
+      {% if aushang.aendern %}<p class="aushang-tipp">Auf einen Namen oder Platz tippen, um sich auszutragen oder einzuspringen.</p>{% endif %}
+      <div class="aushang-inhalt">{{ html }}</div>
+    </section>
+    {% empty %}
+    <section class="aushang-folie sichtbar aushang-leer">
+      <h1>{{ aushang }}</h1>
+      <p>Zurzeit gibt es hier nichts anzuzeigen.</p>
+    </section>
+    {% endfor %}
+  </main>
+  <footer class="aushang-punkte" id="aushang-punkte" aria-hidden="true"></footer>
+  <dialog id="aushang-dialog" class="aushang-dialog"></dialog>
+  <div id="aushang-meldung" class="aushang-meldung" role="status" hidden></div>
+</body>
+</html>

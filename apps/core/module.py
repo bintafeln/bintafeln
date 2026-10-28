@@ -21,6 +21,31 @@ from django.http import Http404
 
 
 @dataclass(frozen=True)
+class Aushangseite:
+    """Eine Seitenart für Aushang-Monitore (ADR 0080), angeboten von einem Modul."""
+
+    kennung: str  # eindeutig über alle Module, z. B. "dienstplan"
+    titel: str  # in der Auswahl, z. B. „Dienstplan einer Ausgabestelle“
+    recht: str  # wer die Seite auf einen Aushang setzen darf
+    # auswahl() -> [(wert, text)], z. B. die Ausgabestellen; leer = keine Wahl nötig
+    auswahl: Callable
+    # folien(wert, von, bis) -> [(titel, html, adresse)]: was der Monitor für den Zeitraum zeigt
+    # (nur Namen, nie Kontaktdaten; der Monitor braucht keine Anmeldung) und die Seite im
+    # Programm zum Ändern (für den QR-Code). Plätze, die sich am Monitor ändern lassen, tragen
+    # data-platz="<kennung>|…" im HTML.
+    folien: Callable
+    # Ändern am Monitor mit persönlicher PIN (optional): platz(teil) -> dict für den Dialog oder
+    # None ({"titel", "wer", "wer_konto", "status", "kann_ausfallen", "gruende",
+    # "frei": [(wert, name, konto)], "hat_ersatz", "recht"}; ``recht`` = wer alles ändern darf);
+    # aendern(teil, daten, person, von, basis) -> Meldung. ``person`` ist das per PIN bestätigte
+    # Konto; das Modul prüft, was es darf (sich austragen, selbst einspringen, mit ``recht``
+    # alles) und wirft sonst ValueError mit verständlichem Text. ``teil`` ist data-platz ohne
+    # die Kennung, ``basis`` die Adresse von bintafeln (für Links in Benachrichtigungen).
+    platz: Callable | None = None
+    aendern: Callable | None = None
+
+
+@dataclass(frozen=True)
 class Modul:
     kennung: str
     titel: str
@@ -66,6 +91,8 @@ class Modul:
     suchen: Callable | None = None
     # Beitrag zur Startseite unter der Begrüßung: startseite(request) -> HTML (render_to_string)
     startseite: Callable | None = None
+    # Seiten für Aushang-Monitore (ADR 0080): aushang() -> [Aushangseite, …]
+    aushang: Callable | None = None
 
 
 @cache
@@ -131,6 +158,12 @@ def startseite(request) -> list[str]:
     an = eingeschaltet()
     teile = [m.startseite(request) for m in alle() if m.kennung in an and m.startseite]
     return [t for t in teile if t]
+
+
+def aushangseiten() -> dict[str, Aushangseite]:
+    """Seitenarten der eingeschalteten Module für Aushang-Monitore, nach Kennung."""
+    an = eingeschaltet()
+    return {s.kennung: s for m in alle() if m.kennung in an and m.aushang for s in m.aushang()}
 
 
 def kopfzeile() -> list[str]:

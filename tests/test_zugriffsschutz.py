@@ -42,6 +42,9 @@ OEFFENTLICH = {
     "aufruf:anzeige_abfrage",
     "aufruf:anzeige_layout",
     "aufruf:anzeige_datei",
+    # Aushang-Monitor ohne Anmeldung, nur mit dem Schlüssel im Link (ADR 0080)
+    "aushang:anzeige",
+    "aushang:platz",  # Ändern nur mit persönlicher PIN
 }
 
 # Für jedes angemeldete Konto, auch ohne Rechte
@@ -65,6 +68,8 @@ ALLE_ANGEMELDETEN = {
     "core:papierkorb_eintrag",
     "core:papierkorb_wiederherstellen",
     "core:papierkorb_loeschen",
+    # Eigene PIN fürs Ändern am Aushang-Monitor (ADR 0080)
+    "aushang:meine_pin",
 }
 
 PLATZHALTER = {

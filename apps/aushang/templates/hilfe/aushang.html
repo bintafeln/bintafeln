@@ -1,0 +1,50 @@
+<p>Ein Aushang-Monitor zeigt Seiten wie den Dienstplan der Ausgabe oder den Fahrerplan ganzseitig auf einem Bildschirm –
+  ohne Menü, ohne Kopfzeile, ohne Anmeldung. Er ist ein zuschaltbares Modul (Einstellungen → Tafel → Tafel und Module →
+  Zusätzliche Module).</p>
+
+<h3>Am Monitor</h3>
+<ul>
+  <li>Die Seiten wechseln sich ab (oder stehen zu zweit nebeneinander). Die Schrift passt sich so an, dass jede Seite
+    ganz zu sehen ist; der heutige Tag ist hervorgehoben. Jede Minute kommt der neue Stand.</li>
+  <li><strong>Antippen</strong> zeigt einen Plan <strong>groß</strong> – nur in der Breite eingepasst, nach unten
+    lässt er sich schieben. <strong>„← Übersicht“</strong> oben links oder 30 Sekunden ohne Eingabe führen zurück.</li>
+  <li><strong>Am Handy ändern</strong>: In der großen Ansicht steht rechts oben ein QR-Code. Mit dem eigenen Handy
+    scannen, mit dem eigenen Konto anmelden und im Plan wie gewohnt ändern.</li>
+  <li><strong>Am Monitor ändern</strong>: In der großen Ansicht auf einen Namen oder Platz tippen. Dann
+    <ul>
+      <li><strong>sich austragen</strong> („Ich bin … und kann an diesem Tag nicht“, Grund wählen, eigene PIN),</li>
+      <li><strong>einspringen</strong> auf einem freien oder offenen Platz („Ich springe ein“, Namen wählen, eigene PIN),</li>
+      <li>wer den Plan <strong>planen</strong> darf, trägt unter „Für andere eintragen“ mit seiner PIN auch Ausfälle,
+        Ersatz und Gäste ein oder nimmt einen Eintrag zurück.</li>
+    </ul>
+    Im Plan steht dann „&lt;Konto&gt; am Monitor …“, im Änderungsprotokoll die Person selbst. Die Teamleitung bzw. die
+    Fahrdienstleitung wird wie gewohnt benachrichtigt. Vergangene Tage lassen sich am Monitor nicht ändern.</li>
+</ul>
+
+<h3>Meine PIN für Monitore</h3>
+<p>Unter <strong>Dienstpläne → Meine PIN für Monitore</strong> legt jede Person ihre eigene PIN fest: mindestens
+  6 Ziffern, keine einfache Folge wie 111111 oder 123456. Gespeichert wird nur ein Prüfwert, nicht die PIN selbst; mit
+  der PIN kann man sich nicht im Programm anmelden. Nach fünf falschen Eingaben ist die PIN 15 Minuten gesperrt.
+  Wer keine PIN hat, erscheint am Monitor nicht zur Auswahl; dann bleibt der QR-Code.</p>
+
+{% if "aushang.einrichten" in rechte %}
+<h3>Einrichten</h3>
+<p>Unter <strong>Einstellungen → Dienstpläne → Aushang-Monitore</strong>:</p>
+<ol>
+  <li>Unter „Neuer Aushang-Monitor“ einen Namen eingeben, z. B. „Monitor Fahrerraum“, und anlegen.</li>
+  <li><strong>Seiten hinzufügen</strong>: z. B. „Dienstplan einer Ausgabestelle: Mitte“ und „Fahrerplan“. Je Seite
+    wählen Sie den Zeitraum: <strong>dieser Monat</strong> oder <strong>dieser und nächster Monat</strong>. Der
+    Monitor zeigt immer ab heute; mit „dieser und nächster Monat“ ist am Monatsende schon der neue Plan zu sehen.
+    Der Dienstplan kommt je Ausgabetag als eigene Seite, der Fahrerplan je Monat. Mit ↑ und ↓ ändern Sie die
+    Reihenfolge, ✕ entfernt eine Seite. Seiten eines Plans kann nur hinzufügen, wer diesen Plan planen darf.</li>
+  <li><strong>Seiten gleichzeitig</strong> (eine im Wechsel oder zwei nebeneinander), <strong>Sekunden je Seite</strong>,
+    <strong>QR-Code fürs Handy</strong> und <strong>Ändern am Monitor</strong> (mit persönlicher PIN) einstellen.</li>
+  <li>Den <strong>Link für den Monitor</strong> im Browser des Monitor-PCs öffnen. Er braucht keine Anmeldung; der
+    geheime Schlüssel steckt im Link. Nur auf Geräten der Tafel öffnen. Am besten den Browser gleich im Vollbild starten
+    (Chrome oder Chromium mit <code>--kiosk</code> und dem Link), sonst einmal oben rechts auf „Vollbild“ tippen.</li>
+  <li><strong>Neuen Link erzeugen</strong> sperrt den alten sofort, z. B. wenn ein Gerät verloren ging; der alte Monitor
+    zeigt dann binnen einer Minute „Dieser Link ist nicht mehr gültig“. Dasselbe passiert, wenn Sie „Aktiv“ ausschalten.</li>
+</ol>
+{% endif %}
+<p>Datenschutz: Der Monitor zeigt nur Namen, nie Telefonnummern, E-Mail-Adressen oder Anmerkungen. Er ist für Räume
+  gedacht, die nur das Team sieht.</p>

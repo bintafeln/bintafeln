@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block titel %}Aushang-Monitor {{ aushang }}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'aushang:liste' %}">← Aushang-Monitore</a></p>
+  <h1>{{ aushang }}</h1>
+  <form method="post" data-autosave>
+    {% csrf_token %}
+    <input type="hidden" name="aktion" value="einstellungen">
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+
+<section class="karte">
+  <h2>Seiten</h2>
+  {% if seiten %}
+  <ol class="aushang-seiten">
+    {% for s in seiten %}
+    <li>
+      <span><strong>{{ s.bezeichnung }}</strong><br><small class="leise">{{ s.get_monate_display }}</small></span>
+      <form method="post" class="aushang-knoepfe">
+        {% csrf_token %}
+        <input type="hidden" name="seite" value="{{ s.pk }}">
+        <button type="submit" name="aktion" value="hoch" class="knopf knopf-zweitrangig" title="nach oben"{% if forloop.first %} disabled{% endif %}>↑</button>
+        <button type="submit" name="aktion" value="runter" class="knopf knopf-zweitrangig" title="nach unten"{% if forloop.last %} disabled{% endif %}>↓</button>
+        <button type="submit" name="aktion" value="entfernen" class="knopf knopf-zweitrangig" title="Seite entfernen">✕</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}<p class="hinweis">Noch keine Seiten. Der Monitor zeigt dann nur den Namen.</p>{% endif %}
+
+  {% if wahl %}
+  <h3>Seite hinzufügen</h3>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="aktion" value="seite">
+    {% with form=seite_form %}{% include "includes/formular.html" %}{% endwith %}
+    <button type="submit" class="knopf knopf-zweitrangig">Seite hinzufügen</button>
+  </form>
+  <p class="hinweis">Der Monitor zeigt ab heute bis zum Ende des Monats, bei „dieser und nächster Monat“ auch den
+    ganzen nächsten Monat – so ist am Monatsende schon der neue Plan zu sehen. Der Dienstplan kommt je Ausgabetag als
+    eigene Seite, der Fahrerplan je Monat.</p>
+  {% else %}
+  <p class="hinweis">Sie können keine Seiten hinzufügen: Dafür braucht es ein eingeschaltetes Modul mit Seiten für den
+    Aushang (Dienstplan der Ausgabe, Fahrdienst) und das Recht, diesen Plan zu planen.</p>
+  {% endif %}
+</section>
+
+<section class="karte">
+  <h2>Link für den Monitor</h2>
+  <p>Diesen Link im Browser des Monitors öffnen. Er braucht keine Anmeldung; die Anzeige aktualisiert sich jede Minute
+    von selbst.</p>
+  <p><label for="aushang-link" class="unsichtbar">Link</label>
+    <input type="text" id="aushang-link" value="{{ link }}" readonly onclick="this.select()" class="aushang-link"></p>
+  <div class="aktionsleiste">
+    {% if aushang.aktiv %}<a class="knopf" href="{{ link }}" target="_blank" rel="noopener">Vorschau ↗</a>{% endif %}
+    <form method="post" onsubmit="return confirm('Der bisherige Link zeigt danach nichts mehr an. Weiter?')">
+      {% csrf_token %}
+      <button type="submit" name="aktion" value="schluessel" class="knopf knopf-zweitrangig">Neuen Link erzeugen</button>
+    </form>
+  </div>
+  <p class="hinweis">Tipp: Den Browser des Monitor-PCs gleich im Vollbild starten, z. B. Chrome mit
+    <code>--kiosk</code> und dem Link. Sonst einmal auf „Vollbild“ oben rechts tippen.</p>
+</section>
+
+<section class="karte">
+  <form method="post" action="{% url 'aushang:loeschen' aushang.pk %}" onsubmit="return confirm('„{{ aushang|escapejs }}“ in den Papierkorb legen?')">
+    {% csrf_token %}
+    <button type="submit" class="knopf knopf-zweitrangig">Aushang-Monitor löschen</button>
+  </form>
+</section>
+{% endblock %}

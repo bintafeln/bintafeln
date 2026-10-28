@@ -38,20 +38,7 @@
   {% if not tag %}<p>An dieser Ausgabestelle sind noch keine Ausgabetage eingestellt.</p>
   {% elif not zeilen %}<p>Für {{ tagname }} sind noch keine Aufgaben angelegt.</p>
   {% else %}
-  <div class="fd-rahmen">
-  <table class="fd-plan dp-plan">
-    <thead><tr><th>Aufgabe</th><th>Zeit</th>{% for d in daten %}<th{% if d == heute %} class="fd-heute"{% endif %}>{{ d|date:"D" }}<br>{{ d|date:"d.m." }}</th>{% empty %}<th>keine Ausgabe in diesem Monat</th>{% endfor %}</tr></thead>
-    <tbody>
-    {% for a, plaetze in zeilen %}
-      <tr>
-        <th scope="row">{{ a.name }}</th>
-        <td class="leise">{{ a.zeit }}</td>
-        {% for p in plaetze %}<td>{% include "dienstplan/_platz.html" %}</td>{% endfor %}
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  </div>
+  {% include "dienstplan/_tabelle.html" %}
   {# Schmale Bildschirme: ein Ausgabetag je Karte, der nächste aufgeklappt #}
   <div class="fd-karten">
     {% if karten_frueher %}

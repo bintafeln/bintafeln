@@ -1064,6 +1064,28 @@ Ersetzt den ausgehängten Papierplan der Ausgabe (ADR 0077), wie der Fahrdienst 
 - **Beispiel** zum Ausprobieren (Knopf oder `python manage.py dienstplan_beispiel`, `--entfernen`).
 - Ausfälle und Ersatz werden nach 12 Monaten gelöscht (einstellbar) und stehen in der Auskunft.
 
+### Aushang-Monitore
+
+Zeigt Dienstplan und Fahrerplan ganzseitig auf einem Monitor, ohne Menü und ohne Anmeldung
+(ADR 0080). Zuschaltbares Modul, Einstellungen unter „Einstellungen → Dienstpläne →
+Aushang-Monitore“ (Recht „Aushang-Monitore einrichten“, Vorgabe Büro).
+
+- **Ein Aushang je Monitor** mit eigenem geheimen Link; „Neuen Link erzeugen“ sperrt den alten,
+  ein gesperrter oder abgeschalteter Monitor leert sich binnen einer Minute.
+- **Seiten** zusammenstellen: „Dienstplan einer Ausgabestelle“ (je Ausgabetag eine Seite) und
+  „Fahrerplan“ (je Monat eine Seite), je mit Zeitraum „dieser Monat“ oder „dieser und nächster
+  Monat“, immer ab heute. Seiten eines Plans nur mit dem Recht, ihn zu planen.
+- **Nacheinander** im Wechsel (Sekunden je Seite) oder **zwei nebeneinander**.
+- Die Schrift passt sich an, damit jede Seite ganz zu sehen ist; neuer Stand jede Minute;
+  Vollbild per Knopf oder Browser mit `--kiosk`. Nur Namen, nie Kontaktdaten.
+- **Antippen** zeigt einen Plan groß; „← Übersicht“ oder 30 Sekunden ohne Eingabe führen zurück.
+  Dort ein **QR-Code** zum Ändern am eigenen Handy (mit Anmeldung) und, wenn eingeschaltet,
+  **Ändern am Monitor mit persönlicher PIN**: sich austragen, einspringen, wer plant auch Ersatz
+  und Gäste. Jede Person legt ihre PIN (mindestens 6 Ziffern, gehasht gespeichert) unter
+  „Dienstpläne → Meine PIN für Monitore“ fest; nach 5 Fehlversuchen 15 Minuten gesperrt. Im
+  Änderungsprotokoll steht die Person.
+- Weitere Module können über `Modul.aushang` eigene Seiten anbieten.
+
 ### Links auf der Startseite
 
 Ersetzt die bisherige „App-Übersicht“ (ADR 0057): Kacheln mit Symbol, Titel, Untertitel,

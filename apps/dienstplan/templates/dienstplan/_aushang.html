@@ -1,0 +1,3 @@
+{# Eine Folie auf dem Aushang-Monitor (ADR 0080): nur Namen, keine Kontaktdaten #}
+{% if diensttag.teamleitung %}<p class="aushang-zusatz">Teamleitung: {{ diensttag.teamleitung }}</p>{% endif %}
+{% include "dienstplan/_tabelle.html" %}
