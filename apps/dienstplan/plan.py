@@ -252,6 +252,37 @@ def ersatz_eintragen(datum, aufgabe, helfer, von, gast: str = "") -> Ersatz | No
                                  gast="" if helfer else gast, eingetragen_von=von)  # fmt: skip
 
 
+# Aufgabe, Beginn, Ende, Anzahl, muss besetzt sein – wie auf dem Papierplan einer Freitags-Ausgabe
+STANDARD_AUFGABEN = [
+    ("Teamleitung", "09:00", "15:00", 1, True), ("Frühdienst", "08:00", "15:00", 2, True),
+    ("Vorsortierung", "11:00", "15:00", 1, True), ("Kasse", "09:00", "15:00", 1, True),
+    ("Brot", "11:30", "15:00", 1, True), ("Mopro", "11:30", "15:00", 1, True),
+    ("Wurst / Fleisch", "11:30", "15:00", 1, True), ("Sonderartikel", "11:30", "15:00", 1, True),
+    ("Obst", "11:30", "15:00", 4, True), ("Gemüse", "11:30", "15:00", 4, True),
+    ("Springer", "11:30", "15:00", 3, False),
+]  # fmt: skip
+
+
+def standard_anlegen(stelle: DienstStelle) -> dict[str, int]:
+    """Die Standard-Aufgaben für jeden Ausgabetag der Stelle, an dem noch keine Aufgaben stehen
+    (ohne Besetzung). Liefert je Tag die Zahl der angelegten Aufgaben."""
+    ergebnis = {}
+    with transaction.atomic():
+        for tag in wochentage(stelle.tage):
+            if stelle.aufgaben.filter(wochentag=tag).exists():
+                continue
+            nr = 0
+            for name, von, bis, anzahl, pflicht in STANDARD_AUFGABEN:
+                for _ in range(anzahl):
+                    nr += 1
+                    Aufgabe.objects.create(stelle=stelle, wochentag=tag, name=name,
+                                           von=dt.time.fromisoformat(von),
+                                           bis=dt.time.fromisoformat(bis), reihenfolge=nr,
+                                           pflicht=pflicht)  # fmt: skip
+            ergebnis[tag] = nr
+    return ergebnis
+
+
 def tag_kopieren(stelle: DienstStelle, von_tag: str, nach_tag: str) -> int:
     """Aufgaben (mit fester Besetzung) eines Wochentags auf einen anderen übernehmen; ersetzt
     die Aufgaben des Zieltags."""
