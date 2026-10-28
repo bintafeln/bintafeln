@@ -174,7 +174,8 @@ def menue(request) -> list[dict]:
         ("personal.sehen", _eintrag("Personal", "personal:liste", genau=True)),
     ])  # fmt: skip
     dazu("Auswertungen", [
-        ("statistik.sehen", _eintrag("Statistik", "statistik:uebersicht")),
+        ("statistik.sehen", _eintrag("Statistik", "statistik:uebersicht", genau=True)),
+        ("statistik.sehen", _eintrag("Verbandsstatistik", "statistik:verband")),
     ], vorn=True)  # fmt: skip
 
     bereiche = [

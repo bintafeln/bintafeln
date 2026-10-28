@@ -95,7 +95,11 @@ def test_neue_ordnung_fuer_die_verwaltung(admin):
     assert "Warteliste" in kunden["Anträge und Warteliste"]
     assert [g["titel"] for g in b["Verein"]["gruppen"]] == ["Mitglieder", "Spenden", "Adressen",
                                                             "Serienbriefe", "Team"]  # fmt: skip
-    assert [e["titel"] for e in b["Auswertungen"]["eintraege"]] == ["Statistik", "Listen"]
+    assert [e["titel"] for e in b["Auswertungen"]["eintraege"]] == [
+        "Statistik",
+        "Verbandsstatistik",
+        "Listen",
+    ]
     assert "Mein Konto" not in b  # über den Namen oben rechts
     # jede Adresse nur einmal im ganzen Menü
     urls = [e["url"] for x in b.values() for e in x["eintraege"]]

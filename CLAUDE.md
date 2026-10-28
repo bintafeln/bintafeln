@@ -172,7 +172,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   (prüft die Zuordnung zu Ausgabestellen, ADR 0034); Listen mit `zugang.filtern()`.
 - Rücknahmen (Abholung, Zahlung, Teilnahme) nur über `apps/ausgabe/korrekturen.py`
   (`zuruecknehmen()`, Korrekturwünsche, ADR 0035).
-- App `statistik` (ADR 0036): Abfragen in `auswertung.py`, SVG-Diagramme in `diagramme.py`
+- App `statistik` (ADR 0036): Abfragen in `auswertung.py`, Verbandsstatistik in `verband.py`
+  (ADR 0081, Stichmonat mit Vorjahresvergleich), SVG-Diagramme in `diagramme.py`
   (feste Farbreihenfolge `reihe-0…7` in bintafeln.css, Texte immer `escape()`), jeder Abschnitt
   auch als Tabelle und CSV.
 - Löschen in der Oberfläche nur über `apps.core.papierkorb.loeschen(...)` (Papierkorb, ADR 0073;

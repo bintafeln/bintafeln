@@ -356,3 +356,71 @@ def jahresbericht(request):
     stelle = stellen[0].name if gewaehlt and stellen else ""
     inhalt = jb.erzeugen(jahr, z, kacheln, teile, stelle)
     return pdf_antwort(inhalt, f"jahresbericht-{jahr}.pdf")
+
+
+def _verband_wahl(request, heute):
+    """Jahr und Stichmonat der Verbandsstatistik (Vorgabe: Juni; vor Juli das Vorjahr)."""
+    from apps.statistik import verband
+
+    wert = request.GET.get("jahr", "")
+    vorgabe = heute.year if heute.month > 6 else heute.year - 1
+    jahr = int(wert) if wert.isdigit() and 2000 <= int(wert) <= heute.year else vorgabe
+    monat = request.GET.get("monat", "")
+    monat = int(monat) if monat.isdigit() and 1 <= int(monat) <= 12 else 6
+    stellen, auswahl, gewaehlt = _stellen(request)
+    jetzt, vorher, fragen = verband.fragen(jahr, monat, stellen)
+    for f in fragen:
+        if f.vergleich:
+            for z in f.zeilen:
+                z[-1] = "–" if z[-1] is None else f"{z[-1]:+d}".replace("+0", "0")
+    return jahr, monat, stellen, auswahl, gewaehlt, jetzt, vorher, fragen
+
+
+@rollen.recht_erforderlich("statistik.sehen")
+def verband(request):
+    """Verbandsstatistik: die jährliche Abfrage des Dachverbands aus den aktuellen Zahlen,
+    als Seite, CSV (alle Fragen) und PDF."""
+    from apps.statistik import verband as vb
+
+    heute = timezone.localdate()
+    jahr, monat, stellen, auswahl, gewaehlt, jetzt, vorher, fragen = _verband_wahl(request, heute)
+    name = f"verbandsstatistik-{jahr}-{monat:02d}"
+    if request.GET.get("format") == "csv":
+        antwort = HttpResponse(content_type="text/csv; charset=utf-8")
+        antwort["Content-Disposition"] = f'attachment; filename="{name}.csv"'
+        antwort.write("﻿")
+        schreiber = csv.writer(antwort, delimiter=";")
+        for f in fragen:
+            schreiber.writerow([f"{f.nummer} {f.text}"])
+            schreiber.writerow(f.kopf)
+            schreiber.writerows(f.zeilen)
+            if f.hinweis:
+                schreiber.writerow([f.hinweis])
+            schreiber.writerow([])
+        return antwort
+    if request.GET.get("format") == "pdf":
+        from apps.core.pdf import Pdf
+
+        stelle = stellen[0].name if gewaehlt and stellen else ""
+        pdf = Pdf(f"Verbandsstatistik {jetzt.name}",
+                  f"Stichmonat {jetzt.name}, Vergleich mit {vorher.name}"
+                  + (f" · Ausgabestelle {stelle}" if stelle else ""))  # fmt: skip
+        for f in fragen:
+            pdf.ueberschrift(f"{f.nummer} {f.text}")
+            breiten = [0.4, 0.15, 0.15, 0.15, 0.15] if f.vergleich else None
+            pdf.tabelle(f.kopf, f.zeilen, breiten=breiten, rechts=range(1, len(f.kopf)))
+            if f.hinweis:
+                pdf.absatz(f.hinweis, klein=True)
+        pdf.ueberschrift("Legende der Stufen")
+        legende = [[f"{s:+d}".replace("+0", "0"), t] for s, t in vb.LEGENDE]
+        pdf.tabelle(["Stufe", "Bedeutung"], legende, breiten=[0.15, 0.85])
+        return pdf_antwort(pdf.erzeugen(), f"{name}.pdf")
+    return render(request, "statistik/verband.html", {
+        "jahr": jahr, "monat": monat, "jetzt": jetzt, "vorher": vorher, "fragen": fragen,
+        "legende": [(f"{s:+d}".replace("+0", "0"), t) for s, t in vb.LEGENDE],
+        "monate": list(enumerate(vb.MONATE, start=1)),
+        "jahre": list(range(heute.year, heute.year - 6, -1)),
+        "auswahl": auswahl, "gewaehlt": gewaehlt,
+        "eingeschraenkt": zugang.stellen(request.user) is not None,
+        "abfrage": request.GET.urlencode(),
+    })  # fmt: skip
