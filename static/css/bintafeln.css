@@ -936,6 +936,8 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 .link-kachel:hover, .link-kachel:focus { transform: translateY(-2px);
                                          box-shadow: 0 6px 16px rgb(0 0 0 / 12%); }
 .link-symbol { font-size: 1.8rem; line-height: 1; }
+.link-bild { width: 2.5rem; height: 2.5rem; object-fit: contain; flex: none; }
+.link-bild-klein { width: 1.5rem; height: 1.5rem; }
 .link-text { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
 .link-untertitel { text-transform: uppercase; letter-spacing: .04em; color: var(--leise); font-size: .75rem; }
 .link-beschreibung { font-size: .9rem; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3;

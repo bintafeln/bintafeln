@@ -13,7 +13,7 @@
     <thead><tr><th></th><th>Titel</th><th>Gruppe</th><th>Adresse</th><th>Sichtbar für</th><th>Aktiv</th></tr></thead>
     <tbody>
       {% for l in links %}
-      <tr><td>{{ l.symbol }}</td><td><a href="{% url 'links:link' l.pk %}">{{ l.titel }}</a>{% if l.warnung %} <span class="marke-warnung">Warnung</span>{% endif %}</td>
+      <tr><td>{% if l.bild %}<img class="link-bild link-bild-klein" src="{{ l.bild.url }}" alt="">{% else %}{{ l.symbol }}{% endif %}</td><td><a href="{% url 'links:link' l.pk %}">{{ l.titel }}</a>{% if l.warnung %} <span class="marke-warnung">Warnung</span>{% endif %}</td>
         <td>{{ l.gruppe|default:"–" }}</td><td>{{ l.adresse|truncatechars:50 }}</td><td>{{ l.recht|default:"alle" }}</td><td>{{ l.aktiv|yesno:"ja,nein" }}</td></tr>
       {% empty %}
       <tr><td colspan="6" class="hinweis">Noch keine Links.</td></tr>

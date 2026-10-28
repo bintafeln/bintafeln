@@ -4,7 +4,7 @@
 <section class="karte breit">
   <p><a href="{% url 'links:liste' %}">← Links</a></p>
   <h1>{% if obj %}{{ name }} „{{ obj }}“ ändern{% else %}{{ name }} anlegen{% endif %}</h1>
-  <form method="post">
+  <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <div class="aktionsleiste">

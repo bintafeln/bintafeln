@@ -40,6 +40,11 @@ class Link(models.Model):
                                help_text="z. B. https://example.org oder /kunden/")  # fmt: skip
     symbol = models.CharField("Symbol", max_length=8, blank=True,
                               help_text="Ein Emoji, z. B. 📋 oder 🖥️.")  # fmt: skip
+    bild = models.FileField(
+        "Bild statt Symbol", upload_to="oeffentlich/links/", blank=True,
+        help_text="PNG (auch mit transparentem Hintergrund), JPG, WebP oder SVG, höchstens 2 MB; "
+        "ersetzt das Symbol. Öffentlich abrufbar.",
+    )  # fmt: skip
     warnung = models.CharField(
         "Warnhinweis", max_length=200, blank=True,
         help_text="Rot hervorgehoben, z. B. „Nur für Admins – Änderungen wirken sofort“.",

@@ -4,7 +4,7 @@
   <ul class="link-kacheln">
     {% for l in links %}
     <li><a class="link-kachel{% if l.warnung %} link-warnung{% endif %}" href="{{ l.adresse }}"{% if l.neuer_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>
-      <span class="link-symbol" aria-hidden="true">{{ l.symbol|default:"🔗" }}</span>
+      {% if l.bild %}<img class="link-bild" src="{{ l.bild.url }}" alt="" width="40" height="40">{% else %}<span class="link-symbol" aria-hidden="true">{{ l.symbol|default:"🔗" }}</span>{% endif %}
       <span class="link-text">
         <strong>{{ l.titel }}</strong>
         {% if l.untertitel %}<small class="link-untertitel">{{ l.untertitel }}</small>{% endif %}

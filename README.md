@@ -1096,7 +1096,8 @@ Aushang-Monitore“ (Recht „Aushang-Monitore einrichten“, Vorgabe Büro).
 
 ### Links auf der Startseite
 
-Ersetzt die bisherige „App-Übersicht“ (ADR 0057): Kacheln mit Symbol, Titel, Untertitel,
+Ersetzt die bisherige „App-Übersicht“ (ADR 0057): Kacheln mit Symbol oder eigenem Bild (PNG,
+JPG, WebP oder SVG; SVG wird beim Hochladen von Skripten bereinigt), Titel, Untertitel,
 Beschreibung und Adresse unter der Begrüßung, in Gruppen geordnet, auf Wunsch mit rotem
 Warnhinweis. „Sichtbar für“ zeigt eine Kachel nur Personen mit einem bestimmten Recht (z. B.
 Serververwaltung nur für Admins). Pflege unter „Einstellungen → Tafel → Links auf der Startseite“

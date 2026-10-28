@@ -112,3 +112,54 @@ def test_rechte_und_modulschalter(admin, benutzer_mit_rolle, anmelden):
     assert c.get(reverse("links:liste")).status_code == 404
     TafelEinstellungen.objects.update(module=["links"])
     assert c.get(reverse("links:liste")).status_code == 403
+
+
+def test_bild_statt_symbol(modul_an, admin_client):
+    import io
+
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    from PIL import Image
+
+    puffer = io.BytesIO()
+    Image.new("RGBA", (600, 400), (0, 128, 0, 0)).save(puffer, "PNG")
+    bild = SimpleUploadedFile("shop.png", puffer.getvalue(), content_type="image/png")
+    daten = {"titel": "Shop", "adresse": "https://example.org", "reihenfolge": 1, "aktiv": "on",
+             "bild": bild}  # fmt: skip
+    assert admin_client.post(reverse("links:link_neu"), daten).status_code == 302
+    link = Link.objects.get()
+    with Image.open(link.bild.path) as bild:
+        assert bild.size == (128, 85) and bild.mode == "RGBA"  # verkleinert, transparent
+    html = admin_client.get(reverse("core:start")).content.decode()
+    assert f'<img class="link-bild" src="{link.bild.url}"' in html
+    gross = SimpleUploadedFile("gross.png", b"x" * (2 * 1024 * 1024 + 1),
+                               content_type="image/png")  # fmt: skip
+    antwort = admin_client.post(reverse("links:link", args=[link.pk]), daten | {"bild": gross})
+    assert "höchstens 2 MB" in antwort.content.decode()
+
+
+def test_svg_wird_bereinigt(modul_an, admin_client):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    boese = (b'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
+             b' viewBox="0 0 10 10" onload="alert(1)"><script>alert(2)</script>'
+             b'<circle cx="5" cy="5" r="4" fill="url(#v)" onclick="alert(3)"/>'
+             b'<use xlink:href="https://boese.example/x.svg#a"/>'
+             b'<rect width="2" height="2" style="fill:url(https://boese.example/)"/>'
+             b'<foreignObject><p>x</p></foreignObject></svg>')  # fmt: skip
+    daten = {
+        "titel": "Logo",
+        "adresse": "https://example.org",
+        "reihenfolge": 1,
+        "aktiv": "on",
+        "bild": SimpleUploadedFile("logo.svg", boese, content_type="image/svg+xml"),
+    }
+    assert admin_client.post(reverse("links:link_neu"), daten).status_code == 302
+    inhalt = Link.objects.get().bild.read().decode()
+    assert 'cx="5"' in inhalt and 'fill="url(#v)"' in inhalt and "viewBox" in inhalt
+    for weg in ("alert", "script", "boese.example", "foreignObject", "onload", "onclick"):
+        assert weg not in inhalt, weg
+    for kaputt, name in ((b"<svg><nicht zu", "a.svg"), (b"<!DOCTYPE x><svg/>", "b.svg"),
+                         (b"<html/>", "c.svg"), (b"kein bild", "d.png")):  # fmt: skip
+        antwort = admin_client.post(reverse("links:link_neu"), daten | {
+            "bild": SimpleUploadedFile(name, kaputt)})  # fmt: skip
+        assert antwort.status_code == 200, name
