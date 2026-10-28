@@ -13,9 +13,9 @@ from django.utils.html import escape, linebreaks
 from django.utils.safestring import SafeString, mark_safe
 
 TAGS = {
-    "a", "b", "blockquote", "br", "div", "em", "h1", "h2", "h3", "h4", "hr", "i", "img",
-    "li", "ol", "p", "small", "span", "strong", "sub", "sup", "table", "tbody", "td", "th",
-    "thead", "tr", "u", "ul",
+    "a", "b", "blockquote", "br", "div", "em", "footer", "h1", "h2", "h3", "h4", "header", "hr",
+    "i", "img", "li", "nav", "ol", "p", "section", "small", "span", "strong", "sub", "sup",
+    "table", "tbody", "td", "th", "thead", "tr", "u", "ul",
 }  # fmt: skip
 ATTRIBUTE = {
     "*": {"style", "class", "lang", "dir"},
@@ -26,8 +26,11 @@ ATTRIBUTE = {
 }
 STILE = {
     "color", "background-color", "font-size", "font-weight", "font-style", "text-align",
-    "text-decoration", "margin", "margin-top", "margin-bottom", "padding", "border",
-    "border-radius", "width", "max-width", "height", "display", "line-height",
+    "text-decoration", "margin", "margin-top", "margin-bottom", "margin-left", "margin-right",
+    "padding", "padding-top", "padding-bottom", "padding-left", "padding-right", "border",
+    "border-radius", "width", "max-width", "height", "display", "line-height", "font-family",
+    "flex-grow", "flex-shrink", "flex-wrap", "justify-content", "align-items", "gap",
+    "vertical-align", "letter-spacing", "text-transform",
 }  # fmt: skip
 
 

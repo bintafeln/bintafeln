@@ -19,6 +19,16 @@ def test_bereinigen_entfernt_gefaehrliches():
     assert 'href="https://tafel.example.org"' in sauber and "noopener" in sauber
 
 
+def test_kopfleiste_mit_menue_bleibt_erhalten():
+    roh = ('<nav style="flex-grow: 1; text-align: right; display: flex; justify-content: '
+           'space-between"><a style="color: white; margin-left: 20px; font-family: Arial" '
+           'href="https://tafel.example.org/">Start</a></nav>')  # fmt: skip
+    sauber = html.bereinigen(roh).replace(": ", ":")
+    for teil in ("<nav", "flex-grow:1", "justify-content:space-between", "margin-left:20px",
+                 "font-family:Arial"):  # fmt: skip
+        assert teil in sauber, teil
+
+
 def test_anzeigen_html_klartext_und_platzhalter():
     assert html.anzeigen("", "Zeile 1\nZeile 2 {tafel}", tafel="A&B") == (
         "<p>Zeile 1<br>Zeile 2 A&amp;B</p>"

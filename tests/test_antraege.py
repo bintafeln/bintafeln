@@ -429,6 +429,9 @@ def test_einstellungen_und_texte(admin_client, benutzer_mit_rolle):
     ).content.decode()  # fmt: skip
     assert "Vorschau (noch nicht gespeichert)" in vorschau and "<h2>مرحبا</h2>" in vorschau
     assert "رقم 4201" in vorschau and "srcdoc=" in vorschau and "Erika" in vorschau
+    # Die Mail steht maskiert im srcdoc, sonst bricht das Attribut am ersten Anführungszeichen ab
+    assert 'srcdoc="&lt;!doctype html&gt;' in vorschau
+    assert "&lt;html lang=&quot;ar&quot;" in vorschau
     assert not AntragText.objects.filter(sprache="ar").exists()
     admin_client.post(texte, {"einleitung": "مرحبا", "bestaetigung": ""})
     assert AntragText.objects.get(sprache="ar").einleitung == "مرحبا"
