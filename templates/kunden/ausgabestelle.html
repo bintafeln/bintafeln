@@ -16,7 +16,13 @@
   <dl class="angaben">
     <dt>Anschrift</dt><dd>{% if s.anschrift %}{{ s.strasse }}<br>{{ s.plz }} {{ s.ort }}{% else %}–{% endif %}</dd>
     <dt>Telefon</dt><dd>{% if s.telefon %}<a href="tel:{{ s.telefon }}">{{ s.telefon }}</a>{% else %}–{% endif %}</dd>
+    {% if s.telefon_kunden %}<dt>Telefon für Kunden</dt><dd><a href="tel:{{ s.telefon_kunden }}">{{ s.telefon_kunden }}</a></dd>{% endif %}
+    {% if s.fax %}<dt>Fax</dt><dd>{{ s.fax }}</dd>{% endif %}
     <dt>E-Mail</dt><dd>{% if s.email %}<a href="mailto:{{ s.email }}">{{ s.email }}</a>{% else %}–{% endif %}</dd>
+    {% if s.plaetze %}<dt>Plätze</dt><dd>{{ s.plaetze }} Haushalte je Ausgabe</dd>{% endif %}
+    {% if s.helfer %}<dt>Helfer</dt><dd>{{ s.helfer }} je Ausgabe</dd>{% endif %}
+    {% if s.barrierefrei is not None %}<dt>Barrierefrei</dt><dd>{{ s.barrierefrei|yesno:"ja,nein" }}</dd>{% endif %}
+    {% if s.wlan %}<dt>WLAN</dt><dd>{{ s.get_wlan_display }}</dd>{% endif %}
   </dl>
   {% if s.anmerkung %}<h3>Allgemeine Anmerkungen</h3><p>{{ s.anmerkung|linebreaksbr }}</p>{% endif %}
   <h3>Zeiten</h3>

@@ -13,7 +13,7 @@ from django.db import models
 from django.utils import timezone
 
 from apps.core import privatdateien
-from apps.core.auswahl import FESTE_ANLIEGEN, GRUPPENFARBEN, KRANK_GRUENDE, NACHRICHT_ANLIEGEN
+from apps.core.auswahl import FESTE_ANLIEGEN, GRUPPENFARBEN, KRANK_GRUENDE, NACHRICHT_ANLIEGEN, WLAN
 from apps.kunden import werte
 
 
@@ -274,7 +274,16 @@ class Ausgabestelle(models.Model):
     plz = models.CharField("PLZ", max_length=10, blank=True)
     ort = models.CharField("Ort", max_length=100, blank=True)
     telefon = models.CharField("Telefon", max_length=50, blank=True)
+    telefon_kunden = models.CharField("Telefon für Kunden", max_length=50, blank=True,
+                                      help_text="Nummer, die Kunden bekommen.")  # fmt: skip
+    fax = models.CharField("Fax", max_length=50, blank=True)
     email = models.EmailField("E-Mail", blank=True)
+    plaetze = models.PositiveIntegerField("Plätze", null=True, blank=True,
+                                          help_text="Haushalte je Ausgabe.")  # fmt: skip
+    helfer = models.PositiveIntegerField("Helfer", null=True, blank=True,
+                                         help_text="Helfer je Ausgabe.")  # fmt: skip
+    barrierefrei = models.BooleanField("Barrierefrei", null=True, blank=True)
+    wlan = models.CharField("WLAN", max_length=10, blank=True, choices=WLAN)
     anmerkung = models.TextField(
         "Allgemeine Anmerkungen", blank=True,
         help_text="Z. B. Zugang, Parken, Barrierefreiheit, Schlüssel, Besonderheiten.",

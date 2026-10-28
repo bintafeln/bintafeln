@@ -306,7 +306,8 @@ class AusgabestelleForm(forms.ModelForm):
     ABSCHNITTE = [
         ("Ausgabestelle", ["name", "aktiv"]),
         ("Anschrift", ["strasse", "plz", "ort"]),
-        ("Kontakt und Anmerkungen", ["telefon", "email", "anmerkung"]),
+        ("Kontakt und Anmerkungen", ["telefon", "telefon_kunden", "fax", "email", "anmerkung"]),
+        ("Ausstattung", ["plaetze", "helfer", "barrierefrei", "wlan"]),
         ("Ausweise", ["ausweise_hier"]),
     ]
 
@@ -319,8 +320,14 @@ class AusgabestelleForm(forms.ModelForm):
             "plz",
             "ort",
             "telefon",
+            "telefon_kunden",
+            "fax",
             "email",
             "anmerkung",
+            "plaetze",
+            "helfer",
+            "barrierefrei",
+            "wlan",
             "ausweise_hier",
         ]
         widgets = {"anmerkung": forms.Textarea(attrs={"rows": 4})}

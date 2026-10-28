@@ -273,7 +273,7 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Übersicht der übernommenen Altprogramme: `docs/altprogramme.md`.
 - Datenimport aus CSV/Excel (ADR 0078): App `datenimport` – `lesen.py` (CSV/xlsx), `zuordnung.py`
   (Spaltenvorschlag, Vorlagen), `abgleich.py` (neu/Konflikt/Ergänzung/Dublette/fehlt, Wahl je
-  Feld, für alle Ziele gleich), Ziele in `ziele.py` (Ausgabestellen, Mitarbeitende, Adressbuch,
+  Feld, für alle Ziele gleich), Ziele in `ziele.py` (Ausgabestellen, Kundengruppen, Mitarbeitende, Adressbuch,
   Mitglieder, Kundenstamm; Kontobuchungen über `buchungen.csv`, `Buchung.importiert`).
   Neue Ziele dort ergänzen. Kundenstamm: Assistent schreibt ins Importformat um, Ergänzen in
   `apps/kunden/import_ergaenzen.py`; Haushalt in den Papierkorb über `apps/kunden/entfernen.py`.

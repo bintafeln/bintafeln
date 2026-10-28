@@ -447,8 +447,9 @@ Regeln:
 
 „Einstellungen → Systemsteuerung → Daten importieren“ übernimmt Daten aus anderen Programmen,
 ohne die Datei vorher umzubauen (ADR 0078): **Kundenstamm** (mit Angehörigen, Abholungen,
-Ausnahmen, Sperren, Anmerkungen und Kontobuchungen), **Ausgabestellen**, **Mitarbeitende** mit
-Anschrift, **Adressbuch** und **Mitglieder**.
+Ausnahmen, Sperren, Anmerkungen und Kontobuchungen), **Ausgabestellen** (mit Plätzen, Helfern,
+Barrierefreiheit, WLAN, Ausgabezeiten und bis zu drei Ansprechpartnern), **Kundengruppen**,
+**Mitarbeitende** mit Anschrift, **Adressbuch** und **Mitglieder**.
 
 1. Was importiert wird wählen, eine oder mehrere Dateien hochladen: CSV (Trennzeichen und
    Zeichenkodierung werden erkannt) oder Excel `.xlsx` (jedes Blatt einzeln). Titelzeilen über
