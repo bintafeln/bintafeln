@@ -1155,16 +1155,22 @@ body.aushang-ruhig { cursor: none; }
 .aushang-zusatz { margin: 0 0 .3em; color: var(--leise); }
 .aushang-titel { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
 .aushang-folie { cursor: pointer; }
-/* Große Ansicht eines Plans: nur in der Breite eingepasst, nach unten scrollbar */
+/* Große Ansicht eines Plans: ganz eingepasst, Knöpfe oben wechseln die Seite */
 .aushang-zurueck, .aushang-qr, .aushang-tipp { display: none; }
+/* Knöpfe oben: je Seite einer, deutlich und fett */
+.aushang-reiter { flex: 1; display: flex; flex-wrap: wrap; justify-content: center; gap: .4rem; }
+.aushang-reiter button { font: inherit; font-weight: 800; font-size: 1.15rem; padding: .35rem .9rem; cursor: pointer;
+  border-radius: var(--radius); border: 2px solid var(--auf-akzent); background: transparent; color: var(--auf-akzent); }
+.aushang-reiter button.aktiv { background: var(--auf-akzent); color: var(--akzent-dunkel); }
 .aushang-gross .aushang-zurueck { display: inline-block; font: inherit; font-size: 1.1rem; padding: .3rem 1rem;
   border-radius: var(--radius); border: 2px solid currentColor; background: transparent; color: inherit; cursor: pointer; }
 .aushang-gross .aushang-uebersicht-nur { display: none; }
 .aushang-gross .aushang-folie { cursor: default; }
-.aushang-gross .aushang-inhalt { overflow-y: auto; }
-.aushang-gross .aushang-qr { display: block; margin: 0; text-align: center; font-size: .85rem; color: var(--leise); }
-.aushang-gross .aushang-qr svg { width: 7rem; height: 7rem; }
-.aushang-gross .aushang-tipp { display: block; margin: 0 0 .4rem; color: var(--leise); }
+.aushang-gross .aushang-qr { display: flex; align-items: center; gap: .4rem; margin: 0 0 .3rem; font-size: .8rem;
+  color: var(--leise); max-width: 9rem; }
+.aushang-gross .aushang-qr svg { width: 4.5rem; height: 4.5rem; flex-shrink: 0; }
+.aushang-gross .aushang-tipp { display: block; margin: 0; color: var(--leise); font-size: .95rem; }
+.aushang-gross .aushang-folie h1 { margin-bottom: .1rem; }
 .aushang-gross [data-platz] { cursor: pointer; }
 .aushang-gross td:has([data-platz]):hover { background: color-mix(in srgb, var(--akzent) 10%, transparent); }
 .aushang-dialog { width: min(36rem, 94vw); border: 0; border-radius: var(--radius); padding: 1rem 1.25rem 1.25rem;

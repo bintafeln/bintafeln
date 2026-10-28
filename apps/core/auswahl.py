@@ -4,6 +4,9 @@ Gespeichert wird der angezeigte Text, damit vorhandene und importierte Werte les
 """
 
 # Farben für Kundengruppen (Erkennung am Einlass); Werte sind CSS-Klassen „gruppe-<wert>“.
+# WLAN an einer Ausgabestelle (Einzelheiten in der Anmerkung)
+WLAN = [("", "unbekannt"), ("ja", "vorhanden"), ("nein", "kein WLAN")]
+
 GRUPPENFARBEN = [
     ("", "keine"),
     ("rot", "Rot"),

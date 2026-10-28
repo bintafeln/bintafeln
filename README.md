@@ -447,8 +447,9 @@ Regeln:
 
 „Einstellungen → Systemsteuerung → Daten importieren“ übernimmt Daten aus anderen Programmen,
 ohne die Datei vorher umzubauen (ADR 0078): **Kundenstamm** (mit Angehörigen, Abholungen,
-Ausnahmen, Sperren, Anmerkungen und Kontobuchungen), **Ausgabestellen**, **Mitarbeitende** mit
-Anschrift, **Adressbuch** und **Mitglieder**.
+Ausnahmen, Sperren, Anmerkungen und Kontobuchungen), **Ausgabestellen** (mit Plätzen, Helfern,
+Barrierefreiheit, WLAN, Ausgabezeiten und bis zu drei Ansprechpartnern), **Kundengruppen**,
+**Mitarbeitende** mit Anschrift, **Adressbuch** und **Mitglieder**.
 
 1. Was importiert wird wählen, eine oder mehrere Dateien hochladen: CSV (Trennzeichen und
    Zeichenkodierung werden erkannt) oder Excel `.xlsx` (jedes Blatt einzeln). Titelzeilen über
@@ -879,10 +880,12 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   neuen Tab); die ganze Steuerung am PC ist unter „Einstellungen → Aufruf, Monitor und Kiosk“
   verlinkt. Weiter, Zurück, Abfrage einer Nummer und „zu spät
   gekommen“ (so viele wartende Plätze nach hinten wie eingestellt). Reihenfolge des Tages als CSV.
-- **Unter dem Menü:** Wer am Einlass arbeitet und aufrufen darf, sieht links unter dem Menü die
-  Nummern der gewählten Ausgabestelle, die gerade eintreten sollen, und den Knopf „Nächste 3
-  hereinrufen“ (Anzahl wie eingestellt), dazu „letzten Schritt zurück“ und „Aufruf starten“; nach
-  der letzten Nummer „Ausgabe beendet“ mit „neu starten“ und „letzten Schritt zurück“. Die
+- **Unter dem Menü:** Wer aufrufen darf, sieht links unter dem Menü die laufende Kundengruppe
+  mit Fortschritt (z. B. „5/19“), die Nummern der gewählten Ausgabestelle, die gerade eintreten
+  sollen, und „Danach“. **Nur auf der Einlass-Seite** stehen dazu die Knöpfe „Nächste 3
+  hereinrufen“ (Anzahl wie eingestellt), „letzten Schritt zurück“ und „Aufruf starten“, nach der
+  letzten Nummer „neu starten“ – damit niemand von einer anderen Seite aus versehentlich
+  weiterschaltet. Handy- und PC-Steuerung behalten alle Knöpfe. Die
   Anzeige aktualisiert sich alle 5 Sekunden (auch wenn ein anderes Gerät weiterschaltet) und
   sofort, wenn am Einlass eine Abholung eingetragen wird. Hat die
   Ausgabestelle heute keine Kundengruppe, erscheint der Kasten nicht. Einen
@@ -1074,11 +1077,12 @@ Aushang-Monitore“ (Recht „Aushang-Monitore einrichten“, Vorgabe Büro).
   ein gesperrter oder abgeschalteter Monitor leert sich binnen einer Minute.
 - **Seiten** zusammenstellen: „Dienstplan einer Ausgabestelle“ (je Ausgabetag eine Seite) und
   „Fahrerplan“ (je Monat eine Seite), je mit Zeitraum „dieser Monat“ oder „dieser und nächster
-  Monat“, immer ab heute. Seiten eines Plans nur mit dem Recht, ihn zu planen.
+  Monat“, immer ganze Monate. Seiten eines Plans nur mit dem Recht, ihn zu planen.
 - **Nacheinander** im Wechsel (Sekunden je Seite) oder **zwei nebeneinander**.
 - Die Schrift passt sich an, damit jede Seite ganz zu sehen ist; neuer Stand jede Minute;
   Vollbild per Knopf oder Browser mit `--kiosk`. Nur Namen, nie Kontaktdaten.
-- **Antippen** zeigt einen Plan groß; „← Übersicht“ oder 30 Sekunden ohne Eingabe führen zurück.
+- **Antippen** zeigt einen Plan groß und ganz (ohne Schieben); oben je Seite ein Knopf („Fahrer
+  Oktober“, „Ausgabe Mitte Freitag“ …), „Übersicht“ oder 30 Sekunden ohne Eingabe führen zurück.
   Dort ein **QR-Code** zum Ändern am eigenen Handy (mit Anmeldung) und, wenn eingeschaltet,
   **Ändern am Monitor mit persönlicher PIN**: sich austragen, einspringen, wer plant auch Ersatz
   und Gäste. Jede Person legt ihre PIN (mindestens 6 Ziffern, gehasht gespeichert) unter

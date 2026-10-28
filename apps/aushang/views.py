@@ -131,8 +131,8 @@ def anzeige(request, schluessel):
         return leer
     jetzt = timezone.localtime()
     folien = [
-        (titel, html, _qr(request.build_absolute_uri(adresse)) if aushang.qr_code else "")
-        for titel, html, adresse in inhalt.folien(aushang, jetzt.date())
+        (titel, html, _qr(request.build_absolute_uri(adresse)) if aushang.qr_code else "", kurz)
+        for titel, html, adresse, kurz in inhalt.folien(aushang, jetzt.date())
     ]
     return render(request, "aushang/anzeige.html", {
         "aushang": aushang, "folien": folien, "jetzt": jetzt,

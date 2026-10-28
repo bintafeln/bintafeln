@@ -45,11 +45,11 @@ def plaene():
     return Ausgabestelle.objects.get(name=dp_beispiel.STELLE)
 
 
-def test_zeitraum_ab_heute_bis_monatsende():
-    assert anzeige.zeitraum(MITTWOCH, 1) == (MITTWOCH, dt.date(2026, 11, 30))
-    assert anzeige.zeitraum(MITTWOCH, 2) == (MITTWOCH, dt.date(2026, 12, 31))
+def test_zeitraum_ganze_monate():
+    assert anzeige.zeitraum(MITTWOCH, 1) == (dt.date(2026, 11, 1), dt.date(2026, 11, 30))
+    assert anzeige.zeitraum(MITTWOCH, 2) == (dt.date(2026, 11, 1), dt.date(2026, 12, 31))
     assert anzeige.zeitraum(dt.date(2026, 12, 31), 2) == (
-        dt.date(2026, 12, 31),
+        dt.date(2026, 12, 1),
         dt.date(2027, 1, 31),
     )
 
@@ -101,12 +101,16 @@ def test_monitor_ohne_anmeldung_nur_namen(plaene, heute, admin):
     antwort = Client().get(reverse("aushang:anzeige", args=[aushang.schluessel]))
     html = antwort.content.decode()
     assert antwort.status_code == 200
-    # Dienstplan: je Ausgabetag (Mo, Mi, Fr) eine Seite, ab heute; Fahrerplan je Monat
-    titel = [t for t, _, _ in anzeige.folien(aushang, heute)]
+    # Dienstplan: je Ausgabetag (Mo, Mi, Fr) eine Seite, ganzer Monat; Fahrerplan je Monat
+    folien = anzeige.folien(aushang, heute)
+    titel = [f[0] for f in folien]
+    assert [f[3] for f in folien][-2:] == ["Fahrer November", "Fahrer Dezember"]
+    assert folien[0][3] == f"Ausgabe {dp_beispiel.STELLE} Montag"
     tage = ("Montag", "Mittwoch", "Freitag")
     assert titel == [f"Dienstplan {dp_beispiel.STELLE} · {t}" for t in tage] + [
         "Fahrerplan November 2026", "Fahrerplan Dezember 2026"]  # fmt: skip
-    assert "11.11." in html and "09.11." not in html  # vergangene Tage fallen weg
+    assert "11.11." in html and "02.11." in html  # der ganze Monat, auch vergangene Tage
+    assert '<button type="button" data-nr="3">Fahrer November</button>' in html
     assert "Teamleitung:" in html and "Mittwoch, 11.11.2026" in html and "Stand 10:00 Uhr" in html
     helfer = Helfer.objects.filter(anmerkung=dp_beispiel.KENNUNG).first()
     assert helfer.name in html and helfer.telefon not in html and "0123 45" not in html

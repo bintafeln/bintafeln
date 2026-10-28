@@ -19,7 +19,7 @@ def auswahl() -> list[tuple[str, str]]:
     return []  # nur ein Fahrerplan
 
 
-def folien(wert, von, bis) -> list[tuple[str, str, str]]:
+def folien(wert, von, bis) -> list[tuple[str, str, str, str]]:
     from apps.fahrdienst.views import MONATE
 
     ergebnis = []
@@ -33,8 +33,10 @@ def folien(wert, von, bis) -> list[tuple[str, str, str]]:
                 "tage": tage, "touren": plan.touren(tage[0][0], tage[-1][0]),
                 "heute": timezone.localdate(), "aushang": True,
             })  # fmt: skip
-            ergebnis.append((f"Fahrerplan {MONATE[erster.month - 1]} {erster.year}", html,
-                             f"{reverse('fahrdienst:plan')}?monat={erster:%Y-%m}"))  # fmt: skip
+            monat = MONATE[erster.month - 1]
+            ergebnis.append((f"Fahrerplan {monat} {erster.year}", html,
+                             f"{reverse('fahrdienst:plan')}?monat={erster:%Y-%m}",
+                             f"Fahrer {monat}"))  # fmt: skip
         erster = ende + dt.timedelta(days=1)
     return ergebnis
 

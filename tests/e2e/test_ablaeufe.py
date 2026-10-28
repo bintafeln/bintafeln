@@ -479,11 +479,23 @@ def test_aushang_monitor_wechselt_passt_ein_und_sperrt_alten_link(seite, admin):
     # Antippen zeigt den Plan groß; „Übersicht“ oder 30 Sekunden Ruhe führen zurück
     sichtbar.click()
     expect(seite.locator("body.aushang-gross")).to_have_count(1)
-    expect(seite.get_by_role("button", name="← Übersicht")).to_be_visible()
+    expect(seite.get_by_role("button", name="Übersicht")).to_be_visible()
     expect(sichtbar.locator(".aushang-qr svg")).to_be_visible()
+    # Der ganze Plan passt auch groß auf den Bildschirm, ohne Schieben
+    gross_passt = seite.evaluate("""() => {
+        const i = document.querySelector('.aushang-folie.sichtbar .aushang-inhalt');
+        return i.scrollHeight <= i.clientHeight + 1 && i.scrollWidth <= i.clientWidth + 1; }""")
+    assert gross_passt
     seite.clock.run_for(20_000)
     expect(seite.locator("body.aushang-gross")).to_have_count(1)  # kein Wechsel in groß
-    seite.get_by_role("button", name="← Übersicht").click()
+    # Die Knöpfe oben wechseln die Seite; der gezeigte ist hervorgehoben
+    reiter = seite.locator("#aushang-reiter button")
+    letzter = reiter.last
+    letzter.click()
+    expect(letzter).to_have_class(re.compile("aktiv"))
+    expect(sichtbar.locator("h1")).to_contain_text("Fahrerplan")
+    expect(seite.locator("#aushang-reiter button.aktiv")).to_have_count(1)
+    seite.get_by_role("button", name="Übersicht").click()
     expect(seite.locator("body.aushang-gross")).to_have_count(0)
     sichtbar.click()
     seite.clock.run_for(31_000)

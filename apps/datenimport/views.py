@@ -353,7 +353,7 @@ def abgleich_ansehen(request, pk):
             hinweise.append(f"{entscheidung.ausgelassen} mögliche Dubletten ausgelassen")
         sitzung.delete()
         messages.success(request, f"{ziel.titel} importiert: " + ", ".join(hinweise) + ".")
-        return redirect(ziel.zurueck[0])
+        return redirect(ziel.zurueck[0], *ziel.zurueck[2:])  # ggf. mit Argumenten
     plan = abgleich.vorgaben(sitzung.plan, modus, ziel.aktionen)
     return render(
         request,

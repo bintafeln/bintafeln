@@ -265,6 +265,77 @@ def test_ausgabestellen_ergaenzen_aktualisieren_loeschen(admin_client):
     assert not ImportSitzung.objects.exists()
 
 
+def test_ausgabestellen_mit_ausstattung_zeiten_und_ansprechpartnern(admin_client):
+    from apps.kunden.models import AusgabestelleZeit
+
+    Ausgabestelle.objects.create(name="Nord")
+    datei = csv_datei(
+        "stellen.csv",
+        "Name;Plätze;Helfer;Barrierefrei;WLAN;Ausgabezeit;Telefon für Kunden;Fax;"
+        "Ansprechpartner 1: Name;Ansprechpartner 1: Telefon;Ansprechpartner 1: E-Mail;"
+        "Ansprechpartner 2: Name",
+        "Nord;30 Plätze;7;ja;nein;Di 13:00, Do 14.00 Uhr;0170 1111111;0201 9;Erika Muster;"
+        "0201 12345;erika@example.org;Max Beispiel",
+        "Süd;abc;;;;Montag;;;;;;",
+    )
+    sitzung = hochladen(admin_client, "ausgabestellen", datei)
+    weiter(admin_client, sitzung)
+    url = reverse("datenimport:abgleich", args=[sitzung.pk])
+    inhalt = admin_client.get(url + "?modus=aktualisieren").content.decode()
+    assert "keine Zahl" in inhalt and "nicht lesbar" in inhalt
+    alle = {f"f-0-{z}": "1" for z in sitzung.tabellen[0]["zuordnung"]}
+    assert admin_client.post(url, {"modus": "aktualisieren", **alle}).status_code == 302
+    nord = Ausgabestelle.objects.get(name="Nord")
+    assert (nord.plaetze, nord.helfer, nord.barrierefrei, nord.wlan) == (30, 7, True, "nein")
+    assert (nord.telefon_kunden, nord.fax) == ("0170 1111111", "0201 9")
+    assert [str(z) for z in nord.zeiten.all()] == ["Dienstag 13:00 Ausgabe",
+                                                    "Donnerstag 14:00 Ausgabe"]  # fmt: skip
+    assert [(k.name, k.telefon, k.email) for k in nord.kontakte.all()] == [
+        ("Erika Muster", "0201 12345", "erika@example.org"), ("Max Beispiel", "", "")]  # fmt: skip
+    sued = Ausgabestelle.objects.get(name="Süd")
+    assert sued.plaetze is None and not sued.zeiten.exists()
+    # Ein zweiter Import mit denselben Zeiten legt nichts doppelt an
+    zweite = csv_datei("s.csv", "Name;Ausgabezeit;Ansprechpartner 1: Telefon",
+                       "Nord;Di 13:00;0201 55555")  # fmt: skip
+    sitzung = hochladen(admin_client, "ausgabestellen", zweite)
+    weiter(admin_client, sitzung)
+    url = reverse("datenimport:abgleich", args=[sitzung.pk])
+    admin_client.post(url, {"modus": "aktualisieren", "f-0-kontakt1_telefon": "1"})
+    assert AusgabestelleZeit.objects.filter(ausgabestelle=nord).count() == 2
+    assert nord.kontakte.first().telefon == "0201 55555"
+    html = admin_client.get(reverse("kunden:ausgabestelle", args=[nord.pk])).content.decode()
+    assert "30 Haushalte je Ausgabe" in html and "Telefon für Kunden" in html
+    assert "kein WLAN" in html
+
+
+def test_kundengruppen_importieren(admin_client):
+    mitte = Ausgabestelle.objects.create(name="Mitte")
+    Kundengruppe.objects.create(kuerzel="W11", name="Mitte Mo 12:30", maximum=40)
+    datei = csv_datei(
+        "gruppen.csv",
+        "Kürzel;Gruppenname;Wochentage;Maximum;Beschreibung;Ausgabestellen;Farbe",
+        "W11;Mitte Mo 12:30;MO;50;Montag 12:30-13:00;Mitte;Rot",
+        "W12;Mitte Di 13:00;DI, DO;45;Dienstag 13:00;Mitte;Schwarz",
+        "DOD;Dummygruppe;MO, DI, MI, DO, FR, SA, SO;150;Dummy;-;",
+    )
+    sitzung = hochladen(admin_client, "kundengruppen", datei)
+    weiter(admin_client, sitzung)
+    url = reverse("datenimport:abgleich", args=[sitzung.pk])
+    inhalt = admin_client.get(url + "?modus=aktualisieren").content.decode()
+    assert "Farbe" in inhalt and "Uhrzeit" in inhalt
+    alle = {f"f-0-{z}": "1" for z in sitzung.tabellen[0]["zuordnung"]}
+    antwort = admin_client.post(url, {"modus": "aktualisieren", **alle})
+    assert antwort.url == reverse("kunden:liste", args=["kundengruppen"])
+    w11 = Kundengruppe.objects.get(kuerzel="W11")
+    assert (w11.maximum, w11.wochentage, w11.ausgabestelle, w11.farbe) == (50, "Mo", mitte, "rot")
+    assert f"{w11.uhrzeit:%H:%M}" == "12:30"
+    w12 = Kundengruppe.objects.get(kuerzel="W12")
+    assert (w12.wochentage, w12.farbe, w12.maximum) == ("Di, Do", "", 45)
+    dod = Kundengruppe.objects.get(kuerzel="DOD")
+    assert dod.ausgabestelle is None and dod.wochentage == "Mo, Di, Mi, Do, Fr, Sa, So"
+    assert dod.uhrzeit is None
+
+
 # --- Mitarbeitende ----------------------------------------------------------------------
 
 

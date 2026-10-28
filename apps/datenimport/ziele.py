@@ -6,6 +6,7 @@ werden nach der Zuordnung in das neutrale Format umgeschrieben und dort geprüft
 """
 
 import csv
+import datetime as dt
 import io
 import re
 
@@ -35,7 +36,7 @@ class Ziel:
     recht = ""
     beschreibung = ""
     aktionen: list[tuple[str, str]] = [("behalten", "behalten")]
-    zurueck = ("core:start", "Start")  # Seite nach dem Übernehmen
+    zurueck = ("core:start", "Start")  # Seite nach dem Übernehmen (dahinter ggf. Argumente)
 
     def arten(self) -> list[Art]:
         raise NotImplementedError
@@ -196,14 +197,51 @@ STELLE_FELDER = [
         typ="langtext",
     ),
     Feld("aktiv", "Aktiv (ja/nein)", ("aktiv", "status"), typ="janein"),
-]
+    Feld("telefon_kunden", "Telefon für Kunden", ("kundentelefon", "telfuerkunden"),
+         typ="telefon", laenge=50),
+    Feld("fax", "Fax", ("telefax", "faxnummer"), laenge=50),
+    Feld("plaetze", "Plätze (Haushalte je Ausgabe)", ("plaetze", "kapazitaet", "maximum")),
+    Feld("helfer", "Helfer je Ausgabe", ("helfer", "helferzahl", "anzahlhelfer")),
+    Feld("barrierefrei", "Barrierefrei (ja/nein)", ("barrierefreiheit", "rollstuhl"), typ="janein"),
+    Feld("wlan", "WLAN (ja/nein)", ("wifi", "internet"), typ="janein"),
+    Feld("zeiten", "Ausgabezeiten (z. B. „Di 13:00; Do 14:00“)",
+         ("ausgabezeit", "ausgabezeiten", "zeit", "zeiten", "termin")),
+    *[
+        Feld(f"kontakt{n}_{teil}", f"Ansprechpartner {n}: {text}", (), typ=typ,
+             laenge=laenge)
+        for n in (1, 2, 3)
+        for teil, text, typ, laenge in (("name", "Name", "text", 150),
+                                        ("telefon", "Telefon", "telefon", 50),
+                                        ("email", "E-Mail", "email", 254))
+    ],
+]  # fmt: skip
+TAGE_KURZ = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+
+
+def _zeiten(text: str) -> list[tuple[int, str]]:
+    """„Di 13:00; Do 14.00 Uhr“ → [(1, "13:00"), (3, "14:00")]; Unlesbares fällt weg."""
+    ergebnis = []
+    for tag, stunde, minute in re.findall(
+        r"\b(mo|di|mi|do|fr|sa|so)[a-z]*\.?\s*(\d{1,2})[:.](\d{2})", (text or "").lower()
+    ):
+        eintrag = (TAGE_KURZ.index(tag.capitalize()), f"{int(stunde):02d}:{minute}")
+        if eintrag not in ergebnis and int(stunde) < 24 and int(minute) < 60:
+            ergebnis.append(eintrag)
+    return ergebnis
+
+
+def _zeiten_text(zeiten) -> str:
+    return "; ".join(f"{TAGE_KURZ[t]} {z}" for t, z in sorted(zeiten))
 
 
 class Ausgabestellen(Ziel):
     kennung = "ausgabestellen"
     titel = "Ausgabestellen"
     recht = "einstellungen.listen"
-    beschreibung = "Name, Anschrift, Telefon, E-Mail und Anmerkung je Ausgabestelle."
+    beschreibung = (
+        "Name, Anschrift, Telefon, E-Mail, Anmerkung, Plätze, Helfer, Ausstattung, "
+        "Ausgabezeiten und bis zu drei Ansprechpartner je Ausgabestelle."
+    )
     aktionen = [
         ("behalten", "behalten"),
         ("inaktiv", "auf inaktiv setzen"),
@@ -217,6 +255,19 @@ class Ausgabestellen(Ziel):
     def vergleichsfelder(self):
         # Der Name ist der Schlüssel; eine vorhandene Ausgabestelle behält ihren Namen
         return [(f.schluessel, f.bezeichnung) for f in STELLE_FELDER if f.schluessel != "name"]
+
+    def wert(self, f, wert, warnen):
+        if f.schluessel == "zeiten" and wert:
+            zeiten = _zeiten(wert)
+            if not zeiten:
+                warnen("„Ausgabezeiten“ sind nicht lesbar (z. B. „Di 13:00“) und bleiben leer.")
+            return _zeiten_text(zeiten)
+        if f.schluessel in ("plaetze", "helfer") and wert:
+            zahl = re.match(r"\s*(\d+)", wert)
+            if not zahl:
+                warnen(f"„{f.bezeichnung}“ ist keine Zahl und bleibt leer.")
+            return zahl.group(1) if zahl else ""
+        return super().wert(f, wert, warnen)
 
     def bestand(self, verwalter):
         from django.urls import reverse
@@ -236,11 +287,33 @@ class Ausgabestellen(Ziel):
                     "email": s.email.lower(),
                     "anmerkung": s.anmerkung,
                     "aktiv": "ja" if s.aktiv else "nein",
+                    **self._mehr(s),
                 },
                 link=reverse("kunden:ausgabestelle", args=[s.pk]),
             )
-            for s in Ausgabestelle.objects.all()
+            for s in Ausgabestelle.objects.prefetch_related("zeiten", "kontakte__benutzer")
         ]
+
+    @staticmethod
+    def _mehr(s) -> dict:
+        werte = {
+            "telefon_kunden": s.telefon_kunden,
+            "fax": s.fax,
+            "plaetze": str(s.plaetze or ""),
+            "helfer": str(s.helfer or ""),
+            "barrierefrei": {True: "ja", False: "nein"}.get(s.barrierefrei, ""),
+            "wlan": s.wlan,
+            "zeiten": _zeiten_text(
+                (z.wochentag, f"{z.von:%H:%M}") for z in s.zeiten.all() if z.art == "Ausgabe"
+            ),  # fmt: skip
+        }
+        kontakte = list(s.kontakte.all())
+        for n in (1, 2, 3):
+            k = kontakte[n - 1] if len(kontakte) >= n else None
+            werte[f"kontakt{n}_name"] = k.anzeige_name if k else ""
+            werte[f"kontakt{n}_telefon"] = k.telefon if k else ""
+            werte[f"kontakt{n}_email"] = k.anzeige_email.lower() if k else ""
+        return werte
 
     def treffer_finder(self, bestand):
         return _name_treffer(bestand, self.schluessel)
@@ -254,8 +327,38 @@ class Ausgabestellen(Ziel):
             for k, v in werte.items():
                 if k == "aktiv":
                     s.aktiv = v != "nein"
+                elif k in ("plaetze", "helfer"):
+                    setattr(s, k, int(v) if v else None)
+                elif k == "barrierefrei":
+                    s.barrierefrei = {"ja": True, "nein": False}.get(v)
+                elif k == "zeiten" or k.startswith("kontakt"):
+                    continue  # nach dem Speichern, siehe ergaenzen()
                 elif k != "name" or not s.pk:
                     setattr(s, k, v)
+
+        def ergaenzen(s, werte):
+            """Ausgabezeiten nur hinzufügen (nie löschen); Ansprechpartner 1–3 der Reihe nach."""
+            from apps.kunden.models import AusgabestelleKontakt, AusgabestelleZeit
+
+            for tag, zeit in _zeiten(werte.get("zeiten", "")):
+                zeit = dt.time.fromisoformat(zeit)
+                AusgabestelleZeit.objects.get_or_create(ausgabestelle=s, wochentag=tag, von=zeit,
+                                                        art="Ausgabe")  # fmt: skip
+            kontakte = list(s.kontakte.all())
+            for n in (1, 2, 3):
+                teile = {t: werte[f"kontakt{n}_{t}"] for t in ("name", "telefon", "email")
+                         if f"kontakt{n}_{t}" in werte}  # fmt: skip
+                if not any(teile.values()):
+                    continue
+                k = kontakte[n - 1] if len(kontakte) >= n else AusgabestelleKontakt(
+                    ausgabestelle=s, zustaendigkeit="Ansprechpartner")  # fmt: skip
+                if "name" in teile and not k.benutzer_id:
+                    k.name = teile["name"]
+                for t in ("telefon", "email"):
+                    if t in teile:
+                        setattr(k, t, teile[t])
+                if k.name or k.benutzer_id:
+                    k.save()
 
         neu = 0
         for werte in entscheidung.anlegen:
@@ -264,11 +367,13 @@ class Ausgabestellen(Ziel):
             if Ausgabestelle.objects.filter(name__iexact=s.name).exists():
                 continue  # gleichnamige gibt es schon (Namen sind eindeutig)
             s.save()
+            ergaenzen(s, werte)
             neu += 1
         for pk, werte in entscheidung.aendern.items():
             s = Ausgabestelle.objects.get(pk=pk)
             setzen(s, werte)
             s.save()
+            ergaenzen(s, werte)
         inaktiv = geloescht = 0
         for pk, aktion in entscheidung.fehlt.items():
             s = Ausgabestelle.objects.filter(pk=pk).first()
@@ -293,6 +398,164 @@ class Ausgabestellen(Ziel):
             f"{inaktiv} auf inaktiv gesetzt",
             f"{geloescht} in den Papierkorb gelegt",
         ]
+
+
+# --- Kundengruppen ----------------------------------------------------------------------
+
+GRUPPE_FELDER = [
+    Feld("kuerzel", "Kürzel", ("kuerzel", "gruppe", "kennung", "kurz"), laenge=20),
+    Feld("name", "Name", ("gruppenname", "bezeichnung", "kundengruppe"), pflicht=True, laenge=100),
+    Feld("ausgabestelle", "Ausgabestelle", ("ausgabestellen", "stelle", "standort"), laenge=100),
+    Feld("wochentage", "Wochentage", ("wochentag", "tage", "tag")),
+    Feld("uhrzeit", "Uhrzeit (z. B. 12:30 oder „Freitag 12:30-13:00“)",
+         ("zeit", "beginn", "beschreibung")),
+    Feld("maximum", "Maximum Haushalte", ("maximum", "max", "plaetze", "kapazitaet")),
+    Feld("farbe", "Farbe", ("farbe", "kennfarbe")),
+    Feld("aktiv", "Aktiv (ja/nein)", ("aktiv", "status"), typ="janein"),
+]  # fmt: skip
+
+
+class Kundengruppen(Ziel):
+    kennung = "kundengruppen"
+    titel = "Kundengruppen"
+    recht = "einstellungen.listen"
+    beschreibung = ("Kürzel, Name, Ausgabestelle, Wochentage, Uhrzeit, Maximum und Farbe je "
+                    "Kundengruppe; die Ausgabestellen müssen schon angelegt sein.")  # fmt: skip
+    aktionen = [("behalten", "behalten"), ("inaktiv", "auf inaktiv setzen")]
+    zurueck = ("kunden:liste", "Kundengruppen", "kundengruppen")
+
+    def arten(self):
+        return [Art("kundengruppen", "Kundengruppen", GRUPPE_FELDER)]
+
+    def name(self, werte):
+        return werte.get("name", "")
+
+    def schluessel(self, werte):
+        return normalisieren(werte.get("kuerzel") or werte.get("name", ""))
+
+    def vergleichsfelder(self):
+        return [(f.schluessel, f.bezeichnung) for f in GRUPPE_FELDER if f.schluessel != "kuerzel"]
+
+    def wert(self, f, wert, warnen):
+        from apps.ausgabe.ampel import WOCHENTAGE, wochentage
+        from apps.core.auswahl import GRUPPENFARBEN
+
+        if not wert:
+            return ""
+        if f.schluessel == "wochentage":
+            tage = set(wochentage(wert))
+            if not tage:
+                warnen("„Wochentage“ sind nicht lesbar (z. B. „Mo, Di“) und bleiben leer.")
+            return ", ".join(t for t in WOCHENTAGE if t in tage)
+        if f.schluessel == "uhrzeit":
+            zeit = re.search(r"(\d{1,2})[:.](\d{2})", wert)
+            if not zeit or int(zeit.group(1)) > 23 or int(zeit.group(2)) > 59:
+                warnen("„Uhrzeit“ ist nicht lesbar und bleibt leer.")
+                return ""
+            return f"{int(zeit.group(1)):02d}:{zeit.group(2)}"
+        if f.schluessel == "maximum":
+            zahl = re.match(r"\s*(\d+)", wert)
+            if not zahl:
+                warnen("„Maximum Haushalte“ ist keine Zahl und bleibt leer.")
+            return zahl.group(1) if zahl else ""
+        if f.schluessel == "farbe":
+            farben = {normalisieren(text): wert for wert, text in GRUPPENFARBEN if wert}
+            farben.update({normalisieren(w): w for w, _ in GRUPPENFARBEN if w})
+            gefunden = farben.get(normalisieren(wert), "")
+            if not gefunden:
+                warnen("„Farbe“ gibt es in bintafeln nicht und bleibt leer.")
+            return gefunden
+        return super().wert(f, wert, warnen)
+
+    def bestand(self, verwalter):
+        from django.urls import reverse
+
+        from apps.kunden.models import Kundengruppe
+
+        return [
+            Bestandseintrag(
+                id=str(g.pk),
+                name=g.name,
+                werte={
+                    "kuerzel": g.kuerzel,
+                    "name": g.name,
+                    "ausgabestelle": g.ausgabestelle.name if g.ausgabestelle_id else "",
+                    "wochentage": g.wochentage,
+                    "uhrzeit": f"{g.uhrzeit:%H:%M}" if g.uhrzeit else "",
+                    "maximum": str(g.maximum or ""),
+                    "farbe": g.farbe,
+                    "aktiv": "ja" if g.aktiv else "nein",
+                },
+                link=reverse("kunden:listeneintrag", args=["kundengruppen", g.pk]),
+            )
+            for g in Kundengruppe.objects.select_related("ausgabestelle")
+        ]
+
+    def treffer_finder(self, bestand):
+        nach_kuerzel = {normalisieren(b.werte["kuerzel"]): b for b in bestand if b.werte["kuerzel"]}
+        nach_name = _name_treffer(bestand, lambda w: normalisieren(w.get("name", "")))
+
+        def finden(werte):
+            k = normalisieren(werte.get("kuerzel", ""))
+            if k and k in nach_kuerzel:
+                return Treffer(nach_kuerzel[k].id, True)
+            return nach_name(werte)
+
+        return finden
+
+    @transaction.atomic
+    def anwenden(self, entscheidung, verwalter):
+        from apps.kunden.models import Ausgabestelle, Kundengruppe
+
+        stellen = {normalisieren(s.name): s for s in Ausgabestelle.objects.all()}
+        unbekannt = set()
+
+        def setzen(g, werte):
+            for k, v in werte.items():
+                if k == "aktiv":
+                    g.aktiv = v != "nein"
+                elif k == "maximum":
+                    g.maximum = int(v) if v else None
+                elif k == "uhrzeit":
+                    g.uhrzeit = v or None
+                elif k == "ausgabestelle":
+                    g.ausgabestelle = stellen.get(normalisieren(v)) if v else None
+                    if v and g.ausgabestelle is None:
+                        unbekannt.add(v)
+                elif k == "kuerzel" and v and Kundengruppe.objects.filter(
+                        kuerzel=v).exclude(pk=g.pk).exists():  # fmt: skip
+                    continue  # Kürzel sind eindeutig
+                else:
+                    setattr(g, k, v)
+
+        neu = 0
+        for werte in entscheidung.anlegen:
+            if Kundengruppe.objects.filter(name__iexact=werte.get("name", "")).exists():
+                continue  # Namen sind eindeutig
+            g = Kundengruppe()
+            setzen(g, werte)
+            g.save()
+            neu += 1
+        for pk, werte in entscheidung.aendern.items():
+            g = Kundengruppe.objects.get(pk=pk)
+            if "name" in werte and Kundengruppe.objects.filter(
+                    name__iexact=werte["name"]).exclude(pk=pk).exists():  # fmt: skip
+                werte = {k: v for k, v in werte.items() if k != "name"}
+            setzen(g, werte)
+            g.save()
+        inaktiv = 0
+        for pk in entscheidung.fehlt:
+            if entscheidung.fehlt[pk] == "inaktiv":
+                inaktiv += Kundengruppe.objects.filter(pk=pk, aktiv=True).update(aktiv=False)
+        meldungen = [
+            f"{neu} neu angelegt",
+            f"{len(entscheidung.aendern)} aktualisiert",
+            f"{inaktiv} auf inaktiv gesetzt",
+        ]
+        if unbekannt:
+            meldungen.append(f"{len(unbekannt)} Ausgabestelle(n) nicht gefunden – dort ohne "
+                             "Ausgabestelle angelegt")  # fmt: skip
+        return meldungen
 
 
 # --- Mitarbeitende ----------------------------------------------------------------------
@@ -1279,7 +1542,15 @@ class Kunden(Ziel):
 
 
 ZIELE = {
-    z.kennung: z for z in (Kunden(), Ausgabestellen(), Mitarbeitende(), Adressbuch(), Mitglieder())
+    z.kennung: z
+    for z in (
+        Kunden(),
+        Ausgabestellen(),
+        Kundengruppen(),
+        Mitarbeitende(),
+        Adressbuch(),
+        Mitglieder(),
+    )  # fmt: skip
 }
 
 

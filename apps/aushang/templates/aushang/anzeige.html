@@ -15,18 +15,24 @@
   {% csrf_token %}
   <header class="aushang-kopf">
     <span class="aushang-uebersicht-nur">{{ jetzt|date:"l, d.m.Y" }}</span>
-    <button type="button" class="aushang-zurueck" id="aushang-zurueck">← Übersicht</button>
+    <button type="button" class="aushang-zurueck" id="aushang-zurueck">Übersicht</button>
+    {# Je Seite ein Knopf: öffnet sie groß #}
+    <nav class="aushang-reiter" id="aushang-reiter" aria-label="Seiten">
+      {% if folien|length > 1 %}{% for titel, html, qr, kurz in folien %}<button type="button" data-nr="{{ forloop.counter0 }}">{{ kurz }}</button>{% endfor %}{% endif %}
+    </nav>
     <span><span id="aushang-stand">Stand {{ jetzt|time:"H:i" }} Uhr</span>
       <button type="button" class="aushang-vollbild" id="aushang-vollbild" hidden>Vollbild</button></span>
   </header>
   <main id="aushang-folien" class="aushang-folien">
-    {% for titel, html, qr in folien %}
+    {% for titel, html, qr, kurz in folien %}
     <section class="aushang-folie{% if forloop.first %} sichtbar{% endif %}" data-nr="{{ forloop.counter0 }}">
       <div class="aushang-titel">
-        <h1>{{ titel }}</h1>
+        <div>
+          <h1>{{ titel }}</h1>
+          {% if aushang.aendern %}<p class="aushang-tipp">Auf einen Namen oder Platz tippen, um sich auszutragen oder einzuspringen.</p>{% endif %}
+        </div>
         {% if qr %}<figure class="aushang-qr">{{ qr|safe }}<figcaption>Am Handy ändern</figcaption></figure>{% endif %}
       </div>
-      {% if aushang.aendern %}<p class="aushang-tipp">Auf einen Namen oder Platz tippen, um sich auszutragen oder einzuspringen.</p>{% endif %}
       <div class="aushang-inhalt">{{ html }}</div>
     </section>
     {% empty %}

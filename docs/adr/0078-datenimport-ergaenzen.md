@@ -73,3 +73,12 @@ muss aber bewusst gewählt werden.
   (wenige Abfragen statt mehrerer je Haushalt).
 - Grenzen für große Bestände: 300.000 Zeilen und 60 MB je Datei, `DATA_UPLOAD_MAX_NUMBER_FIELDS`
   20.000 (eine Wahl je Feld im Abgleich), gunicorn wartet bis 300 Sekunden.
+
+## Nachtrag: Kundengruppen, Ausstattung der Ausgabestellen
+
+- Neues Ziel **Kundengruppen** (Kürzel, Name, Ausgabestelle per Name, Wochentage, Uhrzeit auch aus
+  Texten wie „Freitag 12:30-13:00“, Maximum, Farbe); Treffer über das Kürzel, sonst den Namen.
+  Fehlt eine Gruppe in der Datei, lässt sie sich behalten oder auf inaktiv setzen, nie löschen.
+- Ausgabestellen haben jetzt Telefon für Kunden, Fax, Plätze, Helfer, Barrierefrei und WLAN; der
+  Import füllt sie mit, dazu Ausgabezeiten („Di 13:00; Do 14:00“, nur hinzufügen) und bis zu drei
+  Ansprechpartner der Reihe nach.

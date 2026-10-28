@@ -666,6 +666,28 @@ def test_zurueckgenommen_wenn_gruppe_oder_tag_schon_fertig(mitte, tag_daten):
 # ── Kurz-Steuerung unter dem Menü ────────────────────────────────────────────
 
 
+def test_knoepfe_nur_auf_der_einlass_seite(
+    modul_an, mitte, tag_daten, benutzer_mit_rolle, anmelden
+):
+    """Hereinrufen, starten, zurück nur am Einlass; sonst zeigt der Kasten nur, wer dran ist."""
+    konto = benutzer_mit_rolle("anton", rollen.AUSGABE)
+    konto.ausgabestellen.set([mitte])
+    c = anmelden(Client(), konto)
+    url = reverse("aufruf:leiste")
+    assert f'hx-get="{url}"' in c.get(reverse("core:start")).content.decode()
+    assert f'hx-get="{url}?steuern=1"' in c.get(reverse("ausgabe:empfang")).content.decode()
+    ablauf.starten(mitte, heute())
+    nur_info = c.get(url).content.decode()
+    assert "Bitte eintreten" in nur_info and "/" in nur_info  # Gruppe und Fortschritt
+    assert "hereinrufen</button>" not in nur_info and "hx-post" not in nur_info
+    am_einlass = c.get(url, {"steuern": "1"}).content.decode()
+    assert "hereinrufen</button>" in am_einlass
+    # Ohne steuern=1 schaltet auch ein POST nicht weiter
+    vorher = ablauf.tag_holen(mitte, heute()).stand
+    c.post(url, {"aktion": "weiter"})
+    assert ablauf.tag_holen(mitte, heute()).stand == vorher
+
+
 def test_leiste_unter_dem_menue(modul_an, mitte, tag_daten, benutzer_mit_rolle, anmelden):
     konto = benutzer_mit_rolle("anton", rollen.AUSGABE)
     konto.ausgabestellen.set([mitte])
@@ -674,28 +696,31 @@ def test_leiste_unter_dem_menue(modul_an, mitte, tag_daten, benutzer_mit_rolle, 
     start = c.get(reverse("core:start")).content.decode()
     assert f'hx-get="{url}"' in start
     assert 'hx-trigger="load, every 5s, einlassGeaendert from:body"' in start
-    seite = c.get(url).content.decode()
-    assert "Heute noch nicht gestartet" in seite and "Aufruf starten" in seite
+    seite = c.get(url).content.decode()  # nicht auf der Einlass-Seite: nur anzeigen
+    assert "Heute noch nicht gestartet" in seite and "Starten am Einlass" in seite
+    assert "Aufruf starten" not in seite
+    seite = c.get(url, {"steuern": "1"}).content.decode()
+    assert "Aufruf starten" in seite
     assert f'href="{reverse("aufruf:mobil", args=[mitte.pk])}"' in seite  # „Aufruf ↗“
-    seite = c.post(url, {"aktion": "starten"}).content.decode()
+    seite = c.post(url, {"aktion": "starten", "steuern": "1"}).content.decode()
     erste = ablauf.tag_holen(mitte, heute()).stand["gruppen"][0]["wartend"][:3]
     assert "Bitte eintreten" in seite and all(f">{n}</span>" in seite for n in erste)
-    seite = c.post(url, {"aktion": "weiter"}).content.decode()
+    seite = c.post(url, {"aktion": "weiter", "steuern": "1"}).content.decode()
     assert f">{erste[0]}</span>" not in seite and "letzten Schritt zurück" in seite
-    seite = c.post(url, {"aktion": "zurueck"}).content.decode()
+    seite = c.post(url, {"aktion": "zurueck", "steuern": "1"}).content.decode()
     assert f">{erste[0]}</span>" in seite
     # Unbekannte Aktion ändert nichts; Fehler werden angezeigt
-    assert c.post(url, {"aktion": "loeschen"}).status_code == 200
+    assert c.post(url, {"aktion": "loeschen", "steuern": "1"}).status_code == 200
     ablauf.weiter(mitte, heute())
     ablauf.weiter(mitte, heute())
     ablauf.weiter(mitte, heute())
     ablauf.weiter(mitte, heute())
-    seite = c.get(url).content.decode()
+    seite = c.get(url, {"steuern": "1"}).content.decode()
     assert "Ausgabe beendet" in seite and "Nummern aufgerufen" in seite
     assert "neu starten" in seite and "letzten Schritt zurück" in seite
     assert 'role="alert"' not in seite
     # neu starten: wieder von vorn
-    seite = c.post(url, {"aktion": "neustart"}).content.decode()
+    seite = c.post(url, {"aktion": "neustart", "steuern": "1"}).content.decode()
     assert "Bitte eintreten" in seite and "Ausgabe beendet" not in seite
 
 
@@ -708,10 +733,10 @@ def test_leiste_fehler_und_ohne_stelle(modul_an, mitte, benutzer_mit_rolle, anme
     assert reverse("aufruf:start") in seite and "Bitte eintreten" not in seite
     konto.ausgabestellen.set([mitte])
     # Heute keine Ausgabe an der Stelle: kein Kasten, auch nach „Ausgabe beendet“
-    assert c.post(url, {"aktion": "weiter"}).content == b""
+    assert c.post(url, {"aktion": "weiter", "steuern": "1"}).content == b""
     Kundengruppe.objects.create(name="Täglich", ausgabestelle=mitte,
                                 wochentage="Mo, Di, Mi, Do, Fr, Sa, So")  # fmt: skip
-    seite = c.post(url, {"aktion": "weiter"}).content.decode()  # nicht gestartet
+    seite = c.post(url, {"aktion": "weiter", "steuern": "1"}).content.decode()  # nicht gestartet
     assert 'role="alert"' in seite and "Aufruf starten" in seite
     t = TafelEinstellungen.laden()
     t.module = []

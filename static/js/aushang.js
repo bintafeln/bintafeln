@@ -1,7 +1,7 @@
 // Aushang-Monitor (ADR 0080): zeigt die Seiten nacheinander (oder je zwei nebeneinander), passt
 // die Schrift so an, dass jede Seite ohne Scrollen auf den Bildschirm passt, und holt jede Minute
-// den neuen Stand. Antippen zeigt einen Plan groß (zum Lesen und Ändern); „← Übersicht“ oder
-// 30 Sekunden ohne Eingabe führen zurück. In der großen Ansicht öffnet ein Platz den Dialog zum
+// den neuen Stand. Antippen (oder ein Knopf oben, je Seite einer) zeigt einen Plan groß und ganz
+// (zum Lesen und Ändern); „Übersicht“ oder 30 Sekunden ohne Eingabe führen zurück. In der großen Ansicht öffnet ein Platz den Dialog zum
 // Ändern mit persönlicher PIN. Ist der Link nicht mehr gültig (neuer Link erzeugt, Aushang aus),
 // verschwinden die Namen sofort vom Bildschirm.
 (function () {
@@ -23,17 +23,17 @@
     return Array.prototype.slice.call(document.querySelectorAll("#aushang-folien > .aushang-folie"));
   }
 
-  // Größte Schrift, bei der der Inhalt hineinpasst (Suche zwischen 6 und 60 Pixel). In der großen
-  // Ansicht zählt nur die Breite; nach unten lässt sich dann scrollen.
-  function einpassen(folie, nurBreite) {
+  // Größte Schrift, bei der der ganze Inhalt ohne Schieben hineinpasst (Suche zwischen 6 und
+  // 60 Pixel) – in der Übersicht wie in der großen Ansicht.
+  function einpassen(folie) {
     var inhalt = folie.querySelector(".aushang-inhalt");
     if (!inhalt) return;
-    var klein = 6, oben = nurBreite ? 40 : 60;
+    var klein = 6, oben = 60;
     for (var i = 0; i < 12; i++) {
       var mitte = (klein + oben) / 2;
       inhalt.style.fontSize = mitte + "px";
       var passt = inhalt.scrollWidth <= inhalt.clientWidth + 1 &&
-        (nurBreite || inhalt.scrollHeight <= inhalt.clientHeight + 1);
+        inhalt.scrollHeight <= inhalt.clientHeight + 1;
       if (passt) klein = mitte; else oben = mitte;
     }
     inhalt.style.fontSize = (klein * 0.98) + "px"; // etwas Luft für Rundungen
@@ -52,7 +52,12 @@
       for (var i = 0; i < Math.min(gleichzeitig, alle.length); i++) sichtbar.push((start + i) % alle.length);
     }
     alle.forEach(function (f, nr) { f.classList.toggle("sichtbar", sichtbar.indexOf(nr) >= 0); });
-    sichtbar.forEach(function (nr) { einpassen(alle[nr], gross !== null); });
+    sichtbar.forEach(function (nr) { einpassen(alle[nr]); });
+    document.querySelectorAll("#aushang-reiter button").forEach(function (knopf) {
+      var aktiv = gross !== null && parseInt(knopf.dataset.nr, 10) === gross;
+      knopf.classList.toggle("aktiv", aktiv);
+      knopf.setAttribute("aria-pressed", aktiv ? "true" : "false");
+    });
     var punkte = document.getElementById("aushang-punkte");
     punkte.innerHTML = "";
     if (gross === null && alle.length > gleichzeitig) {
@@ -72,10 +77,9 @@
   }
 
   function grossZeigen(nr) {
-    gross = nr;
+    var anzahl = folien().length;
+    gross = ((nr % anzahl) + anzahl) % anzahl;
     zeigen();
-    var inhalt = folien()[nr].querySelector(".aushang-inhalt");
-    if (inhalt) inhalt.scrollTop = 0;
     bewegt();
   }
 
@@ -165,6 +169,7 @@
         var inhalt = neu.getElementById("aushang-folien");
         if (!inhalt) return;
         document.getElementById("aushang-folien").innerHTML = inhalt.innerHTML;
+        document.getElementById("aushang-reiter").innerHTML = neu.getElementById("aushang-reiter").innerHTML;
         document.getElementById("aushang-stand").textContent = neu.getElementById("aushang-stand").textContent;
         zeigen();
       })
@@ -190,6 +195,10 @@
     if (aendern && platz) platzOeffnen(platz.dataset.platz);
   });
   document.getElementById("aushang-zurueck").addEventListener("click", zurUebersicht);
+  document.getElementById("aushang-reiter").addEventListener("click", function (e) {
+    var knopf = e.target.closest("button[data-nr]");
+    if (knopf) grossZeigen(parseInt(knopf.dataset.nr, 10));
+  });
   document.getElementById("aushang-vollbild").addEventListener("click", function () {
     document.documentElement.requestFullscreen().catch(function () {});
   });

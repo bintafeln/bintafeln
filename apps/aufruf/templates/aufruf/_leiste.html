@@ -3,19 +3,19 @@
 {% if ohne_stelle %}
   <p class="leise">Handy-Steuerung des Aufrufs. {% if stelle_waehlen %}Für die Kurz-Steuerung hier oben im Menü die Ausgabestelle wählen.{% endif %}</p>
 {% elif d.error %}
-  <p class="leise">Heute noch nicht gestartet.</p>
-  <button type="button" class="knopf" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "starten"}' hx-target="closest .aufruf-leiste">Aufruf starten</button>
+  <p class="leise">Heute noch nicht gestartet.{% if not steuern %} Starten am Einlass.{% endif %}</p>
+  {% if steuern %}<button type="button" class="knopf" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "starten", "steuern": "1"}' hx-target="closest .aufruf-leiste">Aufruf starten</button>{% endif %}
 {% elif d.finished %}
   <p class="aufruf-leiste-titel">Ausgabe beendet</p>
   <p class="leise">Alle {{ d.total_numbers }} Nummern aufgerufen.</p>
-  <button type="button" class="knopf knopf-zweitrangig" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "neustart"}' hx-target="closest .aufruf-leiste" hx-confirm="Alle Kundennummern neu mischen und von vorn aufrufen? Der bisherige Fortschritt geht verloren.">🔄 neu starten</button>
-  {% if d.can_undo %}<button type="button" class="link aufruf-leiste-zurueck" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "zurueck"}' hx-target="closest .aufruf-leiste">↶ letzten Schritt zurück</button>{% endif %}
+  {% if steuern %}<button type="button" class="knopf knopf-zweitrangig" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "neustart", "steuern": "1"}' hx-target="closest .aufruf-leiste" hx-confirm="Alle Kundennummern neu mischen und von vorn aufrufen? Der bisherige Fortschritt geht verloren.">🔄 neu starten</button>
+  {% if d.can_undo %}<button type="button" class="link aufruf-leiste-zurueck" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "zurueck", "steuern": "1"}' hx-target="closest .aufruf-leiste">↶ letzten Schritt zurück</button>{% endif %}{% endif %}
 {% else %}
   <p class="leise aufruf-leiste-gruppe">{{ d.current_slot }} · {{ d.total_completed }}/{{ d.total_numbers }}</p>
   <p class="aufruf-leiste-titel">Bitte eintreten:</p>
   <p class="aufruf-leiste-nummern" aria-live="polite">{% for p in aktuell %}<span class="{{ p.farbe }}{% if p.vorrang %} vorrang{% endif %}"{% if p.vorrang or p.farbe %} title="{% if p.vorrang %}Vorrang{% endif %}{% if p.farbe == 'nr-da' %} am Kiosk gemeldet{% elif p.farbe %} nicht am Kiosk gemeldet{% endif %}"{% endif %}>{{ p.nummer }}</span>{% empty %}<span class="leise">–</span>{% endfor %}</p>
-  {% if d.alle_eingelassen %}<p class="leise">Alle schon am Einlass – gleich die nächsten hereinrufen.</p>{% endif %}
-  <button type="button" class="knopf aufruf-leiste-weiter" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "weiter"}' hx-target="closest .aufruf-leiste">Nächste {{ anzahl }} hereinrufen</button>
+  {% if d.alle_eingelassen %}<p class="leise">Alle schon am Einlass{% if steuern %} – gleich die nächsten hereinrufen{% endif %}.</p>{% endif %}
+  {% if steuern %}<button type="button" class="knopf aufruf-leiste-weiter" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "weiter", "steuern": "1"}' hx-target="closest .aufruf-leiste">Nächste {{ anzahl }} hereinrufen</button>{% endif %}
   {% if danach or folgende %}<p class="leise aufruf-leiste-danach">Danach: {% for n in danach %}<span class="{{ n.farbe }}">{{ n.nummer }}</span>{% if not forloop.last %}, {% endif %}{% endfor %}{% if d.remaining_count > d.current_numbers|length|add:6 %} …{% endif %}{% if folgende %}{% if danach %} · {% endif %}dann {{ d.following_slot }}: {% for n in folgende %}<span class="{{ n.farbe }}">{{ n.nummer }}</span>{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}</p>{% endif %}
-  {% if d.can_undo %}<button type="button" class="link aufruf-leiste-zurueck" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "zurueck"}' hx-target="closest .aufruf-leiste">↶ letzten Schritt zurück</button>{% endif %}
+  {% if steuern and d.can_undo %}<button type="button" class="link aufruf-leiste-zurueck" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "zurueck", "steuern": "1"}' hx-target="closest .aufruf-leiste">↶ letzten Schritt zurück</button>{% endif %}
 {% endif %}

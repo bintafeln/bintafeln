@@ -7,16 +7,17 @@ from apps.core import module
 
 
 def zeitraum(heute: dt.date, monate: int) -> tuple[dt.date, dt.date]:
-    """Ab heute bis zum Ende dieses Monats bzw. des nächsten (vergangene Tage zeigt der Monitor
-    nicht; am Monatsende ist so schon der nächste Monat zu sehen)."""
+    """Der ganze Monat (bzw. dieser und der nächste): wie der Plan auf Papier; mit zwei Monaten
+    ist am Monatsende schon der nächste zu sehen."""
     erster = heute.replace(day=1)
+    ende = erster
     for _ in range(monate):
-        erster = (erster + dt.timedelta(days=32)).replace(day=1)
-    return heute, erster - dt.timedelta(days=1)
+        ende = (ende + dt.timedelta(days=32)).replace(day=1)
+    return erster, ende - dt.timedelta(days=1)
 
 
-def folien(aushang: Aushang, heute: dt.date) -> list[tuple[str, str, str]]:
-    """[(titel, html, adresse)] aller Seiten; Seiten ausgeschalteter Module fallen weg."""
+def folien(aushang: Aushang, heute: dt.date) -> list[tuple[str, str, str, str]]:
+    """[(titel, html, adresse, kurz)] aller Seiten; Seiten ausgeschalteter Module fallen weg."""
     arten = module.aushangseiten()
     ergebnis = []
     for seite in aushang.seiten.all():
