@@ -1,6 +1,6 @@
 """Beschreibung des Moduls Dienstplan für den Modulrahmen (ADR 0049). Ohne Datenbankzugriff."""
 
-from apps.core.module import Modul
+from apps.core.module import Aushangseite, Modul
 
 
 def menue(eintrag):
@@ -49,6 +49,20 @@ def auskunft_mitarbeiter(benutzer, pdf):
                 breiten=[0.3, 0.7])  # fmt: skip
 
 
+def aushang():
+    from apps.dienstplan import aushang as seiten
+
+    return [
+        Aushangseite(
+            "dienstplan",
+            "Dienstplan einer Ausgabestelle",
+            "dienstplan.planen",
+            seiten.auswahl,
+            seiten.folien,
+        )
+    ]
+
+
 MODUL = Modul(
     kennung="dienstplan",
     titel="Dienstplan der Ausgabe",
@@ -68,4 +82,5 @@ MODUL = Modul(
     fristen=fristen,
     auskunft_mitarbeiter=auskunft_mitarbeiter,
     sicherung_bereich="mitarbeitende",
+    aushang=aushang,
 )  # fmt: skip

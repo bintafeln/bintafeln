@@ -436,3 +436,47 @@ def test_werkseinstellungen_vergessen_eingefahrenes_menue(angemeldet, admin, ben
     expect(seite.locator("html")).not_to_have_class(re.compile("menue-eingefahren"))
     seite.reload()  # bleibt ausgefahren (der neue Stand ist gemerkt)
     expect(seite.locator(".seitenmenue")).to_be_visible()
+
+
+def test_aushang_monitor_wechselt_passt_ein_und_sperrt_alten_link(seite, admin):
+    from apps.aushang.models import Aushang, AushangSeite, neuer_schluessel
+    from apps.core.models import TafelEinstellungen
+    from apps.dienstplan import beispiel as dp_beispiel
+    from apps.fahrdienst import beispiel as fd_beispiel
+
+    t = TafelEinstellungen.laden()
+    t.module, t.bundesland = ["aushang", "dienstplan", "fahrdienst"], "NW"
+    t.save()
+    dp_beispiel.anlegen(seed=1)
+    fd_beispiel.anlegen(seed=1)
+    stelle = Ausgabestelle.objects.get(name=dp_beispiel.STELLE)
+    aushang = Aushang.objects.create(name="Monitor Fahrerraum", sekunden=5)
+    AushangSeite.objects.create(aushang=aushang, art="dienstplan", wert=str(stelle.pk), monate=2)
+    AushangSeite.objects.create(aushang=aushang, art="fahrdienst", monate=2, reihenfolge=1)
+
+    seite.set_viewport_size({"width": 1280, "height": 720})
+    seite.clock.install()
+    seite.goto(f"/aushang/zeigen/{aushang.schluessel}/")
+    sichtbar = seite.locator(".aushang-folie.sichtbar")
+    expect(sichtbar).to_have_count(1)
+    erste = sichtbar.locator("h1").inner_text()
+    # Die Schrift ist so gewählt, dass die ganze Seite ohne Scrollen zu sehen ist
+    passt = seite.evaluate("""() => {
+        const i = document.querySelector('.aushang-folie.sichtbar .aushang-inhalt');
+        return i.scrollHeight <= i.clientHeight + 1 && parseFloat(i.style.fontSize) >= 6; }""")
+    assert passt
+    expect(seite.locator(".aushang-punkt.aktiv")).to_have_count(1)
+    seite.clock.run_for(5_000)
+    expect(sichtbar.locator("h1")).not_to_have_text(erste)
+
+    aushang.nebeneinander = 2
+    aushang.save()
+    seite.reload()
+    expect(seite.locator(".aushang-folie.sichtbar")).to_have_count(2)
+
+    # Neuer Link: Der alte Monitor leert sich beim nächsten Abruf (spätestens nach einer Minute)
+    aushang.schluessel = neuer_schluessel()
+    aushang.save()
+    seite.clock.run_for(61_000)
+    expect(seite.get_by_text("Dieser Link ist nicht mehr gültig.")).to_be_visible()
+    expect(seite.locator("table")).to_have_count(0)

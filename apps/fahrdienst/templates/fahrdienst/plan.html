@@ -30,23 +30,7 @@
   {% if not touren %}
   <p>Noch keine Touren angelegt.{% if planen %} <a href="{% url 'fahrdienst:einstellungen' %}">Touren und Besetzung einstellen</a>{% endif %}</p>
   {% else %}
-  <div class="fd-rahmen">
-  <table class="fd-plan">
-    <thead><tr><th>Tag</th>{% for t in touren %}<th>{% if planen %}<a href="{% url 'fahrdienst:besetzung' t.pk %}?monat={{ monat }}" title="Feste Besetzung ändern">{{ t.name }} ✎</a>{% else %}{{ t.name }}{% endif %}</th>{% endfor %}</tr></thead>
-    <tbody>
-    {% for datum, zeile in tage %}
-      <tr class="{% if datum.weekday == 0 %}fd-woche{% endif %}{% if datum == heute %} fd-heute{% endif %}">
-        <th scope="row">{{ datum|date:"D d.m." }}</th>
-        {% for tour, plaetze in zeile %}
-        <td>{% for p in plaetze %}{% if p.status != "leer" or planen %}{% if not forloop.first %}<span class="fd-trenner"> / </span>{% endif %}{% include "fahrdienst/_platz.html" %}{% endif %}{% empty %}<span class="leise" title="fährt an diesem Tag nicht">–</span>{% endfor %}</td>
-        {% endfor %}
-      </tr>
-    {% empty %}
-      <tr><td colspan="{{ touren|length|add:1 }}">In diesem Monat sind keine Fahrtage.</td></tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  </div>
+  {% include "fahrdienst/_tabelle.html" %}
   {# Schmale Bildschirme: ein Fahrtag je Karte, der nächste aufgeklappt #}
   <div class="fd-karten">
     {% if karten_frueher %}

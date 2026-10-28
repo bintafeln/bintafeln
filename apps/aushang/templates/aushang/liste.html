@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block titel %}Aushang-Monitore{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Aushang-Monitore</h1>
+  <p class="hinweis">Ein Aushang zeigt Seiten wie den Dienstplan oder den Fahrerplan ganzseitig auf einem Monitor –
+    ohne Menü und ohne Anmeldung. Jeder Monitor bekommt einen eigenen geheimen Link; nur auf Geräten der Tafel öffnen.</p>
+  <table class="tabelle">
+    <thead><tr><th>Name</th><th>Seiten</th><th>Aktiv</th><th>Monitor</th></tr></thead>
+    <tbody>
+      {% for a in aushaenge %}
+      <tr>
+        <td data-titel="Name"><a href="{% url 'aushang:bearbeiten' a.pk %}">{{ a.name }}</a></td>
+        <td data-titel="Seiten">{{ a.seiten.all|length }}</td>
+        <td data-titel="Aktiv">{{ a.aktiv|yesno:"ja,nein" }}</td>
+        <td data-titel="Monitor">{% if a.aktiv %}<a href="{{ a.link }}" target="_blank" rel="noopener">öffnen ↗</a>{% else %}–{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="hinweis">Noch keine Aushang-Monitore.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Neuer Aushang-Monitor</h2>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Anlegen</button>
+  </form>
+</section>
+{% endblock %}

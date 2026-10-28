@@ -42,6 +42,8 @@ OEFFENTLICH = {
     "aufruf:anzeige_abfrage",
     "aufruf:anzeige_layout",
     "aufruf:anzeige_datei",
+    # Aushang-Monitor ohne Anmeldung, nur mit dem Schlüssel im Link (ADR 0080)
+    "aushang:anzeige",
 }
 
 # Für jedes angemeldete Konto, auch ohne Rechte

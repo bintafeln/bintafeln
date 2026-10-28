@@ -261,7 +261,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Regeln in `apps/fahrdienst/plan.py`, Plan aus fester Besetzung, Ausfall und Ersatz je Tag).
   `dienstplan` (ADR 0077, wie Fahrdienst je Ausgabestelle und Ausgabetag, Regeln in
   `apps/dienstplan/plan.py`, `Helfer` mit oder ohne Konto). Telegram für beide: `apps/core/telegram.py`.
-  Hooks `Modul.fristen`, `Modul.auskunft_mitarbeiter`,
+  `aushang` (ADR 0080, Aushang-Monitore ohne Anmeldung über den Schlüssel im Link; Seiten bieten
+  Module über `Modul.aushang` als `Aushangseite` an, z. B. `apps/dienstplan/aushang.py`; Inhalt in
+  `apps/aushang/anzeige.py`, Wechsel und Schriftgröße in `static/js/aushang.js`; nur Namen zeigen).
+  Hooks `Modul.fristen`, `Modul.auskunft_mitarbeiter`, `Modul.aushang`,
   `Modul.einlass`, `Modul.auskunft_antrag`, `Modul.kopfzeile`, `Modul.seitenleiste`, `Modul.suchen`,
   `Modul.startseite`. Programmname nur in
   `bintafeln/programm.py`; die Kopfzeile kürzt `static/js/kopfzeile.js` über `.kuerz-1…5`.

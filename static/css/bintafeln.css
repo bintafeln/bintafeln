@@ -1134,3 +1134,32 @@ a.fd-ich { font-weight: 600; text-decoration: underline dotted; }
   100% { transform: translate(-130vw, 8vh); }
 }
 @media (prefers-reduced-motion: reduce) { .anlass { display: none; } }
+
+/* Aushang-Monitore (ADR 0080): ganzseitig, ohne Menü; die Schrift setzt aushang.js */
+body.aushang { height: 100vh; overflow: hidden; background: var(--flaeche); }
+body.aushang-ruhig { cursor: none; }
+.aushang-kopf { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .35rem 1rem;
+  background: var(--akzent); color: var(--auf-akzent); font-weight: 600; }
+.aushang-vollbild { margin-left: .75rem; font: inherit; font-size: .85rem; padding: .15rem .6rem; border-radius: var(--radius);
+  border: 1px solid currentColor; background: transparent; color: inherit; cursor: pointer; }
+.aushang-folien { flex: 1; min-height: 0; display: flex; gap: 1.5rem; padding: .75rem 1rem .25rem; }
+.aushang-folie { display: none; flex: 1 1 0; min-width: 0; min-height: 0; flex-direction: column; }
+.aushang-folie.sichtbar { display: flex; }
+.aushang-folie h1 { margin: 0 0 .4rem; font-size: clamp(1.2rem, 2.6vw, 2.4rem); }
+.aushang-leer { justify-content: center; align-items: center; text-align: center; font-size: 1.5rem; }
+.aushang-inhalt { flex: 1; min-height: 0; overflow: hidden; }
+.aushang-inhalt .fd-rahmen { display: block; overflow: visible; }
+.aushang-inhalt .fd-plan { min-width: 0; font-size: 1em; }
+.aushang-inhalt .fd-plan th, .aushang-inhalt .fd-plan td { padding: .2em .45em; }
+.aushang-inhalt .fd-plan thead th { position: static; }
+.aushang-zusatz { margin: 0 0 .3em; color: var(--leise); }
+.aushang-punkte { display: flex; justify-content: center; gap: .5rem; padding: .3rem 0 .5rem; min-height: 1.4rem; }
+.aushang-punkt { width: .7rem; height: .7rem; border-radius: 50%; background: var(--rand); }
+.aushang-punkt.aktiv { background: var(--akzent); }
+/* Einstellungen */
+.aushang-seiten { padding-left: 1.4rem; }
+.aushang-seiten li { display: flex; justify-content: space-between; align-items: center; gap: .75rem; padding: .4rem 0;
+  border-bottom: 1px solid var(--rand); }
+.aushang-knoepfe { display: flex; gap: .3rem; flex-shrink: 0; }
+.aushang-knoepfe .knopf { width: auto; padding: .35rem .7rem; min-height: 2.4rem; }
+.aushang-link { width: 100%; font: inherit; padding: .5rem; border: 1px solid var(--rand); border-radius: .4rem; }
