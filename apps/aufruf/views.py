@@ -306,9 +306,12 @@ AKTIONEN = {"starten": ablauf.starten, "weiter": ablauf.weiter, "zurueck": ablau
 @never_cache
 @steuern
 def leiste(request):
-    """Aufgerufene Nummern der gewählten Ausgabestelle und „Nächste hereinrufen“ (HTMX)."""
+    """Aufgerufene Nummern der gewählten Ausgabestelle (HTMX). Die Knöpfe („Nächste
+    hereinrufen“, starten, zurück) nur mit ``steuern=1`` – das setzt allein die Einlass-Seite;
+    auf allen anderen Seiten zeigt der Kasten nur, wer dran ist."""
     from apps.ausgabe.stelle import aktuelle
 
+    steuern = (request.POST if request.method == "POST" else request.GET).get("steuern") == "1"
     stelle = aktuelle(request.user)
     if stelle is not None and not AufrufEinstellungen.laden(stelle).aktiv:
         return HttpResponse("")  # an dieser Ausgabestelle wird nicht aufgerufen
@@ -322,7 +325,7 @@ def leiste(request):
     if not ablauf.gruppen_heute(stelle, heute):
         return HttpResponse("")  # heute keine Ausgabe an dieser Stelle: kein Kasten
     fehler = ""
-    if request.method == "POST" and request.POST.get("aktion") in AKTIONEN:
+    if steuern and request.method == "POST" and request.POST.get("aktion") in AKTIONEN:
         try:
             AKTIONEN[request.POST["aktion"]](stelle, heute)
         except ablauf.AufrufFehler as f:
@@ -340,7 +343,7 @@ def leiste(request):
         folgende = nummern_mit_farbe(d["following_numbers"][:frei],
                                      d["following_present_flags"]) if frei > 0 else []  # fmt: skip
     return render(request, "aufruf/_leiste.html", {
-        "stelle": stelle, "d": d, "anzahl": e.anzahl, "fehler": fehler,
+        "stelle": stelle, "d": d, "anzahl": e.anzahl, "fehler": fehler, "steuern": steuern,
         "aktuell": aktuell, "danach": danach, "folgende": folgende,
         "steuerung": reverse("aufruf:mobil", args=[stelle.pk]),
     })  # fmt: skip

@@ -879,10 +879,12 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   neuen Tab); die ganze Steuerung am PC ist unter „Einstellungen → Aufruf, Monitor und Kiosk“
   verlinkt. Weiter, Zurück, Abfrage einer Nummer und „zu spät
   gekommen“ (so viele wartende Plätze nach hinten wie eingestellt). Reihenfolge des Tages als CSV.
-- **Unter dem Menü:** Wer am Einlass arbeitet und aufrufen darf, sieht links unter dem Menü die
-  Nummern der gewählten Ausgabestelle, die gerade eintreten sollen, und den Knopf „Nächste 3
-  hereinrufen“ (Anzahl wie eingestellt), dazu „letzten Schritt zurück“ und „Aufruf starten“; nach
-  der letzten Nummer „Ausgabe beendet“ mit „neu starten“ und „letzten Schritt zurück“. Die
+- **Unter dem Menü:** Wer aufrufen darf, sieht links unter dem Menü die laufende Kundengruppe
+  mit Fortschritt (z. B. „5/19“), die Nummern der gewählten Ausgabestelle, die gerade eintreten
+  sollen, und „Danach“. **Nur auf der Einlass-Seite** stehen dazu die Knöpfe „Nächste 3
+  hereinrufen“ (Anzahl wie eingestellt), „letzten Schritt zurück“ und „Aufruf starten“, nach der
+  letzten Nummer „neu starten“ – damit niemand von einer anderen Seite aus versehentlich
+  weiterschaltet. Handy- und PC-Steuerung behalten alle Knöpfe. Die
   Anzeige aktualisiert sich alle 5 Sekunden (auch wenn ein anderes Gerät weiterschaltet) und
   sofort, wenn am Einlass eine Abholung eingetragen wird. Hat die
   Ausgabestelle heute keine Kundengruppe, erscheint der Kasten nicht. Einen
