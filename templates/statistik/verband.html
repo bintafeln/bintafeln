@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block titel %}Verbandsstatistik {{ jetzt.name }}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Verbandsstatistik {{ jetzt.name }}</h1>
+  <p class="hinweis">Die jährliche Abfrage des Tafel-Dachverbands, gerechnet aus den Zahlen in bintafeln: Haushalte mit
+    mindestens einer Abholung im Stichmonat, jeder nur einmal, mit allen Personen des Haushalts; Vergleich mit demselben
+    Monat im Vorjahr.</p>
+  <form method="get" class="filter-kompakt" data-sofort>
+    <div class="filter-feld"><label for="vs-monat">Stichmonat</label>
+      <select name="monat" id="vs-monat">{% for nr, name in monate %}<option value="{{ nr }}"{% if nr == monat %} selected{% endif %}>{{ name }}</option>{% endfor %}</select></div>
+    <div class="filter-feld"><label for="vs-jahr">Jahr</label>
+      <select name="jahr" id="vs-jahr">{% for j in jahre %}<option{% if j == jahr %} selected{% endif %}>{{ j }}</option>{% endfor %}</select></div>
+    <div class="filter-feld"><label for="vs-stelle">Ausgabestelle</label>
+      <select name="stelle" id="vs-stelle">
+        <option value="">{% if eingeschraenkt %}alle meine{% else %}alle{% endif %}</option>
+        {% for s in auswahl %}<option value="{{ s.pk }}"{% if gewaehlt == s.pk|stringformat:"s" %} selected{% endif %}>{{ s.name }}</option>{% endfor %}
+      </select></div>
+    <button type="submit" class="knopf">Anzeigen</button>
+  </form>
+  <div class="aktionsleiste">
+    <a class="knopf knopf-zweitrangig" href="?{{ abfrage }}{% if abfrage %}&amp;{% endif %}format=pdf">PDF</a>
+    <a class="knopf knopf-zweitrangig" href="?{{ abfrage }}{% if abfrage %}&amp;{% endif %}format=csv">CSV (alle Fragen)</a>
+  </div>
+  <p class="hinweis">Bitte beachten: Die Zusammensetzung der Haushalte ist der heutige Stand. Gelöschte Haushalte und
+    Abholungen nach Ablauf der Löschfrist fehlen, deshalb kann der Vergleich mit dem Vorjahr abweichen.</p>
+</section>
+
+{% for f in fragen %}
+<section class="karte breit verband-frage">
+  <h2>{{ f.nummer }} {{ f.text }}</h2>
+  <div class="tabelle-rahmen">
+  <table class="tabelle kompakt">
+    <thead><tr>{% for k in f.kopf %}<th{% if not forloop.first %} class="zahl"{% endif %}>{{ k }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for z in f.zeilen %}<tr>{% for w in z %}<td{% if forloop.first %} data-titel="{{ f.kopf.0 }}"{% else %} class="zahl"{% endif %}>{% if f.vergleich and forloop.last %}<strong>{{ w }}</strong>{% else %}{{ w }}{% endif %}</td>{% endfor %}</tr>{% empty %}<tr><td colspan="{{ f.kopf|length }}" class="hinweis">Keine Einträge.</td></tr>{% endfor %}</tbody>
+  </table>
+  </div>
+  {% if f.hinweis %}<p class="hinweis">{{ f.hinweis }}</p>{% endif %}
+</section>
+{% endfor %}
+
+<section class="karte breit">
+  <h2>Legende der Stufen (Fragen 2.7 und 3.3)</h2>
+  <table class="tabelle kompakt"><tbody>{% for s, t in legende %}<tr><td><strong>{{ s }}</strong></td><td>{{ t }}</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endblock %}

@@ -1255,6 +1255,11 @@ zeigt sie bildschirmfüllend, „← Zurück“ schließt und lässt die Seite a
   PDF enthält alle Kennzahlen und jeden Abschnitt als Tabelle, Abschnitte mit einer Zahlenreihe
   zusätzlich als Säulendiagramm; im laufenden Jahr bis heute. Mit gewählter Ausgabestelle nur
   deren Zahlen. Gut als Grundlage für Mitgliederversammlung, Vorstand oder Förderanträge.
+- **Verbandsstatistik** (Menü „Auswertungen → Verbandsstatistik“, ADR 0081): die jährliche
+  Abfrage des Dachverbands (Fragen 2.1–2.7, 3.1–3.3, 5.1) für einen Stichmonat (Vorgabe Juni) mit
+  Vergleich zum Vorjahresmonat und Stufen −3 … +3; Kund:innen, Kinder, Erwachsene, Senior:innen ab
+  63, Geflüchtete aus der Ukraine, Staatsangehörigkeiten, Haushalte nach Einkommensart,
+  Tafel-Aktive. Als Seite, CSV und PDF; auf Wunsch je Ausgabestelle.
 
 ## Kasse
 
