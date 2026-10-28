@@ -14,7 +14,7 @@ from apps.antraege.models import (
     AntragText,
 )
 from apps.ausgabe.ampel import WOCHENTAGE
-from apps.core import privatdateien
+from apps.core import geheimnis, privatdateien
 from apps.core.auswahl import (
     ANREDEN,
     FAMILIENSTAENDE,
@@ -267,6 +267,16 @@ class EinstellungenForm(forms.ModelForm):
         help_text=AntragEinstellungen._meta.get_field("einverstaendnis_url").help_text,
     )  # fmt: skip
 
+    ki_schluessel = forms.CharField(
+        label="API-Schlüssel für die KI-Übersetzung (Claude)", required=False, strip=True,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+        help_text="Eigener Schlüssel von console.anthropic.com. Leer lassen, um den gespeicherten "
+        "zu behalten. Er wird verschlüsselt gespeichert und nie wieder angezeigt. Übersetzt werden "
+        "nur die eigenen Texte, nie Angaben aus Anträgen.",
+    )  # fmt: skip
+    ki_schluessel_loeschen = forms.BooleanField(label="Gespeicherten Schlüssel löschen",
+                                                required=False)  # fmt: skip
+
     class Meta:
         model = AntragEinstellungen
         fields = [
@@ -289,6 +299,19 @@ class EinstellungenForm(forms.ModelForm):
             .exclude(email="")
             .order_by("last_name", "first_name", "username")
         )
+
+    def save(self, commit=True):
+        instanz = super().save(commit=False)
+        if self.cleaned_data.get("ki_schluessel_loeschen"):
+            instanz.ki_schluessel_verschluesselt = ""
+        elif self.cleaned_data.get("ki_schluessel"):
+            instanz.ki_schluessel_verschluesselt = geheimnis.verschluesseln(
+                self.cleaned_data["ki_schluessel"]
+            )
+        if commit:
+            instanz.save()
+            self.save_m2m()
+        return instanz
 
 
 def _html_feld(zeilen=8):

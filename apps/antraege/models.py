@@ -77,6 +77,8 @@ class AntragEinstellungen(models.Model):
         help_text="z. B. PDF der Tafel zum Ausdrucken und Unterschreiben (Einverständnis zur "
         "Verarbeitung der Daten).",
     )  # fmt: skip
+    # API-Schlüssel für die KI-Übersetzung der eigenen Texte (ADR 0082), verschlüsselt (ADR 0016)
+    ki_schluessel_verschluesselt = models.TextField("API-Schlüssel (verschlüsselt)", blank=True)
     eigenes_css = models.TextField(
         "Eigene Gestaltung (CSS)",
         blank=True,
@@ -320,7 +322,8 @@ class AntragVersuch(models.Model):
         return f"Versuch {timezone.localtime(self.zeitpunkt):%d.%m.%Y %H:%M}"
 
 
-auditlog.register(AntragEinstellungen, m2m_fields={"benachrichtigen"})
+auditlog.register(AntragEinstellungen, m2m_fields={"benachrichtigen"},
+                  exclude_fields=["ki_schluessel_verschluesselt"])  # fmt: skip
 auditlog.register(AntragText)
 auditlog.register(Antrag)
 auditlog.register(AntragPerson)

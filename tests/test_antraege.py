@@ -515,3 +515,100 @@ def test_behinderung_nur_wenn_eingeschaltet(client, offen, admin_client):
     seite = admin_client.get(reverse("antraege:antrag", args=[a.pk])).content.decode()
     assert "GdB 60" in seite and "keine Behinderung" in seite
     assert antrag_pdf(a)  # Auskunft enthält die Angaben (Tabelle mit Spalte Behinderung)
+
+
+# --- KI-Übersetzung (ADR 0082) -------------------------------------------------------------
+
+
+class _Antwort:
+    def __init__(self, text, stop="end_turn"):
+        self.stop_reason = stop
+        self.content = [type("Block", (), {"type": "text", "text": text})()]
+
+
+def _ki(monkeypatch, antwort):
+    """Ersetzt den Claude-Client; ``antwort(anfrage) -> _Antwort`` oder eine Ausnahme."""
+    from apps.antraege import uebersetzen
+
+    anfragen = []
+
+    class Nachrichten:
+        def create(self, **anfrage):
+            anfragen.append(anfrage)
+            ergebnis = antwort(anfrage)
+            if isinstance(ergebnis, Exception):
+                raise ergebnis
+            return ergebnis
+
+    client = type("Client", (), {"beta": type("Beta", (), {"messages": Nachrichten()})()})()
+    monkeypatch.setattr(uebersetzen, "_client", lambda: client)
+    return anfragen
+
+
+def test_ki_uebersetzung(admin_client, monkeypatch):
+    import httpx2
+    from anthropic import AuthenticationError
+
+    from apps.antraege import uebersetzen
+    from apps.core import geheimnis
+
+    texte = reverse("antraege:texte", args=["de"])
+    assert "Mit KI in alle Sprachen" not in admin_client.get(texte).content.decode()
+    assert admin_client.post(reverse("antraege:uebersetzen")).url == texte  # ohne Schlüssel
+    e = AntragEinstellungen.laden()
+    e.ki_schluessel_verschluesselt = geheimnis.verschluesseln("sk-erfunden")
+    e.save()
+    assert "Mit KI in alle Sprachen" in admin_client.get(texte).content.decode()
+    assert admin_client.post(reverse("antraege:uebersetzen")).url == texte  # noch keine Texte
+    AntragText.objects.create(sprache="de", einleitung="<p>Willkommen bei {tafel}</p>",
+                              mail_betreff="Antrag {nummer}")  # fmt: skip
+
+    def gut(anfrage):
+        assert anfrage["fallbacks"] == "default" and "Sprache" in anfrage["system"]
+        assert set(json.loads(anfrage["messages"][0]["content"])) == {"einleitung", "mail_betreff"}
+        return _Antwort(
+            json.dumps({"einleitung": "<p>{tafel} hoş geldiniz</p>", "mail_betreff": "Başvuru"})
+        )  # Platzhalter fehlt
+
+    _ki(monkeypatch, gut)
+    seite = admin_client.post(reverse("antraege:uebersetzen")).content.decode()
+    erste = uebersetzen.sprachen_ohne_deutsch()[0].code
+    assert f'hx-post="{reverse("antraege:uebersetzen_sprache", args=[erste])}"' in seite
+    teil = admin_client.post(reverse("antraege:uebersetzen_sprache", args=["tr"])).content.decode()
+    assert "✓" in teil and "(1 Text)" in teil and "uebersetzen/uk/" in teil  # nächste Sprache
+    tr = AntragText.objects.get(sprache="tr")
+    assert tr.einleitung == "<p>{tafel} hoş geldiniz</p>" and tr.mail_betreff == ""
+    assert "Fertig" in admin_client.post(
+        reverse("antraege:uebersetzen_sprache",
+                args=[uebersetzen.sprachen_ohne_deutsch()[-1].code])).content.decode()  # fmt: skip
+    deutsch = reverse("antraege:uebersetzen_sprache", args=["de"])
+    assert admin_client.post(deutsch).status_code == 404
+
+    anfrage = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
+    falsch = AuthenticationError("nein", response=httpx2.Response(401, request=anfrage), body=None)
+    _ki(monkeypatch, lambda a: falsch)
+    teil = admin_client.post(reverse("antraege:uebersetzen_sprache", args=["en"])).content.decode()
+    assert "nicht angenommen" in teil
+    _ki(monkeypatch, lambda a: _Antwort("kein json"))
+    with pytest.raises(uebersetzen.UebersetzungsFehler):
+        uebersetzen.sprache_uebersetzen("en")
+    _ki(monkeypatch, lambda a: _Antwort("{}", stop="refusal"))
+    with pytest.raises(uebersetzen.UebersetzungsFehler):
+        uebersetzen.sprache_uebersetzen("en")
+
+
+def test_ki_schluessel_speichern(admin_client):
+    from apps.antraege import uebersetzen
+
+    url = reverse("antraege:einstellungen")
+    werte = {f: "optional" for f in AntragEinstellungen.FELDER}
+    werte |= {"modus": "beides", "erledigt_nach_tagen": 0, "papierkorb_nach_tagen": 90,
+              "loeschen_nach_tagen": 30, "erste_nummer": 1}  # fmt: skip
+    admin_client.post(url, werte | {"ki_schluessel": "sk-erfunden"})
+    e = AntragEinstellungen.laden()
+    assert "sk-erfunden" not in e.ki_schluessel_verschluesselt and uebersetzen.verfuegbar()
+    assert "sk-erfunden" not in admin_client.get(url).content.decode()
+    admin_client.post(url, werte)  # leer: bleibt
+    assert uebersetzen.verfuegbar()
+    admin_client.post(url, werte | {"ki_schluessel_loeschen": "on"})
+    assert not uebersetzen.verfuegbar()

@@ -9,6 +9,12 @@ urlpatterns = [
     path("export/", views.export, name="export"),
     path("einstellungen/", views.einstellungen, name="einstellungen"),
     path("einstellungen/texte/<str:sprache>/", views.texte, name="texte"),
+    path("einstellungen/uebersetzen/", views.uebersetzen, name="uebersetzen"),
+    path(
+        "einstellungen/uebersetzen/<str:sprache>/",
+        views.uebersetzen_sprache,
+        name="uebersetzen_sprache",
+    ),
     path("<int:pk>/", views.antrag, name="antrag"),
     path("<int:pk>/bearbeiten/", views.bearbeiten, name="bearbeiten"),
     path("<int:pk>/aufnahme/", views_aufnahme.start, name="aufnahme"),

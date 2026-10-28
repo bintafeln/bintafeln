@@ -671,6 +671,9 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   letzten stehen gut sichtbar über dem Formular; unter „Texte“ je Sprache ein **Hinweis zu den
   Nachweisen** (z. B. welche Unterlagen nötig sind; ohne eigenen Hinweis gilt der deutsche). Die
   Nachweise lassen sich in ein Feld ziehen, auswählen oder direkt mit dem Handy fotografieren;
+  mit eigenem API-Schlüssel von Claude (Anthropic) übersetzt „Mit KI in alle Sprachen
+  übersetzen“ auf der Seite „Texte: Deutsch“ die eigenen Texte in alle Sprachen (nur diese Texte
+  verlassen den Server, nie Angaben aus Anträgen; ADR 0082);
   „Behinderung (GdB) je Person“ (Vorgabe: nicht abfragen, weil Gesundheitsdaten nach Art. 9
   DSGVO) fragt für jede Person ab: keine Behinderung oder GdB 20 bis 100; der
   Aufnahme-Assistent übernimmt den Wert in das Zusatzfeld „Grad der Behinderung“ und setzt ab

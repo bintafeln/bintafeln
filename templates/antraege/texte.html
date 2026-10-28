@@ -28,6 +28,20 @@
       <button type="submit" class="knopf">Speichern</button>
     </div>
   </form>
+  {% if s.code == "de" %}
+  <h2 class="abseits">In alle Sprachen übersetzen</h2>
+  {% if ki %}
+  <form method="post" action="{% url 'antraege:uebersetzen' %}" onsubmit="return confirm('Die gespeicherten deutschen Texte werden in alle 28 anderen Sprachen übersetzt und ersetzen dort die entsprechenden eigenen Texte. Weiter?')">
+    {% csrf_token %}
+    <button type="submit" class="knopf knopf-zweitrangig">Mit KI in alle Sprachen übersetzen</button>
+    <p class="hinweis">Übersetzt die gespeicherten Texte oben mit Claude (Anthropic); HTML und Platzhalter wie
+      {nummer} bleiben erhalten. Nur diese Texte verlassen den Server, nie Angaben aus Anträgen. Vorher speichern.</p>
+  </form>
+  {% else %}
+  <p class="hinweis">Mit einem eigenen API-Schlüssel von Claude (Anthropic) unter „Anträge einstellen“ lassen sich diese
+    Texte auf Knopfdruck in alle Sprachen übersetzen.</p>
+  {% endif %}
+  {% endif %}
 </section>
 {% if vorschau %}
 <section class="karte" id="vorschau">
