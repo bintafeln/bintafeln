@@ -324,6 +324,15 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .antrag-kopf .marke { font-size: 1.35rem; }
 .antrag-kopf .logo { height: 4rem; padding: 4px; }
 .inhalt.antrag { max-width: 56rem; }
+/* Am PC: breiter, die Abschnitte stehen paarweise nebeneinander; Handy und Tablet: untereinander */
+@media (min-width: 75rem) {
+  .inhalt.antrag { max-width: 96rem; }
+  .antrag-formular { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 2rem;
+    align-items: start; }
+  .antrag-formular > * { grid-column: 1 / -1; }
+  .antrag-formular > fieldset.abschnitt { grid-column: auto; }
+  .antrag-formular > .antrag-absenden { justify-self: start; }
+}
 .antrag-titel { color: var(--akzent-dunkel); font-size: 1.75rem; margin-top: 0; }
 .antrag-einleitung { margin-bottom: 1rem; }
 .antrag-einleitung img { max-width: 100%; height: auto; }

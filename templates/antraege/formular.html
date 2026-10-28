@@ -10,7 +10,7 @@
   </ul>{% endif %}
   <p class="hinweis">{{ t.pflicht_hinweis }}</p>
   {% if fehler %}<p class="sicherung sicherung-fehler" role="alert">{{ fehler }}</p>{% endif %}
-  <form method="post" enctype="multipart/form-data" novalidate>
+  <form method="post" enctype="multipart/form-data" novalidate class="antrag-formular">
     {% csrf_token %}
     {% if form.art %}{% include "antraege/_feld.html" with feld=form.art %}{% endif %}
     <fieldset class="abschnitt">
