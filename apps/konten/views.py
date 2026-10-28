@@ -22,7 +22,7 @@ from django.views.decorators.http import require_POST
 from django_otp import login as otp_login
 from django_otp import match_token
 
-from apps.core import mail
+from apps.core import anlaesse, mail
 from apps.konten import einladung, rollen, zwei_faktor
 from apps.konten.forms import AnmeldeEinstellungenForm, AnmeldeForm, CodeForm, ZweiterSchrittForm
 from apps.konten.models import AnmeldeEinstellungen, VertrautesGeraet
@@ -70,6 +70,7 @@ def anmelden(request):
             "next": request.GET.get("next", ""),
             "mail": mail.eingerichtet(),
             **_demo_zugaenge(),
+            **anlaesse.fuer_anmeldung(request),
         },
     )
 

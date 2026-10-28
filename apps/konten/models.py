@@ -336,6 +336,12 @@ class AnmeldeEinstellungen(models.Model):
         help_text="Aus: Die Konten der Ausgabestellen sehen die Zwei-Faktor-Anmeldung nicht; beim "
         "Ausschalten werden dort eingerichtete Geräte entfernt (ADR 0059).",
     )  # fmt: skip
+    ueberraschungen = models.BooleanField(
+        "Kleine Überraschungen an Festtagen", default=True,
+        help_text="Auf der Anmeldeseite fliegen zu Halloween Fledermäuse, zu Karneval "
+        "Luftschlangen, zu Ostern hoppelt der Osterhase und zu Nikolaus und Weihnachten kommt der "
+        "Nikolaus vorbei – einmal je Aufruf (ADR 0079).",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Anmelde-Einstellungen"

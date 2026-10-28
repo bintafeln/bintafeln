@@ -1033,3 +1033,51 @@ a.fd-ich { font-weight: 600; text-decoration: underline dotted; }
 .autosave-meldung { display: block; margin-top: .2rem; font-size: .85rem; transition: opacity .8s; }
 .autosave-ok { align-self: flex-start; padding: .05rem .5rem; border-radius: 999px; background: var(--erfolg); font-weight: 600; }
 .autosave-weg { opacity: 0; }
+
+/* Überraschungen auf der Anmeldeseite an Festtagen (ADR 0079): einmal je Aufruf, nur Dekoration */
+.anlass { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 50; }
+.anlass-defs { position: absolute; }
+.anlass svg { display: block; overflow: visible; }
+.anlass-flug { position: absolute; left: 0; top: var(--hoehe);
+  animation: anlass-flug var(--dauer) ease-in-out var(--verz) 1 both; }
+.anlass-flattern { animation: anlass-flattern .18s ease-in-out infinite alternate; }
+@keyframes anlass-flug {
+  0% { transform: translate(-20vw, 0); }
+  25% { transform: translate(20vw, -6vh) rotate(-6deg); }
+  50% { transform: translate(55vw, 5vh) rotate(5deg); }
+  75% { transform: translate(85vw, -4vh) rotate(-4deg); }
+  100% { transform: translate(120vw, -12vh); }
+}
+@keyframes anlass-flattern { from { transform: scaleY(1); } to { transform: scaleY(.35); } }
+.anlass-pusten { position: absolute; left: 0; top: var(--hoehe); opacity: 0;
+  animation: anlass-pusten var(--dauer) ease-out var(--verz) 1 both; }
+@keyframes anlass-pusten {
+  0% { opacity: 0; transform: translate(-15vw, 20vh) rotate(-30deg) scale(.3); }
+  15% { opacity: 1; }
+  70% { opacity: 1; transform: translate(60vw, -10vh) rotate(20deg) scale(1.1); }
+  100% { opacity: 0; transform: translate(95vw, 20vh) rotate(60deg) scale(1); }
+}
+.anlass-konfetti { position: absolute; top: -3vh; width: 8px; height: 13px; border-radius: 2px;
+  animation: anlass-fallen var(--dauer) linear var(--verz) 1 both; }
+.anlass-flocke { position: absolute; top: -5vh; color: #8fb8de; font-style: normal;
+  text-shadow: 0 0 2px #fff; animation: anlass-fallen var(--dauer) linear var(--verz) 1 both; }
+@keyframes anlass-fallen {
+  from { transform: translate(0, 0) rotate(0); opacity: 1; }
+  90% { opacity: 1; }
+  to { transform: translate(6vw, 110vh) rotate(var(--dreh, 360deg)); opacity: 0; }
+}
+.anlass-hoppeln { position: absolute; left: 0; bottom: 3vh;
+  animation: anlass-hoppeln var(--dauer) linear var(--verz) 1 both; }
+.anlass-sprung { width: clamp(90px, 14vw, 150px);
+  animation: anlass-sprung .55s cubic-bezier(.3, .8, .5, 1) var(--verz) 15 alternate; }
+@keyframes anlass-hoppeln { from { transform: translateX(-25vw); } to { transform: translateX(115vw); } }
+@keyframes anlass-sprung { from { transform: translateY(0); } to { transform: translateY(-12vh); } }
+.anlass-schlitten { position: absolute; right: 0; top: var(--hoehe);
+  animation: anlass-schlitten var(--dauer) ease-in-out var(--verz) 1 both; }
+.anlass-schlitten svg { width: clamp(200px, 32vw, 380px); transform: scaleX(-1); }
+@keyframes anlass-schlitten {
+  0% { transform: translate(40vw, 6vh); }
+  50% { transform: translate(-45vw, -3vh); }
+  100% { transform: translate(-130vw, 8vh); }
+}
+@media (prefers-reduced-motion: reduce) { .anlass { display: none; } }

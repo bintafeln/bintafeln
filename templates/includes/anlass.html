@@ -1,0 +1,87 @@
+{% comment %}Überraschung auf der Anmeldeseite an Festtagen (ADR 0079): gezeichnete SVG-Figuren,
+CSS-Animation einmal je Aufruf, nur Dekoration (aria-hidden, nimmt keine Klicks an).{% endcomment %}
+<div class="anlass anlass-{{ anlass }}" aria-hidden="true">
+  <svg width="0" height="0" class="anlass-defs" focusable="false">
+    {% if anlass == "halloween" %}
+    <symbol id="anlass-fledermaus" viewBox="0 0 100 50">
+      <path fill="#1d1a24" d="M50 19c-2-6-5-7-6-3-6-6-16-10-29-8 7 4 9 10 7 16-6-2-13 0-18 6 10 0 16 3 18 10 6-6 14-6 20-2 2-4 5-6 8-6s6 2 8 6c6-4 14-4 20 2 2-7 8-10 18-10-5-6-12-8-18-6-2-6 0-12 7-16-13-2-23 2-29 8-1-4-4-3-6 3z"/>
+      <path fill="#1d1a24" d="M45 17l1-7 3 6zM55 17l-1-7-3 6z"/>
+      <circle cx="47.5" cy="20" r="1.3" fill="#ffd23f"/><circle cx="52.5" cy="20" r="1.3" fill="#ffd23f"/>
+    </symbol>
+    {% elif anlass == "karneval" %}
+    <symbol id="anlass-luftschlange" viewBox="0 0 120 60">
+      <path fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"
+            d="M4 50c10-30 22 10 32-16s22 14 32-12 22 12 32-10 12 6 16-4"/>
+    </symbol>
+    {% elif anlass == "ostern" %}
+    <symbol id="anlass-osterhase" viewBox="0 0 140 130">
+      <ellipse cx="58" cy="96" rx="40" ry="28" fill="#b98b5e"/>
+      <circle cx="20" cy="92" r="11" fill="#fff"/>
+      <ellipse cx="78" cy="122" rx="18" ry="6" fill="#a37850"/>
+      <ellipse cx="38" cy="122" rx="14" ry="6" fill="#a37850"/>
+      <ellipse cx="88" cy="22" rx="7" ry="24" fill="#b98b5e" transform="rotate(-12 88 22)"/>
+      <ellipse cx="88" cy="22" rx="3.5" ry="17" fill="#f4b6c2" transform="rotate(-12 88 22)"/>
+      <ellipse cx="104" cy="22" rx="7" ry="24" fill="#b98b5e" transform="rotate(14 104 22)"/>
+      <ellipse cx="104" cy="22" rx="3.5" ry="17" fill="#f4b6c2" transform="rotate(14 104 22)"/>
+      <circle cx="98" cy="62" r="24" fill="#c99a6b"/>
+      <circle cx="106" cy="56" r="3.5" fill="#2b2b2b"/><circle cx="107" cy="55" r="1" fill="#fff"/>
+      <ellipse cx="120" cy="66" rx="4" ry="3" fill="#e57a92"/>
+      <path d="M118 72q-4 4-8 1" stroke="#7a5638" stroke-width="1.5" fill="none"/>
+      <ellipse cx="96" cy="104" rx="13" ry="16" fill="#f7d354" transform="rotate(10 96 104)"/>
+      <path d="M84 100q12 6 25-2" stroke="#e63946" stroke-width="3" fill="none"/>
+      <path d="M85 110q12 5 23-2" stroke="#2a9d8f" stroke-width="3" fill="none"/>
+    </symbol>
+    {% else %}
+    <symbol id="anlass-nikolaus" viewBox="0 0 320 120">
+      <g fill="#7a4a24">
+        <ellipse cx="262" cy="62" rx="28" ry="13"/>
+        <rect x="238" y="70" width="5" height="26" rx="2"/><rect x="250" y="72" width="5" height="26" rx="2"/>
+        <rect x="270" y="72" width="5" height="26" rx="2"/><rect x="282" y="70" width="5" height="26" rx="2"/>
+        <path d="M284 56q10-14 18-12l2 10q-8 2-14 10z"/>
+      </g>
+      <circle cx="304" cy="49" r="3.5" fill="#e63946"/>
+      <path d="M296 44l-4-14m2 6l-7-4m11 12l4-14m-2 6l7-4" stroke="#5a3418" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M238 66q-40 2-74 18" stroke="#c9a227" stroke-width="2" fill="none"/>
+      <path d="M40 70h120q20 0 24 20l-6 6H52q-14 0-18-14z" fill="#c1121f"/>
+      <path d="M30 100h150q10 0 14-8" stroke="#e9c46a" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <circle cx="78" cy="58" r="20" fill="#c1121f"/>
+      <circle cx="104" cy="40" r="11" fill="#f2c9a5"/>
+      <path d="M92 44q12 22 26 0q-2 16-13 18q-11-2-13-18z" fill="#fff"/>
+      <path d="M92 38q4-22 30-14q-10-2-14 6z" fill="#c1121f"/>
+      <rect x="91" y="34" width="26" height="6" rx="3" fill="#fff"/>
+      <circle cx="124" cy="25" r="4.5" fill="#fff"/>
+      <circle cx="108" cy="40" r="1.6" fill="#2b2b2b"/>
+      <ellipse cx="54" cy="56" rx="18" ry="16" fill="#8d6e4c"/>
+      <rect x="56" y="38" width="10" height="6" rx="3" fill="#6b4f35"/>
+    </symbol>
+    {% endif %}
+  </svg>
+
+  {% if anlass == "halloween" %}
+    {% for f in szene.figuren %}
+    <div class="anlass-flug" style="--hoehe:{{ f.hoehe }}vh;--verz:{{ f.verz }}s;--dauer:{{ f.dauer }}s">
+      <svg class="anlass-flattern" style="width:{{ f.groesse }}px" viewBox="0 0 100 50"><use href="#anlass-fledermaus"/></svg>
+    </div>
+    {% endfor %}
+  {% elif anlass == "karneval" %}
+    {% for f in szene.figuren %}
+    <div class="anlass-pusten" style="--hoehe:{{ f.hoehe }}vh;--verz:{{ f.verz }}s;--dauer:{{ f.dauer }}s;color:{{ f.farbe }}">
+      <svg style="width:{{ f.groesse }}px" viewBox="0 0 120 60"><use href="#anlass-luftschlange"/></svg>
+    </div>
+    {% endfor %}
+    {% for k in szene.konfetti %}<i class="anlass-konfetti" style="left:{{ k.links }}vw;--verz:{{ k.verz }}s;--dauer:{{ k.dauer }}s;--dreh:{{ k.dreh }}deg;background:{{ k.farbe }}"></i>{% endfor %}
+  {% elif anlass == "ostern" %}
+    {% for f in szene.figuren %}
+    <div class="anlass-hoppeln" style="--verz:{{ f.verz }}s;--dauer:{{ f.dauer }}s">
+      <svg class="anlass-sprung" viewBox="0 0 140 130"><use href="#anlass-osterhase"/></svg>
+    </div>
+    {% endfor %}
+  {% else %}
+    {% for f in szene.figuren %}
+    <div class="anlass-schlitten" style="--hoehe:{{ f.hoehe }}vh;--verz:{{ f.verz }}s;--dauer:{{ f.dauer }}s">
+      <svg viewBox="0 0 320 120"><use href="#anlass-nikolaus"/></svg>
+    </div>
+    {% endfor %}
+    {% for k in szene.flocken %}<i class="anlass-flocke" style="left:{{ k.links }}vw;--verz:{{ k.verz }}s;--dauer:{{ k.dauer }}s;font-size:{{ k.groesse }}px">❄</i>{% endfor %}
+  {% endif %}
+</div>
