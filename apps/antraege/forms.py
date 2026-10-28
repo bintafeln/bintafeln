@@ -237,12 +237,17 @@ class EinstellungenForm(forms.ModelForm):
         help_text=AntragEinstellungen._meta.get_field("voraussetzungen_url").help_text,
     )  # fmt: skip
 
+    einverstaendnis_url = forms.URLField(
+        label="Link zur Einverständniserklärung", required=False, assume_scheme="https",
+        help_text=AntragEinstellungen._meta.get_field("einverstaendnis_url").help_text,
+    )  # fmt: skip
+
     class Meta:
         model = AntragEinstellungen
         fields = [
             "aktiv", "modus", "erste_nummer", *AntragEinstellungen.FELDER, "datenschutz_url",
-            "impressum_url",
-            "erklaerungen_url", "voraussetzungen_url", "eigenes_css", "benachrichtigen",
+            "impressum_url", "erklaerungen_url", "voraussetzungen_url", "einverstaendnis_url",
+            "eigenes_css", "benachrichtigen",
             "erledigt_nach_tagen", "papierkorb_nach_tagen", "loeschen_nach_tagen",
         ]  # fmt: skip
         widgets = {

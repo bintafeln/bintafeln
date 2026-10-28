@@ -407,7 +407,8 @@ def test_einstellungen_und_texte(admin_client, benutzer_mit_rolle):
               "erste_nummer": 4201,
               "datenschutz_url": "tafel.example.org/ds",
               "erklaerungen_url": "tafel.example.org/ausgabe",
-              "voraussetzungen_url": "https://tafel.example.org/wer"}  # fmt: skip
+              "voraussetzungen_url": "https://tafel.example.org/wer",
+              "einverstaendnis_url": "tafel.example.org/einverstaendnis.pdf"}  # fmt: skip
     admin_client.post(url, werte)
     e = AntragEinstellungen.laden()
     assert e.aktiv and list(e.benachrichtigen.all()) == [b]
@@ -415,6 +416,8 @@ def test_einstellungen_und_texte(admin_client, benutzer_mit_rolle):
     assert e.erklaerungen_url == "https://tafel.example.org/ausgabe"
     formular = admin_client.get(reverse("antrag:formular", args=["en"])).content.decode()
     assert 'href="https://tafel.example.org/wer"' in formular
+    assert 'href="https://tafel.example.org/einverstaendnis.pdf"' in formular
+    assert "Declaration of consent" in formular
     assert (
         "Requirements and documents" in formular and "How the food distribution works" in formular
     )

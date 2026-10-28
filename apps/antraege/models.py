@@ -69,6 +69,11 @@ class AntragEinstellungen(models.Model):
         "Link zu Voraussetzungen", blank=True,
         help_text="Seite der Tafel: wer berechtigt ist und welche Nachweise nötig sind.",
     )  # fmt: skip
+    einverstaendnis_url = models.URLField(
+        "Link zur Einverständniserklärung", blank=True,
+        help_text="z. B. PDF der Tafel zum Ausdrucken und Unterschreiben (Einverständnis zur "
+        "Verarbeitung der Daten).",
+    )  # fmt: skip
     eigenes_css = models.TextField(
         "Eigene Gestaltung (CSS)",
         blank=True,

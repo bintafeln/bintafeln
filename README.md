@@ -663,9 +663,10 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
 
 - **Einschalten:** „Anträge“ → „Formular einstellen“ (Admin). Dort je Feld wählen: nicht
   abfragen, freiwillig oder Pflicht; Links zu Datenschutzerklärung, Impressum, Erklärungen
-  (z. B. Ablauf der Lebensmittelausgabe) und Voraussetzungen (wer berechtigt ist, welche
-  Nachweise nötig sind) eintragen (der Impressum-Link steht auch auf der Anmeldeseite und unten
-  auf jeder Seite); die beiden letzten stehen gut sichtbar über dem Formular;
+  (z. B. Ablauf der Lebensmittelausgabe), Voraussetzungen (wer berechtigt ist, welche
+  Nachweise nötig sind) und Einverständniserklärung (z. B. PDF zum Unterschreiben) eintragen
+  (der Impressum-Link steht auch auf der Anmeldeseite und unten auf jeder Seite); die drei
+  letzten stehen gut sichtbar über dem Formular;
   festlegen, wer bei neuen Anträgen eine Mail bekommt. Danach „Online-Anträge annehmen“
   einschalten.
 - **Adresse für die Webseite der Tafel:** `https://<domain>/antrag/`. Die Seite ist in
