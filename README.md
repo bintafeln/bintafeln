@@ -668,7 +668,9 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   (z. B. Ablauf der Lebensmittelausgabe), Voraussetzungen (wer berechtigt ist, welche
   Nachweise nötig sind) und Einverständniserklärung (z. B. PDF zum Unterschreiben) eintragen
   (der Impressum-Link steht auch auf der Anmeldeseite und unten auf jeder Seite); die drei
-  letzten stehen gut sichtbar über dem Formular; unter „Texte“ je Sprache ein **Hinweis zu den
+  letzten stehen gut sichtbar über dem Formular; ist ein Link zur Datenschutz- oder
+  Einverständniserklärung eingetragen, muss sie vor dem Absenden per Häkchen bestätigt werden
+  (der Antrag hält das fest); unter „Texte“ je Sprache ein **Hinweis zu den
   Nachweisen** (z. B. welche Unterlagen nötig sind; ohne eigenen Hinweis gilt der deutsche). Die
   Nachweise lassen sich in ein Feld ziehen, auswählen oder direkt mit dem Handy fotografieren;
   die eigenen Texte lassen sich im Reiter „Gestalten“ wie in einem Schreibprogramm (fett,
