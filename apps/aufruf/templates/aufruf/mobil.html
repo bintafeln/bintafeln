@@ -1294,6 +1294,12 @@
                             Zielgruppe: ${d.gruppe || '–'}`);
                         return;
                     }
+                    if (d.jetzt_dran) {
+                        showAbfrageResult('done', `
+                            <div class="headline">🔔 ${d.nummer} ist jetzt dran</div>
+                            Steht gerade auf dem Monitor (Gruppe ${d.gruppe}).`);
+                        return;
+                    }
                     if (d.schon_dran) {
                         showAbfrageResult('done', `
                             <div class="headline">✅ ${d.nummer} war schon dran</div>

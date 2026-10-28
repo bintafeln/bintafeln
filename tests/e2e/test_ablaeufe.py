@@ -364,3 +364,26 @@ def test_suchfeld_der_listen_auf_dem_handy_einzeilig(angemeldet, admin):
     seite.set_viewport_size({"width": 390, "height": 800})
     seite.goto("/antraege/")
     assert seite.locator("input#suche").bounding_box()["height"] < 80
+
+
+def test_kiosk_nummer_auf_dem_monitor_ist_jetzt_dran(seite, admin):
+    """Steht eine Nummer gerade auf dem Monitor (auch an dritter Stelle), zeigt der Kiosk
+    „jetzt dran“ – nicht „gleich dran“. Wer erst danach kommt, sieht „gleich dran“."""
+    from apps.aufruf import ablauf
+    from apps.aufruf.models import AufrufEinstellungen
+    from apps.core.models import TafelEinstellungen
+
+    stelle = _haushalte(8)
+    t = TafelEinstellungen.laden()
+    t.module = ["aufruf"]
+    t.save()
+    e = AufrufEinstellungen.laden(stelle)
+    e.anzahl = 3
+    e.save()
+    tag = ablauf.starten(stelle, timezone.localdate())
+    wartend = tag.stand["gruppen"][0]["wartend"]
+    for nummer, text in ((wartend[2], "jetzt dran"), (wartend[3], "gleich dran")):
+        seite.goto(f"/aufruf/anzeige/{e.schluessel}/kiosk/")
+        seite.keyboard.type(nummer)
+        seite.keyboard.press("Enter")
+        expect(seite.locator("#statusCard")).to_contain_text(text)

@@ -269,6 +269,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Mitglieder, Kundenstamm; Kontobuchungen über `buchungen.csv`, `Buchung.importiert`).
   Neue Ziele dort ergänzen. Kundenstamm: Assistent schreibt ins Importformat um, Ergänzen in
   `apps/kunden/import_ergaenzen.py`; Haushalt in den Papierkorb über `apps/kunden/entfernen.py`.
+- Überraschungen auf der Anmeldeseite an Festtagen: `apps/core/anlaesse.py` und
+  `templates/includes/anlass.html` (SVG + CSS, kein JavaScript; ADR 0079).
 - Spenden: Import in `apps/spenden/importieren.py` (ADR 0055, `belegnummer` gegen Dubletten),
   Dankesbriefe und hochgeladene Belege in `apps/spenden/dank.py` (ADR 0056; PDFs zusammenfügen
   mit `pypdf`, Mail-Anhänge über `mail.senden(..., anhaenge=…)`).

@@ -216,6 +216,12 @@ Fenster für den Code (5 Minuten gültig, höchstens 5 Versuche).
   signiertes Cookie, in der Datenbank eine Prüfsumme. Ungültig wird das Gerät nach Ablauf, nach
   einer Passwortänderung, nach neuer Einrichtung oder Zurücksetzen der Zwei-Faktor-Anmeldung und
   wenn es unter „Mein Konto“ (eigene Geräte) oder bei „Mitarbeitende“ (Admin) entfernt wird.
+- **Überraschungen an Festtagen** (ADR 0079): Auf der Anmeldeseite fliegen zu Halloween
+  (24.–31.10.) Fledermäuse, zu Karneval (Weiberfastnacht bis Veilchendienstag) Luftschlangen und
+  Konfetti, zu Ostern (Palmsonntag bis Ostermontag) hoppelt der Osterhase, zu Nikolaus (5./6.12.)
+  und Weihnachten (20.–26.12.) kommt der Nikolaus im Schlitten – einmal je Aufruf, nur
+  Dekoration, aus bei „Bewegung reduzieren“. Abschaltbar unter „Anmeldung und Zwei-Faktor“.
+  Vorschau: `/konten/anmelden/?anlass=halloween` (auch `karneval`, `ostern`, `nikolaus`).
   „Aus“ entfernt alle vertrauten Geräte.
 
 Einrichten und Entfernen stehen im Änderungsprotokoll, Schlüssel und Codes nie.
@@ -889,6 +895,9 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   Nummern-Anzeige, Kiosk (Karte scannen, Antwort auf Deutsch und in der Sprache zur
   Staatsangehörigkeit) und Abfrage. Sie brauchen keine Anmeldung, sondern den geheimen Link aus
   „Einstellungen → Aufruf, Monitor und Kiosk“; „Neue Links erzeugen“ sperrt alte Links.
+  Steht eine Nummer gerade auf dem Monitor („Bitte eintreten“), sagen Kiosk, Abfrage und
+  Handy-Steuerung „jetzt dran“ – egal an welcher Stelle. „Gleich dran“ heißt: Die Nummer kommt
+  mit den nächsten Aufrufen auf den Monitor; sonst steht da, wie viele Kunden noch davor sind.
 - **Am Einlass:** Die Einlass-Karte zeigt beim Scannen, ob und wann die Nummer aufgerufen
   wurde, „Zu spät“ (ab einstellbarer Minutenzahl nach dem Aufruf, Vorgabe 15) oder wie viele
   Nummern der Kunde zu früh ist. Bei „zu früh“ und „zu spät“ leuchtet die Ampel grün und Gelb
