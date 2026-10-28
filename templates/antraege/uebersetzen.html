@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block titel %}Texte übersetzen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'antraege:texte' 'de' %}">← Texte Deutsch</a></p>
+  <h1>Texte in alle Sprachen übersetzen</h1>
+  <p class="hinweis">Die eigenen deutschen Texte gehen nacheinander je Sprache an Claude (Anthropic) und werden als Texte
+    dieser Sprache gespeichert. Bitte die Seite offen lassen, bis „Fertig“ erscheint. Danach lassen sich die Texte je
+    Sprache unter „Anträge einstellen“ ansehen und korrigieren.</p>
+  <ul class="uebersetzen-liste" aria-live="polite">
+    {% include "antraege/_uebersetzen_naechste.html" with s=erste %}
+  </ul>
+</section>
+{% endblock %}

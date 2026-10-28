@@ -16,6 +16,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from apps.antraege import auskunft, sprachen
+from apps.antraege import uebersetzen as uebersetzen_ki
 from apps.antraege.forms import (
     AntragBearbeitenForm,
     AntragPersonenFormset,
@@ -283,7 +284,8 @@ def texte(request, sprache):
         raise Http404
     instanz = AntragText.objects.filter(sprache=sprache).first() or AntragText(sprache=sprache)
     form = TextForm(request.POST or None, instance=instanz)
-    kontext = {"form": form, "s": sprachen.sprache(sprache), "t": sprachen.texte(sprache)}
+    kontext = {"form": form, "s": sprachen.sprache(sprache), "t": sprachen.texte(sprache),
+               "ki": sprache == "de" and uebersetzen_ki.verfuegbar()}  # fmt: skip
     if request.method == "POST" and form.is_valid():
         if "vorschau" in request.POST:
             kontext["vorschau"] = vorschau(request, form.save(commit=False))
@@ -310,3 +312,42 @@ def vorschau(request, eigene: AntragText) -> dict:
         "mail_betreff": betreff,
         "mail_html": mail_html,
     }
+
+
+# --- KI-Übersetzung der eigenen Texte (ADR 0082) ---------------------------------------------
+
+
+@require_POST
+@rollen.recht_erforderlich("einstellungen.antraege")
+def uebersetzen(request):
+    """Startet die Übersetzung; die Seite holt die Sprachen nacheinander (htmx), damit keine
+    einzelne Anfrage zu lange dauert und man den Fortschritt sieht."""
+    if not uebersetzen_ki.verfuegbar():
+        messages.error(request, "Für die Übersetzung fehlt der API-Schlüssel (Anträge einstellen).")
+        return redirect("antraege:texte", "de")
+    if not uebersetzen_ki.deutsche_texte():
+        messages.info(request, "Es gibt noch keine eigenen deutschen Texte zum Übersetzen.")
+        return redirect("antraege:texte", "de")
+    sprachliste = uebersetzen_ki.sprachen_ohne_deutsch()
+    return render(request, "antraege/uebersetzen.html",
+                  {"sprachliste": sprachliste, "erste": sprachliste[0]})  # fmt: skip
+
+
+@require_POST
+@rollen.recht_erforderlich("einstellungen.antraege")
+def uebersetzen_sprache(request, sprache):
+    """Eine Sprache übersetzen; die Antwort enthält die Zeile dazu und stößt die nächste an."""
+    liste = uebersetzen_ki.sprachen_ohne_deutsch()
+    codes = [s.code for s in liste]
+    if sprache not in codes:
+        raise Http404
+    try:
+        anzahl = uebersetzen_ki.sprache_uebersetzen(sprache)
+        fehler = ""
+    except uebersetzen_ki.UebersetzungsFehler as e:
+        anzahl, fehler = 0, str(e)
+    i = codes.index(sprache)
+    return render(request, "antraege/_uebersetzen_schritt.html", {
+        "s": liste[i], "anzahl": anzahl, "fehler": fehler,
+        "naechste": liste[i + 1] if i + 1 < len(liste) else None,
+    })  # fmt: skip

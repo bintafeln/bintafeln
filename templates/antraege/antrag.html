@@ -31,11 +31,12 @@
     <dt>E-Mail</dt><dd>{{ a.email|default:"–" }}</dd>
     {% if a.familienstand %}<dt>Familienstand</dt><dd>{{ a.familienstand }}</dd>{% endif %}
     {% if a.staatsangehoerigkeit %}<dt>Staatsangehörigkeit</dt><dd>{{ a.staatsangehoerigkeit }}</dd>{% endif %}
+    {% if a.gdb_text %}<dt>Behinderung</dt><dd>{{ a.gdb_text }}</dd>{% endif %}
     <dt>Wunsch</dt><dd>{{ a.wochentage|default:"keine Wochentage" }} · {{ a.ausgabestelle|default:"Ausgabestelle egal" }}</dd>
     {% if a.nachricht %}<dt>Nachricht</dt><dd class="vorformatiert">{{ a.nachricht }}</dd>{% endif %}
   </dl>
   <h2>Weitere Personen im Haushalt</h2>
-  {% for p in a.personen.all %}{% if forloop.first %}<ul>{% endif %}<li>{{ p.vorname }} {{ p.nachname }}{% if p.geburtsdatum %}, geb. {{ p.geburtsdatum|date:"d.m.Y" }}{% endif %}{% if p.staatsangehoerigkeit %}, {{ p.staatsangehoerigkeit }}{% endif %}</li>{% if forloop.last %}</ul>{% endif %}{% empty %}<p>Keine.</p>{% endfor %}
+  {% for p in a.personen.all %}{% if forloop.first %}<ul>{% endif %}<li>{{ p.vorname }} {{ p.nachname }}{% if p.geburtsdatum %}, geb. {{ p.geburtsdatum|date:"d.m.Y" }}{% endif %}{% if p.staatsangehoerigkeit %}, {{ p.staatsangehoerigkeit }}{% endif %}{% if p.gdb_text %}, {{ p.gdb_text }}{% endif %}</li>{% if forloop.last %}</ul>{% endif %}{% empty %}<p>Keine.</p>{% endfor %}
   <h2>Nachweise</h2>
   {% for d in a.anhaenge.all %}{% if forloop.first %}<ul>{% endif %}<li><a href="{% url 'antraege:anhang' a.pk d.pk %}" target="_blank" rel="noopener">{{ d.name }}</a> ({{ d.groesse|filesizeformat }})</li>{% if forloop.last %}</ul>{% endif %}{% empty %}<p>Keine.</p>{% endfor %}
   <p><a href="{% url 'antraege:auskunft' a.pk %}" target="_blank" rel="noopener">Auskunft nach Art. 15 DSGVO (PDF)</a></p>

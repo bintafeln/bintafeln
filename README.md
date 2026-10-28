@@ -216,6 +216,8 @@ Fenster für den Code (5 Minuten gültig, höchstens 5 Versuche).
   signiertes Cookie, in der Datenbank eine Prüfsumme. Ungültig wird das Gerät nach Ablauf, nach
   einer Passwortänderung, nach neuer Einrichtung oder Zurücksetzen der Zwei-Faktor-Anmeldung und
   wenn es unter „Mein Konto“ (eigene Geräte) oder bei „Mitarbeitende“ (Admin) entfernt wird.
+- **Anmeldefeld schwebt herein:** Beim Aufruf der Anmeldeseite schwebt das Anmeldefeld von links
+  unten an seinen Platz (nicht nach einer falschen Eingabe und nicht bei „Bewegung reduzieren“).
 - **Überraschungen an Festtagen** (ADR 0079): Auf der Anmeldeseite fliegen zu Halloween
   (24.–31.10.) Fledermäuse, zu Karneval (Weiberfastnacht bis Veilchendienstag) Luftschlangen und
   Konfetti, zu Ostern (Palmsonntag bis Ostermontag) hoppeln zwei Osterhasen, zu Nikolaus (5./6.12.)
@@ -669,6 +671,15 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   letzten stehen gut sichtbar über dem Formular; unter „Texte“ je Sprache ein **Hinweis zu den
   Nachweisen** (z. B. welche Unterlagen nötig sind; ohne eigenen Hinweis gilt der deutsche). Die
   Nachweise lassen sich in ein Feld ziehen, auswählen oder direkt mit dem Handy fotografieren;
+  die eigenen Texte lassen sich im Reiter „Gestalten“ wie in einem Schreibprogramm (fett,
+  Überschrift, Liste, Link, Bild, Farbe, Ausrichtung) oder im Reiter „HTML“ bearbeiten;
+  mit eigenem API-Schlüssel von Claude (Anthropic) übersetzt „Mit KI in alle Sprachen
+  übersetzen“ auf der Seite „Texte: Deutsch“ die eigenen Texte in alle Sprachen (nur diese Texte
+  verlassen den Server, nie Angaben aus Anträgen; ADR 0082);
+  „Behinderung (GdB) je Person“ (Vorgabe: nicht abfragen, weil Gesundheitsdaten nach Art. 9
+  DSGVO) fragt für jede Person ab: keine Behinderung oder GdB 20 bis 100; der
+  Aufnahme-Assistent übernimmt den Wert in das Zusatzfeld „Grad der Behinderung“ und setzt ab
+  GdB 50 das Merkmal „Schwerbehindert“;
   festlegen, wer bei neuen Anträgen eine Mail bekommt. Danach „Online-Anträge annehmen“
   einschalten.
 - **Adresse für die Webseite der Tafel:** `https://<domain>/antrag/`. Die Seite ist in

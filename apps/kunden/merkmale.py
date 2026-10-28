@@ -2,7 +2,7 @@
 Einlass sieht und die als Symbol auf den Ausweis kommen können. Gezeigt wird nur, was „ja“ ist;
 leer gilt als „nein“."""
 
-from apps.core.auswahl import FESTE_MERKMALE
+from apps.core.auswahl import FESTE_MERKMALE, GDB_SCHWERBEHINDERT, GDB_STUFEN, gdb_text
 from apps.konten import rollen
 from apps.kunden.models import Zusatzfeld
 
@@ -57,3 +57,24 @@ def ausweis(haushalt) -> list[tuple[str, str]]:
         if symbol not in symbole and _ja(feld, haushalt, personen):
             symbole.append(symbol)
     return symbole
+
+
+GDB_FELD = "gdb"
+
+
+def gdb_setzen(person, gdb) -> None:
+    """Grad der Behinderung aus dem Antrag an der Person (ohne Speichern): als Zusatzfeld
+    „Grad der Behinderung“ (Art. 9, wird beim ersten Mal angelegt) und ab GdB 50 das Merkmal
+    „Schwerbehindert“. Leer (keine Angabe) ändert nichts."""
+    if gdb is None or gdb == "":
+        return
+    gdb = int(gdb)
+    Zusatzfeld.objects.get_or_create(schluessel=GDB_FELD, defaults={
+        "bezeichnung": "Grad der Behinderung", "gilt_fuer": Zusatzfeld.GiltFuer.PERSON,
+        "typ": Zusatzfeld.Typ.AUSWAHL, "besondere_kategorie": True, "reihenfolge": 99,
+        "optionen": "\n".join(gdb_text(n) for n in [0, *GDB_STUFEN]),
+    })  # fmt: skip
+    zusatz = dict(person.zusatz or {})
+    zusatz[GDB_FELD] = gdb_text(gdb)
+    zusatz["schwerbehindert"] = gdb >= GDB_SCHWERBEHINDERT
+    person.zusatz = zusatz

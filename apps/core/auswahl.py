@@ -168,3 +168,15 @@ NACHRICHT_ANLIEGEN_WAEHLBAR = [a for a in NACHRICHT_ANLIEGEN if a[0] not in NACH
 # Krankmeldung eines Kunden (ADR 0075): Gesundheitsdaten, deshalb nur grob und nur befristet
 KRANK_GRUENDE = [("krank", "krank"), ("reha", "Reha"), ("krankenhaus", "Krankenhaus")]
 FAHRDIENST_AUSFALLGRUENDE = [("krank", "krank"), ("urlaub", "Urlaub"), ("sonstiges", "Sonstiges")]
+
+
+# Grad der Behinderung (GdB) im Antrag und im Kundenstamm: Zehnerstufen von 20 bis 100.
+# Gespeichert als Zahl; 0 = keine Behinderung, leer = keine Angabe. Ab 50 schwerbehindert.
+GDB_STUFEN = list(range(20, 101, 10))
+GDB_SCHWERBEHINDERT = 50
+
+
+def gdb_text(wert) -> str:
+    if wert is None or wert == "":
+        return ""
+    return "keine Behinderung" if int(wert) == 0 else f"GdB {int(wert)}"

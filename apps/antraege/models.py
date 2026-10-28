@@ -15,6 +15,7 @@ from django.db import models, transaction
 from django.utils import timezone
 
 from apps.antraege import sprachen
+from apps.core.auswahl import gdb_text
 
 ANHANG_ORDNER = "antraege"
 
@@ -54,6 +55,8 @@ class AntragEinstellungen(models.Model):
     email = _abfrage("E-Mail")
     familienstand = _abfrage("Familienstand", Abfrage.AUS)
     staatsangehoerigkeit = _abfrage("Staatsangehörigkeit", Abfrage.AUS)
+    # Gesundheitsdaten (Art. 9 DSGVO): nur abfragen, wenn die Tafel es bewusst einschaltet
+    behinderung = _abfrage("Behinderung (GdB) je Person", Abfrage.AUS)
     angehoerige = _abfrage("Weitere Personen im Haushalt")
     wochentage = _abfrage("Bevorzugte Wochentage")
     ausgabestelle = _abfrage("Bevorzugte Ausgabestelle")
@@ -74,6 +77,8 @@ class AntragEinstellungen(models.Model):
         help_text="z. B. PDF der Tafel zum Ausdrucken und Unterschreiben (Einverständnis zur "
         "Verarbeitung der Daten).",
     )  # fmt: skip
+    # API-Schlüssel für die KI-Übersetzung der eigenen Texte (ADR 0082), verschlüsselt (ADR 0016)
+    ki_schluessel_verschluesselt = models.TextField("API-Schlüssel (verschlüsselt)", blank=True)
     eigenes_css = models.TextField(
         "Eigene Gestaltung (CSS)",
         blank=True,
@@ -112,8 +117,8 @@ class AntragEinstellungen(models.Model):
 
     FELDER = [
         "kundennummer", "anrede", "geburtsdatum", "anschrift", "telefon", "email",
-        "familienstand", "staatsangehoerigkeit", "angehoerige", "wochentage", "ausgabestelle",
-        "anhaenge", "nachricht",
+        "familienstand", "staatsangehoerigkeit", "behinderung", "angehoerige", "wochentage",
+        "ausgabestelle", "anhaenge", "nachricht",
     ]  # fmt: skip
 
     class Meta:
@@ -199,6 +204,10 @@ class Antrag(models.Model):
     email = models.EmailField("E-Mail", blank=True)
     familienstand = models.CharField("Familienstand", max_length=50, blank=True)
     staatsangehoerigkeit = models.CharField("Staatsangehörigkeit", max_length=100, blank=True)
+    gdb = models.PositiveSmallIntegerField(
+        "Grad der Behinderung", null=True, blank=True,
+        help_text="0 = keine Behinderung, leer = keine Angabe.",
+    )  # fmt: skip
     wochentage = models.CharField("Bevorzugte Wochentage", max_length=30, blank=True)
     ausgabestelle = models.CharField("Bevorzugte Ausgabestelle", max_length=100, blank=True)
     nachricht = models.TextField("Nachricht", blank=True)
@@ -218,6 +227,10 @@ class Antrag(models.Model):
         with transaction.atomic():
             self.laufnummer = naechste_antragsnummer()
             super().save(*args, **kwargs)
+
+    @property
+    def gdb_text(self) -> str:
+        return gdb_text(self.gdb)
 
     @property
     def nummer(self) -> str:
@@ -241,6 +254,10 @@ class AntragPerson(models.Model):
     nachname = models.CharField("Nachname", max_length=100, blank=True)
     geburtsdatum = models.DateField("Geburtsdatum", null=True, blank=True)
     staatsangehoerigkeit = models.CharField("Staatsangehörigkeit", max_length=100, blank=True)
+    gdb = models.PositiveSmallIntegerField(
+        "Grad der Behinderung", null=True, blank=True,
+        help_text="0 = keine Behinderung, leer = keine Angabe.",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Person im Antrag"
@@ -249,6 +266,10 @@ class AntragPerson(models.Model):
 
     def __str__(self):
         return f"{self.vorname} {self.nachname}".strip()
+
+    @property
+    def gdb_text(self) -> str:
+        return gdb_text(self.gdb)
 
 
 class AntragAnhang(models.Model):
@@ -301,7 +322,8 @@ class AntragVersuch(models.Model):
         return f"Versuch {timezone.localtime(self.zeitpunkt):%d.%m.%Y %H:%M}"
 
 
-auditlog.register(AntragEinstellungen, m2m_fields={"benachrichtigen"})
+auditlog.register(AntragEinstellungen, m2m_fields={"benachrichtigen"},
+                  exclude_fields=["ki_schluessel_verschluesselt"])  # fmt: skip
 auditlog.register(AntragText)
 auditlog.register(Antrag)
 auditlog.register(AntragPerson)

@@ -136,6 +136,34 @@ def test_antrag_nachweise_ablegen(seite, admin):
     assert feld.evaluate("f => f.files[0].name") == "bescheid.pdf"
 
 
+def test_editor_gestalten_und_html(angemeldet, admin):
+    from apps.antraege.models import AntragText
+
+    AntragText.objects.create(
+        sprache="de",
+        einleitung='<p>Hallo <img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" '
+        'onerror="alert(1)"></p>',
+    )
+    seite = angemeldet(admin)
+    seite.goto("/antraege/einstellungen/texte/de/")
+    flaeche = seite.locator(".editor-flaeche").first
+    expect(flaeche).to_contain_text("Hallo")
+    assert "onerror" not in flaeche.inner_html()  # Ereignisse fallen vor dem Anzeigen weg
+    flaeche.click()
+    seite.keyboard.press("End")
+    seite.keyboard.type(" Welt")
+    seite.keyboard.press("Shift+Home")
+    seite.locator(".editor-leiste").first.get_by_role("button", name="Fett").click()
+    seite.locator(".editor-reiter").first.get_by_role("tab", name="HTML").click()
+    feld = seite.locator("#id_einleitung")
+    expect(feld).to_be_visible()
+    assert "Welt" in feld.input_value() and (
+        "<b>" in feld.input_value() or "font-weight" in feld.input_value()
+    )
+    seite.get_by_role("button", name="Speichern").click()
+    assert "Welt" in AntragText.objects.get(sprache="de").einleitung
+
+
 def test_suche_im_kopf(angemeldet, admin):
     _haushalte(1)
     seite = angemeldet(admin)

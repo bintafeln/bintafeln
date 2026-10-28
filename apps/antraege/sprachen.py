@@ -1,8 +1,9 @@
 """Sprachen des öffentlichen Antragsformulars (ADR 0024).
 
 Die Texte liegen je Sprache in uebersetzungen/<code>.json, Grundlage ist de.json. Fehlt in
-einer Sprache ein Text, erscheint der deutsche. Es wird kein fremder Übersetzungsdienst
-eingebunden: Was Antragstellende eingeben, verlässt den Server nicht.
+einer Sprache ein Text, erscheint der deutsche. Was Antragstellende eingeben, verlässt den
+Server nicht; nur die eigenen Texte der Tafel lassen sich auf Knopfdruck mit KI übersetzen
+(ADR 0082).
 """
 
 import json

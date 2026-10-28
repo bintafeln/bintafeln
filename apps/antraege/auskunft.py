@@ -31,6 +31,7 @@ def antrag_pdf(a) -> bytes:
             ("E-Mail", a.email),
             ("Familienstand", a.familienstand),
             ("Staatsangehörigkeit", a.staatsangehoerigkeit),
+            ("Behinderung", a.gdb_text),
             ("Bevorzugte Wochentage", a.wochentage),
             ("Bevorzugte Ausgabestelle", a.ausgabestelle),
             ("Nachricht", a.nachricht),
@@ -38,9 +39,9 @@ def antrag_pdf(a) -> bytes:
     )
     doc.ueberschrift("Weitere Personen im Haushalt")
     doc.tabelle(
-        ["Vorname", "Nachname", "Geburtsdatum", "Staatsangehörigkeit"],
+        ["Vorname", "Nachname", "Geburtsdatum", "Staatsangehörigkeit", "Behinderung"],
         [
-            [p.vorname, p.nachname, _datum(p.geburtsdatum), p.staatsangehoerigkeit]
+            [p.vorname, p.nachname, _datum(p.geburtsdatum), p.staatsangehoerigkeit, p.gdb_text]
             for p in a.personen.all()
         ],  # fmt: skip
     )

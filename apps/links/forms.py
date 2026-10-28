@@ -7,7 +7,7 @@ from apps.core.forms import BildEingabe
 from apps.links.models import Link, LinkGruppe
 
 BILD_MAX_BYTES = 2 * 1024 * 1024
-BILD_KANTE = 128
+BILD_KANTE = 480  # scharf genug für breite Logos, auch auf hochauflösenden Bildschirmen
 
 
 def recht_auswahl(wert: str = "") -> list:

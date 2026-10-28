@@ -1,0 +1,2 @@
+<li>{% if fehler %}⚠️ {{ s.deutsch }}: {{ fehler }}{% else %}✓ <a href="{% url 'antraege:texte' s.code %}">{{ s.deutsch }}</a> ({{ anzahl }} Text{{ anzahl|pluralize:"e" }}){% endif %}</li>
+{% if naechste %}{% include "antraege/_uebersetzen_naechste.html" with s=naechste %}{% else %}<li><strong>Fertig.</strong></li>{% endif %}
