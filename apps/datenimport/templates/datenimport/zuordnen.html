@@ -45,12 +45,12 @@
   {% if t.fehlend %}<p class="sicherung sicherung-veraltet">Noch nicht zugeordnet (Pflicht): {% for f in t.fehlend %}{{ f.bezeichnung }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}
   <div class="tabelle-rahmen">
   <table class="tabelle kompakt zuordnung">
-    <thead><tr><th>Spalte in der Datei</th><th>Beispiele</th><th>gehört zu</th></tr></thead>
+    <thead><tr><th>Spalte in der Datei</th><th>Beispiele (je eine Zeile der Datei)</th><th>gehört zu</th></tr></thead>
     <tbody>
     {% for s in t.spalten %}
       <tr{% if not s.wahl %} class="ignoriert"{% endif %}>
         <td data-titel="Spalte"><strong>{{ s.kopf|default:"(ohne Überschrift)" }}</strong></td>
-        <td data-titel="Beispiele"><small>{% for b in s.beispiele %}{{ b|truncatechars:40 }}{% if not forloop.last %} · {% endif %}{% empty %}–{% endfor %}</small></td>
+        <td data-titel="Beispiele"><ul class="import-beispiele">{% for b in s.beispiele %}<li>{{ b|truncatechars:60 }}</li>{% empty %}<li>–</li>{% endfor %}</ul></td>
         <td data-titel="gehört zu">
           <select name="z-{{ t.i }}-{{ s.i }}" aria-label="Feld für {{ s.kopf }}">
             <option value="">– nicht übernehmen –</option>
