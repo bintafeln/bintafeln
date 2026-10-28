@@ -108,6 +108,34 @@ def test_online_antrag_oeffnet(seite, admin):
     expect(seite.locator("form")).to_be_visible()
 
 
+def test_antrag_nachweise_ablegen(seite, admin):
+    from apps.antraege.models import AntragEinstellungen, AntragText
+
+    e = AntragEinstellungen.laden()
+    e.aktiv = True
+    e.save()
+    AntragText.objects.create(sprache="de", anhaenge_hinweis="<p>Bitte Ausweis und die ersten "
+                              "Seiten des Bescheids anhängen.</p>")  # fmt: skip
+    seite.goto("/antrag/en/")  # ohne englischen Hinweis gilt der deutsche
+    expect(seite.get_by_text("Bitte Ausweis und die ersten Seiten")).to_be_visible()
+    expect(seite.get_by_role("button", name="Take a photo")).to_be_visible()
+    feld = seite.locator("input.ablage-feld")
+    png = {"name": "ausweis.png", "mimeType": "image/png", "buffer": b"\x89PNG erfunden"}
+    pdf = {"name": "bescheid.pdf", "mimeType": "application/pdf", "buffer": b"%PDF erfunden"}
+    feld.set_input_files([png])
+    feld.set_input_files([pdf])  # ergänzt, statt zu ersetzen
+    liste = seite.locator(".ablage-liste li")
+    expect(liste).to_have_count(2)
+    assert feld.evaluate("f => f.files.length") == 2
+    feld.set_input_files([{"name": "notiz.txt", "mimeType": "text/plain", "buffer": b"x"}])
+    expect(seite.locator(".ablage-fehler")).to_be_visible()
+    expect(liste).to_have_count(2)
+    liste.first.get_by_role("button").click()
+    expect(liste).to_have_count(1)
+    expect(liste.first).to_contain_text("bescheid.pdf")
+    assert feld.evaluate("f => f.files[0].name") == "bescheid.pdf"
+
+
 def test_suche_im_kopf(angemeldet, admin):
     _haushalte(1)
     seite = angemeldet(admin)

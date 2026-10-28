@@ -10,7 +10,7 @@
   </ul>{% endif %}
   <p class="hinweis">{{ t.pflicht_hinweis }}</p>
   {% if fehler %}<p class="sicherung sicherung-fehler" role="alert">{{ fehler }}</p>{% endif %}
-  <form method="post" enctype="multipart/form-data" novalidate>
+  <form method="post" enctype="multipart/form-data" novalidate class="antrag-formular">
     {% csrf_token %}
     {% if form.art %}{% include "antraege/_feld.html" with feld=form.art %}{% endif %}
     <fieldset class="abschnitt">
@@ -65,7 +65,15 @@
     {% if form.anhaenge %}
     <fieldset class="abschnitt">
       <legend>{{ t.abschnitt_unterlagen }}</legend>
-      {% include "antraege/_feld.html" with feld=form.anhaenge %}
+      {% if anhaenge_hinweis %}<div class="antrag-hinweis">{{ anhaenge_hinweis }}</div>{% endif %}
+      {% comment %}Ablage: Dateien hineinziehen, auswählen oder fotografieren (static/js/ablage.js);
+      ohne JavaScript bleibt das gewöhnliche Dateifeld{% endcomment %}
+      <div class="ablage-rahmen" data-ablage data-max="{{ max_anhaenge }}"
+           data-text-ziehen="{{ t.ablage_ziehen }}" data-text-waehlen="{{ t.ablage_waehlen }}"
+           data-text-foto="{{ t.ablage_foto }}" data-text-entfernen="{{ t.ablage_entfernen }}"
+           data-text-anzahl="{{ t.fehler_datei_anzahl }}" data-text-typ="{{ t.fehler_datei_typ }}">
+        {% include "antraege/_feld.html" with feld=form.anhaenge %}
+      </div>
     </fieldset>
     {% endif %}
     {% include "antraege/_feld.html" with feld=form.nachricht %}

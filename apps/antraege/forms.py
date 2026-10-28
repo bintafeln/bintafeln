@@ -273,14 +273,18 @@ def _html_feld(zeilen=8):
 class TextForm(forms.ModelForm):
     class Meta:
         model = AntragText
-        fields = ["ueberschrift", "einleitung", "bestaetigung", "mail_betreff", "mail_text"]
+        fields = ["ueberschrift", "einleitung", "anhaenge_hinweis", "bestaetigung", "mail_betreff",
+                  "mail_text"]  # fmt: skip
         widgets = {
+            "anhaenge_hinweis": _html_feld(3),
             "einleitung": _html_feld(),
             "bestaetigung": _html_feld(),
             "mail_text": _html_feld(10),
         }
         help_texts = {
             "einleitung": "Steht über dem Formular. Platzhalter: {tafel}.",
+            "anhaenge_hinweis": "Steht über dem Feld für die Nachweise, z. B. welche Unterlagen "
+            "nötig sind. Leer in einer Sprache = der deutsche Hinweis.",
             "bestaetigung": "Erscheint nach dem Absenden unter der Antragsnummer. Platzhalter: "
             "{nummer}, {tafel}.",
             "mail_betreff": "Platzhalter: {nummer}, {tafel}.",

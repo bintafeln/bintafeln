@@ -156,6 +156,7 @@ class AntragText(models.Model):
     bestaetigung = models.TextField("Seite nach dem Absenden (HTML möglich)", blank=True)
     mail_betreff = models.CharField("Betreff der Antwortmail", max_length=200, blank=True)
     mail_text = models.TextField("Antwortmail (HTML möglich)", blank=True)
+    anhaenge_hinweis = models.TextField("Hinweis zu den Nachweisen (HTML möglich)", blank=True)
 
     class Meta:
         verbose_name = "Text des Antragsformulars"
