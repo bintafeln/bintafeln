@@ -603,6 +603,18 @@ def stand_fuer_anzeige(tag, einstellungen, datum, eingelassene_zeigen=False) -> 
         if not eingelassene_zeigen:
             aufgerufen = [x for x in aufgerufen if x not in schon_da]
         danach = [x for x in danach if x not in schon_da]
+    # Geht die laufende Gruppe zu Ende, kommt danach die nächste: ihre ersten Nummern zeigen,
+    # damit „Danach“ nicht leer ist, obwohl noch Kunden warten (sie werden erst aufgerufen,
+    # wenn die laufende Gruppe durch ist).
+    folgende, folgende_titel = [], ""
+    if len(danach) < 10:
+        naechste = next((g2 for g2 in s["gruppen"][s["index"] + 1 :] if g2["wartend"]), None)
+        if naechste:
+            folgende = naechste["wartend"][:30]
+            if einstellungen.eingelassene_ausblenden:
+                schon = _eingelassen_heute(datum, folgende)
+                folgende = [x for x in folgende if x not in schon]
+            folgende, folgende_titel = folgende[: 10 - len(danach)], gruppe_titel(naechste)
     vergangen = []
     for schritt in reversed(s["rueckgaengig"]):
         vergangen += schritt["nummern"]
@@ -628,6 +640,10 @@ def stand_fuer_anzeige(tag, einstellungen, datum, eingelassene_zeigen=False) -> 
         "next_priority_flags": [x in vorrang for x in danach],
         "present_flags": da(aufgerufen),
         "next_present_flags": da(danach),
+        "following_numbers": folgende,
+        "following_slot": folgende_titel if folgende else "",
+        "following_priority_flags": [x in vorrang for x in folgende],
+        "following_present_flags": da(folgende),
         "past_present_flags": da(vergangen[:10]),
         "kiosk_numbers": None if kiosk is None else sorted(kiosk),
         "remaining_count": len(wartend),

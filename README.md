@@ -898,6 +898,8 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   Steht eine Nummer gerade auf dem Monitor („Bitte eintreten“), sagen Kiosk, Abfrage und
   Handy-Steuerung „jetzt dran“ – egal an welcher Stelle. „Gleich dran“ heißt: Die Nummer kommt
   mit den nächsten Aufrufen auf den Monitor; sonst steht da, wie viele Kunden noch davor sind.
+  „Danach“ (Kasten am Einlass, Handy-Steuerung) geht am Ende einer Kundengruppe mit den ersten
+  Nummern der nächsten Gruppe weiter („dann Gruppe …: …“), statt leer zu bleiben.
 - **Am Einlass:** Die Einlass-Karte zeigt beim Scannen, ob und wann die Nummer aufgerufen
   wurde, „Zu spät“ (ab einstellbarer Minutenzahl nach dem Aufruf, Vorgabe 15) oder wie viele
   Nummern der Kunde zu früh ist. Bei „zu früh“ und „zu spät“ leuchtet die Ampel grün und Gelb

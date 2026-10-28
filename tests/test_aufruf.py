@@ -918,3 +918,27 @@ def test_gruppen_nach_beginn_auch_aus_dem_namen(modul_an, mitte):
     assert [g["name"] for g in stand["gruppen"]][-2:] == ["Zentrale 14:30-15:00",
                                                           "Ohne Zeit im Namen"]  # fmt: skip
     assert stand["gruppen"][0]["name"] == "Zentrale 12.30-13.00"  # laufende bleibt
+
+
+def test_danach_am_gruppenende_mit_der_naechsten_gruppe(mitte, tag_daten, admin_client):
+    """Geht die laufende Gruppe zu Ende, zeigt „Danach“ die ersten Nummern der nächsten Gruppe –
+    nicht nichts, obwohl noch Kunden warten."""
+    e = AufrufEinstellungen.laden(mitte)
+    e.anzahl = 2
+    e.save()
+    tag = ablauf.starten(mitte, heute())
+    frueh, spaet = (g["wartend"][:] for g in tag.stand["gruppen"])
+    ablauf.weiter(mitte, heute())  # Früh: 2 erledigt, 2 aufgerufen, 1 danach
+    tag = ablauf.weiter(mitte, heute())
+    d = ablauf.stand_fuer_anzeige(tag, e, heute())
+    assert d["current_numbers"] == frueh[4:5] and d["next_numbers"] == []
+    assert d["following_numbers"] == spaet and d["following_slot"].startswith("Spät")
+    # Kasten am Einlass: „Danach: … dann Spät (13:00): …“
+    t = TafelEinstellungen.laden()
+    t.module = ["aufruf"]
+    t.save()
+    admin = tag.ausgabestelle.mitarbeitende.model.objects.get(username="chefin")
+    admin.gewaehlte_stelle = mitte
+    admin.save()
+    inhalt = admin_client.get(reverse("aufruf:leiste")).content.decode()
+    assert "Danach:" in inhalt and "dann Spät" in inhalt and spaet[0] in inhalt
