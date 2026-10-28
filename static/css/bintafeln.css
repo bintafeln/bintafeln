@@ -1268,3 +1268,13 @@ body.aushang-ruhig { cursor: none; }
   word-break: break-all; }
 .ablage-entfernen { border: 0; background: none; font-size: 1.1rem; cursor: pointer; color: var(--fehler); }
 .ablage-rahmen { position: relative; }
+
+/* Anmeldeseite: das Anmeldefeld schwebt von links unten herein (nicht bei „Bewegung reduzieren“) */
+.inhalt:has(> .einschweben) { overflow: clip; }
+.einschweben { animation: einschweben .9s cubic-bezier(.2, .85, .3, 1.12) both; }
+@keyframes einschweben {
+  from { opacity: 0; transform: translate(-45vw, 45vh) rotate(-10deg) scale(.6); }
+  60% { opacity: 1; }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .einschweben { animation: none; } }

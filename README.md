@@ -216,6 +216,8 @@ Fenster für den Code (5 Minuten gültig, höchstens 5 Versuche).
   signiertes Cookie, in der Datenbank eine Prüfsumme. Ungültig wird das Gerät nach Ablauf, nach
   einer Passwortänderung, nach neuer Einrichtung oder Zurücksetzen der Zwei-Faktor-Anmeldung und
   wenn es unter „Mein Konto“ (eigene Geräte) oder bei „Mitarbeitende“ (Admin) entfernt wird.
+- **Anmeldefeld schwebt herein:** Beim Aufruf der Anmeldeseite schwebt das Anmeldefeld von links
+  unten an seinen Platz (nicht nach einer falschen Eingabe und nicht bei „Bewegung reduzieren“).
 - **Überraschungen an Festtagen** (ADR 0079): Auf der Anmeldeseite fliegen zu Halloween
   (24.–31.10.) Fledermäuse, zu Karneval (Weiberfastnacht bis Veilchendienstag) Luftschlangen und
   Konfetti, zu Ostern (Palmsonntag bis Ostermontag) hoppeln zwei Osterhasen, zu Nikolaus (5./6.12.)

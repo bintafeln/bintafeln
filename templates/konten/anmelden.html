@@ -3,7 +3,8 @@
 {% block hintergrund %}{% if tafel.hintergrund_anmeldung %}<div class="hintergrund" aria-hidden="true" style="background-image: url('{{ tafel.hintergrund_anmeldung.url }}');"></div>{% endif %}{% endblock %}
 {% block inhalt %}
 {% if anlass %}{% include "includes/anlass.html" %}{% endif %}
-<section class="karte schmal">
+{# Beim ersten Aufruf schwebt das Anmeldefeld von links unten herein; nach einem Fehler nicht #}
+<section class="karte schmal{% if not form.errors %} einschweben{% endif %}">
   <h1>Anmelden</h1>
   <form method="post" action="{% url 'konten:anmelden' %}">
     {% csrf_token %}

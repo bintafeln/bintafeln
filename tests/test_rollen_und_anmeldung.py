@@ -34,9 +34,11 @@ def test_anmelden_und_abmelden(client, admin):
 
 
 def test_anmelden_falsches_passwort(client, admin):
+    assert "einschweben" in client.get(reverse("konten:anmelden")).content.decode()
     antwort = client.post(reverse("konten:anmelden"), {"username": "chefin", "password": "nein"})
     assert antwort.status_code == 200
     assert "falsch" in antwort.content.decode()
+    assert "einschweben" not in antwort.content.decode()  # nach einem Fehler nicht noch einmal
 
 
 def test_anmelden_ohne_felder(client, admin):
