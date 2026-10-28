@@ -4,6 +4,7 @@ einem Monitor, ohne Anmeldung, nur über den geheimen Schlüssel im Link."""
 import secrets
 
 from auditlog.registry import auditlog
+from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
@@ -27,6 +28,16 @@ class Aushang(models.Model):
     sekunden = models.PositiveSmallIntegerField(
         "Sekunden je Seite", default=20, validators=[MinValueValidator(5), MaxValueValidator(600)],
         help_text="Wie lange eine Seite stehen bleibt, bevor die nächste kommt.",
+    )  # fmt: skip
+    qr_code = models.BooleanField(
+        "QR-Code fürs Handy", default=True,
+        help_text="In der großen Ansicht eines Plans steht ein QR-Code: mit dem eigenen Handy "
+        "scannen, mit dem eigenen Konto anmelden und dort ändern.",
+    )  # fmt: skip
+    aendern = models.BooleanField(
+        "Ändern am Monitor", default=True,
+        help_text="Auf einen Platz tippen und mit Name und persönlicher PIN bestätigen: sich "
+        "austragen, einspringen; wer planen darf, auch Ersatz und Gäste eintragen.",
     )  # fmt: skip
 
     class Meta:
@@ -58,5 +69,28 @@ class AushangSeite(models.Model):
         return f"{self.art} {self.wert}".strip()
 
 
+class MonitorPin(models.Model):
+    """Persönliche PIN einer Person für das Ändern am Aushang-Monitor (gehasht wie ein Passwort).
+    Nach ``VERSUCHE`` falschen Eingaben ist sie ``SPERRE`` lang gesperrt."""
+
+    VERSUCHE = 5
+    SPERRE_MINUTEN = 15
+
+    benutzer = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                    related_name="monitor_pin")  # fmt: skip
+    pin = models.CharField("PIN", max_length=128)
+    geaendert_am = models.DateTimeField("Geändert am", auto_now=True)
+    fehler = models.PositiveSmallIntegerField(default=0)
+    gesperrt_bis = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "PIN für Aushang-Monitore"
+        verbose_name_plural = "PINs für Aushang-Monitore"
+
+    def __str__(self):
+        return f"PIN von {self.benutzer}"
+
+
 auditlog.register(Aushang, exclude_fields=["schluessel"])
+auditlog.register(MonitorPin, exclude_fields=["pin", "fehler", "gesperrt_bis", "geaendert_am"])
 auditlog.register(AushangSeite)

@@ -263,7 +263,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `apps/dienstplan/plan.py`, `Helfer` mit oder ohne Konto). Telegram für beide: `apps/core/telegram.py`.
   `aushang` (ADR 0080, Aushang-Monitore ohne Anmeldung über den Schlüssel im Link; Seiten bieten
   Module über `Modul.aushang` als `Aushangseite` an, z. B. `apps/dienstplan/aushang.py`; Inhalt in
-  `apps/aushang/anzeige.py`, Wechsel und Schriftgröße in `static/js/aushang.js`; nur Namen zeigen).
+  `apps/aushang/anzeige.py`, Wechsel, große Ansicht und Dialog in `static/js/aushang.js`; nur Namen
+  zeigen; Ändern am Monitor nur mit persönlicher PIN über `apps/aushang/pin.py`, die Rechte prüft
+  `Aushangseite.aendern` des Moduls).
   Hooks `Modul.fristen`, `Modul.auskunft_mitarbeiter`, `Modul.aushang`,
   `Modul.einlass`, `Modul.auskunft_antrag`, `Modul.kopfzeile`, `Modul.seitenleiste`, `Modul.suchen`,
   `Modul.startseite`. Programmname nur in

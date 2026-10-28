@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block titel %}Meine PIN für Monitore{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Meine PIN für Monitore</h1>
+  <p>Mit dieser PIN tragen Sie sich am Aushang-Monitor aus oder springen ein: auf Ihren Namen bzw. einen freien Platz
+    tippen, Namen wählen, PIN eingeben. Im Plan und im Änderungsprotokoll steht dann Ihr Name. Die PIN ist nur für den
+    Monitor; anmelden können Sie sich damit nicht.</p>
+  <p class="hinweis">{% if eintrag %}Sie haben eine PIN (zuletzt geändert am {{ eintrag.geaendert_am|date:"d.m.Y" }}).{% else %}Sie haben noch keine PIN.{% endif %}
+    Nach fünf falschen Eingaben ist die PIN 15 Minuten gesperrt.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">{% if eintrag %}PIN ändern{% else %}PIN festlegen{% endif %}</button>
+  </form>
+  {% if eintrag %}
+  <form method="post" class="abseits" onsubmit="return confirm('PIN löschen? Am Monitor können Sie dann nichts mehr eintragen.')">
+    {% csrf_token %}
+    <button type="submit" name="aktion" value="loeschen" class="knopf knopf-zweitrangig">PIN löschen</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

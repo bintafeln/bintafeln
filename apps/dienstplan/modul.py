@@ -59,6 +59,8 @@ def aushang():
             "dienstplan.planen",
             seiten.auswahl,
             seiten.folien,
+            platz=seiten.platz,
+            aendern=seiten.aendern,
         )
     ]
 

@@ -1078,6 +1078,12 @@ Aushang-Monitore“ (Recht „Aushang-Monitore einrichten“, Vorgabe Büro).
 - **Nacheinander** im Wechsel (Sekunden je Seite) oder **zwei nebeneinander**.
 - Die Schrift passt sich an, damit jede Seite ganz zu sehen ist; neuer Stand jede Minute;
   Vollbild per Knopf oder Browser mit `--kiosk`. Nur Namen, nie Kontaktdaten.
+- **Antippen** zeigt einen Plan groß; „← Übersicht“ oder 30 Sekunden ohne Eingabe führen zurück.
+  Dort ein **QR-Code** zum Ändern am eigenen Handy (mit Anmeldung) und, wenn eingeschaltet,
+  **Ändern am Monitor mit persönlicher PIN**: sich austragen, einspringen, wer plant auch Ersatz
+  und Gäste. Jede Person legt ihre PIN (mindestens 6 Ziffern, gehasht gespeichert) unter
+  „Dienstpläne → Meine PIN für Monitore“ fest; nach 5 Fehlversuchen 15 Minuten gesperrt. Im
+  Änderungsprotokoll steht die Person.
 - Weitere Module können über `Modul.aushang` eigene Seiten anbieten.
 
 ### Links auf der Startseite

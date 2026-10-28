@@ -1,17 +1,20 @@
 """Aushang-Monitore einrichten und anzeigen (ADR 0080); was angezeigt wird, in ``anzeige.py``."""
 
+import segno
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db.models import Max
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.aushang import anzeige as inhalt
-from apps.aushang.forms import AushangForm, NeuForm, SeiteForm
-from apps.aushang.models import Aushang, AushangSeite, neuer_schluessel
+from apps.aushang import pin
+from apps.aushang.forms import AushangForm, NeuForm, PinForm, SeiteForm
+from apps.aushang.models import Aushang, AushangSeite, MonitorPin, neuer_schluessel
 from apps.core import module, papierkorb
 from apps.konten import rollen
 
@@ -104,17 +107,75 @@ def loeschen(request, pk):
     return redirect("aushang:liste")
 
 
-@never_cache
-def anzeige(request, schluessel):
-    """Der Monitor selbst: ohne Anmeldung, nur mit dem Schlüssel im Link. Fragt der Monitor
-    selbst nach dem neuen Stand (aushang.js) und der Link gilt nicht mehr, antwortet er mit 204:
-    Der Monitor leert dann den Bildschirm (ohne Fehlermeldung in der Browser-Konsole)."""
+def _aushang_oder_nichts(request, schluessel):
+    """Der Aushang zum Schlüssel; fragt der Monitor selbst nach (aushang.js) und der Link gilt
+    nicht mehr, antwortet er mit 204: Der Monitor leert dann den Bildschirm (ohne Fehlermeldung
+    in der Browser-Konsole)."""
     aushang = Aushang.objects.filter(schluessel=schluessel, aktiv=True).first()
     if aushang is None:
         if request.headers.get("X-Aushang"):
-            return HttpResponse(status=204)
+            return None, HttpResponse(status=204)
         raise Http404
+    return aushang, None
+
+
+def _qr(adresse: str) -> str:
+    return segno.make(adresse, error="m").svg_inline(scale=4, title="QR-Code: Plan am Handy öffnen")
+
+
+@never_cache
+def anzeige(request, schluessel):
+    """Der Monitor selbst: ohne Anmeldung, nur mit dem Schlüssel im Link."""
+    aushang, leer = _aushang_oder_nichts(request, schluessel)
+    if leer:
+        return leer
     jetzt = timezone.localtime()
+    folien = [
+        (titel, html, _qr(request.build_absolute_uri(adresse)) if aushang.qr_code else "")
+        for titel, html, adresse in inhalt.folien(aushang, jetzt.date())
+    ]
     return render(request, "aushang/anzeige.html", {
-        "aushang": aushang, "folien": inhalt.folien(aushang, jetzt.date()), "jetzt": jetzt,
+        "aushang": aushang, "folien": folien, "jetzt": jetzt,
+        "platz_url": reverse("aushang:platz", args=[schluessel]),
     })  # fmt: skip
+
+
+@never_cache
+@require_http_methods(["GET", "POST"])
+def platz(request, schluessel):
+    """Dialog am Monitor zu einem Platz (GET) und die Änderung mit persönlicher PIN (POST)."""
+    aushang, leer = _aushang_oder_nichts(request, schluessel)
+    if leer:
+        return leer
+    if not aushang.aendern:
+        raise Http404
+    kennung = request.POST.get("platz") or request.GET.get("platz", "")
+    if request.method == "POST":
+        try:
+            meldung = inhalt.aendern(aushang, kennung, request.POST,
+                                     request.build_absolute_uri("/").rstrip("/"))  # fmt: skip
+        except ValueError as fehler:
+            return JsonResponse({"ok": False, "fehler": str(fehler)})
+        return JsonResponse({"ok": True, "meldung": meldung})
+    dialog = inhalt.platz_dialog(kennung)
+    if dialog is None:
+        raise Http404
+    return render(request, "aushang/_platz.html", {"d": dialog, "mindestlaenge": pin.MINDESTLAENGE})
+
+
+@never_cache
+@login_required
+def meine_pin(request):
+    """Eigene PIN für das Ändern am Aushang-Monitor festlegen, ändern oder löschen."""
+    form = PinForm(request.POST or None)
+    if request.method == "POST":
+        if request.POST.get("aktion") == "loeschen":
+            pin.entfernen(request.user)
+            messages.success(request, "Ihre PIN ist gelöscht.")
+            return redirect("aushang:meine_pin")
+        if form.is_valid():
+            pin.setzen(request.user, form.cleaned_data["pin"])
+            messages.success(request, "Ihre PIN ist gespeichert.")
+            return redirect("aushang:meine_pin")
+    eintrag = MonitorPin.objects.filter(benutzer=request.user).first()
+    return render(request, "aushang/meine_pin.html", {"form": form, "eintrag": eintrag})

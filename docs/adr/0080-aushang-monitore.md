@@ -30,9 +30,25 @@ zusammengefasst werden können, eingerichtet direkt im Programm.
   ohne Scrollen passt, holt jede Minute den neuen Stand und lädt alle sechs Stunden die ganze
   Seite neu (neue Programmversion). Vollbild per Knopf oder Browser mit `--kiosk`.
 
+- Antippen zeigt eine Seite groß (nur in der Breite eingepasst, scrollbar); „← Übersicht“ oder
+  30 Sekunden ohne Eingabe führen zurück. Dort steht ein QR-Code mit dem Link zur Seite im
+  Programm (Ändern am eigenen Handy mit Anmeldung; je Aushang abschaltbar).
+- Ändern am Monitor (je Aushang abschaltbar) nur mit **persönlicher PIN** (`MonitorPin`, mindestens
+  6 Ziffern, gehasht wie ein Passwort, selbst festgelegt unter „Dienstpläne → Meine PIN für
+  Monitore“, nach 5 Fehlversuchen 15 Minuten gesperrt). Man tippt auf einen Platz, wählt seinen
+  Namen und gibt die PIN ein; `Aushangseite.platz()` liefert den Dialog, `Aushangseite.aendern()`
+  prüft, was die bestätigte Person darf: sich selbst austragen, selbst auf einem freien Platz
+  einspringen, mit dem Planungsrecht des Moduls alles (Ersatz, Gast, zurücknehmen). Eingetragen
+  wird „<Konto> am Monitor …“, das Änderungsprotokoll nennt die Person (`set_actor`).
+  Vergangene Tage sind am Monitor nicht änderbar.
+
 ## Begründung
 
 Ein eigenes Modul mit Hook hält Dienstplan und Fahrdienst unabhängig voneinander und lässt
 später weitere Seiten zu (z. B. Wochenübersicht). Der Schlüssel im Link hat sich beim Aufruf
 bewährt; Geräte am Monitor müssen sich so nicht anmelden und keine Zwei-Faktor-Sitzung halten.
 Das Einpassen per Schriftgröße statt Skalieren hält die Tabellen scharf und nutzt die Breite.
+Eine gemeinsame PIN je Monitor hätte nicht gezeigt, wer etwas geändert hat; eine Anmeldung mit
+Passwort und Zwei-Faktor-Code am Monitor wäre umständlich und ließe Sitzungen offen. Die
+persönliche PIN reicht für das, was am Monitor geht (Dienste eines Tages), und das
+Änderungsprotokoll bleibt aussagekräftig. Wer mehr ändern will, nutzt den QR-Code und das Handy.

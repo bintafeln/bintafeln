@@ -49,7 +49,15 @@ def aushang():
     from apps.fahrdienst import aushang as seiten
 
     return [
-        Aushangseite("fahrdienst", "Fahrerplan", "fahrdienst.planen", seiten.auswahl, seiten.folien)
+        Aushangseite(
+            "fahrdienst",
+            "Fahrerplan",
+            "fahrdienst.planen",
+            seiten.auswahl,
+            seiten.folien,
+            platz=seiten.platz,
+            aendern=seiten.aendern,
+        )
     ]
 
 

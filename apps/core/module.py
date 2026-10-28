@@ -29,9 +29,20 @@ class Aushangseite:
     recht: str  # wer die Seite auf einen Aushang setzen darf
     # auswahl() -> [(wert, text)], z. B. die Ausgabestellen; leer = keine Wahl nötig
     auswahl: Callable
-    # folien(wert, von, bis) -> [(titel, html)]: was der Monitor für den Zeitraum zeigt; nur
-    # Namen, nie Kontaktdaten (der Monitor braucht keine Anmeldung)
+    # folien(wert, von, bis) -> [(titel, html, adresse)]: was der Monitor für den Zeitraum zeigt
+    # (nur Namen, nie Kontaktdaten; der Monitor braucht keine Anmeldung) und die Seite im
+    # Programm zum Ändern (für den QR-Code). Plätze, die sich am Monitor ändern lassen, tragen
+    # data-platz="<kennung>|…" im HTML.
     folien: Callable
+    # Ändern am Monitor mit persönlicher PIN (optional): platz(teil) -> dict für den Dialog oder
+    # None ({"titel", "wer", "wer_konto", "status", "kann_ausfallen", "gruende",
+    # "frei": [(wert, name, konto)], "hat_ersatz", "recht"}; ``recht`` = wer alles ändern darf);
+    # aendern(teil, daten, person, von, basis) -> Meldung. ``person`` ist das per PIN bestätigte
+    # Konto; das Modul prüft, was es darf (sich austragen, selbst einspringen, mit ``recht``
+    # alles) und wirft sonst ValueError mit verständlichem Text. ``teil`` ist data-platz ohne
+    # die Kennung, ``basis`` die Adresse von bintafeln (für Links in Benachrichtigungen).
+    platz: Callable | None = None
+    aendern: Callable | None = None
 
 
 @dataclass(frozen=True)

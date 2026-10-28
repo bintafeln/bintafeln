@@ -1153,6 +1153,39 @@ body.aushang-ruhig { cursor: none; }
 .aushang-inhalt .fd-plan th, .aushang-inhalt .fd-plan td { padding: .2em .45em; }
 .aushang-inhalt .fd-plan thead th { position: static; }
 .aushang-zusatz { margin: 0 0 .3em; color: var(--leise); }
+.aushang-titel { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.aushang-folie { cursor: pointer; }
+/* Große Ansicht eines Plans: nur in der Breite eingepasst, nach unten scrollbar */
+.aushang-zurueck, .aushang-qr, .aushang-tipp { display: none; }
+.aushang-gross .aushang-zurueck { display: inline-block; font: inherit; font-size: 1.1rem; padding: .3rem 1rem;
+  border-radius: var(--radius); border: 2px solid currentColor; background: transparent; color: inherit; cursor: pointer; }
+.aushang-gross .aushang-uebersicht-nur { display: none; }
+.aushang-gross .aushang-folie { cursor: default; }
+.aushang-gross .aushang-inhalt { overflow-y: auto; }
+.aushang-gross .aushang-qr { display: block; margin: 0; text-align: center; font-size: .85rem; color: var(--leise); }
+.aushang-gross .aushang-qr svg { width: 7rem; height: 7rem; }
+.aushang-gross .aushang-tipp { display: block; margin: 0 0 .4rem; color: var(--leise); }
+.aushang-gross [data-platz] { cursor: pointer; }
+.aushang-gross td:has([data-platz]):hover { background: color-mix(in srgb, var(--akzent) 10%, transparent); }
+.aushang-dialog { width: min(36rem, 94vw); border: 0; border-radius: var(--radius); padding: 1rem 1.25rem 1.25rem;
+  box-shadow: 0 .5rem 2rem rgba(0,0,0,.35); font-size: 1.15rem; }
+.aushang-dialog::backdrop { background: rgba(0,0,0,.45); }
+.aushang-dialog h2 { margin: 0 0 .25rem; font-size: 1.3rem; }
+.aushang-dialog h3 { margin: 0 0 .5rem; font-size: 1.1rem; }
+.aushang-schliessen-zeile { float: right; margin: 0; }
+.aushang-schliessen { font: inherit; font-size: 1.4rem; border: 0; background: transparent; cursor: pointer; padding: .2rem .5rem; }
+.aushang-aktion { border-top: 1px solid var(--rand); padding: .75rem 0 .25rem; margin-top: .5rem; }
+.aushang-aktion summary { cursor: pointer; font-weight: 600; color: var(--akzent-dunkel); padding: .25rem 0; }
+.aushang-felder { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: .75rem; }
+.aushang-felder label { display: flex; flex-direction: column; gap: .2rem; flex: 1 1 12rem; font-weight: 600; }
+.aushang-felder select, .aushang-felder input { font: inherit; padding: .55rem .6rem; border: 1px solid var(--rand);
+  border-radius: .4rem; min-height: 3rem; }
+.aushang-dialog .knopf { width: auto; }
+.aushang-fehler { color: var(--fehler); font-weight: 600; }
+.aushang-dialog-hinweis { color: var(--leise); font-size: .9rem; margin-bottom: 0; }
+.aushang-meldung { position: fixed; left: 50%; bottom: 2.5rem; transform: translateX(-50%); max-width: 90vw;
+  background: #1b6e34; color: #fff; padding: .75rem 1.25rem; border-radius: var(--radius); font-size: 1.2rem;
+  box-shadow: 0 .25rem 1rem rgba(0,0,0,.3); }
 .aushang-punkte { display: flex; justify-content: center; gap: .5rem; padding: .3rem 0 .5rem; min-height: 1.4rem; }
 .aushang-punkt { width: .7rem; height: .7rem; border-radius: 50%; background: var(--rand); }
 .aushang-punkt.aktiv { background: var(--akzent); }

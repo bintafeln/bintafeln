@@ -1,0 +1,61 @@
+{# Dialog am Aushang-Monitor zu einem Platz (ADR 0080); aushang.js schickt die Formulare ab #}
+<form method="dialog" class="aushang-schliessen-zeile"><button type="submit" class="aushang-schliessen" aria-label="Schließen">✕</button></form>
+<h2>{{ d.titel }}</h2>
+<p class="aushang-dialog-wer">{% if d.wer %}<strong>{{ d.wer }}</strong>{% endif %}{% if d.status %} – {{ d.status }}{% endif %}</p>
+<p class="aushang-fehler" role="alert" hidden></p>
+
+{% if d.selbst_aus %}
+<form method="post" class="aushang-aktion">
+  {% csrf_token %}<input type="hidden" name="platz" value="{{ d.kennung }}"><input type="hidden" name="aktion" value="ausfall">
+  <input type="hidden" name="person" value="{{ d.wer_konto }}">
+  <h3>Ich bin {{ d.wer }} und kann an diesem Tag nicht</h3>
+  <div class="aushang-felder">
+    <label>Grund <select name="grund" required>{% for wert, text in d.gruende %}<option value="{{ wert }}">{{ text }}</option>{% endfor %}</select></label>
+    <label>Meine PIN <input type="password" name="pin" inputmode="numeric" autocomplete="off" minlength="{{ mindestlaenge }}" required></label>
+  </div>
+  <button type="submit" class="knopf">Austragen</button>
+</form>
+{% endif %}
+
+{% if d.einspringer %}
+<form method="post" class="aushang-aktion">
+  {% csrf_token %}<input type="hidden" name="platz" value="{{ d.kennung }}"><input type="hidden" name="aktion" value="einspringen">
+  <h3>Ich springe ein</h3>
+  <div class="aushang-felder">
+    <label>Ich bin <select name="einspringer" required><option value="">bitte wählen</option>{% for wert, name in d.einspringer %}<option value="{{ wert }}">{{ name }}</option>{% endfor %}</select></label>
+    <label>Meine PIN <input type="password" name="pin" inputmode="numeric" autocomplete="off" minlength="{{ mindestlaenge }}" required></label>
+  </div>
+  <button type="submit" class="knopf">Einspringen</button>
+</form>
+{% endif %}
+
+{% if d.planer %}
+<details class="aushang-aktion">
+  <summary>Für andere eintragen (wer plant)</summary>
+  <form method="post">
+    {% csrf_token %}<input type="hidden" name="platz" value="{{ d.kennung }}">
+    <div class="aushang-felder">
+      <label>Ich bin <select name="person" required><option value="">bitte wählen</option>{% for pk, name in d.planer %}<option value="{{ pk }}">{{ name }}</option>{% endfor %}</select></label>
+      <label>Meine PIN <input type="password" name="pin" inputmode="numeric" autocomplete="off" minlength="{{ mindestlaenge }}" required></label>
+    </div>
+    <div class="aushang-felder">
+      {% if d.kann_ausfallen %}<label>{{ d.wer }} fällt aus, Grund <select name="grund">{% for wert, text in d.gruende %}<option value="{{ wert }}">{{ text }}</option>{% endfor %}</select></label>{% endif %}
+      {% if d.frei %}<label>Ersatz <select name="helfer"><option value="">bitte wählen</option>{% for wert, name, konto in d.frei %}<option value="{{ wert }}">{{ name }}</option>{% endfor %}</select></label>{% endif %}
+      <label>Gast (Name) <input type="text" name="gast" maxlength="100"></label>
+    </div>
+    <div class="aktionsleiste">
+      {% if d.kann_ausfallen %}<button type="submit" name="aktion" value="ausfall" class="knopf knopf-zweitrangig">Ausfall eintragen</button>{% endif %}
+      {% if d.frei %}<button type="submit" name="aktion" value="ersatz" class="knopf knopf-zweitrangig">Ersatz eintragen</button>{% endif %}
+      <button type="submit" name="aktion" value="gast" class="knopf knopf-zweitrangig">Gast eintragen</button>
+      {% if d.hat_ersatz %}<button type="submit" name="aktion" value="zuruecknehmen" class="knopf knopf-zweitrangig">Eintrag zurücknehmen</button>{% endif %}
+    </div>
+  </form>
+</details>
+{% endif %}
+
+{% if not d.selbst_aus and not d.einspringer and not d.planer %}
+<p>Hier kann gerade niemand am Monitor etwas eintragen. Wer am Monitor ändern möchte, legt im Programm unter
+  „Dienstpläne → Meine PIN für Monitore“ eine persönliche PIN fest.</p>
+{% else %}
+<p class="aushang-dialog-hinweis">Noch keine PIN? Im Programm unter „Dienstpläne → Meine PIN für Monitore“ festlegen.</p>
+{% endif %}
