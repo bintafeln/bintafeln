@@ -14,7 +14,7 @@ für jeden im Netz sichtbar.
 - Zuschaltbares Modul `links` (ADR 0049) mit den Modellen `LinkGruppe` und `Link` (Symbol, Titel,
   Untertitel, Beschreibung, Adresse, Warnhinweis, neuer Tab, Reihenfolge, aktiv). Statt des
   Symbols geht ein eigenes Bild (`Link.bild`, öffentlich unter `media/oeffentlich/links/`):
-  PNG/JPG/WebP werden auf 128 Pixel verkleinert, SVG schreibt `apps/core/svg.py` nach einer
+  PNG/JPG/WebP werden auf 480 Pixel verkleinert, SVG schreibt `apps/core/svg.py` nach einer
   festen Liste von Elementen und Attributen neu (keine Skripte, Ereignisse oder fremden
   Verweise); zusätzlich sendet Caddy für öffentliche Uploads eine Content-Security-Policy mit
   `sandbox`.

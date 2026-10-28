@@ -864,7 +864,7 @@ ul.kompakt { margin: .3rem 0; padding-left: 1rem; }
   .knopf { padding: .55rem 1.1rem; min-height: 2.3rem; }
   .karte { padding: .85rem 1.25rem 1rem; margin-bottom: .85rem; }
   h1 { margin-bottom: .6rem; }
-  .formular-raster { grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
+  .formular-raster { grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr)); }
 }
 /* Pflege-Listen als Tabelle */
 .liste-pflegen td.aus { color: var(--leise); }
@@ -937,7 +937,7 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 .link-bereich .link-gruppe { margin: 1.5rem 0 .6rem; font-size: 1.05rem; }
 .link-bereich .link-gruppe:first-child { margin-top: 0; }
 .link-kacheln { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem;
-                grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
+                grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr)); }
 .link-kachel { display: flex; gap: .75rem; height: 100%; padding: .8rem 1rem; color: var(--text);
                text-decoration: none; background: var(--flaeche); border: 1px solid var(--rand);
                border-left: 4px solid var(--akzent); border-radius: var(--radius);
@@ -945,7 +945,9 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 .link-kachel:hover, .link-kachel:focus { transform: translateY(-2px);
                                          box-shadow: 0 6px 16px rgb(0 0 0 / 12%); }
 .link-symbol { font-size: 1.8rem; line-height: 1; }
-.link-bild { width: 2.5rem; height: 2.5rem; object-fit: contain; flex: none; }
+/* Eigenes Bild: so hoch wie die Kachel, breite Logos dürfen bis knapp die Hälfte einnehmen */
+.link-kachel:has(.link-bild) { align-items: center; }
+.link-bild { height: 4.5rem; width: auto; max-width: 50%; object-fit: contain; flex: none; }
 .link-bild-klein { width: 1.5rem; height: 1.5rem; }
 .link-text { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
 .link-untertitel { text-transform: uppercase; letter-spacing: .04em; color: var(--leise); font-size: .75rem; }

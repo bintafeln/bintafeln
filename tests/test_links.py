@@ -121,14 +121,14 @@ def test_bild_statt_symbol(modul_an, admin_client):
     from PIL import Image
 
     puffer = io.BytesIO()
-    Image.new("RGBA", (600, 400), (0, 128, 0, 0)).save(puffer, "PNG")
+    Image.new("RGBA", (900, 600), (0, 128, 0, 0)).save(puffer, "PNG")
     bild = SimpleUploadedFile("shop.png", puffer.getvalue(), content_type="image/png")
     daten = {"titel": "Shop", "adresse": "https://example.org", "reihenfolge": 1, "aktiv": "on",
              "bild": bild}  # fmt: skip
     assert admin_client.post(reverse("links:link_neu"), daten).status_code == 302
     link = Link.objects.get()
     with Image.open(link.bild.path) as bild:
-        assert bild.size == (128, 85) and bild.mode == "RGBA"  # verkleinert, transparent
+        assert bild.size == (480, 320) and bild.mode == "RGBA"  # verkleinert, transparent
     html = admin_client.get(reverse("core:start")).content.decode()
     assert f'<img class="link-bild" src="{link.bild.url}"' in html
     gross = SimpleUploadedFile("gross.png", b"x" * (2 * 1024 * 1024 + 1),
