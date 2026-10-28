@@ -418,3 +418,21 @@ def test_danach_zeigt_am_gruppenende_die_naechste_gruppe(angemeldet, admin):
     seite.goto(f"/aufruf/{stelle.pk}/mobil/")
     expect(seite.locator("#nextCustomersDisplay")).to_contain_text("dann Später")
     expect(seite.locator("#nextCustomersDisplay")).to_contain_text("00099")
+
+
+def test_werkseinstellungen_vergessen_eingefahrenes_menue(angemeldet, admin, benutzer_mit_rolle):
+    """Nach „Werkseinstellungen“ (Admin) vergisst der Browser gemerkte Ansichten wie das
+    eingefahrene Menü."""
+    from apps.konten import verwaltung
+
+    anna = benutzer_mit_rolle("anna", rollen.BUERO)
+    seite = angemeldet(anna)
+    seite.goto("/")
+    seite.locator("[data-menue-einfahren]").click()
+    seite.reload()
+    expect(seite.locator("html")).to_have_class(re.compile("menue-eingefahren"))
+    verwaltung.werkseinstellungen(admin, anna)
+    seite.reload()
+    expect(seite.locator("html")).not_to_have_class(re.compile("menue-eingefahren"))
+    seite.reload()  # bleibt ausgefahren (der neue Stand ist gemerkt)
+    expect(seite.locator(".seitenmenue")).to_be_visible()

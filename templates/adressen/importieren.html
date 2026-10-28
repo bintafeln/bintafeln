@@ -40,7 +40,7 @@
     <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="schritt" value="uebernehmen">
       <button type="submit" class="knopf">{{ bericht.neu|length }} Adresse{{ bericht.neu|length|pluralize:"n" }} übernehmen</button></form>
     {% endif %}
-    <a class="knopf knopf-abbrechen" href="{% url 'adressen:importieren' %}">Andere Datei wählen</a>
+    <a class="knopf knopf-abbrechen" href="{% url 'datenimport:start' %}?ziel=adressen">Andere Datei wählen</a>
   </div>
   {% endif %}
 </section>

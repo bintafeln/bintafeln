@@ -5,12 +5,12 @@ from apps.core.module import Modul
 
 def menue(eintrag):
     return [
-        ("Ausgabestelle", [
-            ("dienstplan.sehen", eintrag("Dienstplan", "dienstplan:plan", genau=True)),
+        ("Dienstpläne/Ausgabe", [
+            ("dienstplan.sehen", eintrag("Dienstplan der Ausgabe", "dienstplan:plan", genau=True)),
             ("dienstplan.sehen", eintrag("Meine Dienste", "dienstplan:meine")),
         ]),
-        ("Einstellungen/Mitarbeitende", [
-            ("dienstplan.planen", eintrag("Dienstplan: Aufgaben und Helfer",
+        ("Einstellungen/Dienstpläne", [
+            ("dienstplan.planen", eintrag("Ausgabe: Aufgaben und Helfer",
                                           "dienstplan:einstellungen")),
         ]),
     ]  # fmt: skip

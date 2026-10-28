@@ -512,29 +512,42 @@ a.knopf-gefahr { color: #fff; }
 .aufruf-leiste .knopf { width: 100%; margin: .25rem 0 .5rem; }
 .aufruf-leiste .link { font-size: .85rem; padding: 0 0 .5rem; }
 .aufruf-leiste-fehler { color: #8c1d18; font-size: .85rem; }
+/* Menü in drei Ebenen (deutlich unterscheidbar, auch auf dem Handy):
+   1. Hauptpunkt: fett, dunkle Schrift, Pfeil ▾ rechts; aufgeklappt leicht getönt
+   2. Untermenü (Abschnitt): Akzentfarbe, halbfett, eigener Pfeil
+   3. Einträge: normale Schrift, eingerückt hinter einer Linie, die die Ebene zeigt */
 .menue-bereich summary { list-style: none; position: relative; }
 .menue-bereich summary::-webkit-details-marker { display: none; }
-.menue-bereich summary::after { content: "›"; position: absolute; right: 1.25rem; transition: transform .15s; }
-.menue-bereich[open] > summary::after { transform: rotate(90deg); }
+.menue-bereich > summary { padding-right: 2.5rem; }
+.menue-bereich > summary::after, .menue-gruppe > summary::after {
+  content: "▾"; position: absolute; right: 1rem; top: 50%; translate: 0 -50%;
+  font-size: 1.05rem; line-height: 1; color: var(--akzent-dunkel); transition: rotate .15s;
+}
+.menue-bereich:not([open]) > summary::after, .menue-gruppe:not([open]) > summary::after { rotate: -90deg; }
+.menue-bereich[open] { background: color-mix(in srgb, var(--akzent) 6%, transparent); }
+.menue-bereich[open] > summary { color: var(--akzent-dunkel); }
 .menue-zahl {
   display: inline-block; min-width: 1.4em; padding: 0 .4em; margin-left: .35rem;
   border-radius: .7em; background: var(--akzent-dunkel); color: #fff;
   font-size: .78rem; font-weight: 700; line-height: 1.4em; text-align: center;
 }
 .seitenmenue ul { list-style: none; margin: 0 0 .5rem; padding: 0; }
-.menue-gruppe summary { list-style: none; position: relative; cursor: pointer; padding: .4rem 1.25rem .4rem 2rem; font-weight: 600; font-size: .97rem; }
-.menue-gruppe summary::-webkit-details-marker { display: none; }
-.menue-gruppe summary::after { content: "›"; position: absolute; right: 1.25rem; transition: transform .15s; }
-.menue-gruppe[open] summary::after { transform: rotate(90deg); }
-.menue-gruppe summary:hover { background: var(--erfolg); }
-.menue-gruppe ul { margin-bottom: .25rem; }
-/* Zwischenüberschrift in einem aufgeklappten Bereich (z. B. Kunden › Anträge und Warteliste) */
-.seitenmenue .menue-gruppe li a { padding-left: 3rem; font-size: .93rem; }
-.seitenmenue .menue-gruppe li a.aktiv { padding-left: calc(3rem - 4px); }
-.seitenmenue li a { padding: .4rem 1.25rem .4rem 2rem; font-size: .97rem; }
+/* Ebene 2: Einträge direkt unter einem Hauptpunkt und Untermenüs */
+.menue-bereich > ul, .menue-bereich > .menue-gruppe { margin-left: 1.25rem; border-left: 2px solid color-mix(in srgb, var(--akzent) 30%, var(--rand)); }
+.menue-gruppe { margin-bottom: .1rem; }
+.menue-gruppe > summary {
+  list-style: none; position: relative; cursor: pointer; padding: .4rem 2.5rem .4rem .75rem;
+  font-weight: 600; font-size: .95rem; color: var(--akzent-dunkel);
+}
+.menue-gruppe > summary::-webkit-details-marker { display: none; }
+.menue-gruppe > summary:hover { background: var(--erfolg); }
+/* Ebene 3: Einträge eines Untermenüs, noch einmal eingerückt */
+.menue-gruppe > ul { margin: 0 0 .25rem .75rem; border-left: 2px dotted var(--rand); }
+.seitenmenue li a { padding: .4rem 1rem .4rem .75rem; font-size: .95rem; font-weight: 400; }
+.seitenmenue .menue-gruppe li a { font-size: .93rem; }
 .seitenmenue a:hover, .menue-oben:hover { background: var(--erfolg); }
 .seitenmenue a.aktiv { background: var(--erfolg); border-left: 4px solid var(--akzent); font-weight: 600; }
-.seitenmenue li a.aktiv { padding-left: calc(2rem - 4px); }
+.seitenmenue li a.aktiv { padding-left: calc(.75rem - 4px); }
 .seitenmenue a.menue-oben.aktiv { padding-left: calc(1.25rem - 4px); }
 /* Menü einfahren (static/js/menue_einfahren.js): « oben im Menü, » am linken Rand zum Ausfahren */
 .menue-einfahren, .menue-ausfahren {
@@ -555,7 +568,7 @@ a.knopf-gefahr { color: #fff; }
 }
 @media (min-width: 48rem) and (max-width: 63.99rem) {
   .seitenmenue { flex-basis: 13rem; }
-  .menue-oben, .seitenmenue li a { padding-right: .75rem; }
+  .menue-oben { padding-right: .75rem; }
 }
 @media (max-width: 47.99rem) {
   .menue-knopf { display: inline-block; }

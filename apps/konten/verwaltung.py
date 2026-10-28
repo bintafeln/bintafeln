@@ -118,6 +118,23 @@ def entsperren(verwalter, ziel) -> None:
     ziel.save(update_fields=["is_active", "gesperrt_am", "gesperrt_von"])
 
 
+@transaction.atomic
+def werkseinstellungen(verwalter, ziel) -> None:
+    """Persönliche Anpassungen zurücksetzen, wie beim Anlegen des Kontos: Spalten der
+    Kundenliste, gewählte Ausgabestelle, im Browser gemerkte Ansichten, angefangene Importe.
+    Rollen, Rechte, zugeordnete Ausgabestellen, Ausgabetage, Passwort und Zwei-Faktor bleiben."""
+    from apps.datenimport.models import ImportSitzung
+    from apps.kunden.models import ImportVorbereitung
+
+    _pruefen(verwalter, ziel)
+    ziel.kundenliste_aus = []
+    ziel.gewaehlte_stelle = None
+    ziel.ansicht_stand += 1
+    ziel.save(update_fields=["kundenliste_aus", "gewaehlte_stelle", "ansicht_stand"])
+    ImportSitzung.objects.filter(benutzer=ziel).delete()
+    ImportVorbereitung.objects.filter(erstellt_von=ziel).delete()
+
+
 def passwort_zuruecksetzen(verwalter, ziel) -> str:
     _pruefen(verwalter, ziel)
     passwort = _passwort_neu(ziel)

@@ -85,13 +85,37 @@ def test_neue_ordnung_fuer_die_verwaltung(admin):
     assert abschnitte[""][:2] == ["Einlass", "Kasse"]
     assert "Abrechnung" in abschnitte[""] and "Kundenliste" not in abschnitte[""]
     assert "Selbstabholer" in abschnitte["Wochenübersicht"]
-    assert "Alle Ausgabestellen" in abschnitte["Verwaltung"]
+    assert "Alle Ausgabestellen" not in abschnitte["Verwaltung"]  # jetzt unter Einstellungen
+    ausgabe = next(g for g in b["Einstellungen"]["gruppen"] if g["titel"] == "Ausgabe")
+    assert [e["titel"] for e in ausgabe["eintraege"]][:2] == [
+        "Ausgabestellen",
+        "Ausgabestellen-Konten",
+    ]
     kunden = {a["titel"]: [e["titel"] for e in a["eintraege"]] for a in b["Kunden"]["abschnitte"]}
     assert "Warteliste" in kunden["Anträge und Warteliste"]
     assert [g["titel"] for g in b["Verein"]["gruppen"]] == ["Mitglieder", "Spenden", "Adressen",
                                                             "Serienbriefe", "Team"]  # fmt: skip
     assert [e["titel"] for e in b["Auswertungen"]["eintraege"]] == ["Statistik", "Listen"]
     assert "Mein Konto" not in b  # über den Namen oben rechts
+    # jede Adresse nur einmal im ganzen Menü
+    urls = [e["url"] for x in b.values() for e in x["eintraege"]]
+    assert len(urls) == len(set(urls))
+
+
+def test_dienstplaene_unter_einem_punkt(admin):
+    """Fahrdienst und Dienstplan der Ausgabe stehen unter „Dienstpläne“, ihre Einstellungen
+    unter „Einstellungen → Dienstpläne“."""
+    b = alle_bereiche(admin, ["fahrdienst", "dienstplan"])
+    assert "Fahrdienst" not in b
+    teile = {
+        a["titel"]: [e["titel"] for e in a["eintraege"]] for a in b["Dienstpläne"]["abschnitte"]
+    }
+    assert teile == {"Ausgabe": ["Dienstplan der Ausgabe", "Meine Dienste"],
+                     "Fahrdienst": ["Fahrerplan", "Meine Einsätze"]}  # fmt: skip
+    dp = next(g for g in b["Einstellungen"]["gruppen"] if g["titel"] == "Dienstpläne")
+    assert sorted(e["titel"] for e in dp["eintraege"]) == ["Ausgabe: Aufgaben und Helfer",
+                                                     "Fahrdienst: Touren und Springer"]  # fmt: skip
+    assert list(b).index("Dienstpläne") == list(b).index("Ausgabestelle") + 1
 
 
 def test_ausgabe_sieht_keine_warteliste_und_stempeln_nur_wer_stempelt(benutzer_mit_rolle):

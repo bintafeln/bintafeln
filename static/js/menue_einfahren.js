@@ -19,6 +19,19 @@
 
   html.classList.toggle("menue-eingefahren", lesen());
   document.addEventListener("DOMContentLoaded", function () {
+    // Auf Werkseinstellungen zurückgesetzt (Admin): gemerkte Ansichten dieses Browsers vergessen
+    var stand = document.body.dataset.ansichtStand;
+    try {
+      if (stand !== undefined && localStorage.getItem("bintafeln-ansicht-stand") !== stand) {
+        if (localStorage.getItem("bintafeln-ansicht-stand") !== null) {
+          Object.keys(localStorage).forEach(function (k) {
+            if (k.indexOf("bintafeln-") === 0) localStorage.removeItem(k);
+          });
+          html.classList.remove("menue-eingefahren");
+        }
+        localStorage.setItem("bintafeln-ansicht-stand", stand);
+      }
+    } catch (e) { /* ohne Speicher */ }
     document.querySelectorAll("[data-menue-einfahren]").forEach(function (k) {
       k.addEventListener("click", function () { setzen(true); });
     });

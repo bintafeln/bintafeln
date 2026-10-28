@@ -52,6 +52,8 @@ def menue(request) -> list[dict]:
     # oben ohne Überschrift. Module hängen sich mit "Bereich" oder "Bereich/Abschnitt" ein.
     inhalt = {
         "Ausgabestelle": {"": [], "Wochenübersicht": [], "Verwaltung": []},
+        # Dienstpläne aller Art unter einem Punkt; die Module hängen sich als Abschnitt ein
+        "Dienstpläne": {"Ausgabe": [], "Fahrdienst": []},
         "Meine Arbeitszeit": {"": []},
         "Kunden": {"": [], "Anträge und Warteliste": [], "Kundenstamm": []},
         "Verein": {"Mitglieder": [], "Spenden": [], "Adressen": [], "Serienbriefe": [],
@@ -100,8 +102,6 @@ def menue(request) -> list[dict]:
     dazu("Ausgabestelle/Verwaltung", [
         ("sonderaktionen.verwalten", _eintrag("Sonderaktionen", "ausgabe:sonderaktionen")),
         ("korrekturen.entscheiden", _eintrag("Korrekturwünsche", "ausgabe:korrekturen")),
-        # Ausgabestellen kennen ihre eigene Stelle; die Liste aller braucht die Verwaltung
-        ("kunden.alle_ausgabestellen", _eintrag("Alle Ausgabestellen", "kunden:ausgabestellen")),
     ])  # fmt: skip
     if darf_stempeln(b):  # nur, wer selbst stempelt
         dazu("Meine Arbeitszeit", [
@@ -163,7 +163,6 @@ def menue(request) -> list[dict]:
     dazu("Verein/Adressen", [
         ("adressen.sehen", adressbuch),
         ("adressen.bearbeiten", _eintrag("Neue Adresse", "adressen:neu")),
-        ("adressen.importieren", _eintrag("Adressen importieren", "adressen:importieren")),
     ])  # fmt: skip
     dazu("Verein/Serienbriefe", [
         ("serienbriefe.erstellen", _eintrag("Serienbrief erstellen", "serienbriefe:erstellen",
@@ -172,7 +171,6 @@ def menue(request) -> list[dict]:
     ])  # fmt: skip
     dazu("Verein/Team", [
         ("mitarbeitende.verwalten", _eintrag("Mitarbeitende", "konten:mitarbeitende")),
-        ("mitarbeitende.verwalten", _eintrag("Ausgabestellen-Konten", "konten:stellen")),
         ("personal.sehen", _eintrag("Personal", "personal:liste", genau=True)),
     ])  # fmt: skip
     dazu("Auswertungen", [
@@ -215,6 +213,9 @@ def menue(request) -> list[dict]:
             ("einstellungen.antraege", _eintrag("Anträge", "antraege:einstellungen")),
         ],
         "Ausgabe": [
+            # Ausgabestellen pflegen (Anschrift, Zeiten, Ansprechpartner) und ihre Tablet-Konten
+            ("kunden.alle_ausgabestellen", _eintrag("Ausgabestellen", "kunden:ausgabestellen")),
+            ("mitarbeitende.verwalten", _eintrag("Ausgabestellen-Konten", "konten:stellen")),
             ("einstellungen.ausgabe",
              _eintrag("Ausgabe, Ampel und Beiträge", "ausgabe:einstellungen")),
             ("einstellungen.listen",
@@ -227,6 +228,7 @@ def menue(request) -> list[dict]:
             ("einstellungen.spenden",
              _eintrag("Spenden und Zuwendungsbestätigungen", "spenden:einstellungen")),
         ],
+        "Dienstpläne": [],
         "Mitarbeitende": [
             ("einstellungen.rollen", _eintrag("Rollen und Rechte", "konten:rollen")),
             ("einstellungen.personal",

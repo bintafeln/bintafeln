@@ -5,11 +5,11 @@ from apps.core.module import Modul
 
 def menue(eintrag):
     return [
-        ("Fahrdienst", [
+        ("Dienstpläne/Fahrdienst", [
             ("fahrdienst.sehen", eintrag("Fahrerplan", "fahrdienst:plan", genau=True)),
             ("fahrdienst.sehen", eintrag("Meine Einsätze", "fahrdienst:meine")),
         ]),
-        ("Einstellungen/Mitarbeitende", [
+        ("Einstellungen/Dienstpläne", [
             ("fahrdienst.planen", eintrag("Fahrdienst: Touren und Springer",
                                           "fahrdienst:einstellungen")),
         ]),

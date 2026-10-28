@@ -7,7 +7,7 @@
     <h1>Adressbuch</h1>
     <div class="titel-knoepfe">
       {% if "adressen.bearbeiten" in rechte %}<a class="knopf" href="{% url 'adressen:neu' %}">+ Neue Adresse</a>{% endif %}
-      {% if "adressen.importieren" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'adressen:importieren' %}">Importieren</a>{% endif %}
+      {% if "adressen.importieren" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'datenimport:start' %}?ziel=adressen">Importieren</a>{% endif %}
       {% if "mitglieder.sehen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'mitglieder:liste' %}">Mitglieder →</a>{% endif %}
     </div>
   </div>
