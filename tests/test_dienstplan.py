@@ -185,6 +185,27 @@ def test_einstellungen_stelle_aufgaben_kopieren(team, admin_client):
     assert Helfer.objects.filter(benutzer__username="chefin").exists()
 
 
+def test_standard_aufgaben_fuer_alle_ausgabetage(admin_client):
+    stelle = Ausgabestelle.objects.create(name="Zentrale")
+    ds = DienstStelle.objects.create(ausgabestelle=stelle, aktiv=True, tage="Mo, Mi, Fr")
+    Aufgabe.objects.create(stelle=ds, wochentag="Mi", name="Kasse", reihenfolge=1)
+    url = reverse("dienstplan:stelle", args=[stelle.pk])
+    seite = admin_client.get(url, {"tag": "Mo"}).content.decode()
+    assert "Standard-Aufgaben anlegen" in seite
+    antwort = admin_client.post(f"{url}?tag=Mo", {"aktion": "standard"}, follow=True)
+    assert "Standard-Aufgaben angelegt für: Montag, Freitag." in antwort.content.decode()
+    fr = list(ds.aufgaben.filter(wochentag="Fr"))
+    assert len(fr) == 20 and ds.aufgaben.filter(wochentag="Mi").count() == 1  # Mi bleibt
+    assert [(a.name, a.zeit) for a in fr[:3]] == [("Teamleitung", "09.00-15.00"),
+                                                  ("Frühdienst", "08.00-15.00"),
+                                                  ("Frühdienst", "08.00-15.00")]  # fmt: skip
+    assert [a.pflicht for a in fr if a.name == "Springer"] == [False, False, False]
+    assert not Besetzung.objects.filter(aufgabe__stelle=ds).exists()
+    antwort = admin_client.post(f"{url}?tag=Mo", {"aktion": "standard"}, follow=True)
+    assert "nichts angelegt" in antwort.content.decode()
+    assert ds.aufgaben.count() == 41
+
+
 def test_beispiel_und_fristen(admin_client):
     admin_client.post(reverse("dienstplan:beispiel"), {"aktion": "anlegen"})
     ds = DienstStelle.objects.get(ausgabestelle__name=beispiel.STELLE)

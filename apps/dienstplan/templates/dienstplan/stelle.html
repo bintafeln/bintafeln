@@ -49,7 +49,17 @@
     </div>
     <button type="submit" class="knopf">Besetzung speichern</button>
   </form>
-  {% else %}<p>Noch keine Aufgaben für {{ tagname }}.</p>{% endif %}
+  {% else %}<p>Noch keine Aufgaben für {{ tagname }}.</p>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="aktion" value="standard">
+    <button type="submit" class="knopf">Standard-Aufgaben anlegen</button>
+    <p class="hinweis">Legt für jeden Ausgabetag ({{ tage|join:", " }}) ohne Aufgaben die Aufgaben wie auf dem
+      Papierplan an: Teamleitung und Kasse 09.00–15.00, 2× Frühdienst 08.00–15.00, Vorsortierung 11.00–15.00, Brot,
+      Mopro, Wurst / Fleisch, Sonderartikel, 4× Obst, 4× Gemüse und 3× Springer (darf leer bleiben) 11.30–15.00. Ohne
+      Besetzung; Namen tragen Sie danach ein. Einzelne Aufgaben lassen sich danach ändern oder löschen.</p>
+  </form>
+  {% endif %}
 
   <h3 class="abseits">Aufgabe hinzufügen</h3>
   <form method="post">

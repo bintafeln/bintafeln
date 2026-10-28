@@ -327,6 +327,15 @@ def stelle(request, pk):
             _besetzung_speichern(request, ds, tag)
             messages.success(request, "Feste Besetzung gespeichert.")
             return redirect(hier)
+        if aktion == "standard":
+            angelegt = plan.standard_anlegen(ds)
+            if angelegt:
+                tage_text = ", ".join(TAGNAME[t] for t in angelegt)
+                messages.success(request, f"Standard-Aufgaben angelegt für: {tage_text}.")
+            else:
+                messages.info(request, "An allen Ausgabetagen stehen schon Aufgaben; nichts "
+                                       "angelegt.")  # fmt: skip
+            return redirect(hier)
         if aktion == "kopieren" and tag and request.POST.get("von") in tage:
             anzahl = plan.tag_kopieren(ds, request.POST["von"], tag)
             messages.success(request, f"{anzahl} Aufgaben von {TAGNAME[request.POST['von']]} "

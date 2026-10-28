@@ -13,19 +13,12 @@ from django.db import transaction
 from django.db.models import ProtectedError
 
 from apps.dienstplan.models import Aufgabe, Besetzung, DienstStelle, Diensttag, Helfer
+from apps.dienstplan.plan import STANDARD_AUFGABEN
 from apps.kunden.models import Ausgabestelle
 
 KENNUNG = "Beispiel (erfunden)"
 STELLE = "Beispiel-Ausgabestelle"
-# Aufgabe, Beginn, Ende, Anzahl, muss besetzt sein – wie auf dem Papierplan
-AUFGABEN = [
-    ("Teamleitung", "09:00", "15:00", 1, True), ("Frühdienst", "08:00", "15:00", 2, True),
-    ("Vorsortierung", "11:00", "15:00", 1, True), ("Kasse", "09:00", "15:00", 1, True),
-    ("Brot", "11:30", "15:00", 1, True), ("Mopro", "11:30", "15:00", 1, True),
-    ("Wurst / Fleisch", "11:30", "15:00", 1, True), ("Sonderartikel", "11:30", "15:00", 1, True),
-    ("Obst", "11:30", "15:00", 4, True), ("Gemüse", "11:30", "15:00", 4, True),
-    ("Springer", "11:30", "15:00", 3, False),
-]  # fmt: skip
+AUFGABEN = STANDARD_AUFGABEN  # wie auf dem Papierplan
 VORNAMEN = ["Anna", "Ben", "Carla", "David", "Elif", "Frank", "Greta", "Hakan", "Ines", "Jonas",
             "Klara", "Lars", "Mira", "Nils", "Olga", "Paul", "Rosa", "Sami", "Tanja", "Udo",
             "Vera", "Willi", "Yara", "Zoe"]  # fmt: skip
