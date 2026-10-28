@@ -671,6 +671,10 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   letzten stehen gut sichtbar über dem Formular; unter „Texte“ je Sprache ein **Hinweis zu den
   Nachweisen** (z. B. welche Unterlagen nötig sind; ohne eigenen Hinweis gilt der deutsche). Die
   Nachweise lassen sich in ein Feld ziehen, auswählen oder direkt mit dem Handy fotografieren;
+  „Behinderung (GdB) je Person“ (Vorgabe: nicht abfragen, weil Gesundheitsdaten nach Art. 9
+  DSGVO) fragt für jede Person ab: keine Behinderung oder GdB 20 bis 100; der
+  Aufnahme-Assistent übernimmt den Wert in das Zusatzfeld „Grad der Behinderung“ und setzt ab
+  GdB 50 das Merkmal „Schwerbehindert“;
   festlegen, wer bei neuen Anträgen eine Mail bekommt. Danach „Online-Anträge annehmen“
   einschalten.
 - **Adresse für die Webseite der Tafel:** `https://<domain>/antrag/`. Die Seite ist in

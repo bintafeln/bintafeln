@@ -495,3 +495,23 @@ def test_hinweis_zu_den_nachweisen(client, offen):
         assert "data-ablage" in html and "ablage.js" in html and "{#" not in html
     AntragText.objects.create(sprache="tr", anhaenge_hinweis="Kimlik")
     assert "<p>Kimlik</p>" in client.get(reverse("antrag:formular", args=["tr"])).content.decode()
+
+
+def test_behinderung_nur_wenn_eingeschaltet(client, offen, admin_client):
+    from apps.antraege.auskunft import antrag_pdf
+    from apps.antraege.models import Abfrage, Antrag
+
+    assert 'name="gdb"' not in client.get(FORMULAR).content.decode()  # Vorgabe: nicht abfragen
+    offen.behinderung = Abfrage.PFLICHT
+    offen.save()
+    seite = client.get(reverse("antrag:formular", args=["en"])).content.decode()
+    assert 'name="gdb"' in seite and 'name="p1_gdb"' in seite and "GdB 50" in seite
+    assert "no disability" in seite
+    assert "gdb" in client.post(FORMULAR, daten()).context["form"].errors  # Pflicht
+    client.post(FORMULAR, daten(gdb="60", p1_vorname="Lina", p1_gdb="0", p2_vorname="Tom"))
+    a = Antrag.objects.get()
+    assert (a.gdb, a.gdb_text) == (60, "GdB 60")
+    assert [(p.vorname, p.gdb) for p in a.personen.all()] == [("Lina", 0), ("Tom", None)]
+    seite = admin_client.get(reverse("antraege:antrag", args=[a.pk])).content.decode()
+    assert "GdB 60" in seite and "keine Behinderung" in seite
+    assert antrag_pdf(a)  # Auskunft enthält die Angaben (Tabelle mit Spalte Behinderung)

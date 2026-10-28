@@ -11,8 +11,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from apps.antraege import aufnahme
-from apps.antraege.models import Antrag
-from apps.core.auswahl import mit_vorhandenem, staatsangehoerigkeiten
+from apps.antraege.models import Abfrage, Antrag, AntragEinstellungen
+from apps.core.auswahl import GDB_STUFEN, gdb_text, mit_vorhandenem, staatsangehoerigkeiten
 from apps.konten import rollen
 from apps.kunden.models import Einkommensart, Haushalt, KundenEinstellungen, Kundengruppe
 
@@ -154,8 +154,10 @@ def _post_abgleich(request, a, z, h):
 
 def _als_dict(p, pk=None) -> dict:
     datum = p.geburtsdatum.isoformat() if p.geburtsdatum else ""
+    gdb = getattr(p, "gdb", None)  # nur Personen aus dem Antrag haben ihn
     return {"pk": pk, "vorname": p.vorname, "nachname": p.nachname, "geburtsdatum": datum,
-            "staatsangehoerigkeit": p.staatsangehoerigkeit}  # fmt: skip
+            "staatsangehoerigkeit": p.staatsangehoerigkeit,
+            "gdb": "" if gdb is None else str(gdb)}  # fmt: skip
 
 
 def _vorschlag_personen(a, h) -> list[dict]:
@@ -181,6 +183,7 @@ def _kontext_personen(request, a, z, h):
         "nachname": "",
         "geburtsdatum": "",
         "staatsangehoerigkeit": "",
+        "gdb": "",
     }
     staaten = staatsangehoerigkeiten()
     for p in personen:  # gespeicherte Werte, die nicht in der Liste stehen, bleiben wählbar
@@ -188,6 +191,11 @@ def _kontext_personen(request, a, z, h):
     return {
         "personen": personen + [dict(leer) for _ in range(EXTRA_PERSONEN)],
         "staaten": staaten if KundenEinstellungen.laden().staatsangehoerigkeit_erfassen else None,
+        # GdB-Spalte, wenn der Antrag ihn abfragt oder eine Person einen hat
+        "gdb_stufen": [(str(n), gdb_text(n)) for n in [0, *GDB_STUFEN]]
+        if AntragEinstellungen.laden().behinderung != Abfrage.AUS
+        or any(p.get("gdb") for p in personen)
+        else None,
     }
 
 
@@ -208,6 +216,9 @@ def _post_personen(request, a, z, h):
         personen.append({"pk": int(pk) if pk.isdigit() else None, "vorname": vorname,
                          "nachname": request.POST.get(f"p{i}_nachname", "").strip()[:100],
                          "geburtsdatum": datum})  # fmt: skip
+        gdb = request.POST.get(f"p{i}_gdb", "")
+        if gdb in {str(n) for n in [0, *GDB_STUFEN]}:
+            personen[-1]["gdb"] = gdb
         if f"p{i}_staatsangehoerigkeit" in request.POST:  # nur, wenn sie erfasst wird
             personen[-1]["staatsangehoerigkeit"] = request.POST[
                 f"p{i}_staatsangehoerigkeit"

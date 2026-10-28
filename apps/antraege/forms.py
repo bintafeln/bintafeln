@@ -15,7 +15,14 @@ from apps.antraege.models import (
 )
 from apps.ausgabe.ampel import WOCHENTAGE
 from apps.core import privatdateien
-from apps.core.auswahl import ANREDEN, FAMILIENSTAENDE, mit_vorhandenem, staatsangehoerigkeiten
+from apps.core.auswahl import (
+    ANREDEN,
+    FAMILIENSTAENDE,
+    GDB_STUFEN,
+    gdb_text,
+    mit_vorhandenem,
+    staatsangehoerigkeiten,
+)
 from apps.core.forms import StaatAuswahl
 from apps.konten.forms import DatumEingabe
 from apps.kunden.models import Ausgabestelle
@@ -28,6 +35,10 @@ TAGE = WOCHENTAGE[:6]  # Mo–Sa
 FAMILIENSTAND_TEXT = dict(zip(FAMILIENSTAENDE, ["fs_ledig", "fs_verheiratet", "fs_partnerschaft",
                                                 "fs_getrennt", "fs_geschieden", "fs_verwitwet"],
                               strict=True))  # fmt: skip
+
+
+def _zahl(wert) -> int | None:
+    return int(wert) if wert not in (None, "") else None
 
 
 class MehrereDateien(forms.ClearableFileInput):
@@ -80,6 +91,11 @@ class AntragForm(forms.Form):
                    for w, n in staatsangehoerigkeiten(t["keine_angabe"])]  # fmt: skip
         self._feld("staatsangehoerigkeit", forms.ChoiceField(choices=staaten, widget=StaatAuswahl),
                    t["staatsangehoerigkeit"])  # fmt: skip
+        # Grad der Behinderung als Auswahl; bei Pflicht muss „keine Behinderung“ gewählt werden
+        gdb = [("0", t["behinderung_nein"])] + [(str(n), t["gdb_stufe"].format(n=n))
+                                                for n in GDB_STUFEN]  # fmt: skip
+        self._feld("gdb", forms.ChoiceField(choices=[("", t["keine_angabe"]), *gdb]),
+                   t["behinderung"], schalter="behinderung")  # fmt: skip
         if einstellungen.angehoerige != Abfrage.AUS:
             for n in range(1, MAX_PERSONEN + 1):
                 self.fields[f"p{n}_vorname"] = forms.CharField(
@@ -88,6 +104,10 @@ class AntragForm(forms.Form):
                     label=t["nachname"], max_length=100, required=False)  # fmt: skip
                 self.fields[f"p{n}_geburtsdatum"] = forms.DateField(
                     label=t["geburtsdatum"], required=False, widget=DatumEingabe())  # fmt: skip
+                if einstellungen.behinderung != Abfrage.AUS:
+                    self.fields[f"p{n}_gdb"] = forms.ChoiceField(
+                        label=t["behinderung"], choices=[("", t["keine_angabe"]), *gdb],
+                        required=False)  # fmt: skip
                 if einstellungen.staatsangehoerigkeit != Abfrage.AUS:  # nicht immer wie Person 1
                     self.fields[f"p{n}_staatsangehoerigkeit"] = forms.ChoiceField(
                         label=t["staatsangehoerigkeit"], choices=staaten, required=False,
@@ -130,14 +150,17 @@ class AntragForm(forms.Form):
 
     @property
     def personen_zeilen(self):
-        """Je weitere Person ihre Felder (Staatsangehörigkeit nur, wenn abgefragt)."""
+        """Je weitere Person ihre Felder (Staatsangehörigkeit und GdB nur, wenn abgefragt)."""
         if "p1_vorname" not in self.fields:
             return []
+
+        def wenn(name):
+            return self[name] if name in self.fields else None
+
         return [
             (n, self.texte["person_n"].format(n=n), self[f"p{n}_vorname"],
              self[f"p{n}_nachname"], self[f"p{n}_geburtsdatum"],
-             self[f"p{n}_staatsangehoerigkeit"] if f"p{n}_staatsangehoerigkeit" in self.fields
-             else None)
+             wenn(f"p{n}_staatsangehoerigkeit"), wenn(f"p{n}_gdb"))
             for n in range(1, MAX_PERSONEN + 1)
         ]  # fmt: skip
 
@@ -194,6 +217,7 @@ class AntragForm(forms.Form):
                 )
             },  # fmt: skip
             wochentage=", ".join(d.get("wochentage") or []),
+            gdb=_zahl(d.get("gdb")),
         )
         for n in range(1, MAX_PERSONEN + 1):
             if d.get(f"p{n}_vorname"):
@@ -203,6 +227,7 @@ class AntragForm(forms.Form):
                     nachname=d.get(f"p{n}_nachname", ""),
                     geburtsdatum=d.get(f"p{n}_geburtsdatum"),
                     staatsangehoerigkeit=d.get(f"p{n}_staatsangehoerigkeit") or "",
+                    gdb=_zahl(d.get(f"p{n}_gdb")),
                 )
         for datei in d.get("anhaenge") or []:
             AntragAnhang.objects.create(
@@ -294,6 +319,13 @@ class TextForm(forms.ModelForm):
         }
 
 
+def _gdb_feld() -> forms.TypedChoiceField:
+    return forms.TypedChoiceField(
+        label="Behinderung", required=False, coerce=int, empty_value=None,
+        choices=[("", "keine Angabe")] + [(n, gdb_text(n)) for n in [0, *GDB_STUFEN]],
+    )  # fmt: skip
+
+
 class AntragBearbeitenForm(forms.ModelForm):
     """Angaben eines Antrags korrigieren (Büro, Admin); Auswahl statt Freitext wie im Formular."""
 
@@ -302,12 +334,13 @@ class AntragBearbeitenForm(forms.ModelForm):
     staatsangehoerigkeit = forms.ChoiceField(
         label="Staatsangehörigkeit", required=False, widget=StaatAuswahl
     )
+    gdb = _gdb_feld()
 
     class Meta:
         model = Antrag
         fields = [
             "art", "kundennummer", "anrede", "vorname", "nachname", "geburtsdatum", "strasse",
-            "plz", "ort", "telefon", "email", "familienstand", "staatsangehoerigkeit",
+            "plz", "ort", "telefon", "email", "familienstand", "staatsangehoerigkeit", "gdb",
             "wochentage", "ausgabestelle", "nachricht",
         ]  # fmt: skip
         widgets = {"geburtsdatum": DatumEingabe(), "nachricht": forms.Textarea(attrs={"rows": 3})}
@@ -329,9 +362,11 @@ class AntragPersonForm(forms.ModelForm):
         label="Staatsangehörigkeit", required=False, widget=StaatAuswahl
     )
 
+    gdb = _gdb_feld()
+
     class Meta:
         model = AntragPerson
-        fields = ["vorname", "nachname", "geburtsdatum", "staatsangehoerigkeit"]
+        fields = ["vorname", "nachname", "geburtsdatum", "staatsangehoerigkeit", "gdb"]
         widgets = {"geburtsdatum": DatumEingabe()}
 
     def __init__(self, *args, **kwargs):
