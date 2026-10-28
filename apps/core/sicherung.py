@@ -7,9 +7,12 @@ from pathlib import Path
 from django.conf import settings
 from django.utils import timezone
 
-MAX_ALTER = timedelta(hours=48)
+# Bis 5 Tage grün, bis 10 Tage gelb (älter), darüber rot (veraltet)
+GELB_AB = timedelta(days=5)
+MAX_ALTER = timedelta(days=10)
 
 OK = "ok"
+ALT = "alt"
 VERALTET = "veraltet"
 FEHLER = "fehler"
 NICHT_EINGERICHTET = "nicht_eingerichtet"
@@ -55,6 +58,8 @@ def lese_status(pfad: Path | None = None, jetzt: datetime | None = None) -> Sich
         zustand = UNBEKANNT
     elif jetzt - erfolgreich > MAX_ALTER:
         zustand = VERALTET
+    elif jetzt - erfolgreich > GELB_AB:
+        zustand = ALT
     else:
         zustand = OK
     return SicherungsStatus(zustand, erfolgreich, meldung)

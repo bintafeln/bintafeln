@@ -23,7 +23,7 @@ def liste(request):
 
 def _bearbeiten(request, modell, form_klasse, pk, name):
     obj = get_object_or_404(modell, pk=pk) if pk else modell()
-    form = form_klasse(request.POST or None, instance=obj)
+    form = form_klasse(request.POST or None, request.FILES or None, instance=obj)
     if request.method == "POST" and form.is_valid():
         obj = form.save()
         messages.success(request, f"{name} „{obj}“ gespeichert.")

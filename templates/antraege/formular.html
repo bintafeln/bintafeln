@@ -3,9 +3,10 @@
 <section class="karte antrag-karte">
   <h1 class="antrag-titel">{{ ueberschrift }}</h1>
   <div class="antrag-einleitung">{{ einleitung }}</div>
-  {% if e.voraussetzungen_url or e.erklaerungen_url %}<ul class="antrag-links">
+  {% if e.voraussetzungen_url or e.erklaerungen_url or e.einverstaendnis_url %}<ul class="antrag-links">
     {% if e.voraussetzungen_url %}<li><a href="{{ e.voraussetzungen_url }}" target="_blank" rel="noopener">{{ t.voraussetzungen }}</a></li>{% endif %}
     {% if e.erklaerungen_url %}<li><a href="{{ e.erklaerungen_url }}" target="_blank" rel="noopener">{{ t.erklaerungen }}</a></li>{% endif %}
+    {% if e.einverstaendnis_url %}<li><a href="{{ e.einverstaendnis_url }}" target="_blank" rel="noopener">{{ t.einverstaendnis }}</a></li>{% endif %}
   </ul>{% endif %}
   <p class="hinweis">{{ t.pflicht_hinweis }}</p>
   {% if fehler %}<p class="sicherung sicherung-fehler" role="alert">{{ fehler }}</p>{% endif %}

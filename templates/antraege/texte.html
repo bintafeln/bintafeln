@@ -41,7 +41,7 @@
   <h3>Seite nach dem Absenden</h3>
   <div class="html-vorschau" lang="{{ s.code }}" dir="{% if s.rtl %}rtl{% else %}ltr{% endif %}">{{ vorschau.bestaetigung }}</div>
   <h3>Antwortmail: {{ vorschau.mail_betreff }}</h3>
-  <iframe class="html-vorschau mail-vorschau" sandbox title="Vorschau der Antwortmail" srcdoc="{{ vorschau.mail_html }}"></iframe>
+  <iframe class="html-vorschau mail-vorschau" sandbox title="Vorschau der Antwortmail" srcdoc="{{ vorschau.mail_html|force_escape }}"></iframe>
 </section>
 {% endif %}
 {% endblock %}

@@ -14,7 +14,7 @@ from apps.core.feiertage import ostersonntag
 ANLAESSE = {
     "halloween": "Halloween: Fledermäuse",
     "karneval": "Karneval: Luftschlangen und Konfetti",
-    "ostern": "Ostern: der Osterhase",
+    "ostern": "Ostern: zwei Osterhasen",
     "nikolaus": "Nikolaus: der Nikolaus im Schlitten",
     "weihnachten": "Weihnachten: der Nikolaus im Schlitten",
 }
@@ -49,7 +49,8 @@ def szene(name: str, zufall: random.Random | None = None) -> dict:
         ]
 
     if name == "halloween":
-        return {"figuren": teile(5, hoehe=(8, 60), verz=(0, 2.5), dauer=(5, 8), groesse=(70, 140))}
+        return {"figuren": teile(5, hoehe=(8, 60), verz=(0, 2.5), dauer=(5, 8), groesse=(80, 150),
+                                 takt=(0.16, 0.28))}  # fmt: skip
     if name == "karneval":
         return {
             "figuren": teile(6, hoehe=(20, 70), verz=(0, 1.5), dauer=(3, 5), groesse=(90, 160)),
@@ -61,7 +62,13 @@ def szene(name: str, zufall: random.Random | None = None) -> dict:
             "flocken": teile(30, links=(0, 100), verz=(0, 6), dauer=(5, 9), groesse=(10, 24)),
         }
     if name == "ostern":
-        return {"figuren": teile(1, hoehe=(0, 0), verz=(0.3, 0.6), dauer=(8, 9), groesse=(1, 1))}
+        # Zwei Hasen, der zweite von rechts; Boden, Takt und Sprunghöhe je Hase verschieden
+        return {"figuren": [
+            teile(1, boden=(2, 6), verz=(0.2, 0.6), dauer=(8, 10), takt=(1.6, 2.1), hoch=(9, 13),
+                  groesse=(110, 150))[0],
+            teile(1, boden=(14, 24), verz=(1.2, 2.2), dauer=(9, 12), takt=(1.2, 1.6),
+                  hoch=(6, 10), groesse=(80, 110))[0],
+        ]}  # fmt: skip
     return {}
 
 

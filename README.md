@@ -218,7 +218,7 @@ Fenster für den Code (5 Minuten gültig, höchstens 5 Versuche).
   wenn es unter „Mein Konto“ (eigene Geräte) oder bei „Mitarbeitende“ (Admin) entfernt wird.
 - **Überraschungen an Festtagen** (ADR 0079): Auf der Anmeldeseite fliegen zu Halloween
   (24.–31.10.) Fledermäuse, zu Karneval (Weiberfastnacht bis Veilchendienstag) Luftschlangen und
-  Konfetti, zu Ostern (Palmsonntag bis Ostermontag) hoppelt der Osterhase, zu Nikolaus (5./6.12.)
+  Konfetti, zu Ostern (Palmsonntag bis Ostermontag) hoppeln zwei Osterhasen, zu Nikolaus (5./6.12.)
   und Weihnachten (20.–26.12.) kommt der Nikolaus im Schlitten – einmal je Aufruf, nur
   Dekoration, aus bei „Bewegung reduzieren“. Abschaltbar unter „Anmeldung und Zwei-Faktor“.
   Vorschau: `/konten/anmelden/?anlass=halloween` (auch `karneval`, `ostern`, `nikolaus`).
@@ -663,9 +663,10 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
 
 - **Einschalten:** „Anträge“ → „Formular einstellen“ (Admin). Dort je Feld wählen: nicht
   abfragen, freiwillig oder Pflicht; Links zu Datenschutzerklärung, Impressum, Erklärungen
-  (z. B. Ablauf der Lebensmittelausgabe) und Voraussetzungen (wer berechtigt ist, welche
-  Nachweise nötig sind) eintragen (der Impressum-Link steht auch auf der Anmeldeseite und unten
-  auf jeder Seite); die beiden letzten stehen gut sichtbar über dem Formular;
+  (z. B. Ablauf der Lebensmittelausgabe), Voraussetzungen (wer berechtigt ist, welche
+  Nachweise nötig sind) und Einverständniserklärung (z. B. PDF zum Unterschreiben) eintragen
+  (der Impressum-Link steht auch auf der Anmeldeseite und unten auf jeder Seite); die drei
+  letzten stehen gut sichtbar über dem Formular;
   festlegen, wer bei neuen Anträgen eine Mail bekommt. Danach „Online-Anträge annehmen“
   einschalten.
 - **Adresse für die Webseite der Tafel:** `https://<domain>/antrag/`. Die Seite ist in
@@ -1096,7 +1097,8 @@ Aushang-Monitore“ (Recht „Aushang-Monitore einrichten“, Vorgabe Büro).
 
 ### Links auf der Startseite
 
-Ersetzt die bisherige „App-Übersicht“ (ADR 0057): Kacheln mit Symbol, Titel, Untertitel,
+Ersetzt die bisherige „App-Übersicht“ (ADR 0057): Kacheln mit Symbol oder eigenem Bild (PNG,
+JPG, WebP oder SVG; SVG wird beim Hochladen von Skripten bereinigt), Titel, Untertitel,
 Beschreibung und Adresse unter der Begrüßung, in Gruppen geordnet, auf Wunsch mit rotem
 Warnhinweis. „Sichtbar für“ zeigt eine Kachel nur Personen mit einem bestimmten Recht (z. B.
 Serververwaltung nur für Admins). Pflege unter „Einstellungen → Tafel → Links auf der Startseite“
@@ -1403,7 +1405,7 @@ Schlüssel an (eine Zeile, beginnt mit `AGE-SECRET-KEY-`). Diese Zeile:
 - wird nur zum Wiederherstellen gebraucht. **Ohne sie lassen sich die Sicherungen nicht öffnen.**
 
 Danach zeigt die Startseite allen Admins, wann zuletzt gesichert wurde, und warnt, wenn die
-letzte erfolgreiche Sicherung älter als zwei Tage ist.
+letzte erfolgreiche Sicherung älter ist: bis 5 Tage grün, bis 10 Tage gelb, darüber rot.
 
 Jede Sicherung ist ein Ordner in `sicherungen/` (z. B. `2026-01-31_023000`) mit
 `datenbank.dump.age`, `medien.tar.age` und `info.txt`. Ältere Stände löscht der Dienst nach der

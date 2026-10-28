@@ -32,8 +32,12 @@ def test_aktuelle_sicherung_ok(tmp_path):
     assert status.letzte_erfolgreiche == datetime(2026, 3, 1, 1, 30, tzinfo=UTC)
 
 
-def test_alte_sicherung_veraltet(tmp_path):
+def test_alte_sicherung_gelb_und_veraltet(tmp_path):
     pfad = schreiben(tmp_path / "s.txt", "ok", "2026-02-26T02:30:00+0100")
+    assert sicherung.lese_status(pfad, JETZT).zustand == sicherung.OK  # bis 5 Tage grün
+    pfad = schreiben(tmp_path / "s.txt", "ok", "2026-02-20T02:30:00+0100")
+    assert sicherung.lese_status(pfad, JETZT).zustand == sicherung.ALT  # bis 10 Tage gelb
+    pfad = schreiben(tmp_path / "s.txt", "ok", "2026-02-15T02:30:00+0100")
     assert sicherung.lese_status(pfad, JETZT).zustand == sicherung.VERALTET
 
 
@@ -60,8 +64,9 @@ def test_standardpfad_aus_settings(settings, tmp_path):
 @pytest.mark.parametrize(
     ("ergebnis", "erfolgreich", "text"),
     [
-        ("ok", "jetzt", "letzte erfolgreiche am"),
-        ("ok", "alt", "älter als zwei Tage"),
+        ("ok", "jetzt", "Letzte Sicherung am"),
+        ("ok", "alt", "mehr als 5 Tage her"),
+        ("ok", "uralt", "älter als 10 Tage"),
         ("fehler", "jetzt", "Kaputt gegangen"),
         ("fehler", "", "Kaputt gegangen"),
         ("nicht_eingerichtet", "", "./betrieb schluessel"),
@@ -72,7 +77,8 @@ def test_startseite_zeigt_status_fuer_admin(
 ):
     zeitpunkte = {
         "jetzt": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S%z"),
-        "alt": (datetime.now(UTC) - timedelta(days=5)).strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "alt": (datetime.now(UTC) - timedelta(days=6)).strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "uralt": (datetime.now(UTC) - timedelta(days=11)).strftime("%Y-%m-%dT%H:%M:%S%z"),
         "": "",
     }
     settings.SICHERUNG_STATUSDATEI = schreiben(
