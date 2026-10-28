@@ -204,6 +204,13 @@ def test_standard_aufgaben_fuer_alle_ausgabetage(admin_client):
     antwort = admin_client.post(f"{url}?tag=Mo", {"aktion": "standard"}, follow=True)
     assert "nichts angelegt" in antwort.content.decode()
     assert ds.aufgaben.count() == 41
+    # Mi hat schon Aufgaben: Knopf zum Ersetzen nur dieses Tages
+    seite = admin_client.get(url, {"tag": "Mi"}).content.decode()
+    assert "Standard-Aufgaben für Mittwoch anlegen" in seite
+    antwort = admin_client.post(f"{url}?tag=Mi", {"aktion": "standard", "ersetzen": "Mi"},
+                                follow=True)  # fmt: skip
+    assert "Standard-Aufgaben angelegt für: Mittwoch." in antwort.content.decode()
+    assert ds.aufgaben.filter(wochentag="Mi").count() == 20 and ds.aufgaben.count() == 60
 
 
 def test_beispiel_und_fristen(admin_client):

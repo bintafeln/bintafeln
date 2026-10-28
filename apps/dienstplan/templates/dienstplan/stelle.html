@@ -77,6 +77,17 @@
     <button type="submit" class="knopf knopf-zweitrangig">übernehmen</button>
   </form>
   {% endif %}
+  {% if aufgaben %}
+  <form method="post" class="abseits" onsubmit="return confirm('Die Aufgaben von {{ tagname }} samt fester Besetzung werden durch die Standard-Aufgaben ersetzt. Weiter?')">
+    {% csrf_token %}
+    <input type="hidden" name="aktion" value="standard">
+    <input type="hidden" name="ersetzen" value="{{ tag }}">
+    <button type="submit" class="knopf knopf-zweitrangig">Standard-Aufgaben für {{ tagname }} anlegen</button>
+    <p class="hinweis">Ersetzt die Aufgaben von {{ tagname }} durch die Aufgaben wie auf dem Papierplan (Teamleitung,
+      2× Frühdienst, Vorsortierung, Kasse, Brot, Mopro, Wurst / Fleisch, Sonderartikel, 4× Obst, 4× Gemüse, 3× Springer);
+      die Namen tragen Sie danach neu ein.</p>
+  </form>
+  {% endif %}
 </section>
 {% endif %}
 {% endblock %}
