@@ -1,5 +1,7 @@
-{# Abschnitt auf „Mein Konto“ (ADR 0080) #}
-<h2>PIN für Aushang-Monitore</h2>
-<p>Mit dieser PIN tragen Sie sich am Aushang-Monitor aus oder springen ein. Anmelden können Sie sich damit nicht.</p>
-<p class="sicherung{% if eintrag %} sicherung-ok{% endif %}">{% if eintrag %}Eingerichtet (zuletzt geändert am {{ eintrag.geaendert_am|date:"d.m.Y" }}).{% else %}Noch keine PIN.{% endif %}</p>
-<p><a class="knopf{% if eintrag %} knopf-zweitrangig{% endif %}" href="{% url 'aushang:meine_pin' %}">{% if eintrag %}PIN ändern oder löschen{% else %}PIN festlegen{% endif %}</a></p>
+{# Kachel auf „Mein Konto“ (ADR 0080) #}
+<div class="konto-kachel">
+  <h2>PIN für Aushang-Monitore</h2>
+  <p>Zum Austragen und Einspringen am Monitor; zum Anmelden taugt sie nicht.</p>
+  <p class="sicherung{% if eintrag %} sicherung-ok{% endif %}">{% if eintrag %}Eingerichtet (zuletzt geändert am {{ eintrag.geaendert_am|date:"d.m.Y" }}).{% else %}Noch keine PIN.{% endif %}</p>
+  <p><a class="knopf{% if eintrag %} knopf-zweitrangig{% endif %}" href="{% url 'aushang:meine_pin' %}">{% if eintrag %}PIN ändern oder löschen{% else %}PIN festlegen{% endif %}</a></p>
+</div>

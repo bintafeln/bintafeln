@@ -94,7 +94,8 @@ class Modul:
     startseite: Callable | None = None
     # Seiten für Aushang-Monitore (ADR 0080): aushang() -> [Aushangseite, …]
     aushang: Callable | None = None
-    # Abschnitt auf „Mein Konto“: mein_konto(request) -> HTML (render_to_string) oder ""
+    # Kachel auf „Mein Konto“: mein_konto(request) -> HTML (render_to_string, ein
+    # <div class="konto-kachel"> mit <h2>) oder ""
     mein_konto: Callable | None = None
 
 

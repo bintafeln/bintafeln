@@ -3,60 +3,75 @@
 {% block inhalt %}
 <section class="karte">
   <h1>Mein Konto</h1>
-  <p>Angemeldet als <strong>{{ user.username }}</strong>.</p>
-  <p><a class="knopf knopf-zweitrangig" href="{% url 'konten:passwort_aendern' %}">Passwort ändern</a></p>
+  <p>Angemeldet als <strong>{{ user.username }}</strong>.
+    Ihre Rollen: {% for rolle in rollen_liste %}<span class="marke-rolle">{{ rolle }}</span>{% empty %}keine – bitte an einen Admin wenden.{% endfor %}</p>
 
-  {% if not user.stelle_id %}{# Konto einer Ausgabestelle: keine Person, keine Auskunft (ADR 0059) #}
-  <h2>Meine Daten</h2>
-  <p>Alles, was die Tafel zu Ihnen gespeichert hat, als PDF (Auskunft nach Art. 15 DSGVO).</p>
-  <p><a class="knopf knopf-zweitrangig" href="{% url 'konten:meine_auskunft' %}" target="_blank" rel="noopener">Meine Daten ansehen (PDF)</a></p>
+  <div class="konto-raster">
+    <div class="konto-kachel">
+      <h2>Passwort</h2>
+      <p>Für die Anmeldung im Programm.</p>
+      <p><a class="knopf knopf-zweitrangig" href="{% url 'konten:passwort_aendern' %}">Passwort ändern</a></p>
+    </div>
+
+    {% if zwei_faktor_erlaubt %}
+    <div class="konto-kachel">
+      <h2>Zwei-Faktor-Anmeldung</h2>
+      {% if zwei_faktor_aktiv %}
+        <p class="sicherung sicherung-ok">Eingeschaltet (Code aus der Authenticator-App).</p>
+        <p>Noch {{ notfallcodes_uebrig }} unbenutzte Notfallcode{{ notfallcodes_uebrig|pluralize:"s" }}.</p>
+        {% if zwei_faktor_pflicht %}
+        <p class="hinweis">Pflicht für Ihre Rolle, kann nicht abgeschaltet werden. Neues Handy? Ein Admin setzt sie zurück.</p>
+        {% endif %}
+        <form method="post" action="{% url 'konten:notfallcodes_neu' %}">
+          {% csrf_token %}
+          <button type="submit" class="knopf knopf-zweitrangig" title="Die bisherigen Notfallcodes werden dabei ungültig.">Neue Notfallcodes erzeugen</button>
+        </form>
+      {% else %}
+        <p class="sicherung">Nicht eingerichtet.{% if zwei_faktor_pflicht %} Für Ihre Rolle ist sie Pflicht.{% endif %}</p>
+        <p><a class="knopf" href="{% url 'konten:zwei_faktor_einrichten' %}">Jetzt einrichten</a></p>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% for teil in modul_konto %}{{ teil }}{% endfor %}
+
+    {% if not user.stelle_id %}{# Konto einer Ausgabestelle: keine Person, keine Auskunft (ADR 0059) #}
+    <div class="konto-kachel">
+      <h2>Meine Daten</h2>
+      <p>Alles, was die Tafel zu Ihnen speichert (Auskunft nach Art. 15 DSGVO).</p>
+      <p><a class="knopf knopf-zweitrangig" href="{% url 'konten:meine_auskunft' %}" target="_blank" rel="noopener">Meine Daten ansehen (PDF)</a></p>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if zwei_faktor_erlaubt and zwei_faktor_aktiv %}
+  <div class="konto-unten">
+  {% if not zwei_faktor_pflicht %}
+  <h2>Zwei-Faktor abschalten</h2>
+  <form method="post" action="{% url 'konten:zwei_faktor_abschalten' %}">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf knopf-zweitrangig">Zwei-Faktor abschalten</button>
+  </form>
   {% endif %}
 
-  {% if zwei_faktor_erlaubt %}
-  <h2>Zwei-Faktor-Anmeldung</h2>
-  {% if zwei_faktor_aktiv %}
-    <p class="sicherung sicherung-ok">Eingeschaltet. Bei der Anmeldung wird zusätzlich ein Code aus
-      der Authenticator-App verlangt.</p>
-    <p>Noch {{ notfallcodes_uebrig }} unbenutzte Notfallcode{{ notfallcodes_uebrig|pluralize:"s" }}.</p>
-    <form method="post" action="{% url 'konten:notfallcodes_neu' %}">
-      {% csrf_token %}
-      <button type="submit" class="knopf">Neue Notfallcodes erzeugen</button>
-      <small class="hilfe">Die bisherigen Notfallcodes werden dabei ungültig.</small>
-    </form>
-
-    {% if zwei_faktor_pflicht %}
-      <p class="hinweis">Für Ihre Rolle ist die Zwei-Faktor-Anmeldung Pflicht und kann nicht
-        abgeschaltet werden. Neues Handy? Bitte einen Admin bitten, sie zurückzusetzen, und dann
-        neu einrichten.</p>
-    {% else %}
-      <h3>Abschalten</h3>
-      <form method="post" action="{% url 'konten:zwei_faktor_abschalten' %}">
-        {% csrf_token %}
-        {% include "includes/formular.html" %}
-        <button type="submit" class="knopf knopf-zweitrangig">Zwei-Faktor abschalten</button>
-      </form>
-    {% endif %}
-    <h3>Vertraute Geräte</h3>
-    {% if vertrauen_tage %}
-    <p>Auf diesen Geräten ist bis zum genannten Tag kein Code nötig (Haken „Diesem Gerät vertrauen“ bei der Anmeldung).
-      Nach einer Passwortänderung gilt keines mehr.</p>
-    {% endif %}
-    {% if geraete %}
-    <ul>
-      {% for g in geraete %}
-      <li>{{ g.bezeichnung|default:"Gerät" }} · seit {{ g.angelegt_am|date:"d.m.Y" }} · gültig bis {{ g.gueltig_bis|date:"d.m.Y H:i" }}{% if g.zuletzt_am %} · zuletzt {{ g.zuletzt_am|date:"d.m.Y" }}{% endif %}
-        <form method="post" action="{% url 'konten:geraet_entfernen' g.pk %}" class="inline">{% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">Entfernen</button></form></li>
-      {% endfor %}
-    </ul>
-    <form method="post" action="{% url 'konten:geraete_entfernen' %}">{% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">Alle entfernen</button></form>
-    {% else %}
-    <p>Keine.{% if not vertrauen_tage %} Die Tafel hat diese Möglichkeit ausgeschaltet.{% endif %}</p>
-    {% endif %}
+  <h2>Vertraute Geräte</h2>
+  {% if vertrauen_tage %}
+  <p class="hinweis">Auf diesen Geräten ist bis zum genannten Tag kein Code nötig (Haken „Diesem Gerät vertrauen“ bei der
+    Anmeldung). Nach einer Passwortänderung gilt keines mehr.</p>
+  {% endif %}
+  {% if geraete %}
+  <ul>
+    {% for g in geraete %}
+    <li>{{ g.bezeichnung|default:"Gerät" }} · seit {{ g.angelegt_am|date:"d.m.Y" }} · gültig bis {{ g.gueltig_bis|date:"d.m.Y H:i" }}{% if g.zuletzt_am %} · zuletzt {{ g.zuletzt_am|date:"d.m.Y" }}{% endif %}
+      <form method="post" action="{% url 'konten:geraet_entfernen' g.pk %}" class="inline">{% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">Entfernen</button></form></li>
+    {% endfor %}
+  </ul>
+  <form method="post" action="{% url 'konten:geraete_entfernen' %}">{% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">Alle entfernen</button></form>
   {% else %}
-    <p class="sicherung">Nicht eingerichtet.{% if zwei_faktor_pflicht %} Für Ihre Rolle ist sie Pflicht.{% endif %}</p>
-    <p><a class="knopf" href="{% url 'konten:zwei_faktor_einrichten' %}">Jetzt einrichten</a></p>
+  <p>Keine.{% if not vertrauen_tage %} Die Tafel hat diese Möglichkeit ausgeschaltet.{% endif %}</p>
   {% endif %}
+  </div>
   {% endif %}
-  {% for teil in modul_konto %}{{ teil }}{% endfor %}
 </section>
 {% endblock %}

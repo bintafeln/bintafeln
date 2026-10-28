@@ -151,3 +151,10 @@ def test_zwei_faktor_nur_mit_freigabe(admin_client, mitte):
     assert antwort.status_code == 302 and antwort.url == "/"
     # Für andere Konten ändert die Freigabe nichts
     assert "Zwei-Faktor" in admin_client.get(reverse("konten:mein_konto")).content.decode()
+
+
+def test_rollen_unter_mein_konto_nicht_auf_der_startseite(admin_client):
+    start = admin_client.get(reverse("core:start")).content.decode()
+    assert "Ihre Rollen" not in start and "keine Rolle zugeordnet" not in start
+    konto = admin_client.get(reverse("konten:mein_konto")).content.decode()
+    assert "Ihre Rollen" in konto and '<span class="marke-rolle">Admin</span>' in konto

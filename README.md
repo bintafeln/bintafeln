@@ -1403,7 +1403,7 @@ Schlüssel an (eine Zeile, beginnt mit `AGE-SECRET-KEY-`). Diese Zeile:
 - wird nur zum Wiederherstellen gebraucht. **Ohne sie lassen sich die Sicherungen nicht öffnen.**
 
 Danach zeigt die Startseite allen Admins, wann zuletzt gesichert wurde, und warnt, wenn die
-letzte erfolgreiche Sicherung älter als zwei Tage ist.
+letzte erfolgreiche Sicherung älter ist: bis 5 Tage grün, bis 10 Tage gelb, darüber rot.
 
 Jede Sicherung ist ein Ordner in `sicherungen/` (z. B. `2026-01-31_023000`) mit
 `datenbank.dump.age`, `medien.tar.age` und `info.txt`. Ältere Stände löscht der Dienst nach der

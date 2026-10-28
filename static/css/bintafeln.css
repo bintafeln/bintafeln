@@ -169,6 +169,9 @@ h1 { font-size: 1.5rem; margin: .25rem 0 1rem; }
 .sicherung { padding: .75rem 1rem; border-radius: var(--radius); margin: 1rem 0; background: #fdf3d8; }
 .sicherung-ok { background: var(--erfolg); }
 .sicherung-fehler, .sicherung-veraltet { background: #f8e1e1; color: var(--fehler); }
+/* Stand der Sicherung auf der Startseite: bis 5 Tage grün, bis 10 Tage gelb */
+.sicherung-stand.sicherung-ok { background: #e3f1e0; color: #1e5a1e; }
+.sicherung-alt { background: #fdf3d8; color: #6b4e00; }
 
 h2 { font-size: 1.2rem; margin: 1.5rem 0 .5rem; }
 h3 { font-size: 1.05rem; margin: 1.25rem 0 .5rem; }
@@ -1206,3 +1209,13 @@ body.aushang-ruhig { cursor: none; }
 /* Datenimport: Beispielwerte einer Spalte untereinander, je einer aus einer Zeile der Datei */
 .import-beispiele { list-style: none; margin: 0; padding: 0; font-size: .85rem; color: var(--leise); }
 .import-beispiele li + li { border-top: 1px dotted var(--rand); }
+
+/* Mein Konto: Kacheln nebeneinander, Knopf unten bündig */
+.konto-raster { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: 1rem; margin: 1rem 0 1.5rem; }
+.konto-kachel { border: 1px solid var(--rand); border-radius: var(--radius); padding: .9rem 1rem; display: flex; flex-direction: column; gap: .6rem; }
+.konto-kachel h2 { margin: 0; font-size: 1.05rem; }
+.konto-kachel p, .konto-kachel form { margin: 0; }
+.konto-kachel .sicherung { padding: .45rem .7rem; }
+.konto-kachel > :last-child { margin-top: auto; }
+.konto-kachel .knopf { width: 100%; }
+.konto-unten { border-top: 1px solid var(--rand); padding-top: .25rem; }
