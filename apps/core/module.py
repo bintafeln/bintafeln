@@ -29,9 +29,10 @@ class Aushangseite:
     recht: str  # wer die Seite auf einen Aushang setzen darf
     # auswahl() -> [(wert, text)], z. B. die Ausgabestellen; leer = keine Wahl nötig
     auswahl: Callable
-    # folien(wert, von, bis) -> [(titel, html, adresse)]: was der Monitor für den Zeitraum zeigt
-    # (nur Namen, nie Kontaktdaten; der Monitor braucht keine Anmeldung) und die Seite im
-    # Programm zum Ändern (für den QR-Code). Plätze, die sich am Monitor ändern lassen, tragen
+    # folien(wert, von, bis) -> [(titel, html, adresse, kurz)]: was der Monitor für den Zeitraum
+    # zeigt (nur Namen, nie Kontaktdaten; der Monitor braucht keine Anmeldung), die Seite im
+    # Programm zum Ändern (für den QR-Code) und die Aufschrift des Knopfs oben (z. B.
+    # „Fahrer Oktober“). Plätze, die sich am Monitor ändern lassen, tragen
     # data-platz="<kennung>|…" im HTML.
     folien: Callable
     # Ändern am Monitor mit persönlicher PIN (optional): platz(teil) -> dict für den Dialog oder

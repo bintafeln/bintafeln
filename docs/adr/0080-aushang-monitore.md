@@ -20,8 +20,9 @@ zusammengefasst werden können, eingerichtet direkt im Programm.
   Kennung, Titel, Recht, `auswahl()`, `folien(wert, von, bis)`). Dienstplan: je Ausgabetag einer
   Stelle eine Folie; Fahrdienst: je Monat eine Folie. Beide nutzen dieselbe Tabelle wie die Seite
   im Programm (`_tabelle.html`). Seiten ausgeschalteter Module fallen still weg.
-- Zeitraum immer ab heute bis zum Ende dieses bzw. des nächsten Monats: vergangene Tage braucht
-  am Monitor niemand, am Monatsende ist so schon der nächste Plan zu sehen.
+- Zeitraum immer der ganze Monat bzw. dieser und der nächste, wie der Plan auf Papier; am
+  Monatsende ist so schon der nächste Plan zu sehen. (Zuerst ab heute; vergangene Tage im Plan
+  zu sehen war den Tafeln aber wichtiger.)
 - Der Monitor (`/aushang/zeigen/<schluessel>/`) braucht keine Anmeldung, wie die Geräte des
   Aufrufs (ADR 0050). Er zeigt nur Namen, nie Telefon, E-Mail oder Anmerkungen. „Neuen Link
   erzeugen“ und „Aktiv“ aus sperren ihn; fragt der Monitor selbst nach (`X-Aushang`), antwortet
@@ -30,8 +31,9 @@ zusammengefasst werden können, eingerichtet direkt im Programm.
   ohne Scrollen passt, holt jede Minute den neuen Stand und lädt alle sechs Stunden die ganze
   Seite neu (neue Programmversion). Vollbild per Knopf oder Browser mit `--kiosk`.
 
-- Antippen zeigt eine Seite groß (nur in der Breite eingepasst, scrollbar); „← Übersicht“ oder
-  30 Sekunden ohne Eingabe führen zurück. Dort steht ein QR-Code mit dem Link zur Seite im
+- Antippen zeigt eine Seite groß, immer ganz eingepasst (Schieben war am Touch-Monitor nicht
+  brauchbar); oben steht je Seite ein deutlicher Knopf (`kurz` aus `folien()`, z. B. „Fahrer
+  Oktober“), „Übersicht“ oder 30 Sekunden ohne Eingabe führen zurück. Dort steht ein QR-Code mit dem Link zur Seite im
   Programm (Ändern am eigenen Handy mit Anmeldung; je Aushang abschaltbar).
 - Ändern am Monitor (je Aushang abschaltbar) nur mit **persönlicher PIN** (`MonitorPin`, mindestens
   6 Ziffern, gehasht wie ein Passwort, selbst festgelegt unter „Dienstpläne → Meine PIN für

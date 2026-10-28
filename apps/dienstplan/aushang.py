@@ -19,7 +19,7 @@ def auswahl() -> list[tuple[str, str]]:
     return [(str(s.ausgabestelle_id), str(s)) for s in plan.stellen()]
 
 
-def folien(wert, von, bis) -> list[tuple[str, str, str]]:
+def folien(wert, von, bis) -> list[tuple[str, str, str, str]]:
     from apps.dienstplan.views import TAGNAME
 
     stelle = plan.stellen().filter(ausgabestelle_id=wert).first() if str(wert).isdigit() else None
@@ -36,7 +36,8 @@ def folien(wert, von, bis) -> list[tuple[str, str, str]]:
         })  # fmt: skip
         adresse = (f"{reverse('dienstplan:plan')}?stelle={stelle.ausgabestelle_id}&tag={tag}"
                    f"&monat={daten[0]:%Y-%m}")  # fmt: skip
-        ergebnis.append((f"Dienstplan {stelle} · {TAGNAME[tag]}", html, adresse))
+        ergebnis.append((f"Dienstplan {stelle} · {TAGNAME[tag]}", html, adresse,
+                         f"Ausgabe {stelle} {TAGNAME[tag]}"))  # fmt: skip
     return ergebnis
 
 
