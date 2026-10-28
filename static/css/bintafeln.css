@@ -1242,3 +1242,20 @@ body.aushang-ruhig { cursor: none; }
 .konto-kachel > :last-child { margin-top: auto; }
 .konto-kachel .knopf { width: 100%; }
 .konto-unten { border-top: 1px solid var(--rand); padding-top: .25rem; }
+
+/* Antragsformular: Ablage für Nachweise (static/js/ablage.js) */
+.antrag-hinweis { padding: .6rem .9rem; border-left: 4px solid var(--akzent); background: var(--erfolg);
+  border-radius: var(--radius); margin: 0 0 .75rem; }
+.antrag-hinweis > :first-child { margin-top: 0; } .antrag-hinweis > :last-child { margin-bottom: 0; }
+.ablage { border: 2px dashed var(--rand); border-radius: var(--radius); padding: 1.25rem 1rem;
+  text-align: center; transition: background .15s, border-color .15s; }
+.ablage-ueber { border-color: var(--akzent); background: var(--erfolg); }
+.ablage-text { margin: 0 0 .75rem; color: var(--leise); }
+.ablage-knoepfe { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; }
+.ablage-feld { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.ablage-liste { list-style: none; padding: 0; margin: .5rem 0 0; }
+.ablage-liste li { display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+  padding: .35rem .6rem; border: 1px solid var(--rand); border-radius: var(--radius); margin-top: .35rem;
+  word-break: break-all; }
+.ablage-entfernen { border: 0; background: none; font-size: 1.1rem; cursor: pointer; color: var(--fehler); }
+.ablage-rahmen { position: relative; }

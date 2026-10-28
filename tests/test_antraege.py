@@ -480,3 +480,18 @@ def test_menue_zeigt_zahl_offener_antraege(admin_client, client, benutzer_mit_ro
     )  # die Zahl steht immer da, auch bei 0
     anmelden(client, benutzer_mit_rolle("anton", rollen.AUSGABE))
     assert "menue-zahl" not in client.get(reverse("core:start")).content.decode()
+
+
+def test_hinweis_zu_den_nachweisen(client, offen):
+    from apps.antraege.models import AntragText
+
+    assert (
+        "antrag-hinweis" not in client.get(reverse("antrag:formular", args=["de"])).content.decode()
+    )
+    AntragText.objects.create(sprache="de", anhaenge_hinweis="Ausweis <b>und</b> Bescheid")
+    for code in ("de", "tr"):  # ohne eigenen Hinweis gilt der deutsche
+        html = client.get(reverse("antrag:formular", args=[code])).content.decode()
+        assert '<div class="antrag-hinweis">Ausweis <b>und</b> Bescheid</div>' in html
+        assert "data-ablage" in html and "ablage.js" in html and "{#" not in html
+    AntragText.objects.create(sprache="tr", anhaenge_hinweis="Kimlik")
+    assert "<p>Kimlik</p>" in client.get(reverse("antrag:formular", args=["tr"])).content.decode()

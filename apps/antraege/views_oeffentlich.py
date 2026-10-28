@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.utils.html import format_html
 
 from apps.antraege import sprachen
-from apps.antraege.forms import AntragForm
+from apps.antraege.forms import MAX_ANHAENGE, AntragForm
 from apps.antraege.models import AntragEinstellungen, AntragText, AntragVersuch
 from apps.core import html, mail
 from apps.core.models import TafelEinstellungen
@@ -79,6 +79,7 @@ def formular(request, sprache):
     kontext["einleitung"] = html.anzeigen(
         kontext["eigene"].einleitung, t["einleitung"], tafel=kontext["tafel_name"]
     )
+    kontext["anhaenge_hinweis"] = anhaenge_hinweis(kontext["eigene"])
     if not e.aktiv:
         return render(request, "antraege/geschlossen.html", kontext)
     form = AntragForm(request.POST or None, request.FILES or None, texte=t, einstellungen=e)
@@ -96,7 +97,17 @@ def formular(request, sprache):
             return redirect("antrag:danke", sprache=sprache)
         else:
             kontext["fehler"] = t["fehler_formular"]
-    return render(request, "antraege/formular.html", {**kontext, "form": form})
+    return render(request, "antraege/formular.html",
+                  {**kontext, "form": form, "max_anhaenge": MAX_ANHAENGE})  # fmt: skip
+
+
+def anhaenge_hinweis(eigene: AntragText) -> str:
+    """Hinweis über den Nachweisen; fehlt er in der Sprache, gilt der deutsche (oder keiner)."""
+    text = eigene.anhaenge_hinweis
+    if not text.strip() and eigene.sprache != "de":
+        deutsch = AntragText.objects.filter(sprache="de").first()
+        text = deutsch.anhaenge_hinweis if deutsch else ""
+    return html.anzeigen(text, "") if text.strip() else ""
 
 
 def _bestaetigung(kontext, nummer: str) -> str:
