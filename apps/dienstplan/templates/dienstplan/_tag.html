@@ -1,0 +1,8 @@
+{# Ein Ausgabetag als Karte für schmale Bildschirme #}
+<details class="fd-tag{% if k.datum == heute %} fd-heute{% endif %}"{% if k.offen %} open{% endif %}>
+  <summary><strong>{{ k.datum|date:"l, d.m." }}</strong>{% if k.datum == heute %} <span class="fd-marke">heute</span>{% endif %}{% if k.fehlen %} <span class="fd-marke fd-offen">{{ k.fehlen }} offen</span>{% endif %}</summary>
+  <dl>
+    {% for g in k.gruppen %}<dt>{{ g.name }}<small>{{ g.zeit }}</small></dt>
+    <dd>{% for p in g.plaetze %}{% include "dienstplan/_platz.html" %}{% endfor %}</dd>{% endfor %}
+  </dl>
+</details>

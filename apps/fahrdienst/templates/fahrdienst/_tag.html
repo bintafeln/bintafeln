@@ -1,0 +1,8 @@
+{# Ein Fahrtag als Karte für schmale Bildschirme #}
+<details class="fd-tag{% if k.datum == heute %} fd-heute{% endif %}{% if k.datum.weekday == 0 %} fd-woche{% endif %}"{% if k.offen %} open{% endif %}>
+  <summary><strong>{{ k.datum|date:"l, d.m." }}</strong>{% if k.datum == heute %} <span class="fd-marke">heute</span>{% endif %}{% if k.fehlen %} <span class="fd-marke fd-offen">{{ k.fehlen }} offen</span>{% endif %}</summary>
+  <dl>
+    {% for tour, plaetze in k.touren %}<dt>{% if planen %}<a href="{% url 'fahrdienst:besetzung' tour.pk %}?monat={{ monat }}" title="Feste Besetzung ändern">{{ tour.name }} ✎</a>{% else %}{{ tour.name }}{% endif %}</dt>
+    <dd>{% for p in plaetze %}{% if p.status != "leer" or planen %}{% include "fahrdienst/_platz.html" %}{% endif %}{% endfor %}</dd>{% endfor %}
+  </dl>
+</details>

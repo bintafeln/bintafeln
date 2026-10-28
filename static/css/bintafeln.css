@@ -1011,8 +1011,48 @@ a.marke-rolle { text-decoration: none; }
   border: 1px solid var(--rand); border-radius: var(--radius); background: var(--flaeche); color: inherit; }
 .fd-besetzung select:focus { outline: 3px solid var(--fokus); border-color: var(--akzent); }
 .fd-besetzung td, .fd-besetzung tbody th { vertical-align: middle; }
-.fd-monat { display: flex; gap: .35rem; }
-.fd-monat select { width: auto; padding: .4rem .5rem; border: 1px solid var(--rand); border-radius: .4rem; background: var(--flaeche); color: inherit; font: inherit; }
+.fd-monat { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-bottom: .6rem; }
+.fd-monat select { width: auto; max-width: 100%; min-height: 2.6rem; padding: .4rem .5rem; border: 1px solid var(--rand); border-radius: .4rem; background: var(--flaeche); color: inherit; font: inherit; }
+.fd-blaettern { display: flex; align-items: center; gap: .4rem; }
+.fd-blaettern .knopf { flex: 0 0 auto; width: auto; padding: .45rem .8rem; }
+.fd-aktionen { margin-bottom: .5rem; }
+.fd-anleitung { margin: 0 0 1rem; color: var(--leise); }
+.fd-anleitung summary { cursor: pointer; color: var(--akzent-dunkel); font-weight: 600; }
+.fd-anleitung p { margin: .4rem 0 0; }
+/* Schmale Bildschirme: statt der breiten Tabelle eine Karte je Tag (ADR 0074, 0077) */
+.fd-karten { display: none; }
+.fd-tag { border: 1px solid var(--rand); border-radius: var(--radius); margin-bottom: .5rem; background: var(--flaeche); }
+.fd-tag.fd-woche { margin-top: 1rem; }
+.fd-tag > summary { cursor: pointer; padding: .65rem .8rem; display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; list-style: none; }
+.fd-tag > summary::-webkit-details-marker { display: none; }
+.fd-tag > summary::after { content: "▾"; margin-left: auto; color: var(--akzent-dunkel); transition: transform .15s; }
+.fd-tag:not([open]) > summary::after { transform: rotate(-90deg); }
+.fd-tag[open] > summary { border-bottom: 1px solid var(--rand); }
+.fd-tag.fd-heute { border: 2px solid var(--akzent); }
+.fd-tag.fd-heute > summary { background: color-mix(in srgb, var(--akzent) 10%, transparent); }
+.fd-marke { font-size: .8rem; font-weight: 600; padding: .05rem .45rem; border-radius: 1rem; background: color-mix(in srgb, var(--akzent) 18%, transparent); }
+.fd-tag dl { margin: 0; padding: .3rem .8rem .6rem; display: grid; grid-template-columns: minmax(6rem, 38%) 1fr; gap: .1rem .6rem; }
+.fd-tag dt { font-weight: 700; padding: .35rem 0; border-top: 1px solid var(--rand); min-width: 0; overflow-wrap: anywhere; hyphens: auto; }
+.fd-tag dt small { display: block; font-weight: 400; color: var(--leise); font-size: .8rem; }
+.fd-tag dt a { color: inherit; }
+.fd-tag dd { margin: 0; padding: .35rem 0; border-top: 1px solid var(--rand); display: flex; flex-direction: column; align-items: flex-start; gap: .2rem; }
+.fd-tag dt:first-of-type, .fd-tag dd:first-of-type { border-top: 0; }
+.fd-tag .fd-platz { white-space: normal; padding: .1rem .3rem; }
+.fd-frueher { margin-bottom: .75rem; }
+.fd-frueher > summary { cursor: pointer; color: var(--akzent-dunkel); font-weight: 600; padding: .4rem 0; }
+.fd-frueher[open] { padding-bottom: .5rem; border-bottom: 2px dotted var(--rand); }
+@media (max-width: 40rem) {
+  .fd-rahmen { display: none; }
+  .fd-karten { display: block; }
+  .fd-lang { display: none; }
+  .fd-monat select { flex: 1 1 auto; }
+  .fd-blaettern { flex: 1 1 100%; min-width: 0; }
+  .fd-blaettern select { flex: 1 1 0; min-width: 0; }
+  .fd-blaettern select[name="m"] { flex-grow: 1.4; }
+  .fd-blaettern select { padding: .4rem .3rem; }
+  .fd-blaettern .knopf { padding: .45rem .65rem; }
+  .fd-aktionen .knopf { flex: 1 1 100%; text-align: center; }
+}
 .fd-plan thead a { color: inherit; }
 .fd-rahmen { overflow-x: auto; }
 .fd-plan { border-collapse: collapse; width: 100%; min-width: 48rem; font-size: .95rem; }

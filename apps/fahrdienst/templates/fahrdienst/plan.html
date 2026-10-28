@@ -2,28 +2,31 @@
 {% block titel %}Fahrerplan {{ titel }}{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
-  <div class="fd-kopf">
-    <h1>Fahrerplan {{ titel }}</h1>
-    <div class="aktionsleiste">
-      <form method="get" class="fd-monat">
-        <label class="unsichtbar" for="fd-m">Monat</label>
-        <select name="m" id="fd-m" onchange="this.form.submit()">{% for nr, name in monate %}<option value="{{ nr|stringformat:'02d' }}"{% if nr == erster.month %} selected{% endif %}>{{ name }}</option>{% endfor %}</select>
-        <label class="unsichtbar" for="fd-j">Jahr</label>
-        <select name="jahr" id="fd-j" onchange="this.form.submit()">{% for j in jahre %}<option{% if j == erster.year %} selected{% endif %}>{{ j }}</option>{% endfor %}</select>
-        <noscript><button type="submit" class="knopf knopf-zweitrangig">Öffnen</button></noscript>
-      </form>
-      <a class="knopf knopf-zweitrangig" href="?monat={{ vorher }}">← Vormonat</a>
-      <a class="knopf knopf-zweitrangig" href="?monat={{ nachher }}">Folgemonat →</a>
-      <a class="knopf knopf-zweitrangig" href="{% url 'fahrdienst:pdf' %}?monat={{ monat }}">Drucken (PDF)</a>
-      {% if planen or darf_melden %}<a class="knopf" href="{% url 'fahrdienst:ausfall' %}">Ich kann nicht – Ausfall melden</a>{% endif %}
-    </div>
+  <h1>Fahrerplan {{ titel }}</h1>
+  <form method="get" class="fd-monat">
+    <span class="fd-blaettern">
+      <a class="knopf knopf-zweitrangig" href="?monat={{ vorher }}" title="Vormonat">←<span class="fd-lang"> Vormonat</span></a>
+      <label class="unsichtbar" for="fd-m">Monat</label>
+      <select name="m" id="fd-m" onchange="this.form.submit()">{% for nr, name in monate %}<option value="{{ nr|stringformat:'02d' }}"{% if nr == erster.month %} selected{% endif %}>{{ name }}</option>{% endfor %}</select>
+      <label class="unsichtbar" for="fd-j">Jahr</label>
+      <select name="jahr" id="fd-j" onchange="this.form.submit()">{% for j in jahre %}<option{% if j == erster.year %} selected{% endif %}>{{ j }}</option>{% endfor %}</select>
+      <a class="knopf knopf-zweitrangig" href="?monat={{ nachher }}" title="Folgemonat"><span class="fd-lang">Folgemonat </span>→</a>
+    </span>
+    <noscript><button type="submit" class="knopf knopf-zweitrangig">Öffnen</button></noscript>
+  </form>
+  <div class="aktionsleiste fd-aktionen">
+    {% if planen or darf_melden %}<a class="knopf" href="{% url 'fahrdienst:ausfall' %}">Ich kann nicht – Ausfall melden</a>{% endif %}
+    <a class="knopf knopf-zweitrangig" href="{% url 'fahrdienst:pdf' %}?monat={{ monat }}">Drucken (PDF)</a>
   </div>
-  <p class="hinweis"><span class="fd-platz fd-offen"><s>Name</s> <strong>offen</strong></span> fällt aus, noch kein Ersatz ·
-    <span class="fd-platz fd-ersetzt"><s class="fd-weg">Name</s> Ersatz</span> springt ein{% if planen %} ·
-    <br>Jeder Monat lässt sich hier jederzeit wieder öffnen und ändern: auf einen Namen tippen, um für diesen Tag
-    einen Ersatz oder Gast einzutragen; auf den Namen einer Tour, um ihre feste Besetzung zu ändern.{% elif darf_melden %} ·
-    Auf den eigenen Namen tippen, um sich für diesen Tag (oder länger) auszutragen.{% endif %}
-    {% if offen %}<br><strong class="fd-offen-text">{{ offen }} offene Plätze in diesem Monat.</strong>{% endif %}</p>
+  {% if offen %}<p class="hinweis"><strong class="fd-offen-text">{{ offen }} offene Plätze in diesem Monat.</strong></p>{% endif %}
+  <details class="fd-anleitung">
+    <summary>Farben und Ändern</summary>
+    <p><span class="fd-platz fd-offen"><s>Name</s> <strong>offen</strong></span> fällt aus, noch kein Ersatz ·
+      <span class="fd-platz fd-ersetzt"><s class="fd-weg">Name</s> Ersatz</span> springt ein{% if planen %} ·
+      Jeder Monat lässt sich hier jederzeit wieder öffnen und ändern: auf einen Namen tippen, um für diesen Tag
+      einen Ersatz oder Gast einzutragen; auf den Namen einer Tour, um ihre feste Besetzung zu ändern.{% elif darf_melden %} ·
+      Auf den eigenen Namen tippen, um sich für diesen Tag (oder länger) auszutragen.{% endif %}</p>
+  </details>
   {% if not touren %}
   <p>Noch keine Touren angelegt.{% if planen %} <a href="{% url 'fahrdienst:einstellungen' %}">Touren und Besetzung einstellen</a>{% endif %}</p>
   {% else %}
@@ -43,6 +46,18 @@
     {% endfor %}
     </tbody>
   </table>
+  </div>
+  {# Schmale Bildschirme: ein Fahrtag je Karte, der nächste aufgeklappt #}
+  <div class="fd-karten">
+    {% if karten_frueher %}
+    <details class="fd-frueher">
+      <summary>Frühere Tage ({{ karten_frueher|length }})</summary>
+      {% for k in karten_frueher %}{% include "fahrdienst/_tag.html" %}{% endfor %}
+    </details>
+    {% endif %}
+    {% for k in karten %}{% include "fahrdienst/_tag.html" %}
+    {% empty %}{% if not karten_frueher %}<p>In diesem Monat sind keine Fahrtage.</p>{% endif %}
+    {% endfor %}
   </div>
   {% endif %}
 </section>

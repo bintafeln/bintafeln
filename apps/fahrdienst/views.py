@@ -72,7 +72,21 @@ def uebersicht(request):
         "planen": rollen.hat_recht(request.user, "fahrdienst.planen"),
         "offen": sum(p.fehlt for _, z in tage for _, ps in z for p in ps),
         "darf_melden": plan.darf_selbst_melden(request.user),
+        **_karten(tage),
     })  # fmt: skip
+
+
+def _karten(tage) -> dict:
+    """Derselbe Plan für schmale Bildschirme: eine Karte je Fahrtag mit den Touren, die an dem
+    Tag fahren. Aufgeklappt ist der nächste Fahrtag; vergangene Tage stehen eingeklappt unter
+    „Frühere Tage“."""
+    heute = timezone.localdate()
+    naechster = next((d for d, _ in tage if d >= heute), None)
+    karten = [{"datum": datum, "touren": [(t, ps) for t, ps in zeile if ps],
+               "offen": datum == naechster, "fehlen": sum(p.fehlt for _, ps in zeile for p in ps)}
+              for datum, zeile in tage]  # fmt: skip
+    return {"karten_frueher": [k for k in karten if k["datum"] < heute],
+            "karten": [k for k in karten if k["datum"] >= heute]}  # fmt: skip
 
 
 @never_cache
