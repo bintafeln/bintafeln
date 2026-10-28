@@ -328,7 +328,8 @@ def stelle(request, pk):
             messages.success(request, "Feste Besetzung gespeichert.")
             return redirect(hier)
         if aktion == "standard":
-            angelegt = plan.standard_anlegen(ds)
+            ersetzen = request.POST.get("ersetzen")
+            angelegt = plan.standard_anlegen(ds, ersetzen if ersetzen in tage else "")
             if angelegt:
                 tage_text = ", ".join(TAGNAME[t] for t in angelegt)
                 messages.success(request, f"Standard-Aufgaben angelegt für: {tage_text}.")

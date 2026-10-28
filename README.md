@@ -1055,7 +1055,8 @@ Ersetzt den ausgehängten Papierplan der Ausgabe (ADR 0077), wie der Fahrdienst 
   Dienstpläne → Ausgabe: Aufgaben und Helfer“ (Recht „Dienstplan planen“, Vorgabe Büro).
 - **Aufgaben** je Ausgabetag mit Uhrzeit (z. B. Teamleitung 09:00–15:00, Kasse, 4× Obst, Springer),
   „muss besetzt sein“ abschaltbar; „Übernehmen von“ kopiert einen anderen Tag; „Standard-Aufgaben
-  anlegen“ füllt alle Ausgabetage ohne Aufgaben mit den Aufgaben des Papierplans (ohne Namen).
+  anlegen“ füllt alle Ausgabetage ohne Aufgaben mit den Aufgaben des Papierplans (ohne Namen),
+  „Standard-Aufgaben für … anlegen“ ersetzt die Aufgaben eines Tages, an dem schon welche stehen.
 - **Helfer** mit Konto (sehen den Plan, melden sich selbst ab) oder nur mit Name und Telefon; alle
   Konten einer Rolle lassen sich auf einmal übernehmen.
 - **Plan** „Dienstpläne → Ausgabe → Dienstplan der Ausgabe“: Ausgabestelle, Ausgabetag und Monat wählen; Zeilen Aufgaben,

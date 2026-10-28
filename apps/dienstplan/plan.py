@@ -263,13 +263,18 @@ STANDARD_AUFGABEN = [
 ]  # fmt: skip
 
 
-def standard_anlegen(stelle: DienstStelle) -> dict[str, int]:
+def standard_anlegen(stelle: DienstStelle, ersetzen: str = "") -> dict[str, int]:
     """Die Standard-Aufgaben für jeden Ausgabetag der Stelle, an dem noch keine Aufgaben stehen
-    (ohne Besetzung). Liefert je Tag die Zahl der angelegten Aufgaben."""
+    (ohne Besetzung). Mit ``ersetzen`` (ein Wochentag) werden nur an diesem Tag die vorhandenen
+    Aufgaben samt Besetzung ersetzt. Liefert je Tag die Zahl der angelegten Aufgaben."""
     ergebnis = {}
     with transaction.atomic():
         for tag in wochentage(stelle.tage):
-            if stelle.aufgaben.filter(wochentag=tag).exists():
+            if ersetzen:
+                if tag != ersetzen:
+                    continue
+                stelle.aufgaben.filter(wochentag=tag).delete()
+            elif stelle.aufgaben.filter(wochentag=tag).exists():
                 continue
             nr = 0
             for name, von, bis, anzahl, pflicht in STANDARD_AUFGABEN:
