@@ -188,7 +188,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
 - Einstellungsseiten speichern sofort: Formular mit `data-autosave` (`static/js/autosave.js`,
   ADR 0076); die Ansicht leitet nach Erfolg weiter und zeigt Fehler wie gewohnt am Feld.
 - Menü links: Einträge je Rolle in `apps/core/menue.py` (neue Seiten dort eintragen statt
-  Links in die Seiten zu setzen).
+  Links in die Seiten zu setzen). Alles Einstellungsartige unter „Einstellungen“, jede Adresse
+  nur einmal (`tests/test_menue.py`); Fahrdienst und Dienstplan unter „Dienstpläne“.
+  Werkseinstellungen eines Kontos: `verwaltung.werkseinstellungen()`; `Benutzer.ansicht_stand`
+  lässt den Browser gemerkte Ansichten (localStorage `bintafeln-*`) vergessen.
 - Mitarbeitende: Logik und Schutzregeln in `apps/konten/verwaltung.py` (nie löschen, nur
   sperren; ADR 0015). `Benutzer.passwort_aendern` erzwingt über
   `PasswortAendernMiddleware` ein neues Passwort, bevor die Zwei-Faktor-Einrichtung kommt.

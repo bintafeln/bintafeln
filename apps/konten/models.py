@@ -55,6 +55,11 @@ class Benutzer(AbstractUser):
         help_text="Ausgabestelle aus dem Auswahlfeld oben im Menü; gilt bis zur nächsten Wahl "
         "(ADR 0067).",
     )  # fmt: skip
+    ansicht_stand = models.PositiveIntegerField(
+        "Stand der persönlichen Ansicht", default=0,
+        help_text="Steigt beim Zurücksetzen auf Werkseinstellungen; der Browser vergisst dann "
+        "seine gemerkten Ansichten (z. B. eingefahrenes Menü).",
+    )  # fmt: skip
     papierkorb_gesehen_am = models.DateTimeField(
         "Papierkorb zuletzt angesehen", null=True, blank=True,
         help_text="Die Zahl im Menü zählt nur, was danach in den Papierkorb kam (ADR 0073).",

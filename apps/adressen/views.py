@@ -8,6 +8,7 @@ from django.db import transaction
 from django.db.models import ProtectedError, Q, Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
@@ -201,6 +202,9 @@ def _bericht_aus_sitzung(request):
 @never_cache
 @rollen.recht_erforderlich("adressen.importieren")
 def importieren_ansicht(request):
+    if request.method != "POST":
+        # Ein Weg für alle Importe: der Import-Assistent (ADR 0078) kennt das Adressbuch
+        return redirect(f"{reverse('datenimport:start')}?ziel=adressen")
     form = ImportForm(request.POST or None, request.FILES or None)
     bericht = None
     if request.method == "POST" and request.POST.get("schritt") == "uebernehmen":

@@ -196,6 +196,16 @@ def entsperren(request, pk):
 
 @require_POST
 @verwalter_erforderlich
+def werkseinstellungen(request, pk):
+    return _aktion(
+        request, pk, verwaltung.werkseinstellungen,
+        "{ziel} ist auf Werkseinstellungen zurückgesetzt: persönliche Ansichten wie beim Anlegen, "
+        "Rollen und Rechte unverändert.",
+    )  # fmt: skip
+
+
+@require_POST
+@verwalter_erforderlich
 def zwei_faktor_zuruecksetzen(request, pk):
     def zuruecksetzen(verwalter, ziel):
         zwei_faktor.abschalten(ziel)

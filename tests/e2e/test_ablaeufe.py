@@ -387,3 +387,52 @@ def test_kiosk_nummer_auf_dem_monitor_ist_jetzt_dran(seite, admin):
         seite.keyboard.type(nummer)
         seite.keyboard.press("Enter")
         expect(seite.locator("#statusCard")).to_contain_text(text)
+
+
+def test_danach_zeigt_am_gruppenende_die_naechste_gruppe(angemeldet, admin):
+    """Handy-Steuerung: Am Ende einer Gruppe stehen bei „Danach“ die ersten Nummern der
+    nächsten Gruppe statt „-“."""
+    from apps.aufruf import ablauf
+    from apps.aufruf.models import AufrufEinstellungen
+    from apps.core.models import TafelEinstellungen
+
+    stelle = _haushalte(2)
+    Kundengruppe.objects.filter(kuerzel="X").update(uhrzeit=dt.time(8, 0))
+    spaet = Kundengruppe.objects.create(
+        kuerzel="Y", name="Später", ausgabestelle=stelle, wochentage="Mo, Di, Mi, Do, Fr, Sa, So",
+        uhrzeit=dt.time(23, 0),
+    )  # fmt: skip
+    gueltig = timezone.localdate() + dt.timedelta(days=9)
+    h = Haushalt.objects.create(
+        kundennummer="00099", kundengruppe=spaet, ausweis_gueltig_bis=gueltig
+    )
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika", nachname="Spaet")
+    t = TafelEinstellungen.laden()
+    t.module = ["aufruf"]
+    t.save()
+    e = AufrufEinstellungen.laden(stelle)
+    e.anzahl = 2
+    e.save()
+    ablauf.starten(stelle, timezone.localdate())  # beide aus „Jeden Tag“ aufgerufen, danach Später
+    seite = angemeldet(admin)
+    seite.goto(f"/aufruf/{stelle.pk}/mobil/")
+    expect(seite.locator("#nextCustomersDisplay")).to_contain_text("dann Später")
+    expect(seite.locator("#nextCustomersDisplay")).to_contain_text("00099")
+
+
+def test_werkseinstellungen_vergessen_eingefahrenes_menue(angemeldet, admin, benutzer_mit_rolle):
+    """Nach „Werkseinstellungen“ (Admin) vergisst der Browser gemerkte Ansichten wie das
+    eingefahrene Menü."""
+    from apps.konten import verwaltung
+
+    anna = benutzer_mit_rolle("anna", rollen.BUERO)
+    seite = angemeldet(anna)
+    seite.goto("/")
+    seite.locator("[data-menue-einfahren]").click()
+    seite.reload()
+    expect(seite.locator("html")).to_have_class(re.compile("menue-eingefahren"))
+    verwaltung.werkseinstellungen(admin, anna)
+    seite.reload()
+    expect(seite.locator("html")).not_to_have_class(re.compile("menue-eingefahren"))
+    seite.reload()  # bleibt ausgefahren (der neue Stand ist gemerkt)
+    expect(seite.locator(".seitenmenue")).to_be_visible()

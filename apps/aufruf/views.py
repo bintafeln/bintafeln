@@ -330,15 +330,18 @@ def leiste(request):
     e = AufrufEinstellungen.laden(stelle)
     tag = ablauf.aktualisieren(stelle, heute)
     d = ablauf.stand_fuer_anzeige(tag, e, heute)
-    aktuell = danach = []
+    aktuell = danach = folgende = []
     if tag and "error" not in d and not d["finished"]:
         d["current_slot"] = tag.stand["gruppen"][tag.stand["index"]]["name"]  # ohne Uhrzeit
         aktuell = plaetze(d["current_numbers"], d["priority_flags"], len(d["current_numbers"]),
                           d["present_flags"])  # fmt: skip
         danach = nummern_mit_farbe(d["next_numbers"][:6], d["next_present_flags"])
+        frei = 6 - len(danach)
+        folgende = nummern_mit_farbe(d["following_numbers"][:frei],
+                                     d["following_present_flags"]) if frei > 0 else []  # fmt: skip
     return render(request, "aufruf/_leiste.html", {
         "stelle": stelle, "d": d, "anzahl": e.anzahl, "fehler": fehler,
-        "aktuell": aktuell, "danach": danach,
+        "aktuell": aktuell, "danach": danach, "folgende": folgende,
         "steuerung": reverse("aufruf:mobil", args=[stelle.pk]),
     })  # fmt: skip
 

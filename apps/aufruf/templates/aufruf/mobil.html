@@ -696,6 +696,10 @@
                 kioskDa = data.kiosk_numbers ? new Set(data.kiosk_numbers) : null;
             }
         }
+        function escapeHtml(text) {
+            return String(text).replace(/[&<>"']/g, z => '&#' + z.charCodeAt(0) + ';');
+        }
+
         function nrHtml(nummer, vorsatz) {
             const text = String(nummer).replace(/[&<>"']/g, z => '&#' + z.charCodeAt(0) + ';');
             const anzeige = (vorsatz || '') + text;
@@ -762,11 +766,19 @@
             nextBtn.disabled = false;
 
             // Nächste 10 Kunden anzeigen
-            if (data.next_numbers && data.next_numbers.length > 0) {
-                nextCustomersDisplay.innerHTML = data.next_numbers.slice(0, 10).map((number, index) => {
+            const folgende = data.following_numbers || [];
+            if ((data.next_numbers && data.next_numbers.length > 0) || folgende.length > 0) {
+                const naechste = (data.next_numbers || []).slice(0, 10).map((number, index) => {
                     const isPriority = data.next_priority_flags && data.next_priority_flags[index];
                     return nrHtml(number, isPriority ? '♿ ' : '');
                 }).join(' • ');
+                // Am Ende der Gruppe: wer aus der nächsten Gruppe danach kommt
+                const dann = folgende.length ? 'dann ' + escapeHtml(data.following_slot || '') + ': '
+                    + folgende.map((number, index) => {
+                        const isPriority = data.following_priority_flags && data.following_priority_flags[index];
+                        return nrHtml(number, isPriority ? '♿ ' : '');
+                    }).join(' • ') : '';
+                nextCustomersDisplay.innerHTML = [naechste, dann].filter(Boolean).join(' · ');
             } else {
                 nextCustomersDisplay.textContent = '-';
             }

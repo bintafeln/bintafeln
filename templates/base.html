@@ -14,7 +14,7 @@
   <script src="{% static 'js/autosave.js' %}" defer></script>
   {% if menue %}<script src="{% static 'js/menue_einfahren.js' %}"></script>{% endif %}
 </head>
-<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'{% if menue %} class="mit-menue"{% endif %}>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'{% if menue %} class="mit-menue"{% endif %}{% if user.is_authenticated %} data-ansicht-stand="{{ user.ansicht_stand }}"{% endif %}>
   {% block hintergrund %}{% if tafel.hintergrund_bild and tafel.hintergrund_staerke %}<div class="hintergrund" aria-hidden="true" style="background-image: url('{{ tafel.hintergrund_bild.url }}'); opacity: {{ tafel.hintergrund_deckkraft }};"></div>{% endif %}{% endblock %}
   {% if menue %}<input type="checkbox" id="menue-schalter" class="menue-schalter" aria-hidden="true" tabindex="-1">{% endif %}
   <header class="kopf">

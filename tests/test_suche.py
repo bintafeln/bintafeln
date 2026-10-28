@@ -136,8 +136,8 @@ def test_programm_und_handbuch_ohne_kuerzel(admin_client, admin, daten):
     e = antwort.context["e"]
     programm = next(g for g in e.gruppen if g.bereich == "programm")
     alle = next(t for t in programm.treffer if t.url == reverse("kunden:ausgabestellen"))
-    assert alle.titel == "Alle Ausgabestellen"
-    assert alle.zusatz == "Menü: Ausgabestelle › Verwaltung"
+    assert alle.titel == "Ausgabestellen"
+    assert alle.zusatz == "Menü: Einstellungen › Ausgabe"
     assert e.gruppen[0].bereich == "programm"
     hilfe = next(g for g in e.gruppen if g.bereich == "hilfe")
     assert hilfe.treffer[0].titel.startswith("Ausgabestellen")  # Titel vor Text

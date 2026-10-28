@@ -52,6 +52,11 @@
       <button type="submit" class="knopf knopf-zweitrangig">Vertraute Geräte entfernen ({{ vertraute_geraete }})</button>
     </form>
     {% endif %}
+    <form method="post" action="{% url 'konten:werkseinstellungen' ziel.pk %}" class="inline"
+          onsubmit="return confirm('{{ ziel|escapejs }} auf Werkseinstellungen zurücksetzen? Persönliche Ansichten (Spalten der Kundenliste, gewählte Ausgabestelle, eingefahrenes Menü …) werden wie beim Anlegen; Rollen und Rechte bleiben.')">
+      {% csrf_token %}
+      <button type="submit" class="knopf knopf-zweitrangig" title="Persönliche Anpassungen zurücksetzen; Rollen und Rechte bleiben">Werkseinstellungen</button>
+    </form>
     {% if ziel.is_active %}
     <form method="post" action="{% url 'konten:sperren' ziel.pk %}" class="inline"
           onsubmit="return confirm('{{ ziel|escapejs }} sperren? Die Person ist sofort abgemeldet und steht dann im Archiv.')">

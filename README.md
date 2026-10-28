@@ -280,7 +280,7 @@ Druck nehmen die angehakten Zeilen, ohne Haken alle (`{% auswahl_formular %}`,
 ## Mitarbeitende
 
 **Konten der Ausgabestellen** (ADR 0059): Für Einlass-Tablets, die wechselnde Personen bedienen,
-bekommt jede Ausgabestelle unter „Verein → Team → Ausgabestellen-Konten“ ein eigenes Konto. Anmeldung mit
+bekommt jede Ausgabestelle unter „Einstellungen → Ausgabe → Ausgabestellen-Konten“ ein eigenes Konto. Anmeldung mit
 dem **Namen der Ausgabestelle** und Passwort, ohne Zwei-Faktor; Rolle Ausgabe, nur Kunden dieser
 Ausgabestelle; Abmeldung nach 30 Minuten ohne Eingabe. Nach 5 falschen Passwörtern ist die
 Anmeldung eines Kontos 15 Minuten gesperrt (gilt für alle Konten). Zwei-Faktor sehen diese
@@ -304,6 +304,9 @@ bearbeitet nur ein Admin. Rollen, die man nicht vergeben darf, bleiben beim Bear
 - **Bearbeiten:** Name, E-Mail, Beschäftigung, Rollen.
 - **Passwort zurücksetzen** (neues Startpasswort), **Link zum neuen Passwort per Mail** und
   **Zwei-Faktor zurücksetzen** (z. B. Handy verloren).
+- **Werkseinstellungen:** setzt die persönlichen Anpassungen zurück (Spalten der Kundenliste,
+  gewählte Ausgabestelle, im Browser gemerkte Ansichten wie das eingefahrene Menü, angefangene
+  Importe). Rollen, Rechte und Zuordnungen bleiben.
 - **Sperren statt löschen:** Die Person ist sofort abgemeldet und steht im **Archiv** mit „dabei
   seit“, „gesperrt am“ und „gesperrt von“. So bleibt auch Jahre später nachvollziehbar, wer was
   eingetragen hat. Ein gesperrtes Konto lässt sich wieder freischalten.
@@ -481,7 +484,7 @@ Im Seitenkopf steht auf jeder Seite ein **Suchfeld**. Ab 3 Zeichen erscheinen di
 darunter, Enter öffnet eine Ergebnisseite – bei einer genauen Kundennummer („k 10141“ oder
 nur „10141“, führende Nullen egal) gleich den Kunden. Auch auf dem iPad lassen sich die Treffer
 antippen. Ohne Kürzel sucht es **Seiten des Programms**
-(Menüpunkte, z. B. „ausgabestellen“ führt zu „Ausgabestelle → Alle Ausgabestellen“), **Listen und
+(Menüpunkte, z. B. „ausgabestellen“ führt zu „Einstellungen → Ausgabe → Ausgabestellen“), **Listen und
 Einstellungen** (Ausgabestellen, Kundengruppen, Einkommens- und Dokumentarten, Notiz- und
 Serienbrief-Vorlagen, Rollen, Mitgliedsnummern, Belegnummern von Spenden, aus Modulen z. B.
 Selbstabholer und Termine), Kunden (Vor- und
@@ -552,7 +555,7 @@ Dokumente, Historie.
   **Achtung:** Ein Vollaustausch aus dem Altsystem ersetzt alle Änderungen; der Prüfbericht nennt
   die Zahl der geänderten Haushalte (ADR 0025). Beim Ergänzen bleiben sie, Konflikte sind je Feld
   wählbar (ADR 0078).
-- **Ausgabestellen** („Ausgabestelle → Alle Ausgabestellen“, ADR 0048): Übersicht und eigene Seite je
+- **Ausgabestellen** („Einstellungen → Ausgabe → Ausgabestellen“, ADR 0048): Übersicht und eigene Seite je
   Ausgabestelle mit Anschrift, Telefon, E-Mail, allgemeinen Anmerkungen, Zeiten (Ausgabe,
   Anlieferung, Sortieren …), Ansprechpartnern (Mitarbeitende per Auswahl oder extern) und ihren
   Kundengruppen. „In Google Maps öffnen“ zeigt den Weg; die eingebettete Karte lädt erst nach
@@ -898,6 +901,8 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   Steht eine Nummer gerade auf dem Monitor („Bitte eintreten“), sagen Kiosk, Abfrage und
   Handy-Steuerung „jetzt dran“ – egal an welcher Stelle. „Gleich dran“ heißt: Die Nummer kommt
   mit den nächsten Aufrufen auf den Monitor; sonst steht da, wie viele Kunden noch davor sind.
+  „Danach“ (Kasten am Einlass, Handy-Steuerung) geht am Ende einer Kundengruppe mit den ersten
+  Nummern der nächsten Gruppe weiter („dann Gruppe …: …“), statt leer zu bleiben.
 - **Am Einlass:** Die Einlass-Karte zeigt beim Scannen, ob und wann die Nummer aufgerufen
   wurde, „Zu spät“ (ab einstellbarer Minutenzahl nach dem Aufruf, Vorgabe 15) oder wie viele
   Nummern der Kunde zu früh ist. Bei „zu früh“ und „zu spät“ leuchtet die Ampel grün und Gelb
@@ -1001,7 +1006,7 @@ Ersetzt den gedruckten Fahrerplan mit den gelben Aufklebern (ADR 0074).
 - **Fahrerplan** (Recht „Fahrerplan sehen“, Vorgabe Fahrer, Beifahrer, Büro): ein Monat, Zeilen
   die Fahrtage, Spalten die Touren mit Fahrer und Beifahrern. Wer ausfällt, ist gelb markiert und
   der Platz „offen“; ein Ersatz steht grün daneben.
-- **Feste Besetzung** je Tour und Wochentag unter „Einstellungen → Mitarbeitende → Fahrdienst:
+- **Feste Besetzung** je Tour und Wochentag unter „Einstellungen → Dienstpläne → Fahrdienst:
   Touren und Springer“ (Recht „Fahrdienst planen“, Vorgabe Büro); daraus entsteht jede Woche der
   Plan. Dazu Springer (auf jeder Tour, auf Wunsch nur an bestimmten Tagen), Fahrtage, Feiertage.
 - **Selbst austragen:** Fahrer und Beifahrer tippen im Plan auf ihren eigenen Namen (oder in „Meine
@@ -1044,12 +1049,12 @@ Ersetzt den ausgehängten Papierplan der Ausgabe (ADR 0077), wie der Fahrdienst 
 
 - **Je Ausgabestelle** einzeln zuschaltbar, mit beliebigen Ausgabetagen (z. B. Mo, Mi, Fr), je Tag
   eine **Teamleitung** und „Abmeldungen unter“ (Telefon). Einstellungen unter „Einstellungen →
-  Mitarbeitende → Dienstplan: Aufgaben und Helfer“ (Recht „Dienstplan planen“, Vorgabe Büro).
+  Dienstpläne → Ausgabe: Aufgaben und Helfer“ (Recht „Dienstplan planen“, Vorgabe Büro).
 - **Aufgaben** je Ausgabetag mit Uhrzeit (z. B. Teamleitung 09:00–15:00, Kasse, 4× Obst, Springer),
   „muss besetzt sein“ abschaltbar; „Übernehmen von“ kopiert einen anderen Tag.
 - **Helfer** mit Konto (sehen den Plan, melden sich selbst ab) oder nur mit Name und Telefon; alle
   Konten einer Rolle lassen sich auf einmal übernehmen.
-- **Plan** „Ausgabestelle → Dienstplan“: Ausgabestelle, Ausgabetag und Monat wählen; Zeilen Aufgaben,
+- **Plan** „Dienstpläne → Ausgabe → Dienstplan der Ausgabe“: Ausgabestelle, Ausgabetag und Monat wählen; Zeilen Aufgaben,
   Spalten Termine. Ausfall (krank, Urlaub, Sonstiges, wie lange) selbst oder durch die Teamleitung;
   der Platz steht dann „offen“, Ersatz (nur wer frei ist) oder Gast eintragen.
 - **Benachrichtigung** per E-Mail an die Teamleitung des betroffenen Tages (sonst an alle, die
