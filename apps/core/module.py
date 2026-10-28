@@ -94,6 +94,8 @@ class Modul:
     startseite: Callable | None = None
     # Seiten für Aushang-Monitore (ADR 0080): aushang() -> [Aushangseite, …]
     aushang: Callable | None = None
+    # Abschnitt auf „Mein Konto“: mein_konto(request) -> HTML (render_to_string) oder ""
+    mein_konto: Callable | None = None
 
 
 @cache
@@ -158,6 +160,13 @@ def startseite(request) -> list[str]:
     """HTML-Beiträge der eingeschalteten Module für die Startseite (leere fallen weg)."""
     an = eingeschaltet()
     teile = [m.startseite(request) for m in alle() if m.kennung in an and m.startseite]
+    return [t for t in teile if t]
+
+
+def mein_konto(request) -> list[str]:
+    """HTML-Abschnitte der eingeschalteten Module für „Mein Konto“ (leere fallen weg)."""
+    an = eingeschaltet()
+    teile = [m.mein_konto(request) for m in alle() if m.kennung in an and m.mein_konto]
     return [t for t in teile if t]
 
 

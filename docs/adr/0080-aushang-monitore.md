@@ -22,7 +22,10 @@ zusammengefasst werden können, eingerichtet direkt im Programm.
   im Programm (`_tabelle.html`). Seiten ausgeschalteter Module fallen still weg.
 - Zeitraum immer der ganze Monat bzw. dieser und der nächste, wie der Plan auf Papier; am
   Monatsende ist so schon der nächste Plan zu sehen. (Zuerst ab heute; vergangene Tage im Plan
-  zu sehen war den Tafeln aber wichtiger.)
+  zu sehen war den Tafeln aber wichtiger; später doch lieber ohne: vergangene Tage fallen auf dem
+  Monitor immer weg, der Monat beginnt also mit heute.) Alternativ je Seite „die nächsten N Wochen ab heute“
+  (`AushangSeite.wochen`, 1–26, Vorgabe 9) ohne vergangene Tage; der Fahrerplan kommt dann als
+  eine Folie statt je Monat. Vorhandene Fahrerplan-Seiten wurden auf 9 Wochen umgestellt.
 - Der Monitor (`/aushang/zeigen/<schluessel>/`) braucht keine Anmeldung, wie die Geräte des
   Aufrufs (ADR 0050). Er zeigt nur Namen, nie Telefon, E-Mail oder Anmerkungen. „Neuen Link
   erzeugen“ und „Aktiv“ aus sperren ihn; fragt der Monitor selbst nach (`X-Aushang`), antwortet
@@ -36,8 +39,8 @@ zusammengefasst werden können, eingerichtet direkt im Programm.
   Oktober“), „Übersicht“ oder 30 Sekunden ohne Eingabe führen zurück. Dort steht ein QR-Code mit dem Link zur Seite im
   Programm (Ändern am eigenen Handy mit Anmeldung; je Aushang abschaltbar).
 - Ändern am Monitor (je Aushang abschaltbar) nur mit **persönlicher PIN** (`MonitorPin`, mindestens
-  6 Ziffern, gehasht wie ein Passwort, selbst festgelegt unter „Dienstpläne → Meine PIN für
-  Monitore“, nach 5 Fehlversuchen 15 Minuten gesperrt). Man tippt auf einen Platz, wählt seinen
+  6 Ziffern, gehasht wie ein Passwort, selbst festgelegt unter „Mein Konto → PIN für Aushang-Monitore“ über den Hook
+  `Modul.mein_konto`, nach 5 Fehlversuchen 15 Minuten gesperrt). Man tippt auf einen Platz, wählt seinen
   Namen und gibt die PIN ein; `Aushangseite.platz()` liefert den Dialog, `Aushangseite.aendern()`
   prüft, was die bestätigte Person darf: sich selbst austragen, selbst auf einem freien Platz
   einspringen, mit dem Planungsrecht des Moduls alles (Ersatz, Gast, zurücknehmen). Eingetragen

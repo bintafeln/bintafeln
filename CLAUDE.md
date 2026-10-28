@@ -269,7 +269,7 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `Aushangseite.aendern` des Moduls).
   Hooks `Modul.fristen`, `Modul.auskunft_mitarbeiter`, `Modul.aushang`,
   `Modul.einlass`, `Modul.auskunft_antrag`, `Modul.kopfzeile`, `Modul.seitenleiste`, `Modul.suchen`,
-  `Modul.startseite`. Programmname nur in
+  `Modul.startseite`, `Modul.mein_konto`. Programmname nur in
   `bintafeln/programm.py`; die Kopfzeile kürzt `static/js/kopfzeile.js` über `.kuerz-1…5`.
   Übersicht der übernommenen Altprogramme: `docs/altprogramme.md`.
 - Datenimport aus CSV/Excel (ADR 0078): App `datenimport` – `lesen.py` (CSV/xlsx), `zuordnung.py`

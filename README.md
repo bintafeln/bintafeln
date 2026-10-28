@@ -1079,7 +1079,9 @@ Aushang-Monitore“ (Recht „Aushang-Monitore einrichten“, Vorgabe Büro).
   ein gesperrter oder abgeschalteter Monitor leert sich binnen einer Minute.
 - **Seiten** zusammenstellen: „Dienstplan einer Ausgabestelle“ (je Ausgabetag eine Seite) und
   „Fahrerplan“ (je Monat eine Seite), je mit Zeitraum „dieser Monat“ oder „dieser und nächster
-  Monat“, immer ganze Monate. Seiten eines Plans nur mit dem Recht, ihn zu planen.
+  Monat“ oder „die nächsten Wochen ab heute“ mit einstellbarer Anzahl Wochen (Vorgabe 9; der
+  Fahrerplan dann als eine Seite). Vergangene Tage fallen immer weg. Der Zeitraum lässt sich
+  je Seite nachträglich ändern. Seiten eines Plans nur mit dem Recht, ihn zu planen.
 - **Nacheinander** im Wechsel (Sekunden je Seite) oder **zwei nebeneinander**.
 - Die Schrift passt sich an, damit jede Seite ganz zu sehen ist; neuer Stand jede Minute;
   Vollbild per Knopf oder Browser mit `--kiosk`. Nur Namen, nie Kontaktdaten.
@@ -1088,7 +1090,7 @@ Aushang-Monitore“ (Recht „Aushang-Monitore einrichten“, Vorgabe Büro).
   Dort ein **QR-Code** zum Ändern am eigenen Handy (mit Anmeldung) und, wenn eingeschaltet,
   **Ändern am Monitor mit persönlicher PIN**: sich austragen, einspringen, wer plant auch Ersatz
   und Gäste. Jede Person legt ihre PIN (mindestens 6 Ziffern, gehasht gespeichert) unter
-  „Dienstpläne → Meine PIN für Monitore“ fest; nach 5 Fehlversuchen 15 Minuten gesperrt. Im
+  „Mein Konto → PIN für Aushang-Monitore“ fest; nach 5 Fehlversuchen 15 Minuten gesperrt. Im
   Änderungsprotokoll steht die Person.
 - Weitere Module können über `Modul.aushang` eigene Seiten anbieten.
 

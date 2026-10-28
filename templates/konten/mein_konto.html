@@ -57,5 +57,6 @@
     <p><a class="knopf" href="{% url 'konten:zwei_faktor_einrichten' %}">Jetzt einrichten</a></p>
   {% endif %}
   {% endif %}
+  {% for teil in modul_konto %}{{ teil }}{% endfor %}
 </section>
 {% endblock %}

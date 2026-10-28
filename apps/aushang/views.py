@@ -13,7 +13,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.aushang import anzeige as inhalt
 from apps.aushang import pin
-from apps.aushang.forms import AushangForm, NeuForm, PinForm, SeiteForm
+from apps.aushang.forms import AushangForm, NeuForm, PinForm, SeiteForm, ZeitraumForm
 from apps.aushang.models import Aushang, AushangSeite, MonitorPin, neuer_schluessel
 from apps.core import module, papierkorb
 from apps.konten import rollen
@@ -59,9 +59,18 @@ def bearbeiten(request, pk):
                 art, _, wert = seite_form.cleaned_data["seite"].partition(":")
                 letzte = aushang.seiten.aggregate(m=Max("reihenfolge"))["m"] or 0
                 AushangSeite.objects.create(aushang=aushang, art=art, wert=wert,
-                                            monate=seite_form.cleaned_data["monate"],
-                                            reihenfolge=letzte + 1)  # fmt: skip
+                                            reihenfolge=letzte + 1,
+                                            **seite_form.werte())  # fmt: skip
                 return redirect("aushang:bearbeiten", pk)
+        elif aktion == "zeitraum":
+            s = get_object_or_404(AushangSeite, aushang=aushang, pk=request.POST.get("seite"))
+            zeitraum = ZeitraumForm(request.POST)
+            if zeitraum.is_valid():
+                for feld, wert in zeitraum.werte().items():
+                    setattr(s, feld, wert)
+                s.save(update_fields=["monate", "wochen"])
+                messages.success(request, f"Zeitraum: {s.zeitraum_text()}.")
+            return redirect("aushang:bearbeiten", pk)
         elif aktion in ("hoch", "runter", "entfernen"):
             _seite_aendern(aushang, aktion, request.POST.get("seite"))
             return redirect("aushang:bearbeiten", pk)
@@ -74,6 +83,7 @@ def bearbeiten(request, pk):
     seiten = list(aushang.seiten.all())
     for s in seiten:
         s.bezeichnung = inhalt.bezeichnung(s, arten)
+        s.zeitraum_form = ZeitraumForm(initial=ZeitraumForm.fuer(s), auto_id=f"z{s.pk}_%s")
     return render(request, "aushang/bearbeiten.html", {
         "aushang": aushang, "form": form, "seite_form": seite_form, "seiten": seiten,
         "link": _link(request, aushang), "wahl": wahl,
@@ -172,10 +182,10 @@ def meine_pin(request):
         if request.POST.get("aktion") == "loeschen":
             pin.entfernen(request.user)
             messages.success(request, "Ihre PIN ist gelöscht.")
-            return redirect("aushang:meine_pin")
+            return redirect("konten:mein_konto")
         if form.is_valid():
             pin.setzen(request.user, form.cleaned_data["pin"])
             messages.success(request, "Ihre PIN ist gespeichert.")
-            return redirect("aushang:meine_pin")
+            return redirect("konten:mein_konto")
     eintrag = MonitorPin.objects.filter(benutzer=request.user).first()
     return render(request, "aushang/meine_pin.html", {"form": form, "eintrag": eintrag})

@@ -15,10 +15,35 @@ class NeuForm(forms.ModelForm):
         fields = ["name"]
 
 
-class SeiteForm(forms.Form):
+ZEITRAUM = [(f"m{n}", text) for n, text in AushangSeite.MONATE] + [
+    ("w", "die nächsten Wochen ab heute")]  # fmt: skip
+
+
+class ZeitraumForm(forms.Form):
+    """Ganze Monate oder die nächsten Wochen ab heute (Anzahl einstellbar)."""
+
+    zeitraum = forms.ChoiceField(label="Zeitraum", choices=ZEITRAUM, initial="m2")
+    wochen = forms.IntegerField(label="Anzahl Wochen", min_value=1, max_value=26, initial=9,
+                                required=False,
+                                help_text="Nur bei „die nächsten Wochen“; so viele, wie gut auf "
+                                          "den Monitor passen.")  # fmt: skip
+
+    def werte(self) -> dict:
+        """Felder für ``AushangSeite``: monate und wochen."""
+        z = self.cleaned_data["zeitraum"]
+        if z == "w":
+            return {"monate": 2, "wochen": self.cleaned_data["wochen"] or 9}
+        return {"monate": int(z[1:]), "wochen": 0}
+
+    @staticmethod
+    def fuer(seite: AushangSeite) -> dict:
+        return {"zeitraum": "w" if seite.wochen else f"m{seite.monate}",
+                "wochen": seite.wochen or 9}  # fmt: skip
+
+
+class SeiteForm(ZeitraumForm):
     seite = forms.ChoiceField(label="Seite")
-    monate = forms.TypedChoiceField(label="Zeitraum", choices=AushangSeite.MONATE, coerce=int,
-                                    initial=2)  # fmt: skip
+    field_order = ["seite", "zeitraum", "wochen"]
 
     def __init__(self, *args, wahl=(), **kwargs):
         super().__init__(*args, **kwargs)
