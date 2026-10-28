@@ -281,7 +281,7 @@
    {n} = Anzahl wartender Kunden. RTL-Sprachen: ar, fa, ur, ku */
 const RTL = new Set(['ar','fa','ur']);
 const T = {
- de:{name:'Deutsch',already:'Sie wurden bereits aufgerufen',soon:'Sie sind gleich dran!',now:'Sie sind gerade an der Reihe',before:'Vor Ihnen sind noch {n} Kunden',wait:'Bitte warten Sie, bis Ihre Nummer auf dem Monitor erscheint',preview:'Ausgabe noch nicht gestartet – voraussichtliche Position',group:'Ihre Gruppe',group_pos:'Platz in Ihrer Gruppe',total_pos:'Platz insgesamt',now_group:'Aktuell aufgerufen: Gruppe',notfound:'Diese Nummer ist heute nicht in der Liste',staff:'Bitte wenden Sie sich an unser Team',nosession:'Zurzeit läuft keine Ausgabe',done:'Fertig',reordered:'Sie wurden heute neu einsortiert, da Sie zu spät waren',newplace:'Ihr neuer Platz'},
+ de:{name:'Deutsch',already:'Sie wurden bereits aufgerufen',soon:'Sie sind gleich dran!',now:'Sie sind jetzt dran – bitte eintreten',before:'Vor Ihnen sind noch {n} Kunden',wait:'Bitte warten Sie, bis Ihre Nummer auf dem Monitor erscheint',preview:'Ausgabe noch nicht gestartet – voraussichtliche Position',group:'Ihre Gruppe',group_pos:'Platz in Ihrer Gruppe',total_pos:'Platz insgesamt',now_group:'Aktuell aufgerufen: Gruppe',notfound:'Diese Nummer ist heute nicht in der Liste',staff:'Bitte wenden Sie sich an unser Team',nosession:'Zurzeit läuft keine Ausgabe',done:'Fertig',reordered:'Sie wurden heute neu einsortiert, da Sie zu spät waren',newplace:'Ihr neuer Platz'},
  en:{name:'English',already:'Your number has already been called',soon:'You are next!',now:'It is your turn now',before:'{n} customers are still ahead of you',wait:'Please wait until your number appears on the screen',preview:'Distribution has not started yet – expected position',group:'Your group',group_pos:'Position in your group',total_pos:'Overall position',now_group:'Now serving: group',notfound:'This number is not on today\'s list',staff:'Please contact our team',nosession:'No distribution is running at the moment',done:'Done',reordered:'You were reassigned today because you arrived late',newplace:'Your new position'},
  ar:{name:'العربية',already:'تم استدعاء رقمك بالفعل',soon:'دورك قريب جداً!',now:'حان دورك الآن',before:'أمامك {n} عملاء في الانتظار',wait:'يرجى الانتظار حتى يظهر رقمك على الشاشة',preview:'لم يبدأ التوزيع بعد – الموضع المتوقع',group:'مجموعتك',group_pos:'ترتيبك في مجموعتك',total_pos:'الترتيب الإجمالي',now_group:'يتم الآن استدعاء المجموعة',notfound:'هذا الرقم غير موجود في قائمة اليوم',staff:'يرجى التواصل مع فريقنا',nosession:'لا يوجد توزيع في الوقت الحالي',done:'تم',reordered:'تمت إعادة ترتيبك اليوم لأنك تأخرت',newplace:'مكانك الجديد'},
  tr:{name:'Türkçe',already:'Numaranız zaten çağrıldı',soon:'Sıra neredeyse sizde!',now:'Şimdi sıra sizde',before:'Önünüzde {n} müşteri var',wait:'Lütfen numaranız ekranda görünene kadar bekleyin',preview:'Dağıtım henüz başlamadı – tahmini sıra',group:'Grubunuz',group_pos:'Grubunuzdaki sıranız',total_pos:'Genel sıranız',now_group:'Şu an çağrılan grup',notfound:'Bu numara bugünkü listede yok',staff:'Lütfen ekibimize başvurun',nosession:'Şu anda dağıtım yapılmıyor',done:'Tamam',reordered:'Geç geldiğiniz için bugün yeniden sıralandınız',newplace:'Yeni sıranız'},
@@ -433,8 +433,9 @@ function showResult(nummer, d) {
         // Vorab-Abfrage (Ausgabe noch nicht gestartet): kein "jetzt/gleich",
         // immer voraussichtliche Position mit Hinweis.
         const vorschau = d.vorschau === true;
-        const jetzt = !vorschau && d.vor_der_nummer === 0;       // gerade an der Reihe
-        const soon  = !vorschau && d.vor_der_nummer > 0 && d.vor_der_nummer <= 3;  // gleich dran
+        // Steht auf dem Monitor: jetzt dran. „Gleich dran“ nur, wer bald auf den Monitor kommt.
+        const jetzt = !vorschau && d.jetzt_dran === true;
+        const soon  = !vorschau && !jetzt && (d.vor_aufruf ?? d.vor_der_nummer) <= 3;
         card.className = 'status-card ' + (jetzt || soon ? 'soon' : 'waiting');
         const zahl = (jetzt || soon) ? '' : `<div class="bignum">${d.vor_der_nummer}</div>`;
         card.innerHTML = zahl + langs.map(L => {

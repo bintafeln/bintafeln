@@ -519,13 +519,22 @@ def _abfrage_ergebnis(tag, nummer) -> dict:
     i, j, aufg = treffer
     g = s["gruppen"][i]
     schon_dran = j < aufg
-    ergebnis = {**basis, "gefunden": True, "schon_dran": schon_dran, "gruppe": g["name"],
-                "gruppen_platz": j + 1, "gruppen_gesamt": aufg + len(g["wartend"]),
+    # Steht die Nummer gerade auf dem Monitor („Bitte eintreten“), ist sie jetzt dran – nicht
+    # „gleich“. Erst wer danach kommt, wartet noch.
+    anzahl = AufrufEinstellungen.laden(tag.ausgabestelle).anzahl if tag.gestartet_am else 0
+    jetzt = bool(anzahl) and i == s["index"] and aufg <= j < aufg + anzahl
+    vor = 0 if schon_dran or jetzt else _davor(s, i, j, aufg)
+    auf_monitor = min(anzahl, len(s["gruppen"][s["index"]]["wartend"])) if aktuell else 0
+    ergebnis = {**basis, "gefunden": True, "schon_dran": schon_dran, "jetzt_dran": jetzt,
+                "gruppe": g["name"], "gruppen_platz": j + 1,
+                "gruppen_gesamt": aufg + len(g["wartend"]),
                 "gesamt_platz": _gesamtplatz(s, i, j), "gesamt_anzahl": gesamt,
-                "vor_der_nummer": 0 if schon_dran else _davor(s, i, j, aufg),
+                "vor_der_nummer": vor,
+                # so viele Nummern kommen noch auf den Monitor, bevor diese dort erscheint
+                "vor_aufruf": max(vor - auf_monitor, 0),
                 "aktuelle_gruppe": aktuell}  # fmt: skip
     if any(norm(x) == nummer for x in s["spaetzuender"]):
-        ergebnis.update(schon_dran=True, neu_einsortiert=True)
+        ergebnis.update(schon_dran=True, neu_einsortiert=True, jetzt_dran=False)
     if abholung:
         return _abgeholt(ergebnis, abholung)
     return ergebnis

@@ -287,6 +287,30 @@ def test_abgeholte_nicht_neu_einsortieren(mitte, tag_daten):
     assert "abgeholt" not in ablauf.abfrage(mitte, heute(), "201")
 
 
+def test_abfrage_auf_dem_monitor_ist_jetzt_dran(mitte, tag_daten):
+    """Wer gerade auf dem Monitor steht, ist „jetzt dran“ – auch an zweiter oder dritter
+    Stelle, nicht „gleich dran“. Wer danach kommt, wartet noch (vor_aufruf: bis zum Monitor)."""
+    e = AufrufEinstellungen.laden(mitte)
+    e.anzahl = 3
+    e.save()
+    vorab = ablauf.abfrage(mitte, heute(), "101")
+    assert vorab["jetzt_dran"] is False  # vor dem Start nie „jetzt“
+    tag = ablauf.starten(mitte, heute())
+    frueh = tag.stand["gruppen"][0]["wartend"]
+    for nummer in frueh[:3]:
+        a = ablauf.abfrage(mitte, heute(), nummer)
+        assert a["jetzt_dran"] is True and a["schon_dran"] is False and a["vor_der_nummer"] == 0
+    vierter, fuenfter = (ablauf.abfrage(mitte, heute(), n) for n in frueh[3:5])
+    assert vierter["jetzt_dran"] is False and vierter["vor_der_nummer"] == 3
+    assert vierter["vor_aufruf"] == 0 and fuenfter["vor_aufruf"] == 1
+    spaet = ablauf.abfrage(mitte, heute(), tag.stand["gruppen"][1]["wartend"][0])
+    assert spaet["vor_der_nummer"] == 5 and spaet["vor_aufruf"] == 2
+    ablauf.weiter(mitte, heute())
+    a = ablauf.abfrage(mitte, heute(), frueh[0])
+    assert a["schon_dran"] is True and a["jetzt_dran"] is False
+    assert ablauf.abfrage(mitte, heute(), frueh[3])["jetzt_dran"] is True
+
+
 def test_abfrage(mitte, tag_daten):
     Person.objects.filter(haushalt__kundennummer="201").update(staatsangehoerigkeit="Syrien")
     vorab = ablauf.abfrage(mitte, heute(), "201")
@@ -296,7 +320,7 @@ def test_abfrage(mitte, tag_daten):
     assert ablauf.abfrage(mitte, heute(), "201")["gesamt_platz"] == platz
     erster = tag.stand["gruppen"][0]["wartend"][0]
     a = ablauf.abfrage(mitte, heute(), erster)
-    assert a["schon_dran"] is False and a["vor_der_nummer"] == 0
+    assert a["schon_dran"] is False and a["vor_der_nummer"] == 0 and a["jetzt_dran"] is True
     ablauf.weiter(mitte, heute())
     assert ablauf.abfrage(mitte, heute(), erster)["schon_dran"] is True
     assert ablauf.abfrage(mitte, heute(), "301")["gefunden"] is False

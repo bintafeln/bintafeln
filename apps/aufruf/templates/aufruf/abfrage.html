@@ -216,6 +216,13 @@
                             <div class="sub">Diese Kundennummer wurde bereits am Einlass eingelassen.</div>`);
                         return;
                     }
+                    if (d.jetzt_dran) {
+                        show('done', `
+                            <div class="big-icon">🔔</div>
+                            <div class="headline">Nummer ${d.nummer} ist jetzt dran</div>
+                            <div class="sub">Die Nummer steht gerade auf dem Monitor – bitte eintreten.</div>`);
+                        return;
+                    }
                     if (d.schon_dran) {
                         show('done', `
                             <div class="big-icon">✅</div>
