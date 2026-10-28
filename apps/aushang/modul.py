@@ -5,13 +5,24 @@ from apps.core.module import Modul
 
 
 def menue(eintrag):
-    pin = eintrag("Meine PIN für Monitore", "aushang:meine_pin")
     return [
-        ("Dienstpläne", [("dienstplan.sehen", pin), ("fahrdienst.sehen", pin)]),
         ("Einstellungen/Dienstpläne", [
             ("aushang.einrichten", eintrag("Aushang-Monitore", "aushang:liste")),
         ]),
     ]  # fmt: skip
+
+
+def mein_konto(request):
+    """Abschnitt „PIN für Aushang-Monitore“ auf „Mein Konto“, für alle, die einen Plan sehen."""
+    from django.template.loader import render_to_string
+
+    from apps.aushang.models import MonitorPin
+    from apps.konten import rollen
+
+    if not any(rollen.hat_recht(request.user, r) for r in ("dienstplan.sehen", "fahrdienst.sehen")):
+        return ""
+    eintrag = MonitorPin.objects.filter(benutzer=request.user).first()
+    return render_to_string("aushang/_mein_konto.html", {"eintrag": eintrag}, request=request)
 
 
 def auskunft_mitarbeiter(benutzer, pdf):
@@ -43,4 +54,5 @@ MODUL = Modul(
     ),
     menue=menue,
     auskunft_mitarbeiter=auskunft_mitarbeiter,
+    mein_konto=mein_konto,
 )  # fmt: skip

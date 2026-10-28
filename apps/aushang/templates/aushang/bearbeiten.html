@@ -18,7 +18,18 @@
   <ol class="aushang-seiten">
     {% for s in seiten %}
     <li>
-      <span><strong>{{ s.bezeichnung }}</strong><br><small class="leise">{{ s.get_monate_display }}</small></span>
+      <span><strong>{{ s.bezeichnung }}</strong><br><small class="leise">{{ s.zeitraum_text }}</small>
+        <details class="aushang-zeitraum"><summary>Zeitraum ändern</summary>
+          <form method="post" class="filter">
+            {% csrf_token %}
+            <input type="hidden" name="aktion" value="zeitraum">
+            <input type="hidden" name="seite" value="{{ s.pk }}">
+            {{ s.zeitraum_form.zeitraum.label_tag }} {{ s.zeitraum_form.zeitraum }}
+            {{ s.zeitraum_form.wochen.label_tag }} {{ s.zeitraum_form.wochen }}
+            <button type="submit" class="knopf knopf-zweitrangig">ändern</button>
+          </form>
+        </details>
+      </span>
       <form method="post" class="aushang-knoepfe">
         {% csrf_token %}
         <input type="hidden" name="seite" value="{{ s.pk }}">

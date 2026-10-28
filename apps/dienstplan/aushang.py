@@ -26,6 +26,7 @@ def folien(wert, von, bis) -> list[tuple[str, str, str, str]]:
     if stelle is None:
         return []
     ergebnis = []
+    von = max(von, timezone.localdate())  # vergangene Tage fallen weg
     for tag in wochentage(stelle.tage):
         daten, zeilen = plan.monat(stelle, tag, von, bis)
         if not daten or not zeilen:

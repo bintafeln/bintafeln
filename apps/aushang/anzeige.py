@@ -6,9 +6,12 @@ from apps.aushang.models import Aushang, AushangSeite
 from apps.core import module
 
 
-def zeitraum(heute: dt.date, monate: int) -> tuple[dt.date, dt.date]:
+def zeitraum(heute: dt.date, monate: int, wochen: int = 0) -> tuple[dt.date, dt.date]:
     """Der ganze Monat (bzw. dieser und der nächste): wie der Plan auf Papier; mit zwei Monaten
-    ist am Monatsende schon der nächste zu sehen."""
+    ist am Monatsende schon der nächste zu sehen. Mit ``wochen`` stattdessen die nächsten Wochen
+    ab heute, ohne vergangene Tage."""
+    if wochen:
+        return heute, heute + dt.timedelta(days=7 * wochen - 1)
     erster = heute.replace(day=1)
     ende = erster
     for _ in range(monate):
@@ -23,7 +26,7 @@ def folien(aushang: Aushang, heute: dt.date) -> list[tuple[str, str, str, str]]:
     for seite in aushang.seiten.all():
         art = arten.get(seite.art)
         if art:
-            ergebnis += art.folien(seite.wert, *zeitraum(heute, seite.monate))
+            ergebnis += art.folien(seite.wert, *zeitraum(heute, seite.monate, seite.wochen))
     return ergebnis
 
 

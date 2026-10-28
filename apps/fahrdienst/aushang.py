@@ -19,20 +19,34 @@ def auswahl() -> list[tuple[str, str]]:
     return []  # nur ein Fahrerplan
 
 
+def _folie(von, bis) -> str | None:
+    tage = plan.tage(plan.fahrtage(von, bis))
+    if not tage:
+        return None
+    return render_to_string("fahrdienst/_aushang.html", {
+        "tage": tage, "touren": plan.touren(tage[0][0], tage[-1][0]),
+        "heute": timezone.localdate(), "aushang": True,
+    })  # fmt: skip
+
+
 def folien(wert, von, bis) -> list[tuple[str, str, str, str]]:
+    """Ganze Monate: je Monat eine Folie, ohne vergangene Tage. Die nächsten Wochen ab heute:
+    eine Folie für alles."""
     from apps.fahrdienst.views import MONATE
 
+    if von.day != 1 or (bis + dt.timedelta(days=1)).day != 1:
+        html = _folie(von, bis)
+        if not html:
+            return []
+        return [(f"Fahrerplan {von:%d.%m.} bis {bis:%d.%m.%Y}", html,
+                 f"{reverse('fahrdienst:plan')}?monat={von:%Y-%m}", "Fahrer")]  # fmt: skip
     ergebnis = []
     erster = von
     while erster <= bis:
         folgemonat = (erster.replace(day=1) + dt.timedelta(days=32)).replace(day=1)
         ende = min(bis, folgemonat - dt.timedelta(days=1))
-        tage = plan.tage(plan.fahrtage(erster, ende))
-        if tage:
-            html = render_to_string("fahrdienst/_aushang.html", {
-                "tage": tage, "touren": plan.touren(tage[0][0], tage[-1][0]),
-                "heute": timezone.localdate(), "aushang": True,
-            })  # fmt: skip
+        html = _folie(max(erster, timezone.localdate()), ende)  # vergangene Tage fallen weg
+        if html:
             monat = MONATE[erster.month - 1]
             ergebnis.append((f"Fahrerplan {monat} {erster.year}", html,
                              f"{reverse('fahrdienst:plan')}?monat={erster:%Y-%m}",

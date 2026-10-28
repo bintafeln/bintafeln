@@ -52,6 +52,33 @@ def test_zeitraum_ganze_monate():
         dt.date(2026, 12, 1),
         dt.date(2027, 1, 31),
     )
+    # Die nächsten Wochen ab heute: vergangene Tage fallen weg
+    assert anzeige.zeitraum(MITTWOCH, 2, 9) == (MITTWOCH, MITTWOCH + dt.timedelta(days=62))
+
+
+def test_fahrer_naechste_wochen_eine_folie(plaene, heute, admin_client):
+    aushang = Aushang.objects.create(name="Monitor Fahrerraum")
+    seite = reverse("aushang:bearbeiten", args=[aushang.pk])
+    admin_client.post(seite, {"aktion": "seite", "seite": "fahrdienst:", "zeitraum": "w",
+                              "wochen": 3})  # fmt: skip
+    s = aushang.seiten.get()
+    assert (s.wochen, s.zeitraum_text()) == (3, "die nächsten 3 Wochen ab heute")
+    assert "die nächsten 3 Wochen ab heute" in admin_client.get(seite).content.decode()
+    folien = anzeige.folien(aushang, heute)
+    ende = heute + dt.timedelta(days=20)
+    assert [(f[0], f[3]) for f in folien] == [
+        (f"Fahrerplan {heute:%d.%m.} bis {ende:%d.%m.%Y}", "Fahrer")]  # fmt: skip
+    gestern = heute - dt.timedelta(days=1)
+    assert f"{gestern:%d.%m.}" not in folien[0][1] and f"{heute:%d.%m.}" in folien[0][1]
+    # Zeitraum einer vorhandenen Seite ändern: zurück auf ganze Monate
+    admin_client.post(seite, {"aktion": "zeitraum", "seite": s.pk, "zeitraum": "m1"})
+    s.refresh_from_db()
+    assert (s.monate, s.wochen) == (1, 0)
+    admin_client.post(seite, {"aktion": "zeitraum", "seite": s.pk, "zeitraum": "w", "wochen": ""})
+    s.refresh_from_db()
+    assert s.wochen == 9
+    assert admin_client.post(seite, {"aktion": "zeitraum", "seite": 999999,
+                                     "zeitraum": "m1"}).status_code == 404  # fmt: skip
 
 
 def test_einrichten_seiten_reihenfolge_und_link(plaene, admin_client):
@@ -61,8 +88,9 @@ def test_einrichten_seiten_reihenfolge_und_link(plaene, admin_client):
     seite = reverse("aushang:bearbeiten", args=[aushang.pk])
     html = admin_client.get(seite).content.decode()
     assert f"dienstplan:{plaene.pk}" in html and 'value="fahrdienst:"' in html
-    admin_client.post(seite, {"aktion": "seite", "seite": f"dienstplan:{plaene.pk}", "monate": 1})
-    admin_client.post(seite, {"aktion": "seite", "seite": "fahrdienst:", "monate": 2})
+    admin_client.post(seite, {"aktion": "seite", "seite": f"dienstplan:{plaene.pk}",
+                              "zeitraum": "m1"})  # fmt: skip
+    admin_client.post(seite, {"aktion": "seite", "seite": "fahrdienst:", "zeitraum": "m2"})
     assert [(s.art, s.wert, s.monate) for s in aushang.seiten.all()] == [
         ("dienstplan", str(plaene.pk), 1), ("fahrdienst", "", 2)]  # fmt: skip
     html = admin_client.get(seite).content.decode()
@@ -109,7 +137,7 @@ def test_monitor_ohne_anmeldung_nur_namen(plaene, heute, admin):
     tage = ("Montag", "Mittwoch", "Freitag")
     assert titel == [f"Dienstplan {dp_beispiel.STELLE} · {t}" for t in tage] + [
         "Fahrerplan November 2026", "Fahrerplan Dezember 2026"]  # fmt: skip
-    assert "11.11." in html and "02.11." in html  # der ganze Monat, auch vergangene Tage
+    assert "11.11." in html and "02.11." not in html and "09.11." not in html  # ab heute
     assert '<button type="button" data-nr="3">Fahrer November</button>' in html
     assert "Teamleitung:" in html and "Mittwoch, 11.11.2026" in html and "Stand 10:00 Uhr" in html
     helfer = Helfer.objects.filter(anmerkung=dp_beispiel.KENNUNG).first()
@@ -157,7 +185,7 @@ def test_seiten_nur_mit_recht_den_plan_zu_planen(plaene, client, anmelden, benut
     html = client.get(seite).content.decode()
     assert 'value="fahrdienst:"' in html and "dienstplan:" not in html
     antwort = client.post(
-        seite, {"aktion": "seite", "seite": f"dienstplan:{plaene.pk}", "monate": 2}
+        seite, {"aktion": "seite", "seite": f"dienstplan:{plaene.pk}", "zeitraum": "m2"}
     )
     assert antwort.status_code == 200 and not aushang.seiten.exists()
 
@@ -215,12 +243,18 @@ def test_meine_pin_festlegen_und_loeschen(client, anmelden, benutzer_mit_rolle, 
         assert text in html.replace("Mindestens", "mindestens"), falsch
     html = client.post(seite, {"pin": "482915", "wiederholen": "482916"}).content.decode()
     assert "nicht gleich" in html
-    client.post(seite, {"pin": "482915", "wiederholen": "482915"})
+    konto = reverse("konten:mein_konto")
+    assert "PIN für Aushang-Monitore" in client.get(konto).content.decode()
+    antwort = client.post(seite, {"pin": "482915", "wiederholen": "482915"})
+    assert antwort.url == konto and "Eingerichtet" in client.get(konto).content.decode()
     eintrag = MonitorPin.objects.get(benutzer=max_)
     assert eintrag.pin != "482915" and "$" in eintrag.pin  # nur gehasht
     assert "Sie haben eine PIN" in client.get(seite).content.decode()
     client.post(seite, {"aktion": "loeschen"})
     assert not MonitorPin.objects.exists()
+    # Ohne Dienst- oder Fahrerplan kein Abschnitt auf „Mein Konto“
+    anmelden(client, benutzer_mit_rolle("lohn", rollen.PERSONAL))
+    assert "PIN für Aushang-Monitore" not in client.get(konto).content.decode()
 
 
 def test_sich_am_monitor_austragen_nur_mit_eigener_pin(fahrer, heute, client):
@@ -323,7 +357,7 @@ def test_dienstplan_am_monitor_helfer_mit_konto(plaene, heute, client, benutzer_
 
     a = Aufgabe.objects.filter(stelle__ausgabestelle=plaene, wochentag="Mi", name="Kasse").get()
     h = a.besetzung.helfer
-    h.benutzer = benutzer_mit_rolle("kasse", rollen.AUSGABE)
+    h.benutzer = benutzer_mit_rolle("lohn", rollen.PERSONAL)
     h.save()
     pin.setzen(h.benutzer, "482915")
     aushang = Aushang.objects.create(name="Monitor")

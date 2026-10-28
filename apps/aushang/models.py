@@ -58,6 +58,8 @@ class AushangSeite(models.Model):
     art = models.CharField("Seite", max_length=40)
     wert = models.CharField("Auswahl", max_length=40, blank=True)
     monate = models.PositiveSmallIntegerField("Zeitraum", choices=MONATE, default=2)
+    # Statt ganzer Monate die nächsten Wochen ab heute (vergangene Tage fallen weg); 0 = Monate
+    wochen = models.PositiveSmallIntegerField("Wochen", default=0)
     reihenfolge = models.PositiveIntegerField("Reihenfolge", default=0)
 
     class Meta:
@@ -67,6 +69,11 @@ class AushangSeite(models.Model):
 
     def __str__(self):
         return f"{self.art} {self.wert}".strip()
+
+    def zeitraum_text(self) -> str:
+        if self.wochen:
+            return f"die nächsten {self.wochen} Wochen ab heute"
+        return self.get_monate_display()
 
 
 class MonitorPin(models.Model):
