@@ -315,7 +315,8 @@ class EinstellungenForm(forms.ModelForm):
 
 
 def _html_feld(zeilen=8):
-    return forms.Textarea(attrs={"rows": zeilen, "class": "html-eingabe", "dir": "auto"})
+    return forms.Textarea(attrs={"rows": zeilen, "class": "html-eingabe", "dir": "auto",
+                                 "data-editor": ""})  # fmt: skip
 
 
 class TextForm(forms.ModelForm):
