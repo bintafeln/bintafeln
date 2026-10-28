@@ -1202,3 +1202,7 @@ body.aushang-ruhig { cursor: none; }
 .aushang-knoepfe { display: flex; gap: .3rem; flex-shrink: 0; }
 .aushang-knoepfe .knopf { width: auto; padding: .35rem .7rem; min-height: 2.4rem; }
 .aushang-link { width: 100%; font: inherit; padding: .5rem; border: 1px solid var(--rand); border-radius: .4rem; }
+
+/* Datenimport: Beispielwerte einer Spalte untereinander, je einer aus einer Zeile der Datei */
+.import-beispiele { list-style: none; margin: 0; padding: 0; font-size: .85rem; color: var(--leise); }
+.import-beispiele li + li { border-top: 1px dotted var(--rand); }

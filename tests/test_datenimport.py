@@ -279,6 +279,9 @@ def test_ausgabestellen_mit_ausstattung_zeiten_und_ansprechpartnern(admin_client
         "Süd;abc;;;;Montag;;;;;;",
     )
     sitzung = hochladen(admin_client, "ausgabestellen", datei)
+    zuordnen = admin_client.get(reverse("datenimport:zuordnen", args=[sitzung.pk])).content.decode()
+    # Beispiele untereinander, je einer aus einer Zeile – nicht „Nord · Süd“ in einer Reihe
+    assert '<ul class="import-beispiele"><li>Nord</li><li>Süd</li></ul>' in zuordnen
     weiter(admin_client, sitzung)
     url = reverse("datenimport:abgleich", args=[sitzung.pk])
     inhalt = admin_client.get(url + "?modus=aktualisieren").content.decode()
