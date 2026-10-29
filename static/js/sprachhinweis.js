@@ -47,8 +47,18 @@
     // weiter unten gescrollt: oben am Bildschirm anheften, der Pfeil zeigt nach oben zur Auswahl
     hinweis.classList.toggle("fest", auswahl.getBoundingClientRect().bottom < 0);
     hinweis.hidden = false;
+    pfeilAusrichten();
     clearTimeout(timer);
     timer = setTimeout(function () { hinweis.hidden = true; }, sekunden * 1000);
+  }
+
+  // Der Pfeil zeigt genau auf die Sprachwahl, wo auch immer sie steht (am Handy z. B. links in
+  // der zweiten Zeile der Kopfzeile)
+  function pfeilAusrichten() {
+    if (hinweis.hidden) return;
+    var ziel = auswahl.getBoundingClientRect(), kasten = hinweis.getBoundingClientRect();
+    var x = ziel.left + ziel.width / 2 - kasten.left;
+    hinweis.style.setProperty("--pfeil-x", Math.max(24, Math.min(kasten.width - 24, x)) + "px");
   }
 
   function entwurfSichern() {
@@ -85,6 +95,7 @@
   }
 
   auswahl.addEventListener("change", function () { wechseln(auswahl.value); });
+  window.addEventListener("resize", pfeilAusrichten);
   hinweis.querySelector(".sprach-hinweis-zu").addEventListener("click", function () {
     hinweis.hidden = true;
   });

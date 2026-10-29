@@ -346,7 +346,8 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .sprach-hinweis.fest { position: fixed; top: 2.6rem; }
 .sprach-hinweis p { margin: 0 0 .35rem; }
 .sprach-hinweis p:last-child { margin-bottom: 0; }
-.sprach-pfeil { position: absolute; top: -2.1rem; inset-inline-end: 1.5rem; width: 0; height: 0;
+.sprach-pfeil { position: absolute; top: -2.1rem; left: var(--pfeil-x, calc(100% - 2.5rem));
+  transform: translateX(-50%); width: 0; height: 0;
   border: 1rem solid transparent; border-bottom: 1.6rem solid #c62828; border-top: 0;
   animation: sprach-blinken 1s ease-in-out infinite; }
 .sprach-hinweis-zu { position: absolute; top: .3rem; inset-inline-end: .3rem; border: 0;
