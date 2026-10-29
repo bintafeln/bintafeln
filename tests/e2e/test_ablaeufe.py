@@ -202,9 +202,15 @@ def test_sprachhinweis_und_angaben_beim_umstellen(seite, admin):
     e = AntragEinstellungen.laden()
     e.aktiv, e.staatsangehoerigkeit = True, Abfrage.OPTIONAL
     e.save()
+    seite.set_viewport_size({"width": 390, "height": 800})  # Handy: Sprachwahl links, 2. Zeile
     seite.goto("/antrag/de/")
     hinweis = seite.locator("#sprach-hinweis")
     expect(hinweis).to_contain_text("Hier können Sie die Sprache umstellen.")  # einmal je Sitzung
+    auswahl = seite.locator("#sprache").bounding_box()
+    pfeil = seite.locator(".sprach-pfeil").bounding_box()
+    mitte = pfeil["x"] + pfeil["width"] / 2
+    assert auswahl["x"] <= mitte <= auswahl["x"] + auswahl["width"]  # Pfeil zeigt auf die Auswahl
+    seite.set_viewport_size({"width": 1280, "height": 800})
     hinweis.get_by_role("button", name="✕").click()
     expect(hinweis).to_be_hidden()
     seite.goto("/antrag/de/")
