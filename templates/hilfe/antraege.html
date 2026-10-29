@@ -1,4 +1,6 @@
-<p>Online-Anträge kommen über das öffentliche Formular. Menü „Kunden → Anträge“; die kleine Zahl daneben zeigt, wie viele Anträge noch offen sind (neu oder in Bearbeitung, ohne Papierkorb).</p>
+{% load handbuch %}<p>Online-Anträge kommen über das öffentliche Formular (Adresse <code>/antrag/</code> der Tafel, ohne Anmeldung).</p>
+{% hilfe_bild "antraege-formular" "Das öffentliche Formular: ① Sprache wählen, ② neu anmelden oder verlängern, ③ Angaben eintragen." %}
+<p>Menü „Kunden → Anträge“; die kleine Zahl daneben zeigt, wie viele Anträge noch offen sind (neu oder in Bearbeitung, ohne Papierkorb).</p>
 <ul>
   <li>Die Liste zeigt offene Anträge mit fortlaufender Nummer, neueste zuerst; Spalten anklickbar zum Sortieren, Suche,
     Zeilen je Seite, CSV-Export.</li>
@@ -8,4 +10,5 @@
   <li>Anhänge (z. B. Bescheide) öffnen sich mit einem Klick; jeder Abruf wird protokolliert.</li>
   {% if "antraege.loeschen" in rechte %}<li>Im Papierkorb lassen sich Anträge endgültig löschen.</li>{% endif %}
 </ul>
+{% hilfe_bild "antraege-liste" "① Offene Anträge oder Papierkorb, ② Aktionen je Zeile, ③ ➜ startet die Aufnahme als Kunde." %}
 <p>Erledigte und abgelehnte Anträge werden nach den eingestellten Fristen automatisch gelöscht.</p>

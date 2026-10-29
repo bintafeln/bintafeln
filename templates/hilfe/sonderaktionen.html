@@ -1,7 +1,9 @@
-<p>Menü „Ausgabestelle → Sonderaktionen“ → „Neue Sonderaktion“.</p>
+{% load handbuch %}<p>Menü „Ausgabestelle → Sonderaktionen“ → „Neue Sonderaktion“.</p>
 <ul>
   <li>Bezeichnung, Zeitraum, wie viel je Haushalt (einmal, je Kind, je Person), optional nur Haushalte mit Kindern,
-    ein Hinweis für den Einlass und Auswahlmöglichkeiten (eine je Zeile, z. B. „Spielzeug“, „Kleidung“).</li>
+    ein Hinweis für den Einlass und Auswahlmöglichkeiten (eine je Zeile, z. B. „Spielzeug“, „Kleidung“).
+    {% hilfe_bild "sonderaktionen-neu" "① Bezeichnung und Zeitraum, ② wie viel je Haushalt, ③ Hinweis für den Einlass, ④ Auswahlmöglichkeiten, ⑤ „Speichern“." %}</li>
   <li>Während der Aktion zeigt der Einlass sie bei jedem passenden Haushalt.</li>
-  <li>Die Seite der Aktion zeigt Haushalte und Stückzahlen je Auswahl und die Liste der Teilnahmen; CSV-Export ohne Namen.</li>
+  <li>Die Seite der Aktion zeigt Haushalte und Stückzahlen je Auswahl und die Liste der Teilnahmen; CSV-Export ohne Namen.
+    {% hilfe_bild "sonderaktionen-ergebnis" "① Haushalte und Stück je Auswahl, ② alle Teilnahmen, ③ CSV-Export ohne Namen." %}</li>
 </ul>

@@ -1,4 +1,4 @@
-<p>Die Mitgliederverwaltung führt die Mitglieder des Trägervereins. Ein Mitglied ist immer eine Adresse aus dem
+{% load handbuch %}<p>Die Mitgliederverwaltung führt die Mitglieder des Trägervereins. Ein Mitglied ist immer eine Adresse aus dem
   Adressbuch. Menü: „Mitglieder“.</p>
 {% if "mitglieder.bearbeiten" in rechte %}
 <h3>Mitglied aufnehmen</h3>
@@ -11,6 +11,7 @@
     mit, <em>passiv</em> = Stimmrecht, hilft aber nicht mit), Eintritt, Jahresbeitrag, Zahlweise und
     Zahlungsart wählen. Ist das Mitglied zugleich Mitarbeiter/in, das Konto verknüpfen.</li>
 </ol>
+{% hilfe_bild "mitglieder-aufnehmen" "Neue Adresse mit Mitgliedschaft: ① „Ist Vereinsmitglied“ ankreuzen, ② Nummer, Art und Eintritt eintragen, ③ „Speichern“." %}
 <p><strong>Austritt</strong>: Datum und Grund eintragen. Die Daten bleiben, bis die Mitgliedschaft gelöscht wird
   (Adresse und Zahlungen bleiben auch dann erhalten).</p>
 {% endif %}
