@@ -1,5 +1,8 @@
 # Vergibt nach jedem Merge auf main die nächste Version JJJJ.M.N und legt ein GitHub-Release
 # an (ADR 0023). N zählt je Monat ab 1. Monat und Jahr nach deutscher Zeit.
+# Die Stufe (ADR 0084) kommt aus dem Label des Pull Requests (sicherheit, wichtig,
+# neue-funktion; sonst klein) und steht als „stufe=…“ im annotierten Tag; der Dienst „updater“
+# liest sie dort, die Startseite warnt danach.
 name: Version
 
 on:
@@ -8,6 +11,8 @@ on:
 
 permissions:
   contents: write
+  issues: write  # Labels anlegen
+  pull-requests: read
 
 concurrency:
   group: version
@@ -28,8 +33,40 @@ jobs:
           letzte=$(git tag --list "$monat.*" | grep -E "^${monat//./\\.}\.[0-9]+$" \
             | sed "s/^$monat\.//" | sort -n | tail -n 1 || true)
           echo "tag=$monat.$(( ${letzte:-0} + 1 ))" >> "$GITHUB_OUTPUT"
-      - name: Release anlegen
+      - name: Labels für die Stufe anlegen (falls sie fehlen)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create sicherheit --force --color B60205 \
+            --description "Sicherheitsupdate: Tafeln werden sofort gewarnt"
+          gh label create wichtig --force --color FBCA04 \
+            --description "Wichtige Korrektur: Warnung nach 7 Tagen"
+          gh label create neue-funktion --force --color 1D76DB \
+            --description "Neue Funktionen: Hinweis nach 30 Tagen"
+      - name: Stufe aus dem Label des Pull Requests
+        id: stufe
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          labels=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls" \
+            --jq '[.[].labels[].name] | join(" ")' || true)
+          stufe=klein
+          case " $labels " in
+            *" sicherheit "*) stufe=sicherheit ;;
+            *" wichtig "*) stufe=wichtig ;;
+            *" neue-funktion "*) stufe=neu ;;
+          esac
+          echo "stufe=$stufe" >> "$GITHUB_OUTPUT"
+      - name: Tag mit Stufe und Release anlegen
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
-        run: gh release create "$TAG" --target "$GITHUB_SHA" --title "$TAG" --generate-notes
+          STUFE: ${{ steps.stufe.outputs.stufe }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" "$GITHUB_SHA" -m "$TAG" -m "stufe=$STUFE"
+          git push origin "refs/tags/$TAG"
+          gh release create "$TAG" --verify-tag --title "$TAG" --generate-notes

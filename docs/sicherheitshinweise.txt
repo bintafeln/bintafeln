@@ -1,0 +1,12 @@
+# Sicherheitshinweise für bintafeln (ADR 0084)
+#
+# Der Dienst „updater“ jeder Installation liest diese Datei vom Zweig main, auch wenn dort noch
+# eine alte Version läuft. Ist die installierte Version älter als die Version am Zeilenanfang,
+# warnt die Startseite rot und die Tafel bekommt einmal eine Mail.
+#
+# Eine Zeile je Lücke: VERSION Text
+#   VERSION = erste Version, in der die Lücke behoben ist
+#   Text    = kurz und verständlich für die Tafeln, ohne Einzelheiten, die Angreifern helfen
+#
+# Beispiel (ohne # am Anfang wäre es gültig):
+# 2026.11.2 Über das Antragsformular ließen sich fremde Anhänge abrufen.

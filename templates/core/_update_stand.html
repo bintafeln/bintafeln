@@ -19,10 +19,13 @@
 {% if not s.beschaeftigt %}
 {% if s.sucht and s.erreichbar %}
 <p class="meldung" role="status">Suche nach neuen Versionen läuft … (dauert meist nur wenige Sekunden)</p>
-{% elif neuere %}
+{% endif %}
+{% if s.offene_hinweise %}<div class="meldung error" role="alert"><strong>Sicherheitshinweis:</strong> Die installierte Version ist betroffen.
+  <ul>{% for h in s.offene_hinweise %}<li>{{ h.text }} <small>(behoben ab {{ h.version }})</small></li>{% endfor %}</ul></div>{% endif %}
+{% if s.sucht and s.erreichbar %}{% elif neuere %}
 <p class="meldung update-neu" role="status"><strong>Neue Version {{ neuere.0.name }} verfügbar.</strong>
   Installiert ist {{ s.installiert|default:"unbekannt" }}. Unten „Update starten“.</p>
-{% elif s.versionen and not s.abruf_fehler %}
+{% elif s.versionen and not s.abruf_fehler and not s.offene_hinweise %}
 <p class="meldung" role="status">✓ bintafeln ist aktuell (Version {{ s.installiert }}).</p>
 {% endif %}
 {% endif %}
@@ -54,7 +57,7 @@
     <div class="feld">
       <label for="version">Version</label>
       <select name="version" id="version"{% if s.beschaeftigt or not s.erreichbar %} disabled{% endif %}>
-        {% for v in neuere %}<option value="{{ v.name }}">{{ v.name }} vom {{ v.datum }}{% if forloop.first %} (neueste){% endif %}</option>{% endfor %}
+        {% for v in neuere %}<option value="{{ v.name }}">{{ v.name }} vom {{ v.datum }}{% if forloop.first %} (neueste){% endif %}{% if v.stufe_text %} – {{ v.stufe_text }}{% endif %}</option>{% endfor %}
         {% for v in aeltere %}<option value="{{ v.name }}">{{ v.name }} vom {{ v.datum }} – älter, zurückgehen</option>{% endfor %}
       </select>
       {% if aeltere %}<small class="hilfe">Zurück auf eine ältere Version nur bei Problemen: Was nur die neuere Version
@@ -74,7 +77,7 @@
 <section class="karte breit was-ist-neu">
   <h2>{% if neuere %}Was ist neu?{% else %}Neu mit dem Update auf {{ s.ziel }}{% endif %}</h2>
   {% for v in neuere|default:zuletzt %}
-  <h3>{{ v.name }} <small class="leise">vom {{ v.datum }}</small></h3>
+  <h3>{{ v.name }} <small class="leise">vom {{ v.datum }}</small>{% if v.stufe_text %} <span class="stufe stufe-{{ v.stufe }}">{{ v.stufe_text }}</span>{% endif %}</h3>
   {# Einträge mit „· “ sind Stichpunkte zur Änderung darüber #}
   {% if v.aenderungen %}<ul>{% for a in v.aenderungen %}{% if a|slice:":2" == "· " %}<li class="neu-detail">{{ a|slice:"2:" }}</li>{% else %}<li class="neu-titel">{{ a }}</li>{% endif %}{% endfor %}</ul>{% else %}<p class="hinweis">Keine Beschreibung.</p>{% endif %}
   {% endfor %}

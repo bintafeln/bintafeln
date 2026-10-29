@@ -1,12 +1,15 @@
 """Seite „Einstellungen → Update“ (ADR 0043)."""
 
+import datetime as dt
+
 from django.contrib import messages
 from django.shortcuts import redirect, render
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from apps.core import update
-from apps.core.models import SicherungsDienst
+from apps.core.models import SicherungsDienst, TafelEinstellungen
 from apps.konten import rollen
 from apps.konten.views import nicht_in_demo
 
@@ -57,3 +60,13 @@ def starten(request):
 def abrufen(request):
     update.jetzt_abrufen()  # die Seite zeigt, solange gesucht wird, und dann das Ergebnis
     return redirect("core:update")
+
+
+@require_POST
+@rollen.recht_erforderlich("system.update")
+def spaeter(request):
+    """Hinweis auf neue Funktionen für 30 Tage ausblenden (Sicherheit und Korrekturen nie)."""
+    e = TafelEinstellungen.laden()
+    e.update_hinweis_bis = timezone.localdate() + dt.timedelta(days=update.NEU_NACH.days)
+    e.save(update_fields=["update_hinweis_bis"])
+    return redirect("core:start")

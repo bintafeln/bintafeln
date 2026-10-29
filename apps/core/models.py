@@ -78,6 +78,12 @@ class TafelEinstellungen(models.Model):
     )
     geaendert_am = models.DateTimeField("Geändert am", auto_now=True)
 
+    # Update-Warnung (ADR 0084): für welches Sicherheitsupdate schon gemailt wurde und bis wann
+    # der Hinweis auf neue Funktionen ausgeblendet ist
+    update_gemeldet = models.CharField("Gemeldetes Sicherheitsupdate", max_length=200, blank=True)
+    update_hinweis_bis = models.DateField("Hinweis auf neue Funktionen ausgeblendet bis",
+                                          null=True, blank=True)  # fmt: skip
+
     class Meta:
         verbose_name = "Tafel-Einstellungen"
         verbose_name_plural = "Tafel-Einstellungen"

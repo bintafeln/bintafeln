@@ -247,7 +247,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Sicherungsaufträge (`SicherungsAuftrag`, ADR 0042) per psql aus der Datenbank und meldet den
   Stand zurück. Update aus der Oberfläche: `apps/core/update.py` tauscht nur Dateien mit dem
   Dienst `updater` (`docker/updater/updater.sh`) aus; bintafeln selbst bekommt nie Zugriff auf
-  Docker (ADR 0043).
+  Docker (ADR 0043). Warnung bei wichtigen Updates (ADR 0084): `update.warnung()`, Stufe aus
+  dem PR-Label (`sicherheit`, `wichtig`, `neue-funktion`) als `stufe=…` im Tag, später bekannte
+  Lücken in `docs/sicherheitshinweise.txt`. **Beim Anlegen eines PR die passende Stufe als Label
+  vorschlagen.**
 - Zuschaltbare Module (ADR 0049): eigene App mit `modul.py` (`apps.core.module.Modul`: Rechte,
   Vorgaben, Menü, Hilfe-Kapitel mit Vorlage in der App, Pfade, Bereich der Datensicherung),
   eingetragen in `settings.BINTAFELN_MODULE`; jede Tafel schaltet sie in den Tafel-Einstellungen

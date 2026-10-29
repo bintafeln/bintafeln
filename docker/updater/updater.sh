@@ -17,7 +17,9 @@
 #
 # Dateien in /betrieb (Schlüssel=Wert, liest bintafeln):
 #   lebenszeichen.txt  zeit=…                    alle 5 Sekunden
-#   versionen.txt      installiert, abgerufen, fehler, je Version eine Zeile version=NAME|DATUM|ÄNDERUNGEN
+#   versionen.txt      installiert, abgerufen, erfolgreich, fehler, je Version eine Zeile
+#                      version=NAME|DATUM|ÄNDERUNGEN, dazu stufe=NAME|STUFE und
+#                      sicherheit=VERSION|TEXT (ADR 0084)
 #   status.txt         zustand (laeuft|ok|fehler), version, beginn, ende, meldung
 #   protokoll.txt      Ausgabe des letzten Updates
 #   auftrag.txt        von bintafeln: version=…, von=…
@@ -120,16 +122,38 @@ als_besitzer() {
     docker run "$@"
 }
 
+# Stufe einer Version (ADR 0084): steht als „stufe=…“ im annotierten Tag (version.yml)
+stufe() {
+    [ "$(git -C "$PROJEKT" cat-file -t "refs/tags/$1" 2>/dev/null)" = tag ] || return 0
+    git -C "$PROJEKT" tag --list --format='%(contents)' "$1" \
+        | sed -n 's/^stufe=\([a-z]*\)$/\1/p' | head -n 1
+}
+
+# Sicherheitshinweise aus docs/sicherheitshinweise.txt auf main (auch für alte Versionen):
+# Zeilen „VERSION Text“ = Versionen vor VERSION sind betroffen
+sicherheitshinweise() {
+    git -C "$PROJEKT" show origin/main:docs/sicherheitshinweise.txt 2>/dev/null \
+        | grep -E '^[0-9]{4}\.[0-9]{1,2}\.[0-9]+ ' | head -n 20 \
+        | while read -r v text; do
+            echo "sicherheit=$v|$(printf '%s' "$text" | tr '|' '/')"
+        done
+}
+
 versionen_abrufen() {
     fehler=""
+    # Zeitpunkt des letzten gelungenen Abrufs; bleibt bei einem Fehler stehen
+    erfolgreich=$(sed -n 's/^erfolgreich=//p' "$BETRIEB/versionen.txt" 2>/dev/null | head -n 1)
     if ! ausgabe=$(als_besitzer --rm --entrypoint git "$(eigenes '{{.Config.Image}}')" \
         fetch --quiet --tags --force origin 2>&1); then
         fehler="Neue Versionen konnten nicht abgerufen werden: $(echo "$ausgabe" | head -n 1)"
         log "$fehler"
+    else
+        erfolgreich=$(zeit)
     fi
     installiert=$(cat "$PROJEKT/VERSION" 2>/dev/null || true)
     {
         echo "abgerufen=$(zeit)"
+        echo "erfolgreich=$erfolgreich"
         echo "installiert=$installiert"
         echo "fehler=$fehler"
         vorher=""
@@ -137,8 +161,11 @@ versionen_abrufen() {
             datum=$(git -C "$PROJEKT" log -1 --format=%cs "$v")
             if [ -n "$vorher" ]; then bereich="$vorher..$v"; else bereich="$v"; fi
             echo "version=$v|$datum|$(aenderungen "$bereich")"
+            s=$(stufe "$v")
+            if [ -n "$s" ]; then echo "stufe=$v|$s"; fi
             vorher="$v"
         done
+        sicherheitshinweise
     } | schreiben versionen.txt
 }
 
