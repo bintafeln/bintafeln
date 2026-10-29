@@ -1,5 +1,6 @@
-// Menü links einfahren und wieder ausfahren (breite Bildschirme). Der Zustand bleibt im Browser
-// gespeichert; die Datei steht im <head> ohne „defer“, damit das Menü beim Laden nicht aufblitzt.
+// Menü links einfahren und wieder ausfahren (breite Bildschirme); aufgeklappte Punkte ganz zeigen.
+// Der Zustand bleibt im Browser gespeichert; die Datei steht im <head> ohne „defer“, damit das
+// Menü beim Laden nicht aufblitzt.
 (function () {
   "use strict";
   var SCHLUESSEL = "bintafeln-menue-eingefahren";
@@ -32,6 +33,24 @@
         localStorage.setItem("bintafeln-ansicht-stand", stand);
       }
     } catch (e) { /* ohne Speicher */ }
+    // Aufgeklappter Menüpunkt weiter unten: ganz zeigen, also das Menü (bzw. die Seite) so weit
+    // hochschieben, dass alle Unterpunkte zu sehen sind; der Titel bleibt dabei immer sichtbar
+    var nav = document.querySelector(".seitenmenue");
+    var geklickt = false;
+    if (nav) {
+      nav.addEventListener("click", function (e) {
+        if (e.target.closest("summary")) geklickt = true;
+      });
+      nav.addEventListener("toggle", function (e) {
+        var bereich = e.target;
+        if (!geklickt || !bereich.open) return;
+        geklickt = false;
+        var ruhig = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        requestAnimationFrame(function () {
+          bereich.scrollIntoView({ block: "nearest", behavior: ruhig ? "auto" : "smooth" });
+        });
+      }, true);  // „toggle“ steigt nicht auf
+    }
     document.querySelectorAll("[data-menue-einfahren]").forEach(function (k) {
       k.addEventListener("click", function () { setzen(true); });
     });

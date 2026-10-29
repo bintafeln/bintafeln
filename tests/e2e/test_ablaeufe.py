@@ -450,6 +450,31 @@ def test_menue_einfahren_und_ausfahren(angemeldet, admin):
     expect(menue).to_be_visible()
 
 
+def test_menuepunkt_unten_aufklappen_zeigt_alle_unterpunkte(angemeldet, admin):
+    """Klappt man einen Bereich weit unten auf, schiebt sich das Menü hoch, bis alles zu sehen ist
+    (auch eine Zwischenebene darin); der Titel bleibt sichtbar."""
+    seite = angemeldet(admin)
+    for breite, hoehe in ((1280, 420), (390, 500)):  # breit: das Menü schiebt; Handy: die Seite
+        seite.set_viewport_size({"width": breite, "height": hoehe})
+        seite.goto("/")
+        if breite < 768:
+            seite.locator(".menue-knopf").click()
+        bereich = seite.locator("nav.seitenmenue > details.menue-bereich").last
+        titel = bereich.locator(":scope > summary")
+        if bereich.evaluate("d => d.open"):
+            titel.click()
+        titel.click()
+        expect(bereich.locator("summary:visible, a:visible").last).to_be_in_viewport()
+        expect(titel).to_be_in_viewport()
+        gruppe = bereich.locator("details.menue-gruppe").last
+        if gruppe.count():
+            if gruppe.evaluate("d => d.open"):
+                gruppe.locator(":scope > summary").click()
+            gruppe.locator(":scope > summary").click()
+            expect(gruppe.locator("a").last).to_be_in_viewport()
+            expect(gruppe.locator(":scope > summary")).to_be_in_viewport()
+
+
 def test_liste_zeigt_kriterium_sofort(angemeldet, admin):
     """Listen: Ein gewähltes Kriterium zeigt das Ergebnis ohne „Anzeigen“; die Spaltenwahl nicht."""
     from apps.core.models import TafelEinstellungen

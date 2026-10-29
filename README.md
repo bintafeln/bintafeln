@@ -77,7 +77,9 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   Konto“ öffnet der eigene Name oben rechts. Module hängen sich in die passenden Bereiche ein
   (`apps/core/menue.py`). Der Knopf « oben im Menü fährt es ein, » holt es zurück (Wahl bleibt im
   Browser, `static/js/menue_einfahren.js`). Ein Bereich klappt erst seine Einträge und Untergruppen auf, eine
-  Untergruppe (z. B. Wochenübersicht, Kundenstamm) erst beim Anklicken ihre Einträge. Die
+  Untergruppe (z. B. Wochenübersicht, Kundenstamm) erst beim Anklicken ihre Einträge. Liegt ein
+  aufgeklappter Punkt weit unten, schiebt sich das Menü (auf dem Handy die Seite) so weit hoch,
+  dass alle Unterpunkte zu sehen sind; der Titel bleibt sichtbar. Die
   Kundenliste steht nur einmal im Menü: am Einlass (ohne „alle Ausgabestellen“) unter
   „Ausgabestelle“, sonst als „Kunden einsehen“ unter „Kunden“. Die Einstellungen haben Untermenüs (Tafel, Kunden, Ausgabe, Verein,
   Mitarbeitende, Systemsteuerung). Jede Rolle sieht nur, was sie darf. Auf Handys (unter 768 Pixel Breite) öffnet „☰ Menü“ das Menü.
