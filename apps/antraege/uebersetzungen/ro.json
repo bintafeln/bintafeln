@@ -71,6 +71,7 @@
   "absenden": "Trimite cererea",
   "danke_titel": "Vă mulțumim!",
   "danke_nummer": "Cererea dumneavoastră a fost primită. Numărul cererii: {nummer}",
+  "danke_eingang": "Cererea dumneavoastră a fost primită.",
   "bestaetigung": "Vom verifica cererea și vă vom contacta. Când vă invităm, vă rugăm să aduceți documentele în original.",
   "mail_gesendet": "Am trimis o confirmare la {email}.",
   "mail_betreff": "Cererea dumneavoastră la {tafel}",

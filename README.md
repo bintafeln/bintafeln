@@ -750,7 +750,9 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   für das öffentliche Formular hinterlegen (nur für Kundige).
 - Nach dem Absenden sehen Antragstellende eine Bestätigungsseite mit ihrer **Antragsnummer** und
   bekommen eine gestaltete **Antwortmail** (HTML mit Logo, dazu eine Klartextfassung) in ihrer
-  Sprache, wenn sie eine Adresse angeben (Mailserver nötig).
+  Sprache, wenn sie eine Adresse angeben (Mailserver nötig). Die Antragsnummer steht bewusst
+  **nicht** in der Mail (auch `{nummer}` in eigenen Mailtexten bleibt leer), damit niemand sie als
+  Platz in einer Reihenfolge versteht.
 - **Antragsliste** (Admin, Büro) unter „Anträge“ (die Zahl im Menü zeigt die offenen Anträge): fortlaufende **Antragsnummern** (Startwert
   unter „Formular einstellen“ → „Nächste Antragsnummer ab“, z. B. 4201), neueste zuerst; Spalten
   #, Status, Kundennummer, Nachname, Vorname, Antrag vom, E-Mail, Telefon, Art,

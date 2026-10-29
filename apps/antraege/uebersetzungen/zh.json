@@ -71,6 +71,7 @@
   "absenden": "提交申请",
   "danke_titel": "非常感谢！",
   "danke_nummer": "您的申请已收到。您的申请编号：{nummer}",
+  "danke_eingang": "您的申请已收到。",
   "bestaetigung": "我们会审核您的申请并与您联系。我们邀请您时，请携带证明材料原件。",
   "mail_gesendet": "我们已向 {email} 发送确认邮件。",
   "mail_betreff": "您在 {tafel} 的申请",

@@ -392,10 +392,10 @@ class TextForm(forms.ModelForm):
             "nötig sind. Leer in einer Sprache = der deutsche Hinweis.",
             "bestaetigung": "Erscheint nach dem Absenden unter der Antragsnummer. Platzhalter: "
             "{nummer}, {tafel}.",
-            "mail_betreff": "Platzhalter: {nummer}, {tafel}.",
+            "mail_betreff": "Platzhalter: {tafel}.",
             "mail_text": "Ganzer Inhalt der Antwortmail, wenn ausgefüllt (sonst: Anrede, "
-            "Antragsnummer, Text nach dem Absenden, Gruß). Platzhalter: {vorname}, {nachname}, "
-            "{nummer}, {tafel}.",
+            "„Ihr Antrag ist eingegangen“, Text nach dem Absenden, Gruß). Platzhalter: {vorname}, "
+            "{nachname}, {tafel}. Die Antragsnummer steht nie in der Mail.",
         }
 
 
