@@ -91,9 +91,9 @@ def fahrtage(von: dt.date, bis: dt.date, e: FahrdienstEinstellungen | None = Non
     return [t for t in tage if faehrt(t, e, land)]
 
 
-def _ausfall(ausfaelle, benutzer_id, datum, nur_krank=False) -> Ausfall | None:
+def _ausfall(ausfaelle, benutzer_id, datum, ersatz=None) -> Ausfall | None:
     return next((a for a in ausfaelle
-                 if a.benutzer_id == benutzer_id and ausfallregeln.deckt(a, datum, nur_krank)),
+                 if a.benutzer_id == benutzer_id and ausfallregeln.betrifft(a, datum, ersatz)),
                 None)  # fmt: skip
 
 
@@ -124,9 +124,8 @@ def tage(tage_liste: list[dt.date]) -> list[tuple[dt.date, list[tuple[Tour, list
             for nr in range(1, (tour.plaetze if tour.faehrt_am(datum) else 0) + 1):
                 p = Platz(datum, tour, nr, stamm=besetzung.get((tour.pk, kuerzel(datum), nr)),
                           ersatz=ersatz.get((datum, tour.pk, nr)))  # fmt: skip
-                if p.wer is not None:  # wer einspringt, fehlt nur, solange er noch krank ist
-                    p.ausfall = _ausfall(ausfaelle, p.wer.pk, datum,
-                                         nur_krank=p.ersatz is not None)  # fmt: skip
+                if p.wer is not None:
+                    p.ausfall = _ausfall(ausfaelle, p.wer.pk, datum, p.ersatz)
                 plaetze.append(p)
             zeile.append((tour, plaetze))
         ergebnis.append((datum, zeile))

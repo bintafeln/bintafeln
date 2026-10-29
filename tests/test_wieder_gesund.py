@@ -138,3 +138,35 @@ def test_dienstplan_wieder_gesund(heute):  # noqa: F811
     assert dplan.platz(heute + WOCHE, aufgabe).status == dplan.ERSETZT
     vorbei = DAusfall.objects.create(helfer=h, von=heute, bis=heute, grund="krank")
     assert not dplan.gesund_melden(vorbei, heute + WOCHE)
+
+
+def test_eingesprungen_und_dann_selbst_krank(fahrer, heute, client):  # noqa: F811
+    """Ole ist für Max eingesprungen, wird selbst krank, meldet sich für zwei Wochen ab und später
+    gesund: Seine Plätze als Ersatz bleiben abgesagt, bis er sich neu einträgt."""
+    leute, tour, aushang = fahrer
+    ole = leute["ole"]
+    Ausfall.objects.create(benutzer=leute["max"], von=heute, bis=heute + 3 * WOCHE, grund="urlaub")
+    for woche in range(2):
+        plan.ersatz_eintragen(heute + woche * WOCHE, tour, 1, ole, "test")
+    kennung = f"fahrdienst|{heute:%Y-%m-%d}|{tour.pk}|1"
+    html = client.get(_platz(aushang), {"platz": kennung}).content.decode()
+    assert "Ich bin Ole Hansen und kann nicht" in html
+    daten = {"platz": kennung, "aktion": "ausfall", "person": ole.pk, "pin": "482915",
+             "grund": "krank", "dauer": "w2"}  # fmt: skip
+    antwort = client.post(_platz(aushang), daten).json()
+    assert antwort["ok"] and "Ole Hansen fällt vom 11.11. bis 24.11.2026 aus" in antwort["meldung"]
+    for woche in range(2):  # beide Einsätze als Ersatz sind wieder offen
+        p = plan.platz(heute + woche * WOCHE, tour, 1)
+        assert p.status == plan.OFFEN and p.wer == ole
+    assert ole not in _frei(heute)
+    # Jan kann nicht für Ole austragen; Ole meldet sich gesund
+    html = client.get(_platz(aushang), {"platz": kennung}).content.decode()
+    assert "Ich bin Ole Hansen und wieder gesund" in html
+    antwort = client.post(_platz(aushang), {**daten, "aktion": "gesund"}).json()
+    assert antwort["ok"]
+    # nicht automatisch zurück: der alte Ersatz-Eintrag nächste Woche bleibt abgesagt …
+    assert plan.platz(heute + WOCHE, tour, 1).status == plan.OFFEN
+    assert ole in _frei(heute + WOCHE)
+    # … bis Ole sich neu einträgt
+    plan.ersatz_eintragen(heute + WOCHE, tour, 1, ole, "test")
+    assert plan.platz(heute + WOCHE, tour, 1).status == plan.ERSETZT

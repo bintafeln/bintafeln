@@ -88,9 +88,9 @@ def ausgabetage(stelle: DienstStelle, von: dt.date, bis: dt.date, tag: str = "")
             and not (land and ist_feiertag(d, land))]  # fmt: skip
 
 
-def _ausfall(ausfaelle, helfer_id, datum, nur_krank=False) -> Ausfall | None:
+def _ausfall(ausfaelle, helfer_id, datum, ersatz=None) -> Ausfall | None:
     return next((a for a in ausfaelle
-                 if a.helfer_id == helfer_id and ausfallregeln.deckt(a, datum, nur_krank)),
+                 if a.helfer_id == helfer_id and ausfallregeln.betrifft(a, datum, ersatz)),
                 None)  # fmt: skip
 
 
@@ -126,8 +126,8 @@ def plaetze(daten: list[dt.date], aufgaben=None) -> dict[dt.date, list[Platz]]:
             if a.wochentag != kuerzel(datum):
                 continue
             p = Platz(datum, a, stamm=fest.get(a.pk), ersatz=ersatz.get((datum, a.pk)))
-            if p.wer is not None:  # wer einspringt, fehlt nur, solange er noch krank ist
-                p.ausfall = _ausfall(ausfaelle, p.wer.pk, datum, nur_krank=p.ersatz is not None)
+            if p.wer is not None:
+                p.ausfall = _ausfall(ausfaelle, p.wer.pk, datum, p.ersatz)
             liste.append(p)
         ergebnis[datum] = liste
     return ergebnis

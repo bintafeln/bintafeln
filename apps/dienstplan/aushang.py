@@ -73,12 +73,12 @@ def platz(teil: str) -> dict | None:
         "wer": p.gast or (str(p.wer) if p.wer else ""),
         "status": _status(p, status),
         "wer_konto": p.wer.benutzer_id if p.wer else None,
-        "kann_ausfallen": p.wer is not None and not p.ausfall and not p.ersatz,
+        "kann_ausfallen": p.wer is not None and not p.ausfall,  # auch wer eingesprungen ist
         "kann_einspringen": p.fehlt or p.status == plan.LEER,
         "gruende": FAHRDIENST_AUSFALLGRUENDE,
         "dauer": AUSFALL_DAUER,
         "datum": p.datum.isoformat(),
-        "kann_gesund": p.ausfall is not None and p.ersatz is None and not p.ausfall.gesund_ab,
+        "kann_gesund": p.ausfall is not None and not p.ausfall.gesund_ab,
         "frei": [(h.pk, str(h), h.benutzer_id) for h in plan.verfuegbar(p.datum)],
         "hat_ersatz": p.ersatz is not None,
         "recht": "dienstplan.planen",
@@ -86,7 +86,7 @@ def platz(teil: str) -> dict | None:
 
 
 def _status(p, status) -> str:
-    if p.ausfall and p.ausfall.gesund_ab and p.datum >= p.ausfall.gesund_ab and not p.ersatz:
+    if p.ausfall and p.ausfall.gesund_ab and p.datum >= p.ausfall.gesund_ab:
         return "wieder da, der Platz bleibt aber frei (noch kein Ersatz)"
     return status
 
@@ -100,7 +100,7 @@ def aendern(teil: str, daten, person, von: str, basis: str) -> str:
     if aktion in ("gast", "zuruecknehmen") and not planer:
         raise ValueError("Das darf nur, wer den Dienstplan plant.")
     if aktion == "ausfall":
-        if p.wer is None or p.ausfall or p.ersatz:
+        if p.wer is None or p.ausfall:
             raise ValueError("Hier kann niemand ausfallen.")
         if not planer and p.wer.benutzer_id != person.pk:
             raise ValueError("Austragen kann sich nur die Person selbst (oder wer den Dienstplan "
@@ -114,7 +114,7 @@ def aendern(teil: str, daten, person, von: str, basis: str) -> str:
         zeit = f"am {datum:%d.%m.}" if bis == datum else f"vom {datum:%d.%m.} bis {bis:%d.%m.%Y}"
         return f"{p.wer} fällt {zeit} aus. Die Teamleitung wird benachrichtigt."
     if aktion == "gesund":
-        if p.ausfall is None or p.ersatz or p.ausfall.gesund_ab:
+        if p.ausfall is None or p.ausfall.gesund_ab:
             raise ValueError("Hier ist kein Ausfall, der noch läuft.")
         if not planer and p.wer.benutzer_id != person.pk:
             raise ValueError("Gesund melden kann sich nur die Person selbst (oder wer den "
