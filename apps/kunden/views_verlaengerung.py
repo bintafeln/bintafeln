@@ -78,5 +78,6 @@ def verlaengern(request):
         "bedingungen": verlaengerung.bedingungen_text(e),
         "regel": e.get_verlaengern_regel_display(), "regel_satz": verlaengerung.regel_satz(e),
         "erledigte": verlaengerung.erledigte(request.user),
+        "darf_drucken": rollen.hat_recht(request.user, "kunden.ausweis"),
         "aufbewahren": Nachricht.AUFBEWAHREN_TAGE,
     })  # fmt: skip

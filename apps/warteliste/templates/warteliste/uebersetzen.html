@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block titel %}Einladungstexte übersetzen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'warteliste:texte' %}">← Einladungstexte in anderen Sprachen</a></p>
+  <h1>Einladungstexte in alle Sprachen übersetzen</h1>
+  <p class="hinweis">Die geänderten deutschen Texte gehen nacheinander je Sprache an Claude (Anthropic). Bitte die Seite
+    offen lassen, bis „Fertig“ erscheint.</p>
+  <ul class="uebersetzen-liste" aria-live="polite">
+    {% include "warteliste/_uebersetzen_naechste.html" with s=erste %}
+  </ul>
+</section>
+{% endblock %}

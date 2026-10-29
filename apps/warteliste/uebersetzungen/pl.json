@@ -1,0 +1,15 @@
+{
+  "betreff": "Zaproszenie na rejestrację – {datum}",
+  "anrede": "Dzień dobry {vorname} {nachname}",
+  "einleitung": "możemy zaproponować Państwu następujący termin:",
+  "schluss": "Podczas wizyty możliwe jest oczekiwanie, ponieważ zaproszono kilka osób.",
+  "mitbringen": "Aktualna decyzja (Bürgergeld, Grundsicherung, Wohngeld …)\nDowody osobiste wszystkich osób wymienionych w decyzji",
+  "gruss": "Z poważaniem\nZespół Tafel",
+  "absage_betreff": "Termin odwołany – {datum}",
+  "absage_text": "niestety musimy odwołać termin. Wkrótce otrzymają Państwo nowy termin.",
+  "l_datum": "Data",
+  "l_zeit": "Godzina",
+  "l_ort": "Miejsce",
+  "l_mitbringen": "Prosimy zabrać ze sobą:",
+  "l_entfaellt": "TERMIN ODWOŁANY"
+}

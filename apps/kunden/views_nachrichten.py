@@ -83,4 +83,7 @@ def liste(request):
         "tage": Nachricht.AUFBEWAHREN_TAGE,
         "anliegen": anliegen, "anliegen_liste": NACHRICHT_ANLIEGEN_WAEHLBAR,
         "darf_verlaengern": rollen.hat_recht(request.user, "kunden.bearbeiten"),
+        "ausweise_gemeldet": rollen.hat_recht(request.user, "kunden.ausweis")
+        and Nachricht.objects.filter(anliegen=an_stelle.AUSWEIS, erledigt_am__isnull=True)
+        .values("kundennummer").distinct().count(),
     })  # fmt: skip

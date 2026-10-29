@@ -1,0 +1,15 @@
+{
+  "betreff": "Ftesë për regjistrim – {datum}",
+  "anrede": "Përshëndetje {vorname} {nachname}",
+  "einleitung": "mund t’ju ofrojmë takimin e mëposhtëm:",
+  "schluss": "Në takim mund të ketë pritje, sepse janë ftuar disa persona.",
+  "mitbringen": "Vendimi aktual i ndihmës (Bürgergeld, Grundsicherung, Wohngeld …)\nLetërnjoftimet e të gjithë personave të përmendur në vendim",
+  "gruss": "Me respekt\nEkipi juaj i Tafel",
+  "absage_betreff": "Takimi anulohet – {datum}",
+  "absage_text": "fatkeqësisht duhet ta anulojmë takimin. Së shpejti do të merrni një takim të ri.",
+  "l_datum": "Data",
+  "l_zeit": "Ora",
+  "l_ort": "Vendi",
+  "l_mitbringen": "Ju lutemi sillni:",
+  "l_entfaellt": "TAKIMI ANULOHET"
+}

@@ -1,0 +1,15 @@
+{
+  "betreff": "Invito per l’iscrizione – {datum}",
+  "anrede": "Buongiorno {vorname} {nachname}",
+  "einleitung": "possiamo offrirLe il seguente appuntamento:",
+  "schluss": "All’appuntamento potrebbero esserci tempi di attesa, perché sono state invitate più persone.",
+  "mitbringen": "Provvedimento attuale (Bürgergeld, Grundsicherung, Wohngeld …)\nDocumenti d’identità di tutte le persone indicate nel provvedimento",
+  "gruss": "Cordiali saluti\nIl Suo team della Tafel",
+  "absage_betreff": "Appuntamento annullato – {datum}",
+  "absage_text": "purtroppo dobbiamo annullare l’appuntamento. Riceverà a breve un nuovo appuntamento.",
+  "l_datum": "Data",
+  "l_zeit": "Ora",
+  "l_ort": "Luogo",
+  "l_mitbringen": "Si prega di portare:",
+  "l_entfaellt": "APPUNTAMENTO ANNULLATO"
+}

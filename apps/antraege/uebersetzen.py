@@ -19,7 +19,7 @@ FELDER = ["kopf", "ueberschrift", "einleitung", "anhaenge_hinweis", "bestaetigun
 PLATZHALTER = re.compile(r"\{\w+\}")
 ANWEISUNG = (
     "Du übersetzt die Texte einer Tafel (Lebensmittelausgabe für Menschen mit wenig Geld) für "
-    "ihr Online-Antragsformular aus dem Deutschen in die Sprache {sprache}. Schreibe einfach, "
+    "{zweck} aus dem Deutschen in die Sprache {sprache}. Schreibe einfach, "
     "freundlich und respektvoll, in der höflichen Anrede der Zielsprache. Übersetze nur den "
     "sichtbaren Text: HTML-Elemente, Attribute, Links, E-Mail-Adressen, Telefonnummern, Namen "
     "der Tafel und Platzhalter in geschweiften Klammern wie {{nummer}} bleiben genau so stehen. "
@@ -51,8 +51,12 @@ def deutsche_texte() -> dict[str, str]:
     return {f: getattr(de, f) for f in FELDER if de and getattr(de, f).strip()}
 
 
-def uebersetzen(texte: dict[str, str], code: str) -> dict[str, str]:
-    """Übersetzt ``texte`` (Feld → deutscher Text) in die Sprache ``code``."""
+ANTRAG = "ihr Online-Antragsformular"
+
+
+def uebersetzen(texte: dict[str, str], code: str, zweck: str = ANTRAG) -> dict[str, str]:
+    """Übersetzt ``texte`` (Feld → deutscher Text) in die Sprache ``code``; ``zweck`` sagt, wofür
+    die Texte sind (z. B. „ihre Einladungsmails zu einem Anmeldetermin“)."""
     import anthropic
 
     s = sprachen.sprache(code)
@@ -65,7 +69,7 @@ def uebersetzen(texte: dict[str, str], code: str) -> dict[str, str]:
             betas=["server-side-fallback-2026-07-01"],
             fallbacks="default",  # lehnt das Modell ab, übernimmt ein anderes
             output_config={"effort": "low", "format": {"type": "json_schema", "schema": schema}},
-            system=ANWEISUNG.format(sprache=f"{s.deutsch} ({s.name})"),
+            system=ANWEISUNG.format(sprache=f"{s.deutsch} ({s.name})", zweck=zweck),
             messages=[{"role": "user", "content": json.dumps(texte, ensure_ascii=False)}],
         )
     except anthropic.AuthenticationError as e:

@@ -1,0 +1,15 @@
+{
+  "betreff": "Invitation to register – {datum}",
+  "anrede": "Hello {vorname} {nachname}",
+  "einleitung": "we can offer you the following appointment:",
+  "schluss": "There may be waiting times at the appointment, as several people have been invited.",
+  "mitbringen": "Current benefit notice (Bürgergeld, Grundsicherung, Wohngeld …)\nID cards of all persons named in the notice",
+  "gruss": "Kind regards\nYour Tafel team",
+  "absage_betreff": "Appointment cancelled – {datum}",
+  "absage_text": "unfortunately we have to cancel the appointment. You will receive a new appointment shortly.",
+  "l_datum": "Date",
+  "l_zeit": "Time",
+  "l_ort": "Place",
+  "l_mitbringen": "Please bring:",
+  "l_entfaellt": "APPOINTMENT CANCELLED"
+}

@@ -390,7 +390,8 @@ def erledigte(benutzer) -> list[dict]:
             continue
         z = zeilen.setdefault((n.kundennummer, n.erledigt_am), {
             "nummer": n.kundennummer, "erledigt_am": n.erledigt_am, "von": n.erledigt_von,
-            "ergebnis": n.ergebnis or "erledigt", "nachrichten": []})  # fmt: skip
+            "ergebnis": n.ergebnis or "erledigt", "nachrichten": [],
+            "verlaengert": n.ergebnis.startswith("Verlängert")})  # fmt: skip
         z["nachrichten"].append(n)
     return list(zeilen.values())[:300]
 

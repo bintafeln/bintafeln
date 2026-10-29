@@ -2,13 +2,13 @@
 
 {{ einleitung }}
 
-Datum:   {{ datum }}{% if absage %} – ENTFÄLLT{% endif %}
-Zeit:    {{ zeit }}
-Ort:     {{ ort|linebreaksbr|cut:"<br>" }}
+{{ l.l_datum }}:   {{ datum }}{% if absage %} – {{ l.l_entfaellt }}{% endif %}
+{{ l.l_zeit }}:    {{ zeit }}
+{{ l.l_ort }}:     {{ ort|linebreaksbr|cut:"<br>" }}
 {% if schluss %}
 {{ schluss }}
 {% endif %}{% if mitbringen %}
-Bitte bringen Sie mit:
+{{ l.l_mitbringen }}
 {% for z in mitbringen %}  - {{ z }}
 {% endfor %}{% endif %}
 {{ gruss }}{% endautoescape %}

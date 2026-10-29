@@ -98,6 +98,16 @@ def texte(code: str) -> dict[str, str]:
     return {**_datei("de"), **_datei(sprache(code).code)}
 
 
+def mail_sprachen(antrag) -> list[str]:
+    """Sprachen der Mails an Antragstellende (Bestätigung, Einladung): immer Deutsch, dazu die
+    Sprache zur angegebenen Staatsangehörigkeit (ohne passende Sprache: die des Formulars)."""
+    from apps.core.auswahl import LAENDERCODE
+
+    land = LAENDERCODE.get(antrag.staatsangehoerigkeit or "", "")
+    zweite = LAND_SPRACHE.get(land) or antrag.sprache or "de"
+    return ["de"] if zweite == "de" or zweite not in NACH_CODE else ["de", zweite]
+
+
 def aus_browser(kopfzeile: str) -> str:
     """Erste unterstützte Sprache aus Accept-Language, sonst Deutsch."""
     for teil in kopfzeile.split(","):

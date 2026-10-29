@@ -1,0 +1,15 @@
+{
+  "betreff": "Invitación para inscribirse – {datum}",
+  "anrede": "Hola, {vorname} {nachname}",
+  "einleitung": "podemos ofrecerle la siguiente cita:",
+  "schluss": "Puede haber tiempos de espera en la cita, ya que se ha invitado a varias personas.",
+  "mitbringen": "Resolución actual de la prestación (Bürgergeld, Grundsicherung, Wohngeld …)\nDocumentos de identidad de todas las personas que figuran en la resolución",
+  "gruss": "Atentamente\nSu equipo de la Tafel",
+  "absage_betreff": "Cita cancelada – {datum}",
+  "absage_text": "lamentablemente tenemos que cancelar la cita. En breve recibirá una nueva cita.",
+  "l_datum": "Fecha",
+  "l_zeit": "Hora",
+  "l_ort": "Lugar",
+  "l_mitbringen": "Por favor, traiga:",
+  "l_entfaellt": "CITA CANCELADA"
+}

@@ -1,0 +1,15 @@
+{
+  "betreff": "Poziv na prijavu – {datum}",
+  "anrede": "Poštovani/a {vorname} {nachname}",
+  "einleitung": "možemo Vam ponuditi sljedeći termin:",
+  "schluss": "Na terminu može doći do čekanja jer je pozvano više osoba.",
+  "mitbringen": "Aktuelno rješenje (Bürgergeld, Grundsicherung, Wohngeld …)\nLične karte svih osoba navedenih u rješenju",
+  "gruss": "Srdačan pozdrav\nVaš Tafel tim",
+  "absage_betreff": "Termin otkazan – {datum}",
+  "absage_text": "nažalost moramo otkazati termin. Uskoro ćete dobiti novi termin.",
+  "l_datum": "Datum",
+  "l_zeit": "Vrijeme",
+  "l_ort": "Mjesto",
+  "l_mitbringen": "Molimo ponesite:",
+  "l_entfaellt": "TERMIN OTKAZAN"
+}

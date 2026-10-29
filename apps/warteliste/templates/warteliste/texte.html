@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block titel %}Einladungstexte in anderen Sprachen{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'warteliste:einstellungen' %}">← Warteliste und Einladungen</a></p>
+  <h1>Einladungstexte in anderen Sprachen</h1>
+  <p class="hinweis">Einladungen und Absagen gehen auf Deutsch und darunter in der Sprache zur angegebenen
+    Staatsangehörigkeit (ohne passende Sprache in der Sprache des Antrags). Für die vorgegebenen deutschen Texte bringt
+    bintafeln Übersetzungen mit. Haben Sie einen Text geändert, braucht er eine eigene Übersetzung, sonst kommt die Mail
+    in dieser Sprache nur auf Deutsch. Nach einer Änderung der deutschen Texte bitte neu übersetzen.</p>
+  {% if eigene_deutsch %}
+    {% if ki %}<form method="post" action="{% url 'warteliste:uebersetzen' %}" onsubmit="return confirm('Die geänderten deutschen Texte werden in alle 28 Sprachen übersetzt und ersetzen dort die eigenen Übersetzungen dieser Texte. Weiter?')">
+      {% csrf_token %}
+      <button type="submit" class="knopf">Geänderte Texte mit KI in alle Sprachen übersetzen</button>
+      <p class="hinweis">Nur die Texte der Tafel gehen an Claude (Anthropic), nie Angaben aus Anträgen.</p>
+    </form>
+    {% else %}<p class="hinweis">Mit einem API-Schlüssel unter „Anträge einstellen“ lassen sich die geänderten Texte
+      auf Knopfdruck mit KI übersetzen; sonst je Sprache von Hand.</p>{% endif %}
+  {% endif %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Sprache</th><th>Stand</th><th></th></tr></thead>
+    <tbody>
+    {% for z in zeilen %}
+      <tr>
+        <td data-titel="Sprache">{{ z.s.deutsch }} <span class="leise">({{ z.s.name }})</span></td>
+        <td data-titel="Stand">{% if z.fehlt %}<span class="marke-warnung">✗ fehlt: {{ z.fehlt|join:", " }}</span> – Mail nur deutsch{% elif z.eigene %}<span class="marke-ok">✓ eigene Übersetzung</span>{% else %}<span class="marke-ok">✓ mitgeliefert</span>{% endif %}</td>
+        <td><a href="{% url 'warteliste:texte_sprache' z.s.code %}">ansehen und bearbeiten</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

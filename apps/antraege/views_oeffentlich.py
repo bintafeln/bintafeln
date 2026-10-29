@@ -146,16 +146,6 @@ def danke(request, sprache):
     return render(request, "antraege/danke.html", kontext)
 
 
-def mail_sprachen(antrag) -> list[str]:
-    """Sprachen der Bestätigung: immer Deutsch, dazu die Sprache zur angegebenen
-    Staatsangehörigkeit (ohne passende Sprache: die des Formulars)."""
-    from apps.core.auswahl import LAENDERCODE
-
-    land = LAENDERCODE.get(antrag.staatsangehoerigkeit, "")
-    zweite = sprachen.LAND_SPRACHE.get(land) or antrag.sprache or "de"
-    return ["de"] if zweite == "de" or zweite not in sprachen.NACH_CODE else ["de", zweite]
-
-
 def _mail_teil(antrag, kontext) -> tuple[str, str]:
     """Betreff und HTML-Inhalt der Bestätigung in einer Sprache."""
     t, eigene, tafel = kontext["t"], kontext["eigene"], kontext["tafel_name"]
@@ -180,7 +170,7 @@ def antwortmail(request, antrag, eigene: AntragText | None = None) -> tuple[str,
     nicht in der Mail ({nummer} bleibt leer): Antragsteller sollen sie nicht als Platz in einer
     Reihenfolge verstehen. ``eigene``: noch nicht gespeicherte Texte (Vorschau)."""
     teile = []
-    for code in mail_sprachen(antrag):
+    for code in sprachen.mail_sprachen(antrag):
         k = _kontext(code)
         if eigene is not None and eigene.sprache == code:
             k["eigene"] = eigene
@@ -188,7 +178,9 @@ def antwortmail(request, antrag, eigene: AntragText | None = None) -> tuple[str,
         teile.append((k["s"], betreff, inhalt))
     betreff = " / ".join(dict.fromkeys(b for _, b, _ in teile))
     abschnitte = ((s.code, "rtl" if s.rtl else "ltr", i) for s, _, i in teile)
-    inhalt = format_html_join(format_html("<hr>"), '<div lang="{}" dir="{}">{}</div>', abschnitte)
+    inhalt = format_html_join(
+        format_html("<{}>", "hr"), '<div lang="{}" dir="{}">{}</div>', abschnitte
+    )
     kontext = _kontext("de")
     logo = kontext["tafel"].logo
     gestaltet = render_to_string(

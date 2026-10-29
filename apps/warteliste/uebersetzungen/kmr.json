@@ -1,0 +1,15 @@
+{
+  "betreff": "Vexwendina ji bo qeydkirinê – {datum}",
+  "anrede": "Rojbaş {vorname} {nachname}",
+  "einleitung": "em dikarin vê demjimêrê ji we re pêşkêş bikin:",
+  "schluss": "Dibe ku di demjimêrê de li bendê bimînin, ji ber ku gelek kes hatine vexwendin.",
+  "mitbringen": "Biryara alîkariyê ya niha (Bürgergeld, Grundsicherung, Wohngeld …)\nNasnameyên hemû kesên ku di biryarê de hene",
+  "gruss": "Bi rêz û silav\nTîma Tafel",
+  "absage_betreff": "Demjimêr betal bû – {datum}",
+  "absage_text": "mixabin divê em demjimêrê betal bikin. Hûn ê di demeke nêzîk de demjimêreke nû bistînin.",
+  "l_datum": "Dîrok",
+  "l_zeit": "Dem",
+  "l_ort": "Cih",
+  "l_mitbringen": "Ji kerema xwe bi xwe re bînin:",
+  "l_entfaellt": "DEMJIMÊR BETAL BÛ"
+}

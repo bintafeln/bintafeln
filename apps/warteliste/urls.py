@@ -22,4 +22,12 @@ urlpatterns = [
     path("dubletten/entscheiden/", views.dublette, name="dublette"),
     path("streichungsliste/", views.streichungsliste, name="streichungsliste"),
     path("einstellungen/", views.einstellungen, name="einstellungen"),
+    path("einstellungen/texte/", views.texte, name="texte"),
+    path("einstellungen/texte/uebersetzen/", views.uebersetzen, name="uebersetzen"),
+    path(
+        "einstellungen/texte/uebersetzen/<str:sprache>/",
+        views.uebersetzen_sprache,
+        name="uebersetzen_sprache",
+    ),  # fmt: skip
+    path("einstellungen/texte/<str:sprache>/", views.texte_sprache, name="texte_sprache"),
 ]
