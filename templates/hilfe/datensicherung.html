@@ -1,14 +1,16 @@
-<p>Der Server sichert automatisch und verschlüsselt (Kapitel „Sicherungen“). Zusätzlich können Sie unter
+{% load handbuch %}<p>Der Server sichert automatisch und verschlüsselt (Kapitel „Sicherungen“). Zusätzlich können Sie unter
   „Einstellungen → Export und Zurücklesen“ selbst eine Datei mit eigenem Passwort erzeugen und extern aufbewahren.</p>
 {% if "daten.exportieren" in rechte %}<h3>Exportieren</h3>
 <ol>
   <li>Bereiche wählen (alle = vollständige Sicherung).</li>
   <li>Ein Passwort festlegen (mindestens 10 Zeichen) – <strong>gut aufbewahren</strong>, ohne Passwort ist die Datei nicht lesbar.</li>
   <li>„Export herunterladen“ und die Datei sicher ablegen (z. B. verschlossener USB-Stick).</li>
-</ol>{% endif %}
+</ol>
+{% hilfe_bild "datensicherung-export" "① Bereiche wählen, ② Passwort zweimal eingeben, ③ „Export herunterladen“." %}{% endif %}
 {% if "daten.importieren" in rechte %}<h3>Zurücklesen</h3>
 <ol>
-  <li>Datei und Passwort wählen, „Prüfen“. Noch ändert sich nichts.</li>
+  <li>Datei und Passwort wählen, „Prüfen“. Noch ändert sich nichts.
+    {% hilfe_bild "datensicherung-zuruecklesen" "① Exportdatei wählen, ② ihr Passwort eingeben, ③ „Prüfen (noch nichts ändern)“." %}</li>
   <li>Die Vorschau zeigt, was neu ist und was überschrieben würde.</li>
   <li><strong>Aktualisieren</strong>: fügt hinzu und überschreibt gleiche Datensätze, <strong>löscht nichts</strong> –
     auch für Teildateien.</li>

@@ -1,4 +1,4 @@
-<p>„Einstellungen → Rollen und Rechte“. Eine Rolle ist ein Bündel einzelner Rechte; ein Konto kann mehrere Rollen
+{% load handbuch %}<p>„Einstellungen → Rollen und Rechte“. Eine Rolle ist ein Bündel einzelner Rechte; ein Konto kann mehrere Rollen
   haben und darf dann alles, was eine davon darf.</p>
 <ol>
   <li>„Neue Rolle“ oder eine Rolle anklicken.</li>
@@ -6,6 +6,8 @@
   <li>Rechte je Bereich ankreuzen („alle“/„keine“ helfen). Graue Rechte haben Sie selbst nicht; sie bleiben unverändert.</li>
   <li>Speichern. Die Rolle unter „Mitarbeitende“ den Konten geben.</li>
 </ol>
+{% hilfe_bild "rollen-liste" "① „Neue Rolle“ oder ② eine vorhandene Rolle anklicken." %}
+{% hilfe_bild "rollen-bearbeiten" "① Name, ② Pflichten wie Zwei-Faktor, ③ „alle“/„keine“ je Bereich, ④ einzelne Rechte ankreuzen, z. B. Abholungen selbst zurücknehmen." %}
 <ul>
   <li>Ohne Recht fehlt eine Seite im Menü und lässt sich auch nicht über die Adresse öffnen.</li>
   <li><strong>Admin</strong> hat immer alle Rechte und lässt sich nicht löschen.</li>
