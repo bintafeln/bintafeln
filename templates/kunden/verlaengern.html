@@ -82,7 +82,7 @@
         <td data-titel="Erledigt">{{ z.erledigt_am|date:"d.m.Y H:i" }}{% if z.von %} · {{ z.von }}{% endif %}</td>
         <td data-titel="Gemeldet">{% for n in z.nachrichten %}{{ n.erstellt_am|date:"d.m.Y" }}{% if n.stelle %} · {{ n.stelle.name }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
         <td><form method="post" class="inline">{% csrf_token %}<input type="hidden" name="monate" value="{{ monate }}">
-          <button type="submit" name="wieder_oeffnen" value="{{ z.nachrichten.0.pk }}" class="link">Nochmal prüfen</button></form></td>
+          <button type="submit" name="wieder_oeffnen" value="{{ z.nachrichten.0.pk }}" class="knopf knopf-zweitrangig">Nochmal prüfen</button></form></td>
       </tr>
     {% endfor %}
     </tbody>

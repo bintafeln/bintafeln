@@ -404,6 +404,7 @@ def test_erledigte_bleiben_sichtbar_und_lassen_sich_wieder_oeffnen(gemeldet, adm
     admin_client.post(VERLAENGERN, {"wahl_201": "verlaengern", "wahl_202": "ablehnen"})
     seite = admin_client.get(VERLAENGERN).content.decode()
     assert "Erledigt (2)" in seite
+    assert 'class="knopf knopf-zweitrangig">Nochmal prüfen</button>' in seite  # Knopf, kein Link
     assert "Verlängert bis 30.11.2027" in seite and "Nicht verlängert" in seite
     n = Nachricht.objects.filter(kundennummer="201").first()
     assert n.ergebnis == "Verlängert bis 30.11.2027" and n.erledigt_von == "chefin"
