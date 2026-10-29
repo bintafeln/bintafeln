@@ -15,7 +15,7 @@
   {% if menue %}<script src="{% static 'js/menue_einfahren.js' %}"></script>{% endif %}
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'{% if menue %} class="mit-menue"{% endif %}{% if user.is_authenticated %} data-ansicht-stand="{{ user.ansicht_stand }}"{% endif %}>
-  {% block hintergrund %}{% if tafel.hintergrund_bild and tafel.hintergrund_staerke %}<div class="hintergrund" aria-hidden="true" style="background-image: url('{{ tafel.hintergrund_bild.url }}'); opacity: {{ tafel.hintergrund_deckkraft }};"></div>{% endif %}{% endblock %}
+  {% block hintergrund %}{% if tafel.hintergrund_staerke %}{% include "includes/hintergrund.html" with bilder=tafel.seiten_bilder deckkraft=tafel.hintergrund_deckkraft bereich="seiten" %}{% endif %}{% endblock %}
   {% if menue %}<input type="checkbox" id="menue-schalter" class="menue-schalter" aria-hidden="true" tabindex="-1">{% endif %}
   <header class="kopf">
     {% if menue %}<label for="menue-schalter" class="menue-knopf" role="button" aria-label="Menü ein- oder ausblenden">☰<span class="kuerz-5"> Menü</span></label>{% endif %}

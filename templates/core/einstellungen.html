@@ -10,4 +10,21 @@
     <button type="submit" class="knopf">Speichern</button>
   </form>
 </section>
+{% if weitere_bilder %}
+<section class="karte">
+  <h2>Weitere Hintergrundbilder</h2>
+  <p class="hinweis">Sie wechseln mit dem jeweils ersten Bild oben ab, alle {{ form.instance.hintergrund_wechsel }} Sekunden
+    mit einer langsamen Überblendung. „Entfernen“ legt ein Bild in den Papierkorb.</p>
+  <ul class="hintergrund-liste">
+    {% for b in weitere_bilder %}
+    <li>
+      <img src="{{ b.bild.url }}" alt="" loading="lazy">
+      <span>{{ b.get_bereich_display }}</span>
+      <form method="post" action="{% url 'core:hintergrund_entfernen' b.pk %}">{% csrf_token %}
+        <button type="submit" class="knopf knopf-zweitrangig">Entfernen</button></form>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
 {% endblock %}

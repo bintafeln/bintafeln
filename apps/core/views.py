@@ -9,15 +9,16 @@ from django.core.paginator import Paginator
 from django.core.validators import validate_email
 from django.db import transaction
 from django.http import Http404, HttpResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
+from django.views.decorators.http import require_POST
 
 from apps.core import geheimnis, mail, module, papierkorb, sicherung, update
 from apps.core.forms import EinrichtungForm, EinstellungenForm, MailEinstellungenForm
 from apps.core.middleware import admin_existiert
-from apps.core.models import MailEinstellungen, TafelEinstellungen
+from apps.core.models import Hintergrundbild, MailEinstellungen, TafelEinstellungen
 from apps.konten import personal, rollen
 from apps.konten.views import nicht_in_demo
 
@@ -118,7 +119,19 @@ def einstellungen(request):
         form.save()
         messages.success(request, "Einstellungen gespeichert.")
         return redirect("core:einstellungen")
-    return render(request, "core/einstellungen.html", {"form": form})
+    weitere = list(Hintergrundbild.objects.all())
+    return render(request, "core/einstellungen.html", {"form": form, "weitere_bilder": weitere})
+
+
+@require_POST
+@rollen.recht_erforderlich("einstellungen.tafel")
+def hintergrund_entfernen(request, pk):
+    """Ein weiteres Hintergrundbild in den Papierkorb (ADR 0073)."""
+    bild = get_object_or_404(Hintergrundbild, pk=pk)
+    papierkorb.loeschen(request.user, "Hintergrundbild", str(bild), bild,
+                        recht="einstellungen.tafel")  # fmt: skip
+    messages.success(request, "Hintergrundbild entfernt (liegt im Papierkorb).")
+    return redirect("core:einstellungen")
 
 
 @never_cache

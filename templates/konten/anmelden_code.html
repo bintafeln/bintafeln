@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block titel %}Zwei-Faktor-Code{% endblock %}
-{% block hintergrund %}{% if tafel.hintergrund_anmeldung %}<div class="hintergrund" aria-hidden="true" style="background-image: url('{{ tafel.hintergrund_anmeldung.url }}');"></div>{% endif %}{% endblock %}
+{% block hintergrund %}{% include "includes/hintergrund.html" with bilder=tafel.anmeldung_bilder bereich="anmeldung" %}{% endblock %}
 {% block inhalt %}
 <section class="karte schmal">
   <h1>Zwei-Faktor-Code</h1>

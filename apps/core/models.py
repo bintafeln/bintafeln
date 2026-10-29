@@ -51,6 +51,12 @@ class TafelEinstellungen(models.Model):
         help_text="0 = nicht sichtbar, 100 = volle Stärke. Die Inhalte stehen immer auf weißen "
         "Karten und bleiben lesbar.",
     )  # fmt: skip
+    hintergrund_wechsel = models.PositiveSmallIntegerField(
+        "Hintergrundbilder wechseln alle … Sekunden", default=60,
+        validators=[MinValueValidator(10), MaxValueValidator(3600)],
+        help_text="Gilt, wenn es mehrere Bilder gibt (unten „Weitere Bilder“): Sie blenden "
+        "langsam ineinander über, beim nächsten Seitenaufruf geht es mit dem nächsten weiter.",
+    )  # fmt: skip
     strasse = models.CharField("Straße und Hausnummer", max_length=200, blank=True)
     plz = models.CharField("PLZ", max_length=10, blank=True)
     ort = models.CharField("Ort", max_length=100, blank=True)
@@ -104,6 +110,19 @@ class TafelEinstellungen(models.Model):
         return self.hintergrund or self.hintergrund_anmeldung
 
     @property
+    def anmeldung_bilder(self) -> list[str]:
+        """Adressen der Hintergrundbilder der Anmeldeseite, in der Reihenfolge des Wechsels."""
+        erstes = [self.hintergrund_anmeldung.url] if self.hintergrund_anmeldung else []
+        return erstes + Hintergrundbild.adressen(Hintergrundbild.Bereich.ANMELDUNG)
+
+    @property
+    def seiten_bilder(self) -> list[str]:
+        """Bilder der übrigen Seiten; ohne eigene die der Anmeldeseite."""
+        erstes = [self.hintergrund.url] if self.hintergrund else []
+        eigene = erstes + Hintergrundbild.adressen(Hintergrundbild.Bereich.SEITEN)
+        return eigene or self.anmeldung_bilder
+
+    @property
     def hintergrund_deckkraft(self) -> str:
         """Für CSS opacity, immer mit Punkt (unabhängig von der Sprache)."""
         return f"{self.hintergrund_staerke / 100:.2f}"
@@ -121,6 +140,30 @@ class TafelEinstellungen(models.Model):
     def anschrift(self) -> str:
         ort = " ".join(teil for teil in (self.plz, self.ort) if teil)
         return ", ".join(teil for teil in (self.strasse, ort) if teil)
+
+
+class Hintergrundbild(models.Model):
+    """Weitere Hintergrundbilder; sie wechseln mit dem ersten aus den Tafel-Einstellungen ab."""
+
+    class Bereich(models.TextChoices):
+        ANMELDUNG = "anmeldung", "Anmeldeseite"
+        SEITEN = "seiten", "übrige Seiten"
+
+    bereich = models.CharField("Für", max_length=10, choices=Bereich.choices)
+    bild = models.ImageField("Bild", upload_to="oeffentlich/hintergrund/")
+    reihenfolge = models.PositiveIntegerField("Reihenfolge", default=0)
+
+    class Meta:
+        ordering = ["bereich", "reihenfolge", "pk"]
+        verbose_name = "Hintergrundbild"
+        verbose_name_plural = "Hintergrundbilder"
+
+    def __str__(self):
+        return f"Hintergrundbild ({self.get_bereich_display()})"
+
+    @classmethod
+    def adressen(cls, bereich: str) -> list[str]:
+        return [h.bild.url for h in cls.objects.filter(bereich=bereich)]
 
 
 class MailEinstellungen(models.Model):

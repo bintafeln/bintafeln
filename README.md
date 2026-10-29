@@ -37,6 +37,9 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   Tafel – in der Datenbank, nicht im Code. Dazu ein **Hintergrundbild** für die Anmeldeseite
   (volle Stärke) und wahlweise ein eigenes für die übrigen Seiten; dort regelt ein Schieber die
   Stärke von 0 % (nicht sichtbar) bis 100 %. Die Inhalte stehen weiter auf weißen Karten.
+  Je Bereich lassen sich **weitere Bilder** hochladen (Modell `Hintergrundbild`); dann blendet
+  `static/js/hintergrund.js` alle paar Sekunden (Einstellung, Vorgabe 60) langsam zum nächsten
+  über, und der nächste Seitenaufruf beginnt mit dem nächsten Bild (sessionStorage).
   Ein eigenes **App-Symbol** (quadratisch, am besten 512 × 512 Pixel) erscheint im Browser-Tab
   und auf dem Startbildschirm von Handy und Tablet („Zum Home-Bildschirm“); ohne eigenes Bild
   das Symbol von bintafeln (`static/img/bintafeln-*.png`). Ausgeliefert unter

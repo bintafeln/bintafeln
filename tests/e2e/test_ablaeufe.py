@@ -726,3 +726,28 @@ def test_aushang_monitor_wechselt_passt_ein_und_sperrt_alten_link(seite, admin):
     seite.clock.run_for(61_000)
     expect(seite.get_by_text("Dieser Link ist nicht mehr gültig.")).to_be_visible()
     expect(seite.locator("table")).to_have_count(0)
+
+
+def test_hintergrundbilder_gehen_beim_naechsten_aufruf_weiter(seite, admin):
+    """Mehrere Hintergrundbilder: der nächste Seitenaufruf blendet zum nächsten Bild über."""
+    import io
+
+    from PIL import Image
+
+    from apps.core.models import Hintergrundbild, TafelEinstellungen
+
+    puffer = io.BytesIO()
+    Image.new("RGB", (4, 4), "green").save(puffer, "PNG")
+    bild = puffer.getvalue()  # Medien liefert der Testserver nicht aus
+    seite.route("**/media/**", lambda r: r.fulfill(body=bild, content_type="image/png"))
+    t = TafelEinstellungen.laden()
+    t.hintergrund_anmeldung = "oeffentlich/hintergrund/a.png"
+    t.save()
+    Hintergrundbild.objects.create(bereich="anmeldung", bild="oeffentlich/hintergrund/b.png")
+    seite.goto(reverse("konten:anmelden"))
+    hintergrund = seite.locator(".hintergrund")
+    expect(hintergrund).to_have_count(1)
+    expect(hintergrund).to_have_attribute("style", re.compile(r"a\.png"))
+    seite.reload()
+    expect(hintergrund.last).to_have_attribute("style", re.compile(r"b\.png"))
+    expect(hintergrund).to_have_count(1)  # das alte Bild ist nach dem Überblenden weg
