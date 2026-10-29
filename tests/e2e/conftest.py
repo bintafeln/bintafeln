@@ -38,6 +38,8 @@ def browser():
             executable_path=os.environ.get("BINTAFELN_E2E_CHROMIUM") or None,
             # Kamera-Scanner: Testbild statt echter Kamera, ohne Rückfrage
             args=["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"],
+            # Deutsche Datumsfelder (TT.MM.JJJJ) wie bei den Tafeln, z. B. für die Hilfe-Bilder
+            env={**os.environ, "LANG": "de_DE.UTF-8", "LANGUAGE": "de"},
         )
         yield b
         b.close()
@@ -78,3 +80,37 @@ def angemeldet(seite, live_server, anmelden):
         return seite
 
     return ausfuehren
+
+
+@pytest.fixture
+def muster(admin):
+    """Eine erfundene Tafel mit zwei Ausgabestellen und einem Haushalt, der heute dran ist
+    (für die Bilder im Handbuch, ``hilfe_bilder.py``). Die angemeldete Chefin heißt „Clara
+    Beispiel“ und arbeitet an der Ausgabestelle Mitte."""
+    import datetime as dt
+
+    from django.utils import timezone
+
+    from apps.core.models import TafelEinstellungen
+    from apps.kunden.models import Ausgabestelle, Haushalt, Kundengruppe, Notiz, Person
+
+    t = TafelEinstellungen.laden()
+    t.name = "Tafel Musterstadt"
+    t.save()
+    mitte = Ausgabestelle.objects.create(name="Ausgabestelle Mitte")
+    Ausgabestelle.objects.create(name="Ausgabestelle Nord")
+    gruppe = Kundengruppe.objects.create(kuerzel="A", name="Gruppe A", ausgabestelle=mitte,
+                                         wochentage="Mo, Di, Mi, Do, Fr, Sa, So")  # fmt: skip
+    heute = timezone.localdate()
+    h = Haushalt.objects.create(kundennummer="00042", kundengruppe=gruppe,
+                                ausweis_gueltig_bis=heute + dt.timedelta(days=150))  # fmt: skip
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika", nachname="Muster",
+                          geburtsdatum=dt.date(1961, 4, 12))  # fmt: skip
+    Person.objects.create(haushalt=h, vorname="Max", nachname="Muster",
+                          geburtsdatum=dt.date(2014, 9, 3))  # fmt: skip
+    Notiz.objects.create(kundennummer="00042", verfasst_von="Büro",
+                         text="Bringt nächste Woche den neuen Bescheid mit.")  # fmt: skip
+    admin.first_name, admin.last_name = "Clara", "Beispiel"
+    admin.gewaehlte_stelle = mitte
+    admin.save()
+    return h

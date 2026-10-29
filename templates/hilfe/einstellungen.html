@@ -1,13 +1,15 @@
-<p>Unter „Einstellungen“ finden Sie, wofür Sie Rechte haben, sortiert in Untermenüs: <strong>Tafel</strong>
+{% load handbuch %}<p>Unter „Einstellungen“ finden Sie, wofür Sie Rechte haben, sortiert in Untermenüs: <strong>Tafel</strong>
   (Tafel und Module, E-Mail), <strong>Kunden</strong> (Kundenstamm, Kundengruppen, Listen, Kundenausweis, Anträge),
   <strong>Ausgabe</strong> (Ampel und Beiträge, beitragsfreie Zeiträume, zugeschaltete Module wie der Aufruf),
   <strong>Verein</strong> (Adresskategorien, Mitglieder, Spenden), <strong>Mitarbeitende</strong> (Rollen und Rechte,
   Mitarbeitende, Arbeitszeit) und <strong>Systemsteuerung</strong> (Sicherungen, Export, Update,
   Änderungsprotokoll). Ein Untermenü erscheint nur, wenn Sie darin etwas einstellen dürfen.</p>
+{% if "einstellungen.tafel" in rechte %}{% hilfe_bild "einstellungen-uebersicht" "① „Einstellungen“ im Menü links aufklappen, ② Untermenü wählen, z. B. Tafel → „Tafel und Module“; dort ③ Name der Tafel und ④ Farbe." %}{% endif %}
 <p><strong>Ohne Speichern-Knopf:</strong> Auf den Einstellungsseiten wird jede Änderung sofort gespeichert – Häkchen und
   Auswahl gleich, Text- und Zahlfelder kurz nach dem Tippen. Neben dem Feld erscheint kurz „✓ gespeichert“. Ist ein Wert
   ungültig, steht eine rote Meldung am Feld, und es bleibt der alte Wert gespeichert. Nur Löschen fragt nach („Wirklich
   löschen?“). Neue Farbe, Logo oder zugeschaltete Module sehen Sie nach dem nächsten Seitenwechsel im Menü.</p>
+{% if "einstellungen.tafel" in rechte %}{% hilfe_bild "einstellungen-sofort" "① Wert eintragen (hier der Ort), ② kurz darauf erscheint „✓ gespeichert“." %}{% endif %}
 <ul>
   {% if "einstellungen.tafel" in rechte %}<li><strong>Tafel</strong>: Name, Logo, <strong>App-Symbol</strong> (das Bild im Browser-Tab und auf dem
     Startbildschirm von Handy und Tablet; quadratisch, am besten 512 × 512 Pixel; ohne eigenes Bild das Symbol von
@@ -24,7 +26,8 @@
     nicht. „Verwaist“ heißt: Die Datei gehört zu keinem Datensatz mehr (auch nicht im Papierkorb); solche Dateien lassen
     sich nach einer frischen Sicherung löschen. Unter <strong>Zusätzliche Module</strong> schalten Sie
     Programme ein, die nicht jede Tafel braucht (z. B. den Aufruf mit Monitor und Kiosk). Ausgeschaltete Module
-    erscheinen nirgends; ihre Daten bleiben erhalten.</li>{% endif %}
+    erscheinen nirgends; ihre Daten bleiben erhalten.
+    {% hilfe_bild "einstellungen-module" "Unten in „Tafel und Module“: ① Häkchen setzen schaltet ein Modul ein, z. B. den Aufruf." %}</li>{% endif %}
   {% if "einstellungen.mail" in rechte %}<li><strong>E-Mail</strong>: Mailserver für Einladungen, Passwort-Links, Antragsbestätigungen und Korrekturwünsche; „Verbindung prüfen“ und Testmail.</li>{% endif %}
   {% if "einstellungen.kundenstamm" in rechte %}<li><strong>Kundenstamm und Zusatzfelder</strong>: welche Angaben erfasst werden, „Kind bis“, Gültigkeit der Ausweise, Löschfristen (Abholungen, Zugriffsprotokoll, Historie), eigene Zusatzfelder. Die mitgelieferten Merkmale (Schwerbehindert, Vegetarier, Braucht Hilfe beim Einkauf, Taub, Stumm, Blind) schalten Sie dort mit „Aktiv“ ab oder zu und legen fest, ob der Einlass sie sieht und ob sie auf den Ausweis kommen.</li>{% endif %}
   {% if "einstellungen.listen" in rechte %}<li><strong>Listen</strong>: Kundengruppen (mit Höchstzahl und Farbe), Ausgabestellen, Einkommensarten, Notiz-Vorlagen, Dokumentarten (mit Aufbewahrungsfrist), beitragsfreie Zeiträume und <strong>Sonderausgaben</strong>: eine außerplanmäßige Ausgabe an einem Tag und einer Ausgabestelle, mit den Kunden eines Wochentags und/oder einzelnen Kundengruppen (auch mehreren). An dem Tag sind genau diese Kunden dran, die regulären nicht.</li>{% endif %}

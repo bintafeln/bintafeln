@@ -18,7 +18,7 @@
     {% if planen or darf_melden %}<a class="knopf" href="{% url 'fahrdienst:ausfall' %}">Ich kann nicht – Ausfall melden</a>{% endif %}
     <a class="knopf knopf-zweitrangig" href="{% url 'fahrdienst:pdf' %}?monat={{ monat }}">Drucken (PDF)</a>
   </div>
-  {% if offen %}<p class="hinweis"><strong class="fd-offen-text">{{ offen }} offene Plätze in diesem Monat.</strong></p>{% endif %}
+  {% if offen %}<p class="hinweis"><strong class="fd-offen-text">{{ offen }} {% if offen == 1 %}offener Platz{% else %}offene Plätze{% endif %} in diesem Monat.</strong></p>{% endif %}
   <details class="fd-anleitung">
     <summary>Farben und Ändern</summary>
     <p><span class="fd-platz fd-offen"><s>Name</s> <strong>offen</strong></span> fällt aus, noch kein Ersatz ·

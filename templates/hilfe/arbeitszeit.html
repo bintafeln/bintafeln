@@ -1,7 +1,9 @@
-{% if darf_stempeln %}<p>Menü „Meine Arbeitszeit“ (eigener Menüpunkt).</p>
+{% load handbuch %}{% if darf_stempeln %}<p>Menü „Meine Arbeitszeit“ (eigener Menüpunkt).</p>
+{% hilfe_bild "arbeitszeit-stempeln" "① Menü „Meine Arbeitszeit“, eingestempelt mit „Kommen“; danach ② „Pause“ für die Pause oder ③ „Gehen“ zum Feierabend." %}
 <ul>
   <li><strong>Kommen</strong> und <strong>Gehen</strong> per Knopf stempeln. Für die Pause eingestempelt
     <strong>Pause</strong> drücken, danach <strong>Pause beenden</strong>; die Zeit dazwischen zählt als Pause.</li>
-  <li>Die Monatsübersicht zeigt Ihre Zeiten, Pausen und Summen.</li>
+  <li>Die Monatsübersicht zeigt Ihre Zeiten, Pausen und Summen.
+    {% hilfe_bild "arbeitszeit-monat" "① Zeiten des Monats je Tag mit Pause und Arbeitszeit, unten die Summe; ② „← früher“ blättert zum Vormonat." %}</li>
   <li>Vergessen zu stempeln? Bitte an die Personalverantwortlichen wenden; sie können Zeiten nachtragen.</li>
 </ul>{% else %}<p>Stempeln ist für Ihr Konto nicht vorgesehen (z. B. ehrenamtlich, wenn die Tafel das nicht nutzt).</p>{% endif %}

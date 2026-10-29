@@ -1,4 +1,4 @@
-<p>Ein Aushang-Monitor zeigt Seiten wie den Dienstplan der Ausgabe oder den Fahrerplan ganzseitig auf einem Bildschirm –
+{% load handbuch %}<p>Ein Aushang-Monitor zeigt Seiten wie den Dienstplan der Ausgabe oder den Fahrerplan ganzseitig auf einem Bildschirm –
   ohne Menü, ohne Kopfzeile, ohne Anmeldung. Er ist ein zuschaltbares Modul (Einstellungen → Tafel → Tafel und Module →
   Zusätzliche Module).</p>
 
@@ -25,6 +25,8 @@
     Im Plan steht dann „&lt;Konto&gt; am Monitor …“, im Änderungsprotokoll die Person selbst. Die Teamleitung bzw. die
     Fahrdienstleitung wird wie gewohnt benachrichtigt. Vergangene Tage lassen sich am Monitor nicht ändern.</li>
 </ul>
+{% hilfe_bild "aushang-monitor" "Große Ansicht: ① je Seite ein Knopf, ② auf den eigenen Namen tippen, ③ QR-Code fürs Handy, ④ „Übersicht“ führt zurück." %}
+{% hilfe_bild "aushang-dialog" "„Ich bin … und kann nicht“: ① Grund und ② Dauer wählen, ③ eigene PIN eingeben, ④ „Austragen“." %}
 
 <h3>PIN für Aushang-Monitore</h3>
 <p>Unter <strong>Mein Konto</strong> (eigener Name oben rechts) → <strong>PIN für Aushang-Monitore</strong> legt jede Person ihre eigene PIN fest: mindestens
@@ -54,6 +56,7 @@
   <li><strong>Neuen Link erzeugen</strong> sperrt den alten sofort, z. B. wenn ein Gerät verloren ging; der alte Monitor
     zeigt dann binnen einer Minute „Dieser Link ist nicht mehr gültig“. Dasselbe passiert, wenn Sie „Aktiv“ ausschalten.</li>
 </ol>
+{% hilfe_bild "aushang-einrichten" "① Die Seiten des Monitors (mit ↑, ↓ und ✕), ② weitere Seite hinzufügen, ③ der Link für den Monitor." %}
 {% endif %}
 <p>Datenschutz: Der Monitor zeigt nur Namen, nie Telefonnummern, E-Mail-Adressen oder Anmerkungen. Er ist für Räume
   gedacht, die nur das Team sieht.</p>

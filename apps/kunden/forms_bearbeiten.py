@@ -15,14 +15,19 @@ from apps.core.auswahl import (
     ANREDEN,
     FAMILIENSTAENDE,
     FESTE_ANLIEGEN,
+    GDB_STUFEN,
     NACHRICHT_ANLIEGEN_ALT,
     ZEITARTEN,
     ZUSTAENDIGKEITEN,
+    gdb_text,
+    merkzeichen_auswahl,
+    merkzeichen_liste,
     mit_vorhandenem,
     staatsangehoerigkeiten,
 )
 from apps.core.forms import StaatAuswahl
 from apps.konten.forms import DatumEingabe
+from apps.kunden import merkmale
 from apps.kunden.models import (
     Abholer,
     Ausgabestelle,
@@ -54,9 +59,11 @@ class ZusatzMixin:
     """Fügt die aktiven Zusatzfelder (Haushalt oder Person) als Eingabefelder hinzu."""
 
     zusatz_fuer = ""
+    zusatz_ohne = ()  # Schlüssel, die eigene Felder haben (z. B. Behinderung)
 
     def zusatz_einbauen(self):
-        self.zusatzfelder = list(Zusatzfeld.objects.filter(aktiv=True, gilt_fuer=self.zusatz_fuer))
+        self.zusatzfelder = list(Zusatzfeld.objects.filter(aktiv=True, gilt_fuer=self.zusatz_fuer)
+                                 .exclude(schluessel__in=self.zusatz_ohne))  # fmt: skip
         werte = self.instance.zusatz or {}
         for z in self.zusatzfelder:
             name, wert = f"zusatz_{z.schluessel}", werte.get(z.schluessel)
@@ -96,6 +103,37 @@ class ZusatzMixin:
             else:
                 werte[z.schluessel] = wert
         self.instance.zusatz = werte
+
+
+class BehinderungMixin:
+    """Grad der Behinderung als Auswahl und die Merkzeichen des Schwerbehindertenausweises, wie im
+    Antrag; daraus ergeben sich die Merkmale „Schwerbehindert“ und „Blind“ (ADR 0071)."""
+
+    def behinderung_einbauen(self):
+        if not Zusatzfeld.objects.filter(schluessel="schwerbehindert", aktiv=True).exists():
+            return  # von der Tafel abgeschaltet
+        p = self.instance
+        gdb = merkmale.gdb_von(p)
+        self.fields["gdb"] = forms.TypedChoiceField(
+            label="Behinderung (Art. 9)", required=False, coerce=int, empty_value=None,
+            choices=[("", "keine Angabe")] + [(n, gdb_text(n)) for n in [0, *GDB_STUFEN]],
+        )  # fmt: skip
+        if gdb is None and (p.zusatz or {}).get("schwerbehindert"):
+            self.fields["gdb"].help_text = "Bisher als „schwerbehindert“ erfasst, ohne Grad."
+        bisher = merkzeichen_liste((p.zusatz or {}).get(merkmale.MERKZEICHEN_FELD, ""))
+        self.fields["merkzeichen"] = forms.MultipleChoiceField(
+            label="Merkzeichen", required=False,
+            widget=forms.CheckboxSelectMultiple,
+            choices=[(c, f"{c} ({b})") for c, b in merkzeichen_auswahl(", ".join(bisher))],
+        )  # fmt: skip
+        self.initial["gdb"], self.initial["merkzeichen"] = gdb, bisher
+        # Merkzeichen erst mit GdB zeigen (static/js/merkzeichen.js)
+        self.fields["gdb"].widget.attrs["data-merkzeichen"] = self["merkzeichen"].auto_id
+
+    def behinderung_uebernehmen(self):
+        if "gdb" in self.fields and {"gdb", "merkzeichen"} & set(self.changed_data):
+            merkmale.behinderung_aendern(self.instance, self.cleaned_data.get("gdb"),
+                                         self.cleaned_data.get("merkzeichen") or [])  # fmt: skip
 
 
 class HaushaltForm(ZusatzMixin, forms.ModelForm):
@@ -168,8 +206,9 @@ class HaushaltForm(ZusatzMixin, forms.ModelForm):
         return super().save(commit)
 
 
-class PersonForm(ZusatzMixin, forms.ModelForm):
+class PersonForm(BehinderungMixin, ZusatzMixin, forms.ModelForm):
     zusatz_fuer = Zusatzfeld.GiltFuer.PERSON
+    zusatz_ohne = merkmale.BEHINDERUNG_FELDER
     anrede = forms.ChoiceField(label="Anrede", required=False)
     familienstand = forms.ChoiceField(label="Familienstand", required=False)
     staatsangehoerigkeit = forms.ChoiceField(
@@ -199,9 +238,11 @@ class PersonForm(ZusatzMixin, forms.ModelForm):
         if not e.familienstand_erfassen:
             del self.fields["familienstand"]
         self.zusatz_einbauen()
+        self.behinderung_einbauen()
 
     def save(self, commit=True):
         self.zusatz_uebernehmen()
+        self.behinderung_uebernehmen()
         return super().save(commit)
 
 

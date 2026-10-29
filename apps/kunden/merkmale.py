@@ -103,3 +103,32 @@ def gdb_setzen(person, gdb, merkzeichen: str = "") -> None:
         if code in MERKZEICHEN_MERKMAL:
             zusatz[MERKZEICHEN_MERKMAL[code]] = True
     person.zusatz = zusatz
+
+
+# Felder, die im Kundenstamm nicht als einzelne Häkchen erscheinen: Sie ergeben sich aus dem
+# Grad der Behinderung und den Merkzeichen (Formulare „Neuer Haushalt“ und „Person bearbeiten“);
+# „Taub“ und „Stumm“ bleiben Merkmale für den Einlass, gespeicherte Werte bleiben erhalten
+BEHINDERUNG_FELDER = ("schwerbehindert", "blind", "taub", "stumm", GDB_FELD, MERKZEICHEN_FELD)
+
+
+def gdb_von(person) -> int | None:
+    """Grad der Behinderung aus dem Zusatzfeld („GdB 80“, „keine Behinderung“), sonst None."""
+    text = (person.zusatz or {}).get(GDB_FELD, "")
+    return next((n for n in [0, *GDB_STUFEN] if gdb_text(n) == text), None)
+
+
+def behinderung_aendern(person, gdb, codes) -> None:
+    """GdB und Merkzeichen aus dem Formular (ohne Speichern). Ohne Angabe fallen beide weg und
+    „Schwerbehindert“ wird nein; „Blind“ folgt den Merkzeichen Bl/TBl."""
+    zusatz = dict(person.zusatz or {})
+    if gdb is None:
+        zusatz.pop(GDB_FELD, None)
+        zusatz.pop(MERKZEICHEN_FELD, None)
+        if "schwerbehindert" in zusatz:
+            zusatz["schwerbehindert"] = False
+        person.zusatz = zusatz
+        return
+    gdb_setzen(person, gdb, ", ".join(codes))
+    blind = any(c in MERKZEICHEN_MERKMAL for c in merkzeichen_liste(", ".join(codes)) if gdb)
+    if blind or "blind" in person.zusatz:
+        person.zusatz["blind"] = blind

@@ -158,7 +158,8 @@ def haushalt_neu(request):
         return redirect("kunden:haushalt", kundennummer=h.kundennummer)
     return render(request, "kunden/haushalt_neu.html", {
         "haushalt": haushalt, "hauptperson": hauptperson, "angehoerige": angehoerige,
-        "hp_felder": [hauptperson[n] for n in hauptperson.fields if not n.startswith("zusatz_")],
+        "hp_felder": [hauptperson[n] for n in hauptperson.fields
+                      if not n.startswith("zusatz_") and n not in ("gdb", "merkzeichen")],
         "anschrift": [haushalt[n] for n in ("strasse", "plz", "ort", "telefon", "email")
                       if n in haushalt.fields],
         "zusatz": [haushalt[n] for n in haushalt.fields if n.startswith("zusatz_")],

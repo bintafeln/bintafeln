@@ -68,7 +68,12 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   Angaben erfasst werden, und richtet eigene **Zusatzfelder** ein (z. B. „Schwerbehindert“).
   **Import** mit Prüfbericht unter „Kunden“; Liste und Suche folgen.
 - **Hilfe im Programm:** ein ausführliches Handbuch („Hilfe“ im Menü), das nur die Kapitel
-  zeigt, die zu den Rechten des Kontos passen (ADR 0038).
+  zeigt, die zu den Rechten des Kontos passen (ADR 0038). Bilder mit Pfeilen und Rahmen in
+  Tafel-Orange zeigen in allen Kapiteln mit einer Oberfläche, wo man was tut; ein
+  Klick zeigt sie groß. Sie entstehen automatisch mit erfundenen Daten:
+  `BINTAFELN_HILFE_BILDER=1 .venv/bin/pytest -m e2e tests/e2e -k hilfe_bild` legt sie
+  neu in `static/hilfe/bilder/` ab. Ohne die Variable prüft der e2e-Lauf in CI nur, dass jedes
+  markierte Element noch da ist.
 - **Menü links** mit wenigen, aufklappbaren Bereichen: Start, **Ausgabestelle** (Einlass, Kasse,
   Kundenliste, Abrechnung, Wochenübersicht, Sonderaktionen, Korrekturwünsche, alle
   Ausgabestellen), **Kunden** (mit Anträgen und Warteliste), **Verein** (Mitglieder, Spenden,
@@ -77,7 +82,9 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   Konto“ öffnet der eigene Name oben rechts. Module hängen sich in die passenden Bereiche ein
   (`apps/core/menue.py`). Der Knopf « oben im Menü fährt es ein, » holt es zurück (Wahl bleibt im
   Browser, `static/js/menue_einfahren.js`). Ein Bereich klappt erst seine Einträge und Untergruppen auf, eine
-  Untergruppe (z. B. Wochenübersicht, Kundenstamm) erst beim Anklicken ihre Einträge. Die
+  Untergruppe (z. B. Wochenübersicht, Kundenstamm) erst beim Anklicken ihre Einträge. Liegt ein
+  aufgeklappter Punkt weit unten, schiebt sich das Menü (auf dem Handy die Seite) so weit hoch,
+  dass alle Unterpunkte zu sehen sind; der Titel bleibt sichtbar. Die
   Kundenliste steht nur einmal im Menü: am Einlass (ohne „alle Ausgabestellen“) unter
   „Ausgabestelle“, sonst als „Kunden einsehen“ unter „Kunden“. Die Einstellungen haben Untermenüs (Tafel, Kunden, Ausgabe, Verein,
   Mitarbeitende, Systemsteuerung). Jede Rolle sieht nur, was sie darf. Auf Handys (unter 768 Pixel Breite) öffnet „☰ Menü“ das Menü.
@@ -550,7 +557,11 @@ Dokumente, Historie.
   wer das Recht „Kundennummer vergeben und ändern“ hat (Vorgabe nur Admin), auch beim Bearbeiten.
   **Merkmale** (ADR 0071): Mitgeliefert und eingeschaltet sind die Ja/Nein-Felder je Person
   Schwerbehindert, Vegetarier, Braucht Hilfe beim Einkauf, Taub, Stumm und Blind. Beim Bearbeiten
-  sind sie Ankreuzkästchen; nicht angekreuzt heißt „nein“. Was auf „ja“ steht, sieht der Einlass
+  sind sie Ankreuzkästchen; nicht angekreuzt heißt „nein“. Statt der Häkchen Schwerbehindert,
+  Taub, Stumm und Blind fragen „Neuer Haushalt“ (Hauptperson und jede angehörige Person) und
+  „Person bearbeiten“ nach der **Behinderung (Art. 9)**: keine Angabe, keine Behinderung oder der
+  Grad (GdB 20 bis 100), mit GdB dazu die Merkzeichen zum Ankreuzen wie im Antrag. Ab GdB 50 gilt
+  „Schwerbehindert“, Bl und TBl setzen „Blind“; gespeicherte Werte bei Taub und Stumm bleiben. Was auf „ja“ steht, sieht der Einlass
   unter „Merkmale“; Schwerbehindert, Taub, Stumm und Blind (Art. 9) nur mit dem Recht „besondere
   Kategorie“. Mit dem Element „Merkmale“ der Ausweis-Vorlage kommt bei „ja“ das Rollstuhl-Symbol
   bzw. ein Kürzel auf den Ausweis. Jedes Merkmal lässt sich ab- und zuschalten, aber nicht löschen;
@@ -631,8 +642,11 @@ Dokumente, Historie.
   wer früher gemeldet wird, bekommt eine Notiz, ab wann es geht. Je Haushalt „verlängern“,
   „ablehnen“ oder „offen lassen“; ablehnen geht auch bei erfüllten Bedingungen, dann mit
   Begründung, die als Notiz („Ausweis wird **NICHT!** verlängert. Begründung: …“) an die
-  Ausgabestelle geht. Erledigte Meldungen bleiben 90 Tage unter der Liste stehen (mit Ergebnis,
-  wann, von wem); „Nochmal prüfen“ holt einen Haushalt zurück in die offene Liste.
+  Ausgabestelle geht. Umgekehrt lässt sich ein Haushalt, der die Bedingungen nicht erfüllt (auch
+  zu früh gemeldet), „trotzdem verlängern“, ebenfalls nur mit Begründung; sie steht in der
+  Historie und im Ergebnis der Meldung. Erledigte Meldungen bleiben 90 Tage unter der Liste stehen (mit Ergebnis,
+  wann, von wem); „Nochmal prüfen“ holt einen Haushalt zurück in die offene Liste (auch ein abgelehnter
+  lässt sich dort trotzdem verlängern).
 - **Kundengruppe nur mit gültigem Ausweis** (ADR 0061): Pausierte, gesperrte, beendete Kunden
   und Kunden mit abgelaufenem Ausweis fallen automatisch aus der Kundengruppe, bei Änderungen
   sofort, sonst täglich und beim Import. Abschaltbar unter „Einstellungen → Kunden →

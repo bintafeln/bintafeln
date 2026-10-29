@@ -1,3 +1,4 @@
+{% load handbuch %}
 {% if "einlass.zuruecknehmen" in rechte %}
 <p>Sie dürfen Abholungen, Zahlungen und Teilnahmen an Sonderaktionen <strong>selbst zurücknehmen</strong>, auch an
   späteren Tagen. Am Einlass steht dafür beim Eintrag „… zurücknehmen“. Kundenkonto, letzter Besuch und Kasse werden
@@ -11,6 +12,8 @@
   <li>Einen <strong>Grund</strong> wählen und bei Bedarf eine kurze Anmerkung schreiben (z. B. „war Kunde 24“).</li>
   <li>„Korrekturwunsch senden“. Der Eintrag zeigt dann „Korrektur beantragt …, wartet auf Entscheidung“.</li>
 </ol>
+{% hilfe_bild "korrigieren-wunsch" "① „Korrektur beantragen“ aufklappen, ② Grund wählen (darunter eine kurze Anmerkung), ③ „Korrekturwunsch senden“." %}
+{% hilfe_bild "korrigieren-beantragt" "③ Danach wartet der Wunsch auf die Entscheidung." %}
 <p>Ein Admin oder eine dafür berechtigte Person entscheidet und nimmt die Buchung zurück oder lehnt ab.</p>
 {% endif %}
 <p>Entschiedene Korrekturwünsche der letzten 14 Tage stehen auf der Einlass-Karte des Kunden unter

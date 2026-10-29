@@ -71,6 +71,7 @@ form.konto-name { display: flex; flex-direction: column; align-items: flex-end; 
 .schmal { max-width: 28rem; margin-left: auto; margin-right: auto; }
 h1 { font-size: 1.5rem; margin: .25rem 0 1rem; }
 
+.feld[hidden] { display: none; }
 .feld { display: flex; flex-direction: column; margin-bottom: 1rem; }
 .feld label { font-weight: 600; margin-bottom: .25rem; }
 .feld input, .feld select, .feld textarea, .filter select, .filter input {
@@ -793,6 +794,13 @@ ul.kompakt { margin: .3rem 0; padding-left: 1rem; }
 .handbuch h3 { margin: 1.25rem 0 .4rem; font-size: 1.05rem; }
 .handbuch ol, .handbuch ul { padding-left: 1.4rem; }
 .handbuch li { margin: .25rem 0; }
+/* Bilder im Handbuch: Pfeile und Rahmen in Tafel-Orange sind eingezeichnet */
+.hilfe-bild { margin: .75rem 0 1rem; }
+.hilfe-bild img {
+  display: block; max-width: 100%; height: auto; border: 1px solid var(--rand);
+  border-radius: var(--radius); box-shadow: 0 2px 8px rgba(0, 0, 0, .12); cursor: zoom-in;
+}
+.hilfe-bild figcaption { margin-top: .35rem; color: var(--leise); font-size: .9rem; }
 .handbuch-teil { margin: 0; color: var(--leise); font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; }
 .handbuch .tipp { background: var(--erfolg); border-radius: var(--radius); padding: .6rem 1rem; margin: .75rem 0; }
 .handbuch .achtung { background: #fdf3e2; border-left: 4px solid #e0a020; border-radius: var(--radius); padding: .6rem 1rem; margin: .75rem 0; }
@@ -883,6 +891,7 @@ ul.kompakt { margin: .3rem 0; padding-left: 1rem; }
 .filter .filter-haken { display: inline-flex; align-items: center; gap: .35rem; }
 .serienbrief-vorschau { border: 1px solid var(--rand); border-radius: var(--radius); padding: .75rem 1rem; background: var(--flaeche); }
 .haushalt-neu .tabelle input, .haushalt-neu .tabelle select { width: 100%; }
+.haushalt-neu .tabelle input[type="checkbox"] { width: auto; }
 .karte-einbettung { width: 100%; height: 22rem; border: 0; border-radius: var(--radius); }
 .formular-tabelle input, .formular-tabelle select { width: 100%; }
 .formular-tabelle input:not([type="checkbox"]), .formular-tabelle select {
@@ -1349,3 +1358,7 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 [data-merkzeichen-fuer] .feld > div { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; }
 .merkzeichen-auswahl { display: flex; flex-wrap: wrap; gap: 0 .6rem; margin-top: .3rem; font-size: .9rem; }
 .merkzeichen-auswahl label { white-space: nowrap; }
+/* Merkzeichen im Kundenstamm (Neuer Haushalt, Person bearbeiten) nebeneinander */
+[data-merkzeichen-fuer] div[id$="merkzeichen"] { display: flex; flex-wrap: wrap; gap: 0 .6rem;
+  margin-top: .3rem; font-size: .9rem; }
+[data-merkzeichen-fuer] div[id$="merkzeichen"] label { white-space: nowrap; }

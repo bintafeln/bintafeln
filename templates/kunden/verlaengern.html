@@ -28,12 +28,12 @@
       {% for p in liste %}
         <tr class="verlaengern-{{ p.ergebnis }}">
           <td data-titel="Wählen" class="verlaengern-wahl">
-            {% if p.ergebnis != "nein" %}<label><input type="radio" name="wahl_{{ p.nummer }}" value="verlaengern"{% if p.ergebnis == "ok" %} checked{% endif %}> verlängern</label><br>{% endif %}
+            <label><input type="radio" name="wahl_{{ p.nummer }}" value="verlaengern"{% if p.ergebnis == "ok" %} checked{% endif %}> {% if p.ergebnis == "nein" %}trotzdem verlängern (mit Begründung){% else %}verlängern{% endif %}</label><br>
             <label><input type="radio" name="wahl_{{ p.nummer }}" value="ablehnen"{% if p.ergebnis == "nein" and ablehnung != "anzeigen" %} checked{% endif %}>
               {% if p.zu_frueh %}Notiz: zu früh{% elif p.ergebnis != "nein" %}ablehnen (mit Begründung){% elif ablehnung == "pausieren" %}{{ pause }} Monate pausieren{% else %}Notiz an die Ausgabestelle{% endif %}</label><br>
             <label><input type="radio" name="wahl_{{ p.nummer }}" value=""{% if p.ergebnis == "unklar" or p.ergebnis == "nein" and ablehnung == "anzeigen" %} checked{% endif %}> offen lassen</label>
             <input type="text" name="grund_{{ p.nummer }}" maxlength="500" aria-label="Begründung für Kunde {{ p.nummer }}"
-                   placeholder="{% if p.ergebnis == 'nein' %}Anmerkung (freiwillig){% else %}Begründung beim Ablehnen{% endif %}">
+                   placeholder="{% if p.ergebnis == 'nein' %}Begründung beim trotzdem Verlängern, sonst Anmerkung{% else %}Begründung beim Ablehnen{% endif %}">
           </td>
           <td data-titel="Kunde"><a href="{% url 'kunden:haushalt' p.nummer %}">{{ p.nummer }}</a></td>
           <td data-titel="Prüfung">
@@ -43,7 +43,7 @@
           </td>
           <td data-titel="Personen">{% for name, womit in p.personen %}{{ name }}: {{ womit }}{% if not forloop.last %}<br>{% endif %}{% empty %}<span class="leise">–</span>{% endfor %}</td>
           <td data-titel="Ausweis bisher">{{ p.haushalt.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}</td>
-          <td data-titel="neu bis">{% if p.ergebnis != "nein" %}{{ p.neu_bis|date:"d.m.Y" }}{% else %}–{% endif %}</td>
+          <td data-titel="neu bis">{% if p.ergebnis != "nein" %}{{ p.neu_bis|date:"d.m.Y" }}{% else %}<span class="leise" title="nur beim trotzdem Verlängern">({{ p.neu_bis|date:"d.m.Y" }})</span>{% endif %}</td>
           <td data-titel="Gemeldet">{% for n in p.nachrichten %}{{ n.erstellt_am|date:"d.m.Y" }}{% if n.stelle %} · {{ n.stelle.name }}{% endif %}{% if n.text %}<br><small>{{ n.text }}</small>{% endif %}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
         </tr>
       {% endfor %}
@@ -51,7 +51,8 @@
     </table>
     </div>
     <p class="hinweis">„Ablehnen“ geht bei jedem Haushalt: Erfüllt er die Bedingungen, braucht es eine Begründung, die als Notiz
-      an die Ausgabestelle geht. Zu früh Gemeldete bekommen eine Notiz, ab wann verlängert werden kann.
+      an die Ausgabestelle geht. Umgekehrt lässt sich auch ein Haushalt, der die Bedingungen nicht erfüllt, „trotzdem
+      verlängern“, ebenfalls nur mit Begründung; sie steht in der Historie. Zu früh Gemeldete bekommen eine Notiz, ab wann verlängert werden kann.
       Jede Änderung steht in der Historie des Haushalts. Bei allen gewählten wird die gemeldete Notiz
       (z. B. „Bescheide geprüft …“) gestrichen und die Meldung erledigt; „offen lassen“ bleibt offen.
       {% if ablehnung == "notiz" %}Wer die Bedingung nicht erfüllt, bekommt statt der Verlängerung eine Notiz an die Ausgabestelle:
@@ -68,7 +69,8 @@
 <section class="karte breit">
   <h2>Erledigt ({{ erledigte|length }})</h2>
   <p class="hinweis">Schon bearbeitete Meldungen, neueste zuerst. Sie bleiben {{ aufbewahren }} Tage hier stehen.
-    „Nochmal prüfen“ holt den Haushalt zurück in die Liste oben, z. B. wenn ein neuer Bescheid kommt.</p>
+    „Nochmal prüfen“ holt den Haushalt zurück in die Liste oben, z. B. wenn ein neuer Bescheid kommt; dort lässt
+    er sich auch nach einer Ablehnung trotzdem verlängern.</p>
   <div class="tabelle-rahmen">
   <table class="tabelle">
     <thead><tr><th>Kunde</th><th>Ergebnis</th><th>Erledigt</th><th>Gemeldet</th><th></th></tr></thead>
@@ -80,7 +82,7 @@
         <td data-titel="Erledigt">{{ z.erledigt_am|date:"d.m.Y H:i" }}{% if z.von %} · {{ z.von }}{% endif %}</td>
         <td data-titel="Gemeldet">{% for n in z.nachrichten %}{{ n.erstellt_am|date:"d.m.Y" }}{% if n.stelle %} · {{ n.stelle.name }}{% endif %}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
         <td><form method="post" class="inline">{% csrf_token %}<input type="hidden" name="monate" value="{{ monate }}">
-          <button type="submit" name="wieder_oeffnen" value="{{ z.nachrichten.0.pk }}" class="link">Nochmal prüfen</button></form></td>
+          <button type="submit" name="wieder_oeffnen" value="{{ z.nachrichten.0.pk }}" class="knopf knopf-zweitrangig">Nochmal prüfen</button></form></td>
       </tr>
     {% endfor %}
     </tbody>

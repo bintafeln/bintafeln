@@ -1,3 +1,4 @@
+{% load handbuch %}
 <p>Beim Buchen einer Abholung stehen zwei Beträge:</p>
 <ul>
   <li><strong>Beitrag</strong>: Was diese Abholung kostet. Vorgeschlagen nach den Regeln der Tafel (z. B. 1,50 € je
@@ -5,6 +6,7 @@
   <li><strong>Gezahlt</strong> (Pflicht): Genau der Betrag, den der Kunde jetzt bar gibt – <strong>auch 0</strong>.
     Vorgeschlagen ist, was nach Verrechnung eines Guthabens noch fehlt.</li>
 </ul>
+{% hilfe_bild "bezahlen-felder" "① Beitrag (vorgeschlagen, änderbar), ② Gezahlt: was der Kunde jetzt bar gibt, ③ „Abholung eintragen“ bucht beides." %}
 <h3>Was passiert mit der Differenz?</h3>
 <ul>
   <li>Weniger gezahlt als der Beitrag: Der Rest kommt aus dem Guthaben; reicht das nicht und erlaubt die Tafel
@@ -13,6 +15,7 @@
 </ul>
 <p>Die Bestätigung nennt genau, was bar erhalten, aus dem Guthaben genommen, angeschrieben oder gutgeschrieben wurde,
   und den neuen Kontostand.</p>
+{% hilfe_bild "bezahlen-bestaetigung" "① Die Bestätigung: bar erhalten, angeschrieben und der neue Kontostand." %}
 <h3>Vorauszahlung</h3>
 <p>Sind bis Monatsende noch mindestens drei Abholungen möglich, steht oben links neben „Beitrag“ und „Gezahlt“ ein
   Knopf, z. B. „Vorauszahlung Rest Oktober 4,50 €“ (Maus darüber zeigt die Rechnung). Ein Klick trägt den Betrag nur
@@ -20,4 +23,5 @@
   Vorschlag.</p>
 {% if "einlass.zahlung" in rechte %}<h3>Zahlung ohne Abholung</h3>
 <p>Ist heute keine Abholung möglich, gibt es das Feld „Gezahlt ohne Abholung“ – z. B. um Schulden auszugleichen oder
-  vorauszuzahlen. Der Betrag wird Guthaben.</p>{% endif %}
+  vorauszuzahlen. Der Betrag wird Guthaben.</p>
+{% hilfe_bild "bezahlen-ohne-abholung" "① Betrag eintragen, ② „Zahlung buchen“." %}{% endif %}

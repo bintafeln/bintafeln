@@ -32,16 +32,22 @@ def verlaengern(request):
         return redirect(f"{reverse('kunden:verlaengern')}?monate={monate}")
     if request.method == "POST":
         wahl = {k[5:]: w for k, w in request.POST.items() if k.startswith("wahl_")}
-        verlaengern = {n for n, w in wahl.items() if w == "verlaengern"}
+        verlaengern = {
+            n: request.POST.get(f"grund_{n}", "") for n, w in wahl.items() if w == "verlaengern"
+        }
         # bisherige Form (Häkchen) wird weiter verstanden
-        verlaengern |= set(request.POST.getlist("verlaengern"))
+        verlaengern |= {n: "" for n in request.POST.getlist("verlaengern") if n not in verlaengern}
         ablehnen = {
             n: request.POST.get(f"grund_{n}", "") for n, w in wahl.items() if w == "ablehnen"
         }
         ablehnen |= {n: "" for n in request.POST.getlist("ablehnen") if n not in ablehnen}
-        erfuellt = {p.nummer for p in verlaengerung.gemeldete(request.user, heute, monate)
-                    if p.ergebnis != verlaengerung.NEIN}  # fmt: skip
-        ohne_grund = sorted(n for n, g in ablehnen.items() if n in erfuellt and not g.strip())
+        ergebnis = {p.nummer: p.ergebnis
+                    for p in verlaengerung.gemeldete(request.user, heute, monate)}  # fmt: skip
+        nein = {n for n, e in ergebnis.items() if e == verlaengerung.NEIN}
+        ohne_grund = sorted(n for n, g in ablehnen.items()
+                            if n in ergebnis and n not in nein and not g.strip())  # fmt: skip
+        trotzdem_ohne_grund = sorted(n for n, g in verlaengern.items()
+                                     if n in nein and not g.strip())  # fmt: skip
         v, p = verlaengerung.ausfuehren(request.user, heute, monate, verlaengern, ablehnen,
                                         an_stelle=bool(request.POST.get("an_stelle")))  # fmt: skip
         if v or p:
@@ -49,8 +55,11 @@ def verlaengern(request):
             if p:
                 text += f", {p} nicht verlängert"
             messages.success(request, text + ".")
-        elif not ohne_grund:
+        elif not ohne_grund and not trotzdem_ohne_grund:
             messages.info(request, "Nichts ausgewählt.")
+        if trotzdem_ohne_grund:
+            messages.error(request, "Ohne Begründung nicht verlängert (die Bedingungen sind nicht "
+                                    f"erfüllt): {', '.join(trotzdem_ohne_grund)}")  # fmt: skip
         if ohne_grund:
             messages.error(request, "Ohne Begründung nicht abgelehnt (die Bedingungen sind "
                                     f"erfüllt): {', '.join(ohne_grund)}")  # fmt: skip

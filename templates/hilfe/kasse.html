@@ -1,9 +1,12 @@
+{% load handbuch %}
 <p>Die Kasse rechnet allein aus den Buchungen des Kundenkontos. Menü „Ausgabestelle → Kasse“.</p>
 <ul>
   <li><strong>Tag</strong> (je Ausgabestelle), <strong>Monat</strong> (je Tag) und <strong>Jahr</strong> (je Monat), mit
     Pfeilen vor- und zurückblättern; nach Ausgabestelle filtern.</li>
   <li>Spalten: Abholungen, Beiträge, bar eingenommen, aus Guthaben, angeschrieben, Einzahlungen.</li>
-  <li>„Bericht als PDF“ für die Kassenführung.</li>
+  <li>„Kassenabschluss drucken (PDF)“ (Tag) bzw. „Kassenbericht drucken (PDF)“ (Monat, Jahr) für die Kassenführung.</li>
   {% if "kasse.einzelbuchungen" in rechte %}<li>In der Tagesansicht sehen Sie zusätzlich jede Einzelbuchung mit Kundennummer.</li>{% endif %}
 </ul>
+{% hilfe_bild "kasse-tag" "① Tag, Monat oder Jahr wählen, ② vor- und zurückblättern, ③ nach Ausgabestelle filtern, ④ als PDF drucken, ⑤ die Summen." %}
+{% if "kasse.einzelbuchungen" in rechte %}{% hilfe_bild "kasse-einzelbuchungen" "① Jede Buchung des Tages mit Kundennummer." %}{% endif %}
 <div class="tipp">Am Ende des Ausgabetags den Tagesstand mit dem Bargeld vergleichen.</div>

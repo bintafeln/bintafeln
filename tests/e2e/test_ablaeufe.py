@@ -4,6 +4,7 @@ import datetime as dt
 import re
 from pathlib import Path
 
+from django.urls import reverse
 from django.utils import timezone
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from playwright.sync_api import expect
@@ -194,6 +195,28 @@ def test_antrag_merkzeichen_erst_mit_gdb(seite, admin):
     seite.select_option("#id_gdb", "0")
     expect(block).to_be_hidden()
     assert not block.get_by_label("G (erheblich gehbehindert)").is_checked()
+
+
+def test_kundenstamm_merkzeichen_erst_mit_gdb(angemeldet, admin):
+    h = Haushalt.objects.create(kundennummer="4711")
+    erika = Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika",
+                                  nachname="Muster")  # fmt: skip
+    seite = angemeldet(admin)
+    seite.goto(reverse("kunden:teil", args=["4711", "person", erika.pk]))
+    g = seite.get_by_label("G (erheblich gehbehindert)")
+    expect(g).to_be_hidden()
+    seite.select_option("#id_gdb", "80")
+    g.check()
+    seite.get_by_role("button", name="Speichern").click()
+    erika.refresh_from_db()
+    assert erika.zusatz["gdb"] == "GdB 80" and erika.zusatz["schwerbehindert"]
+
+    seite.goto(reverse("kunden:haushalt_neu"))
+    for gdb in ("#id_hp-gdb", "#id_a-0-gdb"):  # Hauptperson und Angehörige
+        block = seite.locator(f'[data-merkzeichen-fuer="{gdb[1:]}"]')
+        expect(block).to_be_hidden()
+        seite.select_option(gdb, "50")
+        expect(block).to_be_visible()
 
 
 def test_sprachhinweis_und_angaben_beim_umstellen(seite, admin):
@@ -425,6 +448,31 @@ def test_menue_einfahren_und_ausfahren(angemeldet, admin):
     expect(menue).to_be_visible()
     seite.goto("/")
     expect(menue).to_be_visible()
+
+
+def test_menuepunkt_unten_aufklappen_zeigt_alle_unterpunkte(angemeldet, admin):
+    """Klappt man einen Bereich weit unten auf, schiebt sich das Menü hoch, bis alles zu sehen ist
+    (auch eine Zwischenebene darin); der Titel bleibt sichtbar."""
+    seite = angemeldet(admin)
+    for breite, hoehe in ((1280, 420), (390, 500)):  # breit: das Menü schiebt; Handy: die Seite
+        seite.set_viewport_size({"width": breite, "height": hoehe})
+        seite.goto("/")
+        if breite < 768:
+            seite.locator(".menue-knopf").click()
+        bereich = seite.locator("nav.seitenmenue > details.menue-bereich").last
+        titel = bereich.locator(":scope > summary")
+        if bereich.evaluate("d => d.open"):
+            titel.click()
+        titel.click()
+        expect(bereich.locator("summary:visible, a:visible").last).to_be_in_viewport()
+        expect(titel).to_be_in_viewport()
+        gruppe = bereich.locator("details.menue-gruppe").last
+        if gruppe.count():
+            if gruppe.evaluate("d => d.open"):
+                gruppe.locator(":scope > summary").click()
+            gruppe.locator(":scope > summary").click()
+            expect(gruppe.locator("a").last).to_be_in_viewport()
+            expect(gruppe.locator(":scope > summary")).to_be_in_viewport()
 
 
 def test_liste_zeigt_kriterium_sofort(angemeldet, admin):

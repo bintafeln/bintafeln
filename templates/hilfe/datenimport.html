@@ -1,4 +1,4 @@
-<p>Menü „Einstellungen → Systemsteuerung → Daten importieren (CSV, Excel)“. Damit lassen sich Daten aus einem anderen Programm
+{% load handbuch %}<p>Menü „Einstellungen → Systemsteuerung → Daten importieren (CSV, Excel)“. Damit lassen sich Daten aus einem anderen Programm
   übernehmen, ohne die Datei vorher umzubauen: Kundenstamm (mit Abholungen und Kontobuchungen), Ausgabestellen
   (mit Plätzen, Helfern, Ausstattung, Ausgabezeiten wie „Di 13:00“ und bis zu drei Ansprechpartnern), Kundengruppen
   (Kürzel, Name, Ausgabestelle, Wochentage, Uhrzeit, Maximum, Farbe – Ausgabestellen vorher anlegen), Mitarbeitende
@@ -22,6 +22,9 @@
     Austritt mit heutigem Datum eintragen. Mitarbeitende werden nie gelöscht, das eigene Konto steht nie zur Wahl. Adressen,
     an denen Spenden oder eine Mitgliedschaft hängen, bleiben.</li>
 </ol>
+{% hilfe_bild "datenimport-hochladen" "Beispiel Ausgabestellen: ① wählen, was importiert wird, ② Dateien wählen, ③ „Weiter zur Zuordnung“." %}
+{% hilfe_bild "datenimport-zuordnen" "① Je Spalte das Feld wählen (hier wird „PLZ Ort“ aufgeteilt), ② die Zuordnung unter einem Namen speichern, ③ „Prüfen und abgleichen“." %}
+{% hilfe_bild "datenimport-abgleich" "① Art wählen, ② Haken = Wert aus der Datei übernehmen (Konflikt beim Telefon), ③ wählen, was mit Einträgen geschieht, die nicht mehr in der Datei stehen; dann „Import übernehmen“." %}
 <p><strong>Mitarbeitende:</strong> Neue Konten bekommen kein Passwort. Den Zugang geben Sie danach unter „Mitarbeitende“ (Link
   per E-Mail oder neues Passwort). Erkannt werden vorhandene Konten am Benutzernamen, an der E-Mail-Adresse oder an Name und
   Geburtsdatum. Rollen aus der Datei bekommen nur neue Konten, und nur solche, die Sie selbst vergeben dürfen.</p>

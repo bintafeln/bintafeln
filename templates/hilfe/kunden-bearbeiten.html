@@ -1,23 +1,32 @@
-{% if "kunden.bearbeiten" in rechte %}<h3>Neuer Haushalt</h3>
+{% load handbuch %}{% if "kunden.bearbeiten" in rechte %}<h3>Neuer Haushalt</h3>
 <p>„Kunden → Neuer Haushalt“ von oben nach unten ausfüllen:</p>
 <ol>
   <li><strong>Hauptperson</strong> – ihr Name kommt auf den Kundenausweis.</li>
   <li><strong>Anschrift und Kontakt</strong>.</li>
   <li><strong>Weitere Angaben</strong> der Tafel, z. B. Ernährung oder Haustiere (welche, stellt die Tafel unter
-    „Einstellungen → Kundenstamm und Zusatzfelder“ ein).</li>
-  <li><strong>Angehörige</strong> mit Geburtsdatum und Staatsangehörigkeit; Nachname leer = wie die Hauptperson.</li>
+    „Einstellungen → Kundenstamm und Zusatzfelder“ ein). Dazu <strong>Behinderung (Art. 9)</strong>: keine Angabe,
+    keine Behinderung oder der Grad der Behinderung (GdB); ist ein GdB gewählt, kreuzen Sie die Merkzeichen aus dem
+    Schwerbehindertenausweis an (z. B. G, aG, Bl, mehrere zugleich). Ab GdB 50 gilt die Person als schwerbehindert,
+    Bl und TBl zählen als „Blind“.</li>
+  <li><strong>Angehörige</strong> mit Geburtsdatum, Staatsangehörigkeit und Behinderung (wie bei der Hauptperson);
+    Nachname leer = wie die Hauptperson.</li>
   <li><strong>Bescheid</strong> und wie lange der Ausweis gilt.</li>
   <li><strong>Kundengruppe</strong> – angeboten werden nur Gruppen mit freiem Platz.</li>
 </ol>
+{% hilfe_bild "haushalt-neu-behinderung" "Abschnitt 3: ① Grad der Behinderung wählen, ② dann erscheinen die Merkzeichen zum Ankreuzen." %}
+{% hilfe_bild "haushalt-neu-angehoerige" "Abschnitt 4: ① Angehörige Zeile für Zeile eintragen, ② die Behinderung genauso wie bei der Hauptperson." %}
 <p>Die <strong>Kundennummer</strong> vergibt bintafeln selbst{% if "kunden.nummer_aendern" in rechte %}; Sie dürfen sie
   ändern{% endif %}. Neue Kunden aus Anträgen besser über den Aufnahme-Assistenten anlegen (Kapitel „Antrag aufnehmen“).</p>
 <h3>Bearbeiten</h3>
 <p>Auf der Haushaltsseite „Bearbeiten“: Angaben und Zusatzfelder, Personen, Abholberechtigte, Sperren, Ausnahmen und
   Anmerkungen. Abholungen lassen sich dort löschen (das Kundenkonto wird mitkorrigiert). Jede Änderung steht in der
-  Historie und im Änderungsprotokoll. Ja/Nein-Felder wie die Merkmale „Schwerbehindert“ oder „Vegetarier“ sind
-  Ankreuzkästchen: angekreuzt heißt ja, leer heißt nein. <strong>Erwachsene und Kinder</strong> trägt niemand ein:
+  Historie und im Änderungsprotokoll. Ja/Nein-Felder wie das Merkmal „Vegetarier“ sind
+  Ankreuzkästchen: angekreuzt heißt ja, leer heißt nein. Schwerbehinderung und Blindheit ergeben sich bei einer
+  Person aus „Behinderung (Art. 9)“ mit GdB und Merkzeichen. <strong>Erwachsene und Kinder</strong> trägt niemand ein:
   bintafeln zählt sie aus den Angehörigen (unter dem Alter aus „Kind bis“, Vorgabe 18, ist man Kind; ohne
   Geburtsdatum erwachsen). Nur wenn außer der Hauptperson niemand erfasst ist, gelten die Zahlen aus dem Altsystem.</p>
+{% hilfe_bild "kunden-bearbeiten-haushalt" "Oben die Angaben zum Haushalt, z. B. ① „Ausweis gültig bis“ oder ② die Anschrift ändern, dann ③ „Haushalt speichern“." %}
+{% hilfe_bild "kunden-bearbeiten-personen" "Darunter je eine Karte für Personen, Abholberechtigte, Sperren, Ausnahmen und Anmerkungen: ① einen Eintrag anklicken, um ihn zu ändern, ② „Hinzufügen“ für einen neuen." %}
 <h3>Kundengruppe nur mit gültigem Ausweis</h3>
 <p>Wer <strong>pausiert, gesperrt oder beendet</strong> ist oder dessen <strong>Ausweis abgelaufen</strong> ist, fällt
   automatisch aus der Kundengruppe, damit das Maximum einer Gruppe nie überschritten wird: bei einer Änderung sofort
@@ -37,7 +46,8 @@
   Sie stehen unter „Kunden → Nachrichten der Ausgabestellen“, nach Anliegen filterbar, und auf der Haushaltsseite. Die
   Startseite zeigt die offenen je Anliegen. „✓ erledigt“ hakt sie ab; erledigte werden nach 90 Tagen gelöscht.
   <strong>„Antworten“</strong> schickt Ihre Antwort als Notiz auf die Startseite der Ausgabestelle, die geschrieben hat
-  (auch bei fremden Kunden), und erledigt die Nachricht.</p>{% endif %}
+  (auch bei fremden Kunden), und erledigt die Nachricht.</p>
+{% hilfe_bild "kunden-bearbeiten-nachrichten" "① Nach Anliegen filtern, ② „✓ erledigt“ hakt eine Nachricht ab, ③ unter „Antworten“ den Text eintragen und „Antwort senden“." %}{% endif %}
 {% if "kunden.bearbeiten" in rechte %}<h3>Ausweise zusammen verlängern</h3>
 <p>Melden Ausgabestellen „Bescheid geprüft – Ausweis verlängern“ (im Nachrichten-Fenster oder mit einem Notiz-Knopf,
   bei dem unter „Einstellungen → Notiz-Vorlagen“ „Meldet der Verwaltung“ gewählt ist), stehen diese Haushalte unter „Kunden → Ausweise
@@ -76,7 +86,11 @@
   dass der Kunde ein Pausenjahr (bzw. die eingestellte Pause) einlegen muss; der Status bleibt, der Ausweis läuft zu
   seinem Datum ab, danach fällt der Kunde aus der Kundengruppe. Andere Tafeln können stattdessen „pausieren“ wählen
   oder nur anzeigen lassen. Die gemeldete Notiz (z. B. „Bescheide geprüft …“) wird gestrichen. Ein Klick auf
-  „Ausgewählte ausführen“ erledigt alles; jede Änderung steht in der Historie, die Meldungen sind danach erledigt.</p>
+  „Ausgewählte ausführen“ erledigt alles; jede Änderung steht in der Historie, die Meldungen sind danach erledigt.
+  Kommt es vor, dass ein Haushalt trotz nicht erfüllter Bedingung verlängert wird (z. B. ein Härtefall), wählen Sie
+  „trotzdem verlängern (mit Begründung)“ und tragen die Begründung ein; ohne Begründung geschieht nichts.</p>
+{% hilfe_bild "verlaengern-liste" "① Erfüllt die Bedingungen: „verlängern“ ist vorgewählt. ② Erfüllt sie nicht: „trotzdem verlängern“ wählen und ③ die Begründung eintragen. ④ „Ausgewählte ausführen“." %}
 <p>Unter der Liste stehen die <strong>erledigten</strong> Meldungen der letzten 90 Tage mit Ergebnis (z. B. „Verlängert bis
   30.11.2027“ oder „Nicht verlängert (Verwaltung): …“), wann und von wem. „Nochmal prüfen“ holt einen Haushalt zurück in
-  die Liste oben, etwa wenn ein neuer Bescheid kommt.</p>{% endif %}
+  die Liste oben, etwa wenn ein neuer Bescheid kommt; auch ein abgelehnter lässt sich dann trotzdem verlängern.</p>
+{% hilfe_bild "verlaengern-erledigt" "① „Nochmal prüfen“ holt den Haushalt zurück in die Liste oben." %}{% endif %}

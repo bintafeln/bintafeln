@@ -1,4 +1,4 @@
-<p>Zuwendungsbestätigungen („Spendenquittungen“) erstellt bintafeln als PDF nach den amtlichen Mustern. Menü: „Spenden →
+{% load handbuch %}<p>Zuwendungsbestätigungen („Spendenquittungen“) erstellt bintafeln als PDF nach den amtlichen Mustern. Menü: „Spenden →
   Zuwendungsbestätigungen“.</p>
 {% if "einstellungen.spenden" in rechte %}
 <h3>Einmal einrichten</h3>
@@ -16,8 +16,10 @@
   <li>Danach „Ausgestellte Bestätigungen als PDF öffnen“, drucken, unterschreiben, versenden.</li>
   <li>Sachspenden mit Wert erscheinen darunter und werden einzeln bestätigt.</li>
 </ul>
+{% hilfe_bild "zuwendungsbestaetigungen-ausstellen" "① Jahr wählen, ② für einen Spender „ausstellen“ oder ③ „Alle ausstellen“; ④ ohne Anschrift keine Bestätigung." %}
 <div class="tipp">Jede Spende wird nur einmal bestätigt, die Nummern laufen fortlaufend. Eine falsche Bestätigung
   „stornieren“: Die Nummer bleibt vergeben, das PDF trägt den Vermerk „STORNIERT“, und die Spenden lassen sich neu
   bestätigen.</div>
+{% hilfe_bild "zuwendungsbestaetigungen-ausgestellt" "① Ausgestellte Bestätigungen als PDF öffnen, ② eine falsche Bestätigung stornieren." %}
 {% endif %}
 <p>Spender ohne Anschrift sind in der Liste markiert; eine Zuwendungsbestätigung braucht Name und Anschrift.</p>

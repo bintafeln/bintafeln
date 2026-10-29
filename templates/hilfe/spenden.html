@@ -1,4 +1,4 @@
-<p>Jede Spende gehört zu einer Adresse im Adressbuch (Spender). Menü: „Spenden“.</p>
+{% load handbuch %}<p>Jede Spende gehört zu einer Adresse im Adressbuch (Spender). Menü: „Spenden“.</p>
 {% if "spenden.erfassen" in rechte %}
 <h3>Spende erfassen</h3>
 <ol>
@@ -10,6 +10,7 @@
     Zuwendungsbestätigung zusätzlich den Wert und die Herkunft (Privat- oder Betriebsvermögen).</li>
   <li>„Speichern und nächste Spende“ beschleunigt das Erfassen mehrerer Spenden, z. B. vom Kontoauszug.</li>
 </ol>
+{% hilfe_bild "spenden-erfassen" "① Spender wählen, ② Geldspende: Betrag und Zahlungsweg, ③ Sachspende: was genau, Menge und Einheit, ④ „Speichern und nächste Spende“." %}
 <p>Eine bestätigte Spende lässt sich nicht mehr ändern oder löschen. Ist ein Fehler passiert, zuerst die Bestätigung
   stornieren.</p>
 <h3>Spenden importieren</h3>

@@ -1,4 +1,4 @@
-<p>Menü „Kunden → Kunden einsehen“ (an der Ausgabestelle: „Ausgabestelle → Kundenliste“), oder die Suche oben im Seitenkopf (Kapitel „Suchen“).</p>
+{% load handbuch %}<p>Menü „Kunden → Kunden einsehen“ (an der Ausgabestelle: „Ausgabestelle → Kundenliste“), oder die Suche oben im Seitenkopf (Kapitel „Suchen“).</p>
 <ul>
   <li><strong>Suche</strong> nach Kundennummer oder Name (Teile genügen); Status und Kundengruppe filtern.</li>
   <li>Eine vollständige Kundennummer mit Enter (auch vom Scanner) öffnet den Haushalt direkt.</li>
@@ -23,6 +23,7 @@
     Kundenstamm“ fest. Jeder Export steht im Zugriffsprotokoll – bitte die Datei nach Gebrauch löschen und nicht
     weitergeben.</li>{% endif %}
 </ul>
+{% hilfe_bild "kunden-finden-liste" "① Suchen und filtern, ② die Liste als CSV exportieren (mit Recht dazu), ③ Spalten wählen, ④ Haushalte für Export oder Ausweisdruck anhaken." %}
 <h3>Die Seite eines Haushalts</h3>
 <p>Oben die wichtigsten Knöpfe (z. B. „Zum Einlass“{% if "kunden.ausweis" in rechte %}, „Ausweis drucken“{% endif %}{% if "kunden.bearbeiten" in rechte %}, „Bearbeiten“{% endif %}),
   rote Hinweise bei Sperre oder abgelaufenem Ausweis. Darunter, je nach Ihren Rechten:</p>
@@ -36,4 +37,5 @@
   {% if "kunden.konto" in rechte %}<li>Kundenkonto mit allen Buchungen{% if "konto.korrektur" in rechte %} und Korrekturbuchung{% endif %}</li>{% endif %}
   {% if "kunden.anmerkungen" in rechte %}<li>Interne Anmerkungen aus dem bisherigen Programm</li>{% endif %}
 </ul>
+{% hilfe_bild "kunden-finden-haushalt" "① Die Knöpfe oben (je nach Rechten), ② darunter die Angaben zum Haushalt." %}
 <p>Jeder Aufruf steht im Zugriffsprotokoll.</p>

@@ -53,3 +53,28 @@ def test_ohne_rollen_nur_grundlagen(client, admin, django_user_model):
 
 def test_nur_angemeldet(client):
     assert client.get(URL).status_code == 302
+
+
+def test_bilder_im_handbuch_vorhanden_und_benutzt(admin_client):
+    """Jedes Bild in ``{% hilfe_bild %}`` liegt in static/hilfe/bilder, jedes Bild dort wird
+    benutzt (erzeugt von tests/e2e/test_hilfe_bilder.py)."""
+    import re
+
+    basis = Path(settings.BASE_DIR)
+    ordner = basis / "static" / "hilfe" / "bilder"
+    vorlagen = [*basis.glob("templates/hilfe/*.html"), *basis.glob("apps/*/templates/hilfe/*.html")]
+    benutzt = {name for p in vorlagen
+               for name in re.findall(r'{% hilfe_bild "([^"]+)"', p.read_text())}  # fmt: skip
+    assert benutzt, "keine Bilder im Handbuch"
+    assert benutzt == {p.stem for p in ordner.glob("*.png")}
+    inhalt = admin_client.get(URL).content.decode()
+    assert 'src="/static/hilfe/bilder/einlass-kunde.png"' in inhalt
+    assert 'alt="① Ampel und Gründe lesen, ② Notizen lesen' in inhalt
+    assert re.search(r'einlass-kunde\.png" alt="[^"]*" width="\d+" height="\d+" loading="lazy"',
+                     inhalt)  # fmt: skip
+
+
+def test_bild_fehlt_zeigt_nichts():
+    from apps.core.templatetags.handbuch import hilfe_bild
+
+    assert hilfe_bild("gibt-es-nicht", "x") == ""

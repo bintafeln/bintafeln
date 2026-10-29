@@ -1,4 +1,4 @@
-<p>Unter „Listen“ stehen fertige Listen zum Kundenstamm: Kundenliste einer Ausgabestelle, Kinder unter 6, Kinder von–bis,
+{% load handbuch %}<p>Unter „Listen“ stehen fertige Listen zum Kundenstamm: Kundenliste einer Ausgabestelle, Kinder unter 6, Kinder von–bis,
   Seniorinnen und Senioren, Ausweis läuft ab, lange nicht gekommen, große Haushalte, Abholungen im Zeitraum und Zählungen
   (z. B. je Altersgruppe oder Ausgabestelle). Mit dem Recht „Stammdaten sehen“ kommen Listen nach Staatsangehörigkeit
   und Einkommensart (Bürgergeld, Rente) dazu. Sie sehen immer nur Kunden Ihrer Ausgabestellen. Die Listen sind ein
@@ -12,10 +12,12 @@
     Überschrift mit Anzahl und Summen. „Nur Anzahl und Summen je Gruppe“ zeigt eine Zählung statt der Namen.</li>
   <li>„Vorgaben“ stellt die Liste wieder her, wie sie geliefert wird.</li>
 </ul>
+{% hilfe_bild "listen-filter" "① Filter wie die Ausgabestelle, ② „Gliedern nach“, ③ „Spalten wählen“." %}
 <h3>Auswählen, drucken, exportieren</h3>
 <p>Ganz links hat jede Zeile ein Kästchen; das Kästchen im Kopf hakt alle an oder ab. „CSV (Excel)“ und „PDF drucken“ nehmen
   die angehakten Zeilen – ist keine angehakt, die ganze Liste. Jeder Export steht im Zugriffsprotokoll; Dateien mit
   Kundendaten bitte nach Gebrauch löschen.</p>
+{% hilfe_bild "listen-tabelle" "① Alle an- oder abhaken, ② ein Klick auf die Überschrift sortiert, ③ „CSV (Excel)“ und ④ „PDF drucken“ nehmen die angehakten Zeilen." %}
 <h3>Eigene Listen</h3>
 <p>Unten auf der Seite speichert „Als eigene Liste speichern“ die aktuellen Einstellungen (keine Kundendaten) unter
   einem Titel. Sie stehen dann oben unter „Alle Listen“.{% if "listen.teilen" in rechte %} Mit „für alle sichtbar“ sehen

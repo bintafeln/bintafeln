@@ -207,8 +207,9 @@ MERKZEICHEN_ALLE = MERKZEICHEN + MERKZEICHEN_ALT
 
 
 def merkzeichen_liste(text: str) -> list[str]:
-    """„G, B“ → ["G", "B"] in fester Reihenfolge; Unbekanntes fällt weg."""
-    teile = {t.strip() for t in (text or "").split(",")}
+    """„G, B“ (auch „G (erheblich gehbehindert), B (…)“) → ["G", "B"] in fester Reihenfolge;
+    Unbekanntes fällt weg."""
+    teile = {t.split(" (")[0].strip() for t in (text or "").split(",")}
     return [code for code, _ in MERKZEICHEN_ALLE if code in teile]
 
 

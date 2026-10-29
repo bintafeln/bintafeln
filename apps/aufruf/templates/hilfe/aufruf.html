@@ -1,4 +1,4 @@
-<p>Der Aufruf ruft die Kundinnen und Kunden im Wartebereich der Reihe nach auf. Er ersetzt das bisherige
+{% load handbuch %}<p>Der Aufruf ruft die Kundinnen und Kunden im Wartebereich der Reihe nach auf. Er ersetzt das bisherige
   Aufrufsystem mit seinen heruntergeladenen Listen: Die Kundennummern kommen direkt aus dem Kundenstamm von
   bintafeln. Er ist ein zuschaltbares Modul (Einstellungen → Tafel → Tafel und Module → Zusätzliche Module).</p>
 
@@ -42,6 +42,8 @@
     die aufgerufenen Nummern bis zum nächsten „Weiter“ stehen. Sind alle Aufgerufenen schon eingetragen, steht ein
     Hinweis da; die nächsten ruft immer jemand mit dem Knopf herein, nie das Programm von selbst.</li>
 </ol>
+{% hilfe_bild "aufruf-leiste" "Der Kasten unter dem Menü auf der Einlass-Seite: ① „Aufruf ↗“ öffnet die Handy-Steuerung, ② „Bitte eintreten“ (grün = am Kiosk gemeldet, dunkelrot = nicht gemeldet), ③ „Nächste 3 hereinrufen“, ④ wer danach kommt." %}
+{% hilfe_bild "aufruf-handy" "Handy-Steuerung: ① der große Knopf ruft die nächsten Kunden herein, ② die nächsten Kunden, ③ Kundennummer-Abfrage, z. B. für zu spät Gekommene." %}
 <h3>Am Einlass</h3>
 <p>Ist der Aufruf gestartet, zeigt die Einlass-Karte beim Scannen unter der Ampel, wie es mit dem Aufruf steht – die
   Liste muss niemand durchsehen:</p>
@@ -59,6 +61,7 @@
   grün und <strong>Gelb blinkt dazu</strong> („ZU FRÜH“ bzw. „ZU SPÄT“); daneben steht „Abholung möglich – Kunde ist
   zu früh (Aufruf)“ bzw. „… zu spät“. Eintragen geht trotzdem; ob jemand abholen darf, entscheidet weiter das Team.
   Ist er an der Reihe, steht alles auf Grün.</p>
+{% hilfe_bild "aufruf-einlass" "Kunde kommt zu spät: ① die Ampel blinkt gelb „ZU SPÄT“, ② der Aufruf nennt die Uhrzeit, ③ „15 Nummern verschieben“ sortiert ihn neu ein." %}
 
 <h3>Der Kasten am Einlass: „Bitte eintreten“ und „Danach“</h3>
 <ul>

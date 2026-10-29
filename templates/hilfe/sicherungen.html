@@ -1,9 +1,10 @@
-<p>Der Server sichert Datenbank und hochgeladene Dateien <strong>verschlüsselt</strong>. Lesen kann die Sicherungen nur,
+{% load handbuch %}<p>Der Server sichert Datenbank und hochgeladene Dateien <strong>verschlüsselt</strong>. Lesen kann die Sicherungen nur,
   wer den privaten Sicherungsschlüssel hat; der liegt nicht auf dem Server. Menü: „Einstellungen → Sicherungen“.</p>
 {% if "system.sicherung" in rechte %}
 <h3>Jetzt sichern</h3>
 <p>Bei jedem Auftrag steht <strong>„Jetzt sichern“</strong>. Das geht immer, auch wenn der Zeitplan des Auftrags
   ausgeschaltet ist. Die Sicherung startet nach wenigen Sekunden; die Seite zeigt „läuft …“ und danach das Ergebnis.</p>
+{% hilfe_bild "sicherungen-liste" "① „Jetzt sichern“ beim Auftrag, ② „Bearbeiten“ ändert Zeitplan und Aufbewahrung, ③ „Neuer Sicherungsauftrag“ für ein weiteres Ziel." %}
 <h3>Sicherungsaufträge</h3>
 <p>Ein Auftrag legt fest:</p>
 <ul>
@@ -15,6 +16,7 @@
   <li><strong>Aufbewahrung</strong>: höchstens so viele Stände und/oder so viele Tage. Ältere Stände werden gelöscht,
     die neueste Sicherung bleibt immer.</li>
 </ul>
+{% hilfe_bild "sicherungen-auftrag" "Neuer Auftrag: ① Ziel wählen (z. B. eine USB-Platte), ② Wochentage, ③ Uhrzeit, ④ wie viele Stände bleiben." %}
 <p>Je Ziel gibt es einen Auftrag. Der Auftrag „Tägliche Sicherung auf dem Server“ ist immer da: Dorthin sichert auch
   das Update, und von dort wird wiederhergestellt. Er lässt sich ausschalten, aber nicht löschen.</p>
 <div class="tipp">Eine Sicherung nur auf dem Server schützt nicht vor einem Defekt des Servers. Am besten zusätzlich auf

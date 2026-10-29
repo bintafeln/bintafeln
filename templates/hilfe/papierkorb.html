@@ -1,3 +1,4 @@
+{% load handbuch %}
 <p>Was Sie in bintafeln löschen, ist nicht sofort weg: Es kommt mit allem, was dazugehört, in den
   <strong>Papierkorb</strong>. Ein gelöschter Haushalt nimmt z. B. seine Personen, Abholberechtigten, Sperren,
   Abholungen, Notizen, Dokumente und seine Historie mit. Das gilt für Haushalte und ihre Teile, Notizen, Dokumente,
@@ -7,11 +8,14 @@
 <ul>
   <li>Den Papierkorb finden Sie im Menü links, sobald etwas darin liegt, das Sie sehen dürfen. Die Zahl zeigt, wie
     viele Einträge <strong>neu</strong> dazugekommen sind, seit Sie zuletzt hineingeschaut haben; nach dem Öffnen
-    verschwindet sie (gelöscht wird dabei nichts).</li>
+    verschwindet sie (gelöscht wird dabei nichts).
+    {% hilfe_bild "papierkorb-menue" "① Der Papierkorb im Menü; die Zahl zeigt neue Einträge." %}</li>
   <li>Sie sehen nur, was Sie auch löschen dürften: Gelöschte Adressen z. B. nur mit dem Recht, Adressen zu löschen.
     Wer einer Ausgabestelle zugeordnet ist, sieht nur Gelöschtes von deren Kunden.</li>
   <li>Ein Klick auf den Eintrag zeigt, was alles darin steckt. <strong>Wiederherstellen</strong> legt alles mit
-    denselben Nummern wieder an; Kontobuchungen eines Haushalts hängen danach wieder am Haushalt.</li>
+    denselben Nummern wieder an; Kontobuchungen eines Haushalts hängen danach wieder am Haushalt.
+    {% hilfe_bild "papierkorb-liste" "① Ein Klick auf den Eintrag zeigt, was darin steckt, ② „Wiederherstellen“ holt alles zurück." %}
+    {% hilfe_bild "papierkorb-eintrag" "① „Wiederherstellen“, ② „Endgültig löschen“, ③ darunter alles, was mit gelöscht wurde." %}</li>
   <li>Geht das nicht, sagt bintafeln warum, und der Eintrag bleibt liegen. Beispiele: Die Kundennummer ist
     inzwischen neu vergeben (etwa durch einen Import), oder die Kundengruppe des Haushalts wurde gelöscht – dann
     erst die Kundengruppe wiederherstellen. Eine Rolle stellt nur wieder her, wer alle ihre Rechte selbst hat.</li>

@@ -300,16 +300,20 @@ def gemeldete(benutzer, heute: dt.date, monate: int) -> list[Pruefung]:
     return ergebnis
 
 
-def ausfuehren(benutzer, heute: dt.date, monate: int, verlaengern: set[str],
+def ausfuehren(benutzer, heute: dt.date, monate: int, verlaengern: dict[str, str] | set[str],
                ablehnen: dict[str, str] | set[str],
                an_stelle: bool = False) -> tuple[int, int]:  # fmt: skip
-    """Verlängert die gewählten gemeldeten Haushalte. Abgelehnte (``ablehnen``: Kundennummer ->
+    """Verlängert die gewählten gemeldeten Haushalte (``verlaengern``: Kundennummer ->
+    Begründung). Erfüllt einer die Bedingungen nicht, verlängert die Verwaltung trotzdem nur mit
+    Begründung; sie steht in der Historie. Abgelehnte (``ablehnen``: Kundennummer ->
     Begründung der Verwaltung) bekommen eine Notiz an die Ausgabestelle:
     - zu früh gemeldet: ab wann es geht (keine Pause);
     - Bedingung nicht erfüllt: je nach Einstellung Notiz oder Pause, die Begründung dazu;
     - Bedingungen erfüllt, Verwaltung lehnt trotzdem ab: nur mit Begründung (Notiz, keine Pause).
     Danach ist die Meldung erledigt und die gemeldete Notiz gestrichen. ``an_stelle``: die Notiz
     auch auf die Startseite der Ausgabestelle. Ergebnis: (verlängert, abgelehnt)."""
+    if not isinstance(verlaengern, dict):
+        verlaengern = dict.fromkeys(verlaengern, "")
     if not isinstance(ablehnen, dict):
         ablehnen = dict.fromkeys(ablehnen, "")
     e = KundenEinstellungen.laden()
@@ -321,10 +325,16 @@ def ausfuehren(benutzer, heute: dt.date, monate: int, verlaengern: set[str],
         for p in gemeldete(benutzer, heute, monate):
             h = p.haushalt
             vorher = historie.schnappschuss(h)
-            if p.nummer in verlaengern and p.ergebnis != NEIN:
+            if p.nummer in verlaengern:
+                grund = verlaengern[p.nummer].strip()[:500]
+                if p.ergebnis == NEIN and not grund:
+                    continue  # nicht erfüllt: trotzdem verlängern nur mit Begründung
                 h.ausweis_gueltig_bis = p.neu_bis
                 zusatz = "Ausweis verlängert (Sammel-Verlängerung)"
                 ergebnis = f"Verlängert bis {p.neu_bis:%d.%m.%Y}"
+                if p.ergebnis == NEIN:
+                    zusatz = f"Ausweis trotzdem verlängert (Verwaltung): {grund}"
+                    ergebnis += f", trotz Prüfung: {grund}"
                 v += 1
             elif p.nummer in ablehnen:
                 grund = ablehnen[p.nummer].strip()[:500]

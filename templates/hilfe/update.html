@@ -1,10 +1,11 @@
-<p>Unter „Einstellungen → Update“ spielen Sie eine neue Version von bintafeln ein, ohne den Server zu bedienen.</p>
+{% load handbuch %}<p>Unter „Einstellungen → Update“ spielen Sie eine neue Version von bintafeln ein, ohne den Server zu bedienen.</p>
 <ol>
   <li>Die Seite zeigt die <strong>installierte Version</strong> und oben deutlich „Neue Version … verfügbar“ oder
     „bintafeln ist aktuell“, darunter die neuen Versionen mit ihren Änderungen („Was ist neu?“, je Änderung mit
     Stichpunkten). Die Liste bleibt während des Updates und danach stehen („Neu mit dem Update auf …“). bintafeln sucht alle
     10 Minuten selbst; „Jetzt nach neuen Versionen suchen“ zeigt, solange gesucht wird, „Suche läuft …“.</li>
-  <li>Version wählen (vorgewählt ist die neueste), bestätigen und <strong>„Update starten“</strong>.</li>
+  <li>Version wählen (vorgewählt ist die neueste), bestätigen und <strong>„Update starten“</strong>.
+    {% hilfe_bild "update-seite" "① Hinweis auf die neue Version, ② „Jetzt nach neuen Versionen suchen“, ③ Version wählen, ④ bestätigen, ⑤ „Update starten“. Darunter „Was ist neu?“." %}</li>
   <li>bintafeln sichert zuerst automatisch, holt dann die neue Version und startet neu. Das dauert meist ein bis zwei
     Minuten; in der Zeit ist bintafeln nicht erreichbar. Das Protokoll lässt sich währenddessen aufklappen und läuft dann mit. Die Seite meldet sich danach von selbst mit dem Ergebnis. Nicht mehr benötigte alte Programmstände räumt das Update selbst weg, damit die Festplatte nicht volläuft.</li>
 </ol>

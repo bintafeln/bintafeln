@@ -1,11 +1,13 @@
-<p>Menü „Verein → Team → Mitarbeitende“.</p>
+{% load handbuch %}<p>Menü „Verein → Team → Mitarbeitende“.</p>
 <h3>Anlegen</h3>
 <ol>
-  <li>„Neue Person“: Benutzername, Name, E-Mail (optional), Beschäftigung, <strong>Rollen</strong> und ggf.
+  <li>„Mitarbeiterin / Mitarbeiter anlegen“: Benutzername, Name, E-Mail (optional), Beschäftigung, <strong>Rollen</strong> und ggf.
     <strong>Ausgabestellen</strong>.</li>
   <li>bintafeln zeigt einmal ein Startpasswort zum persönlichen Weitergeben – oder schickt, wenn eingerichtet, eine
     Einladung per Mail.</li>
 </ol>
+{% hilfe_bild "mitarbeitende-liste" "① „Mitarbeiterin / Mitarbeiter anlegen“; ② gesperrte Konten stehen im Archiv, ③ die Konten der Ausgabestellen im eigenen Reiter." %}
+{% hilfe_bild "mitarbeitende-neu" "① Benutzername zum Anmelden, ② Ausgabestellen (leer: alle Kunden), ③ Rollen ankreuzen, ④ „Anlegen“." %}
 <h3>Ausgabestellen zuordnen</h3>
 <p>Wer einer oder mehreren Ausgabestellen zugeordnet ist, sieht nur deren Kunden (außer mit dem Recht „Kunden aller
   Ausgabestellen“). Ohne Zuordnung gibt es keine Einschränkung.</p>
@@ -18,6 +20,7 @@
     Spalten der Kundenliste, gewählte Ausgabestelle, im Browser gemerkte Ansichten (z. B. eingefahrenes Menü), angefangene
     Importe. Rollen, Rechte, zugeordnete Ausgabestellen, Ausgabetage, Passwort und Zwei-Faktor bleiben.</li>
 </ul>
+{% hilfe_bild "mitarbeitende-zugang" "Unten auf der Seite einer Person, Kasten „Zugang“: ① Passwort zurücksetzen, ② Werkseinstellungen, ③ Konto sperren." %}
 <h3>Stammdaten und Wiedervorlagen</h3>
 <p>„Stammdaten“: Anschrift, Notfallkontakt, Führerschein, Belehrung nach Infektionsschutzgesetz, Schulungen und
   Dokumente. Fällige Wiedervorlagen (Führerschein ansehen, Belehrung wiederholen …) stehen in der Liste und auf der

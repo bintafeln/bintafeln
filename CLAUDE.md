@@ -186,6 +186,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
 - Handbuch im Programm (ADR 0038): Kapitel in `apps/core/hilfe.py` (mit Rechten) und
   `templates/hilfe/<kennung>.html`. **Neue oder geänderte Funktionen aktualisieren das passende
   Kapitel im selben PR** (wie README); `tests/test_hilfe.py` prüft Vollständigkeit.
+  Bilder im Handbuch: `{% load handbuch %}{% hilfe_bild "name" "① … ② …" %}`, erzeugt nur
+  mit erfundenen Daten in `tests/e2e/test_hilfe_bilder*.py` (Werkzeug `hilfe_bilder.py`,
+  Pfeile/Rahmen über `Marke`, Fixture `muster`; neue Seiten mit Oberfläche bekommen ein Bild);
+  ändert sich eine abgebildete Seite, Bilder mit `BINTAFELN_HILFE_BILDER=1` neu erzeugen.
 - Suchfelder in Listen suchen beim Tippen: Feld mit `{% live_suche %}` (ab 2 Zeichen, htmx),
   Treffer der Seite in `<div id="ergebnis">`; nur dieser Bereich wird ausgetauscht.
 - Einstellungsseiten speichern sofort: Formular mit `data-autosave` (`static/js/autosave.js`,
