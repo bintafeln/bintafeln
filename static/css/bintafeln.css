@@ -83,6 +83,20 @@ h1 { font-size: 1.5rem; margin: .25rem 0 1rem; }
   width: 100%;
 }
 .feld input[type="file"] { padding: .5rem 0; border: 0; }
+/* Auswahlfelder und Datumsfelder überall gleich, auch auf iPad und iPhone (Safari zeichnet sonst
+   graue, gewölbte Felder mit eigener Höhe): weiß, Rand wie die Textfelder, Pfeil rechts */
+select:not([multiple]):not([size]) {
+  -webkit-appearance: none; appearance: none;
+  background-color: var(--flaeche); color: var(--text);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235b6660' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right .6rem center; background-size: .7rem auto;
+  padding-right: 1.9rem;
+}
+input[type="date"], input[type="time"], input[type="datetime-local"], input[type="month"] {
+  -webkit-appearance: none; appearance: none; background-color: var(--flaeche); color: var(--text);
+  text-align: left;
+}
+input::-webkit-date-and-time-value { text-align: left; }
 .feld input:focus, .feld select:focus, .feld textarea:focus, .filter input:focus { outline: 3px solid var(--fokus); border-color: var(--akzent); }
 .hilfe { color: var(--leise); }
 .fehler { color: var(--fehler); }
