@@ -91,7 +91,9 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   Kundenliste steht nur einmal im Menü: am Einlass (ohne „alle Ausgabestellen“) unter
   „Ausgabestelle“, sonst als „Kunden einsehen“ unter „Kunden“. Die Einstellungen haben Untermenüs (Tafel, Kunden, Ausgabe, Verein,
   Mitarbeitende, Systemsteuerung). Jede Rolle sieht nur, was sie darf. Auf Handys (unter 768 Pixel Breite) öffnet „☰ Menü“ das Menü.
-- Deutsche, mobilfreundliche Oberfläche (Django-Templates + HTMX, ohne externe CDNs).
+- Deutsche, mobilfreundliche Oberfläche (Django-Templates + HTMX, ohne externe CDNs). Nach dem
+  Absenden eines Formulars bleibt die Seite an der Stelle, an der man war; „Vorschau“ und „Prüfen“
+  springen direkt zum Ergebnis (`static/js/position.js`, Knöpfe mit `data-ziel`).
 
 ## Aufbau
 

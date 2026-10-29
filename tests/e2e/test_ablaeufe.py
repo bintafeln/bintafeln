@@ -751,3 +751,20 @@ def test_hintergrundbilder_gehen_beim_naechsten_aufruf_weiter(seite, admin):
     seite.reload()
     expect(hintergrund.last).to_have_attribute("style", re.compile(r"b\.png"))
     expect(hintergrund).to_have_count(1)  # das alte Bild ist nach dem Überblenden weg
+
+
+def test_nach_dem_absenden_bleibt_die_position(angemeldet, admin, muster):
+    """Vorschau springt zum Ergebnis; ein Formular an dieselbe Seite landet nicht wieder oben."""
+    seite = angemeldet(admin)
+    seite.set_viewport_size({"width": 1100, "height": 600})
+    seite.goto(reverse("serienbriefe:erstellen"))
+    seite.get_by_label("Vorlage").select_option(index=1)
+    seite.get_by_role("button", name="Vorschau").click()
+    expect(seite.locator("#ergebnis-vorschau")).to_be_in_viewport()
+    assert seite.evaluate("window.scrollY") > 200
+
+    seite.goto(reverse("statistik:uebersicht"))
+    seite.evaluate("window.scrollTo(0, 700)")
+    with seite.expect_navigation():
+        seite.locator("form.filter-kompakt").first.evaluate("f => f.requestSubmit()")
+    seite.wait_for_function("window.scrollY > 600")

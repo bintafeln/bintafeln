@@ -11,10 +11,10 @@
   <form method="post">
     {% csrf_token %}
     {% include "includes/formular.html" %}
-    <div class="aktionsleiste"><button type="submit" name="schritt" value="vorschau" class="knopf">Vorschau</button></div>
+    <div class="aktionsleiste"><button type="submit" name="schritt" value="vorschau" class="knopf" data-ziel="ergebnis-vorschau">Vorschau</button></div>
 
     {% if danke is not None %}
-    <h2>{{ danke|length }} Spender</h2>
+    <h2 id="ergebnis-vorschau">{{ danke|length }} Spender</h2>
     {% if danke %}
     <div class="tabelle-rahmen">
       <table class="tabelle kompakt">

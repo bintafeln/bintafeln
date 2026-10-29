@@ -21,10 +21,10 @@
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     {% include "includes/formular.html" %}
-    <button type="submit" class="knopf">Prüfen</button>
+    <button type="submit" class="knopf" data-ziel="pruefbericht">Prüfen</button>
   </form>
   {% else %}
-  <h2>Prüfbericht</h2>
+  <h2 id="pruefbericht">Prüfbericht</h2>
   <ul>
     <li><strong>{{ bericht.spenden|length }}</strong> Spende{{ bericht.spenden|length|pluralize:"n" }} über zusammen
       <strong>{{ bericht.summe }} €</strong> werden angelegt.</li>

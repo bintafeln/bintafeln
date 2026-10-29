@@ -10,7 +10,7 @@
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <div class="aktionsleiste">
-      <button type="submit" name="schritt" value="vorschau" class="knopf">Vorschau</button>
+      <button type="submit" name="schritt" value="vorschau" class="knopf" data-ziel="ergebnis-vorschau">Vorschau</button>
       {% if erreichbar %}
         {% if d.versandart == "email" %}
           <button type="submit" name="schritt" value="senden" class="knopf knopf-eintragen"{% if not mail_bereit %} disabled{% endif %}
@@ -24,7 +24,7 @@
 </section>
 {% if d %}
 <div class="seiten-raster">
-<section class="karte">
+<section class="karte" id="ergebnis-vorschau">
   <h2>{{ erreichbar|length }} Empfänger</h2>
   {% if d.versandart == "email" and not mail_bereit %}<p class="meldung error">Es ist noch kein Mailserver eingerichtet („Einstellungen → E-Mail“).</p>{% endif %}
   {% if ohne %}<p class="meldung error">{{ ohne|length }} ohne {% if d.versandart == "email" %}E-Mail-Adresse{% else %}vollständige Anschrift{% endif %} (werden übersprungen):
