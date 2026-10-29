@@ -32,6 +32,8 @@ def antrag_pdf(a) -> bytes:
             ("Familienstand", a.familienstand),
             ("Staatsangehörigkeit", a.staatsangehoerigkeit),
             ("Behinderung", a.gdb_text),
+            ("Datenschutzerklärung bestätigt", "ja" if a.datenschutz_bestaetigt else "nein"),
+            ("Einverständniserklärung bestätigt", "ja" if a.einverstaendnis_bestaetigt else "nein"),
             ("Bevorzugte Wochentage", a.wochentage),
             ("Bevorzugte Ausgabestelle", a.ausgabestelle),
             ("Nachricht", a.nachricht),

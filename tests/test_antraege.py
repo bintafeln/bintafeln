@@ -612,3 +612,24 @@ def test_ki_schluessel_speichern(admin_client):
     assert uebersetzen.verfuegbar()
     admin_client.post(url, werte | {"ki_schluessel_loeschen": "on"})
     assert not uebersetzen.verfuegbar()
+
+
+def test_erklaerungen_als_pflicht_bestaetigen(client, offen, admin_client):
+    from apps.antraege.models import Antrag
+
+    assert 'name="datenschutz_bestaetigt"' not in client.get(FORMULAR).content.decode()  # ohne Link
+    offen.datenschutz_url = "https://tafel.example.org/datenschutz"
+    offen.einverstaendnis_url = "https://tafel.example.org/einverstaendnis.pdf"
+    offen.save()
+    seite = client.get(FORMULAR).content.decode()
+    assert 'name="datenschutz_bestaetigt"' in seite and 'name="einverstaendnis_bestaetigt"' in seite
+    assert "Ich habe die Einverständniserklärung gelesen" in seite
+    fehler = client.post(FORMULAR, daten()).context["form"].errors
+    assert set(fehler) == {"datenschutz_bestaetigt", "einverstaendnis_bestaetigt"}
+    assert "Bitte bestätigen Sie das" in fehler["datenschutz_bestaetigt"][0]
+    assert not Antrag.objects.exists()
+    client.post(FORMULAR, daten(datenschutz_bestaetigt="on", einverstaendnis_bestaetigt="on"))
+    a = Antrag.objects.get()
+    assert a.datenschutz_bestaetigt and a.einverstaendnis_bestaetigt
+    seite = admin_client.get(reverse("antraege:antrag", args=[a.pk])).content.decode()
+    assert "Datenschutzerklärung gelesen" in seite and "Einverständniserklärung" in seite

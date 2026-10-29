@@ -140,6 +140,15 @@ class AntragForm(forms.Form):
                     "max_length": t["fehler_formular"],
                 }
             )
+        # Pflicht-Häkchen zu den verlinkten Erklärungen (nur, wenn die Tafel einen Link einträgt)
+        for name, url in (
+            ("datenschutz_bestaetigt", einstellungen.datenschutz_url),
+            ("einverstaendnis_bestaetigt", einstellungen.einverstaendnis_url),
+        ):
+            if url:
+                self.fields[name] = forms.BooleanField(
+                    label=t[name], error_messages={"required": t["fehler_bestaetigen"]}
+                )
 
     def _feld(self, name, feld, label, schalter=None):
         abfrage = getattr(self.e, schalter or name)
@@ -218,6 +227,8 @@ class AntragForm(forms.Form):
             },  # fmt: skip
             wochentage=", ".join(d.get("wochentage") or []),
             gdb=_zahl(d.get("gdb")),
+            datenschutz_bestaetigt=bool(d.get("datenschutz_bestaetigt")),
+            einverstaendnis_bestaetigt=bool(d.get("einverstaendnis_bestaetigt")),
         )
         for n in range(1, MAX_PERSONEN + 1):
             if d.get(f"p{n}_vorname"):

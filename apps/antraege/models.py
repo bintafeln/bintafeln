@@ -209,6 +209,10 @@ class Antrag(models.Model):
         help_text="0 = keine Behinderung, leer = keine Angabe.",
     )  # fmt: skip
     wochentage = models.CharField("Bevorzugte Wochentage", max_length=30, blank=True)
+    # Beim Absenden bestätigt (Pflicht-Häkchen, wenn die Tafel den Link eingetragen hat)
+    datenschutz_bestaetigt = models.BooleanField("Datenschutzerklärung bestätigt", default=False)
+    einverstaendnis_bestaetigt = models.BooleanField("Einverständniserklärung bestätigt",
+                                                     default=False)  # fmt: skip
     ausgabestelle = models.CharField("Bevorzugte Ausgabestelle", max_length=100, blank=True)
     nachricht = models.TextField("Nachricht", blank=True)
     bearbeitet_von = models.CharField("Zuletzt bearbeitet von", max_length=150, blank=True)
