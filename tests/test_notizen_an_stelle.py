@@ -144,3 +144,66 @@ def test_notiztext_fett_und_maskiert():
                     "&lt;b&gt;x&lt;/b&gt; &amp; **y")  # fmt: skip
     assert ohne_auszeichnung("kann **NICHT!** werden") == "kann NICHT! werden"
     assert notiz_text(None) == ""
+
+
+def test_alle_gemeldeten_ausweise_auf_einmal_drucken(admin_client, mitte, zentrale, pdf_text):
+    haushalt("601", mitte)
+    haushalt("602", zentrale)
+    haushalt("603", mitte)
+    Nachricht.objects.create(kundennummer="601", anliegen="ausweis")
+    Nachricht.objects.create(kundennummer="602", anliegen="ausweis")
+    Nachricht.objects.create(kundennummer="603", anliegen="adresse")  # anderes Anliegen
+    seite = admin_client.get(reverse("kunden:nachrichten") + "?anliegen=adresse").content.decode()
+    assert "Alle gemeldeten Ausweise drucken (2)" in seite
+    url = reverse("kunden:ausweise_auswahl")
+    assert admin_client.get(url).status_code == 405  # nur per Knopf
+    antwort = admin_client.post(url, {"gemeldet": "1"})
+    assert antwort["Content-Type"] == "application/pdf"
+    text = pdf_text(antwort)
+    assert "(601)" in text and "(602)" in text and "(603)" not in text
+    assert set(Notiz.objects.filter(an_stelle=True).values_list("kundennummer", flat=True)) == {
+        "601",
+        "602",
+    }
+    assert not Nachricht.objects.filter(anliegen="ausweis", erledigt_am__isnull=True).exists()
+    assert "Alle gemeldeten Ausweise" not in admin_client.get(
+        reverse("kunden:nachrichten")).content.decode()  # fmt: skip
+    antwort = admin_client.post(url, {"gemeldet": "1"})
+    assert antwort.url == reverse("kunden:nachrichten")  # nichts mehr offen
+
+
+def test_verlaengerte_ausweise_auswaehlen_und_drucken(admin_client, mitte, pdf_text):
+    from django.utils import timezone
+
+    verlaengert = "Verlängert bis 31.10.2027"
+    for nummer, ergebnis in (("701", verlaengert), ("702", verlaengert),
+                             ("703", "Nicht verlängert: Alter fehlt")):  # fmt: skip
+        haushalt(nummer, mitte)
+        Nachricht.objects.create(kundennummer=nummer, anliegen="verlaengern", ergebnis=ergebnis,
+                                 erledigt_am=timezone.now(), erledigt_von="chefin")  # fmt: skip
+    seite = admin_client.get(reverse("kunden:verlaengern")).content.decode()
+    assert 'name="nummer" value="701" form="ausweise-drucken"' in seite
+    assert 'value="703" form="ausweise-drucken"' not in seite  # nicht verlängert
+    assert "Angehakte Ausweise drucken (PDF)" in seite
+    antwort = admin_client.post(reverse("kunden:ausweise_auswahl"), {"nummer": ["702"]})
+    text = pdf_text(antwort)
+    assert "(702)" in text and "(701)" not in text
+    leer = admin_client.post(reverse("kunden:ausweise_auswahl"))
+    assert leer.url == reverse("kunden:verlaengern")
+
+
+def test_ausweise_auswahl_nur_mit_recht_und_eigene_stelle(
+    client, admin, mitte, benutzer_mit_rolle, anmelden, recht_geben
+):
+    nord = Ausgabestelle.objects.create(name="Nord")
+    haushalt("801", nord)
+    haushalt("802", mitte)
+    url = reverse("kunden:ausweise_auswahl")
+    konto = benutzer_mit_rolle("anton", rollen.AUSGABE)
+    konto.ausgabestellen.set([mitte])
+    anmelden(client, konto)
+    assert client.post(url, {"nummer": ["801"]}).status_code == 403
+    recht_geben(rollen.AUSGABE, "kunden.ausweis")
+    antwort = client.post(url, {"nummer": ["801"]})  # fremde Ausgabestelle
+    assert antwort.status_code == 302 and antwort.url == reverse("kunden:verlaengern")
+    assert client.post(url, {"nummer": ["801", "802"]})["Content-Type"] == "application/pdf"

@@ -683,7 +683,9 @@ Dokumente, Historie.
     erfundenen Daten.
   - **Sammeldruck:** In der Kundenliste druckt „Ausweise dieser … drucken (PDF)“ die Ausweise
     aller Haushalte der aktuellen Suche bzw. Filter (z. B. einer Kundengruppe), einen je Seite,
-    höchstens 500 auf einmal.
+    höchstens 500 auf einmal. Unter „Nachrichten der Ausgabestellen“ druckt „Alle gemeldeten Ausweise
+    drucken“ alle offenen Meldungen „Neuen Ausweis drucken“ (die Ausgabestellen bekommen die Antwort);
+    unter „Ausweise verlängern“ lassen sich verlängerte Haushalte anhaken und gezielt neu drucken.
   - **Auskunft nach Art. 15 DSGVO:** alle gespeicherten Daten des Haushalts samt Hinweisen zu
     Zweck, Speicherdauer und Rechten. Der Abruf steht im Zugriffsprotokoll.
 

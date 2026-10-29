@@ -83,6 +83,7 @@ urlpatterns = [
     path("nachrichten/", views_nachrichten.liste, name="nachrichten"),
     path("verlaengern/", views_verlaengerung.verlaengern, name="verlaengern"),
     path("ausweise/", views.ausweise, name="ausweise"),
+    path("ausweise/auswahl/", views.ausweise_auswahl, name="ausweise_auswahl"),
     path("ausweis/gestalten/", views_bearbeiten.ausweis_gestalten, name="ausweis_gestalten"),
     path("import/", views.import_hochladen, name="import"),
     path("import/<uuid:pk>/", views.import_vorschau, name="import_vorschau"),

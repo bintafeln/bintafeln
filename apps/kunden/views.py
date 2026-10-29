@@ -628,6 +628,33 @@ def ausweise(request):
     return pdf_antwort(ausweise_pdf(haushalte), "kundenausweise.pdf")
 
 
+@never_cache
+@require_POST
+@rollen.recht_erforderlich("kunden.ausweis")
+def ausweise_auswahl(request):
+    """Sammeldruck ohne Kundenliste: alle offenen Meldungen „Neuen Ausweis drucken“
+    (``gemeldet``) oder die unter „Ausweise verlängern“ angehakten Haushalte (``nummer``)."""
+    if request.POST.get("gemeldet"):
+        nummern = list(Nachricht.objects.filter(anliegen=an_stelle.AUSWEIS,
+                                                erledigt_am__isnull=True)
+                       .values_list("kundennummer", flat=True))  # fmt: skip
+        zurueck = "kunden:nachrichten"
+    else:
+        nummern = request.POST.getlist("nummer")
+        zurueck = "kunden:verlaengern"
+    haushalte = list(
+        zugang.filtern(Haushalt.objects.filter(kundennummer__in=nummern), request.user)
+        .select_related("kundengruppe__ausgabestelle")
+        .order_by("kundennummer")[: MAX_SAMMELDRUCK + 1]
+    )
+    if not haushalte or len(haushalte) > MAX_SAMMELDRUCK:
+        messages.error(request, "Keine Haushalte ausgewählt." if not haushalte else
+                       f"Mehr als {MAX_SAMMELDRUCK} Haushalte auf einmal.")  # fmt: skip
+        return redirect(zurueck)
+    _ausweis_gedruckt(request, haushalte)
+    return pdf_antwort(ausweise_pdf(haushalte), "kundenausweise.pdf")
+
+
 def _ausweis_gedruckt(request, haushalte) -> None:
     """Gemeldetes „Neuen Ausweis drucken“ beantworten (Notiz an die Ausgabestelle)."""
     if anzahl := an_stelle.ausweis_gedruckt(haushalte, request.user):

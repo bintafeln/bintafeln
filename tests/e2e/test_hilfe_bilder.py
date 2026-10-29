@@ -94,4 +94,8 @@ def test_bild_ausweise_verlaengern(angemeldet, admin, muster):
     seite.get_by_role("button", name="Ausgewählte ausführen").click()
     knopf = seite.get_by_role("button", name="Nochmal prüfen").first
     erledigt = seite.locator("section", has=seite.get_by_role("heading", name="Erledigt (2)"))
-    aufnehmen(seite, "verlaengern-erledigt", erledigt, Marke(knopf, nummer=1, von="rechts"))
+    haken = seite.locator('input[name="nummer"][value="00057"]')
+    haken.check()
+    drucken = seite.get_by_role("button", name="Angehakte Ausweise drucken (PDF)")
+    aufnehmen(seite, "verlaengern-erledigt", erledigt, Marke(knopf, nummer=1, von="rechts"),
+              Marke(haken, nummer=2), Marke(drucken, nummer=3, von="rechts"))  # fmt: skip

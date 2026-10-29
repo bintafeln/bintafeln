@@ -69,14 +69,16 @@
 <section class="karte breit">
   <h2>Erledigt ({{ erledigte|length }})</h2>
   <p class="hinweis">Schon bearbeitete Meldungen, neueste zuerst. Sie bleiben {{ aufbewahren }} Tage hier stehen.
+    Wer einen neuen Ausweis braucht, z. B. weil das Datum aufgedruckt ist: anhaken und „Angehakte Ausweise drucken“.
     „Nochmal prüfen“ holt den Haushalt zurück in die Liste oben, z. B. wenn ein neuer Bescheid kommt; dort lässt
     er sich auch nach einer Ablehnung trotzdem verlängern.</p>
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Kunde</th><th>Ergebnis</th><th>Erledigt</th><th>Gemeldet</th><th></th></tr></thead>
+    <thead><tr><th>Drucken</th><th>Kunde</th><th>Ergebnis</th><th>Erledigt</th><th>Gemeldet</th><th></th></tr></thead>
     <tbody>
     {% for z in erledigte %}
       <tr>
+        <td data-titel="Drucken">{% if z.verlaengert and darf_drucken %}<input type="checkbox" name="nummer" value="{{ z.nummer }}" form="ausweise-drucken" aria-label="Ausweis {{ z.nummer }} drucken">{% endif %}</td>
         <td data-titel="Kunde"><a href="{% url 'kunden:haushalt' z.nummer %}">{{ z.nummer }}</a></td>
         <td data-titel="Ergebnis">{{ z.ergebnis }}</td>
         <td data-titel="Erledigt">{{ z.erledigt_am|date:"d.m.Y H:i" }}{% if z.von %} · {{ z.von }}{% endif %}</td>
@@ -88,6 +90,8 @@
     </tbody>
   </table>
   </div>
+  {% if darf_drucken %}<form method="post" action="{% url 'kunden:ausweise_auswahl' %}" id="ausweise-drucken" target="_blank">{% csrf_token %}
+    <button type="submit" class="knopf">Angehakte Ausweise drucken (PDF)</button></form>{% endif %}
 </section>
 {% endif %}
 {% endblock %}
