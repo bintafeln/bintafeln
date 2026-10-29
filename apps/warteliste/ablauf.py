@@ -17,7 +17,9 @@ from apps.antraege import aufnahme
 from apps.antraege.models import Antrag, AntragAnmerkung
 from apps.core import mail
 from apps.core.models import TafelEinstellungen
+from apps.kunden.models import Haushalt
 from apps.warteliste.models import (
+    AbgleichEntscheidung,
     DubletteIgnoriert,
     Einladung,
     Streichung,
@@ -207,6 +209,15 @@ def einladen(antraege, termin, von: str, mail_senden=True, heute=None) -> list[d
                 }
             )
             continue
+        if hinweis := sperre_offen(a, heute):
+            ergebnisse.append(
+                {
+                    "antrag": a,
+                    "ok": False,
+                    "hinweis": f"{hinweis} – erst im Abgleich prüfen, nicht eingeladen",
+                }
+            )
+            continue
         fehler = _senden(a, termin) if mail_senden else ""
         weg = "E-Mail" if mail_senden and not fehler else "ohne Mail"
         Einladung.objects.create(antrag=a, termin=termin, termin_text=str(termin), von=von,
@@ -321,7 +332,7 @@ def hinweise(haushalt, person, heute, e=None) -> list[dict]:
         erg.append({"text": "Ausweis ohne Ablaufdatum im Kundenstamm", "art": "info"})
     elif bis >= heute:
         erg.append({"text": f"Ausweis noch gültig bis {bis:%d.%m.%Y} – Verlängerung statt "
-                    "Neuanmeldung", "art": "info"})  # fmt: skip
+                    "Neuanmeldung", "art": "info", "gueltig": True})  # fmt: skip
     else:
         sperre = aufnahme.monat_plus(bis, e.sperrzeit_monate, False) if e.sperrzeit_monate else bis
         if frei:
@@ -329,7 +340,7 @@ def hinweise(haushalt, person, heute, e=None) -> list[dict]:
                         f"({', '.join(frei)}) – direkt verlängern", "art": "ok"})  # fmt: skip
         elif heute < sperre:
             erg.append({"text": f"Ausweis abgelaufen am {bis:%d.%m.%Y} – Sperrzeit bis "
-                        f"{sperre:%d.%m.%Y}", "art": "sperr"})  # fmt: skip
+                        f"{sperre:%d.%m.%Y}", "art": "sperr", "bis": sperre})  # fmt: skip
         else:
             erg.append({"text": f"Ausweis abgelaufen am {bis:%d.%m.%Y} – Sperrzeit vorbei, "
                         "Neuanmeldung möglich", "art": "ok"})  # fmt: skip
@@ -338,20 +349,110 @@ def hinweise(haushalt, person, heute, e=None) -> list[dict]:
     return erg
 
 
+def _offene_treffer(a, heute, e) -> list[dict]:
+    """Treffer eines Antrags, die noch niemand geprüft hat (mit Hinweisen und Folge)."""
+    entschieden = set(AbgleichEntscheidung.objects.filter(antrag=a)
+                      .values_list("kundennummer", flat=True))  # fmt: skip
+    treffer = [t for t in aufnahme.treffer(a) if t["haushalt"].kundennummer not in entschieden]
+    for t in treffer:
+        t["hinweise"] = hinweise(t["haushalt"], t["person"], heute, e)
+        t["folge"] = folge(t["hinweise"])
+    return treffer
+
+
+def folge(hinw: list[dict]) -> str:
+    """Was „Ja, derselbe Haushalt“ auslöst (für den Knopf)."""
+    sperre = next((h["bis"] for h in hinw if h.get("bis")), None)
+    if sperre:
+        return f"Wartezeit bis {sperre:%d.%m.%Y}"
+    if any(h.get("gueltig") for h in hinw):
+        return "als Verlängerung vermerken"
+    return "mit dem Kunden verknüpfen"
+
+
 def kundenabgleich(antraege, heute=None) -> list[dict]:
-    """Je Antrag die ähnlichsten Haushalte mit Hinweisen; Anträge mit Sperrzeit zuerst."""
+    """Je Antrag die ähnlichsten, noch nicht geprüften Haushalte mit Hinweisen; Anträge mit
+    Sperrzeit zuerst. Anträge, bei denen schon „derselbe Haushalt“ bestätigt ist, fehlen."""
     heute = heute or timezone.localdate()
     e = WartelisteEinstellungen.laden()
     ergebnis = []
     for a in antraege:
-        treffer = aufnahme.treffer(a)
+        if a.abgleich.filter(gleich=True).exists():
+            continue
+        treffer = _offene_treffer(a, heute, e)
         if not treffer:
             continue
-        for t in treffer:
-            t["hinweise"] = hinweise(t["haushalt"], t["person"], heute, e)
         sperr = any(h["art"] == "sperr" for t in treffer for h in t["hinweise"])
         ergebnis.append({"antrag": a, "treffer": treffer, "sperr": sperr})
     return sorted(ergebnis, key=lambda x: (not x["sperr"], -x["treffer"][0]["punkte"]))
+
+
+def sperre_offen(a, heute=None) -> str:
+    """Hinweis, wenn ein ungeprüfter ähnlicher Haushalt in der Sperrzeit ist (sonst "")."""
+    if AbgleichEntscheidung.objects.filter(antrag=a, gleich=True).exists():
+        return ""
+    heute = heute or timezone.localdate()
+    for t in _offene_treffer(a, heute, WartelisteEinstellungen.laden()):
+        for h in t["hinweise"]:
+            if h["art"] == "sperr":
+                return f"möglicherweise Kunde {t['haushalt'].kundennummer}: {h['text']}"
+    return ""
+
+
+def offene_sperren(antraege, heute=None) -> dict[int, str]:
+    """{Antrag-pk: Hinweis} für die Warteliste; zehn Minuten zwischengespeichert, weil der
+    Vergleich mit dem ganzen Kundenstamm dauert."""
+    from django.core.cache import cache
+
+    stand = (AbgleichEntscheidung.objects.count(),
+             Haushalt.objects.order_by("-geaendert_am").values_list("geaendert_am", flat=True)
+             .first())  # fmt: skip
+    ergebnis = {}
+    for a in antraege:
+        schluessel = f"warteliste-sperre-{a.pk}-{hash(stand)}"
+        hinweis = cache.get(schluessel)
+        if hinweis is None:
+            hinweis = sperre_offen(a, heute)
+            cache.set(schluessel, hinweis, 600)
+        if hinweis:
+            ergebnis[a.pk] = hinweis
+    return ergebnis
+
+
+@transaction.atomic
+def entscheiden(a, kundennummer: str, gleich: bool, von: str, heute=None) -> str:
+    """Ergebnis der Prüfung eines Treffers festhalten und anwenden; liefert eine Meldung.
+    Derselbe Haushalt in der Sperrzeit → Wartezeit bis zum Ende der Sperrzeit; Ausweis noch
+    gültig → Antrag als Verlängerung mit Kundennummer; sonst nur verknüpfen."""
+    heute = heute or timezone.localdate()
+    if not gleich:
+        AbgleichEntscheidung.objects.update_or_create(
+            antrag=a, kundennummer=kundennummer,
+            defaults={"gleich": False, "von": von, "ergebnis": "anderer Haushalt"})  # fmt: skip
+        return f"Antrag {a.nummer}: Kunde {kundennummer} ist ein anderer Haushalt."
+    h = Haushalt.objects.filter(kundennummer=kundennummer).first()
+    if h is None:
+        raise ValueError(f"Kunde {kundennummer} gibt es nicht mehr.")
+    hinw = hinweise(h, h.hauptperson, heute)
+    texte = "; ".join(x["text"] for x in hinw)
+    anmerken(a, f"Abgleich: derselbe Haushalt wie Kunde {kundennummer} ({texte}).", von)
+    sperre = next((x["bis"] for x in hinw if x.get("bis")), None)
+    ws, _ = Wartestand.objects.get_or_create(antrag=a)
+    if sperre:
+        status_setzen(ws, S.WARTEZEIT, von, wartezeit_bis=sperre)
+        ergebnis = f"Wartezeit bis {sperre:%d.%m.%Y}"
+    elif any(x.get("gueltig") for x in hinw):
+        a.art = Antrag.Art.VERLAENGERUNG
+        ergebnis = "als Verlängerung vermerkt"
+    else:
+        ergebnis = "mit dem Kunden verknüpft"
+    if not a.kundennummer:
+        a.kundennummer = kundennummer
+    a.save(update_fields=["art", "kundennummer"])
+    AbgleichEntscheidung.objects.update_or_create(
+        antrag=a, kundennummer=kundennummer,
+        defaults={"gleich": True, "von": von, "ergebnis": ergebnis})  # fmt: skip
+    return f"Antrag {a.nummer}: derselbe Haushalt wie Kunde {kundennummer} – {ergebnis}."
 
 
 def offene_antraege():

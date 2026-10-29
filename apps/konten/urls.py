@@ -9,6 +9,7 @@ urlpatterns = [
     path("anmelden/code/", views.anmelden_code, name="anmelden_code"),
     path("abmelden/", views.abmelden, name="abmelden"),
     path("", views.mein_konto, name="mein_konto"),
+    path("benachrichtigungen/", views.benachrichtigungen, name="benachrichtigungen"),
     path("passwort/", views.passwort_aendern, name="passwort_aendern"),
     path("passwort/vergessen/", views.passwort_vergessen, name="passwort_vergessen"),
     path(

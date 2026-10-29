@@ -17,6 +17,7 @@ urlpatterns = [
     path("termine/<int:pk>/loeschen/", views.termin_loeschen, name="termin_loeschen"),
     path("termine/<int:pk>/druckliste.pdf", views.druckliste, name="druckliste"),
     path("abgleich/", views.abgleich, name="abgleich"),
+    path("abgleich/entscheiden/", views.abgleich_entscheiden, name="abgleich_entscheiden"),
     path("dubletten/", views.dubletten, name="dubletten"),
     path("dubletten/entscheiden/", views.dublette, name="dublette"),
     path("streichungsliste/", views.streichungsliste, name="streichungsliste"),

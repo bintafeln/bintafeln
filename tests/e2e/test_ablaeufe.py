@@ -790,3 +790,66 @@ def test_serienbrief_empfaenger_mit_auswahlmenue(angemeldet, admin, muster):
     expect(gruppen.locator("summary")).to_contain_text("C – Gruppe C")
     seite.locator("h1").click()  # daneben klicken klappt zu
     expect(gruppen).not_to_have_attribute("open", "")
+
+
+def test_serienbrief_vorlage_platzhalter_ziehen_und_antippen(angemeldet, admin):
+    """Platzhalter-Kärtchen: antippen fügt an der Schreibmarke ein, ziehen an der Drop-Stelle."""
+    from apps.serienbriefe.models import Vorlage
+
+    seite = angemeldet(admin)
+    seite.goto(reverse("serienbriefe:vorlage_neu"))
+    seite.locator("#id_name").fill("Probe")
+    seite.get_by_label("Betreff").fill("Einladung ")
+    editor = seite.locator(".editor", has=seite.locator("#id_text"))
+    flaeche = editor.locator(".editor-flaeche")
+    flaeche.click()
+    seite.keyboard.type("Liebe Grüße")
+    seite.keyboard.press("Home")
+    seite.locator('[data-platzhalter-karte="anrede"]').click()  # wie Antippen auf dem iPad
+    feld = flaeche.locator('[data-platzhalter="anrede"]')
+    expect(feld).to_have_text("Briefanrede")
+    expect(feld).to_have_attribute("contenteditable", "false")
+    text_vorher = flaeche.inner_text()
+    assert text_vorher.index("Briefanrede") < text_vorher.index("Liebe")  # an der Schreibmarke
+    seite.locator('[data-platzhalter-karte="vorname"]').drag_to(flaeche)
+    expect(flaeche.locator('[data-platzhalter="vorname"]')).to_have_text("Vorname")
+    editor.locator(".editor-leiste").get_by_role("button", name="groß").click()
+    # Im Betreff gewesen: dort einfügen
+    seite.get_by_label("Betreff").click()
+    seite.keyboard.press("End")
+    seite.locator('[data-platzhalter-karte="jahr"]').click()
+    expect(seite.get_by_label("Betreff")).to_have_value("Einladung {jahr}")
+    editor.locator(".editor-reiter").get_by_role("tab", name="HTML").click()
+    html = seite.locator("#id_text").input_value()
+    assert "{anrede}" in html and "{vorname}" in html and "platzhalter" not in html
+    editor.locator(".editor-reiter").get_by_role("tab", name="Gestalten").click()
+    expect(flaeche.locator(".platzhalter")).to_have_count(2)
+    seite.get_by_role("button", name="Speichern").click()
+    expect(seite.get_by_text("Vorlage „Probe“ gespeichert.")).to_be_visible()
+    v = Vorlage.objects.get(name="Probe")
+    assert "{anrede}" in v.text and "{vorname}" in v.text and "Liebe Grüße" in v.text
+    assert v.betreff == "Einladung {jahr}" and "platzhalter" not in v.text
+
+
+def test_warteliste_spalten_waehlen_bleibt_gemerkt(angemeldet, admin):
+    from apps.antraege.models import Antrag
+    from apps.core.models import TafelEinstellungen
+
+    t = TafelEinstellungen.laden()
+    t.module = ["warteliste"]
+    t.save()
+    Antrag.objects.create(vorname="Erika", nachname="Beispiel", email="erika@example.org")
+    seite = angemeldet(admin)
+    seite.goto(reverse("warteliste:liste"))
+    kontakt = seite.locator('th[data-spalte="kontakt"]')
+    geburt = seite.locator('th[data-spalte="geburtsdatum"]')
+    expect(kontakt).to_be_visible()
+    expect(geburt).to_be_hidden()  # zu Beginn aus
+    seite.get_by_text("Spalten wählen").click()
+    seite.locator('[data-spalten-wahl] input[value="kontakt"]').uncheck()
+    seite.locator('[data-spalten-wahl] input[value="geburtsdatum"]').check()
+    expect(kontakt).to_be_hidden()
+    expect(geburt).to_be_visible()
+    seite.reload()
+    expect(seite.locator('th[data-spalte="kontakt"]')).to_be_hidden()
+    expect(seite.locator('td[data-spalte="geburtsdatum"]').first).to_be_visible()

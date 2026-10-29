@@ -1,3 +1,4 @@
+import datetime as dt
 import uuid
 
 from auditlog.registry import auditlog
@@ -164,6 +165,67 @@ class Hintergrundbild(models.Model):
     @classmethod
     def adressen(cls, bereich: str) -> list[str]:
         return [h.bild.url for h in cls.objects.filter(bereich=bereich)]
+
+
+class BenachrichtigungsWahl(models.Model):
+    """Wie oft eine Person eine Art von Benachrichtigung bekommt (ADR 0086); ohne Eintrag sofort."""
+
+    benutzer = models.ForeignKey("konten.Benutzer", on_delete=models.CASCADE,
+                                 related_name="benachrichtigungen")  # fmt: skip
+    art = models.CharField("Art", max_length=50)
+    haeufigkeit = models.CharField("Wie oft", max_length=20, default="sofort")
+
+    class Meta:
+        unique_together = [("benutzer", "art")]
+        verbose_name = "Benachrichtigungs-Wahl"
+        verbose_name_plural = "Benachrichtigungs-Wahlen"
+
+    def __str__(self):
+        return f"{self.benutzer}: {self.art} {self.haeufigkeit}"
+
+
+class BenachrichtigungsZeit(models.Model):
+    """Wann gesammelte Benachrichtigungen kommen: Uhrzeit (täglich) und Wochentag (wöchentlich)."""
+
+    benutzer = models.OneToOneField("konten.Benutzer", on_delete=models.CASCADE,
+                                    related_name="benachrichtigungszeit")  # fmt: skip
+    uhrzeit = models.TimeField("Uhrzeit", default=dt.time(7, 0))
+    wochentag = models.PositiveSmallIntegerField(
+        "Wochentag", default=0, choices=[(0, "Montag"), (1, "Dienstag"), (2, "Mittwoch"),
+                                         (3, "Donnerstag"), (4, "Freitag"), (5, "Samstag"),
+                                         (6, "Sonntag")],
+    )  # fmt: skip
+
+    class Meta:
+        verbose_name = "Zeit der Benachrichtigungen"
+        verbose_name_plural = "Zeiten der Benachrichtigungen"
+
+    def __str__(self):
+        return f"{self.benutzer}: {self.uhrzeit:%H:%M}"
+
+    @classmethod
+    def fuer(cls, benutzer) -> "BenachrichtigungsZeit":
+        return cls.objects.filter(benutzer=benutzer).first() or cls(benutzer=benutzer)
+
+
+class Meldung(models.Model):
+    """Gesammelte Benachrichtigung, die auf ihren Versand wartet; danach gelöscht."""
+
+    benutzer = models.ForeignKey("konten.Benutzer", on_delete=models.CASCADE,
+                                 related_name="wartende_meldungen")  # fmt: skip
+    art = models.CharField("Art", max_length=50)
+    betreff = models.CharField("Betreff", max_length=200)
+    text = models.TextField("Text")
+    schluessel = models.CharField("Bezug", max_length=100, blank=True)
+    erstellt_am = models.DateTimeField("Erstellt am", auto_now_add=True)
+    faellig_am = models.DateTimeField("Versand ab")
+
+    class Meta:
+        verbose_name = "wartende Benachrichtigung"
+        verbose_name_plural = "wartende Benachrichtigungen"
+
+    def __str__(self):
+        return f"{self.art}: {self.betreff}"
 
 
 class MailEinstellungen(models.Model):

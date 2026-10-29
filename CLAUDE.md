@@ -237,7 +237,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Auskunft. In Tests liest die Fixture `pdf_text` den Text aus
   dem PDF.
 - Mails nur über `apps.core.mail.senden()` (Mailserver aus der Datenbank, verständliche
-  `MailFehler`). Geheimnisse in der Datenbank nur über `apps.core.geheimnis` verschlüsselt
+  `MailFehler`). Benachrichtigungen an Mitarbeitende nur über
+  `apps.core.benachrichtigung.melden(art, an, …, schluessel)` (Häufigkeit je Person, Erledigtes
+  entfällt über `Art.offen`; neue Arten in `KERN` bzw. `Modul.benachrichtigungen`; ADR 0086). Geheimnisse in der Datenbank nur über `apps.core.geheimnis` verschlüsselt
   speichern (ADR 0016). In Tests landen Mails in `django.core.mail.outbox`.
 - Zwei-Faktor: Logik in `apps/konten/zwei_faktor.py`, Durchsetzung in
   `apps.konten.middleware.ZweiFaktorMiddleware`. In Tests Benutzer mit der Fixture `anmelden`
@@ -279,6 +281,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Regeln in `apps/fahrdienst/plan.py`, Plan aus fester Besetzung, Ausfall und Ersatz je Tag).
   `dienstplan` (ADR 0077, wie Fahrdienst je Ausgabestelle und Ausgabetag, Regeln in
   `apps/dienstplan/plan.py`, `Helfer` mit oder ohne Konto). Telegram für beide: `apps/core/telegram.py`.
+  `tickets` (ADR 0087, Regeln in `apps/tickets/ablauf.py`: wer sieht/bearbeitet, Zuständige je
+  Kategorie aus Personen und Rollen, Benachrichtigung über ADR 0086, Frist für erledigte).
   Ausfälle beider: Dauer und „wieder gesund“ (`Ausfall.gesund_ab`, nie automatisch zurück) in
   `apps/core/ausfall.py` (ADR 0085).
   `aushang` (ADR 0080, Aushang-Monitore ohne Anmeldung über den Schlüssel im Link; Seiten bieten
@@ -299,6 +303,11 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `apps/kunden/import_ergaenzen.py`; Haushalt in den Papierkorb über `apps/kunden/entfernen.py`.
 - Überraschungen auf der Anmeldeseite an Festtagen: `apps/core/anlaesse.py` und
   `templates/includes/anlass.html` (SVG + CSS, kein JavaScript; ADR 0079).
+- Serienbriefe (ADR 0047, 0088): Vorlagen-Text und Fußzeile als bereinigtes HTML aus
+  `static/js/html_editor.js` (Platzhalter gespeichert als `{name}`, im Editor als Feld über
+  `data-platzhalter`, Kärtchen mit `data-platzhalter-karte`; Namen in `empfaenger.NAMEN`).
+  Einsetzen (Werte immer maskiert), alte Textvorlagen, HTML→ReportLab und Mail in
+  `apps/serienbriefe/gestaltung.py` (`brief()`, `mail()`, `flowables()`); PDF in `brief.py`.
 - Spenden: Import in `apps/spenden/importieren.py` (ADR 0055, `belegnummer` gegen Dubletten),
   Dankesbriefe und hochgeladene Belege in `apps/spenden/dank.py` (ADR 0056; PDFs zusammenfügen
   mit `pypdf`, Mail-Anhänge über `mail.senden(..., anhaenge=…)`).

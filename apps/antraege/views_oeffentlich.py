@@ -191,12 +191,11 @@ def _benachrichtigen(request, antrag, e) -> None:
     an = [b.email for b in e.benachrichtigen.filter(is_active=True) if b.email]
     if not an or not mail.eingerichtet():
         return
+    from apps.core import benachrichtigung
+
     link = request.build_absolute_uri(reverse("antraege:antrag", args=[antrag.pk]))
-    try:
-        mail.senden(
-            f"Neuer Antrag {antrag.nummer}",
-            f"Es ist ein neuer Antrag eingegangen ({antrag.get_art_display()}).\n\n{link}",
-            an,
-        )
-    except mail.MailFehler as fehler:
-        logger.warning("Benachrichtigung zu Antrag %s nicht gesendet: %s", antrag.nummer, fehler)
+    benachrichtigung.melden(
+        "antrag_neu", an, f"Neuer Antrag {antrag.nummer}",
+        f"Es ist ein neuer Antrag eingegangen ({antrag.get_art_display()}).\n\n{link}",
+        schluessel=antrag.pk,
+    )  # fmt: skip

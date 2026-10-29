@@ -221,3 +221,24 @@ auditlog.register(Termin)
 auditlog.register(Wartestand)
 auditlog.register(Einladung)
 auditlog.register(Streichung)
+
+
+class AbgleichEntscheidung(models.Model):
+    """Ergebnis des Abgleichs mit dem Kundenstamm: Ist der ähnliche Haushalt derselbe?"""
+
+    antrag = models.ForeignKey(Antrag, on_delete=models.CASCADE, related_name="abgleich")
+    kundennummer = models.CharField("Kundennummer", max_length=20)
+    gleich = models.BooleanField("Derselbe Haushalt")
+    ergebnis = models.CharField("Ergebnis", max_length=300, blank=True)
+    von = models.CharField("Von", max_length=150, blank=True)
+    am = models.DateTimeField("Am", auto_now_add=True)
+
+    class Meta:
+        ordering = ["-am"]
+        verbose_name = "Abgleich-Entscheidung"
+        verbose_name_plural = "Abgleich-Entscheidungen"
+        constraints = [models.UniqueConstraint(fields=["antrag", "kundennummer"],
+                                               name="abgleich_einmal_je_kunde")]  # fmt: skip
+
+    def __str__(self):
+        return f"Antrag {self.antrag.nummer} / Kunde {self.kundennummer}"

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block titel %}Tickets{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <div class="titel-zeile">
+    <h1>Tickets</h1>
+    <div class="titel-knoepfe">
+      <a class="knopf" href="{% url 'tickets:neu' %}">+ Ticket eröffnen</a>
+      {% if "einstellungen.tickets" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'tickets:kategorien' %}">Kategorien</a>{% endif %}
+    </div>
+  </div>
+  <p class="hinweis">Etwas gefunden, das kaputt ist oder fehlt? Eröffnen Sie ein Ticket: Die Zuständigen der Kategorie bekommen
+    Bescheid, und Sie sehen hier, was daraus wird. Sie sehen Ihre eigenen Tickets und die der Kategorien, für die Sie
+    zuständig sind.</p>
+  {% if keine_kategorie %}<p class="meldung error">Es gibt noch keine Kategorie. {% if "einstellungen.tickets" in rechte %}Bitte zuerst unter „Kategorien“ anlegen.{% else %}Bitte an einen Admin wenden.{% endif %}</p>{% endif %}
+  <form method="get" class="filter-kompakt" data-sofort>
+    <div class="filter-feld"><label for="status">Status</label>
+      <select name="status" id="status">
+        <option value="offen"{% if status == "offen" %} selected{% endif %}>noch nicht erledigt</option>
+        {% for wert, text in stati %}<option value="{{ wert }}"{% if status == wert %} selected{% endif %}>{{ text }}</option>{% endfor %}
+        <option value="alle"{% if status == "alle" %} selected{% endif %}>alle</option>
+      </select></div>
+    <div class="filter-feld"><label for="kategorie">Kategorie</label>
+      <select name="kategorie" id="kategorie">
+        <option value="">alle</option>
+        {% for k in kategorien %}<option value="{{ k.pk }}"{% if kategorie == k.pk|stringformat:"s" %} selected{% endif %}>{{ k.name }}</option>{% endfor %}
+      </select></div>
+    <noscript><button type="submit" class="knopf">Anzeigen</button></noscript>
+  </form>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Nr.</th><th>Worum es geht</th><th>Kategorie</th><th>Status</th><th>Zuständig</th><th>Gemeldet</th></tr></thead>
+    <tbody>
+    {% for t in tickets %}
+      <tr>
+        <td data-titel="Nr.">{{ t.pk }}</td>
+        <td data-titel="Worum es geht"><a href="{% url 'tickets:ticket' t.pk %}">{{ t.titel }}</a></td>
+        <td data-titel="Kategorie">{{ t.kategorie }}</td>
+        <td data-titel="Status">{% include "tickets/_status.html" %}</td>
+        <td data-titel="Zuständig">{{ t.zustaendig.get_full_name|default:t.zustaendig|default:"–" }}</td>
+        <td data-titel="Gemeldet">{{ t.erstellt_am|date:"d.m.Y" }}{% if t.erstellt_von %} · {{ t.erstellt_von.get_full_name|default:t.erstellt_von }}{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6">Keine Tickets.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

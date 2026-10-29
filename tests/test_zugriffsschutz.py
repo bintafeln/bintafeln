@@ -52,6 +52,7 @@ ALLE_ANGEMELDETEN = {
     "konten:anmelden_code",
     "konten:abmelden",
     "konten:mein_konto",
+    "konten:benachrichtigungen",
     "konten:passwort_aendern",
     "konten:meine_auskunft",
     "konten:zwei_faktor_einrichten",
@@ -70,6 +71,12 @@ ALLE_ANGEMELDETEN = {
     "core:papierkorb_loeschen",
     # Eigene PIN fürs Ändern am Aushang-Monitor (ADR 0080)
     "aushang:meine_pin",
+    # Tickets: jede Person meldet und sieht ihre eigenen; fremde nur als Zuständige (ADR 0087)
+    "tickets:liste",
+    "tickets:neu",
+    "tickets:ticket",
+    "tickets:loeschen",
+    "tickets:anhang",
 }
 
 PLATZHALTER = {

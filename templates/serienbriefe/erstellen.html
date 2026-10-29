@@ -53,7 +53,7 @@
   {% if beispiel %}
   {% if d.versandart != "email" %}<address class="anschrift">{% for z in beispiel.anschrift %}{{ z }}<br>{% endfor %}</address>{% endif %}
   <p><strong>{{ beispiel_betreff }}</strong></p>
-  <div class="serienbrief-vorschau">{{ beispiel_text|linebreaks }}</div>
+  <div class="serienbrief-vorschau html-vorschau">{{ beispiel_text }}{% if beispiel_fuss %}<div class="serienbrief-fuss">{{ beispiel_fuss }}</div>{% endif %}</div>
   {% else %}<p>Keine Empfänger mit dieser Auswahl.</p>{% endif %}
 </section>
 </div>

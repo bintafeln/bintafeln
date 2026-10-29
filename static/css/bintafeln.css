@@ -1415,4 +1415,65 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 .mehrfach-eintrag:hover { background: var(--erfolg); }
 .feld .mehrfach .mehrfach-eintrag[hidden], .mehrfach .mehrfach-eintrag[hidden] { display: none; }
 .serienbrief-auswahl .abschnitt-titel { font-size: 1.05rem; margin: .5rem 0 .4rem; }
-.serienbrief-auswahl [data-zeigen-bei][hidden] { display: none; }
+[data-zeigen-bei][hidden] { display: none; }
+
+/* Serienbrief-Vorlagen (ADR 0088): Editor breit, Platzhalter als Kärtchen daneben */
+.vorlage-raster { display: grid; gap: 0 1.25rem; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 64rem) {
+  .vorlage-raster { grid-template-columns: minmax(0, 1fr) minmax(15rem, 19rem); }
+  .platzhalter-spalte { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; }
+}
+.platzhalter-karten { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
+.platzhalter-karten li { margin: 0; }
+.platzhalter-karte { display: grid; grid-template-columns: 1fr auto; gap: 0 .5rem; width: 100%; text-align: left;
+  padding: .45rem .6rem; border: 1px solid var(--rand); border-left: 4px solid var(--akzent); border-radius: var(--radius);
+  background: var(--flaeche); color: var(--text); font: inherit; cursor: grab; touch-action: manipulation; }
+.platzhalter-karte:hover, .platzhalter-karte:focus-visible { border-color: var(--akzent); background: var(--erfolg); }
+.platzhalter-karte:active { cursor: grabbing; }
+.platzhalter-karte-name { font-weight: 600; }
+.platzhalter-karte code { font-size: .75rem; color: var(--leise); align-self: center; }
+.platzhalter-karte-text { grid-column: 1 / -1; font-size: .8rem; color: var(--leise); }
+.editor-flaeche .platzhalter { display: inline-block; padding: 0 .4em; margin: 0 .05em; border-radius: 999px;
+  background: var(--erfolg); border: 1px solid var(--akzent); color: var(--akzent-dunkel); font-weight: 600;
+  font-size: .92em; line-height: 1.35; white-space: nowrap; cursor: default; user-select: all; }
+.serienbrief-fuss { margin-top: 1rem; padding-top: .5rem; border-top: 1px solid var(--rand); font-size: .8rem; color: var(--leise); }
+
+/* Tickets (apps/tickets) */
+.ticket-status { display: inline-block; padding: .05rem .5rem; border-radius: 999px; font-size: .85rem; font-weight: 600; }
+.ticket-offen { background: #fdecea; color: var(--fehler); }
+.ticket-in_arbeit { background: #fff4d6; color: #7a5200; }
+.ticket-erledigt { background: #e6f4ea; color: #1e6b34; }
+.ticket-text { margin: .5rem 0; }
+.ticket-anhaenge { padding-left: 1.2rem; }
+.editor:has(#id_fusszeile) .editor-flaeche { min-height: 4rem; }
+.benachrichtigungs-wahl select { font: inherit; min-height: 2.4rem; padding: .3rem 1.9rem .3rem .6rem;
+  border: 1px solid var(--rand); border-radius: var(--radius); }
+@media (max-width: 63.99rem) { /* Tablet/Handy: Platzhalter als kompakte Leiste unten am Bildschirm */
+  .platzhalter-spalte { position: sticky; bottom: 0; z-index: 5; max-height: 34vh; overflow-y: auto;
+    padding-top: .5rem; padding-bottom: .5rem; box-shadow: 0 -4px 14px rgba(0, 0, 0, .12); }
+  .platzhalter-spalte h2 { font-size: 1rem; margin: 0 0 .35rem; }
+  .platzhalter-spalte .hinweis { display: none; }
+  .platzhalter-karten { display: flex; flex-wrap: wrap; gap: .35rem; }
+  .platzhalter-karte { display: inline-block; width: auto; padding: .35rem .65rem; }
+  .platzhalter-karte-text, .platzhalter-karte code { display: none; }
+}
+
+/* Warteliste: Einladen und Status nebeneinander, Datum/von/bis in einer Zeile */
+.warteliste-aktionen .abschnitt { display: flex; flex-direction: column; gap: .25rem; }
+.warteliste-aktionen .abschnitt > .knopf { align-self: flex-start; margin-top: .25rem; }
+.feld-zeile { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0 .75rem; }
+.feld-zeile[hidden] { display: none; }
+@media (max-width: 30rem) { .feld-zeile { grid-template-columns: 1fr 1fr; } .feld-zeile > :first-child { grid-column: 1 / -1; } }
+.warteliste-aktionen { grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); }
+.feld-zeile > .feld { min-width: 0; }
+.feld-zeile input { width: 100%; }
+.mehrfach-eintrag { display: flex; align-items: center; gap: .5rem; padding: .3rem .35rem; border-radius: 6px; cursor: pointer; }
+.warteliste-staaten { min-width: 14rem; }
+.treffer-entscheiden { margin: .4rem 0 .9rem; gap: .5rem; flex-wrap: wrap; }
+.sperr-hinweis { font-size: .85rem; font-weight: 600; }
+.tabelle [data-spalte][hidden], [data-spalten-wahl][hidden] { display: none; }
+.anmerkung-zelle { max-width: 18rem; }
+.anmerkung-neu { text-decoration: none; font-weight: 700; margin-left: .25rem; }
+.anmerkung-form { display: flex; flex-direction: column; gap: .4rem; margin-top: .5rem; }
+.anmerkung-form textarea { font: inherit; padding: .5rem .65rem; border: 1px solid var(--rand); border-radius: var(--radius); }
+.anmerkung-form .knopf { align-self: flex-start; }

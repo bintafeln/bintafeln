@@ -126,6 +126,7 @@ def test_mail_einmal_je_sicherheitsupdate(admin_client, admin, ordner, benutzer_
     gesendet = []
     monkeypatch.setattr("apps.core.mail.senden", lambda betreff, text, an: gesendet.append(
         (betreff, text, an)))  # fmt: skip
+    monkeypatch.setattr("apps.core.mail.eingerichtet", lambda: True)
     admin.email = "chefin@example.org"
     admin.save()
     einlass = benutzer_mit_rolle("einlass", "Ausgabe")

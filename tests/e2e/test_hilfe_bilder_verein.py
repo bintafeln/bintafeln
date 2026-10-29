@@ -247,6 +247,40 @@ def test_hilfe_bild_serienbrief(angemeldet, admin, muster):
               Marke(pdf, nummer=3, von="rechts"))  # fmt: skip
 
 
+def test_hilfe_bild_serienbrief_vorlage(angemeldet, admin, muster):
+    from apps.serienbriefe.models import Vorlage
+
+    v = Vorlage.objects.get(name="Dank für Spenden")
+    v.text = (
+        "<p>{anrede}</p><p>im Jahr {jahr} haben Sie die {tafel} mit Spenden von insgesamt "
+        "<b>{spendensumme}</b> unterstützt. Dafür danken wir Ihnen von Herzen.</p>"
+        '<div class="kasten" style="padding:12px 16px;border-radius:8px;margin:8px 0;'
+        'background-color:#fdf3d8"><p>Ihre Hilfe kommt direkt den Menschen zugute, die bei uns '
+        "Lebensmittel erhalten.</p></div><p>Mit freundlichen Grüßen</p><p>{tafel}</p>"
+    )
+    v.fusszeile = "<p>Bankverbindung: Musterbank · IBAN DE00 1234 5678 9000 0000 00</p>"
+    v.save()
+    seite = oeffnen(angemeldet, admin, reverse("serienbriefe:vorlage", args=[v.pk]), breite=1400,
+                    hoehe=1100)  # fmt: skip
+    _ohne_menue(seite)
+    editor = seite.locator(".editor", has=seite.locator("#id_text"))
+    flaeche = editor.locator(".editor-flaeche")
+    flaeche.locator(".kasten p").click()
+    seite.keyboard.press("End")
+    seite.keyboard.type(" Danke, ")
+    seite.locator('[data-platzhalter-karte="vorname"]').click()
+    seite.keyboard.type("!")
+    expect(flaeche.locator('.kasten [data-platzhalter="vorname"]')).to_be_visible()
+    karten = seite.locator(".platzhalter-spalte")
+    aufnehmen(seite, "serienbriefe-vorlage", [seite.locator("#vorlage-formular"), karten],
+              Marke(editor.locator(".editor-leiste"), "rahmen", 1),
+              Marke(flaeche.locator('[data-platzhalter="vorname"]'), nummer=2, von="unten",
+                    laenge=40),
+              Marke(seite.locator('[data-platzhalter-karte="vorname"]'), "rahmen", 3),
+              Marke(seite.get_by_label("Briefkopf"), "rahmen", 4),
+              Marke(seite.get_by_role("button", name="Vorschau (PDF)"), "rahmen", 5))  # fmt: skip
+
+
 # --- Spenden und Zuwendungsbestätigungen ------------------------------------------------------
 
 

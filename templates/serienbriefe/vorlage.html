@@ -1,15 +1,18 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load static %}
 {% block titel %}{% if v.pk %}Vorlage „{{ v.name }}“{% else %}Neue Vorlage{% endif %}{% endblock %}
 {% block inhalt %}
-<div class="seiten-raster">
+<script src="{% static 'js/html_editor.js' %}" defer></script>
+<div class="vorlage-raster">
 <section class="karte">
   <p><a href="{% url 'serienbriefe:vorlagen' %}">← Vorlagen</a></p>
   <h1>{% if v.pk %}Vorlage „{{ v.name }}“{% else %}Neue Vorlage{% endif %}</h1>
-  <form method="post">
+  <form method="post" id="vorlage-formular">
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <div class="aktionsleiste">
       <button type="submit" class="knopf">Speichern</button>
+      <button type="submit" class="knopf knopf-zweitrangig" formaction="{% url 'serienbriefe:vorlage_vorschau' %}"
+              formtarget="_blank" title="Zeigt den Brief mit einem erfundenen Empfänger als PDF in einem neuen Tab; speichert nichts">Vorschau (PDF)</button>
       <a class="knopf knopf-abbrechen" href="{% url 'serienbriefe:vorlagen' %}">Abbrechen</a>
     </div>
   </form>
@@ -19,11 +22,18 @@
   </form>
   {% endif %}
 </section>
-<section class="karte">
-  <h2>Platzhalter</h2>
-  <p class="hinweis">Diese Angaben setzt bintafeln je Empfänger ein. Was für einen Empfänger nicht passt (z. B. die
-    Mitgliedsnummer bei einem Spender), bleibt leer.</p>
-  <dl class="angaben">{% for name, erklaerung in platzhalter %}<dt><code>{{ "{" }}{{ name }}{{ "}" }}</code></dt><dd>{{ erklaerung }}</dd>{% endfor %}</dl>
+<section class="karte platzhalter-spalte" aria-labelledby="platzhalter-titel">
+  <h2 id="platzhalter-titel">Platzhalter</h2>
+  <p class="hinweis">In den Text ziehen oder antippen: Der Platzhalter landet an der Schreibmarke. bintafeln setzt je
+    Empfänger den Wert ein; was nicht passt (z. B. die Mitgliedsnummer bei einem Spender), bleibt leer.</p>
+  <ul class="platzhalter-karten">{% for name, titel, erklaerung in karten %}
+    <li><button type="button" class="platzhalter-karte" draggable="true" data-platzhalter-karte="{{ name }}"
+        data-platzhalter-name="{{ titel }}" data-fuer="id_text" title="{{ erklaerung }}">
+      <span class="platzhalter-karte-name">{{ titel }}</span>
+      {% if erklaerung|lower != titel|lower %}<span class="platzhalter-karte-text">{{ erklaerung }}</span>{% endif %}
+      <code>{{ "{" }}{{ name }}{{ "}" }}</code>
+    </button></li>{% endfor %}
+  </ul>
 </section>
 </div>
 {% endblock %}

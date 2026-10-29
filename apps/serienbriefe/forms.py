@@ -1,3 +1,5 @@
+import json
+
 from django import forms
 from django.utils import timezone
 
@@ -5,15 +7,42 @@ from apps.adressen.models import AdressKategorie
 from apps.core.auswahl import MITGLIEDSARTEN
 from apps.core.forms import Mehrfachauswahl
 from apps.konten import rollen
-from apps.serienbriefe.empfaenger import QUELLEN
+from apps.serienbriefe import gestaltung
+from apps.serienbriefe.empfaenger import QUELLEN, karten
 from apps.serienbriefe.models import Versand, Vorlage
 
 
 class VorlageForm(forms.ModelForm):
+    """Text und Fußzeile im Editor (static/js/html_editor.js), gespeichert als bereinigtes HTML."""
+
     class Meta:
         model = Vorlage
-        fields = ["name", "betreff", "text"]
-        widgets = {"text": forms.Textarea(attrs={"rows": 16})}
+        fields = ["name", "betreff", "text", "briefkopf", "fusszeile"]
+        widgets = {
+            "betreff": forms.TextInput(attrs={"data-platzhalter-ziel": ""}),
+            "text": forms.Textarea(attrs={"rows": 16, "class": "html-eingabe",
+                                          "data-editor": "", "data-editor-ohne": "link bild"}),
+            "fusszeile": forms.Textarea(attrs={"rows": 3, "class": "html-eingabe",
+                                               "data-editor": "", "data-editor-ohne": "link bild"}),
+        }  # fmt: skip
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        namen = {k: name for k, name, _ in karten()}
+        self.fields["text"].widget.attrs["data-platzhalter"] = json.dumps(namen)
+        for feld in ("text", "fusszeile"):  # ältere Vorlagen aus reinem Text als Absätze
+            if self.instance.pk and not self.is_bound:
+                self.initial[feld] = gestaltung.als_html(getattr(self.instance, feld))
+
+    def clean_text(self):
+        text = gestaltung.speichern(self.cleaned_data["text"])
+        if not gestaltung.mail_text(text).strip():
+            raise forms.ValidationError("Bitte einen Text schreiben.")
+        return text
+
+    def clean_fusszeile(self):
+        fuss = gestaltung.speichern(self.cleaned_data["fusszeile"])
+        return fuss if gestaltung.mail_text(fuss).strip() else ""
 
 
 class AuswahlForm(forms.Form):

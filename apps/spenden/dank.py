@@ -17,6 +17,7 @@ from pypdf.errors import PdfReadError
 
 from apps.core import privatdateien
 from apps.serienbriefe import empfaenger as emp
+from apps.serienbriefe import gestaltung
 from apps.serienbriefe.brief import briefe_pdf
 from apps.spenden import bestaetigung as bst
 from apps.spenden.models import Spende, SpendenBeleg, Zuwendungsbestaetigung
@@ -128,8 +129,7 @@ def briefe(danke: list[Dank], vorlage, jahr: int, mit_bestaetigungen=True, mit_b
     schreiber, warnungen = PdfWriter(), []
     for d in danke:
         e = werte(d, jahr)
-        brief = briefe_pdf([(e.anschrift, emp.einsetzen(vorlage.betreff, e, allgemein),
-                             emp.einsetzen(vorlage.text, e, allgemein))])  # fmt: skip
+        brief = briefe_pdf([(e.anschrift, *gestaltung.brief(vorlage, e, allgemein))], vorlage)
         _anhaengen(schreiber, brief)
         for name, inhalt in anlagen(d, mit_bestaetigungen, mit_belegen):
             if not _anhaengen(schreiber, inhalt):

@@ -328,6 +328,11 @@ bearbeitet nur ein Admin. Rollen, die man nicht vergeben darf, bleiben beim Bear
   - Niemand kann sich selbst sperren oder sich die Admin-Rolle nehmen.
   - Das Büro bearbeitet keine Admin-Konten.
 - Jede Person kann unter „Mein Konto“ ihr **Passwort ändern**.
+- **Benachrichtigungen** (ADR 0086): Unter „Mein Konto → Benachrichtigungen“ wählt jede Person je
+  Art (neuer Antrag, Korrekturwunsch, Ausfall und Gesundmeldung in Dienstplan und Fahrdienst,
+  Sicherheitsupdate, Tickets) sofort, stündlich/täglich/wöchentlich gesammelt oder nie, dazu
+  Uhrzeit und Wochentag. Vor dem Versand fällt Erledigtes weg; der App-Container verschickt
+  gesammelte Mails alle fünf Minuten (`benachrichtigungen_senden` in `docker/entrypoint.sh`).
 - **Stammdaten** (Person → „Stammdaten, Führerschein, Belehrungen, Schulungen“):
   - Anschrift, Telefon, Handy, Notfallkontakt, Eintritt und Austritt
   - Führerschein-Vermerk (Klassen, gültig bis, gesehen am / von)
@@ -1134,6 +1139,23 @@ Ersetzt den ausgehängten Papierplan der Ausgabe (ADR 0077), wie der Fahrdienst 
 - **Beispiel** zum Ausprobieren (Knopf oder `python manage.py dienstplan_beispiel`, `--entfernen`).
 - Ausfälle und Ersatz werden nach 12 Monaten gelöscht (einstellbar) und stehen in der Auskunft.
 
+### Tickets
+
+Wer etwas findet (Gerät defekt, Lager, Fahrzeug, Fehler im Programm), eröffnet unter „Tickets →
+Ticket eröffnen“ ein Ticket mit Kategorie, Beschreibung und auf Wunsch Fotos/PDF (verschlüsselt
+abgelegt). Zuschaltbares Modul (ADR 0087).
+
+- **Kategorien** unter „Einstellungen → Tafel → Ticket-Kategorien“ (Recht „Ticket-Kategorien und
+  Zuständige einstellen“): je Kategorie Personen und/oder Rollen, die benachrichtigt werden und
+  die Tickets bearbeiten dürfen. Das Recht „Alle Tickets sehen und bearbeiten“ (Vorgabe Büro)
+  gilt für alle Kategorien.
+- **Ablauf:** offen → in Arbeit → erledigt, eine zuständige Person (Auswahl aus den Konten) und
+  Antworten. Die meldende Person erfährt Antworten und Statuswechsel per Mail.
+- **Benachrichtigungen** wie alle anderen (ADR 0086): jede Person wählt unter „Mein Konto →
+  Benachrichtigungen“, wie oft; ein übernommenes Ticket fällt aus der Sammelmail heraus.
+- Jede Person sieht ihre eigenen Tickets, fremde nur als Zuständige. Erledigte werden nach der
+  eingestellten Frist gelöscht (Vorgabe 365 Tage); eigene Tickets stehen in der Auskunft.
+
 ### Aushang-Monitore
 
 Zeigt Dienstplan und Fahrerplan ganzseitig auf einem Monitor, ohne Menü und ohne Anmeldung
@@ -1256,12 +1278,23 @@ auch an Kunden“, nur Admin) schreibt viele Empfänger auf einmal an (ADR 0047)
   `{organisation}`, `{mitgliedsnummer}`, `{jahresbeitrag}`, `{beitrag_offen}`,
   `{spendensumme}`, `{kundennummer}`, `{jahr}`, `{datum}`, `{tafel}`. Mitgeliefert: Dank für
   Spenden, Erinnerung Mitgliedsbeitrag, Einladung Mitgliederversammlung.
+- **Gestalten wie in einem Schreibprogramm** (ADR 0088): fett, kursiv, unterstrichen,
+  Überschrift, Schriftgröße (klein/normal/groß), Ausrichtung (links/Mitte/rechts/Blocksatz),
+  Aufzählung und Nummerierung, Text- und Markierfarbe, farbiger Kasten; im Reiter „HTML“ der
+  Quelltext. Die Platzhalter stehen als Kärtchen mit verständlichem Namen („Briefanrede“,
+  „Spendensumme“ …) neben dem Text: in den Text ziehen oder antippen (fügt an der Schreibmarke
+  ein, auch auf dem iPad; zuletzt im Betreff gewesen, dann dort). Im Text erscheinen sie als
+  farbige Felder. Je Vorlage **Briefkopf** (Logo und Kontakt der Tafel oben rechts, abschaltbar
+  für eigenes Briefpapier) und **Fußzeile** (z. B. Bankverbindung, auf jeder Seite und unter
+  jeder E-Mail). **Vorschau (PDF)** zeigt den Brief mit einem erfundenen Empfänger, ohne zu
+  speichern. Ältere Vorlagen aus reinem Text werden beim Update zu Absätzen.
 - **Empfänger**: Adressen nach Kategorie, Mitglieder (Arten, nur offener Beitrag), Spender eines
   Jahres (Mindestsumme), Kunden (aktive Haushalte, Kundengruppen). Für Adressen und Spender ist
   „nur mit Einwilligung“ (Post bzw. E-Mail) vorgewählt.
 - **Vorschau** mit Empfängerliste, Übersprungenen (ohne Anschrift/E-Mail) und Beispielbrief.
-- **Briefe** als ein PDF (Anschrift für Fensterumschlag DIN lang, Faltmarken) oder **E-Mails**
-  einzeln über den eingerichteten Mailserver. Jeder Versand wird vermerkt und erscheint in der
+- **Briefe** als ein PDF (Anschrift für Fensterumschlag DIN lang, Faltmarken, mit der Gestaltung
+  der Vorlage) oder **E-Mails** einzeln über den eingerichteten Mailserver (gestaltet als HTML,
+  dazu eine Klartext-Fassung). Jeder Versand wird vermerkt und erscheint in der
   Auskunft der Empfänger.
 
 ## Spenden und Zuwendungsbestätigungen

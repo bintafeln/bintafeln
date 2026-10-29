@@ -33,6 +33,12 @@
     </div>
     {% endif %}
 
+    <div class="konto-kachel">
+      <h2>Benachrichtigungen</h2>
+      <p>Wie oft Mails kommen, z. B. zu neuen Anträgen oder Ausfällen: sofort, gesammelt oder nie.</p>
+      <p><a class="knopf knopf-zweitrangig" href="{% url 'konten:benachrichtigungen' %}">Einstellen</a></p>
+    </div>
+
     {% for teil in modul_konto %}{{ teil }}{% endfor %}
 
     {% if not user.stelle_id %}{# Konto einer Ausgabestelle: keine Person, keine Auskunft (ADR 0059) #}

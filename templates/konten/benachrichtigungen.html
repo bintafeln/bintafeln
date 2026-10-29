@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block titel %}Benachrichtigungen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'konten:mein_konto' %}">← Mein Konto</a></p>
+  <h1>Benachrichtigungen</h1>
+  <p class="hinweis">Wie oft bintafeln Ihnen Mails zu diesen Dingen schickt. „Gesammelt“ heißt: eine Mail mit allem, was bis
+    dahin anfällt. Was Sie vorher im Programm schon erledigt haben (z. B. den Antrag bearbeitet oder den Korrekturwunsch
+    entschieden), steht dann nicht mehr darin; bleibt nichts übrig, kommt keine Mail.</p>
+  {% if ohne_mail %}<p class="meldung error">Ihr Konto hat keine E-Mail-Adresse. Bitte an einen Admin wenden, sonst kommen keine Benachrichtigungen an.</p>{% endif %}
+  {% if zeilen %}
+  <form method="post">
+    {% csrf_token %}
+    <div class="tabelle-rahmen">
+    <table class="tabelle benachrichtigungs-wahl">
+      <thead><tr><th>Worum es geht</th><th>Wie oft</th></tr></thead>
+      <tbody>
+      {% for z in zeilen %}
+        <tr>
+          <td data-titel="Worum es geht"><label for="art_{{ z.art.kennung }}"><strong>{{ z.art.titel }}</strong></label>
+            {% if z.art.beschreibung %}<br><small class="leise">{{ z.art.beschreibung }}</small>{% endif %}</td>
+          <td data-titel="Wie oft"><select name="art_{{ z.art.kennung }}" id="art_{{ z.art.kennung }}">
+            {% for wert, text in z.moeglich %}<option value="{{ wert }}"{% if wert == z.wahl %} selected{% endif %}>{{ text }}</option>{% endfor %}
+          </select></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <div class="formular-raster">
+      <div class="feld"><label for="uhrzeit">Uhrzeit für „täglich“ und „wöchentlich“</label>
+        <input type="time" name="uhrzeit" id="uhrzeit" value="{{ zeit.uhrzeit|time:'H:i' }}"></div>
+      <div class="feld"><label for="wochentag">Wochentag für „wöchentlich“</label>
+        <select name="wochentag" id="wochentag">{% for wert, text in wochentage %}<option value="{{ wert }}"{% if wert == zeit.wochentag %} selected{% endif %}>{{ text }}</option>{% endfor %}</select></div>
+    </div>
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+  {% else %}
+  <p>Zu Ihren Aufgaben verschickt bintafeln zurzeit keine Benachrichtigungen.</p>
+  {% endif %}
+</section>
+{% endblock %}

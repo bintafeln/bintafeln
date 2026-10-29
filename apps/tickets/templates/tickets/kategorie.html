@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block titel %}{% if k %}{{ k.name }}{% else %}Neue Kategorie{% endif %}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'tickets:kategorien' %}">← Ticket-Kategorien</a></p>
+  <h1>{% if k %}{{ k.name }}{% else %}Neue Kategorie{% endif %}</h1>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+{% endblock %}

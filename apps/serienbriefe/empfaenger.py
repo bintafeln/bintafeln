@@ -30,6 +30,23 @@ PLATZHALTER = [
     ("jahr", "gewähltes Jahr"), ("datum", "heutiges Datum"), ("tafel", "Name der Tafel"),
 ]  # fmt: skip
 
+# Verständliche Namen für die Kärtchen neben dem Editor und die Felder im Text (ADR 0088)
+NAMEN = {
+    "anrede": "Briefanrede", "name": "Ganzer Name", "vorname": "Vorname", "nachname": "Nachname",
+    "organisation": "Organisation", "mitgliedsnummer": "Mitgliedsnummer",
+    "jahresbeitrag": "Jahresbeitrag", "beitrag_offen": "Offener Beitrag",
+    "spendensumme": "Spendensumme", "anzahl_spenden": "Anzahl Spenden",
+    "spendendaten": "Spendendaten", "kundennummer": "Kundennummer", "jahr": "Jahr",
+    "datum": "Heutiges Datum", "tafel": "Name der Tafel",
+}  # fmt: skip
+# Erfundener Empfänger für die Vorschau beim Bearbeiten einer Vorlage
+BEISPIEL = {
+    "anrede": "Sehr geehrte Frau Beispiel,", "name": "Erika Beispiel", "vorname": "Erika",
+    "nachname": "Beispiel", "organisation": "", "mitgliedsnummer": "42",
+    "jahresbeitrag": "36,00 €", "beitrag_offen": "36,00 €", "spendensumme": "150,00 €",
+    "anzahl_spenden": "2", "spendendaten": "15.01., 15.06.", "kundennummer": "1234",
+}  # fmt: skip
+BEISPIEL_ANSCHRIFT = ["Frau Erika Beispiel", "Musterweg 1", "12345 Musterstadt"]
 
 BEITRAGS_PLATZHALTER = {"jahresbeitrag", "beitrag_offen"}
 
@@ -41,6 +58,11 @@ def platzhalter() -> list[tuple[str, str]]:
     if MitgliederEinstellungen.mit_beitraegen():
         return PLATZHALTER
     return [p for p in PLATZHALTER if p[0] not in BEITRAGS_PLATZHALTER]
+
+
+def karten() -> list[tuple[str, str, str]]:
+    """(Schlüssel, Name, Erklärung) der angebotenen Platzhalter für die Kärtchen."""
+    return [(k, NAMEN.get(k, k), erklaerung) for k, erklaerung in platzhalter()]
 
 
 @dataclass

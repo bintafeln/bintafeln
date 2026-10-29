@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block titel %}Ticket-Kategorien{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <div class="titel-zeile">
+    <h1>Ticket-Kategorien</h1>
+    <div class="titel-knoepfe"><a class="knopf" href="{% url 'tickets:kategorie_neu' %}">+ Neue Kategorie</a></div>
+  </div>
+  <p class="hinweis">Je Kategorie legen Sie fest, wer bei einem neuen Ticket Bescheid bekommt: einzelne Personen und/oder alle
+    mit einer Rolle. Diese dürfen die Tickets der Kategorie auch bearbeiten. Wie oft die Mails kommen, stellt jede Person
+    selbst unter „Mein Konto → Benachrichtigungen“ ein.</p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Kategorie</th><th>Personen</th><th>Rollen</th><th>Aktiv</th></tr></thead>
+    <tbody>
+    {% for k in kategorien %}
+      <tr>
+        <td data-titel="Kategorie"><a href="{% url 'tickets:kategorie' k.pk %}">{{ k.name }}</a>{% if k.beschreibung %}<br><small class="leise">{{ k.beschreibung }}</small>{% endif %}</td>
+        <td data-titel="Personen">{% for p in k.personen.all %}{{ p.get_full_name|default:p.username }}{% if not forloop.last %}, {% endif %}{% empty %}–{% endfor %}</td>
+        <td data-titel="Rollen">{% for r in k.rollen.all %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% empty %}–{% endfor %}</td>
+        <td data-titel="Aktiv">{{ k.aktiv|yesno:"ja,nein" }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4">Noch keine Kategorie, z. B. „Technik und Geräte“, „Lager“, „Fahrzeuge“, „Programm (bintafeln)“.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+<section class="karte">
+  <h2>Aufbewahrung</h2>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+{% endblock %}
