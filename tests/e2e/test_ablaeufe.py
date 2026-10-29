@@ -80,6 +80,23 @@ def test_kamera_zeigt_bei_jedem_scan_ein_bild(angemeldet, admin, benutzer_mit_ro
         expect(dialog).to_be_hidden()
 
 
+def _pdf_fenster(seite, klick) -> str:
+    """Klickt, erwartet ein neues Fenster und liefert die Adresse des PDFs. Die Antwort wird
+    durch eine kleine Seite ersetzt: Die kopflose Chrome-Variante in CI zeigt PDFs nicht an."""
+    adressen = []
+
+    def ersetzen(route):
+        adressen.append(route.request.url)
+        route.fulfill(status=200, content_type="text/html", body="<p>PDF</p>")
+
+    seite.context.route(re.compile(r"/kunden/ausweise/"), ersetzen)
+    with seite.expect_popup() as fenster:
+        klick()
+    fenster.value.wait_for_load_state()
+    seite.context.unroute(re.compile(r"/kunden/ausweise/"))
+    return adressen[-1]
+
+
 def test_kundenliste_auswahl_und_export(angemeldet, admin):
     _haushalte(3)
     seite = angemeldet(admin)
@@ -102,9 +119,10 @@ def test_kundenliste_auswahl_und_export(angemeldet, admin):
     inhalt = Path(laden.value.path()).read_text(encoding="utf-8-sig")
     assert "00042" in inhalt and "00041" not in inhalt and "00043" not in inhalt
     # Ausweise drucken öffnet ein eigenes Fenster (iPad-App), nur mit dem angehakten Haushalt
-    with seite.expect_popup() as fenster:
-        seite.get_by_role("button", name=re.compile("Ausweise drucken")).click()
-    fenster.value.wait_for_url(re.compile(r"/kunden/ausweise/\?.*id=\d+"), wait_until="commit")
+    adresse = _pdf_fenster(
+        seite, seite.get_by_role("button", name=re.compile("Ausweise drucken")).click
+    )
+    assert re.search(r"/kunden/ausweise/\?.*id=\d+", adresse)
     assert seite.url.endswith("/kunden/")
 
 
@@ -901,12 +919,10 @@ def test_ausweise_drucken_oeffnet_neues_fenster(angemeldet, admin):
     seite = angemeldet(admin)
     seite.goto(reverse("kunden:verlaengern"))
     seite.locator('input[name="nummer"][value="00062"]').check()
-    with seite.expect_popup() as fenster:
-        seite.get_by_role("button", name="Angehakte Ausweise drucken (PDF)").click()
-    fenster.value.wait_for_url(re.compile("nummer=00062"), wait_until="commit")
+    knopf = seite.get_by_role("button", name="Angehakte Ausweise drucken (PDF)")
+    assert "nummer=00062" in _pdf_fenster(seite, knopf.click)
     assert seite.url.endswith(reverse("kunden:verlaengern"))
     seite.goto(reverse("kunden:nachrichten"))
-    with seite.expect_popup() as fenster:
-        seite.get_by_role("link", name=re.compile("Alle gemeldeten Ausweise drucken")).click()
-    fenster.value.wait_for_url(re.compile("gemeldet=1"), wait_until="commit")
+    link = seite.get_by_role("link", name=re.compile("Alle gemeldeten Ausweise drucken"))
+    assert "gemeldet=1" in _pdf_fenster(seite, link.click)
     expect(seite.get_by_role("heading", name="Nachrichten der Ausgabestellen")).to_be_visible()
