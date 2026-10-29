@@ -704,7 +704,13 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   einschalten.
 - **Adresse für die Webseite der Tafel:** `https://<domain>/antrag/`. Die Seite ist in
   **29 Sprachen** umstellbar und erkennt die Sprache des Browsers. Oben stehen Logo und Name
-  der Tafel in der Farbe der Tafel (siehe Einstellungen).
+  der Tafel in der Farbe der Tafel (siehe Einstellungen). Beim ersten Aufruf zeigt ein roter,
+  blinkender Pfeil einige Sekunden auf die Sprachwahl („Hier können Sie die Sprache
+  umstellen“); passt die gewählte Staatsangehörigkeit nicht zur Sprache (z. B. Syrien und
+  Deutsch), erscheint der Hinweis in der passenden Sprache mit Knopf zum Umstellen
+  (`static/js/sprachhinweis.js`, Zuordnung `LAND_SPRACHE` in `apps/antraege/sprachen.py`). Beim
+  Umstellen bleiben die schon eingetragenen Angaben erhalten (nur im Browser-Tab, danach
+  gelöscht); hochgeladene Dateien muss man neu wählen.
 - **Eigene Texte je Sprache** („Texte je Sprache“): Überschrift, Einleitung, Seite nach dem
   Absenden, Betreff und Inhalt der Antwortmail. Die Texte dürfen **HTML** enthalten
   (Überschriften, Absätze, Listen, Links, Bilder, Tabellen, Farben über `style="…"`);

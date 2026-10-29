@@ -196,6 +196,33 @@ def test_antrag_merkzeichen_erst_mit_gdb(seite, admin):
     assert not block.get_by_label("G (erheblich gehbehindert)").is_checked()
 
 
+def test_sprachhinweis_und_angaben_beim_umstellen(seite, admin):
+    from apps.antraege.models import Abfrage, AntragEinstellungen
+
+    e = AntragEinstellungen.laden()
+    e.aktiv, e.staatsangehoerigkeit = True, Abfrage.OPTIONAL
+    e.save()
+    seite.goto("/antrag/de/")
+    hinweis = seite.locator("#sprach-hinweis")
+    expect(hinweis).to_contain_text("Hier können Sie die Sprache umstellen.")  # einmal je Sitzung
+    hinweis.get_by_role("button", name="✕").click()
+    expect(hinweis).to_be_hidden()
+    seite.goto("/antrag/de/")
+    expect(hinweis).to_be_hidden()
+    seite.fill("#id_vorname", "Erika")
+    seite.select_option("#id_staatsangehoerigkeit", "Deutschland")
+    expect(hinweis).to_be_hidden()  # passt zur Sprache
+    seite.select_option("#id_staatsangehoerigkeit", "Syrien")
+    expect(hinweis).to_be_visible()
+    expect(hinweis.locator("p[lang=ar]")).to_contain_text("يمكنك تغيير اللغة")
+    hinweis.get_by_role("button", name="→ العربية").click()
+    seite.wait_for_url("**/antrag/ar/")
+    expect(seite.locator("#id_vorname")).to_have_value("Erika")  # Angaben bleiben
+    expect(seite.locator("#id_staatsangehoerigkeit")).to_have_value("Syrien")
+    seite.goto("/antrag/ar/")
+    expect(seite.locator("#id_vorname")).to_have_value("")  # nur einmal übernommen
+
+
 def test_suche_im_kopf(angemeldet, admin):
     _haushalte(1)
     seite = angemeldet(admin)

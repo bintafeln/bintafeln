@@ -336,6 +336,24 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .antrag-kopf .logo { height: 4rem; padding: 4px; }
 /* ohne Logo und Name bleibt nur die Sprachwahl rechts */
 .antrag-kopf.ohne-marke { justify-content: flex-end; padding-block: .5rem; }
+/* Hinweis auf die Sprachwahl (sprachhinweis.js): roter Pfeil nach oben, über der Seite */
+.antrag-kopf { position: relative; }
+.sprach-hinweis { position: absolute; top: calc(100% + .9rem); inset-inline-end: 1rem; z-index: 50;
+  max-width: min(24rem, calc(100vw - 2rem)); padding: .75rem 2.25rem .75rem 1rem;
+  background: #fff; color: #222; border: 3px solid #c62828; border-radius: .6rem;
+  box-shadow: 0 .4rem 1.2rem rgba(0, 0, 0, .25); font-weight: 600; text-align: start; }
+.sprach-hinweis[hidden] { display: none; }
+.sprach-hinweis.fest { position: fixed; top: 2.6rem; }
+.sprach-hinweis p { margin: 0 0 .35rem; }
+.sprach-hinweis p:last-child { margin-bottom: 0; }
+.sprach-pfeil { position: absolute; top: -2.1rem; inset-inline-end: 1.5rem; width: 0; height: 0;
+  border: 1rem solid transparent; border-bottom: 1.6rem solid #c62828; border-top: 0;
+  animation: sprach-blinken 1s ease-in-out infinite; }
+.sprach-hinweis-zu { position: absolute; top: .3rem; inset-inline-end: .3rem; border: 0;
+  background: none; font-size: 1.1rem; cursor: pointer; color: #555; }
+.sprach-hinweis-wechseln { margin-top: .35rem; padding: .3rem .7rem; }
+@keyframes sprach-blinken { 50% { opacity: .2; } }
+@media (prefers-reduced-motion: reduce) { .sprach-pfeil { animation: none; } }
 /* eigene Kopf- und Fußbereiche der Tafel (Texte je Sprache) */
 .antrag-bereich { width: 100%; max-width: 56rem; margin: 1rem auto 0; padding: 0 1rem; overflow-wrap: anywhere; }
 .antrag-bereich img { max-width: 100%; height: auto; }

@@ -57,6 +57,8 @@ def _kontext(code):
         "tafel": tafel,
         "tafel_name": tafel_name,
         "eigenes_css": html.css_bereinigen(e.eigenes_css),
+        "sprach_hinweise": sprachen.hinweise(),
+        "land_sprache": sprachen.LAND_SPRACHE,
         "kopf": eigener_bereich(eigene, "kopf", tafel=tafel_name),
         "fuss": eigener_bereich(eigene, "fuss", tafel=tafel_name),
     }
