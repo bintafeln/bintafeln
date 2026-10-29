@@ -19,8 +19,10 @@ in ihrer Sprache. Die Warteliste arbeitet die Tafel derzeit mit einem eigenen Pr
   Die Tafel kann Einleitung und Bestätigungstext je Sprache selbst schreiben.
 - Je Feld stellt die Tafel ein: nicht abfragen, freiwillig oder Pflicht. Vorgabe ist sparsam;
   Familienstand und Staatsangehörigkeit sind aus. Das Formular ist zunächst ausgeschaltet.
-- **Bestätigung** auf dem Bildschirm und, wenn eine Adresse angegeben ist, per Mail in der
-  gewählten Sprache. Ausgewählte Mitarbeitende erhalten eine Mail ohne persönliche Angaben.
+- **Bestätigung** auf dem Bildschirm und, wenn eine Adresse angegeben ist, per Mail auf Deutsch
+  und darunter in der Sprache zur angegebenen Staatsangehörigkeit (ohne passende Sprache: der
+  gewählten), damit auch Angehörige oder Beratungsstellen sie lesen können. Die Antragsnummer
+  zeigen weder Seite noch Mail, damit niemand sie als Platz in einer Reihenfolge versteht. Ausgewählte Mitarbeitende erhalten eine Mail ohne persönliche Angaben.
 - **Missbrauchsschutz** ohne fremde Dienste: ein für Menschen unsichtbares Feld, höchstens fünf
   Absendungen je Adresse und Stunde (gespeichert nur als Prüfsumme, nach einem Tag gelöscht),
   Nachweise nur als Foto oder PDF, höchstens fünf Dateien mit je 10 MB, verschlüsselt abgelegt.

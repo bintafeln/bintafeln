@@ -70,7 +70,6 @@
   "einverstaendnis": "Beleegyező nyilatkozat",
   "absenden": "Kérelem elküldése",
   "danke_titel": "Köszönjük!",
-  "danke_nummer": "Kérelmét megkaptuk. Kérelme száma: {nummer}",
   "danke_eingang": "Kérelmét megkaptuk.",
   "bestaetigung": "Megvizsgáljuk kérelmét, és felvesszük Önnel a kapcsolatot. Amikor behívjuk, hozza magával az eredeti igazolásokat.",
   "mail_gesendet": "Visszaigazolást küldtünk ide: {email}.",

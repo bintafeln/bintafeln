@@ -390,12 +390,13 @@ class TextForm(forms.ModelForm):
             "einleitung": "Steht über dem Formular. Platzhalter: {tafel}.",
             "anhaenge_hinweis": "Steht über dem Feld für die Nachweise, z. B. welche Unterlagen "
             "nötig sind. Leer in einer Sprache = der deutsche Hinweis.",
-            "bestaetigung": "Erscheint nach dem Absenden unter der Antragsnummer. Platzhalter: "
-            "{nummer}, {tafel}.",
+            "bestaetigung": "Erscheint nach dem Absenden. Platzhalter: {tafel} (die Antragsnummer "
+            "zeigt die Seite bewusst nicht).",
             "mail_betreff": "Platzhalter: {tafel}.",
             "mail_text": "Ganzer Inhalt der Antwortmail, wenn ausgefüllt (sonst: Anrede, "
             "„Ihr Antrag ist eingegangen“, Text nach dem Absenden, Gruß). Platzhalter: {vorname}, "
-            "{nachname}, {tafel}. Die Antragsnummer steht nie in der Mail.",
+            "{nachname}, {tafel}. Die Antragsnummer steht nie in der Mail. Die Mail kommt auf "
+            "Deutsch und darunter in der Sprache zur angegebenen Staatsangehörigkeit.",
         }
 
 
