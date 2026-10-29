@@ -57,6 +57,29 @@ NACH_CODE = {s.code: s for s in SPRACHEN}
 # Codes, die Browser für dieselben Sprachen senden.
 ALIASSE = {"ku": "kmr", "fa-af": "prs", "zh-cn": "zh", "zh-hans": "zh"}
 AUSWAHL = [(s.code, s.deutsch) for s in SPRACHEN]
+# Staatsangehörigkeit (Ländercode) → passende Sprache des Formulars, nur wo sie klar ist; passt
+# sie nicht zur gewählten, zeigt static/js/sprachhinweis.js einen Hinweis in dieser Sprache
+LAND_SPRACHE = {
+    **dict.fromkeys(["DE", "AT", "CH", "LI"], "de"),
+    **dict.fromkeys(["GB", "IE", "US", "CA", "AU", "NZ", "NG", "GH", "GM", "SL", "LR"], "en"),
+    **dict.fromkeys(["EG", "DZ", "BH", "IQ", "YE", "JO", "QA", "KW", "LB", "LY", "MA", "OM",
+                     "PS", "SA", "SD", "SY", "TN", "AE", "MR"], "ar"),
+    "TR": "tr", "UA": "uk", "RU": "ru", "BY": "ru", "PL": "pl", "RO": "ro", "MD": "ro",
+    "BG": "bg", "IR": "fa", "AF": "prs", "ER": "ti", "SO": "so",
+    **dict.fromkeys(["FR", "SN", "CI", "ML", "GN", "TG", "BJ", "BF", "NE", "CD", "CG", "CM",
+                     "GA", "TD"], "fr"),
+    **dict.fromkeys(["ES", "MX", "CO", "VE", "PE", "AR", "CL", "EC", "BO", "CU", "DO", "GT",
+                     "HN", "NI", "PY", "SV", "UY", "CR", "PA"], "es"),
+    "IT": "it", **dict.fromkeys(["PT", "BR", "AO", "MZ", "GW", "CV"], "pt"),
+    "AL": "sq", "XK": "sq", "RS": "sr", "ME": "sr", "HR": "hr", "BA": "bs",
+    "GR": "el", "CY": "el", "HU": "hu", "VN": "vi", "CN": "zh", "TW": "zh", "PK": "ur",
+}  # fmt: skip
+
+
+def hinweise() -> dict[str, dict]:
+    """Je Sprache der Hinweis „Hier können Sie die Sprache umstellen“, ihr Name und die Richtung."""
+    return {s.code: {"text": texte(s.code)["sprache_hinweis"], "name": s.name, "rtl": s.rtl}
+            for s in SPRACHEN}  # fmt: skip
 
 
 def sprache(code: str) -> Sprache:

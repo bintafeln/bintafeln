@@ -11,6 +11,7 @@
   <script src="{% static 'js/staaten.js' %}" defer></script>
   <script src="{% static 'js/ablage.js' %}" defer></script>
   <script src="{% static 'js/merkzeichen.js' %}" defer></script>
+  <script src="{% static 'js/sprachhinweis.js' %}" defer></script>
   {% if eigenes_css %}<style>{{ eigenes_css }}</style>{% endif %}
 </head>
 <body class="oeffentlich">
@@ -21,11 +22,17 @@
     </span>{% endif %}
     <form method="get" action="{% url 'antrag:start' %}" class="sprachwahl">
       <label for="sprache">{{ t.sprache }}</label>
-      <select name="sprache" id="sprache" onchange="this.form.submit()">
+      <select name="sprache" id="sprache" data-sofort>
         {% for x in sprachen %}<option value="{{ x.code }}" lang="{{ x.code }}"{% if x.code == s.code %} selected{% endif %}>{{ x.name }}</option>{% endfor %}
       </select>
       <noscript><button type="submit" class="knopf">{{ t.sprache_wechseln }}</button></noscript>
     </form>
+    {# Hinweis auf die Sprachwahl (sprachhinweis.js): liegt über der Seite, man kann weiter ausfüllen #}
+    <div class="sprach-hinweis" id="sprach-hinweis" role="status" hidden>
+      <span class="sprach-pfeil" aria-hidden="true"></span>
+      <div class="sprach-hinweis-texte"></div>
+      <button type="button" class="sprach-hinweis-zu" aria-label="✕">✕</button>
+    </div>
   </header>
   {% if kopf %}<div class="antrag-bereich antrag-eigener-kopf">{{ kopf }}</div>{% endif %}
   <main class="inhalt antrag">{% block inhalt %}{% endblock %}</main>
@@ -38,5 +45,7 @@
       {% if e.erklaerungen_url %} · <a href="{{ e.erklaerungen_url }}">{{ t.erklaerungen }}</a>{% endif %}
       {% if e.einverstaendnis_url %} · <a href="{{ e.einverstaendnis_url }}">{{ t.einverstaendnis }}</a>{% endif %}</span>
   </footer>{% endif %}
+{{ sprach_hinweise|json_script:"sprach-hinweise" }}
+{{ land_sprache|json_script:"land-sprache" }}
 </body>
 </html>
