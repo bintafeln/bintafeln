@@ -41,6 +41,7 @@
   "behinderung": "Disability (degree of disability, GdB)",
   "behinderung_nein": "no disability",
   "gdb_stufe": "GdB {n}",
+  "merkzeichen": "Marks on the disability ID card (several possible)",
   "wochentage": "Preferred days of the week",
   "tag_mo": "Monday",
   "tag_di": "Tuesday",

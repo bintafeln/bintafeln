@@ -1302,3 +1302,8 @@ body.aushang-ruhig { cursor: none; }
 .editor-farbpaar { display: inline-flex; align-items: center; gap: 2px; }
 .editor-leiste .editor-farbknopf { box-shadow: inset 0 -4px 0 var(--farbe); }
 .editor-leiste .editor-farbpaar input[type="color"] { width: 1.6rem; height: 2rem; }
+
+/* Antragsformular: Merkzeichen nebeneinander */
+[data-merkzeichen-fuer] .feld > div { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; }
+.merkzeichen-auswahl { display: flex; flex-wrap: wrap; gap: 0 .6rem; margin-top: .3rem; font-size: .9rem; }
+.merkzeichen-auswahl label { white-space: nowrap; }

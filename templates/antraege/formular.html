@@ -37,13 +37,14 @@
         {% include "antraege/_feld.html" with feld=form.familienstand %}
         {% include "antraege/_feld.html" with feld=form.staatsangehoerigkeit %}
       </div>{% endif %}
-      {% if form.gdb %}<div class="reihe">{% include "antraege/_feld.html" with feld=form.gdb %}</div>{% endif %}
+      {% if form.gdb %}<div class="reihe">{% include "antraege/_feld.html" with feld=form.gdb %}</div>
+      <div data-merkzeichen-fuer="{{ form.gdb.id_for_label }}">{% include "antraege/_feld.html" with feld=form.merkzeichen %}</div>{% endif %}
     </fieldset>
     {% if form.personen_zeilen %}
     <fieldset class="abschnitt">
       <legend>{{ t.abschnitt_haushalt }}</legend>
       <p class="hilfe">{{ t.haushalt_hinweis }}</p>
-      {% for n, titel, vorname, nachname, geburtsdatum, staat, gdb in form.personen_zeilen %}
+      {% for n, titel, vorname, nachname, geburtsdatum, staat, gdb, merkzeichen in form.personen_zeilen %}
       <details class="person"{% if n == 1 or vorname.value or vorname.errors %} open{% endif %}>
         <summary>{{ titel }}</summary>
         <div class="reihe reihe-3">
@@ -52,6 +53,7 @@
           {% include "antraege/_feld.html" with feld=geburtsdatum %}
         </div>
         {% if staat or gdb %}<div class="reihe">{% include "antraege/_feld.html" with feld=staat %}{% include "antraege/_feld.html" with feld=gdb %}</div>{% endif %}
+        {% if merkzeichen %}<div data-merkzeichen-fuer="{{ gdb.id_for_label }}">{% include "antraege/_feld.html" with feld=merkzeichen %}</div>{% endif %}
       </details>
       {% endfor %}
     </fieldset>

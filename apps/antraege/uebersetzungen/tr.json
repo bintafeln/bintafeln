@@ -41,6 +41,7 @@
   "behinderung": "Engellilik (engellilik derecesi, GdB)",
   "behinderung_nein": "engellilik yok",
   "gdb_stufe": "GdB {n}",
+  "merkzeichen": "Engelli kimlik kartındaki işaretler (birden fazla olabilir)",
   "wochentage": "Tercih edilen günler",
   "tag_mo": "Pazartesi",
   "tag_di": "Salı",

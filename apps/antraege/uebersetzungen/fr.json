@@ -41,6 +41,7 @@
   "behinderung": "Handicap (taux de handicap, GdB)",
   "behinderung_nein": "pas de handicap",
   "gdb_stufe": "GdB {n}",
+  "merkzeichen": "Mentions sur la carte d’invalidité (plusieurs possibles)",
   "wochentage": "Jours de la semaine préférés",
   "tag_mo": "Lundi",
   "tag_di": "Mardi",

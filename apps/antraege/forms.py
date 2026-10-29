@@ -4,6 +4,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.db import transaction
 
+from apps.antraege import sprachen
 from apps.antraege.models import (
     ANHANG_ORDNER,
     Abfrage,
@@ -19,7 +20,10 @@ from apps.core.auswahl import (
     ANREDEN,
     FAMILIENSTAENDE,
     GDB_STUFEN,
+    MERKZEICHEN,
+    MERKZEICHEN_CODES,
     gdb_text,
+    merkzeichen_liste,
     mit_vorhandenem,
     staatsangehoerigkeiten,
 )
@@ -39,6 +43,18 @@ FAMILIENSTAND_TEXT = dict(zip(FAMILIENSTAENDE, ["fs_ledig", "fs_verheiratet", "f
 
 def _zahl(wert) -> int | None:
     return int(wert) if wert not in (None, "") else None
+
+
+def _merkzeichen(gdb, gewaehlt) -> str:
+    """Merkzeichen nur zusammen mit einem GdB über 0, in fester Reihenfolge."""
+    if not _zahl(gdb):
+        return ""
+    return ", ".join(c for c in MERKZEICHEN_CODES if c in (gewaehlt or []))
+
+
+def _merkzeichen_feld(label, choices) -> forms.MultipleChoiceField:
+    return forms.MultipleChoiceField(label=label, choices=choices, required=False,
+                                     widget=forms.CheckboxSelectMultiple)  # fmt: skip
 
 
 class MehrereDateien(forms.ClearableFileInput):
@@ -96,6 +112,11 @@ class AntragForm(forms.Form):
                                                 for n in GDB_STUFEN]  # fmt: skip
         self._feld("gdb", forms.ChoiceField(choices=[("", t["keine_angabe"]), *gdb]),
                    t["behinderung"], schalter="behinderung")  # fmt: skip
+        # Merkzeichen (mehrere möglich), nur zusammen mit einem GdB; auf Deutsch mit Bedeutung
+        deutsch = t["merkzeichen"] == sprachen.texte("de")["merkzeichen"]
+        merkzeichen = [(c, f"{c} ({b})" if deutsch else c) for c, b in MERKZEICHEN]
+        if "gdb" in self.fields:
+            self.fields["merkzeichen"] = _merkzeichen_feld(t["merkzeichen"], merkzeichen)
         if einstellungen.angehoerige != Abfrage.AUS:
             for n in range(1, MAX_PERSONEN + 1):
                 self.fields[f"p{n}_vorname"] = forms.CharField(
@@ -108,6 +129,8 @@ class AntragForm(forms.Form):
                     self.fields[f"p{n}_gdb"] = forms.ChoiceField(
                         label=t["behinderung"], choices=[("", t["keine_angabe"]), *gdb],
                         required=False)  # fmt: skip
+                    self.fields[f"p{n}_merkzeichen"] = _merkzeichen_feld(t["merkzeichen"],
+                                                                         merkzeichen)  # fmt: skip
                 if einstellungen.staatsangehoerigkeit != Abfrage.AUS:  # nicht immer wie Person 1
                     self.fields[f"p{n}_staatsangehoerigkeit"] = forms.ChoiceField(
                         label=t["staatsangehoerigkeit"], choices=staaten, required=False,
@@ -170,7 +193,7 @@ class AntragForm(forms.Form):
         return [
             (n, self.texte["person_n"].format(n=n), self[f"p{n}_vorname"],
              self[f"p{n}_nachname"], self[f"p{n}_geburtsdatum"],
-             wenn(f"p{n}_staatsangehoerigkeit"), wenn(f"p{n}_gdb"))
+             wenn(f"p{n}_staatsangehoerigkeit"), wenn(f"p{n}_gdb"), wenn(f"p{n}_merkzeichen"))
             for n in range(1, MAX_PERSONEN + 1)
         ]  # fmt: skip
 
@@ -228,6 +251,7 @@ class AntragForm(forms.Form):
             },  # fmt: skip
             wochentage=", ".join(d.get("wochentage") or []),
             gdb=_zahl(d.get("gdb")),
+            merkzeichen=_merkzeichen(d.get("gdb"), d.get("merkzeichen")),
             einwilligung_bestaetigt=bool(d.get("einwilligung")),
             datenschutz_bestaetigt=bool(d.get("datenschutz_bestaetigt")),
             einverstaendnis_bestaetigt=bool(d.get("einverstaendnis_bestaetigt")),
@@ -241,6 +265,7 @@ class AntragForm(forms.Form):
                     geburtsdatum=d.get(f"p{n}_geburtsdatum"),
                     staatsangehoerigkeit=d.get(f"p{n}_staatsangehoerigkeit") or "",
                     gdb=_zahl(d.get(f"p{n}_gdb")),
+                    merkzeichen=_merkzeichen(d.get(f"p{n}_gdb"), d.get(f"p{n}_merkzeichen")),
                 )
         for datei in d.get("anhaenge") or []:
             AntragAnhang.objects.create(
@@ -358,6 +383,20 @@ class TextForm(forms.ModelForm):
         }
 
 
+class MerkzeichenMixin:
+    """Merkzeichen als Mehrfachauswahl; gespeichert als Text „G, B“."""
+
+    def _merkzeichen_einrichten(self):
+        self.fields["merkzeichen"] = forms.MultipleChoiceField(
+            label="Merkzeichen", required=False, widget=forms.CheckboxSelectMultiple,
+            choices=[(c, f"{c} ({b})") for c, b in MERKZEICHEN],
+            initial=merkzeichen_liste(self.instance.merkzeichen),
+        )  # fmt: skip
+
+    def clean_merkzeichen(self):
+        return ", ".join(c for c in MERKZEICHEN_CODES if c in self.cleaned_data["merkzeichen"])
+
+
 def _gdb_feld() -> forms.TypedChoiceField:
     return forms.TypedChoiceField(
         label="Behinderung", required=False, coerce=int, empty_value=None,
@@ -365,7 +404,7 @@ def _gdb_feld() -> forms.TypedChoiceField:
     )  # fmt: skip
 
 
-class AntragBearbeitenForm(forms.ModelForm):
+class AntragBearbeitenForm(MerkzeichenMixin, forms.ModelForm):
     """Angaben eines Antrags korrigieren (Büro, Admin); Auswahl statt Freitext wie im Formular."""
 
     anrede = forms.ChoiceField(label="Anrede", required=False, choices=ANREDEN)
@@ -380,7 +419,7 @@ class AntragBearbeitenForm(forms.ModelForm):
         fields = [
             "art", "kundennummer", "anrede", "vorname", "nachname", "geburtsdatum", "strasse",
             "plz", "ort", "telefon", "email", "familienstand", "staatsangehoerigkeit", "gdb",
-            "wochentage", "ausgabestelle", "nachricht",
+            "merkzeichen", "wochentage", "ausgabestelle", "nachricht",
         ]  # fmt: skip
         widgets = {"geburtsdatum": DatumEingabe(), "nachricht": forms.Textarea(attrs={"rows": 3})}
 
@@ -394,9 +433,10 @@ class AntragBearbeitenForm(forms.ModelForm):
         self.fields["staatsangehoerigkeit"].choices = mit_vorhandenem(
             staatsangehoerigkeiten(), a.staatsangehoerigkeit
         )
+        self._merkzeichen_einrichten()
 
 
-class AntragPersonForm(forms.ModelForm):
+class AntragPersonForm(MerkzeichenMixin, forms.ModelForm):
     staatsangehoerigkeit = forms.ChoiceField(
         label="Staatsangehörigkeit", required=False, widget=StaatAuswahl
     )
@@ -405,7 +445,14 @@ class AntragPersonForm(forms.ModelForm):
 
     class Meta:
         model = AntragPerson
-        fields = ["vorname", "nachname", "geburtsdatum", "staatsangehoerigkeit", "gdb"]
+        fields = [
+            "vorname",
+            "nachname",
+            "geburtsdatum",
+            "staatsangehoerigkeit",
+            "gdb",
+            "merkzeichen",
+        ]
         widgets = {"geburtsdatum": DatumEingabe()}
 
     def __init__(self, *args, **kwargs):
@@ -413,6 +460,7 @@ class AntragPersonForm(forms.ModelForm):
         self.fields["staatsangehoerigkeit"].choices = mit_vorhandenem(
             staatsangehoerigkeiten(), self.instance.staatsangehoerigkeit
         )
+        self._merkzeichen_einrichten()
 
 
 AntragPersonenFormset = forms.inlineformset_factory(

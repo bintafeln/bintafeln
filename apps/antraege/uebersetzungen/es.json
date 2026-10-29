@@ -41,6 +41,7 @@
   "behinderung": "Discapacidad (grado de discapacidad, GdB)",
   "behinderung_nein": "sin discapacidad",
   "gdb_stufe": "GdB {n}",
+  "merkzeichen": "Marcas en la tarjeta de discapacidad (varias posibles)",
   "wochentage": "Días de la semana preferidos",
   "tag_mo": "Lunes",
   "tag_di": "Martes",

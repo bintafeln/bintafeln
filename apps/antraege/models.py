@@ -218,6 +218,7 @@ class Antrag(models.Model):
         "Grad der Behinderung", null=True, blank=True,
         help_text="0 = keine Behinderung, leer = keine Angabe.",
     )  # fmt: skip
+    merkzeichen = models.CharField("Merkzeichen", max_length=60, blank=True)
     wochentage = models.CharField("Bevorzugte Wochentage", max_length=30, blank=True)
     # Beim Absenden bestätigt (Pflicht-Häkchen, wenn die Tafel den Link eingetragen hat)
     # Bisher war das Häkchen zum Speichern immer Pflicht, daher für alte Anträge „ja“
@@ -246,7 +247,7 @@ class Antrag(models.Model):
 
     @property
     def gdb_text(self) -> str:
-        return gdb_text(self.gdb)
+        return gdb_text(self.gdb, self.merkzeichen)
 
     @property
     def nummer(self) -> str:
@@ -274,6 +275,7 @@ class AntragPerson(models.Model):
         "Grad der Behinderung", null=True, blank=True,
         help_text="0 = keine Behinderung, leer = keine Angabe.",
     )  # fmt: skip
+    merkzeichen = models.CharField("Merkzeichen", max_length=60, blank=True)
 
     class Meta:
         verbose_name = "Person im Antrag"
@@ -285,7 +287,7 @@ class AntragPerson(models.Model):
 
     @property
     def gdb_text(self) -> str:
-        return gdb_text(self.gdb)
+        return gdb_text(self.gdb, self.merkzeichen)
 
 
 class AntragAnhang(models.Model):

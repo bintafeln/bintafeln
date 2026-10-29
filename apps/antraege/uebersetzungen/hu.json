@@ -41,6 +41,7 @@
   "behinderung": "Fogyatékosság (fogyatékosság mértéke, GdB)",
   "behinderung_nein": "nincs fogyatékosság",
   "gdb_stufe": "GdB {n}",
+  "merkzeichen": "Jelzések a fogyatékossági igazolványon (több is lehet)",
   "wochentage": "Előnyben részesített napok",
   "tag_mo": "Hétfő",
   "tag_di": "Kedd",

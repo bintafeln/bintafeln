@@ -41,6 +41,7 @@
   "behinderung": "Behinderung (Grad der Behinderung, GdB)",
   "behinderung_nein": "keine Behinderung",
   "gdb_stufe": "GdB {n}",
+  "merkzeichen": "Merkzeichen im Schwerbehindertenausweis (mehrere möglich)",
   "wochentage": "Bevorzugte Wochentage",
   "tag_mo": "Montag",
   "tag_di": "Dienstag",

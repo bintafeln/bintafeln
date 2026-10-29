@@ -2,7 +2,13 @@
 Einlass sieht und die als Symbol auf den Ausweis kommen können. Gezeigt wird nur, was „ja“ ist;
 leer gilt als „nein“."""
 
-from apps.core.auswahl import FESTE_MERKMALE, GDB_SCHWERBEHINDERT, GDB_STUFEN, gdb_text
+from apps.core.auswahl import (
+    FESTE_MERKMALE,
+    GDB_SCHWERBEHINDERT,
+    GDB_STUFEN,
+    gdb_text,
+    merkzeichen_liste,
+)
 from apps.konten import rollen
 from apps.kunden.models import Zusatzfeld
 
@@ -62,10 +68,16 @@ def ausweis(haushalt) -> list[tuple[str, str]]:
 GDB_FELD = "gdb"
 
 
-def gdb_setzen(person, gdb) -> None:
+MERKZEICHEN_FELD = "merkzeichen"
+# Merkzeichen, die ein mitgeliefertes Merkmal (Einlass, Ausweis) mit sich bringen
+MERKZEICHEN_MERKMAL = {"Bl": "blind", "TBl": "blind", "Gl": "taub"}
+
+
+def gdb_setzen(person, gdb, merkzeichen: str = "") -> None:
     """Grad der Behinderung aus dem Antrag an der Person (ohne Speichern): als Zusatzfeld
-    „Grad der Behinderung“ (Art. 9, wird beim ersten Mal angelegt) und ab GdB 50 das Merkmal
-    „Schwerbehindert“. Leer (keine Angabe) ändert nichts."""
+    „Grad der Behinderung“ (Art. 9, wird beim ersten Mal angelegt), ab GdB 50 das Merkmal
+    „Schwerbehindert“, die Merkzeichen (G, aG, B …) als Zusatzfeld „Merkzeichen“ und Bl/Gl als
+    Merkmal „Blind“/„Taub“. Leer (keine Angabe) ändert nichts."""
     if gdb is None or gdb == "":
         return
     gdb = int(gdb)
@@ -77,4 +89,15 @@ def gdb_setzen(person, gdb) -> None:
     zusatz = dict(person.zusatz or {})
     zusatz[GDB_FELD] = gdb_text(gdb)
     zusatz["schwerbehindert"] = gdb >= GDB_SCHWERBEHINDERT
+    codes = merkzeichen_liste(merkzeichen) if gdb else []
+    if codes or zusatz.get(MERKZEICHEN_FELD):
+        Zusatzfeld.objects.get_or_create(schluessel=MERKZEICHEN_FELD, defaults={
+            "bezeichnung": "Merkzeichen (Schwerbehindertenausweis)",
+            "gilt_fuer": Zusatzfeld.GiltFuer.PERSON, "typ": Zusatzfeld.Typ.TEXT,
+            "besondere_kategorie": True, "reihenfolge": 99,
+        })  # fmt: skip
+        zusatz[MERKZEICHEN_FELD] = ", ".join(codes)
+    for code in codes:
+        if code in MERKZEICHEN_MERKMAL:
+            zusatz[MERKZEICHEN_MERKMAL[code]] = True
     person.zusatz = zusatz

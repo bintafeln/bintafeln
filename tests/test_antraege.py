@@ -646,3 +646,29 @@ def test_erklaerungen_als_pflicht_bestaetigen(client, offen, admin_client):
     b = Antrag.objects.get(vorname="Ole")
     assert not b.einwilligung_bestaetigt and not b.datenschutz_bestaetigt
     assert b.einverstaendnis_bestaetigt
+
+
+def test_merkzeichen_mit_gdb(client, offen):
+    from apps.antraege.models import Abfrage, Antrag
+
+    offen.behinderung = Abfrage.OPTIONAL
+    offen.save()
+    seite = client.get(FORMULAR).content.decode()
+    assert 'name="merkzeichen"' in seite and "aG (außergewöhnlich gehbehindert)" in seite
+    assert 'name="p1_merkzeichen"' in seite and "data-merkzeichen-fuer" in seite
+    englisch = client.get(reverse("antrag:formular", args=["en"])).content.decode()
+    assert "Marks on the disability ID card" in englisch and "gehbehindert" not in englisch
+    client.post(FORMULAR, daten(gdb="80", merkzeichen=["B", "G"], p1_vorname="Lina",
+                                p1_gdb="0", p1_merkzeichen=["H"]))  # fmt: skip
+    a = Antrag.objects.get()
+    assert a.merkzeichen == "G, B" and a.gdb_text == "GdB 80, Merkzeichen G, B"
+    assert a.personen.get().merkzeichen == ""  # ohne GdB keine Merkzeichen
+
+
+def test_merkzeichen_unbekannt_abgelehnt(client, offen):
+    from apps.antraege.models import Abfrage, Antrag
+
+    offen.behinderung = Abfrage.OPTIONAL
+    offen.save()
+    antwort = client.post(FORMULAR, daten(gdb="80", merkzeichen=["G", "Unsinn"]))
+    assert antwort.status_code == 200 and not Antrag.objects.exists()

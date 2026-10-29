@@ -177,6 +177,23 @@ def test_editor_gestalten_und_html(angemeldet, admin):
     assert "Welt" in gespeichert and "kasten" in gespeichert
 
 
+def test_antrag_merkzeichen_erst_mit_gdb(seite, admin):
+    from apps.antraege.models import Abfrage, AntragEinstellungen
+
+    e = AntragEinstellungen.laden()
+    e.aktiv, e.behinderung = True, Abfrage.OPTIONAL
+    e.save()
+    seite.goto("/antrag/de/")
+    block = seite.locator('[data-merkzeichen-fuer="id_gdb"]')
+    expect(block).to_be_hidden()
+    seite.select_option("#id_gdb", "50")
+    expect(block).to_be_visible()
+    block.get_by_label("G (erheblich gehbehindert)").check()
+    seite.select_option("#id_gdb", "0")
+    expect(block).to_be_hidden()
+    assert not block.get_by_label("G (erheblich gehbehindert)").is_checked()
+
+
 def test_suche_im_kopf(angemeldet, admin):
     _haushalte(1)
     seite = angemeldet(admin)

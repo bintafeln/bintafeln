@@ -257,13 +257,14 @@ def test_datum_de_filter():
 def test_aufnahme_uebernimmt_gdb(admin_client, bestand):
     from apps.kunden.models import Zusatzfeld
 
-    a = antrag(vorname="Max", nachname="Probe", gdb=60)
+    a = antrag(vorname="Max", nachname="Probe", gdb=60, merkzeichen="G, B")
     AntragPerson.objects.create(antrag=a, vorname="Lina", nachname="Probe", gdb=30)
     schritt(admin_client, a, "kunde", {"haushalt": "neu"})
     schritt(admin_client, a, "abgleich", {})
     seite = schritt(admin_client, a, "personen").content.decode()
     assert 'name="p0_gdb"' in seite and '<option value="30" selected>GdB 30</option>' in seite
     schritt(admin_client, a, "personen", {"anzahl": "2", "p0_vorname": "Lina", "p0_gdb": "30",
+                                          "p0_merkzeichen": ["Bl", "x"],
                                           "p1_vorname": "Ben", "p1_gdb": "unsinn"})  # fmt: skip
     art = Einkommensart.objects.get()
     bis = aufnahme.gueltigkeit_auswahl(timezone.localdate(), KundenEinstellungen.laden())[0][0]
@@ -271,8 +272,11 @@ def test_aufnahme_uebernimmt_gdb(admin_client, bestand):
     schritt(admin_client, a, "gruppe", {"kundengruppe": bestand["frei"].pk})
     schritt(admin_client, a, "pruefen", {})
     h = Haushalt.objects.get(kundennummer="1002")
-    assert h.hauptperson.zusatz == {"gdb": "GdB 60", "schwerbehindert": True}
-    assert h.personen.get(vorname="Lina").zusatz == {"gdb": "GdB 30", "schwerbehindert": False}
+    assert h.hauptperson.zusatz == {"gdb": "GdB 60", "schwerbehindert": True,
+                                    "merkzeichen": "G, B"}  # fmt: skip
+    assert h.personen.get(vorname="Lina").zusatz == {
+        "gdb": "GdB 30", "schwerbehindert": False, "merkzeichen": "Bl", "blind": True}  # fmt: skip
+    assert Zusatzfeld.objects.get(schluessel="merkzeichen").besondere_kategorie
     assert not h.personen.get(vorname="Ben").zusatz  # ohne Angabe bleibt alles, wie es war
     feld = Zusatzfeld.objects.get(schluessel="gdb")
     assert feld.besondere_kategorie and "GdB 100" in feld.optionen_liste()

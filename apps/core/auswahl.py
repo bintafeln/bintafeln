@@ -176,7 +176,24 @@ GDB_STUFEN = list(range(20, 101, 10))
 GDB_SCHWERBEHINDERT = 50
 
 
-def gdb_text(wert) -> str:
+def gdb_text(wert, merkzeichen: str = "") -> str:
     if wert is None or wert == "":
         return ""
-    return "keine Behinderung" if int(wert) == 0 else f"GdB {int(wert)}"
+    if int(wert) == 0:
+        return "keine Behinderung"
+    return f"GdB {int(wert)}" + (f", Merkzeichen {merkzeichen}" if merkzeichen else "")
+
+
+# Merkzeichen im Schwerbehindertenausweis (mehrere möglich); gespeichert als „G, B“
+MERKZEICHEN = [
+    ("G", "erheblich gehbehindert"), ("aG", "außergewöhnlich gehbehindert"), ("H", "hilflos"),
+    ("Bl", "blind"), ("Gl", "gehörlos"), ("TBl", "taubblind"), ("B", "Begleitperson nötig"),
+    ("RF", "Rundfunkbeitrag ermäßigt"), ("1. Kl.", "1. Wagenklasse"),
+]  # fmt: skip
+MERKZEICHEN_CODES = [code for code, _ in MERKZEICHEN]
+
+
+def merkzeichen_liste(text: str) -> list[str]:
+    """„G, B“ → ["G", "B"] in fester Reihenfolge; Unbekanntes fällt weg."""
+    teile = {t.strip() for t in (text or "").split(",")}
+    return [code for code in MERKZEICHEN_CODES if code in teile]

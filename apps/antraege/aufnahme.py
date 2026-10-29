@@ -197,7 +197,7 @@ def uebernehmen(antrag, zustand: dict, von: str) -> Haushalt:
     for feld, _, zum_haushalt in FELDER:
         if not zum_haushalt and feld in werte:
             setattr(hp, feld, _datum(werte[feld]) if feld == "geburtsdatum" else werte[feld] or "")
-    merkmale.gdb_setzen(hp, antrag.gdb)
+    merkmale.gdb_setzen(hp, antrag.gdb, antrag.merkzeichen)
     hp.save()
 
     behalten = set()
@@ -211,7 +211,7 @@ def uebernehmen(antrag, zustand: dict, von: str) -> Haushalt:
         person.geburtsdatum = _datum(p.get("geburtsdatum"))
         if "staatsangehoerigkeit" in p:  # ältere Zwischenstände ohne das Feld ändern nichts
             person.staatsangehoerigkeit = p["staatsangehoerigkeit"]
-        merkmale.gdb_setzen(person, p.get("gdb"))
+        merkmale.gdb_setzen(person, p.get("gdb"), p.get("merkzeichen", ""))
         person.save()
         behalten.add(person.pk)
     h.personen.filter(ist_hauptperson=False).exclude(pk__in=behalten).delete()
