@@ -342,3 +342,24 @@ def springer_loeschen(request, pk):
     papierkorb.loeschen(request.user, "Springer", str(s), s, recht="fahrdienst.planen")
     messages.success(request, f"„{s}“ ist kein Springer mehr.")
     return redirect("fahrdienst:einstellungen")
+
+
+@require_POST
+@sehen
+def ausfall_gesund(request, pk):
+    """Wieder gesund ab heute (ADR 0085): kann einspringen, die eigenen Plätze bleiben frei."""
+    a = get_object_or_404(Ausfall, pk=pk)
+    eigener = a.benutzer_id == request.user.pk and plan.darf_selbst_melden(request.user)
+    if not (eigener or rollen.hat_recht(request.user, "fahrdienst.planen")):
+        raise PermissionDenied
+    if plan.gesund_melden(a, timezone.localdate(),
+                          request.build_absolute_uri(reverse("fahrdienst:plan"))):  # fmt: skip
+        messages.success(request, "Wieder gesund gemeldet. Die eigenen Plätze bleiben frei "
+                                  "bzw. beim Ersatz; bitte dort eintragen, wo noch jemand "
+                                  "fehlt.")  # fmt: skip
+    else:
+        messages.info(request, "Dieser Ausfall ist schon vorbei oder bereits gesund gemeldet.")
+    weiter = request.POST.get("weiter", "")
+    if not url_has_allowed_host_and_scheme(weiter, {request.get_host()}):
+        weiter = reverse("fahrdienst:meine")
+    return redirect(weiter)

@@ -23,6 +23,7 @@ def fristen():
 
 
 def auskunft_mitarbeiter(benutzer, pdf):
+    from apps.core import ausfall as ausfallregeln
     from apps.dienstplan.models import Ausfall, Besetzung, Ersatz, Helfer
 
     h = Helfer.objects.filter(benutzer=benutzer).first()
@@ -38,7 +39,12 @@ def auskunft_mitarbeiter(benutzer, pdf):
     pdf.tabelle(
         ["Ausfall von", "bis", "Grund", "Anmerkung"],
         [
-            [f"{a.von:%d.%m.%Y}", f"{a.bis:%d.%m.%Y}", a.get_grund_display(), a.anmerkung]
+            [
+                f"{a.von:%d.%m.%Y}",
+                f"{a.bis:%d.%m.%Y}",
+                a.get_grund_display(),
+                " · ".join(filter(None, [a.anmerkung, ausfallregeln.gesund_text(a)])),
+            ]
             for a in Ausfall.objects.filter(helfer=h)
         ],
         breiten=[0.2, 0.2, 0.2, 0.4],

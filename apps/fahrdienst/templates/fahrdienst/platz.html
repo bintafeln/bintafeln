@@ -9,6 +9,7 @@
     {% if p.ersatz %}<dt>Für diesen Tag</dt><dd>{% if p.gast %}{{ p.gast }} (Gast){% else %}{{ p.ersatz.benutzer.get_full_name|default:p.ersatz.benutzer.username }}{% endif %} (eingetragen von {{ p.ersatz.eingetragen_von }})</dd>{% endif %}
     {% if p.ausfall %}<dt>Fällt aus</dt><dd>{{ p.ausfall.benutzer.get_full_name|default:p.ausfall.benutzer.username }}: {{ p.ausfall.get_grund_display }}{% if p.ausfall.anmerkung %} – {{ p.ausfall.anmerkung }}{% endif %}
       ({{ p.ausfall.von|date:"d.m." }}{% if p.ausfall.bis != p.ausfall.von %}–{{ p.ausfall.bis|date:"d.m.Y" }}{% endif %})
+      {% if not p.ausfall.gesund_ab %}<form method="post" action="{% url 'fahrdienst:ausfall_gesund' p.ausfall.pk %}" class="inline">{% csrf_token %}<input type="hidden" name="weiter" value="{{ zurueck }}"><button type="submit" class="link">wieder gesund</button></form>{% else %}<span class="hinweis">wieder da ab {{ p.ausfall.gesund_ab|date:"d.m.Y" }}</span>{% endif %}
       <form method="post" action="{% url 'fahrdienst:ausfall_loeschen' p.ausfall.pk %}" class="inline" onsubmit="return confirm('Ausfall zurücknehmen? Wirklich löschen?')">{% csrf_token %}<input type="hidden" name="weiter" value="{{ zurueck }}"><button type="submit" class="link">zurücknehmen</button></form></dd>{% endif %}
   </dl>
   {% if p.wer and not p.ausfall %}

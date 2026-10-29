@@ -9,7 +9,8 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.ausgabe.ampel import wochentage
-from apps.core.auswahl import FAHRDIENST_AUSFALLGRUENDE
+from apps.core import ausfall as ausfallregeln
+from apps.core.auswahl import AUSFALL_DAUER, FAHRDIENST_AUSFALLGRUENDE
 from apps.dienstplan import plan
 from apps.dienstplan.models import Aufgabe, Diensttag, Helfer
 from apps.konten import rollen
@@ -70,15 +71,24 @@ def platz(teil: str) -> dict | None:
     return {
         "titel": f"{TAGNAME[a.wochentag]} {p.datum:%d.%m.%Y} · {a.name} {a.zeit}",
         "wer": p.gast or (str(p.wer) if p.wer else ""),
-        "status": status,
+        "status": _status(p, status),
         "wer_konto": p.wer.benutzer_id if p.wer else None,
         "kann_ausfallen": p.wer is not None and not p.ausfall and not p.ersatz,
         "kann_einspringen": p.fehlt or p.status == plan.LEER,
         "gruende": FAHRDIENST_AUSFALLGRUENDE,
+        "dauer": AUSFALL_DAUER,
+        "datum": p.datum.isoformat(),
+        "kann_gesund": p.ausfall is not None and p.ersatz is None and not p.ausfall.gesund_ab,
         "frei": [(h.pk, str(h), h.benutzer_id) for h in plan.verfuegbar(p.datum)],
         "hat_ersatz": p.ersatz is not None,
         "recht": "dienstplan.planen",
     }
+
+
+def _status(p, status) -> str:
+    if p.ausfall and p.ausfall.gesund_ab and p.datum >= p.ausfall.gesund_ab and not p.ersatz:
+        return "wieder da, der Platz bleibt aber frei (noch kein Ersatz)"
+    return status
 
 
 def aendern(teil: str, daten, person, von: str, basis: str) -> str:
@@ -98,9 +108,20 @@ def aendern(teil: str, daten, person, von: str, basis: str) -> str:
         grund = daten.get("grund", "")
         if grund not in dict(FAHRDIENST_AUSFALLGRUENDE):
             raise ValueError("Bitte einen Grund wählen.")
+        bis = ausfallregeln.bis_berechnen(datum, daten.get("dauer", ""), daten.get("bis", ""))
         link = f"{basis}{reverse('dienstplan:plan')}"
-        plan.ausfall_melden(p.wer, datum, datum, grund, "", von, link)
-        return f"{p.wer} fällt am {datum:%d.%m.} aus. Die Teamleitung wird benachrichtigt."
+        plan.ausfall_melden(p.wer, datum, bis, grund, "", von, link)
+        zeit = f"am {datum:%d.%m.}" if bis == datum else f"vom {datum:%d.%m.} bis {bis:%d.%m.%Y}"
+        return f"{p.wer} fällt {zeit} aus. Die Teamleitung wird benachrichtigt."
+    if aktion == "gesund":
+        if p.ausfall is None or p.ersatz or p.ausfall.gesund_ab:
+            raise ValueError("Hier ist kein Ausfall, der noch läuft.")
+        if not planer and p.wer.benutzer_id != person.pk:
+            raise ValueError("Gesund melden kann sich nur die Person selbst (oder wer den "
+                             "Dienstplan plant).")  # fmt: skip
+        plan.gesund_melden(p.ausfall, timezone.localdate(), f"{basis}{reverse('dienstplan:plan')}")
+        return (f"{p.wer} ist wieder da und kann einspringen. Die eigenen Dienste bleiben frei "
+                "bzw. beim Ersatz: Bitte dort wieder eintragen, wo noch jemand fehlt.")  # fmt: skip
     if aktion == "ersatz":
         h = Helfer.objects.filter(pk=daten.get("helfer") or 0, aktiv=True).first()
         if h is None or h not in plan.verfuegbar(datum):

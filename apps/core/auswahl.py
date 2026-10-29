@@ -168,6 +168,11 @@ NACHRICHT_ANLIEGEN_WAEHLBAR = [a for a in NACHRICHT_ANLIEGEN if a[0] not in NACH
 # Krankmeldung eines Kunden (ADR 0075): Gesundheitsdaten, deshalb nur grob und nur befristet
 KRANK_GRUENDE = [("krank", "krank"), ("reha", "Reha"), ("krankenhaus", "Krankenhaus")]
 FAHRDIENST_AUSFALLGRUENDE = [("krank", "krank"), ("urlaub", "Urlaub"), ("sonstiges", "Sonstiges")]
+# Wie lange ein Ausfall am Aushang-Monitor gilt (apps/core/ausfall.py); „Wochen“ zählt ab dem
+# gewählten Tag, also z. B. dieser und der nächste Mittwoch bei „2 Wochen“
+AUSFALL_DAUER = [("tag", "nur an diesem Tag"), ("w1", "1 Woche"), ("w2", "2 Wochen"),
+                 ("w3", "3 Wochen"), ("w4", "4 Wochen"), ("w6", "6 Wochen"),
+                 ("w8", "8 Wochen"), ("bis", "bis einschließlich …")]  # fmt: skip
 
 
 # Grad der Behinderung (GdB) im Antrag und im Kundenstamm: Zehnerstufen von 20 bis 100.

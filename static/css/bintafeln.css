@@ -1232,6 +1232,9 @@ body.aushang-ruhig { cursor: none; }
 .aushang-aktion summary { cursor: pointer; font-weight: 600; color: var(--akzent-dunkel); padding: .25rem 0; }
 .aushang-felder { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: .75rem; }
 .aushang-felder label { display: flex; flex-direction: column; gap: .2rem; flex: 1 1 12rem; font-weight: 600; }
+/* Ausfall am Monitor: Datum nur bei „bis einschließlich …“ (ohne JavaScript) */
+.aushang-felder .aushang-bis { display: none; }
+form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aushang-bis { display: flex; }
 .aushang-felder select, .aushang-felder input { font: inherit; padding: .55rem .6rem; border: 1px solid var(--rand);
   border-radius: .4rem; min-height: 3rem; }
 .aushang-dialog .knopf { width: auto; }

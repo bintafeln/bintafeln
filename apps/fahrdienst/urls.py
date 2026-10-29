@@ -13,6 +13,7 @@ urlpatterns = [
     path("meine/", views.meine, name="meine"),
     path("ausfall/", views.ausfall, name="ausfall"),
     path("ausfall/<int:pk>/loeschen/", views.ausfall_loeschen, name="ausfall_loeschen"),
+    path("ausfall/<int:pk>/gesund/", views.ausfall_gesund, name="ausfall_gesund"),
     path("einstellungen/", views.einstellungen, name="einstellungen"),
     path("tour/neu/", views.tour, name="tour_neu"),
     path("tour/<int:pk>/", views.tour, name="tour"),

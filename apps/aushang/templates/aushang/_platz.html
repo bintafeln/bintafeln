@@ -8,12 +8,28 @@
 <form method="post" class="aushang-aktion">
   {% csrf_token %}<input type="hidden" name="platz" value="{{ d.kennung }}"><input type="hidden" name="aktion" value="ausfall">
   <input type="hidden" name="person" value="{{ d.wer_konto }}">
-  <h3>Ich bin {{ d.wer }} und kann an diesem Tag nicht</h3>
+  <h3>Ich bin {{ d.wer }} und kann nicht</h3>
   <div class="aushang-felder">
     <label>Grund <select name="grund" required>{% for wert, text in d.gruende %}<option value="{{ wert }}">{{ text }}</option>{% endfor %}</select></label>
+    <label>Wie lange <select name="dauer">{% for wert, text in d.dauer %}<option value="{{ wert }}">{{ text }}</option>{% endfor %}</select></label>
+    <label class="aushang-bis">bis einschließlich <input type="date" name="bis" min="{{ d.datum }}" value="{{ d.datum }}"></label>
     <label>Meine PIN <input type="password" name="pin" inputmode="numeric" autocomplete="off" minlength="{{ mindestlaenge }}" required></label>
   </div>
   <button type="submit" class="knopf">Austragen</button>
+</form>
+{% endif %}
+
+{% if d.selbst_gesund %}
+<form method="post" class="aushang-aktion">
+  {% csrf_token %}<input type="hidden" name="platz" value="{{ d.kennung }}"><input type="hidden" name="aktion" value="gesund">
+  <input type="hidden" name="person" value="{{ d.wer_konto }}">
+  <h3>Ich bin {{ d.wer }} und wieder gesund</h3>
+  <p class="aushang-dialog-hinweis">Ab heute können Sie wieder einspringen. Ihre Plätze bleiben frei bzw. beim Ersatz; tragen Sie sich
+    dort wieder ein, wo noch jemand fehlt.</p>
+  <div class="aushang-felder">
+    <label>Meine PIN <input type="password" name="pin" inputmode="numeric" autocomplete="off" minlength="{{ mindestlaenge }}" required></label>
+  </div>
+  <button type="submit" class="knopf">Wieder gesund melden</button>
 </form>
 {% endif %}
 
@@ -39,12 +55,15 @@
       <label>Meine PIN <input type="password" name="pin" inputmode="numeric" autocomplete="off" minlength="{{ mindestlaenge }}" required></label>
     </div>
     <div class="aushang-felder">
-      {% if d.kann_ausfallen %}<label>{{ d.wer }} fällt aus, Grund <select name="grund">{% for wert, text in d.gruende %}<option value="{{ wert }}">{{ text }}</option>{% endfor %}</select></label>{% endif %}
+      {% if d.kann_ausfallen %}<label>{{ d.wer }} fällt aus, Grund <select name="grund">{% for wert, text in d.gruende %}<option value="{{ wert }}">{{ text }}</option>{% endfor %}</select></label>
+      <label>Wie lange <select name="dauer">{% for wert, text in d.dauer %}<option value="{{ wert }}">{{ text }}</option>{% endfor %}</select></label>
+    <label class="aushang-bis">bis einschließlich <input type="date" name="bis" min="{{ d.datum }}" value="{{ d.datum }}"></label>{% endif %}
       {% if d.frei %}<label>Ersatz <select name="helfer"><option value="">bitte wählen</option>{% for wert, name, konto in d.frei %}<option value="{{ wert }}">{{ name }}</option>{% endfor %}</select></label>{% endif %}
       <label>Gast (Name) <input type="text" name="gast" maxlength="100"></label>
     </div>
     <div class="aktionsleiste">
       {% if d.kann_ausfallen %}<button type="submit" name="aktion" value="ausfall" class="knopf knopf-zweitrangig">Ausfall eintragen</button>{% endif %}
+      {% if d.kann_gesund %}<button type="submit" name="aktion" value="gesund" class="knopf knopf-zweitrangig">{{ d.wer }} wieder gesund melden</button>{% endif %}
       {% if d.frei %}<button type="submit" name="aktion" value="ersatz" class="knopf knopf-zweitrangig">Ersatz eintragen</button>{% endif %}
       <button type="submit" name="aktion" value="gast" class="knopf knopf-zweitrangig">Gast eintragen</button>
       {% if d.hat_ersatz %}<button type="submit" name="aktion" value="zuruecknehmen" class="knopf knopf-zweitrangig">Eintrag zurücknehmen</button>{% endif %}
@@ -53,7 +72,7 @@
 </details>
 {% endif %}
 
-{% if not d.selbst_aus and not d.einspringer and not d.planer %}
+{% if not d.selbst_aus and not d.selbst_gesund and not d.einspringer and not d.planer %}
 <p>Hier kann gerade niemand am Monitor etwas eintragen. Wer am Monitor ändern möchte, legt im Programm unter
   „Mein Konto“ (eigener Name oben rechts) eine persönliche PIN fest.</p>
 {% else %}

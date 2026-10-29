@@ -23,6 +23,7 @@ def fristen():
 
 
 def auskunft_mitarbeiter(benutzer, pdf):
+    from apps.core import ausfall as ausfallregeln
     from apps.fahrdienst.models import Ausfall, Besetzung, Ersatz, Springer, platz_name
 
     feste = Besetzung.objects.filter(benutzer=benutzer).select_related("tour")
@@ -38,7 +39,8 @@ def auskunft_mitarbeiter(benutzer, pdf):
                 [[b.tour.name, b.wochentag, platz_name(b.platz)] for b in feste],
                 breiten=[0.5, 0.25, 0.25])  # fmt: skip
     pdf.tabelle(["Ausfall von", "bis", "Grund", "Anmerkung"],
-                [[f"{a.von:%d.%m.%Y}", f"{a.bis:%d.%m.%Y}", a.get_grund_display(), a.anmerkung]
+                [[f"{a.von:%d.%m.%Y}", f"{a.bis:%d.%m.%Y}", a.get_grund_display(),
+              " · ".join(filter(None, [a.anmerkung, ausfallregeln.gesund_text(a)]))]
                  for a in ausfaelle], breiten=[0.2, 0.2, 0.2, 0.4])  # fmt: skip
     pdf.tabelle(["Eingesprungen am", "Tour", "Platz"],
                 [[f"{e.datum:%d.%m.%Y}", e.tour.name, platz_name(e.platz)] for e in ersatz],
