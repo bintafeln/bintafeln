@@ -60,9 +60,10 @@ def test_bilder_im_handbuch_vorhanden_und_benutzt(admin_client):
     benutzt (erzeugt von tests/e2e/test_hilfe_bilder.py)."""
     import re
 
-    vorlagen = Path(settings.BASE_DIR) / "templates" / "hilfe"
-    ordner = Path(settings.BASE_DIR) / "static" / "hilfe" / "bilder"
-    benutzt = {name for p in vorlagen.glob("*.html")
+    basis = Path(settings.BASE_DIR)
+    ordner = basis / "static" / "hilfe" / "bilder"
+    vorlagen = [*basis.glob("templates/hilfe/*.html"), *basis.glob("apps/*/templates/hilfe/*.html")]
+    benutzt = {name for p in vorlagen
                for name in re.findall(r'{% hilfe_bild "([^"]+)"', p.read_text())}  # fmt: skip
     assert benutzt, "keine Bilder im Handbuch"
     assert benutzt == {p.stem for p in ordner.glob("*.png")}
