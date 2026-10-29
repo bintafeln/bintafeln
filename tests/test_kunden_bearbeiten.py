@@ -68,7 +68,7 @@ def test_haushalt_bearbeiten(admin_client, h, gruppe_behalten):
     assert "Bearbeiten</a>" in seite
     seite = admin_client.get(url("bearbeiten", "2001")).content.decode()
     assert (
-        "ersetzt der nächste Import alle Änderungen" in seite
+        "kann ein Import diese Änderung" in seite
         and "Schwerbehindert (Art. 9)" in seite
     )
     admin_client.post(

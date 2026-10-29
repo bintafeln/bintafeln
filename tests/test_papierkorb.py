@@ -267,3 +267,23 @@ def test_zuordnungen_und_inhalt_nur_mit_recht(admin, client, benutzer_mit_rolle,
     recht_geben(rollen.BUERO, "kunden.besondere_kategorie")
     assert "schwerbehindert" in client.get(url).content.decode()
     assert Zugriff.objects.get(benutzername="berta").kundennummer == "6001"
+
+
+def test_inhalt_lesbar(admin, admin_client):
+    """Datum deutsch, ja/nein, Verweise mit Namen statt roher Werte."""
+    import datetime as dt
+
+    from apps.kunden.models import Haushalt, Kundengruppe
+
+    gruppe = Kundengruppe.objects.create(name="Gruppe A")
+    h = Haushalt.objects.create(kundennummer="00057", kundengruppe=gruppe,
+                                ausweis_gueltig_bis=dt.date(2027, 3, 28))  # fmt: skip
+    admin_client.post(reverse("kunden:haushalt_loeschen", args=["00057"]))
+    e = PapierkorbEintrag.objects.get()
+    felder = dict(papierkorb.inhalt(e)[0]["felder"])
+    assert felder["Ausweis gültig bis"] == "28.03.2027"
+    assert felder["Kundengruppe"] == "Gruppe A"
+    assert felder["Status"] == h.get_status_display()
+    nummer = gruppe.pk
+    gruppe.delete()
+    assert dict(papierkorb.inhalt(e)[0]["felder"])["Kundengruppe"] == f"Nr. {nummer}"

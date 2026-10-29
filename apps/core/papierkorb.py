@@ -176,10 +176,44 @@ def inhalt(eintrag: PapierkorbEintrag) -> list[dict]:
             if wert in ("", None, [], {}):
                 continue
             try:
-                titel = str(meta.get_field(name).verbose_name) if meta else name
+                feld = meta.get_field(name) if meta else None
             except Exception:  # noqa: BLE001 – Feld gibt es nach einem Update nicht mehr
-                titel = name
-            felder.append((titel[:1].upper() + titel[1:], wert))
+                feld = None
+            titel = str(feld.verbose_name) if feld else name
+            felder.append((titel[:1].upper() + titel[1:], _lesbar(feld, wert)))
         art = str(meta.verbose_name) if meta else d["model"]
         ergebnis.append({"art": art, "pk": d["pk"], "felder": felder})
     return ergebnis
+
+
+def _lesbar(feld, wert):
+    """Wert aus der gespeicherten Kopie so, wie man ihn in der Oberfläche liest: Datum deutsch,
+    ja/nein, Auswahl als Text, Verweise mit Namen (gibt es den Datensatz nicht mehr: „Nr. …“)."""
+    from django.db import models
+    from django.utils.dateparse import parse_date, parse_datetime
+
+    if feld is None:
+        return wert
+    try:
+        if isinstance(feld, models.DateTimeField):
+            return timezone.localtime(parse_datetime(wert)).strftime("%d.%m.%Y %H:%M")
+        if isinstance(feld, models.DateField):
+            return parse_date(wert).strftime("%d.%m.%Y")
+        if isinstance(feld, models.BooleanField):
+            return "ja" if wert else "nein"
+        if feld.choices:
+            return str(dict(feld.flatchoices).get(wert, wert))
+        if isinstance(feld, models.DecimalField):
+            return str(wert).replace(".", ",")
+        if feld.is_relation:
+            ziel = feld.related_model._default_manager
+            if isinstance(wert, list):
+                namen = {o.pk: str(o) for o in ziel.filter(pk__in=wert)}
+                return ", ".join(namen.get(pk, f"Nr. {pk}") for pk in wert)
+            obj = ziel.filter(pk=wert).first()
+            return str(obj) if obj else f"Nr. {wert}"
+    except (TypeError, ValueError, AttributeError):
+        return wert
+    if isinstance(wert, dict):
+        return ", ".join(f"{k}: {v}" for k, v in wert.items())
+    return wert

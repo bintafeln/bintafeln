@@ -1,4 +1,4 @@
-<p>Solange die Tafel noch ein anderes Programm nutzt, kommt der Kundenstamm als Datei herüber: als CSV-Dateien im offenen
+{% load handbuch %}<p>Solange die Tafel noch ein anderes Programm nutzt, kommt der Kundenstamm als Datei herüber: als CSV-Dateien im offenen
   Importformat von bintafeln oder als beliebige Excel- oder CSV-Datei. Beides geht über „Einstellungen → Systemsteuerung →
   Daten importieren“ (oder „Neuen Stand importieren“ auf der Kundenübersicht) mit „Kundenstamm“; Dateien im Importformat
   werden dabei von selbst zugeordnet (siehe „Daten importieren“).</p>
@@ -24,8 +24,10 @@
     da ist. Vorgewählt ist „nicht anlegen“; Sie können ihn als denselben Haushalt behandeln (Haken übernehmen) oder trotzdem neu anlegen.</li>
   <li><strong>Nicht mehr in der Datei</strong>: beim Ergänzen vorgewählt „behalten“; wer gelöscht werden soll, einzeln auf
     „löschen“ stellen (Papierkorb).</li>
-  <li>„Übernehmen“ – nur möglich, wenn die Server-Sicherung frisch ist.</li>
+  <li>„Import übernehmen“ – nur möglich, wenn die Server-Sicherung frisch ist.</li>
 </ol>
+{% hilfe_bild "import-abgleich" "① Art des Imports wählen, ② Haken = Wert aus der Datei übernehmen (hier ein Konflikt beim Ort), ③ bei einer möglichen Dublette wählen: nicht anlegen, als denselben Haushalt behandeln oder trotzdem neu anlegen." %}
+{% hilfe_bild "import-uebernehmen" "① Wählen, was mit Haushalten geschieht, die nicht mehr in der Datei stehen, ② „Import übernehmen“." %}
 <p>Abholungen, Ausnahmen, Anmerkungen und Kontobuchungen aus der Datei kommen beim Ergänzen zu vorhandenen Haushalten dazu,
   wenn es sie noch nicht gibt – nichts wird doppelt, auch wenn dieselbe Datei zweimal eingespielt wird.</p>
 <p><strong>Große Bestände in Teilen:</strong> Zuerst die Haushalte einspielen (auch aufgeteilt, z. B. je Ausgabestelle),

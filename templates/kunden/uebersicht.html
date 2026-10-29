@@ -45,7 +45,8 @@
 <section class="karte">
   <h2>Kundenstamm</h2>
   <p>{{ anzahl.haushalte }} Haushalte · {{ anzahl.personen }} Personen · {{ anzahl.kundengruppen }} Kundengruppen · {{ anzahl.abholungen }} Abholungen</p>
-  <p class="hinweis">Der Kundenstamm ist ein Abbild aus dem bisherigen Programm. Jeder Import ersetzt ihn vollständig.</p>
+  <p class="hinweis">Der Kundenstamm ist ein Abbild aus dem bisherigen Programm. Ein Import ersetzt ihn
+    vollständig oder ergänzt ihn; vorher zeigt er den Abgleich, und in bintafeln geänderte Haushalte lassen sich behalten.</p>
   <p><a class="knopf" href="{% url 'datenimport:start' %}?ziel=kunden">Neuen Stand importieren</a>
     {% if "kunden.zugriffsprotokoll" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'kunden:zugriffe' %}">Zugriffsprotokoll</a>{% endif %}</p>
 </section>
