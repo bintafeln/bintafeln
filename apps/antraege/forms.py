@@ -23,6 +23,7 @@ from apps.core.auswahl import (
     MERKZEICHEN,
     MERKZEICHEN_CODES,
     gdb_text,
+    merkzeichen_auswahl,
     merkzeichen_liste,
     mit_vorhandenem,
     staatsangehoerigkeiten,
@@ -328,6 +329,7 @@ class EinstellungenForm(forms.ModelForm):
             "gebiet_pruefen", "gebiet_plz", "gebiet_orte", "gebiet_name",
             "datenschutz_url",
             "impressum_url", "erklaerungen_url", "voraussetzungen_url", "einverstaendnis_url",
+            "kopf_zeigen", "ueberschrift_zeigen", "fuss_zeigen",
             "eigenes_css", "benachrichtigen",
             "erledigt_nach_tagen", "papierkorb_nach_tagen", "loeschen_nach_tagen",
         ]  # fmt: skip
@@ -368,15 +370,23 @@ def _html_feld(zeilen=8):
 class TextForm(forms.ModelForm):
     class Meta:
         model = AntragText
-        fields = ["ueberschrift", "einleitung", "anhaenge_hinweis", "bestaetigung", "mail_betreff",
-                  "mail_text"]  # fmt: skip
+        fields = ["kopf", "ueberschrift", "einleitung", "anhaenge_hinweis", "bestaetigung",
+                  "mail_betreff", "mail_text", "fuss"]  # fmt: skip
         widgets = {
+            "kopf": _html_feld(4),
+            "fuss": _html_feld(4),
             "anhaenge_hinweis": _html_feld(3),
             "einleitung": _html_feld(),
             "bestaetigung": _html_feld(),
             "mail_text": _html_feld(10),
         }
         help_texts = {
+            "kopf": "Steht ganz oben unter der Kopfzeile, auf allen Seiten des Formulars, z. B. "
+            "ein Bild oder ein farbiges Band. Leer in einer Sprache = der deutsche. Platzhalter: "
+            "{tafel}.",
+            "fuss": "Steht ganz unten über der Fußzeile, z. B. Anschrift, Öffnungszeiten, "
+            "Telefon. Leer in einer Sprache = der deutsche. Platzhalter: {tafel}.",
+            "ueberschrift": "Ob sie erscheint, stellen Sie unter „Anträge einstellen“ ein.",
             "einleitung": "Steht über dem Formular. Platzhalter: {tafel}.",
             "anhaenge_hinweis": "Steht über dem Feld für die Nachweise, z. B. welche Unterlagen "
             "nötig sind. Leer in einer Sprache = der deutsche Hinweis.",
@@ -395,12 +405,12 @@ class MerkzeichenMixin:
     def _merkzeichen_einrichten(self):
         self.fields["merkzeichen"] = forms.MultipleChoiceField(
             label="Merkzeichen", required=False, widget=forms.CheckboxSelectMultiple,
-            choices=[(c, f"{c} ({b})") for c, b in MERKZEICHEN],
+            choices=[(c, f"{c} ({b})") for c, b in merkzeichen_auswahl(self.instance.merkzeichen)],
             initial=merkzeichen_liste(self.instance.merkzeichen),
         )  # fmt: skip
 
     def clean_merkzeichen(self):
-        return ", ".join(c for c in MERKZEICHEN_CODES if c in self.cleaned_data["merkzeichen"])
+        return ", ".join(merkzeichen_liste(", ".join(self.cleaned_data["merkzeichen"])))
 
 
 def _gdb_feld() -> forms.TypedChoiceField:

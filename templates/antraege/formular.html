@@ -1,7 +1,7 @@
 {% extends "antraege/oeffentlich.html" %}
 {% block inhalt %}
 <section class="karte antrag-karte">
-  <h1 class="antrag-titel">{{ ueberschrift }}</h1>
+  {% if e.ueberschrift_zeigen %}<h1 class="antrag-titel">{{ ueberschrift }}</h1>{% endif %}
   <div class="antrag-einleitung">{{ einleitung }}</div>
   {% if e.voraussetzungen_url or e.erklaerungen_url or e.einverstaendnis_url %}<ul class="antrag-links">
     {% if e.voraussetzungen_url %}<li><a href="{{ e.voraussetzungen_url }}" target="_blank" rel="noopener">{{ t.voraussetzungen }}</a></li>{% endif %}

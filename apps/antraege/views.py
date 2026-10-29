@@ -308,6 +308,9 @@ def vorschau(request, eigene: AntragText) -> dict:
     beispiel = SimpleNamespace(nummer="4201", vorname="Erika", nachname="Beispiel")
     betreff, _, mail_html = oe.antwortmail(request, beispiel, kontext)
     return {
+        "kopf": oe.eigener_bereich(eigene, "kopf", tafel=kontext["tafel_name"]),
+        "fuss": oe.eigener_bereich(eigene, "fuss", tafel=kontext["tafel_name"]),
+        "ueberschrift_zeigen": kontext["e"].ueberschrift_zeigen,
         "ueberschrift": oe._ueberschrift(kontext),
         "einleitung": html.anzeigen(
             eigene.einleitung, kontext["t"]["einleitung"], tafel=kontext["tafel_name"]

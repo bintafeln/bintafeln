@@ -146,29 +146,31 @@ def test_editor_gestalten_und_html(angemeldet, admin):
     )
     seite = angemeldet(admin)
     seite.goto("/antraege/einstellungen/texte/de/")
-    flaeche = seite.locator(".editor-flaeche").first
+    # der Editor der Einleitung (davor steht der des eigenen Kopfbereichs)
+    editor = seite.locator(".editor", has=seite.locator("#id_einleitung"))
+    flaeche = editor.locator(".editor-flaeche")
     expect(flaeche).to_contain_text("Hallo")
     assert "onerror" not in flaeche.inner_html()  # Ereignisse fallen vor dem Anzeigen weg
     flaeche.click()
     seite.keyboard.press("End")
     seite.keyboard.type(" Welt")
     seite.keyboard.press("Shift+Home")
-    seite.locator(".editor-leiste").first.get_by_role("button", name="Fett").click()
-    seite.locator(".editor-reiter").first.get_by_role("tab", name="HTML").click()
+    editor.locator(".editor-leiste").get_by_role("button", name="Fett").click()
+    editor.locator(".editor-reiter").get_by_role("tab", name="HTML").click()
     feld = seite.locator("#id_einleitung")
     expect(feld).to_be_visible()
     assert "Welt" in feld.input_value() and (
         "<b>" in feld.input_value() or "font-weight" in feld.input_value()
     )
-    seite.locator(".editor-reiter").first.get_by_role("tab", name="Gestalten").click()
-    leiste = seite.locator(".editor-leiste").first
+    editor.locator(".editor-reiter").get_by_role("tab", name="Gestalten").click()
+    leiste = editor.locator(".editor-leiste")
     flaeche.click()
     seite.keyboard.press("Control+a")
     leiste.get_by_role("button", name="Kasten").click()
     expect(flaeche.locator(".kasten")).to_have_count(1)
     flaeche.locator(".kasten").click()
     leiste.get_by_role("button", name="Mitte").click()
-    seite.locator(".editor-reiter").first.get_by_role("tab", name="HTML").click()
+    editor.locator(".editor-reiter").get_by_role("tab", name="HTML").click()
     html = feld.input_value()
     assert "text-align: center" in html and 'class="kasten"' in html
     assert "background-color" in html

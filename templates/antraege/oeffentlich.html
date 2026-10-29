@@ -14,11 +14,11 @@
   {% if eigenes_css %}<style>{{ eigenes_css }}</style>{% endif %}
 </head>
 <body class="oeffentlich">
-  <header class="kopf antrag-kopf">
-    <span class="marke">
+  <header class="kopf antrag-kopf{% if not e.kopf_zeigen %} ohne-marke{% endif %}">
+    {% if e.kopf_zeigen %}<span class="marke">
       {% if tafel.logo %}<img src="{{ tafel.logo.url }}" alt="{{ tafel_name }}" class="logo">{% endif %}
       <span>{{ tafel_name }}</span>
-    </span>
+    </span>{% endif %}
     <form method="get" action="{% url 'antrag:start' %}" class="sprachwahl">
       <label for="sprache">{{ t.sprache }}</label>
       <select name="sprache" id="sprache" onchange="this.form.submit()">
@@ -27,14 +27,16 @@
       <noscript><button type="submit" class="knopf">{{ t.sprache_wechseln }}</button></noscript>
     </form>
   </header>
+  {% if kopf %}<div class="antrag-bereich antrag-eigener-kopf">{{ kopf }}</div>{% endif %}
   <main class="inhalt antrag">{% block inhalt %}{% endblock %}</main>
-  <footer class="fuss">
+  {% if fuss %}<div class="antrag-bereich antrag-eigener-fuss">{{ fuss }}</div>{% endif %}
+  {% if e.fuss_zeigen %}<footer class="fuss">
     {% if tafel.anschrift %}<span>{{ tafel.anschrift }}</span>{% endif %}
     <span>{% if e.datenschutz_url %}<a href="{{ e.datenschutz_url }}">{{ t.datenschutz }}</a>{% endif %}
       {% if e.impressum_url %} · <a href="{{ e.impressum_url }}">{{ t.impressum }}</a>{% endif %}
       {% if e.voraussetzungen_url %} · <a href="{{ e.voraussetzungen_url }}">{{ t.voraussetzungen }}</a>{% endif %}
       {% if e.erklaerungen_url %} · <a href="{{ e.erklaerungen_url }}">{{ t.erklaerungen }}</a>{% endif %}
       {% if e.einverstaendnis_url %} · <a href="{{ e.einverstaendnis_url }}">{{ t.einverstaendnis }}</a>{% endif %}</span>
-  </footer>
+  </footer>{% endif %}
 </body>
 </html>

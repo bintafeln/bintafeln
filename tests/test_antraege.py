@@ -674,3 +674,64 @@ def test_merkzeichen_unbekannt_abgelehnt(client, offen):
     offen.save()
     antwort = client.post(FORMULAR, daten(gdb="80", merkzeichen=["G", "Unsinn"]))
     assert antwort.status_code == 200 and not Antrag.objects.exists()
+
+
+def test_kopf_ueberschrift_fuss_ein_und_ausblenden(client, offen):
+    from apps.core.models import TafelEinstellungen
+
+    t = TafelEinstellungen.laden()
+    t.name = "Beispieltafel"
+    t.save()
+    seite = client.get(FORMULAR).content.decode()
+    assert '<span class="marke">' in seite and 'class="antrag-titel"' in seite
+    assert '<footer class="fuss">' in seite
+    assert "antrag-eigener-kopf" not in seite and "antrag-eigener-fuss" not in seite
+    offen.kopf_zeigen = offen.ueberschrift_zeigen = offen.fuss_zeigen = False
+    offen.save()
+    seite = client.get(FORMULAR).content.decode()
+    assert '<span class="marke">' not in seite and "ohne-marke" in seite
+    assert 'name="sprache"' in seite  # die Sprachwahl bleibt
+    assert 'class="antrag-titel"' not in seite and '<footer class="fuss">' not in seite
+    offen.aktiv = False
+    offen.save()
+    assert "<h1>" not in client.get(FORMULAR).content.decode()  # geschlossen, ohne Überschrift
+
+
+def test_eigener_kopf_und_fuss_je_sprache(client, offen, admin_client):
+    texte = reverse("antraege:texte", args=["de"])
+    seite = admin_client.get(texte).content.decode()
+    assert 'name="kopf"' in seite and 'name="fuss"' in seite
+    antwort = admin_client.post(texte, {"kopf": '<p style="text-align: center">Kopf {tafel}</p>',
+                                        "fuss": "<p>Öffnungszeiten Mo–Fr<script>x</script></p>",
+                                        "vorschau": "1"})  # fmt: skip
+    assert "Kopf Tafel</p>" in antwort.content.decode()  # Vorschau
+    admin_client.post(texte, {"kopf": '<p style="text-align: center">Kopf {tafel}</p>',
+                              "fuss": "<p>Öffnungszeiten Mo–Fr<script>x</script></p>"})  # fmt: skip
+    seite = client.get(FORMULAR).content.decode()
+    assert '<div class="antrag-bereich antrag-eigener-kopf"><p style="text-align:center">' in seite
+    assert "Kopf Tafel" in seite and "Öffnungszeiten Mo–Fr" in seite and "<script>x" not in seite
+    assert seite.index("antrag-eigener-kopf") < seite.index("antrag-titel")
+    assert seite.index("antrag-eigener-fuss") > seite.index("antrag-formular")
+    englisch = reverse("antrag:formular", args=["en"])
+    assert "Kopf Tafel" in client.get(englisch).content.decode()  # ohne eigenen: der deutsche
+    AntragText.objects.create(sprache="en", kopf="<p>Header {tafel}</p>")
+    seite = client.get(englisch).content.decode()
+    assert "Header Tafel" in seite and "Kopf Tafel" not in seite and "Öffnungszeiten" in seite
+
+
+def test_alte_merkzeichen_nicht_mehr_angeboten_aber_erhalten(client, offen, admin_client):
+    from apps.antraege.models import Abfrage, Antrag
+
+    offen.behinderung = Abfrage.OPTIONAL
+    offen.save()
+    seite = client.get(FORMULAR).content.decode()
+    assert "RF (Rundfunkbeitrag ermäßigt)" in seite
+    assert "Kriegsbeschädigte" not in seite and "versorgungsberechtigt" not in seite
+    antwort = client.post(FORMULAR, daten(gdb="80", merkzeichen=["G", "VB"]))
+    assert antwort.status_code == 200 and not Antrag.objects.exists()  # nicht mehr wählbar
+    # schon gespeichert: bleibt sichtbar und beim Bearbeiten wählbar
+    a = Antrag.objects.create(vorname="Erika", nachname="Beispiel", gdb=80, merkzeichen="G, VB")
+    assert a.gdb_text.endswith("G (erheblich gehbehindert), VB (versorgungsberechtigt)")
+    seite = admin_client.get(reverse("antraege:bearbeiten", args=[a.pk])).content.decode()
+    assert "VB (versorgungsberechtigt)" in seite
+    assert "Kriegsbeschädigte" not in seite

@@ -46,15 +46,19 @@ def _kontext(code):
     texte = sprachen.texte(s.code)
     tafel = TafelEinstellungen.laden()
     e = AntragEinstellungen.laden()
+    eigene = AntragText.objects.filter(sprache=s.code).first() or AntragText(sprache=s.code)
+    tafel_name = tafel.name or "Tafel"
     return {
         "s": s,
         "t": texte,
         "sprachen": sprachen.SPRACHEN,
-        "eigene": AntragText.objects.filter(sprache=s.code).first() or AntragText(sprache=s.code),
+        "eigene": eigene,
         "e": e,
         "tafel": tafel,
-        "tafel_name": tafel.name or "Tafel",
+        "tafel_name": tafel_name,
         "eigenes_css": html.css_bereinigen(e.eigenes_css),
+        "kopf": eigener_bereich(eigene, "kopf", tafel=tafel_name),
+        "fuss": eigener_bereich(eigene, "fuss", tafel=tafel_name),
     }
 
 
@@ -101,13 +105,18 @@ def formular(request, sprache):
                   {**kontext, "form": form, "max_anhaenge": MAX_ANHAENGE})  # fmt: skip
 
 
-def anhaenge_hinweis(eigene: AntragText) -> str:
-    """Hinweis über den Nachweisen; fehlt er in der Sprache, gilt der deutsche (oder keiner)."""
-    text = eigene.anhaenge_hinweis
+def eigener_bereich(eigene: AntragText, feld: str, **werte) -> str:
+    """Eigener Text ohne mitgelieferte Fassung (Hinweis zu den Nachweisen, Kopf- und Fußbereich);
+    fehlt er in der Sprache, gilt der deutsche (oder keiner)."""
+    text = getattr(eigene, feld)
     if not text.strip() and eigene.sprache != "de":
         deutsch = AntragText.objects.filter(sprache="de").first()
-        text = deutsch.anhaenge_hinweis if deutsch else ""
-    return html.anzeigen(text, "") if text.strip() else ""
+        text = getattr(deutsch, feld) if deutsch else ""
+    return html.anzeigen(text, "", **werte) if text.strip() else ""
+
+
+def anhaenge_hinweis(eigene: AntragText) -> str:
+    return eigener_bereich(eigene, "anhaenge_hinweis")
 
 
 def _bestaetigung(kontext, nummer: str) -> str:

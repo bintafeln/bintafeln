@@ -5,8 +5,8 @@
 <section class="karte">
   <p><a href="{% url 'antraege:einstellungen' %}">← Anträge einstellen</a></p>
   <h1>Texte: {{ s.deutsch }}</h1>
-  <p class="hinweis">Leer lassen, um die mitgelieferten Texte zu verwenden. Einleitung, Hinweis zu den Nachweisen,
-    Seite nach dem Absenden und Antwortmail lassen sich im Reiter <strong>Gestalten</strong> wie in einem
+  <p class="hinweis">Leer lassen, um die mitgelieferten Texte zu verwenden. Eigener Kopf- und Fußbereich, Einleitung,
+    Hinweis zu den Nachweisen, Seite nach dem Absenden und Antwortmail lassen sich im Reiter <strong>Gestalten</strong> wie in einem
     Schreibprogramm bearbeiten (fett, Überschrift, Ausrichtung links/Mitte/rechts/Blocksatz, Liste, Textfarbe,
     Markieren, farbiger Kasten, Link, Bild; die Farbe wählt das Feld neben dem Knopf) oder im Reiter
     <strong>HTML</strong> direkt als HTML, z. B. <code>&lt;h2&gt;</code>,
@@ -53,8 +53,10 @@
   <p class="hinweis">Mit Beispielwerten: Antragsnummer 2026-00001, Erika Beispiel.</p>
   <h3>Formular</h3>
   <div class="html-vorschau" lang="{{ s.code }}" dir="{% if s.rtl %}rtl{% else %}ltr{% endif %}">
-    <h1 class="antrag-titel">{{ vorschau.ueberschrift }}</h1>
+    {% if vorschau.kopf %}<div class="antrag-eigener-kopf">{{ vorschau.kopf }}</div>{% endif %}
+    {% if vorschau.ueberschrift_zeigen %}<h1 class="antrag-titel">{{ vorschau.ueberschrift }}</h1>{% else %}<p class="hinweis">(Überschrift ausgeblendet)</p>{% endif %}
     <div class="antrag-einleitung">{{ vorschau.einleitung }}</div>
+    {% if vorschau.fuss %}<div class="antrag-eigener-fuss">{{ vorschau.fuss }}</div>{% endif %}
   </div>
   <h3>Seite nach dem Absenden</h3>
   <div class="html-vorschau" lang="{{ s.code }}" dir="{% if s.rtl %}rtl{% else %}ltr{% endif %}">{{ vorschau.bestaetigung }}</div>

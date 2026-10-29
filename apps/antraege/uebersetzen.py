@@ -14,8 +14,8 @@ from apps.antraege.models import AntragEinstellungen, AntragText
 from apps.core import geheimnis
 
 MODELL = "claude-opus-5-5"
-FELDER = ["ueberschrift", "einleitung", "anhaenge_hinweis", "bestaetigung", "mail_betreff",
-          "mail_text"]  # fmt: skip
+FELDER = ["kopf", "ueberschrift", "einleitung", "anhaenge_hinweis", "bestaetigung",
+          "mail_betreff", "mail_text", "fuss"]  # fmt: skip
 PLATZHALTER = re.compile(r"\{\w+\}")
 ANWEISUNG = (
     "Du übersetzt die Texte einer Tafel (Lebensmittelausgabe für Menschen mit wenig Geld) für "

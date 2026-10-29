@@ -101,6 +101,17 @@ class AntragEinstellungen(models.Model):
         "Häkchen „Ich habe die Einverständniserklärung gelesen und bin einverstanden.“",
         default=True)  # fmt: skip
     impressum_url = models.URLField("Link zum Impressum", blank=True)
+    # Aufbau der Seite: mitgelieferte Teile ein-/ausblenden; eigene Bereiche je Sprache: AntragText
+    kopf_zeigen = models.BooleanField(
+        "Kopfzeile mit Logo und Name zeigen", default=True,
+        help_text="Die Sprachwahl bleibt immer. Einen eigenen Kopfbereich gestalten Sie unter "
+        "„Texte je Sprache“.",
+    )  # fmt: skip
+    ueberschrift_zeigen = models.BooleanField("Überschrift über dem Formular zeigen", default=True)
+    fuss_zeigen = models.BooleanField(
+        "Fußzeile mit Anschrift und Links zeigen", default=True,
+        help_text="Einen eigenen Fußbereich gestalten Sie unter „Texte je Sprache“.",
+    )  # fmt: skip
     erklaerungen_url = models.URLField(
         "Link zu Erklärungen", blank=True,
         help_text="z. B. Seite der Tafel zur Lebensmittelausgabe: wie sie abläuft, was sie kostet.",
@@ -199,6 +210,8 @@ class AntragText(models.Model):
     mail_betreff = models.CharField("Betreff der Antwortmail", max_length=200, blank=True)
     mail_text = models.TextField("Antwortmail (HTML möglich)", blank=True)
     anhaenge_hinweis = models.TextField("Hinweis zu den Nachweisen (HTML möglich)", blank=True)
+    kopf = models.TextField("Eigener Kopfbereich (HTML möglich)", blank=True)
+    fuss = models.TextField("Eigener Fußbereich (HTML möglich)", blank=True)
 
     class Meta:
         verbose_name = "Text des Antragsformulars"

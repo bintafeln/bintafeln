@@ -262,7 +262,7 @@ def test_aufnahme_uebernimmt_gdb(admin_client, bestand):
     schritt(admin_client, a, "kunde", {"haushalt": "neu"})
     schritt(admin_client, a, "abgleich", {})
     seite = schritt(admin_client, a, "personen").content.decode()
-    assert "Gl <small>(gehörlos)</small>" in seite and "VB <small>" in seite
+    assert "Gl <small>(gehörlos)</small>" in seite and "VB <small>" not in seite
     assert 'name="p0_gdb"' in seite and '<option value="30" selected>GdB 30</option>' in seite
     schritt(admin_client, a, "personen", {"anzahl": "2", "p0_vorname": "Lina", "p0_gdb": "30",
                                           "p0_merkzeichen": ["Bl", "Gl", "x"],
