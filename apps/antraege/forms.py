@@ -4,7 +4,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.db import transaction
 
-from apps.antraege import sprachen
+from apps.antraege import gebiet, sprachen
 from apps.antraege.models import (
     ANHANG_ORDNER,
     Abfrage,
@@ -221,6 +221,11 @@ class AntragForm(forms.Form):
             self.add_error("anhaenge", t["fehler_datei_typ"])
         elif any(d.size > MAX_MB * 1024 * 1024 for d in dateien):
             self.add_error("anhaenge", t["fehler_datei_gross"].format(mb=MAX_MB))
+        if (
+            self.e.gebiet_pruefen == AntragEinstellungen.Gebiet.SPERREN
+            and gebiet.passt(self.e, daten.get("plz"), daten.get("ort")) is False
+        ):
+            self.add_error("plz", t["fehler_gebiet"].format(gebiet=gebiet.name(self.e)))
         return daten
 
     @transaction.atomic
@@ -320,6 +325,7 @@ class EinstellungenForm(forms.ModelForm):
         fields = [
             "aktiv", "modus", "erste_nummer", *AntragEinstellungen.FELDER,
             "einwilligung_abfragen", "datenschutz_abfragen", "einverstaendnis_abfragen",
+            "gebiet_pruefen", "gebiet_plz", "gebiet_orte", "gebiet_name",
             "datenschutz_url",
             "impressum_url", "erklaerungen_url", "voraussetzungen_url", "einverstaendnis_url",
             "eigenes_css", "benachrichtigen",

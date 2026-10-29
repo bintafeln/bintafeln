@@ -84,6 +84,7 @@
   "fehler_datei_typ": "Încărcați doar fotografii (JPG, PNG) sau PDF.",
   "fehler_datei_gross": "Un fișier este prea mare (cel mult {mb} MB).",
   "fehler_datei_anzahl": "Încărcați cel mult {anzahl} fișiere.",
+  "fehler_gebiet": "Din păcate, putem accepta doar cereri de la persoane care locuiesc în {gebiet}.",
   "fehler_einwilligung": "Vă rugăm să vă dați acordul pentru a putea procesa cererea.",
   "fehler_zu_viele": "Au fost trimise prea multe cereri într-un timp scurt. Încercați din nou mai târziu."
 }

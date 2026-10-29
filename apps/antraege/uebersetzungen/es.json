@@ -84,6 +84,7 @@
   "fehler_datei_typ": "Suba solo fotos (JPG, PNG) o PDF.",
   "fehler_datei_gross": "Un archivo es demasiado grande (como máximo {mb} MB).",
   "fehler_datei_anzahl": "Suba como máximo {anzahl} archivos.",
+  "fehler_gebiet": "Lamentablemente, solo podemos aceptar solicitudes de personas que viven en {gebiet}.",
   "fehler_einwilligung": "Dé su consentimiento para que podamos tramitar su solicitud.",
   "fehler_zu_viele": "Se han enviado demasiadas solicitudes en poco tiempo. Inténtelo de nuevo más tarde."
 }

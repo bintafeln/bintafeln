@@ -84,6 +84,7 @@
   "fehler_datei_typ": "Prześlij tylko zdjęcia (JPG, PNG) lub PDF.",
   "fehler_datei_gross": "Plik jest za duży (maksymalnie {mb} MB).",
   "fehler_datei_anzahl": "Prześlij maksymalnie {anzahl} plików.",
+  "fehler_gebiet": "Niestety możemy przyjmować wnioski tylko od osób mieszkających w miejscowości {gebiet}.",
   "fehler_einwilligung": "Wyraź zgodę, abyśmy mogli rozpatrzyć Twój wniosek.",
   "fehler_zu_viele": "W krótkim czasie wysłano zbyt wiele wniosków. Spróbuj ponownie później."
 }

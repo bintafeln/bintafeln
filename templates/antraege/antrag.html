@@ -26,7 +26,7 @@
     {% if a.kundennummer %}<dt>Kundennummer</dt><dd><a href="{% url 'kunden:haushalt' a.kundennummer %}">{{ a.kundennummer }}</a></dd>{% endif %}
     <dt>Name</dt><dd>{{ a.anrede }} {{ a.vorname }} {{ a.nachname }}</dd>
     <dt>Geburtsdatum</dt><dd>{{ a.geburtsdatum|date:"d.m.Y"|default:"–" }}</dd>
-    <dt>Anschrift</dt><dd>{{ a.strasse|default:"–" }}{% if a.plz or a.ort %}, {{ a.plz }} {{ a.ort }}{% endif %}</dd>
+    <dt>Anschrift</dt><dd>{{ a.strasse|default:"–" }}{% if a.plz or a.ort %}, {{ a.plz }} {{ a.ort }}{% endif %}{% if ausserhalb %} <span class="marke-warnung" title="PLZ oder Ort liegt nicht im Einzugsgebiet (Anträge einstellen)">außerhalb des Gebiets</span>{% endif %}</dd>
     <dt>Telefon</dt><dd>{{ a.telefon|default:"–" }}</dd>
     <dt>E-Mail</dt><dd>{{ a.email|default:"–" }}</dd>
     {% if a.familienstand %}<dt>Familienstand</dt><dd>{{ a.familienstand }}</dd>{% endif %}

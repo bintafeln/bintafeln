@@ -84,6 +84,7 @@
   "fehler_datei_typ": "Ju lutemi ngarkoni vetëm foto (JPG, PNG) ose PDF.",
   "fehler_datei_gross": "Një skedar është shumë i madh (më së shumti {mb} MB).",
   "fehler_datei_anzahl": "Ju lutemi ngarkoni më së shumti {anzahl} skedarë.",
+  "fehler_gebiet": "Fatkeqësisht, mund të pranojmë vetëm kërkesa nga persona që jetojnë në {gebiet}.",
   "fehler_einwilligung": "Ju lutemi jepni pëlqimin që të mund ta përpunojmë kërkesën tuaj.",
   "fehler_zu_viele": "Janë dërguar shumë kërkesa në pak kohë. Ju lutemi provoni përsëri më vonë."
 }

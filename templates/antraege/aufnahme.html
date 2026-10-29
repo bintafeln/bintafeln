@@ -8,6 +8,7 @@
   <ol class="schritte">
     {% for k, titel in schritte %}<li class="{% if k == schritt %}aktuell{% elif forloop.counter < nr %}erledigt{% endif %}">{% if forloop.counter < nr %}<a href="{% url 'antraege:aufnahme_schritt' a.pk k %}">{{ titel }}</a>{% else %}{{ titel }}{% endif %}</li>{% endfor %}
   </ol>
+  {% if ausserhalb %}<p class="sicherung sicherung-veraltet" role="status">Die Anschrift ({{ a.plz }} {{ a.ort }}) liegt nicht im Einzugsgebiet der Tafel.</p>{% endif %}
   {% if fehler %}<p class="sicherung sicherung-fehler" role="alert">{{ fehler }}</p>{% endif %}
   {% if h %}<p class="hinweis">Gewählt: bestehender Kunde <a href="{% url 'kunden:haushalt' h.kundennummer %}" target="_blank" rel="noopener">{{ h.kundennummer }}</a>.</p>{% elif "haushalt" in z %}<p class="hinweis">Gewählt: neuer Kunde.</p>{% endif %}
 </section>

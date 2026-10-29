@@ -84,6 +84,7 @@
   "fehler_datei_typ": "只能上传照片（JPG、PNG）或 PDF。",
   "fehler_datei_gross": "有文件过大（最多 {mb} MB）。",
   "fehler_datei_anzahl": "最多上传 {anzahl} 个文件。",
+  "fehler_gebiet": "很抱歉，我们只能受理居住在{gebiet}的人的申请。",
   "fehler_einwilligung": "请表示同意，以便我们处理您的申请。",
   "fehler_zu_viele": "短时间内提交的申请过多。请稍后再试。"
 }

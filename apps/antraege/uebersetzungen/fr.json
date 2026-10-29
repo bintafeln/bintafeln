@@ -84,6 +84,7 @@
   "fehler_datei_typ": "Veuillez télécharger uniquement des photos (JPG, PNG) ou des PDF.",
   "fehler_datei_gross": "Un fichier est trop volumineux (au maximum {mb} Mo).",
   "fehler_datei_anzahl": "Veuillez télécharger au maximum {anzahl} fichiers.",
+  "fehler_gebiet": "Nous ne pouvons malheureusement accepter que les demandes de personnes habitant à {gebiet}.",
   "fehler_einwilligung": "Veuillez donner votre accord pour que nous puissions traiter votre demande.",
   "fehler_zu_viele": "Trop de demandes ont été envoyées en peu de temps. Veuillez réessayer plus tard."
 }

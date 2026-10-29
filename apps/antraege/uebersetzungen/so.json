@@ -84,6 +84,7 @@
   "fehler_datei_typ": "Fadlan soo geli sawirro (JPG, PNG) ama PDF oo keliya.",
   "fehler_datei_gross": "Fayl ayaa aad u weyn (ugu badnaan {mb} MB).",
   "fehler_datei_anzahl": "Fadlan soo geli ugu badnaan {anzahl} fayl.",
+  "fehler_gebiet": "Nasiib darro, waxaan kaliya aqbali karnaa codsiyada dadka ku nool {gebiet}.",
   "fehler_einwilligung": "Fadlan ogolow si aan uga shaqayno codsigaaga.",
   "fehler_zu_viele": "Codsiyo badan ayaa la diray waqti gaaban. Fadlan mar dambe isku day."
 }

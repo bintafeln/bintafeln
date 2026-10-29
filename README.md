@@ -687,6 +687,13 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   Schwerbehindertenausweis zum Ankreuzen (G, aG, H, Bl, Gl, TBl, B, RF, 1. Kl., mehrere möglich),
   übernommen ins Zusatzfeld „Merkzeichen (Schwerbehindertenausweis)“; Bl/TBl setzen „Blind“,
   Gl setzt „Taub“;
+  „Anschrift prüfen (Einzugsgebiet)“ (Vorgabe: nicht prüfen) vergleicht PLZ und Ort mit den
+  eingetragenen Postleitzahlen (einzeln oder Bereiche wie `45127-45359`) und Orten (Ortsteile
+  wie „Essen-Steele“ passen dazu; sind beide eingetragen, muss beides passen): *annehmen, aber
+  markieren* zeigt „außerhalb des Gebiets“ in Liste, Ansicht und Aufnahme-Assistent, *nicht
+  annehmen* lehnt das Formular mit einer Meldung in der gewählten Sprache ab. Ob es die
+  Anschrift wirklich gibt, prüft bintafeln nicht, weil Anschriften dafür an einen fremden Dienst
+  gehen müssten (ADR 0083);
   festlegen, wer bei neuen Anträgen eine Mail bekommt. Danach „Online-Anträge annehmen“
   einschalten.
 - **Adresse für die Webseite der Tafel:** `https://<domain>/antrag/`. Die Seite ist in

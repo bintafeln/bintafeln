@@ -84,6 +84,7 @@
   "fehler_datei_typ": "በጃኹም ስእልታት (JPG, PNG) ወይ PDF ጥራይ ጸዓኑ።",
   "fehler_datei_gross": "ሓደ ፋይል ኣዝዩ ዓቢ እዩ (ብዝበዝሐ {mb} MB)።",
   "fehler_datei_anzahl": "በጃኹም ብዝበዝሐ {anzahl} ፋይላት ጸዓኑ።",
+  "fehler_gebiet": "ይቕሬታ፡ ኣብ {gebiet} ዝነብሩ ሰባት ጥራይ ኢና ጠለብ ክንቕበል እንኽእል።",
   "fehler_einwilligung": "ሕቶኹም ክንሰርሖ ምእንቲ በጃኹም ተሰማምዑ።",
   "fehler_zu_viele": "ኣብ ሓጺር ግዜ ብዙሕ ሕቶታት ተላኢኹ። በጃኹም ጸኒሕኩም ፈትኑ።"
 }

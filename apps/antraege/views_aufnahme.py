@@ -10,7 +10,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from apps.antraege import aufnahme
+from apps.antraege import aufnahme, gebiet
 from apps.antraege.models import Abfrage, Antrag, AntragEinstellungen
 from apps.core.auswahl import (
     GDB_STUFEN,
@@ -92,7 +92,8 @@ def schritt(request, pk, schritt):
     h = Haushalt.objects.filter(kundennummer=z.get("haushalt")).first() if z.get(
         "haushalt") else None  # fmt: skip
     kontext = {"a": a, "schritt": schritt, "schritte": SCHRITTE, "h": h, "z": z,
-               "nr": NAMEN.index(schritt) + 1}  # fmt: skip
+               "nr": NAMEN.index(schritt) + 1,
+               "ausserhalb": gebiet.ausserhalb(AntragEinstellungen.laden(), a)}  # fmt: skip
     fehler = None
     if request.method == "POST":
         fehler = globals()[f"_post_{schritt}"](request, a, z, h)
