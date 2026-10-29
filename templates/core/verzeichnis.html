@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block titel %}bintafeln-Verzeichnis{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>bintafeln-Verzeichnis</h1>
+  <p class="hinweis">Freiwillig: Melden Sie Ihre Tafel beim Herausgeber von bintafeln. So weiß er, welche Tafeln das
+    Programm nutzen und mit welcher Version, und kann Sie bei einer Sicherheitslücke direkt anschreiben. Gemeldet
+    wird beim Einschalten, nach jedem Update und einmal pro Woche. Beim Ausschalten wird der Eintrag dort gelöscht.</p>
+  {% if m.aktiv and m.gemeldet_am and not m.fehler %}
+    <p class="sicherung sicherung-ok">Gemeldet, zuletzt am {{ m.gemeldet_am|date:"d.m.Y H:i" }} (Version {{ m.gemeldete_version }}).</p>
+  {% elif m.aktiv and m.fehler %}
+    <p class="sicherung sicherung-fehler">Letzte Meldung hat nicht geklappt: {{ m.fehler }} bintafeln versucht es von selbst noch einmal.</p>
+  {% elif not m.aktiv %}
+    <p class="sicherung">Nicht gemeldet.</p>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <div class="aktionen">
+      <button type="submit" class="knopf">Speichern</button>
+      {% if m.aktiv %}<button type="submit" name="jetzt" value="1" class="knopf knopf-zweitrangig">Jetzt melden</button>{% endif %}
+    </div>
+  </form>
+</section>
+<section class="karte">
+  <h2>Was gemeldet wird</h2>
+  <p class="hinweis">Genau diese Angaben, sonst nichts – nie Kunden-, Mitarbeiter- oder andere Personendaten.</p>
+  <dl class="angaben">
+    <dt>Tafel</dt><dd>{{ angaben.name }}</dd>
+    <dt>Kontakt</dt><dd>{{ angaben.kontakt|default:"–" }}</dd>
+    <dt>Version</dt><dd>{{ angaben.version }}</dd>
+    <dt>Kennung</dt><dd><code>{{ angaben.kennung }}</code> <small class="leise">(zufällig, erkennt diese Installation wieder)</small></dd>
+    <dt>An</dt><dd><code>{{ url }}</code></dd>
+  </dl>
+</section>
+{% endblock %}

@@ -17,12 +17,14 @@ done
 python manage.py migrate --noinput
 python manage.py collectstatic --noinput --verbosity 0
 
-# Beim Webserver: gesammelte Benachrichtigungen alle fünf Minuten verschicken (ADR 0086).
+# Beim Webserver: gesammelte Benachrichtigungen alle fünf Minuten verschicken (ADR 0086) und,
+# wenn eingeschaltet und fällig, die Meldung im bintafeln-Verzeichnis (ADR 0089).
 # Einmalige Befehle (z. B. docker compose run app python manage.py …) starten das nicht.
 if [ "${1:-}" = "gunicorn" ]; then
     (
         while sleep 300; do
             python manage.py benachrichtigungen_senden || true
+            python manage.py verzeichnis_melden || true
         done
     ) &
 fi

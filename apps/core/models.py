@@ -4,6 +4,7 @@ import uuid
 from auditlog.registry import auditlog
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
+from django.utils import timezone
 
 from apps.core.farben import STANDARDFARBE, farbtoene
 from apps.core.feiertage import BUNDESLAENDER
@@ -453,3 +454,56 @@ class PapierkorbEintrag(models.Model):
 
     def __str__(self):
         return f"{self.art}: {self.bezeichnung}"
+
+
+class VerzeichnisMeldung(models.Model):
+    """Freiwillige Meldung dieser Installation im bintafeln-Verzeichnis (Singleton, ADR 0089).
+    Gemeldet werden nur Name der Tafel, Kontakt-Mail und Version, nie Kunden- oder Personendaten."""
+
+    EINZIGE_ID = 1
+
+    aktiv = models.BooleanField("Diese Tafel im bintafeln-Verzeichnis melden", default=False)
+    kontakt = models.EmailField(
+        "Kontakt-Mail für Sicherheitshinweise", blank=True,
+        help_text="Über diese Adresse erreicht der Herausgeber von bintafeln die Tafel, z. B. bei "
+        "einer Sicherheitslücke. Leer = E-Mail der Tafel aus den Einstellungen.",
+    )  # fmt: skip
+    kennung = models.UUIDField(default=uuid.uuid4, editable=False)
+    gemeldet_am = models.DateTimeField(null=True, blank=True, editable=False)
+    gemeldete_version = models.CharField(max_length=50, blank=True, editable=False)
+    fehler = models.CharField(max_length=300, blank=True, editable=False)
+
+    class Meta:
+        verbose_name = "Meldung im bintafeln-Verzeichnis"
+        verbose_name_plural = "Meldung im bintafeln-Verzeichnis"
+
+    def __str__(self):
+        return "Meldung im bintafeln-Verzeichnis"
+
+    def save(self, *args, **kwargs):
+        self.pk = self.EINZIGE_ID
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def laden(cls) -> "VerzeichnisMeldung":
+        meldung, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
+        return meldung
+
+
+class VerzeichnisEintrag(models.Model):
+    """Gemeldete Tafel; nur auf der Installation des Herausgebers (VERZEICHNIS_EMPFANG)."""
+
+    kennung = models.UUIDField(unique=True)
+    name = models.CharField("Tafel", max_length=200)
+    kontakt = models.EmailField("Kontakt", blank=True)
+    version = models.CharField("Version", max_length=50, blank=True)
+    erste_meldung = models.DateTimeField("Erste Meldung", auto_now_add=True)
+    letzte_meldung = models.DateTimeField("Letzte Meldung", default=timezone.now)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "Eintrag im bintafeln-Verzeichnis"
+        verbose_name_plural = "Einträge im bintafeln-Verzeichnis"
+
+    def __str__(self):
+        return self.name

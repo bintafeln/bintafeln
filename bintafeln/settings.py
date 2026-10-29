@@ -7,7 +7,7 @@ ist sie leer, im Entwicklungsmodus über http://IP.
 
 from pathlib import Path
 
-from bintafeln import umgebung
+from bintafeln import programm, umgebung
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -23,6 +23,10 @@ DEMO = umgebung.schalter("BINTAFELN_DEMO", False)
 # Entwicklungsmodus im Heimnetz: zusätzlich https://ADRESSE mit eigenem Zertifikat (ADR 0041)
 HEIMNETZ_ADRESSE = "" if PRODUKTION else umgebung.text("BINTAFELN_HEIMNETZ_ADRESSE", "")
 DEMO_PASSWORT = umgebung.text("BINTAFELN_DEMO_PASSWORT", "")
+# bintafeln-Verzeichnis (ADR 0089): wohin diese Tafel sich freiwillig meldet; ob diese
+# Installation (die des Herausgebers) Meldungen annimmt
+VERZEICHNIS_URL = umgebung.text("BINTAFELN_VERZEICHNIS_URL", "") or programm.VERZEICHNIS_URL
+VERZEICHNIS_EMPFANG = umgebung.schalter("BINTAFELN_VERZEICHNIS_EMPFANG", False)
 
 if PRODUKTION:
     ALLOWED_HOSTS = umgebung.liste("DJANGO_ALLOWED_HOSTS", [DOMAIN])
