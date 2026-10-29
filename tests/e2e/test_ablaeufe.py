@@ -104,7 +104,7 @@ def test_kundenliste_auswahl_und_export(angemeldet, admin):
     # Ausweise drucken öffnet ein eigenes Fenster (iPad-App), nur mit dem angehakten Haushalt
     with seite.expect_popup() as fenster:
         seite.get_by_role("button", name=re.compile("Ausweise drucken")).click()
-    assert re.search(r"/kunden/ausweise/\?.*id=\d+", fenster.value.url)
+    fenster.value.wait_for_url(re.compile(r"/kunden/ausweise/\?.*id=\d+"), wait_until="commit")
     assert seite.url.endswith("/kunden/")
 
 
@@ -903,10 +903,10 @@ def test_ausweise_drucken_oeffnet_neues_fenster(angemeldet, admin):
     seite.locator('input[name="nummer"][value="00062"]').check()
     with seite.expect_popup() as fenster:
         seite.get_by_role("button", name="Angehakte Ausweise drucken (PDF)").click()
-    assert "nummer=00062" in fenster.value.url
+    fenster.value.wait_for_url(re.compile("nummer=00062"), wait_until="commit")
     assert seite.url.endswith(reverse("kunden:verlaengern"))
     seite.goto(reverse("kunden:nachrichten"))
     with seite.expect_popup() as fenster:
         seite.get_by_role("link", name=re.compile("Alle gemeldeten Ausweise drucken")).click()
-    assert "gemeldet=1" in fenster.value.url
+    fenster.value.wait_for_url(re.compile("gemeldet=1"), wait_until="commit")
     expect(seite.get_by_role("heading", name="Nachrichten der Ausgabestellen")).to_be_visible()
