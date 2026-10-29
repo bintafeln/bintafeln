@@ -753,11 +753,12 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   das Büro und im Aufnahme-Assistenten; sie geht mit in den Kundenstamm).
 - **Eigene Gestaltung:** Im Feld „Eigene Gestaltung (CSS)“ lassen sich zusätzliche CSS-Regeln
   für das öffentliche Formular hinterlegen (nur für Kundige).
-- Nach dem Absenden sehen Antragstellende eine Bestätigungsseite mit ihrer **Antragsnummer** und
-  bekommen eine gestaltete **Antwortmail** (HTML mit Logo, dazu eine Klartextfassung) in ihrer
-  Sprache, wenn sie eine Adresse angeben (Mailserver nötig). Die Antragsnummer steht bewusst
-  **nicht** in der Mail (auch `{nummer}` in eigenen Mailtexten bleibt leer), damit niemand sie als
-  Platz in einer Reihenfolge versteht.
+- Nach dem Absenden sehen Antragstellende eine Bestätigungsseite und bekommen eine gestaltete
+  **Antwortmail** (HTML mit Logo, dazu eine Klartextfassung), wenn sie eine Adresse angeben
+  (Mailserver nötig). Die Mail kommt **auf Deutsch und darunter in der Sprache zur angegebenen
+  Staatsangehörigkeit** (z. B. Türkei → Türkisch; ohne passende Sprache in der des Formulars).
+  Die Antragsnummer steht bewusst **weder auf der Seite noch in der Mail** (auch `{nummer}` in
+  eigenen Texten bleibt leer), damit niemand sie als Platz in einer Reihenfolge versteht.
 - **Antragsliste** (Admin, Büro) unter „Anträge“ (die Zahl im Menü zeigt die offenen Anträge): fortlaufende **Antragsnummern** (Startwert
   unter „Formular einstellen“ → „Nächste Antragsnummer ab“, z. B. 4201), neueste zuerst; Spalten
   #, Status, Kundennummer, Nachname, Vorname, Antrag vom, E-Mail, Telefon, Art,

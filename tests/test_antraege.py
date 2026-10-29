@@ -141,8 +141,31 @@ def test_antrag_absenden(client, offen, mailserver, benutzer_mit_rolle):
     assert "number" not in bestaetigung.body  # Antragsnummer nie in der Mail
     assert hinweis.to == ["berta@example.org"] and "Erika" not in hinweis.body
     danke = client.get(antwort.url).content.decode()
-    assert a.nummer in danke and "erika@example.org" in danke
+    assert "erika@example.org" in danke and "number" not in danke  # Nummer auch nicht auf der Seite
     assert client.get(antwort.url).url == reverse("antrag:formular", args=["en"])  # nur einmal
+
+
+def test_bestaetigung_deutsch_und_sprache_der_staatsangehoerigkeit(client, offen, mailserver):
+    offen.staatsangehoerigkeit = Abfrage.OPTIONAL
+    offen.save()
+    client.post(reverse("antrag:formular", args=["en"]),
+                daten(email="erika@example.org", staatsangehoerigkeit="Türkei"))  # fmt: skip
+    m = django_mail.outbox[-1]
+    tr, de = sprachen.texte("tr"), sprachen.texte("de")
+    assert de["danke_eingang"] in m.body and tr["danke_eingang"] in m.body
+    assert m.body.index(de["danke_eingang"]) < m.body.index(tr["danke_eingang"])
+    assert "has been received" not in m.body  # Formularsprache nicht, wenn das Land passt
+    gestaltet = m.alternatives[0][0]
+    assert 'lang="de"' in gestaltet and 'lang="tr"' in gestaltet and "<hr>" in gestaltet
+    assert " / " in m.subject
+
+    client.post(reverse("antrag:formular", args=["ar"]),
+                daten(email="erika@example.org", staatsangehoerigkeit="Deutschland"))  # fmt: skip
+    m = django_mail.outbox[-1]
+    assert de["danke_eingang"] in m.body and sprachen.texte("ar")["danke_eingang"] not in m.body
+    client.post(reverse("antrag:formular", args=["ar"]), daten(email="erika@example.org"))
+    gestaltet = django_mail.outbox[-1].alternatives[0][0]
+    assert 'lang="ar" dir="rtl"' in gestaltet  # ohne Angabe: Sprache des Formulars
 
 
 def test_antrag_ohne_mail_und_mit_mailfehler(client, offen, mailserver, monkeypatch):
@@ -248,7 +271,7 @@ def test_eigene_html_texte_und_mail(client, offen, mailserver):
     antwort = client.post(FORMULAR, daten(email="erika@example.org", vorname="<Erika>"),
                           follow=True)  # fmt: skip
     a = Antrag.objects.get()
-    assert f"Ihre Nummer: <b>{a.nummer}</b> bei Tafel" in antwort.content.decode()
+    assert "Ihre Nummer: <b></b> bei Tafel" in antwort.content.decode()  # Nummer nie sichtbar
     m = django_mail.outbox[0]
     assert m.subject == "Antrag "  # {nummer} bleibt in der Mail leer
     assert f"Nr. {a.nummer}" not in m.body
@@ -432,10 +455,11 @@ def test_einstellungen_und_texte(admin_client, benutzer_mit_rolle):
                 "mail_text": "<p>{vorname}</p>"},
     ).content.decode()  # fmt: skip
     assert "Vorschau (noch nicht gespeichert)" in vorschau and "<h2>مرحبا</h2>" in vorschau
-    assert "رقم 4201" in vorschau and "srcdoc=" in vorschau and "Erika" in vorschau
+    assert "رقم 4201" not in vorschau and "رقم" in vorschau  # Nummer auch in der Vorschau leer
+    assert "srcdoc=" in vorschau and "Erika" in vorschau and "lang=&quot;de&quot;" in vorschau
     # Die Mail steht maskiert im srcdoc, sonst bricht das Attribut am ersten Anführungszeichen ab
     assert 'srcdoc="&lt;!doctype html&gt;' in vorschau
-    assert "&lt;html lang=&quot;ar&quot;" in vorschau
+    assert "&lt;div lang=&quot;ar&quot; dir=&quot;rtl&quot;" in vorschau  # unter Deutsch
     assert not AntragText.objects.filter(sprache="ar").exists()
     admin_client.post(texte, {"einleitung": "مرحبا", "bestaetigung": ""})
     assert AntragText.objects.get(sprache="ar").einleitung == "مرحبا"

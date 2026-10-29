@@ -9,7 +9,7 @@ from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.html import format_html
+from django.utils.html import format_html, format_html_join
 
 from apps.antraege import sprachen
 from apps.antraege.forms import MAX_ANHAENGE, AntragForm
@@ -98,7 +98,7 @@ def formular(request, sprache):
         elif form.is_valid():
             antrag = form.speichern(sprache)
             request.session["antrag_nummer"] = antrag.nummer
-            request.session["antrag_mail"] = _bestaetigen(request, antrag, kontext)
+            request.session["antrag_mail"] = _bestaetigen(request, antrag)
             _benachrichtigen(request, antrag, e)
             return redirect("antrag:danke", sprache=sprache)
         else:
@@ -139,45 +139,72 @@ def danke(request, sprache):
         return redirect("antrag:formular", sprache=kontext["s"].code)
     t = kontext["t"]
     kontext["ueberschrift"] = _ueberschrift(kontext)
-    kontext["bestaetigung"] = _bestaetigung(kontext, kontext["nummer"])
-    kontext["danke_text"] = t["danke_nummer"].format(nummer=kontext["nummer"])
+    # Die Antragsnummer erscheint bewusst nicht, auch nicht als {nummer} im eigenen Text
+    kontext["bestaetigung"] = _bestaetigung(kontext, "")
+    kontext["danke_text"] = t["danke_eingang"]
     kontext["mail_text"] = t["mail_gesendet"].format(email=kontext["mail_an"])
     return render(request, "antraege/danke.html", kontext)
 
 
-def antwortmail(request, antrag, kontext) -> tuple[str, str, str]:
-    """Betreff, Klartext und HTML der Bestätigung (eigene Fassung oder mitgelieferte). Die
-    Antragsnummer steht bewusst nicht in der Mail ({nummer} bleibt leer): Antragsteller sollen
-    sie nicht als Platz in einer Reihenfolge verstehen."""
+def mail_sprachen(antrag) -> list[str]:
+    """Sprachen der Bestätigung: immer Deutsch, dazu die Sprache zur angegebenen
+    Staatsangehörigkeit (ohne passende Sprache: die des Formulars)."""
+    from apps.core.auswahl import LAENDERCODE
+
+    land = LAENDERCODE.get(antrag.staatsangehoerigkeit, "")
+    zweite = sprachen.LAND_SPRACHE.get(land) or antrag.sprache or "de"
+    return ["de"] if zweite == "de" or zweite not in sprachen.NACH_CODE else ["de", zweite]
+
+
+def _mail_teil(antrag, kontext) -> tuple[str, str]:
+    """Betreff und HTML-Inhalt der Bestätigung in einer Sprache."""
     t, eigene, tafel = kontext["t"], kontext["eigene"], kontext["tafel_name"]
     werte = {"nummer": "", "vorname": antrag.vorname, "nachname": antrag.nachname,
              "tafel": tafel}  # fmt: skip
     betreff = html.einsetzen(eigene.mail_betreff or t["mail_betreff"], tafel=tafel, nummer="")
     if eigene.mail_text.strip():
-        inhalt = html.anzeigen(eigene.mail_text, "", **werte)
-    else:
-        inhalt = format_html(
-            "<p>{}</p><p><strong>{}</strong></p>{}<p>{}<br>{}</p>",
-            t["mail_anrede"],
-            t["danke_eingang"],
-            _bestaetigung(kontext, ""),
-            t["mail_gruss"],
-            tafel,
-        )
+        return betreff, html.anzeigen(eigene.mail_text, "", **werte)
+    return betreff, format_html(
+        "<p>{}</p><p><strong>{}</strong></p>{}<p>{}<br>{}</p>",
+        t["mail_anrede"],
+        t["danke_eingang"],
+        _bestaetigung(kontext, ""),
+        t["mail_gruss"],
+        tafel,
+    )
+
+
+def antwortmail(request, antrag, eigene: AntragText | None = None) -> tuple[str, str, str]:
+    """Betreff, Klartext und HTML der Bestätigung: Deutsch und darunter die Sprache zur
+    Staatsangehörigkeit (eigene Fassung oder mitgelieferte). Die Antragsnummer steht bewusst
+    nicht in der Mail ({nummer} bleibt leer): Antragsteller sollen sie nicht als Platz in einer
+    Reihenfolge verstehen. ``eigene``: noch nicht gespeicherte Texte (Vorschau)."""
+    teile = []
+    for code in mail_sprachen(antrag):
+        k = _kontext(code)
+        if eigene is not None and eigene.sprache == code:
+            k["eigene"] = eigene
+        betreff, inhalt = _mail_teil(antrag, k)
+        teile.append((k["s"], betreff, inhalt))
+    betreff = " / ".join(dict.fromkeys(b for _, b, _ in teile))
+    abschnitte = ((s.code, "rtl" if s.rtl else "ltr", i) for s, _, i in teile)
+    inhalt = format_html_join(format_html("<hr>"), '<div lang="{}" dir="{}">{}</div>', abschnitte)
+    kontext = _kontext("de")
     logo = kontext["tafel"].logo
     gestaltet = render_to_string(
         "antraege/mail.html",
         {**kontext, "inhalt": inhalt, "betreff": betreff,
          "logo_url": request.build_absolute_uri(logo.url) if logo else ""},
     )  # fmt: skip
-    return betreff, html.als_text(inhalt), gestaltet
+    text = "\n\n----------\n\n".join(html.als_text(i) for _, _, i in teile)
+    return betreff, text, gestaltet
 
 
-def _bestaetigen(request, antrag, kontext) -> str:
-    """Bestätigung in der Sprache des Antrags; liefert die Adresse, wenn sie verschickt wurde."""
+def _bestaetigen(request, antrag) -> str:
+    """Bestätigung (siehe ``antwortmail``); liefert die Adresse, wenn sie verschickt wurde."""
     if not antrag.email or not mail.eingerichtet():
         return ""
-    betreff, text, gestaltet = antwortmail(request, antrag, kontext)
+    betreff, text, gestaltet = antwortmail(request, antrag)
     try:
         mail.senden(betreff, text, [antrag.email], html=gestaltet)
     except mail.MailFehler as fehler:

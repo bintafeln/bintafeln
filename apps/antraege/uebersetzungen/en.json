@@ -70,7 +70,6 @@
   "einverstaendnis": "Declaration of consent",
   "absenden": "Send application",
   "danke_titel": "Thank you!",
-  "danke_nummer": "Your application has been received. Your application number: {nummer}",
   "danke_eingang": "Your application has been received.",
   "bestaetigung": "We will check your application and contact you. Please bring the original documents when we invite you.",
   "mail_gesendet": "We have sent a confirmation to {email}.",

@@ -70,7 +70,6 @@
   "einverstaendnis": "Einverständniserklärung",
   "absenden": "Antrag absenden",
   "danke_titel": "Vielen Dank!",
-  "danke_nummer": "Ihr Antrag ist eingegangen. Ihre Antragsnummer: {nummer}",
   "danke_eingang": "Ihr Antrag ist eingegangen.",
   "bestaetigung": "Wir prüfen Ihren Antrag und melden uns bei Ihnen. Bitte bringen Sie Ihre Nachweise im Original mit, wenn wir Sie einladen.",
   "mail_gesendet": "Eine Bestätigung haben wir an {email} geschickt.",

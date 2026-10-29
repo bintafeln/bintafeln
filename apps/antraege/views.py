@@ -305,8 +305,9 @@ def vorschau(request, eigene: AntragText) -> dict:
     from apps.antraege import views_oeffentlich as oe
 
     kontext = {**oe._kontext(eigene.sprache), "eigene": eigene}
-    beispiel = SimpleNamespace(nummer="4201", vorname="Erika", nachname="Beispiel")
-    betreff, _, mail_html = oe.antwortmail(request, beispiel, kontext)
+    beispiel = SimpleNamespace(vorname="Erika", nachname="Beispiel", sprache=eigene.sprache,
+                               staatsangehoerigkeit="")  # fmt: skip
+    betreff, _, mail_html = oe.antwortmail(request, beispiel, eigene)
     return {
         "kopf": oe.eigener_bereich(eigene, "kopf", tafel=kontext["tafel_name"]),
         "fuss": oe.eigener_bereich(eigene, "fuss", tafel=kontext["tafel_name"]),
@@ -315,7 +316,7 @@ def vorschau(request, eigene: AntragText) -> dict:
         "einleitung": html.anzeigen(
             eigene.einleitung, kontext["t"]["einleitung"], tafel=kontext["tafel_name"]
         ),  # fmt: skip
-        "bestaetigung": oe._bestaetigung(kontext, beispiel.nummer),
+        "bestaetigung": oe._bestaetigung(kontext, ""),
         "mail_betreff": betreff,
         "mail_html": mail_html,
     }
