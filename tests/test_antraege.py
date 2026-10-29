@@ -661,7 +661,9 @@ def test_merkzeichen_mit_gdb(client, offen):
     client.post(FORMULAR, daten(gdb="80", merkzeichen=["B", "G"], p1_vorname="Lina",
                                 p1_gdb="0", p1_merkzeichen=["H"]))  # fmt: skip
     a = Antrag.objects.get()
-    assert a.merkzeichen == "G, B" and a.gdb_text == "GdB 80, Merkzeichen G, B"
+    assert a.merkzeichen == "G, B" and a.gdb_text == (
+        "GdB 80, Merkzeichen G (erheblich gehbehindert), B (Begleitperson berechtigt)"
+    )
     assert a.personen.get().merkzeichen == ""  # ohne GdB keine Merkzeichen
 
 

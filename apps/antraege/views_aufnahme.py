@@ -14,6 +14,7 @@ from apps.antraege import aufnahme, gebiet
 from apps.antraege.models import Abfrage, Antrag, AntragEinstellungen
 from apps.core.auswahl import (
     GDB_STUFEN,
+    MERKZEICHEN,
     MERKZEICHEN_CODES,
     gdb_text,
     merkzeichen_liste,
@@ -204,7 +205,7 @@ def _kontext_personen(request, a, z, h):
         "personen": zeilen + [dict(leer) for _ in range(EXTRA_PERSONEN)],
         "staaten": staaten if KundenEinstellungen.laden().staatsangehoerigkeit_erfassen else None,
         # GdB-Spalte, wenn der Antrag ihn abfragt oder eine Person einen hat
-        "merkzeichen_codes": MERKZEICHEN_CODES,
+        "merkzeichen_auswahl": MERKZEICHEN,
         "gdb_stufen": [(str(n), gdb_text(n)) for n in [0, *GDB_STUFEN]]
         if AntragEinstellungen.laden().behinderung != Abfrage.AUS
         or any(p.get("gdb") for p in personen)

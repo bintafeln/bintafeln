@@ -262,9 +262,10 @@ def test_aufnahme_uebernimmt_gdb(admin_client, bestand):
     schritt(admin_client, a, "kunde", {"haushalt": "neu"})
     schritt(admin_client, a, "abgleich", {})
     seite = schritt(admin_client, a, "personen").content.decode()
+    assert "Gl <small>(gehörlos)</small>" in seite and "VB <small>" in seite
     assert 'name="p0_gdb"' in seite and '<option value="30" selected>GdB 30</option>' in seite
     schritt(admin_client, a, "personen", {"anzahl": "2", "p0_vorname": "Lina", "p0_gdb": "30",
-                                          "p0_merkzeichen": ["Bl", "x"],
+                                          "p0_merkzeichen": ["Bl", "Gl", "x"],
                                           "p1_vorname": "Ben", "p1_gdb": "unsinn"})  # fmt: skip
     art = Einkommensart.objects.get()
     bis = aufnahme.gueltigkeit_auswahl(timezone.localdate(), KundenEinstellungen.laden())[0][0]
@@ -273,9 +274,12 @@ def test_aufnahme_uebernimmt_gdb(admin_client, bestand):
     schritt(admin_client, a, "pruefen", {})
     h = Haushalt.objects.get(kundennummer="1002")
     assert h.hauptperson.zusatz == {"gdb": "GdB 60", "schwerbehindert": True,
-                                    "merkzeichen": "G, B"}  # fmt: skip
+                                    "merkzeichen": "G (erheblich gehbehindert), "
+                                                   "B (Begleitperson berechtigt)"}  # fmt: skip
+    # Gl (gehörlos) setzt nicht das Merkmal „Taub“
     assert h.personen.get(vorname="Lina").zusatz == {
-        "gdb": "GdB 30", "schwerbehindert": False, "merkzeichen": "Bl", "blind": True}  # fmt: skip
+        "gdb": "GdB 30", "schwerbehindert": False, "merkzeichen": "Bl (blind), Gl (gehörlos)",
+        "blind": True}  # fmt: skip
     assert Zusatzfeld.objects.get(schluessel="merkzeichen").besondere_kategorie
     assert not h.personen.get(vorname="Ben").zusatz  # ohne Angabe bleibt alles, wie es war
     feld = Zusatzfeld.objects.get(schluessel="gdb")

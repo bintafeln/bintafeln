@@ -181,14 +181,18 @@ def gdb_text(wert, merkzeichen: str = "") -> str:
         return ""
     if int(wert) == 0:
         return "keine Behinderung"
-    return f"GdB {int(wert)}" + (f", Merkzeichen {merkzeichen}" if merkzeichen else "")
+    zeichen = merkzeichen_text(merkzeichen)
+    return f"GdB {int(wert)}" + (f", Merkzeichen {zeichen}" if zeichen else "")
 
 
-# Merkzeichen im Schwerbehindertenausweis (mehrere möglich); gespeichert als „G, B“
+# Merkzeichen im Schwerbehindertenausweis (§§ 2, 3 SchwbAwV, mehrere möglich); gespeichert als
+# „G, B“. „Gl“ (gehörlos) schreibt sich mit kleinem L.
 MERKZEICHEN = [
     ("G", "erheblich gehbehindert"), ("aG", "außergewöhnlich gehbehindert"), ("H", "hilflos"),
-    ("Bl", "blind"), ("Gl", "gehörlos"), ("TBl", "taubblind"), ("B", "Begleitperson nötig"),
-    ("RF", "Rundfunkbeitrag ermäßigt"), ("1. Kl.", "1. Wagenklasse"),
+    ("Bl", "blind"), ("Gl", "gehörlos"), ("TBl", "taubblind"),
+    ("B", "Begleitperson berechtigt"), ("RF", "Rundfunkbeitrag ermäßigt"),
+    ("1. Kl.", "1. Wagenklasse für Kriegsbeschädigte"), ("VB", "versorgungsberechtigt"),
+    ("EB", "entschädigungsberechtigt"),
 ]  # fmt: skip
 MERKZEICHEN_CODES = [code for code, _ in MERKZEICHEN]
 
@@ -197,3 +201,9 @@ def merkzeichen_liste(text: str) -> list[str]:
     """„G, B“ → ["G", "B"] in fester Reihenfolge; Unbekanntes fällt weg."""
     teile = {t.strip() for t in (text or "").split(",")}
     return [code for code in MERKZEICHEN_CODES if code in teile]
+
+
+def merkzeichen_text(text: str) -> str:
+    """„G, Gl“ → „G (erheblich gehbehindert), Gl (gehörlos)“, damit nichts verwechselt wird."""
+    bedeutung = dict(MERKZEICHEN)
+    return ", ".join(f"{c} ({bedeutung[c]})" for c in merkzeichen_liste(text))

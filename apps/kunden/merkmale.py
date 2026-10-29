@@ -8,6 +8,7 @@ from apps.core.auswahl import (
     GDB_STUFEN,
     gdb_text,
     merkzeichen_liste,
+    merkzeichen_text,
 )
 from apps.konten import rollen
 from apps.kunden.models import Zusatzfeld
@@ -69,15 +70,16 @@ GDB_FELD = "gdb"
 
 
 MERKZEICHEN_FELD = "merkzeichen"
-# Merkzeichen, die ein mitgeliefertes Merkmal (Einlass, Ausweis) mit sich bringen
-MERKZEICHEN_MERKMAL = {"Bl": "blind", "TBl": "blind", "Gl": "taub"}
+# Merkzeichen, die ein mitgeliefertes Merkmal (Einlass, Ausweis) mit sich bringen; „Gl“
+# (gehörlos) setzt bewusst nicht „Taub“, das meint am Einlass etwas anderes
+MERKZEICHEN_MERKMAL = {"Bl": "blind", "TBl": "blind"}
 
 
 def gdb_setzen(person, gdb, merkzeichen: str = "") -> None:
     """Grad der Behinderung aus dem Antrag an der Person (ohne Speichern): als Zusatzfeld
     „Grad der Behinderung“ (Art. 9, wird beim ersten Mal angelegt), ab GdB 50 das Merkmal
-    „Schwerbehindert“, die Merkzeichen (G, aG, B …) als Zusatzfeld „Merkzeichen“ und Bl/Gl als
-    Merkmal „Blind“/„Taub“. Leer (keine Angabe) ändert nichts."""
+    „Schwerbehindert“, die Merkzeichen (G, aG, B …) als Zusatzfeld „Merkzeichen“ (mit Bedeutung) und
+    Bl/TBl als Merkmal „Blind“. Leer (keine Angabe) ändert nichts."""
     if gdb is None or gdb == "":
         return
     gdb = int(gdb)
@@ -96,7 +98,7 @@ def gdb_setzen(person, gdb, merkzeichen: str = "") -> None:
             "gilt_fuer": Zusatzfeld.GiltFuer.PERSON, "typ": Zusatzfeld.Typ.TEXT,
             "besondere_kategorie": True, "reihenfolge": 99,
         })  # fmt: skip
-        zusatz[MERKZEICHEN_FELD] = ", ".join(codes)
+        zusatz[MERKZEICHEN_FELD] = merkzeichen_text(", ".join(codes))
     for code in codes:
         if code in MERKZEICHEN_MERKMAL:
             zusatz[MERKZEICHEN_MERKMAL[code]] = True
