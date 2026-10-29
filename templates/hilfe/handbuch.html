@@ -9,8 +9,11 @@
   <form method="get" action="{% url 'core:suche' %}" class="aktionsleiste handbuch-suche" role="search">
     <input type="hidden" name="nur" value="hilfe">
     <label for="handbuch-suche" class="unsichtbar">Im Handbuch suchen</label>
-    <input type="search" id="handbuch-suche" name="q" placeholder="Im Handbuch suchen, z. B. Ampel" minlength="3" maxlength="200" required>
+    <input type="search" id="handbuch-suche" name="q" placeholder="Im Handbuch suchen, z. B. Ampel" minlength="3" maxlength="200" required
+           autocomplete="off" hx-get="{% url 'core:suche' %}" hx-include="closest form" hx-target="#handbuch-suche-liste"
+           hx-sync="this:replace" hx-trigger="input[this.value.trim().length >= 3 || !this.value] changed delay:400ms, search">
     <button type="submit" class="knopf">Suchen</button>
+    <div id="handbuch-suche-liste" aria-live="polite"></div>
   </form>
   <nav class="inhaltsverzeichnis" aria-label="Inhalt">
     {% for teil, liste in teile %}

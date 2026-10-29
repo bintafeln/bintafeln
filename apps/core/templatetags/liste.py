@@ -3,6 +3,7 @@
 from urllib.parse import urlencode
 
 from django import template
+from django.utils.html import format_html
 
 register = template.Library()
 
@@ -42,3 +43,17 @@ def auswahl_formular(context, aktion, extra=""):
         k, _, v = extra.partition("=")
         felder.append((k, v))
     return {"aktion": aktion, "felder": felder}
+
+
+@register.simple_tag(takes_context=True)
+def live_suche(context, mindestens=2):
+    """Attribute für ein Suchfeld: sucht beim Tippen ab ``mindestens`` Zeichen (und wenn es leer
+    wird) und tauscht nur den Bereich ``id="ergebnis"`` der Seite aus; „Suchen“ geht weiter."""
+    return format_html(
+        'hx-get="{}" hx-include="closest form" hx-target="#ergebnis" hx-select="#ergebnis" '
+        'hx-swap="outerHTML" hx-push-url="true" hx-sync="this:replace" autocomplete="off" '
+        'hx-trigger="input[this.value.trim().length >= {} || !this.value] changed delay:400ms, '
+        'search"',
+        context["request"].path,
+        mindestens,
+    )

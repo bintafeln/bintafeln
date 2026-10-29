@@ -21,9 +21,10 @@
     <select name="jahr" id="jahr" onchange="this.form.submit()">{% for j in jahre %}<option value="{{ j }}"{% if j == jahr %} selected{% endif %}>{{ j }}</option>{% endfor %}</select>
     {% if beitraege %}<label class="filter-haken"><input type="checkbox" name="nur_offen" value="1"{% if filter.nur_offen %} checked{% endif %} onchange="this.form.submit()"> nur mit offenem Beitrag</label>{% endif %}
     <label for="q">Suche</label>
-    <input type="search" name="q" id="q" value="{{ filter.q }}" class="suche" placeholder="Nummer oder Name">
+    <input type="search" name="q" id="q" value="{{ filter.q }}" class="suche" placeholder="Nummer oder Name" {% live_suche %}>
     <button type="submit" class="knopf">Suchen</button>
   </form>
+  <div id="ergebnis">
   <div class="kacheln">
     <div class="kachel"><span class="kachel-titel">Mitglieder heute</span><span class="kachel-wert">{{ k.mitglieder }}</span></div>
     <div class="kachel"><span class="kachel-titel">Eintritte / Austritte {{ jahr }}</span><span class="kachel-wert">{{ k.eintritte }} / {{ k.austritte }}</span></div>
@@ -57,6 +58,7 @@
     </tbody>
   </table>
   </div>
+</div>
 </section>
 <script src="{% static 'js/auswahl.js' %}" defer></script>
 {% endblock %}

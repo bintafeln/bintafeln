@@ -229,6 +229,34 @@ def test_sprachhinweis_und_angaben_beim_umstellen(seite, admin):
     expect(seite.locator("#id_vorname")).to_have_value("")  # nur einmal übernommen
 
 
+def test_live_suche_ab_zwei_zeichen(angemeldet, admin):
+    from apps.adressen.models import Adresse
+
+    Adresse.objects.create(nachname="Musterfrau", vorname="Erika")
+    Adresse.objects.create(nachname="Beispiel", vorname="Max")
+    seite = angemeldet(admin)
+    seite.goto("/adressen/")
+    ergebnis = seite.locator("#ergebnis")
+    expect(ergebnis).to_contain_text("Beispiel")
+    feld = seite.locator("#q")
+    feld.press_sequentially("M", delay=50)
+    seite.wait_for_timeout(700)
+    expect(ergebnis).to_contain_text("Beispiel")  # ein Zeichen: sucht noch nicht
+    feld.press_sequentially("u", delay=50)
+    expect(ergebnis).not_to_contain_text("Beispiel")  # ab zwei Zeichen, ohne „Suchen“
+    expect(ergebnis).to_contain_text("Musterfrau")
+    expect(feld).to_be_focused()  # man kann weitertippen
+    feld.press_sequentially("st", delay=50)
+    expect(feld).to_have_value("Must")
+    seite.wait_for_url("**q=Must**")
+    feld.fill("")
+    feld.dispatch_event("input")
+    expect(ergebnis).to_contain_text("Beispiel")  # leer: wieder alle
+    seite.goto("/hilfe/")  # Handbuch: Treffer gleich unter dem Feld
+    seite.locator("#handbuch-suche").press_sequentially("Ampel", delay=50)
+    expect(seite.locator("#handbuch-suche-liste .suche-liste")).to_be_visible()
+
+
 def test_suche_im_kopf(angemeldet, admin):
     _haushalte(1)
     seite = angemeldet(admin)

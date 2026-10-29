@@ -14,7 +14,7 @@
   <p class="hinweis titel-text">Spender, Märkte, Partner, Presse, Behörden, Mitglieder … Kunden stehen nicht hier, sondern im Kundenstamm.</p>
   <form class="filter-kompakt" method="get" action="{% url 'adressen:liste' %}">
     <div class="filter-feld filter-suche"><label for="q">Suche</label>
-      <input type="search" name="q" id="q" value="{{ filter.q }}" placeholder="Name, Ort, PLZ oder E-Mail"></div>
+      <input type="search" name="q" id="q" value="{{ filter.q }}" placeholder="Name, Ort, PLZ oder E-Mail" {% live_suche %}></div>
     <div class="filter-feld"><label for="kategorie">Kategorie</label>
       <select name="kategorie" id="kategorie" onchange="this.form.submit()">
         <option value="">alle</option>
@@ -32,6 +32,7 @@
       </select></div>
     <button type="submit" class="knopf">Suchen</button>
   </form>
+  <div id="ergebnis">
   <p class="hinweis">{{ anzahl }} Adresse{{ anzahl|pluralize:"n" }}{% if anzahl %} ·
     <button type="submit" form="auswahl" class="link-knopf">als CSV-Datei (Excel)</button> <span class="hinweis" data-auswahl-zahl="auswahl"></span>{% endif %}</p>
   {% auswahl_formular "" "csv=1" %}
@@ -55,6 +56,7 @@
   </table>
   </div>
   {% blaettern seite %}
+</div>
 </section>
 <script src="{% static 'js/auswahl.js' %}" defer></script>
 {% endblock %}

@@ -9,11 +9,12 @@
     (einstellbar unter „Einstellungen → Kundenstamm“).</p>
   <form class="filter" method="get" data-sofort>
     <label for="kundennummer">Kundennummer</label>
-    <input type="search" name="kundennummer" id="kundennummer" value="{{ kundennummer }}">
+    <input type="search" name="kundennummer" id="kundennummer" value="{{ kundennummer }}" data-nicht-sofort {% live_suche %}>
     <label for="benutzer">Benutzer</label>
-    <input type="search" name="benutzer" id="benutzer" value="{{ benutzer }}">
+    <input type="search" name="benutzer" id="benutzer" value="{{ benutzer }}" data-nicht-sofort {% live_suche %}>
     <button type="submit" class="knopf">Filtern</button>
   </form>
+  <div id="ergebnis">
   {% blaettern seite %}
   <div class="tabelle-rahmen">
   <table class="tabelle">
@@ -34,5 +35,6 @@
   </table>
   </div>
   {% blaettern seite %}
+</div>
 </section>
 {% endblock %}

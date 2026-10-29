@@ -186,6 +186,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
 - Handbuch im Programm (ADR 0038): Kapitel in `apps/core/hilfe.py` (mit Rechten) und
   `templates/hilfe/<kennung>.html`. **Neue oder geänderte Funktionen aktualisieren das passende
   Kapitel im selben PR** (wie README); `tests/test_hilfe.py` prüft Vollständigkeit.
+- Suchfelder in Listen suchen beim Tippen: Feld mit `{% live_suche %}` (ab 2 Zeichen, htmx),
+  Treffer der Seite in `<div id="ergebnis">`; nur dieser Bereich wird ausgetauscht.
 - Einstellungsseiten speichern sofort: Formular mit `data-autosave` (`static/js/autosave.js`,
   ADR 0076); die Ansicht leitet nach Erfolg weiter und zeigt Fehler wie gewohnt am Feld.
 - Menü links: Einträge je Rolle in `apps/core/menue.py` (neue Seiten dort eintragen statt

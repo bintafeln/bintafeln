@@ -851,6 +851,10 @@ ul.kompakt { margin: .3rem 0; padding-left: 1rem; }
   border-radius: var(--radius); box-shadow: 0 6px 20px rgb(0 0 0 / 18%);
 }
 .suche-liste ul { list-style: none; margin: 0 0 .25rem; padding: 0; }
+/* Live-Treffer unter dem Suchfeld im Handbuch, wie im Seitenkopf */
+.handbuch-suche { position: relative; }
+.handbuch-suche .suche-liste a { display: block; padding: .4rem 1rem; color: var(--text); }
+.handbuch-suche .suche-liste a:hover, .handbuch-suche .suche-liste a:focus { background: var(--erfolg); }
 .kopf .suche-liste a { display: block; padding: .4rem 1rem; color: var(--text); }
 .kopf .suche-liste a:hover, .kopf .suche-liste a:focus { background: var(--erfolg); }
 .suche-liste small { display: block; color: var(--leise); font-size: .82rem; }

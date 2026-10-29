@@ -510,7 +510,11 @@ einem Bereich:
 | `h` | Handbuch | `h ampel` |
 
 `?` im Suchfeld zeigt die Kürzel. Jeder Bereich erscheint nur mit dem passenden Recht; wer einer
-Ausgabestelle zugeordnet ist, findet nur deren Kunden (ADR 0040).
+Ausgabestelle zugeordnet ist, findet nur deren Kunden (ADR 0040). Alle Suchfelder in Listen (Kunden,
+Anträge, Warteliste, Spenden, Mitglieder, Adressbuch, Zugriffsprotokoll, Seite „Suche“,
+Handbuch) suchen beim Tippen ab 2 Zeichen (Suche und Handbuch ab 3) und tauschen nur die
+Trefferliste aus; „Suchen“ bleibt möglich. Neue Listen: Feld mit `{% live_suche %}`
+(`apps/core/templatetags/liste.py`), Treffer in `<div id="ergebnis">`.
 
 ## Kunden ansehen und bearbeiten
 
