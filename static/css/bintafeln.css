@@ -95,8 +95,10 @@ select:not([multiple]):not([size]) {
 input[type="date"], input[type="time"], input[type="datetime-local"], input[type="month"] {
   -webkit-appearance: none; appearance: none; background-color: var(--flaeche); color: var(--text);
   text-align: left;
+  min-width: 0; max-width: 100%; /* Safari: sonst breiter als die Spalte */
 }
-input::-webkit-date-and-time-value { text-align: left; }
+/* Safari: Datum linksbündig und ohne zusätzlichen Rand, damit das Feld so hoch ist wie die übrigen */
+input::-webkit-date-and-time-value { text-align: left; margin: 0; }
 .feld input:focus, .feld select:focus, .feld textarea:focus, .filter input:focus { outline: 3px solid var(--fokus); border-color: var(--akzent); }
 .hilfe { color: var(--leise); }
 .fehler { color: var(--fehler); }
