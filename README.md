@@ -1545,6 +1545,10 @@ also dieselben SSH-Schlüssel, `known_hosts` und git-Einstellungen wie beim `./b
 auf der Kommandozeile. **Einmalig** kommt der Dienst mit dem ersten
 `./betrieb update` auf der Kommandozeile dazu; danach geht jedes Update in der Oberfläche.
 
+Neue Versionen vergibt `.github/workflows/version.yml` nach jedem Merge auf `main`. Hat GitHub
+nach einem Merge ausnahmsweise keinen Lauf gestartet (unter „Actions“ fehlt „Version“), lässt er
+sich dort mit „Run workflow“ von Hand starten; hat der Stand schon eine Version, passiert nichts.
+
 **Warnung bei wichtigen Updates (ADR 0084).** Jede Version hat eine Stufe, die aus dem Label des
 Pull Requests kommt (`sicherheit`, `wichtig`, `neue-funktion`, sonst „klein“); `version.yml`
 schreibt sie als `stufe=…` in das annotierte Versions-Tag und legt die Labels an, falls sie
