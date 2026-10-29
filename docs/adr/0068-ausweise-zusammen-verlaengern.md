@@ -40,6 +40,10 @@ mindestens 60 Jahre alt oder schwerbehindert sind; die anderen pausieren ein Jah
   an die Ausgabestelle geht; Status bleibt, keine Pause. Bei nicht erfüllten Bedingungen hängt
   eine Begründung als „Anmerkung der Verwaltung“ an der Notiz. Die Wahl je Haushalt ist
   „verlängern“, „ablehnen“ oder „offen lassen“.
+- Umgekehrt kann die Verwaltung einen Haushalt trotz nicht erfüllter Bedingungen (auch zu früh
+  gemeldet) „trotzdem verlängern“ (ergänzt 2026-10), ebenfalls nur mit Begründung; sie steht in
+  der Historie („Ausweis trotzdem verlängert (Verwaltung): …“) und im Ergebnis der Meldung. Das
+  geht auch nach „Nochmal prüfen“ bei einem schon abgelehnten Haushalt.
 - Erledigte Meldungen bleiben sichtbar (ergänzt 2026-10): `Nachricht.ergebnis` hält fest, was
   geschah (z. B. „Verlängert bis …“). Die Seite listet sie unter den offenen, bis sie nach
   `Nachricht.AUFBEWAHREN_TAGE` gelöscht werden; „Nochmal prüfen“ setzt sie wieder auf offen

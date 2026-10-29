@@ -179,7 +179,8 @@ def test_sammelseite_verlaengert_und_schreibt_notiz(gemeldet, admin_client):
     assert 'name="wahl_201" value="verlaengern" checked' in seite
     assert 'name="wahl_203" value="verlaengern">' in seite  # unklar: nicht vorbelegt
     assert 'name="wahl_203" value="" checked' in seite
-    assert 'name="wahl_202" value="verlaengern"' not in seite  # nicht verlängerbar
+    assert 'name="wahl_202" value="verlaengern">' in seite  # nicht verlängerbar: nur trotzdem
+    assert "trotzdem verlängern (mit Begründung)" in seite
     assert (
         'name="wahl_202" value="ablehnen" checked>\n              Notiz an die Ausgabestelle'
     ) in seite
@@ -327,7 +328,7 @@ def test_zu_frueh_gemeldet_bekommt_notiz(gemeldet, admin_client):
     assert p.ergebnis == "nein" and p.zu_frueh == dt.date(2027, 1, 30)
     seite = admin_client.get(VERLAENGERN).content.decode()
     assert "verlängern frühestens ab 30.01.2027" in seite
-    assert 'name="wahl_201" value="verlaengern"' not in seite
+    assert 'name="wahl_201" value="verlaengern">' in seite  # nur trotzdem, mit Begründung
     assert "Notiz: zu früh" in seite
     admin_client.post(VERLAENGERN, {"wahl_201": "ablehnen"})
     h.refresh_from_db()
@@ -414,3 +415,30 @@ def test_erledigte_bleiben_sichtbar_und_lassen_sich_wieder_oeffnen(gemeldet, adm
     seite = admin_client.get(VERLAENGERN).content.decode()
     assert "Erledigt (1)" in seite and 'name="wahl_201"' in seite
     assert admin_client.post(VERLAENGERN, {"wieder_oeffnen": "x"}).status_code == 302
+
+
+def test_trotzdem_verlaengern_mit_begruendung_auch_nach_nochmal_pruefen(gemeldet, admin_client):
+    antwort = admin_client.post(VERLAENGERN, {"wahl_202": "verlaengern"}, follow=True)
+    assert "Ohne Begründung nicht verlängert (die Bedingungen sind nicht erfüllt): 202" in (
+        antwort.content.decode()
+    )
+    assert "Nichts ausgewählt" not in antwort.content.decode()
+    h = Haushalt.objects.get(kundennummer="202")
+    assert h.ausweis_gueltig_bis == dt.date(2026, 11, 30)  # nichts geschehen
+
+    # Erst abgelehnt, dann „Nochmal prüfen“ und trotzdem verlängert
+    admin_client.post(VERLAENGERN, {"wahl_202": "ablehnen"})
+    n = Nachricht.objects.get(kundennummer="202", anliegen="verlaengern")
+    assert n.erledigt_am and n.ergebnis.startswith("Nicht verlängert")
+    admin_client.post(VERLAENGERN, {"wieder_oeffnen": str(n.pk)})
+    seite = admin_client.get(VERLAENGERN).content.decode()
+    assert 'name="wahl_202" value="verlaengern">' in seite and "(30.11.2027)" in seite
+    admin_client.post(VERLAENGERN, {"monate": "12", "wahl_202": "verlaengern",
+                                    "grund_202": "Härtefall, Bescheid folgt"})  # fmt: skip
+    h.refresh_from_db()
+    assert h.ausweis_gueltig_bis == dt.date(2027, 11, 30) and h.status == Haushalt.Status.AKTIV
+    n.refresh_from_db()
+    assert n.ergebnis == "Verlängert bis 30.11.2027, trotz Prüfung: Härtefall, Bescheid folgt"
+    text = "Ausweis trotzdem verlängert (Verwaltung): Härtefall, Bescheid folgt"
+    assert HaushaltEreignis.objects.filter(kundennummer="202", text=text).exists()
+    assert not Notiz.objects.filter(kundennummer="202", text=GEPRUEFT).exists()
