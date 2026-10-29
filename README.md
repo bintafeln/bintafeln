@@ -690,9 +690,8 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   GdB 50 das Merkmal „Schwerbehindert“; ist ein GdB gewählt, erscheinen die Merkzeichen aus dem
   Schwerbehindertenausweis zum Ankreuzen, mehrere möglich: G (erheblich gehbehindert),
   aG (außergewöhnlich gehbehindert), H (hilflos), Bl (blind), Gl (gehörlos, mit kleinem L),
-  TBl (taubblind), B (Begleitperson berechtigt), RF (Rundfunkbeitrag ermäßigt), 1. Kl.
-  (1. Wagenklasse für Kriegsbeschädigte), VB (versorgungsberechtigt) und EB
-  (entschädigungsberechtigt); übernommen mit Bedeutung ins Zusatzfeld „Merkzeichen
+  TBl (taubblind), B (Begleitperson berechtigt) und RF (Rundfunkbeitrag ermäßigt) (früher
+  angebotene wie 1. Kl., VB, EB bleiben bei schon erfassten Personen sichtbar); übernommen mit Bedeutung ins Zusatzfeld „Merkzeichen
   (Schwerbehindertenausweis)“, Bl und TBl setzen dazu das Merkmal „Blind“;
   „Anschrift prüfen (Einzugsgebiet)“ (Vorgabe: nicht prüfen) vergleicht PLZ und Ort mit den
   eingetragenen Postleitzahlen (einzeln oder Bereiche wie `45127-45359`) und Orten (Ortsteile

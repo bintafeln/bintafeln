@@ -14,9 +14,8 @@ from apps.antraege import aufnahme, gebiet
 from apps.antraege.models import Abfrage, Antrag, AntragEinstellungen
 from apps.core.auswahl import (
     GDB_STUFEN,
-    MERKZEICHEN,
-    MERKZEICHEN_CODES,
     gdb_text,
+    merkzeichen_auswahl,
     merkzeichen_liste,
     mit_vorhandenem,
     staatsangehoerigkeiten,
@@ -205,7 +204,7 @@ def _kontext_personen(request, a, z, h):
         "personen": zeilen + [dict(leer) for _ in range(EXTRA_PERSONEN)],
         "staaten": staaten if KundenEinstellungen.laden().staatsangehoerigkeit_erfassen else None,
         # GdB-Spalte, wenn der Antrag ihn abfragt oder eine Person einen hat
-        "merkzeichen_auswahl": MERKZEICHEN,
+        "merkzeichen_auswahl": merkzeichen_auswahl(*(p.get("merkzeichen", "") for p in personen)),
         "gdb_stufen": [(str(n), gdb_text(n)) for n in [0, *GDB_STUFEN]]
         if AntragEinstellungen.laden().behinderung != Abfrage.AUS
         or any(p.get("gdb") for p in personen)
@@ -234,7 +233,7 @@ def _post_personen(request, a, z, h):
         if gdb in {str(n) for n in [0, *GDB_STUFEN]}:
             personen[-1]["gdb"] = gdb
             gewaehlt = request.POST.getlist(f"p{i}_merkzeichen")
-            personen[-1]["merkzeichen"] = ", ".join(c for c in MERKZEICHEN_CODES if c in gewaehlt)
+            personen[-1]["merkzeichen"] = ", ".join(merkzeichen_liste(", ".join(gewaehlt)))
         if f"p{i}_staatsangehoerigkeit" in request.POST:  # nur, wenn sie erfasst wird
             personen[-1]["staatsangehoerigkeit"] = request.POST[
                 f"p{i}_staatsangehoerigkeit"

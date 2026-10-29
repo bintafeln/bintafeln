@@ -23,6 +23,7 @@ from apps.core.auswahl import (
     MERKZEICHEN,
     MERKZEICHEN_CODES,
     gdb_text,
+    merkzeichen_auswahl,
     merkzeichen_liste,
     mit_vorhandenem,
     staatsangehoerigkeiten,
@@ -404,12 +405,12 @@ class MerkzeichenMixin:
     def _merkzeichen_einrichten(self):
         self.fields["merkzeichen"] = forms.MultipleChoiceField(
             label="Merkzeichen", required=False, widget=forms.CheckboxSelectMultiple,
-            choices=[(c, f"{c} ({b})") for c, b in MERKZEICHEN],
+            choices=[(c, f"{c} ({b})") for c, b in merkzeichen_auswahl(self.instance.merkzeichen)],
             initial=merkzeichen_liste(self.instance.merkzeichen),
         )  # fmt: skip
 
     def clean_merkzeichen(self):
-        return ", ".join(c for c in MERKZEICHEN_CODES if c in self.cleaned_data["merkzeichen"])
+        return ", ".join(merkzeichen_liste(", ".join(self.cleaned_data["merkzeichen"])))
 
 
 def _gdb_feld() -> forms.TypedChoiceField:
