@@ -1,0 +1,15 @@
+{
+  "betreff": "Invitation à l’inscription – {datum}",
+  "anrede": "Bonjour {vorname} {nachname}",
+  "einleitung": "nous pouvons vous proposer le rendez-vous suivant :",
+  "schluss": "Il peut y avoir de l’attente lors du rendez-vous, car plusieurs personnes ont été invitées.",
+  "mitbringen": "Décision d’aide actuelle (Bürgergeld, Grundsicherung, Wohngeld …)\nPièces d’identité de toutes les personnes figurant sur la décision",
+  "gruss": "Cordialement\nVotre équipe de la Tafel",
+  "absage_betreff": "Rendez-vous annulé – {datum}",
+  "absage_text": "nous devons malheureusement annuler le rendez-vous. Vous recevrez bientôt un nouveau rendez-vous.",
+  "l_datum": "Date",
+  "l_zeit": "Heure",
+  "l_ort": "Lieu",
+  "l_mitbringen": "Veuillez apporter :",
+  "l_entfaellt": "RENDEZ-VOUS ANNULÉ"
+}

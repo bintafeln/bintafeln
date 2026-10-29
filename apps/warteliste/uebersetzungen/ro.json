@@ -1,0 +1,15 @@
+{
+  "betreff": "Invitație la înscriere – {datum}",
+  "anrede": "Bună ziua, {vorname} {nachname}",
+  "einleitung": "vă putem oferi următoarea programare:",
+  "schluss": "La programare pot exista timpi de așteptare, deoarece au fost invitate mai multe persoane.",
+  "mitbringen": "Decizia actuală privind ajutorul (Bürgergeld, Grundsicherung, Wohngeld …)\nActele de identitate ale tuturor persoanelor din decizie",
+  "gruss": "Cu stimă\nEchipa Tafel",
+  "absage_betreff": "Programare anulată – {datum}",
+  "absage_text": "din păcate trebuie să anulăm programarea. Veți primi în curând o nouă programare.",
+  "l_datum": "Data",
+  "l_zeit": "Ora",
+  "l_ort": "Locul",
+  "l_mitbringen": "Vă rugăm să aduceți:",
+  "l_entfaellt": "PROGRAMARE ANULATĂ"
+}

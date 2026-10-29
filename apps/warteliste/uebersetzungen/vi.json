@@ -1,0 +1,15 @@
+{
+  "betreff": "Thư mời đăng ký – {datum}",
+  "anrede": "Xin chào {vorname} {nachname}",
+  "einleitung": "chúng tôi có thể sắp xếp cho quý vị cuộc hẹn sau:",
+  "schluss": "Có thể phải chờ đợi tại buổi hẹn vì nhiều người đã được mời.",
+  "mitbringen": "Quyết định trợ cấp hiện tại (Bürgergeld, Grundsicherung, Wohngeld …)\nGiấy tờ tùy thân của tất cả những người có tên trong quyết định",
+  "gruss": "Trân trọng\nĐội ngũ Tafel",
+  "absage_betreff": "Hủy cuộc hẹn – {datum}",
+  "absage_text": "rất tiếc chúng tôi phải hủy cuộc hẹn. Quý vị sẽ sớm nhận được cuộc hẹn mới.",
+  "l_datum": "Ngày",
+  "l_zeit": "Giờ",
+  "l_ort": "Địa điểm",
+  "l_mitbringen": "Vui lòng mang theo:",
+  "l_entfaellt": "CUỘC HẸN BỊ HỦY"
+}

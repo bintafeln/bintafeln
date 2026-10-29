@@ -1,0 +1,15 @@
+{
+  "betreff": "Kayıt için davet – {datum}",
+  "anrede": "Merhaba {vorname} {nachname}",
+  "einleitung": "size aşağıdaki randevuyu sunabiliriz:",
+  "schluss": "Birden fazla kişi davet edildiği için randevuda bekleme olabilir.",
+  "mitbringen": "Güncel yardım kararı (Bürgergeld, Grundsicherung, Wohngeld …)\nKararda adı geçen tüm kişilerin kimlik kartları",
+  "gruss": "Saygılarımızla\nTafel ekibiniz",
+  "absage_betreff": "Randevu iptal – {datum}",
+  "absage_text": "maalesef randevuyu iptal etmek zorundayız. Kısa süre içinde yeni bir randevu alacaksınız.",
+  "l_datum": "Tarih",
+  "l_zeit": "Saat",
+  "l_ort": "Yer",
+  "l_mitbringen": "Lütfen yanınızda getirin:",
+  "l_entfaellt": "RANDEVU İPTAL"
+}

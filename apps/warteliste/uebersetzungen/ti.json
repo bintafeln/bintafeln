@@ -1,0 +1,15 @@
+{
+  "betreff": "ዕድመ ንምዝገባ – {datum}",
+  "anrede": "ሰላም {vorname} {nachname}",
+  "einleitung": "ነዚ ዝስዕብ ቆጸራ ክንህበኩም ንኽእል ኢና፦",
+  "schluss": "ብዙሓት ሰባት ስለ ዝተዓደሙ ኣብቲ ቆጸራ ምጽባይ ክህሉ ይኽእል እዩ።",
+  "mitbringen": "ናይ ሕጂ ውሳነ ሓገዝ (Bürgergeld, Grundsicherung, Wohngeld …)\nመንነት ወረቐት ናይ ኩሎም ኣብቲ ውሳነ ዝተጠቕሱ ሰባት",
+  "gruss": "ምስ ሰላምታ\nጉጅለ Tafel",
+  "absage_betreff": "ቆጸራ ተሰሪዙ – {datum}",
+  "absage_text": "ከም ዘይተደልየ ነቲ ቆጸራ ክንስርዞ ኣለና። ቀልጢፍኩም ሓድሽ ቆጸራ ክትረኽቡ ኢኹም።",
+  "l_datum": "ዕለት",
+  "l_zeit": "ሰዓት",
+  "l_ort": "ቦታ",
+  "l_mitbringen": "በጃኹም ሒዝኩም ምጹ፦",
+  "l_entfaellt": "ቆጸራ ተሰሪዙ"
+}

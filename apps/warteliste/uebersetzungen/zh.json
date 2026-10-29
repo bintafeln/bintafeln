@@ -1,0 +1,15 @@
+{
+  "betreff": "登记邀请 – {datum}",
+  "anrede": "{vorname} {nachname}，您好",
+  "einleitung": "我们可以为您安排以下预约：",
+  "schluss": "由于邀请了多人，预约时可能需要等候。",
+  "mitbringen": "当前的补助决定书（Bürgergeld、Grundsicherung、Wohngeld …）\n决定书上所有人员的身份证件",
+  "gruss": "此致敬礼\n您的 Tafel 团队",
+  "absage_betreff": "预约取消 – {datum}",
+  "absage_text": "很抱歉，我们必须取消此预约。您很快会收到新的预约。",
+  "l_datum": "日期",
+  "l_zeit": "时间",
+  "l_ort": "地点",
+  "l_mitbringen": "请携带：",
+  "l_entfaellt": "预约已取消"
+}

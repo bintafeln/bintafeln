@@ -10,6 +10,12 @@
   </form>
 </section>
 <section class="karte breit">
+  <h2>Andere Sprachen</h2>
+  <p>Einladungen und Absagen gehen auf Deutsch und darunter in der Sprache zur Staatsangehörigkeit bzw. des Antrags.
+    {% if fehlen %}<strong>{{ fehlen }} Sprache{{ fehlen|pluralize:"n" }} ohne Übersetzung der geänderten Texte</strong> – dort nur Deutsch.{% else %}Für alle Sprachen gibt es Übersetzungen.{% endif %}</p>
+  <p><a class="knopf knopf-zweitrangig" href="{% url 'warteliste:texte' %}">Texte in anderen Sprachen</a></p>
+</section>
+<section class="karte breit">
   <h2>Vorschau der Einladung</h2>
   <p class="hinweis">Mit erfundenem Namen und heutigem Datum; zuletzt gespeicherter Stand.</p>
   <p><strong>Betreff:</strong> {{ vorschau_betreff }}</p>

@@ -698,3 +698,26 @@ def test_hilfe_bild_warteliste_abgleich(angemeldet, admin, muster):
                     von="unten", laenge=35),
               Marke(fall.get_by_role("button", name=re.compile("Nein")), nummer=3, von="unten",
                     laenge=35))  # fmt: skip
+
+
+def test_hilfe_bild_warteliste_texte(angemeldet, admin):
+    from apps.antraege.models import AntragEinstellungen
+    from apps.core import geheimnis
+    from apps.warteliste.models import WartelisteEinstellungen, WartelisteText
+
+    _module("warteliste")
+    e = WartelisteEinstellungen.laden()
+    e.gruss = "Herzliche Grüße\nIhr Team der Tafel"
+    e.save()
+    WartelisteText.objects.create(sprache="en", gruss="Kind regards\nYour Tafel team")
+    a = AntragEinstellungen.laden()
+    a.ki_schluessel_verschluesselt = geheimnis.verschluesseln("sk-erfunden")
+    a.save()
+    seite = oeffnen(angemeldet, admin, reverse("warteliste:texte"), breite=1300)
+    karte = seite.locator("section.karte").first
+    zeile = karte.locator("tbody tr", has_text="Türkisch")
+    aufnehmen(seite, "warteliste-texte", [karte.locator("h1"), karte.locator("tbody tr").nth(3)],
+              Marke(karte.get_by_role("button", name=re.compile("mit KI")), nummer=1, von="rechts"),
+              Marke(zeile.locator(".marke-warnung"), nummer=2, von="links", laenge=40),
+              Marke(zeile.get_by_role("link", name="bearbeiten"), nummer=3,
+                    von="rechts"))  # fmt: skip

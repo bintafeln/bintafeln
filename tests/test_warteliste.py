@@ -373,3 +373,123 @@ def test_streichungsliste_suche_und_anmerkungen(admin_client, modul_an):
     liste = admin_client.get(reverse("warteliste:liste")).content.decode()
     assert 'data-spalten-wahl="warteliste"' in liste and 'data-spalte="anmerkung"' in liste
     assert "Hat angerufen, kommt ab Dezember" in liste
+
+
+# ── Einladung in zwei Sprachen ───────────────────────────────────────────────
+
+
+def test_mitgelieferte_uebersetzungen_vollstaendig():
+    import re
+
+    from apps.antraege import sprachen
+
+    de = ablauf.mitgeliefert("de")
+    for f in WartelisteEinstellungen.TEXTFELDER:
+        assert de[f] == ablauf.vorgabe(f)  # Grundlage = Vorgabe des Modells
+    for s in sprachen.SPRACHEN:
+        t = ablauf.mitgeliefert(s.code)
+        assert set(t) == set(de), s.code
+        for k, v in t.items():
+            assert v.strip() and set(re.findall(r"\{\w+\}", v)) == set(
+                re.findall(r"\{\w+\}", de[k])), (s.code, k)  # fmt: skip
+
+
+def test_einladung_deutsch_und_sprache_der_staatsangehoerigkeit(mailserver):
+    a = antrag(email="erika@example.org", staatsangehoerigkeit="Türkei", sprache="en")
+    ablauf.einladen([a], termin(), "Büro")
+    m = django_mail.outbox[0]
+    tr = ablauf.mitgeliefert("tr")
+    assert m.subject.startswith("Einladung zur Anmeldung") and " / Kayıt için davet" in m.subject
+    assert "10:00 Uhr bis 12:00 Uhr" in m.body and "Saat:    10:00 – 12:00" in m.body
+    assert m.body.index("Bitte bringen Sie mit") < m.body.index(tr["l_mitbringen"])
+    assert "Invitation" not in m.body  # Staatsangehörigkeit vor Formularsprache
+    html = m.alternatives[0][0]
+    assert 'lang="tr" dir="ltr"' in html and "Kayıt için davet" in html
+    # Absage zweisprachig, Arabisch von rechts nach links
+    b = antrag(email="sami@example.org", staatsangehoerigkeit="Syrien")
+    t = termin(8)
+    ablauf.einladen([b], t, "Büro")
+    django_mail.outbox.clear()
+    ablauf.absagen(t, [b], "Büro")
+    m = django_mail.outbox[0]
+    assert "ENTFÄLLT" in m.body and ablauf.mitgeliefert("ar")["l_entfaellt"] in m.body
+    assert 'lang="ar" dir="rtl"' in m.alternatives[0][0]
+
+
+def test_geaenderter_text_ohne_uebersetzung_nur_deutsch(mailserver):
+    e = WartelisteEinstellungen.laden()
+    e.einleitung = "wir laden Sie herzlich ein:"
+    e.save()
+    assert ablauf.eigene_deutsche_texte() == {"einleitung": "wir laden Sie herzlich ein:"}
+    assert "einleitung" in ablauf.fehlende("tr")
+    ablauf.einladen([antrag(email="erika@example.org", staatsangehoerigkeit="Türkei")], termin(),
+                    "Büro")  # fmt: skip
+    m = django_mail.outbox[0]
+    assert "Kayıt" not in m.subject and "----------" not in m.body
+    # Eigene Übersetzung → wieder zweisprachig; Absage braucht die Einleitung nicht
+    from apps.warteliste.models import WartelisteText
+
+    WartelisteText.objects.create(sprache="tr", einleitung="sizi davet ediyoruz:")
+    assert ablauf.fehlende("tr") == []
+    django_mail.outbox.clear()
+    ablauf.einladen([antrag(email="ali@example.org", staatsangehoerigkeit="Türkei")], termin(9),
+                    "Büro")  # fmt: skip
+    assert "sizi davet ediyoruz:" in django_mail.outbox[0].body
+
+
+def test_ohne_zweite_sprache_nur_deutsch(mailserver):
+    ablauf.einladen([antrag(email="erika@example.org")], termin(), "Büro")
+    m = django_mail.outbox[0]
+    assert " / " not in m.subject and "----------" not in m.body and 'lang="de"' in (
+        m.alternatives[0][0])  # fmt: skip
+
+
+def test_textseiten_und_ki(modul_an, admin_client, monkeypatch):
+    from apps.antraege import uebersetzen
+    from apps.warteliste.models import WartelisteText
+
+    seite = admin_client.get(reverse("warteliste:einstellungen")).content.decode()
+    assert "Für alle Sprachen gibt es Übersetzungen" in seite
+    seite = admin_client.get(reverse("warteliste:texte")).content.decode()
+    assert "✓ mitgeliefert" in seite and "mit KI" not in seite
+    url = reverse("warteliste:texte_sprache", args=["tr"])
+    seite = admin_client.get(url).content.decode()
+    assert 'lang="tr"' in seite and "Kayıt için davet" in seite  # Platzhalter und Vorschau
+    assert admin_client.get(reverse("warteliste:texte_sprache", args=["de"])).url == reverse(
+        "warteliste:texte")  # fmt: skip
+    e = WartelisteEinstellungen.laden()
+    e.gruss = "Herzliche Grüße\nIhre Tafel"
+    e.save()
+    seite = admin_client.get(reverse("warteliste:texte")).content.decode()
+    assert "✗ fehlt: Gruß" in seite
+    seite = admin_client.get(reverse("warteliste:einstellungen")).content.decode()
+    assert "28 Sprachen ohne Übersetzung" in seite
+    admin_client.post(url, {"gruss": "Selamlar\nTafel"})
+    assert WartelisteText.objects.get(sprache="tr").gruss == "Selamlar\nTafel"
+    assert "✓ eigene Übersetzung" in admin_client.get(reverse("warteliste:texte")).content.decode()
+    # KI: ohne Schlüssel zurück, mit Schlüssel Schritt für Schritt
+    start = reverse("warteliste:uebersetzen")
+    assert admin_client.post(start).url == reverse("warteliste:texte")
+    monkeypatch.setattr(uebersetzen, "verfuegbar", lambda: True)
+    gesehen = []
+
+    def falsch_uebersetzen(texte, code, zweck=""):
+        gesehen.append((texte, code, zweck))
+        return {"gruss": f"Gruß {code}"}
+
+    monkeypatch.setattr(uebersetzen, "uebersetzen", falsch_uebersetzen)
+    assert (
+        "Geänderte Texte mit KI" in admin_client.get(reverse("warteliste:texte")).content.decode()
+    )
+    assert "uebersetzen/en/" in admin_client.post(start).content.decode()
+    schritt = admin_client.post(reverse("warteliste:uebersetzen_sprache", args=["en"]))
+    assert "✓" in schritt.content.decode() and "uebersetzen/ar/" in schritt.content.decode()
+    assert gesehen == [({"gruss": "Herzliche Grüße\nIhre Tafel"}, "en", ablauf.EINLADUNG_ZWECK)]
+    assert WartelisteText.objects.get(sprache="en").gruss == "Gruß en"
+
+    def kaputt(*a, **k):
+        raise uebersetzen.UebersetzungsFehler("Keine Verbindung")
+
+    monkeypatch.setattr(uebersetzen, "uebersetzen", kaputt)
+    letzte = admin_client.post(reverse("warteliste:uebersetzen_sprache", args=["ur"]))
+    assert "Keine Verbindung" in letzte.content.decode() and "Fertig" in letzte.content.decode()

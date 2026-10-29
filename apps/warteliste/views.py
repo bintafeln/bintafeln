@@ -8,17 +8,26 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
+from apps.antraege import sprachen
+from apps.antraege import uebersetzen as uebersetzen_ki
 from apps.antraege.models import Antrag
 from apps.core import papierkorb
 from apps.core.pdf import Pdf, pdf_antwort
 from apps.konten import rollen
 from apps.warteliste import ablauf
-from apps.warteliste.forms import EinladenForm, EinstellungenForm, StatusForm, TerminForm
+from apps.warteliste.forms import (
+    EinladenForm,
+    EinstellungenForm,
+    StatusForm,
+    TerminForm,
+    TextForm,
+)
 from apps.warteliste.models import (
     AbgleichEntscheidung,
     Streichung,
     Termin,
     WartelisteEinstellungen,
+    WartelisteText,
     Wartestand,
 )
 
@@ -380,6 +389,93 @@ def einstellungen(request):
     beispiel_termin = Termin(datum=timezone.localdate(), von=timezone.localtime().time()
                              .replace(hour=10, minute=0, second=0, microsecond=0))  # fmt: skip
     betreff, text, _ = ablauf.mail_inhalt(beispiel_antrag, beispiel_termin)
+    fehlen = sum(1 for s in _fremde_sprachen() if ablauf.fehlende(s.code))
     return render(request, "warteliste/einstellungen.html", {
-        "form": form, "vorschau_betreff": betreff, "vorschau_text": text,
+        "form": form, "vorschau_betreff": betreff, "vorschau_text": text, "fehlen": fehlen,
+    })  # fmt: skip
+
+
+# --- Einladungstexte in anderen Sprachen -----------------------------------------------------
+
+
+def _fremde_sprachen():
+    return [s for s in sprachen.SPRACHEN if s.code != "de"]
+
+
+def _beispiel(code: str):
+    antrag = Antrag(vorname="Erika", nachname="Musterfrau", sprache=code)
+    termin = Termin(datum=timezone.localdate(), von=timezone.localtime().time()
+                    .replace(hour=10, minute=0, second=0, microsecond=0))  # fmt: skip
+    return antrag, termin
+
+
+@rollen.recht_erforderlich("einstellungen.warteliste")
+def texte(request):
+    e = WartelisteEinstellungen.laden()
+    eigene = set(WartelisteText.objects.values_list("sprache", flat=True))
+    namen = {f: WartelisteEinstellungen._meta.get_field(f).verbose_name
+             for f in WartelisteEinstellungen.TEXTFELDER}  # fmt: skip
+    zeilen = [{"s": s, "eigene": s.code in eigene,
+               "fehlt": [namen[f] for f in ablauf.fehlende(s.code, e)]}
+              for s in _fremde_sprachen()]  # fmt: skip
+    return render(request, "warteliste/texte.html", {
+        "zeilen": zeilen, "ki": uebersetzen_ki.verfuegbar(),
+        "eigene_deutsch": ablauf.eigene_deutsche_texte(e),
+    })  # fmt: skip
+
+
+@rollen.recht_erforderlich("einstellungen.warteliste")
+def texte_sprache(request, sprache):
+    if sprache not in sprachen.NACH_CODE or sprache == "de":
+        return redirect("warteliste:texte")
+    s = sprachen.sprache(sprache)
+    e = WartelisteEinstellungen.laden()
+    instanz = WartelisteText.objects.filter(sprache=sprache).first() or WartelisteText(
+        sprache=sprache)  # fmt: skip
+    mitgeliefert = {f: ablauf.mitgeliefert(sprache).get(f, "")
+                    for f in WartelisteEinstellungen.TEXTFELDER
+                    if getattr(e, f).strip() == ablauf.vorgabe(f).strip()}  # fmt: skip
+    form = TextForm(request.POST or None, instance=instanz, deutsch=e, mitgeliefert=mitgeliefert)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, f"Texte {s.deutsch} gespeichert.")
+        return redirect("warteliste:texte_sprache", sprache)
+    antrag, termin = _beispiel(sprache)
+    betreff, text, _ = ablauf.mail_inhalt(antrag, termin)
+    return render(request, "warteliste/texte_sprache.html", {
+        "s": s, "form": form, "fehlt": ablauf.fehlende(sprache, e),
+        "vorschau_betreff": betreff, "vorschau_text": text,
+    })  # fmt: skip
+
+
+@require_POST
+@rollen.recht_erforderlich("einstellungen.warteliste")
+def uebersetzen(request):
+    """Startet die KI-Übersetzung; die Seite holt die Sprachen nacheinander (htmx)."""
+    if not uebersetzen_ki.verfuegbar():
+        messages.error(request, "Für die Übersetzung fehlt der API-Schlüssel (Anträge einstellen).")
+        return redirect("warteliste:texte")
+    if not ablauf.eigene_deutsche_texte():
+        messages.info(request, "Alle deutschen Texte entsprechen der Vorgabe; dafür gibt es "
+                      "schon Übersetzungen.")  # fmt: skip
+        return redirect("warteliste:texte")
+    liste = _fremde_sprachen()
+    return render(request, "warteliste/uebersetzen.html", {"erste": liste[0]})
+
+
+@require_POST
+@rollen.recht_erforderlich("einstellungen.warteliste")
+def uebersetzen_sprache(request, sprache):
+    liste = _fremde_sprachen()
+    codes = [s.code for s in liste]
+    if sprache not in codes:
+        return redirect("warteliste:texte")
+    try:
+        anzahl, fehler = ablauf.ki_uebersetzen(sprache), ""
+    except uebersetzen_ki.UebersetzungsFehler as fehler_:
+        anzahl, fehler = 0, str(fehler_)
+    i = codes.index(sprache)
+    return render(request, "warteliste/_uebersetzen_schritt.html", {
+        "s": liste[i], "anzahl": anzahl, "fehler": fehler,
+        "naechste": liste[i + 1] if i + 1 < len(liste) else None,
     })  # fmt: skip

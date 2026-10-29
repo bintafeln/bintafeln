@@ -271,7 +271,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Erstes Modul: `aufruf` (ADR 0050, Regeln in `apps/aufruf/ablauf.py`, Seiten aus dem
   bisherigen Aufrufsystem in `apps/aufruf/templates/aufruf/`, Geräte ohne Anmeldung nur über
   den Schlüssel im Link). `warteliste` (ADR 0051, Regeln in `apps/warteliste/ablauf.py`,
-  `Wartestand` je Antrag). `wetter` (ADR 0053, Abruf bei Open-Meteo nur im Server in
+  `Wartestand` je Antrag; Mails deutsch + Sprache aus `sprachen.mail_sprachen()`, Texte je
+  Sprache in `apps/warteliste/uebersetzungen/` bzw. `WartelisteText`). `wetter` (ADR 0053, Abruf bei Open-Meteo nur im Server in
   `apps/wetter/wetter.py`, in Tests `wetter._json` ersetzen). `wochenuebersicht` (ADR 0054,
   Rechnung in `apps/wochenuebersicht/auswertung.py`, PDF hoch/quer in `pdf.py`). `abrechnung`
   (ADR 0060, Regeln in `apps/abrechnung/ablauf.py`, Einnahmen aus der Kasse, beim Einreichen

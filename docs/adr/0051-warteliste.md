@@ -22,6 +22,12 @@ mussten zurückgeschrieben werden, und es gab keine Anmeldung.
 - `Termin` mit Datum, Zeit und Ort; Einladung und Absage per Mail (`apps.core.mail`), Texte mit
   Platzhaltern in `WartelisteEinstellungen`; ohne E-Mail-Adresse wird nur eingetragen.
   Verlauf in `Einladung`. Druckliste und Streichungsliste als PDF.
+- Einladung und Absage gehen auf Deutsch und darunter in der Sprache zur Staatsangehörigkeit (ohne
+  passende Sprache: der des Antrags; `sprachen.mail_sprachen()`, wie die Antragsbestätigung). Die
+  Vorgabetexte und Beschriftungen liegen übersetzt in `apps/warteliste/uebersetzungen/<code>.json`.
+  Weicht ein deutscher Text der Tafel von der Vorgabe ab, gilt die eigene Übersetzung
+  (`WartelisteText`, von Hand oder mit KI nach ADR 0082); fehlt sie, geht die Mail nur auf Deutsch,
+  damit niemand einen veralteten oder halb übersetzten Text bekommt.
 - Abgleich mit dem eigenen Kundenstamm über die Dublettenprüfung des Aufnahme-Assistenten, mit
   Hinweisen zur Sperrzeit nach Ablauf des Ausweises (Monate einstellbar; keine Sperrzeit ab
   einstellbarem Alter oder bei einem Ja/Nein-Zusatzfeld).

@@ -1,0 +1,15 @@
+{
+  "betreff": "Martiqaad diiwaangelin – {datum}",
+  "anrede": "Salaan {vorname} {nachname}",
+  "einleitung": "waxaan kuu soo bandhigi karnaa ballantan:",
+  "schluss": "Ballanta waxaa laga yaabaa in la sugo, maadaama dad badan la casuumay.",
+  "mitbringen": "Go’aanka gargaarka ee hadda (Bürgergeld, Grundsicherung, Wohngeld …)\nKaararka aqoonsiga dhammaan dadka ku qoran go’aanka",
+  "gruss": "Mahadsanid\nKooxda Tafel",
+  "absage_betreff": "Ballanta waa la joojiyay – {datum}",
+  "absage_text": "nasiib darro waa inaan joojinnaa ballanta. Dhawaan waxaad heli doontaa ballan cusub.",
+  "l_datum": "Taariikhda",
+  "l_zeit": "Waqtiga",
+  "l_ort": "Goobta",
+  "l_mitbringen": "Fadlan keen:",
+  "l_entfaellt": "BALLANTA WAA LA JOOJIYAY"
+}

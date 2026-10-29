@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block titel %}Einladungstexte {{ s.deutsch }}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'warteliste:texte' %}">← Einladungstexte in anderen Sprachen</a></p>
+  <h1>Einladungstexte: {{ s.deutsch }}</h1>
+  <p class="hinweis">Leer = mitgelieferte Übersetzung (steht grau im Feld), solange der deutsche Text der Vorgabe
+    entspricht. Platzhalter wie {vorname} oder {datum} unverändert übernehmen.</p>
+  {% if fehlt %}<p class="meldung error">Es fehlen Übersetzungen; Mails gehen in dieser Sprache bis dahin nur auf Deutsch.</p>{% endif %}
+  <form method="post" lang="{{ s.code }}" dir="{% if s.rtl %}rtl{% else %}ltr{% endif %}">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+<section class="karte breit">
+  <h2>Vorschau der Einladung</h2>
+  <p class="hinweis">Mit erfundenem Namen und heutigem Datum; zuletzt gespeicherter Stand.</p>
+  <p><strong>Betreff:</strong> {{ vorschau_betreff }}</p>
+  <pre style="white-space: pre-wrap; background: var(--grund); padding: 1rem; border-radius: var(--radius);">{{ vorschau_text }}</pre>
+</section>
+{% endblock %}

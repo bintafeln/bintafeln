@@ -1,0 +1,15 @@
+{
+  "betreff": "Convite para inscrição – {datum}",
+  "anrede": "Olá, {vorname} {nachname}",
+  "einleitung": "podemos oferecer-lhe a seguinte marcação:",
+  "schluss": "Poderá haver tempo de espera na marcação, pois foram convidadas várias pessoas.",
+  "mitbringen": "Decisão atual do apoio (Bürgergeld, Grundsicherung, Wohngeld …)\nDocumentos de identificação de todas as pessoas indicadas na decisão",
+  "gruss": "Com os melhores cumprimentos\nA sua equipa da Tafel",
+  "absage_betreff": "Marcação cancelada – {datum}",
+  "absage_text": "infelizmente temos de cancelar a marcação. Receberá em breve uma nova marcação.",
+  "l_datum": "Data",
+  "l_zeit": "Hora",
+  "l_ort": "Local",
+  "l_mitbringen": "Por favor, traga:",
+  "l_entfaellt": "MARCAÇÃO CANCELADA"
+}

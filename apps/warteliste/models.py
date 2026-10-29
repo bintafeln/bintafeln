@@ -17,6 +17,28 @@ from apps.kunden.models import Zusatzfeld
 PLATZHALTER = "{vorname}, {nachname}, {datum}, {von}, {bis}, {ort}"
 
 
+class WartelisteText(models.Model):
+    """Eigene Übersetzung der Einladungs- und Absagetexte in eine Sprache (von Hand oder mit KI).
+    Leere Felder: mitgelieferte Übersetzung, solange der deutsche Text der Vorgabe entspricht."""
+
+    sprache = models.CharField("Sprache", max_length=10, unique=True)
+    betreff = models.CharField("Betreff", max_length=300, blank=True)
+    anrede = models.CharField("Anrede", max_length=300, blank=True)
+    einleitung = models.TextField("Einleitung", blank=True)
+    schluss = models.TextField("Text nach dem Termin", blank=True)
+    mitbringen = models.TextField("Bitte mitbringen (eine Zeile je Punkt)", blank=True)
+    gruss = models.TextField("Gruß", blank=True)
+    absage_betreff = models.CharField("Betreff der Absage", max_length=300, blank=True)
+    absage_text = models.TextField("Text der Absage", blank=True)
+
+    class Meta:
+        verbose_name = "Einladungstext je Sprache"
+        verbose_name_plural = "Einladungstexte je Sprache"
+
+    def __str__(self):
+        return self.sprache
+
+
 class WartelisteEinstellungen(models.Model):
     """Einstellungen der Warteliste (Singleton)."""
 
@@ -79,6 +101,9 @@ class WartelisteEinstellungen(models.Model):
         "Text der Absage",
         default="leider müssen wir den Termin absagen. Sie bekommen in Kürze einen neuen Termin.",
     )  # fmt: skip
+
+    TEXTFELDER = ["betreff", "anrede", "einleitung", "schluss", "mitbringen", "gruss",
+                  "absage_betreff", "absage_text"]  # fmt: skip
 
     class Meta:
         verbose_name = "Warteliste-Einstellungen"

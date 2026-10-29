@@ -7,13 +7,16 @@ Kundenstamm kam (Antrag erledigt mit Kundennummer).
 """
 
 import datetime as dt
+import json
+from functools import cache
+from pathlib import Path
 
 from django.db import transaction
 from django.db.models import Q
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from apps.antraege import aufnahme
+from apps.antraege import aufnahme, sprachen
 from apps.antraege.models import Antrag, AntragAnmerkung
 from apps.core import mail
 from apps.core.models import TafelEinstellungen
@@ -25,6 +28,7 @@ from apps.warteliste.models import (
     Streichung,
     Termin,
     WartelisteEinstellungen,
+    WartelisteText,
     Wartestand,
 )
 
@@ -133,10 +137,12 @@ def ort(termin, e=None) -> str:
     return "\n".join(x for x in (t.name, t.strasse, f"{t.plz} {t.ort}".strip()) if x)
 
 
-def _werte(antrag, termin, e) -> dict:
+def _werte(antrag, termin, e, deutsch=True) -> dict:
+    """Platzhalter; außer im deutschen Teil ohne deutsche Wochentage und „Uhr“."""
+    datum = f"{termin.datum:%d.%m.%Y}"
     return {
         "vorname": antrag.vorname, "nachname": antrag.nachname,
-        "datum": f"{TAGE[termin.datum.weekday()]} {termin.datum:%d.%m.%Y}",
+        "datum": f"{TAGE[termin.datum.weekday()]} {datum}" if deutsch else datum,
         "von": f"{termin.von:%H:%M}", "bis": f"{termin.bis:%H:%M}" if termin.bis else "",
         "ort": ort(termin, e).replace("\n", ", "),
     }  # fmt: skip
@@ -148,26 +154,112 @@ def einsetzen(vorlage: str, werte: dict) -> str:
     return vorlage
 
 
-def mail_inhalt(antrag, termin, absage=False) -> tuple[str, str, str]:
-    """(Betreff, Text, HTML) der Einladung oder Absage."""
-    e = WartelisteEinstellungen.laden()
-    w = _werte(antrag, termin, e)
-    zeit = f"{w['von']} Uhr" + (f" bis {w['bis']} Uhr" if w["bis"] else "")
-    teile = {
-        "betreff": einsetzen(e.absage_betreff if absage else e.betreff, w),
-        "anrede": einsetzen(e.anrede, w),
-        "einleitung": einsetzen(e.absage_text if absage else e.einleitung, w),
-        "schluss": "" if absage else einsetzen(e.schluss, w),
-        "mitbringen": [] if absage else [z.strip() for z in e.mitbringen.splitlines() if z.strip()],
-        "gruss": einsetzen(e.gruss, w),
+UEBERSETZUNGEN = Path(__file__).resolve().parent / "uebersetzungen"
+EINLADUNG = ["betreff", "anrede", "einleitung", "schluss", "mitbringen", "gruss"]
+ABSAGE = ["absage_betreff", "anrede", "absage_text", "gruss"]
+
+
+@cache
+def mitgeliefert(code: str) -> dict[str, str]:
+    """Mitgelieferte Übersetzung der Vorgabetexte und Beschriftungen (uebersetzungen/)."""
+    pfad = UEBERSETZUNGEN / f"{code}.json"
+    return json.loads(pfad.read_text(encoding="utf-8")) if pfad.exists() else {}
+
+
+def vorgabe(feld: str) -> str:
+    return WartelisteEinstellungen._meta.get_field(feld).default
+
+
+def text_in(code: str, feld: str, e, eigene=None) -> str | None:
+    """Text eines Feldes in einer Sprache: der deutsche Text der Tafel; sonst die eigene
+    Übersetzung, ohne sie die mitgelieferte (nur solange der deutsche Text der Vorgabe
+    entspricht). ``None``: keine Übersetzung."""
+    deutsch = getattr(e, feld)
+    if code == "de" or not deutsch.strip():
+        return deutsch
+    if eigene is not None and getattr(eigene, feld).strip():
+        return getattr(eigene, feld)
+    if deutsch.strip() == vorgabe(feld).strip():
+        return mitgeliefert(code).get(feld)
+    return None
+
+
+def fehlende(code: str, e=None) -> list[str]:
+    """Felder, für die in ``code`` eine Übersetzung fehlt (die Mail kommt dann nur deutsch)."""
+    e = e or WartelisteEinstellungen.laden()
+    eigene = WartelisteText.objects.filter(sprache=code).first()
+    return [f for f in WartelisteEinstellungen.TEXTFELDER
+            if text_in(code, f, e, eigene) is None]  # fmt: skip
+
+
+EINLADUNG_ZWECK = "ihre Einladungs- und Absagemails zu einem Anmeldetermin"
+
+
+def eigene_deutsche_texte(e=None) -> dict[str, str]:
+    """Deutsche Texte, die von der Vorgabe abweichen (nur sie braucht es zu übersetzen)."""
+    e = e or WartelisteEinstellungen.laden()
+    return {f: getattr(e, f) for f in WartelisteEinstellungen.TEXTFELDER
+            if getattr(e, f).strip() and getattr(e, f).strip() != vorgabe(f).strip()}  # fmt: skip
+
+
+def ki_uebersetzen(code: str) -> int:
+    """Übersetzt die eigenen deutschen Texte mit KI (ADR 0082) und speichert sie als Texte der
+    Sprache ``code``; liefert die Zahl der übernommenen Texte."""
+    from apps.antraege import uebersetzen
+
+    texte = eigene_deutsche_texte()
+    if not texte or code == "de":
+        return 0
+    neu = uebersetzen.uebersetzen(texte, code, zweck=EINLADUNG_ZWECK)
+    ziel = WartelisteText.objects.filter(sprache=code).first() or WartelisteText(sprache=code)
+    for feld, wert in neu.items():
+        setattr(ziel, feld, wert)
+    ziel.save()
+    return len(neu)
+
+
+def _teil(antrag, termin, e, code: str, absage: bool) -> dict | None:
+    """Inhalt der Mail in einer Sprache; ``None``, wenn eine Übersetzung fehlt."""
+    eigene = None if code == "de" else WartelisteText.objects.filter(sprache=code).first()
+    texte = {f: text_in(code, f, e, eigene) for f in (ABSAGE if absage else EINLADUNG)}
+    if any(t is None for t in texte.values()):
+        return None
+    w = _werte(antrag, termin, e, deutsch=code == "de")
+    if code == "de":
+        zeit = f"{w['von']} Uhr" + (f" bis {w['bis']} Uhr" if w["bis"] else "")
+    else:
+        zeit = w["von"] + (f" – {w['bis']}" if w["bis"] else "")
+    s = sprachen.sprache(code)
+    return {
+        "code": code, "rtl": s.rtl, "l": mitgeliefert(code) or mitgeliefert("de"),
+        "betreff": einsetzen(texte["absage_betreff" if absage else "betreff"], w),
+        "anrede": einsetzen(texte["anrede"], w),
+        "einleitung": einsetzen(texte["absage_text" if absage else "einleitung"], w),
+        "schluss": "" if absage else einsetzen(texte["schluss"], w),
+        "mitbringen": [] if absage else [z.strip() for z in texte["mitbringen"].splitlines()
+                                         if z.strip()],
+        "gruss": einsetzen(texte["gruss"], w),
         "datum": w["datum"], "zeit": zeit, "ort": ort(termin, e), "absage": absage,
     }  # fmt: skip
-    text = render_to_string("warteliste/mail.txt", teile).strip() + "\n"
-    t = TafelEinstellungen.laden()
-    html = render_to_string(
-        "warteliste/mail.html", {**teile, "tafel": t, "tafel_name": t.name or "Tafel"}
+
+
+def mail_inhalt(antrag, termin, absage=False) -> tuple[str, str, str]:
+    """(Betreff, Text, HTML) der Einladung oder Absage: Deutsch und darunter die Sprache zur
+    Staatsangehörigkeit bzw. des Antrags (wie die Antragsbestätigung), wenn es für alle Texte
+    eine Übersetzung gibt."""
+    e = WartelisteEinstellungen.laden()
+    teile = [t for code in sprachen.mail_sprachen(antrag)
+             if (t := _teil(antrag, termin, e, code, absage))]  # fmt: skip
+    betreff = " / ".join(dict.fromkeys(t["betreff"] for t in teile))
+    text = "\n----------\n\n".join(
+        render_to_string("warteliste/mail.txt", t).strip() + "\n" for t in teile
     )
-    return teile["betreff"], text, html
+    tafel = TafelEinstellungen.laden()
+    html = render_to_string("warteliste/mail.html", {
+        "teile": teile, "betreff": betreff, "absage": absage, "tafel": tafel,
+        "tafel_name": tafel.name or "Tafel",
+    })  # fmt: skip
+    return betreff, text, html
 
 
 def _senden(antrag, termin, absage=False) -> str:

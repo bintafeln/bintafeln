@@ -1,0 +1,15 @@
+{
+  "betreff": "Meghívó a jelentkezésre – {datum}",
+  "anrede": "Jó napot, {vorname} {nachname}",
+  "einleitung": "a következő időpontot tudjuk felajánlani Önnek:",
+  "schluss": "Az időponton várakozásra lehet számítani, mivel több személyt is meghívtunk.",
+  "mitbringen": "Aktuális határozat (Bürgergeld, Grundsicherung, Wohngeld …)\nA határozatban szereplő összes személy személyi igazolványa",
+  "gruss": "Üdvözlettel\nA Tafel csapata",
+  "absage_betreff": "Az időpont elmarad – {datum}",
+  "absage_text": "sajnos le kell mondanunk az időpontot. Hamarosan új időpontot kap.",
+  "l_datum": "Dátum",
+  "l_zeit": "Idő",
+  "l_ort": "Helyszín",
+  "l_mitbringen": "Kérjük, hozza magával:",
+  "l_entfaellt": "AZ IDŐPONT ELMARAD"
+}

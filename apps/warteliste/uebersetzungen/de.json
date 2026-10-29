@@ -1,0 +1,15 @@
+{
+  "betreff": "Einladung zur Anmeldung – {datum}",
+  "anrede": "Guten Tag {vorname} {nachname}",
+  "einleitung": "wir können Ihnen folgenden Termin anbieten:",
+  "schluss": "Bei dem Termin kann es zu Wartezeiten kommen, da mehrere Personen eingeladen wurden.",
+  "mitbringen": "Aktueller Bescheid (Bürgergeld, Grundsicherung, Wohngeld …)\nPersonalausweise aller Personen auf dem Bescheid",
+  "gruss": "Mit freundlichen Grüßen\nIhr Tafel-Team",
+  "absage_betreff": "Termin entfällt – {datum}",
+  "absage_text": "leider müssen wir den Termin absagen. Sie bekommen in Kürze einen neuen Termin.",
+  "l_datum": "Datum",
+  "l_zeit": "Zeit",
+  "l_ort": "Ort",
+  "l_mitbringen": "Bitte bringen Sie mit:",
+  "l_entfaellt": "TERMIN ENTFÄLLT"
+}

@@ -1004,6 +1004,10 @@ Ersetzt das bisherige Neuanmeldungs-Programm (ADR 0051) und arbeitet direkt mit 
 - **Einladen:** Anträge auswählen (Filter nach Status, Art, Termin, Staatsangehörigkeit „nur“ oder
   „nicht“), Termin wählen oder neu anlegen. Einladung per Mail mit eigenen Texten und
   Platzhaltern; ohne E-Mail-Adresse nur eintragen (anrufen oder Brief).
+  Einladung und Absage gehen **auf Deutsch und in der Sprache zur Staatsangehörigkeit** (sonst der
+  des Antrags). Für die Vorgabetexte liegen Übersetzungen in allen 29 Sprachen bei
+  (`apps/warteliste/uebersetzungen/`); geänderte Texte übersetzt man unter „Texte in anderen
+  Sprachen“ von Hand oder mit KI (ADR 0082). Fehlt eine Übersetzung, kommt die Mail nur deutsch.
 - **Termine:** Liste der Eingeladenen, Druckliste (PDF), Status für mehrere setzen, **Absagen**
   per Mail (danach wieder „wartend“).
 - **Abgleich mit dem Kundenstamm:** ähnliche Haushalte mit Hinweis, ob der Ausweis noch gilt oder

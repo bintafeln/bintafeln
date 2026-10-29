@@ -3,7 +3,13 @@ from django import forms
 from apps.konten.forms import DatumEingabe
 from apps.kunden.forms_bearbeiten import UhrzeitEingabe
 from apps.kunden.models import Zusatzfeld
-from apps.warteliste.models import PLATZHALTER, Termin, WartelisteEinstellungen, Wartestand
+from apps.warteliste.models import (
+    PLATZHALTER,
+    Termin,
+    WartelisteEinstellungen,
+    WartelisteText,
+    Wartestand,
+)
 
 S = Wartestand.Status
 # Was das Team von Hand setzen kann („neu“, „eingeladen“ und „aufgenommen“ entstehen von selbst)
@@ -104,3 +110,23 @@ class EinstellungenForm(forms.ModelForm):
 
     def abschnitte(self):
         return [(titel, [self[f] for f in felder]) for titel, felder in self.ABSCHNITTE]
+
+
+class TextForm(forms.ModelForm):
+    """Eigene Übersetzung der Einladungs- und Absagetexte in eine Sprache."""
+
+    class Meta:
+        model = WartelisteText
+        fields = WartelisteEinstellungen.TEXTFELDER
+        widgets = {
+            f: forms.Textarea(attrs={"rows": 3})
+            for f in ["einleitung", "schluss", "mitbringen", "gruss", "absage_text"]
+        }
+
+    def __init__(self, *args, deutsch=None, mitgeliefert=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, feld in self.fields.items():
+            original = getattr(deutsch, name, "") if deutsch else ""
+            feld.help_text = f"Deutsch: {original}" if original.strip() else "Deutsch: leer"
+            if (mitgeliefert or {}).get(name):
+                feld.widget.attrs["placeholder"] = mitgeliefert[name]
