@@ -17,11 +17,12 @@
       {% for z in zeilen_auswahl %}<option value="{{ z }}"{% if z == zeilen %} selected{% endif %}>{{ z }}</option>{% endfor %}
     </select>
     <label for="suche" class="unsichtbar">Suche</label>
-    <input type="search" name="suche" id="suche" value="{{ suche }}" placeholder="Suchbegriff (Name, Nummer, E-Mail, Telefon …)" class="suche">
+    <input type="search" name="suche" id="suche" value="{{ suche }}" placeholder="Suchbegriff (Name, Nummer, E-Mail, Telefon …)" class="suche" {% live_suche %}>
     <button type="submit" class="knopf">Suchen</button>
     <button type="submit" form="auswahl" class="knopf knopf-zweitrangig">CSV-Export</button> <span class="hinweis" data-auswahl-zahl="auswahl"></span>
   </form>
   {% url 'antraege:export' as export_url %}{% auswahl_formular export_url %}
+  <div id="ergebnis">
   {% blaettern seite zusatz="Anträge" %}
   <div class="tabelle-rahmen">
   <table class="tabelle antraege-liste">
@@ -68,6 +69,7 @@
   </div>
   {% if seite.has_other_pages %}{% blaettern seite zusatz="Anträge" %}{% else %}<p class="hinweis">{{ seite.paginator.count }} Antr{{ seite.paginator.count|pluralize:"ag,äge" }}</p>{% endif %}
   <p class="hinweis">Die CSV-Datei enthält Personendaten. Nur dort speichern, wo sie geschützt ist, und danach löschen.</p>
+</div>
 </section>
 <script src="{% static 'js/auswahl.js' %}" defer></script>
 {% endblock %}

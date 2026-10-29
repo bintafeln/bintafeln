@@ -215,8 +215,10 @@ def suche(request):
     eingabe = request.GET.get("q", "")[:200]
     if request.GET.get("nur") == "hilfe" and such.zerlegen(eingabe)[0] is None:
         eingabe = f"h {eingabe}"  # Suchfeld im Handbuch
-    kurz = bool(request.headers.get("HX-Request"))
-    if not kurz and (ziel := such.direkt(request.user, eingabe)):
+    # Kurze Liste unter einem Suchfeld (Seitenkopf, Handbuch); das Tippen auf der Suchseite selbst
+    # holt die ganze Seite (live_suche), springt dabei aber nicht zum Kunden
+    kurz = request.headers.get("HX-Target") in ("kopf-suche-liste", "handbuch-suche-liste")
+    if not request.headers.get("HX-Request") and (ziel := such.direkt(request.user, eingabe)):
         return redirect(ziel)  # Enter mit genauer Kundennummer: gleich zum Kunden
     ergebnis = such.suchen(
         request.user,

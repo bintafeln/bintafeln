@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block titel %}Warteliste{% endblock %}
+{% load liste %}{% block titel %}Warteliste{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
   <div class="liste-kopf">
@@ -29,10 +29,11 @@
     </select>
     <select name="staat" multiple size="3" data-nicht-sofort aria-label="Staatsangehörigkeiten">{% for s in staaten %}<option value="{{ s }}"{% if s in f.staaten %} selected{% endif %}>{{ s }}</option>{% endfor %}</select>
     <label for="suche" class="unsichtbar">Suche</label>
-    <input type="search" name="suche" id="suche" value="{{ f.suche }}" placeholder="Name, Nummer, E-Mail, Telefon …" class="suche">
+    <input type="search" name="suche" id="suche" value="{{ f.suche }}" placeholder="Name, Nummer, E-Mail, Telefon …" class="suche" data-nicht-sofort {% live_suche %}>
     <button type="submit" class="knopf">Filtern</button>
   </form>
 
+  <div id="ergebnis">
   <form method="post" id="auswahl">
     {% csrf_token %}
     <input type="hidden" name="zurueck" value="{{ request.get_full_path }}">
@@ -96,5 +97,6 @@
     </div>
     {% endif %}
   </form>
+</div>
 </section>
 {% endblock %}

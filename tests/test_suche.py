@@ -22,7 +22,7 @@ from apps.kunden.models import (
 
 pytestmark = pytest.mark.django_db
 URL = reverse("core:suche")
-HX = {"HTTP_HX_REQUEST": "true"}
+HX = {"HTTP_HX_REQUEST": "true", "HTTP_HX_TARGET": "kopf-suche-liste"}
 
 
 @pytest.fixture

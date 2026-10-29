@@ -14,9 +14,10 @@
     <label for="art">Art</label>
     <select name="art" id="art" onchange="this.form.submit()"><option value="">alle</option>{% for w, n in arten %}<option value="{{ w }}"{% if filter.art == w %} selected{% endif %}>{{ n }}</option>{% endfor %}</select>
     <label for="q">Suche</label>
-    <input type="search" name="q" id="q" value="{{ filter.q }}" class="suche" placeholder="Spender, Bezeichnung, Zweck">
+    <input type="search" name="q" id="q" value="{{ filter.q }}" class="suche" placeholder="Spender, Bezeichnung, Zweck" {% live_suche %}>
     <button type="submit" class="knopf">Suchen</button>
   </form>
+  <div id="ergebnis">
   <div class="kacheln">
     <div class="kachel"><span class="kachel-titel">Geldspenden</span><span class="kachel-wert">{{ summen.geld|default:0|floatformat:2 }} €</span></div>
     <div class="kachel"><span class="kachel-titel">Wert der Sachspenden</span><span class="kachel-wert">{{ summen.sach|default:0|floatformat:2 }} €</span></div>
@@ -48,6 +49,7 @@
   </table>
   </div>
   {% blaettern seite %}
+</div>
 </section>
 <script src="{% static 'js/auswahl.js' %}" defer></script>
 {% endblock %}

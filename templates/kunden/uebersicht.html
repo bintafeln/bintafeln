@@ -12,7 +12,7 @@
   {# Ohne hx-trigger "submit": Enter (auch vom Scanner) sendet normal und öffnet bei passender Kundennummer den Haushalt. #}
   <form class="filter-kompakt" method="get" action="{% url 'kunden:uebersicht' %}"
         hx-get="{% url 'kunden:uebersicht' %}" hx-target="#kunden-liste" hx-push-url="true"
-        hx-trigger="input changed delay:400ms from:#q, change from:select">
+        hx-trigger="input[event.target.value.trim().length >= 2 || !event.target.value] changed delay:400ms from:#q, change from:select">
     <div class="filter-feld filter-suche"><label for="q">Suche</label>
       <input type="search" name="q" id="q" value="{{ filter.q }}" autofocus autocomplete="off"
              placeholder="Kundennummer oder Name"></div>
