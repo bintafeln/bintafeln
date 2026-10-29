@@ -1,4 +1,4 @@
-<p>Der Fahrdienst ersetzt den gedruckten Fahrerplan mit den gelben Aufklebern: Wer nicht kann, meldet das, der Plan
+{% load handbuch %}<p>Der Fahrdienst ersetzt den gedruckten Fahrerplan mit den gelben Aufklebern: Wer nicht kann, meldet das, der Plan
   zeigt die Lücke, und die Fahrdienstleitung bekommt sofort eine E-Mail mit den freien Springern.</p>
 <h3>Fahrerplan lesen</h3>
 <ul>
@@ -18,6 +18,7 @@
   <li><strong>Drucken (PDF)</strong> erzeugt den Monat im Format A3 quer wie der bisherige Papierplan, mit den Springern
     darunter. Der Plan füllt die ganze Seite mit möglichst großer Schrift.</li>
 </ul>
+{% hilfe_bild "fahrdienst-plan" "① Monat wählen oder blättern. ② „offen“: fällt aus, noch kein Ersatz. ③ grün: jemand springt ein. ④ Auf eine Tour tippen: feste Besetzung ändern (wer plant). ⑤ „Ich kann nicht – Ausfall melden“." %}
 <h3>Ausfall melden</h3>
 <ul>
   <li><strong>Sich selbst austragen:</strong> Im Fahrerplan auf den eigenen (unterstrichenen) Namen tippen oder in „Meine
@@ -25,6 +26,9 @@
     dieser Tag, 1, 2, 3 oder 4 Wochen (oder ein genaues Ende), dazu den Grund (krank, Urlaub, Sonstiges). Ab dann ist Ihr
     Name an diesen Tagen durchgestrichen und der Platz „offen“. Zurücknehmen geht in „Meine Einsätze“.</li>
   <li>Dasselbe über den Knopf „Ich kann nicht – Ausfall melden“. Den Grund sieht nur, wer den Fahrdienst plant.</li>
+</ul>
+{% hilfe_bild "fahrdienst-ausfall" "Nach „kann nicht“: ① der Tag ist schon eingetragen, ② „Wie lange?“ und ③ den Grund wählen, ④ „Ausfall melden“." %}
+<ul>
   <li><strong>Wieder gesund:</strong> Ist ein längerer Ausfall früher vorbei, in „Meine Einsätze“ beim Ausfall auf „wieder
     gesund“ tippen (oder am Aushang-Monitor „Ich bin … und wieder gesund“). Ab heute können Sie wieder einspringen. Ihre
     eigenen Plätze bleiben aber frei bzw. beim Ersatz, denn dort ist vielleicht schon jemand eingetragen: Tragen Sie sich
@@ -49,6 +53,9 @@
     sich dort auch zurücknehmen.</li>
   <li>Darunter den Ersatz wählen: Die Auswahl zeigt zuerst die Springer, die an dem Tag frei sind, dann weitere
     freie Fahrer und Beifahrer. Wer selbst ausfällt oder schon eingeteilt ist, steht nicht zur Wahl.</li>
+</ul>
+{% hilfe_bild "fahrdienst-platz" "Auf einen Namen getippt: ① „Wie lange?“ wählen und ② „Ausfall melden (ohne Ersatz)“ – oder ③ wählen, wer einspringt, und ④ „Ersatz eintragen“." %}
+<ul>
   <li>Auf den Namen einer Tour (✎) im Fahrerplan tippen: Dort ändern Sie die <strong>feste Besetzung</strong> dieser
     Tour je Wochentag und kommen danach zurück zum selben Monat. Das gilt für jeden Monat; Ersatz an einzelnen Tagen
     bleibt stehen.</li>

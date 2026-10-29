@@ -1,4 +1,4 @@
-<p>Der Dienstplan ersetzt den ausgehängten Papierplan der Ausgabe: je Ausgabestelle und Ausgabetag die Aufgaben (z. B.
+{% load handbuch %}<p>Der Dienstplan ersetzt den ausgehängten Papierplan der Ausgabe: je Ausgabestelle und Ausgabetag die Aufgaben (z. B.
   Teamleitung, Kasse, Obst, Gemüse, Springer) mit Uhrzeit und wer sie übernimmt. Wer nicht kann, meldet das; die
   Teamleitung des Tages bekommt sofort eine E-Mail.</p>
 <h3>Dienstplan lesen</h3>
@@ -13,11 +13,15 @@
   <li><strong>Drucken (PDF)</strong>: A4 quer, je Ausgabetag eine Seite mit „Freitag | November“, den Terminen und Namen,
     unten „Abmeldungen bitte bei … unter …“ (Teamleitung des Tages). Fehlende Namen sind gelb hinterlegt.</li>
 </ul>
+{% hilfe_bild "dienstplan-plan" "① Ausgabestelle, Ausgabetag und Monat wählen. ② „offen“: fällt aus, noch kein Ersatz. ③ grün: jemand springt ein. ④ „Ich kann nicht – Ausfall melden“." %}
 <h3>Ausfall melden</h3>
 <ul>
   <li>Im Dienstplan auf den eigenen Namen tippen oder in „Meine Dienste“ auf „kann nicht“: Grund (krank, Urlaub,
     Sonstiges) und „Wie lange?“ wählen. Den Grund sieht nur, wer plant. Das geht für Helfer mit Konto, wenn die Tafel
     es in den Einstellungen erlaubt; für Helfer ohne Konto trägt die Teamleitung den Ausfall ein.</li>
+</ul>
+{% hilfe_bild "dienstplan-meine" "Meine Dienste: ① bei einem Dienst „kann nicht“ oder ② „Ich kann nicht – Ausfall melden“, dann Grund und „Wie lange?“ wählen." %}
+<ul>
   <li><strong>Wieder gesund:</strong> Ist ein längerer Ausfall früher vorbei, in „Meine Dienste“ beim Ausfall auf „wieder
     gesund“ tippen (oder am Aushang-Monitor „Ich bin … und wieder gesund“). Ab heute können Sie wieder einspringen. Ihre
     eigenen Plätze bleiben aber frei bzw. beim Ersatz, denn dort ist vielleicht schon jemand eingetragen: Tragen Sie sich
@@ -34,6 +38,9 @@
 <ul>
   <li>Im Dienstplan auf einen Namen tippen: erst einmal nur „fällt aus“ melden, einen Ersatz wählen (nur wer an dem Tag
     frei ist und nicht ausfällt) oder einen Gast mit Namen eintragen.</li>
+</ul>
+{% hilfe_bild "dienstplan-platz" "Auf einen Namen getippt: ① „Wie lange?“ wählen und ② „Ausfall melden (ohne Ersatz)“ – oder ③ wählen, wer einspringt, und ④ „Ersatz eintragen“." %}
+<ul>
   <li><strong>Einstellungen → Dienstpläne → Ausgabe: Aufgaben und Helfer</strong>: Benachrichtigung, Telegram,
     Feiertage, die <strong>Helfer</strong> (mit Konto oder nur Name und Telefon; „Alle Konten der Rolle Ausgabe übernehmen“)
     und je <strong>Ausgabestelle</strong>: mitmachen ja/nein, Ausgabetage (beliebige Wochentage), je Tag die Teamleitung und

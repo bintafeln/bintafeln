@@ -31,7 +31,8 @@ nutzbar. Die Bindung an Rechte nutzt dieselbe Grundlage wie Menü und Seiten (AD
   `apps/core/templatetags/handbuch.py`), mit Pfeilen, Rahmen und Nummern in Tafel-Orange (`STANDARDFARBE`). Die
   Beschreibung unter dem Bild nennt die Schritte mit denselben Nummern (①, ②, …); ein Klick
   zeigt das Bild groß.
-- Die Bilder macht niemand von Hand: `tests/e2e/test_hilfe_bilder.py` spielt die Abläufe mit
+- Die Bilder macht niemand von Hand: `tests/e2e/test_hilfe_bilder*.py` (Werkzeug in
+  `tests/e2e/hilfe_bilder.py`) spielt die Abläufe mit
   erfundenen Daten im Browser durch und nimmt sie auf (`BINTAFELN_HILFE_BILDER=1`). So kommen
   keine echten Personendaten hinein, und nach einer Änderung lassen sich alle Bilder mit einem
   Befehl erneuern. Ohne die Variable läuft derselbe Test in CI und schlägt fehl, wenn ein

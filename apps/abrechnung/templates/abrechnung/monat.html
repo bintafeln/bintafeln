@@ -12,7 +12,7 @@
     </form>
     {% endif %}
     <a class="knopf" href="{% url 'abrechnung:pdf' abr.pk %}">PDF</a>
-    {% if quittungen %}<a class="knopf" href="{% url 'abrechnung:quittungen' abr.monat|date:'Y-m' %}?stelle={{ stelle.pk }}">⬇ Alle {{ quittungen }} Quittungen (ZIP)</a>{% endif %}
+    {% if quittungen %}<a class="knopf" href="{% url 'abrechnung:quittungen' abr.monat|date:'Y-m' %}?stelle={{ stelle.pk }}">⬇ {% if quittungen == 1 %}Die Quittung{% else %}Alle {{ quittungen }} Quittungen{% endif %} (ZIP)</a>{% endif %}
     {% if darf_pruefen %}<a class="knopf knopf-zweitrangig" href="{% url 'abrechnung:uebersicht' %}?monat={{ abr.monat|date:'Y-m' }}">Alle Ausgabestellen</a>{% endif %}
   </div>
   <p>Status: {% include "abrechnung/_status.html" %}

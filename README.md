@@ -69,9 +69,9 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   **Import** mit Prüfbericht unter „Kunden“; Liste und Suche folgen.
 - **Hilfe im Programm:** ein ausführliches Handbuch („Hilfe“ im Menü), das nur die Kapitel
   zeigt, die zu den Rechten des Kontos passen (ADR 0038). Bilder mit Pfeilen und Rahmen in
-  Tafel-Orange zeigen, wo man was tut (bisher Einlass, Neuer Haushalt, Ausweise verlängern); ein
+  Tafel-Orange zeigen in allen Kapiteln mit einer Oberfläche, wo man was tut; ein
   Klick zeigt sie groß. Sie entstehen automatisch mit erfundenen Daten:
-  `BINTAFELN_HILFE_BILDER=1 .venv/bin/pytest -m e2e tests/e2e/test_hilfe_bilder.py` legt sie
+  `BINTAFELN_HILFE_BILDER=1 .venv/bin/pytest -m e2e tests/e2e -k hilfe_bild` legt sie
   neu in `static/hilfe/bilder/` ab. Ohne die Variable prüft der e2e-Lauf in CI nur, dass jedes
   markierte Element noch da ist.
 - **Menü links** mit wenigen, aufklappbaren Bereichen: Start, **Ausgabestelle** (Einlass, Kasse,

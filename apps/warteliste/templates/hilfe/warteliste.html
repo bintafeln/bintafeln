@@ -1,4 +1,4 @@
-<p>Die Warteliste ersetzt das bisherige Neuanmeldungs-Programm. Sie arbeitet mit den Anträgen aus bintafeln: Jeder
+{% load handbuch %}<p>Die Warteliste ersetzt das bisherige Neuanmeldungs-Programm. Sie arbeitet mit den Anträgen aus bintafeln: Jeder
   Antrag, der nicht im Papierkorb liegt, steht darauf. Ein Download von anderen Seiten entfällt. Sie ist ein
   zuschaltbares Modul (Einstellungen → Tafel → Tafel und Module).</p>
 
@@ -15,11 +15,13 @@
   <li><strong>Wartezeit bis</strong>: nicht einladen bis zu einem Datum; danach „Wartezeit abgelaufen“.</li>
   <li><strong>Gestrichen</strong> kommt auf die Streichungsliste (als PDF druckbar) und lehnt den Antrag ab.</li>
 </ol>
+{% if "warteliste.bearbeiten" in rechte %}{% hilfe_bild "warteliste-liste" "① Nach Status filtern, ② Personen anhaken, ③ Termin wählen (oder einen neuen anlegen), ④ „Einladen“." %}{% endif %}
 
 <h3>Termine</h3>
 <p>„Kunden → Termine“ zeigt die Termine mit der Zahl der Eingeladenen. Auf der Seite eines Termins: Druckliste
   (PDF), Status für mehrere Personen setzen und <strong>Absagen</strong> – die Absage geht per Mail hinaus, die
   Personen stehen danach wieder als „wartend“ ohne Termin in der Liste.</p>
+{% if "warteliste.bearbeiten" in rechte %}{% hilfe_bild "warteliste-termin" "Seite des Termins: ① Personen anhaken, ② „erschienen“ oder „entschuldigt“ wählen, ③ „Status setzen“." %}{% endif %}
 
 {% if "warteliste.bearbeiten" in rechte %}
 <h3>Abgleich mit dem Kundenstamm</h3>

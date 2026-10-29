@@ -1,4 +1,4 @@
-<p>Jede Ausgabestelle macht ihre Monatsabrechnung direkt in bintafeln: Die Einnahmen kommen aus dem Einlass, die
+{% load handbuch %}<p>Jede Ausgabestelle macht ihre Monatsabrechnung direkt in bintafeln: Die Einnahmen kommen aus dem Einlass, die
   Ausgaben trägt die Ausgabestelle selbst ein, mit einem Foto der Quittung. Das Büro prüft und bestätigt. Die
   Abrechnung ist ein zuschaltbares Modul (Einstellungen → Tafel → Tafel und Module).</p>
 
@@ -18,8 +18,10 @@
   <li>Am Monatsende „Einreichen“. Danach sind keine Änderungen mehr möglich, bis das Büro die Abrechnung
     zurückgibt. Der Grund der Rückgabe steht dann oben auf der Seite.</li>
 </ol>
+{% hilfe_bild "abrechnung-eintragen" "① Betrag (dazu Datum, Art und „Bezahlt an“), ② „Quittung fotografieren“, ③ „Ausgabe speichern“." %}
 <p>Mit „PDF“ lässt sich die Abrechnung mit Unterschriftsfeldern drucken. Jede Quittung lässt sich in der Liste
-  ansehen oder herunterladen; „Alle … Quittungen (ZIP)“ lädt alle Quittungen des Monats auf einmal.</p>
+  ansehen oder herunterladen; „Alle … Quittungen (ZIP)“ (bei nur einer: „Die Quittung (ZIP)“) lädt alle Quittungen des Monats auf einmal.</p>
+{% hilfe_bild "abrechnung-monat" "① Einnahmen bar aus dem Einlass, ② eine Quittung fehlt noch, ③ die Abrechnung als PDF drucken." %}
 {% endif %}
 
 {% if "abrechnung.pruefen" in rechte %}

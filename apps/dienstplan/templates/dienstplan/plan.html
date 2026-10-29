@@ -27,7 +27,7 @@
     <a class="knopf knopf-zweitrangig" href="{% url 'dienstplan:pdf' %}?stelle={{ stelle.ausgabestelle_id }}&amp;monat={{ monat }}">Drucken (PDF, alle Tage)</a>
   </div>
   <p class="hinweis">{{ stelle }}{% if diensttag.teamleitung %} · Teamleitung: {{ diensttag.teamleitung }}{% endif %}
-    {% if offen %}· <strong class="fd-offen-text">{{ offen }} offene Plätze</strong>{% endif %}</p>
+    {% if offen %}· <strong class="fd-offen-text">{{ offen }} {% if offen == 1 %}offener Platz{% else %}offene Plätze{% endif %}</strong>{% endif %}</p>
   <details class="fd-anleitung">
     <summary>Farben und Ändern</summary>
     <p><span class="fd-platz fd-offen"><s>Name</s> <strong>offen</strong></span> fällt aus ·
