@@ -1041,7 +1041,8 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 .tabelle .auswahl { width: 2rem; text-align: center; }
 
 /* Kompakte Filter über Listen (Kundenliste, Modul Listen): kleine Beschriftung, flache Felder */
-.titel-zeile { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .25rem 1rem; }
+.titel-zeile { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem;
+  margin-bottom: .75rem; }
 .titel-zeile h1 { margin: 0 0 .35rem; font-size: 1.3rem; }
 .titel-text { margin: 0 0 .5rem; }
 .filter-kompakt { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .4rem .6rem; margin-bottom: .6rem; }
@@ -1062,7 +1063,7 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 @media (max-width: 40rem) { .filter-feld { flex: 1 1 8rem; } }
 .liste-aktionen .knopf, .titel-zeile .knopf { min-height: 2rem; padding: .3rem .9rem; font-size: .92rem; }
 .liste-aktionen { gap: .4rem .75rem; }
-.titel-knoepfe { display: flex; flex-wrap: wrap; gap: .4rem; }
+.titel-knoepfe { display: flex; flex-wrap: wrap; gap: .5rem; }
 .querweg { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }
 .querweg p { margin: 0; flex: 1 1 20rem; }
 a.marke-rolle { text-decoration: none; }
