@@ -41,6 +41,7 @@
   "behinderung": "Disabilità (grado di disabilità, GdB)",
   "behinderung_nein": "nessuna disabilità",
   "gdb_stufe": "GdB {n}",
+  "merkzeichen": "Contrassegni sulla tessera di disabilità (più di uno possibile)",
   "wochentage": "Giorni della settimana preferiti",
   "tag_mo": "Lunedì",
   "tag_di": "Martedì",
@@ -83,6 +84,7 @@
   "fehler_datei_typ": "Carichi solo foto (JPG, PNG) o PDF.",
   "fehler_datei_gross": "Un file è troppo grande (al massimo {mb} MB).",
   "fehler_datei_anzahl": "Carichi al massimo {anzahl} file.",
+  "fehler_gebiet": "Purtroppo possiamo accettare solo domande di persone che abitano a {gebiet}.",
   "fehler_einwilligung": "Dia il suo consenso affinché possiamo gestire la sua domanda.",
   "fehler_zu_viele": "Sono state inviate troppe domande in poco tempo. Riprovi più tardi."
 }

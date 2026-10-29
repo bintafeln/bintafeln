@@ -41,6 +41,7 @@
   "behinderung": "Invaliditet (stepen invaliditeta, GdB)",
   "behinderung_nein": "bez invaliditeta",
   "gdb_stufe": "GdB {n}",
+  "merkzeichen": "Oznake u iskaznici za osobe s invaliditetom (moguće više)",
   "wochentage": "Željeni dani u sedmici",
   "tag_mo": "Ponedjeljak",
   "tag_di": "Utorak",
@@ -83,6 +84,7 @@
   "fehler_datei_typ": "Učitajte samo fotografije (JPG, PNG) ili PDF.",
   "fehler_datei_gross": "Datoteka je prevelika (najviše {mb} MB).",
   "fehler_datei_anzahl": "Učitajte najviše {anzahl} datoteka.",
+  "fehler_gebiet": "Nažalost, možemo primati samo zahtjeve osoba koje žive u mjestu {gebiet}.",
   "fehler_einwilligung": "Molimo dajte privolu kako bismo mogli obraditi vaš zahtjev.",
   "fehler_zu_viele": "Za kratko vrijeme poslano je previše zahtjeva. Pokušajte ponovo kasnije."
 }

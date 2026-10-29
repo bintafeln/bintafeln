@@ -41,6 +41,7 @@
   "behinderung": "Fogyatékosság (fogyatékosság mértéke, GdB)",
   "behinderung_nein": "nincs fogyatékosság",
   "gdb_stufe": "GdB {n}",
+  "merkzeichen": "Jelzések a fogyatékossági igazolványon (több is lehet)",
   "wochentage": "Előnyben részesített napok",
   "tag_mo": "Hétfő",
   "tag_di": "Kedd",
@@ -83,6 +84,7 @@
   "fehler_datei_typ": "Csak fényképet (JPG, PNG) vagy PDF-et töltsön fel.",
   "fehler_datei_gross": "Egy fájl túl nagy (legfeljebb {mb} MB).",
   "fehler_datei_anzahl": "Legfeljebb {anzahl} fájlt töltsön fel.",
+  "fehler_gebiet": "Sajnos csak olyan emberek kérelmét fogadhatjuk el, akik itt laknak: {gebiet}.",
   "fehler_einwilligung": "Kérjük, járuljon hozzá, hogy feldolgozhassuk a kérelmét.",
   "fehler_zu_viele": "Rövid idő alatt túl sok kérelmet küldtek. Kérjük, próbálja újra később."
 }

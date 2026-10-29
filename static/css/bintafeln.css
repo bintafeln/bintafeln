@@ -1295,3 +1295,15 @@ body.aushang-ruhig { cursor: none; }
 .editor-flaeche:focus { box-shadow: inset 0 0 0 3px var(--fokus); }
 .editor-flaeche img { max-width: 100%; height: auto; }
 .editor textarea { border: 0; border-radius: 0; width: 100%; }
+.editor-leiste { gap: .35rem .75rem; }
+.editor-gruppe { display: flex; flex-wrap: wrap; gap: .25rem; align-items: center; padding-right: .75rem;
+  border-right: 1px solid var(--rand); }
+.editor-gruppe:last-child { border-right: 0; }
+.editor-farbpaar { display: inline-flex; align-items: center; gap: 2px; }
+.editor-leiste .editor-farbknopf { box-shadow: inset 0 -4px 0 var(--farbe); }
+.editor-leiste .editor-farbpaar input[type="color"] { width: 1.6rem; height: 2rem; }
+
+/* Antragsformular: Merkzeichen nebeneinander */
+[data-merkzeichen-fuer] .feld > div { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; }
+.merkzeichen-auswahl { display: flex; flex-wrap: wrap; gap: 0 .6rem; margin-top: .3rem; font-size: .9rem; }
+.merkzeichen-auswahl label { white-space: nowrap; }

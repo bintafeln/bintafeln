@@ -10,9 +10,17 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from apps.antraege import aufnahme
+from apps.antraege import aufnahme, gebiet
 from apps.antraege.models import Abfrage, Antrag, AntragEinstellungen
-from apps.core.auswahl import GDB_STUFEN, gdb_text, mit_vorhandenem, staatsangehoerigkeiten
+from apps.core.auswahl import (
+    GDB_STUFEN,
+    MERKZEICHEN,
+    MERKZEICHEN_CODES,
+    gdb_text,
+    merkzeichen_liste,
+    mit_vorhandenem,
+    staatsangehoerigkeiten,
+)
 from apps.konten import rollen
 from apps.kunden.models import Einkommensart, Haushalt, KundenEinstellungen, Kundengruppe
 
@@ -85,7 +93,8 @@ def schritt(request, pk, schritt):
     h = Haushalt.objects.filter(kundennummer=z.get("haushalt")).first() if z.get(
         "haushalt") else None  # fmt: skip
     kontext = {"a": a, "schritt": schritt, "schritte": SCHRITTE, "h": h, "z": z,
-               "nr": NAMEN.index(schritt) + 1}  # fmt: skip
+               "nr": NAMEN.index(schritt) + 1,
+               "ausserhalb": gebiet.ausserhalb(AntragEinstellungen.laden(), a)}  # fmt: skip
     fehler = None
     if request.method == "POST":
         fehler = globals()[f"_post_{schritt}"](request, a, z, h)
@@ -157,7 +166,8 @@ def _als_dict(p, pk=None) -> dict:
     gdb = getattr(p, "gdb", None)  # nur Personen aus dem Antrag haben ihn
     return {"pk": pk, "vorname": p.vorname, "nachname": p.nachname, "geburtsdatum": datum,
             "staatsangehoerigkeit": p.staatsangehoerigkeit,
-            "gdb": "" if gdb is None else str(gdb)}  # fmt: skip
+            "gdb": "" if gdb is None else str(gdb),
+            "merkzeichen": getattr(p, "merkzeichen", "")}  # fmt: skip
 
 
 def _vorschlag_personen(a, h) -> list[dict]:
@@ -188,10 +198,14 @@ def _kontext_personen(request, a, z, h):
     staaten = staatsangehoerigkeiten()
     for p in personen:  # gespeicherte Werte, die nicht in der Liste stehen, bleiben wählbar
         staaten = mit_vorhandenem(staaten, p.get("staatsangehoerigkeit", ""))
+    # Kopien mit den Merkzeichen als Liste (für die Häkchen), der Zwischenstand bleibt unverändert
+    zeilen = [p | {"merkzeichen_liste": merkzeichen_liste(p.get("merkzeichen", ""))}
+              for p in personen]  # fmt: skip
     return {
-        "personen": personen + [dict(leer) for _ in range(EXTRA_PERSONEN)],
+        "personen": zeilen + [dict(leer) for _ in range(EXTRA_PERSONEN)],
         "staaten": staaten if KundenEinstellungen.laden().staatsangehoerigkeit_erfassen else None,
         # GdB-Spalte, wenn der Antrag ihn abfragt oder eine Person einen hat
+        "merkzeichen_auswahl": MERKZEICHEN,
         "gdb_stufen": [(str(n), gdb_text(n)) for n in [0, *GDB_STUFEN]]
         if AntragEinstellungen.laden().behinderung != Abfrage.AUS
         or any(p.get("gdb") for p in personen)
@@ -219,6 +233,8 @@ def _post_personen(request, a, z, h):
         gdb = request.POST.get(f"p{i}_gdb", "")
         if gdb in {str(n) for n in [0, *GDB_STUFEN]}:
             personen[-1]["gdb"] = gdb
+            gewaehlt = request.POST.getlist(f"p{i}_merkzeichen")
+            personen[-1]["merkzeichen"] = ", ".join(c for c in MERKZEICHEN_CODES if c in gewaehlt)
         if f"p{i}_staatsangehoerigkeit" in request.POST:  # nur, wenn sie erfasst wird
             personen[-1]["staatsangehoerigkeit"] = request.POST[
                 f"p{i}_staatsangehoerigkeit"

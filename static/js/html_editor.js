@@ -1,5 +1,6 @@
 // Editor für eigene HTML-Texte (Antragstexte): Reiter „Gestalten“ mit Knöpfen (fett, Überschrift,
-// Liste, Link, Bild, Farbe, Ausrichtung) und „HTML“ mit dem Quelltext. Beide zeigen denselben
+// Ausrichtung, Liste, Text- und Markierfarbe, farbige Kästen, Link, Bild) und „HTML“ mit dem
+// Quelltext. Beide zeigen denselben
 // Text; gespeichert wird immer das Textfeld. Vor dem Anzeigen fallen Skripte und Ereignisse weg,
 // beim Speichern bereinigt der Server ohnehin (apps.core.html).
 (function () {
@@ -7,15 +8,21 @@
 
   var VERBOTEN = ["SCRIPT", "STYLE", "IFRAME", "OBJECT", "EMBED", "FORM", "INPUT", "BUTTON",
                   "TEXTAREA", "SELECT", "LINK", "META", "BASE"];
-  var KNOEPFE = [
-    ["bold", "F", "Fett"], ["italic", "K", "Kursiv"], ["underline", "U", "Unterstrichen"],
-    ["h2", "Ü", "Überschrift"], ["p", "¶", "Absatz"],
-    ["insertUnorderedList", "•", "Aufzählung"], ["insertOrderedList", "1.", "Nummerierung"],
-    ["justifyLeft", "⟸", "Linksbündig"], ["justifyCenter", "⟺", "Zentriert"],
-    ["justifyRight", "⟹", "Rechtsbündig"],
-    ["link", "🔗", "Link"], ["bild", "🖼", "Bild (Adresse)"], ["farbe", "", "Textfarbe"],
-    ["removeFormat", "⌫", "Formatierung entfernen"],
+  // Gruppen der Werkzeugleiste: [Name, [[Befehl, Aufschrift, Erklärung], …]]
+  var GRUPPEN = [
+    ["Schrift", [["bold", "F", "Fett"], ["italic", "K", "Kursiv"], ["underline", "U", "Unterstrichen"],
+                 ["h2", "Überschrift", "Überschrift"], ["p", "Absatz", "Normaler Absatz"]]],
+    ["Ausrichtung", [["justifyLeft", "Links", "Linksbündig"], ["justifyCenter", "Mitte", "Zentriert"],
+                     ["justifyRight", "Rechts", "Rechtsbündig"], ["justifyFull", "Blocksatz", "Blocksatz"]]],
+    ["Liste", [["insertUnorderedList", "• Liste", "Aufzählung"],
+               ["insertOrderedList", "1. Liste", "Nummerierung"]]],
+    ["Farbe", [["farbe", "Text", "Textfarbe der Auswahl"], ["markieren", "Markieren", "Hintergrundfarbe der Auswahl"],
+               ["kasten", "Kasten", "Farbiger Kasten: Auswahl (oder neuer Text) mit Hintergrundfarbe"]]],
+    ["Einfügen", [["link", "Link", "Link"], ["bild", "Bild", "Bild (Adresse)"],
+                  ["removeFormat", "Format weg", "Formatierung entfernen"]]],
   ];
+  var FARBEN = {farbe: "#c1121f", markieren: "#fff3a3", kasten: "#fdf3d8"};
+  var KASTEN = "padding:12px 16px;border-radius:8px;margin:8px 0;background-color:";
 
   function sauber(html) {
     var doc = new DOMParser().parseFromString("<body>" + html + "</body>", "text/html");
@@ -57,24 +64,62 @@
       knoepfe[art] = k;
     });
 
-    KNOEPFE.forEach(function (b) {
-      var k;
-      if (b[0] === "farbe") {
-        k = document.createElement("input");
-        k.type = "color";
-        k.value = "#c1121f";
-        k.addEventListener("input", function () { befehl("foreColor", k.value); });
-      } else {
-        k = document.createElement("button");
+    var gemerkt = null; // Auswahl, solange ein Farbfeld offen ist
+
+    function merken() {
+      var s = window.getSelection();
+      if (s.rangeCount && flaeche.contains(s.anchorNode)) gemerkt = s.getRangeAt(0).cloneRange();
+    }
+
+    function zurueck() {
+      if (!gemerkt) return;
+      var s = window.getSelection();
+      s.removeAllRanges();
+      s.addRange(gemerkt);
+    }
+
+    GRUPPEN.forEach(function (g) {
+      var gruppe = document.createElement("div");
+      gruppe.className = "editor-gruppe";
+      gruppe.setAttribute("role", "group");
+      gruppe.setAttribute("aria-label", g[0]);
+      g[1].forEach(function (b) {
+        var k = document.createElement("button");
         k.type = "button";
         k.textContent = b[1];
+        k.title = b[2];
+        if (b[1].length === 1) k.setAttribute("aria-label", b[2]); // F, K, U vorlesbar
+        k.dataset.befehl = b[0];
         k.addEventListener("mousedown", function (e) { e.preventDefault(); }); // Auswahl behalten
+        if (FARBEN[b[0]]) {
+          // Farbknopf: Klick wendet die Farbe an, das Feld daneben wählt sie
+          var wahl = document.createElement("input");
+          wahl.type = "color";
+          wahl.value = FARBEN[b[0]];
+          wahl.title = b[2] + ": Farbe wählen";
+          wahl.setAttribute("aria-label", b[2] + ": Farbe wählen");
+          wahl.addEventListener("pointerdown", merken);
+          wahl.addEventListener("focus", merken);
+          wahl.addEventListener("change", function () {
+            FARBEN[b[0]] = wahl.value;
+            k.style.setProperty("--farbe", wahl.value);
+            zurueck();
+            knopf(b[0], true);
+          });
+          k.style.setProperty("--farbe", wahl.value);
+          k.classList.add("editor-farbknopf");
+          k.addEventListener("click", function () { knopf(b[0]); });
+          var paar = document.createElement("span");
+          paar.className = "editor-farbpaar";
+          paar.appendChild(k);
+          paar.appendChild(wahl);
+          gruppe.appendChild(paar);
+          return;
+        }
         k.addEventListener("click", function () { knopf(b[0]); });
-      }
-      k.title = b[2];
-      k.setAttribute("aria-label", b[2]);
-      k.dataset.befehl = b[0];
-      leiste.appendChild(k);
+        gruppe.appendChild(k);
+      });
+      leiste.appendChild(gruppe);
     });
 
     function uebertragen() { feld.value = flaeche.innerHTML; }
@@ -86,7 +131,36 @@
       uebertragen();
     }
 
-    function knopf(name) {
+    function kastenHier() {
+      var s = window.getSelection();
+      var knoten = s.rangeCount ? s.getRangeAt(0).commonAncestorContainer : null;
+      var el = knoten && (knoten.nodeType === 1 ? knoten : knoten.parentElement);
+      var kasten = el && el.closest(".kasten");
+      return kasten && flaeche.contains(kasten) ? kasten : null;
+    }
+
+    function kasten(nurUmfaerben) {
+      var drin = kastenHier();
+      if (drin) { // Kasten umfärben
+        drin.style.backgroundColor = FARBEN.kasten;
+        uebertragen();
+        return;
+      }
+      if (nurUmfaerben) return;
+      var s = window.getSelection();
+      var inhalt = "<p>Text im Kasten</p>";
+      if (s.rangeCount && !s.isCollapsed && flaeche.contains(s.anchorNode)) {
+        var hilfe = document.createElement("div");
+        hilfe.appendChild(s.getRangeAt(0).cloneContents());
+        inhalt = hilfe.innerHTML;
+      }
+      befehl("insertHTML", '<div class="kasten" style="' + KASTEN + FARBEN.kasten + '">' + inhalt + "</div><p><br></p>");
+    }
+
+    function knopf(name, ausFarbfeld) {
+      if (name === "farbe") return befehl("foreColor", FARBEN.farbe);
+      if (name === "markieren") return befehl("hiliteColor", FARBEN.markieren);
+      if (name === "kasten") return kasten(ausFarbfeld);
       if (name === "h2" || name === "p") return befehl("formatBlock", "<" + name + ">");
       if (name === "link") {
         var url = window.prompt("Adresse des Links (https://…)", "https://");

@@ -41,6 +41,7 @@
   "behinderung": "Khuyết tật (mức độ khuyết tật, GdB)",
   "behinderung_nein": "không khuyết tật",
   "gdb_stufe": "GdB {n}",
+  "merkzeichen": "Ký hiệu trên thẻ khuyết tật (có thể nhiều)",
   "wochentage": "Các ngày trong tuần mong muốn",
   "tag_mo": "Thứ Hai",
   "tag_di": "Thứ Ba",
@@ -83,6 +84,7 @@
   "fehler_datei_typ": "Chỉ tải lên ảnh (JPG, PNG) hoặc PDF.",
   "fehler_datei_gross": "Một tệp quá lớn (tối đa {mb} MB).",
   "fehler_datei_anzahl": "Vui lòng tải lên tối đa {anzahl} tệp.",
+  "fehler_gebiet": "Rất tiếc, chúng tôi chỉ có thể nhận đơn của những người sống tại {gebiet}.",
   "fehler_einwilligung": "Vui lòng đồng ý để chúng tôi có thể xử lý đơn của bạn.",
   "fehler_zu_viele": "Có quá nhiều đơn được gửi trong thời gian ngắn. Vui lòng thử lại sau."
 }

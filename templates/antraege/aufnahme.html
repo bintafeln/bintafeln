@@ -8,6 +8,7 @@
   <ol class="schritte">
     {% for k, titel in schritte %}<li class="{% if k == schritt %}aktuell{% elif forloop.counter < nr %}erledigt{% endif %}">{% if forloop.counter < nr %}<a href="{% url 'antraege:aufnahme_schritt' a.pk k %}">{{ titel }}</a>{% else %}{{ titel }}{% endif %}</li>{% endfor %}
   </ol>
+  {% if ausserhalb %}<p class="sicherung sicherung-veraltet" role="status">Die Anschrift ({{ a.plz }} {{ a.ort }}) liegt nicht im Einzugsgebiet der Tafel.</p>{% endif %}
   {% if fehler %}<p class="sicherung sicherung-fehler" role="alert">{{ fehler }}</p>{% endif %}
   {% if h %}<p class="hinweis">Gewählt: bestehender Kunde <a href="{% url 'kunden:haushalt' h.kundennummer %}" target="_blank" rel="noopener">{{ h.kundennummer }}</a>.</p>{% elif "haushalt" in z %}<p class="hinweis">Gewählt: neuer Kunde.</p>{% endif %}
 </section>
@@ -82,7 +83,8 @@
         <td data-titel="Nachname"><input type="text" name="p{{ forloop.counter0 }}_nachname" value="{{ p.nachname }}" maxlength="100" aria-label="Nachname"></td>
         <td data-titel="Geburtsdatum"><input type="date" name="p{{ forloop.counter0 }}_geburtsdatum" value="{{ p.geburtsdatum }}" aria-label="Geburtsdatum"></td>
         {% if staaten %}<td data-titel="Staatsangehörigkeit"><select name="p{{ forloop.counter0 }}_staatsangehoerigkeit" aria-label="Staatsangehörigkeit">{% for wert, name in staaten %}<option value="{{ wert }}"{% if wert == p.staatsangehoerigkeit %} selected{% endif %}>{{ name }}</option>{% endfor %}</select></td>{% endif %}
-        {% if gdb_stufen %}<td data-titel="Behinderung"><select name="p{{ forloop.counter0 }}_gdb" aria-label="Behinderung"><option value="">keine Angabe</option>{% for wert, name in gdb_stufen %}<option value="{{ wert }}"{% if wert == p.gdb %} selected{% endif %}>{{ name }}</option>{% endfor %}</select></td>{% endif %}
+        {% if gdb_stufen %}<td data-titel="Behinderung"><select name="p{{ forloop.counter0 }}_gdb" aria-label="Behinderung"><option value="">keine Angabe</option>{% for wert, name in gdb_stufen %}<option value="{{ wert }}"{% if wert == p.gdb %} selected{% endif %}>{{ name }}</option>{% endfor %}</select>
+          <span class="merkzeichen-auswahl">{% for code, bedeutung in merkzeichen_auswahl %}<label title="{{ bedeutung }}"><input type="checkbox" name="p{{ forloop.parentloop.counter0 }}_merkzeichen" value="{{ code }}"{% if code in p.merkzeichen_liste %} checked{% endif %}> {{ code }} <small>({{ bedeutung }})</small></label>{% endfor %}</span></td>{% endif %}
         <td data-titel="Entfernen">{% if p.vorname %}<input type="checkbox" name="p{{ forloop.counter0 }}_weg" aria-label="{{ p.vorname }} entfernen">{% endif %}</td>
       </tr>
     {% endfor %}

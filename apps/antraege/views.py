@@ -15,7 +15,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
-from apps.antraege import auskunft, sprachen
+from apps.antraege import auskunft, gebiet, sprachen
 from apps.antraege import uebersetzen as uebersetzen_ki
 from apps.antraege.forms import (
     AntragBearbeitenForm,
@@ -85,6 +85,9 @@ def liste(request):
     seite = Paginator(antraege, 10**9 if zeilen == "alle" else int(zeilen)).get_page(
         request.GET.get("seite")
     )
+    e = AntragEinstellungen.laden()
+    for a in seite:
+        a.ausserhalb = gebiet.ausserhalb(e, a)
     spalten = [("nummer", "#"), ("status", "Status"), ("kundennummer", "Kundennummer"),
                ("nachname", "Nachname"), ("vorname", "Vorname"), ("eingang", "Antrag vom"),
                ("email", "E-Mail"), ("telefon", "Telefon"), ("art", "Art"),
@@ -134,6 +137,7 @@ def antrag(request, pk):
             "a": a,
             "sprache": sprachen.sprache(a.sprache),
             "platz": davor.count() + 1 if a.status in Antrag.OFFEN else None,
+            "ausserhalb": gebiet.ausserhalb(AntragEinstellungen.laden(), a),
             "status_auswahl": Antrag.Status.choices,
         },
     )

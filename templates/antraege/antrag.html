@@ -26,13 +26,13 @@
     {% if a.kundennummer %}<dt>Kundennummer</dt><dd><a href="{% url 'kunden:haushalt' a.kundennummer %}">{{ a.kundennummer }}</a></dd>{% endif %}
     <dt>Name</dt><dd>{{ a.anrede }} {{ a.vorname }} {{ a.nachname }}</dd>
     <dt>Geburtsdatum</dt><dd>{{ a.geburtsdatum|date:"d.m.Y"|default:"–" }}</dd>
-    <dt>Anschrift</dt><dd>{{ a.strasse|default:"–" }}{% if a.plz or a.ort %}, {{ a.plz }} {{ a.ort }}{% endif %}</dd>
+    <dt>Anschrift</dt><dd>{{ a.strasse|default:"–" }}{% if a.plz or a.ort %}, {{ a.plz }} {{ a.ort }}{% endif %}{% if ausserhalb %} <span class="marke-warnung" title="PLZ oder Ort liegt nicht im Einzugsgebiet (Anträge einstellen)">außerhalb des Gebiets</span>{% endif %}</dd>
     <dt>Telefon</dt><dd>{{ a.telefon|default:"–" }}</dd>
     <dt>E-Mail</dt><dd>{{ a.email|default:"–" }}</dd>
     {% if a.familienstand %}<dt>Familienstand</dt><dd>{{ a.familienstand }}</dd>{% endif %}
     {% if a.staatsangehoerigkeit %}<dt>Staatsangehörigkeit</dt><dd>{{ a.staatsangehoerigkeit }}</dd>{% endif %}
     {% if a.gdb_text %}<dt>Behinderung</dt><dd>{{ a.gdb_text }}</dd>{% endif %}
-    <dt>Bestätigt</dt><dd>Speichern der Angaben{% if a.datenschutz_bestaetigt %} · Datenschutzerklärung gelesen{% endif %}{% if a.einverstaendnis_bestaetigt %} · Einverständniserklärung{% endif %} ({{ a.eingegangen_am|date:"d.m.Y H:i" }})</dd>
+    <dt>Bestätigt</dt><dd>{% if a.einwilligung_bestaetigt %}Speichern der Angaben · {% endif %}{% if a.datenschutz_bestaetigt %}Datenschutzerklärung gelesen · {% endif %}{% if a.einverstaendnis_bestaetigt %}Einverständniserklärung · {% endif %}{{ a.eingegangen_am|date:"d.m.Y H:i" }}</dd>
     <dt>Wunsch</dt><dd>{{ a.wochentage|default:"keine Wochentage" }} · {{ a.ausgabestelle|default:"Ausgabestelle egal" }}</dd>
     {% if a.nachricht %}<dt>Nachricht</dt><dd class="vorformatiert">{{ a.nachricht }}</dd>{% endif %}
   </dl>

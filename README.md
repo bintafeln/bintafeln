@@ -668,20 +668,35 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   (z. B. Ablauf der Lebensmittelausgabe), Voraussetzungen (wer berechtigt ist, welche
   Nachweise nötig sind) und Einverständniserklärung (z. B. PDF zum Unterschreiben) eintragen
   (der Impressum-Link steht auch auf der Anmeldeseite und unten auf jeder Seite); die drei
-  letzten stehen gut sichtbar über dem Formular; ist ein Link zur Datenschutz- oder
-  Einverständniserklärung eingetragen, muss sie vor dem Absenden per Häkchen bestätigt werden
-  (der Antrag hält das fest); unter „Texte“ je Sprache ein **Hinweis zu den
+  letzten stehen gut sichtbar über dem Formular; vor dem Absenden müssen drei Häkchen bestätigt
+  werden (Speichern der Angaben, Datenschutzerklärung gelesen, Einverständniserklärung gelesen),
+  jedes einzeln abschaltbar, Vorgabe: alle; ist ein Link eingetragen, steht er unter dem Häkchen
+  (der Antrag hält die Bestätigungen fest); unter „Texte“ je Sprache ein **Hinweis zu den
   Nachweisen** (z. B. welche Unterlagen nötig sind; ohne eigenen Hinweis gilt der deutsche). Die
   Nachweise lassen sich in ein Feld ziehen, auswählen oder direkt mit dem Handy fotografieren;
   die eigenen Texte lassen sich im Reiter „Gestalten“ wie in einem Schreibprogramm (fett,
-  Überschrift, Liste, Link, Bild, Farbe, Ausrichtung) oder im Reiter „HTML“ bearbeiten;
+  Überschrift, Ausrichtung links/Mitte/rechts/Blocksatz, Liste, Text- und Markierfarbe,
+  farbige Kästen, Link, Bild) oder im Reiter „HTML“ bearbeiten;
   mit eigenem API-Schlüssel von Claude (Anthropic) übersetzt „Mit KI in alle Sprachen
   übersetzen“ auf der Seite „Texte: Deutsch“ die eigenen Texte in alle Sprachen (nur diese Texte
   verlassen den Server, nie Angaben aus Anträgen; ADR 0082);
   „Behinderung (GdB) je Person“ (Vorgabe: nicht abfragen, weil Gesundheitsdaten nach Art. 9
   DSGVO) fragt für jede Person ab: keine Behinderung oder GdB 20 bis 100; der
   Aufnahme-Assistent übernimmt den Wert in das Zusatzfeld „Grad der Behinderung“ und setzt ab
-  GdB 50 das Merkmal „Schwerbehindert“;
+  GdB 50 das Merkmal „Schwerbehindert“; ist ein GdB gewählt, erscheinen die Merkzeichen aus dem
+  Schwerbehindertenausweis zum Ankreuzen, mehrere möglich: G (erheblich gehbehindert),
+  aG (außergewöhnlich gehbehindert), H (hilflos), Bl (blind), Gl (gehörlos, mit kleinem L),
+  TBl (taubblind), B (Begleitperson berechtigt), RF (Rundfunkbeitrag ermäßigt), 1. Kl.
+  (1. Wagenklasse für Kriegsbeschädigte), VB (versorgungsberechtigt) und EB
+  (entschädigungsberechtigt); übernommen mit Bedeutung ins Zusatzfeld „Merkzeichen
+  (Schwerbehindertenausweis)“, Bl und TBl setzen dazu das Merkmal „Blind“;
+  „Anschrift prüfen (Einzugsgebiet)“ (Vorgabe: nicht prüfen) vergleicht PLZ und Ort mit den
+  eingetragenen Postleitzahlen (einzeln oder Bereiche wie `45127-45359`) und Orten (Ortsteile
+  wie „Essen-Steele“ passen dazu; sind beide eingetragen, muss beides passen): *annehmen, aber
+  markieren* zeigt „außerhalb des Gebiets“ in Liste, Ansicht und Aufnahme-Assistent, *nicht
+  annehmen* lehnt das Formular mit einer Meldung in der gewählten Sprache ab. Ob es die
+  Anschrift wirklich gibt, prüft bintafeln nicht, weil Anschriften dafür an einen fremden Dienst
+  gehen müssten (ADR 0083);
   festlegen, wer bei neuen Anträgen eine Mail bekommt. Danach „Online-Anträge annehmen“
   einschalten.
 - **Adresse für die Webseite der Tafel:** `https://<domain>/antrag/`. Die Seite ist in

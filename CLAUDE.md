@@ -213,6 +213,7 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `apps.core.html.anzeigen()`/`bereinigen()` (nh3), nie ungefiltert mit `|safe`.
   Farbe der Tafel als CSS-Variablen über `templates/includes/farben.html`
   (`apps/core/farben.py`); in CSS nur `var(--akzent)` usw., keine festen Akzentfarben.
+  Einzugsgebiet (PLZ/Orte, markieren oder sperren) in `apps/antraege/gebiet.py` (ADR 0083).
   KI-Übersetzung der eigenen Texte nur über `apps/antraege/uebersetzen.py` (ADR 0082; in Tests
   `uebersetzen._client` ersetzen).
   Texte je Sprache in `apps/antraege/uebersetzungen/<code>.json` (Grundlage `de.json`); neue

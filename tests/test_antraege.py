@@ -55,7 +55,8 @@ def daten(**mehr):
     return {
         "art": "neu", "vorname": "Erika", "nachname": "Beispiel", "geburtsdatum": "1980-02-03",
         "strasse": "Erfundene Gasse 1", "plz": "12345", "ort": "Musterstadt",
-        "einwilligung": "on", **mehr,
+        "einwilligung": "on", "datenschutz_bestaetigt": "on", "einverstaendnis_bestaetigt": "on",
+        **mehr,
     }  # fmt: skip
 
 
@@ -404,7 +405,7 @@ def test_einstellungen_und_texte(admin_client, benutzer_mit_rolle):
     werte = {f: "optional" for f in AntragEinstellungen.FELDER}
     werte |= {"aktiv": "on", "modus": "beides", "benachrichtigen": [b.pk],
               "erledigt_nach_tagen": 0, "papierkorb_nach_tagen": 90, "loeschen_nach_tagen": 30,
-              "erste_nummer": 4201,
+              "erste_nummer": 4201, "gebiet_pruefen": "aus",
               "datenschutz_url": "tafel.example.org/ds",
               "erklaerungen_url": "tafel.example.org/ausgabe",
               "voraussetzungen_url": "https://tafel.example.org/wer",
@@ -603,7 +604,7 @@ def test_ki_schluessel_speichern(admin_client):
     url = reverse("antraege:einstellungen")
     werte = {f: "optional" for f in AntragEinstellungen.FELDER}
     werte |= {"modus": "beides", "erledigt_nach_tagen": 0, "papierkorb_nach_tagen": 90,
-              "loeschen_nach_tagen": 30, "erste_nummer": 1}  # fmt: skip
+              "loeschen_nach_tagen": 30, "gebiet_pruefen": "aus", "erste_nummer": 1}  # fmt: skip
     admin_client.post(url, werte | {"ki_schluessel": "sk-erfunden"})
     e = AntragEinstellungen.laden()
     assert "sk-erfunden" not in e.ki_schluessel_verschluesselt and uebersetzen.verfuegbar()
@@ -617,19 +618,59 @@ def test_ki_schluessel_speichern(admin_client):
 def test_erklaerungen_als_pflicht_bestaetigen(client, offen, admin_client):
     from apps.antraege.models import Antrag
 
-    assert 'name="datenschutz_bestaetigt"' not in client.get(FORMULAR).content.decode()  # ohne Link
-    offen.datenschutz_url = "https://tafel.example.org/datenschutz"
+    # Vorgabe: alle drei Häkchen, auch ohne eingetragene Links (dann ohne Link darunter)
+    seite = client.get(FORMULAR).content.decode()
+    for name in ("einwilligung", "datenschutz_bestaetigt", "einverstaendnis_bestaetigt"):
+        assert f'name="{name}"' in seite, name
+    assert "Ich habe die Einverständniserklärung gelesen" in seite and ".pdf" not in seite
+    ohne = {"einwilligung": "", "datenschutz_bestaetigt": "", "einverstaendnis_bestaetigt": ""}
+    fehler = client.post(FORMULAR, daten(**ohne)).context["form"].errors
+    assert set(fehler) == {"einwilligung", "datenschutz_bestaetigt", "einverstaendnis_bestaetigt"}
+    assert "Bitte bestätigen Sie das" in fehler["datenschutz_bestaetigt"][0]
+    assert not Antrag.objects.exists()
     offen.einverstaendnis_url = "https://tafel.example.org/einverstaendnis.pdf"
     offen.save()
     seite = client.get(FORMULAR).content.decode()
-    assert 'name="datenschutz_bestaetigt"' in seite and 'name="einverstaendnis_bestaetigt"' in seite
-    assert "Ich habe die Einverständniserklärung gelesen" in seite
-    fehler = client.post(FORMULAR, daten()).context["form"].errors
-    assert set(fehler) == {"datenschutz_bestaetigt", "einverstaendnis_bestaetigt"}
-    assert "Bitte bestätigen Sie das" in fehler["datenschutz_bestaetigt"][0]
-    assert not Antrag.objects.exists()
-    client.post(FORMULAR, daten(datenschutz_bestaetigt="on", einverstaendnis_bestaetigt="on"))
+    assert 'href="https://tafel.example.org/einverstaendnis.pdf"' in seite
+    client.post(FORMULAR, daten())
     a = Antrag.objects.get()
-    assert a.datenschutz_bestaetigt and a.einverstaendnis_bestaetigt
+    assert a.einwilligung_bestaetigt and a.datenschutz_bestaetigt and a.einverstaendnis_bestaetigt
     seite = admin_client.get(reverse("antraege:antrag", args=[a.pk])).content.decode()
-    assert "Datenschutzerklärung gelesen" in seite and "Einverständniserklärung" in seite
+    assert "Speichern der Angaben · Datenschutzerklärung gelesen · Einverständniserklärung" in seite
+    # Einzeln abschaltbar
+    offen.einwilligung_abfragen = offen.datenschutz_abfragen = False
+    offen.save()
+    seite = client.get(FORMULAR).content.decode()
+    assert 'name="einwilligung"' not in seite and 'name="datenschutz_bestaetigt"' not in seite
+    client.post(FORMULAR, daten(**ohne | {"einverstaendnis_bestaetigt": "on"}, vorname="Ole"))
+    b = Antrag.objects.get(vorname="Ole")
+    assert not b.einwilligung_bestaetigt and not b.datenschutz_bestaetigt
+    assert b.einverstaendnis_bestaetigt
+
+
+def test_merkzeichen_mit_gdb(client, offen):
+    from apps.antraege.models import Abfrage, Antrag
+
+    offen.behinderung = Abfrage.OPTIONAL
+    offen.save()
+    seite = client.get(FORMULAR).content.decode()
+    assert 'name="merkzeichen"' in seite and "aG (außergewöhnlich gehbehindert)" in seite
+    assert 'name="p1_merkzeichen"' in seite and "data-merkzeichen-fuer" in seite
+    englisch = client.get(reverse("antrag:formular", args=["en"])).content.decode()
+    assert "Marks on the disability ID card" in englisch and "gehbehindert" not in englisch
+    client.post(FORMULAR, daten(gdb="80", merkzeichen=["B", "G"], p1_vorname="Lina",
+                                p1_gdb="0", p1_merkzeichen=["H"]))  # fmt: skip
+    a = Antrag.objects.get()
+    assert a.merkzeichen == "G, B" and a.gdb_text == (
+        "GdB 80, Merkzeichen G (erheblich gehbehindert), B (Begleitperson berechtigt)"
+    )
+    assert a.personen.get().merkzeichen == ""  # ohne GdB keine Merkzeichen
+
+
+def test_merkzeichen_unbekannt_abgelehnt(client, offen):
+    from apps.antraege.models import Abfrage, Antrag
+
+    offen.behinderung = Abfrage.OPTIONAL
+    offen.save()
+    antwort = client.post(FORMULAR, daten(gdb="80", merkzeichen=["G", "Unsinn"]))
+    assert antwort.status_code == 200 and not Antrag.objects.exists()

@@ -35,7 +35,7 @@
         <td data-titel="#"><a href="{% url 'antraege:antrag' a.pk %}">{{ a.nummer }}</a></td>
         <td data-titel="Status"><span class="status status-{{ a.status }}">{{ a.get_status_display }}</span></td>
         <td data-titel="Kundennummer">{{ a.kundennummer|default:"–" }}</td>
-        <td data-titel="Nachname">{{ a.nachname }}</td>
+        <td data-titel="Nachname">{{ a.nachname }}{% if a.ausserhalb %} <span class="marke-warnung" title="PLZ oder Ort liegt nicht im Einzugsgebiet (Anträge einstellen)">außerhalb des Gebiets</span>{% endif %}</td>
         <td data-titel="Vorname">{{ a.vorname }}</td>
         <td data-titel="Antrag vom">{{ a.eingegangen_am|date:"d.m.Y H:i" }}</td>
         <td data-titel="E-Mail">{{ a.email|default:"–" }}</td>

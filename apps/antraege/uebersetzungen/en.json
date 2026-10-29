@@ -41,6 +41,7 @@
   "behinderung": "Disability (degree of disability, GdB)",
   "behinderung_nein": "no disability",
   "gdb_stufe": "GdB {n}",
+  "merkzeichen": "Marks on the disability ID card (several possible)",
   "wochentage": "Preferred days of the week",
   "tag_mo": "Monday",
   "tag_di": "Tuesday",
@@ -83,6 +84,7 @@
   "fehler_datei_typ": "Please upload only photos (JPG, PNG) or PDF.",
   "fehler_datei_gross": "A file is too large (at most {mb} MB).",
   "fehler_datei_anzahl": "Please upload at most {anzahl} files.",
+  "fehler_gebiet": "Unfortunately, we can only accept applications from people who live in {gebiet}.",
   "fehler_einwilligung": "Please agree so that we can process your application.",
   "fehler_zu_viele": "Too many applications were sent in a short time. Please try again later."
 }

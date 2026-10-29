@@ -41,6 +41,7 @@
   "behinderung": "Seqetî (asta seqetiyê, GdB)",
   "behinderung_nein": "seqetî tune",
   "gdb_stufe": "GdB {n}",
+  "merkzeichen": "Nîşanên li ser qerta seqetiyê (çend dibe)",
   "wochentage": "Rojên hefteyê yên bijartî",
   "tag_mo": "Duşem",
   "tag_di": "Sêşem",
@@ -83,6 +84,7 @@
   "fehler_datei_typ": "Ji kerema xwe tenê wêne (JPG, PNG) an PDF bar bikin.",
   "fehler_datei_gross": "Pelek pir mezin e (herî zêde {mb} MB).",
   "fehler_datei_anzahl": "Ji kerema xwe herî zêde {anzahl} pelan bar bikin.",
+  "fehler_gebiet": "Mixabin em tenê dikarin serlêdanên kesên ku li {gebiet} dijîn qebûl bikin.",
   "fehler_einwilligung": "Ji kerema xwe razî bin da ku em bikarin daxwaza we bikin.",
   "fehler_zu_viele": "Di demeke kurt de gelek daxwaz hatin şandin. Ji kerema xwe paşê dîsa biceribînin."
 }

@@ -41,6 +41,7 @@
   "behinderung": "Deficiência (grau de deficiência, GdB)",
   "behinderung_nein": "sem deficiência",
   "gdb_stufe": "GdB {n}",
+  "merkzeichen": "Marcas no cartão de deficiência (várias possíveis)",
   "wochentage": "Dias da semana preferidos",
   "tag_mo": "Segunda-feira",
   "tag_di": "Terça-feira",
@@ -83,6 +84,7 @@
   "fehler_datei_typ": "Carregue apenas fotos (JPG, PNG) ou PDF.",
   "fehler_datei_gross": "Um ficheiro é demasiado grande (no máximo {mb} MB).",
   "fehler_datei_anzahl": "Carregue no máximo {anzahl} ficheiros.",
+  "fehler_gebiet": "Infelizmente, só podemos aceitar pedidos de pessoas que moram em {gebiet}.",
   "fehler_einwilligung": "Dê o seu consentimento para podermos tratar o seu pedido.",
   "fehler_zu_viele": "Foram enviados demasiados pedidos em pouco tempo. Tente novamente mais tarde."
 }

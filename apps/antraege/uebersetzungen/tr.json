@@ -41,6 +41,7 @@
   "behinderung": "Engellilik (engellilik derecesi, GdB)",
   "behinderung_nein": "engellilik yok",
   "gdb_stufe": "GdB {n}",
+  "merkzeichen": "Engelli kimlik kartındaki işaretler (birden fazla olabilir)",
   "wochentage": "Tercih edilen günler",
   "tag_mo": "Pazartesi",
   "tag_di": "Salı",
@@ -83,6 +84,7 @@
   "fehler_datei_typ": "Lütfen yalnızca fotoğraf (JPG, PNG) veya PDF yükleyin.",
   "fehler_datei_gross": "Bir dosya çok büyük (en fazla {mb} MB).",
   "fehler_datei_anzahl": "Lütfen en fazla {anzahl} dosya yükleyin.",
+  "fehler_gebiet": "Maalesef yalnızca {gebiet} bölgesinde yaşayan kişilerin başvurularını kabul edebiliyoruz.",
   "fehler_einwilligung": "Başvurunuzu işleyebilmemiz için lütfen onay verin.",
   "fehler_zu_viele": "Kısa sürede çok fazla başvuru gönderildi. Lütfen daha sonra tekrar deneyin."
 }

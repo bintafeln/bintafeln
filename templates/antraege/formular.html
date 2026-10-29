@@ -37,13 +37,14 @@
         {% include "antraege/_feld.html" with feld=form.familienstand %}
         {% include "antraege/_feld.html" with feld=form.staatsangehoerigkeit %}
       </div>{% endif %}
-      {% if form.gdb %}<div class="reihe">{% include "antraege/_feld.html" with feld=form.gdb %}</div>{% endif %}
+      {% if form.gdb %}<div class="reihe">{% include "antraege/_feld.html" with feld=form.gdb %}</div>
+      <div data-merkzeichen-fuer="{{ form.gdb.id_for_label }}">{% include "antraege/_feld.html" with feld=form.merkzeichen %}</div>{% endif %}
     </fieldset>
     {% if form.personen_zeilen %}
     <fieldset class="abschnitt">
       <legend>{{ t.abschnitt_haushalt }}</legend>
       <p class="hilfe">{{ t.haushalt_hinweis }}</p>
-      {% for n, titel, vorname, nachname, geburtsdatum, staat, gdb in form.personen_zeilen %}
+      {% for n, titel, vorname, nachname, geburtsdatum, staat, gdb, merkzeichen in form.personen_zeilen %}
       <details class="person"{% if n == 1 or vorname.value or vorname.errors %} open{% endif %}>
         <summary>{{ titel }}</summary>
         <div class="reihe reihe-3">
@@ -52,6 +53,7 @@
           {% include "antraege/_feld.html" with feld=geburtsdatum %}
         </div>
         {% if staat or gdb %}<div class="reihe">{% include "antraege/_feld.html" with feld=staat %}{% include "antraege/_feld.html" with feld=gdb %}</div>{% endif %}
+        {% if merkzeichen %}<div data-merkzeichen-fuer="{{ gdb.id_for_label }}">{% include "antraege/_feld.html" with feld=merkzeichen %}</div>{% endif %}
       </details>
       {% endfor %}
     </fieldset>
@@ -80,18 +82,18 @@
     {% include "antraege/_feld.html" with feld=form.nachricht %}
     {% if form.datenschutz_bestaetigt %}<div class="feld feld-haken{% if form.datenschutz_bestaetigt.errors %} hat-fehler{% endif %}">
       <label for="{{ form.datenschutz_bestaetigt.id_for_label }}">{{ form.datenschutz_bestaetigt }} {{ t.datenschutz_bestaetigt }} *</label>
-      <small class="hilfe"><a href="{{ e.datenschutz_url }}" target="_blank" rel="noopener">{{ t.datenschutz }}</a></small>
+      {% if e.datenschutz_url %}<small class="hilfe"><a href="{{ e.datenschutz_url }}" target="_blank" rel="noopener">{{ t.datenschutz }}</a></small>{% endif %}
       {% for fehler in form.datenschutz_bestaetigt.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
     </div>{% endif %}
     {% if form.einverstaendnis_bestaetigt %}<div class="feld feld-haken{% if form.einverstaendnis_bestaetigt.errors %} hat-fehler{% endif %}">
       <label for="{{ form.einverstaendnis_bestaetigt.id_for_label }}">{{ form.einverstaendnis_bestaetigt }} {{ t.einverstaendnis_bestaetigt }} *</label>
-      <small class="hilfe"><a href="{{ e.einverstaendnis_url }}" target="_blank" rel="noopener">{{ t.einverstaendnis }}</a></small>
+      {% if e.einverstaendnis_url %}<small class="hilfe"><a href="{{ e.einverstaendnis_url }}" target="_blank" rel="noopener">{{ t.einverstaendnis }}</a></small>{% endif %}
       {% for fehler in form.einverstaendnis_bestaetigt.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
     </div>{% endif %}
-    <div class="feld feld-haken{% if form.einwilligung.errors %} hat-fehler{% endif %}">
+    {% if form.einwilligung %}<div class="feld feld-haken{% if form.einwilligung.errors %} hat-fehler{% endif %}">
       <label for="{{ form.einwilligung.id_for_label }}">{{ form.einwilligung }} {{ t.einwilligung }} *</label>
       {% for fehler in form.einwilligung.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
-    </div>
+    </div>{% endif %}
     <div class="unsichtbar" aria-hidden="true">
       <label for="id_webseite">Webseite</label>
       <input type="text" name="webseite" id="id_webseite" tabindex="-1" autocomplete="off">
