@@ -794,6 +794,13 @@ ul.kompakt { margin: .3rem 0; padding-left: 1rem; }
 .handbuch h3 { margin: 1.25rem 0 .4rem; font-size: 1.05rem; }
 .handbuch ol, .handbuch ul { padding-left: 1.4rem; }
 .handbuch li { margin: .25rem 0; }
+/* Bilder im Handbuch: Pfeile und Rahmen in Tafel-Orange sind eingezeichnet */
+.hilfe-bild { margin: .75rem 0 1rem; }
+.hilfe-bild img {
+  display: block; max-width: 100%; height: auto; border: 1px solid var(--rand);
+  border-radius: var(--radius); box-shadow: 0 2px 8px rgba(0, 0, 0, .12); cursor: zoom-in;
+}
+.hilfe-bild figcaption { margin-top: .35rem; color: var(--leise); font-size: .9rem; }
 .handbuch-teil { margin: 0; color: var(--leise); font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; }
 .handbuch .tipp { background: var(--erfolg); border-radius: var(--radius); padding: .6rem 1rem; margin: .75rem 0; }
 .handbuch .achtung { background: #fdf3e2; border-left: 4px solid #e0a020; border-radius: var(--radius); padding: .6rem 1rem; margin: .75rem 0; }
@@ -884,6 +891,7 @@ ul.kompakt { margin: .3rem 0; padding-left: 1rem; }
 .filter .filter-haken { display: inline-flex; align-items: center; gap: .35rem; }
 .serienbrief-vorschau { border: 1px solid var(--rand); border-radius: var(--radius); padding: .75rem 1rem; background: var(--flaeche); }
 .haushalt-neu .tabelle input, .haushalt-neu .tabelle select { width: 100%; }
+.haushalt-neu .tabelle input[type="checkbox"] { width: auto; }
 .karte-einbettung { width: 100%; height: 22rem; border: 0; border-radius: var(--radius); }
 .formular-tabelle input, .formular-tabelle select { width: 100%; }
 .formular-tabelle input:not([type="checkbox"]), .formular-tabelle select {

@@ -38,6 +38,8 @@ def browser():
             executable_path=os.environ.get("BINTAFELN_E2E_CHROMIUM") or None,
             # Kamera-Scanner: Testbild statt echter Kamera, ohne Rückfrage
             args=["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"],
+            # Deutsche Datumsfelder (TT.MM.JJJJ) wie bei den Tafeln, z. B. für die Hilfe-Bilder
+            env={**os.environ, "LANG": "de_DE.UTF-8", "LANGUAGE": "de"},
         )
         yield b
         b.close()

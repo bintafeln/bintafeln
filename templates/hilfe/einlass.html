@@ -1,4 +1,4 @@
-<p>Der Einlass prüft, ob ein Kunde heute abholen darf, und trägt die Abholung ein. Menü: „Ausgabestelle → Einlass“.</p>
+{% load handbuch %}<p>Der Einlass prüft, ob ein Kunde heute abholen darf, und trägt die Abholung ein. Menü: „Ausgabestelle → Einlass“.</p>
 <h3>Zu Beginn der Schicht</h3>
 <ol>
   <li>Oben im linken Menü die <strong>Ausgabestelle</strong> wählen, an der Sie arbeiten. bintafeln merkt sich die
@@ -6,6 +6,7 @@
     nutzen Sie das Konto einer Ausgabestelle, steht sie dort fest.</li>
   <li>Prüfen, dass der Scanner funktioniert (einmal einen Ausweis scannen).</li>
 </ol>
+{% hilfe_bild "einlass-suche" "① Ausgabestelle oben im Menü wählen, ② Kundennummer scannen oder eintippen." %}
 <p><strong>Sonderausgabe:</strong> Ist heute eine Sonderausgabe eingestellt, sind nur die dort gewählten Kunden dran
   (z. B. „Kunden vom Donnerstag + Gruppe B“). Die Ampel zeigt alle anderen als „heute nicht dran“ mit der Sonderausgabe
   als Grund. Auf dem Handy stehen Kunde, Beitrag und Knöpfe knapp oben, darunter gleich die Ampel.</p>
@@ -34,6 +35,7 @@
   <li>Läuft eine <strong>Sonderaktion</strong> (z. B. Weihnachtsgutschein), erscheint eine eigene Karte mit Knöpfen.</li>
   <li>Nächsten Kunden scannen – das Suchfeld ist sofort wieder bereit.</li>
 </ol>
+{% hilfe_bild "einlass-kunde" "① Ampel und Gründe lesen, ② Notizen lesen, ③ „Abholung eintragen“ drücken." %}
 <p><strong>Kunde gehört nicht zu Ihrer Ausgabestelle?</strong> Dann sehen Sie keine Angaben zu ihm. Mit „✉ Nachricht an
   die Verwaltung“ schreiben Sie dem Büro trotzdem etwas zu dieser Kundennummer (z. B. „wohnt jetzt bei uns“). Das geht
   auch aus der Kundenliste, wenn Sie nach der Nummer suchen.</p>
