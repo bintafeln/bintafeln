@@ -41,6 +41,16 @@ def deckt(ausfall, datum: dt.date, nur_krank: bool = False) -> bool:
     return not (nur_krank and ausfall.gesund_ab and datum >= ausfall.gesund_ab)
 
 
+def betrifft(ausfall, datum: dt.date, ersatz=None) -> bool:
+    """Fällt die Person auf diesem Platz aus? Auf dem festen Platz: im ganzen Zeitraum, auch nach
+    „wieder gesund“. Als Ersatz: solange sie krank ist; ein Einspringen, das schon vor der
+    Krankmeldung eingetragen war, bleibt aber abgesagt (nie automatisch zurück)."""
+    if ersatz is None or (ersatz.eingetragen_am and ausfall.eingetragen_am
+                          and ersatz.eingetragen_am <= ausfall.eingetragen_am):  # fmt: skip
+        return deckt(ausfall, datum)
+    return deckt(ausfall, datum, nur_krank=True)
+
+
 def krank_am(datum: dt.date) -> Q:
     """Filter: Ausfälle, wegen derer jemand an ``datum`` nicht einspringen kann."""
     return Q(von__lte=datum, bis__gte=datum) & (Q(gesund_ab__isnull=True) | Q(gesund_ab__gt=datum))

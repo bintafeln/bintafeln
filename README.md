@@ -1123,7 +1123,9 @@ Aushang-Monitore“ (Recht „Aushang-Monitore einrichten“, Vorgabe Büro).
   zu einem Datum), wieder gesund melden, einspringen, wer plant auch Ersatz und Gäste.
   **Wieder gesund** (auch im Programm unter „Meine Dienste/Einsätze“, ADR 0085): Die Person kann
   ab heute einspringen, ihre festen Plätze bleiben aber frei bzw. beim Ersatz; sie wird nie
-  automatisch wieder eingetragen, weil dort vielleicht schon jemand anderes steht. Jede Person legt ihre PIN (mindestens 6 Ziffern, gehasht gespeichert) unter
+  automatisch wieder eingetragen, weil dort vielleicht schon jemand anderes steht. Auch wer
+  eingesprungen ist, kann sich so austragen; Einsätze als Ersatz von vor der Krankmeldung bleiben
+  danach abgesagt, bis man sich neu einträgt. Jede Person legt ihre PIN (mindestens 6 Ziffern, gehasht gespeichert) unter
   „Mein Konto → PIN für Aushang-Monitore“ fest; nach 5 Fehlversuchen 15 Minuten gesperrt. Im
   Änderungsprotokoll steht die Person.
 - Weitere Module können über `Modul.aushang` eigene Seiten anbieten.
