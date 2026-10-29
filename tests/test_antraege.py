@@ -55,7 +55,8 @@ def daten(**mehr):
     return {
         "art": "neu", "vorname": "Erika", "nachname": "Beispiel", "geburtsdatum": "1980-02-03",
         "strasse": "Erfundene Gasse 1", "plz": "12345", "ort": "Musterstadt",
-        "einwilligung": "on", **mehr,
+        "einwilligung": "on", "datenschutz_bestaetigt": "on", "einverstaendnis_bestaetigt": "on",
+        **mehr,
     }  # fmt: skip
 
 
@@ -617,19 +618,31 @@ def test_ki_schluessel_speichern(admin_client):
 def test_erklaerungen_als_pflicht_bestaetigen(client, offen, admin_client):
     from apps.antraege.models import Antrag
 
-    assert 'name="datenschutz_bestaetigt"' not in client.get(FORMULAR).content.decode()  # ohne Link
-    offen.datenschutz_url = "https://tafel.example.org/datenschutz"
+    # Vorgabe: alle drei Häkchen, auch ohne eingetragene Links (dann ohne Link darunter)
+    seite = client.get(FORMULAR).content.decode()
+    for name in ("einwilligung", "datenschutz_bestaetigt", "einverstaendnis_bestaetigt"):
+        assert f'name="{name}"' in seite, name
+    assert "Ich habe die Einverständniserklärung gelesen" in seite and ".pdf" not in seite
+    ohne = {"einwilligung": "", "datenschutz_bestaetigt": "", "einverstaendnis_bestaetigt": ""}
+    fehler = client.post(FORMULAR, daten(**ohne)).context["form"].errors
+    assert set(fehler) == {"einwilligung", "datenschutz_bestaetigt", "einverstaendnis_bestaetigt"}
+    assert "Bitte bestätigen Sie das" in fehler["datenschutz_bestaetigt"][0]
+    assert not Antrag.objects.exists()
     offen.einverstaendnis_url = "https://tafel.example.org/einverstaendnis.pdf"
     offen.save()
     seite = client.get(FORMULAR).content.decode()
-    assert 'name="datenschutz_bestaetigt"' in seite and 'name="einverstaendnis_bestaetigt"' in seite
-    assert "Ich habe die Einverständniserklärung gelesen" in seite
-    fehler = client.post(FORMULAR, daten()).context["form"].errors
-    assert set(fehler) == {"datenschutz_bestaetigt", "einverstaendnis_bestaetigt"}
-    assert "Bitte bestätigen Sie das" in fehler["datenschutz_bestaetigt"][0]
-    assert not Antrag.objects.exists()
-    client.post(FORMULAR, daten(datenschutz_bestaetigt="on", einverstaendnis_bestaetigt="on"))
+    assert 'href="https://tafel.example.org/einverstaendnis.pdf"' in seite
+    client.post(FORMULAR, daten())
     a = Antrag.objects.get()
-    assert a.datenschutz_bestaetigt and a.einverstaendnis_bestaetigt
+    assert a.einwilligung_bestaetigt and a.datenschutz_bestaetigt and a.einverstaendnis_bestaetigt
     seite = admin_client.get(reverse("antraege:antrag", args=[a.pk])).content.decode()
-    assert "Datenschutzerklärung gelesen" in seite and "Einverständniserklärung" in seite
+    assert "Speichern der Angaben · Datenschutzerklärung gelesen · Einverständniserklärung" in seite
+    # Einzeln abschaltbar
+    offen.einwilligung_abfragen = offen.datenschutz_abfragen = False
+    offen.save()
+    seite = client.get(FORMULAR).content.decode()
+    assert 'name="einwilligung"' not in seite and 'name="datenschutz_bestaetigt"' not in seite
+    client.post(FORMULAR, daten(**ohne | {"einverstaendnis_bestaetigt": "on"}, vorname="Ole"))
+    b = Antrag.objects.get(vorname="Ole")
+    assert not b.einwilligung_bestaetigt and not b.datenschutz_bestaetigt
+    assert b.einverstaendnis_bestaetigt

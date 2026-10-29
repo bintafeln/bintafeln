@@ -122,9 +122,10 @@ class AntragForm(forms.Form):
         self._feld("anhaenge", MehrereDateienFeld(help_text=hilfe), t["anhaenge"])
         self._feld("nachricht", forms.CharField(widget=forms.Textarea(attrs={"rows": 4}),
                                                 max_length=2000), t["nachricht"])  # fmt: skip
-        self.fields["einwilligung"] = forms.BooleanField(
-            label=t["einwilligung"], error_messages={"required": t["fehler_einwilligung"]}
-        )
+        if einstellungen.einwilligung_abfragen:
+            self.fields["einwilligung"] = forms.BooleanField(
+                label=t["einwilligung"], error_messages={"required": t["fehler_einwilligung"]}
+            )
         # Für Menschen unsichtbar; wer es ausfüllt, ist sehr wahrscheinlich ein Programm.
         self.fields["webseite"] = forms.CharField(required=False, label="Webseite")
         for feld in self.fields.values():
@@ -140,12 +141,12 @@ class AntragForm(forms.Form):
                     "max_length": t["fehler_formular"],
                 }
             )
-        # Pflicht-Häkchen zu den verlinkten Erklärungen (nur, wenn die Tafel einen Link einträgt)
-        for name, url in (
-            ("datenschutz_bestaetigt", einstellungen.datenschutz_url),
-            ("einverstaendnis_bestaetigt", einstellungen.einverstaendnis_url),
+        # Pflicht-Häkchen zu den Erklärungen, je nach Einstellung (Vorgabe: alle)
+        for name, abfragen in (
+            ("datenschutz_bestaetigt", einstellungen.datenschutz_abfragen),
+            ("einverstaendnis_bestaetigt", einstellungen.einverstaendnis_abfragen),
         ):
-            if url:
+            if abfragen:
                 self.fields[name] = forms.BooleanField(
                     label=t[name], error_messages={"required": t["fehler_bestaetigen"]}
                 )
@@ -227,6 +228,7 @@ class AntragForm(forms.Form):
             },  # fmt: skip
             wochentage=", ".join(d.get("wochentage") or []),
             gdb=_zahl(d.get("gdb")),
+            einwilligung_bestaetigt=bool(d.get("einwilligung")),
             datenschutz_bestaetigt=bool(d.get("datenschutz_bestaetigt")),
             einverstaendnis_bestaetigt=bool(d.get("einverstaendnis_bestaetigt")),
         )
@@ -291,7 +293,9 @@ class EinstellungenForm(forms.ModelForm):
     class Meta:
         model = AntragEinstellungen
         fields = [
-            "aktiv", "modus", "erste_nummer", *AntragEinstellungen.FELDER, "datenschutz_url",
+            "aktiv", "modus", "erste_nummer", *AntragEinstellungen.FELDER,
+            "einwilligung_abfragen", "datenschutz_abfragen", "einverstaendnis_abfragen",
+            "datenschutz_url",
             "impressum_url", "erklaerungen_url", "voraussetzungen_url", "einverstaendnis_url",
             "eigenes_css", "benachrichtigen",
             "erledigt_nach_tagen", "papierkorb_nach_tagen", "loeschen_nach_tagen",

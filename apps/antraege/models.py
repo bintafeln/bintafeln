@@ -63,6 +63,16 @@ class AntragEinstellungen(models.Model):
     anhaenge = _abfrage("Nachweise hochladen")
     nachricht = _abfrage("Nachricht an die Tafel")
     datenschutz_url = models.URLField("Link zur Datenschutzerklärung", blank=True)
+    # Pflicht-Häkchen vor dem Absenden; ist ein Link eingetragen, steht er darunter
+    einwilligung_abfragen = models.BooleanField(
+        "Häkchen „Ich bin einverstanden, dass die Tafel meine Angaben speichert …“", default=True
+    )
+    datenschutz_abfragen = models.BooleanField(
+        "Häkchen „Ich habe die Datenschutzerklärung gelesen.“", default=True
+    )
+    einverstaendnis_abfragen = models.BooleanField(
+        "Häkchen „Ich habe die Einverständniserklärung gelesen und bin einverstanden.“",
+        default=True)  # fmt: skip
     impressum_url = models.URLField("Link zum Impressum", blank=True)
     erklaerungen_url = models.URLField(
         "Link zu Erklärungen", blank=True,
@@ -210,6 +220,8 @@ class Antrag(models.Model):
     )  # fmt: skip
     wochentage = models.CharField("Bevorzugte Wochentage", max_length=30, blank=True)
     # Beim Absenden bestätigt (Pflicht-Häkchen, wenn die Tafel den Link eingetragen hat)
+    # Bisher war das Häkchen zum Speichern immer Pflicht, daher für alte Anträge „ja“
+    einwilligung_bestaetigt = models.BooleanField("Speichern der Angaben bestätigt", default=True)
     datenschutz_bestaetigt = models.BooleanField("Datenschutzerklärung bestätigt", default=False)
     einverstaendnis_bestaetigt = models.BooleanField("Einverständniserklärung bestätigt",
                                                      default=False)  # fmt: skip

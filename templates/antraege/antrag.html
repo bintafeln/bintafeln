@@ -32,7 +32,7 @@
     {% if a.familienstand %}<dt>Familienstand</dt><dd>{{ a.familienstand }}</dd>{% endif %}
     {% if a.staatsangehoerigkeit %}<dt>Staatsangehörigkeit</dt><dd>{{ a.staatsangehoerigkeit }}</dd>{% endif %}
     {% if a.gdb_text %}<dt>Behinderung</dt><dd>{{ a.gdb_text }}</dd>{% endif %}
-    <dt>Bestätigt</dt><dd>Speichern der Angaben{% if a.datenschutz_bestaetigt %} · Datenschutzerklärung gelesen{% endif %}{% if a.einverstaendnis_bestaetigt %} · Einverständniserklärung{% endif %} ({{ a.eingegangen_am|date:"d.m.Y H:i" }})</dd>
+    <dt>Bestätigt</dt><dd>{% if a.einwilligung_bestaetigt %}Speichern der Angaben · {% endif %}{% if a.datenschutz_bestaetigt %}Datenschutzerklärung gelesen · {% endif %}{% if a.einverstaendnis_bestaetigt %}Einverständniserklärung · {% endif %}{{ a.eingegangen_am|date:"d.m.Y H:i" }}</dd>
     <dt>Wunsch</dt><dd>{{ a.wochentage|default:"keine Wochentage" }} · {{ a.ausgabestelle|default:"Ausgabestelle egal" }}</dd>
     {% if a.nachricht %}<dt>Nachricht</dt><dd class="vorformatiert">{{ a.nachricht }}</dd>{% endif %}
   </dl>
