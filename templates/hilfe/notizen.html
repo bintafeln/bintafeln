@@ -1,3 +1,4 @@
+{% load handbuch %}
 <p>Notizen sind kurze Hinweise für die nächste Schicht, z. B. „Bringt nächste Woche den neuen Bescheid mit“. Sie stehen
   am Einlass und auf der Seite des Haushalts.</p>
 <ul>
@@ -6,9 +7,11 @@
   <li><strong>Löschen</strong>: Eigene Notizen vom selben Tag (Versehen) über „löschen“.
     {% if "kunden.notizen_loeschen" in rechte %}Sie dürfen auch Notizen anderer löschen.{% endif %}</li>
 </ul>
+{% hilfe_bild "notizen-einlass" "① Notiz-Knopf: ein Klick speichert den Text als Notiz, ② eigene Notiz schreiben, ③ „Notiz speichern“, ④ eigene Notiz vom selben Tag löschen." %}
 {% if "kunden.stammdaten" in rechte %}<h3>Notiz an die Ausgabestelle</h3>
 <p>Auf der Haushaltsseite „An die Ausgabestelle schicken“ anhaken: Die Notiz steht dann zusätzlich auf der Startseite der
   Ausgabestelle, bis dort jemand „✓ gelesen“ klickt. Am Haushalt steht, ob und von wem sie gelesen wurde.</p>
+{% hilfe_bild "notizen-an-stelle" "Auf der Haushaltsseite: ① Notiz schreiben, ② „An die Ausgabestelle schicken“ anhaken, ③ „Notiz speichern“." %}
 <p>Hat die Ausgabestelle „Neuen Ausweis drucken“ gemeldet, schreibt „Ausweis drucken“ (auch der Sammeldruck) die Antwort
   von selbst: „Neuer Ausweis ist gedruckt und wird zur Ausgabestelle geschickt“, bei einer Ausgabestelle mit „Gedruckte
   Ausweise liegen hier“ (z. B. Zentrale) „… liegt im Schrank“. Die Meldung ist danach erledigt.</p>

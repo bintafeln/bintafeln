@@ -1,3 +1,4 @@
+{% load handbuch %}
 <p>Die Ampel fasst alle Regeln zusammen. Darunter steht immer, <em>warum</em> sie so steht.
   {% if "einstellungen.ausgabe" in rechte %}Die Texte dieser Meldungen lassen sich unter „Einstellungen → Ausgabe, Ampel
   und Beiträge“ in eigenen Worten formulieren (leer = Standard), z. B. „Bitte am {tage} kommen“.{% endif %}</p>
@@ -8,8 +9,10 @@
   <li>Heute schon so oft abgeholt wie erlaubt, oder Höchstzahl je Woche/14 Tage/Monat erreicht</li>
   <li>Keine Kundengruppe, oder heute nicht dran (wenn die Tafel das als Rot eingestellt hat)</li>
 </ul>
+{% hilfe_bild "ampel-rot" "① Rot: keine Abholung, ② der Grund steht daneben (hier: Ausweis abgelaufen)." %}
 <h3>Gelb (mit Grün) – Abholung möglich, bitte beachten</h3>
 <p>Gelb und Grün leuchten zusammen: Die Abholung kann eingetragen werden, vorher bitte den Hinweis beachten.</p>
+{% hilfe_bild "ampel-gelb" "① Gelb und Grün leuchten, ② darunter steht der Grund (hier: Ausweis läuft bald ab), ③ „Abholung eintragen“ ist trotzdem möglich." %}
 <ul>
   <li>Ausweis läuft bald ab (Vorwarnung) – Kunden bitten, Nachweise ins Büro zu bringen</li>
   <li>Andere Ausgabestelle als vorgesehen, oder heute nicht dran (wenn nur als Hinweis eingestellt)</li>

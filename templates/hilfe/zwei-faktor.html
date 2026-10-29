@@ -1,3 +1,4 @@
+{% load handbuch %}
 <p>Mit der Zwei-Faktor-Anmeldung reicht ein gestohlenes Passwort nicht aus: Zusätzlich braucht man einen Code vom
   eigenen Handy. Für manche Rollen ist sie Pflicht; dann führt bintafeln nach der Anmeldung direkt zur Einrichtung.</p>
 <h3>Einrichten</h3>
@@ -9,10 +10,13 @@
   <li>Es erscheinen einmalig <strong>10 Notfallcodes</strong>. Ausdrucken oder abschreiben und sicher aufbewahren –
     jeder funktioniert genau einmal anstelle der App.</li>
 </ol>
+{% hilfe_bild "zwei-faktor-konto" "① Ein Klick auf Ihren Namen oben rechts öffnet „Mein Konto“, ② dort „Jetzt einrichten“." %}
+{% hilfe_bild "zwei-faktor-einrichten" "① QR-Code mit der Authenticator-App scannen, ② den sechsstelligen Code aus der App eintippen, ③ „Bestätigen“." %}
 <h3>So läuft die Anmeldung</h3>
 <p>Zuerst nur <strong>Benutzername und Passwort</strong>. Ist für Ihr Konto Zwei-Faktor eingerichtet, erscheint danach
   ein eigenes Fenster für den <strong>Code</strong> aus der App (oder einen Notfallcode). Das Fenster gilt
   5 Minuten; nach 5 falschen Codes beginnt die Anmeldung von vorn.</p>
+{% hilfe_bild "zwei-faktor-code" "① Code aus der App eintippen, ② nur an eigenen bzw. Tafel-Geräten: „Diesem Gerät … Tage vertrauen“ (siehe unten), ③ „Anmelden“." %}
 <h3>Handy verloren oder neu?</h3>
 <p>Mit einem Notfallcode anmelden und unter „Mein Konto“ neu einrichten. Ohne Notfallcode kann ein Admin oder das
   Büro die Zwei-Faktor-Anmeldung bei „Mitarbeitende“ zurücksetzen.</p>
