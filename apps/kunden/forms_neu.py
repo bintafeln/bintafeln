@@ -14,7 +14,7 @@ from apps.antraege import aufnahme
 from apps.core.auswahl import mit_vorhandenem, staatsangehoerigkeiten
 from apps.core.forms import StaatAuswahl
 from apps.konten.forms import DatumEingabe
-from apps.kunden.forms_bearbeiten import HaushaltForm, PersonForm
+from apps.kunden.forms_bearbeiten import BehinderungMixin, HaushaltForm, PersonForm
 from apps.kunden.models import Einkommensart, Haushalt, KundenEinstellungen, Kundengruppe, Person
 
 
@@ -91,7 +91,7 @@ class HaushaltNeuForm(HaushaltForm):
         return super().save(commit)
 
 
-class AngehoerigerForm(forms.ModelForm):
+class AngehoerigerForm(BehinderungMixin, forms.ModelForm):
     staatsangehoerigkeit = forms.ChoiceField(
         label="Staatsangehörigkeit", required=False, widget=StaatAuswahl
     )
@@ -111,6 +111,11 @@ class AngehoerigerForm(forms.ModelForm):
             )
         else:
             del self.fields["staatsangehoerigkeit"]
+        self.behinderung_einbauen()
+
+    def save(self, commit=True):
+        self.behinderung_uebernehmen()
+        return super().save(commit)
 
     def clean(self):
         daten = super().clean()

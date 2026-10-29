@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block titel %}Neuer Haushalt{% endblock %}
-{% block inhalt %}
+{% load static %}{% block inhalt %}
+<script src="{% static 'js/merkzeichen.js' %}" defer></script>
 <section class="karte breit">
   <p><a href="{% url 'kunden:uebersicht' %}">← Kunden</a></p>
   <h1>Neuer Haushalt</h1>
@@ -33,10 +34,12 @@
 
   <section class="karte breit">
     <h2>3. Weitere Angaben</h2>
-    {% if zusatz or hp_zusatz %}
+    {% if zusatz or hp_zusatz or hauptperson.gdb %}
     <div class="formular-raster">
       {% for feld in zusatz %}{% include "includes/feld.html" %}{% endfor %}
       {% for feld in hp_zusatz %}{% include "includes/feld.html" %}{% endfor %}
+      {% if hauptperson.gdb %}{% with feld=hauptperson.gdb %}{% include "includes/feld.html" %}{% endwith %}
+      <div data-merkzeichen-fuer="{{ hauptperson.gdb.id_for_label }}">{% with feld=hauptperson.merkzeichen %}{% include "includes/feld.html" %}{% endwith %}</div>{% endif %}
     </div>
     {% endif %}
     <p class="hinweis">Welche Angaben hier stehen (z. B. Ernährung, Allergien, Haustiere), legt die Tafel selbst fest
@@ -51,7 +54,7 @@
     {% for e in angehoerige.non_form_errors %}<p class="fehler">{{ e }}</p>{% endfor %}
     <div class="tabelle-rahmen">
     <table class="tabelle">
-      <thead><tr><th>Vorname</th><th>Nachname (leer = wie Hauptperson)</th><th>Geburtsdatum</th>{% if angehoerige.forms.0.staatsangehoerigkeit %}<th>Staatsangehörigkeit</th>{% endif %}</tr></thead>
+      <thead><tr><th>Vorname</th><th>Nachname (leer = wie Hauptperson)</th><th>Geburtsdatum</th>{% if angehoerige.forms.0.staatsangehoerigkeit %}<th>Staatsangehörigkeit</th>{% endif %}{% if angehoerige.forms.0.gdb %}<th>Behinderung (Art. 9)</th>{% endif %}</tr></thead>
       <tbody>
       {% for f in angehoerige %}
         <tr>
@@ -59,6 +62,7 @@
           <td data-titel="Nachname">{{ f.nachname }}{% for e in f.nachname.errors %}<small class="fehler">{{ e }}</small>{% endfor %}</td>
           <td data-titel="Geburtsdatum">{{ f.geburtsdatum }}{% for e in f.geburtsdatum.errors %}<small class="fehler">{{ e }}</small>{% endfor %}</td>
           {% if f.staatsangehoerigkeit %}<td data-titel="Staatsangehörigkeit">{{ f.staatsangehoerigkeit }}</td>{% endif %}
+          {% if f.gdb %}<td data-titel="Behinderung">{{ f.gdb }}<div data-merkzeichen-fuer="{{ f.gdb.id_for_label }}">{{ f.merkzeichen }}</div></td>{% endif %}
         </tr>
       {% endfor %}
       </tbody>

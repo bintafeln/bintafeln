@@ -44,3 +44,11 @@ besondere Kategorie markiert:
 - Feste Schlüssel machen Import, Einlass und Ausweis ohne Einrichtung nutzbar.
 - Dass die Merkmale normale Zusatzfelder bleiben, nutzt alles Vorhandene: Import
   (`zusatz_schwerbehindert`), Listen, Auskunft, Verlängerungsregeln, Vorrang im Aufruf.
+
+## Nachtrag: Grad der Behinderung im Kundenstamm
+
+„Neuer Haushalt“ und „Person bearbeiten“ zeigen Schwerbehindert, Taub, Stumm und Blind nicht mehr
+als einzelne Häkchen. Wie im Antrag (ADR 0024) wird der Grad der Behinderung gewählt, mit GdB die
+Merkzeichen; daraus folgen „Schwerbehindert“ (ab GdB 50) und „Blind“ (Bl, TBl). Das gilt auch für
+jede angehörige Person. Taub und Stumm bleiben Merkmale für den Einlass, gespeicherte Werte bleiben
+erhalten.

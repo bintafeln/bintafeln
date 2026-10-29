@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block titel %}{{ titel }}{% endblock %}
-{% block inhalt %}
+{% load static %}{% block inhalt %}
+{% if form.merkzeichen %}<script src="{% static 'js/merkzeichen.js' %}" defer></script>{% endif %}
 <section class="karte">
   {% if h %}<p><a href="{% url 'kunden:bearbeiten' h.kundennummer %}">← Haushalt {{ h.kundennummer }} bearbeiten</a></p>
   {% elif zurueck %}<p><a href="{{ zurueck }}">← zurück</a></p>

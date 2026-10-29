@@ -2,6 +2,7 @@
 
 import datetime as dt
 import importlib
+import re
 
 import pytest
 from django.apps import apps as django_apps
@@ -152,9 +153,49 @@ def test_ausweis_symbole(haushalt, monkeypatch, pdf_text, admin_client):
     assert len(gezeichnet) == 1 and "(V) Tj" in text
 
 
-def test_bearbeiten_mit_haekchen(haushalt, admin_client):
+def test_bearbeiten_mit_haekchen_und_grad_der_behinderung(haushalt, admin_client):
     erika = haushalt.personen.get(vorname="Erika")
     url = reverse("kunden:teil", args=[haushalt.kundennummer, "person", erika.pk])
     seite = admin_client.get(url).content.decode()
-    assert 'type="checkbox" name="zusatz_schwerbehindert"' in seite
     assert 'name="zusatz_vegetarier" id="id_zusatz_vegetarier" checked' in seite
+    for feld in ("schwerbehindert", "blind", "taub", "stumm"):  # statt einzelner Häkchen
+        assert f'name="zusatz_{feld}"' not in seite
+    assert 'name="gdb"' in seite and "Bisher als „schwerbehindert“ erfasst" in seite
+    assert 'value="G"' in seite and 'value="Bl"' in seite
+
+    daten = {"vorname": "Erika", "nachname": "Muster", "zusatz_vegetarier": "on",
+             "gdb": "80", "merkzeichen": ["G", "Bl"]}  # fmt: skip
+    admin_client.post(url, daten)
+    erika.refresh_from_db()
+    z = erika.zusatz
+    assert z["gdb"] == "GdB 80" and z["schwerbehindert"] and z["blind"]
+    assert z["merkzeichen"].startswith("G (") and "Bl (" in z["merkzeichen"] and z["vegetarier"]
+    seite = admin_client.get(url).content.decode()
+    assert '<option value="80" selected>' in seite
+    assert re.search(r'value="Bl"[^>]* checked', seite)
+    assert not re.search(r'value="B"[^>]* checked', seite)
+
+    admin_client.post(url, {**daten, "gdb": "30", "merkzeichen": []})  # unter 50
+    erika.refresh_from_db()
+    assert not erika.zusatz["schwerbehindert"] and not erika.zusatz["blind"]
+    admin_client.post(url, {**daten, "gdb": ""})  # keine Angabe
+    erika.refresh_from_db()
+    assert "gdb" not in erika.zusatz and "merkzeichen" not in erika.zusatz
+    assert erika.zusatz["vegetarier"]
+
+
+def test_neuer_haushalt_mit_behinderung_auch_bei_angehoerigen(admin_client, gruppe_behalten):
+    url = reverse("kunden:haushalt_neu")
+    seite = admin_client.get(url).content.decode()
+    assert 'name="hp-gdb"' in seite and 'name="a-0-gdb"' in seite
+    assert 'name="hp-zusatz_taub"' not in seite and 'name="hp-zusatz_schwerbehindert"' not in seite
+    admin_client.post(url, {
+        "kundennummer": "88", "hp-vorname": "Erika", "hp-nachname": "Neu", "hp-gdb": "50",
+        "hp-merkzeichen": ["aG"], "a-TOTAL_FORMS": "1", "a-INITIAL_FORMS": "0",
+        "a-0-vorname": "Kim", "a-0-nachname": "Neu", "a-0-gdb": "100", "a-0-merkzeichen": ["TBl"],
+        "gueltig_bis": ""})  # fmt: skip
+    h = Haushalt.objects.get(kundennummer="88")
+    erika, kim = h.personen.get(vorname="Erika"), h.personen.get(vorname="Kim")
+    assert erika.zusatz["gdb"] == "GdB 50" and erika.zusatz["schwerbehindert"]
+    assert erika.zusatz["merkzeichen"].startswith("aG (") and "blind" not in erika.zusatz
+    assert kim.zusatz["gdb"] == "GdB 100" and kim.zusatz["blind"]

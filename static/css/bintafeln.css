@@ -71,6 +71,7 @@ form.konto-name { display: flex; flex-direction: column; align-items: flex-end; 
 .schmal { max-width: 28rem; margin-left: auto; margin-right: auto; }
 h1 { font-size: 1.5rem; margin: .25rem 0 1rem; }
 
+.feld[hidden] { display: none; }
 .feld { display: flex; flex-direction: column; margin-bottom: 1rem; }
 .feld label { font-weight: 600; margin-bottom: .25rem; }
 .feld input, .feld select, .feld textarea, .filter select, .filter input {
@@ -1349,3 +1350,7 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 [data-merkzeichen-fuer] .feld > div { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; }
 .merkzeichen-auswahl { display: flex; flex-wrap: wrap; gap: 0 .6rem; margin-top: .3rem; font-size: .9rem; }
 .merkzeichen-auswahl label { white-space: nowrap; }
+/* Merkzeichen im Kundenstamm (Neuer Haushalt, Person bearbeiten) nebeneinander */
+[data-merkzeichen-fuer] div[id$="merkzeichen"] { display: flex; flex-wrap: wrap; gap: 0 .6rem;
+  margin-top: .3rem; font-size: .9rem; }
+[data-merkzeichen-fuer] div[id$="merkzeichen"] label { white-space: nowrap; }
