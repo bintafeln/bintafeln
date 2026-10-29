@@ -1,7 +1,7 @@
 {% extends "antraege/oeffentlich.html" %}
 {% block inhalt %}
 <section class="karte">
-  <h1>{{ ueberschrift }}</h1>
+  {% if e.ueberschrift_zeigen %}<h1>{{ ueberschrift }}</h1>{% endif %}
   <p>{{ t.geschlossen }}</p>
 </section>
 {% endblock %}

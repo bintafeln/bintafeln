@@ -680,6 +680,10 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   mit eigenem API-Schlüssel von Claude (Anthropic) übersetzt „Mit KI in alle Sprachen
   übersetzen“ auf der Seite „Texte: Deutsch“ die eigenen Texte in alle Sprachen (nur diese Texte
   verlassen den Server, nie Angaben aus Anträgen; ADR 0082);
+  Aufbau der Seite: Kopfzeile mit Logo und Name, Überschrift und Fußzeile lassen sich je einzeln
+  ausblenden (die Sprachwahl bleibt); unter „Texte je Sprache“ gibt es zusätzlich einen eigenen
+  Kopf- und Fußbereich im Editor „Gestalten/HTML“ (leer in einer Sprache = der deutsche, wird
+  mit übersetzt);
   „Behinderung (GdB) je Person“ (Vorgabe: nicht abfragen, weil Gesundheitsdaten nach Art. 9
   DSGVO) fragt für jede Person ab: keine Behinderung oder GdB 20 bis 100; der
   Aufnahme-Assistent übernimmt den Wert in das Zusatzfeld „Grad der Behinderung“ und setzt ab
