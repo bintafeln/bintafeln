@@ -675,7 +675,8 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   Nachweisen** (z. B. welche Unterlagen nötig sind; ohne eigenen Hinweis gilt der deutsche). Die
   Nachweise lassen sich in ein Feld ziehen, auswählen oder direkt mit dem Handy fotografieren;
   die eigenen Texte lassen sich im Reiter „Gestalten“ wie in einem Schreibprogramm (fett,
-  Überschrift, Liste, Link, Bild, Farbe, Ausrichtung) oder im Reiter „HTML“ bearbeiten;
+  Überschrift, Ausrichtung links/Mitte/rechts/Blocksatz, Liste, Text- und Markierfarbe,
+  farbige Kästen, Link, Bild) oder im Reiter „HTML“ bearbeiten;
   mit eigenem API-Schlüssel von Claude (Anthropic) übersetzt „Mit KI in alle Sprachen
   übersetzen“ auf der Seite „Texte: Deutsch“ die eigenen Texte in alle Sprachen (nur diese Texte
   verlassen den Server, nie Angaben aus Anträgen; ADR 0082);

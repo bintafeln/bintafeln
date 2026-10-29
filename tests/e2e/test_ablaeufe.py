@@ -160,8 +160,21 @@ def test_editor_gestalten_und_html(angemeldet, admin):
     assert "Welt" in feld.input_value() and (
         "<b>" in feld.input_value() or "font-weight" in feld.input_value()
     )
+    seite.locator(".editor-reiter").first.get_by_role("tab", name="Gestalten").click()
+    leiste = seite.locator(".editor-leiste").first
+    flaeche.click()
+    seite.keyboard.press("Control+a")
+    leiste.get_by_role("button", name="Kasten").click()
+    expect(flaeche.locator(".kasten")).to_have_count(1)
+    flaeche.locator(".kasten").click()
+    leiste.get_by_role("button", name="Mitte").click()
+    seite.locator(".editor-reiter").first.get_by_role("tab", name="HTML").click()
+    html = feld.input_value()
+    assert "text-align: center" in html and 'class="kasten"' in html
+    assert "background-color" in html
     seite.get_by_role("button", name="Speichern").click()
-    assert "Welt" in AntragText.objects.get(sprache="de").einleitung
+    gespeichert = AntragText.objects.get(sprache="de").einleitung
+    assert "Welt" in gespeichert and "kasten" in gespeichert
 
 
 def test_suche_im_kopf(angemeldet, admin):
