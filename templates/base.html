@@ -13,6 +13,8 @@
   <script src="{% static 'js/sofort.js' %}" defer></script>
   <script src="{% static 'js/autosave.js' %}" defer></script>
   <script src="{% static 'js/position.js' %}" defer></script>
+  <script src="{% static 'js/mehrfachauswahl.js' %}" defer></script>
+  <script src="{% static 'js/zeigen_bei.js' %}" defer></script>
   {% if menue %}<script src="{% static 'js/menue_einfahren.js' %}"></script>{% endif %}
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'{% if menue %} class="mit-menue"{% endif %}{% if user.is_authenticated %} data-ansicht-stand="{{ user.ansicht_stand }}"{% endif %}>

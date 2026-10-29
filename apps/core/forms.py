@@ -74,6 +74,27 @@ class EinrichtungForm(forms.Form):
         return daten
 
 
+class Mehrfachauswahl(forms.CheckboxSelectMultiple):
+    """Mehrfachauswahl als aufklappbares Menü mit Häkchen: zu sieht man, was gewählt ist (leer =
+    ``leer``); lange Listen bekommen ein Suchfeld. Verhalten in static/js/mehrfachauswahl.js,
+    ohne JavaScript klappt es trotzdem auf und zu."""
+
+    template_name = "core/widgets/mehrfachauswahl.html"
+
+    def __init__(self, attrs=None, choices=(), leer="alle", suche_ab=8):
+        super().__init__(attrs, choices)
+        self.leer, self.suche_ab = leer, suche_ab
+
+    def get_context(self, name, value, attrs):
+        kontext = super().get_context(name, value, attrs)
+        optionen = [o for _, gruppe, _ in kontext["widget"]["optgroups"] for o in gruppe]
+        kontext["widget"].update(
+            leer=self.leer, suche=len(optionen) >= self.suche_ab,
+            gewaehlt=[str(o["label"]) for o in optionen if o["selected"]],
+        )  # fmt: skip
+        return kontext
+
+
 class MehrereBilder(forms.FileInput):
     allow_multiple_selected = True
 

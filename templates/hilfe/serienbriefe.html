@@ -8,15 +8,17 @@
 <h3>Erstellen</h3>
 <ol>
   <li>Vorlage wählen.</li>
-  <li>Empfänger: Adressen nach Kategorie, Mitglieder (z. B. nur mit offenem Beitrag), Spender eines Jahres (ggf. ab
-    einer Mindestsumme){% if "serienbriefe.kunden" in rechte %} oder Kunden (Haushalte, ggf. nur bestimmte
-    Kundengruppen){% endif %}.</li>
+  <li>Empfänger im Auswahlmenü: Adressen nach Kategorie, Mitglieder (z. B. nur mit offenem Beitrag), Spender eines
+    Jahres (ggf. ab einer Mindestsumme){% if "serienbriefe.kunden" in rechte %} oder Kunden (Haushalte, ggf. nur
+    bestimmte Kundengruppen){% endif %}. Darunter erscheinen nur die Filter, die dazu passen. Kategorien, Arten und
+    Kundengruppen wählen Sie in einem aufklappbaren Menü mit Häkchen; leer heißt alle.</li>
   <li>Versand: Briefe als PDF oder E-Mail. „Vorschau“ zeigt die Empfänger, wer übersprungen wird (ohne Anschrift bzw.
     E-Mail) und einen Beispielbrief.</li>
   <li>„PDF erzeugen“ und drucken – die Anschrift passt in Fensterumschläge DIN lang – oder „E-Mails senden“. Jede E-Mail
     geht einzeln an einen Empfänger.</li>
 </ol>
-{% hilfe_bild "serienbriefe-auswahl" "① Vorlage, ② Empfänger und ③ Versand wählen." %}
+{% hilfe_bild "serienbriefe-auswahl" "① Vorlage wählen, ② die Empfänger wählen, ③ darunter erscheinen nur die Filter, die dazu passen (hier die Mindestsumme der Spender)." %}
+{% hilfe_bild "serienbriefe-kundengruppen" "Mehrere Werte wählen: ① das Menü aufklappen, ② bei langen Listen oben suchen, ③ Häkchen setzen. Zugeklappt steht oben, was gewählt ist; leer heißt alle." %}
 {% hilfe_bild "serienbriefe-vorschau" "① „Vorschau“ zeigt ② die Empfänger und einen Beispielbrief, ③ dann das PDF erzeugen." %}
 <div class="tipp">Für Adressen und Spender ist „nur mit Einwilligung“ vorgewählt: Dann bekommt nur Post bzw. E-Mail,
   wer im Adressbuch eine Einwilligung mit Datum hat. Mitglieder und Kunden schreiben Sie im Rahmen der Mitgliedschaft

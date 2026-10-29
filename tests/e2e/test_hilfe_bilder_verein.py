@@ -213,12 +213,31 @@ def test_hilfe_bild_serienbrief(angemeldet, admin, muster):
     seite = oeffnen(angemeldet, admin, reverse("serienbriefe:erstellen"), breite=1400)
     _ohne_menue(seite)
     seite.get_by_label("Vorlage").select_option(index=1)
-    seite.get_by_label("Spender eines Jahres").check()
-    felder = seite.locator("section.karte .formular-raster > .feld")
-    aufnehmen(seite, "serienbriefe-auswahl", [felder.nth(0), felder.nth(3)],
+    seite.get_by_label("Empfänger").select_option("spender")
+    formular = seite.locator("form.serienbrief-auswahl")
+    raster = formular.locator(".formular-raster")
+    aufnehmen(seite, "serienbriefe-auswahl", [raster.first, raster.last],
               Marke(seite.locator("#id_vorlage"), "rahmen", 1),
               Marke(seite.locator("#id_quelle"), "rahmen", 2),
-              Marke(seite.locator("#id_versandart"), "rahmen", 3))  # fmt: skip
+              Marke(seite.locator("#id_mindestbetrag"), "rahmen", 3))  # fmt: skip
+    from apps.kunden.models import Kundengruppe
+
+    for kuerzel, tag in (("B", "Mo"), ("C", "Di"), ("D", "Mi"), ("E", "Do"), ("F", "Fr"),
+                         ("G", "Sa"), ("H", "Mo"), ("I", "Di")):  # fmt: skip
+        Kundengruppe.objects.create(kuerzel=kuerzel, name=f"Gruppe {kuerzel}", wochentage=tag)
+    seite.reload()  # Menü bleibt eingefahren
+    seite.get_by_label("Vorlage").select_option(index=1)
+    seite.get_by_label("Empfänger").select_option("kunden")
+    menue = seite.locator("details#id_kundengruppen")
+    menue.locator("summary").click()
+    menue.get_by_label("Gruppe A").check()
+    aufnehmen(seite, "serienbriefe-kundengruppen", [formular.locator(".formular-raster").last,
+                                                    menue.locator(".mehrfach-liste")],
+              Marke(menue.locator("summary"), "rahmen", 1),
+              Marke(menue.locator(".mehrfach-suche"), nummer=2, von="rechts"),
+              Marke(menue.locator(".mehrfach-eintrag").first, "rahmen", 3))  # fmt: skip
+    seite.keyboard.press("Escape")
+    seite.get_by_label("Empfänger").select_option("spender")
     seite.get_by_role("button", name="Vorschau").click()
     pdf = seite.get_by_role("button", name="PDF mit 2 Briefen erzeugen")
     raster = seite.locator(".seiten-raster")

@@ -768,3 +768,25 @@ def test_nach_dem_absenden_bleibt_die_position(angemeldet, admin, muster):
     with seite.expect_navigation():
         seite.locator("form.filter-kompakt").first.evaluate("f => f.requestSubmit()")
     seite.wait_for_function("window.scrollY > 600")
+
+
+def test_serienbrief_empfaenger_mit_auswahlmenue(angemeldet, admin, muster):
+    """Nur die Filter der gewählten Empfänger; Mehrfachauswahl als Menü mit Suche."""
+    for kuerzel in "BCDEFGHI":
+        Kundengruppe.objects.create(kuerzel=kuerzel, name=f"Gruppe {kuerzel}", wochentage="Mo")
+    seite = angemeldet(admin)
+    seite.goto(reverse("serienbriefe:erstellen"))
+    kategorien = seite.locator("details#id_kategorien")
+    gruppen = seite.locator("details#id_kundengruppen")
+    expect(kategorien).to_be_visible()
+    expect(gruppen).to_be_hidden()  # nur bei „Kunden“
+    seite.get_by_label("Empfänger").select_option("kunden")
+    expect(kategorien).to_be_hidden()
+    expect(gruppen.locator("summary")).to_have_text("alle Kundengruppen")
+    gruppen.locator("summary").click()
+    gruppen.get_by_placeholder("In der Liste suchen …").fill("gruppe c")
+    expect(gruppen.get_by_label("B – Gruppe B")).to_be_hidden()
+    gruppen.get_by_label("C – Gruppe C").check()
+    expect(gruppen.locator("summary")).to_contain_text("C – Gruppe C")
+    seite.locator("h1").click()  # daneben klicken klappt zu
+    expect(gruppen).not_to_have_attribute("open", "")

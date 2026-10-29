@@ -6,9 +6,25 @@
   <p class="hinweis">Vorlage und Empfänger wählen, „Vorschau“ zeigt, wer den Brief bekommt und wie er aussieht. Briefe
     entstehen als ein PDF zum Drucken (Anschrift passt in Fensterumschläge DIN lang); E-Mails gehen einzeln an jeden
     Empfänger. Jeder Versand wird vermerkt.</p>
-  <form method="post">
+  <form method="post" class="serienbrief-auswahl">
     {% csrf_token %}
-    {% include "includes/formular.html" %}
+    {% if form.non_field_errors %}<div class="fehler" role="alert">{% for f in form.non_field_errors %}<p>{{ f }}</p>{% endfor %}</div>{% endif %}
+    <h2 class="abschnitt-titel">1. Brief</h2>
+    <div class="formular-raster">
+      {% with feld=form.vorlage %}{% include "includes/feld.html" %}{% endwith %}
+      {% with feld=form.jahr %}{% include "includes/feld.html" %}{% endwith %}
+      {% with feld=form.versandart %}{% include "includes/feld.html" %}{% endwith %}
+    </div>
+    <h2 class="abschnitt-titel">2. Empfänger</h2>
+    <div class="formular-raster">
+      {% with feld=form.quelle %}{% include "includes/feld.html" %}{% endwith %}
+      <div data-zeigen-bei="quelle=adressen">{% with feld=form.kategorien %}{% include "includes/feld.html" %}{% endwith %}</div>
+      <div data-zeigen-bei="quelle=spender">{% with feld=form.mindestbetrag %}{% include "includes/feld.html" %}{% endwith %}</div>
+      <div data-zeigen-bei="quelle=mitglieder">{% with feld=form.mitgliedsarten %}{% include "includes/feld.html" %}{% endwith %}</div>
+      {% if form.nur_offen %}<div data-zeigen-bei="quelle=mitglieder">{% with feld=form.nur_offen %}{% include "includes/feld.html" %}{% endwith %}</div>{% endif %}
+      {% if form.kundengruppen %}<div data-zeigen-bei="quelle=kunden">{% with feld=form.kundengruppen %}{% include "includes/feld.html" %}{% endwith %}</div>{% endif %}
+      <div data-zeigen-bei="quelle=adressen spender">{% with feld=form.nur_einwilligung %}{% include "includes/feld.html" %}{% endwith %}</div>
+    </div>
     <div class="aktionsleiste">
       <button type="submit" name="schritt" value="vorschau" class="knopf" data-ziel="ergebnis-vorschau">Vorschau</button>
       {% if erreichbar %}
