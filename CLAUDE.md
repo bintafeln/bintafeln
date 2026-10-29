@@ -197,6 +197,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   zeigen mit `data-zeigen-bei="feld=wert1 wert2"` (`static/js/zeigen_bei.js`).
 - Nach dem Absenden eines Formulars an dieselbe Seite bleibt die Position (`static/js/position.js`);
   Knöpfe, deren Ergebnis weiter unten erscheint (Vorschau, Prüfen), bekommen `data-ziel="<id>"`.
+  PDFs in einem neuen Fenster öffnen per Link oder GET-Formular mit `target="_blank"`
+  (`static/js/neues_fenster.js` öffnet es per `window.open`); in der iPad-App vom Home-Bildschirm
+  käme man aus einem per POST geöffneten PDF nicht zurück.
 - Einstellungsseiten speichern sofort: Formular mit `data-autosave` (`static/js/autosave.js`,
   ADR 0076); die Ansicht leitet nach Erfolg weiter und zeigt Fehler wie gewohnt am Feld.
 - Menü links: Einträge je Rolle in `apps/core/menue.py` (neue Seiten dort eintragen statt

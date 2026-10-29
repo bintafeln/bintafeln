@@ -629,18 +629,20 @@ def ausweise(request):
 
 
 @never_cache
-@require_POST
 @rollen.recht_erforderlich("kunden.ausweis")
 def ausweise_auswahl(request):
     """Sammeldruck ohne Kundenliste: alle offenen Meldungen „Neuen Ausweis drucken“
-    (``gemeldet``) oder die unter „Ausweise verlängern“ angehakten Haushalte (``nummer``)."""
-    if request.POST.get("gemeldet"):
+    (``gemeldet``) oder die unter „Ausweise verlängern“ angehakten Haushalte (``nummer``).
+    Als Link (GET) wie der Einzeldruck: so öffnet das PDF auch in der iPad-App (ohne Tabs und
+    Zurück-Knopf) in einem eigenen Fenster mit „Fertig“."""
+    daten = request.POST if request.method == "POST" else request.GET
+    if daten.get("gemeldet"):
         nummern = list(Nachricht.objects.filter(anliegen=an_stelle.AUSWEIS,
                                                 erledigt_am__isnull=True)
                        .values_list("kundennummer", flat=True))  # fmt: skip
         zurueck = "kunden:nachrichten"
     else:
-        nummern = request.POST.getlist("nummer")
+        nummern = daten.getlist("nummer")
         zurueck = "kunden:verlaengern"
     haushalte = list(
         zugang.filtern(Haushalt.objects.filter(kundennummer__in=nummern), request.user)

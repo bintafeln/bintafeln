@@ -101,6 +101,11 @@ def test_kundenliste_auswahl_und_export(angemeldet, admin):
         seite.get_by_role("button", name=re.compile("Als CSV exportieren")).click()
     inhalt = Path(laden.value.path()).read_text(encoding="utf-8-sig")
     assert "00042" in inhalt and "00041" not in inhalt and "00043" not in inhalt
+    # Ausweise drucken öffnet ein eigenes Fenster (iPad-App), nur mit dem angehakten Haushalt
+    with seite.expect_popup() as fenster:
+        seite.get_by_role("button", name=re.compile("Ausweise drucken")).click()
+    assert re.search(r"/kunden/ausweise/\?.*id=\d+", fenster.value.url)
+    assert seite.url.endswith("/kunden/")
 
 
 def test_online_antrag_oeffnet(seite, admin):
@@ -881,3 +886,27 @@ def test_verlaengern_begruendung_eintragen_und_pflicht(angemeldet, admin):
     expect(seite.get_by_text("1 Ausweis verlängert.")).to_be_visible()
     h.refresh_from_db()
     assert h.ausweis_gueltig_bis > timezone.localdate() + dt.timedelta(days=300)
+
+
+def test_ausweise_drucken_oeffnet_neues_fenster(angemeldet, admin):
+    """Sammeldruck öffnet das PDF in einem eigenen Fenster; die Seite bleibt (iPad-App)."""
+    from apps.kunden.models import Nachricht
+
+    for nummer in ("00061", "00062"):
+        Haushalt.objects.create(kundennummer=nummer)
+        Nachricht.objects.create(kundennummer=nummer, anliegen="verlaengern",
+                                 ergebnis="Verlängert bis 30.11.2027",
+                                 erledigt_am=timezone.now(), erledigt_von="chefin")  # fmt: skip
+    Nachricht.objects.create(kundennummer="00061", anliegen="ausweis")
+    seite = angemeldet(admin)
+    seite.goto(reverse("kunden:verlaengern"))
+    seite.locator('input[name="nummer"][value="00062"]').check()
+    with seite.expect_popup() as fenster:
+        seite.get_by_role("button", name="Angehakte Ausweise drucken (PDF)").click()
+    assert "nummer=00062" in fenster.value.url
+    assert seite.url.endswith(reverse("kunden:verlaengern"))
+    seite.goto(reverse("kunden:nachrichten"))
+    with seite.expect_popup() as fenster:
+        seite.get_by_role("link", name=re.compile("Alle gemeldeten Ausweise drucken")).click()
+    assert "gemeldet=1" in fenster.value.url
+    expect(seite.get_by_role("heading", name="Nachrichten der Ausgabestellen")).to_be_visible()

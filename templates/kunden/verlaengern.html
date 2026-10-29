@@ -92,7 +92,7 @@
     </tbody>
   </table>
   </div>
-  {% if darf_drucken %}<form method="post" action="{% url 'kunden:ausweise_auswahl' %}" id="ausweise-drucken" target="_blank">{% csrf_token %}
+  {% if darf_drucken %}<form method="get" action="{% url 'kunden:ausweise_auswahl' %}" id="ausweise-drucken" target="_blank">
     <button type="submit" class="knopf">Angehakte Ausweise drucken (PDF)</button></form>{% endif %}
 </section>
 {% endif %}
