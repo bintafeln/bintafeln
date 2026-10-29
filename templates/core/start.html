@@ -4,6 +4,7 @@
 <section class="karte">
   <h1>Hallo {{ user.get_short_name|default:user.username }}</h1>
   {% if not rollen_liste %}<p class="sicherung">Ihrem Konto ist noch keine Rolle zugeordnet – bitte an einen Admin wenden.</p>{% endif %}
+  {% if update_warnung %}{% include "core/_update_warnung.html" with w=update_warnung %}{% endif %}
   {% if sicherung %}{% include "core/_sicherung.html" %}{% endif %}
   {% for a in sicherungsfehler %}<p class="sicherung sicherung-fehler"><strong>Sicherungsauftrag „{{ a.name }}“ fehlgeschlagen</strong> ({{ a.letzter_versuch|date:"d.m.Y H:i" }}): {{ a.meldung }}{% if "system.sicherung" in rechte %} <a href="{% url 'core:sicherungen' %}">Zu den Sicherungen</a>{% endif %}</p>{% endfor %}
   {% if faellig %}<p class="sicherung"><a href="{% url 'konten:mitarbeitende' %}">{{ faellig }} Wiedervorlage{{ faellig|pluralize:"n" }} bei den Mitarbeitenden fällig</a> (Führerschein, Belehrung, Schulungen).</p>{% endif %}

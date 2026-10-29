@@ -10,10 +10,11 @@ from django.core.validators import validate_email
 from django.db import transaction
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
 
-from apps.core import geheimnis, mail, module, papierkorb, sicherung
+from apps.core import geheimnis, mail, module, papierkorb, sicherung, update
 from apps.core.forms import EinrichtungForm, EinstellungenForm, MailEinstellungenForm
 from apps.core.middleware import admin_existiert
 from apps.core.models import MailEinstellungen, TafelEinstellungen
@@ -69,6 +70,14 @@ def start(request):
     if rollen.hat_recht(request.user, "system.status"):
         kontext["sicherung"] = sicherung.lese_status()
         kontext["sicherungsfehler"] = sicherung.auftraege_mit_fehler()
+    # Update-Warnung (ADR 0084); die Mail zum Sicherheitsupdate geht bei jedem Besuch hier raus,
+    # auch wenn niemand mit Update-Recht vorbeischaut
+    warnung = update.warnung(update.stand())
+    update.sicherheit_melden(warnung)
+    if warnung and rollen.hat_recht(request.user, "system.update"):
+        bis = TafelEinstellungen.laden().update_hinweis_bis
+        if warnung.art != "neu" or not bis or bis < timezone.localdate():
+            kontext["update_warnung"] = warnung
     kontext["modul_startseite"] = module.startseite(request)
     return render(request, "core/start.html", kontext)
 

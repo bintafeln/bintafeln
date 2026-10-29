@@ -46,6 +46,7 @@ urlpatterns = [
     path("update/", views_update.seite, name="update"),
     path("update/starten/", views_update.starten, name="update_starten"),
     path("update/abrufen/", views_update.abrufen, name="update_abrufen"),
+    path("update/spaeter/", views_update.spaeter, name="update_spaeter"),
     path("sicherungen/", views_sicherung.seite, name="sicherungen"),
     path("sicherungen/neu/", views_sicherung.auftrag, name="sicherungsauftrag_neu"),
     path("sicherungen/<int:pk>/", views_sicherung.auftrag, name="sicherungsauftrag"),

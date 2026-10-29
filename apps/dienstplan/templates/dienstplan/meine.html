@@ -15,7 +15,7 @@
   {% if ausfaelle %}
   <h2>Gemeldete Ausfälle</h2>
   <ul>{% for a in ausfaelle %}<li>{{ a.von|date:"d.m.Y" }}{% if a.bis != a.von %} bis {{ a.bis|date:"d.m.Y" }}{% endif %} ({{ a.get_grund_display }})
-    {% if darf_melden or planen %}<form method="post" action="{% url 'dienstplan:ausfall_loeschen' a.pk %}" class="inline" onsubmit="return confirm('Ausfall zurücknehmen? Wirklich löschen?')">{% csrf_token %}<button type="submit" class="link">zurücknehmen</button></form>{% endif %}</li>{% endfor %}</ul>
+    {% if darf_melden or planen %}{% if not a.gesund_ab %}<form method="post" action="{% url 'dienstplan:ausfall_gesund' a.pk %}" class="inline">{% csrf_token %}<button type="submit" class="link">wieder gesund</button></form>{% else %}<span class="hinweis">wieder da ab {{ a.gesund_ab|date:"d.m.Y" }}</span>{% endif %} <form method="post" action="{% url 'dienstplan:ausfall_loeschen' a.pk %}" class="inline" onsubmit="return confirm('Ausfall zurücknehmen? Wirklich löschen?')">{% csrf_token %}<button type="submit" class="link">zurücknehmen</button></form>{% endif %}</li>{% endfor %}</ul>
   {% endif %}
   {% endif %}
   <p><a href="{% url 'dienstplan:plan' %}">Ganzer Dienstplan</a></p>

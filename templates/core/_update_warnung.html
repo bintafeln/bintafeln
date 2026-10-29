@@ -1,0 +1,27 @@
+{% comment %}Update-Warnung auf der Startseite (ADR 0084), nur mit dem Recht „Programm aktualisieren“.{% endcomment %}
+{% url 'core:update' as update_url %}
+{% if w.art == "sicherheit" %}
+<div class="sicherung update-warnung update-sicherheit" role="alert">
+  <strong>Sicherheitsupdate verfügbar{% if w.version %}: Version {{ w.version }}{% endif %}.</strong>
+  {% if w.tage %}Es steht seit {{ w.tage }} Tag{{ w.tage|pluralize:"en" }} bereit.{% endif %}
+  Bitte so bald wie möglich aktualisieren.
+  {% if w.hinweise %}<ul>{% for h in w.hinweise %}<li>{{ h.text }} <small>(behoben ab {{ h.version }})</small></li>{% endfor %}</ul>{% endif %}
+  <a class="knopf" href="{{ update_url }}">Jetzt aktualisieren</a>
+</div>
+{% elif w.art == "wichtig" %}
+<div class="sicherung update-warnung update-wichtig" role="status">
+  <strong>Wichtige Korrektur verfügbar</strong> (seit {{ w.tage }} Tagen, neueste Version {{ w.version }}).
+  Bitte bald aktualisieren. <a href="{{ update_url }}">Zum Update</a>
+</div>
+{% elif w.art == "abruf" %}
+<div class="sicherung update-warnung update-wichtig" role="status">
+  <strong>Update:</strong> Seit {{ w.tage }} Tagen konnte bintafeln nicht mehr nach neuen Versionen suchen.
+  Wichtige Updates fallen so nicht auf. <a href="{{ update_url }}">Update-Seite prüfen</a>
+</div>
+{% else %}
+<div class="sicherung update-warnung update-neu-hinweis" role="status">
+  <strong>Neue Funktionen verfügbar</strong> (seit {{ w.tage }} Tagen, neueste Version {{ w.version }}).
+  <a href="{{ update_url }}">Was ist neu?</a>
+  <form method="post" action="{% url 'core:update_spaeter' %}" class="inline">{% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">In 30 Tagen erinnern</button></form>
+</div>
+{% endif %}

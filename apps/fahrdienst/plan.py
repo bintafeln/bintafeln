@@ -14,6 +14,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.ausgabe.ampel import WOCHENTAGE, wochentage
+from apps.core import ausfall as ausfallregeln
 from apps.core.feiertage import ist_feiertag
 from apps.fahrdienst.models import (
     Ausfall,
@@ -90,9 +91,10 @@ def fahrtage(von: dt.date, bis: dt.date, e: FahrdienstEinstellungen | None = Non
     return [t for t in tage if faehrt(t, e, land)]
 
 
-def _ausfall(ausfaelle, benutzer_id, datum) -> Ausfall | None:
+def _ausfall(ausfaelle, benutzer_id, datum, nur_krank=False) -> Ausfall | None:
     return next((a for a in ausfaelle
-                 if a.benutzer_id == benutzer_id and a.von <= datum <= a.bis), None)  # fmt: skip
+                 if a.benutzer_id == benutzer_id and ausfallregeln.deckt(a, datum, nur_krank)),
+                None)  # fmt: skip
 
 
 def touren(von: dt.date, bis: dt.date) -> list[Tour]:
@@ -122,8 +124,9 @@ def tage(tage_liste: list[dt.date]) -> list[tuple[dt.date, list[tuple[Tour, list
             for nr in range(1, (tour.plaetze if tour.faehrt_am(datum) else 0) + 1):
                 p = Platz(datum, tour, nr, stamm=besetzung.get((tour.pk, kuerzel(datum), nr)),
                           ersatz=ersatz.get((datum, tour.pk, nr)))  # fmt: skip
-                if p.wer is not None:
-                    p.ausfall = _ausfall(ausfaelle, p.wer.pk, datum)
+                if p.wer is not None:  # wer einspringt, fehlt nur, solange er noch krank ist
+                    p.ausfall = _ausfall(ausfaelle, p.wer.pk, datum,
+                                         nur_krank=p.ersatz is not None)  # fmt: skip
                 plaetze.append(p)
             zeile.append((tour, plaetze))
         ergebnis.append((datum, zeile))
@@ -138,9 +141,10 @@ def platz(datum: dt.date, tour: Tour, nr: int) -> Platz:
 
 
 def eingesetzt(datum: dt.date) -> set[int]:
-    """Benutzer, die an dem Tag schon einen Platz haben (fest oder als Ersatz)."""
+    """Benutzer, die an dem Tag schon einen Platz haben (fest oder als Ersatz; nicht, wer
+    ausfällt)."""
     return {p.wer.pk for _, zeile in tage([datum]) for _, plaetze in zeile for p in plaetze
-            if p.wer is not None}  # fmt: skip
+            if p.wer is not None and not p.ausfall}  # fmt: skip
 
 
 def verfuegbar(datum: dt.date) -> tuple[list, list]:
@@ -148,7 +152,7 @@ def verfuegbar(datum: dt.date) -> tuple[list, list]:
 
     Nicht dabei: wer ausfällt oder an dem Tag schon einen Platz hat."""
     belegt = eingesetzt(datum)
-    belegt |= set(Ausfall.objects.filter(von__lte=datum, bis__gte=datum)
+    belegt |= set(Ausfall.objects.filter(ausfallregeln.krank_am(datum))
                   .values_list("benutzer_id", flat=True))  # fmt: skip
     tag = kuerzel(datum)
     springer = [s.benutzer for s in Springer.objects.select_related("benutzer")
@@ -240,6 +244,35 @@ def ausfall_melden(benutzer, von, bis, grund, anmerkung, eingetragen_von,
                                anmerkung=anmerkung, eingetragen_von=eingetragen_von)  # fmt: skip
     transaction.on_commit(lambda: _benachrichtigen(a, adresse))
     return a
+
+
+def gesund_melden(a: Ausfall, ab: dt.date, adresse: str = "") -> bool:
+    """Wieder gesund ab ``ab`` (ADR 0085): Die Person kann einspringen, ihre festen Plätze bleiben
+    frei. False, wenn der Ausfall dann schon vorbei ist."""
+    if ab > a.bis or a.gesund_ab:
+        return False
+    a.gesund_ab = max(ab, a.von)
+    a.save(update_fields=["gesund_ab"])  # wer es war, hält das Änderungsprotokoll fest
+    transaction.on_commit(lambda: _gesund_benachrichtigen(a, adresse))
+    return True
+
+
+def _gesund_benachrichtigen(a: Ausfall, adresse: str) -> None:
+    from apps.core import mail, telegram
+
+    e = FahrdienstEinstellungen.laden()
+    frei = [p for p in einsaetze(a.benutzer, a.gesund_ab, a.bis) if p.fehlt]
+    text = (f"{a.benutzer} ist ab {a.gesund_ab:%d.%m.%Y} wieder da und kann einspringen. Die "
+            "eigenen Touren bis " f"{a.bis:%d.%m.%Y} bleiben frei bzw. beim Ersatz"
+            + (f" ({len(frei)} noch ohne Ersatz)" if frei else "") + "."
+            + (f"\n\nPlan: {adresse}" if adresse else ""))  # fmt: skip
+    telegram.benachrichtigen(e, f"🟩 Fahrdienst: {text}")
+    an = empfaenger() if mail.eingerichtet() else []
+    if an:
+        try:
+            mail.senden(f"Fahrdienst: {a.benutzer} wieder da", text, an)
+        except mail.MailFehler as fehler:
+            log.warning("Fahrdienst-Gesundmeldung %s: Mail nicht gesendet: %s", a.pk, fehler)
 
 
 def fristen_anwenden(heute: dt.date | None = None) -> int:

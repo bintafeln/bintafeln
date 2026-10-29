@@ -82,6 +82,7 @@ def platz_dialog(kennung: str) -> dict | None:
         **info,
         "kennung": kennung,
         "selbst_aus": info["kann_ausfallen"] and info["wer_konto"] in pins,
+        "selbst_gesund": info.get("kann_gesund") and info["wer_konto"] in pins,
         "einspringer": [
             (f"{wert}:{konto}", name) for wert, name, konto in info["frei"] if konto in pins
         ]
@@ -101,7 +102,7 @@ def aendern(aushang: Aushang, kennung: str, daten, basis: str) -> str:
     art, teil = _art(kennung)
     if art is None or art.platz(teil) is None:
         raise ValueError("Diesen Platz gibt es nicht (mehr).")
-    werte = {k: daten.get(k, "") for k in ("aktion", "grund", "helfer", "gast")}
+    werte = {k: daten.get(k, "") for k in ("aktion", "grund", "dauer", "bis", "helfer", "gast")}
     person_wert = daten.get("person", "")
     if werte["aktion"] == "einspringen":  # die Wahl „Helfer:Konto“ ist zugleich die Person
         werte["helfer"], _, person_wert = daten.get("einspringer", "").partition(":")

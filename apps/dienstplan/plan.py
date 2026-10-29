@@ -14,6 +14,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.ausgabe.ampel import WOCHENTAGE, wochentage
+from apps.core import ausfall as ausfallregeln
 from apps.core.feiertage import ist_feiertag
 from apps.dienstplan.models import (
     Aufgabe,
@@ -87,9 +88,10 @@ def ausgabetage(stelle: DienstStelle, von: dt.date, bis: dt.date, tag: str = "")
             and not (land and ist_feiertag(d, land))]  # fmt: skip
 
 
-def _ausfall(ausfaelle, helfer_id, datum) -> Ausfall | None:
+def _ausfall(ausfaelle, helfer_id, datum, nur_krank=False) -> Ausfall | None:
     return next((a for a in ausfaelle
-                 if a.helfer_id == helfer_id and a.von <= datum <= a.bis), None)  # fmt: skip
+                 if a.helfer_id == helfer_id and ausfallregeln.deckt(a, datum, nur_krank)),
+                None)  # fmt: skip
 
 
 def plaetze(daten: list[dt.date], aufgaben=None) -> dict[dt.date, list[Platz]]:
@@ -124,8 +126,8 @@ def plaetze(daten: list[dt.date], aufgaben=None) -> dict[dt.date, list[Platz]]:
             if a.wochentag != kuerzel(datum):
                 continue
             p = Platz(datum, a, stamm=fest.get(a.pk), ersatz=ersatz.get((datum, a.pk)))
-            if p.wer is not None:
-                p.ausfall = _ausfall(ausfaelle, p.wer.pk, datum)
+            if p.wer is not None:  # wer einspringt, fehlt nur, solange er noch krank ist
+                p.ausfall = _ausfall(ausfaelle, p.wer.pk, datum, nur_krank=p.ersatz is not None)
             liste.append(p)
         ergebnis[datum] = liste
     return ergebnis
@@ -147,14 +149,14 @@ def platz(datum: dt.date, aufgabe: Aufgabe) -> Platz:
 
 
 def eingesetzt(datum: dt.date) -> set[int]:
-    """Helfer, die an dem Tag schon irgendwo einen Platz haben."""
-    return {p.wer.pk for p in plaetze([datum])[datum] if p.wer is not None}
+    """Helfer, die an dem Tag schon irgendwo einen Platz haben (nicht: ausgefallen)."""
+    return {p.wer.pk for p in plaetze([datum])[datum] if p.wer is not None and not p.ausfall}
 
 
 def verfuegbar(datum: dt.date) -> list[Helfer]:
     """Wer an dem Tag einspringen kann: aktiv, nicht ausgefallen, noch nirgends eingeteilt."""
     belegt = eingesetzt(datum) | set(
-        Ausfall.objects.filter(von__lte=datum, bis__gte=datum).values_list("helfer_id", flat=True)
+        Ausfall.objects.filter(ausfallregeln.krank_am(datum)).values_list("helfer_id", flat=True)
     )
     helfer = (Helfer.objects.filter(aktiv=True).exclude(benutzer__is_active=False)
               .exclude(pk__in=belegt).select_related("benutzer"))  # fmt: skip
@@ -240,6 +242,35 @@ def ausfall_melden(helfer, von, bis, grund, anmerkung, eingetragen_von, adresse=
                                anmerkung=anmerkung, eingetragen_von=eingetragen_von)  # fmt: skip
     transaction.on_commit(lambda: _benachrichtigen(a, adresse))
     return a
+
+
+def gesund_melden(a: Ausfall, ab: dt.date, adresse: str = "") -> bool:
+    """Wieder gesund ab ``ab`` (ADR 0085): Die Person kann einspringen, ihre festen Plätze bleiben
+    frei. False, wenn der Ausfall dann schon vorbei ist."""
+    if ab > a.bis or a.gesund_ab:
+        return False
+    a.gesund_ab = max(ab, a.von)
+    a.save(update_fields=["gesund_ab"])  # wer es war, hält das Änderungsprotokoll fest
+    transaction.on_commit(lambda: _gesund_benachrichtigen(a, adresse))
+    return True
+
+
+def _gesund_benachrichtigen(a: Ausfall, adresse: str) -> None:
+    from apps.core import mail, telegram
+
+    e = DienstplanEinstellungen.laden()
+    frei = [p for p in einsaetze(a.helfer, a.gesund_ab, a.bis) if p.fehlt]
+    text = (f"{a.helfer} ist ab {a.gesund_ab:%d.%m.%Y} wieder da und kann einspringen. Die "
+            "eigenen Dienste bis " f"{a.bis:%d.%m.%Y} bleiben frei bzw. beim Ersatz"
+            + (f" ({len(frei)} noch ohne Ersatz)" if frei else "") + "."
+            + (f"\n\nPlan: {adresse}" if adresse else ""))  # fmt: skip
+    telegram.benachrichtigen(e, f"🟩 Dienstplan: {text}")
+    an = empfaenger(einsaetze(a.helfer, a.gesund_ab, a.bis)) if mail.eingerichtet() else []
+    if an:
+        try:
+            mail.senden(f"Dienstplan: {a.helfer} wieder da", text, an)
+        except mail.MailFehler as fehler:
+            log.warning("Dienstplan-Gesundmeldung %s: Mail nicht gesendet: %s", a.pk, fehler)
 
 
 def ersatz_eintragen(datum, aufgabe, helfer, von, gast: str = "") -> Ersatz | None:

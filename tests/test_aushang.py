@@ -266,7 +266,7 @@ def test_sich_am_monitor_austragen_nur_mit_eigener_pin(fahrer, heute, client):
     leute, tour, aushang = fahrer
     kennung = f"fahrdienst|{heute:%Y-%m-%d}|{tour.pk}|1"
     html = client.get(_platz(aushang), {"platz": kennung}).content.decode()
-    assert "Ich bin Max Mustermann und kann an diesem Tag nicht" in html
+    assert "Ich bin Max Mustermann und kann nicht" in html and "Wie lange" in html
     assert "Für andere eintragen" in html and "Eva Lindner" in html  # Eva plant
     daten = {"platz": kennung, "aktion": "ausfall", "person": leute["max"].pk, "grund": "krank"}
     # Jans PIN passt nicht zu Max; Jan darf Max auch nicht austragen

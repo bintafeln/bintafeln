@@ -1119,8 +1119,11 @@ Aushang-Monitore“ (Recht „Aushang-Monitore einrichten“, Vorgabe Büro).
 - **Antippen** zeigt einen Plan groß und ganz (ohne Schieben); oben je Seite ein Knopf („Fahrer
   Oktober“, „Ausgabe Mitte Freitag“ …), „Übersicht“ oder 30 Sekunden ohne Eingabe führen zurück.
   Dort ein **QR-Code** zum Ändern am eigenen Handy (mit Anmeldung) und, wenn eingeschaltet,
-  **Ändern am Monitor mit persönlicher PIN**: sich austragen, einspringen, wer plant auch Ersatz
-  und Gäste. Jede Person legt ihre PIN (mindestens 6 Ziffern, gehasht gespeichert) unter
+  **Ändern am Monitor mit persönlicher PIN**: sich austragen (auch für mehrere Wochen oder bis
+  zu einem Datum), wieder gesund melden, einspringen, wer plant auch Ersatz und Gäste.
+  **Wieder gesund** (auch im Programm unter „Meine Dienste/Einsätze“, ADR 0085): Die Person kann
+  ab heute einspringen, ihre festen Plätze bleiben aber frei bzw. beim Ersatz; sie wird nie
+  automatisch wieder eingetragen, weil dort vielleicht schon jemand anderes steht. Jede Person legt ihre PIN (mindestens 6 Ziffern, gehasht gespeichert) unter
   „Mein Konto → PIN für Aushang-Monitore“ fest; nach 5 Fehlversuchen 15 Minuten gesperrt. Im
   Änderungsprotokoll steht die Person.
 - Weitere Module können über `Modul.aushang` eigene Seiten anbieten.
@@ -1541,6 +1544,23 @@ die Person, der der Projektordner gehört, mit deren Konto und Home-Ordner (nur 
 also dieselben SSH-Schlüssel, `known_hosts` und git-Einstellungen wie beim `./betrieb update`
 auf der Kommandozeile. **Einmalig** kommt der Dienst mit dem ersten
 `./betrieb update` auf der Kommandozeile dazu; danach geht jedes Update in der Oberfläche.
+
+**Warnung bei wichtigen Updates (ADR 0084).** Jede Version hat eine Stufe, die aus dem Label des
+Pull Requests kommt (`sicherheit`, `wichtig`, `neue-funktion`, sonst „klein“); `version.yml`
+schreibt sie als `stufe=…` in das annotierte Versions-Tag und legt die Labels an, falls sie
+fehlen. Wer das Recht „Programm aktualisieren“ hat, sieht auf der Startseite:
+
+| Stufe | Warnung |
+|---|---|
+| Sicherheitsupdate | sofort, rot, nicht ausblendbar; dazu einmal eine Mail an alle mit dem Recht |
+| Wichtige Korrektur | gelb, wenn sie seit 7 Tagen bereitsteht |
+| Neue Funktionen | blau nach 30 Tagen, „In 30 Tagen erinnern“ blendet sie 30 Tage aus |
+| klein | nie, auch nicht nach langer Zeit |
+
+Dazu ein gelber Hinweis, wenn seit 14 Tagen keine Versionen mehr abgerufen werden konnten. Wird
+eine Lücke erst später bekannt, trägt man sie in `docs/sicherheitshinweise.txt` auf `main` ein
+(„VERSION Text“, VERSION = erste Version ohne die Lücke): Der Dienst liest die Datei bei jedem
+Abruf, auch auf Installationen mit alter Version, und die Startseite warnt mit diesem Text.
 
 Auf der Kommandozeile:
 

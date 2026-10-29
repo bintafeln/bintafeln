@@ -172,6 +172,17 @@ h1 { font-size: 1.5rem; margin: .25rem 0 1rem; }
 /* Stand der Sicherung auf der Startseite: bis 5 Tage grün, bis 10 Tage gelb */
 .sicherung-stand.sicherung-ok { background: #e3f1e0; color: #1e5a1e; }
 .sicherung-alt { background: #fdf3d8; color: #6b4e00; }
+/* Update-Warnung (ADR 0084): Sicherheit rot, wichtige Korrektur gelb, neue Funktionen blau */
+.update-warnung form.inline { margin-left: .5rem; }
+.update-warnung ul { margin: .4rem 0; }
+.update-sicherheit { background: #f8e1e1; color: var(--fehler); border-left: 4px solid var(--fehler); }
+.update-wichtig { background: #fdf3d8; color: #6b4e00; }
+.update-neu-hinweis { background: #e3eef9; color: #1d3f66; }
+.stufe { display: inline-block; padding: .05rem .45rem; border-radius: 999px; font-size: .8rem;
+         font-weight: 600; vertical-align: middle; }
+.stufe-sicherheit { background: #f8e1e1; color: var(--fehler); }
+.stufe-wichtig { background: #fdf3d8; color: #6b4e00; }
+.stufe-neu { background: #e3eef9; color: #1d3f66; }
 
 h2 { font-size: 1.2rem; margin: 1.5rem 0 .5rem; }
 h3 { font-size: 1.05rem; margin: 1.25rem 0 .5rem; }
@@ -1221,6 +1232,9 @@ body.aushang-ruhig { cursor: none; }
 .aushang-aktion summary { cursor: pointer; font-weight: 600; color: var(--akzent-dunkel); padding: .25rem 0; }
 .aushang-felder { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: .75rem; }
 .aushang-felder label { display: flex; flex-direction: column; gap: .2rem; flex: 1 1 12rem; font-weight: 600; }
+/* Ausfall am Monitor: Datum nur bei „bis einschließlich …“ (ohne JavaScript) */
+.aushang-felder .aushang-bis { display: none; }
+form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aushang-bis { display: flex; }
 .aushang-felder select, .aushang-felder input { font: inherit; padding: .55rem .6rem; border: 1px solid var(--rand);
   border-radius: .4rem; min-height: 3rem; }
 .aushang-dialog .knopf { width: auto; }

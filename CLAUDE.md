@@ -247,7 +247,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Sicherungsaufträge (`SicherungsAuftrag`, ADR 0042) per psql aus der Datenbank und meldet den
   Stand zurück. Update aus der Oberfläche: `apps/core/update.py` tauscht nur Dateien mit dem
   Dienst `updater` (`docker/updater/updater.sh`) aus; bintafeln selbst bekommt nie Zugriff auf
-  Docker (ADR 0043).
+  Docker (ADR 0043). Warnung bei wichtigen Updates (ADR 0084): `update.warnung()`, Stufe aus
+  dem PR-Label (`sicherheit`, `wichtig`, `neue-funktion`) als `stufe=…` im Tag, später bekannte
+  Lücken in `docs/sicherheitshinweise.txt`. **Beim Anlegen eines PR die passende Stufe als Label
+  vorschlagen.**
 - Zuschaltbare Module (ADR 0049): eigene App mit `modul.py` (`apps.core.module.Modul`: Rechte,
   Vorgaben, Menü, Hilfe-Kapitel mit Vorlage in der App, Pfade, Bereich der Datensicherung),
   eingetragen in `settings.BINTAFELN_MODULE`; jede Tafel schaltet sie in den Tafel-Einstellungen
@@ -265,6 +268,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Regeln in `apps/fahrdienst/plan.py`, Plan aus fester Besetzung, Ausfall und Ersatz je Tag).
   `dienstplan` (ADR 0077, wie Fahrdienst je Ausgabestelle und Ausgabetag, Regeln in
   `apps/dienstplan/plan.py`, `Helfer` mit oder ohne Konto). Telegram für beide: `apps/core/telegram.py`.
+  Ausfälle beider: Dauer und „wieder gesund“ (`Ausfall.gesund_ab`, nie automatisch zurück) in
+  `apps/core/ausfall.py` (ADR 0085).
   `aushang` (ADR 0080, Aushang-Monitore ohne Anmeldung über den Schlüssel im Link; Seiten bieten
   Module über `Modul.aushang` als `Aushangseite` an, z. B. `apps/dienstplan/aushang.py`; Inhalt in
   `apps/aushang/anzeige.py`, Wechsel, große Ansicht und Dialog in `static/js/aushang.js`; nur Namen
