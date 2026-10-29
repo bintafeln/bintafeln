@@ -2,21 +2,35 @@
   oder Einladungen. Menü: „Serienbriefe“.</p>
 <h3>Vorlage</h3>
 <p>Unter „Vorlagen und Versände“ stehen fertige Vorlagen (Dank für Spenden, Erinnerung Mitgliedsbeitrag, Einladung
-  Mitgliederversammlung), die Sie anpassen oder ergänzen können. Platzhalter in geschweiften Klammern setzt bintafeln je
-  Empfänger ein, z. B. <code>{anrede}</code> („Sehr geehrte Frau Muster,“), <code>{spendensumme}</code> oder
-  <code>{beitrag_offen}</code>. Die Liste steht neben dem Text der Vorlage. Absätze durch eine Leerzeile trennen.</p>
+  Mitgliederversammlung), die Sie anpassen oder ergänzen können. Den Text gestalten Sie wie in einem Schreibprogramm:
+  Markieren Sie Text und wählen Sie oben fett, kursiv, unterstrichen, Überschrift, Schriftgröße (klein, normal, groß),
+  Ausrichtung (links, Mitte, rechts, Blocksatz), Aufzählung oder Nummerierung, Textfarbe, Markieren oder einen farbigen
+  Kasten. Die Farbe wählt das kleine Feld neben dem Knopf. Im Reiter „HTML“ sehen Sie den Quelltext.</p>
+<p>Platzhalter setzt bintafeln je Empfänger ein, z. B. die Briefanrede („Sehr geehrte Frau Muster,“), die
+  Spendensumme oder den offenen Beitrag. Sie stehen rechts als Kärtchen: <strong>in den Text ziehen</strong> oder
+  <strong>antippen</strong> – dann landet der Platzhalter an der Stelle, an der Sie zuletzt im Text geschrieben haben
+  (so geht es auch auf dem iPad). Waren Sie zuletzt im Betreff, kommt er dorthin. Im Text erscheint er als farbiges
+  Feld, das Sie wie ein Wort löschen können; im Reiter „HTML“ und im Betreff steht er in geschweiften Klammern, z. B.
+  <code>{anrede}</code>.</p>
+<p><strong>Briefkopf</strong>: Logo, Name, Anschrift und Kontakt der Tafel aus den Tafel-Einstellungen oben rechts;
+  ausschalten, wenn Sie auf eigenes Briefpapier drucken. <strong>Fußzeile</strong>: steht unten auf jeder Seite und
+  unter jeder E-Mail, z. B. die Bankverbindung. <strong>Vorschau (PDF)</strong> öffnet den Brief mit einem erfundenen
+  Empfänger in einem neuen Tab, ohne zu speichern.</p>
+{% hilfe_bild "serienbriefe-vorlage" "① Text gestalten, ② ein Platzhalter im Text, ③ Platzhalter-Kärtchen zum Ziehen oder Antippen, ④ Briefkopf ein oder aus, ⑤ den Brief vorab als PDF ansehen." %}
 <h3>Erstellen</h3>
 <ol>
   <li>Vorlage wählen.</li>
-  <li>Empfänger: Adressen nach Kategorie, Mitglieder (z. B. nur mit offenem Beitrag), Spender eines Jahres (ggf. ab
-    einer Mindestsumme){% if "serienbriefe.kunden" in rechte %} oder Kunden (Haushalte, ggf. nur bestimmte
-    Kundengruppen){% endif %}.</li>
+  <li>Empfänger im Auswahlmenü: Adressen nach Kategorie, Mitglieder (z. B. nur mit offenem Beitrag), Spender eines
+    Jahres (ggf. ab einer Mindestsumme){% if "serienbriefe.kunden" in rechte %} oder Kunden (Haushalte, ggf. nur
+    bestimmte Kundengruppen){% endif %}. Darunter erscheinen nur die Filter, die dazu passen. Kategorien, Arten und
+    Kundengruppen wählen Sie in einem aufklappbaren Menü mit Häkchen; leer heißt alle.</li>
   <li>Versand: Briefe als PDF oder E-Mail. „Vorschau“ zeigt die Empfänger, wer übersprungen wird (ohne Anschrift bzw.
     E-Mail) und einen Beispielbrief.</li>
   <li>„PDF erzeugen“ und drucken – die Anschrift passt in Fensterumschläge DIN lang – oder „E-Mails senden“. Jede E-Mail
-    geht einzeln an einen Empfänger.</li>
+    geht einzeln an einen Empfänger, gestaltet wie der Brief.</li>
 </ol>
-{% hilfe_bild "serienbriefe-auswahl" "① Vorlage, ② Empfänger und ③ Versand wählen." %}
+{% hilfe_bild "serienbriefe-auswahl" "① Vorlage wählen, ② die Empfänger wählen, ③ darunter erscheinen nur die Filter, die dazu passen (hier die Mindestsumme der Spender)." %}
+{% hilfe_bild "serienbriefe-kundengruppen" "Mehrere Werte wählen: ① das Menü aufklappen, ② bei langen Listen oben suchen, ③ Häkchen setzen. Zugeklappt steht oben, was gewählt ist; leer heißt alle." %}
 {% hilfe_bild "serienbriefe-vorschau" "① „Vorschau“ zeigt ② die Empfänger und einen Beispielbrief, ③ dann das PDF erzeugen." %}
 <div class="tipp">Für Adressen und Spender ist „nur mit Einwilligung“ vorgewählt: Dann bekommt nur Post bzw. E-Mail,
   wer im Adressbuch eine Einwilligung mit Datum hat. Mitglieder und Kunden schreiben Sie im Rahmen der Mitgliedschaft

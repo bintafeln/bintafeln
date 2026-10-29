@@ -3,6 +3,7 @@ Warteliste, Wochenübersicht, Links, Abrechnung, Listen (Werkzeug und Anleitung 
 ``hilfe_bilder.py``)."""
 
 import datetime as dt
+import re
 
 from django.urls import reverse
 from django.utils import timezone
@@ -666,3 +667,34 @@ def test_hilfe_bild_warteliste(angemeldet, admin, muster):
             status.get_by_role("button", name="Status setzen"), nummer=3, von="rechts", laenge=50
         ),
     )
+
+
+def test_hilfe_bild_warteliste_abgleich(angemeldet, admin, muster):
+    from apps.antraege.models import Antrag
+    from apps.kunden.models import Haushalt, Person
+    from apps.warteliste import ablauf
+
+    _module("warteliste")
+    heute = timezone.localdate()
+    h = Haushalt.objects.create(kundennummer="00077", ausweis_gueltig_bis=heute - dt.timedelta(90),
+                                strasse="Beispielweg 3", plz="12345")  # fmt: skip
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Gisela", nachname="Probe",
+                          geburtsdatum=dt.date(1981, 2, 18))  # fmt: skip
+    a = Antrag.objects.create(
+        vorname="Gisela",
+        nachname="Probe",
+        geburtsdatum=dt.date(1981, 2, 7),
+        strasse="Beispielweg 3",
+        plz="12345",
+        email="gisela@example.org",
+    )
+    Antrag.objects.filter(pk=a.pk).update(eingegangen_am=timezone.now() - dt.timedelta(days=5))
+    ablauf.automatik()
+    seite = oeffnen(angemeldet, admin, reverse("warteliste:abgleich"), breite=1300)
+    fall = seite.locator("section.karte section.karte").first
+    aufnehmen(seite, "warteliste-abgleich", fall,
+              Marke(fall.locator("li.grund-rot").first, nummer=1, von="rechts", laenge=60),
+              Marke(fall.get_by_role("button", name=re.compile("Ja, derselbe Haushalt")), nummer=2,
+                    von="unten", laenge=35),
+              Marke(fall.get_by_role("button", name=re.compile("Nein")), nummer=3, von="unten",
+                    laenge=35))  # fmt: skip

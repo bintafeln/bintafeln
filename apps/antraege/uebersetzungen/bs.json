@@ -71,6 +71,7 @@
   "absenden": "Pošalji zahtjev",
   "danke_titel": "Hvala vam!",
   "danke_nummer": "Vaš zahtjev je zaprimljen. Broj vašeg zahtjeva: {nummer}",
+  "danke_eingang": "Vaš zahtjev je zaprimljen.",
   "bestaetigung": "Provjerit ćemo vaš zahtjev i javiti vam se. Kada vas pozovemo, ponesite izvorne dokaze.",
   "mail_gesendet": "Poslali smo potvrdu na {email}.",
   "mail_betreff": "Vaš zahtjev kod {tafel}",

@@ -7,11 +7,13 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from apps.core import mail, papierkorb
+from apps.core.html import bereinigen
 from apps.core.models import TafelEinstellungen
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.konten.views import nicht_in_demo
 from apps.serienbriefe import empfaenger as emp
+from apps.serienbriefe import gestaltung
 from apps.serienbriefe.brief import briefe_pdf
 from apps.serienbriefe.forms import AuswahlForm, VorlageForm
 from apps.serienbriefe.models import Versand, Vorlage
@@ -34,8 +36,23 @@ def vorlage(request, pk=None):
         messages.success(request, f"Vorlage „{v.name}“ gespeichert.")
         return redirect("serienbriefe:vorlagen")
     return render(request, "serienbriefe/vorlage.html", {
-        "form": form, "v": v, "platzhalter": emp.platzhalter(),
+        "form": form, "v": v, "karten": emp.karten(),
     })  # fmt: skip
+
+
+@require_POST
+@never_cache
+@rollen.recht_erforderlich("serienbriefe.erstellen")
+def vorlage_vorschau(request):
+    """Der Brief aus dem (noch nicht gespeicherten) Formular mit einem erfundenen Empfänger."""
+    d = request.POST
+    v = Vorlage(name=d.get("name", ""), betreff=d.get("betreff", ""),
+                text=gestaltung.speichern(d.get("text", "")), briefkopf=bool(d.get("briefkopf")),
+                fusszeile=gestaltung.speichern(d.get("fusszeile", "")))  # fmt: skip
+    beispiel = emp.Empfaenger("vorschau", "Erika Beispiel", emp.BEISPIEL_ANSCHRIFT,
+                              "erika@example.org", emp.BEISPIEL)  # fmt: skip
+    betreff, html = gestaltung.brief(v, beispiel, _allgemein(timezone.localdate().year))
+    return pdf_antwort(briefe_pdf([(beispiel.anschrift, betreff, html)], v), "vorschau.pdf")
 
 
 @require_POST
@@ -82,14 +99,7 @@ def erstellen(request):
         schritt = request.POST.get("schritt", "vorschau")
         if schritt == "pdf" and erreichbar:
             inhalt = briefe_pdf(
-                [
-                    (
-                        e.anschrift,
-                        emp.einsetzen(v.betreff, e, allgemein),
-                        emp.einsetzen(v.text, e, allgemein),
-                    )
-                    for e in erreichbar
-                ]
+                [(e.anschrift, *gestaltung.brief(v, e, allgemein)) for e in erreichbar], v
             )
             Versand.objects.create(von=request.user.get_username(), art=Versand.Art.BRIEF,
                                    vorlage=v.name, betreff=v.betreff, auswahl=_beschreibung(d),
@@ -103,7 +113,10 @@ def erstellen(request):
             "beispiel": erreichbar[0] if erreichbar else None,
             "beispiel_betreff": emp.einsetzen(v.betreff, erreichbar[0], allgemein)
             if erreichbar else "",
-            "beispiel_text": emp.einsetzen(v.text, erreichbar[0], allgemein) if erreichbar else "",
+            # bereinigtes HTML mit maskierten Werten (gestaltung.einsetzen)
+            "beispiel_text": bereinigen(gestaltung.brief(v, erreichbar[0], allgemein)[1])
+            if erreichbar else "",
+            "beispiel_fuss": bereinigen(gestaltung.als_html(v.fusszeile)),
             "mail_bereit": mail.eingerichtet(),
         }  # fmt: skip
     return render(request, "serienbriefe/erstellen.html", kontext)
@@ -115,8 +128,8 @@ def _senden(request, v, d, erreichbar, allgemein):
     gesendet, fehler = [], []
     for e in erreichbar:
         try:
-            mail.senden(emp.einsetzen(v.betreff, e, allgemein),
-                        emp.einsetzen(v.text, e, allgemein), [e.email])  # fmt: skip
+            betreff, text, html = gestaltung.mail(v, e, allgemein)
+            mail.senden(betreff, text, [e.email], html=html)
         except mail.MailFehler as grund:
             fehler.append(f"{e.name}: {grund}")
             if len(fehler) >= 3 and not gesendet:

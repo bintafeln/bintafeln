@@ -259,9 +259,7 @@ def _empfaenger() -> list[str]:
 
 def sicherheit_melden(w: Warnung | None) -> None:
     """Einmal je Sicherheitsupdate eine Mail an alle mit dem Recht „Programm aktualisieren“."""
-    import logging
 
-    from apps.core import mail
     from apps.core.models import TafelEinstellungen
 
     if not w or w.art != "sicherheit":
@@ -284,7 +282,7 @@ def sicherheit_melden(w: Warnung | None) -> None:
         "Bitte bald aktualisieren: in bintafeln unter Einstellungen → Update oder auf dem Server "
         "mit ./betrieb update.",
     ]
-    try:
-        mail.senden("bintafeln: Sicherheitsupdate verfügbar", "\n".join(zeilen), an)
-    except mail.MailFehler as fehler:
-        logging.getLogger(__name__).warning("Mail zum Sicherheitsupdate nicht gesendet: %s", fehler)
+    from apps.core import benachrichtigung
+
+    benachrichtigung.melden("sicherheitsupdate", an, "bintafeln: Sicherheitsupdate verfügbar",
+                            "\n".join(zeilen))  # fmt: skip

@@ -217,3 +217,12 @@ def test_mitgliedschaft_direkt_bei_der_adresse(admin_client, benutzer_mit_rolle,
     client.post(reverse("adressen:neu"), {"art": "person", "nachname": "Ohne", **{
         k: v for k, v in daten.items() if k.startswith("m-") or k == "ist_mitglied"}})  # fmt: skip
     assert not Mitglied.objects.filter(adresse__nachname="Ohne").exists()
+
+
+def test_liste_sortiert_nummern_wie_zahlen(admin_client):
+    for nr in ("10", "2", "1"):
+        a = Adresse.objects.create(nachname=f"Probe{nr}x", vorname="Erfunden")
+        Mitglied.objects.create(adresse=a, nummer=nr, art="Fördermitglied",
+                                eintritt=dt.date(2020, 1, 1))  # fmt: skip
+    seite = admin_client.get(reverse("mitglieder:liste")).content.decode()
+    assert seite.index("Probe1x") < seite.index("Probe2x") < seite.index("Probe10x")

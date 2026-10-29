@@ -1,3 +1,4 @@
+import datetime as dt
 import uuid
 
 from auditlog.registry import auditlog
@@ -50,6 +51,12 @@ class TafelEinstellungen(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(100)],
         help_text="0 = nicht sichtbar, 100 = volle Stärke. Die Inhalte stehen immer auf weißen "
         "Karten und bleiben lesbar.",
+    )  # fmt: skip
+    hintergrund_wechsel = models.PositiveSmallIntegerField(
+        "Hintergrundbilder wechseln alle … Sekunden", default=60,
+        validators=[MinValueValidator(10), MaxValueValidator(3600)],
+        help_text="Gilt, wenn es mehrere Bilder gibt (unten „Weitere Bilder“): Sie blenden "
+        "langsam ineinander über, beim nächsten Seitenaufruf geht es mit dem nächsten weiter.",
     )  # fmt: skip
     strasse = models.CharField("Straße und Hausnummer", max_length=200, blank=True)
     plz = models.CharField("PLZ", max_length=10, blank=True)
@@ -104,6 +111,19 @@ class TafelEinstellungen(models.Model):
         return self.hintergrund or self.hintergrund_anmeldung
 
     @property
+    def anmeldung_bilder(self) -> list[str]:
+        """Adressen der Hintergrundbilder der Anmeldeseite, in der Reihenfolge des Wechsels."""
+        erstes = [self.hintergrund_anmeldung.url] if self.hintergrund_anmeldung else []
+        return erstes + Hintergrundbild.adressen(Hintergrundbild.Bereich.ANMELDUNG)
+
+    @property
+    def seiten_bilder(self) -> list[str]:
+        """Bilder der übrigen Seiten; ohne eigene die der Anmeldeseite."""
+        erstes = [self.hintergrund.url] if self.hintergrund else []
+        eigene = erstes + Hintergrundbild.adressen(Hintergrundbild.Bereich.SEITEN)
+        return eigene or self.anmeldung_bilder
+
+    @property
     def hintergrund_deckkraft(self) -> str:
         """Für CSS opacity, immer mit Punkt (unabhängig von der Sprache)."""
         return f"{self.hintergrund_staerke / 100:.2f}"
@@ -121,6 +141,91 @@ class TafelEinstellungen(models.Model):
     def anschrift(self) -> str:
         ort = " ".join(teil for teil in (self.plz, self.ort) if teil)
         return ", ".join(teil for teil in (self.strasse, ort) if teil)
+
+
+class Hintergrundbild(models.Model):
+    """Weitere Hintergrundbilder; sie wechseln mit dem ersten aus den Tafel-Einstellungen ab."""
+
+    class Bereich(models.TextChoices):
+        ANMELDUNG = "anmeldung", "Anmeldeseite"
+        SEITEN = "seiten", "übrige Seiten"
+
+    bereich = models.CharField("Für", max_length=10, choices=Bereich.choices)
+    bild = models.ImageField("Bild", upload_to="oeffentlich/hintergrund/")
+    reihenfolge = models.PositiveIntegerField("Reihenfolge", default=0)
+
+    class Meta:
+        ordering = ["bereich", "reihenfolge", "pk"]
+        verbose_name = "Hintergrundbild"
+        verbose_name_plural = "Hintergrundbilder"
+
+    def __str__(self):
+        return f"Hintergrundbild ({self.get_bereich_display()})"
+
+    @classmethod
+    def adressen(cls, bereich: str) -> list[str]:
+        return [h.bild.url for h in cls.objects.filter(bereich=bereich)]
+
+
+class BenachrichtigungsWahl(models.Model):
+    """Wie oft eine Person eine Art von Benachrichtigung bekommt (ADR 0086); ohne Eintrag sofort."""
+
+    benutzer = models.ForeignKey("konten.Benutzer", on_delete=models.CASCADE,
+                                 related_name="benachrichtigungen")  # fmt: skip
+    art = models.CharField("Art", max_length=50)
+    haeufigkeit = models.CharField("Wie oft", max_length=20, default="sofort")
+
+    class Meta:
+        unique_together = [("benutzer", "art")]
+        verbose_name = "Benachrichtigungs-Wahl"
+        verbose_name_plural = "Benachrichtigungs-Wahlen"
+
+    def __str__(self):
+        return f"{self.benutzer}: {self.art} {self.haeufigkeit}"
+
+
+class BenachrichtigungsZeit(models.Model):
+    """Wann gesammelte Benachrichtigungen kommen: Uhrzeit (täglich) und Wochentag (wöchentlich)."""
+
+    benutzer = models.OneToOneField("konten.Benutzer", on_delete=models.CASCADE,
+                                    related_name="benachrichtigungszeit")  # fmt: skip
+    uhrzeit = models.TimeField("Uhrzeit", default=dt.time(7, 0))
+    wochentag = models.PositiveSmallIntegerField(
+        "Wochentag", default=0, choices=[(0, "Montag"), (1, "Dienstag"), (2, "Mittwoch"),
+                                         (3, "Donnerstag"), (4, "Freitag"), (5, "Samstag"),
+                                         (6, "Sonntag")],
+    )  # fmt: skip
+
+    class Meta:
+        verbose_name = "Zeit der Benachrichtigungen"
+        verbose_name_plural = "Zeiten der Benachrichtigungen"
+
+    def __str__(self):
+        return f"{self.benutzer}: {self.uhrzeit:%H:%M}"
+
+    @classmethod
+    def fuer(cls, benutzer) -> "BenachrichtigungsZeit":
+        return cls.objects.filter(benutzer=benutzer).first() or cls(benutzer=benutzer)
+
+
+class Meldung(models.Model):
+    """Gesammelte Benachrichtigung, die auf ihren Versand wartet; danach gelöscht."""
+
+    benutzer = models.ForeignKey("konten.Benutzer", on_delete=models.CASCADE,
+                                 related_name="wartende_meldungen")  # fmt: skip
+    art = models.CharField("Art", max_length=50)
+    betreff = models.CharField("Betreff", max_length=200)
+    text = models.TextField("Text")
+    schluessel = models.CharField("Bezug", max_length=100, blank=True)
+    erstellt_am = models.DateTimeField("Erstellt am", auto_now_add=True)
+    faellig_am = models.DateTimeField("Versand ab")
+
+    class Meta:
+        verbose_name = "wartende Benachrichtigung"
+        verbose_name_plural = "wartende Benachrichtigungen"
+
+    def __str__(self):
+        return f"{self.art}: {self.betreff}"
 
 
 class MailEinstellungen(models.Model):

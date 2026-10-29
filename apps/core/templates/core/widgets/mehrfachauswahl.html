@@ -1,0 +1,10 @@
+<details class="mehrfach" data-mehrfach data-leer="{{ widget.leer }}" id="{{ widget.attrs.id }}">
+  <summary class="mehrfach-kopf"><span class="mehrfach-text">{% if widget.gewaehlt %}{{ widget.gewaehlt|join:", " }}{% else %}{{ widget.leer }}{% endif %}</span>{% if widget.gewaehlt %} <span class="mehrfach-zahl">{{ widget.gewaehlt|length }}</span>{% endif %}</summary>
+  <div class="mehrfach-liste">
+    {% if widget.suche %}<input type="search" class="mehrfach-suche" placeholder="In der Liste suchen …" aria-label="In der Liste suchen" data-mehrfach-suche hidden>{% endif %}
+    <p class="mehrfach-knoepfe" hidden><button type="button" class="link" data-mehrfach-alle>alle wählen</button> · <button type="button" class="link" data-mehrfach-keine>keine</button></p>
+    {% for gruppe, optionen, index in widget.optgroups %}{% for option in optionen %}
+    <label class="mehrfach-eintrag"><input type="checkbox" name="{{ option.name }}" value="{{ option.value|stringformat:'s' }}"{% include "django/forms/widgets/attrs.html" with widget=option %}> {{ option.label }}</label>
+    {% endfor %}{% endfor %}
+  </div>
+</details>

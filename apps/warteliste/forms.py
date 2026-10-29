@@ -30,7 +30,7 @@ class EinladenForm(forms.Form):
 
     termin = forms.ModelChoiceField(Termin.objects.none(), label="Termin", required=False,
                                     empty_label="– neuer Termin –")  # fmt: skip
-    datum = forms.DateField(label="Datum (neuer Termin)", required=False, widget=DatumEingabe())
+    datum = forms.DateField(label="Datum", required=False, widget=DatumEingabe())
     von = forms.TimeField(label="von", required=False, widget=UhrzeitEingabe())
     bis = forms.TimeField(label="bis", required=False, widget=UhrzeitEingabe())
     mail = forms.BooleanField(

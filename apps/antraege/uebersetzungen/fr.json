@@ -71,6 +71,7 @@
   "absenden": "Envoyer la demande",
   "danke_titel": "Merci beaucoup !",
   "danke_nummer": "Votre demande a bien été reçue. Votre numéro de demande : {nummer}",
+  "danke_eingang": "Votre demande a bien été reçue.",
   "bestaetigung": "Nous examinons votre demande et vous recontacterons. Merci d'apporter les originaux de vos justificatifs lorsque nous vous inviterons.",
   "mail_gesendet": "Nous avons envoyé une confirmation à {email}.",
   "mail_betreff": "Votre demande auprès de {tafel}",

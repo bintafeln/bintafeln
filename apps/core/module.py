@@ -97,6 +97,8 @@ class Modul:
     # Kachel auf „Mein Konto“: mein_konto(request) -> HTML (render_to_string, ein
     # <div class="konto-kachel"> mit <h2>) oder ""
     mein_konto: Callable | None = None
+    # Arten von Benachrichtigungen des Moduls (apps.core.benachrichtigung.Art, ADR 0086)
+    benachrichtigungen: tuple = ()
 
 
 @cache

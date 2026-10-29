@@ -71,6 +71,7 @@
   "absenden": "Dërgo kërkesën",
   "danke_titel": "Faleminderit shumë!",
   "danke_nummer": "Kërkesa juaj u mor. Numri i kërkesës suaj: {nummer}",
+  "danke_eingang": "Kërkesa juaj u mor.",
   "bestaetigung": "Do ta shqyrtojmë kërkesën tuaj dhe do t'ju kontaktojmë. Kur t'ju ftojmë, ju lutemi sillni dokumentet origjinale.",
   "mail_gesendet": "Kemi dërguar një konfirmim në {email}.",
   "mail_betreff": "Kërkesa juaj te {tafel}",

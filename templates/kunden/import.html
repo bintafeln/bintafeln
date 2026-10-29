@@ -27,13 +27,13 @@
       <label for="dateien">CSV-Dateien</label>
       <input type="file" id="dateien" name="dateien" accept=".csv,text/csv" multiple required>
     </div>
-    <button type="submit" class="knopf">Prüfen</button>
+    <button type="submit" class="knopf" data-ziel="pruefbericht">Prüfen</button>
   </form>
 </section>
 
 {% if bericht %}
 <section class="karte">
-  <h2>Prüfbericht: Import nicht möglich</h2>
+  <h2 id="pruefbericht">Prüfbericht: Import nicht möglich</h2>
   <p>Geprüft: {{ dateien|join:", " }}. Bitte die Fehler in den Dateien beheben und erneut hochladen.
     Der Bericht nennt nur Datei und Zeile, keine Inhalte.</p>
   {% include "kunden/_bericht.html" %}

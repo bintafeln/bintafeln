@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block titel %}Ticket {{ t.pk }}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'tickets:liste' %}">← Tickets</a></p>
+  <h1>Ticket {{ t.pk }}: {{ t.titel }}</h1>
+  <p>{% include "tickets/_status.html" %} · {{ t.kategorie }} · gemeldet am {{ t.erstellt_am|date:"d.m.Y H:i" }}{% if t.erstellt_von %} von {{ t.erstellt_von.get_full_name|default:t.erstellt_von }}{% endif %}{% if t.zustaendig %} · zuständig: {{ t.zustaendig.get_full_name|default:t.zustaendig }}{% endif %}</p>
+  <div class="ticket-text">{{ t.beschreibung|linebreaks }}</div>
+  {% if anhaenge %}
+  <ul class="ticket-anhaenge">{% for a in anhaenge %}<li><a href="{% url 'tickets:anhang' a.pk %}" target="_blank" rel="noopener">📎 {{ a.name }}</a></li>{% endfor %}</ul>
+  {% endif %}
+</section>
+
+<div class="seiten-raster">
+<section class="karte" id="verlauf">
+  <h2>Verlauf</h2>
+  {% for k in kommentare %}
+    <div class="notiz"><div class="notiz-kopf"><span>{{ k.am|date:"d.m.Y H:i" }} · {{ k.von.get_full_name|default:k.von|default:"–" }}</span></div>
+      {{ k.text|linebreaks }}</div>
+  {% empty %}
+    <p class="leise">Noch keine Antworten.</p>
+  {% endfor %}
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" with form=kommentar %}
+    <button type="submit" name="kommentar" value="1" class="knopf" data-ziel="verlauf">Antworten</button>
+  </form>
+</section>
+{% if darf %}
+<section class="karte">
+  <h2>Bearbeiten</h2>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" with form=bearbeiten %}
+    <button type="submit" name="aendern" value="1" class="knopf">Speichern</button>
+  </form>
+  <p class="hinweis">Die meldende Person bekommt Bescheid, wenn sich der Status ändert oder jemand antwortet.</p>
+  <form method="post" action="{% url 'tickets:loeschen' t.pk %}" class="abseits" onsubmit="return confirm('Ticket in den Papierkorb legen?')">
+    {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Löschen</button>
+  </form>
+</section>
+{% endif %}
+</div>
+{% endblock %}

@@ -1,11 +1,17 @@
 from django import forms
 from django.contrib.auth import get_user_model, password_validation
+from django.db.models import Max
 from django.template.defaultfilters import filesizeformat
 
 from apps.core import bilder, geheimnis
 from apps.core.auswahl import LAENDERCODE
 from apps.core.farben import STANDARDFARBE
-from apps.core.models import MailEinstellungen, SicherungsAuftrag, TafelEinstellungen
+from apps.core.models import (
+    Hintergrundbild,
+    MailEinstellungen,
+    SicherungsAuftrag,
+    TafelEinstellungen,
+)
 from apps.core.module import auswahl as modul_auswahl
 
 HINTERGRUND_MAX_BYTES = 5 * 1024 * 1024
@@ -68,7 +74,55 @@ class EinrichtungForm(forms.Form):
         return daten
 
 
+class Mehrfachauswahl(forms.CheckboxSelectMultiple):
+    """Mehrfachauswahl als aufklappbares Menü mit Häkchen: zu sieht man, was gewählt ist (leer =
+    ``leer``); lange Listen bekommen ein Suchfeld. Verhalten in static/js/mehrfachauswahl.js,
+    ohne JavaScript klappt es trotzdem auf und zu."""
+
+    template_name = "core/widgets/mehrfachauswahl.html"
+
+    def __init__(self, attrs=None, choices=(), leer="alle", suche_ab=8):
+        super().__init__(attrs, choices)
+        self.leer, self.suche_ab = leer, suche_ab
+
+    def get_context(self, name, value, attrs):
+        kontext = super().get_context(name, value, attrs)
+        optionen = [o for _, gruppe, _ in kontext["widget"]["optgroups"] for o in gruppe]
+        kontext["widget"].update(
+            leer=self.leer, suche=len(optionen) >= self.suche_ab,
+            gewaehlt=[str(o["label"]) for o in optionen if o["selected"]],
+        )  # fmt: skip
+        return kontext
+
+
+class MehrereBilder(forms.FileInput):
+    allow_multiple_selected = True
+
+    def __init__(self, attrs=None):
+        super().__init__({"accept": "image/jpeg,image/png,image/webp", "multiple": True,
+                          **(attrs or {})})  # fmt: skip
+
+
+class MehrereBilderFeld(forms.ImageField):
+    """Mehrere Bilder auf einmal hochladen; ergibt eine Liste (leer = keins)."""
+
+    def __init__(self, **kwargs):
+        super().__init__(widget=MehrereBilder(), required=False, **kwargs)
+
+    def clean(self, data, initial=None):
+        dateien = data if isinstance(data, (list, tuple)) else [data]
+        return [super(MehrereBilderFeld, self).clean(d, initial) for d in dateien if d]
+
+
 class EinstellungenForm(forms.ModelForm):
+    weitere_anmeldung = MehrereBilderFeld(
+        label="Weitere Bilder der Anmeldeseite",
+        help_text="Mehrere auf einmal wählbar. Sie wechseln mit dem Bild oben ab.",
+    )
+    weitere_seiten = MehrereBilderFeld(
+        label="Weitere Bilder der übrigen Seiten",
+        help_text="Mehrere auf einmal wählbar. Sie wechseln mit dem Bild oben ab.",
+    )
     module = forms.MultipleChoiceField(
         label="Zusätzliche Module", required=False, widget=forms.CheckboxSelectMultiple,
         help_text="Ausgeschaltete Module erscheinen nirgends: kein Menü, keine Seiten, keine "
@@ -83,8 +137,11 @@ class EinstellungenForm(forms.ModelForm):
             "app_symbol",
             "farbe",
             "hintergrund_anmeldung",
+            "weitere_anmeldung",
             "hintergrund",
+            "weitere_seiten",
             "hintergrund_staerke",
+            "hintergrund_wechsel",
             "strasse",
             "plz",
             "ort",
@@ -120,6 +177,7 @@ class EinstellungenForm(forms.ModelForm):
         self.fields["papierkorb_tage"].required = False  # fehlt, bleibt die bisherige Zahl
         staerke = self.fields["hintergrund_staerke"]
         staerke.required = False
+        self.fields["hintergrund_wechsel"].required = False
         staerke.help_text = f"Aktuell {self.instance.hintergrund_staerke} %. {staerke.help_text}"
 
     def clean_farbe(self):
@@ -137,6 +195,34 @@ class EinstellungenForm(forms.ModelForm):
         if bild and getattr(bild, "size", 0) > HINTERGRUND_MAX_BYTES:
             raise forms.ValidationError("Das Bild darf höchstens 5 MB groß sein.")
         return _verkleinert(bild, bilder.HINTERGRUND_KANTE)
+
+    def _weitere(self, feld):
+        ergebnis = []
+        for bild in self.cleaned_data.get(feld) or []:
+            if getattr(bild, "size", 0) > HINTERGRUND_MAX_BYTES:
+                raise forms.ValidationError(f"„{bild.name}“ ist größer als 5 MB.")
+            ergebnis.append(_verkleinert(bild, bilder.HINTERGRUND_KANTE))
+        return ergebnis
+
+    def clean_weitere_anmeldung(self):
+        return self._weitere("weitere_anmeldung")
+
+    def clean_weitere_seiten(self):
+        return self._weitere("weitere_seiten")
+
+    def clean_hintergrund_wechsel(self):
+        wert = self.cleaned_data.get("hintergrund_wechsel")
+        return self.instance.hintergrund_wechsel if wert is None else wert
+
+    def save(self, commit=True):
+        instanz = super().save(commit)
+        B = Hintergrundbild.Bereich
+        for feld, bereich in (("weitere_anmeldung", B.ANMELDUNG), ("weitere_seiten", B.SEITEN)):
+            letzte = Hintergrundbild.objects.filter(bereich=bereich).aggregate(m=Max("reihenfolge"))
+            start = (letzte["m"] or 0) + 1
+            for nr, bild in enumerate(self.cleaned_data.get(feld) or [], start=start):
+                Hintergrundbild.objects.create(bereich=bereich, bild=bild, reihenfolge=nr)
+        return instanz
 
     def clean_hintergrund_anmeldung(self):
         return self._bild("hintergrund_anmeldung")

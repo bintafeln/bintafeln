@@ -53,14 +53,22 @@
   <h2>Einladungen und Absagen</h2>
   <ul>{% for e in einladungen %}<li>{{ e.gesendet_am|date:"d.m.Y H:i" }}: {{ e.get_art_display }} zum Termin {{ e.termin_text }} ({{ e.weg }}{% if e.fehler %}, nicht gesendet: {{ e.fehler }}{% endif %}{% if e.von %}, {{ e.von }}{% endif %})</li>{% empty %}<li>Noch keine.</li>{% endfor %}</ul>
 </section>
-<section class="karte abschnitt">
+<section class="karte abschnitt" id="anmerkung">
   <h2>Anmerkungen</h2>
   <ul>{% for m in anmerkungen %}<li>{{ m.zeitpunkt|date:"d.m.Y" }} ({{ m.von }}): {{ m.text }}</li>{% empty %}<li>Keine.</li>{% endfor %}</ul>
+  {% if "warteliste.bearbeiten" in rechte %}
+  <form method="post" class="anmerkung-form">
+    {% csrf_token %}
+    <label for="anmerkung-text" class="unsichtbar">Neue Anmerkung</label>
+    <textarea name="anmerkung" id="anmerkung-text" rows="2" maxlength="2000" placeholder="Neue Anmerkung, z. B. „hat angerufen, kommt erst ab Dezember“" required></textarea>
+    <button type="submit" class="knopf knopf-zweitrangig" data-ziel="anmerkung">Anmerkung speichern</button>
+  </form>
+  {% endif %}
 </section>
 </div>
 
 <section class="karte breit">
   <h2>Ähnliche Haushalte im Kundenstamm</h2>
-  {% include "warteliste/_treffer.html" %}
+  {% include "warteliste/_treffer.html" with antrag=a entscheiden=True %}
 </section>
 {% endblock %}

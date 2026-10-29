@@ -1,0 +1,23 @@
+{% load handbuch %}<p>Ist etwas kaputt, fehlt etwas oder stimmt im Programm etwas nicht, eröffnen Sie ein <strong>Ticket</strong>. So geht nichts
+  verloren, und die Zuständigen bekommen automatisch Bescheid.</p>
+<h3>Ticket eröffnen</h3>
+<ol>
+  <li>Menü „Tickets → Ticket eröffnen“.</li>
+  <li><strong>Kategorie</strong> wählen (z. B. Technik, Lager, Fahrzeuge), kurz beschreiben, worum es geht, und auf Wunsch
+    ein Foto oder PDF anhängen. Bitte keine Angaben zu Kunden eintragen.</li>
+  <li>„Ticket eröffnen“. Unter „Tickets“ sehen Sie danach den Stand: <em>offen</em>, <em>in Arbeit</em> oder
+    <em>erledigt</em>. Antworten und Statuswechsel bekommen Sie per Mail.</li>
+</ol>
+{% hilfe_bild "tickets-neu" "① Kategorie wählen, ② kurz sagen, worum es geht (darunter die Beschreibung), ③ auf Wunsch Fotos oder PDF anhängen, ④ „Ticket eröffnen“." %}
+<h3>Tickets bearbeiten</h3>
+<p>Wer für eine Kategorie eingetragen ist{% if "tickets.bearbeiten" in rechte %} oder das Recht „Alle Tickets sehen und
+  bearbeiten“ hat{% endif %}, sieht deren Tickets, antwortet, setzt den Status und trägt ein, wer sich kümmert
+  (<em>Zuständig</em>). Die meldende Person bekommt dann Bescheid. Erledigte Tickets werden nach der eingestellten Frist
+  gelöscht (Vorgabe ein Jahr); „Löschen“ legt ein Ticket sofort in den Papierkorb.</p>
+{% hilfe_bild "tickets-bearbeiten" "① Der Verlauf mit allen Antworten, ② eine Antwort schreiben, ③ den Status setzen, ④ eintragen, wer sich kümmert." %}
+{% if "einstellungen.tickets" in rechte %}<h3>Kategorien einstellen</h3>
+<p>Unter „Einstellungen → Tafel → Ticket-Kategorien“ legen Sie Kategorien an und wählen je Kategorie die
+  <strong>Personen</strong> und <strong>Rollen</strong>, die benachrichtigt werden. Wie oft diese Mails kommen (sofort,
+  gesammelt oder nie), stellt jede Person selbst unter „Mein Konto → Benachrichtigungen“ ein; ein Ticket, das bis zum
+  Versand schon jemand übernommen hat, fällt aus der Sammelmail heraus.</p>
+{% hilfe_bild "tickets-kategorie" "① Name der Kategorie, ② Personen und ③ Rollen, die Bescheid bekommen (aufklappbares Menü mit Häkchen)." %}{% endif %}

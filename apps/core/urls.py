@@ -16,6 +16,11 @@ urlpatterns = [
     path("", views.start, name="start"),
     path("einrichtung/", views.einrichtung, name="einrichtung"),
     path("einstellungen/", views.einstellungen, name="einstellungen"),
+    path(
+        "einstellungen/hintergrund/<int:pk>/entfernen/",
+        views.hintergrund_entfernen,
+        name="hintergrund_entfernen",
+    ),  # fmt: skip
     path("einstellungen/mail/", views.mail_einstellungen, name="mail_einstellungen"),
     path("einstellungen/speicher/", views_speicher.seite, name="speicher"),
     path("einstellungen/speicher/dateien/", views_speicher.dateien, name="dateien"),

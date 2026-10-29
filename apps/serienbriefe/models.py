@@ -9,9 +9,20 @@ class Vorlage(models.Model):
     betreff = models.CharField("Betreff", max_length=200)
     text = models.TextField(
         "Text",
-        help_text="Absätze durch eine Leerzeile trennen. Platzhalter in geschweiften Klammern, "
-        "z. B. {anrede} oder {spendensumme}; die Liste steht unter dem Feld.",
+        help_text="Gestalten wie in einem Schreibprogramm. Platzhalter aus der Liste "
+        "„Platzhalter“ in den Text ziehen oder antippen (fügt sie an der Schreibmarke ein); "
+        "im Reiter HTML stehen sie als {anrede}, {spendensumme} usw.",
     )
+    briefkopf = models.BooleanField(
+        "Briefkopf", default=True,
+        help_text="Logo, Name, Anschrift und Kontakt der Tafel oben rechts (aus den "
+        "Tafel-Einstellungen). Aus, wenn Sie auf eigenes Briefpapier drucken.",
+    )  # fmt: skip
+    fusszeile = models.TextField(
+        "Fußzeile", blank=True,
+        help_text="Steht unten auf jeder Seite des Briefs und unter jeder E-Mail, z. B. "
+        "Bankverbindung, Vereinsregister, Vorstand. Leer = keine Fußzeile.",
+    )  # fmt: skip
     geaendert_am = models.DateTimeField("Geändert am", auto_now=True)
 
     class Meta:

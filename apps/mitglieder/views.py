@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.db.models import Q
+from django.db.models.functions import Length
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -44,7 +45,8 @@ def _zeilen(mitglieder, jahr: int):
 def liste(request):
     jahr = _jahr(request)
     stand = request.GET.get("stand", "aktiv")
-    mitglieder = Mitglied.objects.select_related("adresse")
+    # Nummern wie Zahlen sortieren: 1, 2, 3 … 10 statt 1, 10, 11 … 2
+    mitglieder = Mitglied.objects.select_related("adresse").order_by(Length("nummer"), "nummer")
     heute = timezone.localdate()
     if stand == "aktiv":
         mitglieder = mitglieder.filter(Q(austritt__isnull=True) | Q(austritt__gte=heute))

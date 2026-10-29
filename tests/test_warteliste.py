@@ -297,3 +297,79 @@ def test_hilfe_und_menue(modul_an, admin_client):
     assert 'id="warteliste"' in seite
     seite = admin_client.get(reverse("core:start")).content.decode()
     assert "Abgleich mit Kundenstamm" in seite and "Warteliste und Einladungen" in seite
+
+
+def test_abgleich_entscheiden_sperrzeit_und_einladen(admin_client, modul_an):
+    """Treffer bestätigen: Sperrzeit wird zur Wartezeit; ungeprüft lädt „Einladen“ nicht ein."""
+    from apps.warteliste.models import AbgleichEntscheidung
+
+    heute = timezone.localdate()
+    h = Haushalt.objects.create(kundennummer="900", ausweis_gueltig_bis=heute - dt.timedelta(60))
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika", nachname="Beispiel",
+                          geburtsdatum=dt.date(1980, 2, 3))  # fmt: skip
+    a = antrag(geburtsdatum=dt.date(1980, 2, 3))
+    ablauf.automatik()
+    liste = admin_client.get(reverse("warteliste:liste")).content.decode()
+    assert "mit möglicher Sperrzeit" in liste and "⚠ Sperrzeit? Prüfen" in liste
+    ergebnis = ablauf.einladen([a], termin(), "Büro", mail_senden=False)
+    assert not ergebnis[0]["ok"] and "erst im Abgleich prüfen" in ergebnis[0]["hinweis"]
+
+    seite = admin_client.get(reverse("warteliste:abgleich")).content.decode()
+    assert "✓ Ja, derselbe Haushalt – Wartezeit bis" in seite and "✗ Nein" in seite
+    antwort = admin_client.post(reverse("warteliste:abgleich_entscheiden"),
+                                {"antrag": a.pk, "kundennummer": "900", "gleich": "1"},
+                                follow=True)  # fmt: skip
+    assert "derselbe Haushalt wie Kunde 900 – Wartezeit bis" in antwort.content.decode()
+    a.refresh_from_db()
+    ws = Wartestand.objects.get(antrag=a)
+    assert ws.status == "wartezeit" and ws.wartezeit_bis > heute and a.kundennummer == "900"
+    assert "Abgleich: derselbe Haushalt wie Kunde 900" in a.anmerkungen.first().text
+    seite = admin_client.get(reverse("warteliste:abgleich")).content.decode()
+    assert "Kein ungeprüfter Antrag" in seite and "Zuletzt geprüft" in seite
+    assert (
+        "⚠ Sperrzeit? Prüfen" not in admin_client.get(reverse("warteliste:liste")).content.decode()
+    )
+
+    # Zurücknehmen bringt den Treffer zurück
+    d = AbgleichEntscheidung.objects.get()
+    admin_client.post(reverse("warteliste:abgleich_entscheiden"), {"zuruecknehmen": d.pk})
+    assert not AbgleichEntscheidung.objects.exists()
+
+
+def test_abgleich_nein_und_gueltiger_ausweis(admin_client, modul_an):
+    heute = timezone.localdate()
+    h = Haushalt.objects.create(kundennummer="901", ausweis_gueltig_bis=heute + dt.timedelta(90))
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika", nachname="Beispiel",
+                          geburtsdatum=dt.date(1980, 2, 3))  # fmt: skip
+    a = antrag(geburtsdatum=dt.date(1980, 2, 3))
+    b = antrag(vorname="Erika", geburtsdatum=dt.date(1980, 2, 3))
+    url = reverse("warteliste:abgleich_entscheiden")
+    admin_client.post(url, {"antrag": a.pk, "kundennummer": "901", "gleich": "0"})
+    assert ablauf.kundenabgleich(Antrag.objects.filter(pk=a.pk)) == []  # ausgeblendet
+    admin_client.post(url, {"antrag": b.pk, "kundennummer": "901", "gleich": "1",
+                            "weiter": reverse("warteliste:eintrag", args=[b.pk])})  # fmt: skip
+    b.refresh_from_db()
+    assert b.art == "verlaengerung" and b.kundennummer == "901"
+    antwort = admin_client.post(url, {"antrag": b.pk, "kundennummer": "999", "gleich": "1"},
+                                follow=True)  # fmt: skip
+    assert "gibt es nicht mehr" in antwort.content.decode()
+
+
+def test_streichungsliste_suche_und_anmerkungen(admin_client, modul_an):
+    from apps.warteliste.models import Streichung
+
+    Streichung.objects.create(antragsnummer="17", name="Probe, Gisela", von="Büro")
+    Streichung.objects.create(antragsnummer="23", name="Muster, Jonas", von="Büro")
+    url = reverse("warteliste:streichungsliste")
+    seite = admin_client.get(url, {"q": "gisela"}).content.decode()
+    assert "Probe, Gisela" in seite and "Muster, Jonas" not in seite and "hx-get" in seite
+    assert "Nichts gefunden" in admin_client.get(url, {"q": "zzz"}).content.decode()
+
+    a = antrag()
+    ablauf.automatik()
+    admin_client.post(reverse("warteliste:eintrag", args=[a.pk]),
+                      {"anmerkung": "Hat angerufen, kommt ab Dezember"})  # fmt: skip
+    assert a.anmerkungen.last().text == "Hat angerufen, kommt ab Dezember"
+    liste = admin_client.get(reverse("warteliste:liste")).content.decode()
+    assert 'data-spalten-wahl="warteliste"' in liste and 'data-spalte="anmerkung"' in liste
+    assert "Hat angerufen, kommt ab Dezember" in liste

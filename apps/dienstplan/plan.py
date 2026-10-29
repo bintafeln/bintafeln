@@ -5,7 +5,6 @@ sonst aus der festen Besetzung; fällt diese Person aus, ist der Platz „offen�
 """
 
 import datetime as dt
-import logging
 from dataclasses import dataclass
 
 from django.contrib.auth import get_user_model
@@ -27,8 +26,6 @@ from apps.dienstplan.models import (
     Helfer,
 )
 from apps.konten import rollen
-
-log = logging.getLogger(__name__)
 
 # LEER: freier Platz einer Aufgabe, die nicht besetzt sein muss (z. B. Springer)
 OK, ERSETZT, OFFEN, LEER, UNBESETZT = "ok", "ersetzt", "offen", "leer", "unbesetzt"
@@ -231,10 +228,11 @@ def _benachrichtigen(ausfall: Ausfall, adresse: str) -> None:
     text = (f"{ausfall.helfer} fällt in der Ausgabe aus: {zeit} ({ausfall.get_grund_display()}).\n"
             + (f"Anmerkung: {ausfall.anmerkung}\n" if ausfall.anmerkung else "")
             + f"Eingetragen von: {ausfall.eingetragen_von}\n\n" + dienste + link)  # fmt: skip
-    try:
-        mail.senden(f"Dienstplan: Ausfall {ausfall.helfer} {zeit}", text, an)
-    except mail.MailFehler as fehler:  # Der Ausfall steht trotzdem im Plan
-        log.warning("Dienstplan-Ausfall %s: Mail nicht gesendet: %s", ausfall.pk, fehler)
+    from apps.core import benachrichtigung
+
+    # Der Ausfall steht ohnehin im Plan; die Mail kommt so oft, wie jede Person es wählt
+    betreff = f"Dienstplan: Ausfall {ausfall.helfer} {zeit}"
+    benachrichtigung.melden("dienstplan_ausfall", an, betreff, text, schluessel=ausfall.pk)
 
 
 def ausfall_melden(helfer, von, bis, grund, anmerkung, eingetragen_von, adresse="") -> Ausfall:
@@ -267,10 +265,10 @@ def _gesund_benachrichtigen(a: Ausfall, adresse: str) -> None:
     telegram.benachrichtigen(e, f"🟩 Dienstplan: {text}")
     an = empfaenger(einsaetze(a.helfer, a.gesund_ab, a.bis)) if mail.eingerichtet() else []
     if an:
-        try:
-            mail.senden(f"Dienstplan: {a.helfer} wieder da", text, an)
-        except mail.MailFehler as fehler:
-            log.warning("Dienstplan-Gesundmeldung %s: Mail nicht gesendet: %s", a.pk, fehler)
+        from apps.core import benachrichtigung
+
+        betreff = f"Dienstplan: {a.helfer} wieder da"
+        benachrichtigung.melden("dienstplan_gesund", an, betreff, text)
 
 
 def ersatz_eintragen(datum, aufgabe, helfer, von, gast: str = "") -> Ersatz | None:

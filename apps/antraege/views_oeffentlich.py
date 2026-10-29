@@ -146,20 +146,21 @@ def danke(request, sprache):
 
 
 def antwortmail(request, antrag, kontext) -> tuple[str, str, str]:
-    """Betreff, Klartext und HTML der Bestätigung (eigene Fassung oder mitgelieferte)."""
+    """Betreff, Klartext und HTML der Bestätigung (eigene Fassung oder mitgelieferte). Die
+    Antragsnummer steht bewusst nicht in der Mail ({nummer} bleibt leer): Antragsteller sollen
+    sie nicht als Platz in einer Reihenfolge verstehen."""
     t, eigene, tafel = kontext["t"], kontext["eigene"], kontext["tafel_name"]
-    werte = {"nummer": antrag.nummer, "vorname": antrag.vorname, "nachname": antrag.nachname,
+    werte = {"nummer": "", "vorname": antrag.vorname, "nachname": antrag.nachname,
              "tafel": tafel}  # fmt: skip
-    betreff = html.einsetzen(eigene.mail_betreff or t["mail_betreff"], tafel=tafel,
-                             nummer=antrag.nummer)  # fmt: skip
+    betreff = html.einsetzen(eigene.mail_betreff or t["mail_betreff"], tafel=tafel, nummer="")
     if eigene.mail_text.strip():
         inhalt = html.anzeigen(eigene.mail_text, "", **werte)
     else:
         inhalt = format_html(
             "<p>{}</p><p><strong>{}</strong></p>{}<p>{}<br>{}</p>",
             t["mail_anrede"],
-            t["danke_nummer"].format(nummer=antrag.nummer),
-            _bestaetigung(kontext, antrag.nummer),
+            t["danke_eingang"],
+            _bestaetigung(kontext, ""),
             t["mail_gruss"],
             tafel,
         )
@@ -190,12 +191,11 @@ def _benachrichtigen(request, antrag, e) -> None:
     an = [b.email for b in e.benachrichtigen.filter(is_active=True) if b.email]
     if not an or not mail.eingerichtet():
         return
+    from apps.core import benachrichtigung
+
     link = request.build_absolute_uri(reverse("antraege:antrag", args=[antrag.pk]))
-    try:
-        mail.senden(
-            f"Neuer Antrag {antrag.nummer}",
-            f"Es ist ein neuer Antrag eingegangen ({antrag.get_art_display()}).\n\n{link}",
-            an,
-        )
-    except mail.MailFehler as fehler:
-        logger.warning("Benachrichtigung zu Antrag %s nicht gesendet: %s", antrag.nummer, fehler)
+    benachrichtigung.melden(
+        "antrag_neu", an, f"Neuer Antrag {antrag.nummer}",
+        f"Es ist ein neuer Antrag eingegangen ({antrag.get_art_display()}).\n\n{link}",
+        schluessel=antrag.pk,
+    )  # fmt: skip

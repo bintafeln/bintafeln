@@ -37,6 +37,9 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   Tafel – in der Datenbank, nicht im Code. Dazu ein **Hintergrundbild** für die Anmeldeseite
   (volle Stärke) und wahlweise ein eigenes für die übrigen Seiten; dort regelt ein Schieber die
   Stärke von 0 % (nicht sichtbar) bis 100 %. Die Inhalte stehen weiter auf weißen Karten.
+  Je Bereich lassen sich **weitere Bilder** hochladen (Modell `Hintergrundbild`); dann blendet
+  `static/js/hintergrund.js` alle paar Sekunden (Einstellung, Vorgabe 60) langsam zum nächsten
+  über, und der nächste Seitenaufruf beginnt mit dem nächsten Bild (sessionStorage).
   Ein eigenes **App-Symbol** (quadratisch, am besten 512 × 512 Pixel) erscheint im Browser-Tab
   und auf dem Startbildschirm von Handy und Tablet („Zum Home-Bildschirm“); ohne eigenes Bild
   das Symbol von bintafeln (`static/img/bintafeln-*.png`). Ausgeliefert unter
@@ -88,7 +91,9 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   Kundenliste steht nur einmal im Menü: am Einlass (ohne „alle Ausgabestellen“) unter
   „Ausgabestelle“, sonst als „Kunden einsehen“ unter „Kunden“. Die Einstellungen haben Untermenüs (Tafel, Kunden, Ausgabe, Verein,
   Mitarbeitende, Systemsteuerung). Jede Rolle sieht nur, was sie darf. Auf Handys (unter 768 Pixel Breite) öffnet „☰ Menü“ das Menü.
-- Deutsche, mobilfreundliche Oberfläche (Django-Templates + HTMX, ohne externe CDNs).
+- Deutsche, mobilfreundliche Oberfläche (Django-Templates + HTMX, ohne externe CDNs). Nach dem
+  Absenden eines Formulars bleibt die Seite an der Stelle, an der man war; „Vorschau“ und „Prüfen“
+  springen direkt zum Ergebnis (`static/js/position.js`, Knöpfe mit `data-ziel`).
 
 ## Aufbau
 
@@ -323,6 +328,11 @@ bearbeitet nur ein Admin. Rollen, die man nicht vergeben darf, bleiben beim Bear
   - Niemand kann sich selbst sperren oder sich die Admin-Rolle nehmen.
   - Das Büro bearbeitet keine Admin-Konten.
 - Jede Person kann unter „Mein Konto“ ihr **Passwort ändern**.
+- **Benachrichtigungen** (ADR 0086): Unter „Mein Konto → Benachrichtigungen“ wählt jede Person je
+  Art (neuer Antrag, Korrekturwunsch, Ausfall und Gesundmeldung in Dienstplan und Fahrdienst,
+  Sicherheitsupdate, Tickets) sofort, stündlich/täglich/wöchentlich gesammelt oder nie, dazu
+  Uhrzeit und Wochentag. Vor dem Versand fällt Erledigtes weg; der App-Container verschickt
+  gesammelte Mails alle fünf Minuten (`benachrichtigungen_senden` in `docker/entrypoint.sh`).
 - **Stammdaten** (Person → „Stammdaten, Führerschein, Belehrungen, Schulungen“):
   - Anschrift, Telefon, Handy, Notfallkontakt, Eintritt und Austritt
   - Führerschein-Vermerk (Klassen, gültig bis, gesehen am / von)
@@ -745,7 +755,9 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   für das öffentliche Formular hinterlegen (nur für Kundige).
 - Nach dem Absenden sehen Antragstellende eine Bestätigungsseite mit ihrer **Antragsnummer** und
   bekommen eine gestaltete **Antwortmail** (HTML mit Logo, dazu eine Klartextfassung) in ihrer
-  Sprache, wenn sie eine Adresse angeben (Mailserver nötig).
+  Sprache, wenn sie eine Adresse angeben (Mailserver nötig). Die Antragsnummer steht bewusst
+  **nicht** in der Mail (auch `{nummer}` in eigenen Mailtexten bleibt leer), damit niemand sie als
+  Platz in einer Reihenfolge versteht.
 - **Antragsliste** (Admin, Büro) unter „Anträge“ (die Zahl im Menü zeigt die offenen Anträge): fortlaufende **Antragsnummern** (Startwert
   unter „Formular einstellen“ → „Nächste Antragsnummer ab“, z. B. 4201), neueste zuerst; Spalten
   #, Status, Kundennummer, Nachname, Vorname, Antrag vom, E-Mail, Telefon, Art,
@@ -1127,6 +1139,23 @@ Ersetzt den ausgehängten Papierplan der Ausgabe (ADR 0077), wie der Fahrdienst 
 - **Beispiel** zum Ausprobieren (Knopf oder `python manage.py dienstplan_beispiel`, `--entfernen`).
 - Ausfälle und Ersatz werden nach 12 Monaten gelöscht (einstellbar) und stehen in der Auskunft.
 
+### Tickets
+
+Wer etwas findet (Gerät defekt, Lager, Fahrzeug, Fehler im Programm), eröffnet unter „Tickets →
+Ticket eröffnen“ ein Ticket mit Kategorie, Beschreibung und auf Wunsch Fotos/PDF (verschlüsselt
+abgelegt). Zuschaltbares Modul (ADR 0087).
+
+- **Kategorien** unter „Einstellungen → Tafel → Ticket-Kategorien“ (Recht „Ticket-Kategorien und
+  Zuständige einstellen“): je Kategorie Personen und/oder Rollen, die benachrichtigt werden und
+  die Tickets bearbeiten dürfen. Das Recht „Alle Tickets sehen und bearbeiten“ (Vorgabe Büro)
+  gilt für alle Kategorien.
+- **Ablauf:** offen → in Arbeit → erledigt, eine zuständige Person (Auswahl aus den Konten) und
+  Antworten. Die meldende Person erfährt Antworten und Statuswechsel per Mail.
+- **Benachrichtigungen** wie alle anderen (ADR 0086): jede Person wählt unter „Mein Konto →
+  Benachrichtigungen“, wie oft; ein übernommenes Ticket fällt aus der Sammelmail heraus.
+- Jede Person sieht ihre eigenen Tickets, fremde nur als Zuständige. Erledigte werden nach der
+  eingestellten Frist gelöscht (Vorgabe 365 Tage); eigene Tickets stehen in der Auskunft.
+
 ### Aushang-Monitore
 
 Zeigt Dienstplan und Fahrerplan ganzseitig auf einem Monitor, ohne Menü und ohne Anmeldung
@@ -1249,12 +1278,23 @@ auch an Kunden“, nur Admin) schreibt viele Empfänger auf einmal an (ADR 0047)
   `{organisation}`, `{mitgliedsnummer}`, `{jahresbeitrag}`, `{beitrag_offen}`,
   `{spendensumme}`, `{kundennummer}`, `{jahr}`, `{datum}`, `{tafel}`. Mitgeliefert: Dank für
   Spenden, Erinnerung Mitgliedsbeitrag, Einladung Mitgliederversammlung.
+- **Gestalten wie in einem Schreibprogramm** (ADR 0088): fett, kursiv, unterstrichen,
+  Überschrift, Schriftgröße (klein/normal/groß), Ausrichtung (links/Mitte/rechts/Blocksatz),
+  Aufzählung und Nummerierung, Text- und Markierfarbe, farbiger Kasten; im Reiter „HTML“ der
+  Quelltext. Die Platzhalter stehen als Kärtchen mit verständlichem Namen („Briefanrede“,
+  „Spendensumme“ …) neben dem Text: in den Text ziehen oder antippen (fügt an der Schreibmarke
+  ein, auch auf dem iPad; zuletzt im Betreff gewesen, dann dort). Im Text erscheinen sie als
+  farbige Felder. Je Vorlage **Briefkopf** (Logo und Kontakt der Tafel oben rechts, abschaltbar
+  für eigenes Briefpapier) und **Fußzeile** (z. B. Bankverbindung, auf jeder Seite und unter
+  jeder E-Mail). **Vorschau (PDF)** zeigt den Brief mit einem erfundenen Empfänger, ohne zu
+  speichern. Ältere Vorlagen aus reinem Text werden beim Update zu Absätzen.
 - **Empfänger**: Adressen nach Kategorie, Mitglieder (Arten, nur offener Beitrag), Spender eines
   Jahres (Mindestsumme), Kunden (aktive Haushalte, Kundengruppen). Für Adressen und Spender ist
   „nur mit Einwilligung“ (Post bzw. E-Mail) vorgewählt.
 - **Vorschau** mit Empfängerliste, Übersprungenen (ohne Anschrift/E-Mail) und Beispielbrief.
-- **Briefe** als ein PDF (Anschrift für Fensterumschlag DIN lang, Faltmarken) oder **E-Mails**
-  einzeln über den eingerichteten Mailserver. Jeder Versand wird vermerkt und erscheint in der
+- **Briefe** als ein PDF (Anschrift für Fensterumschlag DIN lang, Faltmarken, mit der Gestaltung
+  der Vorlage) oder **E-Mails** einzeln über den eingerichteten Mailserver (gestaltet als HTML,
+  dazu eine Klartext-Fassung). Jeder Versand wird vermerkt und erscheint in der
   Auskunft der Empfänger.
 
 ## Spenden und Zuwendungsbestätigungen

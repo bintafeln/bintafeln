@@ -71,6 +71,7 @@
   "absenden": "Enviar solicitud",
   "danke_titel": "¡Muchas gracias!",
   "danke_nummer": "Hemos recibido su solicitud. Su número de solicitud: {nummer}",
+  "danke_eingang": "Hemos recibido su solicitud.",
   "bestaetigung": "Revisaremos su solicitud y nos pondremos en contacto con usted. Cuando le citemos, traiga sus justificantes originales.",
   "mail_gesendet": "Hemos enviado una confirmación a {email}.",
   "mail_betreff": "Su solicitud en {tafel}",

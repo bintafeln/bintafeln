@@ -6,7 +6,6 @@ Mail, wenn ein Mailserver eingerichtet ist.
 """
 
 import datetime as dt
-import logging
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
@@ -18,7 +17,6 @@ from apps.ausgabe.models import Buchung, Korrekturwunsch, Teilnahme
 from apps.konten import rollen
 from apps.kunden.models import Abholung, Haushalt, abholfrist_beginn
 
-log = logging.getLogger(__name__)
 Art = Korrekturwunsch.Art
 
 
@@ -104,10 +102,11 @@ def _benachrichtigen(k: Korrekturwunsch) -> None:
         + (f"Anmerkung: {k.anmerkung}\n" if k.anmerkung else "")
         + f"Von: {k.erstellt_von}\n\nEntscheiden unter „Ausgabe → Korrekturwünsche“."
     )
-    try:
-        mail.senden(f"Korrekturwunsch für Kunde {k.kundennummer}", text, an)
-    except mail.MailFehler as fehler:  # Der Wunsch steht trotzdem auf der Seite
-        log.warning("Korrekturwunsch %s: Mail nicht gesendet: %s", k.pk, fehler)
+    from apps.core import benachrichtigung
+
+    # Der Wunsch steht ohnehin auf der Seite; die Mail kommt so oft, wie jede Person es wählt
+    benachrichtigung.melden("korrekturwunsch", an, f"Korrekturwunsch für Kunde {k.kundennummer}",
+                            text, schluessel=k.pk)  # fmt: skip
 
 
 def zuruecknehmen(art, obj) -> None:

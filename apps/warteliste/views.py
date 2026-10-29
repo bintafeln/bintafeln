@@ -15,11 +15,18 @@ from apps.konten import rollen
 from apps.warteliste import ablauf
 from apps.warteliste.forms import EinladenForm, EinstellungenForm, StatusForm, TerminForm
 from apps.warteliste.models import (
+    AbgleichEntscheidung,
     Streichung,
     Termin,
     WartelisteEinstellungen,
     Wartestand,
 )
+
+# Spalten der Warteliste, die man ausblenden kann (static/js/spalten.js); Name bleibt immer
+SPALTEN = [("eingang", "Eingang"), ("nummer", "#"), ("geburtsdatum", "Geburtsdatum"),
+           ("kontakt", "Kontakt"), ("wohnort", "Wohnort"), ("personen", "Personen"),
+           ("art", "Art"), ("staat", "Staatsangehörigkeit"), ("status", "Status"),
+           ("termin", "Termin"), ("anmerkung", "Anmerkung")]  # fmt: skip
 
 sehen = rollen.recht_erforderlich("warteliste.sehen")
 bearbeiten = rollen.recht_erforderlich("warteliste.bearbeiten")
@@ -88,8 +95,11 @@ def liste(request):
                          .exclude(staatsangehoerigkeit="")
                          .values_list("staatsangehoerigkeit", flat=True)))  # fmt: skip
     termine = Termin.objects.annotate(n=Count("wartende")).filter(n__gt=0)
+    pruefen = [w.antrag for w in ws if w.status in (S.NEU, S.WARTEND, S.WARTEZEIT_UM)]
+    sperren = ablauf.offene_sperren(pruefen)
     return render(request, "warteliste/liste.html", {
-        "eintraege": ws, "f": f, "staaten": staaten, "termine": termine,
+        "eintraege": ws.prefetch_related("antrag__personen", "antrag__anmerkungen"), "f": f,
+        "staaten": staaten, "termine": termine, "sperren": sperren, "spalten_wahl": SPALTEN,
         "status_zahlen": [(s, name, zahlen.get(s, 0)) for s, name in S.choices],
         "arten": Antrag.Art.choices,
         "einladen": EinladenForm(termine=ablauf.kommende_termine()),
@@ -154,6 +164,11 @@ def eintrag(request, pk):
     if request.method == "POST":
         if not rollen.hat_recht(request.user, "warteliste.bearbeiten"):
             messages.error(request, "Dafür fehlt Ihnen das Recht.")
+        elif "anmerkung" in request.POST:
+            if text := request.POST["anmerkung"].strip()[:2000]:
+                ablauf.anmerken(a, text, _von(request))
+                messages.success(request, "Anmerkung gespeichert.")
+            return redirect("warteliste:eintrag", a.pk)
         elif form.is_valid():
             ablauf.status_setzen(ws, form.cleaned_data["status"], _von(request),
                                  form.cleaned_data.get("wartezeit_bis"))  # fmt: skip
@@ -162,7 +177,8 @@ def eintrag(request, pk):
     return render(request, "warteliste/eintrag.html", {
         "a": a, "ws": ws, "form": form, "einladungen": a.einladungen.all(),
         "anmerkungen": a.anmerkungen.all(),
-        "treffer": next(iter(ablauf.kundenabgleich([a])), {}).get("treffer", []),
+        "treffer": next(iter(ablauf.kundenabgleich(Antrag.objects.filter(pk=a.pk))),
+                        {}).get("treffer", []),  # fmt: skip
         "einladen": EinladenForm(termine=ablauf.kommende_termine()),
     })  # fmt: skip
 
@@ -271,7 +287,33 @@ def abgleich(request):
     return render(request, "warteliste/abgleich.html", {
         "ergebnis": ablauf.kundenabgleich(antraege.order_by("eingegangen_am")), "alle": alle,
         "geprueft": antraege.count(),
+        "entschieden": AbgleichEntscheidung.objects.select_related("antrag")[:30],
     })  # fmt: skip
+
+
+@require_POST
+@bearbeiten
+def abgleich_entscheiden(request):
+    """Treffer des Abgleichs bestätigen („derselbe Haushalt“) oder verwerfen; oder zurücknehmen."""
+    if pk := request.POST.get("zuruecknehmen"):
+        AbgleichEntscheidung.objects.filter(pk=pk).delete()
+        messages.success(
+            request,
+            "Prüfung zurückgenommen; der Treffer steht wieder in der Liste. "
+            "Eine schon gesetzte Wartezeit bleibt (Status von Hand ändern).",
+        )
+        return redirect("warteliste:abgleich")
+    a = get_object_or_404(Antrag, pk=request.POST.get("antrag"))
+    kundennummer = request.POST.get("kundennummer", "").strip()
+    try:
+        meldung = ablauf.entscheiden(a, kundennummer, request.POST.get("gleich") == "1",
+                                     _von(request))  # fmt: skip
+    except ValueError as fehler:
+        messages.error(request, str(fehler))
+    else:
+        messages.success(request, meldung)
+    weiter = request.POST.get("weiter", "")
+    return redirect(weiter if weiter.startswith("/warteliste/") else "warteliste:abgleich")
 
 
 @never_cache
@@ -302,6 +344,14 @@ def dublette(request):
 @sehen
 def streichungsliste(request):
     eintraege = Streichung.objects.all()
+    q = request.GET.get("q", "").strip()
+    for wort in q.split():
+        eintraege = eintraege.filter(
+            Q(name__icontains=wort)
+            | Q(antragsnummer__icontains=wort)
+            | Q(termin_text__icontains=wort)
+            | Q(von__icontains=wort)
+        )
     if request.GET.get("pdf"):
         doc = Pdf("Streichungsliste", f"Stand {timezone.localtime():%d.%m.%Y %H:%M}")
         doc.tabelle(["Gestrichen am", "Antrag", "Name", "Letzter Termin", "Wie"],
@@ -311,6 +361,7 @@ def streichungsliste(request):
         return pdf_antwort(doc.erzeugen(), "streichungsliste.pdf")
     return render(request, "warteliste/streichungsliste.html", {
         "eintraege": eintraege, "tage": WartelisteEinstellungen.laden().streichungsliste_tage,
+        "q": q,
     })  # fmt: skip
 
 

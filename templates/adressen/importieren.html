@@ -18,10 +18,10 @@
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     {% include "includes/formular.html" %}
-    <button type="submit" class="knopf">Prüfen</button>
+    <button type="submit" class="knopf" data-ziel="pruefbericht">Prüfen</button>
   </form>
   {% else %}
-  <h2>Prüfbericht</h2>
+  <h2 id="pruefbericht">Prüfbericht</h2>
   <ul>
     <li><strong>{{ bericht.neu|length }}</strong> neue Adresse{{ bericht.neu|length|pluralize:"n" }} werden angelegt.</li>
     <li>{{ bericht.vorhanden|length }} schon vorhanden (werden übersprungen).</li>

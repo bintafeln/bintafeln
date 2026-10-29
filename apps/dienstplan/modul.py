@@ -1,5 +1,6 @@
 """Beschreibung des Moduls Dienstplan für den Modulrahmen (ADR 0049). Ohne Datenbankzugriff."""
 
+from apps.core.benachrichtigung import Art
 from apps.core.module import Aushangseite, Modul
 
 
@@ -71,8 +72,33 @@ def aushang():
     ]
 
 
+def _ausfall_offen(schluessel: str) -> bool:
+    """Benachrichtigung zu einem Ausfall: offen, solange ein Platz noch ohne Ersatz ist."""
+    from apps.dienstplan.models import Ausfall
+    from apps.dienstplan.plan import einsaetze
+
+    a = Ausfall.objects.filter(pk=schluessel or 0).first()
+    return bool(a) and any(p.fehlt for p in einsaetze(a.helfer, a.von, a.bis))
+
+
+def _darf(*codes):
+    def pruefen(benutzer):
+        from apps.konten import rollen
+
+        return any(rollen.hat_recht(benutzer, c) for c in codes)
+
+    return pruefen
+
+
 MODUL = Modul(
     kennung="dienstplan",
+    benachrichtigungen=(
+        Art("dienstplan_ausfall", "Dienstplan: Ausfall",
+            "Entfällt, wenn bis zum Versand für alle betroffenen Plätze Ersatz eingetragen ist.",
+            fuer=_darf("dienstplan.planen", "dienstplan.sehen"), offen=_ausfall_offen),
+        Art("dienstplan_gesund", "Dienstplan: wieder gesund",
+            fuer=_darf("dienstplan.planen", "dienstplan.sehen")),
+    ),
     titel="Dienstplan der Ausgabe",
     beschreibung="Dienstplan je Ausgabestelle und Ausgabetag: Aufgaben, feste Besetzung, Ausfälle "
     "und Ersatz, Teamleitung wird benachrichtigt, PDF zum Aushängen",

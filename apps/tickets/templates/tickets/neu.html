@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block titel %}Ticket eröffnen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'tickets:liste' %}">← Tickets</a></p>
+  <h1>Ticket eröffnen</h1>
+  <p class="hinweis">Kurz beschreiben, was los ist. Ein Foto hilft oft. Keine Namen oder Angaben zu Kunden eintragen.</p>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Ticket eröffnen</button>
+  </form>
+</section>
+{% endblock %}

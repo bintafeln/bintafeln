@@ -13,9 +13,18 @@
   <li>Ohne Rückmeldung: Nach der eingestellten Zahl von Tagen setzt bintafeln den Status auf „Streichen möglich“ –
     oder streicht direkt, je nach Einstellung.</li>
   <li><strong>Wartezeit bis</strong>: nicht einladen bis zu einem Datum; danach „Wartezeit abgelaufen“.</li>
-  <li><strong>Gestrichen</strong> kommt auf die Streichungsliste (als PDF druckbar) und lehnt den Antrag ab.</li>
+  <li><strong>Gestrichen</strong> kommt auf die Streichungsliste (als PDF druckbar) und lehnt den Antrag ab. Die
+    Streichungsliste hat ein eigenes Suchfeld (Name, Antragsnummer, Termin), das schon beim Tippen sucht.</li>
 </ol>
-{% if "warteliste.bearbeiten" in rechte %}{% hilfe_bild "warteliste-liste" "① Nach Status filtern, ② Personen anhaken, ③ Termin wählen (oder einen neuen anlegen), ④ „Einladen“." %}{% endif %}
+{% if "warteliste.bearbeiten" in rechte %}{% hilfe_bild "warteliste-liste" "① Nach Status filtern, ② Personen anhaken, ③ Termin wählen (oder einen neuen anlegen, dann erscheinen Datum, von und bis), ④ „Einladen“." %}
+<p><strong>Spalten und Anmerkungen:</strong> Über „Spalten wählen“ blenden Sie Spalten der Liste ein und aus (z. B.
+  Geburtsdatum, Wohnort, Personen); dieser Browser merkt sich die Wahl. Die Spalte <em>Anmerkung</em> zeigt die neueste
+  Anmerkung zum Antrag; mit „＋“ öffnen Sie den Antrag und schreiben unter „Anmerkungen“ eine neue.</p>
+<p><strong>Status von Hand setzen</strong> (rechts unter der Liste): für alles, was nicht von selbst passiert – z. B. jemand
+  war beim Termin (<em>erschienen</em>), hat abgesagt (<em>entschuldigt</em>), soll erst später wieder dran sein
+  (<em>Wartezeit</em>, dann erscheint das Feld „Wartezeit bis“) oder wird von der Warteliste genommen (<em>gestrichen</em>).
+  Einladen und Aufnehmen setzen den Status selbst. Der Filter „Staatsangehörigkeit“ bietet bei „nur …“ bzw. „nicht …“ ein
+  aufklappbares Menü mit Häkchen.</p>{% endif %}
 
 <h3>Termine</h3>
 <p>„Kunden → Termine“ zeigt die Termine mit der Zahl der Eingeladenen. Auf der Seite eines Termins: Druckliste
@@ -28,6 +37,14 @@
 <p>Findet zu neuen und wartenden Anträgen ähnliche Haushalte im Kundenstamm und sagt, was das bedeutet: Ausweis
   noch gültig (Verlängerung statt Neuanmeldung), abgelaufen mit laufender Sperrzeit oder Sperrzeit vorbei. Keine
   Sperrzeit gilt ab dem eingestellten Alter oder bei einem Ja/Nein-Zusatzfeld wie „Schwerbehindert“.</p>
+<p>Je Treffer entscheiden Sie: <strong>„Ja, derselbe Haushalt“</strong> vermerkt den Kunden beim Antrag und setzt die Folge
+  um – in der Sperrzeit bekommt der Antrag eine <em>Wartezeit</em> bis zu deren Ende (bis dahin wird er nicht eingeladen,
+  danach steht er als „Wartezeit abgelaufen“ wieder in der Liste); ist der Ausweis noch gültig, wird der Antrag als
+  Verlängerung vermerkt. <strong>„Nein, anderer Haushalt“</strong> blendet den Treffer aus. Unten stehen die zuletzt
+  geprüften Fälle; „Zurücknehmen“ holt einen Treffer zurück. Dieselben Knöpfe stehen auch auf der Seite eines Antrags.
+  Solange ein Fall mit möglicher Sperrzeit nicht geprüft ist, zeigt die Warteliste „⚠ Sperrzeit? Prüfen“, und
+  „Einladen“ lässt diesen Antrag aus.</p>
+{% hilfe_bild "warteliste-abgleich" "① Was der Treffer bedeutet (hier: Sperrzeit), ② „Ja, derselbe Haushalt“ trägt die Wartezeit bis zum Ende der Sperrzeit ein, ③ „Nein“ blendet den Treffer aus." %}
 
 <h3>Doppelte Anträge</h3>
 <p>Zeigt offene Anträge mit sehr ähnlichem Namen. Einen davon streichen (der andere bekommt eine Anmerkung) oder

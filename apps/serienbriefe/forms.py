@@ -1,23 +1,53 @@
+import json
+
 from django import forms
 from django.utils import timezone
 
 from apps.adressen.models import AdressKategorie
 from apps.core.auswahl import MITGLIEDSARTEN
+from apps.core.forms import Mehrfachauswahl
 from apps.konten import rollen
-from apps.serienbriefe.empfaenger import QUELLEN
+from apps.serienbriefe import gestaltung
+from apps.serienbriefe.empfaenger import QUELLEN, karten
 from apps.serienbriefe.models import Versand, Vorlage
 
 
 class VorlageForm(forms.ModelForm):
+    """Text und Fußzeile im Editor (static/js/html_editor.js), gespeichert als bereinigtes HTML."""
+
     class Meta:
         model = Vorlage
-        fields = ["name", "betreff", "text"]
-        widgets = {"text": forms.Textarea(attrs={"rows": 16})}
+        fields = ["name", "betreff", "text", "briefkopf", "fusszeile"]
+        widgets = {
+            "betreff": forms.TextInput(attrs={"data-platzhalter-ziel": ""}),
+            "text": forms.Textarea(attrs={"rows": 16, "class": "html-eingabe",
+                                          "data-editor": "", "data-editor-ohne": "link bild"}),
+            "fusszeile": forms.Textarea(attrs={"rows": 3, "class": "html-eingabe",
+                                               "data-editor": "", "data-editor-ohne": "link bild"}),
+        }  # fmt: skip
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        namen = {k: name for k, name, _ in karten()}
+        self.fields["text"].widget.attrs["data-platzhalter"] = json.dumps(namen)
+        for feld in ("text", "fusszeile"):  # ältere Vorlagen aus reinem Text als Absätze
+            if self.instance.pk and not self.is_bound:
+                self.initial[feld] = gestaltung.als_html(getattr(self.instance, feld))
+
+    def clean_text(self):
+        text = gestaltung.speichern(self.cleaned_data["text"])
+        if not gestaltung.mail_text(text).strip():
+            raise forms.ValidationError("Bitte einen Text schreiben.")
+        return text
+
+    def clean_fusszeile(self):
+        fuss = gestaltung.speichern(self.cleaned_data["fusszeile"])
+        return fuss if gestaltung.mail_text(fuss).strip() else ""
 
 
 class AuswahlForm(forms.Form):
     vorlage = forms.ModelChoiceField(label="Vorlage", queryset=Vorlage.objects.all())
-    quelle = forms.ChoiceField(label="Empfänger", widget=forms.RadioSelect)
+    quelle = forms.ChoiceField(label="Empfänger")
     versandart = forms.ChoiceField(label="Versand", choices=Versand.Art.choices,
                                    widget=forms.RadioSelect, initial=Versand.Art.BRIEF)  # fmt: skip
     jahr = forms.TypedChoiceField(
@@ -25,24 +55,24 @@ class AuswahlForm(forms.Form):
         help_text="Für Spender, offene Beiträge und die Platzhalter {spendensumme}, {jahr}.",
     )  # fmt: skip
     kategorien = forms.ModelMultipleChoiceField(
-        label="Kategorien (Adressen)", required=False, widget=forms.CheckboxSelectMultiple,
+        label="Kategorien", required=False, widget=Mehrfachauswahl(leer="alle Kategorien"),
         queryset=AdressKategorie.objects.filter(aktiv=True),
     )  # fmt: skip
     nur_einwilligung = forms.BooleanField(
-        label="Adressen und Spender nur mit Einwilligung (Post bzw. E-Mail)", required=False,
+        label="Nur mit Einwilligung (Post bzw. E-Mail)", required=False,
         initial=True,
     )  # fmt: skip
-    mindestbetrag = forms.DecimalField(label="Spender: Mindestsumme im Jahr (Euro)",
+    mindestbetrag = forms.DecimalField(label="Mindestsumme im Jahr (Euro)",
                                        required=False, localize=True)  # fmt: skip
     mitgliedsarten = forms.MultipleChoiceField(
-        label="Mitglieder: nur diese Arten", required=False, widget=forms.CheckboxSelectMultiple,
+        label="Mitgliedsarten", required=False, widget=Mehrfachauswahl(leer="alle Arten"),
         choices=[(a, a) for a in MITGLIEDSARTEN],
     )  # fmt: skip
-    nur_offen = forms.BooleanField(label="Mitglieder: nur mit offenem Beitrag im Jahr",
+    nur_offen = forms.BooleanField(label="Nur mit offenem Beitrag im Jahr",
                                    required=False)  # fmt: skip
     kundengruppen = forms.ModelMultipleChoiceField(
-        label="Kunden: nur diese Kundengruppen", required=False,
-        widget=forms.CheckboxSelectMultiple, queryset=None,
+        label="Kundengruppen", required=False,
+        widget=Mehrfachauswahl(leer="alle Kundengruppen"), queryset=None,
     )  # fmt: skip
 
     def __init__(self, *args, benutzer=None, **kwargs):

@@ -71,6 +71,7 @@
   "absenden": "Dir codsiga",
   "danke_titel": "Aad baad u mahadsan tahay!",
   "danke_nummer": "Codsigaagii waa la helay. Lambarka codsigaaga: {nummer}",
+  "danke_eingang": "Codsigaagii waa la helay.",
   "bestaetigung": "Waan hubin doonnaa codsigaaga waana kula soo xiriiri doonnaa. Marka aan ku casuuno, fadlan keen dukumentiyada asalka ah.",
   "mail_gesendet": "Xaqiijin ayaan u dirnay {email}.",
   "mail_betreff": "Codsigaaga {tafel}",

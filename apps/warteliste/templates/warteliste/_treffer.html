@@ -3,8 +3,16 @@
   {% for t in treffer %}
   <li><strong>{% if "kunden.ansehen" in rechte %}<a href="{% url 'kunden:haushalt' t.haushalt.kundennummer %}">Kunde {{ t.haushalt.kundennummer }}</a>{% else %}Kunde {{ t.haushalt.kundennummer }}{% endif %}</strong>
     {% if t.person %}· {{ t.person.vorname }} {{ t.person.nachname }}{% if t.person.geburtsdatum %} ({{ t.person.geburtsdatum|date:"d.m.Y" }}){% endif %}{% endif %}
+    {% if t.haushalt.strasse or t.haushalt.plz %}· {{ t.haushalt.strasse }} {{ t.haushalt.plz }}{% endif %}
     · {{ t.punkte }} Punkte ({{ t.gruende|join:", " }})
     <ul>{% for h in t.hinweise %}<li class="{% if h.art == 'sperr' %}grund-rot{% elif h.art == 'ok' %}grund-gruen{% endif %}">{{ h.text }}</li>{% endfor %}</ul>
+    {% if entscheiden and "warteliste.bearbeiten" in rechte %}
+    <form method="post" action="{% url 'warteliste:abgleich_entscheiden' %}" class="aktionsleiste treffer-entscheiden">
+      {% csrf_token %}<input type="hidden" name="antrag" value="{{ antrag.pk }}"><input type="hidden" name="kundennummer" value="{{ t.haushalt.kundennummer }}"><input type="hidden" name="weiter" value="{{ request.path }}">
+      <button type="submit" name="gleich" value="1" class="knopf">✓ Ja, derselbe Haushalt – {{ t.folge }}</button>
+      <button type="submit" name="gleich" value="0" class="knopf knopf-zweitrangig">✗ Nein, anderer Haushalt</button>
+    </form>
+    {% endif %}
   </li>
   {% endfor %}
 </ul>

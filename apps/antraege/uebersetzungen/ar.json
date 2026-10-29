@@ -71,6 +71,7 @@
   "absenden": "إرسال الطلب",
   "danke_titel": "شكرًا جزيلًا!",
   "danke_nummer": "تم استلام طلبك. رقم طلبك: {nummer}",
+  "danke_eingang": "تم استلام طلبك.",
   "bestaetigung": "سنراجع طلبك ونتواصل معك. عندما ندعوك، يرجى إحضار المستندات الأصلية.",
   "mail_gesendet": "أرسلنا تأكيدًا إلى {email}.",
   "mail_betreff": "طلبك لدى {tafel}",

@@ -136,7 +136,9 @@ def test_antrag_absenden(client, offen, mailserver, benutzer_mit_rolle):
     anhang = a.anhaenge.first()
     assert b"%PDF" not in privatdateien.pfad(ANHANG_ORDNER, anhang.datei).read_bytes()
     bestaetigung, hinweis = django_mail.outbox
-    assert bestaetigung.to == ["erika@example.org"] and a.nummer in bestaetigung.body
+    assert bestaetigung.to == ["erika@example.org"]
+    assert "application has been received" in bestaetigung.body
+    assert "number" not in bestaetigung.body  # Antragsnummer nie in der Mail
     assert hinweis.to == ["berta@example.org"] and "Erika" not in hinweis.body
     danke = client.get(antwort.url).content.decode()
     assert a.nummer in danke and "erika@example.org" in danke
@@ -248,7 +250,8 @@ def test_eigene_html_texte_und_mail(client, offen, mailserver):
     a = Antrag.objects.get()
     assert f"Ihre Nummer: <b>{a.nummer}</b> bei Tafel" in antwort.content.decode()
     m = django_mail.outbox[0]
-    assert m.subject == f"Antrag {a.nummer}"
+    assert m.subject == "Antrag "  # {nummer} bleibt in der Mail leer
+    assert f"Nr. {a.nummer}" not in m.body
     assert m.body.startswith("Liebe(r) <Erika> Beispiel,") and "onclick" not in m.body
     gestaltet, typ = m.alternatives[0]
     assert typ == "text/html" and "&lt;Erika&gt; Beispiel" in gestaltet

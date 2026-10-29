@@ -324,7 +324,7 @@ def dank(request):
 
 @nicht_in_demo
 def _dank_senden(request, form, per_mail):
-    from apps.serienbriefe import empfaenger as emp
+    from apps.serienbriefe import gestaltung
     from apps.serienbriefe.models import Versand
 
     d = form.cleaned_data
@@ -336,9 +336,8 @@ def _dank_senden(request, form, per_mail):
             for n, inhalt in danken.anlagen(x, d["mit_bestaetigungen"], d["mit_belegen"])
         ]
         try:
-            mail.senden(emp.einsetzen(d["vorlage"].betreff, e, allgemein),
-                        emp.einsetzen(d["vorlage"].text, e, allgemein), [x.adresse.email],
-                        anhaenge=anhaenge)  # fmt: skip
+            betreff, text, html = gestaltung.mail(d["vorlage"], e, allgemein)
+            mail.senden(betreff, text, [x.adresse.email], html=html, anhaenge=anhaenge)
         except mail.MailFehler as grund:
             fehler.append(f"{x.adresse.name}: {grund}")
             if len(fehler) >= 3 and not gesendet:

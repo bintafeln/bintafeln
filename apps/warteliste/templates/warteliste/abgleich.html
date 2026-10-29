@@ -6,13 +6,40 @@
   <p>Geprüft wurden {{ geprueft }} {% if alle %}offene Anträge{% else %}Anträge mit Status „neu“ oder „wartend“{% endif %}
     (<a href="?{% if not alle %}alle=1{% endif %}">{% if alle %}nur neue und wartende{% else %}alle offenen prüfen{% endif %}</a>).
     Angezeigt werden nur Anträge mit ähnlichem Haushalt im Kundenstamm, Fälle mit Sperrzeit zuerst.</p>
+  <p class="hinweis">Bitte je Treffer entscheiden: <strong>„Ja, derselbe Haushalt“</strong> vermerkt den Kunden beim Antrag und
+    setzt die Folge um – in der Sperrzeit bekommt der Antrag eine <em>Wartezeit</em> bis zu deren Ende (er wird bis dahin
+    nicht eingeladen und erscheint danach wieder als „Wartezeit abgelaufen“), bei noch gültigem Ausweis wird er als
+    Verlängerung vermerkt. <strong>„Nein“</strong> blendet den Treffer aus. Ungeprüfte Fälle mit Sperrzeit lädt „Einladen“
+    nicht ein.</p>
   {% for e in ergebnis %}
   <section class="karte{% if e.sperr %} ampel ampel-rot{% endif %}">
-    <h2><a href="{% url 'warteliste:eintrag' e.antrag.pk %}">{{ e.antrag.nachname }}, {{ e.antrag.vorname }}</a> <small>· Antrag {{ e.antrag.nummer }}{% if e.antrag.geburtsdatum %} · geb. {{ e.antrag.geburtsdatum|date:"d.m.Y" }}{% endif %}</small></h2>
-    {% include "warteliste/_treffer.html" with treffer=e.treffer %}
+    <h2><a href="{% url 'warteliste:eintrag' e.antrag.pk %}">{{ e.antrag.nachname }}, {{ e.antrag.vorname }}</a> <small>· Antrag {{ e.antrag.nummer }}{% if e.antrag.geburtsdatum %} · geb. {{ e.antrag.geburtsdatum|date:"d.m.Y" }}{% endif %}{% if e.antrag.plz or e.antrag.strasse %} · {{ e.antrag.strasse }} {{ e.antrag.plz }} {{ e.antrag.ort }}{% endif %}</small></h2>
+    {% include "warteliste/_treffer.html" with treffer=e.treffer antrag=e.antrag entscheiden=True %}
   </section>
   {% empty %}
-  <p>Kein Antrag hat einen ähnlichen Haushalt im Kundenstamm.</p>
+  <p>Kein ungeprüfter Antrag hat einen ähnlichen Haushalt im Kundenstamm.</p>
   {% endfor %}
 </section>
+{% if entschieden %}
+<section class="karte breit">
+  <h2>Zuletzt geprüft</h2>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Antrag</th><th>Kunde</th><th>Ergebnis</th><th>Von</th><th></th></tr></thead>
+    <tbody>
+    {% for d in entschieden %}
+      <tr>
+        <td data-titel="Antrag"><a href="{% url 'warteliste:eintrag' d.antrag.pk %}">{{ d.antrag.nummer }} · {{ d.antrag.nachname }}, {{ d.antrag.vorname }}</a></td>
+        <td data-titel="Kunde">{{ d.kundennummer }}</td>
+        <td data-titel="Ergebnis">{% if d.gleich %}derselbe Haushalt – {% endif %}{{ d.ergebnis }}</td>
+        <td data-titel="Von">{{ d.am|date:"d.m.Y H:i" }} · {{ d.von }}</td>
+        <td><form method="post" action="{% url 'warteliste:abgleich_entscheiden' %}">{% csrf_token %}
+          <button type="submit" name="zuruecknehmen" value="{{ d.pk }}" class="knopf knopf-zweitrangig">Zurücknehmen</button></form></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endif %}
 {% endblock %}

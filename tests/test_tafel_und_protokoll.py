@@ -192,3 +192,45 @@ def test_hintergrundbild(admin_client, monkeypatch):
 
     anmeldung = Client().get(reverse("konten:anmelden")).content.decode()
     assert f"url('{t.hintergrund_anmeldung.url}');\"" in anmeldung  # volle Stärke
+
+
+def test_mehrere_hintergrundbilder_wechseln(admin_client):
+    from django.test import Client  # admin_client ist derselbe Client wie client
+
+    from apps.core.models import Hintergrundbild, PapierkorbEintrag
+
+    url = reverse("core:einstellungen")
+    seite = admin_client.get(url).content.decode()
+    assert 'name="weitere_anmeldung"' in seite and "multiple" in seite
+    assert 'name="hintergrund_wechsel"' in seite and "Weitere Hintergrundbilder" not in seite
+    admin_client.post(url, {"name": "X", "hintergrund_anmeldung": png("a.png"),
+                            "weitere_anmeldung": [png("b.png"), png("c.png")],
+                            "hintergrund_staerke": "30", "hintergrund_wechsel": "20"})  # fmt: skip
+    t = TafelEinstellungen.laden()
+    assert t.hintergrund_wechsel == 20
+    weitere = list(Hintergrundbild.objects.all())
+    assert [h.bereich for h in weitere] == ["anmeldung", "anmeldung"]
+    assert [h.reihenfolge for h in weitere] == [1, 2]
+    assert len(t.anmeldung_bilder) == 3 and t.seiten_bilder == t.anmeldung_bilder  # ohne eigene
+
+    anmeldung = Client().get(reverse("konten:anmelden")).content.decode()
+    assert f'data-bilder="{" ".join(t.anmeldung_bilder)}"' in anmeldung
+    assert 'data-sekunden="20" data-bereich="anmeldung"' in anmeldung
+    assert "hintergrund.js" in anmeldung
+    start = admin_client.get("/").content.decode()
+    assert 'data-bereich="seiten"' in start and "opacity: 0.30;" in start
+
+    # Eigene Bilder für die übrigen Seiten; eins entfernen (Papierkorb)
+    admin_client.post(url, {"name": "X", "weitere_seiten": [png("d.png")],
+                            "hintergrund_staerke": "30"})  # fmt: skip
+    t = TafelEinstellungen.laden()
+    assert len(t.seiten_bilder) == 1 and "/hintergrund/d" in t.seiten_bilder[0]
+    start = admin_client.get("/").content.decode()
+    assert "data-bilder" not in start and "hintergrund.js" not in start  # ein Bild: kein Wechsel
+    seite = admin_client.get(url).content.decode()
+    assert "Weitere Hintergrundbilder" in seite and "übrige Seiten" in seite
+    seiten_bild = Hintergrundbild.objects.get(bereich="seiten")
+    admin_client.post(reverse("core:hintergrund_entfernen", args=[seiten_bild.pk]))
+    assert not Hintergrundbild.objects.filter(bereich="seiten").exists()
+    assert PapierkorbEintrag.objects.get().art == "Hintergrundbild"
+    assert TafelEinstellungen.laden().seiten_bilder == TafelEinstellungen.laden().anmeldung_bilder

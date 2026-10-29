@@ -5,7 +5,6 @@ diesen Tag eingetragen. Fällt die Person aus, die den Platz an dem Tag hat, ist
 """
 
 import datetime as dt
-import logging
 from dataclasses import dataclass
 
 from django.contrib.auth import get_user_model
@@ -26,8 +25,6 @@ from apps.fahrdienst.models import (
     platz_name,
 )
 from apps.konten import rollen
-
-log = logging.getLogger(__name__)
 
 # LEER: freier Gästeplatz über der Mindestbesetzung; UNBESETZT: Pflichtplatz ohne Person
 OK, ERSETZT, OFFEN, LEER, UNBESETZT = "ok", "ersetzt", "offen", "leer", "unbesetzt"
@@ -230,10 +227,11 @@ def _benachrichtigen(ausfall: Ausfall, adresse: str) -> None:
         + einsaetze_text
         + link
     )
-    try:
-        mail.senden(f"Fahrdienst: Ausfall {ausfall.benutzer} {zeit}", text, an)
-    except mail.MailFehler as fehler:  # Der Ausfall steht trotzdem im Plan
-        log.warning("Fahrdienst-Ausfall %s: Mail nicht gesendet: %s", ausfall.pk, fehler)
+    from apps.core import benachrichtigung
+
+    # Der Ausfall steht ohnehin im Plan; die Mail kommt so oft, wie jede Person es wählt
+    betreff = f"Fahrdienst: Ausfall {ausfall.benutzer} {zeit}"
+    benachrichtigung.melden("fahrdienst_ausfall", an, betreff, text, schluessel=ausfall.pk)
 
 
 def ausfall_melden(benutzer, von, bis, grund, anmerkung, eingetragen_von,
@@ -268,10 +266,10 @@ def _gesund_benachrichtigen(a: Ausfall, adresse: str) -> None:
     telegram.benachrichtigen(e, f"🟩 Fahrdienst: {text}")
     an = empfaenger() if mail.eingerichtet() else []
     if an:
-        try:
-            mail.senden(f"Fahrdienst: {a.benutzer} wieder da", text, an)
-        except mail.MailFehler as fehler:
-            log.warning("Fahrdienst-Gesundmeldung %s: Mail nicht gesendet: %s", a.pk, fehler)
+        from apps.core import benachrichtigung
+
+        betreff = f"Fahrdienst: {a.benutzer} wieder da"
+        benachrichtigung.melden("fahrdienst_gesund", an, betreff, text)
 
 
 def fristen_anwenden(heute: dt.date | None = None) -> int:

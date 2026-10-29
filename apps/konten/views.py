@@ -322,3 +322,41 @@ def anmelde_einstellungen(request):
         return redirect("konten:anmelde_einstellungen")
     anzahl = VertrautesGeraet.objects.filter(gueltig_bis__gt=timezone.now()).count()
     return render(request, "konten/anmelde_einstellungen.html", {"form": form, "anzahl": anzahl})
+
+
+@login_required
+def benachrichtigungen(request):
+    """Wie oft die eigenen Benachrichtigungen kommen (ADR 0086); jede Person wählt selbst."""
+    import contextlib
+    import datetime as dt
+
+    from apps.core import benachrichtigung as b
+    from apps.core.models import BenachrichtigungsWahl, BenachrichtigungsZeit
+
+    arten = b.arten_fuer(request.user)
+    zeit = BenachrichtigungsZeit.fuer(request.user)
+    if request.method == "POST":
+        for art in arten:
+            wert = request.POST.get(f"art_{art.kennung}", b.SOFORT)
+            if wert not in dict(b.wahlmoeglichkeiten(art)):
+                wert = b.SOFORT
+            if wert == b.SOFORT:
+                BenachrichtigungsWahl.objects.filter(benutzer=request.user,
+                                                     art=art.kennung).delete()  # fmt: skip
+            else:
+                BenachrichtigungsWahl.objects.update_or_create(
+                    benutzer=request.user, art=art.kennung, defaults={"haeufigkeit": wert}
+                )
+        with contextlib.suppress(ValueError):
+            zeit.uhrzeit = dt.time.fromisoformat(request.POST.get("uhrzeit", "07:00"))
+        tag = request.POST.get("wochentag", "0")
+        zeit.wochentag = int(tag) if tag.isdigit() and int(tag) < 7 else 0
+        zeit.save()
+        messages.success(request, "Benachrichtigungen gespeichert.")
+        return redirect("konten:benachrichtigungen")
+    zeilen = [{"art": a, "wahl": b.haeufigkeit(request.user, a.kennung),
+               "moeglich": b.wahlmoeglichkeiten(a)} for a in arten]  # fmt: skip
+    return render(request, "konten/benachrichtigungen.html", {
+        "zeilen": zeilen, "zeit": zeit, "wochentage": BenachrichtigungsZeit._meta.get_field(
+            "wochentag").choices, "ohne_mail": not request.user.email,
+    })  # fmt: skip
