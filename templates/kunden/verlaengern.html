@@ -32,8 +32,10 @@
             <label><input type="radio" name="wahl_{{ p.nummer }}" value="ablehnen"{% if p.ergebnis == "nein" and ablehnung != "anzeigen" %} checked{% endif %}>
               {% if p.zu_frueh %}Notiz: zu früh{% elif p.ergebnis != "nein" %}ablehnen (mit Begründung){% elif ablehnung == "pausieren" %}{{ pause }} Monate pausieren{% else %}Notiz an die Ausgabestelle{% endif %}</label><br>
             <label><input type="radio" name="wahl_{{ p.nummer }}" value=""{% if p.ergebnis == "unklar" or p.ergebnis == "nein" and ablehnung == "anzeigen" %} checked{% endif %}> offen lassen</label>
-            <input type="text" name="grund_{{ p.nummer }}" maxlength="500" aria-label="Begründung für Kunde {{ p.nummer }}"
-                   placeholder="{% if p.ergebnis == 'nein' %}Begründung beim trotzdem Verlängern, sonst Anmerkung{% else %}Begründung beim Ablehnen{% endif %}">
+            <div class="feld verlaengern-grund"{% if p.ergebnis == "nein" %} data-pflicht-bei="wahl_{{ p.nummer }}=verlaengern"{% elif not p.zu_frueh %} data-pflicht-bei="wahl_{{ p.nummer }}=ablehnen"{% endif %}>
+              <label for="grund_{{ p.nummer }}">{% if p.ergebnis == "nein" %}Begründung <small>(Pflicht bei „trotzdem verlängern“, sonst Anmerkung)</small>{% elif p.zu_frueh %}Anmerkung <small>(freiwillig)</small>{% else %}Begründung <small>(Pflicht beim Ablehnen)</small>{% endif %}</label>
+              <textarea name="grund_{{ p.nummer }}" id="grund_{{ p.nummer }}" rows="2" maxlength="500"></textarea>
+            </div>
           </td>
           <td data-titel="Kunde"><a href="{% url 'kunden:haushalt' p.nummer %}">{{ p.nummer }}</a></td>
           <td data-titel="Prüfung">

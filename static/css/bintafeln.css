@@ -1477,3 +1477,10 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 .anmerkung-form { display: flex; flex-direction: column; gap: .4rem; margin-top: .5rem; }
 .anmerkung-form textarea { font: inherit; padding: .5rem .65rem; border: 1px solid var(--rand); border-radius: var(--radius); }
 .anmerkung-form .knopf { align-self: flex-start; }
+/* Sammel-Verlängerung: Begründung als richtiges Feld, Pflicht hervorgehoben (zeigen_bei.js) */
+.verlaengern-wahl { min-width: 16rem; }
+.verlaengern-grund { margin: .5rem 0 0; }
+.verlaengern-grund label { font-size: .9rem; }
+.verlaengern-grund textarea { width: 100%; min-height: 3.2rem; }
+.verlaengern-grund.pflicht label { color: var(--fehler); font-weight: 600; }
+.verlaengern-grund.pflicht textarea { border-color: var(--akzent); }

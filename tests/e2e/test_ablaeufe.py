@@ -853,3 +853,31 @@ def test_warteliste_spalten_waehlen_bleibt_gemerkt(angemeldet, admin):
     seite.reload()
     expect(seite.locator('th[data-spalte="kontakt"]')).to_be_hidden()
     expect(seite.locator('td[data-spalte="geburtsdatum"]').first).to_be_visible()
+
+
+def test_verlaengern_begruendung_eintragen_und_pflicht(angemeldet, admin):
+    """Trotzdem verlängern: Begründung ist ein richtiges Feld und dann Pflicht (zeigen_bei.js)."""
+    from apps.kunden.models import KundenEinstellungen, Nachricht
+
+    e = KundenEinstellungen.laden()
+    e.verlaengern_regel = KundenEinstellungen.Verlaengern.ALLE
+    e.verlaengern_ab_alter = 60
+    e.save()
+    bis = timezone.localdate() + dt.timedelta(days=20)
+    h = Haushalt.objects.create(kundennummer="00057", ausweis_gueltig_bis=bis)
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Jonas", nachname="Probe",
+                          geburtsdatum=dt.date(1990, 2, 1))  # fmt: skip
+    Nachricht.objects.create(kundennummer="00057", anliegen="verlaengern", von="einlass")
+    seite = angemeldet(admin)
+    seite.goto(reverse("kunden:verlaengern"))
+    feld = seite.get_by_role("textbox", name=re.compile("Begründung"))
+    assert feld.evaluate("e => e.required") is False
+    seite.locator('input[name="wahl_00057"][value="verlaengern"]').check()
+    assert feld.evaluate("e => e.required") is True
+    seite.get_by_role("button", name="Ausgewählte ausführen").click()
+    expect(seite.get_by_text("Erledigt (")).to_have_count(0)  # Browser hält das Absenden an
+    feld.fill("Härtefall, Bescheid folgt")
+    seite.get_by_role("button", name="Ausgewählte ausführen").click()
+    expect(seite.get_by_text("1 Ausweis verlängert.")).to_be_visible()
+    h.refresh_from_db()
+    assert h.ausweis_gueltig_bis > timezone.localdate() + dt.timedelta(days=300)
