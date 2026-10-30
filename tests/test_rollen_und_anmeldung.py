@@ -134,3 +134,60 @@ def test_impressum_auf_der_anmeldeseite(client, admin):
     seite = client.get(reverse("konten:anmelden")).content.decode()
     assert 'href="https://tafel.example.org/impressum" rel="noopener">Impressum der Tafel ' in seite
     assert seite.count("https://tafel.example.org/impressum") == 2  # auch unten in der Fußzeile
+
+
+def test_sperre_nach_zu_vielen_falschen_passwoertern(client, admin):
+    """Nach 5 falschen Passwörtern ist auch das richtige kurz gesperrt (Schutz vor Durchprobieren).
+
+    Der Zähler liegt im Datenbank-Cache (ADR 0093), gilt also über alle Prozesse und übersteht
+    einen Neustart.
+    """
+    from apps.konten.forms import AnmeldeForm
+
+    url = reverse("konten:anmelden")
+    for _ in range(AnmeldeForm.VERSUCHE):
+        antwort = client.post(url, {"username": "chefin", "password": "falsch"})
+        assert "falsch" in antwort.content.decode()
+    # jetzt gesperrt – sogar das richtige Passwort wird abgewiesen
+    antwort = client.post(url, {"username": "chefin", "password": PASSWORT})
+    assert antwort.status_code == 200 and "Zu viele falsche Versuche" in antwort.content.decode()
+    # ein anderes Konto ist nicht betroffen (Zähler je Benutzername)
+    assert client.post(url, {"username": "chefin", "password": PASSWORT}).status_code == 200
+
+
+def test_richtige_anmeldung_setzt_den_zaehler_zurueck(client, admin):
+    from apps.konten.forms import AnmeldeForm
+
+    url = reverse("konten:anmelden")
+    for _ in range(AnmeldeForm.VERSUCHE - 1):  # einer weniger als die Grenze
+        client.post(url, {"username": "chefin", "password": "falsch"})
+    # richtige Anmeldung klappt noch und löscht den Zähler
+    start = reverse("core:start")
+    assert client.post(url, {"username": "chefin", "password": PASSWORT}).url == start
+    client.post(reverse("konten:abmelden"))
+    # danach stehen wieder volle Versuche zur Verfügung
+    for _ in range(AnmeldeForm.VERSUCHE - 1):
+        client.post(url, {"username": "chefin", "password": "falsch"})
+    assert client.post(url, {"username": "chefin", "password": PASSWORT}).url == start
+
+
+@pytest.mark.django_db
+def test_datenbank_cache_funktioniert():
+    """Der im Betrieb genutzte Datenbank-Cache (ADR 0093) kann setzen, lesen und hochzählen."""
+    from django.test import override_settings
+
+    datenbank_cache = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+            "LOCATION": "bintafeln_cache",
+        }
+    }
+    with override_settings(CACHES=datenbank_cache):
+        from django.core.cache import cache
+
+        cache.set("probe", 1, 60)
+        assert cache.get("probe") == 1
+        cache.incr("probe")
+        assert cache.get("probe") == 2
+        cache.delete("probe")
+        assert cache.get("probe") is None

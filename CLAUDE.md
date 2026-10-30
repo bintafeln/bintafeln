@@ -247,6 +247,11 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `apps.core.benachrichtigung.melden(art, an, …, schluessel)` (Häufigkeit je Person, Erledigtes
   entfällt über `Art.offen`; neue Arten in `KERN` bzw. `Modul.benachrichtigungen`; ADR 0086). Geheimnisse in der Datenbank nur über `apps.core.geheimnis` verschlüsselt
   speichern (ADR 0016). In Tests landen Mails in `django.core.mail.outbox`.
+- Gemeinsamer Cache in der Datenbank (ADR 0093): `CACHES` = DatabaseCache, Tabelle `bintafeln_cache`
+  (Migration `core/0022`); nötig, weil mehrere gunicorn-Prozesse laufen und ein prozesslokaler
+  Cache Zähler nicht teilt und beim Update vergisst. Darauf bauen die Anmelde-Sperre
+  (`AnmeldeForm`, 5 Fehlversuche je Benutzername → 15 min) und weitere Drosseln. In Tests
+  LocMemCache (`settings_test.py`), der Datenbank-Cache ist mit einem eigenen Test abgedeckt.
 - Zwei-Faktor: Logik in `apps/konten/zwei_faktor.py`, Durchsetzung in
   `apps.konten.middleware.ZweiFaktorMiddleware`. In Tests Benutzer mit der Fixture `anmelden`
   anmelden (verifizierte Sitzung); ein bloßes `force_login` landet bei Pflicht-Rollen auf der
