@@ -167,7 +167,8 @@ def test_ablauf_starten_weiter_zurueck_fertig(mitte, tag_daten):
     tag = ablauf.weiter(mitte, heute())
     d = ablauf.stand_fuer_anzeige(tag, e, heute())
     assert len(d["current_numbers"]) == 2 and d["past_numbers"] == erste
-    assert d["can_undo"] and d["total_completed"] == 3
+    # „Erledigt“ zählt Eingelassene (Abholung), nicht aufgerufene Batches: noch niemand da → 0
+    assert d["can_undo"] and d["total_completed"] == 0
     tag = ablauf.zurueck(mitte, heute())
     assert ablauf.stand_fuer_anzeige(tag, e, heute())["current_numbers"] == erste
     for _ in range(2):
@@ -177,9 +178,23 @@ def test_ablauf_starten_weiter_zurueck_fertig(mitte, tag_daten):
     for _ in range(2):
         tag = ablauf.weiter(mitte, heute())
     d = ablauf.stand_fuer_anzeige(tag, e, heute())
-    assert d["finished"] and d["total_completed"] == 9
+    assert d["finished"] and d["total_numbers"] == 9 and d["total_completed"] == 0  # keine Abholung
     tag = ablauf.zurueck(mitte, heute())  # auch der letzte Schritt lässt sich zurücknehmen
     assert not ablauf.stand_fuer_anzeige(tag, e, heute())["finished"]
+
+
+def test_zaehler_zaehlt_eingelassene(mitte, tag_daten):
+    """Der Fortschritt „X/Y“ wächst, sobald jemand eingelassen wird (Abholung), nicht erst beim
+    nächsten „Weiter“."""
+    e = AufrufEinstellungen.laden(mitte)
+    tag = ablauf.starten(mitte, heute())
+    d = ablauf.stand_fuer_anzeige(tag, e, heute())
+    assert d["total_completed"] == 0 and d["total_numbers"] == 9
+    # Zwei der gerade Aufgerufenen lassen (Abholung), ohne „Weiter“ zu drücken
+    for n in d["current_numbers"][:2]:
+        Abholung.objects.create(haushalt=Haushalt.objects.get(kundennummer=n), datum=heute())
+    d = ablauf.stand_fuer_anzeige(ablauf.aktualisieren(mitte, heute()), e, heute())
+    assert d["total_completed"] == 2 and d["total_numbers"] == 9  # Zähler sofort gewachsen
 
 
 def test_anzahl_einstellbar(mitte, tag_daten):
