@@ -131,14 +131,8 @@ class AntragEinstellungen(models.Model):
         help_text="z. B. PDF der Tafel zum Ausdrucken und Unterschreiben (Einverständnis zur "
         "Verarbeitung der Daten).",
     )  # fmt: skip
-    # Statt (oder zusätzlich zu) einem externen Link lässt sich der Text hier hinterlegen; dann
-    # führt der Link auf eine interne, öffentliche Seite (ADR 0094). HTML wird beim Anzeigen
-    # über apps.core.html bereinigt.
-    datenschutz_text = models.TextField("Datenschutzerklärung (Text, HTML möglich)", blank=True)
-    impressum_text = models.TextField("Impressum (Text, HTML möglich)", blank=True)
-    einverstaendnis_text = models.TextField(
-        "Einverständniserklärung (Text, HTML möglich)", blank=True
-    )
+    # Der interne Text zu Datenschutz, Impressum und Einverständnis liegt in den Tafel-Einstellungen
+    # (ADR 0094); hier stehen nur noch die externen Links als Rückfallebene (oben).
     # API-Schlüssel für die KI-Übersetzung der eigenen Texte (ADR 0082), verschlüsselt (ADR 0016)
     ki_schluessel_verschluesselt = models.TextField("API-Schlüssel (verschlüsselt)", blank=True)
     eigenes_css = models.TextField(
@@ -199,19 +193,23 @@ class AntragEinstellungen(models.Model):
         einstellungen, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
         return einstellungen
 
-    # Datenschutz, Impressum, Einverständnis: interner Text oder externer Link (ADR 0094)
-    RECHTSTEXTE = ("datenschutz", "impressum", "einverstaendnis")
-
+    # Datenschutz, Impressum, Einverständnis: interner Text (Tafel-Einstellungen) oder externer
+    # Link (hier). Der Text liegt in TafelEinstellungen (ADR 0094).
     def rechtslink(self, art: str, sprache: str) -> str:
-        """Interne Seite, wenn ein Text hinterlegt ist, sonst der externe Link (sonst leer)."""
+        """Interne Seite, wenn in den Tafel-Einstellungen ein Text hinterlegt ist, sonst der
+        externe Link (sonst leer)."""
         from django.urls import reverse
 
-        if (getattr(self, f"{art}_text", "") or "").strip():
+        from apps.core.models import TafelEinstellungen
+
+        if (getattr(TafelEinstellungen.laden(), f"{art}_text", "") or "").strip():
             return reverse("antrag:rechtstext", args=[sprache, art])
         return getattr(self, f"{art}_url", "")
 
     def rechtslinks(self, sprache: str) -> dict:
-        return {art: self.rechtslink(art, sprache) for art in self.RECHTSTEXTE}
+        from apps.core.models import TafelEinstellungen
+
+        return {art: self.rechtslink(art, sprache) for art in TafelEinstellungen.RECHTSTEXTE}
 
 
 def naechste_antragsnummer() -> int:

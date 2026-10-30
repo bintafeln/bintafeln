@@ -92,6 +92,17 @@ class TafelEinstellungen(models.Model):
     update_hinweis_bis = models.DateField("Hinweis auf neue Funktionen ausgeblendet bis",
                                           null=True, blank=True)  # fmt: skip
 
+    # Rechtstexte der Tafel (ADR 0094): Datenschutz, Impressum, Einverständniserklärung als interner
+    # Text (HTML möglich). Ist ein Text gesetzt, führt der Link im Antragsformular auf eine eigene
+    # öffentliche Seite; sonst gilt der externe Link aus den Antrags-Einstellungen. Angezeigt wird
+    # der Text immer über apps.core.html bereinigt (nh3, keine Skripte).
+    RECHTSTEXTE = ("datenschutz", "impressum", "einverstaendnis")
+    datenschutz_text = models.TextField("Datenschutzerklärung (Text, HTML möglich)", blank=True)
+    impressum_text = models.TextField("Impressum (Text, HTML möglich)", blank=True)
+    einverstaendnis_text = models.TextField(
+        "Einverständniserklärung (Text, HTML möglich)", blank=True
+    )
+
     class Meta:
         verbose_name = "Tafel-Einstellungen"
         verbose_name_plural = "Tafel-Einstellungen"

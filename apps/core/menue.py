@@ -203,6 +203,7 @@ def menue(request) -> list[dict]:
     gruppen_einstellungen = {
         "Tafel": [
             ("einstellungen.tafel", _eintrag("Tafel und Module", "core:einstellungen", genau=True)),
+            ("einstellungen.tafel", _eintrag("Rechtstexte", "core:rechtstexte")),
             ("einstellungen.mail", _eintrag("E-Mail", "core:mail_einstellungen")),
             ("einstellungen.tafel", _eintrag("bintafeln-Verzeichnis", "core:verzeichnis")),
             *([("einstellungen.tafel", _eintrag("Gemeldete Tafeln", "core:verzeichnis_liste"))]

@@ -772,11 +772,14 @@ def test_rechtstext_intern_oder_extern(client, offen):
     e.save()
     seite = client.get(FORMULAR).content.decode()
     assert "https://tafel.example.org/datenschutz" in seite
-    # interner Text gesetzt → der Link führt auf die interne Seite, nicht mehr nach außen
-    e.datenschutz_text = (
+    # interner Text (in den Tafel-Einstellungen) gesetzt → der Link führt auf die interne Seite
+    from apps.core.models import TafelEinstellungen
+
+    tafel = TafelEinstellungen.laden()
+    tafel.datenschutz_text = (
         "<h2>Datenschutz</h2><p>Nur erfundene Angaben.</p><script>alert(1)</script>"
     )
-    e.save()
+    tafel.save()
     intern = reverse("antrag:rechtstext", args=["de", "datenschutz"])
     seite = client.get(FORMULAR).content.decode()
     assert intern in seite and "tafel.example.org/datenschutz" not in seite
@@ -791,11 +794,14 @@ def test_rechtstext_intern_oder_extern(client, offen):
 
 
 def test_rechtstexte_bearbeiten(admin_client, offen):
-    url = reverse("antraege:rechtstexte")
+    """Rechtstexte liegen in den Tafel-Einstellungen (ADR 0094)."""
+    from apps.core.models import TafelEinstellungen
+
+    url = reverse("core:rechtstexte")
     assert 'name="impressum_text"' in admin_client.get(url).content.decode()
     admin_client.post(url, {"datenschutz_text": "", "impressum_text": "<p>Impressum der Tafel</p>",
                             "einverstaendnis_text": ""})  # fmt: skip
-    AntragEinstellungen.laden().refresh_from_db()
+    assert TafelEinstellungen.laden().impressum_text == "<p>Impressum der Tafel</p>"
     seite = admin_client.get(url).content.decode()
     assert "Impressum ansehen" in seite  # Ansehen-Link erscheint, da Text gesetzt
     antwort = admin_client.get(reverse("antrag:rechtstext", args=["de", "impressum"]))
