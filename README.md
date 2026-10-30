@@ -401,6 +401,16 @@ bearbeitet nur ein Admin. Rollen, die man nicht vergeben darf, bleiben beim Bear
 gesetzliche Feiertage weder als Arbeitstag (Urlaub, Krankheit, Stundenkonto) noch als Abholtag im
 Vorschlag für Vorauszahlungen am Einlass.
 
+## bintafeln-Verzeichnis
+
+Unter „Einstellungen → Tafel → bintafeln-Verzeichnis“ kann sich eine Tafel **freiwillig** beim
+Herausgeber melden (ADR 0089). Gemeldet werden nur Name der Tafel, Kontakt-Mail, Version und eine
+zufällige Kennung der Installation, nie Kunden- oder Personendaten: beim Einschalten, nach jedem
+Update und einmal pro Woche. Ausschalten löscht den Eintrag. Ziel ist
+`BINTAFELN_VERZEICHNIS_URL` (leer = Adresse des Herausgebers). Die Installation des Herausgebers
+nimmt Meldungen mit `BINTAFELN_VERZEICHNIS_EMPFANG=true` an und zeigt sie unter
+„Einstellungen → Tafel → Gemeldete Tafeln“.
+
 ## E-Mail
 
 Unter „Einstellungen → E-Mail“ trägt ein Admin den Mailserver der Tafel ein: Server, Port,

@@ -8,6 +8,7 @@ from apps.core import (
     views_sicherung,
     views_speicher,
     views_update,
+    views_verzeichnis,
 )
 
 app_name = "core"
@@ -22,6 +23,9 @@ urlpatterns = [
         name="hintergrund_entfernen",
     ),  # fmt: skip
     path("einstellungen/mail/", views.mail_einstellungen, name="mail_einstellungen"),
+    path("einstellungen/verzeichnis/", views_verzeichnis.einstellung, name="verzeichnis"),
+    path("verzeichnis/melden/", views_verzeichnis.melden, name="verzeichnis_melden"),
+    path("verzeichnis/", views_verzeichnis.liste, name="verzeichnis_liste"),
     path("einstellungen/speicher/", views_speicher.seite, name="speicher"),
     path("einstellungen/speicher/dateien/", views_speicher.dateien, name="dateien"),
     path("protokoll/", views.protokoll, name="protokoll"),

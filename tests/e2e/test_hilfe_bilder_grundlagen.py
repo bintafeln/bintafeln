@@ -18,6 +18,7 @@ from apps.ausgabe.models import (
     Sonderaktion,
     SonderaktionAuswahl,
 )
+from apps.core.models import TafelEinstellungen
 from apps.konten import rollen
 from apps.konten.models import AnmeldeEinstellungen
 from apps.kunden.models import Ausgabestelle, Haushalt, Kundengruppe, Person
@@ -380,3 +381,18 @@ def test_hilfe_bild_kasse(angemeldet, admin, muster):
     buchungen = seite.locator("section.karte", has=titel)
     zelle = buchungen.locator("tbody td[data-titel=Kundennummer]").first
     aufnehmen(seite, "kasse-einzelbuchungen", buchungen, Marke(zelle, "rahmen", 1))
+
+
+def test_hilfe_bild_verzeichnis(angemeldet, admin):
+    t = TafelEinstellungen.laden()
+    t.name, t.email = "Tafel Musterstadt", "info@tafel.example.org"
+    t.save()
+    seite = oeffnen(angemeldet, admin, reverse("core:verzeichnis"))
+    seite.get_by_label("Diese Tafel im bintafeln-Verzeichnis melden").check()
+    seite.get_by_label(re.compile("Kontakt-Mail")).fill("vorstand@tafel.example.org")
+    karten = seite.locator("section.karte")
+    aufnehmen(seite, "verzeichnis", [karten.nth(0), karten.nth(1)],
+              Marke(seite.get_by_label("Diese Tafel im bintafeln-Verzeichnis melden"), nummer=1),
+              Marke(seite.get_by_label(re.compile("Kontakt-Mail")), nummer=2, von="rechts"),
+              Marke(seite.get_by_role("button", name="Speichern"), nummer=3, von="rechts"),
+              Marke(karten.nth(1).locator("dl"), "rahmen", 4))  # fmt: skip

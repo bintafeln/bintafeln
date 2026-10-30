@@ -82,12 +82,12 @@ def test_bild_ausweise_verlaengern(angemeldet, admin, muster):
     seite.set_viewport_size({"width": BREITE, "height": HOEHE})
     seite.goto(reverse("kunden:verlaengern"))
     seite.locator('input[name="wahl_00057"][value="verlaengern"]').check()
-    seite.fill('input[name="grund_00057"]', "Härtefall, Bescheid folgt")
+    seite.fill('textarea[name="grund_00057"]', "Härtefall, Bescheid folgt")
     tabelle = seite.locator("table.tabelle").first
     aufnehmen(seite, "verlaengern-liste", seite.locator("section.karte").first,
               Marke(seite.locator('input[name="wahl_00042"][value="verlaengern"]'), nummer=1),
               Marke(seite.locator('input[name="wahl_00057"][value="verlaengern"]'), nummer=2),
-              Marke(seite.locator('input[name="grund_00057"]'), nummer=3, von="unten"),
+              Marke(seite.locator('textarea[name="grund_00057"]'), nummer=3, von="rechts"),
               Marke(seite.get_by_role("button", name="Ausgewählte ausführen"), nummer=4,
                     von="rechts"))  # fmt: skip
     expect(tabelle).to_be_visible()

@@ -197,6 +197,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   zeigen mit `data-zeigen-bei="feld=wert1 wert2"` (`static/js/zeigen_bei.js`).
 - Nach dem Absenden eines Formulars an dieselbe Seite bleibt die Position (`static/js/position.js`);
   Knöpfe, deren Ergebnis weiter unten erscheint (Vorschau, Prüfen), bekommen `data-ziel="<id>"`.
+  PDFs in einem neuen Fenster öffnen per Link oder GET-Formular mit `target="_blank"`
+  (`static/js/neues_fenster.js` öffnet es per `window.open`); in der iPad-App vom Home-Bildschirm
+  käme man aus einem per POST geöffneten PDF nicht zurück.
 - Einstellungsseiten speichern sofort: Formular mit `data-autosave` (`static/js/autosave.js`,
   ADR 0076); die Ansicht leitet nach Erfolg weiter und zeigt Fehler wie gewohnt am Feld.
 - Menü links: Einträge je Rolle in `apps/core/menue.py` (neue Seiten dort eintragen statt
@@ -248,6 +251,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
 - Neue Modelle mit Personen- oder Stammdaten bei django-auditlog registrieren
   (`auditlog.register(...)`), Geheimnisse und Passwörter mit `exclude_fields` ausnehmen.
 - Betriebsmodus: `BINTAFELN_DOMAIN` leer = Entwicklung (http), gesetzt = Produktion (TLS).
+- Freiwillige Meldung im bintafeln-Verzeichnis (ADR 0089): `apps/core/verzeichnis.py` (Name,
+  Kontakt, Version, Kennung – nie Personendaten), Empfang beim Herausgeber mit
+  `BINTAFELN_VERZEICHNIS_EMPFANG`; in Tests `verzeichnis._senden` ersetzen.
 - Betrieb auf dem Server über `./betrieb` (update, sichern, wiederherstellen, schluessel, status).
   Versionen `JJJJ.M.N` vergibt `.github/workflows/version.yml` nach jedem Merge, `update` bietet
   sie zur Auswahl an (auch ältere; dann Migrationen rückwärts, deshalb jede Migration

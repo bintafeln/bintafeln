@@ -7,9 +7,9 @@
     werden nach {{ tage }} Tagen gelöscht.</p>
   {% if darf_verlaengern or ausweise_gemeldet %}<div class="aktionen">
     {% if darf_verlaengern %}<a class="knopf" href="{% url 'kunden:verlaengern' %}">Gemeldete Ausweise zusammen prüfen und verlängern</a>{% endif %}
-    {% if ausweise_gemeldet %}<form method="post" action="{% url 'kunden:ausweise_auswahl' %}" class="inline" target="_blank">{% csrf_token %}
-      <button type="submit" name="gemeldet" value="1" class="knopf" title="Ein PDF mit allen offenen Meldungen „Neuen Ausweis drucken“; die Ausgabestellen bekommen die Antwort, die Meldungen sind danach erledigt"
-        onclick="setTimeout(() => location.reload(), 1500)">Alle gemeldeten Ausweise drucken ({{ ausweise_gemeldet }})</button></form>{% endif %}
+    {% if ausweise_gemeldet %}<a class="knopf" href="{% url 'kunden:ausweise_auswahl' %}?gemeldet=1" target="_blank" rel="noopener"
+      title="Ein PDF mit allen offenen Meldungen „Neuen Ausweis drucken“; die Ausgabestellen bekommen die Antwort, die Meldungen sind danach erledigt"
+      onclick="setTimeout(() => location.reload(), 1500)">Alle gemeldeten Ausweise drucken ({{ ausweise_gemeldet }})</a>{% endif %}
   </div>{% endif %}
   <p class="filter">Anliegen: <a href="{% url 'kunden:nachrichten' %}"{% if not anliegen %} aria-current="true"{% endif %}>alle</a>
     {% for wert, name in anliegen_liste %} · <a href="?anliegen={{ wert }}"{% if wert == anliegen %} aria-current="true"{% endif %}>{{ name }}</a>{% endfor %}</p>

@@ -80,6 +80,23 @@ def test_kamera_zeigt_bei_jedem_scan_ein_bild(angemeldet, admin, benutzer_mit_ro
         expect(dialog).to_be_hidden()
 
 
+def _pdf_fenster(seite, klick) -> str:
+    """Klickt, erwartet ein neues Fenster und liefert die Adresse des PDFs. Die Antwort wird
+    durch eine kleine Seite ersetzt: Die kopflose Chrome-Variante in CI zeigt PDFs nicht an."""
+    adressen = []
+
+    def ersetzen(route):
+        adressen.append(route.request.url)
+        route.fulfill(status=200, content_type="text/html", body="<p>PDF</p>")
+
+    seite.context.route(re.compile(r"/kunden/ausweise/"), ersetzen)
+    with seite.expect_popup() as fenster:
+        klick()
+    fenster.value.wait_for_load_state()
+    seite.context.unroute(re.compile(r"/kunden/ausweise/"))
+    return adressen[-1]
+
+
 def test_kundenliste_auswahl_und_export(angemeldet, admin):
     _haushalte(3)
     seite = angemeldet(admin)
@@ -101,6 +118,12 @@ def test_kundenliste_auswahl_und_export(angemeldet, admin):
         seite.get_by_role("button", name=re.compile("Als CSV exportieren")).click()
     inhalt = Path(laden.value.path()).read_text(encoding="utf-8-sig")
     assert "00042" in inhalt and "00041" not in inhalt and "00043" not in inhalt
+    # Ausweise drucken öffnet ein eigenes Fenster (iPad-App), nur mit dem angehakten Haushalt
+    adresse = _pdf_fenster(
+        seite, seite.get_by_role("button", name=re.compile("Ausweise drucken")).click
+    )
+    assert re.search(r"/kunden/ausweise/\?.*id=\d+", adresse)
+    assert seite.url.endswith("/kunden/")
 
 
 def test_online_antrag_oeffnet(seite, admin):
@@ -853,3 +876,53 @@ def test_warteliste_spalten_waehlen_bleibt_gemerkt(angemeldet, admin):
     seite.reload()
     expect(seite.locator('th[data-spalte="kontakt"]')).to_be_hidden()
     expect(seite.locator('td[data-spalte="geburtsdatum"]').first).to_be_visible()
+
+
+def test_verlaengern_begruendung_eintragen_und_pflicht(angemeldet, admin):
+    """Trotzdem verlängern: Begründung ist ein richtiges Feld und dann Pflicht (zeigen_bei.js)."""
+    from apps.kunden.models import KundenEinstellungen, Nachricht
+
+    e = KundenEinstellungen.laden()
+    e.verlaengern_regel = KundenEinstellungen.Verlaengern.ALLE
+    e.verlaengern_ab_alter = 60
+    e.save()
+    bis = timezone.localdate() + dt.timedelta(days=20)
+    h = Haushalt.objects.create(kundennummer="00057", ausweis_gueltig_bis=bis)
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Jonas", nachname="Probe",
+                          geburtsdatum=dt.date(1990, 2, 1))  # fmt: skip
+    Nachricht.objects.create(kundennummer="00057", anliegen="verlaengern", von="einlass")
+    seite = angemeldet(admin)
+    seite.goto(reverse("kunden:verlaengern"))
+    feld = seite.get_by_role("textbox", name=re.compile("Begründung"))
+    assert feld.evaluate("e => e.required") is False
+    seite.locator('input[name="wahl_00057"][value="verlaengern"]').check()
+    assert feld.evaluate("e => e.required") is True
+    seite.get_by_role("button", name="Ausgewählte ausführen").click()
+    expect(seite.get_by_text("Erledigt (")).to_have_count(0)  # Browser hält das Absenden an
+    feld.fill("Härtefall, Bescheid folgt")
+    seite.get_by_role("button", name="Ausgewählte ausführen").click()
+    expect(seite.get_by_text("1 Ausweis verlängert.")).to_be_visible()
+    h.refresh_from_db()
+    assert h.ausweis_gueltig_bis > timezone.localdate() + dt.timedelta(days=300)
+
+
+def test_ausweise_drucken_oeffnet_neues_fenster(angemeldet, admin):
+    """Sammeldruck öffnet das PDF in einem eigenen Fenster; die Seite bleibt (iPad-App)."""
+    from apps.kunden.models import Nachricht
+
+    for nummer in ("00061", "00062"):
+        Haushalt.objects.create(kundennummer=nummer)
+        Nachricht.objects.create(kundennummer=nummer, anliegen="verlaengern",
+                                 ergebnis="Verlängert bis 30.11.2027",
+                                 erledigt_am=timezone.now(), erledigt_von="chefin")  # fmt: skip
+    Nachricht.objects.create(kundennummer="00061", anliegen="ausweis")
+    seite = angemeldet(admin)
+    seite.goto(reverse("kunden:verlaengern"))
+    seite.locator('input[name="nummer"][value="00062"]').check()
+    knopf = seite.get_by_role("button", name="Angehakte Ausweise drucken (PDF)")
+    assert "nummer=00062" in _pdf_fenster(seite, knopf.click)
+    assert seite.url.endswith(reverse("kunden:verlaengern"))
+    seite.goto(reverse("kunden:nachrichten"))
+    link = seite.get_by_role("link", name=re.compile("Alle gemeldeten Ausweise drucken"))
+    assert "gemeldet=1" in _pdf_fenster(seite, link.click)
+    expect(seite.get_by_role("heading", name="Nachrichten der Ausgabestellen")).to_be_visible()

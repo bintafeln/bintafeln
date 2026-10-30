@@ -156,8 +156,9 @@ def test_alle_gemeldeten_ausweise_auf_einmal_drucken(admin_client, mitte, zentra
     seite = admin_client.get(reverse("kunden:nachrichten") + "?anliegen=adresse").content.decode()
     assert "Alle gemeldeten Ausweise drucken (2)" in seite
     url = reverse("kunden:ausweise_auswahl")
-    assert admin_client.get(url).status_code == 405  # nur per Knopf
-    antwort = admin_client.post(url, {"gemeldet": "1"})
+    # Ein Link mit eigenem Fenster, damit man in der iPad-App zurückkommt
+    assert f'href="{url}?gemeldet=1" target="_blank"' in seite
+    antwort = admin_client.get(url, {"gemeldet": "1"})
     assert antwort["Content-Type"] == "application/pdf"
     text = pdf_text(antwort)
     assert "(601)" in text and "(602)" in text and "(603)" not in text
@@ -185,7 +186,8 @@ def test_verlaengerte_ausweise_auswaehlen_und_drucken(admin_client, mitte, pdf_t
     assert 'name="nummer" value="701" form="ausweise-drucken"' in seite
     assert 'value="703" form="ausweise-drucken"' not in seite  # nicht verlängert
     assert "Angehakte Ausweise drucken (PDF)" in seite
-    antwort = admin_client.post(reverse("kunden:ausweise_auswahl"), {"nummer": ["702"]})
+    assert 'method="get"' in seite and 'target="_blank"' in seite
+    antwort = admin_client.get(reverse("kunden:ausweise_auswahl"), {"nummer": ["702"]})
     text = pdf_text(antwort)
     assert "(702)" in text and "(701)" not in text
     leer = admin_client.post(reverse("kunden:ausweise_auswahl"))

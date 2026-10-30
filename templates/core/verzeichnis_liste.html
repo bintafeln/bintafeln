@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titel %}Gemeldete Tafeln{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Gemeldete Tafeln ({{ eintraege|length }})</h1>
+  <p class="hinweis">Tafeln, die sich freiwillig im bintafeln-Verzeichnis gemeldet haben. Sie melden sich nach jedem Update
+    und einmal pro Woche; wer seit zwei Wochen nichts mehr gemeldet hat, ist markiert (Server aus oder nicht mehr in
+    Betrieb). Wer die Meldung ausschaltet, verschwindet von selbst aus der Liste.</p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Tafel</th><th>Kontakt</th><th>Version</th><th>Erste Meldung</th><th>Letzte Meldung</th></tr></thead>
+    <tbody>
+    {% for e in eintraege %}
+      <tr>
+        <td data-titel="Tafel">{{ e.name }}</td>
+        <td data-titel="Kontakt">{% if e.kontakt %}<a href="mailto:{{ e.kontakt }}">{{ e.kontakt }}</a>{% else %}–{% endif %}</td>
+        <td data-titel="Version">{{ e.version|default:"–" }}</td>
+        <td data-titel="Erste Meldung">{{ e.erste_meldung|date:"d.m.Y" }}</td>
+        <td data-titel="Letzte Meldung">{% if e.letzte_meldung < still_seit %}<span class="marke-warnung">{{ e.letzte_meldung|date:"d.m.Y" }}</span>{% else %}{{ e.letzte_meldung|date:"d.m.Y H:i" }}{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" class="hinweis">Noch keine Tafel gemeldet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}
