@@ -15,13 +15,17 @@
     <form method="post" action="{% url 'ausgabe:korrektur_beantragen' art obj.pk %}"
           hx-post="{% url 'ausgabe:korrektur_beantragen' art obj.pk %}" hx-target="#einlass">
       {% csrf_token %}
-      <label for="grund-{{ art }}-{{ obj.pk }}">Grund</label>
-      <select name="grund" id="grund-{{ art }}-{{ obj.pk }}" required>
-        <option value="">bitte wählen</option>
-        {% for g in korrekturgruende %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
-      </select>
-      <label for="anmerkung-{{ art }}-{{ obj.pk }}">Anmerkung (optional)</label>
-      <input type="text" name="anmerkung" id="anmerkung-{{ art }}-{{ obj.pk }}" maxlength="300">
+      <div class="feld">
+        <label for="grund-{{ art }}-{{ obj.pk }}">Grund *</label>
+        <select name="grund" id="grund-{{ art }}-{{ obj.pk }}" required>
+          <option value="">bitte wählen</option>
+          {% for g in korrekturgruende %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="feld">
+        <label for="anmerkung-{{ art }}-{{ obj.pk }}">Anmerkung (optional)</label>
+        <textarea name="anmerkung" id="anmerkung-{{ art }}-{{ obj.pk }}" rows="2" maxlength="300"></textarea>
+      </div>
       <button type="submit" class="knopf knopf-zweitrangig">Korrekturwunsch senden</button>
       <small class="hilfe">Zurücknehmen dürfen Admins bzw. berechtigte Rollen; sie entscheiden über den Wunsch.</small>
     </form>

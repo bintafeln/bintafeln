@@ -748,7 +748,9 @@ ul.kompakt { margin: .3rem 0; padding-left: 1rem; }
 /* Korrekturwünsche */
 .zuruecknehmen { margin: .25rem 0; }
 .korrektur-wunsch summary { cursor: pointer; color: var(--akzent-dunkel); }
-.korrektur-wunsch form { display: grid; gap: .4rem; margin-top: .5rem; max-width: 28rem; }
+.korrektur-wunsch form { margin-top: .5rem; max-width: 32rem; }
+.korrektur-wunsch form .feld { margin-bottom: .6rem; }
+.korrektur-wunsch form .hilfe { display: block; margin-top: .4rem; }
 .korrektur-karte { border-left: 4px solid var(--akzent); padding: .25rem 0 .25rem 1rem; margin: 0 0 1rem; }
 .korrektur-karte p { margin: .2rem 0; }
 
