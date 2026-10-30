@@ -721,11 +721,31 @@ def _verschieben_knopf(tag, e, haushalt) -> dict:
     }
 
 
+def _handys(haushalt) -> list[dict]:
+    """Eingerichtete Handys für „Wartezeit aufs Handy“ mit Knopf zum Zurücksetzen (ADR 0090)."""
+    from apps.aufruf.models import HandyZugang
+
+    anzahl = HandyZugang.objects.filter(kundennummer=haushalt.kundennummer).count()
+    if not anzahl:
+        return []
+    return [{"text": f"Wartezeit aufs Handy: {anzahl} Handy{'s' if anzahl != 1 else ''} "
+             "eingerichtet", "farbe": "info", "knopf": {
+                 "recht": "aufruf.steuern", "text": "Handys zurücksetzen",
+                 "url": reverse("aufruf:handys_zuruecksetzen", args=[haushalt.kundennummer]),
+                 "erklaerung": "Meldet alle Handys dieses Haushalts ab, z. B. bei neuem oder "
+                 "verlorenem Handy. Der Kunde meldet sich danach neu mit Kundennummer und "
+                 "Geburtsdatum an."}}]  # fmt: skip
+
+
 def einlass(haushalt, heute, stelle=None) -> list[dict]:
-    """Hinweis für die Einlass-Karte: wann aufgerufen, zu spät oder noch nicht dran. An einer
-    Ausgabestelle ohne Aufruf erscheint nichts, auch nicht für Kunden anderer Stellen."""
+    """Hinweise für die Einlass-Karte: Handys für die Wartezeit und wann aufgerufen, zu spät oder
+    noch nicht dran. An einer Ausgabestelle ohne Aufruf erscheint nichts."""
     if stelle is not None and not AufrufEinstellungen.laden(stelle).aktiv:
         return []
+    return _handys(haushalt) + _einlass_aufruf(haushalt, heute, stelle)
+
+
+def _einlass_aufruf(haushalt, heute, stelle=None) -> list[dict]:
     gruppe = haushalt.kundengruppe
     stellen = [s for s in (gruppe.ausgabestelle if gruppe else None, stelle) if s]
     tag = next((t for t in (tag_holen(s, heute) for s in stellen) if t), None)

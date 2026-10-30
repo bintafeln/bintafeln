@@ -221,6 +221,10 @@ def kunde_pdf(h: Haushalt) -> bytes:
             for v in versaende
         ], breiten=[0.2, 0.2, 0.6])  # fmt: skip
 
+    from apps.core import module
+
+    module.auskunft_haushalt(h, doc)
+
     from apps.core.models import PapierkorbEintrag, TafelEinstellungen
 
     # Gelöschtes zu diesem Haushalt, das noch im Papierkorb liegt (ADR 0073)

@@ -2,11 +2,14 @@
 
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
+from apps.aufruf import handy
 from apps.aufruf.forms import EinstellungenForm, InfoForm
 from apps.aufruf.models import AufrufEinstellungen, AufrufInfo, neuer_schluessel
+from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.konten.views import nicht_in_demo
 from apps.kunden.models import Ausgabestelle
@@ -21,7 +24,17 @@ def einstellungen(request):
                for s in Ausgabestelle.objects.filter(aktiv=True)]  # fmt: skip
     return render(request, "aufruf/einstellungen.html", {
         "stellen": stellen, "infos": AufrufInfo.objects.prefetch_related("ausgabestellen"),
+        "warten_adresse": request.build_absolute_uri(reverse("warten:seite")),
+        "handy_an": any(e.handy and e.aktiv for _, e in stellen),
     })  # fmt: skip
+
+
+@never_cache
+@einstellen
+def aushang(request):
+    """Aushang mit QR-Code zu /warten/ zum einmaligen Drucken (ADR 0090)."""
+    adresse = request.build_absolute_uri(reverse("warten:seite"))
+    return pdf_antwort(handy.aushang_pdf(adresse), "wartezeit-aushang.pdf")
 
 
 @never_cache

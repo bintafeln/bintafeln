@@ -1,0 +1,21 @@
+{% extends "aufruf/warten_basis.html" %}
+{% block inhalt %}
+<section class="karte antrag-karte warten-karte">
+  <h1>{{ t.titel }}</h1>
+  {% if fehler_text %}<p class="meldung error" role="alert">{{ fehler_text }}</p>{% endif %}
+  <p>{{ t.einleitung }}</p>
+  <form method="post" action="{% url 'warten:seite' %}{% if request.GET.sprache %}?sprache={{ request.GET.sprache }}{% endif %}">
+    {% csrf_token %}
+    <div class="feld">
+      <label for="kundennummer">{{ t.kundennummer }}</label>
+      <input type="text" name="kundennummer" id="kundennummer" inputmode="numeric" autocomplete="off" required maxlength="20">
+    </div>
+    <div class="feld">
+      <label for="geburtsdatum">{{ t.geburtsdatum }}</label>
+      <input type="date" name="geburtsdatum" id="geburtsdatum" required>
+    </div>
+    <button type="submit" class="knopf knopf-gross">{{ t.anmelden }}</button>
+  </form>
+  <p class="hinweis">{{ t.datenschutz }}</p>
+</section>
+{% endblock %}

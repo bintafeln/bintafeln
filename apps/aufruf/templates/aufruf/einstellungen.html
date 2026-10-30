@@ -13,7 +13,7 @@
     {% for s, e in stellen %}
       <tr>
         <td data-titel="Ausgabestelle"><strong>{{ s.name }}</strong></td>
-        <td data-titel="Einstellungen">{% if not e.aktiv %}<strong>Kein Aufruf an dieser Ausgabestelle</strong>{% else %}{{ e.anzahl }} Nummer{{ e.anzahl|pluralize:"n" }} je Aufruf{% if e.vorrang_feld %}<br>Vorrang: {{ e.vorrang_feld }}{% endif %}{% if e.wochentag_probe is not None %}<br><span class="marke-warnung">Probelauf als {{ e.get_wochentag_probe_display }}</span>{% endif %}{% endif %}
+        <td data-titel="Einstellungen">{% if not e.aktiv %}<strong>Kein Aufruf an dieser Ausgabestelle</strong>{% else %}{{ e.anzahl }} Nummer{{ e.anzahl|pluralize:"n" }} je Aufruf{% if e.vorrang_feld %}<br>Vorrang: {{ e.vorrang_feld }}{% endif %}{% if e.handy %}<br>Wartezeit aufs Handy: an (bis {{ e.handy_geraete }} Handy{{ e.handy_geraete|pluralize:"s" }}){% endif %}{% if e.wochentag_probe is not None %}<br><span class="marke-warnung">Probelauf als {{ e.get_wochentag_probe_display }}</span>{% endif %}{% endif %}
           <br><a href="{% url 'aufruf:einstellungen_stelle' s.pk %}">ändern</a></td>
         <td data-titel="Links">
           {% with basis=request.scheme|add:"://"|add:request.get_host %}
@@ -39,6 +39,19 @@
     </tbody>
   </table>
   </div>
+</section>
+
+<section class="karte breit">
+  <h2>Wartezeit aufs Handy</h2>
+  <p>Kunden sehen unter <a href="{% url 'warten:seite' %}" target="_blank" rel="noopener">{{ warten_adresse }}</a> auf
+    ihrem Handy, wie viele noch vor ihnen sind und ungefähr wie lange es dauert. Einmal anmelden mit Kundennummer und
+    Geburtsdatum der Hauptperson, danach merkt sich das Handy den Haushalt. Gezeigt wird nur der eigene Platz an der
+    eigenen Ausgabestelle, keine Namen. Einschalten je Ausgabestelle unter „ändern“.</p>
+  {% if not handy_an %}<p class="hinweis">Zurzeit an keiner Ausgabestelle eingeschaltet.</p>{% endif %}
+  <p><a class="knopf knopf-zweitrangig" href="{% url 'aufruf:aushang' %}" target="_blank" rel="noopener">Aushang mit QR-Code (PDF)</a></p>
+  <p class="hinweis">Den Aushang einmal drucken und am Eingang aufhängen – er gilt dauerhaft und an allen Ausgabestellen.
+    Auf neu gedruckten Ausweisen kann zusätzlich ein persönlicher QR-Code stehen (Element „QR-Code Wartezeit“ in der
+    Ausweis-Vorlage); er gilt nur bis zum nächsten Druck.</p>
 </section>
 
 <section class="karte breit">

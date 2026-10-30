@@ -1484,3 +1484,17 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 .verlaengern-grund textarea { width: 100%; min-height: 3.2rem; }
 .verlaengern-grund.pflicht label { color: var(--fehler); font-weight: 600; }
 .verlaengern-grund.pflicht textarea { border-color: var(--akzent); }
+/* Ausweis-Gestalter: Vorschau des QR-Codes (Wartezeit aufs Handy, ADR 0090) */
+.ausweis-element .qr-vorschau {
+  display: block; width: 100%; height: 100%; pointer-events: none;
+  background: repeating-conic-gradient(#000 0 25%, #fff 0 50%) 0 0 / 25% 25%;
+}
+/* Wartezeit aufs Handy (/warten/) */
+.warten-karte { text-align: center; }
+.warten-kopf { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; color: var(--leise); }
+.warten-gross { font-size: 2.2rem; font-weight: 700; margin: 1.5rem 0 .5rem; line-height: 1.2; }
+.warten-mittel { font-size: 1.3rem; margin: 1.5rem 0; }
+.warten-zeit { font-size: 1.3rem; margin: 0 0 1.5rem; }
+.warten-jetzt { background: #e6f4ea; }
+.warten-jetzt .warten-gross { color: #1e7b34; }
+.warten-karte form .feld { text-align: start; }

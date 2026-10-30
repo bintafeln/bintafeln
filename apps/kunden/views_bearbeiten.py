@@ -437,7 +437,8 @@ def ausweis_gestalten(request):
         "beispiel": {**ausweis.BEISPIEL, "ausweisname": vorlage.name},
         "platzhalter": ausweis.PLATZHALTER,
         "masse": {"b": ausweis.BREITE_MM, "h": ausweis.HOEHE_MM,
-                  "barcode_b": ausweis.BARCODE_MIN_B, "barcode_h": ausweis.BARCODE_MIN_H},
+                  "barcode_b": ausweis.BARCODE_MIN_B, "barcode_h": ausweis.BARCODE_MIN_H,
+                  "qr": ausweis.QR_MIN},
         "logo": tafel.logo.url if tafel.logo else "",
         "hintergrund": vorlage.hintergrund.url if vorlage.hintergrund else "",
         "hintergrund_hinten": vorlage.hintergrund_rueckseite.url

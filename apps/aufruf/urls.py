@@ -10,6 +10,8 @@ urlpatterns = [
     path("<int:pk>/", views.steuerung, name="steuerung"),
     path("<int:pk>/mobil/", views.mobil, name="mobil"),
     path("<int:pk>/verschieben/<str:nummer>/", views.verschieben, name="verschieben"),
+    path("handys/<str:nummer>/zuruecksetzen/", views.handys_zuruecksetzen,
+         name="handys_zuruecksetzen"),  # fmt: skip
     path("<int:pk>/starten/", views.starten, name="starten"),
     path("<int:pk>/weiter/", views.weiter, name="weiter"),
     path("<int:pk>/zurueck/", views.zurueck, name="zurueck"),
@@ -27,6 +29,7 @@ urlpatterns = [
     path("einstellungen/<int:pk>/", views_einstellungen.stelle, name="einstellungen_stelle"),
     path("einstellungen/<int:pk>/schluessel/", views_einstellungen.schluessel_neu,
          name="schluessel_neu"),
+    path("einstellungen/aushang.pdf", views_einstellungen.aushang, name="aushang"),
     path("einstellungen/info/neu/", views_einstellungen.info, name="info_neu"),
     path("einstellungen/info/<int:pk>/", views_einstellungen.info, name="info"),
     path("einstellungen/info/<int:pk>/loeschen/", views_einstellungen.info_loeschen,
