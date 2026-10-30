@@ -134,6 +134,12 @@ def test_impressum_auf_der_anmeldeseite(client, admin):
     seite = client.get(reverse("konten:anmelden")).content.decode()
     assert 'href="https://tafel.example.org/impressum" rel="noopener">Impressum der Tafel ' in seite
     assert seite.count("https://tafel.example.org/impressum") == 2  # auch unten in der Fußzeile
+    # Interner Text (Tafel-Einstellungen) hat Vorrang: der Link führt dann auf die interne Seite,
+    # nicht mehr nach außen – auch im App-/Anmelde-Footer (ADR 0094).
+    TafelEinstellungen.objects.update(impressum_text="<p>Impressum der Tafel Musterstadt</p>")
+    intern = reverse("antrag:rechtstext", args=["de", "impressum"])
+    seite = client.get(reverse("konten:anmelden")).content.decode()
+    assert intern in seite and "tafel.example.org/impressum" not in seite
 
 
 def test_sperre_nach_zu_vielen_falschen_passwoertern(client, admin):

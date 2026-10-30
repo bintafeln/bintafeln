@@ -20,6 +20,11 @@ passendes PDF; manche möchten diese Texte lieber direkt im Programm pflegen.
   (`AntragEinstellungen.datenschutz_url` usw.), weil sie zur Fußzeile und den Häkchen des Formulars
   gehören. `core` liest den Text selbst; `antraege` hängt (wie erlaubt) von `core` ab, nicht
   umgekehrt.
+- Dieselbe Vorrang-Logik (interner Text vor externem Link) gilt überall, wo das Impressum steht:
+  nicht nur in der Antragsfußzeile, sondern auch im App-Footer und auf der Anmeldeseite
+  (`_impressum()` in `apps/core/context_processors.py` nutzt `rechtslink("impressum", "de")`). So
+  zeigt ein hinterlegter Text den internen Link, und ein geleerter externer Link verschwindet überall
+  gemeinsam.
 - Angezeigt wird der Text bereinigt über `apps.core.html.bereinigen()` (nh3); Skripte und
   gefährliche Attribute werden entfernt. Gespeichert wird roh, bereinigt erst beim Anzeigen.
 - Die öffentliche Seite trägt das Logo und die Farben der Tafel, zeigt aber **nur den jeweiligen
