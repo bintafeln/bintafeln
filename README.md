@@ -207,6 +207,11 @@ Authenticator-App verlangt (z. B. Aegis, FreeOTP, Google Authenticator). Das Anm
 fragt zuerst nur Benutzername und Passwort; ist Zwei-Faktor eingerichtet, folgt ein eigenes
 Fenster für den Code (5 Minuten gültig, höchstens 5 Versuche).
 
+**Schutz vor Durchprobieren:** Nach 5 falschen Passwörtern ist ein Benutzername 15 Minuten
+gesperrt – auch das richtige Passwort wird dann kurz abgewiesen (eine richtige Anmeldung setzt den
+Zähler sofort zurück). Der Zähler liegt im gemeinsamen Datenbank-Cache (ADR 0093), gilt also über
+alle Server-Prozesse und übersteht ein Update.
+
 - **Einrichten:** „Mein Konto“ → „Jetzt einrichten“, QR-Code scannen, Code eingeben. Danach
   erscheinen einmalig **10 Notfallcodes**. Jeder funktioniert einmal anstelle der App.
 - **Pflicht je Rolle:** in der Rolle („Einstellungen → Rollen und Rechte“) per Häkchen.

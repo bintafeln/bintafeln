@@ -129,6 +129,17 @@ DATABASES = {
     }
 }
 
+# Gemeinsamer, dauerhafter Cache in der Datenbank (ADR 0093). Die App läuft mit mehreren
+# gunicorn-Prozessen; ein prozesslokaler Speicher-Cache würde Zähler nicht teilen und bei jedem
+# Update vergessen. Darauf bauen die Sperre nach zu vielen Anmeldeversuchen und weitere Drosseln.
+# Die Tabelle legt die Migration core/0022 an.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "bintafeln_cache",
+    }
+}
+
 AUTH_USER_MODEL = "konten.Benutzer"
 
 AUTH_PASSWORD_VALIDATORS = [
