@@ -1504,3 +1504,21 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 .nachtragen tr.erledigt td { color: var(--leise); }
 .nachtragen input.betrag { width: 6rem; }
 .nachtragen .ohne-umbruch { white-space: nowrap; }
+/* Nachrichten der Ausgabestellen: kompakte Karten statt Tabelle */
+.nachrichten { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: .6rem; }
+.nachricht { border: 1px solid var(--rand); border-left: 4px solid var(--akzent); border-radius: var(--radius); padding: .6rem .8rem; }
+.nachricht.erledigt { border-left-color: var(--leise); opacity: .85; }
+.nachricht-kopf { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .6rem; }
+.nachricht-kunde { font-weight: 700; }
+.nachricht-anliegen { font-size: .85rem; padding: 0 .5rem; border-radius: 999px; background: var(--erfolg); }
+.nachricht-text { margin: .35rem 0; white-space: normal; }
+.nachricht-knoepfe { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .4rem; margin-top: .45rem; }
+.nachricht-knoepfe .knopf, .nachricht-antwort summary.knopf { width: auto; padding: .3rem .8rem; min-height: 0; font-size: .95rem; }
+.nachricht-antwort { margin-top: 0; flex: 1 1 auto; }
+.nachricht-antwort summary.knopf { display: inline-block; list-style: none; }
+.nachricht-antwort summary::-webkit-details-marker { display: none; }
+.nachricht-antwort[open] summary { margin-bottom: .3rem; }
+.nachrichten-reiter .zahl { font-size: .8rem; font-weight: 700; }
+.nachrichten-erledigt > summary { cursor: pointer; list-style: revert; }
+.nachrichten-erledigt > summary h2 { display: inline; }
+.nachrichten-reiter { margin-top: .75rem; }

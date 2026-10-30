@@ -11,11 +11,15 @@
       title="Ein PDF mit allen offenen Meldungen „Neuen Ausweis drucken“; die Ausgabestellen bekommen die Antwort, die Meldungen sind danach erledigt"
       onclick="setTimeout(() => location.reload(), 1500)">Alle gemeldeten Ausweise drucken ({{ ausweise_gemeldet }})</a>{% endif %}
   </div>{% endif %}
-  <p class="filter">Anliegen: <a href="{% url 'kunden:nachrichten' %}"{% if not anliegen %} aria-current="true"{% endif %}>alle</a>
-    {% for wert, name in anliegen_liste %} · <a href="?anliegen={{ wert }}"{% if wert == anliegen %} aria-current="true"{% endif %}>{{ name }}</a>{% endfor %}</p>
+  <nav class="reiter nachrichten-reiter" aria-label="Anliegen">
+    <a href="{% url 'kunden:nachrichten' %}"{% if not anliegen %} aria-current="page"{% endif %}>alle <span class="zahl">{{ offen_gesamt }}</span></a>
+    {% for wert, name, zahl in anliegen_liste %}<a href="?anliegen={{ wert }}"{% if wert == anliegen %} aria-current="page"{% endif %}>{{ name }} <span class="zahl">{{ zahl }}</span></a>{% endfor %}
+  </nav>
   <h2>Offen ({{ offen|length }})</h2>
   {% include "kunden/_nachrichten_tabelle.html" with liste=offen %}
-  <h2>Erledigt</h2>
-  {% include "kunden/_nachrichten_tabelle.html" with liste=erledigt %}
+  <details class="nachrichten-erledigt">
+    <summary><h2>Erledigt ({{ erledigt|length }})</h2></summary>
+    {% include "kunden/_nachrichten_tabelle.html" with liste=erledigt %}
+  </details>
 </section>
 {% endblock %}

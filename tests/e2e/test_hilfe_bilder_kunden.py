@@ -134,7 +134,7 @@ def test_hilfe_bild_kunden_nachrichten(angemeldet, admin, muster):
                              stelle=Ausgabestelle.objects.get(name="Ausgabestelle Mitte"),
                              text="Ausweis ist verloren gegangen.")  # fmt: skip
     seite = oeffnen(angemeldet, admin, reverse("kunden:nachrichten"))
-    zeile = seite.locator("tbody tr", has_text="00051")
+    zeile = seite.locator("li.nachricht", has_text="00051")
     zeile.locator("summary", has_text="Antworten").click()
     zeile.locator("textarea").fill("Danke, ist eingetragen.")
     karte = seite.locator("section.karte").first
@@ -142,7 +142,7 @@ def test_hilfe_bild_kunden_nachrichten(angemeldet, admin, muster):
         seite,
         "kunden-bearbeiten-nachrichten",
         karte,
-        Marke(seite.locator("p.filter"), "rahmen", 1),
+        Marke(seite.locator("nav.nachrichten-reiter"), "rahmen", 1),
         Marke(zeile.get_by_role("button", name="✓ erledigt"), "rahmen", 2),
         Marke(zeile.get_by_role("button", name="Antwort senden"), "rahmen", 3),
     )
@@ -357,3 +357,18 @@ def test_hilfe_bild_datenimport(angemeldet, admin, muster, sicherung):
         Marke(fehlt.locator("select").first, nummer=3, von="rechts", laenge=50),
     )
     # fmt: skip
+
+
+def test_nachrichten_auf_dem_handy(angemeldet, admin, muster):
+    """Schmale Ansicht: Karten statt Tabelle, Erledigte eingeklappt."""
+    nord = Ausgabestelle.objects.get(name="Ausgabestelle Nord")
+    Nachricht.objects.create(kundennummer="00042", anliegen="sonstiges", von="Einlass",
+                             stelle=nord)  # fmt: skip
+    Nachricht.objects.create(kundennummer="00042", anliegen="sonstiges", von="Einlass",
+                             erledigt_am=timezone.now(), erledigt_von="chefin")  # fmt: skip
+    seite = oeffnen(angemeldet, admin, reverse("kunden:nachrichten"), breite=390, hoehe=844)
+    expect(seite.locator("nav.nachrichten-reiter")).to_contain_text("Sonstiges 1")
+    expect(seite.locator("li.nachricht").first).to_be_visible()
+    expect(seite.get_by_role("button", name="wieder öffnen")).to_be_hidden()
+    seite.locator(".nachrichten-erledigt summary").click()
+    expect(seite.get_by_role("button", name="wieder öffnen")).to_be_visible()

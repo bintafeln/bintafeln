@@ -75,13 +75,19 @@ def liste(request):
         return redirect(weiter)
     alle = Nachricht.objects.select_related("stelle")
     anliegen = request.GET.get("anliegen", "")
+    zahlen = Counter(Nachricht.objects.filter(erledigt_am__isnull=True)
+                     .values_list("anliegen", flat=True))  # fmt: skip
+    # nur Anliegen mit offenen Nachrichten als Reiter (und das gewählte), mit Zahl
+    reiter = [(k, name, zahlen[k]) for k, name in NACHRICHT_ANLIEGEN_WAEHLBAR
+              if zahlen[k] or k == anliegen]  # fmt: skip
     if anliegen in dict(NACHRICHT_ANLIEGEN):
         alle = alle.filter(anliegen=anliegen)
     return render(request, "kunden/nachrichten.html", {
         "offen": alle.filter(erledigt_am__isnull=True),
-        "erledigt": alle.filter(erledigt_am__isnull=False).order_by("-erledigt_am")[:100],
+        "erledigt": list(alle.filter(erledigt_am__isnull=False).order_by("-erledigt_am")[:100]),
+        "offen_gesamt": sum(zahlen.values()),
         "tage": Nachricht.AUFBEWAHREN_TAGE,
-        "anliegen": anliegen, "anliegen_liste": NACHRICHT_ANLIEGEN_WAEHLBAR,
+        "anliegen": anliegen, "anliegen_liste": reiter,
         "darf_verlaengern": rollen.hat_recht(request.user, "kunden.bearbeiten"),
         "ausweise_gemeldet": rollen.hat_recht(request.user, "kunden.ausweis")
         and Nachricht.objects.filter(anliegen=an_stelle.AUSWEIS, erledigt_am__isnull=True)
