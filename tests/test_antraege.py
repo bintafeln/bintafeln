@@ -795,6 +795,26 @@ def test_rechtstext_intern_oder_extern(client, offen):
     assert client.get(reverse("antrag:rechtstext", args=["de", "unbekannt"])).status_code == 404
 
 
+def test_rechtstext_zurueck_fuehrt_woher_man_kam(client, offen):
+    """„Zurück" führt dorthin, woher man kam – nicht immer zum Antrag."""
+    from apps.core.models import TafelEinstellungen
+
+    t = TafelEinstellungen.laden()
+    t.impressum_text = "<p>Impressum</p>"
+    t.save()
+    intern = reverse("antrag:rechtstext", args=["de", "impressum"])
+    # Ohne Herkunft: gar kein Zurück-Link (der Browser-Zurück genügt)
+    ohne = client.get(intern).content.decode()
+    assert 'class="abseits"' not in ohne
+    # Von der Anmeldeseite gekommen: Zurück führt dorthin zurück
+    anmelden = "http://testserver" + reverse("konten:anmelden")
+    mit = client.get(intern, HTTP_REFERER=anmelden).content.decode()
+    assert f'href="{anmelden}"' in mit
+    # Fremde Seite als Herkunft wird nicht übernommen
+    fremd = client.get(intern, HTTP_REFERER="https://boese.example.org/x").content.decode()
+    assert "boese.example.org" not in fremd
+
+
 def test_rechtstexte_bearbeiten(admin_client, offen):
     """Rechtstexte liegen in den Tafel-Einstellungen (ADR 0094)."""
     from apps.core.models import TafelEinstellungen

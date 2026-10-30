@@ -239,4 +239,14 @@ def rechtstext(request, sprache, art):
     # Nur den jeweiligen Text zeigen: ohne Sprachwahl (der Text ist einsprachig) und ohne die
     # Fußzeile mit den anderen Links.
     kontext["nur_rechtstext"] = True
+    # „Zurück" führt dorthin, woher man kam (Antrag, App-Footer, Anmeldeseite …), nicht immer zum
+    # Antrag. Nur ein Verweis von derselben Seite wird übernommen; sonst kein Link (der
+    # Zurück-Knopf des Browsers genügt).
+    from django.utils.http import url_has_allowed_host_and_scheme
+
+    herkunft = request.META.get("HTTP_REFERER", "")
+    if herkunft and url_has_allowed_host_and_scheme(
+        herkunft, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        kontext["zurueck"] = herkunft
     return render(request, "antraege/rechtstext.html", kontext)
