@@ -1,0 +1,8 @@
+{% extends "antraege/oeffentlich.html" %}
+{% block inhalt %}
+<article class="antrag-bereich antrag-rechtstext">
+  <h1>{{ ueberschrift }}</h1>
+  {{ rechtstext }}
+  <p class="abseits"><a href="{% url 'antrag:formular' s.code %}">← {{ t.titel }}</a></p>
+</article>
+{% endblock %}

@@ -100,6 +100,12 @@ class AntragEinstellungen(models.Model):
     einverstaendnis_abfragen = models.BooleanField(
         "Häkchen „Ich habe die Einverständniserklärung gelesen und bin einverstanden.“",
         default=True)  # fmt: skip
+    voraussetzungen_abfragen = models.BooleanField(
+        "Häkchen „Voraussetzungen gelesen“ (nur sinnvoll mit Link oben)", default=False
+    )
+    erklaerungen_abfragen = models.BooleanField(
+        "Häkchen „Erklärungen gelesen“ (z. B. Flyer; nur mit Link oben sinnvoll)",
+        default=False)  # fmt: skip
     impressum_url = models.URLField("Link zum Impressum", blank=True)
     # Aufbau der Seite: mitgelieferte Teile ein-/ausblenden; eigene Bereiche je Sprache: AntragText
     kopf_zeigen = models.BooleanField(
@@ -125,6 +131,14 @@ class AntragEinstellungen(models.Model):
         help_text="z. B. PDF der Tafel zum Ausdrucken und Unterschreiben (Einverständnis zur "
         "Verarbeitung der Daten).",
     )  # fmt: skip
+    # Statt (oder zusätzlich zu) einem externen Link lässt sich der Text hier hinterlegen; dann
+    # führt der Link auf eine interne, öffentliche Seite (ADR 0094). HTML wird beim Anzeigen
+    # über apps.core.html bereinigt.
+    datenschutz_text = models.TextField("Datenschutzerklärung (Text, HTML möglich)", blank=True)
+    impressum_text = models.TextField("Impressum (Text, HTML möglich)", blank=True)
+    einverstaendnis_text = models.TextField(
+        "Einverständniserklärung (Text, HTML möglich)", blank=True
+    )
     # API-Schlüssel für die KI-Übersetzung der eigenen Texte (ADR 0082), verschlüsselt (ADR 0016)
     ki_schluessel_verschluesselt = models.TextField("API-Schlüssel (verschlüsselt)", blank=True)
     eigenes_css = models.TextField(
@@ -184,6 +198,20 @@ class AntragEinstellungen(models.Model):
     def laden(cls) -> "AntragEinstellungen":
         einstellungen, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
         return einstellungen
+
+    # Datenschutz, Impressum, Einverständnis: interner Text oder externer Link (ADR 0094)
+    RECHTSTEXTE = ("datenschutz", "impressum", "einverstaendnis")
+
+    def rechtslink(self, art: str, sprache: str) -> str:
+        """Interne Seite, wenn ein Text hinterlegt ist, sonst der externe Link (sonst leer)."""
+        from django.urls import reverse
+
+        if (getattr(self, f"{art}_text", "") or "").strip():
+            return reverse("antrag:rechtstext", args=[sprache, art])
+        return getattr(self, f"{art}_url", "")
+
+    def rechtslinks(self, sprache: str) -> dict:
+        return {art: self.rechtslink(art, sprache) for art in self.RECHTSTEXTE}
 
 
 def naechste_antragsnummer() -> int:
@@ -264,6 +292,8 @@ class Antrag(models.Model):
     # Bisher war das Häkchen zum Speichern immer Pflicht, daher für alte Anträge „ja“
     einwilligung_bestaetigt = models.BooleanField("Speichern der Angaben bestätigt", default=True)
     datenschutz_bestaetigt = models.BooleanField("Datenschutzerklärung bestätigt", default=False)
+    voraussetzungen_bestaetigt = models.BooleanField("Voraussetzungen bestätigt", default=False)
+    erklaerungen_bestaetigt = models.BooleanField("Erklärungen bestätigt", default=False)
     einverstaendnis_bestaetigt = models.BooleanField("Einverständniserklärung bestätigt",
                                                      default=False)  # fmt: skip
     ausgabestelle = models.CharField("Bevorzugte Ausgabestelle", max_length=100, blank=True)

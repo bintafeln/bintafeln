@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% load static %}
+{% block titel %}Datenschutz, Impressum, Einverständnis{% endblock %}
+{% block inhalt %}
+<script src="{% static 'js/html_editor.js' %}" defer></script>
+<section class="karte">
+  <p><a href="{% url 'antraege:einstellungen' %}">← Anträge einstellen</a></p>
+  <h1>Datenschutz, Impressum, Einverständniserklärung</h1>
+  <p class="hinweis">Diese Texte können Sie hier direkt schreiben (im Reiter <strong>Gestalten</strong> wie in einem
+    Schreibprogramm oder im Reiter <strong>HTML</strong>). Ist ein Text ausgefüllt, führt der Link im Antragsformular auf
+    eine eigene Seite mit diesem Text. Lassen Sie ein Feld leer, gilt stattdessen der externe Link aus den Antrags-Einstellungen
+    (falls dort einer eingetragen ist). Skripte werden beim Anzeigen entfernt.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <div class="aktionen"><button type="submit" class="knopf">Speichern</button></div>
+  </form>
+  <ul class="rechtstext-ansehen">
+    {% if e.datenschutz_text %}<li><a href="{% url 'antrag:rechtstext' 'de' 'datenschutz' %}" target="_blank" rel="noopener">Datenschutzerklärung ansehen ↗</a></li>{% endif %}
+    {% if e.impressum_text %}<li><a href="{% url 'antrag:rechtstext' 'de' 'impressum' %}" target="_blank" rel="noopener">Impressum ansehen ↗</a></li>{% endif %}
+    {% if e.einverstaendnis_text %}<li><a href="{% url 'antrag:rechtstext' 'de' 'einverstaendnis' %}" target="_blank" rel="noopener">Einverständniserklärung ansehen ↗</a></li>{% endif %}
+  </ul>
+</section>
+{% endblock %}

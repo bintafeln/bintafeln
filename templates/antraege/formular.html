@@ -3,10 +3,10 @@
 <section class="karte antrag-karte">
   {% if e.ueberschrift_zeigen %}<h1 class="antrag-titel">{{ ueberschrift }}</h1>{% endif %}
   <div class="antrag-einleitung">{{ einleitung }}</div>
-  {% if e.voraussetzungen_url or e.erklaerungen_url or e.einverstaendnis_url %}<ul class="antrag-links">
+  {% if e.voraussetzungen_url or e.erklaerungen_url or rechtslinks.einverstaendnis %}<ul class="antrag-links">
     {% if e.voraussetzungen_url %}<li><a href="{{ e.voraussetzungen_url }}" target="_blank" rel="noopener">{{ t.voraussetzungen }}</a></li>{% endif %}
     {% if e.erklaerungen_url %}<li><a href="{{ e.erklaerungen_url }}" target="_blank" rel="noopener">{{ t.erklaerungen }}</a></li>{% endif %}
-    {% if e.einverstaendnis_url %}<li><a href="{{ e.einverstaendnis_url }}" target="_blank" rel="noopener">{{ t.einverstaendnis }}</a></li>{% endif %}
+    {% if rechtslinks.einverstaendnis %}<li><a href="{{ rechtslinks.einverstaendnis }}" target="_blank" rel="noopener">{{ t.einverstaendnis }}</a></li>{% endif %}
   </ul>{% endif %}
   <p class="hinweis">{{ t.pflicht_hinweis }}</p>
   {% if fehler %}<p class="sicherung sicherung-fehler" role="alert">{{ fehler }}</p>{% endif %}
@@ -82,13 +82,23 @@
     {% include "antraege/_feld.html" with feld=form.nachricht %}
     {% if form.datenschutz_bestaetigt %}<div class="feld feld-haken{% if form.datenschutz_bestaetigt.errors %} hat-fehler{% endif %}">
       <label for="{{ form.datenschutz_bestaetigt.id_for_label }}">{{ form.datenschutz_bestaetigt }} {{ t.datenschutz_bestaetigt }} *</label>
-      {% if e.datenschutz_url %}<small class="hilfe"><a href="{{ e.datenschutz_url }}" target="_blank" rel="noopener">{{ t.datenschutz }}</a></small>{% endif %}
+      {% if rechtslinks.datenschutz %}<small class="hilfe"><a href="{{ rechtslinks.datenschutz }}" target="_blank" rel="noopener">{{ t.datenschutz }}</a></small>{% endif %}
       {% for fehler in form.datenschutz_bestaetigt.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
     </div>{% endif %}
     {% if form.einverstaendnis_bestaetigt %}<div class="feld feld-haken{% if form.einverstaendnis_bestaetigt.errors %} hat-fehler{% endif %}">
       <label for="{{ form.einverstaendnis_bestaetigt.id_for_label }}">{{ form.einverstaendnis_bestaetigt }} {{ t.einverstaendnis_bestaetigt }} *</label>
-      {% if e.einverstaendnis_url %}<small class="hilfe"><a href="{{ e.einverstaendnis_url }}" target="_blank" rel="noopener">{{ t.einverstaendnis }}</a></small>{% endif %}
+      {% if rechtslinks.einverstaendnis %}<small class="hilfe"><a href="{{ rechtslinks.einverstaendnis }}" target="_blank" rel="noopener">{{ t.einverstaendnis }}</a></small>{% endif %}
       {% for fehler in form.einverstaendnis_bestaetigt.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
+    </div>{% endif %}
+    {% if form.voraussetzungen_bestaetigt %}<div class="feld feld-haken{% if form.voraussetzungen_bestaetigt.errors %} hat-fehler{% endif %}">
+      <label for="{{ form.voraussetzungen_bestaetigt.id_for_label }}">{{ form.voraussetzungen_bestaetigt }} {{ form.voraussetzungen_bestaetigt.label }} *</label>
+      {% if e.voraussetzungen_url %}<small class="hilfe"><a href="{{ e.voraussetzungen_url }}" target="_blank" rel="noopener">{{ t.voraussetzungen }}</a></small>{% endif %}
+      {% for fehler in form.voraussetzungen_bestaetigt.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
+    </div>{% endif %}
+    {% if form.erklaerungen_bestaetigt %}<div class="feld feld-haken{% if form.erklaerungen_bestaetigt.errors %} hat-fehler{% endif %}">
+      <label for="{{ form.erklaerungen_bestaetigt.id_for_label }}">{{ form.erklaerungen_bestaetigt }} {{ form.erklaerungen_bestaetigt.label }} *</label>
+      {% if e.erklaerungen_url %}<small class="hilfe"><a href="{{ e.erklaerungen_url }}" target="_blank" rel="noopener">{{ t.erklaerungen }}</a></small>{% endif %}
+      {% for fehler in form.erklaerungen_bestaetigt.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
     </div>{% endif %}
     {% if form.einwilligung %}<div class="feld feld-haken{% if form.einwilligung.errors %} hat-fehler{% endif %}">
       <label for="{{ form.einwilligung.id_for_label }}">{{ form.einwilligung }} {{ t.einwilligung }} *</label>

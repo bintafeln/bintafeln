@@ -87,5 +87,6 @@
   "fehler_datei_anzahl": "Vui lòng tải lên tối đa {anzahl} tệp.",
   "fehler_gebiet": "Rất tiếc, chúng tôi chỉ có thể nhận đơn của những người sống tại {gebiet}.",
   "fehler_einwilligung": "Vui lòng đồng ý để chúng tôi có thể xử lý đơn của bạn.",
-  "fehler_zu_viele": "Có quá nhiều đơn được gửi trong thời gian ngắn. Vui lòng thử lại sau."
+  "fehler_zu_viele": "Có quá nhiều đơn được gửi trong thời gian ngắn. Vui lòng thử lại sau.",
+  "gelesen_bestaetigt": "Tôi đã đọc: {was}"
 }

@@ -87,5 +87,6 @@
   "fehler_datei_anzahl": "Please upload at most {anzahl} files.",
   "fehler_gebiet": "Unfortunately, we can only accept applications from people who live in {gebiet}.",
   "fehler_einwilligung": "Please agree so that we can process your application.",
-  "fehler_zu_viele": "Too many applications were sent in a short time. Please try again later."
+  "fehler_zu_viele": "Too many applications were sent in a short time. Please try again later.",
+  "gelesen_bestaetigt": "I have read: {was}"
 }

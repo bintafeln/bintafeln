@@ -87,5 +87,6 @@
   "fehler_datei_anzahl": "Ju lutemi ngarkoni më së shumti {anzahl} skedarë.",
   "fehler_gebiet": "Fatkeqësisht, mund të pranojmë vetëm kërkesa nga persona që jetojnë në {gebiet}.",
   "fehler_einwilligung": "Ju lutemi jepni pëlqimin që të mund ta përpunojmë kërkesën tuaj.",
-  "fehler_zu_viele": "Janë dërguar shumë kërkesa në pak kohë. Ju lutemi provoni përsëri më vonë."
+  "fehler_zu_viele": "Janë dërguar shumë kërkesa në pak kohë. Ju lutemi provoni përsëri më vonë.",
+  "gelesen_bestaetigt": "Kam lexuar: {was}"
 }

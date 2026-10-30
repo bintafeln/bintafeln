@@ -87,5 +87,6 @@
   "fehler_datei_anzahl": "最多上传 {anzahl} 个文件。",
   "fehler_gebiet": "很抱歉，我们只能受理居住在{gebiet}的人的申请。",
   "fehler_einwilligung": "请表示同意，以便我们处理您的申请。",
-  "fehler_zu_viele": "短时间内提交的申请过多。请稍后再试。"
+  "fehler_zu_viele": "短时间内提交的申请过多。请稍后再试。",
+  "gelesen_bestaetigt": "我已阅读：{was}"
 }

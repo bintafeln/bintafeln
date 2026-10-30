@@ -87,5 +87,6 @@
   "fehler_datei_anzahl": "Učitajte najviše {anzahl} datoteka.",
   "fehler_gebiet": "Nažalost, možemo primati samo zahtjeve osoba koje žive u mjestu {gebiet}.",
   "fehler_einwilligung": "Molimo dajte privolu kako bismo mogli obraditi vaš zahtjev.",
-  "fehler_zu_viele": "Za kratko vrijeme poslano je previše zahtjeva. Pokušajte ponovo kasnije."
+  "fehler_zu_viele": "Za kratko vrijeme poslano je previše zahtjeva. Pokušajte ponovo kasnije.",
+  "gelesen_bestaetigt": "Pročitao/la sam: {was}"
 }

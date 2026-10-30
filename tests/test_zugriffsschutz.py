@@ -38,6 +38,7 @@ OEFFENTLICH = {
     "antrag:start",  # Online-Antrag (ADR 0024)
     "antrag:formular",
     "antrag:danke",
+    "antrag:rechtstext",  # Datenschutz/Impressum/Einverständnis als interner Text (ADR 0094)
     # Geräte am Aufruf ohne Anmeldung, nur mit dem Schlüssel im Link (ADR 0050)
     "aufruf:anzeige",
     "aufruf:monitor",

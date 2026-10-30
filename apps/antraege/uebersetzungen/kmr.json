@@ -87,5 +87,6 @@
   "fehler_datei_anzahl": "Ji kerema xwe herî zêde {anzahl} pelan bar bikin.",
   "fehler_gebiet": "Mixabin em tenê dikarin serlêdanên kesên ku li {gebiet} dijîn qebûl bikin.",
   "fehler_einwilligung": "Ji kerema xwe razî bin da ku em bikarin daxwaza we bikin.",
-  "fehler_zu_viele": "Di demeke kurt de gelek daxwaz hatin şandin. Ji kerema xwe paşê dîsa biceribînin."
+  "fehler_zu_viele": "Di demeke kurt de gelek daxwaz hatin şandin. Ji kerema xwe paşê dîsa biceribînin.",
+  "gelesen_bestaetigt": "Min xwend: {was}"
 }

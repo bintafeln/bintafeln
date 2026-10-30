@@ -87,5 +87,6 @@
   "fehler_datei_anzahl": "Bitte höchstens {anzahl} Dateien hochladen.",
   "fehler_gebiet": "Wir können leider nur Anträge von Menschen annehmen, die in {gebiet} wohnen.",
   "fehler_einwilligung": "Bitte stimmen Sie zu, damit wir Ihren Antrag bearbeiten können.",
-  "fehler_zu_viele": "Es wurden in kurzer Zeit zu viele Anträge gesendet. Bitte versuchen Sie es später noch einmal."
+  "fehler_zu_viele": "Es wurden in kurzer Zeit zu viele Anträge gesendet. Bitte versuchen Sie es später noch einmal.",
+  "gelesen_bestaetigt": "Ich habe gelesen: {was}"
 }
