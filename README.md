@@ -719,8 +719,9 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   Nachweise nötig sind) und Einverständniserklärung (z. B. PDF zum Unterschreiben) eintragen.
   Datenschutzerklärung, Impressum und Einverständniserklärung gelten für die ganze Tafel und lassen
   sich statt als Link auch **direkt im Programm** als Text hinterlegen (Admin:
-  „Einstellungen → Tafel → Rechtstexte“, mit HTML-Editor, ADR 0094); dann führt der Link auf eine eigene Seite
-  (der Impressum-Link steht auch auf der Anmeldeseite und unten auf jeder Seite); die drei
+  „Einstellungen → Tafel → Rechtstexte“, mit HTML-Editor, ADR 0094). Ist für eine dieser drei
+  **kein externer Link** eingetragen, führt der Link auf eine eigene Seite mit diesem Text; ein
+  eingetragener Link hat Vorrang (der Impressum-Link steht auch auf der Anmeldeseite und unten auf jeder Seite); die drei
   letzten stehen gut sichtbar über dem Formular; vor dem Absenden müssen Häkchen bestätigt
   werden (Speichern der Angaben, Datenschutzerklärung gelesen, Einverständniserklärung gelesen;
   dazu zuschaltbar „Voraussetzungen gelesen“ und „Erklärungen gelesen“, z. B. für einen Flyer –

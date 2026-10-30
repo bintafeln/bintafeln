@@ -193,18 +193,21 @@ class AntragEinstellungen(models.Model):
         einstellungen, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
         return einstellungen
 
-    # Datenschutz, Impressum, Einverständnis: interner Text (Tafel-Einstellungen) oder externer
-    # Link (hier). Der Text liegt in TafelEinstellungen (ADR 0094).
+    # Datenschutz, Impressum, Einverständnis: externer Link (hier) oder – als Rückfallebene, wenn
+    # kein Link gesetzt ist – der interne Text aus den Tafel-Einstellungen (ADR 0094).
     def rechtslink(self, art: str, sprache: str) -> str:
-        """Interne Seite, wenn in den Tafel-Einstellungen ein Text hinterlegt ist, sonst der
-        externe Link (sonst leer)."""
+        """Der externe Link, wenn einer eingetragen ist; sonst die interne Seite mit dem in den
+        Tafel-Einstellungen hinterlegten Text; sonst leer."""
         from django.urls import reverse
 
         from apps.core.models import TafelEinstellungen
 
+        url = (getattr(self, f"{art}_url", "") or "").strip()
+        if url:
+            return url
         if (getattr(TafelEinstellungen.laden(), f"{art}_text", "") or "").strip():
             return reverse("antrag:rechtstext", args=[sprache, art])
-        return getattr(self, f"{art}_url", "")
+        return ""
 
     def rechtslinks(self, sprache: str) -> dict:
         from apps.core.models import TafelEinstellungen

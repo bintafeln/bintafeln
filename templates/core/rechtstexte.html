@@ -7,9 +7,9 @@
   <h1>Rechtstexte der Tafel</h1>
   <p class="hinweis">Datenschutzerklärung, Impressum und Einverständniserklärung gelten für die ganze Tafel. Sie können
     sie hier direkt schreiben (im Reiter <strong>Gestalten</strong> wie in einem Schreibprogramm oder im Reiter
-    <strong>HTML</strong>). Ist ein Text ausgefüllt, führt der Link im Antragsformular auf eine eigene Seite mit diesem
-    Text. Lassen Sie ein Feld leer, gilt stattdessen der externe Link aus den Antrags-Einstellungen (falls dort einer
-    eingetragen ist). Skripte werden beim Anzeigen entfernt.</p>
+    <strong>HTML</strong>). <strong>Ist in den Antrags-Einstellungen kein externer Link eingetragen</strong>, führt der
+    Link im Antragsformular (und beim Impressum auch im Footer) auf eine eigene Seite mit diesem Text. Ist dort ein
+    externer Link gesetzt, hat dieser Vorrang – der Text hier dient dann nicht. Skripte werden beim Anzeigen entfernt.</p>
   <form method="post">
     {% csrf_token %}
     {% include "includes/formular.html" %}

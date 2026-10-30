@@ -34,8 +34,9 @@
     {% hilfe_bild "einstellungen-module" "Unten in „Tafel und Module“: ① Häkchen setzen schaltet ein Modul ein, z. B. den Aufruf." %}</li>{% endif %}
   {% if "einstellungen.tafel" in rechte %}<li><strong>Rechtstexte</strong>: Datenschutzerklärung, Impressum und Einverständniserklärung der Tafel.
     Sie können sie als Text direkt im Programm schreiben (Reiter „Gestalten“ wie in einem Schreibprogramm oder „HTML“);
-    dann führt der Link im Antragsformular auf eine eigene Seite mit Logo und Farben der Tafel. Lassen Sie ein Feld leer,
-    gilt der externe Link aus den Antrags-Einstellungen. Skripte werden beim Anzeigen entfernt.</li>{% endif %}
+    dann führt der Link im Antragsformular auf eine eigene Seite mit Logo und Farben der Tafel – aber nur, wenn in den
+    Antrags-Einstellungen kein externer Link eingetragen ist (ein externer Link hat Vorrang). Skripte werden beim
+    Anzeigen entfernt.</li>{% endif %}
   {% if "einstellungen.mail" in rechte %}<li><strong>E-Mail</strong>: Mailserver für Einladungen, Passwort-Links, Antragsbestätigungen und Korrekturwünsche; „Verbindung prüfen“ und Testmail.</li>{% endif %}
   {% if "einstellungen.tafel" in rechte %}<li><strong>bintafeln-Verzeichnis</strong>: freiwillig die Tafel beim Herausgeber von bintafeln melden,
     damit er weiß, wer das Programm nutzt, und Sie bei einer Sicherheitslücke direkt anschreiben kann. Gemeldet werden nur
