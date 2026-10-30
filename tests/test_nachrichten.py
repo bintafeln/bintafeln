@@ -57,7 +57,7 @@ def test_einlass_und_liste(lage, admin_client):
     # Verwaltung: Startseite, Menü, Liste, Haushaltsseite, erledigen
     assert "2 × Sonstiges" in admin_client.get("/").content.decode()  # je Anliegen (ADR 0068)
     seite = admin_client.get(reverse("kunden:nachrichten")).content.decode()
-    assert "War heute hier" in seite and "anton · Mitte" in seite
+    assert "War heute hier" in seite and "anton (Mitte)" in seite
     haus = admin_client.get(reverse("kunden:haushalt", args=["501"])).content.decode()
     assert "Nachrichten der Ausgabestellen" in haus
     boese = {"nachricht": n.pk, "weiter": "https://boese.example/"}
