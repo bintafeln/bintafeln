@@ -18,7 +18,7 @@ from django.views.decorators.http import require_POST
 
 from apps.adressen.forms import ImportForm
 from apps.adressen.models import Adresse
-from apps.core import geheimnis, listenauswahl, mail, papierkorb, privatdateien
+from apps.core import geheimnis, listen, listenauswahl, mail, papierkorb, privatdateien
 from apps.core.pdf import im_fenster, pdf_antwort
 from apps.konten import rollen
 from apps.konten.views import nicht_in_demo
@@ -40,6 +40,15 @@ def _jahre():
     return sorted(jahre, reverse=True)
 
 
+# Sortierbare Spalten der Spendenliste (Schlüssel wie in ?sort=…, mit „-“ absteigend):
+SORTIERUNG = {
+    "datum": ("datum", "pk"),
+    "spender": ("adresse__organisation", "adresse__nachname", "adresse__vorname"),
+    "art": ("art",),
+    "betrag": ("betrag",),
+}
+
+
 @rollen.recht_erforderlich("spenden.sehen")
 def liste(request):
     jahr = _jahr(request)
@@ -54,6 +63,7 @@ def liste(request):
             | Q(adresse__vorname__icontains=q) | Q(beschreibung__icontains=q)
             | Q(zweck__icontains=q)
         )  # fmt: skip
+    spenden, sort = listen.sortieren(spenden, request.GET.get("sort", ""), SORTIERUNG, "-datum")
     if request.GET.get("csv"):
         return _csv(listenauswahl.filtern(request, spenden), jahr)
     summen = spenden.aggregate(
@@ -66,7 +76,7 @@ def liste(request):
     return render(request, "spenden/liste.html", {
         "seite": Paginator(spenden, 50).get_page(request.GET.get("seite")),
         "jahr": jahr, "jahre": _jahre(), "filter": {"art": art, "q": q}, "summen": summen,
-        "je_monat": list(je_monat), "arten": Spende.Art.choices,
+        "je_monat": list(je_monat), "arten": Spende.Art.choices, "sort": sort,
     })  # fmt: skip
 
 

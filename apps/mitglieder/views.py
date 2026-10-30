@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
-from apps.core import listenauswahl, papierkorb
+from apps.core import listen, listenauswahl, papierkorb
 from apps.konten import rollen
 from apps.mitglieder.forms import MitgliederEinstellungenForm, MitgliedForm
 from apps.mitglieder.models import Mitglied, MitgliederEinstellungen, nummer_verbraucht
@@ -67,6 +67,16 @@ def liste(request):
             zeilen = [z for z in zeilen if z["offen"] > 0]
     else:
         zeilen = [{"m": m} for m in mitglieder]
+    # Spalten wie Zahlen/Namen sortieren; Beitragsspalten nur, wenn es Beiträge gibt.
+    schluessel = {
+        "nummer": lambda z: (len(z["m"].nummer), z["m"].nummer),
+        "name": lambda z: z["m"].adresse.name.lower(),
+        "art": lambda z: z["m"].art,
+        "eintritt": lambda z: z["m"].eintritt,
+    }
+    if beitraege:
+        schluessel |= {f: (lambda z, f=f: z[f]) for f in ("soll", "gezahlt", "offen")}
+    zeilen, sort = listen.sortieren_liste(zeilen, request.GET.get("sort", ""), schluessel, "nummer")
     if request.GET.get("csv"):
         return _csv(zeilen, jahr, beitraege)
     alle = Mitglied.objects.all()
@@ -80,6 +90,7 @@ def liste(request):
             kennzahlen[feld] = sum(z[feld] for z in zeilen)
     return render(request, "mitglieder/liste.html", {
         "zeilen": zeilen, "jahr": jahr, "jahre": _jahre(), "k": kennzahlen, "beitraege": beitraege,
+        "sort": sort,
         "filter": {"stand": stand, "q": q, "nur_offen": request.GET.get("nur_offen", "")},
     })  # fmt: skip
 

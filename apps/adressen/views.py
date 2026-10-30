@@ -17,7 +17,7 @@ from apps.adressen import importieren
 from apps.adressen.auskunft import adresse_pdf
 from apps.adressen.forms import AdresseForm, ImportForm
 from apps.adressen.models import Adresse, AdressKategorie
-from apps.core import geheimnis, listenauswahl, papierkorb
+from apps.core import geheimnis, listen, listenauswahl, papierkorb
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 
@@ -78,9 +78,19 @@ def _gefiltert(request):
     return adressen.distinct(), {"q": q, "kategorie": kategorie, "art": art, "verein": verein}
 
 
+# Sortierbare Spalten des Adressbuchs (Schlüssel wie in ?sort=…, mit „-“ absteigend):
+SORTIERUNG = {
+    "name": ("organisation", "nachname", "vorname"),
+    "ort": ("ort", "plz"),
+    "telefon": ("telefon", "mobil"),
+    "email": ("email",),
+}
+
+
 @rollen.recht_erforderlich("adressen.sehen")
 def liste(request):
     adressen, filter_ = _gefiltert(request)
+    adressen, sort = listen.sortieren(adressen, request.GET.get("sort", ""), SORTIERUNG, "name")
     if request.GET.get("csv"):
         adressen = listenauswahl.filtern(request, adressen)
         antwort = HttpResponse(importieren.exportieren(adressen), content_type="text/csv")
@@ -89,7 +99,7 @@ def liste(request):
         return antwort
     seite = Paginator(adressen.select_related("mitglied"), 50).get_page(request.GET.get("seite"))
     return render(request, "adressen/liste.html", {
-        "seite": seite, "filter": filter_, "anzahl": seite.paginator.count,
+        "seite": seite, "filter": filter_, "anzahl": seite.paginator.count, "sort": sort,
         "kategorien": AdressKategorie.objects.all(), "arten": Adresse.Art.choices,
         "verein_wahl": _verein_wahl(request.user),
     })  # fmt: skip

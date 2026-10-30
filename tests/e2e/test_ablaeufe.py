@@ -115,7 +115,7 @@ def test_kundenliste_auswahl_und_export(angemeldet, admin):
     # Export nimmt nur die angehakten Haushalte
     zeilen.nth(1).check()
     with seite.expect_download() as laden:
-        seite.get_by_role("button", name=re.compile("Als CSV exportieren")).click()
+        seite.get_by_role("button", name=re.compile("Als CSV-Datei")).click()
     inhalt = Path(laden.value.path()).read_text(encoding="utf-8-sig")
     assert "00042" in inhalt and "00041" not in inhalt and "00043" not in inhalt
     # Ausweise drucken öffnet ein eigenes Fenster (iPad-App), nur mit dem angehakten Haushalt

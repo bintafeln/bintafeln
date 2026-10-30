@@ -3,12 +3,15 @@
 {% block titel %}Spenden {{ jahr }}{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
-  <h1>Spenden {{ jahr }}</h1>
-  <div class="aktionsleiste">
-    {% if "spenden.erfassen" in rechte %}<a class="knopf" href="{% url 'spenden:neu' %}">Spende erfassen</a> <a class="knopf knopf-zweitrangig" href="{% url 'spenden:importieren' %}">Importieren</a>{% endif %}
-    {% if "spenden.bestaetigen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'spenden:bestaetigungen' %}?jahr={{ jahr }}">Zuwendungsbestätigungen</a>{% endif %}
+  <div class="titel-zeile">
+    <h1>Spenden {{ jahr }}</h1>
+    <div class="titel-knoepfe">
+      {% if "spenden.erfassen" in rechte %}<a class="knopf" href="{% url 'spenden:neu' %}">+ Spende erfassen</a> <a class="knopf knopf-zweitrangig" href="{% url 'spenden:importieren' %}">Importieren</a>{% endif %}
+      {% if "spenden.bestaetigen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'spenden:bestaetigungen' %}?jahr={{ jahr }}">Zuwendungsbestätigungen</a>{% endif %}
+    </div>
   </div>
   <form class="filter" method="get">
+    <input type="hidden" name="sort" value="{{ sort }}">
     <label for="jahr">Jahr</label>
     <select name="jahr" id="jahr" onchange="this.form.submit()">{% for j in jahre %}<option value="{{ j }}"{% if j == jahr %} selected{% endif %}>{{ j }}</option>{% endfor %}</select>
     <label for="art">Art</label>
@@ -25,13 +28,16 @@
     <div class="kachel"><span class="kachel-titel">Spender</span><span class="kachel-wert">{{ summen.spender }}</span></div>
   </div>
   {% if je_monat %}<p class="hinweis">Geldspenden je Monat: {% for monat, summe in je_monat %}{{ monat }}/{{ jahr }}: {{ summe|floatformat:2 }} €{% if not forloop.last %} · {% endif %}{% endfor %}</p>{% endif %}
-  <p class="hinweis">{{ seite.paginator.count }} Spende{{ seite.paginator.count|pluralize:"n" }}{% if seite.paginator.count %} ·
-    <button type="submit" form="auswahl" class="link-knopf">als CSV-Datei (Excel)</button> <span class="hinweis" data-auswahl-zahl="auswahl"></span>{% endif %}</p>
   {% auswahl_formular "" "csv=1" %}
+  <div class="liste-aktionen">
+    <span class="hinweis">{{ seite.paginator.count }} Spende{{ seite.paginator.count|pluralize:"n" }}</span>
+    {% if seite.paginator.count %}<button type="submit" form="auswahl" class="knopf knopf-zweitrangig" title="Angehakte Spenden (ohne Haken: alle dieser Auswahl) als CSV-Datei, öffnet in Excel oder LibreOffice">⬇ Als CSV-Datei (Excel)</button>
+    <span class="hinweis" data-auswahl-zahl="auswahl"></span>{% endif %}
+  </div>
   {% blaettern seite %}
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th class="auswahl"><input type="checkbox" data-alle="id" form="auswahl" aria-label="Alle auswählen" title="alle / keine"></th><th>Datum</th><th>Spender</th><th>Art</th><th class="zahl">Betrag/Wert</th><th>Bezeichnung / Zweck</th><th>Bestätigung</th></tr></thead>
+    <thead><tr><th class="auswahl"><input type="checkbox" data-alle="id" form="auswahl" aria-label="Alle auswählen" title="alle / keine"></th>{% sortkopf "Datum" "datum" sort %}{% sortkopf "Spender" "spender" sort %}{% sortkopf "Art" "art" sort %}{% sortkopf "Betrag/Wert" "betrag" sort "zahl" %}{% sortkopf "Bezeichnung / Zweck" %}{% sortkopf "Bestätigung" %}</tr></thead>
     <tbody>
     {% for s in seite %}
       <tr><td class="auswahl"><input type="checkbox" name="id" value="{{ s.pk }}" form="auswahl" aria-label="Zeile auswählen"></td>
