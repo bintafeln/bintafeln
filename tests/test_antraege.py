@@ -342,6 +342,18 @@ def antrag(db):
     return a
 
 
+def test_antragsliste_spalten_waehlbar(admin_client, antrag):
+    """Jede Person wählt in der Antragsliste selbst, welche Spalten sie sieht; # bleibt immer."""
+    url = reverse("antraege:liste")
+    seite = admin_client.get(url).content.decode()
+    assert 'data-titel="Telefon"' in seite and 'data-titel="E-Mail"' in seite
+    # nur Status behalten → die übrigen (außer #) verschwinden
+    admin_client.post(reverse("antraege:spalten"), {"spalte": ["status"]})
+    seite = admin_client.get(url).content.decode()
+    assert 'data-titel="Telefon"' not in seite and 'data-titel="E-Mail"' not in seite
+    assert 'data-titel="#"' in seite and 'data-titel="Status"' in seite
+
+
 def test_liste_und_detail(admin_client, antrag):
     Antrag.objects.create(vorname="Zweite", nachname="Person")
     seite = admin_client.get(reverse("antraege:liste")).content.decode()

@@ -17,6 +17,7 @@ def test_werkseinstellungen(admin_client, admin, benutzer_mit_rolle):
     anna.ausgabestellen.add(nord)
     anna.ausgabetage = "Mo"
     anna.kundenliste_aus = ["telefon", "ort"]
+    anna.antraege_liste_aus = ["telefon", "email"]
     anna.gewaehlte_stelle = nord
     anna.save()
     ImportSitzung.objects.create(benutzer=anna, ziel="kunden")
@@ -25,7 +26,8 @@ def test_werkseinstellungen(admin_client, admin, benutzer_mit_rolle):
     antwort = admin_client.post(reverse("konten:werkseinstellungen", args=[anna.pk]), follow=True)
     assert "auf Werkseinstellungen zurückgesetzt" in antwort.content.decode()
     anna.refresh_from_db()
-    assert anna.kundenliste_aus == [] and anna.gewaehlte_stelle is None
+    assert anna.kundenliste_aus == [] and anna.antraege_liste_aus == []
+    assert anna.gewaehlte_stelle is None
     assert anna.ansicht_stand == 1
     assert not ImportSitzung.objects.filter(benutzer=anna).exists()
     # Rollen, Zuordnung und Ausgabetage bleiben
