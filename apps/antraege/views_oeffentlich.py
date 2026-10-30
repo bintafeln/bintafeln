@@ -61,6 +61,7 @@ def _kontext(code):
         "land_sprache": sprachen.LAND_SPRACHE,
         "kopf": eigener_bereich(eigene, "kopf", tafel=tafel_name),
         "fuss": eigener_bereich(eigene, "fuss", tafel=tafel_name),
+        "rechtslinks": e.rechtslinks(s.code),
     }
 
 
@@ -218,3 +219,19 @@ def _benachrichtigen(request, antrag, e) -> None:
         f"Es ist ein neuer Antrag eingegangen ({antrag.get_art_display()}).\n\n{link}",
         schluessel=antrag.pk,
     )  # fmt: skip
+
+
+def rechtstext(request, sprache, art):
+    """Öffentliche Seite mit dem hinterlegten Datenschutz-, Impressum- oder Einverständnistext
+    (ADR 0094). 404, wenn die Sprache unbekannt ist oder kein Text hinterlegt wurde."""
+    from django.http import Http404
+
+    if sprache not in sprachen.NACH_CODE or art not in AntragEinstellungen.RECHTSTEXTE:
+        raise Http404
+    kontext = _kontext(sprache)
+    roh = getattr(kontext["e"], f"{art}_text", "")
+    if not (roh or "").strip():
+        raise Http404
+    kontext["ueberschrift"] = kontext["t"][art]
+    kontext["rechtstext"] = html.bereinigen(roh)
+    return render(request, "antraege/rechtstext.html", kontext)

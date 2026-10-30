@@ -8,6 +8,7 @@ urlpatterns = [
     path("", views.liste, name="liste"),
     path("export/", views.export, name="export"),
     path("einstellungen/", views.einstellungen, name="einstellungen"),
+    path("einstellungen/rechtstexte/", views.rechtstexte, name="rechtstexte"),
     path("einstellungen/texte/<str:sprache>/", views.texte, name="texte"),
     path("einstellungen/uebersetzen/", views.uebersetzen, name="uebersetzen"),
     path(

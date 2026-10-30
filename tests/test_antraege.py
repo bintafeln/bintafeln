@@ -762,3 +762,41 @@ def test_alte_merkzeichen_nicht_mehr_angeboten_aber_erhalten(client, offen, admi
     seite = admin_client.get(reverse("antraege:bearbeiten", args=[a.pk])).content.decode()
     assert "VB (versorgungsberechtigt)" in seite
     assert "Kriegsbeschädigte" not in seite
+
+
+def test_rechtstext_intern_oder_extern(client, offen):
+    """Datenschutz/Impressum/Einverständnis als interner Text oder externer Link (ADR 0094)."""
+    e = offen
+    # kein Text, nur externer Link → der externe Link erscheint
+    e.datenschutz_url = "https://tafel.example.org/datenschutz"
+    e.save()
+    seite = client.get(FORMULAR).content.decode()
+    assert "https://tafel.example.org/datenschutz" in seite
+    # interner Text gesetzt → der Link führt auf die interne Seite, nicht mehr nach außen
+    e.datenschutz_text = (
+        "<h2>Datenschutz</h2><p>Nur erfundene Angaben.</p><script>alert(1)</script>"
+    )
+    e.save()
+    intern = reverse("antrag:rechtstext", args=["de", "datenschutz"])
+    seite = client.get(FORMULAR).content.decode()
+    assert intern in seite and "tafel.example.org/datenschutz" not in seite
+    # die interne Seite zeigt den Text bereinigt (ohne <script>)
+    antwort = client.get(intern)
+    inhalt = antwort.content.decode()
+    assert antwort.status_code == 200
+    assert "Nur erfundene Angaben." in inhalt and "<script>alert" not in inhalt
+    # ohne Text 404; unbekannte Art 404
+    assert client.get(reverse("antrag:rechtstext", args=["de", "impressum"])).status_code == 404
+    assert client.get(reverse("antrag:rechtstext", args=["de", "unbekannt"])).status_code == 404
+
+
+def test_rechtstexte_bearbeiten(admin_client, offen):
+    url = reverse("antraege:rechtstexte")
+    assert 'name="impressum_text"' in admin_client.get(url).content.decode()
+    admin_client.post(url, {"datenschutz_text": "", "impressum_text": "<p>Impressum der Tafel</p>",
+                            "einverstaendnis_text": ""})  # fmt: skip
+    AntragEinstellungen.laden().refresh_from_db()
+    seite = admin_client.get(url).content.decode()
+    assert "Impressum ansehen" in seite  # Ansehen-Link erscheint, da Text gesetzt
+    antwort = admin_client.get(reverse("antrag:rechtstext", args=["de", "impressum"]))
+    assert "Impressum der Tafel" in antwort.content.decode()
