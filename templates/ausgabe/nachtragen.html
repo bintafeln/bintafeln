@@ -46,7 +46,7 @@
       {% for z in zeilen %}
         <tr{% if z.schon %} class="erledigt"{% elif z.rot %} class="rot"{% endif %}>
           <td data-titel="Nachtragen">{% if z.schon %}✓{% else %}<input type="checkbox" name="nummer" value="{{ z.h.kundennummer }}" aria-label="{{ z.h.kundennummer }} nachtragen"{% if z.rot and not alle %} disabled{% endif %}>{% endif %}</td>
-          <td data-titel="Kunde"><strong>{{ z.h.kundennummer }}</strong></td>
+          <td data-titel="Kunde">{% if "kunden.ansehen" in rechte %}<a href="{% url 'kunden:haushalt' z.h.kundennummer %}" target="_blank" rel="noopener"><strong>{{ z.h.kundennummer }}</strong></a>{% else %}<strong>{{ z.h.kundennummer }}</strong>{% endif %}</td>
           <td data-titel="Name">{% with hp=z.hauptperson %}{% if hp %}{{ hp.nachname }}, {{ hp.vorname }}{% endif %}{% endwith %}</td>
           <td data-titel="Kundengruppe">{{ z.gruppe }}</td>
           <td data-titel="Bar gezahlt" class="ohne-umbruch">{% if z.schon %}{% for a in z.schon %}{{ a.beitrag|floatformat:2|default:"–" }} €{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}<input type="text" name="betrag_{{ z.h.kundennummer }}" value="{{ z.beitrag|floatformat:2 }}" inputmode="decimal" class="betrag" aria-label="Betrag für {{ z.h.kundennummer }}"{% if z.rot and not alle %} disabled{% endif %}> €{% endif %}</td>
