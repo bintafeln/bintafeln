@@ -45,6 +45,8 @@ KAPITEL = [
             ("einlass.abholung", "einlass.zahlung", "einlass.sonderaktion")),
     Kapitel("ausnahme", "Ausnahme für heute erteilen", EINLASS, ("einlass.ausnahme",)),
     Kapitel("korrekturen", "Korrekturwünsche entscheiden", EINLASS, ("korrekturen.entscheiden",)),
+    Kapitel("nachtragen", "Abholungen nachtragen (Papierliste)", EINLASS,
+            ("einlass.nachtragen", "einlass.nachtragen_alle")),
     Kapitel("kasse", "Die Kasse", EINLASS, ("kasse.sehen",)),
     Kapitel("kunden-finden", "Kunden finden und ansehen", KUNDEN,
             ("kunden.liste", "kunden.ansehen")),

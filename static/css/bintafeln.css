@@ -1500,3 +1500,7 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 .warten-jetzt { background: #e6f4ea; }
 .warten-jetzt .warten-gross { color: #1e7b34; }
 .warten-karte form .feld { text-align: start; }
+/* Abholungen nachtragen (ADR 0091) */
+.nachtragen tr.erledigt td { color: var(--leise); }
+.nachtragen input.betrag { width: 6rem; }
+.nachtragen .ohne-umbruch { white-space: nowrap; }

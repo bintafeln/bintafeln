@@ -952,6 +952,10 @@ class Abholung(models.Model):
         blank=True,
         help_text="Leer, wenn aus dem Import übernommen.",
     )
+    nachgetragen = models.BooleanField(
+        "Nachgetragen", default=False,
+        help_text="Später eingetragen, z. B. von einer Papierliste (ADR 0091).",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Abholung"

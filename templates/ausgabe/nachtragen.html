@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block titel %}Abholungen nachtragen{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Abholungen nachtragen</h1>
+  <p class="hinweis">Für Kunden, die da waren, aber nicht eingetragen werden konnten (z. B. von einer Papierliste). Der Betrag
+    ist das, was bar gezahlt wurde; er zählt in der Kasse des gewählten Tages.
+    {% if alle %}Sie können jeden vergangenen Tag nachtragen, auch Kunden, bei denen die Ampel Rot gezeigt hätte.
+    {% else %}Nachtragen geht für heute und gestern; ältere Tage und Kunden, bei denen die Ampel Rot gezeigt hätte, trägt ein Admin nach.{% endif %}</p>
+  <form method="get" class="filter" data-sofort>
+    <label for="datum">Tag</label>
+    <input type="date" name="datum" id="datum" value="{{ datum|date:'Y-m-d' }}" max="{{ heute|date:'Y-m-d' }}"{% if fruehester %} min="{{ fruehester|date:'Y-m-d' }}"{% endif %}>
+    <label for="stelle">Ausgabestelle</label>
+    <select name="stelle" id="stelle">
+      {% for s in stellen %}<option value="{{ s.pk }}"{% if s == stelle %} selected{% endif %}>{{ s.name }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="knopf">Anzeigen</button>
+  </form>
+  {% if fehler %}<p class="meldung error">{{ fehler }}</p>
+  {% elif not stelle %}<p class="hinweis">Noch keine Ausgabestelle angelegt.</p>
+  {% else %}
+  <h2>Einzeln nachtragen</h2>
+  <form method="post" class="filter" id="einzeln">
+    {% csrf_token %}
+    <input type="hidden" name="datum" value="{{ datum|date:'Y-m-d' }}">
+    <input type="hidden" name="stelle" value="{{ stelle.pk }}">
+    <input type="hidden" name="einzeln" value="1">
+    <label for="kundennummer">Kundennummer</label>
+    <input type="text" name="kundennummer" id="kundennummer" required autocomplete="off" data-kamera>
+    <label for="betrag">Bar gezahlt</label>
+    <input type="text" name="betrag" id="betrag" inputmode="decimal" class="betrag" placeholder="Beitrag">
+    <button type="submit" class="knopf">Nachtragen</button>
+  </form>
+  <p class="hinweis">Ohne Betrag gilt der Beitrag des Haushalts an dem Tag. Auch für Kunden anderer Kundengruppen.</p>
+
+  <h2>Kunden, die am {{ datum|date:"d.m.Y" }} in {{ stelle.name }} dran waren</h2>
+  {% if zeilen %}
+  <form method="post" id="liste">
+    {% csrf_token %}
+    <input type="hidden" name="datum" value="{{ datum|date:'Y-m-d' }}">
+    <input type="hidden" name="stelle" value="{{ stelle.pk }}">
+    <div class="tabelle-rahmen">
+    <table class="tabelle nachtragen">
+      <thead><tr><th>Nachtragen</th><th>Kunde</th><th>Name</th><th>Kundengruppe</th><th>Bar gezahlt</th><th>Hinweis</th></tr></thead>
+      <tbody>
+      {% for z in zeilen %}
+        <tr{% if z.schon %} class="erledigt"{% elif z.rot %} class="rot"{% endif %}>
+          <td data-titel="Nachtragen">{% if z.schon %}✓{% else %}<input type="checkbox" name="nummer" value="{{ z.h.kundennummer }}" aria-label="{{ z.h.kundennummer }} nachtragen"{% if z.rot and not alle %} disabled{% endif %}>{% endif %}</td>
+          <td data-titel="Kunde"><strong>{{ z.h.kundennummer }}</strong></td>
+          <td data-titel="Name">{% with hp=z.hauptperson %}{% if hp %}{{ hp.nachname }}, {{ hp.vorname }}{% endif %}{% endwith %}</td>
+          <td data-titel="Kundengruppe">{{ z.gruppe }}</td>
+          <td data-titel="Bar gezahlt" class="ohne-umbruch">{% if z.schon %}{% for a in z.schon %}{{ a.beitrag|floatformat:2|default:"–" }} €{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}<input type="text" name="betrag_{{ z.h.kundennummer }}" value="{{ z.beitrag|floatformat:2 }}" inputmode="decimal" class="betrag" aria-label="Betrag für {{ z.h.kundennummer }}"{% if z.rot and not alle %} disabled{% endif %}> €{% endif %}</td>
+          <td data-titel="Hinweis">{% if z.schon %}schon eingetragen{% for a in z.schon %}{% if a.uhrzeit %} um {{ a.uhrzeit|time:"H:i" }}{% endif %}{% if a.nachgetragen %} (nachgetragen){% endif %}{% endfor %}{% elif z.rot %}<span class="marke-warnung">Rot:</span> {{ z.gruende }}{% if not alle %} – trägt ein Admin nach{% endif %}{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf knopf-eintragen">Angehakte nachtragen</button>
+      <span class="hinweis">{{ offen }} noch nicht eingetragen</span>
+    </div>
+  </form>
+  {% else %}
+  <p class="hinweis">An diesem Tag war in {{ stelle.name }} keine Kundengruppe dran. Einzelne Kunden lassen sich oben nachtragen.</p>
+  {% endif %}
+  {% endif %}
+</section>
+{% endblock %}

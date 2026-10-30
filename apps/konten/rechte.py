@@ -34,6 +34,11 @@ KATALOG = [
     Recht("einlass.zahlung", EINLASS, "Zahlungen ohne Abholung buchen"),
     Recht("einlass.ausnahme", EINLASS, "Ausnahme für heute erteilen"),
     Recht("einlass.sonderaktion", EINLASS, "Teilnahme an Sonderaktionen eintragen"),
+    Recht("einlass.nachtragen", EINLASS, "Abholungen von heute und gestern nachtragen",
+          "Kunden, die da waren, aber nicht eingetragen werden konnten (z. B. Papierliste); nur "
+          "an den eigenen Ausgabestellen und nur, wenn die Ampel nicht Rot gezeigt hätte."),
+    Recht("einlass.nachtragen_alle", EINLASS, "Abholungen ohne Zeitgrenze und trotz Rot nachtragen",
+          "Jeder vergangene Tag; auch Kunden, bei denen die Ampel Rot gezeigt hätte."),
     Recht("einlass.zuruecknehmen", EINLASS,
           "Abholungen, Zahlungen und Sonderaktionen selbst zurücknehmen",
           "Auch an späteren Tagen. Ohne dieses Recht geht am Einlass nur ein Korrekturwunsch."),
@@ -147,6 +152,7 @@ def _module_einsammeln() -> None:
 
 
 _EINLASS = ["einlass.nutzen", "einlass.abholung", "einlass.zahlung", "einlass.sonderaktion",
+            "einlass.nachtragen",
             "kasse.sehen", "kunden.liste", "kunden.ansehen", "kunden.notizen",
             "kunden.exportieren"]  # fmt: skip
 

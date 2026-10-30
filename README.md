@@ -905,6 +905,20 @@ Unter „Einstellungen → Ausgabe, Ampel und Beiträge“:
   bei nicht gewählten Kunden die Sonderausgabe als Grund (ein eigener Hinweis oben entfällt,
   damit auf dem Handy die Ampel gleich zu sehen ist).
 
+### Abholungen nachtragen
+
+Ging am Einlass einmal nichts und die Kunden stehen auf einer Papierliste (ADR 0091):
+„Ausgabestelle → Abholungen nachtragen“.
+
+- Tag und Ausgabestelle wählen; die Liste zeigt alle Kunden der Kundengruppen, die an dem Tag dran
+  waren (schon eingetragene grau). Anhaken, Betrag je Zeile bei Bedarf ändern (vorbelegt mit dem
+  Beitrag, gilt als bar gezahlt), „Angehakte nachtragen“. Einzelne Kunden auch über die Kundennummer.
+- Abholung und Buchung zählen für den gewählten Tag, also in dessen Kasse; die Abholung ist als
+  „nachgetragen“ markiert.
+- Recht „Abholungen von heute und gestern nachtragen“ (Ausgabe, Büro): nur heute und gestern, nur
+  eigene Ausgabestellen, nicht bei roter Ampel. Recht „… ohne Zeitgrenze und trotz Rot“ (Admin):
+  jeder vergangene Tag, auch rote Fälle.
+
 ### Korrekturwünsche
 
 Am Einlass sollen Kunden nicht nachträglich verändert werden. Wer eine Abholung, Zahlung oder
