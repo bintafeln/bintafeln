@@ -1,0 +1,22 @@
+{% load handbuch %}
+<p>Ging am Einlass einmal nichts (kein Netz, Gerät kaputt) und die Kunden stehen auf einer Papierliste, trägt man
+  sie hinterher nach: Menü „Ausgabestelle → Abholungen nachtragen“.</p>
+<ol>
+  <li><strong>Tag</strong> und <strong>Ausgabestelle</strong> wählen. Die Liste zeigt alle Kunden der Kundengruppen,
+    die an dem Tag dort dran waren. Wer schon eingetragen ist, steht grau mit ✓ darin.</li>
+  <li>Die Kunden von der Papierliste <strong>anhaken</strong>. Hinten steht der Betrag, den sie zahlen müssen; ihn bei
+    Bedarf ändern (z. B. 0, wenn jemand nichts gezahlt hat).</li>
+  <li><strong>„Angehakte nachtragen“</strong>. Die Abholungen zählen für den gewählten Tag und erscheinen in der Kasse
+    dieses Tages; der Betrag gilt als bar gezahlt.</li>
+</ol>
+{% hilfe_bild "nachtragen-liste" "① Tag und Ausgabestelle, ② Kunden anhaken, ③ Betrag bei Bedarf ändern, ④ „Angehakte nachtragen“." %}
+<p><strong>Einzeln nachtragen:</strong> Oben Kundennummer und Betrag eingeben (ohne Betrag gilt der Beitrag des Haushalts),
+  „Nachtragen“. Das geht auch für Kunden anderer Kundengruppen.</p>
+<ul>
+  <li>Mit dem Recht „Abholungen von heute und gestern nachtragen“ (Vorgabe: Ausgabe und Büro) geht das für <strong>heute
+    und gestern</strong>, an den eigenen Ausgabestellen und nur, wenn die Ampel nicht Rot gezeigt hätte.</li>
+  <li><strong>Admins</strong> (Recht „Abholungen ohne Zeitgrenze und trotz Rot nachtragen“) tragen jeden vergangenen Tag
+    nach, auch Kunden mit roter Ampel (z. B. Ausweis abgelaufen). Der Grund steht rot in der Zeile.</li>
+  <li>Nachgetragene Abholungen sind auf der Seite des Haushalts als „nachgetragen“ zu erkennen und lassen sich wie
+    andere zurücknehmen.</li>
+</ul>

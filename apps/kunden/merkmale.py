@@ -4,7 +4,6 @@ leer gilt als „nein“."""
 
 from apps.core.auswahl import (
     FESTE_MERKMALE,
-    GDB_SCHWERBEHINDERT,
     GDB_STUFEN,
     gdb_text,
     merkzeichen_liste,
@@ -67,6 +66,29 @@ def ausweis(haushalt) -> list[tuple[str, str]]:
 
 
 GDB_FELD = "gdb"
+AUSWEIS_FELD = "sb_ausweis"  # Schwerbehindertenausweis vorgelegt (ADR 0092)
+
+
+def gilt_schwerbehindert(gdb, merkzeichen, vorgelegt, einstellungen=None) -> bool:
+    """Ob eine Person mit diesem GdB als „schwerbehindert“ gilt: nach den Bedingungen der Tafel
+    (``KundenEinstellungen.sb_*``, ADR 0092). Blind, Taub, Stumm bleiben eigene Merkmale."""
+    from apps.kunden.models import KundenEinstellungen
+
+    e = einstellungen or KundenEinstellungen.laden()
+    if gdb is None or gdb == "" or int(gdb) < e.sb_ab_gdb:
+        return False
+    noetig = merkzeichen_liste(e.sb_merkzeichen)
+    if noetig and not set(noetig) & set(merkzeichen_liste(merkzeichen or "")):
+        return False
+    return bool(vorgelegt) or not e.sb_ausweis_vorgelegt
+
+
+def _ausweis_feld() -> None:
+    Zusatzfeld.objects.get_or_create(schluessel=AUSWEIS_FELD, defaults={
+        "bezeichnung": "Schwerbehindertenausweis vorgelegt",
+        "gilt_fuer": Zusatzfeld.GiltFuer.PERSON, "typ": Zusatzfeld.Typ.JA_NEIN,
+        "besondere_kategorie": True, "reihenfolge": 99, "einlass": False,
+    })  # fmt: skip
 
 
 MERKZEICHEN_FELD = "merkzeichen"
@@ -90,8 +112,9 @@ def gdb_setzen(person, gdb, merkzeichen: str = "") -> None:
     })  # fmt: skip
     zusatz = dict(person.zusatz or {})
     zusatz[GDB_FELD] = gdb_text(gdb)
-    zusatz["schwerbehindert"] = gdb >= GDB_SCHWERBEHINDERT
     codes = merkzeichen_liste(merkzeichen) if gdb else []
+    zusatz["schwerbehindert"] = gilt_schwerbehindert(gdb, ", ".join(codes),
+                                                     zusatz.get(AUSWEIS_FELD))  # fmt: skip
     if codes or zusatz.get(MERKZEICHEN_FELD):
         Zusatzfeld.objects.get_or_create(schluessel=MERKZEICHEN_FELD, defaults={
             "bezeichnung": "Merkzeichen (Schwerbehindertenausweis)",
@@ -108,7 +131,8 @@ def gdb_setzen(person, gdb, merkzeichen: str = "") -> None:
 # Felder, die im Kundenstamm nicht als einzelne Häkchen erscheinen: Sie ergeben sich aus dem
 # Grad der Behinderung und den Merkzeichen (Formulare „Neuer Haushalt“ und „Person bearbeiten“);
 # „Taub“ und „Stumm“ bleiben Merkmale für den Einlass, gespeicherte Werte bleiben erhalten
-BEHINDERUNG_FELDER = ("schwerbehindert", "blind", "taub", "stumm", GDB_FELD, MERKZEICHEN_FELD)
+BEHINDERUNG_FELDER = ("schwerbehindert", "blind", "taub", "stumm", GDB_FELD, MERKZEICHEN_FELD,
+                      AUSWEIS_FELD)  # fmt: skip
 
 
 def gdb_von(person) -> int | None:
@@ -117,13 +141,19 @@ def gdb_von(person) -> int | None:
     return next((n for n in [0, *GDB_STUFEN] if gdb_text(n) == text), None)
 
 
-def behinderung_aendern(person, gdb, codes) -> None:
-    """GdB und Merkzeichen aus dem Formular (ohne Speichern). Ohne Angabe fallen beide weg und
-    „Schwerbehindert“ wird nein; „Blind“ folgt den Merkzeichen Bl/TBl."""
+def behinderung_aendern(person, gdb, codes, vorgelegt=None) -> None:
+    """GdB, Merkzeichen und „Ausweis vorgelegt“ aus dem Formular (ohne Speichern). Ohne Angabe
+    fallen alle weg und „Schwerbehindert“ wird nein; „Blind“ folgt den Merkzeichen Bl/TBl."""
     zusatz = dict(person.zusatz or {})
+    if vorgelegt is not None and gdb is not None:
+        if vorgelegt or AUSWEIS_FELD in zusatz:
+            _ausweis_feld()
+            zusatz[AUSWEIS_FELD] = bool(vorgelegt)
+        person.zusatz = zusatz
     if gdb is None:
         zusatz.pop(GDB_FELD, None)
         zusatz.pop(MERKZEICHEN_FELD, None)
+        zusatz.pop(AUSWEIS_FELD, None)
         if "schwerbehindert" in zusatz:
             zusatz["schwerbehindert"] = False
         person.zusatz = zusatz
@@ -132,3 +162,22 @@ def behinderung_aendern(person, gdb, codes) -> None:
     blind = any(c in MERKZEICHEN_MERKMAL for c in merkzeichen_liste(", ".join(codes)) if gdb)
     if blind or "blind" in person.zusatz:
         person.zusatz["blind"] = blind
+
+
+def neu_bewerten() -> int:
+    """Nach geänderten Bedingungen: „Schwerbehindert“ bei allen Personen mit GdB neu setzen.
+    Personen ohne GdB (z. B. von Hand oder aus dem Import) behalten ihren Wert. Liefert die
+    Zahl der geänderten Personen."""
+    from apps.kunden.models import KundenEinstellungen, Person
+
+    e = KundenEinstellungen.laden()
+    geaendert = 0
+    for person in Person.objects.filter(zusatz__has_key=GDB_FELD):
+        z = person.zusatz
+        neu = gilt_schwerbehindert(gdb_von(person), z.get(MERKZEICHEN_FELD, ""),
+                                   z.get(AUSWEIS_FELD), e)  # fmt: skip
+        if bool(z.get("schwerbehindert")) != neu:
+            person.zusatz = {**z, "schwerbehindert": neu}
+            person.save(update_fields=["zusatz"])
+            geaendert += 1
+    return geaendert

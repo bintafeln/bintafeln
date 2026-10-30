@@ -582,8 +582,11 @@ Dokumente, Historie.
   sind sie Ankreuzkästchen; nicht angekreuzt heißt „nein“. Statt der Häkchen Schwerbehindert,
   Taub, Stumm und Blind fragen „Neuer Haushalt“ (Hauptperson und jede angehörige Person) und
   „Person bearbeiten“ nach der **Behinderung (Art. 9)**: keine Angabe, keine Behinderung oder der
-  Grad (GdB 20 bis 100), mit GdB dazu die Merkzeichen zum Ankreuzen wie im Antrag. Ab GdB 50 gilt
-  „Schwerbehindert“, Bl und TBl setzen „Blind“; gespeicherte Werte bei Taub und Stumm bleiben. Was auf „ja“ steht, sieht der Einlass
+  Grad (GdB 20 bis 100), mit GdB dazu die Merkzeichen zum Ankreuzen wie im Antrag und
+  „Schwerbehindertenausweis vorgelegt“. Wann „Schwerbehindert“ gilt, legt die Tafel unter
+  „Einstellungen → Kundenstamm“ fest (ADR 0092): ab GdB (Vorgabe 50), optional eines bestimmter
+  Merkzeichen, optional nur mit vorgelegtem Ausweis; geänderte Bedingungen bewerten alle Personen
+  mit GdB neu, ohne GdB bleibt der Haken. Bl und TBl setzen „Blind“; gespeicherte Werte bei Taub und Stumm bleiben. Was auf „ja“ steht, sieht der Einlass
   unter „Merkmale“; Schwerbehindert, Taub, Stumm und Blind (Art. 9) nur mit dem Recht „besondere
   Kategorie“. Mit dem Element „Merkmale“ der Ausweis-Vorlage kommt bei „ja“ das Rollstuhl-Symbol
   bzw. ein Kürzel auf den Ausweis. Jedes Merkmal lässt sich ab- und zuschalten, aber nicht löschen;
@@ -728,8 +731,8 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   mit übersetzt);
   „Behinderung (GdB) je Person“ (Vorgabe: nicht abfragen, weil Gesundheitsdaten nach Art. 9
   DSGVO) fragt für jede Person ab: keine Behinderung oder GdB 20 bis 100; der
-  Aufnahme-Assistent übernimmt den Wert in das Zusatzfeld „Grad der Behinderung“ und setzt ab
-  GdB 50 das Merkmal „Schwerbehindert“; ist ein GdB gewählt, erscheinen die Merkzeichen aus dem
+  Aufnahme-Assistent übernimmt den Wert in das Zusatzfeld „Grad der Behinderung“ und setzt nach
+  den Bedingungen der Tafel (Vorgabe ab GdB 50) das Merkmal „Schwerbehindert“; ist ein GdB gewählt, erscheinen die Merkzeichen aus dem
   Schwerbehindertenausweis zum Ankreuzen, mehrere möglich: G (erheblich gehbehindert),
   aG (außergewöhnlich gehbehindert), H (hilflos), Bl (blind), Gl (gehörlos, mit kleinem L),
   TBl (taubblind), B (Begleitperson berechtigt) und RF (Rundfunkbeitrag ermäßigt) (früher
@@ -904,6 +907,20 @@ Unter „Einstellungen → Ausgabe, Ampel und Beiträge“:
   Kundenliste richten sich danach (`apps/ausgabe/ausgabetag.py`); am Einlass nennt die Ampel
   bei nicht gewählten Kunden die Sonderausgabe als Grund (ein eigener Hinweis oben entfällt,
   damit auf dem Handy die Ampel gleich zu sehen ist).
+
+### Abholungen nachtragen
+
+Ging am Einlass einmal nichts und die Kunden stehen auf einer Papierliste (ADR 0091):
+„Ausgabestelle → Abholungen nachtragen“.
+
+- Tag und Ausgabestelle wählen; die Liste zeigt alle Kunden der Kundengruppen, die an dem Tag dran
+  waren (schon eingetragene grau). Anhaken, Betrag je Zeile bei Bedarf ändern (vorbelegt mit dem
+  Beitrag, gilt als bar gezahlt), „Angehakte nachtragen“. Einzelne Kunden auch über die Kundennummer.
+- Abholung und Buchung zählen für den gewählten Tag, also in dessen Kasse; die Abholung ist als
+  „nachgetragen“ markiert.
+- Recht „Abholungen von heute und gestern nachtragen“ (Ausgabe, Büro): nur heute und gestern, nur
+  eigene Ausgabestellen, nicht bei roter Ampel. Recht „… ohne Zeitgrenze und trotz Rot“ (Admin):
+  jeder vergangene Tag, auch rote Fälle.
 
 ### Korrekturwünsche
 

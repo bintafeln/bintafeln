@@ -396,3 +396,20 @@ def test_hilfe_bild_verzeichnis(angemeldet, admin):
               Marke(seite.get_by_label(re.compile("Kontakt-Mail")), nummer=2, von="rechts"),
               Marke(seite.get_by_role("button", name="Speichern"), nummer=3, von="rechts"),
               Marke(karten.nth(1).locator("dl"), "rahmen", 4))  # fmt: skip
+
+
+def test_hilfe_bild_nachtragen(angemeldet, admin, muster):
+    _haushalt("00043", "Jonas", "Probe", dt.date(1990, 2, 1))
+    _haushalt("00044", "Lea", "Beispiel", dt.date(1985, 7, 9), tage=-10)
+    seite = oeffnen(angemeldet, admin, reverse("ausgabe:nachtragen"), breite=1100)
+    filter_ = seite.locator("form.filter").first
+    seite.get_by_label("00042 nachtragen").check()
+    seite.get_by_label("00043 nachtragen").check()
+    betrag = seite.get_by_label("Betrag für 00043")
+    betrag.fill("0,00")
+    knopf = seite.get_by_role("button", name="Angehakte nachtragen")
+    aufnehmen(seite, "nachtragen-liste", [filter_, knopf],
+              Marke(filter_, "rahmen", 1),
+              Marke(seite.get_by_label("00042 nachtragen"), nummer=2, von="links", laenge=40),
+              Marke(betrag, nummer=3, von="rechts", laenge=50),
+              Marke(knopf, nummer=4, von="unten", laenge=30))  # fmt: skip

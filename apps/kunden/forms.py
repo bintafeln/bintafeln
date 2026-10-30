@@ -1,5 +1,6 @@
 from django import forms
 
+from apps.core.auswahl import MERKZEICHEN, merkzeichen_liste
 from apps.kunden.models import KundenEinstellungen, Zusatzfeld
 
 
@@ -11,6 +12,12 @@ class KundenEinstellungenForm(forms.ModelForm):
         "Liste einzelne ausblenden. Leer = Kundennummer, Vorname, Nachname, Kundengruppe, "
         "Ausgabetage, Uhrzeit, Personen, Status, Ausweis, letzter Besuch. Kontaktdaten, "
         "Kontostand und Art.-9-Felder bleiben ohne das passende Recht leer.",
+    )  # fmt: skip
+
+    sb_merkzeichen = forms.MultipleChoiceField(
+        label=KundenEinstellungen._meta.get_field("sb_merkzeichen").verbose_name, required=False,
+        widget=forms.CheckboxSelectMultiple,
+        help_text=KundenEinstellungen._meta.get_field("sb_merkzeichen").help_text,
     )  # fmt: skip
 
     class Meta:
@@ -37,6 +44,9 @@ class KundenEinstellungenForm(forms.ModelForm):
             "verlaengern_sonst_pausieren_monate",
             "verlaengern_fruehestens_tage",
             "krankmeldung",
+            "sb_ab_gdb",
+            "sb_merkzeichen",
+            "sb_ausweis_vorgelegt",
         ]
         widgets = {
             "verlaengern_felder": forms.CheckboxSelectMultiple,
@@ -48,7 +58,12 @@ class KundenEinstellungenForm(forms.ModelForm):
 
         super().__init__(*args, **kwargs)
         self.fields["export_felder"].choices = export.auswahl()
+        self.fields["sb_merkzeichen"].choices = [(c, f"{c} ({b})") for c, b in MERKZEICHEN]
+        self.initial["sb_merkzeichen"] = merkzeichen_liste(self.instance.sb_merkzeichen)
         self.initial["export_felder"] = self.instance.export_felder or export.VORGABE
+
+    def clean_sb_merkzeichen(self):
+        return ", ".join(merkzeichen_liste(", ".join(self.cleaned_data["sb_merkzeichen"])))
 
     def clean_export_felder(self):
         from apps.kunden import export

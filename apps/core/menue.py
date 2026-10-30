@@ -98,6 +98,7 @@ def menue(request) -> list[dict]:
     dazu("Ausgabestelle", [
         ("einlass.nutzen", _eintrag("Einlass", "ausgabe:empfang", genau=True)),
         ("kasse.sehen", _eintrag("Kasse", "ausgabe:kasse")),
+        ("einlass.nachtragen", _eintrag("Abholungen nachtragen", "ausgabe:nachtragen")),
         *([("kunden.liste", alle_kunden)] if an_der_stelle else []),
     ], vorn=True)  # fmt: skip
     dazu("Ausgabestelle/Verwaltung", [

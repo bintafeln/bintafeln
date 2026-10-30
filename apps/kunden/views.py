@@ -24,6 +24,7 @@ from apps.kunden import (
     export,
     gruppen,
     importieren,
+    merkmale,
     verlaengerung,
     views_dokumente,
     zugang,
@@ -58,7 +59,11 @@ def einstellungen(request):
     form = KundenEinstellungenForm(request.POST or None, instance=KundenEinstellungen.laden())
     if request.method == "POST" and form.is_valid():
         form.save()
-        messages.success(request, "Einstellungen des Kundenstamms gespeichert.")
+        text = "Einstellungen des Kundenstamms gespeichert."
+        if {"sb_ab_gdb", "sb_merkzeichen", "sb_ausweis_vorgelegt"} & set(form.changed_data):
+            n = merkmale.neu_bewerten()
+            text += f" „Schwerbehindert“ bei {n} Person{'en' if n != 1 else ''} neu gesetzt."
+        messages.success(request, text)
         return redirect("kunden:einstellungen")
     return render(
         request,

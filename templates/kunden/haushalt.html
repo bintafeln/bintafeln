@@ -60,7 +60,7 @@
     {% for a in abholungen %}
       <tr>
         <td data-titel="Datum">{{ a.datum|date:"d.m.Y" }}</td>
-        <td data-titel="Uhrzeit">{{ a.uhrzeit|time:"H:i"|default:"–" }}</td>
+        <td data-titel="Uhrzeit">{{ a.uhrzeit|time:"H:i"|default:"–" }}{% if a.nachgetragen %} (nachgetragen){% endif %}</td>
         <td data-titel="Ausgabestelle">{{ a.ausgabestelle.name|default:"–" }}</td>
         {% if "kunden.abholungen_alle" in rechte %}
         <td data-titel="Beitrag">{% if a.beitrag is not None %}{{ a.beitrag|floatformat:2 }} €{% else %}–{% endif %}</td>

@@ -199,3 +199,77 @@ def test_neuer_haushalt_mit_behinderung_auch_bei_angehoerigen(admin_client, grup
     assert erika.zusatz["gdb"] == "GdB 50" and erika.zusatz["schwerbehindert"]
     assert erika.zusatz["merkzeichen"].startswith("aG (") and "blind" not in erika.zusatz
     assert kim.zusatz["gdb"] == "GdB 100" and kim.zusatz["blind"]
+
+
+def _person(haushalt, vorname, gdb, merkzeichen="", vorgelegt=None):
+    p = Person.objects.create(haushalt=haushalt, vorname=vorname, nachname="Probe")
+    merkmale.behinderung_aendern(p, gdb, merkzeichen.split() if merkzeichen else [], vorgelegt)
+    p.save()
+    return p
+
+
+def test_bedingungen_fuer_schwerbehindert(haushalt):
+    """Die Tafel legt fest, wer als schwerbehindert gilt (ADR 0092); Blind bleibt Merkmal."""
+    from apps.kunden.models import KundenEinstellungen
+
+    e = KundenEinstellungen.laden()
+    assert merkmale.gilt_schwerbehindert(50, "", None, e)  # Vorgabe wie bisher: ab GdB 50
+    assert not merkmale.gilt_schwerbehindert(40, "", None, e)
+    e.sb_ab_gdb, e.sb_merkzeichen, e.sb_ausweis_vorgelegt = 70, "G, aG", True
+    assert not merkmale.gilt_schwerbehindert(60, "G", True, e)  # GdB zu klein
+    assert not merkmale.gilt_schwerbehindert(80, "Bl", True, e)  # falsches Merkzeichen
+    assert not merkmale.gilt_schwerbehindert(80, "G (erheblich gehbehindert)", False, e)
+    assert merkmale.gilt_schwerbehindert(80, "G (erheblich gehbehindert)", True, e)
+
+    ohne_gdb = Person.objects.create(haushalt=haushalt, vorname="Ohne", nachname="Grad",
+                                     zusatz={"schwerbehindert": True})  # fmt: skip
+    gehend = _person(haushalt, "Gerd", 80, "G", vorgelegt=True)
+    blind = _person(haushalt, "Bea", 80, "Bl")
+    assert gehend.zusatz["schwerbehindert"] and blind.zusatz["schwerbehindert"]
+    e.save()
+    assert merkmale.neu_bewerten() == 1
+    blind.refresh_from_db()
+    gehend.refresh_from_db()
+    ohne_gdb.refresh_from_db()
+    assert not blind.zusatz["schwerbehindert"] and blind.zusatz["blind"]
+    assert gehend.zusatz["schwerbehindert"] and gehend.zusatz["sb_ausweis"]
+    assert ohne_gdb.zusatz["schwerbehindert"]  # ohne GdB bleibt es, wie es ist
+
+
+def test_einstellungen_bewerten_neu(haushalt, admin_client):
+    from apps.kunden.models import KundenEinstellungen
+
+    bea = _person(haushalt, "Bea", 60, "Bl")
+    url = reverse("kunden:einstellungen")
+    seite = admin_client.get(url).content.decode()
+    assert 'name="sb_ab_gdb"' in seite and 'name="sb_merkzeichen"' in seite
+    from apps.kunden.forms import KundenEinstellungenForm
+
+    daten = {k: v for k, v in KundenEinstellungenForm(instance=KundenEinstellungen.laden())
+             .initial.items() if v is not None}  # fmt: skip
+    daten = {k: (list(v) if isinstance(v, list | tuple) else v) for k, v in daten.items()}
+    for k in [k for k, v in daten.items() if v is False]:
+        daten.pop(k)
+    daten.update({"sb_ab_gdb": "70", "verlaengern_felder": [], "verlaengern_einkommensarten": []})
+    antwort = admin_client.post(url, daten, follow=True)
+    assert "bei 1 Person neu gesetzt" in antwort.content.decode()
+    bea.refresh_from_db()
+    assert not bea.zusatz["schwerbehindert"]
+
+
+def test_ausweis_vorgelegt_an_der_person(haushalt, admin_client):
+    from apps.kunden.models import KundenEinstellungen
+
+    e = KundenEinstellungen.laden()
+    e.sb_ausweis_vorgelegt = True
+    e.save()
+    erika = haushalt.personen.get(vorname="Erika")
+    url = reverse("kunden:teil", args=[haushalt.kundennummer, "person", erika.pk])
+    assert 'name="sb_ausweis"' in admin_client.get(url).content.decode()
+    daten = {"vorname": "Erika", "nachname": "Muster", "gdb": "80"}
+    admin_client.post(url, daten)
+    erika.refresh_from_db()
+    assert not erika.zusatz["schwerbehindert"]
+    admin_client.post(url, {**daten, "sb_ausweis": "on"})
+    erika.refresh_from_db()
+    assert erika.zusatz["schwerbehindert"] and erika.zusatz["sb_ausweis"]
