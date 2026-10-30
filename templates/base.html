@@ -110,10 +110,10 @@
       </details>
       {% endif %}
     {% endfor %}
-    {% for vorlage in seiten_module %}{% include vorlage %}{% endfor %}
   </nav>
   {% endif %}
   <main class="inhalt">
+    {% for vorlage in seiten_module %}{% include vorlage %}{% endfor %}
     {% if messages %}
       <ul class="meldungen">
         {% for meldung in messages %}<li class="meldung {{ meldung.tags }}">{{ meldung }}</li>{% endfor %}

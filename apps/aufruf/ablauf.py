@@ -584,8 +584,14 @@ def stand_fuer_anzeige(tag, einstellungen, datum, eingelassene_zeigen=False) -> 
         }
     s = tag.stand
     tag_name = tagname(tag.ausgabestelle, tag.datum)
-    gesamt = sum(len(g["aufgerufen"]) + len(g["wartend"]) for g in s["gruppen"])
-    erledigt = sum(len(g["aufgerufen"]) for g in s["gruppen"])
+    # „Erledigt“ zählt die heute schon Eingelassenen (mit Abholung), nicht die aufgerufenen Batches:
+    # So wächst der Zähler, sobald jemand hereinkommt, nicht erst beim nächsten „Weiter“. „Gesamt“
+    # ist die ganze heutige Menge (auch schon Eingelassene), damit der Nenner stabil bleibt.
+    alle_nummern = [x for g in s["gruppen"]
+                    for teil in ("wartend", "aufgerufen", "eingelassen")
+                    for x in g[teil]]  # fmt: skip
+    gesamt = len(alle_nummern)
+    erledigt = len(_eingelassen_heute(datum, alle_nummern))
     kann_zurueck = bool(s["rueckgaengig"])
     if s["index"] >= len(s["gruppen"]):
         return {"finished": True, "selected_day": tag_name, "can_undo": kann_zurueck,
