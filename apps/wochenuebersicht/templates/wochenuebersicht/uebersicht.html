@@ -5,13 +5,13 @@
   <h1>Wochenübersicht der Ausgabestellen</h1>
   <p class="hinweis">Stand {{ stichtag|date:"d.m.Y" }}: Soll = „Maximum Haushalte“ der Kundengruppen, Ist = aktive Haushalte.
     Eine Kundengruppe zählt an jedem ihrer Wochentage.</p>
-  <form method="get" class="aktionsleiste" data-sofort>
-    <label><input type="checkbox" name="abholungen" value="1"{% if woche %} checked{% endif %}> mit Abholungen der Woche</label>
+  <form method="get" class="filter wochen-filter" data-sofort>
+    <label class="filter-haken"><input type="checkbox" name="abholungen" value="1"{% if woche %} checked{% endif %}> mit Abholungen der Woche</label>
     <label>Kalenderwoche <input type="week" name="kw" value="{{ kw }}"></label>
-    <button type="submit" class="knopf knopf-zweit">Anzeigen</button>
-    <a class="knopf" href="{% url 'wochenuebersicht:pdf' 'hoch' %}?{{ abfrage }}">PDF Hochformat</a>
-    <a class="knopf" href="{% url 'wochenuebersicht:pdf' 'quer' %}?{{ abfrage }}">PDF Querformat</a>
+    <button type="submit" class="knopf knopf-zweitrangig">Anzeigen</button>
   </form>
+  <p class="wochen-pdf">PDF: <a href="{% url 'wochenuebersicht:pdf' 'hoch' %}?{{ abfrage }}" target="_blank">Hochformat</a> ·
+    <a href="{% url 'wochenuebersicht:pdf' 'quer' %}?{{ abfrage }}" target="_blank">Querformat</a></p>
 
   {% for tag in tage %}
   <h2>{{ tag.name }}</h2>
@@ -20,23 +20,23 @@
       <thead><tr><th>Ausgabestelle</th><th class="zahl">Soll HH</th><th class="zahl">Ist HH</th><th class="zahl">Erw.</th><th class="zahl">Kinder</th><th class="zahl">Gesamt</th>{% if woche %}<th class="zahl">Abgeholt</th>{% endif %}</tr></thead>
       <tbody>
         {% for z in tag.zeilen %}
-        <tr><td title="{{ z.gruppen|join:', ' }}">{{ z.name }}</td><td class="zahl">{{ z.soll|default_if_none:"–" }}</td><td class="zahl">{{ z.haushalte }}</td><td class="zahl">{{ z.erwachsene }}</td><td class="zahl">{{ z.kinder }}</td><td class="zahl">{{ z.personen }}</td>{% if woche %}<td class="zahl">{{ z.abgeholt|default_if_none:"–" }}</td>{% endif %}</tr>
+        <tr><td data-titel="Ausgabestelle" title="{{ z.gruppen|join:', ' }}">{{ z.name }}</td><td class="zahl" data-titel="Soll">{{ z.soll|default_if_none:"–" }}</td><td class="zahl" data-titel="Ist">{{ z.haushalte }}</td><td class="zahl" data-titel="Erw.">{{ z.erwachsene }}</td><td class="zahl" data-titel="Kinder">{{ z.kinder }}</td><td class="zahl" data-titel="Pers.">{{ z.personen }}</td>{% if woche %}<td class="zahl" data-titel="Abgeh.">{{ z.abgeholt|default_if_none:"–" }}</td>{% endif %}</tr>
         {% empty %}
         <tr><td colspan="{% if woche %}7{% else %}6{% endif %}" class="hinweis">Keine Kundengruppe an diesem Tag.</td></tr>
         {% endfor %}
         {% for s in tag.selbstabholer %}
-        <tr class="wochen-selbst"><td>🚚 {{ s.name }}</td><td></td><td></td><td></td><td></td><td class="zahl">{{ s.personen }}</td>{% if woche %}<td></td>{% endif %}</tr>
+        <tr class="wochen-selbst"><td data-titel="Selbstabholer">🚚 {{ s.name }}</td><td class="leer"></td><td class="leer"></td><td class="leer"></td><td class="leer"></td><td class="zahl" data-titel="Pers.">{{ s.personen }}</td>{% if woche %}<td class="leer"></td>{% endif %}</tr>
         {% endfor %}
       </tbody>
-      <tfoot>
-        <tr><th>{{ tag.summe.name }}</th><th class="zahl">{{ tag.summe.soll|default_if_none:"–" }}</th><th class="zahl">{{ tag.summe.haushalte }}</th><th class="zahl">{{ tag.summe.erwachsene }}</th><th class="zahl">{{ tag.summe.kinder }}</th><th class="zahl">{{ tag.summe.personen }}{% if tag.selbst_personen %} <span class="hinweis">+{{ tag.selbst_personen }}</span>{% endif %}</th>{% if woche %}<th class="zahl">{{ tag.summe.abgeholt|default_if_none:"–" }}</th>{% endif %}</tr>
-      </tfoot>
+      {% if tag.zeilen or tag.selbstabholer %}<tfoot>
+        <tr><th>{{ tag.summe.name }}</th><th class="zahl" data-titel="Soll">{{ tag.summe.soll|default_if_none:"–" }}</th><th class="zahl" data-titel="Ist">{{ tag.summe.haushalte }}</th><th class="zahl" data-titel="Erw.">{{ tag.summe.erwachsene }}</th><th class="zahl" data-titel="Kinder">{{ tag.summe.kinder }}</th><th class="zahl" data-titel="Pers.">{{ tag.summe.personen }}{% if tag.selbst_personen %} <span class="hinweis">+{{ tag.selbst_personen }}</span>{% endif %}</th>{% if woche %}<th class="zahl" data-titel="Abgeh.">{{ tag.summe.abgeholt|default_if_none:"–" }}</th>{% endif %}</tr>
+      </tfoot>{% endif %}
     </table>
   </div>
   {% endfor %}
 
   <h2>Gesamt (alle Tage)</h2>
-  <table class="tabelle kompakt">
+  <table class="tabelle kompakt wochen-summen">
     <tbody>
       <tr><td>Ausgabestellen gesamt</td><td class="zahl">{{ gesamt.personen }}</td></tr>
       <tr><td>Selbstabholer gesamt</td><td class="zahl">{{ selbst_gesamt }}</td></tr>
@@ -44,6 +44,7 @@
       {% if woche %}<tr><td>Abgeholt in KW {{ woche|date:"W" }} (Haushalte)</td><td class="zahl">{{ gesamt.abgeholt }}</td></tr>{% endif %}
     </tbody>
   </table>
-  <p class="hinweis">Wer an mehreren Tagen kommt, zählt an jedem dieser Tage. Fahren Sie mit der Maus über eine Ausgabestelle, sehen Sie die Kundengruppen dahinter.</p>
+  <p class="hinweis">Soll = Maximum Haushalte, Ist = aktive Haushalte, Erw. = Erwachsene, Pers. = Personen{% if woche %}, Abgeh. = abgeholt{% endif %}.
+    Wer an mehreren Tagen kommt, zählt an jedem dieser Tage. Fahren Sie mit der Maus über eine Ausgabestelle, sehen Sie die Kundengruppen dahinter.</p>
 </section>
 {% endblock %}

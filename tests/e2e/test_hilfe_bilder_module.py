@@ -526,10 +526,17 @@ def test_hilfe_bild_wochenuebersicht(angemeldet, admin, muster):
         "wochenuebersicht-tag",
         [karte.locator("h1"), erste],
         Marke(karte.locator("label", has_text="mit Abholungen der Woche"), "rahmen", 1),
-        Marke(karte.get_by_role("link", name="PDF Querformat"), nummer=2, von="rechts", laenge=50),
+        Marke(karte.get_by_role("link", name="Querformat"), nummer=2, von="rechts", laenge=50),
         Marke(erste.locator("thead th").nth(1), "rahmen", 3),
         Marke(erste.locator("tr.wochen-selbst"), "rahmen", 4),
     )
+    # Handy: je Ausgabestelle Name, darunter die Zahlen mit Beschriftung, nichts abgeschnitten
+    seite.set_viewport_size({"width": 390, "height": 844})
+    zeile = erste.locator("tbody tr").first
+    breite = seite.evaluate("document.documentElement.scrollWidth")
+    assert breite <= 390, breite
+    vorher = zeile.locator("td").nth(1).evaluate("e => getComputedStyle(e, '::before').content")
+    assert vorher == '"Soll"'
 
 
 def test_hilfe_bild_abrechnung(angemeldet, admin, muster, benutzer_mit_rolle):

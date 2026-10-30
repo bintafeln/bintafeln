@@ -1522,3 +1522,21 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 .nachrichten-erledigt > summary { cursor: pointer; list-style: revert; }
 .nachrichten-erledigt > summary h2 { display: inline; }
 .nachrichten-reiter { margin-top: .75rem; }
+/* Wochenübersicht: oben Woche und PDF klein; auf dem Handy je Ausgabestelle zwei Zeilen –
+   Name, darunter die Zahlen mit kurzer Beschriftung nebeneinander */
+.wochen-filter { margin-bottom: .25rem; }
+.wochen-pdf { margin: 0 0 1rem; }
+.wochen-filter .filter-haken input { width: auto; min-height: 0; }
+@media (max-width: 40rem) {
+  .tabelle.kompakt.wochen-tabelle td:first-child { min-width: 0; }
+  .tabelle.kompakt.wochen-tabelle tr { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0 .25rem; padding: .4rem 0; }
+  .tabelle.kompakt.wochen-tabelle tr > :first-child { grid-column: 1 / -1; font-weight: 600; text-align: left; }
+  .tabelle.kompakt.wochen-tabelle td, .tabelle.kompakt.wochen-tabelle th { display: block; border: 0; padding: 0; text-align: center; }
+  .tabelle.kompakt.wochen-tabelle td:first-child::before { content: none; }
+  .tabelle.kompakt.wochen-tabelle .zahl::before { content: attr(data-titel); display: block; font-size: .7rem; font-weight: 400; color: var(--leise); }
+  .tabelle.kompakt.wochen-tabelle td.leer { visibility: hidden; }
+  .tabelle.kompakt.wochen-tabelle td[colspan] { grid-column: 1 / -1; text-align: left; }
+  .tabelle.kompakt.wochen-tabelle tfoot tr { border-top: 2px solid var(--text); }
+  .tabelle.kompakt.wochen-summen tr { display: flex; justify-content: space-between; }
+  .tabelle.kompakt.wochen-summen td::before { content: none; }
+}
