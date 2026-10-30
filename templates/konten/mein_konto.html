@@ -7,11 +7,13 @@
     Ihre Rollen: {% for rolle in rollen_liste %}<span class="marke-rolle">{{ rolle }}</span>{% empty %}keine – bitte an einen Admin wenden.{% endfor %}</p>
 
   <div class="konto-raster">
+    {% if not user.stelle_id %}{# Konto einer Ausgabestelle: Passwort setzt der Admin (ADR 0059) #}
     <div class="konto-kachel">
       <h2>Passwort</h2>
       <p>Für die Anmeldung im Programm.</p>
       <p><a class="knopf knopf-zweitrangig" href="{% url 'konten:passwort_aendern' %}">Passwort ändern</a></p>
     </div>
+    {% endif %}
 
     {% if zwei_faktor_erlaubt %}
     <div class="konto-kachel">
@@ -33,11 +35,13 @@
     </div>
     {% endif %}
 
+    {% if not user.stelle_id %}{# Konto einer Ausgabestelle bekommt keine Benachrichtigungen (ADR 0059) #}
     <div class="konto-kachel">
       <h2>Benachrichtigungen</h2>
       <p>Wie oft Mails kommen, z. B. zu neuen Anträgen oder Ausfällen: sofort, gesammelt oder nie.</p>
       <p><a class="knopf knopf-zweitrangig" href="{% url 'konten:benachrichtigungen' %}">Einstellen</a></p>
     </div>
+    {% endif %}
 
     {% for teil in modul_konto %}{{ teil }}{% endfor %}
 

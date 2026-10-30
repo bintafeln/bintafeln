@@ -309,6 +309,11 @@ class Ausgabestelle(models.Model):
         help_text="Z. B. die Zentrale: Nach dem Druck heißt die Nachricht „Neuer Ausweis ist "
         "gedruckt und liegt im Schrank“ statt „… wird zur Ausgabestelle geschickt“.",
     )  # fmt: skip
+    dienstplan_sichtbar = models.BooleanField(
+        "Dienstplan auf dem Tablet zeigen", default=False,
+        help_text="Nur wenn eingeschaltet, sieht das Konto dieser Ausgabestelle (Einlass-Tablet) "
+        "den Dienstplan und die eigenen Dienste im Menü (ADR 0059).",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Ausgabestelle"

@@ -24,8 +24,8 @@ def entfernen(benutzer) -> None:
 
 
 def mit_pin() -> set[int]:
-    """Konten (aktiv), die eine PIN eingerichtet haben."""
-    return set(MonitorPin.objects.filter(benutzer__is_active=True)
+    """Konten (aktiv, keine Ausgabestellen-Konten), die eine PIN eingerichtet haben."""
+    return set(MonitorPin.objects.filter(benutzer__is_active=True, benutzer__stelle__isnull=True)
                .values_list("benutzer_id", flat=True))  # fmt: skip
 
 

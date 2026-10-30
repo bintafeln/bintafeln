@@ -43,6 +43,13 @@ def stelle(request, pk):
         zustand = "entsperrt" if konto.is_active else "gesperrt"
         messages.success(request, f"Konto von „{s.name}“ {zustand}.")
         return redirect("konten:stelle", pk=s.pk)
+    if request.method == "POST" and request.POST.get("aktion") in ("dienstplan_an",
+                                                                   "dienstplan_aus"):  # fmt: skip
+        s.dienstplan_sichtbar = request.POST["aktion"] == "dienstplan_an"
+        s.save(update_fields=["dienstplan_sichtbar"])
+        zustand = "eingeschaltet" if s.dienstplan_sichtbar else "ausgeschaltet"
+        messages.success(request, f"Dienstplan auf dem Tablet von „{s.name}“ {zustand}.")
+        return redirect("konten:stelle", pk=s.pk)
     if request.method == "POST" and form.is_valid():
         if rollen.AUSGABE not in verwaltung.vergebbare_rollen(request.user):
             raise PermissionDenied

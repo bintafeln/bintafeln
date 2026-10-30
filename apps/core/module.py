@@ -108,6 +108,10 @@ class Modul:
     benachrichtigungen: tuple = ()
     # Adresse für das Ausweis-Element „QR-Code Wartezeit“: ausweis_qr(haushalt) -> URL oder ""
     ausweis_qr: Callable | None = None
+    # Rechte, die das Modul einem Konto wieder entzieht (z. B. je Ausgabestelle):
+    # rechte_entzug(benutzer) -> set[str]. Greift in rollen.rechte_von, also auch für Menü und
+    # Ansichten (recht_erforderlich).
+    rechte_entzug: Callable | None = None
 
 
 @cache
@@ -130,6 +134,16 @@ def aktiv(kennung: str) -> bool:
 def ausgeschaltete_rechte() -> set[str]:
     an = eingeschaltet()
     return {code for m in alle() if m.kennung not in an for code, _, _ in m.rechte}
+
+
+def entzogene_rechte(benutzer) -> set[str]:
+    """Rechte, die eingeschaltete Module diesem Konto gezielt entziehen (ADR 0049)."""
+    an = eingeschaltet()
+    entzogen: set[str] = set()
+    for m in alle():
+        if m.kennung in an and m.rechte_entzug:
+            entzogen |= m.rechte_entzug(benutzer)
+    return entzogen
 
 
 def einlass_hinweise(haushalt, heute, stelle) -> list[dict]:

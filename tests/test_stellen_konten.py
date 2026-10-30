@@ -153,6 +153,58 @@ def test_zwei_faktor_nur_mit_freigabe(admin_client, mitte):
     assert "Zwei-Faktor" in admin_client.get(reverse("konten:mein_konto")).content.decode()
 
 
+def test_ausgabestellen_konto_ohne_pin_passwort_benachrichtigungen(admin_client, mitte):
+    """Ein Ausgabestellen-Konto ist keine Person: keine PIN, kein eigenes Passwort, keine
+    Benachrichtigungen (sie bekommt keine)."""
+    from apps.aushang import pin
+
+    konto_anlegen(admin_client, mitte)
+    konto = get_user_model().objects.get(stelle=mitte)
+    tablet = Client()
+    tablet.post(ANMELDEN, {"username": "Carnaper Tisch", "password": PW})
+    seite = tablet.get(reverse("konten:mein_konto")).content.decode()
+    assert "Passwort ändern" not in seite
+    assert "Benachrichtigungen" not in seite
+    assert "PIN" not in seite
+    # Die Seiten sind auch direkt nicht erreichbar
+    assert tablet.get(reverse("konten:passwort_aendern")).status_code == 404
+    assert tablet.get(reverse("konten:benachrichtigungen")).status_code == 404
+    assert tablet.get(reverse("aushang:meine_pin")).status_code == 404
+    # Selbst eine (etwa aus Altbestand) gesetzte PIN taucht in der Monitor-Auswahl nicht auf
+    pin.setzen(konto, "482915")
+    assert konto.pk not in pin.mit_pin()
+    # Beim Admin (einer Person) sind die Kacheln dagegen da
+    admin_seite = admin_client.get(reverse("konten:mein_konto")).content.decode()
+    assert "Passwort ändern" in admin_seite and "Benachrichtigungen" in admin_seite
+
+
+def test_dienstplan_nur_wenn_admin_fuer_stelle_einschaltet(admin_client, mitte):
+    """Das Tablet-Konto sieht den Dienstplan nur, wenn ein Admin ihn für diese Ausgabestelle
+    einschaltet (ADR 0059)."""
+    from apps.core.models import TafelEinstellungen
+
+    t = TafelEinstellungen.laden()
+    t.module = ["dienstplan"]
+    t.save()
+    konto_anlegen(admin_client, mitte)
+    tablet = Client()
+    tablet.post(ANMELDEN, {"username": "Carnaper Tisch", "password": PW})
+    plan = reverse("dienstplan:plan")
+    # Standard: nicht im Menü und nicht erreichbar
+    assert "Dienstplan der Ausgabe" not in tablet.get(reverse("core:start")).content.decode()
+    assert tablet.get(plan).status_code == 403
+    # Admin schaltet ihn für diese Ausgabestelle ein
+    admin_client.post(reverse("konten:stelle", args=[mitte.pk]), {"aktion": "dienstplan_an"})
+    mitte.refresh_from_db()
+    assert mitte.dienstplan_sichtbar
+    # Jetzt sichtbar und erreichbar
+    assert "Dienstplan der Ausgabe" in tablet.get(reverse("core:start")).content.decode()
+    assert tablet.get(plan).status_code == 200
+    # Und wieder ausschaltbar
+    admin_client.post(reverse("konten:stelle", args=[mitte.pk]), {"aktion": "dienstplan_aus"})
+    assert tablet.get(plan).status_code == 403
+
+
 def test_rollen_unter_mein_konto_nicht_auf_der_startseite(admin_client):
     start = admin_client.get(reverse("core:start")).content.decode()
     assert "Ihre Rollen" not in start and "keine Rolle zugeordnet" not in start

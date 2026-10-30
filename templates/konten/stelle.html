@@ -23,6 +23,13 @@
     {% if konto.is_active %}<button type="submit" name="aktion" value="sperren" class="knopf knopf-gefahr">Konto sperren</button>
     {% else %}<button type="submit" name="aktion" value="entsperren" class="knopf">Konto entsperren</button>{% endif %}
   </form>
+  <h3>Dienstplan</h3>
+  <p>{% if s.dienstplan_sichtbar %}<span class="marke-ok">Wird auf dem Tablet gezeigt.</span> Das Tablet-Konto sieht den Dienstplan und die eigenen Dienste.{% else %}Das Tablet-Konto sieht den Dienstplan <strong>nicht</strong>.{% endif %}</p>
+  <form method="post" class="inline">
+    {% csrf_token %}
+    {% if s.dienstplan_sichtbar %}<button type="submit" name="aktion" value="dienstplan_aus" class="knopf knopf-zweitrangig">Dienstplan auf dem Tablet ausblenden</button>
+    {% else %}<button type="submit" name="aktion" value="dienstplan_an" class="knopf knopf-zweitrangig">Dienstplan auf dem Tablet zeigen</button>{% endif %}
+  </form>
   <h3>Passwort ändern</h3>
   {% else %}
   <p>Noch kein Konto. Mit einem Passwort wird es angelegt; angemeldet wird dann mit „{{ s.name }}“ und diesem Passwort.</p>

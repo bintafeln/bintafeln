@@ -177,6 +177,8 @@ def platz(request, schluessel):
 @login_required
 def meine_pin(request):
     """Eigene PIN für das Ändern am Aushang-Monitor festlegen, ändern oder löschen."""
+    if request.user.stelle_id:  # Konto einer Ausgabestelle gehört keiner Person (ADR 0059, 0080)
+        raise Http404
     form = PinForm(request.POST or None)
     if request.method == "POST":
         if request.POST.get("aktion") == "loeschen":
