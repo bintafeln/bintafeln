@@ -8,15 +8,24 @@ passendes PDF; manche möchten diese Texte lieber direkt im Programm pflegen.
 
 ## Entscheidung
 
-- `AntragEinstellungen` bekommt je einen Textbereich `datenschutz_text`, `impressum_text` und
-  `einverstaendnis_text` (HTML über den vorhandenen Editor, Bilder per Adresse).
+- Die Texte gehören der **ganzen Tafel**, nicht nur dem Antragsmodul. `TafelEinstellungen` bekommt
+  je einen Textbereich `datenschutz_text`, `impressum_text` und `einverstaendnis_text` (HTML über
+  den vorhandenen Editor, Bilder per Adresse). Bearbeitet werden sie unter
+  „Einstellungen → Tafel → Rechtstexte“ (`core:rechtstexte`, Recht `einstellungen.tafel`).
 - Ist ein Text gesetzt, führt der Link im Formular auf eine **interne, öffentliche Seite**
-  (`antrag:rechtstext`, `AntragEinstellungen.rechtslink()`); ist nur der externe Link gesetzt,
-  bleibt dieser. Beides ist also weiter möglich, der interne Text hat Vorrang.
+  (`antrag:rechtstext`, `AntragEinstellungen.rechtslink()` liest den Text aus den
+  Tafel-Einstellungen); ist nur der externe Link gesetzt, bleibt dieser. Beides ist also weiter
+  möglich, der interne Text hat Vorrang.
+- Die **externen Links** als Rückfallebene bleiben bei den Antrags-Einstellungen
+  (`AntragEinstellungen.datenschutz_url` usw.), weil sie zur Fußzeile und den Häkchen des Formulars
+  gehören. `core` liest den Text selbst; `antraege` hängt (wie erlaubt) von `core` ab, nicht
+  umgekehrt.
 - Angezeigt wird der Text bereinigt über `apps.core.html.bereinigen()` (nh3); Skripte und
   gefährliche Attribute werden entfernt. Gespeichert wird roh, bereinigt erst beim Anzeigen.
-- Bearbeitet wird unter „Anträge → Formular einstellen → Rechtstexte bearbeiten“
-  (`einstellungen.antraege`). Die öffentliche Seite trägt das Logo und die Farben der Tafel.
+- Die öffentliche Seite trägt das Logo und die Farben der Tafel.
+- Verschoben aus `AntragEinstellungen` nach `TafelEinstellungen` mit Migration
+  `core 0023` (Felder) und `antraege 0018` (vorhandene Texte kopieren, dann entfernen – umkehrbar,
+  ohne Datenverlust).
 
 ## Begründung
 

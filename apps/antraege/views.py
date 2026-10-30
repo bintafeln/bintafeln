@@ -21,7 +21,6 @@ from apps.antraege.forms import (
     AntragBearbeitenForm,
     AntragPersonenFormset,
     EinstellungenForm,
-    RechtstexteForm,
     TextForm,
 )
 from apps.antraege.models import (
@@ -281,18 +280,6 @@ def einstellungen(request):
             "sprachen": [(s, s.code in eigene) for s in sprachen.SPRACHEN],
         },
     )
-
-
-@rollen.recht_erforderlich("einstellungen.antraege")
-def rechtstexte(request):
-    """Datenschutz, Impressum und Einverständniserklärung als interner Text (ADR 0094)."""
-    form = RechtstexteForm(request.POST or None, instance=AntragEinstellungen.laden())
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        messages.success(request, "Rechtstexte gespeichert.")
-        return redirect("antraege:rechtstexte")
-    return render(request, "antraege/rechtstexte.html",
-                  {"form": form, "e": AntragEinstellungen.laden()})  # fmt: skip
 
 
 @rollen.recht_erforderlich("einstellungen.antraege")

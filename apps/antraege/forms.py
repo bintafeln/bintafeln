@@ -384,19 +384,6 @@ def _html_feld(zeilen=8):
                                  "data-editor": ""})  # fmt: skip
 
 
-class RechtstexteForm(forms.ModelForm):
-    """Datenschutz, Impressum und Einverständniserklärung als interner Text (ADR 0094)."""
-
-    class Meta:
-        model = AntragEinstellungen
-        fields = ["datenschutz_text", "impressum_text", "einverstaendnis_text"]
-        widgets = {
-            "datenschutz_text": _html_feld(10),
-            "impressum_text": _html_feld(6),
-            "einverstaendnis_text": _html_feld(8),
-        }
-
-
 class TextForm(forms.ModelForm):
     class Meta:
         model = AntragText

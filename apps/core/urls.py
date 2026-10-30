@@ -17,6 +17,7 @@ urlpatterns = [
     path("", views.start, name="start"),
     path("einrichtung/", views.einrichtung, name="einrichtung"),
     path("einstellungen/", views.einstellungen, name="einstellungen"),
+    path("einstellungen/rechtstexte/", views.rechtstexte, name="rechtstexte"),
     path(
         "einstellungen/hintergrund/<int:pk>/entfernen/",
         views.hintergrund_entfernen,

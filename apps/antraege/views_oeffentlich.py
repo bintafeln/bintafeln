@@ -226,10 +226,12 @@ def rechtstext(request, sprache, art):
     (ADR 0094). 404, wenn die Sprache unbekannt ist oder kein Text hinterlegt wurde."""
     from django.http import Http404
 
-    if sprache not in sprachen.NACH_CODE or art not in AntragEinstellungen.RECHTSTEXTE:
+    from apps.core.models import TafelEinstellungen
+
+    if sprache not in sprachen.NACH_CODE or art not in TafelEinstellungen.RECHTSTEXTE:
         raise Http404
     kontext = _kontext(sprache)
-    roh = getattr(kontext["e"], f"{art}_text", "")
+    roh = getattr(kontext["tafel"], f"{art}_text", "")
     if not (roh or "").strip():
         raise Http404
     kontext["ueberschrift"] = kontext["t"][art]

@@ -3,12 +3,13 @@
 {% block inhalt %}
 <script src="{% static 'js/html_editor.js' %}" defer></script>
 <section class="karte">
-  <p><a href="{% url 'antraege:einstellungen' %}">← Anträge einstellen</a></p>
-  <h1>Datenschutz, Impressum, Einverständniserklärung</h1>
-  <p class="hinweis">Diese Texte können Sie hier direkt schreiben (im Reiter <strong>Gestalten</strong> wie in einem
-    Schreibprogramm oder im Reiter <strong>HTML</strong>). Ist ein Text ausgefüllt, führt der Link im Antragsformular auf
-    eine eigene Seite mit diesem Text. Lassen Sie ein Feld leer, gilt stattdessen der externe Link aus den Antrags-Einstellungen
-    (falls dort einer eingetragen ist). Skripte werden beim Anzeigen entfernt.</p>
+  <p><a href="{% url 'core:einstellungen' %}">← Tafel und Module</a></p>
+  <h1>Rechtstexte der Tafel</h1>
+  <p class="hinweis">Datenschutzerklärung, Impressum und Einverständniserklärung gelten für die ganze Tafel. Sie können
+    sie hier direkt schreiben (im Reiter <strong>Gestalten</strong> wie in einem Schreibprogramm oder im Reiter
+    <strong>HTML</strong>). Ist ein Text ausgefüllt, führt der Link im Antragsformular auf eine eigene Seite mit diesem
+    Text. Lassen Sie ein Feld leer, gilt stattdessen der externe Link aus den Antrags-Einstellungen (falls dort einer
+    eingetragen ist). Skripte werden beim Anzeigen entfernt.</p>
   <form method="post">
     {% csrf_token %}
     {% include "includes/formular.html" %}

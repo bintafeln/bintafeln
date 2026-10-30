@@ -16,7 +16,12 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_POST
 
 from apps.core import geheimnis, mail, module, papierkorb, sicherung, update
-from apps.core.forms import EinrichtungForm, EinstellungenForm, MailEinstellungenForm
+from apps.core.forms import (
+    EinrichtungForm,
+    EinstellungenForm,
+    MailEinstellungenForm,
+    RechtstexteForm,
+)
 from apps.core.middleware import admin_existiert
 from apps.core.models import Hintergrundbild, MailEinstellungen, TafelEinstellungen
 from apps.konten import personal, rollen
@@ -121,6 +126,18 @@ def einstellungen(request):
         return redirect("core:einstellungen")
     weitere = list(Hintergrundbild.objects.all())
     return render(request, "core/einstellungen.html", {"form": form, "weitere_bilder": weitere})
+
+
+@rollen.recht_erforderlich("einstellungen.tafel")
+def rechtstexte(request):
+    """Datenschutz, Impressum und Einverständniserklärung der Tafel als interner Text (ADR 0094)."""
+    instanz = TafelEinstellungen.laden()
+    form = RechtstexteForm(request.POST or None, instance=instanz)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Rechtstexte gespeichert.")
+        return redirect("core:rechtstexte")
+    return render(request, "core/rechtstexte.html", {"form": form, "e": TafelEinstellungen.laden()})
 
 
 @require_POST
