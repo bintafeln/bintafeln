@@ -61,6 +61,7 @@ def test_treffer(bestand):
     t = aufnahme.treffer(vertauscht)
     assert t[0]["haushalt"] == bestand["h"] and t[0]["punkte"] == 100
     assert "gleiches Geburtsdatum" in t[0]["gruende"]
+    assert t[0]["stufe"] == "hoch" and t[0]["stufe_text"]  # Einstufung statt nackter Punkte
     tippfehler = antrag(vorname="Erica", nachname="Musterman", geburtsdatum=dt.date(1968, 12, 3),
                         strasse="", plz="")  # fmt: skip
     t = aufnahme.treffer(tippfehler)
@@ -69,6 +70,12 @@ def test_treffer(bestand):
     assert aufnahme.treffer(antrag(vorname="Max", nachname="Probe", geburtsdatum=None)) == []
     mit_nummer = antrag(vorname="Max", nachname="Probe", kundennummer="00042")
     assert aufnahme.treffer(mit_nummer)[0]["punkte"] == 100
+
+
+def test_einstufung_stufen():
+    assert aufnahme.einstufung(100)[0] == "hoch" and aufnahme.einstufung(80)[0] == "hoch"
+    assert aufnahme.einstufung(79)[0] == "mittel" and aufnahme.einstufung(65)[0] == "mittel"
+    assert aufnahme.einstufung(64)[0] == "niedrig" and aufnahme.einstufung(0)[0] == "niedrig"
 
 
 def test_gueltigkeit():
@@ -213,6 +220,9 @@ def test_aufnahme_bestehender_kunde(admin_client, bestand):
     admin_client.get(reverse("antraege:aufnahme", args=[a.pk]))
     seite = schritt(admin_client, a, "kunde").content.decode()
     assert "1001" in seite and "gleiches Geburtsdatum" in seite
+    # Antragsdaten dauerhaft sichtbar, Ampel-Einstufung und Vorschau ohne neuen Tab
+    assert "Angaben aus dem Antrag" in seite and "Neue Straße 1" in seite
+    assert "einstufung-" in seite and "<summary>Vorschau</summary>" in seite
     schritt(admin_client, a, "kunde", {"haushalt": "1001"})
     seite = schritt(admin_client, a, "abgleich").content.decode()
     assert "Alte Straße 9" in seite and "Neue Straße 1" in seite and "unterschied" in seite

@@ -18,31 +18,52 @@
 <section class="karte">
 {% if schritt == "kunde" %}
   <h2>1. Gibt es den Kunden schon?</h2>
-  <p class="hinweis">Gesucht wird auch bei vertauschten Vor- und Nachnamen und Tippfehlern, dazu nach
-    Geburtsdatum und Anschrift. Je höher die Punkte, desto ähnlicher.</p>
-  <div class="tabelle-rahmen">
-  <table class="tabelle">
-    <thead><tr><th></th><th>Punkte</th><th>Kundennummer</th><th>Gefundene Person</th><th>Geburtsdatum</th><th>Anschrift</th><th>Warum</th></tr></thead>
-    <tbody>
-    {% for t in treffer %}
-      <tr>
-        <td><input type="radio" name="haushalt" value="{{ t.haushalt.kundennummer }}" id="t{{ forloop.counter }}"{% if z.haushalt == t.haushalt.kundennummer %} checked{% endif %}></td>
-        <td data-titel="Punkte"><label for="t{{ forloop.counter }}"><strong>{{ t.punkte }}</strong></label></td>
-        <td data-titel="Kundennummer"><a href="{% url 'kunden:haushalt' t.haushalt.kundennummer %}" target="_blank" rel="noopener">{{ t.haushalt.kundennummer }}</a> <small class="hinweis">{{ t.haushalt.get_status_display }}</small></td>
-        <td data-titel="Person">{{ t.person.vorname }} {{ t.person.nachname }}{% if not t.person.ist_hauptperson %} <small class="hinweis">(Angehörige)</small>{% endif %}</td>
-        <td data-titel="Geburtsdatum">{{ t.person.geburtsdatum|date:"d.m.Y"|default:"–" }}</td>
-        <td data-titel="Anschrift">{{ t.haushalt.strasse|default:"–" }}{% if t.haushalt.plz %}, {{ t.haushalt.plz }} {{ t.haushalt.ort }}{% endif %}</td>
-        <td data-titel="Warum">{{ t.gruende|join:", " }}</td>
-      </tr>
-    {% empty %}
-      <tr><td colspan="7">Kein ähnlicher Kunde gefunden.</td></tr>
-    {% endfor %}
-      <tr class="zeile-neu">
-        <td><input type="radio" name="haushalt" value="neu" id="t-neu"{% if "haushalt" in z and not z.haushalt %} checked{% elif not treffer %} checked{% endif %}></td>
-        <td colspan="6"><label for="t-neu"><strong>Neuer Kunde</strong> – mit der nächsten freien Kundennummer anlegen</label></td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="abgleich-gegenueber">
+    <div class="antrag-karte">
+      <h3>Angaben aus dem Antrag</h3>
+      <dl class="angaben">
+        <dt>Name</dt><dd>{{ a.anrede }} {{ a.vorname }} {{ a.nachname }}</dd>
+        <dt>Geburtsdatum</dt><dd>{{ a.geburtsdatum|date:"d.m.Y"|default:"–" }}</dd>
+        <dt>Anschrift</dt><dd>{{ a.strasse|default:"–" }}{% if a.plz %}<br>{{ a.plz }} {{ a.ort }}{% endif %}</dd>
+        <dt>Telefon</dt><dd>{{ a.telefon|default:"–" }}</dd>
+        <dt>E-Mail</dt><dd>{{ a.email|default:"–" }}</dd>
+        {% if a.staatsangehoerigkeit %}<dt>Staatsangehörigkeit</dt><dd>{{ a.staatsangehoerigkeit }}</dd>{% endif %}
+        <dt>Angehörige</dt><dd>{{ a.personen.count }}</dd>
+      </dl>
+    </div>
+    <div class="treffer-liste">
+      <p class="hinweis">Gesucht wird auch bei vertauschten Vor- und Nachnamen und Tippfehlern, dazu nach
+        Geburtsdatum und Anschrift. „Vorschau“ zeigt den Kunden ohne Wechsel in einen neuen Tab.</p>
+      {% for t in treffer %}
+        <div class="treffer-karte">
+          <label class="treffer-wahl">
+            <input type="radio" name="haushalt" value="{{ t.haushalt.kundennummer }}"{% if z.haushalt == t.haushalt.kundennummer %} checked{% endif %}>
+            <span class="einstufung einstufung-{{ t.stufe }}" title="{{ t.punkte }} von 100 Punkten">{{ t.stufe_text }}</span>
+            <strong>{{ t.person.vorname }} {{ t.person.nachname }}</strong>{% if not t.person.ist_hauptperson %} <small class="hinweis">(Angehörige)</small>{% endif %}
+          </label>
+          <p class="treffer-zeile">Kunde <a href="{% url 'kunden:haushalt' t.haushalt.kundennummer %}" target="_blank" rel="noopener">{{ t.haushalt.kundennummer }}</a>
+            · {{ t.haushalt.get_status_display }}{% if t.person.geburtsdatum %} · geb. {{ t.person.geburtsdatum|date:"d.m.Y" }}{% endif %}{% if t.haushalt.strasse %} · {{ t.haushalt.strasse }}{% if t.haushalt.plz %}, {{ t.haushalt.plz }} {{ t.haushalt.ort }}{% endif %}{% endif %}</p>
+          <p class="hinweis treffer-grund">{{ t.gruende|join:", " }}</p>
+          <details class="treffer-vorschau">
+            <summary>Vorschau</summary>
+            <dl class="angaben">
+              <dt>Kundengruppe</dt><dd>{% if t.haushalt.kundengruppe %}{{ t.haushalt.kundengruppe.ausgabestelle.name|default:"" }} · {{ t.haushalt.kundengruppe.name }}{% else %}–{% endif %}</dd>
+              <dt>Ausweis gültig bis</dt><dd>{{ t.haushalt.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}</dd>
+              <dt>Letzter Besuch</dt><dd>{{ t.haushalt.letzter_besuch_text }}</dd>
+              <dt>Haushalt</dt><dd>{% for p in t.haushalt.personen.all %}{{ p.vorname }} {{ p.nachname }}{% if p.ist_hauptperson %} (Hauptperson){% endif %}{% if not forloop.last %}; {% endif %}{% empty %}–{% endfor %}</dd>
+            </dl>
+          </details>
+        </div>
+      {% empty %}
+        <p class="hinweis">Kein ähnlicher Kunde gefunden.</p>
+      {% endfor %}
+      <div class="treffer-karte treffer-neu">
+        <label class="treffer-wahl">
+          <input type="radio" name="haushalt" value="neu"{% if "haushalt" in z and not z.haushalt %} checked{% elif not treffer %} checked{% endif %}>
+          <strong>Neuer Kunde</strong> – mit der nächsten freien Kundennummer anlegen
+        </label>
+      </div>
+    </div>
   </div>
 
 {% elif schritt == "abgleich" %}
