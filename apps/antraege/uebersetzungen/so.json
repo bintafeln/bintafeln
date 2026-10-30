@@ -87,5 +87,6 @@
   "fehler_datei_anzahl": "Fadlan soo geli ugu badnaan {anzahl} fayl.",
   "fehler_gebiet": "Nasiib darro, waxaan kaliya aqbali karnaa codsiyada dadka ku nool {gebiet}.",
   "fehler_einwilligung": "Fadlan ogolow si aan uga shaqayno codsigaaga.",
-  "fehler_zu_viele": "Codsiyo badan ayaa la diray waqti gaaban. Fadlan mar dambe isku day."
+  "fehler_zu_viele": "Codsiyo badan ayaa la diray waqti gaaban. Fadlan mar dambe isku day.",
+  "gelesen_bestaetigt": "Waan akhriyay: {was}"
 }

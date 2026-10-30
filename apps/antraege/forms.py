@@ -174,6 +174,20 @@ class AntragForm(forms.Form):
                 self.fields[name] = forms.BooleanField(
                     label=t[name], error_messages={"required": t["fehler_bestaetigen"]}
                 )
+        # Voraussetzungen und Erklärungen (z. B. Flyer): Pflicht-Häkchen mit gleichem Rahmen
+        for name, abfragen, was in (
+            (
+                "voraussetzungen_bestaetigt",
+                einstellungen.voraussetzungen_abfragen,
+                "voraussetzungen",
+            ),
+            ("erklaerungen_bestaetigt", einstellungen.erklaerungen_abfragen, "erklaerungen"),
+        ):
+            if abfragen:
+                self.fields[name] = forms.BooleanField(
+                    label=t["gelesen_bestaetigt"].format(was=t[was]),
+                    error_messages={"required": t["fehler_bestaetigen"]},
+                )
 
     def _feld(self, name, feld, label, schalter=None):
         abfrage = getattr(self.e, schalter or name)
@@ -260,6 +274,8 @@ class AntragForm(forms.Form):
             merkzeichen=_merkzeichen(d.get("gdb"), d.get("merkzeichen")),
             einwilligung_bestaetigt=bool(d.get("einwilligung")),
             datenschutz_bestaetigt=bool(d.get("datenschutz_bestaetigt")),
+            voraussetzungen_bestaetigt=bool(d.get("voraussetzungen_bestaetigt")),
+            erklaerungen_bestaetigt=bool(d.get("erklaerungen_bestaetigt")),
             einverstaendnis_bestaetigt=bool(d.get("einverstaendnis_bestaetigt")),
         )
         for n in range(1, MAX_PERSONEN + 1):
@@ -326,6 +342,7 @@ class EinstellungenForm(forms.ModelForm):
         fields = [
             "aktiv", "modus", "erste_nummer", *AntragEinstellungen.FELDER,
             "einwilligung_abfragen", "datenschutz_abfragen", "einverstaendnis_abfragen",
+            "voraussetzungen_abfragen", "erklaerungen_abfragen",
             "gebiet_pruefen", "gebiet_plz", "gebiet_orte", "gebiet_name",
             "datenschutz_url",
             "impressum_url", "erklaerungen_url", "voraussetzungen_url", "einverstaendnis_url",

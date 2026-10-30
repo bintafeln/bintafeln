@@ -34,6 +34,8 @@ def antrag_pdf(a) -> bytes:
             ("Behinderung", a.gdb_text),
             ("Speichern der Angaben bestätigt", "ja" if a.einwilligung_bestaetigt else "nein"),
             ("Datenschutzerklärung bestätigt", "ja" if a.datenschutz_bestaetigt else "nein"),
+            ("Voraussetzungen bestätigt", "ja" if a.voraussetzungen_bestaetigt else "nein"),
+            ("Erklärungen bestätigt", "ja" if a.erklaerungen_bestaetigt else "nein"),
             ("Einverständniserklärung bestätigt", "ja" if a.einverstaendnis_bestaetigt else "nein"),
             ("Bevorzugte Wochentage", a.wochentage),
             ("Bevorzugte Ausgabestelle", a.ausgabestelle),

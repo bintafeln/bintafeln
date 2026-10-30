@@ -87,5 +87,6 @@
   "fehler_datei_anzahl": "Prześlij maksymalnie {anzahl} plików.",
   "fehler_gebiet": "Niestety możemy przyjmować wnioski tylko od osób mieszkających w miejscowości {gebiet}.",
   "fehler_einwilligung": "Wyraź zgodę, abyśmy mogli rozpatrzyć Twój wniosek.",
-  "fehler_zu_viele": "W krótkim czasie wysłano zbyt wiele wniosków. Spróbuj ponownie później."
+  "fehler_zu_viele": "W krótkim czasie wysłano zbyt wiele wniosków. Spróbuj ponownie później.",
+  "gelesen_bestaetigt": "Przeczytałem/am: {was}"
 }

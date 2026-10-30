@@ -87,5 +87,6 @@
   "fehler_datei_anzahl": "በጃኹም ብዝበዝሐ {anzahl} ፋይላት ጸዓኑ።",
   "fehler_gebiet": "ይቕሬታ፡ ኣብ {gebiet} ዝነብሩ ሰባት ጥራይ ኢና ጠለብ ክንቕበል እንኽእል።",
   "fehler_einwilligung": "ሕቶኹም ክንሰርሖ ምእንቲ በጃኹም ተሰማምዑ።",
-  "fehler_zu_viele": "ኣብ ሓጺር ግዜ ብዙሕ ሕቶታት ተላኢኹ። በጃኹም ጸኒሕኩም ፈትኑ።"
+  "fehler_zu_viele": "ኣብ ሓጺር ግዜ ብዙሕ ሕቶታት ተላኢኹ። በጃኹም ጸኒሕኩም ፈትኑ።",
+  "gelesen_bestaetigt": "ኣንቢበ፦ {was}"
 }

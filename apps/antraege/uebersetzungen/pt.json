@@ -87,5 +87,6 @@
   "fehler_datei_anzahl": "Carregue no máximo {anzahl} ficheiros.",
   "fehler_gebiet": "Infelizmente, só podemos aceitar pedidos de pessoas que moram em {gebiet}.",
   "fehler_einwilligung": "Dê o seu consentimento para podermos tratar o seu pedido.",
-  "fehler_zu_viele": "Foram enviados demasiados pedidos em pouco tempo. Tente novamente mais tarde."
+  "fehler_zu_viele": "Foram enviados demasiados pedidos em pouco tempo. Tente novamente mais tarde.",
+  "gelesen_bestaetigt": "Eu li: {was}"
 }

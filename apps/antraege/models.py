@@ -100,6 +100,12 @@ class AntragEinstellungen(models.Model):
     einverstaendnis_abfragen = models.BooleanField(
         "Häkchen „Ich habe die Einverständniserklärung gelesen und bin einverstanden.“",
         default=True)  # fmt: skip
+    voraussetzungen_abfragen = models.BooleanField(
+        "Häkchen „Voraussetzungen gelesen“ (nur sinnvoll mit Link oben)", default=False
+    )
+    erklaerungen_abfragen = models.BooleanField(
+        "Häkchen „Erklärungen gelesen“ (z. B. Flyer; nur mit Link oben sinnvoll)",
+        default=False)  # fmt: skip
     impressum_url = models.URLField("Link zum Impressum", blank=True)
     # Aufbau der Seite: mitgelieferte Teile ein-/ausblenden; eigene Bereiche je Sprache: AntragText
     kopf_zeigen = models.BooleanField(
@@ -286,6 +292,8 @@ class Antrag(models.Model):
     # Bisher war das Häkchen zum Speichern immer Pflicht, daher für alte Anträge „ja“
     einwilligung_bestaetigt = models.BooleanField("Speichern der Angaben bestätigt", default=True)
     datenschutz_bestaetigt = models.BooleanField("Datenschutzerklärung bestätigt", default=False)
+    voraussetzungen_bestaetigt = models.BooleanField("Voraussetzungen bestätigt", default=False)
+    erklaerungen_bestaetigt = models.BooleanField("Erklärungen bestätigt", default=False)
     einverstaendnis_bestaetigt = models.BooleanField("Einverständniserklärung bestätigt",
                                                      default=False)  # fmt: skip
     ausgabestelle = models.CharField("Bevorzugte Ausgabestelle", max_length=100, blank=True)

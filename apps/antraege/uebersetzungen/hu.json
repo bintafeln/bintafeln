@@ -87,5 +87,6 @@
   "fehler_datei_anzahl": "Legfeljebb {anzahl} fájlt töltsön fel.",
   "fehler_gebiet": "Sajnos csak olyan emberek kérelmét fogadhatjuk el, akik itt laknak: {gebiet}.",
   "fehler_einwilligung": "Kérjük, járuljon hozzá, hogy feldolgozhassuk a kérelmét.",
-  "fehler_zu_viele": "Rövid idő alatt túl sok kérelmet küldtek. Kérjük, próbálja újra később."
+  "fehler_zu_viele": "Rövid idő alatt túl sok kérelmet küldtek. Kérjük, próbálja újra később.",
+  "gelesen_bestaetigt": "Elolvastam: {was}"
 }

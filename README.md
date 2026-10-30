@@ -721,9 +721,11 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   **direkt im Programm** als Text hinterlegen (Admin: „Anträge → Formular einstellen → Rechtstexte
   bearbeiten“, mit HTML-Editor, ADR 0094); dann führt der Link auf eine eigene Seite
   (der Impressum-Link steht auch auf der Anmeldeseite und unten auf jeder Seite); die drei
-  letzten stehen gut sichtbar über dem Formular; vor dem Absenden müssen drei Häkchen bestätigt
-  werden (Speichern der Angaben, Datenschutzerklärung gelesen, Einverständniserklärung gelesen),
-  jedes einzeln abschaltbar, Vorgabe: alle; ist ein Link eingetragen, steht er unter dem Häkchen
+  letzten stehen gut sichtbar über dem Formular; vor dem Absenden müssen Häkchen bestätigt
+  werden (Speichern der Angaben, Datenschutzerklärung gelesen, Einverständniserklärung gelesen;
+  dazu zuschaltbar „Voraussetzungen gelesen“ und „Erklärungen gelesen“, z. B. für einen Flyer –
+  Beschriftung „Ich habe gelesen: …“ in allen 29 Sprachen), jedes einzeln ab- und zuschaltbar,
+  Vorgabe: die ersten drei; ist ein Link eingetragen, steht er unter dem Häkchen
   (der Antrag hält die Bestätigungen fest); unter „Texte“ je Sprache ein **Hinweis zu den
   Nachweisen** (z. B. welche Unterlagen nötig sind; ohne eigenen Hinweis gilt der deutsche). Die
   Nachweise lassen sich in ein Feld ziehen, auswählen oder direkt mit dem Handy fotografieren;

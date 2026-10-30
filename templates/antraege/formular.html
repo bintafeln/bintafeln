@@ -90,6 +90,16 @@
       {% if rechtslinks.einverstaendnis %}<small class="hilfe"><a href="{{ rechtslinks.einverstaendnis }}" target="_blank" rel="noopener">{{ t.einverstaendnis }}</a></small>{% endif %}
       {% for fehler in form.einverstaendnis_bestaetigt.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
     </div>{% endif %}
+    {% if form.voraussetzungen_bestaetigt %}<div class="feld feld-haken{% if form.voraussetzungen_bestaetigt.errors %} hat-fehler{% endif %}">
+      <label for="{{ form.voraussetzungen_bestaetigt.id_for_label }}">{{ form.voraussetzungen_bestaetigt }} {{ form.voraussetzungen_bestaetigt.label }} *</label>
+      {% if e.voraussetzungen_url %}<small class="hilfe"><a href="{{ e.voraussetzungen_url }}" target="_blank" rel="noopener">{{ t.voraussetzungen }}</a></small>{% endif %}
+      {% for fehler in form.voraussetzungen_bestaetigt.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
+    </div>{% endif %}
+    {% if form.erklaerungen_bestaetigt %}<div class="feld feld-haken{% if form.erklaerungen_bestaetigt.errors %} hat-fehler{% endif %}">
+      <label for="{{ form.erklaerungen_bestaetigt.id_for_label }}">{{ form.erklaerungen_bestaetigt }} {{ form.erklaerungen_bestaetigt.label }} *</label>
+      {% if e.erklaerungen_url %}<small class="hilfe"><a href="{{ e.erklaerungen_url }}" target="_blank" rel="noopener">{{ t.erklaerungen }}</a></small>{% endif %}
+      {% for fehler in form.erklaerungen_bestaetigt.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
+    </div>{% endif %}
     {% if form.einwilligung %}<div class="feld feld-haken{% if form.einwilligung.errors %} hat-fehler{% endif %}">
       <label for="{{ form.einwilligung.id_for_label }}">{{ form.einwilligung }} {{ t.einwilligung }} *</label>
       {% for fehler in form.einwilligung.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}

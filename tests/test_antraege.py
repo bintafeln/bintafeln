@@ -800,3 +800,33 @@ def test_rechtstexte_bearbeiten(admin_client, offen):
     assert "Impressum ansehen" in seite  # Ansehen-Link erscheint, da Text gesetzt
     antwort = admin_client.get(reverse("antrag:rechtstext", args=["de", "impressum"]))
     assert "Impressum der Tafel" in antwort.content.decode()
+
+
+def test_flyer_und_voraussetzungen_pflicht(client, offen):
+    """Voraussetzungen und Erklärungen (z. B. MHD-Flyer) als abschaltbare Pflicht-Häkchen."""
+    e = offen
+    e.voraussetzungen_abfragen = True
+    e.erklaerungen_abfragen = True
+    e.erklaerungen_url = "https://tafel.example.org/mhd-flyer.pdf"
+    e.save()
+    # das Formular zeigt die beiden Häkchen (Rahmen „Ich habe gelesen: …“) und den Flyer-Link
+    seite = client.get(FORMULAR).content.decode()
+    assert 'name="voraussetzungen_bestaetigt"' in seite
+    assert 'name="erklaerungen_bestaetigt"' in seite
+    assert "Ich habe gelesen:" in seite and "https://tafel.example.org/mhd-flyer.pdf" in seite
+    # ohne die Haken wird der Antrag abgelehnt
+    antwort = client.post(FORMULAR, daten(), HTTP_X_FORWARDED_FOR="203.0.113.9")
+    assert not Antrag.objects.exists()
+    assert antwort.context["form"].errors.keys() >= {"voraussetzungen_bestaetigt",
+                                                      "erklaerungen_bestaetigt"}  # fmt: skip
+    # mit den Haken geht er durch und wird vermerkt
+    antwort = client.post(FORMULAR, daten(voraussetzungen_bestaetigt="on",
+                                          erklaerungen_bestaetigt="on"),
+                          HTTP_X_FORWARDED_FOR="203.0.113.9")  # fmt: skip
+    assert antwort.url == reverse("antrag:danke", args=["de"])
+    a = Antrag.objects.get()
+    assert a.voraussetzungen_bestaetigt and a.erklaerungen_bestaetigt
+    # abschaltbar: ohne die Einstellung kein Häkchen
+    e.voraussetzungen_abfragen = e.erklaerungen_abfragen = False
+    e.save()
+    assert 'name="voraussetzungen_bestaetigt"' not in client.get(FORMULAR).content.decode()
