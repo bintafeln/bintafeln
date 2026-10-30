@@ -25,10 +25,11 @@ def _ausgabestelle(request) -> dict:
 
 
 def _impressum() -> str:
-    """Link zum Impressum der Tafel (Einstellung der Online-Anträge), auch auf der Anmeldeseite."""
+    """Link zum Impressum der Tafel, auch im App-Footer und auf der Anmeldeseite: interner Text
+    (Tafel-Einstellungen) hat Vorrang, sonst der externe Link (ADR 0094)."""
     from apps.antraege.models import AntragEinstellungen
 
-    return AntragEinstellungen.laden().impressum_url
+    return AntragEinstellungen.laden().rechtslink("impressum", "de")
 
 
 def tafel(request):
