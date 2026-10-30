@@ -679,6 +679,9 @@ a.knopf-gefahr { color: #fff; }
 .schritte li.aktuell { background: var(--akzent); color: var(--auf-akzent); border-color: var(--akzent); font-weight: 600; }
 .schritte li.erledigt { background: var(--erfolg); }
 .abgleich tr.unterschied td { background: #fff6dc; }
+.abgleich tr.gleich td { color: var(--leise); }
+.abgleich-sammel { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .75rem;
+  margin: .5rem 0; }
 .abgleich label { display: flex; gap: .5rem; align-items: center; cursor: pointer; }
 tr.wunsch td { background: var(--erfolg); }
 .zeile-neu td { background: var(--grund); }

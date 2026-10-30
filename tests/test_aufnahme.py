@@ -294,3 +294,19 @@ def test_aufnahme_uebernimmt_gdb(admin_client, bestand):
     assert not h.personen.get(vorname="Ben").zusatz  # ohne Angabe bleibt alles, wie es war
     feld = Zusatzfeld.objects.get(schluessel="gdb")
     assert feld.besondere_kategorie and "GdB 100" in feld.optionen_liste()
+
+
+def test_abgleich_gleiche_felder_ohne_wahl(admin_client, bestand):
+    # Antrag gleicht dem Kunden 1001 fast überall, nur die Straße ist anders.
+    a = antrag(vorname="Mustermann", nachname="Erika", strasse="Neue Straße 1")
+    admin_client.get(reverse("antraege:aufnahme", args=[a.pk]))
+    schritt(admin_client, a, "kunde", {"haushalt": "1001"})
+    seite = schritt(admin_client, a, "abgleich").content.decode()
+    assert 'class="gleich"' in seite  # gleiche Angaben als graue Info-Zeile
+    assert 'name="wahl_plz"' not in seite  # PLZ ist gleich → keine Wahl
+    assert 'name="wahl_strasse"' in seite  # Straße unterscheidet sich → Wahl
+    assert "data-alle-wahl" in seite  # Sammel-Knöpfe „alles aus …"
+    # Ohne Wahl der gleichen Felder wird ihr Wert trotzdem übernommen (aus dem Bestand).
+    schritt(admin_client, a, "abgleich", {"wahl_strasse": "antrag"})
+    seite = schritt(admin_client, a, "pruefen").content.decode()
+    assert "Neue Straße 1" in seite and "Musterstadt" in seite

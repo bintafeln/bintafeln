@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load aufnahme_anzeige %}
+{% load aufnahme_anzeige static %}
 {% block titel %}Aufnahme Antrag {{ a.nummer }}{% endblock %}
 {% block inhalt %}
 <section class="karte">
@@ -68,27 +68,48 @@
 
 {% elif schritt == "abgleich" %}
   <h2>2. Daten abgleichen</h2>
-  {% if neu %}<p class="hinweis">Neuer Kunde: Die Angaben aus dem Antrag werden übernommen. Falsch geschriebene Angaben vorher unter
+  {% if neu %}
+  <p class="hinweis">Neuer Kunde: Die Angaben aus dem Antrag werden übernommen. Falsch geschriebene Angaben vorher unter
     <a href="{% url 'antraege:bearbeiten' a.pk %}">Antrag bearbeiten</a> korrigieren.</p>
-  {% else %}<p class="hinweis">Je Angabe wählen, welcher Wert gilt. Unterschiede sind markiert.</p>{% endif %}
   <div class="tabelle-rahmen">
   <table class="tabelle abgleich">
-    <thead><tr><th>Angabe</th>{% if not neu %}<th>Im Kundenstamm</th>{% endif %}<th>Im Antrag</th></tr></thead>
+    <thead><tr><th>Angabe</th><th>Im Antrag</th></tr></thead>
     <tbody>
     {% for r in zeilen %}
-      <tr{% if not r.gleich and not neu %} class="unterschied"{% endif %}>
-        <td data-titel="Angabe">{{ r.titel }}</td>
-        {% if neu %}
-        <td data-titel="Im Antrag">{{ r.antrag|datum_de|default:"–" }}</td>
-        {% else %}
-        <td data-titel="Im Kundenstamm"><label><input type="radio" name="wahl_{{ r.feld }}" value="bestand"{% if r.wahl == "bestand" %} checked{% endif %}> {{ r.bestand|datum_de|default:"–" }}</label></td>
-        <td data-titel="Im Antrag"><label><input type="radio" name="wahl_{{ r.feld }}" value="antrag"{% if r.wahl == "antrag" %} checked{% endif %}> {{ r.antrag|datum_de|default:"–" }}</label></td>
-        {% endif %}
-      </tr>
+      <tr><td data-titel="Angabe">{{ r.titel }}</td><td data-titel="Im Antrag">{{ r.antrag|datum_de|default:"–" }}</td></tr>
     {% endfor %}
     </tbody>
   </table>
   </div>
+  {% else %}
+  <p class="hinweis">Gleiche Angaben stehen nur zur Info da (grau). Nur bei echten Unterschieden wählen, welcher Wert gilt.</p>
+  {% if hat_unterschied %}
+  <div class="abgleich-sammel">
+    <span class="hinweis">Bei allen Unterschieden übernehmen:</span>
+    <button type="button" class="knopf knopf-zweitrangig" data-alle-wahl="antrag">alles aus dem Antrag</button>
+    <button type="button" class="knopf knopf-zweitrangig" data-alle-wahl="bestand">alles aus dem Kundenstamm</button>
+  </div>
+  {% else %}<p class="hinweis">Keine Unterschiede – die Angaben stimmen überein.</p>{% endif %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle abgleich">
+    <thead><tr><th>Angabe</th><th>Im Kundenstamm</th><th>Im Antrag</th></tr></thead>
+    <tbody>
+    {% for r in zeilen %}
+      {% if r.gleich %}
+      <tr class="gleich"><td data-titel="Angabe">{{ r.titel }}</td><td colspan="2">{{ r.bestand|datum_de|default:"–" }}</td></tr>
+      {% else %}
+      <tr class="unterschied">
+        <td data-titel="Angabe">{{ r.titel }}</td>
+        <td data-titel="Im Kundenstamm"><label><input type="radio" name="wahl_{{ r.feld }}" value="bestand"{% if r.wahl == "bestand" %} checked{% endif %}> {{ r.bestand|datum_de|default:"–" }}</label></td>
+        <td data-titel="Im Antrag"><label><input type="radio" name="wahl_{{ r.feld }}" value="antrag"{% if r.wahl == "antrag" %} checked{% endif %}> {{ r.antrag|datum_de|default:"–" }}</label></td>
+      </tr>
+      {% endif %}
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <script src="{% static 'js/abgleich.js' %}" defer></script>
+  {% endif %}
 
 {% elif schritt == "personen" %}
   <h2>3. Angehörige</h2>

@@ -140,7 +140,8 @@ def _kontext_abgleich(request, a, z, h):
             wahl = "antrag" if neu and (not alt or h is None) else "bestand"
         zeilen.append({"feld": feld, "titel": titel, "bestand": alt, "antrag": neu,
                        "gleich": alt == neu, "wahl": wahl})  # fmt: skip
-    return {"zeilen": zeilen, "neu": h is None}
+    return {"zeilen": zeilen, "neu": h is None,
+            "hat_unterschied": h is not None and any(not z["gleich"] for z in zeilen)}  # fmt: skip
 
 
 def _post_abgleich(request, a, z, h):
