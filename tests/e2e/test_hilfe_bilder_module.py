@@ -752,3 +752,35 @@ def test_hilfe_bild_wartezeit_handy(seite, admin, muster):
     expect(gross).to_contain_text("vor Ihnen")
     aufnehmen(seite, "warten-handy-stand", seite.locator("section.karte").first,
               Marke(gross, "rahmen", 1))  # fmt: skip
+
+
+def test_hilfe_bild_wartezeit_einstellungen(angemeldet, admin, muster):
+    """Ausgabestellen für die Wartezeit aufs Handy gleich im Abschnitt wählen (nur bei
+    „nur an ausgewählten Ausgabestellen“ sichtbar)."""
+    from apps.aufruf.models import AufrufEinstellungen
+
+    _module("aufruf")
+    _aufruf(muster)
+    seite = oeffnen(angemeldet, admin, reverse("aufruf:einstellungen"))
+    karte = seite.locator(
+        "section.karte", has=seite.get_by_role("heading", name="Wartezeit aufs Handy")
+    )
+    modus = karte.locator("select[name=modus]")
+    stellen = karte.locator('[data-zeigen-bei="modus=auswahl"]')
+    modus.select_option("alle")
+    expect(stellen).to_be_hidden()
+    modus.select_option("auswahl")
+    expect(stellen).to_be_visible()
+    stellen.locator("summary").click()
+    stellen.get_by_label("Ausgabestelle Mitte").check()
+    mitte = Ausgabestelle.objects.get(name="Ausgabestelle Mitte")
+    for _ in range(50):  # speichert von selbst (autosave)
+        if AufrufEinstellungen.laden(mitte).handy:
+            break
+        seite.wait_for_timeout(100)
+    assert AufrufEinstellungen.laden(mitte).handy
+    seite.reload()
+    expect(stellen).to_contain_text("Ausgabestelle Mitte")
+    aufnehmen(seite, "warten-einstellungen", karte,
+              Marke(modus, nummer=1, von="rechts", laenge=40),
+              Marke(stellen, "rahmen", 2))  # fmt: skip

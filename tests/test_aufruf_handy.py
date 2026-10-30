@@ -238,11 +238,17 @@ def test_einstellungen_und_aushang(admin_client, mitte, pdf_text):
     antwort = admin_client.get(reverse("aufruf:aushang"))
     assert antwort["Content-Type"] == "application/pdf"
     assert "Wartezeit auf dem Handy" in pdf_text(antwort) and "/warten/" in pdf_text(antwort)
+    # Ausgabestellen direkt hier wählen, nicht mehr je Ausgabestelle unter „ändern“
+    assert 'name="stellen"' in seite and 'data-zeigen-bei="modus=auswahl"' in seite
     url = reverse("aufruf:einstellungen_stelle", args=[mitte.pk])
-    assert 'name="handy"' in admin_client.get(url).content.decode()  # nur bei „ausgewählte“
-    admin_client.post(url, {"aktiv": "on", "anzahl": 3, "spaetzuender_versatz": 30,
-                            "zu_spaet_minuten": 15})  # fmt: skip
-    assert AufrufEinstellungen.laden(mitte).handy is False
+    assert 'name="handy"' not in admin_client.get(url).content.decode()
+    nord, _ = stelle_mit("Nord", handy_an=False)
+    einstellungen = reverse("aufruf:einstellungen")
+    admin_client.post(einstellungen, {"modus": "auswahl", "stellen": [nord.pk], "geraete": 2})
+    assert AufrufEinstellungen.laden(nord).handy and not AufrufEinstellungen.laden(mitte).handy
+    # bei „alle“ bleibt die Auswahl für später erhalten
+    admin_client.post(einstellungen, {"modus": "alle", "geraete": 2})
+    assert AufrufEinstellungen.laden(nord).handy
 
 
 def test_zentral_fuer_alle_oder_aus(client, admin_client, mitte):
@@ -252,8 +258,6 @@ def test_zentral_fuer_alle_oder_aus(client, admin_client, mitte):
     # an allen Ausgabestellen: auch Nord, obwohl dort nicht ausgewählt
     admin_client.post(einstellungen, {"modus": "alle", "geraete": 1})
     assert HandyEinstellungen.laden().geraete == 1
-    assert 'name="handy"' not in admin_client.get(
-        reverse("aufruf:einstellungen_stelle", args=[mitte.pk])).content.decode()  # fmt: skip
     assert anmelden(client, "501").status_code == 302
     assert "genug Handys" in anmelden(Client(), "501").content.decode()  # Grenze 1
     # zentral aus: niemand sieht etwas, auch schon angemeldete Handys nicht
