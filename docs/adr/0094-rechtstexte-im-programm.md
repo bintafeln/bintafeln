@@ -22,7 +22,9 @@ passendes PDF; manche möchten diese Texte lieber direkt im Programm pflegen.
   umgekehrt.
 - Angezeigt wird der Text bereinigt über `apps.core.html.bereinigen()` (nh3); Skripte und
   gefährliche Attribute werden entfernt. Gespeichert wird roh, bereinigt erst beim Anzeigen.
-- Die öffentliche Seite trägt das Logo und die Farben der Tafel.
+- Die öffentliche Seite trägt das Logo und die Farben der Tafel, zeigt aber **nur den jeweiligen
+  Text** – ohne die Sprachwahl des Antragsformulars (der Text ist einsprachig) und ohne die
+  Fußzeile mit den anderen Links (`nur_rechtstext` in `oeffentlich.html`).
 - Verschoben aus `AntragEinstellungen` nach `TafelEinstellungen` mit Migration
   `core 0023` (Felder) und `antraege 0018` (vorhandene Texte kopieren, dann entfernen – umkehrbar,
   ohne Datenverlust).

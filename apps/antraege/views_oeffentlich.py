@@ -236,4 +236,7 @@ def rechtstext(request, sprache, art):
         raise Http404
     kontext["ueberschrift"] = kontext["t"][art]
     kontext["rechtstext"] = html.bereinigen(roh)
+    # Nur den jeweiligen Text zeigen: ohne Sprachwahl (der Text ist einsprachig) und ohne die
+    # Fußzeile mit den anderen Links.
+    kontext["nur_rechtstext"] = True
     return render(request, "antraege/rechtstext.html", kontext)

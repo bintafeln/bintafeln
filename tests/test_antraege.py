@@ -788,6 +788,8 @@ def test_rechtstext_intern_oder_extern(client, offen):
     inhalt = antwort.content.decode()
     assert antwort.status_code == 200
     assert "Nur erfundene Angaben." in inhalt and "<script>alert" not in inhalt
+    # Nur der Text: keine Sprachwahl (einsprachig) und keine Fußzeile mit anderen Links
+    assert 'name="sprache"' not in inhalt and '<footer class="fuss"' not in inhalt
     # ohne Text 404; unbekannte Art 404
     assert client.get(reverse("antrag:rechtstext", args=["de", "impressum"])).status_code == 404
     assert client.get(reverse("antrag:rechtstext", args=["de", "unbekannt"])).status_code == 404

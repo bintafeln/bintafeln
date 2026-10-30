@@ -20,6 +20,7 @@
       {% if tafel.logo %}<img src="{{ tafel.logo.url }}" alt="{{ tafel_name }}" class="logo">{% endif %}
       <span>{{ tafel_name }}</span>
     </span>{% endif %}
+    {% if not nur_rechtstext %}
     <form method="get" action="{% url 'antrag:start' %}" class="sprachwahl">
       <label for="sprache">{{ t.sprache }}</label>
       <select name="sprache" id="sprache" data-sofort>
@@ -33,11 +34,12 @@
       <div class="sprach-hinweis-texte"></div>
       <button type="button" class="sprach-hinweis-zu" aria-label="✕">✕</button>
     </div>
+    {% endif %}
   </header>
   {% if kopf %}<div class="antrag-bereich antrag-eigener-kopf">{{ kopf }}</div>{% endif %}
   <main class="inhalt antrag">{% block inhalt %}{% endblock %}</main>
   {% if fuss %}<div class="antrag-bereich antrag-eigener-fuss">{{ fuss }}</div>{% endif %}
-  {% if e.fuss_zeigen %}<footer class="fuss">
+  {% if e.fuss_zeigen and not nur_rechtstext %}<footer class="fuss">
     {% if tafel.anschrift %}<span>{{ tafel.anschrift }}</span>{% endif %}
     <span>{% if rechtslinks.datenschutz %}<a href="{{ rechtslinks.datenschutz }}">{{ t.datenschutz }}</a>{% endif %}
       {% if rechtslinks.impressum %} · <a href="{{ rechtslinks.impressum }}">{{ t.impressum }}</a>{% endif %}
