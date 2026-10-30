@@ -2,7 +2,9 @@
 // Sitzung für einige Sekunden auf die Auswahl oben; passt die gewählte Staatsangehörigkeit nicht
 // zur Sprache der Seite, erscheint er in der passenden Sprache mit einem Knopf zum Umstellen.
 // Beim Umstellen nimmt die Seite die schon eingetragenen Angaben mit (nur in diesem Tab, nach dem
-// Laden gelöscht); hochgeladene Dateien muss man neu wählen.
+// Laden gelöscht); hochgeladene Dateien muss man neu wählen. Trägt der Hinweis
+// data-vorschlag (z. B. „Wartezeit aufs Handy“ nach der Anmeldung), erscheint er gleich in dieser
+// Sprache mit Knopf zum Umstellen.
 (function () {
   var auswahl = document.getElementById("sprache");
   var hinweis = document.getElementById("sprach-hinweis");
@@ -108,7 +110,13 @@
   });
 
   entwurfLaden();
-  if (!speicher("lesen", GESEHEN)) {
+  // Vorschlag nur einmal je Sitzung (die Wartezeit-Seite lädt sich alle 30 Sekunden neu)
+  var vorschlag = hinweis.dataset.vorschlag;
+  if (vorschlag && vorschlag !== jetzt && texte[vorschlag] && !speicher("lesen", GESEHEN + "-" + vorschlag)) {
+    speicher("schreiben", GESEHEN + "-" + vorschlag, "1");
+    speicher("schreiben", GESEHEN, "1");
+    zeigen([vorschlag, jetzt], 20);
+  } else if (!speicher("lesen", GESEHEN)) {
     speicher("schreiben", GESEHEN, "1");
     zeigen([jetzt], 10);
   }

@@ -7,8 +7,13 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from apps.aufruf import handy
-from apps.aufruf.forms import EinstellungenForm, InfoForm
-from apps.aufruf.models import AufrufEinstellungen, AufrufInfo, neuer_schluessel
+from apps.aufruf.forms import EinstellungenForm, HandyForm, InfoForm
+from apps.aufruf.models import (
+    AufrufEinstellungen,
+    AufrufInfo,
+    HandyEinstellungen,
+    neuer_schluessel,
+)
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.konten.views import nicht_in_demo
@@ -20,12 +25,22 @@ einstellen = rollen.recht_erforderlich("einstellungen.aufruf")
 @never_cache
 @einstellen
 def einstellungen(request):
-    stellen = [(s, AufrufEinstellungen.laden(s))
-               for s in Ausgabestelle.objects.filter(aktiv=True)]  # fmt: skip
+    zentral = HandyEinstellungen.laden()
+    form = HandyForm(request.POST or None, instance=zentral)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Wartezeit aufs Handy gespeichert.")
+        return redirect("aufruf:einstellungen")
+    M = HandyEinstellungen.Modus
+    stellen = [(s, e, e.aktiv and (zentral.modus == M.ALLE or (zentral.modus == M.AUSWAHL
+                                                               and e.handy)))
+               for s, e in ((s, AufrufEinstellungen.laden(s))
+                            for s in Ausgabestelle.objects.filter(aktiv=True))]  # fmt: skip
     return render(request, "aufruf/einstellungen.html", {
         "stellen": stellen, "infos": AufrufInfo.objects.prefetch_related("ausgabestellen"),
         "warten_adresse": request.build_absolute_uri(reverse("warten:seite")),
-        "handy_an": any(e.handy and e.aktiv for _, e in stellen),
+        "handy_form": form, "handy_an": any(an for _, _, an in stellen),
+        "handy_auswahl": zentral.modus == M.AUSWAHL,
     })  # fmt: skip
 
 
@@ -42,6 +57,8 @@ def aushang(request):
 def stelle(request, pk):
     s = get_object_or_404(Ausgabestelle, pk=pk)
     form = EinstellungenForm(request.POST or None, instance=AufrufEinstellungen.laden(s))
+    if HandyEinstellungen.laden().modus != HandyEinstellungen.Modus.AUSWAHL:
+        del form.fields["handy"]  # zählt nur bei „nur ausgewählte Ausgabestellen“
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, f"Aufruf für „{s}“ gespeichert.")

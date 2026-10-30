@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="{% static 'css/bintafeln.css' %}">
   {% include "includes/farben.html" %}
   {% include "includes/app_symbol.html" %}
+  <script src="{% static 'js/sprachhinweis.js' %}" defer></script>
 </head>
 <body class="oeffentlich warten">
   <header class="kopf antrag-kopf">
@@ -18,12 +19,20 @@
     </span>
     <form method="get" class="sprachwahl">
       <label for="sprache">{{ t.sprache }}</label>
-      <select name="sprache" id="sprache" onchange="this.form.submit()">
+      <select name="sprache" id="sprache">
         {% for x in sprachen %}<option value="{{ x.code }}" lang="{{ x.code }}"{% if x.code == s.code %} selected{% endif %}>{{ x.name }}</option>{% endfor %}
       </select>
       <noscript><button type="submit" class="knopf">OK</button></noscript>
     </form>
+    {# Hinweis auf die Sprachwahl (sprachhinweis.js), nach der Anmeldung in der Sprache zur Staatsangehörigkeit #}
+    <div class="sprach-hinweis" id="sprach-hinweis" role="status" hidden{% if vorschlag %} data-vorschlag="{{ vorschlag }}"{% endif %}>
+      <span class="sprach-pfeil" aria-hidden="true"></span>
+      <div class="sprach-hinweis-texte"></div>
+      <button type="button" class="sprach-hinweis-zu" aria-label="✕">✕</button>
+    </div>
   </header>
   <main class="inhalt antrag">{% block inhalt %}{% endblock %}</main>
+{{ sprach_hinweise|json_script:"sprach-hinweise" }}
+{{ land_sprache|json_script:"land-sprache" }}
 </body>
 </html>

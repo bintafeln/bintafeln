@@ -3,7 +3,7 @@
 Einmal anmelden mit Kundennummer und Geburtsdatum der Hauptperson (oder über den QR-Code auf
 einem neu gedruckten Ausweis), danach merkt sich das Handy den Haushalt über einen zufälligen
 Schlüssel im Cookie. Gezeigt wird nur der eigene Platz an der eigenen Ausgabestelle, keine Namen.
-Höchstens ``AufrufEinstellungen.handy_geraete`` Handys je Haushalt; der Einlass setzt zurück.
+Höchstens ``HandyEinstellungen.geraete`` Handys je Haushalt; der Einlass setzt zurück.
 """
 
 import datetime as dt
@@ -15,7 +15,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.aufruf import ablauf
-from apps.aufruf.models import AufrufEinstellungen, HandyCode, HandyZugang
+from apps.aufruf.models import AufrufEinstellungen, HandyCode, HandyEinstellungen, HandyZugang
 from apps.kunden.models import Haushalt
 
 COOKIE = "bintafeln_warten"
@@ -41,15 +41,21 @@ def _einstellungen(h: Haushalt) -> AufrufEinstellungen | None:
     stelle = stelle_von(h)
     if stelle is None:
         return None
+    zentral = HandyEinstellungen.laden()
+    if zentral.modus == HandyEinstellungen.Modus.AUS:
+        return None
     e = AufrufEinstellungen.laden(stelle)
-    return e if e.aktiv and e.handy else None
+    if not e.aktiv:
+        return None
+    return e if zentral.modus == HandyEinstellungen.Modus.ALLE or e.handy else None
 
 
 def _einrichten(h: Haushalt, geraet: str) -> str:
     e = _einstellungen(h)
     if e is None:
         raise Abgelehnt("nicht_verfuegbar")
-    if HandyZugang.objects.filter(kundennummer=h.kundennummer).count() >= e.handy_geraete:
+    grenze = HandyEinstellungen.laden().geraete
+    if HandyZugang.objects.filter(kundennummer=h.kundennummer).count() >= grenze:
         raise Abgelehnt("zu_viele")
     schluessel = secrets.token_urlsafe(32)
     HandyZugang.objects.create(kundennummer=h.kundennummer, pruefsumme=pruefsumme(schluessel),
@@ -93,6 +99,21 @@ def abmelden(schluessel: str) -> None:
 def zuruecksetzen(kundennummer: str) -> int:
     """Am Einlass: alle Handys des Haushalts abmelden."""
     return HandyZugang.objects.filter(kundennummer=kundennummer).delete()[0]
+
+
+def sprache_vorschlag(z: HandyZugang) -> str:
+    """Sprache zur Staatsangehörigkeit der Hauptperson (wie bei den Mails), sonst leer."""
+    from types import SimpleNamespace
+
+    from apps.antraege import sprachen
+
+    h = Haushalt.objects.filter(kundennummer=z.kundennummer).first()
+    hp = h.hauptperson if h else None
+    if not hp or not hp.staatsangehoerigkeit:
+        return ""
+    codes = sprachen.mail_sprachen(SimpleNamespace(staatsangehoerigkeit=hp.staatsangehoerigkeit,
+                                                   sprache=""))  # fmt: skip
+    return codes[-1] if codes[-1] != "de" else ""
 
 
 def minuten_je_nummer(tag) -> float | None:

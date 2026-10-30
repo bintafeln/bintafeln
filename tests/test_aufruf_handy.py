@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from apps.antraege import sprachen
 from apps.aufruf import ablauf, handy, views_warten
-from apps.aufruf.models import AufrufEinstellungen, HandyCode, HandyZugang
+from apps.aufruf.models import AufrufEinstellungen, HandyCode, HandyEinstellungen, HandyZugang
 from apps.ausgabe.ampel import WOCHENTAGE
 from apps.core.models import TafelEinstellungen
 from apps.kunden.models import Abholung, Ausgabestelle, Haushalt, Kundengruppe, Person
@@ -29,6 +29,7 @@ def modul_an(admin):
     t = TafelEinstellungen.laden()
     t.module = ["aufruf"]
     t.save()
+    HandyEinstellungen.objects.update_or_create(pk=1, defaults={"modus": "auswahl"})
     cache.clear()
 
 
@@ -233,15 +234,44 @@ def test_ausweis_qr_code(client, mitte, settings, pdf_text):
 def test_einstellungen_und_aushang(admin_client, mitte, pdf_text):
     seite = admin_client.get(reverse("aufruf:einstellungen")).content.decode()
     assert "Wartezeit aufs Handy: an" in seite and "/warten/" in seite
+    assert 'name="modus"' in seite and 'name="geraete"' in seite
     antwort = admin_client.get(reverse("aufruf:aushang"))
     assert antwort["Content-Type"] == "application/pdf"
     assert "Wartezeit auf dem Handy" in pdf_text(antwort) and "/warten/" in pdf_text(antwort)
     url = reverse("aufruf:einstellungen_stelle", args=[mitte.pk])
-    assert 'name="handy"' in admin_client.get(url).content.decode()
+    assert 'name="handy"' in admin_client.get(url).content.decode()  # nur bei „ausgewählte“
     admin_client.post(url, {"aktiv": "on", "anzahl": 3, "spaetzuender_versatz": 30,
-                            "zu_spaet_minuten": 15, "handy_geraete": 3})  # fmt: skip
-    e = AufrufEinstellungen.laden(mitte)
-    assert e.handy is False and e.handy_geraete == 3
+                            "zu_spaet_minuten": 15})  # fmt: skip
+    assert AufrufEinstellungen.laden(mitte).handy is False
+
+
+def test_zentral_fuer_alle_oder_aus(client, admin_client, mitte):
+    _, g = stelle_mit("Nord", handy_an=False)
+    haushalt(g, "501")
+    einstellungen = reverse("aufruf:einstellungen")
+    # an allen Ausgabestellen: auch Nord, obwohl dort nicht ausgewählt
+    admin_client.post(einstellungen, {"modus": "alle", "geraete": 1})
+    assert HandyEinstellungen.laden().geraete == 1
+    assert 'name="handy"' not in admin_client.get(
+        reverse("aufruf:einstellungen_stelle", args=[mitte.pk])).content.decode()  # fmt: skip
+    assert anmelden(client, "501").status_code == 302
+    assert "genug Handys" in anmelden(Client(), "501").content.decode()  # Grenze 1
+    # zentral aus: niemand sieht etwas, auch schon angemeldete Handys nicht
+    admin_client.post(einstellungen, {"modus": "aus", "geraete": 2})
+    assert "gibt es diese Anzeige nicht" in client.get(SEITE).content.decode()
+    assert "Zurzeit an keiner Ausgabestelle" in admin_client.get(einstellungen).content.decode()
+
+
+def test_sprachvorschlag_nach_staatsangehoerigkeit(client, mitte):
+    hp = Haushalt.objects.get(kundennummer="109").hauptperson
+    hp.staatsangehoerigkeit = "Türkei"
+    hp.save()
+    anmelden(client)
+    seite = client.get(SEITE).content.decode()
+    assert 'data-vorschlag="tr"' in seite and 'id="sprach-hinweise"' in seite
+    assert "sprachhinweis.js" in seite
+    seite = client.get(SEITE, {"sprache": "de"}).content.decode()
+    assert "data-vorschlag" not in seite  # selbst gewählt: kein Vorschlag mehr
 
 
 def test_auskunft_nennt_handys(client, mitte, admin_client, pdf_text):
