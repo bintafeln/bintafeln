@@ -182,6 +182,25 @@ def test_vorschau_mit_beispiel_empfaenger(admin_client, pdf_text):
     assert admin_client.get(reverse("serienbriefe:vorlage_vorschau")).status_code == 405
 
 
+def test_vorschau_als_link_fuer_die_ipad_app(admin_client, pdf_text):
+    """Mit „_fenster“ (iPad-App): erst ein Link, der Link liefert das PDF genau einmal."""
+    adresse = reverse("serienbriefe:vorlage_vorschau")
+    antwort = admin_client.post(f"{adresse}?x=1", {
+        "_fenster": "1", "name": "Neu", "betreff": "Hallo", "text": "<p>{anrede}</p>",
+    })  # fmt: skip
+    link = antwort.json()["adresse"]
+    assert link.startswith(f"{adresse}?ablage=")
+    eintrag = next(iter(admin_client.session["pdf_ablage"].values()))
+    assert eintrag["get"] == "x=1" and "_fenster" not in eintrag["post"]
+    andere = reverse("serienbriefe:erstellen") + "?" + link.split("?")[1]
+    assert admin_client.get(andere).status_code == 404  # Schlüssel gilt nur für diese Adresse
+    assert "Sehr geehrte Frau Beispiel," in pdf_text(admin_client.get(link))
+    assert admin_client.get(link).status_code == 404  # schon geöffnet
+    for _ in range(7):
+        admin_client.post(adresse, {"_fenster": "1", "text": "<p>x</p>"})
+    assert len(admin_client.session["pdf_ablage"]) == 5
+
+
 def test_email_als_html_und_klartext(admin_client, erika):
     m = MailEinstellungen.laden()
     m.server, m.absender = "smtp.example.org", "tafel@example.org"

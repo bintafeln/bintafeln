@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST
 from apps.core import mail, papierkorb
 from apps.core.html import bereinigen
 from apps.core.models import TafelEinstellungen
-from apps.core.pdf import pdf_antwort
+from apps.core.pdf import im_fenster, pdf_antwort
 from apps.konten import rollen
 from apps.konten.views import nicht_in_demo
 from apps.serienbriefe import empfaenger as emp
@@ -40,6 +40,7 @@ def vorlage(request, pk=None):
     })  # fmt: skip
 
 
+@im_fenster
 @require_POST
 @never_cache
 @rollen.recht_erforderlich("serienbriefe.erstellen")
@@ -84,6 +85,7 @@ def _beschreibung(d: dict) -> str:
     return " · ".join(teile)[:300]
 
 
+@im_fenster
 @never_cache
 @rollen.recht_erforderlich("serienbriefe.erstellen")
 def erstellen(request):

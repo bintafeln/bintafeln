@@ -19,7 +19,7 @@ from django.views.decorators.http import require_POST
 from apps.adressen.forms import ImportForm
 from apps.adressen.models import Adresse
 from apps.core import geheimnis, listenauswahl, mail, papierkorb, privatdateien
-from apps.core.pdf import pdf_antwort
+from apps.core.pdf import im_fenster, pdf_antwort
 from apps.konten import rollen
 from apps.konten.views import nicht_in_demo
 from apps.spenden import bestaetigung as bst
@@ -284,6 +284,7 @@ def _allgemein(jahr):
     return allgemein(jahr)
 
 
+@im_fenster
 @never_cache
 @rollen.recht_erforderlich("spenden.bestaetigen")
 def dank(request):

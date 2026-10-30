@@ -9,9 +9,11 @@ Gedruckt wird in bintafeln nur über PDFs. Ein Dokument baut man mit ``Pdf``::
 """
 
 import io
+import secrets
+from functools import wraps
 from html import escape
 
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse, JsonResponse, QueryDict
 from django.utils import timezone
 from django.utils.cache import add_never_cache_headers
 from reportlab.lib import colors
@@ -168,3 +170,44 @@ def pdf_antwort(inhalt: bytes, dateiname: str) -> HttpResponse:
     antwort["Content-Disposition"] = f'inline; filename="{dateiname}"'
     add_never_cache_headers(antwort)
     return antwort
+
+
+ABLAGE = "pdf_ablage"
+ABLAGE_HOECHSTENS = 5
+
+
+def im_fenster(ansicht):
+    """Für POST-Formulare, deren PDF in einem neuen Fenster erscheint (``formtarget="_blank"``).
+
+    In der iPad-App vom Home-Bildschirm öffnet nur ein Link ein eigenes Fenster mit „Fertig“;
+    ein abgeschicktes Formular bliebe im selben Fenster, und man käme nicht zurück. Dort schickt
+    ``static/js/neues_fenster.js`` das Formular mit ``_fenster=1`` ab: Die Eingaben (nie das PDF)
+    kommen für einen Aufruf in die Sitzung, die Antwort ist ein Link (GET ``?ablage=…``), der die
+    Ansicht mit diesen Eingaben ausführt. Rechte prüft die Ansicht bei diesem Aufruf wie sonst.
+    Als äußersten Decorator setzen."""
+
+    @wraps(ansicht)
+    def huelle(request, *args, **kwargs):
+        if request.method == "POST" and request.POST.get("_fenster"):
+            daten = request.POST.copy()
+            for feld in ("_fenster", "csrfmiddlewaretoken"):
+                daten.pop(feld, None)
+            ablage = dict(list(request.session.get(ABLAGE, {}).items())[1 - ABLAGE_HOECHSTENS :])
+            schluessel = secrets.token_urlsafe(16)
+            ablage[schluessel] = {"pfad": request.path, "post": daten.urlencode(),
+                                  "get": request.GET.urlencode()}  # fmt: skip
+            request.session[ABLAGE] = ablage
+            return JsonResponse({"adresse": f"{request.path}?ablage={schluessel}"})
+        if request.method == "GET" and "ablage" in request.GET:
+            ablage = request.session.get(ABLAGE, {})
+            eintrag = ablage.get(request.GET["ablage"])
+            if not eintrag or eintrag["pfad"] != request.path:
+                raise Http404("Dieses PDF wurde schon geöffnet. Bitte noch einmal erzeugen.")
+            del ablage[request.GET["ablage"]]
+            request.session[ABLAGE] = ablage
+            request.method = "POST"
+            request.POST = QueryDict(eintrag["post"])
+            request.GET = QueryDict(eintrag["get"])
+        return ansicht(request, *args, **kwargs)
+
+    return huelle

@@ -13,7 +13,7 @@ from django.views.decorators.http import require_POST
 from reportlab.lib.pagesizes import A4, landscape
 
 from apps.core import papierkorb
-from apps.core.pdf import Pdf, pdf_antwort
+from apps.core.pdf import Pdf, im_fenster, pdf_antwort
 from apps.konten import rollen
 from apps.kunden.export import waehlbare_tage
 from apps.kunden.models import Zugriff
@@ -185,6 +185,7 @@ def _pdf(liste, p, e, nur_summen: bool) -> bytes:
     return doc.erzeugen()
 
 
+@im_fenster
 @require_POST
 @nutzen
 def export(request, kennung, art):

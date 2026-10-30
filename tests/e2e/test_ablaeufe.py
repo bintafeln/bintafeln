@@ -956,3 +956,33 @@ def test_wartezeit_handy_sprachhinweis(seite, admin):
     knopf.click()
     expect(seite.locator("html")).to_have_attribute("lang", "tr")
     expect(seite.get_by_text("Bu telefonun oturumunu kapat")).to_be_visible()
+
+
+def test_pdf_aus_formular_in_der_ipad_app(angemeldet, admin):
+    """In der App vom Home-Bildschirm öffnen auch POST-Formulare (Vorschau einer Vorlage) das
+    PDF über einen Link in einem eigenen Fenster; die Seite mit dem Formular bleibt."""
+    seite = angemeldet(admin)
+    seite.add_init_script("Object.defineProperty(navigator, 'standalone', {get: () => true})")
+    seite.goto(reverse("serienbriefe:vorlage_neu"))
+    seite.locator("#id_name").fill("Probe")
+    seite.get_by_label("Betreff").fill("Hallo")
+    seite.locator(".editor-flaeche").first.click()
+    seite.keyboard.type("Liebe Grüße")
+    seite.get_by_role("button", name="Vorschau (PDF)").click()
+    dialog = seite.locator(".fenster-dialog")
+    expect(dialog).to_be_visible()
+    link = dialog.get_by_role("link", name="PDF öffnen")
+    expect(link).to_have_attribute("href", re.compile(r"/vorschau/\?ablage="))
+    adressen = []
+
+    def ersetzen(route):
+        adressen.append(route.request.url)
+        route.fulfill(status=200, content_type="text/html", body="<p>PDF</p>")
+
+    seite.context.route(re.compile(r"\?ablage="), ersetzen)
+    with seite.expect_popup() as fenster:
+        link.click()
+    fenster.value.wait_for_load_state()
+    assert "ablage=" in adressen[-1]
+    expect(dialog).to_have_count(0)
+    assert seite.url.endswith(reverse("serienbriefe:vorlage_neu"))

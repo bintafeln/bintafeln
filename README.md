@@ -44,6 +44,8 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   und auf dem Startbildschirm von Handy und Tablet („Zum Home-Bildschirm“); ohne eigenes Bild
   das Symbol von bintafeln (`static/img/bintafeln-*.png`). Ausgeliefert unter
   `/app/symbol-<32|180|192|512>.png` und `/app/manifest.webmanifest`, auch vor der Anmeldung.
+  In der App vom Home-Bildschirm öffnen PDFs (Ausweise, Serienbriefe, Vorschauen, Listen,
+  Dankesbriefe) in einem eigenen Fenster mit „Fertig“; nach Formularen erst über „PDF öffnen“.
   Hintergrundbilder und Logo werden beim Hochladen verkleinert (`apps/core/bilder.py`: längste
   Seite 1920 bzw. 800 Pixel, ohne Bilddaten wie den Aufnahmeort); große, schon vorhandene Bilder
   verkleinert das Update einmalig (das Original bleibt als Datei liegen). Caddy lässt sie einen

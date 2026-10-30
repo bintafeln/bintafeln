@@ -695,6 +695,8 @@ ul.kompakt { margin: .3rem 0; padding-left: 1rem; }
 /* Kamera als Barcode-Scanner (Einlass) */
 .kamera-dialog { width: min(36rem, calc(100vw - 2rem)); border: 0; border-radius: var(--radius); padding: 1rem; }
 .nachricht-dialog { width: min(36rem, calc(100vw - 2rem)); border: 0; border-radius: var(--radius); padding: 1rem; }
+.fenster-dialog { width: min(24rem, calc(100vw - 2rem)); border: 0; border-radius: var(--radius); padding: 1rem; text-align: center; }
+.fenster-dialog::backdrop { background: rgb(0 0 0 / .4); }
 .nachricht-dialog textarea { width: 100%; }
 .kamera-dialog::backdrop { background: rgb(0 0 0 / .6); }
 /* Immer quer (Barcodes sind breit), auch wenn das Handy hochkant ein Hochformat-Bild liefert */
