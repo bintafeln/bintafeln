@@ -34,7 +34,7 @@
       </table>
     </div>
     <div class="aktionsleiste">
-      {% if per_brief %}<button type="submit" name="schritt" value="pdf" class="knopf">{{ per_brief|length }} Brief{{ per_brief|length|pluralize:"e" }} als PDF erstellen</button>{% endif %}
+      {% if per_brief %}<button type="submit" name="schritt" value="pdf" class="knopf" formtarget="_blank">{{ per_brief|length }} Brief{{ per_brief|length|pluralize:"e" }} als PDF erstellen</button>{% endif %}
       {% if per_mail %}{% if mail_bereit %}<button type="submit" name="schritt" value="senden" class="knopf">{{ per_mail|length }} E-Mail{{ per_mail|length|pluralize:"s" }} senden</button>{% else %}<span class="hinweis">Für E-Mails bitte zuerst unter „Einstellungen → Tafel → E-Mail“ einen Mailserver einrichten.</span>{% endif %}{% endif %}
     </div>
     <p class="hinweis">Zuwendungsbestätigungen für Sachspenden stellen Sie wie bisher einzeln aus.</p>

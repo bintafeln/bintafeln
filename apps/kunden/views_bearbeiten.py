@@ -23,7 +23,7 @@ from apps.ausgabe.forms import BeitragsfreiForm, SonderausgabeForm
 from apps.ausgabe.models import BeitragsfreierZeitraum, Sonderausgabe, Teilnahme
 from apps.core import papierkorb
 from apps.core.models import TafelEinstellungen
-from apps.core.pdf import pdf_antwort
+from apps.core.pdf import im_fenster, pdf_antwort
 from apps.konten import rollen
 from apps.kunden import ausweis, entfernen, gruppen, historie, zugang
 from apps.kunden.forms_bearbeiten import (
@@ -410,6 +410,7 @@ def listeneintrag_loeschen(request, art, pk):
 # --- Ausweis gestalten (ADR 0027) -------------------------------------------------------------
 
 
+@im_fenster
 @rollen.recht_erforderlich("einstellungen.ausweis")
 def ausweis_gestalten(request):
     vorlage = AusweisVorlage.laden()

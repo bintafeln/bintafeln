@@ -199,7 +199,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Knöpfe, deren Ergebnis weiter unten erscheint (Vorschau, Prüfen), bekommen `data-ziel="<id>"`.
   PDFs in einem neuen Fenster öffnen per Link oder GET-Formular mit `target="_blank"`
   (`static/js/neues_fenster.js` öffnet es per `window.open`); in der iPad-App vom Home-Bildschirm
-  käme man aus einem per POST geöffneten PDF nicht zurück.
+  käme man aus einem per POST geöffneten PDF nicht zurück. POST-Formulare mit `formtarget="_blank"`
+  bekommen deshalb `@im_fenster` aus `apps.core.pdf` (äußerster Decorator): in der App geht das
+  Formular im Hintergrund ab, die Eingaben kommen für einen Aufruf in die Sitzung, ein Dialog
+  bietet „PDF öffnen“ als Link an.
 - Einstellungsseiten speichern sofort: Formular mit `data-autosave` (`static/js/autosave.js`,
   ADR 0076); die Ansicht leitet nach Erfolg weiter und zeigt Fehler wie gewohnt am Feld.
 - Menü links: Einträge je Rolle in `apps/core/menue.py` (neue Seiten dort eintragen statt
