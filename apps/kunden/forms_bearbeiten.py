@@ -126,14 +126,19 @@ class BehinderungMixin:
             widget=forms.CheckboxSelectMultiple,
             choices=[(c, f"{c} ({b})") for c, b in merkzeichen_auswahl(", ".join(bisher))],
         )  # fmt: skip
+        self.fields["sb_ausweis"] = forms.BooleanField(
+            label="Schwerbehindertenausweis vorgelegt", required=False,
+        )  # fmt: skip
         self.initial["gdb"], self.initial["merkzeichen"] = gdb, bisher
+        self.initial["sb_ausweis"] = bool((p.zusatz or {}).get(merkmale.AUSWEIS_FELD))
         # Merkzeichen erst mit GdB zeigen (static/js/merkzeichen.js)
         self.fields["gdb"].widget.attrs["data-merkzeichen"] = self["merkzeichen"].auto_id
 
     def behinderung_uebernehmen(self):
-        if "gdb" in self.fields and {"gdb", "merkzeichen"} & set(self.changed_data):
+        if "gdb" in self.fields and {"gdb", "merkzeichen", "sb_ausweis"} & set(self.changed_data):
             merkmale.behinderung_aendern(self.instance, self.cleaned_data.get("gdb"),
-                                         self.cleaned_data.get("merkzeichen") or [])  # fmt: skip
+                                         self.cleaned_data.get("merkzeichen") or [],
+                                         self.cleaned_data.get("sb_ausweis"))  # fmt: skip
 
 
 class HaushaltForm(ZusatzMixin, forms.ModelForm):

@@ -582,8 +582,11 @@ Dokumente, Historie.
   sind sie Ankreuzkästchen; nicht angekreuzt heißt „nein“. Statt der Häkchen Schwerbehindert,
   Taub, Stumm und Blind fragen „Neuer Haushalt“ (Hauptperson und jede angehörige Person) und
   „Person bearbeiten“ nach der **Behinderung (Art. 9)**: keine Angabe, keine Behinderung oder der
-  Grad (GdB 20 bis 100), mit GdB dazu die Merkzeichen zum Ankreuzen wie im Antrag. Ab GdB 50 gilt
-  „Schwerbehindert“, Bl und TBl setzen „Blind“; gespeicherte Werte bei Taub und Stumm bleiben. Was auf „ja“ steht, sieht der Einlass
+  Grad (GdB 20 bis 100), mit GdB dazu die Merkzeichen zum Ankreuzen wie im Antrag und
+  „Schwerbehindertenausweis vorgelegt“. Wann „Schwerbehindert“ gilt, legt die Tafel unter
+  „Einstellungen → Kundenstamm“ fest (ADR 0092): ab GdB (Vorgabe 50), optional eines bestimmter
+  Merkzeichen, optional nur mit vorgelegtem Ausweis; geänderte Bedingungen bewerten alle Personen
+  mit GdB neu, ohne GdB bleibt der Haken. Bl und TBl setzen „Blind“; gespeicherte Werte bei Taub und Stumm bleiben. Was auf „ja“ steht, sieht der Einlass
   unter „Merkmale“; Schwerbehindert, Taub, Stumm und Blind (Art. 9) nur mit dem Recht „besondere
   Kategorie“. Mit dem Element „Merkmale“ der Ausweis-Vorlage kommt bei „ja“ das Rollstuhl-Symbol
   bzw. ein Kürzel auf den Ausweis. Jedes Merkmal lässt sich ab- und zuschalten, aber nicht löschen;
@@ -728,8 +731,8 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   mit übersetzt);
   „Behinderung (GdB) je Person“ (Vorgabe: nicht abfragen, weil Gesundheitsdaten nach Art. 9
   DSGVO) fragt für jede Person ab: keine Behinderung oder GdB 20 bis 100; der
-  Aufnahme-Assistent übernimmt den Wert in das Zusatzfeld „Grad der Behinderung“ und setzt ab
-  GdB 50 das Merkmal „Schwerbehindert“; ist ein GdB gewählt, erscheinen die Merkzeichen aus dem
+  Aufnahme-Assistent übernimmt den Wert in das Zusatzfeld „Grad der Behinderung“ und setzt nach
+  den Bedingungen der Tafel (Vorgabe ab GdB 50) das Merkmal „Schwerbehindert“; ist ein GdB gewählt, erscheinen die Merkzeichen aus dem
   Schwerbehindertenausweis zum Ankreuzen, mehrere möglich: G (erheblich gehbehindert),
   aG (außergewöhnlich gehbehindert), H (hilflos), Bl (blind), Gl (gehörlos, mit kleinem L),
   TBl (taubblind), B (Begleitperson berechtigt) und RF (Rundfunkbeitrag ermäßigt) (früher

@@ -133,6 +133,22 @@ class KundenEinstellungen(models.Model):
         help_text="Einlass und Verwaltung können eintragen, dass ein Kunde für eine Zeit krank, in "
         "Reha oder im Krankenhaus ist. Die Notiz verschwindet nach dem Ende von selbst.",
     )  # fmt: skip
+    # Wann eine Person als „schwerbehindert“ gilt (Merkmal, Ausweis, Vorrang; ADR 0092)
+    sb_ab_gdb = models.PositiveSmallIntegerField(
+        "Schwerbehindert ab Grad der Behinderung", default=50,
+        choices=[(n, f"GdB {n}") for n in range(50, 101, 10)],
+        help_text="Erst ab diesem GdB gilt eine Person als schwerbehindert (Merkmal am Einlass, "
+        "Symbol auf dem Ausweis, Vorrang beim Aufruf).",
+    )  # fmt: skip
+    sb_merkzeichen = models.CharField(
+        "und eines dieser Merkzeichen", max_length=100, blank=True,
+        help_text="Keins angehakt = das Merkzeichen spielt keine Rolle. Sonst muss im "
+        "Schwerbehindertenausweis mindestens eines der angehakten stehen.",
+    )  # fmt: skip
+    sb_ausweis_vorgelegt = models.BooleanField(
+        "und Schwerbehindertenausweis vorgelegt", default=False,
+        help_text="Nur wer den Ausweis gezeigt hat (Haken an der Person) gilt als schwerbehindert.",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Einstellungen Kundenstamm"

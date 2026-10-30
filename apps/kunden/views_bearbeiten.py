@@ -70,6 +70,8 @@ TEILE = {
     "ausnahme": (Ausnahme, AusnahmeForm, "Ausnahme", True),
 }
 
+BEHINDERUNG = ("gdb", "merkzeichen", "sb_ausweis")  # eigene Felder, nicht in der Liste
+
 
 def geaendert(h: Haushalt, request) -> None:
     Haushalt.objects.filter(pk=h.pk).update(
@@ -159,7 +161,7 @@ def haushalt_neu(request):
     return render(request, "kunden/haushalt_neu.html", {
         "haushalt": haushalt, "hauptperson": hauptperson, "angehoerige": angehoerige,
         "hp_felder": [hauptperson[n] for n in hauptperson.fields
-                      if not n.startswith("zusatz_") and n not in ("gdb", "merkzeichen")],
+                      if not n.startswith("zusatz_") and n not in BEHINDERUNG],
         "anschrift": [haushalt[n] for n in ("strasse", "plz", "ort", "telefon", "email")
                       if n in haushalt.fields],
         "zusatz": [haushalt[n] for n in haushalt.fields if n.startswith("zusatz_")],

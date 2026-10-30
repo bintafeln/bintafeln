@@ -48,6 +48,7 @@ def test_einstellungen_speichern(admin_client):
             "verlaengern_ablehnung": "notiz",
             "verlaengern_sonst_pausieren_monate": "6",
             "verlaengern_fruehestens_tage": "45",
+            "sb_ab_gdb": "50",
         },
     )
     assert antwort.status_code == 302
