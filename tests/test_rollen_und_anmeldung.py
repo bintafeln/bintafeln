@@ -134,9 +134,14 @@ def test_impressum_auf_der_anmeldeseite(client, admin):
     seite = client.get(reverse("konten:anmelden")).content.decode()
     assert 'href="https://tafel.example.org/impressum" rel="noopener">Impressum der Tafel ' in seite
     assert seite.count("https://tafel.example.org/impressum") == 2  # auch unten in der Fußzeile
-    # Interner Text (Tafel-Einstellungen) hat Vorrang: der Link führt dann auf die interne Seite,
-    # nicht mehr nach außen – auch im App-/Anmelde-Footer (ADR 0094).
+    # Externer Link hat Vorrang: der interne Text greift erst, wenn kein Link gesetzt ist – auch im
+    # App-/Anmelde-Footer (ADR 0094).
     TafelEinstellungen.objects.update(impressum_text="<p>Impressum der Tafel Musterstadt</p>")
+    assert client.get(reverse("konten:anmelden")).content.decode().count(
+        "https://tafel.example.org/impressum"
+    ) == 2  # Link weiter maßgeblich  # fmt: skip
+    e.impressum_url = ""
+    e.save()
     intern = reverse("antrag:rechtstext", args=["de", "impressum"])
     seite = client.get(reverse("konten:anmelden")).content.decode()
     assert intern in seite and "tafel.example.org/impressum" not in seite

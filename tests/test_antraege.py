@@ -767,20 +767,22 @@ def test_alte_merkzeichen_nicht_mehr_angeboten_aber_erhalten(client, offen, admi
 def test_rechtstext_intern_oder_extern(client, offen):
     """Datenschutz/Impressum/Einverständnis als interner Text oder externer Link (ADR 0094)."""
     e = offen
-    # kein Text, nur externer Link → der externe Link erscheint
-    e.datenschutz_url = "https://tafel.example.org/datenschutz"
-    e.save()
-    seite = client.get(FORMULAR).content.decode()
-    assert "https://tafel.example.org/datenschutz" in seite
-    # interner Text (in den Tafel-Einstellungen) gesetzt → der Link führt auf die interne Seite
     from apps.core.models import TafelEinstellungen
 
+    # externer Link hat Vorrang: ist er gesetzt, erscheint er – auch wenn ein interner Text da ist
+    e.datenschutz_url = "https://tafel.example.org/datenschutz"
+    e.save()
     tafel = TafelEinstellungen.laden()
     tafel.datenschutz_text = (
         "<h2>Datenschutz</h2><p>Nur erfundene Angaben.</p><script>alert(1)</script>"
     )
     tafel.save()
     intern = reverse("antrag:rechtstext", args=["de", "datenschutz"])
+    seite = client.get(FORMULAR).content.decode()
+    assert "https://tafel.example.org/datenschutz" in seite and intern not in seite
+    # kein externer Link → der interne Text greift (Rückfallebene)
+    e.datenschutz_url = ""
+    e.save()
     seite = client.get(FORMULAR).content.decode()
     assert intern in seite and "tafel.example.org/datenschutz" not in seite
     # die interne Seite zeigt den Text bereinigt (ohne <script>)
