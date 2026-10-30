@@ -724,14 +724,12 @@ def test_hilfe_bild_warteliste_texte(angemeldet, admin):
 
 
 def test_hilfe_bild_wartezeit_handy(seite, admin, muster):
-    from apps.aufruf.models import AufrufEinstellungen
+    from apps.aufruf.models import HandyEinstellungen
     from apps.kunden.models import Haushalt
 
     _module("aufruf")
     stelle, _ = _aufruf(muster)
-    e = AufrufEinstellungen.laden(stelle)
-    e.handy = True
-    e.save()
+    HandyEinstellungen.objects.update_or_create(pk=1, defaults={"modus": "alle"})
     from apps.aufruf import ablauf
 
     tag = ablauf.tag_holen(stelle, timezone.localdate())
@@ -741,6 +739,7 @@ def test_hilfe_bild_wartezeit_handy(seite, admin, muster):
     hp.save()
     seite.set_viewport_size({"width": 400, "height": 760})
     seite.goto(reverse("warten:seite"))
+    seite.locator(".sprach-hinweis-zu").click()  # Hinweis auf die Sprachwahl schließen
     seite.get_by_label("Kundennummer").fill(nummer)
     seite.get_by_label("Geburtsdatum der Hauptperson").fill("1975-03-12")
     karte = seite.locator("section.karte").first

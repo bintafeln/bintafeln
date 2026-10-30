@@ -73,7 +73,8 @@ def _antwort(request, vorlage, kontext):
     tafel = TafelEinstellungen.laden()
     antwort = render(request, vorlage, {
         **kontext, "s": s, "t": t, "sprachen": sprachen.SPRACHEN, "tafel": tafel,
-        "tafel_name": tafel.name or "Tafel",
+        "tafel_name": tafel.name or "Tafel", "sprach_hinweise": sprachen.hinweise(),
+        "land_sprache": {},
     })  # fmt: skip
     if request.GET.get("sprache") in sprachen.NACH_CODE:
         antwort.set_cookie(SPRACH_COOKIE, s.code, max_age=handy.COOKIE_TAGE * 86400,
@@ -121,9 +122,12 @@ def seite(request):
     if stand.get("minuten"):
         stand["minuten_text"] = t["etwa"].format(minuten=stand["minuten"])
     uhrzeit = timezone.localtime().strftime("%H:%M")
+    # Sprache zur Staatsangehörigkeit vorschlagen, solange niemand selbst gewählt hat
+    gewaehlt = request.GET.get("sprache") or request.COOKIES.get(SPRACH_COOKIE)
     return _antwort(request, "aufruf/warten_stand.html", {
         "stand": stand, "aktualisieren": AKTUALISIEREN,
         "aktualisiert": t["aktualisiert"].format(uhrzeit=uhrzeit),
+        "vorschlag": "" if gewaehlt else handy.sprache_vorschlag(z),
     })  # fmt: skip
 
 

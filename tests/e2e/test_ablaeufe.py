@@ -926,3 +926,33 @@ def test_ausweise_drucken_oeffnet_neues_fenster(angemeldet, admin):
     link = seite.get_by_role("link", name=re.compile("Alle gemeldeten Ausweise drucken"))
     assert "gemeldet=1" in _pdf_fenster(seite, link.click)
     expect(seite.get_by_role("heading", name="Nachrichten der Ausgabestellen")).to_be_visible()
+
+
+def test_wartezeit_handy_sprachhinweis(seite, admin):
+    """Wartezeit aufs Handy: Hinweis auf die Sprachwahl, nach der Anmeldung in der Sprache zur
+    Staatsangehörigkeit mit Knopf zum Umstellen."""
+    from apps.aufruf.models import HandyEinstellungen
+    from apps.core.models import TafelEinstellungen
+
+    t = TafelEinstellungen.laden()
+    t.module = ["aufruf"]
+    t.save()
+    HandyEinstellungen.objects.update_or_create(pk=1, defaults={"modus": "alle"})
+    stelle = Ausgabestelle.objects.create(name="Mitte")
+    g = Kundengruppe.objects.create(name="Gruppe", ausgabestelle=stelle)
+    h = Haushalt.objects.create(kundennummer="00077", kundengruppe=g)
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Ayla", nachname="Probe",
+                          geburtsdatum=dt.date(1975, 3, 12),
+                          staatsangehoerigkeit="Türkei")  # fmt: skip
+    seite.goto(reverse("warten:seite"))
+    hinweis = seite.locator("#sprach-hinweis")
+    expect(hinweis).to_be_visible()  # beim ersten Besuch
+    seite.locator(".sprach-hinweis-zu").click()
+    seite.get_by_label("Kundennummer").fill("00077")
+    seite.get_by_label("Geburtsdatum der Hauptperson").fill("1975-03-12")
+    seite.get_by_role("button", name="Anmelden").click()
+    expect(hinweis).to_be_visible()
+    knopf = hinweis.get_by_role("button", name=re.compile("Türkçe"))
+    knopf.click()
+    expect(seite.locator("html")).to_have_attribute("lang", "tr")
+    expect(seite.get_by_text("Bu telefonun oturumunu kapat")).to_be_visible()

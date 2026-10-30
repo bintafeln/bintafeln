@@ -96,12 +96,8 @@ class AufrufEinstellungen(models.Model):
     info_rotation = models.BooleanField("Infos auf dem Monitor zeigen", default=True)
     handy = models.BooleanField(
         "Wartezeit aufs Handy", default=False,
-        help_text="Kunden dieser Ausgabestelle sehen unter /warten/ auf ihrem Handy, wie viele "
-        "noch vor ihnen sind (nach einmaliger Anmeldung mit Kundennummer und Geburtsdatum).",
-    )  # fmt: skip
-    handy_geraete = models.PositiveSmallIntegerField(
-        "Handys je Haushalt", default=2, validators=[MinValueValidator(1), MaxValueValidator(5)],
-        help_text="Danach heißt es „Bitte am Einlass melden“; der Einlass kann zurücksetzen.",
+        help_text="Nur wenn unter „Aufruf, Monitor und Kiosk“ für die Wartezeit aufs Handy „nur "
+        "ausgewählte Ausgabestellen“ eingestellt ist: diese Ausgabestelle gehört dazu.",
     )  # fmt: skip
     layout = models.JSONField("Monitor-Aufteilung", default=dict, blank=True)
 
@@ -212,6 +208,40 @@ class AufrufInfo(models.Model):
         return self.titel
 
 
+class HandyEinstellungen(models.Model):
+    """Wartezeit aufs Handy für alle Ausgabestellen zentral (Singleton, ADR 0090)."""
+
+    EINZIGE_ID = 1
+
+    class Modus(models.TextChoices):
+        AUS = "aus", "aus – an keiner Ausgabestelle"
+        ALLE = "alle", "an allen Ausgabestellen mit Aufruf"
+        AUSWAHL = "auswahl", "nur an ausgewählten Ausgabestellen (je Ausgabestelle „ändern“)"
+
+    modus = models.CharField("Wartezeit aufs Handy", max_length=10, choices=Modus.choices,
+                             default=Modus.AUS)  # fmt: skip
+    geraete = models.PositiveSmallIntegerField(
+        "Handys je Haushalt", default=2, validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Danach heißt es „Bitte am Einlass melden“; der Einlass kann zurücksetzen.",
+    )  # fmt: skip
+
+    class Meta:
+        verbose_name = "Wartezeit aufs Handy"
+        verbose_name_plural = "Wartezeit aufs Handy"
+
+    def __str__(self):
+        return "Wartezeit aufs Handy"
+
+    def save(self, *args, **kwargs):
+        self.pk = self.EINZIGE_ID
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def laden(cls) -> "HandyEinstellungen":
+        e, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
+        return e
+
+
 class HandyZugang(models.Model):
     """Ein Handy, das die Wartezeit eines Haushalts sehen darf (ADR 0090). Im Handy liegt nur ein
     zufälliger Schlüssel als Cookie; gespeichert ist dessen Prüfsumme. Hängt an der Kundennummer
@@ -249,4 +279,5 @@ class HandyCode(models.Model):
 
 
 auditlog.register(AufrufEinstellungen)
+auditlog.register(HandyEinstellungen)
 auditlog.register(AufrufInfo)

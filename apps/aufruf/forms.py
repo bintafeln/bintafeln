@@ -1,6 +1,6 @@
 from django import forms
 
-from apps.aufruf.models import TAGE, AufrufEinstellungen, AufrufInfo
+from apps.aufruf.models import TAGE, AufrufEinstellungen, AufrufInfo, HandyEinstellungen
 from apps.kunden.models import Ausgabestelle, Zusatzfeld
 
 INFO_MAX_BYTES = 10 * 1024 * 1024
@@ -12,7 +12,7 @@ class EinstellungenForm(forms.ModelForm):
         model = AufrufEinstellungen
         fields = ["aktiv", "anzahl", "vorrang_feld", "vorrang_symbol", "eingelassene_ausblenden",
                   "spaetzuender_versatz", "zu_spaet_minuten", "info_rotation",
-                  "wochentag_probe", "handy", "handy_geraete"]  # fmt: skip
+                  "wochentag_probe", "handy"]  # fmt: skip
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -21,10 +21,6 @@ class EinstellungenForm(forms.ModelForm):
         feld.empty_label = "– kein Vorrang –"
         self.fields["wochentag_probe"].choices = [("", "– aus (heutiger Wochentag) –"),
                                                   *TAGE]  # fmt: skip
-        self.fields["handy_geraete"].required = False
-
-    def clean_handy_geraete(self):
-        return self.cleaned_data.get("handy_geraete") or 2
 
 
 class InfoForm(forms.ModelForm):
@@ -66,3 +62,9 @@ class InfoForm(forms.ModelForm):
             elif not name.endswith(".pdf"):
                 self.add_error("datei", "Bitte eine PDF-Datei.")
         return daten
+
+
+class HandyForm(forms.ModelForm):
+    class Meta:
+        model = HandyEinstellungen
+        fields = ["modus", "geraete"]

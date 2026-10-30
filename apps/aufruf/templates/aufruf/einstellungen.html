@@ -10,10 +10,10 @@
   <table class="tabelle">
     <thead><tr><th>Ausgabestelle</th><th>Einstellungen</th><th>Links für die Geräte</th><th></th></tr></thead>
     <tbody>
-    {% for s, e in stellen %}
+    {% for s, e, handy_hier in stellen %}
       <tr>
         <td data-titel="Ausgabestelle"><strong>{{ s.name }}</strong></td>
-        <td data-titel="Einstellungen">{% if not e.aktiv %}<strong>Kein Aufruf an dieser Ausgabestelle</strong>{% else %}{{ e.anzahl }} Nummer{{ e.anzahl|pluralize:"n" }} je Aufruf{% if e.vorrang_feld %}<br>Vorrang: {{ e.vorrang_feld }}{% endif %}{% if e.handy %}<br>Wartezeit aufs Handy: an (bis {{ e.handy_geraete }} Handy{{ e.handy_geraete|pluralize:"s" }}){% endif %}{% if e.wochentag_probe is not None %}<br><span class="marke-warnung">Probelauf als {{ e.get_wochentag_probe_display }}</span>{% endif %}{% endif %}
+        <td data-titel="Einstellungen">{% if not e.aktiv %}<strong>Kein Aufruf an dieser Ausgabestelle</strong>{% else %}{{ e.anzahl }} Nummer{{ e.anzahl|pluralize:"n" }} je Aufruf{% if e.vorrang_feld %}<br>Vorrang: {{ e.vorrang_feld }}{% endif %}{% if handy_hier %}<br>Wartezeit aufs Handy: an{% endif %}{% if e.wochentag_probe is not None %}<br><span class="marke-warnung">Probelauf als {{ e.get_wochentag_probe_display }}</span>{% endif %}{% endif %}
           <br><a href="{% url 'aufruf:einstellungen_stelle' s.pk %}">ändern</a></td>
         <td data-titel="Links">
           {% with basis=request.scheme|add:"://"|add:request.get_host %}
@@ -46,7 +46,14 @@
   <p>Kunden sehen unter <a href="{% url 'warten:seite' %}" target="_blank" rel="noopener">{{ warten_adresse }}</a> auf
     ihrem Handy, wie viele noch vor ihnen sind und ungefähr wie lange es dauert. Einmal anmelden mit Kundennummer und
     Geburtsdatum der Hauptperson, danach merkt sich das Handy den Haushalt. Gezeigt wird nur der eigene Platz an der
-    eigenen Ausgabestelle, keine Namen. Einschalten je Ausgabestelle unter „ändern“.</p>
+    eigenen Ausgabestelle, keine Namen.</p>
+  <form method="post" data-autosave>
+    {% csrf_token %}
+    {% with form=handy_form %}{% include "includes/formular.html" %}{% endwith %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+  {% if handy_auswahl %}<p class="hinweis">Welche Ausgabestellen dazugehören, legen Sie oben je Ausgabestelle unter „ändern“ fest
+    („Wartezeit aufs Handy“).</p>{% endif %}
   {% if not handy_an %}<p class="hinweis">Zurzeit an keiner Ausgabestelle eingeschaltet.</p>{% endif %}
   <p><a class="knopf knopf-zweitrangig" href="{% url 'aufruf:aushang' %}" target="_blank" rel="noopener">Aushang mit QR-Code (PDF)</a></p>
   <p class="hinweis">Den Aushang einmal drucken und am Eingang aufhängen – er gilt dauerhaft und an allen Ausgabestellen.
