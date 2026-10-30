@@ -33,6 +33,11 @@ urlpatterns = [
         for app, m in zip(settings.BINTAFELN_MODULE, module.alle(), strict=True)
         if m.pfade
     ],
+    *[
+        path(pfad.lstrip("/"), include(urls))
+        for m in module.alle()
+        for pfad, urls in m.weitere_urls
+    ],
     # Öffentlich, ohne Anmeldung (ADR 0024)
     path("antrag/", include("apps.antraege.urls_oeffentlich")),
     path("", include("apps.core.urls")),

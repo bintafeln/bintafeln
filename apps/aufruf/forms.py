@@ -12,7 +12,7 @@ class EinstellungenForm(forms.ModelForm):
         model = AufrufEinstellungen
         fields = ["aktiv", "anzahl", "vorrang_feld", "vorrang_symbol", "eingelassene_ausblenden",
                   "spaetzuender_versatz", "zu_spaet_minuten", "info_rotation",
-                  "wochentag_probe"]  # fmt: skip
+                  "wochentag_probe", "handy", "handy_geraete"]  # fmt: skip
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -21,6 +21,10 @@ class EinstellungenForm(forms.ModelForm):
         feld.empty_label = "– kein Vorrang –"
         self.fields["wochentag_probe"].choices = [("", "– aus (heutiger Wochentag) –"),
                                                   *TAGE]  # fmt: skip
+        self.fields["handy_geraete"].required = False
+
+    def clean_handy_geraete(self):
+        return self.cleaned_data.get("handy_geraete") or 2
 
 
 class InfoForm(forms.ModelForm):

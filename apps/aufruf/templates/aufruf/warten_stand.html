@@ -1,0 +1,23 @@
+{% extends "aufruf/warten_basis.html" %}
+{% block kopf %}<meta http-equiv="refresh" content="{{ aktualisieren }}">{% endblock %}
+{% block inhalt %}
+<section class="karte antrag-karte warten-karte warten-{{ stand.art }}" aria-live="polite">
+  {% if stand.nummer %}<p class="warten-kopf"><span>{{ t.nummer }}: <strong dir="ltr">{{ stand.nummer }}</strong></span>
+    <span>{{ t.stelle }}: {{ stand.stelle }}</span></p>{% endif %}
+  {% if stand.art == "warten" %}
+    <p class="warten-gross">{{ stand.vor_text }}</p>
+    {% if stand.minuten_text %}<p class="warten-zeit">{{ stand.minuten_text }}</p>{% endif %}
+  {% elif stand.art == "vorschau" %}
+    <p class="warten-mittel">{{ stand.vorschau_text }}</p>
+  {% elif stand.art == "jetzt" %}
+    <p class="warten-gross">{{ t.jetzt }}</p>
+  {% else %}
+    <p class="warten-mittel">{{ stand.text }}</p>
+  {% endif %}
+  <p class="hinweis">{{ aktualisiert }}</p>
+  <form method="post" action="{% url 'warten:abmelden' %}">
+    {% csrf_token %}
+    <button type="submit" class="knopf knopf-zweitrangig">{{ t.abmelden }}</button>
+  </form>
+</section>
+{% endblock %}

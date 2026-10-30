@@ -30,7 +30,11 @@ OEFFENTLICH = {
     "core:healthz",
     "core:app_symbol",  # Symbol im Browser-Tab, auch auf der Anmeldeseite
     "core:manifest",
-    "core:verzeichnis_melden",  # Empfang der Verzeichnis-Meldungen, nur beim Herausgeber (ADR 0089)
+    "core:verzeichnis_melden",
+    # Wartezeit aufs Handy für Kunden (ADR 0090): Kundennummer + Geburtsdatum oder Ausweis-Code
+    "warten:seite",
+    "warten:abmelden",
+    "warten:code",  # Empfang der Verzeichnis-Meldungen, nur beim Herausgeber (ADR 0089)
     "antrag:start",  # Online-Antrag (ADR 0024)
     "antrag:formular",
     "antrag:danke",

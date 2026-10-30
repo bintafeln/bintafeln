@@ -365,3 +365,16 @@ def verschieben(request, pk, nummer):
             messages.success(request, f"Kunde {nummer} wurde {e['versatz']} Plätze später "
                              f"einsortiert (neuer Platz {e['neuer_platz']}).")  # fmt: skip
     return redirect(f"{reverse('ausgabe:empfang')}?{urlencode({'nummer': nummer})}")
+
+
+@require_POST
+@steuern
+def handys_zuruecksetzen(request, nummer):
+    """Knopf am Einlass: alle Handys eines Haushalts für „Wartezeit aufs Handy“ abmelden."""
+    from apps.aufruf import handy
+
+    h = zugang.haushalt(request.user, nummer)
+    anzahl = handy.zuruecksetzen(h.kundennummer)
+    messages.success(request, f"{anzahl} Handy{'s' if anzahl != 1 else ''} von Kunde "
+                     f"{h.kundennummer} abgemeldet.")  # fmt: skip
+    return redirect(f"{reverse('ausgabe:empfang')}?{urlencode({'nummer': h.kundennummer})}")

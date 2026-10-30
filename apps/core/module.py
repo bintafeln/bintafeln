@@ -52,8 +52,12 @@ class Modul:
     titel: str
     beschreibung: str
     app_label: str
-    # Adressanfänge, die nur bei eingeschaltetem Modul erreichbar sind (z. B. "/aufruf/")
+    # Adressanfänge, die nur bei eingeschaltetem Modul erreichbar sind (z. B. "/aufruf/"); der
+    # erste bekommt ``<app>.urls``, weitere ihre URL-Datei aus ``weitere_urls``
     pfade: tuple[str, ...] = ()
+    # (Adressanfang, URL-Modul), z. B. öffentliche Seiten außerhalb des ersten Pfads:
+    # (("/warten/", "apps.aufruf.urls_warten"),); der Adressanfang gehört auch in ``pfade``
+    weitere_urls: tuple[tuple[str, str], ...] = ()
     # (code, bezeichnung, hilfe) – Bereich im Rechtekatalog ist der Titel des Moduls
     rechte: tuple[tuple[str, str, str], ...] = ()
     # Rechte der mitgelieferten Rollen beim ersten Anlegen (wie rechte.VORGABEN)
@@ -76,6 +80,9 @@ class Modul:
     # Auskunft nach Art. 15 zu einem Antrag: auskunft_antrag(antrag, pdf) schreibt eigene
     # Abschnitte. Läuft auch bei ausgeschaltetem Modul (die Daten sind ja gespeichert).
     auskunft_antrag: Callable | None = None
+    # Auskunft nach Art. 15 zu einem Haushalt: auskunft_haushalt(haushalt, pdf); läuft auch bei
+    # ausgeschaltetem Modul.
+    auskunft_haushalt: Callable | None = None
     # Auskunft nach Art. 15 zu Mitarbeitenden: auskunft_mitarbeiter(benutzer, pdf); läuft auch
     # bei ausgeschaltetem Modul.
     auskunft_mitarbeiter: Callable | None = None
@@ -99,6 +106,8 @@ class Modul:
     mein_konto: Callable | None = None
     # Arten von Benachrichtigungen des Moduls (apps.core.benachrichtigung.Art, ADR 0086)
     benachrichtigungen: tuple = ()
+    # Adresse für das Ausweis-Element „QR-Code Wartezeit“: ausweis_qr(haushalt) -> URL oder ""
+    ausweis_qr: Callable | None = None
 
 
 @cache
@@ -136,6 +145,12 @@ def auskunft_antrag(antrag, pdf) -> None:
             m.auskunft_antrag(antrag, pdf)
 
 
+def auskunft_haushalt(haushalt, pdf) -> None:
+    for m in alle():
+        if m.auskunft_haushalt:
+            m.auskunft_haushalt(haushalt, pdf)
+
+
 def auskunft_mitarbeiter(benutzer, pdf) -> None:
     for m in alle():
         if m.auskunft_mitarbeiter:
@@ -157,6 +172,15 @@ def suchen(benutzer, begriff: str, grenze: int) -> list:
     an = eingeschaltet()
     return [Treffer(*t) for m in alle() if m.kennung in an and m.suchen
             for t in m.suchen(benutzer, begriff, grenze)]  # fmt: skip
+
+
+def ausweis_qr(haushalt) -> str:
+    """Adresse für den QR-Code auf dem Ausweis (erstes eingeschaltetes Modul, das eine liefert)."""
+    an = eingeschaltet()
+    for m in alle():
+        if m.kennung in an and m.ausweis_qr and (adresse := m.ausweis_qr(haushalt)):
+            return adresse
+    return ""
 
 
 def startseite(request) -> list[str]:

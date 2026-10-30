@@ -721,3 +721,35 @@ def test_hilfe_bild_warteliste_texte(angemeldet, admin):
               Marke(zeile.locator(".marke-warnung"), nummer=2, von="links", laenge=40),
               Marke(zeile.get_by_role("link", name="bearbeiten"), nummer=3,
                     von="rechts"))  # fmt: skip
+
+
+def test_hilfe_bild_wartezeit_handy(seite, admin, muster):
+    from apps.aufruf.models import AufrufEinstellungen
+    from apps.kunden.models import Haushalt
+
+    _module("aufruf")
+    stelle, _ = _aufruf(muster)
+    e = AufrufEinstellungen.laden(stelle)
+    e.handy = True
+    e.save()
+    from apps.aufruf import ablauf
+
+    tag = ablauf.tag_holen(stelle, timezone.localdate())
+    nummer = tag.stand["gruppen"][tag.stand["index"]]["wartend"][-1]  # weit hinten
+    hp = Haushalt.objects.get(kundennummer=nummer).hauptperson
+    hp.geburtsdatum = dt.date(1975, 3, 12)
+    hp.save()
+    seite.set_viewport_size({"width": 400, "height": 760})
+    seite.goto(reverse("warten:seite"))
+    seite.get_by_label("Kundennummer").fill(nummer)
+    seite.get_by_label("Geburtsdatum der Hauptperson").fill("1975-03-12")
+    karte = seite.locator("section.karte").first
+    aufnehmen(seite, "warten-handy", karte,
+              Marke(seite.get_by_label("Kundennummer"), nummer=1, von="rechts", laenge=30),
+              Marke(seite.get_by_role("button", name="Anmelden"), nummer=2, von="rechts",
+                    laenge=30))  # fmt: skip
+    seite.get_by_role("button", name="Anmelden").click()
+    gross = seite.locator(".warten-gross")
+    expect(gross).to_contain_text("vor Ihnen")
+    aufnehmen(seite, "warten-handy-stand", seite.locator("section.karte").first,
+              Marke(gross, "rahmen", 1))  # fmt: skip

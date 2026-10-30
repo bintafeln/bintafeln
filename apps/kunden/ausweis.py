@@ -17,6 +17,7 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen.canvas import Canvas
 
+from apps.core import module
 from apps.core.models import TafelEinstellungen
 from apps.kunden import merkmale
 from apps.kunden.models import KundenEinstellungen
@@ -24,6 +25,7 @@ from apps.kunden.models import KundenEinstellungen
 BREITE_MM, HOEHE_MM = 85.6, 54.0  # ISO/IEC 7810 ID-1
 BREITE, HOEHE = BREITE_MM * mm, HOEHE_MM * mm
 BARCODE_MIN_B, BARCODE_MIN_H = 30.0, 8.0  # darunter liest nicht jeder Scanner sicher
+QR_MIN = 14.0  # mm Kantenlänge, darunter erkennen Handys den Code schlecht
 MAX_ELEMENTE = 40
 MAX_SAMMELDRUCK = 500
 FARBE = re.compile(r"^#[0-9a-fA-F]{6}$")
@@ -44,6 +46,8 @@ TYPEN = {
     "personen_kinder": ("Personen/Minderjährige (z. B. 6/3)", False, "text"),
     "freitext": ("Freier Text", False, "text"),
     "merkmale": ("Merkmale (z. B. Rollstuhl-Symbol)", False, "merkmale"),
+    # Persönlicher Code für „Wartezeit aufs Handy“ (Modul Aufruf, ADR 0090); leer ohne Modul
+    "qr_handy": ("QR-Code „Wartezeit aufs Handy“", False, "qr"),
     "flaeche": ("Farbige Fläche", False, "flaeche"),
 }
 PLATZHALTER = [t for t, (_, _, art) in TYPEN.items() if art == "text" and t != "freitext"]
@@ -92,6 +96,7 @@ BEISPIEL = {
     "personen": "3 Personen",
     "personen_kinder": "6/3",
     "merkmale": [("rollstuhl", "")],
+    "qr_handy": "https://tafel.example.org/warten/a/beispiel/",
 }
 MERKMAL_FARBE = "#1d4f91"  # Blau des Rollstuhl-Symbols (ISO 7001)
 
@@ -116,6 +121,8 @@ def element_pruefen(roh) -> dict | None:
     if art == "barcode":
         e["b"] = max(e["b"], BARCODE_MIN_B)
         e["h"] = max(e["h"], BARCODE_MIN_H)
+    if art == "qr":
+        e["b"] = e["h"] = max(e["b"], e["h"], QR_MIN)
     e["x"] = _zahl(roh.get("x"), 4, 0, BREITE_MM - e["b"])
     e["y"] = _zahl(roh.get("y"), 4, 0, HOEHE_MM - e["h"])
     ausrichtung = roh.get("ausrichtung")
@@ -169,7 +176,16 @@ def werte(h, tafel, vorlage) -> dict[str, str]:
         "personen": f"{anzahl} Person{'en' if anzahl != 1 else ''}" if anzahl else "",
         "personen_kinder": f"{erwachsene + kinder}/{kinder}",
         "merkmale": merkmale.ausweis(h),
+        # nur wenn die Vorlage den Code enthält: jeder Druck erzeugt einen neuen
+        "qr_handy": module.ausweis_qr(h) if _mit_qr(vorlage) else "",
     }
+
+
+def _mit_qr(vorlage) -> bool:
+    elemente = list(vorlage.vorderseite or [])
+    if vorlage.rueckseite_aktiv:
+        elemente += list(vorlage.rueckseite or [])
+    return any(isinstance(e, dict) and e.get("typ") == "qr_handy" for e in elemente)
 
 
 def text_von(e: dict, w: dict) -> str:
@@ -214,6 +230,8 @@ def _seite(c: Canvas, elemente, hintergrund, logo, w, x0, y0) -> None:
             _text(c, text_von(e, w), e, x, y, b, h)
         elif art == "merkmale":
             _merkmale(c, w.get("merkmale") or [], e, x, y, b, h)
+        elif art == "qr" and w.get("qr_handy"):
+            _qr(c, w["qr_handy"], x, y, b, h, e["ausrichtung"])
 
 
 def _text(c: Canvas, text, e, x, y, b, h) -> None:
@@ -294,6 +312,20 @@ def _barcode(c: Canvas, nummer, x, y, b, h, ausrichtung) -> None:
     code = Code128(nummer, barWidth=breite, barHeight=h, humanReadable=False)
     dx = {"links": 0, "mitte": (b - code.width) / 2, "rechts": b - code.width}[ausrichtung]
     code.drawOn(c, x + dx, y)
+
+
+def _qr(c: Canvas, adresse, x, y, b, h, ausrichtung) -> None:
+    from reportlab.graphics import renderPDF
+    from reportlab.graphics.barcode.qr import QrCodeWidget
+    from reportlab.graphics.shapes import Drawing
+
+    seite = min(b, h)
+    code = QrCodeWidget(adresse, barBorder=0)
+    x1, y1, x2, y2 = code.getBounds()
+    zeichnung = Drawing(seite, seite, transform=[seite / (x2 - x1), 0, 0, seite / (y2 - y1), 0, 0])
+    zeichnung.add(code)
+    dx = {"links": 0, "mitte": (b - seite) / 2, "rechts": b - seite}[ausrichtung]
+    renderPDF.draw(zeichnung, c, x + dx, y + (h - seite) / 2)
 
 
 def _schnittmarken(c: Canvas, x, y) -> None:

@@ -1004,6 +1004,14 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
 - Die Geräte zeigen nur Kundennummern. Die Reihenfolge eines Tages wird nach vier Wochen
   gelöscht.
 
+- **Wartezeit aufs Handy** (ADR 0090, je Ausgabestelle einschaltbar): Kunden öffnen `/warten/`
+  (Aushang mit QR-Code als PDF unter „Aufruf, Monitor und Kiosk“, einmal drucken), melden sich
+  einmal mit Kundennummer und Geburtsdatum der Hauptperson an und sehen dann auf dem Handy nur
+  ihren eigenen Platz an ihrer Ausgabestelle („noch 7 vor Ihnen, ca. 20 Minuten“, „Bitte jetzt
+  eintreten“), in 29 Sprachen, ohne Namen. Höchstens 2 Handys je Haushalt (einstellbar),
+  „Handys zurücksetzen“ am Einlass, Fehlversuche begrenzt. Neu gedruckte Ausweise können einen
+  persönlichen QR-Code tragen (Element in der Ausweis-Vorlage, jeder Druck ein neuer Code).
+
 ### Warteliste mit Einladungen
 
 Ersetzt das bisherige Neuanmeldungs-Programm (ADR 0051) und arbeitet direkt mit den Anträgen.

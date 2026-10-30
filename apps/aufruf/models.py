@@ -94,6 +94,15 @@ class AufrufEinstellungen(models.Model):
         "Danach wieder leeren.",
     )  # fmt: skip
     info_rotation = models.BooleanField("Infos auf dem Monitor zeigen", default=True)
+    handy = models.BooleanField(
+        "Wartezeit aufs Handy", default=False,
+        help_text="Kunden dieser Ausgabestelle sehen unter /warten/ auf ihrem Handy, wie viele "
+        "noch vor ihnen sind (nach einmaliger Anmeldung mit Kundennummer und Geburtsdatum).",
+    )  # fmt: skip
+    handy_geraete = models.PositiveSmallIntegerField(
+        "Handys je Haushalt", default=2, validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Danach heißt es „Bitte am Einlass melden“; der Einlass kann zurücksetzen.",
+    )  # fmt: skip
     layout = models.JSONField("Monitor-Aufteilung", default=dict, blank=True)
 
     class Meta:
@@ -201,6 +210,42 @@ class AufrufInfo(models.Model):
 
     def __str__(self):
         return self.titel
+
+
+class HandyZugang(models.Model):
+    """Ein Handy, das die Wartezeit eines Haushalts sehen darf (ADR 0090). Im Handy liegt nur ein
+    zufälliger Schlüssel als Cookie; gespeichert ist dessen Prüfsumme. Hängt an der Kundennummer
+    und übersteht so den Import."""
+
+    kundennummer = models.CharField("Kundennummer", max_length=20, db_index=True)
+    pruefsumme = models.CharField(max_length=64, unique=True, editable=False)
+    geraet = models.CharField("Gerät", max_length=120, blank=True)
+    eingerichtet_am = models.DateTimeField("Eingerichtet am", auto_now_add=True)
+    zuletzt_am = models.DateTimeField("Zuletzt angesehen", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Handy-Zugang zur Wartezeit"
+        verbose_name_plural = "Handy-Zugänge zur Wartezeit"
+        ordering = ["eingerichtet_am"]
+
+    def __str__(self):
+        return f"Handy {self.kundennummer}"
+
+
+class HandyCode(models.Model):
+    """QR-Code auf dem Ausweis für „Wartezeit aufs Handy“: Mit jedem gedruckten Ausweis entsteht
+    ein neuer, der alte gilt nicht mehr."""
+
+    kundennummer = models.CharField("Kundennummer", max_length=20, unique=True)
+    code = models.CharField(max_length=64, unique=True, default=neuer_schluessel)
+    erstellt_am = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Handy-Code auf dem Ausweis"
+        verbose_name_plural = "Handy-Codes auf dem Ausweis"
+
+    def __str__(self):
+        return f"Handy-Code {self.kundennummer}"
 
 
 auditlog.register(AufrufEinstellungen)

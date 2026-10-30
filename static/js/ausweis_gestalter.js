@@ -25,6 +25,7 @@
   function grenzen(e) {
     var art = daten.typen[e.typ].art;
     if (art === "barcode") { e.b = Math.max(e.b, M.barcode_b); e.h = Math.max(e.h, M.barcode_h); }
+    if (art === "qr") { e.b = e.h = Math.max(e.b, e.h, M.qr || 14); }
     e.b = Math.min(Math.max(e.b, 2), M.b);
     e.h = Math.min(Math.max(e.h, 1), M.h);
     e.x = Math.min(Math.max(e.x, 0), M.b - e.b);
@@ -89,6 +90,10 @@
         var balken = document.createElement("span");
         balken.className = "balken";
         d.appendChild(balken);
+      } else if (art === "qr") {
+        var qr = document.createElement("span");
+        qr.className = "qr-vorschau";
+        d.appendChild(qr);
       }
       var griff = document.createElement("span");
       griff.className = "griff";
@@ -217,8 +222,8 @@
     var t = neuTyp.value;
     if (!t) return;
     var art = daten.typen[t].art;
-    var e = { typ: t, x: 4, y: 4, b: art === "barcode" ? 50 : art === "merkmale" ? 14 : 30,
-              h: art === "barcode" ? 12 : art === "merkmale" ? 6 : 5, ausrichtung: "links",
+    var e = { typ: t, x: 4, y: 4, b: art === "barcode" ? 50 : art === "merkmale" ? 14 : art === "qr" ? 16 : 30,
+              h: art === "barcode" ? 12 : art === "merkmale" ? 6 : art === "qr" ? 16 : 5, ausrichtung: "links",
               farbe: art === "flaeche" ? "#e8710a" : art === "merkmale" ? "#1d4f91" : "#000000" };
     if (art === "text") { e.groesse = 9; e.fett = false; }
     if (t === "freitext") e.text = "";
