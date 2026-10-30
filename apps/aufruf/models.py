@@ -96,8 +96,8 @@ class AufrufEinstellungen(models.Model):
     info_rotation = models.BooleanField("Infos auf dem Monitor zeigen", default=True)
     handy = models.BooleanField(
         "Wartezeit aufs Handy", default=False,
-        help_text="Nur wenn unter „Aufruf, Monitor und Kiosk“ für die Wartezeit aufs Handy „nur "
-        "ausgewählte Ausgabestellen“ eingestellt ist: diese Ausgabestelle gehört dazu.",
+        help_text="Bei „nur an ausgewählten Ausgabestellen“: diese Ausgabestelle gehört dazu "
+        "(gewählt unter „Wartezeit aufs Handy“).",
     )  # fmt: skip
     layout = models.JSONField("Monitor-Aufteilung", default=dict, blank=True)
 
@@ -216,7 +216,7 @@ class HandyEinstellungen(models.Model):
     class Modus(models.TextChoices):
         AUS = "aus", "aus – an keiner Ausgabestelle"
         ALLE = "alle", "an allen Ausgabestellen mit Aufruf"
-        AUSWAHL = "auswahl", "nur an ausgewählten Ausgabestellen (je Ausgabestelle „ändern“)"
+        AUSWAHL = "auswahl", "nur an ausgewählten Ausgabestellen"
 
     modus = models.CharField("Wartezeit aufs Handy", max_length=10, choices=Modus.choices,
                              default=Modus.AUS)  # fmt: skip

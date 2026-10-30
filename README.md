@@ -1024,7 +1024,7 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   gelöscht.
 
 - **Wartezeit aufs Handy** (ADR 0090, zentral aus, an allen oder an ausgewählten
-  Ausgabestellen): Kunden öffnen `/warten/`
+  Ausgabestellen, die gleich dort angekreuzt werden): Kunden öffnen `/warten/`
   (Aushang mit QR-Code als PDF unter „Aufruf, Monitor und Kiosk“, einmal drucken), melden sich
   einmal mit Kundennummer und Geburtsdatum der Hauptperson an und sehen dann auf dem Handy nur
   ihren eigenen Platz an ihrer Ausgabestelle („noch 7 vor Ihnen, ca. 20 Minuten“, „Bitte jetzt

@@ -49,11 +49,11 @@
     eigenen Ausgabestelle, keine Namen.</p>
   <form method="post" data-autosave>
     {% csrf_token %}
-    {% with form=handy_form %}{% include "includes/formular.html" %}{% endwith %}
+    {% with feld=handy_form.modus %}{% include "includes/feld.html" %}{% endwith %}
+    <div data-zeigen-bei="modus=auswahl">{% with feld=handy_form.stellen %}{% include "includes/feld.html" %}{% endwith %}</div>
+    {% with feld=handy_form.geraete %}{% include "includes/feld.html" %}{% endwith %}
     <button type="submit" class="knopf">Speichern</button>
   </form>
-  {% if handy_auswahl %}<p class="hinweis">Welche Ausgabestellen dazugehören, legen Sie oben je Ausgabestelle unter „ändern“ fest
-    („Wartezeit aufs Handy“).</p>{% endif %}
   {% if not handy_an %}<p class="hinweis">Zurzeit an keiner Ausgabestelle eingeschaltet.</p>{% endif %}
   <p><a class="knopf knopf-zweitrangig" href="{% url 'aufruf:aushang' %}" target="_blank" rel="noopener">Aushang mit QR-Code (PDF)</a></p>
   <p class="hinweis">Den Aushang einmal drucken und am Eingang aufhängen – er gilt dauerhaft und an allen Ausgabestellen.

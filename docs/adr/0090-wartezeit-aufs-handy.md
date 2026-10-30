@@ -11,7 +11,7 @@ Ausweise mit QR-Code für alle Kunden zu drucken, ist zu teuer.
 
 - Öffentliche Seite `/warten/` im Modul Aufruf (ADR 0050), zentral geschaltet über
   `HandyEinstellungen.modus`: aus, an allen Ausgabestellen mit Aufruf oder nur an ausgewählten
-  (`AufrufEinstellungen.handy`). Ein fester Aushang mit QR-Code (PDF unter „Aufruf, Monitor und
+  (`AufrufEinstellungen.handy`, gewählt im selben Abschnitt über `HandyForm.stellen`). Ein fester Aushang mit QR-Code (PDF unter „Aufruf, Monitor und
   Kiosk“) führt dorthin; er ist kein Geheimnis und gilt an allen Ausgabestellen.
 - Einmalige Anmeldung mit **Kundennummer und Geburtsdatum der Hauptperson**. Danach liegt im
   Handy ein zufälliger Schlüssel als Cookie (gespeichert nur als Prüfsumme in `HandyZugang`,

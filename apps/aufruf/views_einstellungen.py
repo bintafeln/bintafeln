@@ -40,7 +40,6 @@ def einstellungen(request):
         "stellen": stellen, "infos": AufrufInfo.objects.prefetch_related("ausgabestellen"),
         "warten_adresse": request.build_absolute_uri(reverse("warten:seite")),
         "handy_form": form, "handy_an": any(an for _, _, an in stellen),
-        "handy_auswahl": zentral.modus == M.AUSWAHL,
     })  # fmt: skip
 
 
@@ -57,8 +56,6 @@ def aushang(request):
 def stelle(request, pk):
     s = get_object_or_404(Ausgabestelle, pk=pk)
     form = EinstellungenForm(request.POST or None, instance=AufrufEinstellungen.laden(s))
-    if HandyEinstellungen.laden().modus != HandyEinstellungen.Modus.AUSWAHL:
-        del form.fields["handy"]  # zählt nur bei „nur ausgewählte Ausgabestellen“
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, f"Aufruf für „{s}“ gespeichert.")

@@ -1,6 +1,7 @@
 from django import forms
 
 from apps.aufruf.models import TAGE, AufrufEinstellungen, AufrufInfo, HandyEinstellungen
+from apps.core.forms import Mehrfachauswahl
 from apps.kunden.models import Ausgabestelle, Zusatzfeld
 
 INFO_MAX_BYTES = 10 * 1024 * 1024
@@ -12,7 +13,7 @@ class EinstellungenForm(forms.ModelForm):
         model = AufrufEinstellungen
         fields = ["aktiv", "anzahl", "vorrang_feld", "vorrang_symbol", "eingelassene_ausblenden",
                   "spaetzuender_versatz", "zu_spaet_minuten", "info_rotation",
-                  "wochentag_probe", "handy"]  # fmt: skip
+                  "wochentag_probe"]  # fmt: skip
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -65,6 +66,33 @@ class InfoForm(forms.ModelForm):
 
 
 class HandyForm(forms.ModelForm):
+    """Zentral für alle Ausgabestellen; bei „nur ausgewählte“ hier gleich die Ausgabestellen."""
+
+    stellen = forms.ModelMultipleChoiceField(
+        label="Ausgabestellen", required=False, queryset=Ausgabestelle.objects.none(),
+        widget=Mehrfachauswahl(leer="keine"),
+        help_text="Nur bei „nur an ausgewählten Ausgabestellen“; dort muss auch der Aufruf "
+        "eingeschaltet sein.",
+    )  # fmt: skip
+
     class Meta:
         model = HandyEinstellungen
-        fields = ["modus", "geraete"]
+        fields = ["modus", "stellen", "geraete"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["stellen"].queryset = Ausgabestelle.objects.filter(aktiv=True).order_by("name")
+        self.initial["stellen"] = list(
+            AufrufEinstellungen.objects.filter(handy=True).values_list("ausgabestelle", flat=True)
+        )
+
+    def save(self, commit=True):
+        e = super().save(commit)
+        if self.instance.modus == HandyEinstellungen.Modus.AUSWAHL:
+            gewaehlt = {s.pk for s in self.cleaned_data["stellen"]}
+            for s in self.fields["stellen"].queryset:
+                einst = AufrufEinstellungen.laden(s)
+                if einst.handy != (s.pk in gewaehlt):
+                    einst.handy = s.pk in gewaehlt
+                    einst.save(update_fields=["handy"])
+        return e
