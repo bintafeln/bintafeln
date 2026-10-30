@@ -19,6 +19,8 @@ def mein_konto(request):
     from apps.aushang.models import MonitorPin
     from apps.konten import rollen
 
+    if request.user.stelle_id:  # Konto einer Ausgabestelle gehört keiner Person (ADR 0059, 0080)
+        return ""
     if not any(rollen.hat_recht(request.user, r) for r in ("dienstplan.sehen", "fahrdienst.sehen")):
         return ""
     eintrag = MonitorPin.objects.filter(benutzer=request.user).first()

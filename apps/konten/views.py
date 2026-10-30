@@ -194,6 +194,8 @@ def abmelden(request):
 @sensitive_post_parameters("old_password", "new_password1", "new_password2")
 def passwort_aendern(request):
     """Eigenes Passwort ändern; Pflicht nach einem Startpasswort."""
+    if request.user.stelle_id:  # Konto einer Ausgabestelle: Passwort setzt der Admin (ADR 0059)
+        raise Http404
     form = PasswordChangeForm(request.user, request.POST or None)
     if request.method == "POST" and form.is_valid():
         benutzer = form.save(commit=False)
@@ -327,6 +329,8 @@ def anmelde_einstellungen(request):
 @login_required
 def benachrichtigungen(request):
     """Wie oft die eigenen Benachrichtigungen kommen (ADR 0086); jede Person wählt selbst."""
+    if request.user.stelle_id:  # Konto einer Ausgabestelle bekommt keine Benachrichtigungen
+        raise Http404
     import contextlib
     import datetime as dt
 

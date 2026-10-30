@@ -85,7 +85,10 @@ def rechte_von(benutzer) -> frozenset[str]:
         if any(r.ist_admin for r in rollen):
             ergebnis = katalog.ALLE
         else:
+            from apps.core import module
+
             ergebnis = frozenset(c for r in rollen for c in r.rechte if c in katalog.ALLE)
+            ergebnis -= module.entzogene_rechte(benutzer)
     benutzer._bintafeln_rechte = ergebnis
     return ergebnis
 

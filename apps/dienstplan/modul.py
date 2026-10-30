@@ -81,6 +81,15 @@ def _ausfall_offen(schluessel: str) -> bool:
     return bool(a) and any(p.fehlt for p in einsaetze(a.helfer, a.von, a.bis))
 
 
+def _rechte_entzug(benutzer) -> set:
+    """Das Tablet-Konto einer Ausgabestelle (ADR 0059) sieht den Dienstplan nur, wenn ein Admin
+    ihn für diese Ausgabestelle ausdrücklich eingeschaltet hat."""
+    stelle = getattr(benutzer, "stelle", None)
+    if stelle is None or stelle.dienstplan_sichtbar:
+        return set()
+    return {"dienstplan.sehen", "dienstplan.planen"}
+
+
 def _darf(*codes):
     def pruefen(benutzer):
         from apps.konten import rollen
@@ -117,4 +126,5 @@ MODUL = Modul(
     auskunft_mitarbeiter=auskunft_mitarbeiter,
     sicherung_bereich="mitarbeitende",
     aushang=aushang,
+    rechte_entzug=_rechte_entzug,
 )  # fmt: skip
