@@ -6,6 +6,7 @@ app_name = "spenden"
 
 urlpatterns = [
     path("", views.liste, name="liste"),
+    path("spalten/", views.spalten, name="spalten"),
     path("neu/", views.bearbeiten, name="neu"),
     path("import/", views.importieren_ansicht, name="importieren"),
     path("<int:pk>/", views.bearbeiten, name="bearbeiten"),

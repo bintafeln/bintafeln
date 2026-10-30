@@ -48,6 +48,10 @@ class Benutzer(AbstractUser):
         "In der Antragsliste ausgeblendete Spalten", default=list, blank=True,
         help_text="Jede Person wählt auf der Antragsliste selbst, welche Spalten sie sieht.",
     )  # fmt: skip
+    listen_spalten_aus = models.JSONField(
+        "In weiteren Listen ausgeblendete Spalten", default=dict, blank=True,
+        help_text="Je Liste (Adressbuch, Mitglieder, Spenden …) die selbst ausgeblendeten Spalten.",
+    )  # fmt: skip
     ausgabetage = models.CharField(
         "Ausgabetage", max_length=30, blank=True,
         help_text="An welchen Tagen die Person meist arbeitet; die Kundenliste startet mit diesem "
@@ -201,7 +205,13 @@ class PersonalEinstellungen(models.Model):
 
 auditlog.register(
     Benutzer,
-    exclude_fields=["password", "last_login", "kundenliste_aus", "antraege_liste_aus"],
+    exclude_fields=[
+        "password",
+        "last_login",
+        "kundenliste_aus",
+        "antraege_liste_aus",
+        "listen_spalten_aus",
+    ],
     m2m_fields={"groups", "ausgabestellen"},
 )
 

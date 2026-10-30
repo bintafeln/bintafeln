@@ -40,24 +40,25 @@
     {% if zeilen %}<button type="submit" form="auswahl" class="knopf knopf-zweitrangig" title="Angehakte Mitglieder (ohne Haken: alle dieser Auswahl) als CSV-Datei, öffnet in Excel oder LibreOffice">⬇ Als CSV-Datei (Excel)</button>
     <span class="hinweis" data-auswahl-zahl="auswahl"></span>{% endif %}
   </div>
+  {% url 'mitglieder:spalten' as spalten_aktion %}{% include "includes/spalten_wahl.html" %}
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th class="auswahl"><input type="checkbox" data-alle="id" form="auswahl" aria-label="Alle auswählen" title="alle / keine"></th>{% sortkopf "Nr." "nummer" sort %}{% sortkopf "Name" "name" sort %}{% sortkopf "Art" "art" sort %}{% sortkopf "Eintritt" "eintritt" sort %}{% if beitraege %}{% with js=jahr|stringformat:"s" %}{% sortkopf "Soll "|add:js "soll" sort "zahl" %}{% endwith %}{% sortkopf "gezahlt" "gezahlt" sort "zahl" %}{% sortkopf "offen" "offen" sort "zahl" %}{% endif %}</tr></thead>
+    <thead><tr><th class="auswahl"><input type="checkbox" data-alle="id" form="auswahl" aria-label="Alle auswählen" title="alle / keine"></th>{% sortkopf "Nr." "nummer" sort %}{% if "name" in sichtbar %}{% sortkopf "Name" "name" sort %}{% endif %}{% if "art" in sichtbar %}{% sortkopf "Art" "art" sort %}{% endif %}{% if "eintritt" in sichtbar %}{% sortkopf "Eintritt" "eintritt" sort %}{% endif %}{% if beitraege %}{% if "soll" in sichtbar %}{% with js=jahr|stringformat:"s" %}{% sortkopf "Soll "|add:js "soll" sort "zahl" %}{% endwith %}{% endif %}{% if "gezahlt" in sichtbar %}{% sortkopf "gezahlt" "gezahlt" sort "zahl" %}{% endif %}{% if "offen" in sichtbar %}{% sortkopf "offen" "offen" sort "zahl" %}{% endif %}{% endif %}</tr></thead>
     <tbody>
     {% for z in zeilen %}
       <tr><td class="auswahl"><input type="checkbox" name="id" value="{{ z.m.pk }}" form="auswahl" aria-label="Zeile auswählen"></td>
         <td data-titel="Nr."><a href="{% url 'mitglieder:mitglied' z.m.pk %}">{{ z.m.nummer }}</a></td>
-        <td data-titel="Name"><a href="{% url 'mitglieder:mitglied' z.m.pk %}">{{ z.m.adresse.name }}</a>{% if z.m.austritt %} <span class="marke-warnung">ausgetreten {{ z.m.austritt|date:"d.m.Y" }}</span>{% endif %}</td>
-        <td data-titel="Art">{{ z.m.art }}</td>
-        <td data-titel="Eintritt">{{ z.m.eintritt|date:"d.m.Y" }}</td>
+        {% if "name" in sichtbar %}<td data-titel="Name"><a href="{% url 'mitglieder:mitglied' z.m.pk %}">{{ z.m.adresse.name }}</a>{% if z.m.austritt %} <span class="marke-warnung">ausgetreten {{ z.m.austritt|date:"d.m.Y" }}</span>{% endif %}</td>{% endif %}
+        {% if "art" in sichtbar %}<td data-titel="Art">{{ z.m.art }}</td>{% endif %}
+        {% if "eintritt" in sichtbar %}<td data-titel="Eintritt">{{ z.m.eintritt|date:"d.m.Y" }}</td>{% endif %}
         {% if beitraege %}
-        <td data-titel="Soll" class="zahl">{{ z.soll|floatformat:2 }} €</td>
-        <td data-titel="gezahlt" class="zahl">{{ z.gezahlt|floatformat:2 }} €</td>
-        <td data-titel="offen" class="zahl">{% if z.offen %}<span class="marke-warnung">{{ z.offen|floatformat:2 }} €</span>{% else %}–{% endif %}</td>
+        {% if "soll" in sichtbar %}<td data-titel="Soll" class="zahl">{{ z.soll|floatformat:2 }} €</td>{% endif %}
+        {% if "gezahlt" in sichtbar %}<td data-titel="gezahlt" class="zahl">{{ z.gezahlt|floatformat:2 }} €</td>{% endif %}
+        {% if "offen" in sichtbar %}<td data-titel="offen" class="zahl">{% if z.offen %}<span class="marke-warnung">{{ z.offen|floatformat:2 }} €</span>{% else %}–{% endif %}</td>{% endif %}
         {% endif %}
       </tr>
     {% empty %}
-      <tr><td colspan="{% if beitraege %}8{% else %}5{% endif %}">Keine Mitglieder gefunden.</td></tr>
+      <tr><td colspan="{{ sichtbar|length|add:1 }}">Keine Mitglieder gefunden.</td></tr>
     {% endfor %}
     </tbody>
   </table>

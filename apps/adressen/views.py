@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import ProtectedError, Q, Sum
-from django.http import HttpResponse
+from django.http import HttpResponse, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -85,6 +85,10 @@ SORTIERUNG = {
     "telefon": ("telefon", "mobil"),
     "email": ("email",),
 }
+# Spalten zum Zu-/Abwählen je Person (Name öffnet die Adresse und bleibt immer sichtbar).
+SPALTEN = [("name", "Name"), ("ort", "Ort"), ("telefon", "Telefon"), ("email", "E-Mail"),
+           ("kategorien", "Kategorien")]  # fmt: skip
+SPALTEN_FEST = {"name"}
 
 
 @rollen.recht_erforderlich("adressen.sehen")
@@ -98,11 +102,28 @@ def liste(request):
         antwort["Content-Disposition"] = f'attachment; filename="{name}"'
         return antwort
     seite = Paginator(adressen.select_related("mitglied"), 50).get_page(request.GET.get("seite"))
+    abfrage = request.GET.copy()
+    abfrage.pop("seite", None)
     return render(request, "adressen/liste.html", {
         "seite": seite, "filter": filter_, "anzahl": seite.paginator.count, "sort": sort,
         "kategorien": AdressKategorie.objects.all(), "arten": Adresse.Art.choices,
+        "sichtbar": listen.sichtbare_spalten(request.user, "adressen",
+                                             [k for k, _ in SPALTEN], SPALTEN_FEST),
+        "spalten_wahl": listen.spalten_wahl(request.user, "adressen", SPALTEN, SPALTEN_FEST),
+        "abfrage": abfrage.urlencode(),
         "verein_wahl": _verein_wahl(request.user),
     })  # fmt: skip
+
+
+@require_POST
+@rollen.recht_erforderlich("adressen.sehen")
+def spalten(request):
+    """Speichert, welche Spalten diese Person im Adressbuch sieht, und kehrt zur Liste zurück."""
+    listen.spalten_speichern(request.user, "adressen", request.POST.getlist("spalte"),
+                             SPALTEN, SPALTEN_FEST)  # fmt: skip
+    zurueck = QueryDict(request.POST.get("zurueck", "")).urlencode()
+    ziel = reverse("adressen:liste")
+    return redirect(f"{ziel}?{zurueck}" if zurueck else ziel)
 
 
 @rollen.recht_erforderlich("adressen.sehen")

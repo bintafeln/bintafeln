@@ -34,22 +34,23 @@
     {% if seite.paginator.count %}<button type="submit" form="auswahl" class="knopf knopf-zweitrangig" title="Angehakte Spenden (ohne Haken: alle dieser Auswahl) als CSV-Datei, öffnet in Excel oder LibreOffice">⬇ Als CSV-Datei (Excel)</button>
     <span class="hinweis" data-auswahl-zahl="auswahl"></span>{% endif %}
   </div>
+  {% url 'spenden:spalten' as spalten_aktion %}{% include "includes/spalten_wahl.html" %}
   {% blaettern seite %}
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th class="auswahl"><input type="checkbox" data-alle="id" form="auswahl" aria-label="Alle auswählen" title="alle / keine"></th>{% sortkopf "Datum" "datum" sort %}{% sortkopf "Spender" "spender" sort %}{% sortkopf "Art" "art" sort %}{% sortkopf "Betrag/Wert" "betrag" sort "zahl" %}{% sortkopf "Bezeichnung / Zweck" %}{% sortkopf "Bestätigung" %}</tr></thead>
+    <thead><tr><th class="auswahl"><input type="checkbox" data-alle="id" form="auswahl" aria-label="Alle auswählen" title="alle / keine"></th>{% sortkopf "Datum" "datum" sort %}{% if "spender" in sichtbar %}{% sortkopf "Spender" "spender" sort %}{% endif %}{% if "art" in sichtbar %}{% sortkopf "Art" "art" sort %}{% endif %}{% if "betrag" in sichtbar %}{% sortkopf "Betrag/Wert" "betrag" sort "zahl" %}{% endif %}{% if "bezeichnung" in sichtbar %}{% sortkopf "Bezeichnung / Zweck" %}{% endif %}{% if "bestaetigung" in sichtbar %}{% sortkopf "Bestätigung" %}{% endif %}</tr></thead>
     <tbody>
     {% for s in seite %}
       <tr><td class="auswahl"><input type="checkbox" name="id" value="{{ s.pk }}" form="auswahl" aria-label="Zeile auswählen"></td>
         <td data-titel="Datum">{% if "spenden.erfassen" in rechte and not s.bestaetigt %}<a href="{% url 'spenden:bearbeiten' s.pk %}">{{ s.datum|date:"d.m.Y" }}</a>{% else %}{{ s.datum|date:"d.m.Y" }}{% endif %}</td>
-        <td data-titel="Spender"><a href="{% url 'adressen:adresse' s.adresse_id %}">{{ s.adresse.name }}</a></td>
-        <td data-titel="Art">{{ s.get_art_display }}{% if s.mitgliedsbeitrag %} (Mitgliedsbeitrag){% endif %}</td>
-        <td data-titel="Betrag/Wert" class="zahl">{% if s.betrag %}{{ s.betrag|floatformat:2 }} €{% else %}–{% endif %}</td>
-        <td data-titel="Bezeichnung">{{ s.beschreibung|default:s.zweck|default:"–" }}{% if s.menge %} ({{ s.menge|floatformat:"-2" }} {{ s.einheit }}){% endif %}</td>
-        <td data-titel="Bestätigung">{% if s.bestaetigt %}Nr. {{ s.bestaetigung.nummer }}{% else %}–{% endif %}</td>
+        {% if "spender" in sichtbar %}<td data-titel="Spender"><a href="{% url 'adressen:adresse' s.adresse_id %}">{{ s.adresse.name }}</a></td>{% endif %}
+        {% if "art" in sichtbar %}<td data-titel="Art">{{ s.get_art_display }}{% if s.mitgliedsbeitrag %} (Mitgliedsbeitrag){% endif %}</td>{% endif %}
+        {% if "betrag" in sichtbar %}<td data-titel="Betrag/Wert" class="zahl">{% if s.betrag %}{{ s.betrag|floatformat:2 }} €{% else %}–{% endif %}</td>{% endif %}
+        {% if "bezeichnung" in sichtbar %}<td data-titel="Bezeichnung">{{ s.beschreibung|default:s.zweck|default:"–" }}{% if s.menge %} ({{ s.menge|floatformat:"-2" }} {{ s.einheit }}){% endif %}</td>{% endif %}
+        {% if "bestaetigung" in sichtbar %}<td data-titel="Bestätigung">{% if s.bestaetigt %}Nr. {{ s.bestaetigung.nummer }}{% else %}–{% endif %}</td>{% endif %}
       </tr>
     {% empty %}
-      <tr><td colspan="7">Keine Spenden gefunden.</td></tr>
+      <tr><td colspan="{{ sichtbar|length|add:1 }}">Keine Spenden gefunden.</td></tr>
     {% endfor %}
     </tbody>
   </table>

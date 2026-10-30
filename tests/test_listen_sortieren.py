@@ -85,3 +85,38 @@ def test_mitgliederliste_sortiert_als_python_liste(admin_client):
     assert nach_name.index("Albert") < nach_name.index("Zimmer")
     nach_nr = admin_client.get(liste_url, {"sort": "-nummer"}).content.decode()
     assert nach_nr.index("Albert") < nach_nr.index("Zimmer")  # Nr. 2 (Anna) vor Nr. 1 (Berta)
+
+
+def test_spaltenauswahl_helfer():
+    from apps.konten.models import Benutzer
+
+    b = Benutzer(username="x")
+    spalten = [("a", "A"), ("b", "B"), ("c", "C")]
+    # Ohne gespeicherte Wahl ist alles sichtbar.
+    assert listen.sichtbare_spalten(b, "test", ["a", "b", "c"], {"a"}) == {"a", "b", "c"}
+    b.listen_spalten_aus = {"test": ["b"]}
+    assert listen.sichtbare_spalten(b, "test", ["a", "b", "c"], {"a"}) == {"a", "c"}
+    # Die feste Spalte bleibt sichtbar, auch wenn sie fälschlich ausgeblendet wäre.
+    b.listen_spalten_aus = {"test": ["a", "b"]}
+    assert "a" in listen.sichtbare_spalten(b, "test", ["a", "b", "c"], {"a"})
+    wahl = listen.spalten_wahl(b, "test", spalten, {"a"})
+    assert wahl[0] == ("a", "A", True, True) and wahl[1] == ("b", "B", False, False)
+
+
+def test_adressbuch_spalten_abwaehlbar(admin_client):
+    Adresse.objects.create(art="person", vorname="Anna", nachname="Albert", strasse="W 2",
+                           plz="2", ort="Musterstadt", telefon="0123 456")  # fmt: skip
+    liste_url = reverse("adressen:liste")
+    seite = admin_client.get(liste_url).content.decode()
+    assert "Spalten wählen" in seite and "0123 456" in seite  # Telefon anfangs sichtbar
+    # Telefon abwählen (nur Name + Ort behalten); Name ist fest und bleibt immer.
+    admin_client.post(reverse("adressen:spalten"), {"spalte": ["ort"]})
+    seite = admin_client.get(liste_url).content.decode()
+    assert "0123 456" not in seite  # Telefon-Spalte ausgeblendet
+    assert "Albert" in seite and "Musterstadt" in seite  # Name (fest) und Ort noch da
+
+
+def test_spaltenauswahl_in_allen_listen(admin_client):
+    # Auch Mitglieder- und Spendenliste bieten die Spaltenauswahl an.
+    for url in (reverse("mitglieder:liste"), reverse("spenden:liste")):
+        assert "Spalten wählen" in admin_client.get(url).content.decode()
