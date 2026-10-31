@@ -273,12 +273,13 @@ def druckliste(request, pk):
     )
     doc = Pdf(f"Termin {t}", "Liste der Eingeladenen")
     doc.absatz(ablauf.ort(t).replace("\n", ", "), klein=True)
+    leer = " "  # leere Zelle (sonst „–"): zum Ankreuzen bzw. Reinschreiben von Hand
     doc.tabelle(
-        ["", "Antrag", "Name", "Telefon", "Staatsangehörigkeit", "Status"],
-        [["", ws.antrag.nummer, f"{ws.antrag.nachname}, {ws.antrag.vorname}",
-          ws.antrag.telefon, ws.antrag.staatsangehoerigkeit, ws.get_status_display()]
+        ["Erschienen", "Antrag", "Name", "Staatsangehörigkeit", "Status", "Bemerkung"],
+        [[leer, ws.antrag.nummer, f"{ws.antrag.nachname}, {ws.antrag.vorname}",
+          ws.antrag.staatsangehoerigkeit, ws.get_status_display(), leer]
          for ws in wartende],
-        breiten=[0.05, 0.1, 0.3, 0.2, 0.2, 0.15],
+        breiten=[0.12, 0.08, 0.28, 0.18, 0.14, 0.2],
     )  # fmt: skip
     return pdf_antwort(doc.erzeugen(), f"druckliste_{t.datum:%Y-%m-%d}.pdf")
 

@@ -1510,7 +1510,9 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 .treffer-entscheiden { margin: .4rem 0 .9rem; gap: .5rem; flex-wrap: wrap; }
 .sperr-hinweis { font-size: .85rem; font-weight: 600; }
 .tabelle [data-spalte][hidden], [data-spalten-wahl][hidden] { display: none; }
-.anmerkung-zelle { max-width: 18rem; }
+.anmerkung-zelle { max-width: 22rem; }
+.anmerkung-eintrag { margin: 0 0 .35rem; }
+.anmerkung-eintrag:last-of-type { margin-bottom: 0; }
 .anmerkung-neu { text-decoration: none; font-weight: 700; margin-left: .25rem; }
 .anmerkung-form { display: flex; flex-direction: column; gap: .4rem; margin-top: .5rem; }
 .anmerkung-form textarea { font: inherit; padding: .5rem .65rem; border: 1px solid var(--rand); border-radius: var(--radius); }
