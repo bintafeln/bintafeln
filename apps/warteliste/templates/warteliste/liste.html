@@ -49,14 +49,16 @@
     </div>
     <p class="hinweis">Die Wahl merkt sich dieser Browser.</p>
   </details>
+  {% url 'warteliste:export' as export_url %}{% auswahl_formular export_url %}
+  <div class="liste-aktionen">{% include "includes/listen_export.html" %}</div>
   <div id="ergebnis">
-  <form method="post" id="auswahl">
+  <form method="post" id="aktionen">
     {% csrf_token %}
     <input type="hidden" name="zurueck" value="{{ request.get_full_path }}">
     <div class="tabelle-rahmen">
     <table class="tabelle" data-spalten="warteliste">
       <thead><tr>
-        <th><input type="checkbox" aria-label="Alle auswählen" onclick="document.querySelectorAll('#auswahl input[name=ids]').forEach(c => c.checked = this.checked)"></th>
+        <th><input type="checkbox" aria-label="Alle auswählen" onclick="document.querySelectorAll('#aktionen input[name=ids]').forEach(c => c.checked = this.checked)"></th>
         <th data-spalte="eingang"><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'eingang' %}-{% endif %}eingang">Eingang</a></th>
         <th data-spalte="nummer">#</th>
         <th><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'name' %}-{% endif %}name">Name</a></th>

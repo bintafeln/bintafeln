@@ -1051,6 +1051,8 @@ Ersetzt das bisherige Neuanmeldungs-Programm (ADR 0051) und arbeitet direkt mit 
 - **Status** je Antrag: neu → wartend → eingeladen (mit Termin) → erschienen oder entschuldigt;
   „Wartezeit bis“ ein Datum; ohne Rückmeldung nach einstellbaren Tagen „Streichen möglich“ oder
   direkt gestrichen; aufgenommen, sobald der Aufnahme-Assistent den Antrag übernommen hat.
+- **Liste herunterladen und versenden:** die gefilterte Warteliste als CSV (Excel/LibreOffice) oder
+  PDF herunterladen oder per E-Mail (PDF + CSV im Anhang) verschicken (ADR 0096).
 - **Einladen:** Anträge auswählen (Filter nach Status, Art, Termin, Staatsangehörigkeit „nur“ oder
   „nicht“), Termin wählen oder neu anlegen. Einladung per Mail mit eigenen Texten und
   Platzhaltern; ohne E-Mail-Adresse nur eintragen (anrufen oder Brief).

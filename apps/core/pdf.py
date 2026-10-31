@@ -46,6 +46,19 @@ ZELLE = ParagraphStyle("zelle", parent=TEXT, fontSize=8.5, leading=10.5)
 ZELLE_KOPF = ParagraphStyle("zelle_kopf", parent=ZELLE, fontName="Helvetica-Bold")
 
 
+class Kaestchen(Flowable):
+    """Leeres Kästchen zum Ankreuzen von Hand (z. B. Spalte „Erschienen")."""
+
+    def __init__(self, groesse=3.5 * mm):
+        super().__init__()
+        self.groesse = self.width = self.height = groesse
+
+    def draw(self):
+        self.canv.setStrokeColor(colors.black)
+        self.canv.setLineWidth(0.6)
+        self.canv.rect(0, 0, self.groesse, self.groesse)
+
+
 def text(wert) -> str:
     """Wert als sicherer Absatztext (ReportLab liest eine Untermenge von HTML)."""
     if wert is None or wert == "":
@@ -91,9 +104,14 @@ class Pdf:
         """Tabelle mit Kopfzeile; ``rechts`` = Spaltennummern rechtsbündig (Beträge)."""
         if not zeilen:
             return self.absatz("Keine Einträge.")
+
+        def zelle(w, stil):
+            # Fertige Flowables (z. B. Kaestchen) unverändert übernehmen
+            return w if isinstance(w, Flowable) else Paragraph(text(w), stil)
+
         daten = [[Paragraph(text(k), ZELLE_KOPF) for k in kopf]]
         for zeile in zeilen:
-            daten.append([Paragraph(text(w), ZELLE) for w in zeile])
+            daten.append([zelle(w, ZELLE) for w in zeile])
         breite = self.seitengroesse[0] - 2 * RAND
         spalten = [b * breite for b in breiten] if breiten else None
         tabelle = Table(daten, colWidths=spalten, repeatRows=1, hAlign="LEFT")
@@ -104,11 +122,14 @@ class Pdf:
         ]
         for spalte in rechts:
             for zeile in daten:
-                zeile[spalte].style = ParagraphStyle("r", parent=zeile[spalte].style, alignment=2)
+                z = zeile[spalte]
+                if isinstance(z, Paragraph):
+                    z.style = ParagraphStyle("r", parent=z.style, alignment=2)
         if summe:
             stil.append(("LINEABOVE", (0, -1), (-1, -1), 0.8, colors.black))
-            for zelle in daten[-1]:
-                zelle.style = ParagraphStyle("s", parent=zelle.style, fontName="Helvetica-Bold")
+            for z in daten[-1]:
+                if isinstance(z, Paragraph):
+                    z.style = ParagraphStyle("s", parent=z.style, fontName="Helvetica-Bold")
         tabelle.setStyle(TableStyle(stil))
         self.inhalt.append(tabelle)
 
