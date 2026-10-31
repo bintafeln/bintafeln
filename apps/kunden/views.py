@@ -6,7 +6,7 @@ from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Count, F, OuterRef, Q, Subquery
 from django.db.models.functions import Length
-from django.http import HttpResponse, QueryDict
+from django.http import QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -16,7 +16,7 @@ from django.views.decorators.http import require_POST
 
 from apps.ausgabe.ampel import WOCHENTAGE
 from apps.ausgabe.models import AusgabeEinstellungen
-from apps.core import listenauswahl, papierkorb, sicherung
+from apps.core import listenauswahl, listenexport, papierkorb, sicherung
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.kunden import (
@@ -607,9 +607,9 @@ def exportieren(request):
         for h in haushalte
     ])  # fmt: skip
     teil = f"-{filter_['tag'].lower()}" if filter_["tag"] else ""
-    antwort = HttpResponse(inhalt, content_type="text/csv; charset=utf-8")
-    antwort["Content-Disposition"] = f'attachment; filename="kunden{teil}-{heute:%Y-%m-%d}.csv"'
-    return antwort
+    basis = f"kunden{teil}-{heute:%Y-%m-%d}"
+    return listenexport.ausliefern(request, "Kundenliste", basis, inhalt,
+                                   weiter=reverse("kunden:uebersicht"))  # fmt: skip
 
 
 @never_cache

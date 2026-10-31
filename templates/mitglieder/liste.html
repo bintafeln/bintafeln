@@ -34,10 +34,10 @@
     <div class="kachel"><span class="kachel-titel">gezahlt / offen</span><span class="kachel-wert">{{ k.gezahlt|floatformat:2 }} / {{ k.offen|floatformat:2 }} €</span><span class="kachel-unter">in der Liste unten</span></div>
     {% endif %}
   </div>
-  {% auswahl_formular "" "csv=1" %}
+  {% auswahl_formular "" %}
   <div class="liste-aktionen">
     <span class="hinweis">{{ zeilen|length }} Mitglied{{ zeilen|length|pluralize:"er" }}</span>
-    {% if zeilen %}<button type="submit" form="auswahl" class="knopf knopf-zweitrangig" title="Angehakte Mitglieder (ohne Haken: alle dieser Auswahl) als CSV-Datei, öffnet in Excel oder LibreOffice">⬇ Als CSV-Datei (Excel)</button>
+    {% if zeilen %}{% include "includes/listen_export.html" %}
     <span class="hinweis" data-auswahl-zahl="auswahl"></span>{% endif %}
   </div>
   {% url 'mitglieder:spalten' as spalten_aktion %}{% include "includes/spalten_wahl.html" %}

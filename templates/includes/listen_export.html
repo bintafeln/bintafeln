@@ -1,0 +1,17 @@
+{% comment %}
+Herunterladen und Versenden der Liste – alle über das Auswahl-Formular (form="auswahl"):
+CSV und PDF laden die angehakten (ohne Haken: alle gefilterten) Zeilen herunter, „Per E-Mail“
+schickt dieselbe Liste als PDF und CSV an die angegebene Adresse (ADR 0096).
+{% endcomment %}
+<button type="submit" form="auswahl" name="aktion" value="csv" class="knopf knopf-zweitrangig"
+        title="Angehakte Einträge (ohne Haken: alle dieser Auswahl) als CSV-Datei, öffnet in Excel oder LibreOffice">⬇ Als CSV-Datei (Excel)</button>
+<button type="submit" form="auswahl" name="aktion" value="pdf" class="knopf knopf-zweitrangig"
+        title="Dieselbe Liste als PDF – zum Ansehen und Drucken, öffnet auch auf dem Tablet">⬇ Als PDF</button>
+<span class="export-mail">
+  <input type="email" form="auswahl" name="email" value="{{ request.user.email|default:'' }}"
+         placeholder="E-Mail-Adresse" aria-label="Liste per E-Mail an diese Adresse senden"
+         class="export-mail-feld">
+  <input type="hidden" form="auswahl" name="weiter" value="{{ request.get_full_path }}">
+  <button type="submit" form="auswahl" name="aktion" value="mail" class="knopf knopf-zweitrangig"
+          title="Die Liste als PDF und CSV an diese Adresse senden, z. B. an den eigenen Rechner">✉ Per E-Mail</button>
+</span>

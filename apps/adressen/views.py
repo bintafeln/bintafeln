@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import ProtectedError, Q, Sum
-from django.http import HttpResponse, QueryDict
+from django.http import QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -17,7 +17,7 @@ from apps.adressen import importieren
 from apps.adressen.auskunft import adresse_pdf
 from apps.adressen.forms import AdresseForm, ImportForm
 from apps.adressen.models import Adresse, AdressKategorie
-from apps.core import geheimnis, listen, listenauswahl, papierkorb
+from apps.core import geheimnis, listen, listenauswahl, listenexport, papierkorb
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 
@@ -95,12 +95,12 @@ SPALTEN_FEST = {"name"}
 def liste(request):
     adressen, filter_ = _gefiltert(request)
     adressen, sort = listen.sortieren(adressen, request.GET.get("sort", ""), SORTIERUNG, "name")
-    if request.GET.get("csv"):
+    if request.GET.get("aktion"):
         adressen = listenauswahl.filtern(request, adressen)
-        antwort = HttpResponse(importieren.exportieren(adressen), content_type="text/csv")
-        name = f"adressen-{timezone.localdate():%Y-%m-%d}.csv"
-        antwort["Content-Disposition"] = f'attachment; filename="{name}"'
-        return antwort
+        basis = f"adressen-{timezone.localdate():%Y-%m-%d}"
+        return listenexport.ausliefern(request, "Adressbuch", basis,
+                                       importieren.exportieren(adressen),
+                                       weiter=reverse("adressen:liste"))  # fmt: skip
     seite = Paginator(adressen.select_related("mitglied"), 50).get_page(request.GET.get("seite"))
     abfrage = request.GET.copy()
     abfrage.pop("seite", None)

@@ -9,7 +9,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
-from django.http import Http404, HttpResponse, QueryDict
+from django.http import Http404, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -18,7 +18,15 @@ from django.views.decorators.http import require_POST
 
 from apps.adressen.forms import ImportForm
 from apps.adressen.models import Adresse
-from apps.core import geheimnis, listen, listenauswahl, mail, papierkorb, privatdateien
+from apps.core import (
+    geheimnis,
+    listen,
+    listenauswahl,
+    listenexport,
+    mail,
+    papierkorb,
+    privatdateien,
+)
 from apps.core.pdf import im_fenster, pdf_antwort
 from apps.konten import rollen
 from apps.konten.views import nicht_in_demo
@@ -68,8 +76,10 @@ def liste(request):
             | Q(zweck__icontains=q)
         )  # fmt: skip
     spenden, sort = listen.sortieren(spenden, request.GET.get("sort", ""), SORTIERUNG, "-datum")
-    if request.GET.get("csv"):
-        return _csv(listenauswahl.filtern(request, spenden), jahr)
+    if request.GET.get("aktion"):
+        return listenexport.ausliefern(request, f"Spenden {jahr}", f"spenden-{jahr}",
+                                       _csv_text(listenauswahl.filtern(request, spenden), jahr),
+                                       weiter=reverse("spenden:liste"))  # fmt: skip
     summen = spenden.aggregate(
         geld=Sum("betrag", filter=Q(art=Spende.Art.GELD)),
         sach=Sum("betrag", filter=Q(art=Spende.Art.SACH)),
@@ -101,7 +111,7 @@ def spalten(request):
     return redirect(f"{ziel}?{zurueck}" if zurueck else ziel)
 
 
-def _csv(spenden, jahr):
+def _csv_text(spenden, jahr) -> str:
     puffer = io.StringIO()
     w = csv.writer(puffer, delimiter=";", lineterminator="\r\n")
     w.writerow(
@@ -127,9 +137,7 @@ def _csv(spenden, jahr):
                     "ja" if s.mitgliedsbeitrag else "", s.zahlungsweg, s.beschreibung,
                     s.menge or "", s.einheit, s.zweck,
                     s.bestaetigung.nummer if s.bestaetigt else ""])  # fmt: skip
-    antwort = HttpResponse("﻿" + puffer.getvalue(), content_type="text/csv")
-    antwort["Content-Disposition"] = f'attachment; filename="spenden-{jahr}.csv"'
-    return antwort
+    return "﻿" + puffer.getvalue()
 
 
 @never_cache

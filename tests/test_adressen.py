@@ -71,7 +71,7 @@ def test_liste_filter_csv_auskunft(admin_client, markt, pdf_text):
     kat = AdressKategorie.objects.get(name="Lieferant/Markt").pk
     assert "Max Presse" not in admin_client.get(LISTE, {"kategorie": kat}).content.decode()
     assert "Frischmarkt" not in admin_client.get(LISTE, {"art": "person"}).content.decode()
-    csv = admin_client.get(LISTE, {"csv": "1"})
+    csv = admin_client.get(LISTE, {"aktion": "csv"})
     text = csv.content.decode("utf-8")
     assert text.startswith("﻿art;organisation") and "Frischmarkt Muster" in text
     assert ";Lieferant/Markt;" in text
