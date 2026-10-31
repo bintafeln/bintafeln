@@ -150,16 +150,26 @@ def eingesetzt(datum: dt.date) -> set[int]:
     return {p.wer.pk for p in plaetze([datum])[datum] if p.wer is not None and not p.ausfall}
 
 
+def einteilbare_rollen() -> list[str]:
+    """Rollen, deren Konten im Dienstplan einteilbar sind (ADR 0097); leer = Ausgabe."""
+    return DienstplanEinstellungen.laden().rollen or [rollen.AUSGABE]
+
+
+def einteilbare():
+    """Personen (Adressen mit aktivem Konto), die laut Einstellungen über ihre Rolle im
+    Dienstplan einteilbar sind."""
+    return (Adresse.objects.filter(konto__is_active=True,
+                                   konto__groups__name__in=einteilbare_rollen())
+            .select_related("konto").distinct().order_by("nachname", "vorname"))  # fmt: skip
+
+
 def verfuegbar(datum: dt.date) -> list[Adresse]:
-    """Wer an dem Tag einspringen kann: aktiver Helfer, nicht ausgefallen, noch nirgends
-    eingeteilt (und das Konto, falls vorhanden, nicht gesperrt)."""
+    """Wer an dem Tag einspringen kann: über die Rolle einteilbar, nicht ausgefallen und noch
+    nirgends eingeteilt."""
     belegt = eingesetzt(datum) | set(
         Ausfall.objects.filter(ausfallregeln.krank_am(datum)).values_list("helfer_id", flat=True)
     )
-    helfer = (Adresse.objects.filter(helfer=True, helfer_aktiv=True)
-              .exclude(konto__is_active=False).exclude(pk__in=belegt)
-              .select_related("konto"))  # fmt: skip
-    return sorted(helfer, key=lambda h: h.name.lower())
+    return [h for h in einteilbare() if h.pk not in belegt]
 
 
 def einsaetze(helfer: Adresse, von: dt.date, bis: dt.date) -> list[Platz]:
@@ -189,10 +199,11 @@ def einsatztage(helfer: Adresse) -> list[tuple[str, str]]:
 
 
 def helfer_von(benutzer) -> Adresse | None:
-    """Die Helfer-Person (Adresse) zum angemeldeten Konto, falls aktiv."""
+    """Die Dienstplan-Person (Adresse) zum angemeldeten Konto, falls über die Rolle einteilbar."""
     if not benutzer:
         return None
-    return Adresse.objects.filter(konto=benutzer, helfer=True, helfer_aktiv=True).first()
+    return Adresse.objects.filter(konto=benutzer,
+                                  konto__groups__name__in=einteilbare_rollen()).first()  # fmt: skip
 
 
 def darf_selbst_melden(benutzer) -> bool:

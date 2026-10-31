@@ -82,7 +82,8 @@ def monat(titel: str, tage, touren) -> bytes:
     doc = Pdf(f"Fahrerplan {titel}", "offen = fällt aus, noch kein Ersatz · fett = springt ein",
               seite)  # fmt: skip
     breite = seite[0] - 2 * RAND
-    springer = list(Springer.objects.select_related("person").filter(person__helfer_aktiv=True))
+    springer = list(Springer.objects.select_related("person")
+                    .exclude(person__konto__is_active=False))  # fmt: skip
     if not tage:
         doc.absatz("In diesem Monat sind keine Fahrtage.")
     else:

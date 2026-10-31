@@ -6,7 +6,11 @@ from django.contrib.auth import get_user_model
 from apps.adressen.models import Adresse
 from apps.ausgabe.ampel import WOCHENTAGE, wochentage
 from apps.fahrdienst.models import Ausfall, FahrdienstEinstellungen, Springer, Tour
+from apps.konten import rollen
 from apps.konten.forms import DatumEingabe
+
+# Rollen, deren Konten im Fahrdienst mitfahren; „Fahrer“ darf auch fahren (ADR 0097).
+FAHRDIENST_ROLLEN = [rollen.FAHRER, rollen.BEIFAHRER]
 
 
 class Person(forms.ModelChoiceField):
@@ -15,11 +19,11 @@ class Person(forms.ModelChoiceField):
 
 
 def fahrdienst_personen(nur_fahrer: bool = False):
-    """Personen aus dem Adressbuch, die im Fahrdienst mitfahren (aktiv). ADR 0097."""
-    qs = Adresse.objects.filter(helfer_aktiv=True).exclude(fahrdienst="")
-    if nur_fahrer:
-        qs = qs.filter(fahrdienst="fahrer")
-    return qs.order_by("nachname", "vorname")
+    """Personen, die im Fahrdienst mitfahren – bestimmt über ihre Rolle (ADR 0097): Fahrer oder
+    Beifahrer, Konto nicht gesperrt. ``nur_fahrer``: nur die Rolle Fahrer (darf fahren)."""
+    namen = [rollen.FAHRER] if nur_fahrer else FAHRDIENST_ROLLEN
+    return (Adresse.objects.filter(konto__is_active=True, konto__groups__name__in=namen)
+            .distinct().order_by("nachname", "vorname"))  # fmt: skip
 
 
 def aktive_konten():

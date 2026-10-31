@@ -385,9 +385,12 @@ def test_beispiel_plan(admin_client):
         heute = [p.wer.pk for _, plaetze in zeile for p in plaetze if p.wer]
         assert len(heute) == len(set(heute))  # niemand zweimal am Tag
         assert all(not p.fehlt for _, plaetze in zeile for p in plaetze)
-    # Erfundene Personen stehen als Adressen (mit Fahrdienst-Kennzeichen) im Adressbuch, ohne Konto
+    # Erfundene Personen stehen als Adressen mit Konto und Fahrdienst-Rolle im Adressbuch (ADR 0097)
     muster = Adresse.objects.filter(notiz=beispiel.KENNUNG)
-    assert muster.count() == 23 and all(a.konto_id is None and a.fahrdienst for a in muster)
+    assert muster.count() == 23 and all(
+        a.konto_id and a.konto.groups.filter(name__in=["Fahrer", "Beifahrer"]).exists()
+        for a in muster
+    )
     assert Springer.objects.count() == 3
     seite = admin_client.get(reverse("fahrdienst:einstellungen")).content.decode()
     assert "Beispiel neu würfeln" in seite and "Beispiel entfernen" in seite

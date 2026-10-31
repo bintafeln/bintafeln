@@ -7,13 +7,17 @@ löscht nur sie samt Fahrdienst-Bezug, nie echte Leute.
 
 import random
 
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.db import transaction
 
 from apps.adressen.models import Adresse
 from apps.ausgabe.ampel import wochentage
 from apps.fahrdienst.models import Besetzung, FahrdienstEinstellungen, Springer, Tour
+from apps.konten import rollen
 
 KENNUNG = "Beispiel-Fahrdienst (erfunden)"
+KONTO_PRAEFIX = "beispiel-fd-"
 TOUREN = ["Katernberg", "Innenstadt", "Steele", "Frohnhausen", "Sondertour"]
 FAHRER = ["Max Mustermann", "Lena Sommer", "Kai Nordmann", "Paul Winter", "Udo Feld",
           "Ina Kurz", "Rolf Stein", "Tom Brandt", "Gerd Lohmann"]  # fmt: skip
@@ -23,9 +27,20 @@ SPRINGER = ["Sven Ersatz", "Petra Spring", "Uwe Helfer"]
 
 
 def _person(name: str, rolle: str) -> Adresse:
+    """Erfundene Person mit Konto und passender Rolle: ob jemand im Fahrdienst mitfährt (und ob
+    als Fahrer oder Beifahrer), bestimmt die Rolle (ADR 0097)."""
     vorname, nachname = name.split()
+    gruppe = rollen.FAHRER if rolle == "fahrer" else rollen.BEIFAHRER
+    konto = get_user_model().objects.create(
+        username=f"{KONTO_PRAEFIX}{vorname}-{nachname}".lower(),
+        first_name=vorname, last_name=nachname, is_active=True,
+    )  # fmt: skip
+    konto.set_unusable_password()
+    konto.save(update_fields=["password"])
+    konto.groups.add(Group.objects.get_or_create(name=gruppe)[0])
     return Adresse.objects.create(art=Adresse.Art.PERSON, vorname=vorname, nachname=nachname,
-                                  notiz=KENNUNG, helfer_aktiv=True, fahrdienst=rolle)  # fmt: skip
+                                  notiz=KENNUNG, konto=konto, helfer_aktiv=True,
+                                  fahrdienst=rolle)  # fmt: skip
 
 
 def vorhanden() -> bool:
@@ -74,5 +89,6 @@ def entfernen() -> int:
         personen = Adresse.objects.filter(notiz=KENNUNG)
         anzahl = personen.count()
         personen.delete()  # Besetzung, Springer, Ausfälle, Ersatz hängen daran und gehen mit
+        get_user_model().objects.filter(username__startswith=KONTO_PRAEFIX).delete()
         Tour.objects.filter(name__in=TOUREN, besetzungen__isnull=True).delete()
     return anzahl

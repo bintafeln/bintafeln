@@ -8,7 +8,6 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.adressen.models import Adresse
 from apps.ausgabe.ampel import wochentage
 from apps.core import ausfall as ausfallregeln
 from apps.core.auswahl import AUSFALL_DAUER, FAHRDIENST_AUSFALLGRUENDE
@@ -124,9 +123,7 @@ def aendern(teil: str, daten, person, von: str, basis: str) -> str:
         return (f"{p.wer} ist wieder da und kann einspringen. Die eigenen Dienste bleiben frei "
                 "bzw. beim Ersatz: Bitte dort wieder eintragen, wo noch jemand fehlt.")  # fmt: skip
     if aktion == "ersatz":
-        h = Adresse.objects.filter(
-            pk=daten.get("helfer") or 0, helfer=True, helfer_aktiv=True
-        ).first()
+        h = plan.einteilbare().filter(pk=daten.get("helfer") or 0).first()
         if h is None or h not in plan.verfuegbar(datum):
             raise ValueError("Diese Person kann an dem Tag nicht einspringen.")
         if not planer and (h.konto_id != person.pk or not (p.fehlt or p.status == plan.LEER)):

@@ -1,6 +1,7 @@
 """Modul Dienstplan der Ausgabe (ADR 0077). Alle Namen sind erfunden."""
 
 import datetime as dt
+from itertools import count
 
 import pytest
 from django.core import mail as django_mail
@@ -21,9 +22,17 @@ from apps.dienstplan.models import (
 from apps.konten import rollen
 from apps.kunden.models import Ausgabestelle
 
+_zaehler = count(1)
+
 
 def _helfer(vorname="", nachname="", konto=None, telefon="", email=""):
-    """Eine Helfer-Person im Adressbuch (ADR 0097)."""
+    """Eine im Dienstplan einteilbare Person: Konto mit der Rolle Ausgabe (ADR 0097)."""
+    if konto is None:
+        from django.contrib.auth import get_user_model
+        from django.contrib.auth.models import Group
+
+        konto = get_user_model().objects.create(username=f"dp-helfer-{next(_zaehler)}")
+        konto.groups.add(Group.objects.get_or_create(name=rollen.AUSGABE)[0])
     return Adresse.objects.create(
         art=Adresse.Art.PERSON,
         vorname=vorname,
@@ -81,6 +90,23 @@ def team(benutzer_mit_rolle):
     Besetzung.objects.create(aufgabe=a[2], helfer=h["paul"])
     Diensttag.objects.create(stelle=ds, wochentag="Fr", teamleitung=h["lea"], telefon="0123 999")
     return ds, h, a
+
+
+def test_einteilbar_ueber_rolle(benutzer_mit_rolle):
+    """Einteilbar ist, wer ein Konto mit einer der eingestellten Rollen hat (Vorgabe Ausgabe)."""
+    ausgabe_konto = benutzer_mit_rolle("ausi", rollen.AUSGABE)
+    a_ausgabe = _helfer("Ausi", "Ausgabe", konto=ausgabe_konto)
+    buero_konto = benutzer_mit_rolle("bueri", rollen.BUERO)
+    a_buero = _helfer("Buer", "Büro", konto=buero_konto)
+
+    frei = plan.verfuegbar(FREITAG)
+    assert a_ausgabe in frei and a_buero not in frei  # Vorgabe: nur Ausgabe
+    # Tafel stellt Büro als einteilbare Rolle ein → jetzt ist auch das Büro-Konto dabei
+    e = DienstplanEinstellungen.laden()
+    e.rollen = [rollen.AUSGABE, rollen.BUERO]
+    e.save()
+    frei = plan.verfuegbar(FREITAG)
+    assert a_ausgabe in frei and a_buero in frei
 
 
 def test_plan_wie_auf_papier(team, admin_client, pdf_text):
