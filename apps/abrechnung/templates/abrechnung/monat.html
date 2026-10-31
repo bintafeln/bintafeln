@@ -15,9 +15,7 @@
     {% if quittungen %}<a class="knopf" href="{% url 'abrechnung:quittungen' abr.monat|date:'Y-m' %}?stelle={{ stelle.pk }}">⬇ {% if quittungen == 1 %}Die Quittung{% else %}Alle {{ quittungen }} Quittungen{% endif %} (ZIP)</a>{% endif %}
     {% if darf_pruefen %}<a class="knopf knopf-zweitrangig" href="{% url 'abrechnung:uebersicht' %}?monat={{ abr.monat|date:'Y-m' }}">Alle Ausgabestellen</a>{% endif %}
   </div>
-  <p>Status: {% include "abrechnung/_status.html" %}
-    {% if abr.eingereicht_am %}<span class="hinweis">· eingereicht {{ abr.eingereicht_am|date:"d.m.Y H:i" }} von {{ abr.eingereicht_von }}</span>{% endif %}
-    {% if abr.bestaetigt_am %}<span class="hinweis">· bestätigt {{ abr.bestaetigt_am|date:"d.m.Y H:i" }} von {{ abr.bestaetigt_von }}</span>{% endif %}</p>
+  <p>Status: {% include "abrechnung/_status.html" %}</p>
   {% if abr.rueckgabe %}<div class="fehler" role="alert"><p>Vom Büro zurückgegeben: {{ abr.rueckgabe }}</p></div>{% endif %}
   {% if abr.anmerkung %}<p><strong>Anmerkung:</strong> {{ abr.anmerkung|linebreaksbr }}</p>{% endif %}
 
