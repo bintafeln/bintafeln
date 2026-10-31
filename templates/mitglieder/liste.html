@@ -10,19 +10,19 @@
       {% if "adressen.sehen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'adressen:liste' %}">Adressbuch →</a>{% endif %}
     </div>
   </div>
-  <form class="filter" method="get">
+  <form class="filter-kompakt" method="get">
     <input type="hidden" name="sort" value="{{ sort }}">
-    <label for="stand">Stand</label>
-    <select name="stand" id="stand" onchange="this.form.submit()">
-      <option value="aktiv"{% if filter.stand == "aktiv" %} selected{% endif %}>aktuelle Mitglieder</option>
-      <option value="ausgetreten"{% if filter.stand == "ausgetreten" %} selected{% endif %}>ausgetretene</option>
-      <option value="alle"{% if filter.stand == "alle" %} selected{% endif %}>alle</option>
-    </select>
-    <label for="jahr">{% if beitraege %}Beiträge{% else %}Jahr{% endif %}</label>
-    <select name="jahr" id="jahr" onchange="this.form.submit()">{% for j in jahre %}<option value="{{ j }}"{% if j == jahr %} selected{% endif %}>{{ j }}</option>{% endfor %}</select>
+    <div class="filter-feld"><label for="stand">Stand</label>
+      <select name="stand" id="stand" onchange="this.form.submit()">
+        <option value="aktiv"{% if filter.stand == "aktiv" %} selected{% endif %}>aktuelle Mitglieder</option>
+        <option value="ausgetreten"{% if filter.stand == "ausgetreten" %} selected{% endif %}>ausgetretene</option>
+        <option value="alle"{% if filter.stand == "alle" %} selected{% endif %}>alle</option>
+      </select></div>
+    <div class="filter-feld"><label for="jahr">{% if beitraege %}Beiträge{% else %}Jahr{% endif %}</label>
+      <select name="jahr" id="jahr" onchange="this.form.submit()">{% for j in jahre %}<option value="{{ j }}"{% if j == jahr %} selected{% endif %}>{{ j }}</option>{% endfor %}</select></div>
     {% if beitraege %}<label class="filter-haken"><input type="checkbox" name="nur_offen" value="1"{% if filter.nur_offen %} checked{% endif %} onchange="this.form.submit()"> nur mit offenem Beitrag</label>{% endif %}
-    <label for="q">Suche</label>
-    <input type="search" name="q" id="q" value="{{ filter.q }}" class="suche" placeholder="Nummer oder Name" {% live_suche %}>
+    <div class="filter-feld filter-suche"><label for="q">Suche</label>
+      <input type="search" name="q" id="q" value="{{ filter.q }}" placeholder="Nummer oder Name" {% live_suche %}></div>
     <button type="submit" class="knopf">Suchen</button>
   </form>
   <div id="ergebnis">

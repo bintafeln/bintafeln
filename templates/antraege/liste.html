@@ -10,19 +10,22 @@
     </nav>
   </div>
   {% if ansicht == "papierkorb" %}<p class="hinweis">Gelöschte Anträge bleiben {{ loeschen_nach_tagen }} Tag{{ loeschen_nach_tagen|pluralize:"e" }} im Papierkorb und werden danach samt Nachweisen endgültig gelöscht.{% if "einstellungen.antraege" in rechte %} Die Zahl der Tage stellen Sie unter <a href="{% url 'antraege:einstellungen' %}">Anträge einstellen</a> ein.{% endif %}</p>{% endif %}
-  <form method="get" class="filter liste-filter">
+  <form method="get" class="filter-kompakt">
     <input type="hidden" name="ansicht" value="{{ ansicht }}">
     <input type="hidden" name="sort" value="{{ sort }}">
-    <label for="zeilen">Zeilen</label>
-    <select name="zeilen" id="zeilen" onchange="this.form.submit()">
-      {% for z in zeilen_auswahl %}<option value="{{ z }}"{% if z == zeilen %} selected{% endif %}>{{ z }}</option>{% endfor %}
-    </select>
-    <label for="suche" class="unsichtbar">Suche</label>
-    <input type="search" name="suche" id="suche" value="{{ suche }}" placeholder="Suchbegriff (Name, Nummer, E-Mail, Telefon …)" class="suche" {% live_suche %}>
+    <div class="filter-feld"><label for="zeilen">Zeilen</label>
+      <select name="zeilen" id="zeilen" onchange="this.form.submit()">
+        {% for z in zeilen_auswahl %}<option value="{{ z }}"{% if z == zeilen %} selected{% endif %}>{{ z }}</option>{% endfor %}
+      </select></div>
+    <div class="filter-feld filter-suche"><label for="suche">Suche</label>
+      <input type="search" name="suche" id="suche" value="{{ suche }}" placeholder="Suchbegriff (Name, Nummer, E-Mail, Telefon …)" {% live_suche %}></div>
     <button type="submit" class="knopf">Suchen</button>
-    <button type="submit" form="auswahl" class="knopf knopf-zweitrangig" title="Angehakte Anträge (ohne Haken: alle dieser Auswahl) als CSV-Datei, öffnet in Excel oder LibreOffice">⬇ Als CSV-Datei (Excel)</button> <span class="hinweis" data-auswahl-zahl="auswahl"></span>
   </form>
   {% url 'antraege:export' as export_url %}{% auswahl_formular export_url %}
+  <div class="liste-aktionen">
+    <button type="submit" form="auswahl" class="knopf knopf-zweitrangig" title="Angehakte Anträge (ohne Haken: alle dieser Auswahl) als CSV-Datei, öffnet in Excel oder LibreOffice">⬇ Als CSV-Datei (Excel)</button>
+    <span class="hinweis" data-auswahl-zahl="auswahl"></span>
+  </div>
   <details class="spalten-wahl">
     <summary>Spalten wählen</summary>
     <form method="post" action="{% url 'antraege:spalten' %}">

@@ -10,14 +10,14 @@
       {% if "spenden.bestaetigen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'spenden:bestaetigungen' %}?jahr={{ jahr }}">Zuwendungsbestätigungen</a>{% endif %}
     </div>
   </div>
-  <form class="filter" method="get">
+  <form class="filter-kompakt" method="get">
     <input type="hidden" name="sort" value="{{ sort }}">
-    <label for="jahr">Jahr</label>
-    <select name="jahr" id="jahr" onchange="this.form.submit()">{% for j in jahre %}<option value="{{ j }}"{% if j == jahr %} selected{% endif %}>{{ j }}</option>{% endfor %}</select>
-    <label for="art">Art</label>
-    <select name="art" id="art" onchange="this.form.submit()"><option value="">alle</option>{% for w, n in arten %}<option value="{{ w }}"{% if filter.art == w %} selected{% endif %}>{{ n }}</option>{% endfor %}</select>
-    <label for="q">Suche</label>
-    <input type="search" name="q" id="q" value="{{ filter.q }}" class="suche" placeholder="Spender, Bezeichnung, Zweck" {% live_suche %}>
+    <div class="filter-feld"><label for="jahr">Jahr</label>
+      <select name="jahr" id="jahr" onchange="this.form.submit()">{% for j in jahre %}<option value="{{ j }}"{% if j == jahr %} selected{% endif %}>{{ j }}</option>{% endfor %}</select></div>
+    <div class="filter-feld"><label for="art">Art</label>
+      <select name="art" id="art" onchange="this.form.submit()"><option value="">alle</option>{% for w, n in arten %}<option value="{{ w }}"{% if filter.art == w %} selected{% endif %}>{{ n }}</option>{% endfor %}</select></div>
+    <div class="filter-feld filter-suche"><label for="q">Suche</label>
+      <input type="search" name="q" id="q" value="{{ filter.q }}" placeholder="Spender, Bezeichnung, Zweck" {% live_suche %}></div>
     <button type="submit" class="knopf">Suchen</button>
   </form>
   <div id="ergebnis">

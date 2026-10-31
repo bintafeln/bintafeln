@@ -13,32 +13,32 @@
   {% if sperren %}<p class="meldung error">{{ sperren|length }} Antr{{ sperren|length|pluralize:"ag,äge" }} mit möglicher Sperrzeit
     (ähnlicher Haushalt im Kundenstamm, noch nicht geprüft) – bitte im <a href="{% url 'warteliste:abgleich' %}">Abgleich mit dem Kundenstamm</a>
     bestätigen oder verwerfen. Bis dahin lädt „Einladen“ sie nicht ein.</p>{% endif %}
-  <form method="get" class="filter liste-filter" data-sofort>
+  <form method="get" class="filter-kompakt" data-sofort>
     <input type="hidden" name="status" value="{{ f.status }}">
     <input type="hidden" name="sort" value="{{ f.sort }}">
-    <label for="art">Art</label>
-    <select name="art" id="art"><option value="">alle</option>{% for k, l in arten %}<option value="{{ k }}"{% if f.art == k %} selected{% endif %}>{{ l }}</option>{% endfor %}</select>
-    <label for="termin">Termin</label>
-    <select name="termin" id="termin">
-      <option value="">egal</option>
-      <option value="ohne"{% if f.termin == "ohne" %} selected{% endif %}>ohne Termin</option>
-      <option value="mit"{% if f.termin == "mit" %} selected{% endif %}>mit Termin</option>
-      {% for t in termine %}<option value="{{ t.pk }}"{% if f.termin == t.pk|stringformat:"s" %} selected{% endif %}>{{ t }}</option>{% endfor %}
-    </select>
-    <label for="staat_modus">Staatsangehörigkeit</label>
-    <select name="staat_modus" id="staat_modus">
-      <option value="alle"{% if f.staat_modus == "alle" %} selected{% endif %}>alle</option>
-      <option value="nur"{% if f.staat_modus == "nur" %} selected{% endif %}>nur …</option>
-      <option value="nicht"{% if f.staat_modus == "nicht" %} selected{% endif %}>nicht …</option>
-    </select>
+    <div class="filter-feld"><label for="art">Art</label>
+      <select name="art" id="art"><option value="">alle</option>{% for k, l in arten %}<option value="{{ k }}"{% if f.art == k %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div class="filter-feld"><label for="termin">Termin</label>
+      <select name="termin" id="termin">
+        <option value="">egal</option>
+        <option value="ohne"{% if f.termin == "ohne" %} selected{% endif %}>ohne Termin</option>
+        <option value="mit"{% if f.termin == "mit" %} selected{% endif %}>mit Termin</option>
+        {% for t in termine %}<option value="{{ t.pk }}"{% if f.termin == t.pk|stringformat:"s" %} selected{% endif %}>{{ t }}</option>{% endfor %}
+      </select></div>
+    <div class="filter-feld"><label for="staat_modus">Staatsangehörigkeit</label>
+      <select name="staat_modus" id="staat_modus">
+        <option value="alle"{% if f.staat_modus == "alle" %} selected{% endif %}>alle</option>
+        <option value="nur"{% if f.staat_modus == "nur" %} selected{% endif %}>nur …</option>
+        <option value="nicht"{% if f.staat_modus == "nicht" %} selected{% endif %}>nicht …</option>
+      </select></div>
     {% if staaten %}<details class="mehrfach warteliste-staaten" data-mehrfach data-leer="Staatsangehörigkeiten wählen" data-zeigen-bei="staat_modus=nur nicht">
       <summary class="mehrfach-kopf" aria-label="Staatsangehörigkeiten"><span class="mehrfach-text">{% if f.staaten %}{{ f.staaten|join:", " }}{% else %}Staatsangehörigkeiten wählen{% endif %}</span></summary>
       <div class="mehrfach-liste">
         {% for s in staaten %}<label class="mehrfach-eintrag"><input type="checkbox" name="staat" value="{{ s }}" data-nicht-sofort{% if s in f.staaten %} checked{% endif %}> {{ s }}</label>{% endfor %}
       </div>
     </details>{% endif %}
-    <label for="suche" class="unsichtbar">Suche</label>
-    <input type="search" name="suche" id="suche" value="{{ f.suche }}" placeholder="Name, Nummer, E-Mail, Telefon …" class="suche" data-nicht-sofort {% live_suche %}>
+    <div class="filter-feld filter-suche"><label for="suche">Suche</label>
+      <input type="search" name="suche" id="suche" value="{{ f.suche }}" placeholder="Name, Nummer, E-Mail, Telefon …" data-nicht-sofort {% live_suche %}></div>
     <button type="submit" class="knopf">Filtern</button>
   </form>
 
