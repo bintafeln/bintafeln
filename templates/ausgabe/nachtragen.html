@@ -3,10 +3,7 @@
 {% block inhalt %}
 <section class="karte breit">
   <h1>Abholungen nachtragen</h1>
-  <p class="hinweis">Für Kunden, die da waren, aber nicht eingetragen werden konnten (z. B. von einer Papierliste). Der Betrag
-    ist das, was bar gezahlt wurde; er zählt in der Kasse des gewählten Tages.
-    {% if alle %}Sie können jeden vergangenen Tag nachtragen, auch Kunden, bei denen die Ampel Rot gezeigt hätte.
-    {% else %}Nachtragen geht für heute und gestern; ältere Tage und Kunden, bei denen die Ampel Rot gezeigt hätte, trägt ein Admin nach.{% endif %}</p>
+  <p class="hinweis">{% if alle %}Sie können jeden vergangenen Tag nachtragen, auch Kunden, bei denen die Ampel Rot gezeigt hätte.{% else %}Nachtragen geht für heute und gestern; ältere Tage und Kunden, bei denen die Ampel Rot gezeigt hätte, trägt ein Admin nach.{% endif %}</p>
   <form method="get" class="filter" data-sofort>
     <label for="datum">Tag</label>
     <input type="date" name="datum" id="datum" value="{{ datum|date:'Y-m-d' }}" max="{{ heute|date:'Y-m-d' }}"{% if fruehester %} min="{{ fruehester|date:'Y-m-d' }}"{% endif %}>

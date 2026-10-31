@@ -24,6 +24,14 @@ def _ausgabestelle(request) -> dict:
     return kontext(request)
 
 
+def _hilfe_kennung(request) -> str:
+    """Passendes Hilfe-Kapitel zur aktuellen Seite (für das „?“ oben rechts)."""
+    from apps.core import hilfe
+
+    treffer = getattr(request, "resolver_match", None)
+    return hilfe.kennung_fuer(treffer.view_name, treffer.app_name or "") if treffer else ""
+
+
 def _impressum() -> str:
     """Link zum Impressum der Tafel, auch im App-Footer und auf der Anmeldeseite: interner Text
     (Tafel-Einstellungen) hat Vorrang, sonst der externe Link (ADR 0094)."""
@@ -51,6 +59,7 @@ def tafel(request):
         "darf_mitarbeitende": angemeldet and darf_mitarbeitende_verwalten(benutzer),
         "passwort_offen": angemeldet and benutzer.passwort_aendern,
         "darf_stempeln": angemeldet and _darf_stempeln(benutzer),
+        "hilfe_kennung": _hilfe_kennung(request) if angemeldet and not offen else "",
         "demo": settings.DEMO,
         "heimnetz_https": settings.HEIMNETZ_ADRESSE,
         "version": version(),

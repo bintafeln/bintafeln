@@ -139,3 +139,18 @@ def test_zuordnung_im_mitarbeitendenformular(admin_client, stellen):
         "rollen": [rollen.AUSGABE], "ausgabestellen": [mitte.pk, nord.pk],
     })  # fmt: skip
     assert set(neu.ausgabestellen.all()) == {mitte, nord}
+
+
+def test_einlass_fremd_zeigt_ampelgrund(anton, stellen):
+    """Kunde einer anderen Ausgabestelle: der Einlass sieht jetzt, warum die Ampel rot wäre
+    (z. B. abgelaufener Ausweis), ohne dass ein Zugriff protokolliert wird."""
+    import datetime as dt
+
+    h200 = Haushalt.objects.get(kundennummer="200")
+    h200.ausweis_gueltig_bis = dt.date(2000, 1, 1)
+    h200.save()
+    seite = anton.get(reverse("ausgabe:empfang"), {"nummer": "200"}, **HX).content.decode()
+    assert "Dieser Kunde gehört nicht zu Ihrer Ausgabestelle" in seite
+    assert "wäre die Ampel rot" in seite and "Ausweis abgelaufen" in seite
+    assert "Probe200" not in seite  # weiterhin nicht die ganze Karte
+    assert not Zugriff.objects.filter(kundennummer="200").exists()  # weiterhin kein Zugriff

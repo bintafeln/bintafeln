@@ -42,6 +42,7 @@
     <div class="kopf-rechts">
       {% if ausgabestelle is not None or ausgabestellen_wahl %}{% include "ausgabe/_fortschritt.html" %}{% endif %}
       {% for vorlage in kopf_module %}{% include vorlage %}{% endfor %}
+      {% if user.is_authenticated and menue %}<a class="hilfe-knopf" href="{% url 'core:hilfe' %}{% if hilfe_kennung %}#{{ hilfe_kennung }}{% endif %}" title="Hilfe zu dieser Seite" aria-label="Hilfe zu dieser Seite">?</a>{% endif %}
       {% if user.is_authenticated %}
       <nav class="navigation" aria-label="Konto">
         <form method="post" action="{% url 'konten:abmelden' %}" class="inline konto-name">
