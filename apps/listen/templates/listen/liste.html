@@ -92,9 +92,24 @@
   </form>
 </section>
 
+{% if eigene and darf_eigene_bearbeiten %}
+<section class="karte">
+  <details open>
+    <summary>Gespeicherte Liste „{{ eigene.titel }}“ bearbeiten</summary>
+    <form method="post" action="{% url 'listen:eigene_aktualisieren' eigene.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="abfrage" value="{{ abfrage }}">
+      <div class="feld"><label for="titel-e">Titel</label><input type="text" name="titel" id="titel-e" maxlength="100" value="{{ eigene.titel }}"></div>
+      {% if darf_teilen %}<div class="feld feld-haken"><label><input type="checkbox" name="fuer_alle" value="1"{% if eigene.fuer_alle %} checked{% endif %}> für alle sichtbar</label></div>{% endif %}
+      <button type="submit" class="knopf knopf-zweitrangig">Änderungen übernehmen</button>
+      <p class="hinweis">Übernimmt Titel, Freigabe und die aktuellen Einstellungen (Filter, Spalten, Sortierung) in diese gespeicherte Liste.</p>
+    </form>
+  </details>
+</section>
+{% endif %}
 <section class="karte">
   <details>
-    <summary>Als eigene Liste speichern</summary>
+    <summary>Als {% if eigene %}neue {% endif %}eigene Liste speichern</summary>
     <form method="post" action="{% url 'listen:speichern' liste.kennung %}">
       {% csrf_token %}
       <input type="hidden" name="abfrage" value="{{ abfrage }}">
