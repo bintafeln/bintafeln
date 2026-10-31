@@ -1,8 +1,12 @@
 """Warteliste (Modul, ADR 0051): Liste, Einladen, Termine, Abgleich, Dubletten, Streichungen."""
 
+import csv
+import io
+
 from django.contrib import messages
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
@@ -11,7 +15,7 @@ from django.views.decorators.http import require_POST
 from apps.antraege import sprachen
 from apps.antraege import uebersetzen as uebersetzen_ki
 from apps.antraege.models import Antrag
-from apps.core import papierkorb
+from apps.core import listenexport, papierkorb
 from apps.core.pdf import Kaestchen, Pdf, pdf_antwort
 from apps.konten import rollen
 from apps.warteliste import ablauf
@@ -282,6 +286,49 @@ def druckliste(request, pk):
         breiten=[0.12, 0.09, 0.33, 0.22, 0.24],
     )  # fmt: skip
     return pdf_antwort(doc.erzeugen(), f"druckliste_{t.datum:%Y-%m-%d}.pdf")
+
+
+EXPORT_KOPF = ["Eingang", "#", "Name", "Geburtsdatum", "Kontakt", "Wohnort", "Personen",
+               "Art", "Staatsangehörigkeit", "Status", "Termin", "Anmerkung"]  # fmt: skip
+
+
+def _export_zeile(ws) -> list[str]:
+    a = ws.antrag
+    kontakt = " ".join(t for t in (a.email, a.telefon) if t)
+    wohnort = f"{a.plz} {a.ort}".strip()
+    anmerkungen = " | ".join(f"{m.zeitpunkt:%d.%m.%Y}: {m.text}" for m in a.anmerkungen.all())
+    return [
+        f"{a.eingegangen_am:%d.%m.%Y}" if a.eingegangen_am else "",
+        a.nummer,
+        f"{a.nachname}, {a.vorname}",
+        f"{a.geburtsdatum:%d.%m.%Y}" if a.geburtsdatum else "",
+        kontakt,
+        wohnort,
+        len(a.personen.all()) + 1,
+        a.get_art_display(),
+        a.staatsangehoerigkeit,
+        ws.get_status_display(),
+        str(ws.termin) if ws.termin else "",
+        anmerkungen,
+    ]
+
+
+@never_cache
+@sehen
+def export(request):
+    """Die gefilterte Warteliste als CSV, PDF oder per E-Mail (ADR 0096)."""
+    ablauf.automatik()
+    _, ws = _gefiltert(request)
+    ws = ws.prefetch_related("antrag__personen", "antrag__anmerkungen")
+    puffer = io.StringIO()
+    puffer.write("﻿")  # BOM, damit Excel/LibreOffice Umlaute richtig lesen
+    schreiber = csv.writer(puffer, delimiter=";")
+    schreiber.writerow(EXPORT_KOPF)
+    for eintrag in ws:
+        schreiber.writerow(_export_zeile(eintrag))
+    basis = f"warteliste-{timezone.localdate():%Y-%m-%d}"
+    return listenexport.ausliefern(request, "Warteliste", basis, puffer.getvalue(),
+                                   weiter=reverse("warteliste:liste"))  # fmt: skip
 
 
 # ── Abgleich, Dubletten, Streichungen ────────────────────────────────────────

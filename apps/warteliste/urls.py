@@ -6,6 +6,7 @@ app_name = "warteliste"
 
 urlpatterns = [
     path("", views.liste, name="liste"),
+    path("export/", views.export, name="export"),
     path("einladen/", views.einladen, name="einladen"),
     path("status/", views.status_mehrere, name="status"),
     path("antrag/<int:pk>/", views.eintrag, name="eintrag"),

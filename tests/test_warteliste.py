@@ -300,6 +300,31 @@ def test_seiten(modul_an, admin_client, mailserver, pdf_text):
     assert Termin.objects.filter(pk=t.pk).exists()
 
 
+def test_export_csv_pdf_und_mail(modul_an, admin_client, mailserver):
+    antrag(email="erika@example.org", staatsangehoerigkeit="Ukraine")
+    antrag("Max", "Probe", staatsangehoerigkeit="Syrien")
+    csv_ = admin_client.get(reverse("warteliste:export"))
+    assert csv_["Content-Type"].startswith("text/csv")
+    text = csv_.content.decode("utf-8")
+    assert "Staatsangehörigkeit" in text
+    assert "Beispiel, Erika" in text and "Probe, Max" in text
+    # Der Export beachtet denselben Filter wie die Liste
+    gefiltert = admin_client.get(
+        reverse("warteliste:export"), {"staat_modus": "nicht", "staat": ["Syrien"]}
+    ).content.decode("utf-8")
+    assert "Beispiel, Erika" in gefiltert and "Probe, Max" not in gefiltert
+    # PDF
+    pdf = admin_client.get(reverse("warteliste:export"), {"aktion": "pdf"})
+    assert pdf["Content-Type"] == "application/pdf"
+    # E-Mail mit PDF und CSV im Anhang
+    antwort = admin_client.get(
+        reverse("warteliste:export"), {"aktion": "mail", "email": "buero@example.org"}
+    )
+    assert antwort.status_code == 302
+    assert django_mail.outbox and django_mail.outbox[0].to == ["buero@example.org"]
+    assert len(django_mail.outbox[0].attachments) == 2
+
+
 def test_rechte(modul_an, client, anmelden, benutzer_mit_rolle):
     anmelden(client, benutzer_mit_rolle("berta", rollen.BUERO))
     assert client.get(reverse("warteliste:liste")).status_code == 200
