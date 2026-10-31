@@ -683,7 +683,8 @@ def test_aushang_monitor_wechselt_passt_ein_und_sperrt_alten_link(seite, admin):
     from django.contrib.auth import get_user_model
 
     konto = get_user_model().objects.create_user(
-        f"monitor-{p.wer.pk}", first_name=p.wer.vorname, last_name=p.wer.nachname)
+        f"monitor-{p.wer.pk}", first_name=p.wer.vorname, last_name=p.wer.nachname
+    )
     p.wer.konto = konto
     p.wer.save(update_fields=["konto"])
     pin.setzen(konto, "482915")
