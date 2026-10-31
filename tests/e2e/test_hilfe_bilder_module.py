@@ -109,8 +109,10 @@ def test_hilfe_bild_dienstplan(angemeldet, admin, muster, benutzer_mit_rolle, re
     stelle, freitag, obst = _dienstplan()
     # Gezielt den Freitag mit dem Ausfall öffnen – sonst hängt die Standardansicht am heutigen
     # Wochentag und der offene Platz (.fd-offen) wäre je nach Testtag nicht zu sehen.
-    plan_url = (f"{reverse('dienstplan:plan')}?stelle={stelle.ausgabestelle_id}"
-                f"&tag=Fr&monat={freitag:%Y-%m}")
+    plan_url = (
+        f"{reverse('dienstplan:plan')}?stelle={stelle.ausgabestelle_id}"
+        f"&tag=Fr&monat={freitag:%Y-%m}"
+    )
     seite = oeffnen(angemeldet, admin, plan_url, breite=1400)
     karte = seite.locator("section.karte")
     tabelle = seite.locator("table.dp-plan")
