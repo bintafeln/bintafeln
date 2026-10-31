@@ -40,7 +40,7 @@ def test_bis_berechnen_fehler(dauer, bis, fehler):
 
 
 def test_am_monitor_fuer_mehrere_wochen_austragen(fahrer, heute, client):  # noqa: F811
-    leute, tour, aushang = fahrer
+    leute, pers, tour, aushang = fahrer
     daten = {"platz": f"fahrdienst|{heute:%Y-%m-%d}|{tour.pk}|1", "aktion": "ausfall",
              "person": leute["max"].pk, "pin": "482915", "grund": "krank"}  # fmt: skip
     fehler = client.post(_platz(aushang), {**daten, "dauer": "bis", "bis": "2026-11-01"}).json()
@@ -55,42 +55,42 @@ def test_am_monitor_fuer_mehrere_wochen_austragen(fahrer, heute, client):  # noq
 
 
 def test_wieder_gesund_traegt_nicht_zurueck_ein(fahrer, heute, client):  # noqa: F811
-    leute, tour, aushang = fahrer
-    max_ = leute["max"]
-    a = Ausfall.objects.create(benutzer=max_, von=heute - WOCHE, bis=heute + 3 * WOCHE,
+    leute, pers, tour, aushang = fahrer
+    max_ = pers["max"]
+    a = Ausfall.objects.create(person=max_, von=heute - WOCHE, bis=heute + 3 * WOCHE,
                                grund="krank")  # fmt: skip
-    Ersatz.objects.create(datum=heute + WOCHE, tour=tour, platz=1, benutzer=leute["ole"])
+    Ersatz.objects.create(datum=heute + WOCHE, tour=tour, platz=1, person=pers["ole"])
     kennung = f"fahrdienst|{heute:%Y-%m-%d}|{tour.pk}|1"
     html = client.get(_platz(aushang), {"platz": kennung}).content.decode()
     assert "Ich bin Max Mustermann und wieder gesund" in html
     assert max_ not in _frei(heute)  # noch krank: kann nicht einspringen
     daten = {"platz": kennung, "aktion": "gesund", "person": leute["jan"].pk, "pin": "482915"}
     assert "nur die Person selbst" in client.post(_platz(aushang), daten).json()["fehler"]
-    antwort = client.post(_platz(aushang), {**daten, "person": max_.pk}).json()
+    antwort = client.post(_platz(aushang), {**daten, "person": leute["max"].pk}).json()
     assert antwort["ok"] and "bleiben frei bzw. beim Ersatz" in antwort["meldung"]
     a.refresh_from_db()
     assert a.gesund_ab == heute and a.bis == heute + 3 * WOCHE
     # nicht zurück: heute und in zwei Wochen fehlt jemand, nächste Woche bleibt Ole
     assert plan.platz(heute, tour, 1).status == plan.OFFEN
-    assert plan.platz(heute + WOCHE, tour, 1).wer == leute["ole"]
+    assert plan.platz(heute + WOCHE, tour, 1).wer == pers["ole"]
     assert plan.platz(heute + 2 * WOCHE, tour, 1).status == plan.OFFEN
     # aber Max kann jetzt einspringen, auch auf seinem alten Platz
     assert max_ in _frei(heute + 2 * WOCHE)
     html = client.get(_platz(aushang), {"platz": kennung}).content.decode()
     assert "wieder da, der Platz bleibt aber frei" in html and "wieder gesund" not in html
     selbst = {"platz": f"fahrdienst|{heute + 2 * WOCHE:%Y-%m-%d}|{tour.pk}|1",
-              "aktion": "einspringen", "einspringer": f"{max_.pk}:{max_.pk}",
+              "aktion": "einspringen", "einspringer": f"{pers['max'].pk}:{leute['max'].pk}",
               "pin": "482915"}  # fmt: skip
     assert client.post(_platz(aushang), selbst).json()["ok"]
     assert plan.platz(heute + 2 * WOCHE, tour, 1).status == plan.ERSETZT
     # ein zweites Mal geht nicht
-    antwort = client.post(_platz(aushang), {**daten, "person": max_.pk}).json()
+    antwort = client.post(_platz(aushang), {**daten, "person": leute["max"].pk}).json()
     assert antwort["fehler"] == "Hier ist kein Ausfall, der noch läuft."
 
 
 def test_wer_plant_meldet_am_monitor_gesund(fahrer, heute, client):  # noqa: F811
-    leute, tour, aushang = fahrer
-    Ausfall.objects.create(benutzer=leute["max"], von=heute, bis=heute + WOCHE, grund="urlaub")
+    leute, pers, tour, aushang = fahrer
+    Ausfall.objects.create(person=pers["max"], von=heute, bis=heute + WOCHE, grund="urlaub")
     daten = {"platz": f"fahrdienst|{heute:%Y-%m-%d}|{tour.pk}|1", "aktion": "gesund",
              "person": leute["eva"].pk, "pin": "482915"}  # fmt: skip
     assert client.post(_platz(aushang), daten).json()["ok"]
@@ -100,11 +100,11 @@ def test_wer_plant_meldet_am_monitor_gesund(fahrer, heute, client):  # noqa: F81
 def test_wieder_gesund_im_programm(fahrer, heute, client, anmelden):  # noqa: F811
     from apps.fahrdienst.models import FahrdienstEinstellungen
 
-    leute, tour, _ = fahrer
+    leute, pers, tour, _ = fahrer
     e = FahrdienstEinstellungen.laden()
     e.selbst_melden = True
     e.save()
-    a = Ausfall.objects.create(benutzer=leute["max"], von=heute, bis=heute + WOCHE, grund="krank")
+    a = Ausfall.objects.create(person=pers["max"], von=heute, bis=heute + WOCHE, grund="krank")
     url = reverse("fahrdienst:ausfall_gesund", args=[a.pk])
     anmelden(client, leute["jan"])
     assert client.post(url).status_code == 403  # fremder Ausfall
@@ -143,15 +143,15 @@ def test_dienstplan_wieder_gesund(heute):  # noqa: F811
 def test_eingesprungen_und_dann_selbst_krank(fahrer, heute, client):  # noqa: F811
     """Ole ist für Max eingesprungen, wird selbst krank, meldet sich für zwei Wochen ab und später
     gesund: Seine Plätze als Ersatz bleiben abgesagt, bis er sich neu einträgt."""
-    leute, tour, aushang = fahrer
-    ole = leute["ole"]
-    Ausfall.objects.create(benutzer=leute["max"], von=heute, bis=heute + 3 * WOCHE, grund="urlaub")
+    leute, pers, tour, aushang = fahrer
+    ole = pers["ole"]
+    Ausfall.objects.create(person=pers["max"], von=heute, bis=heute + 3 * WOCHE, grund="urlaub")
     for woche in range(2):
         plan.ersatz_eintragen(heute + woche * WOCHE, tour, 1, ole, "test")
     kennung = f"fahrdienst|{heute:%Y-%m-%d}|{tour.pk}|1"
     html = client.get(_platz(aushang), {"platz": kennung}).content.decode()
     assert "Ich bin Ole Hansen und kann nicht" in html
-    daten = {"platz": kennung, "aktion": "ausfall", "person": ole.pk, "pin": "482915",
+    daten = {"platz": kennung, "aktion": "ausfall", "person": leute["ole"].pk, "pin": "482915",
              "grund": "krank", "dauer": "w2"}  # fmt: skip
     antwort = client.post(_platz(aushang), daten).json()
     assert antwort["ok"] and "Ole Hansen fällt vom 11.11. bis 24.11.2026 aus" in antwort["meldung"]

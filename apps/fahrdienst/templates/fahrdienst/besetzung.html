@@ -11,17 +11,17 @@
     {% csrf_token %}
     <div class="tabelle-rahmen">
     <table class="tabelle fd-besetzung">
-      <thead><tr><th>Tag</th>{% for nr, name, _ in zeilen.0.1 %}<th>{{ name }}</th>{% endfor %}</tr></thead>
+      <thead><tr><th>Tag</th>{% for nr, name, b, istf in zeilen.0.1 %}<th>{{ name }}</th>{% endfor %}</tr></thead>
       <tbody>
       {% for tag, plaetze in zeilen %}
         <tr>
           <th scope="row">{{ tag }}</th>
-          {% for nr, name, b in plaetze %}
+          {% for nr, name, b, istf in plaetze %}
           <td data-titel="{{ name }}">
             <label class="unsichtbar" for="b_{{ tag }}_{{ nr }}">{{ tag }} {{ name }}</label>
             <select name="b_{{ tag }}_{{ nr }}" id="b_{{ tag }}_{{ nr }}">
               <option value="">– frei –</option>
-              {% for p in personen %}<option value="{{ p.pk }}"{% if b and b.benutzer_id == p.pk %} selected{% endif %}>{{ p.get_full_name|default:p.username }}</option>{% endfor %}
+              {% if istf %}{% for p in fahrer %}<option value="{{ p.pk }}"{% if b and b.person_id == p.pk %} selected{% endif %}>{{ p.name }}</option>{% endfor %}{% else %}{% for p in personen %}<option value="{{ p.pk }}"{% if b and b.person_id == p.pk %} selected{% endif %}>{{ p.name }}</option>{% endfor %}{% endif %}
             </select>
           </td>
           {% endfor %}

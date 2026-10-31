@@ -183,13 +183,13 @@ def _fahrdienst():
     for datum in tage[2:4]:
         p = next(p for _, plaetze in plan.tage([datum])[0][1] for p in plaetze if p.wer)
         Ausfall.objects.create(
-            benutzer=p.wer, von=datum, bis=datum, grund="krank", eingetragen_von="Clara Beispiel"
+            person=p.wer, von=datum, bis=datum, grund="krank", eingetragen_von="Clara Beispiel"
         )
         eintraege.append((datum, p))
     datum, p = eintraege[1]
     springer = plan.verfuegbar(datum)[0][0]
     Ersatz.objects.create(
-        datum=datum, tour=p.tour, platz=p.platz, benutzer=springer, eingetragen_von="Clara Beispiel"
+        datum=datum, tour=p.tour, platz=p.platz, person=springer, eingetragen_von="Clara Beispiel"
     )
 
 
@@ -232,9 +232,18 @@ def test_hilfe_bild_fahrdienst(angemeldet, admin, muster):
         Marke(seite.get_by_role("button", name="Ersatz eintragen"), nummer=4, von="rechts"),
     )
 
-    # Ein Fahrer trägt sich selbst aus: „Meine Einsätze“ → „kann nicht“
-    kai = get_user_model().objects.get(username="beispiel-fd-kai-nordmann")
-    assert plan.einsaetze(kai, heute, heute + dt.timedelta(days=27))
+    # Ein Fahrer trägt sich selbst aus: „Meine Einsätze“ → „kann nicht“. Die Beispiel-Person
+    # Kai Nordmann bekommt dafür ein Konto mit der Rolle Fahrer (ADR 0097).
+    from django.contrib.auth.models import Group
+
+    from apps.adressen.models import Adresse
+
+    kai_person = Adresse.objects.get(nachname="Nordmann", fahrdienst="fahrer")
+    kai = get_user_model().objects.create_user("kai-fahrer", first_name="Kai", last_name="Nordmann")
+    kai.groups.add(Group.objects.get(name=rollen.FAHRER))
+    kai_person.konto = kai
+    kai_person.save(update_fields=["konto"])
+    assert plan.einsaetze(kai_person, heute, heute + dt.timedelta(days=27))
     seite.context.clear_cookies()
     seite = oeffnen(angemeldet, kai, reverse("fahrdienst:meine"))
     seite.get_by_role("link", name="kann nicht", exact=True).first.click()

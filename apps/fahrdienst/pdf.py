@@ -16,7 +16,7 @@ GRAU = colors.HexColor("#f0f0f0")
 
 
 def _name(b) -> str:
-    return b.get_full_name() or b.username
+    return b.name
 
 
 def _platz(p) -> str:
@@ -82,7 +82,7 @@ def monat(titel: str, tage, touren) -> bytes:
     doc = Pdf(f"Fahrerplan {titel}", "offen = fällt aus, noch kein Ersatz · fett = springt ein",
               seite)  # fmt: skip
     breite = seite[0] - 2 * RAND
-    springer = list(Springer.objects.select_related("benutzer").filter(benutzer__is_active=True))
+    springer = list(Springer.objects.select_related("person").filter(person__helfer_aktiv=True))
     if not tage:
         doc.absatz("In diesem Monat sind keine Fahrtage.")
     else:
@@ -93,6 +93,6 @@ def monat(titel: str, tage, touren) -> bytes:
         doc.element(_seite_fuellen(list(tage), touren, breite, hoehe))
     if springer:
         doc.ueberschrift("Springer")
-        doc.absatz(", ".join(_name(s.benutzer) + (f" (nur {s.wochentage})" if s.wochentage else "")
+        doc.absatz(", ".join(_name(s.person) + (f" (nur {s.wochentage})" if s.wochentage else "")
                              for s in springer))  # fmt: skip
     return doc.erzeugen()

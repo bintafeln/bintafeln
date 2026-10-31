@@ -679,7 +679,15 @@ def test_aushang_monitor_wechselt_passt_ein_und_sperrt_alten_link(seite, admin):
     heute = timezone.localdate()
     tag = fd_plan.fahrtage(heute, heute + dt.timedelta(days=14))[0]
     p = next(p for _, plaetze in fd_plan.tage([tag])[0][1] for p in plaetze if p.wer)
-    pin.setzen(p.wer, "482915")
+    # Diese Fahrdienst-Person bekommt ein Konto mit PIN, um sich am Monitor selbst auszutragen
+    from django.contrib.auth import get_user_model
+
+    konto = get_user_model().objects.create_user(
+        f"monitor-{p.wer.pk}", first_name=p.wer.vorname, last_name=p.wer.nachname
+    )
+    p.wer.konto = konto
+    p.wer.save(update_fields=["konto"])
+    pin.setzen(konto, "482915")
 
     seite.set_viewport_size({"width": 1280, "height": 720})
     seite.clock.install()
@@ -729,7 +737,7 @@ def test_aushang_monitor_wechselt_passt_ein_und_sperrt_alten_link(seite, admin):
     kennung = f"fahrdienst|{tag:%Y-%m-%d}|{p.tour.pk}|{p.platz}"
     seite.locator(f'[data-platz="{kennung}"]').click()
     dialog = seite.locator("#aushang-dialog")
-    expect(dialog).to_contain_text(f"Ich bin {p.wer.get_full_name()}")
+    expect(dialog).to_contain_text(f"Ich bin {p.wer.name}")
     dialog.get_by_label("Meine PIN").first.fill("000000")
     dialog.get_by_role("button", name="Austragen").click()
     expect(dialog.get_by_text("Die PIN stimmt nicht.")).to_be_visible()

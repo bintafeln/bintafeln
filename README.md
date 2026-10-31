@@ -1141,6 +1141,9 @@ Ersetzt den gedruckten Fahrerplan mit den gelben Aufklebern (ADR 0074).
 - **Feste Besetzung** je Tour und Wochentag unter „Einstellungen → Dienstpläne → Fahrdienst:
   Touren und Springer“ (Recht „Fahrdienst planen“, Vorgabe Büro); daraus entsteht jede Woche der
   Plan. Dazu Springer (auf jeder Tour, auf Wunsch nur an bestimmten Tagen), Fahrtage, Feiertage.
+- **Wer im Fahrdienst mitfährt**, wird an der Person im **Adressbuch** eingestellt (ADR 0097):
+  „nur Beifahrer“ oder „Fahrer (darf fahren)“. Auf den **Fahrerplatz (Platz 1) kommt nur ein
+  Fahrer**; als Beifahrer sind beide einsetzbar. Nur diese Personen stehen im Fahrdienst zur Wahl.
 - **Selbst austragen:** Fahrer und Beifahrer tippen im Plan auf ihren eigenen Namen (oder in „Meine
   Einsätze“ auf „kann nicht“) und wählen, wie lange: nur dieser Tag, 1–4 Wochen oder ein genaues Ende.
 - **Ausfall melden:** „Meine Einsätze → Ich kann nicht“ (wenn die Tafel Selbstmelden erlaubt)

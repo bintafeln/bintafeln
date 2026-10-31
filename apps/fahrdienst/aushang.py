@@ -4,11 +4,11 @@ eintragen – mit denselben Regeln wie im Programm."""
 
 import datetime as dt
 
-from django.contrib.auth import get_user_model
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.adressen.models import Adresse
 from apps.core import ausfall as ausfallregeln
 from apps.core.auswahl import AUSFALL_DAUER, FAHRDIENST_AUSFALLGRUENDE
 from apps.fahrdienst import plan
@@ -56,8 +56,8 @@ def folien(wert, von, bis) -> list[tuple[str, str, str, str]]:
     return ergebnis
 
 
-def _name(benutzer) -> str:
-    return benutzer.get_full_name() or benutzer.get_username()
+def _name(person) -> str:
+    return person.name
 
 
 def _platz(teil: str):
@@ -74,8 +74,8 @@ def _platz(teil: str):
     return plan.platz(datum, tour, nr)
 
 
-def _frei(datum) -> list:
-    springer, weitere = plan.verfuegbar(datum)
+def _frei(datum, nur_fahrer: bool = False) -> list:
+    springer, weitere = plan.verfuegbar(datum, nur_fahrer=nur_fahrer)
     return springer + weitere
 
 
@@ -89,14 +89,14 @@ def platz(teil: str) -> dict | None:
         "titel": f"{p.datum:%d.%m.%Y} · {p.tour} · {p.name}",
         "wer": p.gast or (_name(p.wer) if p.wer else ""),
         "status": _status(p, status.get(p.status, "")),
-        "wer_konto": p.wer.pk if p.wer else None,
+        "wer_konto": p.wer.konto_id if p.wer else None,
         "kann_ausfallen": p.wer is not None and not p.ausfall,  # auch wer eingesprungen ist
         "kann_einspringen": p.fehlt or p.status == plan.LEER,
         "gruende": FAHRDIENST_AUSFALLGRUENDE,
         "dauer": AUSFALL_DAUER,
         "datum": p.datum.isoformat(),
         "kann_gesund": p.ausfall is not None and not p.ausfall.gesund_ab,
-        "frei": [(b.pk, _name(b), b.pk) for b in _frei(p.datum)],
+        "frei": [(b.pk, _name(b), b.konto_id) for b in _frei(p.datum, nur_fahrer=p.platz == 1)],
         "hat_ersatz": p.ersatz is not None,
         "recht": "fahrdienst.planen",
     }
@@ -119,7 +119,7 @@ def aendern(teil: str, daten, person, von: str, basis: str) -> str:
     if aktion == "ausfall":
         if p.wer is None or p.ausfall:
             raise ValueError("Hier kann niemand ausfallen.")
-        if not planer and p.wer.pk != person.pk:
+        if not planer and p.wer.konto_id != person.pk:
             raise ValueError("Austragen kann sich nur die Person selbst (oder wer den Fahrdienst "
                              "plant).")  # fmt: skip
         grund = daten.get("grund", "")
@@ -133,7 +133,7 @@ def aendern(teil: str, daten, person, von: str, basis: str) -> str:
     if aktion == "gesund":
         if p.ausfall is None or p.ausfall.gesund_ab:
             raise ValueError("Hier ist kein Ausfall, der noch läuft.")
-        if not planer and p.wer.pk != person.pk:
+        if not planer and p.wer.konto_id != person.pk:
             raise ValueError("Gesund melden kann sich nur die Person selbst (oder wer den "
                              "Fahrdienst plant).")  # fmt: skip
         plan.gesund_melden(p.ausfall, timezone.localdate(), f"{basis}{reverse('fahrdienst:plan')}")
@@ -141,10 +141,10 @@ def aendern(teil: str, daten, person, von: str, basis: str) -> str:
                 "bleiben frei bzw. beim Ersatz: Bitte dort wieder eintragen, wo noch jemand "
                 "fehlt.")  # fmt: skip
     if aktion == "ersatz":
-        b = get_user_model().objects.filter(pk=daten.get("helfer") or 0, is_active=True).first()
-        if b is None or b not in _frei(datum):
+        b = Adresse.objects.filter(pk=daten.get("helfer") or 0).first()
+        if b is None or b not in _frei(datum, nur_fahrer=p.platz == 1):
             raise ValueError("Diese Person kann an dem Tag nicht einspringen.")
-        if not planer and (b.pk != person.pk or not (p.fehlt or p.status == plan.LEER)):
+        if not planer and (b.konto_id != person.pk or not (p.fehlt or p.status == plan.LEER)):
             raise ValueError("Einspringen kann man nur selbst und nur auf einem freien Platz (oder "
                              "wer den Fahrdienst plant).")  # fmt: skip
         plan.ersatz_eintragen(datum, p.tour, p.platz, b, von)

@@ -5,9 +5,9 @@
   <p><a href="{{ zurueck }}">← Fahrerplan</a></p>
   <h1>{{ wochentag }} {{ p.datum|date:"d.m.Y" }} · {{ p.tour }} · {{ p.name }}</h1>
   <dl class="angaben">
-    <dt>Feste Besetzung</dt><dd>{% if p.stamm %}{{ p.stamm.get_full_name|default:p.stamm.username }}{% else %}–{% if p.status == "leer" %} (Platz für Gäste){% endif %}{% endif %}</dd>
-    {% if p.ersatz %}<dt>Für diesen Tag</dt><dd>{% if p.gast %}{{ p.gast }} (Gast){% else %}{{ p.ersatz.benutzer.get_full_name|default:p.ersatz.benutzer.username }}{% endif %} (eingetragen von {{ p.ersatz.eingetragen_von }})</dd>{% endif %}
-    {% if p.ausfall %}<dt>Fällt aus</dt><dd>{{ p.ausfall.benutzer.get_full_name|default:p.ausfall.benutzer.username }}: {{ p.ausfall.get_grund_display }}{% if p.ausfall.anmerkung %} – {{ p.ausfall.anmerkung }}{% endif %}
+    <dt>Feste Besetzung</dt><dd>{% if p.stamm %}{{ p.stamm.name }}{% else %}–{% if p.status == "leer" %} (Platz für Gäste){% endif %}{% endif %}</dd>
+    {% if p.ersatz %}<dt>Für diesen Tag</dt><dd>{% if p.gast %}{{ p.gast }} (Gast){% else %}{{ p.ersatz.person.name }}{% endif %} (eingetragen von {{ p.ersatz.eingetragen_von }})</dd>{% endif %}
+    {% if p.ausfall %}<dt>Fällt aus</dt><dd>{{ p.ausfall.person.name }}: {{ p.ausfall.get_grund_display }}{% if p.ausfall.anmerkung %} – {{ p.ausfall.anmerkung }}{% endif %}
       ({{ p.ausfall.von|date:"d.m." }}{% if p.ausfall.bis != p.ausfall.von %}–{{ p.ausfall.bis|date:"d.m.Y" }}{% endif %})
       {% if not p.ausfall.gesund_ab %}<form method="post" action="{% url 'fahrdienst:ausfall_gesund' p.ausfall.pk %}" class="inline">{% csrf_token %}<input type="hidden" name="weiter" value="{{ zurueck }}"><button type="submit" class="link">wieder gesund</button></form>{% else %}<span class="hinweis">wieder da ab {{ p.ausfall.gesund_ab|date:"d.m.Y" }}</span>{% endif %}
       <form method="post" action="{% url 'fahrdienst:ausfall_loeschen' p.ausfall.pk %}" class="inline" onsubmit="return confirm('Ausfall zurücknehmen? Wirklich löschen?')">{% csrf_token %}<input type="hidden" name="weiter" value="{{ zurueck }}"><button type="submit" class="link">zurücknehmen</button></form></dd>{% endif %}
@@ -15,10 +15,10 @@
   {% if p.wer and not p.ausfall %}
   <form method="post" action="{% url 'fahrdienst:ausfall' %}" class="fd-nur-ausfall">
     {% csrf_token %}
-    <h2>Erst einmal nur: {{ p.wer.get_full_name|default:p.wer.username }} fällt aus</h2>
+    <h2>Erst einmal nur: {{ p.wer.name }} fällt aus</h2>
     <p class="hinweis">Ohne Ersatz – der Platz steht dann im Plan „offen“, die Fahrdienstleitung wird benachrichtigt.
       Einen Ersatz kann man später eintragen.</p>
-    <input type="hidden" name="benutzer" value="{{ p.wer.pk }}">
+    <input type="hidden" name="person" value="{{ p.wer.pk }}">
     <input type="hidden" name="von" value="{{ p.datum|date:'Y-m-d' }}">
     <input type="hidden" name="bis" value="">
     <div class="feld">
@@ -39,8 +39,8 @@
       <label for="benutzer">Wer springt ein?</label>
       <select name="benutzer" id="benutzer" required>
         <option value="">bitte wählen</option>
-        {% if springer %}<optgroup label="Springer (frei an diesem Tag)">{% for b in springer %}<option value="{{ b.pk }}">{{ b.get_full_name|default:b.username }}</option>{% endfor %}</optgroup>{% endif %}
-        {% if weitere %}<optgroup label="Weitere Fahrer und Beifahrer (frei)">{% for b in weitere %}<option value="{{ b.pk }}">{{ b.get_full_name|default:b.username }}</option>{% endfor %}</optgroup>{% endif %}
+        {% if springer %}<optgroup label="Springer (frei an diesem Tag)">{% for b in springer %}<option value="{{ b.pk }}">{{ b.name }}</option>{% endfor %}</optgroup>{% endif %}
+        {% if weitere %}<optgroup label="Weitere Fahrer und Beifahrer (frei)">{% for b in weitere %}<option value="{{ b.pk }}">{{ b.name }}</option>{% endfor %}</optgroup>{% endif %}
       </select>
       {% if not springer and not weitere %}<small class="fehler">An diesem Tag ist niemand frei.</small>{% endif %}
     </div>

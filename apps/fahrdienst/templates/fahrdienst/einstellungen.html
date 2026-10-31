@@ -47,7 +47,7 @@
   <h2>Springer</h2>
   <p class="hinweis">Springer können auf jeder Tour einspringen.</p>
   <ul>
-    {% for s in springer %}<li><a href="{% url 'fahrdienst:springer' s.pk %}">{{ s.benutzer.get_full_name|default:s.benutzer.username }}</a>{% if s.wochentage %} (nur {{ s.wochentage }}){% endif %}{% if s.anmerkung %} – {{ s.anmerkung }}{% endif %}</li>
+    {% for s in springer %}<li><a href="{% url 'fahrdienst:springer' s.pk %}">{{ s.person.name }}</a>{% if s.wochentage %} (nur {{ s.wochentage }}){% endif %}{% if s.anmerkung %} – {{ s.anmerkung }}{% endif %}</li>
     {% empty %}<li>Noch keine Springer.</li>{% endfor %}
   </ul>
   <p><a class="knopf knopf-zweitrangig" href="{% url 'fahrdienst:springer_neu' %}">Springer hinzufügen</a></p>
@@ -68,7 +68,7 @@
 <section class="karte">
   <h2>Aktuelle und kommende Ausfälle</h2>
   <ul>
-    {% for a in ausfaelle %}<li>{{ a.benutzer.get_full_name|default:a.benutzer.username }}: {{ a.von|date:"d.m.Y" }}{% if a.bis != a.von %} bis {{ a.bis|date:"d.m.Y" }}{% endif %} ({{ a.get_grund_display }}{% if a.anmerkung %}, {{ a.anmerkung }}{% endif %})
+    {% for a in ausfaelle %}<li>{{ a.person.name }}: {{ a.von|date:"d.m.Y" }}{% if a.bis != a.von %} bis {{ a.bis|date:"d.m.Y" }}{% endif %} ({{ a.get_grund_display }}{% if a.anmerkung %}, {{ a.anmerkung }}{% endif %})
       <form method="post" action="{% url 'fahrdienst:ausfall_loeschen' a.pk %}" class="inline" onsubmit="return confirm('Ausfall wirklich löschen?')">{% csrf_token %}<input type="hidden" name="weiter" value="{% url 'fahrdienst:einstellungen' %}"><button type="submit" class="link">löschen</button></form></li>
     {% empty %}<li>Keine.</li>{% endfor %}
   </ul>

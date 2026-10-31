@@ -114,8 +114,8 @@ class Besetzung(models.Model):
     wochentag = models.CharField("Wochentag", max_length=2,
                                  choices=[(t, t) for t in WOCHENTAGE])  # fmt: skip
     platz = models.PositiveSmallIntegerField("Platz")
-    benutzer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
-                                 related_name="fahrdienst_besetzungen")  # fmt: skip
+    person = models.ForeignKey("adressen.Adresse", on_delete=models.CASCADE,
+                               related_name="fahr_besetzungen", verbose_name="Person")  # fmt: skip
 
     class Meta:
         verbose_name = "Feste Besetzung"
@@ -127,14 +127,14 @@ class Besetzung(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.tour} {self.wochentag} {platz_name(self.platz)}: {self.benutzer}"
+        return f"{self.tour} {self.wochentag} {platz_name(self.platz)}: {self.person}"
 
 
 class Springer(models.Model):
     """Springt bei Ausfällen ein, auf jeder Tour."""
 
-    benutzer = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
-                                    related_name="fahrdienst_springer")  # fmt: skip
+    person = models.OneToOneField("adressen.Adresse", on_delete=models.CASCADE,
+                                  related_name="fahr_springer", verbose_name="Person")  # fmt: skip
     wochentage = models.CharField(
         "Nur an diesen Tagen", max_length=40, blank=True,
         help_text="z. B. „Mi“; leer = an allen Fahrtagen.",
@@ -146,14 +146,14 @@ class Springer(models.Model):
         verbose_name_plural = "Springer"
 
     def __str__(self):
-        return str(self.benutzer)
+        return str(self.person)
 
 
 class Ausfall(models.Model):
     """Jemand kann an einem oder mehreren Tagen nicht fahren (der „gelbe Aufkleber“)."""
 
-    benutzer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
-                                 related_name="fahrdienst_ausfaelle")  # fmt: skip
+    person = models.ForeignKey("adressen.Adresse", on_delete=models.CASCADE,
+                               related_name="fahr_ausfaelle", verbose_name="Person")  # fmt: skip
     von = models.DateField("Von")
     bis = models.DateField("Bis")
     grund = models.CharField("Grund", max_length=20, choices=FAHRDIENST_AUSFALLGRUENDE,
@@ -171,7 +171,7 @@ class Ausfall(models.Model):
 
     def __str__(self):
         zeit = f"{self.von:%d.%m.%Y}" + (f"–{self.bis:%d.%m.%Y}" if self.bis != self.von else "")
-        return f"{self.benutzer} {zeit}"
+        return f"{self.person} {zeit}"
 
 
 class Ersatz(models.Model):
@@ -180,10 +180,11 @@ class Ersatz(models.Model):
     datum = models.DateField("Datum")
     tour = models.ForeignKey(Tour, on_delete=models.CASCADE, related_name="+")
     platz = models.PositiveSmallIntegerField("Platz")
-    benutzer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True,
-                                 blank=True, related_name="fahrdienst_ersatz")  # fmt: skip
+    person = models.ForeignKey("adressen.Adresse", on_delete=models.CASCADE, null=True,
+                               blank=True, related_name="fahr_ersatz",
+                               verbose_name="Person")  # fmt: skip
     gast = models.CharField("Gast", max_length=100, blank=True,
-                            help_text="Name eines Gastes ohne Konto (statt Benutzer).")  # fmt: skip
+                            help_text="Name eines Gastes ohne Konto (statt Person).")  # fmt: skip
     eingetragen_von = models.CharField("Eingetragen von", max_length=150, blank=True)
     eingetragen_am = models.DateTimeField("Eingetragen am", auto_now_add=True)
 
@@ -195,7 +196,7 @@ class Ersatz(models.Model):
         ]
 
     def __str__(self):
-        wer = self.benutzer or f"{self.gast} (Gast)"
+        wer = self.person or f"{self.gast} (Gast)"
         return f"{self.datum:%d.%m.%Y} {self.tour} {platz_name(self.platz)}: {wer}"
 
 
