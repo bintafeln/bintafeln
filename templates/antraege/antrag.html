@@ -17,7 +17,7 @@
 </section>
 
 <section class="karte">
-  {% if a.papierkorb_am %}<p class="sicherung sicherung-veraltet">Im Papierkorb seit {{ a.papierkorb_am|date:"d.m.Y" }}.</p>{% endif %}
+  {% if a.papierkorb_am %}<p class="sicherung sicherung-veraltet">Im Papierkorb seit {{ a.papierkorb_am|date:"d.m.Y" }}; wird am {{ a.endgueltig_loeschen_am|date:"d.m.Y" }} endgültig gelöscht.</p>{% endif %}
   <dl class="angaben">
     <dt>Eingegangen</dt><dd>{{ a.eingegangen_am|date:"d.m.Y H:i" }}{% if platz %} – Platz {{ platz }} der offenen Anträge{% endif %}</dd>
     <dt>Art</dt><dd>{{ a.get_art_display }}</dd>

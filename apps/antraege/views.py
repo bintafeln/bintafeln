@@ -116,6 +116,7 @@ def liste(request):
             "spalten_wahl": spalten_wahl,
             "abfrage": request.GET.urlencode(),
             "offen_gesamt": Antrag.objects.filter(ANSICHTEN["offen"][1]).count(),
+            "loeschen_nach_tagen": e.loeschen_nach_tagen,
         },
     )
 

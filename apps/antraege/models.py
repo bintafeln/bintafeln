@@ -333,6 +333,14 @@ class Antrag(models.Model):
         self.abgeschlossen_am = None if status in self.OFFEN else timezone.now()
         self.save()
 
+    def endgueltig_loeschen_am(self):
+        """Tag, an dem dieser Antrag aus dem Papierkorb endgültig gelöscht wird (nach der unter
+        „Anträge einstellen“ gesetzten Frist); None, wenn er nicht im Papierkorb liegt."""
+        if not self.papierkorb_am:
+            return None
+        tage = AntragEinstellungen.laden().loeschen_nach_tagen
+        return timezone.localdate(self.papierkorb_am) + dt.timedelta(days=tage)
+
 
 class AntragPerson(models.Model):
     """Weitere Person im Haushalt."""
