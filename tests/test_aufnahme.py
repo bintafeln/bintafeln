@@ -72,6 +72,15 @@ def test_treffer(bestand):
     assert aufnahme.treffer(mit_nummer)[0]["punkte"] == 100
 
 
+def test_gleicher_nachname_anderer_vorname_kein_treffer(bestand):
+    """Nur der Nachname gleich (anderer Vorname) soll kein Treffer mehr sein – auch nicht mit
+    gleichem Geburtsjahr."""
+    assert aufnahme.namens_aehnlichkeit("Boris", "Mustermann", "Erika", "Mustermann") < 0.5
+    fremd = antrag(vorname="Boris", nachname="Mustermann", geburtsdatum=dt.date(1968, 7, 7),
+                   strasse="", plz="")  # fmt: skip
+    assert aufnahme.treffer(fremd) == []
+
+
 def test_einstufung_stufen():
     assert aufnahme.einstufung(100)[0] == "hoch" and aufnahme.einstufung(80)[0] == "hoch"
     assert aufnahme.einstufung(79)[0] == "mittel" and aufnahme.einstufung(65)[0] == "mittel"
