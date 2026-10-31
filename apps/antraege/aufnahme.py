@@ -56,14 +56,23 @@ def _quote(a: str, b: str) -> float:
     return difflib.SequenceMatcher(None, a, b).ratio() if a and b else 0.0
 
 
+def _namen_paar(vorname: str, nachname: str, v2: str, n2: str) -> float:
+    """Ähnlichkeit, wenn Vorname→v2 und Nachname→n2 zusammengehören. Beide Hälften müssen passen:
+    passt nur eine (z. B. gleicher Nachname, aber anderer Vorname), wird stark abgewertet, damit
+    nicht schon halbe Namensgleichheit als Treffer durchgeht."""
+    vn, nn = _quote(normal(vorname), normal(v2)), _quote(normal(nachname), normal(n2))
+    mittel = (vn + nn) / 2
+    schwaecher = min(vn, nn)
+    # Erst ab spürbarer Ähnlichkeit beider Hälften zählt der Name voll; darunter (z. B. zufällig
+    # ein paar gleiche Buchstaben im Vornamen) fällt der Wert schnell ab.
+    return mittel if schwaecher >= 0.55 else mittel * (schwaecher / 0.55) ** 2
+
+
 def namens_aehnlichkeit(vorname: str, nachname: str, v2: str, n2: str) -> float:
-    """0 bis 1; vertauschte Vor- und Nachnamen und Doppelnamen zählen voll."""
-    a, b = normal(f"{vorname} {nachname}"), normal(f"{v2} {n2}")
-    sortiert = lambda t: " ".join(sorted(t.split()))  # noqa: E731
+    """0 bis 1; berücksichtigt auch vertauschte Vor- und Nachnamen."""
     return max(
-        _quote(a, b),
-        _quote(a, normal(f"{n2} {v2}")),
-        _quote(sortiert(a), sortiert(b)),
+        _namen_paar(vorname, nachname, v2, n2),
+        _namen_paar(vorname, nachname, n2, v2),  # Vor- und Nachname vertauscht
     )
 
 

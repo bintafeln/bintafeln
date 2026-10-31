@@ -223,6 +223,18 @@ def test_kundenabgleich_sperrzeit_und_ausnahmen():
     assert hinweis["art"] == "ok" and "Sperrzeit vorbei" in hinweis["text"]
 
 
+def test_abgleich_seite_hat_regler_und_prozent(admin_client, modul_an):
+    h = Haushalt.objects.create(kundennummer="900")
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika", nachname="Beispiel",
+                          geburtsdatum=dt.date(1980, 2, 3))  # fmt: skip
+    antrag(geburtsdatum=dt.date(1980, 2, 3))
+    ablauf.automatik()  # legt die Wartestände an, damit der Antrag auf der Abgleich-Seite steht
+    seite = admin_client.get(reverse("warteliste:abgleich")).content.decode()
+    assert "% Übereinstimmung" in seite
+    assert 'id="min-score"' in seite and "data-punkte=" in seite
+    assert "js/abgleich.js" in seite
+
+
 def test_auskunft_enthaelt_warteliste(pdf_text):
     a = antrag()
     ablauf.einladen([a], termin(), "Büro", mail_senden=False)

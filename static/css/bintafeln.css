@@ -707,6 +707,9 @@ tr.wunsch td { background: var(--erfolg); }
 .einstufung-mittel { background: var(--erfolg); color: var(--akzent-dunkel); }
 .einstufung-niedrig { background: var(--flaeche); color: var(--leise); border: 1px solid var(--rand); }
 .abgleich-gruppe { margin: .75rem 0; }
+.abgleich-regler { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .75rem;
+  margin: .5rem 0 1rem; }
+.abgleich-regler input[type="range"] { flex: 1 1 12rem; max-width: 20rem; }
 .abgleich-gruppe summary { cursor: pointer; padding: .35rem 0; }
 tr.unterschied td { background: #fff6dc; }
 label.wahl { display: block; white-space: nowrap; }

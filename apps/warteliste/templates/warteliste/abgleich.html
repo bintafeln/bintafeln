@@ -1,6 +1,8 @@
 {% extends "base.html" %}
+{% load static %}
 {% block titel %}Abgleich mit dem Kundenstamm{% endblock %}
 {% block inhalt %}
+<script src="{% static 'js/abgleich.js' %}" defer></script>
 <section class="karte breit">
   <h1>Abgleich mit dem Kundenstamm</h1>
   <p>Geprüft wurden {{ geprueft }} {% if alle %}offene Anträge{% else %}Anträge mit Status „neu“ oder „wartend“{% endif %}
@@ -11,8 +13,16 @@
     nicht eingeladen und erscheint danach wieder als „Wartezeit abgelaufen“), bei noch gültigem Ausweis wird er als
     Verlängerung vermerkt. <strong>„Nein“</strong> blendet den Treffer aus. Ungeprüfte Fälle mit Sperrzeit lädt „Einladen“
     nicht ein.</p>
+  {% if ergebnis %}
+  <div class="abgleich-regler" data-abgleich-regler>
+    <label for="min-score">Nur Treffer ab <output id="min-score-wert">65</output> % Übereinstimmung anzeigen</label>
+    <input type="range" id="min-score" min="55" max="100" step="5" value="65">
+    <span class="hinweis" data-abgleich-zahl></span>
+  </div>
+  <p class="hinweis" data-abgleich-leer hidden>Kein Treffer über dieser Übereinstimmung – Regler nach links schieben.</p>
+  {% endif %}
   {% for e in ergebnis %}
-  <section class="karte{% if e.sperr %} ampel ampel-rot{% endif %}">
+  <section class="karte{% if e.sperr %} ampel ampel-rot{% endif %}" data-antrag-block>
     <h2><a href="{% url 'warteliste:eintrag' e.antrag.pk %}">{{ e.antrag.nachname }}, {{ e.antrag.vorname }}</a> <small>· Antrag {{ e.antrag.nummer }}{% if e.antrag.geburtsdatum %} · geb. {{ e.antrag.geburtsdatum|date:"d.m.Y" }}{% endif %}{% if e.antrag.plz or e.antrag.strasse %} · {{ e.antrag.strasse }} {{ e.antrag.plz }} {{ e.antrag.ort }}{% endif %}</small></h2>
     {% include "warteliste/_treffer.html" with treffer=e.treffer antrag=e.antrag entscheiden=True %}
   </section>
