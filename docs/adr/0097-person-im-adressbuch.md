@@ -51,6 +51,12 @@ Import, die Löschfristen und viele Tests. Er kommt deshalb – wie es die Grund
    bestehende Pläne, Ausfälle und Ersätze um.
 3. **Einsatztage bei der Person** anzeigen; Auskunft Art. 15, Datensicherung, Import und
    Löschfristen auf den neuen Aufbau nachziehen.
+4. **Jedes Mitarbeiter-Konto wird eine Person im Adressbuch.** Zunächst hatten nur Fahrdienst-
+   und Dienstplan-Teilnehmer eine Adresse bekommen; Konten mit anderer Rolle fehlten im
+   Adressbuch. Beim Anlegen eines Kontos entsteht nun immer eine verknüpfte Adresse
+   (`verwaltung.adresse_abgleichen`), und eine Datenmigration (`adressen.0007`) holt das für
+   bestehende Konten nach. Wer eine mitmachende Rolle hat (Ausgabe, Einlass, Fahrer, Beifahrer),
+   wird dabei als Helfer markiert; Konten einer Ausgabestelle (Einlass-Tablet) bleiben außen vor.
 
 ## Begründung
 

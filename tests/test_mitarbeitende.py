@@ -129,6 +129,33 @@ def test_bearbeiten(admin_client, benutzer_mit_rolle):
     assert "Kim Probe gespeichert" in admin_client.get(LISTE).content.decode()
 
 
+def test_anlegen_legt_adresse_an_und_markiert_helfer(admin):
+    from apps.adressen.models import Adresse
+
+    # Rolle Ausgabe → Adresse wird angelegt und als Helfer markiert (ADR 0097)
+    ziel, _ = verwaltung.anlegen(
+        admin, {"username": "lea", "first_name": "Lea", "last_name": "Helfer"}, [rollen.AUSGABE]
+    )
+    adr = Adresse.objects.get(konto=ziel)
+    assert adr.art == Adresse.Art.PERSON and adr.name == "Lea Helfer"
+    assert adr.helfer and adr.helfer_aktiv
+    # Rolle Büro → Adresse ja, aber nicht automatisch als Helfer
+    buero, _ = verwaltung.anlegen(admin, {"username": "bo"}, [rollen.BUERO])
+    assert Adresse.objects.get(konto=buero).helfer is False
+    # Spätere Rollenänderung auf Ausgabe markiert die vorhandene Adresse als Helfer
+    verwaltung.bearbeiten(admin, buero, [rollen.AUSGABE])
+    assert Adresse.objects.get(konto=buero).helfer is True
+
+
+def test_ausgabestellen_konto_bekommt_keine_adresse(admin):
+    from apps.adressen.models import Adresse
+    from apps.kunden.models import Ausgabestelle
+
+    stelle = Ausgabestelle.objects.create(name="Mitte")
+    konto, _ = verwaltung.anlegen(admin, {"username": "tablet-mitte", "stelle": stelle}, [])
+    assert not Adresse.objects.filter(konto=konto).exists()  # Stellen-Konto ist keine Person
+
+
 def test_admin_kann_sich_admin_rolle_nicht_nehmen(als):
     client, zweiter = als(rollen.ADMIN, "zweiter")
     antwort = client.post(
