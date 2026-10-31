@@ -49,7 +49,8 @@ def _im_verein(adressen, wahl: str):
     if wahl == "passiv":
         return adressen.filter(mitglied, mitglied__art="Passives Mitglied")
     if wahl == "helfer":
-        return adressen.filter(Q(kategorien__name=HELFER)
+        # Kennzeichen helfer=True oder (noch) die alte Kategorie „Ehrenamtliche Helfer“
+        return adressen.filter(Q(helfer=True) | Q(kategorien__name=HELFER)
                                | (mitglied & Q(mitglied__art="Aktives Mitglied")))  # fmt: skip
     if wahl == "spender":
         return adressen.filter(Q(kategorien__name="Spender") | Q(spenden__isnull=False))
@@ -87,7 +88,7 @@ SORTIERUNG = {
 }
 # Spalten zum Zu-/Abwählen je Person (Name öffnet die Adresse und bleibt immer sichtbar).
 SPALTEN = [("name", "Name"), ("ort", "Ort"), ("telefon", "Telefon"), ("email", "E-Mail"),
-           ("kategorien", "Kategorien")]  # fmt: skip
+           ("kategorien", "Kategorien"), ("helfer", "Helfer")]  # fmt: skip
 SPALTEN_FEST = {"name"}
 
 
@@ -143,6 +144,8 @@ def adresse(request, pk):
     if rollen.hat_recht(request.user, "mitglieder.sehen"):
         kontext["mitglied"] = getattr(a, "mitglied", None)
         kontext["zeige_mitglied"] = True
+    # Verknüpftes Konto und seine Stammdaten nur für Mitarbeitenden-Verwalter
+    kontext["darf_konto"] = rollen.darf_mitarbeitende_verwalten(request.user)
     return render(request, "adressen/adresse.html", kontext)
 
 
@@ -150,7 +153,8 @@ def adresse(request, pk):
 @rollen.recht_erforderlich("adressen.bearbeiten")
 def bearbeiten(request, pk=None):
     a = get_object_or_404(Adresse, pk=pk) if pk else Adresse()
-    form = AdresseForm(request.POST or None, instance=a)
+    konto_waehlbar = rollen.darf_mitarbeitende_verwalten(request.user)
+    form = AdresseForm(request.POST or None, instance=a, konto_waehlbar=konto_waehlbar)
     m_form, ist_mitglied = _mitglied_formular(request, a)
     gueltig = form.is_valid() and (not ist_mitglied or m_form.is_valid())
     if request.method == "POST" and gueltig:

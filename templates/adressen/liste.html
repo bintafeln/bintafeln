@@ -44,7 +44,7 @@
   {% blaettern seite %}
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th class="auswahl"><input type="checkbox" data-alle="id" form="auswahl" aria-label="Alle auswählen" title="alle / keine"></th>{% sortkopf "Name" "name" sort %}{% if "ort" in sichtbar %}{% sortkopf "Ort" "ort" sort %}{% endif %}{% if "telefon" in sichtbar %}{% sortkopf "Telefon" "telefon" sort %}{% endif %}{% if "email" in sichtbar %}{% sortkopf "E-Mail" "email" sort %}{% endif %}{% if "kategorien" in sichtbar %}{% sortkopf "Kategorien" %}{% endif %}</tr></thead>
+    <thead><tr><th class="auswahl"><input type="checkbox" data-alle="id" form="auswahl" aria-label="Alle auswählen" title="alle / keine"></th>{% sortkopf "Name" "name" sort %}{% if "ort" in sichtbar %}{% sortkopf "Ort" "ort" sort %}{% endif %}{% if "telefon" in sichtbar %}{% sortkopf "Telefon" "telefon" sort %}{% endif %}{% if "email" in sichtbar %}{% sortkopf "E-Mail" "email" sort %}{% endif %}{% if "kategorien" in sichtbar %}{% sortkopf "Kategorien" %}{% endif %}{% if "helfer" in sichtbar %}{% sortkopf "Helfer" %}{% endif %}</tr></thead>
     <tbody>
     {% for a in seite %}
       <tr><td class="auswahl"><input type="checkbox" name="id" value="{{ a.pk }}" form="auswahl" aria-label="Zeile auswählen"></td>
@@ -53,6 +53,7 @@
         {% if "telefon" in sichtbar %}<td data-titel="Telefon">{{ a.telefon|default:a.mobil }}</td>{% endif %}
         {% if "email" in sichtbar %}<td data-titel="E-Mail">{% if a.email %}<a href="mailto:{{ a.email }}">{{ a.email }}</a>{% endif %}</td>{% endif %}
         {% if "kategorien" in sichtbar %}<td data-titel="Kategorien">{% for k in a.kategorien.all %}<span class="marke-rolle">{{ k.name }}</span> {% endfor %}</td>{% endif %}
+        {% if "helfer" in sichtbar %}<td data-titel="Helfer">{% if a.helfer %}{% if a.helfer_aktiv %}<span class="marke-rolle">Helfer</span>{% else %}<span class="marke-rolle leise">inaktiv</span>{% endif %}{% endif %}</td>{% endif %}
       </tr>
     {% empty %}
       <tr><td colspan="{{ sichtbar|length|add:1 }}">Keine Adressen gefunden.</td></tr>

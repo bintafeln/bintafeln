@@ -189,3 +189,36 @@ def test_filter_im_verein(admin_client, benutzer_mit_rolle, anmelden, client):
     antwort = client.get(reverse("adressen:liste"), {"verein": "passiv"})
     assert [w for w, _ in antwort.context["verein_wahl"]] == ["helfer", "spender"]
     assert antwort.context["filter"]["verein"] == ""
+
+
+def test_helfer_und_konto_verknuepfen(admin_client, django_user_model):
+    konto = django_user_model.objects.create_user("helga", first_name="Helga",
+                                                   last_name="Helfer")  # fmt: skip
+    neu = reverse("adressen:neu")
+    # Die Maske bietet den Abschnitt „Mitarbeit"
+    assert "<legend>Mitarbeit</legend>" in admin_client.get(neu).content.decode()
+    antwort = admin_client.post(neu, {
+        "art": "person", "vorname": "Helga", "nachname": "Helfer", "plz": "1", "ort": "X",
+        "helfer": "on", "helfer_aktiv": "on", "konto": konto.pk,
+    })  # fmt: skip
+    a = Adresse.objects.get(nachname="Helfer")
+    assert antwort.url == reverse("adressen:adresse", args=[a.pk])
+    assert a.helfer and a.helfer_aktiv and a.konto_id == konto.pk
+    # Detailseite: Abschnitt Mitarbeit mit Verweis auf die Stammdaten des Kontos
+    seite = admin_client.get(antwort.url).content.decode()
+    assert "Mitarbeit" in seite and "Stammdaten" in seite
+    # Liste: Filter „ehrenamtliche Helfer" findet sie, Spalte zeigt „Helfer"
+    liste = admin_client.get(LISTE, {"verein": "helfer"})
+    assert a in list(liste.context["seite"]) and "Helfer" in liste.content.decode()
+    # Inaktiv geschaltet steht „inaktiv" in der Liste
+    Adresse.objects.filter(pk=a.pk).update(helfer_aktiv=False)
+    assert "inaktiv" in admin_client.get(LISTE).content.decode()
+
+
+def test_konto_nur_bei_person(admin_client, django_user_model):
+    konto = django_user_model.objects.create_user("firmenkonto")
+    fehlt = admin_client.post(reverse("adressen:neu"), {
+        "art": "organisation", "organisation": "Firma X", "konto": konto.pk,
+    }).content.decode()  # fmt: skip
+    assert "Ein Konto gibt es nur bei einer Person." in fehlt
+    assert not Adresse.objects.filter(organisation="Firma X").exists()

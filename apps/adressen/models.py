@@ -49,6 +49,22 @@ class Adresse(models.Model):
         AdressKategorie, blank=True, related_name="adressen", verbose_name="Kategorien"
     )
     notiz = models.TextField("Notiz", blank=True)
+    # Mitarbeit: Helfer-Kennzeichen und – für Personen, die sich anmelden – das Login-Konto.
+    # Eine als Helfer aktiv markierte Person steht später im Dienstplan/Fahrdienst zur Auswahl
+    # (ADR 0097). Die Verknüpfung zum Konto ist fest 1:1; das Konto bleibt das Anmelde-Objekt.
+    helfer = models.BooleanField(
+        "Ehrenamtlicher Helfer", default=False,
+        help_text="Kann im Dienstplan und Fahrdienst eingeteilt werden.",
+    )  # fmt: skip
+    helfer_aktiv = models.BooleanField(
+        "Helfer aktiv", default=True,
+        help_text="Inaktive Helfer werden nicht mehr zur Einteilung vorgeschlagen.",
+    )  # fmt: skip
+    konto = models.OneToOneField(
+        "konten.Benutzer", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="adresse", verbose_name="Konto",
+        help_text="Das Anmelde-Konto dieser Person (für Helfer, die sich selbst anmelden).",
+    )  # fmt: skip
     einwilligung_post = models.DateField(
         "Einwilligung Post seit", null=True, blank=True,
         help_text="Datum, ab dem Briefe (z. B. Serienbriefe) erlaubt sind.",
@@ -75,6 +91,9 @@ class Adresse(models.Model):
             raise ValidationError({"nachname": "Bei einer Person ist der Nachname nötig."})
         if self.art == self.Art.ORGANISATION and not self.organisation:
             raise ValidationError({"organisation": "Bitte den Namen der Organisation angeben."})
+        if self.art == self.Art.ORGANISATION and (self.konto_id or self.helfer):
+            raise ValidationError("Konto und Helfer gibt es nur bei einer Person, nicht bei einer "
+                                  "Organisation.")  # fmt: skip
 
     @property
     def personenname(self) -> str:
