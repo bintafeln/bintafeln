@@ -988,6 +988,16 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 .kopf-programm strong { font-size: 1.15rem; font-weight: 800; }
 .kopf-untertitel { font-size: .75rem; opacity: .9; }
 .kopf-rechts { display: flex; align-items: center; gap: .25rem 1rem; margin-left: auto; }
+/* Kleines „?“ in der Kopfzeile: Hilfe zur aktuellen Seite */
+.hilfe-knopf { display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 1.9rem; height: 1.9rem; border-radius: 999px; border: 2px solid var(--akzent);
+  color: var(--akzent-dunkel); background: var(--flaeche); font-weight: 800; line-height: 1;
+  text-decoration: none; }
+.hilfe-knopf:hover, .hilfe-knopf:focus { background: var(--akzent); color: var(--auf-akzent); }
+/* Fremder Kunde am Einlass: knappe Ampel-Begründung */
+.fremd-ampel { font-weight: 700; margin: .5rem 0 .25rem; }
+.fremd-ampel-rot { color: var(--fehler); }
+.fremd-gruende { margin: 0; padding-left: 1.2rem; }
 .kopf-wetter { white-space: nowrap; font-size: .95rem; }
 .kopf-fortschritt { position: relative; white-space: nowrap; font-size: .9rem; font-variant-numeric: tabular-nums; cursor: help; }
 /* Erklärungsblase: erscheint sofort bei Maus darüber oder beim Antippen (Fokus) */

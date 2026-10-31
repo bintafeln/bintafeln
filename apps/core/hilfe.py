@@ -124,3 +124,86 @@ def gegliedert(kapitel: list[Kapitel]) -> list[tuple[str, list[Kapitel]]]:
     for k in kapitel:
         teile.setdefault(k.teil, []).append(k)
     return list(teile.items())
+
+
+# Welches Hilfe-Kapitel passt zu welcher Programmseite (für das „?“ oben rechts auf jeder Seite)?
+# Zuerst die genaue Adresse „Namespace:Name“, sonst das Standardkapitel der App, sonst – bei einem
+# zuschaltbaren Modul – dessen erstes Kapitel. Bleibt es leer, führt das „?“ zur Handbuch-Übersicht.
+# Eine unbekannte Kennung ist harmlos: der Anker fehlt dann nur, die Hilfe öffnet ganz oben.
+_SEITE = {
+    "ausgabe:empfang": "einlass",
+    "ausgabe:kasse": "kasse",
+    "ausgabe:nachtragen": "nachtragen",
+    "ausgabe:korrekturen": "korrekturen",
+    "ausgabe:sonderaktionen": "sonderaktionen",
+    "ausgabe:sonderaktion": "sonderaktionen",
+    "ausgabe:sonderaktion_neu": "sonderaktionen",
+    "ausgabe:einstellungen": "einstellungen",
+    "kunden:uebersicht": "kunden-finden",
+    "kunden:haushalt": "kunden-finden",
+    "kunden:verlaengern": "kunden-finden",
+    "kunden:nachrichten": "notizen",
+    "kunden:haushalt_neu": "kunden-bearbeiten",
+    "kunden:bearbeiten": "kunden-bearbeiten",
+    "kunden:ausgabestellen": "ausgabestellen",
+    "kunden:ausweis_gestalten": "ausweis",
+    "kunden:zugriffe": "auskunft",
+    "kunden:einstellungen": "einstellungen",
+    "antraege:liste": "antraege",
+    "antraege:aufnahme": "aufnahme",
+    "antraege:einstellungen": "einstellungen",
+    "adressen:liste": "adressbuch",
+    "mitglieder:liste": "mitglieder",
+    "mitglieder:einstellungen": "mitglieder",
+    "spenden:liste": "spenden",
+    "spenden:bestaetigungen": "zuwendungsbestaetigungen",
+    "spenden:einstellungen": "zuwendungsbestaetigungen",
+    "serienbriefe:erstellen": "serienbriefe",
+    "serienbriefe:vorlagen": "serienbriefe",
+    "statistik:uebersicht": "statistik",
+    "statistik:verband": "statistik",
+    "datenimport:start": "datenimport",
+    "konten:mitarbeitende": "mitarbeitende",
+    "konten:rollen": "rollen",
+    "konten:stellen": "einstellungen",
+    "konten:personal_einstellungen": "einstellungen",
+    "konten:anmelde_einstellungen": "einstellungen",
+    "konten:mein_konto": "erste-schritte",
+    "personal:liste": "personal",
+    "personal:meine_arbeitszeit": "arbeitszeit",
+    "personal:arbeitszeit_einstellungen": "einstellungen",
+    "core:start": "erste-schritte",
+    "core:suche": "suche",
+    "core:einstellungen": "einstellungen",
+    "core:rechtstexte": "einstellungen",
+    "core:mail_einstellungen": "einstellungen",
+    "core:protokoll": "protokoll",
+    "core:papierkorb": "papierkorb",
+    "core:sicherungen": "sicherungen",
+    "core:datensicherung": "datensicherung",
+    "core:update": "update",
+    "core:verzeichnis": "betrieb",
+}
+_APP = {
+    "ausgabe": "einlass",
+    "kunden": "kunden-finden",
+    "antraege": "antraege",
+    "adressen": "adressbuch",
+    "mitglieder": "mitglieder",
+    "spenden": "spenden",
+    "serienbriefe": "serienbriefe",
+    "statistik": "statistik",
+    "datenimport": "datenimport",
+    "personal": "personal",
+}
+
+
+def kennung_fuer(view_name: str, app_name: str = "") -> str:
+    """Kapitel-Kennung für die aktuelle Seite (``Namespace:Name``); leer = Handbuch-Übersicht."""
+    if view_name in _SEITE:
+        return _SEITE[view_name]
+    if app_name in _APP:
+        return _APP[app_name]
+    # Zuschaltbares Modul: sein erstes Kapitel (Modul-Kennung = URL-Namespace der App).
+    kapitel = _modul_kapitel().get(app_name)
+    return kapitel[0].kennung if kapitel else ""
