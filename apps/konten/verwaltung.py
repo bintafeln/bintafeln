@@ -56,16 +56,11 @@ def _rollen_setzen(verwalter, ziel, rollen_namen) -> None:
     rollen.rechte_vergessen(ziel)
 
 
-# Rollen, deren Konten im Dienstplan/Fahrdienst einteilbar sein sollen (ADR 0097). „Einlass“ nur,
-# falls eine Tafel eine solche Rolle angelegt hat; Büro, Personal und Admin zählen nicht dazu.
-HELFER_ROLLEN = [rollen.AUSGABE, "Einlass", rollen.FAHRER, rollen.BEIFAHRER]
-
-
 def adresse_abgleichen(ziel) -> None:
-    """Jedes Mitarbeiter-Konto ist eine Person im Adressbuch (ADR 0097): fehlt die verknüpfte
-    Adresse, wird sie aus den Kontodaten angelegt. Hat das Konto eine mitmachende Rolle (Ausgabe,
-    Einlass, Fahrer, Beifahrer), wird die Person als ehrenamtlicher Helfer markiert. Konten einer
-    Ausgabestelle (Einlass-Tablet) bleiben außen vor."""
+    """Jedes Mitarbeiter-Konto ist eine Person im Adressbuch (ADR 0097) und ein ehrenamtlicher
+    Helfer (im Dienst-/Fahrdienstplan einteilbar). Helfer sind überall tätig – Ausgabe,
+    Fahrdienst, Büro, Lager, Sortierung … –, deshalb werden alle Konten als Helfer markiert.
+    Konten einer Ausgabestelle (Einlass-Tablet) bleiben außen vor; sie sind keine Person."""
     if ziel.stelle_id:
         return
     from apps.adressen.models import Adresse
@@ -77,7 +72,7 @@ def adresse_abgleichen(ziel) -> None:
             art=Adresse.Art.PERSON, konto=ziel,
             vorname=(ziel.first_name or "")[:100],
             nachname=(ziel.last_name or ziel.get_username())[:100],
-            email=ziel.email or "", helfer_aktiv=ziel.is_active,
+            email=ziel.email or "", helfer=True, helfer_aktiv=ziel.is_active,
             anrede=getattr(stamm, "anrede", "") or "",
             strasse=getattr(stamm, "strasse", "") or "",
             plz=getattr(stamm, "plz", "") or "",
@@ -85,15 +80,10 @@ def adresse_abgleichen(ziel) -> None:
             telefon=getattr(stamm, "telefon", "") or "",
             mobil=getattr(stamm, "handy", "") or "",
         )  # fmt: skip
-    ist_helfer = ziel.groups.filter(name__in=HELFER_ROLLEN).exists()
-    geaendert = adr.pk is None
-    if ist_helfer and not adr.helfer:
-        adr.helfer = True
-        if geaendert:  # neu angelegt → Aktiv-Status aus dem Konto übernehmen
-            adr.helfer_aktiv = ziel.is_active
-        geaendert = True
-    if geaendert:
         adr.save()
+    elif not adr.helfer:  # vorhandene Adresse (z. B. aus dem Fahrdienst) als Helfer markieren
+        adr.helfer = True
+        adr.save(update_fields=["helfer"])
 
 
 def _pruefen(verwalter, ziel):

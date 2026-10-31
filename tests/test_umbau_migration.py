@@ -68,8 +68,8 @@ def _mitarbeiter_werden_adressen():
     Adresse = neu.get_model("adressen", "Adresse")
     a_helfer = Adresse.objects.get(konto=helfer.pk)
     assert a_helfer.nachname == "Ausgabe" and a_helfer.helfer and a_helfer.helfer_aktiv
-    a_buero = Adresse.objects.get(konto=buero.pk)
-    assert a_buero.helfer is False  # Büro ist keine mitmachende Rolle
+    # Alle Mitarbeiter-Konten werden Helfer – auch das Büro-Konto
+    assert Adresse.objects.get(konto=buero.pk).helfer is True
 
 
 def _umbau_mit_echten_daten():

@@ -1,26 +1,20 @@
 """Jedes Mitarbeiter-Konto wird eine Person im Adressbuch (ADR 0097).
 
 Der Umbau hatte Adressen bisher nur für Fahrdienst- und Dienstplan-Teilnehmer angelegt.
-Mitarbeitende mit Konto, aber ohne diese Einteilung (z. B. nur Rolle „Ausgabe“), fehlten deshalb
-im Adressbuch und waren nicht als Helfer markiert. Diese Migration legt für jedes Konto – außer
-dem einer Ausgabestelle (Einlass-Tablet, ADR 0059) – eine verknüpfte Adresse an, falls noch keine
-da ist, und markiert alle mit einer mitmachenden Rolle als ehrenamtliche Helfer.
+Mitarbeitende mit Konto, aber ohne diese Einteilung (z. B. nur Rolle „Ausgabe“ oder im Büro,
+Lager, in der Sortierung), fehlten deshalb im Adressbuch und waren nicht als Helfer markiert.
+Diese Migration legt für jedes Konto – außer dem einer Ausgabestelle (Einlass-Tablet, ADR 0059) –
+eine verknüpfte Adresse an, falls noch keine da ist, und markiert alle als ehrenamtliche Helfer
+(Helfer sind überall tätig; einzelne Nicht-Helfer kann der Admin im Adressbuch abwählen).
 """
 
 from django.db import migrations
-
-# Rollen, deren Konten im Dienstplan/Fahrdienst einteilbar sein sollen (mitgelieferte Namen;
-# „Einlass“ ist nur dann vorhanden, wenn eine Tafel eine solche Rolle angelegt hat).
-HELFER_ROLLEN = ["Ausgabe", "Einlass", "Fahrer", "Beifahrer"]
 
 
 def mitarbeiter_zu_adressen(apps, schema_editor):
     Adresse = apps.get_model("adressen", "Adresse")
     Benutzer = apps.get_model("konten", "Benutzer")
 
-    helfer_ids = set(
-        Benutzer.objects.filter(groups__name__in=HELFER_ROLLEN).values_list("pk", flat=True)
-    )
     # Konten einer Ausgabestelle sind keine Personen (stelle_id gesetzt) → auslassen.
     for b in Benutzer.objects.filter(stelle__isnull=True):
         adr = Adresse.objects.filter(konto_id=b.pk).first()
@@ -32,6 +26,7 @@ def mitarbeiter_zu_adressen(apps, schema_editor):
                 nachname=(b.last_name or b.username)[:100],
                 email=b.email or "",
                 konto_id=b.pk,
+                helfer=True,
                 helfer_aktiv=b.is_active,
             )
             if stamm is not None:
@@ -41,11 +36,10 @@ def mitarbeiter_zu_adressen(apps, schema_editor):
                 adr.ort = stamm.ort or ""
                 adr.telefon = stamm.telefon or ""
                 adr.mobil = stamm.handy or ""
-        if b.pk in helfer_ids and not adr.helfer:
+            adr.save()
+        elif not adr.helfer:  # vorhandene Adresse (z. B. aus dem Fahrdienst) als Helfer markieren
             adr.helfer = True
-            if adr.pk is None:
-                adr.helfer_aktiv = b.is_active
-        adr.save()
+            adr.save(update_fields=["helfer"])
 
 
 class Migration(migrations.Migration):
