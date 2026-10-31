@@ -1181,13 +1181,15 @@ Ersetzt den ausgehängten Papierplan der Ausgabe (ADR 0077), wie der Fahrdienst 
 
 - **Je Ausgabestelle** einzeln zuschaltbar, mit beliebigen Ausgabetagen (z. B. Mo, Mi, Fr), je Tag
   eine **Teamleitung** und „Abmeldungen unter“ (Telefon). Einstellungen unter „Einstellungen →
-  Dienstpläne → Ausgabe: Aufgaben und Helfer“ (Recht „Dienstplan planen“, Vorgabe Büro).
+  Dienstpläne → Ausgabe: Aufgaben und Besetzung“ (Recht „Dienstplan planen“, Vorgabe Büro).
 - **Aufgaben** je Ausgabetag mit Uhrzeit (z. B. Teamleitung 09:00–15:00, Kasse, 4× Obst, Springer),
   „muss besetzt sein“ abschaltbar; „Übernehmen von“ kopiert einen anderen Tag; „Standard-Aufgaben
   anlegen“ füllt alle Ausgabetage ohne Aufgaben mit den Aufgaben des Papierplans (ohne Namen),
   „Standard-Aufgaben für … anlegen“ ersetzt die Aufgaben eines Tages, an dem schon welche stehen.
-- **Helfer** mit Konto (sehen den Plan, melden sich selbst ab) oder nur mit Name und Telefon; alle
-  Konten einer Rolle lassen sich auf einmal übernehmen.
+- **Helfer** werden im **Adressbuch** gepflegt (ADR 0097): eine Person dort als „Ehrenamtlicher
+  Helfer“ markieren und auf aktiv stellen. Aktive Helfer stehen im Dienstplan und im Fahrdienst zur
+  Auswahl; wer ein Konto hat, sieht den Plan und meldet sich selbst ab. Die Einstellungsseite zeigt
+  die aktiven Helfer und verlinkt ins Adressbuch.
 - **Plan** „Dienstpläne → Ausgabe → Dienstplan der Ausgabe“: Ausgabestelle, Ausgabetag und Monat wählen; Zeilen Aufgaben,
   Spalten Termine. Ausfall (krank, Urlaub, Sonstiges, wie lange) selbst oder durch die Teamleitung;
   der Platz steht dann „offen“, Ersatz (nur wer frei ist) oder Gast eintragen.

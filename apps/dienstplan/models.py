@@ -2,14 +2,12 @@
 Ausfälle und Ersatz – wie der Fahrdienst (ADR 0074), aber je Ausgabestelle und mit Teamleitung
 je Ausgabetag, die bei einem Ausfall benachrichtigt wird.
 
-Eingeteilt werden ``Helfer``: mit Konto (dann melden sie ihren Ausfall selbst) oder nur mit Name
-und Telefon. Der Plan eines Tages entsteht aus der festen ``Besetzung`` der Aufgaben dieses
-Wochentags; Regeln in ``apps/dienstplan/plan.py``.
+Eingeteilt werden Personen aus dem Adressbuch, die als aktive Helfer markiert sind (ADR 0097);
+mit Konto melden sie ihren Ausfall selbst. Der Plan eines Tages entsteht aus der festen
+``Besetzung`` der Aufgaben dieses Wochentags; Regeln in ``apps/dienstplan/plan.py``.
 """
 
 from auditlog.registry import auditlog
-from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
@@ -61,53 +59,6 @@ class DienstplanEinstellungen(models.Model):
         return einstellungen
 
 
-class Helfer(models.Model):
-    """Wer in der Ausgabe eingeteilt werden kann – mit Konto oder nur mit Namen."""
-
-    benutzer = models.OneToOneField(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True,
-        related_name="dienstplan_helfer", verbose_name="Konto",
-        help_text="Mit Konto sieht die Person den Plan und meldet ihren Ausfall selbst.",
-    )  # fmt: skip
-    name = models.CharField("Name", max_length=150, blank=True,
-                            help_text="Nur ohne Konto nötig.")  # fmt: skip
-    telefon = models.CharField("Telefon", max_length=50, blank=True)
-    email = models.EmailField("E-Mail", blank=True,
-                              help_text="Für Benachrichtigungen als Teamleitung; mit Konto "
-                              "zählt die E-Mail des Kontos.")  # fmt: skip
-    aktiv = models.BooleanField("Aktiv", default=True)
-    anmerkung = models.CharField("Anmerkung", max_length=200, blank=True)
-
-    class Meta:
-        verbose_name = "Helfer"
-        verbose_name_plural = "Helfer"
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.anzeige
-
-    @property
-    def anzeige(self) -> str:
-        if self.benutzer_id:
-            return self.benutzer.get_full_name() or self.benutzer.get_username()
-        return self.name
-
-    @property
-    def mail(self) -> str:
-        return (self.benutzer.email if self.benutzer_id else "") or self.email
-
-    @property
-    def tel(self) -> str:
-        if self.telefon or not self.benutzer_id:
-            return self.telefon
-        stamm = getattr(self.benutzer, "stammdaten", None)
-        return stamm.telefon if stamm else ""
-
-    def clean(self):
-        if not self.benutzer_id and not self.name.strip():
-            raise ValidationError("Bitte ein Konto wählen oder einen Namen eintragen.")
-
-
 class DienstStelle(models.Model):
     """Eine Ausgabestelle im Dienstplan: ob sie mitmacht und an welchen Tagen Ausgabe ist."""
 
@@ -134,7 +85,7 @@ class Diensttag(models.Model):
     stelle = models.ForeignKey(DienstStelle, on_delete=models.CASCADE, related_name="diensttage")
     wochentag = models.CharField("Wochentag", max_length=2, choices=TAG_WAHL)
     teamleitung = models.ForeignKey(
-        Helfer, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+        "adressen.Adresse", on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
         verbose_name="Teamleitung",
         help_text="Bekommt Ausfälle dieses Tages per E-Mail. Leer = alle, die planen dürfen.",
     )  # fmt: skip
@@ -187,7 +138,9 @@ class Besetzung(models.Model):
     """Wer eine Aufgabe regelmäßig übernimmt (jede Woche an diesem Wochentag)."""
 
     aufgabe = models.OneToOneField(Aufgabe, on_delete=models.CASCADE, related_name="besetzung")
-    helfer = models.ForeignKey(Helfer, on_delete=models.CASCADE, related_name="besetzungen")
+    helfer = models.ForeignKey("adressen.Adresse", on_delete=models.CASCADE,
+                               related_name="dienst_besetzungen",
+                               verbose_name="Person")  # fmt: skip
 
     class Meta:
         verbose_name = "Feste Besetzung"
@@ -200,7 +153,8 @@ class Besetzung(models.Model):
 class Ausfall(models.Model):
     """Jemand kann an einem oder mehreren Tagen nicht."""
 
-    helfer = models.ForeignKey(Helfer, on_delete=models.CASCADE, related_name="ausfaelle")
+    helfer = models.ForeignKey("adressen.Adresse", on_delete=models.CASCADE,
+                               related_name="dienst_ausfaelle", verbose_name="Person")  # fmt: skip
     von = models.DateField("Von")
     bis = models.DateField("Bis")
     grund = models.CharField("Grund", max_length=20, choices=FAHRDIENST_AUSFALLGRUENDE,
@@ -226,8 +180,8 @@ class Ersatz(models.Model):
 
     datum = models.DateField("Datum")
     aufgabe = models.ForeignKey(Aufgabe, on_delete=models.CASCADE, related_name="+")
-    helfer = models.ForeignKey(Helfer, on_delete=models.CASCADE, null=True, blank=True,
-                               related_name="ersatz")  # fmt: skip
+    helfer = models.ForeignKey("adressen.Adresse", on_delete=models.CASCADE, null=True, blank=True,
+                               related_name="dienst_ersatz", verbose_name="Person")  # fmt: skip
     gast = models.CharField("Gast", max_length=100, blank=True)
     eingetragen_von = models.CharField("Eingetragen von", max_length=150, blank=True)
     eingetragen_am = models.DateTimeField("Eingetragen am", auto_now_add=True)
@@ -243,7 +197,6 @@ class Ersatz(models.Model):
 
 
 auditlog.register(DienstplanEinstellungen, exclude_fields=["telegram_schluessel_verschluesselt"])
-auditlog.register(Helfer)
 auditlog.register(DienstStelle)
 auditlog.register(Diensttag)
 auditlog.register(Aufgabe)

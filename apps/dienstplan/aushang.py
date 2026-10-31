@@ -8,11 +8,12 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.adressen.models import Adresse
 from apps.ausgabe.ampel import wochentage
 from apps.core import ausfall as ausfallregeln
 from apps.core.auswahl import AUSFALL_DAUER, FAHRDIENST_AUSFALLGRUENDE
 from apps.dienstplan import plan
-from apps.dienstplan.models import Aufgabe, Diensttag, Helfer
+from apps.dienstplan.models import Aufgabe, Diensttag
 from apps.konten import rollen
 
 
@@ -72,14 +73,14 @@ def platz(teil: str) -> dict | None:
         "titel": f"{TAGNAME[a.wochentag]} {p.datum:%d.%m.%Y} · {a.name} {a.zeit}",
         "wer": p.gast or (str(p.wer) if p.wer else ""),
         "status": _status(p, status),
-        "wer_konto": p.wer.benutzer_id if p.wer else None,
+        "wer_konto": p.wer.konto_id if p.wer else None,
         "kann_ausfallen": p.wer is not None and not p.ausfall,  # auch wer eingesprungen ist
         "kann_einspringen": p.fehlt or p.status == plan.LEER,
         "gruende": FAHRDIENST_AUSFALLGRUENDE,
         "dauer": AUSFALL_DAUER,
         "datum": p.datum.isoformat(),
         "kann_gesund": p.ausfall is not None and not p.ausfall.gesund_ab,
-        "frei": [(h.pk, str(h), h.benutzer_id) for h in plan.verfuegbar(p.datum)],
+        "frei": [(h.pk, str(h), h.konto_id) for h in plan.verfuegbar(p.datum)],
         "hat_ersatz": p.ersatz is not None,
         "recht": "dienstplan.planen",
     }
@@ -102,7 +103,7 @@ def aendern(teil: str, daten, person, von: str, basis: str) -> str:
     if aktion == "ausfall":
         if p.wer is None or p.ausfall:
             raise ValueError("Hier kann niemand ausfallen.")
-        if not planer and p.wer.benutzer_id != person.pk:
+        if not planer and p.wer.konto_id != person.pk:
             raise ValueError("Austragen kann sich nur die Person selbst (oder wer den Dienstplan "
                              "plant).")  # fmt: skip
         grund = daten.get("grund", "")
@@ -116,17 +117,19 @@ def aendern(teil: str, daten, person, von: str, basis: str) -> str:
     if aktion == "gesund":
         if p.ausfall is None or p.ausfall.gesund_ab:
             raise ValueError("Hier ist kein Ausfall, der noch läuft.")
-        if not planer and p.wer.benutzer_id != person.pk:
+        if not planer and p.wer.konto_id != person.pk:
             raise ValueError("Gesund melden kann sich nur die Person selbst (oder wer den "
                              "Dienstplan plant).")  # fmt: skip
         plan.gesund_melden(p.ausfall, timezone.localdate(), f"{basis}{reverse('dienstplan:plan')}")
         return (f"{p.wer} ist wieder da und kann einspringen. Die eigenen Dienste bleiben frei "
                 "bzw. beim Ersatz: Bitte dort wieder eintragen, wo noch jemand fehlt.")  # fmt: skip
     if aktion == "ersatz":
-        h = Helfer.objects.filter(pk=daten.get("helfer") or 0, aktiv=True).first()
+        h = Adresse.objects.filter(
+            pk=daten.get("helfer") or 0, helfer=True, helfer_aktiv=True
+        ).first()
         if h is None or h not in plan.verfuegbar(datum):
             raise ValueError("Diese Person kann an dem Tag nicht einspringen.")
-        if not planer and (h.benutzer_id != person.pk or not (p.fehlt or p.status == plan.LEER)):
+        if not planer and (h.konto_id != person.pk or not (p.fehlt or p.status == plan.LEER)):
             raise ValueError("Einspringen kann man nur selbst und nur auf einem freien Platz (oder "
                              "wer den Dienstplan plant).")  # fmt: skip
         plan.ersatz_eintragen(datum, a, h, von)

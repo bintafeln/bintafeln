@@ -146,7 +146,7 @@ def test_dienstplaene_unter_einem_punkt(admin):
     assert teile == {"Ausgabe": ["Dienstplan der Ausgabe", "Meine Dienste"],
                      "Fahrdienst": ["Fahrerplan", "Meine Einsätze"]}  # fmt: skip
     dp = next(g for g in b["Einstellungen"]["gruppen"] if g["titel"] == "Dienstpläne")
-    assert sorted(e["titel"] for e in dp["eintraege"]) == ["Ausgabe: Aufgaben und Helfer",
+    assert sorted(e["titel"] for e in dp["eintraege"]) == ["Ausgabe: Aufgaben und Besetzung",
                                                      "Fahrdienst: Touren und Springer"]  # fmt: skip
     assert list(b).index("Dienstpläne") == list(b).index("Ausgabestelle") + 1
 

@@ -12,6 +12,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
+from apps.adressen.models import Adresse
 from apps.ausgabe.ampel import WOCHENTAGE, wochentage
 from apps.core import papierkorb
 from apps.core.pdf import pdf_antwort
@@ -21,7 +22,6 @@ from apps.dienstplan.forms import (
     AusfallForm,
     DiensttagForm,
     EinstellungenForm,
-    HelferForm,
     StelleForm,
     helfer_aktiv,
 )
@@ -32,7 +32,6 @@ from apps.dienstplan.models import (
     DienstplanEinstellungen,
     DienstStelle,
     Diensttag,
-    Helfer,
 )
 from apps.konten import rollen
 from apps.konten.views import nicht_in_demo
@@ -182,7 +181,8 @@ def platz(request, datum, aufgabe):
     frei = plan.verfuegbar(tag)
     if request.method == "POST":
         wahl, gast = request.POST.get("helfer", ""), request.POST.get("gast", "").strip()
-        neu = get_object_or_404(Helfer, pk=wahl, aktiv=True) if wahl else None
+        neu = (get_object_or_404(Adresse, pk=wahl, helfer=True, helfer_aktiv=True)
+               if wahl else None)  # fmt: skip
         if neu is not None and neu not in frei:
             messages.error(request, f"{neu} kann am {tag:%d.%m.%Y} nicht einspringen "
                                     "(Ausfall gemeldet oder schon eingeteilt).")  # fmt: skip
@@ -281,7 +281,7 @@ def einstellungen(request):
         "form": form, "beispiel": muster.vorhanden(),
         "stellen": [(s, dienststellen.get(s.pk)) for s in Ausgabestelle.objects.filter(aktiv=True)
                     .order_by("name")],
-        "helfer": Helfer.objects.select_related("benutzer").order_by("-aktiv", "name"),
+        "helfer": helfer_aktiv(),
     })  # fmt: skip
 
 
@@ -342,11 +342,11 @@ def stelle(request, pk):
             messages.success(request, f"{anzahl} Aufgaben von {TAGNAME[request.POST['von']]} "
                                       "übernommen.")  # fmt: skip
             return redirect(hier)
-    aufgaben = ds.aufgaben.filter(wochentag=tag).select_related("besetzung__helfer__benutzer")
+    aufgaben = ds.aufgaben.filter(wochentag=tag).select_related("besetzung__helfer__konto")
     return render(request, "dienstplan/stelle.html", {
         "ausgabestelle": ausgabestelle, "ds": ds, "form": form, "tage": tage, "tag": tag,
         "tagname": TAGNAME.get(tag, ""), "tag_form": tag_form, "neu_form": neu_form,
-        "aufgaben": aufgaben, "helfer": helfer_aktiv().order_by("name"),
+        "aufgaben": aufgaben, "helfer": helfer_aktiv(),
         "andere_tage": [t for t in tage if t != tag],
     })  # fmt: skip
 
@@ -383,45 +383,6 @@ def aufgabe_loeschen(request, pk):
                         a, recht="dienstplan.planen")  # fmt: skip
     messages.success(request, "Aufgabe in den Papierkorb gelegt.")
     return redirect(zurueck)
-
-
-@never_cache
-@planen
-def helfer(request, pk=None):
-    h = get_object_or_404(Helfer, pk=pk) if pk else Helfer()
-    form = HelferForm(request.POST or None, instance=h)
-    if request.method == "POST" and form.is_valid():
-        form.save()
-        messages.success(request, f"{form.instance} gespeichert.")
-        return redirect("dienstplan:einstellungen")
-    return render(request, "dienstplan/helfer.html", {"form": form, "h": h})
-
-
-@require_POST
-@planen
-def helfer_loeschen(request, pk):
-    h = get_object_or_404(Helfer, pk=pk)
-    papierkorb.loeschen(request.user, "Helfer im Dienstplan", str(h), h,
-                        recht="dienstplan.planen")  # fmt: skip
-    messages.success(request, f"{h} in den Papierkorb gelegt.")
-    return redirect("dienstplan:einstellungen")
-
-
-@require_POST
-@planen
-def helfer_uebernehmen(request):
-    """Alle aktiven Konten einer Rolle (z. B. Ausgabe) als Helfer übernehmen."""
-    from django.contrib.auth import get_user_model
-
-    rolle = request.POST.get("rolle", "")
-    konten = get_user_model().objects.filter(is_active=True, groups__name=rolle,
-                                             dienstplan_helfer__isnull=True)  # fmt: skip
-    anzahl = 0
-    for b in konten.distinct():
-        Helfer.objects.create(benutzer=b)
-        anzahl += 1
-    messages.success(request, f"{anzahl} Helfer aus der Rolle „{rolle}“ übernommen.")
-    return redirect("dienstplan:einstellungen")
 
 
 @require_POST
