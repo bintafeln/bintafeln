@@ -34,6 +34,9 @@
     gehört. Klappt <code>git fetch</code> dort auf der Kommandozeile, klappt es auch hier. Bei „Host key verification
     failed“ nach einem Update von einer älteren Version einmalig <code>./betrieb update</code> auf dem Server
     ausführen.</li>
-  <li><strong>Update fehlgeschlagen</strong>: Das Protokoll auf der Seite zeigt, woran es lag. Meist läuft der bisherige
-    Stand weiter; die technisch verantwortliche Person kann mit dem Protokoll helfen.</li>
+  <li><strong>Update fehlgeschlagen</strong>: Kommt eine neue Version nicht sauber hoch (z. B. weil eine Umstellung der
+    Datenbank scheitert), setzt sich bintafeln <strong>automatisch wieder auf den vorigen Stand</strong> zurück und läuft
+    weiter – die Umstellung wird dabei rückgängig gemacht, Ihre Daten bleiben unverändert (vor dem Update wurde zusätzlich
+    gesichert). Die Seite meldet dann das Fehlschlagen; das Protokoll zeigt, woran es lag, und die technisch
+    verantwortliche Person kann damit helfen.</li>
 </ul>

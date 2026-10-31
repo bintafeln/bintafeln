@@ -176,6 +176,11 @@ befehl_update() {
         nachfragen "Ohne Sicherung fortfahren?" || exit 1
     fi
     [[ -z "$rueckwaerts" ]] || migrationen_zuruecksetzen "$ziel"
+    # Den jetzigen Stand merken: Kommt das Update nicht sauber hoch, geht es automatisch hierher
+    # zurück, damit bintafeln weiterläuft (die Admin-Oberfläche wäre sonst nicht erreichbar).
+    local vorher_ref vorher_version
+    vorher_ref=$(git rev-parse HEAD)
+    vorher_version="${installiert:-$(git rev-parse --short HEAD)}"
     hinweis "Stand $ziel holen"
     if [[ "$ziel" == main ]]; then
         git checkout --quiet main
@@ -184,23 +189,60 @@ befehl_update() {
         git checkout --quiet "$ziel"
     fi
     # Die übrigen Schritte führt die gerade geholte Fassung dieses Skripts aus.
-    exec ./betrieb _update_fortsetzen
+    exec ./betrieb _update_fortsetzen "$vorher_ref" "$vorher_version"
 }
 
-befehl_update_fortsetzen() {
+schreibe_version() {
     # Die Anwendung zeigt diese Angabe Admins in der Fußzeile.
     git describe --tags --exact-match 2>/dev/null > VERSION \
         || printf 'main-%s\n' "$(git rev-parse --short HEAD)" > VERSION
+}
+
+befehl_update_fortsetzen() {
+    local vorher_ref="${1:-}" vorher_version="${2:-}"
+    schreibe_version
     hinweis "Images aktualisieren und neu bauen"
     docker compose pull db proxy
     docker compose build --pull
     hinweis "Neu starten (Migrationen laufen automatisch)"
-    docker compose up -d --wait
-    hinweis "Alte Images aufräumen"
-    # Nur Images ohne Namen: die durch den Neubau ersetzten Stände. Ältere Versionen lassen sich
-    # jederzeit wieder aus dem Repository bauen.
-    docker image prune -f
-    befehl_status
+    if docker compose up -d --wait; then
+        hinweis "Alte Images aufräumen"
+        # Nur Images ohne Namen: die durch den Neubau ersetzten Stände. Ältere Versionen lassen
+        # sich jederzeit wieder aus dem Repository bauen.
+        docker image prune -f
+        befehl_status
+        return 0
+    fi
+    # bintafeln kam nicht gesund hoch (z. B. eine Migration oder der Start schlug fehl).
+    echo
+    echo "Das Update ist fehlgeschlagen: bintafeln kam nicht sauber hoch."
+    docker compose logs --tail 50 app 2>&1 | sed 's/^/  /' || true
+    if [[ -z "$vorher_ref" ]]; then
+        fehler "Kein vorheriger Stand bekannt (erstes Update auf diese Fassung). bintafeln bleibt auf dem neuen Stand; die Sicherung von vor dem Update enthält alles. Bitte das Protokoll prüfen."
+    fi
+    auf_vorigen_stand_zurueck "$vorher_ref" "$vorher_version"
+}
+
+# Nach einem fehlgeschlagenen Update zurück auf den vorigen Stand, damit bintafeln weiterläuft.
+auf_vorigen_stand_zurueck() {
+    local vorher_ref="$1" vorher_version="${2:-}"
+    hinweis "Update fehlgeschlagen – zurück auf den vorigen Stand (${vorher_version})"
+    echo "Was das fehlgeschlagene Update erreicht hat, wird rückgängig gemacht. Die Daten bleiben"
+    echo "erhalten (vor dem Update wurde gesichert)."
+    # Noch läuft der neue Code: er kann seine eigenen (teils schon angewandten) Migrationen umkehren.
+    migrationen_zuruecksetzen "$vorher_ref"
+    git checkout --quiet "$vorher_ref"
+    schreibe_version
+    docker compose build --pull
+    if docker compose up -d --wait; then
+        docker image prune -f
+        befehl_status
+        echo
+        fehler "Das Update ist fehlgeschlagen; bintafeln läuft wieder auf dem vorigen Stand ${vorher_version}. Ihre Daten sind unverändert. Bitte das Protokoll prüfen und das Problem melden."
+    fi
+    docker compose logs --tail 50 app 2>&1 | sed 's/^/  /' || true
+    befehl_status || true
+    fehler "Das Update ist fehlgeschlagen und der vorige Stand ließ sich nicht automatisch wiederherstellen. Bitte auf dem Server prüfen; die Sicherung von vor dem Update enthält alles."
 }
 
 befehl_wiederherstellen() {
@@ -304,7 +346,7 @@ main() {
     shift || true
     case "$befehl" in
         update) befehl_update "$@" ;;
-        _update_fortsetzen) befehl_update_fortsetzen ;;
+        _update_fortsetzen) befehl_update_fortsetzen "$@" ;;
         sichern) befehl_sichern ;;
         schluessel) befehl_schluessel ;;
         wiederherstellen) befehl_wiederherstellen "$@" ;;

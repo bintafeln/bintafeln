@@ -30,6 +30,15 @@ Einrichtung auf dem Server (Systemdienst o. Ä.) ist für die Tafeln keine Optio
 - Seite „Einstellungen → Update“ mit neuem Recht `system.update` (Vorgabe Admin), Bestätigung,
   Fortschritt, Ergebnis und Protokoll; in der Demo gesperrt.
 - Der Dienst kommt einmalig mit dem nächsten `./betrieb update` auf die Server.
+- **Automatisches Zurücksetzen bei einem fehlgeschlagenen Update:** Kommt der neue Stand nicht
+  gesund hoch (`docker compose up -d --wait` scheitert, z. B. an einer Migration oder am Start),
+  setzt `./betrieb update` selbsttätig auf den vorigen Stand zurück: die (ggf. teilweise schon
+  angewandten) Migrationen des neuen Codes umkehren (dafür ist jede Migration umkehrbar), den
+  vorigen Commit auschecken, neu bauen und starten. So bleibt bintafeln erreichbar – sonst käme
+  man gerade über die Oberfläche nicht mehr an das Protokoll. Der Aufruf endet trotzdem mit
+  Fehlercode, damit die Update-Seite „fehlgeschlagen“ anzeigt; vor dem Update wird wie bisher
+  gesichert. Nur das allererste Update auf diese Fassung kennt den vorigen Stand noch nicht (der
+  alte Code reicht ihn nicht weiter) und setzt deshalb noch nicht automatisch zurück.
 
 ## Begründung
 
