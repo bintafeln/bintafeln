@@ -64,6 +64,11 @@ class TafelEinstellungen(models.Model):
     ort = models.CharField("Ort", max_length=100, blank=True)
     telefon = models.CharField("Telefon", max_length=50, blank=True)
     email = models.EmailField("E-Mail", blank=True)
+    laendervorwahl = models.CharField(
+        "Ländervorwahl", max_length=4, default="49", blank=True,
+        help_text="Für WhatsApp-Nachrichten: Vorwahl ohne „+“ oder „00“ (Deutschland 49, "
+        "Österreich 43, Schweiz 41). Gilt für Handynummern, die mit 0 beginnen.",
+    )  # fmt: skip
     bundesland = models.CharField(
         "Bundesland",
         max_length=2,

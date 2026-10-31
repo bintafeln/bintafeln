@@ -215,6 +215,17 @@ def test_helfer_und_konto_verknuepfen(admin_client, django_user_model):
     assert "inaktiv" in admin_client.get(LISTE).content.decode()
 
 
+def test_whatsapp_link_bei_mobilnummer(admin_client):
+    a = Adresse.objects.create(art=Adresse.Art.PERSON, vorname="Max", nachname="Muster",
+                               mobil="0171 1234567")  # fmt: skip
+    seite = admin_client.get(reverse("adressen:adresse", args=[a.pk])).content.decode()
+    assert "https://wa.me/491711234567" in seite and ">WhatsApp</a>" in seite
+    # Ohne Handynummer kein WhatsApp-Link
+    ohne = Adresse.objects.create(art=Adresse.Art.PERSON, nachname="Ohnehandy")
+    seite = admin_client.get(reverse("adressen:adresse", args=[ohne.pk])).content.decode()
+    assert "wa.me" not in seite
+
+
 def test_konto_nur_bei_person(admin_client, django_user_model):
     konto = django_user_model.objects.create_user("firmenkonto")
     fehlt = admin_client.post(reverse("adressen:neu"), {

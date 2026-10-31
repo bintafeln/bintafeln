@@ -129,6 +129,10 @@ class EinstellungenForm(forms.ModelForm):
         "Rechte, keine Hilfe. Ihre Daten bleiben erhalten, bis man sie wieder einschaltet.",
     )  # fmt: skip
 
+    def clean_laendervorwahl(self):
+        # Leer lassen ist erlaubt, wird aber auf Deutschland (49) gesetzt – nie leer speichern.
+        return self.cleaned_data.get("laendervorwahl", "").strip() or "49"
+
     class Meta:
         model = TafelEinstellungen
         fields = [
@@ -147,6 +151,7 @@ class EinstellungenForm(forms.ModelForm):
             "ort",
             "telefon",
             "email",
+            "laendervorwahl",
             "bundesland",
             "papierkorb_tage",
             "module",
