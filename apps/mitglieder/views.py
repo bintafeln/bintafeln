@@ -7,14 +7,14 @@ from decimal import Decimal
 from django.contrib import messages
 from django.db.models import Q
 from django.db.models.functions import Length
-from django.http import HttpResponse, QueryDict
+from django.http import QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
-from apps.core import listen, listenauswahl, papierkorb
+from apps.core import listen, listenauswahl, listenexport, papierkorb
 from apps.konten import rollen
 from apps.mitglieder.forms import MitgliederEinstellungenForm, MitgliedForm
 from apps.mitglieder.models import Mitglied, MitgliederEinstellungen, nummer_verbraucht
@@ -71,7 +71,7 @@ def liste(request):
             Q(nummer__icontains=q) | Q(adresse__organisation__icontains=q)
             | Q(adresse__nachname__icontains=q) | Q(adresse__vorname__icontains=q)
         )  # fmt: skip
-    if request.GET.get("csv"):
+    if request.GET.get("aktion"):
         mitglieder = listenauswahl.filtern(request, mitglieder)
     beitraege = MitgliederEinstellungen.mit_beitraegen()
     if beitraege:
@@ -90,8 +90,10 @@ def liste(request):
     if beitraege:
         schluessel |= {f: (lambda z, f=f: z[f]) for f in ("soll", "gezahlt", "offen")}
     zeilen, sort = listen.sortieren_liste(zeilen, request.GET.get("sort", ""), schluessel, "nummer")
-    if request.GET.get("csv"):
-        return _csv(zeilen, jahr, beitraege)
+    if request.GET.get("aktion"):
+        return listenexport.ausliefern(request, f"Mitglieder {jahr}", f"mitglieder-{jahr}",
+                                       _csv_text(zeilen, jahr, beitraege),
+                                       weiter=reverse("mitglieder:liste"))  # fmt: skip
     alle = Mitglied.objects.all()
     kennzahlen = {
         "mitglieder": sum(1 for m in alle if m.ist_mitglied(heute)),
@@ -127,7 +129,7 @@ def spalten(request):
     return redirect(f"{ziel}?{zurueck}" if zurueck else ziel)
 
 
-def _csv(zeilen, jahr, beitraege):
+def _csv_text(zeilen, jahr, beitraege) -> str:
     puffer = io.StringIO()
     w = csv.writer(puffer, delimiter=";", lineterminator="\r\n")
     kopf = ["Nummer", "Name", "Anschrift", "E-Mail", "Art", "Eintritt", "Austritt"]
@@ -153,9 +155,7 @@ def _csv(zeilen, jahr, beitraege):
             zeile += [euro(m.jahresbeitrag), m.zahlungsart, euro(z["soll"]), euro(z["gezahlt"]),
                       euro(z["offen"])]  # fmt: skip
         w.writerow(zeile)
-    antwort = HttpResponse("﻿" + puffer.getvalue(), content_type="text/csv")
-    antwort["Content-Disposition"] = f'attachment; filename="mitglieder-{jahr}.csv"'
-    return antwort
+    return "﻿" + puffer.getvalue()
 
 
 @rollen.recht_erforderlich("mitglieder.sehen")

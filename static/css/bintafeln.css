@@ -1112,6 +1112,8 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 @media (max-width: 40rem) { .filter-feld { flex: 1 1 8rem; } }
 .liste-aktionen .knopf, .titel-zeile .knopf { min-height: 2rem; padding: .3rem .9rem; font-size: .92rem; }
 .liste-aktionen { gap: .4rem .75rem; }
+.export-mail { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .35rem; }
+.export-mail-feld { min-height: 2rem; max-width: 15rem; }
 .titel-knoepfe { display: flex; flex-wrap: wrap; gap: .5rem; }
 .querweg { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }
 .querweg p { margin: 0; flex: 1 1 20rem; }

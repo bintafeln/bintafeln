@@ -1,6 +1,7 @@
 """Anträge bearbeiten (Admin, Büro) und das Formular einstellen (Admin)."""
 
 import csv
+import io
 from types import SimpleNamespace
 
 from auditlog.signals import accessed
@@ -32,7 +33,7 @@ from apps.antraege.models import (
     AntragText,
     loeschen,
 )
-from apps.core import html, listenauswahl, privatdateien
+from apps.core import html, listenauswahl, listenexport, privatdateien
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 
@@ -272,19 +273,18 @@ def _wert(a, spalte):
 @never_cache
 @rollen.recht_erforderlich("antraege.sehen")
 def export(request):
-    """CSV der angezeigten Anträge in Eingangsreihenfolge, z. B. für die Warteliste."""
+    """Die angezeigten Anträge als CSV, PDF oder per E-Mail (Eingangsreihenfolge)."""
     ansicht, _, antraege = _gefiltert(request)
     _, antraege = _sortiert(request, listenauswahl.filtern(request, antraege))
-    antwort = HttpResponse(content_type="text/csv; charset=utf-8")
-    antwort["Content-Disposition"] = (
-        f'attachment; filename="antraege-{ansicht}-{timezone.localdate():%Y-%m-%d}.csv"'
-    )
-    antwort.write("﻿")  # damit Tabellenprogramme die Umlaute richtig lesen
-    schreiber = csv.writer(antwort, delimiter=";")
+    puffer = io.StringIO()
+    puffer.write("﻿")  # damit Tabellenprogramme die Umlaute richtig lesen
+    schreiber = csv.writer(puffer, delimiter=";")
     schreiber.writerow(EXPORT_SPALTEN)
     for a in antraege.prefetch_related("personen"):
         schreiber.writerow([_wert(a, name) for name in EXPORT_SPALTEN])
-    return antwort
+    basis = f"antraege-{ansicht}-{timezone.localdate():%Y-%m-%d}"
+    return listenexport.ausliefern(request, "Anträge", basis, puffer.getvalue(),
+                                   weiter=reverse("antraege:liste"))  # fmt: skip
 
 
 # --- Einstellungen (Admin) ---------------------------------------------------------------

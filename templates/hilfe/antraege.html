@@ -4,8 +4,9 @@
 <p>Menü „Kunden → Anträge“; die kleine Zahl daneben zeigt, wie viele Anträge noch offen sind (neu oder in Bearbeitung, ohne Papierkorb).</p>
 <ul>
   <li>Die Liste zeigt offene Anträge mit fortlaufender Nummer, neueste zuerst; Spalten anklickbar zum Sortieren, Suche,
-    Zeilen je Seite, CSV-Export. Unter „Spalten wählen“ blendet jede Person selbst einzelne Spalten ein oder aus
-    (die Nummer # bleibt immer).</li>
+    Zeilen je Seite. Die Liste gibt es als <strong>CSV</strong> (Excel), als <strong>PDF</strong> und
+    <strong>per E-Mail</strong> (PDF und CSV im Anhang, z. B. an den eigenen Rechner). Unter „Spalten wählen“
+    blendet jede Person selbst einzelne Spalten ein oder aus (die Nummer # bleibt immer).</li>
   <li>Aktionen je Zeile: ansehen 👁{% if "antraege.bearbeiten" in rechte %}, bearbeiten ✎, Anmerkung 💬, in den Papierkorb 🗑{% endif %}{% if "antraege.aufnehmen" in rechte %}, aufnehmen ➜{% endif %}.</li>
   {% if "antraege.bearbeiten" in rechte %}<li>Status setzen und interne Anmerkungen schreiben; Tippfehler im Antrag vor der Aufnahme unter „Bearbeiten“ korrigieren.</li>{% endif %}
   <li>Hat die Tafel ein Einzugsgebiet eingestellt, steht bei Anträgen mit PLZ oder Ort außerhalb „außerhalb des Gebiets“, auch im Aufnahme-Assistenten.</li>

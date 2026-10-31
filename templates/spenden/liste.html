@@ -28,10 +28,10 @@
     <div class="kachel"><span class="kachel-titel">Spender</span><span class="kachel-wert">{{ summen.spender }}</span></div>
   </div>
   {% if je_monat %}<p class="hinweis">Geldspenden je Monat: {% for monat, summe in je_monat %}{{ monat }}/{{ jahr }}: {{ summe|floatformat:2 }} €{% if not forloop.last %} · {% endif %}{% endfor %}</p>{% endif %}
-  {% auswahl_formular "" "csv=1" %}
+  {% auswahl_formular "" %}
   <div class="liste-aktionen">
     <span class="hinweis">{{ seite.paginator.count }} Spende{{ seite.paginator.count|pluralize:"n" }}</span>
-    {% if seite.paginator.count %}<button type="submit" form="auswahl" class="knopf knopf-zweitrangig" title="Angehakte Spenden (ohne Haken: alle dieser Auswahl) als CSV-Datei, öffnet in Excel oder LibreOffice">⬇ Als CSV-Datei (Excel)</button>
+    {% if seite.paginator.count %}{% include "includes/listen_export.html" %}
     <span class="hinweis" data-auswahl-zahl="auswahl"></span>{% endif %}
   </div>
   {% url 'spenden:spalten' as spalten_aktion %}{% include "includes/spalten_wahl.html" %}

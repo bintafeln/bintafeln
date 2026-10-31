@@ -85,7 +85,7 @@ def test_anlegen_liste_beitraege(admin_client, erika):
     assert "Erika Muster" in liste and "36,00 €" in liste
     offen = admin_client.get(reverse("mitglieder:liste"), {"jahr": "2026", "nur_offen": "1"})
     assert "Erika Muster" not in offen.content.decode()
-    csv = admin_client.get(reverse("mitglieder:liste"), {"jahr": "2026", "csv": "1"})
+    csv = admin_client.get(reverse("mitglieder:liste"), {"jahr": "2026", "aktion": "csv"})
     assert "1;Erika Muster;Weg 1, 12345 Musterstadt" in csv.content.decode()
     # Adresse zeigt die Mitgliedschaft und ist nicht löschbar
     adresse = admin_client.get(reverse("adressen:adresse", args=[erika.pk])).content.decode()
@@ -110,7 +110,7 @@ def test_ohne_beitraege_nichts_zu_beitraegen(admin_client, erika, pdf_text):
         assert not any(
             w in inhalt for w in ("Soll", "offenem Beitrag", "Jahresbeitrag", "Zahlung erfassen")
         )
-    csv = admin_client.get(reverse("mitglieder:liste"), {"csv": "1"}).content.decode()
+    csv = admin_client.get(reverse("mitglieder:liste"), {"aktion": "csv"}).content.decode()
     assert "Soll" not in csv and csv.splitlines()[1].endswith(";Fördermitglied;01.02.2026;")
     assert "mitgliedsbeitrag" not in admin_client.get(reverse("spenden:neu")).content.decode()
     einst = admin_client.get(reverse("mitglieder:einstellungen")).content.decode()

@@ -128,7 +128,7 @@ def test_oberflaeche(admin_client, einstellungen, spender, pdf_text):
     assert "Geldspenden je Jahr" in adresse and "50,00 €" in adresse
     liste = admin_client.get(reverse("spenden:liste"), {"jahr": "2026"}).content.decode()
     assert "Max Probe" in liste and "50,00 €" in liste
-    csv = admin_client.get(reverse("spenden:liste"), {"jahr": "2026", "csv": "1"})
+    csv = admin_client.get(reverse("spenden:liste"), {"jahr": "2026", "aktion": "csv"})
     assert "Max Probe;12345;Musterstadt;50,00" in csv.content.decode()
     # Alle ausstellen, dann PDF-Link
     url = reverse("spenden:ausstellen") + "?jahr=2026"
