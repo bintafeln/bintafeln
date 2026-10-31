@@ -56,6 +56,11 @@ def benutzer_zu_adressen(apps, schema_editor):
         e.person = person_fuer(e.benutzer_id)
         e.save(update_fields=["person"])
 
+    # Siehe dienstplan.0004: aufgeschobene Fremdschlüssel-Prüfungen jetzt nachholen, sonst
+    # scheitert der nächste Schema-Schritt auf echten Daten an „pending trigger events".
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.execute("SET CONSTRAINTS ALL IMMEDIATE")
+
 
 class Migration(migrations.Migration):
     dependencies = [
@@ -93,22 +98,7 @@ class Migration(migrations.Migration):
         migrations.RemoveField(model_name="springer", name="benutzer"),
         migrations.RemoveField(model_name="ausfall", name="benutzer"),
         migrations.RemoveField(model_name="ersatz", name="benutzer"),
-        migrations.AlterField(
-            model_name="besetzung", name="person",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.CASCADE, related_name="fahr_besetzungen",
-                to="adressen.adresse", verbose_name="Person"),
-        ),
-        migrations.AlterField(
-            model_name="springer", name="person",
-            field=models.OneToOneField(
-                on_delete=django.db.models.deletion.CASCADE, related_name="fahr_springer",
-                to="adressen.adresse", verbose_name="Person"),
-        ),
-        migrations.AlterField(
-            model_name="ausfall", name="person",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.CASCADE, related_name="fahr_ausfaelle",
-                to="adressen.adresse", verbose_name="Person"),
-        ),
+        # Kein ALTER … SET NOT NULL hier (siehe dienstplan.0004): das würde auf Servern mit
+        # echten Daten an „pending trigger events" auf adressen_adresse scheitern. Die Felder
+        # bleiben nullbar; gesetzt werden sie ohnehin immer.
     ]

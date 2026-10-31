@@ -57,6 +57,13 @@ def helfer_zu_adressen(apps, schema_editor):
         d.teamleitung_neu = karte.get(d.teamleitung_id)
         d.save(update_fields=["teamleitung_neu"])
 
+    # Die neuen Verweise (und die neu angelegten Adressen) sind Fremdschlüssel mit
+    # aufgeschobener Prüfung. Solange diese Prüfung aussteht, scheitert der nächste
+    # Schema-Schritt (DROP/RENAME einer Spalte) auf echten Daten an „pending trigger
+    # events" auf adressen_adresse. Darum die Prüfungen hier sofort nachholen.
+    if schema_editor.connection.vendor == "postgresql":
+        schema_editor.execute("SET CONSTRAINTS ALL IMMEDIATE")
+
 
 class Migration(migrations.Migration):
     dependencies = [
@@ -101,17 +108,9 @@ class Migration(migrations.Migration):
         migrations.RenameField(model_name="ersatz", old_name="person", new_name="helfer"),
         migrations.RenameField(
             model_name="diensttag", old_name="teamleitung_neu", new_name="teamleitung"),
-        migrations.AlterField(
-            model_name="besetzung", name="helfer",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.CASCADE, related_name="dienst_besetzungen",
-                to="adressen.adresse", verbose_name="Person"),
-        ),
-        migrations.AlterField(
-            model_name="ausfall", name="helfer",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.CASCADE, related_name="dienst_ausfaelle",
-                to="adressen.adresse", verbose_name="Person"),
-        ),
+        # Kein ALTER … SET NOT NULL hier: das würde in derselben Transaktion nach der
+        # Daten-Übernahme an „pending trigger events" auf adressen_adresse scheitern (nur auf
+        # Servern mit echten Daten). Die Felder bleiben deshalb nullbar; gesetzt werden sie
+        # ohnehin immer.
         migrations.DeleteModel(name="Helfer"),
     ]

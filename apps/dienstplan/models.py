@@ -138,7 +138,7 @@ class Besetzung(models.Model):
     """Wer eine Aufgabe regelmäßig übernimmt (jede Woche an diesem Wochentag)."""
 
     aufgabe = models.OneToOneField(Aufgabe, on_delete=models.CASCADE, related_name="besetzung")
-    helfer = models.ForeignKey("adressen.Adresse", on_delete=models.CASCADE,
+    helfer = models.ForeignKey("adressen.Adresse", on_delete=models.CASCADE, null=True,
                                related_name="dienst_besetzungen",
                                verbose_name="Person")  # fmt: skip
 
@@ -153,7 +153,7 @@ class Besetzung(models.Model):
 class Ausfall(models.Model):
     """Jemand kann an einem oder mehreren Tagen nicht."""
 
-    helfer = models.ForeignKey("adressen.Adresse", on_delete=models.CASCADE,
+    helfer = models.ForeignKey("adressen.Adresse", on_delete=models.CASCADE, null=True,
                                related_name="dienst_ausfaelle", verbose_name="Person")  # fmt: skip
     von = models.DateField("Von")
     bis = models.DateField("Bis")
