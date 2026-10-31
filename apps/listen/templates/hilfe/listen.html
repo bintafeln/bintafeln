@@ -22,3 +22,6 @@
 <p>Unten auf der Seite speichert „Als eigene Liste speichern“ die aktuellen Einstellungen (keine Kundendaten) unter
   einem Titel. Sie stehen dann oben unter „Alle Listen“.{% if "listen.teilen" in rechte %} Mit „für alle sichtbar“ sehen
   sie alle, die Listen nutzen dürfen.{% endif %}</p>
+<p>Öffnen Sie eine gespeicherte Liste, erscheint oben „Gespeicherte Liste … bearbeiten“: Dort lassen sich Titel{% if "listen.teilen" in rechte %}, Freigabe{% endif %}
+  und die aktuellen Einstellungen (Filter, Spalten, Sortierung) in diese Liste übernehmen, ohne sie neu anlegen zu müssen.{% if "listen.teilen" in rechte %}
+  Fremde, für alle freigegebene Listen dürfen Sie ebenfalls bearbeiten; Ihre eigenen Listen sehen und ändern nur Sie.{% endif %}</p>

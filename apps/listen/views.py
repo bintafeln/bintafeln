@@ -100,6 +100,15 @@ def liste(request, kennung):
     ergebnis = abfrage.rechnen(liste, request.user, p)
     gewaehlt = [s.schluessel for s in ergebnis.spalten]
     erlaubte = sp.erlaubte(liste.basis, darf)
+    # Kommt die Ansicht von einer gespeicherten Liste? Dann lässt sie sich aktualisieren.
+    eigene_obj = None
+    if (eigene_pk := p.get("eigene", "")).isdigit():
+        kandidat = EigeneListe.objects.filter(pk=eigene_pk, kennung=kennung).first()
+        if kandidat and kandidat in _eigene_listen(request):
+            eigene_obj = kandidat
+    darf_eigene = eigene_obj is not None and (
+        eigene_obj.benutzer_id == request.user.pk
+        or rollen.hat_recht(request.user, "listen.teilen"))  # fmt: skip
     return render(request, "listen/liste.html", {
         "liste": liste, "p": p, "abfrage": p.urlencode(), "e": ergebnis,
         "kopf": _kopf(p, liste, ergebnis.spalten),
@@ -115,6 +124,7 @@ def liste(request, kennung):
         "nationen": abfrage.staatsangehoerigkeiten(request.user)
         if "staatsangehoerigkeit" in liste.filter else [],
         "darf_teilen": rollen.hat_recht(request.user, "listen.teilen"),
+        "eigene": eigene_obj, "darf_eigene_bearbeiten": darf_eigene,
     })  # fmt: skip
 
 
@@ -217,10 +227,35 @@ def speichern(request, kennung):
     )
     p = QueryDict(request.POST.get("abfrage", ""), mutable=True)
     p.pop("id", None)
-    EigeneListe.objects.create(titel=titel, kennung=liste.kennung, parameter=p.urlencode(),
-                               benutzer=request.user, fuer_alle=fuer_alle)  # fmt: skip
+    p.pop("eigene", None)
+    e = EigeneListe.objects.create(titel=titel, kennung=liste.kennung, parameter=p.urlencode(),
+                                   benutzer=request.user, fuer_alle=fuer_alle)  # fmt: skip
     messages.success(request, f"Liste „{titel}“ gespeichert. Sie steht unter „Alle Listen“.")
-    return redirect(f"{reverse('listen:liste', args=[liste.kennung])}?{p.urlencode()}")
+    ziel = reverse("listen:liste", args=[liste.kennung])
+    return redirect(f"{ziel}?{p.urlencode()}&eigene={e.pk}")
+
+
+@require_POST
+@nutzen
+def eigene_aktualisieren(request, pk):
+    """Eine gespeicherte Liste aktualisieren: Titel, Freigabe und die aktuellen Einstellungen.
+    Eigene immer; fremde (für alle freigegebene) nur mit dem Recht „listen.teilen“."""
+    e = get_object_or_404(EigeneListe, pk=pk)
+    darf_teilen = rollen.hat_recht(request.user, "listen.teilen")
+    if e.benutzer_id != request.user.pk and not darf_teilen:
+        raise PermissionDenied
+    liste = _liste(request, e.kennung)  # prüft auch das Recht der Liste selbst
+    p = QueryDict(request.POST.get("abfrage", ""), mutable=True)
+    p.pop("id", None)
+    p.pop("eigene", None)
+    e.titel = request.POST.get("titel", "").strip()[:100] or e.titel
+    e.parameter = p.urlencode()
+    if darf_teilen:  # die Freigabe ändern darf nur, wer teilen darf
+        e.fuer_alle = bool(request.POST.get("fuer_alle"))
+    e.save()
+    messages.success(request, f"Liste „{e.titel}“ aktualisiert.")
+    ziel = reverse("listen:liste", args=[liste.kennung])
+    return redirect(f"{ziel}?{p.urlencode()}&eigene={e.pk}")
 
 
 @nutzen
@@ -228,7 +263,7 @@ def eigene(request, pk):
     e = get_object_or_404(EigeneListe, pk=pk)
     if e not in _eigene_listen(request):
         raise Http404
-    return redirect(f"{reverse('listen:liste', args=[e.kennung])}?{e.parameter}")
+    return redirect(f"{reverse('listen:liste', args=[e.kennung])}?{e.parameter}&eigene={e.pk}")
 
 
 @require_POST

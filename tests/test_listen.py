@@ -211,7 +211,8 @@ def test_eigene_listen(admin_client, daten, benutzer_mit_rolle, anmelden):
     assert e.fuer_alle and e.parameter == "geladen=1&alter_bis=10"
     assert "Kinder Mitte" in admin_client.get(reverse("listen:uebersicht")).content.decode()
     antwort = admin_client.get(reverse("listen:eigene", args=[e.pk]))
-    assert antwort.url == reverse("listen:liste", args=["kinder"]) + "?geladen=1&alter_bis=10"
+    ziel = reverse("listen:liste", args=["kinder"])
+    assert antwort.url == f"{ziel}?geladen=1&alter_bis=10&eigene={e.pk}"
     c = anmelden(Client(), benutzer_mit_rolle("anton", rollen.AUSGABE))
     assert c.get(reverse("listen:eigene", args=[e.pk])).status_code == 302  # für alle
     assert c.post(reverse("listen:eigene_loeschen", args=[e.pk])).status_code == 403
@@ -223,6 +224,39 @@ def test_eigene_listen(admin_client, daten, benutzer_mit_rolle, anmelden):
     assert c.get(reverse("listen:eigene", args=[e.pk])).status_code == 404
     admin_client.post(reverse("listen:eigene_loeschen", args=[e.pk]))
     assert not EigeneListe.objects.filter(pk=e.pk).exists()
+
+
+def test_eigene_liste_bearbeiten(admin_client, daten, benutzer_mit_rolle, anmelden):
+    # Admin legt eine für alle freigegebene Liste an
+    admin_client.post(reverse("listen:speichern", args=["kinder"]),
+                      {"titel": "Kinder Mitte", "abfrage": "geladen=1&alter_bis=10",
+                       "fuer_alle": "1"})  # fmt: skip
+    e = EigeneListe.objects.get()
+    akt = reverse("listen:eigene_aktualisieren", args=[e.pk])
+    # Titel, Einstellungen und Freigabe aktualisieren (ohne „fuer_alle“ = Freigabe aus)
+    antwort = admin_client.post(akt, {"titel": "Kinder bis 12",
+                                      "abfrage": "geladen=1&alter_bis=12&id=5"})  # fmt: skip
+    e.refresh_from_db()
+    assert e.titel == "Kinder bis 12" and e.parameter == "geladen=1&alter_bis=12"
+    assert not e.fuer_alle  # Häkchen fehlte und Admin darf teilen → Freigabe entfernt
+    assert antwort.url.endswith(f"&eigene={e.pk}")
+    # Die Bearbeiten-Fläche erscheint beim Öffnen der gespeicherten Liste
+    seite = admin_client.get(antwort.url).content.decode()
+    assert "Gespeicherte Liste „Kinder bis 12“ bearbeiten" in seite
+
+    # Ausgabe-Konto (ohne „listen.teilen“) darf die fremde Liste nicht bearbeiten
+    c = anmelden(Client(), benutzer_mit_rolle("anton", rollen.AUSGABE))
+    assert c.post(akt, {"titel": "X", "abfrage": "geladen=1"}).status_code == 403
+    # Die eigene Liste darf es umbenennen, die Freigabe aber nicht setzen
+    c.post(reverse("listen:speichern", args=["kinder"]),
+           {"titel": "Meine", "abfrage": "geladen=1"})  # fmt: skip
+    meine = EigeneListe.objects.get(benutzer__username="anton")
+    c.post(
+        reverse("listen:eigene_aktualisieren", args=[meine.pk]),
+        {"titel": "Meine Kinder", "abfrage": "geladen=1", "fuer_alle": "1"},
+    )
+    meine.refresh_from_db()
+    assert meine.titel == "Meine Kinder" and not meine.fuer_alle  # Freigabe bleibt ohne Recht aus
 
 
 def test_suche_und_menue(admin, admin_client):
