@@ -7,6 +7,7 @@
   <dl class="angaben">
     <dt>Ausgabestelle</dt><dd>{{ p.aufgabe.stelle }}</dd>
     <dt>Feste Besetzung</dt><dd>{{ p.stamm|default:"–" }}</dd>
+    {% if whatsapp %}<dt>WhatsApp</dt><dd><a class="knopf knopf-klein knopf-whatsapp" href="{{ whatsapp }}" target="_blank" rel="noopener noreferrer">{{ p.wer.name }} per WhatsApp schreiben</a></dd>{% endif %}
     {% if p.ersatz %}<dt>An diesem Tag</dt><dd>{% if p.gast %}{{ p.gast }} (Gast){% else %}{{ p.ersatz.helfer }}{% endif %} (eingetragen von {{ p.ersatz.eingetragen_von }})</dd>{% endif %}
     {% if p.ausfall %}<dt>Fällt aus</dt><dd>{{ p.ausfall.helfer }}: {{ p.ausfall.get_grund_display }}{% if p.ausfall.anmerkung %} – {{ p.ausfall.anmerkung }}{% endif %}
       ({{ p.ausfall.von|date:"d.m." }}{% if p.ausfall.bis != p.ausfall.von %}–{{ p.ausfall.bis|date:"d.m.Y" }}{% endif %})

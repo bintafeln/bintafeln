@@ -14,7 +14,7 @@ from django.views.decorators.http import require_POST
 
 from apps.adressen.models import Adresse
 from apps.ausgabe.ampel import WOCHENTAGE, wochentage
-from apps.core import papierkorb
+from apps.core import papierkorb, whatsapp
 from apps.core.pdf import pdf_antwort
 from apps.dienstplan import plan
 from apps.dienstplan.forms import (
@@ -195,9 +195,13 @@ def platz(request, datum, aufgabe):
         )
         messages.success(request, f"{tag:%d.%m.%Y}, {a}: {text}")
         return redirect(zurueck)
+    p_ = plan.platz(tag, a)
+    nachricht = (f"Hallo {p_.wer.vorname or p_.wer.name}, es geht um den Dienst am "
+                 f"{tag:%d.%m.%Y}: {a.stelle}, {a}.") if p_.wer else ""  # fmt: skip
     return render(request, "dienstplan/platz.html", {
-        "p": plan.platz(tag, a), "frei": frei, "zurueck": zurueck,
+        "p": p_, "frei": frei, "zurueck": zurueck,
         "tagname": TAGNAME[a.wochentag], "ausfall_form": AusfallForm(planen=True),
+        "whatsapp": whatsapp.fuer_person(p_.wer, nachricht),
     })  # fmt: skip
 
 
