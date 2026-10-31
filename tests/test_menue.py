@@ -106,6 +106,35 @@ def test_neue_ordnung_fuer_die_verwaltung(admin):
     assert len(urls) == len(set(urls))
 
 
+def aktive_bereiche(benutzer, pfad):
+    anfrage = RequestFactory().get(pfad)
+    anfrage.user = benutzer
+    return {b["titel"]: b for b in menue(anfrage)}
+
+
+def test_tiefe_einstellungsseite_leuchtet_nur_in_einstellungen(admin):
+    """Auf einer Einstellungsseite (z. B. „Einstellungen → Anträge“) ist nur der Einstellungs-
+    Eintrag aktiv – nicht der kürzere Listen-Eintrag „Kunden → Anträge“ mit gleichem Anfang."""
+    b = aktive_bereiche(admin, reverse("antraege:einstellungen"))
+    assert not b["Kunden"]["offen"]
+    assert b["Einstellungen"]["offen"]
+    aktiv = [e["titel"] for e in b["Einstellungen"]["eintraege"] if e["aktiv"]]
+    assert aktiv == ["Anträge"]
+
+
+def test_noch_tiefere_seite_leuchtet_nur_in_einstellungen(admin):
+    """Auch unterhalb der Einstellungsseite (Texte je Sprache) bleibt nur Einstellungen offen."""
+    b = aktive_bereiche(admin, reverse("antraege:texte", args=["bg"]))
+    assert not b["Kunden"]["offen"]
+    assert b["Einstellungen"]["offen"]
+
+
+def test_liste_leuchtet_auf_ihrer_eigenen_seite(admin):
+    """Die Antragsliste selbst macht weiter den Bereich „Kunden“ auf, nicht Einstellungen."""
+    b = aktive_bereiche(admin, reverse("antraege:liste"))
+    assert b["Kunden"]["offen"] and not b["Einstellungen"]["offen"]
+
+
 def test_dienstplaene_unter_einem_punkt(admin):
     """Fahrdienst und Dienstplan der Ausgabe stehen unter „Dienstpläne“, ihre Einstellungen
     unter „Einstellungen → Dienstpläne“."""

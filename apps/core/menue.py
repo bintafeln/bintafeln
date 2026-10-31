@@ -290,14 +290,24 @@ def menue(request) -> list[dict]:
     bereiche.append({"titel": "Hilfe", "eintraege": [_eintrag("Hilfe", "core:hilfe")]})
     # „Mein Konto“ öffnet der eigene Name oben rechts
 
+    # Aktiv ist der Eintrag mit dem längsten passenden Adressanfang im ganzen Menü. Sonst leuchtet
+    # auf tieferen Seiten zusätzlich ein kürzerer Eintrag mit: „Einstellungen → Anträge“
+    # (/antraege/einstellungen/) und „Kunden → Anträge“ (/antraege/) treffen beide, der längere
+    # gewinnt. „genau“: nur die Adresse selbst; „auch“: weitere Adressanfänge, die dazugehören.
     pfad = request.path
+
+    def treffer(e):
+        passt = pfad == e["url"] if e["genau"] else pfad.startswith(e["url"])
+        lang = len(e["url"]) if passt else -1
+        for a in e["auch"]:
+            if pfad.startswith(a):
+                lang = max(lang, len(a))
+        return lang
+
+    bester = max((treffer(e) for b in bereiche for e in b["eintraege"]), default=-1)
     for bereich in bereiche:
         for e in bereich["eintraege"]:
-            e["aktiv"] = pfad == e["url"] if e["genau"] else pfad.startswith(e["url"])
-        # „auch“ nur, wenn kein anderer Eintrag die Seite schon genau trifft (z. B. Neuer Haushalt)
-        if not any(e["aktiv"] for e in bereich["eintraege"]):
-            for e in bereich["eintraege"]:
-                e["aktiv"] = any(pfad.startswith(a) for a in e["auch"])
+            e["aktiv"] = bester >= 0 and treffer(e) == bester
         bereich["offen"] = any(e["aktiv"] for e in bereich["eintraege"])
         bereich["einzeln"] = len(bereich["eintraege"]) == 1
         # Unterpunkte (dritte Ebene) klappen erst auf, wenn man sie wählt
