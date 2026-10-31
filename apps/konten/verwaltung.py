@@ -56,6 +56,46 @@ def _rollen_setzen(verwalter, ziel, rollen_namen) -> None:
     rollen.rechte_vergessen(ziel)
 
 
+# Rollen, deren Konten im Dienstplan/Fahrdienst einteilbar sein sollen (ADR 0097). „Einlass“ nur,
+# falls eine Tafel eine solche Rolle angelegt hat; Büro, Personal und Admin zählen nicht dazu.
+HELFER_ROLLEN = [rollen.AUSGABE, "Einlass", rollen.FAHRER, rollen.BEIFAHRER]
+
+
+def adresse_abgleichen(ziel) -> None:
+    """Jedes Mitarbeiter-Konto ist eine Person im Adressbuch (ADR 0097): fehlt die verknüpfte
+    Adresse, wird sie aus den Kontodaten angelegt. Hat das Konto eine mitmachende Rolle (Ausgabe,
+    Einlass, Fahrer, Beifahrer), wird die Person als ehrenamtlicher Helfer markiert. Konten einer
+    Ausgabestelle (Einlass-Tablet) bleiben außen vor."""
+    if ziel.stelle_id:
+        return
+    from apps.adressen.models import Adresse
+
+    adr = Adresse.objects.filter(konto=ziel).first()
+    if adr is None:
+        stamm = getattr(ziel, "stammdaten", None)
+        adr = Adresse(
+            art=Adresse.Art.PERSON, konto=ziel,
+            vorname=(ziel.first_name or "")[:100],
+            nachname=(ziel.last_name or ziel.get_username())[:100],
+            email=ziel.email or "", helfer_aktiv=ziel.is_active,
+            anrede=getattr(stamm, "anrede", "") or "",
+            strasse=getattr(stamm, "strasse", "") or "",
+            plz=getattr(stamm, "plz", "") or "",
+            ort=getattr(stamm, "ort", "") or "",
+            telefon=getattr(stamm, "telefon", "") or "",
+            mobil=getattr(stamm, "handy", "") or "",
+        )  # fmt: skip
+    ist_helfer = ziel.groups.filter(name__in=HELFER_ROLLEN).exists()
+    geaendert = adr.pk is None
+    if ist_helfer and not adr.helfer:
+        adr.helfer = True
+        if geaendert:  # neu angelegt → Aktiv-Status aus dem Konto übernehmen
+            adr.helfer_aktiv = ziel.is_active
+        geaendert = True
+    if geaendert:
+        adr.save()
+
+
 def _pruefen(verwalter, ziel):
     if not darf_bearbeiten(verwalter, ziel):
         raise VerwaltungsFehler("Admin-Konten kann nur ein Admin bearbeiten.")
@@ -82,6 +122,7 @@ def anlegen(verwalter, daten: dict, rollen_namen: list[str], einladung=False):
         passwort = _passwort_neu(ziel)
     ziel.save()
     _rollen_setzen(verwalter, ziel, rollen_namen)
+    adresse_abgleichen(ziel)
     return ziel, passwort
 
 
@@ -98,6 +139,7 @@ def bearbeiten(verwalter, ziel, rollen_namen: list[str]) -> None:
         raise VerwaltungsFehler("Sie können sich die Admin-Rolle nicht selbst nehmen.")
     ziel.save()
     _rollen_setzen(verwalter, ziel, rollen_namen)
+    adresse_abgleichen(ziel)
 
 
 def sperren(verwalter, ziel) -> None:

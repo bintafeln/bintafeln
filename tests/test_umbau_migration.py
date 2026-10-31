@@ -38,6 +38,40 @@ def test_umbau_mit_echten_daten():
         _migriere(MigrationExecutor(connection).loader.graph.leaf_nodes())
 
 
+def test_mitarbeiter_werden_adressen():
+    """adressen.0007: bestehende Mitarbeiter-Konten werden Personen im Adressbuch; die mit einer
+    mitmachenden Rolle als Helfer (ADR 0097, Nachzügler-Migration)."""
+    try:
+        _mitarbeiter_werden_adressen()
+    finally:
+        _migriere(MigrationExecutor(connection).loader.graph.leaf_nodes())
+
+
+def _mitarbeiter_werden_adressen():
+    # Nur das Adressbuch zurück vor 0007 (Dienstplan/Fahrdienst bleiben auf dem neuesten Stand).
+    ziele_vor = _leaves_mit({"adressen": "0006_adresse_fahrdienst"})
+    _migriere(ziele_vor)
+    apps = MigrationExecutor(connection).loader.project_state(ziele_vor).apps
+    Benutzer = apps.get_model("konten", "Benutzer")
+    Group = apps.get_model("auth", "Group")
+    Adresse = apps.get_model("adressen", "Adresse")
+
+    ausgabe = Group.objects.get_or_create(name="Ausgabe")[0]
+    helfer = Benutzer.objects.create(username="ria", first_name="Ria", last_name="Ausgabe")
+    helfer.groups.add(ausgabe)
+    buero = Benutzer.objects.create(username="bo", first_name="Bo", last_name="Büro")
+    buero.groups.add(Group.objects.get_or_create(name="Büro")[0])
+    assert not Adresse.objects.filter(konto_id=helfer.pk).exists()  # vorher keine Adresse
+
+    _migriere(MigrationExecutor(connection).loader.graph.leaf_nodes())  # wendet 0007 an
+    neu = MigrationExecutor(connection).loader.project_state().apps
+    Adresse = neu.get_model("adressen", "Adresse")
+    a_helfer = Adresse.objects.get(konto=helfer.pk)
+    assert a_helfer.nachname == "Ausgabe" and a_helfer.helfer and a_helfer.helfer_aktiv
+    a_buero = Adresse.objects.get(konto=buero.pk)
+    assert a_buero.helfer is False  # Büro ist keine mitmachende Rolle
+
+
 def _umbau_mit_echten_daten():
     # 1) Auf den Stand vor dem Umbau zurück (Dienstplan/Fahrdienst alt, Adressbuch neu).
     ziele_vor = _leaves_mit(VOR_UMBAU)
