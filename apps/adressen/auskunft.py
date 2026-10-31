@@ -9,6 +9,34 @@ def _datum(wert) -> str:
     return f"{wert:%d.%m.%Y}" if wert else ""
 
 
+def _einsaetze_abschnitt(doc, a) -> None:
+    """Mitarbeit (Helfer/Fahrdienst) und regelmäßige Einsätze, nur bei eingeschaltetem Modul."""
+    from apps.core import module
+
+    mitarbeit = []
+    if a.helfer:
+        mitarbeit.append(("Ehrenamtlicher Helfer", "aktiv" if a.helfer_aktiv else "inaktiv"))
+    if a.fahrdienst:
+        mitarbeit.append(("Fahrdienst", a.get_fahrdienst_display()))
+    if mitarbeit:
+        doc.ueberschrift("Mitarbeit")
+        doc.angaben(mitarbeit)
+
+    zeilen = []
+    if module.aktiv("dienstplan"):
+        from apps.dienstplan import plan as dienstplan
+
+        zeilen += [(tag, "Dienstplan", text) for tag, text in dienstplan.einsatztage(a)]
+    if module.aktiv("fahrdienst"):
+        from apps.fahrdienst import plan as fahrdienst
+
+        zeilen += [(tag, "Fahrdienst", text) for tag, text in fahrdienst.einsatztage(a)]
+    if zeilen:
+        doc.ueberschrift("Regelmäßige Einsätze")
+        doc.tabelle(["Tag", "Bereich", "Einsatz"], [list(z) for z in zeilen],
+                    breiten=[0.12, 0.23, 0.65])  # fmt: skip
+
+
 def adresse_pdf(a) -> bytes:
     doc = Pdf("Auskunft nach Art. 15 DSGVO", f"Gespeicherte Daten zu {a.name}")
     doc.absatz(
@@ -79,6 +107,8 @@ def adresse_pdf(a) -> bytes:
             angaben.append(("Jahresbeitrag", f"{m.jahresbeitrag:.2f} €".replace(".", ",")))
         angaben += [("Zahlweise", m.zahlweise), ("Zahlungsart", m.zahlungsart), ("Notiz", m.notiz)]
         doc.angaben(angaben)
+    if a.art == a.Art.PERSON:
+        _einsaetze_abschnitt(doc, a)
     from apps.serienbriefe.models import Versand
 
     versaende = Versand.objects.filter(empfaenger__contains=[f"a:{a.pk}"])

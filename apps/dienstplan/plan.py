@@ -176,6 +176,18 @@ def einsaetze(helfer: Adresse, von: dt.date, bis: dt.date) -> list[Platz]:
     return ergebnis
 
 
+def einsatztage(helfer: Adresse) -> list[tuple[str, str]]:
+    """Regelmäßige Einsätze der Person im Dienstplan (feste Besetzungen) als lesbare Zeilen:
+    (Wochentag, „Ausgabestelle: Aufgabe“), sortiert nach Wochentag und Stelle."""
+    if helfer is None:
+        return []
+    bes = Besetzung.objects.filter(helfer=helfer).select_related("aufgabe__stelle__ausgabestelle")
+    bes = sorted(bes, key=lambda b: (
+        WOCHENTAGE.index(b.aufgabe.wochentag) if b.aufgabe.wochentag in WOCHENTAGE else 9,
+        str(b.aufgabe.stelle.ausgabestelle), b.aufgabe.reihenfolge))  # fmt: skip
+    return [(b.aufgabe.wochentag, f"{b.aufgabe.stelle.ausgabestelle}: {b.aufgabe}") for b in bes]
+
+
 def helfer_von(benutzer) -> Adresse | None:
     """Die Helfer-Person (Adresse) zum angemeldeten Konto, falls aktiv."""
     if not benutzer:

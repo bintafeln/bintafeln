@@ -151,6 +151,9 @@ input::-webkit-date-and-time-value { text-align: left; margin: 0; }
 .bemerkung { border-bottom: 1px solid var(--rand); margin-bottom: .75rem; }
 .blaettern { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .5rem 0; }
 .liste-aktionen { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin: .5rem 0; }
+.liste-schlicht { list-style: none; padding: 0; margin: .25rem 0 .5rem; }
+.liste-schlicht li { padding: .15rem 0; border-bottom: 1px solid var(--rand); }
+.liste-schlicht li:last-child { border-bottom: none; }
 
 .fuss {
   display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem;
