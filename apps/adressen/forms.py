@@ -19,7 +19,7 @@ class AdresseForm(forms.ModelForm):
                   "kategorien"]),
         ("Anschrift und Kontakt", ["strasse", "plz", "ort", "land", "telefon", "mobil", "email",
                                    "webseite"]),
-        ("Mitarbeit", ["helfer", "helfer_aktiv", "konto"]),
+        ("Mitarbeit", ["helfer", "helfer_aktiv", "fahrdienst", "konto"]),
         ("Einwilligungen und Notiz", ["einwilligung_post", "einwilligung_email",
                                       "veroeffentlichen", "notiz"]),
     ]  # fmt: skip
@@ -29,7 +29,7 @@ class AdresseForm(forms.ModelForm):
         fields = [
             "art", "organisation", "ansprechperson", "anrede", "vorname", "nachname", "kategorien",
             "strasse", "plz", "ort", "land", "telefon", "mobil", "email", "webseite",
-            "helfer", "helfer_aktiv",
+            "helfer", "helfer_aktiv", "fahrdienst",
             "einwilligung_post", "einwilligung_email", "veroeffentlichen", "notiz",
         ]  # fmt: skip
         widgets = {
@@ -43,7 +43,7 @@ class AdresseForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["anrede"].choices = mit_vorhandenem(ANREDEN, self.instance.anrede)
         # Helfer-Felder nur bei einer Person zeigen (Umschalten über data-zeigen-bei)
-        for name in ("helfer", "helfer_aktiv"):
+        for name in ("helfer", "helfer_aktiv", "fahrdienst"):
             self.fields[name].widget.attrs["data-zeigen-bei"] = "art=person"
         # Das Konto darf nur verknüpfen, wer Mitarbeitende verwalten darf.
         if konto_waehlbar:

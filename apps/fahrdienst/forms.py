@@ -3,6 +3,7 @@ import datetime as dt
 from django import forms
 from django.contrib.auth import get_user_model
 
+from apps.adressen.models import Adresse
 from apps.ausgabe.ampel import WOCHENTAGE, wochentage
 from apps.fahrdienst.models import Ausfall, FahrdienstEinstellungen, Springer, Tour
 from apps.konten.forms import DatumEingabe
@@ -10,10 +11,18 @@ from apps.konten.forms import DatumEingabe
 
 class Person(forms.ModelChoiceField):
     def label_from_instance(self, obj):
-        return obj.get_full_name() or obj.username
+        return obj.name
 
 
-def aktive():
+def fahrdienst_personen(nur_fahrer: bool = False):
+    """Personen aus dem Adressbuch, die im Fahrdienst mitfahren (aktiv). ADR 0097."""
+    qs = Adresse.objects.filter(helfer_aktiv=True).exclude(fahrdienst="")
+    if nur_fahrer:
+        qs = qs.filter(fahrdienst="fahrer")
+    return qs.order_by("nachname", "vorname")
+
+
+def aktive_konten():
     return (
         get_user_model()
         .objects.filter(is_active=True)
@@ -40,7 +49,7 @@ class TageFeld(forms.MultipleChoiceField):
 class EinstellungenForm(forms.ModelForm):
     fahrtage = TageFeld(label="Fahrtage")
     benachrichtigen = forms.ModelMultipleChoiceField(
-        label="Bei einem Ausfall benachrichtigen", queryset=aktive().exclude(email=""),
+        label="Bei einem Ausfall benachrichtigen", queryset=aktive_konten().exclude(email=""),
         required=False, widget=forms.CheckboxSelectMultiple,
         help_text="Per E-Mail; zur Auswahl stehen Konten mit E-Mail-Adresse. Leer = alle, die "
         "den Fahrdienst planen dürfen.",
@@ -112,24 +121,24 @@ class TourForm(forms.ModelForm):
 
 
 class SpringerForm(forms.ModelForm):
-    benutzer = Person(label="Person", queryset=aktive())
+    person = Person(label="Person", queryset=fahrdienst_personen())
     wochentage = TageFeld(label="Nur an diesen Tagen", required=False,
                           help_text="Keiner gewählt = an allen Fahrtagen.")  # fmt: skip
 
     class Meta:
         model = Springer
-        fields = ["benutzer", "wochentage", "anmerkung"]
+        fields = ["person", "wochentage", "anmerkung"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        schon = Springer.objects.exclude(pk=self.instance.pk).values_list("benutzer", flat=True)
-        self.fields["benutzer"].queryset = aktive().exclude(pk__in=schon)
+        schon = Springer.objects.exclude(pk=self.instance.pk).values_list("person", flat=True)
+        self.fields["person"].queryset = fahrdienst_personen().exclude(pk__in=schon)
 
 
 class AusfallForm(forms.ModelForm):
-    """Wer fällt aus? Wer plant, wählt die Person; sonst ist es das eigene Konto."""
+    """Wer fällt aus? Wer plant, wählt die Person; sonst ist es die eigene Person."""
 
-    benutzer = Person(label="Wer fällt aus?", queryset=aktive())
+    person = Person(label="Wer fällt aus?", queryset=fahrdienst_personen())
     dauer = forms.TypedChoiceField(
         label="Wie lange?", coerce=int, required=False, empty_value=1,
         choices=[(1, "nur dieser Tag"), (7, "1 Woche"), (14, "2 Wochen"), (21, "3 Wochen"),
@@ -139,7 +148,7 @@ class AusfallForm(forms.ModelForm):
 
     class Meta:
         model = Ausfall
-        fields = ["benutzer", "von", "dauer", "bis", "grund", "anmerkung"]
+        fields = ["person", "von", "dauer", "bis", "grund", "anmerkung"]
         widgets = {"von": DatumEingabe(), "bis": DatumEingabe()}
         labels = {"von": "Ab", "bis": "Bis (genau)"}
         help_texts = {"bis": "Leer = so lange wie oben gewählt."}
@@ -148,7 +157,7 @@ class AusfallForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["bis"].required = False
         if not planen:
-            del self.fields["benutzer"]
+            del self.fields["person"]
 
     def clean(self):
         daten = super().clean()

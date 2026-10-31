@@ -14,7 +14,13 @@ from apps.ausgabe.ampel import WOCHENTAGE, wochentage
 from apps.core import papierkorb
 from apps.core.pdf import pdf_antwort
 from apps.fahrdienst import plan
-from apps.fahrdienst.forms import AusfallForm, EinstellungenForm, SpringerForm, TourForm, aktive
+from apps.fahrdienst.forms import (
+    AusfallForm,
+    EinstellungenForm,
+    SpringerForm,
+    TourForm,
+    fahrdienst_personen,
+)
 from apps.fahrdienst.models import (
     Ausfall,
     Besetzung,
@@ -115,24 +121,25 @@ def platz(request, datum, tour, nr):
     if not 1 <= nr <= t.plaetze or not t.faehrt_am(tag):
         raise Http404
     zurueck = f"{reverse('fahrdienst:plan')}?monat={tag:%Y-%m}"
+    nur_fahrer = nr == 1
     if request.method == "POST":
         wahl, gast = request.POST.get("benutzer", ""), request.POST.get("gast", "").strip()
-        neu = get_object_or_404(aktive(), pk=wahl) if wahl else None
-        springer, weitere = plan.verfuegbar(tag)
+        neu = (get_object_or_404(fahrdienst_personen(nur_fahrer=nur_fahrer), pk=wahl)
+               if wahl else None)  # fmt: skip
+        springer, weitere = plan.verfuegbar(tag, nur_fahrer=nur_fahrer)
         if neu is not None and neu not in springer + weitere:
             # z. B. selbst als ausgefallen gemeldet oder an dem Tag schon eingeteilt
-            name = neu.get_full_name() or neu
-            messages.error(request, f"{name} kann am {tag:%d.%m.%Y} nicht einspringen "
+            messages.error(request, f"{neu.name} kann am {tag:%d.%m.%Y} nicht einspringen "
                                     "(Ausfall gemeldet oder schon eingeteilt).")  # fmt: skip
             return redirect(request.path)
         plan.ersatz_eintragen(tag, t, nr, neu, request.user.get_username(), gast=gast)
         if neu:
-            text = f"{neu.get_full_name() or neu} springt ein."
+            text = f"{neu.name} springt ein."
         else:
             text = f"Gast „{gast}“ fährt mit." if gast else "Eintrag zurückgenommen."
         messages.success(request, f"{tag:%d.%m.%Y}, {t}, {platz_name(nr)}: {text}")
         return redirect(zurueck)
-    springer, weitere = plan.verfuegbar(tag)
+    springer, weitere = plan.verfuegbar(tag, nur_fahrer=nur_fahrer)
     return render(request, "fahrdienst/platz.html", {
         "p": plan.platz(tag, t, nr), "springer": springer, "weitere": weitere,
         "zurueck": zurueck, "wochentag": WOCHENTAGE[tag.weekday()], "monat": f"{tag:%Y-%m}",
@@ -145,10 +152,12 @@ def platz(request, datum, tour, nr):
 def meine(request):
     """Eigene Einsätze der nächsten vier Wochen und eigene Ausfälle."""
     heute = timezone.localdate()
+    ich = plan.person_von(request.user)
     return render(request, "fahrdienst/meine.html", {
-        "einsaetze": plan.einsaetze(request.user, heute, heute + dt.timedelta(days=27)),
+        "ich": ich,
+        "einsaetze": plan.einsaetze(ich, heute, heute + dt.timedelta(days=27)),
         "heute": heute,
-        "ausfaelle": Ausfall.objects.filter(benutzer=request.user, bis__gte=heute),
+        "ausfaelle": Ausfall.objects.filter(person=ich, bis__gte=heute) if ich else [],
         "darf_melden": plan.darf_selbst_melden(request.user),
         "planen": rollen.hat_recht(request.user, "fahrdienst.planen"),
     })  # fmt: skip
@@ -160,16 +169,17 @@ def ausfall(request):
     darf_planen = rollen.hat_recht(request.user, "fahrdienst.planen")
     if not darf_planen and not plan.darf_selbst_melden(request.user):
         raise PermissionDenied
+    ich = plan.person_von(request.user)
     heute = timezone.localdate()
     try:  # aus dem Plan oder „Meine Einsätze“: der angetippte Tag
         von = max(dt.date.fromisoformat(request.GET.get("von", "")), heute)
     except ValueError:
         von = heute
-    vorbelegt = {"von": von, "benutzer": request.user.pk}
+    vorbelegt = {"von": von, "person": ich.pk if ich else None}
     form = AusfallForm(request.POST or None, planen=darf_planen, initial=vorbelegt)
     if request.method == "POST" and form.is_valid():
         d = form.cleaned_data
-        wer = d["benutzer"] if darf_planen else request.user
+        wer = d["person"] if darf_planen else ich
         a = plan.ausfall_melden(wer, d["von"], d["bis"], d["grund"], d["anmerkung"],
                                 request.user.get_username(),
                                 request.build_absolute_uri(reverse("fahrdienst:plan"))
@@ -189,7 +199,9 @@ def ausfall(request):
 @sehen
 def ausfall_loeschen(request, pk):
     a = get_object_or_404(Ausfall, pk=pk)
-    eigener = a.benutzer_id == request.user.pk and plan.darf_selbst_melden(request.user)
+    eigener = (
+        a.person and a.person.konto_id == request.user.pk and plan.darf_selbst_melden(request.user)
+    )
     if not (eigener or rollen.hat_recht(request.user, "fahrdienst.planen")):
         raise PermissionDenied
     papierkorb.loeschen(request.user, "Ausfall im Fahrdienst", str(a), a,
@@ -215,8 +227,8 @@ def einstellungen(request):
 
     return render(request, "fahrdienst/einstellungen.html", {
         "form": form, "touren": Tour.objects.all(), "beispiel": muster.vorhanden(),
-        "springer": Springer.objects.select_related("benutzer"),
-        "ausfaelle": Ausfall.objects.filter(bis__gte=heute).select_related("benutzer"),
+        "springer": Springer.objects.select_related("person"),
+        "ausfaelle": Ausfall.objects.filter(bis__gte=heute).select_related("person"),
     })  # fmt: skip
 
 
@@ -261,7 +273,7 @@ def beispiel(request):
 
     if request.POST.get("aktion") == "entfernen":
         anzahl = muster.entfernen()
-        messages.success(request, f"Beispiel entfernt ({anzahl} erfundene Konten gelöscht).")
+        messages.success(request, f"Beispiel entfernt ({anzahl} erfundene Personen gelöscht).")
     else:
         z = muster.anlegen()
         messages.success(request, f"Beispiel angelegt: {z['Touren']} Touren, {z['Personen']} "
@@ -296,7 +308,9 @@ def besetzung(request, pk):
     """Feste Besetzung einer Tour: je Fahrtag und Platz eine Person (Auswahl)."""
     t = get_object_or_404(Tour, pk=pk)
     tage = wochentage(FahrdienstEinstellungen.laden().fahrtage)
-    personen = list(aktive())
+    personen = list(fahrdienst_personen())
+    fahrer = [p for p in personen if p.darf_fahren]
+    fahrer_pks = {p.pk for p in fahrer}
     jetzt = {(b.wochentag, b.platz): b for b in t.besetzungen.all()}
     # Vom Fahrerplan aus geöffnet: danach zurück zu diesem Monat
     monat = request.GET.get("monat", "")
@@ -304,23 +318,31 @@ def besetzung(request, pk):
                else reverse("fahrdienst:einstellungen"))  # fmt: skip
     if request.method == "POST":
         gueltig = {str(p.pk): p for p in personen}
+        nicht_fahrer = False
         for tag in tage:
             for nr in range(1, t.plaetze + 1):
                 wahl = request.POST.get(f"b_{tag}_{nr}", "")
                 alt = jetzt.get((tag, nr))
-                if wahl in gueltig and (alt is None or str(alt.benutzer_id) != wahl):
+                if wahl in gueltig and nr == 1 and gueltig[wahl].pk not in fahrer_pks:
+                    nicht_fahrer = True  # Fahrerplatz braucht einen Fahrer
+                    continue
+                if wahl in gueltig and (alt is None or str(alt.person_id) != wahl):
                     Besetzung.objects.update_or_create(
-                        tour=t, wochentag=tag, platz=nr, defaults={"benutzer": gueltig[wahl]}
+                        tour=t, wochentag=tag, platz=nr, defaults={"person": gueltig[wahl]}
                     )
                 elif not wahl and alt is not None:
                     alt.delete()
+        if nicht_fahrer:
+            messages.warning(request, "Auf dem Fahrerplatz (Platz 1) kann nur ein Fahrer stehen; "
+                                      "diese Auswahl wurde übergangen.")  # fmt: skip
         messages.success(request, f"Feste Besetzung der Tour „{t}“ gespeichert.")
         return redirect(zurueck)
-    zeilen = [(tag, [(nr, platz_name(nr), jetzt.get((tag, nr))) for nr in range(1, t.plaetze + 1)])
+    zeilen = [(tag, [(nr, platz_name(nr), jetzt.get((tag, nr)), nr == 1)
+                     for nr in range(1, t.plaetze + 1)])
               for tag in tage]  # fmt: skip
     return render(request, "fahrdienst/besetzung.html",
-                  {"tour": t, "zeilen": zeilen, "personen": personen, "zurueck": zurueck,
-                   "vom_plan": bool(monat)})  # fmt: skip
+                  {"tour": t, "zeilen": zeilen, "personen": personen, "fahrer": fahrer,
+                   "zurueck": zurueck, "vom_plan": bool(monat)})  # fmt: skip
 
 
 @never_cache
@@ -349,7 +371,9 @@ def springer_loeschen(request, pk):
 def ausfall_gesund(request, pk):
     """Wieder gesund ab heute (ADR 0085): kann einspringen, die eigenen Plätze bleiben frei."""
     a = get_object_or_404(Ausfall, pk=pk)
-    eigener = a.benutzer_id == request.user.pk and plan.darf_selbst_melden(request.user)
+    eigener = (
+        a.person and a.person.konto_id == request.user.pk and plan.darf_selbst_melden(request.user)
+    )
     if not (eigener or rollen.hat_recht(request.user, "fahrdienst.planen")):
         raise PermissionDenied
     if plan.gesund_melden(a, timezone.localdate(),

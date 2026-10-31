@@ -6,6 +6,7 @@ import pytest
 from django.core import mail as django_mail
 from django.urls import reverse
 
+from apps.adressen.models import Adresse
 from apps.core.models import MailEinstellungen, PapierkorbEintrag, TafelEinstellungen
 from apps.fahrdienst import plan
 from apps.fahrdienst.models import (
@@ -32,11 +33,15 @@ def modul_an():
 
 
 def person(benutzer_mit_rolle, name, rolle=rollen.FAHRER, email=""):
+    """Eine Fahrdienst-Person (Adresse) mit verknüpftem Konto (ADR 0097)."""
     vorname, nachname = name.split()
     b = benutzer_mit_rolle(vorname.lower(), rolle)
     b.first_name, b.last_name, b.email = vorname, nachname, email
     b.save()
-    return b
+    fahrdienst = "fahrer" if rolle == rollen.FAHRER else "beifahrer"
+    return Adresse.objects.create(art=Adresse.Art.PERSON, vorname=vorname, nachname=nachname,
+                                  email=email, konto=b, helfer_aktiv=True,
+                                  fahrdienst=fahrdienst)  # fmt: skip
 
 
 @pytest.fixture
@@ -47,17 +52,17 @@ def team(benutzer_mit_rolle):
     steele = Tour.objects.create(name="Steele", reihenfolge=2, plaetze=2)
     mitte = Tour.objects.create(name="Mitte", reihenfolge=1, plaetze=2)
     for tag in ("Mo", "Mi"):
-        Besetzung.objects.create(tour=mitte, wochentag=tag, platz=1, benutzer=p["max"])
-        Besetzung.objects.create(tour=mitte, wochentag=tag, platz=2, benutzer=p["jan"])
-        Besetzung.objects.create(tour=steele, wochentag=tag, platz=1, benutzer=p["kai"])
-        Besetzung.objects.create(tour=steele, wochentag=tag, platz=2, benutzer=p["eva"])
-    Springer.objects.create(benutzer=p["ole"])
-    Springer.objects.create(benutzer=p["tim"], wochentage="Fr")
+        Besetzung.objects.create(tour=mitte, wochentag=tag, platz=1, person=p["max"])
+        Besetzung.objects.create(tour=mitte, wochentag=tag, platz=2, person=p["jan"])
+        Besetzung.objects.create(tour=steele, wochentag=tag, platz=1, person=p["kai"])
+        Besetzung.objects.create(tour=steele, wochentag=tag, platz=2, person=p["eva"])
+    Springer.objects.create(person=p["ole"])
+    Springer.objects.create(person=p["tim"], wochentage="Fr")
     return p, mitte, steele
 
 
 def namen(personen):
-    return [b.first_name for b in personen]
+    return [b.vorname for b in personen]
 
 
 def test_plan_ausfall_und_ersatz(team):
@@ -65,7 +70,7 @@ def test_plan_ausfall_und_ersatz(team):
     tage = plan.tage([MITTWOCH])
     assert [t.name for t, _ in tage[0][1]] == ["Mitte", "Steele"]  # nach Reihenfolge
     _, plaetze = tage[0][1][1]
-    assert [(x.wer.first_name, x.status, x.name) for x in plaetze] == [
+    assert [(x.wer.vorname, x.status, x.name) for x in plaetze] == [
         ("Kai", plan.OK, "Fahrer"),
         ("Eva", plan.OK, "Beifahrer"),
     ]
@@ -116,7 +121,7 @@ def test_mail_an_die_fahrdienstleitung(team, benutzer_mit_rolle, settings,
     person(benutzer_mit_rolle, "Bob Buero", rollen.BUERO, "bob@example.org")
     assert plan.empfaenger() == ["bob@example.org", "lea@example.org"]  # alle, die planen
     e = FahrdienstEinstellungen.laden()
-    e.benachrichtigen.set([leitung])
+    e.benachrichtigen.set([leitung.konto])
     assert plan.empfaenger() == ["lea@example.org"]  # normalerweise eine Person
     with django_capture_on_commit_callbacks(execute=True):
         plan.ausfall_melden(p["kai"], MITTWOCH, MITTWOCH + dt.timedelta(days=5), "krank",
@@ -130,36 +135,36 @@ def test_mail_an_die_fahrdienstleitung(team, benutzer_mit_rolle, settings,
 
 def test_seiten_und_rechte(team, client, admin_client, anmelden, benutzer_mit_rolle):
     p, mitte, steele = team
-    Ausfall.objects.create(benutzer=p["kai"], von=MITTWOCH, bis=MITTWOCH, grund="krank")
+    Ausfall.objects.create(person=p["kai"], von=MITTWOCH, bis=MITTWOCH, grund="krank")
     seite = admin_client.get(PLAN, {"monat": "2026-11"}).content.decode()
     assert "Fahrerplan November 2026" in seite and "fd-offen" in seite and "Kai Nordmann" in seite
     assert "fällt aus (krank)" in seite  # Grund nur für die Planung
     url = reverse("fahrdienst:platz", args=["2026-11-11", steele.pk, 1])
     assert "Ole Hansen" in admin_client.get(url).content.decode()
     admin_client.post(url, {"benutzer": p["ole"].pk})
-    assert Ersatz.objects.get().benutzer == p["ole"]
+    assert Ersatz.objects.get().person == p["ole"]
     falsch = reverse("fahrdienst:platz", args=["kein-datum", 1, 1])
     assert admin_client.get(falsch).status_code == 404
     assert admin_client.get(reverse("fahrdienst:platz", args=["2026-11-11", steele.pk, 3])
                             ).status_code == 404  # fmt: skip
 
     # Fahrer: sieht den Plan ohne Grund, meldet selbst, sieht eigene Einsätze
-    anmelden(client, p["eva"])
+    anmelden(client, p["eva"].konto)
     seite = client.get(PLAN, {"monat": "2026-11"}).content.decode()
     assert "krank" not in seite and "fd-platz" in seite
     assert client.get(url).status_code == 403
     antwort = client.post(reverse("fahrdienst:ausfall"), {"von": "2026-11-16", "bis": "",
                                                           "grund": "urlaub"})  # fmt: skip
     assert antwort.status_code == 302
-    a = Ausfall.objects.get(benutzer=p["eva"])
+    a = Ausfall.objects.get(person=p["eva"])
     assert a.bis == a.von == dt.date(2026, 11, 16) and a.eingetragen_von == "eva"
     meine = client.get(reverse("fahrdienst:meine")).content.decode()
     assert "Gemeldete Ausfälle" in meine and "16.11.2026" in meine
     client.post(reverse("fahrdienst:ausfall_loeschen", args=[a.pk]))
-    assert not Ausfall.objects.filter(benutzer=p["eva"]).exists()
+    assert not Ausfall.objects.filter(person=p["eva"]).exists()
     assert PapierkorbEintrag.objects.get().art == "Ausfall im Fahrdienst"
     # Fremden Ausfall darf sie nicht löschen; ohne Erlaubnis kein Selbstmelden
-    kai = Ausfall.objects.get(benutzer=p["kai"])
+    kai = Ausfall.objects.get(person=p["kai"])
     assert client.post(reverse("fahrdienst:ausfall_loeschen", args=[kai.pk])).status_code == 403
     FahrdienstEinstellungen.objects.update(selbst_melden=False)
     assert client.get(reverse("fahrdienst:ausfall")).status_code == 403
@@ -170,14 +175,14 @@ def test_falsche_eingaben(team, admin_client):
     p, _, _ = team
     antwort = admin_client.post(
         reverse("fahrdienst:ausfall"),
-        {"benutzer": p["jan"].pk, "von": "2026-11-16", "bis": "2026-11-10", "grund": "krank"},
+        {"person": p["jan"].pk, "von": "2026-11-16", "bis": "2026-11-10", "grund": "krank"},
     )
     assert "Das Ende liegt vor dem Anfang" in antwort.content.decode()
     admin_client.post(
         reverse("fahrdienst:ausfall"),
-        {"benutzer": p["jan"].pk, "von": "2026-11-16", "bis": "2026-11-20", "grund": "krank"},
+        {"person": p["jan"].pk, "von": "2026-11-16", "bis": "2026-11-20", "grund": "krank"},
     )
-    assert Ausfall.objects.get(benutzer=p["jan"]).bis == dt.date(2026, 11, 20)
+    assert Ausfall.objects.get(person=p["jan"]).bis == dt.date(2026, 11, 20)
 
 
 def test_einstellungen_touren_besetzung_springer(team, admin_client):
@@ -198,38 +203,38 @@ def test_einstellungen_touren_besetzung_springer(team, admin_client):
     url = reverse("fahrdienst:besetzung", args=[neu.pk])
     assert 'name="b_Di_3"' in admin_client.get(url).content.decode()
     admin_client.post(url, {"b_Mo_1": p["tim"].pk, "b_Di_2": p["ole"].pk, "b_Di_3": "999999"})
-    assert {(b.wochentag, b.platz, b.benutzer.first_name) for b in neu.besetzungen.all()} == {
+    assert {(b.wochentag, b.platz, b.person.vorname) for b in neu.besetzungen.all()} == {
         ("Mo", 1, "Tim"),
         ("Di", 2, "Ole"),
     }
     admin_client.post(url, {"b_Mo_1": p["max"].pk, "b_Di_2": ""})  # ändern und leeren
-    assert [(b.wochentag, b.benutzer.first_name) for b in neu.besetzungen.all()] == [("Mo", "Max")]
+    assert [(b.wochentag, b.person.vorname) for b in neu.besetzungen.all()] == [("Mo", "Max")]
     admin_client.post(reverse("fahrdienst:tour_loeschen", args=[neu.pk]))
     assert not Tour.objects.filter(name="Sondertour").exists()
     assert PapierkorbEintrag.objects.get().art == "Tour"
     # Springer: nur an bestimmten Tagen; dieselbe Person nicht doppelt
-    s = Springer.objects.get(benutzer=p["tim"])
+    s = Springer.objects.get(person=p["tim"])
     admin_client.post(reverse("fahrdienst:springer", args=[s.pk]),
-                      {"benutzer": p["tim"].pk, "wochentage": ["Mi", "Fr"]})  # fmt: skip
+                      {"person": p["tim"].pk, "wochentage": ["Mi", "Fr"]})  # fmt: skip
     s.refresh_from_db()
     assert s.wochentage == "Mi, Fr"
     form = admin_client.get(reverse("fahrdienst:springer_neu")).content.decode()
     assert "Tim Weber" not in form and "Max Mustermann" in form
     admin_client.post(reverse("fahrdienst:springer_loeschen", args=[s.pk]))
-    assert not Springer.objects.filter(benutzer=p["tim"]).exists()
+    assert not Springer.objects.filter(person=p["tim"]).exists()
 
 
 def test_fristen_menue_und_auskunft(team, admin_client, pdf_text):
     p, _, steele = team
     alt = dt.date(2025, 1, 10)
-    Ausfall.objects.create(benutzer=p["kai"], von=alt, bis=alt, grund="krank")
-    Ersatz.objects.create(datum=alt, tour=steele, platz=1, benutzer=p["ole"])
-    Ausfall.objects.create(benutzer=p["kai"], von=MITTWOCH, bis=MITTWOCH, grund="urlaub")
+    Ausfall.objects.create(person=p["kai"], von=alt, bis=alt, grund="krank")
+    Ersatz.objects.create(datum=alt, tour=steele, platz=1, person=p["ole"])
+    Ausfall.objects.create(person=p["kai"], von=MITTWOCH, bis=MITTWOCH, grund="urlaub")
     assert plan.fristen_anwenden(dt.date(2026, 11, 1)) == 2
     assert Ausfall.objects.count() == 1 and not Ersatz.objects.exists()
     start = admin_client.get(reverse("core:start")).content.decode()
     assert "Fahrerplan" in start and "Fahrdienst: Touren und Springer" in start
-    text = pdf_text(admin_client.get(reverse("konten:auskunft", args=[p["kai"].pk])))
+    text = pdf_text(admin_client.get(reverse("konten:auskunft", args=[p["kai"].konto.pk])))
     assert "Fahrdienst" in text and "Steele" in text and "Urlaub" in text
 
 
@@ -283,7 +288,7 @@ def test_telegram_ohne_grund(team, admin_client, monkeypatch, django_capture_on_
     )
     with django_capture_on_commit_callbacks(execute=True):
         plan.ausfall_melden(p["eva"], MITTWOCH, None, "urlaub", "", "eva")
-    assert Ausfall.objects.filter(benutzer=p["eva"]).exists()
+    assert Ausfall.objects.filter(person=p["eva"]).exists()
     assert "nicht erreichbar" in admin_client.post(tg, {"aktion": "test"}, follow=True
                                                    ).content.decode()  # fmt: skip
     admin_client.post(seite, {"fahrtage": ["Mo"], "aufbewahren_monate": 12,
@@ -322,7 +327,7 @@ def test_telegram_schnittstelle(monkeypatch):
 
 def test_plan_als_pdf(team, admin_client, pdf_text):
     p, _, steele = team
-    Ausfall.objects.create(benutzer=p["kai"], von=MITTWOCH, bis=MITTWOCH, grund="krank")
+    Ausfall.objects.create(person=p["kai"], von=MITTWOCH, bis=MITTWOCH, grund="krank")
     plan.ersatz_eintragen(MITTWOCH, steele, 2, p["ole"], "chefin")
     antwort = admin_client.get(reverse("fahrdienst:pdf"), {"monat": "2026-11"})
     assert antwort["Content-Disposition"].endswith('fahrerplan-2026-11.pdf"')
@@ -380,15 +385,14 @@ def test_beispiel_plan(admin_client):
         heute = [p.wer.pk for _, plaetze in zeile for p in plaetze if p.wer]
         assert len(heute) == len(set(heute))  # niemand zweimal am Tag
         assert all(not p.fehlt for _, plaetze in zeile for p in plaetze)
-    from django.contrib.auth import get_user_model
-
-    konto = get_user_model().objects.filter(username__startswith=beispiel.PRAEFIX).first()
-    assert not konto.has_usable_password()  # erfundene Konten können sich nicht anmelden
+    # Erfundene Personen stehen als Adressen (mit Fahrdienst-Kennzeichen) im Adressbuch, ohne Konto
+    muster = Adresse.objects.filter(notiz=beispiel.KENNUNG)
+    assert muster.count() == 23 and all(a.konto_id is None and a.fahrdienst for a in muster)
     assert Springer.objects.count() == 3
     seite = admin_client.get(reverse("fahrdienst:einstellungen")).content.decode()
     assert "Beispiel neu würfeln" in seite and "Beispiel entfernen" in seite
-    beispiel.anlegen(seed=1)  # wiederholbar, ohne doppelte Konten
-    assert get_user_model().objects.filter(username__startswith=beispiel.PRAEFIX).count() == 23
+    beispiel.anlegen(seed=1)  # wiederholbar, ohne doppelte Personen
+    assert Adresse.objects.filter(notiz=beispiel.KENNUNG).count() == 23
     echt = Tour.objects.create(name="Echte Tour")
     admin_client.post(reverse("fahrdienst:beispiel"), {"aktion": "entfernen"})
     assert not beispiel.vorhanden() and list(Tour.objects.all()) == [echt]
@@ -409,14 +413,14 @@ def test_monat_oeffnen_und_besetzung_vom_plan_aendern(team, admin_client, anmeld
     assert admin_client.post(besetzung, {}).url == reverse("fahrdienst:einstellungen")
     platz = reverse("fahrdienst:platz", args=["2026-11-11", steele.pk, 1])
     assert f'href="{besetzung}?monat=2026-11"' in admin_client.get(platz).content.decode()
-    anmelden(client, p["eva"])  # ohne Planungsrecht keine Links zur Besetzung
+    anmelden(client, p["eva"].konto)  # ohne Planungsrecht keine Links zur Besetzung
     assert besetzung not in client.get(PLAN, {"monat": "2026-11"}).content.decode()
 
 
 def test_fahrer_traegt_sich_selbst_aus(team, admin, client, anmelden):
     """Eigenen Namen im Plan antippen → Ausfall ab diesem Tag, z. B. 3 Wochen Urlaub."""
     p, mitte, steele = team
-    anmelden(client, p["eva"])
+    anmelden(client, p["eva"].konto)
     seite = client.get(PLAN, {"monat": "2026-11"}).content.decode()
     ausfall = reverse("fahrdienst:ausfall")
     assert f'href="{ausfall}?von=2026-11-11" title="Ich kann nicht – austragen"' in seite
@@ -428,7 +432,7 @@ def test_fahrer_traegt_sich_selbst_aus(team, admin, client, anmelden):
     assert 'value="2026-11-11"' in formular and "3 Wochen" in formular
     assert client.get(ausfall, {"von": "kaputt"}).status_code == 200
     client.post(ausfall, {"von": "2026-11-11", "dauer": "21", "bis": "", "grund": "urlaub"})
-    a = Ausfall.objects.get(benutzer=p["eva"])
+    a = Ausfall.objects.get(person=p["eva"])
     assert (a.von, a.bis) == (dt.date(2026, 11, 11), dt.date(2026, 12, 1))
     assert len(plan.einsaetze(p["eva"], a.von, a.bis)) == 6  # Mo und Mi in 3 Wochen
     seite = client.get(PLAN, {"monat": "2026-11"}).content.decode()
@@ -436,7 +440,7 @@ def test_fahrer_traegt_sich_selbst_aus(team, admin, client, anmelden):
     # Genaues Ende geht vor; ohne Selbstmelden kein Link
     client.post(ausfall, {"von": "2026-12-07", "dauer": "28", "bis": "2026-12-09",
                           "grund": "krank"})  # fmt: skip
-    assert Ausfall.objects.get(benutzer=p["eva"], grund="krank").bis == dt.date(2026, 12, 9)
+    assert Ausfall.objects.get(person=p["eva"], grund="krank").bis == dt.date(2026, 12, 9)
     FahrdienstEinstellungen.objects.update(selbst_melden=False)
     assert ausfall not in client.get(PLAN, {"monat": "2026-11"}).content.decode()
 
@@ -447,9 +451,9 @@ def test_planung_meldet_nur_ausfall_ohne_ersatz(team, admin_client):
     url = reverse("fahrdienst:platz", args=["2026-11-11", steele.pk, 1])
     seite = admin_client.get(url).content.decode()
     assert "Erst einmal nur: Kai Nordmann fällt aus" in seite
-    assert f'name="benutzer" value="{p["kai"].pk}"' in seite
+    assert f'name="person" value="{p["kai"].pk}"' in seite
     daten = {
-        "benutzer": p["kai"].pk,
+        "person": p["kai"].pk,
         "von": "2026-11-11",
         "bis": "",
         "dauer": "7",
@@ -457,14 +461,14 @@ def test_planung_meldet_nur_ausfall_ohne_ersatz(team, admin_client):
     }
     antwort = admin_client.post(reverse("fahrdienst:ausfall"), daten)
     assert antwort.url == f"{PLAN}?monat=2026-11"
-    a = Ausfall.objects.get(benutzer=p["kai"])
+    a = Ausfall.objects.get(person=p["kai"])
     assert (a.von, a.bis, a.grund) == (dt.date(2026, 11, 11), dt.date(2026, 11, 17), "krank")
     assert plan.platz(MITTWOCH, steele, 1).status == plan.OFFEN and not Ersatz.objects.exists()
     seite = admin_client.get(url).content.decode()
     assert "Erst einmal nur" not in seite and "zurücknehmen" in seite
     loeschen = reverse("fahrdienst:ausfall_loeschen", args=[a.pk])
     assert admin_client.post(loeschen, {"weiter": url}).url == url
-    a = Ausfall.objects.create(benutzer=p["kai"], von=MITTWOCH, bis=MITTWOCH, grund="krank")
+    a = Ausfall.objects.create(person=p["kai"], von=MITTWOCH, bis=MITTWOCH, grund="krank")
     fremd = reverse("fahrdienst:ausfall_loeschen", args=[a.pk])
     assert admin_client.post(fremd, {"weiter": "https://example.org/"}).url == reverse(
         "fahrdienst:meine"
@@ -492,7 +496,7 @@ def test_tour_faehrt_ab_und_bis(team, admin_client, pdf_text):
     p, mitte, steele = team
     neu = Tour.objects.create(name="Nordtour", reihenfolge=3, plaetze=2,
                               ab=dt.date(2026, 11, 16))  # fmt: skip
-    Besetzung.objects.create(tour=neu, wochentag="Mi", platz=1, benutzer=p["tim"])
+    Besetzung.objects.create(tour=neu, wochentag="Mi", platz=1, person=p["tim"])
     steele.bis = dt.date(2026, 11, 16)
     steele.save()
     assert [t.name for t in plan.touren(dt.date(2026, 10, 1), dt.date(2026, 10, 31))] == [

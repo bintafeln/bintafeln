@@ -209,21 +209,27 @@ def fahrer(benutzer_mit_rolle, admin):
     from apps.aushang import pin
     from apps.fahrdienst.models import Besetzung, Tour
 
-    leute = {}
+    leute, pers = {}, {}  # leute: Konten (für PIN), pers: Fahrdienst-Personen (Adressen)
     namen = [("Max Mustermann", rollen.FAHRER), ("Jan Beispiel", rollen.BEIFAHRER),
              ("Eva Lindner", rollen.BUERO), ("Ole Hansen", rollen.BEIFAHRER)]  # fmt: skip
     for name, rolle in namen:
-        b = benutzer_mit_rolle(name.split()[0].lower(), rolle)
-        b.first_name, b.last_name = name.split()
+        vorname, nachname = name.split()
+        b = benutzer_mit_rolle(vorname.lower(), rolle)
+        b.first_name, b.last_name = vorname, nachname
         b.save()
         pin.setzen(b, "482915")
         leute[b.username] = b
+        if rolle in (rollen.FAHRER, rollen.BEIFAHRER):
+            fd = "fahrer" if rolle == rollen.FAHRER else "beifahrer"
+            pers[b.username] = Adresse.objects.create(
+                art=Adresse.Art.PERSON, vorname=vorname, nachname=nachname, konto=b,
+                helfer_aktiv=True, fahrdienst=fd)  # fmt: skip
     tour = Tour.objects.create(name="Mitte", plaetze=2, mindestbesetzung=2)
-    Besetzung.objects.create(tour=tour, wochentag="Mi", platz=1, benutzer=leute["max"])
-    Besetzung.objects.create(tour=tour, wochentag="Mi", platz=2, benutzer=leute["jan"])
+    Besetzung.objects.create(tour=tour, wochentag="Mi", platz=1, person=pers["max"])
+    Besetzung.objects.create(tour=tour, wochentag="Mi", platz=2, person=pers["jan"])
     aushang = Aushang.objects.create(name="Monitor Fahrerraum")
     AushangSeite.objects.create(aushang=aushang, art="fahrdienst", monate=1)
-    return leute, tour, aushang
+    return leute, pers, tour, aushang
 
 
 def _platz(aushang):
@@ -263,7 +269,7 @@ def test_sich_am_monitor_austragen_nur_mit_eigener_pin(fahrer, heute, client):
     from apps.aushang.models import MonitorPin
     from apps.fahrdienst.models import Ausfall
 
-    leute, tour, aushang = fahrer
+    leute, pers, tour, aushang = fahrer
     kennung = f"fahrdienst|{heute:%Y-%m-%d}|{tour.pk}|1"
     html = client.get(_platz(aushang), {"platz": kennung}).content.decode()
     assert "Ich bin Max Mustermann und kann nicht" in html and "Wie lange" in html
@@ -277,14 +283,14 @@ def test_sich_am_monitor_austragen_nur_mit_eigener_pin(fahrer, heute, client):
     antwort = client.post(_platz(aushang), {**daten, "pin": "482915"}).json()
     assert antwort["ok"] and "Max Mustermann fällt am 11.11. aus" in antwort["meldung"]
     ausfall = Ausfall.objects.get()
-    assert (ausfall.benutzer, ausfall.von, ausfall.bis) == (leute["max"], heute, heute)
+    assert (ausfall.person, ausfall.von, ausfall.bis) == (pers["max"], heute, heute)
     assert ausfall.eingetragen_von == "max am Monitor „Monitor Fahrerraum“"
     assert LogEntry.objects.get_for_object(ausfall).get().actor == leute["max"]
     assert MonitorPin.objects.get(benutzer=leute["max"]).fehler == 0
 
 
 def test_falsche_pin_sperrt_nach_fuenf_versuchen(fahrer, heute, client):
-    leute, tour, aushang = fahrer
+    leute, pers, tour, aushang = fahrer
     daten = {"platz": f"fahrdienst|{heute:%Y-%m-%d}|{tour.pk}|1", "aktion": "ausfall",
              "person": leute["max"].pk, "grund": "krank", "pin": "111222"}  # fmt: skip
     for _ in range(5):
@@ -299,14 +305,16 @@ def test_einspringen_selbst_planen_fuer_andere(fahrer, heute, client):
     from apps.fahrdienst import plan
     from apps.fahrdienst.models import Ausfall, Ersatz
 
-    leute, tour, aushang = fahrer
-    Ausfall.objects.create(benutzer=leute["max"], von=heute, bis=heute, grund="krank")
-    kennung = f"fahrdienst|{heute:%Y-%m-%d}|{tour.pk}|1"
+    leute, pers, tour, aushang = fahrer
+    # Beifahrerplatz (Platz 2), damit der Beifahrer Ole einspringen darf (auf den Fahrerplatz
+    # kommt nur ein Fahrer, ADR 0097)
+    Ausfall.objects.create(person=pers["jan"], von=heute, bis=heute, grund="krank")
+    kennung = f"fahrdienst|{heute:%Y-%m-%d}|{tour.pk}|2"
     html = client.get(_platz(aushang), {"platz": kennung}).content.decode()
     assert "Ich springe ein" in html and "Ole Hansen" in html
     # Ole springt selbst ein, Jan kann Ole nicht eintragen, Gast nur wer plant
-    ole = f"{leute['ole'].pk}:{leute['ole'].pk}"
-    daten = {"platz": kennung, "aktion": "ersatz", "helfer": leute["ole"].pk,
+    ole = f"{pers['ole'].pk}:{leute['ole'].pk}"
+    daten = {"platz": kennung, "aktion": "ersatz", "helfer": pers["ole"].pk,
              "person": leute["jan"].pk, "pin": "482915"}  # fmt: skip
     assert "Einspringen kann man nur selbst" in client.post(_platz(aushang), daten).json()["fehler"]
     assert "nur, wer den Fahrdienst plant" in client.post(_platz(aushang), {
@@ -314,7 +322,7 @@ def test_einspringen_selbst_planen_fuer_andere(fahrer, heute, client):
     selbst = {"platz": kennung, "aktion": "einspringen", "einspringer": ole, "pin": "482915"}
     antwort = client.post(_platz(aushang), selbst).json()
     assert antwort["ok"] and "Ole Hansen springt am 11.11. ein" in antwort["meldung"]
-    assert plan.platz(heute, tour, 1).status == plan.ERSETZT
+    assert plan.platz(heute, tour, 2).status == plan.ERSETZT
     # Eva plant: Eintrag zurücknehmen und einen Gast eintragen
     eva = {"platz": kennung, "person": leute["eva"].pk, "pin": "482915"}
     assert client.post(_platz(aushang), {**eva, "aktion": "zuruecknehmen"}).json()["ok"]
@@ -330,7 +338,7 @@ def test_einspringen_selbst_planen_fuer_andere(fahrer, heute, client):
 
 
 def test_am_monitor_nichts_aendern_wenn_aus_vergangen_oder_unbekannt(fahrer, heute, client):
-    leute, tour, aushang = fahrer
+    leute, pers, tour, aushang = fahrer
     gestern = heute - dt.timedelta(days=7)
     assert client.get(_platz(aushang), {"platz": f"fahrdienst|{gestern:%Y-%m-%d}|{tour.pk}|1"}
                       ).status_code == 404  # fmt: skip

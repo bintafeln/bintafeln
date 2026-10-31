@@ -60,6 +60,12 @@ class Adresse(models.Model):
         "Helfer aktiv", default=True,
         help_text="Inaktive Helfer werden nicht mehr zur Einteilung vorgeschlagen.",
     )  # fmt: skip
+    fahrdienst = models.CharField(
+        "Fahrdienst", max_length=10, blank=True,
+        choices=[("beifahrer", "nur Beifahrer"), ("fahrer", "Fahrer (darf fahren)")],
+        help_text="Ob und wie die Person im Fahrdienst mitfährt. Fahrer dürfen fahren und sind "
+        "auch als Beifahrer einsetzbar; ein Fahrerplatz braucht einen Fahrer.",
+    )  # fmt: skip
     konto = models.OneToOneField(
         "konten.Benutzer", null=True, blank=True, on_delete=models.SET_NULL,
         related_name="adresse", verbose_name="Konto",
@@ -91,9 +97,9 @@ class Adresse(models.Model):
             raise ValidationError({"nachname": "Bei einer Person ist der Nachname nötig."})
         if self.art == self.Art.ORGANISATION and not self.organisation:
             raise ValidationError({"organisation": "Bitte den Namen der Organisation angeben."})
-        if self.art == self.Art.ORGANISATION and (self.konto_id or self.helfer):
-            raise ValidationError("Konto und Helfer gibt es nur bei einer Person, nicht bei einer "
-                                  "Organisation.")  # fmt: skip
+        if self.art == self.Art.ORGANISATION and (self.konto_id or self.helfer or self.fahrdienst):
+            raise ValidationError("Konto, Helfer und Fahrdienst gibt es nur bei einer Person, "
+                                  "nicht bei einer Organisation.")  # fmt: skip
 
     @property
     def personenname(self) -> str:
@@ -103,6 +109,10 @@ class Adresse(models.Model):
     def mail(self) -> str:
         """E-Mail für Benachrichtigungen: die des Kontos, sonst die der Adresse."""
         return (self.konto.email if self.konto_id else "") or self.email
+
+    @property
+    def darf_fahren(self) -> bool:
+        return self.fahrdienst == "fahrer"
 
     @property
     def name(self) -> str:

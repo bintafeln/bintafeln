@@ -24,13 +24,17 @@ def fristen():
 
 
 def auskunft_mitarbeiter(benutzer, pdf):
+    from apps.adressen.models import Adresse
     from apps.core import ausfall as ausfallregeln
     from apps.fahrdienst.models import Ausfall, Besetzung, Ersatz, Springer, platz_name
 
-    feste = Besetzung.objects.filter(benutzer=benutzer).select_related("tour")
-    ausfaelle = Ausfall.objects.filter(benutzer=benutzer)
-    ersatz = Ersatz.objects.filter(benutzer=benutzer).select_related("tour")
-    springer = Springer.objects.filter(benutzer=benutzer).first()
+    person = Adresse.objects.filter(konto=benutzer).first()
+    if person is None:
+        return
+    feste = Besetzung.objects.filter(person=person).select_related("tour")
+    ausfaelle = Ausfall.objects.filter(person=person)
+    ersatz = Ersatz.objects.filter(person=person).select_related("tour")
+    springer = Springer.objects.filter(person=person).first()
     if not (feste or ausfaelle or ersatz or springer):
         return
     pdf.ueberschrift("Fahrdienst")
@@ -70,7 +74,7 @@ def _ausfall_offen(schluessel: str) -> bool:
     from apps.fahrdienst.plan import einsaetze
 
     a = Ausfall.objects.filter(pk=schluessel or 0).first()
-    return bool(a) and any(p.fehlt for p in einsaetze(a.benutzer, a.von, a.bis))
+    return bool(a) and any(p.fehlt for p in einsaetze(a.person, a.von, a.bis))
 
 
 def _darf(*codes):

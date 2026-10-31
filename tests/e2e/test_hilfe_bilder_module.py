@@ -183,13 +183,13 @@ def _fahrdienst():
     for datum in tage[2:4]:
         p = next(p for _, plaetze in plan.tage([datum])[0][1] for p in plaetze if p.wer)
         Ausfall.objects.create(
-            benutzer=p.wer, von=datum, bis=datum, grund="krank", eingetragen_von="Clara Beispiel"
+            person=p.wer, von=datum, bis=datum, grund="krank", eingetragen_von="Clara Beispiel"
         )
         eintraege.append((datum, p))
     datum, p = eintraege[1]
     springer = plan.verfuegbar(datum)[0][0]
     Ersatz.objects.create(
-        datum=datum, tour=p.tour, platz=p.platz, benutzer=springer, eingetragen_von="Clara Beispiel"
+        datum=datum, tour=p.tour, platz=p.platz, person=springer, eingetragen_von="Clara Beispiel"
     )
 
 
