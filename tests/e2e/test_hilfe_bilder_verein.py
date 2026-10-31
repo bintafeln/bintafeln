@@ -114,7 +114,7 @@ def test_hilfe_bild_aufnahme(angemeldet, admin, muster):
     aufnehmen(seite, "aufnahme-kunde", [seite.locator("section.karte").first,
                                          seite.locator(".aktionen")],
               Marke(treffer, nummer=1, von="oben", laenge=40),
-              Marke(seite.locator("tr.zeile-neu"), "rahmen", 2),
+              Marke(seite.locator(".treffer-neu"), "rahmen", 2),
               Marke(weiter, nummer=3, von="unten", laenge=30))  # fmt: skip
     weiter.click()
     seite.locator('input[name="wahl_strasse"][value="antrag"]').check()

@@ -61,6 +61,7 @@ def test_treffer(bestand):
     t = aufnahme.treffer(vertauscht)
     assert t[0]["haushalt"] == bestand["h"] and t[0]["punkte"] == 100
     assert "gleiches Geburtsdatum" in t[0]["gruende"]
+    assert t[0]["stufe"] == "hoch" and t[0]["stufe_text"]  # Einstufung statt nackter Punkte
     tippfehler = antrag(vorname="Erica", nachname="Musterman", geburtsdatum=dt.date(1968, 12, 3),
                         strasse="", plz="")  # fmt: skip
     t = aufnahme.treffer(tippfehler)
@@ -69,6 +70,12 @@ def test_treffer(bestand):
     assert aufnahme.treffer(antrag(vorname="Max", nachname="Probe", geburtsdatum=None)) == []
     mit_nummer = antrag(vorname="Max", nachname="Probe", kundennummer="00042")
     assert aufnahme.treffer(mit_nummer)[0]["punkte"] == 100
+
+
+def test_einstufung_stufen():
+    assert aufnahme.einstufung(100)[0] == "hoch" and aufnahme.einstufung(80)[0] == "hoch"
+    assert aufnahme.einstufung(79)[0] == "mittel" and aufnahme.einstufung(65)[0] == "mittel"
+    assert aufnahme.einstufung(64)[0] == "niedrig" and aufnahme.einstufung(0)[0] == "niedrig"
 
 
 def test_gueltigkeit():
@@ -213,6 +220,9 @@ def test_aufnahme_bestehender_kunde(admin_client, bestand):
     admin_client.get(reverse("antraege:aufnahme", args=[a.pk]))
     seite = schritt(admin_client, a, "kunde").content.decode()
     assert "1001" in seite and "gleiches Geburtsdatum" in seite
+    # Antragsdaten dauerhaft sichtbar, Ampel-Einstufung und Vorschau ohne neuen Tab
+    assert "Angaben aus dem Antrag" in seite and "Neue Straße 1" in seite
+    assert "einstufung-" in seite and "<summary>Vorschau</summary>" in seite
     schritt(admin_client, a, "kunde", {"haushalt": "1001"})
     seite = schritt(admin_client, a, "abgleich").content.decode()
     assert "Alte Straße 9" in seite and "Neue Straße 1" in seite and "unterschied" in seite
@@ -284,3 +294,19 @@ def test_aufnahme_uebernimmt_gdb(admin_client, bestand):
     assert not h.personen.get(vorname="Ben").zusatz  # ohne Angabe bleibt alles, wie es war
     feld = Zusatzfeld.objects.get(schluessel="gdb")
     assert feld.besondere_kategorie and "GdB 100" in feld.optionen_liste()
+
+
+def test_abgleich_gleiche_felder_ohne_wahl(admin_client, bestand):
+    # Antrag gleicht dem Kunden 1001 fast überall, nur die Straße ist anders.
+    a = antrag(vorname="Mustermann", nachname="Erika", strasse="Neue Straße 1")
+    admin_client.get(reverse("antraege:aufnahme", args=[a.pk]))
+    schritt(admin_client, a, "kunde", {"haushalt": "1001"})
+    seite = schritt(admin_client, a, "abgleich").content.decode()
+    assert 'class="gleich"' in seite  # gleiche Angaben als graue Info-Zeile
+    assert 'name="wahl_plz"' not in seite  # PLZ ist gleich → keine Wahl
+    assert 'name="wahl_strasse"' in seite  # Straße unterscheidet sich → Wahl
+    assert "data-alle-wahl" in seite  # Sammel-Knöpfe „alles aus …"
+    # Ohne Wahl der gleichen Felder wird ihr Wert trotzdem übernommen (aus dem Bestand).
+    schritt(admin_client, a, "abgleich", {"wahl_strasse": "antrag"})
+    seite = schritt(admin_client, a, "pruefen").content.decode()
+    assert "Neue Straße 1" in seite and "Musterstadt" in seite

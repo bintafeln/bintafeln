@@ -89,7 +89,7 @@ def test_hilfe_bild_kunden_finden(angemeldet, admin, muster):
     haken.check()
     aufnehmen(seite, "kunden-finden-liste", karte,
               Marke(seite.locator("form.filter-kompakt"), "rahmen", 1),
-              Marke(seite.get_by_role("button", name=re.compile("Als CSV exportieren")),
+              Marke(seite.get_by_role("button", name=re.compile("Als CSV-Datei")),
                     "rahmen", 2),
               Marke(seite.get_by_text("Spalten wählen"), nummer=3, laenge=50),
               Marke(haken, nummer=4, laenge=50))  # fmt: skip

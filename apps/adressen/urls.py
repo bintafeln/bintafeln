@@ -6,6 +6,7 @@ app_name = "adressen"
 
 urlpatterns = [
     path("", views.liste, name="liste"),
+    path("spalten/", views.spalten, name="spalten"),
     path("neu/", views.bearbeiten, name="neu"),
     path("importieren/", views.importieren_ansicht, name="importieren"),
     path("<int:pk>/", views.adresse, name="adresse"),

@@ -3,7 +3,7 @@
 <div class="liste-aktionen">
   <span class="hinweis">{{ seite.paginator.count }} Haushalt{{ seite.paginator.count|pluralize:"e" }}</span>
   {% if seite.paginator.count %}
-  {% if "kunden.exportieren" in rechte %}<button type="submit" form="auswahl" class="knopf" title="Angehakte Haushalte (ohne Haken: alle dieser Auswahl) als CSV-Datei, öffnet in Excel oder LibreOffice">⬇ Als CSV exportieren (Excel)</button>{% endif %}
+  {% if "kunden.exportieren" in rechte %}<button type="submit" form="auswahl" class="knopf knopf-zweitrangig" title="Angehakte Haushalte (ohne Haken: alle dieser Auswahl) als CSV-Datei, öffnet in Excel oder LibreOffice">⬇ Als CSV-Datei (Excel)</button>{% endif %}
   {% if "kunden.ausweis" in rechte %}<button type="submit" form="auswahl" class="knopf knopf-zweitrangig" formaction="{% url 'kunden:ausweise' %}" formtarget="_blank">🖨 Ausweise drucken (PDF)</button>{% endif %}
   <span class="hinweis" data-auswahl-zahl="auswahl">keine ausgewählt – es gilt die ganze Liste ({{ seite.paginator.count }})</span>
   {% endif %}

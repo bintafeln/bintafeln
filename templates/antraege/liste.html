@@ -19,9 +19,21 @@
     <label for="suche" class="unsichtbar">Suche</label>
     <input type="search" name="suche" id="suche" value="{{ suche }}" placeholder="Suchbegriff (Name, Nummer, E-Mail, Telefon …)" class="suche" {% live_suche %}>
     <button type="submit" class="knopf">Suchen</button>
-    <button type="submit" form="auswahl" class="knopf knopf-zweitrangig">CSV-Export</button> <span class="hinweis" data-auswahl-zahl="auswahl"></span>
+    <button type="submit" form="auswahl" class="knopf knopf-zweitrangig" title="Angehakte Anträge (ohne Haken: alle dieser Auswahl) als CSV-Datei, öffnet in Excel oder LibreOffice">⬇ Als CSV-Datei (Excel)</button> <span class="hinweis" data-auswahl-zahl="auswahl"></span>
   </form>
   {% url 'antraege:export' as export_url %}{% auswahl_formular export_url %}
+  <details class="spalten-wahl">
+    <summary>Spalten wählen</summary>
+    <form method="post" action="{% url 'antraege:spalten' %}">
+      {% csrf_token %}
+      <input type="hidden" name="zurueck" value="{{ abfrage }}">
+      <div class="spalten-haken">
+        {% for k, name, an in spalten_wahl %}<label><input type="checkbox" name="spalte" value="{{ k }}"{% if an %} checked{% endif %}> {{ name }}</label>{% endfor %}
+      </div>
+      <button type="submit" class="knopf knopf-zweitrangig">Übernehmen</button>
+      <span class="hinweis">Die Antragsnummer (#) bleibt immer sichtbar.</span>
+    </form>
+  </details>
   <div id="ergebnis">
   {% blaettern seite zusatz="Anträge" %}
   <div class="tabelle-rahmen">
@@ -33,16 +45,16 @@
     <tbody>
     {% for a in seite %}
       <tr><td class="auswahl"><input type="checkbox" name="id" value="{{ a.pk }}" form="auswahl" aria-label="Zeile auswählen"></td>
-        <td data-titel="#"><a href="{% url 'antraege:antrag' a.pk %}">{{ a.nummer }}</a></td>
-        <td data-titel="Status"><span class="status status-{{ a.status }}">{{ a.get_status_display }}</span></td>
-        <td data-titel="Kundennummer">{{ a.kundennummer|default:"–" }}</td>
-        <td data-titel="Nachname">{{ a.nachname }}{% if a.ausserhalb %} <span class="marke-warnung" title="PLZ oder Ort liegt nicht im Einzugsgebiet (Anträge einstellen)">außerhalb des Gebiets</span>{% endif %}</td>
-        <td data-titel="Vorname">{{ a.vorname }}</td>
-        <td data-titel="Antrag vom">{{ a.eingegangen_am|date:"d.m.Y H:i" }}</td>
-        <td data-titel="E-Mail">{{ a.email|default:"–" }}</td>
-        <td data-titel="Telefon">{{ a.telefon|default:"–" }}</td>
-        <td data-titel="Art">{{ a.get_art_display }}</td>
-        <td data-titel="Staatsangehörigkeit">{{ a.staatsangehoerigkeit|default:"–" }}</td>
+        {% if "nummer" in sichtbar %}<td data-titel="#"><a href="{% url 'antraege:antrag' a.pk %}">{{ a.nummer }}</a></td>{% endif %}
+        {% if "status" in sichtbar %}<td data-titel="Status"><span class="status status-{{ a.status }}">{{ a.get_status_display }}</span></td>{% endif %}
+        {% if "kundennummer" in sichtbar %}<td data-titel="Kundennummer">{{ a.kundennummer|default:"–" }}</td>{% endif %}
+        {% if "nachname" in sichtbar %}<td data-titel="Nachname">{{ a.nachname }}{% if a.ausserhalb %} <span class="marke-warnung" title="PLZ oder Ort liegt nicht im Einzugsgebiet (Anträge einstellen)">außerhalb des Gebiets</span>{% endif %}</td>{% endif %}
+        {% if "vorname" in sichtbar %}<td data-titel="Vorname">{{ a.vorname }}</td>{% endif %}
+        {% if "eingang" in sichtbar %}<td data-titel="Antrag vom">{{ a.eingegangen_am|date:"d.m.Y H:i" }}</td>{% endif %}
+        {% if "email" in sichtbar %}<td data-titel="E-Mail">{{ a.email|default:"–" }}</td>{% endif %}
+        {% if "telefon" in sichtbar %}<td data-titel="Telefon">{{ a.telefon|default:"–" }}</td>{% endif %}
+        {% if "art" in sichtbar %}<td data-titel="Art">{{ a.get_art_display }}</td>{% endif %}
+        {% if "staat" in sichtbar %}<td data-titel="Staatsangehörigkeit">{{ a.staatsangehoerigkeit|default:"–" }}</td>{% endif %}
         <td data-titel="Anmerkung">{{ a.kommentar|default:""|truncatechars:60 }}</td>
         <td data-titel="Aktionen" class="zeilen-aktionen">
           <a class="symbol" href="{% url 'antraege:antrag' a.pk %}" title="Ansehen" aria-label="Antrag {{ a.nummer }} ansehen">👁</a>
@@ -62,7 +74,7 @@
         </td>
       </tr>
     {% empty %}
-      <tr><td colspan="13">Keine Anträge.</td></tr>
+      <tr><td colspan="{{ spalten|length|add:3 }}">Keine Anträge.</td></tr>
     {% endfor %}
     </tbody>
   </table>

@@ -679,9 +679,33 @@ a.knopf-gefahr { color: #fff; }
 .schritte li.aktuell { background: var(--akzent); color: var(--auf-akzent); border-color: var(--akzent); font-weight: 600; }
 .schritte li.erledigt { background: var(--erfolg); }
 .abgleich tr.unterschied td { background: #fff6dc; }
+.abgleich tr.gleich td { color: var(--leise); }
+.abgleich-sammel { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .75rem;
+  margin: .5rem 0; }
 .abgleich label { display: flex; gap: .5rem; align-items: center; cursor: pointer; }
 tr.wunsch td { background: var(--erfolg); }
 .zeile-neu td { background: var(--grund); }
+/* Aufnahme Schritt 1: Antragsdaten fest neben den Treffer-Karten, Einstufung als Ampel */
+.abgleich-gegenueber { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; }
+.antrag-karte { flex: 1 1 14rem; background: var(--grund); border: 1px solid var(--rand);
+  border-radius: var(--radius); padding: .5rem 1rem; }
+.antrag-karte h3 { margin: .25rem 0 .5rem; }
+.antrag-karte .angaben { margin: 0; }
+.treffer-liste { flex: 2 1 22rem; min-width: 0; display: flex; flex-direction: column; gap: .6rem; }
+@media (min-width: 48rem) { .antrag-karte { position: sticky; top: .5rem; max-width: 20rem; } }
+.treffer-karte { border: 1px solid var(--rand); border-radius: var(--radius); padding: .6rem .8rem; }
+.treffer-karte:has(input:checked) { border-color: var(--akzent); box-shadow: 0 0 0 2px var(--fokus); }
+.treffer-wahl { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; cursor: pointer; }
+.treffer-zeile { margin: .35rem 0 .15rem; }
+.treffer-grund { margin: 0 0 .35rem; }
+.treffer-vorschau summary { cursor: pointer; color: var(--akzent-dunkel); }
+.treffer-vorschau .angaben { margin: .4rem 0 0; }
+.treffer-neu { border-style: dashed; }
+.einstufung { display: inline-block; padding: .1rem .55rem; border-radius: 999px; font-size: .8rem;
+  font-weight: 700; }
+.einstufung-hoch { background: var(--akzent); color: var(--auf-akzent); }
+.einstufung-mittel { background: var(--erfolg); color: var(--akzent-dunkel); }
+.einstufung-niedrig { background: var(--flaeche); color: var(--leise); border: 1px solid var(--rand); }
 .abgleich-gruppe { margin: .75rem 0; }
 .abgleich-gruppe summary { cursor: pointer; padding: .35rem 0; }
 tr.unterschied td { background: #fff6dc; }

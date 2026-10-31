@@ -48,6 +48,14 @@ SORTIERUNG = {
 }  # fmt: skip
 ZEILEN = ["25", "50", "100", "alle"]
 
+# Spalten der Antragsliste; „nummer" (die Antragsnummer mit Link) ist immer sichtbar, die übrigen
+# wählt jede Person selbst (Benutzer.antraege_liste_aus).
+SPALTEN = [("nummer", "#"), ("status", "Status"), ("kundennummer", "Kundennummer"),
+           ("nachname", "Nachname"), ("vorname", "Vorname"), ("eingang", "Antrag vom"),
+           ("email", "E-Mail"), ("telefon", "Telefon"), ("art", "Art"),
+           ("staat", "Staatsangehörigkeit")]  # fmt: skip
+SPALTEN_FEST = {"nummer"}
+
 
 def _gefiltert(request):
     ansicht = request.GET.get("ansicht", "offen")
@@ -88,10 +96,10 @@ def liste(request):
     e = AntragEinstellungen.laden()
     for a in seite:
         a.ausserhalb = gebiet.ausserhalb(e, a)
-    spalten = [("nummer", "#"), ("status", "Status"), ("kundennummer", "Kundennummer"),
-               ("nachname", "Nachname"), ("vorname", "Vorname"), ("eingang", "Antrag vom"),
-               ("email", "E-Mail"), ("telefon", "Telefon"), ("art", "Art"),
-               ("staat", "Staatsangehörigkeit")]  # fmt: skip
+    aus = set(request.user.antraege_liste_aus or [])
+    sichtbar = {k for k, _ in SPALTEN if k in SPALTEN_FEST or k not in aus}
+    spalten = [(k, titel) for k, titel in SPALTEN if k in sichtbar]
+    spalten_wahl = [(k, titel, k not in aus) for k, titel in SPALTEN if k not in SPALTEN_FEST]
     return render(
         request,
         "antraege/liste.html",
@@ -104,9 +112,26 @@ def liste(request):
             "zeilen": zeilen,
             "zeilen_auswahl": ZEILEN,
             "spalten": spalten,
+            "sichtbar": sichtbar,
+            "spalten_wahl": spalten_wahl,
+            "abfrage": request.GET.urlencode(),
             "offen_gesamt": Antrag.objects.filter(ANSICHTEN["offen"][1]).count(),
         },
     )
+
+
+@require_POST
+@rollen.recht_erforderlich("antraege.bearbeiten")
+def spalten(request):
+    """Eigene Auswahl der Spalten in der Antragsliste (am Konto gespeichert)."""
+    from django.http import QueryDict
+
+    gewaehlt = set(request.POST.getlist("spalte"))
+    request.user.antraege_liste_aus = [k for k, _ in SPALTEN
+                                       if k not in SPALTEN_FEST and k not in gewaehlt]  # fmt: skip
+    request.user.save(update_fields=["antraege_liste_aus"])
+    zurueck = QueryDict(request.POST.get("zurueck", "")).urlencode()
+    return redirect(f"{reverse('antraege:liste')}?{zurueck}" if zurueck else "antraege:liste")
 
 
 @rollen.recht_erforderlich("antraege.bearbeiten")

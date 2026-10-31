@@ -128,9 +128,12 @@ def werkseinstellungen(verwalter, ziel) -> None:
 
     _pruefen(verwalter, ziel)
     ziel.kundenliste_aus = []
+    ziel.antraege_liste_aus = []
+    ziel.listen_spalten_aus = {}
     ziel.gewaehlte_stelle = None
     ziel.ansicht_stand += 1
-    ziel.save(update_fields=["kundenliste_aus", "gewaehlte_stelle", "ansicht_stand"])
+    ziel.save(update_fields=["kundenliste_aus", "antraege_liste_aus", "listen_spalten_aus",
+                             "gewaehlte_stelle", "ansicht_stand"])  # fmt: skip
     ImportSitzung.objects.filter(benutzer=ziel).delete()
     ImportVorbereitung.objects.filter(erstellt_von=ziel).delete()
 

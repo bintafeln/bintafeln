@@ -7,13 +7,14 @@ from decimal import Decimal
 from django.contrib import messages
 from django.db.models import Q
 from django.db.models.functions import Length
-from django.http import HttpResponse
+from django.http import HttpResponse, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
-from apps.core import listenauswahl, papierkorb
+from apps.core import listen, listenauswahl, papierkorb
 from apps.konten import rollen
 from apps.mitglieder.forms import MitgliederEinstellungenForm, MitgliedForm
 from apps.mitglieder.models import Mitglied, MitgliederEinstellungen, nummer_verbraucht
@@ -39,6 +40,18 @@ def _zeilen(mitglieder, jahr: int):
             {"m": m, "soll": soll, "gezahlt": gezahlt, "offen": max(soll - gezahlt, Decimal("0"))}
         )
     return zeilen
+
+
+# Spalten zum Zu-/Abwählen je Person (Nr. öffnet das Mitglied und bleibt immer sichtbar);
+# die Beitragsspalten gibt es nur, wenn Beiträge eingeschaltet sind.
+SPALTEN_FEST = {"nummer"}
+
+
+def _spalten(beitraege) -> list[tuple[str, str]]:
+    spalten = [("nummer", "Nr."), ("name", "Name"), ("art", "Art"), ("eintritt", "Eintritt")]
+    if beitraege:
+        spalten += [("soll", "Soll"), ("gezahlt", "gezahlt"), ("offen", "offen")]
+    return spalten
 
 
 @rollen.recht_erforderlich("mitglieder.sehen")
@@ -67,6 +80,16 @@ def liste(request):
             zeilen = [z for z in zeilen if z["offen"] > 0]
     else:
         zeilen = [{"m": m} for m in mitglieder]
+    # Spalten wie Zahlen/Namen sortieren; Beitragsspalten nur, wenn es Beiträge gibt.
+    schluessel = {
+        "nummer": lambda z: (len(z["m"].nummer), z["m"].nummer),
+        "name": lambda z: z["m"].adresse.name.lower(),
+        "art": lambda z: z["m"].art,
+        "eintritt": lambda z: z["m"].eintritt,
+    }
+    if beitraege:
+        schluessel |= {f: (lambda z, f=f: z[f]) for f in ("soll", "gezahlt", "offen")}
+    zeilen, sort = listen.sortieren_liste(zeilen, request.GET.get("sort", ""), schluessel, "nummer")
     if request.GET.get("csv"):
         return _csv(zeilen, jahr, beitraege)
     alle = Mitglied.objects.all()
@@ -78,10 +101,30 @@ def liste(request):
     if beitraege:
         for feld in ("soll", "gezahlt", "offen"):
             kennzahlen[feld] = sum(z[feld] for z in zeilen)
+    spalten = _spalten(beitraege)
+    abfrage = request.GET.copy()
+    abfrage.pop("seite", None)
     return render(request, "mitglieder/liste.html", {
         "zeilen": zeilen, "jahr": jahr, "jahre": _jahre(), "k": kennzahlen, "beitraege": beitraege,
+        "sort": sort,
+        "sichtbar": listen.sichtbare_spalten(request.user, "mitglieder",
+                                             [k for k, _ in spalten], SPALTEN_FEST),
+        "spalten_wahl": listen.spalten_wahl(request.user, "mitglieder", spalten, SPALTEN_FEST),
+        "abfrage": abfrage.urlencode(),
         "filter": {"stand": stand, "q": q, "nur_offen": request.GET.get("nur_offen", "")},
     })  # fmt: skip
+
+
+@require_POST
+@rollen.recht_erforderlich("mitglieder.sehen")
+def spalten(request):
+    """Speichert, welche Spalten diese Person in der Mitgliederliste sieht."""
+    spalten = _spalten(MitgliederEinstellungen.mit_beitraegen())
+    listen.spalten_speichern(request.user, "mitglieder", request.POST.getlist("spalte"),
+                             spalten, SPALTEN_FEST)  # fmt: skip
+    zurueck = QueryDict(request.POST.get("zurueck", "")).urlencode()
+    ziel = reverse("mitglieder:liste")
+    return redirect(f"{ziel}?{zurueck}" if zurueck else ziel)
 
 
 def _csv(zeilen, jahr, beitraege):

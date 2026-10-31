@@ -9,7 +9,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -18,7 +18,7 @@ from django.views.decorators.http import require_POST
 
 from apps.adressen.forms import ImportForm
 from apps.adressen.models import Adresse
-from apps.core import geheimnis, listenauswahl, mail, papierkorb, privatdateien
+from apps.core import geheimnis, listen, listenauswahl, mail, papierkorb, privatdateien
 from apps.core.pdf import im_fenster, pdf_antwort
 from apps.konten import rollen
 from apps.konten.views import nicht_in_demo
@@ -40,6 +40,19 @@ def _jahre():
     return sorted(jahre, reverse=True)
 
 
+# Sortierbare Spalten der Spendenliste (Schlüssel wie in ?sort=…, mit „-“ absteigend):
+SORTIERUNG = {
+    "datum": ("datum", "pk"),
+    "spender": ("adresse__organisation", "adresse__nachname", "adresse__vorname"),
+    "art": ("art",),
+    "betrag": ("betrag",),
+}
+# Spalten zum Zu-/Abwählen je Person (Datum bleibt immer sichtbar):
+SPALTEN = [("datum", "Datum"), ("spender", "Spender"), ("art", "Art"), ("betrag", "Betrag/Wert"),
+           ("bezeichnung", "Bezeichnung / Zweck"), ("bestaetigung", "Bestätigung")]  # fmt: skip
+SPALTEN_FEST = {"datum"}
+
+
 @rollen.recht_erforderlich("spenden.sehen")
 def liste(request):
     jahr = _jahr(request)
@@ -54,6 +67,7 @@ def liste(request):
             | Q(adresse__vorname__icontains=q) | Q(beschreibung__icontains=q)
             | Q(zweck__icontains=q)
         )  # fmt: skip
+    spenden, sort = listen.sortieren(spenden, request.GET.get("sort", ""), SORTIERUNG, "-datum")
     if request.GET.get("csv"):
         return _csv(listenauswahl.filtern(request, spenden), jahr)
     summen = spenden.aggregate(
@@ -63,11 +77,28 @@ def liste(request):
     )  # fmt: skip
     je_monat = (spenden.filter(art=Spende.Art.GELD).values_list("datum__month")
                 .annotate(s=Sum("betrag")).order_by("datum__month"))  # fmt: skip
+    abfrage = request.GET.copy()
+    abfrage.pop("seite", None)
     return render(request, "spenden/liste.html", {
         "seite": Paginator(spenden, 50).get_page(request.GET.get("seite")),
         "jahr": jahr, "jahre": _jahre(), "filter": {"art": art, "q": q}, "summen": summen,
-        "je_monat": list(je_monat), "arten": Spende.Art.choices,
+        "je_monat": list(je_monat), "arten": Spende.Art.choices, "sort": sort,
+        "sichtbar": listen.sichtbare_spalten(request.user, "spenden",
+                                             [k for k, _ in SPALTEN], SPALTEN_FEST),
+        "spalten_wahl": listen.spalten_wahl(request.user, "spenden", SPALTEN, SPALTEN_FEST),
+        "abfrage": abfrage.urlencode(),
     })  # fmt: skip
+
+
+@require_POST
+@rollen.recht_erforderlich("spenden.sehen")
+def spalten(request):
+    """Speichert, welche Spalten diese Person in der Spendenliste sieht."""
+    listen.spalten_speichern(request.user, "spenden", request.POST.getlist("spalte"),
+                             SPALTEN, SPALTEN_FEST)  # fmt: skip
+    zurueck = QueryDict(request.POST.get("zurueck", "")).urlencode()
+    ziel = reverse("spenden:liste")
+    return redirect(f"{ziel}?{zurueck}" if zurueck else ziel)
 
 
 def _csv(spenden, jahr):

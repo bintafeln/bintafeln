@@ -79,8 +79,18 @@ def _datum_punkte(a: dt.date | None, b: dt.date | None) -> tuple[int, str]:
     return 0, ""
 
 
+def einstufung(punkte: int) -> tuple[str, str]:
+    """Verständliche Einstufung eines Treffers statt nackter Punkte: Schlüssel (für die Farbe)
+    und Klartext. Die Punkte stehen daneben nur noch als Detail."""
+    if punkte >= 80:
+        return "hoch", "sehr wahrscheinlich dieselbe Person"
+    if punkte >= 65:
+        return "mittel", "möglich – bitte prüfen"
+    return "niedrig", "eher nicht – nur bei Bedarf"
+
+
 def treffer(antrag) -> list[dict]:
-    """Ähnliche Haushalte, beste zuerst: {haushalt, person, punkte, gruende}."""
+    """Ähnliche Haushalte, beste zuerst: {haushalt, person, punkte, gruende, stufe, stufe_text}."""
     beste: dict[int, dict] = {}
     if antrag.kundennummer:
         h = Haushalt.objects.filter(kundennummer__iexact=antrag.kundennummer).first()
@@ -105,7 +115,10 @@ def treffer(antrag) -> list[dict]:
         punkte = min(punkte, 100)
         if punkte >= MIN_PUNKTE and punkte > beste.get(h.pk, {}).get("punkte", 0):
             beste[h.pk] = {"haushalt": h, "person": p, "punkte": punkte, "gruende": gruende}
-    return sorted(beste.values(), key=lambda t: -t["punkte"])[:MAX_TREFFER]
+    liste = sorted(beste.values(), key=lambda t: -t["punkte"])[:MAX_TREFFER]
+    for t in liste:
+        t["stufe"], t["stufe_text"] = einstufung(t["punkte"])
+    return liste
 
 
 def monat_plus(datum: dt.date, monate: int, monatsende: bool) -> dt.date:

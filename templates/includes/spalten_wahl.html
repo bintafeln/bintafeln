@@ -1,0 +1,14 @@
+{% comment %}Auswahlmenü „Spalten wählen" für eine Liste. Erwartet: spalten_aktion (URL der
+spalten-Ansicht), spalten_wahl (Liste aus apps/core/listen.spalten_wahl), abfrage (aktuelle
+Filter als URL-Text, damit man danach zur selben Ansicht zurückkommt).{% endcomment %}
+<details class="spalten-wahl">
+  <summary>Spalten wählen</summary>
+  <form method="post" action="{{ spalten_aktion }}">
+    {% csrf_token %}
+    <input type="hidden" name="zurueck" value="{{ abfrage }}">
+    <div class="spalten-haken">
+      {% for k, name, an, fest in spalten_wahl %}<label><input type="checkbox" name="spalte" value="{{ k }}"{% if an %} checked{% endif %}{% if fest %} disabled title="immer sichtbar"{% endif %}> {{ name }}</label>{% endfor %}
+    </div>
+    <button type="submit" class="knopf knopf-zweitrangig">Übernehmen</button>
+  </form>
+</details>

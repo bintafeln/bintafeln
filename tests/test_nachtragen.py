@@ -54,6 +54,8 @@ def test_liste_des_tages_mit_beitrag_und_rot(chefin, tafel):
     assert "00001" in text and "00003" in text
     assert 'name="betrag_00001" value="1,50"' in text and "Probe, Eva" in text
     assert "Ausweis abgelaufen" in text
+    # Die Kundennummer ist zum Kunden verlinkt (mit Recht kunden.ansehen)
+    assert f'href="{reverse("kunden:haushalt", args=["00001"])}"' in text
 
 
 def test_angehakte_nachtragen_mit_eigenem_betrag(chefin, tafel):

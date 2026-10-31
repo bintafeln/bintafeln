@@ -130,7 +130,7 @@ def test_export_vorgabe_und_admin(admin_client, daten):
     zeilen = admin_client.get(EXPORT, {"tag": "Mo"}).content.decode().lstrip("﻿")
     assert zeilen.splitlines()[1] == "0123;Mitte;aktiv;1;0;;;;Weg 1;1;Musterstadt;"
     liste = admin_client.get(LISTE, {"tag": ""}).content.decode()
-    assert "Als CSV exportieren" in liste and 'form="auswahl"' in liste
+    assert "Als CSV-Datei (Excel)" in liste and 'form="auswahl"' in liste
 
 
 def test_art9_zusatzfeld_nur_mit_recht(admin, daten, benutzer_mit_rolle, anmelden):
