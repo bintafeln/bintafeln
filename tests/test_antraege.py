@@ -371,6 +371,21 @@ def test_liste_und_detail(admin_client, antrag):
     assert "2 neue Anträge" in start
 
 
+def test_papierkorb_zeigt_eingestellte_loeschfrist(admin_client, antrag):
+    """Die Papierkorb-Ansicht nennt die eingestellte Löschfrist (nicht die alte Vorgabe), die
+    Antragsseite den genauen Tag der endgültigen Löschung."""
+    e = AntragEinstellungen.laden()
+    e.loeschen_nach_tagen = 300
+    e.save()
+    antrag.papierkorb_am = timezone.now()
+    antrag.save()
+    seite = admin_client.get(reverse("antraege:liste"), {"ansicht": "papierkorb"}).content.decode()
+    assert "300 Tage im Papierkorb" in seite and "Anträge einstellen" in seite
+    erwartet = antrag.endgueltig_loeschen_am().strftime("%d.%m.%Y")
+    detail = admin_client.get(reverse("antraege:antrag", args=[antrag.pk])).content.decode()
+    assert f"wird am {erwartet} endgültig gelöscht" in detail
+
+
 def test_bearbeiten_und_loeschen(admin_client, antrag):
     url = reverse("antraege:antrag", args=[antrag.pk])
     admin_client.post(reverse("antraege:status", args=[antrag.pk]), {"status": "erledigt"})
