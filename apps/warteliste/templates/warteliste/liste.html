@@ -85,7 +85,7 @@
           <td data-titel="Staatsangehörigkeit" data-spalte="staat">{{ a.staatsangehoerigkeit|default:"–" }}</td>
           <td data-titel="Status" data-spalte="status">{% include "warteliste/_status.html" %}{% for pk, hinweis in sperren.items %}{% if pk == a.pk %}<br><a href="{% url 'warteliste:abgleich' %}" class="grund-rot sperr-hinweis" title="{{ hinweis }}">⚠ Sperrzeit? Prüfen</a>{% endif %}{% endfor %}</td>
           <td data-titel="Termin" data-spalte="termin">{% if ws.termin %}<a href="{% url 'warteliste:termin' ws.termin.pk %}">{{ ws.termin }}</a>{% else %}–{% endif %}</td>
-          <td data-titel="Anmerkung" data-spalte="anmerkung" class="anmerkung-zelle">{% for m in a.anmerkungen.all %}{% if forloop.last %}<span title="{{ m.zeitpunkt|date:'d.m.Y' }} · {{ m.von }}">{{ m.text|truncatechars:80 }}</span>{% endif %}{% empty %}–{% endfor %}
+          <td data-titel="Anmerkung" data-spalte="anmerkung" class="anmerkung-zelle">{% for m in a.anmerkungen.all %}<div class="anmerkung-eintrag" title="{{ m.von }}"><span class="hinweis">{{ m.zeitpunkt|date:'d.m.Y' }}:</span> {{ m.text }}</div>{% empty %}–{% endfor %}
             {% if "warteliste.bearbeiten" in rechte %}<a href="{% url 'warteliste:eintrag' a.pk %}#anmerkung" class="anmerkung-neu" title="Anmerkung hinzufügen">＋</a>{% endif %}</td>
         </tr>
       {% endwith %}{% empty %}

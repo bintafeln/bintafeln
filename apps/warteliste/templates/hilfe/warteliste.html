@@ -18,8 +18,8 @@
 </ol>
 {% if "warteliste.bearbeiten" in rechte %}{% hilfe_bild "warteliste-liste" "① Nach Status filtern, ② Personen anhaken, ③ Termin wählen (oder einen neuen anlegen, dann erscheinen Datum, von und bis), ④ „Einladen“." %}
 <p><strong>Spalten und Anmerkungen:</strong> Über „Spalten wählen“ blenden Sie Spalten der Liste ein und aus (z. B.
-  Geburtsdatum, Wohnort, Personen); dieser Browser merkt sich die Wahl. Die Spalte <em>Anmerkung</em> zeigt die neueste
-  Anmerkung zum Antrag; mit „＋“ öffnen Sie den Antrag und schreiben unter „Anmerkungen“ eine neue.</p>
+  Geburtsdatum, Wohnort, Personen); dieser Browser merkt sich die Wahl. Die Spalte <em>Anmerkung</em> zeigt alle
+  Anmerkungen zum Antrag (die Zeile wird dann höher); mit „＋“ öffnen Sie den Antrag und schreiben unter „Anmerkungen“ eine neue.</p>
 <p><strong>Status von Hand setzen</strong> (rechts unter der Liste): für alles, was nicht von selbst passiert – z. B. jemand
   war beim Termin (<em>erschienen</em>), hat abgesagt (<em>entschuldigt</em>), soll erst später wieder dran sein
   (<em>Wartezeit</em>, dann erscheint das Feld „Wartezeit bis“) oder wird von der Warteliste genommen (<em>gestrichen</em>).
@@ -28,7 +28,8 @@
 
 <h3>Termine</h3>
 <p>„Kunden → Termine“ zeigt die Termine mit der Zahl der Eingeladenen. Auf der Seite eines Termins: Druckliste
-  (PDF), Status für mehrere Personen setzen und <strong>Absagen</strong> – die Absage geht per Mail hinaus, die
+  (PDF) zum Abhaken – mit Spalten <em>Erschienen</em> (zum Ankreuzen) und <em>Bemerkung</em> (zum Reinschreiben) –,
+  Status für mehrere Personen setzen und <strong>Absagen</strong> – die Absage geht per Mail hinaus, die
   Personen stehen danach wieder als „wartend“ ohne Termin in der Liste.</p>
 {% if "warteliste.bearbeiten" in rechte %}{% hilfe_bild "warteliste-termin" "Seite des Termins: ① Personen anhaken, ② „erschienen“ oder „entschuldigt“ wählen, ③ „Status setzen“." %}{% endif %}
 

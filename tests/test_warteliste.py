@@ -239,7 +239,7 @@ def test_modul_aus(admin_client):
     assert admin_client.get(reverse("warteliste:liste")).status_code == 404
 
 
-def test_seiten(modul_an, admin_client, mailserver):
+def test_seiten(modul_an, admin_client, mailserver, pdf_text):
     a = antrag(email="erika@example.org", staatsangehoerigkeit="Ukraine")
     b = antrag("Max", "Probe", staatsangehoerigkeit="Syrien")
     seite = admin_client.get(reverse("warteliste:liste")).content.decode()
@@ -259,6 +259,9 @@ def test_seiten(modul_an, admin_client, mailserver):
     assert "Beispiel, Erika" in seite
     pdf = admin_client.get(reverse("warteliste:druckliste", args=[t.pk]))
     assert pdf["Content-Type"] == "application/pdf"
+    # Druckliste zum Abhaken: Spalten Erschienen und Bemerkung, keine Telefonnummer
+    text = pdf_text(pdf)
+    assert "Erschienen" in text and "Bemerkung" in text and "Telefon" not in text
     admin_client.post(reverse("warteliste:status"), {
         "ids": [b.pk], "status": "erschienen", "zurueck": reverse("warteliste:termin", args=[t.pk]),
     })  # fmt: skip
@@ -370,9 +373,11 @@ def test_streichungsliste_suche_und_anmerkungen(admin_client, modul_an):
     admin_client.post(reverse("warteliste:eintrag", args=[a.pk]),
                       {"anmerkung": "Hat angerufen, kommt ab Dezember"})  # fmt: skip
     assert a.anmerkungen.last().text == "Hat angerufen, kommt ab Dezember"
+    admin_client.post(reverse("warteliste:eintrag", args=[a.pk]), {"anmerkung": "Zweite Anmerkung"})
     liste = admin_client.get(reverse("warteliste:liste")).content.decode()
     assert 'data-spalten-wahl="warteliste"' in liste and 'data-spalte="anmerkung"' in liste
-    assert "Hat angerufen, kommt ab Dezember" in liste
+    # Die Liste zeigt jetzt alle Anmerkungen, nicht nur die letzte.
+    assert "Hat angerufen, kommt ab Dezember" in liste and "Zweite Anmerkung" in liste
 
 
 # ── Einladung in zwei Sprachen ───────────────────────────────────────────────
