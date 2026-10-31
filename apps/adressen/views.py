@@ -17,7 +17,7 @@ from apps.adressen import importieren
 from apps.adressen.auskunft import adresse_pdf
 from apps.adressen.forms import AdresseForm, ImportForm
 from apps.adressen.models import Adresse, AdressKategorie
-from apps.core import geheimnis, listen, listenauswahl, listenexport, module, papierkorb, whatsapp
+from apps.core import geheimnis, listen, listenauswahl, listenexport, module, papierkorb
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 
@@ -146,7 +146,6 @@ def adresse(request, pk):
         kontext["zeige_mitglied"] = True
     # Verknüpftes Konto und seine Stammdaten nur für Mitarbeitenden-Verwalter
     kontext["darf_konto"] = rollen.darf_mitarbeitende_verwalten(request.user)
-    kontext["whatsapp"] = whatsapp.fuer_person(a)  # Klick-zum-Chat an die Handynummer
     # Regelmäßige Einsätze dieser Person (nur bei eingeschaltetem Modul, ADR 0097)
     if a.art == Adresse.Art.PERSON:
         if module.aktiv("dienstplan"):

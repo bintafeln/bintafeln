@@ -11,7 +11,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from apps.ausgabe.ampel import WOCHENTAGE, wochentage
-from apps.core import papierkorb, whatsapp
+from apps.core import papierkorb
 from apps.core.pdf import pdf_antwort
 from apps.fahrdienst import plan
 from apps.fahrdienst.forms import (
@@ -140,14 +140,10 @@ def platz(request, datum, tour, nr):
         messages.success(request, f"{tag:%d.%m.%Y}, {t}, {platz_name(nr)}: {text}")
         return redirect(zurueck)
     springer, weitere = plan.verfuegbar(tag, nur_fahrer=nur_fahrer)
-    p_ = plan.platz(tag, t, nr)
-    nachricht = (f"Hallo {p_.wer.vorname or p_.wer.name}, es geht um den Fahrdienst am "
-                 f"{tag:%d.%m.%Y}: {t}, {platz_name(nr)}.") if p_.wer else ""  # fmt: skip
     return render(request, "fahrdienst/platz.html", {
-        "p": p_, "springer": springer, "weitere": weitere,
+        "p": plan.platz(tag, t, nr), "springer": springer, "weitere": weitere,
         "zurueck": zurueck, "wochentag": WOCHENTAGE[tag.weekday()], "monat": f"{tag:%Y-%m}",
         "ausfall_form": AusfallForm(planen=True),
-        "whatsapp": whatsapp.fuer_person(p_.wer, nachricht),
     })  # fmt: skip
 
 
