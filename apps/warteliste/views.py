@@ -12,7 +12,7 @@ from apps.antraege import sprachen
 from apps.antraege import uebersetzen as uebersetzen_ki
 from apps.antraege.models import Antrag
 from apps.core import papierkorb
-from apps.core.pdf import Pdf, pdf_antwort
+from apps.core.pdf import Kaestchen, Pdf, pdf_antwort
 from apps.konten import rollen
 from apps.warteliste import ablauf
 from apps.warteliste.forms import (
@@ -273,13 +273,13 @@ def druckliste(request, pk):
     )
     doc = Pdf(f"Termin {t}", "Liste der Eingeladenen")
     doc.absatz(ablauf.ort(t).replace("\n", ", "), klein=True)
-    leer = " "  # leere Zelle (sonst „–"): zum Ankreuzen bzw. Reinschreiben von Hand
+    leer = " "  # leere Zelle (sonst „–"): zum Reinschreiben von Hand (Bemerkung)
     doc.tabelle(
-        ["Erschienen", "Antrag", "Name", "Staatsangehörigkeit", "Status", "Bemerkung"],
-        [[leer, ws.antrag.nummer, f"{ws.antrag.nachname}, {ws.antrag.vorname}",
-          ws.antrag.staatsangehoerigkeit, ws.get_status_display(), leer]
+        ["Erschienen", "Antrag", "Name", "Staatsangehörigkeit", "Bemerkung"],
+        [[Kaestchen(), ws.antrag.nummer, f"{ws.antrag.nachname}, {ws.antrag.vorname}",
+          ws.antrag.staatsangehoerigkeit, leer]
          for ws in wartende],
-        breiten=[0.12, 0.08, 0.28, 0.18, 0.14, 0.2],
+        breiten=[0.12, 0.09, 0.33, 0.22, 0.24],
     )  # fmt: skip
     return pdf_antwort(doc.erzeugen(), f"druckliste_{t.datum:%Y-%m-%d}.pdf")
 

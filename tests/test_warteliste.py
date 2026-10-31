@@ -271,9 +271,10 @@ def test_seiten(modul_an, admin_client, mailserver, pdf_text):
     assert "Beispiel, Erika" in seite
     pdf = admin_client.get(reverse("warteliste:druckliste", args=[t.pk]))
     assert pdf["Content-Type"] == "application/pdf"
-    # Druckliste zum Abhaken: Spalten Erschienen und Bemerkung, keine Telefonnummer
+    # Druckliste zum Abhaken: Spalten Erschienen und Bemerkung, kein Status, keine Telefonnummer
     text = pdf_text(pdf)
-    assert "Erschienen" in text and "Bemerkung" in text and "Telefon" not in text
+    assert "Erschienen" in text and "Bemerkung" in text
+    assert "Status" not in text and "Telefon" not in text
     admin_client.post(reverse("warteliste:status"), {
         "ids": [b.pk], "status": "erschienen", "zurueck": reverse("warteliste:termin", args=[t.pk]),
     })  # fmt: skip
