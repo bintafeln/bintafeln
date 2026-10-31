@@ -10,7 +10,7 @@
   <dl class="angaben">
     {% if a.art == "organisation" and a.personenname %}<dt>Person</dt><dd>{{ a.anrede }} {{ a.personenname }}</dd>{% endif %}
     {% if a.telefon %}<dt>Telefon</dt><dd><a href="tel:{{ a.telefon }}">{{ a.telefon }}</a></dd>{% endif %}
-    {% if a.mobil %}<dt>Mobil</dt><dd><a href="tel:{{ a.mobil }}">{{ a.mobil }}</a>{% if whatsapp %} · <a href="{{ whatsapp }}" target="_blank" rel="noopener noreferrer">WhatsApp</a>{% endif %}</dd>{% endif %}
+    {% if a.mobil %}<dt>Mobil</dt><dd><a href="tel:{{ a.mobil }}">{{ a.mobil }}</a></dd>{% endif %}
     {% if a.email %}<dt>E-Mail</dt><dd><a href="mailto:{{ a.email }}">{{ a.email }}</a></dd>{% endif %}
     {% if a.webseite %}<dt>Webseite</dt><dd><a href="{{ a.webseite }}" target="_blank" rel="noopener noreferrer">{{ a.webseite }}</a></dd>{% endif %}
   </dl>

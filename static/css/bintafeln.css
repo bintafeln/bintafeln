@@ -117,12 +117,6 @@ input::-webkit-date-and-time-value { text-align: left; margin: 0; }
   width: 100%;
 }
 .knopf:hover { background: var(--akzent-dunkel); }
-/* kleiner Knopf (z. B. eine Aktion in einer Angabenliste): schmaler, nicht volle Breite */
-.knopf-klein { width: auto; padding: .35rem .75rem; min-height: 0; display: inline-block;
-  text-decoration: none; }  /* fmt: skip */
-/* WhatsApp-Knopf (Klick zum Chat): WhatsApp-Grün, damit er als Messenger erkennbar ist */
-.knopf-whatsapp { background: #25d366; color: #0b2e13; }
-.knopf-whatsapp:hover { background: #1da851; }
 
 .meldungen { list-style: none; padding: 0; margin: 0 0 1rem; }
 /* Nach dem Absenden weiter unten (static/js/position.js): Meldung kurz über der Seite zeigen */
