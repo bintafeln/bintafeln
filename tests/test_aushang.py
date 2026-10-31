@@ -7,11 +7,11 @@ from django.test import Client
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.adressen.models import Adresse
 from apps.aushang import anzeige
 from apps.aushang.models import Aushang, AushangSeite
 from apps.core.models import PapierkorbEintrag, TafelEinstellungen
 from apps.dienstplan import beispiel as dp_beispiel
-from apps.dienstplan.models import Helfer
 from apps.fahrdienst import beispiel as fd_beispiel
 from apps.konten import rollen
 from apps.kunden.models import Ausgabestelle
@@ -140,7 +140,7 @@ def test_monitor_ohne_anmeldung_nur_namen(plaene, heute, admin):
     assert "11.11." in html and "02.11." not in html and "09.11." not in html  # ab heute
     assert '<button type="button" data-nr="3">Fahrer November</button>' in html
     assert "Teamleitung:" in html and "Mittwoch, 11.11.2026" in html and "Stand 10:00 Uhr" in html
-    helfer = Helfer.objects.filter(anmerkung=dp_beispiel.KENNUNG).first()
+    helfer = Adresse.objects.filter(notiz=dp_beispiel.KENNUNG, helfer=True).first()
     assert helfer.name in html and helfer.telefon not in html and "0123 45" not in html
     assert 'class="knopf' not in html and "menue" not in html  # ganzseitig, ohne Menü
     assert "aushang.js" in html and 'data-sekunden="20"' in html
@@ -357,13 +357,13 @@ def test_dienstplan_am_monitor_helfer_mit_konto(plaene, heute, client, benutzer_
 
     a = Aufgabe.objects.filter(stelle__ausgabestelle=plaene, wochentag="Mi", name="Kasse").get()
     h = a.besetzung.helfer
-    h.benutzer = benutzer_mit_rolle("lohn", rollen.PERSONAL)
+    h.konto = benutzer_mit_rolle("lohn", rollen.PERSONAL)
     h.save()
-    pin.setzen(h.benutzer, "482915")
+    pin.setzen(h.konto, "482915")
     aushang = Aushang.objects.create(name="Monitor")
     kennung = f"dienstplan|{heute:%Y-%m-%d}|{a.pk}"
     assert f"Ich bin {h}" in client.get(_platz(aushang), {"platz": kennung}).content.decode()
-    daten = {"platz": kennung, "aktion": "ausfall", "grund": "urlaub", "person": h.benutzer.pk,
+    daten = {"platz": kennung, "aktion": "ausfall", "grund": "urlaub", "person": h.konto.pk,
              "pin": "482915"}  # fmt: skip
     antwort = client.post(_platz(aushang), daten).json()
     assert antwort["ok"] and "Teamleitung wird benachrichtigt" in antwort["meldung"]

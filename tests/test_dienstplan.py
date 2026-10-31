@@ -6,6 +6,7 @@ import pytest
 from django.core import mail as django_mail
 from django.urls import reverse
 
+from apps.adressen.models import Adresse
 from apps.core.models import MailEinstellungen, PapierkorbEintrag, TafelEinstellungen
 from apps.dienstplan import beispiel, plan
 from apps.dienstplan.models import (
@@ -16,10 +17,24 @@ from apps.dienstplan.models import (
     DienstStelle,
     Diensttag,
     Ersatz,
-    Helfer,
 )
 from apps.konten import rollen
 from apps.kunden.models import Ausgabestelle
+
+
+def _helfer(vorname="", nachname="", konto=None, telefon="", email=""):
+    """Eine Helfer-Person im Adressbuch (ADR 0097)."""
+    return Adresse.objects.create(
+        art=Adresse.Art.PERSON,
+        vorname=vorname,
+        nachname=nachname,
+        telefon=telefon,
+        email=email,
+        helfer=True,
+        helfer_aktiv=True,
+        konto=konto,
+    )
+
 
 pytestmark = pytest.mark.django_db
 FREITAG = dt.date(2026, 11, 13)
@@ -44,9 +59,10 @@ def team(benutzer_mit_rolle):
     konto = benutzer_mit_rolle("erika", rollen.AUSGABE)
     konto.first_name, konto.last_name, konto.email = "Erika", "Muster", "erika@example.org"
     konto.save()
-    h = {"erika": Helfer.objects.create(benutzer=konto)}
-    for name in ("Paul Probe", "Lea Leitung", "Tom Teich", "Uwe Ufer"):
-        h[name.split()[0].lower()] = Helfer.objects.create(name=name, telefon="0123 4567")
+    h = {"erika": _helfer("Erika", "Muster", konto=konto, email="erika@example.org")}
+    for vorname, nachname in (("Paul", "Probe"), ("Lea", "Leitung"), ("Tom", "Teich"),
+                              ("Uwe", "Ufer")):  # fmt: skip
+        h[vorname.lower()] = _helfer(vorname, nachname, telefon="0123 4567")
     h["lea"].email = "lea@example.org"
     h["lea"].save()
     a = {}
@@ -136,7 +152,7 @@ def test_ohne_teamleitung_alle_die_planen(team, benutzer_mit_rolle):
 
 def test_helfer_mit_konto_traegt_sich_selbst_aus(team, client, anmelden, admin):
     ds, h, a = team
-    anmelden(client, h["erika"].benutzer)
+    anmelden(client, h["erika"].konto)
     seite = client.get(PLAN, {"stelle": ds.ausgabestelle_id, "monat": "2026-11"}).content.decode()
     ausfall = reverse("dienstplan:ausfall")
     assert f'href="{ausfall}?von=2026-11-13" title="Ich kann nicht – austragen"' in seite
@@ -176,13 +192,12 @@ def test_einstellungen_stelle_aufgaben_kopieren(team, admin_client):
     assert Besetzung.objects.filter(aufgabe__wochentag="Mi", helfer=h["uwe"]).exists()
     admin_client.post(reverse("dienstplan:aufgabe_loeschen", args=[a[4].pk]))
     assert not Aufgabe.objects.filter(pk=a[4].pk).exists()
-    # Helfer: ohne Konto nur mit Name; aus einer Rolle übernehmen
-    assert "Bitte ein Konto wählen" in admin_client.post(reverse("dienstplan:helfer_neu"), {
-        "name": "", "aktiv": "on"}).content.decode()  # fmt: skip
-    admin_client.post(reverse("dienstplan:helfer_neu"), {"name": "Nina Neu", "aktiv": "on"})
-    assert Helfer.objects.filter(name="Nina Neu").exists()
-    admin_client.post(reverse("dienstplan:helfer_uebernehmen"), {"rolle": "Admin"})
-    assert Helfer.objects.filter(benutzer__username="chefin").exists()
+    # Helfer werden im Adressbuch gepflegt (ADR 0097): nur aktive Helfer-Personen werden
+    # angeboten, andere Adressen nicht.
+    _helfer("Nina", "Neu")
+    Adresse.objects.create(art=Adresse.Art.PERSON, nachname="Extern")  # kein Helfer
+    seite = admin_client.get(reverse("dienstplan:einstellungen")).content.decode()
+    assert "Nina Neu" in seite and "Extern" not in seite
 
 
 def test_standard_aufgaben_fuer_alle_ausgabetage(admin_client):
@@ -224,10 +239,10 @@ def test_beispiel_und_fristen(admin_client):
     assert len(namen) == len(set(namen))  # niemand doppelt am selben Tag
     assert Diensttag.objects.get(stelle=ds, wochentag="Fr").teamleitung is not None
     admin_client.post(reverse("dienstplan:beispiel"), {"aktion": "entfernen"})
-    assert not Helfer.objects.filter(anmerkung=beispiel.KENNUNG).exists()
+    assert not Adresse.objects.filter(notiz=beispiel.KENNUNG, helfer=True).exists()
     assert not Ausgabestelle.objects.filter(name=beispiel.STELLE).exists()
     # Fristen: alte Ausfälle weg
-    h = Helfer.objects.create(name="Alt Ausfall")
+    h = _helfer("Alt", "Ausfall")
     Ausfall.objects.create(helfer=h, von=dt.date(2020, 1, 1), bis=dt.date(2020, 1, 2))
     assert plan.fristen_anwenden(dt.date(2026, 11, 1)) == 1
 

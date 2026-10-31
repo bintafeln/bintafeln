@@ -32,12 +32,10 @@ def _name(p) -> str:
     if p.wer is None:
         return ""
     if p.status == plan.OFFEN:
-        return (
-            f'<font backColor="{GELB}"><strike>{text(p.wer.anzeige)}</strike> <b>offen</b></font>'
-        )
+        return f'<font backColor="{GELB}"><strike>{text(p.wer.name)}</strike> <b>offen</b></font>'
     if p.ersatz and p.stamm:
-        return f"<b>{text(p.wer.anzeige)}</b>"
-    return text(p.wer.anzeige)
+        return f"<b>{text(p.wer.name)}</b>"
+    return text(p.wer.name)
 
 
 def _seite(tagname, monat, daten, zeilen, diensttag, breite, hoehe):
@@ -80,7 +78,7 @@ def _seite(tagname, monat, daten, zeilen, diensttag, breite, hoehe):
     leitung = diensttag.teamleitung if diensttag else None
     telefon = (diensttag.telefon if diensttag and diensttag.telefon else
                (leitung.tel if leitung else ""))  # fmt: skip
-    fuss = "Abmeldungen bitte bei " + (text(leitung.anzeige) if leitung else "der Teamleitung")
+    fuss = "Abmeldungen bitte bei " + (text(leitung.name) if leitung else "der Teamleitung")
     fuss += f" unter {text(telefon)}" if telefon else ""
     zeilen_tab.append([Paragraph(fuss, FUSS), *[""] * (spalten + 1)])
     stil += [("SPAN", (0, len(zeilen_tab) - 1), (-1, len(zeilen_tab) - 1)),

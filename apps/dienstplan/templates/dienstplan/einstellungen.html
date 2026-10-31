@@ -41,30 +41,24 @@
 
 <section class="karte">
   <h2>Helfer</h2>
-  <p class="hinweis">Wer eingeteilt werden kann: mit Konto (sieht den Plan, meldet sich selbst ab) oder nur mit Name und
-    Telefon. Inaktive stehen nicht mehr zur Wahl.</p>
+  <p class="hinweis">Helfer werden im <strong>Adressbuch</strong> gepflegt (ADR 0097): eine Person dort als
+    „Ehrenamtlicher Helfer“ markieren und auf aktiv stellen. Aktive Helfer stehen hier im Dienstplan
+    und im Fahrdienst zur Auswahl; Personen mit Konto melden ihren Ausfall selbst.</p>
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Name</th><th>Konto</th><th>Telefon</th><th>Aktiv</th></tr></thead>
+    <thead><tr><th>Name</th><th>Konto</th><th>Telefon</th></tr></thead>
     <tbody>
     {% for h in helfer %}
       <tr>
-        <td data-titel="Name"><a href="{% url 'dienstplan:helfer' h.pk %}">{{ h }}</a>{% if h.anmerkung %} <small class="leise">{{ h.anmerkung }}</small>{% endif %}</td>
-        <td data-titel="Konto">{% if h.benutzer_id %}ja{% else %}–{% endif %}</td>
-        <td data-titel="Telefon">{{ h.tel }}</td>
-        <td data-titel="Aktiv">{{ h.aktiv|yesno:"ja,nein" }}</td>
+        <td data-titel="Name">{% if "adressen.sehen" in rechte %}<a href="{% url 'adressen:adresse' h.pk %}">{{ h.name }}</a>{% else %}{{ h.name }}{% endif %}</td>
+        <td data-titel="Konto">{% if h.konto_id %}ja{% else %}–{% endif %}</td>
+        <td data-titel="Telefon">{{ h.telefon|default:h.mobil|default:"–" }}</td>
       </tr>
-    {% empty %}<tr><td colspan="4">Noch keine Helfer.</td></tr>{% endfor %}
+    {% empty %}<tr><td colspan="3">Noch keine aktiven Helfer. Im Adressbuch eine Person als „Ehrenamtlicher Helfer“ markieren.</td></tr>{% endfor %}
     </tbody>
   </table>
   </div>
-  <p class="aktionsleiste"><a class="knopf knopf-zweitrangig" href="{% url 'dienstplan:helfer_neu' %}">Helfer anlegen</a></p>
-  <form method="post" action="{% url 'dienstplan:helfer_uebernehmen' %}" class="filter">
-    {% csrf_token %}
-    <label for="dp-rolle">Alle Konten der Rolle</label>
-    <select name="rolle" id="dp-rolle"><option>Ausgabe</option><option>Büro</option></select>
-    <button type="submit" class="knopf knopf-zweitrangig">als Helfer übernehmen</button>
-  </form>
+  {% if "adressen.sehen" in rechte %}<p class="aktionsleiste"><a class="knopf knopf-zweitrangig" href="{% url 'adressen:liste' %}?verein=helfer">Helfer im Adressbuch →</a></p>{% endif %}
 </section>
 
 <section class="karte">

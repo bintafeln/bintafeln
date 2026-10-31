@@ -12,6 +12,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
+from apps.adressen.models import Adresse
 from apps.ausgabe.ampel import WOCHENTAGE, wochentage
 from apps.core import ausfall as ausfallregeln
 from apps.core.feiertage import ist_feiertag
@@ -23,7 +24,6 @@ from apps.dienstplan.models import (
     DienstStelle,
     Diensttag,
     Ersatz,
-    Helfer,
 )
 from apps.konten import rollen
 
@@ -39,12 +39,12 @@ def kuerzel(datum: dt.date) -> str:
 class Platz:
     datum: dt.date
     aufgabe: Aufgabe
-    stamm: Helfer | None = None
+    stamm: Adresse | None = None
     ersatz: Ersatz | None = None
     ausfall: Ausfall | None = None  # der Person, die den Platz an dem Tag hat
 
     @property
-    def wer(self) -> Helfer | None:
+    def wer(self) -> Adresse | None:
         return self.ersatz.helfer if self.ersatz else self.stamm
 
     @property
@@ -106,14 +106,14 @@ def plaetze(daten: list[dt.date], aufgaben=None) -> dict[dt.date, list[Platz]]:
     aufgaben = list(aufgaben)
     fest = {
         b.aufgabe_id: b.helfer
-        for b in Besetzung.objects.filter(aufgabe__in=aufgaben).select_related("helfer__benutzer")
+        for b in Besetzung.objects.filter(aufgabe__in=aufgaben).select_related("helfer__konto")
     }
     von, bis = min(daten), max(daten)
     ersatz = {
         (x.datum, x.aufgabe_id): x
         for x in Ersatz.objects.filter(
             datum__range=(von, bis), aufgabe__in=aufgaben
-        ).select_related("helfer__benutzer")
+        ).select_related("helfer__konto")
     }
     ausfaelle = list(Ausfall.objects.filter(von__lte=bis, bis__gte=von))
     ergebnis = {}
@@ -150,17 +150,19 @@ def eingesetzt(datum: dt.date) -> set[int]:
     return {p.wer.pk for p in plaetze([datum])[datum] if p.wer is not None and not p.ausfall}
 
 
-def verfuegbar(datum: dt.date) -> list[Helfer]:
-    """Wer an dem Tag einspringen kann: aktiv, nicht ausgefallen, noch nirgends eingeteilt."""
+def verfuegbar(datum: dt.date) -> list[Adresse]:
+    """Wer an dem Tag einspringen kann: aktiver Helfer, nicht ausgefallen, noch nirgends
+    eingeteilt (und das Konto, falls vorhanden, nicht gesperrt)."""
     belegt = eingesetzt(datum) | set(
         Ausfall.objects.filter(ausfallregeln.krank_am(datum)).values_list("helfer_id", flat=True)
     )
-    helfer = (Helfer.objects.filter(aktiv=True).exclude(benutzer__is_active=False)
-              .exclude(pk__in=belegt).select_related("benutzer"))  # fmt: skip
-    return sorted(helfer, key=lambda h: h.anzeige.lower())
+    helfer = (Adresse.objects.filter(helfer=True, helfer_aktiv=True)
+              .exclude(konto__is_active=False).exclude(pk__in=belegt)
+              .select_related("konto"))  # fmt: skip
+    return sorted(helfer, key=lambda h: h.name.lower())
 
 
-def einsaetze(helfer: Helfer, von: dt.date, bis: dt.date) -> list[Platz]:
+def einsaetze(helfer: Adresse, von: dt.date, bis: dt.date) -> list[Platz]:
     """Alle Plätze der Person zwischen ``von`` und ``bis`` (fest oder als Ersatz)."""
     daten = [von + dt.timedelta(days=i) for i in range((bis - von).days + 1)]
     erlaubt = {s.pk: s for s in stellen()}
@@ -174,8 +176,11 @@ def einsaetze(helfer: Helfer, von: dt.date, bis: dt.date) -> list[Platz]:
     return ergebnis
 
 
-def helfer_von(benutzer) -> Helfer | None:
-    return Helfer.objects.filter(benutzer=benutzer, aktiv=True).first() if benutzer else None
+def helfer_von(benutzer) -> Adresse | None:
+    """Die Helfer-Person (Adresse) zum angemeldeten Konto, falls aktiv."""
+    if not benutzer:
+        return None
+    return Adresse.objects.filter(konto=benutzer, helfer=True, helfer_aktiv=True).first()
 
 
 def darf_selbst_melden(benutzer) -> bool:

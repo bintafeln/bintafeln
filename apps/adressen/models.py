@@ -100,6 +100,11 @@ class Adresse(models.Model):
         return " ".join(t for t in (self.vorname, self.nachname) if t)
 
     @property
+    def mail(self) -> str:
+        """E-Mail für Benachrichtigungen: die des Kontos, sonst die der Adresse."""
+        return (self.konto.email if self.konto_id else "") or self.email
+
+    @property
     def name(self) -> str:
         if self.art == self.Art.ORGANISATION:
             return self.organisation or self.personenname

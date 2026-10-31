@@ -1,6 +1,6 @@
 from django import forms
-from django.contrib.auth import get_user_model
 
+from apps.adressen.models import Adresse
 from apps.ausgabe.ampel import WOCHENTAGE, wochentage
 from apps.core import geheimnis
 from apps.core.auswahl import FAHRDIENST_AUSFALLGRUENDE
@@ -10,7 +10,6 @@ from apps.dienstplan.models import (
     DienstplanEinstellungen,
     DienstStelle,
     Diensttag,
-    Helfer,
 )
 from apps.konten.forms import DatumEingabe
 
@@ -33,11 +32,13 @@ class TageFeld(forms.MultipleChoiceField):
 
 class HelferWahl(forms.ModelChoiceField):
     def label_from_instance(self, obj):
-        return obj.anzeige
+        return obj.name
 
 
 def helfer_aktiv():
-    return Helfer.objects.filter(aktiv=True).select_related("benutzer")
+    """Die aktiven Helfer aus dem Adressbuch (ADR 0097)."""
+    return (Adresse.objects.filter(helfer=True, helfer_aktiv=True)
+            .order_by("nachname", "vorname"))  # fmt: skip
 
 
 class EinstellungenForm(forms.ModelForm):
@@ -93,28 +94,6 @@ class AufgabeForm(forms.ModelForm):
 
     def clean_reihenfolge(self):
         return self.cleaned_data.get("reihenfolge") or 0
-
-
-class HelferForm(forms.ModelForm):
-    benutzer = forms.ModelChoiceField(
-        label="Konto", required=False,
-        queryset=get_user_model().objects.filter(is_active=True).order_by("last_name",
-                                                                            "first_name"),
-        help_text="Mit Konto sieht die Person den Plan und meldet ihren Ausfall selbst. Ohne "
-        "Konto genügt der Name.",
-    )  # fmt: skip
-
-    class Meta:
-        model = Helfer
-        fields = ["benutzer", "name", "telefon", "email", "aktiv", "anmerkung"]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["benutzer"].label_from_instance = lambda b: b.get_full_name() or b.username
-        vergeben = Helfer.objects.exclude(pk=self.instance.pk).exclude(benutzer=None)
-        self.fields["benutzer"].queryset = self.fields["benutzer"].queryset.exclude(
-            pk__in=vergeben.values("benutzer")
-        )
 
 
 class AusfallForm(forms.ModelForm):

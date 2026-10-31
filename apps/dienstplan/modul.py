@@ -11,7 +11,7 @@ def menue(eintrag):
             ("dienstplan.sehen", eintrag("Meine Dienste", "dienstplan:meine")),
         ]),
         ("Einstellungen/Dienstpläne", [
-            ("dienstplan.planen", eintrag("Ausgabe: Aufgaben und Helfer",
+            ("dienstplan.planen", eintrag("Ausgabe: Aufgaben und Besetzung",
                                           "dienstplan:einstellungen")),
         ]),
     ]  # fmt: skip
@@ -24,14 +24,15 @@ def fristen():
 
 
 def auskunft_mitarbeiter(benutzer, pdf):
+    from apps.adressen.models import Adresse
     from apps.core import ausfall as ausfallregeln
-    from apps.dienstplan.models import Ausfall, Besetzung, Ersatz, Helfer
+    from apps.dienstplan.models import Ausfall, Besetzung, Ersatz
 
-    h = Helfer.objects.filter(benutzer=benutzer).first()
+    h = Adresse.objects.filter(konto=benutzer, helfer=True).first()
     if h is None:
         return
     pdf.ueberschrift("Dienstplan der Ausgabe")
-    pdf.absatz(f"Helfer: {h.anzeige}{', Telefon ' + h.telefon if h.telefon else ''}"
+    pdf.absatz(f"Helfer: {h.name}{', Telefon ' + h.telefon if h.telefon else ''}"
                f"{', E-Mail ' + h.email if h.email else ''}.")  # fmt: skip
     feste = Besetzung.objects.filter(helfer=h).select_related("aufgabe__stelle__ausgabestelle")
     pdf.tabelle(["Feste Besetzung", "Ausgabestelle", "Wochentag"],
@@ -116,7 +117,7 @@ MODUL = Modul(
     rechte=(
         ("dienstplan.sehen", "Dienstplan und eigene Dienste sehen",
          "Ausfall selbst melden, wenn in den Einstellungen des Dienstplans erlaubt."),
-        ("dienstplan.planen", "Dienstplan planen: Ersatz, Ausfälle, Aufgaben, Helfer",
+        ("dienstplan.planen", "Dienstplan planen: Ersatz, Ausfälle, Aufgaben, Besetzung",
          "Bekommt Ausfälle per E-Mail, wenn für den Tag keine Teamleitung eingetragen ist."),
     ),
     vorgaben={"Büro": ("dienstplan.sehen", "dienstplan.planen"), "Ausgabe": ("dienstplan.sehen",)},

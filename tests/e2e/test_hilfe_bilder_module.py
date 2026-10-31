@@ -103,7 +103,8 @@ def _dienstplan():
 
 
 def test_hilfe_bild_dienstplan(angemeldet, admin, muster, benutzer_mit_rolle, recht_geben):
-    from apps.dienstplan.models import Besetzung, Helfer
+    from apps.adressen.models import Adresse
+    from apps.dienstplan.models import Besetzung
 
     _module("dienstplan")
     stelle, freitag, obst = _dienstplan()
@@ -150,7 +151,8 @@ def test_hilfe_bild_dienstplan(angemeldet, admin, muster, benutzer_mit_rolle, re
     ines = benutzer_mit_rolle("ines", rollen.AUSGABE)
     ines.first_name, ines.last_name = "Ines", "Probe"
     ines.save()
-    helferin = Helfer.objects.create(benutzer=ines)
+    helferin = Adresse.objects.create(art=Adresse.Art.PERSON, vorname="Ines", nachname="Probe",
+                                      helfer=True, helfer_aktiv=True, konto=ines)  # fmt: skip
     b = Besetzung.objects.filter(aufgabe__stelle=stelle, aufgabe__name="Brot")
     b.update(helfer=helferin)
     seite.context.clear_cookies()
@@ -330,9 +332,10 @@ def test_hilfe_bild_aufruf(angemeldet, admin, muster):
 
 
 def test_hilfe_bild_aushang(angemeldet, admin, muster, benutzer_mit_rolle, recht_geben):
+    from apps.adressen.models import Adresse
     from apps.aushang import pin
     from apps.aushang.models import Aushang, AushangSeite
-    from apps.dienstplan.models import Besetzung, Helfer
+    from apps.dienstplan.models import Besetzung
 
     _module("aushang", "dienstplan")
     stelle, freitag, _ = _dienstplan()
@@ -340,7 +343,8 @@ def test_hilfe_bild_aushang(angemeldet, admin, muster, benutzer_mit_rolle, recht
     ines = benutzer_mit_rolle("ines", rollen.AUSGABE)
     ines.first_name, ines.last_name = "Ines", "Probe"
     ines.save()
-    helferin = Helfer.objects.create(benutzer=ines)
+    helferin = Adresse.objects.create(art=Adresse.Art.PERSON, vorname="Ines", nachname="Probe",
+                                      helfer=True, helfer_aktiv=True, konto=ines)  # fmt: skip
     brot = stelle.aufgaben.get(wochentag="Fr", name="Brot")
     Besetzung.objects.filter(aufgabe=brot).update(helfer=helferin)
     pin.setzen(ines, "482915")

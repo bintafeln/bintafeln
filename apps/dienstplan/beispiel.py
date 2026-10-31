@@ -12,7 +12,8 @@ import random
 from django.db import transaction
 from django.db.models import ProtectedError
 
-from apps.dienstplan.models import Aufgabe, Besetzung, DienstStelle, Diensttag, Helfer
+from apps.adressen.models import Adresse
+from apps.dienstplan.models import Aufgabe, Besetzung, DienstStelle, Diensttag
 from apps.dienstplan.plan import STANDARD_AUFGABEN
 from apps.kunden.models import Ausgabestelle
 
@@ -32,7 +33,7 @@ def _zeit(text):
 
 
 def vorhanden() -> bool:
-    return Helfer.objects.filter(anmerkung=KENNUNG).exists()
+    return Adresse.objects.filter(notiz=KENNUNG, helfer=True).exists()
 
 
 def anlegen(seed: int | None = None) -> dict:
@@ -46,12 +47,13 @@ def anlegen(seed: int | None = None) -> dict:
             ausgabestelle=stelle, defaults={"aktiv": True, "tage": ", ".join(TAGE)}
         )
         ds.aufgaben.all().delete()
-        namen = [f"{v} {n}" for v in VORNAMEN for n in NACHNAMEN]
+        namen = [(v, n) for v in VORNAMEN for n in NACHNAMEN]
         zufall.shuffle(namen)
         pro_tag = sum(a[3] for a in AUFGABEN)
-        helfer = [Helfer.objects.create(name=n, anmerkung=KENNUNG,
-                                        telefon=f"0123 45{i:04d}")  # erfunden
-                  for i, n in enumerate(namen[:pro_tag + 6])]  # fmt: skip
+        helfer = [Adresse.objects.create(art=Adresse.Art.PERSON, vorname=v, nachname=n,
+                                         notiz=KENNUNG, helfer=True, helfer_aktiv=True,
+                                         telefon=f"0123 45{i:04d}")  # erfunden
+                  for i, (v, n) in enumerate(namen[:pro_tag + 6])]  # fmt: skip
         anzahl = 0
         for tag in TAGE:
             frei = zufall.sample(helfer, len(helfer))
@@ -84,7 +86,8 @@ def anlegen(seed: int | None = None) -> dict:
 def entfernen() -> int:
     """Löscht die erfundenen Helfer (mit ihrer Besetzung) und die leere Beispiel-Ausgabestelle."""
     with transaction.atomic():
-        anzahl = Helfer.objects.filter(anmerkung=KENNUNG).delete()[1].get("dienstplan.Helfer", 0)
+        anzahl = (Adresse.objects.filter(notiz=KENNUNG, helfer=True)
+                  .delete()[1].get("adressen.Adresse", 0))  # fmt: skip
         stelle = Ausgabestelle.objects.filter(name=STELLE).first()
         if stelle and not stelle.kundengruppe_set.exists():
             with contextlib.suppress(ProtectedError):  # inzwischen anderweitig benutzt: bleibt
