@@ -34,6 +34,15 @@
   </form>
   {% endif %}
 </section>
+{% if a.helfer or darf_konto and a.konto_id %}
+<section class="karte">
+  <h2>Mitarbeit</h2>
+  <dl class="angaben">
+    {% if a.helfer %}<dt>Helfer</dt><dd>{% if a.helfer_aktiv %}aktiv – kann im Dienstplan und Fahrdienst eingeteilt werden{% else %}inaktiv (wird nicht vorgeschlagen){% endif %}</dd>{% endif %}
+    {% if darf_konto and a.konto_id %}<dt>Konto</dt><dd><a href="{% url 'konten:mitarbeiter' a.konto_id %}">{{ a.konto }}</a> · <a href="{% url 'konten:stammdaten' a.konto_id %}">Stammdaten ansehen</a></dd>{% endif %}
+  </dl>
+</section>
+{% endif %}
 {% if zeige_mitglied %}
 <section class="karte">
   <h2>Mitgliedschaft</h2>

@@ -1284,6 +1284,11 @@ Serienbriefe (Modul 5, ADR 0044); Kunden stehen weiter im Kundenstamm.
 - **Adresse**: Organisation (mit Ansprechperson) oder Person, Anschrift, Telefon, Mobil, E-Mail,
   Webseite, Kategorien (Mehrfachauswahl, gepflegt unter „Einstellungen → Adresskategorien“),
   Notiz.
+- **Mitarbeit** (nur bei einer Person, ADR 0097): Kennzeichen **Helfer** mit **aktiv/inaktiv** – wer
+  als aktiver Helfer markiert ist, lässt sich später im Dienstplan und Fahrdienst einteilen. Wer
+  Mitarbeitende verwalten darf, kann die Person zusätzlich mit ihrem **Anmelde-Konto** verknüpfen;
+  dann führt von der Adresse ein Verweis direkt zu den Stammdaten des Kontos. Die Spalte und der
+  Filter „Helfer“ zeigen die Helfer in der Liste.
 - **Einwilligungen** jeweils mit Datum: Post, E-Mail, Name veröffentlichen.
 - **Filter „Im Verein“**: Mitglieder (aktuell), aktive Mitglieder (helfen mit), passive Mitglieder
   (Stimmrecht, helfen nicht mit; Mitgliedsart „Passives Mitglied“), ehrenamtliche Helfer
