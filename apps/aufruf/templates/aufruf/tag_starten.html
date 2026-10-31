@@ -177,9 +177,9 @@
             <div class="empty-state">
                 <h2>📁 Kein Programm für heute gefunden</h2>
                 <p>Für <strong>{{ current_day }}</strong> ist an der Ausgabestelle {{ stelle.name }} keine aktive Kundengruppe eingetragen.</p>
-                <p style="margin-top: 15px; font-size: 0.9em;">
+                {% if "einstellungen.listen" in rechte %}<p style="margin-top: 15px; font-size: 0.9em;">
                     Wochentage und Ausgabestelle stehen bei den Kundengruppen (Einstellungen → Kundengruppen).
-                </p>
+                </p>{% endif %}
             </div>
         {% endif %}
 

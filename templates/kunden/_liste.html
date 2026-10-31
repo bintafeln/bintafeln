@@ -18,7 +18,7 @@
       {% for k, name, an in spalten_wahl %}<label><input type="checkbox" name="spalte" value="{{ k }}"{% if an %} checked{% endif %}> {{ name }}</label>{% endfor %}
     </div>
     <button type="submit" class="knopf knopf-zweitrangig">Übernehmen</button>
-    <span class="hinweis">Welche Spalten es gibt, legt der Admin unter „Einstellungen → Kunden → Kundenstamm“ fest.</span>
+    {% if "einstellungen.kundenstamm" in rechte %}<span class="hinweis">Welche Spalten es gibt, legt der Admin unter „Einstellungen → Kunden → Kundenstamm“ fest.</span>{% endif %}
   </form>
 </details>
 <div class="tabelle-rahmen">

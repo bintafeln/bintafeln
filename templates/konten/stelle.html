@@ -16,7 +16,7 @@
     <dt>Anmelden mit</dt><dd><strong>{{ s.name }}</strong> und dem Passwort</dd>
     <dt>Status</dt><dd>{% if konto.is_active %}<span class="marke-ok">aktiv</span>{% else %}<span class="marke-warnung">gesperrt seit {{ konto.gesperrt_am|date:"d.m.Y H:i" }}</span>{% endif %}</dd>
     <dt>Zuletzt angemeldet</dt><dd>{{ konto.last_login|date:"d.m.Y H:i"|default:"noch nie" }}</dd>
-    <dt>Rolle</dt><dd>Ausgabe (Rechte unter „Einstellungen → Mitarbeitende → Rollen und Rechte“)</dd>
+    <dt>Rolle</dt><dd>Ausgabe{% if "einstellungen.rollen" in rechte %} (Rechte unter „Einstellungen → Mitarbeitende → Rollen und Rechte“){% endif %}</dd>
   </dl>
   <form method="post" class="inline">
     {% csrf_token %}
