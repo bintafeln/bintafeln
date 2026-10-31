@@ -1,5 +1,8 @@
+from urllib.parse import urlparse
+
 from django.contrib import messages
 from django.contrib.auth import logout
+from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django_otp import user_has_device
@@ -7,6 +10,26 @@ from django_otp import user_has_device
 from apps.konten import zwei_faktor
 
 FREIE_PFADE = ("/static/", "/media/", "/healthz/", "/app/")
+
+
+class HtmxAnmeldeMiddleware:
+    """Läuft die Sitzung während eines htmx-Aufrufs ab (Abmeldung, Zeitüberschreitung oder
+    Neustart beim Update), leitet bintafeln auf die Anmeldeseite um. htmx würde deren HTML sonst
+    in einen Seitenbereich einfügen – es entsteht ein doppeltes „Anmelden" über der Seite.
+    Stattdessen schicken wir htmx per ``HX-Redirect`` die ganze Seite zur Anmeldung."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        if request.headers.get("HX-Request") and response.status_code in (301, 302):
+            ziel = response.headers.get("Location", "")
+            if urlparse(ziel).path == reverse("konten:anmelden"):
+                leer = HttpResponse(status=204)
+                leer["HX-Redirect"] = ziel
+                return leer
+        return response
 
 
 class PasswortAendernMiddleware:
