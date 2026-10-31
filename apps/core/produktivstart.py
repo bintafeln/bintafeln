@@ -79,7 +79,8 @@ GRUPPEN = [
     (
         "module",
         "Modul-Bewegungsdaten",
-        "Aufruf-Handyzugänge, Wochenübersicht, Abrechnungen, Fahrdienst-/Dienstplan-Ausfälle, Tickets",
+        "Aufruf-Handyzugänge, Wochenübersicht, Abrechnungen, "
+        "Fahrdienst-/Dienstplan-Ausfälle, Tickets",
         [
             "aufruf.handycode",
             "aufruf.handyzugang",
