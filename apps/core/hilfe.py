@@ -90,6 +90,8 @@ KAPITEL = [
             ("daten.exportieren", "daten.importieren")),
     Kapitel("protokoll", "Änderungsprotokoll", VERWALTUNG, ("protokoll.sehen",)),
     Kapitel("update", "Update: neue Version einspielen", VERWALTUNG, ("system.update",)),
+    Kapitel("produktivstart", "Produktivstart: Testdaten löschen und mit Echtdaten starten",
+            VERWALTUNG, ("system.produktivstart",)),
     Kapitel("betrieb", "Betrieb auf dem Server", VERWALTUNG, ("system.status",)),
 ]  # fmt: skip
 
@@ -182,6 +184,7 @@ _SEITE = {
     "core:sicherungen": "sicherungen",
     "core:datensicherung": "datensicherung",
     "core:update": "update",
+    "core:produktivstart": "produktivstart",
     "core:verzeichnis": "betrieb",
 }
 _APP = {

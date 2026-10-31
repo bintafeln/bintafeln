@@ -247,6 +247,8 @@ def menue(request) -> list[dict]:
             ("system.sicherung", _eintrag("Sicherungen", "core:sicherungen")),
             (export, _eintrag("Export und Zurücklesen", "core:datensicherung")),
             ("system.update", _eintrag("Update", "core:update")),
+            ("system.produktivstart",
+             _eintrag("Produktivstart (Testdaten löschen)", "core:produktivstart")),
             *([(None, _eintrag("Daten importieren (CSV, Excel)", "datenimport:start"))]
               if darf & {z.recht for z in ZIELE.values()}
               else []),

@@ -137,6 +137,9 @@ KATALOG = [
           "Neue oder ältere Version einspielen. Vorher wird gesichert."),
     Recht("system.sicherung", EINSTELLUNGEN, "Sicherungen starten, Sicherungsaufträge einstellen",
           "Ziele, Zeitpläne und Aufbewahrung der Sicherungen auf dem Server."),
+    Recht("system.produktivstart", EINSTELLUNGEN, "Produktivstart: alle Testdaten löschen",
+          "Beim Umstieg auf Echtdaten einmalig alle Test-/Bewegungsdaten löschen. Vorher wird "
+          "automatisch gesichert; die Einrichtung bleibt erhalten."),
 ]  # fmt: skip
 
 
