@@ -6,6 +6,12 @@
 <section class="karte ampel ampel-unbekannt" role="status">
   <p class="ampel-titel">Dieser Kunde gehört nicht zu Ihrer Ausgabestelle</p>
   <p>{{ nicht_erlaubt }}</p>
+  {% if fremd.gruende %}
+  <p class="fremd-ampel fremd-ampel-{{ fremd.farbe }}">Unabhängig davon wäre die Ampel {% if fremd.farbe == "rot" %}rot{% else %}gelb{% endif %}:</p>
+  <ul class="fremd-gruende">{% for m in fremd.gruende %}<li>{{ m.text }}</li>{% endfor %}</ul>
+  {% elif fremd %}
+  <p class="hinweis">An der eigenen Ausgabestelle wäre die Ampel grün (keine Sperre, kein abgelaufener Ausweis, Status aktiv).</p>
+  {% endif %}
   {% url 'ausgabe:empfang' as einlass_url %}{% include "kunden/_nachricht.html" with nummer=fremd_nummer zurueck=einlass_url %}
 </section>
 {% elif h %}

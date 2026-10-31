@@ -162,6 +162,27 @@ def _ergebnis(request, h, meldung=None):
     }
 
 
+def _fremd_status(request, h) -> dict:
+    """Kunde einer anderen Ausgabestelle am Einlass: knapp zeigen, warum die Ampel rot wäre –
+    Sperre, Status, abgelaufener Ausweis. Terminregeln (andere Stelle, nicht dran) bleiben weg,
+    weil sie an der eigenen Stelle nicht gelten. So sieht der Einlass, warum jemand abgewiesen
+    wird, ohne die ganze Kundenkarte zu öffnen."""
+    heute = timezone.localdate()
+    einstellungen = AusgabeEinstellungen.laden()
+    h = (
+        Haushalt.objects.select_related("kundengruppe__ausgabestelle")
+        .prefetch_related("sperren", "ausnahmen", "abholungen")
+        .get(pk=h.pk)
+    )
+    bewertung = ampel.bewerten(h, heute, _stelle(request), einstellungen)
+    gruende = [m for m in bewertung.meldungen
+               if m.farbe != ampel.GRUEN and not m.ausnahme_moeglich]  # fmt: skip
+    farbe = ampel.ROT if any(m.farbe == ampel.ROT for m in gruende) else (
+        ampel.GELB if gruende else ampel.GRUEN)  # fmt: skip
+    gruppe = h.kundengruppe
+    return {"stelle": gruppe.ausgabestelle if gruppe else None, "farbe": farbe, "gruende": gruende}
+
+
 def _antworten(request, kontext):
     if request.headers.get("HX-Request"):
         # Fortschritt in der Kopfzeile gleich mit austauschen (hx-swap-oob)
@@ -182,6 +203,7 @@ def empfang(request):
         elif grund:
             kontext["nicht_erlaubt"] = grund
             kontext["fremd_nummer"] = h.kundennummer
+            kontext["fremd"] = _fremd_status(request, h)
         else:
             kontext.update(_ergebnis(request, h))
             Zugriff.objects.create(
