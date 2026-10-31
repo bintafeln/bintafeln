@@ -191,6 +191,18 @@ def einsaetze(person, von: dt.date, bis: dt.date) -> list[Platz]:
             if p.wer is not None and p.wer.pk == person.pk]  # fmt: skip
 
 
+def einsatztage(person: Adresse) -> list[tuple[str, str]]:
+    """Regelmäßige Einsätze der Person im Fahrdienst (feste Besetzungen) als lesbare Zeilen:
+    (Wochentag, „Tour: Platz“), sortiert nach Wochentag, Tour und Platz."""
+    if person is None:
+        return []
+    bes = Besetzung.objects.filter(person=person).select_related("tour")
+    bes = sorted(bes, key=lambda b: (
+        WOCHENTAGE.index(b.wochentag) if b.wochentag in WOCHENTAGE else 9,
+        b.tour.reihenfolge, b.platz))  # fmt: skip
+    return [(b.wochentag, f"Tour {b.tour}: {platz_name(b.platz)}") for b in bes]
+
+
 def person_von(benutzer) -> Adresse | None:
     """Die Fahrdienst-Person (Adresse) zum angemeldeten Konto."""
     return Adresse.objects.filter(konto=benutzer).first() if benutzer else None

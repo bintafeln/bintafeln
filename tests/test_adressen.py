@@ -222,3 +222,46 @@ def test_konto_nur_bei_person(admin_client, django_user_model):
     }).content.decode()  # fmt: skip
     assert "Ein Konto gibt es nur bei einer Person." in fehlt
     assert not Adresse.objects.filter(organisation="Firma X").exists()
+
+
+def test_einsatztage_bei_der_person(admin_client, pdf_text):
+    """Regelmäßige Einsätze (Dienstplan + Fahrdienst) erscheinen bei der Person und in der
+    Auskunft, aber nur bei eingeschaltetem Modul (ADR 0097, Schritt 3)."""
+    import datetime as dt
+
+    from apps.core.models import TafelEinstellungen
+    from apps.dienstplan import models as dp
+    from apps.dienstplan import plan as dplan
+    from apps.fahrdienst import models as fd
+    from apps.fahrdienst import plan as fplan
+    from apps.kunden.models import Ausgabestelle
+
+    person = Adresse.objects.create(
+        art=Adresse.Art.PERSON, vorname="Max", nachname="Muster",
+        helfer=True, helfer_aktiv=True, fahrdienst="fahrer")  # fmt: skip
+    # Dienstplan: Freitag an der Ausgabestelle Mitte, Aufgabe Kasse
+    stelle = Ausgabestelle.objects.create(name="Mitte")
+    ds = dp.DienstStelle.objects.create(ausgabestelle=stelle, aktiv=True, tage="Fr")
+    aufgabe = dp.Aufgabe.objects.create(stelle=ds, wochentag="Fr", name="Kasse", reihenfolge=1,
+                                        von=dt.time(9), bis=dt.time(15), pflicht=True)  # fmt: skip
+    dp.Besetzung.objects.create(aufgabe=aufgabe, helfer=person)
+    # Fahrdienst: Montag, Tour Nord, Platz 1 (Fahrer)
+    tour = fd.Tour.objects.create(name="Nord", reihenfolge=1, plaetze=2, mindestbesetzung=2)
+    fd.Besetzung.objects.create(tour=tour, wochentag="Mo", platz=1, person=person)
+
+    # Ohne Module: die Logik liefert zwar Daten, die Seite zeigt sie aber nicht an.
+    assert dplan.einsatztage(person) == [("Fr", "Mitte: Kasse 09.00-15.00")]
+    assert fplan.einsatztage(person) == [("Mo", "Tour Nord: Fahrer")]
+    seite = admin_client.get(reverse("adressen:adresse", args=[person.pk])).content.decode()
+    assert "Einsätze im Dienstplan" not in seite and "Einsätze im Fahrdienst" not in seite
+
+    # Module an: beide Abschnitte erscheinen auf der Seite und in der Auskunft.
+    t = TafelEinstellungen.laden()
+    t.module = ["dienstplan", "fahrdienst"]
+    t.save()
+    seite = admin_client.get(reverse("adressen:adresse", args=[person.pk])).content.decode()
+    assert "Einsätze im Dienstplan" in seite and "Mitte: Kasse" in seite
+    assert "Einsätze im Fahrdienst" in seite and "Tour Nord: Fahrer" in seite
+    text = pdf_text(admin_client.get(reverse("adressen:auskunft", args=[person.pk])))
+    assert "Regelmäßige Einsätze" in text and "Kasse" in text and "Fahrer" in text
+    assert "Fahrdienst" in text  # Mitarbeit zeigt die Fahrer-Rolle
