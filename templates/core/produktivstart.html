@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block titel %}Produktivstart{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Produktivstart: Testdaten löschen</h1>
+  <p>Beim Umstieg von den Test-/Phantasiedaten auf die echten Daten entfernt der Produktivstart
+    <strong>alle Bewegungs- und Testdaten</strong> und lässt die <strong>Einrichtung</strong>
+    unberührt. So starten Sie mit einem sauberen Stand, behalten aber alles, was Sie schon
+    eingestellt haben.</p>
+
+  <h2>Was erhalten bleibt</h2>
+  <p>Ihr Admin-Konto, alle <strong>Ausgabestellen</strong> und <strong>Kundengruppen</strong>,
+    <strong>Rollen und Rechte</strong> sowie die gesamte Einrichtung (Tafel-, Ausgabe-, Antrag-,
+    Mail-Einstellungen, Vorlagen für Ausweis, Serienbriefe, Notizen, Antragstexte,
+    Einkommensarten, Dokumentarten, Adresskategorien, Modul-Einstellungen).</p>
+
+  <div class="meldung error">
+    <p><strong>Das lässt sich nicht rückgängig machen.</strong> Wählen Sie unten aus, welche
+      Bereiche geleert werden. Vor dem Löschen wird <strong>automatisch eine verschlüsselte
+      Komplett-Sicherung</strong> erzeugt und heruntergeladen – bewahren Sie die Datei sicher auf,
+      nur damit kommen Sie an die alten Daten zurück.{% if "daten.exportieren" in rechte %} Zusätzlich
+      können Sie vorab unter <a href="{% url 'core:datensicherung' %}">Export und Zurücklesen</a>
+      sichern.{% endif %}</p>
+  </div>
+
+  <form method="post" action="{% url 'core:produktivstart_ausfuehren' %}"
+        onsubmit="return confirm('Die ausgewählten Bereiche jetzt löschen? Vorher wird gesichert.');">
+    {% csrf_token %}
+    <h2>Was gelöscht werden soll</h2>
+    <p class="hinweis">Standardmäßig ist alles angehakt. Haken Sie ab, was bleiben soll.</p>
+    <div class="spalten-haken">
+      {% for b in bereiche %}
+      <label><input type="checkbox" name="bereiche" value="{{ b.key }}" checked>
+        <strong>{{ b.titel }}</strong> ({{ b.zahl }})<br>
+        <small class="leise">{{ b.beschreibung }}</small></label>
+      {% endfor %}
+    </div>
+    <p class="hinweis">Die <strong>Statistik</strong> ist leer, sobald „Kunden und Ausgabe“
+      gelöscht ist, weil sie aus den Abholungen gerechnet wird.</p>
+    <div class="feld">
+      <label for="passwort">Passwort für die Sicherung (mind. {{ min_passwort }} Zeichen)</label>
+      <input type="password" name="passwort" id="passwort" autocomplete="new-password" required>
+    </div>
+    <div class="feld">
+      <label for="passwort2">Passwort wiederholen</label>
+      <input type="password" name="passwort2" id="passwort2" autocomplete="new-password" required>
+    </div>
+    <div class="feld">
+      <label for="bestaetigung">Zum Bestätigen „{{ wort }}“ eingeben</label>
+      <input type="text" name="bestaetigung" id="bestaetigung" autocomplete="off"
+             placeholder="{{ wort }}" required>
+    </div>
+    <button type="submit" class="knopf knopf-gefahr">Sichern und Testdaten löschen</button>
+  </form>
+  <p class="hinweis">Nach dem Klick wird die Sicherung heruntergeladen und die Daten sind
+    gelöscht. Laden Sie die Seite anschließend neu.</p>
+</section>
+{% endblock %}
