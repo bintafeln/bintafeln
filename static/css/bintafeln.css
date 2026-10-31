@@ -1099,6 +1099,9 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 }
 .filter-feld input:focus, .filter-feld select:focus { outline: 3px solid var(--fokus); border-color: var(--akzent); }
 .filter-kompakt .knopf, .listen-filter .knopf { min-height: 2rem; padding: .3rem .9rem; font-size: .92rem; }
+/* Kästchen und aufklappbare Mehrfachauswahl in der kompakten Filterzeile unten ausrichten */
+.filter-kompakt .filter-haken { display: inline-flex; align-items: center; gap: .35rem; align-self: flex-end; min-height: 2rem; }
+.filter-kompakt .mehrfach { align-self: flex-end; }
 .listen-filter .formular-raster.listen-felder { grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: 0 .6rem; margin-bottom: .1rem; }
 .listen-filter .listen-felder .feld { margin-bottom: .35rem; }
 .listen-filter .listen-haken, .listen-filter .feld-haken label { font-size: .88rem; font-weight: 600; }
