@@ -114,7 +114,7 @@ class Besetzung(models.Model):
     wochentag = models.CharField("Wochentag", max_length=2,
                                  choices=[(t, t) for t in WOCHENTAGE])  # fmt: skip
     platz = models.PositiveSmallIntegerField("Platz")
-    person = models.ForeignKey("adressen.Adresse", on_delete=models.CASCADE,
+    person = models.ForeignKey("adressen.Adresse", on_delete=models.CASCADE, null=True,
                                related_name="fahr_besetzungen", verbose_name="Person")  # fmt: skip
 
     class Meta:
@@ -133,7 +133,7 @@ class Besetzung(models.Model):
 class Springer(models.Model):
     """Springt bei Ausfällen ein, auf jeder Tour."""
 
-    person = models.OneToOneField("adressen.Adresse", on_delete=models.CASCADE,
+    person = models.OneToOneField("adressen.Adresse", on_delete=models.CASCADE, null=True,
                                   related_name="fahr_springer", verbose_name="Person")  # fmt: skip
     wochentage = models.CharField(
         "Nur an diesen Tagen", max_length=40, blank=True,
@@ -152,7 +152,7 @@ class Springer(models.Model):
 class Ausfall(models.Model):
     """Jemand kann an einem oder mehreren Tagen nicht fahren (der „gelbe Aufkleber“)."""
 
-    person = models.ForeignKey("adressen.Adresse", on_delete=models.CASCADE,
+    person = models.ForeignKey("adressen.Adresse", on_delete=models.CASCADE, null=True,
                                related_name="fahr_ausfaelle", verbose_name="Person")  # fmt: skip
     von = models.DateField("Von")
     bis = models.DateField("Bis")
