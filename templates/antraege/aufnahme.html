@@ -143,7 +143,7 @@
         <option value="">– kein Bescheid –</option>
         {% for art in arten %}<option value="{{ art.pk }}"{% if art.pk == art_gewaehlt %} selected{% endif %}>{{ art.bezeichnung }}</option>{% endfor %}
       </select>
-      <small class="hilfe">Die Liste pflegt der Admin unter Einstellungen → Einkommensarten.</small>
+      {% if "einstellungen.listen" in rechte %}<small class="hilfe">Die Liste pflegt der Admin unter Einstellungen → Einkommensarten.</small>{% endif %}
     </div>
     <div class="feld">
       <label for="gueltig_bis">Ausweis gültig bis</label>
@@ -151,7 +151,7 @@
         {% for wert, titel in gueltigkeiten %}<option value="{{ wert }}"{% if wert == gueltig_gewaehlt %} selected{% endif %}>{{ titel }}</option>{% endfor %}
         <option value="eigenes"{% if gueltig_eigen %} selected{% endif %}>eigenes Datum …</option>
       </select>
-      <small class="hilfe">Gilt nur mit Bescheidart.{% if bisher_gueltig %} Bisher gültig bis {{ bisher_gueltig|date:"d.m.Y" }}.{% endif %} Den Vorschlag stellt der Admin unter Einstellungen → Kundenstamm ein.</small>
+      <small class="hilfe">Gilt nur mit Bescheidart.{% if bisher_gueltig %} Bisher gültig bis {{ bisher_gueltig|date:"d.m.Y" }}.{% endif %}{% if "einstellungen.kundenstamm" in rechte %} Den Vorschlag stellt der Admin unter Einstellungen → Kundenstamm ein.{% endif %}</small>
     </div>
     <div class="feld">
       <label for="gueltig_eigenes">Eigenes Datum</label>

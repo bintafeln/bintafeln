@@ -89,6 +89,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "auditlog.middleware.AuditlogMiddleware",
+    "apps.konten.middleware.HtmxAnmeldeMiddleware",
     "apps.core.middleware.EinrichtungMiddleware",
     "apps.core.module.ModulMiddleware",
     "apps.konten.middleware.PasswortAendernMiddleware",

@@ -5,8 +5,8 @@
 <section class="karte">
   <p><a href="{% url 'kunden:uebersicht' %}">← Kunden</a></p>
   <h1>Zugriffsprotokoll</h1>
-  <p class="hinweis">Wer hat wann welchen Haushalt angesehen. Einträge werden nach {{ frist }} Tagen gelöscht
-    (einstellbar unter „Einstellungen → Kundenstamm“).</p>
+  <p class="hinweis">Wer hat wann welchen Haushalt angesehen. Einträge werden nach {{ frist }} Tagen gelöscht{% if "einstellungen.kundenstamm" in rechte %}
+    (einstellbar unter „Einstellungen → Kundenstamm“){% endif %}.</p>
   <form class="filter" method="get" data-sofort>
     <label for="kundennummer">Kundennummer</label>
     <input type="search" name="kundennummer" id="kundennummer" value="{{ kundennummer }}" data-nicht-sofort {% live_suche %}>
