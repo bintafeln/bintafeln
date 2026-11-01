@@ -68,7 +68,7 @@ BEREICHE = {
     "kunden": "Kunden und Ausgabe (Haushalte, Abholungen, Kundenkonto, Notizen, Sonderaktionen)",
     "antraege": "Anträge",
     "adressen": "Adressbuch, Spenden und Mitglieder",
-    "mitarbeitende": "Mitarbeitende, Rollen und Personal",
+    "mitarbeitende": "Konten, Rollen und Angestellten-Daten",
     "protokoll": "Änderungsprotokoll",
     "dateien": "Hochgeladene Dateien (Dokumente, Logo, Anhänge)",
 }

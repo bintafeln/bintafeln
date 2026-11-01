@@ -172,8 +172,9 @@ def menue(request) -> list[dict]:
         ("serienbriefe.erstellen", _eintrag("Vorlagen und Versände", "serienbriefe:vorlagen")),
     ])  # fmt: skip
     dazu("Verein/Team", [
-        ("mitarbeitende.verwalten", _eintrag("Mitarbeitende", "konten:mitarbeitende")),
-        ("personal.sehen", _eintrag("Personal", "personal:liste", genau=True)),
+        ("mitarbeitende.verwalten", _eintrag("Ehrenamtliche", "konten:ehrenamtliche", genau=True)),
+        ("mitarbeitende.verwalten", _eintrag("Angestellte", "konten:angestellte", genau=True)),
+        ("personal.sehen", _eintrag("Verträge & Zeiten", "personal:liste", genau=True)),
     ])  # fmt: skip
     dazu("Auswertungen", [
         ("statistik.sehen", _eintrag("Statistik", "statistik:uebersicht", genau=True)),
@@ -236,10 +237,10 @@ def menue(request) -> list[dict]:
              _eintrag("Spenden und Zuwendungsbestätigungen", "spenden:einstellungen")),
         ],
         "Dienstpläne": [],
-        "Mitarbeitende": [
+        "Team": [
             ("einstellungen.rollen", _eintrag("Rollen und Rechte", "konten:rollen")),
             ("einstellungen.personal",
-             _eintrag("Mitarbeitende und Dokumente", "konten:personal_einstellungen")),
+             _eintrag("Fristen und Dokumente", "konten:personal_einstellungen")),
             ("einstellungen.arbeitszeit",
              _eintrag("Arbeitszeit", "personal:arbeitszeit_einstellungen")),
         ],

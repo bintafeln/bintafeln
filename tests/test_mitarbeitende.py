@@ -55,13 +55,13 @@ def test_neue_rollen_fahrer_und_beifahrer():
 def test_ohne_freigabe_kein_zugang(als, rolle):
     client, _ = als(rolle)
     assert client.get(LISTE).status_code == 403
-    assert "Mitarbeitende</a>" not in client.get("/").content.decode()
+    assert "Ehrenamtliche</a>" not in client.get("/").content.decode()
 
 
 def test_admin_sieht_liste_und_archiv(admin_client):
-    assert "Mitarbeitende</a>" in admin_client.get("/").content.decode()
+    assert "Ehrenamtliche</a>" in admin_client.get("/").content.decode()
     inhalt = admin_client.get(LISTE).content.decode()
-    assert "chefin" in inhalt and "Mitarbeiterin / Mitarbeiter anlegen" in inhalt
+    assert "chefin" in inhalt and "Konto anlegen" in inhalt
     assert "Keine gesperrten Konten." in admin_client.get(ARCHIV).content.decode()
 
 
@@ -97,7 +97,7 @@ def test_startpasswort_ohne_verwechselbare_zeichen():
 
 def test_buero_mit_freigabe(als, admin, buero_freigegeben):
     client, buero = als(rollen.BUERO)
-    assert "Mitarbeitende</a>" in client.get("/").content.decode()
+    assert "Ehrenamtliche</a>" in client.get("/").content.decode()
     formular = client.get(NEU).content.decode()
     assert 'value="Ausgabe"' in formular and 'value="Admin"' not in formular
     assert "rollen" in neu(client, rollen=[rollen.ADMIN]).context["form"].errors

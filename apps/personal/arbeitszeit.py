@@ -53,7 +53,9 @@ def gehen(benutzer, jetzt=None) -> Zeitbuchung:
     jetzt = jetzt or timezone.now()
     buchung = laufend(benutzer, jetzt)
     if buchung is None:
-        raise StempelFehler("Kein offenes „Kommen“. Bitte die Zeit vom Personal nachtragen lassen.")
+        raise StempelFehler(
+            "Kein offenes „Kommen“. Bitte die Zeit von den Zuständigen nachtragen lassen."
+        )
     buchung.ende = max(jetzt.replace(microsecond=0), buchung.beginn + dt.timedelta(minutes=1))
     buchung.save()
     return buchung

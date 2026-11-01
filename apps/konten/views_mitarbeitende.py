@@ -66,18 +66,41 @@ def _zeilen(benutzer):
     return zeilen
 
 
-@verwalter_erforderlich
-def liste(request):
+# Zwei getrennte Listen nach Beschäftigung (Angestellte / Ehrenamtliche); ohne Filter alle.
+BESCHAEFTIGUNG_TITEL = {"ehrenamtlich": "Ehrenamtliche", "fest": "Angestellte"}
+
+
+def _liste(request, art):
     personal.stammdaten_leeren()
+    konten = get_user_model().objects.filter(is_active=True, stelle__isnull=True)
+    if art:
+        konten = konten.filter(beschaeftigung=art)
     return render(
         request,
         "konten/mitarbeitende.html",
         {
-            "zeilen": _zeilen(get_user_model().objects.filter(is_active=True, stelle__isnull=True)),
+            "zeilen": _zeilen(konten),
             "archiv": False,
+            "art": art,
+            "titel": BESCHAEFTIGUNG_TITEL.get(art, "Team"),
             "faellig": personal.faelligkeiten(),
         },
     )
+
+
+@verwalter_erforderlich
+def liste(request):
+    return _liste(request, art=None)
+
+
+@verwalter_erforderlich
+def ehrenamtliche(request):
+    return _liste(request, art="ehrenamtlich")
+
+
+@verwalter_erforderlich
+def angestellte(request):
+    return _liste(request, art="fest")
 
 
 @verwalter_erforderlich
@@ -106,8 +129,14 @@ def _startpasswort_zeigen(request, ziel, passwort, neu):
 @never_cache
 @verwalter_erforderlich
 def anlegen(request):
+    # Aus einer der beiden Listen heraus die passende Beschäftigung vorbelegen.
+    art = request.GET.get("art")
+    initial = {"beschaeftigung": art} if art in BESCHAEFTIGUNG_TITEL else None
     form = MitarbeiterForm(
-        request.POST or None, verwalter=request.user, mail_moeglich=mail.eingerichtet()
+        request.POST or None,
+        verwalter=request.user,
+        mail_moeglich=mail.eingerichtet(),
+        initial=initial,
     )
     if request.method == "POST" and form.is_valid():
         daten = {f: form.cleaned_data[f] for f in MitarbeiterForm.Meta.fields

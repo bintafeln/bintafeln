@@ -23,9 +23,9 @@ def titel(bereich):
 
 def test_admin_sieht_alle_untermenues(admin):
     gruppen = titel(einstellungen(admin))
-    assert list(gruppen) == ["Tafel", "Kunden", "Ausgabe", "Verein", "Mitarbeitende",
+    assert list(gruppen) == ["Tafel", "Kunden", "Ausgabe", "Verein", "Team",
                              "Systemsteuerung"]  # fmt: skip
-    assert "Rollen und Rechte" in gruppen["Mitarbeitende"]
+    assert "Rollen und Rechte" in gruppen["Team"]
     assert "Kundengruppen" in gruppen["Kunden"] and "Sicherungen" in gruppen["Systemsteuerung"]
     assert "Aufruf, Monitor und Kiosk" not in gruppen["Ausgabe"]  # Modul aus
 

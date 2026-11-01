@@ -104,7 +104,7 @@ def test_nur_personal_dokumente(client, admin, benutzer_mit_rolle, anmelden, adm
 
     anmelden(client, benutzer_mit_rolle("hr", rollen.PERSONAL))
     seite = client.get(reverse("personal:person", args=[kim.pk])).content.decode()
-    assert "Testdokument Arbeitsvertrag" in seite and "nur Personal" in seite
+    assert "Testdokument Arbeitsvertrag" in seite and "nur Angestellte" in seite
     assert client.get(ansehen).status_code == 200
 
 
