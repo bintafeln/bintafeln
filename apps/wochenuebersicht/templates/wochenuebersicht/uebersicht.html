@@ -7,11 +7,15 @@
     Eine Kundengruppe zählt an jedem ihrer Wochentage.</p>
   <form method="get" class="filter wochen-filter" data-sofort>
     <label class="filter-haken"><input type="checkbox" name="abholungen" value="1"{% if woche %} checked{% endif %}> mit Abholungen der Woche</label>
-    <label>Kalenderwoche <input type="week" name="kw" value="{{ kw }}"></label>
+    <label>Kalenderwoche
+      <select name="kw">
+        {% for wert, bez in wochen %}<option value="{{ wert }}"{% if wert == kw %} selected{% endif %}>{{ bez }}</option>{% endfor %}
+      </select></label>
     <button type="submit" class="knopf knopf-zweitrangig">Anzeigen</button>
   </form>
-  <p class="wochen-pdf">PDF: <a href="{% url 'wochenuebersicht:pdf' 'hoch' %}?{{ abfrage }}" target="_blank">Hochformat</a> ·
-    <a href="{% url 'wochenuebersicht:pdf' 'quer' %}?{{ abfrage }}" target="_blank">Querformat</a></p>
+  <p class="wochen-pdf">PDF:
+    <a class="knopf knopf-zweitrangig" href="{% url 'wochenuebersicht:pdf' 'hoch' %}?{{ abfrage }}" target="_blank">Hochformat</a>
+    <a class="knopf knopf-zweitrangig" href="{% url 'wochenuebersicht:pdf' 'quer' %}?{{ abfrage }}" target="_blank">Querformat</a></p>
 
   {% for tag in tage %}
   <h2>{{ tag.name }}</h2>
