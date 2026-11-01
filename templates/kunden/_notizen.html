@@ -43,7 +43,7 @@
 
   {% if krankmeldung %}
   <details class="krank-melden">
-    <summary>Krank gemeldet …</summary>
+    <summary class="knopf knopf-vorlage"><span aria-hidden="true">🩺 </span>Krank melden …</summary>
     {% if notiz_htmx %}
     <form method="post" action="{% url 'ausgabe:krank' h.kundennummer %}" hx-post="{% url 'ausgabe:krank' h.kundennummer %}" hx-target="#einlass">
     {% else %}
