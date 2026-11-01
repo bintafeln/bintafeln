@@ -40,3 +40,13 @@ Führerscheinkopien). Status: gehört zu einem Datensatz, im Papierkorb, verwais
 kein Datensatz) oder unbekannter Ordner. `verwaiste_loeschen()` löscht nur verwaiste Dateien, die
 älter als ein Tag sind, und nur nach einer höchstens 24 Stunden alten Sicherung; unbekannte
 Ordner nie. Die Seite zeigt keine Inhalte.
+
+## Nachtrag: Bilder der Tafel ansehen (2026-11-01)
+
+Die öffentlichen Bilder der Tafel (Logo, App-Symbol, Hintergrund der Anmeldeseite und der
+übrigen Seiten, weitere Hintergrundbilder) liegen in den Tafel-Einstellungen verstreut. Damit
+man sieht, was hinterlegt ist, zeigt die Seite „Speicher und Fotos“ sie als kleine Galerie mit
+Vorschau und Dateigröße (`views_speicher.tafel_bilder()`); ein Klick öffnet das Bild in voller
+Größe. Von den Tafel-Einstellungen führt ein Verweis dorthin. Nur Ansehen, kein Hochladen oder
+Löschen – das bleibt bei den Tafel-Einstellungen. Die Bilder sind ohnehin öffentlich abrufbar
+(`oeffentlich/`), deshalb entsteht keine neue Offenlegung.

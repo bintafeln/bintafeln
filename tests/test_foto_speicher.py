@@ -159,3 +159,29 @@ def test_alle_dateien_nur_mit_recht(client, admin, benutzer_mit_rolle, anmelden)
 
     anmelden(client, benutzer_mit_rolle("buero", rollen.BUERO))
     assert client.get(reverse("core:dateien")).status_code == 403
+
+
+def test_bilder_galerie(admin_client):
+    """Die Tafel-Bilder (Logo, Hintergründe) erscheinen auf „Speicher und Fotos“ als Galerie;
+    ohne Bilder gibt es die Galerie nicht. Von den Tafel-Einstellungen führt ein Verweis dorthin."""
+    from apps.core.models import Hintergrundbild, TafelEinstellungen
+
+    # Ohne hinterlegte Bilder: keine Galerie.
+    seite = admin_client.get(URL).content.decode()
+    assert "Bilder der Tafel" not in seite
+
+    t = TafelEinstellungen.laden()
+    t.logo = SimpleUploadedFile("logo.png", foto(200, 200, "PNG"), content_type="image/png")
+    t.save()
+    Hintergrundbild.objects.create(
+        bereich=Hintergrundbild.Bereich.ANMELDUNG,
+        bild=SimpleUploadedFile("hg.jpg", foto(400, 300), content_type="image/jpeg"),
+    )
+    seite = admin_client.get(URL).content.decode()
+    assert "Bilder der Tafel" in seite
+    assert "Logo" in seite and "Weiteres Hintergrundbild (Anmeldeseite)" in seite
+    assert t.logo.url in seite and 'class="bilder-galerie"' in seite
+
+    # Verweis von den Tafel-Einstellungen auf die Seite.
+    einst = admin_client.get(reverse("core:einstellungen")).content.decode()
+    assert f'href="{URL}"' in einst and "Alle Bilder der Tafel ansehen" in einst
