@@ -339,6 +339,40 @@ def test_kundengruppen_importieren(admin_client):
     assert dod.uhrzeit is None
 
 
+# --- Anträge ----------------------------------------------------------------------------
+
+
+def test_antraege_importieren(admin_client):
+    from apps.antraege.models import Antrag
+
+    vorhanden = Antrag.objects.create(
+        vorname="Anna", nachname="Beispiel", geburtsdatum=dt.date(1990, 2, 1), telefon="alt"
+    )
+    datei = csv_datei(
+        "antraege.csv",
+        "Vorname;Nachname;Geburtsdatum;PLZ;Ort;Telefon;Status;Eingegangen am;Grad der Behinderung",
+        "Max;Mustermann;15.03.1985;45127;Essen;0201 123;neu;10.09.2026;50",
+        "Anna;Beispiel;01.02.1990;;;0201 999;in Bearbeitung;;",
+    )
+    sitzung = hochladen(admin_client, "antraege", datei)
+    weiter(admin_client, sitzung)
+    url = reverse("datenimport:abgleich", args=[sitzung.pk])
+    inhalt = admin_client.get(url + "?modus=aktualisieren").content.decode()
+    assert "Beispiel" in inhalt  # der vorhandene Antrag taucht im Abgleich auf
+    alle = {f"f-{i}-{z}": "1" for i in range(2) for z in sitzung.tabellen[0]["zuordnung"] if z}
+    antwort = admin_client.post(url, {"modus": "aktualisieren", **alle})
+    assert antwort.url == reverse("antraege:liste")
+    # Neuer Antrag angelegt, mit Antragsnummer
+    neu = Antrag.objects.get(nachname="Mustermann")
+    assert (neu.vorname, neu.plz, neu.ort) == ("Max", "45127", "Essen")
+    assert (neu.status, neu.gdb) == ("neu", 50)
+    assert neu.geburtsdatum == dt.date(1985, 3, 15) and neu.laufnummer
+    assert timezone.localdate(neu.eingegangen_am) == dt.date(2026, 9, 10)
+    # Vorhandener über Name + Geburtsdatum erkannt und aktualisiert
+    vorhanden.refresh_from_db()
+    assert vorhanden.telefon == "0201 999" and vorhanden.status == "in_bearbeitung"
+
+
 # --- Mitarbeitende ----------------------------------------------------------------------
 
 
