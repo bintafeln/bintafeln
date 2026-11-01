@@ -309,8 +309,8 @@ def besetzung(request, pk):
     t = get_object_or_404(Tour, pk=pk)
     tage = wochentage(FahrdienstEinstellungen.laden().fahrtage)
     personen = list(fahrdienst_personen())
-    fahrer = [p for p in personen if p.darf_fahren]
-    fahrer_pks = {p.pk for p in fahrer}
+    fahrer_pks = set(fahrdienst_personen(nur_fahrer=True).values_list("pk", flat=True))
+    fahrer = [p for p in personen if p.pk in fahrer_pks]
     jetzt = {(b.wochentag, b.platz): b for b in t.besetzungen.all()}
     # Vom Fahrerplan aus geöffnet: danach zurück zu diesem Monat
     monat = request.GET.get("monat", "")

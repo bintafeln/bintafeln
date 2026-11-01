@@ -140,7 +140,7 @@ def test_monitor_ohne_anmeldung_nur_namen(plaene, heute, admin):
     assert "11.11." in html and "02.11." not in html and "09.11." not in html  # ab heute
     assert '<button type="button" data-nr="3">Fahrer November</button>' in html
     assert "Teamleitung:" in html and "Mittwoch, 11.11.2026" in html and "Stand 10:00 Uhr" in html
-    helfer = Adresse.objects.filter(notiz=dp_beispiel.KENNUNG, helfer=True).first()
+    helfer = Adresse.objects.filter(notiz=dp_beispiel.KENNUNG).first()
     assert helfer.name in html and helfer.telefon not in html and "0123 45" not in html
     assert 'class="knopf' not in html and "menue" not in html  # ganzseitig, ohne Menü
     assert "aushang.js" in html and 'data-sekunden="20"' in html
@@ -220,10 +220,8 @@ def fahrer(benutzer_mit_rolle, admin):
         pin.setzen(b, "482915")
         leute[b.username] = b
         if rolle in (rollen.FAHRER, rollen.BEIFAHRER):
-            fd = "fahrer" if rolle == rollen.FAHRER else "beifahrer"
             pers[b.username] = Adresse.objects.create(
-                art=Adresse.Art.PERSON, vorname=vorname, nachname=nachname, konto=b,
-                helfer_aktiv=True, fahrdienst=fd)  # fmt: skip
+                art=Adresse.Art.PERSON, vorname=vorname, nachname=nachname, konto=b)  # fmt: skip
     tour = Tour.objects.create(name="Mitte", plaetze=2, mindestbesetzung=2)
     Besetzung.objects.create(tour=tour, wochentag="Mi", platz=1, person=pers["max"])
     Besetzung.objects.create(tour=tour, wochentag="Mi", platz=2, person=pers["jan"])

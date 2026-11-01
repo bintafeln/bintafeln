@@ -10,17 +10,14 @@ def _datum(wert) -> str:
 
 
 def _einsaetze_abschnitt(doc, a) -> None:
-    """Mitarbeit (Helfer/Fahrdienst) und regelmäßige Einsätze, nur bei eingeschaltetem Modul."""
+    """Mitarbeit (Rollen des Kontos) und regelmäßige Einsätze, nur bei eingeschaltetem Modul."""
     from apps.core import module
 
-    mitarbeit = []
-    if a.helfer:
-        mitarbeit.append(("Ehrenamtlicher Helfer", "aktiv" if a.helfer_aktiv else "inaktiv"))
-    if a.fahrdienst:
-        mitarbeit.append(("Fahrdienst", a.get_fahrdienst_display()))
-    if mitarbeit:
-        doc.ueberschrift("Mitarbeit")
-        doc.angaben(mitarbeit)
+    if a.konto_id:
+        rollen = ", ".join(a.konto.groups.values_list("name", flat=True))
+        if rollen:
+            doc.ueberschrift("Mitarbeit")
+            doc.angaben([("Rollen", rollen)])
 
     zeilen = []
     if module.aktiv("dienstplan"):

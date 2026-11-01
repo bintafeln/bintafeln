@@ -174,6 +174,7 @@ class MitarbeiterForm(forms.ModelForm):
         from apps.ausgabe.ampel import WOCHENTAGE
 
         super().__init__(*args, **kwargs)
+        self.verwalter = verwalter
         self.fields["ausgabetage"].choices = [(t, t) for t in WOCHENTAGE]
         self.initial["ausgabetage"] = [
             t.strip() for t in (self.instance.ausgabetage or "").split(",") if t.strip()
@@ -192,6 +193,17 @@ class MitarbeiterForm(forms.ModelForm):
             self.add_error(
                 "email", "Für eine Einladung per Mail bitte eine E-Mail-Adresse angeben."
             )
+        # Jedes Mitarbeiter-Konto braucht mindestens eine Rolle (ADR 0097); nicht vergebbare
+        # Rollen, die schon gesetzt sind, zählen mit.
+        gewaehlt = set(daten.get("rollen") or [])
+        behalten = (
+            set(self.instance.groups.values_list("name", flat=True))
+            - set(verwaltung.vergebbare_rollen(self.verwalter))
+            if self.instance.pk
+            else set()
+        )
+        if not gewaehlt and not behalten:
+            self.add_error("rollen", "Bitte mindestens eine Rolle wählen.")
         return daten
 
     def clean_ausgabetage(self):

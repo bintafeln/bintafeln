@@ -68,7 +68,7 @@ def anlegen(seed: int | None = None) -> dict:
             konto.groups.add(ausgabe)
             helfer.append(Adresse.objects.create(
                 art=Adresse.Art.PERSON, vorname=v, nachname=n, notiz=KENNUNG, konto=konto,
-                helfer=True, helfer_aktiv=True, telefon=f"0123 45{i:04d}"))  # fmt: skip
+                telefon=f"0123 45{i:04d}"))  # fmt: skip
         anzahl = 0
         for tag in TAGE:
             frei = zufall.sample(helfer, len(helfer))

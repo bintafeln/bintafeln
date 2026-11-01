@@ -39,8 +39,6 @@ def _helfer(vorname="", nachname="", konto=None, telefon="", email=""):
         nachname=nachname,
         telefon=telefon,
         email=email,
-        helfer=True,
-        helfer_aktiv=True,
         konto=konto,
     )
 
@@ -265,7 +263,7 @@ def test_beispiel_und_fristen(admin_client):
     assert len(namen) == len(set(namen))  # niemand doppelt am selben Tag
     assert Diensttag.objects.get(stelle=ds, wochentag="Fr").teamleitung is not None
     admin_client.post(reverse("dienstplan:beispiel"), {"aktion": "entfernen"})
-    assert not Adresse.objects.filter(notiz=beispiel.KENNUNG, helfer=True).exists()
+    assert not Adresse.objects.filter(notiz=beispiel.KENNUNG).exists()
     assert not Ausgabestelle.objects.filter(name=beispiel.STELLE).exists()
     # Fristen: alte Ausfälle weg
     h = _helfer("Alt", "Ausfall")
