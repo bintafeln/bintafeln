@@ -206,9 +206,9 @@ def test_export_auswahl_und_protokoll(admin_client, daten, pdf_text):
 def test_eigene_listen(admin_client, daten, benutzer_mit_rolle, anmelden):
     admin_client.post(reverse("listen:speichern", args=["kinder"]),
                       {"titel": "Kinder Mitte", "abfrage": "geladen=1&alter_bis=10&id=5",
-                       "fuer_alle": "1"})  # fmt: skip
+                       "sichtbarkeit": "alle"})  # fmt: skip
     e = EigeneListe.objects.get()
-    assert e.fuer_alle and e.parameter == "geladen=1&alter_bis=10"
+    assert e.sichtbarkeit == "alle" and e.parameter == "geladen=1&alter_bis=10"
     assert "Kinder Mitte" in admin_client.get(reverse("listen:uebersicht")).content.decode()
     antwort = admin_client.get(reverse("listen:eigene", args=[e.pk]))
     ziel = reverse("listen:liste", args=["kinder"])
@@ -217,28 +217,58 @@ def test_eigene_listen(admin_client, daten, benutzer_mit_rolle, anmelden):
     assert c.get(reverse("listen:eigene", args=[e.pk])).status_code == 302  # für alle
     assert c.post(reverse("listen:eigene_loeschen", args=[e.pk])).status_code == 403
     c.post(reverse("listen:speichern", args=["kinder"]), {"titel": "", "abfrage": "",
-                                                          "fuer_alle": "1"})  # fmt: skip
+                                                          "sichtbarkeit": "alle"})  # fmt: skip
     eigene = EigeneListe.objects.get(benutzer__username="anton")
-    assert eigene.titel == "Kinder und Jugendliche (Alter von–bis)" and not eigene.fuer_alle
-    EigeneListe.objects.filter(pk=e.pk).update(fuer_alle=False)
+    assert eigene.titel == "Kinder und Jugendliche (Alter von–bis)"
+    assert eigene.sichtbarkeit == "privat"  # Ausgabe-Konto darf nicht teilen → privat
+    EigeneListe.objects.filter(pk=e.pk).update(sichtbarkeit="privat")
     assert c.get(reverse("listen:eigene", args=[e.pk])).status_code == 404
     admin_client.post(reverse("listen:eigene_loeschen", args=[e.pk]))
     assert not EigeneListe.objects.filter(pk=e.pk).exists()
+
+
+def test_eigene_liste_sichtbarkeit(admin_client, daten, benutzer_mit_rolle, anmelden):
+    from apps.kunden.models import Ausgabestelle
+
+    mitte = Ausgabestelle.objects.create(name="Freigabe-Stelle A")
+    nord = Ausgabestelle.objects.create(name="Freigabe-Stelle B")
+    anton = benutzer_mit_rolle("anton", rollen.AUSGABE)
+    anton.ausgabestellen.add(mitte)
+    berta = benutzer_mit_rolle("berta", rollen.AUSGABE)
+    berta.ausgabestellen.add(nord)
+    ca, cb = anmelden(Client(), anton), anmelden(Client(), berta)
+    oeffnen = lambda c, e: c.get(reverse("listen:eigene", args=[e.pk])).status_code  # noqa: E731
+
+    # Für eine Ausgabestelle: nur deren Mitarbeitende
+    admin_client.post(reverse("listen:speichern", args=["kinder"]),
+                      {"titel": "Nur Mitte", "abfrage": "geladen=1",
+                       "sichtbarkeit": "stelle", "ausgabestelle": mitte.pk})  # fmt: skip
+    e = EigeneListe.objects.get()
+    assert e.sichtbarkeit == "stelle" and e.ausgabestelle_id == mitte.pk
+    assert oeffnen(ca, e) == 302 and oeffnen(cb, e) == 404
+    # Alle Ausgabestellen: beide (mit Stelle)
+    e.sichtbarkeit, e.ausgabestelle = "alle_stellen", None
+    e.save()
+    assert oeffnen(ca, e) == 302 and oeffnen(cb, e) == 302
+    # Bestimmte Person: nur berta
+    e.sichtbarkeit, e.fuer_person = "person", berta
+    e.save()
+    assert oeffnen(cb, e) == 302 and oeffnen(ca, e) == 404
 
 
 def test_eigene_liste_bearbeiten(admin_client, daten, benutzer_mit_rolle, anmelden):
     # Admin legt eine für alle freigegebene Liste an
     admin_client.post(reverse("listen:speichern", args=["kinder"]),
                       {"titel": "Kinder Mitte", "abfrage": "geladen=1&alter_bis=10",
-                       "fuer_alle": "1"})  # fmt: skip
+                       "sichtbarkeit": "alle"})  # fmt: skip
     e = EigeneListe.objects.get()
     akt = reverse("listen:eigene_aktualisieren", args=[e.pk])
-    # Titel, Einstellungen und Freigabe aktualisieren (ohne „fuer_alle“ = Freigabe aus)
+    # Titel, Einstellungen und Freigabe aktualisieren (ohne „sichtbarkeit“ = wieder privat)
     antwort = admin_client.post(akt, {"titel": "Kinder bis 12",
                                       "abfrage": "geladen=1&alter_bis=12&id=5"})  # fmt: skip
     e.refresh_from_db()
     assert e.titel == "Kinder bis 12" and e.parameter == "geladen=1&alter_bis=12"
-    assert not e.fuer_alle  # Häkchen fehlte und Admin darf teilen → Freigabe entfernt
+    assert e.sichtbarkeit == "privat"  # kein Wert gewählt und Admin darf teilen → privat
     assert antwort.url.endswith(f"&eigene={e.pk}")
     # Die Bearbeiten-Fläche erscheint beim Öffnen der gespeicherten Liste
     seite = admin_client.get(antwort.url).content.decode()
@@ -253,10 +283,10 @@ def test_eigene_liste_bearbeiten(admin_client, daten, benutzer_mit_rolle, anmeld
     meine = EigeneListe.objects.get(benutzer__username="anton")
     c.post(
         reverse("listen:eigene_aktualisieren", args=[meine.pk]),
-        {"titel": "Meine Kinder", "abfrage": "geladen=1", "fuer_alle": "1"},
+        {"titel": "Meine Kinder", "abfrage": "geladen=1", "sichtbarkeit": "alle"},
     )
     meine.refresh_from_db()
-    assert meine.titel == "Meine Kinder" and not meine.fuer_alle  # Freigabe bleibt ohne Recht aus
+    assert meine.titel == "Meine Kinder" and meine.sichtbarkeit == "privat"  # ohne Recht privat
 
 
 def test_suche_und_menue(admin, admin_client):

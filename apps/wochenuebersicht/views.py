@@ -30,6 +30,19 @@ def _woche(request) -> dt.date | None:
         return auswertung.montag(timezone.localdate())
 
 
+def _wochen_auswahl(heute: dt.date) -> list[tuple[str, str]]:
+    """Die letzten 8 Kalenderwochen (aktuelle zuerst) als (Wert ``JJJJ-Www``, Beschriftung mit
+    Zeitraum) für das Auswahlmenü."""
+    mo = auswertung.montag(heute)
+    auswahl = []
+    for i in range(8):
+        anfang = mo - dt.timedelta(weeks=i)
+        ende = anfang + dt.timedelta(days=6)
+        auswahl.append((anfang.strftime("%G-W%V"),
+                        f"KW {anfang:%V} ({anfang:%d.%m.}–{ende:%d.%m.%Y})"))  # fmt: skip
+    return auswahl
+
+
 @never_cache
 @sehen
 def uebersicht(request):
@@ -38,6 +51,7 @@ def uebersicht(request):
     daten = auswertung.uebersicht(heute, woche)
     kw = (woche or auswertung.montag(heute)).strftime("%G-W%V")
     return render(request, "wochenuebersicht/uebersicht.html", {**daten, "kw": kw,
+                  "wochen": _wochen_auswahl(heute),
                   "abfrage": request.GET.urlencode()})  # fmt: skip
 
 

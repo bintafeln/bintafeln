@@ -10,15 +10,15 @@
   <h2>Eigene Listen</h2>
   <ul class="listen-katalog">
     {% for e in eigene %}
-    <li><a href="{% url 'listen:eigene' e.pk %}">{{ e.titel }}</a>{% if e.fuer_alle %} <span class="marke-ok">für alle</span>{% endif %}
-      {% if e.benutzer_id == user.pk or "listen.teilen" in rechte %}
-      <form method="post" action="{% url 'listen:eigene_loeschen' e.pk %}" class="inline" onsubmit="return confirm('Liste „{{ e.titel|escapejs }}“ löschen?')">{% csrf_token %}<button type="submit" class="link-knopf">löschen</button></form>
-      {% endif %}</li>
+    <li><a href="{% url 'listen:eigene' e.pk %}">{{ e.titel }}</a>{% if e.sichtbarkeit != 'privat' %} <span class="marke-ok">{{ e.get_sichtbarkeit_display }}{% if e.sichtbarkeit == 'stelle' and e.ausgabestelle %}: {{ e.ausgabestelle.name }}{% elif e.sichtbarkeit == 'person' and e.fuer_person %}: {{ e.fuer_person.get_full_name|default:e.fuer_person.username }}{% endif %}</span>{% endif %}</li>
     {% endfor %}
   </ul>
+  <p class="hinweis">Löschen geht in der jeweiligen Liste selbst (oben „Diese gespeicherte Liste löschen“).</p>
   {% endif %}
+  <h2>Neue Liste anlegen</h2>
+  <p class="hinweis">Wählen Sie eine Vorlage – dann filtern, Spalten wählen und als eigene Liste speichern.</p>
   {% for bereich, listen in bereiche %}{% if listen %}
-  <h2>{{ bereich }}</h2>
+  <h3>{{ bereich }}</h3>
   <ul class="listen-katalog">
     {% for l in listen %}<li><a href="{% url 'listen:liste' l.kennung %}">{{ l.titel }}</a><br><span class="hinweis">{{ l.beschreibung }}</span></li>{% endfor %}
   </ul>
