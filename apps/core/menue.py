@@ -171,13 +171,21 @@ def menue(request) -> list[dict]:
                                             genau=True)),
         ("serienbriefe.erstellen", _eintrag("Vorlagen und Versände", "serienbriefe:vorlagen")),
     ])  # fmt: skip
-    dazu("Verein/Team", [
-        ("mitarbeitende.verwalten", _eintrag("Ehrenamtliche", "konten:ehrenamtliche", genau=True)),
-        ("mitarbeitende.verwalten", _eintrag("Angestellte", "konten:angestellte", genau=True)),
-        # Auch im Menü, damit hinkommt, wer nur „Verträge & Zeiten“ darf (Rolle Angestellte, ohne
-        # Mitarbeitenden-Verwaltung); für Verwaltende zusätzlich als Reiter unter Angestellte.
-        ("personal.sehen", _eintrag("Verträge & Zeiten", "personal:liste", genau=True)),
-    ])  # fmt: skip
+    # „Verträge & Zeiten“ ist ein Unterpunkt von „Angestellte“ (eine Ebene tiefer). Wer nur
+    # „Verträge & Zeiten“ darf (Rolle Angestellte ohne Mitarbeitenden-Verwaltung), bekommt es
+    # eigenständig, damit er überhaupt hinkommt.
+    team = []
+    if "mitarbeitende.verwalten" in darf:
+        angestellte = _eintrag("Angestellte", "konten:angestellte", genau=True)
+        if "personal.sehen" in darf:
+            angestellte["kinder"] = [_eintrag("Verträge & Zeiten", "personal:liste", genau=True)]
+        team = [
+            (None, _eintrag("Ehrenamtliche", "konten:ehrenamtliche", genau=True)),
+            (None, angestellte),
+        ]
+    elif "personal.sehen" in darf:
+        team = [(None, _eintrag("Verträge & Zeiten", "personal:liste", genau=True))]
+    dazu("Verein/Team", team)
     dazu("Auswertungen", [
         ("statistik.sehen", _eintrag("Statistik", "statistik:uebersicht", genau=True)),
         ("statistik.sehen", _eintrag("Verbandsstatistik", "statistik:verband")),
@@ -299,6 +307,12 @@ def menue(request) -> list[dict]:
     # gewinnt. „genau“: nur die Adresse selbst; „auch“: weitere Adressanfänge, die dazugehören.
     pfad = request.path
 
+    def flach(eintraege):
+        """Einträge samt ihren Unterpunkten (vierte Ebene, z. B. Verträge & Zeiten)."""
+        for e in eintraege:
+            yield e
+            yield from flach(e.get("kinder", []))
+
     def treffer(e):
         passt = pfad == e["url"] if e["genau"] else pfad.startswith(e["url"])
         lang = len(e["url"]) if passt else -1
@@ -307,13 +321,13 @@ def menue(request) -> list[dict]:
                 lang = max(lang, len(a))
         return lang
 
-    bester = max((treffer(e) for b in bereiche for e in b["eintraege"]), default=-1)
+    bester = max((treffer(e) for b in bereiche for e in flach(b["eintraege"])), default=-1)
     for bereich in bereiche:
-        for e in bereich["eintraege"]:
+        for e in flach(bereich["eintraege"]):
             e["aktiv"] = bester >= 0 and treffer(e) == bester
-        bereich["offen"] = any(e["aktiv"] for e in bereich["eintraege"])
+        bereich["offen"] = any(e["aktiv"] for e in flach(bereich["eintraege"]))
         bereich["einzeln"] = len(bereich["eintraege"]) == 1
         # Unterpunkte (dritte Ebene) klappen erst auf, wenn man sie wählt
         for gruppe in [*bereich.get("gruppen", []), *bereich.get("abschnitte", [])]:
-            gruppe["offen"] = any(e["aktiv"] for e in gruppe["eintraege"])
+            gruppe["offen"] = any(e["aktiv"] for e in flach(gruppe["eintraege"]))
     return bereiche

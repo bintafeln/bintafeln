@@ -41,18 +41,7 @@
     {% if a.konto_id %}<dt>Rollen</dt><dd>{% for r in konto_rollen %}<span class="marke-rolle">{{ r }}</span> {% empty %}<span class="leise">keine Rolle</span>{% endfor %}</dd>{% endif %}
     {% if darf_konto and a.konto_id %}<dt>Konto</dt><dd><a href="{% url 'konten:mitarbeiter' a.konto_id %}">{{ a.konto }}</a> · <a href="{% url 'konten:stammdaten' a.konto_id %}">Stammdaten ansehen</a>{% if not konto_aktiv %} · <span class="marke-art9">gesperrt (ausgeschieden)</span>{% endif %}</dd>{% endif %}
   </dl>
-  {% if darf_konto and a.konto_id %}
-    {% if konto_aktiv %}
-    <form method="post" action="{% url 'adressen:konto_sperren' a.pk %}" class="abseits" onsubmit="return confirm('Hört „{{ a.name|escapejs }}“ auf? Das Konto wird gesperrt (Archiv); die Person bleibt als Adresse erhalten.')">
-      {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">Konto sperren (Person hört auf)</button>
-      <small class="leise">Keine Rolle mehr nötig; Historie bleibt, Kategorie „Ehemalige Ehrenamtliche“ kommt dazu.</small>
-    </form>
-    {% else %}
-    <form method="post" action="{% url 'adressen:konto_entsperren' a.pk %}" class="abseits">
-      {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">Konto entsperren (macht wieder mit)</button>
-    </form>
-    {% endif %}
-  {% endif %}
+  {% if darf_konto and a.konto_id %}<p class="leise">Hört die Person auf? Über <a href="{% url 'adressen:bearbeiten' a.pk %}">Bearbeiten</a> lässt sich das Konto sperren.</p>{% endif %}
   {% if dienst_einsaetze %}
   <h3>Einsätze im Dienstplan</h3>
   <ul class="liste-schlicht">
