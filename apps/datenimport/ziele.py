@@ -23,7 +23,9 @@ FEHLER, WARNUNG = "fehler", "warnung"
 
 
 def _datum_text(d) -> str:
-    return d.strftime("%d.%m.%Y") if d else ""
+    # Jahr immer vierstellig: strftime("%Y") liefert für Jahre vor 1000 nur drei Stellen
+    # (z. B. „962“), was danach nicht mehr als Datum gelesen werden kann.
+    return f"{d.day:02d}.{d.month:02d}.{d.year:04d}" if d else ""
 
 
 def _liste(text: str) -> list[str]:
@@ -1622,7 +1624,11 @@ class Antraege(Ziel):
                 setattr(a, k, werte[k])
         if "geburtsdatum" in werte:
             geb = werte["geburtsdatum"]
-            a.geburtsdatum = wertlesen.datum(geb) if geb else None
+            # Eine krumme Angabe bleibt leer, statt den ganzen Import zu sprengen.
+            try:
+                a.geburtsdatum = wertlesen.datum(geb) if geb else None
+            except wertlesen.UngueltigerWert:
+                a.geburtsdatum = None
         if "gdb" in werte:
             a.gdb = int(werte["gdb"]) if werte["gdb"] else None
         if "art" in werte:
@@ -1631,10 +1637,14 @@ class Antraege(Ziel):
             a.status = status_code.get(werte["status"], "neu")
         if werte.get("eingegangen_am"):
             roh = werte["eingegangen_am"]
-            tag = wertlesen.datum(roh.split()[0])
-            zeit = re.search(r"(\d{1,2}):(\d{2})", roh)
-            uhr = dt.time(int(zeit.group(1)), int(zeit.group(2))) if zeit else dt.time()
-            a.eingegangen_am = timezone.make_aware(dt.datetime.combine(tag, uhr))
+            try:
+                tag = wertlesen.datum(roh.split()[0])
+            except wertlesen.UngueltigerWert:
+                tag = None
+            if tag:
+                zeit = re.search(r"(\d{1,2}):(\d{2})", roh)
+                uhr = dt.time(int(zeit.group(1)), int(zeit.group(2))) if zeit else dt.time()
+                a.eingegangen_am = timezone.make_aware(dt.datetime.combine(tag, uhr))
 
     @transaction.atomic
     def anwenden(self, entscheidung, verwalter):
