@@ -752,11 +752,18 @@ class Nachricht(models.Model):
 
 
 def verwaiste_notizen_loeschen() -> int:
-    """Notizen zu Kundennummern, die es nicht mehr gibt, und abgelaufene Krankmeldungen
-    (Gesundheitsdaten nur so lange wie nötig, ADR 0075)."""
+    """Notizen zu Kundennummern, die es nicht mehr gibt, und Krankmeldungen, die nicht mehr
+    gelten (Gesundheitsdaten nur so lange wie nötig, ADR 0075): abgelaufene und solche, bei
+    denen der Kunde seit dem Beginn schon abgeholt hat (dann ist er offenbar wieder da)."""
     vorhanden = Haushalt.objects.values("kundennummer")
     weg = Notiz.objects.exclude(kundennummer__in=vorhanden).delete()[0]
-    return weg + Notiz.objects.filter(krank_bis__lt=timezone.localdate()).delete()[0]
+    weg += Notiz.objects.filter(krank_bis__lt=timezone.localdate()).delete()[0]
+    abgeholt = Abholung.objects.filter(
+        haushalt__kundennummer=models.OuterRef("kundennummer"),
+        datum__gte=models.OuterRef("krank_von"),
+    )
+    weg += Notiz.objects.filter(krank_von__isnull=False).filter(models.Exists(abgeholt)).delete()[0]
+    return weg
 
 
 class Dokumentart(models.Model):

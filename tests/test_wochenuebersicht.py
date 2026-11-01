@@ -140,6 +140,15 @@ def test_seiten_und_pdf(modul_an, admin_client, daten, pdf_text):
     assert "Selbstabholer: Frauenhaus" in hoch and "(+12)" in hoch
 
 
+def test_wochen_dropdown_und_pdf_knoepfe(modul_an, admin_client, daten):
+    seite = admin_client.get(reverse("wochenuebersicht:uebersicht")).content.decode()
+    # Kalenderwoche als Auswahlmenü der letzten 8 Wochen statt Wochen-Eingabefeld
+    assert '<select name="kw">' in seite and 'type="week"' not in seite
+    assert seite.count("<option") >= 8
+    # PDF als ordentliche Knöpfe statt reiner Links
+    assert seite.count('class="knopf knopf-zweitrangig"') >= 3  # Anzeigen + Hoch + Quer
+
+
 LEER = {"k-TOTAL_FORMS": "2", "k-INITIAL_FORMS": "0", "k-MIN_NUM_FORMS": "0",
         "k-MAX_NUM_FORMS": "1000"}  # fmt: skip
 
