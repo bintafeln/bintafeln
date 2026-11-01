@@ -1482,6 +1482,8 @@ class Antraege(Ziel):
     recht = "antraege.bearbeiten"
     beschreibung = (
         "Anträge (Neuanmeldungen) mit Antragsteller und Anschrift, ein Antrag je Zeile. "
+        "Jede Zeile wird als eigener Antrag übernommen – es wird nichts zusammengeführt und "
+        "nichts mit vorhandenen Anträgen abgeglichen. "
         "Angehörige lassen sich aus einer Spalte „Vorname TT.MM.JJJJ je Zeile“ übernehmen; "
         "Einkommen und Nachweise kommen nicht mit (später im Aufnahme-Assistenten). "
         "Verschickt keine Mails."
@@ -1490,6 +1492,24 @@ class Antraege(Ziel):
 
     def arten(self):
         return [Art("antraege", "Anträge", ANTRAG_FELDER)]
+
+    def planen(self, saetze, verwalter):
+        """Anträge werden unverändert als Liste übernommen: jede Zeile ein neuer Antrag,
+        kein Abgleich mit vorhandenen Anträgen und kein Zusammenführen gleicher Namen
+        (anders als bei den übrigen Zielen). Die Antragsnummer übernimmt ``anwenden``."""
+        from apps.datenimport.abgleich import Plan
+
+        plan = Plan()
+        for i, satz in enumerate(saetze):
+            plan.neu.append(
+                {
+                    "i": i,
+                    "zeile": satz["zeile"],
+                    "name": self.name(satz["werte"]),
+                    "werte": satz["werte"],
+                }
+            )
+        return plan
 
     def name(self, werte):
         return f"{werte.get('vorname', '')} {werte.get('nachname', '')}".strip()
@@ -1504,6 +1524,18 @@ class Antraege(Ziel):
         return [(f.schluessel, f.bezeichnung) for f in ANTRAG_FELDER if f.schluessel not in ohne]
 
     def wert(self, f, wert, warnen):
+        if f.schluessel == "eingegangen_am" and wert:
+            # Datum mit optionaler Uhrzeit, z. B. „29.07.2024 12:36“. Die Uhrzeit bleibt erhalten.
+            erstes = wert.split()[0]
+            try:
+                tag = wertlesen.datum(erstes[:10] if "-" in erstes[:10] else erstes)
+            except wertlesen.UngueltigerWert:
+                warnen("„Eingegangen am“ ist kein Datum und bleibt leer.")
+                return ""
+            zeit = re.search(r"\b(\d{1,2})[:.](\d{2})", wert[len(erstes) :])
+            if zeit and int(zeit.group(1)) < 24 and int(zeit.group(2)) < 60:
+                return f"{_datum_text(tag)} {int(zeit.group(1)):02d}:{zeit.group(2)}"
+            return _datum_text(tag)
         if f.schluessel == "laufnummer" and wert:
             ziffern = wert.strip()
             if not ziffern.isdigit() or int(ziffern) < 1:
@@ -1598,8 +1630,11 @@ class Antraege(Ziel):
         if werte.get("status"):
             a.status = status_code.get(werte["status"], "neu")
         if werte.get("eingegangen_am"):
-            tag = wertlesen.datum(werte["eingegangen_am"])
-            a.eingegangen_am = timezone.make_aware(dt.datetime.combine(tag, dt.time()))
+            roh = werte["eingegangen_am"]
+            tag = wertlesen.datum(roh.split()[0])
+            zeit = re.search(r"(\d{1,2}):(\d{2})", roh)
+            uhr = dt.time(int(zeit.group(1)), int(zeit.group(2))) if zeit else dt.time()
+            a.eingegangen_am = timezone.make_aware(dt.datetime.combine(tag, uhr))
 
     @transaction.atomic
     def anwenden(self, entscheidung, verwalter):

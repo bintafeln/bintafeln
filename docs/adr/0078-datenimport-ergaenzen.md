@@ -93,6 +93,22 @@ legt die `Antrag`-Datensätze über das Modell an und verschickt keine Mails. Re
 ist; danach zählt `naechste_antragsnummer()` oberhalb der höchsten übernommenen Nummer weiter.
 Bei vorhandenen Anträgen (erkannt an Nummer oder Name + Geburtsdatum) bleibt die Nummer unberührt.
 
+## Nachtrag: Anträge als Liste, Steuerzeichen entfernen (2026-11-01)
+
+Anträge werden **unverändert als Liste** übernommen: jede Zeile wird ein eigener Antrag, ohne
+Abgleich mit vorhandenen Anträgen und ohne Zusammenführen gleicher Namen. `Antraege.planen()`
+baut dafür direkt einen „alles neu“-Plan (kein `treffer`, kein `schluessel`). Hintergrund: Bei
+echten Alt-Beständen (viele Antragsteller, teils ohne Geburtsdatum) führte der gemeinsame Abgleich
+gleichnamige Zeilen zusammen bzw. stufte sie als mögliche Dubletten ein, sodass die Liste nicht
+vollständig ankam. Die Antragsnummer wird weiterhin aus der Datei übernommen (sofern frei) und
+darüber fortlaufend weitergezählt.
+
+Beim **Einlesen** (`lesen.py`) werden außerdem Steuerzeichen entfernt, die PostgreSQL weder als
+Text noch in JSON speichern kann – vor allem das NUL-Byte (`\x00`), das in Alt-Exporten in
+einzelnen Feldern vorkommt und den Import sonst mit einem Serverfehler abbrechen ließ. Tab,
+Zeilenumbruch und Wagenrücklauf bleiben erhalten (z. B. für Angehörige „Vorname TT.MM.JJJJ je
+Zeile“). Das gilt für alle Importe, nicht nur Anträge.
+
 ## Nachtrag: Anträge – Angehörige aus einer Spalte (2026-11-01)
 
 Manche Altprogramme speichern die Angehörigen eines Antrags in **einer** Zelle, je Zeile
