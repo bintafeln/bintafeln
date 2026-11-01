@@ -818,6 +818,40 @@ class Mitarbeitende(Ziel):
                 setattr(sd, k, wertlesen.datum(v) if k in DATUMSFELDER else v)
         sd.save()
 
+    def _adresse_aktualisieren(self, konto, werte):
+        """Jedes Konto ist auch eine Person im Adressbuch (ADR 0097). verwaltung.anlegen()
+        legt die Adresse schon an, bevor die Stammdaten stehen, sie bliebe also ohne
+        Anschrift; darum hier die importierten Angaben nachziehen. Nur Felder aus der Datei
+        werden gesetzt, damit ein Lauf von Hand gepflegte Adressdaten nicht leert."""
+        from apps.adressen.models import Adresse
+
+        adresse = Adresse.objects.filter(konto=konto).first()
+        if adresse is None:
+            return
+        geaendert = False
+        if "vorname" in werte:
+            adresse.vorname = (konto.first_name or "")[:100]
+            geaendert = True
+        if "nachname" in werte:
+            adresse.nachname = (konto.last_name or konto.get_username())[:100]
+            geaendert = True
+        if "email" in werte:
+            adresse.email = konto.email or ""
+            geaendert = True
+        for schluessel, feld in (
+            ("anrede", "anrede"),
+            ("strasse", "strasse"),
+            ("plz", "plz"),
+            ("ort", "ort"),
+            ("telefon", "telefon"),
+            ("handy", "mobil"),
+        ):
+            if schluessel in werte:
+                setattr(adresse, feld, werte[schluessel] or "")
+                geaendert = True
+        if geaendert:
+            adresse.save()
+
     def _konto_felder(self, b, werte):
         for k, attr in (("vorname", "first_name"), ("nachname", "last_name"), ("email", "email")):
             if k in werte:
@@ -862,6 +896,7 @@ class Mitarbeitende(Ziel):
                 einladung=True,
             )
             self._stammdaten(konto, werte)
+            self._adresse_aktualisieren(konto, werte)
             self._stellen(konto, werte)
             neu += 1
         geaendert = uebersprungen = 0
@@ -875,6 +910,7 @@ class Mitarbeitende(Ziel):
             rollen.rechte_vergessen(b)
             if set(werte) & set(STAMMDATEN):
                 self._stammdaten(b, werte)
+            self._adresse_aktualisieren(b, werte)
             self._stellen(b, werte)
             geaendert += 1
         gesperrt = 0
