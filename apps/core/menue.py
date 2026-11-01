@@ -153,7 +153,7 @@ def menue(request) -> list[dict]:
         ("mitglieder.bearbeiten", _eintrag("Neues Mitglied", "mitglieder:neu")),
     ])  # fmt: skip
     dazu("Verein/Spenden", [
-        ("spenden.sehen", _eintrag("Spenden", "spenden:liste", genau=True)),
+        ("spenden.sehen", _eintrag("Spendenliste", "spenden:liste", genau=True)),
         ("spenden.erfassen", _eintrag("Spende erfassen", "spenden:neu")),
         ("spenden.erfassen", _eintrag("Spenden importieren", "spenden:importieren")),
         ("spenden.bestaetigen", _eintrag("Zuwendungsbestätigungen", "spenden:bestaetigungen")),
@@ -179,10 +179,11 @@ def menue(request) -> list[dict]:
         angestellte = _eintrag("Angestellte", "konten:angestellte", genau=True)
         if "personal.sehen" in darf:
             angestellte["kinder"] = [_eintrag("Verträge & Zeiten", "personal:liste", genau=True)]
-        team = [
-            (None, _eintrag("Ehrenamtliche", "konten:ehrenamtliche", genau=True)),
-            (None, angestellte),
-        ]
+        ehrenamtliche = _eintrag("Ehrenamtliche", "konten:ehrenamtliche", genau=True)
+        # Die Sammel-Liste und die Detail-/Bearbeiten-Seiten liegen unter /konten/mitarbeitende/
+        # (ohne eigenen Menüeintrag). Sie öffnen deshalb den Bereich über „Ehrenamtliche“.
+        ehrenamtliche["auch"] = [reverse("konten:mitarbeitende")]
+        team = [(None, ehrenamtliche), (None, angestellte)]
     elif "personal.sehen" in darf:
         team = [(None, _eintrag("Verträge & Zeiten", "personal:liste", genau=True))]
     dazu("Verein/Team", team)

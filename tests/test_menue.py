@@ -194,3 +194,26 @@ def test_fest_angestellte_stempeln_im_menue(benutzer_mit_rolle):
     berta.beschaeftigung = berta.Beschaeftigung.FEST
     berta.save()
     assert "Meine Arbeitszeit" in alle_bereiche(berta)
+
+
+def test_mitarbeitende_sammelliste_oeffnet_verein(admin):
+    # /konten/mitarbeitende/ (Sammel-Liste und Detailseiten, ohne eigenen Eintrag) öffnet den
+    # Bereich Verein über „Ehrenamtliche“ – sonst klappt das Menü dort komplett zu.
+    anfrage = RequestFactory().get(reverse("konten:mitarbeitende"))
+    anfrage.user = admin
+    verein = next(b for b in menue(anfrage) if b["titel"] == "Verein")
+    assert verein["offen"]
+    ehren = next(e for g in verein["gruppen"] if g["titel"] == "Team"
+                 for e in g["eintraege"] if e["titel"] == "Ehrenamtliche")  # fmt: skip
+    assert ehren["aktiv"]
+
+
+def test_spenden_zweite_ebene_heisst_spendenliste(admin):
+    gruppen = titel(next(b for b in _bereiche(admin) if b["titel"] == "Verein"))
+    assert "Spendenliste" in gruppen["Spenden"] and "Spenden" not in gruppen["Spenden"]
+
+
+def _bereiche(benutzer):
+    anfrage = RequestFactory().get("/")
+    anfrage.user = benutzer
+    return menue(anfrage)
