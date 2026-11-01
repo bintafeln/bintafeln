@@ -447,6 +447,26 @@ def test_antraege_krummes_geburtsdatum(admin_client):
     assert Antrag.objects.get(nachname="Richtig").geburtsdatum == dt.date(1990, 2, 1)
 
 
+def test_antraege_anmerkung_eigene_spalte(admin_client):
+    # „Nachricht“ (vom Antragsteller) und „Anmerkung“ (intern) sind getrennte Spalten.
+    from apps.antraege.models import Antrag
+
+    datei = csv_datei(
+        "antraege.csv",
+        "Vorname;Nachname;Nachricht;Anmerkung",
+        "Lena;Muster;Bitte um baldigen Termin;Bescheid lag bei",
+    )
+    sitzung = hochladen(admin_client, "antraege", datei)
+    weiter(admin_client, sitzung)
+    url = reverse("datenimport:abgleich", args=[sitzung.pk])
+    antwort = admin_client.post(url, {"modus": "aktualisieren"})
+    assert antwort.url == reverse("antraege:liste")
+    antrag = Antrag.objects.get(nachname="Muster")
+    assert antrag.nachricht == "Bitte um baldigen Termin"
+    anmerkungen = list(antrag.anmerkungen.all())
+    assert [(x.text, x.von) for x in anmerkungen] == [("Bescheid lag bei", "Import")]
+
+
 def test_antraege_werden_nicht_zusammengefuehrt(admin_client):
     # Anträge kommen als Liste: gleiche Namen (auch ohne Geburtsdatum) werden NICHT
     # zusammengeführt, jede Zeile wird ein eigener Antrag.
