@@ -195,6 +195,8 @@ def bearbeiten(request, pk=None):
     return render(request, "adressen/bearbeiten.html", {
         "form": form, "a": a, "m_form": m_form, "ist_mitglied": ist_mitglied,
         "schon_mitglied": m_form is not None and m_form.instance.pk is not None,
+        "konto_waehlbar": konto_waehlbar,
+        "konto_aktiv": bool(a.konto_id and a.konto.is_active),
     })  # fmt: skip
 
 
