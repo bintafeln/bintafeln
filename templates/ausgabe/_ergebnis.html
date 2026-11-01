@@ -41,19 +41,23 @@
 </section>
 {% if krank %}<p class="karte krank-hinweis" role="status"><strong>Krank gemeldet</strong> ({{ krank.get_krank_grund_display }})
   bis {{ krank.krank_bis|date:"d.m.Y" }}. Abholen darf nur, wer beim Haushalt als abholberechtigt eingetragen ist.</p>{% endif %}
-{% if modul_hinweise %}
-{% with f=modul_hinweise.0.farbe %}
-<section class="karte ampel modul-hinweise {% if f == 'info' %}ampel-unbekannt{% else %}ampel-{{ f }}{% endif %}" role="status">
-  {% for m in modul_hinweise %}<p class="modul-hinweis grund-{{ m.farbe }}"><strong>{{ m.modul }}:</strong> {{ m.text }}</p>
-  {% if m.knopf and m.knopf.recht in rechte %}
-  <form method="post" action="{{ m.knopf.url }}" class="modul-knopf mit-blase">
-    {% csrf_token %}
-    <button type="submit" class="knopf knopf-zweitrangig" aria-describedby="modul-knopf-{{ forloop.counter }}">{{ m.knopf.text }}</button>
-    <span id="modul-knopf-{{ forloop.counter }}" class="blase" role="tooltip">{{ m.knopf.erklaerung }}</span>
-  </form>
-  {% endif %}{% endfor %}
+{% comment %}Reihenfolge links: Ampel, Krankmeldung, dann „Letzte Abholungen“ oben (sieht der
+Einlass am häufigsten an); Aufruf-/Modulhinweise und die Zahlung weiter unten.{% endcomment %}
+{% if einstellungen.einlass_abholungen %}
+<section class="karte">
+  <h2>Letzte Abholungen</h2>
+  {% if abholungen %}
+  <table class="tabelle kompakt">
+    <tbody>
+    {% for a in abholungen %}
+      <tr><td>{{ a.datum|date:"d.m.Y" }}{% if a.uhrzeit %} {{ a.uhrzeit|time:"H:i" }}{% endif %}</td><td>{{ a.ausgabestelle.name|default:"–" }}</td><td class="zahl">{% if a.beitrag is not None %}{{ a.beitrag|floatformat:2 }} €{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="hinweis">Keine.</p>
+  {% endif %}
 </section>
-{% endwith %}
 {% endif %}
 {% if korrekturen_entschieden %}
 <section class="karte korrekturen-entschieden" aria-label="Entschiedene Korrekturen">
@@ -67,6 +71,45 @@
     {% endfor %}
   </ul>
 </section>
+{% endif %}
+
+{% for s in sonderaktionen %}
+<section class="karte sonderaktion">
+  <h2>Sonderaktion: {{ s.aktion }}</h2>
+  {% if s.aktion.beschreibung %}<p class="hinweis">{{ s.aktion.beschreibung }}</p>{% endif %}
+  {% if s.teilnahme %}
+  <p class="sonderaktion-erhalten">✓ Erhalten am {{ s.teilnahme.zeitpunkt|date:"d.m.Y" }}: {{ s.teilnahme.menge }}×{% if s.teilnahme.auswahl %} {{ s.teilnahme.auswahl }}{% endif %}</p>
+  {% url 'ausgabe:teilnahme_zuruecknehmen' s.teilnahme.pk as ziel %}
+  {% include "ausgabe/_zuruecknehmen.html" with art="teilnahme" obj=s.teilnahme ziel=ziel titel="Teilnahme" aufklapp="Teilnahme ist erfolgt: Korrigieren" %}
+  {% elif s.grund %}
+  <p class="hinweis">{{ s.grund }}</p>
+  {% else %}
+  <form method="post" action="{% url 'ausgabe:sonderaktion_eintragen' h.kundennummer s.aktion.pk %}" class="aktionsleiste"
+        hx-post="{% url 'ausgabe:sonderaktion_eintragen' h.kundennummer s.aktion.pk %}" hx-target="#einlass">
+    {% csrf_token %}
+    {% for o in s.auswahl %}
+    <button type="submit" name="auswahl" value="{{ o.pk }}" class="knopf">{{ s.menge }}× {{ o.bezeichnung }}</button>
+    {% empty %}
+    <button type="submit" class="knopf">{{ s.menge }}× ausgeben und eintragen</button>
+    {% endfor %}
+  </form>
+  {% endif %}
+</section>
+{% endfor %}
+
+{% if modul_hinweise %}
+{% with f=modul_hinweise.0.farbe %}
+<section class="karte ampel modul-hinweise {% if f == 'info' %}ampel-unbekannt{% else %}ampel-{{ f }}{% endif %}" role="status">
+  {% for m in modul_hinweise %}<p class="modul-hinweis grund-{{ m.farbe }}"><strong>{{ m.modul }}:</strong> {{ m.text }}</p>
+  {% if m.knopf and m.knopf.recht in rechte %}
+  <form method="post" action="{{ m.knopf.url }}" class="modul-knopf mit-blase">
+    {% csrf_token %}
+    <button type="submit" class="knopf knopf-zweitrangig" aria-describedby="modul-knopf-{{ forloop.counter }}">{{ m.knopf.text }}</button>
+    <span id="modul-knopf-{{ forloop.counter }}" class="blase" role="tooltip">{{ m.knopf.erklaerung }}</span>
+  </form>
+  {% endif %}{% endfor %}
+</section>
+{% endwith %}
 {% endif %}
 
 {% comment %}Bei möglicher Abholung steht alles oben in der Leiste; die Karte nur für Zahlung ohne
@@ -115,47 +158,6 @@ Abholung, Rücknahmen von heute und die Ausnahme{% endcomment %}
     <input type="text" name="begruendung" id="begruendung" required maxlength="500" class="suche">
     <button type="submit" class="knopf knopf-zweitrangig">Ausnahme erteilen</button>
   </form>
-  {% endif %}
-</section>
-{% endif %}
-
-{% for s in sonderaktionen %}
-<section class="karte sonderaktion">
-  <h2>Sonderaktion: {{ s.aktion }}</h2>
-  {% if s.aktion.beschreibung %}<p class="hinweis">{{ s.aktion.beschreibung }}</p>{% endif %}
-  {% if s.teilnahme %}
-  <p class="sonderaktion-erhalten">✓ Erhalten am {{ s.teilnahme.zeitpunkt|date:"d.m.Y" }}: {{ s.teilnahme.menge }}×{% if s.teilnahme.auswahl %} {{ s.teilnahme.auswahl }}{% endif %}</p>
-  {% url 'ausgabe:teilnahme_zuruecknehmen' s.teilnahme.pk as ziel %}
-  {% include "ausgabe/_zuruecknehmen.html" with art="teilnahme" obj=s.teilnahme ziel=ziel titel="Teilnahme" aufklapp="Teilnahme ist erfolgt: Korrigieren" %}
-  {% elif s.grund %}
-  <p class="hinweis">{{ s.grund }}</p>
-  {% else %}
-  <form method="post" action="{% url 'ausgabe:sonderaktion_eintragen' h.kundennummer s.aktion.pk %}" class="aktionsleiste"
-        hx-post="{% url 'ausgabe:sonderaktion_eintragen' h.kundennummer s.aktion.pk %}" hx-target="#einlass">
-    {% csrf_token %}
-    {% for o in s.auswahl %}
-    <button type="submit" name="auswahl" value="{{ o.pk }}" class="knopf">{{ s.menge }}× {{ o.bezeichnung }}</button>
-    {% empty %}
-    <button type="submit" class="knopf">{{ s.menge }}× ausgeben und eintragen</button>
-    {% endfor %}
-  </form>
-  {% endif %}
-</section>
-{% endfor %}
-
-{% if einstellungen.einlass_abholungen %}
-<section class="karte">
-  <h2>Letzte Abholungen</h2>
-  {% if abholungen %}
-  <table class="tabelle kompakt">
-    <tbody>
-    {% for a in abholungen %}
-      <tr><td>{{ a.datum|date:"d.m.Y" }}{% if a.uhrzeit %} {{ a.uhrzeit|time:"H:i" }}{% endif %}</td><td>{{ a.ausgabestelle.name|default:"–" }}</td><td class="zahl">{% if a.beitrag is not None %}{{ a.beitrag|floatformat:2 }} €{% endif %}</td></tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-    <p class="hinweis">Keine.</p>
   {% endif %}
 </section>
 {% endif %}
