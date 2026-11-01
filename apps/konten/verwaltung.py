@@ -80,6 +80,35 @@ def adresse_abgleichen(ziel) -> None:
     )  # fmt: skip
 
 
+# Kategorien, die eine Mitarbeit im Adressbuch sichtbar machen (ADR 0098). Beide werden immer nur
+# ergänzt, nie automatisch entfernt: So bleibt jemand auch nach dem Ausscheiden als (ehemaliger)
+# Helfer auffindbar, z. B. für einen Serienbrief.
+HELFER_KATEGORIE = "Ehrenamtliche Helfer"
+EHEMALIGE_KATEGORIE = "Ehemalige Ehrenamtliche"
+
+
+def _kategorie_ergaenzen(ziel, name) -> None:
+    """Hängt dem Adressbuch-Eintrag des Kontos die genannte Kategorie additiv an. Konten einer
+    Ausgabestelle (Einlass-Tablet) sind keine Person und bleiben außen vor."""
+    from apps.adressen.models import Adresse, AdressKategorie
+
+    if ziel.stelle_id:
+        return
+    adresse = Adresse.objects.filter(konto=ziel).first()
+    if adresse is None:
+        return
+    kategorie, _ = AdressKategorie.objects.get_or_create(name=name)
+    adresse.kategorien.add(kategorie)
+
+
+def helfer_kennzeichnen(ziel) -> None:
+    """Wer ein Konto mit mindestens einer Rolle hat, gilt als ehrenamtlicher Helfer (ADR 0098):
+    die Kategorie „Ehrenamtliche Helfer“ wird additiv gesetzt und bleibt erhalten, auch wenn
+    später eine Rolle wegfällt."""
+    if ziel.groups.exists():
+        _kategorie_ergaenzen(ziel, HELFER_KATEGORIE)
+
+
 def _pruefen(verwalter, ziel):
     if not darf_bearbeiten(verwalter, ziel):
         raise VerwaltungsFehler("Admin-Konten kann nur ein Admin bearbeiten.")
@@ -92,6 +121,7 @@ def rollen_setzen(verwalter, konto, rollen_namen) -> None:
     if set(rollen_namen) - set(vergebbare_rollen(verwalter)):
         raise VerwaltungsFehler("Diese Rolle dürfen Sie nicht vergeben.")
     _rollen_setzen(verwalter, konto, rollen_namen)
+    helfer_kennzeichnen(konto)
 
 
 def _passwort_neu(ziel) -> str:
@@ -116,6 +146,7 @@ def anlegen(verwalter, daten: dict, rollen_namen: list[str], einladung=False):
     ziel.save()
     _rollen_setzen(verwalter, ziel, rollen_namen)
     adresse_abgleichen(ziel)
+    helfer_kennzeichnen(ziel)
     return ziel, passwort
 
 
@@ -133,6 +164,7 @@ def bearbeiten(verwalter, ziel, rollen_namen: list[str]) -> None:
     ziel.save()
     _rollen_setzen(verwalter, ziel, rollen_namen)
     adresse_abgleichen(ziel)
+    helfer_kennzeichnen(ziel)
 
 
 def sperren(verwalter, ziel) -> None:
@@ -143,6 +175,9 @@ def sperren(verwalter, ziel) -> None:
     ziel.gesperrt_am = timezone.now()
     ziel.gesperrt_von = str(verwalter)[:150]
     ziel.save(update_fields=["is_active", "gesperrt_am", "gesperrt_von"])
+    # Ausgeschiedene Mitarbeitende zusätzlich als „Ehemalige“ führen (ADR 0098); die Kategorie
+    # „Ehrenamtliche Helfer“ bleibt dabei erhalten.
+    _kategorie_ergaenzen(ziel, EHEMALIGE_KATEGORIE)
 
 
 def entsperren(verwalter, ziel) -> None:

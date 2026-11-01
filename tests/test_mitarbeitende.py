@@ -143,6 +143,52 @@ def test_anlegen_legt_adresse_an(admin):
     assert Adresse.objects.filter(konto=buero).exists()
 
 
+def test_rolle_macht_ehrenamtlichen_helfer(admin):
+    from apps.adressen.models import Adresse
+
+    # Wer ein Konto mit Rolle hat, wird automatisch als „Ehrenamtliche Helfer“ geführt (ADR 0098).
+    ziel, _ = verwaltung.anlegen(
+        admin, {"username": "lea", "last_name": "Helfer"}, [rollen.AUSGABE]
+    )
+    adr = Adresse.objects.get(konto=ziel)
+    assert verwaltung.HELFER_KATEGORIE in adr.kategorien.values_list("name", flat=True)
+
+
+def test_helfer_kategorie_bleibt_auch_ohne_rolle(admin):
+    from apps.adressen.models import Adresse
+
+    # Additiv und nie automatisch entfernt: fällt später jede Rolle weg, bleibt die Kategorie.
+    ziel, _ = verwaltung.anlegen(
+        admin, {"username": "lea", "last_name": "Helfer"}, [rollen.AUSGABE]
+    )
+    verwaltung.bearbeiten(admin, ziel, [])  # alle Rollen entfernt
+    adr = Adresse.objects.get(konto=ziel)
+    assert verwaltung.HELFER_KATEGORIE in adr.kategorien.values_list("name", flat=True)
+
+
+def test_sperren_setzt_ehemalige(admin):
+    from apps.adressen.models import Adresse
+
+    # Beim Sperren kommt „Ehemalige Ehrenamtliche“ dazu; „Ehrenamtliche Helfer“ bleibt (ADR 0098).
+    ziel, _ = verwaltung.anlegen(
+        admin, {"username": "lea", "last_name": "Helfer"}, [rollen.AUSGABE]
+    )
+    verwaltung.sperren(admin, ziel)
+    namen = set(Adresse.objects.get(konto=ziel).kategorien.values_list("name", flat=True))
+    assert verwaltung.EHEMALIGE_KATEGORIE in namen and verwaltung.HELFER_KATEGORIE in namen
+
+
+def test_sperren_stellen_konto_ohne_adresse(admin):
+    from apps.adressen.models import Adresse
+    from apps.kunden.models import Ausgabestelle
+
+    # Ausgabestellen-Konto ist keine Person: Sperren darf nicht an fehlender Adresse scheitern.
+    stelle = Ausgabestelle.objects.create(name="Mitte")
+    konto, _ = verwaltung.anlegen(admin, {"username": "tablet-mitte", "stelle": stelle}, [])
+    verwaltung.sperren(admin, konto)
+    assert not Adresse.objects.filter(konto=konto).exists()
+
+
 def test_mitarbeiter_braucht_mindestens_eine_rolle(admin_client):
     # Ohne Rolle lässt sich kein Mitarbeiter-Konto anlegen (ADR 0097).
     antwort = neu(admin_client, username="ohnerolle", rollen=[])
