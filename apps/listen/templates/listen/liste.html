@@ -100,9 +100,12 @@
       {% csrf_token %}
       <input type="hidden" name="abfrage" value="{{ abfrage }}">
       <div class="feld"><label for="titel-e">Titel</label><input type="text" name="titel" id="titel-e" maxlength="100" value="{{ eigene.titel }}"></div>
-      {% if darf_teilen %}<div class="feld feld-haken"><label><input type="checkbox" name="fuer_alle" value="1"{% if eigene.fuer_alle %} checked{% endif %}> für alle sichtbar</label></div>{% endif %}
+      {% if darf_teilen %}{% include "listen/_freigabe.html" with praefix="e-" gewaehlt=eigene.sichtbarkeit gewaehlt_stelle=eigene.ausgabestelle_id gewaehlt_person=eigene.fuer_person_id %}{% endif %}
       <button type="submit" class="knopf knopf-zweitrangig">Änderungen übernehmen</button>
       <p class="hinweis">Übernimmt Titel, Freigabe und die aktuellen Einstellungen (Filter, Spalten, Sortierung) in diese gespeicherte Liste.</p>
+    </form>
+    <form method="post" action="{% url 'listen:eigene_loeschen' eigene.pk %}" class="abseits" onsubmit="return confirm('Gespeicherte Liste „{{ eigene.titel|escapejs }}“ löschen?')">
+      {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Diese gespeicherte Liste löschen</button>
     </form>
   </details>
 </section>
@@ -114,7 +117,7 @@
       {% csrf_token %}
       <input type="hidden" name="abfrage" value="{{ abfrage }}">
       <div class="feld"><label for="titel">Titel</label><input type="text" name="titel" id="titel" maxlength="100" value="{{ liste.titel }}"></div>
-      {% if darf_teilen %}<div class="feld feld-haken"><label><input type="checkbox" name="fuer_alle" value="1"> für alle sichtbar</label></div>{% endif %}
+      {% if darf_teilen %}{% include "listen/_freigabe.html" with praefix="n-" gewaehlt="privat" %}{% endif %}
       <button type="submit" class="knopf knopf-zweitrangig">Speichern</button>
       <p class="hinweis">Gespeichert werden nur die Einstellungen (Filter, Spalten, Sortierung), keine Kundendaten.</p>
     </form>
