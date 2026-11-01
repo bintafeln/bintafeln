@@ -174,6 +174,8 @@ def menue(request) -> list[dict]:
     dazu("Verein/Team", [
         ("mitarbeitende.verwalten", _eintrag("Ehrenamtliche", "konten:ehrenamtliche", genau=True)),
         ("mitarbeitende.verwalten", _eintrag("Angestellte", "konten:angestellte", genau=True)),
+        # Auch im Menü, damit hinkommt, wer nur „Verträge & Zeiten“ darf (Rolle Angestellte, ohne
+        # Mitarbeitenden-Verwaltung); für Verwaltende zusätzlich als Reiter unter Angestellte.
         ("personal.sehen", _eintrag("Verträge & Zeiten", "personal:liste", genau=True)),
     ])  # fmt: skip
     dazu("Auswertungen", [

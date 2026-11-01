@@ -6,6 +6,7 @@
   <nav class="reiter" aria-label="Ansicht">
     <a href="{% url 'konten:ehrenamtliche' %}"{% if art == 'ehrenamtlich' %} aria-current="page"{% endif %}>Ehrenamtliche</a>
     <a href="{% url 'konten:angestellte' %}"{% if art == 'fest' %} aria-current="page"{% endif %}>Angestellte</a>
+    {% if art == 'fest' and "personal.sehen" in rechte %}<a href="{% url 'personal:liste' %}">Verträge &amp; Zeiten</a>{% endif %}
     <a href="{% url 'konten:mitarbeitende_archiv' %}"{% if archiv %} aria-current="page"{% endif %}>Archiv (gesperrt)</a>
     <a href="{% url 'konten:stellen' %}">Ausgabestellen</a>
   </nav>

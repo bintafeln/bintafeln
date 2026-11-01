@@ -151,6 +151,7 @@ def adresse(request, pk):
     kontext["darf_konto"] = rollen.darf_mitarbeitende_verwalten(request.user)
     kontext["konto_rollen"] = (list(a.konto.groups.values_list("name", flat=True))
                                if a.konto_id else [])  # fmt: skip
+    kontext["konto_aktiv"] = bool(a.konto_id and a.konto.is_active)
     # Regelmäßige Einsätze dieser Person (nur bei eingeschaltetem Modul, ADR 0097)
     if a.art == Adresse.Art.PERSON:
         if module.aktiv("dienstplan"):
@@ -195,6 +196,41 @@ def bearbeiten(request, pk=None):
         "form": form, "a": a, "m_form": m_form, "ist_mitglied": ist_mitglied,
         "schon_mitglied": m_form is not None and m_form.instance.pk is not None,
     })  # fmt: skip
+
+
+@require_POST
+@rollen.recht_erforderlich("mitarbeitende.verwalten")
+def konto_sperren(request, pk):
+    """„Person hört auf“: sperrt das verknüpfte Konto (Archiv). Die Adresse und die Historie
+    bleiben; die Kategorie „Ehemalige Ehrenamtliche“ kommt dabei automatisch dazu (ADR 0098).
+    Danach ist keine Rolle mehr nötig."""
+    from apps.konten import verwaltung
+
+    a = get_object_or_404(Adresse, pk=pk)
+    if a.konto_id:
+        try:
+            verwaltung.sperren(request.user, a.konto)
+            messages.success(request, f"Konto von „{a.name}“ gesperrt. Die Person bleibt als "
+                             "Adresse erhalten.")  # fmt: skip
+        except verwaltung.VerwaltungsFehler as fehler:
+            messages.error(request, str(fehler))
+    return redirect("adressen:adresse", pk=a.pk)
+
+
+@require_POST
+@rollen.recht_erforderlich("mitarbeitende.verwalten")
+def konto_entsperren(request, pk):
+    """Nimmt die Sperre wieder zurück (Person macht doch weiter)."""
+    from apps.konten import verwaltung
+
+    a = get_object_or_404(Adresse, pk=pk)
+    if a.konto_id:
+        try:
+            verwaltung.entsperren(request.user, a.konto)
+            messages.success(request, f"Konto von „{a.name}“ ist wieder aktiv.")
+        except verwaltung.VerwaltungsFehler as fehler:
+            messages.error(request, str(fehler))
+    return redirect("adressen:adresse", pk=a.pk)
 
 
 def _mitglied_formular(request, a: Adresse):

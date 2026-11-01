@@ -86,8 +86,9 @@ class AdresseForm(forms.ModelForm):
         cleaned = super().clean()
         if cleaned.get("art") == Adresse.Art.ORGANISATION and cleaned.get("konto"):
             self.add_error("konto", "Ein Konto gibt es nur bei einer Person.")
-        # Jedes verknüpfte Konto braucht mindestens eine Rolle (ADR 0097).
-        if self.rollen_bearbeitbar and cleaned.get("konto"):
+        # Jedes aktive Konto braucht mindestens eine Rolle (ADR 0097). Gesperrte (ausgeschiedene)
+        # Personen dürfen ohne Rolle geführt werden – so bleiben sie als reine Adresse erhalten.
+        if self.rollen_bearbeitbar and cleaned.get("konto") and cleaned["konto"].is_active:
             from apps.konten import verwaltung
 
             gewaehlt = set(cleaned.get("rollen") or [])
@@ -95,7 +96,9 @@ class AdresseForm(forms.ModelForm):
                 verwaltung.vergebbare_rollen(self.verwalter)
             )
             if not gewaehlt and not behalten:
-                self.add_error("rollen", "Bitte mindestens eine Rolle wählen.")
+                self.add_error("rollen", "Jedes aktive Konto braucht mindestens eine Rolle. "
+                               "Hört die Person auf? „Konto sperren“ auf ihrer Adressseite – sie "
+                               "bleibt dann als Adresse erhalten.")  # fmt: skip
         return cleaned
 
     def save(self, commit=True):

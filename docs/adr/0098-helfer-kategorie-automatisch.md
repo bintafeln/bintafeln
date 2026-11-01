@@ -32,6 +32,12 @@ Helferfest), ohne sie mit den aktiven Helfern zu vermischen.
 Eine Datenmigration legt die neue Kategorie an und kennzeichnet bestehende Mitarbeiter-Adressen als
 „Ehrenamtliche Helfer“.
 
+**Nachtrag:** Die Pflicht „mindestens eine Rolle“ (ADR 0097) gilt nur für **aktive** Konten.
+Scheidet jemand aus, wird das Konto gesperrt (direkt über „Konto sperren“ auf der Adressseite); ein
+gesperrtes Konto darf rollenlos sein und bleibt so als reine Adresse erhalten. „Verträge & Zeiten“
+(früher „Personal“) ist zusätzlich als Reiter unter „Angestellte“ erreichbar; die Adressseite
+speichert Änderungen sofort (Autosave, ADR 0076).
+
 ## Begründung
 
 Rolle und Kategorie bleiben getrennt (sie lassen sich nicht zusammenlegen: Rollen brauchen ein
