@@ -28,8 +28,10 @@ ihr:
   Oberfläche ist es **eine Maske** bei der Adresse.
 - Stammdaten, Personaldaten (Führerschein, IfSG, Verträge, Arbeitszeit) und die Einteilung in
   Dienstplan und Fahrdienst beziehen sich auf die Person.
-- Eine als **Helfer** markierte, **aktive** Person steht automatisch im Dienstplan und Fahrdienst
-  zur Auswahl. Die Adressliste zeigt und filtert Helfer (aktiv/inaktiv).
+- Wer im Dienstplan oder Fahrdienst einteilbar ist, ergibt sich aus der **Rolle** des Kontos
+  (dort sind Rechte, Fahrer/Beifahrer usw. ohnehin geregelt): Der Fahrdienst nimmt die Rollen
+  **Fahrer** und **Beifahrer** (Fahrer darf fahren), der Dienstplan die Rollen, die die Tafel je
+  Dienstplan in den Einstellungen wählt (Vorgabe **Ausgabe**). So wird nichts doppelt gepflegt.
 - Ihre **Einsatztage** (feste Besetzungen) erscheinen bei der Person.
 
 Das Adressbuch bleibt zugleich der Ort für externe Kontakte (Spender, Märkte, Behörden).
@@ -59,6 +61,11 @@ Import, die Löschfristen und viele Tests. Er kommt deshalb – wie es die Grund
    Sortierung …) und sich das nicht an festen Rollennamen festmachen lässt, werden **alle** Konten
    als Helfer markiert; einzelne Nicht-Helfer kann der Admin im Adressbuch abwählen. Konten einer
    Ausgabestelle (Einlass-Tablet) bleiben außen vor.
+5. **Einteilbarkeit über die Rolle statt über eigene Felder.** Wer im Dienstplan bzw. Fahrdienst
+   zur Auswahl steht, ergibt sich aus der Rolle des Kontos: Fahrdienst = Rolle Fahrer/Beifahrer
+   (Fahrer darf fahren), Dienstplan = die in `DienstplanEinstellungen.rollen` gewählten Rollen
+   (Vorgabe Ausgabe). Die Adress-Felder „Helfer“ und „Fahrdienst“ entfallen damit (Feld-Entfernung
+   als eigener, nächster PR); gepflegt werden nur noch die Rollen.
 
 ## Begründung
 

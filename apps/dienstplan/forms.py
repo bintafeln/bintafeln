@@ -36,9 +36,10 @@ class HelferWahl(forms.ModelChoiceField):
 
 
 def helfer_aktiv():
-    """Die aktiven Helfer aus dem Adressbuch (ADR 0097)."""
-    return (Adresse.objects.filter(helfer=True, helfer_aktiv=True)
-            .order_by("nachname", "vorname"))  # fmt: skip
+    """Die über ihre Rolle im Dienstplan einteilbaren Personen (ADR 0097)."""
+    from apps.dienstplan import plan
+
+    return plan.einteilbare()
 
 
 class EinstellungenForm(forms.ModelForm):
@@ -47,10 +48,22 @@ class EinstellungenForm(forms.ModelForm):
         widget=forms.PasswordInput(render_value=False),
         help_text="Leer lassen = unverändert. Von @BotFather; verschlüsselt gespeichert.",
     )  # fmt: skip
+    rollen = forms.MultipleChoiceField(
+        label="Rollen für den Dienstplan", required=False,
+        widget=forms.CheckboxSelectMultiple,
+        help_text="Wer eine dieser Rollen hat, lässt sich im Dienstplan einteilen. Leer = Ausgabe.",
+    )  # fmt: skip
 
     class Meta:
         model = DienstplanEinstellungen
-        fields = ["selbst_melden", "feiertage_frei", "aufbewahren_monate", "telegram_chats"]
+        fields = ["selbst_melden", "rollen", "feiertage_frei", "aufbewahren_monate",
+                  "telegram_chats"]  # fmt: skip
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from apps.konten import rollen as rollen_modul
+
+        self.fields["rollen"].choices = [(r.name, r.name) for r in rollen_modul.alle_rollen()]
 
     def save(self, commit=True):
         e = super().save(commit=False)
@@ -72,12 +85,16 @@ class StelleForm(forms.ModelForm):
 
 
 class DiensttagForm(forms.ModelForm):
-    teamleitung = HelferWahl(label="Teamleitung", queryset=helfer_aktiv(), required=False,
+    teamleitung = HelferWahl(label="Teamleitung", queryset=Adresse.objects.none(), required=False,
                              help_text="Bekommt Ausfälle dieses Tages per E-Mail.")  # fmt: skip
 
     class Meta:
         model = Diensttag
         fields = ["teamleitung", "telefon"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["teamleitung"].queryset = helfer_aktiv()
 
 
 class AufgabeForm(forms.ModelForm):
@@ -99,7 +116,7 @@ class AufgabeForm(forms.ModelForm):
 class AusfallForm(forms.ModelForm):
     """Wer fällt aus? Wer plant, wählt die Person; sonst der eigene Helfer-Eintrag."""
 
-    helfer = HelferWahl(label="Wer fällt aus?", queryset=helfer_aktiv())
+    helfer = HelferWahl(label="Wer fällt aus?", queryset=Adresse.objects.none())
     dauer = forms.TypedChoiceField(
         label="Wie lange?", coerce=int, required=False, empty_value=1,
         choices=[(1, "nur dieser Tag"), (7, "1 Woche"), (14, "2 Wochen"), (21, "3 Wochen"),
@@ -118,7 +135,9 @@ class AusfallForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["bis"].required = False
         self.fields["grund"].choices = FAHRDIENST_AUSFALLGRUENDE
-        if not planen:
+        if planen:
+            self.fields["helfer"].queryset = helfer_aktiv()
+        else:
             del self.fields["helfer"]
 
     def clean(self):

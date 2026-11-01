@@ -12,7 +12,6 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
-from apps.adressen.models import Adresse
 from apps.ausgabe.ampel import WOCHENTAGE, wochentage
 from apps.core import papierkorb
 from apps.core.pdf import pdf_antwort
@@ -181,8 +180,7 @@ def platz(request, datum, aufgabe):
     frei = plan.verfuegbar(tag)
     if request.method == "POST":
         wahl, gast = request.POST.get("helfer", ""), request.POST.get("gast", "").strip()
-        neu = (get_object_or_404(Adresse, pk=wahl, helfer=True, helfer_aktiv=True)
-               if wahl else None)  # fmt: skip
+        neu = get_object_or_404(plan.einteilbare(), pk=wahl) if wahl else None
         if neu is not None and neu not in frei:
             messages.error(request, f"{neu} kann am {tag:%d.%m.%Y} nicht einspringen "
                                     "(Ausfall gemeldet oder schon eingeteilt).")  # fmt: skip

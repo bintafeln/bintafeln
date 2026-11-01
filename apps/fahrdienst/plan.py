@@ -153,10 +153,10 @@ def verfuegbar(datum: dt.date, nur_fahrer: bool = False) -> tuple[list, list]:
     belegt |= set(Ausfall.objects.filter(ausfallregeln.krank_am(datum))
                   .values_list("person_id", flat=True))  # fmt: skip
     tag = kuerzel(datum)
-    pool = (Adresse.objects.filter(helfer_aktiv=True).exclude(fahrdienst="")
-            .exclude(konto__is_active=False).order_by("nachname", "vorname"))  # fmt: skip
-    if nur_fahrer:
-        pool = pool.filter(fahrdienst="fahrer")
+    # Pool über die Rolle (ADR 0097): Fahrer oder Beifahrer; für einen Fahrerplatz nur Fahrer.
+    namen = [rollen.FAHRER] if nur_fahrer else [rollen.FAHRER, rollen.BEIFAHRER]
+    pool = (Adresse.objects.filter(konto__is_active=True, konto__groups__name__in=namen)
+            .distinct().order_by("nachname", "vorname"))  # fmt: skip
     springer_tage = {s.person_id: s.wochentage for s in Springer.objects.all()}
     springer, weitere = [], []
     for p in pool:

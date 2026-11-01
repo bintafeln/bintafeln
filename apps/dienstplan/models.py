@@ -26,6 +26,10 @@ class DienstplanEinstellungen(models.Model):
         "Helfer mit Konto melden ihren Ausfall selbst", default=True,
         help_text="Aus: Nur wer den Dienstplan plant, trägt Ausfälle ein.",
     )  # fmt: skip
+    rollen = models.JSONField(
+        "Rollen für den Dienstplan", default=list, blank=True,
+        help_text="Wer eine dieser Rollen hat, lässt sich im Dienstplan einteilen. Leer = Ausgabe.",
+    )  # fmt: skip
     feiertage_frei = models.BooleanField(
         "An Feiertagen keine Ausgabe", default=True,
         help_text="Gesetzliche Feiertage des Bundeslands aus den Einstellungen der Tafel.",

@@ -28,8 +28,10 @@ def auskunft_mitarbeiter(benutzer, pdf):
     from apps.core import ausfall as ausfallregeln
     from apps.dienstplan.models import Ausfall, Besetzung, Ersatz
 
-    h = Adresse.objects.filter(konto=benutzer, helfer=True).first()
-    if h is None:
+    h = Adresse.objects.filter(konto=benutzer).first()
+    if h is None or not (Besetzung.objects.filter(helfer=h).exists()
+                         or Ausfall.objects.filter(helfer=h).exists()
+                         or Ersatz.objects.filter(helfer=h).exists()):  # fmt: skip
         return
     pdf.ueberschrift("Dienstplan der Ausgabe")
     pdf.absatz(f"Helfer: {h.name}{', Telefon ' + h.telefon if h.telefon else ''}"

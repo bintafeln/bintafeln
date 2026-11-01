@@ -9,13 +9,18 @@ import contextlib
 import datetime as dt
 import random
 
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.db import transaction
 from django.db.models import ProtectedError
 
 from apps.adressen.models import Adresse
 from apps.dienstplan.models import Aufgabe, Besetzung, DienstStelle, Diensttag
 from apps.dienstplan.plan import STANDARD_AUFGABEN
+from apps.konten import rollen
 from apps.kunden.models import Ausgabestelle
+
+KONTO_PRAEFIX = "beispiel-dp-"
 
 KENNUNG = "Beispiel (erfunden)"
 STELLE = "Beispiel-Ausgabestelle"
@@ -33,7 +38,7 @@ def _zeit(text):
 
 
 def vorhanden() -> bool:
-    return Adresse.objects.filter(notiz=KENNUNG, helfer=True).exists()
+    return Adresse.objects.filter(notiz=KENNUNG).exists()
 
 
 def anlegen(seed: int | None = None) -> dict:
@@ -50,10 +55,20 @@ def anlegen(seed: int | None = None) -> dict:
         namen = [(v, n) for v in VORNAMEN for n in NACHNAMEN]
         zufall.shuffle(namen)
         pro_tag = sum(a[3] for a in AUFGABEN)
-        helfer = [Adresse.objects.create(art=Adresse.Art.PERSON, vorname=v, nachname=n,
-                                         notiz=KENNUNG, helfer=True, helfer_aktiv=True,
-                                         telefon=f"0123 45{i:04d}")  # erfunden
-                  for i, (v, n) in enumerate(namen[:pro_tag + 6])]  # fmt: skip
+        # Einteilbar ist, wer ein Konto mit der Rolle Ausgabe hat (ADR 0097); die erfundenen
+        # Helfer bekommen deshalb ein Konto mit dieser Rolle.
+        ausgabe = Group.objects.get_or_create(name=rollen.AUSGABE)[0]
+        helfer = []
+        for i, (v, n) in enumerate(namen[: pro_tag + 6]):
+            konto = get_user_model().objects.create(
+                username=f"{KONTO_PRAEFIX}{i}", first_name=v, last_name=n, is_active=True
+            )
+            konto.set_unusable_password()
+            konto.save(update_fields=["password"])
+            konto.groups.add(ausgabe)
+            helfer.append(Adresse.objects.create(
+                art=Adresse.Art.PERSON, vorname=v, nachname=n, notiz=KENNUNG, konto=konto,
+                helfer=True, helfer_aktiv=True, telefon=f"0123 45{i:04d}"))  # fmt: skip
         anzahl = 0
         for tag in TAGE:
             frei = zufall.sample(helfer, len(helfer))
@@ -86,8 +101,10 @@ def anlegen(seed: int | None = None) -> dict:
 def entfernen() -> int:
     """Löscht die erfundenen Helfer (mit ihrer Besetzung) und die leere Beispiel-Ausgabestelle."""
     with transaction.atomic():
-        anzahl = (Adresse.objects.filter(notiz=KENNUNG, helfer=True)
+        anzahl = (Adresse.objects.filter(notiz=KENNUNG)
                   .delete()[1].get("adressen.Adresse", 0))  # fmt: skip
+        # Die erfundenen Demo-Konten mitlöschen (nur diese, am Präfix erkennbar).
+        get_user_model().objects.filter(username__startswith=KONTO_PRAEFIX).delete()
         stelle = Ausgabestelle.objects.filter(name=STELLE).first()
         if stelle and not stelle.kundengruppe_set.exists():
             with contextlib.suppress(ProtectedError):  # inzwischen anderweitig benutzt: bleibt
