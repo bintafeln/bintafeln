@@ -27,5 +27,26 @@
       <a class="knopf knopf-abbrechen" href="{% if a.pk %}{% url 'adressen:adresse' a.pk %}{% else %}{% url 'adressen:liste' %}{% endif %}">Abbrechen</a>
     </div>
   </form>
+  {% if konto_waehlbar and a.konto_id %}
+  <div class="konto-ausscheiden">
+    <h2>Mitarbeit beenden</h2>
+    {% if konto_aktiv %}
+    <p class="hinweis">Nur für Personen, die bei der Tafel <strong>aufhören</strong>: Das Konto wird gesperrt (Archiv),
+      eine Rolle ist danach nicht mehr nötig. Die Person bleibt als Adresse erhalten und wird als „Ehemalige
+      Ehrenamtliche“ geführt; Historie (Rollen, Einsätze, Protokoll) bleibt. Anmelden kann sie sich nicht mehr.</p>
+    <form method="post" action="{% url 'adressen:konto_sperren' a.pk %}"
+          onsubmit="return confirm('Hört {{ a.name|escapejs }} wirklich bei der Tafel auf?\n\nDas Konto wird gesperrt und die Person wandert ins Archiv. Nur bestätigen, wenn die Person tatsächlich ausscheidet.')">
+      {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Person hört auf – Konto sperren</button>
+    </form>
+    {% else %}
+    <p class="hinweis">Diese Person ist ausgeschieden; ihr Konto ist gesperrt. „Entsperren“, falls sie doch
+      weitermacht.</p>
+    <form method="post" action="{% url 'adressen:konto_entsperren' a.pk %}"
+          onsubmit="return confirm('Konto von {{ a.name|escapejs }} wieder aktiv setzen?')">
+      {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">Konto entsperren (macht wieder mit)</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
 </section>
 {% endblock %}

@@ -97,8 +97,8 @@ class AdresseForm(forms.ModelForm):
             )
             if not gewaehlt and not behalten:
                 self.add_error("rollen", "Jedes aktive Konto braucht mindestens eine Rolle. "
-                               "Hört die Person auf? „Konto sperren“ auf ihrer Adressseite – sie "
-                               "bleibt dann als Adresse erhalten.")  # fmt: skip
+                               "Hört die Person auf? Unten „Person hört auf – Konto sperren“ – "
+                               "sie bleibt dann ohne Rolle als Adresse erhalten.")  # fmt: skip
         return cleaned
 
     def save(self, commit=True):
