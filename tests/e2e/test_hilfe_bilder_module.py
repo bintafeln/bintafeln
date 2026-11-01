@@ -151,8 +151,9 @@ def test_hilfe_bild_dienstplan(angemeldet, admin, muster, benutzer_mit_rolle, re
     ines = benutzer_mit_rolle("ines", rollen.AUSGABE)
     ines.first_name, ines.last_name = "Ines", "Probe"
     ines.save()
-    helferin = Adresse.objects.create(art=Adresse.Art.PERSON, vorname="Ines", nachname="Probe",
-                                      helfer=True, helfer_aktiv=True, konto=ines)  # fmt: skip
+    helferin = Adresse.objects.create(
+        art=Adresse.Art.PERSON, vorname="Ines", nachname="Probe", konto=ines
+    )
     b = Besetzung.objects.filter(aufgabe__stelle=stelle, aufgabe__name="Brot")
     b.update(helfer=helferin)
     seite.context.clear_cookies()
@@ -238,7 +239,7 @@ def test_hilfe_bild_fahrdienst(angemeldet, admin, muster):
 
     from apps.adressen.models import Adresse
 
-    kai_person = Adresse.objects.get(nachname="Nordmann", fahrdienst="fahrer")
+    kai_person = Adresse.objects.get(nachname="Nordmann")
     kai = get_user_model().objects.create_user("kai-fahrer", first_name="Kai", last_name="Nordmann")
     kai.groups.add(Group.objects.get(name=rollen.FAHRER))
     kai_person.konto = kai
@@ -352,8 +353,9 @@ def test_hilfe_bild_aushang(angemeldet, admin, muster, benutzer_mit_rolle, recht
     ines = benutzer_mit_rolle("ines", rollen.AUSGABE)
     ines.first_name, ines.last_name = "Ines", "Probe"
     ines.save()
-    helferin = Adresse.objects.create(art=Adresse.Art.PERSON, vorname="Ines", nachname="Probe",
-                                      helfer=True, helfer_aktiv=True, konto=ines)  # fmt: skip
+    helferin = Adresse.objects.create(
+        art=Adresse.Art.PERSON, vorname="Ines", nachname="Probe", konto=ines
+    )
     brot = stelle.aufgaben.get(wochentag="Fr", name="Brot")
     Besetzung.objects.filter(aufgabe=brot).update(helfer=helferin)
     pin.setzen(ines, "482915")

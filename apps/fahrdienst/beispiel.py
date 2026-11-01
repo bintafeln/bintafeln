@@ -39,8 +39,7 @@ def _person(name: str, rolle: str) -> Adresse:
     konto.save(update_fields=["password"])
     konto.groups.add(Group.objects.get_or_create(name=gruppe)[0])
     return Adresse.objects.create(art=Adresse.Art.PERSON, vorname=vorname, nachname=nachname,
-                                  notiz=KENNUNG, konto=konto, helfer_aktiv=True,
-                                  fahrdienst=rolle)  # fmt: skip
+                                  notiz=KENNUNG, konto=konto)  # fmt: skip
 
 
 def vorhanden() -> bool:

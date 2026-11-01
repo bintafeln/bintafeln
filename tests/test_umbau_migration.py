@@ -13,7 +13,8 @@ from django.db.migrations.executor import MigrationExecutor
 
 pytestmark = pytest.mark.django_db(transaction=True)
 
-VOR_UMBAU = {"dienstplan": "0003_wieder_gesund", "fahrdienst": "0006_wieder_gesund"}
+VOR_UMBAU = {"dienstplan": "0003_wieder_gesund", "fahrdienst": "0006_wieder_gesund",
+             "adressen": "0006_adresse_fahrdienst"}  # fmt: skip
 
 
 def _migriere(ziele):
@@ -67,9 +68,9 @@ def _mitarbeiter_werden_adressen():
     neu = MigrationExecutor(connection).loader.project_state().apps
     Adresse = neu.get_model("adressen", "Adresse")
     a_helfer = Adresse.objects.get(konto=helfer.pk)
-    assert a_helfer.nachname == "Ausgabe" and a_helfer.helfer and a_helfer.helfer_aktiv
-    # Alle Mitarbeiter-Konten werden Helfer – auch das Büro-Konto
-    assert Adresse.objects.get(konto=buero.pk).helfer is True
+    assert a_helfer.nachname == "Ausgabe"
+    # Auch das Büro-Konto wird eine Person im Adressbuch
+    assert Adresse.objects.filter(konto=buero.pk).exists()
 
 
 def _umbau_mit_echten_daten():
@@ -111,9 +112,9 @@ def _umbau_mit_echten_daten():
     DBesetzung2 = neu.get_model("dienstplan", "Besetzung")
     FBesetzung2 = neu.get_model("fahrdienst", "Besetzung")
 
-    assert Adresse.objects.filter(helfer=True, nachname="Muster").exists()
-    assert Adresse.objects.filter(fahrdienst="fahrer", konto=konto.pk).exists()
+    assert Adresse.objects.filter(nachname="Muster").exists()
+    assert Adresse.objects.filter(konto=konto.pk).exists()
     b = DBesetzung2.objects.get(aufgabe=aufgabe.pk)
-    assert b.helfer_id and Adresse.objects.get(pk=b.helfer_id).helfer
+    assert b.helfer_id and Adresse.objects.get(pk=b.helfer_id).nachname == "Muster"
     f = FBesetzung2.objects.get(tour=tour.pk)
-    assert f.person_id and Adresse.objects.get(pk=f.person_id).fahrdienst == "fahrer"
+    assert f.person_id and Adresse.objects.get(pk=f.person_id).konto_id == konto.pk

@@ -38,10 +38,8 @@ def person(benutzer_mit_rolle, name, rolle=rollen.FAHRER, email=""):
     b = benutzer_mit_rolle(vorname.lower(), rolle)
     b.first_name, b.last_name, b.email = vorname, nachname, email
     b.save()
-    fahrdienst = "fahrer" if rolle == rollen.FAHRER else "beifahrer"
     return Adresse.objects.create(art=Adresse.Art.PERSON, vorname=vorname, nachname=nachname,
-                                  email=email, konto=b, helfer_aktiv=True,
-                                  fahrdienst=fahrdienst)  # fmt: skip
+                                  email=email, konto=b)  # fmt: skip
 
 
 @pytest.fixture

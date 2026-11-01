@@ -38,7 +38,7 @@ def buero_freigegeben():
 
 def neu(client, **daten):
     werte = {"username": "max", "first_name": "Max", "last_name": "Beispiel",
-             "beschaeftigung": "ehrenamtlich", **daten}  # fmt: skip
+             "beschaeftigung": "ehrenamtlich", "rollen": [rollen.AUSGABE], **daten}  # fmt: skip
     return client.post(NEU, werte)
 
 
@@ -129,20 +129,25 @@ def test_bearbeiten(admin_client, benutzer_mit_rolle):
     assert "Kim Probe gespeichert" in admin_client.get(LISTE).content.decode()
 
 
-def test_anlegen_legt_adresse_an_und_markiert_helfer(admin):
+def test_anlegen_legt_adresse_an(admin):
     from apps.adressen.models import Adresse
 
-    # Jedes Mitarbeiter-Konto wird eine Person im Adressbuch und ein Helfer (ADR 0097) –
-    # Helfer sind überall tätig (Ausgabe, Fahrdienst, Büro, Lager, Sortierung …).
+    # Jedes Mitarbeiter-Konto wird eine Person im Adressbuch (ADR 0097); die Einteilbarkeit
+    # regelt die Rolle, nicht mehr ein eigenes Helfer-Feld.
     ziel, _ = verwaltung.anlegen(
         admin, {"username": "lea", "first_name": "Lea", "last_name": "Helfer"}, [rollen.AUSGABE]
     )
     adr = Adresse.objects.get(konto=ziel)
     assert adr.art == Adresse.Art.PERSON and adr.name == "Lea Helfer"
-    assert adr.helfer and adr.helfer_aktiv
-    # Auch ein Büro-Konto wird als Helfer markiert
     buero, _ = verwaltung.anlegen(admin, {"username": "bo"}, [rollen.BUERO])
-    assert Adresse.objects.get(konto=buero).helfer is True
+    assert Adresse.objects.filter(konto=buero).exists()
+
+
+def test_mitarbeiter_braucht_mindestens_eine_rolle(admin_client):
+    # Ohne Rolle lässt sich kein Mitarbeiter-Konto anlegen (ADR 0097).
+    antwort = neu(admin_client, username="ohnerolle", rollen=[])
+    assert "rollen" in antwort.context["form"].errors
+    assert not get_user_model().objects.filter(username="ohnerolle").exists()
 
 
 def test_ausgabestellen_konto_bekommt_keine_adresse(admin):

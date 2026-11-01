@@ -34,12 +34,11 @@
   </form>
   {% endif %}
 </section>
-{% if a.helfer or a.fahrdienst or darf_konto and a.konto_id %}
+{% if a.konto_id or dienst_einsaetze or fahr_einsaetze %}
 <section class="karte">
   <h2>Mitarbeit</h2>
   <dl class="angaben">
-    {% if a.helfer %}<dt>Helfer</dt><dd>{% if a.helfer_aktiv %}aktiv – kann im Dienstplan und Fahrdienst eingeteilt werden{% else %}inaktiv (wird nicht vorgeschlagen){% endif %}</dd>{% endif %}
-    {% if a.fahrdienst %}<dt>Fahrdienst</dt><dd>{{ a.get_fahrdienst_display }}</dd>{% endif %}
+    {% if a.konto_id %}<dt>Rollen</dt><dd>{% for r in konto_rollen %}<span class="marke-rolle">{{ r }}</span> {% empty %}<span class="leise">keine Rolle</span>{% endfor %}</dd>{% endif %}
     {% if darf_konto and a.konto_id %}<dt>Konto</dt><dd><a href="{% url 'konten:mitarbeiter' a.konto_id %}">{{ a.konto }}</a> · <a href="{% url 'konten:stammdaten' a.konto_id %}">Stammdaten ansehen</a></dd>{% endif %}
   </dl>
   {% if dienst_einsaetze %}
@@ -54,7 +53,7 @@
     {% for tag, text in fahr_einsaetze %}<li><strong>{{ tag }}</strong> · {{ text }}</li>{% endfor %}
   </ul>
   {% endif %}
-  {% if a.helfer and dienst_einsaetze is not None and not dienst_einsaetze and fahr_einsaetze is not None and not fahr_einsaetze %}
+  {% if a.konto_id and dienst_einsaetze is not None and not dienst_einsaetze and fahr_einsaetze is not None and not fahr_einsaetze %}
   <p class="leise">Noch keine festen Einsätze eingeteilt.</p>
   {% endif %}
 </section>

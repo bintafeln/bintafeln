@@ -49,8 +49,9 @@ def _im_verein(adressen, wahl: str):
     if wahl == "passiv":
         return adressen.filter(mitglied, mitglied__art="Passives Mitglied")
     if wahl == "helfer":
-        # Kennzeichen helfer=True oder (noch) die alte Kategorie „Ehrenamtliche Helfer“
-        return adressen.filter(Q(helfer=True) | Q(kategorien__name=HELFER)
+        # Mitarbeitende (Person mit Konto), die alte Kategorie „Ehrenamtliche Helfer“ oder aktive
+        # Mitglieder gelten als Helfer (ADR 0097: Einteilbarkeit regelt die Rolle des Kontos).
+        return adressen.filter(Q(konto__isnull=False) | Q(kategorien__name=HELFER)
                                | (mitglied & Q(mitglied__art="Aktives Mitglied")))  # fmt: skip
     if wahl == "spender":
         return adressen.filter(Q(kategorien__name="Spender") | Q(spenden__isnull=False))
@@ -88,7 +89,7 @@ SORTIERUNG = {
 }
 # Spalten zum Zu-/Abwählen je Person (Name öffnet die Adresse und bleibt immer sichtbar).
 SPALTEN = [("name", "Name"), ("ort", "Ort"), ("telefon", "Telefon"), ("email", "E-Mail"),
-           ("kategorien", "Kategorien"), ("helfer", "Helfer")]  # fmt: skip
+           ("kategorien", "Kategorien"), ("helfer", "Mitarbeit")]  # fmt: skip
 SPALTEN_FEST = {"name"}
 
 
@@ -102,7 +103,9 @@ def liste(request):
         return listenexport.ausliefern(request, "Adressbuch", basis,
                                        importieren.exportieren(adressen),
                                        weiter=reverse("adressen:liste"))  # fmt: skip
-    seite = Paginator(adressen.select_related("mitglied"), 50).get_page(request.GET.get("seite"))
+    seite = Paginator(
+        adressen.select_related("mitglied", "konto").prefetch_related("konto__groups"), 50
+    ).get_page(request.GET.get("seite"))
     abfrage = request.GET.copy()
     abfrage.pop("seite", None)
     return render(request, "adressen/liste.html", {
@@ -146,6 +149,8 @@ def adresse(request, pk):
         kontext["zeige_mitglied"] = True
     # Verknüpftes Konto und seine Stammdaten nur für Mitarbeitenden-Verwalter
     kontext["darf_konto"] = rollen.darf_mitarbeitende_verwalten(request.user)
+    kontext["konto_rollen"] = (list(a.konto.groups.values_list("name", flat=True))
+                               if a.konto_id else [])  # fmt: skip
     # Regelmäßige Einsätze dieser Person (nur bei eingeschaltetem Modul, ADR 0097)
     if a.art == Adresse.Art.PERSON:
         if module.aktiv("dienstplan"):
@@ -164,7 +169,8 @@ def adresse(request, pk):
 def bearbeiten(request, pk=None):
     a = get_object_or_404(Adresse, pk=pk) if pk else Adresse()
     konto_waehlbar = rollen.darf_mitarbeitende_verwalten(request.user)
-    form = AdresseForm(request.POST or None, instance=a, konto_waehlbar=konto_waehlbar)
+    form = AdresseForm(request.POST or None, instance=a, konto_waehlbar=konto_waehlbar,
+                       verwalter=request.user)  # fmt: skip
     m_form, ist_mitglied = _mitglied_formular(request, a)
     gueltig = form.is_valid() and (not ist_mitglied or m_form.is_valid())
     if request.method == "POST" and gueltig:
@@ -173,6 +179,7 @@ def bearbeiten(request, pk=None):
             a.geaendert_am, a.geaendert_von = timezone.now(), request.user.get_username()
             a.save()
             form.save_m2m()
+            form.rollen_anwenden()  # Rollen auf das verknüpfte Konto schreiben (ADR 0097)
             if m_form is not None and ist_mitglied:
                 from apps.mitglieder.models import nummer_verbraucht
 

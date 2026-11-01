@@ -57,38 +57,41 @@ def _rollen_setzen(verwalter, ziel, rollen_namen) -> None:
 
 
 def adresse_abgleichen(ziel) -> None:
-    """Jedes Mitarbeiter-Konto ist eine Person im Adressbuch (ADR 0097) und ein ehrenamtlicher
-    Helfer (im Dienst-/Fahrdienstplan einteilbar). Helfer sind überall tätig – Ausgabe,
-    Fahrdienst, Büro, Lager, Sortierung … –, deshalb werden alle Konten als Helfer markiert.
-    Konten einer Ausgabestelle (Einlass-Tablet) bleiben außen vor; sie sind keine Person."""
-    if ziel.stelle_id:
-        return
+    """Jedes Mitarbeiter-Konto ist eine Person im Adressbuch (ADR 0097): fehlt die verknüpfte
+    Adresse, wird sie aus den Kontodaten angelegt. Ob jemand im Dienstplan/Fahrdienst einteilbar
+    ist, ergibt sich aus der Rolle. Konten einer Ausgabestelle (Einlass-Tablet) bleiben außen vor;
+    sie sind keine Person."""
     from apps.adressen.models import Adresse
 
-    adr = Adresse.objects.filter(konto=ziel).first()
-    if adr is None:
-        stamm = getattr(ziel, "stammdaten", None)
-        adr = Adresse(
-            art=Adresse.Art.PERSON, konto=ziel,
-            vorname=(ziel.first_name or "")[:100],
-            nachname=(ziel.last_name or ziel.get_username())[:100],
-            email=ziel.email or "", helfer=True, helfer_aktiv=ziel.is_active,
-            anrede=getattr(stamm, "anrede", "") or "",
-            strasse=getattr(stamm, "strasse", "") or "",
-            plz=getattr(stamm, "plz", "") or "",
-            ort=getattr(stamm, "ort", "") or "",
-            telefon=getattr(stamm, "telefon", "") or "",
-            mobil=getattr(stamm, "handy", "") or "",
-        )  # fmt: skip
-        adr.save()
-    elif not adr.helfer:  # vorhandene Adresse (z. B. aus dem Fahrdienst) als Helfer markieren
-        adr.helfer = True
-        adr.save(update_fields=["helfer"])
+    if ziel.stelle_id or Adresse.objects.filter(konto=ziel).exists():
+        return
+    stamm = getattr(ziel, "stammdaten", None)
+    Adresse.objects.create(
+        art=Adresse.Art.PERSON, konto=ziel,
+        vorname=(ziel.first_name or "")[:100],
+        nachname=(ziel.last_name or ziel.get_username())[:100],
+        email=ziel.email or "",
+        anrede=getattr(stamm, "anrede", "") or "",
+        strasse=getattr(stamm, "strasse", "") or "",
+        plz=getattr(stamm, "plz", "") or "",
+        ort=getattr(stamm, "ort", "") or "",
+        telefon=getattr(stamm, "telefon", "") or "",
+        mobil=getattr(stamm, "handy", "") or "",
+    )  # fmt: skip
 
 
 def _pruefen(verwalter, ziel):
     if not darf_bearbeiten(verwalter, ziel):
         raise VerwaltungsFehler("Admin-Konten kann nur ein Admin bearbeiten.")
+
+
+def rollen_setzen(verwalter, konto, rollen_namen) -> None:
+    """Öffentliche Fassung für die Adress-Maske (ADR 0097): prüft wie beim Bearbeiten und setzt
+    die vergebbaren Rollen; nicht vergebbare Rollen bleiben."""
+    _pruefen(verwalter, konto)
+    if set(rollen_namen) - set(vergebbare_rollen(verwalter)):
+        raise VerwaltungsFehler("Diese Rolle dürfen Sie nicht vergeben.")
+    _rollen_setzen(verwalter, konto, rollen_namen)
 
 
 def _passwort_neu(ziel) -> str:

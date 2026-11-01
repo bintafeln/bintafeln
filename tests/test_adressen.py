@@ -191,28 +191,33 @@ def test_filter_im_verein(admin_client, benutzer_mit_rolle, anmelden, client):
     assert antwort.context["filter"]["verein"] == ""
 
 
-def test_helfer_und_konto_verknuepfen(admin_client, django_user_model):
+def test_konto_und_rollen_verknuepfen(admin_client, django_user_model):
     konto = django_user_model.objects.create_user("helga", first_name="Helga",
                                                    last_name="Helfer")  # fmt: skip
     neu = reverse("adressen:neu")
-    # Die Maske bietet den Abschnitt „Mitarbeit"
-    assert "<legend>Mitarbeit</legend>" in admin_client.get(neu).content.decode()
+    # Die Maske bietet den Abschnitt „Mitarbeit" mit Rollen-Häkchen
+    inhalt = admin_client.get(neu).content.decode()
+    assert "<legend>Mitarbeit</legend>" in inhalt and "Rollen" in inhalt
+    # Ohne Rolle lässt sich ein Konto nicht verknüpfen
+    fehlt = admin_client.post(neu, {
+        "art": "person", "vorname": "Helga", "nachname": "Helfer", "konto": konto.pk,
+    }).content.decode()  # fmt: skip
+    assert "mindestens eine Rolle" in fehlt
+    # Mit Rolle Ausgabe: Konto verknüpft und Rolle gesetzt
     antwort = admin_client.post(neu, {
         "art": "person", "vorname": "Helga", "nachname": "Helfer", "plz": "1", "ort": "X",
-        "helfer": "on", "helfer_aktiv": "on", "konto": konto.pk,
+        "konto": konto.pk, "rollen": [rollen.AUSGABE],
     })  # fmt: skip
     a = Adresse.objects.get(nachname="Helfer")
     assert antwort.url == reverse("adressen:adresse", args=[a.pk])
-    assert a.helfer and a.helfer_aktiv and a.konto_id == konto.pk
-    # Detailseite: Abschnitt Mitarbeit mit Verweis auf die Stammdaten des Kontos
+    assert a.konto_id == konto.pk
+    assert set(konto.groups.values_list("name", flat=True)) == {rollen.AUSGABE}
+    # Detailseite: Abschnitt Mitarbeit mit Rolle und Verweis auf die Stammdaten des Kontos
     seite = admin_client.get(antwort.url).content.decode()
-    assert "Mitarbeit" in seite and "Stammdaten" in seite
-    # Liste: Filter „ehrenamtliche Helfer" findet sie, Spalte zeigt „Helfer"
+    assert "Mitarbeit" in seite and "Ausgabe" in seite and "Stammdaten" in seite
+    # Liste: Filter „ehrenamtliche Helfer" findet Mitarbeitende, Spalte zeigt die Rolle
     liste = admin_client.get(LISTE, {"verein": "helfer"})
-    assert a in list(liste.context["seite"]) and "Helfer" in liste.content.decode()
-    # Inaktiv geschaltet steht „inaktiv" in der Liste
-    Adresse.objects.filter(pk=a.pk).update(helfer_aktiv=False)
-    assert "inaktiv" in admin_client.get(LISTE).content.decode()
+    assert a in list(liste.context["seite"]) and "Ausgabe" in liste.content.decode()
 
 
 def test_konto_nur_bei_person(admin_client, django_user_model):
@@ -236,9 +241,7 @@ def test_einsatztage_bei_der_person(admin_client, pdf_text):
     from apps.fahrdienst import plan as fplan
     from apps.kunden.models import Ausgabestelle
 
-    person = Adresse.objects.create(
-        art=Adresse.Art.PERSON, vorname="Max", nachname="Muster",
-        helfer=True, helfer_aktiv=True, fahrdienst="fahrer")  # fmt: skip
+    person = Adresse.objects.create(art=Adresse.Art.PERSON, vorname="Max", nachname="Muster")
     # Dienstplan: Freitag an der Ausgabestelle Mitte, Aufgabe Kasse
     stelle = Ausgabestelle.objects.create(name="Mitte")
     ds = dp.DienstStelle.objects.create(ausgabestelle=stelle, aktiv=True, tage="Fr")
@@ -264,4 +267,4 @@ def test_einsatztage_bei_der_person(admin_client, pdf_text):
     assert "Einsätze im Fahrdienst" in seite and "Tour Nord: Fahrer" in seite
     text = pdf_text(admin_client.get(reverse("adressen:auskunft", args=[person.pk])))
     assert "Regelmäßige Einsätze" in text and "Kasse" in text and "Fahrer" in text
-    assert "Fahrdienst" in text  # Mitarbeit zeigt die Fahrer-Rolle
+    assert "Fahrdienst" in text  # Spalte „Bereich" der Einsätze-Tabelle
