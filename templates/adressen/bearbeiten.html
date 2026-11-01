@@ -6,7 +6,7 @@
   <h1>{% if a.pk %}{{ a.name }} bearbeiten{% else %}Neue Adresse{% endif %}</h1>
   <p class="hinweis">Bei einer Organisation genügt der Name der Organisation; bei einer Person der Nachname. Einwilligungen
     mit dem Datum eintragen, an dem sie erteilt wurden; leer = keine Einwilligung.</p>
-  <form method="post">
+  <form method="post"{% if a.pk %} data-autosave{% endif %}>
     {% csrf_token %}
     {% include "includes/formular_abschnitte.html" %}
     {% if m_form %}

@@ -220,6 +220,32 @@ def test_konto_und_rollen_verknuepfen(admin_client, django_user_model):
     assert a in list(liste.context["seite"]) and "Ausgabe" in liste.content.decode()
 
 
+def test_ausgeschiedener_ohne_rolle_und_sperren(admin_client, django_user_model):
+    from apps.konten import verwaltung
+
+    konto = django_user_model.objects.create_user("jan", first_name="Jan", last_name="Beispiel")
+    admin_client.post(reverse("adressen:neu"), {
+        "art": "person", "vorname": "Jan", "nachname": "Beispiel", "plz": "1", "ort": "X",
+        "konto": konto.pk, "rollen": [rollen.BEIFAHRER]})  # fmt: skip
+    a = Adresse.objects.get(nachname="Beispiel")
+    bearb = reverse("adressen:bearbeiten", args=[a.pk])
+    daten = {"art": "person", "vorname": "Jan", "nachname": "Beispiel", "plz": "1", "ort": "X",
+             "konto": konto.pk}  # fmt: skip
+    # Solange das Konto aktiv ist, ist mindestens eine Rolle Pflicht.
+    assert "mindestens eine Rolle" in admin_client.post(bearb, daten).content.decode()
+    # „Konto sperren" (Person hört auf): archiviert, Kategorie Ehemalige, Historie bleibt.
+    admin_client.post(reverse("adressen:konto_sperren", args=[a.pk]))
+    konto.refresh_from_db()
+    assert not konto.is_active
+    assert verwaltung.EHEMALIGE_KATEGORIE in a.kategorien.values_list("name", flat=True)
+    # Jetzt lässt sich die Person ohne Rolle speichern.
+    assert admin_client.post(bearb, daten).status_code == 302
+    # Entsperren macht das Konto wieder aktiv.
+    admin_client.post(reverse("adressen:konto_entsperren", args=[a.pk]))
+    konto.refresh_from_db()
+    assert konto.is_active
+
+
 def test_konto_nur_bei_person(admin_client, django_user_model):
     konto = django_user_model.objects.create_user("firmenkonto")
     fehlt = admin_client.post(reverse("adressen:neu"), {
