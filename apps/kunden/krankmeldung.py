@@ -8,9 +8,10 @@ darf, legt allein die Verwaltung beim Haushalt fest (Abholer), nicht die Krankme
 
 import datetime as dt
 
+from django.db.models import Exists, OuterRef
 from django.utils import timezone
 
-from apps.kunden.models import Haushalt, KundenEinstellungen, Notiz
+from apps.kunden.models import Abholung, Haushalt, KundenEinstellungen, Notiz
 
 LAENGSTENS_TAGE = 365
 
@@ -52,7 +53,20 @@ def melden(h: Haushalt, benutzer, von, bis, grund: str, anmerkung: str = "") -> 
 
 
 def aktuelle(kundennummer: str, heute: dt.date | None = None) -> Notiz | None:
-    """Die Krankmeldung, die heute gilt (die am längsten laufende)."""
+    """Die Krankmeldung, die heute gilt (die am längsten laufende).
+
+    Fällt weg, sobald der Kunde seit dem Beginn schon einmal abgeholt hat: Wer wieder kommt,
+    ist offenbar nicht mehr krank, dann muss niemand die Meldung von Hand löschen.
+    """
     heute = heute or timezone.localdate()
     return (Notiz.objects.filter(kundennummer=kundennummer, krank_von__lte=heute,
-                                 krank_bis__gte=heute).order_by("-krank_bis").first())  # fmt: skip
+                                 krank_bis__gte=heute).exclude(_ueberholt())
+            .order_by("-krank_bis").first())  # fmt: skip
+
+
+def _ueberholt():
+    """Bedingung: Es gibt seit ``krank_von`` schon eine Abholung desselben Haushalts."""
+    abgeholt = Abholung.objects.filter(
+        haushalt__kundennummer=OuterRef("kundennummer"), datum__gte=OuterRef("krank_von")
+    )
+    return Exists(abgeholt)

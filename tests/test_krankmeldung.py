@@ -41,7 +41,7 @@ def an():
 
 def test_ausgeschaltet_kein_formular(h, admin_client):
     seite = admin_client.get(reverse("kunden:haushalt", args=["00042"])).content.decode()
-    assert "Krank gemeldet …" not in seite
+    assert "Krank melden …" not in seite
     daten = {"krank_grund": "krank", "krank_von": HEUTE.isoformat()}
     antwort = admin_client.post(reverse("kunden:krank_neu", args=["00042"]), daten)
     assert antwort.status_code == 403 and not Notiz.objects.exists()
@@ -49,7 +49,8 @@ def test_ausgeschaltet_kein_formular(h, admin_client):
 
 def test_melden_in_der_verwaltung(h, an, admin_client):
     url = reverse("kunden:haushalt", args=["00042"])
-    assert "Krank gemeldet …" in admin_client.get(url).content.decode()
+    seite = admin_client.get(url).content.decode()
+    assert "Krank melden …" in seite and 'summary class="knopf knopf-vorlage"' in seite
     bis = HEUTE + dt.timedelta(days=13)
     admin_client.post(reverse("kunden:krank_neu", args=["00042"]), {
         "krank_grund": "reha", "krank_von": HEUTE.isoformat(), "krank_bis": bis.isoformat(),
@@ -99,3 +100,21 @@ def test_nach_dem_ende_weg(h, an, admin_client):
     fristen_anwenden()
     assert not Notiz.objects.filter(pk=alt.pk).exists()
     assert Notiz.objects.filter(text="Bringt Bescheid").exists()
+
+
+def test_faellt_weg_wenn_kunde_wieder_kommt(h, an, admin):
+    """Kommt der Kunde innerhalb der laufenden Zeit, ist er offenbar nicht mehr krank: Die
+    Meldung wird nicht mehr angezeigt und beim täglichen Lauf gelöscht."""
+    from apps.kunden.models import Abholung
+
+    n = krankmeldung.melden(h, admin, HEUTE - dt.timedelta(days=2), HEUTE + dt.timedelta(days=5),
+                            "krank")  # fmt: skip
+    assert krankmeldung.aktuelle("00042") == n
+    # Abholung vor dem Beginn zählt nicht.
+    Abholung.objects.create(haushalt=h, datum=HEUTE - dt.timedelta(days=4))
+    assert krankmeldung.aktuelle("00042") == n
+    # Abholung ab dem Beginn hebt die Meldung auf.
+    Abholung.objects.create(haushalt=h, datum=HEUTE)
+    assert krankmeldung.aktuelle("00042") is None
+    fristen_anwenden()
+    assert not Notiz.objects.filter(pk=n.pk).exists()
