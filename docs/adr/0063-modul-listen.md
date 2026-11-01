@@ -33,3 +33,13 @@ Berichte. Bisher entstanden sie per Export und Excel.
 Ein Katalog mit wenigen, klaren Bausteinen deckt die meisten Wünsche ab, ohne für jede Liste
 eigenen Code zu schreiben; neue Listen sind ein Eintrag im Katalog. Die Rechte der Kundendaten
 gelten unverändert, Exporte bleiben nachvollziehbar.
+
+## Nachtrag: Freigabe-Ziele mehrfach wählbar (2026-11-01)
+
+Die Sichtbarkeit einer eigenen Liste (`EigeneListe.sichtbarkeit`) kann auf bestimmte Ziele
+eingeschränkt werden: „Bestimmte Ausgabestellen“ (`ausgabestellen`) oder „Bestimmte Personen“
+(`fuer_personen`). Beide sind `ManyToManyField`, es lassen sich also mehrere auf einmal wählen
+(Mehrfachauswahl-Widget wie im Kern, `static/js/mehrfachauswahl.js`). `sichtbar_fuer()` prüft, ob
+eine der gewählten Ausgabestellen zu den Stellen des Benutzers gehört bzw. ob der Benutzer unter
+den gewählten Personen ist. Vorher war je Liste nur eine Ausgabestelle oder eine Person möglich;
+die Migration übernimmt vorhandene Einzelwerte in die neuen Mehrfachfelder.

@@ -244,16 +244,34 @@ def test_eigene_liste_sichtbarkeit(admin_client, daten, benutzer_mit_rolle, anme
                       {"titel": "Nur Mitte", "abfrage": "geladen=1",
                        "sichtbarkeit": "stelle", "ausgabestelle": mitte.pk})  # fmt: skip
     e = EigeneListe.objects.get()
-    assert e.sichtbarkeit == "stelle" and e.ausgabestelle_id == mitte.pk
+    assert e.sichtbarkeit == "stelle" and list(e.ausgabestellen.all()) == [mitte]
     assert oeffnen(ca, e) == 302 and oeffnen(cb, e) == 404
-    # Alle Ausgabestellen: beide (mit Stelle)
-    e.sichtbarkeit, e.ausgabestelle = "alle_stellen", None
-    e.save()
+    # Mehrere Ausgabestellen auf einmal: jetzt sehen beide die Liste
+    admin_client.post(reverse("listen:eigene_aktualisieren", args=[e.pk]),
+                      {"titel": "Mitte und Nord", "abfrage": "geladen=1",
+                       "sichtbarkeit": "stelle", "ausgabestelle": [mitte.pk, nord.pk]})  # fmt: skip
+    e.refresh_from_db()
+    assert set(e.ausgabestellen.values_list("pk", flat=True)) == {mitte.pk, nord.pk}
     assert oeffnen(ca, e) == 302 and oeffnen(cb, e) == 302
-    # Bestimmte Person: nur berta
-    e.sichtbarkeit, e.fuer_person = "person", berta
+    # Alle Ausgabestellen: beide (mit Stelle)
+    e.sichtbarkeit = "alle_stellen"
     e.save()
+    e.ausgabestellen.clear()
+    assert oeffnen(ca, e) == 302 and oeffnen(cb, e) == 302
+    # Bestimmte Personen (mehrere): nur die gewählten – hier anton und berta
+    e.sichtbarkeit = "person"
+    e.save()
+    e.fuer_personen.set([anton, berta])
+    assert oeffnen(ca, e) == 302 and oeffnen(cb, e) == 302
+    e.fuer_personen.set([berta])
     assert oeffnen(cb, e) == 302 and oeffnen(ca, e) == 404
+    # Über das Formular lassen sich mehrere Personen auf einmal freigeben
+    admin_client.post(reverse("listen:eigene_aktualisieren", args=[e.pk]),
+                      {"titel": "Für anton und berta", "abfrage": "geladen=1",
+                       "sichtbarkeit": "person", "fuer_person": [anton.pk, berta.pk]})  # fmt: skip
+    e.refresh_from_db()
+    assert set(e.fuer_personen.values_list("pk", flat=True)) == {anton.pk, berta.pk}
+    assert oeffnen(ca, e) == 302 and oeffnen(cb, e) == 302
 
 
 def test_eigene_liste_bearbeiten(admin_client, daten, benutzer_mit_rolle, anmelden):

@@ -10,9 +10,9 @@ class EigeneListe(models.Model):
 
     class Sichtbarkeit(models.TextChoices):
         PRIVAT = "privat", "Nur ich"
-        STELLE = "stelle", "Eine Ausgabestelle"
+        STELLE = "stelle", "Bestimmte Ausgabestellen"
         ALLE_STELLEN = "alle_stellen", "Alle Ausgabestellen"
-        PERSON = "person", "Bestimmte Person"
+        PERSON = "person", "Bestimmte Personen"
         ALLE = "alle", "Alle"
 
     titel = models.CharField("Titel", max_length=100)
@@ -23,12 +23,11 @@ class EigeneListe(models.Model):
     sichtbarkeit = models.CharField("Sichtbar für", max_length=12,
                                     choices=Sichtbarkeit.choices,
                                     default=Sichtbarkeit.PRIVAT)  # fmt: skip
-    ausgabestelle = models.ForeignKey("kunden.Ausgabestelle", null=True, blank=True,
-                                      on_delete=models.CASCADE, related_name="+",
-                                      verbose_name="Ausgabestelle")  # fmt: skip
-    fuer_person = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
-                                    on_delete=models.CASCADE, related_name="+",
-                                    verbose_name="Person")  # fmt: skip
+    # Mehrere möglich (ADR 0063): bei „Bestimmte Ausgabestellen“ bzw. „Bestimmte Personen“
+    ausgabestellen = models.ManyToManyField("kunden.Ausgabestelle", blank=True, related_name="+",
+                                            verbose_name="Ausgabestellen")  # fmt: skip
+    fuer_personen = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name="+",
+                                           verbose_name="Personen")  # fmt: skip
     erstellt_am = models.DateTimeField("Erstellt am", default=timezone.now)
 
     class Meta:
@@ -41,7 +40,8 @@ class EigeneListe(models.Model):
 
     def sichtbar_fuer(self, benutzer, meine_stellen) -> bool:
         """Ob die Liste für ``benutzer`` sichtbar ist. ``meine_stellen`` = Menge der
-        Ausgabestellen-IDs des Benutzers (einmal berechnet, für viele Listen wiederverwendbar)."""
+        Ausgabestellen-IDs des Benutzers (einmal berechnet, für viele Listen wiederverwendbar).
+        ``ausgabestellen``/``fuer_personen`` am besten prefetchen (sonst eine Abfrage je Liste)."""
         if self.benutzer_id == benutzer.pk:
             return True  # die eigene Liste sieht man immer
         if self.sichtbarkeit == self.Sichtbarkeit.ALLE:
@@ -49,9 +49,9 @@ class EigeneListe(models.Model):
         if self.sichtbarkeit == self.Sichtbarkeit.ALLE_STELLEN:
             return bool(meine_stellen)
         if self.sichtbarkeit == self.Sichtbarkeit.STELLE:
-            return self.ausgabestelle_id in meine_stellen
+            return any(s.pk in meine_stellen for s in self.ausgabestellen.all())
         if self.sichtbarkeit == self.Sichtbarkeit.PERSON:
-            return self.fuer_person_id == benutzer.pk
+            return any(p.pk == benutzer.pk for p in self.fuer_personen.all())
         return False  # privat, fremde Liste
 
 

@@ -1,18 +1,33 @@
-{% comment %}Sichtbarkeit einer eigenen Liste. Erwartet: praefix, gewaehlt, gewaehlt_stelle,
-gewaehlt_person (aus dem umgebenden {% include %} with). freigabe_stellen/-personen und
-sichtbarkeiten stehen im Seitenkontext.{% endcomment %}
+{% comment %}Sichtbarkeit einer eigenen Liste. Erwartet: praefix, gewaehlt, gewaehlt_stellen,
+gewaehlt_personen (aus dem umgebenden {% include %} with). freigabe_stellen/-personen und
+sichtbarkeiten stehen im Seitenkontext. Ausgabestellen und Personen sind mehrfach wählbar
+(Widget wie in apps/core, static/js/mehrfachauswahl.js).{% endcomment %}
 <div class="feld"><label for="{{ praefix }}sichtbar">Sichtbar für</label>
   <select name="sichtbarkeit" id="{{ praefix }}sichtbar">
     {% for wert, bez in sichtbarkeiten %}<option value="{{ wert }}"{% if wert == gewaehlt %} selected{% endif %}>{{ bez }}</option>{% endfor %}
   </select>
 </div>
-<div class="feld" data-zeigen-bei="sichtbarkeit=stelle"><label for="{{ praefix }}stelle">Ausgabestelle</label>
-  <select name="ausgabestelle" id="{{ praefix }}stelle"><option value="">bitte wählen</option>
-    {% for s in freigabe_stellen %}<option value="{{ s.pk }}"{% if s.pk == gewaehlt_stelle %} selected{% endif %}>{{ s.name }}</option>{% endfor %}
-  </select>
+<div class="feld" data-zeigen-bei="sichtbarkeit=stelle"><span class="feld-titel">Ausgabestellen</span>
+  <details class="mehrfach" data-mehrfach data-leer="bitte wählen" id="{{ praefix }}stelle">
+    <summary class="mehrfach-kopf"><span class="mehrfach-text">{% for s in gewaehlt_stellen %}{{ s.name }}{% if not forloop.last %}, {% endif %}{% empty %}bitte wählen{% endfor %}</span>{% if gewaehlt_stellen %} <span class="mehrfach-zahl">{{ gewaehlt_stellen|length }}</span>{% endif %}</summary>
+    <div class="mehrfach-liste">
+      {% if freigabe_stellen|length >= 8 %}<input type="search" class="mehrfach-suche" placeholder="In der Liste suchen …" aria-label="In der Liste suchen" data-mehrfach-suche hidden>{% endif %}
+      <p class="mehrfach-knoepfe" hidden><button type="button" class="link" data-mehrfach-alle>alle wählen</button> · <button type="button" class="link" data-mehrfach-keine>keine</button></p>
+      {% for s in freigabe_stellen %}
+      <label class="mehrfach-eintrag"><input type="checkbox" name="ausgabestelle" value="{{ s.pk }}"{% if gewaehlt_stellen and s in gewaehlt_stellen %} checked{% endif %}> {{ s.name }}</label>
+      {% endfor %}
+    </div>
+  </details>
 </div>
-<div class="feld" data-zeigen-bei="sichtbarkeit=person"><label for="{{ praefix }}person">Person</label>
-  <select name="fuer_person" id="{{ praefix }}person"><option value="">bitte wählen</option>
-    {% for p in freigabe_personen %}<option value="{{ p.pk }}"{% if p.pk == gewaehlt_person %} selected{% endif %}>{{ p.get_full_name|default:p.username }}</option>{% endfor %}
-  </select>
+<div class="feld" data-zeigen-bei="sichtbarkeit=person"><span class="feld-titel">Personen</span>
+  <details class="mehrfach" data-mehrfach data-leer="bitte wählen" id="{{ praefix }}person">
+    <summary class="mehrfach-kopf"><span class="mehrfach-text">{% for p in gewaehlt_personen %}{{ p.get_full_name|default:p.username }}{% if not forloop.last %}, {% endif %}{% empty %}bitte wählen{% endfor %}</span>{% if gewaehlt_personen %} <span class="mehrfach-zahl">{{ gewaehlt_personen|length }}</span>{% endif %}</summary>
+    <div class="mehrfach-liste">
+      {% if freigabe_personen|length >= 8 %}<input type="search" class="mehrfach-suche" placeholder="In der Liste suchen …" aria-label="In der Liste suchen" data-mehrfach-suche hidden>{% endif %}
+      <p class="mehrfach-knoepfe" hidden><button type="button" class="link" data-mehrfach-alle>alle wählen</button> · <button type="button" class="link" data-mehrfach-keine>keine</button></p>
+      {% for p in freigabe_personen %}
+      <label class="mehrfach-eintrag"><input type="checkbox" name="fuer_person" value="{{ p.pk }}"{% if gewaehlt_personen and p in gewaehlt_personen %} checked{% endif %}> {{ p.get_full_name|default:p.username }}</label>
+      {% endfor %}
+    </div>
+  </details>
 </div>
