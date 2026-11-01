@@ -98,6 +98,18 @@ def test_alte_formate_verstaendlich_abgelehnt():
         lesen.lesen("leer.csv", b"\n\n")
 
 
+def test_steuerzeichen_werden_entfernt():
+    # NUL- und andere Steuerzeichen (aus Alt-Exporten) kann PostgreSQL nicht speichern; sie
+    # werden beim Einlesen entfernt, sonst bricht der Import mit einem Serverfehler ab. Tab und
+    # Zeilenumbruch bleiben erhalten (z. B. für Angehörige „Vorname TT.MM.JJJJ je Zeile“).
+    roh = b"Nr;Name\n1;Max\x00well\n2;\x01A\x1fB\x7fC\n"
+    t = lesen.lesen("a.csv", roh)[0]
+    assert t.zeilen[1] == ["1", "Maxwell"] and t.zeilen[2] == ["2", "ABC"]
+    # Excel-Zellwerte ebenso; Tab und Zeilenumbruch bleiben erhalten.
+    assert lesen.zelle("A\x00B") == "AB"
+    assert lesen.zelle("x\ny") == "x\ny"
+
+
 # --- Zuordnen ---------------------------------------------------------------------------
 
 
@@ -345,6 +357,8 @@ def test_kundengruppen_importieren(admin_client):
 def test_antraege_importieren(admin_client):
     from apps.antraege.models import Antrag
 
+    # Ein gleichnamiger Antrag ist schon da. Er wird NICHT abgeglichen/aktualisiert:
+    # die Datei kommt als Liste dazu (jede Zeile ein neuer Antrag).
     vorhanden = Antrag.objects.create(
         vorname="Anna", nachname="Beispiel", geburtsdatum=dt.date(1990, 2, 1), telefon="alt"
     )
@@ -352,30 +366,83 @@ def test_antraege_importieren(admin_client):
     datei = csv_datei(
         "antraege.csv",
         "Antragsnummer;Vorname;Nachname;Geburtsdatum;PLZ;Ort;Telefon;Status;Eingegangen am;Grad der Behinderung",  # noqa: E501
-        "500;Max;Mustermann;15.03.1985;45127;Essen;0201 123;neu;10.09.2026;50",
+        "500;Max;Mustermann;15.03.1985;45127;Essen;0201 123;neu;10.09.2026 14:05;50",
         ";Anna;Beispiel;01.02.1990;;;0201 999;in Bearbeitung;;",
         ";Lea;Neu;05.05.1995;;;;neu;;",
     )
     sitzung = hochladen(admin_client, "antraege", datei)
     weiter(admin_client, sitzung)
     url = reverse("datenimport:abgleich", args=[sitzung.pk])
-    inhalt = admin_client.get(url + "?modus=aktualisieren").content.decode()
-    assert "Beispiel" in inhalt  # der vorhandene Antrag taucht im Abgleich auf
-    alle = {f"f-{i}-{z}": "1" for i in range(3) for z in sitzung.tabellen[0]["zuordnung"] if z}
-    antwort = admin_client.post(url, {"modus": "aktualisieren", **alle})
+    antwort = admin_client.post(url, {"modus": "aktualisieren"})
     assert antwort.url == reverse("antraege:liste")
+    # Alle drei Zeilen angelegt; der vorhandene Antrag bleibt zusätzlich bestehen.
+    assert Antrag.objects.count() == 4
     # Neuer Antrag angelegt; Antragsnummer aus der Datei übernommen
     neu = Antrag.objects.get(nachname="Mustermann")
     assert (neu.vorname, neu.plz, neu.ort) == ("Max", "45127", "Essen")
     assert (neu.status, neu.gdb, neu.laufnummer) == ("neu", 50, 500)
     assert neu.geburtsdatum == dt.date(1985, 3, 15)
-    assert timezone.localdate(neu.eingegangen_am) == dt.date(2026, 9, 10)
-    # Ohne eigene Nummer wird oberhalb der höchsten übernommenen Nummer weitergezählt
-    assert Antrag.objects.get(nachname="Neu").laufnummer == 501
-    # Vorhandener über Name + Geburtsdatum erkannt und aktualisiert; seine Nummer bleibt
+    # „Eingegangen am“ wird mit Uhrzeit übernommen
+    ein = timezone.localtime(neu.eingegangen_am)
+    assert (ein.date(), ein.hour, ein.minute) == (dt.date(2026, 9, 10), 14, 5)
+    # „Anna Beispiel“ aus der Datei wird als EIGENER neuer Antrag angelegt (nicht zusammengeführt);
+    # ohne eigene Nummer wird oberhalb der höchsten übernommenen Nummer weitergezählt.
+    anna_neu = Antrag.objects.get(nachname="Beispiel", telefon="0201 999")
+    assert anna_neu.pk != vorhanden.pk and anna_neu.status == "in_bearbeitung"
+    assert anna_neu.laufnummer == 501
+    assert Antrag.objects.get(nachname="Neu").laufnummer == 502
+    # Der vorhandene Antrag bleibt unverändert.
     vorhanden.refresh_from_db()
-    assert vorhanden.telefon == "0201 999" and vorhanden.status == "in_bearbeitung"
-    assert vorhanden.laufnummer == alte_nummer
+    assert vorhanden.telefon == "alt" and vorhanden.laufnummer == alte_nummer
+
+
+def test_antraege_angehoerige_aus_einer_spalte(admin_client):
+    from apps.antraege.models import Antrag
+
+    # Angehörige wie im Altprogramm: eine Zelle, je Zeile „Vorname TT.MM.JJJJ“ (krumme Abstände).
+    gepackt = "Yuliia 30.03.1978\nAndriy 02.10. 2008\nHanna 08.07.2010"
+    datei = excel_datei(
+        "antraege.xlsx",
+        {
+            "Anträge": [
+                ["Vorname", "Nachname", "Angehörige"],
+                ["Olek", "Schewtschenko", gepackt],
+            ]
+        },
+    )
+    sitzung = hochladen(admin_client, "antraege", datei)
+    weiter(admin_client, sitzung)
+    url = reverse("datenimport:abgleich", args=[sitzung.pk])
+    admin_client.get(url)
+    alle = {f"f-0-{z}": "1" for z in sitzung.tabellen[0]["zuordnung"] if z}
+    admin_client.post(url, {"modus": "aktualisieren", **alle})
+    antrag = Antrag.objects.get(nachname="Schewtschenko")
+    personen = list(antrag.personen.order_by("pk"))
+    assert [(p.vorname, p.geburtsdatum) for p in personen] == [
+        ("Yuliia", dt.date(1978, 3, 30)),
+        ("Andriy", dt.date(2008, 10, 2)),
+        ("Hanna", dt.date(2010, 7, 8)),
+    ]
+
+
+def test_antraege_werden_nicht_zusammengefuehrt(admin_client):
+    # Anträge kommen als Liste: gleiche Namen (auch ohne Geburtsdatum) werden NICHT
+    # zusammengeführt, jede Zeile wird ein eigener Antrag.
+    from apps.antraege.models import Antrag
+
+    datei = csv_datei(
+        "antraege.csv",
+        "Vorname;Nachname;Ort",
+        "Maria;Müller;Essen",
+        "Maria;Müller;Essen",
+        "Maria;Müller;Bochum",
+    )
+    sitzung = hochladen(admin_client, "antraege", datei)
+    weiter(admin_client, sitzung)
+    url = reverse("datenimport:abgleich", args=[sitzung.pk])
+    antwort = admin_client.post(url, {"modus": "aktualisieren"})
+    assert antwort.url == reverse("antraege:liste")
+    assert Antrag.objects.filter(nachname="Müller").count() == 3
 
 
 # --- Mitarbeitende ----------------------------------------------------------------------

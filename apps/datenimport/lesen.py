@@ -13,10 +13,20 @@ Alles wird als Text zurückgegeben; die Prüfung der Werte macht das jeweilige Z
 import csv
 import datetime as dt
 import io
+import re
 from dataclasses import dataclass, field
 
 MAX_ZEILEN = 300_000  # z. B. alle Abholungen von 10.000 Haushalten über drei Jahre
 TRENNER = [";", "\t", ",", "|"]
+
+# Steuerzeichen, die PostgreSQL weder als Text noch in JSON speichern kann (vor allem das
+# NUL-Byte \x00). Alt-Exporte enthalten sie manchmal in einzelnen Feldern; ungefiltert bricht
+# der Import mit einem Serverfehler ab. Tab, Zeilenumbruch und Wagenrücklauf bleiben erhalten.
+_STEUERZEICHEN = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+
+
+def _sauber(text: str) -> str:
+    return _STEUERZEICHEN.sub("", text)
 
 
 class LeseFehler(ValueError):
@@ -67,7 +77,7 @@ def csv_lesen(name: str, roh: bytes) -> Tabelle:
     if kodierung != "UTF-8":
         tabelle.hinweise.append(f"Zeichenkodierung {kodierung} erkannt.")
     for werte in csv.reader(io.StringIO(text, newline=""), delimiter=trenner):
-        tabelle.zeilen.append([w.strip() for w in werte])
+        tabelle.zeilen.append([_sauber(w).strip() for w in werte])
         if len(tabelle.zeilen) > MAX_ZEILEN:
             raise LeseFehler(f"{name}: mehr als {MAX_ZEILEN} Zeilen; bitte in Teilen importieren.")
     return tabelle
@@ -89,7 +99,7 @@ def zelle(wert) -> str:
         return wert.strftime("%H:%M")
     if isinstance(wert, float):
         return str(int(wert)) if wert.is_integer() else str(wert)
-    return str(wert).strip()
+    return _sauber(str(wert)).strip()
 
 
 def excel_lesen(name: str, roh: bytes) -> list[Tabelle]:
