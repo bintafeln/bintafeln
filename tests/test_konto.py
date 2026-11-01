@@ -355,6 +355,13 @@ def test_storno_nimmt_buchung_zurueck(ausgabe, haushalt, recht_geben):
 def test_empfang_einzahlung_und_vorschlag(ausgabe, haushalt, recht_geben, monkeypatch):
     # Fester Tag am Monatsanfang: Vorschläge gibt es erst ab drei möglichen Abholungen
     mitte = timezone.now().replace(day=3, hour=10)
+    # Die Anmeldung geschah in Echtzeit; die Sitzung läuft nach SESSION_COOKIE_AGE (10 h) ab. Noch
+    # vor dem Vorstellen der Uhr ihre Gültigkeit über die vorgestellte Zeit hinaus verlängern –
+    # sonst gälte sie als abgelaufen und die Anfrage käme als Weiterleitung zur Anmeldung zurück
+    # (leere Antwort), je nach echtem Laufdatum.
+    sitzung = ausgabe.session
+    sitzung.set_expiry(mitte + dt.timedelta(hours=10))
+    sitzung.save()
     monkeypatch.setattr(timezone, "now", lambda: mitte)
     recht_geben(rollen.AUSGABE, "einlass.zuruecknehmen")
     e = AusgabeEinstellungen.laden()
