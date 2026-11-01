@@ -88,5 +88,7 @@ muss aber bewusst gewählt werden.
 Neues Ziel **Anträge** in `ziele.py` (`Antraege`): ein Antrag (Neuanmeldung) je Zeile mit
 Antragsteller und Anschrift, erkannt an Name und Geburtsdatum. Angehörige, Einkommen und
 Nachweise sind nicht enthalten – sie werden später im Aufnahme-Assistenten ergänzt. Der Import
-legt die `Antrag`-Datensätze über das Modell an (vergibt die Antragsnummer) und verschickt keine
-Mails. Recht `antraege.bearbeiten`.
+legt die `Antrag`-Datensätze über das Modell an und verschickt keine Mails. Recht
+`antraege.bearbeiten`. Eine **Antragsnummer** aus der Datei wird übernommen, sofern sie noch frei
+ist; danach zählt `naechste_antragsnummer()` oberhalb der höchsten übernommenen Nummer weiter.
+Bei vorhandenen Anträgen (erkannt an Nummer oder Name + Geburtsdatum) bleibt die Nummer unberührt.

@@ -1370,6 +1370,7 @@ class Mitglieder(_AdressRegeln):
 # --- Anträge ----------------------------------------------------------------------------
 
 ANTRAG_FELDER = [
+    Feld("laufnummer", "Antragsnummer", ("antragsnummer", "antragsnr", "lfdnr", "laufnr")),
     Feld("vorname", "Vorname", ("rufname",), pflicht=True, laenge=100),
     Feld("nachname", "Nachname", ("name", "familienname", "zuname"), pflicht=True, laenge=100),
     Feld("anrede", "Anrede", ("titel",), laenge=30),
@@ -1460,7 +1461,19 @@ class Antraege(Ziel):
     def schluessel(self, werte):
         return normalisieren(self.name(werte)) + werte.get("geburtsdatum", "")
 
+    def vergleichsfelder(self):
+        # Die Antragsnummer ist die Kennung, sie wird bei vorhandenen Anträgen nie geändert.
+        return [
+            (f.schluessel, f.bezeichnung) for f in ANTRAG_FELDER if f.schluessel != "laufnummer"
+        ]
+
     def wert(self, f, wert, warnen):
+        if f.schluessel == "laufnummer" and wert:
+            ziffern = wert.strip()
+            if not ziffern.isdigit() or int(ziffern) < 1:
+                warnen("„Antragsnummer“ ist keine positive Zahl; es wird automatisch nummeriert.")
+                return ""
+            return str(int(ziffern))
         if f.schluessel == "gdb" and wert:
             ziffern = wert.strip()
             if not ziffern.isdigit() or int(ziffern) > 100:
@@ -1482,6 +1495,7 @@ class Antraege(Ziel):
         ergebnis = []
         for a in Antrag.objects.filter(papierkorb_am__isnull=True):
             werte = {
+                "laufnummer": str(a.laufnummer or ""),
                 "anrede": a.anrede, "vorname": a.vorname, "nachname": a.nachname,
                 "geburtsdatum": _datum_text(a.geburtsdatum),
                 "strasse": a.strasse, "plz": a.plz, "ort": a.ort,
@@ -1502,6 +1516,7 @@ class Antraege(Ziel):
         return ergebnis
 
     def treffer_finder(self, bestand):
+        nach_nummer = {b.werte["laufnummer"]: b for b in bestand if b.werte["laufnummer"]}
         nach_name: dict[str, list] = {}
         for b in bestand:
             n = normalisieren(f"{b.werte['vorname']} {b.werte['nachname']}")
@@ -1509,6 +1524,9 @@ class Antraege(Ziel):
                 nach_name.setdefault(n, []).append(b)
 
         def finden(werte):
+            nummer = werte.get("laufnummer", "")
+            if nummer and nummer in nach_nummer:
+                return Treffer(nach_nummer[nummer].id, True)
             gleiche = nach_name.get(normalisieren(self.name(werte)), [])
             geb = werte.get("geburtsdatum", "")
             for b in gleiche:
@@ -1552,10 +1570,18 @@ class Antraege(Ziel):
         from apps.antraege.models import Antrag
 
         neu = 0
-        for werte in entscheidung.anlegen:
+        # Erst die Anträge mit eigener Nummer anlegen, dann die ohne: So zählt die automatische
+        # Nummerierung oberhalb der höchsten übernommenen Nummer weiter (naechste_antragsnummer).
+        mit_nummer = [w for w in entscheidung.anlegen if w.get("laufnummer", "").isdigit()]
+        ohne_nummer = [w for w in entscheidung.anlegen if not w.get("laufnummer", "").isdigit()]
+        for werte in mit_nummer + ohne_nummer:
             a = Antrag(sprache="de")
             self._setzen(a, werte)
-            a.save()  # vergibt die Antragsnummer
+            nummer = werte.get("laufnummer", "")
+            # Nummer aus dem Altprogramm übernehmen, wenn sie frei ist; sonst automatisch vergeben.
+            if nummer.isdigit() and not Antrag.objects.filter(laufnummer=int(nummer)).exists():
+                a.laufnummer = int(nummer)
+            a.save()  # leere laufnummer = automatisch fortlaufend (über der höchsten Nummer)
             neu += 1
         for pk, werte in entscheidung.aendern.items():
             a = Antrag.objects.filter(pk=pk).first()
