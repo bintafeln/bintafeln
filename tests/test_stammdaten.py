@@ -226,7 +226,7 @@ def test_personal_einstellungen(admin_client):
     assert antwort.url == url_
     e = PersonalEinstellungen.laden()
     assert (e.fs_pruefung_monate, e.fs_kopie_erlaubt, e.stammdaten_loeschen_jahre) == (3, True, 5)
-    assert str(e) == "Einstellungen Personal"
+    assert str(e) == "Einstellungen Angestellte"
     assert "Fristen für Wiedervorlagen" in admin_client.get(url_).content.decode()
     assert admin_client.post(url_, {"fs_pruefung_monate": "0"}).status_code == 200
     assert str(Stammdaten(benutzer=admin_client.get("/").wsgi_request.user)) == "Stammdaten chefin"

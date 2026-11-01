@@ -7,7 +7,7 @@
     {% for d in dokumente %}
       <tr>
         <td data-titel="Titel"><a href="{% url 'konten:dokument_ansehen' ziel.pk d.pk %}" target="_blank" rel="noopener">{{ d.titel }}</a></td>
-        <td data-titel="Kategorie">{{ d.kategorie }}{% if d.kategorie.nur_personal %} <span class="marke-art9">nur Personal</span>{% endif %}</td>
+        <td data-titel="Kategorie">{{ d.kategorie }}{% if d.kategorie.nur_personal %} <span class="marke-art9">nur Angestellte</span>{% endif %}</td>
         <td data-titel="Datum">{{ d.datum|date:"d.m.Y"|default:"–" }}</td>
         <td data-titel="Hochgeladen">{{ d.hochgeladen_am|date:"d.m.Y" }}{% if d.hochgeladen_von %} von {{ d.hochgeladen_von }}{% endif %}</td>
         <td data-titel="Aktion">

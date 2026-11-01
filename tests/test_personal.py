@@ -161,11 +161,11 @@ def test_stundenkonto_mit_vorjahren(kim):
 def test_nur_admin_und_personal(client, admin, benutzer_mit_rolle, anmelden, kim):
     anmelden(client, benutzer_mit_rolle("buero", rollen.BUERO))
     assert client.get(LISTE).status_code == 403
-    assert "Personal</a>" not in client.get("/").content.decode()
+    assert "Verträge &amp; Zeiten</a>" not in client.get("/").content.decode()
     client.logout()
     anmelden(client, benutzer_mit_rolle("hr", rollen.PERSONAL))
     assert client.get(LISTE).status_code == 200
-    assert "Personal</a>" in client.get("/").content.decode()
+    assert "Verträge &amp; Zeiten</a>" in client.get("/").content.decode()
 
 
 def test_personal_rolle_vergibt_nur_ein_admin(admin, benutzer_mit_rolle):

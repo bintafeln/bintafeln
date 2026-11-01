@@ -1,10 +1,11 @@
 {% extends "base.html" %}
-{% block titel %}Mitarbeitende{% endblock %}
+{% block titel %}{% if archiv %}Archiv{% else %}{{ titel|default:"Team" }}{% endif %}{% endblock %}
 {% block inhalt %}
 <section class="karte">
-  <h1>Mitarbeitende</h1>
+  <h1>{% if archiv %}Archiv{% else %}{{ titel|default:"Team" }}{% endif %}</h1>
   <nav class="reiter" aria-label="Ansicht">
-    <a href="{% url 'konten:mitarbeitende' %}"{% if not archiv %} aria-current="page"{% endif %}>Aktiv</a>
+    <a href="{% url 'konten:ehrenamtliche' %}"{% if art == 'ehrenamtlich' %} aria-current="page"{% endif %}>Ehrenamtliche</a>
+    <a href="{% url 'konten:angestellte' %}"{% if art == 'fest' %} aria-current="page"{% endif %}>Angestellte</a>
     <a href="{% url 'konten:mitarbeitende_archiv' %}"{% if archiv %} aria-current="page"{% endif %}>Archiv (gesperrt)</a>
     <a href="{% url 'konten:stellen' %}">Ausgabestellen</a>
   </nav>
@@ -12,7 +13,7 @@
     <p class="hinweis">Gesperrte Konten werden nicht gelöscht. So bleibt auch Jahre später nachvollziehbar, wer wann
       dabei war und was eingetragen hat (Änderungsprotokoll, Abholungen, Buchungen).</p>
   {% else %}
-    <p><a class="knopf" href="{% url 'konten:mitarbeiter_neu' %}">Mitarbeiterin / Mitarbeiter anlegen</a>
+    <p><a class="knopf" href="{% url 'konten:mitarbeiter_neu' %}{% if art %}?art={{ art }}{% endif %}">{% if art == 'fest' %}Angestellte anlegen{% elif art == 'ehrenamtlich' %}Ehrenamtliche anlegen{% else %}Konto anlegen{% endif %}</a>
       {% if "einstellungen.personal" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'konten:personal_einstellungen' %}">Fristen einstellen</a>{% endif %}</p>
     {% if faellig %}
     <div class="faellig">

@@ -23,7 +23,7 @@ EINLASS = "Einlass und Kasse"
 KUNDEN = "Kunden"
 ANTRAEGE = "Anträge"
 STATISTIK = "Statistik und Daten"
-TEAM = "Mitarbeitende und Personal"
+TEAM = "Team (Ehrenamtliche und Angestellte)"
 ADRESSEN = "Adressen und Verein"
 EINSTELLUNGEN = "Einstellungen"
 
@@ -178,7 +178,7 @@ VORGABEN = {
     "Kiosk": [],
     "Fahrer": [],
     "Beifahrer": [],
-    "Personal": ["personal.sehen", "einstellungen.arbeitszeit"],
+    "Angestellte": ["personal.sehen", "einstellungen.arbeitszeit"],
 }  # fmt: skip
 
 _module_einsammeln()

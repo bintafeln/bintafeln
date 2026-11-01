@@ -22,13 +22,13 @@
   </form>
   {% for b in vergessen %}
     <p class="sicherung sicherung-veraltet">Am {{ b.beginn|date:"d.m.Y" }} um {{ b.beginn|time:"H:i" }} fehlt das „Gehen“.
-      Diese Zeit zählt erst, wenn das Personal sie nachgetragen hat.</p>
+      Diese Zeit zählt erst, wenn die Zuständigen sie nachgetragen haben.</p>
   {% endfor %}
   {% if saldo is not None %}<p>Stundenkonto: <strong{% if saldo < 0 %} class="fehler"{% endif %}>{{ saldo|floatformat:2 }} Stunden</strong></p>{% endif %}
 </section>
 <section class="karte">
   <h2>Meine Zeiten</h2>
   {% include "personal/_tage.html" %}
-  <p class="hinweis">Falsch gestempelt? Bitte beim Personal melden; Korrekturen werden mit Namen und Grund festgehalten.</p>
+  <p class="hinweis">Falsch gestempelt? Bitte bei den Zuständigen melden; Korrekturen werden mit Namen und Grund festgehalten.</p>
 </section>
 {% endblock %}

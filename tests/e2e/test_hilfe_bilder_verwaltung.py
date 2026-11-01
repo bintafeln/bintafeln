@@ -106,7 +106,7 @@ def test_hilfe_bild_mitarbeitende(angemeldet, admin, muster, benutzer_mit_rolle)
     kim = _kim(benutzer_mit_rolle)
     seite = oeffnen(angemeldet, admin, reverse("konten:mitarbeitende"))
     karte = seite.locator("section.karte").first
-    anlegen = seite.get_by_role("link", name="Mitarbeiterin / Mitarbeiter anlegen")
+    anlegen = seite.get_by_role("link", name="Konto anlegen")
     aufnehmen(seite, "mitarbeitende-liste", karte,
               Marke(anlegen, nummer=1, von="links", laenge=40),
               Marke(seite.get_by_role("link", name="Archiv (gesperrt)"), "rahmen", 2),

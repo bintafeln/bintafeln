@@ -23,7 +23,7 @@ EINLASS = "Einlass und Kasse"
 KUNDEN = "Kunden"
 ANTRAEGE = "Anträge"
 ADRESSEN = "Adressen und Verein"
-TEAM = "Mitarbeitende und Personal"
+TEAM = "Team (Ehrenamtliche und Angestellte)"
 VERWALTUNG = "Einstellungen und Verwaltung"
 
 KAPITEL = [
@@ -77,8 +77,9 @@ KAPITEL = [
             ("spenden.bestaetigen", "einstellungen.spenden")),
     Kapitel("statistik", "Statistik", VERWALTUNG, ("statistik.sehen",)),
     Kapitel("arbeitszeit", "Meine Arbeitszeit (Stempeln)", TEAM),
-    Kapitel("mitarbeitende", "Mitarbeitende verwalten", TEAM, ("mitarbeitende.verwalten",)),
-    Kapitel("personal", "Personal: Verträge, Urlaub, Stunden", TEAM, ("personal.sehen",)),
+    Kapitel("mitarbeitende", "Ehrenamtliche und Angestellte verwalten", TEAM,
+            ("mitarbeitende.verwalten",)),
+    Kapitel("personal", "Verträge & Zeiten: Verträge, Urlaub, Stunden", TEAM, ("personal.sehen",)),
     Kapitel("rollen", "Rollen und Rechte", VERWALTUNG, ("einstellungen.rollen",)),
     Kapitel("einstellungen", "Einstellungen der Tafel", VERWALTUNG,
             ("einstellungen.tafel", "einstellungen.mail", "einstellungen.kundenstamm",

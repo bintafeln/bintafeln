@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block titel %}Personal {{ p }}{% endblock %}
+{% block titel %}Verträge &amp; Zeiten: {{ p }}{% endblock %}
 {% block inhalt %}
 <section class="karte">
-  <p><a href="{% url 'personal:liste' %}">← Personal</a></p>
+  <p><a href="{% url 'personal:liste' %}">← Verträge &amp; Zeiten</a></p>
   <h1>{{ p }}</h1>
   <p><a href="{% url 'personal:zeiten' p.pk %}">Arbeitszeiten</a> · <a href="{% url 'konten:auskunft' p.pk %}">Auskunft (PDF)</a></p>
   <nav class="blaettern" aria-label="Jahr wechseln">

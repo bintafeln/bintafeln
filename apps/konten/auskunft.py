@@ -159,7 +159,7 @@ def mitarbeiter_pdf(b) -> bytes:
         "Empfänger: Die Daten nutzen nur berechtigte Personen der Tafel. Weitergabe nur, wo ein "
         "Gesetz es verlangt (z. B. Lohnabrechnung, Sozialversicherung, Finanzamt).",
         f"Speicherdauer: Nach dem Ende der Mitarbeit wird das Konto gesperrt; persönliche "
-        f"Angaben und Personaldaten werden {jahre} Jahre danach automatisch gelöscht.",
+        f"Angaben und gespeicherte Daten werden {jahre} Jahre danach automatisch gelöscht.",
         "Ihre Rechte: Berichtigung, Löschung, Einschränkung der Verarbeitung, Widerspruch und "
         "Beschwerde bei einer Datenschutz-Aufsichtsbehörde.",
     ]:

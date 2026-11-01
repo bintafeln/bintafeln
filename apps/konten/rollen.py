@@ -19,7 +19,7 @@ AUSGABE = "Ausgabe"
 KIOSK = "Kiosk"
 FAHRER = "Fahrer"
 BEIFAHRER = "Beifahrer"
-PERSONAL = "Personal"
+PERSONAL = "Angestellte"  # Rolle für die Angestellten-Verwaltung (früher „Personal“)
 
 # Mitgelieferte Rollen: Reihenfolge, Zwei-Faktor Pflicht, Belehrung (IfSG), Führerschein
 MITGELIEFERT = {

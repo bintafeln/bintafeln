@@ -101,8 +101,8 @@ GRUPPEN = [
     ("protokoll", "Änderungsprotokoll", "Wer hat wann was geändert", ["auditlog.logentry"]),
     (
         "konten",
-        "Andere Konten und Personal",
-        "Alle Konten außer Ihrem Admin-Konto – mit ihren Personaldaten (Verträge, Abwesenheiten, "
+        "Andere Konten (Ehrenamtliche und Angestellte)",
+        "Alle Konten außer Ihrem Admin-Konto – mit ihren Daten (Verträge, Abwesenheiten, "
         "Stunden, Schulungen, Dokumente)",
         [
             "konten.stammdaten",

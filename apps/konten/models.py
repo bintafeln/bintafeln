@@ -176,7 +176,7 @@ class PersonalEinstellungen(models.Model):
         "… (Tag)",
         default=31,
         validators=[MinValueValidator(1), MaxValueValidator(31)],
-        help_text="Vorgabe 31.03. Je Person und Jahr unter „Personal“ änderbar.",
+        help_text="Vorgabe 31.03. Je Person und Jahr unter „Verträge & Zeiten“ änderbar.",
     )
     stammdaten_loeschen_jahre = models.PositiveSmallIntegerField(
         "Stammdaten … Jahre nach Austritt bzw. Sperre leeren",
@@ -187,11 +187,11 @@ class PersonalEinstellungen(models.Model):
     )
 
     class Meta:
-        verbose_name = "Einstellungen Personal"
-        verbose_name_plural = "Einstellungen Personal"
+        verbose_name = "Einstellungen Angestellte"
+        verbose_name_plural = "Einstellungen Angestellte"
 
     def __str__(self):
-        return "Einstellungen Personal"
+        return "Einstellungen Angestellte"
 
     def save(self, *args, **kwargs):
         self.pk = self.EINZIGE_ID
@@ -237,7 +237,7 @@ class Schulung(models.Model):
 class DokumentKategorie(models.Model):
     name = models.CharField("Name", max_length=100, unique=True)
     nur_personal = models.BooleanField(
-        "Nur für Admin und Rolle Personal sichtbar",
+        "Nur für Admin und Rolle Angestellte sichtbar",
         default=False,
         help_text="Z. B. Arbeitsverträge oder Lohnunterlagen.",
     )
