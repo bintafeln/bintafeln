@@ -27,7 +27,7 @@ def markt():
 def test_vorgaben_und_name():
     assert list(AdressKategorie.objects.values_list("name", flat=True)) == [
         "Spender", "Lieferant/Markt", "Partner", "Presse", "Behörde",
-        "Ehrenamtliche Helfer"]  # fmt: skip
+        "Ehrenamtliche Helfer", "Ehemalige Ehrenamtliche"]  # fmt: skip
     p = Adresse(art=Adresse.Art.PERSON, anrede="Frau", vorname="Erika", nachname="Muster",
                 strasse="Weg 2", plz="12345", ort="Musterstadt")  # fmt: skip
     assert p.name == "Erika Muster"

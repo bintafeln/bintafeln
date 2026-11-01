@@ -18,19 +18,29 @@
 <ul>
   <li><strong>Organisation</strong> (Markt, Firma, Verein, Behörde): Name der Organisation, dazu eine Ansprechperson.</li>
   <li><strong>Person</strong>: mindestens der Nachname.</li>
-  <li><strong>Kategorien</strong> per Häkchen, auch mehrere. Die Liste pflegt ein Admin unter „Einstellungen →
-    Adresskategorien“.</li>
+  <li><strong>Kategorien</strong> per Häkchen, auch mehrere – zum Einordnen und als Empfänger-Auswahl
+    (z. B. für einen Serienbrief an alle Spender). Die Liste pflegt ein Admin unter „Einstellungen →
+    Adresskategorien“. Zwei Kategorien setzt bintafeln selbst: <strong>„Ehrenamtliche Helfer“</strong>
+    (bei jeder Person mit Konto und Rolle) und <strong>„Ehemalige Ehrenamtliche“</strong> (sobald ein
+    Mitarbeiter-Konto gesperrt wird). Beide bleiben erhalten und lassen sich für Serienbriefe nutzen.</li>
   <li><strong>Einwilligungen</strong> mit Datum eintragen, sobald sie vorliegen: Post (z. B. für Serienbriefe), E-Mail,
     Name veröffentlichen (z. B. Spenderliste im Jahresbericht). Leer bedeutet: keine Einwilligung.</li>
-  <li><strong>Mitarbeit</strong> (nur bei einer Person): Häkchen <strong>„Ehrenamtlicher Helfer“</strong>
-    und <strong>„Helfer aktiv“</strong> – wer als aktiver Helfer markiert ist, lässt sich im Dienstplan
-    und Fahrdienst einteilen; inaktive werden nicht vorgeschlagen. Wer Mitarbeitende verwalten darf,
-    kann die Person zusätzlich mit ihrem <strong>Anmelde-Konto</strong> verknüpfen; auf der Seite der
-    Adresse führt dann ein Verweis direkt zu den Stammdaten des Kontos. So steht alles zu einer Person
-    an einer Stelle. Ist das Modul Dienstplan oder Fahrdienst eingeschaltet, zeigt die Mitarbeit auch
+  <li><strong>Mitarbeit</strong> (nur bei einer Person): Hier wird die Person mit ihrem
+    <strong>Anmelde-Konto</strong> verknüpft und bekommt ihre <strong>Rollen</strong> per Häkchen
+    (mehrere möglich, mindestens eine ist Pflicht). Die Rolle entscheidet, was jemand darf und wo er
+    einteilbar ist (z. B. Fahrer/Beifahrer im Fahrdienst, Ausgabe im Dienstplan). Auf der Seite der
+    Adresse führt ein Verweis direkt zu den Stammdaten des Kontos, so steht alles zu einer Person an
+    einer Stelle. Ist das Modul Dienstplan oder Fahrdienst eingeschaltet, zeigt die Mitarbeit auch
     die <strong>regelmäßigen Einsätze</strong> der Person (Wochentag, Ausgabestelle bzw. Tour, Aufgabe
     bzw. Fahrer/Beifahrer).</li>
 </ul>
+<p><strong>Rolle oder Kategorie?</strong> Beides sieht ähnlich aus, meint aber Verschiedenes. Die
+  <strong>Rolle</strong> (am Konto) sagt, <em>was jemand in bintafeln darf und wo er mitarbeitet</em> –
+  sie setzt ein Anmelde-Konto voraus. Die <strong>Kategorie</strong> (an der Adresse) ordnet den
+  Eintrag nur ein und braucht kein Konto; so lassen sich auch Organisationen (Märkte, Firmen) führen
+  und gezielt anschreiben. Wer eine Rolle bekommt, wird darum automatisch zusätzlich der Kategorie
+  „Ehrenamtliche Helfer“ zugeordnet – man muss nichts doppelt pflegen, und die Kategorie bleibt auch
+  dann erhalten, wenn später eine Rolle wegfällt.</p>
 {% endif %}
 {% if "adressen.importieren" in rechte %}
 <h3>Importieren</h3>
