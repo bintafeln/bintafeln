@@ -82,3 +82,11 @@ muss aber bewusst gewählt werden.
 - Ausgabestellen haben jetzt Telefon für Kunden, Fax, Plätze, Helfer, Barrierefrei und WLAN; der
   Import füllt sie mit, dazu Ausgabezeiten („Di 13:00; Do 14:00“, nur hinzufügen) und bis zu drei
   Ansprechpartner der Reihe nach.
+
+## Nachtrag: Anträge (2026-11-01)
+
+Neues Ziel **Anträge** in `ziele.py` (`Antraege`): ein Antrag (Neuanmeldung) je Zeile mit
+Antragsteller und Anschrift, erkannt an Name und Geburtsdatum. Angehörige, Einkommen und
+Nachweise sind nicht enthalten – sie werden später im Aufnahme-Assistenten ergänzt. Der Import
+legt die `Antrag`-Datensätze über das Modell an (vergibt die Antragsnummer) und verschickt keine
+Mails. Recht `antraege.bearbeiten`.

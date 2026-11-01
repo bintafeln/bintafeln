@@ -1367,6 +1367,205 @@ class Mitglieder(_AdressRegeln):
         ]
 
 
+# --- Anträge ----------------------------------------------------------------------------
+
+ANTRAG_FELDER = [
+    Feld("vorname", "Vorname", ("rufname",), pflicht=True, laenge=100),
+    Feld("nachname", "Nachname", ("name", "familienname", "zuname"), pflicht=True, laenge=100),
+    Feld("anrede", "Anrede", ("titel",), laenge=30),
+    Feld(
+        "geburtsdatum",
+        "Geburtsdatum",
+        ("geboren", "gebdatum", "gebdat", "geburtstag", "geb"),
+        typ="datum",
+    ),  # fmt: skip
+    Feld(
+        "strasse",
+        "Straße und Hausnummer",
+        ("adresse", "anschrift", "str", "hausnummer", "hausnr"),
+        mehrfach=True,
+        laenge=200,
+    ),
+    Feld("plz", "PLZ", ("postleitzahl",), laenge=10),
+    Feld("ort", "Ort", ("wohnort", "stadt"), laenge=100),
+    Feld(
+        "telefon",
+        "Telefon",
+        ("tel", "telefonnummer", "handy", "mobil", "festnetz"),
+        typ="telefon",
+        laenge=50,
+    ),  # fmt: skip
+    Feld("email", "E-Mail", ("mail", "emailadresse"), typ="email", laenge=254),
+    Feld("familienstand", "Familienstand", (), laenge=50),
+    Feld(
+        "staatsangehoerigkeit",
+        "Staatsangehörigkeit",
+        ("nationalitaet", "herkunft", "herkunftsland"),
+        laenge=100,
+    ),  # fmt: skip
+    Feld("gdb", "Grad der Behinderung (0–100)", ("behinderung", "gradderbehinderung")),
+    Feld("merkzeichen", "Merkzeichen", (), laenge=60),
+    Feld("wochentage", "Bevorzugte Wochentage", ("tage", "tag", "wochentag"), laenge=30),
+    Feld(
+        "ausgabestelle",
+        "Bevorzugte Ausgabestelle",
+        ("stelle", "standort", "ausgabeort"),
+        laenge=100,
+    ),  # fmt: skip
+    Feld(
+        "kundennummer", "Kundennummer", ("kdnr", "kundennr", "nummer", "ausweisnummer"), laenge=20
+    ),
+    Feld(
+        "eingegangen_am",
+        "Eingegangen am",
+        ("eingang", "eingangsdatum", "datum", "antragsdatum", "anmeldedatum", "aufnahme"),
+        typ="datum",
+    ),  # fmt: skip
+    Feld("art", "Art (Neuanmeldung/Verlängerung)", ("antragsart",)),
+    Feld("status", "Status (neu, in Bearbeitung, erledigt, abgelehnt)", ("antragsstatus",)),
+    Feld(
+        "nachricht", "Nachricht", ("mitteilung", "kommentar", "anmerkung", "notiz"), typ="langtext"
+    ),
+]
+# Codes ↔ angezeigte Texte (die Modell-Auswahl ist stabil; Import und Bestand zeigen den Text,
+# gespeichert wird der Code).
+ANTRAG_ART = {"neu": "Neuanmeldung", "verlaengerung": "Verlängerung"}
+ANTRAG_STATUS = {"neu": "neu", "in_bearbeitung": "in Bearbeitung",
+                 "erledigt": "erledigt", "abgelehnt": "abgelehnt"}  # fmt: skip
+ANTRAG_STATUS_EINGABE = {
+    "neu": "neu", "offen": "neu",
+    "inbearbeitung": "in Bearbeitung", "bearbeitung": "in Bearbeitung",
+    "erledigt": "erledigt", "fertig": "erledigt", "angenommen": "erledigt",
+    "abgelehnt": "abgelehnt", "ablehnung": "abgelehnt",
+}  # fmt: skip
+
+
+class Antraege(Ziel):
+    kennung = "antraege"
+    titel = "Anträge"
+    recht = "antraege.bearbeiten"
+    beschreibung = (
+        "Anträge (Neuanmeldungen) mit Antragsteller und Anschrift, ein Antrag je Zeile. "
+        "Angehörige, Einkommen und Nachweise kommen nicht mit; sie werden später im "
+        "Aufnahme-Assistenten ergänzt. Verschickt keine Mails."
+    )
+    zurueck = ("antraege:liste", "Anträge")
+
+    def arten(self):
+        return [Art("antraege", "Anträge", ANTRAG_FELDER)]
+
+    def name(self, werte):
+        return f"{werte.get('vorname', '')} {werte.get('nachname', '')}".strip()
+
+    def schluessel(self, werte):
+        return normalisieren(self.name(werte)) + werte.get("geburtsdatum", "")
+
+    def wert(self, f, wert, warnen):
+        if f.schluessel == "gdb" and wert:
+            ziffern = wert.strip()
+            if not ziffern.isdigit() or int(ziffern) > 100:
+                warnen("„Grad der Behinderung“ ist keine Zahl von 0 bis 100 und bleibt leer.")
+                return ""
+            return str(int(ziffern))
+        if f.schluessel == "art" and wert:
+            return "Verlängerung" if normalisieren(wert).startswith("verl") else "Neuanmeldung"
+        if f.schluessel == "status" and wert:
+            return ANTRAG_STATUS_EINGABE.get(normalisieren(wert), "neu")
+        return super().wert(f, wert, warnen)
+
+    def bestand(self, verwalter):
+        from django.urls import reverse
+        from django.utils import timezone
+
+        from apps.antraege.models import Antrag
+
+        ergebnis = []
+        for a in Antrag.objects.filter(papierkorb_am__isnull=True):
+            werte = {
+                "anrede": a.anrede, "vorname": a.vorname, "nachname": a.nachname,
+                "geburtsdatum": _datum_text(a.geburtsdatum),
+                "strasse": a.strasse, "plz": a.plz, "ort": a.ort,
+                "telefon": a.telefon, "email": a.email.lower(),
+                "familienstand": a.familienstand, "staatsangehoerigkeit": a.staatsangehoerigkeit,
+                "gdb": "" if a.gdb is None else str(a.gdb), "merkzeichen": a.merkzeichen,
+                "wochentage": a.wochentage, "ausgabestelle": a.ausgabestelle,
+                "kundennummer": a.kundennummer,
+                "eingegangen_am": _datum_text(timezone.localdate(a.eingegangen_am)),
+                "art": ANTRAG_ART.get(a.art, "Neuanmeldung"),
+                "status": ANTRAG_STATUS.get(a.status, "neu"),
+                "nachricht": a.nachricht,
+            }  # fmt: skip
+            ergebnis.append(Bestandseintrag(
+                id=str(a.pk), name=f"{a.nummer} · {a.name}", werte=werte,
+                link=reverse("antraege:antrag", args=[a.pk]),
+            ))  # fmt: skip
+        return ergebnis
+
+    def treffer_finder(self, bestand):
+        nach_name: dict[str, list] = {}
+        for b in bestand:
+            n = normalisieren(f"{b.werte['vorname']} {b.werte['nachname']}")
+            if n:
+                nach_name.setdefault(n, []).append(b)
+
+        def finden(werte):
+            gleiche = nach_name.get(normalisieren(self.name(werte)), [])
+            geb = werte.get("geburtsdatum", "")
+            for b in gleiche:
+                if geb and b.werte["geburtsdatum"] == geb:
+                    return Treffer(b.id, True)
+            if gleiche:
+                b = gleiche[0]
+                if geb and b.werte["geburtsdatum"] and b.werte["geburtsdatum"] != geb:
+                    return Treffer(b.id, False, "gleicher Name, anderes Geburtsdatum")
+                return Treffer(b.id, False, "gleicher Name")
+            return None
+
+        return finden
+
+    @staticmethod
+    def _setzen(a, werte):
+        from django.utils import timezone
+
+        code = {v: k for k, v in ANTRAG_ART.items()}
+        status_code = {v: k for k, v in ANTRAG_STATUS.items()}
+        for k in ("anrede", "vorname", "nachname", "strasse", "plz", "ort", "telefon", "email",
+                  "familienstand", "staatsangehoerigkeit", "merkzeichen", "wochentage",
+                  "ausgabestelle", "kundennummer", "nachricht"):  # fmt: skip
+            if k in werte:
+                setattr(a, k, werte[k])
+        if "geburtsdatum" in werte:
+            geb = werte["geburtsdatum"]
+            a.geburtsdatum = wertlesen.datum(geb) if geb else None
+        if "gdb" in werte:
+            a.gdb = int(werte["gdb"]) if werte["gdb"] else None
+        if "art" in werte:
+            a.art = code.get(werte["art"], "neu")
+        if werte.get("status"):
+            a.status = status_code.get(werte["status"], "neu")
+        if werte.get("eingegangen_am"):
+            tag = wertlesen.datum(werte["eingegangen_am"])
+            a.eingegangen_am = timezone.make_aware(dt.datetime.combine(tag, dt.time()))
+
+    @transaction.atomic
+    def anwenden(self, entscheidung, verwalter):
+        from apps.antraege.models import Antrag
+
+        neu = 0
+        for werte in entscheidung.anlegen:
+            a = Antrag(sprache="de")
+            self._setzen(a, werte)
+            a.save()  # vergibt die Antragsnummer
+            neu += 1
+        for pk, werte in entscheidung.aendern.items():
+            a = Antrag.objects.filter(pk=pk).first()
+            if a is None:
+                continue
+            self._setzen(a, werte)
+            a.save()
+        return [f"{neu} neu angelegt", f"{len(entscheidung.aendern)} aktualisiert"]
+
+
 # --- Kundenstamm ------------------------------------------------------------------------
 
 KUNDEN_BEZEICHNUNG = {
@@ -1550,6 +1749,7 @@ ZIELE = {
         Mitarbeitende(),
         Adressbuch(),
         Mitglieder(),
+        Antraege(),
     )  # fmt: skip
 }
 
