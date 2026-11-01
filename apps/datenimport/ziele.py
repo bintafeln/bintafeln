@@ -1426,9 +1426,8 @@ ANTRAG_FELDER = [
     ),  # fmt: skip
     Feld("art", "Art (Neuanmeldung/Verlängerung)", ("antragsart",)),
     Feld("status", "Status (neu, in Bearbeitung, erledigt, abgelehnt)", ("antragsstatus",)),
-    Feld(
-        "nachricht", "Nachricht", ("mitteilung", "kommentar", "anmerkung", "notiz"), typ="langtext"
-    ),
+    Feld("nachricht", "Nachricht", ("mitteilung",), typ="langtext"),
+    Feld("anmerkung", "Anmerkung", ("kommentar", "comment", "bemerkung", "notiz"), typ="langtext"),
     Feld(
         "angehoerige",
         "Angehörige (je Zeile „Vorname TT.MM.JJJJ“)",
@@ -1648,7 +1647,7 @@ class Antraege(Ziel):
 
     @transaction.atomic
     def anwenden(self, entscheidung, verwalter):
-        from apps.antraege.models import Antrag, AntragPerson
+        from apps.antraege.models import Antrag, AntragAnmerkung, AntragPerson
 
         neu = angehoerige = 0
         # Erst die Anträge mit eigener Nummer anlegen, dann die ohne: So zählt die automatische
@@ -1668,6 +1667,8 @@ class Antraege(Ziel):
             for vorname, geb in _angehoerige(werte.get("angehoerige", "")):
                 AntragPerson.objects.create(antrag=a, vorname=vorname, geburtsdatum=geb)
                 angehoerige += 1
+            if werte.get("anmerkung"):
+                AntragAnmerkung.objects.create(antrag=a, text=werte["anmerkung"], von="Import")
         for pk, werte in entscheidung.aendern.items():
             a = Antrag.objects.filter(pk=pk).first()
             if a is None:
