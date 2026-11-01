@@ -100,7 +100,7 @@
       {% csrf_token %}
       <input type="hidden" name="abfrage" value="{{ abfrage }}">
       <div class="feld"><label for="titel-e">Titel</label><input type="text" name="titel" id="titel-e" maxlength="100" value="{{ eigene.titel }}"></div>
-      {% if darf_teilen %}{% include "listen/_freigabe.html" with praefix="e-" gewaehlt=eigene.sichtbarkeit gewaehlt_stelle=eigene.ausgabestelle_id gewaehlt_person=eigene.fuer_person_id %}{% endif %}
+      {% if darf_teilen %}{% include "listen/_freigabe.html" with praefix="e-" gewaehlt=eigene.sichtbarkeit gewaehlt_stellen=eigene.ausgabestellen.all gewaehlt_personen=eigene.fuer_personen.all %}{% endif %}
       <button type="submit" class="knopf knopf-zweitrangig">Änderungen übernehmen</button>
       <p class="hinweis">Übernimmt Titel, Freigabe und die aktuellen Einstellungen (Filter, Spalten, Sortierung) in diese gespeicherte Liste.</p>
     </form>
