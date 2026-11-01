@@ -3,7 +3,6 @@ import io
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q
 from django.http import Http404, HttpResponse, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -58,11 +57,46 @@ def _sichtbar(request, liste):
     return [x for x in katalog.LISTEN if not x.recht or x.recht in darf]
 
 
+def _meine_stellen(request) -> set:
+    return set(request.user.ausgabestellen.values_list("pk", flat=True))
+
+
 def _eigene_listen(request):
     darf = rollen.rechte_von(request.user)
-    qs = EigeneListe.objects.filter(Q(benutzer=request.user) | Q(fuer_alle=True))
+    meine = _meine_stellen(request)
+    qs = EigeneListe.objects.select_related("ausgabestelle", "fuer_person")
     return [e for e in qs if (x := katalog.NACH_KENNUNG.get(e.kennung))
-            and (not x.recht or x.recht in darf)]  # fmt: skip
+            and (not x.recht or x.recht in darf)
+            and e.sichtbar_fuer(request.user, meine)]  # fmt: skip
+
+
+def _freigabe(request):
+    """(sichtbarkeit, ausgabestelle, fuer_person) aus dem Formular. Ohne das Recht „listen.teilen“
+    bleibt die Liste privat. Fehlt bei Ausgabestelle/Person die Auswahl, ebenfalls privat."""
+    from django.contrib.auth import get_user_model
+
+    from apps.kunden.models import Ausgabestelle
+
+    S = EigeneListe.Sichtbarkeit
+    if not rollen.hat_recht(request.user, "listen.teilen"):
+        return S.PRIVAT, None, None
+    s = request.POST.get("sichtbarkeit", S.PRIVAT)
+    if s not in S.values:
+        s = S.PRIVAT
+    stelle = person = None
+    if s == S.STELLE:
+        stelle = Ausgabestelle.objects.filter(pk=request.POST.get("ausgabestelle") or 0).first()
+        if stelle is None:
+            s = S.PRIVAT
+    elif s == S.PERSON:
+        person = (
+            get_user_model()
+            .objects.filter(pk=request.POST.get("fuer_person") or 0, stelle__isnull=True)
+            .first()
+        )
+        if person is None:
+            s = S.PRIVAT
+    return s, stelle, person
 
 
 @never_cache
@@ -106,9 +140,21 @@ def liste(request, kennung):
         kandidat = EigeneListe.objects.filter(pk=eigene_pk, kennung=kennung).first()
         if kandidat and kandidat in _eigene_listen(request):
             eigene_obj = kandidat
+    darf_teilen = rollen.hat_recht(request.user, "listen.teilen")
     darf_eigene = eigene_obj is not None and (
-        eigene_obj.benutzer_id == request.user.pk
-        or rollen.hat_recht(request.user, "listen.teilen"))  # fmt: skip
+        eigene_obj.benutzer_id == request.user.pk or darf_teilen
+    )
+    if darf_teilen:
+        from django.contrib.auth import get_user_model
+
+        from apps.kunden.models import Ausgabestelle
+
+        freigabe_stellen = Ausgabestelle.objects.order_by("name")
+        freigabe_personen = (get_user_model().objects
+                             .filter(stelle__isnull=True, is_active=True)
+                             .order_by("last_name", "first_name"))  # fmt: skip
+    else:
+        freigabe_stellen = freigabe_personen = []
     return render(request, "listen/liste.html", {
         "liste": liste, "p": p, "abfrage": p.urlencode(), "e": ergebnis,
         "kopf": _kopf(p, liste, ergebnis.spalten),
@@ -123,7 +169,9 @@ def liste(request, kennung):
         if "einkommensart" in liste.filter else [],
         "nationen": abfrage.staatsangehoerigkeiten(request.user)
         if "staatsangehoerigkeit" in liste.filter else [],
-        "darf_teilen": rollen.hat_recht(request.user, "listen.teilen"),
+        "darf_teilen": darf_teilen,
+        "freigabe_stellen": freigabe_stellen, "freigabe_personen": freigabe_personen,
+        "sichtbarkeiten": EigeneListe.Sichtbarkeit.choices,
         "eigene": eigene_obj, "darf_eigene_bearbeiten": darf_eigene,
     })  # fmt: skip
 
@@ -222,14 +270,13 @@ def export(request, kennung, art):
 def speichern(request, kennung):
     liste = _liste(request, kennung)
     titel = request.POST.get("titel", "").strip()[:100] or liste.titel
-    fuer_alle = bool(request.POST.get("fuer_alle")) and rollen.hat_recht(
-        request.user, "listen.teilen"
-    )
+    sichtbarkeit, stelle, person = _freigabe(request)
     p = QueryDict(request.POST.get("abfrage", ""), mutable=True)
     p.pop("id", None)
     p.pop("eigene", None)
     e = EigeneListe.objects.create(titel=titel, kennung=liste.kennung, parameter=p.urlencode(),
-                                   benutzer=request.user, fuer_alle=fuer_alle)  # fmt: skip
+                                   benutzer=request.user, sichtbarkeit=sichtbarkeit,
+                                   ausgabestelle=stelle, fuer_person=person)  # fmt: skip
     messages.success(request, f"Liste „{titel}“ gespeichert. Sie steht unter „Alle Listen“.")
     ziel = reverse("listen:liste", args=[liste.kennung])
     return redirect(f"{ziel}?{p.urlencode()}&eigene={e.pk}")
@@ -251,7 +298,7 @@ def eigene_aktualisieren(request, pk):
     e.titel = request.POST.get("titel", "").strip()[:100] or e.titel
     e.parameter = p.urlencode()
     if darf_teilen:  # die Freigabe ändern darf nur, wer teilen darf
-        e.fuer_alle = bool(request.POST.get("fuer_alle"))
+        e.sichtbarkeit, e.ausgabestelle, e.fuer_person = _freigabe(request)
     e.save()
     messages.success(request, f"Liste „{e.titel}“ aktualisiert.")
     ziel = reverse("listen:liste", args=[liste.kennung])

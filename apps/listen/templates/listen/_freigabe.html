@@ -1,0 +1,18 @@
+{% comment %}Sichtbarkeit einer eigenen Liste. Erwartet: praefix, gewaehlt, gewaehlt_stelle,
+gewaehlt_person (aus dem umgebenden {% include %} with). freigabe_stellen/-personen und
+sichtbarkeiten stehen im Seitenkontext.{% endcomment %}
+<div class="feld"><label for="{{ praefix }}sichtbar">Sichtbar für</label>
+  <select name="sichtbarkeit" id="{{ praefix }}sichtbar">
+    {% for wert, bez in sichtbarkeiten %}<option value="{{ wert }}"{% if wert == gewaehlt %} selected{% endif %}>{{ bez }}</option>{% endfor %}
+  </select>
+</div>
+<div class="feld" data-zeigen-bei="sichtbarkeit=stelle"><label for="{{ praefix }}stelle">Ausgabestelle</label>
+  <select name="ausgabestelle" id="{{ praefix }}stelle"><option value="">bitte wählen</option>
+    {% for s in freigabe_stellen %}<option value="{{ s.pk }}"{% if s.pk == gewaehlt_stelle %} selected{% endif %}>{{ s.name }}</option>{% endfor %}
+  </select>
+</div>
+<div class="feld" data-zeigen-bei="sichtbarkeit=person"><label for="{{ praefix }}person">Person</label>
+  <select name="fuer_person" id="{{ praefix }}person"><option value="">bitte wählen</option>
+    {% for p in freigabe_personen %}<option value="{{ p.pk }}"{% if p.pk == gewaehlt_person %} selected{% endif %}>{{ p.get_full_name|default:p.username }}</option>{% endfor %}
+  </select>
+</div>
