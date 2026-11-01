@@ -348,29 +348,34 @@ def test_antraege_importieren(admin_client):
     vorhanden = Antrag.objects.create(
         vorname="Anna", nachname="Beispiel", geburtsdatum=dt.date(1990, 2, 1), telefon="alt"
     )
+    alte_nummer = vorhanden.laufnummer
     datei = csv_datei(
         "antraege.csv",
-        "Vorname;Nachname;Geburtsdatum;PLZ;Ort;Telefon;Status;Eingegangen am;Grad der Behinderung",
-        "Max;Mustermann;15.03.1985;45127;Essen;0201 123;neu;10.09.2026;50",
-        "Anna;Beispiel;01.02.1990;;;0201 999;in Bearbeitung;;",
+        "Antragsnummer;Vorname;Nachname;Geburtsdatum;PLZ;Ort;Telefon;Status;Eingegangen am;Grad der Behinderung",  # noqa: E501
+        "500;Max;Mustermann;15.03.1985;45127;Essen;0201 123;neu;10.09.2026;50",
+        ";Anna;Beispiel;01.02.1990;;;0201 999;in Bearbeitung;;",
+        ";Lea;Neu;05.05.1995;;;;neu;;",
     )
     sitzung = hochladen(admin_client, "antraege", datei)
     weiter(admin_client, sitzung)
     url = reverse("datenimport:abgleich", args=[sitzung.pk])
     inhalt = admin_client.get(url + "?modus=aktualisieren").content.decode()
     assert "Beispiel" in inhalt  # der vorhandene Antrag taucht im Abgleich auf
-    alle = {f"f-{i}-{z}": "1" for i in range(2) for z in sitzung.tabellen[0]["zuordnung"] if z}
+    alle = {f"f-{i}-{z}": "1" for i in range(3) for z in sitzung.tabellen[0]["zuordnung"] if z}
     antwort = admin_client.post(url, {"modus": "aktualisieren", **alle})
     assert antwort.url == reverse("antraege:liste")
-    # Neuer Antrag angelegt, mit Antragsnummer
+    # Neuer Antrag angelegt; Antragsnummer aus der Datei übernommen
     neu = Antrag.objects.get(nachname="Mustermann")
     assert (neu.vorname, neu.plz, neu.ort) == ("Max", "45127", "Essen")
-    assert (neu.status, neu.gdb) == ("neu", 50)
-    assert neu.geburtsdatum == dt.date(1985, 3, 15) and neu.laufnummer
+    assert (neu.status, neu.gdb, neu.laufnummer) == ("neu", 50, 500)
+    assert neu.geburtsdatum == dt.date(1985, 3, 15)
     assert timezone.localdate(neu.eingegangen_am) == dt.date(2026, 9, 10)
-    # Vorhandener über Name + Geburtsdatum erkannt und aktualisiert
+    # Ohne eigene Nummer wird oberhalb der höchsten übernommenen Nummer weitergezählt
+    assert Antrag.objects.get(nachname="Neu").laufnummer == 501
+    # Vorhandener über Name + Geburtsdatum erkannt und aktualisiert; seine Nummer bleibt
     vorhanden.refresh_from_db()
     assert vorhanden.telefon == "0201 999" and vorhanden.status == "in_bearbeitung"
+    assert vorhanden.laufnummer == alte_nummer
 
 
 # --- Mitarbeitende ----------------------------------------------------------------------
