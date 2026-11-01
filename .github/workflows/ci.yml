@@ -2,6 +2,10 @@ name: CI
 
 on:
   pull_request:
+  # Merge Queue: GitHub testet jeden PR auf dem kombinierten Stand und mergt der Reihe nach,
+  # sobald grün – ohne dass offene PRs nach jedem Merge „veraltet“ werden. Dafür müssen die
+  # Pflicht-Checks auch auf diesem Ereignis laufen, sonst hängt die Queue.
+  merge_group:
   push:
     branches: [main]
 
