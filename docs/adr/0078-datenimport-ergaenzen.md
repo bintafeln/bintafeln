@@ -92,3 +92,11 @@ legt die `Antrag`-Datensätze über das Modell an und verschickt keine Mails. Re
 `antraege.bearbeiten`. Eine **Antragsnummer** aus der Datei wird übernommen, sofern sie noch frei
 ist; danach zählt `naechste_antragsnummer()` oberhalb der höchsten übernommenen Nummer weiter.
 Bei vorhandenen Anträgen (erkannt an Nummer oder Name + Geburtsdatum) bleibt die Nummer unberührt.
+
+## Nachtrag: Anträge – Angehörige aus einer Spalte (2026-11-01)
+
+Manche Altprogramme speichern die Angehörigen eines Antrags in **einer** Zelle, je Zeile
+„Vorname TT.MM.JJJJ“. Das Feld „Angehörige“ des Anträge-Ziels liest dieses Format
+(`_angehoerige()`, tolerant gegenüber krummen Leerzeichen und fehlenden Zeilenumbrüchen) und
+legt beim **Neuanlegen** je Zeile eine `AntragPerson` mit Name und Geburtsdatum an. Bei
+vorhandenen Anträgen werden keine Angehörigen angelegt (sonst Dubletten).

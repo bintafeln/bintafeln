@@ -378,6 +378,35 @@ def test_antraege_importieren(admin_client):
     assert vorhanden.laufnummer == alte_nummer
 
 
+def test_antraege_angehoerige_aus_einer_spalte(admin_client):
+    from apps.antraege.models import Antrag
+
+    # Angehörige wie im Altprogramm: eine Zelle, je Zeile „Vorname TT.MM.JJJJ“ (krumme Abstände).
+    gepackt = "Yuliia 30.03.1978\nAndriy 02.10. 2008\nHanna 08.07.2010"
+    datei = excel_datei(
+        "antraege.xlsx",
+        {
+            "Anträge": [
+                ["Vorname", "Nachname", "Angehörige"],
+                ["Olek", "Schewtschenko", gepackt],
+            ]
+        },
+    )
+    sitzung = hochladen(admin_client, "antraege", datei)
+    weiter(admin_client, sitzung)
+    url = reverse("datenimport:abgleich", args=[sitzung.pk])
+    admin_client.get(url)
+    alle = {f"f-0-{z}": "1" for z in sitzung.tabellen[0]["zuordnung"] if z}
+    admin_client.post(url, {"modus": "aktualisieren", **alle})
+    antrag = Antrag.objects.get(nachname="Schewtschenko")
+    personen = list(antrag.personen.order_by("pk"))
+    assert [(p.vorname, p.geburtsdatum) for p in personen] == [
+        ("Yuliia", dt.date(1978, 3, 30)),
+        ("Andriy", dt.date(2008, 10, 2)),
+        ("Hanna", dt.date(2010, 7, 8)),
+    ]
+
+
 # --- Mitarbeitende ----------------------------------------------------------------------
 
 

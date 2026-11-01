@@ -1427,6 +1427,12 @@ ANTRAG_FELDER = [
     Feld(
         "nachricht", "Nachricht", ("mitteilung", "kommentar", "anmerkung", "notiz"), typ="langtext"
     ),
+    Feld(
+        "angehoerige",
+        "Angehörige (je Zeile „Vorname TT.MM.JJJJ“)",
+        ("angehoerige", "haushalt", "familienmitglieder", "mitglieder", "personen", "kinder"),
+        typ="langtext",
+    ),
 ]
 # Codes ↔ angezeigte Texte (die Modell-Auswahl ist stabil; Import und Bestand zeigen den Text,
 # gespeichert wird der Code).
@@ -1439,6 +1445,35 @@ ANTRAG_STATUS_EINGABE = {
     "erledigt": "erledigt", "fertig": "erledigt", "angenommen": "erledigt",
     "abgelehnt": "abgelehnt", "ablehnung": "abgelehnt",
 }  # fmt: skip
+# Datum in einer Angehörigen-Zeile, auch mit krummen Leerzeichen („02.10. 2008“).
+_ANGEHOERIGE_DATUM = re.compile(r"(\d{1,2})\s*\.\s*(\d{1,2})\s*\.\s*(\d{2,4})")
+
+
+def _angehoerige(text: str) -> list[tuple[str, dt.date | None]]:
+    """Angehörige aus einer Zelle lesen: je Zeile „Vorname TT.MM.JJJJ“. Fehlt der Zeilenumbruch
+    (aneinandergehängt), wird an den Datumsangaben getrennt. Liefert (Name, Geburtsdatum|None)."""
+    text = (text or "").strip()
+    if not text:
+        return []
+    zeilen = [z for z in re.split(r"[\r\n]+", text) if z.strip()]
+    if len(zeilen) <= 1:
+        teile = re.findall(r"\D*?\d{1,2}\s*\.\s*\d{1,2}\s*\.\s*\d{2,4}", text)
+        if len(teile) > 1:
+            zeilen = teile
+    ergebnis = []
+    for z in zeilen:
+        m = _ANGEHOERIGE_DATUM.search(z)
+        geb, name = None, z
+        if m:
+            name = (z[: m.start()] + z[m.end() :]).strip()
+            try:
+                geb = wertlesen.datum(f"{m.group(1)}.{m.group(2)}.{m.group(3)}")
+            except wertlesen.UngueltigerWert:
+                geb = None
+        name = " ".join(name.split())[:100]
+        if name:
+            ergebnis.append((name, geb))
+    return ergebnis
 
 
 class Antraege(Ziel):
@@ -1447,8 +1482,9 @@ class Antraege(Ziel):
     recht = "antraege.bearbeiten"
     beschreibung = (
         "Anträge (Neuanmeldungen) mit Antragsteller und Anschrift, ein Antrag je Zeile. "
-        "Angehörige, Einkommen und Nachweise kommen nicht mit; sie werden später im "
-        "Aufnahme-Assistenten ergänzt. Verschickt keine Mails."
+        "Angehörige lassen sich aus einer Spalte „Vorname TT.MM.JJJJ je Zeile“ übernehmen; "
+        "Einkommen und Nachweise kommen nicht mit (später im Aufnahme-Assistenten). "
+        "Verschickt keine Mails."
     )
     zurueck = ("antraege:liste", "Anträge")
 
@@ -1462,10 +1498,10 @@ class Antraege(Ziel):
         return normalisieren(self.name(werte)) + werte.get("geburtsdatum", "")
 
     def vergleichsfelder(self):
-        # Die Antragsnummer ist die Kennung, sie wird bei vorhandenen Anträgen nie geändert.
-        return [
-            (f.schluessel, f.bezeichnung) for f in ANTRAG_FELDER if f.schluessel != "laufnummer"
-        ]
+        # Antragsnummer ist die Kennung; Angehörige werden nur beim Neuanlegen übernommen –
+        # beide nicht Feld für Feld abgeglichen.
+        ohne = {"laufnummer", "angehoerige"}
+        return [(f.schluessel, f.bezeichnung) for f in ANTRAG_FELDER if f.schluessel not in ohne]
 
     def wert(self, f, wert, warnen):
         if f.schluessel == "laufnummer" and wert:
@@ -1567,9 +1603,9 @@ class Antraege(Ziel):
 
     @transaction.atomic
     def anwenden(self, entscheidung, verwalter):
-        from apps.antraege.models import Antrag
+        from apps.antraege.models import Antrag, AntragPerson
 
-        neu = 0
+        neu = angehoerige = 0
         # Erst die Anträge mit eigener Nummer anlegen, dann die ohne: So zählt die automatische
         # Nummerierung oberhalb der höchsten übernommenen Nummer weiter (naechste_antragsnummer).
         mit_nummer = [w for w in entscheidung.anlegen if w.get("laufnummer", "").isdigit()]
@@ -1583,13 +1619,20 @@ class Antraege(Ziel):
                 a.laufnummer = int(nummer)
             a.save()  # leere laufnummer = automatisch fortlaufend (über der höchsten Nummer)
             neu += 1
+            # Angehörige nur beim Neuanlegen (bei vorhandenen Anträgen käme es zu Dubletten).
+            for vorname, geb in _angehoerige(werte.get("angehoerige", "")):
+                AntragPerson.objects.create(antrag=a, vorname=vorname, geburtsdatum=geb)
+                angehoerige += 1
         for pk, werte in entscheidung.aendern.items():
             a = Antrag.objects.filter(pk=pk).first()
             if a is None:
                 continue
             self._setzen(a, werte)
             a.save()
-        return [f"{neu} neu angelegt", f"{len(entscheidung.aendern)} aktualisiert"]
+        hinweise = [f"{neu} neu angelegt", f"{len(entscheidung.aendern)} aktualisiert"]
+        if angehoerige:
+            hinweise.append(f"{angehoerige} Angehörige übernommen")
+        return hinweise
 
 
 # --- Kundenstamm ------------------------------------------------------------------------
