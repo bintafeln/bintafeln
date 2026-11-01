@@ -613,6 +613,10 @@ a.knopf-gefahr { color: #fff; }
 .menue-gruppe > summary:hover { background: var(--erfolg); }
 /* Ebene 3: Einträge eines Untermenüs, noch einmal eingerückt */
 .menue-gruppe > ul { margin: 0 0 .25rem .75rem; border-left: 2px dotted var(--rand); }
+.konto-ausscheiden { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--rand); }
+/* Unterpunkt eines Eintrags (vierte Ebene, z. B. Verträge & Zeiten unter Angestellte) */
+.menue-unter { margin: 0 0 .1rem .9rem; padding: 0; list-style: none; border-left: 2px dotted var(--rand); }
+.seitenmenue .menue-unter li a { font-size: .9rem; }
 .seitenmenue li a { padding: .4rem 1rem .4rem .75rem; font-size: .95rem; font-weight: 400; }
 .seitenmenue .menue-gruppe li a { font-size: .93rem; }
 .seitenmenue a:hover, .menue-oben:hover { background: var(--erfolg); }

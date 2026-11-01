@@ -21,6 +21,28 @@ def titel(bereich):
     return {g["titel"]: [e["titel"] for e in g["eintraege"]] for g in bereich["gruppen"]}
 
 
+def _team(benutzer):
+    anfrage = RequestFactory().get("/")
+    anfrage.user = benutzer
+    verein = next((b for b in menue(anfrage) if b["titel"] == "Verein"), None)
+    return next((g for g in verein["gruppen"] if g["titel"] == "Team"), None)
+
+
+def test_vertraege_und_zeiten_als_unterpunkt_von_angestellte(admin):
+    team = _team(admin)
+    # „Verträge & Zeiten“ ist kein eigener Team-Eintrag, sondern Unterpunkt von „Angestellte“.
+    assert [e["titel"] for e in team["eintraege"]] == ["Ehrenamtliche", "Angestellte"]
+    angestellte = next(e for e in team["eintraege"] if e["titel"] == "Angestellte")
+    assert [k["titel"] for k in angestellte.get("kinder", [])] == ["Verträge & Zeiten"]
+
+
+def test_vertraege_und_zeiten_eigenstaendig_ohne_verwaltung(benutzer_mit_rolle):
+    # Rolle Angestellte darf „Verträge & Zeiten“, aber nicht Mitarbeitende verwalten: eigener
+    # Eintrag, damit sie überhaupt hinkommt.
+    team = _team(benutzer_mit_rolle("hr", rollen.PERSONAL))
+    assert [e["titel"] for e in team["eintraege"]] == ["Verträge & Zeiten"]
+
+
 def test_admin_sieht_alle_untermenues(admin):
     gruppen = titel(einstellungen(admin))
     assert list(gruppen) == ["Tafel", "Kunden", "Ausgabe", "Verein", "Team",
