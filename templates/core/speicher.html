@@ -26,6 +26,23 @@
   <p><a class="knopf knopf-zweitrangig" href="{% url 'core:dateien' %}">Alle Dateien ansehen</a></p>
 </section>
 
+{% if tafel_bilder %}
+<section class="karte">
+  <h2>Bilder der Tafel</h2>
+  <p class="hinweis">Logo, App-Symbol und Hintergrundbilder, die in den Einstellungen hochgeladen wurden.
+    Ändern lassen sie sich unter <a href="{% url 'core:einstellungen' %}">Einstellungen → Tafel</a>.</p>
+  <ul class="bilder-galerie">
+    {% for b in tafel_bilder %}
+    <li>
+      <a href="{{ b.url }}" target="_blank" rel="noopener"><img src="{{ b.url }}" alt="{{ b.name }}" loading="lazy"></a>
+      <span class="bild-name">{{ b.name }}</span>
+      {% if b.groesse is not None %}<span class="bild-groesse">{{ b.groesse|filesizeformat }}</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
 <section class="karte">
   <h2>Vorhandene Fotos verkleinern</h2>
   <p>Wendet die Einstellungen oben auf schon gespeicherte Fotos an (je Klick bis zu 200). Die Originale bleiben

@@ -1443,6 +1443,17 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 .hintergrund-liste img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--radius);
   border: 1px solid var(--rand); }
 
+/* Galerie der Tafel-Bilder (Speicher und Fotos): Vorschau als Kachel, object-fit contain, damit
+   auch das Logo und das quadratische App-Symbol vollständig zu sehen sind. */
+.bilder-galerie { list-style: none; padding: 0; margin: 0; display: grid; gap: .75rem;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); }
+.bilder-galerie li { display: flex; flex-direction: column; gap: .2rem; }
+.bilder-galerie img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; border-radius: var(--radius);
+  border: 1px solid var(--rand); background:
+    repeating-conic-gradient(var(--flaeche) 0 25%, #fff 0 50%) 0 0 / 1.2rem 1.2rem; }
+.bilder-galerie .bild-name { font-weight: 600; font-size: .9rem; }
+.bilder-galerie .bild-groesse { color: var(--leise); font-size: .85rem; }
+
 /* Mehrfachauswahl als aufklappbares Menü (Mehrfachauswahl in apps/core/forms.py) */
 .mehrfach { position: relative; }
 .mehrfach-kopf {

@@ -11,7 +11,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 
 from apps.core import privatdateien, sicherung
-from apps.core.models import FotoEinstellungen
+from apps.core.models import FotoEinstellungen, Hintergrundbild, TafelEinstellungen
 from apps.konten import rollen
 from apps.konten.views import nicht_in_demo
 
@@ -37,6 +37,32 @@ def _sicherung_frisch() -> bool:
     status = sicherung.lese_status()
     erfolgreich = status.letzte_erfolgreiche
     return erfolgreich is not None and timezone.now() - erfolgreich <= SICHERUNG_HOECHSTENS
+
+
+def _bild(name: str, feld) -> dict | None:
+    """Ein Eintrag für die Bilder-Galerie oder None, wenn kein Bild hinterlegt ist."""
+    if not feld:
+        return None
+    try:
+        groesse = feld.size
+    except (OSError, ValueError):
+        groesse = None
+    return {"name": name, "url": feld.url, "groesse": groesse}
+
+
+def tafel_bilder() -> list[dict]:
+    """Die von der Tafel hochgeladenen, öffentlichen Bilder (Logo, App-Symbol, Hintergründe)
+    zum Ansehen – damit niemand in den Einstellungen suchen muss, was gerade hinterlegt ist."""
+    t = TafelEinstellungen.laden()
+    eintraege = [
+        _bild("Logo", t.logo),
+        _bild("App-Symbol", t.app_symbol),
+        _bild("Hintergrund der Anmeldeseite", t.hintergrund_anmeldung),
+        _bild("Hintergrund der übrigen Seiten", t.hintergrund),
+    ]
+    for h in Hintergrundbild.objects.all():
+        eintraege.append(_bild(f"Weiteres Hintergrundbild ({h.get_bereich_display()})", h.bild))
+    return [e for e in eintraege if e]
 
 
 @never_cache
@@ -65,6 +91,7 @@ def seite(request):
         "originale": sum(z["originale"] for z in bestand),
         "datenbank": _datenbank_groesse(),
         "sicherung_frisch": _sicherung_frisch(),
+        "tafel_bilder": tafel_bilder(),
     })  # fmt: skip
 
 
