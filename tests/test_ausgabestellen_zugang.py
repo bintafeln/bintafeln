@@ -90,24 +90,24 @@ def test_nachfrist_ausgeschiedene_bleiben_eine_weile_sichtbar(benutzer_mit_rolle
     alt = ausgeschieden("401", g_mitte, 100)  # vor 100 Tagen an „Mitte"
     fremd = ausgeschieden("402", g_nord, 5)  # vor 5 Tagen, aber an „Nord"
 
-    def sichtbar(h):
+    def in_liste(h):
         return zugang.filtern(Haushalt.objects, b).filter(pk=h.pk).exists()
 
-    # In der Nachfrist an der eigenen Stelle: sichtbar, kein Sperrgrund.
-    assert zugang.sperrgrund(b, weg) == "" and sichtbar(weg)
-    # Zu lange her: nicht mehr sichtbar.
-    assert "keiner Kundengruppe zugeordnet" in zugang.sperrgrund(b, alt) and not sichtbar(alt)
-    # Fremde Ausgabestelle: nicht sichtbar.
-    assert zugang.sperrgrund(b, fremd) != "" and not sichtbar(fremd)
+    # In der Nachfrist an der eigenen Stelle: direkt aufrufbar (kein Sperrgrund) …
+    assert zugang.sperrgrund(b, weg) == ""
+    # … aber in Listen tauchen Ausgeschiedene nicht auf.
+    assert not in_liste(weg) and not in_liste(alt) and not in_liste(fremd)
+    # Zu lange her: nicht mehr aufrufbar.
+    assert "keiner Kundengruppe zugeordnet" in zugang.sperrgrund(b, alt)
+    # Fremde Ausgabestelle: nicht aufrufbar.
+    assert zugang.sperrgrund(b, fremd) != ""
 
-    # Nachfrist auf 0: sofort unsichtbar wie bisher.
+    # Nachfrist auf 0: sofort auch nicht mehr aufrufbar wie bisher.
     e = KundenEinstellungen.laden()
     e.nachfrist_sichtbar_tage = 0
     e.save()
     b = type(b).objects.get(pk=b.pk)  # Stellen-Zwischenspeicher zurücksetzen
-    assert zugang.sperrgrund(b, weg) != "" and not zugang.filtern(Haushalt.objects, b).filter(
-        pk=weg.pk
-    ).exists()
+    assert zugang.sperrgrund(b, weg) != ""
 
 
 def test_einlass(anton):

@@ -31,9 +31,11 @@ ein Kunde in welcher Gruppe war.
   Zuordnung zur Ausgabestelle und wäre für deren Konten sofort unsichtbar. Damit die Ausgabestelle
   einen gerade Ausgeschiedenen noch ansprechen oder einordnen kann, bleibt er ihr über
   `KundenEinstellungen.nachfrist_sichtbar_tage` (Vorgabe 60 Tage, 0 = aus) noch eine Weile
-  **eingeschränkt** sichtbar: Die frühere Ausgabestelle (aus der jüngsten `Gruppenzeit`, deren Ende
-  höchstens so lange zurückliegt) darf den Haushalt ansehen; die Ampel sperrt die Abholung ohnehin.
-  Danach gilt wieder „Kein Zugriff“. Das Recht „Kunden aller Ausgabestellen“ sieht wie bisher alle.
+  **eingeschränkt aufrufbar**: Die frühere Ausgabestelle (aus der jüngsten `Gruppenzeit`, deren Ende
+  höchstens so lange zurückliegt) darf den Haushalt **direkt aufrufen** (Einlass/Detailseite über
+  `zugang.sperrgrund`); die Ampel sperrt die Abholung ohnehin. In **Listen** (`zugang.filtern`)
+  taucht er dagegen **nicht** auf. Danach gilt wieder „Kein Zugriff“. Das Recht „Kunden aller
+  Ausgabestellen“ sieht wie bisher alle.
 
 ## Begründung
 
