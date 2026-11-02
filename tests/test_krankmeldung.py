@@ -51,6 +51,10 @@ def test_melden_in_der_verwaltung(h, an, admin_client):
     url = reverse("kunden:haushalt", args=["00042"])
     seite = admin_client.get(url).content.decode()
     assert "Krank melden …" in seite and 'summary class="knopf knopf-vorlage"' in seite
+    # Von und Bis sind mit dem heutigen Datum vorbelegt (beide überschreibbar).
+    heute_iso = HEUTE.isoformat()
+    assert f'name="krank_von" id="krank-von" value="{heute_iso}"' in seite
+    assert f'name="krank_bis" id="krank-bis" value="{heute_iso}"' in seite
     bis = HEUTE + dt.timedelta(days=13)
     admin_client.post(reverse("kunden:krank_neu", args=["00042"]), {
         "krank_grund": "reha", "krank_von": HEUTE.isoformat(), "krank_bis": bis.isoformat(),
