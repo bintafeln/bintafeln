@@ -56,11 +56,11 @@ def _quote(a: str, b: str) -> float:
     return difflib.SequenceMatcher(None, a, b).ratio() if a and b else 0.0
 
 
-def _namen_paar(vorname: str, nachname: str, v2: str, n2: str) -> float:
-    """Ähnlichkeit, wenn Vorname→v2 und Nachname→n2 zusammengehören. Beide Hälften müssen passen:
-    passt nur eine (z. B. gleicher Nachname, aber anderer Vorname), wird stark abgewertet, damit
-    nicht schon halbe Namensgleichheit als Treffer durchgeht."""
-    vn, nn = _quote(normal(vorname), normal(v2)), _quote(normal(nachname), normal(n2))
+def _namen_paar_n(av: str, an: str, bv: str, bn: str) -> float:
+    """Wie :func:`_namen_paar`, aber mit bereits normalisierten Namen (schon klein, ohne Akzente).
+    Beide Hälften müssen passen: passt nur eine (z. B. gleicher Nachname, aber anderer Vorname),
+    wird stark abgewertet, damit nicht schon halbe Namensgleichheit als Treffer durchgeht."""
+    vn, nn = _quote(av, bv), _quote(an, bn)
     mittel = (vn + nn) / 2
     schwaecher = min(vn, nn)
     # Erst ab spürbarer Ähnlichkeit beider Hälften zählt der Name voll; darunter (z. B. zufällig
@@ -68,12 +68,25 @@ def _namen_paar(vorname: str, nachname: str, v2: str, n2: str) -> float:
     return mittel if schwaecher >= 0.55 else mittel * (schwaecher / 0.55) ** 2
 
 
+def _aehnlichkeit_n(av: str, an: str, bv: str, bn: str) -> float:
+    """0 bis 1 aus bereits normalisierten Namen; berücksichtigt vertauschte Vor-/Nachnamen."""
+    return max(_namen_paar_n(av, an, bv, bn), _namen_paar_n(av, an, bn, bv))
+
+
+def _vielleicht_aehnlich(av: str, an: str, bv: str, bn: str) -> bool:
+    """Billige Obergrenze für die Namensähnlichkeit (``quick_ratio`` ≥ ``ratio``). Liegt sie unter
+    der Treffer-Schwelle 0,5, ist auch der genaue Wert darunter – dann die teure Berechnung (und
+    beim großen Kundenstamm sehr viele davon) überspringen."""
+
+    def ob(a: str, b: str) -> float:
+        return difflib.SequenceMatcher(None, a, b).quick_ratio() if a and b else 0.0
+
+    return max((ob(av, bv) + ob(an, bn)) / 2, (ob(av, bn) + ob(an, bv)) / 2) >= 0.5
+
+
 def namens_aehnlichkeit(vorname: str, nachname: str, v2: str, n2: str) -> float:
     """0 bis 1; berücksichtigt auch vertauschte Vor- und Nachnamen."""
-    return max(
-        _namen_paar(vorname, nachname, v2, n2),
-        _namen_paar(vorname, nachname, n2, v2),  # Vor- und Nachname vertauscht
-    )
+    return _aehnlichkeit_n(normal(vorname), normal(nachname), normal(v2), normal(n2))
 
 
 def _datum_punkte(a: dt.date | None, b: dt.date | None) -> tuple[int, str]:
@@ -98,8 +111,20 @@ def einstufung(punkte: int) -> tuple[str, str]:
     return "niedrig", "eher nicht – nur bei Bedarf"
 
 
-def treffer(antrag) -> list[dict]:
-    """Ähnliche Haushalte, beste zuerst: {haushalt, person, punkte, gruende, stufe, stufe_text}."""
+def kandidaten() -> list[tuple]:
+    """Alle Personen mit schon normalisierten Namen: ``(person, vorname_norm, nachname_norm)``.
+    Einmal berechnen und an viele ``treffer()``-Aufrufe geben (Warteliste-Abgleich), damit die
+    Namen nicht für jeden Antrag neu normalisiert werden."""
+    return [
+        (p, normal(p.vorname), normal(p.nachname))
+        for p in Person.objects.select_related("haushalt")
+    ]
+
+
+def treffer(antrag, vorberechnet: list[tuple] | None = None) -> list[dict]:
+    """Ähnliche Haushalte, beste zuerst: {haushalt, person, punkte, gruende, stufe, stufe_text}.
+    ``vorberechnet`` (aus :func:`kandidaten`) spart beim Abgleich vieler Anträge das wiederholte
+    Laden und Normalisieren der Personen."""
     beste: dict[int, dict] = {}
     if antrag.kundennummer:
         h = Haushalt.objects.filter(kundennummer__iexact=antrag.kundennummer).first()
@@ -107,8 +132,11 @@ def treffer(antrag) -> list[dict]:
             beste[h.pk] = {"haushalt": h, "person": h.hauptperson, "punkte": 100,
                            "gruende": ["Kundennummer aus dem Antrag"]}  # fmt: skip
     plz, strasse = (antrag.plz or "").strip(), normal(antrag.strasse)
-    for p in Person.objects.select_related("haushalt"):
-        name = namens_aehnlichkeit(antrag.vorname, antrag.nachname, p.vorname, p.nachname)
+    av, an = normal(antrag.vorname), normal(antrag.nachname)
+    for p, pv, pn in vorberechnet if vorberechnet is not None else kandidaten():
+        if not _vielleicht_aehnlich(av, an, pv, pn):
+            continue
+        name = _aehnlichkeit_n(av, an, pv, pn)
         if name < 0.5:
             continue
         punkte = round(name * 70)

@@ -72,6 +72,18 @@ def test_treffer(bestand):
     assert aufnahme.treffer(mit_nummer)[0]["punkte"] == 100
 
 
+def test_treffer_vorberechnet_wie_direkt(bestand):
+    """Der schnelle Weg mit vorberechneten Personen (Warteliste-Abgleich) liefert genau dieselben
+    Treffer wie der einzelne Aufruf – nur ohne die Personen je Antrag neu zu normalisieren."""
+    vor = aufnahme.kandidaten()
+    for a in (antrag(vorname="Erica", nachname="Musterman", geburtsdatum=dt.date(1968, 12, 3)),
+              antrag(vorname="Max", nachname="Probe", geburtsdatum=None),
+              antrag(vorname="Mustermann", nachname="Erika")):  # fmt: skip
+        direkt = [(t["haushalt"].pk, t["punkte"]) for t in aufnahme.treffer(a)]
+        schnell = [(t["haushalt"].pk, t["punkte"]) for t in aufnahme.treffer(a, vor)]
+        assert direkt == schnell
+
+
 def test_gleicher_nachname_anderer_vorname_kein_treffer(bestand):
     """Nur der Nachname gleich (anderer Vorname) soll kein Treffer mehr sein – auch nicht mit
     gleichem Geburtsjahr."""

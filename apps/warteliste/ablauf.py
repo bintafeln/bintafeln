@@ -441,11 +441,12 @@ def hinweise(haushalt, person, heute, e=None) -> list[dict]:
     return erg
 
 
-def _offene_treffer(a, heute, e) -> list[dict]:
+def _offene_treffer(a, heute, e, vorberechnet=None) -> list[dict]:
     """Treffer eines Antrags, die noch niemand geprüft hat (mit Hinweisen und Folge)."""
     entschieden = set(AbgleichEntscheidung.objects.filter(antrag=a)
                       .values_list("kundennummer", flat=True))  # fmt: skip
-    treffer = [t for t in aufnahme.treffer(a) if t["haushalt"].kundennummer not in entschieden]
+    treffer = [t for t in aufnahme.treffer(a, vorberechnet)
+               if t["haushalt"].kundennummer not in entschieden]  # fmt: skip
     for t in treffer:
         t["hinweise"] = hinweise(t["haushalt"], t["person"], heute, e)
         t["folge"] = folge(t["hinweise"])
@@ -467,11 +468,14 @@ def kundenabgleich(antraege, heute=None) -> list[dict]:
     Sperrzeit zuerst. Anträge, bei denen schon „derselbe Haushalt“ bestätigt ist, fehlen."""
     heute = heute or timezone.localdate()
     e = WartelisteEinstellungen.laden()
+    # Personen mit normalisierten Namen einmal laden – nicht für jeden Antrag neu (sonst wird der
+    # Abgleich beim großen Kundenstamm so langsam, dass gunicorn den Prozess abbricht).
+    vorberechnet = aufnahme.kandidaten()
     ergebnis = []
     for a in antraege:
         if a.abgleich.filter(gleich=True).exists():
             continue
-        treffer = _offene_treffer(a, heute, e)
+        treffer = _offene_treffer(a, heute, e, vorberechnet)
         if not treffer:
             continue
         sperr = any(h["art"] == "sperr" for t in treffer for h in t["hinweise"])
