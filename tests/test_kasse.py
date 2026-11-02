@@ -105,6 +105,27 @@ def test_ausgabe_sieht_summen_aber_keine_einzelbuchungen(als, buchungen):
     assert "ohne Ausgabestelle" in inhalt and "Buchungen des Tages" not in inhalt
 
 
+def test_ausgabestelle_sieht_nur_eigene_kasse(client, admin, buchungen, benutzer_mit_rolle,
+                                              anmelden):  # fmt: skip
+    # Ein Konto, das nur der Ausgabestelle „Nord" zugeordnet ist, sieht in der Kasse auch nur
+    # deren Zahlen – nicht „Mitte" und nicht die Buchungen „ohne Ausgabestelle" (ADR 0034).
+    mitte, nord = buchungen
+    benutzer = benutzer_mit_rolle("nordkonto", rollen.AUSGABE)
+    benutzer.ausgabestellen.add(nord)
+    anmelden(client, benutzer)
+    antwort = client.get(KASSE, {"datum": "2026-10-23"})
+    inhalt = antwort.content.decode()
+    assert "Nord" in inhalt and "Mitte" not in inhalt
+    assert "ohne Ausgabestelle" not in inhalt
+    assert "Bar eingenommen: 20,00 €" in inhalt  # nur Nord, nicht 24,00 €
+    # Die Auswahl bietet nur die eigene Ausgabestelle an.
+    assert list(antwort.context["stellen"]) == [nord]
+    # Eine fremde Ausgabestelle lässt sich nicht erzwingen.
+    fremd = client.get(KASSE, {"datum": "2026-10-23", "stelle": mitte.pk})
+    assert fremd.context["stelle"] is None
+    assert "Mitte" not in fremd.content.decode()
+
+
 def test_buero_sieht_einzelbuchungen(als, buchungen):
     inhalt = als(rollen.BUERO).get(KASSE, {"datum": "2026-10-23"}).content.decode()
     assert "Buchungen des Tages" in inhalt
