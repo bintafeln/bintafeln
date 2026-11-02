@@ -20,7 +20,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.kunden import gruppen as gruppenregel
-from apps.kunden import historie, werte
+from apps.kunden import historie, namen, werte
 from apps.kunden.models import (
     Abholer,
     Abholung,
@@ -978,6 +978,8 @@ class _Bezuege:
 
 
 def _person(haushalt, p, hauptperson):
+    # such_name hier setzen, weil bulk_create save() nicht aufruft (sonst fehlt die
+    # Trigramm-Vorauswahl beim Abgleich für importierte Personen).
     return Person(
         haushalt=haushalt,
         ist_hauptperson=hauptperson,
@@ -988,6 +990,7 @@ def _person(haushalt, p, hauptperson):
         staatsangehoerigkeit=p["staatsangehoerigkeit"],
         familienstand=p["familienstand"],
         zusatz=p["zusatz"],
+        such_name=namen.such_name(p["vorname"], p["nachname"]),
     )
 
 

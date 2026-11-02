@@ -231,6 +231,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Aufnahme-Assistent: Logik in `aufnahme.py` (Dubletten, Gültigkeit, freie Gruppen,
   `uebernehmen()`), Schritte in `views_aufnahme.py` (ADR 0028). Import-Abgleich:
   `importieren.abgleich()`, `uebernehmen(..., behalten=…)`.
+  Ähnliche Kunden sucht `aufnahme.kandidaten()`/`treffer()` über den Trigramm-Index
+  `Person.such_name` (pg_trgm, ADR 0102), damit der Abgleich bei großem Kundenstamm nicht jeden mit
+  jedem vergleicht; Namensnormalisierung in `apps/kunden/namen.py` (auch von `aufnahme.normal`
+  genutzt). `such_name` wird abgeleitet (in `Person.save()` und im Import `_person()`), nie von Hand.
   Eigene Texte der Tafel (`AntragText`) dürfen HTML enthalten und laufen immer durch
   `apps.core.html.anzeigen()`/`bereinigen()` (nh3), nie ungefiltert mit `|safe`.
   Farbe der Tafel als CSS-Variablen über `templates/includes/farben.html`

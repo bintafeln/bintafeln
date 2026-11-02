@@ -72,16 +72,14 @@ def test_treffer(bestand):
     assert aufnahme.treffer(mit_nummer)[0]["punkte"] == 100
 
 
-def test_treffer_vorberechnet_wie_direkt(bestand):
-    """Der schnelle Weg mit vorberechneten Personen (Warteliste-Abgleich) liefert genau dieselben
-    Treffer wie der einzelne Aufruf – nur ohne die Personen je Antrag neu zu normalisieren."""
-    vor = aufnahme.kandidaten()
-    for a in (antrag(vorname="Erica", nachname="Musterman", geburtsdatum=dt.date(1968, 12, 3)),
-              antrag(vorname="Max", nachname="Probe", geburtsdatum=None),
-              antrag(vorname="Mustermann", nachname="Erika")):  # fmt: skip
-        direkt = [(t["haushalt"].pk, t["punkte"]) for t in aufnahme.treffer(a)]
-        schnell = [(t["haushalt"].pk, t["punkte"]) for t in aufnahme.treffer(a, vor)]
-        assert direkt == schnell
+def test_treffer_findet_ueber_trigramm_index(bestand):
+    """Der Treffer kommt jetzt über die Trigramm-Vorauswahl aus der Datenbank – auch bei
+    Tippfehler und vertauschten Namen wird der passende Haushalt gefunden."""
+    tippfehler = antrag(vorname="Erica", nachname="Musterman", geburtsdatum=dt.date(1968, 12, 3))
+    assert aufnahme.treffer(tippfehler)[0]["haushalt"] == bestand["h"]
+    # kandidaten() liefert nur ähnliche Personen, nicht den ganzen Stamm.
+    kand = aufnahme.kandidaten(aufnahme.normal("Erika"), aufnahme.normal("Mustermann"))
+    assert bestand["h"].hauptperson.pk in {p.pk for p, _, _ in kand}
 
 
 def test_gleicher_nachname_anderer_vorname_kein_treffer(bestand):

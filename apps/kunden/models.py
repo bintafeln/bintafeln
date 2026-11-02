@@ -7,6 +7,7 @@ import uuid
 from auditlog.context import disable_auditlog
 from auditlog.registry import auditlog
 from django.conf import settings
+from django.contrib.postgres.indexes import GinIndex
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
@@ -14,7 +15,7 @@ from django.utils import timezone
 
 from apps.core import privatdateien
 from apps.core.auswahl import FESTE_ANLIEGEN, GRUPPENFARBEN, KRANK_GRUENDE, NACHRICHT_ANLIEGEN, WLAN
-from apps.kunden import werte
+from apps.kunden import namen, werte
 
 
 class KundenEinstellungen(models.Model):
@@ -570,6 +571,9 @@ class Person(models.Model):
     staatsangehoerigkeit = models.CharField("Staatsangehörigkeit", max_length=100, blank=True)
     familienstand = models.CharField("Familienstand", max_length=50, blank=True)
     zusatz = models.JSONField("Zusatzfelder", default=dict, blank=True)
+    # Normalisierter Name für die Trigramm-Vorauswahl beim Abgleich (wird aus Vor-/Nachname
+    # berechnet, siehe apps.kunden.namen; nicht von Hand pflegen).
+    such_name = models.CharField(max_length=201, blank=True, default="", editable=False)
 
     class Meta:
         verbose_name = "Person"
@@ -582,9 +586,20 @@ class Person(models.Model):
                 name="eine_hauptperson_je_haushalt",
             )
         ]
+        indexes = [
+            GinIndex(
+                name="kunden_person_such_trgm",
+                fields=["such_name"],
+                opclasses=["gin_trgm_ops"],
+            )
+        ]
 
     def __str__(self):
         return f"{self.vorname} {self.nachname}"
+
+    def save(self, *args, **kwargs):
+        self.such_name = namen.such_name(self.vorname, self.nachname)
+        super().save(*args, **kwargs)
 
     def alter(self, stichtag: dt.date | None = None) -> int | None:
         if self.geburtsdatum is None:
@@ -1162,7 +1177,6 @@ for modell in (
     Kundengruppe,
     Einkommensart,
     Haushalt,
-    Person,
     Abholer,
     Sperre,
     Bemerkung,
@@ -1177,5 +1191,6 @@ for modell in (
     AusgabestelleKontakt,
 ):
     auditlog.register(modell)
+auditlog.register(Person, exclude_fields=["such_name"])  # such_name ist abgeleitet
 auditlog.register(HaushaltDokument, exclude_fields=["datei"])
 auditlog.register(Nachricht)
