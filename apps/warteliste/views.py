@@ -343,18 +343,33 @@ def export(request):
 # ── Abgleich, Dubletten, Streichungen ────────────────────────────────────────
 
 
-@never_cache
-@bearbeiten
-def abgleich(request):
+def _abzugleichende(request):
+    """Die zu prüfenden Anträge und ob „alle offenen“ gewählt sind (für Seite und Nachladen)."""
     alle = request.GET.get("alle") == "1"
     antraege = ablauf.offene_antraege()
     if not alle:
         antraege = antraege.filter(wartestand__status__in=[S.NEU, S.WARTEND])
+    return alle, antraege
+
+
+@never_cache
+@bearbeiten
+def abgleich(request):
+    alle, antraege = _abzugleichende(request)
     return render(request, "warteliste/abgleich.html", {
-        "ergebnis": ablauf.kundenabgleich(antraege.order_by("eingegangen_am")), "alle": alle,
-        "geprueft": antraege.count(),
+        "alle": alle, "geprueft": antraege.count(),
         "entschieden": AbgleichEntscheidung.objects.select_related("antrag")[:30],
     })  # fmt: skip
+
+
+@never_cache
+@bearbeiten
+def abgleich_ergebnis(request):
+    """Nur die Treffer des Abgleichs, per htmx nachgeladen: Der Vergleich mit dem ganzen
+    Kundenstamm kann dauern; so erscheint die Seite sofort und blockiert nie."""
+    _, antraege = _abzugleichende(request)
+    ergebnis = ablauf.kundenabgleich(antraege.order_by("eingegangen_am"))
+    return render(request, "warteliste/_abgleich_ergebnis.html", {"ergebnis": ergebnis})
 
 
 @require_POST
@@ -385,7 +400,15 @@ def abgleich_entscheiden(request):
 @never_cache
 @bearbeiten
 def dubletten(request):
-    return render(request, "warteliste/dubletten.html", {"paare": ablauf.dubletten()})
+    return render(request, "warteliste/dubletten.html", {})
+
+
+@never_cache
+@bearbeiten
+def dubletten_ergebnis(request):
+    """Nur die gefundenen Paare, per htmx nachgeladen (Namensvergleich aller offenen Anträge
+    untereinander kann dauern); so erscheint die Seite sofort und blockiert nie."""
+    return render(request, "warteliste/_dubletten_ergebnis.html", {"paare": ablauf.dubletten()})
 
 
 @require_POST
