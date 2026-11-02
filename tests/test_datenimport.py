@@ -447,6 +447,27 @@ def test_antraege_krummes_geburtsdatum(admin_client):
     assert Antrag.objects.get(nachname="Richtig").geburtsdatum == dt.date(1990, 2, 1)
 
 
+def test_mitarbeitende_import_fuellt_adresse(admin_client):
+    # Importierte Mitarbeitende müssen auch im Adressbuch mit Anschrift auftauchen (ADR 0097):
+    # die verknüpfte Adresse bekommt die Daten, nicht nur die Stammdaten.
+    from apps.adressen.models import Adresse
+
+    datei = csv_datei(
+        "ma.csv",
+        "Vorname;Nachname;E-Mail;Straße;PLZ;Ort;Telefon;Handy",
+        "Kevin;Forster;kevin@example.org;Frillendorfer Str. 1;45139;Essen;0201 123;0176 9",
+    )
+    sitzung = hochladen(admin_client, "mitarbeitende", datei)
+    weiter(admin_client, sitzung)
+    url = reverse("datenimport:abgleich", args=[sitzung.pk])
+    admin_client.post(url, {"modus": "aktualisieren"})
+    adresse = Adresse.objects.get(nachname="Forster")
+    assert (adresse.vorname, adresse.plz, adresse.ort) == ("Kevin", "45139", "Essen")
+    assert adresse.strasse == "Frillendorfer Str. 1"
+    assert (adresse.telefon, adresse.mobil) == ("0201 123", "0176 9")
+    assert adresse.mail == "kevin@example.org"
+
+
 def test_antraege_anmerkung_eigene_spalte(admin_client):
     # „Nachricht“ (vom Antragsteller) und „Anmerkung“ (intern) sind getrennte Spalten.
     from apps.antraege.models import Antrag
