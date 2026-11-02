@@ -46,7 +46,7 @@
   <div class="tabelle-rahmen">
   <table class="tabelle">
     <thead><tr>
-      {% if "nummer" in sichtbar %}{% sortkopf "Nummer" %}{% endif %}
+      {% if "nummer" in sichtbar %}{% sortkopf "Nummer" "nummer" sort %}{% endif %}
       {% sortkopf "Nachname" "name" sort %}
       {% if "vorname" in sichtbar %}{% sortkopf "Vorname" "vorname" sort %}{% endif %}
       {% if "anrede" in sichtbar %}{% sortkopf "Anrede" "anrede" sort %}{% endif %}

@@ -176,6 +176,23 @@ def test_personalnummer_mitglied_zeigt_mitgliedsnummer(admin_client):
     assert verwaltung.personennummer(b) == "99"
 
 
+def test_liste_nach_nummer_sortieren(admin_client):
+    from apps.konten.models import Stammdaten
+
+    U = get_user_model()
+    for name, pn in [("Zimmer", 2), ("Albrecht", 10), ("Berg", 1)]:
+        b = U.objects.create_user(name.lower(), last_name=name, first_name=name,
+                                  beschaeftigung="ehrenamtlich")  # fmt: skip
+        Stammdaten.objects.create(benutzer=b, personalnummer=pn)
+    ehren = reverse("konten:ehrenamtliche")
+
+    # Nur die Nummern (das Admin-Konto hat keine und steht in beiden Richtungen hinten).
+    auf = [z["nummer"] for z in admin_client.get(ehren, {"sort": "nummer"}).context["zeilen"]]
+    assert auf == ["1", "2", "10", ""]  # numerisch, nicht 1,10,2; ohne Nummer zuletzt
+    ab = [z["nummer"] for z in admin_client.get(ehren, {"sort": "-nummer"}).context["zeilen"]]
+    assert ab == ["10", "2", "1", ""]  # absteigend; ohne Nummer weiter hinten
+
+
 # --- Anlegen -----------------------------------------------------------------------------
 
 
