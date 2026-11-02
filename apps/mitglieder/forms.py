@@ -70,6 +70,18 @@ class MitgliedForm(forms.ModelForm):
             for name in ("jahresbeitrag", "zahlweise", "zahlungsart"):
                 del self.fields[name]
 
+    def clean_nummer(self):
+        # Gemeinsame Personennummern-Reihe (ADR 0101): eine Nummer, die schon als Personalnummer
+        # eines Mitarbeitenden vergeben ist, darf nicht noch einmal als Mitgliedsnummer dienen.
+        nummer = self.cleaned_data["nummer"]
+        from apps.konten.models import Stammdaten
+
+        if nummer.isdigit() and Stammdaten.objects.filter(personalnummer=int(nummer)).exists():
+            raise forms.ValidationError(
+                "Diese Nummer ist bereits als Personalnummer eines Mitarbeitenden vergeben."
+            )
+        return nummer
+
     def clean(self):
         daten = super().clean()
         if daten.get("austritt") and not daten.get("austrittsgrund"):

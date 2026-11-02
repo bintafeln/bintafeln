@@ -147,7 +147,46 @@ def anlegen(verwalter, daten: dict, rollen_namen: list[str], einladung=False):
     _rollen_setzen(verwalter, ziel, rollen_namen)
     adresse_abgleichen(ziel)
     helfer_kennzeichnen(ziel)
+    personalnummer_zuweisen(ziel)
     return ziel, passwort
+
+
+def _ist_mitglied(konto) -> bool:
+    """Ist die Person (über ihren Adressbuch-Eintrag) ein Vereinsmitglied?"""
+    from django.core.exceptions import ObjectDoesNotExist
+
+    try:
+        return konto.adresse.mitglied is not None
+    except ObjectDoesNotExist:
+        return False
+
+
+def personalnummer_zuweisen(konto) -> None:
+    """Gibt dem Konto eine Personalnummer aus der gemeinsamen Personennummern-Reihe (Mitarbeitende
+    und Mitglieder, ADR 0101), sofern es noch keine hat und die Person nicht bereits Mitglied ist
+    (dann gilt die Mitgliedsnummer). Die Reihe wird vom Mitglieder-Zähler geführt, damit keine
+    Nummer doppelt vergeben wird."""
+    from apps.konten.models import Stammdaten
+    from apps.mitglieder.models import naechste_nummer
+
+    sd, _ = Stammdaten.objects.get_or_create(benutzer=konto)
+    if sd.personalnummer is not None or _ist_mitglied(konto):
+        return
+    sd.personalnummer = int(naechste_nummer())
+    sd.save(update_fields=["personalnummer"])
+
+
+def personennummer(konto) -> str:
+    """Die anzuzeigende Nummer der Person: Mitgliedsnummer, wenn sie Mitglied ist, sonst die
+    Personalnummer (oder leer)."""
+    from django.core.exceptions import ObjectDoesNotExist
+
+    try:
+        return konto.adresse.mitglied.nummer
+    except ObjectDoesNotExist:
+        pass
+    nummer = getattr(getattr(konto, "stammdaten", None), "personalnummer", None)
+    return str(nummer) if nummer else ""
 
 
 @transaction.atomic

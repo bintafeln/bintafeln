@@ -226,3 +226,36 @@ def test_liste_sortiert_nummern_wie_zahlen(admin_client):
                                 eintritt=dt.date(2020, 1, 1))  # fmt: skip
     seite = admin_client.get(reverse("mitglieder:liste")).content.decode()
     assert seite.index("Probe1x") < seite.index("Probe2x") < seite.index("Probe10x")
+
+
+def test_mitgliedsnummer_nicht_doppelt_mit_personalnummer(erika):
+    # Gemeinsame Personennummern-Reihe (ADR 0101): eine schon als Personalnummer vergebene Nummer
+    # darf nicht als Mitgliedsnummer dienen.
+    from django.contrib.auth import get_user_model
+
+    from apps.konten.models import Stammdaten
+    from apps.mitglieder.forms import MitgliedForm
+
+    b = get_user_model().objects.create_user("kollege")
+    Stammdaten.objects.create(benutzer=b, personalnummer=42)
+    form = MitgliedForm(
+        data={
+            "adresse": erika.pk,
+            "nummer": "42",
+            "art": "Fördermitglied",
+            "eintritt": "2024-01-01",
+            "jahresbeitrag": "0",
+        }
+    )
+    assert not form.is_valid() and "nummer" in form.errors
+    # Eine freie Nummer geht
+    form_ok = MitgliedForm(
+        data={
+            "adresse": erika.pk,
+            "nummer": "43",
+            "art": "Fördermitglied",
+            "eintritt": "2024-01-01",
+            "jahresbeitrag": "0",
+        }
+    )
+    assert "nummer" not in form_ok.errors

@@ -70,6 +70,7 @@ SORTIERUNG = {
 # Zu-/abwählbare Spalten (Nachname öffnet das Konto und steht immer; Vorname und die übrigen sind
 # frei wählbar und standardmäßig alle sichtbar).
 SPALTEN = [
+    ("nummer", "Nummer"),
     ("vorname", "Vorname"), ("anrede", "Anrede"), ("strasse", "Straße"), ("plz", "PLZ"),
     ("ort", "Ort"), ("telefon", "Telefon"), ("handy", "Handy"), ("email", "E-Mail"),
     ("benutzername", "Benutzername"), ("rollen", "Rollen"), ("ausgabestellen", "Ausgabestellen"),
@@ -93,7 +94,9 @@ def _zeilen(konten):
     """Konten mit Rollen, Zwei-Faktor-Stand, Stammdaten und Ausgabestellen für die Listen."""
     zeilen = []
     alle = rollen.alle_rollen()
-    konten = konten.select_related("stammdaten").prefetch_related("groups", "ausgabestellen")
+    konten = konten.select_related("stammdaten", "adresse__mitglied").prefetch_related(
+        "groups", "ausgabestellen"
+    )
     for b in konten:
         namen = {g.name for g in b.groups.all()}
         try:
@@ -104,6 +107,7 @@ def _zeilen(konten):
             {
                 "b": b,
                 "sd": sd,
+                "nummer": verwaltung.personennummer(b),
                 "rollen": [
                     r.name
                     for r in alle
@@ -123,6 +127,7 @@ def _csv(zeilen, archiv) -> str:
     puffer.write("﻿")
     schreiber = csv.writer(puffer, delimiter=";")
     kopf = [
+        "Nummer",
         "Nachname",
         "Vorname",
         "Anrede",
@@ -144,8 +149,8 @@ def _csv(zeilen, archiv) -> str:
     for z in zeilen:
         b, sd = z["b"], z["sd"]
         reihe = [
-            b.last_name, b.first_name, sd.anrede, sd.strasse, sd.plz, sd.ort, sd.telefon, sd.handy,
-            b.email, b.username, ", ".join(z["rollen"]), z["stellen"],
+            z["nummer"], b.last_name, b.first_name, sd.anrede, sd.strasse, sd.plz, sd.ort,
+            sd.telefon, sd.handy, b.email, b.username, ", ".join(z["rollen"]), z["stellen"],
             b.get_beschaeftigung_display(),
             z["dabei_seit"].strftime("%d.%m.%Y") if z["dabei_seit"] else "",
         ]  # fmt: skip
@@ -311,6 +316,7 @@ def bearbeiten(request, pk):
                 gueltig_bis__gt=timezone.now()
             ).count(),
             "mail": mail.eingerichtet(),
+            "nummer": verwaltung.personennummer(ziel),
         },
     )
 

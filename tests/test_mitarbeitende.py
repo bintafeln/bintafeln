@@ -135,6 +135,47 @@ def test_liste_spalten_sortieren_export(admin_client):
     assert pdf["Content-Type"] == "application/pdf"
 
 
+def test_personalnummer_automatisch_und_gemeinsame_reihe(admin_client):
+    import datetime as dt
+
+    from apps.adressen.models import Adresse
+    from apps.konten.models import Stammdaten
+    from apps.mitglieder.models import Mitglied, MitgliederEinstellungen
+
+    # Ein Mitglied mit Nummer 5 existiert; die Reihe steht bei 5
+    a = Adresse.objects.create(art=Adresse.Art.PERSON, nachname="Alt")
+    Mitglied.objects.create(adresse=a, nummer="5", art="foerder", eintritt=dt.date(2020, 1, 1))
+    e = MitgliederEinstellungen.laden()
+    e.naechste_nummer = 5
+    e.save()
+
+    # Neue Mitarbeitende bekommen automatisch Nummern aus derselben Reihe – nicht die belegte 5
+    neu(admin_client, username="neo.neu", first_name="Neo", last_name="Neu")
+    neo = get_user_model().objects.get(username="neo.neu")
+    assert neo.stammdaten.personalnummer == 6  # 5 ist belegt → 6
+    neu(admin_client, username="pia.platz", first_name="Pia", last_name="Platz")
+    assert Stammdaten.objects.get(benutzer__username="pia.platz").personalnummer == 7
+
+    # Die Nummer erscheint in der Liste
+    inhalt = admin_client.get(reverse("konten:ehrenamtliche")).content.decode()
+    assert '<td data-titel="Nummer">6</td>' in inhalt
+
+
+def test_personalnummer_mitglied_zeigt_mitgliedsnummer(admin_client):
+    import datetime as dt
+
+    from apps.adressen.models import Adresse
+    from apps.mitglieder.models import Mitglied
+
+    neu(admin_client, username="mia.mit", first_name="Mia", last_name="Mitglied")
+    b = get_user_model().objects.get(username="mia.mit")
+    # Mia ist zugleich Mitglied → in der Liste zählt ihre Mitgliedsnummer, nicht die Personalnummer
+    Mitglied.objects.create(
+        adresse=Adresse.objects.get(konto=b), nummer="99", art="aktiv", eintritt=dt.date(2021, 1, 1)
+    )
+    assert verwaltung.personennummer(b) == "99"
+
+
 # --- Anlegen -----------------------------------------------------------------------------
 
 
