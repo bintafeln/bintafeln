@@ -111,9 +111,10 @@
         .main-content {
             height: calc(100vh - var(--header-height));
             display: grid;
-            grid-template-columns: 
-                var(--next-customers-width)
-                var(--current-numbers-width)
+            /* Zwei Spalten: die aufgerufenen Kundennummern (füllen den Platz) und rechts die
+               Infotexte/Wetter. Die früher links gezeigten „nächsten Kunden“ entfallen. */
+            grid-template-columns:
+                1fr
                 var(--info-display-width);
             min-height: 0;
             flex: 1;
@@ -610,7 +611,7 @@
         /* Mobile und Tablet Responsive */
         @media (max-width: 1024px) {
             .main-content {
-                grid-template-columns: 1fr 2fr;
+                grid-template-columns: 1fr;
                 grid-template-rows: auto auto;
                 height: auto;
                 min-height: calc(100vh - var(--header-height));
@@ -771,17 +772,8 @@
             <h4>📏 Breiten-Verhältnisse</h4>
             
             <div class="layout-setting-item">
-                <label for="nextCustomersSlider">
-                    📋 Nächste Kunden: 
-                    <span class="layout-value" id="nextCustomersValue">15%</span>
-                </label>
-                <input type="range" id="nextCustomersSlider" class="layout-slider" 
-                       min="10" max="30" value="15" oninput="updateLayout()">
-            </div>
-            
-            <div class="layout-setting-item">
                 <label for="currentNumbersSlider">
-                    🎯 Kundennummern: 
+                    🎯 Kundennummern:
                     <span class="layout-value" id="currentNumbersValue">40%</span>
                 </label>
                 <input type="range" id="currentNumbersSlider" class="layout-slider" 
@@ -809,15 +801,6 @@
                 </label>
                 <input type="range" id="headerFontSlider" class="layout-slider" 
                        min="1.5" max="4" step="0.1" value="2.8" oninput="updateLayout()">
-            </div>
-            
-            <div class="layout-setting-item">
-                <label for="nextCustomersFontSlider">
-                    📋 Nächste Kunden: 
-                    <span class="layout-value" id="nextCustomersFontValue">1.2rem</span>
-                </label>
-                <input type="range" id="nextCustomersFontSlider" class="layout-slider" 
-                       min="0.8" max="5" step="0.1" value="1.2" oninput="updateLayout()">
             </div>
             
             <div class="layout-setting-item">
@@ -868,12 +851,7 @@
     </div>
 
     <div class="main-content">
-        <!-- Linke Seite: Nächste Kunden (ausgeblendet wie bisher) -->
-        <div class="next-customers">
-            <div class="customer-list" hidden></div>
-        </div> 
-
-        <!-- Mitte: Aktuelle Kunden -->
+        <!-- Aktuelle Kunden (die aufgerufenen Nummern) -->
         <div class="current-customer">
             {% if current_numbers or alle_eingelassen %}
                 <div class="current-label">Bitte eintreten</div>
@@ -1064,12 +1042,10 @@
 
         // LAYOUT-EINSTELLUNGEN SYSTEM
         let layoutSettings = {
-            nextCustomers: {{ layout.next_customers_width }},
             currentNumbers: {{ layout.current_numbers_width }},
             infoDisplay: {{ layout.info_display_width }},
             headerHeight: {{ layout.header_height }},
             headerFont: {{ layout.header_font }},
-            nextCustomersFont: {{ layout.next_customers_font }},
             currentNumbersFont: {{ layout.current_numbers_font }},
             infoDisplayFont: {{ layout.info_display_font }}
         };
@@ -1117,36 +1093,30 @@
         }
         
         function applyLayoutSettings() {
-            document.documentElement.style.setProperty('--next-customers-width', layoutSettings.nextCustomers + '%');
             document.documentElement.style.setProperty('--current-numbers-width', layoutSettings.currentNumbers + '%');
             document.documentElement.style.setProperty('--info-display-width', layoutSettings.infoDisplay + '%');
             document.documentElement.style.setProperty('--header-height', layoutSettings.headerHeight + 'px');
             document.documentElement.style.setProperty('--content-area-height', `calc(100vh - ${layoutSettings.headerHeight}px)`);
             document.documentElement.style.setProperty('--header-font-size', layoutSettings.headerFont + 'rem');
-            document.documentElement.style.setProperty('--next-customers-font-size', layoutSettings.nextCustomersFont + 'rem');
             document.documentElement.style.setProperty('--current-numbers-font-size', layoutSettings.currentNumbersFont + 'rem');
             document.documentElement.style.setProperty('--info-display-font-size', layoutSettings.infoDisplayFont + 'rem');
         }
         
         function updateSliders() {
-            document.getElementById('nextCustomersSlider').value = layoutSettings.nextCustomers;
             document.getElementById('currentNumbersSlider').value = layoutSettings.currentNumbers;
             document.getElementById('infoDisplaySlider').value = layoutSettings.infoDisplay;
             document.getElementById('headerHeightSlider').value = layoutSettings.headerHeight;
             document.getElementById('headerFontSlider').value = layoutSettings.headerFont;
-            document.getElementById('nextCustomersFontSlider').value = layoutSettings.nextCustomersFont;
             document.getElementById('currentNumbersFontSlider').value = layoutSettings.currentNumbersFont;
             document.getElementById('infoDisplayFontSlider').value = layoutSettings.infoDisplayFont;
             updateLayoutValues();
         }
         
         function updateLayoutValues() {
-            document.getElementById('nextCustomersValue').textContent = layoutSettings.nextCustomers + '%';
             document.getElementById('currentNumbersValue').textContent = layoutSettings.currentNumbers + '%';
             document.getElementById('infoDisplayValue').textContent = layoutSettings.infoDisplay + '%';
             document.getElementById('headerHeightValue').textContent = layoutSettings.headerHeight + 'px';
             document.getElementById('headerFontValue').textContent = layoutSettings.headerFont + 'rem';
-            document.getElementById('nextCustomersFontValue').textContent = layoutSettings.nextCustomersFont + 'rem';
             document.getElementById('currentNumbersFontValue').textContent = layoutSettings.currentNumbersFont + 'rem';
             document.getElementById('infoDisplayFontValue').textContent = layoutSettings.infoDisplayFont + 'rem';
         }
@@ -1158,35 +1128,20 @@
         
         let updateTimeout = null;
         function updateLayout() {
-            const nextCustomers = parseInt(document.getElementById('nextCustomersSlider').value);
             const currentNumbers = parseInt(document.getElementById('currentNumbersSlider').value);
             const infoDisplay = parseInt(document.getElementById('infoDisplaySlider').value);
             const headerHeight = parseInt(document.getElementById('headerHeightSlider').value);
             const headerFont = parseFloat(document.getElementById('headerFontSlider').value);
-            const nextCustomersFont = parseFloat(document.getElementById('nextCustomersFontSlider').value);
             const currentNumbersFont = parseFloat(document.getElementById('currentNumbersFontSlider').value);
             const infoDisplayFont = parseFloat(document.getElementById('infoDisplayFontSlider').value);
-            
-            const total = nextCustomers + currentNumbers + infoDisplay;
-            
-            if (total !== 100) {
-                layoutSettings.nextCustomers = Math.round((nextCustomers / total) * 100);
-                layoutSettings.currentNumbers = Math.round((currentNumbers / total) * 100);
-                layoutSettings.infoDisplay = Math.round((infoDisplay / total) * 100);
-                
-                const newTotal = layoutSettings.nextCustomers + layoutSettings.currentNumbers + layoutSettings.infoDisplay;
-                if (newTotal !== 100) {
-                    layoutSettings.infoDisplay += (100 - newTotal);
-                }
-            } else {
-                layoutSettings.nextCustomers = nextCustomers;
-                layoutSettings.currentNumbers = currentNumbers;
-                layoutSettings.infoDisplay = infoDisplay;
-            }
-            
+
+            // Zwei Spalten: die Kundennummern füllen den Rest, rechts stehen die Infotexte mit der
+            // eingestellten Breite. Darum werden beide nur übernommen, nicht mehr auf 100 normiert.
+            layoutSettings.currentNumbers = currentNumbers;
+            layoutSettings.infoDisplay = infoDisplay;
+
             layoutSettings.headerHeight = headerHeight;
             layoutSettings.headerFont = headerFont;
-            layoutSettings.nextCustomersFont = nextCustomersFont;
             layoutSettings.currentNumbersFont = currentNumbersFont;
             layoutSettings.infoDisplayFont = infoDisplayFont;
             
@@ -1223,12 +1178,10 @@
         
         async function resetLayout() {
             const defaultSettings = {
-                nextCustomers: 15,
-                currentNumbers: 40,
+                currentNumbers: 55,
                 infoDisplay: 45,
                 headerHeight: 120,
                 headerFont: 2.8,
-                nextCustomersFont: 1.2,
                 currentNumbersFont: 3.5,
                 infoDisplayFont: 1.4
             };
@@ -1465,16 +1418,6 @@
                 currentCustomerContainer.innerHTML = gridHtml;
             } else {
                 currentCustomerContainer.innerHTML = `<div class="waiting-message">⏳<br>Kundengruppe wird<br>vorbereitet...</div>`;
-            }
-            
-            const nextCustomerList = document.querySelector('.customer-list');
-            if (!nextCustomerList) {
-                // Liste ist ausgeblendet
-            } else if (data.next_numbers && data.next_numbers.length > 0) {
-                // Nur die nächsten 3 Kundennummern zeigen, nicht die ganze Warteschlange.
-                nextCustomerList.innerHTML = data.next_numbers.slice(0, 3).map(number => `<div class="customer-item">${number}</div>`).join('');
-            } else {
-                nextCustomerList.innerHTML = `<div style="text-align: center; color: #95a5a6; font-size: calc(var(--next-customers-font-size) * 0.9); margin-top: clamp(20px, 5vh, 50px); opacity: 0.8;">Keine weiteren Kunden in der Warteschlange</div>`;
             }
             
             if (data.infos && data.infos.length !== document.querySelectorAll('.info-item[data-duration]').length) {
