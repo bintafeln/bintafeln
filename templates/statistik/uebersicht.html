@@ -53,30 +53,7 @@
 
 {# Abschnitte nebeneinander, Diagramme höchstens in ihrer eigentlichen Größe (640 Pixel) #}
 <div class="statistik-raster">
-{% for a in abschnitte %}
-<section class="karte statistik-abschnitt" id="{{ a.id }}">
-  <div class="liste-kopf">
-    <h2>{{ a.titel }}</h2>
-    <span>{% if a.svg %}<button type="button" class="link link-klein" data-gross="{{ a.id }}" title="Grafik bildschirmfüllend anzeigen">⤢ Groß</button> {% endif %}<a class="link-klein" href="?{% if abfrage %}{{ abfrage }}&amp;{% endif %}csv={{ a.id }}">CSV</a></span>
-  </div>
-  {% if a.text %}<p class="hinweis">{{ a.text }}</p>{% endif %}
-  {% if a.legende %}
-  <ul class="legende" aria-label="Legende – auf einen Eintrag tippen blendet die Reihe aus oder wieder ein">{% for r in a.legende %}<li><a class="legende-schalter{% if r.aus %} aus{% endif %}" href="?{{ r.abfrage }}#{{ a.id }}" hx-get="?{{ r.abfrage }}" hx-target="#{{ a.id }}" hx-select="#{{ a.id }}" hx-swap="outerHTML" hx-push-url="true" aria-pressed="{% if r.aus %}false{% else %}true{% endif %}" title="{{ r.name }} {% if r.aus %}einblenden{% else %}ausblenden{% endif %}"><span class="legende-farbe reihe-{{ r.farbe }}"></span>{{ r.name }}</a></li>{% endfor %}</ul>
-  {% endif %}
-  {% if a.svg %}<figure class="diagramm-rahmen" data-gross="{{ a.id }}" title="Anklicken: groß anzeigen">{{ a.svg }}</figure>{% elif a.legende %}<p class="hinweis">Alle Reihen ausgeblendet – über die Legende wieder einblenden.</p>{% elif not a.zeilen %}<p class="hinweis">Keine Daten im Zeitraum.</p>{% endif %}
-  {% if a.zeilen %}
-  <details class="statistik-tabelle">
-    <summary>Zahlen als Tabelle</summary>
-    <div class="tabelle-rahmen">
-    <table class="tabelle kompakt">
-      <thead><tr>{% for k in a.kopf %}<th>{{ k }}</th>{% endfor %}</tr></thead>
-      <tbody>{% for zeile in a.zeilen %}<tr>{% for wert in zeile %}<td{% if not forloop.first %} class="zahl"{% endif %}>{{ wert }}</td>{% endfor %}</tr>{% endfor %}</tbody>
-    </table>
-    </div>
-  </details>
-  {% endif %}
-</section>
-{% endfor %}
+{% for a in abschnitte %}{% include "statistik/_abschnitt.html" %}{% endfor %}
 </div>
 {# Grafik groß (static/js/diagramm_gross.js); „Zurück“ schließt, die Seite bleibt an ihrer Stelle #}
 <dialog class="diagramm-gross" id="diagramm-gross" aria-labelledby="diagramm-gross-titel">
