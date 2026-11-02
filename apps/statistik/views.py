@@ -59,8 +59,33 @@ def _verein(benutzer, stellen) -> tuple[bool, bool]:
             rollen.hat_recht(benutzer, "mitglieder.sehen"))  # fmt: skip
 
 
-def abschnitte(z: aw.Zeitraum, stellen, heute, benutzer=None) -> list[dict]:
-    """Alle Abschnitte mit Diagramm, Tabelle und Erklärung."""
+def _versteckt(get, kennung) -> set[int]:
+    """Welche Reihen des Abschnitts hat die Legende ausgeblendet (?aus_<id>=0,2)?"""
+    if get is None:
+        return set()
+    roh = get.get(f"aus_{kennung}", "")
+    return {int(t) for t in roh.split(",") if t.strip().isdigit()}
+
+
+def _umschalten(get, kennung, aus: set[int], index: int) -> str:
+    """Abfrage, die genau diese eine Reihe aus- bzw. wieder einblendet (für den Legenden-Link)."""
+    if get is None:  # PDF-Jahresbericht: keine anklickbare Legende
+        return ""
+    neu_aus = (aus - {index}) if index in aus else (aus | {index})
+    p = get.copy()
+    schluessel = f"aus_{kennung}"
+    if neu_aus:
+        p[schluessel] = ",".join(str(i) for i in sorted(neu_aus))
+    elif schluessel in p:
+        del p[schluessel]
+    p.pop("csv", None)
+    return p.urlencode()
+
+
+def abschnitte(z: aw.Zeitraum, stellen, heute, benutzer=None, get=None) -> list[dict]:
+    """Alle Abschnitte mit Diagramm, Tabelle und Erklärung. ``get`` (die Abfrageparameter der
+    Seite) steuert die anklickbare Legende; ohne ``get`` (PDF-Jahresbericht) sind alle Reihen zu
+    sehen."""
     beschriftung = [name for _, name in aw.perioden(z)]
     einheit = {"tag": "Tag", "woche": "Woche", "monat": "Monat"}[z.einheit]
     liste = []
@@ -78,6 +103,33 @@ def abschnitte(z: aw.Zeitraum, stellen, heute, benutzer=None) -> list[dict]:
             }
         )
 
+    def linien_neu(kennung, titel, serien, diagramm_titel, text=""):
+        """Verlaufs-Abschnitt mit anklickbarer Legende: ausgeblendete Reihen fallen aus der
+        Zeichnung, dadurch skaliert die Y-Achse neu. Tabelle und CSV bleiben vollständig."""
+        aus = _versteckt(get, kennung)
+        sichtbar = [s for i, s in enumerate(serien) if i not in aus]
+        liste.append(
+            {
+                "id": kennung,
+                "titel": titel,
+                "svg": dg.linien(beschriftung, sichtbar, diagramm_titel),
+                "kopf": [einheit, *[s.name for s in serien]],
+                "zeilen": [
+                    [b, *[int(s.werte[i]) for s in serien]] for i, b in enumerate(beschriftung)
+                ],
+                "text": text,
+                "legende": [
+                    {
+                        "name": s.name,
+                        "farbe": s.farbe,
+                        "aus": i in aus,
+                        "abfrage": _umschalten(get, kennung, aus, i),
+                    }
+                    for i, s in enumerate(serien)
+                ],
+            }
+        )
+
     werte = aw.verlauf(aw.abholungen(z, stellen), z)
     daten = list(zip(beschriftung, werte, strict=True))
     neu(
@@ -90,14 +142,13 @@ def abschnitte(z: aw.Zeitraum, stellen, heute, benutzer=None) -> list[dict]:
 
     serien = aw.verlauf_je_stelle(z, stellen)
     if len(serien) > 1:
-        neu(
+        linien_neu(
             "verlauf_stellen",
             f"Abholungen je Ausgabestelle und {einheit}",
-            dg.linien(beschriftung, serien, "Abholungen je Ausgabestelle"),
-            [einheit, *[s.name for s in serien]],
-            [[b, *[int(s.werte[i]) for s in serien]] for i, b in enumerate(beschriftung)],
-            "Jede Ausgabestelle behält ihre Farbe; mehr als acht werden zu „Andere“.",
-            legende=serien,
+            serien,
+            "Abholungen je Ausgabestelle",
+            "Jede Ausgabestelle behält ihre Farbe; mehr als acht werden zu „Andere“. "
+            "Ein Tippen auf die Legende blendet eine Ausgabestelle aus; die Achse passt sich an.",
         )
     je_stelle = aw.je_stelle(z, stellen)
     neu(
@@ -139,14 +190,12 @@ def abschnitte(z: aw.Zeitraum, stellen, heute, benutzer=None) -> list[dict]:
     )
 
     zugang_serien = aw.neuaufnahmen_und_antraege(z, stellen)
-    neu(
+    linien_neu(
         "neuaufnahmen",
         f"Neue Kunden und Anträge je {einheit}",
-        dg.linien(beschriftung, zugang_serien, "Neue Kunden und Anträge"),
-        [einheit, *[s.name for s in zugang_serien]],
-        [[b, *[int(s.werte[i]) for s in zugang_serien]] for i, b in enumerate(beschriftung)],
+        zugang_serien,
+        "Neue Kunden und Anträge",
         "Neue Kunden nach „Kunde seit“. Anträge nur ohne Auswahl einer Ausgabestelle.",
-        legende=zugang_serien,
     )
 
     groessen = aw.haushaltsgroessen(heute, stellen)
@@ -244,13 +293,11 @@ def abschnitte(z: aw.Zeitraum, stellen, heute, benutzer=None) -> list[dict]:
         )
     if mit_mitgliedern:
         bewegung = aw.mitglieder_ein_und_austritte(z)
-        neu(
+        linien_neu(
             "mitglieder",
             f"Eintritte und Austritte je {einheit}",
-            dg.linien(beschriftung, bewegung, "Eintritte und Austritte"),
-            [einheit, *[s.name for s in bewegung]],
-            [[b, *[int(s.werte[i]) for s in bewegung]] for i, b in enumerate(beschriftung)],
-            legende=bewegung,
+            bewegung,
+            "Eintritte und Austritte",
         )
         arten = aw.mitglieder_nach_art(min(heute, z.bis))
         neu(
@@ -310,7 +357,7 @@ def uebersicht(request):
     heute = timezone.localdate()
     wahl, z, vorgaben = _zeitraum(request, heute)
     stellen, auswahl, gewaehlt = _stellen(request)
-    teile = abschnitte(z, stellen, heute, request.user)
+    teile = abschnitte(z, stellen, heute, request.user, get=request.GET)
     csv_teil = request.GET.get("csv")
     if csv_teil:
         teil = next((t for t in teile if t["id"] == csv_teil), None)

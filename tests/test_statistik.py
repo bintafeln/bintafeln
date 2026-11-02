@@ -97,6 +97,42 @@ def test_diagramme_escapen_und_skala():
     assert "1.618" in dg.balken([("Nord", 1618)], "x")
 
 
+def test_verlauf_legende_umschalten():
+    # Anklickbare Legende: eine Reihe ausblenden entfernt ihre Linie und lässt die Y-Achse
+    # neu skalieren; Tabelle und CSV bleiben vollständig.
+    from django.http import QueryDict
+
+    from apps.statistik import views
+
+    gross = Ausgabestelle.objects.create(name="Gross")
+    klein = Ausgabestelle.objects.create(name="Klein")
+    hg = Haushalt.objects.create(kundennummer="G")
+    hk = Haushalt.objects.create(kundennummer="K")
+    for stelle, h, anzahl in ((gross, hg, 20), (klein, hk, 2)):
+        for _ in range(anzahl):
+            Abholung.objects.create(haushalt=h, datum=dt.date(2026, 1, 5), ausgabestelle=stelle)
+    heute = dt.date(2026, 10, 25)
+
+    alle = {t["id"]: t for t in views.abschnitte(Z, None, heute, get=QueryDict(""))}
+    voll = alle["verlauf_stellen"]
+    assert [r["name"] for r in voll["legende"]] == ["Gross", "Klein"]
+    assert all(not r["aus"] for r in voll["legende"])
+    assert voll["svg"].count('class="linie ') == 2
+    assert ">20<" in voll["svg"]  # Achse reicht bis zur großen Reihe
+    # Der Legenden-Link blendet genau diese eine Reihe aus
+    assert "aus_verlauf_stellen=0" in voll["legende"][0]["abfrage"]
+
+    aus = {
+        t["id"]: t for t in views.abschnitte(Z, None, heute, get=QueryDict("aus_verlauf_stellen=0"))
+    }["verlauf_stellen"]
+    assert aus["legende"][0]["aus"] and not aus["legende"][1]["aus"]
+    assert aus["svg"].count('class="linie ') == 1  # nur noch die sichtbare Reihe
+    assert ">20<" not in aus["svg"]  # Y-Achse ist kleiner geworden
+    assert aus["kopf"] == voll["kopf"] and aus["zeilen"] == voll["zeilen"]  # Tabelle vollständig
+    # Erneutes Tippen auf die ausgeblendete Reihe blendet sie wieder ein
+    assert "aus_verlauf_stellen" not in aus["legende"][0]["abfrage"]
+
+
 def test_seite_und_rechte(client, admin_client, benutzer_mit_rolle, anmelden, daten):
     seite = admin_client.get(URL, {"zeitraum": "eigen", "von": "2026-01-01", "bis": "2026-03-31"})
     inhalt = seite.content.decode()
