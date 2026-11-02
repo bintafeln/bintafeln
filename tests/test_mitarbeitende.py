@@ -65,6 +65,31 @@ def test_admin_sieht_liste_und_archiv(admin_client):
     assert "Keine gesperrten Konten." in admin_client.get(ARCHIV).content.decode()
 
 
+def test_liste_suche(admin_client):
+    U = get_user_model()
+    U.objects.create_user("anna.albrecht", first_name="Anna", last_name="Albrecht",
+                          beschaeftigung="ehrenamtlich")  # fmt: skip
+    U.objects.create_user("bodo.bauer", first_name="Bodo", last_name="Bauer",
+                          beschaeftigung="ehrenamtlich")  # fmt: skip
+    ehren = reverse("konten:ehrenamtliche")
+    # Suchfeld ist da; ohne Suche beide Konten
+    seite = admin_client.get(ehren)
+    assert 'name="q"' in seite.content.decode()
+    namen = {z["b"].username for z in seite.context["zeilen"]}
+    assert {"anna.albrecht", "bodo.bauer"} <= namen
+    # Nach Nachname filtern (auch über htmx nur der Ergebnisbereich)
+    treffer = admin_client.get(ehren, {"q": "albrecht"}, HTTP_HX_REQUEST="true")
+    gefunden = [z["b"].username for z in treffer.context["zeilen"]]
+    assert gefunden == ["anna.albrecht"]
+    assert "bodo.bauer" not in treffer.content.decode()
+    # Nach Benutzername
+    nach_login = admin_client.get(ehren, {"q": "bodo.b"}).context["zeilen"]
+    assert [z["b"].username for z in nach_login] == ["bodo.bauer"]
+    # Kein Treffer
+    leer = admin_client.get(ehren, {"q": "gibtsnicht"})
+    assert leer.context["zeilen"] == [] and "Keine Treffer" in leer.content.decode()
+
+
 # --- Anlegen -----------------------------------------------------------------------------
 
 

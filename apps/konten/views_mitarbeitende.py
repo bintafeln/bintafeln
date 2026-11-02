@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -70,8 +71,18 @@ def _zeilen(benutzer):
 BESCHAEFTIGUNG_TITEL = {"ehrenamtlich": "Ehrenamtliche", "fest": "Angestellte"}
 
 
+def _suchen(konten, q):
+    """Nach Name oder Benutzername filtern (für die Suche in den Listen)."""
+    if q:
+        konten = konten.filter(
+            Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(username__icontains=q)
+        )
+    return konten
+
+
 def _liste(request, art):
     personal.stammdaten_leeren()
+    q = (request.GET.get("q") or "").strip()
     konten = get_user_model().objects.filter(is_active=True, stelle__isnull=True)
     if art:
         konten = konten.filter(beschaeftigung=art)
@@ -79,9 +90,10 @@ def _liste(request, art):
         request,
         "konten/mitarbeitende.html",
         {
-            "zeilen": _zeilen(konten),
+            "zeilen": _zeilen(_suchen(konten, q)),
             "archiv": False,
             "art": art,
+            "q": q,
             "titel": BESCHAEFTIGUNG_TITEL.get(art, "Team"),
             "faellig": personal.faelligkeiten(),
         },
@@ -105,14 +117,15 @@ def angestellte(request):
 
 @verwalter_erforderlich
 def archiv(request):
+    q = (request.GET.get("q") or "").strip()
+    konten = get_user_model().objects.filter(is_active=False, stelle__isnull=True)
     return render(
         request,
         "konten/mitarbeitende.html",
         {
-            "zeilen": _zeilen(
-                get_user_model().objects.filter(is_active=False, stelle__isnull=True)
-            ),
+            "zeilen": _zeilen(_suchen(konten, q)),
             "archiv": True,
+            "q": q,
         },
     )
 
