@@ -37,29 +37,56 @@
     <button type="submit" class="knopf">Suchen</button>
   </form>
   <div id="ergebnis">
+  {% auswahl_formular "" %}
+  <div class="liste-aktionen">
+    <span class="hinweis">{{ zeilen|length }} Konto{{ zeilen|length|pluralize:"en" }}</span>
+    {% if zeilen %}{% include "includes/listen_export.html" %}{% endif %}
+  </div>
+  {% url 'konten:mitarbeitende_spalten' as spalten_aktion %}{% include "includes/spalten_wahl.html" %}
   <div class="tabelle-rahmen">
   <table class="tabelle">
     <thead><tr>
-      <th>Name</th><th>Benutzername</th><th>Rollen</th><th>Beschäftigung</th>
-      {% if archiv %}<th>Dabei seit</th><th>Gesperrt</th>{% else %}<th>Zwei-Faktor</th><th>Letzte Anmeldung</th>{% endif %}
+      {% sortkopf "Nachname" "name" sort %}
+      {% if "vorname" in sichtbar %}{% sortkopf "Vorname" "vorname" sort %}{% endif %}
+      {% if "anrede" in sichtbar %}{% sortkopf "Anrede" "anrede" sort %}{% endif %}
+      {% if "strasse" in sichtbar %}{% sortkopf "Straße" "strasse" sort %}{% endif %}
+      {% if "plz" in sichtbar %}{% sortkopf "PLZ" %}{% endif %}
+      {% if "ort" in sichtbar %}{% sortkopf "Ort" "ort" sort %}{% endif %}
+      {% if "telefon" in sichtbar %}{% sortkopf "Telefon" "telefon" sort %}{% endif %}
+      {% if "handy" in sichtbar %}{% sortkopf "Handy" %}{% endif %}
+      {% if "email" in sichtbar %}{% sortkopf "E-Mail" "email" sort %}{% endif %}
+      {% if "benutzername" in sichtbar %}{% sortkopf "Benutzername" "benutzername" sort %}{% endif %}
+      {% if "rollen" in sichtbar %}{% sortkopf "Rollen" %}{% endif %}
+      {% if "ausgabestellen" in sichtbar %}{% sortkopf "Ausgabestellen" %}{% endif %}
+      {% if "beschaeftigung" in sichtbar %}{% sortkopf "Beschäftigung" "beschaeftigung" sort %}{% endif %}
+      {% if "eintritt" in sichtbar %}{% sortkopf "Dabei seit" "eintritt" sort %}{% endif %}
+      {% if "zwei_faktor" in sichtbar %}{% sortkopf "Zwei-Faktor" %}{% endif %}
+      {% if "anmeldung" in sichtbar %}{% sortkopf "Letzte Anmeldung" "anmeldung" sort %}{% endif %}
+      {% if archiv %}{% sortkopf "Gesperrt" %}{% endif %}
     </tr></thead>
     <tbody>
     {% for z in zeilen %}
       <tr>
-        <td data-titel="Name"><a href="{% url 'konten:mitarbeiter' z.b.pk %}">{{ z.b.get_full_name|default:z.b.username }}</a></td>
-        <td data-titel="Benutzername">{{ z.b.username }}</td>
-        <td data-titel="Rollen">{% for r in z.rollen %}<span class="marke-rolle">{{ r }}</span>{% empty %}–{% endfor %}</td>
-        <td data-titel="Beschäftigung">{{ z.b.get_beschaeftigung_display }}</td>
-        {% if archiv %}
-          <td data-titel="Dabei seit">{{ z.b.date_joined|date:"d.m.Y" }}</td>
-          <td data-titel="Gesperrt">{{ z.b.gesperrt_am|date:"d.m.Y"|default:"–" }}{% if z.b.gesperrt_von %} von {{ z.b.gesperrt_von }}{% endif %}</td>
-        {% else %}
-          <td data-titel="Zwei-Faktor">{{ z.zwei_faktor|yesno:"eingerichtet,–" }}</td>
-          <td data-titel="Letzte Anmeldung">{{ z.b.last_login|date:"d.m.Y H:i"|default:"noch nie" }}</td>
-        {% endif %}
+        <td data-titel="Nachname"><a href="{% url 'konten:mitarbeiter' z.b.pk %}">{{ z.b.last_name|default:z.b.username }}</a></td>
+        {% if "vorname" in sichtbar %}<td data-titel="Vorname">{{ z.b.first_name }}</td>{% endif %}
+        {% if "anrede" in sichtbar %}<td data-titel="Anrede">{{ z.sd.anrede }}</td>{% endif %}
+        {% if "strasse" in sichtbar %}<td data-titel="Straße">{{ z.sd.strasse }}</td>{% endif %}
+        {% if "plz" in sichtbar %}<td data-titel="PLZ">{{ z.sd.plz }}</td>{% endif %}
+        {% if "ort" in sichtbar %}<td data-titel="Ort">{{ z.sd.ort }}</td>{% endif %}
+        {% if "telefon" in sichtbar %}<td data-titel="Telefon">{{ z.sd.telefon }}</td>{% endif %}
+        {% if "handy" in sichtbar %}<td data-titel="Handy">{{ z.sd.handy }}</td>{% endif %}
+        {% if "email" in sichtbar %}<td data-titel="E-Mail">{% if z.b.email %}<a href="mailto:{{ z.b.email }}">{{ z.b.email }}</a>{% endif %}</td>{% endif %}
+        {% if "benutzername" in sichtbar %}<td data-titel="Benutzername">{{ z.b.username }}</td>{% endif %}
+        {% if "rollen" in sichtbar %}<td data-titel="Rollen">{% for r in z.rollen %}<span class="marke-rolle">{{ r }}</span> {% empty %}–{% endfor %}</td>{% endif %}
+        {% if "ausgabestellen" in sichtbar %}<td data-titel="Ausgabestellen">{{ z.stellen|default:"–" }}</td>{% endif %}
+        {% if "beschaeftigung" in sichtbar %}<td data-titel="Beschäftigung">{{ z.b.get_beschaeftigung_display }}</td>{% endif %}
+        {% if "eintritt" in sichtbar %}<td data-titel="Dabei seit">{{ z.dabei_seit|date:"d.m.Y" }}</td>{% endif %}
+        {% if "zwei_faktor" in sichtbar %}<td data-titel="Zwei-Faktor">{{ z.zwei_faktor|yesno:"eingerichtet,–" }}</td>{% endif %}
+        {% if "anmeldung" in sichtbar %}<td data-titel="Letzte Anmeldung">{{ z.b.last_login|date:"d.m.Y H:i"|default:"noch nie" }}</td>{% endif %}
+        {% if archiv %}<td data-titel="Gesperrt">{{ z.b.gesperrt_am|date:"d.m.Y"|default:"–" }}{% if z.b.gesperrt_von %} von {{ z.b.gesperrt_von }}{% endif %}</td>{% endif %}
       </tr>
     {% empty %}
-      <tr><td colspan="6">{% if q %}Keine Treffer für „{{ q }}“.{% elif archiv %}Keine gesperrten Konten.{% else %}Keine aktiven Konten.{% endif %}</td></tr>
+      <tr><td colspan="20">{% if q %}Keine Treffer für „{{ q }}“.{% elif archiv %}Keine gesperrten Konten.{% else %}Keine aktiven Konten.{% endif %}</td></tr>
     {% endfor %}
     </tbody>
   </table>

@@ -27,6 +27,7 @@ urlpatterns = [
     path("ausgabestellen/", views_stellen.liste, name="stellen"),
     path("ausgabestellen/<int:pk>/", views_stellen.stelle, name="stelle"),
     path("mitarbeitende/archiv/", views_mitarbeitende.archiv, name="mitarbeitende_archiv"),
+    path("mitarbeitende/spalten/", views_mitarbeitende.spalten, name="mitarbeitende_spalten"),
     path("mitarbeitende/neu/", views_mitarbeitende.anlegen, name="mitarbeiter_neu"),
     path("mitarbeitende/<int:pk>/", views_mitarbeitende.bearbeiten, name="mitarbeiter"),
     path("mitarbeitende/<int:pk>/sperren/", views_mitarbeitende.sperren, name="sperren"),

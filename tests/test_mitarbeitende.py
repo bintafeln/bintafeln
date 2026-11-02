@@ -90,6 +90,51 @@ def test_liste_suche(admin_client):
     assert leer.context["zeilen"] == [] and "Keine Treffer" in leer.content.decode()
 
 
+def test_liste_spalten_sortieren_export(admin_client):
+    from apps.konten.models import Stammdaten
+
+    U = get_user_model()
+    zora = U.objects.create_user("zora.zimmer", first_name="Zora", last_name="Zimmer",
+                                 beschaeftigung="ehrenamtlich")  # fmt: skip
+    anna = U.objects.create_user("anna.albrecht", first_name="Anna", last_name="Albrecht",
+                                 beschaeftigung="ehrenamtlich")  # fmt: skip
+    Stammdaten.objects.create(benutzer=zora, ort="Zwickau", telefon="0999", strasse="Weg 9")
+    Stammdaten.objects.create(benutzer=anna, ort="Aachen", telefon="0111", strasse="Weg 1")
+    ehren = reverse("konten:ehrenamtliche")
+
+    # Getrennte Spalten + Anschrift/Telefon standardmäßig sichtbar
+    seite = admin_client.get(ehren)
+    inhalt = seite.content.decode()
+    assert "Nachname" in inhalt and "Zwickau" in inhalt and "0111" in inhalt
+    assert "telefon" in seite.context["sichtbar"]  # Vorgabe: alles sichtbar
+    namen = [z["b"].last_name for z in seite.context["zeilen"]]
+    assert namen.index("Albrecht") < namen.index("Zimmer")  # Vorgabe nach Nachname sortiert
+
+    # Nach Ort sortieren
+    sortiert = admin_client.get(ehren, {"sort": "ort"}).context["zeilen"]
+    orte = [z["sd"].ort for z in sortiert if z["sd"].ort]
+    assert orte == sorted(orte)
+
+    # Spalten abwählen (nur Vorname und Ort behalten) und zurück zur selben Liste
+    antwort = admin_client.post(
+        reverse("konten:mitarbeitende_spalten"), {"spalte": ["vorname", "ort"]}, HTTP_REFERER=ehren
+    )
+    assert antwort.status_code == 302
+    sichtbar = admin_client.get(ehren).context["sichtbar"]
+    assert "telefon" not in sichtbar and {"vorname", "ort"} <= sichtbar
+
+    # CSV-Export: alle Felder, egal welche Spalten sichtbar sind
+    csv = admin_client.get(ehren, {"aktion": "csv"})
+    assert csv["Content-Type"].startswith("text/csv")
+    text = csv.content.decode("utf-8-sig")
+    assert "Nachname;Vorname;Anrede;Straße" in text
+    assert "Zimmer;Zora" in text and "0999" in text and "Weg 9" in text
+
+    # PDF-Export (zum Drucken)
+    pdf = admin_client.get(ehren, {"aktion": "pdf"})
+    assert pdf["Content-Type"] == "application/pdf"
+
+
 # --- Anlegen -----------------------------------------------------------------------------
 
 

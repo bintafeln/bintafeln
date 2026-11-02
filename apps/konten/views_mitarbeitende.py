@@ -1,5 +1,7 @@
 """Mitarbeitende verwalten: Liste, Archiv, anlegen, bearbeiten, sperren, zurücksetzen."""
 
+import csv
+import io
 from functools import wraps
 
 from auditlog.signals import accessed
@@ -15,7 +17,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 from django_otp import user_has_device
 
-from apps.core import mail, papierkorb
+from apps.core import listen, listenexport, mail, papierkorb
 from apps.core.pdf import pdf_antwort
 from apps.konten import (
     auskunft,
@@ -47,28 +49,35 @@ def verwalter_erforderlich(ansicht):
     return pruefen
 
 
-def _zeilen(benutzer):
-    """Konten mit Rollen (in fester Reihenfolge) und Zwei-Faktor-Stand für die Listen."""
-    zeilen = []
-    alle = rollen.alle_rollen()
-    for b in benutzer.prefetch_related("groups").order_by("last_name", "first_name", "username"):
-        namen = {g.name for g in b.groups.all()}
-        zeilen.append(
-            {
-                "b": b,
-                "rollen": [
-                    r.name
-                    for r in alle
-                    if r.name in namen or (b.is_superuser and r.name == rollen.ADMIN)
-                ],
-                "zwei_faktor": user_has_device(b),
-            }
-        )
-    return zeilen
-
-
 # Zwei getrennte Listen nach Beschäftigung (Angestellte / Ehrenamtliche); ohne Filter alle.
 BESCHAEFTIGUNG_TITEL = {"ehrenamtlich": "Ehrenamtliche", "fest": "Angestellte"}
+
+# Sortierbare Spalten (Schlüssel wie in ?sort=…, „-“ = absteigend). Anschrift/Kontakt liegen in
+# den Stammdaten, darum über die Verknüpfung „stammdaten__…“.
+SORTIERUNG = {
+    "name": ("last_name", "first_name"),
+    "vorname": ("first_name", "last_name"),
+    "anrede": ("stammdaten__anrede",),
+    "strasse": ("stammdaten__strasse",),
+    "ort": ("stammdaten__ort", "stammdaten__plz"),
+    "telefon": ("stammdaten__telefon", "stammdaten__handy"),
+    "email": ("email",),
+    "benutzername": ("username",),
+    "beschaeftigung": ("beschaeftigung",),
+    "eintritt": ("stammdaten__eintritt",),
+    "anmeldung": ("last_login",),
+}
+# Zu-/abwählbare Spalten (Nachname öffnet das Konto und steht immer; Vorname und die übrigen sind
+# frei wählbar und standardmäßig alle sichtbar).
+SPALTEN = [
+    ("vorname", "Vorname"), ("anrede", "Anrede"), ("strasse", "Straße"), ("plz", "PLZ"),
+    ("ort", "Ort"), ("telefon", "Telefon"), ("handy", "Handy"), ("email", "E-Mail"),
+    ("benutzername", "Benutzername"), ("rollen", "Rollen"), ("ausgabestellen", "Ausgabestellen"),
+    ("beschaeftigung", "Beschäftigung"), ("eintritt", "Dabei seit"),
+    ("zwei_faktor", "Zwei-Faktor"), ("anmeldung", "Letzte Anmeldung"),
+]  # fmt: skip
+SPALTEN_FEST: set = set()
+LISTE = "mitarbeitende"
 
 
 def _suchen(konten, q):
@@ -80,24 +89,111 @@ def _suchen(konten, q):
     return konten
 
 
-def _liste(request, art):
-    personal.stammdaten_leeren()
+def _zeilen(konten):
+    """Konten mit Rollen, Zwei-Faktor-Stand, Stammdaten und Ausgabestellen für die Listen."""
+    zeilen = []
+    alle = rollen.alle_rollen()
+    konten = konten.select_related("stammdaten").prefetch_related("groups", "ausgabestellen")
+    for b in konten:
+        namen = {g.name for g in b.groups.all()}
+        try:
+            sd = b.stammdaten
+        except Stammdaten.DoesNotExist:
+            sd = Stammdaten(benutzer=b)
+        zeilen.append(
+            {
+                "b": b,
+                "sd": sd,
+                "rollen": [
+                    r.name
+                    for r in alle
+                    if r.name in namen or (b.is_superuser and r.name == rollen.ADMIN)
+                ],
+                "zwei_faktor": user_has_device(b),
+                "stellen": ", ".join(sorted(s.name for s in b.ausgabestellen.all())),
+                "dabei_seit": sd.eintritt or (b.date_joined and b.date_joined.date()),
+            }
+        )
+    return zeilen
+
+
+def _csv(zeilen, archiv) -> str:
+    """Alle Felder als CSV (für Export/Druck), unabhängig von den sichtbaren Spalten."""
+    puffer = io.StringIO()
+    puffer.write("﻿")
+    schreiber = csv.writer(puffer, delimiter=";")
+    kopf = [
+        "Nachname",
+        "Vorname",
+        "Anrede",
+        "Straße",
+        "PLZ",
+        "Ort",
+        "Telefon",
+        "Handy",
+        "E-Mail",
+        "Benutzername",
+        "Rollen",
+        "Ausgabestellen",
+        "Beschäftigung",
+        "Dabei seit",
+    ]
+    if archiv:
+        kopf += ["Gesperrt am", "Gesperrt von"]
+    schreiber.writerow(kopf)
+    for z in zeilen:
+        b, sd = z["b"], z["sd"]
+        reihe = [
+            b.last_name, b.first_name, sd.anrede, sd.strasse, sd.plz, sd.ort, sd.telefon, sd.handy,
+            b.email, b.username, ", ".join(z["rollen"]), z["stellen"],
+            b.get_beschaeftigung_display(),
+            z["dabei_seit"].strftime("%d.%m.%Y") if z["dabei_seit"] else "",
+        ]  # fmt: skip
+        if archiv:
+            reihe += [b.gesperrt_am.strftime("%d.%m.%Y") if b.gesperrt_am else "", b.gesperrt_von]
+        schreiber.writerow(reihe)
+    return puffer.getvalue()
+
+
+def _mitarbeitende_seite(request, konten, *, archiv, art=None):
     q = (request.GET.get("q") or "").strip()
-    konten = get_user_model().objects.filter(is_active=True, stelle__isnull=True)
-    if art:
-        konten = konten.filter(beschaeftigung=art)
+    konten, sort = listen.sortieren(
+        _suchen(konten, q), request.GET.get("sort", ""), SORTIERUNG, "name"
+    )
+    zeilen = _zeilen(konten)
+    if request.GET.get("aktion"):
+        titel = "Archiv" if archiv else BESCHAEFTIGUNG_TITEL.get(art, "Team")
+        basis = f"mitarbeitende-{timezone.localdate():%Y-%m-%d}"
+        return listenexport.ausliefern(
+            request, f"Mitarbeitende – {titel}", basis, _csv(zeilen, archiv),
+            weiter=request.path,
+        )  # fmt: skip
     return render(
         request,
         "konten/mitarbeitende.html",
         {
-            "zeilen": _zeilen(_suchen(konten, q)),
-            "archiv": False,
+            "zeilen": zeilen,
+            "archiv": archiv,
             "art": art,
             "q": q,
-            "titel": BESCHAEFTIGUNG_TITEL.get(art, "Team"),
-            "faellig": personal.faelligkeiten(),
+            "sort": sort,
+            "titel": "Archiv" if archiv else BESCHAEFTIGUNG_TITEL.get(art, "Team"),
+            "faellig": None if archiv else personal.faelligkeiten(),
+            "sichtbar": listen.sichtbare_spalten(
+                request.user, LISTE, [k for k, _ in SPALTEN], SPALTEN_FEST
+            ),
+            "spalten_wahl": listen.spalten_wahl(request.user, LISTE, SPALTEN, SPALTEN_FEST),
+            "abfrage": request.GET.urlencode(),
         },
     )
+
+
+def _liste(request, art):
+    personal.stammdaten_leeren()
+    konten = get_user_model().objects.filter(is_active=True, stelle__isnull=True)
+    if art:
+        konten = konten.filter(beschaeftigung=art)
+    return _mitarbeitende_seite(request, konten, archiv=False, art=art)
 
 
 @verwalter_erforderlich
@@ -117,17 +213,25 @@ def angestellte(request):
 
 @verwalter_erforderlich
 def archiv(request):
-    q = (request.GET.get("q") or "").strip()
     konten = get_user_model().objects.filter(is_active=False, stelle__isnull=True)
-    return render(
-        request,
-        "konten/mitarbeitende.html",
-        {
-            "zeilen": _zeilen(_suchen(konten, q)),
-            "archiv": True,
-            "q": q,
-        },
+    return _mitarbeitende_seite(request, konten, archiv=True)
+
+
+@require_POST
+@verwalter_erforderlich
+def spalten(request):
+    """Speichert, welche Spalten diese Person in den Mitarbeitenden-Listen sieht; zurück zur
+    Liste, auf der man war (eine der drei: Ehrenamtliche/Angestellte/Archiv)."""
+    from django.utils.http import url_has_allowed_host_and_scheme
+
+    listen.spalten_speichern(
+        request.user, LISTE, request.POST.getlist("spalte"), SPALTEN, SPALTEN_FEST
     )
+    herkunft = request.META.get("HTTP_REFERER", "")
+    sicher = url_has_allowed_host_and_scheme(herkunft, {request.get_host()}, request.is_secure())
+    if herkunft and sicher:
+        return redirect(herkunft)
+    return redirect("konten:mitarbeitende")
 
 
 def _startpasswort_zeigen(request, ziel, passwort, neu):
