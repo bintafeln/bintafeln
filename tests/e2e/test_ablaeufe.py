@@ -547,6 +547,39 @@ def test_statistik_grafik_gross_und_zurueck(angemeldet, admin):
     expect(dialog).to_be_hidden()
 
 
+def test_statistik_legende_blendet_reihe_aus(angemeldet, admin):
+    """Auf einen Legendeneintrag tippen blendet die Reihe aus (durchgestrichen) und zeichnet das
+    Diagramm neu; erneutes Tippen blendet sie wieder ein."""
+    from apps.kunden.models import Abholung
+
+    mitte = _haushalte(1)  # legt Ausgabestelle „Mitte“ mit einem Haushalt (00041) an
+    nord = Ausgabestelle.objects.create(name="Nord")
+    mitte_haushalt = Haushalt.objects.get(kundennummer="00041")
+    nord_haushalt = Haushalt.objects.create(kundennummer="09000")
+    heute = timezone.localdate()
+    # Mitte viele, Nord wenige Abholungen → deutlich unterschiedliche Höhe
+    for _ in range(12):
+        Abholung.objects.create(haushalt=mitte_haushalt, datum=heute, ausgabestelle=mitte)
+    Abholung.objects.create(haushalt=nord_haushalt, datum=heute, ausgabestelle=nord)
+
+    seite = angemeldet(admin)
+    seite.goto("/statistik/")
+    abschnitt = seite.locator("#verlauf_stellen")
+    linien = abschnitt.locator("svg path.linie")
+    expect(linien).to_have_count(2)
+    erster = abschnitt.locator(".legende-schalter").first
+    erster.click()
+    # Abschnitt wird per htmx neu geladen: nur noch eine Linie, Eintrag durchgestrichen
+    expect(seite.locator("#verlauf_stellen svg path.linie")).to_have_count(1)
+    expect(seite.locator("#verlauf_stellen .legende-schalter").first).to_have_class(
+        re.compile(r"\baus\b")
+    )
+    assert "aus_verlauf_stellen" in seite.url
+    # Erneutes Tippen blendet wieder ein
+    seite.locator("#verlauf_stellen .legende-schalter").first.click()
+    expect(seite.locator("#verlauf_stellen svg path.linie")).to_have_count(2)
+
+
 def test_einstellungen_speichern_sofort(angemeldet, admin):
     """Einstellungen ohne Speichern-Knopf: jede Änderung gleich gespeichert, Fehler am Feld."""
     from apps.kunden.models import KundenEinstellungen

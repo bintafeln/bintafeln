@@ -61,9 +61,9 @@
   </div>
   {% if a.text %}<p class="hinweis">{{ a.text }}</p>{% endif %}
   {% if a.legende %}
-  <ul class="legende" aria-label="Legende">{% for name, farbe in a.legende %}<li><span class="legende-farbe reihe-{{ farbe }}"></span>{{ name }}</li>{% endfor %}</ul>
+  <ul class="legende" aria-label="Legende – auf einen Eintrag tippen blendet die Reihe aus oder wieder ein">{% for r in a.legende %}<li><a class="legende-schalter{% if r.aus %} aus{% endif %}" href="?{{ r.abfrage }}#{{ a.id }}" hx-get="?{{ r.abfrage }}" hx-target="#{{ a.id }}" hx-select="#{{ a.id }}" hx-swap="outerHTML" hx-push-url="true" aria-pressed="{% if r.aus %}false{% else %}true{% endif %}" title="{{ r.name }} {% if r.aus %}einblenden{% else %}ausblenden{% endif %}"><span class="legende-farbe reihe-{{ r.farbe }}"></span>{{ r.name }}</a></li>{% endfor %}</ul>
   {% endif %}
-  {% if a.svg %}<figure class="diagramm-rahmen" data-gross="{{ a.id }}" title="Anklicken: groß anzeigen">{{ a.svg }}</figure>{% elif not a.zeilen %}<p class="hinweis">Keine Daten im Zeitraum.</p>{% endif %}
+  {% if a.svg %}<figure class="diagramm-rahmen" data-gross="{{ a.id }}" title="Anklicken: groß anzeigen">{{ a.svg }}</figure>{% elif a.legende %}<p class="hinweis">Alle Reihen ausgeblendet – über die Legende wieder einblenden.</p>{% elif not a.zeilen %}<p class="hinweis">Keine Daten im Zeitraum.</p>{% endif %}
   {% if a.zeilen %}
   <details class="statistik-tabelle">
     <summary>Zahlen als Tabelle</summary>
