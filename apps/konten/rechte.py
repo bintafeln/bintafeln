@@ -101,6 +101,10 @@ KATALOG = [
     Recht("mitarbeitende.nummer", TEAM, "Mitarbeiternummer von Hand vergeben",
           "Die Personalnummer sonst automatisch; mit diesem Recht kann man sie im Profil selbst "
           "setzen. Vorgabe: nur Admin."),
+    Recht("mitarbeitende.loeschen", TEAM, "Gesperrte Mitarbeitende endgültig löschen",
+          "Ein gesperrtes (archiviertes) Konto samt Stammdaten und verknüpfter Adresse in den "
+          "Papierkorb legen (wiederherstellbar). Spenden oder Mitgliedschaft verhindern das. "
+          "Vorgabe: nur Admin."),
     Recht("personal.sehen", TEAM, "Personal: Verträge, Abwesenheiten, Stunden, Arbeitszeiten, "
           "vertrauliche Dokumente"),
     # Adressen und Verein (Modul 5)
