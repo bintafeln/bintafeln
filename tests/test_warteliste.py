@@ -171,6 +171,16 @@ def test_ort_aus_tafel_oder_einstellungen():
     assert ablauf.ort(Termin(datum=timezone.localdate(), von=dt.time(9), ort="Saal")) == "Saal"
 
 
+def test_liste_nach_nummer_sortierbar(admin_client, modul_an):
+    a, b, c = antrag(vorname="A"), antrag(vorname="B"), antrag(vorname="C")
+    ablauf.automatik()
+    nummern = sorted(x.laufnummer for x in (a, b, c))
+    auf = admin_client.get(reverse("warteliste:liste"), {"sort": "nummer"}).context["eintraege"]
+    assert [w.antrag.laufnummer for w in auf] == nummern  # aufsteigend
+    ab = admin_client.get(reverse("warteliste:liste"), {"sort": "-nummer"}).context["eintraege"]
+    assert [w.antrag.laufnummer for w in ab] == nummern[::-1]  # absteigend
+
+
 # ── Dubletten und Abgleich ───────────────────────────────────────────────────
 
 
