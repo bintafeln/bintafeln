@@ -21,8 +21,11 @@
     dialog.showModal();
   }
 
-  document.querySelectorAll("[data-gross]").forEach(function (el) {
-    el.addEventListener("click", function () { oeffnen(el.getAttribute("data-gross"), el); });
+  // Delegiert, damit „Groß“ auch in Abschnitten funktioniert, die htmx nachlädt
+  // (anklickbare Legende tauscht den Abschnitt aus).
+  document.addEventListener("click", function (e) {
+    var el = e.target.closest("[data-gross]");
+    if (el) oeffnen(el.getAttribute("data-gross"), el);
   });
   dialog.querySelector("[data-zurueck]").addEventListener("click", function () { dialog.close(); });
   dialog.addEventListener("close", function () {
