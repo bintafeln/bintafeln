@@ -191,6 +191,20 @@ def test_dubletten_und_zusammenfuehren(admin):
     assert c in (paar["a"], paar["b"])
 
 
+def test_abgleich_und_dubletten_laden_ergebnis_nach(admin_client, modul_an):
+    """Beide Seiten erscheinen sofort und laden ihr Ergebnis per htmx nach, damit sie bei großem
+    Kundenstamm nicht hängen."""
+    antrag("Erika", "Beispiel", geburtsdatum=dt.date(1980, 2, 3))
+    antrag("Erika", "Beispiell", geburtsdatum=dt.date(1980, 2, 3))
+    ablauf.automatik()
+    seite = admin_client.get(reverse("warteliste:abgleich")).content.decode()
+    assert "warteliste/abgleich/treffer/" in seite and "geprüft … das kann" in seite
+    dubl = admin_client.get(reverse("warteliste:dubletten")).content.decode()
+    assert "warteliste/dubletten/paare/" in dubl
+    paare = admin_client.get(reverse("warteliste:dubletten_ergebnis")).content.decode()
+    assert "streichen" in paare  # die gefundenen Paare kommen aus dem Nachlade-Endpunkt
+
+
 def test_kundenabgleich_sperrzeit_und_ausnahmen():
     heute = timezone.localdate()
     h = Haushalt.objects.create(kundennummer="900", ausweis_gueltig_bis=heute - dt.timedelta(60))
@@ -264,9 +278,10 @@ def test_abgleich_seite_hat_regler_und_prozent(admin_client, modul_an):
     antrag(geburtsdatum=dt.date(1980, 2, 3))
     ablauf.automatik()  # legt die Wartestände an, damit der Antrag auf der Abgleich-Seite steht
     seite = admin_client.get(reverse("warteliste:abgleich")).content.decode()
-    assert "% Übereinstimmung" in seite
-    assert 'id="min-score"' in seite and "data-punkte=" in seite
-    assert "js/abgleich.js" in seite
+    assert "js/abgleich.js" in seite and "warteliste/abgleich/treffer/" in seite  # lädt nach
+    treffer = admin_client.get(reverse("warteliste:abgleich_ergebnis")).content.decode()
+    assert "% Übereinstimmung" in treffer
+    assert 'id="min-score"' in treffer and "data-punkte=" in treffer
 
 
 def test_auskunft_enthaelt_warteliste(pdf_text):
@@ -392,8 +407,8 @@ def test_abgleich_entscheiden_sperrzeit_und_einladen(admin_client, modul_an):
     ergebnis = ablauf.einladen([a], termin(), "Büro", mail_senden=False)
     assert not ergebnis[0]["ok"] and "erst im Abgleich prüfen" in ergebnis[0]["hinweis"]
 
-    seite = admin_client.get(reverse("warteliste:abgleich")).content.decode()
-    assert "✓ Ja, derselbe Haushalt – Wartezeit bis" in seite and "✗ Nein" in seite
+    treffer = admin_client.get(reverse("warteliste:abgleich_ergebnis")).content.decode()
+    assert "✓ Ja, derselbe Haushalt – Wartezeit bis" in treffer and "✗ Nein" in treffer
     antwort = admin_client.post(reverse("warteliste:abgleich_entscheiden"),
                                 {"antrag": a.pk, "kundennummer": "900", "gleich": "1"},
                                 follow=True)  # fmt: skip
@@ -403,7 +418,9 @@ def test_abgleich_entscheiden_sperrzeit_und_einladen(admin_client, modul_an):
     assert ws.status == "wartezeit" and ws.wartezeit_bis > heute and a.kundennummer == "900"
     assert "Abgleich: derselbe Haushalt wie Kunde 900" in a.anmerkungen.first().text
     seite = admin_client.get(reverse("warteliste:abgleich")).content.decode()
-    assert "Kein ungeprüfter Antrag" in seite and "Zuletzt geprüft" in seite
+    assert "Zuletzt geprüft" in seite
+    treffer = admin_client.get(reverse("warteliste:abgleich_ergebnis")).content.decode()
+    assert "Kein ungeprüfter Antrag" in treffer
     assert (
         "⚠ Sperrzeit? Prüfen"
         not in admin_client.get(reverse("warteliste:sperren")).content.decode()

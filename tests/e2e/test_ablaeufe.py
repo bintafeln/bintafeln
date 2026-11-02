@@ -563,6 +563,30 @@ def test_warteliste_erscheint_sofort_sperrhinweis_laedt_nach(angemeldet, admin):
     expect(seite.locator(".sperr-hinweis")).to_be_visible()
 
 
+def test_abgleich_erscheint_sofort_treffer_laden_nach(angemeldet, admin):
+    """Der Abgleich mit dem Kundenstamm erscheint sofort und lädt die Treffer per htmx nach,
+    damit die Seite bei großem Kundenstamm nicht hängt."""
+    from apps.antraege.models import Antrag
+    from apps.core.models import TafelEinstellungen
+    from apps.warteliste import ablauf
+
+    t = TafelEinstellungen.laden()
+    t.module = ["warteliste"]
+    t.save()
+    h = Haushalt.objects.create(
+        kundennummer="00900", ausweis_gueltig_bis=timezone.localdate() - dt.timedelta(days=60)
+    )
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika", nachname="Beispiel",
+                          geburtsdatum=dt.date(1980, 2, 3))  # fmt: skip
+    Antrag.objects.create(vorname="Erika", nachname="Beispiel", geburtsdatum=dt.date(1980, 2, 3))
+    ablauf.automatik()
+    seite = angemeldet(admin)
+    seite.goto("/warteliste/abgleich/")
+    # Überschrift sofort da, der Vergleich wird nachgeladen.
+    expect(seite.get_by_role("heading", name="Abgleich mit dem Kundenstamm")).to_be_visible()
+    expect(seite.locator(".abgleich-regler")).to_be_visible()  # Treffer per htmx eingesetzt
+
+
 def test_statistik_grafik_gross_und_zurueck(angemeldet, admin):
     """Grafik anklicken: bildschirmfüllend; „Zurück“ schließt, die Seite bleibt an ihrer Stelle."""
     from apps.kunden.models import Abholung
