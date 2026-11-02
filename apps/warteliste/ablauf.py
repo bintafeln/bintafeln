@@ -483,12 +483,13 @@ def kundenabgleich(antraege, heute=None) -> list[dict]:
     return sorted(ergebnis, key=lambda x: (not x["sperr"], -x["treffer"][0]["punkte"]))
 
 
-def sperre_offen(a, heute=None) -> str:
+def sperre_offen(a, heute=None, e=None, vorberechnet=None) -> str:
     """Hinweis, wenn ein ungeprüfter ähnlicher Haushalt in der Sperrzeit ist (sonst "")."""
     if AbgleichEntscheidung.objects.filter(antrag=a, gleich=True).exists():
         return ""
     heute = heute or timezone.localdate()
-    for t in _offene_treffer(a, heute, WartelisteEinstellungen.laden()):
+    e = e or WartelisteEinstellungen.laden()
+    for t in _offene_treffer(a, heute, e, vorberechnet):
         for h in t["hinweise"]:
             if h["art"] == "sperr":
                 return f"möglicherweise Kunde {t['haushalt'].kundennummer}: {h['text']}"
@@ -500,15 +501,23 @@ def offene_sperren(antraege, heute=None) -> dict[int, str]:
     Vergleich mit dem ganzen Kundenstamm dauert."""
     from django.core.cache import cache
 
+    heute = heute or timezone.localdate()
+    e = WartelisteEinstellungen.laden()
     stand = (AbgleichEntscheidung.objects.count(),
              Haushalt.objects.order_by("-geaendert_am").values_list("geaendert_am", flat=True)
              .first())  # fmt: skip
+    # Personen mit normalisierten Namen höchstens einmal laden – und nur, wenn überhaupt ein
+    # Antrag neu berechnet werden muss (sonst lädt die Warteliste bei kaltem Cache den ganzen
+    # Kundenstamm für jeden Antrag neu und gunicorn bricht den Aufruf ab).
+    vorberechnet = None
     ergebnis = {}
     for a in antraege:
         schluessel = f"warteliste-sperre-{a.pk}-{hash(stand)}"
         hinweis = cache.get(schluessel)
         if hinweis is None:
-            hinweis = sperre_offen(a, heute)
+            if vorberechnet is None:
+                vorberechnet = aufnahme.kandidaten()
+            hinweis = sperre_offen(a, heute, e, vorberechnet)
             cache.set(schluessel, hinweis, 600)
         if hinweis:
             ergebnis[a.pk] = hinweis

@@ -223,6 +223,40 @@ def test_kundenabgleich_sperrzeit_und_ausnahmen():
     assert hinweis["art"] == "ok" and "Sperrzeit vorbei" in hinweis["text"]
 
 
+def test_offene_sperren_wie_einzeln_und_zwischengespeichert(monkeypatch):
+    """Die Sperrhinweise der Listenseite stimmen mit sperre_offen() überein, werden beim zweiten
+    Aufruf aus dem Cache bedient und laden den Kundenstamm nur einmal (nicht je Antrag) – sonst
+    bricht gunicorn den Aufruf bei großem Kundenstamm ab."""
+    from django.core.cache import cache
+
+    from apps.antraege import aufnahme
+
+    cache.clear()
+    heute = timezone.localdate()
+    h = Haushalt.objects.create(kundennummer="900", ausweis_gueltig_bis=heute - dt.timedelta(60))
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika",
+                          nachname="Beispiel", geburtsdatum=dt.date(1980, 2, 3))  # fmt: skip
+    a = antrag(geburtsdatum=dt.date(1980, 2, 3))
+    b = antrag(vorname="Erika", nachname="Beispiel", geburtsdatum=dt.date(1980, 2, 3))
+    for x in (a, b):
+        Wartestand.objects.get_or_create(antrag=x)
+
+    # Der Kundenstamm wird für beide Anträge nur einmal geladen, nicht je Antrag neu.
+    echte_kandidaten = aufnahme.kandidaten
+    aufrufe = []
+    monkeypatch.setattr(aufnahme, "kandidaten", lambda: aufrufe.append(1) or echte_kandidaten())
+    sperren = ablauf.offene_sperren([a, b], heute)
+    assert len(aufrufe) == 1
+    assert sperren[a.pk] == ablauf.sperre_offen(a, heute)
+
+    # Zweiter Aufruf kommt aus dem Cache – kandidaten() wird gar nicht mehr gebraucht.
+    def nicht_erneut():
+        pytest.fail("kandidaten() trotz Cache erneut aufgerufen")
+
+    monkeypatch.setattr(aufnahme, "kandidaten", nicht_erneut)
+    assert ablauf.offene_sperren([a, b], heute) == sperren
+
+
 def test_abgleich_seite_hat_regler_und_prozent(admin_client, modul_an):
     h = Haushalt.objects.create(kundennummer="900")
     Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika", nachname="Beispiel",
