@@ -1,0 +1,27 @@
+{% load handbuch %}<p>Menü „Einstellungen → Systemsteuerung → Aus Bexat übernehmen“. Mit diesem Modul übernehmen Sie
+  Daten aus dem <strong>Bexat-Tafelprogramm</strong> (Hersteller tafelarbeit.de), ohne die Datei von
+  Hand umzubauen. Es ist ein zuschaltbares Modul: In den Tafel-Einstellungen einschalten, dann
+  erscheint der Menüpunkt.</p>
+<ol>
+  <li><strong>In Bexat exportieren:</strong> Die Daten als Excel-Datei (.xlsx) exportieren. Es ist
+    die mehrblättrige Datei mit Haushalten, Personen, Abholungen usw.</li>
+  <li><strong>Zuordnungen prüfen:</strong> Unter „Bexat-Zuordnungen“ den Ausgabestellen-Nummern
+    Namen und den Einkommensart-Nummern Texte geben (nur nötig, soweit sie nicht schon im Export
+    stehen). Eine Zuordnung je Zeile, z. B. <code>6 = Rente</code>.</li>
+  <li><strong>Hochladen:</strong> Die Exportdatei wählen und entscheiden, was übernommen wird:
+    <ul>
+      <li><strong>Kundenstamm prüfen und abgleichen</strong> wandelt Haushalte, Personen,
+        Abholberechtigte, Abholungen, Sperren, Ausnahmen, Anmerkungen und Kundengruppen um und
+        führt direkt in den gewohnten Abgleich des Kundenstamms. Gespeichert wird erst nach Ihrer
+        Bestätigung.</li>
+      <li><strong>Anträge</strong> und <strong>Mitarbeitende</strong> werden als CSV-Datei
+        heruntergeladen. Diese laden Sie anschließend unter „Daten importieren“ mit dem Ziel
+        „Anträge“ bzw. „Mitarbeitende“ hoch; auch dort wird vor dem Speichern abgeglichen.</li>
+    </ul>
+  </li>
+</ol>
+<p><strong>Was übernommen wird:</strong> Nur <em>offene</em> Anträge; gelöschte Haushalte bleiben
+  außen vor (Datensparsamkeit). Die Höhe des Einkommens kommt bewusst nicht mit, nur die
+  Einkommensart. Familienstand übernimmt bintafeln nicht.</p>
+<p class="hinweis">Die Daten verlassen Ihren Server nicht. Die hochgeladene Datei wird nur für die
+  Umwandlung gelesen und nicht gespeichert.</p>

@@ -75,6 +75,7 @@ BINTAFELN_MODULE = [
     "apps.dienstplan",
     "apps.aushang",
     "apps.tickets",
+    "apps.bexat",
 ]
 INSTALLED_APPS += BINTAFELN_MODULE
 

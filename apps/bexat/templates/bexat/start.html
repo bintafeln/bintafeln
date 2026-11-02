@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block titel %}Aus Bexat übernehmen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Aus Bexat übernehmen</h1>
+  <p>Daten aus dem <strong>Bexat-Tafelprogramm</strong> (tafelarbeit.de) übernehmen. Exportieren Sie
+    dort die Daten als Excel-Datei (.xlsx) und laden Sie die Datei hier hoch. bintafeln wandelt sie
+    in sein Importformat um und zeigt anschließend wie gewohnt den <strong>Abgleich</strong> –
+    gespeichert wird erst nach Ihrer Bestätigung.</p>
+  <p class="hinweis">Die Daten verlassen Ihren Server nicht. Nur offene Anträge werden übernommen;
+    gelöschte Haushalte bleiben außen vor (Datensparsamkeit).</p>
+  <p class="hinweis">Ausgabestellen und Einkommensarten kennt Bexat teils nur als Nummer. Prüfen Sie
+    vorab die <a href="{% url 'bexat:einstellungen' %}">Bexat-Zuordnungen</a>, damit Namen und
+    Einkommensarten richtig ankommen.</p>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="feld">
+      <label for="datei">Bexat-Exportdatei (.xlsx)</label>
+      <input type="file" id="datei" name="datei"
+             accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
+    </div>
+    <p>Was möchten Sie übernehmen?</p>
+    <div class="knopf-reihe">
+      <button type="submit" class="knopf" name="ziel" value="kunden" data-ziel="pruefbericht">
+        Kundenstamm prüfen und abgleichen</button>
+      <button type="submit" class="knopf knopf-zweitrangig" name="ziel" value="antraege">
+        Anträge als CSV herunterladen</button>
+      <button type="submit" class="knopf knopf-zweitrangig" name="ziel" value="mitarbeitende">
+        Mitarbeitende als CSV herunterladen</button>
+    </div>
+  </form>
+  <p class="hinweis">„Kundenstamm prüfen und abgleichen“ führt direkt in den Abgleich des
+    Kundenstamms. Die heruntergeladenen Dateien <code>antraege.csv</code> und
+    <code>mitarbeitende.csv</code> laden Sie anschließend unter „Daten importieren“ mit dem Ziel
+    „Anträge“ bzw. „Mitarbeitende“ hoch; auch dort wird vor dem Speichern abgeglichen.</p>
+</section>
+
+{% if bericht %}
+<section class="karte">
+  <h2 id="pruefbericht">Prüfbericht: Import nicht möglich</h2>
+  <p>Die umgewandelten Daten haben die Prüfung nicht bestanden. Der Bericht nennt nur Datei und
+    Zeile, keine Inhalte. Bitte die Bexat-Zuordnungen prüfen und erneut hochladen.</p>
+  {% include "kunden/_bericht.html" %}
+</section>
+{% endif %}
+{% endblock %}
