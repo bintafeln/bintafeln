@@ -79,6 +79,23 @@ def test_liste_filter_csv_auskunft(admin_client, markt, pdf_text):
     assert "Frischmarkt Muster" in pdf_text(pdf) and "Frau Probe" in pdf_text(pdf)
 
 
+def test_liste_blaettern_und_getrennte_spalten(admin_client):
+    for i in range(30):
+        Adresse.objects.create(art="person", vorname=f"V{i:02d}", nachname=f"N{i:02d}")
+    # Vorgabe blättert (25 je Seite), „alle“ zeigt alles auf einer Seite.
+    assert admin_client.get(LISTE).context["seite"].paginator.num_pages >= 2
+    alle = admin_client.get(LISTE, {"anzahl": "alle"})
+    assert alle.context["seite"].paginator.num_pages == 1
+    # Getrennte Spalten wie bei den Mitarbeitenden, standardmäßig sichtbar.
+    inhalt = alle.content.decode()
+    assert "Nachname" in inhalt and "Vorname" in inhalt and "Straße" in inhalt and "Handy" in inhalt
+    assert {"vorname", "strasse", "mobil"} <= alle.context["sichtbar"]
+    # Nach Vorname sortierbar.
+    nach_v = admin_client.get(LISTE, {"anzahl": "alle", "sort": "vorname"}).context["seite"]
+    vornamen = [a.vorname for a in nach_v if a.vorname]
+    assert vornamen == sorted(vornamen)
+
+
 CSV = (
     "organisation;vorname;nachname;plz;ort;email;kategorien;einwilligung_post;quatsch\n"
     "Frischmarkt Muster;;;12345;Musterstadt;;Lieferant/Markt;;x\n"  # schon da (Name + PLZ)
