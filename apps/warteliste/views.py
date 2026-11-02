@@ -45,8 +45,9 @@ sehen = rollen.recht_erforderlich("warteliste.sehen")
 bearbeiten = rollen.recht_erforderlich("warteliste.bearbeiten")
 S = Wartestand.Status
 SORTIERUNG = {"eingang": "antrag__eingegangen_am", "name": "antrag__nachname",
-              "status": "status", "termin": "termin__datum", "staat":
-              "antrag__staatsangehoerigkeit", "art": "antrag__art"}  # fmt: skip
+              "vorname": "antrag__vorname", "geburtsdatum": "antrag__geburtsdatum",
+              "wohnort": "antrag__ort", "status": "status", "termin": "termin__datum",
+              "staat": "antrag__staatsangehoerigkeit", "art": "antrag__art"}  # fmt: skip
 
 
 def _von(request) -> str:
