@@ -306,6 +306,12 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `apps/aushang/anzeige.py`, Wechsel, große Ansicht und Dialog in `static/js/aushang.js`; nur Namen
   zeigen; Ändern am Monitor nur mit persönlicher PIN über `apps/aushang/pin.py`, die Rechte prüft
   `Aushangseite.aendern` des Moduls).
+  `bexat` (ADR 0006 ergänzt, ADR 0100, Übernahme aus dem Bexat-Tafelprogramm/tafelarbeit.de):
+  reine Umwandlung in `apps/bexat/konvertieren.py` (`umwandeln(bytes)` → neutrale Importformat-Dateien),
+  herstellerweite Code-Tabellen in `apps/bexat/codes.py`, je-Tafel-Zuordnungen (Ausgabestellen,
+  Einkommensarten) in `BexatEinstellungen`; die Seite schickt den Kundenstamm direkt in den
+  Abgleich (`ImportVorbereitung` → `kunden:import_vorschau`), Anträge/Mitarbeitende als CSV.
+  Keine festen Tafel-Werte, keine Personendaten; Tests mit erfundenem Workbook.
   Hooks `Modul.fristen`, `Modul.auskunft_mitarbeiter`, `Modul.aushang`,
   `Modul.einlass`, `Modul.auskunft_antrag`, `Modul.kopfzeile`, `Modul.seitenleiste`, `Modul.suchen`,
   `Modul.startseite`, `Modul.mein_konto`. Programmname nur in

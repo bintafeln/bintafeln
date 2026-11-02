@@ -18,6 +18,11 @@ eine Tafel vollständig umsteigt. Eine laufende Synchronisation zweier Systeme i
 - bintafeln kennt nur **ein eigenes, offen dokumentiertes, neutrales CSV-Format**. Jeder Import
   erzeugt einen **Prüfbericht**.
 - **Konverter für bestimmte Altsysteme gehören nicht in dieses Repository.**
+  *Ergänzt am 2026-11-02 (siehe ADR 0100):* Ein Konverter darf als **zuschaltbares Modul**
+  (ADR 0049) in bintafeln aufgenommen werden, wenn mehrere Tafeln dasselbe Altsystem nutzen und
+  das Modul das neutrale Importformat erzeugt und durch den normalen Import mit Abgleich schickt.
+  Er darf keine festen, tafelspezifischen Werte enthalten und keine Personendaten mitbringen.
+  Außerhalb des Repositorys bleiben Konverter weiterhin erlaubt (lokales Werkzeug).
 - Erst beim späteren **Umstieg zu einem Stichtag** übernimmt bintafeln die Führung der Daten.
 
 ## Begründung

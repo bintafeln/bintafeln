@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block titel %}Bexat-Zuordnungen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'bexat:start' %}">← Aus Bexat übernehmen</a></p>
+  <h1>Bexat-Zuordnungen</h1>
+  <p>Bexat speichert Ausgabestellen und Einkommensarten teils nur als Nummer. Hier ordnen Sie den
+    Nummern Namen bzw. Texte zu – eine Zuordnung je Zeile im Format <code>Nummer = Text</code>.</p>
+  <p class="hinweis">Die Ausgabestellen stehen meist schon im Export; dann bleibt das Feld leer.
+    Die Einkommensarten-Nummern finden Sie in der Bexat-Kundenkonfiguration. Was hier fehlt, bleibt
+    beim Import einfach leer.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+{% endblock %}
