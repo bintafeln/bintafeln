@@ -558,7 +558,7 @@ def test_warteliste_erscheint_sofort_sperrhinweis_laedt_nach(angemeldet, admin):
     seite.goto("/warteliste/")
     # Die Zeile steht sofort, ohne auf den Vergleich mit dem Kundenstamm zu warten.
     expect(seite.locator("tbody tr")).to_have_count(1)
-    expect(seite.get_by_role("link", name="Beispiel, Erika")).to_be_visible()
+    expect(seite.get_by_role("link", name="Beispiel", exact=True)).to_be_visible()  # Nachname
     # Der Sperrzeit-Hinweis wird danach per htmx eingesetzt.
     expect(seite.locator(".sperr-hinweis")).to_be_visible()
 
