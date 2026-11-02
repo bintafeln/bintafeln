@@ -136,6 +136,11 @@ def test_antragsformular_am_pc_breit(seite, admin):
     # Regression: Das öffentliche Antragsformular darf am PC (Viewport 1280) nicht auf
     # Handy-Breite schrumpfen. Früher kappte die Klasse „antrag-karte“ (aus dem
     # Aufnahme-Abgleich) es auf 20rem ≈ 320px.
+    from apps.antraege.models import AntragEinstellungen
+
+    e = AntragEinstellungen.laden()
+    e.aktiv = True  # sonst zeigt die Seite nur „Zurzeit keine Anträge“ statt des Formulars
+    e.save()
     seite.goto("/antrag/de/")
     kasten = seite.locator(".antrag-formular")
     expect(kasten).to_be_visible()
