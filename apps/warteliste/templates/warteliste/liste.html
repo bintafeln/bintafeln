@@ -10,8 +10,7 @@
       {% for s, label, n in status_zahlen %}{% if n %}<a href="?status={{ s }}"{% if f.status == s %} aria-current="page"{% endif %}>{{ label }} ({{ n }})</a>{% endif %}{% endfor %}
     </nav>
   </div>
-  {# Sperrzeit-Hinweise werden nach dem Seitenaufbau per htmx nachgeladen, damit die Liste auch bei
-     großem Kundenstamm sofort erscheint und nie hängt (füllt #sperren-banner und je Zeile #sperre-<pk>). #}
+  {# Sperrzeit-Hinweise lädt htmx nach dem Seitenaufbau nach (#sperren-banner und je Zeile #sperre-<pk>), damit die Liste auch bei großem Kundenstamm sofort erscheint. #}
   <p id="sperren-banner" class="meldung error" hidden></p>
   <div hx-get="{% url 'warteliste:sperren' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
        hx-trigger="load" hx-swap="none"></div>
