@@ -5,9 +5,37 @@ Kundengruppe zu einer dieser Ausgabestellen gehört – außer mit dem Recht
 „kunden.alle_ausgabestellen“ (Admin immer). Ohne Zuordnung gibt es keine Einschränkung.
 """
 
+import datetime as dt
+
 from django.core.exceptions import PermissionDenied
+from django.db.models import OuterRef, Q, Subquery
+from django.utils import timezone
 
 from apps.konten import rollen
+
+
+def _nachfrist_tage() -> int:
+    """Wie viele Tage ein aus der Kundengruppe gefallener Kunde der früheren Ausgabestelle noch
+    eingeschränkt sichtbar bleibt (Kunden-Einstellungen; 0 = sofort unsichtbar)."""
+    from apps.kunden.models import KundenEinstellungen
+
+    return KundenEinstellungen.laden().nachfrist_sichtbar_tage
+
+
+def _letzte_stelle_in_nachfrist(kundennummer: str, grenze: dt.date):
+    """Ausgabestelle, an der dieser (ohne aktuelle Kundengruppe dastehende) Kunde zuletzt war,
+    wenn dieses Ende höchstens bis ``grenze`` zurückliegt; sonst None."""
+    from apps.kunden.models import Gruppenzeit
+
+    gz = (
+        Gruppenzeit.objects.filter(kundennummer=kundennummer, bis__isnull=False, bis__gte=grenze)
+        .select_related("kundengruppe")
+        .order_by("-bis", "-pk")
+        .first()
+    )
+    if gz and gz.kundengruppe_id and gz.kundengruppe.ausgabestelle_id:
+        return gz.kundengruppe.ausgabestelle_id
+    return None
 
 
 def stellen(benutzer) -> list | None:
@@ -34,10 +62,17 @@ def sperrgrund(benutzer, haushalt) -> str:
     eigene = stellen(benutzer)
     if eigene is None:
         return ""
+    eigene_pks = {s.pk for s in eigene}
     gruppe = haushalt.kundengruppe
     stelle = gruppe.ausgabestelle if gruppe else None
-    if stelle is not None and stelle.pk in {s.pk for s in eigene}:
+    if stelle is not None and stelle.pk in eigene_pks:
         return ""
+    # Nachfrist (ADR 0061/0034): Wer aus seiner Kundengruppe gefallen ist, bleibt der früheren
+    # Ausgabestelle noch eine Weile eingeschränkt sichtbar (die Ampel sperrt die Abholung ohnehin).
+    if gruppe is None and (tage := _nachfrist_tage()) > 0:
+        grenze = timezone.localdate() - dt.timedelta(days=tage)
+        if _letzte_stelle_in_nachfrist(haushalt.kundennummer, grenze) in eigene_pks:
+            return ""
     zugeordnet = f"Sie sind der Ausgabestelle {_namen(eigene)} zugeordnet" if len(eigene) == 1 \
         else f"Sie sind den Ausgabestellen {_namen(eigene)} zugeordnet"  # fmt: skip
     if stelle is None:
@@ -60,11 +95,28 @@ def pruefen(benutzer, haushalt) -> None:
 
 
 def filtern(haushalte, benutzer):
-    """Schränkt eine Haushalt-Abfrage auf die eigenen Ausgabestellen ein."""
+    """Schränkt eine Haushalt-Abfrage auf die eigenen Ausgabestellen ein. Wer aus der Kundengruppe
+    gefallen ist, bleibt der früheren Ausgabestelle noch die Nachfrist sichtbar (ADR 0061)."""
     eigene = stellen(benutzer)
     if eigene is None:
         return haushalte
-    return haushalte.filter(kundengruppe__ausgabestelle__in=eigene)
+    eigene_pks = [s.pk for s in eigene]
+    normal = Q(kundengruppe__ausgabestelle__in=eigene_pks)
+    tage = _nachfrist_tage()
+    if tage <= 0:
+        return haushalte.filter(normal)
+    from apps.kunden.models import Gruppenzeit
+
+    grenze = timezone.localdate() - dt.timedelta(days=tage)
+    letzte = Gruppenzeit.objects.filter(
+        kundennummer=OuterRef("kundennummer"), bis__isnull=False
+    ).order_by("-bis", "-pk")
+    haushalte = haushalte.annotate(
+        _nf_bis=Subquery(letzte.values("bis")[:1]),
+        _nf_stelle=Subquery(letzte.values("kundengruppe__ausgabestelle")[:1]),
+    )
+    nachfrist = Q(kundengruppe__isnull=True, _nf_bis__gte=grenze, _nf_stelle__in=eigene_pks)
+    return haushalte.filter(normal | nachfrist)
 
 
 def haushalt(benutzer, kundennummer, abfrage=None):

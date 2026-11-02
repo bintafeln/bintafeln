@@ -35,6 +35,7 @@ class KundenEinstellungenForm(forms.ModelForm):
             "zugriffe_aufbewahren_tage",
             "historie_aufbewahren_jahre",
             "gruppe_behalten",
+            "nachfrist_sichtbar_tage",
             "export_felder",
             "verlaengern_regel",
             "verlaengern_ab_alter",

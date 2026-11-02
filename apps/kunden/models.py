@@ -61,6 +61,14 @@ class KundenEinstellungen(models.Model):
         help_text="Aus: Wer pausiert, gesperrt oder beendet ist oder keinen gültigen Ausweis mehr "
         "hat, fällt sofort aus der Kundengruppe, damit das Maximum der Gruppe stimmt.",
     )  # fmt: skip
+    nachfrist_sichtbar_tage = models.PositiveSmallIntegerField(
+        "Ehemalige Kunden noch sichtbar (Tage)",
+        default=60,
+        validators=[MaxValueValidator(3650)],
+        help_text="Wer aus der Kundengruppe gefallen ist (beendet, gesperrt, pausiert oder Ausweis "
+        "abgelaufen), bleibt der früheren Ausgabestelle noch so viele Tage eingeschränkt sichtbar "
+        "(nur ansehen, keine Abholung). 0 = sofort unsichtbar.",
+    )
     zugriffe_aufbewahren_tage = models.PositiveSmallIntegerField(
         "Zugriffsprotokoll aufbewahren (Tage)",
         default=365,
