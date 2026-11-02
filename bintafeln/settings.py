@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.postgres",  # Trigramm-Suche (pg_trgm) für den Kundenstamm-Abgleich
     "django_otp",
     "django_otp.plugins.otp_totp",
     "django_otp.plugins.otp_static",

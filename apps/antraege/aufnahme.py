@@ -8,8 +8,6 @@ mit freiem Platz, nächste freie Kundennummer und das Speichern in einer Transak
 import calendar
 import datetime as dt
 import difflib
-import re
-import unicodedata
 
 from django.db import transaction
 from django.db.models import Count, Q
@@ -24,6 +22,7 @@ from apps.kunden.models import (
     Kundengruppe,
     Person,
 )
+from apps.kunden.namen import normal
 
 MIN_PUNKTE = 55
 MAX_TREFFER = 10
@@ -42,14 +41,6 @@ FELDER = [
     ("familienstand", "Familienstand", False),
     ("staatsangehoerigkeit", "Staatsangehörigkeit", False),
 ]
-UMLAUTE = str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"})
-
-
-def normal(text: str) -> str:
-    """Für Vergleiche: klein, Umlaute ausgeschrieben, ohne Akzente und Satzzeichen."""
-    text = (text or "").lower().translate(UMLAUTE)
-    text = "".join(z for z in unicodedata.normalize("NFKD", text) if not unicodedata.combining(z))
-    return " ".join(re.sub(r"[^a-z ]+", " ", text).split())
 
 
 def _quote(a: str, b: str) -> float:
@@ -71,17 +62,6 @@ def _namen_paar_n(av: str, an: str, bv: str, bn: str) -> float:
 def _aehnlichkeit_n(av: str, an: str, bv: str, bn: str) -> float:
     """0 bis 1 aus bereits normalisierten Namen; berücksichtigt vertauschte Vor-/Nachnamen."""
     return max(_namen_paar_n(av, an, bv, bn), _namen_paar_n(av, an, bn, bv))
-
-
-def _vielleicht_aehnlich(av: str, an: str, bv: str, bn: str) -> bool:
-    """Billige Obergrenze für die Namensähnlichkeit (``quick_ratio`` ≥ ``ratio``). Liegt sie unter
-    der Treffer-Schwelle 0,5, ist auch der genaue Wert darunter – dann die teure Berechnung (und
-    beim großen Kundenstamm sehr viele davon) überspringen."""
-
-    def ob(a: str, b: str) -> float:
-        return difflib.SequenceMatcher(None, a, b).quick_ratio() if a and b else 0.0
-
-    return max((ob(av, bv) + ob(an, bn)) / 2, (ob(av, bn) + ob(an, bv)) / 2) >= 0.5
 
 
 def namens_aehnlichkeit(vorname: str, nachname: str, v2: str, n2: str) -> float:
@@ -111,20 +91,24 @@ def einstufung(punkte: int) -> tuple[str, str]:
     return "niedrig", "eher nicht – nur bei Bedarf"
 
 
-def kandidaten() -> list[tuple]:
-    """Alle Personen mit schon normalisierten Namen: ``(person, vorname_norm, nachname_norm)``.
-    Einmal berechnen und an viele ``treffer()``-Aufrufe geben (Warteliste-Abgleich), damit die
-    Namen nicht für jeden Antrag neu normalisiert werden."""
-    return [
-        (p, normal(p.vorname), normal(p.nachname))
-        for p in Person.objects.select_related("haushalt")
-    ]
+def kandidaten(av: str, an: str) -> list[tuple]:
+    """Mögliche Personen aus dem Kundenstamm mit schon normalisierten Namen
+    ``(person, vorname_norm, nachname_norm)`` – über den Trigramm-Index ``Person.such_name``
+    (pg_trgm) nur die mit ähnlichem Namen, statt alle. Beide Reihenfolgen, damit vertauschte
+    Vor-/Nachnamen gefunden werden. ``av``/``an`` sind der schon normalisierte Vor-/Nachname."""
+    name, name_dreh = f"{av} {an}".strip(), f"{an} {av}".strip()
+    if not name:
+        return []
+    qs = Person.objects.filter(
+        Q(such_name__trigram_similar=name) | Q(such_name__trigram_similar=name_dreh)
+    ).select_related("haushalt")
+    return [(p, normal(p.vorname), normal(p.nachname)) for p in qs]
 
 
-def treffer(antrag, vorberechnet: list[tuple] | None = None) -> list[dict]:
+def treffer(antrag) -> list[dict]:
     """Ähnliche Haushalte, beste zuerst: {haushalt, person, punkte, gruende, stufe, stufe_text}.
-    ``vorberechnet`` (aus :func:`kandidaten`) spart beim Abgleich vieler Anträge das wiederholte
-    Laden und Normalisieren der Personen."""
+    Die Vorauswahl der Personen kommt über den Trigramm-Index (:func:`kandidaten`), danach bewertet
+    jede genau wie bisher – so bleibt der Abgleich auch bei großem Kundenstamm schnell."""
     beste: dict[int, dict] = {}
     if antrag.kundennummer:
         h = Haushalt.objects.filter(kundennummer__iexact=antrag.kundennummer).first()
@@ -133,9 +117,7 @@ def treffer(antrag, vorberechnet: list[tuple] | None = None) -> list[dict]:
                            "gruende": ["Kundennummer aus dem Antrag"]}  # fmt: skip
     plz, strasse = (antrag.plz or "").strip(), normal(antrag.strasse)
     av, an = normal(antrag.vorname), normal(antrag.nachname)
-    for p, pv, pn in vorberechnet if vorberechnet is not None else kandidaten():
-        if not _vielleicht_aehnlich(av, an, pv, pn):
-            continue
+    for p, pv, pn in kandidaten(av, an):
         name = _aehnlichkeit_n(av, an, pv, pn)
         if name < 0.5:
             continue

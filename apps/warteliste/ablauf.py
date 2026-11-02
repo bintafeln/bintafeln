@@ -357,12 +357,15 @@ def dubletten() -> list[dict]:
         .order_by("eingegangen_am")
     )  # fmt: skip
     ignoriert = set(DubletteIgnoriert.objects.values_list("a_id", "b_id"))
+    # Namen einmal normalisieren statt bei jedem Paarvergleich neu – sonst dauert die Suche bei
+    # vielen offenen Anträgen zu lange. Ergebnis bleibt gleich (dieselbe Ähnlichkeitsrechnung).
+    norm = [(a, aufnahme.normal(a.vorname), aufnahme.normal(a.nachname)) for a in antraege]
     paare = []
-    for i, a in enumerate(antraege):
-        for b in antraege[i + 1 :]:
+    for i, (a, av, an) in enumerate(norm):
+        for b, bv, bn in norm[i + 1 :]:
             if (min(a.pk, b.pk), max(a.pk, b.pk)) in ignoriert:
                 continue
-            name = aufnahme.namens_aehnlichkeit(a.vorname, a.nachname, b.vorname, b.nachname)
+            name = aufnahme._aehnlichkeit_n(av, an, bv, bn)
             gleich_geb = a.geburtsdatum and a.geburtsdatum == b.geburtsdatum
             if name >= DUBLETTE_AB or (gleich_geb and name >= 0.6):
                 gruende = [f"Name zu {round(name * 100)} % ähnlich"]
@@ -441,11 +444,11 @@ def hinweise(haushalt, person, heute, e=None) -> list[dict]:
     return erg
 
 
-def _offene_treffer(a, heute, e, vorberechnet=None) -> list[dict]:
+def _offene_treffer(a, heute, e) -> list[dict]:
     """Treffer eines Antrags, die noch niemand geprüft hat (mit Hinweisen und Folge)."""
     entschieden = set(AbgleichEntscheidung.objects.filter(antrag=a)
                       .values_list("kundennummer", flat=True))  # fmt: skip
-    treffer = [t for t in aufnahme.treffer(a, vorberechnet)
+    treffer = [t for t in aufnahme.treffer(a)
                if t["haushalt"].kundennummer not in entschieden]  # fmt: skip
     for t in treffer:
         t["hinweise"] = hinweise(t["haushalt"], t["person"], heute, e)
@@ -468,14 +471,11 @@ def kundenabgleich(antraege, heute=None) -> list[dict]:
     Sperrzeit zuerst. Anträge, bei denen schon „derselbe Haushalt“ bestätigt ist, fehlen."""
     heute = heute or timezone.localdate()
     e = WartelisteEinstellungen.laden()
-    # Personen mit normalisierten Namen einmal laden – nicht für jeden Antrag neu (sonst wird der
-    # Abgleich beim großen Kundenstamm so langsam, dass gunicorn den Prozess abbricht).
-    vorberechnet = aufnahme.kandidaten()
     ergebnis = []
     for a in antraege:
         if a.abgleich.filter(gleich=True).exists():
             continue
-        treffer = _offene_treffer(a, heute, e, vorberechnet)
+        treffer = _offene_treffer(a, heute, e)
         if not treffer:
             continue
         sperr = any(h["art"] == "sperr" for t in treffer for h in t["hinweise"])
@@ -483,13 +483,13 @@ def kundenabgleich(antraege, heute=None) -> list[dict]:
     return sorted(ergebnis, key=lambda x: (not x["sperr"], -x["treffer"][0]["punkte"]))
 
 
-def sperre_offen(a, heute=None, e=None, vorberechnet=None) -> str:
+def sperre_offen(a, heute=None, e=None) -> str:
     """Hinweis, wenn ein ungeprüfter ähnlicher Haushalt in der Sperrzeit ist (sonst "")."""
     if AbgleichEntscheidung.objects.filter(antrag=a, gleich=True).exists():
         return ""
     heute = heute or timezone.localdate()
     e = e or WartelisteEinstellungen.laden()
-    for t in _offene_treffer(a, heute, e, vorberechnet):
+    for t in _offene_treffer(a, heute, e):
         for h in t["hinweise"]:
             if h["art"] == "sperr":
                 return f"möglicherweise Kunde {t['haushalt'].kundennummer}: {h['text']}"
@@ -506,18 +506,14 @@ def offene_sperren(antraege, heute=None) -> dict[int, str]:
     stand = (AbgleichEntscheidung.objects.count(),
              Haushalt.objects.order_by("-geaendert_am").values_list("geaendert_am", flat=True)
              .first())  # fmt: skip
-    # Personen mit normalisierten Namen höchstens einmal laden – und nur, wenn überhaupt ein
-    # Antrag neu berechnet werden muss (sonst lädt die Warteliste bei kaltem Cache den ganzen
-    # Kundenstamm für jeden Antrag neu und gunicorn bricht den Aufruf ab).
-    vorberechnet = None
+    # Ergebnis je Antrag zehn Minuten zwischenspeichern; den ähnlichen Haushalt sucht aufnahme über
+    # den Trigramm-Index, der Cache spart nur die wiederholte Abfrage beim erneuten Seitenaufbau.
     ergebnis = {}
     for a in antraege:
         schluessel = f"warteliste-sperre-{a.pk}-{hash(stand)}"
         hinweis = cache.get(schluessel)
         if hinweis is None:
-            if vorberechnet is None:
-                vorberechnet = aufnahme.kandidaten()
-            hinweis = sperre_offen(a, heute, e, vorberechnet)
+            hinweis = sperre_offen(a, heute, e)
             cache.set(schluessel, hinweis, 600)
         if hinweis:
             ergebnis[a.pk] = hinweis
