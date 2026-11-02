@@ -160,12 +160,33 @@ def _csv(zeilen, archiv) -> str:
     return puffer.getvalue()
 
 
+def _nummer_wert(z):
+    """Sortierwert der Spalte „Nummer“: Zahlen numerisch, nicht-numerische danach alphabetisch."""
+    n = (z["nummer"] or "").strip()
+    return (0, int(n), "") if n.isdigit() else (1, 0, n.lower())
+
+
+def _nach_nummer(zeilen, absteigend):
+    """Zeilen nach der (im Code gebildeten) Nummer sortieren; ohne Nummer immer ans Ende –
+    in beiden Richtungen, wie ``nulls_last`` bei den Datenbank-Spalten."""
+    zeilen.sort(key=_nummer_wert, reverse=absteigend)
+    zeilen.sort(key=lambda z: not (z["nummer"] or "").strip())  # leere stabil nach hinten
+    return zeilen
+
+
 def _mitarbeitende_seite(request, konten, *, archiv, art=None):
     q = (request.GET.get("q") or "").strip()
-    konten, sort = listen.sortieren(
-        _suchen(konten, q), request.GET.get("sort", ""), SORTIERUNG, "name"
-    )
-    zeilen = _zeilen(konten)
+    konten = _suchen(konten, q)
+    roh = request.GET.get("sort", "")
+    if (roh or "").lstrip("-") == "nummer":
+        # Nummer steht nicht als Feld in der Datenbank (Mitglieds- oder Personalnummer), darum die
+        # schon gebauten Zeilen sortieren; Name (aus der Abfrage) als stabile Zweitsortierung.
+        sort = roh
+        zeilen = _nach_nummer(_zeilen(konten.order_by("last_name", "first_name")),
+                              roh.startswith("-"))  # fmt: skip
+    else:
+        konten, sort = listen.sortieren(konten, roh, SORTIERUNG, "name")
+        zeilen = _zeilen(konten)
     if request.GET.get("aktion"):
         titel = "Archiv" if archiv else BESCHAEFTIGUNG_TITEL.get(art, "Team")
         basis = f"mitarbeitende-{timezone.localdate():%Y-%m-%d}"
