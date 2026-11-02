@@ -132,6 +132,17 @@ def test_online_antrag_oeffnet(seite, admin):
     expect(seite.locator("form")).to_be_visible()
 
 
+def test_antragsformular_am_pc_breit(seite, admin):
+    # Regression: Das öffentliche Antragsformular darf am PC (Viewport 1280) nicht auf
+    # Handy-Breite schrumpfen. Früher kappte die Klasse „antrag-karte“ (aus dem
+    # Aufnahme-Abgleich) es auf 20rem ≈ 320px.
+    seite.goto("/antrag/de/")
+    kasten = seite.locator(".antrag-formular")
+    expect(kasten).to_be_visible()
+    breite = kasten.bounding_box()["width"]
+    assert breite > 600, f"Antragsformular nur {breite:.0f}px breit"
+
+
 def test_antrag_nachweise_ablegen(seite, admin):
     from apps.antraege.models import AntragEinstellungen, AntragText
 

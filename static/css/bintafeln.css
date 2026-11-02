@@ -693,14 +693,18 @@ a.knopf-gefahr { color: #fff; }
 .abgleich label { display: flex; gap: .5rem; align-items: center; cursor: pointer; }
 tr.wunsch td { background: var(--erfolg); }
 .zeile-neu td { background: var(--grund); }
-/* Aufnahme Schritt 1: Antragsdaten fest neben den Treffer-Karten, Einstufung als Ampel */
+/* Aufnahme Schritt 1: Antragsdaten fest neben den Treffer-Karten, Einstufung als Ampel.
+   Nur innerhalb des Abgleichs (die schmale, klebende Seitenkarte); sonst würde das öffentliche
+   Antragsformular, das dieselbe Klasse „antrag-karte“ trägt, am PC auf 20rem schrumpfen. */
 .abgleich-gegenueber { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; }
-.antrag-karte { flex: 1 1 14rem; background: var(--grund); border: 1px solid var(--rand);
-  border-radius: var(--radius); padding: .5rem 1rem; }
-.antrag-karte h3 { margin: .25rem 0 .5rem; }
-.antrag-karte .angaben { margin: 0; }
+.abgleich-gegenueber .antrag-karte { flex: 1 1 14rem; background: var(--grund);
+  border: 1px solid var(--rand); border-radius: var(--radius); padding: .5rem 1rem; }
+.abgleich-gegenueber .antrag-karte h3 { margin: .25rem 0 .5rem; }
+.abgleich-gegenueber .antrag-karte .angaben { margin: 0; }
 .treffer-liste { flex: 2 1 22rem; min-width: 0; display: flex; flex-direction: column; gap: .6rem; }
-@media (min-width: 48rem) { .antrag-karte { position: sticky; top: .5rem; max-width: 20rem; } }
+@media (min-width: 48rem) {
+  .abgleich-gegenueber .antrag-karte { position: sticky; top: .5rem; max-width: 20rem; }
+}
 .treffer-karte { border: 1px solid var(--rand); border-radius: var(--radius); padding: .6rem .8rem; }
 .treffer-karte:has(input:checked) { border-color: var(--akzent); box-shadow: 0 0 0 2px var(--fokus); }
 .treffer-wahl { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; cursor: pointer; }
