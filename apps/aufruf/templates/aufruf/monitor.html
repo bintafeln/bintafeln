@@ -1471,7 +1471,8 @@
             if (!nextCustomerList) {
                 // Liste ist ausgeblendet
             } else if (data.next_numbers && data.next_numbers.length > 0) {
-                nextCustomerList.innerHTML = data.next_numbers.map(number => `<div class="customer-item">${number}</div>`).join('');
+                // Nur die nächsten 3 Kundennummern zeigen, nicht die ganze Warteschlange.
+                nextCustomerList.innerHTML = data.next_numbers.slice(0, 3).map(number => `<div class="customer-item">${number}</div>`).join('');
             } else {
                 nextCustomerList.innerHTML = `<div style="text-align: center; color: #95a5a6; font-size: calc(var(--next-customers-font-size) * 0.9); margin-top: clamp(20px, 5vh, 50px); opacity: 0.8;">Keine weiteren Kunden in der Warteschlange</div>`;
             }
