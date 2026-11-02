@@ -90,7 +90,7 @@ def _beispiel() -> bytes:
                     50,
                     "herr",
                     "Heinz",
-                    "Ehrenamt",
+                    "EHRENAMT",
                     "Gasse 2",
                     "45128",
                     "Essen",
@@ -237,7 +237,7 @@ def test_umwandeln_antraege_nur_offene():
 def test_umwandeln_mitarbeitende():
     umw = konvertieren.umwandeln(_beispiel())
     ma = _lesen(umw.mitarbeitende)
-    assert [m["nachname"] for m in ma] == ["Ehrenamt"]  # nur aktive
+    assert [m["nachname"] for m in ma] == ["Ehrenamt"]  # nur aktive; „EHRENAMT“ lesbar gemacht
     assert ma[0]["ausgabestellen"] == "Innenstadt" and ma[0]["handy"] == "0171 9"
 
 
@@ -257,6 +257,17 @@ def test_text_entfernt_steuerzeichen():
     # NUL u. a. Steuerzeichen (die PostgreSQL nicht als Text speichern kann) werden entfernt.
     assert konvertieren._text("Helfer\x00") == "Helfer"
     assert konvertieren._text("a\x1fb") == "ab"
+
+
+def test_name_gross_wird_lesbar():
+    # Komplett groß geschriebene Namen aus dem Altsystem werden lesbar; bewusste Schreibweisen
+    # (Kleinbuchstaben vorhanden) bleiben.
+    assert konvertieren._name("BRÜGGE") == "Brügge"
+    assert konvertieren._name("BUERS") == "Buers"
+    assert konvertieren._name("AYDIN-BICER") == "Aydin-Bicer"
+    assert konvertieren._name("McDonald") == "McDonald"  # hat Kleinbuchstaben → bleibt
+    assert konvertieren._name("van Berg") == "van Berg"
+    assert konvertieren._name("") == ""
 
 
 def _modul_an():

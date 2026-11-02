@@ -40,6 +40,18 @@ def _text(wert) -> str:
     return "" if wert is None else _STEUERZEICHEN.sub("", str(wert)).strip()
 
 
+def _name(wert) -> str:
+    """Namen lesbar machen: komplett GROSS geschriebene Namen aus dem Altsystem (z. B. „BRÜGGE“,
+    „BUERS“) werden in Titelfall gewandelt (Brügge, Buers). Namen mit Kleinbuchstaben – auch
+    „McDonald“ oder „van Berg“ – bleiben unverändert, damit bewusste Schreibweisen erhalten
+    bleiben."""
+    text = _text(wert)
+    buchstaben = [c for c in text if c.isalpha()]
+    if buchstaben and not any(c.islower() and c.isascii() for c in buchstaben):
+        return text.title()
+    return text
+
+
 def _zahl(wert):
     if wert is None or wert == "":
         return None
@@ -263,8 +275,8 @@ def umwandeln(
         g = gruppe_nach_id.get(_zahl(h.get("clientgroup_id")), {})
         haushalte_zeilen.append({
             "kundennummer": knr,
-            "nachname": _text(haupt.get("lastname")),
-            "vorname": _text(haupt.get("firstname")),
+            "nachname": _name(haupt.get("lastname")),
+            "vorname": _name(haupt.get("firstname")),
             "anrede": anrede(haupt.get("title")),
             "geburtsdatum": _datum(haupt.get("birthday")),
             "staatsangehoerigkeit": staat(haupt.get("nationality_id")),
@@ -287,8 +299,8 @@ def umwandeln(
             if p:
                 personen_zeilen.append({
                     "kundennummer": knr,
-                    "nachname": _text(p.get("lastname")),
-                    "vorname": _text(p.get("firstname")),
+                    "nachname": _name(p.get("lastname")),
+                    "vorname": _name(p.get("firstname")),
                     "anrede": anrede(p.get("title")),
                     "geburtsdatum": _datum(p.get("birthday")),
                     "staatsangehoerigkeit": staat(p.get("nationality_id")),
@@ -298,8 +310,8 @@ def umwandeln(
             if p:
                 abholer_zeilen.append({
                     "kundennummer": knr,
-                    "nachname": _text(p.get("lastname")),
-                    "vorname": _text(p.get("firstname")),
+                    "nachname": _name(p.get("lastname")),
+                    "vorname": _name(p.get("firstname")),
                     "geburtsdatum": _datum(p.get("birthday")),
                 })  # fmt: skip
 
@@ -383,8 +395,8 @@ def umwandeln(
         antraege.append({
             "laufnummer": _text(_zahl(a.get("id")) or ""),
             "eingegangen_am": _datum_zeit(a.get("created_at")),
-            "vorname": _text(a.get("firstname")),
-            "nachname": _text(a.get("lastname")),
+            "vorname": _name(a.get("firstname")),
+            "nachname": _name(a.get("lastname")),
             "anrede": anrede(a.get("title")) or _text(a.get("title")),
             "geburtsdatum": _datum(a.get("birthday")),
             "strasse": _text(a.get("street")),
@@ -416,8 +428,8 @@ def umwandeln(
             namen = [heim, *namen]
         mitarbeitende.append({
             "anrede": anrede(p.get("title")),
-            "vorname": _text(p.get("firstname")),
-            "nachname": _text(p.get("lastname")),
+            "vorname": _name(p.get("firstname")),
+            "nachname": _name(p.get("lastname")),
             "geburtsdatum": _datum(p.get("birthday")),
             "strasse": _text(p.get("street")),
             "plz": _text(p.get("zipcode")),
