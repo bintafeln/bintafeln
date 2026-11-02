@@ -537,6 +537,32 @@ def test_liste_zeigt_kriterium_sofort(angemeldet, admin):
     assert seite.url == adresse  # Spalten warten auf „Anzeigen“
 
 
+def test_warteliste_erscheint_sofort_sperrhinweis_laedt_nach(angemeldet, admin):
+    """Die Warteliste erscheint sofort; den Sperrzeit-Hinweis lädt htmx danach nach, damit die
+    Seite auch bei großem Kundenstamm nie hängt (Grund für das Hängen in der Produktion)."""
+    from apps.antraege.models import Antrag
+    from apps.core.models import TafelEinstellungen
+    from apps.warteliste import ablauf
+
+    t = TafelEinstellungen.laden()
+    t.module = ["warteliste"]
+    t.save()
+    h = Haushalt.objects.create(
+        kundennummer="00900", ausweis_gueltig_bis=timezone.localdate() - dt.timedelta(days=60)
+    )
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika", nachname="Beispiel",
+                          geburtsdatum=dt.date(1980, 2, 3))  # fmt: skip
+    Antrag.objects.create(vorname="Erika", nachname="Beispiel", geburtsdatum=dt.date(1980, 2, 3))
+    ablauf.automatik()
+    seite = angemeldet(admin)
+    seite.goto("/warteliste/")
+    # Die Zeile steht sofort, ohne auf den Vergleich mit dem Kundenstamm zu warten.
+    expect(seite.locator("tbody tr")).to_have_count(1)
+    expect(seite.get_by_role("link", name="Beispiel, Erika")).to_be_visible()
+    # Der Sperrzeit-Hinweis wird danach per htmx eingesetzt.
+    expect(seite.locator(".sperr-hinweis")).to_be_visible()
+
+
 def test_statistik_grafik_gross_und_zurueck(angemeldet, admin):
     """Grafik anklicken: bildschirmfüllend; „Zurück“ schließt, die Seite bleibt an ihrer Stelle."""
     from apps.kunden.models import Abholung
