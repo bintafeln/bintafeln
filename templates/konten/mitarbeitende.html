@@ -46,6 +46,7 @@
   <div class="tabelle-rahmen">
   <table class="tabelle">
     <thead><tr>
+      {% if "nummer" in sichtbar %}{% sortkopf "Nummer" %}{% endif %}
       {% sortkopf "Nachname" "name" sort %}
       {% if "vorname" in sichtbar %}{% sortkopf "Vorname" "vorname" sort %}{% endif %}
       {% if "anrede" in sichtbar %}{% sortkopf "Anrede" "anrede" sort %}{% endif %}
@@ -67,6 +68,7 @@
     <tbody>
     {% for z in zeilen %}
       <tr>
+        {% if "nummer" in sichtbar %}<td data-titel="Nummer">{{ z.nummer|default:"–" }}</td>{% endif %}
         <td data-titel="Nachname"><a href="{% url 'konten:mitarbeiter' z.b.pk %}">{{ z.b.last_name|default:z.b.username }}</a></td>
         {% if "vorname" in sichtbar %}<td data-titel="Vorname">{{ z.b.first_name }}</td>{% endif %}
         {% if "anrede" in sichtbar %}<td data-titel="Anrede">{{ z.sd.anrede }}</td>{% endif %}

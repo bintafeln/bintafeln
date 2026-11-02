@@ -211,7 +211,12 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Werkseinstellungen eines Kontos: `verwaltung.werkseinstellungen()`; `Benutzer.ansicht_stand`
   lässt den Browser gemerkte Ansichten (localStorage `bintafeln-*`) vergessen.
 - Mitarbeitende: Logik und Schutzregeln in `apps/konten/verwaltung.py` (nie löschen, nur
-  sperren; ADR 0015). `Benutzer.passwort_aendern` erzwingt über
+  sperren; ADR 0015). Liste in `apps/konten/views_mitarbeitende.py` (getrennte Namen, wählbare
+  Spalten über `apps/core/listen.py`, Export über `apps/core/listenexport.py`, Suche).
+  Personennummer (ADR 0101): `Stammdaten.personalnummer`, automatisch aus der gemeinsamen Reihe
+  der Mitgliedsnummern (`mitglieder.naechste_nummer()`) in `verwaltung.personalnummer_zuweisen()`;
+  Anzeige über `verwaltung.personennummer()` (Mitgliedsnummer, sonst Personalnummer).
+  `Benutzer.passwort_aendern` erzwingt über
   `PasswortAendernMiddleware` ein neues Passwort, bevor die Zwei-Faktor-Einrichtung kommt.
   Stammdaten, Wiedervorlagen, Führerschein-Kopie und Löschfrist in `apps/konten/personal.py`
   (ADR 0017); Fotos verkleinert `privatdateien.speichern()` nach `FotoEinstellungen` (ADR 0064).

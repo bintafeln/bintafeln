@@ -97,6 +97,14 @@ class Stammdaten(models.Model):
     benutzer = models.OneToOneField(
         Benutzer, on_delete=models.CASCADE, primary_key=True, related_name="stammdaten"
     )
+    personalnummer = models.PositiveIntegerField(
+        "Personalnummer",
+        null=True,
+        blank=True,
+        unique=True,
+        help_text="Automatisch aus der gemeinsamen Personennummern-Reihe (Mitarbeitende und "
+        "Mitglieder) vergeben. Ist die Person Mitglied, gilt die Mitgliedsnummer.",
+    )
     anrede = models.CharField("Anrede", max_length=30, blank=True)
     geburtsdatum = models.DateField("Geburtsdatum", null=True, blank=True)
     strasse = models.CharField("Straße und Hausnummer", max_length=200, blank=True)
