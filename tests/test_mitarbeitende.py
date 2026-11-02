@@ -176,6 +176,33 @@ def test_personalnummer_mitglied_zeigt_mitgliedsnummer(admin_client):
     assert verwaltung.personennummer(b) == "99"
 
 
+def test_admin_mitarbeiternummer_selbst_setzen(admin_client):
+    from apps.konten.forms import StammdatenForm
+    from apps.konten.models import Stammdaten
+    from apps.mitglieder.models import MitgliederEinstellungen
+
+    neu(admin_client, username="nia.neu", first_name="Nia", last_name="Neu")
+    b = get_user_model().objects.get(username="nia.neu")
+    url = reverse("konten:stammdaten", args=[b.pk])
+    assert "Mitarbeiternummer" in admin_client.get(url).content.decode()  # Admin sieht das Feld
+    admin_client.post(url, {"personalnummer": "1234"})
+    assert Stammdaten.objects.get(benutzer=b).personalnummer == 1234
+    assert MitgliederEinstellungen.laden().naechste_nummer > 1234  # Reihe rückt darüber hinaus
+
+    # Dieselbe Nummer bei einer anderen Person wird abgelehnt.
+    neu(admin_client, username="olf.ohne", first_name="Olf", last_name="Ohne")
+    c = get_user_model().objects.get(username="olf.ohne")
+    c_url = reverse("konten:stammdaten", args=[c.pk])
+    antwort = admin_client.post(c_url, {"personalnummer": "1234"})
+    assert "schon an eine andere Person" in antwort.content.decode()
+    assert Stammdaten.objects.get(benutzer=c).personalnummer != 1234
+
+    # Ohne das Recht (Vorgabe für Nicht-Admins) gibt es das Feld nicht.
+    assert "personalnummer" not in StammdatenForm(instance=Stammdaten(benutzer=b)).fields
+    with_feld = StammdatenForm(instance=Stammdaten(benutzer=b), nummer_erlaubt=True)
+    assert "personalnummer" in with_feld.fields
+
+
 def test_liste_nach_nummer_sortieren(admin_client):
     from apps.konten.models import Stammdaten
 

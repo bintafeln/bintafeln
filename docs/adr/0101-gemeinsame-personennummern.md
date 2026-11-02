@@ -39,5 +39,9 @@ vergeben werden.
   umkehrbar (Personalnummern werden wieder entfernt).
 - Wird jemand erst Mitarbeiter und später Mitglied, zählt dann die Mitgliedsnummer; die vergebene
   Personalnummer bleibt bestehen (sie wird nicht neu genutzt, damit keine Dopplung entsteht).
-- Die Personalnummer wird nicht von Hand vergeben; sie steht im Mitarbeiter-Profil und in der
-  Mitarbeitendenliste (Spalte „Nummer“, auch im CSV-/PDF-Export).
+- Die Personalnummer wird normalerweise automatisch vergeben. Mit dem Recht
+  „mitarbeitende.nummer“ (Vorgabe: nur Admin) kann man sie im Mitarbeiter-Profil auch von Hand
+  setzen; sie muss eindeutig bleiben (nicht schon als Personal- oder Mitgliedsnummer vergeben),
+  und die gemeinsame Reihe rückt über eine von Hand gesetzte Nummer hinaus. Wer das Recht nicht
+  hat, legt Mitarbeitende an wie bisher – die Nummer kommt dann automatisch. Die Nummer steht im
+  Mitarbeiter-Profil und in der Mitarbeitendenliste (Spalte „Nummer“, auch im CSV-/PDF-Export).

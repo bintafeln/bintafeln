@@ -98,6 +98,9 @@ KATALOG = [
     Recht("mitarbeitende.verwalten", TEAM, "Mitarbeitende anlegen, bearbeiten, sperren",
           "Rollen vergeben kann man nur, wenn man selbst alle Rechte der Rolle hat; "
           "Admin-Konten bearbeitet nur ein Admin."),
+    Recht("mitarbeitende.nummer", TEAM, "Mitarbeiternummer von Hand vergeben",
+          "Die Personalnummer sonst automatisch; mit diesem Recht kann man sie im Profil selbst "
+          "setzen. Vorgabe: nur Admin."),
     Recht("personal.sehen", TEAM, "Personal: Verträge, Abwesenheiten, Stunden, Arbeitszeiten, "
           "vertrauliche Dokumente"),
     # Adressen und Verein (Modul 5)

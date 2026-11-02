@@ -259,6 +259,7 @@ class StammdatenForm(forms.ModelForm):
 
     # Abschnitte für die Anzeige (Feldnamen in Reihenfolge).
     ABSCHNITTE = [
+        ("Nummer", ["personalnummer"]),
         ("Person", ["anrede", "geburtsdatum", "eintritt", "austritt"]),
         ("Kontakt", ["strasse", "plz", "ort", "telefon", "handy"]),
         ("Notfallkontakt", ["notfall_name", "notfall_telefon"]),
@@ -267,9 +268,16 @@ class StammdatenForm(forms.ModelForm):
         ("Sonstiges", ["bemerkung"]),
     ]
 
-    def __init__(self, *args, angemeldet=None, **kwargs):
+    def __init__(self, *args, angemeldet=None, nummer_erlaubt=False, **kwargs):
         super().__init__(*args, **kwargs)
         s = self.instance
+        if nummer_erlaubt:
+            self.fields["personalnummer"] = forms.IntegerField(
+                label="Mitarbeiternummer", required=False, min_value=1,
+                help_text="Leer lassen: wird automatisch vergeben. Muss eindeutig sein. "
+                "Ist die Person Vereinsmitglied, zählt stattdessen die Mitgliedsnummer.",
+            )  # fmt: skip
+            self.initial["personalnummer"] = s.personalnummer
         self.fields["anrede"].choices = mit_vorhandenem(ANREDEN, s.anrede)
         vorhanden = [k.strip() for k in s.fs_klassen.split(",") if k.strip()]
         self.initial["fs_klassen"] = vorhanden
@@ -288,14 +296,37 @@ class StammdatenForm(forms.ModelForm):
     def clean_fs_klassen(self):
         return ", ".join(self.cleaned_data["fs_klassen"])
 
+    def clean_personalnummer(self):
+        from apps.konten.models import Stammdaten
+        from apps.mitglieder.models import Mitglied
+
+        n = self.cleaned_data.get("personalnummer")
+        if n is None:
+            return n
+        if Stammdaten.objects.filter(personalnummer=n).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("Diese Nummer ist schon an eine andere Person vergeben.")
+        if Mitglied.objects.filter(nummer=str(n)).exists():
+            raise forms.ValidationError("Diese Nummer ist schon eine Mitgliedsnummer.")
+        return n
+
     def clean(self):
         daten = super().clean()
         if not daten.get("fs_gesehen_am"):
             daten["fs_gesehen_von"] = ""  # die Vorbelegung zählt nur mit Datum
         return daten
 
+    def save(self, commit=True):
+        if "personalnummer" in self.fields:  # nur wenn das Feld (für Admins) da war
+            self.instance.personalnummer = self.cleaned_data.get("personalnummer")
+        return super().save(commit=commit)
+
     def abschnitte(self):
-        return [(titel, [self[f] for f in felder]) for titel, felder in self.ABSCHNITTE]
+        erg = []
+        for titel, felder in self.ABSCHNITTE:
+            vorhanden = [self[f] for f in felder if f in self.fields]
+            if vorhanden:
+                erg.append((titel, vorhanden))
+        return erg
 
 
 class SchulungForm(forms.ModelForm):

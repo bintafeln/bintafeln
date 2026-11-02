@@ -438,9 +438,16 @@ def _stammdaten(ziel):
 def stammdaten(request, pk):
     ziel = _ziel(request, pk)
     s = _stammdaten(ziel)
-    form = StammdatenForm(request.POST or None, instance=s, angemeldet=request.user)
+    nummer_erlaubt = rollen.hat_recht(request.user, "mitarbeitende.nummer")
+    form = StammdatenForm(request.POST or None, instance=s, angemeldet=request.user,
+                          nummer_erlaubt=nummer_erlaubt)  # fmt: skip
     if request.method == "POST" and form.is_valid():
         form.save()
+        if nummer_erlaubt and form.cleaned_data.get("personalnummer"):
+            # Reihe weiterrücken, damit die automatische Vergabe diese Nummer nicht erneut nimmt.
+            from apps.mitglieder.models import nummer_verbraucht
+
+            nummer_verbraucht(str(form.cleaned_data["personalnummer"]))
         messages.success(request, f"Stammdaten von {ziel} gespeichert.")
         return redirect("konten:stammdaten", pk=ziel.pk)
     return render(
