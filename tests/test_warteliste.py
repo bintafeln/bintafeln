@@ -295,6 +295,9 @@ def test_abgleich_seite_hat_regler_und_prozent(admin_client, modul_an):
     treffer = admin_client.get(reverse("warteliste:abgleich_ergebnis")).content.decode()
     assert "% Übereinstimmung" in treffer
     assert 'id="min-score"' in treffer and "data-punkte=" in treffer
+    # „Zurück zu“ zeigt auf die echte Abgleich-Seite, nicht auf den Fragment-Endpunkt – sonst
+    # landet man nach dem Bestätigen auf der Trefferliste ohne Layout.
+    assert f'name="weiter" value="{reverse("warteliste:abgleich")}"' in treffer
 
 
 def test_auskunft_enthaelt_warteliste(pdf_text):

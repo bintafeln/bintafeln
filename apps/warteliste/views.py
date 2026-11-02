@@ -369,9 +369,13 @@ def abgleich(request):
 def abgleich_ergebnis(request):
     """Nur die Treffer des Abgleichs, per htmx nachgeladen: Der Vergleich mit dem ganzen
     Kundenstamm kann dauern; so erscheint die Seite sofort und blockiert nie."""
-    _, antraege = _abzugleichende(request)
+    alle, antraege = _abzugleichende(request)
     ergebnis = ablauf.kundenabgleich(antraege.order_by("eingegangen_am"))
-    return render(request, "warteliste/_abgleich_ergebnis.html", {"ergebnis": ergebnis})
+    # „Zurück zu“ muss die echte Seite sein, nicht dieser Fragment-Endpunkt (sonst landet man nach
+    # dem Bestätigen auf der Trefferliste ohne Layout, weil sie ohne base.html gerendert wird).
+    weiter = reverse("warteliste:abgleich") + ("?alle=1" if alle else "")
+    return render(request, "warteliste/_abgleich_ergebnis.html",
+                  {"ergebnis": ergebnis, "weiter": weiter})  # fmt: skip
 
 
 @require_POST
