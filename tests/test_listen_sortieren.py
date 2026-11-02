@@ -67,8 +67,8 @@ def test_adressbuch_sortiert_nach_name(admin_client):
     ab = admin_client.get(liste_url, {"sort": "-name"}).content.decode()
     assert auf.index("Albert") < auf.index("Zimmer")
     assert ab.index("Zimmer") < ab.index("Albert")
-    # Der Spaltenkopf trägt den Sortierstil wie in allen Listen.
-    assert "sortieren" in auf and "Nach Name sortieren" in auf
+    # Der Spaltenkopf trägt den Sortierstil wie in allen Listen (Name jetzt getrennt: Nachname).
+    assert "sortieren" in auf and "Nach Nachname sortieren" in auf
 
 
 def test_mitgliederliste_sortiert_als_python_liste(admin_client):

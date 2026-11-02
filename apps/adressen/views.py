@@ -77,20 +77,31 @@ def _gefiltert(request):
     if verein not in dict(_verein_wahl(request.user)):
         verein = ""
     adressen = _im_verein(adressen, verein)
-    return adressen.distinct(), {"q": q, "kategorie": kategorie, "art": art, "verein": verein}
+    anzahl = request.GET.get("anzahl", "")
+    anzahl = anzahl if anzahl in ANZAHL_WAHL[1:] else ""  # leer = Vorgabe (JE_SEITE)
+    return adressen.distinct(), {"q": q, "kategorie": kategorie, "art": art, "verein": verein,
+                                 "anzahl": anzahl}  # fmt: skip
 
 
+# Anzeigen: Adressen je Seite zur Wahl (Vorgabe 25), „alle“ ohne Blättern – wie in anderen Listen.
+ANZAHL_WAHL = ("25", "50", "100", "alle")
+JE_SEITE = 25
 # Sortierbare Spalten des Adressbuchs (Schlüssel wie in ?sort=…, mit „-“ absteigend):
 SORTIERUNG = {
     "name": ("organisation", "nachname", "vorname"),
+    "vorname": ("vorname", "nachname"),
+    "anrede": ("anrede",),
+    "strasse": ("strasse",),
     "ort": ("ort", "plz"),
     "telefon": ("telefon", "mobil"),
     "email": ("email",),
 }
-# Spalten zum Zu-/Abwählen je Person (Name öffnet die Adresse und bleibt immer sichtbar).
-SPALTEN = [("name", "Name"), ("ort", "Ort"), ("telefon", "Telefon"), ("email", "E-Mail"),
+# Zu-/abwählbare Spalten (Nachname öffnet die Adresse und steht immer, darum nicht hier) –
+# getrennte Spalten wie in der Mitarbeitendenliste, standardmäßig alle sichtbar.
+SPALTEN = [("vorname", "Vorname"), ("anrede", "Anrede"), ("strasse", "Straße"), ("plz", "PLZ"),
+           ("ort", "Ort"), ("telefon", "Telefon"), ("mobil", "Handy"), ("email", "E-Mail"),
            ("kategorien", "Kategorien"), ("helfer", "Mitarbeit")]  # fmt: skip
-SPALTEN_FEST = {"name"}
+SPALTEN_FEST: set = set()
 
 
 @rollen.recht_erforderlich("adressen.sehen")
@@ -103,13 +114,16 @@ def liste(request):
         return listenexport.ausliefern(request, "Adressbuch", basis,
                                        importieren.exportieren(adressen),
                                        weiter=reverse("adressen:liste"))  # fmt: skip
+    je_seite = (max(adressen.count(), 1) if filter_["anzahl"] == "alle"
+                else int(filter_["anzahl"] or JE_SEITE))  # fmt: skip
     seite = Paginator(
-        adressen.select_related("mitglied", "konto").prefetch_related("konto__groups"), 50
+        adressen.select_related("mitglied", "konto").prefetch_related("konto__groups"), je_seite
     ).get_page(request.GET.get("seite"))
     abfrage = request.GET.copy()
     abfrage.pop("seite", None)
     return render(request, "adressen/liste.html", {
         "seite": seite, "filter": filter_, "anzahl": seite.paginator.count, "sort": sort,
+        "anzahl_wahl": ANZAHL_WAHL,
         "kategorien": AdressKategorie.objects.all(), "arten": Adresse.Art.choices,
         "sichtbar": listen.sichtbare_spalten(request.user, "adressen",
                                              [k for k, _ in SPALTEN], SPALTEN_FEST),
