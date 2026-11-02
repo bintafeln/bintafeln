@@ -10,9 +10,10 @@
       {% for s, label, n in status_zahlen %}{% if n %}<a href="?status={{ s }}"{% if f.status == s %} aria-current="page"{% endif %}>{{ label }} ({{ n }})</a>{% endif %}{% endfor %}
     </nav>
   </div>
-  {% if sperren %}<p class="meldung error">{{ sperren|length }} Antr{{ sperren|length|pluralize:"ag,äge" }} mit möglicher Sperrzeit
-    (ähnlicher Haushalt im Kundenstamm, noch nicht geprüft) – bitte im <a href="{% url 'warteliste:abgleich' %}">Abgleich mit dem Kundenstamm</a>
-    bestätigen oder verwerfen. Bis dahin lädt „Einladen“ sie nicht ein.</p>{% endif %}
+  {# Sperrzeit-Hinweise lädt htmx nach dem Seitenaufbau nach (#sperren-banner und je Zeile #sperre-<pk>), damit die Liste auch bei großem Kundenstamm sofort erscheint. #}
+  <p id="sperren-banner" class="meldung error" hidden></p>
+  <div hx-get="{% url 'warteliste:sperren' %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}"
+       hx-trigger="load" hx-swap="none"></div>
   <form method="get" class="filter-kompakt" data-sofort>
     <input type="hidden" name="status" value="{{ f.status }}">
     <input type="hidden" name="sort" value="{{ f.sort }}">
@@ -85,7 +86,7 @@
           <td data-titel="Personen" data-spalte="personen">{{ a.personen.all|length|add:1 }}</td>
           <td data-titel="Art" data-spalte="art">{{ a.get_art_display }}</td>
           <td data-titel="Staatsangehörigkeit" data-spalte="staat">{{ a.staatsangehoerigkeit|default:"–" }}</td>
-          <td data-titel="Status" data-spalte="status">{% include "warteliste/_status.html" %}{% for pk, hinweis in sperren.items %}{% if pk == a.pk %}<br><a href="{% url 'warteliste:abgleich' %}" class="grund-rot sperr-hinweis" title="{{ hinweis }}">⚠ Sperrzeit? Prüfen</a>{% endif %}{% endfor %}</td>
+          <td data-titel="Status" data-spalte="status">{% include "warteliste/_status.html" %}<span id="sperre-{{ a.pk }}"></span></td>
           <td data-titel="Termin" data-spalte="termin">{% if ws.termin %}<a href="{% url 'warteliste:termin' ws.termin.pk %}">{{ ws.termin }}</a>{% else %}–{% endif %}</td>
           <td data-titel="Anmerkung" data-spalte="anmerkung" class="anmerkung-zelle">{% for m in a.anmerkungen.all %}<div class="anmerkung-eintrag" title="{{ m.von }}"><span class="hinweis">{{ m.zeitpunkt|date:'d.m.Y' }}:</span> {{ m.text }}</div>{% empty %}–{% endfor %}
             {% if "warteliste.bearbeiten" in rechte %}<a href="{% url 'warteliste:eintrag' a.pk %}#anmerkung" class="anmerkung-neu" title="Anmerkung hinzufügen">＋</a>{% endif %}</td>

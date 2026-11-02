@@ -384,8 +384,11 @@ def test_abgleich_entscheiden_sperrzeit_und_einladen(admin_client, modul_an):
                           geburtsdatum=dt.date(1980, 2, 3))  # fmt: skip
     a = antrag(geburtsdatum=dt.date(1980, 2, 3))
     ablauf.automatik()
+    # Die Seite selbst zeigt nur den Platzhalter; die Hinweise lädt htmx über warteliste:sperren.
     liste = admin_client.get(reverse("warteliste:liste")).content.decode()
-    assert "mit möglicher Sperrzeit" in liste and "⚠ Sperrzeit? Prüfen" in liste
+    assert "warteliste/sperren/" in liste and "⚠ Sperrzeit? Prüfen" not in liste
+    hinweise = admin_client.get(reverse("warteliste:sperren")).content.decode()
+    assert "mit möglicher Sperrzeit" in hinweise and "⚠ Sperrzeit? Prüfen" in hinweise
     ergebnis = ablauf.einladen([a], termin(), "Büro", mail_senden=False)
     assert not ergebnis[0]["ok"] and "erst im Abgleich prüfen" in ergebnis[0]["hinweis"]
 
@@ -402,7 +405,8 @@ def test_abgleich_entscheiden_sperrzeit_und_einladen(admin_client, modul_an):
     seite = admin_client.get(reverse("warteliste:abgleich")).content.decode()
     assert "Kein ungeprüfter Antrag" in seite and "Zuletzt geprüft" in seite
     assert (
-        "⚠ Sperrzeit? Prüfen" not in admin_client.get(reverse("warteliste:liste")).content.decode()
+        "⚠ Sperrzeit? Prüfen"
+        not in admin_client.get(reverse("warteliste:sperren")).content.decode()
     )
 
     # Zurücknehmen bringt den Treffer zurück

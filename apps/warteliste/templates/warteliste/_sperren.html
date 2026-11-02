@@ -1,0 +1,9 @@
+{% comment %}Per htmx (hx-swap="none") nachgeladen: ersetzt den Banner und je Zeile den Platzhalter
+#sperre-<pk> über Out-of-Band-Swaps. Ohne Treffer bleibt der Banner leer und verborgen.{% endcomment %}
+<p id="sperren-banner" hx-swap-oob="true" class="meldung error"{% if not sperren %} hidden{% endif %}>
+  {% if sperren %}{{ sperren|length }} Antr{{ sperren|length|pluralize:"ag,äge" }} mit möglicher Sperrzeit
+  (ähnlicher Haushalt im Kundenstamm, noch nicht geprüft) – bitte im <a href="{% url 'warteliste:abgleich' %}">Abgleich mit dem Kundenstamm</a>
+  bestätigen oder verwerfen. Bis dahin lädt „Einladen“ sie nicht ein.{% endif %}
+</p>
+{% for pk, hinweis in sperren.items %}<span id="sperre-{{ pk }}" hx-swap-oob="true"><br><a href="{% url 'warteliste:abgleich' %}" class="grund-rot sperr-hinweis" title="{{ hinweis }}">⚠ Sperrzeit? Prüfen</a></span>
+{% endfor %}

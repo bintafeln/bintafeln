@@ -108,16 +108,25 @@ def liste(request):
                          .exclude(staatsangehoerigkeit="")
                          .values_list("staatsangehoerigkeit", flat=True)))  # fmt: skip
     termine = Termin.objects.annotate(n=Count("wartende")).filter(n__gt=0)
-    pruefen = [w.antrag for w in ws if w.status in (S.NEU, S.WARTEND, S.WARTEZEIT_UM)]
-    sperren = ablauf.offene_sperren(pruefen)
     return render(request, "warteliste/liste.html", {
         "eintraege": ws.prefetch_related("antrag__personen", "antrag__anmerkungen"), "f": f,
-        "staaten": staaten, "termine": termine, "sperren": sperren, "spalten_wahl": SPALTEN,
+        "staaten": staaten, "termine": termine, "spalten_wahl": SPALTEN,
         "status_zahlen": [(s, name, zahlen.get(s, 0)) for s, name in S.choices],
         "arten": Antrag.Art.choices,
         "einladen": EinladenForm(termine=ablauf.kommende_termine()),
         "status_form": StatusForm(),
     })  # fmt: skip
+
+
+@never_cache
+@sehen
+def sperren(request):
+    """Nur die Sperrzeit-Hinweise der Warteliste, per htmx nach dem Seitenaufbau nachgeladen.
+    Der Vergleich mit dem ganzen Kundenstamm kann dauern; so erscheint die Liste trotzdem sofort
+    und blockiert nie (die Hinweise setzt _sperren.html dann an Ort und Stelle ein)."""
+    _, ws = _gefiltert(request)
+    pruefen = [w.antrag for w in ws if w.status in (S.NEU, S.WARTEND, S.WARTEZEIT_UM)]
+    return render(request, "warteliste/_sperren.html", {"sperren": ablauf.offene_sperren(pruefen)})
 
 
 def _ausgewaehlt(request):
