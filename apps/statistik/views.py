@@ -82,12 +82,88 @@ def _umschalten(get, kennung, aus: set[int], index: int) -> str:
     return p.urlencode()
 
 
+def _einheit(z: aw.Zeitraum) -> str:
+    return {"tag": "Tag", "woche": "Woche", "monat": "Monat"}[z.einheit]
+
+
+def _linien_quelle(kennung, z, stellen, benutzer):
+    """Die Reihen, Überschrift, Diagrammtitel und Erläuterung eines Verlaufs-Abschnitts – oder
+    ``None``, wenn es ihn bei dieser Auswahl nicht gibt. Beide Wege (ganze Seite und das Nachladen
+    eines einzelnen Abschnitts) nutzen dieselbe Quelle, damit Texte nicht auseinanderlaufen."""
+    einheit = _einheit(z)
+    if kennung == "verlauf_stellen":
+        serien = aw.verlauf_je_stelle(z, stellen)
+        if len(serien) <= 1:
+            return None
+        return (
+            serien,
+            f"Abholungen je Ausgabestelle und {einheit}",
+            "Abholungen je Ausgabestelle",
+            "Jede Ausgabestelle behält ihre Farbe; mehr als acht werden zu „Andere“. "
+            "Ein Tippen auf die Legende blendet eine Ausgabestelle aus; die Achse passt sich an.",
+        )
+    if kennung == "neuaufnahmen":
+        return (
+            aw.neuaufnahmen_und_antraege(z, stellen),
+            f"Neue Kunden und Anträge je {einheit}",
+            "Neue Kunden und Anträge",
+            "Neue Kunden nach „Kunde seit“. Anträge nur ohne Auswahl einer Ausgabestelle.",
+        )
+    if kennung == "mitglieder":
+        if not _verein(benutzer, stellen)[1]:
+            return None
+        return (
+            aw.mitglieder_ein_und_austritte(z),
+            f"Eintritte und Austritte je {einheit}",
+            "Eintritte und Austritte",
+            "",
+        )
+    return None
+
+
+def _linien_dict(kennung, serien, titel, diagramm_titel, beschriftung, einheit, get, text=""):
+    """Verlaufs-Abschnitt mit anklickbarer Legende: ausgeblendete Reihen fallen aus der Zeichnung,
+    dadurch skaliert die Y-Achse neu. Tabelle und CSV bleiben vollständig."""
+    aus = _versteckt(get, kennung)
+    sichtbar = [s for i, s in enumerate(serien) if i not in aus]
+    return {
+        "id": kennung,
+        "titel": titel,
+        "svg": dg.linien(beschriftung, sichtbar, diagramm_titel),
+        "kopf": [einheit, *[s.name for s in serien]],
+        "zeilen": [[b, *[int(s.werte[i]) for s in serien]] for i, b in enumerate(beschriftung)],
+        "text": text,
+        "legende": [
+            {
+                "name": s.name,
+                "farbe": s.farbe,
+                "aus": i in aus,
+                "abfrage": _umschalten(get, kennung, aus, i),
+            }
+            for i, s in enumerate(serien)
+        ],
+    }
+
+
+def linien_abschnitt(kennung, z, stellen, benutzer, get):
+    """Nur einen Verlaufs-Abschnitt bauen (für das schnelle Nachladen beim Legenden-Klick, ohne
+    die ganze Seite neu zu berechnen). ``None``, wenn es den Abschnitt nicht gibt."""
+    quelle = _linien_quelle(kennung, z, stellen, benutzer)
+    if quelle is None:
+        return None
+    serien, titel, diagramm_titel, text = quelle
+    beschriftung = [name for _, name in aw.perioden(z)]
+    return _linien_dict(
+        kennung, serien, titel, diagramm_titel, beschriftung, _einheit(z), get, text
+    )
+
+
 def abschnitte(z: aw.Zeitraum, stellen, heute, benutzer=None, get=None) -> list[dict]:
     """Alle Abschnitte mit Diagramm, Tabelle und Erklärung. ``get`` (die Abfrageparameter der
     Seite) steuert die anklickbare Legende; ohne ``get`` (PDF-Jahresbericht) sind alle Reihen zu
     sehen."""
     beschriftung = [name for _, name in aw.perioden(z)]
-    einheit = {"tag": "Tag", "woche": "Woche", "monat": "Monat"}[z.einheit]
+    einheit = _einheit(z)
     liste = []
 
     def neu(kennung, titel, svg, kopf, zeilen, text="", legende=()):
@@ -103,32 +179,15 @@ def abschnitte(z: aw.Zeitraum, stellen, heute, benutzer=None, get=None) -> list[
             }
         )
 
-    def linien_neu(kennung, titel, serien, diagramm_titel, text=""):
-        """Verlaufs-Abschnitt mit anklickbarer Legende: ausgeblendete Reihen fallen aus der
-        Zeichnung, dadurch skaliert die Y-Achse neu. Tabelle und CSV bleiben vollständig."""
-        aus = _versteckt(get, kennung)
-        sichtbar = [s for i, s in enumerate(serien) if i not in aus]
-        liste.append(
-            {
-                "id": kennung,
-                "titel": titel,
-                "svg": dg.linien(beschriftung, sichtbar, diagramm_titel),
-                "kopf": [einheit, *[s.name for s in serien]],
-                "zeilen": [
-                    [b, *[int(s.werte[i]) for s in serien]] for i, b in enumerate(beschriftung)
-                ],
-                "text": text,
-                "legende": [
-                    {
-                        "name": s.name,
-                        "farbe": s.farbe,
-                        "aus": i in aus,
-                        "abfrage": _umschalten(get, kennung, aus, i),
-                    }
-                    for i, s in enumerate(serien)
-                ],
-            }
-        )
+    def linien_neu(kennung):
+        quelle = _linien_quelle(kennung, z, stellen, benutzer)
+        if quelle is not None:
+            serien, titel, diagramm_titel, text = quelle
+            liste.append(
+                _linien_dict(
+                    kennung, serien, titel, diagramm_titel, beschriftung, einheit, get, text
+                )
+            )
 
     werte = aw.verlauf(aw.abholungen(z, stellen), z)
     daten = list(zip(beschriftung, werte, strict=True))
@@ -140,16 +199,7 @@ def abschnitte(z: aw.Zeitraum, stellen, heute, benutzer=None, get=None) -> list[
         [[n, int(w)] for n, w in daten],
     )
 
-    serien = aw.verlauf_je_stelle(z, stellen)
-    if len(serien) > 1:
-        linien_neu(
-            "verlauf_stellen",
-            f"Abholungen je Ausgabestelle und {einheit}",
-            serien,
-            "Abholungen je Ausgabestelle",
-            "Jede Ausgabestelle behält ihre Farbe; mehr als acht werden zu „Andere“. "
-            "Ein Tippen auf die Legende blendet eine Ausgabestelle aus; die Achse passt sich an.",
-        )
+    linien_neu("verlauf_stellen")
     je_stelle = aw.je_stelle(z, stellen)
     neu(
         "stellen",
@@ -189,14 +239,7 @@ def abschnitte(z: aw.Zeitraum, stellen, heute, benutzer=None, get=None) -> list[
         "Bar eingenommenes Geld laut Kundenkonto (Beiträge und Einzahlungen).",
     )
 
-    zugang_serien = aw.neuaufnahmen_und_antraege(z, stellen)
-    linien_neu(
-        "neuaufnahmen",
-        f"Neue Kunden und Anträge je {einheit}",
-        zugang_serien,
-        "Neue Kunden und Anträge",
-        "Neue Kunden nach „Kunde seit“. Anträge nur ohne Auswahl einer Ausgabestelle.",
-    )
+    linien_neu("neuaufnahmen")
 
     groessen = aw.haushaltsgroessen(heute, stellen)
     neu(
@@ -292,13 +335,7 @@ def abschnitte(z: aw.Zeitraum, stellen, heute, benutzer=None, get=None) -> list[
             "Mehr als acht Zwecke werden zu „Andere“ zusammengefasst.",
         )
     if mit_mitgliedern:
-        bewegung = aw.mitglieder_ein_und_austritte(z)
-        linien_neu(
-            "mitglieder",
-            f"Eintritte und Austritte je {einheit}",
-            bewegung,
-            "Eintritte und Austritte",
-        )
+        linien_neu("mitglieder")
         arten = aw.mitglieder_nach_art(min(heute, z.bis))
         neu(
             "mitglieder_art",
@@ -352,11 +389,29 @@ def kennzahlen_kacheln(z: aw.Zeitraum, stellen, heute, benutzer) -> list[tuple[s
     return kacheln
 
 
+def _abfrage_ohne(get, *weglassen) -> str:
+    p = get.copy()
+    for schluessel in weglassen:
+        p.pop(schluessel, None)
+    return p.urlencode()
+
+
 @rollen.recht_erforderlich("statistik.sehen")
 def uebersicht(request):
     heute = timezone.localdate()
     wahl, z, vorgaben = _zeitraum(request, heute)
     stellen, auswahl, gewaehlt = _stellen(request)
+    # Legenden-Klick (htmx): nur den einen Verlaufs-Abschnitt neu berechnen, nicht die ganze Seite.
+    nur = request.GET.get("nur")
+    if nur and request.headers.get("HX-Request"):
+        teil = linien_abschnitt(nur, z, stellen, request.user, request.GET)
+        if teil is not None:
+            return render(
+                request,
+                "statistik/_abschnitt.html",
+                {"a": teil, "abfrage": _abfrage_ohne(request.GET, "nur", "csv")},
+            )
+        return HttpResponse(status=204)  # Abschnitt gibt es nicht (mehr): nichts austauschen
     teile = abschnitte(z, stellen, heute, request.user, get=request.GET)
     csv_teil = request.GET.get("csv")
     if csv_teil:

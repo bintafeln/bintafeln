@@ -133,6 +133,25 @@ def test_verlauf_legende_umschalten():
     assert "aus_verlauf_stellen" not in aus["legende"][0]["abfrage"]
 
 
+def test_legende_klick_laedt_nur_einen_abschnitt(admin_client, daten):
+    # Der Legenden-Klick (htmx, ?nur=…) rendert nur diesen Abschnitt, nicht die ganze Seite –
+    # sonst würde die große Auswertung bei jedem Klick komplett neu berechnet.
+    gemeinsam = {"zeitraum": "eigen", "von": "2026-01-01", "bis": "2026-03-31"}
+    antwort = admin_client.get(
+        URL,
+        {**gemeinsam, "nur": "verlauf_stellen", "aus_verlauf_stellen": "0"},
+        HTTP_HX_REQUEST="true",
+    )
+    inhalt = antwort.content.decode()
+    assert 'id="verlauf_stellen"' in inhalt
+    assert "Abholungen nach Wochentag" not in inhalt  # andere Abschnitte werden nicht gebaut
+    assert "<h1>Statistik</h1>" not in inhalt  # keine ganze Seite
+    assert inhalt.count('class="linie ') == 1  # eine Reihe ausgeblendet
+    # Gibt es den Abschnitt (bei dieser Auswahl) nicht, wird nichts ausgetauscht
+    leer = admin_client.get(URL, {**gemeinsam, "nur": "gibtsnicht"}, HTTP_HX_REQUEST="true")
+    assert leer.status_code == 204
+
+
 def test_seite_und_rechte(client, admin_client, benutzer_mit_rolle, anmelden, daten):
     seite = admin_client.get(URL, {"zeitraum": "eigen", "von": "2026-01-01", "bis": "2026-03-31"})
     inhalt = seite.content.decode()
