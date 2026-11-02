@@ -61,7 +61,7 @@
       <thead><tr>
         <th><input type="checkbox" aria-label="Alle auswählen" onclick="document.querySelectorAll('#aktionen input[name=ids]').forEach(c => c.checked = this.checked)"></th>
         <th data-spalte="eingang"><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'eingang' %}-{% endif %}eingang">Eingang</a></th>
-        <th data-spalte="nummer">#</th>
+        <th data-spalte="nummer"><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'nummer' %}-{% endif %}nummer">#</a></th>
         <th><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'name' %}-{% endif %}name">Nachname</a></th>
         <th><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'vorname' %}-{% endif %}vorname">Vorname</a></th>
         <th data-spalte="geburtsdatum"><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'geburtsdatum' %}-{% endif %}geburtsdatum">Geburtsdatum</a></th>
