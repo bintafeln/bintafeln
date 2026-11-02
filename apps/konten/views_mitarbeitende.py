@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q
+from django.db.models import ProtectedError, Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -18,6 +18,7 @@ from django.views.decorators.http import require_POST
 from django_otp import user_has_device
 
 from apps.core import listen, listenexport, mail, papierkorb
+from apps.core.models import TafelEinstellungen
 from apps.core.pdf import pdf_antwort
 from apps.konten import (
     auskunft,
@@ -365,6 +366,34 @@ def sperren(request, pk):
 @verwalter_erforderlich
 def entsperren(request, pk):
     return _aktion(request, pk, verwaltung.entsperren, "{ziel} ist wieder aktiv.")
+
+
+@require_POST
+@verwalter_erforderlich
+def entfernen(request, pk):
+    """Ein gesperrtes Konto samt Adresse endgültig (in den Papierkorb) löschen; nur mit dem
+    Recht „Gesperrte Mitarbeitende endgültig löschen“."""
+    if not rollen.hat_recht(request.user, "mitarbeitende.loeschen"):
+        raise PermissionDenied
+    ziel = _ziel(request, pk)
+    name = str(ziel)
+    try:
+        verwaltung.entfernen(request.user, ziel)
+    except verwaltung.VerwaltungsFehler as fehler:
+        messages.error(request, str(fehler))
+        return redirect("konten:mitarbeiter", pk=pk)
+    except ProtectedError:
+        messages.error(request, f"„{name}“ hat Spenden, Zuwendungsbestätigungen oder eine "
+                       "Mitgliedschaft und lässt sich deshalb nicht löschen. Bitte das zuerst "
+                       "klären.")  # fmt: skip
+        return redirect("konten:mitarbeiter", pk=pk)
+    tage = TafelEinstellungen.laden().papierkorb_tage
+    messages.success(
+        request,
+        f"„{name}“ wurde in den Papierkorb gelegt (Konto, Stammdaten und Adresse) und kann "
+        f"dort {tage} Tage lang wiederhergestellt werden.",
+    )
+    return redirect("konten:mitarbeitende_archiv")
 
 
 @require_POST

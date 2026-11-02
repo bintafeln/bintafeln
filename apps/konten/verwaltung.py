@@ -227,6 +227,31 @@ def entsperren(verwalter, ziel) -> None:
     ziel.save(update_fields=["is_active", "gesperrt_am", "gesperrt_von"])
 
 
+def entfernen(verwalter, ziel):
+    """Löscht ein gesperrtes (archiviertes) Mitarbeiter-Konto samt Stammdaten und verknüpfter
+    Adresse in den Papierkorb (Ausnahme zu ADR 0015). Alles, was am Konto hängt (Verträge,
+    Stunden, Urlaub, Abwesenheiten, Zeitbuchungen, PIN, Import-Vorlagen), kommt als Teil der
+    Löschung mit; wo die Person nur als „eingetragen/gesehen von“ an fremden Vorgängen steht,
+    wird sie dort auf leer gesetzt (und bei einer Wiederherstellung zurückgesetzt).
+
+    Nur gesperrte Konten, nie das eigene; Admin-Konten nur durch einen Admin. Hat die Person
+    Spenden oder eine Mitgliedschaft, löst das Löschen ``ProtectedError`` aus und es wird nichts
+    gelöscht (wie im Adressbuch). Gibt den ``PapierkorbEintrag`` zurück."""
+    from apps.adressen.models import Adresse
+    from apps.core import papierkorb
+
+    _pruefen(verwalter, ziel)
+    if ziel.pk == verwalter.pk:
+        raise VerwaltungsFehler("Sie können sich nicht selbst löschen.")
+    if ziel.is_active:
+        raise VerwaltungsFehler("Nur gesperrte (archivierte) Konten lassen sich löschen; "
+                                "bitte das Konto zuerst sperren.")  # fmt: skip
+    adresse = Adresse.objects.filter(konto=ziel).first()
+    objekte = [ziel] + ([adresse] if adresse else [])
+    return papierkorb.loeschen(verwalter, "Mitarbeiter", str(ziel), *objekte,
+                               recht="mitarbeitende.loeschen")  # fmt: skip
+
+
 @transaction.atomic
 def werkseinstellungen(verwalter, ziel) -> None:
     """Persönliche Anpassungen zurücksetzen, wie beim Anlegen des Kontos: Spalten der

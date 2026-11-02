@@ -69,6 +69,13 @@
       {% csrf_token %}
       <button type="submit" class="knopf">Wieder freischalten</button>
     </form>
+    {% if "mitarbeitende.loeschen" in rechte %}
+    <form method="post" action="{% url 'konten:entfernen' ziel.pk %}" class="inline"
+          onsubmit="return confirm('„{{ ziel|escapejs }}“ endgültig löschen? Konto, Stammdaten und die verknüpfte Adresse kommen in den Papierkorb (Verträge, Stunden, Urlaub und Ähnliches gehen mit). Von dort lässt sich das eine Zeit lang wiederherstellen.')">
+      {% csrf_token %}
+      <button type="submit" class="knopf knopf-gefahr" title="Konto samt Adresse in den Papierkorb legen">Endgültig löschen</button>
+    </form>
+    {% endif %}
     {% endif %}
   </div>
 </section>

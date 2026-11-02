@@ -37,6 +37,7 @@ urlpatterns = [
         name="werkseinstellungen",
     ),
     path("mitarbeitende/<int:pk>/entsperren/", views_mitarbeitende.entsperren, name="entsperren"),
+    path("mitarbeitende/<int:pk>/entfernen/", views_mitarbeitende.entfernen, name="entfernen"),
     path(
         "mitarbeitende/<int:pk>/passwort/",
         views_mitarbeitende.passwort_zuruecksetzen,

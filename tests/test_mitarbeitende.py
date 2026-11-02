@@ -333,6 +333,64 @@ def test_sperren_setzt_ehemalige(admin):
     assert verwaltung.EHEMALIGE_KATEGORIE in namen and verwaltung.HELFER_KATEGORIE in namen
 
 
+def test_entfernen_loescht_konto_und_adresse_und_stellt_wieder_her(admin, admin_client):
+    from apps.adressen.models import Adresse
+    from apps.core import papierkorb
+    from apps.core.models import PapierkorbEintrag
+    from apps.konten.models import Stammdaten
+
+    ziel, _ = verwaltung.anlegen(
+        admin, {"username": "lea", "first_name": "Lea", "last_name": "Helfer"}, [rollen.AUSGABE]
+    )
+    # anlegen() legt schon Stammdaten an (ADR 0101); diese gehören zum Konto.
+    assert Stammdaten.objects.filter(benutzer=ziel).exists()
+    verwaltung.sperren(admin, ziel)
+    antwort = admin_client.post(url("entfernen", ziel))
+    assert antwort.status_code == 302 and antwort.url == ARCHIV
+    # Konto, Stammdaten und Adresse sind weg und liegen als ein Eintrag im Papierkorb.
+    assert not get_user_model().objects.filter(pk=ziel.pk).exists()
+    assert not Adresse.objects.filter(konto_id=ziel.pk).exists()
+    assert not Stammdaten.objects.filter(benutzer_id=ziel.pk).exists()
+    eintrag = PapierkorbEintrag.objects.get(art="Mitarbeiter")
+    assert eintrag.recht == "mitarbeitende.loeschen"
+    # Wiederherstellen legt Konto, Stammdaten und Adresse mit denselben Nummern wieder an.
+    papierkorb.wiederherstellen(eintrag)
+    assert get_user_model().objects.filter(pk=ziel.pk, username="lea").exists()
+    assert Adresse.objects.filter(konto_id=ziel.pk).exists()
+    assert Stammdaten.objects.filter(benutzer_id=ziel.pk).exists()
+
+
+def test_entfernen_nur_gesperrt_und_nicht_selbst(admin):
+    # Aktive Konten erst sperren; niemand löscht sich selbst.
+    ziel, _ = verwaltung.anlegen(admin, {"username": "lea", "last_name": "H"}, [rollen.AUSGABE])
+    with pytest.raises(verwaltung.VerwaltungsFehler, match="gesperrt"):
+        verwaltung.entfernen(admin, ziel)
+    with pytest.raises(verwaltung.VerwaltungsFehler, match="selbst"):
+        verwaltung.entfernen(admin, admin)
+    assert get_user_model().objects.filter(pk=ziel.pk).exists()
+
+
+def test_entfernen_braucht_recht_und_scheitert_an_spende(admin, admin_client, als,
+                                                         buero_freigegeben):  # fmt: skip
+    from django.utils import timezone
+
+    from apps.adressen.models import Adresse
+    from apps.spenden.models import Spende
+
+    ziel, _ = verwaltung.anlegen(admin, {"username": "lea", "last_name": "H"}, [rollen.AUSGABE])
+    verwaltung.sperren(admin, ziel)
+    # Büro hat „verwalten“, aber nicht „löschen“: 403, nichts gelöscht.
+    client, _ = als(rollen.BUERO)
+    assert client.post(url("entfernen", ziel)).status_code == 403
+    assert get_user_model().objects.filter(pk=ziel.pk).exists()
+    # Mit einer Spende an der Adresse lehnt das Löschen ab (ProtectedError); nichts gelöscht.
+    adr = Adresse.objects.get(konto=ziel)
+    Spende.objects.create(adresse=adr, datum=timezone.localdate())
+    antwort = admin_client.post(url("entfernen", ziel), follow=True)
+    assert "Spenden" in antwort.content.decode()
+    assert get_user_model().objects.filter(pk=ziel.pk).exists()
+
+
 def test_sperren_stellen_konto_ohne_adresse(admin):
     from apps.adressen.models import Adresse
     from apps.kunden.models import Ausgabestelle
