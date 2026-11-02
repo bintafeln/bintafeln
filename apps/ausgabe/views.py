@@ -476,9 +476,16 @@ def kasse_ansehen(request):
     heute = timezone.localdate()
     ansicht = request.GET.get("ansicht", "tag")
     stellen = Ausgabestelle.objects.order_by("name")
+    # Konten, die einer Ausgabestelle zugeordnet sind, sehen nur deren Kasse (ADR 0034):
+    # Auswahl und Daten werden auf die eigenen Ausgabestellen beschränkt; None = keine Grenze.
+    eigene = zugang.stellen(request.user)
+    if eigene is not None:
+        stellen = stellen.filter(pk__in=[s.pk for s in eigene])
     stelle_pk = request.GET.get("stelle", "")
     stelle = stellen.filter(pk=stelle_pk).first() if stelle_pk.isdigit() else None
     buchungen = Buchung.objects.all()
+    if eigene is not None:
+        buchungen = buchungen.filter(ausgabestelle__in=stellen)
     if stelle:
         buchungen = buchungen.filter(ausgabestelle=stelle)
 
