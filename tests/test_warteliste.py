@@ -171,6 +171,20 @@ def test_ort_aus_tafel_oder_einstellungen():
     assert ablauf.ort(Termin(datum=timezone.localdate(), von=dt.time(9), ort="Saal")) == "Saal"
 
 
+def test_liste_name_vorname_getrennt_und_sortierbar(admin_client, modul_an):
+    antrag(vorname="Berta", nachname="Zander")
+    antrag(vorname="Anton", nachname="Anders")
+    ablauf.automatik()
+    inhalt = admin_client.get(reverse("warteliste:liste")).content.decode()
+    assert ">Nachname</a>" in inhalt and ">Vorname</a>" in inhalt  # getrennte Spalten
+    nach_v = admin_client.get(reverse("warteliste:liste"), {"sort": "vorname"}).context["eintraege"]
+    assert [w.antrag.vorname for w in nach_v] == ["Anton", "Berta"]
+    # Weitere Spalten sind jetzt auch sortierbar (kein Fehler).
+    liste = reverse("warteliste:liste")
+    assert admin_client.get(liste, {"sort": "geburtsdatum"}).status_code == 200
+    assert admin_client.get(liste, {"sort": "-wohnort"}).status_code == 200
+
+
 def test_liste_nach_nummer_sortierbar(admin_client, modul_an):
     a, b, c = antrag(vorname="A"), antrag(vorname="B"), antrag(vorname="C")
     ablauf.automatik()
@@ -303,10 +317,10 @@ def test_seiten(modul_an, admin_client, mailserver, pdf_text):
     a = antrag(email="erika@example.org", staatsangehoerigkeit="Ukraine")
     b = antrag("Max", "Probe", staatsangehoerigkeit="Syrien")
     seite = admin_client.get(reverse("warteliste:liste")).content.decode()
-    assert "Beispiel, Erika" in seite and "Probe, Max" in seite
+    assert ">Beispiel</a>" in seite and ">Probe</a>" in seite  # Nachname getrennt
     filter_ = {"staat_modus": "nicht", "staat": ["Syrien"]}
     seite = admin_client.get(reverse("warteliste:liste"), filter_).content.decode()
-    assert "Beispiel, Erika" in seite and "Probe, Max" not in seite
+    assert ">Beispiel</a>" in seite and ">Probe</a>" not in seite
     datum = (timezone.localdate() + dt.timedelta(days=5)).isoformat()
     antwort = admin_client.post(reverse("warteliste:einladen"), {
         "ids": [a.pk, b.pk], "datum": datum, "von": "10:00", "bis": "11:30", "mail": "on",

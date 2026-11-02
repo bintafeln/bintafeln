@@ -62,10 +62,11 @@
         <th><input type="checkbox" aria-label="Alle auswählen" onclick="document.querySelectorAll('#aktionen input[name=ids]').forEach(c => c.checked = this.checked)"></th>
         <th data-spalte="eingang"><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'eingang' %}-{% endif %}eingang">Eingang</a></th>
         <th data-spalte="nummer"><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'nummer' %}-{% endif %}nummer">#</a></th>
-        <th><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'name' %}-{% endif %}name">Name</a></th>
-        <th data-spalte="geburtsdatum">Geburtsdatum</th>
+        <th><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'name' %}-{% endif %}name">Nachname</a></th>
+        <th><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'vorname' %}-{% endif %}vorname">Vorname</a></th>
+        <th data-spalte="geburtsdatum"><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'geburtsdatum' %}-{% endif %}geburtsdatum">Geburtsdatum</a></th>
         <th data-spalte="kontakt">Kontakt</th>
-        <th data-spalte="wohnort">Wohnort</th>
+        <th data-spalte="wohnort"><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'wohnort' %}-{% endif %}wohnort">Wohnort</a></th>
         <th data-spalte="personen">Personen</th>
         <th data-spalte="art"><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'art' %}-{% endif %}art">Art</a></th>
         <th data-spalte="staat"><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'staat' %}-{% endif %}staat">Staatsangehörigkeit</a></th>
@@ -79,7 +80,8 @@
           <td><input type="checkbox" name="ids" value="{{ a.pk }}" aria-label="Antrag {{ a.nummer }} auswählen"></td>
           <td data-titel="Eingang" data-spalte="eingang">{{ a.eingegangen_am|date:"d.m.Y" }}</td>
           <td data-titel="#" data-spalte="nummer"><a href="{% url 'warteliste:eintrag' a.pk %}">{{ a.nummer }}</a></td>
-          <td data-titel="Name"><a href="{% url 'warteliste:eintrag' a.pk %}">{{ a.nachname }}, {{ a.vorname }}</a></td>
+          <td data-titel="Nachname"><a href="{% url 'warteliste:eintrag' a.pk %}">{{ a.nachname }}</a></td>
+          <td data-titel="Vorname">{{ a.vorname }}</td>
           <td data-titel="Geburtsdatum" data-spalte="geburtsdatum">{{ a.geburtsdatum|date:"d.m.Y"|default:"–" }}</td>
           <td data-titel="Kontakt" data-spalte="kontakt">{% if a.email %}✉ {{ a.email }}{% endif %}{% if a.email and a.telefon %}<br>{% endif %}{% if a.telefon %}☎ {{ a.telefon }}{% endif %}{% if not a.email and not a.telefon %}–{% endif %}</td>
           <td data-titel="Wohnort" data-spalte="wohnort">{{ a.plz }} {{ a.ort|default:"" }}{% if not a.plz and not a.ort %}–{% endif %}</td>
@@ -92,7 +94,7 @@
             {% if "warteliste.bearbeiten" in rechte %}<a href="{% url 'warteliste:eintrag' a.pk %}#anmerkung" class="anmerkung-neu" title="Anmerkung hinzufügen">＋</a>{% endif %}</td>
         </tr>
       {% endwith %}{% empty %}
-        <tr><td colspan="13">Keine Einträge.</td></tr>
+        <tr><td colspan="14">Keine Einträge.</td></tr>
       {% endfor %}
       </tbody>
     </table>
