@@ -62,6 +62,54 @@ def test_sperrgrund(benutzer_mit_rolle, stellen):
     assert "den Ausgabestellen „Mitte“ und „Nord“" in zugang.sperrgrund(b, h300)
 
 
+def test_nachfrist_ausgeschiedene_bleiben_eine_weile_sichtbar(benutzer_mit_rolle, stellen):
+    """Wer aus der Kundengruppe gefallen ist, bleibt der früheren Ausgabestelle die Nachfrist
+    (Vorgabe 60 Tage) eingeschränkt sichtbar; danach und an fremder Stelle nicht (ADR 0061)."""
+    import datetime as dt
+
+    from django.utils import timezone
+
+    from apps.kunden.models import Gruppenzeit, KundenEinstellungen, Kundengruppe
+
+    mitte, nord = stellen
+    heute = timezone.localdate()
+    g_mitte = Kundengruppe.objects.get(name="Montag Mitte")
+    g_nord = Kundengruppe.objects.get(name="Dienstag Nord")
+    b = benutzer_mit_rolle("anton", rollen.AUSGABE)
+    b.ausgabestellen.set([mitte])
+
+    def ausgeschieden(nummer, gruppe, vor_tagen):
+        h = Haushalt.objects.create(kundennummer=nummer, status=Haushalt.Status.BEENDET)
+        Gruppenzeit.objects.create(
+            kundennummer=nummer, kundengruppe=gruppe, gruppe_name=gruppe.name,
+            von=heute - dt.timedelta(days=300), bis=heute - dt.timedelta(days=vor_tagen),
+        )  # fmt: skip
+        return h
+
+    weg = ausgeschieden("400", g_mitte, 10)  # vor 10 Tagen an „Mitte"
+    alt = ausgeschieden("401", g_mitte, 100)  # vor 100 Tagen an „Mitte"
+    fremd = ausgeschieden("402", g_nord, 5)  # vor 5 Tagen, aber an „Nord"
+
+    def in_liste(h):
+        return zugang.filtern(Haushalt.objects, b).filter(pk=h.pk).exists()
+
+    # In der Nachfrist an der eigenen Stelle: direkt aufrufbar (kein Sperrgrund) …
+    assert zugang.sperrgrund(b, weg) == ""
+    # … aber in Listen tauchen Ausgeschiedene nicht auf.
+    assert not in_liste(weg) and not in_liste(alt) and not in_liste(fremd)
+    # Zu lange her: nicht mehr aufrufbar.
+    assert "keiner Kundengruppe zugeordnet" in zugang.sperrgrund(b, alt)
+    # Fremde Ausgabestelle: nicht aufrufbar.
+    assert zugang.sperrgrund(b, fremd) != ""
+
+    # Nachfrist auf 0: sofort auch nicht mehr aufrufbar wie bisher.
+    e = KundenEinstellungen.laden()
+    e.nachfrist_sichtbar_tage = 0
+    e.save()
+    b = type(b).objects.get(pk=b.pk)  # Stellen-Zwischenspeicher zurücksetzen
+    assert zugang.sperrgrund(b, weg) != ""
+
+
 def test_einlass(anton):
     seite = anton.get(reverse("ausgabe:empfang"), {"nummer": "200"}, **HX).content.decode()
     assert "Dieser Kunde gehört nicht zu Ihrer Ausgabestelle" in seite

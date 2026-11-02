@@ -27,6 +27,15 @@ ein Kunde in welcher Gruppe war.
   offene Zeit ohne Anfang. Die Zeiten hängen an der Kundennummer, stehen in der Auskunft und
   werden wie die Historie gelöscht.
 - Die Regel ändert keine Haushalte per Migration; sie greift erst im Betrieb.
+- **Nachfrist für die Sichtbarkeit (ADR 0034):** Wer so aus der Kundengruppe fällt, verliert die
+  Zuordnung zur Ausgabestelle und wäre für deren Konten sofort unsichtbar. Damit die Ausgabestelle
+  einen gerade Ausgeschiedenen noch ansprechen oder einordnen kann, bleibt er ihr über
+  `KundenEinstellungen.nachfrist_sichtbar_tage` (Vorgabe 60 Tage, 0 = aus) noch eine Weile
+  **eingeschränkt aufrufbar**: Die frühere Ausgabestelle (aus der jüngsten `Gruppenzeit`, deren Ende
+  höchstens so lange zurückliegt) darf den Haushalt **direkt aufrufen** (Einlass/Detailseite über
+  `zugang.sperrgrund`); die Ampel sperrt die Abholung ohnehin. In **Listen** (`zugang.filtern`)
+  taucht er dagegen **nicht** auf. Danach gilt wieder „Kein Zugriff“. Das Recht „Kunden aller
+  Ausgabestellen“ sieht wie bisher alle.
 
 ## Begründung
 
