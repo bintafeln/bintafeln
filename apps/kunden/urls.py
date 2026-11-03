@@ -34,6 +34,11 @@ urlpatterns = [
         views_bearbeiten.abholung_loeschen,
         name="abholung_loeschen",
     ),
+    path(
+        "haushalt/<path:kundennummer>/kundengruppe/",
+        views_bearbeiten.kundengruppe_aendern,
+        name="kundengruppe_aendern",
+    ),
     # Nach den genaueren Mustern: <path:…> würde sonst „…/teil/…/loeschen/“ verschlucken.
     path(
         "haushalt/<path:kundennummer>/bearbeiten/",

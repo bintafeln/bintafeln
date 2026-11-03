@@ -13,7 +13,7 @@ jeder Änderung, nach dem Import und täglich.
 import datetime as dt
 
 from django.db import transaction
-from django.db.models import F
+from django.db.models import Count, F, Q
 from django.utils import timezone
 
 from apps.kunden.models import (
@@ -21,6 +21,7 @@ from apps.kunden.models import (
     Haushalt,
     HaushaltEreignis,
     KundenEinstellungen,
+    Kundengruppe,
 )
 
 RAUS = {Haushalt.Status.PAUSIERT, Haushalt.Status.GESPERRT, Haushalt.Status.BEENDET}
@@ -107,6 +108,26 @@ def zeiten_abgleichen(kundennummern=None, heute: dt.date | None = None, ende: st
     Gruppenzeit.objects.bulk_update(schliessen, ["bis", "grund"], batch_size=1000)
     Gruppenzeit.objects.bulk_create(neu, batch_size=1000)
     return len(schliessen) + len(neu)
+
+
+def mit_plaetzen(haushalt: Haushalt | None = None) -> list[dict]:
+    """Alle aktiven Kundengruppen mit Belegung (Haushalte ohne beendete), Maximum und freien
+    Plätzen, sortiert nach Ausgabestelle und Name. ``eigene`` markiert die aktuelle Gruppe des
+    Haushalts. Anders als ``aufnahme.freie_gruppen`` werden auch volle Gruppen gezeigt."""
+    belegt = Count("haushalte", filter=~Q(haushalte__status=Haushalt.Status.BEENDET))
+    ergebnis = []
+    for g in (
+        Kundengruppe.objects.filter(aktiv=True)
+        .select_related("ausgabestelle")
+        .annotate(belegt=belegt)
+        .order_by("ausgabestelle__name", "name")
+    ):
+        frei = None if g.maximum is None else g.maximum - g.belegt
+        ergebnis.append({
+            "gruppe": g, "belegt": g.belegt, "maximum": g.maximum, "frei": frei,
+            "eigene": haushalt is not None and haushalt.kundengruppe_id == g.pk,
+        })  # fmt: skip
+    return ergebnis
 
 
 def zeiten(kundennummer: str) -> list[Gruppenzeit]:

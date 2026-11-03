@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block titel %}Kundengruppe ändern{% endblock %}
+{% block inhalt %}
+<div class="seiten-raster">
+  <section class="karte breit">
+    <p><a href="{% url 'kunden:haushalt' h.kundennummer %}">← Kunde {{ h.kundennummer }}</a></p>
+    <h1>Kundengruppe ändern · {{ h.kundennummer }}{% if hauptperson %} · {{ hauptperson.vorname }} {{ hauptperson.nachname }}{% endif %}</h1>
+
+    <form method="get" class="filter-kompakt" data-sofort>
+      <div class="filter-feld"><label for="tag">Wochentag</label>
+        <select name="tag" id="tag">
+          <option value="">alle</option>
+          {% for w in wochentage %}<option value="{{ w }}"{% if tag == w %} selected{% endif %}>{{ w }}</option>{% endfor %}
+        </select></div>
+      <noscript><button type="submit" class="knopf knopf-zweitrangig">Filtern</button></noscript>
+    </form>
+
+    <form method="post">
+      {% csrf_token %}
+      <table class="tabelle">
+        <thead><tr><th></th><th>Gruppe</th><th class="zahl">Mitglieder</th><th class="zahl">Max</th><th class="zahl">frei</th><th>Wochentage</th><th>Uhrzeit</th></tr></thead>
+        <tbody>
+        {% for x in gruppen %}
+          <tr{% if x.eigene %} class="hervor"{% endif %}>
+            <td><input type="radio" name="kundengruppe" value="{{ x.gruppe.pk }}" id="g{{ x.gruppe.pk }}"{% if x.eigene %} checked{% endif %}></td>
+            <td data-titel="Gruppe"><label for="g{{ x.gruppe.pk }}">{{ x.gruppe.name }}{% if x.gruppe.ausgabestelle %} <small class="leise">· {{ x.gruppe.ausgabestelle.name }}</small>{% endif %}{% if x.eigene %} <span class="marke-ok">aktuell</span>{% endif %}</label></td>
+            <td data-titel="Mitglieder" class="zahl">{{ x.belegt }}</td>
+            <td data-titel="Max" class="zahl">{{ x.maximum|default:"–" }}</td>
+            <td data-titel="frei" class="zahl">{% if x.frei is None %}∞{% elif x.frei <= 0 %}<span class="fehler">0</span>{% else %}{{ x.frei }}{% endif %}</td>
+            <td data-titel="Wochentage">{{ x.gruppe.wochentage|default:"–" }}</td>
+            <td data-titel="Uhrzeit">{{ x.gruppe.uhrzeit|time:"H:i"|default:"–" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="hinweis">Keine Kundengruppe{% if tag %} am {{ tag }}{% endif %}.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <div class="aktionsleiste">
+        <button type="submit" class="knopf">Auswählen</button>
+        <a href="{% url 'kunden:haushalt' h.kundennummer %}" class="knopf knopf-abbrechen">Abbrechen</a>
+      </div>
+      <p class="hinweis">„frei“ zählt alle Haushalte außer beendeten. Ohne gültigen Ausweis zählt ein Kunde in keiner Gruppe (die Zuordnung wird dann wieder entfernt).</p>
+    </form>
+  </section>
+
+  <section class="karte breit">
+    <h2>Bisherige Gruppen</h2>
+    {% if historie %}
+    <table class="tabelle">
+      <thead><tr><th>Kundengruppe</th><th>von</th><th>bis</th><th>Grund für das Ende</th></tr></thead>
+      <tbody>
+        {% for z in historie %}
+        <tr>
+          <td data-titel="Kundengruppe">{{ z.gruppe_name }}</td>
+          <td data-titel="von">{{ z.von|date:"d.m.Y"|default:"früher" }}</td>
+          <td data-titel="bis">{{ z.bis|date:"d.m.Y"|default:"läuft" }}</td>
+          <td data-titel="Grund">{{ z.grund|default:"" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="hinweis">Noch in keiner Kundengruppe.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
