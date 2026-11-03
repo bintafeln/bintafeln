@@ -17,6 +17,7 @@ from apps.kunden.models import (
     Ausnahme,
     Bemerkung,
     Einkommensart,
+    Gruppenzeit,
     Haushalt,
     KundenEinstellungen,
     Kundengruppe,
@@ -86,6 +87,32 @@ def test_haushalt_bearbeiten(admin_client, h, gruppe_behalten):
     admin_client.post(url("bearbeiten", "2001"), {"kundennummer": "2002", "status": "aktiv"})
     assert Haushalt.objects.get(pk=h.pk).kundennummer == "2002"
     assert "In bintafeln geändert" in admin_client.get(url("haushalt", "2002")).content.decode()
+
+
+def test_kundengruppe_aendern(admin_client):
+    heute = dt.date.today()
+    mitte = Ausgabestelle.objects.create(name="Mitte")
+    mo = Kundengruppe.objects.create(name="Montagsgruppe", ausgabestelle=mitte,
+                                     wochentage="Mo", maximum=2)  # fmt: skip
+    di = Kundengruppe.objects.create(name="Dienstagsgruppe", ausgabestelle=mitte,
+                                     wochentage="Di", maximum=2)  # fmt: skip
+    gueltig = heute + dt.timedelta(days=30)
+    hh = Haushalt.objects.create(kundennummer="5001", kundengruppe=mo, ausweis_gueltig_bis=gueltig)
+    Person.objects.create(haushalt=hh, ist_hauptperson=True, vorname="A", nachname="B")
+    Haushalt.objects.create(kundennummer="5002", kundengruppe=mo, ausweis_gueltig_bis=gueltig)
+    seite = admin_client.get(url("kundengruppe_aendern", "5001")).content.decode()
+    assert "Montagsgruppe" in seite and "Dienstagsgruppe" in seite and "aktuell" in seite
+    # Belegung: Montagsgruppe 2 Mitglieder, 0 frei
+    assert "Mitglieder" in seite
+    # Wochentagsfilter
+    nur_di = admin_client.get(url("kundengruppe_aendern", "5001"), {"tag": "Di"}).content.decode()
+    assert "Dienstagsgruppe" in nur_di and "Montagsgruppe" not in nur_di
+    # Gruppe ändern → Historie wird fortgeschrieben
+    antwort = admin_client.post(url("kundengruppe_aendern", "5001"), {"kundengruppe": di.pk})
+    assert antwort.status_code == 302
+    hh.refresh_from_db()
+    assert hh.kundengruppe_id == di.pk
+    assert Gruppenzeit.objects.filter(kundennummer="5001", gruppe_name="Dienstagsgruppe").exists()
 
 
 def test_datensparsamkeit_blendet_felder_aus(h):

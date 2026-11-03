@@ -133,6 +133,51 @@ def haushalt_bearbeiten(request, kundennummer):
 
 
 @rollen.recht_erforderlich("kunden.bearbeiten")
+def kundengruppe_aendern(request, kundennummer):
+    """Kundengruppe eines Haushalts wählen – mit freien Plätzen je Gruppe, Wochentagsfilter und
+    der bisherigen Gruppen-Historie (ähnlich dem früheren Bexat-Fenster)."""
+    from apps.ausgabe.ampel import WOCHENTAGE
+    from apps.ausgabe.ampel import wochentage as _wochentage
+
+    h = zugang.haushalt(request.user, kundennummer)
+    alle = gruppen.mit_plaetzen(h)
+    if request.method == "POST":
+        neu = next(
+            (x["gruppe"] for x in alle if str(x["gruppe"].pk) == request.POST.get("kundengruppe")),
+            None,
+        )
+        if neu is None:
+            messages.error(request, "Bitte eine Kundengruppe wählen.")
+        else:
+            vorher = historie.schnappschuss(h)
+            with transaction.atomic():
+                h.kundengruppe = neu
+                h.save(update_fields=["kundengruppe"])
+                geaendert(h, request)
+                _festhalten(h, vorher, request)
+            messages.success(request, f"Kundengruppe auf „{neu.name}“ geändert.")
+            return redirect("kunden:haushalt", kundennummer=h.kundennummer)
+    tag = request.GET.get("tag", "")
+    zeilen = (
+        [x for x in alle if tag in _wochentage(x["gruppe"].wochentage)]
+        if tag in WOCHENTAGE
+        else alle
+    )
+    return render(
+        request,
+        "kunden/kundengruppe_aendern.html",
+        {
+            "h": h,
+            "hauptperson": h.personen.filter(ist_hauptperson=True).first(),
+            "gruppen": zeilen,
+            "tag": tag,
+            "wochentage": WOCHENTAGE,
+            "historie": gruppen.zeiten(h.kundennummer),
+        },
+    )
+
+
+@rollen.recht_erforderlich("kunden.bearbeiten")
 def haushalt_neu(request):
     """Ein Formular in der Reihenfolge des Büros: Hauptperson zuerst, Kundengruppe zuletzt."""
     daten = request.POST or None
