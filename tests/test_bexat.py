@@ -306,6 +306,36 @@ def test_start_ohne_datei_meldung(admin_client):
     assert "auswählen" in antwort.content.decode()
 
 
+def test_aktivieren_legt_an_und_schaltet_ein():
+    from apps.kunden import merkmale
+    from apps.kunden.models import Zusatzfeld
+
+    # fehlt ganz → wird angelegt und aktiv
+    Zusatzfeld.objects.filter(schluessel="schwerbehindert").delete()
+    assert merkmale.aktivieren("schwerbehindert") == ["Schwerbehindert"]
+    assert Zusatzfeld.objects.get(schluessel="schwerbehindert").aktiv
+    # schon aktiv → nichts zu melden
+    assert merkmale.aktivieren("schwerbehindert") == []
+    # abgeschaltet → wieder einschalten
+    Zusatzfeld.objects.filter(schluessel="schwerbehindert").update(aktiv=False)
+    assert merkmale.aktivieren("schwerbehindert") == ["Schwerbehindert"]
+    assert Zusatzfeld.objects.get(schluessel="schwerbehindert").aktiv
+
+
+def test_start_aktiviert_merkmal_schwerbehindert(admin_client):
+    """Ein abgeschaltetes Merkmal „Schwerbehindert" wird vor dem Import wieder eingeschaltet, damit
+    die Spalte zusatz_schwerbehindert nicht stillschweigend übersprungen wird."""
+    from apps.kunden.models import Zusatzfeld
+
+    _modul_an()
+    Zusatzfeld.objects.filter(schluessel="schwerbehindert").update(aktiv=False)
+    datei = io.BytesIO(_beispiel())
+    datei.name = "export.xlsx"
+    antwort = admin_client.post(reverse("bexat:start"), {"ziel": "kunden", "datei": datei})
+    assert antwort.status_code == 302
+    assert Zusatzfeld.objects.get(schluessel="schwerbehindert").aktiv
+
+
 def test_einstellungen_speichern(admin_client):
     _modul_an()
     antwort = admin_client.post(

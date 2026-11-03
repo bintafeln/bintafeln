@@ -24,6 +24,26 @@ def feste_anlegen() -> None:
         })  # fmt: skip
 
 
+def aktivieren(*schluessel) -> list[str]:
+    """Stellt sicher, dass die mitgelieferten Merkmale ``schluessel`` angelegt und aktiv sind –
+    z. B. vor dem Bexat-Import, damit die zugehörige Spalte nicht stillschweigend übersprungen
+    wird. Gibt die Bezeichnungen der Merkmale zurück, die dadurch (neu angelegt oder wieder
+    eingeschaltet) nutzbar wurden, für eine Rückmeldung an die Tafel."""
+    vorhanden = dict(
+        Zusatzfeld.objects.filter(schluessel__in=schluessel).values_list("schluessel", "aktiv")
+    )
+    nicht_nutzbar = [s for s in schluessel if not vorhanden.get(s)]  # fehlt oder inaktiv
+    if not nicht_nutzbar:
+        return []
+    feste_anlegen()  # legt fehlende mitgelieferte Merkmale an
+    Zusatzfeld.objects.filter(schluessel__in=nicht_nutzbar, aktiv=False).update(aktiv=True)
+    return list(
+        Zusatzfeld.objects.filter(schluessel__in=nicht_nutzbar).values_list(
+            "bezeichnung", flat=True
+        )
+    )
+
+
 def _felder(**filter_) -> list[Zusatzfeld]:
     return list(Zusatzfeld.objects.filter(aktiv=True, typ=Zusatzfeld.Typ.JA_NEIN, **filter_))
 
