@@ -447,6 +447,10 @@ def dublette(request):
     elif aktion == "b_streichen":
         ablauf.zusammenfuehren(a, b, _von(request))
         messages.success(request, f"Antrag {b.nummer} gestrichen, bei {a.nummer} vermerkt.")
+    if request.headers.get("HX-Request") == "true":
+        # Nur dieses eine Paar entfernen – nicht die ganze Liste neu vergleichen (der Namens-
+        # vergleich aller offenen Anträge dauert bei vielen Anträgen lange).
+        return HttpResponse("")
     return redirect("warteliste:dubletten")
 
 
