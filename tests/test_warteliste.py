@@ -229,6 +229,23 @@ def test_abgleich_und_dubletten_laden_ergebnis_nach(admin_client, modul_an):
     assert "streichen" in paare  # die gefundenen Paare kommen aus dem Nachlade-Endpunkt
 
 
+def test_dublette_per_htmx_entfernt_nur_das_paar(admin_client, modul_an):
+    """Eine Aktion auf ein Paar tauscht per htmx nur dieses Paar aus (hier: entfernt), statt alle
+    offenen Anträge neu zu vergleichen (das dauert bei vielen Anträgen lange)."""
+    a = antrag("Erika", "Beispiel", geburtsdatum=dt.date(1980, 2, 3))
+    b = antrag("Erika", "Beispiell", geburtsdatum=dt.date(1980, 2, 3))
+    ergebnis = admin_client.get(reverse("warteliste:dubletten_ergebnis")).content.decode()
+    assert f'id="paar-{a.pk}-{b.pk}"' in ergebnis or f'id="paar-{b.pk}-{a.pk}"' in ergebnis
+    assert "hx-post=" in ergebnis and 'hx-target="#paar-' in ergebnis
+    antwort = admin_client.post(
+        reverse("warteliste:dublette"),
+        {"a": a.pk, "b": b.pk, "aktion": "ignorieren"},
+        HTTP_HX_REQUEST="true",
+    )
+    assert antwort.status_code == 200 and antwort.content == b""
+    assert ablauf.dubletten() == []  # Paar ist erledigt, Liste wurde nicht neu aufgebaut
+
+
 def test_kundenabgleich_sperrzeit_und_ausnahmen():
     heute = timezone.localdate()
     h = Haushalt.objects.create(kundennummer="900", ausweis_gueltig_bis=heute - dt.timedelta(60))
