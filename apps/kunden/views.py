@@ -139,7 +139,7 @@ def _haushalte_suchen(request):
     if feld is not None:
         haushalte = merkmale.haushalte_mit_merkmal(haushalte, feld, merkmal_wert != "nein")
     else:
-        merkmal = ""
+        merkmal = merkmal_wert = ""  # ohne Merkmal nichts in die Adresszeile schreiben
     tag = _tag(request)
     haushalte = export.nach_tag(haushalte, tag)
     sortierung = request.GET.get("sort", "")
