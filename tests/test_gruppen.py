@@ -156,3 +156,15 @@ def test_kapazitaet_ueberblick():
     assert voll_zeile["frei"] == 0 and voll_zeile["prozent"] == 100
     offen_zeile = next(g for g in k["gruppen"] if g["gruppe"].name == "Offen")
     assert offen_zeile["frei"] is None and offen_zeile["prozent"] is None
+
+
+def test_kapazitaet_ohne_interne_gruppe():
+    normal = Kundengruppe.objects.create(name="Normal", maximum=5)
+    park = Kundengruppe.objects.create(name="Park", intern=True)
+    haushalt("1", normal)
+    haushalt("2", park)
+    k = gruppen.kapazitaet()
+    # interne Park-Gruppe taucht in der Kapazitätsübersicht nicht auf
+    assert [g["gruppe"].name for g in k["gruppen"]] == ["Normal"]
+    # bleibt aber zum Zuordnen wählbar (mit_plaetzen)
+    assert "Park" in [x["gruppe"].name for x in gruppen.mit_plaetzen()]

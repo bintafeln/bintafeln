@@ -195,8 +195,8 @@ def je_stelle(z: Zeitraum, stellen=None) -> list[tuple[str, int]]:
 
 
 def bestand(stellen=None):
-    """Haushalte (ohne beendete) der gewählten Ausgabestellen."""
-    qs = Haushalt.objects.exclude(status=Haushalt.Status.BEENDET)
+    """Haushalte (ohne beendete) der gewählten Ausgabestellen; interne Park-Gruppen außen vor."""
+    qs = Haushalt.objects.exclude(status=Haushalt.Status.BEENDET).exclude(kundengruppe__intern=True)
     if stellen is not None:
         qs = qs.filter(kundengruppe__ausgabestelle__in=stellen)
     return qs
@@ -232,7 +232,7 @@ def altersgruppen(heute: dt.date, stellen=None) -> list[tuple[str, int]]:
 
 
 def status(stellen=None) -> list[tuple[str, int]]:
-    qs = Haushalt.objects.all()
+    qs = Haushalt.objects.exclude(kundengruppe__intern=True)
     if stellen is not None:
         qs = qs.filter(kundengruppe__ausgabestelle__in=stellen)
     je = dict(qs.values_list("status").annotate(n=Count("pk")))
@@ -277,7 +277,12 @@ class Auslastung:
 
 def auslastung(stellen=None) -> list[Auslastung]:
     belegt = Count("haushalte", filter=~Q(haushalte__status=Haushalt.Status.BEENDET))
-    gruppen = Kundengruppe.objects.filter(aktiv=True).annotate(belegt=belegt).order_by("name")
+    gruppen = (
+        Kundengruppe.objects.filter(aktiv=True)
+        .exclude(intern=True)
+        .annotate(belegt=belegt)
+        .order_by("name")
+    )
     if stellen is not None:
         gruppen = gruppen.filter(ausgabestelle__in=stellen)
     return [Auslastung(g.name, g.belegt, g.maximum) for g in gruppen]

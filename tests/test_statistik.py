@@ -328,3 +328,12 @@ def test_jahresbericht_zahlen_und_leere_diagramme():
     assert jb.saeulen([("Jan", 2)], 100, "#000000") is not None
     z = jb.zeitraum(2026, dt.date(2026, 10, 25))
     assert (z.von, z.bis) == (dt.date(2026, 1, 1), dt.date(2026, 10, 25))
+
+
+def test_statistik_ohne_interne_gruppe(daten):
+    mitte, _ = daten
+    park = Kundengruppe.objects.create(name="Park", intern=True, ausgabestelle=mitte)
+    Haushalt.objects.create(kundennummer="99", kundengruppe=park)
+    assert "Park" not in [a.name for a in aw.auslastung()]
+    assert aw.bestand().filter(kundennummer="99").count() == 0  # geparkter Haushalt zählt nicht
+    assert aw.bestand().filter(kundennummer="1").count() == 1
