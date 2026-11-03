@@ -91,9 +91,12 @@ def _gefiltert(request):
         teile = Q(antrag__vorname__icontains=wort) | Q(antrag__nachname__icontains=wort)
         teile |= Q(antrag__email__icontains=wort) | Q(antrag__telefon__icontains=wort)
         teile |= Q(antrag__staatsangehoerigkeit__icontains=wort)
+        teile |= Q(antrag__anmerkungen__text__icontains=wort)  # auch in den Anmerkungen suchen
         if wort.isdigit():
             teile |= Q(antrag__laufnummer=int(wort))
         ws = ws.filter(teile)
+    if f["suche"]:
+        ws = ws.distinct()  # der Join auf die Anmerkungen kann Zeilen doppeln
     feld = SORTIERUNG.get(f["sort"].lstrip("-"))
     if not feld:
         f["sort"], feld = "eingang", SORTIERUNG["eingang"]
