@@ -17,23 +17,25 @@
 
     <form method="post">
       {% csrf_token %}
-      <table class="tabelle">
-        <thead><tr><th></th><th>Gruppe</th><th class="zahl">Mitglieder</th><th class="zahl">Max</th><th class="zahl">frei</th><th>Wochentage</th><th>Uhrzeit</th></tr></thead>
+      <table class="tabelle kompakt">
+        <thead><tr><th></th><th>Gruppe</th><th class="zahl">Belegung</th><th class="zahl">frei</th><th>Tag/Zeit</th></tr></thead>
+        {% regroup gruppen by gruppe.ausgabestelle.name as nach_stelle %}
+        {% for stelle in nach_stelle %}
         <tbody>
-        {% for x in gruppen %}
+          <tr class="gruppe-stelle"><th colspan="5">{{ stelle.grouper|default:"ohne Ausgabestelle" }}</th></tr>
+          {% for x in stelle.list %}
           <tr{% if x.eigene %} class="hervor"{% endif %}>
             <td><input type="radio" name="kundengruppe" value="{{ x.gruppe.pk }}" id="g{{ x.gruppe.pk }}"{% if x.eigene %} checked{% endif %}></td>
-            <td data-titel="Gruppe"><label for="g{{ x.gruppe.pk }}">{{ x.gruppe.name }}{% if x.gruppe.ausgabestelle %} <small class="leise">· {{ x.gruppe.ausgabestelle.name }}</small>{% endif %}{% if x.eigene %} <span class="marke-ok">aktuell</span>{% endif %}</label></td>
-            <td data-titel="Mitglieder" class="zahl">{{ x.belegt }}</td>
-            <td data-titel="Max" class="zahl">{{ x.maximum|default:"–" }}</td>
+            <td data-titel="Gruppe"><label for="g{{ x.gruppe.pk }}">{{ x.gruppe.name }}{% if x.eigene %} <span class="marke-ok">aktuell</span>{% endif %}</label></td>
+            <td data-titel="Belegung" class="zahl">{{ x.belegt }}{% if x.maximum %}&#8201;/&#8201;{{ x.maximum }}{% endif %}</td>
             <td data-titel="frei" class="zahl">{% if x.frei is None %}∞{% elif x.frei <= 0 %}<span class="fehler">0</span>{% else %}{{ x.frei }}{% endif %}</td>
-            <td data-titel="Wochentage">{{ x.gruppe.wochentage|default:"–" }}</td>
-            <td data-titel="Uhrzeit">{{ x.gruppe.uhrzeit|time:"H:i"|default:"–" }}</td>
+            <td data-titel="Tag/Zeit">{{ x.gruppe.wochentage|default:"–" }}{% if x.gruppe.uhrzeit %} {{ x.gruppe.uhrzeit|time:"H:i" }}{% endif %}</td>
           </tr>
-        {% empty %}
-          <tr><td colspan="7" class="hinweis">Keine Kundengruppe{% if tag %} am {{ tag }}{% endif %}.</td></tr>
-        {% endfor %}
+          {% endfor %}
         </tbody>
+        {% empty %}
+        <tbody><tr><td colspan="5" class="hinweis">Keine Kundengruppe{% if tag %} am {{ tag }}{% endif %}.</td></tr></tbody>
+        {% endfor %}
       </table>
       <div class="aktionsleiste">
         <button type="submit" class="knopf">Auswählen</button>

@@ -102,8 +102,8 @@ def test_kundengruppe_aendern(admin_client):
     Haushalt.objects.create(kundennummer="5002", kundengruppe=mo, ausweis_gueltig_bis=gueltig)
     seite = admin_client.get(url("kundengruppe_aendern", "5001")).content.decode()
     assert "Montagsgruppe" in seite and "Dienstagsgruppe" in seite and "aktuell" in seite
-    # Belegung: Montagsgruppe 2 Mitglieder, 0 frei
-    assert "Mitglieder" in seite
+    # Nach Ausgabestelle gruppiert, Spalte „Belegung" statt Mitglieder/Max
+    assert "Belegung" in seite and "Mitte" in seite
     # Wochentagsfilter
     nur_di = admin_client.get(url("kundengruppe_aendern", "5001"), {"tag": "Di"}).content.decode()
     assert "Dienstagsgruppe" in nur_di and "Montagsgruppe" not in nur_di
