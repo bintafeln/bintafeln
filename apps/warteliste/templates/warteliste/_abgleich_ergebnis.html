@@ -9,10 +9,7 @@
 <p class="hinweis" data-abgleich-leer hidden>Kein Treffer über dieser Übereinstimmung – Regler nach links schieben.</p>
 {% endif %}
 {% for e in ergebnis %}
-<section class="karte{% if e.sperr %} ampel ampel-rot{% endif %}" data-antrag-block>
-  <h2><a href="{% url 'warteliste:eintrag' e.antrag.pk %}">{{ e.antrag.nachname }}, {{ e.antrag.vorname }}</a> <small>· Antrag {{ e.antrag.nummer }}{% if e.antrag.geburtsdatum %} · geb. {{ e.antrag.geburtsdatum|date:"d.m.Y" }}{% endif %}{% if e.antrag.plz or e.antrag.strasse %} · {{ e.antrag.strasse }} {{ e.antrag.plz }} {{ e.antrag.ort }}{% endif %}</small></h2>
-  {% include "warteliste/_treffer.html" with treffer=e.treffer antrag=e.antrag entscheiden=True weiter=weiter %}
-</section>
+  {% include "warteliste/_abgleich_antrag.html" with e=e weiter=weiter %}
 {% empty %}
 <p>Kein ungeprüfter Antrag hat einen ähnlichen Haushalt im Kundenstamm.</p>
 {% endfor %}

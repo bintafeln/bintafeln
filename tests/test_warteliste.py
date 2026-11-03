@@ -448,6 +448,31 @@ def test_abgleich_entscheiden_sperrzeit_und_einladen(admin_client, modul_an):
     assert not AbgleichEntscheidung.objects.exists()
 
 
+def test_abgleich_entscheiden_per_htmx_tauscht_nur_den_block(admin_client, modul_an):
+    """Per htmx wird nach „Ja" nur der eine Antrag-Block ausgetauscht (hier: entfernt), nicht die
+    ganze Liste neu gerechnet (sonst 10–20 s bei großem Kundenstamm)."""
+    from apps.warteliste.models import AbgleichEntscheidung
+
+    heute = timezone.localdate()
+    h = Haushalt.objects.create(kundennummer="900", ausweis_gueltig_bis=heute - dt.timedelta(60))
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika", nachname="Beispiel",
+                          geburtsdatum=dt.date(1980, 2, 3))  # fmt: skip
+    a = antrag(geburtsdatum=dt.date(1980, 2, 3))
+    ablauf.automatik()
+    # Die Entscheiden-Knöpfe tauschen gezielt den Block dieses Antrags aus.
+    treffer = admin_client.get(reverse("warteliste:abgleich_ergebnis")).content.decode()
+    assert f'hx-target="#antrag-{a.pk}"' in treffer and "hx-post=" in treffer
+    assert f'id="antrag-{a.pk}"' in treffer
+    # „Ja" per htmx → Antwort ist leer (Block verschwindet), kein Neuaufbau der Liste.
+    antwort = admin_client.post(
+        reverse("warteliste:abgleich_entscheiden"),
+        {"antrag": a.pk, "kundennummer": "900", "gleich": "1"},
+        HTTP_HX_REQUEST="true",
+    )
+    assert antwort.status_code == 200 and antwort.content == b""
+    assert AbgleichEntscheidung.objects.filter(antrag=a, gleich=True).exists()
+
+
 def test_abgleich_nein_und_gueltiger_ausweis(admin_client, modul_an):
     heute = timezone.localdate()
     h = Haushalt.objects.create(kundennummer="901", ausweis_gueltig_bis=heute + dt.timedelta(90))

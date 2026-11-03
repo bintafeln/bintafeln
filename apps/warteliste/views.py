@@ -5,6 +5,7 @@ import io
 
 from django.contrib import messages
 from django.db.models import Count, Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -392,15 +393,29 @@ def abgleich_entscheiden(request):
         return redirect("warteliste:abgleich")
     a = get_object_or_404(Antrag, pk=request.POST.get("antrag"))
     kundennummer = request.POST.get("kundennummer", "").strip()
+    weiter = request.POST.get("weiter", "")
+    htmx = request.headers.get("HX-Request") == "true"
+    ziel = weiter if weiter.startswith("/warteliste/") else "warteliste:abgleich"
     try:
         meldung = ablauf.entscheiden(a, kundennummer, request.POST.get("gleich") == "1",
                                      _von(request))  # fmt: skip
     except ValueError as fehler:
         messages.error(request, str(fehler))
-    else:
-        messages.success(request, meldung)
-    weiter = request.POST.get("weiter", "")
-    return redirect(weiter if weiter.startswith("/warteliste/") else "warteliste:abgleich")
+        if htmx:  # selten; volle Seite laden, dort erscheint die Meldung
+            antwort = HttpResponse(status=204)
+            antwort["HX-Redirect"] = reverse("warteliste:abgleich")
+            return antwort
+        return redirect(ziel)
+    if htmx:
+        # Nur diesen einen Antrag neu berechnen und den Block austauschen – nicht die ganze Liste
+        # (die kann bei großem Kundenstamm und vielen Treffern 10–20 s dauern).
+        rest = ablauf.kundenabgleich([a])
+        if not rest:
+            return HttpResponse("")  # Antrag erledigt: der Block verschwindet
+        return render(request, "warteliste/_abgleich_antrag.html",
+                      {"e": rest[0], "weiter": weiter})  # fmt: skip
+    messages.success(request, meldung)
+    return redirect(ziel)
 
 
 @never_cache

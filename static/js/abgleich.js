@@ -33,7 +33,7 @@
       if (leer) leer.hidden = sichtbareBloecke !== 0;
     }
 
-    regler.addEventListener("input", anwenden);
+    regler.oninput = anwenden; // zuweisen statt addEventListener: kein Stapeln bei jedem Nachladen
     anwenden();
   }
 
