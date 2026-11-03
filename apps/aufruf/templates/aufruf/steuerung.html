@@ -17,7 +17,7 @@
         }
         
         .main-container {
-            max-width: 1000px;
+            max-width: 1280px;
             margin: 0 auto;
         }
         
@@ -108,7 +108,7 @@
             margin: 15px 0;
             text-align: center;
             position: relative;
-            min-height: 200px;
+            min-height: 260px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -133,17 +133,17 @@
         
         .numbers-display {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 15px;
             margin: 15px 0;
         }
-        
+
         .number-item {
             background: rgba(255, 255, 255, 0.2);
             border-radius: 8px;
-            padding: 15px 10px;
+            padding: 20px 12px;
             border: 2px solid rgba(255, 255, 255, 0.3);
-            min-height: 80px;
+            min-height: 120px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -156,11 +156,11 @@
         }
         
         .number-value {
-            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            font-size: clamp(2.6rem, 8vw, 4.5rem);
             font-weight: bold;
             font-family: 'Courier New', monospace;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-            line-height: 1.2;
+            line-height: 1.1;
         }
         
         .buttons {
@@ -210,22 +210,22 @@
         
         .preview-numbers {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
             margin-top: 10px;
         }
-        
+
         .preview-number {
             background: #e9ecef;
-            padding: 12px 16px;
+            padding: 16px 20px;
             border-radius: 8px;
             font-family: 'Courier New', monospace;
-            font-size: clamp(1.2rem, 3vw, 1.6rem);
+            font-size: clamp(1.7rem, 4.5vw, 2.8rem);
             font-weight: bold;
             color: #495057;
             border: 2px solid #dee2e6;
             transition: all 0.3s ease;
-            min-height: 44px; /* Touch-freundlich */
+            min-height: 68px; /* Touch-freundlich */
             display: flex;
             align-items: center;
             justify-content: center;
