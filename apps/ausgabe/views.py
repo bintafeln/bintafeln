@@ -133,6 +133,7 @@ def _ergebnis(request, h, meldung=None):
         "krank": krankmeldung.aktuelle(h.kundennummer, heute),
         "merkmale": merkmale_zeilen,
         "merkmale_art9": merkmale_art9,
+        "rollstuhl": merkmale.rollstuhl_einlass(h, request.user),
         "h": h,
         "hauptperson": next((p for p in h.personen.all() if p.ist_hauptperson), None),
         "personen": sorted(h.personen.all(), key=lambda p: not p.ist_hauptperson),

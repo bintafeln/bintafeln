@@ -123,6 +123,27 @@ def test_einlass_zeigt_nur_ja_und_art9_nur_mit_recht(
     assert "<dt>Merkmale</dt>" not in seite
 
 
+def test_einlass_rollstuhl_symbol_bei_schwerbehindert(
+    haushalt, admin, admin_client, client, benutzer_mit_rolle, anmelden
+):
+    # Schwerbehindert (Ausweis-Symbol „rollstuhl“) → ♿ neben der Nummer; nur mit dem Art.-9-Recht.
+    assert merkmale.rollstuhl_einlass(haushalt, admin) is True
+    seite = admin_client.get(EMPFANG, {"nummer": "00042"}).content.decode()
+    assert 'class="rollstuhl"' in seite and "♿" in seite
+
+    anton = benutzer_mit_rolle("anton", rollen.AUSGABE)
+    assert merkmale.rollstuhl_einlass(haushalt, anton) is False  # ohne Art.-9-Recht kein Symbol
+    anmelden(client, anton)
+    assert "♿" not in client.get(EMPFANG, {"nummer": "00042"}).content.decode()
+
+    # Ist niemand schwerbehindert, erscheint kein Symbol.
+    p = haushalt.personen.get(vorname="Erika")
+    p.zusatz = {"vegetarier": True}
+    p.save()
+    assert merkmale.rollstuhl_einlass(haushalt, admin) is False
+    assert "♿" not in admin_client.get(EMPFANG, {"nummer": "00042"}).content.decode()
+
+
 def test_haushaltsfeld_und_eine_person(haushalt, admin):
     Zusatzfeld.objects.create(schluessel="lieferung", bezeichnung="Lieferung", gilt_fuer="haushalt",
                               einlass=True)  # fmt: skip
