@@ -18,11 +18,11 @@ TAGE = AusgabestelleZeit.Wochentag.choices
 LAYOUT_STANDARD = {
     "next_customers_width": 15,
     "current_numbers_width": 40,
-    "info_display_width": 32,
+    "info_display_width": 45,
     "header_height": 120,
     "header_font": 2.8,
     "next_customers_font": 1.2,
-    "current_numbers_font": 6.0,
+    "current_numbers_font": 3.5,
     "info_display_font": 1.4,
 }
 # (kleinster, größter Wert); Breiten werden zusätzlich auf 100 % gebracht
@@ -33,7 +33,7 @@ LAYOUT_GRENZEN = {
     "header_height": (80, 200),
     "header_font": (1.5, 4.0),
     "next_customers_font": (0.8, 5.0),
-    "current_numbers_font": (2.0, 24.0),
+    "current_numbers_font": (2.0, 15.0),
     "info_display_font": (0.8, 2.5),
 }
 
