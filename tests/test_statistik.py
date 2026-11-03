@@ -8,7 +8,14 @@ from django.urls import reverse
 
 from apps.ausgabe.models import Buchung
 from apps.konten import rollen
-from apps.kunden.models import Abholung, Ausgabestelle, Haushalt, Kundengruppe, Person
+from apps.kunden.models import (
+    Abholung,
+    Ausgabestelle,
+    Haushalt,
+    Kundengruppe,
+    Person,
+    Zusatzfeld,
+)
 from apps.statistik import auswertung as aw
 from apps.statistik import diagramme as dg
 
@@ -40,6 +47,32 @@ def daten():
 
 
 Z = aw.Zeitraum(dt.date(2026, 1, 1), dt.date(2026, 3, 31))
+
+
+@pytest.fixture
+def merkmal_sb(daten):
+    Zusatzfeld.objects.create(
+        schluessel="schwerbehindert", bezeichnung="Schwerbehindert",
+        gilt_fuer=Zusatzfeld.GiltFuer.PERSON, typ=Zusatzfeld.Typ.JA_NEIN,
+        besondere_kategorie=True)  # fmt: skip
+    p = Person.objects.get(haushalt__kundennummer="1", ist_hauptperson=True)
+    p.zusatz = {"schwerbehindert": True}
+    p.save()
+
+
+def test_merkmale_auswertung(merkmal_sb):
+    # Nur aktive Haushalte (Haushalt 1): eine schwerbehinderte Person
+    assert aw.merkmale(True) == [("Schwerbehindert", 1)]
+    # Ohne Art.-9-Recht: das Merkmal der besonderen Kategorie fällt weg → kein Abschnitt
+    assert aw.merkmale(False) == []
+
+
+def test_merkmale_abschnitt_und_csv(admin_client, merkmal_sb):
+    zeit = {"zeitraum": "eigen", "von": "2026-01-01", "bis": "2026-03-31"}
+    seite = admin_client.get(URL, zeit).content.decode()
+    assert "Personen in aktiven Haushalten nach Merkmal" in seite
+    csv = admin_client.get(URL, {**zeit, "csv": "merkmale"}).content.decode("utf-8-sig")
+    assert "Schwerbehindert;1" in csv
 
 
 def test_zeitraeume_und_perioden():
