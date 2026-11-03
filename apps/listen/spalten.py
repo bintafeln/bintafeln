@@ -132,10 +132,26 @@ def zusatzspalten(gilt_fuer: str) -> list[Spalte]:
     return spalten
 
 
+def merkmal_spalten() -> list[Spalte]:
+    """Personen-Ja/Nein-Merkmale (z. B. Schwerbehindert) als Haushaltsspalte: „ja“, wenn im
+    Haushalt mindestens eine Person es hat. Art.-9-Merkmale nur mit dem Recht dazu."""
+    spalten = []
+    for z in Zusatzfeld.objects.filter(
+        aktiv=True, typ=Zusatzfeld.Typ.JA_NEIN, gilt_fuer=Zusatzfeld.GiltFuer.PERSON
+    ):
+        recht = "kunden.besondere_kategorie" if z.besondere_kategorie else None
+        spalten.append(Spalte(
+            f"merkmal:{z.schluessel}", z.bezeichnung,
+            lambda h, k, z=z: "ja" if any((p.zusatz or {}).get(z.schluessel) is True
+                                          for p in h.personen.all()) else "nein",
+            recht))  # fmt: skip
+    return spalten
+
+
 def alle(basis: str) -> list[Spalte]:
     if basis == "person":
         return PERSON + zusatzspalten(Zusatzfeld.GiltFuer.PERSON)
-    return HAUSHALT + zusatzspalten(Zusatzfeld.GiltFuer.HAUSHALT)
+    return HAUSHALT + zusatzspalten(Zusatzfeld.GiltFuer.HAUSHALT) + merkmal_spalten()
 
 
 def erlaubte(basis: str, darf) -> list[Spalte]:

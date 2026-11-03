@@ -30,6 +30,11 @@
       {% if "staatsangehoerigkeit" in liste.filter %}<div class="feld"><label for="f-nat">Staatsangehörigkeit</label>
         <select name="staatsangehoerigkeit" id="f-nat"><option value="">alle</option>
           {% for n in nationen %}<option value="{{ n }}"{% if p.staatsangehoerigkeit == n %} selected{% endif %}>{{ n }}</option>{% endfor %}</select></div>{% endif %}
+      {% if merkmale %}<div class="feld"><label for="f-merk">Merkmal</label>
+        <select name="merkmal" id="f-merk"><option value="">alle</option>
+          {% for z in merkmale %}<option value="{{ z.schluessel }}"{% if p.merkmal == z.schluessel %} selected{% endif %}>{{ z.bezeichnung }}</option>{% endfor %}</select></div>
+        <div class="feld"><label for="f-merkw">Merkmal trifft zu</label>
+          <select name="merkmal_wert" id="f-merkw"><option value="ja"{% if p.merkmal_wert != "nein" %} selected{% endif %}>ja</option><option value="nein"{% if p.merkmal_wert == "nein" %} selected{% endif %}>nein</option></select></div>{% endif %}
       {% if "alter" in liste.filter %}<div class="feld"><label for="f-av">Alter von</label><input type="number" min="0" max="120" name="alter_von" id="f-av" value="{{ p.alter_von }}"></div>
         <div class="feld"><label for="f-ab">Alter bis</label><input type="number" min="0" max="120" name="alter_bis" id="f-ab" value="{{ p.alter_bis }}"></div>{% endif %}
       {% if "ausweis_bis" in liste.filter %}<div class="feld"><label for="f-aus">Ausweis gültig bis spätestens</label><input type="date" name="ausweis_bis" id="f-aus" value="{{ p.ausweis_bis }}"></div>{% endif %}

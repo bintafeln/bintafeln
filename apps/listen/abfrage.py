@@ -19,6 +19,7 @@ from apps.kunden.models import (
     KundenEinstellungen,
     Kundengruppe,
     Person,
+    Zusatzfeld,
 )
 from apps.listen import spalten as sp
 from apps.listen.katalog import Liste
@@ -75,6 +76,34 @@ def einkommensarten():
     return list(Einkommensart.objects.values_list("bezeichnung", flat=True))
 
 
+def merkmale(benutzer):
+    """Ja/Nein-Merkmale, nach denen gefiltert werden darf; die der besonderen Kategorie
+    (Art. 9, z. B. Schwerbehindert, Blind) nur mit dem Recht „kunden.besondere_kategorie“."""
+    darf = rollen.hat_recht(benutzer, "kunden.besondere_kategorie")
+    return [z for z in Zusatzfeld.objects.filter(aktiv=True, typ=Zusatzfeld.Typ.JA_NEIN)
+            .order_by("reihenfolge", "bezeichnung")
+            if not z.besondere_kategorie or darf]  # fmt: skip
+
+
+def merkmal_wahl(benutzer, p):
+    """(Zusatzfeld, ob „ja“ gesucht ist) aus dem Filter ``merkmal``/``merkmal_wert`` oder None.
+    Prüft, dass das Merkmal für die Person erlaubt ist (sonst wird nicht gefiltert)."""
+    schluessel = p.get("merkmal")
+    if not schluessel:
+        return None
+    z = next((m for m in merkmale(benutzer) if m.schluessel == schluessel), None)
+    return (z, p.get("merkmal_wert", "ja") != "nein") if z else None
+
+
+def _merkmal_filtern(qs, mw):
+    z, ja = mw
+    if z.gilt_fuer == Zusatzfeld.GiltFuer.PERSON:
+        bedingung = Q(**{f"personen__zusatz__{z.schluessel}": True})
+    else:
+        bedingung = Q(**{f"zusatz__{z.schluessel}": True})
+    return qs.filter(bedingung).distinct() if ja else qs.exclude(bedingung)
+
+
 def _haushalte(benutzer, p):
     qs = zugang.filtern(Haushalt.objects.all(), benutzer).select_related(
         "kundengruppe__ausgabestelle", "einkommensart"
@@ -100,6 +129,8 @@ def _haushalte(benutzer, p):
         qs = qs.filter(kontostand__lt=0)
     if p.get("ohne_gruppe"):
         qs = qs.filter(kundengruppe__isnull=True)
+    if (mw := merkmal_wahl(benutzer, p)) is not None:
+        qs = _merkmal_filtern(qs, mw)
     qs = Haushalt.mit_besuch_zeit(qs)
     return qs.prefetch_related(Prefetch("personen", queryset=Person.objects.order_by(
         "-ist_hauptperson", "pk")))  # fmt: skip
@@ -132,6 +163,8 @@ def objekte(liste: Liste, benutzer, p, mit_abholungen=False) -> tuple[list, dict
         return hh, k
     von, bis = _zahl(p.get("alter_von")), _zahl(p.get("alter_bis"))
     nat = p.get("staatsangehoerigkeit", "")
+    mw = merkmal_wahl(benutzer, p)
+    person_merkmal = mw if mw and mw[0].gilt_fuer == Zusatzfeld.GiltFuer.PERSON else None
     personen = []
     for h in hh:
         for person in h.personen.all():
@@ -143,6 +176,10 @@ def objekte(liste: Liste, benutzer, p, mit_abholungen=False) -> tuple[list, dict
                 continue
             if nat and person.staatsangehoerigkeit != nat:
                 continue
+            if person_merkmal is not None:
+                z, ja = person_merkmal
+                if ((person.zusatz or {}).get(z.schluessel) is True) != ja:
+                    continue
             personen.append(person)
     return personen, k
 
