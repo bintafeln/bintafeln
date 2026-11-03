@@ -133,6 +133,13 @@ def _haushalte_suchen(request):
     gruppe = request.GET.get("gruppe", "")
     if gruppe.isdigit():
         haushalte = haushalte.filter(kundengruppe_id=int(gruppe))
+    merkmal = request.GET.get("merkmal", "")
+    merkmal_wert = request.GET.get("merkmal_wert", "ja")
+    feld = next((z for z in merkmale.waehlbar(request.user) if z.schluessel == merkmal), None)
+    if feld is not None:
+        haushalte = merkmale.haushalte_mit_merkmal(haushalte, feld, merkmal_wert != "nein")
+    else:
+        merkmal = ""
     tag = _tag(request)
     haushalte = export.nach_tag(haushalte, tag)
     sortierung = request.GET.get("sort", "")
@@ -144,6 +151,7 @@ def _haushalte_suchen(request):
     anzahl = request.GET.get("anzahl", "")
     anzahl = anzahl if anzahl in ANZAHL_WAHL[1:] else ""  # leer = Vorgabe 25
     return haushalte, {"q": suche, "status": status, "gruppe": gruppe, "tag": tag,
+                       "merkmal": merkmal, "merkmal_wert": merkmal_wert,
                        "sort": sortierung, "anzahl": anzahl}  # fmt: skip
 
 
@@ -298,6 +306,7 @@ def uebersicht(request):
         "seite": seite,
         "filter": filter_,
         "status_auswahl": Haushalt.Status.choices,
+        "merkmale": merkmale.waehlbar(request.user),
         "anzahl_wahl": ANZAHL_WAHL,
         "gruppen": Kundengruppe.objects.order_by("name")
         if zugang.stellen(request.user) is None

@@ -31,6 +31,16 @@
         <option value="">alle Tage</option>
         {% for t in tage %}<option value="{{ t }}"{% if filter.tag == t %} selected{% endif %}>{{ t }}</option>{% endfor %}
       </select></div>{% endif %}
+    {% if merkmale %}<div class="filter-feld"><label for="merkmal">Merkmal</label>
+      <select name="merkmal" id="merkmal">
+        <option value="">alle</option>
+        {% for z in merkmale %}<option value="{{ z.schluessel }}"{% if filter.merkmal == z.schluessel %} selected{% endif %}>{{ z.bezeichnung }}</option>{% endfor %}
+      </select></div>
+    <div class="filter-feld"><label for="merkmal_wert">trifft zu</label>
+      <select name="merkmal_wert" id="merkmal_wert">
+        <option value="ja"{% if filter.merkmal_wert != "nein" %} selected{% endif %}>ja</option>
+        <option value="nein"{% if filter.merkmal_wert == "nein" %} selected{% endif %}>nein</option>
+      </select></div>{% endif %}
     <div class="filter-feld"><label for="anzahl">Anzeigen</label>
       <select name="anzahl" id="anzahl">
         {% for a in anzahl_wahl %}<option value="{% if not forloop.first %}{{ a }}{% endif %}"{% if filter.anzahl == a or forloop.first and not filter.anzahl %} selected{% endif %}>{% if a == "alle" %}alle{% else %}{{ a }} je Seite{% endif %}</option>{% endfor %}
