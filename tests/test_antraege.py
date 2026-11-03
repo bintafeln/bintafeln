@@ -240,6 +240,22 @@ def test_bot_und_zu_viele(client, offen):
     assert str(AntragVersuch.objects.first()).startswith("Versuch")
 
 
+def test_sperre_einstellbar(client, offen):
+    offen.max_je_stunde = 2
+    offen.save()
+    for _ in range(2):
+        client.post(FORMULAR, daten())
+    assert Antrag.objects.count() == 2
+    seite = client.post(FORMULAR, daten()).content.decode()
+    assert "zu viele Anträge" in seite and Antrag.objects.count() == 2
+    # 0 = aus: beliebig viele Anträge, keine Sperre
+    offen.max_je_stunde = 0
+    offen.save()
+    for _ in range(4):
+        client.post(FORMULAR, daten())
+    assert Antrag.objects.count() == 6
+
+
 def test_besucher_ip(rf):
     assert besucher_ip(rf.get("/", REMOTE_ADDR="10.0.0.1")) == "10.0.0.1"
     assert besucher_ip(rf.get("/", HTTP_X_FORWARDED_FOR="203.0.113.7, 10.0.0.1")) == "203.0.113.7"
@@ -458,7 +474,7 @@ def test_einstellungen_und_texte(admin_client, benutzer_mit_rolle):
     werte = {f: "optional" for f in AntragEinstellungen.FELDER}
     werte |= {"aktiv": "on", "modus": "beides", "benachrichtigen": [b.pk],
               "erledigt_nach_tagen": 0, "papierkorb_nach_tagen": 90, "loeschen_nach_tagen": 30,
-              "erste_nummer": 4201, "gebiet_pruefen": "aus",
+              "max_je_stunde": 5, "erste_nummer": 4201, "gebiet_pruefen": "aus",
               "datenschutz_url": "tafel.example.org/ds",
               "erklaerungen_url": "tafel.example.org/ausgabe",
               "voraussetzungen_url": "https://tafel.example.org/wer",
@@ -658,7 +674,8 @@ def test_ki_schluessel_speichern(admin_client):
     url = reverse("antraege:einstellungen")
     werte = {f: "optional" for f in AntragEinstellungen.FELDER}
     werte |= {"modus": "beides", "erledigt_nach_tagen": 0, "papierkorb_nach_tagen": 90,
-              "loeschen_nach_tagen": 30, "gebiet_pruefen": "aus", "erste_nummer": 1}  # fmt: skip
+              "loeschen_nach_tagen": 30, "max_je_stunde": 5, "gebiet_pruefen": "aus",
+              "erste_nummer": 1}  # fmt: skip
     admin_client.post(url, werte | {"ki_schluessel": "sk-erfunden"})
     e = AntragEinstellungen.laden()
     assert "sk-erfunden" not in e.ki_schluessel_verschluesselt and uebersetzen.verfuegbar()

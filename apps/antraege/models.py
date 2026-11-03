@@ -170,6 +170,14 @@ class AntragEinstellungen(models.Model):
         default=30,
         validators=[MinValueValidator(1), MaxValueValidator(3650)],
     )
+    max_je_stunde = models.PositiveSmallIntegerField(
+        "Anträge je Stunde und Internetanschluss",
+        default=5,
+        validators=[MaxValueValidator(1000)],
+        help_text="Schutz gegen massenhaftes Absenden: so viele Anträge darf ein Internetanschluss "
+        "(IP-Adresse) in einer Stunde senden, danach kommt „Bitte später noch einmal“. 0 = aus. "
+        "Höher stellen, wenn viele Menschen am selben Gerät oder WLAN einen Antrag ausfüllen.",
+    )
 
     FELDER = [
         "kundennummer", "anrede", "geburtsdatum", "anschrift", "telefon", "email",
