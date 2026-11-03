@@ -277,6 +277,18 @@ def abschnitte(z: aw.Zeitraum, stellen, heute, benutzer=None, get=None) -> list[
         [[n, w] for n, w in arten],
         "Ohne beendete Haushalte.",
     )
+    darf_art9 = benutzer is not None and rollen.hat_recht(benutzer, "kunden.besondere_kategorie")
+    merkmale = aw.merkmale(darf_art9, stellen)
+    if merkmale:
+        neu(
+            "merkmale",
+            "Personen in aktiven Haushalten nach Merkmal",
+            dg.balken(merkmale, "Merkmale", farbe=2),
+            ["Merkmal", "Personen"],
+            [[n, w] for n, w in merkmale],
+            "Heutiger Stand. Merkmale der besonderen Kategorie (Art. 9, z. B. Schwerbehindert) "
+            "nur mit dem Recht „Angaben der besonderen Kategorie“.",
+        )
     auslastung = aw.auslastung(stellen)
     mit_max = [(a.name, a.prozent) for a in auslastung if a.prozent is not None]
     neu(

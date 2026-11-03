@@ -239,6 +239,23 @@ def status(stellen=None) -> list[tuple[str, int]]:
     return [(name, je.get(wert, 0)) for wert, name in Haushalt.Status.choices]
 
 
+def merkmale(darf_art9: bool, stellen=None) -> list[tuple[str, int]]:
+    """Personen in aktiven Haushalten je Ja/Nein-Merkmal (z. B. Schwerbehindert), heutiger Stand.
+    Merkmale der besonderen Kategorie (Art. 9) nur mit ``darf_art9``."""
+    from apps.kunden.models import Person, Zusatzfeld
+
+    aktive = bestand(stellen).filter(status=Haushalt.Status.AKTIV)
+    personen = Person.objects.filter(haushalt__in=aktive)
+    zeilen = []
+    for z in Zusatzfeld.objects.filter(
+        aktiv=True, typ=Zusatzfeld.Typ.JA_NEIN, gilt_fuer=Zusatzfeld.GiltFuer.PERSON
+    ).order_by("reihenfolge", "bezeichnung"):
+        if z.besondere_kategorie and not darf_art9:
+            continue
+        zeilen.append((z.bezeichnung, personen.filter(**{f"zusatz__{z.schluessel}": True}).count()))
+    return zeilen
+
+
 def einkommensarten(stellen=None) -> list[tuple[str, int]]:
     zeilen = bestand(stellen).values("einkommensart__bezeichnung").annotate(n=Count("pk"))
     return sorted(
