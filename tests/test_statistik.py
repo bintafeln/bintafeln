@@ -328,3 +328,24 @@ def test_jahresbericht_zahlen_und_leere_diagramme():
     assert jb.saeulen([("Jan", 2)], 100, "#000000") is not None
     z = jb.zeitraum(2026, dt.date(2026, 10, 25))
     assert (z.von, z.bis) == (dt.date(2026, 1, 1), dt.date(2026, 10, 25))
+
+
+def test_je_stelle_wochentag(daten):
+    bloecke = aw.je_stelle_wochentag(Z)
+    assert [(b["stelle"], b["wochentag"], len(b["tage"])) for b in bloecke] == [
+        ("Ausgabestelle Mitte", "Mo", 2),
+        ("Ausgabestelle Nord", "Di", 1),
+    ]
+    # Mitte montags: zwei Ausgabetage, je 1 Haushalt mit 2 Personen (heutige Haushaltsgröße)
+    assert bloecke[0]["tage"][0] == {"datum": dt.date(2026, 1, 5), "haushalte": 1, "personen": 2}
+    assert bloecke[0]["tage"][1]["datum"] == dt.date(2026, 1, 12)
+    # Nord dienstags: ein Haushalt mit 1 Person
+    assert bloecke[1]["tage"][0] == {"datum": dt.date(2026, 2, 3), "haushalte": 1, "personen": 1}
+
+
+def test_je_stelle_wochentag_abschnitt_und_csv(admin_client, daten):
+    zeit = {"zeitraum": "eigen", "von": "2026-01-01", "bis": "2026-03-31"}
+    seite = admin_client.get(URL, zeit).content.decode()
+    assert "Ausgabestelle Mitte – Mo" in seite and "Ausgabestelle Nord – Di" in seite
+    csv = admin_client.get(URL, {**zeit, "csv": "tag-0"}).content.decode("utf-8-sig")
+    assert "Datum;Haushalte;Personen" in csv and "05.01.2026;1;2" in csv
