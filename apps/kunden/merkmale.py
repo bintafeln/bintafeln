@@ -54,6 +54,21 @@ def einlass(haushalt, benutzer) -> tuple[list[dict], bool]:
             for p, m in zeilen], art9  # fmt: skip
 
 
+def rollstuhl_einlass(haushalt, benutzer) -> bool:
+    """True, wenn am Einlass ein Rollstuhl-Symbol neben der Nummer stehen soll: ein aktives
+    Ja/Nein-Merkmal mit Ausweis-Symbol „rollstuhl“ (mitgeliefert: „Schwerbehindert“) ist bei
+    Haushalt oder Person „ja“. Merkmale der besonderen Kategorie (Art. 9) nur mit dem passenden
+    Recht – wie die Merkmale-Zeilen, damit das Symbol nicht mehr verrät als der Text."""
+    darf_art9 = rollen.hat_recht(benutzer, "kunden.besondere_kategorie")
+    personen = list(haushalt.personen.all())
+    for feld in _felder(einlass=True, ausweis="rollstuhl"):
+        if feld.besondere_kategorie and not darf_art9:
+            continue
+        if _ja(feld, haushalt, personen):
+            return True
+    return False
+
+
 def ausweis(haushalt) -> list[tuple[str, str]]:
     """Symbole für den Ausweis: [("rollstuhl", "") oder ("kuerzel", "V")], jedes nur einmal."""
     personen = list(haushalt.personen.all())
