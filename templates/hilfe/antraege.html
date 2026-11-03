@@ -8,7 +8,7 @@
     <strong>per E-Mail</strong> (PDF und CSV im Anhang, z. B. an den eigenen Rechner). Unter „Spalten wählen“
     blendet jede Person selbst einzelne Spalten ein oder aus (die Nummer # bleibt immer).</li>
   <li>Aktionen je Zeile: ansehen 👁{% if "antraege.bearbeiten" in rechte %}, bearbeiten ✎, Anmerkung 💬, in den Papierkorb 🗑{% endif %}{% if "antraege.aufnehmen" in rechte %}, aufnehmen ➜{% endif %}.</li>
-  {% if "antraege.bearbeiten" in rechte %}<li>Status setzen und interne Anmerkungen schreiben; Tippfehler im Antrag vor der Aufnahme unter „Bearbeiten“ korrigieren.</li>{% endif %}
+  {% if "antraege.bearbeiten" in rechte %}<li>Status setzen und interne Anmerkungen schreiben; Tippfehler im Antrag vor der Aufnahme unter „Bearbeiten“ korrigieren. Dort lässt sich auch die <strong>Antragsnummer</strong> ändern (muss eindeutig sein; eine schon vergebene wird abgelehnt).</li>{% endif %}
   <li>Hat die Tafel ein Einzugsgebiet eingestellt, steht bei Anträgen mit PLZ oder Ort außerhalb „außerhalb des Gebiets“, auch im Aufnahme-Assistenten.</li>
   <li>Anhänge (z. B. Bescheide) öffnen sich mit einem Klick; jeder Abruf wird protokolliert.</li>
   {% if "antraege.loeschen" in rechte %}<li>Im Papierkorb lassen sich Anträge endgültig löschen.</li>{% endif %}
