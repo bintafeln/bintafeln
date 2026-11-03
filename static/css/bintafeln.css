@@ -102,7 +102,16 @@ input::-webkit-date-and-time-value { text-align: left; margin: 0; }
 .feld input:focus, .feld select:focus, .feld textarea:focus, .filter input:focus { outline: 3px solid var(--fokus); border-color: var(--akzent); }
 .hilfe { color: var(--leise); }
 .fehler { color: var(--fehler); }
-.hat-fehler input { border-color: var(--fehler); }
+/* Fehlerhaftes/leeres Pflichtfeld deutlich hervorheben: dicker roter Rand, leicht roter
+   Hintergrund und rote Beschriftung – damit man das Feld sofort sieht, nicht nur die kleine
+   rote Schrift darunter. */
+.hat-fehler label, .hat-fehler .feld-titel { color: var(--fehler); }
+.hat-fehler input, .hat-fehler select, .hat-fehler textarea {
+  border: 2px solid var(--fehler);
+  background: color-mix(in srgb, var(--fehler) 8%, var(--flaeche));
+}
+.hat-fehler input:focus, .hat-fehler select:focus, .hat-fehler textarea:focus { border-color: var(--fehler); }
+.hat-fehler .fehler { font-weight: 600; }
 
 .knopf {
   font: inherit;
@@ -455,6 +464,16 @@ tr.hervor td { background: var(--erfolg); }
   .tabelle.kompakt tr { display: table-row; border: 0; padding: 0; }
   .tabelle.kompakt td { display: table-cell; border-bottom: 1px solid var(--rand); }
 }
+
+/* Kundengruppe ändern: Auswahl und bisherige Gruppen nebeneinander (wie im früheren
+   Bexat-Fenster). Die Auswahltabelle hugt ihre Spalten, statt über die ganze Bildschirmbreite
+   auseinandergezogen zu werden. Auf schmalen Bildschirmen stehen beide untereinander. */
+.gruppenwahl { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 1rem 1.5rem; }
+.gruppenwahl .karte { margin-bottom: 0; }
+.gruppenwahl-auswahl { flex: 0 1 auto; max-width: min(100%, 40rem); }
+.gruppenwahl-verlauf { flex: 1 1 15rem; max-width: 26rem; }
+.gruppen-tabelle { width: auto; }
+.gruppen-tabelle th, .gruppen-tabelle td { padding-right: 1.25rem; }
 
 /* Gruppenkapazitäten: kompakte Kästchen je Kundengruppe (z. B. oben auf der Warteliste).
    Volle Gruppen rot, knappe (≤ 2 frei) mit Akzentrand hervorgehoben. */

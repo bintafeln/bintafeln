@@ -448,7 +448,7 @@ def test_anzeige_nur_mit_schluessel(modul_an, mitte, tag_daten):
     assert "error" in c.get(reverse("aufruf:anzeige_stand", args=[e.schluessel])).json()
     ablauf.starten(mitte, heute())
     seite = c.get(reverse("aufruf:monitor", args=[e.schluessel])).content.decode()
-    assert "Bitte eintreten" in seite and "--info-display-width: 45%" in seite
+    assert "Bitte eintreten" in seite and "--info-display-width: 32%" in seite
     assert "Erika" not in seite
     d = c.get(reverse("aufruf:anzeige_stand", args=[e.schluessel])).json()
     assert len(d["current_numbers"]) == 3 and d["infos"] == []
@@ -483,9 +483,9 @@ def test_layout_vom_monitor(modul_an, mitte):
     assert antwort["success"]
     layout = antwort["layout"]
     assert layout["nextCustomers"] + layout["currentNumbers"] + layout["infoDisplay"] == 100
-    assert layout["currentNumbersFont"] == 15.0 and layout["headerFont"] == 2.8
+    assert layout["currentNumbersFont"] == 24.0 and layout["headerFont"] == 2.8
     e.refresh_from_db()
-    assert e.layout_werte()["current_numbers_font"] == 15.0
+    assert e.layout_werte()["current_numbers_font"] == 24.0
     assert c.post(url, "kaputt", content_type="application/json").status_code == 400
 
 
