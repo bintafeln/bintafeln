@@ -54,9 +54,17 @@ def start(request):
         return _csv_antwort("mitarbeitende.csv", umw.mitarbeitende)
 
     # Vorgabe: Kundenstamm. Dieselbe Prüfung wie beim Importformat, dann der bekannte Abgleich.
-    from apps.kunden import importieren
+    from apps.kunden import importieren, merkmale
     from apps.kunden.models import ImportVorbereitung
 
+    # Merkmale, die der Umwandler füllt (z. B. „Schwerbehindert"), anlegen/aktivieren – sonst
+    # überspringt der Import die Spalte stillschweigend und die Angabe geht verloren.
+    for name in merkmale.aktivieren(*konvertieren.GELIEFERTE_MERKMALE):
+        messages.info(
+            request,
+            f"Das Merkmal „{name}“ wurde für den Import angelegt bzw. wieder eingeschaltet, "
+            "damit die Angabe aus Bexat nicht verloren geht.",
+        )
     ergebnis = importieren.pruefen(umw.kundenstamm)
     if ergebnis.daten is None:
         return render(

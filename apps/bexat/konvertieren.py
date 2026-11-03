@@ -25,6 +25,11 @@ from apps.bexat import codes
 
 KUNDENNUMMER_BREITE = 5  # Bexat zeigt die Haushaltsnummer fünfstellig mit führenden Nullen
 
+# Mitgelieferte Ja/Nein-Merkmale, die der Umwandler aus Bexat füllt (Spalte zusatz_<schlüssel>).
+# Vor dem Import stellt die Bexat-Ansicht sicher, dass diese Merkmale angelegt und aktiv sind,
+# damit die Spalte nicht stillschweigend übersprungen wird (ADR 0071, ADR 0100).
+GELIEFERTE_MERKMALE = ("schwerbehindert",)
+
 
 class BexatFehler(Exception):
     """Die hochgeladene Datei ist keine lesbare Bexat-Excel-Datei."""
@@ -460,7 +465,7 @@ def umwandeln(
             ["kundennummer", "nachname", "vorname", "anrede", "geburtsdatum",
              "staatsangehoerigkeit", "status", "kundengruppe", "ausgabestelle", "kunde_seit",
              "ausweis_gueltig_bis", "letzter_besuch", "einkommensart", "strasse", "plz", "ort",
-             "telefon", "email", "zusatz_schwerbehindert"],
+             "telefon", "email", *[f"zusatz_{m}" for m in GELIEFERTE_MERKMALE]],
             haushalte_zeilen,
         ),
         "personen.csv": _csv_bytes(
