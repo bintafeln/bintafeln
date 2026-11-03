@@ -140,7 +140,8 @@ def kundengruppe_aendern(request, kundennummer):
     from apps.ausgabe.ampel import wochentage as _wochentage
 
     h = zugang.haushalt(request.user, kundennummer)
-    alle = gruppen.mit_plaetzen(h)
+    # Nur Gruppen mit freiem Platz (oder ohne Maximum); die aktuelle Gruppe bleibt immer wählbar.
+    alle = [x for x in gruppen.mit_plaetzen(h) if x["frei"] is None or x["frei"] > 0 or x["eigene"]]
     if request.method == "POST":
         neu = next(
             (x["gruppe"] for x in alle if str(x["gruppe"].pk) == request.POST.get("kundengruppe")),
