@@ -119,6 +119,12 @@ def status_setzen(ws, status: str, von: str, wartezeit_bis: dt.date | None = Non
         return
     if status == S.ENTSCHULDIGT and ws.termin:
         anmerken(ws.antrag, f"Entschuldigt für den Termin {ws.termin}", von)
+    if status == S.WIEDER_BEREIT:
+        # Zurückgemeldet (z. B. Unterlagen da): wie „wartend" bei der nächsten Einladung
+        # berücksichtigt, aber als eigener Status erkennbar; alten (verpassten) Termin lösen.
+        _setzen(ws, S.WIEDER_BEREIT, termin=None, wartezeit_bis=None)
+        anmerken(ws.antrag, "Wieder bereit für eine Einladung", von)
+        return
     if ws.status == S.GESTRICHEN and ws.antrag.status == Antrag.Status.ABGELEHNT:
         ws.antrag.status_setzen(Antrag.Status.IN_BEARBEITUNG, von)  # Streichen zurückgenommen
     _setzen(ws, status, wartezeit_bis=None)

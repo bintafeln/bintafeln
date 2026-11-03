@@ -151,6 +151,7 @@ class Wartestand(models.Model):
         STREICHEN_MOEGLICH = "streichen_moeglich", "Streichen möglich"
         ERSCHIENEN = "erschienen", "erschienen"
         ENTSCHULDIGT = "entschuldigt", "entschuldigt"
+        WIEDER_BEREIT = "wieder_bereit", "wieder bereit"
         GESTRICHEN = "gestrichen", "gestrichen"
         AUFGENOMMEN = "aufgenommen", "aufgenommen"
 

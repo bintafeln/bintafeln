@@ -113,6 +113,21 @@ def test_entschuldigt_vermerkt_termin_und_streichen_zuruecknehmen():
     ablauf.status_setzen(ws(a), S.GESTRICHEN, "Büro")
     a.refresh_from_db()
     assert a.status == Antrag.Status.ABGELEHNT
+
+
+def test_wieder_bereit_nach_entschuldigt():
+    a = antrag()
+    t = termin()
+    ablauf.einladen([a], t, "Büro", mail_senden=False)
+    ablauf.status_setzen(ws(a), S.ENTSCHULDIGT, "Büro")
+    # zurückgemeldet: „wieder bereit" löst den alten Termin, bleibt aber eigener Status
+    ablauf.status_setzen(ws(a), S.WIEDER_BEREIT, "Büro")
+    w = ws(a)
+    assert w.status == S.WIEDER_BEREIT and w.termin is None
+    assert "Wieder bereit" in a.anmerkungen.last().text
+    # und ist wie „wartend" wieder zu einem Termin einladbar
+    erg = ablauf.einladen([a], termin(), "Büro", mail_senden=False)
+    assert erg[0]["ok"] and ws(a).status == S.EINGELADEN
     ablauf.status_setzen(ws(a), S.WARTEND, "Büro")
     a.refresh_from_db()
     assert a.status == Antrag.Status.IN_BEARBEITUNG and ws(a).status == S.WARTEND

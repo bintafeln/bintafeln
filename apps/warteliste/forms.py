@@ -14,7 +14,8 @@ from apps.warteliste.models import (
 S = Wartestand.Status
 # Was das Team von Hand setzen kann („neu“, „eingeladen“ und „aufgenommen“ entstehen von selbst)
 STATUS_HAND = [(s.value, s.label) for s in (S.WARTEND, S.WARTEZEIT, S.ERSCHIENEN, S.ENTSCHULDIGT,
-                                            S.STREICHEN_MOEGLICH, S.GESTRICHEN)]  # fmt: skip
+                                            S.WIEDER_BEREIT, S.STREICHEN_MOEGLICH,
+                                            S.GESTRICHEN)]  # fmt: skip
 
 
 class TerminForm(forms.ModelForm):
