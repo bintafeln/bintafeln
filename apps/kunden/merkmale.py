@@ -54,6 +54,26 @@ def einlass(haushalt, benutzer) -> tuple[list[dict], bool]:
             for p, m in zeilen], art9  # fmt: skip
 
 
+def waehlbar(benutzer) -> list[Zusatzfeld]:
+    """Ja/Nein-Merkmale, nach denen gefiltert werden darf; die der besonderen Kategorie
+    (Art. 9, z. B. Schwerbehindert, Blind) nur mit dem Recht „kunden.besondere_kategorie“."""
+    darf = rollen.hat_recht(benutzer, "kunden.besondere_kategorie")
+    felder = sorted(_felder(), key=lambda z: (z.reihenfolge, z.bezeichnung))
+    return [z for z in felder if not z.besondere_kategorie or darf]
+
+
+def haushalte_mit_merkmal(haushalte, feld: Zusatzfeld, ja: bool):
+    """Haushalte, bei denen das Merkmal ``feld`` zutrifft (``ja``) oder nicht. Personen-Merkmale
+    zählen, wenn im Haushalt mindestens eine Person sie hat; Haushaltsmerkmale am Haushalt."""
+    from django.db.models import Q
+
+    if feld.gilt_fuer == Zusatzfeld.GiltFuer.PERSON:
+        bedingung = Q(**{f"personen__zusatz__{feld.schluessel}": True})
+    else:
+        bedingung = Q(**{f"zusatz__{feld.schluessel}": True})
+    return haushalte.filter(bedingung).distinct() if ja else haushalte.exclude(bedingung)
+
+
 def rollstuhl_einlass(haushalt, benutzer) -> bool:
     """True, wenn am Einlass ein Rollstuhl-Symbol neben der Nummer stehen soll: ein aktives
     Ja/Nein-Merkmal mit Ausweis-Symbol „rollstuhl“ (mitgeliefert: „Schwerbehindert“) ist bei

@@ -144,6 +144,10 @@ def test_zugriffsprotokoll_nur_admin(als, rolle):
         ({"status": "pausiert"}, {"1002"}),
         ({"status": "unbekannt"}, {"1001", "1002"}),
         ({"gruppe": "x"}, {"1001", "1002"}),
+        ({"merkmal": "schwerbehindert"}, {"1001"}),
+        ({"merkmal": "schwerbehindert", "merkmal_wert": "ja"}, {"1001"}),
+        ({"merkmal": "schwerbehindert", "merkmal_wert": "nein"}, {"1002"}),
+        ({"merkmal": "gibtsnicht"}, {"1001", "1002"}),
     ],
 )
 def test_suche_und_filter(admin_client, bestand, parameter, erwartet):
@@ -156,6 +160,19 @@ def test_suche_und_filter(admin_client, bestand, parameter, erwartet):
 def test_filter_kundengruppe(admin_client, bestand, gruppe_behalten):
     antwort = admin_client.get(LISTE, {"gruppe": bestand.kundengruppe.pk})
     assert [h.kundennummer for h in antwort.context["seite"]] == ["1001"]
+
+
+def test_merkmal_filter_sichtbar_fuer_admin(admin_client, bestand):
+    seite = admin_client.get(LISTE).content.decode()
+    assert 'name="merkmal"' in seite and "Schwerbehindert" in seite
+
+
+def test_merkmal_filter_nur_mit_art9_recht(als, bestand):
+    c = als(rollen.AUSGABE)  # ohne das Recht „Angaben der besonderen Kategorie“
+    assert 'name="merkmal"' not in c.get(LISTE).content.decode()
+    ohne = {h.kundennummer for h in c.get(LISTE).context["seite"]}
+    mit = {h.kundennummer for h in c.get(LISTE, {"merkmal": "schwerbehindert"}).context["seite"]}
+    assert mit == ohne and len(ohne) >= 1  # Filter wird ohne Recht ignoriert
 
 
 def test_genaue_kundennummer_oeffnet_haushalt(admin_client, bestand):
