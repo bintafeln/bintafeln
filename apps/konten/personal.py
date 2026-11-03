@@ -2,7 +2,7 @@
 
 import calendar
 import datetime as dt
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from auditlog.context import disable_auditlog
@@ -42,10 +42,13 @@ class Faelligkeit:
     benutzer: object
     was: str
     faellig_am: dt.date | None  # None = noch nie eingetragen
+    # Stichtag, zu dem die Fälligkeit berechnet wurde (nicht erst jetzt „heute" nachsehen –
+    # sonst stimmt „überfällig" nach einem Tageswechsel nicht mehr zum Rest der Liste).
+    heute: dt.date = field(default_factory=timezone.localdate)
 
     @property
     def ueberfaellig(self) -> bool:
-        return self.faellig_am is None or self.faellig_am < timezone.localdate()
+        return self.faellig_am is None or self.faellig_am < self.heute
 
 
 def _stammdaten(benutzer):
@@ -74,24 +77,24 @@ def faelligkeiten(heute: dt.date | None = None) -> list[Faelligkeit]:
         # 0 Monate in den Einstellungen: keine Wiedervorlage zu diesem Thema
         if e.fs_pruefung_monate and any(r and r.braucht_fuehrerschein for r in pflichten):
             if s.fs_gueltig_bis and s.fs_gueltig_bis <= grenze:
-                ergebnis.append(Faelligkeit(b, "Führerschein läuft ab", s.fs_gueltig_bis))
+                ergebnis.append(Faelligkeit(b, "Führerschein läuft ab", s.fs_gueltig_bis, heute))
             naechste = (
                 monate_spaeter(s.fs_gesehen_am, e.fs_pruefung_monate) if s.fs_gesehen_am else None
             )
             if naechste is None or naechste <= grenze:
-                ergebnis.append(Faelligkeit(b, "Führerschein ansehen", naechste))
+                ergebnis.append(Faelligkeit(b, "Führerschein ansehen", naechste, heute))
         if e.ifsg_wiederholung_monate and any(r and r.braucht_belehrung for r in pflichten):
             letzte = s.letzte_ifsg_belehrung
             naechste = monate_spaeter(letzte, e.ifsg_wiederholung_monate) if letzte else None
             if naechste is None or naechste <= grenze:
-                ergebnis.append(Faelligkeit(b, "Belehrung nach IfSG", naechste))
+                ergebnis.append(Faelligkeit(b, "Belehrung nach IfSG", naechste, heute))
         # Je Thema zählt die jüngste Schulung; eine Auffrischung erledigt die alte.
         juengste = {}
         for sch in sorted(b.schulungen.all(), key=lambda x: x.datum):
             juengste[sch.thema.strip().lower()] = sch
         for sch in juengste.values():
             if sch.gueltig_bis and sch.gueltig_bis <= grenze:
-                ergebnis.append(Faelligkeit(b, f"Schulung „{sch.thema}“", sch.gueltig_bis))
+                ergebnis.append(Faelligkeit(b, f"Schulung „{sch.thema}“", sch.gueltig_bis, heute))
     return ergebnis
 
 
