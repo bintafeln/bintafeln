@@ -449,6 +449,8 @@ textarea.html-eingabe { font-family: ui-monospace, Menlo, Consolas, monospace; f
 .tabelle.kompakt td { padding: .35rem .5rem; }
 .tabelle.kompakt td::before { content: none; }
 .zahl { text-align: right; white-space: nowrap; }
+.gruppe-stelle th { background: var(--grund); font-weight: 700; padding: .4rem .5rem; }
+tr.hervor td { background: var(--erfolg); }
 @media (max-width: 39.99rem) {
   .tabelle.kompakt tr { display: table-row; border: 0; padding: 0; }
   .tabelle.kompakt td { display: table-cell; border-bottom: 1px solid var(--rand); }

@@ -100,10 +100,16 @@ def test_kundengruppe_aendern(admin_client):
     hh = Haushalt.objects.create(kundennummer="5001", kundengruppe=mo, ausweis_gueltig_bis=gueltig)
     Person.objects.create(haushalt=hh, ist_hauptperson=True, vorname="A", nachname="B")
     Haushalt.objects.create(kundennummer="5002", kundengruppe=mo, ausweis_gueltig_bis=gueltig)
+    # Eine volle Fremdgruppe (0 frei) darf gar nicht erscheinen
+    voll = Kundengruppe.objects.create(name="Vollgruppe", ausgabestelle=mitte, wochentage="Mo",
+                                       maximum=1)  # fmt: skip
+    Haushalt.objects.create(kundennummer="5003", kundengruppe=voll, ausweis_gueltig_bis=gueltig)
     seite = admin_client.get(url("kundengruppe_aendern", "5001")).content.decode()
     assert "Montagsgruppe" in seite and "Dienstagsgruppe" in seite and "aktuell" in seite
-    # Belegung: Montagsgruppe 2 Mitglieder, 0 frei
-    assert "Mitglieder" in seite
+    # volle Fremdgruppe ausgeblendet; die (volle) eigene Gruppe „Montagsgruppe" bleibt sichtbar
+    assert "Vollgruppe" not in seite
+    # Nach Ausgabestelle gruppiert, Spalte „Belegung" statt Mitglieder/Max
+    assert "Belegung" in seite and "Mitte" in seite
     # Wochentagsfilter
     nur_di = admin_client.get(url("kundengruppe_aendern", "5001"), {"tag": "Di"}).content.decode()
     assert "Dienstagsgruppe" in nur_di and "Montagsgruppe" not in nur_di
