@@ -982,3 +982,93 @@ def test_danach_am_gruppenende_mit_der_naechsten_gruppe(mitte, tag_daten, admin_
     admin.save()
     inhalt = admin_client.get(reverse("aufruf:leiste")).content.decode()
     assert "Danach:" in inhalt and "dann Spät" in inhalt and spaet[0] in inhalt
+
+
+def _mailserver_einrichten():
+    from apps.core import geheimnis
+    from apps.core.models import MailEinstellungen
+
+    m = MailEinstellungen.laden()
+    m.server, m.port, m.benutzer, m.absender = "mail.example.org", 587, "tafel", "t@example.org"
+    m.passwort_verschluesselt = geheimnis.verschluesseln("erfunden")
+    m.save()
+
+
+def test_reihenfolge_csv_mit_markierung(modul_an, mitte):
+    from apps.aufruf import reihenfolge
+
+    stand = {
+        "gruppen": [
+            {"name": "Zentrale Mo 13:00", "eingelassen": ["201", "202"], "aufgerufen": ["203"]},
+        ],
+        "spaetzuender": {"202": {"versatz": 10, "neuer_platz": 15, "zeit": "13:42"}},
+    }  # fmt: skip
+    tag = AufrufTag.objects.create(ausgabestelle=mitte, datum=heute(), stand=stand)
+    text = reihenfolge.csv_text(tag)
+    assert "Reihenfolge;Kundengruppe;Kundennummer;zurückgestellt" in text
+    # tatsächliche Reihenfolge: 201, dann 202 (zurückgestellt, mit Versatz/Platz/Zeit), dann 203
+    assert "1;Zentrale Mo 13:00;201;;;;" in text
+    assert "2;Zentrale Mo 13:00;202;ja;10;15;13:42" in text
+    assert "3;Zentrale Mo 13:00;203;;;;" in text
+    assert "Erika" not in text  # nur Nummern, keine Namen
+
+
+def test_reihenfolge_mail_bei_abschluss(modul_an, mitte):
+    from django.core import mail as django_mail
+
+    from apps.aufruf import reihenfolge
+
+    _mailserver_einrichten()
+    e = AufrufEinstellungen.laden(mitte)
+    e.reihenfolge_mail = "einlass@example.org"
+    e.save()
+    tag = AufrufTag.objects.create(
+        ausgabestelle=mitte, datum=heute(),
+        stand={"gruppen": [{"name": "Zentrale", "eingelassen": ["201"], "aufgerufen": []}],
+               "spaetzuender": {}},
+    )  # fmt: skip
+    reihenfolge.bei_abschluss(tag, e)
+    assert len(django_mail.outbox) == 1
+    nachricht = django_mail.outbox[0]
+    assert nachricht.to == ["einlass@example.org"]
+    assert nachricht.attachments and nachricht.attachments[0][0].endswith(".csv")
+    tag.refresh_from_db()
+    assert tag.stand.get("reihenfolge_gesendet") is True
+    reihenfolge.bei_abschluss(tag, e)  # kein zweiter Versand
+    assert len(django_mail.outbox) == 1
+
+
+def test_reihenfolge_mail_aus_ohne_adresse(modul_an, mitte):
+    from django.core import mail as django_mail
+
+    from apps.aufruf import reihenfolge
+
+    _mailserver_einrichten()
+    e = AufrufEinstellungen.laden(mitte)  # reihenfolge_mail bleibt leer
+    tag = AufrufTag.objects.create(ausgabestelle=mitte, datum=heute(),
+                                   stand={"gruppen": [], "spaetzuender": {}})  # fmt: skip
+    reihenfolge.bei_abschluss(tag, e)
+    assert django_mail.outbox == []
+
+
+def test_reihenfolge_mail_ueber_api_beim_abschluss(modul_an, admin_client, mitte, tag_daten):
+    from django.core import mail as django_mail
+
+    _mailserver_einrichten()
+    e = AufrufEinstellungen.laden(mitte)
+    e.reihenfolge_mail = "einlass@example.org"
+    e.save()
+
+    def post(name, **daten):
+        antwort = admin_client.post(reverse(f"aufruf:{name}", args=[mitte.pk]),
+                                    json.dumps(daten), content_type="application/json")  # fmt: skip
+        return antwort.json()
+
+    assert post("api_starten")["success"]
+    for _ in range(10):
+        if post("api_weiter").get("all_finished"):
+            break
+    assert django_mail.outbox and django_mail.outbox[0].to == ["einlass@example.org"]
+    assert django_mail.outbox[0].attachments[0][0].endswith(".csv")
+    post("api_weiter")  # weiter nach Abschluss: kein zweiter Versand
+    assert len(django_mail.outbox) == 1

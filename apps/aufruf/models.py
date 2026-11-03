@@ -99,6 +99,12 @@ class AufrufEinstellungen(models.Model):
         help_text="Bei „nur an ausgewählten Ausgabestellen“: diese Ausgabestelle gehört dazu "
         "(gewählt unter „Wartezeit aufs Handy“).",
     )  # fmt: skip
+    reihenfolge_mail = models.EmailField(
+        "Aufruf-Reihenfolge nach der Ausgabe per Mail an", blank=True,
+        help_text="Nach Abschluss der Ausgabe wird die tatsächliche Aufruf-Reihenfolge (nur "
+        "Kundennummern, mit Markierung der zurückgestellten) als CSV an diese Adresse geschickt. "
+        "Leer = aus.",
+    )  # fmt: skip
     layout = models.JSONField("Monitor-Aufteilung", default=dict, blank=True)
 
     class Meta:

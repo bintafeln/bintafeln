@@ -17,7 +17,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
-from apps.aufruf import ablauf
+from apps.aufruf import ablauf, reihenfolge
 from apps.aufruf.models import AufrufEinstellungen
 from apps.konten import rollen
 from apps.kunden import zugang
@@ -181,6 +181,8 @@ def api_status(request, pk):
 
 def _antwort_nach_schritt(tag, e, heute, **mehr) -> dict:
     d = ablauf.stand_fuer_anzeige(tag, e, heute)
+    if d.get("finished"):
+        reihenfolge.bei_abschluss(tag, e)
     antwort = {"success": True, "can_undo": d.get("can_undo", False),
                "total_completed": d.get("total_completed"), "total_numbers": d.get("total_numbers"),
                **mehr}  # fmt: skip
