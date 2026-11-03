@@ -159,7 +159,8 @@ def test_bearbeiten(admin_client):
     seite = admin_client.get(url).content.decode()
     assert '<option value="deutsch" selected>deutsch</option>' in seite
     assert 'name="p-0-staatsangehoerigkeit"' in seite
-    daten = {"art": "neu", "vorname": "Erika", "nachname": "Musterfrau", "anrede": "Frau",
+    daten = {"laufnummer": a.laufnummer, "art": "neu", "vorname": "Erika",
+             "nachname": "Musterfrau", "anrede": "Frau",
              "staatsangehoerigkeit": "Deutschland", "familienstand": "",
              "p-TOTAL_FORMS": "3", "p-INITIAL_FORMS": "1", "p-MIN_NUM_FORMS": "0",
              "p-MAX_NUM_FORMS": "1000",
@@ -172,6 +173,25 @@ def test_bearbeiten(admin_client):
     a.refresh_from_db()
     assert a.nachname == "Musterfrau" and a.staatsangehoerigkeit == "Deutschland"
     assert [(p.vorname, p.staatsangehoerigkeit) for p in a.personen.all()] == [("Tom", "Irak")]
+
+
+def test_antragsnummer_aendern(admin_client):
+    a = antrag()
+    b = antrag()  # belegt eine andere Antragsnummer
+    url = reverse("antraege:bearbeiten", args=[a.pk])
+    basis = {"art": "neu", "vorname": a.vorname, "nachname": a.nachname, "anrede": "",
+             "staatsangehoerigkeit": "", "familienstand": "",
+             "p-TOTAL_FORMS": "0", "p-INITIAL_FORMS": "0", "p-MIN_NUM_FORMS": "0",
+             "p-MAX_NUM_FORMS": "1000"}  # fmt: skip
+    neu = (b.laufnummer or 0) + 100  # freie Nummer
+    assert admin_client.post(url, {**basis, "laufnummer": neu}).status_code == 302
+    a.refresh_from_db()
+    assert a.laufnummer == neu
+    # eine schon vergebene Nummer wird abgelehnt (Seite bleibt, Nummer unverändert)
+    antwort = admin_client.post(url, {**basis, "laufnummer": b.laufnummer})
+    assert antwort.status_code == 200 and "bereits" in antwort.content.decode()
+    a.refresh_from_db()
+    assert a.laufnummer == neu
 
 
 # --- Aufnahme -------------------------------------------------------------------------------

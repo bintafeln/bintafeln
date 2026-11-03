@@ -441,6 +441,10 @@ def _gdb_feld() -> forms.TypedChoiceField:
 class AntragBearbeitenForm(MerkzeichenMixin, forms.ModelForm):
     """Angaben eines Antrags korrigieren (Büro, Admin); Auswahl statt Freitext wie im Formular."""
 
+    laufnummer = forms.IntegerField(
+        label="Antragsnummer", min_value=1,
+        help_text="Eindeutige Nummer des Antrags; eine schon vergebene wird abgelehnt.",
+    )  # fmt: skip
     anrede = forms.ChoiceField(label="Anrede", required=False, choices=ANREDEN)
     familienstand = forms.ChoiceField(label="Familienstand", required=False)
     staatsangehoerigkeit = forms.ChoiceField(
@@ -451,9 +455,9 @@ class AntragBearbeitenForm(MerkzeichenMixin, forms.ModelForm):
     class Meta:
         model = Antrag
         fields = [
-            "art", "kundennummer", "anrede", "vorname", "nachname", "geburtsdatum", "strasse",
-            "plz", "ort", "telefon", "email", "familienstand", "staatsangehoerigkeit", "gdb",
-            "merkzeichen", "wochentage", "ausgabestelle", "nachricht",
+            "laufnummer", "art", "kundennummer", "anrede", "vorname", "nachname", "geburtsdatum",
+            "strasse", "plz", "ort", "telefon", "email", "familienstand", "staatsangehoerigkeit",
+            "gdb", "merkzeichen", "wochentage", "ausgabestelle", "nachricht",
         ]  # fmt: skip
         widgets = {"geburtsdatum": DatumEingabe(), "nachricht": forms.Textarea(attrs={"rows": 3})}
 
