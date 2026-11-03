@@ -349,6 +349,7 @@ class EinstellungenForm(forms.ModelForm):
             "kopf_zeigen", "ueberschrift_zeigen", "fuss_zeigen",
             "eigenes_css", "benachrichtigen",
             "erledigt_nach_tagen", "papierkorb_nach_tagen", "loeschen_nach_tagen",
+            "max_je_stunde",
         ]  # fmt: skip
         widgets = {
             "benachrichtigen": forms.CheckboxSelectMultiple,

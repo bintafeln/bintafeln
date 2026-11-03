@@ -19,8 +19,6 @@ from apps.core.models import TafelEinstellungen
 
 logger = logging.getLogger(__name__)
 
-MAX_JE_STUNDE = 5
-
 
 def besucher_ip(request) -> str:
     """Adresse der Besucher. Hinter Caddy steht sie als erster Eintrag in X-Forwarded-For."""
@@ -34,11 +32,15 @@ def _schluessel(request) -> str:
     return hashlib.sha256(roh).hexdigest()
 
 
-def zu_viele(request) -> bool:
+def zu_viele(request, hoechstens: int) -> bool:
+    """True, wenn dieser Internetanschluss in der letzten Stunde mehr als ``hoechstens`` Anträge
+    gesendet hat. ``hoechstens`` kommt aus den Antrag-Einstellungen; 0 schaltet die Sperre ab."""
+    if hoechstens <= 0:
+        return False
     grenze = timezone.now() - dt.timedelta(hours=1)
     AntragVersuch.objects.create(schluessel=_schluessel(request))
     anzahl = AntragVersuch.objects.filter(schluessel=_schluessel(request), zeitpunkt__gte=grenze)
-    return anzahl.count() > MAX_JE_STUNDE
+    return anzahl.count() > hoechstens
 
 
 def _kontext(code):
@@ -94,7 +96,7 @@ def formular(request, sprache):
         if form.ist_bot:  # so tun, als sei alles gut
             request.session["antrag_nummer"] = ""
             return redirect("antrag:danke", sprache=sprache)
-        if zu_viele(request):
+        if zu_viele(request, e.max_je_stunde):
             kontext["fehler"] = t["fehler_zu_viele"]
         elif form.is_valid():
             antrag = form.speichern(sprache)
