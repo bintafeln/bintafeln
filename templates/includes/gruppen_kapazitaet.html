@@ -1,0 +1,24 @@
+{% comment %}Kompakter Überblick über die freien Plätze je Kundengruppe.
+Erwartet „kapazitaet" (aus apps.kunden.gruppen.kapazitaet) und optional „stand" (Uhrzeit).{% endcomment %}
+<section class="karte breit kapazitaet-karte" aria-label="Gruppenkapazitäten">
+  <div class="kapazitaet-kopf">
+    <h2>Gruppenkapazitäten</h2>
+    <p class="kapazitaet-summe">
+      <strong>{{ kapazitaet.frei_gesamt }}</strong> freie Plätze
+      {% if kapazitaet.maximum_gesamt %}· {{ kapazitaet.belegt_gesamt }}&#8201;/&#8201;{{ kapazitaet.maximum_gesamt }}{% if kapazitaet.prozent_gesamt is not None %} ({{ kapazitaet.prozent_gesamt }}&#8201;%){% endif %}{% endif %}
+      · {{ kapazitaet.mit_platz }} Gruppe{{ kapazitaet.mit_platz|pluralize:"n" }} mit Platz
+      {% if stand %}<span class="hinweis kapazitaet-stand">Stand {{ stand|time:"H:i" }} Uhr</span>{% endif %}
+    </p>
+  </div>
+  <ul class="kapazitaet-liste">
+    {% for g in kapazitaet.gruppen %}
+    <li class="kapazitaet-box{% if g.frei is not None and g.frei <= 0 %} voll{% elif g.frei is not None and g.frei <= 2 %} knapp{% endif %}">
+      <span class="kapazitaet-name">{{ g.gruppe.name }}</span>
+      <span class="kapazitaet-zahl">{% if g.maximum is not None %}{{ g.belegt }}&#8201;/&#8201;{{ g.maximum }}{% else %}{{ g.belegt }}{% endif %} ·
+        {% if g.frei is None %}∞ frei{% elif g.frei <= 0 %}0 frei{% else %}{{ g.frei }} frei{% endif %}{% if g.prozent is not None %} <span class="kapazitaet-prozent">{{ g.prozent }}&#8201;%</span>{% endif %}</span>
+    </li>
+    {% empty %}
+    <li class="hinweis">Keine aktiven Kundengruppen.</li>
+    {% endfor %}
+  </ul>
+</section>

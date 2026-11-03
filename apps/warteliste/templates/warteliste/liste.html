@@ -2,6 +2,7 @@
 {% load liste static %}{% block titel %}Warteliste{% endblock %}
 {% block inhalt %}
 <script src="{% static 'js/spalten.js' %}" defer></script>
+{% include "includes/gruppen_kapazitaet.html" %}
 <section class="karte breit">
   <div class="liste-kopf">
     <h1>Warteliste</h1>

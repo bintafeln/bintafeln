@@ -649,3 +649,13 @@ def test_textseiten_und_ki(modul_an, admin_client, monkeypatch):
     monkeypatch.setattr(uebersetzen, "uebersetzen", kaputt)
     letzte = admin_client.post(reverse("warteliste:uebersetzen_sprache", args=["ur"]))
     assert "Keine Verbindung" in letzte.content.decode() and "Fertig" in letzte.content.decode()
+
+
+def test_liste_zeigt_gruppenkapazitaet(admin_client, modul_an):
+    """Oben auf der Warteliste stehen die freien Plätze je Kundengruppe (ADR 0061)."""
+    from apps.kunden.models import Kundengruppe
+
+    Kundengruppe.objects.create(name="Montagsgruppe", maximum=10)
+    inhalt = admin_client.get(reverse("warteliste:liste")).content.decode()
+    assert "Gruppenkapazitäten" in inhalt
+    assert "Montagsgruppe" in inhalt and "freie Plätze" in inhalt
