@@ -20,7 +20,7 @@ from apps.kunden.models import (
     Person,
     Zugriff,
 )
-from apps.listen import katalog, spalten
+from apps.listen import abfrage, katalog, spalten
 from apps.listen.models import EigeneListe
 
 pytestmark = pytest.mark.django_db
@@ -347,3 +347,62 @@ def test_nummernspalte_kurz(admin_client, daten):
     seite = admin_client.get(reverse("listen:liste", args=["kunden_stelle"])).content.decode()
     assert '<th class="spalte-nr" title="Kundennummer"' in seite and ">Nr.</a>" in seite
     assert '<td data-titel="Kundennummer" class="spalte-nr">' in seite
+
+
+@pytest.fixture
+def merkmal_sb(daten):
+    """Merkmal „Schwerbehindert“ (Art. 9, Person) und es bei Erika (Haushalt 1) setzen."""
+    from apps.kunden.models import Zusatzfeld
+
+    z = Zusatzfeld.objects.create(
+        schluessel="schwerbehindert", bezeichnung="Schwerbehindert",
+        gilt_fuer=Zusatzfeld.GiltFuer.PERSON, typ=Zusatzfeld.Typ.JA_NEIN,
+        besondere_kategorie=True)  # fmt: skip
+    p = Person.objects.get(haushalt__kundennummer="1", ist_hauptperson=True)
+    p.zusatz = {"schwerbehindert": True}
+    p.save()
+    return z
+
+
+def test_merkmal_filter_haushalt(admin_client, merkmal_sb):
+    # nur Haushalte mit Schwerbehinderung (Haushalt 1: Erika)
+    assert zeilen(admin_client.get(*url("alle_kunden", merkmal="schwerbehindert"))) == ["1"]
+    # „nein“: Haushalte ohne jemanden mit dem Merkmal
+    assert sorted(zeilen(admin_client.get(*url("alle_kunden", merkmal="schwerbehindert",
+                                               merkmal_wert="nein")))) == ["2", "3"]  # fmt: skip
+    # kein Merkmal gewählt: alle
+    assert len(zeilen(admin_client.get(*url("alle_kunden")))) == 3
+
+
+def test_merkmal_filter_person(admin_client, merkmal_sb):
+    # Personenliste: nur die schwerbehinderte Person, nicht die übrigen des Haushalts
+    antwort = admin_client.get(*url("alle_personen", merkmal="schwerbehindert"))
+    assert antwort.context["e"].anzahl == 1
+    assert zeilen(antwort) == ["1"]
+
+
+def test_merkmal_spalte_haushalt(admin_client, merkmal_sb):
+    antwort = admin_client.get(*url("alle_kunden", s=["kundennummer", "merkmal:schwerbehindert"]))
+    werte = {z["nummer"]: z["zellen"][1] for g in antwort.context["e"].gruppen for z in g["zeilen"]}
+    assert werte["1"] == "ja" and werte["2"] == "nein"
+    assert "merkmal:schwerbehindert" in {s.schluessel for s in spalten.alle("haushalt")}
+
+
+def test_merkmal_nur_mit_art9_recht(
+    client, merkmal_sb, benutzer_mit_rolle, anmelden, recht_geben, recht_nehmen
+):
+    recht_geben(rollen.AUSGABE, "kunden.alle_ausgabestellen")
+    recht_nehmen(rollen.AUSGABE, "kunden.besondere_kategorie")
+    benutzer = benutzer_mit_rolle("ohne9", rollen.AUSGABE)
+    c = anmelden(client, benutzer)
+    seite = c.get(*url("alle_kunden"))
+    # Ohne Art.-9-Recht: kein Merkmal-Filter sichtbar …
+    assert 'name="merkmal"' not in seite.text
+    # … und ein untergeschobener Merkmal-Filter wird ignoriert (nicht gefiltert)
+    assert len(zeilen(c.get(*url("alle_kunden", merkmal="schwerbehindert")))) == 3
+    # Merkmal und Spalte fehlen ohne das Recht
+    darf = rollen.rechte_von(benutzer)
+    assert abfrage.merkmale(benutzer) == []
+    assert "merkmal:schwerbehindert" not in {
+        s.schluessel for s in spalten.erlaubte("haushalt", darf)
+    }

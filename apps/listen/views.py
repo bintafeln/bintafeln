@@ -171,6 +171,7 @@ def liste(request, kennung):
         if "einkommensart" in liste.filter else [],
         "nationen": abfrage.staatsangehoerigkeiten(request.user)
         if "staatsangehoerigkeit" in liste.filter else [],
+        "merkmale": abfrage.merkmale(request.user),
         "darf_teilen": darf_teilen,
         "freigabe_stellen": freigabe_stellen, "freigabe_personen": freigabe_personen,
         "sichtbarkeiten": EigeneListe.Sichtbarkeit.choices,
@@ -198,6 +199,12 @@ def _beschreibung(liste, p) -> str:
                         ("von", "von"), ("bis", "bis")):  # fmt: skip
         if p.get(name):
             teile.append(f"{titel}: {p[name]}")
+    if p.get("merkmal"):
+        from apps.kunden.models import Zusatzfeld
+
+        z = Zusatzfeld.objects.filter(schluessel=p["merkmal"]).first()
+        if z:
+            teile.append(f"{z.bezeichnung}: {'nein' if p.get('merkmal_wert') == 'nein' else 'ja'}")
     return " · ".join(teile)
 
 
