@@ -102,7 +102,16 @@ input::-webkit-date-and-time-value { text-align: left; margin: 0; }
 .feld input:focus, .feld select:focus, .feld textarea:focus, .filter input:focus { outline: 3px solid var(--fokus); border-color: var(--akzent); }
 .hilfe { color: var(--leise); }
 .fehler { color: var(--fehler); }
-.hat-fehler input { border-color: var(--fehler); }
+/* Fehlerhaftes/leeres Pflichtfeld deutlich hervorheben: dicker roter Rand, leicht roter
+   Hintergrund und rote Beschriftung – damit man das Feld sofort sieht, nicht nur die kleine
+   rote Schrift darunter. */
+.hat-fehler label, .hat-fehler .feld-titel { color: var(--fehler); }
+.hat-fehler input, .hat-fehler select, .hat-fehler textarea {
+  border: 2px solid var(--fehler);
+  background: color-mix(in srgb, var(--fehler) 8%, var(--flaeche));
+}
+.hat-fehler input:focus, .hat-fehler select:focus, .hat-fehler textarea:focus { border-color: var(--fehler); }
+.hat-fehler .fehler { font-weight: 600; }
 
 .knopf {
   font: inherit;
