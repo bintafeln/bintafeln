@@ -228,6 +228,23 @@ def abschnitte(z: aw.Zeitraum, stellen, heute, benutzer=None, get=None) -> list[
             "Nur Abholungen mit Uhrzeit (am Einlass gebucht).",
         )
 
+    for i, block in enumerate(aw.je_stelle_wochentag(z, stellen)):
+        tage = block["tage"]
+        beschr = [f"{t['datum']:%d.%m.}" for t in tage]
+        haushalte = aw.Serie("Haushalte", [float(t["haushalte"]) for t in tage], farbe=0)
+        personen = aw.Serie("Personen", [float(t["personen"]) for t in tage], farbe=1)
+        titel = f"{block['stelle']} – {block['wochentag']}"
+        neu(
+            f"tag-{i}",
+            titel,
+            dg.linien(beschr, [haushalte, personen], titel),
+            ["Datum", "Haushalte", "Personen"],
+            [[f"{t['datum']:%d.%m.%Y}", t["haushalte"], t["personen"]] for t in tage],
+            "Je Ausgabetag: wie viele Haushalte abgeholt haben und wie viele Personen "
+            "(heutige Haushaltsgröße) dahinterstehen.",
+            legende=(haushalte, personen),
+        )
+
     einnahmen = aw.verlauf(aw.einnahmen(z, stellen), z, wert="bar")
     daten = list(zip(beschriftung, einnahmen, strict=True))
     neu(
