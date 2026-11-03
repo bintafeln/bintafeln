@@ -475,6 +475,23 @@ tr.hervor td { background: var(--erfolg); }
 .gruppen-tabelle { width: auto; }
 .gruppen-tabelle th, .gruppen-tabelle td { padding-right: 1.25rem; }
 
+/* Gruppenkapazitäten: kompakte Kästchen je Kundengruppe (z. B. oben auf der Warteliste).
+   Volle Gruppen rot, knappe (≤ 2 frei) mit Akzentrand hervorgehoben. */
+.kapazitaet-karte { margin-bottom: 1rem; }
+.kapazitaet-kopf { display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem 1rem; }
+.kapazitaet-kopf h2 { margin: 0; font-size: 1.1rem; }
+.kapazitaet-summe { margin: 0; }
+.kapazitaet-stand { margin-left: .25rem; }
+.kapazitaet-liste { list-style: none; margin: .6rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: .4rem; }
+.kapazitaet-box { border: 1px solid var(--rand); border-radius: var(--radius); padding: .3rem .55rem;
+  min-width: 8.5rem; background: var(--flaeche); line-height: 1.3; }
+.kapazitaet-name { display: block; font-weight: 600; font-size: .88rem; }
+.kapazitaet-zahl { font-size: .82rem; color: var(--leise); }
+.kapazitaet-prozent { color: var(--text); font-weight: 600; }
+.kapazitaet-box.knapp { border-color: var(--akzent); background: color-mix(in srgb, var(--akzent) 10%, var(--flaeche)); }
+.kapazitaet-box.voll { border-color: var(--fehler); background: color-mix(in srgb, var(--fehler) 12%, var(--flaeche)); }
+.kapazitaet-box.voll .kapazitaet-zahl, .kapazitaet-box.voll .kapazitaet-prozent { color: var(--fehler); }
+
 /* Notizen: farbig hinterlegt, damit sie auffallen */
 .notiz {
   background: #e3f2fd; border-left: 4px solid #64b5f6; border-radius: var(--radius);

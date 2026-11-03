@@ -19,6 +19,7 @@ from apps.antraege.models import Antrag
 from apps.core import listenexport, papierkorb
 from apps.core.pdf import Kaestchen, Pdf, pdf_antwort
 from apps.konten import rollen
+from apps.kunden import gruppen
 from apps.warteliste import ablauf
 from apps.warteliste.forms import (
     EinladenForm,
@@ -113,6 +114,7 @@ def liste(request):
     termine = Termin.objects.annotate(n=Count("wartende")).filter(n__gt=0)
     return render(request, "warteliste/liste.html", {
         "eintraege": ws.prefetch_related("antrag__personen", "antrag__anmerkungen"), "f": f,
+        "kapazitaet": gruppen.kapazitaet(), "stand": timezone.localtime(),
         "staaten": staaten, "termine": termine, "spalten_wahl": SPALTEN,
         "status_zahlen": [(s, name, zahlen.get(s, 0)) for s, name in S.choices],
         "arten": Antrag.Art.choices,

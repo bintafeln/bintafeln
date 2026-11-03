@@ -136,3 +136,23 @@ def test_import_ohne_doppelte_historie():
     texte = list(HaushaltEreignis.objects.filter(kundennummer="2").values_list("text", "quelle"))
     assert texte == [("Neu im Kundenstamm", "import")]
     assert Gruppenzeit.objects.filter(kundennummer="1", bis__isnull=True).count() == 1
+
+
+def test_kapazitaet_ueberblick():
+    voll = Kundengruppe.objects.create(name="Voll", maximum=2)
+    frei = Kundengruppe.objects.create(name="Frei", maximum=5)
+    offen = Kundengruppe.objects.create(name="Offen")  # ohne Maximum = unbegrenzt
+    haushalt("1", voll)
+    haushalt("2", voll)
+    haushalt("3", frei)
+    haushalt("4", offen)
+    k = gruppen.kapazitaet()
+    # volle Gruppen oben, Gruppen ohne Maximum zuletzt
+    assert [g["gruppe"].name for g in k["gruppen"]] == ["Voll", "Frei", "Offen"]
+    assert k["belegt_gesamt"] == 3 and k["maximum_gesamt"] == 7
+    assert k["frei_gesamt"] == 4 and k["mit_platz"] == 1
+    assert k["prozent_gesamt"] == 43  # 3 von 7
+    voll_zeile = next(g for g in k["gruppen"] if g["gruppe"].name == "Voll")
+    assert voll_zeile["frei"] == 0 and voll_zeile["prozent"] == 100
+    offen_zeile = next(g for g in k["gruppen"] if g["gruppe"].name == "Offen")
+    assert offen_zeile["frei"] is None and offen_zeile["prozent"] is None

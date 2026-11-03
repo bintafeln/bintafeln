@@ -130,6 +130,33 @@ def mit_plaetzen(haushalt: Haushalt | None = None) -> list[dict]:
     return ergebnis
 
 
+def kapazitaet() -> dict:
+    """Überblick über die Belegung aller aktiven Kundengruppen für eine kompakte Anzeige (z. B.
+    oben auf der Warteliste): je Gruppe Belegung, freie Plätze und Auslastung in Prozent, dazu die
+    Summen über alle Gruppen mit Maximum. Gruppen mit Maximum zuerst, die volleren oben; Gruppen
+    ohne Maximum (unbegrenzt) ans Ende."""
+    zeilen = []
+    belegt_gesamt = maximum_gesamt = frei_gesamt = mit_platz = 0
+    for x in mit_plaetzen():
+        prozent = round(100 * x["belegt"] / x["maximum"]) if x["maximum"] else None
+        zeilen.append({**x, "prozent": prozent})
+        if x["maximum"]:
+            belegt_gesamt += x["belegt"]
+            maximum_gesamt += x["maximum"]
+            frei_gesamt += max(0, x["frei"])
+            if x["frei"] > 0:
+                mit_platz += 1
+    zeilen.sort(key=lambda z: (z["prozent"] is None, -(z["prozent"] or 0), z["gruppe"].name))
+    return {
+        "gruppen": zeilen,
+        "belegt_gesamt": belegt_gesamt,
+        "maximum_gesamt": maximum_gesamt,
+        "frei_gesamt": frei_gesamt,
+        "mit_platz": mit_platz,
+        "prozent_gesamt": round(100 * belegt_gesamt / maximum_gesamt) if maximum_gesamt else None,
+    }
+
+
 def zeiten(kundennummer: str) -> list[Gruppenzeit]:
     return list(Gruppenzeit.objects.filter(kundennummer=kundennummer)
                 .order_by(F("von").desc(nulls_last=True), "-pk"))  # fmt: skip
