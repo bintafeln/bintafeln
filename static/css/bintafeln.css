@@ -456,6 +456,16 @@ tr.hervor td { background: var(--erfolg); }
   .tabelle.kompakt td { display: table-cell; border-bottom: 1px solid var(--rand); }
 }
 
+/* Kundengruppe ändern: Auswahl und bisherige Gruppen nebeneinander (wie im früheren
+   Bexat-Fenster). Die Auswahltabelle hugt ihre Spalten, statt über die ganze Bildschirmbreite
+   auseinandergezogen zu werden. Auf schmalen Bildschirmen stehen beide untereinander. */
+.gruppenwahl { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 1rem 1.5rem; }
+.gruppenwahl .karte { margin-bottom: 0; }
+.gruppenwahl-auswahl { flex: 0 1 auto; max-width: min(100%, 40rem); }
+.gruppenwahl-verlauf { flex: 1 1 15rem; max-width: 26rem; }
+.gruppen-tabelle { width: auto; }
+.gruppen-tabelle th, .gruppen-tabelle td { padding-right: 1.25rem; }
+
 /* Notizen: farbig hinterlegt, damit sie auffallen */
 .notiz {
   background: #e3f2fd; border-left: 4px solid #64b5f6; border-radius: var(--radius);
