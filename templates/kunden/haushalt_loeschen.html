@@ -12,7 +12,7 @@
     </tbody>
   </table>
   <p class="hinweis">{% if buchungen %}{{ buchungen }} Kontobuchung{{ buchungen|pluralize:"en" }} bleiben ohne Haushalt für die Kasse erhalten.{% else %}Es gibt keine Kontobuchungen.{% endif %}
-    Solange der Kundenstamm importiert wird, legt der nächste Import den Haushalt wieder an, wenn er im Altsystem noch steht.</p>
+    {% if not kundenstamm_selbst_gefuehrt %}Solange der Kundenstamm importiert wird, legt der nächste Import den Haushalt wieder an, wenn er im Altsystem noch steht.{% endif %}</p>
   <form method="post" class="aktionen">
     {% csrf_token %}
     <button type="submit" class="knopf knopf-gefahr">Ja, Haushalt {{ h.kundennummer }} in den Papierkorb legen</button>

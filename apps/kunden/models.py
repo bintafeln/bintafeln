@@ -56,6 +56,12 @@ class KundenEinstellungen(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(10)],
         help_text="Ältere Einträge der Historie werden automatisch gelöscht.",
     )
+    selbst_gefuehrt = models.BooleanField(
+        "Kundenstamm wird in bintafeln selbst geführt", default=False,
+        help_text="Einschalten, sobald die Tafel die Kundendaten übernommen hat und nicht mehr aus "
+        "einem Altsystem importiert. Dann verschwinden die Hinweise auf den Import, und der "
+        "Kundenstamm-Import wird gesperrt, damit nichts versehentlich überschrieben wird.",
+    )  # fmt: skip
     gruppe_behalten = models.BooleanField(
         "Kunden ohne gültigen Ausweis in der Kundengruppe lassen", default=False,
         help_text="Aus: Wer pausiert, gesperrt oder beendet ist oder keinen gültigen Ausweis mehr "

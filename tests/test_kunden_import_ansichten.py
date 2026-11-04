@@ -108,6 +108,40 @@ def test_ablauf_pruefen_und_uebernehmen(buero_client, sicherung):
     assert "2 Haushalte" in inhalt and "Import abgeschlossen" in inhalt
 
 
+def test_selbst_gefuehrt_sperrt_import_und_blendet_hinweise_aus(buero_client, sicherung):
+    """Führt die Tafel den Kundenstamm selbst (ADR 0103), sind die Import-Hinweise weg und jeder
+    Kundenstamm-Import ist gesperrt – auch eine schon vorbereitete Übernahme."""
+    from apps.kunden.models import KundenEinstellungen
+
+    sicherung(23)
+    buero_client.post(IMPORT, {"dateien": [gueltig()]})  # Vorbereitung anlegen, noch erlaubt
+    v = ImportVorbereitung.objects.get()
+
+    e = KundenEinstellungen.laden()
+    e.selbst_gefuehrt = True
+    e.save()
+
+    inhalt = buero_client.get(UEBERSICHT).content.decode()
+    assert "Neuen Stand importieren" not in inhalt
+    assert "Abbild aus dem bisherigen Programm" not in inhalt
+    assert "führt den Kundenstamm selbst" in inhalt
+
+    assert buero_client.get(reverse("kunden:import_vorschau", args=[v.pk])).url == UEBERSICHT
+    assert buero_client.post(reverse("kunden:import_uebernehmen", args=[v.pk])).url == UEBERSICHT
+    assert (
+        ImportVorbereitung.objects.exists() and Haushalt.objects.count() == 0
+    )  # nichts übernommen
+
+    # Der Import-Assistent bietet das Ziel „Kundenstamm" nicht mehr an
+    gesperrt = buero_client.post(START, {"ziel": "kunden", "dateien": [gueltig()]})
+    assert gesperrt.status_code == 403
+
+    # Wieder abschalten: Import geht wieder
+    e.selbst_gefuehrt = False
+    e.save()
+    assert buero_client.get(reverse("kunden:import_vorschau", args=[v.pk])).status_code == 200
+
+
 @pytest.mark.parametrize("stunden", [25, None])
 def test_uebernehmen_nur_mit_frischer_sicherung(
     buero_client, sicherung, settings, tmp_path, stunden

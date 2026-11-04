@@ -1,3 +1,3 @@
-<p class="sicherung">Solange der Kundenstamm aus dem Altsystem kommt, <strong>kann ein Import diese Änderung
+{% if not kundenstamm_selbst_gefuehrt %}<p class="sicherung">Solange der Kundenstamm aus dem Altsystem kommt, <strong>kann ein Import diese Änderung
   überschreiben</strong>: Vor dem Übernehmen zeigt der Import den Abgleich, und in bintafeln geänderte Haushalte
-  lassen sich dort behalten. Jede Änderung steht im Änderungsprotokoll.</p>
+  lassen sich dort behalten. Jede Änderung steht im Änderungsprotokoll.</p>{% endif %}
