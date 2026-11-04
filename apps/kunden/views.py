@@ -708,6 +708,20 @@ def _zum_import():
     return redirect(f"{reverse('datenimport:start')}?ziel=kunden")
 
 
+def _import_gesperrt(request) -> bool:
+    """Wahr, wenn die Tafel den Kundenstamm selbst führt (ADR 0103): Dann ist jeder
+    Kundenstamm-Import gesperrt, damit ein Import die eigenen Daten nicht überschreibt. Meldet
+    das dem Aufrufer; die aufrufende Ansicht leitet dann zur Kundenübersicht zurück."""
+    if not KundenEinstellungen.laden().selbst_gefuehrt:
+        return False
+    messages.error(
+        request,
+        "Der Kundenstamm wird in bintafeln selbst geführt – ein Import ist gesperrt. Zum "
+        "Importieren zuerst in den Kundenstamm-Einstellungen „selbst geführt“ abschalten.",
+    )
+    return True
+
+
 @rollen.recht_erforderlich("kunden.importieren")
 def import_hochladen(request):
     """Hochladen von Dateien im Importformat. In der Oberfläche führt der Import-Assistent
@@ -765,6 +779,8 @@ def import_vorschau(request, pk):
     from apps.datenimport import abgleich as abgleich_
     from apps.kunden import import_ergaenzen
 
+    if _import_gesperrt(request):
+        return redirect("kunden:uebersicht")
     vorbereitung = _vorbereitung_laden(request, pk)
     if vorbereitung is None:
         messages.error(request, "Dieser Import ist abgelaufen oder existiert nicht mehr.")
@@ -824,6 +840,8 @@ def import_vorschau(request, pk):
 @require_POST
 @rollen.recht_erforderlich("kunden.importieren")
 def import_uebernehmen(request, pk):
+    if _import_gesperrt(request):
+        return redirect("kunden:uebersicht")
     vorbereitung = _vorbereitung_laden(request, pk)
     if vorbereitung is None:
         messages.error(request, "Dieser Import ist abgelaufen oder existiert nicht mehr.")

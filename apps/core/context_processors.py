@@ -32,6 +32,13 @@ def _hilfe_kennung(request) -> str:
     return hilfe.kennung_fuer(treffer.view_name, treffer.app_name or "") if treffer else ""
 
 
+def _selbst_gefuehrt() -> bool:
+    # Spät eingebunden: Die App kunden baut auf core auf, nicht umgekehrt.
+    from apps.kunden.models import KundenEinstellungen
+
+    return KundenEinstellungen.laden().selbst_gefuehrt
+
+
 def _impressum() -> str:
     """Link zum Impressum der Tafel, auch im App-Footer und auf der Anmeldeseite: interner Text
     (Tafel-Einstellungen) hat Vorrang, sonst der externe Link (ADR 0094)."""
@@ -71,6 +78,9 @@ def tafel(request):
         "kopf_module": module.kopfzeile() if angemeldet and not offen else [],
         "seiten_module": module.seitenleiste() if angemeldet and not offen else [],
         "nachricht_anliegen": NACHRICHT_ANLIEGEN_WAEHLBAR,  # Fenster „Nachricht an die Verwaltung“
+        # Führt die Tafel den Kundenstamm selbst (keine Altsystem-Importe mehr)? Blendet die
+        # Import-Hinweise aus (ADR 0103).
+        "kundenstamm_selbst_gefuehrt": angemeldet and _selbst_gefuehrt(),
         # Ausgabestelle oben im Menü und Fortschritt des Tages in der Kopfzeile (ADR 0067)
         **(_ausgabestelle(request) if angemeldet and not offen else {}),
     }

@@ -42,8 +42,10 @@
   „Einstellungen → Kunden → Kundenstamm“ abschalten („… in der Kundengruppe lassen“).</p>
 <p>Unter der Historie der Haushaltsseite steht, von wann bis wann der Kunde in welcher Kundengruppe war und warum es
   endete („früher“ = schon vor Einführung dieser Liste).</p>
-<div class="achtung">Solange der Kundenstamm noch aus dem bisherigen Programm importiert wird, ersetzt der nächste
-  Import Änderungen – außer Sie wählen dort „bintafeln-Stand behalten“.</div>{% endif %}
+{% if not kundenstamm_selbst_gefuehrt %}<div class="achtung">Solange der Kundenstamm noch aus dem bisherigen Programm importiert wird, ersetzt der nächste
+  Import Änderungen – außer Sie wählen dort „bintafeln-Stand behalten“. Hat die Tafel die Daten übernommen,
+  lässt sich das unter „Einstellungen → Kundenstamm“ mit „Kundenstamm wird in bintafeln selbst geführt“ abschalten;
+  dann verschwindet dieser Hinweis und der Import ist gesperrt.</div>{% endif %}{% endif %}
 {% if "kunden.loeschen" in rechte %}<h3>Löschen</h3>
 <p>„Löschen …“ zeigt zuerst, was alles mitgelöscht wird (Personen, Abholungen, Notizen, Dokumente, Historie …). Erst
   „Ja, … endgültig löschen“ löscht. Kontobuchungen bleiben ohne Haushalt für die Kasse erhalten.</p>{% endif %}

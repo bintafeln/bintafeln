@@ -479,6 +479,15 @@ Regeln:
 - Abholungen und Ausnahmen werden nur innerhalb der **Aufbewahrungsfrist** übernommen
   („Einstellungen → Kundenstamm“, Vorgabe 3 Jahre). Ältere löscht bintafeln automatisch.
 
+### Kundenstamm selbst führen (Import sperren)
+
+Sobald die Tafel die Kundendaten übernommen hat und nicht mehr aus einem Altsystem importiert,
+unter „Einstellungen → Kundenstamm“ **„Kundenstamm wird in bintafeln selbst geführt“** einschalten
+(ADR 0103). Dann verschwinden die Hinweise, dass ein Import Änderungen überschreiben kann, und der
+Kundenstamm-Import wird gesperrt (das Ziel „Kundenstamm“ wird im Import-Assistenten nicht mehr
+angeboten), damit nichts versehentlich überschrieben wird. Zum erneuten Importieren die Einstellung
+wieder abschalten.
+
 ## Daten importieren (CSV, Excel)
 
 „Einstellungen → Systemsteuerung → Daten importieren“ übernimmt Daten aus anderen Programmen,

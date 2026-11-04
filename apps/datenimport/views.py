@@ -88,8 +88,16 @@ def _vorschlag(ziel, t: dict, vorlage=None) -> None:
 
 @_ein_recht_noetig
 def start(request):
+    from apps.kunden.models import KundenEinstellungen
+
     ImportSitzung.abgelaufene_loeschen()
     ziele = erlaubte(request.user)
+    # Führt die Tafel den Kundenstamm selbst, ist sein Import gesperrt (ADR 0103):
+    # das Ziel nicht mehr anbieten.
+    if KundenEinstellungen.laden().selbst_gefuehrt:
+        ziele = [z for z in ziele if z.kennung != "kunden"]
+    if not ziele:
+        raise PermissionDenied
     gewaehlt = request.POST.get("ziel") or request.GET.get("ziel") or ziele[0].kennung
     if request.method == "POST":
         ziel = next((z for z in ziele if z.kennung == gewaehlt), None)
