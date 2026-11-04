@@ -100,7 +100,7 @@ def test_fehlerhafte_beispieldaten(demo, tmp_path, monkeypatch):
 
 def test_hinweise_und_sperren(demo, client, admin, anmelden, benutzer_mit_rolle):
     anmeldung = client.get(reverse("konten:anmelden")).content.decode()
-    assert "Demoversion" in anmeldung and PASSWORT in anmeldung and "demo-buero" in anmeldung
+    assert "Öffentliche Demo" in anmeldung and PASSWORT in anmeldung and "demo-buero" in anmeldung
     b = benutzer_mit_rolle("berta", rollen.BUERO)
     assert not zwei_faktor.ist_pflicht(b)
     anmelden(client, b)
