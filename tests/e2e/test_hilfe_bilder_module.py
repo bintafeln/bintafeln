@@ -198,7 +198,7 @@ def test_hilfe_bild_fahrdienst(angemeldet, admin, muster):
     from django.contrib.auth import get_user_model
 
     from apps.fahrdienst import plan
-    from apps.fahrdienst.models import Tour
+    from apps.fahrdienst.models import Ausfall, Tour
 
     _module("fahrdienst")
     _fahrdienst()
@@ -216,9 +216,15 @@ def test_hilfe_bild_fahrdienst(angemeldet, admin, muster):
         Marke(seite.get_by_role("link", name="Ich kann nicht – Ausfall melden"), "rahmen", 5),
     )
 
-    # Als Fahrdienstleitung auf einen Namen tippen
+    # Als Fahrdienstleitung auf einen Namen tippen. Der nächste Fahrtag ohne eingetragenen
+    # Ausfall, damit die Seite das Melde-Formular zeigt und nicht „wieder gesund“ – sonst
+    # schlägt der Test je nach heutigem Datum fehl, wenn der nächste Fahrtag auf einen der
+    # in `_fahrdienst()` angelegten Krank-Tage fällt.
     heute = timezone.localdate()
-    datum = plan.fahrtage(heute, heute + dt.timedelta(days=14))[0]
+    ausfall_tage = set(Ausfall.objects.values_list("von", flat=True))
+    datum = next(
+        d for d in plan.fahrtage(heute, heute + dt.timedelta(days=28)) if d not in ausfall_tage
+    )
     tour = Tour.objects.order_by("reihenfolge").first()
     seite.goto(reverse("fahrdienst:platz", args=[f"{datum:%Y-%m-%d}", tour.pk, 1]))
     aufnehmen(
