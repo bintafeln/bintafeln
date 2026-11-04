@@ -39,6 +39,89 @@ env_setzen() {
     fi
 }
 
+frage_wert() {
+    # frage_wert PROMPT VORGABE -> gibt die Antwort aus (Vorgabe bei leerer Eingabe oder
+    # wenn nicht interaktiv / BINTAFELN_JA=1 gesetzt ist).
+    local prompt="$1" vorgabe="${2:-}" antwort=""
+    if [[ "${BINTAFELN_JA:-}" == 1 || ! -t 0 ]]; then
+        printf '%s' "$vorgabe"
+        return
+    fi
+    read -r -p "$prompt" antwort || true
+    printf '%s' "${antwort:-$vorgabe}"
+}
+
+docker_vorhanden() { command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; }
+
+docker_installieren() {
+    hinweis "Docker installieren"
+    local id codename
+    # shellcheck disable=SC1091
+    id=$(. /etc/os-release 2>/dev/null && printf '%s' "${ID:-}")
+    # shellcheck disable=SC1091
+    codename=$(. /etc/os-release 2>/dev/null && printf '%s' "${VERSION_CODENAME:-}")
+    [[ "$id" == debian ]] \
+        || fehler "Automatische Docker-Installation nur für Debian. Docker bitte laut README installieren und erneut aufrufen."
+    [[ $EUID -eq 0 ]] \
+        || fehler "Für die Docker-Installation sind Root-Rechte nötig. Mit sudo ausführen oder Docker laut README installieren."
+    apt-get update
+    apt-get install -y ca-certificates curl git
+    install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+    chmod a+r /etc/apt/keyrings/docker.asc
+    printf 'Types: deb\nURIs: https://download.docker.com/linux/debian\nSuites: %s\nComponents: stable\nSigned-By: /etc/apt/keyrings/docker.asc\n' \
+        "$codename" > /etc/apt/sources.list.d/docker.sources
+    apt-get update
+    apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+}
+
+env_anlegen() {
+    if [[ -f .env ]]; then
+        echo ".env ist bereits vorhanden und wird nicht verändert."
+        return
+    fi
+    command -v openssl >/dev/null 2>&1 || fehler "openssl wird gebraucht (apt install openssl)."
+    [[ -f .env.example ]] || fehler "Vorlage .env.example fehlt – im Projektordner aufrufen."
+    hinweis ".env anlegen"
+    cp .env.example .env
+    chmod 600 .env
+    env_setzen DJANGO_SECRET_KEY "$(openssl rand -hex 32)"
+    env_setzen POSTGRES_PASSWORD "$(openssl rand -hex 24)"
+    local domain tz
+    domain=$(frage_wert "Domain für HTTPS (leer = Entwicklungsmodus über http://<IP>): " "")
+    [[ -n "$domain" ]] && env_setzen BINTAFELN_DOMAIN "$domain"
+    tz=$(frage_wert "Zeitzone [Europe/Berlin]: " "Europe/Berlin")
+    env_setzen TZ "$tz"
+}
+
+befehl_installieren() {
+    if docker_vorhanden; then
+        echo "Docker ist bereits vorhanden."
+    elif nachfragen "Docker ist nicht installiert. Jetzt installieren (nur Debian, Root nötig)?"; then
+        docker_installieren
+    else
+        fehler "Ohne Docker geht es nicht. Docker laut README installieren und erneut aufrufen."
+    fi
+    docker_vorhanden || fehler "Docker oder Docker Compose steht auch nach der Installation nicht bereit."
+    env_anlegen
+    hinweis "bintafeln starten (baut beim ersten Mal das Image, das dauert einige Minuten)"
+    docker compose up -d
+    local domain
+    domain=$(env_wert BINTAFELN_DOMAIN)
+    cat <<EOF
+
+Fertig. bintafeln startet gerade.
+  * Zustand ansehen:      docker compose ps        (der Dienst app wird „healthy")
+  * Protokoll:            docker compose logs -f app
+  * Im Browser öffnen:    ${domain:+https://$domain}${domain:-http://<Server-IP>}
+  * Sicherung einrichten: ./betrieb schluessel      (den privaten Schlüssel sicher und
+                                                     getrennt vom Server aufbewahren!)
+
+Beim Umzug: den Sicherungsordner nach sicherungen/ kopieren und
+  ./betrieb wiederherstellen NAME --schluessel schluessel.txt
+EOF
+}
+
 befehl_sichern() {
     schluessel_eingetragen || fehler "Kein Sicherungsschlüssel eingetragen. Zuerst: ./betrieb schluessel"
     hinweis "Sicherung wird erstellt"
@@ -328,6 +411,7 @@ befehl_hilfe() {
     cat <<'EOF'
 Betriebswerkzeug für bintafeln
 
+  ./betrieb installieren               Docker installieren (Debian), .env anlegen und starten
   ./betrieb update                     Version wählen (nach 3 Sekunden die neueste), sichern,
                                          holen, neu bauen und starten; auch zurück auf ältere
   ./betrieb update VERSION             direkt diese Version, z. B. 2026.10.5
@@ -345,6 +429,7 @@ main() {
     local befehl="${1:-hilfe}"
     shift || true
     case "$befehl" in
+        installieren) befehl_installieren "$@" ;;
         update) befehl_update "$@" ;;
         _update_fortsetzen) befehl_update_fortsetzen "$@" ;;
         sichern) befehl_sichern ;;

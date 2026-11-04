@@ -112,6 +112,11 @@ Die gesamte Konfiguration steht in der Datei `.env` (Vorlage: [`.env.example`](.
 
 Die folgenden Befehle als Benutzer mit `sudo`-Rechten ausführen.
 
+> **Schnell:** Nach dem Herunterladen (Schritt 2) erledigt `./betrieb installieren` die Schritte 3
+> und 4 (Docker installieren, falls nötig, `.env` mit zufälligen Schlüsseln anlegen, Domain und
+> Zeitzone abfragen, starten). Danach weiter mit „5. Einrichten". Wer die Schritte lieber von Hand
+> nachvollziehen will, folgt der ausführlichen Anleitung unten.
+
 ### 1. Docker installieren
 
 ```bash
@@ -1547,6 +1552,7 @@ Anfragen nur noch für die eingetragene Domain an.
 Alle Betriebsaufgaben erledigt das Werkzeug `./betrieb` im Projektordner:
 
 ```bash
+./betrieb installieren            # Docker installieren (Debian), .env anlegen, starten (Erstinstallation)
 ./betrieb status                  # Dienste, letzte Sicherung, vorhandene Sicherungen
 ./betrieb update                  # sichern, neuen Stand holen, neu bauen, starten
 ./betrieb sichern                 # sofort sichern
