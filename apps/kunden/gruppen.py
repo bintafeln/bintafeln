@@ -138,6 +138,8 @@ def kapazitaet() -> dict:
     zeilen = []
     belegt_gesamt = maximum_gesamt = frei_gesamt = mit_platz = 0
     for x in mit_plaetzen():
+        if x["gruppe"].intern:  # interne Park-Gruppen gehören nicht in die Kapazitätsübersicht
+            continue
         prozent = round(100 * x["belegt"] / x["maximum"]) if x["maximum"] else None
         zeilen.append({**x, "prozent": prozent})
         if x["maximum"]:

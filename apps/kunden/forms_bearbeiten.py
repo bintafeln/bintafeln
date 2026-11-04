@@ -334,7 +334,7 @@ class KundengruppeForm(forms.ModelForm):
         model = Kundengruppe
         fields = [
             "kuerzel", "name", "ausgabestelle", "wochentage", "uhrzeit", "maximum", "farbe",
-            "aktiv",
+            "aktiv", "intern",
         ]  # fmt: skip
         widgets = {"uhrzeit": forms.TimeInput(attrs={"type": "time"}, format="%H:%M")}
 

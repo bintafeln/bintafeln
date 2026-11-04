@@ -430,6 +430,13 @@ class Kundengruppe(models.Model):
         help_text="Zur schnellen Erkennung am Einlass.",
     )  # fmt: skip
     aktiv = models.BooleanField("Aktiv", default=True)
+    intern = models.BooleanField(
+        "Interne Gruppe (zum Parken)",
+        default=False,
+        help_text="Zum vorübergehenden Parken von Haushalten. Erscheint nicht in der "
+        "Kapazitätsübersicht und in keiner Statistik oder Auswertung; bleibt aber zum Zuordnen "
+        "wählbar.",
+    )
 
     class Meta:
         verbose_name = "Kundengruppe"

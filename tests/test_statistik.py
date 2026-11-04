@@ -330,6 +330,15 @@ def test_jahresbericht_zahlen_und_leere_diagramme():
     assert (z.von, z.bis) == (dt.date(2026, 1, 1), dt.date(2026, 10, 25))
 
 
+def test_statistik_ohne_interne_gruppe(daten):
+    mitte, _ = daten
+    park = Kundengruppe.objects.create(name="Park", intern=True, ausgabestelle=mitte)
+    Haushalt.objects.create(kundennummer="99", kundengruppe=park)
+    assert "Park" not in [a.name for a in aw.auslastung()]
+    assert aw.bestand().filter(kundennummer="99").count() == 0  # geparkter Haushalt zählt nicht
+    assert aw.bestand().filter(kundennummer="1").count() == 1
+
+
 def test_je_stelle_wochentag(daten):
     bloecke = aw.je_stelle_wochentag(Z)
     assert [(b["stelle"], b["wochentag"], len(b["tage"])) for b in bloecke] == [
