@@ -595,7 +595,8 @@ def stand_fuer_anzeige(tag, einstellungen, datum, eingelassene_zeigen=False) -> 
     kann_zurueck = bool(s["rueckgaengig"])
     if s["index"] >= len(s["gruppen"]):
         return {"finished": True, "selected_day": tag_name, "can_undo": kann_zurueck,
-                "total_completed": erledigt, "total_numbers": gesamt}  # fmt: skip
+                "total_completed": erledigt, "total_numbers": gesamt,
+                "aufgerufen_gesamt": gesamt}  # fmt: skip
     n = einstellungen.anzahl
     g = s["gruppen"][s["index"]]
     wartend = g["wartend"]
@@ -632,6 +633,11 @@ def stand_fuer_anzeige(tag, einstellungen, datum, eingelassene_zeigen=False) -> 
     def da(nummern):
         return None if kiosk is None else [x in kiosk for x in nummern]
 
+    # Wie viele der heutigen Nummern schon über den Monitor aufgerufen wurden: die bereits
+    # erledigten Batches aller Gruppen plus die gerade angezeigten (die stehen jetzt auf dem
+    # Monitor). Schon Eingelassene zählen mit, denn aufgerufen wurden sie trotzdem.
+    aufgerufen_gesamt = sum(len(g2["aufgerufen"]) for g2 in s["gruppen"]) + len(wartend[:n])
+
     return {
         "finished": False,
         "current_numbers": aufgerufen,
@@ -659,6 +665,7 @@ def stand_fuer_anzeige(tag, einstellungen, datum, eingelassene_zeigen=False) -> 
         "slot_total": len(g["aufgerufen"]) + len(wartend),
         "total_completed": erledigt,
         "total_numbers": gesamt,
+        "aufgerufen_gesamt": aufgerufen_gesamt,
         "can_undo": kann_zurueck,
     }
 

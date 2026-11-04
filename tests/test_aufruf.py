@@ -197,6 +197,28 @@ def test_zaehler_zaehlt_eingelassene(mitte, tag_daten):
     assert d["total_completed"] == 2 and d["total_numbers"] == 9  # Zähler sofort gewachsen
 
 
+def test_aufgerufen_gesamt_zaehlt_die_ueber_den_monitor_gerufenen(mitte, tag_daten):
+    """`aufgerufen_gesamt` zählt die schon über den Monitor aufgerufenen Nummern (erledigte
+    Batches plus die gerade angezeigten), unabhängig davon, ob sie schon eingelassen sind."""
+    e = AufrufEinstellungen.laden(mitte)  # anzahl = 3, zwei Gruppen mit zusammen 9 Nummern
+    tag = ablauf.starten(mitte, heute())
+    d = ablauf.stand_fuer_anzeige(tag, e, heute())
+    assert d["aufgerufen_gesamt"] == 3  # die ersten drei stehen auf dem Monitor
+    # Abholung ändert nur den Eingelassen-Zähler, nicht die Zahl der Aufgerufenen
+    Abholung.objects.create(
+        haushalt=Haushalt.objects.get(kundennummer=d["current_numbers"][0]), datum=heute()
+    )
+    d = ablauf.stand_fuer_anzeige(ablauf.aktualisieren(mitte, heute()), e, heute())
+    assert d["aufgerufen_gesamt"] == 3 and d["total_completed"] == 1
+    tag = ablauf.weiter(mitte, heute())  # nächster Batch der ersten Gruppe
+    d = ablauf.stand_fuer_anzeige(tag, e, heute())
+    assert d["aufgerufen_gesamt"] == 5  # 3 erledigt + 2 jetzt angezeigt
+    while not ablauf.stand_fuer_anzeige(tag, e, heute())["finished"]:
+        tag = ablauf.weiter(mitte, heute())
+    d = ablauf.stand_fuer_anzeige(tag, e, heute())
+    assert d["aufgerufen_gesamt"] == 9 == d["total_numbers"]  # am Ende alle aufgerufen
+
+
 def test_anzahl_einstellbar(mitte, tag_daten):
     e = AufrufEinstellungen.laden(mitte)
     e.anzahl = 2
