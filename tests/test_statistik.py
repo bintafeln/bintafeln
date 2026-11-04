@@ -29,7 +29,8 @@ def daten():
     nord = Ausgabestelle.objects.create(name="Ausgabestelle Nord")
     g1 = Kundengruppe.objects.create(name="Montag", ausgabestelle=mitte, maximum=4)
     g2 = Kundengruppe.objects.create(name="Dienstag", ausgabestelle=nord)
-    h1 = Haushalt.objects.create(kundennummer="1", kundengruppe=g1, kunde_seit=dt.date(2026, 2, 1))
+    h1 = Haushalt.objects.create(kundennummer="1", kundengruppe=g1, kunde_seit=dt.date(2026, 2, 1),
+                                 ausweis_gueltig_bis=dt.date(2027, 12, 31))  # fmt: skip
     h2 = Haushalt.objects.create(kundennummer="2", kundengruppe=g2, status="pausiert")
     for h, geburtstage in ((h1, [dt.date(1980, 1, 1), dt.date(2020, 5, 5)]),
                            (h2, [dt.date(1950, 3, 3)])):  # fmt: skip
@@ -337,6 +338,28 @@ def test_statistik_ohne_interne_gruppe(daten):
     assert "Park" not in [a.name for a in aw.auslastung()]
     assert aw.bestand().filter(kundennummer="99").count() == 0  # geparkter Haushalt zählt nicht
     assert aw.bestand().filter(kundennummer="1").count() == 1
+
+
+def test_aktiv_nur_mit_gueltigem_ausweis(daten):
+    """„Aktiv“ heißt Status aktiv UND gültiger Ausweis. Status aktiv ohne (gültigen) Ausweis zählt
+    nicht als aktiv, sondern steht im Status-Diagramm getrennt unter „aktiv ohne gültigen
+    Ausweis“."""
+    mitte, _ = daten  # h1: aktiv, Ausweis gültig bis 2027; h2: pausiert
+    heute = dt.date(2026, 10, 25)
+    # Haushalt ohne Ausweis-Datum und einer mit abgelaufenem Ausweis – beide Status „aktiv“
+    ohne = Haushalt.objects.create(kundennummer="10", kundengruppe=mitte.kundengruppe_set.first())
+    abgelaufen = Haushalt.objects.create(
+        kundennummer="11", kundengruppe=mitte.kundengruppe_set.first(),
+        ausweis_gueltig_bis=dt.date(2026, 1, 1))  # fmt: skip
+    for h in (ohne, abgelaufen):
+        Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="A", nachname="B",
+                              geburtsdatum=dt.date(1990, 1, 1))  # fmt: skip
+    # Nur h1 ist wirklich aktiv (gültiger Ausweis)
+    assert list(aw.aktive([mitte], heute).values_list("kundennummer", flat=True)) == ["1"]
+    assert aw.kennzahlen(Z, [mitte]).aktive_haushalte == 1
+    # Status-Diagramm: „aktiv“ = 1, die beiden anderen unter „aktiv ohne gültigen Ausweis“
+    s = dict(aw.status([mitte], heute))
+    assert s["aktiv"] == 1 and s["aktiv ohne gültigen Ausweis"] == 2
 
 
 def test_je_stelle_wochentag(daten):
