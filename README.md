@@ -1659,8 +1659,60 @@ Das Werkzeug prüft zuerst, ob sich die Sicherung mit dem Schlüssel öffnen lä
 **sichert den aktuellen Stand** und ersetzt dann Datenbank und hochgeladene Dateien vollständig.
 Danach startet die Anwendung wieder, Migrationen laufen automatisch.
 
-Auf einem **neuen Server**: bintafeln wie oben installieren, den Ordner `sicherungen/`
-dorthin kopieren und dann wie beschrieben wiederherstellen.
+Auf einem **neuen Server** siehe [Umzug auf einen eigenen Server](#umzug-auf-einen-eigenen-server).
+
+### Umzug auf einen eigenen Server
+
+So zieht eine Tafel von einer bestehenden Installation (z. B. der Demo oder einem anderen Hoster)
+auf einen eigenen Server um. Der ganze Datenbestand kommt über eine **Sicherung** mit; das Programm
+selbst wird frisch installiert.
+
+Ein gemieteter Server wird über die **Konsole (SSH)** bedient, ohne grafische Oberfläche. Beim
+Hoster das Betriebssystem **Debian 13** auswählen (wird automatisch installiert); du bekommst eine
+IP-Adresse und ein Passwort bzw. hinterlegst einen SSH-Schlüssel. Dann vom eigenen Rechner:
+`ssh root@SERVER-IP`.
+
+1. **System aktualisieren:** `apt update && apt full-upgrade -y` (danach bei Kernel-Update einmal
+   `reboot`).
+2. **Server absichern** (empfohlen): eigenen Benutzer mit `sudo` statt `root`, Anmeldung per
+   SSH-Schlüssel statt Passwort (`PermitRootLogin no`, `PasswordAuthentication no` in
+   `/etc/ssh/sshd_config.d/`), Firewall `ufw` (nur SSH sowie 80/443 erlauben), automatische
+   Sicherheitsupdates (`unattended-upgrades`) und `fail2ban`. Die Firewall des Hosters zusätzlich
+   gleich mitkonfigurieren.
+3. **bintafeln holen:** `git clone https://github.com/bintafeln/bintafeln.git /opt/bintafeln && cd
+   /opt/bintafeln`.
+4. **Installieren:** `./betrieb installieren` (installiert bei Bedarf Docker, legt die `.env` an,
+   fragt Domain und Zeitzone ab und startet) – oder die Schritte 1–4 der
+   [Installation](#installation-auf-debian-13-trixie-mit-docker) von Hand. Für den Produktionsmodus
+   die **Domain** per DNS auf den Server zeigen lassen und die **Ports 80 und 443** freigeben
+   (siehe [Entwicklungs- und Produktionsmodus](#entwicklungs--und-produktionsmodus)).
+5. **Daten vom alten System holen:** Dort frisch sichern (`./betrieb sichern`, Name per
+   `./betrieb status`), dann den Sicherungsordner (z. B. `2026-11-04_020000`) nach `sicherungen/`
+   auf dem neuen Server kopieren, etwa mit `scp -r`. Dazu den **privaten age-Schlüssel der alten
+   Installation** (`AGE-SECRET-KEY-…`) bereithalten – ohne ihn lässt sich die Sicherung nicht
+   öffnen.
+6. **Zurückspielen:** den privaten Schlüssel in eine Datei legen und
+   [wiederherstellen](#wiederherstellen):
+
+   ```bash
+   cd /opt/bintafeln
+   nano schluessel.txt      # die Zeile AGE-SECRET-KEY-… einfügen
+   ./betrieb wiederherstellen 2026-11-04_020000 --schluessel schluessel.txt
+   rm schluessel.txt
+   ```
+
+   Datenbank und hochgeladene Dateien werden vollständig ersetzt, Migrationen laufen automatisch.
+   Danach ist der komplette Bestand auf dem neuen Server.
+7. **Sicherungen für die Zukunft:** `./betrieb schluessel` erzeugt ein **neues** Schlüsselpaar für
+   den neuen Server (den privaten Schlüssel wieder getrennt aufbewahren). Dann unter
+   [„Einstellungen → Sicherungen“](#sicherungsaufträge) den Zeitplan einstellen und die
+   verschlüsselten Sicherungen regelmäßig
+   [auf einen anderen Rechner kopieren](#sicherungen-auf-einen-anderen-rechner-kopieren).
+
+Der „Notfallkoffer“ für einen späteren Totalausfall ist damit: die **`.env`**, der **private
+Sicherungsschlüssel** und eine **Kopie von `sicherungen/`** außerhalb des Servers. Mit diesen drei
+Dingen lässt sich bintafeln auf einem frischen Debian jederzeit über die Schritte 3–6 neu
+aufsetzen.
 
 ### Musterdaten für eine Test-Installation
 
