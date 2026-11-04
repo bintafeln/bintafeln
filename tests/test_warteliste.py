@@ -674,3 +674,17 @@ def test_liste_zeigt_gruppenkapazitaet(admin_client, modul_an):
     inhalt = admin_client.get(reverse("warteliste:liste")).content.decode()
     assert "Gruppenkapazitäten" in inhalt
     assert "Montagsgruppe" in inhalt and "freie Plätze" in inhalt
+
+
+def test_suche_findet_anmerkungen(admin_client, modul_an):
+    a = antrag(vorname="Zeynep", nachname="Yildiz")
+    b = antrag(vorname="Omar", nachname="Nasser")
+    ablauf.automatik()
+    ablauf.anmerken(a, "Hat noch keinen Bescheid vom Jobcenter", "Büro")
+    liste = reverse("warteliste:liste")
+    treffer = admin_client.get(liste, {"suche": "Jobcenter"}).context["eintraege"]
+    assert [w.antrag.pk for w in treffer] == [a.pk] and b.pk not in [w.antrag.pk for w in treffer]
+    # mehrere passende Anmerkungen → trotzdem nur eine Zeile (distinct)
+    ablauf.anmerken(a, "Jobcenter-Unterlagen fehlen noch", "Büro")
+    treffer = list(admin_client.get(liste, {"suche": "Jobcenter"}).context["eintraege"])
+    assert len(treffer) == 1

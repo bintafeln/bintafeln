@@ -23,7 +23,7 @@ from django.utils import timezone
 from apps.ausgabe.ampel import WOCHENTAGE
 from apps.ausgabe.konto import MONATE
 from apps.ausgabe.models import Buchung, Sonderaktion
-from apps.kunden.models import Abholung, Haushalt, KundenEinstellungen, Kundengruppe
+from apps.kunden.models import Abholung, Haushalt, KundenEinstellungen, Kundengruppe, Person
 
 ALTERSGRUPPEN = [
     (0, 5, "0–5"),
@@ -175,6 +175,34 @@ def je_wochentag(z: Zeitraum, stellen=None) -> list[tuple[str, int]]:
         .annotate(n=Count("pk"))
     )
     return [(WOCHENTAGE[i], je.get(i + 1, 0)) for i in range(7)]
+
+
+def je_stelle_wochentag(z: Zeitraum, stellen=None) -> list[dict]:
+    """Je Ausgabestelle und Wochentag die einzelnen Ausgabetage im Zeitraum: wie viele Haushalte
+    abgeholt haben und die Summe ihrer heutigen Haushaltsgrößen (Personen). Eine Ausgabestelle mit
+    mehreren Tagen (z. B. Treff24 montags und donnerstags) bekommt je Wochentag einen Block."""
+    groesse = dict(Person.objects.values_list("haushalt").annotate(n=Count("pk")))
+    je_tag: dict[tuple[str, dt.date], set] = {}
+    for name, datum, haushalt_id in abholungen(z, stellen).values_list(
+        "ausgabestelle__name", "datum", "haushalt_id"
+    ):
+        je_tag.setdefault((name or "ohne Ausgabestelle", datum), set()).add(haushalt_id)
+    nach_stelle: dict[str, dict[int, list]] = {}
+    for (stelle, datum), haushalte in je_tag.items():
+        personen = sum(groesse.get(h, 0) for h in haushalte)
+        nach_stelle.setdefault(stelle, {}).setdefault(datum.isoweekday(), []).append(
+            (datum, len(haushalte), personen)
+        )
+    ergebnis = []
+    for stelle in sorted(nach_stelle):
+        for wt in sorted(nach_stelle[stelle]):
+            tage = sorted(nach_stelle[stelle][wt])
+            ergebnis.append({
+                "stelle": stelle,
+                "wochentag": WOCHENTAGE[wt - 1],
+                "tage": [{"datum": d, "haushalte": h, "personen": p} for d, h, p in tage],
+            })  # fmt: skip
+    return ergebnis
 
 
 def je_stunde(z: Zeitraum, stellen=None) -> list[tuple[str, int]]:

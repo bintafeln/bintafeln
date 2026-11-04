@@ -665,7 +665,8 @@ def test_hilfe_bild_warteliste(angemeldet, admin, muster):
     ablauf.einladen(antraege[:2], termin, "Clara Beispiel")
 
     seite = oeffnen(angemeldet, admin, reverse("warteliste:liste"), breite=1400)
-    karte = seite.locator("section.karte").first
+    # Die Liste-Karte gezielt wählen: oben steht jetzt zusätzlich die Gruppenkapazitäten-Karte.
+    karte = seite.locator("section.karte:has(.liste-kopf)").first
     for a in antraege[2:4]:
         karte.locator(f'input[name=ids][value="{a.pk}"]').check()
     einladen = karte.locator("fieldset", has_text="Ausgewählte einladen")
