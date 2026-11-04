@@ -230,10 +230,23 @@ def bestand(stellen=None):
     return qs
 
 
+def aktive(stellen=None, heute: dt.date | None = None):
+    """Haushalte mit gültiger Tafelkarte: Status „aktiv“ und ein Ausweis-Datum, das heute noch
+    gilt. Ein Haushalt mit Status „aktiv“, aber ohne gültigen (oder ganz ohne) Ausweis ist für
+    die Statistik nicht aktiv – genauso, wie er ohne gültigen Ausweis aus der Kundengruppe fällt
+    (ADR 0061)."""
+    heute = heute or timezone.localdate()
+    return bestand(stellen).filter(
+        status=Haushalt.Status.AKTIV,
+        ausweis_gueltig_bis__isnull=False,
+        ausweis_gueltig_bis__gte=heute,
+    )
+
+
 def haushaltsgroessen(heute: dt.date, stellen=None) -> list[tuple[str, int]]:
     kind_bis = KundenEinstellungen.laden().kind_bis_alter
     zaehler = Counter()
-    for h in bestand(stellen).filter(status=Haushalt.Status.AKTIV).prefetch_related("personen"):
+    for h in aktive(stellen, heute).prefetch_related("personen"):
         erwachsene, kinder = h.groesse(kind_bis, heute)
         zaehler[min(erwachsene + kinder, 6)] += 1
     return [("6 und mehr" if n == 6 else str(n), zaehler.get(n, 0)) for n in range(1, 7)]
@@ -242,7 +255,7 @@ def haushaltsgroessen(heute: dt.date, stellen=None) -> list[tuple[str, int]]:
 def altersgruppen(heute: dt.date, stellen=None) -> list[tuple[str, int]]:
     zaehler = Counter()
     ohne = 0
-    for h in bestand(stellen).filter(status=Haushalt.Status.AKTIV).prefetch_related("personen"):
+    for h in aktive(stellen, heute).prefetch_related("personen"):
         for p in h.personen.all():
             if p.geburtsdatum is None:
                 ohne += 1
@@ -259,21 +272,37 @@ def altersgruppen(heute: dt.date, stellen=None) -> list[tuple[str, int]]:
     return zeilen + ([("ohne Geburtsdatum", ohne)] if ohne else [])
 
 
-def status(stellen=None) -> list[tuple[str, int]]:
+def status(stellen=None, heute: dt.date | None = None) -> list[tuple[str, int]]:
+    """Haushalte je Status. „aktiv“ zählt nur die mit gültiger Tafelkarte; wer den Status „aktiv“
+    hat, aber keinen gültigen Ausweis (abgelaufen oder gar nicht hinterlegt), steht getrennt unter
+    „aktiv ohne gültigen Ausweis“, damit die Summe stimmt und „aktiv“ nicht geschönt wirkt."""
+    heute = heute or timezone.localdate()
     qs = Haushalt.objects.exclude(kundengruppe__intern=True)
     if stellen is not None:
         qs = qs.filter(kundengruppe__ausgabestelle__in=stellen)
     je = dict(qs.values_list("status").annotate(n=Count("pk")))
-    return [(name, je.get(wert, 0)) for wert, name in Haushalt.Status.choices]
+    mit_ausweis = qs.filter(
+        status=Haushalt.Status.AKTIV,
+        ausweis_gueltig_bis__isnull=False,
+        ausweis_gueltig_bis__gte=heute,
+    ).count()
+    ohne_ausweis = je.get(Haushalt.Status.AKTIV, 0) - mit_ausweis
+    zeilen = []
+    for wert, name in Haushalt.Status.choices:
+        if wert == Haushalt.Status.AKTIV:
+            zeilen.append((name, mit_ausweis))
+            zeilen.append(("aktiv ohne gültigen Ausweis", ohne_ausweis))
+        else:
+            zeilen.append((name, je.get(wert, 0)))
+    return zeilen
 
 
-def merkmale(darf_art9: bool, stellen=None) -> list[tuple[str, int]]:
+def merkmale(darf_art9: bool, stellen=None, heute: dt.date | None = None) -> list[tuple[str, int]]:
     """Personen in aktiven Haushalten je Ja/Nein-Merkmal (z. B. Schwerbehindert), heutiger Stand.
     Merkmale der besonderen Kategorie (Art. 9) nur mit ``darf_art9``."""
     from apps.kunden.models import Person, Zusatzfeld
 
-    aktive = bestand(stellen).filter(status=Haushalt.Status.AKTIV)
-    personen = Person.objects.filter(haushalt__in=aktive)
+    personen = Person.objects.filter(haushalt__in=aktive(stellen, heute))
     zeilen = []
     for z in Zusatzfeld.objects.filter(
         aktiv=True, typ=Zusatzfeld.Typ.JA_NEIN, gilt_fuer=Zusatzfeld.GiltFuer.PERSON
@@ -385,7 +414,7 @@ def kennzahlen(z: Zeitraum, stellen=None) -> Kennzahlen:
     }
     k.personen = sum(groesse.get(h, 0) for h in besucht)
     k.einnahmen = einnahmen(z, stellen).aggregate(s=Sum("bar"))["s"] or Decimal("0")
-    aktiv = bestand(stellen).filter(status=Haushalt.Status.AKTIV)
+    aktiv = aktive(stellen)
     k.aktive_haushalte = aktiv.count()
     k.aktive_personen = sum(h.personen.count() for h in aktiv.prefetch_related("personen"))
     k.neue_kunden = sum(neuaufnahmen_und_antraege(z, stellen)[0].werte)

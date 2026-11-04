@@ -276,7 +276,7 @@ def abschnitte(z: aw.Zeitraum, stellen, heute, benutzer=None, get=None) -> list[
         [[n, w] for n, w in alter],
         "Heutiger Stand.",
     )
-    status = aw.status(stellen)
+    status = aw.status(stellen, heute)
     neu(
         "status",
         "Haushalte nach Status",
@@ -295,7 +295,7 @@ def abschnitte(z: aw.Zeitraum, stellen, heute, benutzer=None, get=None) -> list[
         "Ohne beendete Haushalte.",
     )
     darf_art9 = benutzer is not None and rollen.hat_recht(benutzer, "kunden.besondere_kategorie")
-    merkmale = aw.merkmale(darf_art9, stellen)
+    merkmale = aw.merkmale(darf_art9, stellen, heute)
     if merkmale:
         neu(
             "merkmale",
@@ -392,7 +392,7 @@ def kennzahlen_kacheln(z: aw.Zeitraum, stellen, heute, benutzer) -> list[tuple[s
         (
             "Aktive Haushalte",
             f"{k.aktive_haushalte:,}".replace(",", "."),
-            f"heute, mit {k.aktive_personen:,} Personen".replace(",", "."),
+            f"heute mit gültigem Ausweis, {k.aktive_personen:,} Personen".replace(",", "."),
         ),
         ("Neue Kunden", f"{int(k.neue_kunden):,}".replace(",", "."), "im Zeitraum"),
     ]
