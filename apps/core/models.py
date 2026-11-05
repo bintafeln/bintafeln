@@ -395,6 +395,9 @@ class Fernsicherung(models.Model):
 
     EINZIGE_ID = 1
     konfig_verschluesselt = models.TextField(blank=True, editable=False)
+    # Optionaler privater SSH-Schlüssel für SFTP (statt Passwort), verschlüsselt. Der Dienst app
+    # schreibt ihn entschlüsselt neben die rclone.conf; die Konfig verweist mit key_file darauf.
+    schluessel_verschluesselt = models.TextField(blank=True, editable=False)
 
     class Meta:
         verbose_name = "Fernsicherung"
@@ -424,6 +427,21 @@ class Fernsicherung(models.Model):
         from apps.core import geheimnis
 
         self.konfig_verschluesselt = geheimnis.verschluesseln(text) if (text or "").strip() else ""
+
+    @property
+    def schluessel(self) -> str:
+        from apps.core import geheimnis
+
+        if not self.schluessel_verschluesselt:
+            return ""
+        return geheimnis.entschluesseln(self.schluessel_verschluesselt) or ""
+
+    def schluessel_setzen(self, text: str) -> None:
+        from apps.core import geheimnis
+
+        self.schluessel_verschluesselt = (
+            geheimnis.verschluesseln(text) if (text or "").strip() else ""
+        )
 
     @property
     def eingerichtet(self) -> bool:

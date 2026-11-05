@@ -24,31 +24,49 @@
 <h3>Sicherung außer Haus (Fernablage)</h3>
 <p>Weil die Sicherungen bereits verschlüsselt sind, kann man sie bedenkenlos auf einen fremden Speicher legen – dort
   sieht niemand den Inhalt. Unter „Sicherung außer Haus“ auf der Sicherungsseite richtet man eine <strong>Fernablage</strong>
-  ein; danach lässt sie sich bei einem Auftrag als Ziel wählen. Die Zugangsdaten werden verschlüsselt gespeichert und aus
-  Sicherheitsgründen nicht wieder angezeigt (Feld leer lassen = unverändert).</p>
-<p>Technisch geschieht das mit <code>rclone</code>; man fügt einen fertigen Remote-Block ein. Beispiele:</p>
-<pre class="vorformatiert">[fern]            # SFTP auf einen anderen Server / eine Storage Box
-type = sftp
-host = backup.example.de
-user = tafel
-key_file = /…      (oder: pass = …, siehe rclone-Doku)
-
-[fern]            # Nextcloud/WebDAV
-type = webdav
-url = https://cloud.example.de/remote.php/dav/files/tafel/
-vendor = nextcloud
-user = tafel
-pass = <i>mit „rclone obscure“ verschleiert</i>
-
-[fern]            # S3 (Backblaze B2, Wasabi, Hetzner, MinOffice …)
-type = s3
-provider = Other
-access_key_id = …
-secret_access_key = …
-endpoint = …</pre>
-<p>Den Block erzeugt man am einfachsten mit <code>rclone config</code> auf einem beliebigen Rechner und fügt ihn hier ein.
-  Wichtig: Der <strong>private Sicherungsschlüssel</strong> gehört nicht auf denselben Fremdspeicher – ohne ihn nützt die
-  Fernsicherung nichts, mit ihm neben den Daten wäre der Schutz dahin.</p>
+  ein; danach lässt sie sich bei einem Auftrag als Ziel wählen. Man muss nichts über die Technik dahinter
+  (<code>rclone</code>) wissen: Oben <strong>die Art wählen</strong>, dann erscheinen genau die passenden Felder, und
+  bintafeln setzt den Rest selbst zusammen. Die Zugangsdaten werden verschlüsselt gespeichert und aus Sicherheitsgründen
+  nicht wieder angezeigt – ein <strong>leeres</strong> Passwort-Feld beim späteren Bearbeiten heißt „unverändert“.</p>
+<p>Was in die Felder gehört, je nach Art:</p>
+<ul>
+  <li><strong>SFTP (SSH-Server / Storage Box):</strong> Sichern über eine SSH-Verbindung, z. B. auf eine Hetzner
+    Storage Box. Nötig sind <em>Server</em> (z. B. <code>u123456.your-storagebox.de</code>), <em>Benutzername</em> und
+    – zur Anmeldung – <em>entweder</em> ein <em>Passwort</em> <em>oder</em> eine <em>Schlüsseldatei</em> (nicht beides).
+    Der <em>Port</em> ist üblicherweise 22 (bei Hetzner-Storage-Boxen oft 23) und kann leer bleiben, wenn es der
+    Standard ist.
+    <ul>
+      <li><strong>Mit Passwort:</strong> einfach das Passwort des SSH-Zugangs eintragen – sonst nichts.</li>
+      <li><strong>Mit Schlüsseldatei (empfohlen, sicherer):</strong> Ein SSH-Schlüsselpaar besteht aus einem
+        <em>privaten</em> und einem <em>öffentlichen</em> Schlüssel. Den <strong>privaten</strong> Schlüssel
+        (die Datei, z. B. <code>id_ed25519</code> – <em>ohne</em> Passphrase) laden Sie hier hoch. Den dazugehörigen
+        <strong>öffentlichen</strong> Schlüssel (<code>id_ed25519.pub</code>) hinterlegen Sie beim Anbieter bzw. auf dem
+        Zielserver (bei einer Storage Box im Kundenmenü unter „SSH-Keys“, sonst in der Datei
+        <code>~/.ssh/authorized_keys</code> des Zielbenutzers). Erzeugt wird so ein Paar z. B. mit
+        <code>ssh-keygen -t ed25519 -N ""</code>. Ein Passwort ist dann nicht nötig. Eine bereits gespeicherte
+        Schlüsseldatei lässt sich über das Häkchen wieder entfernen.</li>
+    </ul>
+  </li>
+  <li><strong>Nextcloud / ownCloud / WebDAV:</strong> <em>Anbieter</em> wählen, dann die <em>WebDAV-Adresse</em>. Bei
+    Nextcloud/ownCloud hat sie die Form <code>https://cloud.example.de/remote.php/dav/files/BENUTZER/</code>
+    (BENUTZER durch den eigenen Anmeldenamen ersetzen). <em>Benutzername</em> ist der Anmeldename. Als
+    <em>Passwort</em> am besten <strong>kein</strong> normales Login-Passwort nehmen, sondern ein eigens angelegtes
+    <strong>App-Passwort</strong> (in Nextcloud: Einstellungen → Sicherheit → „App-Passwort erstellen“); das lässt
+    sich jederzeit zurückziehen, ohne das Hauptpasswort zu ändern.</li>
+  <li><strong>S3-kompatibel</strong> (Backblaze B2, Wasabi, Hetzner Object Storage, MinIO …): <em>Anbieter</em>
+    wählen, dann <em>Access Key ID</em> und <em>Secret Access Key</em> eintragen – die bekommt man beim Anbieter beim
+    Anlegen eines „Application Key“ / „Access Key“. Bei allen außer Amazon AWS zusätzlich den <em>Endpunkt</em>
+    (z. B. <code>s3.eu-central-003.backblazeb2.com</code>, steht in der Bucket-Übersicht des Anbieters); bei Amazon
+    AWS bleibt er leer, dort genügt die <em>Region</em>. Der Bucket/Container muss beim Anbieter bereits existieren.</li>
+  <li><strong>FTP / FTPS:</strong> <em>Server</em>, <em>Benutzername</em> und <em>Passwort</em> wie beim FTP-Zugang;
+    <em>Port</em> üblicherweise 21. Wenn der Anbieter es unterstützt, das Häkchen <em>„Verschlüsselt (FTPS)“</em>
+    setzen – sonst gingen die Zugangsdaten unverschlüsselt über die Leitung.</li>
+  <li><strong>Experten:</strong> Für Sonderfälle (z. B. Google Drive, OneDrive) lässt sich stattdessen ein fertiger
+    <code>rclone</code>-Block einfügen; er muss mit <code>[fern]</code> beginnen.</li>
+</ul>
+<p class="tipp">Wichtig: Der <strong>private Sicherungsschlüssel</strong> (mit dem die Sicherungen verschlüsselt sind)
+  gehört <strong>nicht</strong> auf denselben Fremdspeicher – ohne ihn nützt die Fernsicherung nichts, mit ihm neben den
+  Daten wäre der Schutz dahin. Ihn getrennt aufbewahren (siehe <code>./betrieb schluessel</code>).</p>
 {% endif %}
 <h3>Wenn etwas nicht stimmt</h3>
 <ul>

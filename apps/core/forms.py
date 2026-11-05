@@ -359,27 +359,192 @@ class SicherungsAuftragForm(forms.ModelForm):
 
 
 class FernsicherungForm(forms.Form):
-    """rclone-Konfiguration für Sicherungen außer Haus (ADR 0106). Das Geheimnis wird aus
-    Sicherheitsgründen nicht angezeigt: leer lassen = unverändert."""
+    """Geführte Eingabe für eine Fernablage (rclone, ADR 0106): Art wählen, Felder ausfüllen –
+    bintafeln baut daraus den rclone-Block und verschleiert Passwörter. Passwörter/Schlüssel
+    werden aus Sicherheitsgründen nie wieder angezeigt: leer lassen = unverändert."""
 
+    GEHEIM = forms.PasswordInput(render_value=False, attrs={"autocomplete": "new-password"})
+    ART = [
+        ("", "– bitte wählen –"),
+        ("sftp", "SFTP (SSH-Server / Storage Box)"),
+        ("webdav", "Nextcloud / ownCloud / WebDAV"),
+        ("s3", "S3-kompatibel (Backblaze B2, Wasabi, Hetzner …)"),
+        ("ftp", "FTP / FTPS"),
+        ("block", "Experten: rclone-Block selbst einfügen"),
+    ]
+    art = forms.ChoiceField(label="Art der Fernablage", choices=ART, required=False)
+
+    # SFTP
+    sftp_host = forms.CharField(label="Server (Host)", required=False,
+                                help_text="z. B. u123456.your-storagebox.de")  # fmt: skip
+    sftp_port = forms.IntegerField(label="Port", required=False, min_value=1, max_value=65535,
+                                   help_text="Standard 22.")  # fmt: skip
+    sftp_user = forms.CharField(label="Benutzername", required=False)
+    sftp_pass = forms.CharField(label="Passwort", required=False, widget=GEHEIM,
+        help_text="Leer lassen = unverändert. Oder stattdessen unten eine Schlüsseldatei "
+        "hochladen.")  # fmt: skip
+    sftp_key = forms.FileField(label="Private Schlüsseldatei (statt Passwort)", required=False,
+        help_text="OpenSSH-Privatschlüssel OHNE Passphrase (z. B. id_ed25519). Den passenden "
+        "öffentlichen Schlüssel beim Server hinterlegen.")  # fmt: skip
+    sftp_key_entfernen = forms.BooleanField(label="Gespeicherte Schlüsseldatei entfernen",
+                                            required=False)  # fmt: skip
+
+    # Nextcloud / ownCloud / WebDAV
+    dav_vendor = forms.ChoiceField(
+        label="Anbieter",
+        required=False,
+        choices=[
+            ("nextcloud", "Nextcloud"),
+            ("owncloud", "ownCloud"),
+            ("other", "anderer WebDAV-Server"),
+        ],
+    )
+    dav_url = forms.CharField(label="WebDAV-Adresse", required=False,
+        help_text="Nextcloud/ownCloud: https://cloud.example.org/remote.php/dav/files/BENUTZER/")  # fmt: skip  # noqa: E501
+    dav_user = forms.CharField(label="Benutzername", required=False)
+    dav_pass = forms.CharField(label="Passwort", required=False, widget=GEHEIM,
+        help_text="Bei Nextcloud/ownCloud am besten ein App-Passwort (Einstellungen → Sicherheit → "
+        "App-Passwort). Leer lassen = unverändert.")  # fmt: skip
+
+    # S3-kompatibel
+    s3_provider = forms.ChoiceField(label="Anbieter", required=False, choices=[
+        ("Other", "anderer / S3-kompatibel"), ("AWS", "Amazon AWS"), ("Wasabi", "Wasabi"),
+        ("Backblaze", "Backblaze B2")])  # fmt: skip
+    s3_key = forms.CharField(label="Access Key ID", required=False)
+    s3_secret = forms.CharField(label="Secret Access Key", required=False, widget=GEHEIM,
+                                help_text="Leer lassen = unverändert.")  # fmt: skip
+    s3_endpoint = forms.CharField(label="Endpunkt (Endpoint)", required=False,
+        help_text="z. B. s3.eu-central-003.backblazeb2.com; bei Amazon AWS leer.")  # fmt: skip
+    s3_region = forms.CharField(label="Region", required=False, help_text="falls nötig, sonst leer")
+
+    # FTP / FTPS
+    ftp_host = forms.CharField(label="Server (Host)", required=False)
+    ftp_port = forms.IntegerField(label="Port", required=False, min_value=1, max_value=65535,
+                                  help_text="Standard 21.")  # fmt: skip
+    ftp_user = forms.CharField(label="Benutzername", required=False)
+    ftp_pass = forms.CharField(label="Passwort", required=False, widget=GEHEIM,
+                               help_text="Leer lassen = unverändert.")  # fmt: skip
+    ftp_tls = forms.BooleanField(label="Verschlüsselt (FTPS, explizit)", required=False)
+
+    # Experten
     konfig = forms.CharField(
-        label="rclone-Konfiguration", required=False,
-        widget=forms.Textarea(attrs={"rows": 8, "spellcheck": "false", "autocomplete": "off",
+        label="rclone-Remote-Block", required=False,
+        widget=forms.Textarea(attrs={"rows": 7, "spellcheck": "false", "autocomplete": "off",
                                      "placeholder": "[fern]\ntype = sftp\nhost = …\nuser = …\n…"}),
-        help_text="Einen fertigen rclone-Remote-Block einfügen (aus „rclone config“ oder der "
-        "Anleitung). Leer lassen ändert nichts an einer bereits gespeicherten Konfiguration.",
+        help_text="Nur für Sonderfälle (z. B. Google Drive): einen fertigen rclone-Block einfügen. "
+        "Der Name in eckigen Klammern muss „fern“ sein.",
     )  # fmt: skip
     entfernen = forms.BooleanField(label="Gespeicherte Fernablage entfernen", required=False)
 
+    NAME = "fern"  # fester Remote-Name
+
+    def __init__(self, *args, instanz=None, **kwargs):
+        from apps.core.models import Fernsicherung
+
+        self.instanz = instanz or Fernsicherung.laden()
+        super().__init__(*args, **kwargs)
+        if not self.is_bound:
+            self._vorbelegen()
+
+    def _vorbelegen(self):
+        """Die nicht-geheimen Werte der gespeicherten Konfig in die Felder übernehmen."""
+        from apps.core import rclone
+
+        alt = rclone.block_parsen(self.instanz.konfig)
+        typ = alt.get("type")
+        if typ == "sftp":
+            self.initial.update(art="sftp", sftp_host=alt.get("host"), sftp_port=alt.get("port"),
+                                sftp_user=alt.get("user"))  # fmt: skip
+        elif typ == "webdav":
+            self.initial.update(art="webdav", dav_vendor=alt.get("vendor", "nextcloud"),
+                                dav_url=alt.get("url"), dav_user=alt.get("user"))  # fmt: skip
+        elif typ == "s3":
+            self.initial.update(art="s3", s3_provider=alt.get("provider", "Other"),
+                                s3_key=alt.get("access_key_id"), s3_endpoint=alt.get("endpoint"),
+                                s3_region=alt.get("region"))  # fmt: skip
+        elif typ == "ftp":
+            self.initial.update(art="ftp", ftp_host=alt.get("host"), ftp_port=alt.get("port"),
+                                ftp_user=alt.get("user"),
+                                ftp_tls=alt.get("explicit_tls") == "true")  # fmt: skip
+        elif typ:
+            self.initial.update(art="block", konfig=self.instanz.konfig)
+
+    def _geheim(self, feld, alt_schluessel, alt, art_passt, verschleiern=True):
+        """Neues Geheimnis verschleiern, sonst das gespeicherte übernehmen (bei gleicher Art)."""
+        from apps.core import rclone
+
+        wert = self.cleaned_data.get(feld, "")
+        if wert:
+            return rclone.obscure(wert) if verschleiern else wert
+        return alt.get(alt_schluessel, "") if art_passt else ""
+
+    def clean(self):
+        d = super().clean()
+        art = d.get("art")
+        if art in ("", "block") or d.get("entfernen"):
+            return d
+        pflicht = {"sftp": ("sftp_host", "sftp_user"), "webdav": ("dav_url", "dav_user"),
+                   "s3": ("s3_key",), "ftp": ("ftp_host", "ftp_user")}  # fmt: skip
+        for feld in pflicht.get(art, ()):
+            if not d.get(feld):
+                self.add_error(feld, "Bitte ausfüllen.")
+        return d
+
     def speichern(self) -> None:
-        obj = Fernsicherung.laden()
-        if self.cleaned_data.get("entfernen"):
+        from apps.core import rclone
+        from apps.core.models import Fernsicherung
+
+        obj: Fernsicherung = self.instanz
+        d = self.cleaned_data
+        art = d.get("art")
+        if d.get("entfernen"):
             obj.konfig_setzen("")
-        elif self.cleaned_data.get("konfig", "").strip():
-            obj.konfig_setzen(self.cleaned_data["konfig"])
-        else:
-            return  # nichts eingegeben und nicht entfernt: unverändert lassen
+            obj.schluessel_setzen("")
+            obj.save()
+            return
+        if not art:
+            return  # nichts gewählt, nicht entfernt: unverändert
+        if art == "block":
+            if d.get("konfig", "").strip():
+                obj.konfig_setzen(d["konfig"])
+                obj.save()
+            return
+        alt = rclone.block_parsen(obj.konfig)
+        passt = alt.get("type") == art  # gleiche Art wie gespeichert → Geheimnis wiederverwendbar
+        werte = {}
+        if art == "sftp":
+            schluessel = self._sftp_schluessel(obj, passt)
+            werte = {"host": d["sftp_host"], "port": d.get("sftp_port"), "user": d["sftp_user"]}
+            if schluessel:
+                werte["key_file"] = rclone.SCHLUESSELDATEI_PFAD
+            else:
+                werte["pass"] = self._geheim("sftp_pass", "pass", alt, passt)
+        elif art == "webdav":
+            werte = {"url": d["dav_url"], "user": d["dav_user"],
+                     "vendor": d.get("dav_vendor") or "nextcloud",
+                     "pass": self._geheim("dav_pass", "pass", alt, passt)}  # fmt: skip
+        elif art == "s3":
+            werte = {"provider": d.get("s3_provider"), "access_key_id": d["s3_key"],
+                     "secret_access_key": self._geheim("s3_secret", "secret_access_key", alt,
+                                                        passt, verschleiern=False),
+                     "endpoint": d.get("s3_endpoint"), "region": d.get("s3_region")}  # fmt: skip
+        elif art == "ftp":
+            werte = {"host": d["ftp_host"], "port": d.get("ftp_port"), "user": d["ftp_user"],
+                     "pass": self._geheim("ftp_pass", "pass", alt, passt),
+                     "tls": d.get("ftp_tls")}  # fmt: skip
+        obj.konfig_setzen(rclone.block_bauen(self.NAME, art, werte))
         obj.save()
+
+    def _sftp_schluessel(self, obj, passt) -> str:
+        """Neue Schlüsseldatei speichern / entfernen / behalten; liefert den aktuellen Schlüssel."""
+        if self.cleaned_data.get("sftp_key_entfernen"):
+            obj.schluessel_setzen("")
+            return ""
+        datei = self.cleaned_data.get("sftp_key")
+        if datei:
+            obj.schluessel_setzen(datei.read().decode("utf-8", errors="replace"))
+            return obj.schluessel
+        return obj.schluessel if passt else ""
 
 
 def _html_feld(zeilen=8):

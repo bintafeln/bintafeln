@@ -1,0 +1,61 @@
+{# Geführte Eingabe der Fernablage: Art wählen, dann nur die passenden Felder (zeigen_bei.js). #}
+{% if fern_form.non_field_errors %}
+  <div class="fehler" role="alert">{% for fehler in fern_form.non_field_errors %}<p>{{ fehler }}</p>{% endfor %}</div>
+{% endif %}
+<div class="formular-raster">{% include "includes/feld.html" with feld=fern_form.art %}</div>
+
+<fieldset class="feld-gruppe" data-zeigen-bei="art=sftp">
+  <legend>SFTP (SSH-Server / Storage Box)</legend>
+  <p class="hilfe">Entweder ein <strong>Passwort</strong> eintragen <em>oder</em> eine private
+    <strong>Schlüsseldatei</strong> hochladen – nicht beides. Bei einer Schlüsseldatei muss der
+    passende öffentliche Schlüssel beim Server hinterlegt sein.</p>
+  <div class="formular-raster">
+    {% include "includes/feld.html" with feld=fern_form.sftp_host %}
+    {% include "includes/feld.html" with feld=fern_form.sftp_port %}
+    {% include "includes/feld.html" with feld=fern_form.sftp_user %}
+    {% include "includes/feld.html" with feld=fern_form.sftp_pass %}
+    {% include "includes/feld.html" with feld=fern_form.sftp_key %}
+    {% if fern_eingerichtet %}{% include "includes/feld.html" with feld=fern_form.sftp_key_entfernen %}{% endif %}
+  </div>
+</fieldset>
+
+<fieldset class="feld-gruppe" data-zeigen-bei="art=webdav">
+  <legend>Nextcloud / ownCloud / WebDAV</legend>
+  <div class="formular-raster">
+    {% include "includes/feld.html" with feld=fern_form.dav_vendor %}
+    {% include "includes/feld.html" with feld=fern_form.dav_url %}
+    {% include "includes/feld.html" with feld=fern_form.dav_user %}
+    {% include "includes/feld.html" with feld=fern_form.dav_pass %}
+  </div>
+</fieldset>
+
+<fieldset class="feld-gruppe" data-zeigen-bei="art=s3">
+  <legend>S3-kompatibel</legend>
+  <div class="formular-raster">
+    {% include "includes/feld.html" with feld=fern_form.s3_provider %}
+    {% include "includes/feld.html" with feld=fern_form.s3_key %}
+    {% include "includes/feld.html" with feld=fern_form.s3_secret %}
+    {% include "includes/feld.html" with feld=fern_form.s3_endpoint %}
+    {% include "includes/feld.html" with feld=fern_form.s3_region %}
+  </div>
+</fieldset>
+
+<fieldset class="feld-gruppe" data-zeigen-bei="art=ftp">
+  <legend>FTP / FTPS</legend>
+  <div class="formular-raster">
+    {% include "includes/feld.html" with feld=fern_form.ftp_host %}
+    {% include "includes/feld.html" with feld=fern_form.ftp_port %}
+    {% include "includes/feld.html" with feld=fern_form.ftp_user %}
+    {% include "includes/feld.html" with feld=fern_form.ftp_pass %}
+    {% include "includes/feld.html" with feld=fern_form.ftp_tls %}
+  </div>
+</fieldset>
+
+<fieldset class="feld-gruppe" data-zeigen-bei="art=block">
+  <legend>Experten: rclone-Block selbst einfügen</legend>
+  <div class="formular-raster">{% include "includes/feld.html" with feld=fern_form.konfig %}</div>
+</fieldset>
+
+{% if fern_eingerichtet %}
+<div class="formular-raster">{% include "includes/feld.html" with feld=fern_form.entfernen %}</div>
+{% endif %}

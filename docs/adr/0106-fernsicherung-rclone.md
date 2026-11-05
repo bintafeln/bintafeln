@@ -14,10 +14,20 @@ Der Dienst „backup“ kann Sicherungen zusätzlich auf eine **Fernablage** hoc
 **rclone** (deckt viele Anbieter mit einem Werkzeug ab).
 
 - Das Image `docker/backup` enthält `rclone`.
-- In der Oberfläche („Einstellungen → Sicherungen → Sicherung außer Haus“) fügt die Tafel einen
-  fertigen rclone-Remote-Block ein (`FernsicherungForm`). Er wird **verschlüsselt** gespeichert
-  (`Fernsicherung.konfig_verschluesselt` über `apps.core.geheimnis`, ADR 0016) und aus
-  Sicherheitsgründen nie wieder angezeigt (leer lassen = unverändert, Häkchen zum Entfernen).
+- In der Oberfläche („Einstellungen → Sicherungen → Sicherung außer Haus“) wählt die Tafel
+  **menügeführt** die Art (SFTP, Nextcloud/ownCloud/WebDAV, S3-kompatibel, FTP/FTPS) und füllt nur
+  die passenden Felder aus (`FernsicherungForm` mit `data-zeigen-bei`, `templates/core/_fernablage_form.html`);
+  bintafeln baut daraus selbst den rclone-Remote-Block (`apps.core.rclone.block_bauen`). Für Sonderfälle
+  bleibt „Experten: rclone-Block selbst einfügen“. Passwörter werden rclone-kompatibel „verschleiert“
+  (`rclone.obscure`, AES-CTR mit dem festen rclone-Schlüssel – keine echte Verschlüsselung, aber so,
+  dass der Dienst „backup“ die Konfig unverändert nutzen kann; S3-Secrets lässt rclone im Klartext).
+  Die gesamte Konfig wird **verschlüsselt** gespeichert (`Fernsicherung.konfig_verschluesselt` über
+  `apps.core.geheimnis`, ADR 0016) und aus Sicherheitsgründen nie wieder angezeigt (leer lassen =
+  unverändert, Häkchen zum Entfernen).
+- Bei SFTP kann statt eines Passworts eine **private Schlüsseldatei** hochgeladen werden; sie wird
+  getrennt verschlüsselt gespeichert (`Fernsicherung.schluessel_verschluesselt`). Der Dienst „app“
+  schreibt sie entschlüsselt als `/fernsicherung/sftp_key` (Rechte `0600`) neben die `rclone.conf`,
+  die mit `key_file` darauf verweist.
 - Weil der Dienst „backup“ kein Django ist und das Geheimnis (Fernet) nicht entschlüsseln kann,
   schreibt der Dienst „app“ die entschlüsselte `rclone.conf` in ein nur intern geteiltes Volume
   (`fernsicherung`, in „app“ beschreibbar, in „backup“ nur lesbar). Das geschieht beim Start

@@ -43,7 +43,7 @@ def seite(request):
 @nicht_in_demo
 def fernablage(request):
     """rclone-Konfiguration für Sicherungen außer Haus speichern (ADR 0106)."""
-    form = FernsicherungForm(request.POST or None)
+    form = FernsicherungForm(request.POST or None, request.FILES or None)
     if request.method == "POST" and form.is_valid():
         form.speichern()
         fernsicherung.schreiben()  # entschlüsselt für den Dienst backup bereitstellen

@@ -177,24 +177,123 @@ def test_fernsicherung_schreibt_rclone_conf(tmp_path, monkeypatch):
     assert fernsicherung.schreiben() is False and not datei.exists()
 
 
-def test_fernablage_oberflaeche_speichern_und_entfernen(admin_client, tmp_path, monkeypatch):
+def test_rclone_obscure_roundtrip():
+    from apps.core import rclone
+
+    verschleiert = rclone.obscure("geheim123")
+    assert verschleiert != "geheim123" and "=" not in verschleiert  # kein Klartext/Füllzeichen
+    assert rclone.reveal(verschleiert) == "geheim123"
+    # Zufälliger IV: zweimal verschleiern ergibt verschiedene Texte, beide lesbar
+    assert rclone.obscure("geheim123") != verschleiert
+    assert rclone.block_parsen("[fern]\ntype = sftp\nhost = a.example\n") == {
+        "type": "sftp", "host": "a.example"}  # fmt: skip
+
+
+def test_fernablage_gefuehrt_sftp_passwort(admin_client, tmp_path, monkeypatch):
+    """SFTP mit Passwort: Block wird gebaut, Passwort rclone-verschleiert (nicht im Klartext)."""
+    from apps.core import fernsicherung, rclone
+    from apps.core.models import Fernsicherung
+
+    monkeypatch.setattr(fernsicherung, "KONFIG_PFAD", tmp_path)
+    url = reverse("core:sicherung_fernablage")
+    admin_client.post(url, {"art": "sftp", "sftp_host": "backup.example", "sftp_port": "2222",
+                            "sftp_user": "tafel", "sftp_pass": "geheim123"})  # fmt: skip
+    werte = rclone.block_parsen(Fernsicherung.laden().konfig)
+    assert werte["type"] == "sftp" and werte["host"] == "backup.example"
+    assert werte["port"] == "2222" and werte["user"] == "tafel"
+    assert werte["pass"] != "geheim123" and rclone.reveal(werte["pass"]) == "geheim123"
+    assert (tmp_path / "rclone.conf").exists()
+    # Leeres Passwort bei gleicher Art: gespeichertes Geheimnis bleibt erhalten
+    admin_client.post(url, {"art": "sftp", "sftp_host": "backup.example", "sftp_user": "tafel"})
+    neu = rclone.block_parsen(Fernsicherung.laden().konfig)
+    assert rclone.reveal(neu["pass"]) == "geheim123"
+
+
+def test_fernablage_gefuehrt_sftp_schluesseldatei(admin_client, tmp_path, monkeypatch):
+    """SFTP mit Schlüsseldatei: key_file im Block, Schlüssel verschlüsselt gespeichert."""
+    from io import BytesIO
+
+    from apps.core import fernsicherung, rclone
+    from apps.core.models import Fernsicherung
+
+    monkeypatch.setattr(fernsicherung, "KONFIG_PFAD", tmp_path)
+    url = reverse("core:sicherung_fernablage")
+    schluessel = b"-----BEGIN OPENSSH PRIVATE KEY-----\nerfundenerschluessel\n-----END-----\n"
+    datei = BytesIO(schluessel)
+    datei.name = "id_ed25519"
+    admin_client.post(url, {"art": "sftp", "sftp_host": "backup.example", "sftp_user": "tafel",
+                            "sftp_key": datei})  # fmt: skip
+    f = Fernsicherung.laden()
+    werte = rclone.block_parsen(f.konfig)
+    assert werte["key_file"] == rclone.SCHLUESSELDATEI_PFAD and "pass" not in werte
+    assert f.schluessel.strip() == schluessel.decode().strip()
+    assert "erfundenerschluessel" not in f.schluessel_verschluesselt  # nicht im Klartext
+    # schreiben() legt die Schlüsseldatei mit strengen Rechten an
+    import stat
+
+    schl_datei = tmp_path / "sftp_key"
+    assert schl_datei.exists() and stat.S_IMODE(schl_datei.stat().st_mode) == 0o600
+
+
+def test_fernablage_gefuehrt_webdav_s3_ftp(admin_client, tmp_path, monkeypatch):
+    from apps.core import fernsicherung, rclone
+    from apps.core.models import Fernsicherung
+
+    monkeypatch.setattr(fernsicherung, "KONFIG_PFAD", tmp_path)
+    url = reverse("core:sicherung_fernablage")
+    # Nextcloud/WebDAV: Anbieter als vendor, Passwort verschleiert
+    admin_client.post(url, {"art": "webdav", "dav_vendor": "owncloud",
+                            "dav_url": "https://cloud.example/remote.php/dav/files/tafel/",
+                            "dav_user": "tafel", "dav_pass": "app-pw"})  # fmt: skip
+    w = rclone.block_parsen(Fernsicherung.laden().konfig)
+    assert w["type"] == "webdav" and w["vendor"] == "owncloud"
+    assert rclone.reveal(w["pass"]) == "app-pw"
+    # S3: Secret im Klartext (rclone verschleiert S3-Secrets nicht)
+    admin_client.post(url, {"art": "s3", "s3_provider": "Backblaze", "s3_key": "KID",
+                            "s3_secret": "SECRET", "s3_endpoint": "s3.example"})  # fmt: skip
+    w = rclone.block_parsen(Fernsicherung.laden().konfig)
+    assert w["type"] == "s3" and w["access_key_id"] == "KID" and w["secret_access_key"] == "SECRET"
+    # FTP mit FTPS
+    admin_client.post(url, {"art": "ftp", "ftp_host": "ftp.example", "ftp_user": "tafel",
+                            "ftp_pass": "pw", "ftp_tls": "on"})  # fmt: skip
+    w = rclone.block_parsen(Fernsicherung.laden().konfig)
+    assert w["type"] == "ftp" and w["explicit_tls"] == "true" and rclone.reveal(w["pass"]) == "pw"
+
+
+def test_fernablage_block_und_entfernen(admin_client, tmp_path, monkeypatch):
     from apps.core import fernsicherung
     from apps.core.models import Fernsicherung
 
     monkeypatch.setattr(fernsicherung, "KONFIG_PFAD", tmp_path)
     url = reverse("core:sicherung_fernablage")
-    admin_client.post(url, {"konfig": FERN_KONFIG})
+    admin_client.post(url, {"art": "block", "konfig": FERN_KONFIG})
     assert Fernsicherung.laden().konfig.strip() == FERN_KONFIG.strip()
     assert (tmp_path / "rclone.conf").exists()
-    admin_client.post(url, {"konfig": ""})  # leer = unverändert
+    admin_client.post(url, {"art": "block", "konfig": ""})  # leer = unverändert
     assert Fernsicherung.laden().konfig.strip() == FERN_KONFIG.strip()
-    admin_client.post(url, {"konfig": "", "entfernen": "on"})
+    admin_client.post(url, {"entfernen": "on"})
     assert not Fernsicherung.laden().eingerichtet and not (tmp_path / "rclone.conf").exists()
     # Das Geheimnis wird nicht in die Seite zurückgeschrieben
     f = Fernsicherung.laden()
     f.konfig_setzen(FERN_KONFIG)
     f.save()
     assert "geheim123" not in admin_client.get(URL).content.decode()
+
+
+def test_fernablage_vorbelegung(admin_client):
+    """Beim erneuten Öffnen stehen Art und die nicht-geheimen Werte wieder im Formular."""
+    from apps.core.forms import FernsicherungForm
+    from apps.core.models import Fernsicherung
+
+    f = Fernsicherung.laden()
+    f.konfig_setzen(FERN_KONFIG)
+    f.save()
+    form = FernsicherungForm(instanz=f)
+    assert form.initial["art"] == "sftp" and form.initial["sftp_host"] == "backup.example"
+    assert form.initial["sftp_user"] == "tafel"
+    seite = admin_client.get(URL).content.decode()
+    assert 'value="backup.example"' in seite  # vorbelegt sichtbar
+    assert "geheim123" not in seite  # Geheimnis nie
 
 
 def test_fernablage_als_sicherungsziel_waehlbar(admin_client):
