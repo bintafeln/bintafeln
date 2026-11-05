@@ -54,9 +54,7 @@ def start(request):
     papierkorb.fristen_anwenden()
     kontext = {}
     if rollen.hat_recht(request.user, "antraege.sehen"):
-        kontext["neue_antraege"] = Antrag.objects.filter(
-            status=Antrag.Status.NEU, papierkorb_am__isnull=True
-        ).count()
+        kontext["neue_antraege"] = Antrag.objects.filter(status=Antrag.Status.NEU).count()
     if rollen.darf_mitarbeitende_verwalten(request.user):
         kontext["faellig"] = len(personal.faelligkeiten())
     if rollen.hat_recht(request.user, "korrekturen.entscheiden"):

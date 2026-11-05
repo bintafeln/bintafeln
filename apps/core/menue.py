@@ -134,9 +134,7 @@ def menue(request) -> list[dict]:
         from apps.antraege.models import Antrag
 
         antraege = _eintrag("Anträge", "antraege:liste")
-        antraege["zahl"] = Antrag.objects.filter(
-            status__in=Antrag.OFFEN, papierkorb_am__isnull=True
-        ).count()
+        antraege["zahl"] = Antrag.objects.filter(status__in=Antrag.OFFEN).count()
         antraege["zahl_titel"] = "offene Anträge"
         dazu("Kunden/Anträge und Warteliste", [
             ("antraege.sehen", antraege),

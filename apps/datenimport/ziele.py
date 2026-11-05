@@ -1598,7 +1598,7 @@ class Antraege(Ziel):
         from apps.antraege.models import Antrag
 
         ergebnis = []
-        for a in Antrag.objects.filter(papierkorb_am__isnull=True):
+        for a in Antrag.objects.all():
             werte = {
                 "laufnummer": str(a.laufnummer or ""),
                 "anrede": a.anrede, "vorname": a.vorname, "nachname": a.nachname,

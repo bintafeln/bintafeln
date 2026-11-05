@@ -41,8 +41,8 @@ DUBLETTE_AB = 0.85  # Namensähnlichkeit, ab der zwei Anträge als mögliche Dub
 
 
 def wartestaende_anlegen() -> None:
-    """Jeder Antrag außerhalb des Papierkorbs bekommt einen Wartestand."""
-    fehlend = Antrag.objects.filter(papierkorb_am__isnull=True, wartestand__isnull=True)
+    """Jeder Antrag bekommt einen Wartestand (gelöschte Anträge liegen im Papierkorb)."""
+    fehlend = Antrag.objects.filter(wartestand__isnull=True)
     Wartestand.objects.bulk_create([Wartestand(antrag=a) for a in fehlend],
                                    ignore_conflicts=True)  # fmt: skip
 
@@ -358,7 +358,7 @@ def absagen(termin, antraege, von: str) -> list[dict]:
 def dubletten() -> list[dict]:
     """Paare offener Anträge mit sehr ähnlichem Namen (oder gleichem Geburtsdatum und Namen)."""
     antraege = list(
-        Antrag.objects.filter(papierkorb_am__isnull=True)
+        Antrag.objects
         .exclude(wartestand__status__in=Wartestand.ABGESCHLOSSEN)
         .order_by("eingegangen_am")
     )  # fmt: skip
@@ -563,7 +563,7 @@ def entscheiden(a, kundennummer: str, gleich: bool, von: str, heute=None) -> str
 
 
 def offene_antraege():
-    return (Antrag.objects.filter(papierkorb_am__isnull=True)
+    return (Antrag.objects
             .exclude(wartestand__status__in=Wartestand.ABGESCHLOSSEN)
             .filter(Q(status__in=Antrag.OFFEN)))  # fmt: skip
 

@@ -164,11 +164,8 @@ class AntragEinstellungen(models.Model):
         "Abgeschlossene Anträge nach … Tagen in den Papierkorb",
         default=90,
         validators=[MinValueValidator(1), MaxValueValidator(3650)],
-    )
-    loeschen_nach_tagen = models.PositiveSmallIntegerField(
-        "Anträge im Papierkorb nach … Tagen endgültig löschen",
-        default=30,
-        validators=[MinValueValidator(1), MaxValueValidator(3650)],
+        help_text="Danach liegen sie im gemeinsamen Papierkorb und werden dort nach der "
+        "Tafel-weiten Frist („Papierkorb leeren nach“) endgültig gelöscht.",
     )
     max_je_stunde = models.PositiveSmallIntegerField(
         "Anträge je Stunde und Internetanschluss",
@@ -278,7 +275,6 @@ class Antrag(models.Model):
     sprache = models.CharField("Sprache", max_length=5, choices=sprachen.AUSWAHL, default="de")
     status = models.CharField("Status", max_length=15, choices=Status.choices, default=Status.NEU)
     abgeschlossen_am = models.DateTimeField("Abgeschlossen am", null=True, blank=True)
-    papierkorb_am = models.DateTimeField("In den Papierkorb am", null=True, blank=True)
     kundennummer = models.CharField("Kundennummer", max_length=20, blank=True)
     anrede = models.CharField("Anrede", max_length=30, blank=True)
     vorname = models.CharField("Vorname", max_length=100)
@@ -340,14 +336,6 @@ class Antrag(models.Model):
         self.status, self.bearbeitet_von = status, von
         self.abgeschlossen_am = None if status in self.OFFEN else timezone.now()
         self.save()
-
-    def endgueltig_loeschen_am(self):
-        """Tag, an dem dieser Antrag aus dem Papierkorb endgültig gelöscht wird (nach der unter
-        „Anträge einstellen“ gesetzten Frist); None, wenn er nicht im Papierkorb liegt."""
-        if not self.papierkorb_am:
-            return None
-        tage = AntragEinstellungen.laden().loeschen_nach_tagen
-        return timezone.localdate(self.papierkorb_am) + dt.timedelta(days=tage)
 
 
 class AntragPerson(models.Model):
@@ -436,12 +424,24 @@ auditlog.register(AntragAnhang, exclude_fields=["datei"])
 auditlog.register(AntragAnmerkung)
 
 
+def in_papierkorb(antrag: Antrag, benutzer=None):
+    """Legt einen Antrag mit allem, was daran hängt (Personen, Nachweise, Anmerkungen), in den
+    gemeinsamen Papierkorb (ADR 0073). Von dort wiederherstellbar; die endgültige Löschung
+    besorgt ``papierkorb.fristen_anwenden`` nach der Tafel-weiten Frist."""
+    from apps.core import papierkorb
+
+    return papierkorb.loeschen(
+        benutzer, "Antrag", f"{antrag.nummer} · {antrag.name}", antrag,
+        recht="antraege.loeschen", kundennummer=antrag.kundennummer)  # fmt: skip
+
+
 def fristen_anwenden(jetzt=None) -> int:
-    """Fristen der Anträge (ADR 0024); liefert die Zahl der endgültig gelöschten.
+    """Fristen der Anträge (ADR 0024); liefert die Zahl der in den Papierkorb gelegten.
 
     Unbearbeitete gelten nach N Tagen als erledigt (wenn eingestellt), abgeschlossene kommen
-    nach N Tagen in den Papierkorb, aus dem Papierkorb wird nach N Tagen gelöscht, samt
-    Nachweisen. Absendeversuche (Missbrauchsschutz) bleiben einen Tag.
+    nach N Tagen in den gemeinsamen Papierkorb (ADR 0073), wo sie nach der Tafel-weiten Frist
+    endgültig gelöscht werden, samt Nachweisen. Absendeversuche (Missbrauchsschutz) bleiben
+    einen Tag.
     """
     jetzt = jetzt or timezone.now()
     e = AntragEinstellungen.laden()
@@ -450,23 +450,19 @@ def fristen_anwenden(jetzt=None) -> int:
     if e.erledigt_nach_tagen:
         Antrag.objects.filter(
             status__in=Antrag.OFFEN,
-            papierkorb_am__isnull=True,
             eingegangen_am__lt=jetzt - tage(days=e.erledigt_nach_tagen),
         ).update(status=Antrag.Status.ERLEDIGT, abgeschlossen_am=jetzt, bearbeitet_von="Frist")
-    Antrag.objects.filter(
-        papierkorb_am__isnull=True,
-        abgeschlossen_am__lt=jetzt - tage(days=e.papierkorb_nach_tagen),
-    ).update(papierkorb_am=jetzt)
-    faellig = Antrag.objects.filter(papierkorb_am__lt=jetzt - tage(days=e.loeschen_nach_tagen))
-    anzahl = 0
+    faellig = list(Antrag.objects.filter(
+        abgeschlossen_am__lt=jetzt - tage(days=e.papierkorb_nach_tagen)))  # fmt: skip
     for antrag in faellig:
-        loeschen(antrag)
-        anzahl += 1
-    return anzahl
+        in_papierkorb(antrag)
+    return len(faellig)
 
 
 def loeschen(antrag: Antrag) -> None:
-    """Löscht einen Antrag endgültig, mit verschlüsselten Nachweisen und Protokolleinträgen."""
+    """Löscht einen Antrag sofort und endgültig, mit verschlüsselten Nachweisen und
+    Protokolleinträgen (für das Zurücksetzen der Demo-Daten; das normale Löschen läuft über
+    ``in_papierkorb`` und den gemeinsamen Papierkorb)."""
     from auditlog.models import LogEntry
     from django.contrib.contenttypes.models import ContentType
 

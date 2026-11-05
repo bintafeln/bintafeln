@@ -24,7 +24,6 @@ urlpatterns = [
     path("<int:pk>/status/", views.status, name="status"),
     path("<int:pk>/anmerkung/", views.anmerkung, name="anmerkung"),
     path("<int:pk>/papierkorb/", views.papierkorb, name="papierkorb"),
-    path("<int:pk>/loeschen/", views.endgueltig_loeschen, name="loeschen"),
     path("<int:pk>/auskunft/", views.auskunft_pdf, name="auskunft"),
     path("<int:pk>/nachweis/<int:anhang>/", views.anhang, name="anhang"),
 ]

@@ -67,9 +67,7 @@ def _gefiltert(request):
         "suche": request.GET.get("suche", "").strip(),
         "sort": request.GET.get("sort", "eingang"),
     }
-    ws = Wartestand.objects.filter(antrag__papierkorb_am__isnull=True).select_related(
-        "antrag", "termin"
-    )
+    ws = Wartestand.objects.select_related("antrag", "termin")
     if f["status"] in S.values:
         ws = ws.filter(status=f["status"])
     else:
@@ -109,10 +107,8 @@ def _gefiltert(request):
 def liste(request):
     ablauf.automatik()
     f, ws = _gefiltert(request)
-    zahlen = dict(Wartestand.objects.filter(antrag__papierkorb_am__isnull=True)
-                  .values_list("status").annotate(n=Count("pk")))  # fmt: skip
-    staaten = sorted(set(Antrag.objects.filter(papierkorb_am__isnull=True)
-                         .exclude(staatsangehoerigkeit="")
+    zahlen = dict(Wartestand.objects.values_list("status").annotate(n=Count("pk")))
+    staaten = sorted(set(Antrag.objects.exclude(staatsangehoerigkeit="")
                          .values_list("staatsangehoerigkeit", flat=True)))  # fmt: skip
     termine = Termin.objects.annotate(n=Count("wartende")).filter(n__gt=0)
     return render(request, "warteliste/liste.html", {
@@ -139,8 +135,7 @@ def sperren(request):
 
 def _ausgewaehlt(request):
     ids = [int(i) for i in request.POST.getlist("ids") if i.isdigit()]
-    return list(Antrag.objects.filter(pk__in=ids, papierkorb_am__isnull=True)
-                .order_by("eingegangen_am"))  # fmt: skip
+    return list(Antrag.objects.filter(pk__in=ids).order_by("eingegangen_am"))
 
 
 @require_POST
