@@ -34,6 +34,16 @@ def gruppe():
     return g
 
 
+def test_text_umbruch():
+    """Lange Texte (z. B. die Adresse der Ausgabestelle) brechen in einer schmalen Box um."""
+    from reportlab.lib.units import mm
+
+    lang = "Musterstraße 123, 45127 Essen-Altendorf"
+    assert len(ausweis._umbrechen(lang, "Helvetica", 8, 20 * mm)) >= 2  # schmal → mehrzeilig
+    assert len(ausweis._umbrechen(lang, "Helvetica", 8, 200 * mm)) == 1  # breit → eine Zeile
+    assert ausweis._umbrechen("", "Helvetica", 8, 20 * mm) == [""]
+
+
 def test_elemente_pruefen():
     roh = [
         {"typ": "unbekannt"},
