@@ -110,10 +110,10 @@ def mitarbeiter_pdf(b) -> bytes:
 
     doc.ueberschrift("Arbeitsverträge")
     doc.tabelle(
-        ["Beginn", "Ende", "Tätigkeit", "Std./Woche", "Urlaub/Jahr", "Stundenlohn"],
+        ["Beginn", "Ende", "Tätigkeit", "Std./Woche", "Urlaub/Jahr", "Stundenlohn", "Monatslohn"],
         [
             [_wert(v.beginn), _wert(v.ende) or "unbefristet", v.taetigkeit, _wert(v.wochenstunden),
-             _wert(v.urlaubstage), _wert(v.stundenlohn)]
+             _wert(v.urlaubstage), _wert(v.stundenlohn), _wert(v.monatslohn)]
             for v in b.vertraege.all()
         ],
     )  # fmt: skip

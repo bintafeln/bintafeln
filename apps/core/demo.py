@@ -186,6 +186,7 @@ def _arbeitszeit(fest, heute) -> None:
     Arbeitsvertrag.objects.create(
         benutzer=fest, beginn=heute.replace(month=1, day=1), taetigkeit="Fahrdienst",
         wochenstunden=Decimal("30"), urlaubstage=Decimal("30"), stundenlohn=Decimal("14.50"),
+        monatslohn=Decimal("1885.00"),
     )  # fmt: skip
     zeitzone = timezone.get_current_timezone()
     for tage in range(1, 8):

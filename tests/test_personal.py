@@ -69,16 +69,30 @@ def test_monatslohn_umrechnung():
 def test_vertragform_rechnet_in_beide_richtungen():
     from apps.personal.forms import VertragForm
 
-    # Nur Monatslohn eingegeben → Stundenlohn wird rückwärts gerechnet
+    # Nur Monatslohn eingegeben → Stundenlohn wird rückwärts gerechnet, Monatslohn bleibt
     form = VertragForm({"beginn": "01.01.2026", "wochenstunden": "40", "urlaubstage": "30",
                         "monatslohn": "2600"})  # fmt: skip
     assert form.is_valid(), form.errors
     assert form.cleaned_data["stundenlohn"] == D("15.00")
-    # Nur Stundenlohn eingegeben → bleibt, Monatslohn ist nur Anzeige
+    assert form.cleaned_data["monatslohn"] == D("2600")
+    # Ein krummer Monatslohn ist maßgeblich und bleibt GENAU stehen; nur der Stundenlohn rundet
+    # (2000 / (40 × 52/12) = 11,5384… → 11,54). Nicht zurück auf 11,54 × … = 2000,27 runden!
+    form = VertragForm({"beginn": "01.01.2026", "wochenstunden": "40", "urlaubstage": "30",
+                        "monatslohn": "2000"})  # fmt: skip
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["stundenlohn"] == D("11.54")
+    assert form.cleaned_data["monatslohn"] == D("2000")
+    # Monatslohn gewinnt auch, wenn zugleich ein Stundenlohn eingegeben wurde
+    form = VertragForm({"beginn": "01.01.2026", "wochenstunden": "40", "urlaubstage": "30",
+                        "stundenlohn": "99", "monatslohn": "2600"})  # fmt: skip
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["stundenlohn"] == D("15.00") and form.cleaned_data["monatslohn"] == D("2600")  # noqa: E501
+    # Nur Stundenlohn eingegeben → bleibt, Monatslohn wird daraus berechnet (Anzeige)
     form = VertragForm({"beginn": "01.01.2026", "wochenstunden": "40", "urlaubstage": "30",
                         "stundenlohn": "15"})  # fmt: skip
     assert form.is_valid(), form.errors
     assert form.cleaned_data["stundenlohn"] == D("15")
+    assert form.cleaned_data["monatslohn"] == D("2600.00")
     # Monatslohn ohne Wochenstunden → verständlicher Fehler
     form = VertragForm({"beginn": "01.01.2026", "urlaubstage": "30", "monatslohn": "2600"})
     assert not form.is_valid() and "wochenstunden" in form.errors
