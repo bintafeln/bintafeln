@@ -253,6 +253,48 @@ def test_umwandeln_unlesbare_datei():
         konvertieren.umwandeln(b"keine excel-datei")
 
 
+def _besuche_xlsx() -> bytes:
+    """Tagesreport „kunden die da waren“: Titelzeile, Kopfzeile, dann Datenzeilen (nur Nummern)."""
+    return _xlsx(
+        {
+            "Sheet1": [
+                ["Bexat Tafelprogramm - kunden die da waren"],
+                ["#", "Kundennummer", "Kundengruppe", "Letzter Besuch", "Uhrzeit",
+                 "Tafelausweis gültig", "Kontostand", "Beitrag"],
+                [1, "01294", "kleiner Markt Do (DO)", "05.11.2026", "16:09", "30.04.2027",
+                 "0,00 €", "3 €"],
+                [2, "02015", "kleiner Markt Do (DO)", "05.11.2026", "12:15", "31.03.2027",
+                 "0,00 €", "1,5 €"],
+                [3, "02268", "Treff24 Do (DO)", "", "14:11", "31.01.2027", "0,00 €", "1,5 €"],
+            ]
+        }
+    )  # fmt: skip
+
+
+def test_besuche_umwandeln():
+    umw = konvertieren.besuche_umwandeln(_besuche_xlsx())
+    zeilen = _lesen(umw.abholungen)
+    assert umw.anzahl == 2  # die Zeile ohne „Letzter Besuch“ wird übersprungen
+    assert any("1 Zeile" in h for h in umw.hinweise)
+    assert [z["kundennummer"] for z in zeilen] == ["01294", "02015"]
+    assert zeilen[0] == {"kundennummer": "01294", "datum": "05.11.2026",
+                         "uhrzeit": "16:09", "beitrag": "3"}  # fmt: skip
+    assert zeilen[1]["beitrag"] == "1,5"  # „1,5 €“ → „1,5“
+
+
+def test_besuche_umwandeln_falsches_blatt():
+    # Datei ohne Spalte „Kundennummer“ (z. B. der volle Export) → klare Meldung.
+    with pytest.raises(konvertieren.BexatFehler, match="Kundennummer"):
+        konvertieren.besuche_umwandeln(_xlsx({"persons": [["id", "firstname"], [1, "A"]]}))
+
+
+def test_besuche_betrag_report():
+    assert konvertieren._betrag_report("3 €") == "3"
+    assert konvertieren._betrag_report("1,5 €") == "1,5"
+    assert konvertieren._betrag_report("2.50") == "2,50"
+    assert konvertieren._betrag_report(None) == ""
+
+
 def test_text_entfernt_steuerzeichen():
     # NUL u. a. Steuerzeichen (die PostgreSQL nicht als Text speichern kann) werden entfernt.
     assert konvertieren._text("Helfer\x00") == "Helfer"
@@ -297,6 +339,18 @@ def test_start_antraege_download(admin_client):
     assert antwort["Content-Type"].startswith("text/csv")
     assert "antraege.csv" in antwort["Content-Disposition"]
     assert "Antrag" in antwort.content.decode("utf-8-sig")
+
+
+def test_start_besuche_download(admin_client):
+    _modul_an()
+    datei = io.BytesIO(_besuche_xlsx())
+    datei.name = "kunden-die-da-waren.xlsx"
+    antwort = admin_client.post(reverse("bexat:start"), {"ziel": "besuche", "datei": datei})
+    assert antwort["Content-Type"].startswith("text/csv")
+    assert "abholungen.csv" in antwort["Content-Disposition"]
+    zeilen = _lesen(antwort.content)
+    assert [z["kundennummer"] for z in zeilen] == ["01294", "02015"]
+    assert zeilen[0]["datum"] == "05.11.2026" and zeilen[0]["beitrag"] == "3"
 
 
 def test_start_ohne_datei_meldung(admin_client):
