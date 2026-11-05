@@ -261,6 +261,33 @@ def test_dublette_per_htmx_entfernt_nur_das_paar(admin_client, modul_an):
     assert ablauf.dubletten() == []  # Paar ist erledigt, Liste wurde nicht neu aufgebaut
 
 
+def test_vorberechnung_warm_und_auffrischen(admin_client, modul_an, monkeypatch):
+    """Doppelte Anträge kommen vorberechnet aus dem Cache (sofort), neue Anträge werden im
+    Hintergrund nachgezogen; läuft eine Auffrischung, baut die Seite einen Selbst-Nachlader ein
+    (ADR 0109)."""
+    from apps.warteliste import vorberechnung
+
+    monkeypatch.setattr(vorberechnung, "_im_hintergrund", lambda fn: fn())  # synchron auffrischen
+
+    antrag("Erika", "Beispiel", geburtsdatum=dt.date(1980, 2, 3))
+    antrag("Erika", "Beispiell", geburtsdatum=dt.date(1980, 2, 3))
+    paare, frisch, _ = vorberechnung.dubletten_daten()  # erstes Mal: wird gerechnet
+    assert frisch and len(paare) == 1
+
+    # Dritter ähnlicher Antrag → Stand veraltet: altes Ergebnis sofort, Auffrischung angestoßen
+    antrag("Erika", "Beispiel", geburtsdatum=dt.date(1980, 2, 3))
+    paare, frisch, _ = vorberechnung.dubletten_daten()
+    assert not frisch and len(paare) == 1  # noch das alte Ergebnis
+    paare, frisch, _ = vorberechnung.dubletten_daten()
+    assert frisch and len(paare) > 1  # danach sind die neuen Paare dabei
+
+    # Läuft die Auffrischung, zeigt die Seite einen Selbst-Nachlader
+    admin_client.get(reverse("warteliste:dubletten_ergebnis"))  # Cache ist warm
+    antrag("Erika", "Beispiel", geburtsdatum=dt.date(1980, 2, 3))  # Signatur ändert sich
+    seite = admin_client.get(reverse("warteliste:dubletten_ergebnis")).content.decode()
+    assert "Wird im Hintergrund aktualisiert" in seite
+
+
 def test_kundenabgleich_sperrzeit_und_ausnahmen():
     heute = timezone.localdate()
     h = Haushalt.objects.create(kundennummer="900", ausweis_gueltig_bis=heute - dt.timedelta(60))
