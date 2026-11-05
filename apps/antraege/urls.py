@@ -32,6 +32,11 @@ urlpatterns = [
         "<int:pk>/nachweis/<int:anhang>/ausweis/", views.nachweis_pruefen, name="nachweis_pruefen"
     ),  # fmt: skip
     path(
+        "<int:pk>/ausweis/staat-uebernehmen/",
+        views.nachweis_staat_uebernehmen,
+        name="nachweis_staat_uebernehmen",
+    ),  # fmt: skip
+    path(
         "<int:pk>/nachweis/<int:anhang>/entfernen/",
         views.nachweis_entfernen,
         name="nachweis_entfernen",

@@ -1,0 +1,9 @@
+{# Bestätigung nach dem Übernehmen der Staatsangehörigkeit in den Antrag (per htmx). #}
+{% if gespeichert %}
+  <div class="ausweis-bericht">
+    <p class="marke-ok" role="status">✓ Staatsangehörigkeit im Antrag auf <strong>{{ wert }}</strong> gesetzt.</p>
+    <p class="hinweis">Die Angabe oben auf der Antragsseite zeigt den neuen Wert nach dem nächsten Laden der Seite.</p>
+  </div>
+{% else %}
+  <p class="hinweis" role="alert">Konnte nicht übernehmen: „{{ wert }}“ ist keine gültige Auswahl.</p>
+{% endif %}

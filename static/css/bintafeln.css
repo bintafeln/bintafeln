@@ -387,9 +387,18 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .nachweis-dialog-leiste { display: flex; gap: 1rem; justify-content: center; align-items: center;
   margin-top: .5rem; flex-wrap: wrap; }
 .nachweis-dialog::backdrop { background: rgba(0, 0, 0, .6); }
-.ausweis-ergebnis { text-align: left; font-size: .8rem; margin-top: .25rem; }
-.ausweis-ergebnis .angaben { margin: .25rem 0; }
-.ausweis-ergebnis dt { font-weight: 600; }
+/* Ergebnis der Ausweisprüfung: volle Breite unter den Kacheln (nicht im schmalen Kästchen),
+   damit der Hinweis lesbar ist. */
+.ausweis-ergebnis { text-align: left; margin: .5rem 0 0; }
+.ausweis-ergebnis:empty { margin: 0; }
+.ausweis-bericht { max-width: 42rem; padding: .6rem .8rem; border: 1px solid var(--rand);
+  border-left: 4px solid var(--akzent); border-radius: var(--radius); background: var(--flaeche); }
+.ausweis-nat { margin: 0 0 .4rem; }
+.ausweis-abweichung { margin: 0 0 .5rem; padding: .5rem .7rem; border-radius: var(--radius);
+  border: 1px solid var(--fehler); background: color-mix(in srgb, var(--fehler) 10%, var(--flaeche)); }
+.ausweis-uebernehmen { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: .4rem 0; }
+.ausweis-uebernehmen select { width: auto; max-width: 18rem; }
+.ausweis-uebernehmen .knopf { width: auto; min-height: 2.5rem; padding: .4rem .9rem; }
 
 /* Öffentliches Antragsformular */
 .sprachwahl { display: flex; align-items: center; gap: .5rem; }

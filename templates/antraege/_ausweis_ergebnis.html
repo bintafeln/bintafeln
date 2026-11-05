@@ -1,15 +1,33 @@
-{# Ergebnis der lokalen Ausweisprüfung (MRZ), eingesetzt per htmx. Erwartet: b (Bericht). #}
+{# Ergebnis der lokalen Ausweisprüfung (MRZ), per htmx eingesetzt. Erwartet: b (Bericht), a (Antrag), darf_bearbeiten, staaten, vorschlag. #}
 {% if b.fehler %}
   <p class="hinweis">{{ b.fehler }}</p>
 {% elif not b.erkannt %}
   <p class="sicherung sicherung-veraltet" role="status">Kein maschinenlesbarer Ausweis erkannt (die MRZ fehlt oder ist unleserlich). Bitte von Hand prüfen.</p>
 {% else %}
-  <dl class="angaben">
-    <dt>Dokument</dt><dd>{{ b.dokument }}{% if not b.gueltig %} <span class="marke-warnung">Prüfziffern unstimmig – unsicher gelesen</span>{% endif %}</dd>
-    <dt>Ausgestellt von</dt><dd>{{ b.ausstellland }}</dd>
-    <dt>Staatsangehörigkeit laut Dokument</dt><dd>{{ b.staatsangehoerigkeit }}{% if b.code_staat %} ({{ b.code_staat }}){% endif %}</dd>
-    {% if b.name %}<dt>Name laut Dokument</dt><dd>{{ b.name }}</dd>{% endif %}
-    {% if b.passt is not None %}<dt>Abgleich mit der Angabe</dt><dd>{% if b.passt %}<span class="marke-ok">stimmt mit „{{ b.erwartet }}“ überein</span>{% else %}<span class="marke-warnung">weicht von der Angabe „{{ b.erwartet }}“ ab – bitte prüfen</span>{% endif %}</dd>{% endif %}
-  </dl>
-  <p class="hinweis">Nur ein Hinweis aus dem Dokument; die Entscheidung trifft ein Mensch.</p>
+  <div class="ausweis-bericht">
+    {% if b.passt is False %}
+      <p class="ausweis-abweichung" role="alert"><strong>⚠ Staatsangehörigkeit weicht ab.</strong>
+        Laut Ausweis <strong>{{ b.staatsangehoerigkeit }}</strong>{% if b.code_staat %} ({{ b.code_staat }}){% endif %},
+        im Antrag angegeben: <strong>{{ b.erwartet|default:"— keine Angabe" }}</strong>.</p>
+    {% else %}
+      <p class="ausweis-nat">Erkannte Staatsangehörigkeit: <strong>{{ b.staatsangehoerigkeit }}</strong>{% if b.code_staat %} ({{ b.code_staat }}){% endif %}
+        {% if b.passt %}<span class="marke-ok">stimmt mit dem Antrag überein</span>{% endif %}</p>
+    {% endif %}
+
+    {% if darf_bearbeiten %}
+    <form class="ausweis-uebernehmen" method="post"
+          action="{% url 'antraege:nachweis_staat_uebernehmen' a.pk %}"
+          hx-post="{% url 'antraege:nachweis_staat_uebernehmen' a.pk %}"
+          hx-target="closest .ausweis-ergebnis" hx-swap="innerHTML">
+      {% csrf_token %}
+      <label for="nat-{{ a.pk }}">Staatsangehörigkeit im Antrag setzen:</label>
+      <select id="nat-{{ a.pk }}" name="staatsangehoerigkeit">
+        {% for w, n in staaten %}<option value="{{ w }}"{% if w == vorschlag %} selected{% endif %}>{{ n }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="knopf">Im Antrag übernehmen</button>
+    </form>
+    {% endif %}
+
+    <p class="hinweis">Weiter im Dokument: {{ b.dokument }}{% if not b.gueltig %} <span class="marke-warnung">Prüfziffern unsicher gelesen</span>{% endif %}, ausgestellt von {{ b.ausstellland }}{% if b.name %}, Name {{ b.name }}{% endif %}. Nur ein Hinweis; die Entscheidung trifft ein Mensch.</p>
+  </div>
 {% endif %}

@@ -21,8 +21,7 @@
       </form>{% endif %}
       {% if ausweis_pruefen and "image" in d.typ and "antraege.sehen" in rechte %}
       <br><button type="button" class="link" hx-post="{% url 'antraege:nachweis_pruefen' a.pk d.pk %}"
-                  hx-target="#ausweis-{{ d.pk }}" hx-swap="innerHTML" hx-disabled-elt="this">Ausweis prüfen</button>
-      <div id="ausweis-{{ d.pk }}" class="ausweis-ergebnis"></div>
+                  hx-target="#ausweis-ergebnis" hx-swap="innerHTML" hx-disabled-elt="this">Ausweis prüfen</button>
       {% endif %}
     </figcaption>
   </figure>
@@ -30,4 +29,5 @@
   <p>Keine.</p>
 {% endfor %}
 </div>
+{% if ausweis_pruefen %}<div id="ausweis-ergebnis" class="ausweis-ergebnis"></div>{% endif %}
 <script src="{% static 'js/nachweise_vorschau.js' %}" defer></script>
