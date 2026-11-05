@@ -253,6 +253,33 @@ def nachweis_entfernen(request, pk, anhang):
     return redirect("antraege:antrag", pk=a.pk)
 
 
+@rollen.recht_erforderlich("antraege.bearbeiten")
+def nachweise_importieren(request):
+    """Nachweise im Stapel aus einem Altsystem übernehmen (ZIP + Liste nachweise.csv).
+
+    „Nur prüfen" (Vorgabe) zeigt nur den Bericht; zum Übernehmen den Haken entfernen."""
+    from apps.antraege import nachweis_import
+
+    bericht = None
+    if request.method == "POST":
+        datei = request.FILES.get("zip")
+        nur_pruefen = "nur_pruefen" in request.POST
+        if not datei:
+            messages.error(request, "Bitte eine ZIP-Datei auswählen.")
+        else:
+            try:
+                if nur_pruefen:
+                    bericht = nachweis_import.pruefen(datei)
+                else:
+                    bericht = nachweis_import.uebernehmen(datei)
+                    messages.success(request, f"{bericht['zaehler']['ok']} Nachweise übernommen.")
+            except nachweis_import.ImportFehler as fehler:
+                messages.error(request, str(fehler))
+    return render(request, "antraege/nachweise_importieren.html",
+                  {"bericht": bericht, "status": nachweis_import.STATUS,
+                   "max_mb": nachweis_import.MAX_MB})  # fmt: skip
+
+
 @never_cache
 @rollen.recht_erforderlich("antraege.sehen")
 def auskunft_pdf(request, pk):

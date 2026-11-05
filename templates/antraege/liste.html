@@ -5,6 +5,9 @@
 <section class="karte">
   <div class="liste-kopf">
     <h1>Anträge <span class="leise">({{ offen_gesamt }} offen)</span></h1>
+    {% if "antraege.bearbeiten" in rechte %}
+      <a class="knopf knopf-zweitrangig" href="{% url 'antraege:nachweise_importieren' %}">Nachweise importieren</a>
+    {% endif %}
   </div>
   <p class="hinweis">Gelöschte Anträge kommen in den <a href="{% url 'core:papierkorb' %}">gemeinsamen Papierkorb</a>
     und lassen sich dort wiederherstellen, bis sie nach der eingestellten Frist endgültig gelöscht werden.</p>

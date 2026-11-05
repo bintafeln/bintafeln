@@ -30,12 +30,18 @@ def speichern(ordner: str, datei, *, typen=FOTO_ODER_PDF, max_mb=5) -> str:
         raise DateiFehler("Bitte ein Foto (JPG, PNG, WebP) oder ein PDF hochladen.")
     if datei.size > max_mb * 1024 * 1024:
         raise DateiFehler(f"Die Datei darf höchstens {max_mb} MB groß sein.")
+    return ablegen(ordner, _foto_verkleinern(datei.read(), datei.content_type))
+
+
+def ablegen(ordner: str, daten: bytes) -> str:
+    """Legt schon fertige Bytes verschlüsselt ab (ohne Prüfen/Verkleinern); liefert den Namen.
+
+    Für Fälle, in denen die Daten bereits aufbereitet sind (z. B. ein Stapel-Import, der die
+    Bilder selbst verkleinert hat)."""
     name = f"{uuid.uuid4().hex}.bin"
     ziel = pfad(ordner, name)
     ziel.parent.mkdir(parents=True, exist_ok=True)
-    ziel.write_bytes(
-        geheimnis.bytes_verschluesseln(_foto_verkleinern(datei.read(), datei.content_type))
-    )
+    ziel.write_bytes(geheimnis.bytes_verschluesseln(daten))
     return name
 
 
