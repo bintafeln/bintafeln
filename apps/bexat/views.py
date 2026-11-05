@@ -6,6 +6,7 @@ from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 
+from apps.bexat import besuche_konto as besuche_konto_
 from apps.bexat import konvertieren
 from apps.bexat.forms import EinstellungenForm
 from apps.bexat.models import BexatEinstellungen
@@ -18,6 +19,10 @@ def _csv_antwort(name: str, inhalt: bytes) -> HttpResponse:
     antwort = HttpResponse(inhalt, content_type="text/csv; charset=utf-8")
     antwort["Content-Disposition"] = f'attachment; filename="{name}"'
     return antwort
+
+
+def _benutzername(user) -> str:
+    return (user.get_full_name() or user.get_username())[:100]
 
 
 @rollen.recht_erforderlich("kunden.importieren")
@@ -93,6 +98,55 @@ def start(request):
         bericht=ergebnis.bericht,
     )
     return redirect("kunden:import_vorschau", pk=vorbereitung.pk)
+
+
+@rollen.recht_erforderlich("kunden.importieren")
+def besuche_konto(request):
+    """Tagesliste der Abholungen aus tafelarbeit.de übernehmen (ADR 0110): Besuche nachtragen und
+    den Kontostand je Kunde per Korrektur-Buchung auf den Wert aus der Liste setzen. Erst Probelauf
+    (bucht nichts), dann Übernehmen. Das Buchen braucht zusätzlich das Recht „Kundenkonto
+    korrigieren“."""
+    darf_buchen = rollen.hat_recht(request.user, "konto.korrektur")
+    kontext = {"darf_buchen": darf_buchen}
+    aktion = request.POST.get("aktion")
+    if request.method == "POST":
+        datei = request.FILES.get("datei")
+        if datei is None:
+            kontext["fehler"] = "Bitte zuerst die Tagesliste (CSV oder .xlsx) auswählen."
+        elif datei.size > MAX_DATEIGROESSE:
+            kontext["fehler"] = "Die Datei darf höchstens 60 MB groß sein."
+        else:
+            try:
+                zeilen = besuche_konto_.lesen(datei.read())
+            except besuche_konto_.BesucheFehler as fehler:
+                kontext["fehler"] = str(fehler)
+            else:
+                if aktion == "uebernehmen":
+                    if not darf_buchen:
+                        messages.error(request, "Zum Buchen der Kontostände fehlt das Recht "
+                                       "„Kundenkonto korrigieren“.")  # fmt: skip
+                        return redirect("bexat:besuche_konto")
+                    erg = besuche_konto_.uebernehmen(zeilen, _benutzername(request.user))
+                    messages.success(
+                        request,
+                        f"{erg['besuche_neu']} Besuch(e) nachgetragen, "
+                        f"{erg['korrekturen']} Kontostand/-stände korrigiert.",
+                    )
+                    if erg["unbekannt"]:
+                        rest = " …" if len(erg["unbekannt"]) > 20 else ""
+                        messages.warning(
+                            request,
+                            f"{len(erg['unbekannt'])} Kundennummer(n) gibt es in bintafeln nicht "
+                            f"und wurden übersprungen: {', '.join(erg['unbekannt'][:20])}{rest}",
+                        )
+                    return redirect("bexat:besuche_konto")
+                kontext["bericht"] = besuche_konto_.plan(zeilen)
+    # Probelauf per htmx: nur den Bericht zurückgeben, damit die gewählte Datei oben stehen bleibt.
+    if request.method == "POST" and aktion != "uebernehmen" and request.headers.get("HX-Request"):
+        return render(request, "bexat/_besuche_konto_bericht.html", kontext)
+    if "fehler" in kontext:
+        messages.error(request, kontext["fehler"])
+    return render(request, "bexat/besuche_konto.html", kontext)
 
 
 @rollen.recht_erforderlich("kunden.importieren")

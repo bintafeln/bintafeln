@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block titel %}Besuche &amp; Konto nachtragen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'bexat:start' %}">← Aus Bexat übernehmen</a></p>
+  <h1>Besuche &amp; Konto nachtragen</h1>
+  <p>Für die <strong>Übergangszeit</strong>, solange die Ausgabe noch in tafelarbeit.de geführt wird: die
+    <strong>Tagesliste der Abholungen</strong> (CSV oder Excel, nur Kundennummern – keine Namen) übernehmen.
+    bintafeln trägt je Kunde den <strong>Besuch</strong> als Abholung nach und setzt den
+    <strong>Kontostand</strong> genau auf den Wert aus der Liste – über eine nachvollziehbare
+    Korrektur-Buchung. So sind auch <strong>Vorauszahlungen</strong> (z. B. der ganze Monat im Voraus)
+    automatisch korrekt.</p>
+  <h2>So sieht die Datei aus</h2>
+  <ul>
+    <li>Spalten (Reihenfolge egal, die Überschriften müssen stimmen): <code>Kundennummer</code>,
+      <code>Letzter Besuch</code> bzw. <code>Datum</code>, dazu optional <code>Uhrzeit</code>,
+      <code>Beitrag</code> und <code>Kontostand</code>. Beträge mit oder ohne € und mit Komma
+      (z. B. <code>1,50 €</code>).</li>
+    <li>Mehrere Tage in einer Datei sind möglich: Der Besuch wird je Tag angelegt; für den Kontostand
+      zählt je Kunde der <strong>jüngste</strong> Tag.</li>
+    <li>Die Datei bleibt auf Ihrem Server; sie wird nur gelesen, nicht gespeichert.</li>
+  </ul>
+  <form method="post" enctype="multipart/form-data" hx-encoding="multipart/form-data" data-ziel="bericht">
+    {% csrf_token %}
+    <div class="feld">
+      <label for="datei">Tagesliste (CSV oder .xlsx)</label>
+      <input type="file" name="datei" id="datei" accept=".csv,.xlsx,text/csv" required>
+    </div>
+    <div class="aktionsleiste">
+      <button type="submit" name="aktion" value="pruefen" class="knopf knopf-zweitrangig"
+              hx-post="{% url 'bexat:besuche_konto' %}" hx-target="#bericht" hx-swap="innerHTML"
+              hx-disabled-elt="this">Prüfen (Probelauf)</button>
+      {% if darf_buchen %}
+      <button type="submit" name="aktion" value="uebernehmen" class="knopf"
+              onclick="return confirm('Besuche nachtragen und die Kontostände jetzt genau auf die Werte aus der Liste setzen?')">Übernehmen</button>
+      {% endif %}
+    </div>
+    <p class="hinweis">Erst <strong>„Prüfen“</strong> (Probelauf, bucht nichts) – das Ergebnis erscheint
+      unten, die Datei bleibt oben gewählt. Passt es, auf <strong>„Übernehmen“</strong>.</p>
+  </form>
+</section>
+
+<div id="bericht">{% include "bexat/_besuche_konto_bericht.html" %}</div>
+{% endblock %}

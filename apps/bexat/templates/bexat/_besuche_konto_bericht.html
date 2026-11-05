@@ -1,0 +1,43 @@
+{# Ergebnis des Besuche-&-Konto-Probelaufs (per htmx eingesetzt). Erwartet: bericht, fehler, darf_buchen. #}
+{% if fehler %}
+  <section class="karte"><p class="fehler" role="alert">{{ fehler }}</p></section>
+{% elif bericht %}
+<section class="karte">
+  <h2>Probelauf – es wird noch nichts gebucht</h2>
+  <p>{{ bericht.zeilen }} Zeile{{ bericht.zeilen|pluralize:"n" }} gelesen.</p>
+  <ul class="angaben">
+    <li><strong>{{ bericht.besuche_neu }}</strong> neue Besuch{{ bericht.besuche_neu|pluralize:"e" }} würden nachgetragen.</li>
+    <li><strong>{{ bericht.konto|length }}</strong> Kontostand/-stände würden korrigiert (Summe der Änderungen: {{ bericht.summe }}).</li>
+    {% if bericht.unbekannt %}<li><strong>{{ bericht.unbekannt|length }}</strong> Kundennummer(n) gibt es in bintafeln nicht – werden übersprungen.</li>{% endif %}
+    {% if bericht.ohne_datum %}<li><strong>{{ bericht.ohne_datum }}</strong> Zeile(n) ohne Datum – daraus wird kein Besuch, der Kontostand kann aber gesetzt werden.</li>{% endif %}
+  </ul>
+  {% if bericht.konto %}
+  <h3>Kontostände, die gesetzt würden</h3>
+  <div class="tabelle-rahmen">
+  <table class="tabelle kompakt">
+    <thead><tr><th>Kundennummer</th><th>Stand laut Liste vom</th><th>bisher</th><th>neu</th><th>Buchung</th></tr></thead>
+    <tbody>
+    {% for p in bericht.konto %}
+      <tr>
+        <td data-titel="Kundennummer">{{ p.kundennummer }}</td>
+        <td data-titel="Stand vom">{{ p.tag|date:"d.m.Y" }}</td>
+        <td data-titel="bisher">{{ p.aktuell }}</td>
+        <td data-titel="neu">{{ p.ziel }}</td>
+        <td data-titel="Buchung"><strong class="{% if p.mehr %}grund-gruen{% else %}grund-rot{% endif %}">{{ p.differenz }}</strong></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+  {% if bericht.unbekannt %}
+  <p class="hinweis">Unbekannte Kundennummern: {{ bericht.unbekannt|join:", "|truncatechars:300 }}</p>
+  {% endif %}
+  <p class="hinweis"><strong>Achtung:</strong> Beim Übernehmen wird der Kontostand jedes Kunden <strong>genau auf den Wert aus der Liste</strong> gesetzt. In bintafeln selbst eingegebene Konto-Änderungen für dieselben Kunden werden dadurch überschrieben – für die Übergangszeit (das Konto läuft noch in tafelarbeit.de) ist das so gewollt.</p>
+  {% if darf_buchen %}
+  <p class="hinweis">Passt das? Dann oben auf <strong>„Übernehmen“</strong> – die gewählte Datei bleibt erhalten.</p>
+  {% else %}
+  <p class="fehler">Zum Buchen der Kontostände fehlt das Recht „Kundenkonto korrigieren“. Die Besuche ließen sich zwar nachtragen, aber das Konto nicht korrigieren – bitte eine berechtigte Person übernehmen lassen.</p>
+  {% endif %}
+</section>
+{% endif %}

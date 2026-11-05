@@ -7,6 +7,7 @@ def menue(eintrag):
     return [
         ("Einstellungen/Systemsteuerung", [
             ("kunden.importieren", eintrag("Aus Bexat übernehmen", "bexat:start")),
+            ("kunden.importieren", eintrag("Besuche & Konto nachtragen", "bexat:besuche_konto")),
             ("kunden.importieren", eintrag("Bexat-Zuordnungen", "bexat:einstellungen")),
         ]),
     ]  # fmt: skip

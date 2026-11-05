@@ -417,3 +417,136 @@ def test_ohne_recht_kein_zugriff(client, admin, benutzer_mit_rolle, anmelden):
     _modul_an()  # admin sorgt dafür, dass ein Superuser existiert (keine Einrichtungs-Umleitung)
     anmelden(client, benutzer_mit_rolle("anton", rollen.AUSGABE))
     assert client.get(reverse("bexat:start")).status_code == 403
+
+
+# ── Besuche & Konto nachtragen (ADR 0110) ────────────────────────────────────
+
+
+def _besuche_konto_xlsx(kontostand="12,00 €", knr="01294", datum="05.11.2026") -> bytes:
+    return _xlsx(
+        {
+            "Sheet1": [
+                ["Bexat Tafelprogramm - Abholungen heute"],
+                ["#", "Kundennummer", "Letzter Besuch", "Uhrzeit", "Kontostand", "Beitrag"],
+                [1, knr, datum, "16:09", kontostand, "3 €"],
+            ]
+        }
+    )
+
+
+def test_besuche_konto_lesen_xlsx_und_csv():
+    from decimal import Decimal
+
+    from apps.bexat import besuche_konto
+
+    z = besuche_konto.lesen(_besuche_konto_xlsx())[0]
+    assert z.kundennummer == "01294" and str(z.datum) == "2026-11-05"
+    assert z.uhrzeit.hour == 16 and z.betrag == Decimal("3") and z.kontostand == Decimal("12")
+    csv_bytes = "Kundennummer;Datum;Kontostand;Beitrag\n01294;05.11.2026;12,00 €;3 €\n".encode(
+        "utf-8-sig"
+    )
+    assert besuche_konto.lesen(csv_bytes)[0].kontostand == Decimal("12")
+
+
+def test_besuche_konto_falsche_datei():
+    from apps.bexat import besuche_konto
+
+    with pytest.raises(besuche_konto.BesucheFehler, match="Kundennummer"):
+        besuche_konto.lesen(b"Spalte;Wert\n1;2\n")
+
+
+def test_besuche_konto_euro():
+    from decimal import Decimal
+
+    from apps.bexat import besuche_konto
+
+    assert besuche_konto.euro(Decimal("1234.5")) == "1.234,50 €"
+    assert besuche_konto.euro(Decimal("-3")) == "-3,00 €"
+
+
+def test_besuche_konto_plan_und_uebernehmen():
+    from decimal import Decimal
+
+    from apps.bexat import besuche_konto
+    from apps.kunden.models import Abholung, Haushalt
+
+    h = Haushalt.objects.create(kundennummer="01294", kontostand=Decimal("0"))
+    zeilen = besuche_konto.lesen(_besuche_konto_xlsx("12,00 €"))
+
+    plan = besuche_konto.plan(zeilen)
+    assert plan["besuche_neu"] == 1 and len(plan["konto"]) == 1
+    assert plan["konto"][0]["ziel"] == "12,00 €" and plan["unbekannt"] == []
+
+    erg = besuche_konto.uebernehmen(zeilen, "Büro")
+    assert erg["besuche_neu"] == 1 and erg["korrekturen"] == 1
+    h.refresh_from_db()
+    assert h.kontostand == Decimal("12")  # Kontostand auf den Wert aus der Liste gesetzt
+    a = Abholung.objects.get(haushalt=h)
+    assert str(a.datum) == "2026-11-05" and a.beitrag == Decimal("3") and a.nachgetragen
+
+    # Zweiter Lauf: Besuch schon da, Kontostand passt → nichts doppelt
+    erg = besuche_konto.uebernehmen(zeilen, "Büro")
+    assert erg["besuche_neu"] == 0 and erg["korrekturen"] == 0
+    assert Abholung.objects.filter(haushalt=h).count() == 1
+    h.refresh_from_db()
+    assert h.kontostand == Decimal("12")
+
+
+def test_besuche_konto_unbekannte_nummer():
+    from apps.bexat import besuche_konto
+
+    zeilen = besuche_konto.lesen(_besuche_konto_xlsx())  # kein Haushalt angelegt
+    plan = besuche_konto.plan(zeilen)
+    assert plan["unbekannt"] == ["01294"] and plan["besuche_neu"] == 0
+    erg = besuche_konto.uebernehmen(zeilen, "Büro")
+    assert erg["besuche_neu"] == 0 and erg["korrekturen"] == 0 and erg["unbekannt"] == ["01294"]
+
+
+def test_besuche_konto_view_pruefen_und_uebernehmen(admin_client):
+    from decimal import Decimal
+
+    from apps.kunden.models import Abholung, Haushalt
+
+    _modul_an()
+    Haushalt.objects.create(kundennummer="01294", kontostand=Decimal("0"))
+    datei = io.BytesIO(_besuche_konto_xlsx("12,00 €"))
+    datei.name = "tag.xlsx"
+    antwort = admin_client.post(
+        reverse("bexat:besuche_konto"), {"aktion": "pruefen", "datei": datei},
+        HTTP_HX_REQUEST="true",
+    )  # fmt: skip
+    inhalt = antwort.content.decode()
+    assert "Probelauf" in inhalt and "12,00 €" in inhalt and "<html" not in inhalt
+
+    datei = io.BytesIO(_besuche_konto_xlsx("12,00 €"))
+    datei.name = "tag.xlsx"
+    antwort = admin_client.post(
+        reverse("bexat:besuche_konto"), {"aktion": "uebernehmen", "datei": datei}
+    )
+    assert antwort.status_code == 302
+    h = Haushalt.objects.get(kundennummer="01294")
+    assert h.kontostand == Decimal("12") and Abholung.objects.filter(haushalt=h).count() == 1
+
+
+def test_besuche_konto_ohne_konto_recht_bucht_nicht(client, admin, benutzer_mit_rolle, anmelden):
+    from decimal import Decimal
+
+    from apps.konten import rollen
+    from apps.konten.models import Rolle
+    from apps.kunden.models import Abholung, Haushalt
+
+    _modul_an()
+    # Eine Rolle, die importieren darf, aber ausdrücklich NICHT das Konto korrigieren darf.
+    rolle = Rolle.objects.get(gruppe__name=rollen.BUERO)
+    rolle.rechte = sorted(
+        {r for r in rolle.rechte if r != "konto.korrektur"} | {"kunden.importieren"}
+    )
+    rolle.save()
+    anmelden(client, benutzer_mit_rolle("berta", rollen.BUERO))
+    Haushalt.objects.create(kundennummer="01294", kontostand=Decimal("0"))
+    datei = io.BytesIO(_besuche_konto_xlsx("12,00 €"))
+    datei.name = "tag.xlsx"
+    client.post(reverse("bexat:besuche_konto"), {"aktion": "uebernehmen", "datei": datei})
+    h = Haushalt.objects.get(kundennummer="01294")
+    assert h.kontostand == Decimal("0")  # nichts gebucht
+    assert not Abholung.objects.filter(haushalt=h).exists()
