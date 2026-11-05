@@ -85,9 +85,14 @@ def schluessel_als_text(geraet: TOTPDevice) -> str:
 
 
 def qr_code_svg(geraet: TOTPDevice) -> str:
-    return segno.make(geraet.config_url, error="m").svg_inline(
-        scale=5, dark="#000000", light="#ffffff", title="QR-Code für die Authenticator-App"
-    )
+    # Fehlerkorrektur bewusst niedrig ("l"): Der Code trägt weniger Zusatzdaten, braucht also
+    # weniger Kästchen und wird bei gleicher Anzeigegröße grobkörniger – so lesen ihn auch
+    # Handy-Apps wie der Microsoft Authenticator zuverlässig vom Bildschirm. border=4 lässt den
+    # vorgeschriebenen weißen Rand (Ruhezone) stehen, den manche Scanner sonst vermissen.
+    return segno.make(geraet.config_url, error="l").svg_inline(
+        scale=8, border=4, dark="#000000", light="#ffffff",
+        title="QR-Code für die Authenticator-App",
+    )  # fmt: skip
 
 
 @transaction.atomic

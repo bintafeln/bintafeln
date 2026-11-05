@@ -226,7 +226,9 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .schritte { padding-left: 1.25rem; }
 .schritte li { margin-bottom: .75rem; }
 .qr-code { margin: .75rem 0; }
-.qr-code svg { width: 100%; max-width: 15rem; height: auto; display: block; }
+/* Groß und mit weißem Rand, damit Handy-Apps den Code sicher vom Bildschirm lesen */
+.qr-code svg { width: 100%; max-width: 20rem; height: auto; display: block;
+  background: #fff; padding: .5rem; border-radius: var(--radius); }
 .schluessel { font-size: 1.05rem; word-spacing: .3rem; overflow-wrap: anywhere; }
 .notfallcodes { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: .5rem; }
 .notfallcodes code { font-size: 1.15rem; letter-spacing: .05rem; }
