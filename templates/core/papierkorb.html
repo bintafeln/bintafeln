@@ -29,9 +29,13 @@
         <td data-titel="Was"><a href="{% url 'core:papierkorb_eintrag' e.pk %}">{{ e.bezeichnung }}</a></td>
         <td data-titel="Gelöscht">{{ e.geloescht_am|date:"d.m.Y H:i" }}{% if e.geloescht_von %} von {{ e.geloescht_von }}{% endif %}</td>
         <td data-titel="Endgültig weg">{{ e.endgueltig_am|date:"d.m.Y" }}</td>
-        <td>
+        <td class="aktionen">
           <form method="post" action="{% url 'core:papierkorb_wiederherstellen' e.pk %}" class="inline">
             {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">Wiederherstellen</button>
+          </form>
+          <form method="post" action="{% url 'core:papierkorb_loeschen' e.pk %}" class="inline"
+                onsubmit="return confirm('„{{ e.bezeichnung|escapejs }}“ jetzt ENDGÜLTIG löschen? Das kann nicht rückgängig gemacht werden.')">
+            {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Endgültig löschen</button>
           </form>
         </td>
       </tr>

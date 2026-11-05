@@ -61,6 +61,9 @@ def test_haushalt_mit_allem_wiederherstellen(admin, admin_client, stellen):
     seite = admin_client.get(KORB).content.decode()
     assert "4711 – Erika Muster" in seite and "Wiederherstellen" in seite
     assert "Papierkorb leeren nach" in seite  # Weg zur Einstellung
+    # Einzeln sofort endgültig löschen gibt es direkt in der Liste, mit deutlicher Nachfrage
+    assert reverse("core:papierkorb_loeschen", args=[e.pk]) in seite
+    assert "Endgültig löschen" in seite and "ENDGÜLTIG löschen" in seite
     detail = admin_client.get(reverse("core:papierkorb_eintrag", args=[e.pk])).content.decode()
     assert "Bringt Tasche mit" in detail and "Kim" in detail
 

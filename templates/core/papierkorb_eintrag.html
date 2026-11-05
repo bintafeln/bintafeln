@@ -10,7 +10,7 @@
     <form method="post" action="{% url 'core:papierkorb_wiederherstellen' eintrag.pk %}" class="inline">
       {% csrf_token %}<button type="submit" class="knopf">Wiederherstellen</button>
     </form>
-    <form method="post" action="{% url 'core:papierkorb_loeschen' eintrag.pk %}" class="inline" onsubmit="return confirm('Endgültig löschen? Das lässt sich nicht rückgängig machen.')">
+    <form method="post" action="{% url 'core:papierkorb_loeschen' eintrag.pk %}" class="inline" onsubmit="return confirm('„{{ eintrag.bezeichnung|escapejs }}“ jetzt ENDGÜLTIG löschen? Das kann nicht rückgängig gemacht werden.')">
       {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Endgültig löschen</button>
     </form>
   </div>
