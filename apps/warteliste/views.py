@@ -20,7 +20,7 @@ from apps.core import listenexport, papierkorb
 from apps.core.pdf import Kaestchen, Pdf, pdf_antwort
 from apps.konten import rollen
 from apps.kunden import gruppen
-from apps.warteliste import ablauf
+from apps.warteliste import ablauf, vorberechnung
 from apps.warteliste.forms import (
     EinladenForm,
     EinstellungenForm,
@@ -368,15 +368,21 @@ def abgleich(request):
 @never_cache
 @bearbeiten
 def abgleich_ergebnis(request):
-    """Nur die Treffer des Abgleichs, per htmx nachgeladen: Der Vergleich mit dem ganzen
-    Kundenstamm kann dauern; so erscheint die Seite sofort und blockiert nie."""
+    """Nur die Treffer des Abgleichs, per htmx nachgeladen. Das Ergebnis kommt vorberechnet aus dem
+    Cache (ADR 0109), ist also sofort da; hat sich etwas geändert, wird im Hintergrund aufgefrischt
+    und dieser Block lädt sich kurz darauf noch einmal nach."""
     alle, antraege = _abzugleichende(request)
-    ergebnis = ablauf.kundenabgleich(antraege.order_by("eingegangen_am"))
+    ergebnis, frisch, _ = vorberechnung.abgleich_daten()  # alle offenen Anträge
+    pks = set(antraege.values_list("pk", flat=True))
+    gefiltert = [e for e in ergebnis if e["antrag_pk"] in pks]
     # „Zurück zu“ muss die echte Seite sein, nicht dieser Fragment-Endpunkt (sonst landet man nach
     # dem Bestätigen auf der Trefferliste ohne Layout, weil sie ohne base.html gerendert wird).
     weiter = reverse("warteliste:abgleich") + ("?alle=1" if alle else "")
+    nachladen = reverse("warteliste:abgleich_ergebnis") + ("?alle=1" if alle else "")
     return render(request, "warteliste/_abgleich_ergebnis.html",
-                  {"ergebnis": ergebnis, "weiter": weiter})  # fmt: skip
+                  {"ergebnis": gefiltert, "weiter": weiter,
+                   "aktualisiert": not frisch, "nachladen": nachladen,
+                   "ziel": "abgleich-ergebnis"})  # fmt: skip
 
 
 @require_POST
@@ -385,6 +391,7 @@ def abgleich_entscheiden(request):
     """Treffer des Abgleichs bestätigen („derselbe Haushalt“) oder verwerfen; oder zurücknehmen."""
     if pk := request.POST.get("zuruecknehmen"):
         AbgleichEntscheidung.objects.filter(pk=pk).delete()
+        vorberechnung.veraltet(abgleich=True)  # Treffer steht wieder zur Prüfung an
         messages.success(
             request,
             "Prüfung zurückgenommen; der Treffer steht wieder in der Liste. "
@@ -427,9 +434,14 @@ def dubletten(request):
 @never_cache
 @bearbeiten
 def dubletten_ergebnis(request):
-    """Nur die gefundenen Paare, per htmx nachgeladen (Namensvergleich aller offenen Anträge
-    untereinander kann dauern); so erscheint die Seite sofort und blockiert nie."""
-    return render(request, "warteliste/_dubletten_ergebnis.html", {"paare": ablauf.dubletten()})
+    """Nur die gefundenen Paare, per htmx nachgeladen. Das Ergebnis kommt vorberechnet aus dem Cache
+    (ADR 0109), ist also sofort da; hat sich etwas geändert, wird im Hintergrund aufgefrischt und
+    dieser Block lädt sich kurz darauf noch einmal nach."""
+    paare, frisch, _ = vorberechnung.dubletten_daten()
+    return render(request, "warteliste/_dubletten_ergebnis.html",
+                  {"paare": paare, "aktualisiert": not frisch,
+                   "nachladen": reverse("warteliste:dubletten_ergebnis"),
+                   "ziel": "dubletten-ergebnis"})  # fmt: skip
 
 
 @require_POST
