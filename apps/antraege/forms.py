@@ -339,7 +339,7 @@ class EinstellungenForm(forms.ModelForm):
             "gebiet_pruefen", "gebiet_plz", "gebiet_orte", "gebiet_name",
             "datenschutz_url",
             "impressum_url", "erklaerungen_url", "voraussetzungen_url", "einverstaendnis_url",
-            "kopf_zeigen", "ueberschrift_zeigen", "fuss_zeigen",
+            "kopf_zeigen", "ueberschrift_zeigen", "fuss_zeigen", "ausweis_pruefen",
             "eigenes_css", "benachrichtigen",
             "erledigt_nach_tagen", "papierkorb_nach_tagen",
             "max_je_stunde",

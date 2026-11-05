@@ -12,6 +12,9 @@ nh3==0.3.7
 gunicorn==26.2.0
 pillow==13.0.0
 psycopg[binary]==3.3.6
+# Lokale Ausweisprüfung (MRZ lesen) – Tesseract-OCR-Anbindung und MRZ-Parser (ADR 0107)
+pytesseract==0.3.13
+mrz==0.6.2
 # KI-Übersetzung der eigenen Antragstexte (ADR 0082) und ihre Abhängigkeiten
 anthropic==2.3.0
 annotated-types==0.8.0

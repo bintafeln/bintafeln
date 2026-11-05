@@ -152,9 +152,12 @@ def bearbeiten(request, pk):
 
 @rollen.recht_erforderlich("antraege.sehen")
 def antrag(request, pk):
+    from apps.antraege import ausweis_pruefung
+
     a = get_object_or_404(Antrag, pk=pk)
     accessed.send(sender=Antrag, instance=a)  # Aufruf im Änderungsprotokoll
     davor = Antrag.objects.filter(ANSICHTEN["offen"][1], eingegangen_am__lt=a.eingegangen_am)
+    e = AntragEinstellungen.laden()
     return render(
         request,
         "antraege/antrag.html",
@@ -162,8 +165,9 @@ def antrag(request, pk):
             "a": a,
             "sprache": sprachen.sprache(a.sprache),
             "platz": davor.count() + 1 if a.status in Antrag.OFFEN else None,
-            "ausserhalb": gebiet.ausserhalb(AntragEinstellungen.laden(), a),
+            "ausserhalb": gebiet.ausserhalb(e, a),
             "status_auswahl": Antrag.Status.choices,
+            "ausweis_pruefen": ausweis_pruefung.aktiv(e),
         },
     )
 
@@ -251,6 +255,25 @@ def nachweis_entfernen(request, pk, anhang):
                         recht="antraege.bearbeiten", kundennummer=a.kundennummer)  # fmt: skip
     messages.success(request, f"Nachweis „{name}“ in den Papierkorb gelegt.")
     return redirect("antraege:antrag", pk=a.pk)
+
+
+@require_POST
+@rollen.recht_erforderlich("antraege.sehen")
+def nachweis_pruefen(request, pk, anhang):
+    """Liest lokal per OCR die MRZ eines Nachweis-Fotos und zeigt Land/Staatsangehörigkeit als
+    Hinweis (ADR 0107). Nichts automatisch; jeder Aufruf wird protokolliert."""
+    from apps.antraege import ausweis_pruefung
+
+    a = get_object_or_404(Antrag, pk=pk)
+    if not ausweis_pruefung.aktiv(AntragEinstellungen.laden()):
+        raise Http404
+    d = get_object_or_404(AntragAnhang, pk=anhang, antrag=a)
+    inhalt = privatdateien.lesen(ANHANG_ORDNER, d.datei)
+    if inhalt is None:
+        raise Http404
+    accessed.send(sender=AntragAnhang, instance=d)
+    bericht = ausweis_pruefung.pruefen(inhalt, a.staatsangehoerigkeit)
+    return render(request, "antraege/_ausweis_ergebnis.html", {"b": bericht})
 
 
 @rollen.recht_erforderlich("antraege.bearbeiten")
