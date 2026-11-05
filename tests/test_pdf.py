@@ -116,9 +116,10 @@ def test_kundenausweis(admin_client, pdf_text, haushalt):
     assert 'filename="kundenausweis-T-4711.pdf"' in antwort["Content-Disposition"]
     assert "no-cache" in antwort["Cache-Control"]
     inhalt = pdf_text(antwort)
-    for wort in ("T-4711", "Erika Beispiel", "Gruppe Dienstag", "10:30 Uhr", "31.03.2027",
+    for wort in ("T-4711", "Erika Beispiel", "Dienstag", "10:30 Uhr", "31.03.2027",
                  "Kundenausweis", "Tafel", "(2/0)"):  # fmt: skip
         assert wort in inhalt, wort
+    assert "Gruppe Dienstag" not in inhalt  # Vorsilbe „Gruppe“ ist weg
 
 
 def test_kundenausweis_lange_nummer_ohne_gruppe(admin_client, pdf_text):
