@@ -159,7 +159,18 @@ input::-webkit-date-and-time-value { text-align: left; margin: 0; }
 .zeile-aktiv td { background: #fdf0f0; }
 .bemerkung { border-bottom: 1px solid var(--rand); margin-bottom: .75rem; }
 .blaettern { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .5rem 0; flex-wrap: wrap; }
-.blaettern-paar { display: flex; gap: 1rem; flex-wrap: wrap; }
+.blaettern-paar { display: flex; gap: .5rem; flex-wrap: nowrap; }
+/* Feste, gleich breite Kästchen, damit voriger/nächster nicht je nach Nummernlänge
+   (oder am ersten/letzten Antrag) die Position wechseln. */
+.blaettern-knopf {
+  display: inline-flex; align-items: center; justify-content: center;
+  box-sizing: border-box; min-width: 9rem; padding: .4rem .7rem;
+  border: 1px solid var(--rand); border-radius: var(--radius);
+  background: var(--flaeche); white-space: nowrap; text-align: center;
+}
+.blaettern-zurueck { min-width: 8rem; }
+a.blaettern-knopf:hover { border-color: var(--akzent); }
+.blaettern-aus { color: var(--leise); opacity: .6; }  /* erster/letzter Antrag: gleicher Platz, nur grau */
 .liste-aktionen { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin: .5rem 0; }
 .liste-schlicht { list-style: none; padding: 0; margin: .25rem 0 .5rem; }
 .liste-schlicht li { padding: .15rem 0; border-bottom: 1px solid var(--rand); }
