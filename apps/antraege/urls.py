@@ -30,6 +30,11 @@ urlpatterns = [
     path("<int:pk>/papierkorb/", views.papierkorb, name="papierkorb"),
     path("<int:pk>/auskunft/", views.auskunft_pdf, name="auskunft"),
     path("<int:pk>/nachweis/<int:anhang>/", views.anhang, name="anhang"),
+    path(
+        "<int:pk>/nachweis/<int:anhang>/vorschau/",
+        views.nachweis_vorschau,
+        name="nachweis_vorschau",
+    ),  # fmt: skip
     path("<int:pk>/nachweis-hinzufuegen/", views.nachweis_hinzufuegen, name="nachweis_hinzufuegen"),
     path(
         "<int:pk>/nachweis/<int:anhang>/ausweis/", views.nachweis_pruefen, name="nachweis_pruefen"

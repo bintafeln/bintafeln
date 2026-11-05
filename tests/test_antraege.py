@@ -882,6 +882,63 @@ def test_antrag_import_view_und_fehler(admin_client):
     assert "vorname und nachname" in schlecht.content.decode()
 
 
+def _pdf_bytes(text="P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<"):
+    from reportlab.pdfgen import canvas
+
+    puffer = io.BytesIO()
+    c = canvas.Canvas(puffer)
+    c.drawString(72, 720, text)
+    c.showPage()
+    c.save()
+    return puffer.getvalue()
+
+
+def _pdf_anhang(antrag, name="ausweis.pdf"):
+    from apps.antraege.models import AntragAnhang
+
+    datei = privatdateien.speichern(
+        ANHANG_ORDNER, SimpleUploadedFile(name, _pdf_bytes(), content_type="application/pdf"),
+        typen={"application/pdf"})  # fmt: skip
+    return AntragAnhang.objects.create(antrag=antrag, name=name, datei=datei, typ="application/pdf")
+
+
+def test_ausweis_pdf_wird_mitgeprueft(monkeypatch):
+    """Ausweise als PDF werden gerendert und einbezogen (ADR 0107)."""
+    from apps.antraege import ausweis_pruefung, ausweis_scan
+    from apps.antraege.models import Antrag
+
+    # pruefen gibt Ukraine zurück – geprüft wird, dass die PDF-Seite überhaupt als Bild ankommt
+    aufgerufen = []
+
+    def gelesen(bild, *a, **k):
+        aufgerufen.append(len(bild))
+        return _UKR
+
+    monkeypatch.setattr(ausweis_pruefung, "pruefen", gelesen)
+    a = Antrag.objects.create(vorname="A", nachname="B", staatsangehoerigkeit="Deutschland")
+    _pdf_anhang(a)
+    assert ausweis_scan.antrag_pruefen(a) is True
+    assert aufgerufen and aufgerufen[0] > 0  # ein gerendertes Seitenbild wurde geprüft
+    a.refresh_from_db()
+    assert a.ausweis_abweichung and a.ausweis_staat == "Ukraine"
+
+
+def test_nachweis_vorschau_pdf(admin_client, antrag):
+    from apps.antraege.models import AntragAnhang
+
+    d = _pdf_anhang(antrag)
+    antwort = admin_client.get(reverse("antraege:nachweis_vorschau", args=[antrag.pk, d.pk]))
+    assert antwort.status_code == 200 and antwort["Content-Type"] == "image/jpeg"
+    assert len(antwort.getvalue()) > 100  # ein echtes Vorschaubild
+    # Für ein Nicht-PDF gibt es keine Vorschau
+    bild = privatdateien.speichern(
+        ANHANG_ORDNER, SimpleUploadedFile("f.png", _png(), content_type="image/png"),
+        typen={"image/png"})  # fmt: skip
+    dp = AntragAnhang.objects.create(antrag=antrag, name="f.png", datei=bild, typ="image/png")
+    weg = reverse("antraege:nachweis_vorschau", args=[antrag.pk, dp.pk])
+    assert admin_client.get(weg).status_code == 404
+
+
 def test_nachweis_import_fehler_und_view(admin_client, antrag):
     from apps.antraege import nachweis_import
 
