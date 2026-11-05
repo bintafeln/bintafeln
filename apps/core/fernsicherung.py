@@ -24,10 +24,18 @@ def schreiben() -> bool:
     werden verschluckt – ohne Fernablage soll nichts abbrechen."""
     from apps.core.models import Fernsicherung
 
-    text = Fernsicherung.laden().konfig
+    obj = Fernsicherung.laden()
+    text = obj.konfig
     datei = KONFIG_PFAD / "rclone.conf"
+    schluessel_datei = KONFIG_PFAD / "sftp_key"
     try:
         KONFIG_PFAD.mkdir(parents=True, exist_ok=True)
+        # Optionale SFTP-Schlüsseldatei; die Konfig verweist mit key_file darauf
+        if obj.schluessel.strip():
+            schluessel_datei.write_text(obj.schluessel.rstrip("\n") + "\n")
+            schluessel_datei.chmod(0o600)
+        else:
+            schluessel_datei.unlink(missing_ok=True)
         if (text or "").strip():
             datei.write_text(text if text.endswith("\n") else text + "\n")
             datei.chmod(0o600)

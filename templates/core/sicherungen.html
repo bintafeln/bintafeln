@@ -21,9 +21,9 @@
     {% for r in fern_remotes %}„{{ r }}“{% if not forloop.last %}, {% endif %}{% endfor %}.
     Das Geheimnis wird aus Sicherheitsgründen nicht angezeigt.</p>{% else %}
     <p class="hinweis">Noch keine Fernablage eingerichtet.</p>{% endif %}
-  <form method="post" action="{% url 'core:sicherung_fernablage' %}">
+  <form method="post" action="{% url 'core:sicherung_fernablage' %}" enctype="multipart/form-data">
     {% csrf_token %}
-    {% include "includes/formular.html" with form=fern_form %}
+    {% include "core/_fernablage_form.html" %}
     <button type="submit" class="knopf">Fernablage speichern</button>
   </form>
 </section>
