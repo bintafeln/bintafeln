@@ -30,47 +30,23 @@
       <code>nachweise.csv</code>) übernommen; die Zuordnung läuft über die Antragsnummer.</li>
     <li>Bei vielen Anträgen besser <strong>in Stapeln</strong> hochladen.</li>
   </ul>
-  <form method="post" enctype="multipart/form-data" data-ziel="bericht">
+  <form method="post" enctype="multipart/form-data" hx-encoding="multipart/form-data" data-ziel="bericht">
     {% csrf_token %}
     <div class="feld">
       <label for="csv">CSV-Datei</label>
       <input type="file" name="csv" id="csv" accept=".csv,text/csv" required>
     </div>
-    <div class="feld feld-haken">
-      <label for="nur_pruefen"><input type="checkbox" name="nur_pruefen" id="nur_pruefen" checked>
-        Nur prüfen (Probelauf) – noch nichts speichern</label>
+    <div class="aktionsleiste">
+      <button type="submit" name="aktion" value="pruefen" class="knopf knopf-zweitrangig"
+              hx-post="{% url 'antraege:antraege_importieren' %}" hx-target="#bericht"
+              hx-swap="innerHTML" hx-disabled-elt="this">Prüfen (Probelauf)</button>
+      <button type="submit" name="aktion" value="uebernehmen" class="knopf"
+              onclick="return confirm('Die Anträge aus der Datei jetzt anlegen?')">Übernehmen</button>
     </div>
-    <button type="submit" class="knopf">Hochladen</button>
-    <p class="hinweis">Zum tatsächlichen Übernehmen den Haken entfernen.</p>
+    <p class="hinweis">Erst <strong>„Prüfen“</strong> (Probelauf, legt nichts an) – das Ergebnis
+      erscheint unten, die Datei bleibt oben ausgewählt. Passt es, auf <strong>„Übernehmen“</strong>.</p>
   </form>
 </section>
 
-{% if bericht %}
-<section class="karte" id="bericht">
-  <h2>{% if bericht.geschrieben %}Ergebnis{% else %}Probelauf (nichts gespeichert){% endif %}</h2>
-  <p>{{ bericht.zaehler.gesamt }} Zeile{{ bericht.zaehler.gesamt|pluralize:"n" }} in der Datei.</p>
-  <ul class="angaben">
-    {% for text, anzahl in bericht.zusammenfassung %}
-      <li><strong>{{ anzahl }}</strong> {{ text }}</li>
-    {% endfor %}
-  </ul>
-  {% if bericht.probleme %}
-    <h3>Nicht übernommene Zeilen{% if bericht.probleme|length == 300 %} (erste 300){% endif %}</h3>
-    <div class="tabelle-rahmen">
-    <table class="tabelle kompakt">
-      <thead><tr><th>Zeile</th><th>Antragsnummer</th><th>Grund</th></tr></thead>
-      <tbody>
-      {% for z in bericht.probleme %}
-        <tr>
-          <td data-titel="Zeile">{{ z.zeile }}</td>
-          <td data-titel="Antragsnummer">{{ z.nummer|default:"–" }}</td>
-          <td data-titel="Grund">{{ z.text }}</td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-    </div>
-  {% endif %}
-</section>
-{% endif %}
+<div id="bericht">{% include "antraege/_antraege_import_bericht.html" %}</div>
 {% endblock %}

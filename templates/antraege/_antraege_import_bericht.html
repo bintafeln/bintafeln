@@ -1,0 +1,33 @@
+{# Ergebnis des Antrags-Imports (per htmx beim Probelauf eingesetzt). Erwartet: bericht, fehler_text. #}
+{% if fehler_text %}
+  <section class="karte"><p class="fehler" role="alert">{{ fehler_text }}</p></section>
+{% elif bericht %}
+<section class="karte">
+  <h2>{% if bericht.geschrieben %}Ergebnis{% else %}Probelauf (nichts gespeichert){% endif %}</h2>
+  <p>{{ bericht.zaehler.gesamt }} Zeile{{ bericht.zaehler.gesamt|pluralize:"n" }} in der Datei.</p>
+  <ul class="angaben">
+    {% for text, anzahl in bericht.zusammenfassung %}
+      <li><strong>{{ anzahl }}</strong> {{ text }}</li>
+    {% endfor %}
+  </ul>
+  {% if bericht.probleme %}
+    <h3>Nicht übernommene Zeilen{% if bericht.probleme|length == 300 %} (erste 300){% endif %}</h3>
+    <div class="tabelle-rahmen">
+    <table class="tabelle kompakt">
+      <thead><tr><th>Zeile</th><th>Antragsnummer</th><th>Grund</th></tr></thead>
+      <tbody>
+      {% for z in bericht.probleme %}
+        <tr>
+          <td data-titel="Zeile">{{ z.zeile }}</td>
+          <td data-titel="Antragsnummer">{{ z.nummer|default:"–" }}</td>
+          <td data-titel="Grund">{{ z.text }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% endif %}
+  {% if not bericht.geschrieben %}<p class="hinweis">Passt das? Dann unten auf <strong>„Übernehmen“</strong>
+    – die ausgewählte Datei bleibt erhalten.</p>{% endif %}
+</section>
+{% endif %}

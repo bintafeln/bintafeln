@@ -411,22 +411,30 @@ def antraege_importieren(request):
     Export). „Nur prüfen" (Vorgabe) zeigt nur den Bericht; zum Übernehmen den Haken entfernen."""
     from apps.antraege import antrag_import
 
-    bericht = None
+    bericht, fehler_text = None, ""
     if request.method == "POST":
         datei = request.FILES.get("csv")
-        nur_pruefen = "nur_pruefen" in request.POST
+        uebernehmen = request.POST.get("aktion") == "uebernehmen"
         if not datei:
-            messages.error(request, "Bitte eine CSV-Datei auswählen.")
+            fehler_text = "Bitte eine CSV-Datei auswählen."
         else:
             try:
-                if nur_pruefen:
-                    bericht = antrag_import.pruefen(datei)
-                else:
+                if uebernehmen:
                     bericht = antrag_import.uebernehmen(datei)
                     messages.success(request, f"{bericht['zaehler']['ok']} Anträge angelegt.")
+                else:
+                    bericht = antrag_import.pruefen(datei)
             except antrag_import.ImportFehler as fehler:
-                messages.error(request, str(fehler))
-    return render(request, "antraege/antraege_importieren.html", {"bericht": bericht})
+                fehler_text = str(fehler)
+        # Probelauf per htmx: nur den Bericht zurückgeben, damit die gewählte Datei oben bleibt
+        # (ein ganzer Seiten-Neuaufbau würde das Datei-Feld leeren).
+        if request.headers.get("HX-Request") and not uebernehmen:
+            return render(request, "antraege/_antraege_import_bericht.html",
+                          {"bericht": bericht, "fehler_text": fehler_text})  # fmt: skip
+        if fehler_text:
+            messages.error(request, fehler_text)
+    return render(request, "antraege/antraege_importieren.html",
+                  {"bericht": bericht, "fehler_text": fehler_text})  # fmt: skip
 
 
 @never_cache
