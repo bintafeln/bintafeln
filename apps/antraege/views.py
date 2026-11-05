@@ -386,6 +386,30 @@ def nachweise_importieren(request):
                    "max_mb": nachweis_import.MAX_MB})  # fmt: skip
 
 
+@rollen.recht_erforderlich("antraege.bearbeiten")
+def antraege_importieren(request):
+    """Anträge im Stapel aus einem Altsystem übernehmen (antraege.csv – gleiche Spalten wie der
+    Export). „Nur prüfen" (Vorgabe) zeigt nur den Bericht; zum Übernehmen den Haken entfernen."""
+    from apps.antraege import antrag_import
+
+    bericht = None
+    if request.method == "POST":
+        datei = request.FILES.get("csv")
+        nur_pruefen = "nur_pruefen" in request.POST
+        if not datei:
+            messages.error(request, "Bitte eine CSV-Datei auswählen.")
+        else:
+            try:
+                if nur_pruefen:
+                    bericht = antrag_import.pruefen(datei)
+                else:
+                    bericht = antrag_import.uebernehmen(datei)
+                    messages.success(request, f"{bericht['zaehler']['ok']} Anträge angelegt.")
+            except antrag_import.ImportFehler as fehler:
+                messages.error(request, str(fehler))
+    return render(request, "antraege/antraege_importieren.html", {"bericht": bericht})
+
+
 @never_cache
 @rollen.recht_erforderlich("antraege.sehen")
 def auskunft_pdf(request, pk):

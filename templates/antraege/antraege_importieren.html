@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block titel %}Anträge importieren{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'antraege:liste' %}">← Anträge</a></p>
+  <h1>Anträge importieren</h1>
+  <p>Anträge aus einem Altsystem im Stapel übernehmen – aus einer <strong>CSV-Datei</strong> mit
+    denselben Spalten wie der <strong>Export</strong> der Antragsliste. So lassen sich viele Anträge
+    auf einmal anlegen, ohne das öffentliche Formular zu benutzen.</p>
+  <h2>So sieht die Datei aus</h2>
+  <ul>
+    <li>Eine <strong>CSV-Datei</strong> (Trennzeichen <code>;</code>, Zeichensatz UTF-8). Pflicht
+      sind nur <code>vorname</code> und <code>nachname</code>; alle weiteren Spalten sind
+      freiwillig: <code>nummer</code> (Antragsnummer), <code>eingegangen_am</code>, <code>art</code>,
+      <code>status</code>, <code>sprache</code>, <code>kundennummer</code>, <code>anrede</code>,
+      <code>geburtsdatum</code>, <code>strasse</code>, <code>plz</code>, <code>ort</code>,
+      <code>telefon</code>, <code>email</code>, <code>familienstand</code>,
+      <code>staatsangehoerigkeit</code>, <code>wochentage</code>, <code>ausgabestelle</code>,
+      <code>personen</code>, <code>nachricht</code>, <code>anmerkung</code>.</li>
+    <li>Weitere Personen im Haushalt stehen in <code>personen</code>, durch <code> | </code>
+      getrennt, je Person „Vorname Nachname JJJJ-MM-TT (Staat)“ – Datum und Staat sind freiwillig.
+      Beispiel:
+      <pre class="vorformatiert">nummer;vorname;nachname;geburtsdatum;strasse;plz;ort;staatsangehoerigkeit;personen;nachricht
+42;Anna;Muster;1980-05-01;Weg 1;12345;Musterstadt;Deutschland;Kind Muster 2015-03-04 | Opa Muster;zweimal angerufen
+108;Bruno;Beispiel;;;;;Ukraine;;</pre></li>
+    <li>Ist eine <code>nummer</code> angegeben und <strong>schon vorhanden</strong> (oder zweimal in
+      der Datei), wird die Zeile übersprungen – ein erneuter oder stapelweiser Lauf legt nichts
+      doppelt an. Ohne <code>nummer</code> vergibt bintafeln die nächste Antragsnummer.</li>
+    <li>Die <strong>Nachweise</strong> werden getrennt über „Nachweise importieren“ (ZIP +
+      <code>nachweise.csv</code>) übernommen; die Zuordnung läuft über die Antragsnummer.</li>
+    <li>Bei vielen Anträgen besser <strong>in Stapeln</strong> hochladen.</li>
+  </ul>
+  <form method="post" enctype="multipart/form-data" data-ziel="bericht">
+    {% csrf_token %}
+    <div class="feld">
+      <label for="csv">CSV-Datei</label>
+      <input type="file" name="csv" id="csv" accept=".csv,text/csv" required>
+    </div>
+    <div class="feld feld-haken">
+      <label for="nur_pruefen"><input type="checkbox" name="nur_pruefen" id="nur_pruefen" checked>
+        Nur prüfen (Probelauf) – noch nichts speichern</label>
+    </div>
+    <button type="submit" class="knopf">Hochladen</button>
+    <p class="hinweis">Zum tatsächlichen Übernehmen den Haken entfernen.</p>
+  </form>
+</section>
+
+{% if bericht %}
+<section class="karte" id="bericht">
+  <h2>{% if bericht.geschrieben %}Ergebnis{% else %}Probelauf (nichts gespeichert){% endif %}</h2>
+  <p>{{ bericht.zaehler.gesamt }} Zeile{{ bericht.zaehler.gesamt|pluralize:"n" }} in der Datei.</p>
+  <ul class="angaben">
+    {% for text, anzahl in bericht.zusammenfassung %}
+      <li><strong>{{ anzahl }}</strong> {{ text }}</li>
+    {% endfor %}
+  </ul>
+  {% if bericht.probleme %}
+    <h3>Nicht übernommene Zeilen{% if bericht.probleme|length == 300 %} (erste 300){% endif %}</h3>
+    <div class="tabelle-rahmen">
+    <table class="tabelle kompakt">
+      <thead><tr><th>Zeile</th><th>Antragsnummer</th><th>Grund</th></tr></thead>
+      <tbody>
+      {% for z in bericht.probleme %}
+        <tr>
+          <td data-titel="Zeile">{{ z.zeile }}</td>
+          <td data-titel="Antragsnummer">{{ z.nummer|default:"–" }}</td>
+          <td data-titel="Grund">{{ z.text }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

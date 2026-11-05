@@ -8,6 +8,7 @@ urlpatterns = [
     path("", views.liste, name="liste"),
     path("export/", views.export, name="export"),
     path("nachweise-importieren/", views.nachweise_importieren, name="nachweise_importieren"),
+    path("importieren/", views.antraege_importieren, name="antraege_importieren"),
     path("ausweise-pruefen/", views.ausweise_pruefen_alle, name="ausweise_pruefen_alle"),
     path("ausweise-pruefen/stand/", views.ausweis_fortschritt, name="ausweis_fortschritt"),
     path("spalten/", views.spalten, name="spalten"),

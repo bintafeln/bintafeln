@@ -821,6 +821,67 @@ def test_ausweis_scan_liste_bulk_banner_und_automatik(admin_client, monkeypatch)
     assert antrag.staatsangehoerigkeit == "Ukraine" and not antrag.ausweis_abweichung
 
 
+_IMPORT_CSV = (
+    "nummer;vorname;nachname;geburtsdatum;staatsangehoerigkeit;personen;nachricht;anmerkung\n"
+    "500;Anna;Muster;1980-05-01;Deutschland;Kind Muster 2015-03-04 (Ukraine) | Opa Muster;Bitte anrufen;intern\n"  # noqa: E501
+    ";Bruno;Beispiel;;Ukraine;;;\n"
+    "500;Clara;Doppelt;;;;;\n"
+    ";;Ohnevorname;;;;;\n"
+)
+
+
+def _csv_datei(text=_IMPORT_CSV, name="antraege.csv"):
+    return SimpleUploadedFile(name, text.encode("utf-8-sig"), content_type="text/csv")
+
+
+def test_antrag_import_pruefen_und_uebernehmen():
+    from apps.antraege import antrag_import
+    from apps.antraege.models import Antrag
+
+    bericht = antrag_import.pruefen(_csv_datei())
+    z = bericht["zaehler"]
+    assert z["ok"] == 2 and z["dublette"] == 1 and z["unvollstaendig"] == 1
+    assert not bericht["geschrieben"] and not Antrag.objects.exists()  # Probelauf schreibt nichts
+
+    bericht = antrag_import.uebernehmen(_csv_datei())
+    assert bericht["zaehler"]["ok"] == 2
+    assert Antrag.objects.count() == 2
+    anna = Antrag.objects.get(laufnummer=500)
+    assert anna.vorname == "Anna" and anna.staatsangehoerigkeit == "Deutschland"
+    assert anna.geburtsdatum == dt.date(1980, 5, 1) and anna.nachricht == "Bitte anrufen"
+    assert anna.anmerkungen.count() == 1 and anna.anmerkungen.first().text == "intern"
+    # Angehörige aus der Spalte personen
+    personen = list(anna.personen.all())
+    assert len(personen) == 2
+    kind = personen[0]
+    assert kind.vorname == "Kind" and kind.nachname == "Muster"
+    assert kind.geburtsdatum == dt.date(2015, 3, 4) and kind.staatsangehoerigkeit == "Ukraine"
+    # Ohne Nummer wurde automatisch eine vergeben
+    bruno = Antrag.objects.get(vorname="Bruno")
+    assert bruno.laufnummer and bruno.laufnummer != 500
+
+    # Erneuter Lauf: beide „500“-Zeilen sind jetzt Dubletten (nichts doppelt unter der Nummer 500)
+    bericht = antrag_import.uebernehmen(_csv_datei())
+    assert bericht["zaehler"]["dublette"] == 2
+    assert Antrag.objects.filter(laufnummer=500).count() == 1
+
+
+def test_antrag_import_view_und_fehler(admin_client):
+    from apps.antraege.models import Antrag
+
+    url = reverse("antraege:antraege_importieren")
+    # Probelauf (Haken „nur prüfen")
+    admin_client.post(url, {"csv": _csv_datei(), "nur_pruefen": "on"})
+    assert not Antrag.objects.exists()
+    # Übernehmen
+    antwort = admin_client.post(url, {"csv": _csv_datei()}, follow=True)
+    assert "2 Anträge angelegt" in antwort.content.decode()
+    assert Antrag.objects.count() == 2
+    # Falsche Kopfzeile → klarer Fehler
+    schlecht = admin_client.post(url, {"csv": _csv_datei("foo;bar\n1;2\n")}, follow=True)
+    assert "vorname und nachname" in schlecht.content.decode()
+
+
 def test_nachweis_import_fehler_und_view(admin_client, antrag):
     from apps.antraege import nachweis_import
 
