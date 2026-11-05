@@ -6,6 +6,7 @@
   <div class="liste-kopf">
     <h1>Anträge <span class="leise">({{ offen_gesamt }} offen)</span></h1>
     {% if "antraege.bearbeiten" in rechte %}
+      <a class="knopf knopf-zweitrangig" href="{% url 'antraege:antraege_importieren' %}">Anträge importieren</a>
       <a class="knopf knopf-zweitrangig" href="{% url 'antraege:nachweise_importieren' %}">Nachweise importieren</a>
       {% if ausweis_pruefen %}
       <form method="post" action="{% url 'antraege:ausweise_pruefen_alle' %}" class="inline"
