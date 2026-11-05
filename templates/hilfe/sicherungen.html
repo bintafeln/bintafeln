@@ -21,6 +21,34 @@
   das Update, und von dort wird wiederhergestellt. Er lässt sich ausschalten, aber nicht löschen.</p>
 <div class="tipp">Eine Sicherung nur auf dem Server schützt nicht vor einem Defekt des Servers. Am besten zusätzlich auf
   ein externes Medium sichern, das an einem anderen Ort liegt oder regelmäßig getauscht wird.</div>
+<h3>Sicherung außer Haus (Fernablage)</h3>
+<p>Weil die Sicherungen bereits verschlüsselt sind, kann man sie bedenkenlos auf einen fremden Speicher legen – dort
+  sieht niemand den Inhalt. Unter „Sicherung außer Haus“ auf der Sicherungsseite richtet man eine <strong>Fernablage</strong>
+  ein; danach lässt sie sich bei einem Auftrag als Ziel wählen. Die Zugangsdaten werden verschlüsselt gespeichert und aus
+  Sicherheitsgründen nicht wieder angezeigt (Feld leer lassen = unverändert).</p>
+<p>Technisch geschieht das mit <code>rclone</code>; man fügt einen fertigen Remote-Block ein. Beispiele:</p>
+<pre class="vorformatiert">[fern]            # SFTP auf einen anderen Server / eine Storage Box
+type = sftp
+host = backup.example.de
+user = tafel
+key_file = /…      (oder: pass = …, siehe rclone-Doku)
+
+[fern]            # Nextcloud/WebDAV
+type = webdav
+url = https://cloud.example.de/remote.php/dav/files/tafel/
+vendor = nextcloud
+user = tafel
+pass = <i>mit „rclone obscure“ verschleiert</i>
+
+[fern]            # S3 (Backblaze B2, Wasabi, Hetzner, MinOffice …)
+type = s3
+provider = Other
+access_key_id = …
+secret_access_key = …
+endpoint = …</pre>
+<p>Den Block erzeugt man am einfachsten mit <code>rclone config</code> auf einem beliebigen Rechner und fügt ihn hier ein.
+  Wichtig: Der <strong>private Sicherungsschlüssel</strong> gehört nicht auf denselben Fremdspeicher – ohne ihn nützt die
+  Fernsicherung nichts, mit ihm neben den Daten wäre der Schutz dahin.</p>
 {% endif %}
 <h3>Wenn etwas nicht stimmt</h3>
 <ul>

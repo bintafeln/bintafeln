@@ -7,6 +7,7 @@ from apps.core import bilder, geheimnis
 from apps.core.auswahl import LAENDERCODE
 from apps.core.farben import STANDARDFARBE
 from apps.core.models import (
+    Fernsicherung,
     Hintergrundbild,
     MailEinstellungen,
     SicherungsAuftrag,
@@ -310,13 +311,19 @@ class SicherungsAuftragForm(forms.ModelForm):
         auswahl = [("", "Sicherungsordner des Servers")]
         for pfad, frei, _gesamt in ziele:
             auswahl.append((pfad, f"{pfad} (frei: {filesizeformat(frei)})"))
+        # Fernablagen (rclone, ADR 0106) als Ziel anbieten, wenn eingerichtet
+        self.remotes = Fernsicherung.laden().remotes()
+        for name in self.remotes:
+            auswahl.append((f"{name}:bintafeln", f"Fernablage außer Haus „{name}“"))
         gespeichert = self.instance.ziel
         if gespeichert and gespeichert not in {p for p, _ in auswahl}:
-            auswahl.append((gespeichert, f"{gespeichert} (zurzeit nicht angeschlossen)"))
+            hinweis = "Fernablage fehlt" if ":" in gespeichert else "zurzeit nicht angeschlossen"
+            auswahl.append((gespeichert, f"{gespeichert} ({hinweis})"))
         self.fields["ziel"].choices = auswahl
         self.fields["ziel"].help_text = (
             "Externe Platten und Netzlaufwerke erscheinen hier, sobald sie auf dem Server unter "
-            "/media oder /mnt eingehängt sind. bintafeln legt dort einen Ordner „bintafeln“ an."
+            "/media oder /mnt eingehängt sind. bintafeln legt dort einen Ordner „bintafeln“ an. "
+            "Fernablagen außer Haus richtet man unten auf der Sicherungsseite ein."
         )
         self.initial["wochentage"] = list(self.instance.wochentage)
         if self.instance.standard:
@@ -327,9 +334,12 @@ class SicherungsAuftragForm(forms.ModelForm):
 
     def clean_ziel(self):
         ziel = self.cleaned_data.get("ziel", "")
-        if ziel and (not ziel.startswith(("/media/", "/mnt/")) or ".." in ziel.split("/")
-                     or "|" in ziel or "\n" in ziel):  # fmt: skip
-            raise forms.ValidationError("Nur Ordner unter /media oder /mnt sind möglich.")
+        fern = ziel.split(":", 1)[0] in getattr(self, "remotes", []) if ":" in ziel else False
+        lokal = ziel.startswith(("/media/", "/mnt/")) and ".." not in ziel.split("/")
+        if ziel and (not (fern or lokal) or "|" in ziel or "\n" in ziel):
+            raise forms.ValidationError(
+                "Nur ein Ordner unter /media oder /mnt oder eine eingerichtete Fernablage."
+            )
         andere = SicherungsAuftrag.objects.exclude(pk=self.instance.pk).filter(ziel=ziel)
         if andere.exists():
             raise forms.ValidationError(
@@ -346,6 +356,30 @@ class SicherungsAuftragForm(forms.ModelForm):
                 "damit das Ziel nicht volläuft."
             )
         return daten
+
+
+class FernsicherungForm(forms.Form):
+    """rclone-Konfiguration für Sicherungen außer Haus (ADR 0106). Das Geheimnis wird aus
+    Sicherheitsgründen nicht angezeigt: leer lassen = unverändert."""
+
+    konfig = forms.CharField(
+        label="rclone-Konfiguration", required=False,
+        widget=forms.Textarea(attrs={"rows": 8, "spellcheck": "false", "autocomplete": "off",
+                                     "placeholder": "[fern]\ntype = sftp\nhost = …\nuser = …\n…"}),
+        help_text="Einen fertigen rclone-Remote-Block einfügen (aus „rclone config“ oder der "
+        "Anleitung). Leer lassen ändert nichts an einer bereits gespeicherten Konfiguration.",
+    )  # fmt: skip
+    entfernen = forms.BooleanField(label="Gespeicherte Fernablage entfernen", required=False)
+
+    def speichern(self) -> None:
+        obj = Fernsicherung.laden()
+        if self.cleaned_data.get("entfernen"):
+            obj.konfig_setzen("")
+        elif self.cleaned_data.get("konfig", "").strip():
+            obj.konfig_setzen(self.cleaned_data["konfig"])
+        else:
+            return  # nichts eingegeben und nicht entfernt: unverändert lassen
+        obj.save()
 
 
 def _html_feld(zeilen=8):

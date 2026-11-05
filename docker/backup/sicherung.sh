@@ -249,6 +249,77 @@ WHERE id = :'id'::int;
 SQL
 }
 
+# --- Fernablage über rclone (Sicherung außer Haus, ADR 0106) -----------------------------------
+# Die (verschlüsselte) rclone-Konfig stellt der Dienst "app" entschlüsselt hier bereit; dieser
+# Dienst kann das Geheimnis selbst nicht entschlüsseln.
+FERN_KONFIG=/fernsicherung/rclone.conf
+
+rc() {
+    rclone --config "$FERN_KONFIG" "$@"
+}
+
+# ist_fern ZIEL: 0, wenn ZIEL "remote:pfad" mit einer eingerichteten Fernablage ist
+ist_fern() {
+    [ -f "$FERN_KONFIG" ] || return 1
+    case "$1" in *:*) ;; *) return 1 ;; esac
+    rc listremotes 2>/dev/null | grep -qx "${1%%:*}:"
+}
+
+# Aufbewahrung auf der Fernablage (wie aufraeumen(), aber über rclone)
+fern_aufraeumen() {
+    f_grenze=0
+    if [ "$3" -gt 0 ]; then
+        f_grenze=$(als_zahl "$(date -d "@$(( $(date +%s) - $3 * 86400 ))" '+%Y-%m-%d_%H%M%S')")
+    fi
+    f_nummer=0
+    for alt in $(rc lsf --dirs-only "$1" 2>/dev/null | sed 's|/$||' \
+                 | grep -E "$NAMENSMUSTER" | sort -r); do
+        f_nummer=$((f_nummer + 1))
+        [ "$f_nummer" -eq 1 ] && continue
+        if { [ "$2" -gt 0 ] && [ "$f_nummer" -gt "$2" ]; } \
+            || { [ "$f_grenze" -gt 0 ] && [ "$(als_zahl "$alt")" -lt "$f_grenze" ]; }; then
+            rc purge "$1/$alt" 2>/dev/null && log "Alte Sicherung $alt in $1 gelöscht."
+        fi
+    done
+}
+
+# Stände der Fernablage zurückmelden (nur Namen; Größe/Platz dort nicht ermittelbar)
+fern_bestand_melden() {
+    staende=$(rc lsf --dirs-only "$2" 2>/dev/null | sed 's|/$||' \
+        | grep -E "$NAMENSMUSTER" | sort -r | while read -r n; do echo "$n|0"; done)
+    sql -v id="$1" -v staende="$staende" <<'SQL'
+UPDATE core_sicherungsauftrag
+SET staende = :'staende', frei_bytes = NULL, gesamt_bytes = NULL
+WHERE id = :'id'::int;
+SQL
+}
+
+# fern_ausfuehren ID ZIEL ANZAHL TAGE: lokal (verschlüsselt) erzeugen, hochladen, aufräumen
+fern_ausfuehren() {
+    case "$SCHLUESSEL" in
+        age1*) ;;
+        *) ergebnis_melden "$1" fehler "Kein gültiger Sicherungsschlüssel (./betrieb schluessel)."
+           return 1 ;;
+    esac
+    stage="/tmp/fernsicherung.$1"
+    rm -rf "$stage"
+    name="$(date '+%Y-%m-%d_%H%M%S')"
+    arbeit="$stage/$name"
+    mkdir -p "$arbeit"
+    log "Sicherung $name für Fernablage $2 läuft …"
+    if erstellen "$arbeit" && rc copy "$arbeit" "$2/$name"; then
+        ergebnis_melden "$1" ok "Sicherung $name in Fernablage $2 abgelegt."
+        fern_aufraeumen "$2" "$3" "$4" || true
+        fern_bestand_melden "$1" "$2" || true
+        log "Sicherung $name in Fernablage $2 abgelegt."
+        rm -rf "$stage"
+        return 0
+    fi
+    rm -rf "$stage"
+    ergebnis_melden "$1" fehler "Hochladen in die Fernablage $2 fehlgeschlagen (docker compose logs backup)."
+    return 1
+}
+
 # ausfuehren ID ART: einen Auftrag ausführen und das Ergebnis zurückmelden; 1 bei Fehler
 ausfuehren() {
     zeile=$(sql -v id="$1" -v art="$2" <<'SQL'
@@ -263,6 +334,10 @@ SQL
     rest=${zeile#*|}
     tage=${rest%%|*}
     ziel=${rest#*|}
+    if ist_fern "$ziel"; then
+        (fern_ausfuehren "$1" "$ziel" "$anzahl" "$tage")
+        return
+    fi
     if ! ordner=$(zielordner "$ziel"); then
         log "Auftrag $1: Ziel $ziel ist nicht erreichbar."
         ergebnis_melden "$1" fehler "Das Ziel $ziel ist nicht erreichbar (Medium nicht angeschlossen oder nicht eingehängt?)."
@@ -285,8 +360,12 @@ SQL
 alle_bestaende_melden() {
     for zeile in $(echo "SELECT id || '|' || replace(ziel, ' ', '%20') FROM core_sicherungsauftrag;" | sql); do
         ziel=$(echo "${zeile#*|}" | sed 's/%20/ /g')
-        ordner=$(zielordner "$ziel") || ordner=""
-        bestand_melden "${zeile%%|*}" "$ordner"
+        if ist_fern "$ziel"; then
+            fern_bestand_melden "${zeile%%|*}" "$ziel" || true
+        else
+            ordner=$(zielordner "$ziel") || ordner=""
+            bestand_melden "${zeile%%|*}" "$ordner"
+        fi
     done
 }
 

@@ -9,12 +9,14 @@ export COMPOSE_PROJECT_NAME=bintafeln-e2e
 SCHLUESSELDATEI=$(mktemp)
 
 EXTERN=/mnt/bintafeln-e2e-ziel
+FERNZIEL=/mnt/bintafeln-e2e-fern
 mnt_rm() { docker run --rm -v /mnt:/mnt alpine:3 rm -rf "$1" > /dev/null 2>&1 || true; }
 
 aufraeumen() {
     docker compose down -v --remove-orphans > /dev/null 2>&1 || true
     rm -f "$SCHLUESSELDATEI"
     mnt_rm "$EXTERN"
+    mnt_rm "$FERNZIEL"
 }
 trap aufraeumen EXIT
 
@@ -111,6 +113,15 @@ warte 60 "$DIENST; print('ja' if '$EXTERN|' in D.objects.first().ziele else 'nei
 python_in_app "$AUFTRAG; import datetime as dt; A.objects.create(name='Extern', ziel='$EXTERN', uhrzeit=dt.time(0, 0), tage=7)"
 warte 90 "$AUFTRAG; a=A.objects.get(name='Extern'); print('ja' if a.ergebnis=='ok' and a.geplant_am else 'nein')"
 docker run --rm -v /mnt:/mnt alpine:3 sh -c "ls $EXTERN/bintafeln/*/datenbank.dump.age" > /dev/null
+
+pruefe "Fernablage (rclone) als Ziel: lädt verschlüsselt hoch (ADR 0106)"
+docker run --rm -v /mnt:/mnt alpine:3 mkdir -p "$FERNZIEL"
+# „local“-Remote: rclone schreibt in den Pfad im backup-Dienst (hier /mnt, auch im Host sichtbar)
+python_in_app "from apps.core.models import Fernsicherung as F; from apps.core import fernsicherung; f=F.laden(); f.konfig_setzen('[fern]\ntype = local\n'); f.save(); fernsicherung.schreiben()"
+python_in_app "$AUFTRAG; import datetime as dt; A.objects.create(name='Fern', ziel='fern:$FERNZIEL/bintafeln', uhrzeit=dt.time(0, 0), tage=7)"
+warte 90 "$AUFTRAG; a=A.objects.get(name='Fern'); print('ja' if a.ergebnis=='ok' and a.staende else 'nein')"
+docker run --rm -v /mnt:/mnt alpine:3 sh -c "ls $FERNZIEL/bintafeln/*/datenbank.dump.age" > /dev/null
+docker run --rm -v /mnt:/mnt alpine:3 sh -c "head -c 21 $FERNZIEL/bintafeln/*/datenbank.dump.age | grep -q age-encryption.org/v1"
 
 pruefe "Nicht erreichbares Ziel ergibt eine verständliche Meldung"
 python_in_app "$AUFTRAG; from django.utils import timezone as tz; import datetime as dt; A.objects.create(name='Weg', ziel='/mnt/gibt-es-nicht', uhrzeit=dt.time(23, 59), wochentage='', anzahl=1, angefordert_am=tz.now())"
