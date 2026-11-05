@@ -645,17 +645,35 @@ def test_ausweis_pruefung_mrz_logik(monkeypatch):
     from apps.antraege import ausweis_pruefung as ap
 
     monkeypatch.setattr(ap, "tesseract_vorhanden", lambda: True)
+    # PassportEye findet hier nichts → Rückfall über das ganze Bild (_ocr + mrz-Parser)
+    monkeypatch.setattr(ap, "_passporteye", lambda daten: None)
     monkeypatch.setattr(ap, "_ocr", lambda daten: _mrz_ukr())
-    b = ap.pruefen(b"bild", "Ukraine")
+    b = ap.pruefen(_png(), "Ukraine")
     assert b["erkannt"] and b["dokument"] == "Reisepass"
     assert b["staatsangehoerigkeit"] == "Ukraine" and b["ausstellland"] == "Deutschland"
     assert b["passt"] is True
-    assert ap.pruefen(b"bild", "Deutschland")["passt"] is False  # Abweichung erkannt
+    assert ap.pruefen(_png(), "Deutschland")["passt"] is False  # Abweichung erkannt
     # Kein Tesseract bzw. keine MRZ → ehrlich „nicht erkannt", kein Raten
     monkeypatch.setattr(ap, "_ocr", lambda daten: "kein ausweis hier")
-    assert ap.pruefen(b"bild")["erkannt"] is False
+    assert ap.pruefen(_png())["erkannt"] is False
     monkeypatch.setattr(ap, "tesseract_vorhanden", lambda: False)
-    assert ap.pruefen(b"bild")["erkannt"] is False
+    assert ap.pruefen(_png())["erkannt"] is False
+
+
+def test_ausweis_pruefung_passporteye(monkeypatch):
+    """Stufe 1 (PassportEye findet das Band selbst): das Ergebnis wird korrekt übernommen."""
+    from apps.antraege import ausweis_pruefung as ap
+
+    monkeypatch.setattr(ap, "tesseract_vorhanden", lambda: True)
+    monkeypatch.setattr(ap, "_passporteye", lambda daten: {
+        "dokument": "Reisepass", "country": "D", "nationality": "UKR",
+        "name": "SVITLANA KOVACH", "gueltig": True})  # fmt: skip
+    b = ap.pruefen(_png(), "Ukraine")
+    assert b["erkannt"] and b["gueltig"] and b["passt"] is True
+    assert b["ausstellland"] == "Deutschland" and b["staatsangehoerigkeit"] == "Ukraine"
+    assert b["name"] == "SVITLANA KOVACH"
+    # defektes Bild → ehrlicher Fehler, keine Ausnahme
+    assert ap.pruefen(b"kein bild")["erkannt"] is False
 
 
 def test_ausweis_pruefung_view_und_knopf(admin_client, antrag, monkeypatch):
@@ -666,6 +684,7 @@ def test_ausweis_pruefung_view_und_knopf(admin_client, antrag, monkeypatch):
     e.ausweis_pruefen = True
     e.save()
     monkeypatch.setattr(ap, "tesseract_vorhanden", lambda: True)
+    monkeypatch.setattr(ap, "_passporteye", lambda daten: None)
     monkeypatch.setattr(ap, "_ocr", lambda daten: _mrz_ukr())
     name = privatdateien.speichern(
         ANHANG_ORDNER, SimpleUploadedFile("ausweis.png", _png(), content_type="image/png"),
