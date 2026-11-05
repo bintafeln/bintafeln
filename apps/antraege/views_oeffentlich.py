@@ -11,8 +11,9 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html, format_html_join
+from django.views.decorators.http import require_POST
 
-from apps.antraege import sprachen
+from apps.antraege import nachweise, sprachen
 from apps.antraege.forms import MAX_ANHAENGE, AntragForm
 from apps.antraege.models import AntragEinstellungen, AntragText, AntragVersuch
 from apps.core import html, mail
@@ -105,23 +106,40 @@ def formular(request, sprache):
     kontext["anhaenge_hinweis"] = anhaenge_hinweis(kontext["eigene"])
     if not e.aktiv:
         return render(request, "antraege/geschlossen.html", kontext)
-    form = AntragForm(request.POST or None, request.FILES or None, texte=t, einstellungen=e)
+    form = AntragForm(request.POST or None, texte=t, einstellungen=e)
     if request.method == "POST":
         if form.ist_bot:  # so tun, als sei alles gut
             request.session["antrag_nummer"] = ""
             return redirect("antrag:danke", sprache=sprache)
         if zu_viele(request, e.max_je_stunde):
             kontext["fehler"] = t["fehler_zu_viele"]
-        elif form.is_valid():
-            antrag = form.speichern(sprache)
-            request.session["antrag_nummer"] = antrag.nummer
-            request.session["antrag_mail"] = _bestaetigen(request, antrag)
-            _benachrichtigen(request, antrag, e)
-            return redirect("antrag:danke", sprache=sprache)
         else:
-            kontext["fehler"] = t["fehler_formular"]
+            # Hochgeladene Nachweise sofort verschlüsselt ablegen – so bleiben sie erhalten, auch
+            # wenn ein anderes Feld fehlt und das Formular noch einmal erscheint (ADR 0105).
+            datei_fehler = nachweise.hinzufuegen(request, request.FILES.getlist("anhaenge"), t)
+            hat_nachweis = nachweise.eintraege(request).exists()
+            if getattr(form, "nachweise_pflicht", False) and not hat_nachweis:
+                datei_fehler.append(t["fehler_pflicht"])
+            if form.is_valid() and not datei_fehler:
+                antrag = form.speichern(sprache)
+                nachweise.anhaengen(request, antrag)
+                request.session["antrag_nummer"] = antrag.nummer
+                request.session["antrag_mail"] = _bestaetigen(request, antrag)
+                _benachrichtigen(request, antrag, e)
+                return redirect("antrag:danke", sprache=sprache)
+            kontext["fehler"] = datei_fehler[0] if datei_fehler else t["fehler_formular"]
     return render(request, "antraege/formular.html",
-                  {**kontext, "form": form, "max_anhaenge": MAX_ANHAENGE})  # fmt: skip
+                  {**kontext, "form": form, "max_anhaenge": MAX_ANHAENGE,
+                   "nachweise": nachweise.eintraege(request)})  # fmt: skip
+
+
+@require_POST
+def nachweis_entfernen(request, sprache, pk):
+    """Einen schon hochgeladenen Nachweis wieder wegnehmen (vor dem Absenden)."""
+    if sprache not in sprachen.NACH_CODE:
+        return redirect("antrag:start")
+    nachweise.entfernen(request, pk)
+    return redirect("antrag:formular", sprache=sprache)
 
 
 def eigener_bereich(eigene: AntragText, feld: str, **werte) -> str:

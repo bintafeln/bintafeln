@@ -51,7 +51,8 @@ EIGENE_APPS = [
 ]
 # Vorübergehende Daten, die nicht in einen Export gehören
 AUSGENOMMEN = {"kunden.importvorbereitung", "antraege.antragversuch", "core.sicherungsdienst",
-               "konten.vertrautesgeraet", "datenimport.importsitzung", "core.meldung"}  # fmt: skip
+               "konten.vertrautesgeraet", "datenimport.importsitzung", "core.meldung",
+               "antraege.antragentwurfnachweis"}  # fmt: skip
 EINSTELLUNGS_MODELLE = {
     "core.tafeleinstellungen", "core.maileinstellungen", "core.fotoeinstellungen",
     "kunden.kundeneinstellungen",

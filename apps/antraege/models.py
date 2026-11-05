@@ -386,6 +386,30 @@ class AntragAnhang(models.Model):
         return self.name
 
 
+class AntragEntwurfNachweis(models.Model):
+    """Ein schon hochgeladener Nachweis, der noch zu keinem Antrag gehört: Er wird beim Absenden
+    verschlüsselt zwischengelegt und an die Sitzung gebunden, damit die Dateien bei einem
+    Formularfehler nicht verloren gehen. Beim erfolgreichen Absenden werden daraus ``AntragAnhang``;
+    liegen bleibende Entwürfe räumt ``fristen_anwenden`` nach einem Tag weg."""
+
+    PRIVATDATEI = (ANHANG_ORDNER, "datei")
+
+    sitzung = models.CharField(max_length=40, db_index=True)
+    name = models.CharField("Dateiname", max_length=200)
+    datei = models.CharField(max_length=200, editable=False)
+    typ = models.CharField(max_length=100, editable=False)
+    groesse = models.PositiveIntegerField("Größe in Bytes", default=0)
+    erstellt_am = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        verbose_name = "Nachweis-Entwurf"
+        verbose_name_plural = "Nachweis-Entwürfe"
+        ordering = ["pk"]
+
+    def __str__(self):
+        return self.name
+
+
 class AntragAnmerkung(models.Model):
     antrag = models.ForeignKey(Antrag, on_delete=models.CASCADE, related_name="anmerkungen")
     zeitpunkt = models.DateTimeField("Zeitpunkt", default=timezone.now)
@@ -447,6 +471,9 @@ def fristen_anwenden(jetzt=None) -> int:
     e = AntragEinstellungen.laden()
     tage = dt.timedelta
     AntragVersuch.objects.filter(zeitpunkt__lt=jetzt - tage(days=1)).delete()
+    from apps.antraege import nachweise  # liegen gebliebene Nachweis-Entwürfe wegräumen
+
+    nachweise.aufraeumen(jetzt)
     if e.erledigt_nach_tagen:
         Antrag.objects.filter(
             status__in=Antrag.OFFEN,

@@ -10,7 +10,7 @@
   </ul>{% endif %}
   <p class="hinweis">{{ t.pflicht_hinweis }}</p>
   {% if fehler %}<p class="sicherung sicherung-fehler" role="alert">{{ fehler }}</p>{% endif %}
-  <form method="post" enctype="multipart/form-data" novalidate class="antrag-formular">
+  <form method="post" enctype="multipart/form-data" class="antrag-formular">
     {% csrf_token %}
     {% if form.art %}{% include "antraege/_feld.html" with feld=form.art %}{% endif %}
     <fieldset class="abschnitt">
@@ -77,6 +77,16 @@
            data-text-anzahl="{{ t.fehler_datei_anzahl }}" data-text-typ="{{ t.fehler_datei_typ }}">
         {% include "antraege/_feld.html" with feld=form.anhaenge %}
       </div>
+      {% if nachweise %}
+      <p class="hinweis">{{ t.nachweise_behalten|default:"Bereits hochgeladen:" }}</p>
+      <ul class="ablage-liste ablage-behalten">
+        {% for n in nachweise %}
+        <li>{{ n.name }} ({{ n.groesse|filesizeformat }})
+          <button type="submit" class="ablage-entfernen" form="nachweis-weg-{{ n.pk }}"
+                  title="{{ t.ablage_entfernen }}" aria-label="{{ t.ablage_entfernen }}">✕</button></li>
+        {% endfor %}
+      </ul>
+      {% endif %}
     </fieldset>
     {% endif %}
     {% include "antraege/_feld.html" with feld=form.nachricht %}
@@ -110,5 +120,9 @@
     </div>
     <button type="submit" class="knopf antrag-absenden">{{ t.absenden }}</button>
   </form>
+  {% comment %}Eigene kleine Formulare zum Wegnehmen schon hochgeladener Nachweise – außerhalb des
+  Hauptformulars (verschachtelte Formulare sind nicht erlaubt), verbunden über das form-Attribut
+  der ✕-Knöpfe oben.{% endcomment %}
+  {% for n in nachweise %}<form id="nachweis-weg-{{ n.pk }}" method="post" action="{% url 'antrag:nachweis_entfernen' s.code n.pk %}" class="unsichtbar">{% csrf_token %}</form>{% endfor %}
 </section>
 {% endblock %}

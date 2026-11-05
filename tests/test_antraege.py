@@ -219,14 +219,73 @@ def test_fehler_in_der_gewaehlten_sprache(client, offen):
                                    p2_nachname="Ohne Vorname")).content.decode()  # fmt: skip
     for schluessel in ("fehler_einwilligung", "fehler_datum", "fehler_pflicht"):
         assert t[schluessel] in seite, schluessel
+    # Datei-Fehler je eigener Sitzung prüfen, damit behaltene Nachweise sich nicht aufsummieren
+    from django.test import Client as _Client
+
     zu_viele = [pdf(f"{n}.pdf") for n in range(MAX_ANHAENGE + 1)]
-    assert t["fehler_datei_anzahl"].format(anzahl=MAX_ANHAENGE) in client.post(
+    assert t["fehler_datei_anzahl"].format(anzahl=MAX_ANHAENGE) in _Client().post(
         url, daten(anhaenge=zu_viele)).content.decode()  # fmt: skip
     text = SimpleUploadedFile("a.txt", b"x", content_type="text/plain")
-    assert t["fehler_datei_typ"] in client.post(url, daten(anhaenge=[text])).content.decode()
+    assert t["fehler_datei_typ"] in _Client().post(url, daten(anhaenge=[text])).content.decode()
     gross = pdf(groesse=11 * 1024 * 1024)
-    assert "MB" in client.post(url, daten(anhaenge=[gross])).content.decode()
+    assert "MB" in _Client().post(url, daten(anhaenge=[gross])).content.decode()
     assert not Antrag.objects.exists()
+
+
+def test_nachweise_bleiben_bei_formularfehler(client, offen):
+    """Ein Nachweis, der schon hochgeladen war, geht bei einem Fehler an einem anderen Feld nicht
+    verloren: Er wird zwischengelegt, wieder angezeigt und beim nächsten Absenden übernommen."""
+    from apps.antraege.models import AntragEntwurfNachweis
+
+    offen.anhaenge = Abfrage.OPTIONAL
+    offen.save()
+    unvollstaendig = daten(anhaenge=[pdf("bescheid.pdf")])
+    del unvollstaendig["vorname"]  # ein Pflichtfeld fehlt
+    seite = client.post(FORMULAR, unvollstaendig).content.decode()
+    assert not Antrag.objects.exists()  # wegen des fehlenden Feldes nicht angelegt
+    assert AntragEntwurfNachweis.objects.count() == 1  # der Nachweis bleibt erhalten
+    assert "bescheid.pdf" in seite  # und wird wieder angezeigt
+    assert "novalidate" not in seite  # Pflichtfelder prüft jetzt schon der Browser
+    # Nur das fehlende Feld nachtragen, ohne die Datei erneut zu wählen
+    client.post(FORMULAR, daten())
+    antrag = Antrag.objects.get()
+    assert antrag.anhaenge.count() == 1 and antrag.anhaenge.first().name == "bescheid.pdf"
+    assert not AntragEntwurfNachweis.objects.exists()  # Entwürfe sind aufgebraucht
+
+
+def test_nachweise_pflicht_prueft_die_ansicht(client, offen):
+    """Sind Nachweise Pflicht, lässt sich ohne Datei nicht absenden – mit Datei schon (die Prüfung
+    macht jetzt die Ansicht, nicht mehr das Formularfeld)."""
+    offen.anhaenge = Abfrage.PFLICHT
+    offen.save()
+    assert client.post(FORMULAR, daten()).status_code == 200  # ohne Nachweis: Formular erneut
+    assert not Antrag.objects.exists()
+    client.post(FORMULAR, daten(anhaenge=[pdf("bescheid.pdf")]))
+    assert Antrag.objects.get().anhaenge.count() == 1
+
+
+def test_nachweis_einzeln_wegnehmen_und_aufraeumen(client, offen):
+    from apps.antraege import nachweise
+    from apps.antraege.models import ANHANG_ORDNER, AntragEntwurfNachweis
+    from apps.core import privatdateien
+
+    offen.anhaenge = Abfrage.OPTIONAL
+    offen.save()
+    unvollstaendig = daten(anhaenge=[pdf("a.pdf"), pdf("b.pdf")])
+    del unvollstaendig["vorname"]
+    client.post(FORMULAR, unvollstaendig)
+    assert AntragEntwurfNachweis.objects.count() == 2
+    erster = AntragEntwurfNachweis.objects.first()
+    pfad = privatdateien.pfad(ANHANG_ORDNER, erster.datei)
+    assert pfad.exists()
+    client.post(reverse("antrag:nachweis_entfernen", args=["de", erster.pk]))
+    assert AntragEntwurfNachweis.objects.count() == 1 and not pfad.exists()
+    # Liegen gebliebene Entwürfe räumt die Frist nach einem Tag weg (samt Datei)
+    rest = AntragEntwurfNachweis.objects.get()
+    rest_pfad = privatdateien.pfad(ANHANG_ORDNER, rest.datei)
+    AntragEntwurfNachweis.objects.update(erstellt_am=timezone.now() - dt.timedelta(days=2))
+    assert nachweise.aufraeumen() == 1
+    assert not AntragEntwurfNachweis.objects.exists() and not rest_pfad.exists()
 
 
 def test_bot_und_zu_viele(client, offen):

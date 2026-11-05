@@ -7,6 +7,9 @@ app_name = "antrag"
 urlpatterns = [
     path("", views.start, name="start"),
     path("<str:sprache>/", views.formular, name="formular"),
+    path(
+        "<str:sprache>/nachweis/<int:pk>/weg/", views.nachweis_entfernen, name="nachweis_entfernen"
+    ),  # fmt: skip
     path("<str:sprache>/danke/", views.danke, name="danke"),
     path("<str:sprache>/seite/<str:art>/", views.rechtstext, name="rechtstext"),
 ]
