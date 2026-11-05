@@ -81,7 +81,7 @@ def test_hilfe_bild_antraege_liste(angemeldet, admin, muster):
     _ohne_menue(seite)
     zeile = seite.locator("tr", has=seite.get_by_role("link", name=a.nummer, exact=True))
     aufnehmen(seite, "antraege-liste", seite.locator("section.karte").first,
-              Marke(seite.locator(".reiter"), "rahmen", 1),
+              Marke(seite.locator(".liste-kopf"), "rahmen", 1),
               Marke(zeile.locator(".zeilen-aktionen"), "rahmen", 2),
               Marke(zeile.locator("a.aufnehmen"), nummer=3, von="rechts", laenge=40))  # fmt: skip
 
