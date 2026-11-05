@@ -17,33 +17,33 @@ from apps.personal.models import (
 
 
 class VertragForm(forms.ModelForm):
-    # Entweder Stundenlohn oder Monatslohn eingeben; das jeweils andere wird aus den Wochenstunden
-    # berechnet (ADR 0018). Monatslohn ist kein eigenes Feld am Modell, nur eine Eingabehilfe.
-    monatslohn = forms.DecimalField(
-        label="Monatslohn (Euro brutto)", required=False, localize=True, max_digits=9,
-        decimal_places=2, min_value=0,
-        help_text="Durchschnitt über das Jahr aus Stundenlohn × Wochenstunden. Eins von beiden "
-        "genügt – das andere rechnet bintafeln aus.",
-    )  # fmt: skip
-
+    # Entweder Stundenlohn oder Monatslohn eingeben (ADR 0018): Ein fester Monatslohn ist
+    # maßgeblich – er bleibt genau so stehen, der Stundenlohn wird daraus gerundet. Wird nur der
+    # Stundenlohn eingegeben, ergibt sich der Monatslohn daraus.
     class Meta:
         model = Arbeitsvertrag
         fields = [
             "beginn", "ende", "taetigkeit", "wochenstunden", "urlaubstage", "stundenlohn",
-            "bemerkung",
+            "monatslohn", "bemerkung",
         ]  # fmt: skip
         widgets = {
             "beginn": DatumEingabe(),
             "ende": DatumEingabe(),
             "bemerkung": forms.Textarea(attrs={"rows": 2}),
         }
-        localized_fields = ["wochenstunden", "urlaubstage", "stundenlohn"]
+        localized_fields = ["wochenstunden", "urlaubstage", "stundenlohn", "monatslohn"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["stundenlohn"].help_text = "Eins von beiden genügt."
-        if self.instance and self.instance.pk:
-            self.initial.setdefault("monatslohn", self.instance.monatslohn)
+        self.fields[
+            "stundenlohn"
+        ].help_text = (
+            "Eins von beiden genügt. Aus einem festen Monatslohn wird er berechnet und gerundet."
+        )
+        self.fields["monatslohn"].help_text = (
+            "Ein fester Monatslohn bleibt genau so stehen (maßgeblich); der Stundenlohn wird "
+            "daraus gerundet. Eins von beiden genügt."
+        )
 
     def clean(self):
         from apps.personal import berechnung
@@ -51,12 +51,17 @@ class VertragForm(forms.ModelForm):
         daten = super().clean()
         wochenstunden = daten.get("wochenstunden")
         stundenlohn, monat = daten.get("stundenlohn"), daten.get("monatslohn")
-        if stundenlohn is None and monat is not None:
+        if monat is not None:
+            # Der Monatslohn ist maßgeblich: er bleibt unverändert, der Stundenlohn ergibt sich
+            # (gerundet) aus ihm – ein zugleich eingegebener Stundenlohn wird überschrieben.
             if not wochenstunden:
                 self.add_error("wochenstunden",
                                "Für die Umrechnung werden Wochenstunden gebraucht.")  # fmt: skip
             else:
                 daten["stundenlohn"] = berechnung.stundenlohn_aus_monat(monat, wochenstunden)
+        elif stundenlohn is not None:
+            # Nur Stundenlohn: Monatslohn als Anzeigewert daraus berechnen.
+            daten["monatslohn"] = berechnung.monatslohn(stundenlohn, wochenstunden)
         return daten
 
 

@@ -47,6 +47,12 @@ class Arbeitsvertrag(models.Model):
     stundenlohn = models.DecimalField(
         "Stundenlohn (Euro brutto)", max_digits=6, decimal_places=2, null=True, blank=True
     )
+    # Fester Monatslohn: wird er eingegeben, bleibt er genau so stehen (maßgeblich) und der
+    # Stundenlohn wird daraus gerundet. Wird nur der Stundenlohn eingegeben, ergibt sich der
+    # Monatslohn aus Stundenlohn × Wochenstunden (Durchschnitt über das Jahr). ADR 0018.
+    monatslohn = models.DecimalField(
+        "Monatslohn (Euro brutto)", max_digits=8, decimal_places=2, null=True, blank=True
+    )
     bemerkung = models.TextField("Anmerkung", blank=True)
     dokument_datei = models.CharField(max_length=200, blank=True, editable=False)
     dokument_typ = models.CharField(max_length=100, blank=True, editable=False)
@@ -70,13 +76,6 @@ class Arbeitsvertrag(models.Model):
     def tagessoll(self) -> Decimal:
         """Sollstunden je Werktag (Montag bis Freitag)."""
         return self.wochenstunden / 5
-
-    @property
-    def monatslohn(self) -> Decimal | None:
-        """Brutto-Monatslohn aus Stundenlohn und Wochenstunden (Durchschnitt über das Jahr)."""
-        from apps.personal import berechnung
-
-        return berechnung.monatslohn(self.stundenlohn, self.wochenstunden)
 
 
 class Abwesenheit(models.Model):

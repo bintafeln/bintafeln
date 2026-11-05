@@ -177,7 +177,7 @@ class Erzeuger:
                     benutzer=b, beginn=self.heute.replace(month=1, day=1),
                     taetigkeit="Fahrdienst" if rollen.FAHRER in namen else "Verwaltung",
                     wochenstunden=Decimal("30"), urlaubstage=Decimal("30"),
-                    stundenlohn=Decimal("14.50"),
+                    stundenlohn=Decimal("14.50"), monatslohn=Decimal("1885.00"),
                 )  # fmt: skip
                 for tage in range(1, 15):
                     tag = self.heute - dt.timedelta(days=tage)

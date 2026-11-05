@@ -16,13 +16,13 @@
   <h2>Arbeitsvertrag</h2>
   {% if aktuell %}
     <p>Gültig heute: {{ aktuell.taetigkeit|default:"Vertrag" }}, {{ aktuell.wochenstunden|floatformat:"-2" }} Stunden pro Woche,
-      {{ aktuell.urlaubstage|floatformat:"-1" }} Urlaubstage pro Jahr{% if aktuell.stundenlohn %}, {{ aktuell.stundenlohn|floatformat:2 }} € pro Stunde (≈ {{ aktuell.monatslohn|floatformat:2 }} € brutto im Monat){% endif %}.</p>
+      {{ aktuell.urlaubstage|floatformat:"-1" }} Urlaubstage pro Jahr{% if aktuell.monatslohn %}, {{ aktuell.monatslohn|floatformat:2 }} € brutto im Monat{% if aktuell.stundenlohn %} ({{ aktuell.stundenlohn|floatformat:2 }} € pro Stunde){% endif %}{% elif aktuell.stundenlohn %}, {{ aktuell.stundenlohn|floatformat:2 }} € pro Stunde{% endif %}.</p>
   {% else %}
     <p class="sicherung sicherung-veraltet">Heute gilt kein Arbeitsvertrag.</p>
   {% endif %}
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Beginn</th><th>Ende</th><th>Tätigkeit</th><th>Std./Woche</th><th>Urlaub/Jahr</th><th>Stundenlohn</th><th>Dokument</th></tr></thead>
+    <thead><tr><th>Beginn</th><th>Ende</th><th>Tätigkeit</th><th>Std./Woche</th><th>Urlaub/Jahr</th><th>Lohn</th><th>Dokument</th></tr></thead>
     <tbody>
     {% for v in vertraege %}
       <tr>
@@ -31,7 +31,7 @@
         <td data-titel="Tätigkeit">{{ v.taetigkeit|default:"–" }}</td>
         <td data-titel="Std./Woche">{{ v.wochenstunden|floatformat:"-2" }}</td>
         <td data-titel="Urlaub/Jahr">{{ v.urlaubstage|floatformat:"-1" }}</td>
-        <td data-titel="Stundenlohn">{% if v.stundenlohn %}{{ v.stundenlohn|floatformat:2 }} €<br><span class="leise">≈ {{ v.monatslohn|floatformat:2 }} €/Monat</span>{% else %}–{% endif %}</td>
+        <td data-titel="Stundenlohn">{% if v.monatslohn %}{{ v.monatslohn|floatformat:2 }} €/Monat{% if v.stundenlohn %}<br><span class="leise">{{ v.stundenlohn|floatformat:2 }} €/Std.</span>{% endif %}{% elif v.stundenlohn %}{{ v.stundenlohn|floatformat:2 }} €/Std.{% else %}–{% endif %}</td>
         <td data-titel="Dokument">{% if v.dokument_datei %}<a href="{% url 'personal:dokument_ansehen' p.pk v.pk %}" target="_blank" rel="noopener">ansehen</a>{% else %}–{% endif %}</td>
       </tr>
     {% empty %}
