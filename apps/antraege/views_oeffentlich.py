@@ -3,6 +3,7 @@
 import datetime as dt
 import hashlib
 import logging
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.shortcuts import redirect, render
@@ -71,8 +72,20 @@ def _ueberschrift(kontext) -> str:
     return kontext["eigene"].ueberschrift or kontext["t"]["titel"]
 
 
+def herkunft(request) -> str:
+    """Adresse der Seite, von der die Antragstellenden kamen (z. B. die Tafel-Homepage) – für den
+    „Zurück"-Knopf. Die erste Seite von außerhalb des Antrags wird in der Sitzung gemerkt, damit
+    Sprachwahl und Absenden (Verweise innerhalb von /antrag/) sie nicht überschreiben."""
+    teile = urlparse(request.META.get("HTTP_REFERER", ""))
+    intern = teile.netloc == request.get_host() and teile.path.startswith("/antrag")
+    if teile.scheme in ("http", "https") and teile.netloc and not intern:
+        request.session["antrag_herkunft"] = teile.geturl()
+    return request.session.get("antrag_herkunft", "")
+
+
 def start(request):
     """Ohne Sprache in der Adresse: die des Browsers, sonst Deutsch."""
+    herkunft(request)  # Herkunft schon hier merken, falls der Verweis beim Umleiten verloren geht
     wahl = request.GET.get("sprache") or sprachen.aus_browser(
         request.META.get("HTTP_ACCEPT_LANGUAGE", "")
     )
@@ -84,6 +97,7 @@ def formular(request, sprache):
         return redirect("antrag:start")
     kontext = _kontext(sprache)
     e, t = kontext["e"], kontext["t"]
+    kontext["zurueck"] = herkunft(request)
     kontext["ueberschrift"] = _ueberschrift(kontext)
     kontext["einleitung"] = html.anzeigen(
         kontext["eigene"].einleitung, t["einleitung"], tafel=kontext["tafel_name"]
@@ -141,6 +155,7 @@ def danke(request, sprache):
     if kontext["nummer"] is None:  # direkt aufgerufen
         return redirect("antrag:formular", sprache=kontext["s"].code)
     t = kontext["t"]
+    kontext["zurueck"] = request.session.get("antrag_herkunft", "")
     kontext["ueberschrift"] = _ueberschrift(kontext)
     # Die Antragsnummer erscheint bewusst nicht, auch nicht als {nummer} im eigenen Text
     kontext["bestaetigung"] = _bestaetigung(kontext, "")

@@ -568,6 +568,23 @@ def test_hinweis_zu_den_nachweisen(client, offen):
     assert "<p>Kimlik</p>" in client.get(reverse("antrag:formular", args=["tr"])).content.decode()
 
 
+def test_zurueck_knopf_fuehrt_zur_herkunft(client, offen):
+    from django.test import Client
+
+    url = reverse("antrag:formular", args=["de"])
+    # Von außerhalb (z. B. Tafel-Homepage): „Zurück“ zeigt genau dorthin
+    seite = client.get(url, HTTP_REFERER="https://tafel-essen.de/hilfe").content.decode()
+    assert 'href="https://tafel-essen.de/hilfe"' in seite and "Zurück" in seite
+    # Sprachwechsel (Verweis von der Antragsseite selbst) überschreibt die Herkunft nicht
+    seite = client.get(reverse("antrag:formular", args=["tr"]),
+                       HTTP_REFERER="http://testserver/antrag/de").content.decode()  # fmt: skip
+    assert 'href="https://tafel-essen.de/hilfe"' in seite
+    # Nach dem Absenden (Danke-Seite) weiterhin der Weg zurück zur Herkunft
+    frisch = Client()
+    direkt = frisch.get(url).content.decode()
+    assert "antrag-zurueck" not in direkt  # Direktaufruf ohne Herkunft: kein Knopf
+
+
 def test_behinderung_nur_wenn_eingeschaltet(client, offen, admin_client):
     from apps.antraege.auskunft import antrag_pdf
     from apps.antraege.models import Abfrage, Antrag
