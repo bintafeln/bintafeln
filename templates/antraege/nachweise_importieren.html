@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block titel %}Nachweise importieren{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'antraege:liste' %}">← Anträge</a></p>
+  <h1>Nachweise importieren</h1>
+  <p>Hochgeladene Nachweise aus einem Altsystem im Stapel an die passenden Anträge anhängen. Die
+    Zuordnung läuft über die <strong>Antragsnummer</strong>.</p>
+  <h2>So sieht das ZIP aus</h2>
+  <ul>
+    <li>Ein <strong>ZIP-Archiv</strong> mit den Dateien (Fotos JPG/PNG oder PDF) und einer Liste
+      <code>nachweise.csv</code>.</li>
+    <li><code>nachweise.csv</code> hat die Spalten <code>antragsnummer;datei</code> (eine Zeile je
+      Datei; die Spalte <code>name</code> für den Anzeigenamen ist freiwillig). Beispiel:
+      <pre class="vorformatiert">antragsnummer;datei;name
+42;dateien/42_bescheid.pdf;Bescheid Jobcenter
+42;dateien/42_ausweis.jpg;Ausweis
+108;dateien/108_miete.pdf;Mietvertrag</pre></li>
+    <li><strong>Bilder werden beim Import verkleinert</strong> (Einstellungen → Kundenstamm →
+      Fotos); PDFs bleiben, höchstens {{ max_mb }} MB je Datei.</li>
+    <li>Schon vorhandene Nachweise (gleicher Antrag, gleicher Name) werden übersprungen – ein
+      erneuter oder stapelweiser Lauf legt also nichts doppelt an.</li>
+    <li>Bei vielen Anträgen besser <strong>in Stapeln</strong> hochladen (z. B. 100 Anträge je
+      ZIP), das ist zuverlässiger als ein sehr großes Archiv.</li>
+  </ul>
+  <form method="post" enctype="multipart/form-data" data-ziel="bericht">
+    {% csrf_token %}
+    <div class="feld">
+      <label for="zip">ZIP-Archiv</label>
+      <input type="file" name="zip" id="zip" accept=".zip,application/zip" required>
+    </div>
+    <div class="feld feld-haken">
+      <label for="nur_pruefen"><input type="checkbox" name="nur_pruefen" id="nur_pruefen" checked>
+        Nur prüfen (Probelauf) – noch nichts speichern</label>
+    </div>
+    <button type="submit" class="knopf">Hochladen</button>
+    <p class="hinweis">Zum tatsächlichen Übernehmen den Haken entfernen.</p>
+  </form>
+</section>
+
+{% if bericht %}
+<section class="karte" id="bericht">
+  <h2>{% if bericht.geschrieben %}Ergebnis{% else %}Probelauf (nichts gespeichert){% endif %}</h2>
+  <p>{{ bericht.zaehler.gesamt }} Zeile{{ bericht.zaehler.gesamt|pluralize:"n" }} in der Liste.</p>
+  <ul class="angaben">
+    {% for text, anzahl in bericht.zusammenfassung %}
+      <li><strong>{{ anzahl }}</strong> {{ text }}</li>
+    {% endfor %}
+  </ul>
+  {% if bericht.probleme %}
+    <h3>Nicht übernommene Zeilen{% if bericht.probleme|length == 300 %} (erste 300){% endif %}</h3>
+    <div class="tabelle-rahmen">
+    <table class="tabelle kompakt">
+      <thead><tr><th>Antragsnummer</th><th>Datei</th><th>Grund</th></tr></thead>
+      <tbody>
+      {% for z in bericht.probleme %}
+        <tr>
+          <td data-titel="Antragsnummer">{{ z.antragsnummer|default:"–" }}</td>
+          <td data-titel="Datei">{{ z.datei|default:"–" }}</td>
+          <td data-titel="Grund">{{ z.text }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

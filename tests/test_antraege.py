@@ -1,6 +1,8 @@
 import datetime as dt
+import io
 import json
 import re
+import zipfile
 
 import pytest
 from auditlog.models import LogEntry
@@ -544,6 +546,74 @@ def test_nachweis_knopf_nur_mit_recht(client, admin, benutzer_mit_rolle, anmelde
     assert "Nachweis hinzufügen" not in detail and "entfernen</button>" not in detail
     hinzu = reverse("antraege:nachweis_hinzufuegen", args=[antrag.pk])
     assert client.post(hinzu).status_code == 403
+
+
+def _png(groesse=(20, 20)):
+    from PIL import Image
+
+    puffer = io.BytesIO()
+    Image.new("RGB", groesse, (200, 50, 50)).save(puffer, "PNG")
+    return puffer.getvalue()
+
+
+def _zip(dateien: dict, manifest: str) -> bytes:
+    puffer = io.BytesIO()
+    with zipfile.ZipFile(puffer, "w") as z:
+        z.writestr("nachweise.csv", manifest)
+        for name, daten in dateien.items():
+            z.writestr(name, daten)
+    return puffer.getvalue()
+
+
+def test_nachweis_import_stapel(antrag):
+    """ZIP + nachweise.csv: Dateien werden über die Antragsnummer zugeordnet, Probelauf schreibt
+    nichts, ein zweiter Lauf legt nichts doppelt an."""
+    from apps.antraege import nachweis_import
+
+    nummer = antrag.laufnummer
+    manifest = (f"antragsnummer;datei;name\n{nummer};d/a.png;Ausweis\n"
+                f"{nummer};d/b.pdf;Bescheid\n999999;d/c.pdf;Weg\n")  # fmt: skip
+    daten = _zip({"d/a.png": _png(), "d/b.pdf": b"%PDF-1.4 x", "d/c.pdf": b"%PDF-1.4 x"}, manifest)
+    # Probelauf: ordnet 2 zu, 1 Antrag fehlt – aber speichert nichts
+    bericht = nachweis_import.pruefen(io.BytesIO(daten))
+    assert bericht["zaehler"]["ok"] == 2 and bericht["zaehler"]["antrag_fehlt"] == 1
+    assert antrag.anhaenge.count() == 0
+    # Übernehmen hängt die zwei passenden an
+    bericht = nachweis_import.uebernehmen(io.BytesIO(daten))
+    assert bericht["zaehler"]["ok"] == 2
+    assert set(antrag.anhaenge.values_list("name", flat=True)) == {"Ausweis", "Bescheid"}
+    # Erneut → Dublette, nichts doppelt
+    bericht = nachweis_import.uebernehmen(io.BytesIO(daten))
+    assert bericht["zaehler"]["dublette"] == 2 and antrag.anhaenge.count() == 2
+    # Das Bild liegt verschlüsselt (kein Klartext im Dateiinhalt)
+    bild = antrag.anhaenge.get(name="Ausweis")
+    assert b"PNG" not in privatdateien.pfad(ANHANG_ORDNER, bild.datei).read_bytes()
+
+
+def test_nachweis_import_fehler_und_view(admin_client, antrag):
+    from apps.antraege import nachweis_import
+
+    # Falscher Dateityp wird abgewiesen, fehlende Liste gibt einen klaren Fehler
+    manifest = f"antragsnummer;datei\n{antrag.laufnummer};a.txt\n"
+    bericht = nachweis_import.pruefen(io.BytesIO(_zip({"a.txt": b"x"}, manifest)))
+    assert bericht["zaehler"]["typ"] == 1
+    # ZIP ohne nachweise.csv → klarer Fehler
+    puffer = io.BytesIO()
+    with zipfile.ZipFile(puffer, "w") as z:
+        z.writestr("x.pdf", b"%PDF")
+    with pytest.raises(nachweis_import.ImportFehler):
+        nachweis_import.pruefen(io.BytesIO(puffer.getvalue()))
+    # Über die Seite: Probelauf speichert nichts, Übernehmen hängt an
+    url = reverse("antraege:nachweise_importieren")
+    gut = _zip({"a.pdf": b"%PDF-1.4 x"}, f"antragsnummer;datei\n{antrag.laufnummer};a.pdf\n")
+    antwort = admin_client.post(
+        url, {"zip": SimpleUploadedFile("n.zip", gut, content_type="application/zip"),
+              "nur_pruefen": "on"})  # fmt: skip
+    assert antrag.anhaenge.count() == 0 and "Probelauf" in antwort.content.decode()
+    admin_client.post(
+        url, {"zip": SimpleUploadedFile("n.zip", gut, content_type="application/zip")}
+    )
+    assert antrag.anhaenge.count() == 1
 
 
 def test_auskunft_und_export(admin_client, antrag, pdf_text):
