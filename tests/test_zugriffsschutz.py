@@ -37,6 +37,7 @@ OEFFENTLICH = {
     "warten:code",  # Empfang der Verzeichnis-Meldungen, nur beim Herausgeber (ADR 0089)
     "antrag:start",  # Online-Antrag (ADR 0024)
     "antrag:formular",
+    "antrag:nachweis_entfernen",  # hochgeladenen Nachweis vor dem Absenden wegnehmen (ADR 0105)
     "antrag:danke",
     "antrag:rechtstext",  # Datenschutz/Impressum/Einverständnis als interner Text (ADR 0094)
     # Geräte am Aufruf ohne Anmeldung, nur mit dem Schlüssel im Link (ADR 0050)

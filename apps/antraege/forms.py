@@ -6,16 +6,14 @@ from django.db import transaction
 
 from apps.antraege import gebiet, sprachen
 from apps.antraege.models import (
-    ANHANG_ORDNER,
     Abfrage,
     Antrag,
-    AntragAnhang,
     AntragEinstellungen,
     AntragPerson,
     AntragText,
 )
 from apps.ausgabe.ampel import WOCHENTAGE
-from apps.core import geheimnis, privatdateien
+from apps.core import geheimnis
 from apps.core.auswahl import (
     ANREDEN,
     FAMILIENSTAENDE,
@@ -144,6 +142,11 @@ class AntragForm(forms.Form):
             choices=[("", t["egal"])] + [(s, s) for s in stellen]), t["ausgabestelle"])  # fmt: skip
         hilfe = t["anhaenge_hilfe"].format(anzahl=MAX_ANHAENGE, mb=MAX_MB)
         self._feld("anhaenge", MehrereDateienFeld(help_text=hilfe), t["anhaenge"])
+        # Die Dateien verarbeitet apps.antraege.nachweise (sie überstehen einen Formularfehler),
+        # nicht das Formular. Ob Nachweise Pflicht sind, prüft die Ansicht über die Entwürfe.
+        if "anhaenge" in self.fields:
+            self.nachweise_pflicht = self.fields["anhaenge"].required
+            self.fields["anhaenge"].required = False
         self._feld("nachricht", forms.CharField(widget=forms.Textarea(attrs={"rows": 4}),
                                                 max_length=2000), t["nachricht"])  # fmt: skip
         if einstellungen.einwilligung_abfragen:
@@ -229,13 +232,7 @@ class AntragForm(forms.Form):
                 f"p{n}_vorname"
             ):
                 self.add_error(f"p{n}_vorname", t["fehler_pflicht"])
-        dateien = daten.get("anhaenge") or []
-        if len(dateien) > MAX_ANHAENGE:
-            self.add_error("anhaenge", t["fehler_datei_anzahl"].format(anzahl=MAX_ANHAENGE))
-        elif any(d.content_type not in ANHANG_TYPEN for d in dateien):
-            self.add_error("anhaenge", t["fehler_datei_typ"])
-        elif any(d.size > MAX_MB * 1024 * 1024 for d in dateien):
-            self.add_error("anhaenge", t["fehler_datei_gross"].format(mb=MAX_MB))
+        # Hochladen/Prüfen/Behalten der Nachweise macht apps.antraege.nachweise, nicht das Formular
         if (
             self.e.gebiet_pruefen == AntragEinstellungen.Gebiet.SPERREN
             and gebiet.passt(self.e, daten.get("plz"), daten.get("ort")) is False
@@ -289,16 +286,8 @@ class AntragForm(forms.Form):
                     gdb=_zahl(d.get(f"p{n}_gdb")),
                     merkzeichen=_merkzeichen(d.get(f"p{n}_gdb"), d.get(f"p{n}_merkzeichen")),
                 )
-        for datei in d.get("anhaenge") or []:
-            AntragAnhang.objects.create(
-                antrag=antrag,
-                name=datei.name[:200],
-                datei=privatdateien.speichern(
-                    ANHANG_ORDNER, datei, typen=ANHANG_TYPEN, max_mb=MAX_MB
-                ),  # fmt: skip
-                typ=datei.content_type,
-                groesse=datei.size,
-            )
+        # Die hochgeladenen Nachweise hängt die Ansicht über apps.antraege.nachweise an (sie
+        # überstehen einen Formularfehler); hier wird nur der Antrag selbst gespeichert.
         return antrag
 
 
