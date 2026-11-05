@@ -77,6 +77,29 @@ def anhaengen(request, antrag) -> None:
     entwuerfe.delete()  # nur die Entwurf-Zeilen, nicht die Dateien
 
 
+def anhang_hinzufuegen(antrag, dateien) -> list[str]:
+    """Fügt einem bestehenden Antrag nachträglich Nachweise hinzu (Admin/Büro) und legt sie
+    verschlüsselt ab. Liefert Fehlermeldungen (Typ, Größe, Höchstzahl); schon vorhandene Nachweise
+    zählen zur Höchstzahl mit."""
+    fehler = []
+    vorhanden = antrag.anhaenge.count()
+    for datei in dateien:
+        if vorhanden >= MAX_ANHAENGE:
+            fehler.append(f"Höchstens {MAX_ANHAENGE} Nachweise je Antrag.")
+            break
+        try:
+            name = privatdateien.speichern(ANHANG_ORDNER, datei, typen=ANHANG_TYPEN, max_mb=MAX_MB)
+        except privatdateien.DateiFehler as f:
+            fehler.append(f"{datei.name}: {f}")
+            continue
+        AntragAnhang.objects.create(
+            antrag=antrag, name=datei.name[:200], datei=name,
+            typ=datei.content_type, groesse=datei.size,
+        )  # fmt: skip
+        vorhanden += 1
+    return list(dict.fromkeys(fehler))  # jede Meldung höchstens einmal
+
+
 def aufraeumen(jetzt=None) -> int:
     """Entwürfe, die länger als einen Tag liegen, samt Dateien löschen; liefert die Zahl."""
     jetzt = jetzt or timezone.now()

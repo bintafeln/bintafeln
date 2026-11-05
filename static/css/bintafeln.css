@@ -354,6 +354,10 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .demo-hinweis { margin: 0; padding: .5rem 1rem; text-align: center; background: #fff6dc; color: #6b4e00; font-weight: 600; }
 .version { opacity: .6; font-size: .8rem; }
 
+/* Nachweise eines Antrags: Dateiname und „entfernen" in einer Zeile mit etwas Abstand */
+.nachweise li { margin: .15rem 0; }
+.nachweise .inline { margin-left: .5rem; }
+
 /* Öffentliches Antragsformular */
 .sprachwahl { display: flex; align-items: center; gap: .5rem; }
 .sprachwahl select { max-width: 12rem; }

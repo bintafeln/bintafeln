@@ -492,6 +492,60 @@ def test_nachweis_ansehen(admin_client, antrag):
     assert admin_client.get(url).status_code == 404
 
 
+def test_nachweis_nachtraeglich_hinzufuegen(admin_client, antrag):
+    """Admin/Büro können nachträglich Nachweise hochladen (verschlüsselt abgelegt)."""
+    url = reverse("antraege:nachweis_hinzufuegen", args=[antrag.pk])
+    antwort = admin_client.post(url, {"dateien": [pdf("a.pdf"), pdf("b.pdf")]}, follow=True)
+    assert antrag.anhaenge.count() == 2
+    inhalt = antwort.content.decode()
+    assert "2 Nachweise hinzugefügt" in inhalt and "a.pdf" in inhalt
+    # verschlüsselt: die Rohdatei enthält das Klartext-PDF nicht
+    d = antrag.anhaenge.first()
+    assert b"%PDF" not in privatdateien.pfad(ANHANG_ORDNER, d.datei).read_bytes()
+    # Falscher Typ wird abgewiesen, der Antrag bekommt nichts dazu
+    txt = SimpleUploadedFile("x.txt", b"x", content_type="text/plain")
+    admin_client.post(url, {"dateien": [txt]})
+    assert antrag.anhaenge.count() == 2
+    # Höchstens fünf je Antrag
+    admin_client.post(url, {"dateien": [pdf("c.pdf"), pdf("d.pdf"), pdf("e.pdf"), pdf("f.pdf")]})
+    assert antrag.anhaenge.count() == 5
+
+
+def test_nachweis_entfernen_in_papierkorb(admin_client, antrag):
+    """Einen Nachweis entfernen legt ihn in den Papierkorb (wiederherstellbar), löscht die Datei
+    noch nicht."""
+    name = privatdateien.speichern(ANHANG_ORDNER, pdf(), typen={"application/pdf"})
+    d = AntragAnhang.objects.create(antrag=antrag, name="bescheid.pdf", datei=name,
+                                    typ="application/pdf", groesse=14)  # fmt: skip
+    # Der „entfernen"-Knopf steht auf der Antragsseite
+    detail = admin_client.get(reverse("antraege:antrag", args=[antrag.pk])).content.decode()
+    assert reverse("antraege:nachweis_entfernen", args=[antrag.pk, d.pk]) in detail
+    antwort = admin_client.post(reverse("antraege:nachweis_entfernen", args=[antrag.pk, d.pk]),
+                                follow=True)  # fmt: skip
+    assert "in den Papierkorb gelegt" in antwort.content.decode()
+    assert not AntragAnhang.objects.filter(pk=d.pk).exists()
+    eintrag = PapierkorbEintrag.objects.get(art="Nachweis")
+    assert eintrag.kundennummer == "1001" and eintrag.recht == "antraege.bearbeiten"
+    assert privatdateien.pfad(ANHANG_ORDNER, name).exists()  # Datei bleibt bis zur Frist
+    # Wiederherstellen bringt den Nachweis zurück
+    papierkorb.wiederherstellen(eintrag)
+    assert AntragAnhang.objects.filter(antrag=antrag, name="bescheid.pdf").exists()
+
+
+def test_nachweis_knopf_nur_mit_recht(client, admin, benutzer_mit_rolle, anmelden, recht_nehmen,
+                                      antrag):  # fmt: skip
+    """Wer Anträge nur sehen, aber nicht bearbeiten darf, sieht keinen Hochladen-/Entfernen-Bereich
+    und wird beim Versuch mit 403 gesperrt."""
+    name = privatdateien.speichern(ANHANG_ORDNER, pdf(), typen={"application/pdf"})
+    AntragAnhang.objects.create(antrag=antrag, name="b.pdf", datei=name, typ="application/pdf")
+    recht_nehmen(rollen.BUERO, "antraege.bearbeiten")  # Büro behält antraege.sehen
+    anmelden(client, benutzer_mit_rolle("nur_sehen", rollen.BUERO))
+    detail = client.get(reverse("antraege:antrag", args=[antrag.pk])).content.decode()
+    assert "Nachweis hinzufügen" not in detail and "entfernen</button>" not in detail
+    hinzu = reverse("antraege:nachweis_hinzufuegen", args=[antrag.pk])
+    assert client.post(hinzu).status_code == 403
+
+
 def test_auskunft_und_export(admin_client, antrag, pdf_text):
     AntragAnmerkung.objects.create(antrag=antrag, text="Testanmerkung", von="chefin")
     AntragAnhang.objects.create(antrag=antrag, name="bescheid.pdf", datei="x", typ="a",
