@@ -242,22 +242,50 @@ def _seite(c: Canvas, elemente, hintergrund, logo, w, x0, y0) -> None:
             _qr(c, w["qr_handy"], x, y, b, h, e["ausrichtung"])
 
 
+ZEILEN_FAKTOR = 1.15  # Zeilenabstand (Vielfaches der Schriftgröße)
+
+
+def _umbrechen(text, schrift, groesse, b) -> list[str]:
+    """Text an Wortgrenzen auf die Breite ``b`` umbrechen (für mehrzeilige Felder)."""
+    zeilen, aktuell = [], ""
+    for wort in text.split():
+        probe = (aktuell + " " + wort).strip()
+        if aktuell and stringWidth(probe, schrift, groesse) > b:
+            zeilen.append(aktuell)
+            aktuell = wort
+        else:
+            aktuell = probe
+    if aktuell:
+        zeilen.append(aktuell)
+    return zeilen or [""]
+
+
 def _text(c: Canvas, text, e, x, y, b, h) -> None:
     if not text:
         return
     schrift = "Helvetica-Bold" if e.get("fett") else "Helvetica"
     groesse = e.get("groesse", 9)
-    while groesse > 4 and stringWidth(text, schrift, groesse) > b:  # passend verkleinern
+    # Zuerst umbrechen; passt eine Zeile nicht in die Breite oder die Zeilen nicht in die Höhe,
+    # Schrift verkleinern und neu umbrechen. So wird ein zu langer Text mehrzeilig, statt winzig.
+    zeilen = _umbrechen(text, schrift, groesse, b)
+    while groesse > 4 and (
+        any(stringWidth(z, schrift, groesse) > b for z in zeilen)
+        or len(zeilen) * groesse * ZEILEN_FAKTOR > h
+    ):
         groesse -= 0.5
+        zeilen = _umbrechen(text, schrift, groesse, b)
     c.setFont(schrift, groesse)
     c.setFillColor(colors.HexColor(e["farbe"]))
-    grundlinie = y + (h - groesse * 0.7) / 2  # senkrecht mittig
-    if e["ausrichtung"] == "mitte":
-        c.drawCentredString(x + b / 2, grundlinie, text)
-    elif e["ausrichtung"] == "rechts":
-        c.drawRightString(x + b, grundlinie, text)
-    else:
-        c.drawString(x, grundlinie, text)
+    block = len(zeilen) * groesse * ZEILEN_FAKTOR
+    oben = y + (h + block) / 2 - groesse  # Grundlinie der obersten Zeile, Block senkrecht mittig
+    for i, zeile in enumerate(zeilen):
+        grundlinie = oben - i * groesse * ZEILEN_FAKTOR
+        if e["ausrichtung"] == "mitte":
+            c.drawCentredString(x + b / 2, grundlinie, zeile)
+        elif e["ausrichtung"] == "rechts":
+            c.drawRightString(x + b, grundlinie, zeile)
+        else:
+            c.drawString(x, grundlinie, zeile)
 
 
 def _merkmale(c: Canvas, symbole, e, x, y, b, h) -> None:
