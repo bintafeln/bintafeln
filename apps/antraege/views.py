@@ -158,6 +158,13 @@ def antrag(request, pk):
     accessed.send(sender=Antrag, instance=a)  # Aufruf im Änderungsprotokoll
     davor = Antrag.objects.filter(ANSICHTEN["offen"][1], eingegangen_am__lt=a.eingegangen_am)
     e = AntragEinstellungen.laden()
+    # Zum Durchblättern: voriger/nächster Antrag nach Antragsnummer (über alle Anträge).
+    voriger = naechster = None
+    if a.laufnummer is not None:
+        voriger = (Antrag.objects.filter(laufnummer__lt=a.laufnummer)
+                   .order_by("-laufnummer").first())  # fmt: skip
+        naechster = (Antrag.objects.filter(laufnummer__gt=a.laufnummer)
+                     .order_by("laufnummer").first())  # fmt: skip
     return render(
         request,
         "antraege/antrag.html",
@@ -168,6 +175,8 @@ def antrag(request, pk):
             "ausserhalb": gebiet.ausserhalb(e, a),
             "status_auswahl": Antrag.Status.choices,
             "ausweis_pruefen": ausweis_pruefung.aktiv(e),
+            "voriger": voriger,
+            "naechster": naechster,
         },
     )
 
