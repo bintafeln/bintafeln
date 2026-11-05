@@ -9,7 +9,7 @@
       {% for k, name in ansichten %}<a href="?ansicht={{ k }}"{% if k == ansicht %} aria-current="page"{% endif %}>{{ name }}{% if k == "offen" %} ({{ offen_gesamt }}){% endif %}</a>{% endfor %}
     </nav>
   </div>
-  {% if ansicht == "papierkorb" %}<p class="hinweis">Gelöschte Anträge bleiben {{ loeschen_nach_tagen }} Tag{{ loeschen_nach_tagen|pluralize:"e" }} im Papierkorb und werden danach samt Nachweisen endgültig gelöscht.{% if "einstellungen.antraege" in rechte %} Die Zahl der Tage stellen Sie unter <a href="{% url 'antraege:einstellungen' %}">Anträge einstellen</a> ein.{% endif %}</p>{% endif %}
+  {% if ansicht == "papierkorb" %}<p class="hinweis">Das ist der Papierkorb nur für Anträge, mit eigenen Fristen: Gelöschte Anträge bleiben {{ loeschen_nach_tagen }} Tag{{ loeschen_nach_tagen|pluralize:"e" }} hier und werden danach samt Nachweisen endgültig gelöscht.{% if "einstellungen.antraege" in rechte %} Die Zahl der Tage stellen Sie unter <a href="{% url 'antraege:einstellungen' %}">Anträge einstellen</a> ein.{% endif %} Alles andere Gelöschte liegt im <a href="{% url 'core:papierkorb' %}">allgemeinen Papierkorb</a>.</p>{% endif %}
   <form method="get" class="filter-kompakt">
     <input type="hidden" name="ansicht" value="{{ ansicht }}">
     <input type="hidden" name="sort" value="{{ sort }}">

@@ -396,7 +396,8 @@ def test_papierkorb_zeigt_eingestellte_loeschfrist(admin_client, antrag):
     antrag.papierkorb_am = timezone.now()
     antrag.save()
     seite = admin_client.get(reverse("antraege:liste"), {"ansicht": "papierkorb"}).content.decode()
-    assert "300 Tage im Papierkorb" in seite and "Anträge einstellen" in seite
+    assert "300 Tage" in seite and "Anträge einstellen" in seite
+    assert "Papierkorb nur für Anträge" in seite and "allgemeinen Papierkorb" in seite
     erwartet = antrag.endgueltig_loeschen_am().strftime("%d.%m.%Y")
     detail = admin_client.get(reverse("antraege:antrag", args=[antrag.pk])).content.decode()
     assert f"wird am {erwartet} endgültig gelöscht" in detail
