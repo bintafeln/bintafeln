@@ -870,15 +870,22 @@ def test_antrag_import_view_und_fehler(admin_client):
     from apps.antraege.models import Antrag
 
     url = reverse("antraege:antraege_importieren")
-    # Probelauf (Haken „nur prüfen")
-    admin_client.post(url, {"csv": _csv_datei(), "nur_pruefen": "on"})
+    # Probelauf (Knopf „Prüfen") – legt nichts an
+    admin_client.post(url, {"csv": _csv_datei(), "aktion": "pruefen"})
     assert not Antrag.objects.exists()
-    # Übernehmen
-    antwort = admin_client.post(url, {"csv": _csv_datei()}, follow=True)
+    # Probelauf per htmx: nur der Bericht kommt zurück (keine ganze Seite → Datei bleibt oben)
+    teil = admin_client.post(url, {"csv": _csv_datei(), "aktion": "pruefen"},
+                             HTTP_HX_REQUEST="true")  # fmt: skip
+    inhalt = teil.content.decode()
+    assert "Probelauf" in inhalt and "<html" not in inhalt
+    assert not Antrag.objects.exists()
+    # Übernehmen legt an
+    antwort = admin_client.post(url, {"csv": _csv_datei(), "aktion": "uebernehmen"}, follow=True)
     assert "2 Anträge angelegt" in antwort.content.decode()
     assert Antrag.objects.count() == 2
     # Falsche Kopfzeile → klarer Fehler
-    schlecht = admin_client.post(url, {"csv": _csv_datei("foo;bar\n1;2\n")}, follow=True)
+    schlecht = admin_client.post(url, {"csv": _csv_datei("foo;bar\n1;2\n"), "aktion": "pruefen"},
+                                 follow=True)  # fmt: skip
     assert "vorname und nachname" in schlecht.content.decode()
 
 
