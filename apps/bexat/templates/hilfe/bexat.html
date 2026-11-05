@@ -17,6 +17,14 @@
       <li><strong>Anträge</strong> und <strong>Mitarbeitende</strong> werden als CSV-Datei
         heruntergeladen. Diese laden Sie anschließend unter „Daten importieren“ mit dem Ziel
         „Anträge“ bzw. „Mitarbeitende“ hoch; auch dort wird vor dem Speichern abgeglichen.</li>
+      <li><strong>Besuche:</strong> Für den Knopf „Besuche als CSV herunterladen“ laden Sie <em>nicht</em>
+        den großen Export hoch, sondern die einfache Bexat-Liste <em>„kunden die da waren“</em> (nur
+        Kundennummern, keine Namen). bintafeln macht daraus <code>abholungen.csv</code> mit
+        Kundennummer, Datum, Uhrzeit und Beitrag. Diese laden Sie danach unter
+        <strong>„Kundenstamm importieren“</strong> mit der Art <strong>„ergänzen“</strong> hoch – die
+        Besuche kommen zu den vorhandenen Haushalten dazu, ohne den Bestand auszutauschen. Der
+        Kontostand aus der Liste wird nicht übernommen, weil er nur eine Momentaufnahme ist (keine
+        einzelne Buchung).</li>
     </ul>
   </li>
 </ol>

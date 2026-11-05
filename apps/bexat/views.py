@@ -35,6 +35,16 @@ def start(request):
         messages.error(request, "Die Datei darf höchstens 60 MB groß sein.")
         return render(request, "bexat/start.html", {"einstellungen": einstellungen})
 
+    if ziel == "besuche":
+        # Tagesreport „kunden die da waren“ (ein Blatt, nur Nummern) → abholungen.csv zum
+        # Herunterladen; anschließend über „Kundenstamm importieren → ergänzen“ einspielen.
+        try:
+            besuche = konvertieren.besuche_umwandeln(datei.read())
+        except konvertieren.BexatFehler as fehler:
+            messages.error(request, str(fehler))
+            return render(request, "bexat/start.html", {"einstellungen": einstellungen})
+        return _csv_antwort("abholungen.csv", besuche.abholungen)
+
     try:
         umw = konvertieren.umwandeln(
             datei.read(),

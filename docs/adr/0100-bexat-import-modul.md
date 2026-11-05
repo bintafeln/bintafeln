@@ -19,6 +19,13 @@ Tafeln eine Hürde.
   Abgleich**: „Kundenstamm prüfen und abgleichen“ führt direkt in den bekannten Abgleich des
   Kundenstamms; Anträge und Mitarbeitende werden als CSV heruntergeladen und wie gewohnt unter
   „Daten importieren“ eingespielt. Gespeichert wird nie ohne Abgleich.
+- Neben dem mehrblättrigen Gesamtexport kann das Modul den **Bexat-Tagesreport „kunden die da
+  waren“** (ein Blatt, deutsche Spaltenköpfe, nur Kundennummern – keine Namen) umwandeln:
+  `konvertieren.besuche_umwandeln()` macht daraus `abholungen.csv` (Kundennummer, Datum, Uhrzeit,
+  Beitrag) zum Herunterladen, das man über „Kundenstamm importieren → **ergänzen**“ zu den
+  vorhandenen Haushalten einspielt. Der Beitrag kommt wie beim Gesamtexport als `beitrag` in die
+  Abholung; der **Kontostand** der Liste ist eine Momentaufnahme (keine einzelne Buchung) und wird
+  nicht übernommen.
 - **Keine festen, tafelspezifischen Werte im Code.** Ausgabestellen und Kundengruppen kommen aus
   dem Export; Einkommensarten und (falls nötig) Ausgabestellen-Namen pflegt jede Tafel als
   Zuordnung „Nummer → Text“ in den Modul-Einstellungen (`BexatEinstellungen`). Fest sind nur die

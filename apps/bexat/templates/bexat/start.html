@@ -27,12 +27,20 @@
         Anträge als CSV herunterladen</button>
       <button type="submit" class="knopf knopf-zweitrangig" name="ziel" value="mitarbeitende">
         Mitarbeitende als CSV herunterladen</button>
+      <button type="submit" class="knopf knopf-zweitrangig" name="ziel" value="besuche">
+        Besuche als CSV herunterladen</button>
     </div>
   </form>
   <p class="hinweis">„Kundenstamm prüfen und abgleichen“ führt direkt in den Abgleich des
     Kundenstamms. Die heruntergeladenen Dateien <code>antraege.csv</code> und
     <code>mitarbeitende.csv</code> laden Sie anschließend unter „Daten importieren“ mit dem Ziel
     „Anträge“ bzw. „Mitarbeitende“ hoch; auch dort wird vor dem Speichern abgeglichen.</p>
+  <p class="hinweis"><strong>Besuche:</strong> Für „Besuche als CSV herunterladen“ laden Sie die
+    Bexat-Liste <em>„kunden die da waren“</em> hoch (ein einfacher Report, nur Kundennummern, keine
+    Namen). bintafeln macht daraus <code>abholungen.csv</code> (Kundennummer, Datum, Uhrzeit,
+    Beitrag). Diese laden Sie danach unter „Kundenstamm importieren“ mit der Art
+    <strong>„ergänzen“</strong> hoch – die Besuche kommen dann zu den vorhandenen Haushalten dazu.
+    Der Kontostand aus der Liste wird nicht übernommen (er ist nur eine Momentaufnahme).</p>
 </section>
 
 {% if bericht %}

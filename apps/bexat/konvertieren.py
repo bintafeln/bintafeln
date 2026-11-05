@@ -188,6 +188,92 @@ class Umwandlung:
     hinweise: list[str] = field(default_factory=list)
 
 
+@dataclass
+class BesucheUmwandlung:
+    abholungen: bytes = b""
+    anzahl: int = 0
+    hinweise: list[str] = field(default_factory=list)
+
+
+def _betrag_report(wert) -> str:
+    """Beitrag aus dem Tagesreport ('3 €', '1,5 €', 3) → '3' / '1,5' (Komma als Dezimaltrenner,
+    ohne €). Punkt als Dezimaltrenner wird zu Komma, damit es wie beim großen Konverter aussieht."""
+    if wert is None or wert == "":
+        return ""
+    text = str(wert).replace("€", "").replace("EUR", "").strip().replace(" ", "")
+    if "," not in text and text.count(".") == 1:
+        text = text.replace(".", ",")
+    return text
+
+
+def besuche_umwandeln(daten: bytes) -> BesucheUmwandlung:
+    """Bexat-Tagesreport „kunden die da waren“ (ein Blatt, deutsche Spaltenköpfe, nur Nummern –
+    keine Namen) → ``abholungen.csv`` des Importformats. Der Beitrag kommt als ``beitrag`` in die
+    Abholung; der Kontostand ist eine Momentaufnahme (keine Buchung) und wird nicht übernommen.
+    Die Datei spielt man anschließend über „Kundenstamm importieren → ergänzen“ ein.
+    """
+    try:
+        wb = openpyxl.load_workbook(io.BytesIO(daten), read_only=True, data_only=True)
+    except Exception as fehler:  # noqa: BLE001 – openpyxl wirft je nach Datei Verschiedenes
+        raise BexatFehler(
+            "Die Datei ließ sich nicht als Excel-Datei (.xlsx) öffnen. Bitte die Liste „kunden die "
+            "da waren“ aus dem Bexat-Tafelprogramm unverändert hochladen."
+        ) from fehler
+    ws = wb[wb.sheetnames[0]]
+    rows = ws.iter_rows(values_only=True)
+    kopf = None
+    for r in rows:  # eine Titelzeile steht vor der Kopfzeile
+        if r and any(_text(c).lower() == "kundennummer" for c in r):
+            kopf = [_text(c).lower() for c in r]
+            break
+    if kopf is None:
+        raise BexatFehler(
+            "In der Datei wurde keine Spalte „Kundennummer“ gefunden. Bitte die Liste „kunden die "
+            "da waren“ aus dem Bexat-Tafelprogramm unverändert als Excel-Datei (.xlsx) hochladen."
+        )
+
+    def spalte(*namen) -> int:
+        for n in namen:
+            if n in kopf:
+                return kopf.index(n)
+        return -1
+
+    i_knr = spalte("kundennummer", "nummer")
+    i_datum = spalte("letzter besuch", "besuch", "datum")
+    i_zeit = spalte("uhrzeit", "zeit")
+    i_beitrag = spalte("beitrag")
+
+    abholungen, ohne_datum = [], 0
+    for r in rows:
+        if r is None or not (0 <= i_knr < len(r)):
+            continue
+        roh = r[i_knr]
+        knr = str(roh).zfill(KUNDENNUMMER_BREITE) if isinstance(roh, int) else _text(roh)
+        if not knr:
+            continue
+        datum = _datum(r[i_datum]) if 0 <= i_datum < len(r) else ""
+        if not datum:
+            ohne_datum += 1
+            continue
+        abholungen.append({
+            "kundennummer": knr,
+            "datum": datum,
+            "uhrzeit": _uhrzeit(r[i_zeit]) if 0 <= i_zeit < len(r) else "",
+            "beitrag": _betrag_report(r[i_beitrag]) if 0 <= i_beitrag < len(r) else "",
+        })  # fmt: skip
+
+    if not abholungen:
+        raise BexatFehler(
+            "In der Datei standen keine Besuche mit Datum. Bitte prüfen, ob es die Liste „kunden "
+            "die da waren“ mit den Spalten „Kundennummer“ und „Letzter Besuch“ ist."
+        )
+    hinweise = []
+    if ohne_datum:
+        hinweise.append(f"{ohne_datum} Zeile(n) ohne Datum („Letzter Besuch“) übersprungen.")
+    csv_bytes = _csv_bytes(["kundennummer", "datum", "uhrzeit", "beitrag"], abholungen)
+    return BesucheUmwandlung(abholungen=csv_bytes, anzahl=len(abholungen), hinweise=hinweise)
+
+
 def umwandeln(
     daten: bytes,
     einkommensarten: dict | None = None,
