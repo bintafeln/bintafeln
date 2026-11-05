@@ -375,6 +375,9 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .nachweis-dialog-leiste { display: flex; gap: 1rem; justify-content: center; align-items: center;
   margin-top: .5rem; flex-wrap: wrap; }
 .nachweis-dialog::backdrop { background: rgba(0, 0, 0, .6); }
+.ausweis-ergebnis { text-align: left; font-size: .8rem; margin-top: .25rem; }
+.ausweis-ergebnis .angaben { margin: .25rem 0; }
+.ausweis-ergebnis dt { font-weight: 600; }
 
 /* Öffentliches Antragsformular */
 .sprachwahl { display: flex; align-items: center; gap: .5rem; }

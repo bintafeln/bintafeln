@@ -1,0 +1,15 @@
+{# Ergebnis der lokalen Ausweisprüfung (MRZ), eingesetzt per htmx. Erwartet: b (Bericht). #}
+{% if b.fehler %}
+  <p class="hinweis">{{ b.fehler }}</p>
+{% elif not b.erkannt %}
+  <p class="sicherung sicherung-veraltet" role="status">Kein maschinenlesbarer Ausweis erkannt (die MRZ fehlt oder ist unleserlich). Bitte von Hand prüfen.</p>
+{% else %}
+  <dl class="angaben">
+    <dt>Dokument</dt><dd>{{ b.dokument }}{% if not b.gueltig %} <span class="marke-warnung">Prüfziffern unstimmig – unsicher gelesen</span>{% endif %}</dd>
+    <dt>Ausgestellt von</dt><dd>{{ b.ausstellland }}</dd>
+    <dt>Staatsangehörigkeit laut Dokument</dt><dd>{{ b.staatsangehoerigkeit }}{% if b.code_staat %} ({{ b.code_staat }}){% endif %}</dd>
+    {% if b.name %}<dt>Name laut Dokument</dt><dd>{{ b.name }}</dd>{% endif %}
+    {% if b.passt is not None %}<dt>Abgleich mit der Angabe</dt><dd>{% if b.passt %}<span class="marke-ok">stimmt mit „{{ b.erwartet }}“ überein</span>{% else %}<span class="marke-warnung">weicht von der Angabe „{{ b.erwartet }}“ ab – bitte prüfen</span>{% endif %}</dd>{% endif %}
+  </dl>
+  <p class="hinweis">Nur ein Hinweis aus dem Dokument; die Entscheidung trifft ein Mensch.</p>
+{% endif %}

@@ -107,6 +107,13 @@ class AntragEinstellungen(models.Model):
         "Häkchen „Erklärungen gelesen“ (z. B. Flyer; nur mit Link oben sinnvoll)",
         default=False)  # fmt: skip
     impressum_url = models.URLField("Link zum Impressum", blank=True)
+    # Lokale Ausweisprüfung (MRZ lesen, ADR 0107): ein Knopf je Nachweis-Foto, nichts automatisch.
+    ausweis_pruefen = models.BooleanField(
+        "Ausweis-Foto lokal per OCR prüfen (MRZ)", default=False,
+        help_text="Zeigt bei Nachweis-Fotos einen Knopf, der die maschinenlesbare Zone (MRZ) eines "
+        "Ausweises liest und Land/Staatsangehörigkeit als Hinweis anzeigt. Läuft lokal auf dem "
+        "Server (Tesseract), ohne externen Dienst; nur nach Klick, nie automatisch.",
+    )  # fmt: skip
     # Aufbau der Seite: mitgelieferte Teile ein-/ausblenden; eigene Bereiche je Sprache: AntragText
     kopf_zeigen = models.BooleanField(
         "Kopfzeile mit Logo und Name zeigen", default=True,

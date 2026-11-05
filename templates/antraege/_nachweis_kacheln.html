@@ -19,6 +19,11 @@
             onsubmit="return confirm(this.dataset.frage)" data-frage="Nachweis „{{ d.name }}“ in den Papierkorb legen? Von dort ist er wiederherstellbar.">
         {% csrf_token %}<button type="submit" class="link">entfernen</button>
       </form>{% endif %}
+      {% if ausweis_pruefen and "image" in d.typ and "antraege.sehen" in rechte %}
+      <br><button type="button" class="link" hx-post="{% url 'antraege:nachweis_pruefen' a.pk d.pk %}"
+                  hx-target="#ausweis-{{ d.pk }}" hx-swap="innerHTML" hx-disabled-elt="this">Ausweis prüfen</button>
+      <div id="ausweis-{{ d.pk }}" class="ausweis-ergebnis"></div>
+      {% endif %}
     </figcaption>
   </figure>
 {% empty %}

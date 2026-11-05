@@ -91,9 +91,12 @@ def schritt(request, pk, schritt):
         return redirect("antraege:aufnahme_schritt", pk=a.pk, schritt="kunde")
     h = Haushalt.objects.filter(kundennummer=z.get("haushalt")).first() if z.get(
         "haushalt") else None  # fmt: skip
+    from apps.antraege import ausweis_pruefung
+
+    e = AntragEinstellungen.laden()
     kontext = {"a": a, "schritt": schritt, "schritte": SCHRITTE, "h": h, "z": z,
-               "nr": NAMEN.index(schritt) + 1,
-               "ausserhalb": gebiet.ausserhalb(AntragEinstellungen.laden(), a)}  # fmt: skip
+               "nr": NAMEN.index(schritt) + 1, "ausserhalb": gebiet.ausserhalb(e, a),
+               "ausweis_pruefen": ausweis_pruefung.aktiv(e)}  # fmt: skip
     fehler = None
     if request.method == "POST":
         fehler = globals()[f"_post_{schritt}"](request, a, z, h)

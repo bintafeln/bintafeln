@@ -619,6 +619,58 @@ def test_nachweis_import_stapel(antrag):
     assert b"PNG" not in privatdateien.pfad(ANHANG_ORDNER, bild.datei).read_bytes()
 
 
+def _mrz_ukr():
+    from mrz.generator.td3 import TD3CodeGenerator
+
+    # Reisepass, ausgestellt von „D" (Deutschland), Staatsangehörigkeit UKR (Ukraine)
+    return str(TD3CodeGenerator("P", "D", "Kovach", "Svitlana", "A1234567", "UKR",
+                                "560818", "F", "300101", ""))  # fmt: skip
+
+
+def test_ausweis_pruefung_mrz_logik(monkeypatch):
+    from apps.antraege import ausweis_pruefung as ap
+
+    monkeypatch.setattr(ap, "tesseract_vorhanden", lambda: True)
+    monkeypatch.setattr(ap, "_ocr", lambda daten: _mrz_ukr())
+    b = ap.pruefen(b"bild", "Ukraine")
+    assert b["erkannt"] and b["dokument"] == "Reisepass"
+    assert b["staatsangehoerigkeit"] == "Ukraine" and b["ausstellland"] == "Deutschland"
+    assert b["passt"] is True
+    assert ap.pruefen(b"bild", "Deutschland")["passt"] is False  # Abweichung erkannt
+    # Kein Tesseract bzw. keine MRZ → ehrlich „nicht erkannt", kein Raten
+    monkeypatch.setattr(ap, "_ocr", lambda daten: "kein ausweis hier")
+    assert ap.pruefen(b"bild")["erkannt"] is False
+    monkeypatch.setattr(ap, "tesseract_vorhanden", lambda: False)
+    assert ap.pruefen(b"bild")["erkannt"] is False
+
+
+def test_ausweis_pruefung_view_und_knopf(admin_client, antrag, monkeypatch):
+    from apps.antraege import ausweis_pruefung as ap
+    from apps.antraege.models import AntragEinstellungen
+
+    e = AntragEinstellungen.laden()
+    e.ausweis_pruefen = True
+    e.save()
+    monkeypatch.setattr(ap, "tesseract_vorhanden", lambda: True)
+    monkeypatch.setattr(ap, "_ocr", lambda daten: _mrz_ukr())
+    name = privatdateien.speichern(
+        ANHANG_ORDNER, SimpleUploadedFile("ausweis.png", _png(), content_type="image/png"),
+        typen={"image/png"})  # fmt: skip
+    d = AntragAnhang.objects.create(antrag=antrag, name="ausweis.png", datei=name, typ="image/png")
+    url = reverse("antraege:nachweis_pruefen", args=[antrag.pk, d.pk])
+    seite = admin_client.post(url).content.decode()
+    assert "Ukraine" in seite and "Reisepass" in seite
+    # Knopf steht auf der Antragsseite am Foto
+    detail = admin_client.get(reverse("antraege:antrag", args=[antrag.pk])).content.decode()
+    assert "Ausweis prüfen" in detail
+    # Abgeschaltet: kein Knopf, und die Ansicht ist nicht erreichbar
+    e.ausweis_pruefen = False
+    e.save()
+    detail = admin_client.get(reverse("antraege:antrag", args=[antrag.pk])).content.decode()
+    assert "Ausweis prüfen" not in detail
+    assert admin_client.post(url).status_code == 404
+
+
 def test_nachweis_import_fehler_und_view(admin_client, antrag):
     from apps.antraege import nachweis_import
 
