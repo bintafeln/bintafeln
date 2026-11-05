@@ -236,6 +236,28 @@ def test_antrag_merkzeichen_erst_mit_gdb(seite, admin):
     assert not block.get_by_label("G (erheblich gehbehindert)").is_checked()
 
 
+def test_antrag_weitere_person_uebernimmt_nachname_und_staat(seite, admin):
+    from apps.antraege.models import Abfrage, AntragEinstellungen
+
+    e = AntragEinstellungen.laden()
+    e.aktiv = True
+    e.angehoerige = Abfrage.OPTIONAL
+    e.staatsangehoerigkeit = Abfrage.OPTIONAL
+    e.save()
+    seite.goto("/antrag/de/")
+    staat = seite.eval_on_selector("#id_staatsangehoerigkeit option[data-land]", "o => o.value")
+    seite.fill("#id_nachname", "Mustermann")
+    seite.select_option("#id_staatsangehoerigkeit", staat)
+    # Weitere Person übernimmt Nachname und Staatsangehörigkeit der Hauptperson
+    expect(seite.locator("#id_p1_nachname")).to_have_value("Mustermann")
+    expect(seite.locator("#id_p1_staatsangehoerigkeit")).to_have_value(staat)
+    # Überschreibbar: eine eigene Eingabe bleibt, auch wenn die Hauptperson sich ändert
+    seite.fill("#id_p1_nachname", "Anders")
+    seite.fill("#id_nachname", "Neumann")
+    expect(seite.locator("#id_p1_nachname")).to_have_value("Anders")
+    expect(seite.locator("#id_p2_nachname")).to_have_value("Neumann")
+
+
 def test_kundenstamm_merkzeichen_erst_mit_gdb(angemeldet, admin):
     h = Haushalt.objects.create(kundennummer="4711")
     erika = Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika",
