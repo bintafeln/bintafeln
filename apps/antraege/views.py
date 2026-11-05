@@ -215,6 +215,44 @@ def anhang(request, pk, anhang):
     return antwort
 
 
+@require_POST
+@rollen.recht_erforderlich("antraege.bearbeiten")
+def nachweis_hinzufuegen(request, pk):
+    """Nachträglich Nachweise zu einem Antrag hochladen (verschlüsselt, ADR 0105)."""
+    from apps.antraege import nachweise
+
+    a = get_object_or_404(Antrag, pk=pk)
+    dateien = request.FILES.getlist("dateien")
+    if not dateien:
+        messages.error(request, "Bitte mindestens eine Datei auswählen.")
+        return redirect("antraege:antrag", pk=a.pk)
+    vorher = a.anhaenge.count()
+    for meldung in nachweise.anhang_hinzufuegen(a, dateien):
+        messages.error(request, meldung)
+    neu = a.anhaenge.count() - vorher
+    if neu == 1:
+        messages.success(request, "Ein Nachweis hinzugefügt.")
+    elif neu > 1:
+        messages.success(request, f"{neu} Nachweise hinzugefügt.")
+    return redirect("antraege:antrag", pk=a.pk)
+
+
+@require_POST
+@rollen.recht_erforderlich("antraege.bearbeiten")
+def nachweis_entfernen(request, pk, anhang):
+    """Einen Nachweis in den gemeinsamen Papierkorb legen (ADR 0073): wiederherstellbar, danach
+    endgültig gelöscht nach der Tafel-weiten Frist."""
+    from apps.core import papierkorb
+
+    a = get_object_or_404(Antrag, pk=pk)
+    d = get_object_or_404(AntragAnhang, pk=anhang, antrag=a)
+    name = d.name
+    papierkorb.loeschen(request.user, "Nachweis", f"{name} · Antrag {a.nummer}", d,
+                        recht="antraege.bearbeiten", kundennummer=a.kundennummer)  # fmt: skip
+    messages.success(request, f"Nachweis „{name}“ in den Papierkorb gelegt.")
+    return redirect("antraege:antrag", pk=a.pk)
+
+
 @never_cache
 @rollen.recht_erforderlich("antraege.sehen")
 def auskunft_pdf(request, pk):

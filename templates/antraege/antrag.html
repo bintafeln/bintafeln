@@ -40,7 +40,25 @@
   <h2>Weitere Personen im Haushalt</h2>
   {% for p in a.personen.all %}{% if forloop.first %}<ul>{% endif %}<li>{{ p.vorname }} {{ p.nachname }}{% if p.geburtsdatum %}, geb. {{ p.geburtsdatum|date:"d.m.Y" }}{% endif %}{% if p.staatsangehoerigkeit %}, {{ p.staatsangehoerigkeit }}{% endif %}{% if p.gdb_text %}, {{ p.gdb_text }}{% endif %}</li>{% if forloop.last %}</ul>{% endif %}{% empty %}<p>Keine.</p>{% endfor %}
   <h2>Nachweise</h2>
-  {% for d in a.anhaenge.all %}{% if forloop.first %}<ul>{% endif %}<li><a href="{% url 'antraege:anhang' a.pk d.pk %}" target="_blank" rel="noopener">{{ d.name }}</a> ({{ d.groesse|filesizeformat }})</li>{% if forloop.last %}</ul>{% endif %}{% empty %}<p>Keine.</p>{% endfor %}
+  {% for d in a.anhaenge.all %}{% if forloop.first %}<ul class="nachweise">{% endif %}<li><a href="{% url 'antraege:anhang' a.pk d.pk %}" target="_blank" rel="noopener">{{ d.name }}</a> ({{ d.groesse|filesizeformat }}){% if "antraege.bearbeiten" in rechte %}
+    <form method="post" action="{% url 'antraege:nachweis_entfernen' a.pk d.pk %}" class="inline"
+          onsubmit="return confirm(this.dataset.frage)" data-frage="Nachweis „{{ d.name }}“ in den Papierkorb legen? Von dort ist er wiederherstellbar.">
+      {% csrf_token %}<button type="submit" class="link">entfernen</button>
+    </form>{% endif %}</li>{% if forloop.last %}</ul>{% endif %}{% empty %}<p>Keine.</p>{% endfor %}
+  {% if "antraege.bearbeiten" in rechte %}
+  <details class="abseits">
+    <summary>Nachweis hinzufügen</summary>
+    <form method="post" action="{% url 'antraege:nachweis_hinzufuegen' a.pk %}" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="feld">
+        <label for="dateien">Dateien (Foto oder PDF, je höchstens 10 MB; zusammen höchstens 5 Nachweise)</label>
+        <input type="file" name="dateien" id="dateien" multiple
+               accept="image/jpeg,image/png,application/pdf" required>
+      </div>
+      <button type="submit" class="knopf knopf-zweitrangig">Hochladen</button>
+    </form>
+  </details>
+  {% endif %}
   <p><a href="{% url 'antraege:auskunft' a.pk %}" target="_blank" rel="noopener">Auskunft nach Art. 15 DSGVO (PDF)</a></p>
 </section>
 
