@@ -399,6 +399,16 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .ausweis-uebernehmen { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: .4rem 0; }
 .ausweis-uebernehmen select { width: auto; max-width: 18rem; }
 .ausweis-uebernehmen .knopf { width: auto; min-height: 2.5rem; padding: .4rem .9rem; }
+/* Hinweis-Banner auf der Antragsseite bei abweichender Ausweis-Nationalität */
+.ausweis-abweichung { border-left: 4px solid var(--fehler); }
+.ausweis-abweichung h2 { color: var(--fehler); margin-top: 0; }
+.ausweis-abweichung-inhalt { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 1rem; }
+.ausweis-bild { display: block; max-width: 16rem; border: 1px solid var(--rand); border-radius: var(--radius); overflow: hidden; cursor: zoom-in; }
+.ausweis-bild img { display: block; max-width: 100%; height: auto; }
+/* Fortschritt der Sammel-Ausweisprüfung in der Antragsliste */
+.ausweis-lauf { margin: .5rem 0; padding: .5rem .8rem; border-radius: var(--radius);
+  border: 1px solid var(--rand); background: color-mix(in srgb, var(--akzent) 8%, var(--flaeche)); }
+.ausweis-lauf.fertig { background: var(--flaeche); }
 
 /* Öffentliches Antragsformular */
 .sprachwahl { display: flex; align-items: center; gap: .5rem; }

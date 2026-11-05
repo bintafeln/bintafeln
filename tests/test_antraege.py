@@ -739,6 +739,88 @@ def test_ausweis_abweichung_und_uebernehmen(admin_client, antrag, monkeypatch):
     assert Antrag.objects.get(pk=antrag.pk).staatsangehoerigkeit == "Ukraine"
 
 
+_UKR = {"erkannt": True, "staatsangehoerigkeit": "Ukraine"}  # erfundener MRZ-Bericht für Tests
+
+
+def _antrag_mit_ausweis(haupt="Deutschland", personen=()):
+    from apps.antraege.models import Antrag, AntragAnhang, AntragPerson
+
+    a = Antrag.objects.create(vorname="A", nachname="B", staatsangehoerigkeit=haupt)
+    for n in personen:
+        AntragPerson.objects.create(antrag=a, vorname="C", staatsangehoerigkeit=n)
+    name = privatdateien.speichern(
+        ANHANG_ORDNER, SimpleUploadedFile("ausweis.png", _png(), content_type="image/png"),
+        typen={"image/png"})  # fmt: skip
+    AntragAnhang.objects.create(antrag=a, name="ausweis.png", datei=name, typ="image/png")
+    return a
+
+
+def test_ausweis_scan_abweichung_und_treffer(monkeypatch):
+    from apps.antraege import ausweis_pruefung, ausweis_scan
+
+    monkeypatch.setattr(ausweis_pruefung, "pruefen", lambda inhalt, *a, **k: _UKR)
+    # Hauptperson Deutschland, Ausweis Ukraine → Abweichung, Bild gemerkt
+    antrag = _antrag_mit_ausweis("Deutschland")
+    assert ausweis_scan.antrag_pruefen(antrag) is True
+    antrag.refresh_from_db()
+    assert antrag.ausweis_abweichung and antrag.ausweis_staat == "Ukraine"
+    assert antrag.ausweis_anhang_id and antrag.ausweis_geprueft_am
+
+
+def test_ausweis_scan_keine_abweichung(monkeypatch):
+    from apps.antraege import ausweis_pruefung, ausweis_scan
+
+    monkeypatch.setattr(ausweis_pruefung, "pruefen", lambda inhalt, *a, **k: _UKR)
+    # Ukraine ist bei einem Angehörigen angegeben → keine Abweichung (ganzer Haushalt)
+    antrag = _antrag_mit_ausweis("Deutschland", ["Ukraine"])
+    assert ausweis_scan.antrag_pruefen(antrag) is False
+    antrag.refresh_from_db()
+    assert not antrag.ausweis_abweichung and antrag.ausweis_staat == "Ukraine"
+    # Kein Ausweis erkannt → keine Abweichung, kein Staat, kein Hinweis
+    monkeypatch.setattr(ausweis_pruefung, "pruefen", lambda inhalt, *a, **k: {"erkannt": False})
+    leer = _antrag_mit_ausweis("Deutschland")
+    assert ausweis_scan.antrag_pruefen(leer) is False
+    leer.refresh_from_db()
+    assert leer.ausweis_staat == "" and leer.ausweis_anhang_id is None and leer.ausweis_geprueft_am
+
+
+def test_ausweis_scan_liste_bulk_banner_und_automatik(admin_client, monkeypatch):
+    from apps.antraege import ausweis_pruefung, ausweis_scan
+    from apps.antraege.models import AntragEinstellungen
+
+    e = AntragEinstellungen.laden()
+    e.ausweis_pruefen = True
+    e.save()
+    monkeypatch.setattr(ausweis_pruefung, "tesseract_vorhanden", lambda: True)
+    monkeypatch.setattr(ausweis_pruefung, "pruefen", lambda inhalt, *a, **k: _UKR)
+    monkeypatch.setattr(ausweis_scan, "_im_hintergrund", lambda fn: fn())  # synchron
+
+    # Automatik: neuer Antrag wird beim Eingang geprüft
+    antrag = _antrag_mit_ausweis("Deutschland")
+    ausweis_scan.neuen_pruefen(antrag.pk)
+    antrag.refresh_from_db()
+    assert antrag.ausweis_abweichung
+
+    # Sammelprüfung über die Liste
+    zweiter = _antrag_mit_ausweis("Deutschland")
+    admin_client.post(reverse("antraege:ausweise_pruefen_alle"))
+    zweiter.refresh_from_db()
+    assert zweiter.ausweis_abweichung
+
+    # Liste zeigt Marker und Knopf
+    liste = admin_client.get(reverse("antraege:liste")).content.decode()
+    assert "Ausweis ≠" in liste and "Alle Ausweise prüfen" in liste
+    # Antragsseite zeigt Banner mit Bild und Übernahme
+    detail = admin_client.get(reverse("antraege:antrag", args=[antrag.pk])).content.decode()
+    assert "weicht ab" in detail and "Im Antrag übernehmen" in detail
+    assert reverse("antraege:anhang", args=[antrag.pk, antrag.ausweis_anhang_id]) in detail
+    # Übernehmen räumt den Hinweis weg
+    admin_client.post(reverse("antraege:nachweis_staat_uebernehmen", args=[antrag.pk]),
+                      {"staatsangehoerigkeit": "Ukraine"})  # fmt: skip
+    antrag.refresh_from_db()
+    assert antrag.staatsangehoerigkeit == "Ukraine" and not antrag.ausweis_abweichung
+
+
 def test_nachweis_import_fehler_und_view(admin_client, antrag):
     from apps.antraege import nachweis_import
 

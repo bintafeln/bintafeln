@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.utils.html import format_html, format_html_join
 from django.views.decorators.http import require_POST
 
-from apps.antraege import nachweise, sprachen
+from apps.antraege import ausweis_scan, nachweise, sprachen
 from apps.antraege.forms import MAX_ANHAENGE, AntragForm
 from apps.antraege.models import AntragEinstellungen, AntragText, AntragVersuch
 from apps.core import html, mail
@@ -123,6 +123,7 @@ def formular(request, sprache):
             if form.is_valid() and not datei_fehler:
                 antrag = form.speichern(sprache)
                 nachweise.anhaengen(request, antrag)
+                ausweis_scan.neuen_pruefen(antrag.pk)  # Ausweise im Hintergrund prüfen (ADR 0107)
                 request.session["antrag_nummer"] = antrag.nummer
                 request.session["antrag_mail"] = _bestaetigen(request, antrag)
                 _benachrichtigen(request, antrag, e)

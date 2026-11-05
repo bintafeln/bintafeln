@@ -311,6 +311,16 @@ class Antrag(models.Model):
     ausgabestelle = models.CharField("Bevorzugte Ausgabestelle", max_length=100, blank=True)
     nachricht = models.TextField("Nachricht", blank=True)
     bearbeitet_von = models.CharField("Zuletzt bearbeitet von", max_length=150, blank=True)
+    # Ergebnis der lokalen Ausweisprüfung über alle Nachweise (ADR 0107): die im Ausweis erkannte
+    # Staatsangehörigkeit, ob sie zu keiner angegebenen passt (Abweichung), und welches Foto es war.
+    # Nur ein Hinweis; die Entscheidung trifft ein Mensch.
+    ausweis_geprueft_am = models.DateTimeField(null=True, blank=True, editable=False)
+    ausweis_staat = models.CharField(max_length=100, blank=True, editable=False)
+    ausweis_abweichung = models.BooleanField(default=False, editable=False)
+    ausweis_anhang = models.ForeignKey(
+        "AntragAnhang", null=True, blank=True, editable=False,
+        on_delete=models.SET_NULL, related_name="+",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Antrag"
@@ -449,7 +459,8 @@ class AntragVersuch(models.Model):
 auditlog.register(AntragEinstellungen, m2m_fields={"benachrichtigen"},
                   exclude_fields=["ki_schluessel_verschluesselt"])  # fmt: skip
 auditlog.register(AntragText)
-auditlog.register(Antrag)
+auditlog.register(Antrag, exclude_fields=[
+    "ausweis_geprueft_am", "ausweis_staat", "ausweis_abweichung", "ausweis_anhang"])  # fmt: skip
 auditlog.register(AntragPerson)
 auditlog.register(AntragAnhang, exclude_fields=["datei"])
 auditlog.register(AntragAnmerkung)

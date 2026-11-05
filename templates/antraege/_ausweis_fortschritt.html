@@ -1,0 +1,11 @@
+{# Fortschritt der Sammel-Ausweisprüfung (htmx, lädt sich selbst nach, bis fertig). Erwartet: stand. #}
+{% if stand and stand.laeuft %}
+<div class="ausweis-lauf" role="status"
+     hx-get="{% url 'antraege:ausweis_fortschritt' %}" hx-trigger="load delay:3s" hx-swap="outerHTML">
+  Ausweisprüfung läuft … {{ stand.fertig }} von {{ stand.gesamt }} Anträgen geprüft{% if stand.abweichungen %}, {{ stand.abweichungen }} Abweichung{{ stand.abweichungen|pluralize:"en" }}{% endif %}.
+</div>
+{% elif stand %}
+<div class="ausweis-lauf fertig" role="status">
+  Ausweisprüfung fertig: {{ stand.fertig }} Anträge geprüft, {{ stand.abweichungen }} Abweichung{{ stand.abweichungen|pluralize:"en" }} gefunden.
+</div>
+{% endif %}
