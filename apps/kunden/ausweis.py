@@ -90,7 +90,7 @@ BEISPIEL = {
     "ausweisname": "Kundenausweis",
     "tafelname": "Tafel Musterstadt",
     "hauptperson": "Erika Mustermann",
-    "kundengruppe": "Gruppe Montag · Mo, 12:30 Uhr",
+    "kundengruppe": "Montag · Mo, 12:30 Uhr",
     "ausgabestelle": "Ausgabestelle Mitte",
     "ausgabestelle_adresse": "Musterstraße 1, 12345 Musterstadt",
     "gueltig_bis": "Gültig bis 31.12.2027",
@@ -160,7 +160,7 @@ def werte(h, tafel, vorlage) -> dict[str, str]:
     termin = ""
     if g:
         teile = [t for t in (g.wochentage, f"{g.uhrzeit:%H:%M} Uhr" if g.uhrzeit else "") if t]
-        termin = f"Gruppe {g.name}" + (f" · {', '.join(teile)}" if teile else "")
+        termin = g.name + (f" · {', '.join(teile)}" if teile else "")
     stelle_obj = g.ausgabestelle if g and g.ausgabestelle else None
     stelle = stelle_obj.name if stelle_obj else ""
     stelle_adresse = ""
