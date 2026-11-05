@@ -39,7 +39,13 @@ nicht.
   Anträge** werden beim Eingang automatisch geprüft (ein Daemon-Thread, der seine DB-Verbindung
   selbst schließt – kein Celery, passend zu den gunicorn-Prozessen); über die Antragsliste lassen
   sich auf Befehl **alle** Anträge prüfen (ebenfalls im Hintergrund, Fortschritt im gemeinsamen
-  Datenbank-Cache, ADR 0093). Gefunden wird nur ein **Hinweis**: in der Liste ein Marker „Ausweis ≠"
+  Datenbank-Cache, ADR 0093). Die Sammelprüfung arbeitet nur noch **noch nicht geprüfte** Anträge
+  (ohne `ausweis_geprueft_am`) ab und ist damit **fortsetzbar**: Beendet ein App-Neustart (z. B.
+  ein Update) den Hintergrund-Thread, bleibt der Fortschritt im Cache, der Lauf gilt ohne frisches
+  Lebenszeichen (`aktualisiert`, Schwelle `VERWAIST_SEKUNDEN`) als **unterbrochen**, und der nächste
+  Aufruf der Antragsliste bzw. das Fortschritt-Polling setzt ihn automatisch an der Abbruchstelle
+  fort (`fortsetzen_wenn_unterbrochen()`). Ein verwaister Lauf blockiert den Start-Knopf nicht mehr.
+  Gefunden wird nur ein **Hinweis**: in der Liste ein Marker „Ausweis ≠"
   neben der Nummer, auf der Antragsseite ein Banner **mit Bild** und – mit `antraege.bearbeiten` –
   die Übernahme der erkannten Staatsangehörigkeit in den Antrag. Wird kein Ausweis gefunden oder
   passt alles, gibt es **keinen** Hinweis. Es wird nie etwas automatisch geändert.

@@ -821,6 +821,51 @@ def test_ausweis_scan_liste_bulk_banner_und_automatik(admin_client, monkeypatch)
     assert antrag.staatsangehoerigkeit == "Ukraine" and not antrag.ausweis_abweichung
 
 
+def test_ausweis_scan_setzt_nach_unterbrechung_fort(admin_client, monkeypatch):
+    """Ein durch einen Neustart (Update) abgebrochener Sammellauf wird beim nächsten Aufruf der
+    Antragsliste automatisch fortgesetzt und prüft nur die noch offenen Anträge (ADR 0107)."""
+    import time
+
+    from django.core.cache import cache
+
+    from apps.antraege import ausweis_pruefung, ausweis_scan
+    from apps.antraege.models import AntragEinstellungen
+
+    e = AntragEinstellungen.laden()
+    e.ausweis_pruefen = True
+    e.save()
+    monkeypatch.setattr(ausweis_pruefung, "tesseract_vorhanden", lambda: True)
+    monkeypatch.setattr(ausweis_pruefung, "pruefen", lambda inhalt, *a, **k: _UKR)
+    monkeypatch.setattr(ausweis_scan, "_im_hintergrund", lambda fn: fn())  # synchron
+
+    geprueft = _antrag_mit_ausweis("Ukraine")  # Ausweis passt → keine Abweichung
+    ausweis_scan.antrag_pruefen(geprueft)  # schon vor dem „Neustart“ geprüft
+    offen = _antrag_mit_ausweis("Deutschland")  # Ausweis Ukraine → Abweichung, noch offen
+
+    # Verwaister Lauf im Cache: laeuft=True, aber Lebenszeichen uralt – wie nach einem Update,
+    # das den Hintergrund-Thread beendet hat. Er gilt damit als unterbrochen.
+    cache.set(
+        ausweis_scan.CACHE_SCHLUESSEL,
+        {
+            "laeuft": True,
+            "gesamt": 2,
+            "fertig": 1,
+            "abweichungen": 0,
+            "aktualisiert": time.time() - ausweis_scan.VERWAIST_SEKUNDEN - 10,
+        },  # fmt: skip
+        ausweis_scan.CACHE_DAUER,
+    )
+    assert ausweis_scan.fortschritt()["unterbrochen"]
+
+    # Aufruf der Antragsliste setzt automatisch fort – nur der offene Antrag wird geprüft
+    admin_client.get(reverse("antraege:liste"))
+    offen.refresh_from_db()
+    assert offen.ausweis_abweichung
+    stand = ausweis_scan.fortschritt()
+    assert not stand["laeuft"] and not stand["unterbrochen"]
+    assert stand["fertig"] == 2 and stand["abweichungen"] == 1
+
+
 _IMPORT_CSV = (
     "nummer;vorname;nachname;geburtsdatum;staatsangehoerigkeit;personen;nachricht;anmerkung\n"
     "500;Anna;Muster;1980-05-01;Deutschland;Kind Muster 2015-03-04 (Ukraine) | Opa Muster;Bitte anrufen;intern\n"  # noqa: E501
