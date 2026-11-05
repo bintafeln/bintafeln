@@ -105,6 +105,9 @@ def streichen(ws, von: str, weg=Streichung.Weg.HAND) -> None:
     _setzen(ws, S.GESTRICHEN)
     if a.status != Antrag.Status.ABGELEHNT:
         a.status_setzen(Antrag.Status.ABGELEHNT, von)
+    from apps.warteliste import vorberechnung  # ein Antrag weniger offen → beide neu rechnen
+
+    vorberechnung.veraltet(dubletten=True, abgleich=True)
 
 
 def status_setzen(ws, status: str, von: str, wartezeit_bis: dt.date | None = None) -> None:
@@ -387,6 +390,9 @@ def dubletten() -> list[dict]:
 def ignorieren(a, b, benutzer) -> None:
     x, y = sorted([a.pk, b.pk])
     DubletteIgnoriert.objects.get_or_create(a_id=x, b_id=y, defaults={"von": benutzer})
+    from apps.warteliste import vorberechnung
+
+    vorberechnung.veraltet(dubletten=True)
 
 
 @transaction.atomic
@@ -531,11 +537,14 @@ def entscheiden(a, kundennummer: str, gleich: bool, von: str, heute=None) -> str
     """Ergebnis der Prüfung eines Treffers festhalten und anwenden; liefert eine Meldung.
     Derselbe Haushalt in der Sperrzeit → Wartezeit bis zum Ende der Sperrzeit; Ausweis noch
     gültig → Antrag als Verlängerung mit Kundennummer; sonst nur verknüpfen."""
+    from apps.warteliste import vorberechnung
+
     heute = heute or timezone.localdate()
     if not gleich:
         AbgleichEntscheidung.objects.update_or_create(
             antrag=a, kundennummer=kundennummer,
             defaults={"gleich": False, "von": von, "ergebnis": "anderer Haushalt"})  # fmt: skip
+        vorberechnung.veraltet(abgleich=True)
         return f"Antrag {a.nummer}: Kunde {kundennummer} ist ein anderer Haushalt."
     h = Haushalt.objects.filter(kundennummer=kundennummer).first()
     if h is None:
@@ -559,6 +568,7 @@ def entscheiden(a, kundennummer: str, gleich: bool, von: str, heute=None) -> str
     AbgleichEntscheidung.objects.update_or_create(
         antrag=a, kundennummer=kundennummer,
         defaults={"gleich": True, "von": von, "ergebnis": ergebnis})  # fmt: skip
+    vorberechnung.veraltet(abgleich=True)
     return f"Antrag {a.nummer}: derselbe Haushalt wie Kunde {kundennummer} – {ergebnis}."
 
 

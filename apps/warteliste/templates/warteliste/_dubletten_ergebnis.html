@@ -17,3 +17,7 @@
 {% empty %}
 <p>Keine möglichen Dubletten.</p>
 {% endfor %}
+{% if aktualisiert %}
+  <p class="hinweis" aria-busy="true">Wird im Hintergrund aktualisiert …</p>
+  <div hx-get="{{ nachladen }}" hx-trigger="load delay:4s" hx-target="#{{ ziel }}" hx-swap="innerHTML"></div>
+{% endif %}
