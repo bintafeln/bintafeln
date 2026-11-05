@@ -9,4 +9,22 @@
   <p class="aktionsleiste"><a class="knopf" href="{% url 'core:sicherungsauftrag_neu' %}">Neuer Sicherungsauftrag</a></p>
 </section>
 <div id="sicherungen-liste">{% include "core/_sicherungen_liste.html" %}</div>
+
+<section class="karte breit">
+  <h2>Sicherung außer Haus</h2>
+  <p>Weil die Sicherungen bereits verschlüsselt sind, kann man sie auf einen fremden Speicher legen –
+    dort sieht niemand den Inhalt. Richtet man hier eine <strong>Fernablage</strong> ein (per rclone:
+    SFTP, FTP, S3/Backblaze/Hetzner, WebDAV/Nextcloud …), kann man sie bei einem Sicherungsauftrag
+    oben als Ziel wählen. Der Schlüssel zum Entschlüsseln bleibt getrennt – bewahren Sie ihn sicher
+    auf, sonst nützt die Fernsicherung nichts.</p>
+  {% if fern_eingerichtet %}<p class="hinweis">Eingerichtet: Fernablage{{ fern_remotes|length|pluralize:"n" }}
+    {% for r in fern_remotes %}„{{ r }}“{% if not forloop.last %}, {% endif %}{% endfor %}.
+    Das Geheimnis wird aus Sicherheitsgründen nicht angezeigt.</p>{% else %}
+    <p class="hinweis">Noch keine Fernablage eingerichtet.</p>{% endif %}
+  <form method="post" action="{% url 'core:sicherung_fernablage' %}">
+    {% csrf_token %}
+    {% include "includes/formular.html" with form=fern_form %}
+    <button type="submit" class="knopf">Fernablage speichern</button>
+  </form>
+</section>
 {% endblock %}

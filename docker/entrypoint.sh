@@ -16,6 +16,8 @@ done
 
 python manage.py migrate --noinput
 python manage.py collectstatic --noinput --verbosity 0
+# Fernsicherung (ADR 0106): rclone-Konfig entschlüsselt für den Dienst backup bereitstellen
+python manage.py fernsicherung_schreiben || true
 
 # Beim Webserver: gesammelte Benachrichtigungen alle fünf Minuten verschicken (ADR 0086) und,
 # wenn eingeschaltet und fällig, die Meldung im bintafeln-Verzeichnis (ADR 0089).

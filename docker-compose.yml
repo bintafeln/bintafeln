@@ -54,6 +54,8 @@ services:
       - ${BINTAFELN_SICHERUNG_PFAD:-./sicherungen}:/app/sicherungen:ro
       # Austausch mit dem Dienst updater (Update aus der Oberfläche, ADR 0043)
       - betrieb:/app/data/betrieb
+      # Entschlüsselte rclone-Konfig für die Fernsicherung an den Dienst backup (ADR 0106)
+      - fernsicherung:/app/data/fernsicherung
 
   backup:
     build: docker/backup
@@ -74,6 +76,8 @@ services:
     volumes:
       - media:/daten/media:ro
       - ${BINTAFELN_SICHERUNG_PFAD:-./sicherungen}:/sicherungen
+      # Fernsicherung: vom Dienst app entschlüsselt bereitgestellte rclone-Konfig (ADR 0106)
+      - fernsicherung:/fernsicherung:ro
       # Externe Ziele für Sicherungsaufträge (USB-Platte, NAS; ADR 0042). Später eingehängte
       # Medien sieht der Dienst nach seinem nächsten Neustart (er startet sich alle 30 Minuten
       # neu, wenn er nichts zu tun hat).
@@ -132,3 +136,4 @@ volumes:
   caddy-daten:
   caddy-config:
   betrieb:
+  fernsicherung:

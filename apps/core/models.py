@@ -387,6 +387,55 @@ class SicherungsDienst(models.Model):
         return ergebnis
 
 
+class Fernsicherung(models.Model):
+    """Zugang zu einer Fernablage (rclone) für Sicherungen außer Haus (ADR 0106). Singleton; die
+    Zugangsdaten liegen nur verschlüsselt vor. Für den Dienst „backup“ schreibt
+    ``apps.core.fernsicherung`` sie entschlüsselt als rclone.conf in ein nur intern geteiltes
+    Verzeichnis – der Dienst selbst (kein Django) kann das Geheimnis nicht entschlüsseln."""
+
+    EINZIGE_ID = 1
+    konfig_verschluesselt = models.TextField(blank=True, editable=False)
+
+    class Meta:
+        verbose_name = "Fernsicherung"
+        verbose_name_plural = "Fernsicherung"
+
+    def __str__(self):
+        return "Fernsicherung"
+
+    def save(self, *args, **kwargs):
+        self.pk = self.EINZIGE_ID
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def laden(cls) -> "Fernsicherung":
+        obj, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
+        return obj
+
+    @property
+    def konfig(self) -> str:
+        from apps.core import geheimnis
+
+        if not self.konfig_verschluesselt:
+            return ""
+        return geheimnis.entschluesseln(self.konfig_verschluesselt) or ""
+
+    def konfig_setzen(self, text: str) -> None:
+        from apps.core import geheimnis
+
+        self.konfig_verschluesselt = geheimnis.verschluesseln(text) if (text or "").strip() else ""
+
+    @property
+    def eingerichtet(self) -> bool:
+        return bool(self.konfig_verschluesselt)
+
+    def remotes(self) -> list[str]:
+        """Namen der in der rclone-Konfiguration definierten Fernablagen (z. B. ['fern'])."""
+        import re
+
+        return re.findall(r"(?m)^\[([^\]]+)\]", self.konfig)
+
+
 class FotoEinstellungen(models.Model):
     """Wie stark hochgeladene Fotos verkleinert werden (Singleton, ADR 0064): Quittungen,
     Dokumente, Belege, Führerscheinkopien, Anhänge von Anträgen. PDFs bleiben unverändert."""

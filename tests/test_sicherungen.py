@@ -116,7 +116,7 @@ def test_ziel_nur_unter_media_und_mnt():
             instance=SicherungsAuftrag(),
             ziele=[(ziel, 1, 1)],
         )
-        assert not form.is_valid() and "Nur Ordner unter /media" in str(form.errors)
+        assert not form.is_valid() and "Nur ein Ordner unter /media" in str(form.errors)
 
 
 def test_startseite_zeigt_fehlgeschlagene_auftraege(admin_client):
@@ -138,3 +138,75 @@ def test_rechte(client, benutzer_mit_rolle, anmelden, settings, admin_client):
     anmelden(client, benutzer_mit_rolle("berta", rollen.BUERO))
     assert client.get(URL).status_code == 403
     assert client.post(reverse("core:sicherung_jetzt", args=[standard().pk])).status_code == 403
+
+
+# --- Fernsicherung über rclone (ADR 0106) ------------------------------------------------------
+
+FERN_KONFIG = "[fern]\ntype = sftp\nhost = backup.example\nuser = tafel\npass = geheim123\n"
+
+
+def test_fernsicherung_verschluesselt_und_remotes():
+    from apps.core.models import Fernsicherung
+
+    f = Fernsicherung.laden()
+    f.konfig_setzen(FERN_KONFIG)
+    f.save()
+    f = Fernsicherung.laden()
+    assert f.eingerichtet and f.konfig == FERN_KONFIG
+    assert "geheim123" not in f.konfig_verschluesselt  # nicht im Klartext gespeichert
+    assert f.remotes() == ["fern"]
+
+
+def test_fernsicherung_schreibt_rclone_conf(tmp_path, monkeypatch):
+    import stat
+
+    from apps.core import fernsicherung
+    from apps.core.models import Fernsicherung
+
+    monkeypatch.setattr(fernsicherung, "KONFIG_PFAD", tmp_path)
+    f = Fernsicherung.laden()
+    f.konfig_setzen(FERN_KONFIG)
+    f.save()
+    assert fernsicherung.schreiben() is True
+    datei = tmp_path / "rclone.conf"
+    assert datei.read_text().startswith("[fern]") and "geheim123" in datei.read_text()
+    assert stat.S_IMODE(datei.stat().st_mode) == 0o600
+    # Entfernen löscht die Datei wieder
+    f.konfig_setzen("")
+    f.save()
+    assert fernsicherung.schreiben() is False and not datei.exists()
+
+
+def test_fernablage_oberflaeche_speichern_und_entfernen(admin_client, tmp_path, monkeypatch):
+    from apps.core import fernsicherung
+    from apps.core.models import Fernsicherung
+
+    monkeypatch.setattr(fernsicherung, "KONFIG_PFAD", tmp_path)
+    url = reverse("core:sicherung_fernablage")
+    admin_client.post(url, {"konfig": FERN_KONFIG})
+    assert Fernsicherung.laden().konfig.strip() == FERN_KONFIG.strip()
+    assert (tmp_path / "rclone.conf").exists()
+    admin_client.post(url, {"konfig": ""})  # leer = unverändert
+    assert Fernsicherung.laden().konfig.strip() == FERN_KONFIG.strip()
+    admin_client.post(url, {"konfig": "", "entfernen": "on"})
+    assert not Fernsicherung.laden().eingerichtet and not (tmp_path / "rclone.conf").exists()
+    # Das Geheimnis wird nicht in die Seite zurückgeschrieben
+    f = Fernsicherung.laden()
+    f.konfig_setzen(FERN_KONFIG)
+    f.save()
+    assert "geheim123" not in admin_client.get(URL).content.decode()
+
+
+def test_fernablage_als_sicherungsziel_waehlbar(admin_client):
+    from apps.core.models import Fernsicherung
+
+    f = Fernsicherung.laden()
+    f.konfig_setzen(FERN_KONFIG)
+    f.save()
+    seite = admin_client.get(reverse("core:sicherungsauftrag_neu")).content.decode()
+    assert "fern:bintafeln" in seite and "Fernablage außer Haus „fern“" in seite
+    admin_client.post(reverse("core:sicherungsauftrag_neu"), {
+        "name": "Außer Haus", "ziel": "fern:bintafeln", "aktiv": "on",
+        "wochentage": ["1"], "uhrzeit": "02:30", "anzahl": "14",
+    })  # fmt: skip
+    assert SicherungsAuftrag.objects.get(name="Außer Haus").ziel == "fern:bintafeln"

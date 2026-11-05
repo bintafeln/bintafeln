@@ -9,9 +9,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
-from apps.core import sicherung
-from apps.core.forms import SicherungsAuftragForm
-from apps.core.models import SicherungsAuftrag, SicherungsDienst
+from apps.core import fernsicherung, sicherung
+from apps.core.forms import FernsicherungForm, SicherungsAuftragForm
+from apps.core.models import Fernsicherung, SicherungsAuftrag, SicherungsDienst
 from apps.konten import rollen
 from apps.konten.views import nicht_in_demo
 
@@ -29,9 +29,31 @@ def _kontext():
 @never_cache
 @rollen.recht_erforderlich("system.sicherung")
 def seite(request):
-    vorlage = "core/_sicherungen_liste.html" if request.headers.get("HX-Request") else (
-        "core/sicherungen.html")  # fmt: skip
-    return render(request, vorlage, _kontext())
+    if request.headers.get("HX-Request"):
+        return render(request, "core/_sicherungen_liste.html", _kontext())
+    fern = Fernsicherung.laden()
+    return render(request, "core/sicherungen.html", {
+        **_kontext(), "fern_form": FernsicherungForm(),
+        "fern_eingerichtet": fern.eingerichtet, "fern_remotes": fern.remotes(),
+    })  # fmt: skip
+
+
+@never_cache
+@rollen.recht_erforderlich("system.sicherung")
+@nicht_in_demo
+def fernablage(request):
+    """rclone-Konfiguration für Sicherungen außer Haus speichern (ADR 0106)."""
+    form = FernsicherungForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        form.speichern()
+        fernsicherung.schreiben()  # entschlüsselt für den Dienst backup bereitstellen
+        messages.success(request, "Fernablage gespeichert.")
+        return redirect("core:sicherungen")
+    fern = Fernsicherung.laden()
+    return render(request, "core/sicherungen.html", {
+        **_kontext(), "fern_form": form,
+        "fern_eingerichtet": fern.eingerichtet, "fern_remotes": fern.remotes(),
+    })  # fmt: skip
 
 
 @never_cache
