@@ -86,7 +86,9 @@ def test_vertragform_rechnet_in_beide_richtungen():
     form = VertragForm({"beginn": "01.01.2026", "wochenstunden": "40", "urlaubstage": "30",
                         "stundenlohn": "99", "monatslohn": "2600"})  # fmt: skip
     assert form.is_valid(), form.errors
-    assert form.cleaned_data["stundenlohn"] == D("15.00") and form.cleaned_data["monatslohn"] == D("2600")  # noqa: E501
+    assert form.cleaned_data["stundenlohn"] == D("15.00") and form.cleaned_data["monatslohn"] == D(
+        "2600"
+    )  # noqa: E501
     # Nur Stundenlohn eingegeben → bleibt, Monatslohn wird daraus berechnet (Anzeige)
     form = VertragForm({"beginn": "01.01.2026", "wochenstunden": "40", "urlaubstage": "30",
                         "stundenlohn": "15"})  # fmt: skip

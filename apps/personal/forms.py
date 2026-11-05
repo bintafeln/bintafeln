@@ -35,7 +35,9 @@ class VertragForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["stundenlohn"].help_text = (
+        self.fields[
+            "stundenlohn"
+        ].help_text = (
             "Eins von beiden genügt. Aus einem festen Monatslohn wird er berechnet und gerundet."
         )
         self.fields["monatslohn"].help_text = (
