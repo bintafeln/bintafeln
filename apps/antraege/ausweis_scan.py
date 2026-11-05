@@ -15,6 +15,7 @@ prüfen (ebenfalls im Hintergrund, Fortschritt im gemeinsamen Cache).
 
 import logging
 import threading
+import time
 
 from django.core.cache import cache
 from django.db import connections
@@ -26,6 +27,22 @@ from apps.core import privatdateien
 log = logging.getLogger(__name__)
 
 CACHE_SCHLUESSEL = "ausweis_scan_fortschritt"
+# Der Fortschritt lebt im gemeinsamen Cache (überlebt einen App-Neustart), damit ein durch ein
+# Update unterbrochener Lauf erkannt und fortgesetzt werden kann.
+CACHE_DAUER = 86400  # 1 Tag – so lange bleibt ein unterbrochener Lauf fortsetzbar
+# Der Hintergrund-Thread hinterlässt bei jedem Antrag ein Lebenszeichen (``aktualisiert``). Kommt
+# so lange keins mehr, gilt der Lauf als abgebrochen (z. B. durch einen Update-Neustart, der den
+# Thread beendet) und wird beim nächsten Seitenaufruf automatisch fortgesetzt.
+VERWAIST_SEKUNDEN = 180
+
+
+def _verwaist(stand) -> bool:
+    """True, wenn ein als laufend markierter Lauf kein frisches Lebenszeichen mehr hat."""
+    return bool(
+        stand
+        and stand.get("laeuft")
+        and time.time() - stand.get("aktualisiert", 0) > VERWAIST_SEKUNDEN
+    )
 
 
 def aktiv() -> bool:
@@ -110,33 +127,72 @@ def neuen_pruefen(antrag_pk: int) -> None:
 
 
 def alle_pruefen_jetzt() -> int:
-    """Alle (nicht gelöschten) Anträge prüfen; Fortschritt im Cache. Liefert die Zahl der
-    Abweichungen. Synchron – der Aufrufer sorgt für den Hintergrund."""
+    """Alle noch **nicht geprüften** Anträge prüfen; Fortschritt im Cache. Liefert die Gesamtzahl
+    der Abweichungen. Synchron – der Aufrufer sorgt für den Hintergrund.
+
+    Es werden nur Anträge ohne ``ausweis_geprueft_am`` abgearbeitet. Dadurch setzt ein nach einem
+    Neustart (Update) erneut gestarteter Lauf genau dort fort, wo er abgebrochen wurde, statt von
+    vorn zu beginnen. Schon geprüfte Anträge zählen als „fertig“ in den Stand hinein."""
     from apps.antraege.models import Antrag
 
-    pks = list(Antrag.objects.order_by("pk").values_list("pk", flat=True))
-    stand = {"laeuft": True, "gesamt": len(pks), "fertig": 0, "abweichungen": 0}
-    cache.set(CACHE_SCHLUESSEL, stand, 3600)
-    for pk in pks:
+    gesamt = Antrag.objects.count()
+    offen = list(
+        Antrag.objects.filter(ausweis_geprueft_am__isnull=True)
+        .order_by("pk")
+        .values_list("pk", flat=True)
+    )
+    stand = {
+        "laeuft": True,
+        "gesamt": gesamt,
+        "fertig": gesamt - len(offen),  # bereits geprüfte Anträge
+        "abweichungen": Antrag.objects.filter(ausweis_abweichung=True).count(),
+        "aktualisiert": time.time(),
+    }
+    cache.set(CACHE_SCHLUESSEL, stand, CACHE_DAUER)
+    for pk in offen:
         antrag = Antrag.objects.filter(pk=pk).first()
         if antrag and antrag_pruefen(antrag):
             stand["abweichungen"] += 1
         stand["fertig"] += 1
-        cache.set(CACHE_SCHLUESSEL, stand, 3600)
+        stand["aktualisiert"] = time.time()  # Lebenszeichen
+        cache.set(CACHE_SCHLUESSEL, stand, CACHE_DAUER)
     stand["laeuft"] = False
-    cache.set(CACHE_SCHLUESSEL, stand, 3600)
+    stand["aktualisiert"] = time.time()
+    cache.set(CACHE_SCHLUESSEL, stand, CACHE_DAUER)
     return stand["abweichungen"]
 
 
 def alle_pruefen_starten() -> None:
-    """Die Prüfung aller Anträge im Hintergrund anstoßen (tut nichts, wenn schon eine läuft)."""
+    """Die Prüfung aller Anträge im Hintergrund anstoßen. Tut nichts, wenn wirklich noch eine
+    läuft; einen verwaisten (abgebrochenen) Lauf ersetzt sie dagegen durch einen neuen, der die
+    offenen Anträge fortsetzt."""
     stand = cache.get(CACHE_SCHLUESSEL)
-    if stand and stand.get("laeuft"):
+    if stand and stand.get("laeuft") and not _verwaist(stand):
         return
-    cache.set(CACHE_SCHLUESSEL, {"laeuft": True, "gesamt": 0, "fertig": 0, "abweichungen": 0}, 3600)
+    cache.set(
+        CACHE_SCHLUESSEL,
+        {"laeuft": True, "gesamt": 0, "fertig": 0, "abweichungen": 0, "aktualisiert": time.time()},
+        CACHE_DAUER,
+    )
     _im_hintergrund(alle_pruefen_jetzt)
 
 
+def fortsetzen_wenn_unterbrochen() -> bool:
+    """Einen durch einen Neustart (Update) abgebrochenen Sammellauf im Hintergrund fortsetzen.
+    Liefert True, wenn gerade fortgesetzt wurde. Wird bei jedem Aufruf der Antragsliste und des
+    Fortschritt-Pollings aufgerufen, damit ein hängengebliebener Lauf von selbst weiterläuft."""
+    if _verwaist(cache.get(CACHE_SCHLUESSEL)) and aktiv():
+        alle_pruefen_starten()
+        return True
+    return False
+
+
 def fortschritt() -> dict | None:
-    """Stand der laufenden/letzten Sammelprüfung (oder None, wenn noch nie gestartet)."""
-    return cache.get(CACHE_SCHLUESSEL)
+    """Stand der laufenden/letzten Sammelprüfung (oder None, wenn noch nie gestartet). Enthält
+    zusätzlich ``unterbrochen`` (ein als laufend markierter Lauf ohne frisches Lebenszeichen)."""
+    stand = cache.get(CACHE_SCHLUESSEL)
+    if stand is None:
+        return None
+    stand = dict(stand)
+    stand["unterbrochen"] = _verwaist(stand)
+    return stand

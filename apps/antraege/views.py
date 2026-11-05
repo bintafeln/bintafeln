@@ -100,6 +100,7 @@ def liste(request):
     sichtbar = {k for k, _ in SPALTEN if k in SPALTEN_FEST or k not in aus}
     spalten = [(k, titel) for k, titel in SPALTEN if k in sichtbar]
     spalten_wahl = [(k, titel, k not in aus) for k, titel in SPALTEN if k not in SPALTEN_FEST]
+    ausweis_scan.fortsetzen_wenn_unterbrochen()  # durch ein Update abgebrochenen Lauf fortsetzen
     return render(
         request,
         "antraege/liste.html",
@@ -374,6 +375,7 @@ def ausweise_pruefen_alle(request):
 @rollen.recht_erforderlich("antraege.sehen")
 def ausweis_fortschritt(request):
     """Stand der laufenden Sammelprüfung (htmx, lädt sich selbst nach, bis fertig)."""
+    ausweis_scan.fortsetzen_wenn_unterbrochen()  # nach einem Update-Neustart selbst weiterlaufen
     stand = ausweis_scan.fortschritt()
     return render(request, "antraege/_ausweis_fortschritt.html", {"stand": stand})
 
