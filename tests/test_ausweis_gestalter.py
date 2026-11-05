@@ -148,3 +148,26 @@ def test_personen_und_minderjaehrige(gruppe):
     w = ausweis.werte(h, TafelEinstellungen.laden(), AusweisVorlage.laden())
     assert w["personen_kinder"] == "2/1" and w["personen"] == "2 Personen"
     assert ausweis.BEISPIEL["personen_kinder"] == "6/3"
+
+
+def test_ausgabestelle_adresse(gruppe):
+    from apps.core.models import TafelEinstellungen
+    from apps.kunden.models import Ausgabestelle
+
+    stelle = Ausgabestelle.objects.create(
+        name="Mitte", strasse="Musterweg 3", plz="45127", ort="Essen"
+    )
+    gruppe.ausgabestelle = stelle
+    gruppe.save()
+    h = Haushalt.objects.get(kundennummer="A-1")
+    w = ausweis.werte(h, TafelEinstellungen.laden(), AusweisVorlage.laden())
+    assert w["ausgabestelle"] == "Mitte"
+    assert w["ausgabestelle_adresse"] == "Musterweg 3, 45127 Essen"
+    # Teiladresse: nur Ort vorhanden
+    stelle.strasse = ""
+    stelle.plz = ""
+    stelle.save()
+    h = Haushalt.objects.get(kundennummer="A-1")  # frisch laden (Beziehungs-Cache umgehen)
+    w = ausweis.werte(h, TafelEinstellungen.laden(), AusweisVorlage.laden())
+    assert w["ausgabestelle_adresse"] == "Essen"
+    assert "ausgabestelle_adresse" in ausweis.BEISPIEL
