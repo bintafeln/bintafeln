@@ -40,6 +40,7 @@ TYPEN = {
     "hauptperson": ("Name der Hauptperson", False, "text"),
     "kundengruppe": ("Kundengruppe mit Termin", False, "text"),
     "ausgabestelle": ("Ausgabestelle", False, "text"),
+    "ausgabestelle_adresse": ("Adresse der Ausgabestelle", False, "text"),
     "gueltig_bis": ("Gültig bis", False, "text"),
     "kunde_seit": ("Kunde seit", False, "text"),
     "personen": ("Anzahl Personen", False, "text"),
@@ -91,6 +92,7 @@ BEISPIEL = {
     "hauptperson": "Erika Mustermann",
     "kundengruppe": "Gruppe Montag · Mo, 12:30 Uhr",
     "ausgabestelle": "Ausgabestelle Mitte",
+    "ausgabestelle_adresse": "Musterstraße 1, 12345 Musterstadt",
     "gueltig_bis": "Gültig bis 31.12.2027",
     "kunde_seit": "Kunde seit 01.02.2024",
     "personen": "3 Personen",
@@ -159,7 +161,12 @@ def werte(h, tafel, vorlage) -> dict[str, str]:
     if g:
         teile = [t for t in (g.wochentage, f"{g.uhrzeit:%H:%M} Uhr" if g.uhrzeit else "") if t]
         termin = f"Gruppe {g.name}" + (f" · {', '.join(teile)}" if teile else "")
-    stelle = g.ausgabestelle.name if g and g.ausgabestelle else ""
+    stelle_obj = g.ausgabestelle if g and g.ausgabestelle else None
+    stelle = stelle_obj.name if stelle_obj else ""
+    stelle_adresse = ""
+    if stelle_obj:
+        plz_ort = f"{stelle_obj.plz} {stelle_obj.ort}".strip()
+        stelle_adresse = ", ".join(t for t in (stelle_obj.strasse, plz_ort) if t)
     anzahl = h.personen.count()
     erwachsene, kinder = h.groesse(KundenEinstellungen.laden().kind_bis_alter)
     return {
@@ -169,6 +176,7 @@ def werte(h, tafel, vorlage) -> dict[str, str]:
         "hauptperson": f"{hp.vorname} {hp.nachname}" if hp else "",
         "kundengruppe": termin,
         "ausgabestelle": stelle,
+        "ausgabestelle_adresse": stelle_adresse,
         "gueltig_bis": f"Gültig bis {h.ausweis_gueltig_bis:%d.%m.%Y}"
         if h.ausweis_gueltig_bis
         else "",
