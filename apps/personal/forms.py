@@ -53,7 +53,8 @@ class VertragForm(forms.ModelForm):
         stundenlohn, monat = daten.get("stundenlohn"), daten.get("monatslohn")
         if stundenlohn is None and monat is not None:
             if not wochenstunden:
-                self.add_error("wochenstunden", "Für die Umrechnung werden Wochenstunden gebraucht.")
+                self.add_error("wochenstunden",
+                               "Für die Umrechnung werden Wochenstunden gebraucht.")  # fmt: skip
             else:
                 daten["stundenlohn"] = berechnung.stundenlohn_aus_monat(monat, wochenstunden)
         return daten
