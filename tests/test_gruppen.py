@@ -81,19 +81,20 @@ def test_abschaltbar(mo):
 def test_sofort_beim_bearbeiten(admin_client, mo):
     h = haushalt("1", mo)
     gruppen.zeiten_abgleichen()
+    # „pausiert" entfernt die bestehende Gruppe sofort (die Gruppe steht nicht im Formular)
     antwort = admin_client.post(reverse("kunden:bearbeiten", args=["1"]),
-                                {"kundennummer": "1", "status": "pausiert",
-                                 "kundengruppe": mo.pk}, follow=True)  # fmt: skip
+                                {"kundennummer": "1", "status": "pausiert"},
+                                follow=True)  # fmt: skip
     assert "Kundengruppe entfernt (Status pausiert)" in antwort.content.decode()
     h.refresh_from_db()
     assert h.kundengruppe is None
     assert HaushaltEreignis.objects.filter(text="Kundengruppe: Montag → –").exists()
     seite = admin_client.get(reverse("kunden:haushalt", args=["1"])).content.decode()
     assert "Kundengruppen" in seite and "Status pausiert" in seite
-    # neue Kundennummer nimmt die Zeiten mit
+    # eine neue Kundennummer nimmt die bisherigen Gruppenzeiten mit
     admin_client.post(reverse("kunden:bearbeiten", args=["1"]),
-                      {"kundennummer": "9", "status": "aktiv", "kundengruppe": mo.pk})  # fmt: skip
-    assert [z.gruppe_name for z in gruppen.zeiten("9")] == ["Montag", "Montag"]
+                      {"kundennummer": "9", "status": "aktiv"})  # fmt: skip
+    assert [z.gruppe_name for z in gruppen.zeiten("9")] == ["Montag"]
     assert not Gruppenzeit.objects.filter(kundennummer="1").exists()
 
 

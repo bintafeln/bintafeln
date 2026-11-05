@@ -15,6 +15,38 @@
   <p class="hinweis">Der Kontostand ändert sich nur über Buchungen: am Einlass „Korrektur“ verwenden.</p>
 </section>
 
+<section class="karte">
+  <h2>Kundengruppe</h2>
+  {% if h.kundengruppe %}
+    <p><strong>{{ h.kundengruppe.ausgabestelle.name|default:"ohne Ausgabestelle" }} · {{ h.kundengruppe.name }}</strong>{% if h.kundengruppe.wochentage %} <span class="leise">({{ h.kundengruppe.wochentage }}{% if h.kundengruppe.uhrzeit %} {{ h.kundengruppe.uhrzeit|time:"H:i" }}{% endif %})</span>{% endif %}</p>
+  {% else %}
+    <p class="sicherung sicherung-veraltet">Keiner Kundengruppe zugeordnet.</p>
+  {% endif %}
+  <p><a class="knopf knopf-zweitrangig" href="{% url 'kunden:kundengruppe_aendern' h.kundennummer %}">Kundengruppe ändern …</a></p>
+  <p class="hinweis">Die Auswahl zeigt – wie bei der Aufnahme – alle Gruppen mit freiem Platz samt
+    Belegung und Termin, mit Filter nach Wochentag.</p>
+  <h3>Bisherige Gruppen</h3>
+  {% if gruppen_historie %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle kompakt">
+    <thead><tr><th>Kundengruppe</th><th>von</th><th>bis</th><th>Grund</th></tr></thead>
+    <tbody>
+    {% for z in gruppen_historie %}
+      <tr>
+        <td data-titel="Kundengruppe">{{ z.gruppe_name }}</td>
+        <td data-titel="von">{{ z.von|date:"d.m.Y"|default:"früher" }}</td>
+        <td data-titel="bis">{{ z.bis|date:"d.m.Y"|default:"läuft" }}</td>
+        <td data-titel="Grund">{{ z.grund|default:"" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+    <p class="hinweis">Noch in keiner Kundengruppe.</p>
+  {% endif %}
+</section>
+
 {% for art, titel, eintraege in teile %}
 <section class="karte">
   <h2>{{ titel }}</h2>

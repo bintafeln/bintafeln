@@ -120,6 +120,7 @@ def haushalt_bearbeiten(request, kundennummer):
         {
             "h": h,
             "form": form,
+            "gruppen_historie": gruppen.zeiten(h.kundennummer),  # wo waren sie schon
             "teile": [
                 ("person", "Personen", h.personen.all()),
                 ("abholer", "Abholberechtigte", h.abholer.all()),
