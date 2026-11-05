@@ -292,8 +292,27 @@ def nachweis_pruefen(request, pk, anhang):
     if inhalt is None:
         raise Http404
     accessed.send(sender=AntragAnhang, instance=d)
-    bericht = ausweis_pruefung.pruefen(inhalt, a.staatsangehoerigkeit)
+    bericht = ausweis_pruefung.pruefen_datei(inhalt, d.typ, a.staatsangehoerigkeit)
     return render(request, "antraege/_ausweis_ergebnis.html", _ausweis_kontext(request, a, bericht))
+
+
+@rollen.recht_erforderlich("antraege.sehen")
+def nachweis_vorschau(request, pk, anhang):
+    """Kleine Vorschau eines PDF-Nachweises (erste Seite, ADR 0107). Lokal gerendert; nicht
+    serverseitig zwischengespeichert (der Nachweis liegt verschlüsselt)."""
+    from apps.antraege import pdf_bilder
+
+    a = get_object_or_404(Antrag, pk=pk)
+    d = get_object_or_404(AntragAnhang, pk=anhang, antrag=a)
+    if "pdf" not in (d.typ or "").lower():
+        raise Http404
+    inhalt = privatdateien.lesen(ANHANG_ORDNER, d.datei)
+    bild = pdf_bilder.vorschau(inhalt) if inhalt else None
+    if bild is None:
+        raise Http404
+    antwort = HttpResponse(bild, content_type="image/jpeg")
+    antwort["Cache-Control"] = "private, max-age=600"  # nur im Browser des Mitarbeiters
+    return antwort
 
 
 def _ausweis_kontext(request, a, bericht):

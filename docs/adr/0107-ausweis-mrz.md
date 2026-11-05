@@ -20,6 +20,12 @@ nicht.
      Positionen der MRZ und korrigiert typische OCR-Verwechslungen (O/0, B/8).
   2. **Tesseract über das ganze Bild** + Paket **mrz** als Rückfall, falls kein Band gefunden wird.
   Beide nutzen Tesseract (im App-Image, Dockerfile) und werten nach ICAO 9303 mit Prüfziffern aus.
+- **PDF-Nachweise werden einbezogen** (`apps/antraege/pdf_bilder.py`, PDFium über `pypdfium2`): Viele
+  laden ihren Ausweis als PDF hoch (oft mit sehr guten Scans). Für die Prüfung werden die ersten
+  Seiten lokal in Bilder gerendert und wie Fotos behandelt (`ausweis_pruefung.pruefen_datei`). In
+  der Oberfläche zeigt die Nachweis-Kachel eines PDFs eine kleine Vorschau der ersten Seite
+  (`nachweis_vorschau`, lokal gerendert, nicht serverseitig zwischengespeichert, da der Nachweis
+  verschlüsselt liegt); ein Klick öffnet weiterhin das vollständige PDF.
 - Die MRZ liefert Dokumentart, ausstellendes Land und Staatsangehörigkeit als ISO-Code; über die
   vorhandene Länderliste (`apps/core/auswahl.STAATEN`, alpha-2 → alpha-3 im Modul) wird der
   deutsche Name gezeigt und mit der Angabe im Antrag verglichen.

@@ -141,6 +141,25 @@ def _auswerten(zeilen: list[str]):
     return None, None
 
 
+def pruefen_datei(inhalt: bytes, typ: str, erwartete_staatsangehoerigkeit: str = "") -> dict:
+    """Einen Nachweis prüfen – Bild direkt, PDF Seite für Seite gerendert (ADR 0107). Viele laden
+    ihren Ausweis als PDF hoch; diese Bilder werden so einbezogen."""
+    typ = (typ or "").lower()
+    if "pdf" in typ:
+        from apps.antraege import pdf_bilder
+
+        letzter = {"erkannt": False}
+        for bild in pdf_bilder.seiten_bilder(inhalt):
+            bericht = pruefen(bild, erwartete_staatsangehoerigkeit)
+            if bericht.get("erkannt"):
+                return bericht
+            letzter = bericht
+        return letzter
+    if "image" in typ:
+        return pruefen(inhalt, erwartete_staatsangehoerigkeit)
+    return {"erkannt": False}
+
+
 def _passporteye(bild_bytes: bytes) -> dict | None:
     """Stufe 1: PassportEye findet und liest das MRZ-Band selbst. Liefert die neutralen Werte
     (gleiche Form wie die Rückfallstufe) oder None, wenn kein Band gefunden wurde."""

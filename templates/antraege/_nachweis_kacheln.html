@@ -8,9 +8,14 @@
       <a href="{{ durl }}" data-bild title="{{ d.name }}" target="_blank" rel="noopener">
         <img src="{{ durl }}" alt="{{ d.name }}" loading="lazy">
       </a>
+    {% elif "pdf" in d.typ %}
+      <a href="{{ durl }}" data-fenster title="{{ d.name }} (PDF)" target="_blank" rel="noopener" class="nachweis-pdf">
+        <img src="{% url 'antraege:nachweis_vorschau' a.pk d.pk %}" alt="{{ d.name }}" loading="lazy">
+        <span class="nachweis-pdf-marke" aria-hidden="true">PDF</span>
+      </a>
     {% else %}
       <a href="{{ durl }}" data-fenster title="{{ d.name }}" target="_blank" rel="noopener" class="nachweis-datei">
-        <span class="nachweis-symbol" aria-hidden="true">PDF</span>
+        <span class="nachweis-symbol" aria-hidden="true">Datei</span>
       </a>
     {% endif %}
     <figcaption class="nachweis-name">{{ d.name }}{% if d.groesse %} <span class="leise">({{ d.groesse|filesizeformat }})</span>{% endif %}
@@ -19,10 +24,10 @@
             onsubmit="return confirm(this.dataset.frage)" data-frage="Nachweis „{{ d.name }}“ in den Papierkorb legen? Von dort ist er wiederherstellbar.">
         {% csrf_token %}<button type="submit" class="link">entfernen</button>
       </form>{% endif %}
-      {% if ausweis_pruefen and "image" in d.typ and "antraege.sehen" in rechte %}
+      {% if ausweis_pruefen and "antraege.sehen" in rechte %}{% if "image" in d.typ or "pdf" in d.typ %}
       <br><button type="button" class="link" hx-post="{% url 'antraege:nachweis_pruefen' a.pk d.pk %}"
                   hx-target="#ausweis-ergebnis" hx-swap="innerHTML" hx-disabled-elt="this">Ausweis prüfen</button>
-      {% endif %}
+      {% endif %}{% endif %}
     </figcaption>
   </figure>
 {% empty %}

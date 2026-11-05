@@ -50,13 +50,14 @@ def antrag_pruefen(antrag) -> bool:
     erste = None  # erster lesbarer Ausweis (für die Anzeige, wenn nichts abweicht)
     treffer = None  # erster Ausweis, dessen Staat zu keiner Angabe passt
     for d in antrag.anhaenge.all():
-        if "image" not in (d.typ or ""):
+        typ = (d.typ or "").lower()
+        if "image" not in typ and "pdf" not in typ:  # Bilder und PDFs einbeziehen
             continue
         inhalt = privatdateien.lesen(ANHANG_ORDNER, d.datei)
         if inhalt is None:
             continue
         try:
-            bericht = ausweis_pruefung.pruefen(inhalt)
+            bericht = ausweis_pruefung.pruefen_datei(inhalt, d.typ)
         except Exception as fehler:  # noqa: BLE001 – nur ein Hinweis, nichts darf abbrechen
             log.warning("Ausweisprüfung für Antrag %s fehlgeschlagen: %s", antrag.pk, fehler)
             continue
