@@ -144,10 +144,10 @@ def test_liste_sortiert_sucht_und_blaettert(admin_client):
     assert "Vorname05" in gesucht and "Vorname06" not in gesucht
     assert "Vorname05" in admin_client.get(LISTE, {"suche": "0000 05"}).content.decode()
     assert "aufnahme" in seite and "bearbeiten" in seite
-    admin_client.post(reverse("antraege:papierkorb", args=[a.pk]), {"zurueck": "liste"})
-    assert Antrag.objects.get(pk=a.pk).papierkorb_am
-    korb = admin_client.get(LISTE, {"ansicht": "papierkorb", "sort": "unsinn"}).content.decode()
-    assert "Vorname05" in korb and "endgültig löschen" in korb
+    # Löschen legt den Antrag in den gemeinsamen Papierkorb; er verschwindet aus der Liste
+    admin_client.post(reverse("antraege:papierkorb", args=[a.pk]))
+    assert not Antrag.objects.filter(pk=a.pk).exists()
+    assert "Vorname05" not in admin_client.get(LISTE, {"zeilen": "alle"}).content.decode()
     csv = admin_client.get(reverse("antraege:export"), {"sort": "-vorname"}).content.decode()
     assert csv.index("Vorname29") < csv.index("Vorname00")
 

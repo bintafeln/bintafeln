@@ -76,7 +76,7 @@ def _bestand(h: Haushalt | None) -> dict:
 @bearbeiter
 def start(request, pk):
     """Beginnt die Aufnahme neu (verwirft einen angefangenen Zwischenstand)."""
-    a = get_object_or_404(Antrag, pk=pk, papierkorb_am__isnull=True)
+    a = get_object_or_404(Antrag, pk=pk)
     _speichern(request, a.pk, {})
     return redirect("antraege:aufnahme_schritt", pk=a.pk, schritt="kunde")
 
@@ -85,7 +85,7 @@ def start(request, pk):
 def schritt(request, pk, schritt):
     if schritt not in NAMEN:
         raise Http404
-    a = get_object_or_404(Antrag, pk=pk, papierkorb_am__isnull=True)
+    a = get_object_or_404(Antrag, pk=pk)
     z = _zustand(request, a.pk)
     if schritt != "kunde" and "haushalt" not in z:
         return redirect("antraege:aufnahme_schritt", pk=a.pk, schritt="kunde")

@@ -4,12 +4,10 @@
 {% block inhalt %}
 <section class="karte">
   <div class="liste-kopf">
-    <h1>Anträge</h1>
-    <nav class="reiter" aria-label="Ansicht">
-      {% for k, name in ansichten %}<a href="?ansicht={{ k }}"{% if k == ansicht %} aria-current="page"{% endif %}>{{ name }}{% if k == "offen" %} ({{ offen_gesamt }}){% endif %}</a>{% endfor %}
-    </nav>
+    <h1>Anträge <span class="leise">({{ offen_gesamt }} offen)</span></h1>
   </div>
-  {% if ansicht == "papierkorb" %}<p class="hinweis">Gelöschte Anträge bleiben {{ loeschen_nach_tagen }} Tag{{ loeschen_nach_tagen|pluralize:"e" }} im Papierkorb und werden danach samt Nachweisen endgültig gelöscht.{% if "einstellungen.antraege" in rechte %} Die Zahl der Tage stellen Sie unter <a href="{% url 'antraege:einstellungen' %}">Anträge einstellen</a> ein.{% endif %}</p>{% endif %}
+  <p class="hinweis">Gelöschte Anträge kommen in den <a href="{% url 'core:papierkorb' %}">gemeinsamen Papierkorb</a>
+    und lassen sich dort wiederherstellen, bis sie nach der eingestellten Frist endgültig gelöscht werden.</p>
   <form method="get" class="filter-kompakt">
     <input type="hidden" name="ansicht" value="{{ ansicht }}">
     <input type="hidden" name="sort" value="{{ sort }}">
@@ -64,17 +62,12 @@
           <a class="symbol" href="{% url 'antraege:antrag' a.pk %}" title="Ansehen" aria-label="Antrag {{ a.nummer }} ansehen">👁</a>
           <a class="symbol" href="{% url 'antraege:bearbeiten' a.pk %}" title="Bearbeiten" aria-label="Antrag {{ a.nummer }} bearbeiten">✎</a>
           <a class="symbol" href="{% url 'antraege:antrag' a.pk %}#anmerkungen" title="Anmerkung" aria-label="Anmerkung zu Antrag {{ a.nummer }}">💬</a>
-          {% if ansicht == "papierkorb" %}
-            {% if "antraege.loeschen" in rechte %}<form method="post" action="{% url 'antraege:loeschen' a.pk %}" class="inline"
-                  onsubmit="return confirm(this.dataset.frage)" data-frage="Antrag {{ a.nummer }} von {{ a.name }} mit allen Nachweisen endgültig löschen?">
-              {% csrf_token %}<button type="submit" class="symbol gefahr" title="Endgültig löschen" aria-label="Antrag {{ a.nummer }} endgültig löschen">🗑</button></form>{% endif %}
-          {% else %}
+          {% if "antraege.loeschen" in rechte %}
             <form method="post" action="{% url 'antraege:papierkorb' a.pk %}" class="inline"
                   onsubmit="return confirm(this.dataset.frage)" data-frage="Antrag {{ a.nummer }} von {{ a.name }} in den Papierkorb legen?">
-              {% csrf_token %}<input type="hidden" name="zurueck" value="liste">
-              <button type="submit" class="symbol gefahr" title="Löschen (Papierkorb)" aria-label="Antrag {{ a.nummer }} löschen">🗑</button></form>
-            <a class="symbol aufnehmen" href="{% url 'antraege:aufnahme' a.pk %}" title="Aufnehmen" aria-label="Antrag {{ a.nummer }} aufnehmen">➜</a>
+              {% csrf_token %}<button type="submit" class="symbol gefahr" title="Löschen (in den Papierkorb)" aria-label="Antrag {{ a.nummer }} löschen">🗑</button></form>
           {% endif %}
+          <a class="symbol aufnehmen" href="{% url 'antraege:aufnahme' a.pk %}" title="Aufnehmen" aria-label="Antrag {{ a.nummer }} aufnehmen">➜</a>
         </td>
       </tr>
     {% empty %}

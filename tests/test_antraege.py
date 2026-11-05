@@ -22,10 +22,11 @@ from apps.antraege.models import (
     AntragText,
     AntragVersuch,
     fristen_anwenden,
+    in_papierkorb,
 )
 from apps.antraege.views_oeffentlich import besucher_ip
-from apps.core import geheimnis, privatdateien
-from apps.core.models import MailEinstellungen
+from apps.core import geheimnis, papierkorb, privatdateien
+from apps.core.models import MailEinstellungen, PapierkorbEintrag, TafelEinstellungen
 from apps.konten import rollen
 from apps.kunden.models import Ausgabestelle
 
@@ -373,7 +374,7 @@ def test_antragsliste_spalten_waehlbar(admin_client, antrag):
 def test_liste_und_detail(admin_client, antrag):
     Antrag.objects.create(vorname="Zweite", nachname="Person")
     seite = admin_client.get(reverse("antraege:liste")).content.decode()
-    assert antrag.nummer in seite and "Offen (2)" in seite
+    assert antrag.nummer in seite and "(2 offen)" in seite
     assert str(antrag) == f"Antrag {antrag.nummer}" and str(antrag.personen.first()) == "Max"
     gefunden = admin_client.get(reverse("antraege:liste"), {"suche": antrag.nummer})
     assert "Zweite" not in gefunden.content.decode()
@@ -387,23 +388,16 @@ def test_liste_und_detail(admin_client, antrag):
     assert "2 neue Anträge" in start
 
 
-def test_papierkorb_zeigt_eingestellte_loeschfrist(admin_client, antrag):
-    """Die Papierkorb-Ansicht nennt die eingestellte Löschfrist (nicht die alte Vorgabe), die
-    Antragsseite den genauen Tag der endgültigen Löschung."""
-    e = AntragEinstellungen.laden()
-    e.loeschen_nach_tagen = 300
-    e.save()
-    antrag.papierkorb_am = timezone.now()
-    antrag.save()
-    seite = admin_client.get(reverse("antraege:liste"), {"ansicht": "papierkorb"}).content.decode()
-    assert "300 Tage im Papierkorb" in seite and "Anträge einstellen" in seite
-    erwartet = antrag.endgueltig_loeschen_am().strftime("%d.%m.%Y")
-    detail = admin_client.get(reverse("antraege:antrag", args=[antrag.pk])).content.decode()
-    assert f"wird am {erwartet} endgültig gelöscht" in detail
+def test_liste_verweist_auf_gemeinsamen_papierkorb(admin_client, antrag):
+    """Die Antragsliste verweist auf den einen gemeinsamen Papierkorb (ADR 0073); einen eigenen
+    Antrags-Papierkorb-Reiter gibt es nicht mehr."""
+    seite = admin_client.get(reverse("antraege:liste")).content.decode()
+    assert "gemeinsamen Papierkorb" in seite
+    # „ansicht=papierkorb“ ist keine eigene Ansicht mehr, zeigt aber weiter die Liste
+    assert admin_client.get(reverse("antraege:liste"), {"ansicht": "papierkorb"}).status_code == 200
 
 
 def test_bearbeiten_und_loeschen(admin_client, antrag):
-    url = reverse("antraege:antrag", args=[antrag.pk])
     admin_client.post(reverse("antraege:status", args=[antrag.pk]), {"status": "erledigt"})
     antrag.refresh_from_db()
     assert antrag.status == "erledigt" and antrag.abgeschlossen_am and antrag.bearbeitet_von
@@ -415,19 +409,18 @@ def test_bearbeiten_und_loeschen(admin_client, antrag):
     admin_client.post(reverse("antraege:anmerkung", args=[antrag.pk]), {"text": " "})
     assert AntragAnmerkung.objects.get().text == "Angerufen"
     assert str(AntragAnmerkung.objects.get()).startswith("Anmerkung vom")
+    # Löschen legt den Antrag in den gemeinsamen Papierkorb (ADR 0073), nicht mehr in einen eigenen
     admin_client.post(reverse("antraege:papierkorb", args=[antrag.pk]))
-    antrag.refresh_from_db()
-    assert antrag.papierkorb_am
-    assert "Endgültig löschen" in admin_client.get(url).content.decode()
-    admin_client.post(reverse("antraege:papierkorb", args=[antrag.pk]))
-    antrag.refresh_from_db()
-    assert antrag.papierkorb_am is None
-    assert admin_client.post(reverse("antraege:loeschen", args=[antrag.pk])).status_code == 404
-    admin_client.post(reverse("antraege:papierkorb", args=[antrag.pk]))
-    admin_client.post(reverse("antraege:loeschen", args=[antrag.pk]))
-    assert not Antrag.objects.exists() and not AntragPerson.objects.exists()
-    assert not LogEntry.objects.filter(object_pk=str(antrag.pk),
-                                       content_type__model="antrag").exists()  # fmt: skip
+    assert not Antrag.objects.filter(pk=antrag.pk).exists()
+    detail_url = reverse("antraege:antrag", args=[antrag.pk])
+    assert detail_url not in admin_client.get(reverse("antraege:liste")).content.decode()
+    eintrag = PapierkorbEintrag.objects.get(art="Antrag")
+    assert antrag.nummer in eintrag.bezeichnung
+    # Wiederherstellen holt den Antrag samt Personen mit denselben Nummern zurück
+    admin_client.post(reverse("core:papierkorb_wiederherstellen", args=[eintrag.pk]))
+    assert Antrag.objects.filter(pk=antrag.pk).exists()
+    assert AntragPerson.objects.filter(antrag=antrag.pk).exists()
+    assert not PapierkorbEintrag.objects.exists()
 
 
 def test_nachweis_ansehen(admin_client, antrag):
@@ -473,7 +466,7 @@ def test_einstellungen_und_texte(admin_client, benutzer_mit_rolle):
     assert "berta" in seite and "Arabisch" in seite and str(AntragEinstellungen.laden())
     werte = {f: "optional" for f in AntragEinstellungen.FELDER}
     werte |= {"aktiv": "on", "modus": "beides", "benachrichtigen": [b.pk],
-              "erledigt_nach_tagen": 0, "papierkorb_nach_tagen": 90, "loeschen_nach_tagen": 30,
+              "erledigt_nach_tagen": 0, "papierkorb_nach_tagen": 90,
               "max_je_stunde": 5, "erste_nummer": 4201, "gebiet_pruefen": "aus",
               "datenschutz_url": "tafel.example.org/ds",
               "erklaerungen_url": "tafel.example.org/ausgabe",
@@ -510,7 +503,7 @@ def test_einstellungen_und_texte(admin_client, benutzer_mit_rolle):
     assert admin_client.get(reverse("antraege:texte", args=["xx"])).status_code == 404
 
 
-def test_fristen(antrag):
+def test_fristen(antrag, django_capture_on_commit_callbacks):
     e = AntragEinstellungen.laden()
     jetzt = timezone.now()
     AntragVersuch.objects.create(schluessel="a", zeitpunkt=jetzt - dt.timedelta(days=2))
@@ -522,13 +515,19 @@ def test_fristen(antrag):
     fristen_anwenden(jetzt + dt.timedelta(days=11))
     antrag.refresh_from_db()
     assert antrag.status == "erledigt" and antrag.bearbeitet_von == "Frist"
-    fristen_anwenden(jetzt + dt.timedelta(days=11 + 91))
-    antrag.refresh_from_db()
-    assert antrag.papierkorb_am
+    # Nachweis anhängen, bevor der Antrag nach „Papierkorb nach 90 Tagen“ weggeräumt wird
     name = privatdateien.speichern(ANHANG_ORDNER, pdf(), typen={"application/pdf"})
     AntragAnhang.objects.create(antrag=antrag, name="b.pdf", datei=name, typ="application/pdf")
-    assert fristen_anwenden(jetzt + dt.timedelta(days=11 + 91 + 31)) == 1
+    # Abgeschlossene Anträge wandern in den gemeinsamen Papierkorb: Antrag weg, Eintrag da
+    assert fristen_anwenden(jetzt + dt.timedelta(days=11 + 91)) == 1
     assert not Antrag.objects.exists()
+    assert PapierkorbEintrag.objects.filter(art="Antrag").count() == 1
+    assert privatdateien.pfad(ANHANG_ORDNER, name).exists()
+    # Der gemeinsame Papierkorb löscht ihn nach seiner Frist endgültig, samt Nachweis
+    tage = TafelEinstellungen.laden().papierkorb_tage
+    with django_capture_on_commit_callbacks(execute=True):
+        assert papierkorb.fristen_anwenden(jetzt + dt.timedelta(days=11 + 91 + tage + 1)) == 1
+    assert not PapierkorbEintrag.objects.exists()
     assert not privatdateien.pfad(ANHANG_ORDNER, name).exists()
 
 
@@ -542,7 +541,8 @@ def test_menue_zeigt_zahl_offener_antraege(admin_client, client, benutzer_mit_ro
     Antrag.objects.create(vorname="Erika", nachname="Probe")
     Antrag.objects.create(vorname="Max", nachname="Probe", status=Antrag.Status.IN_BEARBEITUNG)
     Antrag.objects.create(vorname="Eva", nachname="Probe", status=Antrag.Status.ERLEDIGT)
-    Antrag.objects.create(vorname="Udo", nachname="Probe", papierkorb_am=timezone.now())
+    weg = Antrag.objects.create(vorname="Udo", nachname="Probe")
+    in_papierkorb(weg)  # im gemeinsamen Papierkorb → zählt nicht mehr als offen
     assert zahl(admin_client) == 2  # am Bereich und am Eintrag
     Antrag.objects.update(status=Antrag.Status.ERLEDIGT)
     assert (
@@ -691,7 +691,7 @@ def test_ki_schluessel_speichern(admin_client):
     url = reverse("antraege:einstellungen")
     werte = {f: "optional" for f in AntragEinstellungen.FELDER}
     werte |= {"modus": "beides", "erledigt_nach_tagen": 0, "papierkorb_nach_tagen": 90,
-              "loeschen_nach_tagen": 30, "max_je_stunde": 5, "gebiet_pruefen": "aus",
+              "max_je_stunde": 5, "gebiet_pruefen": "aus",
               "erste_nummer": 1}  # fmt: skip
     admin_client.post(url, werte | {"ki_schluessel": "sk-erfunden"})
     e = AntragEinstellungen.laden()
