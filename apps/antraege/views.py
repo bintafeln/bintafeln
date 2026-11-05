@@ -282,7 +282,46 @@ def nachweis_pruefen(request, pk, anhang):
         raise Http404
     accessed.send(sender=AntragAnhang, instance=d)
     bericht = ausweis_pruefung.pruefen(inhalt, a.staatsangehoerigkeit)
-    return render(request, "antraege/_ausweis_ergebnis.html", {"b": bericht})
+    return render(request, "antraege/_ausweis_ergebnis.html", _ausweis_kontext(request, a, bericht))
+
+
+def _ausweis_kontext(request, a, bericht):
+    """Kontext für das Ergebnis der Ausweisprüfung: Bericht, Antrag und – wer bearbeiten darf –
+    die Länderauswahl, um die Staatsangehörigkeit im Antrag zu überschreiben."""
+    from apps.core import auswahl
+
+    darf = rollen.hat_recht(request.user, "antraege.bearbeiten")
+    kontext = {"b": bericht, "a": a, "darf_bearbeiten": darf}
+    if darf and bericht.get("erkannt"):
+        staaten = auswahl.mit_vorhandenem(auswahl.staatsangehoerigkeiten(), a.staatsangehoerigkeit)
+        erkannt = bericht.get("staatsangehoerigkeit", "")
+        bekannt = erkannt in auswahl.LAENDERCODE  # erkannter Name ist ein echtes Land
+        # Den erkannten Namen wählbar machen und (wenn bekannt) vorschlagen, sonst die Antragsangabe
+        kontext["staaten"] = auswahl.mit_vorhandenem(staaten, erkannt) if bekannt else staaten
+        kontext["vorschlag"] = erkannt if bekannt else a.staatsangehoerigkeit
+    return kontext
+
+
+@require_POST
+@rollen.recht_erforderlich("antraege.bearbeiten")
+def nachweis_staat_uebernehmen(request, pk):
+    """Die (per Ausweisprüfung erkannte oder von Hand gewählte) Staatsangehörigkeit in den Antrag
+    übernehmen (ADR 0107). Nur nach Klick; der Mensch entscheidet."""
+    from apps.core import auswahl
+
+    a = get_object_or_404(Antrag, pk=pk)
+    wert = (request.POST.get("staatsangehoerigkeit") or "").strip()
+    # Nur Werte aus der Länderliste (plus die bisherige Antragsangabe) zulassen – nicht den
+    # eingesandten Wert selbst in die erlaubte Menge aufnehmen.
+    auswahlliste = auswahl.mit_vorhandenem(auswahl.staatsangehoerigkeiten(), a.staatsangehoerigkeit)
+    gespeichert = bool(wert) and wert in {w for w, _ in auswahlliste}
+    if gespeichert:
+        a.staatsangehoerigkeit = wert
+        a.save(update_fields=["staatsangehoerigkeit"])
+        messages.success(request, f"Staatsangehörigkeit im Antrag auf „{wert}“ gesetzt.")
+    return render(
+        request, "antraege/_ausweis_uebernommen.html", {"wert": wert, "gespeichert": gespeichert}
+    )
 
 
 @rollen.recht_erforderlich("antraege.bearbeiten")

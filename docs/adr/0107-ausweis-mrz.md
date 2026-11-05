@@ -30,6 +30,11 @@ nicht.
 - **Ehrlich bei Unsicherheit:** Fehlt die MRZ oder ist sie unleserlich, meldet bintafeln „kein
   maschinenlesbarer Ausweis erkannt" und rät nichts. Das Ergebnis ist nur ein Hinweis; die
   Entscheidung trifft ein Mensch.
+- **Darstellung:** Das Ergebnis erscheint in voller Breite unter den Nachweis-Kacheln (nicht im
+  schmalen Vorschaukästchen). Im Mittelpunkt steht die erkannte **Staatsangehörigkeit**; weicht sie
+  von der Antragsangabe ab, kommt ein deutlicher Hinweis. Wer bearbeiten darf, kann die
+  Staatsangehörigkeit im Antrag über ein Auswahlmenü direkt überschreiben
+  (`nachweis_staat_uebernehmen`, Recht `antraege.bearbeiten`).
 
 ## Begründung
 

@@ -704,6 +704,41 @@ def test_ausweis_pruefung_view_und_knopf(admin_client, antrag, monkeypatch):
     assert admin_client.post(url).status_code == 404
 
 
+def test_ausweis_abweichung_und_uebernehmen(admin_client, antrag, monkeypatch):
+    """Weicht die erkannte Staatsangehörigkeit ab, kommt ein deutlicher Hinweis und eine Auswahl,
+    mit der sich die Staatsangehörigkeit im Antrag überschreiben lässt."""
+    from apps.antraege import ausweis_pruefung as ap
+    from apps.antraege.models import Antrag, AntragEinstellungen
+
+    e = AntragEinstellungen.laden()
+    e.ausweis_pruefen = True
+    e.save()
+    antrag.staatsangehoerigkeit = "Deutschland"  # Ausweis zeigt Ukraine → Abweichung
+    antrag.save()
+    monkeypatch.setattr(ap, "tesseract_vorhanden", lambda: True)
+    monkeypatch.setattr(ap, "_passporteye", lambda daten: None)
+    monkeypatch.setattr(ap, "_ocr", lambda daten: _mrz_ukr())
+    name = privatdateien.speichern(
+        ANHANG_ORDNER, SimpleUploadedFile("ausweis.png", _png(), content_type="image/png"),
+        typen={"image/png"})  # fmt: skip
+    d = AntragAnhang.objects.create(antrag=antrag, name="ausweis.png", datei=name, typ="image/png")
+    seite = admin_client.post(
+        reverse("antraege:nachweis_pruefen", args=[antrag.pk, d.pk])
+    ).content.decode()
+    assert "weicht ab" in seite and "Ukraine" in seite  # deutlicher Hinweis
+    assert 'name="staatsangehoerigkeit"' in seite and "Im Antrag übernehmen" in seite  # Auswahl
+
+    # Übernehmen setzt die Staatsangehörigkeit im Antrag
+    uurl = reverse("antraege:nachweis_staat_uebernehmen", args=[antrag.pk])
+    antwort = admin_client.post(uurl, {"staatsangehoerigkeit": "Ukraine"}).content.decode()
+    assert "Ukraine" in antwort
+    assert Antrag.objects.get(pk=antrag.pk).staatsangehoerigkeit == "Ukraine"
+
+    # Ungültige Auswahl (nicht in der Länderliste) ändert nichts
+    admin_client.post(uurl, {"staatsangehoerigkeit": "Fantasialand"})
+    assert Antrag.objects.get(pk=antrag.pk).staatsangehoerigkeit == "Ukraine"
+
+
 def test_nachweis_import_fehler_und_view(admin_client, antrag):
     from apps.antraege import nachweis_import
 
