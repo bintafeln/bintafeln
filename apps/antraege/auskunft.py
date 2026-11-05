@@ -65,7 +65,7 @@ def antrag_pdf(a) -> bytes:
         "Zweck: Bearbeitung Ihres Antrags auf Berechtigung bei der Tafel "
         "(Art. 6 Abs. 1 lit. a und b DSGVO).",
         f"Speicherdauer: Abgeschlossene Anträge kommen nach {e.papierkorb_nach_tagen} Tagen in "
-        f"den Papierkorb und werden {e.loeschen_nach_tagen} Tage danach gelöscht, samt "
+        "den Papierkorb und werden dort nach der eingestellten Frist endgültig gelöscht, samt "
         "Nachweisen.",
         "Ihre Rechte: Berichtigung, Löschung, Einschränkung der Verarbeitung, Widerruf der "
         "Einwilligung und Beschwerde bei einer Datenschutz-Aufsichtsbehörde.",

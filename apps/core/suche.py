@@ -261,7 +261,7 @@ def _antraege(benutzer, begriff, grenze):
         passend |= Q(laufnummer=int(begriff))
     return [
         Treffer(f"Antrag {a.nummer} · {a.name}", reverse("antraege:antrag", args=[a.pk]),
-                f"{a.get_status_display()}{', im Papierkorb' if a.papierkorb_am else ''}")
+                a.get_status_display())
         for a in Antrag.objects.filter(passend).order_by("-eingegangen_am")[: grenze + 1]
     ]  # fmt: skip
 

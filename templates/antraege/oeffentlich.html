@@ -16,6 +16,7 @@
 </head>
 <body class="oeffentlich">
   <header class="kopf antrag-kopf{% if not e.kopf_zeigen %} ohne-marke{% endif %}">
+    {% if zurueck and not nur_rechtstext %}<a class="antrag-zurueck" href="{{ zurueck }}">← {{ t.zurueck|default:"Zurück" }}</a>{% endif %}
     {% if e.kopf_zeigen %}<span class="marke">
       {% if tafel.logo %}<img src="{{ tafel.logo.url }}" alt="{{ tafel_name }}" class="logo">{% endif %}
       <span>{{ tafel_name }}</span>

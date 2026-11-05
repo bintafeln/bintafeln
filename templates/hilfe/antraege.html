@@ -1,4 +1,4 @@
-{% load handbuch %}<p>Online-Anträge kommen über das öffentliche Formular (Adresse <code>/antrag/</code> der Tafel, ohne Anmeldung). Fehlt beim Absenden ein Pflichtfeld, bleiben schon hochgeladene Nachweise erhalten und werden wieder angezeigt – man muss nur das fehlende Feld nachtragen, nicht die Dateien erneut auswählen.</p>
+{% load handbuch %}<p>Online-Anträge kommen über das öffentliche Formular (Adresse <code>/antrag/</code> der Tafel, ohne Anmeldung). Wer über einen Link von einer anderen Seite (z. B. der Tafel-Homepage) kommt, findet oben links einen „Zurück“-Knopf, der genau dorthin zurückführt. Fehlt beim Absenden ein Pflichtfeld, bleiben schon hochgeladene Nachweise erhalten und werden wieder angezeigt – man muss nur das fehlende Feld nachtragen, nicht die Dateien erneut auswählen.</p>
 {% hilfe_bild "antraege-formular" "Das öffentliche Formular: ① Sprache wählen, ② neu anmelden oder verlängern, ③ Angaben eintragen." %}
 <p>Nach dem Absenden sehen Antragstellende „Ihr Antrag ist eingegangen“ und bekommen, wenn sie eine Mailadresse angeben, eine Bestätigung auf Deutsch und darunter in der Sprache zur angegebenen Staatsangehörigkeit (z. B. Türkei → Türkisch; sonst in der Sprache des Formulars). Die Antragsnummer erfahren sie bewusst nicht, weder auf der Seite noch in der Mail.</p>
 <p><strong>Schutz gegen Spam:</strong> In den Einstellungen des Antragsformulars legt „Anträge je Stunde und Internetanschluss“ fest, wie viele Anträge ein Internetanschluss (eine IP-Adresse) pro Stunde senden darf; danach erscheint „Bitte später noch einmal“. Standard sind 5. Wer vielen Menschen am selben Gerät oder WLAN beim Ausfüllen hilft, stellt den Wert höher; 0 schaltet die Sperre ganz ab.</p>
@@ -8,13 +8,13 @@
     Zeilen je Seite. Die Liste gibt es als <strong>CSV</strong> (Excel), als <strong>PDF</strong> und
     <strong>per E-Mail</strong> (PDF und CSV im Anhang, z. B. an den eigenen Rechner). Unter „Spalten wählen“
     blendet jede Person selbst einzelne Spalten ein oder aus (die Nummer # bleibt immer).</li>
-  <li>Aktionen je Zeile: ansehen 👁{% if "antraege.bearbeiten" in rechte %}, bearbeiten ✎, Anmerkung 💬, in den Papierkorb 🗑{% endif %}{% if "antraege.aufnehmen" in rechte %}, aufnehmen ➜{% endif %}.</li>
+  <li>Aktionen je Zeile: ansehen 👁{% if "antraege.bearbeiten" in rechte %}, bearbeiten ✎, Anmerkung 💬{% endif %}{% if "antraege.loeschen" in rechte %}, löschen 🗑 (in den gemeinsamen Papierkorb){% endif %}{% if "antraege.aufnehmen" in rechte %}, aufnehmen ➜{% endif %}.</li>
   {% if "antraege.bearbeiten" in rechte %}<li>Status setzen und interne Anmerkungen schreiben; Tippfehler im Antrag vor der Aufnahme unter „Bearbeiten“ korrigieren. Dort lässt sich auch die <strong>Antragsnummer</strong> ändern (muss eindeutig sein; eine schon vergebene wird abgelehnt).</li>{% endif %}
   <li>Hat die Tafel ein Einzugsgebiet eingestellt, steht bei Anträgen mit PLZ oder Ort außerhalb „außerhalb des Gebiets“, auch im Aufnahme-Assistenten.</li>
   <li>Anhänge (z. B. Bescheide) öffnen sich mit einem Klick; jeder Abruf wird protokolliert.</li>
-  {% if "antraege.loeschen" in rechte %}<li>Im Papierkorb lassen sich Anträge endgültig löschen.</li>{% endif %}
+  {% if "antraege.loeschen" in rechte %}<li>Gelöschte Anträge wandern in den gemeinsamen <strong>Papierkorb</strong> (Menü „Papierkorb“) und lassen sich dort mit allen Nachweisen wiederherstellen oder endgültig löschen.</li>{% endif %}
 </ul>
-{% hilfe_bild "antraege-liste" "① Offene Anträge oder Papierkorb, ② Aktionen je Zeile, ③ ➜ startet die Aufnahme als Kunde." %}
+{% hilfe_bild "antraege-liste" "① Offene Anträge, ② Aktionen je Zeile, ③ ➜ startet die Aufnahme als Kunde." %}
 <p>Beim Aufnehmen (➜) führt ein Assistent Schritt für Schritt. Im ersten Schritt stehen die Angaben
   aus dem Antrag links fest sichtbar, daneben die ähnlichen Kunden mit einer Einstufung („sehr
   wahrscheinlich / möglich / eher nicht") – „Vorschau“ zeigt einen Treffer (Gruppe, letzter Besuch,
@@ -23,4 +23,5 @@
 <p>Beim Abgleich mit einem bestehenden Kunden (Schritt „Daten abgleichen“) stehen gleiche Angaben nur
   grau zur Info da; wählen muss man nur bei echten Unterschieden. Zwei Knöpfe übernehmen auf einen
   Schlag „alles aus dem Antrag“ oder „alles aus dem Kundenstamm“.</p>
-<p>Erledigte und abgelehnte Anträge werden nach den eingestellten Fristen automatisch gelöscht.</p>
+<p>Erledigte und abgelehnte Anträge kommen nach der eingestellten Frist automatisch in den gemeinsamen
+  Papierkorb und werden dort nach der Tafel-weiten Frist („Papierkorb leeren nach“) endgültig gelöscht.</p>

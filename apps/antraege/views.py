@@ -31,15 +31,14 @@ from apps.antraege.models import (
     AntragAnmerkung,
     AntragEinstellungen,
     AntragText,
-    loeschen,
+    in_papierkorb,
 )
 from apps.core import html, listenauswahl, listenexport, privatdateien
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 
 ANSICHTEN = {
-    "offen": ("Offen", Q(status__in=Antrag.OFFEN, papierkorb_am__isnull=True)),
-    "papierkorb": ("Papierkorb", Q(papierkorb_am__isnull=False)),
+    "offen": ("Offen", Q(status__in=Antrag.OFFEN)),
 }
 # Spalte in der Adresse → Sortierfeld; Standard: neueste zuerst
 SORTIERUNG = {
@@ -117,7 +116,6 @@ def liste(request):
             "spalten_wahl": spalten_wahl,
             "abfrage": request.GET.urlencode(),
             "offen_gesamt": Antrag.objects.filter(ANSICHTEN["offen"][1]).count(),
-            "loeschen_nach_tagen": e.loeschen_nach_tagen,
         },
     )
 
@@ -193,29 +191,15 @@ def anmerkung(request, pk):
 
 
 @require_POST
-@rollen.recht_erforderlich("antraege.bearbeiten")
-def papierkorb(request, pk):
-    a = get_object_or_404(Antrag, pk=pk)
-    a.papierkorb_am = None if a.papierkorb_am else timezone.now()
-    a.bearbeitet_von = request.user.get_username()
-    a.save()
-    if a.papierkorb_am:
-        messages.success(request, f"Antrag {a.nummer} in den Papierkorb gelegt.")
-    else:
-        messages.success(request, f"Antrag {a.nummer} aus dem Papierkorb geholt.")
-    if request.POST.get("zurueck") == "liste":
-        return redirect("antraege:liste")
-    return redirect("antraege:antrag", pk=a.pk)
-
-
-@require_POST
 @rollen.recht_erforderlich("antraege.loeschen")
-def endgueltig_loeschen(request, pk):
-    a = get_object_or_404(Antrag, pk=pk, papierkorb_am__isnull=False)
+def papierkorb(request, pk):
+    """Legt den Antrag in den gemeinsamen Papierkorb (ADR 0073): von dort wiederherstellbar,
+    danach endgültig gelöscht nach der Tafel-weiten Frist."""
+    a = get_object_or_404(Antrag, pk=pk)
     nummer = a.nummer
-    loeschen(a)
-    messages.success(request, f"Antrag {nummer} endgültig gelöscht.")
-    return redirect(f"{reverse('antraege:liste')}?ansicht=papierkorb")
+    in_papierkorb(a, request.user)
+    messages.success(request, f"Antrag {nummer} in den Papierkorb gelegt.")
+    return redirect("antraege:liste")
 
 
 @never_cache

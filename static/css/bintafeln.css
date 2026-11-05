@@ -226,7 +226,9 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .schritte { padding-left: 1.25rem; }
 .schritte li { margin-bottom: .75rem; }
 .qr-code { margin: .75rem 0; }
-.qr-code svg { width: 100%; max-width: 15rem; height: auto; display: block; }
+/* Groß und mit weißem Rand, damit Handy-Apps den Code sicher vom Bildschirm lesen */
+.qr-code svg { width: 100%; max-width: 20rem; height: auto; display: block;
+  background: #fff; padding: .5rem; border-radius: var(--radius); }
 .schluessel { font-size: 1.05rem; word-spacing: .3rem; overflow-wrap: anywhere; }
 .notfallcodes { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: .5rem; }
 .notfallcodes code { font-size: 1.15rem; letter-spacing: .05rem; }
@@ -364,6 +366,10 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 
 /* Öffentliches Antragsformular: großes Logo, Felder nebeneinander (ab Tablet-Breite) */
 .antrag-kopf { padding: 1rem 1.25rem; }
+/* „Zurück" steht als eigene Zeile ganz oben links und führt dorthin, woher man kam */
+.antrag-zurueck { flex-basis: 100%; color: var(--auf-akzent); text-decoration: none; opacity: .9;
+  font-size: .95rem; }
+.antrag-zurueck:hover { text-decoration: underline; opacity: 1; }
 .antrag-kopf .marke { font-size: 1.35rem; }
 .antrag-kopf .logo { height: 4rem; padding: 4px; }
 /* ohne Logo und Name bleibt nur die Sprachwahl rechts */

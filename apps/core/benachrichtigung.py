@@ -56,8 +56,7 @@ def _recht(code):
 def _antrag_offen(schluessel: str) -> bool:
     from apps.antraege.models import Antrag
 
-    return Antrag.objects.filter(pk=schluessel or 0, status=Antrag.Status.NEU,
-                                 papierkorb_am__isnull=True).exists()  # fmt: skip
+    return Antrag.objects.filter(pk=schluessel or 0, status=Antrag.Status.NEU).exists()
 
 
 def _antrag_fuer(benutzer) -> bool:

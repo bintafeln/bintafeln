@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("antraege", "0019_antrageinstellungen_max_je_stunde"),
+        ("antraege", "0020_antrags_papierkorb_in_gemeinsamen"),
     ]
 
     operations = [
