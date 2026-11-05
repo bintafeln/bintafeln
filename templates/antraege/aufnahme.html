@@ -13,6 +13,14 @@
   {% if h %}<p class="hinweis">Gewählt: bestehender Kunde <a href="{% url 'kunden:haushalt' h.kundennummer %}" target="_blank" rel="noopener">{{ h.kundennummer }}</a>.</p>{% elif "haushalt" in z %}<p class="hinweis">Gewählt: neuer Kunde.</p>{% endif %}
 </section>
 
+{% if a.anhaenge.all and "antraege.sehen" in rechte %}
+<section class="karte nachweise-aufnahme">
+  <h2>Nachweise zum Antrag</h2>
+  <p class="hinweis">Jederzeit einsehbar. Ein Foto anklicken zeigt es groß; „entfernen“ gibt es nur auf der Antragsseite.</p>
+  {% include "antraege/_nachweis_kacheln.html" %}
+</section>
+{% endif %}
+
 <form method="post">
 {% csrf_token %}
 <section class="karte">
