@@ -228,9 +228,13 @@ class AntragForm(forms.Form):
         daten = super().clean()
         t = self.texte
         for n in range(1, MAX_PERSONEN + 1):
-            if (daten.get(f"p{n}_nachname") or daten.get(f"p{n}_geburtsdatum")) and not daten.get(
-                f"p{n}_vorname"
-            ):
+            # Nachname und Staatsangehörigkeit sind per JavaScript von der Hauptperson vorbelegt und
+            # zählen deshalb NICHT als „Zeile angefangen" – sonst müsste man für jede vorbelegte
+            # Zeile einen Vornamen eintragen (und könnte den Antrag nicht absenden). Angefangen ist
+            # eine weitere Person erst mit Geburtsdatum oder einer Behinderungsangabe.
+            angefangen = any(daten.get(f"p{n}_{feld}")
+                             for feld in ("geburtsdatum", "gdb", "merkzeichen"))  # fmt: skip
+            if angefangen and not daten.get(f"p{n}_vorname"):
                 self.add_error(f"p{n}_vorname", t["fehler_pflicht"])
         # Hochladen/Prüfen/Behalten der Nachweise macht apps.antraege.nachweise, nicht das Formular
         if (
