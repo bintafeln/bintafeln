@@ -1,0 +1,31 @@
+{# Vorschau-Kacheln der Nachweise eines Antrags. Fotos öffnen beim Klick groß als Popup
+   (nachweise_vorschau.js), PDFs in einem kleineren Fenster. Ohne JavaScript öffnet der Link die
+   Datei in einem neuen Tab. Mit verwalten=True (und Recht) steht je Kachel „entfernen".
+   Erwartet: a (Antrag); optional verwalten. #}
+{% load static %}
+<div class="nachweis-kacheln">
+{% for d in a.anhaenge.all %}
+  {% url 'antraege:anhang' a.pk d.pk as durl %}
+  <figure class="nachweis-kachel">
+    {% if "image" in d.typ %}
+      <a href="{{ durl }}" data-bild title="{{ d.name }}" target="_blank" rel="noopener">
+        <img src="{{ durl }}" alt="{{ d.name }}" loading="lazy">
+      </a>
+    {% else %}
+      <a href="{{ durl }}" data-fenster title="{{ d.name }}" target="_blank" rel="noopener" class="nachweis-datei">
+        <span class="nachweis-symbol" aria-hidden="true">PDF</span>
+      </a>
+    {% endif %}
+    <figcaption class="nachweis-name">{{ d.name }}{% if d.groesse %} <span class="leise">({{ d.groesse|filesizeformat }})</span>{% endif %}
+      {% if verwalten and "antraege.bearbeiten" in rechte %}
+      <form method="post" action="{% url 'antraege:nachweis_entfernen' a.pk d.pk %}" class="inline"
+            onsubmit="return confirm(this.dataset.frage)" data-frage="Nachweis „{{ d.name }}“ in den Papierkorb legen? Von dort ist er wiederherstellbar.">
+        {% csrf_token %}<button type="submit" class="link">entfernen</button>
+      </form>{% endif %}
+    </figcaption>
+  </figure>
+{% empty %}
+  <p>Keine.</p>
+{% endfor %}
+</div>
+<script src="{% static 'js/nachweise_vorschau.js' %}" defer></script>

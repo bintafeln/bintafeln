@@ -358,6 +358,24 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .nachweise li { margin: .15rem 0; }
 .nachweise .inline { margin-left: .5rem; }
 
+/* Nachweise als Vorschau-Kacheln (Antragsseite und Aufnahme-Assistent) */
+.nachweis-kacheln { display: flex; flex-wrap: wrap; gap: .5rem; margin: .25rem 0; }
+.nachweis-kachel { margin: 0; width: 8rem; display: flex; flex-direction: column; text-align: center; }
+.nachweis-kachel > a { display: flex; align-items: center; justify-content: center; height: 6rem;
+  border: 1px solid var(--rand); border-radius: var(--radius); background: var(--flaeche);
+  overflow: hidden; }
+.nachweis-kachel > a[data-bild] { cursor: zoom-in; }
+.nachweis-kachel img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.nachweis-symbol { font-weight: 700; color: var(--akzent-dunkel); font-size: 1.1rem; }
+.nachweis-name { font-size: .75rem; margin-top: .25rem; overflow-wrap: anywhere; line-height: 1.3; }
+.nachweis-dialog { max-width: 92vw; max-height: 92vh; border: 0; border-radius: var(--radius);
+  padding: .5rem; background: var(--flaeche); color: var(--text); }
+.nachweis-dialog img { display: block; margin: 0 auto; max-width: 88vw; max-height: 80vh;
+  object-fit: contain; }
+.nachweis-dialog-leiste { display: flex; gap: 1rem; justify-content: center; align-items: center;
+  margin-top: .5rem; flex-wrap: wrap; }
+.nachweis-dialog::backdrop { background: rgba(0, 0, 0, .6); }
+
 /* Öffentliches Antragsformular */
 .sprachwahl { display: flex; align-items: center; gap: .5rem; }
 .sprachwahl select { max-width: 12rem; }
