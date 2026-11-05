@@ -3,7 +3,13 @@
 {% block inhalt %}
 <section class="karte kunden-kopf">
   <div class="kunden-titel">
-    <p><a href="{% url 'antraege:liste' %}">← Anträge</a></p>
+    <nav class="blaettern" aria-label="Anträge durchblättern">
+      <a href="{% url 'antraege:liste' %}">← Anträge</a>
+      <span class="blaettern-paar">
+        {% if voriger %}<a href="{% url 'antraege:antrag' voriger.pk %}" rel="prev">‹ Antrag {{ voriger.nummer }}</a>{% else %}<span class="leise">‹ voriger</span>{% endif %}
+        {% if naechster %}<a href="{% url 'antraege:antrag' naechster.pk %}" rel="next">Antrag {{ naechster.nummer }} ›</a>{% else %}<span class="leise">nächster ›</span>{% endif %}
+      </span>
+    </nav>
     <h1>Antrag {{ a.nummer }} · {{ a.name }}</h1>
   </div>
   <div class="aktionsleiste">

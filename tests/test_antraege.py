@@ -461,6 +461,20 @@ def test_antragsliste_spalten_waehlbar(admin_client, antrag):
     assert 'data-titel="#"' in seite and 'data-titel="Status"' in seite
 
 
+def test_antrag_blaettern(admin_client):
+    """Auf der Antragsseite kann man zum vorigen/nächsten Antrag (nach Nummer) blättern."""
+    a1 = Antrag.objects.create(vorname="Eins", nachname="A")
+    a2 = Antrag.objects.create(vorname="Zwei", nachname="B")
+    a3 = Antrag.objects.create(vorname="Drei", nachname="C")
+    url = lambda a: reverse("antraege:antrag", args=[a.pk])  # noqa: E731
+    mitte = admin_client.get(url(a2)).content.decode()
+    assert url(a1) in mitte and url(a3) in mitte  # voriger und nächster verlinkt
+    erster = admin_client.get(url(a1)).content.decode()
+    assert url(a2) in erster and url(a3) not in erster and "‹ voriger" in erster
+    letzter = admin_client.get(url(a3)).content.decode()
+    assert url(a2) in letzter and url(a1) not in letzter and "nächster ›" in letzter
+
+
 def test_liste_und_detail(admin_client, antrag):
     Antrag.objects.create(vorname="Zweite", nachname="Person")
     seite = admin_client.get(reverse("antraege:liste")).content.decode()
