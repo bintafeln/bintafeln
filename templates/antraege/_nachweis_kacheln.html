@@ -1,7 +1,4 @@
-{# Vorschau-Kacheln der Nachweise eines Antrags. Fotos öffnen beim Klick groß als Popup
-   (nachweise_vorschau.js), PDFs in einem kleineren Fenster. Ohne JavaScript öffnet der Link die
-   Datei in einem neuen Tab. Mit verwalten=True (und Recht) steht je Kachel „entfernen".
-   Erwartet: a (Antrag); optional verwalten. #}
+{# Vorschau-Kacheln der Nachweise (Bild → Popup, PDF → Fenster); verwalten=True zeigt je Kachel „entfernen". Erwartet: a (Antrag), optional verwalten. #}
 {% load static %}
 <div class="nachweis-kacheln">
 {% for d in a.anhaenge.all %}
