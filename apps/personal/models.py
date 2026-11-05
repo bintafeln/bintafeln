@@ -71,6 +71,13 @@ class Arbeitsvertrag(models.Model):
         """Sollstunden je Werktag (Montag bis Freitag)."""
         return self.wochenstunden / 5
 
+    @property
+    def monatslohn(self) -> Decimal | None:
+        """Brutto-Monatslohn aus Stundenlohn und Wochenstunden (Durchschnitt über das Jahr)."""
+        from apps.personal import berechnung
+
+        return berechnung.monatslohn(self.stundenlohn, self.wochenstunden)
+
 
 class Abwesenheit(models.Model):
     class Art(models.TextChoices):

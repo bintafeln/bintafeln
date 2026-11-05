@@ -4,9 +4,23 @@
 <section class="karte">
   <p><a href="{% url 'personal:person' p.pk %}?jahr={{ v.beginn|date:'Y' }}">← {{ p }}</a></p>
   <h1>{{ v }}</h1>
-  <form method="post">
+  <form method="post" class="vertrag-formular">
     {% csrf_token %}
-    {% include "includes/formular.html" %}
+    {% if form.non_field_errors %}<div class="fehler" role="alert">{% for fehler in form.non_field_errors %}<p>{{ fehler }}</p>{% endfor %}</div>{% endif %}
+    <div class="reihe">
+      {% include "includes/feld.html" with feld=form.beginn %}
+      {% include "includes/feld.html" with feld=form.ende %}
+    </div>
+    {% include "includes/feld.html" with feld=form.taetigkeit %}
+    <div class="reihe reihe-3">
+      {% include "includes/feld.html" with feld=form.wochenstunden %}
+      {% include "includes/feld.html" with feld=form.urlaubstage %}
+    </div>
+    <div class="reihe">
+      {% include "includes/feld.html" with feld=form.stundenlohn %}
+      {% include "includes/feld.html" with feld=form.monatslohn %}
+    </div>
+    {% include "includes/feld.html" with feld=form.bemerkung %}
     <button type="submit" class="knopf">Speichern</button>
   </form>
 </section>
