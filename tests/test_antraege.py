@@ -218,7 +218,7 @@ def test_fehler_in_der_gewaehlten_sprache(client, offen):
     t = sprachen.texte("tr")
     url = reverse("antrag:formular", args=["tr"])
     seite = client.post(url, daten(einwilligung="", geburtsdatum="kein Datum",
-                                   p2_nachname="Ohne Vorname")).content.decode()  # fmt: skip
+                                   p2_geburtsdatum="2015-05-05")).content.decode()  # fmt: skip
     for schluessel in ("fehler_einwilligung", "fehler_datum", "fehler_pflicht"):
         assert t[schluessel] in seite, schluessel
     # Datei-Fehler je eigener Sitzung prüfen, damit behaltene Nachweise sich nicht aufsummieren
@@ -399,6 +399,35 @@ def test_staatsangehoerigkeit_je_person(client, offen):
     a = Antrag.objects.get()
     assert a.staatsangehoerigkeit == "Deutschland"
     assert a.personen.get().staatsangehoerigkeit == "Türkei"
+
+
+def test_vorbelegter_nachname_blockiert_absenden_nicht(client, offen):
+    """Regression: Nachname und Staatsangehörigkeit werden bei den weiteren Personen per JavaScript
+    von der Hauptperson vorbelegt. Zeilen mit NUR diesen vorbelegten Werten (kein Vorname, kein
+    Geburtsdatum) dürfen das Absenden nicht blockieren und legen keine Person an."""
+    offen.angehoerige = offen.staatsangehoerigkeit = Abfrage.OPTIONAL
+    offen.wochentage = offen.ausgabestelle = offen.anhaenge = Abfrage.OPTIONAL
+    offen.save()
+    felder = daten(
+        staatsangehoerigkeit="Deutschland",
+        p1_vorname="Max", p1_nachname="Beispiel", p1_staatsangehoerigkeit="Deutschland",
+        p2_nachname="Beispiel", p2_staatsangehoerigkeit="Deutschland",   # nur vorbelegt
+        p3_nachname="Beispiel", p3_staatsangehoerigkeit="Deutschland",   # nur vorbelegt
+    )  # fmt: skip
+    antwort = client.post(FORMULAR, felder)
+    assert antwort.status_code == 302, antwort.content.decode()[:2000]
+    a = Antrag.objects.get()
+    assert [p.vorname for p in a.personen.all()] == ["Max"]  # nur die echte Person
+
+
+def test_weitere_person_mit_geburtsdatum_braucht_vornamen(client, offen):
+    """Trägt jemand bei einer weiteren Person ein Geburtsdatum ein, bleibt der Vorname Pflicht –
+    das ist der eigentliche Zweck der Prüfung (ein vorbelegter Nachname allein zählt nicht)."""
+    offen.angehoerige = Abfrage.OPTIONAL
+    offen.wochentage = offen.ausgabestelle = offen.anhaenge = Abfrage.OPTIONAL
+    offen.save()
+    antwort = client.post(FORMULAR, daten(p2_geburtsdatum="2015-05-05"))
+    assert antwort.status_code == 200 and not Antrag.objects.exists()
 
 
 def test_form_personen_leer_ohne_angehoerige(offen):
