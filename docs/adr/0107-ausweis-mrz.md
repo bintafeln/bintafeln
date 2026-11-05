@@ -14,8 +14,12 @@ bintafeln liest die **maschinenlesbare Zone (MRZ)** eines Ausweis-Fotos **lokal 
 und zeigt das Ergebnis als Hinweis. Kein externer Dienst, keine KI – das Bild verlässt den Server
 nicht.
 
-- OCR mit **Tesseract** (im App-Image, Dockerfile), MRZ-Auswertung mit dem Paket **mrz** (ICAO
-  9303, Prüfziffern). Logik in `apps/antraege/ausweis_pruefung.py`.
+- Erkennung in zwei Stufen (Logik in `apps/antraege/ausweis_pruefung.py`):
+  1. **PassportEye** (bevorzugt) findet die MRZ-Zone selbst im Foto, schneidet nur dieses Band aus,
+     vergrößert es und liest es mit **Tesseract**; die zeichenweise Auswertung kennt die festen
+     Positionen der MRZ und korrigiert typische OCR-Verwechslungen (O/0, B/8).
+  2. **Tesseract über das ganze Bild** + Paket **mrz** als Rückfall, falls kein Band gefunden wird.
+  Beide nutzen Tesseract (im App-Image, Dockerfile) und werten nach ICAO 9303 mit Prüfziffern aus.
 - Die MRZ liefert Dokumentart, ausstellendes Land und Staatsangehörigkeit als ISO-Code; über die
   vorhandene Länderliste (`apps/core/auswahl.STAATEN`, alpha-2 → alpha-3 im Modul) wird der
   deutsche Name gezeigt und mit der Angabe im Antrag verglichen.
@@ -31,7 +35,13 @@ nicht.
 
 Die MRZ ist standardisiert und mit Prüfziffern gesichert, daher lokal zuverlässig lesbar, wo sie
 klar fotografiert ist. Lokal statt Cloud/KI schützt die sensiblen Daten (Datenschutz als
-Fundament) und spart eine Rechtsgrundlage für die Übermittlung. Die leichte Variante (Tesseract +
-mrz) kommt ohne schwere Bildbibliotheken aus; reicht die Trefferquote in der Praxis nicht, lässt
-sie sich später um eine robustere MRZ-Erkennung (z. B. passporteye) ergänzen, ohne die Oberfläche
-zu ändern.
+Fundament) und spart eine Rechtsgrundlage für die Übermittlung.
+
+Die erste, leichte Variante (Tesseract über das ganze Bild + mrz) scheiterte in der Praxis an
+echten Handy-Fotos: Tesseract fand die MRZ-Zeilen neben Gesicht, Rand und Muster meist gar nicht,
+und selbst bei sauberen Bildern verwechselte es O/0, sodass die Prüfziffern scheiterten. Darum
+liest jetzt **PassportEye** zuerst: Es grenzt die MRZ-Zone im Bild ein und liest nur dieses Band –
+der entscheidende Schritt, der auf realen Fotos erst Treffer bringt. Das zieht als feste
+Abhängigkeiten scikit-image/scipy/numpy u. a. nach (bewusst die „größere" Variante, da
+Zuverlässigkeit hier wichtiger ist als ein schlankes Image); alle permissiv lizenziert (MIT/BSD),
+AGPL-verträglich. Der bisherige Weg bleibt als Rückfall erhalten.

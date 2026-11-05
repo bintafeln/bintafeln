@@ -15,6 +15,31 @@ psycopg[binary]==3.3.6
 # Lokale Ausweisprüfung (MRZ lesen) – Tesseract-OCR-Anbindung und MRZ-Parser (ADR 0107)
 pytesseract==0.3.13
 mrz==0.6.2
+# PassportEye findet das MRZ-Band selbst im Foto, schneidet es aus und liest nur dieses Band –
+# auf echten, schiefen Fotos deutlich zuverlässiger als das Lesen des ganzen Bildes (ADR 0107).
+# Zieht als feste Abhängigkeiten scikit-image/scipy/numpy u. a. nach (bewusst „größere" Variante);
+# alle permissiv lizenziert (MIT/BSD), AGPL-verträglich. Versionen festgenagelt wie sonst auch.
+passporteye==2.2.2
+scikit-image==0.26.0
+scikit-learn==1.9.1
+scipy==1.18.1
+numpy==2.5.4
+matplotlib==3.11.2
+contourpy==1.4.0
+cycler==0.12.1
+fonttools==4.68.0
+kiwisolver==1.5.1
+pyparsing==3.3.3
+imageio==2.38.1
+tifffile==2026.10.15
+networkx==3.7
+lazy-loader==0.6
+joblib==1.6.0
+threadpoolctl==3.8.0
+narwhals==2.28.0
+cloudpickle==3.1.2
+pdfminer==20191125
+pycryptodome==4.3.0
 # KI-Übersetzung der eigenen Antragstexte (ADR 0082) und ihre Abhängigkeiten
 anthropic==2.3.0
 annotated-types==0.8.0

@@ -1,12 +1,22 @@
 """Lokale Ausweisprüfung über die maschinenlesbare Zone (MRZ), ADR 0107.
 
-Liest mit Tesseract (OCR, lokal auf dem Server) die MRZ eines fotografierten Ausweises oder Passes
-und wertet sie nach ICAO 9303 aus: ausstellendes Land und Staatsangehörigkeit (als Ländercode mit
-Prüfziffern), Dokumentart und Name. Kein externer Dienst, keine KI – das Bild verlässt den Server
-nicht. Das Ergebnis ist nur ein Hinweis zur Prüfung durch einen Menschen; nichts läuft automatisch.
+Liest lokal auf dem Server die MRZ eines fotografierten Ausweises oder Passes und wertet sie nach
+ICAO 9303 aus: ausstellendes Land und Staatsangehörigkeit (als Ländercode mit Prüfziffern),
+Dokumentart und Name. Kein externer Dienst, keine KI – das Bild verlässt den Server nicht. Das
+Ergebnis ist nur ein Hinweis zur Prüfung durch einen Menschen; nichts läuft automatisch.
 
-Zuverlässig, wenn die MRZ (die zwei bis drei Zeilen aus Großbuchstaben und ``<``) klar
-fotografiert ist. Fehlt sie oder ist sie unleserlich, wird nichts geraten (erkannt=False).
+Erkennung in zwei Stufen:
+
+1. **PassportEye** (bevorzugt): findet die MRZ-Zone selbstständig im Foto (auch neben Gesicht und
+   Rand), schneidet nur dieses Band aus, vergrößert es und liest es mit Tesseract. Die zeichenweise
+   Auswertung berücksichtigt, an welcher Stelle der MRZ Buchstaben bzw. Ziffern stehen, und
+   korrigiert typische OCR-Verwechslungen (O/0, B/8). Das macht die Prüfung auf echten, nicht
+   perfekt geraden Fotos erst brauchbar – das bloße Lesen des ganzen Bildes (Stufe 2) scheiterte
+   dort meist.
+2. **Tesseract über das ganze Bild** mit dem ``mrz``-Parser als Rückfall, falls PassportEye kein
+   Band findet.
+
+Fehlt die MRZ oder ist sie unleserlich, wird nichts geraten (erkannt=False).
 """
 
 import io
@@ -131,6 +141,52 @@ def _auswerten(zeilen: list[str]):
     return None, None
 
 
+def _passporteye(bild_bytes: bytes) -> dict | None:
+    """Stufe 1: PassportEye findet und liest das MRZ-Band selbst. Liefert die neutralen Werte
+    (gleiche Form wie die Rückfallstufe) oder None, wenn kein Band gefunden wurde."""
+    import warnings
+
+    from passporteye import read_mrz
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")  # skimage-Deprecation-Warnungen nicht ins Log
+        try:
+            mrz = read_mrz(io.BytesIO(bild_bytes))
+        except Exception:
+            return None
+    if mrz is None:
+        return None
+    d = mrz.to_dict()
+    if not (d.get("nationality") or d.get("country")):
+        return None
+    return {
+        "dokument": _dokumentart(d.get("type") or d.get("mrz_type")),
+        "country": (d.get("country") or "").strip("<"),
+        "nationality": (d.get("nationality") or "").strip("<"),
+        "name": f"{d.get('names', '')} {d.get('surname', '')}".strip(),
+        # valid_score == 100 heißt: alle Prüfziffern stimmen
+        "gueltig": int(d.get("valid_score") or 0) >= 100,
+    }
+
+
+def _rueckfall(bild_bytes: bytes) -> dict | None:
+    """Stufe 2: ganzes Bild per Tesseract lesen und mit dem ``mrz``-Parser auswerten."""
+    try:
+        text = _ocr(bild_bytes)
+    except Exception:
+        return None
+    checker, felder = _auswerten(_mrz_zeilen(text))
+    if felder is None:
+        return None
+    return {
+        "dokument": _dokumentart(felder.document_type),
+        "country": (felder.country or "").strip("<"),
+        "nationality": (felder.nationality or "").strip("<"),
+        "name": f"{felder.name} {felder.surname}".strip(),
+        "gueltig": bool(checker),
+    }
+
+
 def pruefen(bild_bytes: bytes, erwartete_staatsangehoerigkeit: str = "") -> dict:
     """Wertet das Bild aus. Liefert einen Bericht: erkannt (bool), bei Erfolg Dokumentart,
     ausstellendes Land, Staatsangehörigkeit (deutscher Name und Code), Name, Gültigkeit der
@@ -138,21 +194,23 @@ def pruefen(bild_bytes: bytes, erwartete_staatsangehoerigkeit: str = "") -> dict
     if not tesseract_vorhanden():
         return {"erkannt": False, "fehler": "OCR (Tesseract) ist nicht installiert."}
     try:
-        text = _ocr(bild_bytes)
+        from PIL import Image
+
+        Image.open(io.BytesIO(bild_bytes)).verify()  # ist es überhaupt ein lesbares Bild?
     except Exception:
         return {"erkannt": False, "fehler": "Das Bild konnte nicht gelesen werden."}
-    checker, felder = _auswerten(_mrz_zeilen(text))
-    if felder is None:
+    roh = _passporteye(bild_bytes) or _rueckfall(bild_bytes)
+    if roh is None:
         return {"erkannt": False}
-    staat = _staat_name(felder.nationality)
+    staat = _staat_name(roh["nationality"])
     bericht = {
         "erkannt": True,
-        "gueltig": bool(checker),
-        "dokument": _dokumentart(felder.document_type),
-        "ausstellland": _staat_name(felder.country) or (felder.country or "").strip("<"),
-        "staatsangehoerigkeit": staat or (felder.nationality or "").strip("<"),
-        "code_staat": (felder.nationality or "").strip("<"),
-        "name": f"{felder.name} {felder.surname}".strip(),
+        "gueltig": roh["gueltig"],
+        "dokument": roh["dokument"],
+        "ausstellland": _staat_name(roh["country"]) or roh["country"],
+        "staatsangehoerigkeit": staat or roh["nationality"],
+        "code_staat": roh["nationality"],
+        "name": roh["name"],
     }
     erwartet = (erwartete_staatsangehoerigkeit or "").strip()
     if erwartet and staat:
