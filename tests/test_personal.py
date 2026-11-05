@@ -58,6 +58,32 @@ def test_werktage():
     assert berechnung.werktage(dt.date(2026, 10, 25), dt.date(2026, 10, 19)) == 0
 
 
+def test_monatslohn_umrechnung():
+    # 15 €/h × 40 h/Woche × 52/12 Wochen = 2600 €/Monat, und zurück
+    assert berechnung.monatslohn(D("15"), D("40")) == D("2600.00")
+    assert berechnung.stundenlohn_aus_monat(D("2600"), D("40")) == D("15.00")
+    assert berechnung.monatslohn(None, D("40")) is None
+    assert berechnung.monatslohn(D("15"), None) is None
+
+
+def test_vertragform_rechnet_in_beide_richtungen():
+    from apps.personal.forms import VertragForm
+
+    # Nur Monatslohn eingegeben → Stundenlohn wird rückwärts gerechnet
+    form = VertragForm({"beginn": "01.01.2026", "wochenstunden": "40", "urlaubstage": "30",
+                        "monatslohn": "2600"})  # fmt: skip
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["stundenlohn"] == D("15.00")
+    # Nur Stundenlohn eingegeben → bleibt, Monatslohn ist nur Anzeige
+    form = VertragForm({"beginn": "01.01.2026", "wochenstunden": "40", "urlaubstage": "30",
+                        "stundenlohn": "15"})  # fmt: skip
+    assert form.is_valid(), form.errors
+    assert form.cleaned_data["stundenlohn"] == D("15")
+    # Monatslohn ohne Wochenstunden → verständlicher Fehler
+    form = VertragForm({"beginn": "01.01.2026", "urlaubstage": "30", "monatslohn": "2600"})
+    assert not form.is_valid() and "wochenstunden" in form.errors
+
+
 @pytest.mark.parametrize(
     ("beginn", "ende", "urlaub", "anspruch"),
     [

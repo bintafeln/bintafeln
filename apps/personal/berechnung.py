@@ -20,6 +20,26 @@ from apps.konten.models import PersonalEinstellungen
 from apps.personal.models import Abwesenheit, ArbeitszeitEinstellungen
 
 NULL = Decimal("0")
+# Durchschnittliche Wochen je Monat (52 Wochen / 12 Monate) für die Umrechnung Stunden- ↔ Monatslohn
+WOCHEN_JE_MONAT = Decimal(52) / Decimal(12)
+
+
+def monatslohn(stundenlohn, wochenstunden):
+    """Brutto-Monatslohn aus Stundenlohn und Wochenstunden (Durchschnitt über das Jahr)."""
+    if stundenlohn is None or not wochenstunden:
+        return None
+    return (stundenlohn * wochenstunden * WOCHEN_JE_MONAT).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+
+
+def stundenlohn_aus_monat(monat, wochenstunden):
+    """Stundenlohn, der sich aus einem Brutto-Monatslohn und den Wochenstunden ergibt."""
+    if monat is None or not wochenstunden:
+        return None
+    return (monat / (wochenstunden * WOCHEN_JE_MONAT)).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
 
 
 def bundesland() -> str:
