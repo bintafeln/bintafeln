@@ -7,8 +7,11 @@ Verzeichnis (Volume), das „backup“ nur lesen darf. Aufgerufen beim Start (en
 jedem Speichern in der Oberfläche.
 """
 
+import logging
 import os
 from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 # In der Entwicklung/Tests ohne das Volume: ein Ort, der keinen Fehler wirft.
 KONFIG_PFAD = Path(os.environ.get("BINTAFELN_FERNSICHERUNG_PFAD", "/app/data/fernsicherung"))
@@ -30,6 +33,9 @@ def schreiben() -> bool:
             datei.chmod(0o600)
             return True
         datei.unlink(missing_ok=True)
-    except OSError:
-        pass
+    except OSError as fehler:
+        # Ohne Fernablage soll nichts abbrechen; trotzdem protokollieren, damit ein echtes
+        # Rechte-/Volume-Problem nicht lautlos verschwindet (z. B. Verzeichnis gehört root).
+        log.warning("Fernsicherungs-Konfig konnte nicht nach %s geschrieben werden: %s",
+                    datei, fehler)  # fmt: skip
     return False
