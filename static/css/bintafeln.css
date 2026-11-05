@@ -364,6 +364,10 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 
 /* Öffentliches Antragsformular: großes Logo, Felder nebeneinander (ab Tablet-Breite) */
 .antrag-kopf { padding: 1rem 1.25rem; }
+/* „Zurück" steht als eigene Zeile ganz oben links und führt dorthin, woher man kam */
+.antrag-zurueck { flex-basis: 100%; color: var(--auf-akzent); text-decoration: none; opacity: .9;
+  font-size: .95rem; }
+.antrag-zurueck:hover { text-decoration: underline; opacity: 1; }
 .antrag-kopf .marke { font-size: 1.35rem; }
 .antrag-kopf .logo { height: 4rem; padding: 4px; }
 /* ohne Logo und Name bleibt nur die Sprachwahl rechts */
