@@ -24,6 +24,8 @@
   </div>
 </section>
 
+{% if a.ausweis_abweichung and a.ausweis_staat and "antraege.sehen" in rechte %}{% include "antraege/_ausweis_abweichung.html" %}{% endif %}
+
 <section class="karte">
   <dl class="angaben">
     <dt>Eingegangen</dt><dd>{{ a.eingegangen_am|date:"d.m.Y H:i" }}{% if platz %} – Platz {{ platz }} der offenen Anträge{% endif %}</dd>

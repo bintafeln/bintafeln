@@ -16,7 +16,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
-from apps.antraege import auskunft, gebiet, sprachen
+from apps.antraege import auskunft, ausweis_pruefung, ausweis_scan, gebiet, sprachen
 from apps.antraege import uebersetzen as uebersetzen_ki
 from apps.antraege.forms import (
     AntragBearbeitenForm,
@@ -116,6 +116,8 @@ def liste(request):
             "spalten_wahl": spalten_wahl,
             "abfrage": request.GET.urlencode(),
             "offen_gesamt": Antrag.objects.filter(ANSICHTEN["offen"][1]).count(),
+            "ausweis_pruefen": ausweis_pruefung.aktiv(e),
+            "ausweis_lauf": ausweis_scan.fortschritt(),
         },
     )
 
@@ -165,20 +167,29 @@ def antrag(request, pk):
                    .order_by("-laufnummer").first())  # fmt: skip
         naechster = (Antrag.objects.filter(laufnummer__gt=a.laufnummer)
                      .order_by("laufnummer").first())  # fmt: skip
-    return render(
-        request,
-        "antraege/antrag.html",
-        {
-            "a": a,
-            "sprache": sprachen.sprache(a.sprache),
-            "platz": davor.count() + 1 if a.status in Antrag.OFFEN else None,
-            "ausserhalb": gebiet.ausserhalb(e, a),
-            "status_auswahl": Antrag.Status.choices,
-            "ausweis_pruefen": ausweis_pruefung.aktiv(e),
-            "voriger": voriger,
-            "naechster": naechster,
-        },
-    )
+    kontext = {
+        "a": a,
+        "sprache": sprachen.sprache(a.sprache),
+        "platz": davor.count() + 1 if a.status in Antrag.OFFEN else None,
+        "ausserhalb": gebiet.ausserhalb(e, a),
+        "status_auswahl": Antrag.Status.choices,
+        "ausweis_pruefen": ausweis_pruefung.aktiv(e),
+        "voriger": voriger,
+        "naechster": naechster,
+    }
+    # Hinweis-Banner bei einer erkannten Abweichung der Staatsangehörigkeit (ADR 0107): Bild zeigen
+    # und (mit Bearbeiten-Recht) die Übernahme anbieten.
+    darf = rollen.hat_recht(request.user, "antraege.bearbeiten")
+    if a.ausweis_abweichung and a.ausweis_staat and darf:
+        from apps.core import auswahl
+
+        bekannt = a.ausweis_staat in auswahl.LAENDERCODE
+        staaten = auswahl.mit_vorhandenem(auswahl.staatsangehoerigkeiten(), a.staatsangehoerigkeit)
+        kontext["ausweis_staaten"] = (
+            auswahl.mit_vorhandenem(staaten, a.ausweis_staat) if bekannt else staaten
+        )
+        kontext["ausweis_vorschlag"] = a.ausweis_staat if bekannt else a.staatsangehoerigkeit
+    return render(request, "antraege/antrag.html", kontext)
 
 
 @require_POST
@@ -317,11 +328,35 @@ def nachweis_staat_uebernehmen(request, pk):
     gespeichert = bool(wert) and wert in {w for w, _ in auswahlliste}
     if gespeichert:
         a.staatsangehoerigkeit = wert
-        a.save(update_fields=["staatsangehoerigkeit"])
+        a.ausweis_abweichung = False  # vom Menschen geprüft und gesetzt → kein Hinweis mehr
+        a.save(update_fields=["staatsangehoerigkeit", "ausweis_abweichung"])
         messages.success(request, f"Staatsangehörigkeit im Antrag auf „{wert}“ gesetzt.")
     return render(
         request, "antraege/_ausweis_uebernommen.html", {"wert": wert, "gespeichert": gespeichert}
     )
+
+
+@require_POST
+@rollen.recht_erforderlich("antraege.bearbeiten")
+def ausweise_pruefen_alle(request):
+    """Auf Befehl alle Anträge im Hintergrund auf Ausweise prüfen (ADR 0107)."""
+    if not ausweis_scan.aktiv():
+        messages.error(
+            request, "Die Ausweisprüfung ist nicht eingeschaltet (Antragseinstellungen)."
+        )
+    else:
+        ausweis_scan.alle_pruefen_starten()
+        messages.success(
+            request, "Ausweisprüfung für alle Anträge gestartet – läuft im Hintergrund."
+        )
+    return redirect("antraege:liste")
+
+
+@rollen.recht_erforderlich("antraege.sehen")
+def ausweis_fortschritt(request):
+    """Stand der laufenden Sammelprüfung (htmx, lädt sich selbst nach, bis fertig)."""
+    stand = ausweis_scan.fortschritt()
+    return render(request, "antraege/_ausweis_fortschritt.html", {"stand": stand})
 
 
 @rollen.recht_erforderlich("antraege.bearbeiten")

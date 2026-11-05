@@ -1,0 +1,30 @@
+{# Hinweis-Banner bei abweichender Ausweis-Nationalität. Erwartet: a, ausweis_staaten, ausweis_vorschlag. #}
+<section class="karte ausweis-abweichung" aria-label="Hinweis zur Staatsangehörigkeit">
+  <h2>⚠ Staatsangehörigkeit laut Ausweis weicht ab</h2>
+  <p>Laut hochgeladenem Ausweis: <strong>{{ a.ausweis_staat }}</strong>.
+    Im Antrag angegeben: <strong>{{ a.staatsangehoerigkeit|default:"— keine Angabe" }}</strong>.
+    Bitte am Bild prüfen.</p>
+  <div class="ausweis-abweichung-inhalt">
+    {% if a.ausweis_anhang %}
+    <a class="ausweis-bild" href="{% url 'antraege:anhang' a.pk a.ausweis_anhang.pk %}" data-bild
+       target="_blank" rel="noopener" title="Ausweis groß anzeigen">
+      <img src="{% url 'antraege:anhang' a.pk a.ausweis_anhang.pk %}" alt="Ausweis-Nachweis" loading="lazy">
+    </a>
+    {% endif %}
+    {% if "antraege.bearbeiten" in rechte and ausweis_staaten %}
+    <form class="ausweis-uebernehmen" method="post"
+          action="{% url 'antraege:nachweis_staat_uebernehmen' a.pk %}"
+          hx-post="{% url 'antraege:nachweis_staat_uebernehmen' a.pk %}"
+          hx-target="#ausweis-abweichung-antwort" hx-swap="innerHTML">
+      {% csrf_token %}
+      <label for="nat-antrag">Staatsangehörigkeit im Antrag setzen:</label>
+      <select id="nat-antrag" name="staatsangehoerigkeit">
+        {% for w, n in ausweis_staaten %}<option value="{{ w }}"{% if w == ausweis_vorschlag %} selected{% endif %}>{{ n }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="knopf">Im Antrag übernehmen</button>
+    </form>
+    {% endif %}
+  </div>
+  <div id="ausweis-abweichung-antwort"></div>
+  <p class="hinweis">Nur ein Hinweis aus dem Dokument; die Entscheidung trifft ein Mensch.</p>
+</section>

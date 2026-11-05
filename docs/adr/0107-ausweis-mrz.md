@@ -25,8 +25,18 @@ nicht.
   deutsche Name gezeigt und mit der Angabe im Antrag verglichen.
 - **Zuschaltbar**, standardmäßig aus (`AntragEinstellungen.ausweis_pruefen`); ein Knopf
   „Ausweis prüfen" je Nachweis-**Foto** auf der Antragsseite und im Aufnahme-Assistenten (Recht
-  `antraege.sehen`). Nur **nach Klick**, nie automatisch; jeder Aufruf wird protokolliert (wie das
-  Ansehen eines Nachweises).
+  `antraege.sehen`). Jeder Aufruf wird protokolliert (wie das Ansehen eines Nachweises).
+- **Automatischer Abgleich über alle Nachweise** (`apps/antraege/ausweis_scan.py`): Ein Antrag wird
+  über **alle** Bild-Nachweise geprüft; eine **Abweichung** liegt nur vor, wenn die erkannte
+  Staatsangehörigkeit zu **keiner** angegebenen passt (Hauptperson + Angehörige). Das Ergebnis steht
+  am Antrag (`ausweis_staat`, `ausweis_abweichung`, `ausweis_anhang`, `ausweis_geprueft_am`). **Neue
+  Anträge** werden beim Eingang automatisch geprüft (ein Daemon-Thread, der seine DB-Verbindung
+  selbst schließt – kein Celery, passend zu den gunicorn-Prozessen); über die Antragsliste lassen
+  sich auf Befehl **alle** Anträge prüfen (ebenfalls im Hintergrund, Fortschritt im gemeinsamen
+  Datenbank-Cache, ADR 0093). Gefunden wird nur ein **Hinweis**: in der Liste ein Marker „Ausweis ≠"
+  neben der Nummer, auf der Antragsseite ein Banner **mit Bild** und – mit `antraege.bearbeiten` –
+  die Übernahme der erkannten Staatsangehörigkeit in den Antrag. Wird kein Ausweis gefunden oder
+  passt alles, gibt es **keinen** Hinweis. Es wird nie etwas automatisch geändert.
 - **Ehrlich bei Unsicherheit:** Fehlt die MRZ oder ist sie unleserlich, meldet bintafeln „kein
   maschinenlesbarer Ausweis erkannt" und rät nichts. Das Ergebnis ist nur ein Hinweis; die
   Entscheidung trifft ein Mensch.
