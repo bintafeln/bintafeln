@@ -147,7 +147,9 @@ class HaushaltForm(ZusatzMixin, forms.ModelForm):
     groesse = forms.CharField(label="Haushalt", required=False, disabled=True)
     # Abschnitte für die Anzeige auf breiten Bildschirmen (Felder, die fehlen, entfallen)
     ABSCHNITTE = [
-        ("Kunde", ["kundennummer", "status", "kundengruppe", "einkommensart"]),
+        # „kundengruppe" steht nicht hier: sie wird auf der Seite über den eigenen Dialog
+        # „Kundengruppe ändern" gewählt (mit freien Plätzen und bisherigen Gruppen).
+        ("Kunde", ["kundennummer", "status", "einkommensart"]),
         (
             "Haushalt und Termine",
             [
@@ -174,7 +176,7 @@ class HaushaltForm(ZusatzMixin, forms.ModelForm):
     class Meta:
         model = Haushalt
         fields = [
-            "kundennummer", "status", "kundengruppe", "kunde_seit", "ausweis_gueltig_bis",
+            "kundennummer", "status", "kunde_seit", "ausweis_gueltig_bis",
             "letzter_besuch", "einkommensart", "strasse", "plz", "ort", "telefon", "email",
         ]  # fmt: skip
         widgets = {

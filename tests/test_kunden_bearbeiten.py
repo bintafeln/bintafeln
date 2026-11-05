@@ -65,18 +65,24 @@ def test_haushalt_bearbeiten(admin_client, h, gruppe_behalten):
     Zusatzfeld.objects.create(schluessel="notiz", bezeichnung="Notiz", gilt_fuer="haushalt",
                               typ="text")  # fmt: skip
     gruppe = Kundengruppe.objects.create(name="Montag")
+    h.kundengruppe = gruppe  # wird angezeigt, aber über den eigenen Dialog geändert
+    h.save(update_fields=["kundengruppe"])
     seite = admin_client.get(url("haushalt", "2001")).content.decode()
     assert "Bearbeiten</a>" in seite
     seite = admin_client.get(url("bearbeiten", "2001")).content.decode()
     assert "kann ein Import diese Änderung" in seite and "Schwerbehindert (Art. 9)" in seite
+    # Die Kundengruppe steht nicht mehr als einfaches Auswahlmenü im Formular, sondern mit einem
+    # Verweis auf den komfortablen Dialog „Kundengruppe ändern" (freie Plätze, bisherige Gruppen).
+    assert "Montag" in seite and "Kundengruppe ändern" in seite
     admin_client.post(
         url("bearbeiten", "2001"),
-        {"kundennummer": "2001", "status": "pausiert", "kundengruppe": gruppe.pk,
+        {"kundennummer": "2001", "status": "pausiert",
          "strasse": "Erfundene Gasse 2", "zusatz_sb": "ja", "zusatz_seit": "2026-01-02",
          "zusatz_art": "B", "zusatz_notiz": ""},
     )  # fmt: skip
     h.refresh_from_db()
-    assert (h.status, h.kundengruppe, h.strasse) == ("pausiert", gruppe, "Erfundene Gasse 2")
+    assert (h.status, h.strasse) == ("pausiert", "Erfundene Gasse 2")
+    assert h.kundengruppe == gruppe  # vom Formular unberührt
     assert h.zusatz == {"alt": "bleibt", "sb": True, "seit": "2026-01-02", "art": "B"}
     assert h.geaendert_von == "chefin" and h.geaendert_am
     assert LogEntry.objects.get_for_object(h).filter(action=LogEntry.Action.UPDATE).exists()

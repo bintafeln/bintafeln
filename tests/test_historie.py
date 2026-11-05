@@ -89,8 +89,11 @@ def test_bearbeiten_haelt_fest(admin_client, gruppe_behalten):
     assert texte("77") == ["Angelegt"]
     admin_client.post(
         reverse("kunden:bearbeiten", args=["77"]),
-        {"kundennummer": "77", "status": "gesperrt", "kundengruppe": gruppe.pk},
+        {"kundennummer": "77", "status": "gesperrt"},
     )
+    # Die Gruppe wird über den eigenen Dialog gewählt (nicht mehr im Bearbeiten-Formular)
+    admin_client.post(reverse("kunden:kundengruppe_aendern", args=["77"]),
+                      {"kundengruppe": gruppe.pk})  # fmt: skip
     assert texte("77")[1:] == ["Status: aktiv → gesperrt", "Kundengruppe: – → Dienstag"]
     assert HaushaltEreignis.objects.filter(von="chefin", quelle="bearbeitung").count() == 3
 
