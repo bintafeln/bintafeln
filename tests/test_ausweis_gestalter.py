@@ -148,6 +148,9 @@ def test_personen_und_minderjaehrige(gruppe):
     w = ausweis.werte(h, TafelEinstellungen.laden(), AusweisVorlage.laden())
     assert w["personen_kinder"] == "2/1" and w["personen"] == "2 Personen"
     assert ausweis.BEISPIEL["personen_kinder"] == "6/3"
+    # Kundengruppe ohne Vorsilbe „Gruppe“: nur Name (+ Termin)
+    assert w["kundengruppe"] == "Montag · Mo" and not w["kundengruppe"].startswith("Gruppe ")
+    assert not ausweis.BEISPIEL["kundengruppe"].startswith("Gruppe ")
 
 
 def test_ausgabestelle_adresse(gruppe):
