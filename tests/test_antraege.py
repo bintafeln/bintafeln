@@ -1075,7 +1075,7 @@ def test_ausweis_als_bescheid_von_antragsseite(admin_client):
     )
     assert reverse("antraege:antrag", args=[b.pk]) in antwort["Location"]
 
-    # Prüfungsseite: die Vorschau trägt die Bescheid-URL fürs Popup
+    # Prüfungsseite: die Vorschau trägt die Bescheid- und Bereich-URL fürs Popup
     c = _antrag_mit_ausweis("Deutschland")
     c.ausweis_befund = "abweichung"
     c.ausweis_abweichung = True
@@ -1083,6 +1083,28 @@ def test_ausweis_als_bescheid_von_antragsseite(admin_client):
     c.save()
     seite = admin_client.get(pruefliste).content.decode()
     assert reverse("antraege:ausweis_als_bescheid", args=[c.pk]) in seite
+    assert reverse("antraege:ausweis_bereich_lesen", args=[c.pk]) in seite
+
+
+def test_land_aus_ausschnitt(monkeypatch):
+    """Gezieltes Lesen eines Bildausschnitts erkennt ein gültiges Land; zu kleine Auswahl → leer."""
+    from apps.antraege import ausweis_pruefung as ap
+
+    monkeypatch.setattr(ap, "_ocr_text", lambda b: "Staatsangehörigkeit / Nationality UKRAINE")
+    assert ap.land_aus_ausschnitt(_png(), "image/png", 0.1, 0.1, 0.6, 0.6)["land"] == "Ukraine"
+    # Winziges Rechteck wird nicht gelesen
+    assert ap.land_aus_ausschnitt(_png(), "image/png", 0.1, 0.1, 0.005, 0.005)["land"] == ""
+
+
+def test_ausweis_bereich_lesen_view(admin_client, monkeypatch):
+    """Die Ansicht liest den gewählten Ausschnitt und liefert das erkannte Land als JSON."""
+    from apps.antraege import ausweis_pruefung as ap
+
+    monkeypatch.setattr(ap, "_ocr_text", lambda b: "Nationality SYR")
+    a = _antrag_mit_ausweis("Deutschland")
+    url = reverse("antraege:ausweis_bereich_lesen", args=[a.pk])
+    antwort = admin_client.post(url, {"x": 0.1, "y": 0.1, "b": 0.7, "h": 0.5})
+    assert antwort.status_code == 200 and antwort.json()["land"] == "Syrien"
 
 
 def test_ausweis_scan_setzt_nach_unterbrechung_fort(admin_client, monkeypatch):

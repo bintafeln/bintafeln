@@ -1,64 +1,177 @@
 // Vorschau der Nachweise: Ein Foto (Link mit data-bild) öffnet beim Klick groß als Popup über der
 // Seite; ein PDF (data-fenster) öffnet in einem kleineren eigenen Fenster. Ohne JavaScript bleibt
 // es ein normaler Link, der die Datei in einem neuen Tab öffnet.
+//
+// Auf der Ausweisprüfungsseite trägt das Vorschaubild zusätzlich data-bescheid-url (als Bescheid
+// einordnen), data-bereich-url (einen Bildausschnitt gezielt lesen) und data-uebernehmen-url
+// (erkannte Staatsangehörigkeit in den Antrag übernehmen). Dann bietet das Popup die passenden
+// Knöpfe; nach einer Aktion bleibt man auf der aktuellen Seite.
 (function () {
   "use strict";
   if (window.__nachweisVorschau) return; // nur einmal binden (das Skript kann mehrfach eingebunden sein)
   window.__nachweisVorschau = true;
 
-  var dialog, bescheid;
+  var dialog, bild, huelle, auswahl, status, bescheid, bereich, uebernehmen, link;
+  var urls = {}; // bescheid, bereich, uebernehmen für das aktuell gezeigte Bild
+  var erkannt = ""; // zuletzt im Ausschnitt erkanntes Land
+  var zieht = false, startX = 0, startY = 0;
 
-  // "Ist ein Bescheid" (nur wenn der Auslöser data-bescheid-url hat, z. B. auf der Prüfungsseite):
-  // ordnet den Antrag als Amtsdokument ein und bleibt auf der aktuellen Seite (weiter=…).
-  function alsBescheid(url) {
-    var marke = document.querySelector("input[name=csrfmiddlewaretoken]");
-    if (!marke) { window.location.reload(); return; }
-    var form = document.createElement("form");
-    form.method = "post";
-    form.action = url;
-    form.innerHTML =
-      '<input type="hidden" name="csrfmiddlewaretoken" value="' + marke.value + '">' +
-      '<input type="hidden" name="weiter">';
-    form.querySelector('input[name=weiter]').value = window.location.pathname + window.location.search;
-    document.body.appendChild(form);
-    form.submit();
+  function marke() {
+    var m = document.querySelector("input[name=csrfmiddlewaretoken]");
+    return m ? m.value : "";
   }
 
-  function popup(href, name, bescheidUrl) {
-    if (!dialog) {
-      dialog = document.createElement("dialog");
-      dialog.className = "nachweis-dialog";
-      var bild = document.createElement("img");
-      bild.alt = "";
-      var leiste = document.createElement("div");
-      leiste.className = "nachweis-dialog-leiste";
-      bescheid = document.createElement("button");
-      bescheid.type = "button";
-      bescheid.className = "knopf knopf-zweitrangig";
-      bescheid.textContent = "📄 Ist ein Bescheid";
-      var link = document.createElement("a");
-      link.target = "_blank";
-      link.rel = "noopener";
-      link.className = "knopf knopf-zweitrangig";
-      link.textContent = "In neuem Fenster öffnen";
-      var zu = document.createElement("button");
-      zu.type = "button";
-      zu.className = "knopf knopf-abbrechen";
-      zu.textContent = "Schließen";
-      leiste.append(bescheid, link, zu);
-      dialog.append(bild, leiste);
-      document.body.appendChild(dialog);
-      zu.addEventListener("click", function () { dialog.close(); });
-      dialog.addEventListener("click", function (e) { if (e.target === dialog) dialog.close(); });
-      bescheid.addEventListener("click", function () {
-        if (bescheid.dataset.url) alsBescheid(bescheid.dataset.url);
-      });
+  function senden(url, felder) {
+    var daten = new FormData();
+    daten.append("csrfmiddlewaretoken", marke());
+    Object.keys(felder).forEach(function (k) { daten.append(k, felder[k]); });
+    return fetch(url, { method: "POST", body: daten, headers: { "X-CSRFToken": marke() } });
+  }
+
+  function hier() { return window.location.pathname + window.location.search; }
+
+  // "Ist ein Bescheid": als Amtsdokument einordnen, auf der aktuellen Seite bleiben.
+  function alsBescheid(url) {
+    senden(url, { weiter: hier() }).then(function () { window.location.reload(); });
+  }
+
+  function zeichnenAn(an) {
+    huelle.classList.toggle("zeichnen", an);
+    auswahl.hidden = true;
+    if (an) {
+      status.textContent = "Ziehen Sie ein Rechteck über die Staatsangehörigkeit im Bild.";
+      uebernehmen.hidden = true;
+      erkannt = "";
     }
-    dialog.querySelector("img").src = href;
-    dialog.querySelector("img").alt = name || "";
-    dialog.querySelector("a").href = href;
-    if (bescheidUrl) { bescheid.dataset.url = bescheidUrl; bescheid.hidden = false; }
-    else { bescheid.hidden = true; }
+  }
+
+  function rechteck(e) {
+    var r = bild.getBoundingClientRect();
+    var x = Math.max(r.left, Math.min(r.right, e.clientX));
+    var y = Math.max(r.top, Math.min(r.bottom, e.clientY));
+    return { r: r, x: x, y: y };
+  }
+
+  function lesen(r, x1, y1, x2, y2) {
+    var x = (Math.min(x1, x2) - r.left) / r.width;
+    var y = (Math.min(y1, y2) - r.top) / r.height;
+    var b = Math.abs(x2 - x1) / r.width;
+    var h = Math.abs(y2 - y1) / r.height;
+    if (b < 0.02 || h < 0.02) { zeichnenAn(true); return; } // zu klein → noch mal
+    status.textContent = "Lese …";
+    senden(urls.bereich, { x: x, y: y, b: b, h: h })
+      .then(function (a) { return a.json(); })
+      .then(function (d) {
+        erkannt = (d && d.land) || "";
+        if (erkannt) {
+          status.textContent = "Erkannt: " + erkannt + ".";
+          uebernehmen.textContent = "„" + erkannt + "“ übernehmen";
+          uebernehmen.hidden = !urls.uebernehmen;
+        } else {
+          status.textContent = "Nichts erkannt – anderen Bereich versuchen.";
+          uebernehmen.hidden = true;
+        }
+      })
+      .catch(function () { status.textContent = "Lesen fehlgeschlagen."; });
+  }
+
+  function bauen() {
+    dialog = document.createElement("dialog");
+    dialog.className = "nachweis-dialog";
+    huelle = document.createElement("div");
+    huelle.className = "nachweis-bild-huelle";
+    bild = document.createElement("img");
+    bild.alt = "";
+    bild.draggable = false;
+    auswahl = document.createElement("div");
+    auswahl.className = "nachweis-auswahl";
+    auswahl.hidden = true;
+    huelle.append(bild, auswahl);
+    status = document.createElement("div");
+    status.className = "nachweis-status";
+    var leiste = document.createElement("div");
+    leiste.className = "nachweis-dialog-leiste";
+    bescheid = knopf("📄 Ist ein Bescheid");
+    bereich = knopf("🔍 Nationalität im Bild lesen");
+    uebernehmen = knopf("Übernehmen");
+    uebernehmen.className = "knopf knopf-klein";
+    link = document.createElement("a");
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.className = "knopf knopf-zweitrangig";
+    link.textContent = "In neuem Fenster öffnen";
+    var zu = knopf("Schließen");
+    zu.className = "knopf knopf-abbrechen";
+    leiste.append(bescheid, bereich, uebernehmen, link, zu);
+    dialog.append(huelle, status, leiste);
+    document.body.appendChild(dialog);
+
+    zu.addEventListener("click", function () { dialog.close(); });
+    dialog.addEventListener("click", function (e) { if (e.target === dialog) dialog.close(); });
+    bescheid.addEventListener("click", function () { if (urls.bescheid) alsBescheid(urls.bescheid); });
+    bereich.addEventListener("click", function () { zeichnenAn(!huelle.classList.contains("zeichnen")); });
+    uebernehmen.addEventListener("click", function () {
+      if (!erkannt || !urls.uebernehmen) return;
+      senden(urls.uebernehmen, { staatsangehoerigkeit: erkannt }).then(function () {
+        window.location.reload();
+      });
+    });
+
+    huelle.addEventListener("pointerdown", function (e) {
+      if (!huelle.classList.contains("zeichnen")) return;
+      e.preventDefault();
+      var p = rechteck(e);
+      zieht = true; startX = p.x; startY = p.y;
+      auswahl.hidden = false;
+      stellen(p.r, startX, startY, startX, startY);
+      huelle.setPointerCapture(e.pointerId);
+    });
+    huelle.addEventListener("pointermove", function (e) {
+      if (!zieht) return;
+      var p = rechteck(e);
+      stellen(p.r, startX, startY, p.x, p.y);
+    });
+    huelle.addEventListener("pointerup", function (e) {
+      if (!zieht) return;
+      zieht = false;
+      var p = rechteck(e);
+      huelle.classList.remove("zeichnen");
+      lesen(p.r, startX, startY, p.x, p.y);
+    });
+  }
+
+  function knopf(text) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "knopf knopf-zweitrangig";
+    b.textContent = text;
+    return b;
+  }
+
+  function stellen(r, x1, y1, x2, y2) {
+    var hr = huelle.getBoundingClientRect();
+    auswahl.style.left = (Math.min(x1, x2) - hr.left) + "px";
+    auswahl.style.top = (Math.min(y1, y2) - hr.top) + "px";
+    auswahl.style.width = Math.abs(x2 - x1) + "px";
+    auswahl.style.height = Math.abs(y2 - y1) + "px";
+  }
+
+  function popup(a) {
+    if (!dialog) bauen();
+    urls = {
+      bescheid: a.getAttribute("data-bescheid-url") || "",
+      bereich: a.getAttribute("data-bereich-url") || "",
+      uebernehmen: a.getAttribute("data-uebernehmen-url") || "",
+    };
+    bild.src = a.getAttribute("href");
+    bild.alt = a.getAttribute("title") || "";
+    link.href = a.getAttribute("href");
+    bescheid.hidden = !urls.bescheid;
+    bereich.hidden = !urls.bereich;
+    uebernehmen.hidden = true;
+    status.textContent = "";
+    huelle.classList.remove("zeichnen");
+    auswahl.hidden = true;
     dialog.showModal();
   }
 
@@ -67,7 +180,7 @@
     if (!a) return;
     e.preventDefault();
     if (a.hasAttribute("data-bild")) {
-      popup(a.getAttribute("href"), a.getAttribute("title"), a.getAttribute("data-bescheid-url"));
+      popup(a);
     } else {
       var w = window.open(a.href, "_blank", "width=900,height=1000,scrollbars=yes,resizable=yes");
       if (!w) window.open(a.href, "_blank"); // falls das Fenster blockiert wurde: normaler Tab

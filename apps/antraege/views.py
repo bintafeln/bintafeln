@@ -430,6 +430,38 @@ def ausweis_als_bescheid(request, pk):
     return redirect(weiter if sicher else reverse("antraege:antrag", args=[a.pk]))
 
 
+@require_POST
+@rollen.recht_erforderlich("antraege.bearbeiten")
+def ausweis_bereich_lesen(request, pk):
+    """Liest einen vom Menschen aufs Bild gezogenen Ausschnitt gezielt aus und schlägt die darin
+    erkannte Staatsangehörigkeit vor (ADR 0107). Rechteck als Anteile 0–1 (x, y, b, h). Antwort als
+    JSON ``{"land": "…"}`` (leer, wenn nichts Gültiges erkannt wurde)."""
+    from django.http import JsonResponse
+
+    a = get_object_or_404(Antrag, pk=pk)
+    d = _vorschau_anhang(a)
+    if d is None:
+        return JsonResponse({"land": ""})
+
+    def _zahl(name):
+        try:
+            return float(request.POST.get(name, ""))
+        except (TypeError, ValueError):
+            return 0.0
+
+    inhalt = privatdateien.lesen(ANHANG_ORDNER, d.datei)
+    if inhalt is None:
+        return JsonResponse({"land": ""})
+    try:
+        ergebnis = ausweis_pruefung.land_aus_ausschnitt(
+            inhalt, d.typ, _zahl("x"), _zahl("y"), _zahl("b"), _zahl("h")
+        )
+    except Exception as fehler:  # noqa: BLE001 – nur ein Hinweis, nie kritisch
+        log.warning("Bereich-Lesen für Antrag %s fehlgeschlagen: %s", a.pk, fehler)
+        return JsonResponse({"land": ""})
+    return JsonResponse({"land": ergebnis.get("land", "")})
+
+
 @rollen.recht_erforderlich("antraege.sehen")
 def ausweis_fortschritt(request):
     """Stand der laufenden Sammelprüfung (htmx, lädt sich selbst nach, bis fertig)."""

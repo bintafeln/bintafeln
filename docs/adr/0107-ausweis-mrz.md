@@ -116,3 +116,14 @@ Ein normaler Lauf prüft nur noch nicht geprüfte Anträge (fortsetzbar). Mit **
 **erledigten** Anträge zurück (`ausweis_geprueft_am`/`ausweis_befund` leer) und liest sie neu, sodass
 eine verbesserte Erkennung (z. B. Bescheid-Stichwörter, Staatsangehörigkeits-Feld) nachträglich
 greift. Von Hand erledigte Fälle bleiben unberührt.
+
+## Nachtrag: Bereich aufs Bild ziehen (gezielt lesen)
+
+Bei klar lesbaren Ausweisen liest die MRZ-Automatik gelegentlich Müll (kein echtes Land); solche
+Lesungen werten wir nicht mehr als Abweichung (sie landen bei „unklar“). Zusätzlich kann ein Mensch
+im großen Bild-Popup der Prüfungsseite ein **Rechteck** über die Staatsangehörigkeit ziehen:
+`land_aus_ausschnitt` schneidet nur diesen Ausschnitt aus (PDF: erste Seite), liest ihn per OCR und
+sucht darin mit `_code_aus_fenster` ein **gültiges** Land (alpha-3-Code, deutscher Ländername oder
+„deutsch“). Das Ergebnis wird vorgeschlagen und lässt sich mit einem Klick in den Antrag übernehmen
+(`ausweis_bereich_lesen` → `nachweis_staat_uebernehmen`). Das Zeichnen funktioniert mit Maus und
+Touch (Pointer-Events), für die klar lesbaren Fälle, an denen die Voll-Automatik scheitert.

@@ -346,3 +346,45 @@ def ist_amtsdokument(inhalt: bytes, typ: str) -> bool:
     except Exception:  # noqa: BLE001 – nur eine Einordnung, nie kritisch
         return False
     return False
+
+
+def _bild_bytes(inhalt: bytes, typ: str) -> bytes | None:
+    """Rohbytes eines Bildes: ein Bild direkt, bei einem PDF die erste gerenderte Seite."""
+    typ = (typ or "").lower()
+    if "pdf" in typ:
+        from apps.antraege import pdf_bilder
+
+        seiten = pdf_bilder.seiten_bilder(inhalt, max_seiten=1)
+        return seiten[0] if seiten else None
+    if "image" in typ:
+        return inhalt
+    return None
+
+
+def land_aus_ausschnitt(inhalt: bytes, typ: str, x: float, y: float, b: float, h: float) -> dict:
+    """Liest nur einen vom Menschen gewählten **Ausschnitt** des Nachweises (Rechteck als Anteile
+    0–1 des Bildes) und sucht darin eine gültige Staatsangehörigkeit (ADR 0107). Für klar lesbare
+    Ausweise, bei denen die Voll-Automatik scheitert. Liefert ``{"land": name, "code": code}`` oder
+    ``{"land": ""}``."""
+    import io as _io
+
+    from PIL import Image, ImageOps
+
+    rohbild = _bild_bytes(inhalt, typ)
+    if rohbild is None:
+        return {"land": ""}
+    try:
+        bild = ImageOps.exif_transpose(Image.open(_io.BytesIO(rohbild)))
+    except Exception:
+        return {"land": ""}
+    breite, hoehe = bild.size
+    # Rechteck auf 0–1 begrenzen und in Pixel umrechnen; zu kleine Auswahl → nichts.
+    x, y = max(0.0, min(1.0, x)), max(0.0, min(1.0, y))
+    b, h = max(0.0, min(1.0 - x, b)), max(0.0, min(1.0 - y, h))
+    if b < 0.02 or h < 0.02:
+        return {"land": ""}
+    kasten = (round(x * breite), round(y * hoehe), round((x + b) * breite), round((y + h) * hoehe))
+    puffer = _io.BytesIO()
+    bild.crop(kasten).save(puffer, format="PNG")
+    code = _code_aus_fenster(_ocr_text(puffer.getvalue()))
+    return {"land": _staat_name(code), "code": code} if code else {"land": ""}
