@@ -2,6 +2,7 @@
 
 import csv
 import io
+import logging
 from types import SimpleNamespace
 
 from auditlog.signals import accessed
@@ -36,6 +37,8 @@ from apps.antraege.models import (
 from apps.core import html, listenauswahl, listenexport, privatdateien
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
+
+log = logging.getLogger(__name__)
 
 ANSICHTEN = {
     "offen": ("Offen", Q(status__in=Antrag.OFFEN)),
@@ -378,6 +381,119 @@ def ausweis_fortschritt(request):
     ausweis_scan.fortsetzen_wenn_unterbrochen()  # nach einem Update-Neustart selbst weiterlaufen
     stand = ausweis_scan.fortschritt()
     return render(request, "antraege/_ausweis_fortschritt.html", {"stand": stand})
+
+
+@rollen.recht_erforderlich("antraege.bearbeiten")
+def ausweis_pruefung_liste(request):
+    """Sammel-Seite: alle offenen Ausweis-Abweichungen auf einen Blick, mit Mini-Vorschau und je
+    Zeile den Knöpfen „Übernehmen / Nicht übernehmen / Ansehen" – damit man nicht jeden Antrag
+    einzeln öffnen muss (ADR 0107)."""
+    from apps.core import auswahl
+
+    offen = (
+        Antrag.objects.filter(ausweis_abweichung=True, ausweis_erledigt=False)
+        .select_related("ausweis_anhang")
+        .prefetch_related("personen")
+        .order_by("eingegangen_am", "pk")
+    )
+    bekannt = auswahl.LAENDERCODE
+    zeilen = []
+    for a in offen:
+        anhang = a.ausweis_anhang
+        zeilen.append({
+            "a": a,
+            "angegeben": ", ".join(sorted(_angegebene_namen(a))),
+            "erkannt": a.ausweis_staat,
+            # Übernehmen nur anbieten, wenn der erkannte Staat ein echtes Land aus der Liste ist.
+            "uebernehmbar": a.ausweis_staat in bekannt,
+            "anhang_id": anhang.pk if anhang else None,
+            "anhang_bild": bool(anhang) and "image" in (anhang.typ or "").lower(),
+            "anhang_pdf": bool(anhang) and "pdf" in (anhang.typ or "").lower(),
+        })  # fmt: skip
+    return render(request, "antraege/ausweis_pruefung.html", {"zeilen": zeilen})
+
+
+def _angegebene_namen(a) -> set[str]:
+    """Angegebene Staatsangehörigkeiten (Hauptperson + Angehörige), für die Anzeige."""
+    namen = [a.staatsangehoerigkeit] + [p.staatsangehoerigkeit for p in a.personen.all()]
+    return {n.strip() for n in namen if n and n.strip()}
+
+
+@require_POST
+@rollen.recht_erforderlich("antraege.bearbeiten")
+def ausweis_entscheiden(request, pk):
+    """Eine Abweichung auf der Sammel-Seite abschließen (htmx). ``aktion``:
+    - ``uebernehmen``: erkannte Staatsangehörigkeit in den Antrag übernehmen,
+    - ``verwerfen``: nicht übernehmen (Antrag bleibt), Hinweis erledigt.
+    Beide entfernen die Zeile aus der offenen Liste. „Ansehen/Später" ist nur ein Link zum Antrag
+    und braucht keine Aktion."""
+    from apps.core import auswahl
+
+    a = get_object_or_404(Antrag, pk=pk)
+    aktion = request.POST.get("aktion")
+    text = ""
+    if aktion == "uebernehmen":
+        wert = a.ausweis_staat
+        erlaubt = {w for w, _ in auswahl.mit_vorhandenem(
+            auswahl.staatsangehoerigkeiten(), a.staatsangehoerigkeit)}  # fmt: skip
+        if wert and wert in erlaubt:
+            a.staatsangehoerigkeit = wert
+            a.ausweis_abweichung = False
+            a.ausweis_erledigt = True
+            a.save(update_fields=["staatsangehoerigkeit", "ausweis_abweichung", "ausweis_erledigt"])
+            text = f"„{wert}“ übernommen."
+        else:
+            text = "Nicht übernehmbar (kein gültiges Land)."
+            return render(request, "antraege/_ausweis_zeile_fertig.html",
+                          {"text": text, "fehler": True})  # fmt: skip
+    elif aktion == "verwerfen":
+        a.ausweis_abweichung = False
+        a.ausweis_erledigt = True
+        a.save(update_fields=["ausweis_abweichung", "ausweis_erledigt"])
+        text = "Nicht übernommen – Antrag bleibt wie angegeben."
+    else:
+        raise Http404
+    return render(request, "antraege/_ausweis_zeile_fertig.html", {"text": text, "fehler": False})
+
+
+@rollen.recht_erforderlich("antraege.sehen")
+def ausweis_miniatur(request, pk):
+    """Kleine Vorschau des beim Scan gewählten Ausweis-Nachweises (Bild oder erste PDF-Seite),
+    lokal gerendert, nicht serverseitig zwischengespeichert (der Nachweis liegt verschlüsselt)."""
+    a = get_object_or_404(Antrag, pk=pk)
+    d = a.ausweis_anhang
+    if d is None:
+        raise Http404
+    inhalt = privatdateien.lesen(ANHANG_ORDNER, d.datei)
+    if inhalt is None:
+        raise Http404
+    bild = _miniatur_bytes(inhalt, d.typ)
+    if bild is None:
+        raise Http404
+    antwort = HttpResponse(bild, content_type="image/jpeg")
+    antwort["Cache-Control"] = "private, max-age=600"  # nur im Browser des Mitarbeiters
+    return antwort
+
+
+def _miniatur_bytes(inhalt: bytes, typ: str):
+    """Kleine JPEG-Vorschau aus einem Bild- oder PDF-Nachweis; None bei Fehler."""
+    typ = (typ or "").lower()
+    try:
+        if "pdf" in typ:
+            from apps.antraege import pdf_bilder
+
+            return pdf_bilder.vorschau(inhalt)
+        if "image" in typ:
+            from PIL import Image, ImageOps
+
+            bild = ImageOps.exif_transpose(Image.open(io.BytesIO(inhalt))).convert("RGB")
+            bild.thumbnail((400, 400))
+            puffer = io.BytesIO()
+            bild.save(puffer, format="JPEG", quality=70)
+            return puffer.getvalue()
+    except Exception as fehler:  # noqa: BLE001 – nur eine Vorschau, nie kritisch
+        log.warning("Ausweis-Miniatur fehlgeschlagen: %s", fehler)
+    return None
 
 
 @rollen.recht_erforderlich("antraege.bearbeiten")
