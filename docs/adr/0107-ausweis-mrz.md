@@ -67,6 +67,18 @@ nicht.
   Staatsangehörigkeit im Antrag über ein Auswahlmenü direkt überschreiben
   (`nachweis_staat_uebernehmen`, Recht `antraege.bearbeiten`).
 
+- **Sammel-Prüfseite** (`antraege:ausweis_pruefung_liste`, Recht `antraege.bearbeiten`): Nach einem
+  großen Lauf müssen Abweichungen nicht mehr Antrag für Antrag geöffnet werden. Eine eigene Seite
+  listet alle offenen Abweichungen (`ausweis_abweichung=True`, noch nicht erledigt) mit kleiner
+  Vorschau des beim Scan gewählten Nachweises (`ausweis_miniatur`, lokal gerendert – Bild verkleinert
+  oder erste PDF-Seite, nichts zwischengespeichert), der angegebenen und der erkannten
+  Staatsangehörigkeit und je Zeile drei Aktionen (`ausweis_entscheiden`): **Übernehmen** (erkannten
+  Staat in den Antrag schreiben, wie das Auswahlmenü auf der Antragsseite), **Nicht übernehmen**
+  (Antrag bleibt, Hinweis erledigt) und **Ansehen** (Antrag in neuem Tab). Eine abgeschlossene
+  Abweichung merkt sich das neue, abgeleitete Feld `Antrag.ausweis_erledigt`; sie verschwindet sofort
+  aus der Liste und aus dem Menü-Zähler. Weiterhin nur ein Hinweis, die Entscheidung trifft ein
+  Mensch.
+
 ## Begründung
 
 Die MRZ ist standardisiert und mit Prüfziffern gesichert, daher lokal zuverlässig lesbar, wo sie

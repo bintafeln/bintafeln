@@ -321,6 +321,9 @@ class Antrag(models.Model):
         "AntragAnhang", null=True, blank=True, editable=False,
         on_delete=models.SET_NULL, related_name="+",
     )  # fmt: skip
+    # Eine Person hat die Abweichung auf der Sammel-Prüfseite abgeschlossen (übernommen oder
+    # bewusst nicht übernommen) – dann verschwindet sie aus der Liste der offenen Fälle (ADR 0107).
+    ausweis_erledigt = models.BooleanField(default=False, editable=False)
 
     class Meta:
         verbose_name = "Antrag"

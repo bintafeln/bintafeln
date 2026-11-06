@@ -767,6 +767,47 @@ def test_ausweis_scan_abweichung_und_treffer(monkeypatch):
     assert antrag.ausweis_anhang_id and antrag.ausweis_geprueft_am
 
 
+def test_ausweis_sammelseite_und_entscheiden(admin_client, monkeypatch):
+    """Sammel-Prüfseite: offene Abweichungen auf einen Blick, je Zeile übernehmen oder nicht
+    übernehmen – ohne jeden Antrag einzeln zu öffnen (ADR 0107)."""
+    from apps.antraege.models import Antrag
+
+    a = _antrag_mit_ausweis("Deutschland")
+    a.ausweis_abweichung = True
+    a.ausweis_staat = "Ukraine"
+    a.ausweis_anhang = a.anhaenge.first()
+    a.save(update_fields=["ausweis_abweichung", "ausweis_staat", "ausweis_anhang"])
+    b = _antrag_mit_ausweis("Deutschland")
+    b.ausweis_abweichung = True
+    b.ausweis_staat = "Ukraine"
+    b.save(update_fields=["ausweis_abweichung", "ausweis_staat"])
+
+    url = reverse("antraege:ausweis_pruefung_liste")
+    seite = admin_client.get(url).content.decode()
+    assert "Ausweisprüfung" in seite
+    assert str(a.nummer) in seite and "Ukraine" in seite
+
+    # Mini-Vorschau liefert ein Bild (lokal gerendert)
+    mini = admin_client.get(reverse("antraege:ausweis_miniatur", args=[a.pk]))
+    assert mini.status_code == 200 and mini["Content-Type"] == "image/jpeg"
+
+    # Übernehmen schreibt den erkannten Staat in den Antrag und erledigt den Fall
+    entscheiden_a = reverse("antraege:ausweis_entscheiden", args=[a.pk])
+    admin_client.post(entscheiden_a, {"aktion": "uebernehmen"})
+    a.refresh_from_db()
+    assert a.staatsangehoerigkeit == "Ukraine" and not a.ausweis_abweichung and a.ausweis_erledigt
+
+    # Nicht übernehmen lässt die Angabe stehen, erledigt aber ebenfalls den Hinweis
+    admin_client.post(reverse("antraege:ausweis_entscheiden", args=[b.pk]), {"aktion": "verwerfen"})
+    b.refresh_from_db()
+    assert b.staatsangehoerigkeit == "Deutschland"
+    assert not b.ausweis_abweichung and b.ausweis_erledigt
+
+    # Beide erledigt → Liste ist leer
+    assert "Keine offenen Abweichungen" in admin_client.get(url).content.decode()
+    assert not Antrag.objects.filter(ausweis_abweichung=True, ausweis_erledigt=False).exists()
+
+
 def test_ausweis_scan_keine_abweichung(monkeypatch):
     from apps.antraege import ausweis_pruefung, ausweis_scan
 

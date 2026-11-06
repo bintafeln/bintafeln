@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block titel %}Ausweisprüfung{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <div class="liste-kopf">
+    <h1>Ausweisprüfung <span class="leise">({{ zeilen|length }} offen)</span></h1>
+    <a class="knopf knopf-zweitrangig" href="{% url 'antraege:liste' %}">Zur Antragsliste</a>
+  </div>
+  <p class="hinweis">Hier stehen alle Anträge, bei denen die im Ausweis erkannte Staatsangehörigkeit
+    zu <strong>keiner</strong> im Antrag angegebenen passt. Vergleichen Sie die Vorschau mit den
+    Angaben und entscheiden Sie je Zeile: <strong>Übernehmen</strong> (erkannten Staat in den
+    Antrag schreiben), <strong>Nicht übernehmen</strong> (Antrag bleibt wie er ist) oder
+    <strong>Ansehen</strong> (öffnet den Antrag in einem neuen Tab, um ihn in Ruhe zu prüfen).
+    Die Prüfung ist nur ein Hinweis – die Entscheidung trifft immer ein Mensch.</p>
+
+  {% if zeilen %}
+  <table class="liste ausweispruefung">
+    <thead><tr>
+      <th>Vorschau</th><th>Antrag</th><th>Angegeben</th><th>Im Ausweis erkannt</th><th>Entscheidung</th>
+    </tr></thead>
+    <tbody>
+    {% for z in zeilen %}
+      <tr>
+        <td data-titel="Vorschau">
+          {% if z.anhang_bild or z.anhang_pdf %}
+            <a href="{% url 'antraege:anhang' z.a.pk z.anhang_id %}" target="_blank" rel="noopener">
+              <img class="ausweis-mini" loading="lazy" alt="Vorschau des Nachweises"
+                   src="{% url 'antraege:ausweis_miniatur' z.a.pk %}"></a>
+          {% else %}<span class="leise">—</span>{% endif %}
+        </td>
+        <td data-titel="Antrag"><a href="{% url 'antraege:antrag' z.a.pk %}" target="_blank" rel="noopener">
+          {{ z.a.nummer }}</a><br><span class="leise">{{ z.a.vorname }} {{ z.a.nachname }}</span></td>
+        <td data-titel="Angegeben">{{ z.angegeben|default:"—" }}</td>
+        <td data-titel="Im Ausweis erkannt"><strong>{{ z.erkannt|default:"—" }}</strong></td>
+        <td data-titel="Entscheidung">
+          <form method="post" action="{% url 'antraege:ausweis_entscheiden' z.a.pk %}" class="ausweis-aktion"
+                hx-post="{% url 'antraege:ausweis_entscheiden' z.a.pk %}"
+                hx-target="closest tr" hx-swap="outerHTML">
+            {% csrf_token %}
+            {% if z.uebernehmbar %}
+              <button type="submit" name="aktion" value="uebernehmen" class="knopf knopf-klein"
+                      title="Erkannten Staat „{{ z.erkannt }}“ in den Antrag übernehmen">✓ Übernehmen</button>
+            {% endif %}
+            <button type="submit" name="aktion" value="verwerfen" class="knopf knopf-klein knopf-zweitrangig"
+                    title="Antrag bleibt wie angegeben; Hinweis erledigt">✕ Nicht übernehmen</button>
+            <a class="knopf knopf-klein knopf-zweitrangig" href="{% url 'antraege:antrag' z.a.pk %}"
+               target="_blank" rel="noopener" title="Antrag in neuem Tab ansehen">↗ Ansehen</a>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="hinweis">Keine offenen Abweichungen. 🎉 Entschiedene Fälle sind hier nicht mehr
+    aufgeführt; die Angaben stehen weiterhin im jeweiligen Antrag.</p>
+  {% endif %}
+</section>
+{% endblock %}

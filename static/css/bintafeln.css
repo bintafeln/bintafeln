@@ -1726,3 +1726,11 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
   .tabelle.kompakt.wochen-summen tr { display: flex; justify-content: space-between; }
   .tabelle.kompakt.wochen-summen td::before { content: none; }
 }
+
+/* Sammel-Prüfseite der Ausweisprüfung (ADR 0107) */
+.ausweis-mini { max-width: 80px; max-height: 80px; border: 1px solid var(--rahmen, #ccc); border-radius: 4px; }
+.knopf-klein { width: auto; min-height: 2.2rem; padding: .3rem .7rem; font-size: .9rem; }
+a.knopf-klein { display: inline-block; }
+.ausweis-aktion { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.table.ausweispruefung td, table.ausweispruefung td { vertical-align: middle; }
+.ausweis-erledigt td { color: var(--leise, #666); }
