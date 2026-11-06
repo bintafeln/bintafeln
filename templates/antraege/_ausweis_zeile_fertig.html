@@ -1,3 +1,3 @@
-<tr class="ausweis-erledigt">
-  <td colspan="5">{% if fehler %}<span class="marke-warnung">{{ text }}</span>{% else %}<span class="leise">✓ {{ text }}</span>{% endif %}</td>
-</tr>
+<article class="ausweis-fall ausweis-erledigt">
+  {% if fehler %}<span class="marke-warnung">{{ text }}</span>{% else %}<span>✓ {{ text }}</span>{% endif %}
+</article>

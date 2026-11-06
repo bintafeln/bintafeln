@@ -1,19 +1,21 @@
-<tr>
-  <td data-titel="Vorschau">
-    {% if z.hat_vorschau %}
-      <a href="{% url 'antraege:anhang' z.a.pk z.anhang_id %}" target="_blank" rel="noopener">
-        <img class="ausweis-mini" loading="lazy" alt="Vorschau des Nachweises"
-             src="{% url 'antraege:ausweis_miniatur' z.a.pk %}"></a>
-    {% else %}<span class="leise">—</span>{% endif %}
-  </td>
-  <td data-titel="Antrag"><a href="{% url 'antraege:antrag' z.a.pk %}" target="_blank" rel="noopener">
-    {{ z.a.nummer }}</a><br><span class="leise">{{ z.a.vorname }} {{ z.a.nachname }}</span></td>
-  <td data-titel="Angegeben">{{ z.angegeben|default:"—" }}</td>
-  <td data-titel="Im Ausweis erkannt"><strong>{{ z.erkannt|default:"—" }}</strong></td>
-  <td data-titel="Entscheidung">
+<article class="ausweis-fall">
+  {% if z.hat_vorschau %}
+    <a class="ausweis-fall-bild" href="{% url 'antraege:anhang' z.a.pk z.anhang_id %}" target="_blank" rel="noopener">
+      <img class="ausweis-mini" loading="lazy" alt="Vorschau des Nachweises"
+           src="{% url 'antraege:ausweis_miniatur' z.a.pk %}"></a>
+  {% endif %}
+  <div class="ausweis-fall-info">
+    <div class="ausweis-fall-kopf">
+      <a href="{% url 'antraege:antrag' z.a.pk %}" target="_blank" rel="noopener">{{ z.a.nummer }}</a>
+      <span class="leise">· {{ z.a.vorname }} {{ z.a.nachname }}</span>
+    </div>
+    <div class="ausweis-fall-staaten">
+      Angegeben: <strong>{{ z.angegeben|default:"—" }}</strong>
+      {% if z.erkannt %}· Im Ausweis: <strong>{{ z.erkannt }}</strong>{% endif %}
+    </div>
     <form method="post" action="{% url 'antraege:ausweis_entscheiden' z.a.pk %}" class="ausweis-aktion"
           hx-post="{% url 'antraege:ausweis_entscheiden' z.a.pk %}"
-          hx-target="closest tr" hx-swap="outerHTML">
+          hx-target="closest article" hx-swap="outerHTML">
       {% csrf_token %}
       {% if z.uebernehmbar %}
         <button type="submit" name="aktion" value="uebernehmen" class="knopf knopf-klein"
@@ -25,5 +27,5 @@
       <a class="knopf knopf-klein knopf-zweitrangig" href="{% url 'antraege:antrag' z.a.pk %}"
          target="_blank" rel="noopener" title="Antrag in neuem Tab ansehen">↗ Ansehen</a>
     </form>
-  </td>
-</tr>
+  </div>
+</article>

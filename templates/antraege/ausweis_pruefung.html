@@ -15,12 +15,9 @@
     Angabe im Antrag. <strong>Übernehmen</strong> schreibt den erkannten Staat in den Antrag,
     <strong>Nicht übernehmen</strong> lässt den Antrag wie er ist.</p>
   {% if abweichungen %}
-  <table class="liste ausweispruefung">
-    <thead><tr><th>Vorschau</th><th>Antrag</th><th>Angegeben</th><th>Im Ausweis erkannt</th><th>Entscheidung</th></tr></thead>
-    <tbody>
-      {% for z in abweichungen %}{% include "antraege/_ausweis_zeile.html" with z=z modus="abweichung" %}{% endfor %}
-    </tbody>
-  </table>
+  <div class="ausweis-faelle">
+    {% for z in abweichungen %}{% include "antraege/_ausweis_zeile.html" with z=z modus="abweichung" %}{% endfor %}
+  </div>
   {% else %}<p class="hinweis">Keine offenen Abweichungen. 🎉</p>{% endif %}
 
   {% if unklar %}
@@ -28,32 +25,33 @@
   <p class="hinweis">Hier wurde ein Nachweis hochgeladen, aber kein Ausweis gelesen und kein
     Amtsdokument erkannt. Vielleicht ein unscharfes Ausweisfoto – ein Blick lohnt sich.
     <strong>Erledigt</strong> hakt den Fall ab.</p>
-  <table class="liste ausweispruefung">
-    <thead><tr><th>Vorschau</th><th>Antrag</th><th>Angegeben</th><th>Erkannt</th><th>Entscheidung</th></tr></thead>
-    <tbody>
-      {% for z in unklar %}{% include "antraege/_ausweis_zeile.html" with z=z modus="unklar" %}{% endfor %}
-    </tbody>
-  </table>
+  <div class="ausweis-faelle">
+    {% for z in unklar %}{% include "antraege/_ausweis_zeile.html" with z=z modus="unklar" %}{% endfor %}
+  </div>
   {% endif %}
 
   {% if amtsdokumente %}
   <details class="amtsdokumente">
     <summary><strong>Amtsdokumente (Bescheide) – kein Ausweis</strong>
       <span class="leise">({{ amtsdokumente|length }}) – müssen Sie in der Regel nicht ansehen</span></summary>
-    <table class="liste ausweispruefung">
-      <thead><tr><th>Vorschau</th><th>Antrag</th><th>Angegeben</th><th>Erkannt</th><th></th></tr></thead>
-      <tbody>
-        {% for z in amtsdokumente %}
-        <tr>
-          <td data-titel="Vorschau">{% if z.hat_vorschau %}<a href="{% url 'antraege:anhang' z.a.pk z.anhang_id %}" target="_blank" rel="noopener"><img class="ausweis-mini" loading="lazy" alt="Vorschau" src="{% url 'antraege:ausweis_miniatur' z.a.pk %}"></a>{% else %}<span class="leise">—</span>{% endif %}</td>
-          <td data-titel="Antrag"><a href="{% url 'antraege:antrag' z.a.pk %}" target="_blank" rel="noopener">{{ z.a.nummer }}</a><br><span class="leise">{{ z.a.vorname }} {{ z.a.nachname }}</span></td>
-          <td data-titel="Angegeben">{{ z.angegeben|default:"—" }}</td>
-          <td data-titel="Erkannt"><span class="leise">kein Ausweis</span></td>
-          <td data-titel=""><a class="knopf knopf-klein knopf-zweitrangig" href="{% url 'antraege:antrag' z.a.pk %}" target="_blank" rel="noopener">↗ Ansehen</a></td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="ausweis-faelle">
+      {% for z in amtsdokumente %}
+      <article class="ausweis-fall">
+        {% if z.hat_vorschau %}
+          <a class="ausweis-fall-bild" href="{% url 'antraege:anhang' z.a.pk z.anhang_id %}" target="_blank" rel="noopener">
+            <img class="ausweis-mini" loading="lazy" alt="Vorschau" src="{% url 'antraege:ausweis_miniatur' z.a.pk %}"></a>
+        {% endif %}
+        <div class="ausweis-fall-info">
+          <div class="ausweis-fall-kopf">
+            <a href="{% url 'antraege:antrag' z.a.pk %}" target="_blank" rel="noopener">{{ z.a.nummer }}</a>
+            <span class="leise">· {{ z.a.vorname }} {{ z.a.nachname }}</span>
+          </div>
+          <div class="ausweis-fall-staaten"><span class="leise">Amtsdokument, kein Ausweis</span></div>
+          <a class="knopf knopf-klein knopf-zweitrangig" href="{% url 'antraege:antrag' z.a.pk %}" target="_blank" rel="noopener">↗ Ansehen</a>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
   </details>
   {% endif %}
 </section>
