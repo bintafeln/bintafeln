@@ -982,6 +982,8 @@ def test_ausweis_scan_liste_bulk_banner_und_automatik(admin_client, monkeypatch)
     detail = admin_client.get(reverse("antraege:antrag", args=[antrag.pk])).content.decode()
     assert "weicht ab" in detail and "Im Antrag übernehmen" in detail
     assert reverse("antraege:anhang", args=[antrag.pk, antrag.ausweis_anhang_id]) in detail
+    # Übernehmen ersetzt den ganzen roten Hinweis (nicht nur ein Feld darin)
+    assert 'hx-target="closest .ausweis-abweichung"' in detail
     # Übernehmen räumt den Hinweis weg
     admin_client.post(reverse("antraege:nachweis_staat_uebernehmen", args=[antrag.pk]),
                       {"staatsangehoerigkeit": "Ukraine"})  # fmt: skip
