@@ -1727,13 +1727,26 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
   .tabelle.kompakt.wochen-summen td::before { content: none; }
 }
 
-/* Sammel-Prüfseite der Ausweisprüfung (ADR 0107) */
-.ausweis-mini { max-width: 80px; max-height: 80px; border: 1px solid var(--rahmen, #ccc); border-radius: 4px; }
-.knopf-klein { width: auto; min-height: 2.2rem; padding: .3rem .7rem; font-size: .9rem; }
-a.knopf-klein { display: inline-block; }
+/* Sammel-Prüfseite der Ausweisprüfung (ADR 0107/0112) – Karten statt Tabelle, damit es auch auf
+   dem Handy ohne seitliches Scrollen bedienbar ist. */
+.knopf-klein { width: auto; min-height: 2.4rem; padding: .35rem .7rem; font-size: .95rem; }
+a.knopf-klein { display: inline-block; text-align: center; }
+.ausweis-faelle { display: flex; flex-direction: column; gap: .75rem; margin: .5rem 0 1.25rem; }
+.ausweis-fall { display: flex; gap: .75rem; align-items: flex-start; padding: .75rem;
+  border: 1px solid var(--rahmen, #ddd); border-radius: 8px; background: var(--karte-bg, #fff); }
+.ausweis-fall-bild { flex: 0 0 auto; }
+.ausweis-mini { display: block; width: 72px; height: 72px; object-fit: cover;
+  border: 1px solid var(--rahmen, #ccc); border-radius: 4px; background: #f3f3f3; }
+.ausweis-fall-info { flex: 1 1 auto; min-width: 0; }  /* min-width:0 erlaubt Umbruch langer Namen */
+.ausweis-fall-kopf { font-weight: bold; }
+.ausweis-fall-kopf .leise { font-weight: normal; }
+.ausweis-fall-staaten { margin: .25rem 0 .5rem; }
 .ausweis-aktion { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
-.table.ausweispruefung td, table.ausweispruefung td { vertical-align: middle; }
-.ausweis-erledigt td { color: var(--leise, #666); }
+.ausweis-erledigt { color: var(--leise, #666); align-items: center; }
+details.amtsdokumente > summary { cursor: pointer; margin: .5rem 0; }
+@media (max-width: 560px) {
+  .ausweis-aktion .knopf-klein { flex: 1 1 auto; }  /* Knöpfe füllen die Breite, leicht treffbar */
+}
 
 /* Eingeklappte, selten gebrauchte Werkzeuge im Listenkopf (Import/Sammelprüfung) */
 .listen-werkzeuge { display: inline-block; }
