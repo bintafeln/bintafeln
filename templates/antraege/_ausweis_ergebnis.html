@@ -28,6 +28,10 @@
     </form>
     {% endif %}
 
+    {% if b.nur_feld %}
+    <p class="hinweis"><span class="marke-warnung">Keine MRZ gefunden</span> – nur aus dem Feld „Staatsangehörigkeit / Nationality" gelesen (z. B. die Seite ohne maschinenlesbare Zone). Schwächerer Hinweis als eine geprüfte MRZ; bitte ansehen. Die Entscheidung trifft ein Mensch.</p>
+    {% else %}
     <p class="hinweis">Weiter im Dokument: {{ b.dokument }}{% if not b.gueltig %} <span class="marke-warnung">Prüfziffern unsicher gelesen</span>{% endif %}, ausgestellt von {{ b.ausstellland }}{% if b.name %}, Name {{ b.name }}{% endif %}. Nur ein Hinweis; die Entscheidung trifft ein Mensch.</p>
+    {% endif %}
   </div>
 {% endif %}

@@ -93,3 +93,18 @@ der entscheidende Schritt, der auf realen Fotos erst Treffer bringt. Das zieht a
 Abhängigkeiten scikit-image/scipy/numpy u. a. nach (bewusst die „größere" Variante, da
 Zuverlässigkeit hier wichtiger ist als ein schlankes Image); alle permissiv lizenziert (MIT/BSD),
 AGPL-verträglich. Der bisherige Weg bleibt als Rückfall erhalten.
+
+## Nachtrag: Staatsangehörigkeit aus dem Textfeld, wenn keine MRZ (Stufe 3)
+
+Die MRZ steht nur auf **einer** Seite des Ausweises. Lädt jemand nur die andere Seite hoch, fanden
+Stufe 1 (PassportEye) und Stufe 2 (ganzes Bild) nichts. Als **dritte Stufe** liest `_staat_aus_text`
+den freien OCR-Text (deutsch+englisch) und sucht die Beschriftung
+**„Staatsangehörigkeit / Nationality"**; im Ausschnitt dahinter (Zeile + zwei Folgezeilen) erkennt
+`_code_aus_fenster` einen **alpha-3-Ländercode** (z. B. `SYR`), einen **deutschen Ländernamen** oder
+das Adjektiv **„deutsch"** und macht daraus einen Code. Gewertet wird nur, was zu einem **gültigen
+Land** (`ALPHA3_NAME`/`STAATEN`) gehört; Alltagswörter wie „and"/„are" (Andorra/VAE) sind gesperrt,
+um Fehltreffer zu vermeiden.
+
+Der so gewonnene Befund ist bewusst als **schwächerer Hinweis** markiert (`nur_feld=True`, keine
+Prüfziffern geprüft) und im Ergebnis entsprechend gekennzeichnet. Das hebt die Trefferquote
+deutlich, ohne je etwas automatisch zu entscheiden – die MRZ-Prüfung bleibt die erste Wahl.

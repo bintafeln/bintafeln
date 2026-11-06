@@ -676,6 +676,32 @@ def test_ausweis_pruefung_passporteye(monkeypatch):
     assert ap.pruefen(b"kein bild")["erkannt"] is False
 
 
+def test_ausweis_staat_aus_textfeld(monkeypatch):
+    """Stufe 3 (keine MRZ): die Staatsangehörigkeit aus dem Textfeld lesen (ADR 0107)."""
+    from apps.antraege import ausweis_pruefung as ap
+
+    # Code aus einem Ausschnitt: alpha-3-Code, deutscher Name, Adjektiv – Alltagswörter nicht.
+    assert ap._code_aus_fenster("Nationality SYR") == "SYR"
+    assert ap._code_aus_fenster("Staatsangehörigkeit Afghanistan") == "AFG"
+    assert ap._code_aus_fenster("Staatsangehörigkeit / Nationality DEUTSCH") == "DEU"
+    assert ap._code_aus_fenster("Nationality and more words") == ""  # „AND" ist gesperrt
+    assert ap._code_aus_fenster("Name Erika Mustermann") == ""  # ohne Land nichts
+
+    monkeypatch.setattr(ap, "tesseract_vorhanden", lambda: True)
+    monkeypatch.setattr(ap, "_passporteye", lambda daten: None)  # keine MRZ
+    monkeypatch.setattr(ap, "_ocr", lambda daten: "kein mrz-band hier")  # Rückfall scheitert
+    monkeypatch.setattr(ap, "_ocr_text", lambda daten: (
+        "BUNDESREPUBLIK DEUTSCHLAND\nStaatsangehörigkeit / Nationality\nSYR\nName Muster"
+    ))  # fmt: skip
+    b = ap.pruefen(_png(), "Syrien")
+    assert b["erkannt"] and b["nur_feld"] is True
+    assert b["staatsangehoerigkeit"] == "Syrien" and b["code_staat"] == "SYR"
+    assert b["passt"] is True and b["gueltig"] is False
+    # Steht keine (gültige) Staatsangehörigkeit im Text, bleibt es ehrlich „nicht erkannt"
+    monkeypatch.setattr(ap, "_ocr_text", lambda daten: "nur ein Foto, keine Angaben")
+    assert ap.pruefen(_png())["erkannt"] is False
+
+
 def test_ausweis_pruefung_view_und_knopf(admin_client, antrag, monkeypatch):
     from apps.antraege import ausweis_pruefung as ap
     from apps.antraege.models import AntragEinstellungen
