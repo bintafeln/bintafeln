@@ -401,6 +401,10 @@ def test_einlass_zeigt_angaben_und_notizen(ausgabe, haushalt):
     inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
     assert "Erika Muster, geb. 06.05.1970" in inhalt and "Otto Muster, geb. 03.02.2001" in inhalt
     assert "1 Erwachsene, 1 Kind" in inhalt and "Kai Muster, geb. 01.01.2016" in inhalt
+    # Hinter dem Geburtsdatum steht das aktuelle Alter je Person (berechnet, nicht fest).
+    kai = Person.objects.get(vorname="Kai")
+    assert f"geb. 06.05.1970 ({hp.alter()} Jahre)" in inhalt
+    assert f"geb. 01.01.2016 ({kai.alter()} Jahre)" in inhalt
     assert "Ausgabestelle Mitte · Jeden Tag" in inhalt and "Karte gültig bis" in inhalt
     assert "Erfundene Gasse" not in inhalt and "Keine Notizen." in inhalt
     url = reverse("ausgabe:notiz", args=["00042"])
