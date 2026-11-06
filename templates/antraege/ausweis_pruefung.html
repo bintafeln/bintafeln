@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block titel %}Ausweisprüfung{% endblock %}
 {% block inhalt %}
 <section class="karte">
@@ -38,7 +39,9 @@
       {% for z in amtsdokumente %}
       <article class="ausweis-fall">
         {% if z.hat_vorschau %}
-          <a class="ausweis-fall-bild" href="{% url 'antraege:anhang' z.a.pk z.anhang_id %}" target="_blank" rel="noopener">
+          <a class="ausweis-fall-bild" href="{% url 'antraege:anhang' z.a.pk z.anhang_id %}"
+             {% if z.anhang_bild %}data-bild{% else %}data-fenster{% endif %}
+             title="Antrag {{ z.a.nummer }}" target="_blank" rel="noopener">
             <img class="ausweis-mini" loading="lazy" alt="Vorschau" src="{% url 'antraege:ausweis_miniatur' z.a.pk %}"></a>
         {% endif %}
         <div class="ausweis-fall-info">
@@ -55,4 +58,7 @@
   </details>
   {% endif %}
 </section>
+{# Foto-Vorschau groß als Popup (data-bild), PDF im eigenen Fenster (data-fenster) – wie auf der
+   Antragsseite. Ohne JavaScript bleibt es ein normaler Link in einen neuen Tab. #}
+<script src="{% static 'js/nachweise_vorschau.js' %}" defer></script>
 {% endblock %}

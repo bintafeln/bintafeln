@@ -412,6 +412,7 @@ def _ausweis_zeile(a) -> dict:
     from apps.core import auswahl
 
     anhang = a.ausweis_anhang
+    typ = (anhang.typ or "").lower() if anhang else ""
     return {
         "a": a,
         "angegeben": ", ".join(sorted(_angegebene_namen(a))),
@@ -419,8 +420,9 @@ def _ausweis_zeile(a) -> dict:
         # Übernehmen nur anbieten, wenn der erkannte Staat ein echtes Land aus der Liste ist.
         "uebernehmbar": a.ausweis_staat in auswahl.LAENDERCODE,
         "anhang_id": anhang.pk if anhang else None,
-        "hat_vorschau": bool(anhang)
-        and any(t in (anhang.typ or "").lower() for t in ("image", "pdf")),
+        "anhang_bild": "image" in typ,  # Foto → großes Popup; PDF → eigenes Fenster
+        "anhang_pdf": "pdf" in typ,
+        "hat_vorschau": "image" in typ or "pdf" in typ,
     }
 
 
