@@ -362,15 +362,27 @@ def nachweis_staat_uebernehmen(request, pk):
 @require_POST
 @rollen.recht_erforderlich("antraege.bearbeiten")
 def ausweise_pruefen_alle(request):
-    """Auf Befehl alle Anträge im Hintergrund auf Ausweise prüfen (ADR 0107)."""
+    """Auf Befehl alle Anträge im Hintergrund auf Ausweise prüfen (ADR 0107). Gibt eine ehrliche
+    Rückmeldung: läuft schon, nichts zu tun (alles geprüft) oder jetzt für N Anträge gestartet –
+    sonst stünde „läuft im Hintergrund“ da, obwohl gar kein Fortschritt kommt."""
     if not ausweis_scan.aktiv():
         messages.error(
             request, "Die Ausweisprüfung ist nicht eingeschaltet (Antragseinstellungen)."
         )
+    elif ausweis_scan.laeuft_schon():
+        messages.info(request, "Die Ausweisprüfung läuft bereits – der Fortschritt steht oben.")
+    elif (offen := ausweis_scan.offene_anzahl()) == 0:
+        messages.info(
+            request,
+            "Alle Anträge sind bereits geprüft – es gibt nichts Neues zu prüfen. Neue Anträge "
+            "werden beim Eingang ohnehin automatisch geprüft.",
+        )
     else:
         ausweis_scan.alle_pruefen_starten()
         messages.success(
-            request, "Ausweisprüfung für alle Anträge gestartet – läuft im Hintergrund."
+            request,
+            f"Ausweisprüfung für {offen} noch nicht geprüfte "
+            f"{'Anträge' if offen != 1 else 'Antrag'} gestartet – der Fortschritt erscheint oben.",
         )
     return redirect("antraege:liste")
 

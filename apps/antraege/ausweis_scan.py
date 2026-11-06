@@ -189,6 +189,20 @@ def _erster_offener():
     return Antrag.objects.filter(_offen_q()).order_by("pk").values_list("pk", flat=True).first()
 
 
+def offene_anzahl() -> int:
+    """Wie viele Anträge noch nicht geprüft bzw. nach Dokumentart eingeordnet sind – also was ein
+    „Alle Ausweise prüfen“ noch zu tun hätte (gleiche Bedingung wie der Lauf, ADR 0112)."""
+    from apps.antraege.models import Antrag
+
+    return Antrag.objects.filter(_offen_q()).count()
+
+
+def laeuft_schon() -> bool:
+    """True, wenn gerade ein Sammellauf läuft (und nicht unterbrochen ist)."""
+    stand = fortschritt()
+    return bool(stand and stand.get("laeuft") and not stand.get("unterbrochen"))
+
+
 def stapel_im_prozess(zeit_je_antrag: int = ZEIT_JE_ANTRAG) -> None:
     """Die offenen Anträge der Reihe nach prüfen – gedacht als **eigener Prozess** (Management-
     Befehl ``ausweise_pruefen``), damit ein Absturz oder Hänger an einem Nachweis nur diesen Prozess

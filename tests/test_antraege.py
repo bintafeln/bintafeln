@@ -969,6 +969,32 @@ def test_ausweis_scan_liste_bulk_banner_und_automatik(admin_client, monkeypatch)
     assert antrag.staatsangehoerigkeit == "Ukraine" and not antrag.ausweis_abweichung
 
 
+def test_ausweise_pruefen_alle_ehrliche_rueckmeldung(admin_client, monkeypatch):
+    """„Alle Ausweise prüfen“ meldet ehrlich: nichts zu tun vs. für N Anträge gestartet – statt
+    immer „läuft im Hintergrund“, obwohl kein Fortschritt kommt (ADR 0107)."""
+    from apps.antraege import ausweis_pruefung, ausweis_scan
+    from apps.antraege.models import AntragEinstellungen
+
+    e = AntragEinstellungen.laden()
+    e.ausweis_pruefen = True
+    e.save()
+    monkeypatch.setattr(ausweis_pruefung, "tesseract_vorhanden", lambda: True)
+    from django.core.cache import cache
+
+    cache.clear()  # kein Lauf aus einem früheren Test im gemeinsamen Cache
+    url = reverse("antraege:ausweise_pruefen_alle")
+
+    # Keine offenen Anträge → ehrliche „nichts zu tun“-Meldung (kein „gestartet“).
+    seite = admin_client.post(url, follow=True).content.decode()
+    assert "bereits geprüft" in seite and "gestartet" not in seite
+
+    # Ein noch nicht geprüfter Antrag → Start mit Anzahl (Lauf selbst hier nicht ausführen).
+    monkeypatch.setattr(ausweis_scan, "alle_pruefen_starten", lambda: None)
+    _antrag_mit_ausweis("Deutschland")
+    seite = admin_client.post(url, follow=True).content.decode()
+    assert "1 noch nicht" in seite and "gestartet" in seite
+
+
 def test_ausweis_scan_setzt_nach_unterbrechung_fort(admin_client, monkeypatch):
     """Ein durch einen Neustart (Update) abgebrochener Sammellauf wird beim nächsten Aufruf der
     Antragsliste automatisch fortgesetzt und prüft nur die noch offenen Anträge (ADR 0107)."""
