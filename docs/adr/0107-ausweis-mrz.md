@@ -108,3 +108,11 @@ um Fehltreffer zu vermeiden.
 Der so gewonnene Befund ist bewusst als **schwächerer Hinweis** markiert (`nur_feld=True`, keine
 Prüfziffern geprüft) und im Ergebnis entsprechend gekennzeichnet. Das hebt die Trefferquote
 deutlich, ohne je etwas automatisch zu entscheiden – die MRZ-Prüfung bleibt die erste Wahl.
+
+## Nachtrag: „Alle neu prüfen“ (rückwirkend)
+
+Ein normaler Lauf prüft nur noch nicht geprüfte Anträge (fortsetzbar). Mit **„Alle neu prüfen“**
+(`ausweis_scan.alle_neu_pruefen_starten`) setzt bintafeln die Einordnung aller noch nicht
+**erledigten** Anträge zurück (`ausweis_geprueft_am`/`ausweis_befund` leer) und liest sie neu, sodass
+eine verbesserte Erkennung (z. B. Bescheid-Stichwörter, Staatsangehörigkeits-Feld) nachträglich
+greift. Von Hand erledigte Fälle bleiben unberührt.

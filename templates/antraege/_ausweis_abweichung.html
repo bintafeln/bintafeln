@@ -25,6 +25,13 @@
     </form>
     {% endif %}
   </div>
+  {% if "antraege.bearbeiten" in rechte %}
+  <form method="post" action="{% url 'antraege:ausweis_als_bescheid' a.pk %}" class="inline"
+        onsubmit="return confirm('Diesen Nachweis als Bescheid (kein Ausweis) einordnen? Der Hinweis verschwindet dann.')">
+    {% csrf_token %}
+    <button type="submit" class="knopf knopf-zweitrangig" title="Das ist kein Ausweis, sondern ein Bescheid – Hinweis wegräumen">📄 Ist ein Bescheid, kein Ausweis</button>
+  </form>
+  {% endif %}
   <div id="ausweis-abweichung-antwort"></div>
   <p class="hinweis">Nur ein Hinweis aus dem Dokument; die Entscheidung trifft ein Mensch.</p>
 </section>

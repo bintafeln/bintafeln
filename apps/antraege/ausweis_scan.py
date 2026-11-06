@@ -354,6 +354,21 @@ def alle_pruefen_starten() -> None:
     _im_hintergrund(alle_pruefen_jetzt)
 
 
+def alle_neu_pruefen_starten() -> int:
+    """Rückwirkend **alle** noch nicht entschiedenen Anträge erneut prüfen – auch schon geprüfte
+    (ADR 0107). Dazu wird ihre Einordnung zurückgesetzt (``ausweis_geprueft_am``/``ausweis_befund``
+    leer), sodass der normale Lauf sie als „offen“ erneut liest. So greift eine verbesserte
+    Erkennung nachträglich. Von Hand erledigte Fälle (``ausweis_erledigt``) bleiben unberührt.
+    Liefert die Zahl der zurückgesetzten Anträge."""
+    from apps.antraege.models import Antrag
+
+    anzahl = Antrag.objects.filter(ausweis_erledigt=False).update(
+        ausweis_geprueft_am=None, ausweis_befund=""
+    )
+    alle_pruefen_starten()
+    return anzahl
+
+
 def fortsetzen_wenn_unterbrochen() -> bool:
     """Einen durch einen Neustart (Update) abgebrochenen Sammellauf im Hintergrund fortsetzen.
     Liefert True, wenn gerade fortgesetzt wurde. Wird bei jedem Aufruf der Antragsliste und des

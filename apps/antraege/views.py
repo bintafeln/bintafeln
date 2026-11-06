@@ -387,6 +387,42 @@ def ausweise_pruefen_alle(request):
     return redirect("antraege:liste")
 
 
+@require_POST
+@rollen.recht_erforderlich("antraege.bearbeiten")
+def ausweise_neu_pruefen_alle(request):
+    """Rückwirkend ALLE Anträge erneut prüfen – auch schon geprüfte (ADR 0107), damit eine
+    verbesserte Erkennung nachträglich greift. Von Hand erledigte Fälle bleiben unberührt."""
+    if not ausweis_scan.aktiv():
+        messages.error(
+            request, "Die Ausweisprüfung ist nicht eingeschaltet (Antragseinstellungen)."
+        )
+    elif ausweis_scan.laeuft_schon():
+        messages.info(request, "Die Ausweisprüfung läuft bereits – der Fortschritt steht oben.")
+    else:
+        anzahl = ausweis_scan.alle_neu_pruefen_starten()
+        messages.success(
+            request,
+            f"Alle {anzahl} Anträge werden neu geprüft – auch schon geprüfte werden erneut "
+            "gelesen. Der Fortschritt erscheint oben.",
+        )
+    return redirect("antraege:liste")
+
+
+@require_POST
+@rollen.recht_erforderlich("antraege.bearbeiten")
+def ausweis_als_bescheid(request, pk):
+    """Einen Antrag von Hand als Bescheid (Amtsdokument) einordnen – der Nachweis ist kein Ausweis
+    (ADR 0112). Räumt den Abweichungs-Hinweis weg und hakt den Fall ab; nichts am Antrag ändert
+    sich. Von der Antragsseite aus, wenn kein Ausweis, sondern ein Bescheid hochgeladen wurde."""
+    a = get_object_or_404(Antrag, pk=pk)
+    a.ausweis_abweichung = False
+    a.ausweis_befund = "amtsdokument"
+    a.ausweis_erledigt = True
+    a.save(update_fields=["ausweis_abweichung", "ausweis_befund", "ausweis_erledigt"])
+    messages.success(request, "Als Bescheid (kein Ausweis) eingeordnet – der Hinweis ist weg.")
+    return redirect("antraege:antrag", pk=a.pk)
+
+
 @rollen.recht_erforderlich("antraege.sehen")
 def ausweis_fortschritt(request):
     """Stand der laufenden Sammelprüfung (htmx, lädt sich selbst nach, bis fertig)."""

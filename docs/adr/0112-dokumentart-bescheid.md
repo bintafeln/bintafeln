@@ -60,3 +60,11 @@ Befund auf `amtsdokument` und hakt den Fall ab (`ausweis_entscheiden`, Aktion `a
 landet auch ein nicht automatisch erkannter Bescheid mit einem Klick bei den Amtsdokumenten, statt
 die unklare Liste zu belasten. Es bleibt eine reine Einordnung durch den Menschen; am Antrag selbst
 ändert sich nichts.
+
+## Nachtrag: Bescheid auch von der Antragsseite
+
+Nicht jeder Bescheid landet in der unklaren Liste – manche werden als Ausweis mit abweichender
+Staatsangehörigkeit erkannt. Deshalb steht der Hinweis-Banner auf der **Antragsseite** jetzt neben
+„Im Antrag übernehmen“ auch **„Ist ein Bescheid, kein Ausweis“** (`ausweis_als_bescheid`): Er setzt
+den Befund auf `amtsdokument`, hakt den Fall ab und räumt den Hinweis weg – so lässt sich ein
+Bescheid auch beim Durchsehen eines einzelnen Antrags einordnen, nicht nur auf der Sammel-Seite.

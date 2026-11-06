@@ -995,6 +995,53 @@ def test_ausweise_pruefen_alle_ehrliche_rueckmeldung(admin_client, monkeypatch):
     assert "1 noch nicht" in seite and "gestartet" in seite
 
 
+def test_alle_neu_pruefen_setzt_zurueck(admin_client, monkeypatch):
+    """„Alle neu prüfen“ setzt die Einordnung geprüfter Anträge zurück und startet neu; von Hand
+    erledigte bleiben unberührt (ADR 0107)."""
+    from django.core.cache import cache
+
+    from apps.antraege import ausweis_pruefung, ausweis_scan
+    from apps.antraege.models import AntragEinstellungen
+
+    e = AntragEinstellungen.laden()
+    e.ausweis_pruefen = True
+    e.save()
+    monkeypatch.setattr(ausweis_pruefung, "tesseract_vorhanden", lambda: True)
+    monkeypatch.setattr(ausweis_scan, "alle_pruefen_starten", lambda: None)  # Lauf nicht ausführen
+    cache.clear()
+
+    geprueft = _antrag_mit_ausweis("Deutschland")
+    geprueft.ausweis_geprueft_am = timezone.now()
+    geprueft.ausweis_befund = "amtsdokument"
+    geprueft.save()
+    erledigt = _antrag_mit_ausweis("Deutschland")
+    erledigt.ausweis_geprueft_am = timezone.now()
+    erledigt.ausweis_befund = "unklar"
+    erledigt.ausweis_erledigt = True
+    erledigt.save()
+
+    seite = admin_client.post(reverse("antraege:ausweise_neu_pruefen_alle"), follow=True)
+    seite = seite.content.decode()
+    assert "neu geprüft" in seite
+    geprueft.refresh_from_db()
+    erledigt.refresh_from_db()
+    assert geprueft.ausweis_geprueft_am is None and geprueft.ausweis_befund == ""  # zurückgesetzt
+    assert erledigt.ausweis_befund == "unklar" and erledigt.ausweis_erledigt  # unberührt
+
+
+def test_ausweis_als_bescheid_von_antragsseite(admin_client):
+    """Von der Antragsseite einen Nachweis als Bescheid einordnen: Befund amtsdokument, abgehakt,
+    Abweichung weg (ADR 0112)."""
+    a = _antrag_mit_ausweis("Deutschland")
+    a.ausweis_abweichung = True
+    a.ausweis_staat = "Ukraine"
+    a.save()
+    antwort = admin_client.post(reverse("antraege:ausweis_als_bescheid", args=[a.pk]))
+    assert antwort.status_code == 302
+    a.refresh_from_db()
+    assert a.ausweis_befund == "amtsdokument" and a.ausweis_erledigt and not a.ausweis_abweichung
+
+
 def test_ausweis_scan_setzt_nach_unterbrechung_fort(admin_client, monkeypatch):
     """Ein durch einen Neustart (Update) abgebrochener Sammellauf wird beim nächsten Aufruf der
     Antragsliste automatisch fortgesetzt und prüft nur die noch offenen Anträge (ADR 0107)."""
