@@ -1747,3 +1747,9 @@ details.amtsdokumente > summary { cursor: pointer; margin: .5rem 0; }
 @media (max-width: 560px) {
   .ausweis-aktion .knopf-klein { flex: 1 1 auto; }  /* Knöpfe füllen die Breite, leicht treffbar */
 }
+
+/* Eingeklappte, selten gebrauchte Werkzeuge im Listenkopf (Import/Sammelprüfung) */
+.listen-werkzeuge { display: inline-block; }
+.listen-werkzeuge > summary { display: inline-block; list-style: none; cursor: pointer; }
+.listen-werkzeuge > summary::-webkit-details-marker { display: none; }
+.listen-werkzeuge-inhalt { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
