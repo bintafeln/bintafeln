@@ -972,6 +972,12 @@ class AusweisVorlage(models.Model):
         "Hintergrundbild vorn", upload_to="oeffentlich/ausweis/", blank=True,
         help_text="PNG oder JPG, höchstens 2 MB; wird auf Kartengröße (85,6 × 54 mm) gestreckt.",
     )  # fmt: skip
+    gruppe_termin_anhaengen = models.BooleanField(
+        "Tag und Uhrzeit an den Gruppennamen anhängen", default=True,
+        help_text="Hängt an die Kundengruppe auf dem Ausweis Wochentag und Uhrzeit an "
+        "(z. B. „Zentrale · Mo, 12:30 Uhr“). Ausschalten, wenn der Gruppenname Tag und Uhrzeit "
+        "schon enthält (z. B. „Zentrale Montag 12:30 Uhr“) – dann steht nur der Name da.",
+    )  # fmt: skip
     rueckseite_aktiv = models.BooleanField("Rückseite drucken", default=False)
     hintergrund_rueckseite = models.ImageField(
         "Hintergrundbild hinten", upload_to="oeffentlich/ausweis/", blank=True

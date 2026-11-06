@@ -163,6 +163,19 @@ def test_personen_und_minderjaehrige(gruppe):
     assert not ausweis.BEISPIEL["kundengruppe"].startswith("Gruppe ")
 
 
+def test_ausweis_gruppe_termin_abschaltbar(gruppe):
+    """Ist „Tag/Uhrzeit anhängen“ aus, steht nur der Gruppenname auf dem Ausweis – praktisch, wenn
+    der Name Tag und Uhrzeit schon enthält."""
+    from apps.core.models import TafelEinstellungen
+
+    v = AusweisVorlage.laden()
+    v.gruppe_termin_anhaengen = False
+    v.save()
+    h = Haushalt.objects.get(kundennummer="A-1")
+    w = ausweis.werte(h, TafelEinstellungen.laden(), v)
+    assert w["kundengruppe"] == "Montag"  # ohne „· Mo“
+
+
 def test_ausgabestelle_adresse(gruppe):
     from apps.core.models import TafelEinstellungen
     from apps.kunden.models import Ausgabestelle
