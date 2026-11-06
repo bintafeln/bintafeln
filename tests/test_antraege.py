@@ -768,6 +768,23 @@ def test_ausweis_abweichung_und_uebernehmen(admin_client, antrag, monkeypatch):
 _UKR = {"erkannt": True, "staatsangehoerigkeit": "Ukraine"}  # erfundener MRZ-Bericht für Tests
 
 
+def test_ausweis_scan_muell_lesung_keine_abweichung(monkeypatch):
+    """OCR-Müll (kein echtes Land, z. B. „OSI“) wird nicht als Abweichung gewertet, sondern landet
+    bei „unklar“ – sonst reihenweise Falsch-Abweichungen (ADR 0107)."""
+    from apps.antraege import ausweis_pruefung, ausweis_scan
+
+    monkeypatch.setattr(
+        ausweis_pruefung, "pruefen", lambda inhalt, *a, **k: {"erkannt": True,
+                                                              "staatsangehoerigkeit": "OSI"}
+    )  # fmt: skip
+    monkeypatch.setattr(ausweis_pruefung, "ist_amtsdokument", lambda inhalt, typ: False)
+    antrag = _antrag_mit_ausweis("Ukraine")
+    assert ausweis_scan.antrag_pruefen(antrag) is False
+    antrag.refresh_from_db()
+    assert not antrag.ausweis_abweichung
+    assert antrag.ausweis_staat == "" and antrag.ausweis_befund == "unklar"
+
+
 def _antrag_mit_ausweis(haupt="Deutschland", personen=()):
     from apps.antraege.models import Antrag, AntragAnhang, AntragPerson
 

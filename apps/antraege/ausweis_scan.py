@@ -72,6 +72,7 @@ def antrag_pruefen(antrag) -> bool:
     """Prüft alle Bild-Nachweise des Antrags und speichert das Ergebnis am Antrag. Liefert True,
     wenn eine Abweichung gefunden wurde. Fehler werden verschluckt (nur ein Hinweis)."""
     from apps.antraege import ausweis_pruefung
+    from apps.core.auswahl import LAENDERCODE
 
     angegeben = angegebene_staaten(antrag)
     erste = None  # erster lesbarer Ausweis (für die Anzeige, wenn nichts abweicht)
@@ -91,7 +92,10 @@ def antrag_pruefen(antrag) -> bool:
             log.warning("Ausweisprüfung für Antrag %s fehlgeschlagen: %s", antrag.pk, fehler)
             continue
         staat = bericht.get("staatsangehoerigkeit", "") if bericht.get("erkannt") else ""
-        if not staat:
+        # Nur ein echtes Land werten. OCR liest aus der MRZ oft Müll (z. B. „OSI“, „662“); das als
+        # Staatsangehörigkeit zu nehmen erzeugt reihenweise Falsch-Abweichungen. Unbekanntes → wie
+        # „nichts erkannt“ behandeln (der Fall landet dann bei „unklar“, nicht bei „Abweichung“).
+        if not staat or staat not in LAENDERCODE:
             continue
         if erste is None:
             erste = (d, staat)
