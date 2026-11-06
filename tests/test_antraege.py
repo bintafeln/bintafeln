@@ -909,6 +909,12 @@ def test_ausweis_sammelseite_gruppen(admin_client):
     un2.refresh_from_db()
     assert un2.ausweis_befund == "amtsdokument" and un2.ausweis_erledigt
 
+    # „Ist ein Bescheid“ steht auch bei einer Abweichung (Fehllesung ist oft ein Bescheid).
+    admin_client.post(reverse("antraege:ausweis_entscheiden", args=[ab.pk]),
+                      {"aktion": "amtsdokument"})  # fmt: skip
+    ab.refresh_from_db()
+    assert ab.ausweis_befund == "amtsdokument" and ab.ausweis_erledigt and not ab.ausweis_abweichung
+
 
 def test_ausweis_scan_keine_abweichung(monkeypatch):
     from apps.antraege import ausweis_pruefung, ausweis_scan
