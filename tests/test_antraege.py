@@ -866,6 +866,33 @@ def test_ausweis_scan_setzt_nach_unterbrechung_fort(admin_client, monkeypatch):
     assert stand["fertig"] == 2 and stand["abweichungen"] == 1
 
 
+def test_ausweis_scan_ueberspringt_fehler_und_haengt_nicht(monkeypatch):
+    """Ein Antrag, dessen Prüfung einen Fehler wirft, hält den Sammellauf nicht an: er wird
+    übersprungen, trotzdem als geprüft markiert und der Lauf läuft weiter – sonst bliebe er bei
+    jedem Neustart an genau dieser Stelle hängen (ADR 0107)."""
+    from apps.antraege import ausweis_scan
+    from apps.antraege.models import Antrag
+
+    a = Antrag.objects.create(vorname="A", nachname="Eins", staatsangehoerigkeit="Deutschland")
+    b = Antrag.objects.create(vorname="B", nachname="Zwei", staatsangehoerigkeit="Deutschland")
+
+    def pruefen(antrag):
+        if antrag.pk == a.pk:
+            raise RuntimeError("Nachweis nicht lesbar")  # simuliert den Absturz-Antrag
+        antrag.ausweis_geprueft_am = timezone.now()
+        antrag.save(update_fields=["ausweis_geprueft_am"])
+        return False
+
+    monkeypatch.setattr(ausweis_scan, "antrag_pruefen", pruefen)
+    ausweis_scan.alle_pruefen_jetzt()
+
+    a.refresh_from_db()
+    b.refresh_from_db()
+    assert a.ausweis_geprueft_am and b.ausweis_geprueft_am  # auch der fehlerhafte ist geprüft
+    stand = ausweis_scan.fortschritt()
+    assert not stand["laeuft"] and stand["fertig"] == stand["gesamt"] == 2
+
+
 _IMPORT_CSV = (
     "nummer;vorname;nachname;geburtsdatum;staatsangehoerigkeit;personen;nachricht;anmerkung\n"
     "500;Anna;Muster;1980-05-01;Deutschland;Kind Muster 2015-03-04 (Ukraine) | Opa Muster;Bitte anrufen;intern\n"  # noqa: E501

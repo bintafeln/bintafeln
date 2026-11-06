@@ -6,12 +6,15 @@ Rechteprüfung, die jeden Abruf protokollieren.
 """
 
 import io
+import logging
 import uuid
 from pathlib import Path
 
 from django.conf import settings
 
 from apps.core import geheimnis
+
+log = logging.getLogger(__name__)
 
 FOTO_ODER_PDF = {"image/jpeg", "image/png", "image/webp", "application/pdf"}
 
@@ -55,11 +58,22 @@ def _foto_verkleinern(daten: bytes, typ: str) -> bytes:
 
 
 def lesen(ordner: str, name: str) -> bytes | None:
-    """Entschlüsselter Inhalt oder None, wenn nicht vorhanden oder nicht mehr lesbar."""
+    """Entschlüsselter Inhalt oder None, wenn nicht vorhanden oder nicht mehr lesbar.
+
+    „Nicht mehr lesbar“ heißt auch: beschädigt oder mit einem anderen Schlüssel verschlüsselt –
+    dann wirft die Entschlüsselung. Das wird hier abgefangen und als None gemeldet (wie im
+    Docstring zugesagt), damit eine einzelne kaputte Datei keinen Aufrufer abstürzen lässt (z. B.
+    die Sammel-Ausweisprüfung, ADR 0107)."""
     if not name:
         return None
     datei = pfad(ordner, name)
-    return geheimnis.bytes_entschluesseln(datei.read_bytes()) if datei.exists() else None
+    if not datei.exists():
+        return None
+    try:
+        return geheimnis.bytes_entschluesseln(datei.read_bytes())
+    except Exception as fehler:  # noqa: BLE001 – beschädigt/falscher Schlüssel/Lesefehler → None
+        log.warning("Private Datei %s/%s nicht lesbar: %s", ordner, name, fehler)
+        return None
 
 
 def loeschen(ordner: str, name: str) -> None:
