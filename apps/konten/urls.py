@@ -29,7 +29,17 @@ urlpatterns = [
     path("mitarbeitende/archiv/", views_mitarbeitende.archiv, name="mitarbeitende_archiv"),
     path("mitarbeitende/spalten/", views_mitarbeitende.spalten, name="mitarbeitende_spalten"),
     path("mitarbeitende/neu/", views_mitarbeitende.anlegen, name="mitarbeiter_neu"),
+    path(
+        "mitarbeitende/zugaenge-freigeben/",
+        views_mitarbeitende.zugaenge_freigeben,
+        name="zugaenge_freigeben",
+    ),
     path("mitarbeitende/<int:pk>/", views_mitarbeitende.bearbeiten, name="mitarbeiter"),
+    path(
+        "mitarbeitende/<int:pk>/freigeben/",
+        views_mitarbeitende.freigeben,
+        name="zugang_freigeben",
+    ),
     path("mitarbeitende/<int:pk>/sperren/", views_mitarbeitende.sperren, name="sperren"),
     path(
         "mitarbeitende/<int:pk>/werkseinstellungen/",

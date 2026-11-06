@@ -26,7 +26,21 @@
 <section class="karte">
   <h2>Zugang</h2>
   <p>Dabei seit {{ ziel.date_joined|date:"d.m.Y" }} · letzte Anmeldung {{ ziel.last_login|date:"d.m.Y H:i"|default:"noch nie" }}
-    · Zwei-Faktor {{ zwei_faktor|yesno:"eingerichtet,nicht eingerichtet" }}{% if ziel.passwort_aendern %} · Startpasswort noch nicht geändert{% endif %}</p>
+    · Zwei-Faktor {{ zwei_faktor|yesno:"eingerichtet,nicht eingerichtet" }}{% if ziel.passwort_aendern %} · Startpasswort noch nicht geändert{% endif %}
+    {% if not ziel.has_usable_password %}· <strong>Online-Zugang noch nicht freigeschaltet</strong>{% endif %}</p>
+  {% if not ziel.has_usable_password %}
+  <p class="hinweis">Dieses Konto kann sich noch nicht anmelden. „Online-Zugang freigeben“ setzt als
+    vorläufiges Passwort das <strong>Geburtsdatum</strong> (sonst die <strong>Straße</strong>) und
+    schickt – falls eine E-Mail-Adresse hinterlegt ist – eine Einladung. Beim ersten Anmelden muss
+    ein eigenes Passwort gewählt werden.</p>
+  <div class="aktionen">
+    <form method="post" action="{% url 'konten:zugang_freigeben' ziel.pk %}" class="inline">
+      {% csrf_token %}
+      <button type="submit" class="knopf">Online-Zugang freigeben</button>
+    </form>
+    <a class="knopf knopf-zweitrangig" href="{% url 'konten:zugaenge_freigeben' %}">Alle offenen Zugänge …</a>
+  </div>
+  {% endif %}
   <div class="aktionen">
     <form method="post" action="{% url 'konten:passwort_zuruecksetzen' ziel.pk %}" class="inline"
           onsubmit="return confirm('Neues Startpasswort für {{ ziel|escapejs }} erzeugen? Das bisherige Passwort gilt dann nicht mehr.')">

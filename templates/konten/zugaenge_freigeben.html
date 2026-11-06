@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block titel %}Online-Zugänge freigeben{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <div class="liste-kopf">
+    <h1>Online-Zugänge freigeben</h1>
+    <a class="knopf knopf-zweitrangig" href="{% url 'konten:mitarbeitende' %}">Zur Mitarbeitendenliste</a>
+  </div>
+  <p class="hinweis">Diese Konten können sich noch nicht anmelden. „Ausgewählte freigeben“ setzt je
+    Person als vorläufiges Passwort das <strong>Geburtsdatum</strong> (mit Punkten, z. B. 15.03.1980),
+    sonst die <strong>Straße und Hausnummer</strong>, und schickt – falls eine E-Mail-Adresse
+    hinterlegt ist – eine Einladung an diese Adresse. Beim ersten Anmelden muss ein eigenes,
+    sicheres Passwort gewählt werden.</p>
+
+  {% if konten %}
+  <form method="post">
+    {% csrf_token %}
+    <table class="liste">
+      <thead><tr>
+        <th><input type="checkbox" id="alle" aria-label="Alle auswählen"></th>
+        <th>Name</th><th>Benutzername</th><th>E-Mail</th><th>Vorläufiges Passwort</th>
+      </tr></thead>
+      <tbody>
+      {% for k in konten %}
+        <tr>
+          <td><input type="checkbox" name="id" value="{{ k.b.pk }}"
+                     {% if k.sd.geburtsdatum or k.sd.strasse %}checked{% endif %}></td>
+          <td><a href="{% url 'konten:mitarbeiter' k.b.pk %}">{{ k.b.last_name|default:k.b.username }}{% if k.b.first_name %}, {{ k.b.first_name }}{% endif %}</a></td>
+          <td>{{ k.b.username }}</td>
+          <td>{% if k.b.email %}{{ k.b.email }}{% else %}<span class="marke-warnung">keine E-Mail</span>{% endif %}</td>
+          <td>{% if k.sd.geburtsdatum %}Geburtsdatum{% elif k.sd.strasse %}Straße{% else %}<span class="marke-warnung">fehlt – bitte nachtragen</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p><button type="submit" class="knopf">Ausgewählte freigeben</button></p>
+  </form>
+  <script>
+    document.getElementById("alle").addEventListener("change", function (e) {
+      document.querySelectorAll('input[name="id"]').forEach(function (k) { k.checked = e.target.checked; });
+    });
+  </script>
+  {% else %}
+  <p class="hinweis">Alle Konten sind freigeschaltet. 🎉</p>
+  {% endif %}
+</section>
+{% endblock %}

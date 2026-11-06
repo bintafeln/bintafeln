@@ -16,6 +16,7 @@
       dabei war und was eingetragen hat (Änderungsprotokoll, Abholungen, Buchungen).</p>
   {% else %}
     <p><a class="knopf" href="{% url 'konten:mitarbeiter_neu' %}{% if art %}?art={{ art }}{% endif %}">{% if art == 'fest' %}Angestellte anlegen{% elif art == 'ehrenamtlich' %}Ehrenamtliche anlegen{% else %}Konto anlegen{% endif %}</a>
+      <a class="knopf knopf-zweitrangig" href="{% url 'konten:zugaenge_freigeben' %}">Online-Zugänge freigeben</a>
       {% if "einstellungen.personal" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'konten:personal_einstellungen' %}">Fristen einstellen</a>{% endif %}</p>
     {% if faellig %}
     <div class="faellig">
