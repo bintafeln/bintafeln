@@ -237,6 +237,12 @@ def stapel_im_prozess(zeit_je_antrag: int = ZEIT_JE_ANTRAG) -> None:
         finally:
             if hat_wecker:
                 signal.alarm(0)
+        # Fortschritt erzwingen: Dieser Antrag darf nach dem Durchlauf nicht erneut als „offen“
+        # gelten – sonst Endlosschleife, falls die Prüfung den Befund nicht gesetzt hat (ADR 0112).
+        # Im Normalfall hat antrag_pruefen den Befund schon gesetzt, dann greift dies nicht.
+        Antrag.objects.filter(pk=pk, ausweis_befund="").update(
+            ausweis_befund="unklar", ausweis_geprueft_am=timezone.now()
+        )
         _cache_stand(True, gesamt)
 
 
