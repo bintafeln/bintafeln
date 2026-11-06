@@ -30,8 +30,10 @@
 
   function hier() { return window.location.pathname + window.location.search; }
 
-  // "Ist ein Bescheid": als Amtsdokument einordnen, auf der aktuellen Seite bleiben.
+  // "Ist ein Bescheid": als Amtsdokument einordnen. Das Popup geht sofort zu (schnelles Gefühl),
+  // die Seite lädt danach im Hintergrund neu, damit die Zeile verschwindet.
   function alsBescheid(url) {
+    dialog.close();
     senden(url, { weiter: hier() }).then(function () { window.location.reload(); });
   }
 
