@@ -165,8 +165,13 @@ FESTE_MERKMALE = [
 NACHRICHT_ANLIEGEN_ALT = {"zugehoerig"}
 NACHRICHT_ANLIEGEN_WAEHLBAR = [a for a in NACHRICHT_ANLIEGEN if a[0] not in NACHRICHT_ANLIEGEN_ALT]
 # Fahrdienst (ADR 0074): warum jemand nicht fahren kann. Den Grund sehen nur, wer plant.
-# Krankmeldung eines Kunden (ADR 0075): Gesundheitsdaten, deshalb nur grob und nur befristet
+# Abwesenheit eines Kunden (ADR 0075): grober Grund, nur befristet. KRANK_GRUENDE sind
+# Gesundheitsdaten (deshalb gesondert behandelt und als „Krank gemeldet“ angezeigt); die übrigen
+# Gründe (Urlaub, verhindert, Sonstiges) sind keine Gesundheitsdaten und heißen „Abwesend“.
 KRANK_GRUENDE = [("krank", "krank"), ("reha", "Reha"), ("krankenhaus", "Krankenhaus")]
+ABWESENHEIT_GRUENDE = KRANK_GRUENDE + [
+    ("urlaub", "Urlaub"), ("verhindert", "verhindert"), ("sonstiges", "Sonstiges"),
+]  # fmt: skip
 FAHRDIENST_AUSFALLGRUENDE = [("krank", "krank"), ("urlaub", "Urlaub"), ("sonstiges", "Sonstiges")]
 # Wie lange ein Ausfall am Aushang-Monitor gilt (apps/core/ausfall.py); „Wochen“ zählt ab dem
 # gewählten Tag, also z. B. dieser und der nächste Mittwoch bei „2 Wochen“
