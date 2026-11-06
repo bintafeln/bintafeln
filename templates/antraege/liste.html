@@ -6,8 +6,7 @@
   <div class="liste-kopf">
     <h1>Anträge <span class="leise">({{ offen_gesamt }} offen)</span></h1>
     {% if "antraege.bearbeiten" in rechte %}
-      {# Selten gebrauchte Werkzeuge (Import, Sammelprüfung) dezent eingeklappt – neue Anträge werden
-         ohnehin automatisch im Hintergrund geprüft, der Knopf ist nur für Sonderfälle nötig. #}
+      {# Selten gebrauchte Werkzeuge (Import, Sammelprüfung) dezent eingeklappt – neue Anträge werden ohnehin automatisch geprüft. #}
       <details class="listen-werkzeuge">
         <summary class="knopf knopf-zweitrangig">Importieren &amp; prüfen …</summary>
         <div class="listen-werkzeuge-inhalt">
