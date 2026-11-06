@@ -50,3 +50,13 @@ bleiben sichtbar. Die Stichwortsuche ist bewusst eine grobe Heuristik auf lokal 
 mehr braucht es für „Bescheid oder nicht“ nicht, und sie verlässt nie den Server. Die Wiedernutzung
 des vorhandenen Scan-Laufs (statt einer zweiten Hintergrund-Maschinerie) hält den Code klein und
 erbt dessen Absturz-/Update-Robustheit.
+
+## Nachtrag: Einordnung von Hand
+
+Die Stichwortsuche erkennt nicht jeden Bescheid (fremde Vordrucke, schlechte Scans). Deshalb kann
+ein Mensch einen unklaren Fall auf der Sammel-Seite selbst einordnen: Neben **„Nichts dran“** (hakt
+ab, ohne etwas am Antrag zu ändern) steht bei unklaren Fällen **„Ist ein Bescheid“** – es setzt den
+Befund auf `amtsdokument` und hakt den Fall ab (`ausweis_entscheiden`, Aktion `amtsdokument`). So
+landet auch ein nicht automatisch erkannter Bescheid mit einem Klick bei den Amtsdokumenten, statt
+die unklare Liste zu belasten. Es bleibt eine reine Einordnung durch den Menschen; am Antrag selbst
+ändert sich nichts.

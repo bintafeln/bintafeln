@@ -437,8 +437,9 @@ def _angegebene_namen(a) -> set[str]:
 def ausweis_entscheiden(request, pk):
     """Eine Abweichung auf der Sammel-Seite abschließen (htmx). ``aktion``:
     - ``uebernehmen``: erkannte Staatsangehörigkeit in den Antrag übernehmen,
-    - ``verwerfen``: nicht übernehmen (Antrag bleibt), Hinweis erledigt.
-    Beide entfernen die Zeile aus der offenen Liste. „Ansehen/Später" ist nur ein Link zum Antrag
+    - ``verwerfen``: nicht übernehmen (Antrag bleibt), Hinweis erledigt,
+    - ``amtsdokument``: den Fall von Hand als Bescheid (Amtsdokument) einordnen und abhaken.
+    Alle entfernen die Zeile aus der offenen Liste. „Ansehen/Später" ist nur ein Link zum Antrag
     und braucht keine Aktion."""
     from apps.core import auswahl
 
@@ -464,6 +465,12 @@ def ausweis_entscheiden(request, pk):
         a.ausweis_erledigt = True
         a.save(update_fields=["ausweis_abweichung", "ausweis_erledigt"])
         text = "Nicht übernommen – Antrag bleibt wie angegeben."
+    elif aktion == "amtsdokument":
+        a.ausweis_abweichung = False
+        a.ausweis_befund = "amtsdokument"
+        a.ausweis_erledigt = True
+        a.save(update_fields=["ausweis_abweichung", "ausweis_befund", "ausweis_erledigt"])
+        text = "Als Bescheid (Amtsdokument) eingeordnet."
     else:
         raise Http404
     return render(request, "antraege/_ausweis_zeile_fertig.html", {"text": text, "fehler": False})
