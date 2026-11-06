@@ -67,6 +67,7 @@ def _urls(stelle, einstellungen) -> dict:
         "stand": r("api_stand", stelle.pk), "status": r("api_status", stelle.pk),
         "starten": r("api_starten", stelle.pk), "weiter": r("api_weiter", stelle.pk),
         "zurueck": r("api_zurueck", stelle.pk), "abfrage": r("api_abfrage", stelle.pk),
+        "fortsetzen": r("api_fortsetzen", stelle.pk),
         "spaetzuender": r("api_spaetzuender", stelle.pk),
         "starten_formular": r("starten", stelle.pk), "weiter_formular": r("weiter", stelle.pk),
         "zurueck_formular": r("zurueck", stelle.pk), "neustart_formular": r("neustart", stelle.pk),
@@ -250,6 +251,15 @@ def api_zurueck(request, stelle, heute):
 
 
 @_api
+def api_fortsetzen(request, stelle, heute):
+    """Eine durch Inaktivität beendete Ausgabe wieder aufnehmen (ohne etwas am Stand zu ändern)."""
+    tag = ablauf.fortsetzen(stelle, heute)
+    return _antwort_nach_schritt(
+        tag, AufrufEinstellungen.laden(stelle), heute, message="Ausgabe fortgesetzt"
+    )
+
+
+@_api
 def api_spaetzuender(request, stelle, heute):
     try:
         nummer = str(json.loads(request.body or b"{}").get("nummer", "")).strip()
@@ -302,7 +312,7 @@ def liste(request, pk):
 
 
 AKTIONEN = {"starten": ablauf.starten, "weiter": ablauf.weiter, "zurueck": ablauf.zurueck,
-            "neustart": ablauf.neu_mischen}  # fmt: skip
+            "neustart": ablauf.neu_mischen, "fortsetzen": ablauf.fortsetzen}  # fmt: skip
 
 
 @never_cache

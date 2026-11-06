@@ -88,6 +88,13 @@ class AufrufEinstellungen(models.Model):
         help_text="Kommt ein Kunde so viele Minuten nach seinem Aufruf zum Einlass, zeigt die "
         "Einlass-Karte „Zu spät“. 0 = nie.",
     )  # fmt: skip
+    beenden_nach_minuten = models.PositiveSmallIntegerField(
+        "Ausgabe automatisch beenden nach (Minuten ohne Aktivität)", default=90,
+        validators=[MaxValueValidator(1440)],
+        help_text="Passiert so lange nichts mehr (kein Aufruf, kein Weiter, kein Kiosk-Scan), gilt "
+        "die Ausgabe als beendet und verschwindet aus Monitor und Menü. 0 = nie automatisch "
+        "beenden. Zum Weitermachen genügt ein Klick auf „Fortsetzen“.",
+    )  # fmt: skip
     wochentag_probe = models.PositiveSmallIntegerField(
         "Probelauf als Wochentag", null=True, blank=True, choices=TAGE,
         help_text="Nur zum Ausprobieren: Der Aufruf nimmt die Kundengruppen dieses Wochentags. "

@@ -87,3 +87,16 @@ manuelles „Weiter“ im Verlauf und lässt sich zurücknehmen. Einstellung `au
 nächsten „Weiter“, auch wenn sie schon am Einlass eingetragen sind
 (`stand_fuer_anzeige(..., eingelassene_zeigen=True)`); alle anderen Anzeigen nehmen sie sofort
 heraus.
+
+## Nachtrag: automatisches Ende bei Inaktivität (2026-11-06)
+
+Eine gestartete Ausgabe blieb bis Mitternacht in Monitor, Kiosk und Kurz-Steuerung stehen, auch
+wenn längst Schluss war. Jetzt gilt sie nach einer einstellbaren Zeit ohne echte Aktivität als
+beendet (`AufrufEinstellungen.beenden_nach_minuten`, Vorgabe 90, 0 = aus). „Aktivität“ ist eine
+Steueraktion (Starten, Weiter, Zurück, Einsortieren) oder ein Kiosk-Scan – bloßes Anzeigen/Abgleichen
+zählt bewusst nicht. Die effektive letzte Aktivität berechnet `ablauf.letzte_aktivitaet` aus
+`gestartet_am`, dem Zeitstempel im Stand (`letzte_aktivitaet`, gesetzt bei Steueraktionen), dem
+letzten „Weiter“ (`rueckgaengig[...].zeitpunkt`) und der neuesten `KioskMeldung`. Ist die Zeit
+überschritten, liefert `stand_fuer_anzeige` `finished` mit `beendet_inaktiv`; Monitor und Menü
+zeigen „Ausgabe beendet“. War es nur eine Pause, nimmt `ablauf.fortsetzen` (Knopf „Fortsetzen“,
+`api_fortsetzen`) die Ausgabe ohne Änderung am Stand wieder auf.
