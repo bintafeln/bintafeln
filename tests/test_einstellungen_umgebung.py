@@ -64,3 +64,24 @@ def test_liste(monkeypatch):
     assert umgebung.liste("X_LISTE") == ["a.example", "b.example"]
     monkeypatch.delenv("X_LISTE")
     assert umgebung.liste("X_LISTE", ["c"]) == ["c"]
+
+
+def test_ganzzahl(monkeypatch):
+    monkeypatch.setenv("X_ZAHL", " 7 ")
+    assert umgebung.ganzzahl("X_ZAHL", 3) == 7
+    monkeypatch.setenv("X_ZAHL", "")
+    assert umgebung.ganzzahl("X_ZAHL", 3) == 3
+    monkeypatch.delenv("X_ZAHL")
+    assert umgebung.ganzzahl("X_ZAHL", 3) == 3
+    monkeypatch.setenv("X_ZAHL", "keine-zahl")
+    with pytest.raises(ImproperlyConfigured):
+        umgebung.ganzzahl("X_ZAHL", 3)
+
+
+def test_ausweis_ressourcen_einstellungen(monkeypatch):
+    s = laden(monkeypatch, BINTAFELN_AUSWEIS_NICE="5", BINTAFELN_AUSWEIS_SPEICHER_MB="800")
+    assert s["AUSWEIS_NICE"] == 5
+    assert s["AUSWEIS_SPEICHER_MB"] == 800
+    s = laden(monkeypatch, BINTAFELN_AUSWEIS_NICE=None, BINTAFELN_AUSWEIS_SPEICHER_MB=None)
+    assert s["AUSWEIS_NICE"] == 10  # Vorgabe
+    assert s["AUSWEIS_SPEICHER_MB"] == 0  # Vorgabe: kein Deckel

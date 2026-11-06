@@ -913,6 +913,71 @@ def test_ausweis_scan_treiber_ueberspringt_abgestuerzten_prozess(monkeypatch):
     assert not stand["laeuft"] and stand["fertig"] == stand["gesamt"] == 2
 
 
+def test_ausweis_scan_ressourcen_begrenzen(monkeypatch, settings):
+    """ressourcen_begrenzen setzt niedrige Priorität und – wenn eingestellt – einen Speicherdeckel
+    für den Prüf-Prozess (ADR 0111)."""
+    import resource
+
+    from apps.antraege import ausweis_scan
+
+    settings.AUSWEIS_NICE = 7
+    settings.AUSWEIS_SPEICHER_MB = 500
+    aufrufe = {}
+    monkeypatch.setattr(ausweis_scan.os, "nice", lambda n: aufrufe.setdefault("nice", n))
+    monkeypatch.setattr(
+        resource, "setrlimit", lambda was, grenzen: aufrufe.setdefault("rlimit", (was, grenzen))
+    )
+    ausweis_scan.ressourcen_begrenzen()
+    assert aufrufe["nice"] == 7
+    assert aufrufe["rlimit"] == (resource.RLIMIT_AS, (500 * 1024 * 1024, 500 * 1024 * 1024))
+
+    # Vorgaben aus: kein Deckel, keine Prioritätsänderung – und kein Fehler.
+    settings.AUSWEIS_NICE = 0
+    settings.AUSWEIS_SPEICHER_MB = 0
+    aufrufe.clear()
+    ausweis_scan.ressourcen_begrenzen()
+    assert aufrufe == {}
+
+
+def test_ausweis_scan_ressourcen_begrenzen_schluckt_fehler(monkeypatch, settings):
+    """Schlägt das Setzen fehl (z. B. fehlende Rechte/Plattform), läuft der Prüf-Prozess trotzdem
+    weiter – der Fehler wird nur protokolliert."""
+    from apps.antraege import ausweis_scan
+
+    settings.AUSWEIS_NICE = 5
+    settings.AUSWEIS_SPEICHER_MB = 0
+
+    def kaputt(n):
+        raise OSError("nicht erlaubt")
+
+    monkeypatch.setattr(ausweis_scan.os, "nice", kaputt)
+    ausweis_scan.ressourcen_begrenzen()  # kein Absturz
+
+
+def test_gunicorn_konfig_liest_umgebung(monkeypatch):
+    """Die gunicorn-Konfig liest Worker/Timeout/Recycling aus der .env, mit sinnvollen Vorgaben
+    und Schutz gegen Unsinn (ADR 0111)."""
+    import runpy
+    from pathlib import Path
+
+    konf = Path(__file__).resolve().parent.parent / "bintafeln" / "gunicorn.conf.py"
+
+    monkeypatch.delenv("BINTAFELN_WORKER", raising=False)
+    monkeypatch.delenv("BINTAFELN_TIMEOUT", raising=False)
+    monkeypatch.delenv("BINTAFELN_MAX_REQUESTS", raising=False)
+    s = runpy.run_path(str(konf))
+    assert s["workers"] == 3 and s["timeout"] == 120 and s["max_requests"] == 1000
+    assert s["max_requests_jitter"] == 100
+
+    monkeypatch.setenv("BINTAFELN_WORKER", "2")
+    monkeypatch.setenv("BINTAFELN_TIMEOUT", "5")  # unter dem Mindestwert
+    monkeypatch.setenv("BINTAFELN_MAX_REQUESTS", "0")  # Recycling aus
+    s = runpy.run_path(str(konf))
+    assert s["workers"] == 2
+    assert s["timeout"] == 30  # auf den Mindestwert angehoben
+    assert s["max_requests"] == 0 and s["max_requests_jitter"] == 0
+
+
 _IMPORT_CSV = (
     "nummer;vorname;nachname;geburtsdatum;staatsangehoerigkeit;personen;nachricht;anmerkung\n"
     "500;Anna;Muster;1980-05-01;Deutschland;Kind Muster 2015-03-04 (Ukraine) | Opa Muster;Bitte anrufen;intern\n"  # noqa: E501

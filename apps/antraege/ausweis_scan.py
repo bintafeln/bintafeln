@@ -19,6 +19,7 @@ beendet, der Antrag wird übersprungen (als geprüft markiert) und der Lauf läu
 """
 
 import logging
+import os
 import threading
 import time
 
@@ -208,6 +209,35 @@ def stapel_im_prozess(zeit_je_antrag: int = ZEIT_JE_ANTRAG) -> None:
             if hat_wecker:
                 signal.alarm(0)
         _cache_stand(True, gesamt)
+
+
+def ressourcen_begrenzen() -> None:
+    """Den eigenen Prozess ausbremsen und – wenn eingestellt – deckeln (ADR 0111).
+
+    Wird zu Beginn des Prüf-Prozesses aufgerufen: niedrige CPU-Priorität (``nice``), damit die
+    rechenintensive Bildprüfung den Einlass nicht ausbremst, und optional ein harter Speicherdeckel
+    (``RLIMIT_AS``), damit ein einzelner Nachweis nie den ganzen Arbeitsspeicher aufbraucht. Läuft
+    der Prozess in den Deckel, beendet das Betriebssystem ihn mit einem Fehler; der Treiber
+    überspringt dann diesen Antrag wie bei einem Absturz. Fehlt die Funktion auf einer Plattform
+    (z. B. Windows), wird der jeweilige Schritt einfach übersprungen."""
+    from django.conf import settings
+
+    nice = getattr(settings, "AUSWEIS_NICE", 0)
+    if nice:
+        try:
+            os.nice(nice)
+        except (AttributeError, OSError) as fehler:  # z. B. Windows oder fehlende Rechte
+            log.debug("Priorität des Prüf-Prozesses nicht gesetzt: %s", fehler)
+
+    speicher_mb = getattr(settings, "AUSWEIS_SPEICHER_MB", 0)
+    if speicher_mb:
+        try:
+            import resource
+
+            grenze = speicher_mb * 1024 * 1024
+            resource.setrlimit(resource.RLIMIT_AS, (grenze, grenze))
+        except (ImportError, ValueError, OSError) as fehler:  # z. B. Windows
+            log.debug("Speicherdeckel des Prüf-Prozesses nicht gesetzt: %s", fehler)
 
 
 def _stapel_starten() -> None:

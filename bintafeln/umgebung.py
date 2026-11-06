@@ -30,6 +30,17 @@ def schalter(name: str, standard: bool = False) -> bool:
     raise ImproperlyConfigured(f"{name} muss true oder false sein, nicht {wert!r}.")
 
 
+def ganzzahl(name: str, standard: int) -> int:
+    """Liest eine Variable als ganze Zahl; leer oder nicht gesetzt → Standardwert."""
+    wert = os.environ.get(name, "").strip()
+    if not wert:
+        return standard
+    try:
+        return int(wert)
+    except ValueError as fehler:
+        raise ImproperlyConfigured(f"{name} muss eine ganze Zahl sein, nicht {wert!r}.") from fehler
+
+
 def liste(name: str, standard: list[str] | None = None) -> list[str]:
     wert = os.environ.get(name, "").strip()
     if not wert:
