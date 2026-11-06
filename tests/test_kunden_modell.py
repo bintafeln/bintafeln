@@ -147,6 +147,25 @@ def test_alter_und_kind(haushalt):
     assert str(p) == "Mia Mustermann"
 
 
+def test_alter_farbklasse(haushalt):
+    """Altersangabe am Einlass: Geschlecht aus der Anrede + Altersband ergeben die CSS-Klasse."""
+    p = Person(haushalt=haushalt, vorname="Mia", nachname="Mustermann")
+    assert p.alter_farbklasse(STICHTAG) == ""  # ohne Geburtsdatum keine Farbe
+    p.geburtsdatum = dt.date(2015, 1, 1)  # Kind
+    p.anrede = "Frau"
+    assert p.alter_farbklasse(STICHTAG) == "alter-w-jung"
+    p.anrede = "Herr"
+    assert p.alter_farbklasse(STICHTAG) == "alter-m-jung"
+    p.geburtsdatum = dt.date(1990, 1, 1)  # 18–65
+    assert p.alter_farbklasse(STICHTAG) == "alter-m-mittel"
+    p.geburtsdatum = dt.date(1940, 1, 1)  # über 65
+    assert p.alter_farbklasse(STICHTAG) == "alter-m-alt"
+    p.anrede = "Divers"  # kein bekanntes Geschlecht → neutral
+    assert p.alter_farbklasse(STICHTAG) == "alter-n-alt"
+    p.anrede = ""
+    assert p.alter_farbklasse(STICHTAG) == "alter-n-alt"
+
+
 def test_groesse_aus_personen(haushalt):
     Person.objects.create(
         haushalt=haushalt,

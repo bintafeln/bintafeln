@@ -403,8 +403,12 @@ def test_einlass_zeigt_angaben_und_notizen(ausgabe, haushalt):
     assert "1 Erwachsene, 1 Kind" in inhalt and "Kai Muster, geb. 01.01.2016" in inhalt
     # Hinter dem Geburtsdatum steht das aktuelle Alter je Person (berechnet, nicht fest).
     kai = Person.objects.get(vorname="Kai")
-    assert f"geb. 06.05.1970 ({hp.alter()} Jahre)" in inhalt
-    assert f"geb. 01.01.2016 ({kai.alter()} Jahre)" in inhalt
+
+    def chip(p):  # Alter als farbiges Chip hinter dem Geburtsdatum
+        return f'<span class="alter-chip {p.alter_farbklasse()}">{p.alter()} Jahre</span>'
+
+    assert f"geb. 06.05.1970 {chip(hp)}" in inhalt
+    assert f"geb. 01.01.2016 {chip(kai)}" in inhalt
     assert "Ausgabestelle Mitte · Jeden Tag" in inhalt and "Karte gültig bis" in inhalt
     assert "Erfundene Gasse" not in inhalt and "Keine Notizen." in inhalt
     url = reverse("ausgabe:notiz", args=["00042"])
