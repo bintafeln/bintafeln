@@ -151,8 +151,15 @@ def alle_pruefen_jetzt() -> int:
     cache.set(CACHE_SCHLUESSEL, stand, CACHE_DAUER)
     for pk in offen:
         antrag = Antrag.objects.filter(pk=pk).first()
-        if antrag and antrag_pruefen(antrag):
-            stand["abweichungen"] += 1
+        if antrag:
+            try:
+                if antrag_pruefen(antrag):
+                    stand["abweichungen"] += 1
+            except Exception as fehler:  # noqa: BLE001 – ein Antrag darf den Lauf nie anhalten
+                # Fehlgeschlagenen Antrag trotzdem als geprüft markieren, sonst bleibt der Lauf bei
+                # jedem Neustart an genau dieser Stelle hängen.
+                log.warning("Ausweisprüfung für Antrag %s übersprungen: %s", pk, fehler)
+                Antrag.objects.filter(pk=pk).update(ausweis_geprueft_am=timezone.now())
         stand["fertig"] += 1
         stand["aktualisiert"] = time.time()  # Lebenszeichen
         cache.set(CACHE_SCHLUESSEL, stand, CACHE_DAUER)

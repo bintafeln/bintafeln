@@ -45,6 +45,11 @@ nicht.
   Lebenszeichen (`aktualisiert`, Schwelle `VERWAIST_SEKUNDEN`) als **unterbrochen**, und der nächste
   Aufruf der Antragsliste bzw. das Fortschritt-Polling setzt ihn automatisch an der Abbruchstelle
   fort (`fortsetzen_wenn_unterbrochen()`). Ein verwaister Lauf blockiert den Start-Knopf nicht mehr.
+  **Robust gegen einzelne kaputte Nachweise:** Ein Antrag, dessen Prüfung einen Fehler wirft (z. B.
+  eine beschädigte oder nicht entschlüsselbare Datei), wird übersprungen, trotzdem als geprüft
+  markiert und der Lauf läuft weiter – sonst bliebe er bei jedem Neustart an genau dieser Stelle
+  hängen. Dazu meldet `apps.core.privatdateien.lesen()` eine nicht lesbare Datei als `None` (statt zu
+  werfen), wie sein Docstring zusagt.
   Gefunden wird nur ein **Hinweis**: in der Liste ein Marker „Ausweis ≠"
   neben der Nummer, auf der Antragsseite ein Banner **mit Bild** und – mit `antraege.bearbeiten` –
   die Übernahme der erkannten Staatsangehörigkeit in den Antrag. Wird kein Ausweis gefunden oder

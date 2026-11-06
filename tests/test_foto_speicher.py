@@ -185,3 +185,13 @@ def test_bilder_galerie(admin_client):
     # Verweis von den Tafel-Einstellungen auf die Seite.
     einst = admin_client.get(reverse("core:einstellungen")).content.decode()
     assert f'href="{URL}"' in einst and "Alle Bilder der Tafel ansehen" in einst
+
+
+def test_lesen_beschaedigte_datei_gibt_none():
+    """Eine beschädigte/undecodierbare private Datei wird als None gemeldet, statt zu werfen –
+    sonst würde eine einzelne kaputte Datei z. B. die Sammel-Ausweisprüfung abstürzen lassen."""
+    name = hochladen(foto())
+    assert privatdateien.lesen("test", name) is not None  # normal lesbar
+    privatdateien.pfad("test", name).write_bytes(b"kaputt - kein gueltiger Token")
+    assert privatdateien.lesen("test", name) is None  # beschädigt → None, kein Absturz
+    assert privatdateien.lesen("test", "gibtsnicht") is None  # fehlt → None
