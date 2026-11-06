@@ -593,7 +593,7 @@ def test_einstellungen_und_neue_links(modul_an, admin_client, mitte):
     assert reverse("aufruf:monitor", args=[e.schluessel]) in seite
     antwort = admin_client.post(reverse("aufruf:einstellungen_stelle", args=[mitte.pk]), {
         "aktiv": "on", "anzahl": 4, "spaetzuender_versatz": 20, "vorrang_symbol": "on",
-        "info_rotation": "on",
+        "info_rotation": "on", "beenden_nach_minuten": 90,
         "eingelassene_ausblenden": "on", "wochentag_probe": "", "zu_spaet_minuten": 15,
     })  # fmt: skip
     assert antwort.status_code == 302
@@ -867,6 +867,7 @@ def test_ausgabestelle_ohne_aufruf(modul_an, admin_client, mitte, tag_daten, ben
             "anzahl": 3,
             "spaetzuender_versatz": 30,
             "zu_spaet_minuten": 15,
+            "beenden_nach_minuten": 90,
             "wochentag_probe": "",
         },
     )  # fmt: skip  (ohne „aktiv“ = ausgeschaltet)
