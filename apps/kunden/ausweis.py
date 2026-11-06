@@ -159,8 +159,11 @@ def werte(h, tafel, vorlage) -> dict[str, str]:
     g = h.kundengruppe
     termin = ""
     if g:
-        teile = [t for t in (g.wochentage, f"{g.uhrzeit:%H:%M} Uhr" if g.uhrzeit else "") if t]
-        termin = g.name + (f" · {', '.join(teile)}" if teile else "")
+        termin = g.name
+        if vorlage.gruppe_termin_anhaengen:
+            teile = [t for t in (g.wochentage, f"{g.uhrzeit:%H:%M} Uhr" if g.uhrzeit else "") if t]
+            if teile:
+                termin += f" · {', '.join(teile)}"
     stelle_obj = g.ausgabestelle if g and g.ausgabestelle else None
     stelle = stelle_obj.name if stelle_obj else ""
     stelle_adresse = ""
