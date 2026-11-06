@@ -499,9 +499,9 @@ def _nicht_freigeschaltet():
     Ausgabestellen-Konten."""
     return [
         b
-        for b in get_user_model().objects.filter(stelle__isnull=True).order_by(
-            "last_name", "first_name", "username"
-        )
+        for b in get_user_model()
+        .objects.filter(stelle__isnull=True)
+        .order_by("last_name", "first_name", "username")
         if not b.has_usable_password()
     ]
 
@@ -514,9 +514,7 @@ def zugaenge_freigeben(request):
     if request.method == "POST":
         gewaehlt = {int(x) for x in request.POST.getlist("id") if x.isdigit()}
         offen = {b.pk: b for b in _nicht_freigeschaltet()}
-        anzahl = sum(
-            _freigeben_und_melden(request, offen[pk]) for pk in gewaehlt if pk in offen
-        )
+        anzahl = sum(_freigeben_und_melden(request, offen[pk]) for pk in gewaehlt if pk in offen)
         if not gewaehlt:
             messages.error(request, "Niemand ausgewählt.")
         elif anzahl:
