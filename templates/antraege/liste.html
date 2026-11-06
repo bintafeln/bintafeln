@@ -14,8 +14,12 @@
           <a class="knopf knopf-zweitrangig" href="{% url 'antraege:nachweise_importieren' %}">Nachweise importieren</a>
           {% if ausweis_pruefen %}
           <form method="post" action="{% url 'antraege:ausweise_pruefen_alle' %}" class="inline"
-                onsubmit="return confirm('Alle Anträge auf Ausweise prüfen? Das läuft im Hintergrund und kann je nach Anzahl etwas dauern.')">
+                onsubmit="return confirm('Noch nicht geprüfte Anträge auf Ausweise prüfen? Das läuft im Hintergrund und kann je nach Anzahl etwas dauern.')">
             {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">Alle Ausweise prüfen</button>
+          </form>
+          <form method="post" action="{% url 'antraege:ausweise_neu_pruefen_alle' %}" class="inline"
+                onsubmit="return confirm('Wirklich ALLE Anträge noch einmal prüfen – auch die schon geprüften? Das liest jeden Nachweis neu und kann je nach Anzahl länger dauern.')">
+            {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig" title="Auch schon geprüfte Anträge erneut lesen (z. B. nach verbesserter Erkennung)">Alle neu prüfen</button>
           </form>{% endif %}
         </div>
       </details>
