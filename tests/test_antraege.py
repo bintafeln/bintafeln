@@ -791,6 +791,8 @@ def test_ausweis_sammelseite_und_entscheiden(admin_client, monkeypatch):
     seite = admin_client.get(url).content.decode()
     assert "Ausweisprüfung" in seite
     assert str(a.nummer) in seite and "Ukraine" in seite
+    # Foto-Nachweis öffnet als Popup (data-bild), nicht als neue Seite
+    assert "data-bild" in seite
 
     # Mini-Vorschau liefert ein Bild (lokal gerendert)
     mini = admin_client.get(reverse("antraege:ausweis_miniatur", args=[a.pk]))
