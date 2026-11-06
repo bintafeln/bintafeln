@@ -456,6 +456,78 @@ def passwort_zuruecksetzen(request, pk):
     return _startpasswort_zeigen(request, ziel, passwort, neu=False)
 
 
+# --- Online-Zugang freigeben (ADR 0114) ----------------------------------------------------
+
+
+def _freigeben_und_melden(request, ziel) -> bool:
+    """Ein Konto freigeben und – wenn eine Adresse hinterlegt ist – die Freigabe-Mail schicken.
+    Liefert True bei Erfolg; Meldungen landen in ``messages``."""
+    try:
+        basis = verwaltung.freigeben(request.user, ziel)
+    except verwaltung.VerwaltungsFehler as fehler:
+        messages.error(request, f"{ziel}: {fehler}")
+        return False
+    if not ziel.email:
+        womit = "Geburtsdatum mit Punkten" if basis == "geburtsdatum" else "Straße und Hausnummer"
+        messages.warning(
+            request,
+            f"{ziel} freigeschaltet, aber ohne E-Mail-Adresse – bitte die Zugangsdaten persönlich "
+            f"mitteilen (vorläufiges Passwort = {womit}).",
+        )
+        return True
+    try:
+        einladung.freigabe_senden(request, ziel, basis)
+    except mail.MailFehler as fehler:
+        messages.warning(request, f"{ziel} freigeschaltet, aber Mail nicht gesendet: {fehler}")
+    else:
+        messages.success(request, f"{ziel} freigeschaltet – Einladung an {ziel.email} gesendet.")
+    return True
+
+
+@never_cache
+@require_POST
+@verwalter_erforderlich
+def freigeben(request, pk):
+    """Online-Zugang eines einzelnen Kontos freigeben."""
+    ziel = _ziel(request, pk)
+    _freigeben_und_melden(request, ziel)
+    return redirect("konten:mitarbeiter", pk=ziel.pk)
+
+
+def _nicht_freigeschaltet():
+    """Konten, deren Online-Zugang noch nicht freigegeben ist (kein nutzbares Passwort), ohne die
+    Ausgabestellen-Konten."""
+    return [
+        b
+        for b in get_user_model()
+        .objects.filter(stelle__isnull=True)
+        .order_by("last_name", "first_name", "username")
+        if not b.has_usable_password()
+    ]
+
+
+@never_cache
+@verwalter_erforderlich
+def zugaenge_freigeben(request):
+    """Sammel-Seite: alle noch nicht freigeschalteten Konten mit Haken; „Ausgewählte freigeben“
+    gibt sie auf einmal frei (ADR 0114)."""
+    if request.method == "POST":
+        gewaehlt = {int(x) for x in request.POST.getlist("id") if x.isdigit()}
+        offen = {b.pk: b for b in _nicht_freigeschaltet()}
+        anzahl = sum(_freigeben_und_melden(request, offen[pk]) for pk in gewaehlt if pk in offen)
+        if not gewaehlt:
+            messages.error(request, "Niemand ausgewählt.")
+        elif anzahl:
+            messages.success(request, f"{anzahl} Zugang/Zugänge freigegeben.")
+        return redirect("konten:zugaenge_freigeben")
+    konten = _nicht_freigeschaltet()
+    return render(
+        request,
+        "konten/zugaenge_freigeben.html",
+        {"konten": [{"b": b, "sd": getattr(b, "stammdaten", None)} for b in konten]},
+    )
+
+
 # --- Stammdaten, Führerschein-Kopie, Schulungen (ADR 0017) ---------------------------------
 
 

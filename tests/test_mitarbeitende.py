@@ -548,3 +548,87 @@ def test_mein_konto_verlinkt_passwort_aendern(admin_client):
 def test_zwei_faktor_pflicht_fuer_neue_rollen():
     pflicht = {r.name for r in rollen.alle_rollen() if r.zwei_faktor_pflicht}
     assert rollen.FAHRER not in pflicht and rollen.BEIFAHRER not in pflicht
+
+
+# --- Online-Zugang freigeben (ADR 0114) --------------------------------------------------
+
+
+@pytest.fixture
+def mailserver():
+    """Erfundener Mailserver; in Tests landen Mails im Speicher (django.core.mail.outbox)."""
+    from apps.core import geheimnis
+    from apps.core.models import MailEinstellungen
+
+    e = MailEinstellungen.laden()
+    e.server, e.benutzer, e.absender = "smtp.example.org", "tafel", "tafel@example.org"
+    e.passwort_verschluesselt = geheimnis.verschluesseln("nur-test")
+    e.save()
+    return e
+
+
+def _nicht_freigeschaltet(admin, **daten):
+    """Konto wie aus dem Import: angelegt mit Einladung, also noch ohne nutzbares Passwort."""
+    werte = {"username": "neu", "last_name": "Neu", **daten}
+    ziel, passwort = verwaltung.anlegen(admin, werte, [rollen.AUSGABE], einladung=True)
+    assert passwort is None and not ziel.has_usable_password()
+    return ziel
+
+
+def test_zugang_freigeben_geburtsdatum_und_mail(admin, admin_client, mailserver):
+    import datetime as dt
+
+    from django.core import mail as postfach
+
+    ziel = _nicht_freigeschaltet(admin, email="neu@example.org")
+    ziel.stammdaten.geburtsdatum = dt.date(1980, 7, 22)
+    ziel.stammdaten.save()
+    postfach.outbox.clear()
+    antwort = admin_client.post(url("zugang_freigeben", ziel))
+    assert antwort.status_code == 302
+    ziel.refresh_from_db()
+    assert ziel.has_usable_password() and ziel.passwort_aendern and ziel.is_active
+    assert ziel.check_password("22.07.1980")  # Geburtsdatum mit Punkten
+    assert len(postfach.outbox) == 1 and "neu@example.org" in postfach.outbox[0].to
+    # Nur das Format steht in der Mail, nicht das konkrete Datum.
+    assert "Geburtsdatum" in postfach.outbox[0].body and "22.07.1980" not in postfach.outbox[0].body
+
+
+def test_zugang_freigeben_strasse_fallback_ohne_mail(admin, admin_client):
+    from django.core import mail as postfach
+
+    ziel = _nicht_freigeschaltet(admin)  # keine E-Mail
+    ziel.stammdaten.strasse = "Musterweg 7"  # kein Geburtsdatum → Straße
+    ziel.stammdaten.save()
+    postfach.outbox.clear()
+    admin_client.post(url("zugang_freigeben", ziel))
+    ziel.refresh_from_db()
+    assert ziel.has_usable_password() and ziel.check_password("Musterweg 7")
+    assert postfach.outbox == []  # ohne Adresse keine Mail
+
+
+def test_zugang_freigeben_ohne_daten_abgelehnt(admin, admin_client):
+    ziel = _nicht_freigeschaltet(admin, email="l@example.org")  # weder Geburtsdatum noch Straße
+    admin_client.post(url("zugang_freigeben", ziel), follow=True)
+    ziel.refresh_from_db()
+    assert not ziel.has_usable_password()  # nicht freigegeben
+
+
+def test_zugaenge_freigeben_sammel(admin, admin_client):
+    import datetime as dt
+
+    a = _nicht_freigeschaltet(admin, username="a", last_name="Albrecht", email="a@example.org")
+    b = _nicht_freigeschaltet(admin, username="b", last_name="Bauer", email="b@example.org")
+    for z in (a, b):
+        z.stammdaten.geburtsdatum = dt.date(1970, 1, 2)
+        z.stammdaten.save()
+    seite = admin_client.get(reverse("konten:zugaenge_freigeben")).content.decode()
+    assert "Albrecht" in seite and "Bauer" in seite
+    admin_client.post(reverse("konten:zugaenge_freigeben"), {"id": [a.pk, b.pk]})
+    a.refresh_from_db()
+    b.refresh_from_db()
+    assert a.has_usable_password() and b.has_usable_password()
+
+
+def test_zugang_freigeben_nur_verwalter(als):
+    client, _ = als(rollen.AUSGABE)
+    assert client.get(reverse("konten:zugaenge_freigeben")).status_code == 403
