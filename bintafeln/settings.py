@@ -198,6 +198,13 @@ SICHERUNG_STATUSDATEI = Path(
 # Gemeinsamer Ordner mit dem Dienst "updater" (Update aus der Oberfläche, ADR 0043)
 BETRIEB_ORDNER = Path(umgebung.text("BINTAFELN_BETRIEB_ORDNER", str(BASE_DIR / "data" / "betrieb")))
 
+# Ressourcen für den Ausweisprüf-Prozess (ADR 0107/0111): Er liest Fotos mit speicher- und
+# rechenintensiven Bibliotheken (passporteye/tesseract/scipy). Auf einem kleinen Server läuft er
+# daher mit niedriger Priorität, damit der Einlass flüssig bleibt, und – wenn gesetzt – mit einem
+# harten Speicherdeckel, damit ein einzelner Nachweis nie den ganzen Speicher aufbraucht.
+AUSWEIS_NICE = umgebung.ganzzahl("BINTAFELN_AUSWEIS_NICE", 10)
+AUSWEIS_SPEICHER_MB = umgebung.ganzzahl("BINTAFELN_AUSWEIS_SPEICHER_MB", 0)  # 0 = kein Deckel
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Der Proxy (Caddy) setzt X-Forwarded-Proto; die App ist nur über ihn erreichbar.

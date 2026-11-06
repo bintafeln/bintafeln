@@ -20,4 +20,7 @@ class Command(BaseCommand):
         )  # fmt: skip
 
     def handle(self, *args, **optionen):
+        # Niedrige Priorität und optionaler Speicherdeckel (ADR 0111), damit die Bildprüfung den
+        # Server nicht ausbremst oder überlastet.
+        ausweis_scan.ressourcen_begrenzen()
         ausweis_scan.stapel_im_prozess(optionen["zeit"])

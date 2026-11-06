@@ -205,6 +205,39 @@ Caddy stellt das Zertifikat selbst aus, deshalb warnt der Browser beim ersten Au
 Den angezeigten privaten Schlüssel sicher und getrennt vom Server aufbewahren, siehe
 [Sicherung einrichten](#sicherung-einrichten).
 
+### Servergröße und Swap (wichtig bei kleinen Servern)
+
+bintafeln läuft gut auf einem kleinen VPS. Einige Aufgaben brauchen aber kurzzeitig viel
+Arbeitsspeicher – vor allem die **Ausweisprüfung** (sie liest Ausweis-Fotos mit rechenstarken
+Bibliotheken). Hat der Server **nur 2 GB RAM** und **keinen Swap**, kann der Speicher in solchen
+Spitzen volllaufen; dann reagiert der Server auf nichts mehr und lässt sich nur durch einen
+Neustart beim Hoster wieder erreichen.
+
+Dagegen hilft zweierlei. bintafeln bringt den ersten Teil schon mit: In `docker-compose.yml` hat
+jeder Dienst eine **Speicherobergrenze**. Läuft ein Dienst aus dem Ruder, wird nur dieser Container
+beendet und automatisch neu gestartet – der Server selbst bleibt erreichbar (ADR 0111). Die Grenzen
+lassen sich in der `.env` an die Servergröße anpassen (`BINTAFELN_APP_SPEICHER`, `BINTAFELN_WORKER`;
+siehe Kommentare dort).
+
+Den zweiten Teil – eine **Swap-Datei** – richtet man einmalig auf dem Server ein. Swap ist
+ausgelagerter Speicher auf der Festplatte; er fängt kurze Spitzen ab, statt dass der Server
+einfriert. Einmalig als Benutzer mit `sudo`:
+
+```bash
+sudo fallocate -l 2G /swapfile        # 2 GB Swap-Datei anlegen
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+# Dauerhaft (bleibt nach einem Neustart aktiv):
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+# Schonender swappen (erst spät auf die Platte ausweichen):
+echo 'vm.swappiness=10' | sudo tee /etc/sysctl.d/99-swappiness.conf
+sudo sysctl -p /etc/sysctl.d/99-swappiness.conf
+```
+
+Mit `free -h` lässt sich prüfen, dass unter „Swap“ jetzt 2 GB stehen. Auf einem Server mit 4 GB RAM
+oder mehr ist Swap weniger wichtig, schadet aber nicht.
+
 ## Zwei-Faktor-Anmeldung
 
 Bei der Anmeldung wird zusätzlich zum Passwort ein 6-stelliger Code aus einer

@@ -6,6 +6,9 @@ services:
   db:
     image: postgres:17-alpine
     restart: unless-stopped
+    # Speicherobergrenze (ADR 0111): schützt einen kleinen Server davor, dass ein einzelner Dienst
+    # den gesamten Arbeitsspeicher aufbraucht und die Maschine einfriert.
+    mem_limit: 512m
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-bintafeln}
       POSTGRES_USER: ${POSTGRES_USER:-bintafeln}
@@ -23,6 +26,11 @@ services:
     # Je Installation ein eigenes Abbild, falls mehrere auf einem Server laufen (ADR 0022).
     image: ${COMPOSE_PROJECT_NAME:-bintafeln}:lokal
     restart: unless-stopped
+    # Speicherobergrenze für den Webserver samt Hintergrundarbeit, z. B. der Ausweisprüfung
+    # (ADR 0111). Läuft ein Prozess hier aus dem Ruder, wird nur dieser Container beendet (und per
+    # "restart: unless-stopped" automatisch neu gestartet) – der Server selbst friert nicht ein.
+    # Auf einem größeren Server über BINTAFELN_APP_SPEICHER in der .env erhöhen.
+    mem_limit: ${BINTAFELN_APP_SPEICHER:-1280m}
     depends_on:
       db:
         condition: service_healthy
@@ -61,6 +69,7 @@ services:
     build: docker/backup
     image: ${COMPOSE_PROJECT_NAME:-bintafeln}-backup:lokal
     restart: unless-stopped
+    mem_limit: 256m  # Speicherobergrenze (ADR 0111)
     depends_on:
       db:
         condition: service_healthy
@@ -95,6 +104,7 @@ services:
   proxy:
     image: caddy:2-alpine
     restart: unless-stopped
+    mem_limit: 256m  # Speicherobergrenze (ADR 0111)
     depends_on:
       app:
         condition: service_healthy
@@ -122,6 +132,7 @@ services:
     build: docker/updater
     image: ${COMPOSE_PROJECT_NAME:-bintafeln}-updater:lokal
     restart: unless-stopped
+    mem_limit: 512m  # Speicherobergrenze (ADR 0111); beim Update wird kurz mehr gebraucht
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - .:/projekt
