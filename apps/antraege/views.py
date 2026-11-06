@@ -442,7 +442,7 @@ def ausweis_pruefung_liste(request):
         qs = (
             Antrag.objects.filter(ausweis_erledigt=False, **filter)
             .select_related("ausweis_anhang")
-            .prefetch_related("personen")
+            .prefetch_related("personen", "anhaenge")
             .order_by("eingegangen_am", "pk")
         )
         return [_ausweis_zeile(a) for a in qs]
@@ -455,11 +455,24 @@ def ausweis_pruefung_liste(request):
     return render(request, "antraege/ausweis_pruefung.html", kontext)
 
 
+def _vorschau_anhang(a):
+    """Anhang für die Mini-Vorschau: der beim Scan gewählte Ausweis-Nachweis, sonst der erste
+    Bild-/PDF-Nachweis des Antrags. Bei „unklar“ und Amtsdokumenten wurde kein Ausweis gewählt
+    (``ausweis_anhang`` leer) – dann hilft trotzdem ein Blick auf das hochgeladene Dokument."""
+    anhang = a.ausweis_anhang
+    if anhang and any(t in (anhang.typ or "").lower() for t in ("image", "pdf")):
+        return anhang
+    for d in a.anhaenge.all():
+        if any(t in (d.typ or "").lower() for t in ("image", "pdf")):
+            return d
+    return None
+
+
 def _ausweis_zeile(a) -> dict:
     """Eine Zeile der Sammel-Prüfseite aufbereiten (Vorschau-Angaben, angegeben/erkannt)."""
     from apps.core import auswahl
 
-    anhang = a.ausweis_anhang
+    anhang = _vorschau_anhang(a)
     typ = (anhang.typ or "").lower() if anhang else ""
     return {
         "a": a,
@@ -529,7 +542,7 @@ def ausweis_miniatur(request, pk):
     """Kleine Vorschau des beim Scan gewählten Ausweis-Nachweises (Bild oder erste PDF-Seite),
     lokal gerendert, nicht serverseitig zwischengespeichert (der Nachweis liegt verschlüsselt)."""
     a = get_object_or_404(Antrag, pk=pk)
-    d = a.ausweis_anhang
+    d = _vorschau_anhang(a)
     if d is None:
         raise Http404
     inhalt = privatdateien.lesen(ANHANG_ORDNER, d.datei)

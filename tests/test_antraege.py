@@ -910,6 +910,20 @@ def test_ausweis_sammelseite_gruppen(admin_client):
     assert un2.ausweis_befund == "amtsdokument" and un2.ausweis_erledigt
 
 
+def test_ausweis_vorschau_fallback_ohne_erkannten_ausweis(admin_client):
+    """Unklar (kein Ausweis gewählt, ausweis_anhang leer): die Mini-Vorschau fällt auf den ersten
+    Bild-/PDF-Nachweis des Antrags zurück, damit man das Dokument trotzdem sieht."""
+    un = _antrag_mit_ausweis("Deutschland")  # hat ein Bild, aber keinen gewählten Ausweis
+    un.ausweis_befund = "unklar"
+    un.save()
+    assert un.ausweis_anhang_id is None
+    mini = reverse("antraege:ausweis_miniatur", args=[un.pk])
+    seite = admin_client.get(reverse("antraege:ausweis_pruefung_liste")).content.decode()
+    assert mini in seite  # Mini-Bild steht in der Zeile
+    antwort = admin_client.get(mini)
+    assert antwort.status_code == 200 and antwort["Content-Type"] == "image/jpeg"
+
+
 def test_ausweis_scan_keine_abweichung(monkeypatch):
     from apps.antraege import ausweis_pruefung, ausweis_scan
 
