@@ -32,3 +32,10 @@ Einlass muss den Ausweis aber immer lesen können.
 Millimeter von oben links sind für Menschen verständlich und gelten gleich im Browser und im
 PDF. Pflicht-Elemente und Prüfung auf dem Server sichern, dass jeder Ausweis am Einlass
 funktioniert, auch wenn jemand die Gestaltung verunglückt.
+
+## Nachtrag: Gruppenname ohne Tag/Uhrzeit (2026-11-06)
+
+Das Element „Kundengruppe mit Termin“ hängt an den Gruppennamen Wochentag und Uhrzeit an. Viele
+Tafeln benennen ihre Gruppen aber schon mit Tag und Uhrzeit (z. B. „Zentrale Montag 12:30 Uhr“),
+sodass es doppelt erscheint. Neues Feld `AusweisVorlage.gruppe_termin_anhaengen` (Vorgabe an); ist
+es aus, zeigt der Ausweis nur den Gruppennamen (`ausweis.werte`).

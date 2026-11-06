@@ -14,6 +14,7 @@ import datetime as dt
 import random
 
 from django.db import transaction
+from django.db.models import Max
 from django.urls import reverse
 from django.utils import timezone
 
@@ -303,6 +304,40 @@ def vorschau(stelle, datum) -> AufrufTag | None:
         return _vorschau_sperren(stelle, datum, einstellungen)
 
 
+def _aktivitaet(stand) -> None:
+    """Einen Zeitstempel der letzten echten Aktion im Stand hinterlegen (ADR 0050). Daraus ergibt
+    sich die automatische Beendigung bei Inaktivität – bloßes Nachladen der Anzeige zählt nicht."""
+    stand["letzte_aktivitaet"] = timezone.now().isoformat()
+
+
+def letzte_aktivitaet(tag, datum) -> dt.datetime:
+    """Zeitpunkt der letzten echten Aktivität des Tages: Start, eine Steueraktion (Weiter/Zurück/
+    Einsortieren) oder ein Kiosk-Scan. Bloßes Anzeigen/Abgleichen zählt bewusst nicht."""
+    zeiten = [tag.gestartet_am] if tag.gestartet_am else []
+    s = tag.stand
+    if s.get("letzte_aktivitaet"):
+        zeiten.append(dt.datetime.fromisoformat(s["letzte_aktivitaet"]))
+    if s.get("rueckgaengig"):  # Zeitpunkt des letzten „Weiter“
+        letzter = s["rueckgaengig"][-1].get("zeitpunkt")
+        if letzter:
+            zeiten.append(dt.datetime.fromisoformat(letzter))
+    kiosk = KioskMeldung.objects.filter(ausgabestelle=tag.ausgabestelle, datum=datum).aggregate(
+        m=Max("zeitpunkt")
+    )["m"]
+    if kiosk:
+        zeiten.append(kiosk)
+    return max(zeiten) if zeiten else timezone.now()
+
+
+def beendet_durch_inaktivitaet(tag, einstellungen, datum) -> bool:
+    """True, wenn der Tag gestartet ist und seit der eingestellten Zeit nichts mehr passiert ist
+    (0 = nie automatisch beenden)."""
+    grenze = getattr(einstellungen, "beenden_nach_minuten", 0)
+    if not grenze or tag is None or tag.gestartet_am is None:
+        return False
+    return timezone.now() - letzte_aktivitaet(tag, datum) > dt.timedelta(minutes=grenze)
+
+
 def starten(stelle, datum) -> AufrufTag:
     """Tag starten; eine vorhandene Vorschau bleibt (die vorab genannten Plätze stimmen dann)."""
     einstellungen = AufrufEinstellungen.laden(stelle)
@@ -316,6 +351,7 @@ def starten(stelle, datum) -> AufrufTag:
             _eingelassene_heraus(tag.stand, datum, einstellungen, geschuetzt=False)
             abgleichen(tag.stand, stelle, datum, einstellungen)
             tag.gestartet_am = timezone.now()
+            _aktivitaet(tag.stand)
             tag.save()
     return tag
 
@@ -327,6 +363,17 @@ def neu_mischen(stelle, datum) -> AufrufTag:
         tag = _vorschau_sperren(stelle, datum, einstellungen)
         tag.stand = neuer_stand(stelle, datum, einstellungen)
         tag.gestartet_am = timezone.now()
+        _aktivitaet(tag.stand)
+        tag.save()
+    return tag
+
+
+def fortsetzen(stelle, datum) -> AufrufTag:
+    """Eine durch Inaktivität beendete Ausgabe fortsetzen: nur die Aktivität auffrischen, der
+    Stand (Reihenfolge, Fortschritt) bleibt unverändert (ADR 0050)."""
+    with transaction.atomic():
+        tag = _gestartet_sperren(stelle, datum)
+        _aktivitaet(tag.stand)
         tag.save()
     return tag
 
@@ -363,6 +410,7 @@ def _weiter_im_stand(s, stelle, datum, einstellungen) -> None:
         "gruppe": index_vorher, "nummern": weg, "zeit": timezone.localtime().strftime("%H:%M"),
         "zeitpunkt": timezone.now().isoformat(),
     }][-RUECKGAENGIG_MAX:]  # fmt: skip
+    _aktivitaet(s)
     abgleichen(s, stelle, datum, einstellungen)
 
 
@@ -382,6 +430,7 @@ def zurueck(stelle, datum) -> AufrufTag:
             if x in g["aufgerufen"]:
                 g["aufgerufen"].remove(x)
         g["wartend"] = zurueck_ + [x for x in g["wartend"] if x not in zurueck_]
+        _aktivitaet(s)
         tag.save()
     return tag
 
@@ -461,6 +510,7 @@ def spaetzuender(stelle, datum, nummer) -> dict:
             "versatz": einstellungen.spaetzuender_versatz,
             "zeit": timezone.localtime().strftime("%H:%M"),
         }  # fmt: skip
+        _aktivitaet(s)
         tag.save()
         return {"bereits": False, "neuer_platz": _gesamtplatz(s, i, j),
                 "vor_der_nummer": _davor(s, i, j, aufg),
@@ -593,6 +643,12 @@ def stand_fuer_anzeige(tag, einstellungen, datum, eingelassene_zeigen=False) -> 
     gesamt = len(alle_nummern)
     erledigt = len(_eingelassen_heute(datum, alle_nummern))
     kann_zurueck = bool(s["rueckgaengig"])
+    # Lange keine Aktivität → Ausgabe gilt als beendet (ADR 0050); zum Weitermachen „Fortsetzen“.
+    if beendet_durch_inaktivitaet(tag, einstellungen, datum):
+        aufgerufen_gesamt = sum(len(g2["aufgerufen"]) for g2 in s["gruppen"])
+        return {"finished": True, "beendet_inaktiv": True, "selected_day": tag_name,
+                "can_undo": kann_zurueck, "total_completed": erledigt, "total_numbers": gesamt,
+                "aufgerufen_gesamt": aufgerufen_gesamt}  # fmt: skip
     if s["index"] >= len(s["gruppen"]):
         return {"finished": True, "selected_day": tag_name, "can_undo": kann_zurueck,
                 "total_completed": erledigt, "total_numbers": gesamt,

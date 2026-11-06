@@ -7,9 +7,14 @@
   {% if steuern %}<button type="button" class="knopf" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "starten", "steuern": "1"}' hx-target="closest .aufruf-leiste">Aufruf starten</button>{% endif %}
 {% elif d.finished %}
   <p class="aufruf-leiste-titel">Ausgabe beendet</p>
-  <p class="leise">Alle {{ d.total_numbers }} Nummern aufgerufen.</p>
-  {% if steuern %}<button type="button" class="knopf knopf-zweitrangig" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "neustart", "steuern": "1"}' hx-target="closest .aufruf-leiste" hx-confirm="Alle Kundennummern neu mischen und von vorn aufrufen? Der bisherige Fortschritt geht verloren.">🔄 neu starten</button>
-  {% if d.can_undo %}<button type="button" class="link aufruf-leiste-zurueck" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "zurueck", "steuern": "1"}' hx-target="closest .aufruf-leiste">↶ letzten Schritt zurück</button>{% endif %}{% endif %}
+  {% if d.beendet_inaktiv %}
+    <p class="leise">Längere Zeit keine Aktivität{% if steuern %} – zum Weitermachen fortsetzen{% endif %}.</p>
+    {% if steuern %}<button type="button" class="knopf aufruf-leiste-weiter" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "fortsetzen", "steuern": "1"}' hx-target="closest .aufruf-leiste">▶ Fortsetzen</button>{% endif %}
+  {% else %}
+    <p class="leise">Alle {{ d.total_numbers }} Nummern aufgerufen.</p>
+    {% if steuern %}<button type="button" class="knopf knopf-zweitrangig" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "neustart", "steuern": "1"}' hx-target="closest .aufruf-leiste" hx-confirm="Alle Kundennummern neu mischen und von vorn aufrufen? Der bisherige Fortschritt geht verloren.">🔄 neu starten</button>{% endif %}
+  {% endif %}
+  {% if steuern and d.can_undo %}<button type="button" class="link aufruf-leiste-zurueck" hx-post="{% url 'aufruf:leiste' %}" hx-vals='{"aktion": "zurueck", "steuern": "1"}' hx-target="closest .aufruf-leiste">↶ letzten Schritt zurück</button>{% endif %}
 {% else %}
   <p class="leise aufruf-leiste-gruppe">{{ d.current_slot }} · {{ d.aufgerufen_gesamt }}/{{ d.total_numbers }} aufgerufen</p>
   <p class="aufruf-leiste-titel">Bitte eintreten:</p>

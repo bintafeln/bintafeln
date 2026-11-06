@@ -501,8 +501,8 @@ class AusweisVorlageForm(forms.ModelForm):
 
     class Meta:
         model = AusweisVorlage
-        fields = ["name", "seitenformat", "rueckseite_aktiv", "hintergrund",
-                  "hintergrund_rueckseite"]  # fmt: skip
+        fields = ["name", "seitenformat", "gruppe_termin_anhaengen", "rueckseite_aktiv",
+                  "hintergrund", "hintergrund_rueckseite"]  # fmt: skip
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
