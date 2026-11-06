@@ -22,6 +22,7 @@ urlpatterns = [
     path("<int:pk>/api/starten/", views.api_starten, name="api_starten"),
     path("<int:pk>/api/weiter/", views.api_weiter, name="api_weiter"),
     path("<int:pk>/api/zurueck/", views.api_zurueck, name="api_zurueck"),
+    path("<int:pk>/api/fortsetzen/", views.api_fortsetzen, name="api_fortsetzen"),
     path("<int:pk>/api/abfrage/", views.api_abfrage, name="api_abfrage"),
     path("<int:pk>/api/spaetzuender/", views.api_spaetzuender, name="api_spaetzuender"),
     # Einstellungen

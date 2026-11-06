@@ -725,8 +725,13 @@
             const nextCustomersDisplay = document.getElementById('nextCustomersDisplay');
 
             if (!data || data.finished) {
-                // Kein Tag aktiv oder Tag abgeschlossen
-                if (!isSystemStarted) {
+                if (data && data.beendet_inaktiv) {
+                    // Länger keine Aktivität: pausiert, lässt sich fortsetzen
+                    btnMainText.textContent = 'Ausgabe pausiert';
+                    btnNumbers.textContent = '▶ Fortsetzen';
+                    nextBtn.className = 'btn btn-start btn-next';
+                    nextBtn.disabled = false;
+                } else if (!isSystemStarted) {
                     btnMainText.textContent = 'Kundenmonitor starten';
                     btnNumbers.textContent = 'Tag beginnen';
                     nextBtn.className = 'btn btn-start btn-next';
@@ -1123,8 +1128,24 @@
             }
         }
 
+        async function fortsetzen() {
+            // Durch Inaktivität beendete Ausgabe wieder aufnehmen, dann Stand neu laden.
+            if (isLoading) return;
+            try {
+                isLoading = true;
+                await fetch(URLS.fortsetzen, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF }
+                });
+            } finally {
+                isLoading = false;
+            }
+            await loadStatus();
+        }
+
         async function nextCustomer() {
             if (isLoading) return;
+            if (currentStatus && currentStatus.beendet_inaktiv) { await fortsetzen(); return; }
 
             const s = currentStatus;
             const localOk = isSystemStarted && s && !s.finished &&

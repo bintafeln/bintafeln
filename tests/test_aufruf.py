@@ -183,6 +183,44 @@ def test_ablauf_starten_weiter_zurueck_fertig(mitte, tag_daten):
     assert not ablauf.stand_fuer_anzeige(tag, e, heute())["finished"]
 
 
+def test_inaktivitaet_beendet_und_fortsetzen(mitte, tag_daten):
+    """Nach der eingestellten Zeit ohne Aktivität gilt die Ausgabe als beendet; „Fortsetzen“ nimmt
+    sie wieder auf; 0 schaltet die automatische Beendigung aus (ADR 0050)."""
+    e = AufrufEinstellungen.laden(mitte)
+    e.beenden_nach_minuten = 90
+    e.save()
+    ablauf.starten(mitte, heute())
+    ablauf.weiter(mitte, heute())
+    d = ablauf.stand_fuer_anzeige(ablauf.tag_holen(mitte, heute()), e, heute())
+    assert not d["finished"]  # gerade aktiv
+
+    # Alle Aktivitätsspuren auf „vor 91 Minuten“ zurückdrehen → beendet
+    alt = (timezone.now() - dt.timedelta(minutes=91)).isoformat()
+    tag = ablauf.tag_holen(mitte, heute())
+    tag.stand["letzte_aktivitaet"] = alt
+    for schritt in tag.stand["rueckgaengig"]:
+        schritt["zeitpunkt"] = alt
+    tag.gestartet_am = timezone.now() - dt.timedelta(minutes=91)
+    tag.save()
+    d = ablauf.stand_fuer_anzeige(ablauf.tag_holen(mitte, heute()), e, heute())
+    assert d["finished"] and d.get("beendet_inaktiv")
+
+    # Fortsetzen frischt die Aktivität auf → wieder aktiv
+    ablauf.fortsetzen(mitte, heute())
+    d = ablauf.stand_fuer_anzeige(ablauf.tag_holen(mitte, heute()), e, heute())
+    assert not d["finished"]
+
+    # 0 = nie automatisch beenden
+    e.beenden_nach_minuten = 0
+    e.save()
+    tag = ablauf.tag_holen(mitte, heute())
+    tag.stand["letzte_aktivitaet"] = alt
+    tag.gestartet_am = timezone.now() - dt.timedelta(minutes=91)
+    tag.save()
+    d = ablauf.stand_fuer_anzeige(ablauf.tag_holen(mitte, heute()), e, heute())
+    assert not d.get("beendet_inaktiv")
+
+
 def test_zaehler_zaehlt_eingelassene(mitte, tag_daten):
     """Der Fortschritt „X/Y“ wächst, sobald jemand eingelassen wird (Abholung), nicht erst beim
     nächsten „Weiter“."""
