@@ -19,6 +19,16 @@ from apps.core.auswahl import gdb_text
 
 ANHANG_ORDNER = "antraege"
 
+# Einordnung der Ausweisprüfung je Antrag (ADR 0112)
+AUSWEIS_BEFUND = [
+    ("", "nicht geprüft"),
+    ("abweichung", "Ausweis – Staatsangehörigkeit weicht ab"),
+    ("passt", "Ausweis – passt"),
+    ("amtsdokument", "Amtsdokument (Bescheid, kein Ausweis)"),
+    ("unklar", "unklar – Nachweis da, nichts erkannt"),
+    ("ohne", "kein Bild-/PDF-Nachweis"),
+]
+
 
 class Abfrage(models.TextChoices):
     AUS = "aus", "nicht abfragen"
@@ -324,6 +334,13 @@ class Antrag(models.Model):
     # Eine Person hat die Abweichung auf der Sammel-Prüfseite abgeschlossen (übernommen oder
     # bewusst nicht übernommen) – dann verschwindet sie aus der Liste der offenen Fälle (ADR 0107).
     ausweis_erledigt = models.BooleanField(default=False, editable=False)
+    # Einordnung der Nachweise beim Scan (ADR 0112): Ausweis mit Abweichung, Ausweis passt,
+    # Amtsdokument (Bescheid – kein Ausweis), unklar (Nachweis da, nichts erkannt) oder ohne
+    # Nachweis. Trennt die „nichts erkannt“-Fälle, damit reine Bescheide nicht von Hand geprüft
+    # werden müssen. Leer = (noch) nicht eingeordnet.
+    ausweis_befund = models.CharField(
+        max_length=20, blank=True, default="", editable=False, choices=AUSWEIS_BEFUND
+    )
 
     class Meta:
         verbose_name = "Antrag"

@@ -385,32 +385,43 @@ def ausweis_fortschritt(request):
 
 @rollen.recht_erforderlich("antraege.bearbeiten")
 def ausweis_pruefung_liste(request):
-    """Sammel-Seite: alle offenen Ausweis-Abweichungen auf einen Blick, mit Mini-Vorschau und je
-    Zeile den Knöpfen „Übernehmen / Nicht übernehmen / Ansehen" – damit man nicht jeden Antrag
-    einzeln öffnen muss (ADR 0107)."""
+    """Sammel-Seite der Ausweisprüfung (ADR 0107/0112): offene Abweichungen zum Entscheiden, dazu
+    die „nichts erkannt“-Fälle getrennt nach Amtsdokument (Bescheid – kann ignoriert werden) und
+    unklar (evtl. unlesbarer Ausweis). Mit Mini-Vorschau und je Zeile den passenden Knöpfen –
+    damit man nicht jeden Antrag einzeln öffnen muss."""
+
+    def _laden(**filter):
+        qs = (
+            Antrag.objects.filter(ausweis_erledigt=False, **filter)
+            .select_related("ausweis_anhang")
+            .prefetch_related("personen")
+            .order_by("eingegangen_am", "pk")
+        )
+        return [_ausweis_zeile(a) for a in qs]
+
+    kontext = {
+        "abweichungen": _laden(ausweis_befund="abweichung"),
+        "unklar": _laden(ausweis_befund="unklar"),
+        "amtsdokumente": _laden(ausweis_befund="amtsdokument"),
+    }
+    return render(request, "antraege/ausweis_pruefung.html", kontext)
+
+
+def _ausweis_zeile(a) -> dict:
+    """Eine Zeile der Sammel-Prüfseite aufbereiten (Vorschau-Angaben, angegeben/erkannt)."""
     from apps.core import auswahl
 
-    offen = (
-        Antrag.objects.filter(ausweis_abweichung=True, ausweis_erledigt=False)
-        .select_related("ausweis_anhang")
-        .prefetch_related("personen")
-        .order_by("eingegangen_am", "pk")
-    )
-    bekannt = auswahl.LAENDERCODE
-    zeilen = []
-    for a in offen:
-        anhang = a.ausweis_anhang
-        zeilen.append({
-            "a": a,
-            "angegeben": ", ".join(sorted(_angegebene_namen(a))),
-            "erkannt": a.ausweis_staat,
-            # Übernehmen nur anbieten, wenn der erkannte Staat ein echtes Land aus der Liste ist.
-            "uebernehmbar": a.ausweis_staat in bekannt,
-            "anhang_id": anhang.pk if anhang else None,
-            "anhang_bild": bool(anhang) and "image" in (anhang.typ or "").lower(),
-            "anhang_pdf": bool(anhang) and "pdf" in (anhang.typ or "").lower(),
-        })  # fmt: skip
-    return render(request, "antraege/ausweis_pruefung.html", {"zeilen": zeilen})
+    anhang = a.ausweis_anhang
+    return {
+        "a": a,
+        "angegeben": ", ".join(sorted(_angegebene_namen(a))),
+        "erkannt": a.ausweis_staat,
+        # Übernehmen nur anbieten, wenn der erkannte Staat ein echtes Land aus der Liste ist.
+        "uebernehmbar": a.ausweis_staat in auswahl.LAENDERCODE,
+        "anhang_id": anhang.pk if anhang else None,
+        "hat_vorschau": bool(anhang)
+        and any(t in (anhang.typ or "").lower() for t in ("image", "pdf")),
+    }
 
 
 def _angegebene_namen(a) -> set[str]:

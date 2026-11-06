@@ -140,15 +140,16 @@ def menue(request) -> list[dict]:
             ("antraege.sehen", antraege),
             ("antraege.sehen", _eintrag("Öffentliches Formular", "antrag:start", extern=True)),
         ], vorn=True)  # fmt: skip
-        # Sammel-Prüfseite für Ausweis-Abweichungen – nur bei offenen Fällen (ADR 0107).
+        # Sammel-Prüfseite der Ausweisprüfung – nur bei offenen Fällen, die eine Person ansehen
+        # sollte (Abweichung oder unklar; Amtsdokumente zählen nicht; ADR 0107/0112).
         if "antraege.bearbeiten" in darf:
             offen_ausweis = Antrag.objects.filter(
-                ausweis_abweichung=True, ausweis_erledigt=False
+                ausweis_befund__in=["abweichung", "unklar"], ausweis_erledigt=False
             ).count()
             if offen_ausweis:
                 ap = _eintrag("Ausweisprüfung", "antraege:ausweis_pruefung_liste")
                 ap["zahl"] = offen_ausweis
-                ap["zahl_titel"] = "offene Abweichungen"
+                ap["zahl_titel"] = "offen (Abweichung/unklar)"
                 dazu("Kunden/Anträge und Warteliste", [("antraege.bearbeiten", ap)])
     dazu("Kunden/Kundenstamm", [
         ("kunden.zugriffsprotokoll", _eintrag("Zugriffsprotokoll", "kunden:zugriffe")),
