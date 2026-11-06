@@ -641,6 +641,18 @@ class Person(models.Model):
         alter = self.alter(stichtag)
         return alter is not None and alter < kind_bis_alter
 
+    def alter_farbklasse(self, stichtag: dt.date | None = None) -> str:
+        """CSS-Klasse zum Einfärben der Altersangabe am Einlass: Geschlecht aus der Anrede
+        (Frau → rosa „w“, Herr → blau „m“, sonst neutral „n“) und Altersband (unter 18 hell,
+        18–65 kräftig, über 65 sehr dunkel). Leer, wenn kein Geburtsdatum vorliegt (dann wird
+        auch kein Alter angezeigt)."""
+        alter = self.alter(stichtag)
+        if alter is None:
+            return ""
+        geschlecht = {"Frau": "w", "Herr": "m"}.get(self.anrede, "n")
+        band = "jung" if alter < 18 else "alt" if alter > 65 else "mittel"
+        return f"alter-{geschlecht}-{band}"
+
 
 class Abholer(models.Model):
     haushalt = models.ForeignKey(Haushalt, on_delete=models.CASCADE, related_name="abholer")
