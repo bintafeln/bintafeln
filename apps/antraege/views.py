@@ -424,9 +424,10 @@ def ausweis_als_bescheid(request, pk):
     # Aus dem Bild-Popup der Prüfungsseite kommt „weiter“ (die aktuelle Seite) mit, damit man dort
     # bleibt, statt zum Antrag zu springen; nur sichere lokale Adressen zulassen.
     weiter = request.POST.get("weiter", "")
-    if weiter and url_has_allowed_host_and_scheme(weiter, {request.get_host()}, request.is_secure()):
-        return redirect(weiter)
-    return redirect("antraege:antrag", pk=a.pk)
+    sicher = weiter and url_has_allowed_host_and_scheme(
+        weiter, {request.get_host()}, request.is_secure()
+    )
+    return redirect(weiter if sicher else reverse("antraege:antrag", args=[a.pk]))
 
 
 @require_POST

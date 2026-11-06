@@ -1070,7 +1070,8 @@ def test_ausweis_als_bescheid_von_antragsseite(admin_client):
     assert antwort.status_code == 302 and antwort["Location"] == pruefliste
     # Fremde Adresse wird ignoriert (zurück zum Antrag)
     antwort = admin_client.post(
-        reverse("antraege:ausweis_als_bescheid", args=[b.pk]), {"weiter": "https://example.org/boese"}
+        reverse("antraege:ausweis_als_bescheid", args=[b.pk]),
+        {"weiter": "https://example.org/boese"},
     )
     assert reverse("antraege:antrag", args=[b.pk]) in antwort["Location"]
 
