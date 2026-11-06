@@ -63,6 +63,9 @@ ALPHA3_NAME = {_ALPHA2_ALPHA3[code]: name for code, name in STAATEN if code in _
 ALPHA3_NAME.update(
     {"D": "Deutschland", "XKX": "Kosovo", "XXK": "Kosovo", "GBR": ALPHA3_NAME["GBR"]}
 )
+# Deutscher Ländername (kleingeschrieben) → alpha-3-Code, für die Erkennung am Textfeld
+# „Staatsangehörigkeit" (ohne MRZ). Erster Code je Name.
+NAME_ALPHA3 = {name.casefold(): code for code, name in ALPHA3_NAME.items() if len(code) == 3}
 
 
 def tesseract_vorhanden() -> bool:
@@ -206,6 +209,56 @@ def _rueckfall(bild_bytes: bytes) -> dict | None:
     }
 
 
+# Beschriftungen des Staatsangehörigkeits-Feldes (klein verglichen). Die MRZ steht nur auf einer
+# Seite; liegt die andere vor, steht die Staatsangehörigkeit im Klartext unter dieser Beschriftung.
+NATIONALITAET_WOERTER = (
+    "staatsangehörigkeit", "staatsangehorigkeit", "staatsangehoerigkeit",
+    "nationality", "nationalité", "nationalite", "nationalität", "nationalitat",
+)  # fmt: skip
+# Nationalitäts-Adjektiv → alpha-3-Code. Nur das mit Abstand häufigste (deutsche Ausweise);
+# für alles andere greifen Ländercode und -name.
+ADJEKTIV_CODE = {"deutsch": "DEU"}
+# alpha-3-Codes, die als englische/deutsche Alltagswörter auftreten und darum zu viele Fehltreffer
+# brächten („and", „are") – am Nationalitätsfeld werden sie nicht als Code gewertet.
+_CODE_SPERRE = {"AND", "ARE"}
+
+
+def _code_aus_fenster(fenster: str) -> str:
+    """Aus dem Textausschnitt hinter der Feldbeschriftung einen alpha-3-Ländercode, einen deutschen
+    Ländernamen oder das Adjektiv „deutsch" zu einem Code machen. Leer, wenn nichts Gültiges."""
+    for wort in re.findall(r"\b[A-Z]{3}\b", fenster.upper()):
+        if wort in ALPHA3_NAME and wort not in _CODE_SPERRE:
+            return wort
+    klein = fenster.casefold()
+    for name, code in NAME_ALPHA3.items():
+        if len(name) >= 4 and re.search(rf"\b{re.escape(name)}\b", klein):
+            return code
+    for adjektiv, code in ADJEKTIV_CODE.items():
+        if re.search(rf"\b{adjektiv}\b", klein):
+            return code
+    return ""
+
+
+def _staat_aus_text(bild_bytes: bytes) -> dict | None:
+    """Stufe 3 (Rückfall ohne MRZ): den freien Text lesen und unter der Beschriftung
+    „Staatsangehörigkeit / Nationality" den Ländercode bzw. -namen erkennen. Liegt nur die Seite
+    ohne MRZ vor, hebt das die Trefferquote deutlich. Nur gültige Länder werden gewertet."""
+    try:
+        text = _ocr_text(bild_bytes)
+    except Exception:
+        return None
+    zeilen = [z.strip() for z in text.splitlines() if z.strip()]
+    for i, zeile in enumerate(zeilen):
+        if not any(w in zeile.casefold() for w in NATIONALITAET_WOERTER):
+            continue
+        # Rest der Beschriftungszeile und die nächsten beiden Zeilen (der Wert steht dahinter)
+        code = _code_aus_fenster(" ".join(zeilen[i : i + 3]))
+        if code:
+            return {"dokument": "Dokument", "country": "", "nationality": code,
+                    "name": "", "gueltig": False, "nur_feld": True}  # fmt: skip
+    return None
+
+
 def pruefen(bild_bytes: bytes, erwartete_staatsangehoerigkeit: str = "") -> dict:
     """Wertet das Bild aus. Liefert einen Bericht: erkannt (bool), bei Erfolg Dokumentart,
     ausstellendes Land, Staatsangehörigkeit (deutscher Name und Code), Name, Gültigkeit der
@@ -218,7 +271,9 @@ def pruefen(bild_bytes: bytes, erwartete_staatsangehoerigkeit: str = "") -> dict
         Image.open(io.BytesIO(bild_bytes)).verify()  # ist es überhaupt ein lesbares Bild?
     except Exception:
         return {"erkannt": False, "fehler": "Das Bild konnte nicht gelesen werden."}
-    roh = _passporteye(bild_bytes) or _rueckfall(bild_bytes)
+    # Stufe 1/2 lesen die MRZ; findet keine der beiden eine, liest Stufe 3 das Feld
+    # „Staatsangehörigkeit" im Klartext (die Seite ohne MRZ).
+    roh = _passporteye(bild_bytes) or _rueckfall(bild_bytes) or _staat_aus_text(bild_bytes)
     if roh is None:
         return {"erkannt": False}
     staat = _staat_name(roh["nationality"])
@@ -230,6 +285,8 @@ def pruefen(bild_bytes: bytes, erwartete_staatsangehoerigkeit: str = "") -> dict
         "staatsangehoerigkeit": staat or roh["nationality"],
         "code_staat": roh["nationality"],
         "name": roh["name"],
+        # Nur aus dem Textfeld gelesen (keine MRZ geprüft) – schwächerer Hinweis.
+        "nur_feld": roh.get("nur_feld", False),
     }
     erwartet = (erwartete_staatsangehoerigkeit or "").strip()
     if erwartet and staat:
