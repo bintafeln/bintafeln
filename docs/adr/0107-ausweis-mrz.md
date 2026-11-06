@@ -45,11 +45,15 @@ nicht.
   Lebenszeichen (`aktualisiert`, Schwelle `VERWAIST_SEKUNDEN`) als **unterbrochen**, und der nächste
   Aufruf der Antragsliste bzw. das Fortschritt-Polling setzt ihn automatisch an der Abbruchstelle
   fort (`fortsetzen_wenn_unterbrochen()`). Ein verwaister Lauf blockiert den Start-Knopf nicht mehr.
-  **Robust gegen einzelne kaputte Nachweise:** Ein Antrag, dessen Prüfung einen Fehler wirft (z. B.
-  eine beschädigte oder nicht entschlüsselbare Datei), wird übersprungen, trotzdem als geprüft
-  markiert und der Lauf läuft weiter – sonst bliebe er bei jedem Neustart an genau dieser Stelle
-  hängen. Dazu meldet `apps.core.privatdateien.lesen()` eine nicht lesbare Datei als `None` (statt zu
-  werfen), wie sein Docstring zusagt.
+  **Robust gegen einzelne kaputte Nachweise:** Die Sammelprüfung läuft in einem **eigenen Prozess**
+  (Management-Befehl `ausweise_pruefen`, getrieben von `alle_pruefen_jetzt`), mit einem **Zeitlimit
+  je Antrag** (`ZEIT_JE_ANTRAG`, SIGALRM). So hält ein Nachweis, der eine Bild-/PDF-Bibliothek zum
+  **Absturz** (Segfault) bringt oder **endlos hängen** lässt – was Python im laufenden Prozess nicht
+  abfangen kann – den Lauf nicht mehr an: Bei einem Hänger greift das Zeitlimit, bei einem Absturz
+  erkennt der Treiber den fehlenden Fortschritt; der Antrag wird übersprungen (als geprüft markiert)
+  und der Lauf läuft weiter. Zusätzlich meldet `apps.core.privatdateien.lesen()` eine nicht lesbare
+  Datei als `None` (statt zu werfen), wie sein Docstring zusagt. Lässt sich der Unterprozess nicht
+  starten, rechnet der Treiber im selben Prozess weiter (dann ohne Absturz-/Hänger-Schutz).
   Gefunden wird nur ein **Hinweis**: in der Liste ein Marker „Ausweis ≠"
   neben der Nummer, auf der Antragsseite ein Banner **mit Bild** und – mit `antraege.bearbeiten` –
   die Übernahme der erkannten Staatsangehörigkeit in den Antrag. Wird kein Ausweis gefunden oder
