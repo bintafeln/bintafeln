@@ -10,7 +10,9 @@ urlpatterns = [
     path("nachweise-importieren/", views.nachweise_importieren, name="nachweise_importieren"),
     path("importieren/", views.antraege_importieren, name="antraege_importieren"),
     path("ausweise-pruefen/", views.ausweise_pruefen_alle, name="ausweise_pruefen_alle"),
-    path("ausweise-neu-pruefen/", views.ausweise_neu_pruefen_alle, name="ausweise_neu_pruefen_alle"),
+    path(
+        "ausweise-neu-pruefen/", views.ausweise_neu_pruefen_alle, name="ausweise_neu_pruefen_alle"
+    ),
     path("ausweise-pruefen/stand/", views.ausweis_fortschritt, name="ausweis_fortschritt"),
     path("ausweispruefung/", views.ausweis_pruefung_liste, name="ausweis_pruefung_liste"),
     path("ausweispruefung/<int:pk>/", views.ausweis_entscheiden, name="ausweis_entscheiden"),
