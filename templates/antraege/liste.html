@@ -6,13 +6,20 @@
   <div class="liste-kopf">
     <h1>Anträge <span class="leise">({{ offen_gesamt }} offen)</span></h1>
     {% if "antraege.bearbeiten" in rechte %}
-      <a class="knopf knopf-zweitrangig" href="{% url 'antraege:antraege_importieren' %}">Anträge importieren</a>
-      <a class="knopf knopf-zweitrangig" href="{% url 'antraege:nachweise_importieren' %}">Nachweise importieren</a>
-      {% if ausweis_pruefen %}
-      <form method="post" action="{% url 'antraege:ausweise_pruefen_alle' %}" class="inline"
-            onsubmit="return confirm('Alle Anträge auf Ausweise prüfen? Das läuft im Hintergrund und kann je nach Anzahl etwas dauern.')">
-        {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">Alle Ausweise prüfen</button>
-      </form>{% endif %}
+      {# Selten gebrauchte Werkzeuge (Import, Sammelprüfung) dezent eingeklappt – neue Anträge werden
+         ohnehin automatisch im Hintergrund geprüft, der Knopf ist nur für Sonderfälle nötig. #}
+      <details class="listen-werkzeuge">
+        <summary class="knopf knopf-zweitrangig">Importieren &amp; prüfen …</summary>
+        <div class="listen-werkzeuge-inhalt">
+          <a class="knopf knopf-zweitrangig" href="{% url 'antraege:antraege_importieren' %}">Anträge importieren</a>
+          <a class="knopf knopf-zweitrangig" href="{% url 'antraege:nachweise_importieren' %}">Nachweise importieren</a>
+          {% if ausweis_pruefen %}
+          <form method="post" action="{% url 'antraege:ausweise_pruefen_alle' %}" class="inline"
+                onsubmit="return confirm('Alle Anträge auf Ausweise prüfen? Das läuft im Hintergrund und kann je nach Anzahl etwas dauern.')">
+            {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">Alle Ausweise prüfen</button>
+          </form>{% endif %}
+        </div>
+      </details>
     {% endif %}
   </div>
   {% if ausweis_pruefen and ausweis_lauf.laeuft %}{% include "antraege/_ausweis_fortschritt.html" with stand=ausweis_lauf %}{% endif %}

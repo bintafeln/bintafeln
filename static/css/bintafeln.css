@@ -1734,3 +1734,9 @@ a.knopf-klein { display: inline-block; }
 .ausweis-aktion { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
 .table.ausweispruefung td, table.ausweispruefung td { vertical-align: middle; }
 .ausweis-erledigt td { color: var(--leise, #666); }
+
+/* Eingeklappte, selten gebrauchte Werkzeuge im Listenkopf (Import/Sammelprüfung) */
+.listen-werkzeuge { display: inline-block; }
+.listen-werkzeuge > summary { display: inline-block; list-style: none; cursor: pointer; }
+.listen-werkzeuge > summary::-webkit-details-marker { display: none; }
+.listen-werkzeuge-inhalt { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
