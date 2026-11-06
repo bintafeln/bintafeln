@@ -392,6 +392,13 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .nachweis-dialog-leiste { display: flex; gap: 1rem; justify-content: center; align-items: center;
   margin-top: .5rem; flex-wrap: wrap; }
 .nachweis-dialog::backdrop { background: rgba(0, 0, 0, .6); }
+/* Bereich aufs Vorschaubild ziehen (Nationalität gezielt lesen, ADR 0107) */
+.nachweis-bild-huelle { position: relative; width: fit-content; margin: 0 auto; }
+.nachweis-bild-huelle.zeichnen { cursor: crosshair; touch-action: none; }
+.nachweis-bild-huelle.zeichnen img { user-select: none; -webkit-user-select: none; }
+.nachweis-auswahl { position: absolute; border: 2px dashed var(--akzent);
+  background: rgba(232, 113, 10, .15); pointer-events: none; }
+.nachweis-status { text-align: center; margin-top: .4rem; min-height: 1.2em; }
 /* Ergebnis der Ausweisprüfung: volle Breite unter den Kacheln (nicht im schmalen Kästchen),
    damit der Hinweis lesbar ist. */
 .ausweis-ergebnis { text-align: left; margin: .5rem 0 0; }
