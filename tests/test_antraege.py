@@ -765,6 +765,7 @@ def test_ausweis_scan_abweichung_und_treffer(monkeypatch):
     antrag.refresh_from_db()
     assert antrag.ausweis_abweichung and antrag.ausweis_staat == "Ukraine"
     assert antrag.ausweis_anhang_id and antrag.ausweis_geprueft_am
+    assert antrag.ausweis_befund == "abweichung"
 
 
 def test_ausweis_sammelseite_und_entscheiden(admin_client, monkeypatch):
@@ -774,13 +775,17 @@ def test_ausweis_sammelseite_und_entscheiden(admin_client, monkeypatch):
 
     a = _antrag_mit_ausweis("Deutschland")
     a.ausweis_abweichung = True
+    a.ausweis_befund = "abweichung"
     a.ausweis_staat = "Ukraine"
     a.ausweis_anhang = a.anhaenge.first()
-    a.save(update_fields=["ausweis_abweichung", "ausweis_staat", "ausweis_anhang"])
+    a.save(
+        update_fields=["ausweis_abweichung", "ausweis_befund", "ausweis_staat", "ausweis_anhang"]
+    )
     b = _antrag_mit_ausweis("Deutschland")
     b.ausweis_abweichung = True
+    b.ausweis_befund = "abweichung"
     b.ausweis_staat = "Ukraine"
-    b.save(update_fields=["ausweis_abweichung", "ausweis_staat"])
+    b.save(update_fields=["ausweis_abweichung", "ausweis_befund", "ausweis_staat"])
 
     url = reverse("antraege:ausweis_pruefung_liste")
     seite = admin_client.get(url).content.decode()
@@ -808,21 +813,81 @@ def test_ausweis_sammelseite_und_entscheiden(admin_client, monkeypatch):
     assert not Antrag.objects.filter(ausweis_abweichung=True, ausweis_erledigt=False).exists()
 
 
+def test_ausweis_scan_befund_amtsdokument_und_ohne(monkeypatch):
+    """Ohne erkannten Ausweis wird nach Dokumentart eingeordnet: Amtsdokument (Bescheid-Wörter
+    gefunden) bzw. „ohne“, wenn gar kein Bild-/PDF-Nachweis dranhängt (ADR 0112)."""
+    from apps.antraege import ausweis_pruefung, ausweis_scan
+    from apps.antraege.models import Antrag
+
+    monkeypatch.setattr(ausweis_pruefung, "pruefen", lambda inhalt, *a, **k: {"erkannt": False})
+    monkeypatch.setattr(ausweis_pruefung, "ist_amtsdokument", lambda inhalt, typ: True)
+    a = _antrag_mit_ausweis("Deutschland")
+    ausweis_scan.antrag_pruefen(a)
+    a.refresh_from_db()
+    assert a.ausweis_befund == "amtsdokument"
+
+    leer = Antrag.objects.create(vorname="X", nachname="Y")  # kein Nachweis
+    ausweis_scan.antrag_pruefen(leer)
+    leer.refresh_from_db()
+    assert leer.ausweis_befund == "ohne"
+
+
+def test_ist_amtsdokument_stichwoerter(monkeypatch):
+    """Amtsdokument-Erkennung: schlägt bei typischen Bescheid-Wörtern an, sonst nicht (ADR 0112)."""
+    from apps.antraege import ausweis_pruefung as ap
+
+    monkeypatch.setattr(ap, "_ocr_text", lambda b: "Bescheid über Leistungen der Grundsicherung")
+    assert ap.ist_amtsdokument(b"x", "image/png") is True
+    monkeypatch.setattr(ap, "_ocr_text", lambda b: "nur ein Passfoto ohne besondere Woerter")
+    assert ap.ist_amtsdokument(b"x", "image/png") is False
+    assert ap.ist_amtsdokument(b"x", "text/plain") is False  # unbekannter Dateityp
+
+
+def test_ausweis_sammelseite_gruppen(admin_client):
+    """Die Sammel-Seite zeigt drei Gruppen: Abweichungen, unklar und (eingeklappt) Amtsdokumente;
+    „Erledigt“ hakt einen unklaren Fall ab (ADR 0112)."""
+    ab = _antrag_mit_ausweis("Deutschland")
+    ab.ausweis_abweichung = True
+    ab.ausweis_befund = "abweichung"
+    ab.ausweis_staat = "Ukraine"
+    ab.ausweis_anhang = ab.anhaenge.first()
+    ab.save()
+    un = _antrag_mit_ausweis("Deutschland")
+    un.ausweis_befund = "unklar"
+    un.ausweis_anhang = un.anhaenge.first()
+    un.save()
+    amt = _antrag_mit_ausweis("Deutschland")
+    amt.ausweis_befund = "amtsdokument"
+    amt.save()
+
+    seite = admin_client.get(reverse("antraege:ausweis_pruefung_liste")).content.decode()
+    assert "Abweichungen" in seite and "Unklar" in seite and "Amtsdokumente" in seite
+    assert str(un.nummer) in seite and str(amt.nummer) in seite
+
+    entscheiden = reverse("antraege:ausweis_entscheiden", args=[un.pk])
+    admin_client.post(entscheiden, {"aktion": "verwerfen"})
+    un.refresh_from_db()
+    assert un.ausweis_erledigt
+
+
 def test_ausweis_scan_keine_abweichung(monkeypatch):
     from apps.antraege import ausweis_pruefung, ausweis_scan
 
     monkeypatch.setattr(ausweis_pruefung, "pruefen", lambda inhalt, *a, **k: _UKR)
+    monkeypatch.setattr(ausweis_pruefung, "ist_amtsdokument", lambda inhalt, typ: False)
     # Ukraine ist bei einem Angehörigen angegeben → keine Abweichung (ganzer Haushalt)
     antrag = _antrag_mit_ausweis("Deutschland", ["Ukraine"])
     assert ausweis_scan.antrag_pruefen(antrag) is False
     antrag.refresh_from_db()
     assert not antrag.ausweis_abweichung and antrag.ausweis_staat == "Ukraine"
-    # Kein Ausweis erkannt → keine Abweichung, kein Staat, kein Hinweis
+    assert antrag.ausweis_befund == "passt"
+    # Kein Ausweis erkannt, kein Amtsdokument → keine Abweichung, kein Staat, Befund „unklar“
     monkeypatch.setattr(ausweis_pruefung, "pruefen", lambda inhalt, *a, **k: {"erkannt": False})
     leer = _antrag_mit_ausweis("Deutschland")
     assert ausweis_scan.antrag_pruefen(leer) is False
     leer.refresh_from_db()
     assert leer.ausweis_staat == "" and leer.ausweis_anhang_id is None and leer.ausweis_geprueft_am
+    assert leer.ausweis_befund == "unklar"
 
 
 def test_ausweis_scan_liste_bulk_banner_und_automatik(admin_client, monkeypatch):

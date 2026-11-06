@@ -76,6 +76,7 @@ def antrag_pruefen(antrag) -> bool:
     angegeben = angegebene_staaten(antrag)
     erste = None  # erster lesbarer Ausweis (für die Anzeige, wenn nichts abweicht)
     treffer = None  # erster Ausweis, dessen Staat zu keiner Angabe passt
+    nachweise = []  # (Anhang, Inhalt) der Bild-/PDF-Nachweise, für die Dokumentart-Einordnung
     for d in antrag.anhaenge.all():
         typ = (d.typ or "").lower()
         if "image" not in typ and "pdf" not in typ:  # Bilder und PDFs einbeziehen
@@ -83,6 +84,7 @@ def antrag_pruefen(antrag) -> bool:
         inhalt = privatdateien.lesen(ANHANG_ORDNER, d.datei)
         if inhalt is None:
             continue
+        nachweise.append((d, inhalt))
         try:
             bericht = ausweis_pruefung.pruefen_datei(inhalt, d.typ)
         except Exception as fehler:  # noqa: BLE001 – nur ein Hinweis, nichts darf abbrechen
@@ -101,10 +103,29 @@ def antrag_pruefen(antrag) -> bool:
     antrag.ausweis_anhang = gewaehlt[0] if gewaehlt else None
     antrag.ausweis_staat = gewaehlt[1] if gewaehlt else ""
     antrag.ausweis_abweichung = treffer is not None
+    antrag.ausweis_befund = _befund(gewaehlt, treffer, nachweise)
     antrag.save(update_fields=[
         "ausweis_geprueft_am", "ausweis_anhang", "ausweis_staat", "ausweis_abweichung",
+        "ausweis_befund",
     ])  # fmt: skip
     return antrag.ausweis_abweichung
+
+
+def _befund(gewaehlt, treffer, nachweise) -> str:
+    """Dokumentart einordnen (ADR 0112): Ausweis (Abweichung/passt), Amtsdokument (Bescheid),
+    unklar (Nachweis da, nichts erkannt) oder ohne Nachweis. ``nachweise`` sind (Anhang, Inhalt)
+    der Bild-/PDF-Nachweise; der Amtsdokument-Text wird nur geprüft, wenn kein Ausweis erkannt
+    wurde (der teure zweite OCR-Durchgang entfällt im Normalfall)."""
+    from apps.antraege import ausweis_pruefung
+
+    if gewaehlt:
+        return "abweichung" if treffer else "passt"
+    if not nachweise:
+        return "ohne"
+    for d, inhalt in nachweise:
+        if ausweis_pruefung.ist_amtsdokument(inhalt, d.typ):
+            return "amtsdokument"
+    return "unklar"
 
 
 def _im_hintergrund(fn) -> None:
@@ -136,12 +157,21 @@ def neuen_pruefen(antrag_pk: int) -> None:
     _im_hintergrund(lauf)
 
 
+def _offen_q():
+    """Noch zu bearbeiten: nie geprüft ODER (nach ADR 0112) noch nicht nach Dokumentart
+    eingeordnet. So erfasst derselbe „Alle prüfen“-Lauf auch die Alt-Anträge, die vor der
+    Dokumentart-Erkennung geprüft wurden, ohne jeden schon eingeordneten erneut zu lesen."""
+    from django.db.models import Q
+
+    return Q(ausweis_geprueft_am__isnull=True) | Q(ausweis_befund="")
+
+
 def _cache_stand(laeuft: bool, gesamt: int) -> dict:
     """Aktuellen Fortschritt aus der Datenbank in den gemeinsamen Cache schreiben (zugleich
-    Lebenszeichen). ``fertig`` = schon geprüfte Anträge."""
+    Lebenszeichen). ``fertig`` = schon geprüfte/eingeordnete Anträge."""
     from apps.antraege.models import Antrag
 
-    offen = Antrag.objects.filter(ausweis_geprueft_am__isnull=True).count()
+    offen = Antrag.objects.filter(_offen_q()).count()
     stand = {
         "laeuft": laeuft,
         "gesamt": gesamt,
@@ -156,12 +186,7 @@ def _cache_stand(laeuft: bool, gesamt: int) -> dict:
 def _erster_offener():
     from apps.antraege.models import Antrag
 
-    return (
-        Antrag.objects.filter(ausweis_geprueft_am__isnull=True)
-        .order_by("pk")
-        .values_list("pk", flat=True)
-        .first()
-    )
+    return Antrag.objects.filter(_offen_q()).order_by("pk").values_list("pk", flat=True).first()
 
 
 def stapel_im_prozess(zeit_je_antrag: int = ZEIT_JE_ANTRAG) -> None:
@@ -204,7 +229,11 @@ def stapel_im_prozess(zeit_je_antrag: int = ZEIT_JE_ANTRAG) -> None:
             antrag_pruefen(antrag)
         except Exception as fehler:  # noqa: BLE001 – inkl. Zeitlimit; nie den Lauf anhalten
             log.warning("Ausweisprüfung für Antrag %s übersprungen: %s", pk, fehler)
-            Antrag.objects.filter(pk=pk).update(ausweis_geprueft_am=timezone.now())
+            # Auch den Befund terminal setzen, sonst bliebe der Antrag „offen“ (befund="") und
+            # käme endlos wieder dran (ADR 0112).
+            Antrag.objects.filter(pk=pk).update(
+                ausweis_geprueft_am=timezone.now(), ausweis_befund="unklar"
+            )
         finally:
             if hat_wecker:
                 signal.alarm(0)
@@ -283,7 +312,10 @@ def alle_pruefen_jetzt() -> int:
         else:
             if _erster_offener() == erster:  # kein Fortschritt → dieser Antrag hat ihn abgeschossen
                 log.warning("Antrag %s übersprungen (Prüf-Prozess abgebrochen).", erster)
-                Antrag.objects.filter(pk=erster).update(ausweis_geprueft_am=timezone.now())
+                # Befund terminal setzen, sonst bliebe er „offen“ und käme endlos wieder (ADR 0112).
+                Antrag.objects.filter(pk=erster).update(
+                    ausweis_geprueft_am=timezone.now(), ausweis_befund="unklar"
+                )
     return _cache_stand(False, gesamt)["abweichungen"]
 
 

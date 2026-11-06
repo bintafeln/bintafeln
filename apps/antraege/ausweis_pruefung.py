@@ -236,3 +236,56 @@ def pruefen(bild_bytes: bytes, erwartete_staatsangehoerigkeit: str = "") -> dict
         bericht["passt"] = staat.casefold() == erwartet.casefold()
         bericht["erwartet"] = erwartet
     return bericht
+
+
+# Wörter, die ein behördliches Dokument (Bescheid) statt eines Ausweises anzeigen (ADR 0112).
+# Kleingeschrieben; der OCR-Text wird ebenfalls kleingeschrieben verglichen. Bewusst knapp und
+# eindeutig gehalten – die Einordnung erleichtert nur die Arbeit, sie entscheidet nichts.
+AMTSDOKUMENT_WOERTER = (
+    "bescheid", "grundsicherung", "bürgergeld", "buergergeld", "arbeitslosengeld",
+    "jobcenter", "job center", "wohngeld", "sozialamt", "sozialhilfe", "regelbedarf",
+    "regelleistung", "leistungsbescheid", "rentenbescheid", "familienkasse",
+    "bundesagentur für arbeit", "sgb ii", "sgb xii", "asylbewerberleistung",
+)  # fmt: skip
+
+
+def _ocr_text(bild_bytes: bytes) -> str:
+    """Freier OCR-Text eines Bildes (Deutsch+Englisch, ohne MRZ-Whitelist) – für die Erkennung von
+    Amtsdokumenten am Textinhalt. Fällt bei fehlender deutscher Sprachdatei auf Englisch zurück."""
+    import pytesseract
+    from PIL import Image, ImageOps
+
+    bild = ImageOps.exif_transpose(Image.open(io.BytesIO(bild_bytes))).convert("L")
+    if max(bild.size) < 1600:
+        faktor = 1600 / max(bild.size)
+        bild = bild.resize((round(bild.width * faktor), round(bild.height * faktor)))
+    try:
+        return pytesseract.image_to_string(bild, lang="deu+eng")
+    except pytesseract.TesseractError:
+        return pytesseract.image_to_string(bild)  # ohne deutsche Sprachdatei
+
+
+def _text_ist_amtsdokument(text: str) -> bool:
+    klein = (text or "").casefold()
+    return any(wort in klein for wort in AMTSDOKUMENT_WOERTER)
+
+
+def ist_amtsdokument(inhalt: bytes, typ: str) -> bool:
+    """True, wenn im Nachweis (Bild oder PDF) typische Wörter eines behördlichen Bescheids stehen
+    (ADR 0112). Nur als Einordnung gedacht; prüft höchstens die ersten PDF-Seiten."""
+    typ = (typ or "").lower()
+    try:
+        if "pdf" in typ:
+            from apps.antraege import pdf_bilder
+
+            for i, bild in enumerate(pdf_bilder.seiten_bilder(inhalt)):
+                if i >= 2:  # erste Seiten genügen
+                    break
+                if _text_ist_amtsdokument(_ocr_text(bild)):
+                    return True
+            return False
+        if "image" in typ:
+            return _text_ist_amtsdokument(_ocr_text(inhalt))
+    except Exception:  # noqa: BLE001 – nur eine Einordnung, nie kritisch
+        return False
+    return False

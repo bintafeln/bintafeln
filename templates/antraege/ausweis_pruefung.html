@@ -3,57 +3,58 @@
 {% block inhalt %}
 <section class="karte">
   <div class="liste-kopf">
-    <h1>Ausweisprüfung <span class="leise">({{ zeilen|length }} offen)</span></h1>
+    <h1>Ausweisprüfung <span class="leise">({{ abweichungen|length }} Abweichungen)</span></h1>
     <a class="knopf knopf-zweitrangig" href="{% url 'antraege:liste' %}">Zur Antragsliste</a>
   </div>
-  <p class="hinweis">Hier stehen alle Anträge, bei denen die im Ausweis erkannte Staatsangehörigkeit
-    zu <strong>keiner</strong> im Antrag angegebenen passt. Vergleichen Sie die Vorschau mit den
-    Angaben und entscheiden Sie je Zeile: <strong>Übernehmen</strong> (erkannten Staat in den
-    Antrag schreiben), <strong>Nicht übernehmen</strong> (Antrag bleibt wie er ist) oder
-    <strong>Ansehen</strong> (öffnet den Antrag in einem neuen Tab, um ihn in Ruhe zu prüfen).
-    Die Prüfung ist nur ein Hinweis – die Entscheidung trifft immer ein Mensch.</p>
+  <p class="hinweis">Die Prüfung ist nur ein Hinweis – die Entscheidung trifft immer ein Mensch.
+    Fehlt ein Ausweis ganz, stehen die Fälle weiter unten getrennt: reine <strong>Amtsdokumente</strong>
+    (Bescheide) müssen Sie in der Regel nicht ansehen; <strong>unklare</strong> Fälle lohnen einen Blick.</p>
 
-  {% if zeilen %}
+  <h2>Abweichungen <span class="leise">({{ abweichungen|length }})</span></h2>
+  <p class="hinweis">Die im Ausweis erkannte Staatsangehörigkeit passt zu <strong>keiner</strong>
+    Angabe im Antrag. <strong>Übernehmen</strong> schreibt den erkannten Staat in den Antrag,
+    <strong>Nicht übernehmen</strong> lässt den Antrag wie er ist.</p>
+  {% if abweichungen %}
   <table class="liste ausweispruefung">
-    <thead><tr>
-      <th>Vorschau</th><th>Antrag</th><th>Angegeben</th><th>Im Ausweis erkannt</th><th>Entscheidung</th>
-    </tr></thead>
+    <thead><tr><th>Vorschau</th><th>Antrag</th><th>Angegeben</th><th>Im Ausweis erkannt</th><th>Entscheidung</th></tr></thead>
     <tbody>
-    {% for z in zeilen %}
-      <tr>
-        <td data-titel="Vorschau">
-          {% if z.anhang_bild or z.anhang_pdf %}
-            <a href="{% url 'antraege:anhang' z.a.pk z.anhang_id %}" target="_blank" rel="noopener">
-              <img class="ausweis-mini" loading="lazy" alt="Vorschau des Nachweises"
-                   src="{% url 'antraege:ausweis_miniatur' z.a.pk %}"></a>
-          {% else %}<span class="leise">—</span>{% endif %}
-        </td>
-        <td data-titel="Antrag"><a href="{% url 'antraege:antrag' z.a.pk %}" target="_blank" rel="noopener">
-          {{ z.a.nummer }}</a><br><span class="leise">{{ z.a.vorname }} {{ z.a.nachname }}</span></td>
-        <td data-titel="Angegeben">{{ z.angegeben|default:"—" }}</td>
-        <td data-titel="Im Ausweis erkannt"><strong>{{ z.erkannt|default:"—" }}</strong></td>
-        <td data-titel="Entscheidung">
-          <form method="post" action="{% url 'antraege:ausweis_entscheiden' z.a.pk %}" class="ausweis-aktion"
-                hx-post="{% url 'antraege:ausweis_entscheiden' z.a.pk %}"
-                hx-target="closest tr" hx-swap="outerHTML">
-            {% csrf_token %}
-            {% if z.uebernehmbar %}
-              <button type="submit" name="aktion" value="uebernehmen" class="knopf knopf-klein"
-                      title="Erkannten Staat „{{ z.erkannt }}“ in den Antrag übernehmen">✓ Übernehmen</button>
-            {% endif %}
-            <button type="submit" name="aktion" value="verwerfen" class="knopf knopf-klein knopf-zweitrangig"
-                    title="Antrag bleibt wie angegeben; Hinweis erledigt">✕ Nicht übernehmen</button>
-            <a class="knopf knopf-klein knopf-zweitrangig" href="{% url 'antraege:antrag' z.a.pk %}"
-               target="_blank" rel="noopener" title="Antrag in neuem Tab ansehen">↗ Ansehen</a>
-          </form>
-        </td>
-      </tr>
-    {% endfor %}
+      {% for z in abweichungen %}{% include "antraege/_ausweis_zeile.html" with z=z modus="abweichung" %}{% endfor %}
     </tbody>
   </table>
-  {% else %}
-  <p class="hinweis">Keine offenen Abweichungen. 🎉 Entschiedene Fälle sind hier nicht mehr
-    aufgeführt; die Angaben stehen weiterhin im jeweiligen Antrag.</p>
+  {% else %}<p class="hinweis">Keine offenen Abweichungen. 🎉</p>{% endif %}
+
+  {% if unklar %}
+  <h2>Unklar – evtl. unlesbarer Ausweis <span class="leise">({{ unklar|length }})</span></h2>
+  <p class="hinweis">Hier wurde ein Nachweis hochgeladen, aber kein Ausweis gelesen und kein
+    Amtsdokument erkannt. Vielleicht ein unscharfes Ausweisfoto – ein Blick lohnt sich.
+    <strong>Erledigt</strong> hakt den Fall ab.</p>
+  <table class="liste ausweispruefung">
+    <thead><tr><th>Vorschau</th><th>Antrag</th><th>Angegeben</th><th>Erkannt</th><th>Entscheidung</th></tr></thead>
+    <tbody>
+      {% for z in unklar %}{% include "antraege/_ausweis_zeile.html" with z=z modus="unklar" %}{% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if amtsdokumente %}
+  <details class="amtsdokumente">
+    <summary><strong>Amtsdokumente (Bescheide) – kein Ausweis</strong>
+      <span class="leise">({{ amtsdokumente|length }}) – müssen Sie in der Regel nicht ansehen</span></summary>
+    <table class="liste ausweispruefung">
+      <thead><tr><th>Vorschau</th><th>Antrag</th><th>Angegeben</th><th>Erkannt</th><th></th></tr></thead>
+      <tbody>
+        {% for z in amtsdokumente %}
+        <tr>
+          <td data-titel="Vorschau">{% if z.hat_vorschau %}<a href="{% url 'antraege:anhang' z.a.pk z.anhang_id %}" target="_blank" rel="noopener"><img class="ausweis-mini" loading="lazy" alt="Vorschau" src="{% url 'antraege:ausweis_miniatur' z.a.pk %}"></a>{% else %}<span class="leise">—</span>{% endif %}</td>
+          <td data-titel="Antrag"><a href="{% url 'antraege:antrag' z.a.pk %}" target="_blank" rel="noopener">{{ z.a.nummer }}</a><br><span class="leise">{{ z.a.vorname }} {{ z.a.nachname }}</span></td>
+          <td data-titel="Angegeben">{{ z.angegeben|default:"—" }}</td>
+          <td data-titel="Erkannt"><span class="leise">kein Ausweis</span></td>
+          <td data-titel=""><a class="knopf knopf-klein knopf-zweitrangig" href="{% url 'antraege:antrag' z.a.pk %}" target="_blank" rel="noopener">↗ Ansehen</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </details>
   {% endif %}
 </section>
 {% endblock %}

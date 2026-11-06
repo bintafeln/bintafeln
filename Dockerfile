@@ -10,9 +10,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Tesseract-OCR für die lokale Ausweisprüfung (MRZ lesen, ADR 0107). Nur die englische Sprachdatei
-# nötig, da die MRZ aus lateinischen Großbuchstaben und Ziffern besteht.
-RUN apt-get update && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-eng \
+# Tesseract-OCR für die lokale Ausweisprüfung (ADR 0107). Englisch für die MRZ (lateinische
+# Großbuchstaben/Ziffern) und Deutsch, um Amtsdokumente (Bescheide) am Text zu erkennen (ADR 0112).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-eng tesseract-ocr-deu \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
