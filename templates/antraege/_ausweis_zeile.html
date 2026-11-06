@@ -25,7 +25,11 @@
       {% endif %}
       <button type="submit" name="aktion" value="verwerfen" class="knopf knopf-klein knopf-zweitrangig"
               title="{% if modus == 'unklar' %}Als geprüft abhaken{% else %}Antrag bleibt wie angegeben{% endif %}">
-        {% if modus == 'unklar' %}✓ Erledigt{% else %}✕ Nicht übernehmen{% endif %}</button>
+        {% if modus == 'unklar' %}✓ Nichts dran{% else %}✕ Nicht übernehmen{% endif %}</button>
+      {% if modus == 'unklar' %}
+        <button type="submit" name="aktion" value="amtsdokument" class="knopf knopf-klein knopf-zweitrangig"
+                title="Das ist kein Ausweis, sondern ein Bescheid – als Amtsdokument einordnen und abhaken">📄 Ist ein Bescheid</button>
+      {% endif %}
       <a class="knopf knopf-klein knopf-zweitrangig" href="{% url 'antraege:antrag' z.a.pk %}"
          target="_blank" rel="noopener" title="Antrag in neuem Tab ansehen">↗ Ansehen</a>
     </form>

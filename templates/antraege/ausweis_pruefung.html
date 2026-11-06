@@ -24,8 +24,9 @@
   {% if unklar %}
   <h2>Unklar – evtl. unlesbarer Ausweis <span class="leise">({{ unklar|length }})</span></h2>
   <p class="hinweis">Hier wurde ein Nachweis hochgeladen, aber kein Ausweis gelesen und kein
-    Amtsdokument erkannt. Vielleicht ein unscharfes Ausweisfoto – ein Blick lohnt sich.
-    <strong>Erledigt</strong> hakt den Fall ab.</p>
+    Amtsdokument erkannt. Vielleicht ein unscharfes Ausweisfoto – ein Blick lohnt sich. Mit
+    <strong>Nichts dran</strong> haken Sie den Fall einfach ab; ist es doch ein Bescheid, ordnet
+    <strong>Ist ein Bescheid</strong> ihn zu den Amtsdokumenten und hakt ihn ab.</p>
   <div class="ausweis-faelle">
     {% for z in unklar %}{% include "antraege/_ausweis_zeile.html" with z=z modus="unklar" %}{% endfor %}
   </div>

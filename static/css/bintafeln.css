@@ -1753,3 +1753,19 @@ details.amtsdokumente > summary { cursor: pointer; margin: .5rem 0; }
 .listen-werkzeuge > summary { display: inline-block; list-style: none; cursor: pointer; }
 .listen-werkzeuge > summary::-webkit-details-marker { display: none; }
 .listen-werkzeuge-inhalt { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+
+/* Altersangabe am Einlass farbig nach Geschlecht (aus der Anrede) und Altersband:
+   Frau rosa, Herr blau, sonst neutral grau; je heller, desto jünger. Feste Farben mit eigener
+   Schriftfarbe – dadurch in hellem wie dunklem Modus gut lesbar. Die Zahl steht weiter im Text,
+   die Farbe ist nur eine zusätzliche, schnelle Orientierung. */
+.alter-chip { display: inline-block; padding: .02rem .45rem; border-radius: 999px;
+  font-size: .85rem; font-weight: 600; white-space: nowrap; }
+.alter-m-jung   { background: #d4e7ff; color: #0a3d7a; }  /* Junge, hellblau */
+.alter-m-mittel { background: #1565c0; color: #fff; }     /* Mann 18–65, dunkelblau */
+.alter-m-alt    { background: #0a3b7a; color: #fff; }      /* Mann über 65, sehr dunkelblau */
+.alter-w-jung   { background: #ffd9ea; color: #8a1250; }  /* Mädchen, hellrosa */
+.alter-w-mittel { background: #d81b7a; color: #fff; }     /* Frau 18–65, rosa */
+.alter-w-alt    { background: #7d0f46; color: #fff; }      /* Frau über 65, sehr dunkelrosa */
+.alter-n-jung   { background: #e5e7eb; color: #374151; }  /* ohne Geschlecht, neutral */
+.alter-n-mittel { background: #6b7280; color: #fff; }
+.alter-n-alt    { background: #374151; color: #fff; }

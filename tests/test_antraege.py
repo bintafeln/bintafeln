@@ -897,6 +897,18 @@ def test_ausweis_sammelseite_gruppen(admin_client):
     un.refresh_from_db()
     assert un.ausweis_erledigt
 
+    # Zweiten unklaren Fall von Hand als Bescheid einordnen → Befund amtsdokument, abgehakt.
+    un2 = _antrag_mit_ausweis("Deutschland")
+    un2.ausweis_befund = "unklar"
+    un2.ausweis_anhang = un2.anhaenge.first()
+    un2.save()
+    seite = admin_client.get(reverse("antraege:ausweis_pruefung_liste")).content.decode()
+    assert "Ist ein Bescheid" in seite  # Knopf steht bei unklaren Fällen
+    admin_client.post(reverse("antraege:ausweis_entscheiden", args=[un2.pk]),
+                      {"aktion": "amtsdokument"})  # fmt: skip
+    un2.refresh_from_db()
+    assert un2.ausweis_befund == "amtsdokument" and un2.ausweis_erledigt
+
 
 def test_ausweis_scan_keine_abweichung(monkeypatch):
     from apps.antraege import ausweis_pruefung, ausweis_scan

@@ -15,10 +15,20 @@ from apps.core.models import TafelEinstellungen
 
 EINLADUNG = "einladung"
 ZURUECKSETZEN = "zuruecksetzen"
+FREIGABE = "freigabe"
 
 BETREFF = {
     EINLADUNG: "Ihr Zugang zu {tafel}",
     ZURUECKSETZEN: "Neues Passwort für {tafel}",
+    FREIGABE: "Ihr Zugang zu {tafel} ist freigeschaltet",
+}
+
+# Wie das vorläufige Passwort beim Freigeben (ADR 0114) in der Mail beschrieben wird – nur das
+# Format, nicht der konkrete Wert (die Person kennt ihn selbst).
+FREIGABE_PASSWORT = {
+    "geburtsdatum": "Ihr Geburtsdatum mit Punkten, zum Beispiel 15.03.1980",
+    "adresse": "Ihre Straße und Hausnummer, genau wie bei der Tafel hinterlegt "
+    "(zum Beispiel: Musterstraße 12)",
 }
 
 
@@ -42,3 +52,22 @@ def senden(request, benutzer, art: str) -> None:
         f"mail/{art}.txt", {"benutzer": benutzer, "link": link(request, benutzer), "tafel": tafel}
     )
     mail.senden(BETREFF[art].format(tafel=tafel), text, [benutzer.email])
+
+
+def freigabe_senden(request, benutzer, basis: str) -> None:
+    """Teilt per Mail mit, dass der Zugang freigeschaltet ist, und wie man sich anmeldet (ADR 0114).
+    Das vorläufige Passwort wird nur als Format beschrieben, nicht genannt. Löst mail.MailFehler
+    aus, wenn keine Adresse hinterlegt ist."""
+    if not benutzer.email:
+        raise mail.MailFehler("Für dieses Konto ist keine E-Mail-Adresse hinterlegt.")
+    tafel = TafelEinstellungen.laden().name or "bintafeln"
+    text = render_to_string(
+        "mail/freigabe.txt",
+        {
+            "benutzer": benutzer,
+            "tafel": tafel,
+            "anmelden": request.build_absolute_uri(reverse("konten:anmelden")),
+            "passwort_hinweis": FREIGABE_PASSWORT.get(basis, FREIGABE_PASSWORT["geburtsdatum"]),
+        },
+    )
+    mail.senden(BETREFF[FREIGABE].format(tafel=tafel), text, [benutzer.email])

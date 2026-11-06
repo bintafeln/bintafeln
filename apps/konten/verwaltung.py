@@ -277,3 +277,37 @@ def passwort_zuruecksetzen(verwalter, ziel) -> str:
     passwort = _passwort_neu(ziel)
     ziel.save(update_fields=["password", "passwort_aendern"])
     return passwort
+
+
+def startpasswort_basis(ziel) -> tuple[str, str]:
+    """Das Startpasswort beim Freigeben und seine Herkunft: zuerst das **Geburtsdatum** mit Punkten
+    (z. B. „15.03.1980“), sonst **Straße und Hausnummer** (wie hinterlegt) – beides kennt die Person
+    selbst. Liefert (passwort, basis) mit basis ∈ {"geburtsdatum", "adresse"}; fehlt beides, wird
+    ``VerwaltungsFehler`` geworfen."""
+    sd = getattr(ziel, "stammdaten", None)
+    geburtsdatum = getattr(sd, "geburtsdatum", None)
+    if geburtsdatum:
+        return geburtsdatum.strftime("%d.%m.%Y"), "geburtsdatum"
+    strasse = (getattr(sd, "strasse", "") or "").strip()
+    if strasse:
+        return strasse, "adresse"
+    raise VerwaltungsFehler(
+        "Weder Geburtsdatum noch Straße hinterlegt – bitte erst nachtragen "
+        "oder stattdessen einen Link zum Festlegen des Passworts schicken."
+    )
+
+
+def freigeben(verwalter, ziel) -> str:
+    """Gibt den Online-Zugang eines Kontos frei (ADR 0114): Startpasswort aus dem Geburtsdatum
+    (sonst der Adresse), Pflicht zum Passwortwechsel bei der ersten Anmeldung, Konto aktiv. Liefert
+    die Basis des Startpassworts ("geburtsdatum"/"adresse") für die passende E-Mail."""
+    _pruefen(verwalter, ziel)
+    passwort, basis = startpasswort_basis(ziel)
+    ziel.set_password(passwort)
+    ziel.passwort_aendern = True
+    ziel.is_active = True
+    ziel.gesperrt_am = None
+    ziel.gesperrt_von = ""
+    ziel.save(update_fields=["password", "passwort_aendern", "is_active",
+                             "gesperrt_am", "gesperrt_von"])  # fmt: skip
+    return basis
