@@ -794,6 +794,8 @@ def test_ausweis_scan_liste_bulk_banner_und_automatik(admin_client, monkeypatch)
     monkeypatch.setattr(ausweis_pruefung, "tesseract_vorhanden", lambda: True)
     monkeypatch.setattr(ausweis_pruefung, "pruefen", lambda inhalt, *a, **k: _UKR)
     monkeypatch.setattr(ausweis_scan, "_im_hintergrund", lambda fn: fn())  # synchron
+    monkeypatch.setattr(  # Prüfung im selben Prozess statt in einem Unterprozess
+        ausweis_scan, "_stapel_starten", lambda: ausweis_scan.stapel_im_prozess(0))  # fmt: skip
 
     # Automatik: neuer Antrag wird beim Eingang geprüft
     antrag = _antrag_mit_ausweis("Deutschland")
@@ -837,6 +839,8 @@ def test_ausweis_scan_setzt_nach_unterbrechung_fort(admin_client, monkeypatch):
     monkeypatch.setattr(ausweis_pruefung, "tesseract_vorhanden", lambda: True)
     monkeypatch.setattr(ausweis_pruefung, "pruefen", lambda inhalt, *a, **k: _UKR)
     monkeypatch.setattr(ausweis_scan, "_im_hintergrund", lambda fn: fn())  # synchron
+    monkeypatch.setattr(
+        ausweis_scan, "_stapel_starten", lambda: ausweis_scan.stapel_im_prozess(0))  # fmt: skip
 
     geprueft = _antrag_mit_ausweis("Ukraine")  # Ausweis passt → keine Abweichung
     ausweis_scan.antrag_pruefen(geprueft)  # schon vor dem „Neustart“ geprüft
@@ -866,10 +870,10 @@ def test_ausweis_scan_setzt_nach_unterbrechung_fort(admin_client, monkeypatch):
     assert stand["fertig"] == 2 and stand["abweichungen"] == 1
 
 
-def test_ausweis_scan_ueberspringt_fehler_und_haengt_nicht(monkeypatch):
-    """Ein Antrag, dessen Prüfung einen Fehler wirft, hält den Sammellauf nicht an: er wird
-    übersprungen, trotzdem als geprüft markiert und der Lauf läuft weiter – sonst bliebe er bei
-    jedem Neustart an genau dieser Stelle hängen (ADR 0107)."""
+def test_ausweis_scan_stapel_ueberspringt_fehler(monkeypatch):
+    """stapel_im_prozess: ein Antrag, dessen Prüfung einen Fehler (oder Zeitüberschreitung) wirft,
+    hält den Lauf nicht an – er wird übersprungen, trotzdem als geprüft markiert, der Lauf läuft
+    weiter (ADR 0107)."""
     from apps.antraege import ausweis_scan
     from apps.antraege.models import Antrag
 
@@ -878,17 +882,33 @@ def test_ausweis_scan_ueberspringt_fehler_und_haengt_nicht(monkeypatch):
 
     def pruefen(antrag):
         if antrag.pk == a.pk:
-            raise RuntimeError("Nachweis nicht lesbar")  # simuliert den Absturz-Antrag
+            raise RuntimeError("Nachweis nicht lesbar")  # simuliert den Problem-Antrag
         antrag.ausweis_geprueft_am = timezone.now()
         antrag.save(update_fields=["ausweis_geprueft_am"])
         return False
 
     monkeypatch.setattr(ausweis_scan, "antrag_pruefen", pruefen)
-    ausweis_scan.alle_pruefen_jetzt()
+    ausweis_scan.stapel_im_prozess(0)  # im selben Prozess, ohne echtes Zeitlimit
 
     a.refresh_from_db()
     b.refresh_from_db()
     assert a.ausweis_geprueft_am and b.ausweis_geprueft_am  # auch der fehlerhafte ist geprüft
+
+
+def test_ausweis_scan_treiber_ueberspringt_abgestuerzten_prozess(monkeypatch):
+    """alle_pruefen_jetzt: kommt der Prüf-Prozess am ersten offenen Antrag nicht voran (er ist
+    daran abgestürzt/gehangen), wird dieser übersprungen und der Lauf läuft weiter – er bleibt nie
+    an einem Antrag hängen (ADR 0107)."""
+    from apps.antraege import ausweis_scan
+    from apps.antraege.models import Antrag
+
+    Antrag.objects.create(vorname="A", nachname="Eins")
+    Antrag.objects.create(vorname="B", nachname="Zwei")
+    # Der „Unterprozess“ stürzt sofort ab → macht nie Fortschritt
+    monkeypatch.setattr(ausweis_scan, "_stapel_starten", lambda: None)
+    ausweis_scan.alle_pruefen_jetzt()
+
+    assert not Antrag.objects.filter(ausweis_geprueft_am__isnull=True).exists()  # alle übersprungen
     stand = ausweis_scan.fortschritt()
     assert not stand["laeuft"] and stand["fertig"] == stand["gesamt"] == 2
 

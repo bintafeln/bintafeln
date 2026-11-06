@@ -10,7 +10,12 @@ gibt es keine Abweichung und damit keinen Hinweis.
 
 Neue Anträge werden beim Eingang automatisch im Hintergrund geprüft (ein Thread, der seine
 DB-Verbindung selbst schließt); über die Antragsliste lassen sich auf Befehl auch **alle** Anträge
-prüfen (ebenfalls im Hintergrund, Fortschritt im gemeinsamen Cache).
+prüfen (Fortschritt im gemeinsamen Cache).
+
+Die Sammelprüfung läuft dabei in einem **eigenen Prozess** (Management-Befehl ``ausweise_pruefen``),
+mit einem **Zeitlimit je Antrag**. So hält ein einzelner Nachweis, der eine Bild-/PDF-Bibliothek
+zum Absturz bringt oder endlos hängen lässt, den ganzen Lauf nicht mehr an: Nur dieser Prozess wird
+beendet, der Antrag wird übersprungen (als geprüft markiert) und der Lauf läuft weiter.
 """
 
 import logging
@@ -34,6 +39,10 @@ CACHE_DAUER = 86400  # 1 Tag – so lange bleibt ein unterbrochener Lauf fortset
 # so lange keins mehr, gilt der Lauf als abgebrochen (z. B. durch einen Update-Neustart, der den
 # Thread beendet) und wird beim nächsten Seitenaufruf automatisch fortgesetzt.
 VERWAIST_SEKUNDEN = 180
+# Zeitlimit je Antrag im Prüf-Prozess: Hängt eine Bibliothek an einem Bild, wird der Antrag nach so
+# vielen Sekunden übersprungen. Kleiner als VERWAIST_SEKUNDEN, damit ein einzelner langsamer Antrag
+# den Lauf nicht fälschlich als „verwaist“ erscheinen lässt.
+ZEIT_JE_ANTRAG = 90
 
 
 def _verwaist(stand) -> bool:
@@ -126,47 +135,126 @@ def neuen_pruefen(antrag_pk: int) -> None:
     _im_hintergrund(lauf)
 
 
-def alle_pruefen_jetzt() -> int:
-    """Alle noch **nicht geprüften** Anträge prüfen; Fortschritt im Cache. Liefert die Gesamtzahl
-    der Abweichungen. Synchron – der Aufrufer sorgt für den Hintergrund.
-
-    Es werden nur Anträge ohne ``ausweis_geprueft_am`` abgearbeitet. Dadurch setzt ein nach einem
-    Neustart (Update) erneut gestarteter Lauf genau dort fort, wo er abgebrochen wurde, statt von
-    vorn zu beginnen. Schon geprüfte Anträge zählen als „fertig“ in den Stand hinein."""
+def _cache_stand(laeuft: bool, gesamt: int) -> dict:
+    """Aktuellen Fortschritt aus der Datenbank in den gemeinsamen Cache schreiben (zugleich
+    Lebenszeichen). ``fertig`` = schon geprüfte Anträge."""
     from apps.antraege.models import Antrag
 
-    gesamt = Antrag.objects.count()
-    offen = list(
-        Antrag.objects.filter(ausweis_geprueft_am__isnull=True)
-        .order_by("pk")
-        .values_list("pk", flat=True)
-    )
+    offen = Antrag.objects.filter(ausweis_geprueft_am__isnull=True).count()
     stand = {
-        "laeuft": True,
+        "laeuft": laeuft,
         "gesamt": gesamt,
-        "fertig": gesamt - len(offen),  # bereits geprüfte Anträge
+        "fertig": gesamt - offen,
         "abweichungen": Antrag.objects.filter(ausweis_abweichung=True).count(),
         "aktualisiert": time.time(),
     }
     cache.set(CACHE_SCHLUESSEL, stand, CACHE_DAUER)
-    for pk in offen:
+    return stand
+
+
+def _erster_offener():
+    from apps.antraege.models import Antrag
+
+    return (
+        Antrag.objects.filter(ausweis_geprueft_am__isnull=True)
+        .order_by("pk")
+        .values_list("pk", flat=True)
+        .first()
+    )
+
+
+def stapel_im_prozess(zeit_je_antrag: int = ZEIT_JE_ANTRAG) -> None:
+    """Die offenen Anträge der Reihe nach prüfen – gedacht als **eigener Prozess** (Management-
+    Befehl ``ausweise_pruefen``), damit ein Absturz oder Hänger an einem Nachweis nur diesen Prozess
+    trifft.
+
+    Je Antrag gilt ein **Zeitlimit** (SIGALRM, nur im Haupt-Thread verfügbar); jeder Antrag wird –
+    auch bei Fehler oder Zeitüberschreitung – als geprüft markiert, und der Fortschritt landet live
+    im gemeinsamen Cache. Läuft diese Funktion ausnahmsweise nicht als Haupt-Thread (Rückfall ohne
+    eigenen Prozess), fehlt nur das Zeitlimit; alles andere bleibt gleich."""
+    import signal
+
+    from apps.antraege.models import Antrag
+
+    class _Zeitlimit(Exception):
+        pass
+
+    def _wecker(signum, rahmen):
+        raise _Zeitlimit(f"Zeitlimit {zeit_je_antrag}s überschritten")
+
+    try:
+        signal.signal(signal.SIGALRM, _wecker)
+        hat_wecker = True
+    except (ValueError, AttributeError):  # nicht im Haupt-Thread / kein SIGALRM (z. B. Windows)
+        hat_wecker = False
+
+    gesamt = Antrag.objects.count()
+    while True:
+        pk = _erster_offener()
+        if pk is None:
+            break
+        _cache_stand(True, gesamt)  # Lebenszeichen vor der (evtl. langen) Prüfung
         antrag = Antrag.objects.filter(pk=pk).first()
-        if antrag:
-            try:
-                if antrag_pruefen(antrag):
-                    stand["abweichungen"] += 1
-            except Exception as fehler:  # noqa: BLE001 – ein Antrag darf den Lauf nie anhalten
-                # Fehlgeschlagenen Antrag trotzdem als geprüft markieren, sonst bleibt der Lauf bei
-                # jedem Neustart an genau dieser Stelle hängen.
-                log.warning("Ausweisprüfung für Antrag %s übersprungen: %s", pk, fehler)
-                Antrag.objects.filter(pk=pk).update(ausweis_geprueft_am=timezone.now())
-        stand["fertig"] += 1
-        stand["aktualisiert"] = time.time()  # Lebenszeichen
-        cache.set(CACHE_SCHLUESSEL, stand, CACHE_DAUER)
-    stand["laeuft"] = False
-    stand["aktualisiert"] = time.time()
-    cache.set(CACHE_SCHLUESSEL, stand, CACHE_DAUER)
-    return stand["abweichungen"]
+        if antrag is None:  # zwischenzeitlich gelöscht – nächster
+            continue
+        if hat_wecker:
+            signal.alarm(zeit_je_antrag)
+        try:
+            antrag_pruefen(antrag)
+        except Exception as fehler:  # noqa: BLE001 – inkl. Zeitlimit; nie den Lauf anhalten
+            log.warning("Ausweisprüfung für Antrag %s übersprungen: %s", pk, fehler)
+            Antrag.objects.filter(pk=pk).update(ausweis_geprueft_am=timezone.now())
+        finally:
+            if hat_wecker:
+                signal.alarm(0)
+        _cache_stand(True, gesamt)
+
+
+def _stapel_starten() -> None:
+    """Den Prüf-Unterprozess (Management-Befehl ``ausweise_pruefen``) starten und auf sein Ende
+    warten. Als eigene Funktion, damit Tests sie ersetzen. Wirft ``OSError``, wenn er sich nicht
+    starten lässt (dann rechnet der Treiber im selben Prozess weiter)."""
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    from django.conf import settings
+
+    subprocess.run(  # noqa: S603 – feste Argumente, keine Shell
+        [sys.executable, str(Path(settings.BASE_DIR) / "manage.py"), "ausweise_pruefen"],
+        cwd=str(settings.BASE_DIR),
+        check=False,
+    )
+
+
+def alle_pruefen_jetzt() -> int:
+    """Treiber der Sammelprüfung (läuft im Hintergrund-Thread). Startet die eigentliche Prüfung in
+    einem **eigenen Prozess** (``stapel_im_prozess`` über den Management-Befehl), damit ein Absturz
+    oder Hänger an einem Nachweis nur diesen Prozess trifft. Kommt der Prozess am ersten offenen
+    Antrag nicht voran (er ist daran abgestürzt/gehangen), wird dieser übersprungen und neu
+    gestartet – bis alle geprüft sind. Liefert die Gesamtzahl der Abweichungen.
+
+    Nur Anträge ohne ``ausweis_geprueft_am`` werden abgearbeitet, der Lauf ist also fortsetzbar."""
+    from apps.antraege.models import Antrag
+
+    gesamt = Antrag.objects.count()
+    _cache_stand(True, gesamt)
+    while True:
+        erster = _erster_offener()
+        if erster is None:
+            break
+        _cache_stand(True, gesamt)  # Lebenszeichen vor dem blockierenden Unterprozess
+        try:
+            _stapel_starten()
+        except OSError as fehler:
+            # Unterprozess nicht startbar → im selben Prozess weiter (ohne Absturz-/Hänger-Schutz).
+            log.warning("Prüf-Unterprozess nicht startbar (%s); im Prozess weiter.", fehler)
+            stapel_im_prozess()
+        else:
+            if _erster_offener() == erster:  # kein Fortschritt → dieser Antrag hat ihn abgeschossen
+                log.warning("Antrag %s übersprungen (Prüf-Prozess abgebrochen).", erster)
+                Antrag.objects.filter(pk=erster).update(ausweis_geprueft_am=timezone.now())
+    return _cache_stand(False, gesamt)["abweichungen"]
 
 
 def alle_pruefen_starten() -> None:
