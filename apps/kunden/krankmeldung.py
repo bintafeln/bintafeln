@@ -1,9 +1,11 @@
-"""Krankmeldung eines Kunden (ADR 0075): eine Notiz mit Zeitraum und grobem Grund.
+"""Abwesenheit eines Kunden (ADR 0075): eine Notiz mit Zeitraum und grobem Grund.
 
-Zuschaltbar in den Einstellungen des Kundenstamms. Krank, Reha oder Krankenhaus sind
-Gesundheitsdaten: Die Notiz verschwindet nach dem Ende aus der Anzeige und wird beim nächsten
-täglichen Lauf gelöscht (``verwaiste_notizen_loeschen``). Wer in der Zeit für den Kunden abholen
-darf, legt allein die Verwaltung beim Haushalt fest (Abholer), nicht die Krankmeldung.
+Zuschaltbar in den Einstellungen des Kundenstamms. Der Grund kann krank, Reha oder Krankenhaus
+(Gesundheitsdaten, Anzeige „Krank gemeldet“) oder Urlaub, verhindert bzw. sonstiges (Anzeige
+„Abwesend“) sein. Die Notiz verschwindet in allen Fällen nach dem Ende aus der Anzeige und wird
+beim nächsten täglichen Lauf gelöscht (``verwaiste_notizen_loeschen``); kommt der Kunde innerhalb
+der Zeit wieder, gilt sie als überholt. Wer in der Zeit für den Kunden abholen darf, legt allein
+die Verwaltung beim Haushalt fest (Abholer), nicht die Abwesenheitsmeldung.
 """
 
 import datetime as dt
@@ -24,14 +26,21 @@ def eingeschaltet() -> bool:
     return KundenEinstellungen.laden().krankmeldung
 
 
-def text(von: dt.date, bis: dt.date, grund_text: str, anmerkung: str = "") -> str:
+def _gesundheit(grund: str) -> bool:
+    from apps.core.auswahl import KRANK_GRUENDE
+
+    return grund in {wert for wert, _ in KRANK_GRUENDE}
+
+
+def text(von: dt.date, bis: dt.date, grund: str, grund_text: str, anmerkung: str = "") -> str:
     zeit = f"am {von:%d.%m.%Y}" if von == bis else f"vom {von:%d.%m.%Y} bis {bis:%d.%m.%Y}"
-    satz = f"**Krank gemeldet** ({grund_text}) {zeit}."
+    titel = "Krank gemeldet" if _gesundheit(grund) else "Abwesend"
+    satz = f"**{titel}** ({grund_text}) {zeit}."
     return f"{satz}\n{anmerkung}" if anmerkung else satz
 
 
 def melden(h: Haushalt, benutzer, von, bis, grund: str, anmerkung: str = "") -> Notiz:
-    """Legt die Krankmeldung an; prüft Zeitraum und Grund."""
+    """Legt die Abwesenheitsmeldung an; prüft Zeitraum und Grund."""
     gruende = dict(Notiz._meta.get_field("krank_grund").choices)
     if grund not in gruende:
         raise Fehler("Bitte einen Grund wählen.")
@@ -47,7 +56,7 @@ def melden(h: Haushalt, benutzer, von, bis, grund: str, anmerkung: str = "") -> 
     return Notiz.objects.create(
         kundennummer=h.kundennummer, benutzer=benutzer,
         verfasst_von=(benutzer.get_full_name() or benutzer.get_username())[:100],
-        text=text(von, bis, gruende[grund], anmerkung), krank_von=von, krank_bis=bis,
+        text=text(von, bis, grund, gruende[grund], anmerkung), krank_von=von, krank_bis=bis,
         krank_grund=grund,
     )  # fmt: skip
 

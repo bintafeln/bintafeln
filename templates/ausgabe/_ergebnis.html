@@ -39,7 +39,7 @@
     {% for m in bewertung.meldungen %}<li class="grund-{{ m.farbe }}">{{ m.text }}</li>{% endfor %}
   </ul>
 </section>
-{% if krank %}<p class="karte krank-hinweis" role="status"><strong>Krank gemeldet</strong> ({{ krank.get_krank_grund_display }})
+{% if krank %}<p class="karte krank-hinweis" role="status"><strong>{{ krank.abwesenheit_titel }}</strong> ({{ krank.get_krank_grund_display }})
   bis {{ krank.krank_bis|date:"d.m.Y" }}. Abholen darf nur, wer beim Haushalt als abholberechtigt eingetragen ist.</p>{% endif %}
 {% comment %}Reihenfolge links: Ampel, Krankmeldung, dann „Letzte Abholungen“ oben (sieht der
 Einlass am häufigsten an); Aufruf-/Modulhinweise und die Zahlung weiter unten.{% endcomment %}

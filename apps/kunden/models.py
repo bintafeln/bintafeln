@@ -14,7 +14,14 @@ from django.db import models
 from django.utils import timezone
 
 from apps.core import privatdateien
-from apps.core.auswahl import FESTE_ANLIEGEN, GRUPPENFARBEN, KRANK_GRUENDE, NACHRICHT_ANLIEGEN, WLAN
+from apps.core.auswahl import (
+    ABWESENHEIT_GRUENDE,
+    FESTE_ANLIEGEN,
+    GRUPPENFARBEN,
+    KRANK_GRUENDE,
+    NACHRICHT_ANLIEGEN,
+    WLAN,
+)
 from apps.kunden import namen, werte
 
 
@@ -144,9 +151,10 @@ class KundenEinstellungen(models.Model):
         "Notiz, ab wann es geht. 0 = jederzeit.",
     )  # fmt: skip
     krankmeldung = models.BooleanField(
-        "Krankmeldungen von Kunden", default=False,
-        help_text="Einlass und Verwaltung können eintragen, dass ein Kunde für eine Zeit krank, in "
-        "Reha oder im Krankenhaus ist. Die Notiz verschwindet nach dem Ende von selbst.",
+        "Abwesenheit von Kunden (krank, Urlaub …)", default=False,
+        help_text="Einlass und Verwaltung können eintragen, dass ein Kunde für eine Zeit abwesend "
+        "ist – krank, in Reha, im Krankenhaus, im Urlaub, verhindert oder aus sonstigem Grund. Die "
+        "Notiz verschwindet nach dem Ende von selbst und sobald der Kunde wieder abholt.",
     )  # fmt: skip
     # Wann eine Person als „schwerbehindert“ gilt (Merkmal, Ausweis, Vorrang; ADR 0092)
     sb_ab_gdb = models.PositiveSmallIntegerField(
@@ -710,10 +718,11 @@ class Notiz(models.Model):
     )  # fmt: skip
     gelesen_am = models.DateTimeField("Gelesen am", null=True, blank=True)
     gelesen_von = models.CharField("Gelesen von", max_length=150, blank=True)
-    # Krankmeldung (ADR 0075): gilt von … bis; wird nach dem Ende gelöscht
-    krank_von = models.DateField("Krank von", null=True, blank=True)
-    krank_bis = models.DateField("Krank bis", null=True, blank=True)
-    krank_grund = models.CharField("Grund", max_length=20, blank=True, choices=KRANK_GRUENDE)
+    # Abwesenheit/Krankmeldung (ADR 0075): gilt von … bis; wird nach dem Ende gelöscht. Die
+    # Feldnamen bleiben krank_* (Stabilität von DB, Import, Datensicherung), auch für Urlaub u. Ä.
+    krank_von = models.DateField("Abwesend von", null=True, blank=True)
+    krank_bis = models.DateField("Abwesend bis", null=True, blank=True)
+    krank_grund = models.CharField("Grund", max_length=20, blank=True, choices=ABWESENHEIT_GRUENDE)
 
     class Meta:
         verbose_name = "Notiz"
@@ -722,6 +731,12 @@ class Notiz(models.Model):
 
     def __str__(self):
         return f"Notiz vom {timezone.localtime(self.erstellt_am):%d.%m.%Y}"
+
+    @property
+    def abwesenheit_titel(self) -> str:
+        """„Krank gemeldet“ bei Gesundheitsgründen (Gesundheitsdaten), sonst „Abwesend“."""
+        gesundheit = {wert for wert, _ in KRANK_GRUENDE}
+        return "Krank gemeldet" if self.krank_grund in gesundheit else "Abwesend"
 
     def darf_loeschen(self, benutzer) -> bool:
         """Mit Recht „Alle Notizen löschen“ immer; sonst nur eigene vom selben Tag (Versehen)."""

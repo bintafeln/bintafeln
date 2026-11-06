@@ -43,7 +43,7 @@
 
   {% if krankmeldung %}
   <details class="krank-melden">
-    <summary class="knopf knopf-vorlage"><span aria-hidden="true">🩺 </span>Krank melden …</summary>
+    <summary class="knopf knopf-vorlage"><span aria-hidden="true">🗓 </span>Abwesend melden …</summary>
     {% if notiz_htmx %}
     <form method="post" action="{% url 'ausgabe:krank' h.kundennummer %}" hx-post="{% url 'ausgabe:krank' h.kundennummer %}" hx-target="#einlass">
     {% else %}
@@ -60,7 +60,7 @@
         <input type="text" name="krank_anmerkung" id="krank-anmerkung" maxlength="300"></div>
       <p class="hinweis">Die Notiz verschwindet nach dem Ende von selbst. Wer in der Zeit für den Kunden abholen darf,
         legt die Verwaltung beim Haushalt unter „Abholberechtigte“ fest.</p>
-      <button type="submit" class="knopf knopf-zweitrangig">Krankmeldung speichern</button>
+      <button type="submit" class="knopf knopf-zweitrangig">Abwesenheit speichern</button>
     </form>
   </details>
   {% endif %}

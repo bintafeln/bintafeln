@@ -13,12 +13,17 @@ Zeitraum; sie blieb stehen, bis jemand sie löschte, obwohl sie Gesundheitsdaten
 
 - Zuschaltbar unter „Einstellungen → Kundenstamm“ (`KundenEinstellungen.krankmeldung`, Vorgabe
   aus).
-- Eine Krankmeldung ist eine `Notiz` mit `krank_von`, `krank_bis` und grobem Grund
-  (`KRANK_GRUENDE` in `apps/core/auswahl.py`: krank, Reha, Krankenhaus) und einer freiwilligen
-  Anmerkung. Logik in `apps/kunden/krankmeldung.py`. Eintragen darf, wer Notizen schreiben darf
-  (`kunden.notizen`), am Einlass und auf der Haushaltsseite.
-- Der Einlass zeigt eine laufende Krankmeldung unter der Ampel. Die Ampel selbst ändert sich nicht.
-  Der Auslöser ist ein richtiger Knopf („Krank melden …“), wie die Notiz-Vorlagen darüber.
+- Eine Abwesenheit ist eine `Notiz` mit `krank_von`, `krank_bis` und grobem Grund
+  (`ABWESENHEIT_GRUENDE` in `apps/core/auswahl.py`) und einer freiwilligen Anmerkung. Logik in
+  `apps/kunden/krankmeldung.py`. Eintragen darf, wer Notizen schreiben darf (`kunden.notizen`), am
+  Einlass und auf der Haushaltsseite.
+- **Gründe:** Die Gesundheitsgründe `KRANK_GRUENDE` (krank, Reha, Krankenhaus) sind
+  Gesundheitsdaten und werden als „**Krank gemeldet**“ angezeigt. Dazu kommen nicht-gesundheitliche
+  Gründe (Urlaub, verhindert, Sonstiges), angezeigt als „**Abwesend**“ (`Notiz.abwesenheit_titel`).
+  Mechanik, Befristung und automatisches Löschen sind für alle Gründe gleich. Die DB-/Importfelder
+  heißen weiterhin `krank_*` (Stabilität), auch für die neuen Gründe.
+- Der Einlass zeigt eine laufende Abwesenheit unter der Ampel. Die Ampel selbst ändert sich nicht.
+  Der Auslöser ist ein richtiger Knopf („Abwesend melden …“), wie die Notiz-Vorlagen darüber.
 - Nach dem Ende ist die Notiz nicht mehr zu sehen und wird beim täglichen Lauf gelöscht
   (`verwaiste_notizen_loeschen()`). Höchstens 365 Tage.
 - Kommt der Kunde, während die Meldung läuft, schon einmal zur Abholung (eine `Abholung` mit

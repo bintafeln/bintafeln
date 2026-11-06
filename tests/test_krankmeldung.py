@@ -41,7 +41,7 @@ def an():
 
 def test_ausgeschaltet_kein_formular(h, admin_client):
     seite = admin_client.get(reverse("kunden:haushalt", args=["00042"])).content.decode()
-    assert "Krank melden …" not in seite
+    assert "Abwesend melden …" not in seite
     daten = {"krank_grund": "krank", "krank_von": HEUTE.isoformat()}
     antwort = admin_client.post(reverse("kunden:krank_neu", args=["00042"]), daten)
     assert antwort.status_code == 403 and not Notiz.objects.exists()
@@ -50,7 +50,7 @@ def test_ausgeschaltet_kein_formular(h, admin_client):
 def test_melden_in_der_verwaltung(h, an, admin_client):
     url = reverse("kunden:haushalt", args=["00042"])
     seite = admin_client.get(url).content.decode()
-    assert "Krank melden …" in seite and 'summary class="knopf knopf-vorlage"' in seite
+    assert "Abwesend melden …" in seite and 'summary class="knopf knopf-vorlage"' in seite
     # Von und Bis sind mit dem heutigen Datum vorbelegt (beide überschreibbar).
     heute_iso = HEUTE.isoformat()
     assert f'name="krank_von" id="krank-von" value="{heute_iso}"' in seite
@@ -65,6 +65,24 @@ def test_melden_in_der_verwaltung(h, an, admin_client):
                       "Tochter holt ab")  # fmt: skip
     assert krankmeldung.aktuelle("00042") == n
     assert 'class="notiz notiz-krank"' in admin_client.get(url).content.decode()
+
+
+def test_abwesend_nicht_gesundheit_heisst_abwesend(h, an, admin_client):
+    """Nicht-Gesundheitsgründe (Urlaub, verhindert, …) heißen „Abwesend“ statt „Krank gemeldet“,
+    sonst dieselbe Automatik (ADR 0075)."""
+    url = reverse("kunden:haushalt", args=["00042"])
+    seite = admin_client.get(url).content.decode()
+    assert ">Urlaub<" in seite and ">verhindert<" in seite  # neue Gründe in der Auswahl
+    bis = HEUTE + dt.timedelta(days=7)
+    admin_client.post(reverse("kunden:krank_neu", args=["00042"]),
+                      {"krank_grund": "urlaub", "krank_von": HEUTE.isoformat(),
+                       "krank_bis": bis.isoformat()})  # fmt: skip
+    n = Notiz.objects.get()
+    assert n.krank_grund == "urlaub" and n.abwesenheit_titel == "Abwesend"
+    assert n.text == f"**Abwesend** (Urlaub) vom {HEUTE:%d.%m.%Y} bis {bis:%d.%m.%Y}."
+    assert krankmeldung.aktuelle("00042") == n  # gleiche Automatik wie bei Krankmeldung
+    einlass = admin_client.get(url).content.decode()
+    assert "Krank gemeldet" not in einlass  # kein Gesundheits-Wortlaut bei Urlaub
 
 
 @pytest.mark.parametrize(("daten", "fehler"), [
@@ -85,8 +103,8 @@ def test_einlass_zeigt_und_meldet(h, an, client, admin, benutzer_mit_rolle, anme
     seite = client.post(reverse("ausgabe:krank", args=["00042"]),
                         {"krank_grund": "krankenhaus", "krank_von": HEUTE.isoformat()},
                         HTTP_HX_REQUEST="true").content.decode()  # fmt: skip
-    assert "Krankmeldung gespeichert." in seite
-    assert "<strong>Krank gemeldet</strong> (Krankenhaus)" in seite
+    assert "Abwesenheit gespeichert." in seite
+    assert "<strong>Krank gemeldet</strong> (Krankenhaus)" in seite  # Gesundheitsgrund bleibt
     assert f"bis {HEUTE:%d.%m.%Y}. Abholen darf nur" in seite
     fehler = client.post(reverse("ausgabe:krank", args=["00042"]), {"krank_grund": "x"},
                          HTTP_HX_REQUEST="true").content.decode()  # fmt: skip
