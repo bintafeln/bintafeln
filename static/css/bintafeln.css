@@ -389,8 +389,14 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
   padding: .5rem; background: var(--flaeche); color: var(--text); }
 .nachweis-dialog img { display: block; margin: 0 auto; max-width: 88vw; max-height: 80vh;
   object-fit: contain; }
-.nachweis-dialog-leiste { display: flex; gap: 1rem; justify-content: center; align-items: center;
-  margin-top: .5rem; flex-wrap: wrap; }
+/* Knopfleiste unter der Vorschau: kompakt und möglichst in einer Zeile (ADR 0107). Die Knöpfe
+   sind kleiner als sonst, damit alle Aktionen nebeneinander passen; auf schmalen Geräten dürfen
+   sie umbrechen. Ein feiner Trennstrich setzt die Leiste vom Bild ab. */
+.nachweis-dialog-leiste { display: flex; gap: .5rem; justify-content: center; align-items: center;
+  margin-top: .6rem; padding-top: .6rem; border-top: 1px solid var(--rand); flex-wrap: wrap; }
+.nachweis-dialog-leiste .knopf { width: auto; min-height: 2.25rem; padding: .35rem .75rem;
+  font-size: .9rem; font-weight: 500; }
+.nachweis-dialog-leiste .knopf-abbrechen { margin-left: .25rem; }
 .nachweis-dialog::backdrop { background: rgba(0, 0, 0, .6); }
 /* Bereich aufs Vorschaubild ziehen (Nationalität gezielt lesen, ADR 0107) */
 .nachweis-bild-huelle { position: relative; width: fit-content; margin: 0 auto; }
@@ -398,7 +404,9 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .nachweis-bild-huelle.zeichnen img { user-select: none; -webkit-user-select: none; }
 .nachweis-auswahl { position: absolute; border: 2px dashed var(--akzent);
   background: rgba(232, 113, 10, .15); pointer-events: none; }
-.nachweis-staat-auswahl { max-width: 14rem; }
+.nachweis-staat-auswahl { max-width: 12rem; min-height: 2.25rem; padding: .3rem .5rem;
+  font-size: .9rem; border: 1px solid var(--rand); border-radius: var(--radius);
+  background: var(--flaeche); color: var(--text); }
 .nachweis-status { text-align: center; margin-top: .4rem; min-height: 1.2em; }
 /* Ergebnis der Ausweisprüfung: volle Breite unter den Kacheln (nicht im schmalen Kästchen),
    damit der Hinweis lesbar ist. */
