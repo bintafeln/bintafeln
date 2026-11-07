@@ -733,6 +733,25 @@ def test_bereich_lesen_dreh_fallback(monkeypatch):
     assert len(aufrufe) >= 3
 
 
+def test_pruefen_datei_mehrseitiges_pdf(monkeypatch):
+    """Mehrseitiges PDF: der Ausweis (MRZ) auf einer späteren Seite wird gefunden – z. B. die
+    eingescannte Ausweiskontrolle in einem mehrseitigen Bescheid (ADR 0107)."""
+    from apps.antraege import ausweis_pruefung as ap
+    from apps.antraege import pdf_bilder
+
+    # Drei gerenderte Seiten; der Ausweis steckt erst auf Seite 3.
+    monkeypatch.setattr(pdf_bilder, "seiten_lazy", lambda inhalt, **k: iter([b"s1", b"s2", b"s3"]))
+
+    def fake_pruefen(bild, erwartet=""):
+        if bild == b"s3":
+            return {"erkannt": True, "staatsangehoerigkeit": "Ukraine"}
+        return {"erkannt": False}
+
+    monkeypatch.setattr(ap, "pruefen", fake_pruefen)
+    b = ap.pruefen_datei(b"pdf", "application/pdf", "Ukraine")
+    assert b["erkannt"] and b["staatsangehoerigkeit"] == "Ukraine"
+
+
 def test_ausweis_staat_aus_textfeld(monkeypatch):
     """Stufe 3 (keine MRZ): die Staatsangehörigkeit aus dem Textfeld lesen (ADR 0107)."""
     from apps.antraege import ausweis_pruefung as ap

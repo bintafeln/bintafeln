@@ -146,13 +146,15 @@ def _auswerten(zeilen: list[str]):
 
 def pruefen_datei(inhalt: bytes, typ: str, erwartete_staatsangehoerigkeit: str = "") -> dict:
     """Einen Nachweis prüfen – Bild direkt, PDF Seite für Seite gerendert (ADR 0107). Viele laden
-    ihren Ausweis als PDF hoch; diese Bilder werden so einbezogen."""
+    ihren Ausweis als PDF hoch; diese Bilder werden so einbezogen. Auch mehrseitige PDFs werden
+    durchsucht – so wird z. B. die eingescannte Ausweiskontrolle in einem mehrseitigen Bescheid
+    gefunden (Seite für Seite gerendert, Abbruch bei der ersten lesbaren MRZ)."""
     typ = (typ or "").lower()
     if "pdf" in typ:
         from apps.antraege import pdf_bilder
 
         letzter = {"erkannt": False}
-        for bild in pdf_bilder.seiten_bilder(inhalt):
+        for bild in pdf_bilder.seiten_lazy(inhalt):
             bericht = pruefen(bild, erwartete_staatsangehoerigkeit)
             if bericht.get("erkannt"):
                 return bericht
