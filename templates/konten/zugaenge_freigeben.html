@@ -23,8 +23,7 @@
       <tbody>
       {% for k in konten %}
         <tr>
-          <td><input type="checkbox" name="id" value="{{ k.b.pk }}"
-                     {% if k.sd.geburtsdatum or k.sd.strasse %}checked{% endif %}></td>
+          <td><input type="checkbox" name="id" value="{{ k.b.pk }}"></td>
           <td><a href="{% url 'konten:mitarbeiter' k.b.pk %}">{{ k.b.last_name|default:k.b.username }}{% if k.b.first_name %}, {{ k.b.first_name }}{% endif %}</a></td>
           <td>{{ k.b.username }}</td>
           <td>{% if k.b.email %}{{ k.b.email }}{% else %}<span class="marke-warnung">keine E-Mail</span>{% endif %}</td>
