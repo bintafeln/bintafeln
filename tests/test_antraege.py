@@ -540,6 +540,20 @@ def test_loeschen_knopf_schon_mit_bearbeiten(client, admin, antrag, benutzer_mit
     assert not Antrag.objects.filter(pk=antrag.pk).exists()
 
 
+def test_anmerkung_aendern(admin_client, antrag):
+    """Eine gespeicherte Anmerkung lässt sich nachträglich ändern (z. B. aus der Warteliste
+    heraus über die Antragsseite); leerer Text ändert nichts."""
+    admin_client.post(reverse("antraege:anmerkung", args=[antrag.pk]), {"text": "Erst"})
+    m = antrag.anmerkungen.get()
+    url = reverse("antraege:anmerkung_bearbeiten", args=[antrag.pk, m.pk])
+    admin_client.post(url, {"text": "Geändert: kommt erst im Dezember"})
+    m.refresh_from_db()
+    assert m.text == "Geändert: kommt erst im Dezember"
+    admin_client.post(url, {"text": "   "})  # leer: bleibt unverändert
+    m.refresh_from_db()
+    assert m.text == "Geändert: kommt erst im Dezember"
+
+
 def test_nachweis_ansehen(admin_client, antrag):
     name = privatdateien.speichern(ANHANG_ORDNER, pdf(), typen={"application/pdf"})
     d = AntragAnhang.objects.create(antrag=antrag, name="b.pdf", datei=name,
