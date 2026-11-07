@@ -561,6 +561,10 @@ tr.hervor td { background: var(--erfolg); }
 /* Gruppenkapazitäten: kompakte Kästchen je Kundengruppe (z. B. oben auf der Warteliste).
    Volle Gruppen rot, knappe (≤ 2 frei) mit Akzentrand hervorgehoben. */
 .kapazitaet-karte { margin-bottom: 1rem; }
+details.kapazitaet-karte > summary { cursor: pointer; list-style: none; }
+details.kapazitaet-karte > summary::-webkit-details-marker { display: none; }
+details.kapazitaet-karte > summary::before { content: "▾"; margin-right: .4rem; color: var(--leise); }
+details.kapazitaet-karte:not([open]) > summary::before { content: "▸"; }
 .kapazitaet-kopf { display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem 1rem; }
 .kapazitaet-kopf h2 { margin: 0; font-size: 1.1rem; }
 .kapazitaet-summe { margin: 0; }

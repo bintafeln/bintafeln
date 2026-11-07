@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% load liste static %}{% block titel %}Warteliste{% endblock %}
 {% block inhalt %}
-<script src="{% static 'js/spalten.js' %}" defer></script>
-{% include "includes/gruppen_kapazitaet.html" %}
+<script src="{% static 'js/warteliste_ansicht.js' %}" defer></script>
+{% url 'warteliste:ansicht' as kapazitaet_ansicht_url %}{% include "includes/gruppen_kapazitaet.html" %}
 <section class="karte breit">
   <div class="liste-kopf">
     <h1>Warteliste</h1>
@@ -45,57 +45,51 @@
     <button type="submit" class="knopf">Filtern</button>
   </form>
 
-  <details class="spalten-wahl" data-spalten-wahl="warteliste" data-vorgabe-aus="geburtsdatum wohnort personen" hidden>
-    <summary>Spalten wählen</summary>
-    <div class="spalten-haken">
-      {% for k, name in spalten_wahl %}<label><input type="checkbox" value="{{ k }}" checked> {{ name }}</label>{% endfor %}
-    </div>
-    <p class="hinweis">Die Wahl merkt sich dieser Browser.</p>
-  </details>
+  {% include "includes/spalten_wahl.html" %}
   {% url 'warteliste:export' as export_url %}{% auswahl_formular export_url %}
   <div id="ergebnis">
   <form method="post" id="aktionen">
     {% csrf_token %}
     <input type="hidden" name="zurueck" value="{{ request.get_full_path }}">
     <div class="tabelle-rahmen">
-    <table class="tabelle" data-spalten="warteliste">
+    <table class="tabelle">
       <thead><tr>
         <th><input type="checkbox" aria-label="Alle auswählen" onclick="document.querySelectorAll('#aktionen input[name=ids]').forEach(c => c.checked = this.checked)"></th>
-        <th data-spalte="eingang"><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'eingang' %}-{% endif %}eingang">Eingang</a></th>
-        <th data-spalte="nummer"><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'nummer' %}-{% endif %}nummer">#</a></th>
-        <th><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'name' %}-{% endif %}name">Nachname</a></th>
-        <th><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'vorname' %}-{% endif %}vorname">Vorname</a></th>
-        <th data-spalte="geburtsdatum"><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'geburtsdatum' %}-{% endif %}geburtsdatum">Geburtsdatum</a></th>
-        <th data-spalte="kontakt">Kontakt</th>
-        <th data-spalte="wohnort"><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'wohnort' %}-{% endif %}wohnort">Wohnort</a></th>
-        <th data-spalte="personen">Personen</th>
-        <th data-spalte="art"><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'art' %}-{% endif %}art">Art</a></th>
-        <th data-spalte="staat"><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'staat' %}-{% endif %}staat">Staatsangehörigkeit</a></th>
-        <th data-spalte="status"><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'status' %}-{% endif %}status">Status</a></th>
-        <th data-spalte="termin"><a href="?status={{ f.status }}&amp;sort={% if f.sort == 'termin' %}-{% endif %}termin">Termin</a></th>
-        <th data-spalte="anmerkung">Anmerkung</th>
+        {% if "eingang" in sichtbar %}{% sortkopf "Eingang" "eingang" f.sort %}{% endif %}
+        {% if "nummer" in sichtbar %}{% sortkopf "#" "nummer" f.sort %}{% endif %}
+        {% sortkopf "Nachname" "name" f.sort %}
+        {% sortkopf "Vorname" "vorname" f.sort %}
+        {% if "geburtsdatum" in sichtbar %}{% sortkopf "Geburtsdatum" "geburtsdatum" f.sort %}{% endif %}
+        {% if "kontakt" in sichtbar %}{% sortkopf "Kontakt" "kontakt" f.sort %}{% endif %}
+        {% if "wohnort" in sichtbar %}{% sortkopf "Wohnort" "wohnort" f.sort %}{% endif %}
+        {% if "personen" in sichtbar %}{% sortkopf "Personen" "personen" f.sort %}{% endif %}
+        {% if "art" in sichtbar %}{% sortkopf "Art" "art" f.sort %}{% endif %}
+        {% if "staat" in sichtbar %}{% sortkopf "Staatsangehörigkeit" "staat" f.sort %}{% endif %}
+        {% if "status" in sichtbar %}{% sortkopf "Status" "status" f.sort %}{% endif %}
+        {% if "termin" in sichtbar %}{% sortkopf "Termin" "termin" f.sort %}{% endif %}
+        {% if "anmerkung" in sichtbar %}{% sortkopf "Anmerkung" "anmerkung" f.sort %}{% endif %}
       </tr></thead>
       <tbody>
       {% for ws in eintraege %}{% with a=ws.antrag %}
         <tr>
           <td><input type="checkbox" name="ids" value="{{ a.pk }}" aria-label="Antrag {{ a.nummer }} auswählen"></td>
-          <td data-titel="Eingang" data-spalte="eingang">{{ a.eingegangen_am|date:"d.m.Y" }}</td>
-          <td data-titel="#" data-spalte="nummer"><a href="{% url 'warteliste:eintrag' a.pk %}">{{ a.nummer }}</a></td>
+          {% if "eingang" in sichtbar %}<td data-titel="Eingang">{{ a.eingegangen_am|date:"d.m.Y" }}</td>{% endif %}
+          {% if "nummer" in sichtbar %}<td data-titel="#"><a href="{% url 'warteliste:eintrag' a.pk %}">{{ a.nummer }}</a></td>{% endif %}
           <td data-titel="Nachname"><a href="{% url 'warteliste:eintrag' a.pk %}">{{ a.nachname }}</a></td>
           <td data-titel="Vorname">{{ a.vorname }}</td>
-          <td data-titel="Geburtsdatum" data-spalte="geburtsdatum">{{ a.geburtsdatum|date:"d.m.Y"|default:"–" }}</td>
-          <td data-titel="Kontakt" data-spalte="kontakt">{% if a.email %}✉ {{ a.email }}{% endif %}{% if a.email and a.telefon %}<br>{% endif %}{% if a.telefon %}☎ {{ a.telefon }}{% endif %}{% if not a.email and not a.telefon %}–{% endif %}</td>
-          <td data-titel="Wohnort" data-spalte="wohnort">{{ a.plz }} {{ a.ort|default:"" }}{% if not a.plz and not a.ort %}–{% endif %}</td>
-          <td data-titel="Personen" data-spalte="personen">{{ a.personen.all|length|add:1 }}</td>
-          <td data-titel="Art" data-spalte="art">{{ a.get_art_display }}</td>
-          <td data-titel="Staatsangehörigkeit" data-spalte="staat">{{ a.staatsangehoerigkeit|default:"–" }}</td>
-          <td data-titel="Status" data-spalte="status">{% include "warteliste/_status.html" %}<span id="sperre-{{ a.pk }}"></span></td>
-          <td data-titel="Termin" data-spalte="termin">{% if ws.termin %}<a href="{% url 'warteliste:termin' ws.termin.pk %}">{{ ws.termin }}</a>{% else %}–{% endif %}</td>
-          <td data-titel="Anmerkung" data-spalte="anmerkung" class="anmerkung-zelle">{% for m in a.anmerkungen.all %}<div class="anmerkung-eintrag" title="{{ m.von }}"><span class="hinweis">{{ m.zeitpunkt|date:'d.m.Y' }}:</span> {{ m.text }}</div>{% empty %}–{% endfor %}
-            {% if "warteliste.bearbeiten" in rechte %}<a href="{% url 'warteliste:eintrag' a.pk %}#anmerkung" class="anmerkung-neu" title="Anmerkung hinzufügen">＋</a>{% endif %}</td>
+          {% if "geburtsdatum" in sichtbar %}<td data-titel="Geburtsdatum">{{ a.geburtsdatum|date:"d.m.Y"|default:"–" }}</td>{% endif %}
+          {% if "kontakt" in sichtbar %}<td data-titel="Kontakt">{% if a.email %}✉ {{ a.email }}{% endif %}{% if a.email and a.telefon %}<br>{% endif %}{% if a.telefon %}☎ {{ a.telefon }}{% endif %}{% if not a.email and not a.telefon %}–{% endif %}</td>{% endif %}
+          {% if "wohnort" in sichtbar %}<td data-titel="Wohnort">{{ a.plz }} {{ a.ort|default:"" }}{% if not a.plz and not a.ort %}–{% endif %}</td>{% endif %}
+          {% if "personen" in sichtbar %}<td data-titel="Personen">{{ a.personen.all|length|add:1 }}</td>{% endif %}
+          {% if "art" in sichtbar %}<td data-titel="Art">{{ a.get_art_display }}</td>{% endif %}
+          {% if "staat" in sichtbar %}<td data-titel="Staatsangehörigkeit">{{ a.staatsangehoerigkeit|default:"–" }}</td>{% endif %}
+          {% if "status" in sichtbar %}<td data-titel="Status">{% include "warteliste/_status.html" %}<span id="sperre-{{ a.pk }}"></span></td>{% endif %}
+          {% if "termin" in sichtbar %}<td data-titel="Termin">{% if ws.termin %}<a href="{% url 'warteliste:termin' ws.termin.pk %}">{{ ws.termin }}</a>{% else %}–{% endif %}</td>{% endif %}
+          {% if "anmerkung" in sichtbar %}<td data-titel="Anmerkung" class="anmerkung-zelle">{% for m in a.anmerkungen.all %}<div class="anmerkung-eintrag" title="{{ m.von }}"><span class="hinweis">{{ m.zeitpunkt|date:'d.m.Y' }}:</span> {{ m.text }}</div>{% empty %}–{% endfor %}
+            {% if "warteliste.bearbeiten" in rechte %}<a href="{% url 'warteliste:eintrag' a.pk %}#anmerkung" class="anmerkung-neu" title="Anmerkung hinzufügen">＋</a>{% endif %}</td>{% endif %}
         </tr>
       {% endwith %}{% empty %}
-        <tr><td colspan="14">Keine Einträge.</td></tr>
+        <tr><td colspan="{{ sichtbar|length|add:3 }}">Keine Einträge.</td></tr>
       {% endfor %}
       </tbody>
     </table>
