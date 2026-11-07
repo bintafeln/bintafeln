@@ -5,25 +5,34 @@
 <section class="karte">
   <div class="liste-kopf">
     <h1>Anträge <span class="leise">({{ offen_gesamt }} offen)</span></h1>
-    {% if "antraege.bearbeiten" in rechte %}
-      {# Selten gebrauchte Werkzeuge (Import, Sammelprüfung) dezent eingeklappt – neue Anträge werden ohnehin automatisch geprüft. #}
-      <details class="listen-werkzeuge">
-        <summary class="knopf knopf-zweitrangig">Importieren &amp; prüfen …</summary>
+    {# Beide Aufklapper teilen sich einen name, damit sich beim Öffnen des einen das andere schließt. #}
+    <div class="listen-werkzeuge-reihe">
+      <details class="listen-werkzeuge" name="antraege-werkzeuge">
+        <summary class="knopf knopf-zweitrangig">⬇ Herunterladen …</summary>
         <div class="listen-werkzeuge-inhalt">
-          <a class="knopf knopf-zweitrangig" href="{% url 'antraege:antraege_importieren' %}">Anträge importieren</a>
-          <a class="knopf knopf-zweitrangig" href="{% url 'antraege:nachweise_importieren' %}">Nachweise importieren</a>
-          {% if ausweis_pruefen %}
-          <form method="post" action="{% url 'antraege:ausweise_pruefen_alle' %}" class="inline"
-                onsubmit="return confirm('Noch nicht geprüfte Anträge auf Ausweise prüfen? Das läuft im Hintergrund und kann je nach Anzahl etwas dauern.')">
-            {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">Alle Ausweise prüfen</button>
-          </form>
-          <form method="post" action="{% url 'antraege:ausweise_neu_pruefen_alle' %}" class="inline"
-                onsubmit="return confirm('Wirklich ALLE Anträge noch einmal prüfen – auch die schon geprüften? Das liest jeden Nachweis neu und kann je nach Anzahl länger dauern.')">
-            {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig" title="Auch schon geprüfte Anträge erneut lesen (z. B. nach verbesserter Erkennung)">Alle neu prüfen</button>
-          </form>{% endif %}
+          {% include "includes/listen_export.html" %}
         </div>
       </details>
-    {% endif %}
+      {% if "antraege.bearbeiten" in rechte %}
+        {# Selten gebrauchte Werkzeuge (Import, Sammelprüfung) dezent eingeklappt – neue Anträge werden ohnehin automatisch geprüft. #}
+        <details class="listen-werkzeuge" name="antraege-werkzeuge">
+          <summary class="knopf knopf-zweitrangig">Importieren &amp; prüfen …</summary>
+          <div class="listen-werkzeuge-inhalt">
+            <a class="knopf knopf-zweitrangig" href="{% url 'antraege:antraege_importieren' %}">Anträge importieren</a>
+            <a class="knopf knopf-zweitrangig" href="{% url 'antraege:nachweise_importieren' %}">Nachweise importieren</a>
+            {% if ausweis_pruefen %}
+            <form method="post" action="{% url 'antraege:ausweise_pruefen_alle' %}" class="inline"
+                  onsubmit="return confirm('Noch nicht geprüfte Anträge auf Ausweise prüfen? Das läuft im Hintergrund und kann je nach Anzahl etwas dauern.')">
+              {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">Alle Ausweise prüfen</button>
+            </form>
+            <form method="post" action="{% url 'antraege:ausweise_neu_pruefen_alle' %}" class="inline"
+                  onsubmit="return confirm('Wirklich ALLE Anträge noch einmal prüfen – auch die schon geprüften? Das liest jeden Nachweis neu und kann je nach Anzahl länger dauern.')">
+              {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig" title="Auch schon geprüfte Anträge erneut lesen (z. B. nach verbesserter Erkennung)">Alle neu prüfen</button>
+            </form>{% endif %}
+          </div>
+        </details>
+      {% endif %}
+    </div>
   </div>
   {% if ausweis_pruefen and ausweis_lauf.laeuft %}{% include "antraege/_ausweis_fortschritt.html" with stand=ausweis_lauf %}{% endif %}
   <p class="hinweis">Gelöschte Anträge kommen in den <a href="{% url 'core:papierkorb' %}">gemeinsamen Papierkorb</a>
@@ -41,7 +50,6 @@
   </form>
   {% url 'antraege:export' as export_url %}{% auswahl_formular export_url %}
   <div class="liste-aktionen">
-    {% include "includes/listen_export.html" %}
     <span class="hinweis" data-auswahl-zahl="auswahl"></span>
   </div>
   <details class="spalten-wahl">

@@ -1766,11 +1766,12 @@ details.amtsdokumente > summary { cursor: pointer; margin: .5rem 0; }
   .ausweis-aktion .knopf-klein { flex: 1 1 auto; }  /* Knöpfe füllen die Breite, leicht treffbar */
 }
 
-/* Eingeklappte, selten gebrauchte Werkzeuge im Listenkopf (Import/Sammelprüfung) */
+/* Eingeklappte, selten gebrauchte Werkzeuge im Listenkopf (Herunterladen/Import/Sammelprüfung) */
+.listen-werkzeuge-reihe { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .5rem; }
 .listen-werkzeuge { display: inline-block; }
 .listen-werkzeuge > summary { display: inline-block; list-style: none; cursor: pointer; }
 .listen-werkzeuge > summary::-webkit-details-marker { display: none; }
-.listen-werkzeuge-inhalt { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+.listen-werkzeuge-inhalt { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: .5rem; }
 
 /* Altersangabe am Einlass farbig nach Geschlecht (aus der Anrede) und Altersband:
    Frau rosa, Herr blau, sonst neutral grau; je heller, desto jünger. Feste Farben mit eigener
