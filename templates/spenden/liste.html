@@ -8,6 +8,7 @@
     <div class="titel-knoepfe">
       {% if "spenden.erfassen" in rechte %}<a class="knopf" href="{% url 'spenden:neu' %}">+ Spende erfassen</a> <a class="knopf knopf-zweitrangig" href="{% url 'spenden:importieren' %}">Importieren</a>{% endif %}
       {% if "spenden.bestaetigen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'spenden:bestaetigungen' %}?jahr={{ jahr }}">Zuwendungsbestätigungen</a>{% endif %}
+      {% include "includes/herunterladen.html" %}
     </div>
   </div>
   <form class="filter-kompakt" method="get">
@@ -31,8 +32,7 @@
   {% auswahl_formular "" %}
   <div class="liste-aktionen">
     <span class="hinweis">{{ seite.paginator.count }} Spende{{ seite.paginator.count|pluralize:"n" }}</span>
-    {% if seite.paginator.count %}{% include "includes/listen_export.html" %}
-    <span class="hinweis" data-auswahl-zahl="auswahl"></span>{% endif %}
+    <span class="hinweis" data-auswahl-zahl="auswahl"></span>
   </div>
   {% url 'spenden:spalten' as spalten_aktion %}{% include "includes/spalten_wahl.html" %}
   {% blaettern seite %}

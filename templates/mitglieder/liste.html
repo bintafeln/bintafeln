@@ -8,6 +8,7 @@
     <div class="titel-knoepfe">
       {% if "mitglieder.bearbeiten" in rechte %}<a class="knopf" href="{% url 'mitglieder:neu' %}">+ Neues Mitglied</a>{% endif %}
       {% if "adressen.sehen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'adressen:liste' %}">Adressbuch →</a>{% endif %}
+      {% include "includes/herunterladen.html" %}
     </div>
   </div>
   <form class="filter-kompakt" method="get">
@@ -37,8 +38,7 @@
   {% auswahl_formular "" %}
   <div class="liste-aktionen">
     <span class="hinweis">{{ zeilen|length }} Mitglied{{ zeilen|length|pluralize:"er" }}</span>
-    {% if zeilen %}{% include "includes/listen_export.html" %}
-    <span class="hinweis" data-auswahl-zahl="auswahl"></span>{% endif %}
+    <span class="hinweis" data-auswahl-zahl="auswahl"></span>
   </div>
   {% url 'mitglieder:spalten' as spalten_aktion %}{% include "includes/spalten_wahl.html" %}
   <div class="tabelle-rahmen">
