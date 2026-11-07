@@ -135,8 +135,8 @@ def test_hilfe_bild_mitarbeitende(angemeldet, admin, muster, benutzer_mit_rolle)
                     von="unten", laenge=40),
               Marke(zugang.get_by_role("button", name="Werkseinstellungen"), nummer=2,
                     von="unten", laenge=40),
-              Marke(zugang.get_by_role("button", name="Sperren"), nummer=3, von="rechts",
-                    laenge=50))  # fmt: skip
+              Marke(zugang.get_by_role("button", name="Sperren", exact=True), nummer=3,
+                    von="rechts", laenge=50))  # fmt: skip
 
 
 # --- Personal ---------------------------------------------------------------------------------

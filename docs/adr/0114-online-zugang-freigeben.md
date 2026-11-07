@@ -42,3 +42,19 @@ um viele vorhandene Konten nach dem Import zügig nutzbar zu machen.
 Auf der Sammelseite „Online-Zugänge freigeben" sind die Kästchen **nicht** vorausgewählt – man
 wählt die Konten bewusst einzeln (oder über „Alle auswählen" im Kopf). Vorher waren alle Konten mit
 ableitbarem Startpasswort vorangehakt; das Freigeben ist aber eine bewusste Einzelentscheidung.
+
+## Nachtrag: Online-Zugang je Person vorübergehend sperren
+
+Zusätzlich zum Freigeben lässt sich der Online-Zugang einer einzelnen Person **sperren und wieder
+freigeben**, ohne das Konto zu archivieren. Dafür gibt es das Feld `Benutzer.zugang_gesperrt`
+(Vorgabe `False`) und, auf der Kontoseite, die Knöpfe **„Online-Zugang sperren"** /
+**„Online-Zugang freigeben"** (Logik `verwaltung.zugang_sperren` / `zugang_entsperren`, Ansichten
+`views_mitarbeitende.zugang_sperren` / `zugang_entsperren`).
+
+- Bei gesperrtem Zugang lehnt `AnmeldeForm` die Anmeldung ab (Passwort stimmt, zählt aber **nicht**
+  als Fehlversuch); die Person bleibt `is_active` (aktiver Helfer, nicht im Archiv), behält Rollen,
+  Rechte und Passwort. Das Wieder-Freigeben wirkt sofort, ohne neues Startpasswort.
+- Abgrenzung: **„Sperren"** (`is_active=False`) archiviert die Person als ausgeschieden und entfernt
+  sie aus den aktiven Listen; **„Online-Zugang sperren"** stellt nur die Anmeldung ab. Niemand kann
+  den **eigenen** Online-Zugang sperren; Admin-Konten nur ein Admin.
+- Der Stand steht in der Auskunft nach Art. 15 („Online-Zugang gesperrt").

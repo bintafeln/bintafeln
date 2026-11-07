@@ -370,6 +370,26 @@ def entsperren(request, pk):
 
 @require_POST
 @verwalter_erforderlich
+def zugang_sperren(request, pk):
+    """Nur den Online-Zugang einer Person sperren, ohne sie zu archivieren (ADR 0114)."""
+    return _aktion(
+        request, pk, verwaltung.zugang_sperren,
+        "Online-Zugang von {ziel} gesperrt: keine Anmeldung möglich, bleibt aber aktiver Helfer.",
+    )  # fmt: skip
+
+
+@require_POST
+@verwalter_erforderlich
+def zugang_entsperren(request, pk):
+    """Einen gesperrten Online-Zugang wieder freigeben; das bisherige Passwort gilt sofort."""
+    return _aktion(
+        request, pk, verwaltung.zugang_entsperren,
+        "Online-Zugang von {ziel} wieder freigegeben.",
+    )  # fmt: skip
+
+
+@require_POST
+@verwalter_erforderlich
 def entfernen(request, pk):
     """Ein gesperrtes Konto samt Adresse endgültig (in den Papierkorb) löschen; nur mit dem
     Recht „Gesperrte Mitarbeitende endgültig löschen“."""

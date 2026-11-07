@@ -227,6 +227,25 @@ def entsperren(verwalter, ziel) -> None:
     ziel.save(update_fields=["is_active", "gesperrt_am", "gesperrt_von"])
 
 
+def zugang_sperren(verwalter, ziel) -> None:
+    """Nur den Online-Zugang sperren (ADR 0114): Die Person kann sich nicht mehr anmelden, bleibt
+    aber aktiver Helfer (nicht im Archiv); Rollen, Rechte und Passwort bleiben. Anders als
+    ``sperren`` wird das Konto nicht archiviert."""
+    _pruefen(verwalter, ziel)
+    if ziel.pk == verwalter.pk:
+        raise VerwaltungsFehler("Sie können sich den eigenen Online-Zugang nicht sperren.")
+    ziel.zugang_gesperrt = True
+    ziel.save(update_fields=["zugang_gesperrt"])
+
+
+def zugang_entsperren(verwalter, ziel) -> None:
+    """Den zuvor gesperrten Online-Zugang wieder freigeben; das bisherige Passwort gilt sofort
+    wieder (kein neues Startpasswort nötig)."""
+    _pruefen(verwalter, ziel)
+    ziel.zugang_gesperrt = False
+    ziel.save(update_fields=["zugang_gesperrt"])
+
+
 def entfernen(verwalter, ziel):
     """Löscht ein gesperrtes (archiviertes) Mitarbeiter-Konto samt Stammdaten und verknüpfter
     Adresse in den Papierkorb (Ausnahme zu ADR 0015). Alles, was am Konto hängt (Verträge,
@@ -308,6 +327,7 @@ def freigeben(verwalter, ziel) -> str:
     ziel.is_active = True
     ziel.gesperrt_am = None
     ziel.gesperrt_von = ""
+    ziel.zugang_gesperrt = False
     ziel.save(update_fields=["password", "passwort_aendern", "is_active",
-                             "gesperrt_am", "gesperrt_von"])  # fmt: skip
+                             "gesperrt_am", "gesperrt_von", "zugang_gesperrt"])  # fmt: skip
     return basis
