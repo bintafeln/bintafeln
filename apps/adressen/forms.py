@@ -48,6 +48,10 @@ class AdresseForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.verwalter = verwalter
         self.fields["anrede"].choices = mit_vorhandenem(ANREDEN, self.instance.anrede)
+        # Organisation und Ansprechperson gibt es nur bei einer Organisation (zeigen_bei.js blendet
+        # das ganze Feld samt Label ein/aus; ohne JavaScript bleibt alles sichtbar).
+        for name in ("organisation", "ansprechperson"):
+            self.fields[name].widget.attrs["data-zeigen-bei"] = "art=organisation"
         # Das Konto darf nur verknüpfen, wer Mitarbeitende verwalten darf. Dann auch die Rollen.
         self.rollen_bearbeitbar = konto_waehlbar and verwalter is not None
         if konto_waehlbar:
