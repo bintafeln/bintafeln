@@ -226,10 +226,13 @@ def anmerkung(request, pk):
 
 
 @require_POST
-@rollen.recht_erforderlich("antraege.loeschen")
+@rollen.recht_erforderlich("antraege.bearbeiten")
 def papierkorb(request, pk):
     """Legt den Antrag in den gemeinsamen Papierkorb (ADR 0073): von dort wiederherstellbar,
-    danach endgültig gelöscht nach der Tafel-weiten Frist."""
+    danach endgültig gelöscht nach der Tafel-weiten Frist. Das In-den-Papierkorb-Legen gehört zum
+    Bearbeiten (``antraege.bearbeiten``) – der Knopf steht so immer bei den anderen Zeilen-Knöpfen;
+    das Wiederherstellen aus dem Papierkorb bleibt dem stärkeren Recht ``antraege.loeschen``
+    vorbehalten."""
     a = get_object_or_404(Antrag, pk=pk)
     nummer = a.nummer
     in_papierkorb(a, request.user)

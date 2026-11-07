@@ -82,7 +82,7 @@
           <a class="symbol" href="{% url 'antraege:antrag' a.pk %}" title="Ansehen" aria-label="Antrag {{ a.nummer }} ansehen">👁</a>
           <a class="symbol" href="{% url 'antraege:bearbeiten' a.pk %}" title="Bearbeiten" aria-label="Antrag {{ a.nummer }} bearbeiten">✎</a>
           <a class="symbol" href="{% url 'antraege:antrag' a.pk %}#anmerkungen" title="Anmerkung" aria-label="Anmerkung zu Antrag {{ a.nummer }}">💬</a>
-          {% if "antraege.loeschen" in rechte %}
+          {% if "antraege.bearbeiten" in rechte %}
             <form method="post" action="{% url 'antraege:papierkorb' a.pk %}" class="inline"
                   onsubmit="return confirm(this.dataset.frage)" data-frage="Antrag {{ a.nummer }} von {{ a.name }} in den Papierkorb legen?">
               {% csrf_token %}<button type="submit" class="symbol gefahr" title="Löschen (in den Papierkorb)" aria-label="Antrag {{ a.nummer }} löschen">🗑</button></form>
