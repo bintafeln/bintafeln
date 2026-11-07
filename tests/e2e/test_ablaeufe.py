@@ -112,8 +112,10 @@ def test_kundenliste_auswahl_und_export(angemeldet, admin):
     expect(seite.locator("tbody input[type=checkbox]:checked")).to_have_count(3)
     alle.uncheck()
     expect(seite.locator("tbody input[type=checkbox]:checked")).to_have_count(0)
-    # Export nimmt nur die angehakten Haushalte
+    # Export nimmt nur die angehakten Haushalte; „Als CSV-Datei“ liegt im Aufklapper
+    # „⬇ Herunterladen …“, der erst geöffnet werden muss.
     zeilen.nth(1).check()
+    seite.locator("summary", has_text="Herunterladen").click()
     with seite.expect_download() as laden:
         seite.get_by_role("button", name=re.compile("Als CSV-Datei")).click()
     inhalt = Path(laden.value.path()).read_text(encoding="utf-8-sig")

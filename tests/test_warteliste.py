@@ -192,6 +192,7 @@ def test_liste_name_vorname_getrennt_und_sortierbar(admin_client, modul_an):
     ablauf.automatik()
     inhalt = admin_client.get(reverse("warteliste:liste")).content.decode()
     assert ">Nachname</a>" in inhalt and ">Vorname</a>" in inhalt  # getrennte Spalten
+    assert "⬇ Herunterladen …" in inhalt  # Export-Aufklapper oben rechts (einheitlich)
     nach_v = admin_client.get(reverse("warteliste:liste"), {"sort": "vorname"}).context["eintraege"]
     assert [w.antrag.vorname for w in nach_v] == ["Anton", "Berta"]
     # Weitere Spalten sind jetzt auch sortierbar (kein Fehler).
