@@ -12,8 +12,9 @@
   if (window.__nachweisVorschau) return; // nur einmal binden (das Skript kann mehrfach eingebunden sein)
   window.__nachweisVorschau = true;
 
-  var dialog, bild, huelle, auswahl, status, bescheid, neu, bereich, uebernehmen, link;
+  var dialog, bild, huelle, auswahl, status, bescheid, neu, bereich, staatAuswahl, uebernehmen, link;
   var urls = {}; // bescheid, neu, bereich, uebernehmen für das aktuell gezeigte Bild
+  var staatenGefuellt = false; // die Länderliste wird einmal aus der Seitenvorlage geklont
   var erkannt = ""; // zuletzt im Ausschnitt erkanntes Land
   var zieht = false, startX = 0, startY = 0;
 
@@ -70,6 +71,7 @@
           status.textContent = "Erkannt: " + erkannt + ".";
           uebernehmen.textContent = "„" + erkannt + "“ übernehmen";
           uebernehmen.hidden = !urls.uebernehmen;
+          staatAuswahl.value = erkannt; // in der Auswahl mitführen (falls das Land dort steht)
         } else {
           status.textContent = "Nichts erkannt – anderen Bereich versuchen.";
           uebernehmen.hidden = true;
@@ -97,6 +99,9 @@
     bescheid = knopf("📄 Ist ein Bescheid");
     neu = knopf("🔄 Neu prüfen");
     bereich = knopf("🔍 Nationalität im Bild lesen");
+    staatAuswahl = document.createElement("select");
+    staatAuswahl.className = "nachweis-staat-auswahl";
+    fuelleStaaten();
     uebernehmen = knopf("Übernehmen");
     uebernehmen.className = "knopf knopf-klein";
     link = document.createElement("a");
@@ -106,7 +111,7 @@
     link.textContent = "In neuem Fenster öffnen";
     var zu = knopf("Schließen");
     zu.className = "knopf knopf-abbrechen";
-    leiste.append(bescheid, neu, bereich, uebernehmen, link, zu);
+    leiste.append(bescheid, neu, bereich, staatAuswahl, uebernehmen, link, zu);
     dialog.append(huelle, status, leiste);
     document.body.appendChild(dialog);
 
@@ -127,6 +132,17 @@
         .catch(function () { status.textContent = "Prüfung fehlgeschlagen."; neu.disabled = false; });
     });
     bereich.addEventListener("click", function () { zeichnenAn(!huelle.classList.contains("zeichnen")); });
+    // Land von Hand aus der Auswahl wählen: wie ein erkanntes Land behandeln (Übernehmen zeigen).
+    staatAuswahl.addEventListener("change", function () {
+      erkannt = staatAuswahl.value || "";
+      if (erkannt && urls.uebernehmen) {
+        uebernehmen.textContent = "„" + erkannt + "“ übernehmen";
+        uebernehmen.hidden = false;
+        status.textContent = "";
+      } else {
+        uebernehmen.hidden = true;
+      }
+    });
     uebernehmen.addEventListener("click", function () {
       if (!erkannt || !urls.uebernehmen) return;
       senden(urls.uebernehmen, { staatsangehoerigkeit: erkannt }).then(function () {
@@ -165,6 +181,18 @@
     return b;
   }
 
+  // Länder einmal aus der Seitenvorlage <template id="ausweis-staaten-optionen"> in die Auswahl
+  // klonen. Fehlt die Vorlage (keine Berechtigung), bleibt die Auswahl leer und wird verborgen.
+  function fuelleStaaten() {
+    var tpl = document.getElementById("ausweis-staaten-optionen");
+    if (!tpl || !tpl.content) return;
+    staatAuswahl.appendChild(new Option("— Land von Hand setzen —", ""));
+    tpl.content.querySelectorAll("option").forEach(function (o) {
+      staatAuswahl.appendChild(o.cloneNode(true));
+    });
+    staatenGefuellt = staatAuswahl.options.length > 1;
+  }
+
   function stellen(r, x1, y1, x2, y2) {
     var hr = huelle.getBoundingClientRect();
     auswahl.style.left = (Math.min(x1, x2) - hr.left) + "px";
@@ -188,6 +216,9 @@
     neu.hidden = !urls.neu;
     neu.disabled = false;
     bereich.hidden = !urls.bereich;
+    staatAuswahl.hidden = !(staatenGefuellt && urls.uebernehmen);
+    staatAuswahl.value = "";
+    erkannt = "";
     uebernehmen.hidden = true;
     status.textContent = "";
     huelle.classList.remove("zeichnen");

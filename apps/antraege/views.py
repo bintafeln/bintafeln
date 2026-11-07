@@ -182,18 +182,24 @@ def antrag(request, pk):
         "voriger": voriger,
         "naechster": naechster,
     }
-    # Hinweis-Banner bei einer erkannten Abweichung der Staatsangehörigkeit (ADR 0107): Bild zeigen
-    # und (mit Bearbeiten-Recht) die Übernahme anbieten.
+    # Länderliste für die Staaten-Auswahl im Vorschau-Popup (immer, wenn die Ausweisprüfung läuft
+    # und man bearbeiten darf) sowie der Abweichungs-Banner (ADR 0107).
     darf = rollen.hat_recht(request.user, "antraege.bearbeiten")
-    if a.ausweis_abweichung and a.ausweis_staat and darf:
+    if kontext["ausweis_pruefen"] and darf:
         from apps.core import auswahl
 
-        bekannt = a.ausweis_staat in auswahl.LAENDERCODE
-        staaten = auswahl.mit_vorhandenem(auswahl.staatsangehoerigkeiten(), a.staatsangehoerigkeit)
-        kontext["ausweis_staaten"] = (
-            auswahl.mit_vorhandenem(staaten, a.ausweis_staat) if bekannt else staaten
+        kontext["ausweis_staaten"] = auswahl.mit_vorhandenem(
+            auswahl.staatsangehoerigkeiten(), a.staatsangehoerigkeit
         )
-        kontext["ausweis_vorschlag"] = a.ausweis_staat if bekannt else a.staatsangehoerigkeit
+        kontext["ausweis_vorschlag"] = a.staatsangehoerigkeit
+        # Bei einer erkannten Abweichung den erkannten Staat vorschlagen und voranstellen.
+        if a.ausweis_abweichung and a.ausweis_staat:
+            bekannt = a.ausweis_staat in auswahl.LAENDERCODE
+            if bekannt:
+                kontext["ausweis_staaten"] = auswahl.mit_vorhandenem(
+                    kontext["ausweis_staaten"], a.ausweis_staat
+                )
+                kontext["ausweis_vorschlag"] = a.ausweis_staat
     return render(request, "antraege/antrag.html", kontext)
 
 
@@ -512,10 +518,14 @@ def ausweis_pruefung_liste(request):
         )
         return [_ausweis_zeile(a) for a in qs]
 
+    from apps.core import auswahl
+
     kontext = {
         "abweichungen": _laden(ausweis_befund="abweichung"),
         "unklar": _laden(ausweis_befund="unklar"),
         "amtsdokumente": _laden(ausweis_befund="amtsdokument"),
+        # Länderliste für die Staaten-Auswahl im Vorschau-Popup
+        "staaten": auswahl.staatsangehoerigkeiten(),
     }
     return render(request, "antraege/ausweis_pruefung.html", kontext)
 

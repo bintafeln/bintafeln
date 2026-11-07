@@ -768,6 +768,30 @@ def test_ausweis_abweichung_und_uebernehmen(admin_client, antrag, monkeypatch):
     assert Antrag.objects.get(pk=antrag.pk).staatsangehoerigkeit == "Ukraine"
 
 
+def test_ausweis_popup_knoepfe_und_staaten_auf_antragsseite(admin_client, antrag, monkeypatch):
+    """Antragsseite: das Bild-Vorschau-Popup trägt die Prüf-Knöpfe (Bescheid/Neu prüfen/Bereich/
+    Übernehmen) und die Länderliste für die Auswahl von Hand – wie die Sammel-Seite (ADR 0107)."""
+    from apps.antraege import ausweis_pruefung as ap
+    from apps.antraege.models import AntragEinstellungen
+
+    e = AntragEinstellungen.laden()
+    e.ausweis_pruefen = True
+    e.save()
+    monkeypatch.setattr(ap, "tesseract_vorhanden", lambda: True)
+    name = privatdateien.speichern(
+        ANHANG_ORDNER, SimpleUploadedFile("ausweis.png", _png(), content_type="image/png"),
+        typen={"image/png"})  # fmt: skip
+    AntragAnhang.objects.create(antrag=antrag, name="ausweis.png", datei=name, typ="image/png")
+    seite = admin_client.get(reverse("antraege:antrag", args=[antrag.pk])).content.decode()
+    assert "data-neu-pruefen-url" in seite and "data-bereich-url" in seite
+    assert "data-uebernehmen-url" in seite
+    assert 'id="ausweis-staaten-optionen"' in seite  # Länderliste fürs Popup
+
+    # Die Sammel-Prüfungsseite trägt dieselbe Länderliste fürs Popup
+    liste = admin_client.get(reverse("antraege:ausweis_pruefung_liste")).content.decode()
+    assert 'id="ausweis-staaten-optionen"' in liste
+
+
 _UKR = {"erkannt": True, "staatsangehoerigkeit": "Ukraine"}  # erfundener MRZ-Bericht für Tests
 
 
