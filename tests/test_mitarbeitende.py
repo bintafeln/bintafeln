@@ -135,33 +135,29 @@ def test_liste_spalten_sortieren_export(admin_client):
     assert pdf["Content-Type"] == "application/pdf"
 
 
-def test_personalnummer_automatisch_und_gemeinsame_reihe(admin_client):
+def test_personalnummer_automatisch_eigener_kreis(admin_client):
     import datetime as dt
 
     from apps.adressen.models import Adresse
     from apps.konten.models import Stammdaten
-    from apps.mitglieder.models import Mitglied, MitgliederEinstellungen
+    from apps.mitglieder.models import Mitglied
 
-    # Ein Mitglied mit Nummer 5 existiert; die Reihe steht bei 5
+    # Ein Mitglied mit Nummer 5 darf die Personalnummern nicht beeinflussen (getrennte Kreise).
     a = Adresse.objects.create(art=Adresse.Art.PERSON, nachname="Alt")
     Mitglied.objects.create(adresse=a, nummer="5", art="foerder", eintritt=dt.date(2020, 1, 1))
-    e = MitgliederEinstellungen.laden()
-    e.naechste_nummer = 5
-    e.save()
 
-    # Neue Mitarbeitende bekommen automatisch Nummern aus derselben Reihe – nicht die belegte 5
     neu(admin_client, username="neo.neu", first_name="Neo", last_name="Neu")
     neo = get_user_model().objects.get(username="neo.neu")
-    assert neo.stammdaten.personalnummer == 6  # 5 ist belegt → 6
+    erste = neo.stammdaten.personalnummer
     neu(admin_client, username="pia.platz", first_name="Pia", last_name="Platz")
-    assert Stammdaten.objects.get(benutzer__username="pia.platz").personalnummer == 7
-
+    zweite = Stammdaten.objects.get(benutzer__username="pia.platz").personalnummer
+    assert zweite == erste + 1  # fortlaufend aus dem eigenen Kreis
     # Die Nummer erscheint in der Liste
     inhalt = admin_client.get(reverse("konten:ehrenamtliche")).content.decode()
-    assert '<td data-titel="Nummer">6</td>' in inhalt
+    assert f'<td data-titel="Nummer">{erste}</td>' in inhalt
 
 
-def test_personalnummer_mitglied_zeigt_mitgliedsnummer(admin_client):
+def test_personalnummer_unabhaengig_von_mitgliedsnummer(admin_client):
     import datetime as dt
 
     from apps.adressen.models import Adresse
@@ -169,17 +165,18 @@ def test_personalnummer_mitglied_zeigt_mitgliedsnummer(admin_client):
 
     neu(admin_client, username="mia.mit", first_name="Mia", last_name="Mitglied")
     b = get_user_model().objects.get(username="mia.mit")
-    # Mia ist zugleich Mitglied → in der Liste zählt ihre Mitgliedsnummer, nicht die Personalnummer
+    # Mia ist zugleich Mitglied → in der Mitarbeitendenliste zählt ihre eigene Personalnummer,
+    # nicht die Mitgliedsnummer (getrennte Nummernkreise, ADR 0116).
     Mitglied.objects.create(
         adresse=Adresse.objects.get(konto=b), nummer="99", art="aktiv", eintritt=dt.date(2021, 1, 1)
     )
-    assert verwaltung.personennummer(b) == "99"
+    assert verwaltung.personennummer(b) == str(b.stammdaten.personalnummer)
+    assert verwaltung.personennummer(b) != "99"
 
 
 def test_admin_mitarbeiternummer_selbst_setzen(admin_client):
     from apps.konten.forms import StammdatenForm
-    from apps.konten.models import Stammdaten
-    from apps.mitglieder.models import MitgliederEinstellungen
+    from apps.konten.models import PersonalEinstellungen, Stammdaten
 
     neu(admin_client, username="nia.neu", first_name="Nia", last_name="Neu")
     b = get_user_model().objects.get(username="nia.neu")
@@ -187,7 +184,7 @@ def test_admin_mitarbeiternummer_selbst_setzen(admin_client):
     assert "Mitarbeiternummer" in admin_client.get(url).content.decode()  # Admin sieht das Feld
     admin_client.post(url, {"personalnummer": "1234"})
     assert Stammdaten.objects.get(benutzer=b).personalnummer == 1234
-    assert MitgliederEinstellungen.laden().naechste_nummer > 1234  # Reihe rückt darüber hinaus
+    assert PersonalEinstellungen.laden().naechste_personalnummer > 1234  # Zähler rückt darüber
 
     # Dieselbe Nummer bei einer anderen Person wird abgelehnt.
     neu(admin_client, username="olf.ohne", first_name="Olf", last_name="Ohne")
@@ -201,6 +198,23 @@ def test_admin_mitarbeiternummer_selbst_setzen(admin_client):
     assert "personalnummer" not in StammdatenForm(instance=Stammdaten(benutzer=b)).fields
     with_feld = StammdatenForm(instance=Stammdaten(benutzer=b), nummer_erlaubt=True)
     assert "personalnummer" in with_feld.fields
+
+
+def test_personalnummer_darf_mitgliedsnummer_gleichen(admin_client):
+    # Getrennte Nummernkreise (ADR 0116): eine Zahl, die schon Mitgliedsnummer ist, darf von Hand
+    # als Personalnummer gesetzt werden – beide Kreise sind unabhängig.
+    import datetime as dt
+
+    from apps.adressen.models import Adresse
+    from apps.konten.models import Stammdaten
+    from apps.mitglieder.models import Mitglied
+
+    a = Adresse.objects.create(art=Adresse.Art.PERSON, nachname="Vereins")
+    Mitglied.objects.create(adresse=a, nummer="500", art="aktiv", eintritt=dt.date(2020, 1, 1))
+    neu(admin_client, username="per.pn", first_name="Per", last_name="Pn")
+    b = get_user_model().objects.get(username="per.pn")
+    admin_client.post(reverse("konten:stammdaten", args=[b.pk]), {"personalnummer": "500"})
+    assert Stammdaten.objects.get(benutzer=b).personalnummer == 500
 
 
 def test_liste_nach_nummer_sortieren(admin_client):

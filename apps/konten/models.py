@@ -111,8 +111,8 @@ class Stammdaten(models.Model):
         null=True,
         blank=True,
         unique=True,
-        help_text="Automatisch aus der gemeinsamen Personennummern-Reihe (Mitarbeitende und "
-        "Mitglieder) vergeben. Ist die Person Mitglied, gilt die Mitgliedsnummer.",
+        help_text="Feste Nummer des Mitarbeitenden; wird beim Anlegen automatisch fortlaufend "
+        "vergeben. Eigener Nummernkreis – unabhängig von der Mitgliedsnummer.",
     )
     anrede = models.CharField("Anrede", max_length=30, blank=True)
     geburtsdatum = models.DateField("Geburtsdatum", null=True, blank=True)
@@ -202,6 +202,11 @@ class PersonalEinstellungen(models.Model):
         help_text="Name, Rollen und Zeiträume bleiben im Archiv; Anschrift, Telefon, "
         "Notfallkontakt, Führerschein und Belehrungen werden geleert.",
     )
+    naechste_personalnummer = models.PositiveIntegerField(
+        "Nächste Personalnummer", default=1,
+        help_text="Eigener Nummernkreis der Mitarbeitenden (unabhängig von den Mitgliedsnummern); "
+        "beim Anlegen wird die nächste freie Nummer vergeben.",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Einstellungen Angestellte"

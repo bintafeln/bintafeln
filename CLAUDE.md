@@ -213,9 +213,12 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
 - Mitarbeitende: Logik und Schutzregeln in `apps/konten/verwaltung.py` (nie löschen, nur
   sperren; ADR 0015). Liste in `apps/konten/views_mitarbeitende.py` (getrennte Namen, wählbare
   Spalten über `apps/core/listen.py`, Export über `apps/core/listenexport.py`, Suche).
-  Personennummer (ADR 0101): `Stammdaten.personalnummer`, automatisch aus der gemeinsamen Reihe
-  der Mitgliedsnummern (`mitglieder.naechste_nummer()`) in `verwaltung.personalnummer_zuweisen()`;
-  Anzeige über `verwaltung.personennummer()` (Mitgliedsnummer, sonst Personalnummer).
+  Personalnummer (ADR 0116, ersetzt ADR 0101): `Stammdaten.personalnummer`, eigener Nummernkreis –
+  unabhängig von den Mitgliedsnummern, dieselbe Zahl darf in beiden vorkommen. Automatisch aus
+  `PersonalEinstellungen.naechste_personalnummer` über `verwaltung.naechste_personalnummer()` in
+  `verwaltung.personalnummer_zuweisen()` (für jeden Mitarbeitenden, auch Mitglieder); von Hand
+  gesetzte Nummern über `verwaltung.personalnummer_verbraucht()`. Anzeige in der
+  Mitarbeitendenliste über `verwaltung.personennummer()` (immer die Personalnummer).
   `Benutzer.passwort_aendern` erzwingt über
   `PasswortAendernMiddleware` ein neues Passwort, bevor die Zwei-Faktor-Einrichtung kommt.
   Stammdaten, Wiedervorlagen, Führerschein-Kopie und Löschfrist in `apps/konten/personal.py`

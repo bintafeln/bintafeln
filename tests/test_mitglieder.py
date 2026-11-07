@@ -228,9 +228,9 @@ def test_liste_sortiert_nummern_wie_zahlen(admin_client):
     assert seite.index("Probe1x") < seite.index("Probe2x") < seite.index("Probe10x")
 
 
-def test_mitgliedsnummer_nicht_doppelt_mit_personalnummer(erika):
-    # Gemeinsame Personennummern-Reihe (ADR 0101): eine schon als Personalnummer vergebene Nummer
-    # darf nicht als Mitgliedsnummer dienen.
+def test_mitgliedsnummer_darf_personalnummer_gleichen(erika):
+    # Getrennte Nummernkreise (ADR 0116): eine Zahl, die schon als Personalnummer vergeben ist,
+    # darf trotzdem als Mitgliedsnummer dienen – beide Kreise sind unabhängig.
     from django.contrib.auth import get_user_model
 
     from apps.konten.models import Stammdaten
@@ -247,15 +247,4 @@ def test_mitgliedsnummer_nicht_doppelt_mit_personalnummer(erika):
             "jahresbeitrag": "0",
         }
     )
-    assert not form.is_valid() and "nummer" in form.errors
-    # Eine freie Nummer geht
-    form_ok = MitgliedForm(
-        data={
-            "adresse": erika.pk,
-            "nummer": "43",
-            "art": "Fördermitglied",
-            "eintritt": "2024-01-01",
-            "jahresbeitrag": "0",
-        }
-    )
-    assert "nummer" not in form_ok.errors
+    assert "nummer" not in form.errors  # dieselbe Zahl als Mitgliedsnummer ist jetzt erlaubt
