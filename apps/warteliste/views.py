@@ -4,7 +4,7 @@ import csv
 import io
 
 from django.contrib import messages
-from django.db.models import Count, Q
+from django.db.models import Count, Max, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -16,7 +16,7 @@ from django.views.decorators.http import require_POST
 from apps.antraege import sprachen
 from apps.antraege import uebersetzen as uebersetzen_ki
 from apps.antraege.models import Antrag
-from apps.core import listenexport, papierkorb
+from apps.core import listen, listenexport, papierkorb
 from apps.core.pdf import Kaestchen, Pdf, pdf_antwort
 from apps.konten import rollen
 from apps.kunden import gruppen
@@ -37,7 +37,8 @@ from apps.warteliste.models import (
     Wartestand,
 )
 
-# Spalten der Warteliste, die man ausblenden kann (static/js/spalten.js); Name bleibt immer
+# Spalten der Warteliste, die man ausblenden kann (je Konto gemerkt, apps/core/listen.py); Name
+# und Vorname bleiben immer sichtbar.
 SPALTEN = [("eingang", "Eingang"), ("nummer", "#"), ("geburtsdatum", "Geburtsdatum"),
            ("kontakt", "Kontakt"), ("wohnort", "Wohnort"), ("personen", "Personen"),
            ("art", "Art"), ("staat", "Staatsangehörigkeit"), ("status", "Status"),
@@ -46,18 +47,26 @@ SPALTEN = [("eingang", "Eingang"), ("nummer", "#"), ("geburtsdatum", "Geburtsdat
 sehen = rollen.recht_erforderlich("warteliste.sehen")
 bearbeiten = rollen.recht_erforderlich("warteliste.bearbeiten")
 S = Wartestand.Status
+# Jede Spalte ist sortierbar. „kontakt“, „personen“ und „anmerkung“ brauchen eine Annotation
+# (ANNOTATIONEN), die _gefiltert nur bei Bedarf setzt, damit die Liste sonst schlank bleibt.
 SORTIERUNG = {"eingang": "antrag__eingegangen_am", "nummer": "antrag__laufnummer",
               "name": "antrag__nachname", "vorname": "antrag__vorname",
               "geburtsdatum": "antrag__geburtsdatum", "wohnort": "antrag__ort",
               "status": "status", "termin": "termin__datum",
-              "staat": "antrag__staatsangehoerigkeit", "art": "antrag__art"}  # fmt: skip
+              "staat": "antrag__staatsangehoerigkeit", "art": "antrag__art",
+              "kontakt": "antrag__email", "personen": "anzahl_personen",
+              "anmerkung": "letzte_anmerkung"}  # fmt: skip
+ANNOTATIONEN = {
+    "anzahl_personen": Count("antrag__personen", distinct=True),
+    "letzte_anmerkung": Max("antrag__anmerkungen__zeitpunkt"),
+}
 
 
 def _von(request) -> str:
     return (request.user.get_full_name() or request.user.get_username())[:150]
 
 
-def _gefiltert(request):
+def _gefiltert(request, standard_sort="eingang"):
     f = {
         "status": request.GET.get("status", ""),
         "art": request.GET.get("art", ""),
@@ -65,7 +74,7 @@ def _gefiltert(request):
         "staaten": request.GET.getlist("staat"),
         "termin": request.GET.get("termin", ""),
         "suche": request.GET.get("suche", "").strip(),
-        "sort": request.GET.get("sort", "eingang"),
+        "sort": request.GET.get("sort", standard_sort),
     }
     ws = Wartestand.objects.select_related("antrag", "termin")
     if f["status"] in S.values:
@@ -98,6 +107,8 @@ def _gefiltert(request):
     feld = SORTIERUNG.get(f["sort"].lstrip("-"))
     if not feld:
         f["sort"], feld = "eingang", SORTIERUNG["eingang"]
+    if feld in ANNOTATIONEN:
+        ws = ws.annotate(**{feld: ANNOTATIONEN[feld]})
     ws = ws.order_by(("-" if f["sort"].startswith("-") else "") + feld, "antrag__pk")
     return f, ws
 
@@ -119,20 +130,64 @@ def liste(request):
         request.session["warteliste_filter"] = request.GET.urlencode()
     elif request.session.get("warteliste_filter"):
         return redirect(f"{request.path}?{request.session['warteliste_filter']}")
-    f, ws = _gefiltert(request)
+    ansicht = request.user.warteliste_ansicht or {}
+    # Sortierung je Konto merken: eine über die Spaltenköpfe gewählte Sortierung gilt beim
+    # nächsten Aufruf wieder; ohne Wahl die zuletzt gemerkte (sonst „Eingang").
+    standard_sort = ansicht.get("sort") if ansicht.get("sort") in _ALLE_SORT else "eingang"
+    f, ws = _gefiltert(request, standard_sort)
+    if "sort" in request.GET and f["sort"] != ansicht.get("sort"):
+        _ansicht_merken(request.user, sort=f["sort"])
     zahlen = dict(Wartestand.objects.values_list("status").annotate(n=Count("pk")))
     staaten = sorted(set(Antrag.objects.exclude(staatsangehoerigkeit="")
                          .values_list("staatsangehoerigkeit", flat=True)))  # fmt: skip
     termine = Termin.objects.annotate(n=Count("wartende")).filter(n__gt=0)
+    abfrage = request.GET.copy()
+    abfrage.pop("seite", None)
     return render(request, "warteliste/liste.html", {
         "eintraege": ws.prefetch_related("antrag__personen", "antrag__anmerkungen"), "f": f,
         "kapazitaet": gruppen.kapazitaet(), "stand": timezone.localtime(),
-        "staaten": staaten, "termine": termine, "spalten_wahl": SPALTEN,
+        "kapazitaet_zu": bool(ansicht.get("kapazitaet_zu")),
+        "staaten": staaten, "termine": termine,
+        "sichtbar": listen.sichtbare_spalten(request.user, "warteliste",
+                                             [k for k, _ in SPALTEN]),
+        "spalten_wahl": listen.spalten_wahl(request.user, "warteliste", SPALTEN),
+        "spalten_aktion": reverse("warteliste:spalten"), "abfrage": abfrage.urlencode(),
         "status_zahlen": [(s, name, zahlen.get(s, 0)) for s, name in S.choices],
         "arten": Antrag.Art.choices,
         "einladen": EinladenForm(termine=ablauf.kommende_termine()),
         "status_form": StatusForm(),
     })  # fmt: skip
+
+
+_ALLE_SORT = set(SORTIERUNG) | {f"-{k}" for k in SORTIERUNG}
+
+
+def _ansicht_merken(benutzer, **werte) -> None:
+    """Persönliche Warteliste-Ansicht (Sortierung, eingeklappte Kapazitäten) am Konto merken."""
+    ansicht = dict(benutzer.warteliste_ansicht or {})
+    ansicht.update(werte)
+    benutzer.warteliste_ansicht = ansicht
+    benutzer.save(update_fields=["warteliste_ansicht"])
+
+
+@require_POST
+@sehen
+def spalten(request):
+    """Merkt, welche Spalten diese Person in der Warteliste sieht, und kehrt zur Liste zurück."""
+    listen.spalten_speichern(request.user, "warteliste", request.POST.getlist("spalte"), SPALTEN)
+    from django.http import QueryDict
+
+    zurueck = QueryDict(request.POST.get("zurueck", "")).urlencode()
+    ziel = reverse("warteliste:liste")
+    return redirect(f"{ziel}?{zurueck}" if zurueck else ziel)
+
+
+@require_POST
+@sehen
+def ansicht_merken(request):
+    """Autosave der Kapazitätsübersicht (auf-/zugeklappt); vom Browser still aufgerufen."""
+    _ansicht_merken(request.user, kapazitaet_zu=request.POST.get("kapazitaet_zu") == "1")
+    return HttpResponse(status=204)
 
 
 @never_cache

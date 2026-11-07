@@ -623,9 +623,42 @@ def test_streichungsliste_suche_und_anmerkungen(admin_client, modul_an):
     assert a.anmerkungen.last().text == "Hat angerufen, kommt ab Dezember"
     admin_client.post(reverse("antraege:anmerkung", args=[a.pk]), {"text": "Zweite Anmerkung"})
     liste = admin_client.get(reverse("warteliste:liste")).content.decode()
-    assert 'data-spalten-wahl="warteliste"' in liste and 'data-spalte="anmerkung"' in liste
+    assert 'name="spalte" value="anmerkung"' in liste and "Spalten wählen" in liste
     # Die Liste zeigt jetzt alle Anmerkungen, nicht nur die letzte.
     assert "Hat angerufen, kommt ab Dezember" in liste and "Zweite Anmerkung" in liste
+
+
+def test_ansicht_wird_je_konto_gemerkt(admin_client, admin, modul_an):
+    antrag()
+    ablauf.automatik()
+    url = reverse("warteliste:liste")
+    # Jede Spalte ist sortierbar – auch die früher nicht sortierbaren Kontakt/Personen/Anmerkung.
+    for schluessel in ("kontakt", "personen", "anmerkung", "name"):
+        antwort = admin_client.get(url, {"sort": schluessel})
+        assert antwort.status_code == 200 and antwort.context["f"]["sort"] == schluessel
+    # Die zuletzt gewählte Sortierung wird am Konto gemerkt und ohne Parameter wieder angewandt.
+    admin.refresh_from_db()
+    assert admin.warteliste_ansicht["sort"] == "name"
+    admin_client.get(url, {"sort": "-geburtsdatum"})
+    # Die Seitensitzung merkt den Filter zusätzlich; ohne ihn greift der am Konto gemerkte Wert.
+    sitzung = admin_client.session
+    del sitzung["warteliste_filter"]
+    sitzung.save()
+    assert admin_client.get(url).context["f"]["sort"] == "-geburtsdatum"
+    # Spaltenwahl je Konto: Geburtsdatum ausblenden.
+    admin_client.post(reverse("warteliste:spalten"),
+                      {"spalte": ["eingang", "nummer", "kontakt", "status"]})  # fmt: skip
+    admin.refresh_from_db()
+    assert "geburtsdatum" in admin.listen_spalten_aus["warteliste"]
+    inhalt = admin_client.get(url).content.decode()
+    # Spaltenkopf weg (die Spaltenwahl listet den Namen weiter auf).
+    assert "Nach Geburtsdatum sortieren" not in inhalt
+    assert "Nach Kontakt sortieren" in inhalt
+    # Kapazitätsübersicht ein-/ausklappen wird gemerkt.
+    admin_client.post(reverse("warteliste:ansicht"), {"kapazitaet_zu": "1"})
+    admin.refresh_from_db()
+    assert admin.warteliste_ansicht["kapazitaet_zu"] is True
+    assert admin_client.get(url).context["kapazitaet_zu"] is True
 
 
 # ── Einladung in zwei Sprachen ───────────────────────────────────────────────
