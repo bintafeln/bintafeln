@@ -200,6 +200,11 @@ def antrag(request, pk):
                     kontext["ausweis_staaten"], a.ausweis_staat
                 )
                 kontext["ausweis_vorschlag"] = a.ausweis_staat
+    # Abschnitte eingeschalteter Module auf der Antragsseite, z. B. die Warteliste-Aktionen
+    # (Status, Einladen, Anmerkungen) – so braucht es keine eigene Warteliste-Detailseite.
+    from apps.core import module
+
+    kontext["modul_antrag"] = module.antrag(request, a)
     return render(request, "antraege/antrag.html", kontext)
 
 
