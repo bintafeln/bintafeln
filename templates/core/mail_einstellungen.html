@@ -27,6 +27,9 @@
 
 <section class="karte">
   <h2>Testen</h2>
+  {% if mail_test %}
+  <p class="sicherung {% if mail_test.ok %}sicherung-ok{% else %}sicherung-fehler{% endif %}" role="status">{{ mail_test.text }}</p>
+  {% endif %}
   {% if einstellungen.eingerichtet %}
   <p>Zuerst die Einstellungen speichern, dann testen.</p>
   <form method="post" class="filter">

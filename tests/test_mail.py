@@ -159,6 +159,11 @@ def test_testmail(admin_client, admin, mailserver, monkeypatch):
     seite = admin_client.post(MAIL_SEITE, {"testmail": "1", "an": "test@example.org"},
                               follow=True).content.decode()  # fmt: skip
     assert "Testmail an test@example.org gesendet." in seite
+    # Die Rückmeldung erscheint dauerhaft beim Testen-Knopf (nicht nur als flüchtige Meldung oben).
+    assert "sicherung-ok" in seite
+    # Nur einmal: ein erneuter Aufruf der Seite zeigt die alte Rückmeldung nicht mehr.
+    erneut = admin_client.get(MAIL_SEITE).content.decode()
+    assert "Testmail an test@example.org gesendet." not in erneut
     assert django_mail.outbox[0].to == ["test@example.org"]
     admin.email = "chefin@example.org"
     admin.save()
@@ -177,6 +182,7 @@ def test_testmail(admin_client, admin, mailserver, monkeypatch):
 def test_verbindung_pruefen(admin_client, mailserver, monkeypatch):
     seite = admin_client.post(MAIL_SEITE, {"pruefen": "1"}, follow=True).content.decode()
     assert "Verbindung und Anmeldung am Mailserver klappen." in seite
+    assert "sicherung-ok" in seite  # Rückmeldung direkt beim Testen-Knopf
     assert not django_mail.outbox  # es wird nichts gesendet
 
     class Kaputt:
@@ -189,6 +195,7 @@ def test_verbindung_pruefen(admin_client, mailserver, monkeypatch):
     monkeypatch.setattr(mail, "get_connection", lambda **kwargs: Kaputt())
     seite = admin_client.post(MAIL_SEITE, {"pruefen": "1"}, follow=True).content.decode()
     assert "Verbindung fehlgeschlagen: Anmeldung am Mailserver fehlgeschlagen." in seite
+    assert "sicherung-fehler" in seite
 
 
 def test_test_erst_nach_einrichtung(admin_client):
