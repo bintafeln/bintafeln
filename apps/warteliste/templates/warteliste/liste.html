@@ -10,6 +10,7 @@
       <a href="?"{% if not f.status %} aria-current="page"{% endif %}>alle offenen</a>
       {% for s, label, n in status_zahlen %}{% if n %}<a href="?status={{ s }}"{% if f.status == s %} aria-current="page"{% endif %}>{{ label }} ({{ n }})</a>{% endif %}{% endfor %}
     </nav>
+    {% include "includes/herunterladen.html" %}
   </div>
   {# Sperrzeit-Hinweise lädt htmx nach dem Seitenaufbau nach (#sperren-banner und je Zeile #sperre-<pk>), damit die Liste auch bei großem Kundenstamm sofort erscheint. #}
   <p id="sperren-banner" class="meldung error" hidden></p>
@@ -52,7 +53,6 @@
     <p class="hinweis">Die Wahl merkt sich dieser Browser.</p>
   </details>
   {% url 'warteliste:export' as export_url %}{% auswahl_formular export_url %}
-  <div class="liste-aktionen">{% include "includes/listen_export.html" %}</div>
   <div id="ergebnis">
   <form method="post" id="aktionen">
     {% csrf_token %}

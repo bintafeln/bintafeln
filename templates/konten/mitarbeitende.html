@@ -3,7 +3,10 @@
 {% block titel %}{% if archiv %}Archiv{% else %}{{ titel|default:"Team" }}{% endif %}{% endblock %}
 {% block inhalt %}
 <section class="karte">
-  <h1>{% if archiv %}Archiv{% else %}{{ titel|default:"Team" }}{% endif %}</h1>
+  <div class="titel-zeile">
+    <h1>{% if archiv %}Archiv{% else %}{{ titel|default:"Team" }}{% endif %}</h1>
+    <div class="titel-knoepfe">{% include "includes/herunterladen.html" %}</div>
+  </div>
   <nav class="reiter" aria-label="Ansicht">
     <a href="{% url 'konten:ehrenamtliche' %}"{% if art == 'ehrenamtlich' %} aria-current="page"{% endif %}>Ehrenamtliche</a>
     <a href="{% url 'konten:angestellte' %}"{% if art == 'fest' %} aria-current="page"{% endif %}>Angestellte</a>
@@ -41,7 +44,7 @@
   {% auswahl_formular "" %}
   <div class="liste-aktionen">
     <span class="hinweis">{{ zeilen|length }} Konto{{ zeilen|length|pluralize:"en" }}</span>
-    {% if zeilen %}{% include "includes/listen_export.html" %}{% endif %}
+    <span class="hinweis" data-auswahl-zahl="auswahl"></span>
   </div>
   {% url 'konten:mitarbeitende_spalten' as spalten_aktion %}{% include "includes/spalten_wahl.html" %}
   <div class="tabelle-rahmen">

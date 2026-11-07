@@ -193,6 +193,7 @@ def test_liste_blaettert(admin_client):
     Haushalt.objects.bulk_create(Haushalt(kundennummer=f"{n:04d}") for n in range(55))
     inhalt = admin_client.get(LISTE).content.decode()  # Vorgabe: 25 je Seite
     assert "Seite 1 von 3" in inhalt and "55 Haushalte" in inhalt
+    assert "⬇ Herunterladen …" in inhalt  # Export-Aufklapper oben rechts
     assert '<option value="25" selected>25 je Seite</option>' in inhalt
     seite = admin_client.get(LISTE, {"seite": 2, "anzahl": "50"}).content.decode()
     assert "Seite 2 von 2" in seite and "anzahl=50" in seite  # Wahl bleibt beim Blättern

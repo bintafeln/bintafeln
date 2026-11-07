@@ -5,7 +5,10 @@
 <section class="karte">
   <div class="titel-zeile">
     <h1>Kunden</h1>
-    {% if "kunden.bearbeiten" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'kunden:haushalt_neu' %}">Neuer Haushalt</a>{% endif %}
+    <div class="titel-knoepfe">
+      {% if "kunden.bearbeiten" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'kunden:haushalt_neu' %}">Neuer Haushalt</a>{% endif %}
+      {% if "kunden.exportieren" in rechte %}{% include "includes/herunterladen.html" %}{% endif %}
+    </div>
   </div>
   {% if eigene_stellen %}<p class="hinweis">Sie sehen nur Kunden {% if eigene_stellen|length == 1 %}der Ausgabestelle{% else %}der Ausgabestellen{% endif %}
     {% for s in eigene_stellen %}„{{ s.name }}“{% if not forloop.last %}, {% endif %}{% endfor %}, der Sie zugeordnet sind.</p>{% endif %}
