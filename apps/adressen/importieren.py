@@ -20,11 +20,11 @@ from apps.adressen.models import Adresse, AdressKategorie
 from apps.kunden import werte
 
 SPALTEN = [
-    "art", "organisation", "ansprechperson", "anrede", "vorname", "nachname", "strasse", "plz",
-    "ort", "land", "telefon", "mobil", "email", "webseite", "kategorien", "notiz",
+    "art", "organisation", "ansprechperson", "anrede", "vorname", "nachname", "geburtsdatum",
+    "strasse", "plz", "ort", "land", "telefon", "mobil", "email", "webseite", "kategorien", "notiz",
     "einwilligung_post", "einwilligung_email", "veroeffentlichen",
 ]  # fmt: skip
-DATUMSFELDER = ("einwilligung_post", "einwilligung_email", "veroeffentlichen")
+DATUMSFELDER = ("geburtsdatum", "einwilligung_post", "einwilligung_email", "veroeffentlichen")
 MAX_ZEILEN = 20000
 ARTEN = {
     "person": Adresse.Art.PERSON, "privat": Adresse.Art.PERSON,

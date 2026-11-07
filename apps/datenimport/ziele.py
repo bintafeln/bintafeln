@@ -951,6 +951,12 @@ ADRESS_FELDER = [
     Feld("vorname", "Vorname", ("rufname",), laenge=100),
     Feld("nachname", "Nachname", ("name", "familienname", "zuname"), laenge=100),
     Feld(
+        "geburtsdatum",
+        "Geburtsdatum",
+        ("geboren", "gebdatum", "geburtstag", "geb"),
+        typ="datum",
+    ),
+    Feld(
         "ansprechperson",
         "Ansprechperson",
         ("ansprechpartner", "kontakt", "kontaktperson"),
@@ -1001,7 +1007,7 @@ ADRESS_FELDER = [
         typ="einwilligung",
     ),
 ]
-ADRESS_DATUM = {"einwilligung_post", "einwilligung_email", "veroeffentlichen"}
+ADRESS_DATUM = {"geburtsdatum", "einwilligung_post", "einwilligung_email", "veroeffentlichen"}
 ADRESS_ARTEN = {
     "person": "Person",
     "privat": "Person",

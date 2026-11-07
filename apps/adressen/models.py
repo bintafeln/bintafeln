@@ -33,6 +33,10 @@ class Adresse(models.Model):
     anrede = models.CharField("Anrede", max_length=30, blank=True)
     vorname = models.CharField("Vorname", max_length=100, blank=True)
     nachname = models.CharField("Nachname", max_length=100, blank=True)
+    geburtsdatum = models.DateField(
+        "Geburtsdatum", null=True, blank=True,
+        help_text="Nur bei Personen, z. B. für Geburtstagslisten.",
+    )  # fmt: skip
     ansprechperson = models.CharField(
         "Ansprechperson", max_length=200, blank=True,
         help_text="Bei Organisationen, z. B. „Frau Muster, Filialleitung“.",
