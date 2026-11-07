@@ -60,10 +60,14 @@ def test_grund_nennt_was_ausserhalb_liegt():
     assert gebiet.grund(e, _Fake("12345", "Anderswo")) == "Ort außerhalb des Gebiets"
     assert gebiet.grund(e, _Fake("54321", "Anderswo")) == "PLZ und Ort außerhalb des Gebiets"
     # Nur eine Liste konfiguriert
-    assert gebiet.grund(einstellungen(plz="12000-12999"), _Fake("54321", "x")) \
+    assert (
+        gebiet.grund(einstellungen(plz="12000-12999"), _Fake("54321", "x"))
         == "PLZ außerhalb des Gebiets"
-    assert gebiet.grund(einstellungen(orte="Musterstadt"), _Fake("54321", "x")) \
+    )
+    assert (
+        gebiet.grund(einstellungen(orte="Musterstadt"), _Fake("54321", "x"))
         == "Ort außerhalb des Gebiets"
+    )
     assert gebiet.grund(einstellungen(), _Fake("54321", "x")) == ""
 
 
