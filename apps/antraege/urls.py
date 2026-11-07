@@ -33,6 +33,11 @@ urlpatterns = [
     path("<int:pk>/aufnahme/<str:schritt>/", views_aufnahme.schritt, name="aufnahme_schritt"),
     path("<int:pk>/status/", views.status, name="status"),
     path("<int:pk>/anmerkung/", views.anmerkung, name="anmerkung"),
+    path(
+        "<int:pk>/anmerkung/<int:anmerkung>/",
+        views.anmerkung_bearbeiten,
+        name="anmerkung_bearbeiten",
+    ),
     path("<int:pk>/papierkorb/", views.papierkorb, name="papierkorb"),
     path("<int:pk>/auskunft/", views.auskunft_pdf, name="auskunft"),
     path("<int:pk>/nachweis/<int:anhang>/", views.anhang, name="anhang"),

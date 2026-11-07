@@ -75,7 +75,17 @@
     <button type="submit" class="knopf">Status speichern</button>
   </form>
   <h3 id="anmerkungen">Anmerkungen</h3>
-  {% for x in a.anmerkungen.all %}<div class="bemerkung"><p class="vorformatiert">{{ x.text }}</p><p class="hinweis">{{ x.zeitpunkt|date:"d.m.Y H:i" }} · {{ x.von }}</p></div>{% empty %}<p>Noch keine.</p>{% endfor %}
+  {% for x in a.anmerkungen.all %}<div class="bemerkung"><p class="vorformatiert">{{ x.text }}</p><p class="hinweis">{{ x.zeitpunkt|date:"d.m.Y H:i" }} · {{ x.von }}</p>
+    {% if "antraege.bearbeiten" in rechte %}
+    <details class="anmerkung-aendern">
+      <summary>Ändern</summary>
+      <form method="post" action="{% url 'antraege:anmerkung_bearbeiten' a.pk x.pk %}">
+        {% csrf_token %}
+        <div class="feld"><label for="anm-{{ x.pk }}" class="unsichtbar">Anmerkung ändern</label><textarea name="text" id="anm-{{ x.pk }}" rows="3" required>{{ x.text }}</textarea></div>
+        <button type="submit" class="knopf knopf-zweitrangig">Änderung speichern</button>
+      </form>
+    </details>
+    {% endif %}</div>{% empty %}<p>Noch keine.</p>{% endfor %}
   <form method="post" action="{% url 'antraege:anmerkung' a.pk %}">
     {% csrf_token %}
     <div class="feld"><label for="text">Neue Anmerkung</label><textarea name="text" id="text" rows="3" required></textarea></div>

@@ -232,6 +232,22 @@ def anmerkung(request, pk):
 
 @require_POST
 @rollen.recht_erforderlich("antraege.bearbeiten")
+def anmerkung_bearbeiten(request, pk, anmerkung):
+    """Eine gespeicherte Anmerkung ändern (auch aus der Warteliste heraus, da deren Anträge auf
+    dieser Seite liegen). Leerer Text löscht die Anmerkung."""
+    m = get_object_or_404(AntragAnmerkung, pk=anmerkung, antrag_id=pk)
+    text = request.POST.get("text", "").strip()[:2000]
+    if text:
+        m.text = text
+        m.save(update_fields=["text"])
+        messages.success(request, "Anmerkung geändert.")
+    else:
+        messages.error(request, "Die Anmerkung darf nicht leer sein.")
+    return redirect("antraege:antrag", pk=pk)
+
+
+@require_POST
+@rollen.recht_erforderlich("antraege.bearbeiten")
 def papierkorb(request, pk):
     """Legt den Antrag in den gemeinsamen Papierkorb (ADR 0073): von dort wiederherstellbar,
     danach endgültig gelöscht nach der Tafel-weiten Frist. Das In-den-Papierkorb-Legen gehört zum
