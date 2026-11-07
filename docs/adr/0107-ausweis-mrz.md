@@ -175,3 +175,17 @@ so einem Fall **leer**; das Ergebnis sagt ehrlich „Staatsangehörigkeit nicht 
 Hand prüfen". Der Code (z. B. „UKR") wird nur zu einem gültigen Land gezeigt. Damit kann an keiner
 Stelle mehr ein Land auftauchen, das es nicht gibt (die Sammel-Prüfung filterte schon über
 `LAENDERCODE`; nun filtert die Quelle selbst).
+
+## Nachtrag: verdrehte Ausweise und PDFs im Popup
+
+Manche Ausweise werden um 90/180/270° **verdreht** übermittelt – die MRZ-/OCR-Lesung erwartet aber
+aufrechten Text. Scheitert die Lesung aufrecht, probiert bintafeln jetzt die drei gedrehten
+Varianten: `_mrz_roh()` dreht das Bild (`_dreh_bytes`) und liest erneut; `land_aus_ausschnitt`
+probiert den gezogenen Ausschnitt ebenfalls in allen vier Lagen. Die Drehung ist nur ein
+Rückfall (kostet also nur, wenn aufrecht nichts gefunden wird).
+
+**PDF-Nachweise im Popup:** Bild- **und PDF**-Nachweise öffnen jetzt im selben großen Vorschau-Popup
+mit denselben Knöpfen; beim PDF wird die gerenderte erste Seite gezeigt (`data-vorschau` →
+`nachweis_vorschau`), der Bereich-Lesen-Ausschnitt trifft dieselbe erste Seite (`land_aus_ausschnitt`,
+PDF → erste Seite). „In neuem Fenster öffnen“ führt weiter zur vollständigen Datei. Vorher öffneten
+PDFs in einem eigenen Fenster ohne die Prüf-Knöpfe.

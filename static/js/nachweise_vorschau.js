@@ -1,6 +1,7 @@
-// Vorschau der Nachweise: Ein Foto (Link mit data-bild) öffnet beim Klick groß als Popup über der
-// Seite; ein PDF (data-fenster) öffnet in einem kleineren eigenen Fenster. Ohne JavaScript bleibt
-// es ein normaler Link, der die Datei in einem neuen Tab öffnet.
+// Vorschau der Nachweise: Ein Foto oder PDF (Link mit data-bild) öffnet beim Klick groß als Popup
+// über der Seite – bei einem PDF wird die gerenderte erste Seite gezeigt (data-vorschau). Andere
+// Dateien (data-fenster) öffnen in einem eigenen Fenster. Ohne JavaScript bleibt es ein normaler
+// Link, der die Datei in einem neuen Tab öffnet.
 //
 // Auf der Ausweisprüfungsseite trägt das Vorschaubild zusätzlich data-bescheid-url (als Bescheid
 // einordnen), data-neu-pruefen-url (diesen einen Ausweis erneut automatisch prüfen),
@@ -209,7 +210,9 @@
       bereich: a.getAttribute("data-bereich-url") || "",
       uebernehmen: a.getAttribute("data-uebernehmen-url") || "",
     };
-    bild.src = a.getAttribute("href");
+    // Bei einem PDF die gerenderte erste Seite zeigen (data-vorschau); der Link „In neuem Fenster
+    // öffnen" führt weiter auf die echte Datei (href).
+    bild.src = a.getAttribute("data-vorschau") || a.getAttribute("href");
     bild.alt = a.getAttribute("title") || "";
     link.href = a.getAttribute("href");
     bescheid.hidden = !urls.bescheid;

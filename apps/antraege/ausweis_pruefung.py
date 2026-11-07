@@ -263,6 +263,35 @@ def _staat_aus_text(bild_bytes: bytes) -> dict | None:
     return None
 
 
+def _dreh_bytes(bild_bytes: bytes, grad: int) -> bytes:
+    """Das Bild um ``grad`` im Uhrzeigersinn drehen und als PNG zurückgeben (für die
+    Dreh-Rückfälle: manche Ausweise werden um 90/180/270° verdreht hochgeladen)."""
+    from PIL import Image
+
+    bild = Image.open(io.BytesIO(bild_bytes))
+    puffer = io.BytesIO()
+    bild.rotate(-grad, expand=True).save(puffer, format="PNG")
+    return puffer.getvalue()
+
+
+def _mrz_roh(bild_bytes: bytes):
+    """MRZ lesen (PassportEye, sonst Tesseract-Rückfall). Scheitert das aufrecht, werden die um
+    90/180/270° gedrehten Varianten probiert – so werden auch verdreht übermittelte Ausweise
+    erkannt. Liefert die neutralen Rohwerte oder None."""
+    roh = _passporteye(bild_bytes) or _rueckfall(bild_bytes)
+    if roh:
+        return roh
+    for grad in (90, 180, 270):
+        try:
+            gedreht = _dreh_bytes(bild_bytes, grad)
+        except Exception:  # noqa: S112 – defektes Bild: Drehung überspringen, nur ein Hinweis
+            continue
+        roh = _passporteye(gedreht) or _rueckfall(gedreht)
+        if roh:
+            return roh
+    return None
+
+
 def pruefen(bild_bytes: bytes, erwartete_staatsangehoerigkeit: str = "") -> dict:
     """Wertet das Bild aus. Liefert einen Bericht: erkannt (bool), bei Erfolg Dokumentart,
     ausstellendes Land, Staatsangehörigkeit (deutscher Name und Code), Name, Gültigkeit der
@@ -277,7 +306,7 @@ def pruefen(bild_bytes: bytes, erwartete_staatsangehoerigkeit: str = "") -> dict
         return {"erkannt": False, "fehler": "Das Bild konnte nicht gelesen werden."}
     # Stufe 1/2 lesen die MRZ; findet keine der beiden eine, liest Stufe 3 das Feld
     # „Staatsangehörigkeit" im Klartext (die Seite ohne MRZ).
-    roh = _passporteye(bild_bytes) or _rueckfall(bild_bytes) or _staat_aus_text(bild_bytes)
+    roh = _mrz_roh(bild_bytes) or _staat_aus_text(bild_bytes)
     if roh is None:
         return {"erkannt": False}
     # Nur ein echtes Land aus der Länderliste gilt als erkannte Staatsangehörigkeit bzw. als
@@ -397,12 +426,21 @@ def land_aus_ausschnitt(inhalt: bytes, typ: str, x: float, y: float, b: float, h
     # Zuerst normaler OCR-Text (deu+eng); wenn das keinen Code ergibt, die MRZ-Lesung (nur
     # Großbuchstaben/Ziffern/„<") versuchen – ein um die MRZ gezogenes Rechteck liest sie so
     # zuverlässiger (z. B. „…UKR…" zwischen Ziffern).
+    # Auch die um 90/180/270° gedrehten Ausschnitte probieren – der markierte Bereich kann (wie der
+    # ganze Ausweis) verdreht übermittelt worden sein.
     code = ""
-    for leser in (_ocr_text, _ocr):
+    for grad in (0, 90, 180, 270):
         try:
-            code = _code_aus_fenster(leser(ausschnitt))
-        except Exception:
-            code = ""
+            daten = ausschnitt if grad == 0 else _dreh_bytes(ausschnitt, grad)
+        except Exception:  # noqa: S112 – defekter Ausschnitt: Drehung überspringen, nur ein Hinweis
+            continue
+        for leser in (_ocr_text, _ocr):
+            try:
+                code = _code_aus_fenster(leser(daten))
+            except Exception:
+                code = ""
+            if code:
+                break
         if code:
             break
     return {"land": _staat_name(code), "code": code} if code else {"land": ""}

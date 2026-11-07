@@ -692,6 +692,47 @@ def test_ausweis_pruefung_muell_wird_nicht_als_staat_gezeigt(monkeypatch):
     assert "passt" not in b  # ohne gültigen Staat kein Abgleich → keine Falsch-Abweichung
 
 
+def test_ausweis_pruefung_dreh_fallback(monkeypatch):
+    """Verdreht übermittelte Ausweise (90/180/270°) werden erkannt: schlägt die Lesung aufrecht
+    fehl, probiert bintafeln die gedrehten Varianten (ADR 0107)."""
+    from apps.antraege import ausweis_pruefung as ap
+
+    monkeypatch.setattr(ap, "tesseract_vorhanden", lambda: True)
+    monkeypatch.setattr(ap, "_rueckfall", lambda daten: None)
+    aufrufe = []
+
+    def nur_gedreht(daten):
+        aufrufe.append(daten)
+        # Erst ab dem 3. Versuch (= eine gedrehte Variante) erfolgreich.
+        if len(aufrufe) >= 3:
+            return {"dokument": "Ausweis", "country": "D", "nationality": "UKR",
+                    "name": "", "gueltig": True}  # fmt: skip
+        return None
+
+    monkeypatch.setattr(ap, "_passporteye", nur_gedreht)
+    b = ap.pruefen(_png((80, 120)), "Ukraine")
+    assert b["erkannt"] and b["staatsangehoerigkeit"] == "Ukraine"
+    assert len(aufrufe) >= 3  # aufrecht + gedrehte Varianten wurden probiert
+
+
+def test_bereich_lesen_dreh_fallback(monkeypatch):
+    """Auch der aufs Bild gezogene Ausschnitt wird in allen vier Lagen probiert (ADR 0107)."""
+    from apps.antraege import ausweis_pruefung as ap
+
+    monkeypatch.setattr(ap, "tesseract_vorhanden", lambda: True)
+    monkeypatch.setattr(ap, "_ocr_text", lambda daten: "nichts")
+    aufrufe = []
+
+    def nur_gedreht(daten):
+        aufrufe.append(daten)
+        return "1258754662UKR1002089" if len(aufrufe) >= 3 else "nichts"
+
+    monkeypatch.setattr(ap, "_ocr", nur_gedreht)
+    res = ap.land_aus_ausschnitt(_png((200, 200)), "image/png", 0.1, 0.1, 0.6, 0.6)
+    assert res["land"] == "Ukraine" and res["code"] == "UKR"
+    assert len(aufrufe) >= 3
+
+
 def test_ausweis_staat_aus_textfeld(monkeypatch):
     """Stufe 3 (keine MRZ): die Staatsangehörigkeit aus dem Textfeld lesen (ADR 0107)."""
     from apps.antraege import ausweis_pruefung as ap

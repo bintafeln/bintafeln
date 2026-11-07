@@ -1,11 +1,12 @@
 <article class="ausweis-fall">
   {% if z.hat_vorschau %}
     <a class="ausweis-fall-bild" href="{% url 'antraege:anhang' z.a.pk z.anhang_id %}"
-       {% if z.anhang_bild %}data-bild{% else %}data-fenster{% endif %}
+       data-bild
+       {% if z.anhang_pdf %}data-vorschau="{% url 'antraege:nachweis_vorschau' z.a.pk z.anhang_id %}"{% endif %}
        data-bescheid-url="{% url 'antraege:ausweis_als_bescheid' z.a.pk %}"
        data-neu-pruefen-url="{% url 'antraege:ausweis_neu_pruefen_einzeln' z.a.pk %}"
-       {% if z.anhang_bild %}data-bereich-url="{% url 'antraege:ausweis_bereich_lesen' z.a.pk %}"
-       data-uebernehmen-url="{% url 'antraege:nachweis_staat_uebernehmen' z.a.pk %}"{% endif %}
+       data-bereich-url="{% url 'antraege:ausweis_bereich_lesen' z.a.pk %}"
+       data-uebernehmen-url="{% url 'antraege:nachweis_staat_uebernehmen' z.a.pk %}"
        title="Antrag {{ z.a.nummer }}" target="_blank" rel="noopener">
       <img class="ausweis-mini" loading="lazy" alt="Vorschau des Nachweises"
            src="{% url 'antraege:ausweis_miniatur' z.a.pk %}"></a>
