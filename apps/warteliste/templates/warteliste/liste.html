@@ -6,11 +6,16 @@
 <section class="karte breit">
   <div class="liste-kopf">
     <h1>Warteliste</h1>
-    <nav class="reiter" aria-label="Status">
-      <a href="?"{% if not f.status %} aria-current="page"{% endif %}>alle offenen</a>
-      {% for s, label, n in status_zahlen %}{% if n %}<a href="?status={{ s }}"{% if f.status == s %} aria-current="page"{% endif %}>{{ label }} ({{ n }})</a>{% endif %}{% endfor %}
-    </nav>
-    {% include "includes/herunterladen.html" %}
+    <div class="listen-werkzeuge-reihe">
+      <details class="listen-werkzeuge status-wahl">
+        <summary class="knopf knopf-zweitrangig">Status: {% if not f.status %}alle offenen{% else %}{% for s, label, n in status_zahlen %}{% if f.status == s %}{{ label }}{% endif %}{% endfor %}{% endif %} ▾</summary>
+        <nav class="reiter" aria-label="Status">
+          <a href="?"{% if not f.status %} aria-current="page"{% endif %}>alle offenen</a>
+          {% for s, label, n in status_zahlen %}{% if n %}<a href="?status={{ s }}"{% if f.status == s %} aria-current="page"{% endif %}>{{ label }} ({{ n }})</a>{% endif %}{% endfor %}
+        </nav>
+      </details>
+      {% include "includes/herunterladen.html" %}
+    </div>
   </div>
   {# Sperrzeit-Hinweise lädt htmx nach dem Seitenaufbau nach (#sperren-banner und je Zeile #sperre-<pk>), damit die Liste auch bei großem Kundenstamm sofort erscheint. #}
   <p id="sperren-banner" class="meldung error" hidden></p>
