@@ -381,3 +381,23 @@ def test_je_stelle_wochentag_abschnitt_und_csv(admin_client, daten):
     assert "Ausgabestelle Mitte – Mo" in seite and "Ausgabestelle Nord – Di" in seite
     csv = admin_client.get(URL, {**zeit, "csv": "tag-0"}).content.decode("utf-8-sig")
     assert "Datum;Haushalte;Personen" in csv and "05.01.2026;1;2" in csv
+
+
+def test_diagramme_abwaehlen_wirkt_auf_seite(admin_client, daten):
+    from apps.statistik.models import StatistikEinstellungen
+    from apps.statistik.views import DIAGRAMME
+
+    url_e = reverse("statistik:einstellungen")
+    zeit = {"zeitraum": "eigen", "von": "2026-01-01", "bis": "2026-03-31"}
+    seite = admin_client.get(URL, zeit).content.decode()
+    assert "Abholungen nach Wochentag" in seite
+    # Die Einstellungsseite listet die Diagramme zum An-/Abwählen.
+    assert "Abholungen nach Wochentag" in admin_client.get(url_e).content.decode()
+    # „Abholungen nach Wochentag" abwählen (alle anderen Haken mitsenden).
+    gezeigt = [k for k, _ in DIAGRAMME if k != "wochentage"]
+    admin_client.post(url_e, {"diagramm": gezeigt})
+    assert StatistikEinstellungen.laden().ausgeblendet == ["wochentage"]
+    # Auf der Statistik-Seite ist die Grafik weg, andere bleiben.
+    seite = admin_client.get(URL, zeit).content.decode()
+    assert "Abholungen nach Wochentag" not in seite
+    assert "Abholungen je" in seite
