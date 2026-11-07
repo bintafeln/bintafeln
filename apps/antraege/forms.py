@@ -3,6 +3,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.utils.html import format_html
 
 from apps.antraege import gebiet, sprachen
 from apps.antraege.models import (
@@ -141,7 +142,12 @@ class AntragForm(forms.Form):
         self._feld("ausgabestelle", forms.ChoiceField(
             choices=[("", t["egal"])] + [(s, s) for s in stellen]), t["ausgabestelle"])  # fmt: skip
         hilfe = t["anhaenge_hilfe"].format(anzahl=MAX_ANHAENGE, mb=MAX_MB)
-        self._feld("anhaenge", MehrereDateienFeld(help_text=hilfe), t["anhaenge"])
+        # Die Beispiele hinter dem Komma (z. B. „Personalausweis und Bescheid“) rot hervorheben,
+        # damit klar ist, dass Ausweis UND Bescheid gebraucht werden.
+        kopf, komma, beispiel = t["anhaenge"].partition(", ")
+        label = format_html('{}, <span class="nachweis-wichtig">{}</span>', kopf, beispiel) \
+            if komma else t["anhaenge"]  # fmt: skip
+        self._feld("anhaenge", MehrereDateienFeld(help_text=hilfe), label)
         # Die Dateien verarbeitet apps.antraege.nachweise (sie überstehen einen Formularfehler),
         # nicht das Formular. Ob Nachweise Pflicht sind, prüft die Ansicht über die Entwürfe.
         if "anhaenge" in self.fields:
