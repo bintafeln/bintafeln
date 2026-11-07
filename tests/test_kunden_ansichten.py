@@ -193,13 +193,27 @@ def test_liste_blaettert(admin_client):
     Haushalt.objects.bulk_create(Haushalt(kundennummer=f"{n:04d}") for n in range(55))
     inhalt = admin_client.get(LISTE).content.decode()  # Vorgabe: 25 je Seite
     assert "Seite 1 von 3" in inhalt and "55 Haushalte" in inhalt
-    assert '<option value="" selected>25 je Seite</option>' in inhalt
+    assert '<option value="25" selected>25 je Seite</option>' in inhalt
     seite = admin_client.get(LISTE, {"seite": 2, "anzahl": "50"}).content.decode()
     assert "Seite 2 von 2" in seite and "anzahl=50" in seite  # Wahl bleibt beim Blättern
     assert "Seite 1 von" not in admin_client.get(LISTE, {"anzahl": "100"}).content.decode()
     alle = admin_client.get(LISTE, {"anzahl": "alle"})
     assert len(alle.context["zeilen"]) == 55 and "Seite 1 von" not in alle.content.decode()
-    assert admin_client.get(LISTE, {"anzahl": "7"}).context["seite"].paginator.per_page == 25
+    # Die zuletzt gewählte Zahl ist je Person gemerkt und gilt beim nächsten Aufruf wieder –
+    # auch ohne ?anzahl= in der Adresse (hier zuletzt „alle“).
+    assert len(admin_client.get(LISTE).context["zeilen"]) == 55
+    # Ein ungültiger Wert ändert die gemerkte Wahl nicht.
+    assert admin_client.get(LISTE, {"anzahl": "7"}).context["seite"].paginator.per_page >= 55
+
+
+def test_zeilen_je_person_und_liste_uebergreifend_gemerkt(admin_client, admin):
+    # Die gewählte Zeilenzahl merkt sich bintafeln je Person und wendet sie auch in anderen
+    # Listen wieder an (eigener Nummernkreis-unabhängig; ADR-Notiz Zeilen je Seite).
+    admin_client.get(reverse("antraege:liste"), {"zeilen": "100"})
+    admin.refresh_from_db()
+    assert admin.liste_zeilen == "100"
+    # gilt auch in der Kundenliste, ohne ?anzahl= in der Adresse
+    assert admin_client.get(LISTE).context["seite"].paginator.per_page == 100
 
 
 def test_liste_kennzeichnet_abgelaufenen_ausweis(admin_client, bestand):

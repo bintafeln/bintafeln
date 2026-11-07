@@ -35,7 +35,7 @@ from apps.antraege.models import (
     AntragText,
     in_papierkorb,
 )
-from apps.core import html, listenauswahl, listenexport, privatdateien
+from apps.core import html, listen, listenauswahl, listenexport, privatdateien
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 
@@ -50,7 +50,6 @@ SORTIERUNG = {
     "nachname": "nachname", "vorname": "vorname", "eingang": "eingegangen_am", "email": "email",
     "telefon": "telefon", "art": "art", "staat": "staatsangehoerigkeit",
 }  # fmt: skip
-ZEILEN = ["25", "50", "100", "alle"]
 
 # Spalten der Antragsliste; „nummer" (die Antragsnummer mit Link) ist immer sichtbar, die übrigen
 # wählt jede Person selbst (Benutzer.antraege_liste_aus).
@@ -89,12 +88,10 @@ def _sortiert(request, antraege):
 def liste(request):
     ansicht, suche, antraege = _gefiltert(request)
     sort, antraege = _sortiert(request, antraege)
-    zeilen = request.GET.get("zeilen", "25")
-    if zeilen not in ZEILEN:
-        zeilen = "25"
+    zeilen = listen.zeilenzahl(request, "zeilen")
     letzte = AntragAnmerkung.objects.filter(antrag=OuterRef("pk")).order_by("-zeitpunkt")
     antraege = antraege.annotate(kommentar=Subquery(letzte.values("text")[:1]))
-    seite = Paginator(antraege, 10**9 if zeilen == "alle" else int(zeilen)).get_page(
+    seite = Paginator(antraege, listen.je_seite(zeilen, antraege.count())).get_page(
         request.GET.get("seite")
     )
     e = AntragEinstellungen.laden()
@@ -115,7 +112,7 @@ def liste(request):
             "suche": suche,
             "sort": sort,
             "zeilen": zeilen,
-            "zeilen_auswahl": ZEILEN,
+            "zeilen_auswahl": listen.ZEILEN_WAHL,
             "spalten": spalten,
             "sichtbar": sichtbar,
             "spalten_wahl": spalten_wahl,

@@ -33,7 +33,7 @@
       </select></div>
     <div class="filter-feld"><label for="anzahl">Anzeigen</label>
       <select name="anzahl" id="anzahl" onchange="this.form.submit()">
-        {% for a in anzahl_wahl %}<option value="{% if not forloop.first %}{{ a }}{% endif %}"{% if filter.anzahl == a or forloop.first and not filter.anzahl %} selected{% endif %}>{% if a == "alle" %}alle{% else %}{{ a }} je Seite{% endif %}</option>{% endfor %}
+        {% for a in anzahl_wahl %}<option value="{{ a }}"{% if a == filter.anzahl or forloop.first and not filter.anzahl %} selected{% endif %}>{% if a == "alle" %}alle{% else %}{{ a }} je Seite{% endif %}</option>{% endfor %}
       </select></div>
     <button type="submit" class="knopf">Suchen</button>
   </form>
