@@ -353,7 +353,8 @@ def nachweis_staat_uebernehmen(request, pk):
     if gespeichert:
         a.staatsangehoerigkeit = wert
         a.ausweis_abweichung = False  # vom Menschen geprüft und gesetzt → kein Hinweis mehr
-        a.save(update_fields=["staatsangehoerigkeit", "ausweis_abweichung"])
+        a.ausweis_erledigt = True  # entschieden → bleibt auch bei „Alle neu prüfen" entschieden
+        a.save(update_fields=["staatsangehoerigkeit", "ausweis_abweichung", "ausweis_erledigt"])
         messages.success(request, f"Staatsangehörigkeit im Antrag auf „{wert}“ gesetzt.")
     return render(
         request, "antraege/_ausweis_uebernommen.html", {"wert": wert, "gespeichert": gespeichert}
