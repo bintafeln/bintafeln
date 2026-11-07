@@ -146,9 +146,11 @@ def test_programm_und_handbuch_ohne_kuerzel(admin_client, admin, daten):
     anfrage = antwort.wsgi_request
     treffer = suche._programm(admin, "kunden", 50, menue=menue(anfrage))
     titel = [t.titel for t in treffer]
-    assert titel.index("Kunden einsehen") < titel.index("Anträge")  # Anträge: im Bereich Kunden
-    antraege = next(t for t in treffer if t.titel == "Anträge")
-    assert antraege.zusatz == "Menü: Kunden › Anträge und Warteliste"
+    assert "Kunden einsehen" in titel
+    # „Anträge und Warteliste“ ist jetzt ein eigener Hauptbereich (nicht mehr unter „Kunden“)
+    treffer_a = suche._programm(admin, "anträge", 50, menue=menue(anfrage))
+    antraege = next(t for t in treffer_a if t.titel == "Anträge")
+    assert antraege.zusatz == "Menü: Anträge und Warteliste"
     gruppen = next(t for t in treffer if t.titel == "Kundengruppen")
     assert gruppen.zusatz == "Menü: Einstellungen › Kunden"
     assert len({t.url for t in treffer}) == len(treffer)
