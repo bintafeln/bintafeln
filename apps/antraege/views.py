@@ -99,7 +99,7 @@ def liste(request):
     )
     e = AntragEinstellungen.laden()
     for a in seite:
-        a.ausserhalb = gebiet.ausserhalb(e, a)
+        a.gebiet_grund = gebiet.grund(e, a)
     aus = set(request.user.antraege_liste_aus or [])
     sichtbar = {k for k, _ in SPALTEN if k in SPALTEN_FEST or k not in aus}
     spalten = [(k, titel) for k, titel in SPALTEN if k in sichtbar]
@@ -176,7 +176,7 @@ def antrag(request, pk):
         "a": a,
         "sprache": sprachen.sprache(a.sprache),
         "platz": davor.count() + 1 if a.status in Antrag.OFFEN else None,
-        "ausserhalb": gebiet.ausserhalb(e, a),
+        "gebiet_grund": gebiet.grund(e, a),
         "status_auswahl": Antrag.Status.choices,
         "ausweis_pruefen": ausweis_pruefung.aktiv(e),
         "voriger": voriger,

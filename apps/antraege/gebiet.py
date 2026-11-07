@@ -36,6 +36,11 @@ def _ort_passt(ort: str, erlaubt: list[str]) -> bool:
     return any(ort == o or ort.startswith((f"{o}-", f"{o} ", f"{o}(")) for o in erlaubt)
 
 
+def _plz_passt(plz: str, bereiche: list[tuple[int, int]]) -> bool:
+    ziffern = (plz or "").strip()
+    return ziffern.isdigit() and any(a <= int(ziffern) <= b for a, b in bereiche)
+
+
 def passt(e: AntragEinstellungen, plz: str, ort: str) -> bool | None:
     """True/False, ob die Anschrift im Gebiet liegt; None, wenn nichts zu prüfen ist.
 
@@ -46,15 +51,31 @@ def passt(e: AntragEinstellungen, plz: str, ort: str) -> bool | None:
     bereiche, erlaubt = plz_bereiche(e.gebiet_plz), orte(e.gebiet_orte)
     if not bereiche and not erlaubt:
         return None
-    if bereiche:
-        ziffern = (plz or "").strip()
-        if not ziffern.isdigit() or not any(a <= int(ziffern) <= b for a, b in bereiche):
-            return False
+    if bereiche and not _plz_passt(plz, bereiche):
+        return False
     return not erlaubt or _ort_passt(ort or "", erlaubt)
 
 
 def ausserhalb(e: AntragEinstellungen, antrag) -> bool:
     return passt(e, antrag.plz, antrag.ort) is False
+
+
+def grund(e: AntragEinstellungen, antrag) -> str:
+    """Kurzer Grund für die Markierung – nennt, *was* außerhalb liegt (PLZ, Ort oder beides).
+
+    So sieht man nach dem Korrigieren der PLZ sofort, ob noch der Ort das Problem ist. Leer,
+    wenn die Anschrift passt oder nicht geprüft wird.
+    """
+    if passt(e, antrag.plz, antrag.ort) is not False:
+        return ""
+    bereiche, erlaubt = plz_bereiche(e.gebiet_plz), orte(e.gebiet_orte)
+    plz_schlecht = bool(bereiche) and not _plz_passt(antrag.plz, bereiche)
+    ort_schlecht = bool(erlaubt) and not _ort_passt(antrag.ort or "", erlaubt)
+    if plz_schlecht and ort_schlecht:
+        return "PLZ und Ort außerhalb des Gebiets"
+    if plz_schlecht:
+        return "PLZ außerhalb des Gebiets"
+    return "Ort außerhalb des Gebiets"
 
 
 def name(e: AntragEinstellungen) -> str:
