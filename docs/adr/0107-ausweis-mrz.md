@@ -127,3 +127,14 @@ sucht darin mit `_code_aus_fenster` ein **gültiges** Land (alpha-3-Code, deutsc
 „deutsch“). Das Ergebnis wird vorgeschlagen und lässt sich mit einem Klick in den Antrag übernehmen
 (`ausweis_bereich_lesen` → `nachweis_staat_uebernehmen`). Das Zeichnen funktioniert mit Maus und
 Touch (Pointer-Events), für die klar lesbaren Fälle, an denen die Voll-Automatik scheitert.
+
+## Nachtrag: nie eine ungültige Staatsangehörigkeit anzeigen
+
+`pruefen()` gibt eine erkannte **Staatsangehörigkeit** und ein **ausstellendes Land** nur noch dann
+aus, wenn der gelesene Code ein **echtes Land** aus der Länderliste ergibt (`_staat_name`). Früher
+fiel die Anzeige auf die **Rohlesung** der MRZ zurück, sodass bei Fehllesungen Phantasie-„Staaten"
+wie „E<E" im Ergebnis der manuellen „Ausweis prüfen"-Schaltfläche standen. Jetzt bleibt das Feld in
+so einem Fall **leer**; das Ergebnis sagt ehrlich „Staatsangehörigkeit nicht erkannt – bitte von
+Hand prüfen". Der Code (z. B. „UKR") wird nur zu einem gültigen Land gezeigt. Damit kann an keiner
+Stelle mehr ein Land auftauchen, das es nicht gibt (die Sammel-Prüfung filterte schon über
+`LAENDERCODE`; nun filtert die Quelle selbst).

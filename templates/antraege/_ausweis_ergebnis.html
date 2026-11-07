@@ -9,9 +9,11 @@
       <p class="ausweis-abweichung" role="alert"><strong>⚠ Staatsangehörigkeit weicht ab.</strong>
         Laut Ausweis <strong>{{ b.staatsangehoerigkeit }}</strong>{% if b.code_staat %} ({{ b.code_staat }}){% endif %},
         im Antrag angegeben: <strong>{{ b.erwartet|default:"— keine Angabe" }}</strong>.</p>
-    {% else %}
+    {% elif b.staatsangehoerigkeit %}
       <p class="ausweis-nat">Erkannte Staatsangehörigkeit: <strong>{{ b.staatsangehoerigkeit }}</strong>{% if b.code_staat %} ({{ b.code_staat }}){% endif %}
         {% if b.passt %}<span class="marke-ok">stimmt mit dem Antrag überein</span>{% endif %}</p>
+    {% else %}
+      <p class="ausweis-nat"><span class="marke-warnung">Staatsangehörigkeit nicht erkannt</span> – im Nachweis war kein gültiges Land lesbar. Bitte von Hand prüfen{% if darf_bearbeiten %} und unten setzen{% endif %}.</p>
     {% endif %}
 
     {% if darf_bearbeiten %}
@@ -31,7 +33,7 @@
     {% if b.nur_feld %}
     <p class="hinweis"><span class="marke-warnung">Keine MRZ gefunden</span> – nur aus dem Feld „Staatsangehörigkeit / Nationality" gelesen (z. B. die Seite ohne maschinenlesbare Zone). Schwächerer Hinweis als eine geprüfte MRZ; bitte ansehen. Die Entscheidung trifft ein Mensch.</p>
     {% else %}
-    <p class="hinweis">Weiter im Dokument: {{ b.dokument }}{% if not b.gueltig %} <span class="marke-warnung">Prüfziffern unsicher gelesen</span>{% endif %}, ausgestellt von {{ b.ausstellland }}{% if b.name %}, Name {{ b.name }}{% endif %}. Nur ein Hinweis; die Entscheidung trifft ein Mensch.</p>
+    <p class="hinweis">Weiter im Dokument: {{ b.dokument }}{% if not b.gueltig %} <span class="marke-warnung">Prüfziffern unsicher gelesen</span>{% endif %}{% if b.ausstellland %}, ausgestellt von {{ b.ausstellland }}{% endif %}{% if b.name %}, Name {{ b.name }}{% endif %}. Nur ein Hinweis; die Entscheidung trifft ein Mensch.</p>
     {% endif %}
   </div>
 {% endif %}
