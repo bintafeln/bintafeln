@@ -100,7 +100,12 @@ def test_ohne_beitraege_nichts_zu_beitraegen(admin_client, erika, pdf_text):
     assert not MitgliederEinstellungen.mit_beitraegen()  # Vorgabe: die meisten Tafeln ohne
     formular = admin_client.get(reverse("mitglieder:neu")).content.decode()
     assert "Jahresbeitrag" not in formular and "Zahlweise" not in formular
-    daten = {"adresse": erika.pk, "nummer": "1", "art": "Aktives Mitglied", "eintritt": "2026-02-01"}
+    daten = {
+        "adresse": erika.pk,
+        "nummer": "1",
+        "art": "Aktives Mitglied",
+        "eintritt": "2026-02-01",
+    }
     admin_client.post(reverse("mitglieder:neu"), daten)
     m = Mitglied.objects.get()
     assert m.jahresbeitrag == 0
@@ -199,7 +204,10 @@ def test_mitgliedschaft_direkt_bei_der_adresse(admin_client, benutzer_mit_rolle,
                             "m-austrittsgrund": ""})  # fmt: skip
     assert Mitglied.objects.get(pk=m.pk).art == "Aktives Mitglied"  # Grund fehlt: nicht gespeichert
     admin_client.post(url, {**daten, "m-art": "Nicht aktives Mitglied"})
-    assert Mitglied.objects.get(pk=m.pk).art == "Nicht aktives Mitglied" and Mitglied.objects.count() == 1
+    assert (
+        Mitglied.objects.get(pk=m.pk).art == "Nicht aktives Mitglied"
+        and Mitglied.objects.count() == 1
+    )
     # Querlinks: Adressbuch zeigt das Mitglied, Mitgliederliste führt ins Adressbuch
     liste = admin_client.get(reverse("adressen:liste")).content.decode()
     assert f'href="{reverse("mitglieder:mitglied", args=[m.pk])}"' in liste
