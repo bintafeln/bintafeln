@@ -78,7 +78,7 @@
         {% if "nummer" in sichtbar %}<td data-titel="#"><a href="{% url 'antraege:antrag' a.pk %}">{{ a.nummer }}</a>{% if a.ausweis_abweichung %} <a class="marke-warnung" href="{% url 'antraege:antrag' a.pk %}" title="Staatsangehörigkeit laut Ausweis weicht von der Angabe ab – bitte prüfen">Ausweis ≠</a>{% endif %}</td>{% endif %}
         {% if "status" in sichtbar %}<td data-titel="Status"><span class="status status-{{ a.status }}">{{ a.get_status_display }}</span></td>{% endif %}
         {% if "kundennummer" in sichtbar %}<td data-titel="Kundennummer">{{ a.kundennummer|default:"–" }}</td>{% endif %}
-        {% if "nachname" in sichtbar %}<td data-titel="Nachname">{{ a.nachname }}{% if a.ausserhalb %} <span class="marke-warnung" title="PLZ oder Ort liegt nicht im Einzugsgebiet (Anträge einstellen)">außerhalb des Gebiets</span>{% endif %}</td>{% endif %}
+        {% if "nachname" in sichtbar %}<td data-titel="Nachname">{{ a.nachname }}{% if a.gebiet_grund %} <span class="marke-warnung" title="Liegt nicht im Einzugsgebiet (Anträge einstellen)">{{ a.gebiet_grund }}</span>{% endif %}</td>{% endif %}
         {% if "vorname" in sichtbar %}<td data-titel="Vorname">{{ a.vorname }}</td>{% endif %}
         {% if "eingang" in sichtbar %}<td data-titel="Antrag vom">{{ a.eingegangen_am|date:"d.m.Y H:i" }}</td>{% endif %}
         {% if "email" in sichtbar %}<td data-titel="E-Mail">{{ a.email|default:"–" }}</td>{% endif %}

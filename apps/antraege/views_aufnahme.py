@@ -95,7 +95,7 @@ def schritt(request, pk, schritt):
 
     e = AntragEinstellungen.laden()
     kontext = {"a": a, "schritt": schritt, "schritte": SCHRITTE, "h": h, "z": z,
-               "nr": NAMEN.index(schritt) + 1, "ausserhalb": gebiet.ausserhalb(e, a),
+               "nr": NAMEN.index(schritt) + 1, "gebiet_grund": gebiet.grund(e, a),
                "ausweis_pruefen": ausweis_pruefung.aktiv(e)}  # fmt: skip
     fehler = None
     if request.method == "POST":

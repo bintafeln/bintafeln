@@ -47,6 +47,42 @@ def test_passt_nur_eine_liste_oder_keine():
     assert gebiet.passt(aus, "99999", "Anderswo") is None
 
 
+class _Fake:
+    def __init__(self, plz, ort):
+        self.plz, self.ort = plz, ort
+
+
+def test_grund_nennt_was_ausserhalb_liegt():
+    e = einstellungen(plz="12000-12999", orte="Musterstadt")
+    assert gebiet.grund(e, _Fake("12345", "Musterstadt")) == ""
+    assert gebiet.grund(e, _Fake("54321", "Musterstadt")) == "PLZ außerhalb des Gebiets"
+    # Nur den Ort korrigiert übrig: nach PLZ-Korrektur bleibt der Ort als Grund (der gemeldete Bug)
+    assert gebiet.grund(e, _Fake("12345", "Anderswo")) == "Ort außerhalb des Gebiets"
+    assert gebiet.grund(e, _Fake("54321", "Anderswo")) == "PLZ und Ort außerhalb des Gebiets"
+    # Nur eine Liste konfiguriert
+    assert (
+        gebiet.grund(einstellungen(plz="12000-12999"), _Fake("54321", "x"))
+        == "PLZ außerhalb des Gebiets"
+    )
+    assert (
+        gebiet.grund(einstellungen(orte="Musterstadt"), _Fake("54321", "x"))
+        == "Ort außerhalb des Gebiets"
+    )
+    assert gebiet.grund(einstellungen(), _Fake("54321", "x")) == ""
+
+
+def test_korrektur_entfernt_markierung(admin_client, offen):
+    """Nach dem Korrigieren der PLZ verschwindet die Markierung bzw. nennt den Rest-Grund."""
+    offen.gebiet_pruefen, offen.gebiet_orte = Gebiet.HINWEIS, ""  # nur PLZ prüfen
+    offen.save()
+    a = Antrag.objects.create(vorname="Kai", nachname="Muster", plz="54321", ort="Anderswo")
+    detail = reverse("antraege:antrag", args=[a.pk])
+    assert "PLZ außerhalb des Gebiets" in admin_client.get(detail).content.decode()
+    a.plz = "12345"  # in den Bereich korrigiert
+    a.save()
+    assert "außerhalb des Gebiets" not in admin_client.get(detail).content.decode()
+
+
 def test_name_des_gebiets():
     assert gebiet.name(einstellungen(name=" Musterstadt ", orte="A")) == "Musterstadt"
     assert gebiet.name(einstellungen(orte="A, B")) == "A, B"
