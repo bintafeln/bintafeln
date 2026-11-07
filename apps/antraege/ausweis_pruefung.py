@@ -280,14 +280,17 @@ def pruefen(bild_bytes: bytes, erwartete_staatsangehoerigkeit: str = "") -> dict
     roh = _passporteye(bild_bytes) or _rueckfall(bild_bytes) or _staat_aus_text(bild_bytes)
     if roh is None:
         return {"erkannt": False}
+    # Nur ein echtes Land aus der Länderliste gilt als erkannte Staatsangehörigkeit bzw. als
+    # ausstellendes Land. OCR liest aus der MRZ oft Müll (z. B. „E<E“, „OSI“, „662“); solche
+    # Lesungen dürfen NIE als Staat angezeigt werden – sonst stehen Phantasie-Staaten im Ergebnis.
     staat = _staat_name(roh["nationality"])
     bericht = {
         "erkannt": True,
         "gueltig": roh["gueltig"],
         "dokument": roh["dokument"],
-        "ausstellland": _staat_name(roh["country"]) or roh["country"],
-        "staatsangehoerigkeit": staat or roh["nationality"],
-        "code_staat": roh["nationality"],
+        "ausstellland": _staat_name(roh["country"]),  # leer, wenn kein gültiges Land (kein Müll)
+        "staatsangehoerigkeit": staat,  # nur ein gültiges Land; sonst leer, nie die Rohlesung
+        "code_staat": roh["nationality"] if staat else "",  # Code nur zu einem gültigen Land zeigen
         "name": roh["name"],
         # Nur aus dem Textfeld gelesen (keine MRZ geprüft) – schwächerer Hinweis.
         "nur_feld": roh.get("nur_feld", False),
