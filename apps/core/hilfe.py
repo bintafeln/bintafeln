@@ -165,6 +165,7 @@ _SEITE = {
     "serienbriefe:vorlagen": "serienbriefe",
     "statistik:uebersicht": "statistik",
     "statistik:verband": "statistik",
+    "statistik:einstellungen": "statistik",
     "datenimport:start": "datenimport",
     "konten:mitarbeitende": "mitarbeitende",
     "konten:rollen": "rollen",

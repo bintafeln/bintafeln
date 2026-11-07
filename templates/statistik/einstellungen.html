@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block titel %}Statistik: Diagramme wählen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'statistik:uebersicht' %}">← Statistik</a></p>
+  <h1>Statistik: Diagramme wählen</h1>
+  <p class="hinweis">Hier legt die Tafel fest, welche Diagramme auf der Statistik-Seite und im
+    PDF-Jahresbericht erscheinen. Abgewählte Diagramme werden nirgends mehr angezeigt; die Wahl
+    gilt für die ganze Tafel. Die Kennzahlen oben auf der Seite bleiben immer sichtbar.</p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="spalten-haken">
+      {% for schluessel, name, an in diagramme %}
+      <label><input type="checkbox" name="diagramm" value="{{ schluessel }}"{% if an %} checked{% endif %}> {{ name }}</label>
+      {% endfor %}
+    </div>
+    <p class="hinweis">Diagramme zu Spenden und Mitgliedern erscheinen nur, wenn der jeweilige
+      Bereich genutzt wird und man das Recht dazu hat – unabhängig von der Wahl hier.</p>
+    <div class="aktionen"><button type="submit" class="knopf">Speichern</button></div>
+  </form>
+</section>
+{% endblock %}

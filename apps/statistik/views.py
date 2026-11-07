@@ -3,8 +3,9 @@
 import csv
 import datetime as dt
 
+from django.contrib import messages
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from apps.core.pdf import pdf_antwort
@@ -14,6 +15,37 @@ from apps.kunden.models import Ausgabestelle
 from apps.statistik import auswertung as aw
 from apps.statistik import diagramme as dg
 from apps.statistik import jahresbericht as jb
+from apps.statistik.models import StatistikEinstellungen
+
+# Einzelne Diagramme, die eine Tafel unter „Einstellungen → Statistik" ab-/zuschalten kann
+# (Schlüssel = ``id`` des Abschnitts; „tag" steht für alle „Je Ausgabetag"-Diagramme zusammen).
+# Reihenfolge wie auf der Seite. Spenden/Mitglieder erscheinen nur mit dem jeweiligen Recht.
+DIAGRAMME = [
+    ("abholungen", "Abholungen je Monat/Woche"),
+    ("verlauf_stellen", "Abholungen im Verlauf je Ausgabestelle"),
+    ("stellen", "Abholungen je Ausgabestelle"),
+    ("wochentage", "Abholungen nach Wochentag"),
+    ("uhrzeit", "Abholungen nach Uhrzeit"),
+    ("tag", "Je Ausgabetag: Haushalte und Personen"),
+    ("einnahmen", "Bareinnahmen"),
+    ("neuaufnahmen", "Neuaufnahmen und Anträge"),
+    ("haushaltsgroessen", "Aktive Haushalte nach Größe"),
+    ("alter", "Personen nach Alter"),
+    ("status", "Haushalte nach Status"),
+    ("einkommensarten", "Haushalte nach Einkommensart"),
+    ("merkmale", "Personen nach Merkmal"),
+    ("auslastung", "Auslastung der Kundengruppen"),
+    ("sonderaktionen", "Sonderaktionen im Zeitraum"),
+    ("spenden", "Geldspenden je Monat/Woche"),
+    ("spenden_zweck", "Geldspenden nach Zweck"),
+    ("mitglieder", "Mitglieder: Ein- und Austritte"),
+    ("mitglieder_art", "Mitglieder nach Art"),
+]
+
+
+def _diagramm_schluessel(kennung: str) -> str:
+    """Schlüssel in DIAGRAMME: die vielen „tag-<i>" gehören zum gemeinsamen Schalter „tag"."""
+    return "tag" if kennung.startswith("tag-") else kennung
 
 
 def _datum(text) -> dt.date | None:
@@ -164,9 +196,12 @@ def abschnitte(z: aw.Zeitraum, stellen, heute, benutzer=None, get=None) -> list[
     sehen."""
     beschriftung = [name for _, name in aw.perioden(z)]
     einheit = _einheit(z)
+    versteckt = StatistikEinstellungen.versteckt()
     liste = []
 
     def neu(kennung, titel, svg, kopf, zeilen, text="", legende=()):
+        if _diagramm_schluessel(kennung) in versteckt:
+            return
         liste.append(
             {
                 "id": kennung,
@@ -180,6 +215,8 @@ def abschnitte(z: aw.Zeitraum, stellen, heute, benutzer=None, get=None) -> list[
         )
 
     def linien_neu(kennung):
+        if _diagramm_schluessel(kennung) in versteckt:
+            return
         quelle = _linien_quelle(kennung, z, stellen, benutzer)
         if quelle is not None:
             serien, titel, diagramm_titel, text = quelle
@@ -555,3 +592,18 @@ def verband(request):
         "eingeschraenkt": zugang.stellen(request.user) is not None,
         "abfrage": request.GET.urlencode(),
     })  # fmt: skip
+
+
+@rollen.recht_erforderlich("einstellungen.statistik")
+def einstellungen(request):
+    """Tafelweit wählen, welche Diagramme die Statistik-Seite und der Jahresbericht zeigen."""
+    e = StatistikEinstellungen.laden()
+    if request.method == "POST":
+        gezeigt = set(request.POST.getlist("diagramm"))
+        e.ausgeblendet = [k for k, _ in DIAGRAMME if k not in gezeigt]
+        e.save(update_fields=["ausgeblendet"])
+        messages.success(request, "Einstellungen gespeichert.")
+        return redirect("statistik:einstellungen")
+    aus = set(e.ausgeblendet or [])
+    diagramme = [(k, label, k not in aus) for k, label in DIAGRAMME]
+    return render(request, "statistik/einstellungen.html", {"diagramme": diagramme})

@@ -130,6 +130,7 @@ KATALOG = [
           "Notiz-Vorlagen, Dokumentarten, beitragsfreie Zeiträume, Sonderausgaben"),
     Recht("einstellungen.ausweis", EINSTELLUNGEN, "Kundenausweis gestalten"),
     Recht("einstellungen.ausgabe", EINSTELLUNGEN, "Ausgabe, Ampel und Beiträge"),
+    Recht("einstellungen.statistik", EINSTELLUNGEN, "Statistik: Diagramme wählen"),
     Recht("einstellungen.antraege", EINSTELLUNGEN, "Antragsformular und Texte"),
     Recht("einstellungen.personal", EINSTELLUNGEN, "Mitarbeitende und Dokumentkategorien"),
     Recht("einstellungen.arbeitszeit", EINSTELLUNGEN, "Arbeitszeit"),
