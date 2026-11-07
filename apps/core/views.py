@@ -156,20 +156,26 @@ def hintergrund_entfernen(request, pk):
 def mail_einstellungen(request):
     instanz = MailEinstellungen.laden()
     form = MailEinstellungenForm(request.POST or None, instance=instanz)
+    # Das Ergebnis der Tests erscheint gleich beim Testen-Knopf (nicht nur als flüchtige Meldung
+    # oben), damit man die Rückmeldung dort sieht, wo man geklickt hat. Es übersteht die
+    # Weiterleitung (PRG) in der Sitzung und wird beim nächsten Aufruf einmal angezeigt.
     if request.method == "POST" and "pruefen" in request.POST:
         try:
             mail.verbindung_pruefen()
         except mail.MailFehler as fehler:
-            messages.error(request, f"Verbindung fehlgeschlagen: {fehler}")
+            request.session["mail_test"] = [False, f"Verbindung fehlgeschlagen: {fehler}"]
         else:
-            messages.success(request, "Verbindung und Anmeldung am Mailserver klappen.")
+            request.session["mail_test"] = [True, "Verbindung und Anmeldung am Mailserver klappen."]
         return redirect("core:mail_einstellungen")
     if request.method == "POST" and "testmail" in request.POST:
         an = request.POST.get("an", "").strip() or request.user.email
         try:
             validate_email(an)
         except ValidationError:
-            messages.error(request, "Bitte eine gültige Empfängeradresse für die Testmail angeben.")
+            request.session["mail_test"] = [
+                False,
+                "Bitte eine gültige Empfängeradresse für die Testmail angeben.",
+            ]
             return redirect("core:mail_einstellungen")
         try:
             mail.senden(
@@ -178,17 +184,19 @@ def mail_einstellungen(request):
                 [an],
             )
         except mail.MailFehler as fehler:
-            messages.error(request, f"Testmail nicht gesendet: {fehler}")
+            request.session["mail_test"] = [False, f"Testmail nicht gesendet: {fehler}"]
         else:
-            messages.success(
-                request, f"Testmail an {an} gesendet. Bitte im Postfach (auch im Spam) nachsehen."
-            )
+            request.session["mail_test"] = [
+                True,
+                f"Testmail an {an} gesendet. Bitte im Postfach (auch im Spam) nachsehen.",
+            ]
         return redirect("core:mail_einstellungen")
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "E-Mail-Einstellungen gespeichert.")
         return redirect("core:mail_einstellungen")
     lesbar = geheimnis.entschluesseln(instanz.passwort_verschluesselt)
+    test = request.session.pop("mail_test", None)
     return render(
         request,
         "core/mail_einstellungen.html",
@@ -197,6 +205,7 @@ def mail_einstellungen(request):
             "einstellungen": instanz,
             "passwort_gespeichert": bool(instanz.passwort_verschluesselt),
             "passwort_unlesbar": lesbar is None,
+            "mail_test": {"ok": test[0], "text": test[1]} if test else None,
         },
     )
 
