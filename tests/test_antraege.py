@@ -1597,7 +1597,7 @@ def test_einstellungen_und_texte(admin_client, benutzer_mit_rolle):
     assert "berta" in seite and "Arabisch" in seite and str(AntragEinstellungen.laden())
     werte = {f: "optional" for f in AntragEinstellungen.FELDER}
     werte |= {"aktiv": "on", "modus": "beides", "benachrichtigen": [b.pk],
-              "erledigt_nach_tagen": 0, "papierkorb_nach_tagen": 90,
+              "neu_nach_tagen": 0, "erledigt_nach_tagen": 0, "papierkorb_nach_tagen": 90,
               "max_je_stunde": 5, "erste_nummer": 4201, "gebiet_pruefen": "aus",
               "datenschutz_url": "tafel.example.org/ds",
               "erklaerungen_url": "tafel.example.org/ausgabe",
@@ -1660,6 +1660,26 @@ def test_fristen(antrag, django_capture_on_commit_callbacks):
         assert papierkorb.fristen_anwenden(jetzt + dt.timedelta(days=11 + 91 + tage + 1)) == 1
     assert not PapierkorbEintrag.objects.exists()
     assert not privatdateien.pfad(ANHANG_ORDNER, name).exists()
+
+
+def test_neu_nach_tagen_wechselt_auf_in_bearbeitung(antrag):
+    """„neu“ gilt nur für den eingestellten Zeitraum; danach wird der Antrag auf „in Bearbeitung“
+    gesetzt (reiner Statuswechsel). Mit „erledigt nach = 0“ wird er danach nicht gelöscht."""
+    e = AntragEinstellungen.laden()
+    jetzt = timezone.now()
+    e.neu_nach_tagen = 7
+    e.erledigt_nach_tagen = 0  # 0 = nie erledigen/löschen
+    e.save()
+    fristen_anwenden(jetzt + dt.timedelta(days=3))
+    antrag.refresh_from_db()
+    assert antrag.status == "neu"  # im Fenster noch „neu“
+    fristen_anwenden(jetzt + dt.timedelta(days=8))
+    antrag.refresh_from_db()
+    assert antrag.status == "in_bearbeitung"
+    # „erledigt nach = 0“: „in Bearbeitung“ bleibt erhalten, auch viel später
+    assert fristen_anwenden(jetzt + dt.timedelta(days=400)) == 0
+    antrag.refresh_from_db()
+    assert antrag.status == "in_bearbeitung" and Antrag.objects.filter(pk=antrag.pk).exists()
 
 
 def test_menue_zeigt_zahl_offener_antraege(admin_client, client, benutzer_mit_rolle, anmelden):
@@ -1823,8 +1843,8 @@ def test_ki_schluessel_speichern(admin_client):
 
     url = reverse("antraege:einstellungen")
     werte = {f: "optional" for f in AntragEinstellungen.FELDER}
-    werte |= {"modus": "beides", "erledigt_nach_tagen": 0, "papierkorb_nach_tagen": 90,
-              "max_je_stunde": 5, "gebiet_pruefen": "aus",
+    werte |= {"modus": "beides", "neu_nach_tagen": 0, "erledigt_nach_tagen": 0,
+              "papierkorb_nach_tagen": 90, "max_je_stunde": 5, "gebiet_pruefen": "aus",
               "erste_nummer": 1}  # fmt: skip
     admin_client.post(url, werte | {"ki_schluessel": "sk-erfunden"})
     e = AntragEinstellungen.laden()
