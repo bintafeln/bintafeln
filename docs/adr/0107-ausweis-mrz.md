@@ -127,3 +127,10 @@ sucht darin mit `_code_aus_fenster` ein **gültiges** Land (alpha-3-Code, deutsc
 „deutsch“). Das Ergebnis wird vorgeschlagen und lässt sich mit einem Klick in den Antrag übernehmen
 (`ausweis_bereich_lesen` → `nachweis_staat_uebernehmen`). Das Zeichnen funktioniert mit Maus und
 Touch (Pointer-Events), für die klar lesbaren Fälle, an denen die Voll-Automatik scheitert.
+
+`_code_aus_fenster` erkennt einen Ländercode jetzt auch, wenn er – wie in der MRZ – direkt an
+Ziffern klebt (z. B. „…662UKR100…“); die frühere Wortgrenze `\b` griff zwischen Ziffer und
+Buchstabe nicht und übersah den Code. In echtem Text greift die Erkennung weiterhin nicht in
+längere Wörter hinein. Zusätzlich liest `land_aus_ausschnitt` einen über die MRZ gezogenen
+Ausschnitt notfalls mit der MRZ-Lesung (nur Großbuchstaben/Ziffern), wenn der normale OCR-Text
+keinen Code ergibt.
