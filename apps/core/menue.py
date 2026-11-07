@@ -56,7 +56,10 @@ def menue(request) -> list[dict]:
         # Dienstpläne aller Art unter einem Punkt; die Module hängen sich als Abschnitt ein
         "Dienstpläne": {"Ausgabe": [], "Fahrdienst": []},
         "Meine Arbeitszeit": {"": []},
-        "Kunden": {"": [], "Anträge und Warteliste": [], "Kundenstamm": []},
+        "Kunden": {"": [], "Kundenstamm": []},
+        # „Anträge und Warteliste“ ist ein eigener Hauptbereich (direkt unter „Kunden“); sein
+        # Abzeichen zeigt nur die Zahl der aktuellen Anträge, nicht zusätzlich die Abgleich-Fälle.
+        "Anträge und Warteliste": {"": []},
         "Verein": {"Mitglieder": [], "Spenden": [], "Adressen": [], "Serienbriefe": [],
                    "Team": []},
         "Auswertungen": {"": []},
@@ -130,13 +133,17 @@ def menue(request) -> list[dict]:
         ("kunden.bearbeiten", verlaengern),
         ("kunden.nachrichten", nachrichten),
     ], vorn=True)  # fmt: skip
+    antraege_zahl = None  # Abzeichen des Bereichs „Anträge und Warteliste“: nur die offenen Anträge
     if "antraege.sehen" in darf:
         from apps.antraege.models import Antrag
 
         antraege = _eintrag("Anträge", "antraege:liste")
         antraege["zahl"] = Antrag.objects.filter(status__in=Antrag.OFFEN).count()
         antraege["zahl_titel"] = "offene Anträge"
-        dazu("Kunden/Anträge und Warteliste", [
+        # Das Abzeichen des Bereichs zeigt nur die Zahl der aktuellen (offenen) Anträge – nicht die
+        # Summe mit den Ausweis-Abgleich-Fällen (die stehen weiter am eigenen Untereintrag).
+        antraege_zahl = antraege["zahl"] or None
+        dazu("Anträge und Warteliste", [
             ("antraege.sehen", antraege),
             ("antraege.sehen", _eintrag("Öffentliches Formular", "antrag:start", extern=True)),
         ], vorn=True)  # fmt: skip
@@ -150,7 +157,7 @@ def menue(request) -> list[dict]:
                 ap = _eintrag("Ausweisprüfung", "antraege:ausweis_pruefung_liste")
                 ap["zahl"] = offen_ausweis
                 ap["zahl_titel"] = "offen (Abweichung/unklar)"
-                dazu("Kunden/Anträge und Warteliste", [("antraege.bearbeiten", ap)])
+                dazu("Anträge und Warteliste", [("antraege.bearbeiten", ap)])
     dazu("Kunden/Kundenstamm", [
         ("kunden.zugriffsprotokoll", _eintrag("Zugriffsprotokoll", "kunden:zugriffe")),
     ])  # fmt: skip
@@ -213,6 +220,10 @@ def menue(request) -> list[dict]:
             continue
         alle = [e for t in teile for e in t["eintraege"]]
         b_ = {"titel": titel, "eintraege": alle, **zahl_von(alle)}
+        if titel == "Anträge und Warteliste":
+            # Nur die Zahl der aktuellen Anträge, nicht die Summe mit den Abgleich-/Ausweisfällen.
+            b_["zahl"] = antraege_zahl
+            b_["zahl_titel"] = "offene Anträge"
         if titel in aufklappbar:
             b_["gruppen"] = teile
         elif len(teile) > 1 or teile[0]["titel"]:

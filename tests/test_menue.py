@@ -100,8 +100,8 @@ def alle_bereiche(benutzer, module=()):
 def test_neue_ordnung_fuer_die_verwaltung(admin):
     """Start, Ausgabestelle, Kunden, Verein, Auswertungen, Einstellungen, Hilfe; Module darin."""
     b = alle_bereiche(admin, ["abrechnung", "wochenuebersicht", "listen", "warteliste"])
-    assert list(b) == ["Start", "Ausgabestelle", "Kunden", "Verein", "Auswertungen",
-                       "Einstellungen", "Hilfe"]  # fmt: skip
+    assert list(b) == ["Start", "Ausgabestelle", "Kunden", "Anträge und Warteliste", "Verein",
+                       "Auswertungen", "Einstellungen", "Hilfe"]  # fmt: skip
     abschnitte = {a["titel"]: [e["titel"] for e in a["eintraege"]]
                   for a in b["Ausgabestelle"]["abschnitte"]}  # fmt: skip
     assert abschnitte[""][:2] == ["Einlass", "Kasse"]
@@ -113,8 +113,9 @@ def test_neue_ordnung_fuer_die_verwaltung(admin):
         "Ausgabestellen",
         "Ausgabestellen-Konten",
     ]
-    kunden = {a["titel"]: [e["titel"] for e in a["eintraege"]] for a in b["Kunden"]["abschnitte"]}
-    assert "Warteliste" in kunden["Anträge und Warteliste"]
+    # „Anträge und Warteliste“ ist ein eigener Hauptbereich (direkt unter „Kunden“)
+    aw = [e["titel"] for e in b["Anträge und Warteliste"]["eintraege"]]
+    assert "Anträge" in aw and "Warteliste" in aw
     assert [g["titel"] for g in b["Verein"]["gruppen"]] == ["Mitglieder", "Spenden", "Adressen",
                                                             "Serienbriefe", "Team"]  # fmt: skip
     assert [e["titel"] for e in b["Auswertungen"]["eintraege"]] == [
@@ -152,9 +153,9 @@ def test_noch_tiefere_seite_leuchtet_nur_in_einstellungen(admin):
 
 
 def test_liste_leuchtet_auf_ihrer_eigenen_seite(admin):
-    """Die Antragsliste selbst macht weiter den Bereich „Kunden“ auf, nicht Einstellungen."""
+    """Die Antragsliste öffnet den Bereich „Anträge und Warteliste“, nicht Einstellungen."""
     b = aktive_bereiche(admin, reverse("antraege:liste"))
-    assert b["Kunden"]["offen"] and not b["Einstellungen"]["offen"]
+    assert b["Anträge und Warteliste"]["offen"] and not b["Einstellungen"]["offen"]
 
 
 def test_dienstplaene_unter_einem_punkt(admin):
