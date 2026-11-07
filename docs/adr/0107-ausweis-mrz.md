@@ -145,3 +145,13 @@ einen Antrag** noch einmal über die volle Automatik (`ausweis_scan.antrag_pruef
 Ergebnis; die Seite lädt danach neu, sodass die Zeile das neue Ergebnis zeigt. So kann man einen
 einzelnen Fall gezielt erneut lesen lassen – etwa nachdem die Erkennung verbessert wurde –, ohne den
 ganzen Bestand über „Alle neu prüfen“ laufen zu lassen.
+
+## Nachtrag: Vorschau-Popup überall gleich, Land von Hand wählbar
+
+Das große Vorschau-Popup bietet seine Prüf-Knöpfe (Bescheid einordnen, Bereich lesen, übernehmen)
+jetzt auch **auf der Antragsseite** (Kacheln in `_nachweis_kacheln.html`), nicht nur auf der
+Sammel-Prüfungsseite – die Vorlagen tragen dafür dieselben `data-…-url`-Attribute. Zusätzlich hat
+das Popup eine **Länder-Auswahl**, mit der sich die Staatsangehörigkeit **von Hand** setzen lässt
+(nicht nur über die Bild-Erkennung): die Optionen werden einmal aus einer Seitenvorlage
+`<template id="ausweis-staaten-optionen">` geklont (gefüllt aus `staaten` bzw. `ausweis_staaten`),
+und eine Auswahl verhält sich wie ein erkanntes Land (Knopf „… übernehmen“ → `nachweis_staat_uebernehmen`).

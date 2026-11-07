@@ -59,6 +59,10 @@
   </details>
   {% endif %}
 </section>
+{% if staaten %}
+{# Länderliste für die Staaten-Auswahl im Vorschau-Popup (vom JS geklont). #}
+<template id="ausweis-staaten-optionen">{% for w, n in staaten %}<option value="{{ w }}">{{ n }}</option>{% endfor %}</template>
+{% endif %}
 {# Foto groß als Popup (data-bild), PDF im eigenen Fenster (data-fenster) – wie auf der Antragsseite. #}
 <script src="{% static 'js/nachweise_vorschau.js' %}" defer></script>
 {% endblock %}

@@ -5,7 +5,12 @@
   {% url 'antraege:anhang' a.pk d.pk as durl %}
   <figure class="nachweis-kachel">
     {% if "image" in d.typ %}
-      <a href="{{ durl }}" data-bild title="{{ d.name }}" target="_blank" rel="noopener">
+      <a href="{{ durl }}" data-bild title="{{ d.name }}" target="_blank" rel="noopener"
+         {% if ausweis_pruefen and "antraege.bearbeiten" in rechte %}
+         data-bescheid-url="{% url 'antraege:ausweis_als_bescheid' a.pk %}"
+         data-neu-pruefen-url="{% url 'antraege:ausweis_neu_pruefen_einzeln' a.pk %}"
+         data-bereich-url="{% url 'antraege:ausweis_bereich_lesen' a.pk %}"
+         data-uebernehmen-url="{% url 'antraege:nachweis_staat_uebernehmen' a.pk %}"{% endif %}>
         <img src="{{ durl }}" alt="{{ d.name }}" loading="lazy">
       </a>
     {% elif "pdf" in d.typ %}
@@ -35,4 +40,8 @@
 {% endfor %}
 </div>
 {% if ausweis_pruefen %}<div id="ausweis-ergebnis" class="ausweis-ergebnis"></div>{% endif %}
+{% if ausweis_pruefen and "antraege.bearbeiten" in rechte and ausweis_staaten %}
+{# Länderliste für die Staaten-Auswahl im Vorschau-Popup (vom JS geklont). #}
+<template id="ausweis-staaten-optionen">{% for w, n in ausweis_staaten %}<option value="{{ w }}">{{ n }}</option>{% endfor %}</template>
+{% endif %}
 <script src="{% static 'js/nachweise_vorschau.js' %}" defer></script>

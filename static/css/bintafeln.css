@@ -398,6 +398,7 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .nachweis-bild-huelle.zeichnen img { user-select: none; -webkit-user-select: none; }
 .nachweis-auswahl { position: absolute; border: 2px dashed var(--akzent);
   background: rgba(232, 113, 10, .15); pointer-events: none; }
+.nachweis-staat-auswahl { max-width: 14rem; }
 .nachweis-status { text-align: center; margin-top: .4rem; min-height: 1.2em; }
 /* Ergebnis der Ausweisprüfung: volle Breite unter den Kacheln (nicht im schmalen Kästchen),
    damit der Hinweis lesbar ist. */
