@@ -1,9 +1,9 @@
-{# Bestätigung nach dem Übernehmen der Staatsangehörigkeit in den Antrag (per htmx). #}
+{# Bestätigung nach dem Übernehmen (htmx); die Angabe oben wird per Out-of-Band-Swap mit aktualisiert. #}
 {% if gespeichert %}
   <div class="ausweis-bericht">
     <p class="marke-ok" role="status">✓ Staatsangehörigkeit im Antrag auf <strong>{{ wert }}</strong> gesetzt.</p>
-    <p class="hinweis">Die Angabe oben auf der Antragsseite zeigt den neuen Wert nach dem nächsten Laden der Seite.</p>
   </div>
+  <dd id="antrag-staatsangehoerigkeit" hx-swap-oob="true">{{ wert }}</dd>
 {% else %}
   <p class="hinweis" role="alert">Konnte nicht übernehmen: „{{ wert }}“ ist keine gültige Auswahl.</p>
 {% endif %}
