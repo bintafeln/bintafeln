@@ -689,11 +689,19 @@ def zugriffe(request):
     benutzername = request.GET.get("benutzer", "").strip()
     if benutzername:
         eintraege = eintraege.filter(benutzername__iexact=benutzername)
+    seite = Paginator(eintraege, LISTE_JE_SEITE).get_page(request.GET.get("seite"))
+    # Benutzernamen der Seite auf Mitarbeiter-Konten abbilden, damit der Name zum Profil verlinkt.
+    from django.contrib.auth import get_user_model
+
+    namen = {z.benutzername for z in seite if z.benutzername}
+    konten = dict(get_user_model().objects.filter(username__in=namen).values_list("username", "pk"))
+    for z in seite:
+        z.konto_pk = konten.get(z.benutzername)
     return render(
         request,
         "kunden/zugriffe.html",
         {
-            "seite": Paginator(eintraege, LISTE_JE_SEITE).get_page(request.GET.get("seite")),
+            "seite": seite,
             "kundennummer": kundennummer,
             "benutzer": benutzername,
             "frist": KundenEinstellungen.laden().zugriffe_aufbewahren_tage,
