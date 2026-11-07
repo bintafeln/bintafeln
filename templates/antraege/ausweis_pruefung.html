@@ -4,14 +4,14 @@
 {% block inhalt %}
 <section class="karte">
   <div class="liste-kopf">
-    <h1>Ausweisprüfung <span class="leise">({{ abweichungen|length }} Abweichungen)</span></h1>
+    <h1>Ausweisprüfung <span class="leise">(<span id="ausweis-kopf-abweichungen">{{ abweichungen|length }}</span> Abweichungen)</span></h1>
     <a class="knopf knopf-zweitrangig" href="{% url 'antraege:liste' %}">Zur Antragsliste</a>
   </div>
   <p class="hinweis">Die Prüfung ist nur ein Hinweis – die Entscheidung trifft immer ein Mensch.
     Fehlt ein Ausweis ganz, stehen die Fälle weiter unten getrennt: reine <strong>Amtsdokumente</strong>
     (Bescheide) müssen Sie in der Regel nicht ansehen; <strong>unklare</strong> Fälle lohnen einen Blick.</p>
 
-  <h2>Abweichungen <span class="leise">({{ abweichungen|length }})</span></h2>
+  <h2>Abweichungen <span class="leise">(<span id="ausweis-zahl-abweichungen">{{ abweichungen|length }}</span>)</span></h2>
   <p class="hinweis">Die im Ausweis erkannte Staatsangehörigkeit passt zu <strong>keiner</strong>
     Angabe im Antrag. <strong>Übernehmen</strong> schreibt den erkannten Staat in den Antrag,
     <strong>Nicht übernehmen</strong> lässt den Antrag wie er ist.</p>
@@ -22,7 +22,7 @@
   {% else %}<p class="hinweis">Keine offenen Abweichungen. 🎉</p>{% endif %}
 
   {% if unklar %}
-  <h2>Unklar – evtl. unlesbarer Ausweis <span class="leise">({{ unklar|length }})</span></h2>
+  <h2>Unklar – evtl. unlesbarer Ausweis <span class="leise">(<span id="ausweis-zahl-unklar">{{ unklar|length }}</span>)</span></h2>
   <p class="hinweis">Hier wurde ein Nachweis hochgeladen, aber kein Ausweis gelesen und kein
     Amtsdokument erkannt. Vielleicht ein unscharfes Ausweisfoto – ein Blick lohnt sich. Mit
     <strong>Nichts dran</strong> haken Sie den Fall einfach ab; ist es doch ein Bescheid, ordnet

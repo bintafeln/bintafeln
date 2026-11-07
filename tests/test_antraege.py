@@ -951,9 +951,12 @@ def test_ausweis_sammelseite_und_entscheiden(admin_client, monkeypatch):
 
     # Übernehmen schreibt den erkannten Staat in den Antrag und erledigt den Fall
     entscheiden_a = reverse("antraege:ausweis_entscheiden", args=[a.pk])
-    admin_client.post(entscheiden_a, {"aktion": "uebernehmen"})
+    antwort = admin_client.post(entscheiden_a, {"aktion": "uebernehmen"}).content.decode()
     a.refresh_from_db()
     assert a.staatsangehoerigkeit == "Ukraine" and not a.ausweis_abweichung and a.ausweis_erledigt
+    # Die Antwort frischt die Zähler (noch 1 offene Abweichung) und das Menü-Abzeichen gleich mit auf
+    assert 'id="ausweis-zahl-abweichungen" hx-swap-oob="true">1<' in antwort
+    assert 'hx-swap-oob="true"' in antwort and "menue-zahl-" in antwort
 
     # Nicht übernehmen lässt die Angabe stehen, erledigt aber ebenfalls den Hinweis
     admin_client.post(reverse("antraege:ausweis_entscheiden", args=[b.pk]), {"aktion": "verwerfen"})

@@ -1,0 +1,6 @@
+{# Antwort nach einer Entscheidung auf der Sammel-Seite: die erledigte Zeile und per Out-of-Band-Swap die Zähler in den Überschriften und das Menü-Abzeichen, damit „(N)“ und die Leiste sofort stimmen. #}
+{% include "antraege/_ausweis_zeile_fertig.html" with text=text fehler=fehler %}
+<span id="ausweis-kopf-abweichungen" hx-swap-oob="true">{{ n_abweichungen }}</span>
+<span id="ausweis-zahl-abweichungen" hx-swap-oob="true">{{ n_abweichungen }}</span>
+<span id="ausweis-zahl-unklar" hx-swap-oob="true">{{ n_unklar }}</span>
+{% include "includes/_menue_zahlen.html" with zahlen=zahlen %}
