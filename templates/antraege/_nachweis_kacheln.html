@@ -1,4 +1,4 @@
-{# Vorschau-Kacheln der Nachweise (Bild → Popup, PDF → Fenster); verwalten=True zeigt je Kachel „entfernen". Erwartet: a (Antrag), optional verwalten. #}
+{# Vorschau-Kacheln der Nachweise (Bild und PDF → Popup mit erster Seite; andere Dateien → eigenes Fenster); verwalten=True zeigt je Kachel „entfernen". Erwartet: a (Antrag), optional verwalten. #}
 {% load static %}
 <div class="nachweis-kacheln">
 {% for d in a.anhaenge.all %}
@@ -14,7 +14,13 @@
         <img src="{{ durl }}" alt="{{ d.name }}" loading="lazy">
       </a>
     {% elif "pdf" in d.typ %}
-      <a href="{{ durl }}" data-fenster title="{{ d.name }} (PDF)" target="_blank" rel="noopener" class="nachweis-pdf">
+      <a href="{{ durl }}" data-bild data-vorschau="{% url 'antraege:nachweis_vorschau' a.pk d.pk %}"
+         title="{{ d.name }} (PDF)" target="_blank" rel="noopener" class="nachweis-pdf"
+         {% if ausweis_pruefen and "antraege.bearbeiten" in rechte %}
+         data-bescheid-url="{% url 'antraege:ausweis_als_bescheid' a.pk %}"
+         data-neu-pruefen-url="{% url 'antraege:ausweis_neu_pruefen_einzeln' a.pk %}"
+         data-bereich-url="{% url 'antraege:ausweis_bereich_lesen' a.pk %}"
+         data-uebernehmen-url="{% url 'antraege:nachweis_staat_uebernehmen' a.pk %}"{% endif %}>
         <img src="{% url 'antraege:nachweis_vorschau' a.pk d.pk %}" alt="{{ d.name }}" loading="lazy">
         <span class="nachweis-pdf-marke" aria-hidden="true">PDF</span>
       </a>
