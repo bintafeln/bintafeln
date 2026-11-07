@@ -505,6 +505,22 @@ def test_liste_und_detail(admin_client, antrag):
     assert "2 neue Anträge" in start
 
 
+def test_suche_umfasst_status_und_art(admin_client):
+    # Die Suche deckt alle sichtbaren Spalten ab, auch Status und Art (über die Beschriftung).
+    a = Antrag.objects.create(vorname="Anna", nachname="Bearb", art=Antrag.Art.VERLAENGERUNG,
+                              status=Antrag.Status.IN_BEARBEITUNG)  # fmt: skip
+    Antrag.objects.create(vorname="Nina", nachname="Neuling", art=Antrag.Art.NEU,
+                          status=Antrag.Status.NEU)  # fmt: skip
+    url = reverse("antraege:liste")
+    nach_status = admin_client.get(url, {"suche": "Bearbeitung"}).content.decode()
+    assert "Bearb" in nach_status and "Neuling" not in nach_status
+    nach_art = admin_client.get(url, {"suche": "Verlängerung"}).content.decode()
+    assert "Bearb" in nach_art and "Neuling" not in nach_art
+    # Jahr aus „Antrag vom“
+    jahr = str(a.eingegangen_am.year)
+    assert "Bearb" in admin_client.get(url, {"suche": jahr}).content.decode()
+
+
 def test_liste_verweist_auf_gemeinsamen_papierkorb(admin_client, antrag):
     """Die Antragsliste verweist auf den einen gemeinsamen Papierkorb (ADR 0073); einen eigenen
     Antrags-Papierkorb-Reiter gibt es nicht mehr."""

@@ -45,7 +45,7 @@
         {% for z in zeilen_auswahl %}<option value="{{ z }}"{% if z == zeilen %} selected{% endif %}>{{ z }}</option>{% endfor %}
       </select></div>
     <div class="filter-feld filter-suche"><label for="suche">Suche</label>
-      <input type="search" name="suche" id="suche" value="{{ suche }}" placeholder="Suchbegriff (Name, Nummer, E-Mail, Telefon …)" {% live_suche %}></div>
+      <input type="search" name="suche" id="suche" value="{{ suche }}" placeholder="Suchbegriff (Name, Nummer, Status, Art, E-Mail, Telefon …)" {% live_suche %}></div>
     <button type="submit" class="knopf">Suchen</button>
   </form>
   {% url 'antraege:export' as export_url %}{% auswahl_formular export_url %}
