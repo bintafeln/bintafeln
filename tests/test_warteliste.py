@@ -200,6 +200,15 @@ def test_liste_name_vorname_getrennt_und_sortierbar(admin_client, modul_an):
     assert admin_client.get(liste, {"sort": "-wohnort"}).status_code == 200
 
 
+def test_filter_wird_gemerkt_und_wieder_angezeigt(admin_client, modul_an):
+    """Ein angewendeter Filter wird in der Sitzung gemerkt und beim nächsten (parameterlosen)
+    Aufruf der Seite wieder angezeigt – ohne erneut „Filtern" zu drücken."""
+    liste = reverse("warteliste:liste")
+    admin_client.get(liste, {"art": "verlaengerung"})  # Filter anwenden → wird gemerkt
+    antwort = admin_client.get(liste)  # Aufruf ohne Parameter (z. B. über das Menü)
+    assert antwort.status_code == 302 and "art=verlaengerung" in antwort["Location"]
+
+
 def test_liste_nach_nummer_sortierbar(admin_client, modul_an):
     a, b, c = antrag(vorname="A"), antrag(vorname="B"), antrag(vorname="C")
     ablauf.automatik()
