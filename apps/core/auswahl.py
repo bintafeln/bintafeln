@@ -25,8 +25,10 @@ ZAHLUNGSWEGE = ["Überweisung", "Bar", "Lastschrift", "Online (z. B. PayPal)", "
 SACH_EINHEITEN = ["Kisten", "kg", "Stück", "Paletten", "Liter", "Tüten", "Säcke", "Sonstiges"]
 # Mitglieder (ADR 0046)
 # Aktiv = arbeitet ehrenamtlich mit, passiv = Mitglied mit Stimmrecht, hilft aber nicht (mehr) mit
-MITGLIEDSARTEN = ["Ordentliches Mitglied", "Aktives Mitglied", "Passives Mitglied",
-                  "Fördermitglied", "Ehrenmitglied", "Juristische Person"]  # fmt: skip
+# Nur zwei Arten: aktive Mitglieder (arbeiten mit, ehrenamtliche Helfer) und nicht aktive
+# (ehemalige Helfer oder reine Mitglieder). Alte, bereits gespeicherte Werte bleiben über
+# ``mit_vorhandenem`` wählbar.
+MITGLIEDSARTEN = ["Aktives Mitglied", "Nicht aktives Mitglied"]
 ZAHLWEISEN = ["jährlich", "halbjährlich", "vierteljährlich", "monatlich"]
 ZAHLUNGSARTEN = ["Überweisung", "Lastschrift", "Bar", "Dauerauftrag"]
 AUSTRITTSGRUENDE = ["Kündigung", "Tod", "Ausschluss", "Streichung (Beitrag nicht gezahlt)",

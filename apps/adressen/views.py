@@ -47,7 +47,7 @@ def _im_verein(adressen, wahl: str):
     if wahl == "aktiv":
         return adressen.filter(mitglied, mitglied__art="Aktives Mitglied")
     if wahl == "passiv":
-        return adressen.filter(mitglied, mitglied__art="Passives Mitglied")
+        return adressen.filter(mitglied, mitglied__art="Nicht aktives Mitglied")
     if wahl == "helfer":
         # Mitarbeitende (Person mit Konto), die alte Kategorie „Ehrenamtliche Helfer“ oder aktive
         # Mitglieder gelten als Helfer (ADR 0097: Einteilbarkeit regelt die Rolle des Kontos).
