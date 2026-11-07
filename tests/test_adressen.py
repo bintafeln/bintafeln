@@ -40,6 +40,8 @@ def test_anlegen_bearbeiten_loeschen(admin_client):
     neu = reverse("adressen:neu")
     seite = admin_client.get(neu).content.decode()
     assert "<legend>Anschrift und Kontakt</legend>" in seite and "Lieferant/Markt" in seite
+    # Organisation und Ansprechperson erscheinen nur bei einer Organisation (ganzes Feld samt Label)
+    assert seite.count('data-zeigen-bei="art=organisation"') >= 2
     fehlt = admin_client.post(neu, {"art": "person", "vorname": "Erika"}).content.decode()
     assert "Bei einer Person ist der Nachname nötig." in fehlt
     spender = AdressKategorie.objects.get(name="Spender")
