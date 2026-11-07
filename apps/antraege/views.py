@@ -82,7 +82,7 @@ def _gefiltert(request):
             teile |= Q(art__in=arten)
         if wort.isdigit():
             teile |= Q(laufnummer=int(wort))
-            if len(wort) == 4:  # Jahr aus „Antrag vom“
+            if len(wort) == 4 and 2000 <= int(wort) <= 2100:  # Jahr aus „Antrag vom“
                 teile |= Q(eingegangen_am__year=int(wort))
         antraege = antraege.filter(teile)
     return ansicht, suche, antraege
