@@ -1,4 +1,8 @@
 {% comment %}Per htmx in #dubletten-ergebnis geladen: die gefundenen Paare.{% endcomment %}
+{% if not bereit %}
+<p class="hinweis" aria-busy="true">Die Liste wird im Hintergrund vorbereitet … sie erscheint gleich von selbst.</p>
+<div hx-get="{{ nachladen }}" hx-trigger="load delay:3s" hx-target="#{{ ziel }}" hx-swap="innerHTML"></div>
+{% else %}
 {% for p in paare %}
 <section class="karte" id="paar-{{ p.a.pk }}-{{ p.b.pk }}">
   <div class="abschnitte">
@@ -20,4 +24,5 @@
 {% if aktualisiert %}
   <p class="hinweis" aria-busy="true">Wird im Hintergrund aktualisiert …</p>
   <div hx-get="{{ nachladen }}" hx-trigger="load delay:4s" hx-target="#{{ ziel }}" hx-swap="innerHTML"></div>
+{% endif %}
 {% endif %}

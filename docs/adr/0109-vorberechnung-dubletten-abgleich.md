@@ -52,3 +52,13 @@ das Ergebnis wartete – auch wenn sich seit dem letzten Aufruf nichts geändert
   läuft; die Seite kennzeichnet das („Wird im Hintergrund aktualisiert …“) und lädt sich selbst nach.
 - Der Abgleich hängt am Kundenstamm: Nach einem Kundenstamm-Import wird er beim nächsten Aufruf neu
   gerechnet (die Signatur ändert sich).
+
+## Nachtrag: nie synchron blockieren, beim Betreten vorwärmen
+
+Das allererste Öffnen (kalter Cache) rechnete bisher synchron und ließ die Seite 10–20 s hängen.
+Jetzt blockiert `_holen()` nie: Ist noch kein Ergebnis da, wird die Rechnung in den Hintergrund
+gelegt und `daten=None` geliefert; die Ergebnis-Seite zeigt „wird im Hintergrund vorbereitet …“ und
+lädt sich selbst nach, sobald es fertig ist (`None` = noch nichts, `[]` = gerechnet, keine Treffer).
+Zusätzlich wärmt `vorwaermen()` beide Auswertungen schon beim Betreten des Warteliste-Bereichs
+(`warteliste:liste`) im Hintergrund vor, sodass „Doppelte Anträge“ und „Abgleich mit dem
+Kundenstamm“ beim Öffnen meist ohne Warten da sind.
