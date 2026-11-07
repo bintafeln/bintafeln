@@ -463,6 +463,31 @@ def ausweis_bereich_lesen(request, pk):
     return JsonResponse({"land": ergebnis.get("land", "")})
 
 
+@require_POST
+@rollen.recht_erforderlich("antraege.bearbeiten")
+def ausweis_neu_pruefen_einzeln(request, pk):
+    """Genau einen Antrag erneut automatisch prüfen (ADR 0107) – für den „Neu prüfen"-Knopf im
+    Vorschau-Popup. Liest alle Nachweise des Antrags noch einmal durch die volle Erkennung und
+    speichert das Ergebnis am Antrag; Antwort als JSON mit einem kurzen Text. Die Seite lädt danach
+    neu, damit die Zeile das neue Ergebnis zeigt."""
+    from django.http import JsonResponse
+
+    a = get_object_or_404(Antrag, pk=pk)
+    if not ausweis_scan.aktiv():
+        return JsonResponse({"text": "Die Ausweisprüfung ist nicht eingeschaltet."})
+    try:
+        ausweis_scan.antrag_pruefen(a)
+    except Exception as fehler:  # noqa: BLE001 – nur ein Hinweis, nie kritisch
+        log.warning("Einzel-Neuprüfung für Antrag %s fehlgeschlagen: %s", a.pk, fehler)
+        return JsonResponse({"text": "Prüfung fehlgeschlagen – bitte von Hand ansehen."})
+    a.refresh_from_db()
+    if a.ausweis_staat:
+        text = f"Erneut geprüft: „{a.ausweis_staat}“ erkannt."
+    else:
+        text = "Erneut geprüft: kein gültiges Land erkannt."
+    return JsonResponse({"text": text, "staat": a.ausweis_staat, "befund": a.ausweis_befund})
+
+
 @rollen.recht_erforderlich("antraege.sehen")
 def ausweis_fortschritt(request):
     """Stand der laufenden Sammelprüfung (htmx, lädt sich selbst nach, bis fertig)."""
