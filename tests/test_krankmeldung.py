@@ -20,6 +20,16 @@ from apps.kunden.models import (
 
 pytestmark = pytest.mark.django_db
 HEUTE = timezone.localdate()
+
+
+@pytest.fixture(autouse=True)
+def _zeit_fest(monkeypatch):
+    # Uhr auf HEUTE 12:00 einfrieren, damit Aufbau (HEUTE) und die Sicht (timezone.localdate() im
+    # Server) nicht über Mitternacht auf verschiedene Tage fallen.
+    fest = timezone.make_aware(dt.datetime.combine(HEUTE, dt.time(12, 0)))
+    monkeypatch.setattr(timezone, "now", lambda: fest)
+
+
 EMPFANG = reverse("ausgabe:empfang")
 
 

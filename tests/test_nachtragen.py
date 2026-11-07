@@ -19,6 +19,14 @@ GESTERN = HEUTE - dt.timedelta(days=1)
 ALLE_TAGE = "Mo Di Mi Do Fr Sa So"
 
 
+@pytest.fixture(autouse=True)
+def _zeit_fest(monkeypatch):
+    # Uhr auf HEUTE 12:00 einfrieren, damit Aufbau (HEUTE/GESTERN) und die „heute/gestern"-Prüfung
+    # im Server nicht über Mitternacht auf verschiedene Tage fallen.
+    fest = timezone.make_aware(dt.datetime.combine(HEUTE, dt.time(12, 0)))
+    monkeypatch.setattr(timezone, "now", lambda: fest)
+
+
 @pytest.fixture
 def tafel():
     """Erfundene Ausgabestelle mit einer Gruppe, die jeden Tag dran ist, und drei Haushalten."""

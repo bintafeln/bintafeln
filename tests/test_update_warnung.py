@@ -15,6 +15,18 @@ from apps.core.models import TafelEinstellungen
 
 pytestmark = pytest.mark.django_db
 START = reverse("core:start")
+# Fester Bezugstag (beim Einlesen bestimmt): Die Tests vergleichen Versions-Alter in Tagen gegen
+# „heute". Ohne festen „jetzt"-Zeitpunkt könnten Aufbau (hier) und Prüfung (in warnung) über
+# Mitternacht auf verschiedene Tage fallen und die Grenzfälle kippen – darum friert die Fixture
+# `_zeit_fest` die Uhr auf HEUTE 12:00 ein.
+HEUTE = timezone.localdate()
+
+
+@pytest.fixture(autouse=True)
+def _zeit_fest(monkeypatch):
+    fest = timezone.make_aware(dt.datetime.combine(HEUTE, dt.time(12, 0)))
+    monkeypatch.setattr(timezone, "now", lambda: fest)
+    return fest
 
 
 def _zeit(t):
@@ -22,7 +34,7 @@ def _zeit(t):
 
 
 def _tag(tage: int) -> str:
-    return (timezone.localdate() - dt.timedelta(days=tage)).isoformat()
+    return (HEUTE - dt.timedelta(days=tage)).isoformat()
 
 
 @pytest.fixture
