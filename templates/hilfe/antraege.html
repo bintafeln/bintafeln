@@ -5,8 +5,10 @@
 <p>Menü „Kunden → Anträge“; die kleine Zahl daneben zeigt, wie viele Anträge noch offen sind (neu oder in Bearbeitung, ohne Papierkorb).</p>
 <ul>
   <li>Die Liste zeigt offene Anträge mit fortlaufender Nummer, neueste zuerst; Spalten anklickbar zum Sortieren, Suche,
-    Zeilen je Seite. Die Liste gibt es als <strong>CSV</strong> (Excel), als <strong>PDF</strong> und
-    <strong>per E-Mail</strong> (PDF und CSV im Anhang, z. B. an den eigenen Rechner). Unter „Spalten wählen“
+    Zeilen je Seite. Oben rechts bündelt der Aufklapper <strong>„Herunterladen …“</strong> die Ausgabe der
+    Liste als <strong>CSV</strong> (Excel), als <strong>PDF</strong> und <strong>per E-Mail</strong> (PDF und CSV im
+    Anhang, z. B. an den eigenen Rechner); er steht neben „Importieren &amp; prüfen …“, und beim Aufklappen des
+    einen schließt sich das andere. Unter „Spalten wählen“
     blendet jede Person selbst einzelne Spalten ein oder aus (die Nummer # bleibt immer).</li>
   <li>Aktionen je Zeile: ansehen 👁{% if "antraege.bearbeiten" in rechte %}, bearbeiten ✎, Anmerkung 💬, löschen 🗑 (in den gemeinsamen Papierkorb – gehört zum Bearbeiten und steht immer bei den anderen Knöpfen){% endif %}{% if "antraege.aufnehmen" in rechte %}, aufnehmen ➜{% endif %}.</li>
   {% if "antraege.bearbeiten" in rechte %}<li>Status setzen und interne Anmerkungen schreiben; Tippfehler im Antrag vor der Aufnahme unter „Bearbeiten“ korrigieren. Dort lässt sich auch die <strong>Antragsnummer</strong> ändern (muss eindeutig sein; eine schon vergebene wird abgelehnt).</li>{% endif %}
