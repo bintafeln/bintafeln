@@ -1532,6 +1532,8 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
   word-break: break-all; }
 .ablage-entfernen { border: 0; background: none; font-size: 1.1rem; cursor: pointer; color: var(--fehler); }
 .ablage-rahmen { position: relative; }
+/* Beispiele im Nachweise-Label rot hervorheben (Personalausweis und Bescheid) */
+.nachweis-wichtig { color: var(--fehler); font-weight: 600; }
 
 /* Anmeldeseite: das Anmeldefeld schwebt von links unten herein (nicht bei „Bewegung reduzieren“) */
 .inhalt:has(> .einschweben) { overflow: clip; }

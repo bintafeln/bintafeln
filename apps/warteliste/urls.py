@@ -11,6 +11,7 @@ urlpatterns = [
     path("einladen/", views.einladen, name="einladen"),
     path("status/", views.status_mehrere, name="status"),
     path("antrag/<int:pk>/", views.eintrag, name="eintrag"),
+    path("antrag/<int:pk>/treffer/", views.antrag_treffer, name="antrag_treffer"),
     path("termine/", views.termine, name="termine"),
     path("termine/neu/", views.termin_bearbeiten, name="termin_neu"),
     path("termine/<int:pk>/", views.termin, name="termin"),

@@ -39,7 +39,7 @@
     <dt>Telefon</dt><dd>{{ a.telefon|default:"–" }}</dd>
     <dt>E-Mail</dt><dd>{{ a.email|default:"–" }}</dd>
     {% if a.familienstand %}<dt>Familienstand</dt><dd>{{ a.familienstand }}</dd>{% endif %}
-    {% if a.staatsangehoerigkeit %}<dt>Staatsangehörigkeit</dt><dd>{{ a.staatsangehoerigkeit }}</dd>{% endif %}
+    <dt>Staatsangehörigkeit</dt><dd id="antrag-staatsangehoerigkeit">{{ a.staatsangehoerigkeit|default:"–" }}</dd>
     {% if a.gdb_text %}<dt>Behinderung</dt><dd>{{ a.gdb_text }}</dd>{% endif %}
     <dt>Bestätigt</dt><dd>{% if a.einwilligung_bestaetigt %}Speichern der Angaben · {% endif %}{% if a.datenschutz_bestaetigt %}Datenschutzerklärung gelesen · {% endif %}{% if a.voraussetzungen_bestaetigt %}Voraussetzungen · {% endif %}{% if a.erklaerungen_bestaetigt %}Erklärungen · {% endif %}{% if a.einverstaendnis_bestaetigt %}Einverständniserklärung · {% endif %}{{ a.eingegangen_am|date:"d.m.Y H:i" }}</dd>
     <dt>Wunsch</dt><dd>{{ a.wochentage|default:"keine Wochentage" }} · {{ a.ausgabestelle|default:"Ausgabestelle egal" }}</dd>
@@ -92,4 +92,5 @@
     <button type="submit" class="knopf knopf-zweitrangig">Anmerkung speichern</button>
   </form>
 </section>
+{% for teil in modul_antrag %}{{ teil }}{% endfor %}
 {% endblock %}

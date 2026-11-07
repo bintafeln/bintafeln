@@ -116,6 +116,15 @@ def test_formular_in_arabisch_von_rechts(client, offen):
     assert 'lang="de" dir="ltr"' in client.get(FORMULAR).content.decode()
 
 
+def test_nachweise_label_hebt_ausweis_und_bescheid_hervor(client, offen):
+    """Im öffentlichen Formular stehen die Beispiele im Nachweise-Label (Personalausweis und
+    Bescheid) rot hervorgehoben, damit klar ist, dass beides gebraucht wird."""
+    offen.anhaenge = Abfrage.OPTIONAL
+    offen.save()
+    seite = client.get(FORMULAR).content.decode()
+    assert '<span class="nachweis-wichtig">z. B. Personalausweis und Bescheid</span>' in seite
+
+
 def test_antrag_absenden(client, offen, mailserver, benutzer_mit_rolle):
     b = benutzer_mit_rolle("berta", rollen.BUERO)
     b.email = "berta@example.org"
@@ -867,6 +876,8 @@ def test_ausweis_abweichung_und_uebernehmen(admin_client, antrag, monkeypatch):
     uurl = reverse("antraege:nachweis_staat_uebernehmen", args=[antrag.pk])
     antwort = admin_client.post(uurl, {"staatsangehoerigkeit": "Ukraine"}).content.decode()
     assert "Ukraine" in antwort
+    # Die Angabe oben auf der Antragsseite wird gleich mit aktualisiert (htmx-OOB), ohne Neuladen.
+    assert 'id="antrag-staatsangehoerigkeit" hx-swap-oob="true">Ukraine<' in antwort
     nachher = Antrag.objects.get(pk=antrag.pk)
     assert nachher.staatsangehoerigkeit == "Ukraine"
     assert not nachher.ausweis_abweichung and nachher.ausweis_erledigt

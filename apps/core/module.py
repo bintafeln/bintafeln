@@ -104,6 +104,10 @@ class Modul:
     # Kachel auf „Mein Konto“: mein_konto(request) -> HTML (render_to_string, ein
     # <div class="konto-kachel"> mit <h2>) oder ""
     mein_konto: Callable | None = None
+    # Abschnitt auf der Antragsseite (apps/antraege): antrag(request, antrag) -> HTML oder "".
+    # So zeigt z. B. die Warteliste ihre Aktionen (Status, Einladen, Anmerkungen) direkt auf der
+    # ganzen Antragsseite, statt auf einer eigenen Seite.
+    antrag: Callable | None = None
     # Arten von Benachrichtigungen des Moduls (apps.core.benachrichtigung.Art, ADR 0086)
     benachrichtigungen: tuple = ()
     # Adresse für das Ausweis-Element „QR-Code Wartezeit“: ausweis_qr(haushalt) -> URL oder ""
@@ -208,6 +212,13 @@ def mein_konto(request) -> list[str]:
     """HTML-Abschnitte der eingeschalteten Module für „Mein Konto“ (leere fallen weg)."""
     an = eingeschaltet()
     teile = [m.mein_konto(request) for m in alle() if m.kennung in an and m.mein_konto]
+    return [t for t in teile if t]
+
+
+def antrag(request, antrag) -> list[str]:
+    """HTML-Abschnitte der eingeschalteten Module für die Antragsseite (leere fallen weg)."""
+    an = eingeschaltet()
+    teile = [m.antrag(request, antrag) for m in alle() if m.kennung in an and m.antrag]
     return [t for t in teile if t]
 
 

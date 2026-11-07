@@ -102,6 +102,9 @@ def _gefiltert(request):
     return f, ws
 
 
+FILTER_PARAMETER = ("status", "art", "staat_modus", "staat", "termin", "suche", "sort")
+
+
 @never_cache
 @sehen
 def liste(request):
@@ -109,6 +112,13 @@ def liste(request):
     # „Doppelte Anträge" und „Abgleich mit dem Kundenstamm" schon beim Betreten des Bereichs im
     # Hintergrund vorrechnen, damit diese Seiten beim Öffnen meist ohne Warten da sind (ADR 0109).
     vorberechnung.vorwaermen()
+    # Filter merken: Eine geänderte Auswahl wird dank data-sofort gleich angezeigt (ohne „Filtern");
+    # die gewählte Ansicht wird in der Sitzung gemerkt und beim nächsten Aufruf der Seite (Aufruf
+    # ohne Parameter, z. B. über das Menü) wieder angezeigt.
+    if any(p in request.GET for p in FILTER_PARAMETER):
+        request.session["warteliste_filter"] = request.GET.urlencode()
+    elif request.session.get("warteliste_filter"):
+        return redirect(f"{request.path}?{request.session['warteliste_filter']}")
     f, ws = _gefiltert(request)
     zahlen = dict(Wartestand.objects.values_list("status").annotate(n=Count("pk")))
     staaten = sorted(set(Antrag.objects.exclude(staatsangehoerigkeit="")
@@ -184,30 +194,24 @@ def status_mehrere(request):
 @never_cache
 @sehen
 def eintrag(request, pk):
+    """Früher eine eigene Warteliste-Detailseite; jetzt zeigt die ganze Antragsseite den
+    Warteliste-Abschnitt (Modul-Haken, ADR 0115). Alte Links führen daher dorthin."""
+    get_object_or_404(Antrag, pk=pk)
+    return redirect("antraege:antrag", pk=pk)
+
+
+@never_cache
+@bearbeiten
+def antrag_treffer(request, pk):
+    """Ähnliche Haushalte im Kundenstamm zu einem Antrag – per htmx in den Warteliste-Abschnitt der
+    Antragsseite nachgeladen, damit die Antragsseite nicht auf den Abgleich warten muss."""
     a = get_object_or_404(Antrag, pk=pk)
-    ws, _ = Wartestand.objects.get_or_create(antrag=a)
-    form = StatusForm(
-        request.POST or None, initial={"status": ws.status, "wartezeit_bis": ws.wartezeit_bis}
+    treffer = next(iter(ablauf.kundenabgleich(Antrag.objects.filter(pk=a.pk))), {}).get(
+        "treffer", []
     )
-    if request.method == "POST":
-        if not rollen.hat_recht(request.user, "warteliste.bearbeiten"):
-            messages.error(request, "Dafür fehlt Ihnen das Recht.")
-        elif "anmerkung" in request.POST:
-            if text := request.POST["anmerkung"].strip()[:2000]:
-                ablauf.anmerken(a, text, _von(request))
-                messages.success(request, "Anmerkung gespeichert.")
-            return redirect("warteliste:eintrag", a.pk)
-        elif form.is_valid():
-            ablauf.status_setzen(ws, form.cleaned_data["status"], _von(request),
-                                 form.cleaned_data.get("wartezeit_bis"))  # fmt: skip
-            messages.success(request, f"Status von Antrag {a.nummer} gesetzt.")
-            return redirect("warteliste:eintrag", a.pk)
-    return render(request, "warteliste/eintrag.html", {
-        "a": a, "ws": ws, "form": form, "einladungen": a.einladungen.all(),
-        "anmerkungen": a.anmerkungen.all(),
-        "treffer": next(iter(ablauf.kundenabgleich(Antrag.objects.filter(pk=a.pk))),
-                        {}).get("treffer", []),  # fmt: skip
-        "einladen": EinladenForm(termine=ablauf.kommende_termine()),
+    return render(request, "warteliste/_treffer.html", {
+        "treffer": treffer, "antrag": a, "entscheiden": True,
+        "weiter": reverse("antraege:antrag", args=[a.pk]),
     })  # fmt: skip
 
 
@@ -406,7 +410,7 @@ def abgleich_entscheiden(request):
     kundennummer = request.POST.get("kundennummer", "").strip()
     weiter = request.POST.get("weiter", "")
     htmx = request.headers.get("HX-Request") == "true"
-    ziel = weiter if weiter.startswith("/warteliste/") else "warteliste:abgleich"
+    ziel = weiter if weiter.startswith(("/warteliste/", "/antraege/")) else "warteliste:abgleich"
     try:
         meldung = ablauf.entscheiden(a, kundennummer, request.POST.get("gleich") == "1",
                                      _von(request))  # fmt: skip

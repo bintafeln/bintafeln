@@ -31,6 +31,30 @@ def auskunft_antrag(antrag, pdf):
     ablauf.auskunft(antrag, pdf)
 
 
+def antrag_abschnitt(request, a):
+    """Warteliste-Abschnitt auf der ganzen Antragsseite (ADR 0115): Status, Einladen und die
+    Einladungs-/Absage-Historie sowie – nachgeladen – ähnliche Haushalte. Nur wenn der Antrag auf
+    der Warteliste steht und man sie sehen darf."""
+    from django.template.loader import render_to_string
+
+    from apps.konten import rollen
+    from apps.warteliste import ablauf
+    from apps.warteliste.forms import EinladenForm, StatusForm
+    from apps.warteliste.models import Wartestand
+
+    if not rollen.hat_recht(request.user, "warteliste.sehen"):
+        return ""
+    ws = Wartestand.objects.filter(antrag=a).select_related("termin").first()
+    if ws is None:
+        return ""
+    return render_to_string("warteliste/_antrag_panel.html", {
+        "a": a, "ws": ws, "darf": rollen.hat_recht(request.user, "warteliste.bearbeiten"),
+        "form": StatusForm(initial={"status": ws.status, "wartezeit_bis": ws.wartezeit_bis}),
+        "einladen": EinladenForm(termine=ablauf.kommende_termine()),
+        "einladungen": a.einladungen.all(),
+    }, request=request)  # fmt: skip
+
+
 def suchen(benutzer, begriff, grenze):
     from django.db.models import Q
     from django.urls import reverse
@@ -65,6 +89,7 @@ MODUL = Modul(
     menue=menue,
     fristen=fristen,
     auskunft_antrag=auskunft_antrag,
+    antrag=antrag_abschnitt,
     suchen=suchen,
     sicherung_bereich="antraege",
 )  # fmt: skip
