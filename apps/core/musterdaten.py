@@ -398,9 +398,7 @@ class Erzeuger:
         for i, a in enumerate(personen[10:] + adressen[4:6]):
             Mitglied.objects.create(
                 adresse=a, nummer=str(i + 1),
-                art=self.r.choice(["Ordentliches Mitglied", "Aktives Mitglied",
-                                   "Fördermitglied"]) if a.art == Adresse.Art.PERSON
-                else "Juristische Person",
+                art=self.r.choice(["Aktives Mitglied", "Nicht aktives Mitglied"]),
                 eintritt=self.geburt(0, 10), jahresbeitrag=Decimal("24") if e.beitraege
                 else Decimal("0"),
             )  # fmt: skip

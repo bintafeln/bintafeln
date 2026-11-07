@@ -177,7 +177,7 @@ def test_filter_im_verein(admin_client, benutzer_mit_rolle, anmelden, client):
     Mitglied.objects.create(adresse=aktiv, nummer="1", art="Aktives Mitglied",
                             eintritt=dt.date(2020, 1, 1))  # fmt: skip
     passiv = adresse("Passiv")
-    Mitglied.objects.create(adresse=passiv, nummer="2", art="Passives Mitglied",
+    Mitglied.objects.create(adresse=passiv, nummer="2", art="Nicht aktives Mitglied",
                             eintritt=dt.date(2020, 1, 1))  # fmt: skip
     alt = adresse("Ausgetreten")
     Mitglied.objects.create(adresse=alt, nummer="3", art="Aktives Mitglied",

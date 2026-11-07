@@ -22,7 +22,7 @@ def erika():
 
 
 def mitglied(adresse, **mehr):
-    werte = {"nummer": "1", "art": "Ordentliches Mitglied", "eintritt": dt.date(2025, 4, 15),
+    werte = {"nummer": "1", "art": "Aktives Mitglied", "eintritt": dt.date(2025, 4, 15),
              "jahresbeitrag": D("36")} | mehr  # fmt: skip
     return Mitglied.objects.create(adresse=adresse, **werte)
 
@@ -57,9 +57,9 @@ def test_anlegen_liste_beitraege(admin_client, erika):
     beitraege_an()
     neu = reverse("mitglieder:neu")
     seite = admin_client.get(neu, {"adresse": erika.pk}).content.decode()
-    assert f'<option value="{erika.pk}" selected>' in seite and "Fördermitglied" in seite
+    assert f'<option value="{erika.pk}" selected>' in seite and "Nicht aktives Mitglied" in seite
     assert 'value="1"' in seite  # vorgeschlagene Nummer
-    daten = {"adresse": erika.pk, "nummer": "1", "art": "Fördermitglied",
+    daten = {"adresse": erika.pk, "nummer": "1", "art": "Aktives Mitglied",
              "eintritt": "2026-02-01", "jahresbeitrag": "36,00", "zahlweise": "jährlich",
              "zahlungsart": "Überweisung"}  # fmt: skip
     antwort = admin_client.post(neu, daten)
@@ -100,7 +100,12 @@ def test_ohne_beitraege_nichts_zu_beitraegen(admin_client, erika, pdf_text):
     assert not MitgliederEinstellungen.mit_beitraegen()  # Vorgabe: die meisten Tafeln ohne
     formular = admin_client.get(reverse("mitglieder:neu")).content.decode()
     assert "Jahresbeitrag" not in formular and "Zahlweise" not in formular
-    daten = {"adresse": erika.pk, "nummer": "1", "art": "Fördermitglied", "eintritt": "2026-02-01"}
+    daten = {
+        "adresse": erika.pk,
+        "nummer": "1",
+        "art": "Aktives Mitglied",
+        "eintritt": "2026-02-01",
+    }
     admin_client.post(reverse("mitglieder:neu"), daten)
     m = Mitglied.objects.get()
     assert m.jahresbeitrag == 0
@@ -111,7 +116,7 @@ def test_ohne_beitraege_nichts_zu_beitraegen(admin_client, erika, pdf_text):
             w in inhalt for w in ("Soll", "offenem Beitrag", "Jahresbeitrag", "Zahlung erfassen")
         )
     csv = admin_client.get(reverse("mitglieder:liste"), {"aktion": "csv"}).content.decode()
-    assert "Soll" not in csv and csv.splitlines()[1].endswith(";Fördermitglied;01.02.2026;")
+    assert "Soll" not in csv and csv.splitlines()[1].endswith(";Aktives Mitglied;01.02.2026;")
     assert "mitgliedsbeitrag" not in admin_client.get(reverse("spenden:neu")).content.decode()
     einst = admin_client.get(reverse("mitglieder:einstellungen")).content.decode()
     assert "Mitglieder zahlen Beiträge" in einst and "standard_beitrag" not in einst
@@ -120,7 +125,7 @@ def test_ohne_beitraege_nichts_zu_beitraegen(admin_client, erika, pdf_text):
     vorlage = admin_client.get(reverse("serienbriefe:vorlage_neu")).content.decode()
     assert "{beitrag_offen}" not in vorlage and "{mitgliedsnummer}" in vorlage
     text = pdf_text(admin_client.get(reverse("adressen:auskunft", args=[erika.pk])))
-    assert "Fördermitglied" in text and "Jahresbeitrag" not in text
+    assert "Aktives Mitglied" in text and "Jahresbeitrag" not in text
     # Einschalten: alles wieder da
     admin_client.post(
         reverse("mitglieder:einstellungen"), {"beitraege": "on", "naechste_nummer": 2}
@@ -143,7 +148,7 @@ def test_vorhandener_mitgliedsbeitrag_bleibt_sichtbar(admin_client, erika):
 def test_auskunft(admin_client, erika, pdf_text):
     mitglied(erika)
     text = pdf_text(admin_client.get(reverse("adressen:auskunft", args=[erika.pk])))
-    assert "Mitgliedschaft" in text and "Ordentliches Mitglied" in text
+    assert "Mitgliedschaft" in text and "Aktives Mitglied" in text
 
 
 def test_rechte(client, admin, benutzer_mit_rolle, anmelden, erika):
@@ -184,22 +189,25 @@ def test_mitgliedschaft_direkt_bei_der_adresse(admin_client, benutzer_mit_rolle,
                                                         "m-eintritt": "2026-01-01"})  # fmt: skip
     assert fehlt.status_code == 200 and not Adresse.objects.filter(nachname="Probe").exists()
     daten = {"art": "person", "nachname": "Probe", "ist_mitglied": "1", "m-nummer": "77",
-             "m-art": "Fördermitglied", "m-eintritt": "2026-01-01"}  # fmt: skip
+             "m-art": "Aktives Mitglied", "m-eintritt": "2026-01-01"}  # fmt: skip
     antwort = admin_client.post(reverse("adressen:neu"), daten)
     a = Adresse.objects.get(nachname="Probe")
     m = Mitglied.objects.get(adresse=a)
     assert antwort.url == reverse("adressen:adresse", args=[a.pk])
-    assert (m.nummer, m.art, m.eintritt) == ("77", "Fördermitglied", dt.date(2026, 1, 1))
+    assert (m.nummer, m.art, m.eintritt) == ("77", "Aktives Mitglied", dt.date(2026, 1, 1))
     assert MitgliederEinstellungen.laden().naechste_nummer == 78
     # Bearbeiten: Mitgliedsangaben stehen dabei und lassen sich ändern
     url = reverse("adressen:bearbeiten", args=[a.pk])
     seite = admin_client.get(url).content.decode()
     assert 'name="ist_mitglied" value="1">' in seite and "Mitglied Nr. 77" in seite
-    admin_client.post(url, {**daten, "m-art": "Ehrenmitglied", "m-austritt": "2026-06-30",
+    admin_client.post(url, {**daten, "m-art": "Nicht aktives Mitglied", "m-austritt": "2026-06-30",
                             "m-austrittsgrund": ""})  # fmt: skip
-    assert Mitglied.objects.get(pk=m.pk).art == "Fördermitglied"  # Grund fehlt: nicht gespeichert
-    admin_client.post(url, {**daten, "m-art": "Ehrenmitglied"})
-    assert Mitglied.objects.get(pk=m.pk).art == "Ehrenmitglied" and Mitglied.objects.count() == 1
+    assert Mitglied.objects.get(pk=m.pk).art == "Aktives Mitglied"  # Grund fehlt: nicht gespeichert
+    admin_client.post(url, {**daten, "m-art": "Nicht aktives Mitglied"})
+    assert (
+        Mitglied.objects.get(pk=m.pk).art == "Nicht aktives Mitglied"
+        and Mitglied.objects.count() == 1
+    )
     # Querlinks: Adressbuch zeigt das Mitglied, Mitgliederliste führt ins Adressbuch
     liste = admin_client.get(reverse("adressen:liste")).content.decode()
     assert f'href="{reverse("mitglieder:mitglied", args=[m.pk])}"' in liste
@@ -242,7 +250,7 @@ def test_mitgliedsnummer_darf_personalnummer_gleichen(erika):
         data={
             "adresse": erika.pk,
             "nummer": "42",
-            "art": "Fördermitglied",
+            "art": "Aktives Mitglied",
             "eintritt": "2024-01-01",
             "jahresbeitrag": "0",
         }
