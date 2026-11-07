@@ -853,6 +853,8 @@ def test_ausweis_abweichung_und_uebernehmen(admin_client, antrag, monkeypatch):
     uurl = reverse("antraege:nachweis_staat_uebernehmen", args=[antrag.pk])
     antwort = admin_client.post(uurl, {"staatsangehoerigkeit": "Ukraine"}).content.decode()
     assert "Ukraine" in antwort
+    # Die Angabe oben auf der Antragsseite wird gleich mit aktualisiert (htmx-OOB), ohne Neuladen.
+    assert 'id="antrag-staatsangehoerigkeit" hx-swap-oob="true">Ukraine<' in antwort
     nachher = Antrag.objects.get(pk=antrag.pk)
     assert nachher.staatsangehoerigkeit == "Ukraine"
     assert not nachher.ausweis_abweichung and nachher.ausweis_erledigt
