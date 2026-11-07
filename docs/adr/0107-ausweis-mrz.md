@@ -136,3 +136,14 @@ auch `ausweis_erledigt=True`. So merkt sich bintafeln die Entscheidung einheitli
 bei einem späteren **„Alle neu prüfen“** unberührt und taucht nicht erneut als Abweichung auf (z. B.
 weil die Automatik beim erneuten Lesen wieder eine – womöglich falsche – Nationalität meldet). Am
 Antrag selbst wird nur die vom Menschen gesetzte Staatsangehörigkeit gespeichert.
+
+## Nachtrag: nie eine ungültige Staatsangehörigkeit anzeigen
+
+`pruefen()` gibt eine erkannte **Staatsangehörigkeit** und ein **ausstellendes Land** nur noch dann
+aus, wenn der gelesene Code ein **echtes Land** aus der Länderliste ergibt (`_staat_name`). Früher
+fiel die Anzeige auf die **Rohlesung** der MRZ zurück, sodass bei Fehllesungen Phantasie-„Staaten"
+wie „E<E" im Ergebnis der manuellen „Ausweis prüfen"-Schaltfläche standen. Jetzt bleibt das Feld in
+so einem Fall **leer**; das Ergebnis sagt ehrlich „Staatsangehörigkeit nicht erkannt – bitte von
+Hand prüfen". Der Code (z. B. „UKR") wird nur zu einem gültigen Land gezeigt. Damit kann an keiner
+Stelle mehr ein Land auftauchen, das es nicht gibt (die Sammel-Prüfung filterte schon über
+`LAENDERCODE`; nun filtert die Quelle selbst).
