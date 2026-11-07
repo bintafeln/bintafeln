@@ -118,6 +118,18 @@ def test_einrichtung_mit_qr_code_und_notfallcodes(client, buero):
     assert client.get(EINRICHTEN).url == KONTO
 
 
+def test_qr_code_skaliert_ohne_abschneiden():
+    from django.contrib.auth import get_user_model
+
+    benutzer = get_user_model().objects.create_user(username="qr", password="y")
+    geraet = zwei_faktor.neues_app_geraet(benutzer)
+    svg = zwei_faktor.qr_code_svg(geraet)
+    # Mit viewBox und ohne feste width/height skaliert der Code per CSS vollständig mit; ohne
+    # viewBox wurde er rechts und unten abgeschnitten und war nicht scannbar.
+    assert "viewBox=" in svg
+    assert "width=" not in svg and "height=" not in svg
+
+
 def test_einrichtung_falscher_code(client, buero):
     client.force_login(buero)
     client.get(EINRICHTEN)

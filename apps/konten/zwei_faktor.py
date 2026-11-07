@@ -89,8 +89,11 @@ def qr_code_svg(geraet: TOTPDevice) -> str:
     # weniger Kästchen und wird bei gleicher Anzeigegröße grobkörniger – so lesen ihn auch
     # Handy-Apps wie der Microsoft Authenticator zuverlässig vom Bildschirm. border=4 lässt den
     # vorgeschriebenen weißen Rand (Ruhezone) stehen, den manche Scanner sonst vermissen.
+    # omitsize=True: Das SVG bekommt eine viewBox statt fester width/height. Ohne viewBox skaliert
+    # der per CSS auf die Kartenbreite verkleinerte Code NICHT mit, sondern wird rechts und unten
+    # abgeschnitten – der Code war dadurch unvollständig und ließ sich nicht scannen.
     return segno.make(geraet.config_url, error="l").svg_inline(
-        scale=8, border=4, dark="#000000", light="#ffffff",
+        scale=8, border=4, dark="#000000", light="#ffffff", omitsize=True,
         title="QR-Code für die Authenticator-App",
     )  # fmt: skip
 

@@ -130,7 +130,11 @@ def _aushang_oder_nichts(request, schluessel):
 
 
 def _qr(adresse: str) -> str:
-    return segno.make(adresse, error="m").svg_inline(scale=4, title="QR-Code: Plan am Handy öffnen")
+    # omitsize=True: SVG mit viewBox statt fester width/height, damit der per CSS verkleinerte
+    # Code ganz mitskaliert und nicht rechts/unten abgeschnitten (und damit unscannbar) wird.
+    return segno.make(adresse, error="m").svg_inline(
+        scale=4, omitsize=True, title="QR-Code: Plan am Handy öffnen"
+    )
 
 
 @never_cache
