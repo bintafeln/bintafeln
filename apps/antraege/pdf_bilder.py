@@ -40,6 +40,29 @@ def seiten_bilder(pdf_bytes: bytes, max_seiten: int = 3, scale: float = 3.0) -> 
     return bilder
 
 
+def seiten_lazy(pdf_bytes: bytes, max_seiten: int = 8, scale: float = 3.0):
+    """Wie ``seiten_bilder``, aber als Generator – rendert Seite für Seite erst beim Durchlaufen.
+    So kostet das Suchen eines Ausweises in einem **mehrseitigen** PDF nur bis zu der Seite, auf der
+    er gefunden wird (z. B. die eingescannte Ausweiskontrolle in einem mehrseitigen Bescheid)."""
+    try:
+        pdf = _dokument(pdf_bytes)
+    except Exception as fehler:  # noqa: BLE001
+        log.warning("PDF konnte nicht geöffnet werden: %s", fehler)
+        return
+    try:
+        for i in range(min(len(pdf), max(1, max_seiten))):
+            try:
+                pil = pdf[i].render(scale=scale).to_pil().convert("RGB")
+            except Exception as fehler:  # noqa: BLE001
+                log.warning("PDF-Seite %s konnte nicht gerendert werden: %s", i, fehler)
+                continue
+            puffer = io.BytesIO()
+            pil.save(puffer, "PNG")
+            yield puffer.getvalue()
+    finally:
+        pdf.close()
+
+
 def vorschau(pdf_bytes: bytes, breite: int = 480) -> bytes | None:
     """Kleine Vorschau der ersten Seite als JPEG (für die Nachweis-Kachel), auf ``breite`` skaliert.
     Liefert None, wenn das PDF nicht gerendert werden kann."""

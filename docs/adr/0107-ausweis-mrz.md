@@ -189,3 +189,11 @@ mit denselben Knöpfen; beim PDF wird die gerenderte erste Seite gezeigt (`data-
 `nachweis_vorschau`), der Bereich-Lesen-Ausschnitt trifft dieselbe erste Seite (`land_aus_ausschnitt`,
 PDF → erste Seite). „In neuem Fenster öffnen“ führt weiter zur vollständigen Datei. Vorher öffneten
 PDFs in einem eigenen Fenster ohne die Prüf-Knöpfe.
+
+## Nachtrag: mehrseitige PDFs durchsuchen
+
+Ein mehrseitiges PDF (z. B. ein Bescheid, in dem auch die eingescannte Ausweiskontrolle steckt)
+wird jetzt **Seite für Seite** nach einer MRZ durchsucht: `pdf_bilder.seiten_lazy` rendert die Seiten
+als Generator (erst beim Durchlaufen), `pruefen_datei` bricht bei der ersten lesbaren Seite ab. So
+kostet ein früh gefundener Ausweis wenig, und ein tiefer im Dokument liegender wird trotzdem noch
+gefunden (Kappung bei 8 Seiten; der Hintergrundlauf hat ohnehin ein Zeitlimit je Antrag).
