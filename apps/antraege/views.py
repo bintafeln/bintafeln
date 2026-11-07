@@ -609,7 +609,22 @@ def ausweis_entscheiden(request, pk):
         text = "Als Bescheid (Amtsdokument) eingeordnet."
     else:
         raise Http404
-    return render(request, "antraege/_ausweis_zeile_fertig.html", {"text": text, "fehler": False})
+    # Zähler in den Überschriften und das Menü-Abzeichen gleich mit aktualisieren (htmx-OOB),
+    # damit nach dem Abhaken „(N)“ und die Leiste sofort stimmen und nicht eine alte Zahl zeigen.
+    from apps.core.menue import menue, zahlen_flach
+
+    offen = Antrag.objects.filter(ausweis_erledigt=False)
+    return render(
+        request,
+        "antraege/_ausweis_entschieden.html",
+        {
+            "text": text,
+            "fehler": False,
+            "n_abweichungen": offen.filter(ausweis_befund="abweichung").count(),
+            "n_unklar": offen.filter(ausweis_befund="unklar").count(),
+            "zahlen": zahlen_flach(menue(request)),
+        },
+    )
 
 
 @rollen.recht_erforderlich("antraege.sehen")
