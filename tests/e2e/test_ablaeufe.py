@@ -995,18 +995,21 @@ def test_warteliste_spalten_waehlen_bleibt_gemerkt(angemeldet, admin):
     Antrag.objects.create(vorname="Erika", nachname="Beispiel", email="erika@example.org")
     seite = angemeldet(admin)
     seite.goto(reverse("warteliste:liste"))
-    kontakt = seite.locator('th[data-spalte="kontakt"]')
-    geburt = seite.locator('th[data-spalte="geburtsdatum"]')
+    kontakt = seite.get_by_role("columnheader", name=re.compile("Kontakt"))
+    geburt = seite.get_by_role("columnheader", name=re.compile("Geburtsdatum"))
     expect(kontakt).to_be_visible()
-    expect(geburt).to_be_hidden()  # zu Beginn aus
+    expect(geburt).to_have_count(0)  # zu Beginn aus
+    # Die Spaltenwahl wird je Konto gespeichert (Formular mit „Übernehmen").
     seite.get_by_text("Spalten wählen").click()
-    seite.locator('[data-spalten-wahl] input[value="kontakt"]').uncheck()
-    seite.locator('[data-spalten-wahl] input[value="geburtsdatum"]').check()
-    expect(kontakt).to_be_hidden()
-    expect(geburt).to_be_visible()
+    form = seite.locator("details.spalten-wahl form")
+    form.locator('input[value="kontakt"]').uncheck()
+    form.locator('input[value="geburtsdatum"]').check()
+    form.get_by_role("button", name="Übernehmen").click()
+    expect(seite.get_by_role("columnheader", name=re.compile("Kontakt"))).to_have_count(0)
+    expect(seite.get_by_role("columnheader", name=re.compile("Geburtsdatum"))).to_be_visible()
     seite.reload()
-    expect(seite.locator('th[data-spalte="kontakt"]')).to_be_hidden()
-    expect(seite.locator('td[data-spalte="geburtsdatum"]').first).to_be_visible()
+    expect(seite.get_by_role("columnheader", name=re.compile("Kontakt"))).to_have_count(0)
+    expect(seite.get_by_role("columnheader", name=re.compile("Geburtsdatum"))).to_be_visible()
 
 
 def test_verlaengern_begruendung_eintragen_und_pflicht(angemeldet, admin):

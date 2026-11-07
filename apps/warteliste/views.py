@@ -43,6 +43,9 @@ SPALTEN = [("eingang", "Eingang"), ("nummer", "#"), ("geburtsdatum", "Geburtsdat
            ("kontakt", "Kontakt"), ("wohnort", "Wohnort"), ("personen", "Personen"),
            ("art", "Art"), ("staat", "Staatsangehörigkeit"), ("status", "Status"),
            ("termin", "Termin"), ("anmerkung", "Anmerkung")]  # fmt: skip
+# Vorgabe: diese Spalten sind zu Beginn ausgeblendet (beim ersten Öffnen einmal gesetzt, danach
+# entscheidet die Person selbst – auch „alle zeigen" bleibt dann erhalten).
+VORGABE_AUS = {"geburtsdatum", "wohnort", "personen"}
 
 sehen = rollen.recht_erforderlich("warteliste.sehen")
 bearbeiten = rollen.recht_erforderlich("warteliste.bearbeiten")
@@ -130,6 +133,9 @@ def liste(request):
         request.session["warteliste_filter"] = request.GET.urlencode()
     elif request.session.get("warteliste_filter"):
         return redirect(f"{request.path}?{request.session['warteliste_filter']}")
+    if "warteliste" not in (request.user.listen_spalten_aus or {}):
+        gezeigt = [k for k, _ in SPALTEN if k not in VORGABE_AUS]
+        listen.spalten_speichern(request.user, "warteliste", gezeigt, SPALTEN)
     ansicht = request.user.warteliste_ansicht or {}
     # Sortierung je Konto merken: eine über die Spaltenköpfe gewählte Sortierung gilt beim
     # nächsten Aufruf wieder; ohne Wahl die zuletzt gemerkte (sonst „Eingang").
