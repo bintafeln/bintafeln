@@ -226,7 +226,11 @@ _CODE_SPERRE = {"AND", "ARE"}
 def _code_aus_fenster(fenster: str) -> str:
     """Aus dem Textausschnitt hinter der Feldbeschriftung einen alpha-3-Ländercode, einen deutschen
     Ländernamen oder das Adjektiv „deutsch" zu einem Code machen. Leer, wenn nichts Gültiges."""
-    for wort in re.findall(r"\b[A-Z]{3}\b", fenster.upper()):
+    # Drei Großbuchstaben, die NICHT Teil eines längeren Buchstabenworts sind – also auch ein Code,
+    # der (wie in der MRZ) direkt an Ziffern klebt, z. B. „…662UKR100…". Eine Wortgrenze (\b) gäbe
+    # es zwischen Ziffer und Buchstabe nicht, darum scheiterte die Erkennung dort bisher. In echtem
+    # Text greift es trotzdem nicht in Wörter hinein („DEUTSCHLAND" liefert kein „DEU").
+    for wort in re.findall(r"(?<![A-Z])[A-Z]{3}(?![A-Z])", fenster.upper()):
         if wort in ALPHA3_NAME and wort not in _CODE_SPERRE:
             return wort
     klein = fenster.casefold()
@@ -276,14 +280,17 @@ def pruefen(bild_bytes: bytes, erwartete_staatsangehoerigkeit: str = "") -> dict
     roh = _passporteye(bild_bytes) or _rueckfall(bild_bytes) or _staat_aus_text(bild_bytes)
     if roh is None:
         return {"erkannt": False}
+    # Nur ein echtes Land aus der Länderliste gilt als erkannte Staatsangehörigkeit bzw. als
+    # ausstellendes Land. OCR liest aus der MRZ oft Müll (z. B. „E<E“, „OSI“, „662“); solche
+    # Lesungen dürfen NIE als Staat angezeigt werden – sonst stehen Phantasie-Staaten im Ergebnis.
     staat = _staat_name(roh["nationality"])
     bericht = {
         "erkannt": True,
         "gueltig": roh["gueltig"],
         "dokument": roh["dokument"],
-        "ausstellland": _staat_name(roh["country"]) or roh["country"],
-        "staatsangehoerigkeit": staat or roh["nationality"],
-        "code_staat": roh["nationality"],
+        "ausstellland": _staat_name(roh["country"]),  # leer, wenn kein gültiges Land (kein Müll)
+        "staatsangehoerigkeit": staat,  # nur ein gültiges Land; sonst leer, nie die Rohlesung
+        "code_staat": roh["nationality"] if staat else "",  # Code nur zu einem gültigen Land zeigen
         "name": roh["name"],
         # Nur aus dem Textfeld gelesen (keine MRZ geprüft) – schwächerer Hinweis.
         "nur_feld": roh.get("nur_feld", False),
@@ -386,5 +393,16 @@ def land_aus_ausschnitt(inhalt: bytes, typ: str, x: float, y: float, b: float, h
     kasten = (round(x * breite), round(y * hoehe), round((x + b) * breite), round((y + h) * hoehe))
     puffer = _io.BytesIO()
     bild.crop(kasten).save(puffer, format="PNG")
-    code = _code_aus_fenster(_ocr_text(puffer.getvalue()))
+    ausschnitt = puffer.getvalue()
+    # Zuerst normaler OCR-Text (deu+eng); wenn das keinen Code ergibt, die MRZ-Lesung (nur
+    # Großbuchstaben/Ziffern/„<") versuchen – ein um die MRZ gezogenes Rechteck liest sie so
+    # zuverlässiger (z. B. „…UKR…" zwischen Ziffern).
+    code = ""
+    for leser in (_ocr_text, _ocr):
+        try:
+            code = _code_aus_fenster(leser(ausschnitt))
+        except Exception:
+            code = ""
+        if code:
+            break
     return {"land": _staat_name(code), "code": code} if code else {"land": ""}

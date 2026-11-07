@@ -676,6 +676,22 @@ def test_ausweis_pruefung_passporteye(monkeypatch):
     assert ap.pruefen(b"kein bild")["erkannt"] is False
 
 
+def test_ausweis_pruefung_muell_wird_nicht_als_staat_gezeigt(monkeypatch):
+    """OCR-Müll (kein echtes Land, z. B. „E<E"/„OSI") darf NIE als Staatsangehörigkeit oder
+    ausstellendes Land auftauchen – sonst stehen Phantasie-Staaten im Ergebnis (ADR 0107)."""
+    from apps.antraege import ausweis_pruefung as ap
+
+    monkeypatch.setattr(ap, "tesseract_vorhanden", lambda: True)
+    monkeypatch.setattr(ap, "_passporteye", lambda daten: {
+        "dokument": "Ausweis/Aufenthaltstitel", "country": "OSI", "nationality": "E<E",
+        "name": "", "gueltig": False})  # fmt: skip
+    b = ap.pruefen(_png(), "Ukraine")
+    assert b["erkannt"] is True  # ein Dokument wurde gelesen …
+    assert b["staatsangehoerigkeit"] == ""  # … aber kein gültiges Land → leer, nie „E<E"
+    assert b["code_staat"] == "" and b["ausstellland"] == ""
+    assert "passt" not in b  # ohne gültigen Staat kein Abgleich → keine Falsch-Abweichung
+
+
 def test_ausweis_staat_aus_textfeld(monkeypatch):
     """Stufe 3 (keine MRZ): die Staatsangehörigkeit aus dem Textfeld lesen (ADR 0107)."""
     from apps.antraege import ausweis_pruefung as ap
@@ -686,6 +702,11 @@ def test_ausweis_staat_aus_textfeld(monkeypatch):
     assert ap._code_aus_fenster("Staatsangehörigkeit / Nationality DEUTSCH") == "DEU"
     assert ap._code_aus_fenster("Nationality and more words") == ""  # „AND" ist gesperrt
     assert ap._code_aus_fenster("Name Erika Mustermann") == ""  # ohne Land nichts
+    # Code direkt an Ziffern (wie in der MRZ) wird erkannt – früher scheiterte das an \b
+    assert ap._code_aus_fenster("1258754662UKR1002089") == "UKR"
+    assert ap._code_aus_fenster("662SYR100") == "SYR"
+    # greift aber nicht als Code in ein längeres Buchstabenwort hinein (kein „SYR" aus „SYRER")
+    assert ap._code_aus_fenster("SYRER") == ""
 
     monkeypatch.setattr(ap, "tesseract_vorhanden", lambda: True)
     monkeypatch.setattr(ap, "_passporteye", lambda daten: None)  # keine MRZ
