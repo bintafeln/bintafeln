@@ -258,3 +258,14 @@ def suche(request):
                "mindestlaenge": such.MINDESTLAENGE}  # fmt: skip
     vorlage = "core/_suche.html" if kurz else "core/suche.html"
     return render(request, vorlage, kontext)
+
+
+@never_cache
+@login_required
+def menue_zahlen(request):
+    """Aktuelle Zähler der Menüleiste (offene Anträge, Ausweisprüfung, Papierkorb …) als
+    htmx-Out-of-Band-Fragment. Das Seitenmenü lädt sie regelmäßig nach, damit neu erkannte
+    Ausweise oder neue Anträge ohne Neuladen in der Leiste erscheinen."""
+    from apps.core.menue import menue, zahlen_flach
+
+    return render(request, "includes/_menue_zahlen.html", {"zahlen": zahlen_flach(menue(request))})

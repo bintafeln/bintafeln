@@ -1660,11 +1660,12 @@ def test_fristen(antrag, django_capture_on_commit_callbacks):
 
 
 def test_menue_zeigt_zahl_offener_antraege(admin_client, client, benutzer_mit_rolle, anmelden):
+    # Das Abzeichen trägt seit dem Live-Nachladen eine eigene ID; hier nur Titel + Zahl prüfen.
     def zahl(c):
         seite = c.get(reverse("core:start")).content.decode()
-        return seite.count(
-            '<span class="menue-zahl" title="offene Anträge">2</span>'
-        ) + seite.count('<span class="menue-zahl" title="2 offene Anträge">2</span>')
+        return seite.count('title="offene Anträge">2</span>') + seite.count(
+            'title="2 offene Anträge">2</span>'
+        )
 
     Antrag.objects.create(vorname="Erika", nachname="Probe")
     Antrag.objects.create(vorname="Max", nachname="Probe", status=Antrag.Status.IN_BEARBEITUNG)
@@ -1674,11 +1675,12 @@ def test_menue_zeigt_zahl_offener_antraege(admin_client, client, benutzer_mit_ro
     assert zahl(admin_client) == 2  # am Bereich und am Eintrag
     Antrag.objects.update(status=Antrag.Status.ERLEDIGT)
     assert (
-        '<span class="menue-zahl" title="offene Anträge">0</span>'
+        'title="offene Anträge">0</span>'
         in admin_client.get(reverse("core:start")).content.decode()
     )  # die Zahl steht immer da, auch bei 0
     anmelden(client, benutzer_mit_rolle("anton", rollen.AUSGABE))
-    assert "menue-zahl" not in client.get(reverse("core:start")).content.decode()
+    # Ohne das Recht „Anträge“ gibt es kein Anträge-Abzeichen (andere, leere Abzeichen schon).
+    assert "offene Anträge" not in client.get(reverse("core:start")).content.decode()
 
 
 def test_hinweis_zu_den_nachweisen(client, offen):

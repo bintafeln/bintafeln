@@ -217,3 +217,16 @@ def _bereiche(benutzer):
     anfrage = RequestFactory().get("/")
     anfrage.user = benutzer
     return menue(anfrage)
+
+
+def test_menue_zahl_ids_stabil_und_eindeutig(admin):
+    """Jeder Bereich/Eintrag bekommt eine stabile, eindeutige zahl_id – Grundlage fürs Live-
+    Nachladen der Abzeichen per htmx (OOB). Zwei Aufrufe liefern dieselben IDs."""
+    from apps.core.menue import zahlen_flach
+
+    bereiche = _bereiche(admin)
+    assert all(b.get("zahl_id") for b in bereiche)
+    flach = zahlen_flach(bereiche)
+    ids = [z["zahl_id"] for z in flach]
+    assert ids and len(ids) == len(set(ids))  # eindeutig
+    assert [z["zahl_id"] for z in zahlen_flach(_bereiche(admin))] == ids  # deterministisch

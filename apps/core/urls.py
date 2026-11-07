@@ -60,6 +60,7 @@ urlpatterns = [
     path("app/manifest.webmanifest", views_app.manifest, name="manifest"),
     path("hilfe/", views.hilfe, name="hilfe"),
     path("suche/", views.suche, name="suche"),
+    path("menue-zahlen/", views.menue_zahlen, name="menue_zahlen"),
     path("update/", views_update.seite, name="update"),
     path("update/starten/", views_update.starten, name="update_starten"),
     path("update/abrufen/", views_update.abrufen, name="update_abrufen"),

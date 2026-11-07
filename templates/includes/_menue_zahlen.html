@@ -1,0 +1,3 @@
+{# Live-Aktualisierung der Zähler-Abzeichen per htmx (OOB): jede Zahl ersetzt über ihre stabile ID das Abzeichen im Menü; nur vorhandene Abzeichen werden aktualisiert. #}
+{% for z in zahlen %}{% if z.zahl is not None %}<span id="menue-zahl-{{ z.zahl_id }}" class="menue-zahl" hx-swap-oob="true" title="{{ z.zahl_titel }}">{{ z.zahl }}</span>
+{% endif %}{% endfor %}

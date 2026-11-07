@@ -70,6 +70,7 @@ ALLE_ANGEMELDETEN = {
     "core:start",
     "core:hilfe",
     "core:suche",
+    "core:menue_zahlen",
     "wetter:kopf",
     # Papierkorb: jedes Konto sieht nur Einträge mit seinen Rechten (ADR 0073)
     "core:papierkorb",
