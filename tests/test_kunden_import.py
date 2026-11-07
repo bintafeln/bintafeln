@@ -124,6 +124,36 @@ def test_abholung_ohne_stelle_erbt_von_kundengruppe():
     assert a.ausgabestelle is not None and a.ausgabestelle.name == "Mitte"
 
 
+def test_migration_fuellt_fehlende_ausgabestelle_nach():
+    # Schon importierte Abholungen ohne Ausgabestelle (vor dem Erben-Fix angelegt) bekommen die
+    # Ausgabestelle der Kundengruppe nachträglich; Haushalte ohne Gruppe bleiben leer.
+    import importlib
+
+    from django.apps import apps as django_apps
+
+    migration = importlib.import_module(
+        "apps.kunden.migrations.0047_abholung_ausgabestelle_nachfuellen"
+    )
+
+    mitte = Ausgabestelle.objects.create(name="Mitte")
+    gruppe = Kundengruppe.objects.create(name="Montag", ausgabestelle=mitte)
+    mit_gruppe = Haushalt.objects.create(kundennummer="00001", kundengruppe=gruppe)
+    ohne_gruppe = Haushalt.objects.create(kundennummer="00002")
+    a1 = Abholung.objects.create(haushalt=mit_gruppe, datum=dt.date(2026, 5, 1))
+    a2 = Abholung.objects.create(haushalt=ohne_gruppe, datum=dt.date(2026, 5, 1))
+    schon = Ausgabestelle.objects.create(name="Nord")
+    a3 = Abholung.objects.create(
+        haushalt=mit_gruppe, datum=dt.date(2026, 5, 2), ausgabestelle=schon
+    )
+
+    migration.nachfuellen(django_apps, None)
+
+    a1.refresh_from_db(), a2.refresh_from_db(), a3.refresh_from_db()
+    assert a1.ausgabestelle == mitte  # aus der Kundengruppe geerbt
+    assert a2.ausgabestelle is None  # kein Haushalt-Gruppe → nichts zu erben
+    assert a3.ausgabestelle == schon  # vorhandene Ausgabestelle bleibt unangetastet
+
+
 def test_import_wird_zusammengefasst_protokolliert():
     uebernehmen(pruefen(haushalte_csv=MINIMAL))
     assert not LogEntry.objects.filter(content_type__model__in=["haushalt", "person"]).exists()
