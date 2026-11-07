@@ -36,3 +36,9 @@ die Zwei-Faktor-Pflicht das schwache Startpasswort ab, die Anmelde-Sperre (5 Feh
 bleibt. Deshalb darf das Format auch in der Mail stehen. Der bestehende **Einladungs-Link** (Person
 setzt selbst ein Passwort) bleibt als Alternative erhalten; die neue Freigabe ist der einfache Weg,
 um viele vorhandene Konten nach dem Import zügig nutzbar zu machen.
+
+## Nachtrag: Sammelseite ohne Vorauswahl
+
+Auf der Sammelseite „Online-Zugänge freigeben" sind die Kästchen **nicht** vorausgewählt – man
+wählt die Konten bewusst einzeln (oder über „Alle auswählen" im Kopf). Vorher waren alle Konten mit
+ableitbarem Startpasswort vorangehakt; das Freigeben ist aber eine bewusste Einzelentscheidung.
