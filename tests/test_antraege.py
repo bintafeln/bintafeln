@@ -936,6 +936,27 @@ def test_ausweis_sammelseite_gruppen(admin_client):
     assert ab.ausweis_befund == "amtsdokument" and ab.ausweis_erledigt and not ab.ausweis_abweichung
 
 
+def test_ausweis_neu_pruefen_einzeln(admin_client, monkeypatch):
+    """„Neu prüfen“ im Vorschau-Popup liest genau diesen einen Antrag erneut über die Automatik und
+    speichert das Ergebnis; die Antwort nennt den erkannten Staat (ADR 0107)."""
+    from apps.antraege import ausweis_pruefung, ausweis_scan
+
+    monkeypatch.setattr(ausweis_scan, "aktiv", lambda: True)
+    monkeypatch.setattr(ausweis_pruefung, "pruefen_datei", lambda inhalt, typ, *a, **k: _UKR)
+    monkeypatch.setattr(ausweis_pruefung, "ist_amtsdokument", lambda inhalt, typ: False)
+    antrag = _antrag_mit_ausweis("Deutschland")  # Ausweis Ukraine, angegeben DE → Abweichung
+    url = reverse("antraege:ausweis_neu_pruefen_einzeln", args=[antrag.pk])
+    daten = admin_client.post(url).json()
+    assert "Ukraine" in daten["text"] and daten["staat"] == "Ukraine"
+    antrag.refresh_from_db()
+    assert antrag.ausweis_staat == "Ukraine" and antrag.ausweis_befund == "abweichung"
+
+    # Ist die Prüfung aus, wird nichts gemacht (ehrliche Rückmeldung).
+    monkeypatch.setattr(ausweis_scan, "aktiv", lambda: False)
+    daten = admin_client.post(url).json()
+    assert "nicht eingeschaltet" in daten["text"]
+
+
 def test_ausweis_vorschau_fallback_ohne_erkannten_ausweis(admin_client):
     """Unklar (kein Ausweis gewählt, ausweis_anhang leer): die Mini-Vorschau fällt auf den ersten
     Bild-/PDF-Nachweis des Antrags zurück, damit man das Dokument trotzdem sieht."""

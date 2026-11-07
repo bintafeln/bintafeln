@@ -3,16 +3,17 @@
 // es ein normaler Link, der die Datei in einem neuen Tab öffnet.
 //
 // Auf der Ausweisprüfungsseite trägt das Vorschaubild zusätzlich data-bescheid-url (als Bescheid
-// einordnen), data-bereich-url (einen Bildausschnitt gezielt lesen) und data-uebernehmen-url
-// (erkannte Staatsangehörigkeit in den Antrag übernehmen). Dann bietet das Popup die passenden
-// Knöpfe; nach einer Aktion bleibt man auf der aktuellen Seite.
+// einordnen), data-neu-pruefen-url (diesen einen Ausweis erneut automatisch prüfen),
+// data-bereich-url (einen Bildausschnitt gezielt lesen) und data-uebernehmen-url (erkannte
+// Staatsangehörigkeit in den Antrag übernehmen). Dann bietet das Popup die passenden Knöpfe; nach
+// einer Aktion bleibt man auf der aktuellen Seite (bzw. die Seite lädt neu).
 (function () {
   "use strict";
   if (window.__nachweisVorschau) return; // nur einmal binden (das Skript kann mehrfach eingebunden sein)
   window.__nachweisVorschau = true;
 
-  var dialog, bild, huelle, auswahl, status, bescheid, bereich, uebernehmen, link;
-  var urls = {}; // bescheid, bereich, uebernehmen für das aktuell gezeigte Bild
+  var dialog, bild, huelle, auswahl, status, bescheid, neu, bereich, uebernehmen, link;
+  var urls = {}; // bescheid, neu, bereich, uebernehmen für das aktuell gezeigte Bild
   var erkannt = ""; // zuletzt im Ausschnitt erkanntes Land
   var zieht = false, startX = 0, startY = 0;
 
@@ -94,6 +95,7 @@
     var leiste = document.createElement("div");
     leiste.className = "nachweis-dialog-leiste";
     bescheid = knopf("📄 Ist ein Bescheid");
+    neu = knopf("🔄 Neu prüfen");
     bereich = knopf("🔍 Nationalität im Bild lesen");
     uebernehmen = knopf("Übernehmen");
     uebernehmen.className = "knopf knopf-klein";
@@ -104,13 +106,26 @@
     link.textContent = "In neuem Fenster öffnen";
     var zu = knopf("Schließen");
     zu.className = "knopf knopf-abbrechen";
-    leiste.append(bescheid, bereich, uebernehmen, link, zu);
+    leiste.append(bescheid, neu, bereich, uebernehmen, link, zu);
     dialog.append(huelle, status, leiste);
     document.body.appendChild(dialog);
 
     zu.addEventListener("click", function () { dialog.close(); });
     dialog.addEventListener("click", function (e) { if (e.target === dialog) dialog.close(); });
     bescheid.addEventListener("click", function () { if (urls.bescheid) alsBescheid(urls.bescheid); });
+    neu.addEventListener("click", function () {
+      if (!urls.neu) return;
+      neu.disabled = true;
+      status.textContent = "Prüfe erneut …";
+      senden(urls.neu, {})
+        .then(function (a) { return a.json(); })
+        .then(function (d) {
+          status.textContent = (d && d.text) || "Erneut geprüft.";
+          // kurz anzeigen, dann die Seite neu laden, damit die Zeile das neue Ergebnis zeigt
+          setTimeout(function () { window.location.reload(); }, 1200);
+        })
+        .catch(function () { status.textContent = "Prüfung fehlgeschlagen."; neu.disabled = false; });
+    });
     bereich.addEventListener("click", function () { zeichnenAn(!huelle.classList.contains("zeichnen")); });
     uebernehmen.addEventListener("click", function () {
       if (!erkannt || !urls.uebernehmen) return;
@@ -162,6 +177,7 @@
     if (!dialog) bauen();
     urls = {
       bescheid: a.getAttribute("data-bescheid-url") || "",
+      neu: a.getAttribute("data-neu-pruefen-url") || "",
       bereich: a.getAttribute("data-bereich-url") || "",
       uebernehmen: a.getAttribute("data-uebernehmen-url") || "",
     };
@@ -169,6 +185,8 @@
     bild.alt = a.getAttribute("title") || "";
     link.href = a.getAttribute("href");
     bescheid.hidden = !urls.bescheid;
+    neu.hidden = !urls.neu;
+    neu.disabled = false;
     bereich.hidden = !urls.bereich;
     uebernehmen.hidden = true;
     status.textContent = "";

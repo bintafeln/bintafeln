@@ -136,3 +136,12 @@ auch `ausweis_erledigt=True`. So merkt sich bintafeln die Entscheidung einheitli
 bei einem späteren **„Alle neu prüfen“** unberührt und taucht nicht erneut als Abweichung auf (z. B.
 weil die Automatik beim erneuten Lesen wieder eine – womöglich falsche – Nationalität meldet). Am
 Antrag selbst wird nur die vom Menschen gesetzte Staatsangehörigkeit gespeichert.
+
+## Nachtrag: „Neu prüfen“ je Ausweis (Vorschau-Popup)
+
+Im großen Bild-Popup der Sammel-Prüfungsseite gibt es neben „Ist ein Bescheid“ und „Nationalität
+im Bild lesen“ den Knopf **„🔄 Neu prüfen“** (`ausweis_neu_pruefen_einzeln`). Er liest **genau diesen
+einen Antrag** noch einmal über die volle Automatik (`ausweis_scan.antrag_pruefen`) und speichert das
+Ergebnis; die Seite lädt danach neu, sodass die Zeile das neue Ergebnis zeigt. So kann man einen
+einzelnen Fall gezielt erneut lesen lassen – etwa nachdem die Erkennung verbessert wurde –, ohne den
+ganzen Bestand über „Alle neu prüfen“ laufen zu lassen.
