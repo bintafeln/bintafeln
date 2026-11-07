@@ -32,6 +32,15 @@ class Benutzer(AbstractUser):
     )
     gesperrt_am = models.DateTimeField("Gesperrt am", null=True, blank=True)
     gesperrt_von = models.CharField("Gesperrt von", max_length=150, blank=True)
+    # Nur den Online-Zugang sperren, ohne das Konto zu archivieren (ADR 0114): Die Person bleibt
+    # aktiver Helfer, behält Rollen, Rechte und Passwort, kann sich aber vorübergehend nicht
+    # anmelden. Getrennt von ``is_active`` (= gesperrt und im Archiv).
+    zugang_gesperrt = models.BooleanField(
+        "Online-Zugang gesperrt",
+        default=False,
+        help_text="An: Die Person kann sich vorübergehend nicht anmelden, bleibt aber aktiver "
+        "Helfer (nicht im Archiv). Rollen, Rechte und Passwort bleiben erhalten.",
+    )
     ausgabestellen = models.ManyToManyField(
         "kunden.Ausgabestelle",
         blank=True,

@@ -28,6 +28,8 @@ class AnmeldeForm(forms.Form):
     fehler = "Benutzername oder Passwort ist falsch."
     gesperrt = ("Zu viele falsche Versuche. Bitte {minuten} Minuten warten und dann erneut "
                 "anmelden.")  # fmt: skip
+    zugang_gesperrt = ("Dieser Online-Zugang ist zurzeit gesperrt. Bitte an die Verwaltung "
+                       "wenden.")  # fmt: skip
     VERSUCHE = 5
     SPERRE_MINUTEN = 15
 
@@ -68,6 +70,10 @@ class AnmeldeForm(forms.Form):
             cache.incr(schluessel)
             raise forms.ValidationError(self.fehler)
         cache.delete(schluessel)
+        # Online-Zugang einzeln gesperrt (ADR 0114): Passwort stimmt, aber Anmeldung ist für diese
+        # Person vorübergehend abgestellt. Kein Fehlversuch – deshalb erst nach dem Zurücksetzen.
+        if getattr(benutzer, "zugang_gesperrt", False):
+            raise forms.ValidationError(self.zugang_gesperrt)
         if user_has_device(benutzer):
             if zwei_faktor.vertrautes_geraet(self.request, benutzer):
                 # Vertrautes Gerät: angemeldet wie mit Code (Gerät für django-otp)

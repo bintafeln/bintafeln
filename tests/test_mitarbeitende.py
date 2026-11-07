@@ -632,3 +632,48 @@ def test_zugaenge_freigeben_sammel(admin, admin_client):
 def test_zugang_freigeben_nur_verwalter(als):
     client, _ = als(rollen.AUSGABE)
     assert client.get(reverse("konten:zugaenge_freigeben")).status_code == 403
+
+
+# --- Online-Zugang einzeln sperren / freigeben (ADR 0114) -------------------------------
+
+
+def test_zugang_sperren_blockt_anmeldung_ohne_archiv(client, admin, benutzer_mit_rolle):
+    ziel = benutzer_mit_rolle("bo", rollen.AUSGABE)
+    verwaltung.zugang_sperren(admin, ziel)
+    ziel.refresh_from_db()
+    assert ziel.zugang_gesperrt and ziel.is_active  # gesperrt, aber nicht archiviert
+    antwort = client.post(reverse("konten:anmelden"), {"username": "bo", "password": PASSWORT})
+    assert antwort.status_code == 200 and "gesperrt" in antwort.content.decode()
+    assert "_auth_user_id" not in client.session  # nicht angemeldet
+    # Wieder freigeben: das bisherige Passwort gilt sofort (kein neues Startpasswort)
+    verwaltung.zugang_entsperren(admin, ziel)
+    antwort = client.post(reverse("konten:anmelden"), {"username": "bo", "password": PASSWORT})
+    assert antwort.status_code == 302
+    assert client.session.get("_auth_user_id") == str(ziel.pk)
+
+
+def test_zugang_sperren_schutzregeln(admin, benutzer_mit_rolle):
+    with pytest.raises(verwaltung.VerwaltungsFehler):
+        verwaltung.zugang_sperren(admin, admin)  # nicht den eigenen Zugang
+    buero = benutzer_mit_rolle("bo", rollen.BUERO)
+    with pytest.raises(verwaltung.VerwaltungsFehler):
+        verwaltung.zugang_sperren(buero, admin)  # Nicht-Admin fasst Admin-Konto nicht an
+
+
+def test_zugang_sperren_view_und_knoepfe(admin_client, benutzer_mit_rolle):
+    ziel = benutzer_mit_rolle("bo", rollen.AUSGABE)
+    seite = admin_client.get(url("mitarbeiter", ziel)).content.decode()
+    assert "Online-Zugang sperren" in seite
+    admin_client.post(url("zugang_sperren", ziel))
+    ziel.refresh_from_db()
+    assert ziel.zugang_gesperrt
+    seite = admin_client.get(url("mitarbeiter", ziel)).content.decode()
+    assert "Online-Zugang gesperrt" in seite and "Online-Zugang freigeben" in seite
+    admin_client.post(url("zugang_entsperren", ziel))
+    ziel.refresh_from_db()
+    assert not ziel.zugang_gesperrt
+
+
+def test_zugang_sperren_nur_verwalter(als, admin):
+    client, _ = als(rollen.AUSGABE)
+    assert client.post(url("zugang_sperren", admin)).status_code == 403

@@ -52,6 +52,7 @@ def mitarbeiter_pdf(b) -> bytes:
             ("Zuletzt angemeldet am", _wert(b.last_login)),
             ("Zwei-Faktor-Anmeldung eingerichtet", _wert(zwei_faktor.app_geraet(b) is not None)),
             ("Gesperrt am", _wert(b.gesperrt_am)),
+            ("Online-Zugang gesperrt", _wert(b.zugang_gesperrt)),
         ]
     )
 
