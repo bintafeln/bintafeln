@@ -176,7 +176,7 @@ Kundengruppen bleiben erhalten.
 | `datum` | **ja** | Datum der Abholung |
 | `uhrzeit` | | `HH:MM` |
 | `beitrag` | | gezahlter Beitrag in Euro |
-| `ausgabestelle` | | Name der Ausgabestelle. Unbekannte werden angelegt (Warnung) |
+| `ausgabestelle` | | Name der Ausgabestelle. Leer = die Ausgabestelle der Kundengruppe des Haushalts. Unbekannte werden angelegt (Warnung) |
 | `eingetragen_von` | | Name als Text |
 
 ## ausnahmen.csv
