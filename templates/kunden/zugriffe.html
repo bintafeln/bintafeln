@@ -23,8 +23,8 @@
     {% for z in seite %}
       <tr>
         <td data-titel="Zeitpunkt">{{ z.zeitpunkt|date:"d.m.Y H:i:s" }}</td>
-        <td data-titel="Benutzer">{{ z.benutzername }}</td>
-        <td data-titel="Kundennummer">{{ z.kundennummer }}</td>
+        <td data-titel="Benutzer">{% if z.konto_pk %}<a href="{% url 'konten:mitarbeiter' z.konto_pk %}">{{ z.benutzername }}</a>{% else %}{{ z.benutzername }}{% endif %}</td>
+        <td data-titel="Kundennummer">{% if z.kundennummer %}<a href="{% url 'kunden:haushalt' z.kundennummer %}">{{ z.kundennummer }}</a>{% else %}–{% endif %}</td>
         <td data-titel="Art. 9">{{ z.besondere_kategorie|yesno:"ja,–" }}</td>
         <td data-titel="Art">{% if z.export %}Export der Kundenliste{% else %}angesehen{% endif %}</td>
       </tr>

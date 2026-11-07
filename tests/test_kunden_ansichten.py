@@ -333,6 +333,15 @@ def test_zugriffsprotokoll_filtern(admin_client, bestand):
     assert [z.kundennummer for z in nach_name] == ["1001"]
 
 
+def test_zugriffsprotokoll_verlinkt(admin_client, admin, bestand):
+    # Kundennummer verlinkt zum Haushalt, der Benutzername zum Mitarbeiter-Profil.
+    h = Haushalt.objects.first()
+    Zugriff.objects.create(benutzername=admin.username, kundennummer=h.kundennummer)
+    seite = admin_client.get(ZUGRIFFE).content.decode()
+    assert reverse("kunden:haushalt", args=[h.kundennummer]) in seite
+    assert reverse("konten:mitarbeiter", args=[admin.pk]) in seite
+
+
 def test_zugriffe_nach_frist_geloescht():
     alt = Zugriff.objects.create(benutzername="x", kundennummer="1")
     Zugriff.objects.filter(pk=alt.pk).update(zeitpunkt=timezone.now() - dt.timedelta(days=366))
