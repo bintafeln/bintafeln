@@ -16,7 +16,7 @@ from django.views.decorators.http import require_POST
 
 from apps.ausgabe.ampel import WOCHENTAGE
 from apps.ausgabe.models import AusgabeEinstellungen
-from apps.core import listenauswahl, listenexport, papierkorb, sicherung
+from apps.core import listen, listenauswahl, listenexport, papierkorb, sicherung
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.kunden import (
@@ -148,8 +148,7 @@ def _haushalte_suchen(request):
     if sortierung.lstrip("-") == "personen":
         haushalte = haushalte.annotate(anzahl_personen=Count("personen"))
     haushalte = haushalte.order_by(*_reihenfolge(sortierung or "kundennummer"))
-    anzahl = request.GET.get("anzahl", "")
-    anzahl = anzahl if anzahl in ANZAHL_WAHL[1:] else ""  # leer = Vorgabe 25
+    anzahl = listen.zeilenzahl(request, "anzahl")  # je Person gemerkt, Vorgabe 25
     return haushalte, {"q": suche, "status": status, "gruppe": gruppe, "tag": tag,
                        "merkmal": merkmal, "merkmal_wert": merkmal_wert,
                        "sort": sortierung, "anzahl": anzahl}  # fmt: skip
@@ -294,8 +293,7 @@ def uebersicht(request):
             fremd = treffer.kundennummer
     haushalte, filter_ = _haushalte_suchen(request)
     haushalte = haushalte.select_related("kundengruppe__ausgabestelle").prefetch_related("personen")
-    je_seite = (max(haushalte.count(), 1) if filter_["anzahl"] == "alle"
-                else int(filter_["anzahl"] or KUNDENLISTE_JE_SEITE))  # fmt: skip
+    je_seite = listen.je_seite(filter_["anzahl"], haushalte.count(), KUNDENLISTE_JE_SEITE)
     seite = Paginator(haushalte, je_seite).get_page(request.GET.get("seite"))
     darf = rollen.rechte_von(request.user)
     keys = listen_spalten(request.user)

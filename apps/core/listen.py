@@ -67,3 +67,35 @@ def spalten_speichern(benutzer, liste, gewaehlt, spalten, fest=()) -> None:
     daten[liste] = aus
     benutzer.listen_spalten_aus = daten
     benutzer.save(update_fields=["listen_spalten_aus"])
+
+
+# --- Zeilen je Seite, je Person gemerkt ------------------------------------------------------
+# Alle Übersichtslisten zeigen in der Vorgabe 25 Zeilen je Seite. Wählt die Person eine andere
+# Zahl, merkt bintafeln sie in ``Benutzer.liste_zeilen`` und wendet sie beim nächsten Aufruf –
+# auch in anderen Listen und nach dem Abmelden – wieder an. Jede Liste gibt ihren GET-Parameter
+# an (Anträge: „zeilen“, Kunden/Adressbuch: „anzahl“); gespeichert wird immer dasselbe Feld.
+# Ein leerer Wert bedeutet „keine eigene Wahl“ – dann gilt die Vorgabe der jeweiligen Liste.
+
+ZEILEN_WAHL = ("25", "50", "100", "alle")
+
+
+def zeilenzahl(request, param: str = "zeilen") -> str:
+    """Gewählte Zeilen je Seite: aus ``?<param>=`` lesen und je Person merken, sonst die zuletzt
+    gemerkte verwenden. Gibt einen Wert aus :data:`ZEILEN_WAHL` oder ``""`` (keine eigene Wahl –
+    die Liste nimmt dann ihre Vorgabe) zurück."""
+    benutzer = getattr(request, "user", None)
+    wert = request.GET.get(param)
+    if wert in ZEILEN_WAHL:
+        if getattr(benutzer, "liste_zeilen", None) != wert and getattr(benutzer, "pk", None):
+            benutzer.liste_zeilen = wert
+            benutzer.save(update_fields=["liste_zeilen"])
+        return wert
+    return getattr(benutzer, "liste_zeilen", "") or ""
+
+
+def je_seite(wert: str, gesamt: int, standard: int = 25) -> int:
+    """Wandelt den Zeilen-Wert in eine Zahl für den Paginator um. ``"alle"`` → keine Teilung;
+    leer oder unbekannt → ``standard`` (die Vorgabe der Liste)."""
+    if wert == "alle":
+        return max(gesamt, 1)
+    return int(wert) if wert in ZEILEN_WAHL else standard

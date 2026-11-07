@@ -61,6 +61,11 @@ class Benutzer(AbstractUser):
         "In weiteren Listen ausgeblendete Spalten", default=dict, blank=True,
         help_text="Je Liste (Adressbuch, Mitglieder, Spenden …) die selbst ausgeblendeten Spalten.",
     )  # fmt: skip
+    liste_zeilen = models.CharField(
+        "Gewählte Zeilen je Seite", max_length=5, blank=True, default="",
+        help_text="Wie viele Zeilen die Listen (Anträge, Kunden, Adressbuch …) je Seite zeigen; "
+        "die zuletzt gewählte Zahl gilt beim nächsten Aufruf wieder. Leer = Vorgabe (25).",
+    )  # fmt: skip
     ausgabetage = models.CharField(
         "Ausgabetage", max_length=30, blank=True,
         help_text="An welchen Tagen die Person meist arbeitet; die Kundenliste startet mit diesem "

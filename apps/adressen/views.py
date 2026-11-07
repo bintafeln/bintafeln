@@ -77,8 +77,7 @@ def _gefiltert(request):
     if verein not in dict(_verein_wahl(request.user)):
         verein = ""
     adressen = _im_verein(adressen, verein)
-    anzahl = request.GET.get("anzahl", "")
-    anzahl = anzahl if anzahl in ANZAHL_WAHL[1:] else ""  # leer = Vorgabe (JE_SEITE)
+    anzahl = listen.zeilenzahl(request, "anzahl")  # je Person gemerkt, Vorgabe 25
     return adressen.distinct(), {"q": q, "kategorie": kategorie, "art": art, "verein": verein,
                                  "anzahl": anzahl}  # fmt: skip
 
@@ -114,8 +113,7 @@ def liste(request):
         return listenexport.ausliefern(request, "Adressbuch", basis,
                                        importieren.exportieren(adressen),
                                        weiter=reverse("adressen:liste"))  # fmt: skip
-    je_seite = (max(adressen.count(), 1) if filter_["anzahl"] == "alle"
-                else int(filter_["anzahl"] or JE_SEITE))  # fmt: skip
+    je_seite = listen.je_seite(filter_["anzahl"], adressen.count(), JE_SEITE)
     seite = Paginator(
         adressen.select_related("mitglied", "konto").prefetch_related("konto__groups"), je_seite
     ).get_page(request.GET.get("seite"))
