@@ -67,11 +67,22 @@ def _gefiltert(request):
     antraege = Antrag.objects.filter(ANSICHTEN[ansicht][1])
     suche = request.GET.get("suche", "").strip()
     for wort in suche.split():
+        # Über alle sichtbaren Spalten suchen: Name, Nummer, E-Mail, Telefon, Staatsangehörigkeit
+        # und – über die deutsche Beschriftung – auch Status und Art.
+        w = wort.casefold()
         teile = Q(vorname__icontains=wort) | Q(nachname__icontains=wort)
-        teile |= Q(kundennummer__iexact=wort) | Q(email__icontains=wort)
+        teile |= Q(kundennummer__icontains=wort) | Q(email__icontains=wort)
         teile |= Q(telefon__icontains=wort) | Q(staatsangehoerigkeit__icontains=wort)
+        status = [k for k, name in Antrag.Status.choices if w in name.casefold() or w in k]
+        if status:
+            teile |= Q(status__in=status)
+        arten = [k for k, name in Antrag.Art.choices if w in name.casefold() or w in k]
+        if arten:
+            teile |= Q(art__in=arten)
         if wort.isdigit():
             teile |= Q(laufnummer=int(wort))
+            if len(wort) == 4 and 2000 <= int(wort) <= 2100:  # Jahr aus „Antrag vom“
+                teile |= Q(eingegangen_am__year=int(wort))
         antraege = antraege.filter(teile)
     return ansicht, suche, antraege
 
