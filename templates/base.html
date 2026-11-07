@@ -77,16 +77,15 @@
     {% elif ausgabestelle %}
     <p class="menue-stelle"><span class="leise">Ausgabestelle</span><br><strong>{{ ausgabestelle.name }}</strong></p>
     {% endif %}
-    {# Zähler-Abzeichen regelmäßig nachladen, damit neu erkannte Ausweise und neue Anträge ohne
-       Neuladen in der Leiste erscheinen (Out-of-Band-Swap; stört die aufgeklappten Bereiche nicht). #}
+    {# Zähler-Abzeichen regelmäßig nachladen (Out-of-Band-Swap), ohne die Bereiche zu stören. #}
     <span class="unsichtbar" aria-hidden="true" hx-get="{% url 'core:menue_zahlen' %}"
           hx-trigger="every 30s" hx-swap="none"></span>
     {% for bereich in menue %}
       {% if bereich.einzeln %}{% with e=bereich.eintraege.0 %}
-      <a href="{{ e.url }}" class="menue-oben{% if e.aktiv %} aktiv{% endif %}"{% if e.aktiv %} aria-current="page"{% endif %}{% if e.extern %} target="_blank" rel="noopener"{% endif %}>{{ e.titel }}{% if e.extern %} ↗{% endif %} <span class="menue-zahl" id="menue-zahl-{{ e.zahl_id }}" title="{{ e.zahl_titel }}"{% if e.zahl is None %} hidden{% endif %}>{% if e.zahl is not None %}{{ e.zahl }}{% endif %}</span></a>
+      <a href="{{ e.url }}" class="menue-oben{% if e.aktiv %} aktiv{% endif %}"{% if e.aktiv %} aria-current="page"{% endif %}{% if e.extern %} target="_blank" rel="noopener"{% endif %}>{{ e.titel }}{% if e.extern %} ↗{% endif %}{% if e.zahl is not None %} <span class="menue-zahl" id="menue-zahl-{{ e.zahl_id }}" title="{{ e.zahl_titel }}">{{ e.zahl }}</span>{% endif %}</a>
       {% endwith %}{% else %}
       <details class="menue-bereich" name="menue-bereich"{% if bereich.offen %} open{% endif %}>
-        <summary class="menue-oben">{{ bereich.titel }} <span class="menue-zahl" id="menue-zahl-{{ bereich.zahl_id }}" title="{{ bereich.zahl_titel }}"{% if bereich.zahl is None %} hidden{% endif %}>{% if bereich.zahl is not None %}{{ bereich.zahl }}{% endif %}</span></summary>
+        <summary class="menue-oben">{{ bereich.titel }}{% if bereich.zahl is not None %} <span class="menue-zahl" id="menue-zahl-{{ bereich.zahl_id }}" title="{{ bereich.zahl_titel }}">{{ bereich.zahl }}</span>{% endif %}</summary>
         {% if bereich.gruppen %}
         {% for g in bereich.gruppen %}
         <details class="menue-gruppe" name="menue-gruppe"{% if g.offen %} open{% endif %}>

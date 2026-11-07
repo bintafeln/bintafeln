@@ -709,7 +709,6 @@ a.knopf-gefahr { color: #fff; }
 .menue-bereich:not([open]) > summary::after, .menue-gruppe:not([open]) > summary::after { rotate: -90deg; }
 .menue-bereich[open] { background: color-mix(in srgb, var(--akzent) 6%, transparent); }
 .menue-bereich[open] > summary { color: var(--akzent-dunkel); }
-.menue-zahl[hidden] { display: none; }
 .menue-zahl {
   display: inline-block; min-width: 1.4em; padding: 0 .4em; margin-left: .35rem;
   border-radius: .7em; background: var(--akzent-dunkel); color: #fff;
