@@ -754,11 +754,14 @@ def test_ausweis_abweichung_und_uebernehmen(admin_client, antrag, monkeypatch):
     assert "weicht ab" in seite and "Ukraine" in seite  # deutlicher Hinweis
     assert 'name="staatsangehoerigkeit"' in seite and "Im Antrag übernehmen" in seite  # Auswahl
 
-    # Übernehmen setzt die Staatsangehörigkeit im Antrag
+    # Übernehmen setzt die Staatsangehörigkeit im Antrag und hakt den Fall ab (bleibt auch bei
+    # „Alle neu prüfen" entschieden – wie auf der Sammel-Prüfungsseite)
     uurl = reverse("antraege:nachweis_staat_uebernehmen", args=[antrag.pk])
     antwort = admin_client.post(uurl, {"staatsangehoerigkeit": "Ukraine"}).content.decode()
     assert "Ukraine" in antwort
-    assert Antrag.objects.get(pk=antrag.pk).staatsangehoerigkeit == "Ukraine"
+    nachher = Antrag.objects.get(pk=antrag.pk)
+    assert nachher.staatsangehoerigkeit == "Ukraine"
+    assert not nachher.ausweis_abweichung and nachher.ausweis_erledigt
 
     # Ungültige Auswahl (nicht in der Länderliste) ändert nichts
     admin_client.post(uurl, {"staatsangehoerigkeit": "Fantasialand"})

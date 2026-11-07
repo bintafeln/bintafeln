@@ -127,3 +127,12 @@ sucht darin mit `_code_aus_fenster` ein **gültiges** Land (alpha-3-Code, deutsc
 „deutsch“). Das Ergebnis wird vorgeschlagen und lässt sich mit einem Klick in den Antrag übernehmen
 (`ausweis_bereich_lesen` → `nachweis_staat_uebernehmen`). Das Zeichnen funktioniert mit Maus und
 Touch (Pointer-Events), für die klar lesbaren Fälle, an denen die Voll-Automatik scheitert.
+
+## Nachtrag: Übernehmen gilt als „erledigt“ (Entscheidung bleibt)
+
+Das Übernehmen der Staatsangehörigkeit **auf der Antragsseite** bzw. im Bild-Popup
+(`nachweis_staat_uebernehmen`) setzt jetzt – wie die Sammel-Prüfungsseite (`ausweis_entscheiden`) –
+auch `ausweis_erledigt=True`. So merkt sich bintafeln die Entscheidung einheitlich: Der Fall bleibt
+bei einem späteren **„Alle neu prüfen“** unberührt und taucht nicht erneut als Abweichung auf (z. B.
+weil die Automatik beim erneuten Lesen wieder eine – womöglich falsche – Nationalität meldet). Am
+Antrag selbst wird nur die vom Menschen gesetzte Staatsangehörigkeit gespeichert.
