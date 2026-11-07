@@ -48,6 +48,7 @@ def adresse_pdf(a) -> bytes:
         ("Anrede", a.anrede),
         ("Vorname", a.vorname),
         ("Nachname", a.nachname),
+        ("Geburtsdatum", _datum(a.geburtsdatum)),
         ("Straße und Hausnummer", a.strasse),
         ("PLZ und Ort", f"{a.plz} {a.ort}".strip()),
         ("Land", a.land),

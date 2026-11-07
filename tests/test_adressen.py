@@ -45,17 +45,21 @@ def test_anlegen_bearbeiten_loeschen(admin_client):
     fehlt = admin_client.post(neu, {"art": "person", "vorname": "Erika"}).content.decode()
     assert "Bei einer Person ist der Nachname nötig." in fehlt
     spender = AdressKategorie.objects.get(name="Spender")
+    # Das Geburtsdatum gibt es nur bei einer Person (zeigen_bei.js blendet es sonst aus).
+    assert 'data-zeigen-bei="art=person"' in seite
     antwort = admin_client.post(neu, {
         "art": "person", "anrede": "Frau", "vorname": "Erika", "nachname": "Muster",
-        "plz": "12345", "ort": "Musterstadt", "kategorien": [spender.pk],
-        "einwilligung_post": "2026-01-02",
+        "geburtsdatum": "1980-03-15", "plz": "12345", "ort": "Musterstadt",
+        "kategorien": [spender.pk], "einwilligung_post": "2026-01-02",
     })  # fmt: skip
     a = Adresse.objects.get()
     assert antwort.url == reverse("adressen:adresse", args=[a.pk])
     assert a.geaendert_von == "chefin" and a.einwilligung_post == dt.date(2026, 1, 2)
+    assert a.geburtsdatum == dt.date(1980, 3, 15)
     assert list(a.kategorien.all()) == [spender]
     seite = admin_client.get(antwort.url).content.decode()
     assert "Frau Erika Muster" in seite and "ja, seit 02.01.2026" in seite
+    assert "Geburtsdatum" in seite and "15.03.1980" in seite
     # Inaktive Kategorie bleibt bei der Adresse wählbar, fehlt aber bei neuen
     AdressKategorie.objects.filter(pk=spender.pk).update(aktiv=False)
     assert (
@@ -99,14 +103,14 @@ def test_liste_blaettern_und_getrennte_spalten(admin_client):
 
 
 CSV = (
-    "organisation;vorname;nachname;plz;ort;email;kategorien;einwilligung_post;quatsch\n"
-    "Frischmarkt Muster;;;12345;Musterstadt;;Lieferant/Markt;;x\n"  # schon da (Name + PLZ)
-    "Bäckerei Probe;;;12345;Musterstadt;;Spender, Neue Kategorie;01.02.2026;\n"
-    ";Erika;Muster;12345;Musterstadt;erika@example.org;;;\n"
-    ";Kaputt;;;;;;;\n"  # Person ohne Nachname
-    "Firma;;;;;keine-mail;;;\n"
-    ";Erika;Muster;99999;Woanders;ERIKA@example.org;;;\n"  # E-Mail schon in der Datei
-    ";;;;;;;;\n"
+    "organisation;vorname;nachname;geburtsdatum;plz;ort;email;kategorien;einwilligung_post;quatsch\n"
+    "Frischmarkt Muster;;;;12345;Musterstadt;;Lieferant/Markt;;x\n"  # schon da (Name + PLZ)
+    "Bäckerei Probe;;;;12345;Musterstadt;;Spender, Neue Kategorie;01.02.2026;\n"
+    ";Erika;Muster;15.03.1980;12345;Musterstadt;erika@example.org;;;\n"
+    ";Kaputt;;;;;;;;\n"  # Person ohne Nachname
+    "Firma;;;;;;keine-mail;;;\n"
+    ";Erika;Muster;;99999;Woanders;ERIKA@example.org;;;\n"  # E-Mail schon in der Datei
+    ";;;;;;;;;\n"
 )
 
 
@@ -123,7 +127,8 @@ def test_import_pruefen_und_uebernehmen(markt):
     b = Adresse.objects.get(organisation="Bäckerei Probe")
     assert b.art == "organisation" and b.einwilligung_post == dt.date(2026, 2, 1)
     assert sorted(k.name for k in b.kategorien.all()) == ["Neue Kategorie", "Spender"]
-    assert Adresse.objects.get(nachname="Muster").art == "person"
+    erika = Adresse.objects.get(nachname="Muster")
+    assert erika.art == "person" and erika.geburtsdatum == dt.date(1980, 3, 15)
     # Export lässt sich wieder einlesen: alles schon vorhanden
     zurueck = importieren.pruefen(importieren.exportieren(Adresse.objects.all()).lstrip("﻿"))
     assert not zurueck.neu and len(zurueck.vorhanden) == 3

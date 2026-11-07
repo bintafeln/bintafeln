@@ -367,6 +367,7 @@ class Erzeuger:
             strasse, plz, ort = self.anschrift()
             a = Adresse.objects.create(
                 art=Adresse.Art.PERSON, anrede=anrede, vorname=vorname, nachname=nachname,
+                geburtsdatum=self.geburt(20, 85),
                 strasse=strasse, plz=plz, ort=ort, email=f"person{i}@example.org",
                 einwilligung_post=self.geburt(0, 3),
                 einwilligung_email=self.geburt(0, 2) if i % 2 else None,

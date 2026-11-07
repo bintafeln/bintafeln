@@ -22,7 +22,7 @@ class AdresseForm(forms.ModelForm):
 
     ABSCHNITTE = [
         ("Name", ["art", "organisation", "ansprechperson", "anrede", "vorname", "nachname",
-                  "kategorien"]),
+                  "geburtsdatum", "kategorien"]),
         ("Anschrift und Kontakt", ["strasse", "plz", "ort", "land", "telefon", "mobil", "email",
                                    "webseite"]),
         ("Mitarbeit", ["konto", "rollen"]),
@@ -33,11 +33,13 @@ class AdresseForm(forms.ModelForm):
     class Meta:
         model = Adresse
         fields = [
-            "art", "organisation", "ansprechperson", "anrede", "vorname", "nachname", "kategorien",
+            "art", "organisation", "ansprechperson", "anrede", "vorname", "nachname",
+            "geburtsdatum", "kategorien",
             "strasse", "plz", "ort", "land", "telefon", "mobil", "email", "webseite",
             "einwilligung_post", "einwilligung_email", "veroeffentlichen", "notiz",
         ]  # fmt: skip
         widgets = {
+            "geburtsdatum": DatumEingabe(),
             "einwilligung_post": DatumEingabe(),
             "einwilligung_email": DatumEingabe(),
             "veroeffentlichen": DatumEingabe(),
@@ -52,6 +54,8 @@ class AdresseForm(forms.ModelForm):
         # das ganze Feld samt Label ein/aus; ohne JavaScript bleibt alles sichtbar).
         for name in ("organisation", "ansprechperson"):
             self.fields[name].widget.attrs["data-zeigen-bei"] = "art=organisation"
+        # Das Geburtsdatum gibt es nur bei einer Person.
+        self.fields["geburtsdatum"].widget.attrs["data-zeigen-bei"] = "art=person"
         # Das Konto darf nur verknüpfen, wer Mitarbeitende verwalten darf. Dann auch die Rollen.
         self.rollen_bearbeitbar = konto_waehlbar and verwalter is not None
         if konto_waehlbar:
