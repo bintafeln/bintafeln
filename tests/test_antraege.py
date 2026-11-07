@@ -954,7 +954,7 @@ def test_ausweis_sammelseite_und_entscheiden(admin_client, monkeypatch):
     antwort = admin_client.post(entscheiden_a, {"aktion": "uebernehmen"}).content.decode()
     a.refresh_from_db()
     assert a.staatsangehoerigkeit == "Ukraine" and not a.ausweis_abweichung and a.ausweis_erledigt
-    # Die Antwort frischt die Zähler (noch 1 offene Abweichung) und das Menü-Abzeichen gleich mit auf
+    # Die Antwort frischt die Zähler (noch 1 offene Abweichung) und das Menü-Abzeichen mit auf
     assert 'id="ausweis-zahl-abweichungen" hx-swap-oob="true">1<' in antwort
     assert 'hx-swap-oob="true"' in antwort and "menue-zahl-" in antwort
 
