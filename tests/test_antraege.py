@@ -1078,6 +1078,29 @@ def test_ausweis_als_bescheid_von_antragsseite(admin_client):
     a.refresh_from_db()
     assert a.ausweis_befund == "amtsdokument" and a.ausweis_erledigt and not a.ausweis_abweichung
 
+    # Aus dem Bild-Popup kommt „weiter“ mit – dann bleibt man auf der (sicheren, lokalen) Seite.
+    b = _antrag_mit_ausweis("Deutschland")
+    pruefliste = reverse("antraege:ausweis_pruefung_liste")
+    antwort = admin_client.post(
+        reverse("antraege:ausweis_als_bescheid", args=[b.pk]), {"weiter": pruefliste}
+    )
+    assert antwort.status_code == 302 and antwort["Location"] == pruefliste
+    # Fremde Adresse wird ignoriert (zurück zum Antrag)
+    antwort = admin_client.post(
+        reverse("antraege:ausweis_als_bescheid", args=[b.pk]),
+        {"weiter": "https://example.org/boese"},
+    )
+    assert reverse("antraege:antrag", args=[b.pk]) in antwort["Location"]
+
+    # Prüfungsseite: die Vorschau trägt die Bescheid-URL fürs Popup
+    c = _antrag_mit_ausweis("Deutschland")
+    c.ausweis_befund = "abweichung"
+    c.ausweis_abweichung = True
+    c.ausweis_staat = "Ukraine"
+    c.save()
+    seite = admin_client.get(pruefliste).content.decode()
+    assert reverse("antraege:ausweis_als_bescheid", args=[c.pk]) in seite
+
 
 def test_ausweis_scan_setzt_nach_unterbrechung_fort(admin_client, monkeypatch):
     """Ein durch einen Neustart (Update) abgebrochener Sammellauf wird beim nächsten Aufruf der

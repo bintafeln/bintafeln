@@ -14,6 +14,7 @@ from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
@@ -420,7 +421,13 @@ def ausweis_als_bescheid(request, pk):
     a.ausweis_erledigt = True
     a.save(update_fields=["ausweis_abweichung", "ausweis_befund", "ausweis_erledigt"])
     messages.success(request, "Als Bescheid (kein Ausweis) eingeordnet – der Hinweis ist weg.")
-    return redirect("antraege:antrag", pk=a.pk)
+    # Aus dem Bild-Popup der Prüfungsseite kommt „weiter“ (die aktuelle Seite) mit, damit man dort
+    # bleibt, statt zum Antrag zu springen; nur sichere lokale Adressen zulassen.
+    weiter = request.POST.get("weiter", "")
+    sicher = weiter and url_has_allowed_host_and_scheme(
+        weiter, {request.get_host()}, request.is_secure()
+    )
+    return redirect(weiter if sicher else reverse("antraege:antrag", args=[a.pk]))
 
 
 @rollen.recht_erforderlich("antraege.sehen")

@@ -2,6 +2,7 @@
   {% if z.hat_vorschau %}
     <a class="ausweis-fall-bild" href="{% url 'antraege:anhang' z.a.pk z.anhang_id %}"
        {% if z.anhang_bild %}data-bild{% else %}data-fenster{% endif %}
+       data-bescheid-url="{% url 'antraege:ausweis_als_bescheid' z.a.pk %}"
        title="Antrag {{ z.a.nummer }}" target="_blank" rel="noopener">
       <img class="ausweis-mini" loading="lazy" alt="Vorschau des Nachweises"
            src="{% url 'antraege:ausweis_miniatur' z.a.pk %}"></a>
