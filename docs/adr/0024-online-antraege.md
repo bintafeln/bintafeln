@@ -52,3 +52,13 @@ Platzhaltern (z. B. der Name aus dem Antrag) werden maskiert. Die Antwortmail ge
 Klartextfassung hinaus. Die Farbe der Tafel (`TafelEinstellungen.farbe`, voreingestellt
 Tafel-Orange) gilt für die ganze Anwendung; hellere und dunklere Töne sowie die Schriftfarbe
 auf der Farbe werden daraus berechnet (`apps/core/farben.py`).
+
+## Nachtrag: „neu“ nur für einen einstellbaren Zeitraum
+
+`AntragEinstellungen.neu_nach_tagen` (Vorgabe 0 = aus) legt fest, wie lange ein Antrag ab Eingang
+als Status `neu` gilt. `fristen_anwenden()` setzt einen noch unbearbeiteten Antrag danach
+selbsttätig von `neu` auf `in_bearbeitung` – ein reiner Statuswechsel, es wird nichts gelöscht.
+Das ist bewusst getrennt von `erledigt_nach_tagen`: Steht dort 0, wird auch `in_bearbeitung` nie
+automatisch erledigt oder weggeräumt. Als Zielstatus dient das vorhandene `in_bearbeitung` und
+nicht ein eigener Status „wartend“, um keine Verwechslung mit dem `Wartestand` der Warteliste
+(ADR 0051) zu erzeugen.

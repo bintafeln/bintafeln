@@ -171,6 +171,14 @@ class AntragEinstellungen(models.Model):
         help_text="Neue Anträge bekommen fortlaufende Nummern, mindestens ab dieser Zahl, z. B. "
         "4201, wenn bisher bis 4200 gezählt wurde.",
     )
+    neu_nach_tagen = models.PositiveSmallIntegerField(
+        "Anträge gelten noch … Tage als „neu“",
+        default=0,
+        validators=[MaxValueValidator(3650)],
+        help_text="Danach wechselt ein noch unbearbeiteter Antrag selbsttätig von „neu“ auf "
+        "„in Bearbeitung“ (gelöscht wird dabei nichts). 0 = Anträge bleiben „neu“, bis jemand "
+        "sie anfasst.",
+    )
     erledigt_nach_tagen = models.PositiveSmallIntegerField(
         "Unbearbeitete Anträge gelten nach … Tagen als erledigt",
         default=0,
@@ -512,6 +520,13 @@ def fristen_anwenden(jetzt=None) -> int:
     from apps.antraege import nachweise  # liegen gebliebene Nachweis-Entwürfe wegräumen
 
     nachweise.aufraeumen(jetzt)
+    # „neu“ gilt nur für den eingestellten Zeitraum ab Eingang; danach wird ein noch unberührter
+    # Antrag auf „in Bearbeitung“ gesetzt (nur Statuswechsel, keine Löschung). 0 = aus.
+    if e.neu_nach_tagen:
+        Antrag.objects.filter(
+            status=Antrag.Status.NEU,
+            eingegangen_am__lt=jetzt - tage(days=e.neu_nach_tagen),
+        ).update(status=Antrag.Status.IN_BEARBEITUNG)
     if e.erledigt_nach_tagen:
         Antrag.objects.filter(
             status__in=Antrag.OFFEN,
