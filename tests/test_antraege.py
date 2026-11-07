@@ -1027,6 +1027,36 @@ def test_ausweis_sammelseite_und_entscheiden(admin_client, monkeypatch):
     assert not Antrag.objects.filter(ausweis_abweichung=True, ausweis_erledigt=False).exists()
 
 
+def test_ausweis_sammel_entscheiden_mehrere_gleichzeitig(admin_client):
+    """Sammel-Abnicken: mehrere angehakte Fälle auf einen Streich übernehmen; Fälle ohne erkanntes
+    Land werden dabei übersprungen."""
+    a = _antrag_mit_ausweis("Deutschland")
+    b = _antrag_mit_ausweis("Deutschland")
+    c = _antrag_mit_ausweis("Deutschland")
+    for x, staat in ((a, "Ukraine"), (b, "Ukraine"), (c, "")):  # c: kein erkanntes Land
+        x.ausweis_abweichung = True
+        x.ausweis_befund = "abweichung"
+        x.ausweis_staat = staat
+        x.save(update_fields=["ausweis_abweichung", "ausweis_befund", "ausweis_staat"])
+
+    # Die Seite zeigt die Sammelleiste und je Fall ein Kästchen.
+    seite = admin_client.get(reverse("antraege:ausweis_pruefung_liste")).content.decode()
+    assert "alle auswählen" in seite and 'name="id"' in seite and 'id="ausweis-sammel"' in seite
+
+    url = reverse("antraege:ausweis_sammel_entscheiden")
+    admin_client.post(url, {"id": [a.pk, b.pk, c.pk], "aktion": "uebernehmen"})
+    a.refresh_from_db(), b.refresh_from_db(), c.refresh_from_db()
+    assert a.staatsangehoerigkeit == "Ukraine" and a.ausweis_erledigt
+    assert b.staatsangehoerigkeit == "Ukraine" and b.ausweis_erledigt
+    # c hatte kein erkanntes Land: übersprungen, bleibt offen.
+    assert c.staatsangehoerigkeit == "Deutschland" and not c.ausweis_erledigt
+
+    # Verbleibenden Fall ohne Übernahme sammel-abhaken.
+    admin_client.post(url, {"id": [c.pk], "aktion": "verwerfen"})
+    c.refresh_from_db()
+    assert not c.ausweis_abweichung and c.ausweis_erledigt
+
+
 def test_ausweis_scan_befund_amtsdokument_und_ohne(monkeypatch):
     """Ohne erkannten Ausweis wird nach Dokumentart eingeordnet: Amtsdokument (Bescheid-Wörter
     gefunden) bzw. „ohne“, wenn gar kein Bild-/PDF-Nachweis dranhängt (ADR 0112)."""

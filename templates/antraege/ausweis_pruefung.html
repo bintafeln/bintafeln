@@ -2,6 +2,7 @@
 {% load static %}
 {% block titel %}Ausweisprüfung{% endblock %}
 {% block inhalt %}
+<script src="{% static 'js/auswahl.js' %}" defer></script>
 <section class="karte">
   <div class="liste-kopf">
     <h1>Ausweisprüfung <span class="leise">(<span id="ausweis-kopf-abweichungen">{{ abweichungen|length }}</span> Abweichungen)</span></h1>
@@ -10,6 +11,27 @@
   <p class="hinweis">Die Prüfung ist nur ein Hinweis – die Entscheidung trifft immer ein Mensch.
     Fehlt ein Ausweis ganz, stehen die Fälle weiter unten getrennt: reine <strong>Amtsdokumente</strong>
     (Bescheide) müssen Sie in der Regel nicht ansehen; <strong>unklare</strong> Fälle lohnen einen Blick.</p>
+
+  {# Sammel-Formular steht für sich; die Kästchen gehören über form="…" dazu (keine verschachtelten Formulare). #}
+  {% if abweichungen or unklar %}
+  <form method="post" id="ausweis-sammel" action="{% url 'antraege:ausweis_sammel_entscheiden' %}" data-auswahl></form>
+  <div class="ausweis-sammelleiste">
+    <label class="ausweis-alle"><input type="checkbox" data-alle="id" form="ausweis-sammel"> alle auswählen</label>
+    <span class="leise">Ausgewählte:</span>
+    <button type="submit" form="ausweis-sammel" name="aktion" value="uebernehmen" class="knopf knopf-klein"
+            onclick="return confirm('Bei allen ausgewählten Fällen den im Ausweis erkannten Staat übernehmen?')"
+            title="Erkannten Staat übernehmen (nur wo ein Land erkannt wurde)">✓ Übernehmen</button>
+    <button type="submit" form="ausweis-sammel" name="aktion" value="verwerfen" class="knopf knopf-klein knopf-zweitrangig"
+            onclick="return confirm('Alle ausgewählten Fälle abhaken, ohne etwas zu übernehmen?')"
+            title="Abhaken – Antrag bleibt wie angegeben">✕ Nicht übernehmen / abhaken</button>
+    <button type="submit" form="ausweis-sammel" name="aktion" value="amtsdokument" class="knopf knopf-klein knopf-zweitrangig"
+            onclick="return confirm('Alle ausgewählten Fälle als Bescheid (Amtsdokument) einordnen?')"
+            title="Als Bescheid (Amtsdokument) einordnen und abhaken">📄 Als Bescheid</button>
+    <span class="hinweis" data-auswahl-zahl="ausweis-sammel"></span>
+  </div>
+  <p class="hinweis">Mehrere Fälle anhaken und oben gemeinsam entscheiden – oder je Fall die Knöpfe
+    darunter nutzen. „Übernehmen“ gilt nur für Fälle, bei denen ein Land erkannt wurde.</p>
+  {% endif %}
 
   <h2>Abweichungen <span class="leise">(<span id="ausweis-zahl-abweichungen">{{ abweichungen|length }}</span>)</span></h2>
   <p class="hinweis">Die im Ausweis erkannte Staatsangehörigkeit passt zu <strong>keiner</strong>

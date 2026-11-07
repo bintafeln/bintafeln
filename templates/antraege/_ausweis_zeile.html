@@ -1,4 +1,6 @@
 <article class="ausweis-fall">
+  <input type="checkbox" class="ausweis-fall-haken" name="id" value="{{ z.a.pk }}"
+         form="ausweis-sammel" aria-label="Antrag {{ z.a.nummer }} auswählen">
   {% if z.hat_vorschau %}
     <a class="ausweis-fall-bild" href="{% url 'antraege:anhang' z.a.pk z.anhang_id %}"
        data-bild

@@ -600,6 +600,37 @@ def _angegebene_namen(a) -> set[str]:
     return {n.strip() for n in namen if n and n.strip()}
 
 
+def _ausweis_anwenden(a, aktion) -> str:
+    """Wendet eine Entscheidung auf einen Antrag an und speichert. Gibt eine kurze Meldung zurück;
+    leere Meldung = nichts getan (``übernehmen`` ohne gültiges erkanntes Land). Unbekannte Aktion →
+    Http404. Von der Einzel- (htmx) und der Sammel-Entscheidung gemeinsam genutzt."""
+    from apps.core import auswahl
+
+    if aktion == "uebernehmen":
+        wert = a.ausweis_staat
+        erlaubt = {w for w, _ in auswahl.mit_vorhandenem(
+            auswahl.staatsangehoerigkeiten(), a.staatsangehoerigkeit)}  # fmt: skip
+        if not (wert and wert in erlaubt):
+            return ""
+        a.staatsangehoerigkeit = wert
+        a.ausweis_abweichung = False
+        a.ausweis_erledigt = True
+        a.save(update_fields=["staatsangehoerigkeit", "ausweis_abweichung", "ausweis_erledigt"])
+        return f"„{wert}“ übernommen."
+    if aktion == "verwerfen":
+        a.ausweis_abweichung = False
+        a.ausweis_erledigt = True
+        a.save(update_fields=["ausweis_abweichung", "ausweis_erledigt"])
+        return "Nicht übernommen – Antrag bleibt wie angegeben."
+    if aktion == "amtsdokument":
+        a.ausweis_abweichung = False
+        a.ausweis_befund = "amtsdokument"
+        a.ausweis_erledigt = True
+        a.save(update_fields=["ausweis_abweichung", "ausweis_befund", "ausweis_erledigt"])
+        return "Als Bescheid (Amtsdokument) eingeordnet."
+    raise Http404
+
+
 @require_POST
 @rollen.recht_erforderlich("antraege.bearbeiten")
 def ausweis_entscheiden(request, pk):
@@ -609,38 +640,13 @@ def ausweis_entscheiden(request, pk):
     - ``amtsdokument``: den Fall von Hand als Bescheid (Amtsdokument) einordnen und abhaken.
     Alle entfernen die Zeile aus der offenen Liste. „Ansehen/Später" ist nur ein Link zum Antrag
     und braucht keine Aktion."""
-    from apps.core import auswahl
-
     a = get_object_or_404(Antrag, pk=pk)
     aktion = request.POST.get("aktion")
-    text = ""
-    if aktion == "uebernehmen":
-        wert = a.ausweis_staat
-        erlaubt = {w for w, _ in auswahl.mit_vorhandenem(
-            auswahl.staatsangehoerigkeiten(), a.staatsangehoerigkeit)}  # fmt: skip
-        if wert and wert in erlaubt:
-            a.staatsangehoerigkeit = wert
-            a.ausweis_abweichung = False
-            a.ausweis_erledigt = True
-            a.save(update_fields=["staatsangehoerigkeit", "ausweis_abweichung", "ausweis_erledigt"])
-            text = f"„{wert}“ übernommen."
-        else:
-            text = "Nicht übernehmbar (kein gültiges Land)."
-            return render(request, "antraege/_ausweis_zeile_fertig.html",
-                          {"text": text, "fehler": True})  # fmt: skip
-    elif aktion == "verwerfen":
-        a.ausweis_abweichung = False
-        a.ausweis_erledigt = True
-        a.save(update_fields=["ausweis_abweichung", "ausweis_erledigt"])
-        text = "Nicht übernommen – Antrag bleibt wie angegeben."
-    elif aktion == "amtsdokument":
-        a.ausweis_abweichung = False
-        a.ausweis_befund = "amtsdokument"
-        a.ausweis_erledigt = True
-        a.save(update_fields=["ausweis_abweichung", "ausweis_befund", "ausweis_erledigt"])
-        text = "Als Bescheid (Amtsdokument) eingeordnet."
-    else:
-        raise Http404
+    text = _ausweis_anwenden(a, aktion)
+    if aktion == "uebernehmen" and not text:
+        return render(request, "antraege/_ausweis_zeile_fertig.html",
+                      {"text": "Nicht übernehmbar (kein gültiges Land).",
+                       "fehler": True})  # fmt: skip
     # Zähler in den Überschriften und das Menü-Abzeichen gleich mit aktualisieren (htmx-OOB),
     # damit nach dem Abhaken „(N)“ und die Leiste sofort stimmen und nicht eine alte Zahl zeigen.
     from apps.core.menue import menue, zahlen_flach
@@ -657,6 +663,32 @@ def ausweis_entscheiden(request, pk):
             "zahlen": zahlen_flach(menue(request)),
         },
     )
+
+
+@require_POST
+@rollen.recht_erforderlich("antraege.bearbeiten")
+def ausweis_sammel_entscheiden(request):
+    """Mehrere angehakte Fälle der Sammel-Prüfseite auf einen Streich abschließen (gleiche Aktion
+    wie ``ausweis_entscheiden``). Danach zurück zur Seite mit einer Meldung, wie viele erledigt
+    wurden. ``übernehmen`` überspringt Fälle ohne gültiges erkanntes Land."""
+    aktion = request.POST.get("aktion")
+    if aktion not in {"uebernehmen", "verwerfen", "amtsdokument"}:
+        raise Http404
+    pks = request.POST.getlist("id")
+    getan = uebersprungen = 0
+    for a in Antrag.objects.filter(pk__in=pks, ausweis_erledigt=False):
+        if _ausweis_anwenden(a, aktion):
+            getan += 1
+        else:
+            uebersprungen += 1
+    if not pks:
+        messages.error(request, "Nichts ausgewählt.")
+    elif aktion == "uebernehmen" and uebersprungen:
+        messages.success(request, f"{getan} übernommen, {uebersprungen} übersprungen "
+                         "(kein erkanntes Land zum Übernehmen).")  # fmt: skip
+    else:
+        messages.success(request, f"{getan} Fäll{'e' if getan != 1 else ''} erledigt.")
+    return redirect("antraege:ausweis_pruefung_liste")
 
 
 @rollen.recht_erforderlich("antraege.sehen")
