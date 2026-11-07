@@ -1011,10 +1011,15 @@ def _bemerkung(haushalt, b):
 
 
 def _abholung(haushalt, a, bezuege):
+    # Fehlt in der Datei die Ausgabestelle, gilt die der Kundengruppe (sie ist dieser eindeutig
+    # zugeordnet) – so steht nicht „–“ in der Abholung.
+    stelle = bezuege.stelle(a["ausgabestelle"])
+    if stelle is None and haushalt.kundengruppe_id:
+        stelle = haushalt.kundengruppe.ausgabestelle
     return Abholung(
         haushalt=haushalt, datum=_datum(a["datum"]),
         uhrzeit=dt.time.fromisoformat(a["uhrzeit"]) if a["uhrzeit"] else None,
-        beitrag=a["beitrag"], ausgabestelle=bezuege.stelle(a["ausgabestelle"]),
+        beitrag=a["beitrag"], ausgabestelle=stelle,
         eingetragen_von=a["eingetragen_von"],
     )  # fmt: skip
 

@@ -110,6 +110,20 @@ def test_beispieldateien_vollstaendig(zusatzfeld_schwerbehindert):
     assert str(lauf).startswith("Import vom ")
 
 
+def test_abholung_ohne_stelle_erbt_von_kundengruppe():
+    # Fehlt in der Abholung die Ausgabestelle, gilt die der Kundengruppe (eindeutig zugeordnet).
+    ergebnis = pruefen(
+        kundengruppen_csv=csv("kuerzel;name;ausgabestelle", "MO1;Montag;Mitte"),
+        haushalte_csv=csv("kundennummer;nachname;vorname;kundengruppe", "1;Test;Tina;MO1"),
+        abholungen_csv=csv(
+            "kundennummer;datum;uhrzeit;beitrag;ausgabestelle;eingetragen_von", "1;2026-05-01;;0;;"
+        ),
+    )
+    uebernehmen(ergebnis)
+    a = Abholung.objects.get()
+    assert a.ausgabestelle is not None and a.ausgabestelle.name == "Mitte"
+
+
 def test_import_wird_zusammengefasst_protokolliert():
     uebernehmen(pruefen(haushalte_csv=MINIMAL))
     assert not LogEntry.objects.filter(content_type__model__in=["haushalt", "person"]).exists()
