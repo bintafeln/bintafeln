@@ -155,3 +155,12 @@ das Popup eine **Länder-Auswahl**, mit der sich die Staatsangehörigkeit **von 
 (nicht nur über die Bild-Erkennung): die Optionen werden einmal aus einer Seitenvorlage
 `<template id="ausweis-staaten-optionen">` geklont (gefüllt aus `staaten` bzw. `ausweis_staaten`),
 und eine Auswahl verhält sich wie ein erkanntes Land (Knopf „… übernehmen“ → `nachweis_staat_uebernehmen`).
+
+## Nachtrag: Ländercode direkt an Ziffern (MRZ)
+
+`_code_aus_fenster` erkennt einen Ländercode jetzt auch, wenn er – wie in der MRZ – direkt an
+Ziffern klebt (z. B. „…662UKR100…“); die frühere Wortgrenze `\b` griff zwischen Ziffer und
+Buchstabe nicht und übersah den Code. In echtem Text greift die Erkennung weiterhin nicht in
+längere Wörter hinein. Zusätzlich liest `land_aus_ausschnitt` einen über die MRZ gezogenen
+Ausschnitt notfalls mit der MRZ-Lesung (nur Großbuchstaben/Ziffern), wenn der normale OCR-Text
+keinen Code ergibt.
