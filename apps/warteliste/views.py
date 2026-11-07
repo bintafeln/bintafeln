@@ -102,6 +102,9 @@ def _gefiltert(request):
     return f, ws
 
 
+FILTER_PARAMETER = ("status", "art", "staat_modus", "staat", "termin", "suche", "sort")
+
+
 @never_cache
 @sehen
 def liste(request):
@@ -109,6 +112,13 @@ def liste(request):
     # „Doppelte Anträge" und „Abgleich mit dem Kundenstamm" schon beim Betreten des Bereichs im
     # Hintergrund vorrechnen, damit diese Seiten beim Öffnen meist ohne Warten da sind (ADR 0109).
     vorberechnung.vorwaermen()
+    # Filter merken: Eine geänderte Auswahl wird dank data-sofort gleich angezeigt (ohne „Filtern");
+    # die gewählte Ansicht wird in der Sitzung gemerkt und beim nächsten Aufruf der Seite (Aufruf
+    # ohne Parameter, z. B. über das Menü) wieder angezeigt.
+    if any(p in request.GET for p in FILTER_PARAMETER):
+        request.session["warteliste_filter"] = request.GET.urlencode()
+    elif request.session.get("warteliste_filter"):
+        return redirect(f"{request.path}?{request.session['warteliste_filter']}")
     f, ws = _gefiltert(request)
     zahlen = dict(Wartestand.objects.values_list("status").annotate(n=Count("pk")))
     staaten = sorted(set(Antrag.objects.exclude(staatsangehoerigkeit="")
