@@ -1,5 +1,9 @@
 {% comment %}Per htmx in #abgleich-ergebnis geladen: die Treffer des Abgleichs. Der Regler
 (abgleich.js) wird nach dem Einsetzen neu verdrahtet (htmx:afterSettle).{% endcomment %}
+{% if not bereit %}
+<p class="hinweis" aria-busy="true">Der Abgleich wird im Hintergrund vorbereitet … er erscheint gleich von selbst.</p>
+<div hx-get="{{ nachladen }}" hx-trigger="load delay:3s" hx-target="#{{ ziel }}" hx-swap="innerHTML"></div>
+{% else %}
 {% if ergebnis %}
 <div class="abgleich-regler" data-abgleich-regler>
   <label for="min-score">Nur Treffer ab <output id="min-score-wert">65</output> % Übereinstimmung anzeigen</label>
@@ -16,4 +20,5 @@
 {% if aktualisiert %}
   <p class="hinweis" aria-busy="true">Wird im Hintergrund aktualisiert …</p>
   <div hx-get="{{ nachladen }}" hx-trigger="load delay:4s" hx-target="#{{ ziel }}" hx-swap="innerHTML"></div>
+{% endif %}
 {% endif %}

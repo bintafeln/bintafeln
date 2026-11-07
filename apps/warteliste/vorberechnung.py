@@ -87,21 +87,42 @@ def _auffrischen(key, sig_fn, rechnen) -> None:
 
 
 def _holen(key, sig_fn, rechnen):
-    """(daten, frisch, laeuft). Sofort aus dem Cache; bei Bedarf rechnen bzw. auffrischen.
+    """(daten, frisch, laeuft). Sofort aus dem Cache; nie synchron blockieren.
 
     * Cache passt zum Stand → (daten, True, …).
-    * Gar nichts da → einmal synchron rechnen → (daten, True, False).
     * Veraltet, aber brauchbar → zuletzt berechnetes Ergebnis sofort zeigen und im Hintergrund
       auffrischen → (alte_daten, False, läuft?).
+    * Noch gar nichts berechnet → im Hintergrund anstoßen und ``daten=None`` liefern (die Seite
+      zeigt „wird vorbereitet“ und lädt sich nach). ``None`` heißt „noch nicht da“, ``[]`` heißt
+      „gerechnet, keine Treffer“.
     """
     sig = sig_fn()
     stand = cache.get(key)
     if stand and stand.get("signatur") == sig and "daten" in stand:
         return stand["daten"], True, _laeuft(key)
-    if not stand or "daten" not in stand:
-        return _rechnen_speichern(key, sig_fn, rechnen), True, False
+    hatte = stand.get("daten") if stand else None
     _auffrischen(key, sig_fn, rechnen)
-    return stand["daten"], False, _laeuft(key)
+    if hatte is not None:
+        return hatte, False, _laeuft(key)  # veraltet, aber brauchbar
+    # Erstmalig: in Tests rechnet _auffrischen synchron, dann ist das Ergebnis schon da.
+    neu = cache.get(key)
+    if neu and "daten" in neu and neu.get("signatur") == sig:
+        return neu["daten"], True, False
+    return None, False, True  # wird gerade erstmalig im Hintergrund vorbereitet
+
+
+def vorwaermen() -> None:
+    """Dubletten und Abgleich im Hintergrund vorberechnen, sobald man den Warteliste-Bereich
+    betritt – dann ist die jeweilige Seite beim Öffnen meist schon fertig. Ist das Ergebnis aktuell
+    oder läuft bereits eine Rechnung, passiert nichts."""
+    for key, sig_fn, rechnen in (
+        (DUB, _sig_dubletten, _rechnen_dubletten),
+        (ABG, _sig_abgleich, _rechnen_abgleich),
+    ):
+        stand = cache.get(key)
+        aktuell = stand and stand.get("signatur") == sig_fn() and "daten" in stand
+        if not aktuell:
+            _auffrischen(key, sig_fn, rechnen)
 
 
 def veraltet(*, dubletten: bool = False, abgleich: bool = False) -> None:

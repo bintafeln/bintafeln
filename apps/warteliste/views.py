@@ -106,6 +106,9 @@ def _gefiltert(request):
 @sehen
 def liste(request):
     ablauf.automatik()
+    # „Doppelte Anträge" und „Abgleich mit dem Kundenstamm" schon beim Betreten des Bereichs im
+    # Hintergrund vorrechnen, damit diese Seiten beim Öffnen meist ohne Warten da sind (ADR 0109).
+    vorberechnung.vorwaermen()
     f, ws = _gefiltert(request)
     zahlen = dict(Wartestand.objects.values_list("status").annotate(n=Count("pk")))
     staaten = sorted(set(Antrag.objects.exclude(staatsangehoerigkeit="")
@@ -373,14 +376,15 @@ def abgleich_ergebnis(request):
     und dieser Block lädt sich kurz darauf noch einmal nach."""
     alle, antraege = _abzugleichende(request)
     ergebnis, frisch, _ = vorberechnung.abgleich_daten()  # alle offenen Anträge
+    bereit = ergebnis is not None
     pks = set(antraege.values_list("pk", flat=True))
-    gefiltert = [e for e in ergebnis if e["antrag_pk"] in pks]
+    gefiltert = [e for e in (ergebnis or []) if e["antrag_pk"] in pks]
     # „Zurück zu“ muss die echte Seite sein, nicht dieser Fragment-Endpunkt (sonst landet man nach
     # dem Bestätigen auf der Trefferliste ohne Layout, weil sie ohne base.html gerendert wird).
     weiter = reverse("warteliste:abgleich") + ("?alle=1" if alle else "")
     nachladen = reverse("warteliste:abgleich_ergebnis") + ("?alle=1" if alle else "")
     return render(request, "warteliste/_abgleich_ergebnis.html",
-                  {"ergebnis": gefiltert, "weiter": weiter,
+                  {"ergebnis": gefiltert, "bereit": bereit, "weiter": weiter,
                    "aktualisiert": not frisch, "nachladen": nachladen,
                    "ziel": "abgleich-ergebnis"})  # fmt: skip
 
@@ -439,7 +443,8 @@ def dubletten_ergebnis(request):
     dieser Block lädt sich kurz darauf noch einmal nach."""
     paare, frisch, _ = vorberechnung.dubletten_daten()
     return render(request, "warteliste/_dubletten_ergebnis.html",
-                  {"paare": paare, "aktualisiert": not frisch,
+                  {"paare": paare or [], "bereit": paare is not None,
+                   "aktualisiert": not frisch,
                    "nachladen": reverse("warteliste:dubletten_ergebnis"),
                    "ziel": "dubletten-ergebnis"})  # fmt: skip
 

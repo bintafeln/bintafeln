@@ -230,9 +230,12 @@ def test_dubletten_und_zusammenfuehren(admin):
     assert c in (paar["a"], paar["b"])
 
 
-def test_abgleich_und_dubletten_laden_ergebnis_nach(admin_client, modul_an):
+def test_abgleich_und_dubletten_laden_ergebnis_nach(admin_client, modul_an, monkeypatch):
     """Beide Seiten erscheinen sofort und laden ihr Ergebnis per htmx nach, damit sie bei großem
     Kundenstamm nicht hängen."""
+    from apps.warteliste import vorberechnung
+
+    monkeypatch.setattr(vorberechnung, "_im_hintergrund", lambda fn: fn())  # synchron rechnen
     antrag("Erika", "Beispiel", geburtsdatum=dt.date(1980, 2, 3))
     antrag("Erika", "Beispiell", geburtsdatum=dt.date(1980, 2, 3))
     ablauf.automatik()
@@ -244,9 +247,12 @@ def test_abgleich_und_dubletten_laden_ergebnis_nach(admin_client, modul_an):
     assert "streichen" in paare  # die gefundenen Paare kommen aus dem Nachlade-Endpunkt
 
 
-def test_dublette_per_htmx_entfernt_nur_das_paar(admin_client, modul_an):
+def test_dublette_per_htmx_entfernt_nur_das_paar(admin_client, modul_an, monkeypatch):
     """Eine Aktion auf ein Paar tauscht per htmx nur dieses Paar aus (hier: entfernt), statt alle
     offenen Anträge neu zu vergleichen (das dauert bei vielen Anträgen lange)."""
+    from apps.warteliste import vorberechnung
+
+    monkeypatch.setattr(vorberechnung, "_im_hintergrund", lambda fn: fn())  # synchron rechnen
     a = antrag("Erika", "Beispiel", geburtsdatum=dt.date(1980, 2, 3))
     b = antrag("Erika", "Beispiell", geburtsdatum=dt.date(1980, 2, 3))
     ergebnis = admin_client.get(reverse("warteliste:dubletten_ergebnis")).content.decode()
@@ -286,6 +292,35 @@ def test_vorberechnung_warm_und_auffrischen(admin_client, modul_an, monkeypatch)
     antrag("Erika", "Beispiel", geburtsdatum=dt.date(1980, 2, 3))  # Signatur ändert sich
     seite = admin_client.get(reverse("warteliste:dubletten_ergebnis")).content.decode()
     assert "Wird im Hintergrund aktualisiert" in seite
+
+
+def test_dubletten_erstmalig_nicht_blockierend(admin_client, modul_an, monkeypatch):
+    """Beim allerersten Öffnen (Cache kalt) blockiert nichts: statt synchron zu rechnen, läuft die
+    Rechnung im Hintergrund, die Seite zeigt „wird vorbereitet" und lädt sich nach (ADR 0109)."""
+    from apps.warteliste import vorberechnung
+
+    monkeypatch.setattr(vorberechnung, "_im_hintergrund", lambda fn: None)  # läuft noch
+    antrag("Erika", "Beispiel", geburtsdatum=dt.date(1980, 2, 3))
+    antrag("Erika", "Beispiell", geburtsdatum=dt.date(1980, 2, 3))
+    paare, frisch, laeuft = vorberechnung.dubletten_daten()
+    assert paare is None and not frisch and laeuft  # noch nichts berechnet, Rechnung angestoßen
+    seite = admin_client.get(reverse("warteliste:dubletten_ergebnis")).content.decode()
+    assert "im Hintergrund vorbereitet" in seite and "Keine möglichen Dubletten" not in seite
+
+
+def test_vorwaermen_stoesst_beide_rechnungen_an(modul_an, monkeypatch):
+    """Beim Betreten des Warteliste-Bereichs werden Dubletten und Abgleich im Hintergrund
+    vorgerechnet; läuft schon eine Rechnung, wird nicht doppelt gestartet (ADR 0109)."""
+    from apps.warteliste import vorberechnung
+
+    gestartet = []
+    monkeypatch.setattr(vorberechnung, "_im_hintergrund", lambda fn: gestartet.append(fn))
+    vorberechnung.veraltet(dubletten=True, abgleich=True)  # sicher kalt
+    vorberechnung.vorwaermen()
+    assert len(gestartet) == 2  # Dubletten und Abgleich angestoßen
+    gestartet.clear()
+    vorberechnung.vorwaermen()  # läuft bereits → kein zweiter Start
+    assert gestartet == []
 
 
 def test_kundenabgleich_sperrzeit_und_ausnahmen():
@@ -343,7 +378,10 @@ def test_offene_sperren_wie_einzeln_und_zwischengespeichert(monkeypatch):
     assert ablauf.offene_sperren([a], heute) == sperren
 
 
-def test_abgleich_seite_hat_regler_und_prozent(admin_client, modul_an):
+def test_abgleich_seite_hat_regler_und_prozent(admin_client, modul_an, monkeypatch):
+    from apps.warteliste import vorberechnung
+
+    monkeypatch.setattr(vorberechnung, "_im_hintergrund", lambda fn: fn())  # synchron rechnen
     h = Haushalt.objects.create(kundennummer="900")
     Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika", nachname="Beispiel",
                           geburtsdatum=dt.date(1980, 2, 3))  # fmt: skip
@@ -464,9 +502,12 @@ def test_hilfe_und_menue(modul_an, admin_client):
     assert "Abgleich mit Kundenstamm" in seite and "Warteliste und Einladungen" in seite
 
 
-def test_abgleich_entscheiden_sperrzeit_und_einladen(admin_client, modul_an):
+def test_abgleich_entscheiden_sperrzeit_und_einladen(admin_client, modul_an, monkeypatch):
     """Treffer bestätigen: Sperrzeit wird zur Wartezeit; ungeprüft lädt „Einladen“ nicht ein."""
+    from apps.warteliste import vorberechnung
     from apps.warteliste.models import AbgleichEntscheidung
+
+    monkeypatch.setattr(vorberechnung, "_im_hintergrund", lambda fn: fn())  # synchron rechnen
 
     heute = timezone.localdate()
     h = Haushalt.objects.create(kundennummer="900", ausweis_gueltig_bis=heute - dt.timedelta(60))
@@ -507,10 +548,13 @@ def test_abgleich_entscheiden_sperrzeit_und_einladen(admin_client, modul_an):
     assert not AbgleichEntscheidung.objects.exists()
 
 
-def test_abgleich_entscheiden_per_htmx_tauscht_nur_den_block(admin_client, modul_an):
+def test_abgleich_entscheiden_per_htmx_tauscht_nur_den_block(admin_client, modul_an, monkeypatch):
     """Per htmx wird nach „Ja" nur der eine Antrag-Block ausgetauscht (hier: entfernt), nicht die
     ganze Liste neu gerechnet (sonst 10–20 s bei großem Kundenstamm)."""
+    from apps.warteliste import vorberechnung
     from apps.warteliste.models import AbgleichEntscheidung
+
+    monkeypatch.setattr(vorberechnung, "_im_hintergrund", lambda fn: fn())  # synchron rechnen
 
     heute = timezone.localdate()
     h = Haushalt.objects.create(kundennummer="900", ausweis_gueltig_bis=heute - dt.timedelta(60))
