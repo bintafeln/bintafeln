@@ -680,7 +680,7 @@ def test_hilfe_bild_warteliste(angemeldet, admin, muster):
         seite,
         "warteliste-liste",
         [karte.locator(".liste-kopf"), einladen],
-        Marke(karte.locator("nav.reiter"), "rahmen", 1),
+        Marke(karte.locator("details.status-wahl > summary"), "rahmen", 1),
         Marke(karte.locator(f'input[name=ids][value="{antraege[2].pk}"]'), nummer=2, laenge=50),
         Marke(einladen.locator("select").first, nummer=3),
         Marke(einladen.get_by_role("button", name="Einladen"), nummer=4, von="rechts", laenge=50),
