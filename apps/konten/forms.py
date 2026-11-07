@@ -303,16 +303,15 @@ class StammdatenForm(forms.ModelForm):
         return ", ".join(self.cleaned_data["fs_klassen"])
 
     def clean_personalnummer(self):
+        # Eigener Nummernkreis (ADR 0116): nur gegen andere Personalnummern prüfen, nicht gegen
+        # Mitgliedsnummern – beide dürfen dieselbe Zahl führen.
         from apps.konten.models import Stammdaten
-        from apps.mitglieder.models import Mitglied
 
         n = self.cleaned_data.get("personalnummer")
         if n is None:
             return n
         if Stammdaten.objects.filter(personalnummer=n).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError("Diese Nummer ist schon an eine andere Person vergeben.")
-        if Mitglied.objects.filter(nummer=str(n)).exists():
-            raise forms.ValidationError("Diese Nummer ist schon eine Mitgliedsnummer.")
         return n
 
     def clean(self):

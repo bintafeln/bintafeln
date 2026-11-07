@@ -565,10 +565,9 @@ def stammdaten(request, pk):
     if request.method == "POST" and form.is_valid():
         form.save()
         if nummer_erlaubt and form.cleaned_data.get("personalnummer"):
-            # Reihe weiterrücken, damit die automatische Vergabe diese Nummer nicht erneut nimmt.
-            from apps.mitglieder.models import nummer_verbraucht
-
-            nummer_verbraucht(str(form.cleaned_data["personalnummer"]))
+            # Eigenen Personalnummern-Zähler weiterrücken, damit die automatische Vergabe diese
+            # Nummer nicht erneut nimmt.
+            verwaltung.personalnummer_verbraucht(int(form.cleaned_data["personalnummer"]))
         messages.success(request, f"Stammdaten von {ziel} gespeichert.")
         return redirect("konten:stammdaten", pk=ziel.pk)
     return render(

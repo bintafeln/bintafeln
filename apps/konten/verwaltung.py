@@ -151,40 +151,48 @@ def anlegen(verwalter, daten: dict, rollen_namen: list[str], einladung=False):
     return ziel, passwort
 
 
-def _ist_mitglied(konto) -> bool:
-    """Ist die Person (über ihren Adressbuch-Eintrag) ein Vereinsmitglied?"""
-    from django.core.exceptions import ObjectDoesNotExist
+def naechste_personalnummer() -> int:
+    """Nächste freie Personalnummer aus dem eigenen Mitarbeiter-Nummernkreis (Zeile gesperrt,
+    damit nie doppelt). Unabhängig von den Mitgliedsnummern (ADR 0116)."""
+    from apps.konten.models import PersonalEinstellungen, Stammdaten
 
-    try:
-        return konto.adresse.mitglied is not None
-    except ObjectDoesNotExist:
-        return False
+    with transaction.atomic():
+        e = PersonalEinstellungen.laden()
+        e = PersonalEinstellungen.objects.select_for_update().get(pk=e.pk)
+        nummer = e.naechste_personalnummer or 1
+        while Stammdaten.objects.filter(personalnummer=nummer).exists():
+            nummer += 1
+        e.naechste_personalnummer = nummer + 1
+        e.save(update_fields=["naechste_personalnummer"])
+        return nummer
+
+
+def personalnummer_verbraucht(nummer: int) -> None:
+    """Nach einer von Hand gesetzten Personalnummer den Zähler dahinter rücken."""
+    from apps.konten.models import PersonalEinstellungen
+
+    PersonalEinstellungen.laden()
+    PersonalEinstellungen.objects.filter(naechste_personalnummer__lte=nummer).update(
+        naechste_personalnummer=nummer + 1
+    )
 
 
 def personalnummer_zuweisen(konto) -> None:
-    """Gibt dem Konto eine Personalnummer aus der gemeinsamen Personennummern-Reihe (Mitarbeitende
-    und Mitglieder, ADR 0101), sofern es noch keine hat und die Person nicht bereits Mitglied ist
-    (dann gilt die Mitgliedsnummer). Die Reihe wird vom Mitglieder-Zähler geführt, damit keine
-    Nummer doppelt vergeben wird."""
+    """Gibt dem Konto eine Personalnummer aus dem eigenen Mitarbeiter-Nummernkreis (ADR 0116),
+    sofern es noch keine hat. Mitglied oder nicht spielt keine Rolle – die Personalnummer ist
+    unabhängig von der Mitgliedsnummer."""
     from apps.konten.models import Stammdaten
-    from apps.mitglieder.models import naechste_nummer
 
     sd, _ = Stammdaten.objects.get_or_create(benutzer=konto)
-    if sd.personalnummer is not None or _ist_mitglied(konto):
+    if sd.personalnummer is not None:
         return
-    sd.personalnummer = int(naechste_nummer())
+    sd.personalnummer = naechste_personalnummer()
     sd.save(update_fields=["personalnummer"])
 
 
 def personennummer(konto) -> str:
-    """Die anzuzeigende Nummer der Person: Mitgliedsnummer, wenn sie Mitglied ist, sonst die
-    Personalnummer (oder leer)."""
-    from django.core.exceptions import ObjectDoesNotExist
-
-    try:
-        return konto.adresse.mitglied.nummer
-    except ObjectDoesNotExist:
-        pass
+    """Die Personalnummer des Mitarbeitenden für die Mitarbeitendenliste (oder leer). Eigener
+    Nummernkreis, unabhängig von einer etwaigen Mitgliedsnummer der Person (ADR 0116)."""
     nummer = getattr(getattr(konto, "stammdaten", None), "personalnummer", None)
     return str(nummer) if nummer else ""
 

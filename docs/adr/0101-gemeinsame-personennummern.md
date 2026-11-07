@@ -1,6 +1,6 @@
 # 0101: Gemeinsame Personennummern-Reihe für Mitarbeitende und Mitglieder
 
-- Status: Angenommen
+- Status: Ersetzt durch ADR 0116 (getrennte Nummernkreise)
 - Datum: 2026-11-02
 
 ## Problem
