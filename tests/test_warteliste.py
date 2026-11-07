@@ -447,7 +447,8 @@ def test_seiten(modul_an, admin_client, mailserver, pdf_text):
     assert antwort.url == reverse("warteliste:liste")
     admin_client.post(reverse("warteliste:termin_absagen", args=[t.pk]), {"ids": [a.pk]})
     assert ws(a).status == S.WARTEND
-    assert admin_client.get(reverse("warteliste:eintrag", args=[a.pk])).status_code == 200
+    hin = admin_client.get(reverse("warteliste:eintrag", args=[a.pk]))
+    assert hin.status_code == 302 and hin.url == reverse("antraege:antrag", args=[a.pk])
     for name in ("termine", "abgleich", "dubletten", "streichungsliste", "einstellungen"):
         assert admin_client.get(reverse(f"warteliste:{name}")).status_code == 200, name
     assert (
@@ -607,10 +608,10 @@ def test_streichungsliste_suche_und_anmerkungen(admin_client, modul_an):
 
     a = antrag()
     ablauf.automatik()
-    admin_client.post(reverse("warteliste:eintrag", args=[a.pk]),
-                      {"anmerkung": "Hat angerufen, kommt ab Dezember"})  # fmt: skip
+    admin_client.post(reverse("antraege:anmerkung", args=[a.pk]),
+                      {"text": "Hat angerufen, kommt ab Dezember"})  # fmt: skip
     assert a.anmerkungen.last().text == "Hat angerufen, kommt ab Dezember"
-    admin_client.post(reverse("warteliste:eintrag", args=[a.pk]), {"anmerkung": "Zweite Anmerkung"})
+    admin_client.post(reverse("antraege:anmerkung", args=[a.pk]), {"text": "Zweite Anmerkung"})
     liste = admin_client.get(reverse("warteliste:liste")).content.decode()
     assert 'data-spalten-wahl="warteliste"' in liste and 'data-spalte="anmerkung"' in liste
     # Die Liste zeigt jetzt alle Anmerkungen, nicht nur die letzte.
@@ -759,3 +760,22 @@ def test_suche_findet_anmerkungen(admin_client, modul_an):
     ablauf.anmerken(a, "Jobcenter-Unterlagen fehlen noch", "Büro")
     treffer = list(admin_client.get(liste, {"suche": "Jobcenter"}).context["eintraege"])
     assert len(treffer) == 1
+
+
+def test_antragsseite_zeigt_warteliste_abschnitt(admin_client, modul_an):
+    """Ein Antrag aus der Warteliste öffnet die ganze Antragsseite; der Warteliste-Abschnitt
+    (Status setzen, Einladen, ähnliche Haushalte) erscheint dort (ADR 0115)."""
+    a = antrag(geburtsdatum=dt.date(1980, 2, 3))
+    ablauf.automatik()  # legt den Wartestand an
+    seite = admin_client.get(reverse("antraege:antrag", args=[a.pk])).content.decode()
+    assert 'id="warteliste"' in seite and "Status setzen" in seite
+    assert reverse("warteliste:antrag_treffer", args=[a.pk]) in seite  # Treffer werden nachgeladen
+    # Status von der Antragsseite aus setzen führt wieder zur Antragsseite zurück
+    antwort = admin_client.post(
+        reverse("warteliste:status"),
+        {"ids": a.pk, "status": "erschienen", "zurueck": reverse("antraege:antrag", args=[a.pk])},
+    )
+    assert antwort.status_code == 302 and antwort.url == reverse("antraege:antrag", args=[a.pk])
+    assert ws(a).status == S.ERSCHIENEN
+    # Der Treffer-Abschnitt lädt eigenständig (htmx)
+    assert admin_client.get(reverse("warteliste:antrag_treffer", args=[a.pk])).status_code == 200

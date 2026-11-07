@@ -1,0 +1,51 @@
+{# Warteliste-Abschnitt auf der ganzen Antragsseite (ADR 0115). #}
+<section class="karte breit warteliste-abschnitt" id="warteliste">
+  <h2>Warteliste</h2>
+  <dl class="angaben">
+    <dt>Status</dt><dd>{% include "warteliste/_status.html" %}</dd>
+    <dt>Termin</dt><dd>{% if ws.termin %}<a href="{% url 'warteliste:termin' ws.termin.pk %}">{{ ws.termin }}</a>{% else %}–{% endif %}</dd>
+  </dl>
+  {% if darf %}
+  <div class="abschnitte">
+    <div class="abschnitt">
+      <h3>Status setzen</h3>
+      <form method="post" action="{% url 'warteliste:status' %}">
+        {% csrf_token %}
+        <input type="hidden" name="ids" value="{{ a.pk }}">
+        <input type="hidden" name="zurueck" value="{{ request.path }}">
+        <div class="formular-raster">
+          {% with feld=form.status %}{% include "includes/feld.html" %}{% endwith %}
+          {% with feld=form.wartezeit_bis %}{% include "includes/feld.html" %}{% endwith %}
+        </div>
+        <button type="submit" class="knopf">Status speichern</button>
+      </form>
+      <p class="hinweis">„Entschuldigt“ vermerkt den Termin bei den Anmerkungen. „Gestrichen“ kommt auf die Streichungsliste und lehnt den Antrag ab.</p>
+    </div>
+    <div class="abschnitt">
+      <h3>{% if ws.termin %}Neu einladen{% else %}Einladen{% endif %}</h3>
+      <form method="post" action="{% url 'warteliste:einladen' %}">
+        {% csrf_token %}
+        <input type="hidden" name="ids" value="{{ a.pk }}">
+        {% with form=einladen %}
+        <div class="formular-raster">
+          {% with feld=form.termin %}{% include "includes/feld.html" %}{% endwith %}
+          {% with feld=form.datum %}{% include "includes/feld.html" %}{% endwith %}
+          {% with feld=form.von %}{% include "includes/feld.html" %}{% endwith %}
+          {% with feld=form.bis %}{% include "includes/feld.html" %}{% endwith %}
+        </div>
+        <div class="feld feld-haken"><label for="{{ form.mail.id_for_label }}">{{ form.mail }} {{ form.mail.label }}</label></div>
+        {% endwith %}
+        <button type="submit" class="knopf">Einladen</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+  <h3>Einladungen und Absagen</h3>
+  <ul>{% for e in einladungen %}<li>{{ e.gesendet_am|date:"d.m.Y H:i" }}: {{ e.get_art_display }} zum Termin {{ e.termin_text }} ({{ e.weg }}{% if e.fehler %}, nicht gesendet: {{ e.fehler }}{% endif %}{% if e.von %}, {{ e.von }}{% endif %})</li>{% empty %}<li>Noch keine.</li>{% endfor %}</ul>
+  {% if darf %}
+  <h3>Ähnliche Haushalte im Kundenstamm</h3>
+  <div id="warteliste-treffer" hx-get="{% url 'warteliste:antrag_treffer' a.pk %}" hx-trigger="load" hx-swap="innerHTML">
+    <p class="hinweis" aria-busy="true">Ähnliche Haushalte werden gesucht …</p>
+  </div>
+  {% endif %}
+</section>
