@@ -1,0 +1,5 @@
+{# Live-Aktualisierung der Zähler-Abzeichen in der Menüleiste per htmx (Out-of-Band-Swap). Jede
+   Zahl ersetzt über ihre stabile ID das Abzeichen im Menü, ohne die aufgeklappten Bereiche zu
+   stören. Ohne Zähler bleibt das Abzeichen leer und versteckt. #}
+{% for z in zahlen %}<span id="menue-zahl-{{ z.zahl_id }}" class="menue-zahl" hx-swap-oob="true" title="{{ z.zahl_titel }}"{% if z.zahl is None %} hidden{% endif %}>{% if z.zahl is not None %}{{ z.zahl }}{% endif %}</span>
+{% endfor %}

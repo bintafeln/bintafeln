@@ -340,4 +340,34 @@ def menue(request) -> list[dict]:
         # Unterpunkte (dritte Ebene) klappen erst auf, wenn man sie wählt
         for gruppe in [*bereich.get("gruppen", []), *bereich.get("abschnitte", [])]:
             gruppe["offen"] = any(e["aktiv"] for e in flach(gruppe["eintraege"]))
+    # Stabile IDs für die Zähler-Abzeichen, damit sie per htmx live aktualisiert werden können, ohne
+    # das Menü neu aufzubauen. Die Reihenfolge ist deterministisch (gleiche Rechte → gleiches Menü),
+    # also vergeben Seitenaufbau und Nachlade-Fragment dieselben IDs.
+    n = 0
+    for bereich in bereiche:
+        bereich["zahl_id"] = f"b{n}"
+        n += 1
+        for e in flach(bereich["eintraege"]):
+            e["zahl_id"] = f"e{n}"
+            n += 1
     return bereiche
+
+
+def zahlen_flach(bereiche: list[dict]) -> list[dict]:
+    """Alle Zähler-Abzeichen flach (für das Live-Nachladen per htmx): je Bereich (außer „einzeln“,
+    dessen Abzeichen am einzigen Eintrag hängt) und je Eintrag mit stabiler ``zahl_id``."""
+
+    def flach(eintraege):
+        for e in eintraege:
+            yield e
+            yield from flach(e.get("kinder", []))
+
+    aus = []
+    for bereich in bereiche:
+        if not bereich.get("einzeln"):
+            aus.append({"zahl_id": bereich["zahl_id"], "zahl": bereich.get("zahl"),
+                        "zahl_titel": bereich.get("zahl_titel", "")})  # fmt: skip
+        for e in flach(bereich["eintraege"]):
+            aus.append({"zahl_id": e["zahl_id"], "zahl": e.get("zahl"),
+                        "zahl_titel": e.get("zahl_titel", "")})  # fmt: skip
+    return aus
