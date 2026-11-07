@@ -9,6 +9,7 @@
       {% if "adressen.bearbeiten" in rechte %}<a class="knopf" href="{% url 'adressen:neu' %}">+ Neue Adresse</a>{% endif %}
       {% if "adressen.importieren" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'datenimport:start' %}?ziel=adressen">Importieren</a>{% endif %}
       {% if "mitglieder.sehen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'mitglieder:liste' %}">Mitglieder →</a>{% endif %}
+      {% include "includes/herunterladen.html" %}
     </div>
   </div>
   <p class="hinweis titel-text">Spender, Märkte, Partner, Presse, Behörden, Mitglieder … Kunden stehen nicht hier, sondern im Kundenstamm.</p>
@@ -41,8 +42,7 @@
   {% auswahl_formular "" %}
   <div class="liste-aktionen">
     <span class="hinweis">{{ anzahl }} Adresse{{ anzahl|pluralize:"n" }}</span>
-    {% if anzahl %}{% include "includes/listen_export.html" %}
-    <span class="hinweis" data-auswahl-zahl="auswahl"></span>{% endif %}
+    <span class="hinweis" data-auswahl-zahl="auswahl"></span>
   </div>
   {% url 'adressen:spalten' as spalten_aktion %}{% include "includes/spalten_wahl.html" %}
   {% blaettern seite %}

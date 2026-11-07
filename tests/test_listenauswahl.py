@@ -31,6 +31,8 @@ def test_adressen_spenden_mitglieder_antraege(admin_client):
     seite = admin_client.get(reverse("adressen:liste")).content.decode()
     assert '<form id="auswahl" method="get" action=""' in seite
     assert 'name="aktion" value="csv"' in seite and 'name="aktion" value="pdf"' in seite
+    # CSV/PDF/Mail stecken jetzt im Aufklapper „Herunterladen …“ oben
+    assert "⬇ Herunterladen …" in seite
     assert f'name="id" value="{a.pk}" form="auswahl"' in seite
     text = admin_client.get(
         reverse("adressen:liste"), {"aktion": "csv", "id": a.pk}
@@ -48,6 +50,8 @@ def test_adressen_spenden_mitglieder_antraege(admin_client):
         reverse("mitglieder:liste"), {"aktion": "csv", "id": m.pk}
     ).content.decode()
     assert "M1" in text and "M2" not in text
+    for liste in ("mitglieder:liste", "spenden:liste"):
+        assert "⬇ Herunterladen …" in admin_client.get(reverse(liste)).content.decode()
     seite = admin_client.get(reverse("antraege:liste")).content.decode()
     assert 'action="/antraege/export/"' in seite and 'data-alle="id"' in seite
     eins = Antrag.objects.create(nachname="Antragseins", vorname="Erika")
