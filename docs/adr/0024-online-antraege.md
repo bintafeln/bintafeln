@@ -62,3 +62,12 @@ Das ist bewusst getrennt von `erledigt_nach_tagen`: Steht dort 0, wird auch `in_
 automatisch erledigt oder weggeräumt. Als Zielstatus dient das vorhandene `in_bearbeitung` und
 nicht ein eigener Status „wartend“, um keine Verwechslung mit dem `Wartestand` der Warteliste
 (ADR 0051) zu erzeugen.
+
+## Nachtrag: Löschen (in den Papierkorb) gehört zum Bearbeiten
+
+Der Löschen-Knopf 🗑 in der Antragsliste legt den Antrag in den gemeinsamen Papierkorb (ADR 0073,
+wiederherstellbar) und gehört damit zum Bearbeiten: Er ist jetzt an `antraege.bearbeiten` gebunden
+(so wie es die Beschreibung dieses Rechts – „… Papierkorb“ – schon sagt) und steht dadurch immer bei
+den anderen Zeilen-Knöpfen (ansehen, bearbeiten, Anmerkung), statt erst mit dem stärkeren Recht
+`antraege.loeschen` zu erscheinen. Das Wiederherstellen aus dem Papierkorb bleibt `antraege.loeschen`
+vorbehalten.

@@ -527,6 +527,19 @@ def test_bearbeiten_und_loeschen(admin_client, antrag):
     assert not PapierkorbEintrag.objects.exists()
 
 
+def test_loeschen_knopf_schon_mit_bearbeiten(client, admin, antrag, benutzer_mit_rolle, anmelden):
+    """Das In-den-Papierkorb-Legen gehört zum Bearbeiten: Der Löschen-Knopf steht in der Liste
+    schon mit dem Recht „antraege.bearbeiten" bei den anderen Knöpfen (Büro), nicht erst mit dem
+    stärkeren „antraege.loeschen"."""
+    from apps.konten import rollen
+
+    anmelden(client, benutzer_mit_rolle("berta", rollen.BUERO))  # hat bearbeiten, nicht loeschen
+    seite = client.get(reverse("antraege:liste")).content.decode()
+    assert reverse("antraege:papierkorb", args=[antrag.pk]) in seite  # Löschen-Knopf ist da
+    client.post(reverse("antraege:papierkorb", args=[antrag.pk]))
+    assert not Antrag.objects.filter(pk=antrag.pk).exists()
+
+
 def test_nachweis_ansehen(admin_client, antrag):
     name = privatdateien.speichern(ANHANG_ORDNER, pdf(), typen={"application/pdf"})
     d = AntragAnhang.objects.create(antrag=antrag, name="b.pdf", datei=name,
