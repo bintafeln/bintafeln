@@ -824,6 +824,15 @@ def test_antragsseite_zeigt_warteliste_abschnitt(admin_client, modul_an):
     assert admin_client.get(reverse("warteliste:antrag_treffer", args=[a.pk])).status_code == 200
 
 
+def test_einladen_block_steht_oben(admin_client, modul_an):
+    """Der „Ausgewählte einladen“-Block steht jetzt oben (unter den Suchfeldern, über der Tabelle);
+    die Status-Aktion bleibt unten."""
+    seite = admin_client.get(reverse("warteliste:liste")).content.decode()
+    assert "Ausgewählte einladen" in seite
+    assert seite.index("Ausgewählte einladen") < seite.index("<table")
+    assert seite.index("<table") < seite.index("Status der Ausgewählten")
+
+
 def test_menue_zeigt_offene_faelle(admin_client, modul_an, monkeypatch):
     """Im Menü steht neben „Abgleich mit Kundenstamm“ und „Doppelte Anträge“ die Zahl der offenen
     Fälle – aus dem vorberechneten Cache, ohne teure Neuberechnung (ADR 0109)."""
