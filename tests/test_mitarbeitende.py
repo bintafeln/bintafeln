@@ -135,6 +135,31 @@ def test_liste_spalten_sortieren_export(admin_client):
     assert pdf["Content-Type"] == "application/pdf"
 
 
+def test_liste_spalte_geburtstag(admin_client):
+    """Die Mitarbeitendenliste hat eine wählbare Spalte „Geburtstag" (aus der Adresse, ADR 0097);
+    ein Konto ohne Adresse bleibt leer, ohne Fehler."""
+    import datetime as dt
+
+    from apps.adressen.models import Adresse
+
+    U = get_user_model()
+    mit = U.objects.create_user("gigi", first_name="Gigi", last_name="Geber",
+                                beschaeftigung="ehrenamtlich")  # fmt: skip
+    Adresse.objects.create(art=Adresse.Art.PERSON, nachname="Geber", konto=mit,
+                           geburtsdatum=dt.date(1988, 4, 5))  # fmt: skip
+    U.objects.create_user("ohne", first_name="Ohne", last_name="Datum",
+                          beschaeftigung="ehrenamtlich")  # kein Adresse-Eintrag  # fmt: skip
+    ehren = reverse("konten:ehrenamtliche")
+
+    seite = admin_client.get(ehren)
+    assert "geburtstag" in seite.context["sichtbar"]  # Vorgabe: sichtbar
+    inhalt = seite.content.decode()
+    assert "Geburtstag" in inhalt and "05.04.1988" in inhalt
+    # auch im CSV-Export enthalten
+    text = admin_client.get(ehren, {"aktion": "csv"}).content.decode("utf-8-sig")
+    assert "Geburtstag" in text and "05.04.1988" in text
+
+
 def test_personalnummer_automatisch_eigener_kreis(admin_client):
     import datetime as dt
 

@@ -70,6 +70,7 @@
       {% if "telefon" in sichtbar %}{% sortkopf "Telefon" "telefon" sort %}{% endif %}
       {% if "handy" in sichtbar %}{% sortkopf "Handy" %}{% endif %}
       {% if "email" in sichtbar %}{% sortkopf "E-Mail" "email" sort %}{% endif %}
+      {% if "geburtstag" in sichtbar %}{% sortkopf "Geburtstag" %}{% endif %}
       {% if "benutzername" in sichtbar %}{% sortkopf "Benutzername" "benutzername" sort %}{% endif %}
       {% if "rollen" in sichtbar %}{% sortkopf "Rollen" %}{% endif %}
       {% if "ausgabestellen" in sichtbar %}{% sortkopf "Ausgabestellen" %}{% endif %}
@@ -92,6 +93,7 @@
         {% if "telefon" in sichtbar %}<td data-titel="Telefon">{{ z.sd.telefon }}</td>{% endif %}
         {% if "handy" in sichtbar %}<td data-titel="Handy">{{ z.sd.handy }}</td>{% endif %}
         {% if "email" in sichtbar %}<td data-titel="E-Mail">{% if z.b.email %}<a href="mailto:{{ z.b.email }}">{{ z.b.email }}</a>{% endif %}</td>{% endif %}
+        {% if "geburtstag" in sichtbar %}<td data-titel="Geburtstag">{{ z.geburtstag|date:"d.m.Y" }}</td>{% endif %}
         {% if "benutzername" in sichtbar %}<td data-titel="Benutzername">{{ z.b.username }}</td>{% endif %}
         {% if "rollen" in sichtbar %}<td data-titel="Rollen">{% for r in z.rollen %}<span class="marke-rolle">{{ r }}</span> {% empty %}–{% endfor %}</td>{% endif %}
         {% if "ausgabestellen" in sichtbar %}<td data-titel="Ausgabestellen">{{ z.stellen|default:"–" }}</td>{% endif %}
