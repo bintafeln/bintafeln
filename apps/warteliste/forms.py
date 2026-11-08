@@ -1,3 +1,5 @@
+import json
+
 from django import forms
 
 from apps.konten.forms import DatumEingabe
@@ -10,6 +12,26 @@ from apps.warteliste.models import (
     WartelisteText,
     Wartestand,
 )
+
+# Platzhalter, die der Editor als farbige Kärtchen zeigt (ADR 0088). Die Textfelder, die als
+# richtiger Text (mit Formatierung) in die Mail kommen, bekommen den Editor „Gestalten/HTML“.
+EINLADUNG_PLATZHALTER = {
+    "vorname": "Vorname", "nachname": "Nachname", "datum": "Datum", "von": "von (Uhrzeit)",
+    "bis": "bis (Uhrzeit)", "ort": "Ort",
+}  # fmt: skip
+# Anrede und Betreff bleiben einzeilig (das Layout hängt bei der Anrede ein Komma an); die
+# Textabsätze bekommen den Editor.
+EDITOR_FELDER = ["einleitung", "schluss", "gruss", "absage_text"]
+
+
+def _editor(zeilen=4):
+    """Textfeld mit dem grafischen Editor (Gestalten/HTML) und Platzhalter-Kärtchen wie bei den
+    Antragstexten (static/js/html_editor.js)."""
+    return forms.Textarea(attrs={
+        "rows": zeilen, "class": "html-eingabe", "dir": "auto", "data-editor": "",
+        "data-platzhalter": json.dumps(EINLADUNG_PLATZHALTER, ensure_ascii=False),
+    })  # fmt: skip
+
 
 S = Wartestand.Status
 # Was das Team von Hand setzen kann („neu“, „eingeladen“ und „aufgenommen“ entstehen von selbst)
@@ -96,8 +118,9 @@ class EinstellungenForm(forms.ModelForm):
                   "ausnahme_ab_alter", "ausnahme_feld", "ort", "betreff", "anrede", "einleitung",
                   "schluss", "mitbringen", "gruss", "absage_betreff", "absage_text"]  # fmt: skip
         widgets = {
-            f: forms.Textarea(attrs={"rows": 3})
-            for f in ["ort", "einleitung", "schluss", "mitbringen", "gruss", "absage_text"]
+            "ort": forms.Textarea(attrs={"rows": 2}),
+            "mitbringen": forms.Textarea(attrs={"rows": 3}),
+            **{f: _editor() for f in EDITOR_FELDER},
         }
 
     def __init__(self, *args, **kwargs):
@@ -120,8 +143,8 @@ class TextForm(forms.ModelForm):
         model = WartelisteText
         fields = WartelisteEinstellungen.TEXTFELDER
         widgets = {
-            f: forms.Textarea(attrs={"rows": 3})
-            for f in ["einleitung", "schluss", "mitbringen", "gruss", "absage_text"]
+            "mitbringen": forms.Textarea(attrs={"rows": 3}),
+            **{f: _editor() for f in EDITOR_FELDER},
         }
 
     def __init__(self, *args, deutsch=None, mitgeliefert=None, **kwargs):

@@ -239,15 +239,25 @@ def _teil(antrag, termin, e, code: str, absage: bool) -> dict | None:
     else:
         zeit = w["von"] + (f" – {w['bis']}" if w["bis"] else "")
     s = sprachen.sprache(code)
+    from apps.core import html as kernhtml
+
+    def formatiert(roh):  # Für die HTML-Mail: eigenes HTML bereinigt, reiner Text mit Umbrüchen.
+        return kernhtml.anzeigen(roh, roh, **w)
+
+    def klar(roh):  # Für die Nur-Text-Mail: HTML entfernt.
+        return kernhtml.als_text(einsetzen(roh, w))
+
+    haupttext = texte["absage_text" if absage else "einleitung"]
     return {
         "code": code, "rtl": s.rtl, "l": mitgeliefert(code) or mitgeliefert("de"),
         "betreff": einsetzen(texte["absage_betreff" if absage else "betreff"], w),
         "anrede": einsetzen(texte["anrede"], w),
-        "einleitung": einsetzen(texte["absage_text" if absage else "einleitung"], w),
-        "schluss": "" if absage else einsetzen(texte["schluss"], w),
+        "einleitung": klar(haupttext), "einleitung_html": formatiert(haupttext),
+        "schluss": "" if absage else klar(texte["schluss"]),
+        "schluss_html": "" if absage else formatiert(texte["schluss"]),
         "mitbringen": [] if absage else [z.strip() for z in texte["mitbringen"].splitlines()
                                          if z.strip()],
-        "gruss": einsetzen(texte["gruss"], w),
+        "gruss": klar(texte["gruss"]), "gruss_html": formatiert(texte["gruss"]),
         "datum": w["datum"], "zeit": zeit, "ort": ort(termin, e), "absage": absage,
     }  # fmt: skip
 

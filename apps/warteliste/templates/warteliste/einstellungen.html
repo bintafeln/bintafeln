@@ -1,24 +1,36 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load static %}
 {% block titel %}Warteliste und Einladungen{% endblock %}
 {% block inhalt %}
+<script src="{% static 'js/html_editor.js' %}" defer></script>
 <section class="karte breit">
   <h1>Warteliste und Einladungen</h1>
+  <p class="hinweis">Die Einladungs- und Absagetexte lassen sich wie bei den Antragstexten im Reiter
+    <strong>Gestalten</strong> bequem gestalten (fett, Überschrift, Liste, Farbe, Link …) oder im
+    Reiter <strong>HTML</strong> direkt als HTML. Die Platzhalter unten werden beim Versand mit den
+    echten Angaben ersetzt. Datum, Uhrzeit, Ort und „Bitte mitbringen“ setzt das Layout selbst – sie
+    stehen schon hübsch in der Mail.</p>
+  <p class="hinweis platzhalter-legende">Platzhalter:
+    <code>{vorname}</code> <code>{nachname}</code> <code>{datum}</code> <code>{von}</code>
+    <code>{bis}</code> <code>{ort}</code></p>
   <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular_abschnitte.html" %}
     <button type="submit" class="knopf">Speichern</button>
   </form>
 </section>
+
+<section class="karte breit">
+  <h2>Vorschau der Einladung</h2>
+  <p class="hinweis">So sieht die Mail aus – mit erfundenem Namen und heutigem Datum, zuletzt
+    gespeicherter Stand. Betreff: <strong>{{ vorschau_betreff }}</strong></p>
+  <iframe class="mail-vorschau" sandbox title="Vorschau der Einladungs-Mail"
+          srcdoc="{{ vorschau_html|force_escape }}"></iframe>
+</section>
+
 <section class="karte breit">
   <h2>Andere Sprachen</h2>
   <p>Einladungen und Absagen gehen auf Deutsch und darunter in der Sprache zur Staatsangehörigkeit bzw. des Antrags.
     {% if fehlen %}<strong>{{ fehlen }} Sprache{{ fehlen|pluralize:"n" }} ohne Übersetzung der geänderten Texte</strong> – dort nur Deutsch.{% else %}Für alle Sprachen gibt es Übersetzungen.{% endif %}</p>
   <p><a class="knopf knopf-zweitrangig" href="{% url 'warteliste:texte' %}">Texte in anderen Sprachen</a></p>
-</section>
-<section class="karte breit">
-  <h2>Vorschau der Einladung</h2>
-  <p class="hinweis">Mit erfundenem Namen und heutigem Datum; zuletzt gespeicherter Stand.</p>
-  <p><strong>Betreff:</strong> {{ vorschau_betreff }}</p>
-  <pre style="white-space: pre-wrap; background: var(--grund); padding: 1rem; border-radius: var(--radius);">{{ vorschau_text }}</pre>
 </section>
 {% endblock %}

@@ -11,7 +11,7 @@
         {% for t in teile %}
         <tr><td lang="{{ t.code }}" dir="{% if t.rtl %}rtl{% else %}ltr{% endif %}" style="padding:24px;font-size:16px;line-height:1.5;{% if not forloop.first %}border-top:3px solid #d8ddd8;{% endif %}">
           <p style="margin:0 0 12px;">{{ t.anrede }},</p>
-          <p style="margin:0 0 12px;">{{ t.einleitung|linebreaksbr }}</p>
+          <div style="margin:0 0 12px;">{{ t.einleitung_html }}</div>
           <table cellpadding="0" cellspacing="0" width="100%" style="background:#fdf3e7;border-inline-start:4px solid {{ f.akzent }};margin:16px 0;">
             <tr><td style="padding:14px 18px;">
               <table cellpadding="0" cellspacing="0">
@@ -21,10 +21,10 @@
               </table>
             </td></tr>
           </table>
-          {% if t.schluss %}<p style="margin:0 0 12px;">{{ t.schluss|linebreaksbr }}</p>{% endif %}
+          {% if t.schluss_html %}<div style="margin:0 0 12px;">{{ t.schluss_html }}</div>{% endif %}
           {% if t.mitbringen %}<p style="margin:12px 0 4px;font-weight:bold;">{{ t.l.l_mitbringen }}</p>
           <ul style="margin:0 0 12px;padding-inline-start:20px;">{% for z in t.mitbringen %}<li>{{ z }}</li>{% endfor %}</ul>{% endif %}
-          <p style="margin:16px 0 0;">{{ t.gruss|linebreaksbr }}</p>
+          <div style="margin:16px 0 0;">{{ t.gruss_html }}</div>
         </td></tr>
         {% endfor %}
         {% if tafel.anschrift or tafel.telefon or tafel.email %}
