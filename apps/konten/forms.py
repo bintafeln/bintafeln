@@ -127,7 +127,7 @@ class ZweiterSchrittForm(forms.Form):
 class AnmeldeEinstellungenForm(forms.ModelForm):
     class Meta:
         model = AnmeldeEinstellungen
-        fields = ["vertrauen_tage", "stellen_zwei_faktor", "ueberraschungen"]
+        fields = ["vertrauen_tage", "stellen_zwei_faktor", "ueberraschungen", "protokoll_tage"]
 
 
 class CodeForm(forms.Form):
