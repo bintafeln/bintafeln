@@ -233,7 +233,8 @@ def test_abholung_eintragen_mit_vorschlag(ausgabe, haushalt, stelle):
     e.save()
     ausgabe.post(reverse("ausgabe:ausgabestelle"), {"ausgabestelle": stelle.pk})
     vorher = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
-    assert 'value="2,50"' in vorher
+    # Beitrag steht nur als Info (nicht änderbar); gebucht wird der berechnete Wert
+    assert "Beitrag heute" in vorher and "2,50 €" in vorher and 'name="beitrag"' not in vorher
     antwort = eintragen(ausgabe, haushalt, beitrag="")
     assert antwort["HX-Trigger"] == "einlassGeaendert"  # z. B. Aufruf-Kasten lädt sofort neu
     inhalt = antwort.content.decode()
@@ -484,7 +485,9 @@ def test_beitrag_ab_alter_und_beitragsfrei(als, haushalt):
     inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
     assert (
         "Heute beitragsfrei: Weihnachten" in inhalt
-        and 'name="beitrag" id="beitrag" value="0,00"' in inhalt
+        # Der Beitrag steht nur noch als Info (0,00 €), nicht mehr als Eingabefeld
+        and "Beitrag heute" in inhalt
+        and 'name="beitrag"' not in inhalt
     )
 
 
