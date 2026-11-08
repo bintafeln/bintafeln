@@ -15,6 +15,11 @@ urlpatterns = [
     ),
     path("ausweise-pruefen/stand/", views.ausweis_fortschritt, name="ausweis_fortschritt"),
     path("ausweispruefung/", views.ausweis_pruefung_liste, name="ausweis_pruefung_liste"),
+    path(
+        "ausweispruefung/sammel/",
+        views.ausweis_sammel_entscheiden,
+        name="ausweis_sammel_entscheiden",
+    ),
     path("ausweispruefung/<int:pk>/", views.ausweis_entscheiden, name="ausweis_entscheiden"),
     path("ausweispruefung/<int:pk>/bild/", views.ausweis_miniatur, name="ausweis_miniatur"),
     path("spalten/", views.spalten, name="spalten"),
