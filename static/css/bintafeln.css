@@ -1898,3 +1898,5 @@ details.amtsdokumente > summary { cursor: pointer; margin: .5rem 0; }
 .geb-monat li { padding: .15rem .3rem; border-radius: 6px; }
 .geb-monat li.ist-heute { background: var(--erfolg); font-weight: 600; }
 .geb-monat .geb-tag { display: inline-block; min-width: 1.9rem; font-weight: 600; color: var(--leise); }
+
+.platzhalter-legende code { display: inline-block; margin: .1rem .2rem .1rem 0; }

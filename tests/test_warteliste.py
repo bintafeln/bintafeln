@@ -167,6 +167,27 @@ def test_einladen_mit_und_ohne_mail(mailserver):
     assert Einladung.objects.filter(antrag=mit, art="absage").count() == 1
 
 
+def test_einladung_mail_html_formatiert(mailserver):
+    """Die Einladungstexte sind wie die Antragstexte formatierbar: HTML bleibt in der HTML-Mail,
+    die Nur-Text-Fassung hat keine Tags."""
+    e = WartelisteEinstellungen.laden()
+    e.einleitung = "<p>Hallo <strong>{vorname}</strong>, Sie sind dran.</p>"
+    e.save()
+    a = antrag(email="erika@example.org")
+    ablauf.automatik()
+    ablauf.einladen([a], termin(), "Büro")
+    m = django_mail.outbox[0]
+    html = {typ: inhalt for inhalt, typ in m.alternatives}["text/html"]
+    assert "<strong>Erika</strong>" in html  # Formatierung bleibt in der HTML-Mail
+    assert "<strong>" not in m.body and "Erika" in m.body  # Nur-Text ohne HTML
+
+
+def test_einstellungen_seite_hat_editor_und_vorschau(admin_client, modul_an):
+    inhalt = admin_client.get(reverse("warteliste:einstellungen")).content.decode()
+    assert "js/html_editor.js" in inhalt and "data-editor" in inhalt  # grafischer Editor
+    assert "mail-vorschau" in inhalt and "{vorname}" in inhalt  # Vorschau + Platzhalter
+
+
 def test_gestrichene_werden_nicht_eingeladen():
     a = antrag()
     ablauf.automatik()

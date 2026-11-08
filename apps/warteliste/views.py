@@ -575,10 +575,10 @@ def einstellungen(request):
     beispiel_antrag = Antrag(vorname="Erika", nachname="Musterfrau")
     beispiel_termin = Termin(datum=timezone.localdate(), von=timezone.localtime().time()
                              .replace(hour=10, minute=0, second=0, microsecond=0))  # fmt: skip
-    betreff, text, _ = ablauf.mail_inhalt(beispiel_antrag, beispiel_termin)
+    betreff, _, html = ablauf.mail_inhalt(beispiel_antrag, beispiel_termin)
     fehlen = sum(1 for s in _fremde_sprachen() if ablauf.fehlende(s.code))
     return render(request, "warteliste/einstellungen.html", {
-        "form": form, "vorschau_betreff": betreff, "vorschau_text": text, "fehlen": fehlen,
+        "form": form, "vorschau_betreff": betreff, "vorschau_html": html, "fehlen": fehlen,
     })  # fmt: skip
 
 
