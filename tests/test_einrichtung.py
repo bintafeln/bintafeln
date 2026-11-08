@@ -31,6 +31,12 @@ def test_einrichtung_legt_admin_und_tafelnamen_an(client):
     admin = get_user_model().objects.get(username="erste")
     assert admin.is_superuser
     assert admin.groups.filter(name="Admin").exists()
+    # Der Admin ist eine Person im Adressbuch (ADR 0097) – sonst fehlt er in Adress-/Drucklisten.
+    from apps.adressen.models import Adresse
+
+    adr = Adresse.objects.get(konto=admin)
+    assert adr.art == Adresse.Art.PERSON and adr.nachname == "erste"
+    assert adr.kategorien.filter(name="Ehrenamtliche Helfer").exists()  # hat eine Rolle
     assert TafelEinstellungen.laden().name == "Beispiel-Tafel"
     # direkt angemeldet; als Admin muss zuerst Zwei-Faktor eingerichtet werden
     antwort = client.get("/")
