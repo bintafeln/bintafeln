@@ -281,7 +281,8 @@ def adresse(request, pk):
 @never_cache
 @rollen.recht_erforderlich("adressen.bearbeiten")
 def bearbeiten(request, pk=None):
-    a = get_object_or_404(Adresse, pk=pk) if pk else Adresse()
+    # Neue Adresse: „Person" vorbelegen (häufigster Fall), nicht „Organisation".
+    a = get_object_or_404(Adresse, pk=pk) if pk else Adresse(art=Adresse.Art.PERSON)
     konto_waehlbar = rollen.darf_mitarbeitende_verwalten(request.user)
     form = AdresseForm(request.POST or None, instance=a, konto_waehlbar=konto_waehlbar,
                        verwalter=request.user)  # fmt: skip
