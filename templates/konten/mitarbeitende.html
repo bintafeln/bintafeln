@@ -49,13 +49,13 @@
     <span class="hinweis" data-auswahl-zahl="auswahl"></span>
   </div>
   {% url 'konten:mitarbeitende_spalten' as spalten_aktion %}{% include "includes/spalten_wahl.html" %}
-  <div class="tabelle-rahmen haftspalte">
+  <div class="tabelle-rahmen oben-scrollen">
   <table class="tabelle">
     <thead><tr>
-      {% sortkopf "Nachname" "name" sort %}
       {% if "nummer" in sichtbar %}{% sortkopf "Nummer" "nummer" sort %}{% endif %}
-      {% if "vorname" in sichtbar %}{% sortkopf "Vorname" "vorname" sort %}{% endif %}
       {% if "anrede" in sichtbar %}{% sortkopf "Anrede" "anrede" sort %}{% endif %}
+      {% sortkopf "Nachname" "name" sort %}
+      {% if "vorname" in sichtbar %}{% sortkopf "Vorname" "vorname" sort %}{% endif %}
       {% if "strasse" in sichtbar %}{% sortkopf "Straße" "strasse" sort %}{% endif %}
       {% if "plz" in sichtbar %}{% sortkopf "PLZ" %}{% endif %}
       {% if "ort" in sichtbar %}{% sortkopf "Ort" "ort" sort %}{% endif %}
@@ -74,10 +74,10 @@
     <tbody>
     {% for z in zeilen %}
       <tr>
-        <td data-titel="Nachname"><a href="{% url 'konten:mitarbeiter' z.b.pk %}">{{ z.b.last_name|default:z.b.username }}</a></td>
         {% if "nummer" in sichtbar %}<td data-titel="Nummer">{{ z.nummer|default:"–" }}</td>{% endif %}
-        {% if "vorname" in sichtbar %}<td data-titel="Vorname">{{ z.b.first_name }}</td>{% endif %}
         {% if "anrede" in sichtbar %}<td data-titel="Anrede">{{ z.sd.anrede }}</td>{% endif %}
+        <td data-titel="Nachname"><a href="{% url 'konten:mitarbeiter' z.b.pk %}">{{ z.b.last_name|default:z.b.username }}</a></td>
+        {% if "vorname" in sichtbar %}<td data-titel="Vorname">{{ z.b.first_name }}</td>{% endif %}
         {% if "strasse" in sichtbar %}<td data-titel="Straße">{{ z.sd.strasse }}</td>{% endif %}
         {% if "plz" in sichtbar %}<td data-titel="PLZ">{{ z.sd.plz }}</td>{% endif %}
         {% if "ort" in sichtbar %}<td data-titel="Ort">{{ z.sd.ort }}</td>{% endif %}
