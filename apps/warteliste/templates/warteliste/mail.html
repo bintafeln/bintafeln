@@ -6,7 +6,9 @@
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f6f4;">
     <tr><td align="center" style="padding:16px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:8px;overflow:hidden;">
+        {% if logo_url %}<tr><td style="padding:16px 24px 0;text-align:center;"><img src="{{ logo_url }}" alt="{{ tafel_name }}" style="max-height:72px;max-width:260px;height:auto;"></td></tr>{% endif %}
         <tr><td style="background:{{ f.akzent }};color:{{ f.auf_akzent }};padding:16px 24px;font-size:20px;font-weight:bold;">{{ tafel_name }}</td></tr>
+        {% if kopfzeile_html %}<tr><td style="padding:16px 24px 0;font-size:16px;line-height:1.5;">{{ kopfzeile_html }}</td></tr>{% endif %}
         {% if absage %}<tr><td style="background:#b91c1c;color:#ffffff;padding:20px 24px;text-align:center;font-size:24px;font-weight:bold;">&#9888; {% for t in teile %}{{ t.l.l_entfaellt }}{% if not forloop.last %} / {% endif %}{% endfor %}</td></tr>{% endif %}
         {% for t in teile %}
         <tr><td lang="{{ t.code }}" dir="{% if t.rtl %}rtl{% else %}ltr{% endif %}" style="padding:24px;font-size:16px;line-height:1.5;{% if not forloop.first %}border-top:3px solid #d8ddd8;{% endif %}">

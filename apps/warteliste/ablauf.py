@@ -276,9 +276,27 @@ def mail_inhalt(antrag, termin, absage=False) -> tuple[str, str, str]:
     tafel = TafelEinstellungen.laden()
     html = render_to_string("warteliste/mail.html", {
         "teile": teile, "betreff": betreff, "absage": absage, "tafel": tafel,
-        "tafel_name": tafel.name or "Tafel",
+        "tafel_name": tafel.name or "Tafel", "logo_url": _logo_url(tafel),
+        "kopfzeile_html": _kopfzeile_html(e),
     })  # fmt: skip
     return betreff, text, html
+
+
+def _logo_url(tafel) -> str:
+    """Absolute Adresse des Tafel-Logos für die Mail (Mailprogramme brauchen eine volle Adresse).
+    Im Entwicklungsmodus ohne Domain die relative Adresse – reicht für die Vorschau."""
+    from django.conf import settings
+
+    if not tafel.logo:
+        return ""
+    return f"https://{settings.DOMAIN}{tafel.logo.url}" if settings.DOMAIN else tafel.logo.url
+
+
+def _kopfzeile_html(e):
+    """Bereinigte Kopfzeile (für alle Sprachen gleich); leer, wenn nichts hinterlegt ist."""
+    from apps.core import html as kernhtml
+
+    return kernhtml.anzeigen(e.kopfzeile, "") if e.kopfzeile.strip() else ""
 
 
 def _wegbeschreibung_anhang(e) -> list[tuple[str, bytes, str]]:
