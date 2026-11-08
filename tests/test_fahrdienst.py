@@ -108,6 +108,18 @@ def test_fahrtage_und_feiertage(team):
     ]
 
 
+def test_benachrichtigen_auswahl_nur_berechtigte(benutzer_mit_rolle):
+    """Zur Auswahl „Bei einem Ausfall benachrichtigen" stehen nur Konten, die planen dürfen."""
+    from apps.fahrdienst.forms import EinstellungenForm
+
+    planer = person(benutzer_mit_rolle, "Pia Plan", rollen.BUERO, "pia@example.org")  # darf planen
+    fahrer = person(benutzer_mit_rolle, "Fred Fahrer", rollen.FAHRER, "fred@example.org")  # nicht
+    form = EinstellungenForm(instance=FahrdienstEinstellungen.laden())
+    qs = form.fields["benachrichtigen"].queryset
+    assert planer.konto in qs
+    assert fahrer.konto not in qs
+
+
 def test_mail_an_die_fahrdienstleitung(team, benutzer_mit_rolle, settings,
                                        django_capture_on_commit_callbacks):  # fmt: skip
     p, _, _ = team
