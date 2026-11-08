@@ -1117,21 +1117,24 @@ class _AdressRegeln(Ziel):
         return werte.get("email") or normalisieren(self.name(werte)) + werte.get("plz", "")
 
     def _adress_treffer(self, bestand):
-        """Treffer über E-Mail oder Name mit PLZ (sicher), sonst gleicher Name (unsicher)."""
+        """Treffer über E-Mail oder Name mit PLZ (sicher), sonst gleicher Name (unsicher). Die PLZ
+        wird über ``normalisieren`` verglichen, damit zwei sichtbar gleiche PLZ nicht durch
+        unsichtbare Zeichen oder Leerraum als „andere Anschrift“ gelten."""
         nach_mail, nach_name_plz, nach_name = {}, {}, {}
         for b in bestand:
             if b.werte.get("email"):
-                nach_mail.setdefault(b.werte["email"], b)
+                nach_mail.setdefault(b.werte["email"].strip().lower(), b)
             n = normalisieren(_adress_name(b.werte))
-            nach_name_plz.setdefault(n + b.werte.get("plz", ""), b)
+            nach_name_plz.setdefault(n + normalisieren(b.werte.get("plz", "")), b)
             nach_name.setdefault(n, b)
 
         def finden(werte):
-            if werte.get("email") and werte["email"] in nach_mail:
-                return Treffer(nach_mail[werte["email"]].id, True)
+            mail = (werte.get("email") or "").strip().lower()
+            if mail and mail in nach_mail:
+                return Treffer(nach_mail[mail].id, True)
             n = normalisieren(self.name(werte))
-            if n and n + werte.get("plz", "") in nach_name_plz:
-                return Treffer(nach_name_plz[n + werte.get("plz", "")].id, True)
+            if n and n + normalisieren(werte.get("plz", "")) in nach_name_plz:
+                return Treffer(nach_name_plz[n + normalisieren(werte.get("plz", ""))].id, True)
             if n and n in nach_name:
                 return Treffer(nach_name[n].id, False, "gleicher Name, andere Anschrift")
             return None

@@ -19,7 +19,19 @@ aus dem abgeschickten Formular. Das Ergebnis ist reines JSON und wird in der Imp
 gespeichert; angewandt wird es vom Ziel.
 """
 
+import re
 from dataclasses import dataclass, field
+
+# Unsichtbare Zeichen (Zero-Width-Space, BiDi-Marken, BOM), die in Importdateien unbemerkt stecken
+# können und sonst zwei sichtbar gleiche Werte verschieden machen würden.
+_UNSICHTBAR = re.compile(r"[​-‏‪-‮⁠﻿]")
+
+
+def sichtbar(text: str) -> str:
+    """Für den Vergleich: unsichtbare Zeichen entfernen und Leerraum vereinheitlichen. Die
+    Groß-/Kleinschreibung bleibt, damit echte Änderungen (z. B. „BUERS“ → „Buers“) sichtbar sind."""
+    return " ".join(_UNSICHTBAR.sub("", text or "").split())
+
 
 NUR_NEUE = "neu"
 AKTUALISIEREN = "aktualisieren"
@@ -82,7 +94,9 @@ def unterschiede(alt: dict[str, str], neu: dict[str, str], felder) -> list[dict]
     ergebnis = []
     for schluessel, bezeichnung in felder:
         a, n = (alt.get(schluessel) or "").strip(), (neu.get(schluessel) or "").strip()
-        if not n or a == n:
+        # Nur echte Unterschiede melden: zwei sichtbar gleiche Werte, die sich nur durch
+        # unsichtbare Zeichen oder Leerraum unterscheiden, sind kein Konflikt.
+        if not n or sichtbar(a) == sichtbar(n):
             continue
         ergebnis.append(
             {
