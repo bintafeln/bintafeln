@@ -299,8 +299,8 @@ def rollen_sammel(request):
         return redirect(ziel)
     wort = "entfernt bei" if entfernen else "hinzugefügt bei"
     if anzahl:
-        messages.success(request, f"Rolle „{rolle}“ {wort} {anzahl} Konto"
-                         f"{'en' if anzahl != 1 else ''}.")  # fmt: skip
+        messages.success(request, f"Rolle „{rolle}“ {wort} {anzahl} "
+                         f"{'Konto' if anzahl == 1 else 'Konten'}.")  # fmt: skip
     else:
         messages.info(request, "Nichts geändert (die Auswahl hatte die Rolle schon bzw. nicht).")
     return redirect(ziel)
