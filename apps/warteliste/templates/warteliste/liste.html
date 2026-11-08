@@ -62,15 +62,18 @@
       <legend>Ausgewählte einladen</legend>
       <p class="hinweis">Lädt die angehakten Anträge zu einem Termin ein: einen vorhandenen wählen oder einen neuen anlegen.</p>
       {% with form=einladen %}
-      {% with feld=form.termin %}{% include "includes/feld.html" %}{% endwith %}
-      <div class="feld-zeile" data-zeigen-bei="termin=">
-        {% with feld=form.datum %}{% include "includes/feld.html" %}{% endwith %}
-        {% with feld=form.von %}{% include "includes/feld.html" %}{% endwith %}
-        {% with feld=form.bis %}{% include "includes/feld.html" %}{% endwith %}
+      {# Termin, Datum/von/bis (nur beim neuen Termin) und der Einladen-Knopf in einer Zeile, Haken darunter. #}
+      <div class="einladen-kopf">
+        <div class="einladen-termin">{% with feld=form.termin %}{% include "includes/feld.html" %}{% endwith %}</div>
+        <div class="feld-zeile einladen-neu" data-zeigen-bei="termin=">
+          {% with feld=form.datum %}{% include "includes/feld.html" %}{% endwith %}
+          {% with feld=form.von %}{% include "includes/feld.html" %}{% endwith %}
+          {% with feld=form.bis %}{% include "includes/feld.html" %}{% endwith %}
+        </div>
+        <button type="submit" class="knopf einladen-knopf" formaction="{% url 'warteliste:einladen' %}" onclick="return confirm('Die ausgewählten Personen jetzt einladen?')">Einladen</button>
       </div>
-      <div class="feld feld-haken"><label for="{{ form.mail.id_for_label }}">{{ form.mail }} {{ form.mail.label }}</label><small class="hilfe">{{ form.mail.help_text }}</small></div>
+      <div class="feld feld-haken einladen-mail"><label for="{{ form.mail.id_for_label }}">{{ form.mail }} {{ form.mail.label }}</label><small class="hilfe">{{ form.mail.help_text }}</small></div>
       {% endwith %}
-      <button type="submit" class="knopf" formaction="{% url 'warteliste:einladen' %}" onclick="return confirm('Die ausgewählten Personen jetzt einladen?')">Einladen</button>
     </fieldset>
     {% endif %}
     <div class="tabelle-rahmen">

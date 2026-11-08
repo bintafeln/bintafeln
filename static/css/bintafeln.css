@@ -1675,6 +1675,14 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 .warteliste-aktionen { grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); }
 .feld-zeile > .feld { min-width: 0; }
 .feld-zeile input { width: 100%; }
+/* „Ausgewählte einladen“: Termin, Datumsfelder und Knopf in einer Zeile, Haken darunter */
+.einladen-kopf { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem .9rem; }
+.einladen-termin { flex: 1 1 14rem; min-width: 11rem; }
+.einladen-termin .feld { margin: 0; }
+.einladen-termin select { width: 100%; }
+.einladen-kopf .einladen-neu { flex: 2 1 20rem; margin: 0; }
+.einladen-kopf .einladen-knopf { flex: 0 0 auto; }
+.einladen-mail { margin: .55rem 0 0; }
 .mehrfach-eintrag { display: flex; align-items: center; gap: .5rem; padding: .3rem .35rem; border-radius: 6px; cursor: pointer; }
 .warteliste-staaten { min-width: 14rem; }
 .treffer-entscheiden { margin: .4rem 0 .9rem; gap: .5rem; flex-wrap: wrap; }
