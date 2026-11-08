@@ -188,7 +188,7 @@ def test_name_oben_rechts_oeffnet_mein_konto(admin_client):
     assert f'class="angemeldet" href="{reverse("konten:mein_konto")}"' in seite
     # Bereich → Untergruppe → Einträge: Untergruppen sind zu, bis man sie wählt
     assert '<details class="menue-gruppe" name="menue-gruppe">' in seite
-    assert "<summary>Kundenstamm</summary>" in seite
+    assert "<summary>Kunden</summary>" in seite  # Untergruppe der Einstellungen
 
 
 def test_fest_angestellte_stempeln_im_menue(benutzer_mit_rolle):
