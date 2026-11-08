@@ -80,6 +80,55 @@ def adresse_abgleichen(ziel) -> None:
     )  # fmt: skip
 
 
+# Adressfelder, die Mitarbeiter-Stammdaten (links) und der Adressbuch-Eintrag (rechts) beide
+# führen. Damit nicht zwei Stände derselben Adresse auseinanderlaufen, zieht beim Speichern der
+# einen Seite die andere mit (ADR 0097): die Mitarbeiterseite schreibt ins Adressbuch, das
+# Adressbuch zurück in die Stammdaten.
+ADRESS_FELDER = [
+    ("anrede", "anrede"), ("strasse", "strasse"), ("plz", "plz"),
+    ("ort", "ort"), ("telefon", "telefon"), ("handy", "mobil"),
+]  # fmt: skip
+
+
+def adresse_aus_stammdaten(konto, *, von: str = "") -> None:
+    """Nach dem Speichern der Mitarbeiter-Stammdaten den verknüpften Adressbuch-Eintrag mitziehen.
+    Konten einer Ausgabestelle sind keine Person und bleiben außen vor."""
+    from apps.adressen.models import Adresse
+
+    if konto.stelle_id:
+        return
+    stamm = getattr(konto, "stammdaten", None)
+    adresse = Adresse.objects.filter(konto=konto).first()
+    if stamm is None or adresse is None:
+        return
+    aenderung = {a: (getattr(stamm, s, "") or "") for s, a in ADRESS_FELDER
+                 if getattr(adresse, a) != (getattr(stamm, s, "") or "")}  # fmt: skip
+    if aenderung:
+        for feld, wert in aenderung.items():
+            setattr(adresse, feld, wert)
+        adresse.geaendert_am = timezone.now()
+        if von:
+            adresse.geaendert_von = von
+        adresse.save(update_fields=[*aenderung, "geaendert_am", "geaendert_von"])
+
+
+def stammdaten_aus_adresse(adresse) -> None:
+    """Nach dem Speichern eines Adressbuch-Eintrags die Mitarbeiter-Stammdaten des verknüpften
+    Kontos mitziehen (umgekehrte Richtung)."""
+    from apps.konten.models import Stammdaten
+
+    konto = adresse.konto
+    if konto is None or konto.stelle_id:
+        return
+    stamm, _ = Stammdaten.objects.get_or_create(benutzer=konto)
+    aenderung = {s: (getattr(adresse, a, "") or "") for s, a in ADRESS_FELDER
+                 if getattr(stamm, s) != (getattr(adresse, a, "") or "")}  # fmt: skip
+    if aenderung:
+        for feld, wert in aenderung.items():
+            setattr(stamm, feld, wert)
+        stamm.save(update_fields=list(aenderung))
+
+
 # Kategorien, die eine Mitarbeit im Adressbuch sichtbar machen (ADR 0098). Beide werden immer nur
 # ergänzt, nie automatisch entfernt: So bleibt jemand auch nach dem Ausscheiden als (ehemaliger)
 # Helfer auffindbar, z. B. für einen Serienbrief.
