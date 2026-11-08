@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load liste %}
+{% load liste static %}
 {% block titel %}{% if archiv %}Archiv{% else %}{{ titel|default:"Team" }}{% endif %}{% endblock %}
 {% block inhalt %}
 <section class="karte">
@@ -51,15 +51,30 @@
     <button type="submit" class="knopf">Suchen</button>
   </form>
   <div id="ergebnis">
-  {% auswahl_formular "" %}
   <div class="liste-aktionen">
     <span class="hinweis">{{ zeilen|length }} Konto{{ zeilen|length|pluralize:"en" }}</span>
-    <span class="hinweis" data-auswahl-zahl="auswahl"></span>
+    {% if not archiv and vergebbare_rollen %}
+    <form id="rollen-sammel" class="sammel-rollen" method="post" data-auswahl
+          action="{% url 'konten:mitarbeitende_rollen_sammel' %}">
+      {% csrf_token %}
+      <input type="hidden" name="weiter" value="{{ request.get_full_path }}">
+      <span class="hinweis" data-auswahl-zahl="rollen-sammel">keine ausgewählt</span>
+      <select name="aktion" aria-label="Rolle hinzufügen oder entfernen">
+        <option value="hinzufuegen">Rolle hinzufügen</option>
+        <option value="entfernen">Rolle entfernen</option>
+      </select>
+      <select name="rolle" aria-label="Rolle" required>
+        {% for r in vergebbare_rollen %}<option value="{{ r }}">{{ r }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="knopf knopf-zweitrangig">Für Ausgewählte anwenden</button>
+    </form>
+    {% endif %}
   </div>
   {% url 'konten:mitarbeitende_spalten' as spalten_aktion %}{% include "includes/spalten_wahl.html" %}
   <div class="tabelle-rahmen oben-scrollen">
   <table class="tabelle">
     <thead><tr>
+      {% if not archiv and vergebbare_rollen %}<th class="auswahl"><input type="checkbox" data-alle="id" form="rollen-sammel" aria-label="Alle auswählen" title="alle / keine"></th>{% endif %}
       {% if "nummer" in sichtbar %}{% sortkopf "Nummer" "nummer" sort %}{% endif %}
       {% if "anrede" in sichtbar %}{% sortkopf "Anrede" "anrede" sort %}{% endif %}
       {% sortkopf "Nachname" "name" sort %}
@@ -83,6 +98,7 @@
     <tbody>
     {% for z in zeilen %}
       <tr>
+        {% if not archiv and vergebbare_rollen %}<td class="auswahl"><input type="checkbox" name="id" value="{{ z.b.pk }}" form="rollen-sammel" aria-label="{{ z.b.last_name|default:z.b.username }} auswählen"></td>{% endif %}
         {% if "nummer" in sichtbar %}<td data-titel="Nummer">{{ z.nummer|default:"–" }}</td>{% endif %}
         {% if "anrede" in sichtbar %}<td data-titel="Anrede">{{ z.sd.anrede }}</td>{% endif %}
         <td data-titel="Nachname"><a href="{% url 'konten:mitarbeiter' z.b.pk %}">{{ z.b.last_name|default:z.b.username }}</a></td>
@@ -111,4 +127,5 @@
   </div>
   </div>
 </section>
+{% if not archiv and vergebbare_rollen %}<script src="{% static 'js/auswahl.js' %}" defer></script>{% endif %}
 {% endblock %}

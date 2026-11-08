@@ -30,6 +30,11 @@ urlpatterns = [
     path("ausgabestellen/<int:pk>/", views_stellen.stelle, name="stelle"),
     path("mitarbeitende/archiv/", views_mitarbeitende.archiv, name="mitarbeitende_archiv"),
     path("mitarbeitende/spalten/", views_mitarbeitende.spalten, name="mitarbeitende_spalten"),
+    path(
+        "mitarbeitende/rollen/",
+        views_mitarbeitende.rollen_sammel,
+        name="mitarbeitende_rollen_sammel",
+    ),
     path("mitarbeitende/neu/", views_mitarbeitende.anlegen, name="mitarbeiter_neu"),
     path(
         "mitarbeitende/zugaenge-freigeben/",
