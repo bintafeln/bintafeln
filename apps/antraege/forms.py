@@ -364,9 +364,7 @@ class EinstellungenForm(forms.ModelForm):
         from apps.konten import rollen
 
         kandidaten = (
-            get_user_model()
-            .objects.filter(is_active=True, stelle__isnull=True)
-            .exclude(email="")
+            get_user_model().objects.filter(is_active=True, stelle__isnull=True).exclude(email="")
         )
         schon = (
             set(self.instance.benachrichtigen.values_list("pk", flat=True))
