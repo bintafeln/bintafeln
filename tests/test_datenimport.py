@@ -188,6 +188,32 @@ def test_pflichtfeld_fehlt(admin_client):
 # --- Abgleich ---------------------------------------------------------------------------
 
 
+def test_unterschiede_ignoriert_unsichtbare_zeichen():
+    """Zwei sichtbar gleiche Werte, die sich nur durch unsichtbare Zeichen (hier ein
+    Zero-Width-Space) unterscheiden, sind kein Unterschied – nur echte Änderungen zählen."""
+    felder = [("plz", "PLZ"), ("nachname", "Nachname")]
+    diff = abgleich.unterschiede(
+        {"plz": "45149​", "nachname": "BUERS"},
+        {"plz": "45149", "nachname": "Buers"},
+        felder,
+    )
+    assert [d["feld"] for d in diff] == ["nachname"]  # PLZ gilt als gleich, nur der Name ändert
+
+
+def test_adressbuch_treffer_ignoriert_unsichtbare_zeichen():
+    """Gleicher Name und sichtbar gleiche PLZ ergeben einen sicheren Treffer, auch wenn eine PLZ
+    ein unsichtbares Zeichen enthält – nicht „gleicher Name, andere Anschrift“."""
+    bestand = [
+        abgleich.Bestandseintrag("1", "Klaus BUERS", {
+            "art": "Person", "vorname": "Klaus", "nachname": "BUERS",
+            "plz": "45149​", "email": "buers@arcor.de"})  # PLZ mit Zero-Width-Space
+    ]  # fmt: skip
+    finden = ZIELE["adressen"].treffer_finder(bestand)
+    t = finden({"art": "Person", "vorname": "Klaus", "nachname": "Buers",
+                "plz": "45149", "email": "buers@web.de"})  # fmt: skip
+    assert t is not None and t.id == "1" and t.sicher  # sicher über Name+PLZ
+
+
 def test_abgleich_konflikte_ergaenzungen_dubletten():
     bestand = [
         abgleich.Bestandseintrag("1", "Anna", {"name": "Anna", "ort": "Essen", "tel": ""}),
