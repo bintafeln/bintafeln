@@ -20,9 +20,17 @@
     <p class="hinweis">Gesperrte Konten werden nicht gelöscht. So bleibt auch Jahre später nachvollziehbar, wer wann
       dabei war und was eingetragen hat (Änderungsprotokoll, Abholungen, Buchungen).</p>
   {% else %}
-    <p><a class="knopf" href="{% url 'konten:mitarbeiter_neu' %}{% if art %}?art={{ art }}{% endif %}">{% if art == 'fest' %}Angestellte anlegen{% elif art == 'ehrenamtlich' %}Ehrenamtliche anlegen{% else %}Konto anlegen{% endif %}</a>
-      <a class="knopf knopf-zweitrangig" href="{% url 'konten:zugaenge_freigeben' %}">Online-Zugänge freigeben</a>
-      {% if "einstellungen.personal" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'konten:personal_einstellungen' %}">Fristen einstellen</a>{% endif %}</p>
+    {# Anlegen bleibt sichtbar; die weiteren Aktionen klappen wie „Herunterladen …“ rechts auf. #}
+    <div class="team-aktionen">
+      <a class="knopf" href="{% url 'konten:mitarbeiter_neu' %}{% if art %}?art={{ art }}{% endif %}">{% if art == 'fest' %}Angestellte anlegen{% elif art == 'ehrenamtlich' %}Ehrenamtliche anlegen{% else %}Konto anlegen{% endif %}</a>
+      <details class="listen-werkzeuge">
+        <summary class="knopf knopf-zweitrangig">Mehr …</summary>
+        <div class="listen-werkzeuge-inhalt">
+          <a class="knopf knopf-zweitrangig" href="{% url 'konten:zugaenge_freigeben' %}">Online-Zugänge freigeben</a>
+          {% if "einstellungen.personal" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'konten:personal_einstellungen' %}">Fristen einstellen</a>{% endif %}
+        </div>
+      </details>
+    </div>
     {% if faellig %}
     <div class="faellig">
       <h2>Fällig</h2>
