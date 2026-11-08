@@ -553,8 +553,9 @@ def test_breite_liste_scrollbalken_oben(angemeldet, admin):
     seite = angemeldet(admin)
     seite.set_viewport_size({"width": 700, "height": 700})
     seite.goto(reverse("konten:ehrenamtliche"))
-    oben = seite.locator(".tabelle-oben-scroll")
-    rahmen = seite.locator(".tabelle-rahmen.oben-scrollen")
+    # Der obere Balken wird für jede Liste eingebaut, aber nur bei zu breiter Tabelle gezeigt.
+    oben = seite.locator(".tabelle-oben-scroll:visible")
+    rahmen = seite.locator(".tabelle-rahmen").first
     expect(oben).to_have_count(1)
     # Oben schieben → der Rahmen zieht mit
     oben.evaluate("el => el.scrollLeft = 150")

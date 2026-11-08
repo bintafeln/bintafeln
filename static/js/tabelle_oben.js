@@ -1,7 +1,7 @@
-// Zweiter Scrollbalken oben über breiten Tabellen (.tabelle-rahmen.oben-scrollen), synchron mit
-// dem eigentlichen Rahmen. So kann man eine breite Liste seitlich schieben, ohne erst ganz nach
-// unten zum normalen Balken zu müssen. Ist die Tabelle nicht breiter als der Platz, bleibt der
-// Balken unsichtbar. Läuft auch nach htmx-Nachladen (z. B. Live-Suche) erneut.
+// Zweiter Scrollbalken oben über breiten Listen, synchron mit dem eigentlichen Rahmen
+// (.tabelle-rahmen). So kann man eine breite Liste seitlich schieben, ohne erst ganz nach unten
+// zum normalen Balken zu müssen. Gilt für alle Listen; der obere Balken erscheint nur, wenn die
+// Tabelle wirklich breiter ist als der Platz. Läuft auch nach htmx-Nachladen (z. B. Live-Suche).
 (function () {
   "use strict";
   function einbauen(rahmen) {
@@ -12,14 +12,23 @@
     var oben = document.createElement("div");
     oben.className = "tabelle-oben-scroll";
     oben.setAttribute("aria-hidden", "true");
+    oben.hidden = true;
     var innen = document.createElement("div");
     oben.appendChild(innen);
     rahmen.parentNode.insertBefore(oben, rahmen);
 
-    function breite() { innen.style.width = tabelle.scrollWidth + "px"; }
-    breite();
-    if (window.ResizeObserver) new ResizeObserver(breite).observe(tabelle);
-    window.addEventListener("resize", breite);
+    function anpassen() {
+      innen.style.width = tabelle.scrollWidth + "px";
+      // Nur zeigen, wenn die Tabelle breiter ist als der sichtbare Bereich (sonst kein Nutzen).
+      oben.hidden = tabelle.scrollWidth <= rahmen.clientWidth + 1;
+    }
+    anpassen();
+    if (window.ResizeObserver) {
+      var ro = new ResizeObserver(anpassen);
+      ro.observe(tabelle);
+      ro.observe(rahmen);
+    }
+    window.addEventListener("resize", anpassen);
 
     // Beide Balken aneinander koppeln, ohne sich gegenseitig endlos anzustoßen.
     var quelle = null;
@@ -36,7 +45,7 @@
   }
 
   function alle() {
-    document.querySelectorAll(".tabelle-rahmen.oben-scrollen").forEach(einbauen);
+    document.querySelectorAll(".tabelle-rahmen").forEach(einbauen);
   }
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", alle);
