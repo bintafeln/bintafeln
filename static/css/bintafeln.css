@@ -1857,8 +1857,16 @@ details.amtsdokumente > summary { cursor: pointer; margin: .5rem 0; }
 .datum-feld .datum-pick { position: absolute; right: 0; bottom: 0; width: 1px; height: 1px;
   min-height: 0; min-width: 0; padding: 0; margin: 0; border: 0; opacity: 0; pointer-events: none; }
 
-/* Sammelweises Bearbeiten: Eingabefelder füllen die Tabellenzelle. */
-.sammel-tabelle td input, .sammel-tabelle td select { width: 100%; min-width: 7rem; box-sizing: border-box; }
-.sammel-tabelle td textarea { width: 100%; min-width: 11rem; box-sizing: border-box; }
+/* Sammelweises Bearbeiten: Eingabefelder füllen die Zelle und sind gut greifbar hoch. Die Felder
+   stehen hier ohne .feld-Rahmen direkt in der Tabelle, bekommen Höhe/Rand/Abstand darum hier. */
+.sammel-tabelle td input, .sammel-tabelle td select, .sammel-tabelle td textarea {
+  width: 100%; min-width: 7rem; box-sizing: border-box; font: inherit; min-height: 2.75rem;
+  padding: .55rem .7rem; border: 1px solid var(--rand); border-radius: var(--radius); }
+.sammel-tabelle td textarea { min-width: 11rem; }
 .sammel-tabelle td .mehrfach { min-width: 10rem; }
+.sammel-tabelle td .mehrfach-suche { margin-bottom: .35rem; }
+/* Kästchen im Aufklapp-Menü (Kategorien) nicht auf Zellenbreite ziehen – sonst rutscht die
+   Beschriftung nach rechts weg und die Liste wird unbrauchbar. */
+.sammel-tabelle td .mehrfach-eintrag input {
+  width: auto; min-width: 0; min-height: 0; padding: 0; border: 0; }
 .sammel-tabelle .feld-fehler { display: block; color: var(--fehler); font-size: .85rem; }
