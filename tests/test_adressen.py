@@ -381,6 +381,8 @@ def test_druckliste_zusammenstellen_und_pdf(admin_client, django_user_model, pdf
     assert 'value="rollen"' in inhalt and 'value="notfall"' in inhalt
     # Vorschau enthält beide Personen
     assert seite.context["anzahl"] == 2
+    # Vorschau-Tabelle hat ein vollständiges Gitter (Zeilen- und Spaltentrenner)
+    assert "tabelle-gitter" in inhalt
 
     # Absenden mit „alle“ (leere Rolle/Stelle) lässt die Liste NICHT leer werden (Bugfix): das
     # Formular sendet rolle= und stelle= mit – diese leeren Werte dürfen nicht filtern.

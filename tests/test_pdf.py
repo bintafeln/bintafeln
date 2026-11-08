@@ -72,6 +72,18 @@ def test_text_und_leere_angaben(pdf_text, admin):
     assert doc.erzeugen().startswith(b"%PDF")
 
 
+def test_tabelle_gitter(admin):
+    """gitter=True zieht ein vollständiges Gitter (senkrecht + waagerecht, GRID);
+    ohne das Flag bleibt es bei den waagerechten Linien (nur LINEBELOW)."""
+    doc = Pdf("Probe")
+    doc.tabelle(["A", "B"], [["1", "2"]], gitter=True)
+    assert "GRID" in {c[0] for c in doc.inhalt[-1]._linecmds}
+
+    ohne = Pdf("Probe")
+    ohne.tabelle(["A", "B"], [["1", "2"]])
+    assert "GRID" not in {c[0] for c in ohne.inhalt[-1]._linecmds}
+
+
 # --- Auskunft Kunde ------------------------------------------------------------------------
 
 

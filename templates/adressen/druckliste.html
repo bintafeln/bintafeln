@@ -58,7 +58,7 @@
 
     <p class="hinweis">{{ anzahl }} Person{{ anzahl|pluralize:"en" }} in der Vorschau.</p>
     <div class="tabelle-rahmen">
-      <table class="tabelle">
+      <table class="tabelle tabelle-gitter">
         <thead><tr>
           <th><input type="checkbox" data-alle="id" aria-label="Alle auswählen" title="alle / keine"></th>
           {% for t in kopf %}<th>{{ t }}</th>{% endfor %}

@@ -100,8 +100,10 @@ class Pdf:
                                      ("BOTTOMPADDING", (0, 0), (-1, -1), 2)]))  # fmt: skip
         self.inhalt.append(tabelle)
 
-    def tabelle(self, kopf, zeilen, breiten=None, rechts=(), summe=False) -> None:
-        """Tabelle mit Kopfzeile; ``rechts`` = Spaltennummern rechtsbündig (Beträge)."""
+    def tabelle(self, kopf, zeilen, breiten=None, rechts=(), summe=False, gitter=False) -> None:
+        """Tabelle mit Kopfzeile; ``rechts`` = Spaltennummern rechtsbündig (Beträge).
+        ``gitter=True`` zieht ein vollständiges, dünnes Gitter (senkrechte und waagerechte
+        Linien an allen Zellen) – für Listen zum Ausdrucken und Von-Hand-Ausfüllen."""
         if not zeilen:
             return self.absatz("Keine Einträge.")
 
@@ -115,11 +117,18 @@ class Pdf:
         breite = self.seitengroesse[0] - 2 * RAND
         spalten = [b * breite for b in breiten] if breiten else None
         tabelle = Table(daten, colWidths=spalten, repeatRows=1, hAlign="LEFT")
-        stil = [
-            ("LINEBELOW", (0, 0), (-1, 0), 0.8, colors.black),
-            ("LINEBELOW", (0, 1), (-1, -1), 0.25, colors.lightgrey),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ]
+        if gitter:
+            stil = [
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                ("LINEBELOW", (0, 0), (-1, 0), 0.8, colors.black),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ]
+        else:
+            stil = [
+                ("LINEBELOW", (0, 0), (-1, 0), 0.8, colors.black),
+                ("LINEBELOW", (0, 1), (-1, -1), 0.25, colors.lightgrey),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ]
         for spalte in rechts:
             for zeile in daten:
                 z = zeile[spalte]

@@ -146,5 +146,5 @@ def pdf(titel: str, spalten: list[tuple[str, str]], adressen, format_: str, quer
               f"Person{'en' if len(adressen) != 1 else ''}",
               seitengroesse=_seitengroesse(format_, quer))  # fmt: skip
     kopf = [t for _, t in spalten]
-    doc.tabelle(kopf, zeilen(adressen, [k for k, _ in spalten]))
+    doc.tabelle(kopf, zeilen(adressen, [k for k, _ in spalten]), gitter=True)
     return doc.erzeugen()
