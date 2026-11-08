@@ -29,6 +29,13 @@ if [ "${1:-}" = "gunicorn" ]; then
             python manage.py verzeichnis_melden || true
         done
     ) &
+    # Abgleich mit dem Kundenstamm und Doppelte Anträge alle 15 Minuten vorrechnen (ADR 0109),
+    # damit die Seiten auch bei Inaktivität ohne Warten geöffnet werden können.
+    (
+        while sleep 900; do
+            python manage.py warteliste_vorwaermen || true
+        done
+    ) &
 fi
 
 exec "$@"

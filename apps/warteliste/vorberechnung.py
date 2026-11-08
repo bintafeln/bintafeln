@@ -76,15 +76,19 @@ def _rechnen_speichern(key, sig_fn, rechnen):
     return daten
 
 
-def _auffrischen(key, sig_fn, rechnen) -> None:
-    """Im Hintergrund neu rechnen, falls nicht schon eine Auffrischung läuft."""
+def _auffrischen(key, sig_fn, rechnen, *, synchron: bool = False) -> None:
+    """Neu rechnen, falls nicht schon eine Auffrischung läuft. ``synchron=True`` rechnet sofort
+    (für den periodischen Hintergrund-Job, der warten muss, bis es fertig ist), sonst im Thread."""
     if _laeuft(key):
         return
     stand = dict(cache.get(key) or {})
     stand["laeuft"] = True
     stand["aktualisiert"] = time.time()
     cache.set(key, stand, DAUER)
-    _im_hintergrund(lambda: _rechnen_speichern(key, sig_fn, rechnen))
+    if synchron:
+        _rechnen_speichern(key, sig_fn, rechnen)
+    else:
+        _im_hintergrund(lambda: _rechnen_speichern(key, sig_fn, rechnen))
 
 
 def _holen(key, sig_fn, rechnen):
@@ -112,10 +116,12 @@ def _holen(key, sig_fn, rechnen):
     return None, False, True  # wird gerade erstmalig im Hintergrund vorbereitet
 
 
-def vorwaermen() -> None:
-    """Dubletten und Abgleich im Hintergrund vorberechnen, sobald man den Warteliste-Bereich
-    betritt – dann ist die jeweilige Seite beim Öffnen meist schon fertig. Ist das Ergebnis aktuell
-    oder läuft bereits eine Rechnung, passiert nichts."""
+def vorwaermen(*, synchron: bool = False) -> None:
+    """Dubletten und Abgleich vorberechnen, damit die jeweilige Seite beim Öffnen schon fertig ist.
+    Angestoßen wird das (a) sobald jemand im Programm aktiv ist und noch kein Ergebnis im Cache
+    liegt, und (b) regelmäßig im Hintergrund durch den periodischen Warmlauf (``synchron=True``,
+    siehe ``manage.py warteliste_vorwaermen``), damit die Seiten auch bei Inaktivität ohne Warten
+    da sind. Ist das Ergebnis aktuell oder läuft bereits eine Rechnung, passiert nichts."""
     for key, sig_fn, rechnen in (
         (DUB, _sig_dubletten, _rechnen_dubletten),
         (ABG, _sig_abgleich, _rechnen_abgleich),
@@ -123,7 +129,13 @@ def vorwaermen() -> None:
         stand = cache.get(key)
         aktuell = stand and stand.get("signatur") == sig_fn() and "daten" in stand
         if not aktuell:
-            _auffrischen(key, sig_fn, rechnen)
+            _auffrischen(key, sig_fn, rechnen, synchron=synchron)
+
+
+def kalt() -> bool:
+    """True, wenn für Abgleich oder Dubletten noch gar kein Ergebnis im Cache liegt (z. B. nach
+    einer Entscheidung, die den Cache verwirft). Dann lohnt es, im Hintergrund vorzurechnen."""
+    return any(not ((stand := cache.get(key)) and "daten" in stand) for key in (ABG, DUB))
 
 
 def veraltet(*, dubletten: bool = False, abgleich: bool = False) -> None:
