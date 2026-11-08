@@ -183,6 +183,7 @@ _SEITE = {
     "core:rechtstexte": "einstellungen",
     "core:mail_einstellungen": "einstellungen",
     "core:protokoll": "protokoll",
+    "konten:anmeldeprotokoll": "protokoll",
     "core:papierkorb": "papierkorb",
     "core:sicherungen": "sicherungen",
     "core:datensicherung": "datensicherung",

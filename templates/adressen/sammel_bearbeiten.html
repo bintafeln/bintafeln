@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block titel %}Adressen sammelweise ändern{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <div class="titel-zeile">
+    <h1>Adressen sammelweise ändern</h1>
+    <a class="knopf knopf-zweitrangig" href="{{ ziel }}">← Zurück zur Liste</a>
+  </div>
+  <p class="hinweis titel-text">Hier ändern Sie die unten gezeigten {{ anzahl }} Adresse{{ anzahl|pluralize:"n" }}
+    (die aktuelle Seite der gefilterten Liste, von {{ gesamt }} insgesamt) auf einmal. <strong>Name,
+    Organisation und Mitgliedsnummer bleiben gesperrt.</strong> Wollen Sie mehr oder weniger Zeilen
+    auf einmal, erst in der Liste filtern oder „Anzeigen“ ändern. „Speichern“ übernimmt alle
+    Änderungen zusammen.</p>
+  <form method="post">
+    {% csrf_token %}{{ formset.management_form }}
+    {% if formset.non_form_errors %}<p class="meldung error">{{ formset.non_form_errors|striptags }}</p>{% endif %}
+    <div class="tabelle-rahmen">
+      <table class="tabelle sammel-tabelle">
+        <thead><tr><th>Name</th>{% for k, titel in felder %}<th>{{ titel }}</th>{% endfor %}</tr></thead>
+        <tbody>
+          {% for form in formset %}
+          <tr>
+            <td data-titel="Name">{% for h in form.hidden_fields %}{{ h }}{% endfor %}<strong>{{ form.instance.nachname|default:form.instance.organisation }}</strong>{% if form.instance.vorname %}, {{ form.instance.vorname }}{% endif %}</td>
+            {% for feld in form.visible_fields %}
+            <td data-titel="{{ feld.label }}">{{ feld }}{% if feld.errors %}<span class="feld-fehler">{{ feld.errors|striptags }}</span>{% endif %}</td>
+            {% endfor %}
+          </tr>
+          {% empty %}
+          <tr><td colspan="{{ felder|length|add:1 }}">Keine Adressen in dieser Auswahl.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf">Speichern</button>
+      <a class="knopf knopf-zweitrangig" href="{{ ziel }}">Abbrechen</a>
+    </div>
+  </form>
+</section>
+{% endblock %}
