@@ -3,6 +3,7 @@ from django.db.models import Q
 
 from apps.adressen.models import Adresse, AdressKategorie
 from apps.core.auswahl import ANREDEN, mit_vorhandenem
+from apps.core.forms import Mehrfachauswahl
 from apps.konten.forms import DatumEingabe
 
 
@@ -133,19 +134,47 @@ class AdresseForm(forms.ModelForm):
 
 
 class SammelAdresseForm(forms.ModelForm):
-    """Sammelweises Bearbeiten in der Liste: nur gefahrlos änderbare Felder. Name, Organisation,
-    Ansprechperson und die Mitgliedsnummer bleiben bewusst gesperrt (ADR 0097), damit man beim
-    schnellen Ändern vieler Zeilen nicht aus Versehen die Identität verändert."""
+    """Sammelweises Bearbeiten in der Liste: Name, Organisation, Ansprechperson und die
+    Mitgliedsnummer bleiben bewusst gesperrt (ADR 0097), damit man beim schnellen Ändern vieler
+    Zeilen nicht aus Versehen die Identität verändert. Die Grundfelder (Anschrift, Kontakt) werden
+    nur gezeigt, wenn ihre Spalte in der Liste eingeblendet ist; Kategorien, Einwilligungen und
+    Notiz stehen immer zur Verfügung."""
 
     anrede = forms.ChoiceField(label="Anrede", required=False)
+    kategorien = forms.ModelMultipleChoiceField(
+        label="Kategorien", queryset=AdressKategorie.objects.none(), required=False,
+        widget=Mehrfachauswahl,
+    )  # fmt: skip
+
+    # Felder, die von der Spaltenwahl der Liste abhängen (Reihenfolge wie in der Liste).
+    GRUNDFELDER = ("anrede", "strasse", "plz", "ort", "telefon", "mobil", "email")
 
     class Meta:
         model = Adresse
-        fields = ["anrede", "strasse", "plz", "ort", "telefon", "mobil", "email"]
+        fields = [
+            "anrede", "strasse", "plz", "ort", "telefon", "mobil", "email",
+            "kategorien", "einwilligung_post", "einwilligung_email", "veroeffentlichen", "notiz",
+        ]  # fmt: skip
+        widgets = {
+            "einwilligung_post": DatumEingabe(),
+            "einwilligung_email": DatumEingabe(),
+            "veroeffentlichen": DatumEingabe(),
+            "notiz": forms.Textarea(attrs={"rows": 2}),
+        }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, spalten=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["anrede"].choices = mit_vorhandenem(ANREDEN, self.instance.anrede)
+        gewaehlt = (
+            list(self.instance.kategorien.values_list("pk", flat=True)) if self.instance.pk else []
+        )
+        self.fields["kategorien"].queryset = AdressKategorie.objects.filter(
+            Q(aktiv=True) | Q(pk__in=gewaehlt)
+        )
+        if spalten is not None:
+            for name in self.GRUNDFELDER:
+                if name not in spalten:
+                    self.fields.pop(name, None)
         for feld in self.fields.values():
             feld.widget.attrs.setdefault("aria-label", f"{feld.label}: {self.instance}")
 

@@ -455,11 +455,17 @@ def test_sammel_bearbeiten(admin_client):
     a1 = Adresse.objects.create(art=Adresse.Art.PERSON, nachname="Alt", vorname="Anna")
     a2 = Adresse.objects.create(art=Adresse.Art.PERSON, nachname="Beta", vorname="Ben")
     url = reverse("adressen:sammel_bearbeiten")
+    from apps.adressen.models import AdressKategorie
+
+    kat = AdressKategorie.objects.create(name="Probekategorie")
     seite = admin_client.get(url)
     inhalt = seite.content.decode()
     assert "Alt" in inhalt and "Beta" in inhalt
     assert 'name="form-0-ort"' in inhalt  # Ort ist ein Eingabefeld
     assert "nachname" not in inhalt  # Name ist gesperrt, kein Feld dafür
+    # Zusatzfelder sind immer da (unabhängig von den Listenspalten)
+    assert 'name="form-0-kategorien"' in inhalt and 'name="form-0-notiz"' in inhalt
+    assert 'name="form-0-einwilligung_post"' in inhalt
 
     formset = seite.context["formset"]
     n = str(len(formset.forms))
@@ -470,6 +476,10 @@ def test_sammel_bearbeiten(admin_client):
         for feld in ("anrede", "strasse", "plz", "ort", "telefon", "mobil", "email"):
             daten[f"form-{i}-{feld}"] = getattr(form.instance, feld)
         daten[f"form-{i}-ort"] = "Neustadt"  # bei allen denselben Ort setzen
+    # Bei der ersten Zeile zusätzlich Kategorie, Einwilligung und Notiz setzen
+    daten["form-0-kategorien"] = str(kat.pk)
+    daten["form-0-einwilligung_post"] = "15.03.2026"
+    daten["form-0-notiz"] = "Vielen Dank"
     antwort = admin_client.post(url, daten)
     assert antwort.status_code == 302
     a1.refresh_from_db()
@@ -477,6 +487,21 @@ def test_sammel_bearbeiten(admin_client):
     assert a1.ort == "Neustadt" and a2.ort == "Neustadt"
     assert a1.nachname == "Alt" and a2.nachname == "Beta"  # Name unverändert
     assert a1.geaendert_von == "chefin"
+    assert list(a1.kategorien.all()) == [kat]
+    assert a1.einwilligung_post == dt.date(2026, 3, 15) and a1.notiz == "Vielen Dank"
+    assert not a2.kategorien.exists() and a2.notiz == ""  # nur die erste Zeile geändert
+
+
+def test_sammel_bearbeiten_nur_sichtbare_grundspalten(admin_client):
+    """Ein in der Liste ausgeblendetes Grundfeld fehlt auch im Sammel-Bearbeiten; die Zusatzfelder
+    (Kategorien, Einwilligungen, Notiz) bleiben immer."""
+    Adresse.objects.create(art=Adresse.Art.PERSON, nachname="Alt")
+    # In der Liste nur die Straße eingeblendet lassen (Ort u. a. abgewählt)
+    admin_client.post(reverse("adressen:spalten"), {"spalte": ["strasse"]},
+                      HTTP_REFERER=reverse("adressen:liste"))  # fmt: skip
+    inhalt = admin_client.get(reverse("adressen:sammel_bearbeiten")).content.decode()
+    assert 'name="form-0-ort"' not in inhalt and 'name="form-0-strasse"' in inhalt
+    assert 'name="form-0-kategorien"' in inhalt and 'name="form-0-notiz"' in inhalt
 
 
 def test_sammel_bearbeiten_braucht_recht(client, anmelden, admin, django_user_model):
