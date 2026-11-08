@@ -182,6 +182,33 @@ def test_einladung_mail_html_formatiert(mailserver):
     assert "<strong>" not in m.body and "Erika" in m.body  # Nur-Text ohne HTML
 
 
+_PNG = (
+    b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00"
+    b"\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00"
+    b"\x00IEND\xaeB`\x82"
+)
+
+
+def test_logo_und_kopfzeile_in_mail(mailserver):
+    """Logo der Tafel und die Kopfzeile stehen oben in der Mail (für alle Sprachen gleich)."""
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from apps.core.models import TafelEinstellungen
+
+    t = TafelEinstellungen.laden()
+    t.logo = SimpleUploadedFile("logo.png", _PNG, content_type="image/png")
+    t.save()
+    e = WartelisteEinstellungen.laden()
+    e.kopfzeile = "<p>Herzlich willkommen bei der Tafel!</p>"
+    e.save()
+    a = antrag(email="erika@example.org")
+    ablauf.automatik()
+    ablauf.einladen([a], termin(), "Büro")
+    html = {typ: inhalt for inhalt, typ in django_mail.outbox[0].alternatives}["text/html"]
+    assert "logo" in html and "<img" in html  # Logo im Kopf
+    assert "Herzlich willkommen bei der Tafel!" in html  # Kopfzeile darüber
+
+
 def test_einladung_haengt_wegbeschreibung_an(mailserver):
     """Die hinterlegte Wegbeschreibung hängt an der Einladung, nicht an der Absage."""
     from django.core.files.uploadedfile import SimpleUploadedFile
