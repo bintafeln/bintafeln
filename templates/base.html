@@ -18,6 +18,7 @@
   <script src="{% static 'js/mehrfachauswahl.js' %}" defer></script>
   <script src="{% static 'js/zeigen_bei.js' %}" defer></script>
   <script src="{% static 'js/neues_fenster.js' %}" defer></script>
+  <script src="{% static 'js/nach_oben.js' %}" defer></script>
   {% if menue %}<script src="{% static 'js/menue_einfahren.js' %}"></script>{% endif %}
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'{% if menue %} class="mit-menue"{% endif %}{% if user.is_authenticated %} data-ansicht-stand="{{ user.ansicht_stand }}"{% endif %}>
@@ -135,5 +136,6 @@
     {% if impressum_url %}<a href="{{ impressum_url }}" rel="noopener">Impressum</a>{% endif %}
     {% if "system.status" in rechte %}<span class="version">Version {{ version }}</span>{% endif %}
   </footer>
+  <button type="button" id="nach-oben" class="nach-oben" hidden aria-label="Nach oben springen" title="Nach oben">↑</button>
 </body>
 </html>
