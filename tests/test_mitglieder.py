@@ -208,7 +208,7 @@ def test_mitgliedschaft_direkt_bei_der_adresse(admin_client, benutzer_mit_rolle,
         Mitglied.objects.get(pk=m.pk).art == "Nicht aktives Mitglied"
         and Mitglied.objects.count() == 1
     )
-    # Querlinks: Das Adressblatt verlinkt die Mitgliedschaft; das Adressbuch führt zur Mitgliederliste.
+    # Querlinks: Adressblatt → Mitgliedschaft; Adressbuch → Mitgliederliste.
     blatt = admin_client.get(reverse("adressen:adresse", args=[a.pk])).content.decode()
     assert f'href="{reverse("mitglieder:mitglied", args=[m.pk])}"' in blatt
     liste = admin_client.get(reverse("adressen:liste")).content.decode()
