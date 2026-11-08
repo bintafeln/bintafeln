@@ -68,6 +68,13 @@ def test_rollen_sammel_hinzufuegen_und_entfernen(admin_client, benutzer_mit_roll
     assert b.groups.filter(name="Ausgabe").exists()  # bert unverändert
 
 
+def test_konto_plural_richtig(admin_client, benutzer_mit_rolle):
+    """Die Zählung schreibt „Konten", nicht „Kontoen"."""
+    benutzer_mit_rolle("tim")
+    seite = admin_client.get(LISTE).content.decode()
+    assert "Konten" in seite and "Kontoen" not in seite
+
+
 def test_rollen_sammel_auswahl_bleibt(admin_client, benutzer_mit_rolle):
     """Nach dem Anwenden bleibt die Auswahl angehakt (für die nächste Aktion)."""
     a = benutzer_mit_rolle("ayse")

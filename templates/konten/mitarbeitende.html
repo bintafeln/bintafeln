@@ -52,7 +52,7 @@
   </form>
   <div id="ergebnis">
   <div class="liste-aktionen">
-    <span class="hinweis">{{ zeilen|length }} Konto{{ zeilen|length|pluralize:"en" }}</span>
+    <span class="hinweis">{{ zeilen|length }} Kont{{ zeilen|length|pluralize:"o,en" }}</span>
     {% if not archiv and vergebbare_rollen %}
     <form id="rollen-sammel" class="sammel-rollen" method="post" data-auswahl
           action="{% url 'konten:mitarbeitende_rollen_sammel' %}">
