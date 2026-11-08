@@ -181,6 +181,7 @@ def menue(request) -> list[dict]:
     dazu("Verein/Adressen", [
         ("adressen.sehen", adressbuch),
         ("adressen.bearbeiten", _eintrag("Neue Adresse", "adressen:neu")),
+        ("adressen.sehen", _eintrag("Liste drucken", "adressen:druckliste")),
     ])  # fmt: skip
     dazu("Verein/Serienbriefe", [
         ("serienbriefe.erstellen", _eintrag("Serienbrief erstellen", "serienbriefe:erstellen",

@@ -1816,3 +1816,8 @@ details.amtsdokumente > summary { cursor: pointer; margin: .5rem 0; }
 .blaettern-nav { display: flex; gap: .5rem; align-items: center; }
 .blaettern-nav .knopf { padding: .2rem .6rem; }
 .blaettern-nav [aria-disabled="true"] { opacity: .45; pointer-events: none; }
+
+/* „Liste drucken“ (Mitarbeitende/Personen zusammenstellen): Format-/Ausrichtungszeile. */
+.druck-format { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.25rem; margin: .75rem 0; }
+.druck-format-gruppe { display: inline-flex; align-items: center; gap: .5rem; }
+.druck-format-gruppe label { display: inline-flex; align-items: center; gap: .25rem; }

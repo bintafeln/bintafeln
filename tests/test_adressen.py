@@ -320,6 +320,70 @@ def test_einsatztage_bei_der_person(admin_client, pdf_text):
     assert "Fahrdienst" in text  # Spalte „Bereich" der Einsätze-Tabelle
 
 
+DRUCK = reverse("adressen:druckliste")
+
+
+def test_druckliste_zusammenstellen_und_pdf(admin_client, django_user_model, pdf_text):
+    """Admin (darf Mitarbeitende verwalten): Mitarbeiter-Filter und -Spalten da, PDF in A3 quer."""
+    from django.contrib.auth.models import Group
+
+    Adresse.objects.create(art=Adresse.Art.PERSON, nachname="Spender", vorname="Sven",
+                           plz="12345", ort="Musterstadt", telefon="0123")  # fmt: skip
+    konto = django_user_model.objects.create_user("helga", first_name="Helga", last_name="Helfer",
+                                                   beschaeftigung="ehrenamtlich")  # fmt: skip
+    konto.groups.add(Group.objects.get(name=rollen.AUSGABE))
+    Adresse.objects.create(art=Adresse.Art.PERSON, nachname="Helfer", vorname="Helga",
+                           konto=konto)  # fmt: skip
+
+    seite = admin_client.get(DRUCK)
+    assert seite.context["darf_mitarbeit"] is True
+    inhalt = seite.content.decode()
+    # Mitarbeiter-Filter stehen zur Wahl, ebenso die Konto-Spalten
+    assert "nur Mitarbeitende" in inhalt and "Ausgabestelle" in inhalt
+    assert 'value="rollen"' in inhalt and 'value="notfall"' in inhalt
+    # Vorschau enthält beide Personen
+    assert seite.context["anzahl"] == 2
+
+    # Spalte „Rollen" zuschalten: Kopf und Vorschau zeigen die Rolle der Mitarbeiterin
+    mit_rollen = admin_client.get(DRUCK, {"spalte": ["nachname", "rollen"]})
+    assert "Rollen" in mit_rollen.context["kopf"]
+    werte = [w for _, zeile in mit_rollen.context["vorschau"] for w in zeile]
+    assert rollen.AUSGABE in werte
+
+    # Filter „nur Ehrenamtliche" grenzt auf die Mitarbeiterin ein
+    nur_ehr = admin_client.get(DRUCK, {"mitarbeit": "ehrenamtlich"})
+    assert nur_ehr.context["anzahl"] == 1
+
+    # PDF in A3 quer
+    pdf = admin_client.get(DRUCK, {"aktion": "pdf", "format": "a3", "ausrichtung": "quer"})
+    text = pdf_text(pdf)
+    assert "Helfer" in text and "Spender" in text
+
+
+def test_druckliste_ohne_mitarbeiter_recht(client, anmelden, admin, django_user_model):
+    """Büro-Recht (adressen.sehen, nicht mitarbeitende.verwalten): nur reine Adressangaben,
+    keine Mitarbeiter-Filter/-Spalten – auch nicht über Parameter erzwingbar. ``admin`` legt nur
+    den für die Einrichtungs-Middleware nötigen Superuser an."""
+    from django.contrib.auth.models import Group
+
+    nutzer = django_user_model.objects.create_user("bueromensch")
+    nutzer.groups.add(Group.objects.get(name=rollen.BUERO))
+    anmelden(client, nutzer)
+
+    konto = django_user_model.objects.create_user("klara", last_name="Klein",
+                                                   beschaeftigung="fest")  # fmt: skip
+    Adresse.objects.create(art=Adresse.Art.PERSON, nachname="Klein", konto=konto)
+
+    seite = client.get(DRUCK)
+    assert seite.status_code == 200 and seite.context["darf_mitarbeit"] is False
+    inhalt = seite.content.decode()
+    assert "nur Mitarbeitende" not in inhalt and 'value="notfall"' not in inhalt
+    # Konto-Spalte lässt sich nicht über die URL erzwingen
+    erzwungen = client.get(DRUCK, {"spalte": ["nachname", "notfall"], "mitarbeit": "angestellt"})
+    assert "Notfallkontakt" not in erzwungen.context["kopf"]
+    assert erzwungen.context["f"]["mitarbeit"] == "alle"
+
+
 def test_blaettern_folgt_der_liste(admin_client):
     """Aus der Liste kommt man aufs Adressblatt mit Vor-/Zurück-Blättern in genau der Reihenfolge
     (Filter + Sortierung) der Liste; die Listenlinks reichen den Filter weiter."""
