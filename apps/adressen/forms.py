@@ -117,13 +117,18 @@ class AdresseForm(forms.ModelForm):
         return super().save(commit=commit)
 
     def rollen_anwenden(self) -> None:
-        """Die gewählten Rollen auf das verknüpfte Konto schreiben (nach dem Speichern aufrufen)."""
-        if self.rollen_bearbeitbar and self.instance.konto_id:
-            from apps.konten import verwaltung
+        """Die gewählten Rollen auf das verknüpfte Konto schreiben (nach dem Speichern aufrufen).
+        Hat die Person noch kein Konto, aber Rollen gewählt, wird eins angelegt – sonst ginge die
+        Rolle verloren, weil Rollen am Konto hängen (ADR 0097)."""
+        if not self.rollen_bearbeitbar:
+            return
+        from apps.konten import verwaltung
 
-            verwaltung.rollen_setzen(
-                self.verwalter, self.instance.konto, self.cleaned_data.get("rollen") or []
-            )
+        gewaehlt = self.cleaned_data.get("rollen") or []
+        if self.instance.konto_id:
+            verwaltung.rollen_setzen(self.verwalter, self.instance.konto, gewaehlt)
+        elif gewaehlt and self.instance.art == Adresse.Art.PERSON:
+            verwaltung.konto_fuer_adresse(self.verwalter, self.instance, gewaehlt)
 
     def abschnitte(self):
         alle = (
