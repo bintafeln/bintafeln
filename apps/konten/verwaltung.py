@@ -232,6 +232,46 @@ def anlegen(verwalter, daten: dict, rollen_namen: list[str], einladung=False):
     return ziel, passwort
 
 
+def _freier_benutzername(adresse) -> str:
+    """Ein noch freier Benutzername aus dem Namen der Adresse (z. B. „rene.wiechert"); bei
+    Dopplung mit angehängter Zahl. Leerer Name → „helfer"."""
+    from django.utils.text import slugify
+
+    teile = [slugify(adresse.vorname or ""), slugify(adresse.nachname or "")]
+    basis = ".".join(t for t in teile if t) or "helfer"
+    basis = basis[:140]
+    Benutzer = get_user_model()
+    name, n = basis, 1
+    while Benutzer.objects.filter(username__iexact=name).exists():
+        n += 1
+        name = f"{basis}{n}"
+    return name
+
+
+@transaction.atomic
+def konto_fuer_adresse(verwalter, adresse, rollen_namen: list[str]):
+    """Legt für eine Adressbuch-Person ohne Konto ein Anmelde-Konto an und setzt die Rollen darauf
+    (ADR 0097). Ohne nutzbares Passwort und ohne Mail – die Person kann später eingeladen werden.
+    Nötig, weil Rollen am Konto hängen: ohne Konto hätte eine Rolle keinen Platz."""
+    if set(rollen_namen) - set(vergebbare_rollen(verwalter)):
+        raise VerwaltungsFehler("Diese Rolle dürfen Sie nicht vergeben.")
+    ziel = get_user_model()(
+        username=_freier_benutzername(adresse),
+        first_name=(adresse.vorname or "")[:150],
+        last_name=(adresse.nachname or "")[:150],
+        email=adresse.email or "",
+        beschaeftigung="ehrenamtlich",
+    )
+    ziel.set_unusable_password()
+    ziel.save()
+    adresse.konto = ziel
+    adresse.save(update_fields=["konto"])
+    _rollen_setzen(verwalter, ziel, rollen_namen)
+    helfer_kennzeichnen(ziel)
+    personalnummer_zuweisen(ziel)
+    return ziel
+
+
 def naechste_personalnummer() -> int:
     """Nächste freie Personalnummer aus dem eigenen Mitarbeiter-Nummernkreis (Zeile gesperrt,
     damit nie doppelt). Unabhängig von den Mitgliedsnummern (ADR 0116)."""

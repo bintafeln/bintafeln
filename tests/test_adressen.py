@@ -72,6 +72,27 @@ def test_anlegen_bearbeiten_loeschen(admin_client):
     assert not Adresse.objects.exists()
 
 
+def test_rolle_ohne_konto_legt_konto_an(admin_client):
+    """Rollen hängen am Konto (ADR 0097). Gibt man einer neuen Person eine Rolle (z. B. Beifahrer)
+    ohne verknüpftes Konto, legt bintafeln automatisch ein Konto an – sonst ginge die Rolle beim
+    Speichern verloren."""
+    admin_client.post(reverse("adressen:neu"), {
+        "art": "person", "vorname": "René", "nachname": "Wiechert", "rollen": [rollen.BEIFAHRER],
+    })  # fmt: skip
+    a = Adresse.objects.get(nachname="Wiechert")
+    assert a.konto_id is not None
+    assert list(a.konto.groups.values_list("name", flat=True)) == [rollen.BEIFAHRER]
+    assert a.konto.username == "rene.wiechert" and not a.konto.has_usable_password()
+    # Erneut aufrufen: die Rolle ist noch da (nicht mehr verloren) – im Formular vorausgewählt
+    antwort = admin_client.get(reverse("adressen:bearbeiten", args=[a.pk]))
+    assert rollen.BEIFAHRER in antwort.context["form"].initial["rollen"]
+
+    # Ohne Rolle und ohne Konto bleibt es eine reine Adresse (kein Konto)
+    admin_client.post(reverse("adressen:neu"),
+                      {"art": "person", "vorname": "Ohne", "nachname": "Rolle"})  # fmt: skip
+    assert Adresse.objects.get(nachname="Rolle").konto_id is None
+
+
 def test_liste_filter_csv_auskunft(admin_client, markt, pdf_text):
     Adresse.objects.create(art="person", vorname="Max", nachname="Presse", ort="Anderswo")
     inhalt = admin_client.get(LISTE, {"q": "frisch"}).content.decode()
