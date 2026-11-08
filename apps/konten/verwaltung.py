@@ -124,6 +124,38 @@ def rollen_setzen(verwalter, konto, rollen_namen) -> None:
     helfer_kennzeichnen(konto)
 
 
+@transaction.atomic
+def sammel_rolle(verwalter, konten, rolle_name: str, *, entfernen: bool) -> int:
+    """Fügt mehreren Konten auf einmal eine einzelne Rolle hinzu oder nimmt sie ihnen; die übrigen
+    Rollen bleiben. Liefert die Zahl der tatsächlich geänderten Konten. Unangetastet bleiben Konten,
+    die der Verwalter nicht bearbeiten darf (Admin-Konten), und – beim Entfernen – das eigene Konto,
+    wenn es die Admin-Rolle beträfe (niemand nimmt sich selbst die Admin-Rolle)."""
+    from django.contrib.auth.models import Group
+
+    if rolle_name not in vergebbare_rollen(verwalter):
+        raise VerwaltungsFehler("Diese Rolle dürfen Sie nicht vergeben.")
+    gruppe = Group.objects.get(name=rolle_name)
+    geaendert = 0
+    for konto in konten:
+        if not darf_bearbeiten(verwalter, konto):
+            continue
+        selbst = konto.pk == verwalter.pk and not konto.is_superuser
+        if entfernen and selbst and rolle_name == rollen.ADMIN:
+            continue
+        hat = konto.groups.filter(pk=gruppe.pk).exists()
+        if entfernen and hat:
+            konto.groups.remove(gruppe)
+        elif not entfernen and not hat:
+            konto.groups.add(gruppe)
+        else:
+            continue  # nichts zu tun (schon vorhanden bzw. schon weg)
+        rollen.rechte_vergessen(konto)
+        if not entfernen:
+            helfer_kennzeichnen(konto)
+        geaendert += 1
+    return geaendert
+
+
 def _passwort_neu(ziel) -> str:
     passwort = startpasswort()
     ziel.set_password(passwort)

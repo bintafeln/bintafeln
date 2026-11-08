@@ -51,6 +51,38 @@ def test_neue_rollen_fahrer_und_beifahrer():
     assert namen[-3:] == [rollen.FAHRER, rollen.BEIFAHRER, rollen.PERSONAL]
 
 
+ROLLEN_SAMMEL = reverse("konten:mitarbeitende_rollen_sammel")
+
+
+def test_rollen_sammel_hinzufuegen_und_entfernen(admin_client, benutzer_mit_rolle):
+    """Mehrere angehakte Konten bekommen gemeinsam eine Rolle; Entfernen lässt andere in Ruhe."""
+    a = benutzer_mit_rolle("anna")
+    b = benutzer_mit_rolle("bert")
+    admin_client.post(
+        ROLLEN_SAMMEL, {"id": [a.pk, b.pk], "rolle": "Ausgabe", "aktion": "hinzufuegen"}
+    )
+    assert a.groups.filter(name="Ausgabe").exists()
+    assert b.groups.filter(name="Ausgabe").exists()
+    admin_client.post(ROLLEN_SAMMEL, {"id": [a.pk], "rolle": "Ausgabe", "aktion": "entfernen"})
+    assert not a.groups.filter(name="Ausgabe").exists()
+    assert b.groups.filter(name="Ausgabe").exists()  # bert unverändert
+
+
+def test_rollen_sammel_formular_in_der_liste(admin_client, benutzer_mit_rolle):
+    benutzer_mit_rolle("clara")
+    inhalt = admin_client.get(LISTE).content.decode()
+    assert 'id="rollen-sammel"' in inhalt and 'name="id"' in inhalt  # Kästchen + Sammel-Formular
+    assert "Für Ausgewählte anwenden" in inhalt
+
+
+def test_sammel_rolle_nur_vergebbare(benutzer_mit_rolle):
+    """Wer eine Rolle selbst nicht hat, kann sie auch sammelweise nicht vergeben."""
+    ziel = benutzer_mit_rolle("ole")
+    chef = benutzer_mit_rolle("chef")  # ohne Rechte → darf „Admin" nicht vergeben
+    with pytest.raises(verwaltung.VerwaltungsFehler):
+        verwaltung.sammel_rolle(chef, [ziel], rollen.ADMIN, entfernen=False)
+
+
 @pytest.mark.parametrize("rolle", [rollen.BUERO, rollen.AUSGABE, rollen.FAHRER])
 def test_ohne_freigabe_kein_zugang(als, rolle):
     client, _ = als(rolle)
