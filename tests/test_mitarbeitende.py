@@ -277,6 +277,47 @@ def test_admin_mitarbeiternummer_selbst_setzen(admin_client):
     assert "personalnummer" in with_feld.fields
 
 
+def test_adresse_und_stammdaten_bleiben_synchron(admin_client):
+    """Dieselbe Adresse steht in den Mitarbeiter-Stammdaten und im Adressbuch. Ändert man die eine
+    Seite, zieht die andere automatisch mit – kein Auseinanderlaufen zweier Stände (ADR 0097)."""
+    from apps.adressen.models import Adresse
+    from apps.konten.models import Stammdaten
+
+    neu(admin_client, username="eva.ehren", first_name="Eva", last_name="Ehren")
+    b = get_user_model().objects.get(username="eva.ehren")
+    adr = Adresse.objects.get(konto=b)  # beim Anlegen entstanden
+
+    # 1) Mitarbeiterseite ändern -> Adressbuch-Eintrag zieht mit (handy -> mobil)
+    admin_client.post(url("stammdaten", b), {
+        "anrede": "Frau", "strasse": "Neue Gasse 2", "plz": "11111", "ort": "Neustadt",
+        "telefon": "030-111", "handy": "0170-111",
+    })  # fmt: skip
+    adr.refresh_from_db()
+    assert (adr.strasse, adr.plz, adr.ort, adr.telefon, adr.mobil, adr.anrede) == (
+        "Neue Gasse 2",
+        "11111",
+        "Neustadt",
+        "030-111",
+        "0170-111",
+        "Frau",
+    )
+
+    # 2) Adressbuch ändern -> Stammdaten ziehen mit (mobil -> handy)
+    admin_client.post(reverse("adressen:bearbeiten", args=[adr.pk]), {
+        "art": "person", "nachname": "Ehren", "vorname": "Eva", "konto": b.pk,
+        "rollen": [rollen.AUSGABE], "anrede": "Frau", "strasse": "Andere Str. 9",
+        "plz": "22222", "ort": "Andersdorf", "telefon": "040-222", "mobil": "0160-222",
+    })  # fmt: skip
+    s = Stammdaten.objects.get(benutzer=b)
+    assert (s.strasse, s.plz, s.ort, s.telefon, s.handy) == (
+        "Andere Str. 9",
+        "22222",
+        "Andersdorf",
+        "040-222",
+        "0160-222",
+    )
+
+
 def test_personalnummer_darf_mitgliedsnummer_gleichen(admin_client):
     # Getrennte Nummernkreise (ADR 0116): eine Zahl, die schon Mitgliedsnummer ist, darf von Hand
     # als Personalnummer gesetzt werden – beide Kreise sind unabhängig.
