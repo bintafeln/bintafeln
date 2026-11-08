@@ -102,6 +102,22 @@ def test_liste_blaettern_und_getrennte_spalten(admin_client):
     assert vornamen == sorted(vornamen)
 
 
+def test_liste_spalte_geburtstag(admin_client):
+    """Die Liste hat eine wählbare, sortierbare Spalte „Geburtstag"."""
+    Adresse.objects.create(art="person", nachname="Alt", geburtsdatum=dt.date(1950, 2, 3))
+    Adresse.objects.create(art="person", nachname="Jung", geburtsdatum=dt.date(1990, 7, 1))
+    seite = admin_client.get(LISTE, {"anzahl": "alle"})
+    assert "geburtsdatum" in seite.context["sichtbar"]  # standardmäßig sichtbar
+    inhalt = seite.content.decode()
+    assert "Geburtstag" in inhalt and "03.02.1950" in inhalt
+    # auch zur Wahl im Spaltenwähler
+    assert any(k == "geburtsdatum" for k, *_ in seite.context["spalten_wahl"])
+    # sortierbar nach Geburtsdatum
+    nach_geb = admin_client.get(LISTE, {"anzahl": "alle", "sort": "geburtsdatum"}).context["seite"]
+    daten = [a.geburtsdatum for a in nach_geb if a.geburtsdatum]
+    assert daten == sorted(daten)
+
+
 CSV = (
     "organisation;vorname;nachname;geburtsdatum;plz;ort;email;kategorien;einwilligung_post;quatsch\n"
     "Frischmarkt Muster;;;;12345;Musterstadt;;Lieferant/Markt;;x\n"  # schon da (Name + PLZ)

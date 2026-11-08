@@ -117,11 +117,13 @@ SORTIERUNG = {
     "ort": ("ort", "plz"),
     "telefon": ("telefon", "mobil"),
     "email": ("email",),
+    "geburtsdatum": ("geburtsdatum",),
 }
 # Zu-/abwählbare Spalten (Nachname öffnet die Adresse und steht immer, darum nicht hier) –
 # getrennte Spalten wie in der Mitarbeitendenliste, standardmäßig alle sichtbar.
 SPALTEN = [("vorname", "Vorname"), ("anrede", "Anrede"), ("strasse", "Straße"), ("plz", "PLZ"),
            ("ort", "Ort"), ("telefon", "Telefon"), ("mobil", "Handy"), ("email", "E-Mail"),
+           ("geburtsdatum", "Geburtstag"),
            ("kategorien", "Kategorien"), ("helfer", "Mitarbeit")]  # fmt: skip
 SPALTEN_FEST: set = set()
 
