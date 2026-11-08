@@ -71,6 +71,8 @@ def anlegen(seed: int | None = None) -> dict:
             freie_fahrer = zufall.sample(fahrer, len(fahrer))
             freie_beifahrer = zufall.sample(beifahrer, len(beifahrer))
             for tour in touren:
+                if tag not in wochentage(tour.fahrtage):
+                    continue
                 leute = [freie_fahrer.pop(), freie_beifahrer.pop()]
                 if freie_beifahrer and zufall.random() < 0.25:  # manchmal zu dritt
                     leute.append(freie_beifahrer.pop())

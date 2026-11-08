@@ -51,7 +51,11 @@ class TageFeld(forms.MultipleChoiceField):
 
 
 class EinstellungenForm(forms.ModelForm):
-    fahrtage = TageFeld(label="Fahrtage")
+    fahrtage = TageFeld(
+        label="Fahrtage (Vorgabe für neue Touren)",
+        help_text="Diese Tage sind bei einer neuen Tour schon angehakt. Die tatsächlichen Fahrtage "
+        "stellt man je Tour ein.",
+    )  # fmt: skip
     benachrichtigen = forms.ModelMultipleChoiceField(
         label="Bei einem Ausfall benachrichtigen", queryset=aktive_konten().none(),
         required=False, widget=forms.CheckboxSelectMultiple,
@@ -110,14 +114,25 @@ class EinstellungenForm(forms.ModelForm):
 
 
 class TourForm(forms.ModelForm):
+    fahrtage = TageFeld(
+        label="Fahrtage", required=False,
+        help_text="An diesen Wochentagen fährt die Tour. Sa und So sind möglich; einzelne Tage "
+        "(z. B. Do) einfach abwählen.",
+    )  # fmt: skip
+
     class Meta:
         model = Tour
-        fields = ["name", "reihenfolge", "plaetze", "mindestbesetzung", "aktiv", "ab", "bis"]
+        fields = ["name", "reihenfolge", "plaetze", "mindestbesetzung", "fahrtage", "aktiv",
+                  "ab", "bis"]  # fmt: skip
         widgets = {"ab": DatumEingabe(), "bis": DatumEingabe()}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["mindestbesetzung"].required = False  # leer = 2 (höchstens alle Plätze)
+        # Neue Tour: die globalen Fahrtage als Vorgabe vorbelegen (für bestehende Touren steht der
+        # eigene Wert schon in der Instanz).
+        if not self.instance.pk:
+            self.fields["fahrtage"].initial = FahrdienstEinstellungen.laden().fahrtage
 
     def clean(self):
         daten = super().clean()

@@ -100,12 +100,31 @@ def test_fahrtage_und_feiertage(team):
     e = FahrdienstEinstellungen.laden()
     tage = plan.fahrtage(dt.date(2026, 12, 21), dt.date(2026, 12, 27), e)
     assert [t.day for t in tage] == [21, 22, 23, 24]  # 25. und 26. Feiertage, Wochenende frei
+    # Fahrtage jetzt je Tour: nur Mo und Sa, Feiertage nicht mehr gesperrt
     e.feiertage_frei = False
-    e.fahrtage = "Mo, Sa"
+    Tour.objects.update(fahrtage="Mo, Sa")
     assert [t.day for t in plan.fahrtage(dt.date(2026, 12, 21), dt.date(2026, 12, 27), e)] == [
         21,
         26,
     ]
+
+
+def test_fahrtage_je_tour(team):
+    """Jede Tour hat eigene Fahrtage: eine Tour kann samstags fahren, bei einer anderen fällt der
+    Donnerstag weg. Der Plan zeigt jeden Tag, an dem mindestens eine Tour fährt."""
+    p, mitte, steele = team
+    mitte.fahrtage = "Mo, Di, Mi, Fr, Sa"  # kein Do, dafür Sa
+    mitte.save()
+    steele.fahrtage = "Mo, Di, Mi, Do, Fr"  # wie bisher Mo–Fr
+    steele.save()
+    # Woche 9.–15.11.2026 (Mo–So)
+    woche = plan.tage(plan.fahrtage(dt.date(2026, 11, 9), dt.date(2026, 11, 15)))
+    tage = {d: {t.name for t, pl in zeile if pl} for d, zeile in woche}
+    # Samstag (14.) erscheint – nur Mitte fährt; Sonntag (15.) fehlt ganz
+    assert dt.date(2026, 11, 14) in tage and tage[dt.date(2026, 11, 14)] == {"Mitte"}
+    assert dt.date(2026, 11, 15) not in tage
+    # Donnerstag (12.): nur Steele, Mitte hat an dem Tag keine Plätze
+    assert tage[dt.date(2026, 11, 12)] == {"Steele"}
 
 
 def test_benachrichtigen_auswahl_nur_berechtigte(benutzer_mit_rolle):
@@ -207,11 +226,14 @@ def test_einstellungen_touren_besetzung_springer(team, admin_client):
     assert (e.selbst_melden, e.fahrtage, e.aufbewahren_monate) == (False, "Mo, Di", 6)
     antwort = admin_client.post(reverse("fahrdienst:tour_neu"),
                                 {"name": "Sondertour", "reihenfolge": 9, "plaetze": 3,
-                                 "aktiv": "on"})  # fmt: skip
+                                 "fahrtage": ["Mo", "Di"], "aktiv": "on"})  # fmt: skip
     neu = Tour.objects.get(name="Sondertour")
+    assert neu.fahrtage == "Mo, Di"
     assert antwort.url == reverse("fahrdienst:besetzung", args=[neu.pk])
     url = reverse("fahrdienst:besetzung", args=[neu.pk])
-    assert 'name="b_Di_3"' in admin_client.get(url).content.decode()
+    # Nur die Fahrtage der Tour stehen in der Besetzung (Di ist dabei, Mi nicht)
+    seite = admin_client.get(url).content.decode()
+    assert 'name="b_Di_3"' in seite and 'name="b_Mi_1"' not in seite
     admin_client.post(url, {"b_Mo_1": p["tim"].pk, "b_Di_2": p["ole"].pk, "b_Di_3": "999999"})
     assert {(b.wochentag, b.platz, b.person.vorname) for b in neu.besetzungen.all()} == {
         ("Mo", 1, "Tim"),
@@ -346,7 +368,7 @@ def test_plan_als_pdf(team, admin_client, pdf_text):
     assert "(für Eva Lindner)" in text and "Springer" in text and "nur Fr" in text
     assert "krank" not in text
     assert "Drucken (PDF)" in admin_client.get(PLAN).content.decode()
-    FahrdienstEinstellungen.objects.update(fahrtage="")
+    Tour.objects.update(fahrtage="")  # keine Tour fährt mehr an einem Wochentag
     leer = pdf_text(admin_client.get(reverse("fahrdienst:pdf"), {"monat": "2026-11"}))
     assert "keine Fahrtage" in leer
 
