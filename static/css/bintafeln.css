@@ -204,9 +204,16 @@ a.blaettern-knopf:hover { border-color: var(--akzent); }
 }
 
 /* Breite Listen (z. B. Mitarbeitende): zweiter, synchroner Scrollbalken oben über der Tabelle,
-   damit man nicht erst nach ganz unten muss. static/js/tabelle_oben.js baut ihn ein. */
-.tabelle-oben-scroll { overflow-x: auto; overflow-y: hidden; }
+   damit man nicht erst nach ganz unten muss. static/js/tabelle_oben.js baut ihn ein. Der Balken
+   ist absichtlich kräftiger (gut mit Maus und Finger greifbar). */
+.tabelle-oben-scroll { overflow-x: auto; overflow-y: hidden; scrollbar-width: auto; margin-bottom: .35rem; }
 .tabelle-oben-scroll > div { height: 1px; }
+.tabelle-oben-scroll::-webkit-scrollbar { height: 16px; }
+.tabelle-oben-scroll::-webkit-scrollbar-track { background: var(--flaeche-2, #f3f3f3); border-radius: 8px; }
+.tabelle-oben-scroll::-webkit-scrollbar-thumb {
+  background: var(--rand); border-radius: 8px; border: 3px solid var(--flaeche-2, #f3f3f3);
+}
+.tabelle-oben-scroll::-webkit-scrollbar-thumb:hover { background: var(--text-leise, #5b6660); }
 
 @media (min-width: 40rem) {
   .knopf { width: auto; }
