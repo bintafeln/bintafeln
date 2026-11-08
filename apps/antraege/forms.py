@@ -357,11 +357,28 @@ class EinstellungenForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Auswahl statt Freitext: nur aktive Mitarbeitende mit E-Mail-Adresse.
+        # Auswahl statt Freitext, aber nicht das ganze Team: nur die kleine Gruppe, die Anträge
+        # überhaupt sieht (Recht „antraege.sehen“) – aktive Konten mit E-Mail, keine
+        # Ausgabestellen-Konten. Schon ausgewählte Konten bleiben wählbar, auch wenn sich das
+        # Recht später ändert (sonst fielen sie beim Speichern still weg).
+        from apps.konten import rollen
+
+        kandidaten = (
+            get_user_model()
+            .objects.filter(is_active=True, stelle__isnull=True)
+            .exclude(email="")
+        )
+        schon = (
+            set(self.instance.benachrichtigen.values_list("pk", flat=True))
+            if self.instance.pk
+            else set()
+        )
+        erlaubt = [
+            b.pk for b in kandidaten if b.pk in schon or rollen.hat_recht(b, "antraege.sehen")
+        ]
         self.fields["benachrichtigen"].queryset = (
             get_user_model()
-            .objects.filter(is_active=True)
-            .exclude(email="")
+            .objects.filter(pk__in=erlaubt)
             .order_by("last_name", "first_name", "username")
         )
 
