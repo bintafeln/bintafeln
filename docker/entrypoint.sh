@@ -27,6 +27,7 @@ if [ "${1:-}" = "gunicorn" ]; then
         while sleep 300; do
             python manage.py benachrichtigungen_senden || true
             python manage.py verzeichnis_melden || true
+            python manage.py auto_update || true
         done
     ) &
     # Abgleich mit dem Kundenstamm und Doppelte Anträge alle 15 Minuten vorrechnen (ADR 0109),

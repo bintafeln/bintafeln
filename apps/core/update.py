@@ -199,6 +199,42 @@ def _schreiben(name: str, text: str) -> None:
     tmp.replace(ordner / name)
 
 
+AUTO_FENSTER = timedelta(hours=1)
+
+
+def auto_update_pruefen(jetzt: datetime | None = None) -> str | None:
+    """Für den Hintergrundlauf (entrypoint.sh, alle 5 Minuten): Ist das automatische Update
+    eingeschaltet und die eingestellte Uhrzeit heute erreicht (innerhalb einer Stunde danach, damit
+    es nach einem Neustart am Tag nicht irgendwann nachzündet) und heute noch nicht gelaufen, wird
+    auf die neueste Version aktualisiert – nur wenn eine neuere verfügbar ist und der Dienst frei
+    ist. Gibt die angeforderte Version zurück oder None. Je Tag läuft es höchstens einmal."""
+    from apps.core.models import TafelEinstellungen
+
+    jetzt = jetzt or timezone.localtime()
+    e = TafelEinstellungen.laden()
+    if not e.auto_update or e.auto_update_zuletzt == jetzt.date():
+        return None
+    geplant = jetzt.replace(hour=e.auto_update_zeit.hour, minute=e.auto_update_zeit.minute,
+                            second=0, microsecond=0)  # fmt: skip
+    if not (geplant <= jetzt < geplant + AUTO_FENSTER):
+        return None
+    s = stand()
+    if not s.erreichbar or s.beschaeftigt:
+        return None  # Dienst aus oder schon beschäftigt: nächster Tag erneut
+    # Heute als erledigt vermerken, auch wenn es nichts zu tun gibt – sonst prüft die Schleife es
+    # im selben Zeitfenster immer wieder.
+    e.auto_update_zuletzt = jetzt.date()
+    e.save(update_fields=["auto_update_zuletzt"])
+    neueste = s.neueste
+    if neueste is None or not s.ist_neuer(neueste):
+        return None
+    try:
+        anfordern(neueste.name, "automatisch")
+    except UpdateFehler:
+        return None
+    return neueste.name
+
+
 def anfordern(version: str, von: str) -> None:
     """Auftrag für den Dienst; er prüft die Version noch einmal selbst."""
     s = stand()

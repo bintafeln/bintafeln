@@ -9,5 +9,17 @@
     gesichert. Während des Updates ist bintafeln ein bis zwei Minuten nicht erreichbar; danach lädt sich diese Seite
     selbst neu. Am besten zu einer Zeit ohne Ausgabe.</p>
 </section>
+<section class="karte breit">
+  <h2>Automatisch aktualisieren</h2>
+  <p class="hinweis">Mit dem Schalter aktualisiert sich bintafeln zur eingestellten Uhrzeit von selbst auf die
+    neueste Version – am besten nachts, außerhalb der Ausgabe. Vorher wird wie immer gesichert; für ein bis zwei
+    Minuten ist bintafeln dabei nicht erreichbar.</p>
+  <form method="post" action="{% url 'core:update_automatik' %}" class="auto-update-form">
+    {% csrf_token %}
+    <label class="auto-update-schalter"><input type="checkbox" name="auto_update"{% if e.auto_update %} checked{% endif %}> Automatisch aktualisieren</label>
+    <label class="auto-update-zeit">Uhrzeit <input type="time" name="auto_update_zeit" value="{{ e.auto_update_zeit|time:'H:i' }}" required></label>
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
 <div id="update-stand">{% include "core/_update_stand.html" %}</div>
 {% endblock %}
