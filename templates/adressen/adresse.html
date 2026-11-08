@@ -39,7 +39,7 @@
   </dl>
   <p class="hinweis">Angelegt am {{ a.angelegt_am|date:"d.m.Y" }}{% if a.geaendert_am %}, zuletzt geändert am {{ a.geaendert_am|date:"d.m.Y H:i" }} von {{ a.geaendert_von }}{% endif %}.</p>
   {% if "adressen.loeschen" in rechte %}
-  <form method="post" action="{% url 'adressen:loeschen' a.pk %}" class="abseits" onsubmit="return confirm('Adresse „{{ a.name|escapejs }}“ in den Papierkorb legen?')">
+  <form method="post" action="{% url 'adressen:loeschen' a.pk %}" class="abseits" onsubmit="return confirm('{% if a.konto_id %}„{{ a.name|escapejs }}“ samt Anmelde-Konto in den Papierkorb legen?{% else %}Adresse „{{ a.name|escapejs }}“ in den Papierkorb legen?{% endif %}')">
     {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Adresse löschen</button>
   </form>
   {% endif %}

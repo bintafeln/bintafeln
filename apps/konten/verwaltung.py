@@ -400,6 +400,25 @@ def entfernen(verwalter, ziel):
                                recht="mitarbeitende.loeschen")  # fmt: skip
 
 
+def konto_und_adresse_entfernen(verwalter, adresse):
+    """Löscht eine Adressbuch-Person samt ihrem Anmelde-Konto in den Papierkorb – Adresse und Konto
+    gehören zusammen (ADR 0097), eine ohne die andere wäre ein verwaister Zugang. Anders als beim
+    Mitarbeiter-Löschen geht das auch bei einem noch aktiven Konto, weil hier die ganze Person
+    entfernt wird. Prüft die Rechte und Schutzregeln; ``ProtectedError`` (Spenden/Mitgliedschaft)
+    lässt nichts löschen. Gibt den ``PapierkorbEintrag`` zurück."""
+    from apps.core import papierkorb
+
+    ziel = adresse.konto
+    _pruefen(verwalter, ziel)  # Admin-Konten nur durch einen Admin
+    if ziel.pk == verwalter.pk:
+        raise VerwaltungsFehler("Sie können sich nicht selbst löschen.")
+    if not rollen.hat_recht(verwalter, "mitarbeitende.loeschen"):
+        raise VerwaltungsFehler("Diese Person hat ein Mitarbeiter-Konto; zum Löschen brauchen Sie "
+                                "auch das Recht, Mitarbeitende zu löschen.")  # fmt: skip
+    return papierkorb.loeschen(verwalter, "Mitarbeiter", str(ziel), ziel, adresse,
+                               recht="mitarbeitende.loeschen")  # fmt: skip
+
+
 @transaction.atomic
 def werkseinstellungen(verwalter, ziel) -> None:
     """Persönliche Anpassungen zurücksetzen, wie beim Anlegen des Kontos: Spalten der

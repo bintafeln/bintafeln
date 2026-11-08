@@ -383,11 +383,27 @@ def _mitglied_formular(request, a: Adresse):
 def loeschen(request, pk):
     a = get_object_or_404(Adresse, pk=pk)
     name = a.name
+    geschuetzt = (f"„{name}“ hat Spenden, Zuwendungsbestätigungen oder eine Mitgliedschaft und "
+                  "lässt sich deshalb nicht löschen.")  # fmt: skip
+    # Hängt ein Anmelde-Konto an der Person, gehört es zur Person und wird mitgelöscht (ADR 0097) –
+    # sonst bliebe ein verwaister Zugang übrig.
+    if a.konto_id:
+        from apps.konten import verwaltung
+
+        try:
+            verwaltung.konto_und_adresse_entfernen(request.user, a)
+        except verwaltung.VerwaltungsFehler as fehler:
+            messages.error(request, str(fehler))
+            return redirect("adressen:adresse", pk=pk)
+        except ProtectedError:
+            messages.error(request, geschuetzt)
+            return redirect("adressen:adresse", pk=pk)
+        messages.success(request, f"„{name}“ samt Anmelde-Konto in den Papierkorb gelegt.")
+        return redirect("adressen:liste")
     try:
         papierkorb.loeschen(request.user, "Adresse", name, a, recht="adressen.loeschen")
     except ProtectedError:
-        messages.error(request, f"„{name}“ hat Spenden, Zuwendungsbestätigungen oder eine "
-                                "Mitgliedschaft und lässt sich deshalb nicht löschen.")  # fmt: skip
+        messages.error(request, geschuetzt)
         return redirect("adressen:adresse", pk=pk)
     messages.success(request, f"Adresse „{name}“ in den Papierkorb gelegt.")
     return redirect("adressen:liste")
