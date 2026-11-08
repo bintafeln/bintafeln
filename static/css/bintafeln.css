@@ -1809,3 +1809,10 @@ details.amtsdokumente > summary { cursor: pointer; margin: .5rem 0; }
 .nach-oben:hover { filter: brightness(1.08); }
 .nach-oben:focus-visible { outline: 3px solid var(--auf-akzent); outline-offset: 2px; }
 @media print { .nach-oben { display: none !important; } }
+
+/* Blättern-Leiste über dem Adressblatt: Rücksprung links, vor/zurück rechts. */
+.blaettern-leiste { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center;
+  justify-content: space-between; margin-bottom: .5rem; }
+.blaettern-nav { display: flex; gap: .5rem; align-items: center; }
+.blaettern-nav .knopf { padding: .2rem .6rem; }
+.blaettern-nav [aria-disabled="true"] { opacity: .45; pointer-events: none; }
