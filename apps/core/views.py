@@ -109,6 +109,12 @@ def einrichtung(request):
                 username=daten["username"], email=daten["email"], password=daten["password1"]
             )
             admin.groups.add(Group.objects.get(name=rollen.ADMIN))
+            # Jedes Mitarbeiter-Konto ist eine Person im Adressbuch (ADR 0097), sonst fehlt der
+            # Admin in den Adress-/Drucklisten. Wie beim Anlegen über die Verwaltung.
+            from apps.konten import verwaltung
+
+            verwaltung.adresse_abgleichen(admin)
+            verwaltung.helfer_kennzeichnen(admin)
             einstellungen.name = daten["tafel_name"]
             einstellungen.save()
         login(request, admin, backend="django.contrib.auth.backends.ModelBackend")
