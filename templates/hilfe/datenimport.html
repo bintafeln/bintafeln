@@ -36,8 +36,13 @@
 {% hilfe_bild "datenimport-zuordnen" "① Je Spalte das Feld wählen (hier wird „PLZ Ort“ aufgeteilt), ② die Zuordnung unter einem Namen speichern, ③ „Prüfen und abgleichen“." %}
 {% hilfe_bild "datenimport-abgleich" "① Art wählen, ② Haken = Wert aus der Datei übernehmen (Konflikt beim Telefon), ③ wählen, was mit Einträgen geschieht, die nicht mehr in der Datei stehen; dann „Import übernehmen“." %}
 <p><strong>Mitarbeitende:</strong> Neue Konten bekommen kein Passwort. Den Zugang geben Sie danach unter „Mitarbeitende“ (Link
-  per E-Mail oder neues Passwort). Erkannt werden vorhandene Konten am Benutzernamen, an der E-Mail-Adresse oder an Name und
-  Geburtsdatum. Rollen aus der Datei bekommen nur neue Konten, und nur solche, die Sie selbst vergeben dürfen.</p>
+  per E-Mail oder neues Passwort). Vorhandene werden <strong>unabhängig von einer Nummer</strong> erkannt: am Benutzernamen,
+  an der E-Mail-Adresse oder am Namen. Ein <strong>eindeutig gleicher Vor- und Nachname</strong> genügt – so werden beim
+  wiederholten Import nicht alle doppelt angelegt, auch wenn E-Mail und Geburtsdatum fehlen. Ein vorhandenes Geburtsdatum
+  bestätigt den Treffer. Gibt es <strong>mehrere Gleichnamige</strong>, einen <strong>ähnlichen Namen</strong> (Tippfehler)
+  oder denselben Namen mit <strong>anderem Geburtsdatum</strong>, wird nichts stillschweigend zusammengeführt – Sie wählen je
+  Zeile „dieselbe Person“, „neu anlegen“ oder „auslassen“. Rollen aus der Datei bekommen nur neue Konten, und nur solche, die
+  Sie selbst vergeben dürfen.</p>
 <p><strong>Adressbuch:</strong> Erkannt wird an der E-Mail-Adresse oder an Name und PLZ. Kategorien aus der Datei kommen dazu
   (vorhandene bleiben), unbekannte werden angelegt. Bei den Einwilligungen genügt „ja“: Dann gilt sie ab heute.</p>
 <p><strong>Mitglieder:</strong> Die Anschrift kommt ins Adressbuch; steht die Person dort schon, wird diese Adresse
