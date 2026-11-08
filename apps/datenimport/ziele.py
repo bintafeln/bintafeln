@@ -758,7 +758,16 @@ class Mitarbeitende(Ziel):
         return {str(b.pk) for b in self._konten().filter(is_active=False)} | {str(verwalter.pk)}
 
     def treffer_finder(self, bestand):
-        nach_login = {b.werte["benutzername"].lower(): b for b in bestand}
+        """Vorhandene Mitarbeitende werden unabhängig von einer Nummer erkannt: zuerst über
+        Benutzername oder E-Mail (wo vorhanden eindeutig), sonst über den Namen. Ein eindeutig
+        gleicher Vor- und Nachname gilt als sicherer Treffer – so legt ein erneuter Import nicht
+        alle doppelt an. Mehrere Gleichnamige oder nur ähnliche Namen bleiben zur Wahl; ein
+        vorhandenes Geburtsdatum bestätigt oder widerlegt einen Namenstreffer."""
+        import difflib
+
+        nach_login = {
+            b.werte["benutzername"].lower(): b for b in bestand if b.werte["benutzername"]
+        }
         nach_mail = {}
         nach_name: dict[str, list] = {}
         for b in bestand:
@@ -774,16 +783,27 @@ class Mitarbeitende(Ziel):
                 return Treffer(nach_login[login].id, True)
             if werte.get("email") and werte["email"] in nach_mail:
                 return Treffer(nach_mail[werte["email"]].id, True)
-            gleiche = nach_name.get(normalisieren(self.name(werte)), [])
+            name = normalisieren(self.name(werte))
             geb = werte.get("geburtsdatum", "")
-            for b in gleiche:
-                if geb and b.werte["geburtsdatum"] == geb:
-                    return Treffer(b.id, True)
+            gleiche = nach_name.get(name, [])
             if gleiche:
+                mit_geb = [b for b in gleiche if geb and b.werte["geburtsdatum"] == geb]
+                if mit_geb:
+                    return Treffer(mit_geb[0].id, True)  # Name + Geburtsdatum
+                if len(gleiche) > 1:  # mehrere Gleichnamige → nicht raten
+                    return Treffer(gleiche[0].id, False, "gleicher Name (mehrere Einträge)")
                 b = gleiche[0]
                 if geb and b.werte["geburtsdatum"] and b.werte["geburtsdatum"] != geb:
                     return Treffer(b.id, False, "gleicher Name, anderes Geburtsdatum")
-                return Treffer(b.id, False, "gleicher Name")
+                return Treffer(b.id, True, "gleicher Name")  # eindeutig → sicher
+            if len(name) >= 4:  # sehr ähnlicher Name (Tippfehler, Umstellung) → zur Wahl
+                best, score = None, 0.0
+                for k, kandidaten in nach_name.items():
+                    r = difflib.SequenceMatcher(None, name, k).ratio()
+                    if r > score:
+                        best, score = kandidaten[0], r
+                if best is not None and score >= 0.85:
+                    return Treffer(best.id, False, "ähnlicher Name")
             return None
 
         return finden

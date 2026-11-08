@@ -511,6 +511,43 @@ def test_antraege_werden_nicht_zusammengefuehrt(admin_client):
 # --- Mitarbeitende ----------------------------------------------------------------------
 
 
+def test_mitarbeitende_abgleich_ueber_namen():
+    """Der Mitarbeiter-Abgleich erkennt Vorhandene unabhängig von einer Nummer: eindeutig
+    gleicher Name ist ein sicherer Treffer, mehrere Gleichnamige und nur ähnliche Namen bleiben
+    zur Wahl, ein Geburtsdatum bestätigt oder widerlegt den Namen."""
+
+    def eintrag(pk, vorname, nachname, geb="", email=""):
+        return abgleich.Bestandseintrag(
+            pk,
+            f"{vorname} {nachname}",
+            {"benutzername": f"k{pk}", "email": email, "vorname": vorname,
+             "nachname": nachname, "geburtsdatum": geb},
+        )  # fmt: skip
+
+    bestand = [
+        eintrag("1", "Anna", "Neu"),
+        eintrag("2", "Eva", "Klein"),  # zwei Gleichnamige
+        eintrag("3", "Eva", "Klein"),
+        eintrag("4", "Tom", "Groß", geb="1980-01-01"),
+    ]
+    finden = ZIELE["mitarbeitende"].treffer_finder(bestand)
+
+    def zeile(vorname, nachname, geb=""):
+        return finden({"vorname": vorname, "nachname": nachname, "geburtsdatum": geb})
+
+    eindeutig = zeile("Anna", "Neu")  # eindeutig gleicher Name → sicher
+    assert eindeutig.id == "1" and eindeutig.sicher
+    mehrere = zeile("Eva", "Klein")  # mehrere Gleichnamige → zur Wahl
+    assert not mehrere.sicher and "mehrere" in mehrere.grund
+    aehnlich = zeile("Tom", "Gros")  # Tippfehler → nur ähnlich, zur Wahl
+    assert aehnlich.id == "4" and not aehnlich.sicher and aehnlich.grund == "ähnlicher Name"
+    mit_geb = zeile("Tom", "Groß", geb="1980-01-01")  # Name + Geburtsdatum → sicher
+    assert mit_geb.id == "4" and mit_geb.sicher
+    anderes_geb = zeile("Tom", "Groß", geb="1999-09-09")  # Name gleich, Geburtsdatum anders
+    assert anderes_geb.id == "4" and not anderes_geb.sicher
+    assert zeile("Xaver", "Unbekannt") is None  # kein ähnlicher Name → neu
+
+
 def test_mitarbeitende_aus_excel(admin_client, admin, django_user_model):
     vorhanden = django_user_model.objects.create_user(
         username="bmuster", first_name="Ben", last_name="Muster", email="ben@example.org"
@@ -537,7 +574,7 @@ def test_mitarbeitende_aus_excel(admin_client, admin, django_user_model):
                     dt.datetime(1990, 2, 1),
                 ],
                 ["Ben", "Muster", "BEN@example.org", "Gasse 1", None, "45127", "Essen", "", None],
-                ["Carla", "Probe", "", "", None, "", "", "", None],
+                ["Carla", "Probe", "", "Allee 2", None, "44623", "Herne", "", None],
             ]
         },
     )
@@ -548,7 +585,9 @@ def test_mitarbeitende_aus_excel(admin_client, admin, django_user_model):
     weiter(admin_client, sitzung, **{"z-0-4": "strasse"})  # Hausnummer zur Straße
     url = reverse("datenimport:abgleich", args=[sitzung.pk])
     inhalt = admin_client.get(url).content.decode()
-    assert "Mögliche Dublette" in inhalt and "gleicher Name" in inhalt
+    # Carla Probe wird am eindeutig gleichen Namen erkannt (kein doppeltes Konto), nicht als
+    # unsichere Dublette: unabhängig von Nummer, E-Mail oder Geburtsdatum.
+    assert "Mögliche Dublette" not in inhalt
     sitzung.refresh_from_db()
     plan = abgleich.vorgaben(sitzung.plan, abgleich.AKTUALISIEREN, ZIELE["mitarbeitende"].aktionen)
     felder = {f"f-{e['i']}-{f['feld']}": "1" for e in plan["geaendert"] for f in e["felder"]}
@@ -567,8 +606,10 @@ def test_mitarbeitende_aus_excel(admin_client, admin, django_user_model):
     )
     vorhanden.refresh_from_db()
     assert vorhanden.stammdaten.ort == "Essen"  # über die E-Mail erkannt, ergänzt
-    assert django_user_model.objects.filter(first_name="Carla").count() == 1  # Dublette aus
+    assert django_user_model.objects.filter(first_name="Carla").count() == 1  # nicht doppelt
+    gleicher_name.refresh_from_db()
     assert gleicher_name.is_active
+    assert gleicher_name.stammdaten.ort == "Herne"  # über den Namen erkannt, ergänzt
     weg.refresh_from_db()
     assert not weg.is_active
     admin.refresh_from_db()
