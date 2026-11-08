@@ -28,6 +28,25 @@
 </section>
 
 <section class="karte breit">
+  <h2>Wegbeschreibung (Anhang)</h2>
+  <p class="hinweis">Ein optionales PDF oder Bild, das jeder <strong>Einladung</strong> angehängt wird
+    (nicht der Absage) – z. B. eine Wegbeschreibung zur Ausgabestelle.</p>
+  {% if e.wegbeschreibung %}
+  <p>Aktuell angehängt: <a href="{{ e.wegbeschreibung.url }}" target="_blank" rel="noopener">{{ e.wegbeschreibung.name|cut:"warteliste/" }}</a></p>
+  {% endif %}
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="anhang" value="1">
+    <div class="feld"><label for="wegbeschreibung">Datei (PDF oder Bild)</label>
+      <input type="file" name="wegbeschreibung" id="wegbeschreibung" accept=".pdf,image/*"></div>
+    <div class="aktionen">
+      <button type="submit" class="knopf">Anhang speichern</button>
+      {% if e.wegbeschreibung %}<button type="submit" name="entfernen" value="1" class="knopf knopf-gefahr">Entfernen</button>{% endif %}
+    </div>
+  </form>
+</section>
+
+<section class="karte breit">
   <h2>Andere Sprachen</h2>
   <p>Einladungen und Absagen gehen auf Deutsch und darunter in der Sprache zur Staatsangehörigkeit bzw. des Antrags.
     {% if fehlen %}<strong>{{ fehlen }} Sprache{{ fehlen|pluralize:"n" }} ohne Übersetzung der geänderten Texte</strong> – dort nur Deutsch.{% else %}Für alle Sprachen gibt es Übersetzungen.{% endif %}</p>

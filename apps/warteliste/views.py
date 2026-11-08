@@ -567,7 +567,18 @@ def streichungsliste(request):
 @never_cache
 @rollen.recht_erforderlich("einstellungen.warteliste")
 def einstellungen(request):
-    form = EinstellungenForm(request.POST or None, instance=WartelisteEinstellungen.laden())
+    e = WartelisteEinstellungen.laden()
+    if request.method == "POST" and "anhang" in request.POST:
+        # Wegbeschreibung hoch-/runterladen – eigenes Formular (Datei), getrennt vom Autosave.
+        if request.POST.get("entfernen") and e.wegbeschreibung:
+            e.wegbeschreibung.delete(save=True)
+            messages.success(request, "Wegbeschreibung entfernt.")
+        elif request.FILES.get("wegbeschreibung"):
+            e.wegbeschreibung = request.FILES["wegbeschreibung"]
+            e.save()
+            messages.success(request, "Wegbeschreibung gespeichert.")
+        return redirect("warteliste:einstellungen")
+    form = EinstellungenForm(request.POST or None, instance=e)
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Einstellungen gespeichert.")
@@ -579,6 +590,7 @@ def einstellungen(request):
     fehlen = sum(1 for s in _fremde_sprachen() if ablauf.fehlende(s.code))
     return render(request, "warteliste/einstellungen.html", {
         "form": form, "vorschau_betreff": betreff, "vorschau_html": html, "fehlen": fehlen,
+        "e": e,
     })  # fmt: skip
 
 
