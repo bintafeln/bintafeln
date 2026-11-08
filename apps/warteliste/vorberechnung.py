@@ -228,3 +228,22 @@ def dubletten_daten():
 def abgleich_daten():
     """(ergebnis_aller_offenen, frisch, laeuft) für die Abgleich-Seite."""
     return _holen(ABG, _sig_abgleich, _rechnen_abgleich)
+
+
+def _anzahl(key) -> int | None:
+    """Zahl der offenen Fälle aus dem Cache – ohne neu zu rechnen (fürs Menü-Abzeichen). ``None``,
+    wenn noch nichts berechnet wurde; dann zeigt das Menü keine Zahl, statt teuer zu rechnen."""
+    stand = cache.get(key)
+    if stand and "daten" in stand:
+        return len(stand["daten"])
+    return None
+
+
+def anzahl_abgleich() -> int | None:
+    """Anträge mit noch nicht geprüftem Treffer im Kundenstamm (zuletzt berechneter Stand)."""
+    return _anzahl(ABG)
+
+
+def anzahl_dubletten() -> int | None:
+    """Mögliche Dubletten-Paare unter den offenen Anträgen (zuletzt berechneter Stand)."""
+    return _anzahl(DUB)

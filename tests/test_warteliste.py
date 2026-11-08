@@ -831,3 +831,25 @@ def test_einladen_block_steht_oben(admin_client, modul_an):
     assert "Ausgewählte einladen" in seite
     assert seite.index("Ausgewählte einladen") < seite.index("<table")
     assert seite.index("<table") < seite.index("Status der Ausgewählten")
+
+
+def test_menue_zeigt_offene_faelle(admin_client, modul_an, monkeypatch):
+    """Im Menü steht neben „Abgleich mit Kundenstamm“ und „Doppelte Anträge“ die Zahl der offenen
+    Fälle – aus dem vorberechneten Cache, ohne teure Neuberechnung (ADR 0109)."""
+    from apps.core.menue import _eintrag
+    from apps.warteliste import modul, vorberechnung
+
+    monkeypatch.setattr(vorberechnung, "_im_hintergrund", lambda fn: fn())  # synchron rechnen
+    # Ohne vorberechneten Stand kein Abzeichen (das Menü rechnet nie selbst).
+    assert vorberechnung.anzahl_dubletten() is None
+
+    antrag("Erika", "Beispiel", geburtsdatum=dt.date(1980, 2, 3))
+    antrag("Erika", "Beispiell", geburtsdatum=dt.date(1980, 2, 3))
+    vorberechnung.dubletten_daten()  # füllt den Cache wie beim Öffnen der Seite
+    assert vorberechnung.anzahl_dubletten() == 1
+
+    eintraege = {e["titel"]: e for _, e in dict(modul.menue(_eintrag))["Anträge und Warteliste"]}
+    assert eintraege["Doppelte Anträge"].get("zahl") == 1
+    assert "Dubletten" in eintraege["Doppelte Anträge"].get("zahl_titel", "")
+    # Für den Abgleich wurde noch nichts berechnet → kein Abzeichen (statt teuer zu rechnen).
+    assert "zahl" not in eintraege["Abgleich mit Kundenstamm"]
