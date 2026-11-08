@@ -276,6 +276,10 @@ def menue(request) -> list[dict]:
         "Auswertungen": [
             ("einstellungen.statistik", _eintrag("Statistik", "statistik:einstellungen")),
         ],
+        "Protokolle": [
+            ("protokoll.sehen", _eintrag("Änderungsprotokoll", "core:protokoll")),
+            ("protokoll.sehen", _eintrag("Anmeldeprotokoll", "konten:anmeldeprotokoll")),
+        ],
         "Systemsteuerung": [
             ("system.sicherung", _eintrag("Sicherungen", "core:sicherungen")),
             (export, _eintrag("Export und Zurücklesen", "core:datensicherung")),
@@ -286,8 +290,6 @@ def menue(request) -> list[dict]:
               if darf & {z.recht for z in ZIELE.values()}
               else []),
             ("einstellungen.tafel", _eintrag("Speicher und Fotos", "core:speicher")),
-            ("protokoll.sehen", _eintrag("Änderungsprotokoll", "core:protokoll")),
-            ("protokoll.sehen", _eintrag("Anmeldeprotokoll", "konten:anmeldeprotokoll")),
             ("einstellungen.rollen",
              _eintrag("Anmeldung und Zwei-Faktor", "konten:anmelde_einstellungen")),
             *([(None, _eintrag("Django-Verwaltung", "admin:index"))] if b.is_staff else []),
