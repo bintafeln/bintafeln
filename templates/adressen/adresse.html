@@ -3,7 +3,16 @@
 {% block inhalt %}
 <div class="seiten-raster">
 <section class="karte">
-  <p><a href="{% url 'adressen:liste' %}">← Adressbuch</a></p>
+  <div class="blaettern-leiste">
+    <a href="{% url 'adressen:liste' %}{% if zurueck %}?{{ zurueck }}{% endif %}">← Adressbuch</a>
+    {% if blaetter_pos %}
+    <span class="blaettern-nav">
+      {% if vorige %}<a class="knopf knopf-zweitrangig" rel="prev" href="{% url 'adressen:adresse' vorige %}?{{ blaetter_abfrage }}">← vorige</a>{% else %}<span class="knopf knopf-zweitrangig" aria-disabled="true">← vorige</span>{% endif %}
+      <span class="hinweis">{{ blaetter_pos.0 }} von {{ blaetter_pos.1 }}</span>
+      {% if naechste %}<a class="knopf knopf-zweitrangig" rel="next" href="{% url 'adressen:adresse' naechste %}?{{ blaetter_abfrage }}">nächste →</a>{% else %}<span class="knopf knopf-zweitrangig" aria-disabled="true">nächste →</span>{% endif %}
+    </span>
+    {% endif %}
+  </div>
   <h1>{{ a.name }}</h1>
   <p>{% for k in a.kategorien.all %}<span class="marke-rolle">{{ k.name }}</span> {% endfor %}<small class="leise">{{ a.get_art_display }}</small></p>
   <address class="anschrift">{% for z in a.anschrift_zeilen %}{{ z }}<br>{% endfor %}</address>
