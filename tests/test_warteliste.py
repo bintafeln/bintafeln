@@ -822,3 +822,12 @@ def test_antragsseite_zeigt_warteliste_abschnitt(admin_client, modul_an):
     assert ws(a).status == S.ERSCHIENEN
     # Der Treffer-Abschnitt lädt eigenständig (htmx)
     assert admin_client.get(reverse("warteliste:antrag_treffer", args=[a.pk])).status_code == 200
+
+
+def test_einladen_block_steht_oben(admin_client, modul_an):
+    """Der „Ausgewählte einladen“-Block steht jetzt oben (unter den Suchfeldern, über der Tabelle);
+    die Status-Aktion bleibt unten."""
+    seite = admin_client.get(reverse("warteliste:liste")).content.decode()
+    assert "Ausgewählte einladen" in seite
+    assert seite.index("Ausgewählte einladen") < seite.index("<table")
+    assert seite.index("<table") < seite.index("Status der Ausgewählten")
