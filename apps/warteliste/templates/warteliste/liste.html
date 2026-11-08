@@ -56,6 +56,23 @@
   <form method="post" id="aktionen">
     {% csrf_token %}
     <input type="hidden" name="zurueck" value="{{ request.get_full_path }}">
+    {% if "warteliste.bearbeiten" in rechte %}
+    {# Einladen steht oben (unter den Suchfeldern); wirkt auf die weiter unten angehakten Zeilen. #}
+    <fieldset class="abschnitt warteliste-einladen-oben">
+      <legend>Ausgewählte einladen</legend>
+      <p class="hinweis">Lädt die angehakten Anträge zu einem Termin ein: einen vorhandenen wählen oder einen neuen anlegen.</p>
+      {% with form=einladen %}
+      {% with feld=form.termin %}{% include "includes/feld.html" %}{% endwith %}
+      <div class="feld-zeile" data-zeigen-bei="termin=">
+        {% with feld=form.datum %}{% include "includes/feld.html" %}{% endwith %}
+        {% with feld=form.von %}{% include "includes/feld.html" %}{% endwith %}
+        {% with feld=form.bis %}{% include "includes/feld.html" %}{% endwith %}
+      </div>
+      <div class="feld feld-haken"><label for="{{ form.mail.id_for_label }}">{{ form.mail }} {{ form.mail.label }}</label><small class="hilfe">{{ form.mail.help_text }}</small></div>
+      {% endwith %}
+      <button type="submit" class="knopf" formaction="{% url 'warteliste:einladen' %}" onclick="return confirm('Die ausgewählten Personen jetzt einladen?')">Einladen</button>
+    </fieldset>
+    {% endif %}
     <div class="tabelle-rahmen">
     <table class="tabelle">
       <thead><tr>
@@ -103,20 +120,6 @@
 
     {% if "warteliste.bearbeiten" in rechte %}
     <div class="abschnitte warteliste-aktionen">
-      <fieldset class="abschnitt">
-        <legend>Ausgewählte einladen</legend>
-        <p class="hinweis">Lädt die angehakten Anträge zu einem Termin ein: einen vorhandenen wählen oder einen neuen anlegen.</p>
-        {% with form=einladen %}
-        {% with feld=form.termin %}{% include "includes/feld.html" %}{% endwith %}
-        <div class="feld-zeile" data-zeigen-bei="termin=">
-          {% with feld=form.datum %}{% include "includes/feld.html" %}{% endwith %}
-          {% with feld=form.von %}{% include "includes/feld.html" %}{% endwith %}
-          {% with feld=form.bis %}{% include "includes/feld.html" %}{% endwith %}
-        </div>
-        <div class="feld feld-haken"><label for="{{ form.mail.id_for_label }}">{{ form.mail }} {{ form.mail.label }}</label><small class="hilfe">{{ form.mail.help_text }}</small></div>
-        {% endwith %}
-        <button type="submit" class="knopf" formaction="{% url 'warteliste:einladen' %}" onclick="return confirm('Die ausgewählten Personen jetzt einladen?')">Einladen</button>
-      </fieldset>
       <fieldset class="abschnitt">
         <legend>Status der Ausgewählten von Hand setzen</legend>
         <p class="hinweis">Für alles, was nicht von selbst passiert: z. B. jemand war beim Termin (<em>erschienen</em>), hat
