@@ -294,6 +294,10 @@ def bearbeiten(request, pk=None):
             a.save()
             form.save_m2m()
             form.rollen_anwenden()  # Rollen auf das verknüpfte Konto schreiben (ADR 0097)
+            # Hängt ein Mitarbeiter-Konto dran, die gleiche Adresse in dessen Stammdaten mitziehen.
+            from apps.konten import verwaltung
+
+            verwaltung.stammdaten_aus_adresse(a)
             if m_form is not None and ist_mitglied:
                 from apps.mitglieder.models import nummer_verbraucht
 

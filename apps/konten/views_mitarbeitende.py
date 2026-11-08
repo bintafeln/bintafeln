@@ -627,6 +627,9 @@ def stammdaten(request, pk):
                           nummer_erlaubt=nummer_erlaubt)  # fmt: skip
     if request.method == "POST" and form.is_valid():
         form.save()
+        # Dieselbe Adresse steht auch im Adressbuch – sie mitziehen, damit beide Stände
+        # zusammenbleiben (ADR 0097).
+        verwaltung.adresse_aus_stammdaten(ziel, von=request.user.get_username())
         if nummer_erlaubt and form.cleaned_data.get("personalnummer"):
             # Eigenen Personalnummern-Zähler weiterrücken, damit die automatische Vergabe diese
             # Nummer nicht erneut nimmt.
