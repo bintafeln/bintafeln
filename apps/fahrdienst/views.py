@@ -78,6 +78,7 @@ def uebersicht(request):
         "planen": rollen.hat_recht(request.user, "fahrdienst.planen"),
         "offen": sum(p.fehlt for _, z in tage for _, ps in z for p in ps),
         "darf_melden": plan.darf_selbst_melden(request.user),
+        "springer": plan.allgemeine_springer(),
         **_karten(tage),
     })  # fmt: skip
 

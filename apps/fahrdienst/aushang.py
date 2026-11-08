@@ -27,6 +27,7 @@ def _folie(von, bis) -> str | None:
     return render_to_string("fahrdienst/_aushang.html", {
         "tage": tage, "touren": plan.touren(tage[0][0], tage[-1][0]),
         "heute": timezone.localdate(), "aushang": True,
+        "springer": plan.allgemeine_springer(),
     })  # fmt: skip
 
 
