@@ -226,10 +226,18 @@ class MitarbeiterForm(forms.ModelForm):
 
 
 class DatumEingabe(forms.DateInput):
-    input_type = "date"
+    """Datumsfeld zum Tippen im Format TT.MM.JJJJ mit zuschaltbarem Kalender (static/js/datum.js
+    hängt einen 📅-Knopf an, der den gewohnten Browser-Kalender öffnet). So muss niemand den
+    Kalender benutzen, kann es aber. Der Server nimmt „15.03.1980“ wie „1980-03-15“ an (de-de)."""
 
-    def __init__(self, **kwargs):
-        super().__init__(format="%Y-%m-%d", **kwargs)
+    input_type = "text"
+
+    def __init__(self, attrs=None, **kwargs):
+        basis = {"class": "datum", "data-datum": "", "placeholder": "TT.MM.JJJJ",
+                 "autocomplete": "off", "maxlength": "10", "size": "10"}  # fmt: skip
+        if attrs:
+            basis.update(attrs)
+        super().__init__(attrs=basis, format="%d.%m.%Y", **kwargs)
 
 
 class StammdatenForm(forms.ModelForm):

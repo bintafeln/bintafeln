@@ -430,7 +430,7 @@ def test_fahrer_traegt_sich_selbst_aus(team, admin, client, anmelden):
         in client.get(reverse("fahrdienst:meine")).content.decode()
     )
     formular = client.get(ausfall, {"von": "2026-11-11"}).content.decode()
-    assert 'value="2026-11-11"' in formular and "3 Wochen" in formular
+    assert 'value="11.11.2026"' in formular and "3 Wochen" in formular
     assert client.get(ausfall, {"von": "kaputt"}).status_code == 200
     client.post(ausfall, {"von": "2026-11-11", "dauer": "21", "bis": "", "grund": "urlaub"})
     a = Ausfall.objects.get(person=p["eva"])
