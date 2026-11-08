@@ -335,3 +335,50 @@ def importieren_ansicht(request):
     return render(request, "adressen/importieren.html", {
         "form": form, "bericht": bericht, "spalten": importieren.SPALTEN,
     })  # fmt: skip
+
+
+DRUCK_VORGABE = ["nachname", "vorname", "telefon", "mobil", "email", "rollen"]
+
+
+@rollen.recht_erforderlich("adressen.sehen")
+def druckliste(request):
+    """Mitarbeitende und Adressbuch-Personen zu einer Liste zusammenstellen und als PDF drucken
+    (A4/A3, hoch/quer). Konto-Spalten/Filter nur mit dem Recht „mitarbeitende.verwalten“."""
+    from django.contrib.auth.models import Group
+
+    from apps.adressen import druckliste as dl
+    from apps.kunden.models import Ausgabestelle
+
+    darf_mitarbeit = rollen.hat_recht(request.user, "mitarbeitende.verwalten")
+    katalog = dl.spalten_katalog(darf_mitarbeit)
+    gueltig = {k for k, _ in katalog}
+    if "spalte" in request.GET:
+        gewaehlt = [k for k in request.GET.getlist("spalte") if k in gueltig]
+    else:
+        gewaehlt = [k for k in DRUCK_VORGABE if k in gueltig]
+    spalten = [(k, t) for k, t in katalog if k in dl.SPALTEN_FEST or k in gewaehlt]
+    f, adressen = dl.filtern(request, darf_mitarbeit)
+    ids = [int(i) for i in request.GET.getlist("id") if i.isdigit()]
+
+    if request.GET.get("aktion") == "pdf":
+        auswahl = list(adressen.filter(pk__in=ids) if ids else adressen)
+        format_ = "a3" if request.GET.get("format") == "a3" else "a4"
+        quer = request.GET.get("ausrichtung", "quer") != "hoch"
+        daten = dl.pdf("Mitarbeitende und Personen", spalten, auswahl, format_, quer)
+        return pdf_antwort(daten, f"liste-{timezone.localdate():%Y-%m-%d}.pdf")
+
+    adressen = list(adressen)
+    vorschau = list(
+        zip([a.pk for a in adressen], dl.zeilen(adressen, [k for k, _ in spalten]), strict=True)
+    )
+    return render(request, "adressen/druckliste.html", {
+        "f": f, "darf_mitarbeit": darf_mitarbeit,
+        "spalten_wahl": [(k, t, k in dl.SPALTEN_FEST or k in gewaehlt, k in dl.SPALTEN_FEST)
+                         for k, t in katalog],
+        "kopf": [t for _, t in spalten], "vorschau": vorschau, "anzahl": len(adressen),
+        "rollen_wahl": (sorted(Group.objects.values_list("name", flat=True))
+                        if darf_mitarbeit else []),
+        "stellen": Ausgabestelle.objects.order_by("name") if darf_mitarbeit else [],
+        "format": "a3" if request.GET.get("format") == "a3" else "a4",
+        "ausrichtung": "hoch" if request.GET.get("ausrichtung") == "hoch" else "quer",
+    })  # fmt: skip

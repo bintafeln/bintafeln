@@ -156,6 +156,7 @@ _SEITE = {
     "antraege:aufnahme": "aufnahme",
     "antraege:einstellungen": "einstellungen",
     "adressen:liste": "adressbuch",
+    "adressen:druckliste": "adressbuch",
     "mitglieder:liste": "mitglieder",
     "mitglieder:einstellungen": "mitglieder",
     "spenden:liste": "spenden",

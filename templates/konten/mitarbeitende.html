@@ -5,7 +5,9 @@
 <section class="karte">
   <div class="titel-zeile">
     <h1>{% if archiv %}Archiv{% else %}{{ titel|default:"Team" }}{% endif %}</h1>
-    <div class="titel-knoepfe">{% include "includes/herunterladen.html" %}</div>
+    <div class="titel-knoepfe">
+      {% if "adressen.sehen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'adressen:druckliste' %}">🖨 Liste zusammenstellen</a>{% endif %}
+      {% include "includes/herunterladen.html" %}</div>
   </div>
   <nav class="reiter" aria-label="Ansicht">
     <a href="{% url 'konten:ehrenamtliche' %}"{% if art == 'ehrenamtlich' %} aria-current="page"{% endif %}>Ehrenamtliche</a>
