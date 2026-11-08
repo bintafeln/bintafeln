@@ -146,6 +146,9 @@ input::-webkit-date-and-time-value { text-align: left; margin: 0; }
 .tabelle-rahmen { overflow-x: auto; position: relative; }
 .tabelle { width: 100%; border-collapse: collapse; font-size: .95rem; }
 .tabelle th, .tabelle td { text-align: left; padding: .5rem; border-bottom: 1px solid var(--rand); vertical-align: top; }
+/* Vollständiges, dünnes Gitter (Zeilen- und Spaltentrenner). Im schmalen Karten-Modus unten
+   greift wieder „border: 0", daher hier vor dem @media. */
+.tabelle-gitter th, .tabelle-gitter td { border: 1px solid var(--rand); }
 .aenderungen { margin: 0; padding-left: 1rem; }
 .angaben { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1rem; margin: 0 0 1rem; }
 .angaben dt { font-weight: 600; }

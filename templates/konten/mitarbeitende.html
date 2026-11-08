@@ -72,7 +72,7 @@
   </div>
   {% url 'konten:mitarbeitende_spalten' as spalten_aktion %}{% include "includes/spalten_wahl.html" %}
   <div class="tabelle-rahmen oben-scrollen">
-  <table class="tabelle">
+  <table class="tabelle tabelle-gitter">
     <thead><tr>
       {% if not archiv and vergebbare_rollen %}<th class="auswahl"><input type="checkbox" data-alle="id" form="rollen-sammel" aria-label="Alle auswählen" title="alle / keine"></th>{% endif %}
       {% if "nummer" in sichtbar %}{% sortkopf "Nummer" "nummer" sort %}{% endif %}
