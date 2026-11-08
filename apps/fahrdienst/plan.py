@@ -203,6 +203,16 @@ def einsatztage(person: Adresse) -> list[tuple[str, str]]:
     return [(b.wochentag, f"Tour {b.tour}: {platz_name(b.platz)}") for b in bes]
 
 
+def allgemeine_springer() -> list[Springer]:
+    """Die eingetragenen Springer (auf jeder Tour einsetzbar) – für Plan-Seite und Monitor.
+    Gesperrte Konten bleiben außen vor; Reihenfolge nach Nachname, Vorname."""
+    return list(
+        Springer.objects.select_related("person", "person__konto")
+        .exclude(person__konto__is_active=False)
+        .order_by("person__nachname", "person__vorname")
+    )
+
+
 def person_von(benutzer) -> Adresse | None:
     """Die Fahrdienst-Person (Adresse) zum angemeldeten Konto."""
     return Adresse.objects.filter(konto=benutzer).first() if benutzer else None

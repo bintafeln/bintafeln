@@ -1,0 +1,9 @@
+{# Allgemeine Springer (ADR 0074): auf jeder Tour einsetzbar – Plan-Seite und Aushang-Monitor #}
+{% if springer %}
+<div class="fd-springer">
+  <h2>Allgemeine Springer</h2>
+  <ul class="fd-springer-liste">
+    {% for s in springer %}<li>{{ s.person.name }}{% if s.wochentage %} <span class="leise">(nur {{ s.wochentage }})</span>{% endif %}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}

@@ -108,6 +108,18 @@ def test_fahrtage_und_feiertage(team):
     ]
 
 
+def test_allgemeine_springer_auf_seite_und_monitor(team, admin_client):
+    """Die allgemeinen Springer stehen auf der Plan-Seite und auf dem Aushang-Monitor."""
+    from apps.fahrdienst import aushang
+
+    seite = admin_client.get(PLAN).content.decode()
+    assert "Allgemeine Springer" in seite and "Ole Hansen" in seite
+    assert "Tim Weber" in seite and "nur Fr" in seite  # Springer nur freitags
+    # Aushang-Monitor: dieselbe Liste
+    folien = aushang.folien("", dt.date(2026, 11, 1), dt.date(2026, 11, 30))
+    assert folien and "Allgemeine Springer" in folien[0][1] and "Ole Hansen" in folien[0][1]
+
+
 def test_benachrichtigen_auswahl_nur_berechtigte(benutzer_mit_rolle):
     """Zur Auswahl „Bei einem Ausfall benachrichtigen" stehen nur Konten, die planen dürfen."""
     from apps.fahrdienst.forms import EinstellungenForm

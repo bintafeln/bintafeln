@@ -1362,6 +1362,12 @@ a.marke-rolle { text-decoration: none; }
 }
 .fd-plan thead a { color: inherit; }
 .fd-rahmen { overflow-x: auto; }
+.fd-springer { margin-top: 1rem; }
+.fd-springer h2 { margin: 0 0 .35rem; font-size: 1.1rem; }
+.fd-springer-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap;
+  gap: .35rem .6rem; }
+.fd-springer-liste li { background: var(--flaeche-2, #f3f3f3); border-radius: var(--radius);
+  padding: .2rem .55rem; }
 .fd-plan { border-collapse: collapse; width: 100%; min-width: 48rem; font-size: .95rem; }
 .fd-plan th, .fd-plan td { border: 1px solid var(--rand); padding: .35rem .5rem; text-align: left; vertical-align: top; }
 .fd-plan thead th { background: var(--flaeche-2, #f3f3f3); position: sticky; top: 0; }
