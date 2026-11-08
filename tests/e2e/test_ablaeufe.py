@@ -1137,6 +1137,34 @@ def test_nach_oben_knopf(angemeldet, admin):
     expect(knopf).to_be_hidden()
 
 
+def test_datum_tippen_und_kalender(angemeldet, admin):
+    """Datumsfeld: man kann TT.MM.JJJJ eintippen (kein Zwang zum Kalender); der 📅-Knopf
+    (static/js/datum.js) steht als Alternative daneben und schreibt die Kalenderwahl ins Feld."""
+    from apps.adressen.models import Adresse
+
+    seite = angemeldet(admin)
+    seite.goto(reverse("adressen:neu"))
+    seite.locator("#id_art").select_option("person")
+    seite.locator("#id_nachname").fill("Tippmann")
+    datum = seite.locator("#id_geburtsdatum")
+    # JS hat das Feld zum Textfeld gemacht und einen Kalender-Knopf danebengestellt.
+    assert datum.get_attribute("type") == "text"
+    huelle = datum.locator("xpath=ancestor::span[contains(@class,'datum-feld')]")
+    expect(huelle.locator(".datum-kalender")).to_have_count(1)
+    # Alternative Kalender: eine Auswahl im versteckten Kalender-Feld landet im Textfeld.
+    seite.evaluate(
+        "() => { const p = document.querySelector('#id_geburtsdatum')"
+        ".closest('.datum-feld').querySelector('.datum-pick');"
+        " p.value = '2001-12-24'; p.dispatchEvent(new Event('change', { bubbles: true })); }"
+    )
+    expect(datum).to_have_value("24.12.2001")
+    # Einfach eintippen – kein Kalender nötig – und speichern.
+    datum.fill("15.03.1980")
+    seite.get_by_role("button", name="Speichern").click()
+    seite.wait_for_url("**/adressen/*/")
+    assert Adresse.objects.get(nachname="Tippmann").geburtsdatum == dt.date(1980, 3, 15)
+
+
 def test_listen_position_bleibt_beim_zurueckgehen(angemeldet, admin):
     """Lange Liste: Wer eine Person öffnet und über „Zurück“ zurückkommt, landet wieder an
     derselben Stelle, nicht ganz oben (static/js/listen_position.js)."""

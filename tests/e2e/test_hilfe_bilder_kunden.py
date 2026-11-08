@@ -184,7 +184,7 @@ def test_hilfe_bild_dokumente(angemeldet, admin, muster):
     karte = seite.locator("#dokumente")
     karte.locator("summary", has_text="Dokument hochladen").click()
     karte.get_by_label("Dokumentart").select_option(label="Bescheid")
-    karte.get_by_label("Dokumentdatum").fill("2026-09-15")
+    karte.get_by_label("Dokumentdatum").fill("15.09.2026")
     datei = karte.locator("input[type=file]")
     datei.set_input_files([{"name": "bescheid.pdf", "mimeType": "application/pdf", "buffer": PDF}])
     aufnehmen(seite, "dokumente-hochladen", karte,
