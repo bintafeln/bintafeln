@@ -407,6 +407,36 @@ def test_abgleich_seite_hat_regler_und_prozent(admin_client, modul_an, monkeypat
     assert f'name="weiter" value="{reverse("warteliste:abgleich")}"' in treffer
 
 
+def test_menue_zaehler_abgleich_nur_neu_und_wartend(modul_an, monkeypatch):
+    """Der Menü-Zähler zählt nur Anträge, die die Abgleich-Seite in der Vorgabe auch zeigt
+    (Status „neu“/„wartend“). Ein offener Antrag mit ähnlichem Haushalt, der aber schon eingeladen
+    ist, steht nur unter „alle offenen prüfen“ und darf den Zähler nicht hochzählen – sonst stünde
+    im Menü eine Zahl, die geöffnete Seite wäre aber leer."""
+    from django.core.cache import cache
+
+    from apps.warteliste import vorberechnung
+
+    cache.clear()
+    monkeypatch.setattr(vorberechnung, "_im_hintergrund", lambda fn: fn())  # synchron rechnen
+    # Zwei Anträge, beide mit passendem Haushalt im Kundenstamm (ungeprüfter Treffer).
+    for nr, gb in (("900", dt.date(1980, 2, 3)), ("901", dt.date(1975, 5, 6))):
+        h = Haushalt.objects.create(kundennummer=nr)
+        Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika",
+                               nachname="Beispiel", geburtsdatum=gb)  # fmt: skip
+    a = antrag(geburtsdatum=dt.date(1980, 2, 3))
+    b = antrag(geburtsdatum=dt.date(1975, 5, 6))
+    ablauf.automatik()  # beide werden „wartend“
+    # Einen der beiden einladen → nicht mehr „neu“/„wartend“, bleibt aber offen und hat weiter
+    # einen ungeprüften Treffer.
+    ablauf.einladen([b], termin(), "Büro", mail_senden=False)
+    assert ws(b).status == S.EINGELADEN
+
+    vorberechnung.veraltet(abgleich=True)
+    daten, _, _ = vorberechnung.abgleich_daten()  # rechnet synchron und füllt den Cache
+    assert {e["antrag_pk"] for e in daten} == {a.pk, b.pk}  # beide stehen im Ergebnis
+    assert vorberechnung.anzahl_abgleich() == 1  # der Zähler zählt nur den „wartenden“
+
+
 def test_auskunft_enthaelt_warteliste(pdf_text):
     a = antrag()
     ablauf.einladen([a], termin(), "Büro", mail_senden=False)
