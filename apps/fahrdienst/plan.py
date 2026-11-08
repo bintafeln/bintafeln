@@ -214,14 +214,20 @@ def darf_selbst_melden(benutzer) -> bool:
             and rollen.hat_recht(benutzer, "fahrdienst.sehen"))  # fmt: skip
 
 
+def duerfen_planen():
+    """Aktive Konten mit E-Mail, die den Fahrdienst planen dürfen – Grundlage für die Auswahl
+    „Bei einem Ausfall benachrichtigen" und für die Standard-Empfänger."""
+    konten = get_user_model().objects.filter(is_active=True).exclude(email="")
+    konten = konten.filter(Q(is_superuser=True) | Q(groups__rolle__isnull=False)).distinct()
+    return [k for k in konten if rollen.hat_recht(k, "fahrdienst.planen")]
+
+
 def empfaenger() -> list[str]:
     """Mailadressen für Ausfälle: die eingestellten Personen, sonst alle, die planen dürfen."""
     gewaehlt = FahrdienstEinstellungen.laden().benachrichtigen.filter(is_active=True)
     if gewaehlt.exists():
         return sorted({b.email for b in gewaehlt if b.email})
-    konten = get_user_model().objects.filter(is_active=True).exclude(email="")
-    konten = konten.filter(Q(is_superuser=True) | Q(groups__rolle__isnull=False)).distinct()
-    return sorted({k.email for k in konten if rollen.hat_recht(k, "fahrdienst.planen")})
+    return sorted({k.email for k in duerfen_planen() if k.email})
 
 
 def _benachrichtigen(ausfall: Ausfall, adresse: str) -> None:

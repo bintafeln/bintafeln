@@ -33,6 +33,13 @@ def _editor(zeilen=4):
     })  # fmt: skip
 
 
+def _editor_schlicht(zeilen=3):
+    """Grafischer Editor ohne Platzhalter-Kärtchen – für die Kopfzeile (Logo/Text)."""
+    return forms.Textarea(attrs={
+        "rows": zeilen, "class": "html-eingabe", "dir": "auto", "data-editor": "",
+    })  # fmt: skip
+
+
 S = Wartestand.Status
 # Was das Team von Hand setzen kann („neu“, „eingeladen“ und „aufgenommen“ entstehen von selbst)
 STATUS_HAND = [(s.value, s.label) for s in (S.WARTEND, S.WARTEZEIT, S.ERSCHIENEN, S.ENTSCHULDIGT,
@@ -108,6 +115,7 @@ class EinstellungenForm(forms.ModelForm):
         ("Fristen", ["streichen_nach_tagen", "automatik", "streichungsliste_tage"]),
         ("Sperrzeit für frühere Kunden", ["sperrzeit_monate", "ausnahme_ab_alter",
                                           "ausnahme_feld"]),
+        ("Kopf der Mail (Logo & Kopfzeile)", ["kopfzeile"]),
         ("Einladung", ["ort", "betreff", "anrede", "einleitung", "schluss", "mitbringen", "gruss"]),
         ("Absage", ["absage_betreff", "absage_text"]),
     ]  # fmt: skip
@@ -115,11 +123,13 @@ class EinstellungenForm(forms.ModelForm):
     class Meta:
         model = WartelisteEinstellungen
         fields = ["streichen_nach_tagen", "automatik", "streichungsliste_tage", "sperrzeit_monate",
-                  "ausnahme_ab_alter", "ausnahme_feld", "ort", "betreff", "anrede", "einleitung",
-                  "schluss", "mitbringen", "gruss", "absage_betreff", "absage_text"]  # fmt: skip
+                  "ausnahme_ab_alter", "ausnahme_feld", "kopfzeile", "ort", "betreff", "anrede",
+                  "einleitung", "schluss", "mitbringen", "gruss", "absage_betreff",
+                  "absage_text"]  # fmt: skip
         widgets = {
             "ort": forms.Textarea(attrs={"rows": 2}),
             "mitbringen": forms.Textarea(attrs={"rows": 3}),
+            "kopfzeile": _editor_schlicht(),
             **{f: _editor() for f in EDITOR_FELDER},
         }
 

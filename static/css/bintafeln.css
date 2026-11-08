@@ -180,6 +180,8 @@ input::-webkit-date-and-time-value { text-align: left; margin: 0; }
 a.blaettern-knopf:hover { border-color: var(--akzent); }
 .blaettern-aus { color: var(--leise); opacity: .6; }  /* erster/letzter Antrag: gleicher Platz, nur grau */
 .liste-aktionen { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin: .5rem 0; }
+.sammel-rollen { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .6rem; margin-inline-start: auto; }
+.sammel-rollen select { min-height: 2rem; }
 .liste-schlicht { list-style: none; padding: 0; margin: .25rem 0 .5rem; }
 .liste-schlicht li { padding: .15rem 0; border-bottom: 1px solid var(--rand); }
 .liste-schlicht li:last-child { border-bottom: none; }

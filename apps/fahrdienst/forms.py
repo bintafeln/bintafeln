@@ -53,10 +53,10 @@ class TageFeld(forms.MultipleChoiceField):
 class EinstellungenForm(forms.ModelForm):
     fahrtage = TageFeld(label="Fahrtage")
     benachrichtigen = forms.ModelMultipleChoiceField(
-        label="Bei einem Ausfall benachrichtigen", queryset=aktive_konten().exclude(email=""),
+        label="Bei einem Ausfall benachrichtigen", queryset=aktive_konten().none(),
         required=False, widget=forms.CheckboxSelectMultiple,
-        help_text="Per E-Mail; zur Auswahl stehen Konten mit E-Mail-Adresse. Leer = alle, die "
-        "den Fahrdienst planen dürfen.",
+        help_text="Per E-Mail; zur Auswahl stehen nur Konten, die den Fahrdienst planen dürfen. "
+        "Leer = alle, die den Fahrdienst planen dürfen.",
     )  # fmt: skip
 
     telegram_schluessel = forms.CharField(
@@ -75,6 +75,14 @@ class EinstellungenForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Nur Berechtigte (die den Fahrdienst planen dürfen) zur Auswahl; schon Gewählte bleiben
+        # sichtbar, auch wenn jemand das Recht verloren hat.
+        from apps.fahrdienst import plan
+
+        erlaubt = {k.pk for k in plan.duerfen_planen()}
+        if self.instance.pk:
+            erlaubt |= set(self.instance.benachrichtigen.values_list("pk", flat=True))
+        self.fields["benachrichtigen"].queryset = aktive_konten().filter(pk__in=erlaubt)
         self.fields["benachrichtigen"].label_from_instance = lambda b: (
             f"{b.get_full_name() or b.username} ({b.email})"
         )

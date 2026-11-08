@@ -23,6 +23,29 @@ def test_katalog_eindeutig_und_vorgaben_gueltig():
     assert set(rolle("Ausgabe").rechte) == set(rechte.VORGABEN["Ausgabe"])
 
 
+def test_rolle_aufnahme_mitgeliefert():
+    """Die mitgelieferte Rolle „Aufnahme" hat genau die Rechte für Neuaufnahmen (Anträge in den
+    Kundenstamm) und verlangt Zwei-Faktor."""
+    r = rolle("Aufnahme")
+    assert set(r.rechte) == {
+        "antraege.sehen",
+        "antraege.bearbeiten",
+        "antraege.aufnehmen",
+        "kunden.liste",
+        "kunden.ansehen",
+        "kunden.ausweis",
+    }
+    assert r.zwei_faktor_pflicht and r.reihenfolge == 15
+
+
+def test_rolle_aufnahme_zugriff(client, admin, benutzer_mit_rolle, anmelden):
+    """Mit der Rolle Aufnahme kommt man an die Anträge, aber nicht an fremde Bereiche.
+    (``admin`` sorgt dafür, dass die Einrichtung abgeschlossen ist.)"""
+    anmelden(client, benutzer_mit_rolle("ayse", "Aufnahme"))
+    assert client.get(reverse("antraege:liste")).status_code == 200  # darf Anträge sehen
+    assert client.get(reverse("konten:rollen")).status_code == 403  # keine Rollenverwaltung
+
+
 def test_rechte_von(admin, benutzer_mit_rolle):
     assert rollen.rechte_von(admin) == rechte.ALLE
     nur_admin_gruppe = benutzer_mit_rolle("ada", rollen.ADMIN)

@@ -48,7 +48,7 @@ def pflicht_rollen() -> set[str]:
 
 
 def test_standard_pflicht_admin_buero_und_personal():
-    assert pflicht_rollen() == {rollen.ADMIN, rollen.BUERO, rollen.PERSONAL}
+    assert pflicht_rollen() == {rollen.ADMIN, rollen.BUERO, rollen.AUFNAHME, rollen.PERSONAL}
 
 
 def test_pflicht_rolle_wird_zur_einrichtung_geleitet(client, buero):

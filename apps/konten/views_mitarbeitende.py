@@ -220,6 +220,7 @@ def _mitarbeitende_seite(request, konten, *, archiv, art=None):
             ),
             "spalten_wahl": listen.spalten_wahl(request.user, LISTE, SPALTEN, SPALTEN_FEST),
             "abfrage": request.GET.urlencode(),
+            "vergebbare_rollen": [] if archiv else verwaltung.vergebbare_rollen(request.user),
         },
     )
 
@@ -268,6 +269,41 @@ def spalten(request):
     if herkunft and sicher:
         return redirect(herkunft)
     return redirect("konten:mitarbeitende")
+
+
+@require_POST
+@verwalter_erforderlich
+def rollen_sammel(request):
+    """Für mehrere angehakte Mitarbeitende gemeinsam eine Rolle hinzufügen oder entfernen
+    (die übrigen Rollen bleiben). Zurück zur Liste, auf der man war."""
+    from django.utils.http import url_has_allowed_host_and_scheme
+
+    herkunft = request.POST.get("weiter", "")
+    ziel = (
+        herkunft
+        if herkunft
+        and url_has_allowed_host_and_scheme(herkunft, {request.get_host()}, request.is_secure())
+        else "konten:mitarbeitende"
+    )
+    pks = [int(x) for x in request.POST.getlist("id") if x.isdigit()]
+    if not pks:
+        messages.error(request, "Niemand ausgewählt.")
+        return redirect(ziel)
+    rolle = request.POST.get("rolle", "")
+    entfernen = request.POST.get("aktion") == "entfernen"
+    konten = get_user_model().objects.filter(pk__in=pks, is_active=True, stelle__isnull=True)
+    try:
+        anzahl = verwaltung.sammel_rolle(request.user, konten, rolle, entfernen=entfernen)
+    except verwaltung.VerwaltungsFehler as fehler:
+        messages.error(request, str(fehler))
+        return redirect(ziel)
+    wort = "entfernt bei" if entfernen else "hinzugefügt bei"
+    if anzahl:
+        messages.success(request, f"Rolle „{rolle}“ {wort} {anzahl} Konto"
+                         f"{'en' if anzahl != 1 else ''}.")  # fmt: skip
+    else:
+        messages.info(request, "Nichts geändert (die Auswahl hatte die Rolle schon bzw. nicht).")
+    return redirect(ziel)
 
 
 def _startpasswort_zeigen(request, ziel, passwort, neu):

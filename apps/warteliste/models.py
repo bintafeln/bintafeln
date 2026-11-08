@@ -105,6 +105,12 @@ class WartelisteEinstellungen(models.Model):
         "Wegbeschreibung (Anhang der Einladung)", upload_to="warteliste/", blank=True,
         help_text="PDF oder Bild; wird jeder Einladungs-Mail angehängt (nicht der Absage).",
     )  # fmt: skip
+    kopfzeile = models.TextField(
+        "Kopfzeile der Mail", blank=True,
+        help_text="Optionaler Kopf oben in Einladung und Absage (über der Anrede), z. B. ein "
+        "Begrüßungssatz. Für alle Sprachen gleich. Das Logo der Tafel (Einstellungen → Tafel) "
+        "erscheint automatisch darüber.",
+    )  # fmt: skip
 
     TEXTFELDER = ["betreff", "anrede", "einleitung", "schluss", "mitbringen", "gruss",
                   "absage_betreff", "absage_text"]  # fmt: skip

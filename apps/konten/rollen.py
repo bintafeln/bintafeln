@@ -15,6 +15,7 @@ from apps.konten import rechte as katalog
 ADMIN = "Admin"
 # Mitgelieferte Rollen; Namen nur noch für Vorgaben, Demo und Tests.
 BUERO = "Büro"
+AUFNAHME = "Aufnahme"  # Neuaufnahmen: Anträge in den Kundenstamm übernehmen
 AUSGABE = "Ausgabe"
 KIOSK = "Kiosk"
 FAHRER = "Fahrer"
@@ -25,6 +26,7 @@ PERSONAL = "Angestellte"  # Rolle für die Angestellten-Verwaltung (früher „P
 MITGELIEFERT = {
     ADMIN: (0, True, False, False),
     BUERO: (10, True, False, False),
+    AUFNAHME: (15, True, False, False),
     AUSGABE: (20, False, True, False),
     KIOSK: (30, False, False, False),
     FAHRER: (40, False, True, True),
