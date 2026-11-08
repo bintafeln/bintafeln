@@ -18,7 +18,7 @@
 <section class="karte">
   <h2>Kundengruppe</h2>
   {% if h.kundengruppe %}
-    <p><strong>{{ h.kundengruppe.ausgabestelle.name|default:"ohne Ausgabestelle" }} · {{ h.kundengruppe.name }}</strong>{% if h.kundengruppe.wochentage %} <span class="leise">({{ h.kundengruppe.wochentage }}{% if h.kundengruppe.uhrzeit %} {{ h.kundengruppe.uhrzeit|time:"H:i" }}{% endif %})</span>{% endif %}</p>
+    <p><strong>{{ h.kundengruppe.mit_stelle }}</strong>{% if h.kundengruppe.wochentage %} <span class="leise">({{ h.kundengruppe.wochentage }}{% if h.kundengruppe.uhrzeit %} {{ h.kundengruppe.uhrzeit|time:"H:i" }}{% endif %})</span>{% endif %}</p>
   {% else %}
     <p class="sicherung sicherung-veraltet">Keiner Kundengruppe zugeordnet.</p>
   {% endif %}

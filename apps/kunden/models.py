@@ -467,6 +467,19 @@ class Kundengruppe(models.Model):
     def __str__(self):
         return f"{self.kuerzel} – {self.name}" if self.kuerzel else self.name
 
+    @property
+    def mit_stelle(self) -> str:
+        """Anzeige „Ausgabestelle · Gruppe“ – aber ohne den Ausgabestellen-Namen doppelt, wenn
+        der Gruppenname schon damit beginnt („Zentrale · Zentrale Mo“ → „Zentrale Mo“)."""
+        stelle = self.ausgabestelle.name if self.ausgabestelle_id else ""
+        if not stelle:
+            return self.name
+        if self.name.casefold() == stelle.casefold() or self.name.casefold().startswith(
+            stelle.casefold() + " "
+        ):
+            return self.name
+        return f"{stelle} · {self.name}"
+
 
 class Einkommensart(models.Model):
     bezeichnung = models.CharField("Bezeichnung", max_length=100, unique=True)
