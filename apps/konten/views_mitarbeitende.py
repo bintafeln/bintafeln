@@ -221,6 +221,7 @@ def _mitarbeitende_seite(request, konten, *, archiv, art=None):
             "spalten_wahl": listen.spalten_wahl(request.user, LISTE, SPALTEN, SPALTEN_FEST),
             "abfrage": request.GET.urlencode(),
             "vergebbare_rollen": [] if archiv else verwaltung.vergebbare_rollen(request.user),
+            "markiert": {int(x) for x in request.GET.getlist("markiert") if x.isdigit()},
         },
     )
 
@@ -289,6 +290,9 @@ def rollen_sammel(request):
     if not pks:
         messages.error(request, "Niemand ausgewählt.")
         return redirect(ziel)
+    # Nach dem Anwenden bleibt die Auswahl angehakt (für die nächste Aktion): die Pks kommen als
+    # ?markiert=… an die Liste zurück.
+    zurueck = _ziel_mit_markierung(ziel, pks)
     rolle = request.POST.get("rolle", "")
     entfernen = request.POST.get("aktion") == "entfernen"
     konten = get_user_model().objects.filter(pk__in=pks, is_active=True, stelle__isnull=True)
@@ -296,14 +300,28 @@ def rollen_sammel(request):
         anzahl = verwaltung.sammel_rolle(request.user, konten, rolle, entfernen=entfernen)
     except verwaltung.VerwaltungsFehler as fehler:
         messages.error(request, str(fehler))
-        return redirect(ziel)
+        return redirect(zurueck)
     wort = "entfernt bei" if entfernen else "hinzugefügt bei"
     if anzahl:
         messages.success(request, f"Rolle „{rolle}“ {wort} {anzahl} "
                          f"{'Konto' if anzahl == 1 else 'Konten'}.")  # fmt: skip
     else:
         messages.info(request, "Nichts geändert (die Auswahl hatte die Rolle schon bzw. nicht).")
-    return redirect(ziel)
+    return redirect(zurueck)
+
+
+def _ziel_mit_markierung(ziel: str, pks: list[int]) -> str:
+    """Hängt die ausgewählten Pks als ?markiert=… an die Listenadresse, damit sie nach dem
+    Speichern angehakt bleiben. Vorhandene markiert/id-Parameter werden vorher entfernt."""
+    from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
+    from django.urls import reverse
+
+    pfad = ziel if ziel.startswith("/") else reverse(ziel)
+    teile = urlsplit(pfad)
+    rest = [(k, v) for k, v in parse_qsl(teile.query) if k not in ("markiert", "id")]
+    rest += [("markiert", str(p)) for p in pks]
+    return urlunsplit(("", "", teile.path, urlencode(rest), ""))
 
 
 def _startpasswort_zeigen(request, ziel, passwort, neu):

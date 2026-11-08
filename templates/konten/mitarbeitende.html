@@ -98,7 +98,7 @@
     <tbody>
     {% for z in zeilen %}
       <tr>
-        {% if not archiv and vergebbare_rollen %}<td class="auswahl"><input type="checkbox" name="id" value="{{ z.b.pk }}" form="rollen-sammel" aria-label="{{ z.b.last_name|default:z.b.username }} auswählen"></td>{% endif %}
+        {% if not archiv and vergebbare_rollen %}<td class="auswahl"><input type="checkbox" name="id" value="{{ z.b.pk }}" form="rollen-sammel"{% if z.b.pk in markiert %} checked{% endif %} aria-label="{{ z.b.last_name|default:z.b.username }} auswählen"></td>{% endif %}
         {% if "nummer" in sichtbar %}<td data-titel="Nummer">{{ z.nummer|default:"–" }}</td>{% endif %}
         {% if "anrede" in sichtbar %}<td data-titel="Anrede">{{ z.sd.anrede }}</td>{% endif %}
         <td data-titel="Nachname"><a href="{% url 'konten:mitarbeiter' z.b.pk %}">{{ z.b.last_name|default:z.b.username }}</a></td>

@@ -75,6 +75,18 @@ def test_konto_plural_richtig(admin_client, benutzer_mit_rolle):
     assert "Konten" in seite and "Kontoen" not in seite
 
 
+def test_rollen_sammel_auswahl_bleibt(admin_client, benutzer_mit_rolle):
+    """Nach dem Anwenden bleibt die Auswahl angehakt (für die nächste Aktion)."""
+    a = benutzer_mit_rolle("ayse")
+    antwort = admin_client.post(
+        ROLLEN_SAMMEL,
+        {"id": [a.pk], "rolle": "Ausgabe", "aktion": "hinzufuegen", "weiter": LISTE},
+    )
+    assert f"markiert={a.pk}" in antwort.url  # Auswahl in der Rücksprung-Adresse
+    seite = admin_client.get(antwort.url).content.decode()
+    assert f'value="{a.pk}" form="rollen-sammel" checked' in seite  # Haken bleibt gesetzt
+
+
 def test_rollen_sammel_formular_in_der_liste(admin_client, benutzer_mit_rolle):
     benutzer_mit_rolle("clara")
     inhalt = admin_client.get(LISTE).content.decode()
