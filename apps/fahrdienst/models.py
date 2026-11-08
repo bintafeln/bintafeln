@@ -10,7 +10,7 @@ from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from apps.ausgabe.ampel import WOCHENTAGE
+from apps.ausgabe.ampel import WOCHENTAGE, wochentage
 from apps.core.auswahl import FAHRDIENST_AUSFALLGRUENDE
 
 
@@ -29,8 +29,9 @@ class FahrdienstEinstellungen(models.Model):
         help_text="Per E-Mail. Leer = alle, die den Fahrdienst planen dürfen.",
     )  # fmt: skip
     fahrtage = models.CharField(
-        "Fahrtage", max_length=40, default="Mo, Di, Mi, Do, Fr",
-        help_text="Wochentage, an denen die Touren fahren, z. B. „Mo, Di, Mi, Do, Fr“.",
+        "Fahrtage (Vorgabe für neue Touren)", max_length=40, default="Mo, Di, Mi, Do, Fr",
+        help_text="Diese Tage sind bei einer neuen Tour schon angehakt. Die tatsächlichen "
+        "Fahrtage stellt man je Tour ein.",
     )  # fmt: skip
     feiertage_frei = models.BooleanField(
         "An Feiertagen keine Touren", default=True,
@@ -77,6 +78,11 @@ class Tour(models.Model):
         help_text="So viele Plätze müssen besetzt sein; die übrigen sind frei für Gäste (z. B. "
         "Freiwillige, die einen Tag mitfahren).",
     )  # fmt: skip
+    fahrtage = models.CharField(
+        "Fahrtage", max_length=40, default="Mo, Di, Mi, Do, Fr",
+        help_text="Wochentage, an denen diese Tour fährt. Standard Mo–Fr; Sa und So sind möglich, "
+        "einzelne Tage (z. B. Do) lassen sich abwählen.",
+    )  # fmt: skip
     aktiv = models.BooleanField("Aktiv", default=True)
     ab = models.DateField(
         "Fährt ab",
@@ -100,7 +106,11 @@ class Tour(models.Model):
         return self.name
 
     def faehrt_am(self, datum) -> bool:
-        return (self.ab is None or self.ab <= datum) and (self.bis is None or datum <= self.bis)
+        return (
+            (self.ab is None or self.ab <= datum)
+            and (self.bis is None or datum <= self.bis)
+            and WOCHENTAGE[datum.weekday()] in wochentage(self.fahrtage)
+        )
 
 
 def platz_name(platz: int) -> str:
