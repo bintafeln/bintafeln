@@ -25,6 +25,7 @@ import threading
 import time
 
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import connections
 from django.db.models import Count, Max
 
@@ -209,12 +210,19 @@ def _rechnen_dubletten():
 def _rechnen_abgleich():
     from apps.warteliste import ablauf
 
-    offene = ablauf.offene_antraege().order_by("eingegangen_am")
-    return [
-        {"antrag_pk": e["antrag"].pk, "antrag": _antrag_dict(e["antrag"]),
-         "sperr": e["sperr"], "treffer": [_treffer_dict(t) for t in e["treffer"]]}
-        for e in ablauf.kundenabgleich(offene)
-    ]  # fmt: skip
+    offene = ablauf.offene_antraege().select_related("wartestand").order_by("eingegangen_am")
+    ergebnis = []
+    for e in ablauf.kundenabgleich(offene):
+        a = e["antrag"]
+        try:
+            status = a.wartestand.status
+        except ObjectDoesNotExist:
+            status = ""
+        ergebnis.append(
+            {"antrag_pk": a.pk, "antrag": _antrag_dict(a), "status": status,
+             "sperr": e["sperr"], "treffer": [_treffer_dict(t) for t in e["treffer"]]}
+        )  # fmt: skip
+    return ergebnis
 
 
 # ── Öffentlich ───────────────────────────────────────────────────────────────
@@ -240,8 +248,17 @@ def _anzahl(key) -> int | None:
 
 
 def anzahl_abgleich() -> int | None:
-    """Anträge mit noch nicht geprüftem Treffer im Kundenstamm (zuletzt berechneter Stand)."""
-    return _anzahl(ABG)
+    """Anträge mit noch nicht geprüftem Treffer im Kundenstamm (zuletzt berechneter Stand). Gezählt
+    werden nur die, die auch die Abgleich-Seite in der Vorgabe zeigt (Status „neu“/„wartend“) –
+    sonst stünde im Menü eine Zahl, aber die geöffnete Seite wäre leer (die übrigen stehen unter
+    „alle offenen prüfen“)."""
+    from apps.warteliste.models import Wartestand
+
+    stand = cache.get(ABG)
+    if not (stand and "daten" in stand):
+        return None
+    aktiv = {Wartestand.Status.NEU, Wartestand.Status.WARTEND}
+    return sum(1 for e in stand["daten"] if e.get("status") in aktiv) or None
 
 
 def anzahl_dubletten() -> int | None:
