@@ -62,8 +62,7 @@
       <legend>Ausgewählte einladen</legend>
       <p class="hinweis">Lädt die angehakten Anträge zu einem Termin ein: einen vorhandenen wählen oder einen neuen anlegen.</p>
       {% with form=einladen %}
-      {# Alles in eine Zeile: Termin, bei neuem Termin Datum/von/bis und der Einladen-Knopf;
-         der E-Mail-Haken darunter. Bei vorhandenem Termin fallen die Datumsfelder weg. #}
+      {# Termin, Datum/von/bis (nur beim neuen Termin) und der Einladen-Knopf in einer Zeile, Haken darunter. #}
       <div class="einladen-kopf">
         <div class="einladen-termin">{% with feld=form.termin %}{% include "includes/feld.html" %}{% endwith %}</div>
         <div class="feld-zeile einladen-neu" data-zeigen-bei="termin=">
