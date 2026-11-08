@@ -51,7 +51,7 @@ def test_bild_neuer_haushalt(angemeldet, admin, muster):
               Marke(seite.locator("#id_hp-gdb"), nummer=1),
               Marke(seite.locator('[data-merkzeichen-fuer="id_hp-gdb"]'), "rahmen", 2))  # fmt: skip
     seite.fill("#id_a-0-vorname", "Max")
-    seite.fill("#id_a-0-geburtsdatum", "2014-09-03")
+    seite.fill("#id_a-0-geburtsdatum", "03.09.2014")
     seite.select_option("#id_a-0-gdb", "80")
     angehoerige = seite.locator("section", has=seite.get_by_role("heading", name="4. Angehörige"))
     aufnehmen(seite, "haushalt-neu-angehoerige", angehoerige,
