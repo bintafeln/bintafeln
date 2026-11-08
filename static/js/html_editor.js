@@ -244,7 +244,9 @@
 
     function zeigen(art) {
       var html = art === "html";
-      if (html) uebertragen();
+      // Nur aus einer schon bestückten „Gestalten"-Ansicht ins Textfeld übertragen – beim ersten
+      // Aufruf ist die Fläche noch leer und würde sonst den gespeicherten Text löschen.
+      if (html) { if (rahmen.dataset.ansicht === "gestalten") uebertragen(); }
       else { flaeche.innerHTML = sauber(feld.value); felderZeigen(); }
       feld.hidden = !html;
       flaeche.hidden = leiste.hidden = html;
