@@ -50,8 +50,10 @@ def filtern(request, darf_mitarbeit: bool):
     f = {
         "mitarbeit": request.GET.get("mitarbeit", "alle"),
         "status": request.GET.get("status", "alle"),
-        "rollen": request.GET.getlist("rolle"),
-        "stellen": request.GET.getlist("stelle"),
+        # Leere Werte verwerfen: die „alle“-Option sendet rolle=/stelle= mit, getlist liefert dann
+        # [""] – das wäre „wahr“ und würde auf eine leere Rolle/Stelle filtern (→ nichts).
+        "rollen": [r for r in request.GET.getlist("rolle") if r],
+        "stellen": [s for s in request.GET.getlist("stelle") if s],
         "suche": (request.GET.get("suche") or "").strip(),
     }
     qs = Adresse.objects.filter(art=Adresse.Art.PERSON)
