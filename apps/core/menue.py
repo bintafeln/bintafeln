@@ -199,6 +199,8 @@ def menue(request) -> list[dict]:
         team = [(None, ehrenamtliche), (None, angestellte)]
     elif "personal.sehen" in darf:
         team = [(None, _eintrag("Verträge & Zeiten", "personal:liste", genau=True))]
+    if "mitarbeitende.geburtstage" in darf:
+        team.append((None, _eintrag("Geburtstage", "konten:geburtstage", genau=True)))
     dazu("Verein/Team", team)
     dazu("Auswertungen", [
         ("statistik.sehen", _eintrag("Statistik", "statistik:uebersicht", genau=True)),

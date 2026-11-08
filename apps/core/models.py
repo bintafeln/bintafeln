@@ -81,6 +81,11 @@ class TafelEinstellungen(models.Model):
         help_text="Gelöschte Daten liegen so lange im Papierkorb und lassen sich wiederherstellen; "
         "danach löscht bintafeln sie endgültig.",
     )  # fmt: skip
+    geburtstage_startseite = models.BooleanField(
+        "Nächste Geburtstage auf der Startseite", default=False,
+        help_text="Zeigt den Berechtigten auf der Startseite die Geburtstage der Mitarbeitenden "
+        "in den nächsten 14 Tagen.",
+    )  # fmt: skip
     installation = models.UUIDField(
         "Kennung dieser Installation", default=uuid.uuid4, editable=False
     )

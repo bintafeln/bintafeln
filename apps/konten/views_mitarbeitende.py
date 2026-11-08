@@ -689,3 +689,17 @@ def meine_auskunft(request):
     if request.user.stelle_id:  # Konto einer Ausgabestelle gehört keiner Person
         raise Http404
     return _auskunft_antwort(request.user)
+
+
+@rollen.recht_erforderlich("mitarbeitende.geburtstage")
+def geburtstage(request):
+    """Geburtstagskalender des Teams: die nächsten 14 Tage oben, darunter alle Mitarbeitenden
+    mit Geburtstag nach Monaten."""
+    from apps.konten import geburtstage as geb
+
+    heute = timezone.localdate()
+    return render(request, "konten/geburtstage.html", {
+        "naechste": geb.naechste(14, heute),
+        "monate": [m for m in geb.kalender(heute) if m["eintraege"]],
+        "heute": heute,
+    })  # fmt: skip

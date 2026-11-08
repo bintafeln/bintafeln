@@ -21,5 +21,20 @@
     <p><a class="knopf" href="{% url 'ausgabe:empfang' %}">Zum Einlass</a></p>
   {% endif %}
 </section>
+{% if geburtstage %}
+<section class="karte">
+  <h2>🎂 Nächste Geburtstage</h2>
+  <ul class="geburtstage-naechste">
+    {% for g in geburtstage %}
+    <li{% if g.ist_heute %} class="ist-heute"{% endif %}>
+      <span class="geb-datum">{{ g.naechster|date:"d.m." }}</span>
+      <span class="geb-name">{{ g.name }}</span>
+      <span class="geb-wann">{% if g.ist_heute %}heute{% elif g.in_tagen == 1 %}morgen{% else %}in {{ g.in_tagen }} Tagen{% endif %} · wird {{ g.wird }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  <p class="hinweis"><a href="{% url 'konten:geburtstage' %}">Zum Geburtstagskalender</a></p>
+</section>
+{% endif %}
 {% for teil in modul_startseite %}{{ teil }}{% endfor %}
 {% endblock %}

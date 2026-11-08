@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block titel %}Geburtstage{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <div class="titel-zeile"><h1>Geburtstage des Teams</h1>
+    <a class="knopf knopf-zweitrangig" href="{% url 'konten:ehrenamtliche' %}">← Mitarbeitende</a></div>
+  <p class="hinweis">Mitarbeitende mit hinterlegtem Geburtsdatum. Das Datum pflegen Sie auf der
+    Adressseite der Person.</p>
+
+  {% if naechste %}
+  <h2>Nächste 14 Tage</h2>
+  <ul class="geburtstage-naechste">
+    {% for g in naechste %}
+    <li{% if g.ist_heute %} class="ist-heute"{% endif %}>
+      <span class="geb-datum">{{ g.naechster|date:"d.m." }}</span>
+      <span class="geb-name">{{ g.name }}</span>
+      <span class="geb-wann">{% if g.ist_heute %}heute{% elif g.in_tagen == 1 %}morgen{% else %}in {{ g.in_tagen }} Tagen{% endif %} · wird {{ g.wird }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+
+<section class="karte">
+  <h2>Ganzes Jahr</h2>
+  {% if monate %}
+  <div class="geburtstage-jahr">
+    {% for m in monate %}
+    <div class="geb-monat">
+      <h3>{{ m.name }}</h3>
+      <ul>
+        {% for e in m.eintraege %}
+        <li{% if e.ist_heute %} class="ist-heute"{% endif %}><span class="geb-tag">{{ e.tag }}.</span> {{ e.name }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="hinweis">Noch keine Geburtstage hinterlegt.</p>
+  {% endif %}
+</section>
+{% endblock %}

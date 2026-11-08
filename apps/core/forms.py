@@ -150,6 +150,7 @@ class EinstellungenForm(forms.ModelForm):
             "email",
             "bundesland",
             "papierkorb_tage",
+            "geburtstage_startseite",
             "module",
         ]
         widgets = {
