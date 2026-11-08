@@ -54,3 +54,13 @@ Gesundheitsangabe; deshalb sieht den Grund nur, wer planen muss, und die Daten s
 Touren, die im Zeitraum an mindestens einem Tag fahren; an Tagen außerhalb hat die Tour keine
 Plätze (Strich im Plan und PDF, kein Ersatz eintragbar). So bleiben frühere Monate, wie sie waren,
 und neue oder wegfallende Touren lassen sich zu einem Stichtag einplanen.
+
+## Nachtrag: Fahrtage je Tour (2026-11-08)
+
+Statt eines globalen Fahrtage-Felds für alle Touren hat jede Tour eigene Fahrtage
+(`Tour.fahrtage`, Vorgabe „Mo, Di, Mi, Do, Fr“; Sa/So möglich, einzelne Tage abwählbar).
+`Tour.faehrt_am(datum)` prüft jetzt zusätzlich den Wochentag. Die angezeigten Fahrtage eines
+Zeitraums (`plan.fahrtage`) sind die Vereinigung der Fahrtage aller aktiven Touren (ohne Feiertage,
+wenn gesperrt). Das bisherige `FahrdienstEinstellungen.fahrtage` bleibt als Vorbelegung für neue
+Touren erhalten; eine Datenmigration überträgt den bisherigen Wert in jede bestehende Tour, damit
+sich für den Bestand nichts ändert.

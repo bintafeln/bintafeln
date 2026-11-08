@@ -73,11 +73,14 @@ def kuerzel(datum: dt.date) -> str:
     return WOCHENTAGE[datum.weekday()]
 
 
-def faehrt(datum: dt.date, e: FahrdienstEinstellungen, land: str = "") -> bool:
-    """Fahren die Touren an diesem Tag?"""
-    if kuerzel(datum) not in wochentage(e.fahrtage):
+def faehrt(datum: dt.date, e: FahrdienstEinstellungen, land: str = "", touren_=None) -> bool:
+    """Fährt an diesem Tag mindestens eine Tour? Jede Tour hat eigene Fahrtage; der Plan zeigt
+    einen Tag, sobald irgendeine aktive Tour an ihm fährt (und es – falls gesperrt – kein
+    Feiertag ist)."""
+    if e.feiertage_frei and land and ist_feiertag(datum, land):
         return False
-    return not (e.feiertage_frei and land and ist_feiertag(datum, land))
+    touren_ = touren(datum, datum) if touren_ is None else touren_
+    return any(t.faehrt_am(datum) for t in touren_)
 
 
 def fahrtage(von: dt.date, bis: dt.date, e: FahrdienstEinstellungen | None = None) -> list:
@@ -85,8 +88,9 @@ def fahrtage(von: dt.date, bis: dt.date, e: FahrdienstEinstellungen | None = Non
 
     e = e or FahrdienstEinstellungen.laden()
     land = TafelEinstellungen.laden().bundesland
+    touren_ = touren(von, bis)
     tage = [von + dt.timedelta(days=i) for i in range((bis - von).days + 1)]
-    return [t for t in tage if faehrt(t, e, land)]
+    return [t for t in tage if faehrt(t, e, land, touren_)]
 
 
 def _ausfall(ausfaelle, person_id, datum, ersatz=None) -> Ausfall | None:

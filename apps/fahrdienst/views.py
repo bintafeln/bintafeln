@@ -308,7 +308,7 @@ def tour_loeschen(request, pk):
 def besetzung(request, pk):
     """Feste Besetzung einer Tour: je Fahrtag und Platz eine Person (Auswahl)."""
     t = get_object_or_404(Tour, pk=pk)
-    tage = wochentage(FahrdienstEinstellungen.laden().fahrtage)
+    tage = wochentage(t.fahrtage)
     personen = list(fahrdienst_personen())
     fahrer_pks = set(fahrdienst_personen(nur_fahrer=True).values_list("pk", flat=True))
     fahrer = [p for p in personen if p.pk in fahrer_pks]
