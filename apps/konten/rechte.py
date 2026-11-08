@@ -186,6 +186,12 @@ VORGABEN = {
         "spenden.sehen", "spenden.erfassen", "spenden.bestaetigen", "mitglieder.sehen",
         "mitglieder.bearbeiten", "serienbriefe.erstellen",
     ],
+    # Neuaufnahmen: Anträge ansehen/bearbeiten und in den Kundenstamm aufnehmen, dazu Kunden
+    # suchen/ansehen (Dublettenprüfung) und den Kundenausweis drucken.
+    "Aufnahme": [
+        "antraege.sehen", "antraege.bearbeiten", "antraege.aufnehmen",
+        "kunden.liste", "kunden.ansehen", "kunden.ausweis",
+    ],
     "Ausgabe": list(_EINLASS),
     "Kiosk": [],
     "Fahrer": [],
