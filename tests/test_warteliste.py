@@ -218,6 +218,9 @@ def test_einstellungen_seite_hat_editor_und_vorschau(admin_client, modul_an):
     inhalt = admin_client.get(reverse("warteliste:einstellungen")).content.decode()
     assert "js/html_editor.js" in inhalt and "data-editor" in inhalt  # grafischer Editor
     assert "mail-vorschau" in inhalt and "{vorname}" in inhalt  # Vorschau + Platzhalter
+    # „Standard"-Knopf: die Vorgabe steht als data-standard am Editor-Feld bereit
+    assert "data-standard=" in inhalt
+    assert "wir können Ihnen folgenden Termin anbieten" in inhalt
 
 
 def test_sprachen_seite_hat_editor_und_vorschau(admin_client, modul_an):
