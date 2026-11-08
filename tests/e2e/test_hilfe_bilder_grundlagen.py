@@ -227,9 +227,8 @@ def test_hilfe_bild_bezahlen(angemeldet, admin, muster):
     leiste = seite.locator(".einlass-leiste")
     seite.fill("#bar", "1,00")
     aufnehmen(seite, "bezahlen-felder", leiste,
-              Marke(seite.locator("#beitrag"), nummer=1, von="unten", laenge=40),
-              Marke(seite.locator("#bar"), nummer=2, von="unten", laenge=40),
-              Marke(seite.get_by_role("button", name="✓ Abholung eintragen"), nummer=3,
+              Marke(seite.locator("#bar"), nummer=1, von="unten", laenge=40),
+              Marke(seite.get_by_role("button", name="✓ Abholung eintragen"), nummer=2,
                     von="unten", laenge=40))  # fmt: skip
     seite.get_by_role("button", name="✓ Abholung eintragen").click()
     meldung = seite.locator(".kasse-meldung")

@@ -15,10 +15,7 @@ Nach dem Anmelden eines Kunden kommt wieder die Suche.
       <button type="button" class="knopf knopf-zweitrangig einlass-vorschlag" title="{{ v.erklaerung|join:' ' }}"
               onclick="document.getElementById('bar').value='{{ v.zu_zahlen|floatformat:2 }}'">Vorauszahlung {{ v.titel }}<br><strong>{{ v.zu_zahlen|floatformat:2 }} €</strong></button>
       {% endfor %}
-      <div class="feld">
-        <label for="beitrag">Beitrag €</label>
-        <input type="text" name="beitrag" id="beitrag" value="{{ beitrag|floatformat:2 }}" inputmode="decimal" class="betrag">
-      </div>
+      {# Der Beitrag wird automatisch berechnet und steht bei den Angaben; hier nur „Gezahlt“. #}
       <div class="feld">
         <label for="bar">Gezahlt € *</label>
         <input type="text" name="bar" id="bar" value="{{ bar_vorschlag|floatformat:2 }}" inputmode="decimal" class="betrag" required>

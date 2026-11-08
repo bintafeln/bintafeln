@@ -176,6 +176,8 @@ Abholung, Rücknahmen von heute und die Ausnahme{% endcomment %}
     <dt>Ausgabestelle</dt><dd>{{ h.kundengruppe.ausgabestelle.name|default:"–" }}{% if h.kundengruppe %} · {{ h.kundengruppe.name }}{% endif %}</dd>
     <dt>Karte gültig bis</dt><dd>{{ h.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}</dd>
     {% if einstellungen.kontostand_anzeigen %}<dt>Kontostand</dt><dd>{% if h.kontostand is not None %}<strong{% if h.kontostand < 0 %} class="fehler"{% endif %}>{{ h.kontostand|floatformat:2 }} €</strong>{% else %}–{% endif %}</dd>{% endif %}
+    {# Beitrag nur zur Info (wird automatisch berechnet; ändern nur über die Beitragsregeln). #}
+    {% if beitrag is not None %}<dt>Beitrag heute</dt><dd>{{ beitrag|floatformat:2 }} €</dd>{% endif %}
   </dl>
   {# Ohne Stammdaten führt die Haushaltsseite ohnehin zurück zum Einlass #}
   {% if "kunden.stammdaten" in rechte %}<p><a href="{% url 'kunden:haushalt' h.kundennummer %}">Alle Angaben zum Haushalt</a></p>{% endif %}
