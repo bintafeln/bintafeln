@@ -15,7 +15,7 @@ from django.views.decorators.http import require_POST
 
 from apps.adressen import importieren
 from apps.adressen.auskunft import adresse_pdf
-from apps.adressen.forms import AdresseForm, ImportForm
+from apps.adressen.forms import AdresseForm, ImportForm, SammelAdresseForm
 from apps.adressen.models import Adresse, AdressKategorie
 from apps.core import geheimnis, listen, listenauswahl, listenexport, module, papierkorb
 from apps.core.pdf import pdf_antwort
@@ -153,6 +153,53 @@ def liste(request):
         "abfrage": abfrage.urlencode(),
         "blaetter_abfrage": _blaetter_abfrage(request.GET),
         "verein_wahl": _verein_wahl(request.user),
+    })  # fmt: skip
+
+
+# Felder, die sich sammelweise ändern lassen (Reihenfolge = Spalten der Bearbeiten-Tabelle).
+# Name, Organisation, Ansprechperson und Mitgliedsnummer sind bewusst nicht dabei (ADR 0097).
+SAMMEL_FELDER = [("anrede", "Anrede"), ("strasse", "Straße"), ("plz", "PLZ"), ("ort", "Ort"),
+                 ("telefon", "Telefon"), ("mobil", "Handy"), ("email", "E-Mail")]  # fmt: skip
+
+
+@rollen.recht_erforderlich("adressen.bearbeiten")
+def sammel_bearbeiten(request):
+    """Die aktuelle (gefilterte) Seite der Adressliste auf einmal bearbeiten: je Zeile die
+    änderbaren Felder, in einem Rutsch gespeichert. Namen und Nummern bleiben gesperrt."""
+    from django.forms import modelformset_factory
+
+    adressen, filter_ = _gefiltert(request.user, request.GET)
+    filter_["anzahl"] = listen.zeilenzahl(request, "anzahl")
+    adressen, _ = listen.sortieren(adressen, request.GET.get("sort", ""), SORTIERUNG, "name")
+    je_seite = listen.je_seite(filter_["anzahl"], adressen.count(), JE_SEITE)
+    seite = Paginator(adressen, je_seite).get_page(request.GET.get("seite"))
+    basis = adressen.filter(pk__in=[a.pk for a in seite])  # genau diese Seite, in ihrer Reihenfolge
+    FormSet = modelformset_factory(Adresse, form=SammelAdresseForm, extra=0, edit_only=True)
+    abfrage = request.GET.urlencode()
+    ziel = reverse("adressen:liste") + (f"?{abfrage}" if abfrage else "")
+
+    if request.method == "POST":
+        formset = FormSet(request.POST, queryset=basis)
+        if formset.is_valid():
+            with transaction.atomic():
+                geaendert = formset.save(commit=False)
+                for obj in geaendert:
+                    obj.geaendert_am = timezone.now()
+                    obj.geaendert_von = request.user.get_username()
+                    obj.save()
+            if geaendert:
+                messages.success(request, f"{len(geaendert)} Adresse"
+                                 f"{'n' if len(geaendert) != 1 else ''} geändert.")  # fmt: skip
+            else:
+                messages.info(request, "Es wurde nichts geändert.")
+            return redirect(ziel)
+        messages.error(request, "Bitte die rot markierten Felder prüfen.")
+    else:
+        formset = FormSet(queryset=basis)
+
+    return render(request, "adressen/sammel_bearbeiten.html", {
+        "formset": formset, "felder": SAMMEL_FELDER, "ziel": ziel,
+        "anzahl": len(seite), "gesamt": seite.paginator.count,
     })  # fmt: skip
 
 

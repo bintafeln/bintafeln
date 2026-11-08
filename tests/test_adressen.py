@@ -447,3 +447,44 @@ def test_blaettern_folgt_der_liste(admin_client):
     ohne = blatt("Berger")
     assert ohne.context.get("blaetter_pos") is None and ohne.context["zurueck"] == ""
     assert "von 4" not in ohne.content.decode()
+
+
+def test_sammel_bearbeiten(admin_client):
+    """Sammelweises Bearbeiten: die gefilterte Seite auf einmal ändern; Name und Nummer bleiben
+    gesperrt (kein Eingabefeld, serverseitig nicht änderbar)."""
+    a1 = Adresse.objects.create(art=Adresse.Art.PERSON, nachname="Alt", vorname="Anna")
+    a2 = Adresse.objects.create(art=Adresse.Art.PERSON, nachname="Beta", vorname="Ben")
+    url = reverse("adressen:sammel_bearbeiten")
+    seite = admin_client.get(url)
+    inhalt = seite.content.decode()
+    assert "Alt" in inhalt and "Beta" in inhalt
+    assert 'name="form-0-ort"' in inhalt  # Ort ist ein Eingabefeld
+    assert "nachname" not in inhalt  # Name ist gesperrt, kein Feld dafür
+
+    formset = seite.context["formset"]
+    n = str(len(formset.forms))
+    daten = {"form-TOTAL_FORMS": n, "form-INITIAL_FORMS": n,
+             "form-MIN_NUM_FORMS": "0", "form-MAX_NUM_FORMS": "1000"}  # fmt: skip
+    for i, form in enumerate(formset.forms):
+        daten[f"form-{i}-id"] = str(form.instance.pk)
+        for feld in ("anrede", "strasse", "plz", "ort", "telefon", "mobil", "email"):
+            daten[f"form-{i}-{feld}"] = getattr(form.instance, feld)
+        daten[f"form-{i}-ort"] = "Neustadt"  # bei allen denselben Ort setzen
+    antwort = admin_client.post(url, daten)
+    assert antwort.status_code == 302
+    a1.refresh_from_db()
+    a2.refresh_from_db()
+    assert a1.ort == "Neustadt" and a2.ort == "Neustadt"
+    assert a1.nachname == "Alt" and a2.nachname == "Beta"  # Name unverändert
+    assert a1.geaendert_von == "chefin"
+
+
+def test_sammel_bearbeiten_braucht_recht(client, anmelden, admin, django_user_model):
+    """Ohne das Recht „adressen.bearbeiten“ ist das Sammel-Bearbeiten gesperrt (Rolle Ausgabe)."""
+    nutzer = django_user_model.objects.create_user("helfer")
+    from django.contrib.auth.models import Group
+
+    nutzer.groups.add(Group.objects.get(name=rollen.AUSGABE))
+    anmelden(client, nutzer)
+    antwort = client.get(reverse("adressen:sammel_bearbeiten"))
+    assert antwort.status_code == 403

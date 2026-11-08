@@ -132,6 +132,24 @@ class AdresseForm(forms.ModelForm):
         return [(titel, felder) for titel, felder in alle if felder]
 
 
+class SammelAdresseForm(forms.ModelForm):
+    """Sammelweises Bearbeiten in der Liste: nur gefahrlos änderbare Felder. Name, Organisation,
+    Ansprechperson und die Mitgliedsnummer bleiben bewusst gesperrt (ADR 0097), damit man beim
+    schnellen Ändern vieler Zeilen nicht aus Versehen die Identität verändert."""
+
+    anrede = forms.ChoiceField(label="Anrede", required=False)
+
+    class Meta:
+        model = Adresse
+        fields = ["anrede", "strasse", "plz", "ort", "telefon", "mobil", "email"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["anrede"].choices = mit_vorhandenem(ANREDEN, self.instance.anrede)
+        for feld in self.fields.values():
+            feld.widget.attrs.setdefault("aria-label", f"{feld.label}: {self.instance}")
+
+
 class AdressKategorieForm(forms.ModelForm):
     class Meta:
         model = AdressKategorie
