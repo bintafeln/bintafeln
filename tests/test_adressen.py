@@ -286,6 +286,33 @@ def test_ausgeschiedener_ohne_rolle_und_sperren(admin_client, django_user_model)
     assert konto.is_active
 
 
+def test_adresse_loeschen_nimmt_konto_mit(admin_client, django_user_model):
+    """Adresse und Anmelde-Konto gehören zusammen: Löscht man die Adresse, kommt das Konto mit in
+    den Papierkorb – kein verwaister Zugang bleibt übrig (auch bei aktivem Konto)."""
+    from apps.core.models import PapierkorbEintrag
+
+    konto = django_user_model.objects.create_user("rene.w", first_name="René", last_name="Wiechert")
+    a = Adresse.objects.create(art="person", vorname="René", nachname="Wiechert", konto=konto)
+    assert admin_client.post(reverse("adressen:loeschen", args=[a.pk])).url == LISTE
+    assert not Adresse.objects.filter(pk=a.pk).exists()
+    assert not django_user_model.objects.filter(pk=konto.pk).exists()
+    assert PapierkorbEintrag.objects.filter(art="Mitarbeiter").exists()
+
+
+def test_adresse_loeschen_konto_braucht_recht(client, anmelden, benutzer_mit_rolle,
+                                              recht_geben, django_user_model):  # fmt: skip
+    """Ohne das Recht, Mitarbeitende zu löschen, lässt sich eine Adresse MIT Konto nicht löschen."""
+    recht_geben(rollen.BUERO, "adressen.loeschen")  # nur Adressen, nicht Mitarbeitende löschen
+    nutzer = benutzer_mit_rolle("bob", rollen.BUERO)
+    anmelden(client, nutzer)
+    konto = django_user_model.objects.create_user("mit.konto", last_name="Konto")
+    a = Adresse.objects.create(art="person", nachname="Konto", konto=konto)
+    client.post(reverse("adressen:loeschen", args=[a.pk]))
+    # Nichts gelöscht, weil das Recht fehlt
+    assert Adresse.objects.filter(pk=a.pk).exists()
+    assert django_user_model.objects.filter(pk=konto.pk).exists()
+
+
 def test_konto_nur_bei_person(admin_client, django_user_model):
     konto = django_user_model.objects.create_user("firmenkonto")
     fehlt = admin_client.post(reverse("adressen:neu"), {
