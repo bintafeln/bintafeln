@@ -56,7 +56,7 @@ def menue(request) -> list[dict]:
         # Dienstpläne aller Art unter einem Punkt; die Module hängen sich als Abschnitt ein
         "Dienstpläne": {"Ausgabe": [], "Fahrdienst": []},
         "Meine Arbeitszeit": {"": []},
-        "Kunden": {"": [], "Kundenstamm": []},
+        "Kunden": {"": []},
         # „Anträge und Warteliste“ ist ein eigener Hauptbereich (direkt unter „Kunden“); sein
         # Abzeichen zeigt nur die Zahl der aktuellen Anträge, nicht zusätzlich die Abgleich-Fälle.
         "Anträge und Warteliste": {"": []},
@@ -158,10 +158,6 @@ def menue(request) -> list[dict]:
                 ap["zahl"] = offen_ausweis
                 ap["zahl_titel"] = "offen (Abweichung/unklar)"
                 dazu("Anträge und Warteliste", [("antraege.bearbeiten", ap)])
-    dazu("Kunden/Kundenstamm", [
-        ("kunden.zugriffsprotokoll", _eintrag("Zugriffsprotokoll", "kunden:zugriffe")),
-    ])  # fmt: skip
-
     mitglieder = _eintrag("Mitglieder", "mitglieder:liste", genau=True)
     mitglieder["auch"] = [reverse("mitglieder:liste")]  # auch die Seite eines Mitglieds
     dazu("Verein/Mitglieder", [
@@ -181,6 +177,7 @@ def menue(request) -> list[dict]:
     dazu("Verein/Adressen", [
         ("adressen.sehen", adressbuch),
         ("adressen.bearbeiten", _eintrag("Neue Adresse", "adressen:neu")),
+        ("adressen.sehen", _eintrag("Liste drucken", "adressen:druckliste")),
     ])  # fmt: skip
     dazu("Verein/Serienbriefe", [
         ("serienbriefe.erstellen", _eintrag("Serienbrief erstellen", "serienbriefe:erstellen",
@@ -250,6 +247,7 @@ def menue(request) -> list[dict]:
             ("einstellungen.listen", _eintrag("Dokumentarten", *_liste("dokumentarten"))),
             ("einstellungen.ausweis", _eintrag("Kundenausweis", "kunden:ausweis_gestalten")),
             ("einstellungen.antraege", _eintrag("Anträge", "antraege:einstellungen")),
+            ("kunden.zugriffsprotokoll", _eintrag("Zugriffsprotokoll", "kunden:zugriffe")),
         ],
         "Ausgabe": [
             # Ausgabestellen pflegen (Anschrift, Zeiten, Ansprechpartner) und ihre Tablet-Konten
