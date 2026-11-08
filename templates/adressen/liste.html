@@ -52,7 +52,7 @@
     <tbody>
     {% for a in seite %}
       <tr><td class="auswahl"><input type="checkbox" name="id" value="{{ a.pk }}" form="auswahl" aria-label="Zeile auswählen"></td>
-        <td data-titel="Nachname"><a href="{% url 'adressen:adresse' a.pk %}">{{ a.nachname|default:a.organisation }}</a>{% if a.mitglied and "mitglieder.sehen" in rechte %} <a class="marke-rolle" href="{% url 'mitglieder:mitglied' a.mitglied.pk %}" title="Zum Mitglied">Mitglied {{ a.mitglied.nummer }}</a>{% endif %}{% if a.art == "organisation" and a.ansprechperson %}<br><small class="leise">{{ a.ansprechperson }}</small>{% endif %}</td>
+        <td data-titel="Nachname"><a href="{% url 'adressen:adresse' a.pk %}{% if blaetter_abfrage %}?{{ blaetter_abfrage }}{% endif %}">{{ a.nachname|default:a.organisation }}</a>{% if a.mitglied and "mitglieder.sehen" in rechte %} <a class="marke-rolle" href="{% url 'mitglieder:mitglied' a.mitglied.pk %}" title="Zum Mitglied">Mitglied {{ a.mitglied.nummer }}</a>{% endif %}{% if a.art == "organisation" and a.ansprechperson %}<br><small class="leise">{{ a.ansprechperson }}</small>{% endif %}</td>
         {% if "vorname" in sichtbar %}<td data-titel="Vorname">{{ a.vorname }}</td>{% endif %}
         {% if "anrede" in sichtbar %}<td data-titel="Anrede">{{ a.anrede }}</td>{% endif %}
         {% if "strasse" in sichtbar %}<td data-titel="Straße">{{ a.strasse }}</td>{% endif %}

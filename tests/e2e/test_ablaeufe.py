@@ -1163,3 +1163,28 @@ def test_datum_tippen_und_kalender(angemeldet, admin):
     seite.get_by_role("button", name="Speichern").click()
     seite.wait_for_url("**/adressen/*/")
     assert Adresse.objects.get(nachname="Tippmann").geburtsdatum == dt.date(1980, 3, 15)
+
+
+def test_listen_position_bleibt_beim_zurueckgehen(angemeldet, admin):
+    """Lange Liste: Wer eine Person öffnet und über „Zurück“ zurückkommt, landet wieder an
+    derselben Stelle, nicht ganz oben (static/js/listen_position.js)."""
+    from apps.adressen.models import Adresse
+
+    for i in range(40):
+        Adresse.objects.create(art=Adresse.Art.PERSON, nachname=f"Person {i:02d}", vorname="Test")
+    seite = angemeldet(admin)
+    seite.set_viewport_size({"width": 1024, "height": 480})
+    seite.goto("/adressen/?anzahl=alle")  # alle auf einer Seite: lang genug zum Scrollen
+    expect(seite.locator("tbody td a[href^='/adressen/']").first).to_be_visible()
+    # Ein Stück nach unten scrollen und die Höhe merken.
+    seite.evaluate("window.scrollTo(0, 900)")
+    hoehe = seite.evaluate("() => window.scrollY")
+    assert hoehe > 300
+    # Eine Person öffnen (wie ein Klick in der Liste) …
+    pk = Adresse.objects.order_by("nachname").values_list("pk", flat=True)[20]
+    seite.evaluate(f"() => {{ location.href = '/adressen/{pk}/'; }}")
+    seite.wait_for_url(f"**/adressen/{pk}/")
+    # … und über den Zurück-Knopf zurück: wieder dieselbe Höhe, nicht oben.
+    seite.go_back()
+    seite.wait_for_url("**/adressen/?anzahl=alle")
+    seite.wait_for_function(f"() => Math.abs(window.scrollY - {hoehe}) < 12")
