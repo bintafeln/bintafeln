@@ -15,8 +15,10 @@ pytestmark = pytest.mark.django_db
 
 def test_erfolgreiche_anmeldung_wird_protokolliert(client, admin):
     client.post(
-        reverse("konten:anmelden"), {"username": "chefin", "password": PASSWORT},
-        HTTP_X_FORWARDED_FOR="9.9.9.9, 10.0.0.1", HTTP_USER_AGENT="Firefox/Test",
+        reverse("konten:anmelden"),
+        {"username": "chefin", "password": PASSWORT},
+        HTTP_X_FORWARDED_FOR="9.9.9.9, 10.0.0.1",
+        HTTP_USER_AGENT="Firefox/Test",
     )
     e = AnmeldeProtokoll.objects.get()
     assert e.erfolg is True and e.benutzer == admin
