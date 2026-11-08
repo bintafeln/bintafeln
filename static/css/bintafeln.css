@@ -1689,8 +1689,8 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 .feld-zeile input { width: 100%; }
 /* „Ausgewählte einladen“: Termin, Datumsfelder und Knopf in einer Zeile, Haken darunter */
 .einladen-kopf { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem .9rem; }
+.einladen-kopf .feld { margin: 0; }  /* alle Felder gleich hoch, damit eine saubere Reihe entsteht */
 .einladen-termin { flex: 1 1 14rem; min-width: 11rem; }
-.einladen-termin .feld { margin: 0; }
 .einladen-termin select { width: 100%; }
 .einladen-kopf .einladen-neu { flex: 2 1 20rem; margin: 0; }
 .einladen-kopf .einladen-knopf { flex: 0 0 auto; }
