@@ -640,10 +640,10 @@ def texte_sprache(request, sprache):
         messages.success(request, f"Texte {s.deutsch} gespeichert.")
         return redirect("warteliste:texte_sprache", sprache)
     antrag, termin = _beispiel(sprache)
-    betreff, text, _ = ablauf.mail_inhalt(antrag, termin)
+    betreff, _, html = ablauf.mail_inhalt(antrag, termin)
     return render(request, "warteliste/texte_sprache.html", {
         "s": s, "form": form, "fehlt": ablauf.fehlende(sprache, e),
-        "vorschau_betreff": betreff, "vorschau_text": text,
+        "vorschau_betreff": betreff, "vorschau_html": html,
     })  # fmt: skip
 
 

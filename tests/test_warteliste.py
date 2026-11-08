@@ -220,6 +220,12 @@ def test_einstellungen_seite_hat_editor_und_vorschau(admin_client, modul_an):
     assert "mail-vorschau" in inhalt and "{vorname}" in inhalt  # Vorschau + Platzhalter
 
 
+def test_sprachen_seite_hat_editor_und_vorschau(admin_client, modul_an):
+    inhalt = admin_client.get(reverse("warteliste:texte_sprache", args=["tr"])).content.decode()
+    assert "js/html_editor.js" in inhalt and "data-editor" in inhalt  # gleicher Editor wie Deutsch
+    assert "mail-vorschau" in inhalt  # gerenderte Vorschau statt Nur-Text
+
+
 def test_gestrichene_werden_nicht_eingeladen():
     a = antrag()
     ablauf.automatik()

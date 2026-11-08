@@ -1,11 +1,14 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load static %}
 {% block titel %}Einladungstexte {{ s.deutsch }}{% endblock %}
 {% block inhalt %}
+<script src="{% static 'js/html_editor.js' %}" defer></script>
 <section class="karte breit">
   <p><a href="{% url 'warteliste:texte' %}">← Einladungstexte in anderen Sprachen</a></p>
   <h1>Einladungstexte: {{ s.deutsch }}</h1>
-  <p class="hinweis">Leer = mitgelieferte Übersetzung (steht grau im Feld), solange der deutsche Text der Vorgabe
-    entspricht. Platzhalter wie {vorname} oder {datum} unverändert übernehmen.</p>
+  <p class="hinweis">Gestalten Sie die Übersetzung wie die deutschen Texte im Reiter
+    <strong>Gestalten</strong> oder <strong>HTML</strong>. Leer = mitgelieferte Übersetzung (steht grau
+    im Feld), solange der deutsche Text der Vorgabe entspricht. Platzhalter wie
+    <code>{vorname}</code> oder <code>{datum}</code> unverändert übernehmen.</p>
   {% if fehlt %}<p class="meldung error">Es fehlen Übersetzungen; Mails gehen in dieser Sprache bis dahin nur auf Deutsch.</p>{% endif %}
   <form method="post" lang="{{ s.code }}" dir="{% if s.rtl %}rtl{% else %}ltr{% endif %}">
     {% csrf_token %}
@@ -15,8 +18,9 @@
 </section>
 <section class="karte breit">
   <h2>Vorschau der Einladung</h2>
-  <p class="hinweis">Mit erfundenem Namen und heutigem Datum; zuletzt gespeicherter Stand.</p>
-  <p><strong>Betreff:</strong> {{ vorschau_betreff }}</p>
-  <pre style="white-space: pre-wrap; background: var(--grund); padding: 1rem; border-radius: var(--radius);">{{ vorschau_text }}</pre>
+  <p class="hinweis">So sieht die Mail aus – mit erfundenem Namen und heutigem Datum, zuletzt
+    gespeicherter Stand. Betreff: <strong>{{ vorschau_betreff }}</strong></p>
+  <iframe class="mail-vorschau" sandbox title="Vorschau der Einladungs-Mail"
+          srcdoc="{{ vorschau_html|force_escape }}"></iframe>
 </section>
 {% endblock %}
