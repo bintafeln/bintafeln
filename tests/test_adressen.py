@@ -318,3 +318,25 @@ def test_einsatztage_bei_der_person(admin_client, pdf_text):
     text = pdf_text(admin_client.get(reverse("adressen:auskunft", args=[person.pk])))
     assert "Regelmäßige Einsätze" in text and "Kasse" in text and "Fahrer" in text
     assert "Fahrdienst" in text  # Spalte „Bereich" der Einsätze-Tabelle
+
+
+def test_datumsfeld_tippbar_und_deutsches_format(admin_client):
+    """Datumsfelder sind Textfelder zum Tippen (TT.MM.JJJJ), kein erzwungener Kalender; der Server
+    nimmt die getippte deutsche Schreibweise an. Der 📅-Knopf kommt per JavaScript dazu."""
+    seite = admin_client.get(reverse("adressen:neu")).content.decode()
+    # Geburtsdatum als Textfeld mit Markierung fürs Kalender-Skript, nicht als type="date".
+    assert 'name="geburtsdatum"' in seite
+    feld = seite[seite.index('name="geburtsdatum"') - 60 : seite.index('name="geburtsdatum"') + 120]
+    assert 'type="text"' in feld and "data-datum" in feld and 'type="date"' not in feld
+
+    # Getippte deutsche Schreibweise wird gespeichert.
+    antwort = admin_client.post(reverse("adressen:neu"), {
+        "art": "person", "vorname": "Tim", "nachname": "Tipp", "geburtsdatum": "15.03.1980",
+        "plz": "1", "ort": "X",
+    })  # fmt: skip
+    a = Adresse.objects.get(nachname="Tipp")
+    assert antwort.url == reverse("adressen:adresse", args=[a.pk])
+    assert a.geburtsdatum == dt.date(1980, 3, 15)
+    # Auf der Seite erscheint das Datum wieder deutsch (das Feld zeigt den gespeicherten Wert).
+    seite = admin_client.get(reverse("adressen:bearbeiten", args=[a.pk])).content.decode()
+    assert 'value="15.03.1980"' in seite
