@@ -139,7 +139,7 @@ def liste(request):
                                        weiter=reverse("adressen:liste"))  # fmt: skip
     je_seite = listen.je_seite(filter_["anzahl"], adressen.count(), JE_SEITE)
     seite = Paginator(
-        adressen.select_related("mitglied", "konto").prefetch_related("konto__groups"), je_seite
+        adressen.select_related("konto").prefetch_related("konto__groups"), je_seite
     ).get_page(request.GET.get("seite"))
     abfrage = request.GET.copy()
     abfrage.pop("seite", None)

@@ -178,8 +178,7 @@ def test_hilfe_bild_adressbuch(angemeldet, admin, muster):
     aufnehmen(seite, "adressbuch-liste", seite.locator("section.karte").first,
               Marke(seite.locator("#q"), "rahmen", 1),
               Marke(seite.locator("#verein"), nummer=2, von="unten", laenge=40),
-              Marke(seite.locator("a.marke-rolle", has_text="Mitglied 17"), nummer=3,
-                    von="oben", laenge=30),
+              Marke(seite.locator("a.knopf-zweitrangig", has_text="Mitglieder"), "rahmen", 3),
               Marke(seite.get_by_role("link", name="+ Neue Adresse"), "rahmen", 4))  # fmt: skip
 
 
