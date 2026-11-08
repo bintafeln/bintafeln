@@ -1680,9 +1680,14 @@ def test_einstellungen_und_texte(admin_client, benutzer_mit_rolle):
     b = benutzer_mit_rolle("berta", rollen.BUERO)
     b.email = "berta@example.org"
     b.save()
+    # Nur die kleine Gruppe mit Antrags-Zugriff steht zur Benachrichtigung – nicht das ganze Team.
+    aus = benutzer_mit_rolle("anton", rollen.AUSGABE)
+    aus.first_name, aus.last_name, aus.email = "Anton", "Ausgabe", "anton@example.org"
+    aus.save()
     url = reverse("antraege:einstellungen")
     seite = admin_client.get(url).content.decode()
     assert "berta" in seite and "Arabisch" in seite and str(AntragEinstellungen.laden())
+    assert "Anton Ausgabe" not in seite  # kein Antrags-Recht → nicht in der Liste
     werte = {f: "optional" for f in AntragEinstellungen.FELDER}
     werte |= {"aktiv": "on", "modus": "beides", "benachrichtigen": [b.pk],
               "neu_nach_tagen": 0, "erledigt_nach_tagen": 0, "papierkorb_nach_tagen": 90,

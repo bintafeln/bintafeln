@@ -386,6 +386,59 @@ def test_vorwaermen_stoesst_beide_rechnungen_an(modul_an, monkeypatch):
     assert gestartet == []
 
 
+def _abgleich_daten_anlegen():
+    """Ein offener Antrag mit passendem Haushalt im Kundenstamm (etwas zum Vorrechnen)."""
+    h = Haushalt.objects.create(kundennummer="900")
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika",
+                          nachname="Beispiel", geburtsdatum=dt.date(1980, 2, 3))  # fmt: skip
+    antrag(geburtsdatum=dt.date(1980, 2, 3))
+    ablauf.automatik()
+
+
+def test_vorwaermen_synchron_rechnet_sofort(modul_an):
+    """Der Warmlauf (synchron=True, für den periodischen Hintergrund-Job) rechnet sofort, ohne
+    Thread – danach ist das Ergebnis im Cache."""
+    from django.core.cache import cache
+
+    from apps.warteliste import vorberechnung
+
+    cache.clear()
+    _abgleich_daten_anlegen()
+    assert vorberechnung.kalt()  # noch nichts gerechnet
+    vorberechnung.vorwaermen(synchron=True)
+    assert not vorberechnung.kalt()
+    daten, frisch, _ = vorberechnung.abgleich_daten()  # sofort aus dem Cache
+    assert frisch and daten
+
+
+def test_befehl_warteliste_vorwaermen(modul_an):
+    """Der Management-Befehl (vom 15-Minuten-Loop aufgerufen) füllt den Cache."""
+    from django.core.cache import cache
+    from django.core.management import call_command
+
+    from apps.warteliste import vorberechnung
+
+    cache.clear()
+    _abgleich_daten_anlegen()
+    assert vorberechnung.kalt()
+    call_command("warteliste_vorwaermen")
+    assert not vorberechnung.kalt()
+
+
+def test_menue_waermt_bei_kaltem_cache(modul_an, monkeypatch):
+    """Ist der Cache leer, stößt schon der Blick aufs Menü das Vorrechnen an (ergänzt den Timer)."""
+    from django.core.cache import cache
+
+    from apps.warteliste import modul, vorberechnung
+
+    monkeypatch.setattr(vorberechnung, "_im_hintergrund", lambda fn: fn())  # synchron
+    cache.clear()
+    _abgleich_daten_anlegen()
+    assert vorberechnung.kalt()
+    modul.menue(lambda *a, **k: {})  # Menü bauen → wärmt im Hintergrund
+    assert not vorberechnung.kalt()
+
+
 def test_kundenabgleich_sperrzeit_und_ausnahmen():
     heute = timezone.localdate()
     h = Haushalt.objects.create(kundennummer="900", ausweis_gueltig_bis=heute - dt.timedelta(60))

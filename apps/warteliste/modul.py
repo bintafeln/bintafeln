@@ -16,6 +16,11 @@ def menue(eintrag):
     if offen := vorberechnung.anzahl_dubletten():
         doppelte["zahl"] = offen
         doppelte["zahl_titel"] = "mögliche Dubletten-Paare"
+    # Liegt noch kein Ergebnis im Cache (z. B. nach einer Entscheidung, die ihn verwirft), schon
+    # beim Blick aufs Menü im Hintergrund vorrechnen – dann ist die Seite beim Öffnen meist da,
+    # auch wenn man direkt über das Abzeichen hinspringt (ergänzt den periodischen Warmlauf).
+    if vorberechnung.kalt():
+        vorberechnung.vorwaermen()
     return [
         ("Anträge und Warteliste", [
             ("warteliste.sehen", eintrag("Warteliste", "warteliste:liste", genau=True)),
