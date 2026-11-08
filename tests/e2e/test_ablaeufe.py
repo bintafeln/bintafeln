@@ -538,6 +538,34 @@ def test_menuepunkt_unten_aufklappen_zeigt_alle_unterpunkte(angemeldet, admin):
             expect(gruppe.locator(":scope > summary")).to_be_in_viewport()
 
 
+def test_breite_liste_scrollbalken_oben(angemeldet, admin):
+    """Breite Mitarbeitenden-Liste: ein zweiter Scrollbalken oben, synchron mit dem Rahmen."""
+    from django.contrib.auth import get_user_model
+
+    from apps.konten.models import Stammdaten
+
+    U = get_user_model()
+    for i in range(3):
+        b = U.objects.create_user(f"m{i}.muster", first_name=f"Max{i}", last_name=f"Muster{i}",
+                                  beschaeftigung="ehrenamtlich")  # fmt: skip
+        Stammdaten.objects.create(benutzer=b, strasse="Musterweg 7", plz="12345", ort="Musterstadt",
+                                  telefon="0123 456", handy="0170 111")  # fmt: skip
+    seite = angemeldet(admin)
+    seite.set_viewport_size({"width": 700, "height": 700})
+    seite.goto(reverse("konten:ehrenamtliche"))
+    oben = seite.locator(".tabelle-oben-scroll")
+    rahmen = seite.locator(".tabelle-rahmen.oben-scrollen")
+    expect(oben).to_have_count(1)
+    # Oben schieben → der Rahmen zieht mit
+    oben.evaluate("el => el.scrollLeft = 150")
+    seite.wait_for_timeout(100)
+    assert rahmen.evaluate("el => el.scrollLeft") > 50
+    # und umgekehrt
+    rahmen.evaluate("el => el.scrollLeft = 0")
+    seite.wait_for_timeout(100)
+    assert oben.evaluate("el => el.scrollLeft") < 50
+
+
 def test_liste_zeigt_kriterium_sofort(angemeldet, admin):
     """Listen: Ein gewähltes Kriterium zeigt das Ergebnis ohne „Anzeigen“; die Spaltenwahl nicht."""
     from apps.core.models import TafelEinstellungen
