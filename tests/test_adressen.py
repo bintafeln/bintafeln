@@ -406,6 +406,32 @@ def test_druckliste_ohne_mitarbeiter_recht(client, anmelden, admin, django_user_
     assert erzwungen.context["f"]["mitarbeit"] == "alle"
 
 
+def test_personen_art_heilen_zeigt_sie_in_der_druckliste(admin_client, django_user_model):
+    """Falsch als „Organisation" gespeicherte Personen (mit Konto oder ohne Organisationsnamen,
+    aber mit Nachnamen) fehlen in der Druckliste. Die Heilung macht sie zu Personen; eine echte
+    Organisation bleibt unberührt."""
+    from apps.adressen import wartung
+
+    konto = django_user_model.objects.create_user("x", last_name="Konto")
+    # Konto-Adresse fälschlich als Organisation
+    Adresse.objects.create(art=Adresse.Art.ORGANISATION, nachname="Konto", konto=konto)
+    # Person ohne Organisationsnamen, aber mit Nachnamen, fälschlich als Organisation
+    Adresse.objects.create(art=Adresse.Art.ORGANISATION, nachname="Allein")
+    # echte Organisation – bleibt, wie sie ist
+    orga = Adresse.objects.create(art=Adresse.Art.ORGANISATION, organisation="Großmarkt")
+
+    assert admin_client.get(DRUCK).context["anzahl"] == 0  # vorher: keine Person → leer
+    assert wartung.personen_art_heilen() == 2
+    orga.refresh_from_db()
+    assert orga.art == Adresse.Art.ORGANISATION  # echte Organisation unberührt
+    nachher = admin_client.get(DRUCK)
+    assert nachher.context["anzahl"] == 2
+    namen = {a.nachname for a in Adresse.objects.filter(art=Adresse.Art.PERSON)}
+    assert namen == {"Konto", "Allein"}
+    # idempotent
+    assert wartung.personen_art_heilen() == 0
+
+
 def test_blaettern_folgt_der_liste(admin_client):
     """Aus der Liste kommt man aufs Adressblatt mit Vor-/Zurück-Blättern in genau der Reihenfolge
     (Filter + Sortierung) der Liste; die Listenlinks reichen den Filter weiter."""
