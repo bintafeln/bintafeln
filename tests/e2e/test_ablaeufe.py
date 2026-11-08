@@ -1120,3 +1120,18 @@ def test_pdf_aus_formular_in_der_ipad_app(angemeldet, admin):
     assert "ablage=" in adressen[-1]
     expect(dialog).to_have_count(0)
     assert seite.url.endswith(reverse("serienbriefe:vorlage_neu"))
+
+
+def test_nach_oben_knopf(angemeldet, admin):
+    """„Nach oben“-Knopf: erscheint nach dem Scrollen und springt zurück an den Seitenanfang."""
+    seite = angemeldet(admin)
+    seite.set_viewport_size({"width": 1024, "height": 420})
+    seite.goto(reverse("core:hilfe"))  # das Handbuch ist lang genug zum Scrollen
+    knopf = seite.locator("#nach-oben")
+    expect(knopf).to_be_hidden()
+    seite.mouse.move(500, 200)
+    seite.mouse.wheel(0, 1400)
+    expect(knopf).to_be_visible()
+    knopf.click()
+    seite.wait_for_function("(window.scrollY || document.documentElement.scrollTop) < 50")
+    expect(knopf).to_be_hidden()
