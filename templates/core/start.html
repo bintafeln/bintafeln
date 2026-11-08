@@ -21,8 +21,9 @@
     <p><a class="knopf" href="{% url 'ausgabe:empfang' %}">Zum Einlass</a></p>
   {% endif %}
 </section>
+{% for teil in modul_startseite %}{{ teil }}{% endfor %}
 {% if geburtstage %}
-<section class="karte">
+<section class="karte geburtstage-box">
   <h2>🎂 Nächste Geburtstage</h2>
   <ul class="geburtstage-naechste">
     {% for g in geburtstage %}
@@ -36,5 +37,4 @@
   <p class="hinweis"><a href="{% url 'konten:geburtstage' %}">Zum Geburtstagskalender</a></p>
 </section>
 {% endif %}
-{% for teil in modul_startseite %}{{ teil }}{% endfor %}
 {% endblock %}
