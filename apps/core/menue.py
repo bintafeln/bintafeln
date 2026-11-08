@@ -287,6 +287,7 @@ def menue(request) -> list[dict]:
               else []),
             ("einstellungen.tafel", _eintrag("Speicher und Fotos", "core:speicher")),
             ("protokoll.sehen", _eintrag("Änderungsprotokoll", "core:protokoll")),
+            ("protokoll.sehen", _eintrag("Anmeldeprotokoll", "konten:anmeldeprotokoll")),
             ("einstellungen.rollen",
              _eintrag("Anmeldung und Zwei-Faktor", "konten:anmelde_einstellungen")),
             *([(None, _eintrag("Django-Verwaltung", "admin:index"))] if b.is_staff else []),

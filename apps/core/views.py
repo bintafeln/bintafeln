@@ -52,6 +52,9 @@ def start(request):
     antragsfristen_anwenden()
     module.fristen_anwenden()
     papierkorb.fristen_anwenden()
+    from apps.konten import anmeldeprotokoll
+
+    anmeldeprotokoll.fristen_anwenden()
     kontext = {}
     if rollen.hat_recht(request.user, "antraege.sehen"):
         kontext["neue_antraege"] = Antrag.objects.filter(status=Antrag.Status.NEU).count()

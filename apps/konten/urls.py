@@ -8,6 +8,7 @@ urlpatterns = [
     path("anmelden/", views.anmelden, name="anmelden"),
     path("anmelden/code/", views.anmelden_code, name="anmelden_code"),
     path("abmelden/", views.abmelden, name="abmelden"),
+    path("anmeldeprotokoll/", views.anmeldeprotokoll_ansicht, name="anmeldeprotokoll"),
     path("", views.mein_konto, name="mein_konto"),
     path("benachrichtigungen/", views.benachrichtigungen, name="benachrichtigungen"),
     path("passwort/", views.passwort_aendern, name="passwort_aendern"),

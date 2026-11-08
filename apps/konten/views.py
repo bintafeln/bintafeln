@@ -23,7 +23,7 @@ from django_otp import login as otp_login
 from django_otp import match_token
 
 from apps.core import anlaesse, mail, module
-from apps.konten import einladung, rollen, zwei_faktor
+from apps.konten import anmeldeprotokoll, einladung, rollen, zwei_faktor
 from apps.konten.forms import AnmeldeEinstellungenForm, AnmeldeForm, CodeForm, ZweiterSchrittForm
 from apps.konten.models import AnmeldeEinstellungen, VertrautesGeraet
 
@@ -61,6 +61,8 @@ def anmelden(request):
         login(request, form.benutzer)
         if form.geraet is not None:
             otp_login(request, form.geraet)
+        anmeldeprotokoll.eintragen(request, form.benutzer.get_username(), True,
+                                   benutzer=form.benutzer)  # fmt: skip
         return redirect(_ziel(request))
     return render(
         request,
@@ -94,10 +96,13 @@ def anmelden_code(request):
             request.session.pop(SITZUNG_ZWEITER_SCHRITT, None)
             login(request, benutzer, backend=offen["backend"])
             otp_login(request, form.geraet)
+            anmeldeprotokoll.eintragen(request, benutzer.get_username(), True, benutzer=benutzer)
             antwort = redirect(offen["next"])
             if form.cleaned_data.get("vertrauen"):
                 zwei_faktor.geraet_vertrauen(request, antwort, benutzer)
             return antwort
+        anmeldeprotokoll.eintragen(request, benutzer.get_username(), False,
+                                   benutzer=benutzer, grund="Zwei-Faktor")  # fmt: skip
         offen["versuche"] += 1
         if offen["versuche"] >= ZWEITER_SCHRITT_VERSUCHE:
             request.session.pop(SITZUNG_ZWEITER_SCHRITT, None)
@@ -324,6 +329,28 @@ def anmelde_einstellungen(request):
         return redirect("konten:anmelde_einstellungen")
     anzahl = VertrautesGeraet.objects.filter(gueltig_bis__gt=timezone.now()).count()
     return render(request, "konten/anmelde_einstellungen.html", {"form": form, "anzahl": anzahl})
+
+
+@rollen.recht_erforderlich("protokoll.sehen")
+def anmeldeprotokoll_ansicht(request):
+    """Erfolgreiche Anmeldungen und Fehlversuche mit IP-Adresse und Browser/System (ADR 0117)."""
+    from django.core.paginator import Paginator
+    from django.db.models import Q
+
+    from apps.konten.models import AnmeldeProtokoll
+
+    eintraege = AnmeldeProtokoll.objects.select_related("benutzer")
+    nur = request.GET.get("nur", "")
+    if nur == "fehlversuche":
+        eintraege = eintraege.filter(erfolg=False)
+    suche = (request.GET.get("q") or "").strip()
+    if suche:
+        eintraege = eintraege.filter(Q(benutzername__icontains=suche) | Q(ip__icontains=suche))
+    seite = Paginator(eintraege, 50).get_page(request.GET.get("seite"))
+    return render(request, "konten/anmeldeprotokoll.html", {
+        "seite": seite, "nur": nur, "q": suche,
+        "tage": AnmeldeEinstellungen.laden().protokoll_tage,
+    })  # fmt: skip
 
 
 @login_required

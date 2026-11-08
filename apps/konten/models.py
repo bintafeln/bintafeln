@@ -394,6 +394,14 @@ class AnmeldeEinstellungen(models.Model):
         "Luftschlangen, zu Ostern hoppelt der Osterhase und zu Nikolaus und Weihnachten kommt der "
         "Nikolaus vorbei – einmal je Aufruf (ADR 0079).",
     )  # fmt: skip
+    PROTOKOLL_TAGE = [(0, "aus – nicht protokollieren"), (30, "30 Tage"), (90, "90 Tage"),
+                      (180, "180 Tage"), (365, "1 Jahr")]  # fmt: skip
+    protokoll_tage = models.PositiveSmallIntegerField(
+        "Anmeldeprotokoll aufbewahren", choices=PROTOKOLL_TAGE, default=90,
+        help_text="So lange werden Anmeldungen (erfolgreiche und Fehlversuche, mit IP-Adresse und "
+        "Browser/System) für die Sicherheit festgehalten; danach automatisch gelöscht. „Aus“ "
+        "protokolliert nichts und löscht die vorhandenen Einträge.",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Anmelde-Einstellungen"
@@ -435,6 +443,32 @@ class VertrautesGeraet(models.Model):
 
     def __str__(self):
         return f"{self.bezeichnung or 'Gerät'} ({self.benutzer})"
+
+
+class AnmeldeProtokoll(models.Model):
+    """Protokoll der Anmeldungen – erfolgreiche und Fehlversuche – mit IP-Adresse und Browser/System
+    (ADR 0117), für die IT-Sicherheit. Wird nach ``AnmeldeEinstellungen.protokoll_tage`` automatisch
+    gelöscht und steht selbst nicht im Änderungsprotokoll."""
+
+    zeitpunkt = models.DateTimeField("Zeitpunkt", default=timezone.now, db_index=True)
+    benutzer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="anmeldungen", verbose_name="Konto",
+    )  # fmt: skip
+    benutzername = models.CharField("Benutzername", max_length=150, blank=True)
+    erfolg = models.BooleanField("Erfolgreich")
+    grund = models.CharField("Hinweis", max_length=40, blank=True)
+    ip = models.GenericIPAddressField("IP-Adresse", null=True, blank=True)
+    browser = models.CharField("Browser/System", max_length=300, blank=True)
+
+    class Meta:
+        verbose_name = "Anmeldung"
+        verbose_name_plural = "Anmeldeprotokoll"
+        ordering = ["-zeitpunkt"]
+
+    def __str__(self):
+        stand = "angemeldet" if self.erfolg else "Fehlversuch"
+        return f"{self.benutzername or '?'} – {stand} am {self.zeitpunkt:%d.%m.%Y %H:%M}"
 
 
 auditlog.register(AnmeldeEinstellungen)

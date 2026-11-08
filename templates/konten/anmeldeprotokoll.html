@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load liste %}
+{% block titel %}Anmeldeprotokoll{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <div class="titel-zeile">
+    <h1>Anmeldeprotokoll</h1>
+    <a class="knopf knopf-zweitrangig" href="{% url 'konten:anmelde_einstellungen' %}">Aufbewahrung einstellen</a>
+  </div>
+  <p class="hinweis titel-text">Erfolgreiche Anmeldungen und Fehlversuche mit IP-Adresse und
+    Browser/System – für die Sicherheit (wer sich von wo angemeldet hat, Angriffsversuche).
+    {% if tage %}Wird nach {{ tage }} Tagen automatisch gelöscht.{% else %}Das Protokoll ist zurzeit
+    ausgeschaltet.{% endif %}</p>
+  <form class="filter-kompakt" method="get">
+    <div class="filter-feld"><label for="nur">Zeigen</label>
+      <select name="nur" id="nur" onchange="this.form.submit()">
+        <option value="">alle</option>
+        <option value="fehlversuche"{% if nur == "fehlversuche" %} selected{% endif %}>nur Fehlversuche</option>
+      </select></div>
+    <div class="filter-feld filter-suche"><label for="q">Suche</label>
+      <input type="search" name="q" id="q" value="{{ q }}" placeholder="Benutzername oder IP" {% live_suche %}></div>
+    <button type="submit" class="knopf">Suchen</button>
+  </form>
+  <div id="ergebnis">
+  {% blaettern seite %}
+  <div class="tabelle-rahmen">
+    <table class="tabelle">
+      <thead><tr><th>Zeitpunkt</th><th>Benutzername</th><th>Ergebnis</th><th>IP-Adresse</th><th>Browser/System</th></tr></thead>
+      <tbody>
+        {% for e in seite %}
+        <tr>
+          <td data-titel="Zeitpunkt">{{ e.zeitpunkt|date:"d.m.Y H:i:s" }}</td>
+          <td data-titel="Benutzername">{% if e.benutzer %}<a href="{% url 'konten:mitarbeiter' e.benutzer.pk %}">{{ e.benutzername|default:"?" }}</a>{% else %}{{ e.benutzername|default:"?" }}{% endif %}</td>
+          <td data-titel="Ergebnis">{% if e.erfolg %}<span class="marke-ok">angemeldet</span>{% else %}<span class="marke-warnung">Fehlversuch{% if e.grund %} ({{ e.grund }}){% endif %}</span>{% endif %}</td>
+          <td data-titel="IP-Adresse">{{ e.ip|default:"–" }}</td>
+          <td data-titel="Browser/System"><small class="leise">{{ e.browser|default:"–" }}</small></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">Keine Einträge.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% blaettern seite %}
+  </div>
+</section>
+{% endblock %}
