@@ -85,6 +85,12 @@ def start(request):
         bis = TafelEinstellungen.laden().update_hinweis_bis
         if warnung.art != "neu" or not bis or bis < timezone.localdate():
             kontext["update_warnung"] = warnung
+    if rollen.hat_recht(request.user, "mitarbeitende.geburtstage") and (
+        TafelEinstellungen.laden().geburtstage_startseite
+    ):
+        from apps.konten import geburtstage
+
+        kontext["geburtstage"] = geburtstage.naechste(14, timezone.localdate())
     kontext["modul_startseite"] = module.startseite(request)
     return render(request, "core/start.html", kontext)
 

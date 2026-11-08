@@ -105,6 +105,9 @@ KATALOG = [
           "Ein gesperrtes (archiviertes) Konto samt Stammdaten und verknüpfter Adresse in den "
           "Papierkorb legen (wiederherstellbar). Spenden oder Mitgliedschaft verhindern das. "
           "Vorgabe: nur Admin."),
+    Recht("mitarbeitende.geburtstage", TEAM, "Geburtstage der Mitarbeitenden sehen",
+          "Geburtstagskalender des Teams und – wenn die Tafel es einschaltet – die nächsten "
+          "Geburtstage auf der Startseite."),
     Recht("personal.sehen", TEAM, "Personal: Verträge, Abwesenheiten, Stunden, Arbeitszeiten, "
           "vertrauliche Dokumente"),
     # Adressen und Verein (Modul 5)
@@ -170,6 +173,7 @@ _EINLASS = ["einlass.nutzen", "einlass.abholung", "einlass.zahlung", "einlass.so
 # Rechte der mitgelieferten Rollen: genau das Verhalten vor ADR 0033.
 VORGABEN = {
     "Büro": _EINLASS + [
+        "mitarbeitende.geburtstage",
         "einlass.ausnahme", "kasse.einzelbuchungen", "konto.korrektur",
         "kunden.alle_ausgabestellen", "sonderaktionen.verwalten", "kunden.stammdaten",
         "kunden.kontakt",

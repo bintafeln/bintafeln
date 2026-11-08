@@ -31,7 +31,9 @@ def _team(benutzer):
 def test_vertraege_und_zeiten_als_unterpunkt_von_angestellte(admin):
     team = _team(admin)
     # „Verträge & Zeiten“ ist kein eigener Team-Eintrag, sondern Unterpunkt von „Angestellte“.
-    assert [e["titel"] for e in team["eintraege"]] == ["Ehrenamtliche", "Angestellte"]
+    # „Geburtstage“ steht daneben (eigenes Recht, Admin hat es).
+    titel = [e["titel"] for e in team["eintraege"]]
+    assert titel == ["Ehrenamtliche", "Angestellte", "Geburtstage"]
     angestellte = next(e for e in team["eintraege"] if e["titel"] == "Angestellte")
     assert [k["titel"] for k in angestellte.get("kinder", [])] == ["Verträge & Zeiten"]
 

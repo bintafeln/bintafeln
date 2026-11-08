@@ -22,6 +22,7 @@ urlpatterns = [
     path("rollen/neu/", views_rollen.bearbeiten, name="rolle_neu"),
     path("rollen/<int:pk>/", views_rollen.bearbeiten, name="rolle"),
     path("rollen/<int:pk>/loeschen/", views_rollen.loeschen, name="rolle_loeschen"),
+    path("geburtstage/", views_mitarbeitende.geburtstage, name="geburtstage"),
     path("mitarbeitende/", views_mitarbeitende.liste, name="mitarbeitende"),
     path("mitarbeitende/ehrenamtliche/", views_mitarbeitende.ehrenamtliche, name="ehrenamtliche"),
     path("mitarbeitende/angestellte/", views_mitarbeitende.angestellte, name="angestellte"),
