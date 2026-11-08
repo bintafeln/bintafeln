@@ -157,6 +157,26 @@
       leiste.appendChild(gruppe);
     });
 
+    // „Standard"-Knopf: setzt den Text auf die mitgelieferte Vorgabe zurück (nur wenn eine
+    // Vorgabe über data-standard hinterlegt ist).
+    if (feld.dataset.standard != null) {
+      var gstd = document.createElement("div");
+      gstd.className = "editor-gruppe";
+      var std = document.createElement("button");
+      std.type = "button";
+      std.textContent = "Standard";
+      std.title = "Diesen Text auf die mitgelieferte Vorgabe zurücksetzen";
+      std.addEventListener("mousedown", function (e) { e.preventDefault(); });
+      std.addEventListener("click", function () {
+        if (!window.confirm("Diesen Text auf die Vorgabe zurücksetzen? Ihre Änderung geht verloren.")) return;
+        feld.value = feld.dataset.standard;
+        if (rahmen.dataset.ansicht === "gestalten") { flaeche.innerHTML = sauber(feld.value); felderZeigen(); }
+        feld.dispatchEvent(new Event("input", {bubbles: true})); // Autosave speichert
+      });
+      gstd.appendChild(std);
+      leiste.appendChild(gstd);
+    }
+
     function platzhalterFeld(name) {
       var s = document.createElement("span");
       s.className = "platzhalter";

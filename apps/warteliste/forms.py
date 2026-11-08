@@ -141,6 +141,11 @@ class EinstellungenForm(forms.ModelForm):
         for name in ["betreff", "anrede", "einleitung", "schluss", "gruss", "absage_betreff",
                      "absage_text"]:  # fmt: skip
             self.fields[name].help_text = f"Platzhalter: {PLATZHALTER}"
+        # „Standard"-Knopf im Editor: mitgelieferte Vorgabe zum Zurücksetzen hinterlegen.
+        for name in EDITOR_FELDER:
+            standard = WartelisteEinstellungen._meta.get_field(name).default
+            if standard:
+                self.fields[name].widget.attrs["data-standard"] = standard
 
     def abschnitte(self):
         return [(titel, [self[f] for f in felder]) for titel, felder in self.ABSCHNITTE]
