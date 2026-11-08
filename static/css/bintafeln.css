@@ -1816,3 +1816,6 @@ details.amtsdokumente > summary { cursor: pointer; margin: .5rem 0; }
 .blaettern-nav { display: flex; gap: .5rem; align-items: center; }
 .blaettern-nav .knopf { padding: .2rem .6rem; }
 .blaettern-nav [aria-disabled="true"] { opacity: .45; pointer-events: none; }
+
+/* Mitglied-Marke in Listen einheitlich in eigener Zeile unter dem Namen (ADR 0097). */
+.marke-mitglied { display: inline-block; margin-top: .15rem; }
