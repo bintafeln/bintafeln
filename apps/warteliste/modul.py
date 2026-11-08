@@ -4,12 +4,24 @@ from apps.core.module import Modul
 
 
 def menue(eintrag):
+    from apps.warteliste import vorberechnung
+
+    # Zahl der offenen Fälle als Abzeichen – nur aus dem Cache (ohne teure Neuberechnung); so sieht
+    # man schon im Menü, wie viel bei „Abgleich“ bzw. „Doppelte Anträge“ zur Bearbeitung ansteht.
+    abgleich = eintrag("Abgleich mit Kundenstamm", "warteliste:abgleich")
+    if offen := vorberechnung.anzahl_abgleich():
+        abgleich["zahl"] = offen
+        abgleich["zahl_titel"] = "Anträge mit möglichem Treffer im Kundenstamm"
+    doppelte = eintrag("Doppelte Anträge", "warteliste:dubletten")
+    if offen := vorberechnung.anzahl_dubletten():
+        doppelte["zahl"] = offen
+        doppelte["zahl_titel"] = "mögliche Dubletten-Paare"
     return [
         ("Anträge und Warteliste", [
             ("warteliste.sehen", eintrag("Warteliste", "warteliste:liste", genau=True)),
             ("warteliste.sehen", eintrag("Termine", "warteliste:termine")),
-            ("warteliste.bearbeiten", eintrag("Abgleich mit Kundenstamm", "warteliste:abgleich")),
-            ("warteliste.bearbeiten", eintrag("Doppelte Anträge", "warteliste:dubletten")),
+            ("warteliste.bearbeiten", abgleich),
+            ("warteliste.bearbeiten", doppelte),
             ("warteliste.sehen", eintrag("Streichungsliste", "warteliste:streichungsliste")),
         ]),
         ("Einstellungen/Kunden", [
