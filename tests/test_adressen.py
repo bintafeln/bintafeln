@@ -382,6 +382,13 @@ def test_druckliste_zusammenstellen_und_pdf(admin_client, django_user_model, pdf
     # Vorschau enthält beide Personen
     assert seite.context["anzahl"] == 2
 
+    # Absenden mit „alle“ (leere Rolle/Stelle) lässt die Liste NICHT leer werden (Bugfix): das
+    # Formular sendet rolle= und stelle= mit – diese leeren Werte dürfen nicht filtern.
+    abgesendet = admin_client.get(
+        DRUCK, {"mitarbeit": "alle", "status": "alle", "rolle": "", "stelle": "", "suche": ""}
+    )
+    assert abgesendet.context["anzahl"] == 2
+
     # Spalte „Rollen" zuschalten: Kopf und Vorschau zeigen die Rolle der Mitarbeiterin
     mit_rollen = admin_client.get(DRUCK, {"spalte": ["nachname", "rollen"]})
     assert "Rollen" in mit_rollen.context["kopf"]
