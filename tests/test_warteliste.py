@@ -182,6 +182,38 @@ def test_einladung_mail_html_formatiert(mailserver):
     assert "<strong>" not in m.body and "Erika" in m.body  # Nur-Text ohne HTML
 
 
+def test_einladung_haengt_wegbeschreibung_an(mailserver):
+    """Die hinterlegte Wegbeschreibung hängt an der Einladung, nicht an der Absage."""
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    e = WartelisteEinstellungen.laden()
+    e.wegbeschreibung = SimpleUploadedFile(
+        "weg.pdf", b"%PDF-1.4 Test", content_type="application/pdf"
+    )
+    e.save()
+    a = antrag(email="erika@example.org")
+    ablauf.automatik()
+    t = termin()
+    ablauf.einladen([a], t, "Büro")
+    namen = [anhang[0] for anhang in django_mail.outbox[0].attachments]
+    assert any("weg" in n and n.endswith(".pdf") for n in namen)
+    # Absage: kein Anhang
+    django_mail.outbox.clear()
+    ablauf.absagen(t, [a], "Büro")
+    assert django_mail.outbox[0].attachments == []
+
+
+def test_wegbeschreibung_hochladen_und_entfernen(admin_client, modul_an):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    url = reverse("warteliste:einstellungen")
+    datei = SimpleUploadedFile("weg.pdf", b"%PDF-1.4", content_type="application/pdf")
+    admin_client.post(url, {"anhang": "1", "wegbeschreibung": datei})
+    assert WartelisteEinstellungen.laden().wegbeschreibung  # jetzt hinterlegt
+    admin_client.post(url, {"anhang": "1", "entfernen": "1"})
+    assert not WartelisteEinstellungen.laden().wegbeschreibung  # wieder entfernt
+
+
 def test_einstellungen_seite_hat_editor_und_vorschau(admin_client, modul_an):
     inhalt = admin_client.get(reverse("warteliste:einstellungen")).content.decode()
     assert "js/html_editor.js" in inhalt and "data-editor" in inhalt  # grafischer Editor

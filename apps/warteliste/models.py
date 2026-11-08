@@ -101,6 +101,10 @@ class WartelisteEinstellungen(models.Model):
         "Text der Absage",
         default="leider müssen wir den Termin absagen. Sie bekommen in Kürze einen neuen Termin.",
     )  # fmt: skip
+    wegbeschreibung = models.FileField(
+        "Wegbeschreibung (Anhang der Einladung)", upload_to="warteliste/", blank=True,
+        help_text="PDF oder Bild; wird jeder Einladungs-Mail angehängt (nicht der Absage).",
+    )  # fmt: skip
 
     TEXTFELDER = ["betreff", "anrede", "einleitung", "schluss", "mitbringen", "gruss",
                   "absage_betreff", "absage_text"]  # fmt: skip

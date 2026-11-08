@@ -281,13 +281,36 @@ def mail_inhalt(antrag, termin, absage=False) -> tuple[str, str, str]:
     return betreff, text, html
 
 
+def _wegbeschreibung_anhang(e) -> list[tuple[str, bytes, str]]:
+    """Die hinterlegte Wegbeschreibung als Mail-Anhang (nur der Einladung). Fehlt die Datei oder
+    lässt sie sich nicht lesen, wird einfach nichts angehängt."""
+    import contextlib
+    import mimetypes
+    import os
+
+    if not e.wegbeschreibung:
+        return []
+    try:
+        e.wegbeschreibung.open("rb")
+        daten = e.wegbeschreibung.read()
+    except OSError:
+        return []
+    finally:
+        with contextlib.suppress(Exception):
+            e.wegbeschreibung.close()
+    name = os.path.basename(e.wegbeschreibung.name) or "Wegbeschreibung"
+    typ = mimetypes.guess_type(name)[0] or "application/octet-stream"
+    return [(name, daten, typ)]
+
+
 def _senden(antrag, termin, absage=False) -> str:
     """Leer bei Erfolg, sonst der Fehler (verständlich)."""
     if not antrag.email:
         return "keine E-Mail-Adresse"
     betreff, text, html = mail_inhalt(antrag, termin, absage)
+    anhaenge = [] if absage else _wegbeschreibung_anhang(WartelisteEinstellungen.laden())
     try:
-        mail.senden(betreff, text, [antrag.email], html=html)
+        mail.senden(betreff, text, [antrag.email], html=html, anhaenge=anhaenge)
     except mail.MailFehler as fehler:
         return str(fehler)
     return ""
