@@ -8,7 +8,7 @@ from auditlog.signals import accessed
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import ProtectedError, Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -74,6 +74,7 @@ SPALTEN = [
     ("nummer", "Nummer"),
     ("vorname", "Vorname"), ("anrede", "Anrede"), ("strasse", "Straße"), ("plz", "PLZ"),
     ("ort", "Ort"), ("telefon", "Telefon"), ("handy", "Handy"), ("email", "E-Mail"),
+    ("geburtstag", "Geburtstag"),
     ("benutzername", "Benutzername"), ("rollen", "Rollen"), ("ausgabestellen", "Ausgabestellen"),
     ("beschaeftigung", "Beschäftigung"), ("eintritt", "Dabei seit"),
     ("zwei_faktor", "Zwei-Faktor"), ("anmeldung", "Letzte Anmeldung"),
@@ -104,10 +105,15 @@ def _zeilen(konten):
             sd = b.stammdaten
         except Stammdaten.DoesNotExist:
             sd = Stammdaten(benutzer=b)
+        try:
+            geburtstag = b.adresse.geburtsdatum  # Geburtsdatum steht an der Adresse (ADR 0097)
+        except ObjectDoesNotExist:
+            geburtstag = None
         zeilen.append(
             {
                 "b": b,
                 "sd": sd,
+                "geburtstag": geburtstag,
                 "nummer": verwaltung.personennummer(b),
                 "rollen": [
                     r.name
@@ -138,6 +144,7 @@ def _csv(zeilen, archiv) -> str:
         "Telefon",
         "Handy",
         "E-Mail",
+        "Geburtstag",
         "Benutzername",
         "Rollen",
         "Ausgabestellen",
@@ -151,7 +158,9 @@ def _csv(zeilen, archiv) -> str:
         b, sd = z["b"], z["sd"]
         reihe = [
             z["nummer"], b.last_name, b.first_name, sd.anrede, sd.strasse, sd.plz, sd.ort,
-            sd.telefon, sd.handy, b.email, b.username, ", ".join(z["rollen"]), z["stellen"],
+            sd.telefon, sd.handy, b.email,
+            z["geburtstag"].strftime("%d.%m.%Y") if z["geburtstag"] else "",
+            b.username, ", ".join(z["rollen"]), z["stellen"],
             b.get_beschaeftigung_display(),
             z["dabei_seit"].strftime("%d.%m.%Y") if z["dabei_seit"] else "",
         ]  # fmt: skip
