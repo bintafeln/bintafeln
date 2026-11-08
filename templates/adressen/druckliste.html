@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load static %}
+{% block titel %}Liste drucken{% endblock %}
+{% block inhalt %}
+<script src="{% static 'js/auswahl.js' %}" defer></script>
+<section class="karte breit">
+  <div class="titel-zeile"><h1>Mitarbeitende &amp; Personen – Liste zusammenstellen</h1>
+    <a class="knopf knopf-zweitrangig" href="{% url 'adressen:liste' %}">← Adressbuch</a></div>
+  <p class="hinweis">Liste zusammenstellen: filtern, einzelne Personen anhaken, Spalten wählen – und
+    als PDF in <strong>A4 oder A3</strong>, <strong>hoch oder quer</strong> drucken. Ohne Haken kommt
+    die ganze gefilterte Liste aufs Blatt, sonst nur die angehakten.</p>
+  <form method="get" id="druck" data-auswahl>
+    <div class="filter-kompakt">
+      {% if darf_mitarbeit %}
+      <div class="filter-feld"><label for="mitarbeit">Wer</label>
+        <select name="mitarbeit" id="mitarbeit">
+          <option value="alle"{% if f.mitarbeit == "alle" %} selected{% endif %}>alle Personen</option>
+          <option value="mitarbeitende"{% if f.mitarbeit == "mitarbeitende" %} selected{% endif %}>nur Mitarbeitende</option>
+          <option value="ehrenamtlich"{% if f.mitarbeit == "ehrenamtlich" %} selected{% endif %}>nur Ehrenamtliche</option>
+          <option value="angestellt"{% if f.mitarbeit == "angestellt" %} selected{% endif %}>nur Angestellte</option>
+          <option value="ohne_konto"{% if f.mitarbeit == "ohne_konto" %} selected{% endif %}>nur Adressen ohne Konto</option>
+        </select></div>
+      <div class="filter-feld"><label for="status">Status</label>
+        <select name="status" id="status">
+          <option value="alle"{% if f.status == "alle" %} selected{% endif %}>alle</option>
+          <option value="aktiv"{% if f.status == "aktiv" %} selected{% endif %}>aktive</option>
+          <option value="archiv"{% if f.status == "archiv" %} selected{% endif %}>Archiv (gesperrt)</option>
+        </select></div>
+      <div class="filter-feld"><label for="rolle">Rolle</label>
+        <select name="rolle" id="rolle"><option value="">alle</option>
+          {% for r in rollen_wahl %}<option value="{{ r }}"{% if r in f.rollen %} selected{% endif %}>{{ r }}</option>{% endfor %}</select></div>
+      <div class="filter-feld"><label for="stelle">Ausgabestelle</label>
+        <select name="stelle" id="stelle"><option value="">alle</option>
+          {% for s in stellen %}<option value="{{ s.pk }}"{% if s.pk|stringformat:"s" in f.stellen %} selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></div>
+      {% endif %}
+      <div class="filter-feld filter-suche"><label for="suche">Suche</label>
+        <input type="search" name="suche" id="suche" value="{{ f.suche }}" placeholder="Name"></div>
+      <button type="submit" class="knopf knopf-zweitrangig">Vorschau</button>
+    </div>
+
+    <details class="spalten-wahl">
+      <summary>Spalten wählen</summary>
+      <div class="spalten-haken">
+        {% for k, name, an, fest in spalten_wahl %}<label><input type="checkbox" name="spalte" value="{{ k }}"{% if an %} checked{% endif %}{% if fest %} disabled title="immer dabei"{% endif %}> {{ name }}</label>{% endfor %}
+      </div>
+    </details>
+
+    <div class="druck-format">
+      <span class="druck-format-gruppe">Format:
+        <label><input type="radio" name="format" value="a4"{% if format == "a4" %} checked{% endif %}> A4</label>
+        <label><input type="radio" name="format" value="a3"{% if format == "a3" %} checked{% endif %}> A3</label></span>
+      <span class="druck-format-gruppe">Ausrichtung:
+        <label><input type="radio" name="ausrichtung" value="quer"{% if ausrichtung == "quer" %} checked{% endif %}> quer</label>
+        <label><input type="radio" name="ausrichtung" value="hoch"{% if ausrichtung == "hoch" %} checked{% endif %}> hoch</label></span>
+      <button type="submit" name="aktion" value="pdf" class="knopf" formtarget="_blank">🖨 Als PDF drucken</button>
+      <span class="hinweis" data-auswahl-zahl="druck"></span>
+    </div>
+
+    <p class="hinweis">{{ anzahl }} Person{{ anzahl|pluralize:"en" }} in der Vorschau.</p>
+    <div class="tabelle-rahmen">
+      <table class="tabelle">
+        <thead><tr>
+          <th><input type="checkbox" data-alle="id" aria-label="Alle auswählen" title="alle / keine"></th>
+          {% for t in kopf %}<th>{{ t }}</th>{% endfor %}
+        </tr></thead>
+        <tbody>
+          {% for pk, werte in vorschau %}
+          <tr>
+            <td><input type="checkbox" name="id" value="{{ pk }}" aria-label="Person auswählen"></td>
+            {% for w in werte %}<td>{{ w|default:"–" }}</td>{% endfor %}
+          </tr>
+          {% empty %}
+          <tr><td colspan="{{ kopf|length|add:1 }}">Keine Personen für diese Auswahl.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </form>
+</section>
+{% endblock %}
