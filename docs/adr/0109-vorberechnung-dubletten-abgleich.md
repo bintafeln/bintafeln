@@ -32,6 +32,17 @@ das Ergebnis wartete – auch wenn sich seit dem letzten Aufruf nichts geändert
   Streichen), **verwerfen** den Cache gezielt (`veraltet()`), damit die nächste Anfrage frisch
   rechnet. Die htmx-Aktionen auf einzelne Treffer/Paare tauschen weiterhin nur ihren Block aus und
   rechnen nicht die ganze Liste neu.
+- **Vorrechnen, ohne dass jemand die Seite öffnet.** Damit das Ergebnis auch bereitsteht, bevor
+  jemand hinklickt, wird das Vorwärmen von zwei Seiten angestoßen:
+  - **Beim ersten Blick aufs Menü**, sobald jemand im Programm aktiv ist und noch **kein** Ergebnis
+    im Cache liegt (z. B. direkt nach einer Entscheidung, die ihn verworfen hat): Der Menü-Aufbau
+    ruft `vorwaermen()` im Hintergrund auf, so ist die Seite auch da, wenn man direkt über das
+    Abzeichen hinspringt.
+  - **Regelmäßig im Hintergrund**: Der App-Dienst ruft alle **15 Minuten** `manage.py
+    warteliste_vorwaermen` auf (gleicher Platz wie der 5-Minuten-Loop für Benachrichtigungen,
+    `docker/entrypoint.sh`). Dieser Warmlauf rechnet **synchron** (`vorwaermen(synchron=True)`) und
+    nur, wenn das Ergebnis nicht aktuell ist – so sind die Seiten **auch bei völliger Inaktivität**
+    ohne Warten da, ohne einen eigenen Dienst oder Celery.
 
 ## Begründung
 
