@@ -55,7 +55,7 @@
           <details class="treffer-vorschau">
             <summary>Vorschau</summary>
             <dl class="angaben">
-              <dt>Kundengruppe</dt><dd>{% if t.haushalt.kundengruppe %}{{ t.haushalt.kundengruppe.ausgabestelle.name|default:"" }} · {{ t.haushalt.kundengruppe.name }}{% else %}–{% endif %}</dd>
+              <dt>Kundengruppe</dt><dd>{% if t.haushalt.kundengruppe %}{{ t.haushalt.kundengruppe.mit_stelle }}{% else %}–{% endif %}</dd>
               <dt>Ausweis gültig bis</dt><dd>{{ t.haushalt.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}</dd>
               <dt>Letzter Besuch</dt><dd>{{ t.haushalt.letzter_besuch_text }}</dd>
               <dt>Haushalt</dt><dd>{% for p in t.haushalt.personen.all %}{{ p.vorname }} {{ p.nachname }}{% if p.ist_hauptperson %} (Hauptperson){% endif %}{% if not forloop.last %}; {% endif %}{% empty %}–{% endfor %}</dd>

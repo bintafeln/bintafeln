@@ -146,6 +146,17 @@ def test_kontostand_abschaltbar(ausgabe, haushalt):
     assert "Kontostand" not in ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
 
 
+def test_ausgabestelle_ohne_doppelten_namen(stelle, haushalt, ausgabe):
+    """Beginnt der Gruppenname mit der Ausgabestelle, steht sie nicht doppelt (wie beim Ausweis)."""
+    # Gruppe nennt die Stelle schon im Namen → nur einmal
+    doppelt = Kundengruppe.objects.create(name="Ausgabestelle Mitte Mo 13:30", ausgabestelle=stelle)
+    assert doppelt.mit_stelle == "Ausgabestelle Mitte Mo 13:30"
+    # Gruppe ohne Stellen-Präfix → „Stelle · Gruppe“
+    assert haushalt.kundengruppe.mit_stelle == "Ausgabestelle Mitte · Jeden Tag"
+    seite = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
+    assert "Ausgabestelle Mitte · Jeden Tag" in seite
+
+
 def test_ausgabestelle_waehlen(ausgabe, stelle):
     """Auswahl oben im Menü, gespeichert am Benutzer (ADR 0067)."""
     nord = Ausgabestelle.objects.create(name="Nord")
