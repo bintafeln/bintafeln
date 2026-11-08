@@ -203,6 +203,17 @@ a.blaettern-knopf:hover { border-color: var(--akzent); }
   .stapelbar .tabelle td[data-titel="Aktion"] { padding-top: .35rem; }
 }
 
+/* Breite Listen (z. B. Mitarbeitende): seitlich schieben, erste Spalte (Name/Nummer) bleibt stehen.
+   So läuft die Tabelle nicht mehr unsichtbar nach rechts heraus. */
+.tabelle-rahmen.haftspalte th:first-child,
+.tabelle-rahmen.haftspalte td:first-child {
+  position: sticky; left: 0; z-index: 1; background: var(--flaeche); box-shadow: 1px 0 0 var(--rand);
+}
+@media (max-width: 40rem) {
+  .tabelle-rahmen.haftspalte th:first-child,
+  .tabelle-rahmen.haftspalte td:first-child { position: static; box-shadow: none; }
+}
+
 @media (min-width: 40rem) {
   .knopf { width: auto; }
   .filter { flex-direction: row; flex-wrap: wrap; align-items: center; gap: .75rem; }
