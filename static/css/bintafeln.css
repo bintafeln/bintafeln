@@ -1857,4 +1857,6 @@ details.amtsdokumente > summary { cursor: pointer; margin: .5rem 0; }
 
 /* Sammelweises Bearbeiten: Eingabefelder füllen die Tabellenzelle. */
 .sammel-tabelle td input, .sammel-tabelle td select { width: 100%; min-width: 7rem; box-sizing: border-box; }
+.sammel-tabelle td textarea { width: 100%; min-width: 11rem; box-sizing: border-box; }
+.sammel-tabelle td .mehrfach { min-width: 10rem; }
 .sammel-tabelle .feld-fehler { display: block; color: var(--fehler); font-size: .85rem; }

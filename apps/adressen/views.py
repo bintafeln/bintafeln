@@ -156,17 +156,27 @@ def liste(request):
     })  # fmt: skip
 
 
-# Felder, die sich sammelweise ändern lassen (Reihenfolge = Spalten der Bearbeiten-Tabelle).
+# Grundfelder folgen der Spaltenwahl der Liste; Kategorien, Einwilligungen und Notiz stehen immer.
 # Name, Organisation, Ansprechperson und Mitgliedsnummer sind bewusst nicht dabei (ADR 0097).
-SAMMEL_FELDER = [("anrede", "Anrede"), ("strasse", "Straße"), ("plz", "PLZ"), ("ort", "Ort"),
-                 ("telefon", "Telefon"), ("mobil", "Handy"), ("email", "E-Mail")]  # fmt: skip
+SAMMEL_GRUND = [("anrede", "Anrede"), ("strasse", "Straße"), ("plz", "PLZ"), ("ort", "Ort"),
+                ("telefon", "Telefon"), ("mobil", "Handy"), ("email", "E-Mail")]  # fmt: skip
+SAMMEL_EXTRA = [("kategorien", "Kategorien"), ("einwilligung_post", "Einwilligung Post"),
+                ("einwilligung_email", "Einwilligung E-Mail"),
+                ("veroeffentlichen", "Veröffentlichen"), ("notiz", "Notiz")]  # fmt: skip
 
 
 @rollen.recht_erforderlich("adressen.bearbeiten")
 def sammel_bearbeiten(request):
     """Die aktuelle (gefilterte) Seite der Adressliste auf einmal bearbeiten: je Zeile die
-    änderbaren Felder, in einem Rutsch gespeichert. Namen und Nummern bleiben gesperrt."""
+    änderbaren Felder, in einem Rutsch gespeichert. Welche Grundfelder dabei sind, richtet sich
+    nach den in der Liste eingeblendeten Spalten; Namen und Nummern bleiben gesperrt."""
     from django.forms import modelformset_factory
+
+    sichtbar = listen.sichtbare_spalten(
+        request.user, "adressen", [k for k, _ in SPALTEN], SPALTEN_FEST
+    )
+    spalten = {k for k, _ in SAMMEL_GRUND if k in sichtbar}
+    felder = [(k, t) for k, t in SAMMEL_GRUND if k in spalten] + SAMMEL_EXTRA
 
     adressen, filter_ = _gefiltert(request.user, request.GET)
     filter_["anzahl"] = listen.zeilenzahl(request, "anzahl")
@@ -179,26 +189,31 @@ def sammel_bearbeiten(request):
     ziel = reverse("adressen:liste") + (f"?{abfrage}" if abfrage else "")
 
     if request.method == "POST":
-        formset = FormSet(request.POST, queryset=basis)
+        formset = FormSet(request.POST, queryset=basis, form_kwargs={"spalten": spalten})
         if formset.is_valid():
+            geaendert = 0
             with transaction.atomic():
-                geaendert = formset.save(commit=False)
-                for obj in geaendert:
+                for form in formset.forms:
+                    if not form.has_changed():
+                        continue
+                    obj = form.save(commit=False)
                     obj.geaendert_am = timezone.now()
                     obj.geaendert_von = request.user.get_username()
                     obj.save()
+                    form.save_m2m()  # Kategorien
+                    geaendert += 1
             if geaendert:
-                messages.success(request, f"{len(geaendert)} Adresse"
-                                 f"{'n' if len(geaendert) != 1 else ''} geändert.")  # fmt: skip
+                messages.success(request, f"{geaendert} Adresse"
+                                 f"{'n' if geaendert != 1 else ''} geändert.")  # fmt: skip
             else:
                 messages.info(request, "Es wurde nichts geändert.")
             return redirect(ziel)
         messages.error(request, "Bitte die rot markierten Felder prüfen.")
     else:
-        formset = FormSet(queryset=basis)
+        formset = FormSet(queryset=basis, form_kwargs={"spalten": spalten})
 
     return render(request, "adressen/sammel_bearbeiten.html", {
-        "formset": formset, "felder": SAMMEL_FELDER, "ziel": ziel,
+        "formset": formset, "felder": felder, "ziel": ziel,
         "anzahl": len(seite), "gesamt": seite.paginator.count,
     })  # fmt: skip
 
