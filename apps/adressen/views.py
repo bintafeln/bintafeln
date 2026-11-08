@@ -58,28 +58,51 @@ def _im_verein(adressen, wahl: str):
     return adressen
 
 
-def _gefiltert(request):
+# Schlüssel, die die Reihenfolge der Liste bestimmen (Filter + Sortierung) – ohne Blättern/Auswahl.
+# Sie werden an die Adresse weitergereicht, damit man dort vor/zurück blättern kann (ADR 0097).
+BLAETTER_SCHLUESSEL = ("q", "kategorie", "art", "verein", "sort")
+
+
+def _gefiltert(user, params):
+    """Adressbuch nach den Filtern aus ``params`` (QueryDict); ``user`` steuert die „Im Verein“.
+    Ohne die je Person gemerkte Zeilenzahl – die setzt die Listen-Ansicht selbst."""
     adressen = Adresse.objects.prefetch_related("kategorien")
-    q = request.GET.get("q", "").strip()
+    q = (params.get("q") or "").strip()
     if q:
         adressen = adressen.filter(
             Q(organisation__icontains=q) | Q(vorname__icontains=q) | Q(nachname__icontains=q)
             | Q(ansprechperson__icontains=q) | Q(ort__icontains=q) | Q(plz__startswith=q)
             | Q(email__icontains=q)
         )  # fmt: skip
-    kategorie = request.GET.get("kategorie", "")
+    kategorie = params.get("kategorie", "")
     if kategorie.isdigit():
         adressen = adressen.filter(kategorien__pk=kategorie)
-    art = request.GET.get("art", "")
+    art = params.get("art", "")
     if art in Adresse.Art.values:
         adressen = adressen.filter(art=art)
-    verein = request.GET.get("verein", "")
-    if verein not in dict(_verein_wahl(request.user)):
+    verein = params.get("verein", "")
+    if verein not in dict(_verein_wahl(user)):
         verein = ""
     adressen = _im_verein(adressen, verein)
-    anzahl = listen.zeilenzahl(request, "anzahl")  # je Person gemerkt, Vorgabe 25
-    return adressen.distinct(), {"q": q, "kategorie": kategorie, "art": art, "verein": verein,
-                                 "anzahl": anzahl}  # fmt: skip
+    return adressen.distinct(), {"q": q, "kategorie": kategorie, "art": art, "verein": verein}
+
+
+def _blaetter_abfrage(params) -> str:
+    """Nur die Filter-/Sortier-Schlüssel als Abfrage-String – Grundlage fürs Blättern und für den
+    Rücksprung in die gefilterte Liste."""
+    teile = QueryDict(mutable=True)
+    for schluessel in BLAETTER_SCHLUESSEL:
+        wert = params.get(schluessel)
+        if wert:
+            teile[schluessel] = wert
+    return teile.urlencode()
+
+
+def _reihenfolge(user, params) -> list[int]:
+    """Die Adress-pks in genau der Reihenfolge der Liste (Filter + Sortierung), ohne Blättern."""
+    adressen, _ = _gefiltert(user, params)
+    adressen, _ = listen.sortieren(adressen, params.get("sort", ""), SORTIERUNG, "name")
+    return list(adressen.values_list("pk", flat=True))
 
 
 # Anzeigen: Adressen je Seite zur Wahl (Vorgabe 25), „alle“ ohne Blättern – wie in anderen Listen.
@@ -105,7 +128,8 @@ SPALTEN_FEST: set = set()
 
 @rollen.recht_erforderlich("adressen.sehen")
 def liste(request):
-    adressen, filter_ = _gefiltert(request)
+    adressen, filter_ = _gefiltert(request.user, request.GET)
+    filter_["anzahl"] = listen.zeilenzahl(request, "anzahl")  # je Person gemerkt, Vorgabe 25
     adressen, sort = listen.sortieren(adressen, request.GET.get("sort", ""), SORTIERUNG, "name")
     if request.GET.get("aktion"):
         adressen = listenauswahl.filtern(request, adressen)
@@ -127,6 +151,7 @@ def liste(request):
                                              [k for k, _ in SPALTEN], SPALTEN_FEST),
         "spalten_wahl": listen.spalten_wahl(request.user, "adressen", SPALTEN, SPALTEN_FEST),
         "abfrage": abfrage.urlencode(),
+        "blaetter_abfrage": _blaetter_abfrage(request.GET),
         "verein_wahl": _verein_wahl(request.user),
     })  # fmt: skip
 
@@ -174,6 +199,18 @@ def adresse(request, pk):
             from apps.fahrdienst import plan as fahrdienst
 
             kontext["fahr_einsaetze"] = fahrdienst.einsatztage(a)
+    # Kam man aus der Liste (Filter/Sortierung in der Abfrage), lässt sich hier vor/zurück blättern
+    # und über „← Adressbuch“ in genau diese gefilterte Liste zurückspringen (ADR 0097).
+    abfrage = _blaetter_abfrage(request.GET)
+    kontext["zurueck"] = abfrage
+    if abfrage:
+        pks = _reihenfolge(request.user, request.GET)
+        if a.pk in pks:
+            i = pks.index(a.pk)
+            kontext["blaetter_abfrage"] = abfrage
+            kontext["blaetter_pos"] = (i + 1, len(pks))
+            kontext["vorige"] = pks[i - 1] if i > 0 else None
+            kontext["naechste"] = pks[i + 1] if i < len(pks) - 1 else None
     return render(request, "adressen/adresse.html", kontext)
 
 

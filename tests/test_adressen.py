@@ -318,3 +318,46 @@ def test_einsatztage_bei_der_person(admin_client, pdf_text):
     text = pdf_text(admin_client.get(reverse("adressen:auskunft", args=[person.pk])))
     assert "Regelmäßige Einsätze" in text and "Kasse" in text and "Fahrer" in text
     assert "Fahrdienst" in text  # Spalte „Bereich" der Einsätze-Tabelle
+
+
+def test_blaettern_folgt_der_liste(admin_client):
+    """Aus der Liste kommt man aufs Adressblatt mit Vor-/Zurück-Blättern in genau der Reihenfolge
+    (Filter + Sortierung) der Liste; die Listenlinks reichen den Filter weiter."""
+    namen = ["Anders", "Berger", "Conrad", "Diehl"]
+    adr = {n: Adresse.objects.create(art=Adresse.Art.PERSON, nachname=n) for n in namen}
+
+    def blatt(name, **daten):
+        return admin_client.get(reverse("adressen:adresse", args=[adr[name].pk]), daten)
+
+    # Die Listenlinks tragen die Filter-Abfrage, damit das Blättern auf dem Blatt weiß, woher.
+    liste = admin_client.get(LISTE, {"art": "person"})
+    assert liste.context["blaetter_abfrage"] == "art=person"
+    ziel = reverse("adressen:adresse", args=[adr["Berger"].pk]) + "?art=person"
+    assert f'href="{ziel}"' in liste.content.decode()
+
+    # Mittendrin: Position 2 von 4, davor Anders, danach Conrad.
+    mitte = blatt("Berger", art="person")
+    assert mitte.context["blaetter_pos"] == (2, 4)
+    assert mitte.context["vorige"] == adr["Anders"].pk
+    assert mitte.context["naechste"] == adr["Conrad"].pk
+    assert mitte.context["zurueck"] == "art=person"
+    inhalt = mitte.content.decode()
+    assert "2 von 4" in inhalt and "← vorige" in inhalt and "nächste →" in inhalt
+
+    # Am Anfang kein „vorige“, am Ende kein „nächste“.
+    erste = blatt("Anders", art="person")
+    assert erste.context["blaetter_pos"] == (1, 4) and erste.context["vorige"] is None
+    assert erste.context["naechste"] == adr["Berger"].pk
+    letzte = blatt("Diehl", art="person")
+    assert letzte.context["blaetter_pos"] == (4, 4) and letzte.context["naechste"] is None
+
+    # Andere Sortierung dreht die Reihenfolge – das Blättern folgt ihr.
+    rueck = blatt("Berger", art="person", sort="-name")
+    assert rueck.context["blaetter_pos"] == (3, 4)
+    assert rueck.context["vorige"] == adr["Conrad"].pk
+    assert rueck.context["naechste"] == adr["Anders"].pk
+
+    # Ohne Filter-Abfrage kein Blättern (und kein Filter-Rücksprung).
+    ohne = blatt("Berger")
+    assert ohne.context.get("blaetter_pos") is None and ohne.context["zurueck"] == ""
+    assert "von 4" not in ohne.content.decode()
