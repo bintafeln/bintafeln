@@ -112,13 +112,17 @@ def test_kundengruppe_aendern(admin_client):
     Haushalt.objects.create(kundennummer="5003", kundengruppe=voll, ausweis_gueltig_bis=gueltig)
     seite = admin_client.get(url("kundengruppe_aendern", "5001")).content.decode()
     assert "Montagsgruppe" in seite and "Dienstagsgruppe" in seite and "aktuell" in seite
-    # volle Fremdgruppe ausgeblendet; die (volle) eigene Gruppe „Montagsgruppe" bleibt sichtbar
-    assert "Vollgruppe" not in seite
+    # volle Fremdgruppe ausgeblendet; die (volle) eigene Gruppe „Montagsgruppe" bleibt sichtbar.
+    # Nur die auswählbaren Gruppen (Radio "g<pk>") prüfen – ein Kundengruppen-Name kann auch in der
+    # „heute schon abgeholt"-Übersicht stehen, wenn heute ihr Ausgabetag ist (sonst testabhängig vom
+    # Wochentag).
+    assert f'id="g{voll.pk}"' not in seite  # Vollgruppe nicht zur Auswahl
+    assert f'id="g{mo.pk}"' in seite  # Montagsgruppe (eigene, voll) bleibt wählbar
     # Nach Ausgabestelle gruppiert, Spalte „Belegung" statt Mitglieder/Max
     assert "Belegung" in seite and "Mitte" in seite
     # Wochentagsfilter
     nur_di = admin_client.get(url("kundengruppe_aendern", "5001"), {"tag": "Di"}).content.decode()
-    assert "Dienstagsgruppe" in nur_di and "Montagsgruppe" not in nur_di
+    assert f'id="g{di.pk}"' in nur_di and f'id="g{mo.pk}"' not in nur_di
     # Gruppe ändern → Historie wird fortgeschrieben
     antwort = admin_client.post(url("kundengruppe_aendern", "5001"), {"kundengruppe": di.pk})
     assert antwort.status_code == 302
