@@ -156,6 +156,9 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LOGIN_URL = "konten:anmelden"
+# Bei ungültigem CSRF-Token (z. B. lange offene Seite) keine Sackgasse, sondern zurück zur
+# frischen Anmeldung (ADR 0119).
+CSRF_FAILURE_VIEW = "apps.core.fehler.csrf_fehler"
 # Einladungs- und Zurücksetzen-Links gelten 3 Tage (ADR 0016).
 PASSWORD_RESET_TIMEOUT = 3 * 24 * 60 * 60
 
