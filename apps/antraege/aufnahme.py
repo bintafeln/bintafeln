@@ -161,11 +161,16 @@ def gueltigkeit_auswahl(heute: dt.date, e: KundenEinstellungen) -> list[tuple[st
 
 
 def freie_gruppen(haushalt: Haushalt | None = None) -> list[dict]:
-    """Aktive Kundengruppen mit freiem Platz (gezählt in Haushalten, ohne beendete).
+    """Aktive Kundengruppen mit freiem Platz (gezählt in Haushalten, ohne beendete). Geplante,
+    noch nicht ausgeführte Zuzüge (ADR 0118) belegen den Platz schon und zählen bei ``frei`` mit,
+    damit er nicht doppelt vergeben wird.
 
     Die bisherige Gruppe eines bestehenden Haushalts bleibt immer wählbar.
     """
+    from apps.kunden import gruppen as gruppen_modul
+
     belegt = Count("haushalte", filter=~Q(haushalte__status=Haushalt.Status.BEENDET))
+    reserviert = gruppen_modul.reservierte_zugaenge()
     gruppen = []
     for g in (
         Kundengruppe.objects.filter(aktiv=True)
@@ -173,7 +178,8 @@ def freie_gruppen(haushalt: Haushalt | None = None) -> list[dict]:
         .annotate(belegt=belegt)
         .order_by("ausgabestelle__name", "name")
     ):
-        frei = None if g.maximum is None else g.maximum - g.belegt
+        res = reserviert.get(g.pk, 0)
+        frei = None if g.maximum is None else g.maximum - g.belegt - res
         eigene = haushalt is not None and haushalt.kundengruppe_id == g.pk
         if frei is None or frei > 0 or eigene:
             gruppen.append({"gruppe": g, "belegt": g.belegt, "frei": frei, "eigene": eigene})

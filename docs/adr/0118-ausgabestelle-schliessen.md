@@ -20,6 +20,11 @@ bzw. Kundengruppen verteilt werden – ohne dass am Schließtag jemand ohne Grup
   in der Historie fest (`HaushaltEreignis`, Quelle „automatisch“) und wendet die Ausweis-Regel
   (ADR 0061) an; eine inzwischen inaktive Zielgruppe bleibt offen. Beide Funktionen laufen täglich
   über `kunden.models.fristen_anwenden()` (Startseite).
+- **Platzreservierung:** Ein geplanter, noch nicht ausgeführter Zuzug belegt den Platz in der
+  Zielgruppe sofort. `gruppen.reservierte_zugaenge()` liefert diese Zahl je Gruppe;
+  `gruppen.mit_plaetzen()` und `aufnahme.freie_gruppen()` ziehen sie von den freien Plätzen ab, so
+  dass derselbe Platz nicht bis zum Stichtag ein zweites Mal vergeben wird (sonst drohte eine
+  Überbuchung ab dem Stichtag).
 
 ## Begründung
 

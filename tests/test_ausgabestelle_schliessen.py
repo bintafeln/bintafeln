@@ -100,6 +100,28 @@ def test_fristen_anwenden_ruft_beides(aufbau):
     assert not Ausgabestelle.objects.get(pk=alt.pk).aktiv
 
 
+def test_geplanter_zuzug_reserviert_platz(aufbau):
+    """Ein geplanter Zuzug belegt den Platz in der Zielgruppe sofort – er wird bis zum Stichtag
+    nicht erneut vergeben (sonst drohte ab dem Stichtag eine Überbuchung)."""
+    from apps.antraege import aufnahme
+    from apps.kunden import gruppen
+
+    alt, neu, g_alt, g_neu, h = aufbau
+    Kundengruppe.objects.filter(pk=g_neu.pk).update(maximum=1)
+
+    def frei(pk):
+        return next(x["frei"] for x in gruppen.mit_plaetzen() if x["gruppe"].pk == pk)
+
+    assert frei(g_neu.pk) == 1  # ohne Plan: ein Platz frei
+    verlegung.planen(h, g_neu, HEUTE, "chefin")
+    assert frei(g_neu.pk) == 0  # Plan reserviert den Platz
+    # Der Aufnahme-Assistent bietet die (reserviert-)volle Gruppe nicht mehr an
+    assert g_neu.pk not in {x["gruppe"].pk for x in aufnahme.freie_gruppen()}
+    # Nach Ausführung zählt der Haushalt regulär, die Reservierung entfällt – kein Doppeltzählen
+    verlegung.anwenden(HEUTE)
+    assert frei(g_neu.pk) == 0
+
+
 def test_verlegen_seite(admin_client, aufbau):
     alt, neu, g_alt, g_neu, h = aufbau
     url = reverse("kunden:ausgabestelle_verlegen", args=[alt.pk])
