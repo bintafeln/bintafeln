@@ -27,7 +27,7 @@
           <tr{% if x.eigene %} class="hervor"{% endif %}>
             <td><input type="radio" name="kundengruppe" value="{{ x.gruppe.pk }}" id="g{{ x.gruppe.pk }}"{% if x.eigene %} checked{% endif %}></td>
             <td data-titel="Gruppe"><label for="g{{ x.gruppe.pk }}">{{ x.gruppe.name }}{% if x.eigene %} <span class="marke-ok">aktuell</span>{% endif %}</label></td>
-            <td data-titel="Belegung" class="zahl">{{ x.belegt }}{% if x.maximum %}&#8201;/&#8201;{{ x.maximum }}{% endif %}</td>
+            <td data-titel="Belegung" class="zahl">{{ x.belegt }}{% if x.maximum %}&#8201;/&#8201;{{ x.maximum }}{% endif %}{% if x.reserviert %} <span class="leise" title="Plätze für geplante Zuzüge reserviert">(+{{ x.reserviert }} geplant)</span>{% endif %}</td>
             <td data-titel="frei" class="zahl">{% if x.frei is None %}∞{% elif x.frei <= 0 %}<span class="fehler">0</span>{% else %}{{ x.frei }}{% endif %}</td>
             <td data-titel="Tag/Zeit">{{ x.gruppe.wochentage|default:"–" }}{% if x.gruppe.uhrzeit %} {{ x.gruppe.uhrzeit|time:"H:i" }}{% endif %}</td>
           </tr>

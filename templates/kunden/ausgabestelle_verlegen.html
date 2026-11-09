@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block titel %}Kunden verlegen: {{ s.name }}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'kunden:ausgabestelle' s.pk %}">← {{ s.name }}</a></p>
+  <h1>Kunden verlegen: {{ s.name }}</h1>
+  <p class="hinweis">Für jeden Haushalt eine <strong>neue Kundengruppe</strong> wählen und oben einen
+    gemeinsamen <strong>Stichtag</strong> angeben. Zum Stichtag werden die gewählten Haushalte
+    automatisch in die neue Gruppe verlegt (bis dahin lässt sich alles ändern). „– bleibt –“ lässt
+    einen Haushalt unverändert{% if s.schliesst_am %}; nicht verlegte Kunden bleiben nach dem
+    Schließen ohne Gruppe{% endif %}.</p>
+  {% if zeilen %}
+  <form method="post">
+    {% csrf_token %}
+    <div class="filter-kompakt">
+      <div class="filter-feld"><label for="ab">Stichtag (Umzug ab)</label>
+        <input type="date" name="ab" id="ab" value="{{ vorgabe|date:'Y-m-d' }}" required></div>
+    </div>
+    <div class="tabelle-rahmen">
+      <table class="tabelle kompakt">
+        <thead><tr><th>Kundennr.</th><th>Name</th><th>Jetzige Gruppe</th><th>Neue Kundengruppe</th></tr></thead>
+        <tbody>
+        {% for z in zeilen %}
+          <tr>
+            <td data-titel="Kundennr.">{{ z.h.kundennummer }}</td>
+            <td data-titel="Name">{% if z.hauptperson %}{{ z.hauptperson.nachname }}, {{ z.hauptperson.vorname }}{% else %}–{% endif %}</td>
+            <td data-titel="Jetzige Gruppe">{{ z.h.kundengruppe.name }}</td>
+            <td data-titel="Neue Kundengruppe">
+              <label class="unsichtbar" for="ziel_{{ z.h.pk }}">Neue Kundengruppe für {{ z.h.kundennummer }}</label>
+              <select name="ziel_{{ z.h.pk }}" id="ziel_{{ z.h.pk }}">
+                <option value="">– bleibt –</option>
+                {% regroup ziele by ausgabestelle.name as nach_stelle %}
+                {% for stelle in nach_stelle %}
+                <optgroup label="{{ stelle.grouper|default:'ohne Ausgabestelle' }}">
+                  {% for g in stelle.list %}<option value="{{ g.pk }}"{% if z.offen and z.offen.ziel_gruppe_id == g.pk %} selected{% endif %}>{{ g.name }}</option>{% endfor %}
+                </optgroup>
+                {% endfor %}
+              </select>
+              {% if z.offen %}<small class="hinweis">geplant ab {{ z.offen.ab|date:"d.m.Y" }}</small>{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf">Verlegung speichern</button>
+      <a href="{% url 'kunden:ausgabestelle' s.pk %}" class="knopf knopf-abbrechen">Abbrechen</a>
+    </div>
+  </form>
+  {% else %}
+  <p>In den Kundengruppen dieser Ausgabestelle sind keine aktiven Haushalte.</p>
+  {% endif %}
+</section>
+{% endblock %}

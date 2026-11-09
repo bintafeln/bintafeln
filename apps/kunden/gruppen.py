@@ -110,11 +110,31 @@ def zeiten_abgleichen(kundennummern=None, heute: dt.date | None = None, ende: st
     return len(schliessen) + len(neu)
 
 
+def reservierte_zugaenge(heute: dt.date | None = None) -> dict[int, int]:
+    """Je Kundengruppe die Zahl der geplanten, noch nicht ausgeführten Zuzüge (``GeplanterWechsel``,
+    z. B. beim Schließen einer Ausgabestelle, ADR 0118), deren Stichtag innerhalb der Vorlaufzeit
+    liegt (``KundenEinstellungen.verlegung_vorlauf_wochen``). Erst dann ist der Platz reserviert;
+    weit im Voraus geplante Umzüge blockieren ihn noch nicht."""
+    from apps.kunden.models import GeplanterWechsel, KundenEinstellungen
+
+    heute = heute or timezone.localdate()
+    grenze = heute + dt.timedelta(weeks=KundenEinstellungen.laden().verlegung_vorlauf_wochen)
+    return dict(
+        GeplanterWechsel.objects.filter(erledigt_am__isnull=True, ab__lte=grenze)
+        .values("ziel_gruppe")
+        .annotate(n=Count("pk"))
+        .values_list("ziel_gruppe", "n")
+    )
+
+
 def mit_plaetzen(haushalt: Haushalt | None = None) -> list[dict]:
     """Alle aktiven Kundengruppen mit Belegung (Haushalte ohne beendete), Maximum und freien
     Plätzen, sortiert nach Ausgabestelle und Name. ``eigene`` markiert die aktuelle Gruppe des
-    Haushalts. Anders als ``aufnahme.freie_gruppen`` werden auch volle Gruppen gezeigt."""
+    Haushalts. ``reserviert`` zählt geplante Zuzüge, die den Platz schon belegen (ADR 0118); sie
+    zählen bei ``frei`` mit. Anders als ``aufnahme.freie_gruppen`` werden auch volle Gruppen
+    gezeigt."""
     belegt = Count("haushalte", filter=~Q(haushalte__status=Haushalt.Status.BEENDET))
+    reserviert = reservierte_zugaenge()
     ergebnis = []
     for g in (
         Kundengruppe.objects.filter(aktiv=True)
@@ -122,9 +142,10 @@ def mit_plaetzen(haushalt: Haushalt | None = None) -> list[dict]:
         .annotate(belegt=belegt)
         .order_by("ausgabestelle__name", "name")
     ):
-        frei = None if g.maximum is None else g.maximum - g.belegt
+        res = reserviert.get(g.pk, 0)
+        frei = None if g.maximum is None else g.maximum - g.belegt - res
         ergebnis.append({
-            "gruppe": g, "belegt": g.belegt, "maximum": g.maximum, "frei": frei,
+            "gruppe": g, "belegt": g.belegt, "reserviert": res, "maximum": g.maximum, "frei": frei,
             "eigene": haushalt is not None and haushalt.kundengruppe_id == g.pk,
         })  # fmt: skip
     return ergebnis

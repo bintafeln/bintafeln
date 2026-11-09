@@ -58,6 +58,11 @@ urlpatterns = [
         views_ausgabestellen.bearbeiten,
         name="ausgabestelle_bearbeiten",
     ),
+    path(
+        "ausgabestellen/<int:pk>/verlegen/",
+        views_ausgabestellen.verlegen,
+        name="ausgabestelle_verlegen",
+    ),
     path("listen/<str:art>/", views_bearbeiten.liste, name="liste"),
     path("listen/<str:art>/neu/", views_bearbeiten.listeneintrag, name="listeneintrag_neu"),
     path("listen/<str:art>/<int:pk>/", views_bearbeiten.listeneintrag, name="listeneintrag"),

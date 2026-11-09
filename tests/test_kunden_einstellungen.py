@@ -43,6 +43,7 @@ def test_einstellungen_speichern(admin_client):
             "abholungen_aufbewahren_jahre": "2",
             "zugriffe_aufbewahren_tage": "90",
             "nachfrist_sichtbar_tage": "30",
+            "verlegung_vorlauf_wochen": "6",
             "historie_aufbewahren_jahre": "5",
             "verlaengern_regel": "alle",
             "verlaengern_ab_alter": "65",
