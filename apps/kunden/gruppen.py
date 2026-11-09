@@ -110,14 +110,17 @@ def zeiten_abgleichen(kundennummern=None, heute: dt.date | None = None, ende: st
     return len(schliessen) + len(neu)
 
 
-def reservierte_zugaenge() -> dict[int, int]:
+def reservierte_zugaenge(heute: dt.date | None = None) -> dict[int, int]:
     """Je Kundengruppe die Zahl der geplanten, noch nicht ausgeführten Zuzüge (``GeplanterWechsel``,
-    z. B. beim Schließen einer Ausgabestelle, ADR 0118). Diese Plätze sind bis zum Stichtag
-    reserviert, damit sie nicht doppelt vergeben werden."""
-    from apps.kunden.models import GeplanterWechsel
+    z. B. beim Schließen einer Ausgabestelle, ADR 0118), deren Stichtag innerhalb der Vorlaufzeit
+    liegt (``KundenEinstellungen.verlegung_vorlauf_wochen``). Erst dann ist der Platz reserviert;
+    weit im Voraus geplante Umzüge blockieren ihn noch nicht."""
+    from apps.kunden.models import GeplanterWechsel, KundenEinstellungen
 
+    heute = heute or timezone.localdate()
+    grenze = heute + dt.timedelta(weeks=KundenEinstellungen.laden().verlegung_vorlauf_wochen)
     return dict(
-        GeplanterWechsel.objects.filter(erledigt_am__isnull=True)
+        GeplanterWechsel.objects.filter(erledigt_am__isnull=True, ab__lte=grenze)
         .values("ziel_gruppe")
         .annotate(n=Count("pk"))
         .values_list("ziel_gruppe", "n")

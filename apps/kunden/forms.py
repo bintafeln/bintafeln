@@ -36,6 +36,7 @@ class KundenEinstellungenForm(forms.ModelForm):
             "historie_aufbewahren_jahre",
             "selbst_gefuehrt",
             "gruppe_behalten",
+            "verlegung_vorlauf_wochen",
             "nachfrist_sichtbar_tage",
             "export_felder",
             "verlaengern_regel",

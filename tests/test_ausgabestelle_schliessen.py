@@ -1,4 +1,4 @@
-"""Ausgabestelle schließen: Enddatum + Auto-Archiv und geplante Verlegung der Kunden (ADR 0117).
+"""Ausgabestelle schließen: Enddatum + Auto-Archiv und geplante Verlegung der Kunden (ADR 0118).
 Alle Daten sind erfunden."""
 
 import datetime as dt
@@ -119,6 +119,29 @@ def test_geplanter_zuzug_reserviert_platz(aufbau):
     assert g_neu.pk not in {x["gruppe"].pk for x in aufnahme.freie_gruppen()}
     # Nach Ausführung zählt der Haushalt regulär, die Reservierung entfällt – kein Doppeltzählen
     verlegung.anwenden(HEUTE)
+    assert frei(g_neu.pk) == 0
+
+
+def test_reservierung_erst_in_der_vorlaufzeit(aufbau):
+    """Ein weit im Voraus geplanter Umzug blockiert den Platz noch nicht – erst innerhalb der
+    eingestellten Vorlaufzeit vor dem Stichtag (``verlegung_vorlauf_wochen``)."""
+    from apps.kunden import gruppen
+    from apps.kunden.models import KundenEinstellungen
+
+    alt, neu, g_alt, g_neu, h = aufbau
+    Kundengruppe.objects.filter(pk=g_neu.pk).update(maximum=1)
+    e = KundenEinstellungen.laden()
+    e.verlegung_vorlauf_wochen = 6
+    e.save()
+
+    def frei(pk):
+        return next(x["frei"] for x in gruppen.mit_plaetzen() if x["gruppe"].pk == pk)
+
+    # Stichtag 10 Wochen in der Zukunft: außerhalb der 6-Wochen-Vorlaufzeit → kein Block
+    verlegung.planen(h, g_neu, HEUTE + dt.timedelta(weeks=10), "chefin")
+    assert frei(g_neu.pk) == 1
+    # Stichtag 2 Wochen in der Zukunft: innerhalb der Vorlaufzeit → Platz reserviert
+    verlegung.planen(h, g_neu, HEUTE + dt.timedelta(weeks=2), "chefin")
     assert frei(g_neu.pk) == 0
 
 

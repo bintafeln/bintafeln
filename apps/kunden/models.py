@@ -74,6 +74,13 @@ class KundenEinstellungen(models.Model):
         help_text="Aus: Wer pausiert, gesperrt oder beendet ist oder keinen gültigen Ausweis mehr "
         "hat, fällt sofort aus der Kundengruppe, damit das Maximum der Gruppe stimmt.",
     )  # fmt: skip
+    verlegung_vorlauf_wochen = models.PositiveSmallIntegerField(
+        "Platz bei geplantem Umzug reservieren (Wochen vorher)", default=6,
+        validators=[MaxValueValidator(52)],
+        help_text="Ein geplanter Umzug in eine andere Kundengruppe (z. B. beim Schließen einer "
+        "Ausgabestelle) belegt den Platz erst so viele Wochen vor dem Stichtag. Früher geplante "
+        "Umzüge blockieren den Platz noch nicht. 0 = erst am Stichtag.",
+    )  # fmt: skip
     nachfrist_sichtbar_tage = models.PositiveSmallIntegerField(
         "Ehemalige Kunden noch sichtbar (Tage)",
         default=60,
