@@ -96,6 +96,13 @@ class TafelEinstellungen(models.Model):
     update_gemeldet = models.CharField("Gemeldetes Sicherheitsupdate", max_length=200, blank=True)
     update_hinweis_bis = models.DateField("Hinweis auf neue Funktionen ausgeblendet bis",
                                           null=True, blank=True)  # fmt: skip
+    # Automatisches Update (ADR 0043): Schalter und Uhrzeit. Ist es eingeschaltet, aktualisiert
+    # bintafeln sich zur eingestellten Uhrzeit von selbst auf die neueste Version.
+    # ``auto_update_zuletzt`` merkt den letzten Lauf-Tag, damit es je Tag nur einmal anläuft.
+    auto_update = models.BooleanField("Automatisch aktualisieren", default=False)
+    auto_update_zeit = models.TimeField("Uhrzeit fürs automatische Update", default=dt.time(3, 0))
+    auto_update_zuletzt = models.DateField("Letzter automatischer Update-Lauf",
+                                           null=True, blank=True, editable=False)  # fmt: skip
 
     # Rechtstexte der Tafel (ADR 0094): Datenschutz, Impressum, Einverständniserklärung als interner
     # Text (HTML möglich). Ist ein Text gesetzt, führt der Link im Antragsformular auf eine eigene

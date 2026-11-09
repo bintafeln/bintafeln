@@ -29,9 +29,32 @@ def seite(request):
             v for v in stand.versionen if not stand.ist_neuer(v) and v.name != stand.installiert
         ],  # fmt: skip
         "schluessel_ok": SicherungsDienst.laden().schluessel_ok,
+        "e": TafelEinstellungen.laden(),
     }
     vorlage = "core/_update_stand.html" if request.headers.get("HX-Request") else "core/update.html"
     return render(request, vorlage, kontext)
+
+
+@require_POST
+@rollen.recht_erforderlich("system.update")
+@nicht_in_demo
+def automatik(request):
+    """Automatisches Update ein-/ausschalten und die Uhrzeit setzen (ADR 0043)."""
+    e = TafelEinstellungen.laden()
+    e.auto_update = request.POST.get("auto_update") == "on"
+    try:
+        e.auto_update_zeit = dt.datetime.strptime(request.POST.get("auto_update_zeit", ""),
+                                                  "%H:%M").time()  # fmt: skip
+    except ValueError:
+        messages.error(request, "Bitte eine gültige Uhrzeit angeben (z. B. 03:00).")
+        return redirect("core:update")
+    e.save(update_fields=["auto_update", "auto_update_zeit"])
+    if e.auto_update:
+        messages.success(request, f"Automatisches Update eingeschaltet, täglich um "
+                                  f"{e.auto_update_zeit:%H:%M} Uhr.")  # fmt: skip
+    else:
+        messages.success(request, "Automatisches Update ausgeschaltet.")
+    return redirect("core:update")
 
 
 @require_POST

@@ -63,6 +63,7 @@ urlpatterns = [
     path("menue-zahlen/", views.menue_zahlen, name="menue_zahlen"),
     path("update/", views_update.seite, name="update"),
     path("update/starten/", views_update.starten, name="update_starten"),
+    path("update/automatik/", views_update.automatik, name="update_automatik"),
     path("update/abrufen/", views_update.abrufen, name="update_abrufen"),
     path("update/spaeter/", views_update.spaeter, name="update_spaeter"),
     path("sicherungen/", views_sicherung.seite, name="sicherungen"),

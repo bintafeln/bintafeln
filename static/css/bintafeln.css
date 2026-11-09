@@ -1404,6 +1404,9 @@ a.fd-ich { font-weight: 600; text-decoration: underline dotted; }
   border: 1px solid var(--rand); border-radius: var(--radius); width: 100%; }
 
 /* Einstellungen speichern sofort (static/js/autosave.js) */
+.auto-update-form { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem;
+  margin-top: .5rem; }
+.auto-update-form label { display: flex; align-items: center; gap: .4rem; }
 .autosave-meldung { display: block; margin-top: .2rem; font-size: .85rem; transition: opacity .8s; }
 .autosave-ok { align-self: flex-start; padding: .05rem .5rem; border-radius: 999px; background: var(--erfolg); font-weight: 600; }
 .autosave-weg { opacity: 0; }

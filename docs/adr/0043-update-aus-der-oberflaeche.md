@@ -46,3 +46,14 @@ Das Restrisiko (wer den Dienst übernimmt, ist Root auf dem Server) ist bewusst 
 und mit dem Maintainer abgestimmt: Der Dienst ist klein, nicht erreichbar und nimmt nur einen
 geprüften Versionsnamen an. Die Weboberfläche selbst bleibt ohne Docker-Rechte. Für das Update
 selbst wird der bewährte Ablauf von `./betrieb update` wiederverwendet, statt ihn nachzubauen.
+
+## Nachtrag: Automatisches Update (2026-11-08)
+
+Ein Schalter in den Tafel-Einstellungen (`TafelEinstellungen.auto_update`, `auto_update_zeit`)
+schaltet ein automatisches Update zu einer einstellbaren Uhrzeit ein (Vorgabe 3:00). Die Regel
+steht in `update.auto_update_pruefen()`: Ist der Schalter an, die Uhrzeit heute erreicht (innerhalb
+einer Stunde danach, damit es nach einem Neustart am Tag nicht nachzündet) und heute noch nicht
+gelaufen (`auto_update_zuletzt`), fordert bintafeln – wie beim Knopf „Update starten“ – ein Update
+auf die neueste Version an, sofern der Dienst frei und eine neuere Version verfügbar ist. Angestoßen
+wird die Prüfung vom Hintergrundlauf in `docker/entrypoint.sh` (alle fünf Minuten, Management-Befehl
+`auto_update`). Es gelten dieselben Sicherungen und Rückfall-Mechanismen wie beim Update von Hand.

@@ -111,6 +111,65 @@ def test_seite(admin_client, ordner):
     assert "Es wird nach neuen Versionen gesucht" not in seite
 
 
+def _jetzt(stunde, minute=0):
+    heute = timezone.localdate()
+    return timezone.make_aware(dt.datetime.combine(heute, dt.time(stunde, minute)))
+
+
+def test_auto_update_pruefen(ordner):
+    from apps.core.models import TafelEinstellungen
+
+    e = TafelEinstellungen.laden()
+    e.auto_update = True
+    e.auto_update_zeit = dt.time(3, 0)
+    e.save()
+
+    # Vor der Uhrzeit: nichts
+    assert update.auto_update_pruefen(_jetzt(2, 30)) is None
+    assert not (ordner / "auftrag.txt").exists()
+    # Mehr als eine Stunde nach der Uhrzeit (z. B. nach einem Neustart am Tag): nichts
+    assert update.auto_update_pruefen(_jetzt(5, 0)) is None
+    assert not (ordner / "auftrag.txt").exists()
+    # Im Zeitfenster: Update auf die neueste Version
+    assert update.auto_update_pruefen(_jetzt(3, 20)) == "2026.10.10"
+    assert (ordner / "auftrag.txt").read_text().startswith("version=2026.10.10\nvon=automatisch")
+    e.refresh_from_db()
+    assert e.auto_update_zuletzt == timezone.localdate()
+    # Am selben Tag nicht noch einmal (auch wenn der Auftrag weg wäre)
+    (ordner / "auftrag.txt").unlink()
+    assert update.auto_update_pruefen(_jetzt(3, 25)) is None
+    assert not (ordner / "auftrag.txt").exists()
+
+
+def test_auto_update_aus_und_aktuell(ordner):
+    from apps.core.models import TafelEinstellungen
+
+    e = TafelEinstellungen.laden()
+    # Ausgeschaltet: nichts
+    assert update.auto_update_pruefen(_jetzt(3, 20)) is None
+    # Eingeschaltet, aber schon aktuell: Tag wird vermerkt, aber kein Auftrag
+    v = (ordner / "versionen.txt").read_text().replace("installiert=2026.10.2",
+                                                       "installiert=2026.10.10")  # fmt: skip
+    (ordner / "versionen.txt").write_text(v)
+    TafelEinstellungen.objects.update(auto_update=True, auto_update_zeit=dt.time(3, 0))
+    assert update.auto_update_pruefen(_jetzt(3, 20)) is None
+    assert not (ordner / "auftrag.txt").exists()
+    e.refresh_from_db()
+    assert e.auto_update_zuletzt == timezone.localdate()
+
+
+def test_auto_update_einstellen(admin_client):
+    from apps.core.models import TafelEinstellungen
+
+    admin_client.post(reverse("core:update_automatik"),
+                      {"auto_update": "on", "auto_update_zeit": "02:30"})  # fmt: skip
+    e = TafelEinstellungen.laden()
+    assert e.auto_update and e.auto_update_zeit == dt.time(2, 30)
+    admin_client.post(reverse("core:update_automatik"), {"auto_update_zeit": "02:30"})
+    e.refresh_from_db()
+    assert not e.auto_update
+
+
 def test_ohne_dienst(admin_client, settings, tmp_path):
     settings.BETRIEB_ORDNER = tmp_path / "leer"
     seite = admin_client.get(URL).content.decode()
