@@ -44,9 +44,13 @@ ZWEITER_SCHRITT_MINUTEN = 5
 ZWEITER_SCHRITT_VERSUCHE = 5
 
 
+@never_cache
 @sensitive_post_parameters("password")
 def anmelden(request):
-    """Schritt 1: Benutzername und Passwort. Mit Zwei-Faktor-Gerät weiter zu Schritt 2."""
+    """Schritt 1: Benutzername und Passwort. Mit Zwei-Faktor-Gerät weiter zu Schritt 2.
+
+    ``never_cache``, damit der Browser kein altes Anmeldeformular mit veraltetem CSRF-Token
+    aus dem Cache (auch Zurück-Taste) wiederverwendet (ADR 0119)."""
     if request.user.is_authenticated:
         return redirect("core:start")
     form = AnmeldeForm(request, data=request.POST or None)
@@ -77,9 +81,12 @@ def anmelden(request):
     )
 
 
+@never_cache
 @sensitive_post_parameters("otp_token")
 def anmelden_code(request):
-    """Schritt 2: Zwei-Faktor-Code. Gilt nur kurz nach Schritt 1 und für wenige Versuche."""
+    """Schritt 2: Zwei-Faktor-Code. Gilt nur kurz nach Schritt 1 und für wenige Versuche.
+
+    ``never_cache`` wie bei Schritt 1 gegen ein veraltetes Formular aus dem Browser-Cache."""
     if request.user.is_authenticated:
         return redirect("core:start")
     offen = request.session.get(SITZUNG_ZWEITER_SCHRITT)
