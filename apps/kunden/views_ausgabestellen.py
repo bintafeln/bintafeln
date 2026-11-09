@@ -1,15 +1,18 @@
 """Ausgabestellen mit Anschrift, Zeiten, Ansprechpartnern und Karte (ADR 0048)."""
 
+import datetime as dt
 from urllib.parse import quote_plus
 
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from apps.konten import rollen
+from apps.kunden import verlegung
 from apps.kunden.forms_bearbeiten import AusgabestelleForm, KontakteFormset, ZeitenFormset
-from apps.kunden.models import Ausgabestelle, Haushalt
+from apps.kunden.models import Ausgabestelle, Haushalt, Kundengruppe
 
 
 def karten_links(stelle: Ausgabestelle) -> dict | None:
@@ -38,6 +41,64 @@ def ausgabestelle(request, pk):
     gruppen = stelle.kundengruppe_set.filter(aktiv=True).annotate(belegt=aktiv).order_by("name")
     return render(request, "kunden/ausgabestelle.html", {
         "s": stelle, "gruppen": gruppen, "karte": karten_links(stelle),
+    })  # fmt: skip
+
+
+@rollen.recht_erforderlich("kunden.bearbeiten")
+def verlegen(request, pk):
+    """Kunden einer (schließenden) Ausgabestelle auf andere Kundengruppen verteilen: je Haushalt
+    eine neue Kundengruppe und ein gemeinsamer Stichtag. Am Stichtag führt die tägliche Regel die
+    Wechsel aus (ADR 0118)."""
+    stelle = get_object_or_404(Ausgabestelle, pk=pk)
+    haushalte = list(
+        Haushalt.objects.filter(
+            kundengruppe__ausgabestelle=stelle,
+            kundengruppe__aktiv=True,
+            status=Haushalt.Status.AKTIV,
+        )
+        .select_related("kundengruppe")
+        .prefetch_related("personen")
+        .order_by("kundengruppe__name", "kundennummer")
+    )
+    ziele = list(
+        Kundengruppe.objects.filter(aktiv=True)
+        .exclude(ausgabestelle=stelle)
+        .select_related("ausgabestelle")
+        .order_by("ausgabestelle__name", "name")
+    )
+    offen = {w.haushalt_id: w for w in [verlegung.offener(h) for h in haushalte] if w}
+    if request.method == "POST":
+        try:
+            ab = dt.date.fromisoformat(request.POST.get("ab", ""))
+        except ValueError:
+            messages.error(request, "Bitte einen Stichtag (Datum) angeben.")
+            return redirect("kunden:ausgabestelle_verlegen", pk=stelle.pk)
+        gueltig = {str(z.pk): z for z in ziele}
+        geplant = entfernt = 0
+        for h in haushalte:
+            wahl = request.POST.get(f"ziel_{h.pk}", "")
+            if wahl in gueltig:
+                verlegung.planen(h, gueltig[wahl], ab, request.user.get_username())
+                geplant += 1
+            elif h.pk in offen:  # leer gewählt: vorhandenen Plan zurücknehmen
+                verlegung.entfernen(h)
+                entfernt += 1
+        teile = []
+        if geplant:
+            teile.append(f"{geplant} Haushalt{'e' if geplant != 1 else ''} verlegt ab "
+                         f"{ab:%d.%m.%Y}")  # fmt: skip
+        if entfernt:
+            teile.append(f"{entfernt} Plan{'ung' if entfernt == 1 else 'ungen'} zurückgenommen")
+        messages.success(request, (", ".join(teile) + ".") if teile else "Nichts geändert.")
+        return redirect("kunden:ausgabestelle", pk=stelle.pk)
+    vorgabe = stelle.schliesst_am or timezone.localdate()
+    zeilen = [
+        {"h": h, "hauptperson": next((p for p in h.personen.all() if p.ist_hauptperson), None),
+         "offen": offen.get(h.pk)}
+        for h in haushalte
+    ]  # fmt: skip
+    return render(request, "kunden/ausgabestelle_verlegen.html", {
+        "s": stelle, "zeilen": zeilen, "ziele": ziele, "vorgabe": vorgabe,
     })  # fmt: skip
 
 

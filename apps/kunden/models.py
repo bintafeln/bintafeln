@@ -309,6 +309,11 @@ class Zusatzfeld(models.Model):
 class Ausgabestelle(models.Model):
     name = models.CharField("Name", max_length=100, unique=True)
     aktiv = models.BooleanField("Aktiv", default=True)
+    schliesst_am = models.DateField(
+        "Schließt am (letzter Tag)", null=True, blank=True,
+        help_text="Letzter Ausgabetag. Ab dem Tag danach wird die Ausgabestelle automatisch ins "
+        "Archiv geschoben; ihre Kundengruppen laufen dann nicht mehr. Leeren hebt das wieder auf.",
+    )  # fmt: skip
     strasse = models.CharField("Straße und Hausnummer", max_length=200, blank=True)
     plz = models.CharField("PLZ", max_length=10, blank=True)
     ort = models.CharField("Ort", max_length=100, blank=True)
@@ -1149,8 +1154,44 @@ def abgelaufene_zugriffe_loeschen() -> int:
     return Zugriff.objects.filter(zeitpunkt__lt=grenze).delete()[0]
 
 
+class GeplanterWechsel(models.Model):
+    """Geplante Verlegung eines Haushalts in eine andere Kundengruppe zu einem Stichtag – z. B.
+    wenn eine Ausgabestelle schließt und ihre Kunden vorher auf andere Stellen verteilt werden
+    (ADR 0118). Am Stichtag führt die tägliche Regel (``verlegung.anwenden``) den Wechsel aus.
+    Je Haushalt gibt es höchstens einen offenen Plan."""
+
+    haushalt = models.ForeignKey(Haushalt, on_delete=models.CASCADE,
+                                 related_name="geplante_wechsel")  # fmt: skip
+    ziel_gruppe = models.ForeignKey(
+        Kundengruppe, on_delete=models.CASCADE, related_name="geplante_zugaenge",
+        verbose_name="Neue Kundengruppe",
+    )  # fmt: skip
+    ab = models.DateField("Umzug ab")
+    erledigt_am = models.DateField("Ausgeführt am", null=True, blank=True, editable=False)
+    eingetragen_von = models.CharField("Eingetragen von", max_length=150, blank=True)
+    eingetragen_am = models.DateTimeField("Eingetragen am", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Geplanter Gruppenwechsel"
+        verbose_name_plural = "Geplante Gruppenwechsel"
+        ordering = ["ab", "pk"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["haushalt"],
+                condition=models.Q(erledigt_am__isnull=True),
+                name="ein_offener_wechsel_je_haushalt",
+            )  # fmt: skip
+        ]
+
+    def __str__(self):
+        return f"{self.haushalt.kundennummer} → {self.ziel_gruppe} ab {self.ab:%d.%m.%Y}"
+
+
 def fristen_anwenden() -> int:
-    """Löscht alles, dessen Aufbewahrungsfrist abgelaufen ist. Liefert die Anzahl."""
+    """Löscht alles, dessen Aufbewahrungsfrist abgelaufen ist, und führt fällige Verlegungen aus
+    und schließt fällige Ausgabestellen. Liefert die Anzahl."""
+    from apps.kunden import verlegung
+
     return (
         abgelaufene_abholungen_loeschen()
         + abgelaufene_zugriffe_loeschen()
@@ -1158,6 +1199,8 @@ def fristen_anwenden() -> int:
         + abgelaufene_dokumente_loeschen()
         + alte_historie_loeschen()
         + alte_nachrichten_loeschen()
+        + verlegung.anwenden()
+        + verlegung.stellen_schliessen()
         + _gruppenregel()
     )
 
@@ -1261,3 +1304,4 @@ for modell in (
 auditlog.register(Person, exclude_fields=["such_name"])  # such_name ist abgeleitet
 auditlog.register(HaushaltDokument, exclude_fields=["datei"])
 auditlog.register(Nachricht)
+auditlog.register(GeplanterWechsel)

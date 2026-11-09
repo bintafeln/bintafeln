@@ -7,8 +7,12 @@
   <p><a href="{% url 'kunden:ausgabestellen' %}">← Ausgabestellen</a></p>
   <div class="liste-kopf">
     <h1>{{ s.name }}{% if not s.aktiv %} <span class="marke-warnung">nicht aktiv</span>{% endif %}</h1>
-    {% if "einstellungen.listen" in rechte %}<a class="knopf" href="{% url 'kunden:ausgabestelle_bearbeiten' s.pk %}">Bearbeiten</a>{% endif %}
+    <div class="titel-knoepfe">
+      {% if "kunden.bearbeiten" in rechte and s.schliesst_am %}<a class="knopf" href="{% url 'kunden:ausgabestelle_verlegen' s.pk %}">Kunden verlegen</a>{% endif %}
+      {% if "einstellungen.listen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'kunden:ausgabestelle_bearbeiten' s.pk %}">Bearbeiten</a>{% endif %}
+    </div>
   </div>
+  {% if s.schliesst_am %}<p class="hinweis sicherung">Diese Ausgabestelle <strong>schließt am {{ s.schliesst_am|date:"d.m.Y" }}</strong> (letzter Tag). Ab dem Tag danach wandert sie automatisch ins Archiv; ihre Kundengruppen laufen dann nicht mehr. Bitte die Kunden vorher über „Kunden verlegen“ auf andere Kundengruppen verteilen.</p>{% endif %}
 </section>
 <div class="seiten-raster">
 <section class="karte">

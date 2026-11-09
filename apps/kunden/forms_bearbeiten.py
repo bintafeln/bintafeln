@@ -352,7 +352,7 @@ class KundengruppeForm(forms.ModelForm):
 
 class AusgabestelleForm(forms.ModelForm):
     ABSCHNITTE = [
-        ("Ausgabestelle", ["name", "aktiv"]),
+        ("Ausgabestelle", ["name", "aktiv", "schliesst_am"]),
         ("Anschrift", ["strasse", "plz", "ort"]),
         ("Kontakt und Anmerkungen", ["telefon", "telefon_kunden", "fax", "email", "anmerkung"]),
         ("Ausstattung", ["plaetze", "helfer", "barrierefrei", "wlan"]),
@@ -364,6 +364,7 @@ class AusgabestelleForm(forms.ModelForm):
         fields = [
             "name",
             "aktiv",
+            "schliesst_am",
             "strasse",
             "plz",
             "ort",
@@ -378,7 +379,7 @@ class AusgabestelleForm(forms.ModelForm):
             "wlan",
             "ausweise_hier",
         ]
-        widgets = {"anmerkung": forms.Textarea(attrs={"rows": 4})}
+        widgets = {"anmerkung": forms.Textarea(attrs={"rows": 4}), "schliesst_am": DatumEingabe()}
 
     def abschnitte(self):
         return [(t, [self[n] for n in namen]) for t, namen in self.ABSCHNITTE]
