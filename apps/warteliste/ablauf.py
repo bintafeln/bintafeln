@@ -337,39 +337,29 @@ def _senden(antrag, termin, absage=False) -> str:
 # ── Einladen und Absagen ─────────────────────────────────────────────────────
 
 
+def einlade_hindernis(a, heute=None) -> str:
+    """Warum ein Antrag nicht eingeladen wird (abgeschlossen, Wartezeit, offene Sperrzeit); leer,
+    wenn nichts dagegen spricht. Dieselbe Prüfung nutzt die Vorschau vor dem Senden."""
+    heute = heute or timezone.localdate()
+    ws, _ = Wartestand.objects.get_or_create(antrag=a)
+    if ws.status in Wartestand.ABGESCHLOSSEN:
+        return f"{ws.get_status_display()} – nicht eingeladen"
+    if ws.status == S.WARTEZEIT and ws.wartezeit_bis and ws.wartezeit_bis >= heute:
+        return f"Wartezeit bis {ws.wartezeit_bis:%d.%m.%Y} – nicht eingeladen"
+    if hinweis := sperre_offen(a, heute):
+        return f"{hinweis} – erst im Abgleich prüfen, nicht eingeladen"
+    return ""
+
+
 def einladen(antraege, termin, von: str, mail_senden=True, heute=None) -> list[dict]:
     """Lädt zum Termin ein; liefert je Antrag {antrag, ok, hinweis}."""
     heute = heute or timezone.localdate()
     ergebnisse = []
     for a in antraege:
-        ws, _ = Wartestand.objects.get_or_create(antrag=a)
-        if ws.status in Wartestand.ABGESCHLOSSEN:
-            ergebnisse.append(
-                {
-                    "antrag": a,
-                    "ok": False,
-                    "hinweis": f"{ws.get_status_display()} – nicht eingeladen",
-                }
-            )
+        if hindernis := einlade_hindernis(a, heute):
+            ergebnisse.append({"antrag": a, "ok": False, "hinweis": hindernis})
             continue
-        if ws.status == S.WARTEZEIT and ws.wartezeit_bis and ws.wartezeit_bis >= heute:
-            ergebnisse.append(
-                {
-                    "antrag": a,
-                    "ok": False,
-                    "hinweis": f"Wartezeit bis {ws.wartezeit_bis:%d.%m.%Y} – nicht eingeladen",
-                }
-            )
-            continue
-        if hinweis := sperre_offen(a, heute):
-            ergebnisse.append(
-                {
-                    "antrag": a,
-                    "ok": False,
-                    "hinweis": f"{hinweis} – erst im Abgleich prüfen, nicht eingeladen",
-                }
-            )
-            continue
+        ws = Wartestand.objects.get(antrag=a)
         fehler = _senden(a, termin) if mail_senden else ""
         weg = "E-Mail" if mail_senden and not fehler else "ohne Mail"
         Einladung.objects.create(antrag=a, termin=termin, termin_text=str(termin), von=von,

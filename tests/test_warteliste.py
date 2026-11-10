@@ -290,13 +290,35 @@ def test_liste_name_vorname_getrennt_und_sortierbar(admin_client, modul_an):
     assert admin_client.get(liste, {"sort": "-wohnort"}).status_code == 200
 
 
-def test_filter_wird_gemerkt_und_wieder_angezeigt(admin_client, modul_an):
-    """Ein angewendeter Filter wird in der Sitzung gemerkt und beim nächsten (parameterlosen)
-    Aufruf der Seite wieder angezeigt – ohne erneut „Filtern" zu drücken."""
+def test_filter_wird_gemerkt_und_wieder_angezeigt(admin_client, admin, modul_an):
+    """Ein angewendeter Filter wird am Konto gemerkt (auch über das Abmelden hinaus) und beim
+    nächsten (parameterlosen) Aufruf der Seite wieder angezeigt – ohne „Filtern" zu drücken."""
     liste = reverse("warteliste:liste")
     admin_client.get(liste, {"art": "verlaengerung"})  # Filter anwenden → wird gemerkt
     antwort = admin_client.get(liste)  # Aufruf ohne Parameter (z. B. über das Menü)
     assert antwort.status_code == 302 and "art=verlaengerung" in antwort["Location"]
+    admin.refresh_from_db()
+    assert admin.warteliste_ansicht["filter"] == "art=verlaengerung"
+    seite = admin_client.get(liste, {"art": "verlaengerung"}).content.decode()
+    assert "?filter=zuruecksetzen" in seite  # Knopf „Zurücksetzen“ neben „Filtern“
+    # „Zurücksetzen“ entfernt alle Filter dieser Seite, auch den gemerkten
+    assert admin_client.get(liste, {"filter": "zuruecksetzen"}).status_code == 302
+    antwort = admin_client.get(liste)
+    assert antwort.status_code == 200 and antwort.context["f"]["art"] == ""
+    assert "?filter=zuruecksetzen" not in antwort.content.decode()
+
+
+def test_status_alle_offenen_bleibt_gewaehlt(admin_client, modul_an):
+    """Wer von einem Status (z. B. „eingeladen“) zurück auf „alle offenen“ wechselt, bleibt dort
+    – früher sprang die Seite auf den gemerkten Status zurück."""
+    liste = reverse("warteliste:liste")
+    admin_client.get(liste, {"status": "eingeladen", "art": "neu"})
+    seite = admin_client.get(liste, {"status": "eingeladen", "art": "neu"}).content.decode()
+    assert 'href="?status=&amp;art=neu"' in seite  # „alle offenen“ behält die übrigen Filter
+    antwort = admin_client.get(liste, {"status": "", "art": "neu"})
+    assert antwort.status_code == 200 and antwort.context["f"]["status"] == ""
+    antwort = admin_client.get(liste)  # gemerkt ist jetzt „alle offenen“
+    assert antwort.status_code == 302 and "status=eingeladen" not in antwort["Location"]
 
 
 def test_liste_nach_nummer_sortierbar(admin_client, modul_an):
@@ -604,9 +626,14 @@ def test_seiten(modul_an, admin_client, mailserver, pdf_text):
     seite = admin_client.get(reverse("warteliste:liste"), filter_).content.decode()
     assert ">Beispiel</a>" in seite and ">Probe</a>" not in seite
     datum = (timezone.localdate() + dt.timedelta(days=5)).isoformat()
-    antwort = admin_client.post(reverse("warteliste:einladen"), {
-        "ids": [a.pk, b.pk], "datum": datum, "von": "10:00", "bis": "11:30", "mail": "on",
-    })  # fmt: skip
+    einladung = {"ids": [a.pk, b.pk], "datum": datum, "von": "10:00", "bis": "11:30", "mail": "on"}
+    # Erst die Vorschau: wer eingeladen wird und ein Beispiel der Mail – noch nichts gesendet
+    vorschau = admin_client.post(reverse("warteliste:einladen"), einladung).content.decode()
+    assert "Einladung prüfen" in vorschau and "Jetzt senden" in vorschau
+    assert "Beispiel, Erika" in vorschau and "So sieht die Einladung aus" in vorschau
+    assert not Termin.objects.exists() and not django_mail.outbox
+    assert ws(a).status != S.EINGELADEN
+    antwort = admin_client.post(reverse("warteliste:einladen"), {**einladung, "bestaetigt": "1"})
     assert antwort.status_code == 200 and "Einladung an erika@example.org gesendet" in (
         antwort.content.decode()
     )
@@ -640,7 +667,8 @@ def test_seiten(modul_an, admin_client, mailserver, pdf_text):
     seite = admin_client.get(reverse("warteliste:einstellungen")).content.decode()
     assert "Erika Musterfrau" in seite  # Vorschau
     # Termin mit Eingeladenen lässt sich nicht löschen
-    admin_client.post(reverse("warteliste:einladen"), {"ids": [a.pk], "termin": t.pk})
+    admin_client.post(reverse("warteliste:einladen"),
+                      {"ids": [a.pk], "termin": t.pk, "bestaetigt": "1"})  # fmt: skip
     admin_client.post(reverse("warteliste:termin_loeschen", args=[t.pk]))
     assert Termin.objects.filter(pk=t.pk).exists()
 
@@ -812,17 +840,14 @@ def test_ansicht_wird_je_konto_gemerkt(admin_client, admin, modul_an):
     admin.refresh_from_db()
     assert admin.warteliste_ansicht["sort"] == "name"
     admin_client.get(url, {"sort": "-geburtsdatum"})
-    # Die Seitensitzung merkt den Filter zusätzlich; ohne ihn greift der am Konto gemerkte Wert.
-    sitzung = admin_client.session
-    del sitzung["warteliste_filter"]
-    sitzung.save()
-    assert admin_client.get(url).context["f"]["sort"] == "-geburtsdatum"
+    # Ohne Parameter greift der am Konto gemerkte Stand (Filter samt Sortierung).
+    assert admin_client.get(url, follow=True).context["f"]["sort"] == "-geburtsdatum"
     # Spaltenwahl je Konto: Geburtsdatum ausblenden.
     admin_client.post(reverse("warteliste:spalten"),
                       {"spalte": ["eingang", "nummer", "kontakt", "status"]})  # fmt: skip
     admin.refresh_from_db()
     assert "geburtsdatum" in admin.listen_spalten_aus["warteliste"]
-    inhalt = admin_client.get(url).content.decode()
+    inhalt = admin_client.get(url, follow=True).content.decode()
     # Spaltenkopf weg (die Spaltenwahl listet den Namen weiter auf).
     assert "Nach Geburtsdatum sortieren" not in inhalt
     assert "Nach Kontakt sortieren" in inhalt
@@ -830,7 +855,7 @@ def test_ansicht_wird_je_konto_gemerkt(admin_client, admin, modul_an):
     admin_client.post(reverse("warteliste:ansicht"), {"kapazitaet_zu": "1"})
     admin.refresh_from_db()
     assert admin.warteliste_ansicht["kapazitaet_zu"] is True
-    assert admin_client.get(url).context["kapazitaet_zu"] is True
+    assert admin_client.get(url, follow=True).context["kapazitaet_zu"] is True
 
 
 # ── Einladung in zwei Sprachen ───────────────────────────────────────────────
