@@ -340,7 +340,7 @@ def anmelde_einstellungen(request):
 
 @rollen.recht_erforderlich("protokoll.sehen")
 def anmeldeprotokoll_ansicht(request):
-    """Erfolgreiche Anmeldungen und Fehlversuche mit IP-Adresse und Browser/System (ADR 0117)."""
+    """Anmeldungen, Fehlversuche und Abmeldungen mit IP-Adresse und Browser/System (ADR 0117)."""
     from django.core.paginator import Paginator
     from django.db.models import Q
 
@@ -350,6 +350,8 @@ def anmeldeprotokoll_ansicht(request):
     nur = request.GET.get("nur", "")
     if nur == "fehlversuche":
         eintraege = eintraege.filter(erfolg=False)
+    elif nur == "abmeldungen":
+        eintraege = eintraege.filter(grund__startswith=anmeldeprotokoll.ABMELDUNG)
     suche = (request.GET.get("q") or "").strip()
     if suche:
         eintraege = eintraege.filter(Q(benutzername__icontains=suche) | Q(ip__icontains=suche))

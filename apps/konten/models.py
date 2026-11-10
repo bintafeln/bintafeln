@@ -467,8 +467,18 @@ class AnmeldeProtokoll(models.Model):
         ordering = ["-zeitpunkt"]
 
     def __str__(self):
-        stand = "angemeldet" if self.erfolg else "Fehlversuch"
-        return f"{self.benutzername or '?'} – {stand} am {self.zeitpunkt:%d.%m.%Y %H:%M}"
+        return f"{self.benutzername or '?'} – {self.ergebnis} am {self.zeitpunkt:%d.%m.%Y %H:%M}"
+
+    @property
+    def ist_abmeldung(self) -> bool:
+        return self.grund.startswith("Abmeldung")
+
+    @property
+    def ergebnis(self) -> str:
+        """„angemeldet“, „abgemeldet“ (auch automatisch) oder „Fehlversuch“."""
+        if self.ist_abmeldung:
+            return "abgemeldet (automatisch)" if "automatisch" in self.grund else "abgemeldet"
+        return "angemeldet" if self.erfolg else "Fehlversuch"
 
 
 auditlog.register(AnmeldeEinstellungen)

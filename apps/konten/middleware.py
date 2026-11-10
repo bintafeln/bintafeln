@@ -69,6 +69,7 @@ class ZweiFaktorMiddleware:
             and not request.path.startswith(FREIE_PFADE)
         ):
             if user_has_device(benutzer):
+                request.abmeldung_automatisch = True  # fürs Anmeldeprotokoll
                 logout(request)
                 messages.info(request, "Bitte melden Sie sich erneut mit Ihrem Code an.")
                 return redirect("konten:anmelden")
@@ -103,6 +104,7 @@ class StellenKontoMiddleware:
             jetzt = time.time()
             zuletzt = request.session.get(self.SCHLUESSEL)
             if zuletzt and jetzt - zuletzt > self.MINUTEN * 60:
+                request.abmeldung_automatisch = True  # fürs Anmeldeprotokoll
                 logout(request)
                 messages.info(request, f"Nach {self.MINUTEN} Minuten ohne Eingabe abgemeldet.")
                 return redirect("konten:anmelden")

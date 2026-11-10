@@ -7,7 +7,7 @@
     <h1>Anmeldeprotokoll</h1>
     <a class="knopf knopf-zweitrangig" href="{% url 'konten:anmelde_einstellungen' %}">Aufbewahrung einstellen</a>
   </div>
-  <p class="hinweis titel-text">Erfolgreiche Anmeldungen und Fehlversuche mit IP-Adresse und
+  <p class="hinweis titel-text">Erfolgreiche Anmeldungen, Fehlversuche und Abmeldungen mit IP-Adresse und
     Browser/System – für die Sicherheit (wer sich von wo angemeldet hat, Angriffsversuche).
     {% if tage %}Wird nach {{ tage }} Tagen automatisch gelöscht.{% else %}Das Protokoll ist zurzeit
     ausgeschaltet.{% endif %}</p>
@@ -16,6 +16,7 @@
       <select name="nur" id="nur" onchange="this.form.submit()">
         <option value="">alle</option>
         <option value="fehlversuche"{% if nur == "fehlversuche" %} selected{% endif %}>nur Fehlversuche</option>
+        <option value="abmeldungen"{% if nur == "abmeldungen" %} selected{% endif %}>nur Abmeldungen</option>
       </select></div>
     <div class="filter-feld filter-suche"><label for="q">Suche</label>
       <input type="search" name="q" id="q" value="{{ q }}" placeholder="Benutzername oder IP" {% live_suche %}></div>
@@ -31,7 +32,7 @@
         <tr>
           <td data-titel="Zeitpunkt">{{ e.zeitpunkt|date:"d.m.Y H:i:s" }}</td>
           <td data-titel="Benutzername">{% if e.benutzer %}<a href="{% url 'konten:mitarbeiter' e.benutzer.pk %}">{{ e.benutzername|default:"?" }}</a>{% else %}{{ e.benutzername|default:"?" }}{% endif %}</td>
-          <td data-titel="Ergebnis">{% if e.erfolg %}<span class="marke-ok">angemeldet</span>{% else %}<span class="marke-warnung">Fehlversuch{% if e.grund %} ({{ e.grund }}){% endif %}</span>{% endif %}</td>
+          <td data-titel="Ergebnis">{% if e.ist_abmeldung %}<span class="marke">{{ e.ergebnis }}</span>{% elif e.erfolg %}<span class="marke-ok">angemeldet</span>{% else %}<span class="marke-warnung">Fehlversuch{% if e.grund %} ({{ e.grund }}){% endif %}</span>{% endif %}</td>
           <td data-titel="IP-Adresse">{{ e.ip|default:"–" }}</td>
           <td data-titel="Browser/System"><small class="leise">{{ e.browser|default:"–" }}</small></td>
         </tr>
