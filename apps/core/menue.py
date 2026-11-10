@@ -274,7 +274,7 @@ def menue(request) -> list[dict]:
             ("einstellungen.personal",
              _eintrag("Fristen und Dokumente", "konten:personal_einstellungen")),
             ("einstellungen.arbeitszeit",
-             _eintrag("Arbeitszeit", "personal:arbeitszeit_einstellungen")),
+             _eintrag("Arbeitszeiterfassung", "personal:arbeitszeit_einstellungen")),
         ],
         "Auswertungen": [
             ("einstellungen.statistik", _eintrag("Statistik", "statistik:einstellungen")),

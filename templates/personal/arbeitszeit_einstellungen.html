@@ -6,6 +6,8 @@
   <h1>Arbeitszeiterfassung</h1>
   <p class="hinweis">Fest Angestellte stempeln unter „Meine Arbeitszeit“ Kommen und Gehen, am eigenen Handy oder
     an einem gemeinsamen Gerät nach Anmeldung. Die Zeiten fließen nach Pausenabzug ins Stundenkonto.</p>
+  <p class="hinweis">Mit dem ersten Schalter stellen Sie die Arbeitszeiterfassung für die ganze Tafel an oder ab.
+    Ausgeschaltet fehlt „Meine Arbeitszeit“ bei allen im Menü; erfasste Zeiten bleiben erhalten.</p>
   <form method="post">
     {% csrf_token %}
     {% include "includes/formular.html" %}

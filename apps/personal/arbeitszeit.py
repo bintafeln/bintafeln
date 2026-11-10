@@ -12,12 +12,16 @@ class StempelFehler(ValueError):
 
 
 def darf_stempeln(benutzer) -> bool:
-    """Fest Angestellte immer, Ehrenamtliche nur, wenn es in den Einstellungen erlaubt ist."""
+    """Nur wenn die Tafel die Arbeitszeiterfassung nutzt: fest Angestellte immer, Ehrenamtliche
+    nur, wenn es in den Einstellungen erlaubt ist."""
     if not benutzer.is_authenticated or not benutzer.is_active:
+        return False
+    e = ArbeitszeitEinstellungen.laden()
+    if not e.aktiv:
         return False
     if benutzer.beschaeftigung == benutzer.Beschaeftigung.FEST:
         return True
-    return ArbeitszeitEinstellungen.laden().ehrenamtliche_stempeln
+    return e.ehrenamtliche_stempeln
 
 
 def _grenze(jetzt=None) -> dt.datetime:

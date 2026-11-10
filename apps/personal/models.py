@@ -204,6 +204,12 @@ class ArbeitszeitEinstellungen(models.Model):
 
     EINZIGE_ID = 1
 
+    aktiv = models.BooleanField(
+        "Arbeitszeiterfassung nutzen",
+        default=True,
+        help_text="Ausgeschaltet verschwindet „Meine Arbeitszeit“ für alle aus dem Menü, niemand "
+        "kann mehr stempeln. Schon erfasste Zeiten bleiben erhalten.",
+    )
     ehrenamtliche_stempeln = models.BooleanField(
         "Auch Ehrenamtliche stempeln",
         default=False,
