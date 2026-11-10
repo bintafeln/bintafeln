@@ -320,13 +320,31 @@ def besetzung(request, pk):
     if request.method == "POST":
         gueltig = {str(p.pk): p for p in personen}
         nicht_fahrer = False
+        # Niemand steht an einem Tag doppelt im Plan: weder zweimal in dieser Tour noch zugleich
+        # in einer anderen aktiven Tour.
+        andere: dict[str, dict[int, Tour]] = {}
+        for b in (Besetzung.objects.filter(wochentag__in=tage, tour__aktiv=True)
+                  .exclude(tour=t).select_related("tour")):  # fmt: skip
+            andere.setdefault(b.wochentag, {})[b.person_id] = b.tour
+        doppelt = []
         for tag in tage:
+            gesehen = set()
             for nr in range(1, t.plaetze + 1):
                 wahl = request.POST.get(f"b_{tag}_{nr}", "")
                 alt = jetzt.get((tag, nr))
                 if wahl in gueltig and nr == 1 and gueltig[wahl].pk not in fahrer_pks:
                     nicht_fahrer = True  # Fahrerplatz braucht einen Fahrer
                     continue
+                if wahl in gueltig:
+                    person = gueltig[wahl]
+                    woanders = andere.get(tag, {}).get(person.pk)
+                    if person.pk in gesehen or woanders is not None:
+                        wo = f"Tour „{woanders}“" if woanders is not None else "dieser Tour"
+                        doppelt.append(f"{person} ({tag}, schon in {wo})")
+                        if alt is not None and alt.person_id == person.pk:
+                            alt.delete()  # stand hier schon: sonst bliebe er doch doppelt
+                        continue
+                    gesehen.add(person.pk)
                 if wahl in gueltig and (alt is None or str(alt.person_id) != wahl):
                     Besetzung.objects.update_or_create(
                         tour=t, wochentag=tag, platz=nr, defaults={"person": gueltig[wahl]}
@@ -336,6 +354,9 @@ def besetzung(request, pk):
         if nicht_fahrer:
             messages.warning(request, "Auf dem Fahrerplatz (Platz 1) kann nur ein Fahrer stehen; "
                                       "diese Auswahl wurde übergangen.")  # fmt: skip
+        if doppelt:
+            messages.warning(request, "Niemand kann an einem Tag doppelt eingeteilt sein; "
+                                      "übergangen: " + ", ".join(doppelt) + ".")  # fmt: skip
         messages.success(request, f"Feste Besetzung der Tour „{t}“ gespeichert.")
         return redirect(zurueck)
     zeilen = [(tag, [(nr, platz_name(nr), jetzt.get((tag, nr)), nr == 1)
