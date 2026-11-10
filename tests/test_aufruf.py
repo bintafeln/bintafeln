@@ -662,8 +662,10 @@ def test_einlass_karte_zeigt_aufruf(modul_an, admin_client, mitte, tag_daten):
     assert "Noch nicht aufgerufen" not in seite
 
 
-def test_steuerung_ueber_die_leiste_im_neuen_tab(modul_an, admin_client):
-    """Kein eigener Menüeintrag mehr: Der Kasten „Aufruf“ unter dem Menü führt zur Steuerung."""
+def test_steuerung_ueber_die_leiste_im_neuen_tab(modul_an, admin_client, mitte):
+    """Kein eigener Menüeintrag mehr: Der Kasten „Aufruf“ unter dem Menü führt zur Steuerung –
+    sobald es eine Ausgabestelle gibt, die aufruft."""
+    Ausgabestelle.objects.create(name="Nord")  # zwei Stellen: keine ist von selbst gewählt
     seite = admin_client.get(reverse("aufruf:leiste")).content.decode()
     link = f'href="{reverse("aufruf:start")}"'
     stelle = seite.index(link)
@@ -881,6 +883,14 @@ def test_ausgabestelle_ohne_aufruf(modul_an, admin_client, mitte, tag_daten, ben
     c = anmelden(Client(), konto)
     assert c.get(reverse("aufruf:leiste")).content == b""
     assert c.get(reverse("aufruf:steuerung", args=[mitte.pk])).status_code == 403
+    # Auch ohne gewählte Ausgabestelle: Wer nur an Stellen ohne Aufruf arbeitet, sieht keinen
+    # Kasten; kommt eine teilnehmende Stelle dazu, erscheint der Weg zur Steuerung
+    konto.gewaehlte_stelle = None
+    konto.save()
+    assert c.get(reverse("aufruf:leiste")).content == b""
+    nord = Ausgabestelle.objects.create(name="Nord")
+    konto.ausgabestellen.add(nord)
+    assert reverse("aufruf:start") in c.get(reverse("aufruf:leiste")).content.decode()
     assert ablauf.einlass(Haushalt.objects.get(kundennummer=nummer), heute()) == []
 
 
