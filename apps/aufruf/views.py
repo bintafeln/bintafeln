@@ -327,7 +327,10 @@ def leiste(request):
     stelle = aktuelle(request.user)
     if stelle is not None and not AufrufEinstellungen.laden(stelle).aktiv:
         return HttpResponse("")  # an dieser Ausgabestelle wird nicht aufgerufen
-    if stelle is None or not stellen_fuer(request.user).filter(pk=stelle.pk).exists():
+    erlaubt = stellen_fuer(request.user)
+    if stelle is None or not erlaubt.filter(pk=stelle.pk).exists():
+        if not erlaubt.exists():
+            return HttpResponse("")  # keine eigene Ausgabestelle ruft auf: kein Kasten
         # Ohne gewählte Stelle nur der Weg zur ganzen Steuerung (ersetzt den Menüeintrag)
         return render(request, "aufruf/_leiste.html", {
             "ohne_stelle": True, "steuerung": reverse("aufruf:start"),
