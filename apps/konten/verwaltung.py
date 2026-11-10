@@ -440,13 +440,14 @@ def werkseinstellungen(verwalter, ziel) -> None:
     ziel.kundenliste_aus = []
     ziel.antraege_liste_aus = []
     ziel.listen_spalten_aus = {}
+    ziel.listen_filter = {}
     ziel.warteliste_ansicht = {}
     ziel.liste_zeilen = ""
     ziel.gewaehlte_stelle = None
     ziel.ansicht_stand += 1
     ziel.save(update_fields=["kundenliste_aus", "antraege_liste_aus", "listen_spalten_aus",
-                             "warteliste_ansicht", "liste_zeilen", "gewaehlte_stelle",
-                             "ansicht_stand"])  # fmt: skip
+                             "listen_filter", "warteliste_ansicht", "liste_zeilen",
+                             "gewaehlte_stelle", "ansicht_stand"])  # fmt: skip
     ImportSitzung.objects.filter(benutzer=ziel).delete()
     ImportVorbereitung.objects.filter(erstellt_von=ziel).delete()
 

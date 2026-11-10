@@ -80,6 +80,11 @@ class Benutzer(AbstractUser):
         help_text="Wie viele Zeilen die Listen (Anträge, Kunden, Adressbuch …) je Seite zeigen; "
         "die zuletzt gewählte Zahl gilt beim nächsten Aufruf wieder. Leer = Vorgabe (25).",
     )  # fmt: skip
+    listen_filter = models.JSONField(
+        "Gemerkte Filter der Listen", default=dict, blank=True,
+        help_text="Je Liste die zuletzt gewählten Filter; beim nächsten Aufruf wieder so, bis "
+        "„Zurücksetzen“ sie entfernt.",
+    )  # fmt: skip
     warteliste_ansicht = models.JSONField(
         "Gemerkte Warteliste-Ansicht", default=dict, blank=True,
         help_text="Persönliche Einstellungen der Warteliste (Sortierung, eingeklappte "
@@ -257,6 +262,7 @@ auditlog.register(
         "kundenliste_aus",
         "antraege_liste_aus",
         "listen_spalten_aus",
+        "listen_filter",
         "warteliste_ansicht",
     ],
     m2m_fields={"groups", "ausgabestellen"},

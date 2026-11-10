@@ -387,3 +387,49 @@ def test_zuletzt_aufgenommen(admin_client):
     assert "7101" in seite and "7102" in seite and "7103" not in seite
     assert seite.index("7102") < seite.index("7101")
     assert reverse("kunden:zuletzt_aufgenommen") in admin_client.get("/").content.decode()  # Menü
+
+
+def test_filter_der_kundenliste_bleiben_erhalten(admin_client, admin, bestand, monkeypatch):
+    """Status, Kundengruppe, Ausgabetag, Merkmal und Sortierung merkt sich das Konto: Der nächste
+    Aufruf ohne Angaben führt wieder dorthin. Der Ausgabetag wird nur gemerkt, wenn er von der
+    Vorgabe (heute) abweicht; der Suchtext nie. „Zurücksetzen“ vergisst alles."""
+    from apps.kunden import views
+
+    monkeypatch.setattr(views, "_standard_tag", lambda request: "")  # Vorgabe hier: alle Tage
+    # Ohne gemerkte Filter: keine Umleitung
+    assert admin_client.get(LISTE).status_code == 200
+    # Filter wählen (wie das Formular: alle Felder dabei, Tag wie die Vorgabe)
+    admin_client.get(LISTE, {"q": "", "status": "pausiert", "gruppe": "", "tag": "", "sort": ""})
+    admin.refresh_from_db()
+    assert admin.listen_filter["kunden"] == "status=pausiert&gruppe=&sort="  # Tag = Vorgabe: nicht
+    antwort = admin_client.get(LISTE)
+    assert antwort.status_code == 302 and antwort.url == f"{LISTE}?status=pausiert&gruppe=&sort="
+    assert {h.kundennummer for h in admin_client.get(antwort.url).context["seite"]} == {"1002"}
+    # Ein anderer Tag als die Vorgabe bleibt stehen; der Suchtext nicht
+    admin_client.get(LISTE, {"q": "Kim", "status": "", "tag": "Di"})
+    admin.refresh_from_db()
+    assert admin.listen_filter["kunden"] == "status=&tag=Di"
+    assert admin_client.get(LISTE).url == f"{LISTE}?status=&tag=Di"
+    # Eine Suche allein (z. B. aus dem Seitenkopf) wird nicht umgeleitet und ändert nichts
+    assert admin_client.get(LISTE, {"q": "niemand"}).status_code == 200
+    admin.refresh_from_db()
+    assert admin.listen_filter["kunden"] == "status=&tag=Di"
+    # Zurücksetzen
+    seite = admin_client.get(f"{LISTE}?status=&tag=Di").content.decode()
+    assert 'href="?filter=zuruecksetzen"' in seite
+    antwort = admin_client.get(LISTE, {"filter": "zuruecksetzen"})
+    assert antwort.status_code == 302 and antwort.url == LISTE
+    admin.refresh_from_db()
+    assert "kunden" not in admin.listen_filter
+    assert admin_client.get(LISTE).status_code == 200
+
+
+def test_werkseinstellungen_vergessen_gemerkte_filter(admin, benutzer_mit_rolle):
+    from apps.konten import verwaltung
+
+    ziel = benutzer_mit_rolle("eva", "Büro")
+    ziel.listen_filter = {"kunden": "status=pausiert"}
+    ziel.save()
+    verwaltung.werkseinstellungen(admin, ziel)
+    ziel.refresh_from_db()
+    assert ziel.listen_filter == {}

@@ -99,3 +99,41 @@ def je_seite(wert: str, gesamt: int, standard: int = 25) -> int:
     if wert == "alle":
         return max(gesamt, 1)
     return int(wert) if wert in ZEILEN_WAHL else standard
+
+
+def filter_merken(request, liste: str, parameter, vorgaben: dict | None = None):
+    """Merkt die Filter einer Liste am Konto, damit sie beim nächsten Aufruf wieder gelten.
+
+    ``parameter``: die Filter der Liste (ohne Suchtext und Seite). Kommt die Seite ohne jede
+    Angabe, leitet die Funktion auf die gemerkten Filter um (Rückgabe: die Umleitung, sonst
+    ``None``). ``?filter=zuruecksetzen`` vergisst sie. ``vorgaben``: Werte, die nicht gemerkt
+    werden, solange sie der Vorgabe entsprechen – z. B. der heutige Ausgabetag, der sonst am
+    nächsten Tag noch der gestrige wäre."""
+    from django.http import QueryDict
+    from django.shortcuts import redirect
+
+    benutzer = request.user
+    alle = dict(benutzer.listen_filter or {})
+
+    def speichern():
+        benutzer.listen_filter = alle
+        benutzer.save(update_fields=["listen_filter"])
+
+    if request.GET.get("filter") == "zuruecksetzen":
+        if alle.pop(liste, None) is not None:
+            speichern()
+        return redirect(request.path)
+    if any(p in request.GET for p in parameter):
+        gemerkt = QueryDict(mutable=True)
+        for p in parameter:
+            werte = request.GET.getlist(p)
+            if p in request.GET and werte != [(vorgaben or {}).get(p, object())]:
+                gemerkt.setlist(p, werte)
+        text = gemerkt.urlencode()
+        if alle.get(liste, "") != text:
+            alle[liste] = text
+            speichern()
+        return None
+    if alle.get(liste) and not request.GET and not request.headers.get("HX-Request"):
+        return redirect(f"{request.path}?{alle[liste]}")
+    return None
