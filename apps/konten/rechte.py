@@ -72,6 +72,10 @@ KATALOG = [
           "Ausgabestellen schreiben sie zu Kunden, die sie nicht aufrufen dürfen."),
     Recht("kunden.dokumente", KUNDEN, "Dokumente ansehen"),
     Recht("kunden.dokumente_verwalten", KUNDEN, "Dokumente hochladen und löschen"),
+    Recht("kunden.dokument_foto", KUNDEN, "Foto eines Nachweises aufnehmen",
+          "Am Einlass und beim Haushalt: Bescheid oder Behindertenausweis fotografieren und "
+          "beim Haushalt ablegen (auch mehrere Seiten). Ansehen darf die Fotos nur, wer „Dokumente "
+          "ansehen“ hat."),
     Recht("kunden.historie", KUNDEN, "Historie sehen"),
     Recht("kunden.ausweis", KUNDEN, "Kundenausweise drucken"),
     Recht("kunden.auskunft", KUNDEN, "Auskunft nach Art. 15 erstellen"),
@@ -168,7 +172,7 @@ def _module_einsammeln() -> None:
 _EINLASS = ["einlass.nutzen", "einlass.abholung", "einlass.zahlung", "einlass.sonderaktion",
             "einlass.nachtragen",
             "kasse.sehen", "kunden.liste", "kunden.ansehen", "kunden.notizen",
-            "kunden.exportieren"]  # fmt: skip
+            "kunden.dokument_foto", "kunden.exportieren"]  # fmt: skip
 
 # Rechte der mitgelieferten Rollen: genau das Verhalten vor ADR 0033.
 VORGABEN = {

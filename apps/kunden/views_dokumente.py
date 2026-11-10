@@ -52,6 +52,61 @@ def hochladen(request, kundennummer):
     return redirect("kunden:haushalt", kundennummer=h.kundennummer)
 
 
+MAX_FOTOS = 10  # Seiten je Aufnahme
+
+
+@require_POST
+@rollen.recht_erforderlich("kunden.dokument_foto")
+def foto(request, kundennummer):
+    """Foto eines Nachweises (Bescheid, Behindertenausweis …) am Einlass oder beim Haushalt
+    aufnehmen – auch mehrere Seiten (ADR 0122). Jede Seite wird als Dokument des Haushalts
+    verschlüsselt abgelegt; eine Notiz hält fest, dass etwas abgelegt wurde. Ansehen darf die
+    Fotos nur, wer „Dokumente ansehen“ hat."""
+    from django.urls import reverse
+    from django.utils.http import url_has_allowed_host_and_scheme
+
+    from apps.kunden.models import Dokumentart, Notiz
+
+    h = zugang.haushalt(request.user, kundennummer)
+    zurueck = request.POST.get("zurueck", "")
+    if not url_has_allowed_host_and_scheme(zurueck, allowed_hosts={request.get_host()}):
+        zurueck = reverse("kunden:haushalt", args=[h.kundennummer])
+    art = Dokumentart.objects.filter(aktiv=True, pk=request.POST.get("art") or 0).first()
+    dateien = request.FILES.getlist("fotos")
+    if art is None or not dateien:
+        messages.error(request, "Nicht gespeichert: Bitte die Art wählen und ein Foto aufnehmen.")
+        return redirect(zurueck)
+    if len(dateien) > MAX_FOTOS:
+        messages.error(request, f"Höchstens {MAX_FOTOS} Seiten auf einmal.")
+        return redirect(zurueck)
+    namen = []
+    try:
+        for datei in dateien:
+            namen.append((privatdateien.speichern(HaushaltDokument.ORDNER, datei, max_mb=MAX_MB),
+                          datei))  # fmt: skip
+    except privatdateien.DateiFehler as fehler:
+        for name, _ in namen:  # nichts halb abgelegt zurücklassen
+            privatdateien.loeschen(HaushaltDokument.ORDNER, name)
+        messages.error(request, str(fehler))
+        return redirect(zurueck)
+    von = request.user.get_username()[:150]
+    for nr, (name, datei) in enumerate(namen, start=1):
+        seite = f" (Seite {nr} von {len(namen)})" if len(namen) > 1 else ""
+        HaushaltDokument.objects.create(
+            kundennummer=h.kundennummer, art=art, titel=f"{art}{seite}"[:200], datei=name,
+            typ=datei.content_type, groesse=datei.size, hochgeladen_von=von,
+        )  # fmt: skip
+    seiten = "1 Seite" if len(namen) == 1 else f"{len(namen)} Seiten"
+    Notiz.objects.create(
+        kundennummer=h.kundennummer,
+        text=f"Foto abgelegt: {art} ({seiten})",
+        verfasst_von=(request.user.get_full_name() or request.user.get_username())[:100],
+        benutzer=request.user,
+    )
+    messages.success(request, f"{art}: {seiten} verschlüsselt beim Haushalt abgelegt.")
+    return redirect(zurueck)
+
+
 @never_cache
 @rollen.recht_erforderlich("kunden.dokumente")
 def ansehen(request, pk):

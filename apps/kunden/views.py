@@ -38,6 +38,7 @@ from apps.kunden.models import (
     Abholung,
     Ausnahme,
     Bemerkung,
+    Dokumentart,
     Haushalt,
     HaushaltEreignis,
     ImportLauf,
@@ -504,6 +505,9 @@ def notizen_kontext(kundennummer: str, benutzer) -> dict:
         "notizen": notizen, "notiz_vorlagen": NotizVorlage.objects.filter(aktiv=True),
         "krankmeldung": krankmeldung.eingeschaltet(), "krank_gruende": ABWESENHEIT_GRUENDE,
         "heute": heute,
+        # Foto eines Nachweises aufnehmen (ADR 0122): Arten zur Auswahl, nur mit dem Recht
+        "foto_arten": (list(Dokumentart.objects.filter(aktiv=True))
+                       if rollen.hat_recht(benutzer, "kunden.dokument_foto") else []),
     }  # fmt: skip
 
 

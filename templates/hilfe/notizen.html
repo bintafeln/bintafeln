@@ -4,6 +4,13 @@
 <ul>
   <li><strong>Notiz-Knöpfe</strong>: Unter den Notizen, abgesetzt mit „Neue Notiz mit einem Klick“, stehen häufige Texte als umrandete Knöpfe mit „+“. Sie sind noch keine Notizen; erst ein Klick speichert den Text als Notiz (dann erscheint er blau hinterlegt oben).</li>
   <li><strong>Eigene Notiz</strong>: Text ins Feld schreiben, „Notiz speichern“.</li>
+  {% if "kunden.dokument_foto" in rechte %}<li><strong>📷 Foto aufnehmen …</strong> (bei den Notiz-Knöpfen): einen
+    <strong>Bescheid</strong> oder <strong>Behindertenausweis</strong> fotografieren und beim Haushalt ablegen.
+    Art wählen, auf das Feld tippen und die Seite aufnehmen; für weitere Seiten erneut tippen – sie sammeln sich
+    darunter (höchstens 10, einzelne lassen sich wieder entfernen). „Foto(s) speichern“ legt sie verschlüsselt ab; eine
+    Notiz „Foto abgelegt: …“ zeigt der Verwaltung, dass etwas dazugekommen ist. Die Fotos stehen bei den Dokumenten des
+    Haushalts und werden nach der Frist der Dokumentart automatisch gelöscht. Ansehen kann sie nur, wer „Dokumente
+    ansehen“ darf – am Einlass sieht man sie danach nicht mehr.</li>{% endif %}
   <li><strong>Löschen</strong>: Eigene Notizen vom selben Tag (Versehen) über „löschen“.
     {% if "kunden.notizen_loeschen" in rechte %}Sie dürfen auch Notizen anderer löschen.{% endif %}</li>
 </ul>

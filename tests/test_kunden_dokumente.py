@@ -53,6 +53,7 @@ def test_vorgaben_aus_migration():
     assert {a.bezeichnung: a.aufbewahren_monate for a in Dokumentart.objects.all()} == {
         "Bescheid": 24,
         "Datenschutzeinwilligung": 36,
+        "Behindertenausweis": 24,  # für das Foto am Einlass (ADR 0122)
         "Sonstiges": 12,
     }
 
@@ -204,3 +205,54 @@ def test_kundennummer_aendern_nimmt_dokumente_mit(admin_client, h, bescheid):
     )
     assert Haushalt.objects.get().kundennummer == "3009"
     assert HaushaltDokument.objects.get().kundennummer == "3009"
+
+
+def test_foto_eines_nachweises_am_einlass(client, anmelden, benutzer_mit_rolle, h, admin):
+    """Die Ausgabestelle fotografiert am Einlass einen Bescheid oder Behindertenausweis –
+    auch mehrere Seiten (ADR 0122). Abgelegt wird verschlüsselt beim Haushalt; ansehen darf sie
+    die Fotos nicht."""
+    from apps.kunden.models import Notiz
+
+    art = Dokumentart.objects.get(bezeichnung="Behindertenausweis")  # aus der Migration
+    anmelden(client, benutzer_mit_rolle("einlass", rollen.AUSGABE))
+    einlass = f"{reverse('ausgabe:empfang')}?nummer=3001"
+    seite = client.get(einlass).content.decode()
+    assert "Foto aufnehmen" in seite and reverse("kunden:dokument_foto", args=["3001"]) in seite
+    url = reverse("kunden:dokument_foto", args=["3001"])
+    antwort = client.post(url, {"art": art.pk, "zurueck": einlass, "fotos": [pdf(), pdf()]})
+    assert antwort.url == einlass  # zurück zum Einlass
+    titel = sorted(HaushaltDokument.objects.values_list("titel", flat=True))
+    assert titel == ["Behindertenausweis (Seite 1 von 2)",
+                     "Behindertenausweis (Seite 2 von 2)"]  # fmt: skip
+    d = HaushaltDokument.objects.first()
+    assert d.kundennummer == "3001" and d.hochgeladen_von == "einlass"
+    assert privatdateien.lesen(HaushaltDokument.ORDNER, d.datei).startswith(b"%PDF")
+    assert Notiz.objects.get(kundennummer="3001").text == (
+        "Foto abgelegt: Behindertenausweis (2 Seiten)"
+    )
+    # Ansehen darf die Ausgabestelle die Fotos nicht
+    assert client.get(reverse("kunden:dokument", args=[d.pk])).status_code == 403
+    # Ohne Datei oder mit fremder Adresse als Rücksprung passiert nichts Falsches
+    antwort = client.post(url, {"art": art.pk, "zurueck": "https://boese.example.org/"})
+    assert antwort.url == reverse("kunden:haushalt", args=["3001"])
+    assert HaushaltDokument.objects.count() == 2
+    # Zu viele Seiten auf einmal
+    client.post(url, {"art": art.pk, "fotos": [pdf() for _ in range(11)]})
+    assert HaushaltDokument.objects.count() == 2
+
+
+def test_foto_nur_mit_recht(client, anmelden, benutzer_mit_rolle, h, admin):
+    from apps.konten.models import Rolle
+
+    konto = benutzer_mit_rolle("ohne", rollen.AUSGABE)
+    rolle = Rolle.objects.get(gruppe__name=rollen.AUSGABE)
+    rolle.rechte = [r for r in rolle.rechte if r != "kunden.dokument_foto"]
+    rolle.save()
+    anmelden(client, konto)
+    art = Dokumentart.objects.get(bezeichnung="Bescheid")
+    url = reverse("kunden:dokument_foto", args=["3001"])
+    assert client.post(url, {"art": art.pk, "fotos": [pdf()]}).status_code == 403
+    assert (
+        "Foto aufnehmen"
+        not in client.get(f"{reverse('ausgabe:empfang')}?nummer=3001").content.decode()
+    )
