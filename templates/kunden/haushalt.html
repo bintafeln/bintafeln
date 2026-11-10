@@ -23,6 +23,9 @@
 <div class="seiten-spalte">
 <section class="karte">
   <h2>Angaben</h2>
+  {% for s, aktiv in sperren %}{% if aktiv %}
+  <p class="fehler sperre-hinweis" role="alert"><strong>Gesperrt</strong> seit {{ s.von|date:"d.m.Y" }}{% if s.bis %} bis {{ s.bis|date:"d.m.Y" }}{% else %} (unbefristet){% endif %}{% if s.begruendung %}: {{ s.begruendung }}{% endif %}</p>
+  {% endif %}{% endfor %}
   <dl class="angaben">
     {% if "kunden.stammdaten" in rechte %}<dt>Status</dt><dd>{{ h.get_status_display }}</dd>{% endif %}
     <dt>Ausgabestelle</dt><dd>{% if h.kundengruppe %}{{ h.kundengruppe.mit_stelle }}{% if h.kundengruppe.wochentage %} ({{ h.kundengruppe.wochentage }}{% if h.kundengruppe.uhrzeit %} {{ h.kundengruppe.uhrzeit|time:"H:i" }}{% endif %}){% endif %}{% else %}–{% endif %}{% if "kunden.bearbeiten" in rechte %} <a class="leise" href="{% url 'kunden:kundengruppe_aendern' h.kundennummer %}">Kundengruppe ändern</a>{% endif %}</dd>

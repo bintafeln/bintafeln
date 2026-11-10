@@ -102,6 +102,8 @@ input::-webkit-date-and-time-value { text-align: left; margin: 0; }
 .feld input:focus, .feld select:focus, .feld textarea:focus, .filter input:focus { outline: 3px solid var(--fokus); border-color: var(--akzent); }
 .hilfe { color: var(--leise); }
 .fehler { color: var(--fehler); }
+/* Aktive Sperre oben in den Angaben des Haushalts: deutlich, mit rotem Rand */
+.sperre-hinweis { border: 2px solid var(--fehler); border-radius: 6px; padding: .5rem .75rem; margin: 0 0 .75rem; }
 /* Fehlerhaftes/leeres Pflichtfeld deutlich hervorheben: dicker roter Rand, leicht roter
    Hintergrund und rote Beschriftung – damit man das Feld sofort sieht, nicht nur die kleine
    rote Schrift darunter. */

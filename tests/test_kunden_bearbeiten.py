@@ -276,12 +276,19 @@ def test_abholer_sperren_anmerkungen_ausnahmen(admin_client, h):
     assert Abholer.objects.get().vorname == "Otto"
     seite = admin_client.get(url("teil_neu", "2001", "sperre")).content.decode()
     assert '<option value="chefin" selected>chefin</option>' in seite  # vorbelegt
+    # Datum vorbelegt: von heute bis in einem Jahr (überschreibbar)
+    heute = dt.date.today()
+    assert f'value="{heute:%Y-%m-%d}"' in seite
+    assert f'value="{heute + dt.timedelta(days=365):%Y-%m-%d}"' in seite
     daten = {"von": "2026-02-01", "bis": "2026-01-01"}
     falsch = admin_client.post(url("teil_neu", "2001", "sperre"), daten).content.decode()
     assert "nicht vor" in falsch
     daten = {"von": "2026-01-01", "begruendung": "Test", "eingetragen_von": "chefin"}
     admin_client.post(url("teil_neu", "2001", "sperre"), daten)
     assert Sperre.objects.get().eingetragen_von == "chefin"
+    # Die aktive Sperre steht deutlich oben in den Angaben des Haushalts
+    maske = admin_client.get(reverse("kunden:haushalt", args=["2001"])).content.decode()
+    assert "sperre-hinweis" in maske and "<strong>Gesperrt</strong> seit 01.01.2026" in maske
     admin_client.post(url("teil_neu", "2001", "anmerkung"),
                       {"datum": "2026-03-01", "text": "Erfundene Anmerkung",
                        "verfasst_von": "chefin"})  # fmt: skip
