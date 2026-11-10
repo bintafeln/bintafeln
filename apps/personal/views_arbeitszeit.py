@@ -53,6 +53,12 @@ def _monatsdaten(person, monat: dt.date) -> dict:
     }
 
 
+def _saldo(benutzer, heute):
+    """Stand des Stundenkontos; None, wenn für die Person keines geführt wird."""
+    konto = berechnung.stundenkonto(benutzer, heute.year, heute)
+    return konto.saldo if konto.gefuehrt else None
+
+
 @login_required
 def meine(request):
     if not arbeitszeit.darf_stempeln(request.user):
@@ -66,9 +72,7 @@ def meine(request):
             "laufend": arbeitszeit.laufend(request.user),
             "in_pause": arbeitszeit.in_pause(request.user),
             "vergessen": arbeitszeit.vergessen(request.user),
-            "saldo": berechnung.stundenkonto(request.user, heute.year, heute).saldo
-            if hat_vertrag
-            else None,
+            "saldo": _saldo(request.user, heute) if hat_vertrag else None,
             **_monatsdaten(request.user, _monat(request)),
         },
     )

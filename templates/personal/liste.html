@@ -24,7 +24,7 @@
         <td data-titel="Wochenstunden">{% if z.vertrag %}{{ z.vertrag.wochenstunden|floatformat:"-2" }}{% else %}<span class="marke-warnung">kein gültiger Vertrag</span>{% endif %}</td>
         <td data-titel="Vertrag bis">{% if z.vertrag %}{{ z.vertrag.ende|date:"d.m.Y"|default:"unbefristet" }}{% else %}–{% endif %}</td>
         <td data-titel="Resturlaub">{{ z.urlaub.rest|floatformat:"-1" }} Tage</td>
-        <td data-titel="Stundenkonto"><span{% if z.saldo < 0 %} class="fehler"{% endif %}>{{ z.saldo|floatformat:2 }} h</span></td>
+        <td data-titel="Stundenkonto">{% if z.konto.gefuehrt %}<span{% if z.konto.saldo < 0 %} class="fehler"{% endif %}>{{ z.konto.saldo|floatformat:2 }} h</span>{% else %}<span class="hinweis">nicht geführt</span>{% endif %}</td>
       </tr>
     {% empty %}
       <tr><td colspan="6">Noch niemand. Unter „Mitarbeitende“ bei der Beschäftigung „fest angestellt“ wählen.</td></tr>

@@ -110,6 +110,8 @@
 
 <section class="karte">
   <h2>Stundenkonto {{ jahr }}</h2>
+  {% if not konto.gefuehrt %}<p class="hinweis">Für diese Person wird <strong>kein Stundenkonto geführt</strong>. Einschalten
+    lässt es sich im Arbeitsvertrag („Stundenkonto führen“, auf Wunsch erst ab einem Datum).</p>{% else %}
   <p>Stand: <strong{% if konto.saldo < 0 %} class="fehler"{% endif %}>{{ konto.saldo|floatformat:2 }} Stunden</strong>
     (Übertrag aus den Vorjahren: {{ konto.vorjahre|floatformat:2 }})</p>
   <div class="tabelle-rahmen">
@@ -168,6 +170,7 @@
       <button type="submit" class="knopf">Eintragen</button>
     </form>
   </details>
+{% endif %}
 </section>
 {% include "konten/_dokumente.html" with ziel=p %}
 {% endblock %}

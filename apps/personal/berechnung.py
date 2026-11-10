@@ -202,22 +202,38 @@ class Monat:
         return self.ist + self.gestempelt + self.urlaub + self.krank - self.soll
 
 
+def konto_vertrag(vertraege, tag: dt.date):
+    """Der Vertrag, für den an dem Tag ein Stundenkonto geführt wird (sonst None): Das Konto muss
+    beim Vertrag eingeschaltet sein und der Tag darf nicht vor „Stundenkonto ab“ liegen."""
+    v = vertrag_am(vertraege, tag)
+    if v is None or not v.stundenkonto:
+        return None
+    if v.stundenkonto_ab and tag < v.stundenkonto_ab:
+        return None
+    return v
+
+
 def _monat(jahr, monat, vertraege, abwesenheiten, stunden, heute, land, tage) -> Monat:
     anfang, ende = dt.date(jahr, monat, 1), min(_monatsende(jahr, monat), heute)
     soll = NULL
     for i in range((ende - anfang).days + 1):
         tag = anfang + dt.timedelta(days=i)
-        v = vertrag_am(vertraege, tag)
+        v = konto_vertrag(vertraege, tag)
         if v and ist_arbeitstag(tag, land):
             soll += v.tagessoll
     gutschrift = {Abwesenheit.Art.URLAUB: NULL, Abwesenheit.Art.KRANK: NULL}
     for a in abwesenheiten:
         if anfang <= a.von <= ende:
-            v = vertrag_am(vertraege, a.von)
+            v = konto_vertrag(vertraege, a.von)
             if v:
                 gutschrift[a.art] += arbeitstage(a, land) * v.tagessoll
-    ist = sum((s.stunden for s in stunden if anfang <= s.datum <= ende), NULL)
-    gestempelt = sum((t.netto for t in tage if anfang <= t.datum <= ende), NULL)
+
+    # Stunden zählen nur an Tagen, an denen das Stundenkonto geführt wird
+    def zaehlt(tag):
+        return anfang <= tag <= ende and konto_vertrag(vertraege, tag) is not None
+
+    ist = sum((s.stunden for s in stunden if zaehlt(s.datum)), NULL)
+    gestempelt = sum((t.netto for t in tage if zaehlt(t.datum)), NULL)
     return Monat(
         monat=anfang,
         soll=soll,
@@ -232,6 +248,7 @@ def _monat(jahr, monat, vertraege, abwesenheiten, stunden, heute, land, tage) ->
 class Stundenkonto:
     vorjahre: Decimal  # Saldo bis Ende des Vorjahres
     monate: list[Monat]
+    gefuehrt: bool = True  # False: bei keinem Vertrag ist das Stundenkonto eingeschaltet
 
     @property
     def saldo(self) -> Decimal:
@@ -247,6 +264,8 @@ def stundenkonto(benutzer, jahr: int, heute: dt.date) -> Stundenkonto:
     vorjahre, monate = NULL, []
     if erstes is None:
         return Stundenkonto(vorjahre, monate)
+    if not any(v.stundenkonto for v in vertraege):
+        return Stundenkonto(vorjahre, monate, gefuehrt=False)
     land = bundesland()
     tage = arbeitstage_aus(
         benutzer.zeitbuchungen.all(), ArbeitszeitEinstellungen.laden().pausen_automatisch

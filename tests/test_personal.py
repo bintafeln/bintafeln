@@ -190,6 +190,26 @@ def test_stundenkonto_monat(kim):
     assert konto.vorjahre == D("0") and konto.saldo == D("10")
 
 
+def test_stundenkonto_erst_ab_datum_und_abschaltbar(kim):
+    """Das Stundenkonto wird je Vertrag geführt oder nicht – und auf Wunsch erst ab einem Datum:
+    Davor gibt es kein Soll, und Stunden oder Gutschriften davor zählen nicht."""
+    v = vertrag(kim, dt.date(2026, 10, 1))  # 40 Std. = 8 je Werktag
+    Stunden.objects.create(benutzer=kim, datum=dt.date(2026, 10, 2), stunden=D("50"))  # davor
+    Stunden.objects.create(benutzer=kim, datum=dt.date(2026, 10, 8), stunden=D("9"))
+    abwesenheit(kim, dt.date(2026, 10, 5), dt.date(2026, 10, 5))  # Urlaub davor
+    v.stundenkonto_ab = dt.date(2026, 10, 7)  # Mi; gerechnet wird Mi–Fr
+    v.save()
+    konto = berechnung.stundenkonto(kim, 2026, dt.date(2026, 10, 9))
+    (m,) = konto.monate
+    assert (m.soll, m.ist, m.urlaub, m.saldo) == (D("24"), D("9"), D("0"), D("-15"))
+    assert konto.gefuehrt
+    # Abgeschaltet: kein Konto, kein Saldo
+    v.stundenkonto = False
+    v.save()
+    konto = berechnung.stundenkonto(kim, 2026, dt.date(2026, 10, 9))
+    assert not konto.gefuehrt and konto.saldo == D("0") and konto.monate == []
+
+
 def test_stundenkonto_mit_vorjahren(kim):
     vertrag(kim, dt.date(2026, 12, 1), stunden="5")  # 1 Stunde je Werktag
     konto = berechnung.stundenkonto(kim, 2027, dt.date(2027, 1, 5))
@@ -258,6 +278,12 @@ def test_vertrag_eintragen_und_bearbeiten(admin_client, kim):
     assert antwort.url == f"{url('person', kim.pk)}?jahr=2026"
     v = Arbeitsvertrag.objects.get()
     assert (v.wochenstunden, v.stundenlohn) == (D("38.50"), D("14.50"))
+    # Ohne Haken „Stundenkonto führen“ wird keines geführt; die Seite der Person sagt das
+    assert not v.stundenkonto
+    seite = admin_client.get(url("person", kim.pk)).content.decode()
+    assert "kein Stundenkonto geführt" in seite
+    formular = admin_client.get(url("vertrag", kim.pk, v.pk)).content.decode()
+    assert 'name="stundenkonto"' in formular and 'name="stundenkonto_ab"' in formular
     assert str(v) == "Arbeitsvertrag ab 01.01.2026"
     fehler = admin_client.post(url("vertrag_neu", kim.pk), {**daten, "ende": "2025-01-01"},
                                follow=True).content.decode()  # fmt: skip

@@ -54,7 +54,7 @@ def liste(request):
             "p": p,
             "vertrag": berechnung.vertrag_am(list(p.vertraege.all()), heute),
             "urlaub": berechnung.urlaub(p, heute.year, heute),
-            "saldo": berechnung.stundenkonto(p, heute.year, heute).saldo,
+            "konto": berechnung.stundenkonto(p, heute.year, heute),
         }
         for p in personen
     ]
