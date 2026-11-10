@@ -64,6 +64,11 @@ urlpatterns = [
         views_mitarbeitende.zugang_entsperren,
         name="zugang_entsperren",
     ),
+    path(
+        "mitarbeitende/<int:pk>/anmeldesperre-aufheben/",
+        views_mitarbeitende.anmeldesperre_aufheben,
+        name="anmeldesperre_aufheben",
+    ),
     path("mitarbeitende/<int:pk>/entfernen/", views_mitarbeitende.entfernen, name="entfernen"),
     path(
         "mitarbeitende/<int:pk>/passwort/",

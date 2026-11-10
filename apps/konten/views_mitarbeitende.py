@@ -21,6 +21,7 @@ from apps.core import listen, listenexport, mail, papierkorb
 from apps.core.models import TafelEinstellungen
 from apps.core.pdf import pdf_antwort
 from apps.konten import (
+    anmeldesperre,
     auskunft,
     einladung,
     personal,
@@ -402,6 +403,7 @@ def bearbeiten(request, pk):
             ).count(),
             "mail": mail.eingerichtet(),
             "nummer": verwaltung.personennummer(ziel),
+            "anmeldung_gesperrt": anmeldesperre.ist_gesperrt(ziel.get_username()),
         },
     )
 
@@ -429,6 +431,16 @@ def sperren(request, pk):
 @verwalter_erforderlich
 def entsperren(request, pk):
     return _aktion(request, pk, verwaltung.entsperren, "{ziel} ist wieder aktiv.")
+
+
+@require_POST
+@verwalter_erforderlich
+def anmeldesperre_aufheben(request, pk):
+    """Sperre nach zu vielen falschen Passwörtern sofort aufheben (ADR 0120)."""
+    return _aktion(
+        request, pk, verwaltung.anmeldesperre_aufheben,
+        "Anmelde-Sperre von {ziel} aufgehoben: Anmeldung ist sofort wieder möglich.",
+    )  # fmt: skip
 
 
 @require_POST

@@ -30,8 +30,6 @@ class AnmeldeForm(forms.Form):
                 "anmelden.")  # fmt: skip
     zugang_gesperrt = ("Dieser Online-Zugang ist zurzeit gesperrt. Bitte an die Verwaltung "
                        "wenden.")  # fmt: skip
-    VERSUCHE = 5
-    SPERRE_MINUTEN = 15
 
     def __init__(self, request=None, *args, **kwargs):
         self.request = request
@@ -54,22 +52,21 @@ class AnmeldeForm(forms.Form):
         return stelle.konto.username if stelle else eingabe
 
     def clean(self):
-        from django.core.cache import cache
+        from apps.konten import anmeldesperre
 
         daten = super().clean()
         benutzername, passwort = daten.get("username"), daten.get("password")
         if not benutzername or not passwort:
             return daten
         benutzername = self.benutzername(benutzername)
-        schluessel = f"anmelden-fehler:{benutzername.lower()}"
-        if (cache.get(schluessel) or 0) >= self.VERSUCHE:
-            raise forms.ValidationError(self.gesperrt.format(minuten=self.SPERRE_MINUTEN))
+        # Zahl der Fehlversuche und Dauer der Sperre stellt die Tafel ein (ADR 0120)
+        if anmeldesperre.ist_gesperrt(benutzername):
+            raise forms.ValidationError(self.gesperrt.format(minuten=anmeldesperre.minuten()))
         benutzer = authenticate(self.request, username=benutzername, password=passwort)
         if benutzer is None:
-            cache.add(schluessel, 0, self.SPERRE_MINUTEN * 60)
-            cache.incr(schluessel)
+            anmeldesperre.fehlversuch(benutzername)
             raise forms.ValidationError(self.fehler)
-        cache.delete(schluessel)
+        anmeldesperre.aufheben(benutzername)
         # Online-Zugang einzeln gesperrt (ADR 0114): Passwort stimmt, aber Anmeldung ist für diese
         # Person vorübergehend abgestellt. Kein Fehlversuch – deshalb erst nach dem Zurücksetzen.
         if getattr(benutzer, "zugang_gesperrt", False):
@@ -127,7 +124,8 @@ class ZweiterSchrittForm(forms.Form):
 class AnmeldeEinstellungenForm(forms.ModelForm):
     class Meta:
         model = AnmeldeEinstellungen
-        fields = ["vertrauen_tage", "stellen_zwei_faktor", "ueberraschungen", "protokoll_tage"]
+        fields = ["vertrauen_tage", "stellen_zwei_faktor", "fehlversuche", "sperre_minuten",
+                  "ueberraschungen", "protokoll_tage"]  # fmt: skip
 
 
 class CodeForm(forms.Form):

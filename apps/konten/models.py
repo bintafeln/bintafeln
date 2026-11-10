@@ -394,6 +394,17 @@ class AnmeldeEinstellungen(models.Model):
         "Luftschlangen, zu Ostern hoppelt der Osterhase und zu Nikolaus und Weihnachten kommt der "
         "Nikolaus vorbei – einmal je Aufruf (ADR 0079).",
     )  # fmt: skip
+    fehlversuche = models.PositiveSmallIntegerField(
+        "Sperre nach so vielen falschen Passwörtern", default=5,
+        validators=[MinValueValidator(3), MaxValueValidator(50)],
+        help_text="Nach so vielen falschen Passwörtern hintereinander ist der Benutzername "
+        "vorübergehend gesperrt (Schutz vor Ausprobieren). Ein Admin kann die Sperre bei der "
+        "Person sofort aufheben.",
+    )  # fmt: skip
+    sperre_minuten = models.PositiveSmallIntegerField(
+        "Dauer der Sperre (Minuten)", default=15,
+        validators=[MinValueValidator(1), MaxValueValidator(240)],
+    )  # fmt: skip
     PROTOKOLL_TAGE = [(0, "aus – nicht protokollieren"), (30, "30 Tage"), (90, "90 Tage"),
                       (180, "180 Tage"), (365, "1 Jahr")]  # fmt: skip
     protokoll_tage = models.PositiveSmallIntegerField(

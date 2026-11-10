@@ -43,6 +43,12 @@ def stelle(request, pk):
         zustand = "entsperrt" if konto.is_active else "gesperrt"
         messages.success(request, f"Konto von „{s.name}“ {zustand}.")
         return redirect("konten:stelle", pk=s.pk)
+    if request.method == "POST" and request.POST.get("aktion") == "anmeldesperre_aufheben":
+        if konto is None:
+            raise PermissionDenied
+        verwaltung.anmeldesperre_aufheben(request.user, konto)
+        messages.success(request, f"Anmelde-Sperre von „{s.name}“ aufgehoben.")
+        return redirect("konten:stelle", pk=s.pk)
     if request.method == "POST" and request.POST.get("aktion") in ("dienstplan_an",
                                                                    "dienstplan_aus"):  # fmt: skip
         s.dienstplan_sichtbar = request.POST["aktion"] == "dienstplan_an"
@@ -72,4 +78,9 @@ def stelle(request, pk):
                 messages.success(request, f"Konto für „{s.name}“ gespeichert. Anmelden am Tablet: "
                                           f"„{s.name}“ und das neue Passwort.")  # fmt: skip
                 return redirect("konten:stelle", pk=s.pk)
-    return render(request, "konten/stelle.html", {"s": s, "konto": konto, "form": form})
+    from apps.konten import anmeldesperre
+
+    return render(request, "konten/stelle.html", {
+        "s": s, "konto": konto, "form": form,
+        "anmeldung_gesperrt": bool(konto) and anmeldesperre.ist_gesperrt(konto.get_username()),
+    })  # fmt: skip

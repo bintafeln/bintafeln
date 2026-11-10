@@ -375,6 +375,15 @@ def zugang_entsperren(verwalter, ziel) -> None:
     ziel.save(update_fields=["zugang_gesperrt"])
 
 
+def anmeldesperre_aufheben(verwalter, ziel) -> None:
+    """Die vorübergehende Sperre nach zu vielen falschen Passwörtern sofort aufheben (ADR 0120);
+    das Passwort bleibt, wie es ist."""
+    from apps.konten import anmeldesperre
+
+    _pruefen(verwalter, ziel)
+    anmeldesperre.aufheben(ziel.get_username())
+
+
 def entfernen(verwalter, ziel):
     """Löscht ein gesperrtes (archiviertes) Mitarbeiter-Konto samt Stammdaten und verknüpfter
     Adresse in den Papierkorb (Ausnahme zu ADR 0015). Alles, was am Konto hängt (Verträge,
