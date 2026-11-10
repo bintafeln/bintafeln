@@ -212,8 +212,21 @@ def test_aufnahme_neuer_kunde(admin_client, bestand):
     assert schritt(admin_client, a, "personen").url.endswith("/kunde/")  # erst Schritt 1
     assert "aus der Liste" in schritt(admin_client, a, "kunde", {"haushalt": "x"}).content.decode()
     assert schritt(admin_client, a, "kunde", {"haushalt": "neu"}).url.endswith("/abgleich/")
-    assert "Neuer Kunde" in schritt(admin_client, a, "abgleich").content.decode()
-    schritt(admin_client, a, "abgleich", {})
+    seite = schritt(admin_client, a, "abgleich").content.decode()
+    assert "Neuer Kunde" in seite
+    # Die Angaben sind hier bearbeitbar (Felder statt Tabelle); „Zurück“ führt zum Schritt davor
+    assert 'name="vorname"' in seite and 'name="strasse"' in seite
+    assert reverse("antraege:aufnahme_schritt", args=[a.pk, "kunde"]) + '">← Zurück' in seite
+    daten = {f: getattr(a, f) or "" for f in ("anrede", "vorname", "nachname", "strasse", "plz",
+                                              "ort", "telefon", "email", "familienstand",
+                                              "staatsangehoerigkeit")}  # fmt: skip
+    daten["geburtsdatum"] = f"{a.geburtsdatum:%d.%m.%Y}" if a.geburtsdatum else ""
+    falsch = schritt(admin_client, a, "abgleich", {**daten, "vorname": ""}).content.decode()
+    assert "Bitte die markierten Angaben prüfen." in falsch
+    antwort = schritt(admin_client, a, "abgleich", {**daten, "strasse": "Korrigierte Str. 9"})
+    assert antwort.url.endswith("/personen/")
+    a.refresh_from_db()
+    assert a.strasse == "Korrigierte Str. 9" and a.bearbeitet_von  # auch im Antrag gespeichert
     seite = schritt(admin_client, a, "personen").content.decode()
     assert 'value="Lina"' in seite
     assert 'name="p0_staatsangehoerigkeit"' in seite
