@@ -1268,3 +1268,26 @@ def test_aufnahme_angehoerige_ohne_leere_zeilen(angemeldet, admin):
     seite.goto(reverse("antraege:aufnahme_schritt", args=[a.pk, "personen"]))
     expect(seite.locator("table.tabelle tbody tr:visible")).to_have_count(2)
     expect(seite.locator("input[value=Lina]")).to_be_visible()
+
+
+def test_foto_wird_sofort_gespeichert(angemeldet, admin):
+    """Foto eines Nachweises: Nach der Aufnahme geht das Formular von selbst ab (kein Knopf
+    „speichern“), und das Feld bleibt für die nächste Seite offen."""
+    import io
+
+    from PIL import Image
+
+    from apps.kunden.models import HaushaltDokument
+
+    _haushalte(1)
+    bild = io.BytesIO()
+    Image.new("RGB", (40, 30), "white").save(bild, "PNG")
+    seite = angemeldet(admin)
+    seite.goto("/kunden/haushalt/00041/")
+    seite.get_by_text("Foto aufnehmen").click()
+    feld = seite.locator("#foto-dateien")
+    feld.set_input_files({"name": "seite1.png", "mimeType": "image/png", "buffer": bild.getvalue()})
+    expect(seite.get_by_text("Foto abgelegt:").first).to_be_visible()
+    expect(seite).to_have_url(re.compile("foto=1"))
+    expect(seite.locator("#foto-dateien")).to_be_visible()  # offen für die nächste Seite
+    assert HaushaltDokument.objects.count() == 1

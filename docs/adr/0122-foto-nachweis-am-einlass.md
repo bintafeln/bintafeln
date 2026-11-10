@@ -13,12 +13,13 @@ Nachweis musste deshalb später noch einmal vorgelegt oder auf anderem Weg ins B
   Datenmigration gibt es allen bestehenden Rollen, die Notizen schreiben dürfen.
 - **Knopf „📷 Foto aufnehmen …“** bei den Notiz-Vorlagen (am Einlass und auf der Haushaltsseite):
   Art wählen (Dokumentart, z. B. „Bescheid“ oder die neu mitgelieferte
-  „Behindertenausweis“) und fotografieren. Mehrere Seiten sammelt
-  `static/js/foto_seiten.js` (ein Dateifeld ersetzt sonst seine Auswahl), höchstens zehn.
+  „Behindertenausweis“) und fotografieren. Jede Aufnahme geht sofort ab
+  (`static/js/foto_sofort.js`, kein Knopf „speichern“); für weitere Seiten tippt man erneut auf
+  das Feld, das dafür offen bleibt.
 - **Ablage wie jedes Dokument zum Haushalt** (`HaushaltDokument`, verschlüsselt, an der
-  Kundennummer, Löschfrist der Dokumentart, in der Auskunft): je Seite ein Dokument mit
-  „(Seite n von m)“. Dazu entsteht eine Notiz „Foto abgelegt: … (n Seiten)“, damit die Verwaltung
-  es bemerkt.
+  Kundennummer, Löschfrist der Dokumentart, in der Auskunft): je Seite ein Dokument, ab
+  der zweiten mit „(Seite n)“. Dazu entsteht je Nachweis und Tag eine Notiz „Foto abgelegt: …
+  (n Seiten)“, die mit jeder Seite fortgeschrieben wird, damit die Verwaltung es bemerkt.
 
 ## Begründung
 

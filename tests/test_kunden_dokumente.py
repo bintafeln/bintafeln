@@ -219,11 +219,17 @@ def test_foto_eines_nachweises_am_einlass(client, anmelden, benutzer_mit_rolle, 
     seite = client.get(einlass).content.decode()
     assert "Foto aufnehmen" in seite and reverse("kunden:dokument_foto", args=["3001"]) in seite
     url = reverse("kunden:dokument_foto", args=["3001"])
-    antwort = client.post(url, {"art": art.pk, "zurueck": einlass, "fotos": [pdf(), pdf()]})
-    assert antwort.url == einlass  # zurück zum Einlass
+    # Jede Aufnahme wird sofort gespeichert (kein Knopf „speichern“); das Feld bleibt offen
+    antwort = client.post(url, {"art": art.pk, "zurueck": einlass, "fotos": [pdf()]})
+    assert antwort.url == f"{einlass}&foto=1"  # zurück zum Einlass
+    assert 'foto-aufnehmen" open' in client.get(antwort.url).content.decode()
+    assert Notiz.objects.get(kundennummer="3001").text == (
+        "Foto abgelegt: Behindertenausweis (1 Seite)"
+    )
+    # Die zweite Seite zählt weiter, die Notiz wird fortgeschrieben statt verdoppelt
+    client.post(url, {"art": art.pk, "zurueck": einlass, "fotos": [pdf()]})
     titel = sorted(HaushaltDokument.objects.values_list("titel", flat=True))
-    assert titel == ["Behindertenausweis (Seite 1 von 2)",
-                     "Behindertenausweis (Seite 2 von 2)"]  # fmt: skip
+    assert titel == ["Behindertenausweis", "Behindertenausweis (Seite 2)"]
     d = HaushaltDokument.objects.first()
     assert d.kundennummer == "3001" and d.hochgeladen_von == "einlass"
     assert privatdateien.lesen(HaushaltDokument.ORDNER, d.datei).startswith(b"%PDF")
@@ -236,6 +242,8 @@ def test_foto_eines_nachweises_am_einlass(client, anmelden, benutzer_mit_rolle, 
     antwort = client.post(url, {"art": art.pk, "zurueck": "https://boese.example.org/"})
     assert antwort.url == reverse("kunden:haushalt", args=["3001"])
     assert HaushaltDokument.objects.count() == 2
+    # Die Knöpfe tragen Bildchen: Drucker, Blatt, krank
+    assert "🖨️ " in seite and "📄 " in seite
     # Zu viele Seiten auf einmal
     client.post(url, {"art": art.pk, "fotos": [pdf() for _ in range(11)]})
     assert HaushaltDokument.objects.count() == 2
