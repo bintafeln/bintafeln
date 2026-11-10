@@ -76,6 +76,12 @@
       {% csrf_token %}
       <button type="submit" class="knopf knopf-zweitrangig" title="Persönliche Anpassungen zurücksetzen; Rollen und Rechte bleiben">Werkseinstellungen</button>
     </form>
+    {% if anmeldung_gesperrt %}
+      <form method="post" action="{% url 'konten:anmeldesperre_aufheben' ziel.pk %}" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="knopf" title="Zu viele falsche Passwörter: Die Anmeldung ist vorübergehend gesperrt. Hier sofort wieder erlauben; das Passwort bleibt.">Anmelde-Sperre aufheben</button>
+      </form>
+    {% endif %}
     {% if ziel.has_usable_password and ziel.is_active %}
       {% if ziel.zugang_gesperrt %}
       <form method="post" action="{% url 'konten:zugang_entsperren' ziel.pk %}" class="inline">

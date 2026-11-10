@@ -22,6 +22,7 @@
     {% csrf_token %}
     {% if konto.is_active %}<button type="submit" name="aktion" value="sperren" class="knopf knopf-gefahr">Konto sperren</button>
     {% else %}<button type="submit" name="aktion" value="entsperren" class="knopf">Konto entsperren</button>{% endif %}
+    {% if anmeldung_gesperrt %}<button type="submit" name="aktion" value="anmeldesperre_aufheben" class="knopf" title="Zu viele falsche Passwörter: Die Anmeldung ist vorübergehend gesperrt. Hier sofort wieder erlauben.">Anmelde-Sperre aufheben</button>{% endif %}
   </form>
   <h3>Dienstplan</h3>
   <p>{% if s.dienstplan_sichtbar %}<span class="marke-ok">Wird auf dem Tablet gezeigt.</span> Das Tablet-Konto sieht den Dienstplan und die eigenen Dienste.{% else %}Das Tablet-Konto sieht den Dienstplan <strong>nicht</strong>.{% endif %}</p>

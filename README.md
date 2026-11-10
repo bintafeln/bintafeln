@@ -246,7 +246,8 @@ fragt zuerst nur Benutzername und Passwort; ist Zwei-Faktor eingerichtet, folgt 
 Fenster für den Code (5 Minuten gültig, höchstens 5 Versuche).
 
 **Schutz vor Durchprobieren:** Nach 5 falschen Passwörtern ist ein Benutzername 15 Minuten
-gesperrt – auch das richtige Passwort wird dann kurz abgewiesen (eine richtige Anmeldung setzt den
+gesperrt (beides einstellbar unter „Einstellungen → Systemsteuerung → Anmeldung und Zwei-Faktor“;
+ein Admin hebt die Sperre bei der Person mit „Anmelde-Sperre aufheben“ sofort auf, ADR 0120) – auch das richtige Passwort wird dann kurz abgewiesen (eine richtige Anmeldung setzt den
 Zähler sofort zurück). Der Zähler liegt im gemeinsamen Datenbank-Cache (ADR 0093), gilt also über
 alle Server-Prozesse und übersteht ein Update.
 

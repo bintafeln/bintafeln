@@ -138,13 +138,19 @@ def test_zwei_faktor_nur_mit_freigabe(admin_client, mitte):
     # freigeschaltet: sichtbar und einrichtbar (aber keine Pflicht)
     url = reverse("konten:anmelde_einstellungen")
     admin_client.post(url, {"vertrauen_tage": "0", "stellen_zwei_faktor": "on",
-                            "protokoll_tage": "90"})  # fmt: skip
+                            "protokoll_tage": "90", "fehlversuche": "5",
+                            "sperre_minuten": "15"})  # fmt: skip
     assert AnmeldeEinstellungen.laden().stellen_zwei_faktor
     assert "Zwei-Faktor" in tablet.get(reverse("konten:mein_konto")).content.decode()
     einrichten(tablet, konto)
     assert TOTPDevice.objects.filter(user=konto).exists()
     # wieder aus: Geräte entfernt, Anmeldung mit Name und Passwort klappt ohne Code
-    antwort = admin_client.post(url, {"vertrauen_tage": "0", "protokoll_tage": "90"}, follow=True)
+    antwort = admin_client.post(
+        url,
+        {"vertrauen_tage": "0", "protokoll_tage": "90", "fehlversuche": "5",
+         "sperre_minuten": "15"},
+        follow=True,
+    )  # fmt: skip
     assert "Zwei-Faktor bei den Konten der Ausgabestellen entfernt" in antwort.content.decode()
     assert not TOTPDevice.objects.filter(user=konto).exists()
     neu = Client()

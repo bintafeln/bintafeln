@@ -262,7 +262,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
 - Gemeinsamer Cache in der Datenbank (ADR 0093): `CACHES` = DatabaseCache, Tabelle `bintafeln_cache`
   (Migration `core/0022`); nötig, weil mehrere gunicorn-Prozesse laufen und ein prozesslokaler
   Cache Zähler nicht teilt und beim Update vergisst. Darauf bauen die Anmelde-Sperre
-  (`AnmeldeForm`, 5 Fehlversuche je Benutzername → 15 min) und weitere Drosseln. In Tests
+  (`apps/konten/anmeldesperre.py`, Fehlversuche je Benutzername und Dauer aus
+  `AnmeldeEinstellungen`, Vorgabe 5 → 15 min; Admin hebt sie sofort auf, ADR 0120) und weitere Drosseln. In Tests
   LocMemCache (`settings_test.py`), der Datenbank-Cache ist mit einem eigenen Test abgedeckt.
 - Zwei-Faktor: Logik in `apps/konten/zwei_faktor.py`, Durchsetzung in
   `apps.konten.middleware.ZweiFaktorMiddleware`. In Tests Benutzer mit der Fixture `anmelden`

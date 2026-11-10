@@ -153,10 +153,8 @@ def test_sperre_nach_zu_vielen_falschen_passwoertern(client, admin):
     Der Zähler liegt im Datenbank-Cache (ADR 0093), gilt also über alle Prozesse und übersteht
     einen Neustart.
     """
-    from apps.konten.forms import AnmeldeForm
-
     url = reverse("konten:anmelden")
-    for _ in range(AnmeldeForm.VERSUCHE):
+    for _ in range(5):  # Vorgabe: 5 Fehlversuche
         antwort = client.post(url, {"username": "chefin", "password": "falsch"})
         assert "falsch" in antwort.content.decode()
     # jetzt gesperrt – sogar das richtige Passwort wird abgewiesen
@@ -167,19 +165,49 @@ def test_sperre_nach_zu_vielen_falschen_passwoertern(client, admin):
 
 
 def test_richtige_anmeldung_setzt_den_zaehler_zurueck(client, admin):
-    from apps.konten.forms import AnmeldeForm
-
     url = reverse("konten:anmelden")
-    for _ in range(AnmeldeForm.VERSUCHE - 1):  # einer weniger als die Grenze
+    for _ in range(4):  # einer weniger als die Grenze (Vorgabe 5)
         client.post(url, {"username": "chefin", "password": "falsch"})
     # richtige Anmeldung klappt noch und löscht den Zähler
     start = reverse("core:start")
     assert client.post(url, {"username": "chefin", "password": PASSWORT}).url == start
     client.post(reverse("konten:abmelden"))
     # danach stehen wieder volle Versuche zur Verfügung
-    for _ in range(AnmeldeForm.VERSUCHE - 1):
+    for _ in range(4):
         client.post(url, {"username": "chefin", "password": "falsch"})
     assert client.post(url, {"username": "chefin", "password": PASSWORT}).url == start
+
+
+def test_fehlversuche_einstellbar_und_admin_hebt_sperre_auf(admin_client, benutzer_mit_rolle):
+    """Die Zahl der Fehlversuche stellt die Tafel ein; ein Admin hebt die Sperre sofort auf
+    (ADR 0120)."""
+    from django.test import Client
+
+    from apps.konten import anmeldesperre
+
+    client = Client()  # eigener Browser der Person (admin_client ist schon angemeldet)
+    from apps.konten.models import AnmeldeEinstellungen
+
+    helfer = benutzer_mit_rolle("helfer", rollen.AUSGABE)
+    e = AnmeldeEinstellungen.laden()
+    e.fehlversuche, e.sperre_minuten = 8, 30
+    e.save()
+    url = reverse("konten:anmelden")
+    for _ in range(7):
+        client.post(url, {"username": "helfer", "password": "falsch"})
+    assert not anmeldesperre.ist_gesperrt("helfer")  # 7 von 8: noch nicht gesperrt
+    client.post(url, {"username": "helfer", "password": "falsch"})
+    assert anmeldesperre.ist_gesperrt("helfer")
+    antwort = client.post(url, {"username": "helfer", "password": PASSWORT})
+    assert "Bitte 30 Minuten warten" in antwort.content.decode()
+    # Der Admin sieht den Knopf bei der Person und hebt die Sperre sofort auf
+    seite = admin_client.get(reverse("konten:mitarbeiter", args=[helfer.pk])).content.decode()
+    assert "Anmelde-Sperre aufheben" in seite
+    admin_client.post(reverse("konten:anmeldesperre_aufheben", args=[helfer.pk]))
+    assert not anmeldesperre.ist_gesperrt("helfer")
+    assert client.post(url, {"username": "helfer", "password": PASSWORT}).status_code == 302
+    seite = admin_client.get(reverse("konten:mitarbeiter", args=[helfer.pk])).content.decode()
+    assert "Anmelde-Sperre aufheben" not in seite
 
 
 @pytest.mark.django_db

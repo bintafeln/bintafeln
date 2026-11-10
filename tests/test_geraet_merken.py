@@ -117,7 +117,8 @@ def test_admin_entfernt_und_ausschalten_loescht(admin_client, buero):
     assert not VertrautesGeraet.objects.exists()
     mit_code(client, codes[1])
     antwort = admin_client.post(reverse("konten:anmelde_einstellungen"),
-                                {"vertrauen_tage": 0, "protokoll_tage": 90})  # fmt: skip
+                                {"vertrauen_tage": 0, "protokoll_tage": 90, "fehlversuche": 5,
+                                 "sperre_minuten": 15})  # fmt: skip
     assert antwort.status_code == 302 and not VertrautesGeraet.objects.exists()
     # Neue Einrichtung der Zwei-Faktor-Anmeldung entzieht das Vertrauen ebenfalls
     tage(14)
