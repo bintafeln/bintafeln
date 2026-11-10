@@ -288,3 +288,23 @@ def test_korrektur_mit_pause(admin_client, fest):
     assert Zeitbuchung.objects.count() == 2
     b.refresh_from_db()
     assert timezone.localtime(b.ende).strftime("%H:%M") == "11:00"
+
+
+def test_arbeitszeiterfassung_abschaltbar(fest, ehrenamt, client, anmelden, admin):
+    """Die Tafel kann die Arbeitszeiterfassung ganz abschalten: Niemand stempelt mehr, der
+    Menüpunkt verschwindet; erfasste Zeiten bleiben."""
+    from django.urls import reverse
+
+    einstellen(ehrenamtliche_stempeln=True)
+    anmelden(client, fest)
+    assert "Meine Arbeitszeit" in client.get(reverse("core:start")).content.decode()
+    einstellen(aktiv=False)
+    assert not arbeitszeit.darf_stempeln(fest) and not arbeitszeit.darf_stempeln(ehrenamt)
+    assert "Meine Arbeitszeit" not in client.get(reverse("core:start")).content.decode()
+    assert client.post(reverse("personal:stempeln"), {"aktion": "kommen"}).status_code in (403, 404)
+    # Der Schalter steht in den Einstellungen und lässt sich wieder einschalten
+    anmelden(client, admin)
+    url = reverse("personal:arbeitszeit_einstellungen")
+    assert "Arbeitszeiterfassung nutzen" in client.get(url).content.decode()
+    client.post(url, {"aktiv": "on", "pausen_automatisch": "on", "offen_hoechstens_stunden": "14"})
+    assert arbeitszeit.darf_stempeln(fest)

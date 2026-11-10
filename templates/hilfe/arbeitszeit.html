@@ -6,4 +6,29 @@
   <li>Die Monatsübersicht zeigt Ihre Zeiten, Pausen und Summen.
     {% hilfe_bild "arbeitszeit-monat" "① Zeiten des Monats je Tag mit Pause und Arbeitszeit, unten die Summe; ② „← früher“ blättert zum Vormonat." %}</li>
   <li>Vergessen zu stempeln? Bitte an die Zuständigen wenden; sie können Zeiten nachtragen.</li>
-</ul>{% else %}<p>Stempeln ist für Ihr Konto nicht vorgesehen (z. B. ehrenamtlich, wenn die Tafel das nicht nutzt).</p>{% endif %}
+</ul>{% else %}<p>Stempeln ist für Ihr Konto derzeit nicht möglich. Dafür gibt es zwei Gründe: Die Tafel hat die
+  Arbeitszeiterfassung ausgeschaltet, oder Sie sind ehrenamtlich tätig und die Tafel lässt nur fest Angestellte
+  stempeln. Der Menüpunkt „Meine Arbeitszeit“ fehlt dann.</p>{% endif %}
+<h3>Wer stempelt?</h3>
+<ul>
+  <li><strong>Fest Angestellte</strong> stempeln immer, sobald die Arbeitszeiterfassung eingeschaltet ist. Ob jemand
+    fest angestellt oder ehrenamtlich ist, steht bei der Person unter „Mitarbeitende“ (Feld „Beschäftigung“).</li>
+  <li><strong>Ehrenamtliche</strong> stempeln nur, wenn die Tafel das zusätzlich erlaubt. Ihre Zeiten zählen als
+    Einsatzzeiten, nicht in ein Stundenkonto.</li>
+</ul>
+{% if "einstellungen.arbeitszeit" in rechte %}
+<h3>Arbeitszeiterfassung ein- und ausschalten</h3>
+<p>Menü <strong>„Einstellungen → Team → Arbeitszeiterfassung“</strong> (auch über die Suche oben: „Arbeitszeit“).</p>
+<ul>
+  <li><strong>Arbeitszeiterfassung nutzen</strong>: der Hauptschalter. Ausgeschaltet verschwindet „Meine
+    Arbeitszeit“ bei allen aus dem Menü, niemand kann mehr stempeln. Schon erfasste Zeiten bleiben erhalten und
+    zählen weiter im Stundenkonto; das Personal kann sie weiterhin ansehen und korrigieren.</li>
+  <li><strong>Auch Ehrenamtliche stempeln</strong>: erlaubt das Stempeln zusätzlich allen Ehrenamtlichen.</li>
+  <li><strong>Pausen automatisch abziehen</strong>: nach Arbeitszeitgesetz – mehr als 6 Stunden 30 Minuten, mehr als
+    9 Stunden 45 Minuten, soweit nicht schon selbst gestempelt.</li>
+  <li><strong>Offenes „Kommen“</strong>: nach wie vielen Stunden ein fehlendes „Gehen“ als vergessen gilt (Vorgabe
+    14 Stunden). Solche Tage erscheinen beim Personal zum Nachtragen.</li>
+</ul>
+<p>Sehen Sie den Menüpunkt nicht, fehlt Ihrer Rolle das Recht „Arbeitszeit“ im Abschnitt „Einstellungen“ (Einstellungen → Team →
+  Rollen und Rechte).</p>
+{% endif %}

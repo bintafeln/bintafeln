@@ -163,4 +163,5 @@ class ZeitbuchungForm(forms.Form):
 class ArbeitszeitEinstellungenForm(forms.ModelForm):
     class Meta:
         model = ArbeitszeitEinstellungen
-        fields = ["ehrenamtliche_stempeln", "pausen_automatisch", "offen_hoechstens_stunden"]
+        fields = ["aktiv", "ehrenamtliche_stempeln", "pausen_automatisch",
+                  "offen_hoechstens_stunden"]  # fmt: skip
