@@ -4,6 +4,7 @@ from auditlog.signals import accessed
 from django.contrib import messages
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
@@ -59,9 +60,9 @@ MAX_FOTOS = 10  # Seiten je Aufnahme
 @rollen.recht_erforderlich("kunden.dokument_foto")
 def foto(request, kundennummer):
     """Foto eines Nachweises (Bescheid, Behindertenausweis …) am Einlass oder beim Haushalt
-    aufnehmen – auch mehrere Seiten (ADR 0122). Jede Seite wird als Dokument des Haushalts
-    verschlüsselt abgelegt; eine Notiz hält fest, dass etwas abgelegt wurde. Ansehen darf die
-    Fotos nur, wer „Dokumente ansehen“ hat."""
+    aufnehmen – auch mehrere Seiten (ADR 0122). Jede Aufnahme wird sofort als Dokument des
+    Haushalts verschlüsselt abgelegt; eine Notiz hält fest, dass etwas abgelegt wurde. Ansehen
+    darf die Fotos nur, wer „Dokumente ansehen“ hat."""
     from django.urls import reverse
     from django.utils.http import url_has_allowed_host_and_scheme
 
@@ -90,19 +91,37 @@ def foto(request, kundennummer):
         messages.error(request, str(fehler))
         return redirect(zurueck)
     von = request.user.get_username()[:150]
-    for nr, (name, datei) in enumerate(namen, start=1):
-        seite = f" (Seite {nr} von {len(namen)})" if len(namen) > 1 else ""
+    heute = timezone.localdate()
+    # Jede Aufnahme wird sofort gespeichert; weitere Seiten desselben Nachweises zählen weiter
+    bisher = HaushaltDokument.objects.filter(
+        kundennummer=h.kundennummer, art=art, hochgeladen_von=von, hochgeladen_am__date=heute
+    ).count()
+    for nr, (name, datei) in enumerate(namen, start=bisher + 1):
+        seite = f" (Seite {nr})" if nr > 1 else ""
         HaushaltDokument.objects.create(
             kundennummer=h.kundennummer, art=art, titel=f"{art}{seite}"[:200], datei=name,
             typ=datei.content_type, groesse=datei.size, hochgeladen_von=von,
         )  # fmt: skip
-    seiten = "1 Seite" if len(namen) == 1 else f"{len(namen)} Seiten"
-    Notiz.objects.create(
-        kundennummer=h.kundennummer,
-        text=f"Foto abgelegt: {art} ({seiten})",
-        verfasst_von=(request.user.get_full_name() or request.user.get_username())[:100],
-        benutzer=request.user,
-    )
+    gesamt = bisher + len(namen)
+    seiten = "1 Seite" if gesamt == 1 else f"{gesamt} Seiten"
+    anfang = f"Foto abgelegt: {art} ("
+    notiz = Notiz.objects.filter(
+        kundennummer=h.kundennummer, benutzer=request.user, erstellt_am__date=heute,
+        text__startswith=anfang,
+    ).first()  # fmt: skip
+    if notiz:  # eine Notiz je Nachweis und Tag, nicht eine je Seite
+        notiz.text = f"{anfang}{seiten})"
+        notiz.save(update_fields=["text"])
+    else:
+        Notiz.objects.create(
+            kundennummer=h.kundennummer,
+            text=f"{anfang}{seiten})",
+            verfasst_von=(request.user.get_full_name() or request.user.get_username())[:100],
+            benutzer=request.user,
+        )
+    zurueck += (
+        "&" if "?" in zurueck else "?"
+    ) + "foto=1"  # Feld bleibt für die nächste Seite offen
     messages.success(request, f"{art}: {seiten} verschlüsselt beim Haushalt abgelegt.")
     return redirect(zurueck)
 

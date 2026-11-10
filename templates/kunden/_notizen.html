@@ -35,7 +35,7 @@
     {% endif %}
       {% csrf_token %}
       <input type="hidden" name="text" value="{{ v.text }}">
-      <button type="submit" class="knopf knopf-vorlage" title="Als Notiz speichern"><span aria-hidden="true">+ </span>{{ v.text }}</button>
+      <button type="submit" class="knopf knopf-vorlage" title="Als Notiz speichern"><span aria-hidden="true">{% if v.melden == "ausweis" %}🖨️ {% elif v.melden == "verlaengern" %}📄 {% else %}+ {% endif %}</span>{{ v.text }}</button>
     </form>
     {% endfor %}
   </div>
@@ -43,7 +43,7 @@
 
   {% if krankmeldung %}
   <details class="krank-melden">
-    <summary class="knopf knopf-vorlage"><span aria-hidden="true">🗓 </span>Abwesend melden …</summary>
+    <summary class="knopf knopf-vorlage"><span aria-hidden="true">🤒 </span>Abwesend melden …</summary>
     {% if notiz_htmx %}
     <form method="post" action="{% url 'ausgabe:krank' h.kundennummer %}" hx-post="{% url 'ausgabe:krank' h.kundennummer %}" hx-target="#einlass">
     {% else %}
@@ -66,7 +66,7 @@
   {% endif %}
 
   {% if foto_arten %}
-  <details class="krank-melden foto-aufnehmen">
+  <details class="krank-melden foto-aufnehmen"{% if request.GET.foto %} open{% endif %}>
     <summary class="knopf knopf-vorlage"><span aria-hidden="true">📷 </span>Foto aufnehmen …</summary>
     <form method="post" action="{% url 'kunden:dokument_foto' h.kundennummer %}" enctype="multipart/form-data">
       {% csrf_token %}
@@ -74,17 +74,16 @@
       <div class="krank-felder">
         <div class="feld"><label for="foto-art">Was wird fotografiert?</label>
           <select name="art" id="foto-art" required>{% for art in foto_arten %}<option value="{{ art.pk }}">{{ art }}</option>{% endfor %}</select></div>
-        <div class="feld"><label for="foto-dateien">Foto(s) – jede Seite einzeln</label>
-          <input type="file" name="fotos" id="foto-dateien" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment" multiple required data-foto-seiten></div>
+        <div class="feld"><label for="foto-dateien">Foto – jede Seite einzeln</label>
+          <input type="file" name="fotos" id="foto-dateien" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment" multiple required data-foto-sofort></div>
       </div>
-      <ul class="foto-seiten" data-foto-liste hidden></ul>
-      <p class="hinweis">Mehrere Seiten: nach jedem Foto erneut auf das Feld tippen und die nächste Seite aufnehmen – die
-        Seiten sammeln sich darunter (höchstens 10). Die Fotos werden verschlüsselt beim Haushalt abgelegt und
-        nach der Frist der Dokumentart automatisch gelöscht; ansehen kann sie nur die Verwaltung.</p>
-      <button type="submit" class="knopf knopf-zweitrangig">Foto(s) speichern</button>
+      <p class="hinweis" data-foto-meldung>Jedes Foto wird sofort gespeichert. Für weitere Seiten einfach erneut auf das
+        Feld tippen. Die Fotos werden verschlüsselt beim Haushalt abgelegt und nach der Frist der Dokumentart
+        automatisch gelöscht; ansehen kann sie nur die Verwaltung.</p>
+      <noscript><button type="submit" class="knopf knopf-zweitrangig">Foto speichern</button></noscript>
     </form>
   </details>
-  <script src="{% static 'js/foto_seiten.js' %}" defer></script>
+  <script src="{% static 'js/foto_sofort.js' %}" defer></script>
   {% endif %}
 
   {% if notiz_htmx %}
