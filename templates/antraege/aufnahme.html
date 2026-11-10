@@ -114,38 +114,50 @@
 
 {% elif schritt == "personen" %}
   <h2>3. Angehörige</h2>
-  <p class="hinweis">Aus dem Haushalt und dem Antrag vorausgefüllt. Mit „Weitere Person hinzufügen“ kommt eine leere Zeile dazu; Zeilen ohne Vorname werden ignoriert.</p>
+  <p class="hinweis">Aus dem Haushalt und dem Antrag vorausgefüllt. Mit „Weitere Person hinzufügen“ kommt eine leere Karte dazu; Karten ohne Vorname werden ignoriert.</p>
   <input type="hidden" name="anzahl" value="{{ personen|length }}">
-  <div class="tabelle-rahmen">
-  <table class="tabelle">
-    <thead><tr><th>Vorname</th><th>Nachname</th><th>Geburtsdatum</th>{% if staaten %}<th>Staatsangehörigkeit</th>{% endif %}{% if gdb_stufen %}<th>Behinderung</th>{% endif %}<th>Entfernen</th></tr></thead>
-    <tbody>
+  {# Je Person eine Karte mit beschrifteten Feldern (statt einer engen Tabelle) #}
+  <div class="personen-karten" data-zeilen>
     {% for p in personen %}
-      <tr{% if not p.vorname and not p.nachname %} data-leere-zeile{% endif %}>
-        <td data-titel="Vorname"><input type="hidden" name="p{{ forloop.counter0 }}_pk" value="{{ p.pk|default:'' }}"><input type="text" name="p{{ forloop.counter0 }}_vorname" value="{{ p.vorname }}" maxlength="100" aria-label="Vorname"></td>
-        <td data-titel="Nachname"><input type="text" name="p{{ forloop.counter0 }}_nachname" value="{{ p.nachname }}" maxlength="100" aria-label="Nachname"></td>
-        <td data-titel="Geburtsdatum"><input type="date" name="p{{ forloop.counter0 }}_geburtsdatum" value="{{ p.geburtsdatum }}" aria-label="Geburtsdatum"></td>
-        {% if staaten %}<td data-titel="Staatsangehörigkeit"><select name="p{{ forloop.counter0 }}_staatsangehoerigkeit" aria-label="Staatsangehörigkeit">{% for wert, name in staaten %}<option value="{{ wert }}"{% if wert == p.staatsangehoerigkeit %} selected{% endif %}>{{ name }}</option>{% endfor %}</select></td>{% endif %}
-        {% if gdb_stufen %}<td data-titel="Behinderung"><select name="p{{ forloop.counter0 }}_gdb" aria-label="Behinderung"><option value="">keine Angabe</option>{% for wert, name in gdb_stufen %}<option value="{{ wert }}"{% if wert == p.gdb %} selected{% endif %}>{{ name }}</option>{% endfor %}</select>
-          <span class="merkzeichen-auswahl">{% for code, bedeutung in merkzeichen_auswahl %}<label title="{{ bedeutung }}"><input type="checkbox" name="p{{ forloop.parentloop.counter0 }}_merkzeichen" value="{{ code }}"{% if code in p.merkzeichen_liste %} checked{% endif %}> {{ code }} <small>({{ bedeutung }})</small></label>{% endfor %}</span></td>{% endif %}
-        <td data-titel="Entfernen">{% if p.vorname %}<input type="checkbox" name="p{{ forloop.counter0 }}_weg" aria-label="{{ p.vorname }} entfernen">{% endif %}</td>
-      </tr>
+    <fieldset class="person-karte"{% if not p.vorname and not p.nachname %} data-leere-zeile{% endif %}>
+      <legend>{% if p.vorname or p.nachname %}{{ p.vorname }} {{ p.nachname }}{% else %}Weitere Person{% endif %}</legend>
+      <input type="hidden" name="p{{ forloop.counter0 }}_pk" value="{{ p.pk|default:'' }}">
+      <div class="person-felder">
+        <div class="feld"><label for="p{{ forloop.counter0 }}_vorname">Vorname</label>
+          <input type="text" name="p{{ forloop.counter0 }}_vorname" id="p{{ forloop.counter0 }}_vorname" value="{{ p.vorname }}" maxlength="100"></div>
+        <div class="feld"><label for="p{{ forloop.counter0 }}_nachname">Nachname</label>
+          <input type="text" name="p{{ forloop.counter0 }}_nachname" id="p{{ forloop.counter0 }}_nachname" value="{{ p.nachname }}" maxlength="100"></div>
+        <div class="feld"><label for="p{{ forloop.counter0 }}_geburtsdatum">Geburtsdatum</label>
+          <input type="date" name="p{{ forloop.counter0 }}_geburtsdatum" id="p{{ forloop.counter0 }}_geburtsdatum" value="{{ p.geburtsdatum }}"></div>
+        {% if staaten %}<div class="feld"><label for="p{{ forloop.counter0 }}_staatsangehoerigkeit">Staatsangehörigkeit</label>
+          <select name="p{{ forloop.counter0 }}_staatsangehoerigkeit" id="p{{ forloop.counter0 }}_staatsangehoerigkeit">{% for wert, name in staaten %}<option value="{{ wert }}"{% if wert == p.staatsangehoerigkeit %} selected{% endif %}>{{ name }}</option>{% endfor %}</select></div>{% endif %}
+        {% if gdb_stufen %}<div class="feld"><label for="p{{ forloop.counter0 }}_gdb">Behinderung (GdB)</label>
+          <select name="p{{ forloop.counter0 }}_gdb" id="p{{ forloop.counter0 }}_gdb"><option value="">keine Angabe</option>{% for wert, name in gdb_stufen %}<option value="{{ wert }}"{% if wert == p.gdb %} selected{% endif %}>{{ name }}</option>{% endfor %}</select></div>{% endif %}
+      </div>
+      {% if gdb_stufen %}
+      {# Merkzeichen erscheinen erst mit einem Grad der Behinderung (merkzeichen.js) #}
+      <div class="person-merkzeichen" data-merkzeichen-fuer="p{{ forloop.counter0 }}_gdb">
+        <span class="person-merkzeichen-titel">Merkzeichen</span>
+        <span class="merkzeichen-auswahl">{% for code, bedeutung in merkzeichen_auswahl %}<label title="{{ bedeutung }}"><input type="checkbox" name="p{{ forloop.parentloop.counter0 }}_merkzeichen" value="{{ code }}"{% if code in p.merkzeichen_liste %} checked{% endif %}> {{ code }} <small>({{ bedeutung }})</small></label>{% endfor %}</span>
+      </div>
+      {% endif %}
+      {% if p.vorname %}<label class="auswahl person-weg"><input type="checkbox" name="p{{ forloop.counter0 }}_weg"> Diese Person entfernen</label>{% endif %}
+    </fieldset>
     {% endfor %}
-    </tbody>
-  </table>
   </div>
   {# Leere Zeilen blendet leere_zeilen.js aus; der Knopf holt je Klick eine zurück. #}
   <p><button type="button" class="knopf knopf-zweitrangig" data-zeile-dazu hidden>+ Weitere Person hinzufügen</button>
     <span class="hinweis" data-keine-personen hidden>Keine weiteren Personen im Haushalt.</span></p>
   <script src="{% static 'js/leere_zeilen.js' %}" defer></script>
+  <script src="{% static 'js/merkzeichen.js' %}" defer></script>
 
 {% elif schritt == "bescheid" %}
   <h2>4. Bescheid und Gültigkeit des Ausweises</h2>
   <div class="formular-raster">
     <div class="feld">
-      <label for="einkommensart">Bescheidart</label>
-      <select name="einkommensart" id="einkommensart">
-        <option value="">– kein Bescheid –</option>
+      <label for="einkommensart">Bescheidart *</label>
+      <select name="einkommensart" id="einkommensart" required>
+        <option value="">– bitte wählen –</option>
         {% for art in arten %}<option value="{{ art.pk }}"{% if art.pk == art_gewaehlt %} selected{% endif %}>{{ art.bezeichnung }}</option>{% endfor %}
       </select>
       {% if "einstellungen.listen" in rechte %}<small class="hilfe">Die Liste pflegt der Admin unter Einstellungen → Einkommensarten.</small>{% endif %}
@@ -156,7 +168,7 @@
         {% for wert, titel in gueltigkeiten %}<option value="{{ wert }}"{% if wert == gueltig_gewaehlt %} selected{% endif %}>{{ titel }}</option>{% endfor %}
         <option value="eigenes"{% if gueltig_eigen %} selected{% endif %}>eigenes Datum …</option>
       </select>
-      <small class="hilfe">Gilt nur mit Bescheidart.{% if bisher_gueltig %} Bisher gültig bis {{ bisher_gueltig|date:"d.m.Y" }}.{% endif %}{% if "einstellungen.kundenstamm" in rechte %} Den Vorschlag stellt der Admin unter Einstellungen → Kundenstamm ein.{% endif %}</small>
+      <small class="hilfe">{% if bisher_gueltig %} Bisher gültig bis {{ bisher_gueltig|date:"d.m.Y" }}.{% endif %}{% if "einstellungen.kundenstamm" in rechte %} Den Vorschlag stellt der Admin unter Einstellungen → Kundenstamm ein.{% endif %}</small>
     </div>
     <div class="feld">
       <label for="gueltig_eigenes">Eigenes Datum</label>

@@ -235,6 +235,10 @@ def test_aufnahme_neuer_kunde(admin_client, bestand):
             "p1_geburtsdatum": "2018-02-03", "p0_staatsangehoerigkeit": "Ukraine",
             "p1_staatsangehoerigkeit": ""})  # fmt: skip
     art = Einkommensart.objects.get()
+    # Die Bescheidart ist Pflicht: ohne sie geht es weder weiter noch lässt sich speichern
+    ohne = schritt(admin_client, a, "bescheid", {"einkommensart": ""}).content.decode()
+    assert "Bitte eine Bescheidart wählen" in ohne and 'id="einkommensart" required' in ohne
+    assert "Bescheidart wählen" in schritt(admin_client, a, "pruefen", {}).content.decode()
     assert "festlegen" in schritt(admin_client, a, "bescheid",
                                   {"einkommensart": art.pk}).content.decode()  # fmt: skip
     alt = (timezone.localdate() - dt.timedelta(days=1)).isoformat()
@@ -283,6 +287,9 @@ def test_aufnahme_bestehender_kunde(admin_client, bestand):
             "wahl_strasse": "antrag", "wahl_telefon": "antrag"})  # fmt: skip
     seite = schritt(admin_client, a, "personen").content.decode()
     assert seite.count('value="Paul"') == 1 and 'value="Mia"' in seite  # Paul nicht doppelt
+    bis = aufnahme.gueltigkeit_auswahl(timezone.localdate(), KundenEinstellungen.laden())[0][0]
+    art = Einkommensart.objects.first() or Einkommensart.objects.create(bezeichnung="Rente")
+    schritt(admin_client, a, "bescheid", {"einkommensart": art.pk, "gueltig_bis": bis})
     gruppen = schritt(admin_client, a, "gruppe").content.decode()
     assert "(bisherige)" in gruppen  # eigene volle Gruppe bleibt wählbar
     schritt(admin_client, a, "pruefen", {})

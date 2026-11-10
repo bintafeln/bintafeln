@@ -297,9 +297,9 @@ def _post_bescheid(request, a, z, h):
     eigenes = request.POST.get("gueltig_eigenes", "")
     if gueltig == "eigenes":
         gueltig = eigenes
-    if art and not Einkommensart.objects.filter(pk=art).exists():
-        return "Bitte eine Bescheidart aus der Liste wählen."
-    if art and not gueltig:
+    if not art or not art.isdigit() or not Einkommensart.objects.filter(pk=art).exists():
+        return "Bitte eine Bescheidart wählen – ohne Bescheid ist keine Aufnahme möglich."
+    if not gueltig:
         return "Bitte festlegen, bis wann der Ausweis gilt."
     if gueltig:
         try:
@@ -309,8 +309,8 @@ def _post_bescheid(request, a, z, h):
         if datum < timezone.localdate():
             return "Die Gültigkeit darf nicht in der Vergangenheit liegen."
         gueltig = datum.isoformat()
-    z["einkommensart"] = int(art) if art else None
-    z["gueltig_bis"] = gueltig if art else ""
+    z["einkommensart"] = int(art)
+    z["gueltig_bis"] = gueltig
     return None
 
 
@@ -356,6 +356,8 @@ def _kontext_pruefen(request, a, z, h):
 def _post_pruefen(request, a, z, h):
     if not z.get("werte"):
         return "Bitte zuerst die Daten abgleichen."
+    if not z.get("einkommensart") and not (h and h.einkommensart_id):
+        return "Bitte zuerst im Schritt „Bescheid und Gültigkeit“ die Bescheidart wählen."
     if z.get("personen") is None:
         z["personen"] = _vorschlag_personen(a, h)
     if z.get("haushalt") and h is None:

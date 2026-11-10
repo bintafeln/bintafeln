@@ -640,6 +640,19 @@ details.kapazitaet-karte:not([open]) > summary::before { content: "▸"; }
 /* Formulare: Felder auf breiten Bildschirmen nebeneinander */
 /* Aufnahme-Assistent, Schritt 2 (neuer Kunde): kompakte Felder statt breiter Tabelle */
 .aufnahme-daten { max-width: 60rem; }
+/* Aufnahme-Assistent, Angehörige: je Person eine Karte mit beschrifteten Feldern */
+.personen-karten { display: grid; gap: 1rem; margin-bottom: 1rem; }
+.person-karte { margin: 0; padding: .75rem 1rem 1rem; border: 1px solid var(--rand);
+  border-radius: var(--radius); background: var(--flaeche); min-width: 0; }
+.person-karte legend { padding: 0 .4rem; font-weight: 700; font-size: 1.05rem; }
+.person-felder { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+  gap: 0 1rem; }
+.person-felder .feld { margin-bottom: .6rem; }
+.person-felder input, .person-felder select { width: 100%; }
+.person-merkzeichen { margin: 0 0 .6rem; }
+.person-merkzeichen-titel { display: block; font-weight: 600; }
+.person-merkzeichen .merkzeichen-auswahl { gap: .2rem 1.2rem; font-size: 1rem; }
+.person-weg { margin: .2rem 0 0; color: var(--text-leise, inherit); }
 .formular-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 0 1.5rem; }
 .formular-raster .feld-breit, .formular-raster .feld:has(textarea),
 .formular-raster .feld:has(select[multiple]), .formular-raster .feld:has(ul),
