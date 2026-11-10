@@ -97,3 +97,15 @@ def _heute_geb() -> dt.date:
     heute = timezone.localdate()
     # ein Geburtstag „heute", aber in einem früheren Jahr (29.02. gibt es 1980)
     return dt.date(1980, heute.month, heute.day)
+
+
+def test_letzte_sieben_tage(django_user_model, admin_client):
+    heute = dt.date(2026, 1, 3)
+    mitarbeiter(django_user_model, "Gestern", dt.date(1980, 1, 2))
+    mitarbeiter(django_user_model, "Silvester", dt.date(1990, 12, 31))  # über den Jahreswechsel
+    mitarbeiter(django_user_model, "Heute", dt.date(1985, 1, 3))  # heute zählt zu „nächste"
+    mitarbeiter(django_user_model, "Zulange", dt.date(1970, 12, 20))  # 14 Tage her
+    letzte = geburtstage.letzte(7, heute)
+    assert [g["name"] for g in letzte] == ["Gestern", "Silvester"]
+    assert letzte[0]["vor_tagen"] == 1 and letzte[0]["wurde"] == 46
+    assert letzte[1]["vor_tagen"] == 3 and letzte[1]["wurde"] == 35

@@ -91,6 +91,7 @@ def start(request):
         from apps.konten import geburtstage
 
         kontext["geburtstage"] = geburtstage.naechste(14, timezone.localdate())
+        kontext["geburtstage_letzte"] = geburtstage.letzte(7, timezone.localdate())
     kontext["modul_startseite"] = module.startseite(request)
     return render(request, "core/start.html", kontext)
 

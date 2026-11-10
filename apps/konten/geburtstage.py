@@ -88,6 +88,32 @@ def naechste(tage: int = 14, heute: dt.date | None = None) -> list[dict]:
     return ergebnis
 
 
+def letzte(tage: int = 7, heute: dt.date | None = None) -> list[dict]:
+    """Mitarbeitende, die in den letzten ``tage`` Tagen (ohne heute) Geburtstag hatten, der
+    jüngste zuerst – zum Nachgratulieren. Jeder Eintrag: Name, Tag, wurde-X-Jahre, vor-Tagen."""
+    heute = heute or dt.date.today()
+    beginn = heute - dt.timedelta(days=tage)
+    ergebnis = []
+    for a in _mitarbeitende():
+        geb = a.geburtsdatum
+        letzter = _dieses_jahr(geb, heute.year)
+        if letzter >= heute:
+            letzter = _dieses_jahr(geb, heute.year - 1)
+        if letzter < beginn:
+            continue
+        ergebnis.append(
+            {
+                "name": _name(a),
+                "geburtsdatum": geb,
+                "letzter": letzter,
+                "wurde": letzter.year - geb.year,
+                "vor_tagen": (heute - letzter).days,
+            }
+        )
+    ergebnis.sort(key=lambda e: (-e["letzter"].toordinal(), e["name"]))
+    return ergebnis
+
+
 MONATE = [
     "Januar", "Februar", "März", "April", "Mai", "Juni",
     "Juli", "August", "September", "Oktober", "November", "Dezember",
