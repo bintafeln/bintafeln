@@ -146,6 +146,16 @@ input::-webkit-date-and-time-value { text-align: left; margin: 0; }
 
 .filter { display: flex; flex-direction: column; gap: .25rem; margin-bottom: 1rem; }
 .tabelle-rahmen { overflow-x: auto; position: relative; }
+/* Spaltenbreite per Ziehen (spaltenbreite.js): Griff am rechten Rand der Überschrift */
+.spalten-griff { position: absolute; top: 0; right: -3px; width: 9px; height: 100%; cursor: col-resize;
+  touch-action: none; z-index: 1; }
+.spalten-griff::after { content: ""; position: absolute; top: 20%; bottom: 20%; left: 4px; width: 1px;
+  background: var(--rand); }
+.spalten-griff:hover::after, .spalte-wird-gezogen .spalten-griff::after { background: var(--akzent); width: 2px; }
+.spalte-wird-gezogen { cursor: col-resize; user-select: none; }
+.tabelle .breite-fest { overflow: hidden; text-overflow: ellipsis; }
+.spalten-breite-zurueck { margin-top: .5rem; }
+@media (max-width: 40rem) { .spalten-griff, .spalten-breite-zurueck { display: none; } }
 .tabelle { width: 100%; border-collapse: collapse; font-size: .95rem; }
 .tabelle th, .tabelle td { text-align: left; padding: .5rem; border-bottom: 1px solid var(--rand); vertical-align: top; }
 /* Vollständiges, dünnes Gitter (Zeilen- und Spaltentrenner). Im schmalen Karten-Modus unten
