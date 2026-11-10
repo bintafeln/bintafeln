@@ -1,10 +1,15 @@
 """Besuche eines Tages aus tafelarbeit.de übernehmen und das Kundenkonto stimmig machen (ADR 0110).
 
-Liest die Tages-Abholungsliste aus dem Bexat-Tafelprogramm (Excel **oder** CSV; nur Kundennummern,
-keine Namen) und trägt je Kunde den **Besuch** als Abholung nach. Der **Kontostand** wird dabei
-genau auf den Wert aus der Liste gesetzt – nicht direkt, sondern über eine **Korrektur-Buchung**
-(ADR 0014: Kundenkonto nur über ``apps.ausgabe.konto``). Weil der exportierte Stand Vorauszahlungen
-schon enthält, stimmt das Konto danach automatisch.
+Liest die Tages-Abholungsliste aus dem Bexat-Tafelprogramm (Excel **oder** CSV) und trägt je Kunde
+den **Besuch** als Abholung nach. Der **Kontostand** wird dabei genau auf den Wert aus der Liste
+gesetzt – nicht direkt, sondern über eine **Korrektur-Buchung** (ADR 0014: Kundenkonto nur über
+``apps.ausgabe.konto``). Weil der exportierte Stand Vorauszahlungen schon enthält, stimmt das Konto
+danach automatisch.
+
+Die Spalten werden tolerant über die Überschriften erkannt; das Datum heißt je nach Export
+„Letzter Besuch“ oder „Letzte Abholung“. Es geht auch eine **reine Kontostand-Liste** (alle Kunden
+mit Guthaben, ganz **ohne** Datumsspalte, zusätzliche Spalten wie Name/Vorname werden ignoriert):
+Dann wird nur der Kontostand gesetzt (kein Besuch nachgetragen).
 
 Vorgehen: erst :func:`plan` (Probelauf, bucht nichts) zeigt, was passieren würde; dann
 :func:`uebernehmen` legt die Abholungen an und bucht die Korrekturen in einer Transaktion. Beides
@@ -27,7 +32,7 @@ BREITE = 5  # Bexat zeigt die Kundennummer fünfstellig mit führenden Nullen
 
 SPALTEN = {
     "kundennummer": ("kundennummer", "nummer"),
-    "datum": ("letzter besuch", "besuch", "datum", "tag"),
+    "datum": ("letzter besuch", "besuch", "letzte abholung", "abholung", "datum", "tag"),
     "uhrzeit": ("uhrzeit", "zeit"),
     "betrag": ("beitrag", "betrag"),
     "kontostand": ("kontostand", "guthaben", "saldo", "konto"),
@@ -176,14 +181,26 @@ def lesen(daten: bytes) -> list[Zeile]:
 
 
 def _besuche_und_ziele(zeilen: list[Zeile]):
-    """(Besuche je Kunde+Tag, Ziel-Kontostand je Kunde = jüngster Tag mit Kontostand)."""
+    """(Besuche je Kunde+Tag, Ziel-Kontostand je Kunde).
+
+    Für den Kontostand zählt der jüngste Tag je Kunde. Zeilen **ohne** Datum setzen den Stand
+    ebenfalls – so lässt sich auch eine reine Kontostand-Liste (alle Kunden mit Guthaben, ohne
+    letzten Besuch) einlesen. Ein datierter Eintrag hat dabei Vorrang vor einem undatierten.
+    """
     besuche = [z for z in zeilen if z.datum]
-    ziele: dict[str, tuple[dt.date, Decimal]] = {}
+    ziele: dict[str, tuple[dt.date | None, Decimal]] = {}
     for z in zeilen:
-        if z.kontostand is None or z.datum is None:
+        if z.kontostand is None:
             continue
         vorhanden = ziele.get(z.kundennummer)
-        if vorhanden is None or z.datum >= vorhanden[0]:
+        if vorhanden is None:
+            ziele[z.kundennummer] = (z.datum, z.kontostand)
+            continue
+        alt_tag = vorhanden[0]
+        if z.datum is None:
+            if alt_tag is None:  # beide ohne Datum: der letzte Eintrag gewinnt
+                ziele[z.kundennummer] = (z.datum, z.kontostand)
+        elif alt_tag is None or z.datum >= alt_tag:  # datiert schlägt undatiert; jüngster gewinnt
             ziele[z.kundennummer] = (z.datum, z.kontostand)
     return besuche, ziele
 
@@ -264,9 +281,8 @@ def uebernehmen(zeilen: list[Zeile], von: str) -> dict:
                 continue
             differenz = ziel - (h.kontostand or Decimal("0"))
             if differenz != 0:
-                konto_.korrigieren(
-                    h, differenz, f"Abgleich tafelarbeit.de (Stand {tag:%d.%m.%Y})", von
-                )
+                stand = f"Stand {tag:%d.%m.%Y}" if tag else "aktueller Stand"
+                konto_.korrigieren(h, differenz, f"Abgleich tafelarbeit.de ({stand})", von)
                 korrekturen += 1
                 summe += differenz
 

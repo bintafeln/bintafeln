@@ -492,6 +492,46 @@ def test_besuche_konto_plan_und_uebernehmen():
     assert h.kontostand == Decimal("12")
 
 
+def test_besuche_konto_kontostandliste_letzte_abholung_und_ohne_datum():
+    """Liste „alle aktuellen Kunden mit Kontostand“: Kundennummer, Name, Vorname, letzte Abholung,
+    Kontostand. Die Spalte „letzte Abholung“ wird als Datum erkannt; Kunden ohne Datum (Guthaben,
+    aber kein letzter Besuch) werden trotzdem gesetzt."""
+    from decimal import Decimal
+
+    from apps.bexat import besuche_konto
+    from apps.kunden.models import Abholung, Haushalt
+
+    h1 = Haushalt.objects.create(kundennummer="01294", kontostand=Decimal("0"))
+    h2 = Haushalt.objects.create(kundennummer="08034", kontostand=Decimal("0"))
+    csv_bytes = (
+        "Kundennummer;Name;Vorname;letzte Abholung;Kontostand\n"
+        "01294;Muster;Erika;05.11.2026;4,50 €\n"
+        "08034;Ohnedatum;Hans;;12,00 €\n"
+    ).encode("utf-8-sig")
+
+    zeilen = besuche_konto.lesen(csv_bytes)
+    assert str(zeilen[0].datum) == "2026-11-05" and zeilen[0].kontostand == Decimal("4.5")
+    assert zeilen[1].datum is None and zeilen[1].kontostand == Decimal("12")
+
+    plan = besuche_konto.plan(zeilen)
+    assert len(plan["konto"]) == 2  # beide Kontostände würden gesetzt
+    assert plan["besuche_neu"] == 1  # nur der datierte Eintrag wird ein Besuch
+    assert plan["ohne_datum"] == 1
+
+    erg = besuche_konto.uebernehmen(zeilen, "Büro")
+    assert erg["korrekturen"] == 2
+    h1.refresh_from_db()
+    h2.refresh_from_db()
+    assert h1.kontostand == Decimal("4.5") and h2.kontostand == Decimal("12")
+    # Der Kunde ohne Datum bekommt den Stand, aber keine Abholung
+    assert Abholung.objects.filter(haushalt=h1).count() == 1
+    assert Abholung.objects.filter(haushalt=h2).count() == 0
+
+    # Zweiter Lauf ändert nichts doppelt
+    erg = besuche_konto.uebernehmen(zeilen, "Büro")
+    assert erg["korrekturen"] == 0
+
+
 def test_besuche_konto_unbekannte_nummer():
     from apps.bexat import besuche_konto
 

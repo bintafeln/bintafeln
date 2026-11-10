@@ -31,6 +31,11 @@ Kundennummern, keine Namen) mit Kundennummer, Tag, Betrag und **Kontostand**.
 - **Der exportierte Kontostand ist die Wahrheit.** Weil er Vorauszahlungen bereits enthält, stimmt
   das Konto nach der Korrektur automatisch – ohne dass einzelne Einzahlungen bekannt sein müssen.
   Bei mehreren Tagen in einer Datei zählt für den Kontostand der **jüngste** Tag je Kunde.
+- **Spalten tolerant, Datum optional (Nachtrag):** Das Datum heißt je nach Export „Letzter Besuch“
+  oder „Letzte Abholung“; beide werden erkannt. Nötig sind nur `Kundennummer` und `Kontostand`,
+  weitere Spalten (z. B. Name) werden übergangen. Eine reine **Kontostand-Liste ohne Datum** (alle
+  Kunden mit Guthaben) wird ebenfalls übernommen: Dann wird nur der Kontostand gesetzt (die
+  Korrektur-Buchung trägt „aktueller Stand“), ein Besuch wird mangels Datum nicht nachgetragen.
 - **Rechte:** Die Seite erfordert `kunden.importieren`; das Buchen der Kontostände erfordert
   zusätzlich `konto.korrektur`. Ohne dieses Recht ist „Übernehmen“ gesperrt.
 - **Keine Personendaten, keine festen Werte** im Code; die hochgeladene Datei wird nur gelesen,

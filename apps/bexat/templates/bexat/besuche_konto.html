@@ -5,17 +5,20 @@
   <p><a href="{% url 'bexat:start' %}">← Aus Bexat übernehmen</a></p>
   <h1>Besuche &amp; Konto nachtragen</h1>
   <p>Für die <strong>Übergangszeit</strong>, solange die Ausgabe noch in tafelarbeit.de geführt wird: die
-    <strong>Tagesliste der Abholungen</strong> (CSV oder Excel, nur Kundennummern – keine Namen) übernehmen.
-    bintafeln trägt je Kunde den <strong>Besuch</strong> als Abholung nach und setzt den
+    <strong>Tagesliste der Abholungen</strong> oder eine reine <strong>Kontostand-Liste</strong> (CSV oder
+    Excel) übernehmen. bintafeln trägt je Kunde den <strong>Besuch</strong> als Abholung nach und setzt den
     <strong>Kontostand</strong> genau auf den Wert aus der Liste – über eine nachvollziehbare
     Korrektur-Buchung. So sind auch <strong>Vorauszahlungen</strong> (z. B. der ganze Monat im Voraus)
     automatisch korrekt.</p>
   <h2>So sieht die Datei aus</h2>
   <ul>
-    <li>Spalten (Reihenfolge egal, die Überschriften müssen stimmen): <code>Kundennummer</code>,
-      <code>Letzter Besuch</code> bzw. <code>Datum</code>, dazu optional <code>Uhrzeit</code>,
-      <code>Beitrag</code> und <code>Kontostand</code>. Beträge mit oder ohne € und mit Komma
-      (z. B. <code>1,50 €</code>).</li>
+    <li>Spalten (Reihenfolge egal, die Überschriften müssen stimmen): <code>Kundennummer</code> und
+      <code>Kontostand</code>, dazu – wenn vorhanden – ein Datum (<code>Letzter Besuch</code>,
+      <code>Letzte Abholung</code> oder <code>Datum</code>) und optional <code>Uhrzeit</code> und
+      <code>Beitrag</code>. Weitere Spalten wie <code>Name</code> werden übergangen. Beträge mit oder
+      ohne € und mit Komma (z. B. <code>1,50 €</code>).</li>
+    <li>Eine reine <strong>Kontostand-Liste ohne Datum</strong> (alle Kunden mit Guthaben) geht auch:
+      Dann wird nur der Kontostand gesetzt, es wird kein Besuch nachgetragen.</li>
     <li>Mehrere Tage in einer Datei sind möglich: Der Besuch wird je Tag angelegt; für den Kontostand
       zählt je Kunde der <strong>jüngste</strong> Tag.</li>
     <li>Die Datei bleibt auf Ihrem Server; sie wird nur gelesen, nicht gespeichert.</li>
