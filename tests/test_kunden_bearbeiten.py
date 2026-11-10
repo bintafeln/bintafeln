@@ -278,8 +278,8 @@ def test_abholer_sperren_anmerkungen_ausnahmen(admin_client, h):
     assert '<option value="chefin" selected>chefin</option>' in seite  # vorbelegt
     # Datum vorbelegt: von heute bis in einem Jahr (überschreibbar)
     heute = dt.date.today()
-    assert f'value="{heute:%Y-%m-%d}"' in seite
-    assert f'value="{heute + dt.timedelta(days=365):%Y-%m-%d}"' in seite
+    assert f'value="{heute:%d.%m.%Y}"' in seite
+    assert f'value="{heute + dt.timedelta(days=365):%d.%m.%Y}"' in seite
     daten = {"von": "2026-02-01", "bis": "2026-01-01"}
     falsch = admin_client.post(url("teil_neu", "2001", "sperre"), daten).content.decode()
     assert "nicht vor" in falsch
