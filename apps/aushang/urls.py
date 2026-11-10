@@ -11,6 +11,8 @@ urlpatterns = [
     # Der Monitor ohne Anmeldung, nur mit dem Schlüssel im Link
     path("zeigen/<str:schluessel>/", views.anzeige, name="anzeige"),
     path("zeigen/<str:schluessel>/platz/", views.platz, name="platz"),
+    path("zeigen/<str:schluessel>/stempeln/", views.stempeln_monitor, name="stempeln"),
+    path("stempeln/<str:marke>/", views.stempeln_handy, name="stempeln_handy"),
     # Eigene PIN fürs Ändern am Monitor (jedes angemeldete Konto)
     path("meine-pin/", views.meine_pin, name="meine_pin"),
 ]

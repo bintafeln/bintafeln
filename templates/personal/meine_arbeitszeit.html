@@ -8,6 +8,7 @@
   {% else %}
     <p class="stempel-status">Nicht eingestempelt.</p>
   {% endif %}
+  {% if stempeln_erlaubt %}
   <form method="post" action="{% url 'personal:stempeln' %}">
     {% csrf_token %}
     {% if laufend %}
@@ -20,6 +21,11 @@
       <button type="submit" name="aktion" value="kommen" class="knopf stempeln">Kommen</button>
     {% endif %}
   </form>
+  {% else %}
+  <p class="hinweis"><strong>Stempeln geht nur am Aushang-Monitor vor Ort.</strong> Dort oben auf „Stempeln“ tippen und
+    entweder Namen und PIN eingeben oder den QR-Code mit diesem Handy scannen – danach erscheinen hier die Knöpfe
+    für ein paar Minuten. Ihre PIN legen Sie unter „Mein Konto“ (eigener Name oben rechts) fest.</p>
+  {% endif %}
   {% for b in vergessen %}
     <p class="sicherung sicherung-veraltet">Am {{ b.beginn|date:"d.m.Y" }} um {{ b.beginn|time:"H:i" }} fehlt das „Gehen“.
       Diese Zeit zählt erst, wenn die Zuständigen sie nachgetragen haben.</p>

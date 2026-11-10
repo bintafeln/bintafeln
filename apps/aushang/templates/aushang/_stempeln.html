@@ -1,0 +1,35 @@
+{# Fenster „Stempeln“ am Aushang-Monitor (ADR 0123); aushang.js schickt das Formular ab und holt laufend einen neuen QR-Code #}
+<form method="dialog" class="aushang-schliessen-zeile"><button type="submit" class="aushang-schliessen" aria-label="Schließen">✕</button></form>
+<h2>Arbeitszeit stempeln</h2>
+<p class="aushang-fehler" role="alert" hidden></p>
+<div class="aushang-stempeln">
+  {% if aushang.stempeln_pin %}
+  <form method="post" class="aushang-aktion" data-stempeln>
+    {% csrf_token %}
+    <h3>Mit Name und PIN</h3>
+    {% if personen %}
+    <div class="aushang-felder" data-stempeln-anmelden>
+      <label>Ich bin <select name="person" required><option value="">bitte wählen</option>{% for pk, name in personen %}<option value="{{ pk }}">{{ name }}</option>{% endfor %}</select></label>
+      <label>Meine PIN <input type="password" name="pin" inputmode="numeric" autocomplete="off" minlength="{{ mindestlaenge }}" required></label>
+    </div>
+    <button type="submit" class="knopf" data-stempeln-weiter>Weiter</button>
+    <div data-stempeln-wahl hidden>
+      <p class="aushang-stempeln-stand"><strong data-stempeln-name></strong> – <span data-stempeln-stand></span></p>
+      <div class="aktionsleiste" data-stempeln-knoepfe></div>
+    </div>
+    {% else %}
+    <p>Noch hat niemand eine PIN, für den Arbeitszeit erfasst wird. Die PIN legt jeder im Programm unter
+      „Mein Konto“ (eigener Name oben rechts) selbst fest.</p>
+    {% endif %}
+  </form>
+  {% endif %}
+  {% if qr %}
+  <div class="aushang-aktion aushang-stempeln-qr">
+    <h3>Mit dem Handy</h3>
+    <figure data-stempeln-qr data-wechsel="{{ wechsel }}">{{ qr|safe }}</figure>
+    <p class="aushang-dialog-hinweis">Code mit dem eigenen Handy scannen, dort anmelden und stempeln. Der Code ändert
+      sich laufend und gilt nur kurz.</p>
+  </div>
+  {% endif %}
+</div>
+{% if aushang.stempeln_pin and personen %}<p class="aushang-dialog-hinweis">Noch keine PIN? Im Programm unter „Mein Konto“ (eigener Name oben rechts) festlegen.</p>{% endif %}

@@ -28,6 +28,28 @@
 {% hilfe_bild "aushang-monitor" "Große Ansicht: ① je Seite ein Knopf, ② auf den eigenen Namen tippen, ③ QR-Code fürs Handy, ④ „Übersicht“ führt zurück." %}
 {% hilfe_bild "aushang-dialog" "„Ich bin … und kann nicht“: ① Grund und ② Dauer wählen, ③ eigene PIN eingeben, ④ „Austragen“." %}
 
+<h3>Arbeitszeit am Monitor stempeln</h3>
+<p>Nutzt die Tafel die Arbeitszeiterfassung, steht oben am Monitor der Knopf <strong>„⏱ Stempeln“</strong> – in der
+  Vorgabe nur an Monitoren, die einen Dienstplan zeigen. Ein Tipp öffnet ein Fenster mit zwei Wegen:</p>
+<ul>
+  <li><strong>Mit Name und PIN:</strong> den eigenen Namen wählen, die persönliche PIN eingeben, „Weiter“. Danach
+    erscheinen die passenden Knöpfe – <strong>Kommen</strong>, <strong>Pause</strong> / <strong>Pause beenden</strong>
+    oder <strong>Gehen</strong> – und der Monitor bestätigt Name und Uhrzeit. Zur Auswahl stehen nur Personen, für die
+    Arbeitszeit erfasst wird und die eine PIN haben.</li>
+  <li><strong>Mit dem Handy:</strong> den QR-Code im Fenster mit dem eigenen Handy scannen, dort anmelden – unter
+    „Meine Arbeitszeit“ lässt sich dann einige Minuten lang stempeln. Der Code ändert sich alle 30 Sekunden und
+    gilt nur kurz; ein abfotografierter Code nützt später nichts.</li>
+</ul>
+<p>So lässt sich nur vor Ort stempeln, ohne ein eigenes Stempel-Gerät. Das Fenster schließt sich nach zwei Minuten
+  von selbst.</p>
+{% if "aushang.einrichten" in rechte %}
+<p><strong>Einstellen</strong> (je Monitor, unter „Einstellungen → Dienstpläne → Aushang-Monitore“):
+  <strong>Arbeitszeit stempeln</strong> – „Vorgabe: nur an Monitoren mit einem Dienstplan“, „ja, an diesem Monitor“
+  oder „nein“; dazu einzeln <strong>Stempeln mit Name und PIN</strong> und <strong>Stempeln mit QR-Code</strong>.
+  Ob <em>nur noch</em> am Monitor gestempelt werden darf, legt der Schalter „Stempeln nur am Aushang-Monitor“ unter
+  „Einstellungen → Team → Arbeitszeiterfassung“ fest.</p>
+{% endif %}
+
 <h3>PIN für Aushang-Monitore</h3>
 <p>Unter <strong>Mein Konto</strong> (eigener Name oben rechts) → <strong>PIN für Aushang-Monitore</strong> legt jede Person ihre eigene PIN fest: mindestens
   6 Ziffern, keine einfache Folge wie 111111 oder 123456. Gespeichert wird nur ein Prüfwert, nicht die PIN selbst; mit
@@ -49,7 +71,8 @@
     Seite). Mit ↑ und ↓ ändern Sie die
     Reihenfolge, ✕ entfernt eine Seite. Seiten eines Plans kann nur hinzufügen, wer diesen Plan planen darf.</li>
   <li><strong>Seiten gleichzeitig</strong> (eine im Wechsel oder zwei nebeneinander), <strong>Sekunden je Seite</strong>,
-    <strong>QR-Code fürs Handy</strong> und <strong>Ändern am Monitor</strong> (mit persönlicher PIN) einstellen.</li>
+    <strong>QR-Code fürs Handy</strong>, <strong>Ändern am Monitor</strong> (mit persönlicher PIN) und
+    <strong>Arbeitszeit stempeln</strong> (siehe oben) einstellen.</li>
   <li>Den <strong>Link für den Monitor</strong> im Browser des Monitor-PCs öffnen. Er braucht keine Anmeldung; der
     geheime Schlüssel steckt im Link. Nur auf Geräten der Tafel öffnen. Am besten den Browser gleich im Vollbild starten
     (Chrome oder Chromium mit <code>--kiosk</code> und dem Link), sonst einmal oben rechts auf „Vollbild“ tippen.</li>

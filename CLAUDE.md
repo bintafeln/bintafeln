@@ -325,7 +325,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Module über `Modul.aushang` als `Aushangseite` an, z. B. `apps/dienstplan/aushang.py`; Inhalt in
   `apps/aushang/anzeige.py`, Wechsel, große Ansicht und Dialog in `static/js/aushang.js`; nur Namen
   zeigen; Ändern am Monitor nur mit persönlicher PIN über `apps/aushang/pin.py`, die Rechte prüft
-  `Aushangseite.aendern` des Moduls).
+  `Aushangseite.aendern` des Moduls). Arbeitszeit am Monitor stempeln (ADR 0123): Regeln in
+  `apps/aushang/stempeln.py` (wo: `an()`, QR-Marke `marke()`/`einloesen()`), mit PIN oder
+  wechselndem QR-Code; „nur am Monitor“ über `arbeitszeit.hier_erlaubt()`/`freigeben()`.
   `bexat` (ADR 0006 ergänzt, ADR 0100, Übernahme aus dem Bexat-Tafelprogramm/tafelarbeit.de):
   reine Umwandlung in `apps/bexat/konvertieren.py` (`umwandeln(bytes)` → neutrale Importformat-Dateien),
   herstellerweite Code-Tabellen in `apps/bexat/codes.py`, je-Tafel-Zuordnungen (Ausgabestellen,

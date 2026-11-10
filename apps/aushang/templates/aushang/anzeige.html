@@ -11,7 +11,7 @@
 </head>
 {# Aushang-Monitor (ADR 0080): ganzseitig, ohne Menü. aushang.js wechselt die Seiten, passt die Schrift an, lädt jede Minute neu; Antippen zeigt einen Plan groß, dort lässt er sich mit persönlicher PIN ändern #}
 <body class="aushang" data-sekunden="{{ aushang.sekunden }}" data-nebeneinander="{{ aushang.nebeneinander }}"
-      data-aendern="{{ aushang.aendern|yesno:'1,' }}" data-platz-url="{{ platz_url }}">
+      data-aendern="{{ aushang.aendern|yesno:'1,' }}" data-platz-url="{{ platz_url }}" data-stempeln-url="{{ stempeln_url }}">
   {% csrf_token %}
   <header class="aushang-kopf">
     <span class="aushang-uebersicht-nur">{{ jetzt|date:"l, d.m.Y" }}</span>
@@ -21,6 +21,7 @@
       {% if folien|length > 1 %}{% for titel, html, qr, kurz in folien %}<button type="button" data-nr="{{ forloop.counter0 }}">{{ kurz }}</button>{% endfor %}{% endif %}
     </nav>
     <span><span id="aushang-stand">Stand {{ jetzt|time:"H:i" }} Uhr</span>
+      {% if stempeln_url %}<button type="button" class="aushang-stempeln-knopf" id="aushang-stempeln">⏱ Stempeln</button>{% endif %}
       <button type="button" class="aushang-vollbild" id="aushang-vollbild" hidden>Vollbild</button></span>
   </header>
   <main id="aushang-folien" class="aushang-folien">

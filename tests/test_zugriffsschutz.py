@@ -52,6 +52,8 @@ OEFFENTLICH = {
     # Aushang-Monitor ohne Anmeldung, nur mit dem Schlüssel im Link (ADR 0080)
     "aushang:anzeige",
     "aushang:platz",  # Ändern nur mit persönlicher PIN
+    "aushang:stempeln",  # Stempeln nur mit persönlicher PIN (ADR 0123)
+    "aushang:stempeln_handy",  # QR-Code vom Monitor: gibt nur frei, gestempelt wird angemeldet
 }
 
 # Für jedes angemeldete Konto, auch ohne Rechte

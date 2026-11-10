@@ -12,7 +12,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods, require_POST
 
 from apps.aushang import anzeige as inhalt
-from apps.aushang import pin
+from apps.aushang import pin, stempeln
 from apps.aushang.forms import AushangForm, NeuForm, PinForm, SeiteForm, ZeitraumForm
 from apps.aushang.models import Aushang, AushangSeite, MonitorPin, neuer_schluessel
 from apps.core import module, papierkorb
@@ -151,6 +151,8 @@ def anzeige(request, schluessel):
     return render(request, "aushang/anzeige.html", {
         "aushang": aushang, "folien": folien, "jetzt": jetzt,
         "platz_url": reverse("aushang:platz", args=[schluessel]),
+        "stempeln_url": reverse("aushang:stempeln", args=[schluessel])
+        if stempeln.an(aushang) else "",
     })  # fmt: skip
 
 
@@ -175,6 +177,85 @@ def platz(request, schluessel):
     if dialog is None:
         raise Http404
     return render(request, "aushang/_platz.html", {"d": dialog, "mindestlaenge": pin.MINDESTLAENGE})
+
+
+def _qr_stempeln(request, aushang) -> str:
+    adresse = request.build_absolute_uri(
+        reverse("aushang:stempeln_handy", args=[stempeln.marke(aushang)])
+    )
+    return segno.make(adresse, error="m").svg_inline(
+        scale=4, omitsize=True, title="QR-Code: mit dem Handy stempeln"
+    )
+
+
+@never_cache
+@require_http_methods(["GET", "POST"])
+def stempeln_monitor(request, schluessel):
+    """Fenster „Stempeln“ am Monitor (GET, mit ``?qr=1`` nur ein frischer QR-Code) und das
+    Stempeln mit Name und persönlicher PIN (POST): erst prüfen, dann Kommen, Pause oder Gehen."""
+    from apps.personal import arbeitszeit
+
+    aushang, leer = _aushang_oder_nichts(request, schluessel)
+    if leer:
+        return leer
+    if not stempeln.an(aushang):
+        raise Http404
+    if request.method == "GET":
+        if request.GET.get("qr"):
+            if not aushang.stempeln_qr:
+                raise Http404
+            return HttpResponse(_qr_stempeln(request, aushang), content_type="image/svg+xml")
+        return render(request, "aushang/_stempeln.html", {
+            "aushang": aushang, "mindestlaenge": pin.MINDESTLAENGE,
+            "personen": stempeln.mit_pin() if aushang.stempeln_pin else [],
+            "qr": _qr_stempeln(request, aushang) if aushang.stempeln_qr else "",
+            "wechsel": stempeln.WECHSEL_SEKUNDEN,
+        })  # fmt: skip
+    if not aushang.stempeln_pin:
+        raise Http404
+    try:
+        person = pin.pruefen(request.POST.get("person"), request.POST.get("pin"))
+    except ValueError as fehler:
+        return JsonResponse({"ok": False, "fehler": str(fehler)})
+    if not arbeitszeit.erfasst(person):
+        return JsonResponse({"ok": False, "fehler": "Für diese Person wird keine Arbeitszeit "
+                             "erfasst."})  # fmt: skip
+    aktion = request.POST.get("aktion", "")
+    if aktion not in ("kommen", "pause", "gehen"):  # erst nur prüfen: was kann sie stempeln?
+        text, moeglich = arbeitszeit.stand(person)
+        return JsonResponse({"ok": True, "name": str(person), "stand": text,
+                             "aktionen": moeglich})  # fmt: skip
+    try:
+        meldung = arbeitszeit.stempeln(person, aktion)
+    except arbeitszeit.StempelFehler as fehler:
+        return JsonResponse({"ok": False, "fehler": str(fehler)})
+    return JsonResponse({"ok": True, "fertig": True, "meldung": f"{person}: {meldung}"})
+
+
+@never_cache
+def stempeln_handy(request, marke):
+    """Ziel des QR-Codes am Monitor: Dieses Handy darf für ein paar Minuten stempeln. Die
+    Freigabe hängt an der Sitzung und bleibt über die Anmeldung erhalten – wer noch nicht
+    angemeldet ist, meldet sich danach an (der Code selbst gilt nur kurz)."""
+    from django.contrib.auth.views import redirect_to_login
+
+    from apps.personal import arbeitszeit
+
+    ziel = reverse("personal:meine_arbeitszeit")
+    gueltig = stempeln.einloesen(marke) is not None
+    if gueltig:
+        arbeitszeit.freigeben(request)
+    if not request.user.is_authenticated:
+        return redirect_to_login(ziel)
+    if not arbeitszeit.darf_stempeln(request.user):
+        messages.error(request, "Für Ihr Konto wird keine Arbeitszeit erfasst.")
+        return redirect("core:start")
+    if gueltig:
+        messages.success(request, "Vor Ort bestätigt: Sie können jetzt stempeln.")
+    else:
+        messages.error(request, "Dieser QR-Code ist abgelaufen. Bitte den Code am Monitor noch "
+                       "einmal scannen – er ändert sich laufend.")  # fmt: skip
+    return redirect(ziel)
 
 
 @never_cache

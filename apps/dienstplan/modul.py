@@ -71,6 +71,7 @@ def aushang():
             seiten.folien,
             platz=seiten.platz,
             aendern=seiten.aendern,
+            stempeln_standard=True,  # am Dienstplan-Monitor wird in der Vorgabe gestempelt
         )
     ]
 
