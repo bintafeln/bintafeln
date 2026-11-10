@@ -9,6 +9,7 @@ import json
 
 from django import forms
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 from apps.ausgabe.ampel import WOCHENTAGE
 from apps.core.auswahl import (
@@ -289,6 +290,13 @@ class SperreForm(MitVonMixin, forms.ModelForm):
     def __init__(self, *args, angemeldet=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.von_einbauen(angemeldet)
+        # Neue Sperre: von heute bis in einem Jahr vorbelegen (überschreibbar; „bis“ leeren =
+        # unbefristet)
+        if not self.instance.pk:
+            heute = timezone.localdate()
+            # über ``self.initial``: die Werte der (leeren) Instanz hätten sonst Vorrang
+            self.initial["von"] = self.initial.get("von") or heute
+            self.initial["bis"] = self.initial.get("bis") or heute + dt.timedelta(days=365)
 
     def clean(self):
         daten = super().clean()
