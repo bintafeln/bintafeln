@@ -277,6 +277,12 @@ class MailEinstellungen(models.Model):
     absender = models.EmailField(
         "Absenderadresse", blank=True, help_text="Leer = E-Mail der Tafel aus den Einstellungen."
     )
+    archiv_tage = models.PositiveSmallIntegerField(
+        "Gesendete Mails aufbewahren (Tage)", default=90,
+        validators=[MaxValueValidator(3650)],
+        help_text="So lange stehen gesendete Mails unter „Gesendete Mails“ zum Nachlesen; danach "
+        "werden sie automatisch gelöscht. 0 = nichts aufbewahren.",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "E-Mail-Einstellungen"
@@ -301,6 +307,32 @@ class MailEinstellungen(models.Model):
     @property
     def eingerichtet(self) -> bool:
         return bool(self.server and self.absenderadresse)
+
+
+class GesendeteMail(models.Model):
+    """Archiv der gesendeten Mails (ADR 0124): zum Nachlesen, für eine einstellbare Zeit. Anhänge
+    nur mit Name und Größe; Mails mit Zugangsdaten ohne Inhalt. Nicht im Änderungsprotokoll,
+    damit der Inhalt mit der Frist wirklich verschwindet – protokolliert wird nur der Abruf."""
+
+    gesendet_am = models.DateTimeField("Gesendet am", auto_now_add=True, db_index=True)
+    an = models.TextField("Empfänger")
+    betreff = models.CharField("Betreff", max_length=300)
+    art = models.CharField("Art", max_length=30, blank=True, db_index=True)
+    text = models.TextField("Inhalt", blank=True)
+    anhaenge = models.JSONField("Anhänge", default=list, blank=True)
+    vertraulich = models.BooleanField(
+        "Enthält Zugangsdaten", default=False,
+        help_text="Der Inhalt wurde nicht gespeichert.",
+    )  # fmt: skip
+    fehler = models.CharField("Fehler", max_length=300, blank=True)
+
+    class Meta:
+        verbose_name = "Gesendete Mail"
+        verbose_name_plural = "Gesendete Mails"
+        ordering = ["-gesendet_am", "-pk"]
+
+    def __str__(self):
+        return f"Mail „{self.betreff}“ an {self.an}"
 
 
 class SicherungsAuftrag(models.Model):

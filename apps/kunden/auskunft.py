@@ -201,6 +201,17 @@ def kunde_pdf(h: Haushalt) -> bytes:
         rechts=[3],
     )  # fmt: skip
 
+    if h.email:
+        from apps.core.models import GesendeteMail
+
+        mails = GesendeteMail.objects.filter(an__icontains=h.email).defer("text")[:200]
+        if mails:
+            doc.ueberschrift("Mails von bintafeln an Ihre Adresse (Archiv)")
+            doc.tabelle(
+                ["Gesendet", "Betreff"],
+                [[f"{timezone.localtime(m.gesendet_am):%d.%m.%Y %H:%M}", m.betreff] for m in mails],
+            )
+
     doc.ueberschrift("Wer die Daten aufgerufen hat")
     doc.tabelle(
         ["Zeitpunkt", "Mitarbeiterkonto"],

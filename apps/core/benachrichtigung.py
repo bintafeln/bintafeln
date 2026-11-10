@@ -161,7 +161,7 @@ def melden(art: str, an: Iterable[str], betreff: str, text: str, schluessel="") 
                                faellig_am=faellig_am(konto, wie))  # fmt: skip
     if sofort:
         try:
-            mail.senden(betreff, text, sofort)
+            mail.senden(betreff, text, sofort, art="benachrichtigung")
         except mail.MailFehler as fehler:
             log.warning("Benachrichtigung %s nicht gesendet: %s", art, fehler)
 
@@ -197,7 +197,7 @@ def senden(jetzt=None) -> int:
                    else f"{tafel}: {len(liste)} Benachrichtigungen")  # fmt: skip
         try:
             mail.senden(betreff, ("\n\n" + "─" * 30 + "\n\n").join(teile) + fuss,
-                        [benutzer.email])  # fmt: skip
+                        [benutzer.email], art="benachrichtigung")  # fmt: skip
         except mail.MailFehler as fehler:
             log.warning("Gesammelte Benachrichtigung an %s nicht gesendet: %s", benutzer, fehler)
             behalten |= {m.pk for m in liste}  # beim nächsten Lauf noch einmal

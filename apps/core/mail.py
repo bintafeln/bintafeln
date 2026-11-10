@@ -66,14 +66,64 @@ def verbindung_pruefen() -> None:
         verbindung.close()
 
 
+# Wofür eine Mail gesendet wurde – im Archiv „Gesendete Mails“ zum Filtern (ADR 0124)
+ARTEN = {
+    "zugang": "Zugang und Passwort",
+    "benachrichtigung": "Benachrichtigung",
+    "antrag": "Antrag",
+    "warteliste": "Warteliste",
+    "spenden": "Spenden",
+    "serienbrief": "Serienbrief",
+    "aufruf": "Aufruf",
+    "export": "Listen-Export",
+    "test": "Testmail",
+}
+OHNE_INHALT = "(Inhalt nicht gespeichert: Die Mail enthält Zugangsdaten.)"
+
+
+def _archivieren(betreff, text, an, anhaenge, art, vertraulich, fehler="") -> None:
+    """Hält die Mail im Archiv fest, wenn die Tafel eines führt: Anhänge nur mit Name und
+    Größe, Mails mit Zugangsdaten ohne Inhalt."""
+    from apps.core.models import GesendeteMail
+
+    if not MailEinstellungen.laden().archiv_tage:
+        return
+    GesendeteMail.objects.create(
+        an=", ".join(an), betreff=betreff[:300], art=art if art in ARTEN else "",
+        text="" if vertraulich else text, vertraulich=vertraulich, fehler=fehler[:300],
+        anhaenge=[{"name": name, "groesse": len(inhalt), "typ": typ}
+                  for name, inhalt, typ in anhaenge],
+    )  # fmt: skip
+
+
+def fristen_anwenden(jetzt=None) -> int:
+    """Löscht archivierte Mails, die älter als die eingestellte Frist sind (ADR 0124)."""
+    import datetime as dt
+
+    from django.utils import timezone
+
+    from apps.core.models import GesendeteMail
+
+    tage = MailEinstellungen.laden().archiv_tage
+    grenze = (jetzt or timezone.now()) - dt.timedelta(days=tage)
+    return GesendeteMail.objects.filter(gesendet_am__lt=grenze).delete()[0]
+
+
 def senden(betreff: str, text: str, an: list[str], html: str | None = None,
-           anhaenge=()) -> None:  # fmt: skip
+           anhaenge=(), art: str = "", vertraulich: bool = False) -> None:  # fmt: skip
     """Sendet ``text``; mit ``html`` zusätzlich eine gestaltete Fassung (Mailprogramme wählen).
 
-    ``anhaenge`` = [(Dateiname, Inhalt, Medientyp)], z. B. ein PDF.
+    ``anhaenge`` = [(Dateiname, Inhalt, Medientyp)], z. B. ein PDF. ``art`` (Schlüssel aus
+    ``ARTEN``) ordnet die Mail im Archiv ein; ``vertraulich`` bei Zugangsdaten (Link zum
+    Passwort): Dann steht sie ohne Inhalt im Archiv. Auch ein Fehlschlag wird festgehalten.
     """
+    anhaenge = list(anhaenge)
     e = MailEinstellungen.laden()
-    verbindung = _verbindung(e)
+    try:
+        verbindung = _verbindung(e)
+    except MailFehler as fehler:
+        _archivieren(betreff, text, an, anhaenge, art, vertraulich, str(fehler))
+        raise
     nachricht = EmailMultiAlternatives(betreff, text, e.absenderadresse, an, connection=verbindung)
     if html:
         nachricht.attach_alternative(html, "text/html")
@@ -82,4 +132,7 @@ def senden(betreff: str, text: str, an: list[str], html: str | None = None,
     try:
         nachricht.send()
     except (smtplib.SMTPException, OSError) as fehler:
-        raise MailFehler(_verstaendlich(fehler)) from fehler
+        verstaendlich = _verstaendlich(fehler)
+        _archivieren(betreff, text, an, anhaenge, art, vertraulich, verstaendlich)
+        raise MailFehler(verstaendlich) from fehler
+    _archivieren(betreff, text, an, anhaenge, art, vertraulich)

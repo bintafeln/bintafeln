@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block titel %}Mail: {{ m.betreff }}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'core:mails' %}">← Gesendete Mails</a></p>
+  <h1>{{ m.betreff|default:"(ohne Betreff)" }}</h1>
+  {% if m.fehler %}<p class="sicherung sicherung-veraltet"><strong>Nicht gesendet:</strong> {{ m.fehler }}</p>{% endif %}
+  <dl class="angaben">
+    <dt>Gesendet am</dt><dd>{{ m.gesendet_am|date:"d.m.Y H:i" }} Uhr</dd>
+    <dt>An</dt><dd>{{ m.an }}</dd>
+    <dt>Art</dt><dd>{{ art_text }}</dd>
+    <dt>Anhänge</dt><dd>{% for a in m.anhaenge %}{{ a.name }} ({{ a.groesse|filesizeformat }}){% if not forloop.last %}, {% endif %}{% empty %}–{% endfor %}</dd>
+  </dl>
+  {% if m.anhaenge %}<p class="hinweis">Die Anhänge selbst werden nicht aufbewahrt; sie lassen sich im Programm neu erzeugen.</p>{% endif %}
+  <h2>Inhalt</h2>
+  {% if m.vertraulich %}<p class="hinweis">Der Inhalt wurde nicht gespeichert: Diese Mail enthält Zugangsdaten (z. B. den Link zum neuen Passwort).</p>
+  {% else %}<pre class="mail-text">{{ m.text }}</pre>{% endif %}
+</section>
+{% endblock %}

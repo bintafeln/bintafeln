@@ -235,7 +235,7 @@ def _bestaetigen(request, antrag) -> str:
         return ""
     betreff, text, gestaltet = antwortmail(request, antrag)
     try:
-        mail.senden(betreff, text, [antrag.email], html=gestaltet)
+        mail.senden(betreff, text, [antrag.email], html=gestaltet, art="antrag")
     except mail.MailFehler as fehler:
         logger.warning("Bestätigung für Antrag %s nicht gesendet: %s", antrag.nummer, fehler)
         return ""

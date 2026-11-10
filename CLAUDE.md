@@ -262,7 +262,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Auskunft. In Tests liest die Fixture `pdf_text` den Text aus
   dem PDF.
 - Mails nur über `apps.core.mail.senden()` (Mailserver aus der Datenbank, verständliche
-  `MailFehler`). Benachrichtigungen an Mitarbeitende nur über
+  `MailFehler`; mit `art=` aus `mail.ARTEN`, bei Zugangsdaten `vertraulich=True` – jede Mail
+  landet im Archiv `GesendeteMail`, Frist `MailEinstellungen.archiv_tage`, ADR 0124). Benachrichtigungen an Mitarbeitende nur über
   `apps.core.benachrichtigung.melden(art, an, …, schluessel)` (Häufigkeit je Person, Erledigtes
   entfällt über `Art.offen`; neue Arten in `KERN` bzw. `Modul.benachrichtigungen`; ADR 0086). Geheimnisse in der Datenbank nur über `apps.core.geheimnis` verschlüsselt
   speichern (ADR 0016). In Tests landen Mails in `django.core.mail.outbox`.

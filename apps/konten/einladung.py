@@ -51,7 +51,9 @@ def senden(request, benutzer, art: str) -> None:
     text = render_to_string(
         f"mail/{art}.txt", {"benutzer": benutzer, "link": link(request, benutzer), "tafel": tafel}
     )
-    mail.senden(BETREFF[art].format(tafel=tafel), text, [benutzer.email])
+    # Der Link öffnet das Konto: im Archiv der gesendeten Mails ohne Inhalt (ADR 0124)
+    mail.senden(BETREFF[art].format(tafel=tafel), text, [benutzer.email], art="zugang",
+                vertraulich=True)  # fmt: skip
 
 
 def freigabe_senden(request, benutzer, basis: str) -> None:
@@ -70,4 +72,5 @@ def freigabe_senden(request, benutzer, basis: str) -> None:
             "passwort_hinweis": FREIGABE_PASSWORT.get(basis, FREIGABE_PASSWORT["geburtsdatum"]),
         },
     )
-    mail.senden(BETREFF[FREIGABE].format(tafel=tafel), text, [benutzer.email])
+    mail.senden(BETREFF[FREIGABE].format(tafel=tafel), text, [benutzer.email], art="zugang",
+                vertraulich=True)  # fmt: skip

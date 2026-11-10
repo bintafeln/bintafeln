@@ -147,6 +147,9 @@ KATALOG = [
     Recht("einstellungen.rollen", EINSTELLUNGEN, "Rollen und Rechte",
           "Nur Rechte, die man selbst hat, lassen sich weitergeben."),
     Recht("protokoll.sehen", EINSTELLUNGEN, "Änderungsprotokoll ansehen"),
+    Recht("system.mails", EINSTELLUNGEN, "Gesendete Mails ansehen",
+          "Archiv aller Mails, die das Programm verschickt hat – mit Empfängern und Inhalt. "
+          "Jeder Abruf einer Mail wird protokolliert."),
     Recht("system.status", EINSTELLUNGEN, "Sicherungsstand und Version sehen"),
     Recht("system.update", EINSTELLUNGEN, "Programm aktualisieren (Update starten)",
           "Neue oder ältere Version einspielen. Vorher wird gesichert."),

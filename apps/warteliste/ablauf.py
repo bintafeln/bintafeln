@@ -328,7 +328,8 @@ def _senden(antrag, termin, absage=False) -> str:
     betreff, text, html = mail_inhalt(antrag, termin, absage)
     anhaenge = [] if absage else _wegbeschreibung_anhang(WartelisteEinstellungen.laden())
     try:
-        mail.senden(betreff, text, [antrag.email], html=html, anhaenge=anhaenge)
+        mail.senden(betreff, text, [antrag.email], html=html, anhaenge=anhaenge,
+                    art="warteliste")  # fmt: skip
     except mail.MailFehler as fehler:
         return str(fehler)
     return ""
