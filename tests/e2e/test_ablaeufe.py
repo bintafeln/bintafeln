@@ -1217,3 +1217,28 @@ def test_listen_position_bleibt_beim_zurueckgehen(angemeldet, admin):
     seite.go_back()
     seite.wait_for_url("**/adressen/?anzahl=alle")
     seite.wait_for_function(f"() => Math.abs(window.scrollY - {hoehe}) < 12")
+
+
+def test_aufnahme_angehoerige_ohne_leere_zeilen(angemeldet, admin):
+    """Aufnahme-Assistent, Schritt „Angehörige“: Leere Zeilen sind ausgeblendet; „Weitere Person
+    hinzufügen“ holt je Klick eine dazu, und die Eingabe wird übernommen."""
+    from apps.antraege.models import Antrag, AntragPerson
+
+    a = Antrag.objects.create(
+        vorname="Erika", nachname="Beispiel", geburtsdatum=dt.date(1980, 2, 3)
+    )
+    AntragPerson.objects.create(antrag=a, vorname="Paul", nachname="Beispiel")
+    seite = angemeldet(admin)
+    seite.goto(reverse("antraege:aufnahme", args=[a.pk]))
+    seite.get_by_role("button", name="Weiter", exact=True).click()  # Kunde suchen: neuer Kunde
+    seite.get_by_role("button", name="Weiter", exact=True).click()  # Daten abgleichen
+    expect(seite.get_by_role("heading", name="3. Angehörige")).to_be_visible()
+    zeilen = seite.locator("table.tabelle tbody tr:visible")
+    expect(zeilen).to_have_count(1)  # nur Paul, keine leeren Zeilen
+    seite.get_by_role("button", name="Weitere Person hinzufügen").click()
+    expect(zeilen).to_have_count(2)
+    zeilen.nth(1).get_by_label("Vorname").fill("Lina")
+    seite.get_by_role("button", name="Weiter", exact=True).click()
+    seite.goto(reverse("antraege:aufnahme_schritt", args=[a.pk, "personen"]))
+    expect(seite.locator("table.tabelle tbody tr:visible")).to_have_count(2)
+    expect(seite.locator("input[value=Lina]")).to_be_visible()
