@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static liste %}
 {% block titel %}Kunden{% endblock %}
 {% block inhalt %}
 <section class="karte">
@@ -49,6 +49,7 @@
         {% for a in anzahl_wahl %}<option value="{{ a }}"{% if a == filter.anzahl or forloop.first and not filter.anzahl %} selected{% endif %}>{% if a == "alle" %}alle{% else %}{{ a }} je Seite{% endif %}</option>{% endfor %}
       </select></div>
     <button type="submit" class="knopf">Suchen</button>
+    {% filter_zuruecksetzen %}
   </form>
   {% if fremd_nummer %}{% include "kunden/_nachricht.html" with nummer=fremd_nummer zurueck=request.get_full_path %}{% endif %}
   <div id="kunden-liste">{% include "kunden/_liste.html" %}</div>

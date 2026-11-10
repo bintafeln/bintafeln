@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load liste %}
 {% block titel %}Kasse{% endblock %}
 {% block inhalt %}
 <section class="karte">
@@ -26,6 +26,7 @@
       {% for s in stellen %}<option value="{{ s.pk }}"{% if s == stelle %} selected{% endif %}>{{ s.name }}</option>{% endfor %}
     </select>
     <button type="submit" class="knopf">Anzeigen</button>
+    {% filter_zuruecksetzen "ansicht" %}
   </form>
   <nav class="blaettern" aria-label="Zeitraum wechseln">
     <a href="?{{ zurueck }}">← früher</a>

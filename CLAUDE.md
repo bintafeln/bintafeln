@@ -193,6 +193,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   ändert sich eine abgebildete Seite, Bilder mit `BINTAFELN_HILFE_BILDER=1` neu erzeugen.
 - Suchfelder in Listen suchen beim Tippen: Feld mit `{% live_suche %}` (ab 2 Zeichen, htmx),
   Treffer der Seite in `<div id="ergebnis">`; nur dieser Bereich wird ausgetauscht.
+  Jedes Filterformular bekommt `{% filter_zuruecksetzen %}` (Knopf „Zurücksetzen“; Angaben, die
+  bleiben sollen, als Argumente, z. B. `"sort"`).
 - Spaltenbreite in Listen per Ziehen: `static/js/spaltenbreite.js` (alle Tabellen in
   `.tabelle-rahmen`, Breiten je Liste im localStorage `bintafeln-breite-…`, Knopf zum Zurücksetzen).
 - Lange Mehrfachauswahlen als aufklappbares Menü: Widget `Mehrfachauswahl` (`apps/core/forms.py`,

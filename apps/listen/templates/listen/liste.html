@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static liste %}
 {% block titel %}{{ liste.titel }}{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
@@ -59,6 +59,7 @@
       <span class="listen-knoepfe"><button type="submit" class="knopf">Anzeigen</button>
       <a class="knopf knopf-zweitrangig" href="{% url 'listen:liste' liste.kennung %}">Vorgaben</a></span>
     </div>
+    {% filter_zuruecksetzen "geladen" %}
   </form>
 </section>
 

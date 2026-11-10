@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load liste %}
 {% block titel %}Papierkorb{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
@@ -16,6 +16,7 @@
       {% for a in arten %}<option{% if a == art %} selected{% endif %}>{{ a }}</option>{% endfor %}
     </select>
     <noscript><button type="submit" class="knopf knopf-zweitrangig">Anzeigen</button></noscript>
+    {% filter_zuruecksetzen %}
   </form>
   {% endif %}
   {% if eintraege %}

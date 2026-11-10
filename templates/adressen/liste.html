@@ -39,6 +39,7 @@
         {% for a in anzahl_wahl %}<option value="{{ a }}"{% if a == filter.anzahl or forloop.first and not filter.anzahl %} selected{% endif %}>{% if a == "alle" %}alle{% else %}{{ a }} je Seite{% endif %}</option>{% endfor %}
       </select></div>
     <button type="submit" class="knopf">Suchen</button>
+    {% filter_zuruecksetzen "sort" %}
   </form>
   <div id="ergebnis">
   {% auswahl_formular "" %}
