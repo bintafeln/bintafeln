@@ -49,7 +49,7 @@ def anwenden(heute: dt.date | None = None) -> int:
     es in der Historie fest und markiert den Plan als erledigt. Eine inzwischen inaktive Zielgruppe
     bleibt offen (wird nicht ausgeführt). Liefert die Zahl der verlegten Haushalte."""
     from apps.kunden import gruppen, historie
-    from apps.kunden.models import GeplanterWechsel, HaushaltEreignis
+    from apps.kunden.models import GeplanterWechsel, HaushaltEreignis, Notiz
 
     heute = heute or timezone.localdate()
     faellig = GeplanterWechsel.objects.filter(
@@ -71,6 +71,13 @@ def anwenden(heute: dt.date | None = None) -> int:
             quelle=HaushaltEreignis.Quelle.AUTOMATIK, von="automatisch",
             zusatz="Verlegung (Ausgabestelle schließt)",
         )  # fmt: skip
+        # Nach dem Umzug braucht der Haushalt einen neuen Ausweis (neue Ausgabestelle/Gruppe):
+        # als Notiz vermerken, damit beim nächsten Einlass ein neuer Ausweis gedruckt wird.
+        Notiz.objects.create(
+            kundennummer=h.kundennummer,
+            text=f"Ausweis drucken (Umzug zu {wechsel.ziel_gruppe.name})"[:1000],
+            verfasst_von="automatisch",
+        )
         wechsel.erledigt_am = heute
         wechsel.save(update_fields=["erledigt_am"])
         anzahl += 1

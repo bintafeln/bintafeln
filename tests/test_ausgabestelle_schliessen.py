@@ -13,6 +13,7 @@ from apps.kunden.models import (
     Haushalt,
     HaushaltEreignis,
     Kundengruppe,
+    Notiz,
     Person,
     fristen_anwenden,
 )
@@ -50,8 +51,12 @@ def test_verlegung_zum_stichtag(aufbau):
     assert HaushaltEreignis.objects.filter(
         kundennummer="7001", text__startswith="Verlegung"
     ).exists()
-    # Zweiter Lauf verlegt nicht erneut
+    # Am Umzugstag wird eine Notiz „Ausweis drucken" angelegt (neuer Ausweis nötig)
+    ausweis_notizen = Notiz.objects.filter(kundennummer="7001", text__startswith="Ausweis drucken")
+    assert ausweis_notizen.count() == 1
+    # Zweiter Lauf verlegt nicht erneut und legt keine zweite Notiz an
     assert verlegung.anwenden(HEUTE) == 0
+    assert ausweis_notizen.count() == 1
 
 
 def test_planen_ersetzt_und_entfernt(aufbau):
@@ -157,6 +162,22 @@ def test_verlegen_seite(admin_client, aufbau):
     # Leer gewählt nimmt den Plan zurück
     admin_client.post(url, {"ab": "2026-12-01", f"ziel_{h.pk}": ""})
     assert not GeplanterWechsel.objects.filter(haushalt=h, erledigt_am__isnull=True).exists()
+
+
+def test_verlegen_vorgabe_ist_tag_nach_letztem_tag(admin_client, aufbau):
+    alt, neu, g_alt, g_neu, h = aufbau
+    alt.schliesst_am = dt.date(2026, 11, 24)  # letzter Ausgabetag
+    alt.save()
+    url = reverse("kunden:ausgabestelle_verlegen", args=[alt.pk])
+    seite = admin_client.get(url).content.decode()
+    assert 'value="2026-11-25"' in seite  # Umzug ab dem Tag NACH dem letzten Ausgabetag
+
+
+def test_geplanter_umzug_in_kundenmaske(admin_client, aufbau):
+    alt, neu, g_alt, g_neu, h = aufbau
+    verlegung.planen(h, g_neu, HEUTE, "chefin")
+    seite = admin_client.get(reverse("kunden:haushalt", args=[h.kundennummer])).content.decode()
+    assert "Geplanter Umzug" in seite and "Neu Di" in seite
 
 
 def test_enddatum_im_formular(admin_client, aufbau):
