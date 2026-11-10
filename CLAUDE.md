@@ -229,7 +229,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Stammdaten, Wiedervorlagen, Führerschein-Kopie und Löschfrist in `apps/konten/personal.py`
   (ADR 0017); Fotos verkleinert `privatdateien.speichern()` nach `FotoEinstellungen` (ADR 0064).
   App `personal` (Rolle Personal): Verträge, Abwesenheiten, Stunden; Rechenregeln
-  in `apps/personal/berechnung.py` (ADR 0018). Arbeitszeiterfassung (Stempeln, vergessenes
+  in `apps/personal/berechnung.py` (ADR 0018). Wer Arbeitszeit erfasst, entscheidet nur
+  `arbeitszeit.erfasst()` (`Benutzer.zeiterfassung` je Person vor `ArbeitszeitEinstellungen.aktiv`);
+  ohne Erfassung kein Stundenkonto. Arbeitszeiterfassung (Stempeln, vergessenes
   Gehen, Überschneidungen) in `apps/personal/arbeitszeit.py`, Pausenabzug in
   `berechnung.arbeitstag()` (ADR 0020). Verschlüsselte Dateien nur über
   `apps.core.privatdateien`.
