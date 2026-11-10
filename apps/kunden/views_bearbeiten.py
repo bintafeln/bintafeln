@@ -9,7 +9,7 @@ import datetime as dt
 
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import ProtectedError
+from django.db.models import Count, ProtectedError, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -360,7 +360,8 @@ LISTEN = {
 SPALTEN = {
     "kundengruppen": [("Kürzel", "kuerzel"), ("Name", "name"), ("Ausgabestelle", "ausgabestelle"),
                       ("Wochentage", "wochentage"), ("Uhrzeit", "uhrzeit"),
-                      ("Höchstzahl", "maximum"), ("Farbe", "get_farbe_display")],
+                      ("Höchstzahl", "maximum"), ("Belegung", "belegt"),
+                      ("Farbe", "get_farbe_display")],
     "dokumentarten": [("Bezeichnung", "__str__"), ("Aufbewahren (Monate)", "aufbewahren_monate")],
     "beitragsfrei": [("Bezeichnung", "bezeichnung"), ("von", "von"), ("bis", "bis")],
     "sonderausgaben": [("Datum", "datum"), ("Ausgabestelle", "ausgabestelle"),
@@ -394,9 +395,14 @@ def liste(request, art):
         return redirect("kunden:ausgabestellen")
     modell, _, titel, _ = _liste(art)
     spalten = SPALTEN.get(art, [("Bezeichnung", "__str__")])
+    eintraege = modell.objects.all()
+    if art == "kundengruppen":  # aktuelle Belegung (ohne beendete Haushalte) nur zur Anzeige
+        eintraege = eintraege.annotate(
+            belegt=Count("haushalte", filter=~Q(haushalte__status=Haushalt.Status.BEENDET))
+        )
     zeilen = [
         (e.pk, [(t, _zelle(e, a)) for t, a in spalten], getattr(e, "aktiv", True))
-        for e in modell.objects.all()
+        for e in eintraege
     ]
     return render(request, "kunden/liste_pflegen.html", {
         "art": art, "titel": titel, "kopf": [t for t, _ in spalten], "zeilen": zeilen,
