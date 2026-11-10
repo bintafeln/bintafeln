@@ -77,17 +77,10 @@
 {% elif schritt == "abgleich" %}
   <h2>2. Daten abgleichen</h2>
   {% if neu %}
-  <p class="hinweis">Neuer Kunde: Die Angaben aus dem Antrag werden übernommen. Falsch geschriebene Angaben vorher unter
-    <a href="{% url 'antraege:bearbeiten' a.pk %}">Antrag bearbeiten</a> korrigieren.</p>
-  <div class="tabelle-rahmen">
-  <table class="tabelle abgleich">
-    <thead><tr><th>Angabe</th><th>Im Antrag</th></tr></thead>
-    <tbody>
-    {% for r in zeilen %}
-      <tr><td data-titel="Angabe">{{ r.titel }}</td><td data-titel="Im Antrag">{{ r.antrag|datum_de|default:"–" }}</td></tr>
-    {% endfor %}
-    </tbody>
-  </table>
+  <p class="hinweis">Neuer Kunde: Diese Angaben aus dem Antrag werden übernommen. Sie lassen sich hier gleich
+    korrigieren; die Änderung wird auch im Antrag gespeichert.</p>
+  <div class="formular-raster aufnahme-daten">
+    {% for feld in daten_form %}{% include "includes/feld.html" %}{% endfor %}
   </div>
   {% else %}
   <p class="hinweis">Gleiche Angaben stehen nur zur Info da (grau). Nur bei echten Unterschieden wählen, welcher Wert gilt.</p>
@@ -216,6 +209,7 @@
 </section>
 <div class="aktionen">
   <button type="submit" class="knopf">{% if schritt == "pruefen" %}Aufnehmen und speichern{% else %}Weiter{% endif %}</button>
+  {% if zurueck %}<a class="knopf knopf-zweitrangig" href="{% url 'antraege:aufnahme_schritt' a.pk zurueck %}">← Zurück</a>{% endif %}
   <a class="knopf knopf-zweitrangig" href="{% url 'antraege:antrag' a.pk %}">Abbrechen</a>
 </div>
 </form>

@@ -94,7 +94,9 @@ def schritt(request, pk, schritt):
     from apps.antraege import ausweis_pruefung
 
     e = AntragEinstellungen.laden()
+    nummer = NAMEN.index(schritt)
     kontext = {"a": a, "schritt": schritt, "schritte": SCHRITTE, "h": h, "z": z,
+               "zurueck": NAMEN[nummer - 1] if nummer else "",
                "nr": NAMEN.index(schritt) + 1, "gebiet_grund": gebiet.grund(e, a),
                "ausweis_pruefen": ausweis_pruefung.aktiv(e)}  # fmt: skip
     fehler = None
@@ -131,7 +133,17 @@ def _post_kunde(request, a, z, h):
 # --- 2. Daten abgleichen --------------------------------------------------------------------
 
 
+def _daten_form(request, a):
+    """Formular für die Angaben eines neuen Kunden (direkt im Assistenten bearbeitbar)."""
+    from apps.antraege.forms import AufnahmeDatenForm
+
+    return AufnahmeDatenForm(request.POST if request.method == "POST" else None, instance=a)
+
+
 def _kontext_abgleich(request, a, z, h):
+    if h is None:
+        return {"neu": True, "daten_form": _daten_form(request, a), "zeilen": [],
+                "hat_unterschied": False}  # fmt: skip
     bestand = _bestand(h)
     gewaehlt = z.get("werte") or {}
     zeilen = []
@@ -148,6 +160,17 @@ def _kontext_abgleich(request, a, z, h):
 
 
 def _post_abgleich(request, a, z, h):
+    if h is None:
+        # Neuer Kunde: Korrekturen gleich am Antrag speichern, dann gelten dessen Angaben
+        form = _daten_form(request, a)
+        if not any(name in request.POST for name in form.fields):
+            form = None  # nichts mitgeschickt: Angaben des Antrags unverändert übernehmen
+        elif not form.is_valid():
+            return "Bitte die markierten Angaben prüfen."
+        if form is not None and form.has_changed():
+            geaendert = form.save(commit=False)
+            geaendert.bearbeitet_von = request.user.get_username()
+            geaendert.save()
     bestand = _bestand(h)
     werte = {}
     for feld, _, _ in aufnahme.FELDER:

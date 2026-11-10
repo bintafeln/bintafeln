@@ -489,6 +489,37 @@ class AntragBearbeitenForm(MerkzeichenMixin, forms.ModelForm):
         self._merkzeichen_einrichten()
 
 
+class AufnahmeDatenForm(forms.ModelForm):
+    """Aufnahme-Assistent, Schritt „Daten abgleichen“ bei einem neuen Kunden: die Angaben des
+    Antrags gleich dort korrigieren (statt erst unter „Antrag bearbeiten“). Die Felder sind die aus
+    ``aufnahme.FELDER``; Auswahl statt Freitext wie im Antrag."""
+
+    anrede = forms.ChoiceField(label="Anrede", required=False, choices=ANREDEN)
+    familienstand = forms.ChoiceField(label="Familienstand", required=False)
+    staatsangehoerigkeit = forms.ChoiceField(
+        label="Staatsangehörigkeit", required=False, widget=StaatAuswahl
+    )
+
+    class Meta:
+        model = Antrag
+        fields = [
+            "anrede", "vorname", "nachname", "geburtsdatum", "strasse", "plz", "ort", "telefon",
+            "email", "familienstand", "staatsangehoerigkeit",
+        ]  # fmt: skip
+        widgets = {"geburtsdatum": DatumEingabe()}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        a = self.instance
+        self.fields["anrede"].choices = mit_vorhandenem(ANREDEN, a.anrede)
+        self.fields["familienstand"].choices = mit_vorhandenem(
+            [("", "—")] + [(f, f) for f in FAMILIENSTAENDE], a.familienstand
+        )
+        self.fields["staatsangehoerigkeit"].choices = mit_vorhandenem(
+            staatsangehoerigkeiten(), a.staatsangehoerigkeit
+        )
+
+
 class AntragPersonForm(MerkzeichenMixin, forms.ModelForm):
     staatsangehoerigkeit = forms.ChoiceField(
         label="Staatsangehörigkeit", required=False, widget=StaatAuswahl
