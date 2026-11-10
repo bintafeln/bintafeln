@@ -31,7 +31,12 @@
     <dt>Eingegangen</dt><dd>{{ a.eingegangen_am|date:"d.m.Y H:i" }}{% if platz %} – Platz {{ platz }} der offenen Anträge{% endif %}</dd>
     <dt>Art</dt><dd>{{ a.get_art_display }}</dd>
     <dt>Sprache</dt><dd>{{ sprache.deutsch }}</dd>
-    <dt>Status</dt><dd>{{ a.get_status_display }}{% if a.bearbeitet_von %} (zuletzt {{ a.bearbeitet_von }}){% endif %}</dd>
+    <dt><label for="status">Status</label></dt><dd>
+      <form method="post" action="{% url 'antraege:status' a.pk %}" class="inline status-aendern">
+        {% csrf_token %}
+        <select name="status" id="status">{% for wert, name in status_auswahl %}<option value="{{ wert }}"{% if wert == a.status %} selected{% endif %}>{{ name }}</option>{% endfor %}</select>
+        <button type="submit" class="knopf knopf-zweitrangig">Status speichern</button>
+      </form>{% if a.bearbeitet_von %} <span class="hinweis">(zuletzt {{ a.bearbeitet_von }})</span>{% endif %}</dd>
     {% if a.kundennummer %}<dt>Kundennummer</dt><dd><a href="{% url 'kunden:haushalt' a.kundennummer %}">{{ a.kundennummer }}</a></dd>{% endif %}
     <dt>Name</dt><dd>{{ a.anrede }} {{ a.vorname }} {{ a.nachname }}</dd>
     <dt>Geburtsdatum</dt><dd>{{ a.geburtsdatum|date:"d.m.Y"|default:"–" }}</dd>
@@ -63,18 +68,7 @@
     </form>
   </details>
   {% endif %}
-  <p><a href="{% url 'antraege:auskunft' a.pk %}" target="_blank" rel="noopener">Auskunft nach Art. 15 DSGVO (PDF)</a></p>
-</section>
-
-<section class="karte">
-  <h2>Bearbeiten</h2>
-  <form method="post" action="{% url 'antraege:status' a.pk %}" class="filter">
-    {% csrf_token %}
-    <label for="status">Status</label>
-    <select name="status" id="status">{% for wert, name in status_auswahl %}<option value="{{ wert }}"{% if wert == a.status %} selected{% endif %}>{{ name }}</option>{% endfor %}</select>
-    <button type="submit" class="knopf">Status speichern</button>
-  </form>
-  <h3 id="anmerkungen">Anmerkungen</h3>
+  <h2 id="anmerkungen">Anmerkungen</h2>
   {% for x in a.anmerkungen.all %}<div class="bemerkung"><p class="vorformatiert">{{ x.text }}</p><p class="hinweis">{{ x.zeitpunkt|date:"d.m.Y H:i" }} · {{ x.von }}</p>
     {% if "antraege.bearbeiten" in rechte %}
     <details class="anmerkung-aendern">
@@ -91,6 +85,8 @@
     <div class="feld"><label for="text">Neue Anmerkung</label><textarea name="text" id="text" rows="3" required></textarea></div>
     <button type="submit" class="knopf knopf-zweitrangig">Anmerkung speichern</button>
   </form>
+  <p><a href="{% url 'antraege:auskunft' a.pk %}" target="_blank" rel="noopener">Auskunft nach Art. 15 DSGVO (PDF)</a></p>
 </section>
+
 {% for teil in modul_antrag %}{{ teil }}{% endfor %}
 {% endblock %}

@@ -542,6 +542,12 @@ def test_bearbeiten_und_loeschen(admin_client, antrag):
     admin_client.post(reverse("antraege:anmerkung", args=[antrag.pk]), {"text": " "})
     assert AntragAnmerkung.objects.get().text == "Angerufen"
     assert str(AntragAnmerkung.objects.get()).startswith("Anmerkung vom")
+    # Keine eigene „Bearbeiten“-Karte mehr: Status steht bei den Angaben, die Anmerkungen in
+    # derselben Karte vor der Auskunft
+    seite = admin_client.get(reverse("antraege:antrag", args=[antrag.pk])).content.decode()
+    assert "<h2>Bearbeiten</h2>" not in seite and "Status speichern" in seite
+    assert seite.index('id="anmerkungen"') < seite.index("Auskunft nach Art. 15")
+    assert "Angerufen" in seite and "Neue Anmerkung" in seite
     # Löschen legt den Antrag in den gemeinsamen Papierkorb (ADR 0073), nicht mehr in einen eigenen
     admin_client.post(reverse("antraege:papierkorb", args=[antrag.pk]))
     assert not Antrag.objects.filter(pk=antrag.pk).exists()
