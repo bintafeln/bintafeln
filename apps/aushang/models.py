@@ -40,6 +40,26 @@ class Aushang(models.Model):
         "austragen, einspringen; wer planen darf, auch Ersatz und Gäste eintragen.",
     )  # fmt: skip
 
+    class Stempeln(models.TextChoices):
+        STANDARD = "", "Vorgabe: nur an Monitoren mit einem Dienstplan"
+        AN = "an", "ja, an diesem Monitor"
+        AUS = "aus", "nein"
+
+    stempeln = models.CharField(
+        "Arbeitszeit stempeln", max_length=3, choices=Stempeln.choices, blank=True, default="",
+        help_text="Knopf „Stempeln“ oben am Monitor: Kommen, Pause und Gehen. Nur wenn die "
+        "Tafel die Arbeitszeiterfassung nutzt.",
+    )  # fmt: skip
+    stempeln_pin = models.BooleanField(
+        "Stempeln mit Name und PIN", default=True,
+        help_text="Am Monitor den Namen wählen und mit der persönlichen PIN bestätigen.",
+    )  # fmt: skip
+    stempeln_qr = models.BooleanField(
+        "Stempeln mit QR-Code", default=True,
+        help_text="Der Monitor zeigt einen Code, der sich laufend ändert; mit dem eigenen Handy "
+        "scannen und dort stempeln.",
+    )  # fmt: skip
+
     class Meta:
         verbose_name = "Aushang-Monitor"
         verbose_name_plural = "Aushang-Monitore"

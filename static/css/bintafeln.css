@@ -1580,6 +1580,17 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
   border-radius: .4rem; min-height: 3rem; }
 .aushang-dialog .knopf { width: auto; }
 .aushang-fehler { color: var(--fehler); font-weight: 600; }
+/* Stempeln am Monitor (ADR 0123) */
+.aushang-stempeln-knopf { margin-left: .75rem; font: inherit; font-weight: 800; font-size: 1.05rem; padding: .3rem .9rem;
+  border-radius: var(--radius); border: 2px solid var(--auf-akzent); background: var(--auf-akzent);
+  color: var(--akzent-dunkel); cursor: pointer; }
+.aushang-stempeln { display: flex; flex-wrap: wrap; gap: 1rem 1.5rem; align-items: flex-start; }
+.aushang-stempeln > * { flex: 1 1 15rem; }
+.aushang-stempeln-qr figure { margin: 0 0 .4rem; }
+.aushang-stempeln-qr svg { width: 11rem; height: 11rem; display: block; }
+.aushang-stempeln-stand { margin: 0 0 .6rem; }
+.aushang-stempeln-aktion { font-size: 1.2rem; padding: .9rem 1.4rem; }
+.aushang-stempeln [hidden] { display: none; }
 .aushang-dialog-hinweis { color: var(--leise); font-size: .9rem; margin-bottom: 0; }
 .aushang-meldung { position: fixed; left: 50%; bottom: 2.5rem; transform: translateX(-50%); max-width: 90vw;
   background: #1b6e34; color: #fff; padding: .75rem 1.25rem; border-radius: var(--radius); font-size: 1.2rem;

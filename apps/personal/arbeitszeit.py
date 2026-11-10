@@ -34,6 +34,53 @@ def darf_stempeln(benutzer) -> bool:
     return erfasst(benutzer)
 
 
+# Sitzung: bis wann das Handy nach dem QR-Code am Aushang-Monitor stempeln darf (Zeitstempel)
+SITZUNG_FREIGABE = "stempeln_frei_bis"
+FREIGABE_MINUTEN = 5
+
+
+def freigeben(request) -> None:
+    """Der QR-Code am Monitor wurde gerade gescannt: Dieses Handy darf kurz stempeln."""
+    bis = timezone.now() + dt.timedelta(minutes=FREIGABE_MINUTEN)
+    request.session[SITZUNG_FREIGABE] = bis.timestamp()
+
+
+def hier_erlaubt(request) -> bool:
+    """Ob in dieser Sitzung gestempelt werden darf: immer, solange die Tafel nicht „nur am
+    Monitor“ verlangt; sonst nur kurz nach dem Scannen des QR-Codes am Monitor."""
+    if not ArbeitszeitEinstellungen.laden().nur_am_monitor:
+        return True
+    return request.session.get(SITZUNG_FREIGABE, 0) > timezone.now().timestamp()
+
+
+def stand(benutzer, jetzt=None) -> tuple[str, list[tuple[str, str]]]:
+    """Wo die Person gerade steht und was sie jetzt stempeln kann: (Text, [(aktion, Knopf)])."""
+    offen = laufend(benutzer, jetzt)
+    if offen:
+        seit = timezone.localtime(offen.beginn)
+        return f"Eingestempelt seit {seit:%H:%M} Uhr.", [("pause", "Pause"), ("gehen", "Gehen")]
+    pause = in_pause(benutzer, jetzt)
+    if pause:
+        seit = timezone.localtime(pause.ende)
+        return (f"Pause oder Feierabend seit {seit:%H:%M} Uhr.",
+                [("kommen", "Pause beenden")])  # fmt: skip
+    return "Nicht eingestempelt.", [("kommen", "Kommen")]
+
+
+def stempeln(benutzer, aktion: str, jetzt=None) -> str:
+    """Stempelt „kommen“, „pause“ oder „gehen“ und liefert die Meldung; sonst StempelFehler."""
+    if aktion == "kommen":
+        b = kommen(benutzer, jetzt)
+        return f"Kommen um {timezone.localtime(b.beginn):%H:%M} gestempelt."
+    if aktion not in ("pause", "gehen"):
+        raise StempelFehler("Unbekannte Aktion.")
+    b = gehen(benutzer, jetzt)
+    um = f"{timezone.localtime(b.ende):%H:%M}"
+    if aktion == "pause":
+        return f"Pause ab {um} gestempelt. Danach „Pause beenden“."
+    return f"Gehen um {um} gestempelt."
+
+
 def _grenze(jetzt=None) -> dt.datetime:
     stunden = ArbeitszeitEinstellungen.laden().offen_hoechstens_stunden
     return (jetzt or timezone.now()) - dt.timedelta(hours=stunden)

@@ -13,7 +13,8 @@ def menue(eintrag):
 
 
 def mein_konto(request):
-    """Abschnitt „PIN für Aushang-Monitore“ auf „Mein Konto“, für alle, die einen Plan sehen."""
+    """Abschnitt „PIN für Aushang-Monitore“ auf „Mein Konto“, für alle, die einen Plan sehen
+    oder am Monitor ihre Arbeitszeit stempeln."""
     from django.template.loader import render_to_string
 
     from apps.aushang.models import MonitorPin
@@ -21,7 +22,11 @@ def mein_konto(request):
 
     if request.user.stelle_id:  # Konto einer Ausgabestelle gehört keiner Person (ADR 0059, 0080)
         return ""
-    if not any(rollen.hat_recht(request.user, r) for r in ("dienstplan.sehen", "fahrdienst.sehen")):
+    from apps.personal import arbeitszeit
+
+    sieht_plan = any(rollen.hat_recht(request.user, r)
+                     for r in ("dienstplan.sehen", "fahrdienst.sehen"))  # fmt: skip
+    if not sieht_plan and not arbeitszeit.darf_stempeln(request.user):  # PIN auch zum Stempeln
         return ""
     eintrag = MonitorPin.objects.filter(benutzer=request.user).first()
     return render_to_string("aushang/_mein_konto.html", {"eintrag": eintrag}, request=request)

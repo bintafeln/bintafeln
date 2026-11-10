@@ -148,6 +148,86 @@
       .catch(function () { meldung("Keine Verbindung. Bitte gleich noch einmal versuchen."); });
   }
 
+  // --- Arbeitszeit stempeln (ADR 0123): eigenes Fenster mit Name + PIN und einem QR-Code, der
+  // sich laufend ändert. Erst wird die PIN geprüft, dann erscheinen die passenden Knöpfe.
+  var qrTimer = null;
+
+  function qrErneuern() {
+    var bild = dialog.querySelector("[data-stempeln-qr]");
+    if (!bild || !dialog.open) { clearInterval(qrTimer); return; }
+    fetch(body.dataset.stempelnUrl + "?qr=1", { cache: "no-store", credentials: "same-origin",
+                                               headers: { "X-Aushang": "1" } })
+      .then(function (antwort) { return antwort.status === 200 ? antwort.text() : null; })
+      .then(function (svg) { if (svg && dialog.open && bild.isConnected) bild.innerHTML = svg; })
+      .catch(function () { /* Netz kurz weg: alter Code bleibt, nächster Versuch folgt */ });
+  }
+
+  function stempelnOeffnen() {
+    fetch(body.dataset.stempelnUrl, { cache: "no-store", credentials: "same-origin",
+                                     headers: { "X-Aushang": "1" } })
+      .then(function (antwort) { return antwort.status === 200 ? antwort.text() : null; })
+      .then(function (html) {
+        if (!html) { meldung("Stempeln ist hier gerade nicht möglich."); return; }
+        dialog.innerHTML = html;
+        dialog.showModal();
+        var bild = dialog.querySelector("[data-stempeln-qr]");
+        clearInterval(qrTimer);
+        if (bild) qrTimer = setInterval(qrErneuern, (parseInt(bild.dataset.wechsel, 10) || 30) * 1000);
+        // Bleibt das Fenster offen stehen, schließt es sich nach einer Weile von selbst
+        clearTimeout(stempelnOeffnen.zu);
+        stempelnOeffnen.zu = setTimeout(function () { if (dialog.open) dialog.close(); }, 2 * 60 * 1000);
+      })
+      .catch(function () { meldung("Keine Verbindung. Bitte gleich noch einmal versuchen."); });
+  }
+
+  function stempelnAbsenden(form, knopf) {
+    var daten = new FormData(form);
+    if (knopf && knopf.name) daten.set(knopf.name, knopf.value);
+    var fehler = dialog.querySelector(".aushang-fehler");
+    fehler.hidden = true;
+    fetch(body.dataset.stempelnUrl, {
+      method: "POST", body: daten, credentials: "same-origin",
+      headers: { "X-Aushang": "1", "X-CSRFToken": csrf() },
+    })
+      .then(function (antwort) { return antwort.status === 200 ? antwort.json() : null; })
+      .then(function (ergebnis) {
+        if (!ergebnis) { meldung("Stempeln ist hier nicht mehr möglich."); dialog.close(); return; }
+        if (!ergebnis.ok) {
+          fehler.textContent = ergebnis.fehler;
+          fehler.hidden = false;
+          if (!form.querySelector("[data-stempeln-wahl]").hidden) return; // PIN stimmt, Aktion nicht
+          var pin = form.querySelector("input[name=pin]");
+          pin.value = "";
+          pin.focus();
+          return;
+        }
+        if (ergebnis.fertig) {
+          dialog.close();
+          meldung(ergebnis.meldung);
+          return;
+        }
+        // PIN stimmt: Name und Stand zeigen, die passenden Knöpfe anbieten
+        form.querySelector("[data-stempeln-anmelden]").hidden = true;
+        form.querySelector("[data-stempeln-weiter]").hidden = true;
+        form.querySelector("[data-stempeln-name]").textContent = ergebnis.name;
+        form.querySelector("[data-stempeln-stand]").textContent = ergebnis.stand;
+        var knoepfe = form.querySelector("[data-stempeln-knoepfe]");
+        knoepfe.textContent = "";
+        ergebnis.aktionen.forEach(function (aktion, nr) {
+          var k = document.createElement("button");
+          k.type = "submit";
+          k.name = "aktion";
+          k.value = aktion[0];
+          k.className = "knopf aushang-stempeln-aktion" + (nr ? "" : " knopf-zweitrangig");
+          if (ergebnis.aktionen.length === 1) k.className = "knopf aushang-stempeln-aktion";
+          k.textContent = aktion[1];
+          knoepfe.appendChild(k);
+        });
+        form.querySelector("[data-stempeln-wahl]").hidden = false;
+      })
+      .catch(function () { meldung("Keine Verbindung. Bitte gleich noch einmal versuchen."); });
+  }
+
   function neuLaden() {
     if (dialog.open) return; // nicht mitten im Eintragen umbauen
     fetch(window.location.href, { cache: "no-store", credentials: "same-origin",
@@ -205,8 +285,12 @@
   dialog.addEventListener("submit", function (e) {
     if (e.target.method === "dialog") return;
     e.preventDefault();
-    absenden(e.target, e.submitter);
+    if (e.target.matches("[data-stempeln]")) stempelnAbsenden(e.target, e.submitter);
+    else absenden(e.target, e.submitter);
   });
+  dialog.addEventListener("close", function () { clearInterval(qrTimer); });
+  var stempelKnopf = document.getElementById("aushang-stempeln");
+  if (stempelKnopf) stempelKnopf.addEventListener("click", stempelnOeffnen);
   ["pointerdown", "keydown", "scroll", "input"].forEach(function (art) {
     document.addEventListener(art, bewegt, true);
   });

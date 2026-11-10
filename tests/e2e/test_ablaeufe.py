@@ -1305,3 +1305,48 @@ def test_foto_wird_sofort_gespeichert(angemeldet, admin):
     expect(seite).to_have_url(re.compile("foto=1"))
     expect(seite.locator("#foto-dateien")).to_be_visible()  # offen für die nächste Seite
     assert HaushaltDokument.objects.count() == 1
+
+
+def test_stempeln_am_aushang_monitor(seite, admin, benutzer_mit_rolle):
+    """Am Monitor (ADR 0123): „Stempeln“ öffnet ein Fenster mit Name + PIN und QR-Code. Nach der
+    PIN erscheinen die passenden Knöpfe; „Kommen“ stempelt und meldet es am Monitor."""
+    from apps.aushang import pin
+    from apps.aushang.models import Aushang, AushangSeite
+    from apps.core.models import TafelEinstellungen
+    from apps.dienstplan import beispiel as dp_beispiel
+    from apps.personal import arbeitszeit
+
+    t = TafelEinstellungen.laden()
+    t.module = ["aushang", "dienstplan"]
+    t.save()
+    dp_beispiel.anlegen(seed=1)
+    stelle = Ausgabestelle.objects.get(name=dp_beispiel.STELLE)
+    kim = benutzer_mit_rolle("kim", "Ausgabe")
+    kim.first_name, kim.last_name, kim.beschaeftigung = "Kim", "Probe", "fest"
+    kim.save()
+    pin.setzen(kim, "482915")
+    aushang = Aushang.objects.create(name="Monitor Ausgabe")
+    AushangSeite.objects.create(aushang=aushang, art="dienstplan", wert=str(stelle.pk), monate=1)
+    seite.goto(f"/aushang/zeigen/{aushang.schluessel}/")
+    seite.get_by_role("button", name="Stempeln").click()
+    fenster = seite.locator("#aushang-dialog")
+    expect(fenster.get_by_role("heading", name="Arbeitszeit stempeln")).to_be_visible()
+    expect(fenster.locator("[data-stempeln-qr] svg")).to_be_visible()
+    fenster.locator("select[name=person]").select_option(label="Kim Probe")
+    fenster.locator("input[name=pin]").fill("000000")
+    fenster.get_by_role("button", name="Weiter").click()
+    expect(fenster.locator(".aushang-fehler")).to_contain_text("PIN stimmt nicht")
+    fenster.locator("input[name=pin]").fill("482915")
+    fenster.get_by_role("button", name="Weiter").click()
+    expect(fenster.locator("[data-stempeln-name]")).to_have_text("Kim Probe")
+    fenster.get_by_role("button", name="Kommen", exact=True).click()
+    expect(seite.locator("#aushang-meldung")).to_contain_text("Kim Probe: Kommen um")
+    expect(fenster).to_be_hidden()
+    assert arbeitszeit.laufend(kim)
+    # Beim nächsten Mal bietet das Fenster Pause und Gehen an
+    seite.get_by_role("button", name="Stempeln").click()
+    fenster.locator("select[name=person]").select_option(label="Kim Probe")
+    fenster.locator("input[name=pin]").fill("482915")
+    fenster.get_by_role("button", name="Weiter").click()
+    expect(fenster.get_by_role("button", name="Gehen", exact=True)).to_be_visible()
+    expect(fenster.get_by_role("button", name="Pause", exact=True)).to_be_visible()

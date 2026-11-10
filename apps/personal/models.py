@@ -211,6 +211,13 @@ class ArbeitszeitEinstellungen(models.Model):
         "bei Personen, für die es einzeln eingeschaltet ist (Verträge & Zeiten → Person). "
         "Schon erfasste Zeiten bleiben erhalten.",
     )
+    nur_am_monitor = models.BooleanField(
+        "Stempeln nur am Aushang-Monitor",
+        default=False,
+        help_text="Unter „Meine Arbeitszeit“ kann dann niemand mehr von überall stempeln, sondern "
+        "nur noch am Monitor vor Ort: mit Name und PIN oder über den QR-Code am Monitor. Braucht "
+        "das Modul „Aushang-Monitore“ und einen Monitor, an dem das Stempeln eingeschaltet ist.",
+    )
     ehrenamtliche_stempeln = models.BooleanField(
         "Auch Ehrenamtliche stempeln",
         default=False,

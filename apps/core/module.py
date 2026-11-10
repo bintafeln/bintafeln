@@ -44,6 +44,8 @@ class Aushangseite:
     # die Kennung, ``basis`` die Adresse von bintafeln (für Links in Benachrichtigungen).
     platz: Callable | None = None
     aendern: Callable | None = None
+    # Monitore mit dieser Seite bieten in der Vorgabe das Stempeln der Arbeitszeit an
+    stempeln_standard: bool = False
 
 
 @dataclass(frozen=True)

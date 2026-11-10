@@ -72,6 +72,7 @@ def meine(request):
             "laufend": arbeitszeit.laufend(request.user),
             "in_pause": arbeitszeit.in_pause(request.user),
             "vergessen": arbeitszeit.vergessen(request.user),
+            "stempeln_erlaubt": arbeitszeit.hier_erlaubt(request),
             "saldo": _saldo(request.user, heute) if hat_vertrag else None,
             **_monatsdaten(request.user, _monat(request)),
         },
@@ -83,17 +84,14 @@ def meine(request):
 def stempeln(request):
     if not arbeitszeit.darf_stempeln(request.user):
         raise PermissionDenied
+    if not arbeitszeit.hier_erlaubt(request):
+        messages.error(request, "Stempeln geht nur am Aushang-Monitor vor Ort: dort mit Name "
+                       "und PIN, oder den QR-Code am Monitor mit dem Handy scannen.")  # fmt: skip
+        return redirect("personal:meine_arbeitszeit")
     try:
-        if request.POST.get("aktion") == "pause":
-            b = arbeitszeit.gehen(request.user)
-            messages.success(request, f"Pause ab {timezone.localtime(b.ende):%H:%M} gestempelt. "
-                             "Danach „Pause beenden“.")  # fmt: skip
-        elif request.POST.get("aktion") == "gehen":
-            b = arbeitszeit.gehen(request.user)
-            messages.success(request, f"Gehen um {timezone.localtime(b.ende):%H:%M} gestempelt.")
-        else:
-            b = arbeitszeit.kommen(request.user)
-            messages.success(request, f"Kommen um {timezone.localtime(b.beginn):%H:%M} gestempelt.")
+        aktion = request.POST.get("aktion")
+        aktion = aktion if aktion in ("pause", "gehen") else "kommen"
+        messages.success(request, arbeitszeit.stempeln(request.user, aktion))
     except arbeitszeit.StempelFehler as fehler:
         messages.error(request, str(fehler))
     return redirect("personal:meine_arbeitszeit")

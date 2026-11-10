@@ -6,7 +6,8 @@ from apps.aushang.models import Aushang, AushangSeite
 class AushangForm(forms.ModelForm):
     class Meta:
         model = Aushang
-        fields = ["name", "aktiv", "nebeneinander", "sekunden", "qr_code", "aendern"]
+        fields = ["name", "aktiv", "nebeneinander", "sekunden", "qr_code", "aendern",
+                  "stempeln", "stempeln_pin", "stempeln_qr"]  # fmt: skip
 
 
 class NeuForm(forms.ModelForm):
