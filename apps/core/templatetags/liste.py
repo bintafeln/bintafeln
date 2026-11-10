@@ -75,3 +75,20 @@ def live_suche(context, mindestens=2):
         context["request"].path,
         mindestens,
     )
+
+
+@register.simple_tag(takes_context=True)
+def filter_zuruecksetzen(context, *behalten):
+    """Knopf „Zurücksetzen“ für Filterformulare: führt zur selben Seite ohne Filter und
+    Suchbegriff. Die in ``behalten`` genannten Angaben (z. B. ``"ansicht"``, ``"sort"``) bleiben."""
+    request = context["request"]
+    werte = request.GET.copy()
+    for name in list(werte):
+        if name not in behalten:
+            del werte[name]
+    ziel = request.path + (f"?{werte.urlencode()}" if werte else "")
+    return format_html(
+        '<a class="knopf knopf-zweitrangig filter-zuruecksetzen" href="{}" '
+        'title="Alle Filter dieser Seite entfernen">Zurücksetzen</a>',
+        ziel,
+    )

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load liste %}
 {% block titel %}Alle Dateien{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
@@ -21,6 +21,7 @@
       <option value="bereich"{% if sortierung == "bereich" %} selected{% endif %}>Bereich</option>
     </select>
     <noscript><button type="submit" class="knopf knopf-zweitrangig">Anzeigen</button></noscript>
+    {% filter_zuruecksetzen %}
   </form>
   <p>{{ liste|length }} Datei{{ liste|length|pluralize:"en" }}, zusammen {{ summe|filesizeformat }}.</p>
   {% if liste %}

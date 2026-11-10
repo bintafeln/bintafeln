@@ -10,6 +10,7 @@
     <input type="search" name="q" id="q" value="{{ q }}" class="suche" placeholder="Name, Antragsnummer, Termin …" {% live_suche %}>
     <button type="submit" class="knopf">Suchen</button>
     <a class="knopf knopf-zweitrangig" href="?pdf=1{% if q %}&amp;q={{ q|urlencode }}{% endif %}">Als PDF</a>
+    {% filter_zuruecksetzen %}
   </form>
   <div id="ergebnis">
   <p class="hinweis">{{ eintraege|length }} Eintr{{ eintraege|length|pluralize:"ag,äge" }}{% if q %} zu „{{ q }}“{% endif %}.</p>

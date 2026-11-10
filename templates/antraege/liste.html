@@ -47,6 +47,7 @@
     <div class="filter-feld filter-suche"><label for="suche">Suche</label>
       <input type="search" name="suche" id="suche" value="{{ suche }}" placeholder="Suchbegriff (Name, Nummer, Status, Art, E-Mail, Telefon …)" {% live_suche %}></div>
     <button type="submit" class="knopf">Suchen</button>
+    {% filter_zuruecksetzen "ansicht" "sort" %}
   </form>
   {% url 'antraege:export' as export_url %}{% auswahl_formular export_url %}
   <div class="liste-aktionen">

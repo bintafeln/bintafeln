@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static liste %}
 {% block titel %}Statistik{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
@@ -21,6 +21,7 @@
         {% for s in auswahl %}<option value="{{ s.pk }}"{% if gewaehlt == s.pk|stringformat:"s" %} selected{% endif %}>{{ s.name }}</option>{% endfor %}
       </select></div>
     <button type="submit" class="knopf">Anzeigen</button>
+    {% filter_zuruecksetzen %}
   </form>
   <form method="get" action="{% url 'statistik:jahresbericht' %}" class="filter-kompakt" target="_blank">
     <div class="filter-feld"><label for="jahr">Jahresbericht (PDF)</label>

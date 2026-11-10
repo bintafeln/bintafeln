@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load liste %}
 {% block titel %}Wochenübersicht{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
@@ -12,6 +12,7 @@
         {% for wert, bez in wochen %}<option value="{{ wert }}"{% if wert == kw %} selected{% endif %}>{{ bez }}</option>{% endfor %}
       </select></label>
     <button type="submit" class="knopf knopf-zweitrangig">Anzeigen</button>
+    {% filter_zuruecksetzen %}
   </form>
   <p class="wochen-pdf">PDF:
     <a class="knopf knopf-zweitrangig" href="{% url 'wochenuebersicht:pdf' 'hoch' %}?{{ abfrage }}" target="_blank">Hochformat</a>

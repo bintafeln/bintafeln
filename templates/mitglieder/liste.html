@@ -25,6 +25,7 @@
     <div class="filter-feld filter-suche"><label for="q">Suche</label>
       <input type="search" name="q" id="q" value="{{ filter.q }}" placeholder="Nummer oder Name" {% live_suche %}></div>
     <button type="submit" class="knopf">Suchen</button>
+    {% filter_zuruecksetzen "sort" %}
   </form>
   <div id="ergebnis">
   <div class="kacheln">

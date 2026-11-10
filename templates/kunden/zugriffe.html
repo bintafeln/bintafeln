@@ -13,6 +13,7 @@
     <label for="benutzer">Benutzer</label>
     <input type="search" name="benutzer" id="benutzer" value="{{ benutzer }}" data-nicht-sofort {% live_suche %}>
     <button type="submit" class="knopf">Filtern</button>
+    {% filter_zuruecksetzen %}
   </form>
   <div id="ergebnis">
   {% blaettern seite %}

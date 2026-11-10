@@ -21,6 +21,7 @@
     <div class="filter-feld filter-suche"><label for="q">Suche</label>
       <input type="search" name="q" id="q" value="{{ q }}" placeholder="Benutzername oder IP" {% live_suche %}></div>
     <button type="submit" class="knopf">Suchen</button>
+    {% filter_zuruecksetzen %}
   </form>
   <div id="ergebnis">
   {% blaettern seite %}

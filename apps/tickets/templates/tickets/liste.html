@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load liste %}
 {% block titel %}Tickets{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
@@ -26,6 +26,7 @@
         {% for k in kategorien %}<option value="{{ k.pk }}"{% if kategorie == k.pk|stringformat:"s" %} selected{% endif %}>{{ k.name }}</option>{% endfor %}
       </select></div>
     <noscript><button type="submit" class="knopf">Anzeigen</button></noscript>
+    {% filter_zuruecksetzen %}
   </form>
   <div class="tabelle-rahmen">
   <table class="tabelle">

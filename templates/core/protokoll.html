@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load liste %}
 {% block titel %}Änderungsprotokoll{% endblock %}
 {% block inhalt %}
 <section class="karte">
@@ -13,6 +13,7 @@
       {% endfor %}
     </select>
     <noscript><button type="submit" class="knopf">Filtern</button></noscript>
+    {% filter_zuruecksetzen %}
   </form>
   <div id="protokoll-liste">{% include "core/_protokoll_liste.html" %}</div>
 </section>

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load liste %}
 {% block titel %}Verbandsstatistik {{ jetzt.name }}{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
@@ -17,6 +17,7 @@
         {% for s in auswahl %}<option value="{{ s.pk }}"{% if gewaehlt == s.pk|stringformat:"s" %} selected{% endif %}>{{ s.name }}</option>{% endfor %}
       </select></div>
     <button type="submit" class="knopf">Anzeigen</button>
+    {% filter_zuruecksetzen %}
   </form>
   <div class="aktionsleiste">
     <a class="knopf knopf-zweitrangig" href="?{{ abfrage }}{% if abfrage %}&amp;{% endif %}format=pdf">PDF</a>
