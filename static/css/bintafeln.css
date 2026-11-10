@@ -115,17 +115,22 @@ input::-webkit-date-and-time-value { text-align: left; margin: 0; }
 .hat-fehler input:focus, .hat-fehler select:focus, .hat-fehler textarea:focus { border-color: var(--fehler); }
 .hat-fehler .fehler { font-weight: 600; }
 
+/* Alle Knöpfe sind gleich gebaut, damit sie nebeneinander gleich hoch sind und auf einer Linie
+   stehen: gefüllte tragen denselben (unsichtbaren) Rand wie umrandete, Links (<a class="knopf">)
+   und echte Knöpfe haben dieselbe Zeilenhöhe und zentrieren ihren Text gleich. */
 .knopf {
   font: inherit;
   font-weight: 600;
+  line-height: 1.3;
   background: var(--akzent);
   color: var(--auf-akzent);
-  border: 0;
+  border: 2px solid transparent;
   border-radius: var(--radius);
-  padding: .75rem 1.25rem;
+  padding: calc(.75rem - 2px) calc(1.25rem - 2px);
   min-height: 2.75rem;
   cursor: pointer;
   width: 100%;
+  vertical-align: middle;
 }
 .knopf:hover { background: var(--akzent-dunkel); }
 
@@ -272,8 +277,9 @@ a.blaettern-knopf:hover { border-color: var(--akzent); }
 
 h2 { font-size: 1.2rem; margin: 1.5rem 0 .5rem; }
 h3 { font-size: 1.05rem; margin: 1.25rem 0 .5rem; }
-a.knopf { display: inline-block; text-align: center; text-decoration: none; }
-.knopf-zweitrangig { background: #fff; color: var(--akzent-dunkel); border: 2px solid var(--akzent); }
+a.knopf { display: inline-flex; align-items: center; justify-content: center; text-align: center;
+  text-decoration: none; }
+.knopf-zweitrangig { background: #fff; color: var(--akzent-dunkel); border-color: var(--akzent); }
 .knopf-zweitrangig:hover { background: var(--erfolg); }
 .feld-haken label { display: flex; align-items: center; gap: .6rem; font-weight: 500; }
 .feld-haken input { width: 1.4rem; height: 1.4rem; min-height: 0; flex: none; accent-color: var(--akzent); }
@@ -396,13 +402,10 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .feld input[type="checkbox"] { width: 1.25rem; height: 1.25rem; }
 .aktionen .inline, .aktionen .inline + .inline { display: block; margin: 0; }
 .aktionen .knopf { width: auto; }
-/* Knopfreihen: alle Knöpfe gleich hoch und auf einer Linie – gefüllte Knöpfe bekommen denselben
-   (unsichtbaren) Rand wie umrandete, Links stehen wie Knöpfe; zwischen zwei Reihen bleibt Abstand. */
+/* Knopfreihen: auf einer Linie, mit Abstand zwischen zwei Reihen */
 .aktionen { align-items: center; }
 .aktionen + .aktionen { margin-top: .5rem; }
-.aktionen .knopf { border-width: 2px; border-style: solid; margin: 0; line-height: 1.3; }
-.aktionen .knopf:not(.knopf-zweitrangig):not(.knopf-abbrechen) { border-color: transparent; }
-.aktionen a.knopf { display: inline-flex; align-items: center; justify-content: center; }
+.aktionen .knopf { margin: 0; }
 
 /* Stammdaten und Fälligkeiten */
 .abschnitt { border: 1px solid var(--rand); border-radius: var(--radius); padding: .5rem 1rem; margin: 0 0 1rem; }
@@ -1864,7 +1867,7 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 /* Sammel-Prüfseite der Ausweisprüfung (ADR 0107/0112) – Karten statt Tabelle, damit es auch auf
    dem Handy ohne seitliches Scrollen bedienbar ist. */
 .knopf-klein { width: auto; min-height: 2.4rem; padding: .35rem .7rem; font-size: .95rem; }
-a.knopf-klein { display: inline-block; text-align: center; }
+a.knopf-klein { text-align: center; }
 .ausweis-sammelleiste { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem;
   margin: .5rem 0; padding: .5rem .75rem; border: 1px solid var(--rand); border-radius: 8px; }
 .ausweis-alle { font-weight: bold; display: inline-flex; align-items: center; gap: .35rem; }
