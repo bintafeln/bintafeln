@@ -10,8 +10,8 @@
       <details class="listen-werkzeuge status-wahl">
         <summary class="knopf knopf-zweitrangig">Status: {% if not f.status %}alle offenen{% else %}{% for s, label, n in status_zahlen %}{% if f.status == s %}{{ label }}{% endif %}{% endfor %}{% endif %} ▾</summary>
         <nav class="reiter" aria-label="Status">
-          <a href="?"{% if not f.status %} aria-current="page"{% endif %}>alle offenen</a>
-          {% for s, label, n in status_zahlen %}{% if n %}<a href="?status={{ s }}"{% if f.status == s %} aria-current="page"{% endif %}>{{ label }} ({{ n }})</a>{% endif %}{% endfor %}
+          <a href="?status={% if ohne_status %}&amp;{{ ohne_status }}{% endif %}"{% if not f.status %} aria-current="page"{% endif %}>alle offenen</a>
+          {% for s, label, n in status_zahlen %}{% if n %}<a href="?status={{ s }}{% if ohne_status %}&amp;{{ ohne_status }}{% endif %}"{% if f.status == s %} aria-current="page"{% endif %}>{{ label }} ({{ n }})</a>{% endif %}{% endfor %}
         </nav>
       </details>
       {% include "includes/herunterladen.html" %}
@@ -39,7 +39,7 @@
         <option value="nur"{% if f.staat_modus == "nur" %} selected{% endif %}>nur …</option>
         <option value="nicht"{% if f.staat_modus == "nicht" %} selected{% endif %}>nicht …</option>
       </select></div>
-    {% if staaten %}<details class="mehrfach warteliste-staaten" data-mehrfach data-leer="Staatsangehörigkeiten wählen" data-zeigen-bei="staat_modus=nur nicht">
+    {% if staaten %}<details class="mehrfach warteliste-staaten" data-sofort-beim-schliessen data-mehrfach data-leer="Staatsangehörigkeiten wählen" data-zeigen-bei="staat_modus=nur nicht">
       <summary class="mehrfach-kopf" aria-label="Staatsangehörigkeiten"><span class="mehrfach-text">{% if f.staaten %}{{ f.staaten|join:", " }}{% else %}Staatsangehörigkeiten wählen{% endif %}</span></summary>
       <div class="mehrfach-liste">
         {% for s in staaten %}<label class="mehrfach-eintrag"><input type="checkbox" name="staat" value="{{ s }}" data-nicht-sofort{% if s in f.staaten %} checked{% endif %}> {{ s }}</label>{% endfor %}
@@ -48,6 +48,7 @@
     <div class="filter-feld filter-suche"><label for="suche">Suche</label>
       <input type="search" name="suche" id="suche" value="{{ f.suche }}" placeholder="Name, Nummer, E-Mail, Telefon, Anmerkung …" data-nicht-sofort {% live_suche %}></div>
     <button type="submit" class="knopf">Filtern</button>
+    {% if filter_aktiv %}<a class="knopf knopf-zweitrangig" href="?filter=zuruecksetzen" title="Alle Filter dieser Seite entfernen">Zurücksetzen</a>{% endif %}
   </form>
 
   {% include "includes/spalten_wahl.html" %}
@@ -59,7 +60,7 @@
     {% if "warteliste.bearbeiten" in rechte %}
     {# Einladen steht oben (unter den Suchfeldern); wirkt auf die weiter unten angehakten Zeilen. #}
     <fieldset class="abschnitt warteliste-einladen-oben">
-      <legend>Ausgewählte einladen</legend>
+      <legend>Ausgewählte einladen <span class="marke" id="warteliste-auswahl-zahl" aria-live="polite">0 ausgewählt</span></legend>
       <p class="hinweis">Lädt die angehakten Anträge zu einem Termin ein: einen vorhandenen wählen oder einen neuen anlegen.</p>
       {% with form=einladen %}
       {# Termin, Datum/von/bis (nur beim neuen Termin) und der Einladen-Knopf in einer Zeile, Haken darunter. #}
@@ -70,7 +71,7 @@
           {% with feld=form.von %}{% include "includes/feld.html" %}{% endwith %}
           {% with feld=form.bis %}{% include "includes/feld.html" %}{% endwith %}
         </div>
-        <button type="submit" class="knopf einladen-knopf" formaction="{% url 'warteliste:einladen' %}" onclick="return confirm('Die ausgewählten Personen jetzt einladen?')">Einladen</button>
+        <button type="submit" class="knopf einladen-knopf" formaction="{% url 'warteliste:einladen' %}" title="Zeigt erst, wer eingeladen wird, und ein Beispiel der Mail; gesendet wird danach mit „Jetzt senden“">Einladen …</button>
       </div>
       <div class="feld feld-haken einladen-mail"><label for="{{ form.mail.id_for_label }}">{{ form.mail }} {{ form.mail.label }}</label><small class="hilfe">{{ form.mail.help_text }}</small></div>
       {% endwith %}
@@ -79,7 +80,7 @@
     <div class="tabelle-rahmen">
     <table class="tabelle">
       <thead><tr>
-        <th><input type="checkbox" aria-label="Alle auswählen" onclick="document.querySelectorAll('#aktionen input[name=ids]').forEach(c => c.checked = this.checked)"></th>
+        <th><input type="checkbox" id="warteliste-alle" aria-label="Alle auswählen"></th>
         {% if "eingang" in sichtbar %}{% sortkopf "Eingang" "eingang" f.sort %}{% endif %}
         {% if "nummer" in sichtbar %}{% sortkopf "#" "nummer" f.sort %}{% endif %}
         {% sortkopf "Nachname" "name" f.sort %}

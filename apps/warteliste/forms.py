@@ -89,6 +89,12 @@ class EinladenForm(forms.Form):
                 self.add_error("bis", "„bis“ muss nach „von“ liegen.")
         return daten
 
+    def termin_vorschau(self) -> Termin:
+        """Der gewählte Termin oder – beim neuen – ein ungespeicherter mit den Angaben (für die
+        Vorschau vor dem Senden; angelegt wird er erst mit ``termin_holen``)."""
+        d = self.cleaned_data
+        return d.get("termin") or Termin(datum=d["datum"], von=d["von"], bis=d.get("bis"))
+
     def termin_holen(self) -> Termin:
         d = self.cleaned_data
         if d.get("termin"):

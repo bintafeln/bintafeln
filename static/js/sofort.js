@@ -19,5 +19,14 @@
         senden();
       }
     });
+    // Aufklappbare Mehrfachauswahl (data-sofort-beim-schliessen): erst anwenden, wenn das Menü
+    // wieder zugeht – so lassen sich mehrere Häkchen setzen, ohne dass die Seite dazwischen lädt.
+    formular.querySelectorAll("details[data-sofort-beim-schliessen]").forEach(function (menue) {
+      var geaendert = false;
+      menue.addEventListener("change", function () { geaendert = true; });
+      menue.addEventListener("toggle", function () {
+        if (!menue.open && geaendert) { geaendert = false; senden(); }
+      });
+    });
   });
 })();

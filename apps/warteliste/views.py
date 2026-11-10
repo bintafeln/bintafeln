@@ -126,17 +126,25 @@ def liste(request):
     # „Doppelte Anträge" und „Abgleich mit dem Kundenstamm" schon beim Betreten des Bereichs im
     # Hintergrund vorrechnen, damit diese Seiten beim Öffnen meist ohne Warten da sind (ADR 0109).
     vorberechnung.vorwaermen()
-    # Filter merken: Eine geänderte Auswahl wird dank data-sofort gleich angezeigt (ohne „Filtern");
-    # die gewählte Ansicht wird in der Sitzung gemerkt und beim nächsten Aufruf der Seite (Aufruf
-    # ohne Parameter, z. B. über das Menü) wieder angezeigt.
+    # Filter merken: Eine geänderte Auswahl wird dank data-sofort gleich angezeigt (ohne „Filtern“)
+    # und beim nächsten Aufruf der Seite ohne Parameter (z. B. über das Menü) wieder angezeigt.
+    # Der Filter wird am Konto gemerkt (nicht nur in der Sitzung): Er gilt auch nach dem Abmelden
+    # weiter, bis man ihn ändert oder mit „Zurücksetzen“ entfernt.
+    ansicht = request.user.warteliste_ansicht or {}
+    if request.GET.get("filter") == "zuruecksetzen":
+        _ansicht_merken(request.user, filter="")
+        return redirect(request.path)
     if any(p in request.GET for p in FILTER_PARAMETER):
-        request.session["warteliste_filter"] = request.GET.urlencode()
-    elif request.session.get("warteliste_filter"):
-        return redirect(f"{request.path}?{request.session['warteliste_filter']}")
+        gemerkt = request.GET.copy()
+        gemerkt.pop("seite", None)
+        if ansicht.get("filter") != gemerkt.urlencode():
+            _ansicht_merken(request.user, filter=gemerkt.urlencode())
+            ansicht = request.user.warteliste_ansicht
+    elif ansicht.get("filter"):
+        return redirect(f"{request.path}?{ansicht['filter']}")
     if "warteliste" not in (request.user.listen_spalten_aus or {}):
         gezeigt = [k for k, _ in SPALTEN if k not in VORGABE_AUS]
         listen.spalten_speichern(request.user, "warteliste", gezeigt, SPALTEN)
-    ansicht = request.user.warteliste_ansicht or {}
     # Sortierung je Konto merken: eine über die Spaltenköpfe gewählte Sortierung gilt beim
     # nächsten Aufruf wieder; ohne Wahl die zuletzt gemerkte (sonst „Eingang").
     standard_sort = ansicht.get("sort") if ansicht.get("sort") in _ALLE_SORT else "eingang"
@@ -149,6 +157,10 @@ def liste(request):
     termine = Termin.objects.annotate(n=Count("wartende")).filter(n__gt=0)
     abfrage = request.GET.copy()
     abfrage.pop("seite", None)
+    ohne_status = abfrage.copy()  # Status-Reiter behalten die übrigen Filter
+    ohne_status.pop("status", None)
+    filter_aktiv = bool(f["status"] or f["art"] or f["termin"] or f["suche"]
+                        or (f["staaten"] and f["staat_modus"] != "alle"))  # fmt: skip
     return render(request, "warteliste/liste.html", {
         "eintraege": ws.prefetch_related("antrag__personen", "antrag__anmerkungen"), "f": f,
         "kapazitaet": gruppen.kapazitaet(), "stand": timezone.localtime(),
@@ -158,6 +170,7 @@ def liste(request):
                                              [k for k, _ in SPALTEN]),
         "spalten_wahl": listen.spalten_wahl(request.user, "warteliste", SPALTEN),
         "spalten_aktion": reverse("warteliste:spalten"), "abfrage": abfrage.urlencode(),
+        "ohne_status": ohne_status.urlencode(), "filter_aktiv": filter_aktiv,
         "status_zahlen": [(s, name, zahlen.get(s, 0)) for s, name in S.choices],
         "arten": Antrag.Art.choices,
         "einladen": EinladenForm(termine=ablauf.kommende_termine()),
@@ -224,6 +237,26 @@ def einladen(request):
         for fehler in form.errors.values():
             messages.error(request, " ".join(fehler))
         return redirect("warteliste:liste")
+    if request.POST.get("bestaetigt") != "1":
+        # Erst die Vorschau: wer eingeladen wird, wer nicht (und warum) und ein Beispiel der Mail.
+        # Gesendet und eingetragen wird erst mit „Jetzt senden“ (ein neuer Termin wird auch erst
+        # dann angelegt).
+        termin = form.termin_vorschau()
+        zeilen = [{"antrag": a, "hindernis": ablauf.einlade_hindernis(a)} for a in antraege]
+        gehen = [z["antrag"] for z in zeilen if not z["hindernis"]]
+        mit_mail = [a for a in gehen if a.email] if form.cleaned_data["mail"] else []
+        beispiel = mit_mail[0] if mit_mail else None
+        betreff, html = "", ""
+        if beispiel is not None:
+            betreff, _, html = ablauf.mail_inhalt(beispiel, termin)
+        return render(request, "warteliste/einladen_vorschau.html", {
+            "termin": termin, "zeilen": zeilen, "anzahl": len(gehen), "mit_mail": len(mit_mail),
+            "ohne_mail": len(gehen) - len(mit_mail), "mail_senden": form.cleaned_data["mail"],
+            "beispiel": beispiel, "vorschau_betreff": betreff, "vorschau_html": html,
+            "felder": [(k, v) for k in ("termin", "datum", "von", "bis", "mail", "zurueck")
+                       for v in request.POST.getlist(k)],
+            "ids": [a.pk for a in antraege],
+        })  # fmt: skip
     termin = form.termin_holen()
     ergebnisse = ablauf.einladen(antraege, termin, _von(request),
                                  mail_senden=form.cleaned_data["mail"])  # fmt: skip

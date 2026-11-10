@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block titel %}Einladung prüfen{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'warteliste:liste' %}">← Warteliste</a></p>
+  <h1>Einladung prüfen</h1>
+  <p>Termin: <strong>{{ termin }}</strong>. Es {{ anzahl|pluralize:"wird,werden" }} <strong>{{ anzahl }}</strong>
+    Person{{ anzahl|pluralize:"en" }} eingeladen{% if mail_senden %} – {{ mit_mail }} per E-Mail{% if ohne_mail %},
+    {{ ohne_mail }} ohne E-Mail-Adresse (bitte anrufen oder Brief){% endif %}{% else %} (ohne E-Mail: bitte anrufen oder
+    Brief){% endif %}. Noch ist nichts gesendet oder eingetragen.</p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>#</th><th>Name</th><th>E-Mail</th><th>Telefon</th><th>Einladung</th></tr></thead>
+    <tbody>
+    {% for z in zeilen %}
+      <tr>
+        <td data-titel="#">{{ z.antrag.nummer }}</td>
+        <td data-titel="Name">{{ z.antrag.nachname }}, {{ z.antrag.vorname }}</td>
+        <td data-titel="E-Mail">{{ z.antrag.email|default:"–" }}</td>
+        <td data-titel="Telefon">{{ z.antrag.telefon|default:"–" }}</td>
+        <td data-titel="Einladung">{% if z.hindernis %}<strong class="grund-rot">⚠</strong> {{ z.hindernis }}{% elif mail_senden and z.antrag.email %}✓ per E-Mail{% else %}✓ ohne Mail (anrufen oder Brief){% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <form method="post" action="{% url 'warteliste:einladen' %}" class="knopf-reihe">
+    {% csrf_token %}
+    <input type="hidden" name="bestaetigt" value="1">
+    {% for pk in ids %}<input type="hidden" name="ids" value="{{ pk }}">{% endfor %}
+    {% for name, wert in felder %}<input type="hidden" name="{{ name }}" value="{{ wert }}">{% endfor %}
+    {% if anzahl %}<button type="submit" class="knopf">Jetzt senden</button>{% endif %}
+    <a class="knopf knopf-abbrechen" href="{% url 'warteliste:liste' %}">Abbrechen</a>
+  </form>
+  {% if not anzahl %}<p class="fehler">Von den ausgewählten Anträgen kann niemand eingeladen werden.</p>{% endif %}
+</section>
+{% if beispiel %}
+<section class="karte breit">
+  <h2>So sieht die Einladung aus</h2>
+  <p class="hinweis">Beispiel: die Mail an {{ beispiel.vorname }} {{ beispiel.nachname }}. Betreff:
+    <strong>{{ vorschau_betreff }}</strong></p>
+  <iframe class="mail-vorschau" sandbox title="Vorschau der Einladungs-Mail"
+          srcdoc="{{ vorschau_html|force_escape }}"></iframe>
+</section>
+{% endif %}
+{% endblock %}
