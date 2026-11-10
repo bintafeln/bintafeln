@@ -294,8 +294,9 @@ class SperreForm(MitVonMixin, forms.ModelForm):
         # unbefristet)
         if not self.instance.pk:
             heute = timezone.localdate()
-            self.fields["von"].initial = heute
-            self.fields["bis"].initial = heute + dt.timedelta(days=365)
+            # über ``self.initial``: die Werte der (leeren) Instanz hätten sonst Vorrang
+            self.initial["von"] = self.initial.get("von") or heute
+            self.initial["bis"] = self.initial.get("bis") or heute + dt.timedelta(days=365)
 
     def clean(self):
         daten = super().clean()
