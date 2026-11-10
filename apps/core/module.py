@@ -99,6 +99,10 @@ class Modul:
     suchen: Callable | None = None
     # Beitrag zur Startseite unter der Begrüßung: startseite(request) -> HTML (render_to_string)
     startseite: Callable | None = None
+    # Eigene Übernahmen auf der Seite „Daten importieren“: datenimport(request) ->
+    # [{"titel", "beschreibung", "url"}]; das Modul prüft selbst die Rechte. So stehen alle
+    # Importwege an einer Stelle, statt als eigene Menüpunkte.
+    datenimport: Callable | None = None
     # Seiten für Aushang-Monitore (ADR 0080): aushang() -> [Aushangseite, …]
     aushang: Callable | None = None
     # Kachel auf „Mein Konto“: mein_konto(request) -> HTML (render_to_string, ein
@@ -206,6 +210,12 @@ def startseite(request) -> list[str]:
     an = eingeschaltet()
     teile = [m.startseite(request) for m in alle() if m.kennung in an and m.startseite]
     return [t for t in teile if t]
+
+
+def datenimport(request) -> list[dict]:
+    """Übernahmen der eingeschalteten Module für die Seite „Daten importieren“."""
+    an = eingeschaltet()
+    return [e for m in alle() if m.kennung in an and m.datenimport for e in m.datenimport(request)]
 
 
 def mein_konto(request) -> list[str]:
