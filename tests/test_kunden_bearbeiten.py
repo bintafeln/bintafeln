@@ -363,6 +363,16 @@ def test_listen_pflegen(admin_client):
     liste = admin_client.get(url("liste", "kundengruppen")).content.decode()
     assert ">DI</a></td>" in liste and "Dienstag" in liste and "14:00" in liste
     assert "überschreibt Kundengruppen" in liste
+    # Belegung (nur zur Anzeige): zwei Haushalte in der Gruppe, ein beendeter zählt nicht
+    from apps.kunden.models import Haushalt
+
+    Haushalt.objects.create(kundennummer="5001", kundengruppe=gruppe)
+    Haushalt.objects.create(kundennummer="5002", kundengruppe=gruppe)
+    Haushalt.objects.create(
+        kundennummer="5003", kundengruppe=gruppe, status=Haushalt.Status.BEENDET
+    )
+    liste = admin_client.get(url("liste", "kundengruppen")).content.decode()
+    assert 'data-titel="Belegung">2</td>' in liste
     antwort = admin_client.post(url("listeneintrag_loeschen", "ausgabestellen", stelle.pk),
                                 follow=True)  # fmt: skip
     assert "wird noch verwendet" in antwort.content.decode()
