@@ -822,7 +822,17 @@ a.knopf-gefahr { color: #fff; }
 .sortieren.auf::after { content: " ▲"; color: var(--akzent-dunkel); }
 .sortieren.ab::after { content: " ▼"; color: var(--akzent-dunkel); }
 .antraege-liste td { white-space: nowrap; }
-.antraege-liste td[data-titel="Anmerkung"] { white-space: normal; min-width: 10rem; }
+.antraege-liste th, .antraege-liste td { padding: .4rem .35rem; }
+.antraege-liste td[data-titel="Anmerkung"] { white-space: normal; min-width: 8rem; }
+/* Schmalere Spalten: lange E-Mail-Adressen und Staatsangehörigkeiten werden gekürzt (voll im Antrag) */
+.antraege-liste td[data-titel="E-Mail"], .antraege-liste td[data-titel="Staatsangehörigkeit"] {
+  max-width: 11rem; overflow: hidden; text-overflow: ellipsis; }
+/* Die Knöpfe rechts bleiben beim seitlichen Rollen immer sichtbar */
+@media (min-width: 761px) {
+  .antraege-liste th:last-child, .antraege-liste td.zeilen-aktionen {
+    position: sticky; right: 0; background: var(--flaeche); box-shadow: -8px 0 6px -6px rgba(0, 0, 0, .18); }
+}
+.status-aendern { display: inline-flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
 .zeilen-aktionen { display: flex; gap: .25rem; }
 .symbol {
   display: inline-flex; align-items: center; justify-content: center; width: 2.1rem; height: 2.1rem;
