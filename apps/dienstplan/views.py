@@ -322,7 +322,10 @@ def stelle(request, pk):
             messages.success(request, f"Aufgabe „{a}“ angelegt.")
             return redirect(hier)
         if aktion == "besetzung" and tag:
-            _besetzung_speichern(request, ds, tag)
+            doppelt = _besetzung_speichern(request, ds, tag)
+            if doppelt:
+                messages.warning(request, "Niemand kann an einem Tag doppelt eingeteilt sein; "
+                                          "übergangen: " + ", ".join(doppelt) + ".")  # fmt: skip
             messages.success(request, "Feste Besetzung gespeichert.")
             return redirect(hier)
         if aktion == "standard":
@@ -349,14 +352,33 @@ def stelle(request, pk):
     })  # fmt: skip
 
 
-def _besetzung_speichern(request, ds, tag):
+def _besetzung_speichern(request, ds, tag) -> list[str]:
+    """Speichert die feste Besetzung eines Wochentags. Niemand steht an einem Tag doppelt im Plan
+    (weder bei zwei Aufgaben dieser Ausgabestelle noch zugleich an einer anderen); solche
+    Einträge werden übergangen und zurückgemeldet."""
     gueltig = {str(h.pk): h for h in helfer_aktiv()}
+    woanders = {
+        b.helfer_id: b.aufgabe.stelle
+        for b in Besetzung.objects.filter(aufgabe__wochentag=tag, aufgabe__stelle__aktiv=True)
+        .exclude(aufgabe__stelle=ds)
+        .select_related("aufgabe__stelle__ausgabestelle")
+    }
+    gesehen, doppelt = set(), []
     for a in ds.aufgaben.filter(wochentag=tag):
         wahl = request.POST.get(f"h_{a.pk}", "")
         if wahl in gueltig:
-            Besetzung.objects.update_or_create(aufgabe=a, defaults={"helfer": gueltig[wahl]})
+            helfer = gueltig[wahl]
+            if helfer.pk in gesehen or helfer.pk in woanders:
+                wo = f"bei {woanders[helfer.pk]}" if helfer.pk in woanders else "an diesem Tag"
+                doppelt.append(f"{helfer} ({a.name}, schon {wo} eingeteilt)")
+                # stand hier schon: sonst bliebe die Person doch doppelt
+                Besetzung.objects.filter(aufgabe=a, helfer=helfer).delete()
+                continue
+            gesehen.add(helfer.pk)
+            Besetzung.objects.update_or_create(aufgabe=a, defaults={"helfer": helfer})
         elif not wahl:
             Besetzung.objects.filter(aufgabe=a).delete()
+    return doppelt
 
 
 @never_cache

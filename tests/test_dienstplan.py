@@ -208,6 +208,16 @@ def test_einstellungen_stelle_aufgaben_kopieren(team, admin_client):
                                          f"h_{a[1].pk}": ""})  # fmt: skip
     assert Besetzung.objects.get(aufgabe=a[3]).helfer == h["uwe"]
     assert not Besetzung.objects.filter(aufgabe=a[1]).exists()
+    # Niemand doppelt an einem Tag: Uwe kann freitags nicht zwei Aufgaben fest übernehmen
+    antwort = admin_client.post(
+        f"{url}?tag=Fr",
+        {"aktion": "besetzung", f"h_{a[1].pk}": h["uwe"].pk, f"h_{a[2].pk}": h["paul"].pk,
+         f"h_{a[3].pk}": h["uwe"].pk},
+        follow=True,
+    )  # fmt: skip
+    assert Besetzung.objects.get(aufgabe=a[1]).helfer == h["uwe"]
+    assert not Besetzung.objects.filter(aufgabe=a[3]).exists()  # dort stand Uwe bisher
+    assert "doppelt eingeteilt" in antwort.content.decode()
     admin_client.post(f"{url}?tag=Fr", {"aktion": "tag", "teamleitung": h["tom"].pk,
                                          "telefon": ""})  # fmt: skip
     assert Diensttag.objects.get(stelle=ds, wochentag="Fr").teamleitung == h["tom"]

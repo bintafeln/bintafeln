@@ -251,8 +251,21 @@ def test_einstellungen_touren_besetzung_springer(team, admin_client):
         ("Mo", 1, "Tim"),
         ("Di", 2, "Ole"),
     }
-    admin_client.post(url, {"b_Mo_1": p["max"].pk, "b_Di_2": ""})  # ändern und leeren
-    assert [(b.wochentag, b.person.vorname) for b in neu.besetzungen.all()] == [("Mo", "Max")]
+    admin_client.post(url, {"b_Mo_1": p["ole"].pk, "b_Di_2": ""})  # ändern und leeren
+    assert [(b.wochentag, b.person.vorname) for b in neu.besetzungen.all()] == [("Mo", "Ole")]
+    # Niemand doppelt an einem Tag: Max fährt montags schon in der Tour Mitte, und Tim kann
+    # dienstags nicht zwei Plätze derselben Tour haben
+    antwort = admin_client.post(
+        url,
+        {"b_Mo_1": p["ole"].pk, "b_Mo_2": p["max"].pk, "b_Di_1": p["tim"].pk,
+         "b_Di_2": p["tim"].pk},
+        follow=True,
+    )  # fmt: skip
+    assert {(b.wochentag, b.platz, b.person.vorname) for b in neu.besetzungen.all()} == {
+        ("Mo", 1, "Ole"),
+        ("Di", 1, "Tim"),
+    }
+    assert "doppelt eingeteilt" in antwort.content.decode()
     admin_client.post(reverse("fahrdienst:tour_loeschen", args=[neu.pk]))
     assert not Tour.objects.filter(name="Sondertour").exists()
     assert PapierkorbEintrag.objects.get().art == "Tour"
