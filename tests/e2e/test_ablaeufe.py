@@ -1262,14 +1262,14 @@ def test_aufnahme_angehoerige_ohne_leere_zeilen(angemeldet, admin):
     seite.get_by_role("button", name="Weiter", exact=True).click()  # Kunde suchen: neuer Kunde
     seite.get_by_role("button", name="Weiter", exact=True).click()  # Daten abgleichen
     expect(seite.get_by_role("heading", name="3. Angehörige")).to_be_visible()
-    zeilen = seite.locator("table.tabelle tbody tr:visible")
+    zeilen = seite.locator(".person-karte:visible")
     expect(zeilen).to_have_count(1)  # nur Paul, keine leeren Zeilen
     seite.get_by_role("button", name="Weitere Person hinzufügen").click()
     expect(zeilen).to_have_count(2)
     zeilen.nth(1).get_by_label("Vorname").fill("Lina")
     seite.get_by_role("button", name="Weiter", exact=True).click()
     seite.goto(reverse("antraege:aufnahme_schritt", args=[a.pk, "personen"]))
-    expect(seite.locator("table.tabelle tbody tr:visible")).to_have_count(2)
+    expect(seite.locator(".person-karte:visible")).to_have_count(2)
     expect(seite.locator("input[value=Lina]")).to_be_visible()
 
 
