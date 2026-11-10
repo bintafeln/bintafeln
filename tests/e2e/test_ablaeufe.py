@@ -1209,6 +1209,17 @@ def test_datum_tippen_und_kalender(angemeldet, admin):
     assert datum.get_attribute("type") == "text"
     huelle = datum.locator("xpath=ancestor::span[contains(@class,'datum-feld')]")
     expect(huelle.locator(".datum-kalender")).to_have_count(1)
+    # Das echte Kalender-Feld liegt genau über dem Knopf: Ein Tipp auf den Knopf trifft es direkt
+    # (nur so öffnet der Kalender auf dem iPad zuverlässig) und übernimmt das getippte Datum.
+    datum.fill("03.02.1999")
+    mitte = huelle.locator(".datum-kalender").bounding_box()
+    oben = seite.evaluate(
+        "([x, y]) => document.elementFromPoint(x, y).className",
+        [mitte["x"] + mitte["width"] / 2, mitte["y"] + mitte["height"] / 2],
+    )
+    assert "datum-pick" in oben
+    huelle.locator(".datum-pick").dispatch_event("pointerdown")  # der Tipp, ohne Kalenderfenster
+    expect(huelle.locator(".datum-pick")).to_have_value("1999-02-03")
     # Alternative Kalender: eine Auswahl im versteckten Kalender-Feld landet im Textfeld.
     seite.evaluate(
         "() => { const p = document.querySelector('#id_geburtsdatum')"
