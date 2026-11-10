@@ -187,3 +187,24 @@ def test_enddatum_im_formular(admin_client, aufbau):
              "schliesst_am": "2026-12-31"}  # fmt: skip
     admin_client.post(reverse("kunden:ausgabestelle_bearbeiten", args=[alt.pk]), daten)
     assert Ausgabestelle.objects.get(pk=alt.pk).schliesst_am == dt.date(2026, 12, 31)
+
+
+def test_stellenwahl_ohne_lange_geschlossene(aufbau, admin):
+    """In der Auswahl der Ausgabestelle (oben im Menü) stehen aktive Stellen; geschlossene nur noch
+    etwa drei Monate nach dem letzten Tag, nicht aktive ohne Enddatum gar nicht."""
+    from apps.ausgabe import stelle as stellen_wahl
+
+    alt, neu, g_alt, g_neu, h = aufbau
+    ohne_datum = Ausgabestelle.objects.create(name="Stillgelegt", aktiv=False)
+    alt.aktiv, alt.schliesst_am = False, HEUTE - dt.timedelta(days=30)
+    alt.save()
+    namen = {s.name for s in stellen_wahl.waehlbar(admin, HEUTE)}
+    assert namen == {"Alt-Stelle", "Neu-Stelle"}  # vor 30 Tagen geschlossen: noch dabei
+    assert ohne_datum.name not in namen
+    alt.schliesst_am = HEUTE - dt.timedelta(days=120)
+    alt.save()
+    assert {s.name for s in stellen_wahl.waehlbar(admin, HEUTE)} == {"Neu-Stelle"}
+    # Eine früher gewählte, inzwischen lange geschlossene Stelle gilt nicht mehr als aktuelle
+    admin.gewaehlte_stelle = alt
+    admin.save()
+    assert stellen_wahl.aktuelle(admin) == neu  # nur noch eine wählbar

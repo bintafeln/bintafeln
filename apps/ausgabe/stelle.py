@@ -14,13 +14,30 @@ from apps.konten import rollen
 from apps.kunden import zugang
 from apps.kunden.models import Abholung, Ausgabestelle, Ausnahme, Haushalt, Kundengruppe
 
+# So lange nach der Schließung steht eine Ausgabestelle noch in der Auswahl (zum Nachtragen und
+# Abrechnen); danach nicht mehr.
+NACH_SCHLIESSUNG_TAGE = 92
 
-def waehlbar(benutzer) -> list[Ausgabestelle]:
-    """Ausgabestellen, die das Konto wählen darf; die eigene bei Konten einer Ausgabestelle."""
+
+def noch_waehlbar(stelle: Ausgabestelle, heute: dt.date | None = None) -> bool:
+    """Aktive Ausgabestellen immer; geschlossene (nicht aktive) nur bis etwa drei Monate nach
+    ihrem letzten Tag (``schliesst_am``). Nicht aktive ohne Enddatum stehen nicht zur Wahl."""
+    if stelle.aktiv:
+        return True
+    if not stelle.schliesst_am:
+        return False
+    heute = heute or timezone.localdate()
+    return stelle.schliesst_am >= heute - dt.timedelta(days=NACH_SCHLIESSUNG_TAGE)
+
+
+def waehlbar(benutzer, heute: dt.date | None = None) -> list[Ausgabestelle]:
+    """Ausgabestellen, die das Konto wählen darf; die eigene bei Konten einer Ausgabestelle.
+    Geschlossene Stellen stehen nur noch etwa drei Monate nach der Schließung zur Wahl."""
     if benutzer.stelle_id:
         return [benutzer.stelle]
     eigene = zugang.stellen(benutzer)
-    return list(eigene) if eigene is not None else list(Ausgabestelle.objects.order_by("name"))
+    alle = eigene if eigene is not None else Ausgabestelle.objects.order_by("name")
+    return [s for s in alle if noch_waehlbar(s, heute)]
 
 
 def aktuelle(benutzer) -> Ausgabestelle | None:
