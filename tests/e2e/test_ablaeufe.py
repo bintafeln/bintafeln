@@ -395,6 +395,9 @@ def test_suche_treffer_antippen_wie_auf_dem_ipad(angemeldet, admin):
     expect(treffer).to_be_visible()
     treffer.click()
     expect(seite).to_have_url(re.compile("00041"))
+    # Erst tippen, wenn die neue Seite fertig geladen ist: Vorher hört die Suche noch nicht zu,
+    # die Eingabe ginge verloren und es käme keine Trefferliste.
+    seite.wait_for_load_state()
     # Tippen außerhalb schließt die Liste
     seite.get_by_role("searchbox").first.fill("Muster1")
     expect(treffer).to_be_visible()
