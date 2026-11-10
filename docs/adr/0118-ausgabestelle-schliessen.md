@@ -20,6 +20,14 @@ bzw. Kundengruppen verteilt werden – ohne dass am Schließtag jemand ohne Grup
   in der Historie fest (`HaushaltEreignis`, Quelle „automatisch“) und wendet die Ausweis-Regel
   (ADR 0061) an; eine inzwischen inaktive Zielgruppe bleibt offen. Beide Funktionen laufen täglich
   über `kunden.models.fristen_anwenden()` (Startseite).
+- **Stichtag-Vorgabe:** Die Verlegungsseite schlägt den **Tag nach dem letzten Ausgabetag**
+  (`schliesst_am + 1`) als Stichtag vor – erst ab dann gilt die neue Stelle; der Tag bleibt
+  änderbar.
+- **Anzeige am Haushalt:** Ein offener geplanter Wechsel steht auch in der Kundenmaske
+  („Geplanter Umzug: ab … zu …“), nicht nur auf der Verlegungsseite.
+- **Neuer Ausweis:** Am Umzugstag legt `verlegung.anwenden()` je verlegtem Haushalt automatisch
+  eine `Notiz` „Ausweis drucken (Umzug zu …)“ an, damit beim nächsten Einlass ein neuer Ausweis
+  gedruckt wird (die neue Ausgabestelle/Gruppe steht darauf).
 - **Platzreservierung:** Ein geplanter, noch nicht ausgeführter Zuzug belegt den Platz in der
   Zielgruppe, sobald sein Stichtag in die Vorlaufzeit fällt
   (`KundenEinstellungen.verlegung_vorlauf_wochen`, Vorgabe 6 Wochen; 0 = erst am Stichtag). Weit im

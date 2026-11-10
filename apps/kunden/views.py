@@ -26,6 +26,7 @@ from apps.kunden import (
     importieren,
     merkmale,
     verlaengerung,
+    verlegung,
     views_dokumente,
     zugang,
 )
@@ -395,6 +396,7 @@ def haushalt(request, kundennummer):
         {
             "h": h,
             "einstellungen": einstellungen,
+            "geplanter_wechsel": verlegung.offener(h),
             "hauptperson": next((p for p in personen if p[0].ist_hauptperson), None),
             "angehoerige": [p for p in personen if not p[0].ist_hauptperson],
             "haushalt_zusatz": haushalt_zusatz,

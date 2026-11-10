@@ -91,7 +91,10 @@ def verlegen(request, pk):
             teile.append(f"{entfernt} Plan{'ung' if entfernt == 1 else 'ungen'} zurückgenommen")
         messages.success(request, (", ".join(teile) + ".") if teile else "Nichts geändert.")
         return redirect("kunden:ausgabestelle", pk=stelle.pk)
-    vorgabe = stelle.schliesst_am or timezone.localdate()
+    # Umzug ab dem Tag NACH dem letzten Ausgabetag (schliesst_am ist der letzte Tag selbst).
+    vorgabe = (
+        stelle.schliesst_am + dt.timedelta(days=1) if stelle.schliesst_am else timezone.localdate()
+    )
     zeilen = [
         {"h": h, "hauptperson": next((p for p in h.personen.all() if p.ist_hauptperson), None),
          "offen": offen.get(h.pk)}
