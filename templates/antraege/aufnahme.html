@@ -121,14 +121,14 @@
 
 {% elif schritt == "personen" %}
   <h2>3. Angehörige</h2>
-  <p class="hinweis">Aus dem Haushalt und dem Antrag vorausgefüllt. Zeilen ohne Vorname werden ignoriert.</p>
+  <p class="hinweis">Aus dem Haushalt und dem Antrag vorausgefüllt. Mit „Weitere Person hinzufügen“ kommt eine leere Zeile dazu; Zeilen ohne Vorname werden ignoriert.</p>
   <input type="hidden" name="anzahl" value="{{ personen|length }}">
   <div class="tabelle-rahmen">
   <table class="tabelle">
     <thead><tr><th>Vorname</th><th>Nachname</th><th>Geburtsdatum</th>{% if staaten %}<th>Staatsangehörigkeit</th>{% endif %}{% if gdb_stufen %}<th>Behinderung</th>{% endif %}<th>Entfernen</th></tr></thead>
     <tbody>
     {% for p in personen %}
-      <tr>
+      <tr{% if not p.vorname and not p.nachname %} data-leere-zeile{% endif %}>
         <td data-titel="Vorname"><input type="hidden" name="p{{ forloop.counter0 }}_pk" value="{{ p.pk|default:'' }}"><input type="text" name="p{{ forloop.counter0 }}_vorname" value="{{ p.vorname }}" maxlength="100" aria-label="Vorname"></td>
         <td data-titel="Nachname"><input type="text" name="p{{ forloop.counter0 }}_nachname" value="{{ p.nachname }}" maxlength="100" aria-label="Nachname"></td>
         <td data-titel="Geburtsdatum"><input type="date" name="p{{ forloop.counter0 }}_geburtsdatum" value="{{ p.geburtsdatum }}" aria-label="Geburtsdatum"></td>
@@ -141,6 +141,10 @@
     </tbody>
   </table>
   </div>
+  {# Leere Zeilen blendet leere_zeilen.js aus; der Knopf holt je Klick eine zurück. #}
+  <p><button type="button" class="knopf knopf-zweitrangig" data-zeile-dazu hidden>+ Weitere Person hinzufügen</button>
+    <span class="hinweis" data-keine-personen hidden>Keine weiteren Personen im Haushalt.</span></p>
+  <script src="{% static 'js/leere_zeilen.js' %}" defer></script>
 
 {% elif schritt == "bescheid" %}
   <h2>4. Bescheid und Gültigkeit des Ausweises</h2>
