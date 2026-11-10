@@ -251,6 +251,11 @@ def _tag(request) -> str:
         return request.GET["tag"] if request.GET["tag"] in WOCHENTAGE else ""
     if request.GET.get("q", "").strip():
         return ""
+    return _standard_tag(request)
+
+
+def _standard_tag(request) -> str:
+    """Der Ausgabetag, mit dem die Liste ohne eigene Wahl startet (heute bzw. der eigene)."""
     verfuegbar = export.waehlbare_tage(_eigene_gruppen(request.user))
     from apps.ausgabe import ausgabetag
     from apps.ausgabe import stelle as stelle_wahl
@@ -296,11 +301,21 @@ def zuletzt_aufgenommen(request):
                   {"zeilen": zeilen, "anzahl": ZULETZT_AUFGENOMMEN})  # fmt: skip
 
 
+# Filter der Kundenliste, die am Konto gemerkt werden (ohne Suchtext, Seite und Zeilenzahl)
+FILTER_MERKEN = ("status", "gruppe", "tag", "merkmal", "merkmal_wert", "sort")
+
+
 @rollen.recht_erforderlich("kunden.liste")
 def uebersicht(request):
     """Kundenliste mit Suche. Eine exakt passende Kundennummer (Scanner) öffnet den Haushalt."""
     ImportVorbereitung.abgelaufene_loeschen()
     fristen_anwenden()
+    # Filter am Konto merken: beim nächsten Aufruf wieder so, bis „Zurücksetzen“. Der Ausgabetag
+    # wird nur gemerkt, wenn er von der Vorgabe (heute) abweicht – sonst stünde er morgen falsch.
+    gemerkt = listen.filter_merken(request, "kunden", FILTER_MERKEN,
+                                   {"tag": _standard_tag(request)})  # fmt: skip
+    if gemerkt:
+        return gemerkt
     suche = request.GET.get("q", "").strip()
     fremd = ""
     if suche and not request.headers.get("HX-Request"):

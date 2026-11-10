@@ -73,6 +73,7 @@ def test_tagesfilter_der_ausgabestelle(admin, daten, benutzer_mit_rolle, anmelde
     assert nummern(c.get(LISTE, {"tag": "xx"})) == ["101", "201"]
     # Mit Suchtext ohne Tag: alle Tage, damit niemand übersehen wird
     assert nummern(c.get(LISTE, {"q": "Erika"})) == ["101", "201"]
+    c.get(LISTE, {"filter": "zuruecksetzen"})  # die eben gewählten Tage sind am Konto gemerkt
     seite = c.get(LISTE).content.decode()
     assert '<option value="Mo" selected>Mo</option>' in seite and "tag=Mo" in seite
     # Nur ein Ausgabetag: keine Auswahl und kein Filter
