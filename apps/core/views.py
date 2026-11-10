@@ -52,6 +52,7 @@ def start(request):
     antragsfristen_anwenden()
     module.fristen_anwenden()
     papierkorb.fristen_anwenden()
+    mail.fristen_anwenden()
     from apps.konten import anmeldeprotokoll
 
     anmeldeprotokoll.fristen_anwenden()
@@ -198,6 +199,7 @@ def mail_einstellungen(request):
                 "Testmail von bintafeln",
                 "Diese Mail zeigt: bintafeln kann über den eingerichteten Mailserver senden.",
                 [an],
+                art="test",
             )
         except mail.MailFehler as fehler:
             request.session["mail_test"] = [False, f"Testmail nicht gesendet: {fehler}"]

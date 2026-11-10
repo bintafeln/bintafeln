@@ -380,6 +380,10 @@ a.knopf { display: inline-block; text-align: center; text-decoration: none; }
 .kasse .summe { border-top: 2px solid #222; }
 @media (min-width: 40rem) { .kasse .summe td { border-top: 2px solid #222; } }
 
+/* Gesendete Mails: Wortlaut wie getippt, aber umbrechend und in der Schrift der Seite */
+.mail-text { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; margin: 0; padding: .75rem 1rem;
+  background: var(--grund); border: 1px solid var(--rand); border-radius: var(--radius); }
+
 /* Mitarbeitende */
 .aktionen { display: flex; flex-wrap: wrap; gap: .5rem; }
 .knopf-gefahr { background: #b3261e; color: #fff; }

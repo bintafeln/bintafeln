@@ -136,7 +136,7 @@ def test_wichtig_und_abruf_auf_der_startseite(admin_client, ordner):
 def test_mail_einmal_je_sicherheitsupdate(admin_client, admin, ordner, benutzer_mit_rolle,
                                          monkeypatch):  # fmt: skip
     gesendet = []
-    monkeypatch.setattr("apps.core.mail.senden", lambda betreff, text, an: gesendet.append(
+    monkeypatch.setattr("apps.core.mail.senden", lambda betreff, text, an, **k: gesendet.append(
         (betreff, text, an)))  # fmt: skip
     monkeypatch.setattr("apps.core.mail.eingerichtet", lambda: True)
     admin.email = "chefin@example.org"

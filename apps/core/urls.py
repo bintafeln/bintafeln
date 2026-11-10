@@ -4,6 +4,7 @@ from apps.core import (
     views,
     views_app,
     views_datensicherung,
+    views_mails,
     views_papierkorb,
     views_produktivstart,
     views_sicherung,
@@ -31,6 +32,8 @@ urlpatterns = [
     path("einstellungen/speicher/", views_speicher.seite, name="speicher"),
     path("einstellungen/speicher/dateien/", views_speicher.dateien, name="dateien"),
     path("protokoll/", views.protokoll, name="protokoll"),
+    path("mails/", views_mails.liste, name="mails"),
+    path("mails/<int:pk>/", views_mails.ansehen, name="mail"),
     path("papierkorb/", views_papierkorb.liste, name="papierkorb"),
     path("papierkorb/<int:pk>/", views_papierkorb.ansehen, name="papierkorb_eintrag"),
     path(

@@ -377,7 +377,8 @@ def _dank_senden(request, form, per_mail):
         ]
         try:
             betreff, text, html = gestaltung.mail(d["vorlage"], e, allgemein)
-            mail.senden(betreff, text, [x.adresse.email], html=html, anhaenge=anhaenge)
+            mail.senden(betreff, text, [x.adresse.email], html=html, anhaenge=anhaenge,
+                        art="spenden")  # fmt: skip
         except mail.MailFehler as grund:
             fehler.append(f"{x.adresse.name}: {grund}")
             if len(fehler) >= 3 and not gesendet:

@@ -131,7 +131,7 @@ def _senden(request, v, d, erreichbar, allgemein):
     for e in erreichbar:
         try:
             betreff, text, html = gestaltung.mail(v, e, allgemein)
-            mail.senden(betreff, text, [e.email], html=html)
+            mail.senden(betreff, text, [e.email], html=html, art="serienbrief")
         except mail.MailFehler as grund:
             fehler.append(f"{e.name}: {grund}")
             if len(fehler) >= 3 and not gesendet:

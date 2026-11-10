@@ -74,7 +74,8 @@ def senden(stelle, datum, tag: AufrufTag | None = None, einstellungen=None) -> b
         "wurden. Zurückgestellte Kunden sind mit „ja“, dem Versatz und der Uhrzeit markiert."
     )
     mail.senden(betreff, text, [e.reihenfolge_mail],
-                anhaenge=[(f"{basis}.csv", csv_text(tag).encode("utf-8"), "text/csv")])  # fmt: skip
+                anhaenge=[(f"{basis}.csv", csv_text(tag).encode("utf-8"), "text/csv")],
+                art="aufruf")  # fmt: skip
     return True
 
 

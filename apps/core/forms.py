@@ -263,7 +263,15 @@ class MailEinstellungenForm(forms.ModelForm):
 
     class Meta:
         model = MailEinstellungen
-        fields = ["server", "port", "verschluesselung", "benutzer", "absender"]
+        fields = ["server", "port", "verschluesselung", "benutzer", "absender", "archiv_tage"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["archiv_tage"].required = False  # fehlt, bleibt die bisherige Zahl
+
+    def clean_archiv_tage(self):
+        tage = self.cleaned_data.get("archiv_tage")
+        return self.instance.archiv_tage if tage is None else tage
 
     def clean_server(self):
         server = self.cleaned_data["server"].strip()

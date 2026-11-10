@@ -1,0 +1,47 @@
+{% extends "base.html" %}{% load liste %}
+{% block titel %}Gesendete Mails{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Gesendete Mails</h1>
+  <p class="hinweis">Alle Mails, die bintafeln verschickt hat – auch fehlgeschlagene.
+    {% if tage %}Sie bleiben {{ tage }} Tage stehen und werden danach automatisch gelöscht.{% else %}<strong>Das Archiv
+    ist ausgeschaltet</strong> (Aufbewahrung 0 Tage): Neue Mails werden nicht festgehalten.{% endif %}
+    Anhänge stehen nur mit Name und Größe da; Mails mit Zugangsdaten ohne Inhalt. Jeder Abruf einer Mail wird protokolliert.
+    {% if "einstellungen.mail" in rechte %}Die Zahl der Tage stellen Sie unter
+    <a href="{% url 'core:mail_einstellungen' %}">Einstellungen → E-Mail</a> ein („Gesendete Mails aufbewahren“).{% endif %}</p>
+  <form method="get" class="filter-kompakt" data-sofort>
+    <div class="feld"><label for="q">Suche</label>
+      <input type="search" name="q" id="q" value="{{ q }}" placeholder="Empfänger oder Betreff" data-nicht-sofort {% live_suche %}></div>
+    <div class="feld"><label for="art">Art</label>
+      <select name="art" id="art"><option value="">alle</option>{% for wert, text in arten %}<option value="{{ wert }}"{% if wert == art %} selected{% endif %}>{{ text }}</option>{% endfor %}</select></div>
+    <label class="filter-haken"><input type="checkbox" name="fehler" value="1"{% if nur_fehler %} checked{% endif %}> nur fehlgeschlagene{% if fehler_anzahl %} ({{ fehler_anzahl }}){% endif %}</label>
+    <button type="submit" class="knopf">Suchen</button>
+    {% filter_zuruecksetzen %}
+  </form>
+  <div id="ergebnis">
+  {% if seite.object_list %}
+  {% blaettern seite %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Gesendet</th><th>An</th><th>Betreff</th><th>Art</th><th>Anhänge</th><th>Stand</th></tr></thead>
+    <tbody>
+    {% for m in seite %}
+      <tr>
+        <td data-titel="Gesendet">{{ m.gesendet_am|date:"d.m.Y H:i" }}</td>
+        <td data-titel="An">{{ m.an }}</td>
+        <td data-titel="Betreff"><a href="{% url 'core:mail' m.pk %}">{{ m.betreff|default:"(ohne Betreff)" }}</a></td>
+        <td data-titel="Art">{{ m.art_text }}</td>
+        <td data-titel="Anhänge">{{ m.anhaenge|length|default:"–" }}</td>
+        <td data-titel="Stand">{% if m.fehler %}<span class="marke-warnung" title="{{ m.fehler }}">nicht gesendet</span>{% else %}gesendet{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% blaettern seite %}
+  {% else %}
+  <p class="hinweis">{% if q or art or nur_fehler %}Keine Mail passt zu dieser Suche.{% else %}Noch keine Mail im Archiv. Es füllt sich ab jetzt mit jeder gesendeten Mail.{% endif %}</p>
+  {% endif %}
+  </div>
+</section>
+{% endblock %}

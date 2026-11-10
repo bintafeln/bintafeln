@@ -43,6 +43,7 @@ def _mailen(titel: str, basisname: str, csv_text: str, ziel: str) -> None:
         f"Im Anhang die Liste „{titel}“ als PDF und als CSV-Datei (für Excel/LibreOffice).",
         [ziel],
         anhaenge=anhaenge,
+        art="export",
     )
 
 
