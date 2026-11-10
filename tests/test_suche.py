@@ -260,3 +260,34 @@ def test_enter_mit_kundennummer_geht_direkt_zum_kunden(admin_client, client, ben
     anmelden(client, b)
     assert client.get(URL, {"q": "k 2002"}).status_code == 200  # Nord: nicht seine
     assert client.get(URL, {"q": "k 1001"}).status_code == 302
+
+
+def test_seiten_hinter_einem_knopf_werden_gefunden(admin_client, admin, client, anmelden,
+                                                   benutzer_mit_rolle):  # fmt: skip
+    """Die Suche findet auch Seiten, die nur über einen Knopf erreichbar sind (ADR 0121) – z. B.
+    „Online-Zugänge freigeben“ bei den Mitarbeitenden – und zeigt sie nur mit dem Recht dazu."""
+    from apps.core import unterseiten
+
+    ergebnis = suche.suchen(admin, "online-zug")
+    treffer = [t for g in ergebnis.gruppen for t in g.treffer]
+    ziel = next(t for t in treffer if t.titel == "Online-Zugänge freigeben")
+    assert ziel.url == reverse("konten:zugaenge_freigeben") and "Mitarbeitende" in ziel.zusatz
+
+    # auch über ein Stichwort
+    def titel(benutzer, begriff):
+        return [t.titel for g in suche.suchen(benutzer, begriff).gruppen for t in g.treffer]
+
+    assert "Online-Zugänge freigeben" in titel(admin, "startpasswort")
+    # Jede eingetragene Seite gibt es, und der Admin kann sie öffnen
+    for u, url in unterseiten.fuer(rollen.rechte_von(admin), {"bexat"}):
+        if u.modul:
+            continue  # Modulseiten prüft der Test des Moduls
+        assert admin_client.get(url).status_code == 200, u.url_name
+    # Ohne das Recht: kein Treffer, und die Seite selbst ist gesperrt
+    helfer = benutzer_mit_rolle("helferin", rollen.AUSGABE)
+    anmelden(client, helfer)
+    assert "Online-Zugänge freigeben" not in titel(helfer, "online-zug")
+    rechte = rollen.rechte_von(helfer)
+    for u in unterseiten.UNTERSEITEN:
+        if u.rechte and not u.modul and not any(r in rechte for r in u.rechte):
+            assert client.get(reverse(u.url_name)).status_code == 403, u.url_name
