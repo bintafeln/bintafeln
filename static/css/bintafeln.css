@@ -1936,3 +1936,6 @@ details.amtsdokumente > summary { cursor: pointer; margin: .5rem 0; }
 .geb-monat .geb-tag { display: inline-block; min-width: 1.9rem; font-weight: 600; color: var(--leise); }
 
 .platzhalter-legende code { display: inline-block; margin: .1rem .2rem .1rem 0; }
+
+/* Foto eines Nachweises: gesammelte Seiten unter dem Dateifeld */
+.foto-seiten { margin: 0 0 .5rem; padding-left: 1.2rem; font-size: .95rem; }

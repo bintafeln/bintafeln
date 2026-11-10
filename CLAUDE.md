@@ -134,7 +134,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Ausgabe sieht nur die Angaben aus ADR 0026.
   Dokumente zum Haushalt (`HaushaltDokument`, ADR 0030) ebenfalls an der Kundennummer,
   verschlüsselt über `apps.core.privatdateien`, Frist je `Dokumentart`, Ansichten in
-  `views_dokumente.py`.
+  `views_dokumente.py`; am Einlass legt `views_dokumente.foto` Fotos von Nachweisen ab (Recht
+  `kunden.dokument_foto`, nur ablegen, ADR 0122).
   Historie (`HaushaltEreignis`, ADR 0031) über `apps/kunden/historie.py`: Schnappschuss vor und
   nach jeder Änderung am Kundenstamm (`festhalten()`, beim Import `import_festhalten()`).
   Ohne gültigen Ausweis keine Kundengruppe (ADR 0061): `apps/kunden/gruppen.py` (`pruefen()` nach

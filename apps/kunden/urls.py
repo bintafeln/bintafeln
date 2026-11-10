@@ -80,6 +80,11 @@ urlpatterns = [
         views_dokumente.hochladen,
         name="dokument_hochladen",
     ),
+    path(
+        "haushalt/<path:kundennummer>/foto/",
+        views_dokumente.foto,
+        name="dokument_foto",
+    ),
     path("dokument/<int:pk>/", views_dokumente.ansehen, name="dokument"),
     path("dokument/<int:pk>/loeschen/", views_dokumente.loeschen, name="dokument_loeschen"),
     path("haushalt/<path:kundennummer>/auskunft/", views.auskunft, name="auskunft"),

@@ -1,4 +1,4 @@
-{% load notiz %}<section class="karte notizen">
+{% load notiz static %}<section class="karte notizen">
   <h2>Notizen</h2>
   {% for n in notizen %}
     <div class="notiz{% if n.krank_bis %} notiz-krank{% endif %}">
@@ -63,6 +63,28 @@
       <button type="submit" class="knopf knopf-zweitrangig">Abwesenheit speichern</button>
     </form>
   </details>
+  {% endif %}
+
+  {% if foto_arten %}
+  <details class="krank-melden foto-aufnehmen">
+    <summary class="knopf knopf-vorlage"><span aria-hidden="true">📷 </span>Foto aufnehmen …</summary>
+    <form method="post" action="{% url 'kunden:dokument_foto' h.kundennummer %}" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" name="zurueck" value="{% if notiz_htmx %}{% url 'ausgabe:empfang' %}?nummer={{ h.kundennummer|urlencode }}{% else %}{% url 'kunden:haushalt' h.kundennummer %}{% endif %}">
+      <div class="krank-felder">
+        <div class="feld"><label for="foto-art">Was wird fotografiert?</label>
+          <select name="art" id="foto-art" required>{% for art in foto_arten %}<option value="{{ art.pk }}">{{ art }}</option>{% endfor %}</select></div>
+        <div class="feld"><label for="foto-dateien">Foto(s) – jede Seite einzeln</label>
+          <input type="file" name="fotos" id="foto-dateien" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment" multiple required data-foto-seiten></div>
+      </div>
+      <ul class="foto-seiten" data-foto-liste hidden></ul>
+      <p class="hinweis">Mehrere Seiten: nach jedem Foto erneut auf das Feld tippen und die nächste Seite aufnehmen – die
+        Seiten sammeln sich darunter (höchstens 10). Die Fotos werden verschlüsselt beim Haushalt abgelegt und
+        nach der Frist der Dokumentart automatisch gelöscht; ansehen kann sie nur die Verwaltung.</p>
+      <button type="submit" class="knopf knopf-zweitrangig">Foto(s) speichern</button>
+    </form>
+  </details>
+  <script src="{% static 'js/foto_seiten.js' %}" defer></script>
   {% endif %}
 
   {% if notiz_htmx %}
