@@ -145,6 +145,7 @@ _SEITE = {
     "ausgabe:einstellungen": "einstellungen",
     "kunden:uebersicht": "kunden-finden",
     "kunden:haushalt": "kunden-finden",
+    "kunden:zuletzt_aufgenommen": "kunden-finden",
     "kunden:verlaengern": "kunden-finden",
     "kunden:nachrichten": "notizen",
     "kunden:haushalt_neu": "kunden-bearbeiten",

@@ -13,6 +13,7 @@ app_name = "kunden"
 
 urlpatterns = [
     path("", views.uebersicht, name="uebersicht"),
+    path("zuletzt-aufgenommen/", views.zuletzt_aufgenommen, name="zuletzt_aufgenommen"),
     path("haushalt/neu/", views_bearbeiten.haushalt_neu, name="haushalt_neu"),
     path(
         "haushalt/<path:kundennummer>/teil/<str:art>/neu/",
