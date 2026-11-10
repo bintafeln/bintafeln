@@ -507,6 +507,64 @@ def test_kundenabgleich_sperrzeit_und_ausnahmen():
     assert hinweis["art"] == "ok" and "Sperrzeit vorbei" in hinweis["text"]
 
 
+def test_ausnahme_nur_wenn_alle_erwachsenen_sie_erfuellen():
+    """Ein Haushalt mit einer Person über 60 und einer jüngeren ohne Merkmal bekommt keine
+    Ausnahme von der Sperrzeit – erst wenn jede erwachsene Person eine Bedingung erfüllt."""
+    heute = timezone.localdate()
+    h = Haushalt.objects.create(kundennummer="901", ausweis_gueltig_bis=heute - dt.timedelta(60))
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika", nachname="Beispiel",
+                          geburtsdatum=dt.date(heute.year - 65, 1, 1))  # fmt: skip
+    juenger = Person.objects.create(haushalt=h, vorname="Paul", nachname="Beispiel",
+                                    geburtsdatum=dt.date(heute.year - 45, 1, 1))  # fmt: skip
+    Person.objects.create(haushalt=h, vorname="Kind", nachname="Beispiel",
+                          geburtsdatum=dt.date(heute.year - 8, 1, 1))  # fmt: skip
+    hinw = ablauf.hinweise(h, h.hauptperson, heute)
+    assert hinw[0]["art"] == "sperr" and "Sperrzeit bis" in hinw[0]["text"]
+    assert any("nicht alle Erwachsenen" in x["text"] and "Paul Beispiel" in x["text"] for x in hinw)
+    assert ablauf.folge(hinw).startswith("Wartezeit bis")
+    # Erfüllt auch die zweite erwachsene Person eine Bedingung (hier das Merkmal), gilt die
+    # Ausnahme; das Kind zählt nicht mit.
+    feld = Zusatzfeld.objects.create(schluessel="schwerbehindert", bezeichnung="Schwerbehindert",
+                                     typ=Zusatzfeld.Typ.JA_NEIN)  # fmt: skip
+    w = WartelisteEinstellungen.laden()
+    w.ausnahme_feld = feld
+    w.save()
+    juenger.zusatz = {"schwerbehindert": True}
+    juenger.save()
+    h = Haushalt.objects.get(pk=h.pk)
+    hinw = ablauf.hinweise(h, h.hauptperson, heute)
+    assert hinw[0]["art"] == "ok" and "direkt verlängern" in hinw[0]["text"]
+
+
+def test_gesperrte_werden_nicht_eingeladen():
+    """Ein gesperrter Haushalt gilt im Abgleich nie als einladbar: „derselbe Haushalt“ setzt die
+    Wartezeit bis nach dem Ablauf der Sperre – auch wenn sonst eine Ausnahme gälte."""
+    from apps.kunden.models import Sperre
+
+    heute = timezone.localdate()
+    h = Haushalt.objects.create(kundennummer="902", ausweis_gueltig_bis=heute - dt.timedelta(400))
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika", nachname="Beispiel",
+                          geburtsdatum=dt.date(heute.year - 70, 2, 3))  # fmt: skip
+    ende = heute + dt.timedelta(days=90)
+    Sperre.objects.create(haushalt=h, von=heute - dt.timedelta(days=10), bis=ende)
+    a = antrag(geburtsdatum=dt.date(heute.year - 70, 2, 3))
+    ablauf.automatik()
+    e = ablauf.kundenabgleich([a], heute)[0]
+    assert e["sperr"] and "gesperrt bis" in e["treffer"][0]["hinweise"][0]["text"]
+    assert "möglicherweise Kunde 902" in ablauf.sperre_offen(a, heute)
+    meldung = ablauf.entscheiden(a, "902", True, "Büro", heute)
+    bis = ende + dt.timedelta(days=1)
+    assert f"Wartezeit bis {bis:%d.%m.%Y}" in meldung
+    assert ws(a).status == S.WARTEZEIT and ws(a).wartezeit_bis == bis
+    assert not ablauf.einladen([a], termin(), "Büro", mail_senden=False)[0]["ok"]
+    # Unbefristet gesperrt: zunächst ein Jahr Wartezeit
+    Sperre.objects.filter(haushalt=h).update(bis=None)
+    h = Haushalt.objects.get(pk=h.pk)
+    hinw = ablauf.hinweise(h, h.hauptperson, heute)
+    assert "unbefristet gesperrt" in hinw[0]["text"]
+    assert hinw[0]["bis"] == heute + dt.timedelta(days=365)
+
+
 def test_offene_sperren_wie_einzeln_und_zwischengespeichert(monkeypatch):
     """Die Sperrhinweise der Listenseite stimmen mit sperre_offen() überein und werden beim zweiten
     Aufruf aus dem Cache bedient, ohne den Kundenstamm erneut abzufragen."""
