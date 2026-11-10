@@ -20,7 +20,7 @@ from apps.antraege import aufnahme, sprachen
 from apps.antraege.models import Antrag, AntragAnmerkung
 from apps.core import mail
 from apps.core.models import TafelEinstellungen
-from apps.kunden.models import Haushalt
+from apps.kunden.models import Haushalt, KundenEinstellungen
 from apps.warteliste.models import (
     AbgleichEntscheidung,
     DubletteIgnoriert,
@@ -454,27 +454,64 @@ def _alter(geburt: dt.date | None, heute: dt.date) -> int | None:
     return heute.year - geburt.year - ((heute.month, heute.day) < (geburt.month, geburt.day))
 
 
-def _ausnahme(haushalt, person, e) -> str:
-    feld = e.ausnahme_feld
-    if feld is None or not feld.aktiv:
-        return ""
-    werte = [haushalt.zusatz.get(feld.schluessel)] + [
-        p.zusatz.get(feld.schluessel) for p in haushalt.personen.all()]  # fmt: skip
-    return feld.bezeichnung if any(w is True for w in werte) else ""
+def _ausnahme(haushalt, heute, e) -> tuple[list[str], list[str]]:
+    """Ausnahme von der Sperrzeit: (Gründe, wer sie nicht erfüllt).
+
+    Die Ausnahme gilt nur, wenn **jede erwachsene Person** des Haushalts eine der Bedingungen
+    erfüllt (Alter ab ``ausnahme_ab_alter`` oder das Ja/Nein-Feld, z. B. „Schwerbehindert“; am
+    Haushalt gesetzt gilt das Feld für alle). Ist eine Person jünger und hat das Merkmal nicht,
+    greift die Ausnahme für den ganzen Haushalt nicht. Kinder zählen nicht mit."""
+    feld = e.ausnahme_feld if e.ausnahme_feld and e.ausnahme_feld.aktiv else None
+    if not e.ausnahme_ab_alter and feld is None:
+        return [], []
+    haushalt_hat = feld is not None and haushalt.zusatz.get(feld.schluessel) is True
+    kind_bis = KundenEinstellungen.laden().kind_bis_alter
+    gruende, fehlt = [], []
+    for p in haushalt.personen.all():
+        alter = _alter(p.geburtsdatum, heute)
+        if alter is not None and alter <= kind_bis:
+            continue
+        name = f"{p.vorname} {p.nachname}".strip()
+        if feld is not None and (haushalt_hat or p.zusatz.get(feld.schluessel) is True):
+            gruende.append(feld.bezeichnung)
+        elif e.ausnahme_ab_alter and alter is not None and alter >= e.ausnahme_ab_alter:
+            gruende.append(f"{alter} Jahre")
+        else:
+            fehlt.append(f"{name} ({alter} Jahre)" if alter is not None else name)
+    if fehlt or not gruende:
+        return [], fehlt
+    return list(dict.fromkeys(gruende)), []
+
+
+def _sperre_bis(haushalt, heute) -> tuple[bool, dt.date | None]:
+    """(gesperrt?, Ende der Sperre) – aus den aktiven Sperren bzw. dem Status „gesperrt“. Ohne
+    Enddatum (unbefristet) ist das Ende None."""
+    aktive = [s for s in haushalt.sperren.all() if s.ist_aktiv(heute)]
+    if not aktive and haushalt.status != haushalt.Status.GESPERRT:
+        return False, None
+    if not aktive or any(s.bis is None for s in aktive):
+        return True, None
+    return True, max(s.bis for s in aktive)
 
 
 def hinweise(haushalt, person, heute, e=None) -> list[dict]:
     """Was der Treffer im Kundenstamm für den Antrag bedeutet: {text, art} (ok/info/sperr)."""
     e = e or WartelisteEinstellungen.laden()
     erg = []
-    alter = _alter(person.geburtsdatum if person else None, heute)
-    frei = []
-    if e.ausnahme_ab_alter and alter is not None and alter >= e.ausnahme_ab_alter:
-        frei.append(f"{alter} Jahre")
-    if grund := _ausnahme(haushalt, person, e):
-        frei.append(grund)
-    if haushalt.status == haushalt.Status.GESPERRT:
-        erg.append({"text": "Haushalt ist gesperrt", "art": "sperr"})
+    frei, fehlt = _ausnahme(haushalt, heute, e)
+    gesperrt, sperre_ende = _sperre_bis(haushalt, heute)
+    if gesperrt:
+        # Gesperrte werden nicht eingeladen: Wartezeit bis zum Ablauf der Sperre (unbefristet:
+        # zunächst ein Jahr, dann erneut prüfen). Eine Ausnahme von der Sperrzeit ändert das nicht.
+        frei = []
+        if sperre_ende:
+            erg.append({"text": f"Haushalt ist gesperrt bis {sperre_ende:%d.%m.%Y} – nicht "
+                        "einladen", "art": "sperr",
+                        "bis": sperre_ende + dt.timedelta(days=1)})  # fmt: skip
+        else:
+            erg.append({"text": "Haushalt ist unbefristet gesperrt – nicht einladen (Wartezeit "
+                        "zunächst ein Jahr, dann erneut prüfen)", "art": "sperr",
+                        "bis": heute + dt.timedelta(days=365)})  # fmt: skip
     bis = haushalt.ausweis_gueltig_bis
     if bis is None:
         erg.append({"text": "Ausweis ohne Ablaufdatum im Kundenstamm", "art": "info"})
@@ -494,7 +531,15 @@ def hinweise(haushalt, person, heute, e=None) -> list[dict]:
                         "Neuanmeldung möglich", "art": "ok"})  # fmt: skip
     if frei and bis and bis >= heute:
         erg.append({"text": f"Ausnahme von der Sperrzeit: {', '.join(frei)}", "art": "ok"})
+    if fehlt and not gesperrt:
+        erg.append({"text": "Keine Ausnahme von der Sperrzeit: nicht alle Erwachsenen erfüllen "
+                    f"eine Bedingung ({', '.join(fehlt)})", "art": "info"})  # fmt: skip
     return erg
+
+
+def _wartezeit_bis(hinw: list[dict]) -> dt.date | None:
+    """Das späteste Ende aus Sperre und Sperrzeit (None = keine Wartezeit)."""
+    return max((h["bis"] for h in hinw if h.get("bis")), default=None)
 
 
 def _offene_treffer(a, heute, e) -> list[dict]:
@@ -511,7 +556,7 @@ def _offene_treffer(a, heute, e) -> list[dict]:
 
 def folge(hinw: list[dict]) -> str:
     """Was „Ja, derselbe Haushalt“ auslöst (für den Knopf)."""
-    sperre = next((h["bis"] for h in hinw if h.get("bis")), None)
+    sperre = _wartezeit_bis(hinw)
     if sperre:
         return f"Wartezeit bis {sperre:%d.%m.%Y}"
     if any(h.get("gueltig") for h in hinw):
@@ -593,7 +638,7 @@ def entscheiden(a, kundennummer: str, gleich: bool, von: str, heute=None) -> str
     hinw = hinweise(h, h.hauptperson, heute)
     texte = "; ".join(x["text"] for x in hinw)
     anmerken(a, f"Abgleich: derselbe Haushalt wie Kunde {kundennummer} ({texte}).", von)
-    sperre = next((x["bis"] for x in hinw if x.get("bis")), None)
+    sperre = _wartezeit_bis(hinw)
     ws, _ = Wartestand.objects.get_or_create(antrag=a)
     if sperre:
         status_setzen(ws, S.WARTEZEIT, von, wartezeit_bis=sperre)
