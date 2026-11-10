@@ -65,10 +65,10 @@ def mitarbeiter_pdf(b) -> bytes:
 
     anmeldungen = b.anmeldungen.all()[:50]
     if anmeldungen:
-        doc.ueberschrift("Anmeldungen (Sicherheitsprotokoll, letzte 50)")
+        doc.ueberschrift("Anmeldungen und Abmeldungen (Sicherheitsprotokoll, letzte 50)")
         doc.tabelle(["Zeitpunkt", "Ergebnis", "IP-Adresse", "Browser/System"],
-                    [[_wert(a.zeitpunkt), "angemeldet" if a.erfolg else "Fehlversuch",
-                      a.ip or "", a.browser] for a in anmeldungen])  # fmt: skip
+                    [[_wert(a.zeitpunkt), a.ergebnis, a.ip or "", a.browser]
+                     for a in anmeldungen])  # fmt: skip
 
     m = getattr(b, "mitglied", None)
     if m:

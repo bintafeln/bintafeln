@@ -28,6 +28,11 @@ Geräts ist einem Webserver grundsätzlich nicht zugänglich.
   Tafel einstellbaren Frist (`AnmeldeEinstellungen.protokoll_tage`, Vorgabe 90 Tage) über
   `anmeldeprotokoll.fristen_anwenden()` automatisch gelöscht. „Aus“ protokolliert nichts und löscht
   die vorhandenen Einträge.
+- **Abmeldungen (Nachtrag):** Auch Abmeldungen stehen im Protokoll – über das Signal
+  `user_logged_out`, also der Knopf „Abmelden“ ebenso wie die automatische Abmeldung
+  (Ausgabestellen-Konto nach 30 Minuten, fehlender Zwei-Faktor-Code). Sie tragen den Hinweis
+  „Abmeldung“ bzw. „Abmeldung (automatisch)“ und lassen sich eigens filtern. Läuft eine Sitzung
+  ohne Anfrage einfach ab, entsteht kein Eintrag.
 - Das Anmeldeprotokoll wird selbst **nicht** bei django-auditlog registriert (es ist kein
   Stammdatensatz, sondern das Protokoll).
 

@@ -83,3 +83,30 @@ def test_anmeldungen_in_der_auskunft(admin_client, admin, pdf_text):
                                     ip="198.51.100.4", browser="Edge")  # fmt: skip
     text = pdf_text(admin_client.get(reverse("konten:auskunft", args=[admin.pk])))
     assert "Anmeldungen" in text and "198.51.100.4" in text
+
+
+def test_abmeldung_wird_protokolliert(admin_client, admin):
+    admin_client.post(reverse("konten:abmelden"), HTTP_X_FORWARDED_FOR="9.9.9.9")
+    e = AnmeldeProtokoll.objects.get()
+    assert e.ist_abmeldung and e.ergebnis == "abgemeldet"
+    assert e.benutzer == admin and e.ip == "9.9.9.9"
+
+
+def test_automatische_abmeldung_und_filter(client, anmelden, admin, admin_client, db):
+    import time
+
+    from apps.konten.middleware import StellenKontoMiddleware
+    from apps.kunden.models import Ausgabestelle
+
+    konto = type(admin).objects.create_user(username="stelle-nord", password=PASSWORT)
+    konto.stelle = Ausgabestelle.objects.create(name="Nord")
+    konto.save()
+    stellen_client = anmelden(type(client)(), konto, zwei_faktor=False)
+    sitzung = stellen_client.session
+    sitzung[StellenKontoMiddleware.SCHLUESSEL] = time.time() - 31 * 60  # 31 Minuten still
+    sitzung.save()
+    stellen_client.get(reverse("core:start"))
+    e = AnmeldeProtokoll.objects.get(benutzername="stelle-nord")
+    assert e.ergebnis == "abgemeldet (automatisch)"
+    seite = admin_client.get(reverse("konten:anmeldeprotokoll"), {"nur": "abmeldungen"})
+    assert "abgemeldet (automatisch)" in seite.content.decode()
