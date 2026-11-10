@@ -96,9 +96,14 @@ def start(request):
     # das Ziel nicht mehr anbieten.
     if KundenEinstellungen.laden().selbst_gefuehrt:
         ziele = [z for z in ziele if z.kennung != "kunden"]
-    if not ziele:
+    # Übernahmen aus Modulen (z. B. Bexat) stehen ebenfalls hier, an einer Stelle
+    from apps.core import module
+
+    aus_modulen = module.datenimport(request)
+    if not ziele and not aus_modulen:
         raise PermissionDenied
-    gewaehlt = request.POST.get("ziel") or request.GET.get("ziel") or ziele[0].kennung
+    gewaehlt = (request.POST.get("ziel") or request.GET.get("ziel")
+                or (ziele[0].kennung if ziele else ""))  # fmt: skip
     if request.method == "POST":
         ziel = next((z for z in ziele if z.kennung == gewaehlt), None)
         dateien = request.FILES.getlist("dateien")
@@ -141,6 +146,7 @@ def start(request):
         {
             "ziele": ziele,
             "gewaehlt": gewaehlt,
+            "aus_modulen": aus_modulen,
             "sitzungen": ImportSitzung.objects.filter(benutzer=request.user),
             # Kundenstamm: letzte Importe und Hinweis auf die Sicherung (ADR 0078)
             "importe": ImportLauf.objects.select_related("benutzer")[:10] if kunden else None,

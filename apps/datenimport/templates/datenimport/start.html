@@ -7,6 +7,7 @@
     beliebig heißen und in beliebiger Reihenfolge stehen: Im nächsten Schritt ordnen Sie sie zu –
     bintafeln schlägt die Zuordnung vor. Danach zeigt ein Abgleich, was neu ist, was sich ändert
     und wo es Konflikte mit vorhandenen Daten gibt. Übernommen wird erst nach Ihrer Bestätigung.</p>
+  {% if ziele %}
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     <fieldset class="feld">
@@ -24,6 +25,7 @@
     </div>
     <button type="submit" class="knopf">Weiter zur Zuordnung</button>
   </form>
+  {% else %}<p class="hinweis">Für den Import von CSV- oder Excel-Dateien fehlt Ihnen ein Recht, oder der Kundenstamm wird in bintafeln selbst geführt.</p>{% endif %}
   <p class="hinweis">Die hochgeladenen Daten werden höchstens zwei Stunden aufbewahrt und danach gelöscht.
     Dateien im <a href="https://github.com/bintafeln/bintafeln/blob/main/docs/importformat.md">Importformat</a>
     (<code>haushalte.csv</code>, <code>personen.csv</code> …) werden von selbst erkannt und zugeordnet.</p>
@@ -32,6 +34,14 @@
       Den Kundenstamm prüfen ist möglich, übernehmen erst nach einer Sicherung (auf dem Server: <code>./betrieb sichern</code>).</p>
   {% endif %}
 </section>
+{% if aus_modulen %}
+<section class="karte">
+  <h2>Aus einem anderen Programm übernehmen</h2>
+  <ul class="angaben">
+    {% for e in aus_modulen %}<li><a href="{{ e.url }}"><strong>{{ e.titel }}</strong></a> – {{ e.beschreibung }}</li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
 {% if sitzungen %}
 <section class="karte">
   <h2>Angefangene Importe</h2>

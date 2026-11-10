@@ -590,3 +590,26 @@ def test_besuche_konto_ohne_konto_recht_bucht_nicht(client, admin, benutzer_mit_
     h = Haushalt.objects.get(kundennummer="01294")
     assert h.kontostand == Decimal("0")  # nichts gebucht
     assert not Abholung.objects.filter(haushalt=h).exists()
+
+
+def test_bexat_steht_unter_daten_importieren(admin_client):
+    """Die Bexat-Übernahmen stehen auf der Seite „Daten importieren“ (ein Ort für alle Importe)
+    und nicht mehr als eigene Menüpunkte."""
+    start = reverse("datenimport:start")
+    ohne = admin_client.get(start).content.decode()
+    assert reverse("bexat:start") not in ohne  # Modul aus: kein Abschnitt
+    _modul_an()
+    seite = admin_client.get(start).content.decode()
+    assert "Aus einem anderen Programm übernehmen" in seite
+    inhalt = seite[seite.index("<main") :] if "<main" in seite else seite
+    for name in ("start", "besuche_konto", "einstellungen"):
+        assert reverse(f"bexat:{name}") in inhalt
+    # im Menü links stehen die drei Seiten nicht mehr
+    from apps.core import menue
+
+    anfrage = admin_client.get(start).wsgi_request
+    adressen = str(menue.menue(anfrage))
+    assert reverse("bexat:start") not in adressen
+    assert reverse("bexat:besuche_konto") not in adressen
+    # von der Bexat-Seite führt ein Link zurück
+    assert start in admin_client.get(reverse("bexat:start")).content.decode()

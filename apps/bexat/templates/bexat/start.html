@@ -2,6 +2,7 @@
 {% block titel %}Aus Bexat übernehmen{% endblock %}
 {% block inhalt %}
 <section class="karte">
+  <p><a href="{% url 'datenimport:start' %}">← Daten importieren</a> · <a href="{% url 'bexat:besuche_konto' %}">Besuche &amp; Konto nachtragen</a> · <a href="{% url 'bexat:einstellungen' %}">Bexat-Zuordnungen</a></p>
   <h1>Aus Bexat übernehmen</h1>
   <p>Daten aus dem <strong>Bexat-Tafelprogramm</strong> (tafelarbeit.de) übernehmen. Exportieren Sie
     dort die Daten als Excel-Datei (.xlsx) und laden Sie die Datei hier hoch. bintafeln wandelt sie

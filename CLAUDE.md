@@ -326,7 +326,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Keine festen Tafel-Werte, keine Personendaten; Tests mit erfundenem Workbook.
   Hooks `Modul.fristen`, `Modul.auskunft_mitarbeiter`, `Modul.aushang`,
   `Modul.einlass`, `Modul.auskunft_antrag`, `Modul.kopfzeile`, `Modul.seitenleiste`, `Modul.suchen`,
-  `Modul.startseite`, `Modul.mein_konto`. Programmname nur in
+  `Modul.startseite`, `Modul.mein_konto`, `Modul.datenimport` (eigene Übernahmen auf der Seite
+  „Daten importieren“ statt eigener Menüpunkte, z. B. Bexat). Programmname nur in
   `bintafeln/programm.py`; die Kopfzeile kürzt `static/js/kopfzeile.js` über `.kuerz-1…5`.
   Übersicht der übernommenen Altprogramme: `docs/altprogramme.md`.
 - Datenimport aus CSV/Excel (ADR 0078): App `datenimport` – `lesen.py` (CSV/xlsx), `zuordnung.py`
