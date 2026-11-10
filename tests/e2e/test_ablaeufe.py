@@ -128,6 +128,32 @@ def test_kundenliste_auswahl_und_export(angemeldet, admin):
     assert seite.url.endswith("/kunden/")
 
 
+def test_spaltenbreite_ziehen_merken_und_zuruecksetzen(angemeldet, admin):
+    """Spaltenbreite per Ziehen: Die Breite bleibt nach dem Neuladen und lässt sich mit
+    „Spaltenbreiten zurücksetzen“ wieder entfernen."""
+    _haushalte()
+    seite = angemeldet(admin)
+    seite.goto(reverse("kunden:uebersicht"))
+    kopf = seite.locator("table.tabelle thead th").nth(1)
+    vorher = kopf.bounding_box()["width"]
+    griff = kopf.locator(".spalten-griff")
+    kasten = griff.bounding_box()
+    x, y = kasten["x"] + kasten["width"] / 2, kasten["y"] + kasten["height"] / 2
+    seite.mouse.move(x, y)
+    seite.mouse.down()
+    seite.mouse.move(x + 90, y, steps=5)
+    seite.mouse.up()
+    breiter = kopf.bounding_box()["width"]
+    assert breiter > vorher + 60
+    expect(seite.get_by_role("button", name="Spaltenbreiten zurücksetzen")).to_be_visible()
+    seite.reload()  # gemerkt
+    kopf = seite.locator("table.tabelle thead th").nth(1)
+    assert abs(kopf.bounding_box()["width"] - breiter) < 3
+    seite.get_by_role("button", name="Spaltenbreiten zurücksetzen").click()
+    assert kopf.bounding_box()["width"] < breiter - 60
+    expect(seite.get_by_role("button", name="Spaltenbreiten zurücksetzen")).to_be_hidden()
+
+
 def test_online_antrag_oeffnet(seite, admin):
     seite.goto("/antrag/")
     expect(seite).to_have_url(re.compile("/antrag/de/"))
