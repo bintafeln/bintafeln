@@ -20,7 +20,7 @@
     {% for p in bericht.konto %}
       <tr>
         <td data-titel="Kundennummer">{{ p.kundennummer }}</td>
-        <td data-titel="Stand vom">{{ p.tag|date:"d.m.Y" }}</td>
+        <td data-titel="Stand vom">{{ p.tag|date:"d.m.Y"|default:"ohne Datum" }}</td>
         <td data-titel="bisher">{{ p.aktuell }}</td>
         <td data-titel="neu">{{ p.ziel }}</td>
         <td data-titel="Buchung"><strong class="{% if p.mehr %}grund-gruen{% else %}grund-rot{% endif %}">{{ p.differenz }}</strong></td>
