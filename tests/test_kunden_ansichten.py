@@ -370,3 +370,20 @@ def test_zugriffe_nach_frist_geloescht():
 )
 def test_wert_anzeigen(typ, wert, anzeige):
     assert Zusatzfeld(typ=typ).wert_anzeigen(wert) == anzeige
+
+
+def test_zuletzt_aufgenommen(admin_client):
+    """„Kunden → Zuletzt aufgenommen“: nur in bintafeln aufgenommene Haushalte, jüngster zuerst."""
+    from django.utils import timezone
+
+    from apps.kunden.models import Haushalt, Person
+
+    jetzt = timezone.now()
+    for nummer, name, wann in (("7101", "Alt", jetzt - dt.timedelta(days=5)),
+                               ("7102", "Neu", jetzt), ("7103", "Import", None)):  # fmt: skip
+        h = Haushalt.objects.create(kundennummer=nummer, aufgenommen_am=wann)
+        Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika", nachname=name)
+    seite = admin_client.get(reverse("kunden:zuletzt_aufgenommen")).content.decode()
+    assert "7101" in seite and "7102" in seite and "7103" not in seite
+    assert seite.index("7102") < seite.index("7101")
+    assert reverse("kunden:zuletzt_aufgenommen") in admin_client.get("/").content.decode()  # Menü

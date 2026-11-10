@@ -130,6 +130,7 @@ def menue(request) -> list[dict]:
     dazu("Kunden", [
         *([] if an_der_stelle else [("kunden.liste", alle_kunden)]),
         ("kunden.bearbeiten", _eintrag("Neuer Haushalt", "kunden:haushalt_neu")),
+        ("kunden.liste", _eintrag("Zuletzt aufgenommen", "kunden:zuletzt_aufgenommen")),
         ("kunden.bearbeiten", verlaengern),
         ("kunden.nachrichten", nachrichten),
     ], vorn=True)  # fmt: skip

@@ -202,6 +202,8 @@ def haushalt_neu(request):
                     p.nachname = p.nachname or hp.nachname
                     p.save()
             geaendert(h, request)
+            # von Hand angelegt zählt wie eine Aufnahme (Liste „Zuletzt aufgenommen“)
+            Haushalt.objects.filter(pk=h.pk).update(aufgenommen_am=timezone.now())
             _festhalten(h, None, request, zusatz="Angelegt")
         messages.success(request, f"Haushalt {h.kundennummer} angelegt.")
         return redirect("kunden:haushalt", kundennummer=h.kundennummer)

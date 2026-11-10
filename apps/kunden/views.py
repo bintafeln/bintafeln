@@ -273,6 +273,28 @@ def spalten_waehlen(request):
     return redirect(f"{reverse('kunden:uebersicht')}?{zurueck}")
 
 
+ZULETZT_AUFGENOMMEN = 50
+
+
+@rollen.recht_erforderlich("kunden.liste")
+def zuletzt_aufgenommen(request):
+    """Die zuletzt in bintafeln aufgenommenen Haushalte (Aufnahme-Assistent oder „Neuer
+    Haushalt“), der jüngste zuerst. Wer einer Ausgabestelle zugeordnet ist, sieht nur deren."""
+    haushalte = (
+        zugang.filtern(Haushalt.objects.filter(aufgenommen_am__isnull=False), request.user)
+        .select_related("kundengruppe__ausgabestelle")
+        .prefetch_related("personen")
+        .order_by("-aufgenommen_am")[:ZULETZT_AUFGENOMMEN]
+    )
+    zeilen = [
+        {"h": h, "hauptperson": next((p for p in h.personen.all() if p.ist_hauptperson), None),
+         "personen": len(h.personen.all())}
+        for h in haushalte
+    ]  # fmt: skip
+    return render(request, "kunden/zuletzt_aufgenommen.html",
+                  {"zeilen": zeilen, "anzahl": ZULETZT_AUFGENOMMEN})  # fmt: skip
+
+
 @rollen.recht_erforderlich("kunden.liste")
 def uebersicht(request):
     """Kundenliste mit Suche. Eine exakt passende Kundennummer (Scanner) öffnet den Haushalt."""

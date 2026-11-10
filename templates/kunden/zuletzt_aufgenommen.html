@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titel %}Zuletzt aufgenommen{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Zuletzt aufgenommene Kunden</h1>
+  <p class="hinweis">Die letzten {{ anzahl }} in bintafeln aufgenommenen Haushalte (über den Aufnahme-Assistenten
+    oder „Neuer Haushalt“), der jüngste zuerst.</p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Aufgenommen am</th><th>Kundennummer</th><th>Name</th><th>Personen</th><th>Kundengruppe</th><th>Ausweis gültig bis</th></tr></thead>
+    <tbody>
+    {% for z in zeilen %}
+      <tr>
+        <td data-titel="Aufgenommen am">{{ z.h.aufgenommen_am|date:"d.m.Y H:i" }}</td>
+        <td data-titel="Kundennummer"><a href="{% url 'kunden:haushalt' z.h.kundennummer %}">{{ z.h.kundennummer }}</a></td>
+        <td data-titel="Name">{% if z.hauptperson %}{{ z.hauptperson.nachname }}, {{ z.hauptperson.vorname }}{% else %}–{% endif %}</td>
+        <td data-titel="Personen">{{ z.personen }}</td>
+        <td data-titel="Kundengruppe">{% if z.h.kundengruppe %}{{ z.h.kundengruppe.mit_stelle }}{% else %}–{% endif %}</td>
+        <td data-titel="Ausweis gültig bis">{{ z.h.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6">Noch niemand in bintafeln aufgenommen.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}
