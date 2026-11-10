@@ -19,6 +19,18 @@
     {% endfor %}
   </ul>
   {% endif %}
+  {% if letzte %}
+  <h2>Letzte 7 Tage</h2>
+  <ul class="geburtstage-naechste">
+    {% for g in letzte %}
+    <li>
+      <span class="geb-datum">{{ g.letzter|date:"d.m." }}</span>
+      <span class="geb-name">{{ g.name }}</span>
+      <span class="geb-wann">{% if g.vor_tagen == 1 %}gestern{% else %}vor {{ g.vor_tagen }} Tagen{% endif %} · wurde {{ g.wurde }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
 </section>
 
 <section class="karte">

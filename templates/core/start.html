@@ -22,8 +22,9 @@
   {% endif %}
 </section>
 {% for teil in modul_startseite %}{{ teil }}{% endfor %}
-{% if geburtstage %}
+{% if geburtstage or geburtstage_letzte %}
 <section class="karte geburtstage-box">
+  {% if geburtstage %}
   <h2>🎂 Nächste Geburtstage</h2>
   <ul class="geburtstage-naechste">
     {% for g in geburtstage %}
@@ -34,6 +35,19 @@
     </li>
     {% endfor %}
   </ul>
+  {% endif %}
+  {% if geburtstage_letzte %}
+  <h2>Geburtstage der letzten 7 Tage</h2>
+  <ul class="geburtstage-naechste">
+    {% for g in geburtstage_letzte %}
+    <li>
+      <span class="geb-datum">{{ g.letzter|date:"d.m." }}</span>
+      <span class="geb-name">{{ g.name }}</span>
+      <span class="geb-wann">{% if g.vor_tagen == 1 %}gestern{% else %}vor {{ g.vor_tagen }} Tagen{% endif %} · wurde {{ g.wurde }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
   <p class="hinweis"><a href="{% url 'konten:geburtstage' %}">Zum Geburtstagskalender</a></p>
 </section>
 {% endif %}
