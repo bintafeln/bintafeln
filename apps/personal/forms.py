@@ -24,11 +24,12 @@ class VertragForm(forms.ModelForm):
         model = Arbeitsvertrag
         fields = [
             "beginn", "ende", "taetigkeit", "wochenstunden", "urlaubstage", "stundenlohn",
-            "monatslohn", "bemerkung",
+            "monatslohn", "stundenkonto", "stundenkonto_ab", "bemerkung",
         ]  # fmt: skip
         widgets = {
             "beginn": DatumEingabe(),
             "ende": DatumEingabe(),
+            "stundenkonto_ab": DatumEingabe(),
             "bemerkung": forms.Textarea(attrs={"rows": 2}),
         }
         localized_fields = ["wochenstunden", "urlaubstage", "stundenlohn", "monatslohn"]

@@ -20,6 +20,10 @@
       {% include "includes/feld.html" with feld=form.stundenlohn %}
       {% include "includes/feld.html" with feld=form.monatslohn %}
     </div>
+    <div class="reihe">
+      {% include "includes/feld.html" with feld=form.stundenkonto %}
+      {% include "includes/feld.html" with feld=form.stundenkonto_ab %}
+    </div>
     {% include "includes/feld.html" with feld=form.bemerkung %}
     <button type="submit" class="knopf">Speichern</button>
   </form>

@@ -53,6 +53,16 @@ class Arbeitsvertrag(models.Model):
     monatslohn = models.DecimalField(
         "Monatslohn (Euro brutto)", max_digits=8, decimal_places=2, null=True, blank=True
     )
+    stundenkonto = models.BooleanField(
+        "Stundenkonto führen", default=True,
+        help_text="Aus: Für diesen Vertrag wird kein Stundenkonto gerechnet (kein Soll, kein "
+        "Saldo). Urlaub und Abwesenheiten bleiben davon unberührt.",
+    )  # fmt: skip
+    stundenkonto_ab = models.DateField(
+        "Stundenkonto ab", null=True, blank=True,
+        help_text="Erst ab diesem Tag wird gerechnet (Soll, Stunden, Gutschriften). Leer = ab "
+        "Vertragsbeginn.",
+    )  # fmt: skip
     bemerkung = models.TextField("Anmerkung", blank=True)
     dokument_datei = models.CharField(max_length=200, blank=True, editable=False)
     dokument_typ = models.CharField(max_length=100, blank=True, editable=False)
