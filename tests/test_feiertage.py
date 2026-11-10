@@ -89,6 +89,8 @@ def test_werktage_ohne_feiertage(land):
 @pytest.mark.django_db
 def test_stundenkonto_ohne_feiertage(land, benutzer_mit_rolle):
     p = benutzer_mit_rolle("kim")
+    p.zeiterfassung = "an"  # ein Stundenkonto gibt es nur mit Arbeitszeiterfassung
+    p.save()
     Arbeitsvertrag.objects.create(benutzer=p, beginn=dt.date(2026, 6, 1), wochenstunden=D("40"))
     heute = dt.date(2026, 6, 5)
     assert berechnung.stundenkonto(p, 2026, heute).monate[0].soll == D("40")

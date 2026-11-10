@@ -7,7 +7,9 @@
   <p class="hinweis">Fest Angestellte stempeln unter „Meine Arbeitszeit“ Kommen und Gehen, am eigenen Handy oder
     an einem gemeinsamen Gerät nach Anmeldung. Die Zeiten fließen nach Pausenabzug ins Stundenkonto.</p>
   <p class="hinweis">Mit dem ersten Schalter stellen Sie die Arbeitszeiterfassung für die ganze Tafel an oder ab.
-    Ausgeschaltet fehlt „Meine Arbeitszeit“ bei allen im Menü; erfasste Zeiten bleiben erhalten.</p>
+    Ausgeschaltet fehlt „Meine Arbeitszeit“ bei allen im Menü; erfasste Zeiten bleiben erhalten.
+    Für <strong>einzelne Personen</strong> lässt sich das abweichend festlegen: unter „Verträge &amp; Zeiten“ die Person
+    öffnen und bei „Stundenkonto“ die Arbeitszeiterfassung auf „stempelt (immer)“ oder „stempelt nicht“ stellen.</p>
   <form method="post">
     {% csrf_token %}
     {% include "includes/formular.html" %}

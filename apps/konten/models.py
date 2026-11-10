@@ -27,6 +27,20 @@ class Benutzer(AbstractUser):
         choices=Beschaeftigung.choices,
         default=Beschaeftigung.EHRENAMTLICH,
     )
+
+    class Zeiterfassung(models.TextChoices):
+        STANDARD = "", "wie in den Einstellungen der Tafel"
+        AN = "an", "stempelt (immer)"
+        AUS = "aus", "stempelt nicht"
+
+    zeiterfassung = models.CharField(
+        "Arbeitszeiterfassung",
+        max_length=3,
+        choices=Zeiterfassung.choices,
+        blank=True,
+        default="",
+        help_text="Gilt für diese Person und geht der allgemeinen Einstellung vor.",
+    )
     passwort_aendern = models.BooleanField(
         "Muss das Passwort bei der nächsten Anmeldung ändern", default=False
     )

@@ -308,3 +308,42 @@ def test_arbeitszeiterfassung_abschaltbar(fest, ehrenamt, client, anmelden, admi
     assert "Arbeitszeiterfassung nutzen" in client.get(url).content.decode()
     client.post(url, {"aktiv": "on", "pausen_automatisch": "on", "offen_hoechstens_stunden": "14"})
     assert arbeitszeit.darf_stempeln(fest)
+
+
+def test_arbeitszeiterfassung_je_person(fest, ehrenamt, client, anmelden, admin):
+    """Die Angabe bei der Person geht der Einstellung der Tafel vor – in beide Richtungen. Wer
+    nicht stempelt, bekommt kein Stundenkonto (es liefe sonst nur ins Minus)."""
+    import datetime as dt
+
+    from django.urls import reverse
+
+    from apps.personal import berechnung
+    from apps.personal.models import Arbeitsvertrag
+
+    Arbeitsvertrag.objects.create(
+        benutzer=fest, beginn=dt.date(2026, 1, 1), wochenstunden=40, urlaubstage=30
+    )
+    heute = dt.date(2026, 3, 31)
+    assert berechnung.stundenkonto(fest, 2026, heute).saldo < 0  # Soll ohne gestempelte Zeit
+    # Tafel schaltet ab: niemand stempelt, kein Minus mehr in der Liste
+    einstellen(aktiv=False)
+    konto = berechnung.stundenkonto(fest, 2026, heute)
+    assert not konto.gefuehrt and konto.ohne_erfassung and konto.saldo == 0
+    anmelden(client, admin)
+    liste = client.get(reverse("personal:liste")).content.decode()
+    assert "stempelt nicht" in liste and 'class="fehler"' not in liste
+    # Für eine einzelne Person wieder einschalten
+    url = reverse("personal:zeiterfassung", args=[ehrenamt.pk])
+    assert client.post(url, {"zeiterfassung": "an"}).status_code == 302
+    ehrenamt.refresh_from_db()
+    assert arbeitszeit.darf_stempeln(ehrenamt) and not arbeitszeit.darf_stempeln(fest)
+    # … und umgekehrt: Tafel an, eine Person ausgenommen
+    einstellen(aktiv=True)
+    client.post(reverse("personal:zeiterfassung", args=[fest.pk]), {"zeiterfassung": "aus"})
+    fest.refresh_from_db()
+    assert not arbeitszeit.darf_stempeln(fest)
+    seite = client.get(reverse("personal:person", args=[fest.pk])).content.decode()
+    assert "Arbeitszeit nicht erfasst wird" in seite
+    client.post(reverse("personal:zeiterfassung", args=[fest.pk]), {"zeiterfassung": "unsinn"})
+    fest.refresh_from_db()
+    assert fest.zeiterfassung == "aus"  # ungültige Angabe ändert nichts

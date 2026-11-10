@@ -22,6 +22,7 @@ urlpatterns = [
         name="zeit_loeschen",
     ),
     path("<int:pk>/", views.person, name="person"),
+    path("<int:pk>/zeiterfassung/", views.zeiterfassung, name="zeiterfassung"),
     path("<int:pk>/vertrag/", views.vertrag_neu, name="vertrag_neu"),
     path("<int:pk>/vertrag/<int:vertrag>/", views.vertrag_bearbeiten, name="vertrag"),
     path(

@@ -249,6 +249,7 @@ class Stundenkonto:
     vorjahre: Decimal  # Saldo bis Ende des Vorjahres
     monate: list[Monat]
     gefuehrt: bool = True  # False: bei keinem Vertrag ist das Stundenkonto eingeschaltet
+    ohne_erfassung: bool = False  # nicht geführt, weil die Person keine Arbeitszeit erfasst
 
     @property
     def saldo(self) -> Decimal:
@@ -266,6 +267,11 @@ def stundenkonto(benutzer, jahr: int, heute: dt.date) -> Stundenkonto:
         return Stundenkonto(vorjahre, monate)
     if not any(v.stundenkonto for v in vertraege):
         return Stundenkonto(vorjahre, monate, gefuehrt=False)
+    from apps.personal import arbeitszeit  # hier, weil arbeitszeit dieses Modul nutzt
+
+    if not arbeitszeit.erfasst(benutzer):
+        # Ohne Arbeitszeiterfassung gäbe es nur Soll und kein Ist – das Konto liefe ins Minus
+        return Stundenkonto(vorjahre, monate, gefuehrt=False, ohne_erfassung=True)
     land = bundesland()
     tage = arbeitstage_aus(
         benutzer.zeitbuchungen.all(), ArbeitszeitEinstellungen.laden().pausen_automatisch

@@ -110,7 +110,16 @@
 
 <section class="karte">
   <h2>Stundenkonto {{ jahr }}</h2>
-  {% if not konto.gefuehrt %}<p class="hinweis">Für diese Person wird <strong>kein Stundenkonto geführt</strong>. Einschalten
+  <form method="post" action="{% url 'personal:zeiterfassung' p.pk %}" class="filter-kompakt" data-sofort>
+    {% csrf_token %}
+    <div class="feld"><label for="zeiterfassung">Arbeitszeiterfassung für {{ p.first_name|default:p }}</label>
+      <select name="zeiterfassung" id="zeiterfassung">{% for wert, text in zeiterfassung_wahl %}<option value="{{ wert }}"{% if wert == p.zeiterfassung %} selected{% endif %}>{{ text }}</option>{% endfor %}</select></div>
+    <noscript><button type="submit" class="knopf knopf-zweitrangig">Speichern</button></noscript>
+    <span class="hinweis">Derzeit: {% if erfasst %}<strong>stempelt</strong>{% else %}<strong>stempelt nicht</strong>{% endif %}.</span>
+  </form>
+  {% if konto.ohne_erfassung %}<p class="hinweis">Für diese Person wird <strong>kein Stundenkonto geführt</strong>, weil ihre
+    Arbeitszeit nicht erfasst wird – ohne gestempelte Zeiten liefe das Konto nur ins Minus.</p>
+  {% elif not konto.gefuehrt %}<p class="hinweis">Für diese Person wird <strong>kein Stundenkonto geführt</strong>. Einschalten
     lässt es sich im Arbeitsvertrag („Stundenkonto führen“, auf Wunsch erst ab einem Datum).</p>{% else %}
   <p>Stand: <strong{% if konto.saldo < 0 %} class="fehler"{% endif %}>{{ konto.saldo|floatformat:2 }} Stunden</strong>
     (Übertrag aus den Vorjahren: {{ konto.vorjahre|floatformat:2 }})</p>

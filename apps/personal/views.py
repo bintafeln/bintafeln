@@ -82,6 +82,8 @@ def person(request, pk):
             "aktuell": berechnung.vertrag_am(vertraege, heute),
             "urlaub": berechnung.urlaub(p, jahr, heute),
             "konto": berechnung.stundenkonto(p, jahr, heute),
+            "erfasst": arbeitszeit.erfasst(p),
+            "zeiterfassung_wahl": p.Zeiterfassung.choices,
             "abwesenheiten": [
                 (a, berechnung.arbeitstage(a)) for a in p.abwesenheiten.filter(von__year=jahr)
             ],
@@ -121,6 +123,19 @@ def _speichern(request, pk, form_klasse, text, instanz=None):
     else:
         messages.error(request, f"Nicht gespeichert. {_fehlertext(form)}")
     return _zurueck(p, _jahr(request))
+
+
+@require_POST
+@personal_erforderlich
+def zeiterfassung(request, pk):
+    """Arbeitszeiterfassung für diese eine Person: wie die Tafel, immer oder nie."""
+    p = get_object_or_404(get_user_model(), pk=pk)
+    wahl = request.POST.get("zeiterfassung", "")
+    if wahl in p.Zeiterfassung.values:
+        p.zeiterfassung = wahl
+        p.save(update_fields=["zeiterfassung"])
+        messages.success(request, f"Arbeitszeiterfassung: {p.get_zeiterfassung_display()}.")
+    return redirect("personal:person", pk=p.pk)
 
 
 @require_POST
