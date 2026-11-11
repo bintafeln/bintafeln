@@ -94,6 +94,10 @@ Die Module Aufruf, Warteliste, Wochenübersicht, Links, Abrechnung, Listen, Fahr
 und Tickets sind eingeschaltet und mit Beispielen gefüllt. Das Wetter bleibt aus, weil es
 Internet und einen echten Ort braucht.
 
+In der Kopfzeile und in der gelben Hinweiszeile steht in der Demo ein Link zu Quelltext und
+Anleitung auf GitHub (`QUELLTEXT_URL` in `bintafeln/programm.py`); in echten Installationen
+erscheint er nicht.
+
 Damit sich Listen, Filter und Auswertungen wirklich ausprobieren lassen, ist die Demo gut
 gefüllt – alles erfunden (Fantasienamen, Adressen in „Musterstadt“, `example.org`) und nach
 jedem Zurücksetzen gleich:

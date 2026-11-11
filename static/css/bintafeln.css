@@ -1219,6 +1219,11 @@ body:has(.hintergrund) .fuss { background: var(--flaeche); }
 .kopf-programm strong { font-size: 1.15rem; font-weight: 800; }
 .kopf-untertitel { font-size: .75rem; opacity: .9; }
 .kopf-rechts { display: flex; align-items: center; gap: .25rem 1rem; margin-left: auto; }
+/* Nur in der öffentlichen Demo: Link zu Quelltext und Anleitung */
+.kopf-github { flex: none; white-space: nowrap; padding: .3rem .7rem; border: 2px solid currentColor;
+  border-radius: 999px; color: inherit; font-weight: 700; text-decoration: none; }
+.kopf-github:hover, .kopf-github:focus-visible { background: #fff; color: var(--akzent-dunkel, #7a3b00); }
+.demo-hinweis a { color: inherit; }
 /* Kleines „?“ in der Kopfzeile: Hilfe zur aktuellen Seite */
 .hilfe-knopf { display: inline-flex; align-items: center; justify-content: center; flex: none;
   width: 1.9rem; height: 1.9rem; border-radius: 999px; border: 2px solid var(--akzent);
