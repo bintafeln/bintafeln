@@ -468,3 +468,36 @@ def test_statusfilter_zeigt_was_am_einlass_gilt(admin_client):
     inhalt = admin_client.get(LISTE, {"status": "gesperrt", "tag": "", "q": "700"}).content.decode()
     assert '<span class="marke-warnung">gesperrt</span>' in inhalt
     assert "trifft zu" not in inhalt
+
+
+def test_alle_zeigt_bei_grossem_bestand_hoechstens_eine_begrenzte_seite(admin_client, monkeypatch):
+    """„alle“ auf einer Seite wäre bei tausenden Haushalten sehr langsam: dann wird geblättert."""
+    from apps.core import listen
+
+    assert listen.je_seite("alle", 12) == 12
+    assert listen.je_seite("alle", 0) == 1
+    assert listen.je_seite("alle", 11600) == listen.ALLE_HOECHSTENS
+    monkeypatch.setattr(listen, "ALLE_HOECHSTENS", 3)
+    Haushalt.objects.bulk_create([Haushalt(kundennummer=f"9{i:03d}") for i in range(7)])
+    url = reverse("kunden:uebersicht")
+    antwort = admin_client.get(url, {"anzahl": "alle", "tag": ""})
+    assert len(antwort.context["seite"]) == 3
+    assert antwort.context["seite"].paginator.num_pages == 3
+    assert "höchstens 3 Zeilen auf einer Seite" in antwort.content.decode()
+    # eine kurze Liste steht weiter ganz auf einer Seite, ohne Hinweis
+    kurz = admin_client.get(
+        url, {"anzahl": "alle", "tag": "", "q": "9001"}, headers={"HX-Request": "true"}
+    )
+    assert "höchstens" not in kurz.content.decode()
+    # 25 je Seite: kein Hinweis
+    assert "höchstens" not in admin_client.get(url, {"anzahl": "25", "tag": ""}).content.decode()
+
+
+def test_kundenliste_liest_die_spaltenwahl_nicht_je_spalte(
+    admin_client, django_assert_max_num_queries
+):
+    Haushalt.objects.bulk_create([Haushalt(kundennummer=f"8{i:03d}") for i in range(30)])
+    url = reverse("kunden:uebersicht")
+    admin_client.get(url, {"tag": ""})  # erster Aufruf: Fristen, Regeln
+    with django_assert_max_num_queries(80):
+        admin_client.get(url, {"tag": ""})

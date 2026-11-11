@@ -4,4 +4,5 @@
   <span>Seite {{ seite.number }} von {{ seite.paginator.num_pages }}{% if zusatz %} · {{ seite.paginator.count }} {{ zusatz }}{% endif %}</span>
   <span>{% if weiter %}<a class="knopf knopf-zweitrangig" href="{{ weiter }}"{% if ziel %} hx-get="{{ weiter }}" hx-target="{{ ziel }}" hx-push-url="true"{% endif %}>{{ weiter_text }}</a>{% endif %}</span>
 </nav>
+{% if begrenzt %}<p class="hinweis">Die Liste ist zu lang für eine Seite: Bei „alle“ stehen höchstens {{ begrenzt }} Zeilen auf einer Seite, damit sie schnell lädt. Mit Suche und Filtern wird sie kürzer.</p>{% endif %}
 {% endif %}

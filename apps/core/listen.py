@@ -77,6 +77,10 @@ def spalten_speichern(benutzer, liste, gewaehlt, spalten, fest=()) -> None:
 # Ein leerer Wert bedeutet „keine eigene Wahl“ – dann gilt die Vorgabe der jeweiligen Liste.
 
 ZEILEN_WAHL = ("25", "50", "100", "alle")
+# „alle“ zeigt höchstens so viele Zeilen auf einer Seite. Bei einem großen Bestand (z. B. über
+# 10.000 Haushalte) bräuchten Server und Browser sonst viele Sekunden für eine einzige Seite –
+# und weil die Wahl am Konto gemerkt wird, bei jedem Aufruf wieder. Darüber wird geblättert.
+ALLE_HOECHSTENS = 500
 
 
 def zeilenzahl(request, param: str = "zeilen") -> str:
@@ -94,10 +98,11 @@ def zeilenzahl(request, param: str = "zeilen") -> str:
 
 
 def je_seite(wert: str, gesamt: int, standard: int = 25) -> int:
-    """Wandelt den Zeilen-Wert in eine Zahl für den Paginator um. ``"alle"`` → keine Teilung;
+    """Wandelt den Zeilen-Wert in eine Zahl für den Paginator um. ``"alle"`` → keine Teilung,
+    solange die Liste höchstens :data:`ALLE_HOECHSTENS` Zeilen hat (sonst Seiten dieser Größe);
     leer oder unbekannt → ``standard`` (die Vorgabe der Liste)."""
     if wert == "alle":
-        return max(gesamt, 1)
+        return min(max(gesamt, 1), ALLE_HOECHSTENS)
     return int(wert) if wert in ZEILEN_WAHL else standard
 
 
