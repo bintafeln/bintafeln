@@ -78,3 +78,19 @@ def test_bild_fehlt_zeigt_nichts():
     from apps.core.templatetags.handbuch import hilfe_bild
 
     assert hilfe_bild("gibt-es-nicht", "x") == ""
+
+
+def test_bilder_in_der_anleitung_gibt_es():
+    """Die Bilder im README kommen aus dem Handbuch; ein umbenanntes Bild fiele sonst erst auf
+    GitHub als Lücke auf."""
+    import re
+    from pathlib import Path
+
+    wurzel = Path(__file__).resolve().parent.parent
+    pfade = set(
+        re.findall(
+            r'(?:src|href)="(static/hilfe/bilder/[^"]+)"', (wurzel / "README.md").read_text()
+        )
+    )
+    assert len(pfade) >= 10
+    assert not [p for p in pfade if not (wurzel / p).is_file()]
