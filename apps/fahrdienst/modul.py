@@ -116,7 +116,7 @@ MODUL = Modul(
         Art("fahrdienst_gesund", "Fahrdienst: wieder gesund",
             fuer=_darf("fahrdienst.planen", "fahrdienst.sehen"),
             wann="Sobald sich jemand vor dem Ende des Ausfalls wieder gesund meldet.",
-            an="Dieselben Personen wie beim Ausfall."),
+            wahl=Empfaengerwahl(_berechtigte, "dieselben Personen wie beim Ausfall", fest=False)),
     ),
     titel="Fahrdienst",
     beschreibung="Fahrerplan mit Touren, fester Besetzung und Springern; Ausfälle melden, Ersatz "

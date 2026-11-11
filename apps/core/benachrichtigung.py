@@ -39,10 +39,14 @@ class Empfaengerwahl:
     ``leer`` sagt, wer die Mail ohne Auswahl bekommt. Ohne ``lesen``/``speichern`` liegt die
     Auswahl in ``MailEmpfaenger``; bestehende Felder (Anträge, Fahrdienst) geben beide an."""
 
-    berechtigte: Callable
+    # None: keine Auswahl von Personen, die Mail lässt sich nur ganz abstellen („niemand“)
+    berechtigte: Callable | None
     leer: str
     lesen: Callable | None = None
     speichern: Callable | None = None
+    # False: Die Vorgabe hängt vom Einzelfall ab (z. B. Teamleitung des betroffenen Tages); die
+    # Stelle, die die Mail auslöst, übergibt sie an ``an(kennung, vorgabe)``.
+    fest: bool = True
 
 
 @dataclass(frozen=True)
@@ -62,8 +66,8 @@ class Art:
     wahl: Empfaengerwahl | None = None
 
 
-def mit_recht(code: str, ohne_stellen: bool = False) -> list:
-    """Aktive Konten mit E-Mail und dem Recht ``code``; ``ohne_stellen``: keine
+def mit_recht(*codes: str, ohne_stellen: bool = False) -> list:
+    """Aktive Konten mit E-Mail und einem der Rechte ``codes``; ``ohne_stellen``: keine
     Ausgabestellen-Konten."""
     from django.contrib.auth import get_user_model
 
@@ -73,7 +77,7 @@ def mit_recht(code: str, ohne_stellen: bool = False) -> list:
     if ohne_stellen:
         konten = konten.filter(stelle__isnull=True)
     konten = konten.order_by("last_name", "first_name", "username")
-    return [k for k in konten if rollen.hat_recht(k, code)]
+    return [k for k in konten if any(rollen.hat_recht(k, c) for c in codes)]
 
 
 def gewaehlt(art: "Art") -> set[int]:
@@ -84,6 +88,22 @@ def gewaehlt(art: "Art") -> set[int]:
 
     eintrag = MailEmpfaenger.objects.filter(art=art.kennung).first()
     return set(eintrag.personen.values_list("pk", flat=True)) if eintrag else set()
+
+
+def niemand(art: "Art") -> bool:
+    """Hat die Tafel für diese Mail „niemand“ gewählt? Dann wird sie gar nicht verschickt."""
+    from apps.core.models import MailEmpfaenger
+
+    return MailEmpfaenger.objects.filter(art=art.kennung, niemand=True).exists()
+
+
+def niemand_speichern(art: "Art", wert: bool) -> None:
+    from apps.core.models import MailEmpfaenger
+
+    eintrag, _ = MailEmpfaenger.objects.get_or_create(art=art.kennung)
+    if eintrag.niemand != wert:
+        eintrag.niemand = wert
+        eintrag.save(update_fields=["niemand"])
 
 
 def wahl_speichern(art: "Art", konten) -> None:
@@ -100,16 +120,38 @@ def aktuelle(art: "Art") -> list:
     """Wer die Gruppen-Mail im Moment bekommt. Zentrale Auswahl: die ausgewählten Berechtigten,
     ohne Auswahl alle Berechtigten – wer das Recht verloren hat oder gesperrt ist, bekommt
     nichts mehr; bleibt so niemand übrig, geht die Mail wieder an alle. Eigene Ablage (Anträge,
-    Fahrdienst): die ausgewählten aktiven Konten, ohne Auswahl die Vorgabe ``leer``."""
+    Fahrdienst): die ausgewählten aktiven Konten, ohne Auswahl die Vorgabe ``leer``. Hat die
+    Tafel „niemand“ gewählt, bekommt sie keiner."""
+    if niemand(art):
+        return []
+    if art.wahl.berechtigte is None:
+        return []
     berechtigte = art.wahl.berechtigte()
     wahl = gewaehlt(art)
     if not art.wahl.lesen:
-        return [k for k in berechtigte if k.pk in wahl] or berechtigte
+        ausgewaehlt = [k for k in berechtigte if k.pk in wahl]
+        return ausgewaehlt or (berechtigte if art.wahl.fest else [])
     from django.contrib.auth import get_user_model
 
     konten = get_user_model().objects.filter(pk__in=wahl, is_active=True).exclude(email="")
     konten = list(konten.order_by("last_name", "first_name", "username"))
     return konten or ([] if art.wahl.leer == "niemand" else berechtigte)
+
+
+def an(kennung: str, vorgabe) -> list[str]:
+    """Mailadressen für eine Mail, deren Vorgabe vom Einzelfall abhängt (``fest=False``): die
+    unter „Mail-Empfänger“ ausgewählten Berechtigten, sonst ``vorgabe``; bei „niemand“ keiner."""
+    vorgabe = sorted(set(vorgabe))
+    art = arten().get(kennung)
+    if art is None or art.wahl is None:
+        return vorgabe
+    if niemand(art):
+        return []
+    if art.wahl.berechtigte is None:
+        return vorgabe
+    wahl = gewaehlt(art)
+    konten = [k for k in art.wahl.berechtigte() if k.pk in wahl]
+    return sorted({k.email for k in konten}) or vorgabe
 
 
 def empfaenger(kennung: str) -> list[str]:
@@ -172,7 +214,7 @@ KERN = (
         wahl=Empfaengerwahl(lambda: mit_recht("korrekturen.entscheiden"),
                             "alle, die Korrekturwünsche entscheiden dürfen")),
     Art("sicherheitsupdate", "Sicherheitsupdate verfügbar",
-        "Lässt sich nicht abschalten, höchstens täglich sammeln.",
+        "Die einzelne Person kann sie nicht abschalten, höchstens täglich sammeln.",
         fuer=_recht("system.update"), nie_erlaubt=False,
         wann="Einmal je Sicherheitsupdate, sobald bintafeln davon erfährt.",
         wahl=Empfaengerwahl(lambda: mit_recht("system.update"),

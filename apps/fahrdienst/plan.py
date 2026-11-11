@@ -237,11 +237,11 @@ def duerfen_planen():
 
 
 def empfaenger() -> list[str]:
-    """Mailadressen für Ausfälle: die eingestellten Personen, sonst alle, die planen dürfen."""
-    gewaehlt = FahrdienstEinstellungen.laden().benachrichtigen.filter(is_active=True)
-    if gewaehlt.exists():
-        return sorted({b.email for b in gewaehlt if b.email})
-    return sorted({k.email for k in duerfen_planen() if k.email})
+    """Mailadressen für Ausfälle: die unter „Mail-Empfänger“ gewählten Personen, sonst alle,
+    die planen dürfen; bei „niemand“ keiner (ADR 0125)."""
+    from apps.core import benachrichtigung
+
+    return benachrichtigung.empfaenger("fahrdienst_ausfall")
 
 
 def _benachrichtigen(ausfall: Ausfall, adresse: str) -> None:
@@ -312,10 +312,10 @@ def _gesund_benachrichtigen(a: Ausfall, adresse: str) -> None:
             + (f" ({len(frei)} noch ohne Ersatz)" if frei else "") + "."
             + (f"\n\nPlan: {adresse}" if adresse else ""))  # fmt: skip
     telegram.benachrichtigen(e, f"🟩 Fahrdienst: {text}")
-    an = empfaenger() if mail.eingerichtet() else []
-    if an:
-        from apps.core import benachrichtigung
+    from apps.core import benachrichtigung
 
+    an = benachrichtigung.an("fahrdienst_gesund", empfaenger()) if mail.eingerichtet() else []
+    if an:
         betreff = f"Fahrdienst: {a.person} wieder da"
         benachrichtigung.melden("fahrdienst_gesund", an, betreff, text)
 

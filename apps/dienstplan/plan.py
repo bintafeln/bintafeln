@@ -236,7 +236,10 @@ def _benachrichtigen(ausfall: Ausfall, adresse: str) -> None:
 
     e = DienstplanEinstellungen.laden()
     betroffen = einsaetze(ausfall.helfer, ausfall.von, ausfall.bis)
-    an = empfaenger(betroffen) if mail.eingerichtet() else []
+    from apps.core import benachrichtigung
+
+    an = (benachrichtigung.an("dienstplan_ausfall", empfaenger(betroffen))
+          if mail.eingerichtet() else [])  # fmt: skip
     if not an and not telegram.eingerichtet(e):
         return
     zeilen = []
@@ -291,10 +294,11 @@ def _gesund_benachrichtigen(a: Ausfall, adresse: str) -> None:
             + (f" ({len(frei)} noch ohne Ersatz)" if frei else "") + "."
             + (f"\n\nPlan: {adresse}" if adresse else ""))  # fmt: skip
     telegram.benachrichtigen(e, f"🟩 Dienstplan: {text}")
-    an = empfaenger(einsaetze(a.helfer, a.gesund_ab, a.bis)) if mail.eingerichtet() else []
-    if an:
-        from apps.core import benachrichtigung
+    from apps.core import benachrichtigung
 
+    vorgabe = empfaenger(einsaetze(a.helfer, a.gesund_ab, a.bis))
+    an = benachrichtigung.an("dienstplan_gesund", vorgabe) if mail.eingerichtet() else []
+    if an:
         betreff = f"Dienstplan: {a.helfer} wieder da"
         benachrichtigung.melden("dienstplan_gesund", an, betreff, text)
 

@@ -23,14 +23,21 @@ Antrags-Einstellungen, die für Ausfälle im Fahrdienst in den Fahrdienst-Einste
   `FahrdienstEinstellungen.benachrichtigen` bleiben, wo sie sind (`Empfaengerwahl.lesen` und
   `.speichern`); nur die Bedienung wandert auf die zentrale Seite. So braucht es keine
   Datenmigration, und eine ältere Version findet die Auswahl nach einem Zurückgehen wieder.
+- **„Niemand“ ist eine eigene Wahl** (`MailEmpfaenger.niemand`): Eine leere Auswahl heißt
+  „Vorgabe“, also meist alle Berechtigten. Wer eine Mail gar nicht will, setzt den Haken „Niemand
+  bekommt diese Mail“; er gilt für alle Mails mit Auswahl, auch für die mit eigener Ablage.
 - **Niemand fällt still weg:** Gesperrte Konten und Konten ohne das Recht bekommen nichts mehr.
   Bleibt bei der zentralen Auswahl so niemand übrig, geht die Mail wieder an alle Berechtigten.
 - **Alle übrigen Mails** (an Kunden, Spender, einzelne Personen) stehen als `Mail` in
   `apps/core/mailuebersicht.py`, die der Module in `Modul.mails`. Sie werden nur erklärt und
   verlinken dorthin, wo Texte und Einstellungen stehen.
+- **Vorgabe im Einzelfall** (`Empfaengerwahl.fest=False`): Bei Dienstplan (Teamleitung des
+  betroffenen Tages), „wieder gesund“ und Tickets (Zuständige der Kategorie) hängt die Vorgabe
+  vom Vorgang ab. Die auslösende Stelle übergibt sie an `benachrichtigung.an(kennung, vorgabe)`;
+  eine Auswahl auf der Seite ersetzt sie, „niemand“ stellt die Mail ab. Die Antwort zu einem
+  Ticket geht an die meldende Person und lässt sich nur abstellen (`berechtigte=None`).
 - **Nicht zentralisiert:** die persönliche Häufigkeit (sofort, gesammelt, nie) unter „Mein
-  Konto“ (ADR 0086) und Empfänger, die sich aus der Sache ergeben (Teamleitung im Dienstplan,
-  Zuständige einer Ticket-Kategorie). Sie werden auf der Seite beschrieben.
+  Konto“ (ADR 0086).
 
 ## Begründung
 

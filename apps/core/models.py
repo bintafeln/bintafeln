@@ -198,6 +198,11 @@ class MailEmpfaenger(models.Model):
     art = models.CharField("Art", max_length=50, unique=True)
     personen = models.ManyToManyField("konten.Benutzer", blank=True, related_name="+",
                                       verbose_name="Empfänger")  # fmt: skip
+    niemand = models.BooleanField(
+        "Niemand bekommt diese Mail",
+        default=False,
+        help_text="Die Mail wird gar nicht verschickt, auch wenn Personen ausgewählt sind.",
+    )
 
     class Meta:
         verbose_name = "Mail-Empfänger"
