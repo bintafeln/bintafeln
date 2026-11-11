@@ -13,10 +13,47 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
   Server einrichten
 - [Demoversion einrichten](docs/demo-einrichten.md) – mit erfundenen Daten ausprobieren, neben
   einer bestehenden Installation oder öffentlich unter eigener Domain
+- [So sieht es aus](#so-sieht-es-aus) – Bilder vom Programm
 - [Mehrere Installationen auf einem Server](#mehrere-installationen-auf-einem-server)
 - [Aktualisieren und Versionen](#aktualisieren)
 - [Fachkonzept](docs/fachkonzept.md) · [Importformat](docs/importformat.md) ·
   [Entscheidungen (ADR)](docs/adr/README.md)
+
+## So sieht es aus
+
+Die Bilder stammen aus dem Handbuch im Programm und zeigen ausschließlich erfundene Daten. Die
+orangen Nummern und Rahmen gehören zu den Erklärungen dort. Ein Klick zeigt das Bild groß; alle
+weiteren liegen in [`static/hilfe/bilder`](static/hilfe/bilder).
+
+<table>
+<tr>
+<td width="50%" valign="top"><a href="static/hilfe/bilder/erste-schritte-startseite.png"><img src="static/hilfe/bilder/erste-schritte-startseite.png" alt="Startseite"></a><br><strong>Startseite</strong><br>Menü links, Suche oben, Hinweise für den Tag.</td>
+<td width="50%" valign="top"><a href="static/hilfe/bilder/einlass-kunde.png"><img src="static/hilfe/bilder/einlass-kunde.png" alt="Einlass mit Ampel"></a><br><strong>Einlass mit Ampel</strong><br>Kundennummer scannen: Grün, Gelb oder Rot mit dem Grund – dann die Abholung eintragen.</td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="static/hilfe/bilder/kunden-finden-liste.png"><img src="static/hilfe/bilder/kunden-finden-liste.png" alt="Kundenliste"></a><br><strong>Kundenliste</strong><br>Suchen beim Tippen, Filter nach Status, Kundengruppe und Ausgabetag, Spalten wählbar.</td>
+<td width="50%" valign="top"><a href="static/hilfe/bilder/kasse-tag.png"><img src="static/hilfe/bilder/kasse-tag.png" alt="Kasse"></a><br><strong>Kasse</strong><br>Einnahmen des Tages je Ausgabestelle, mit Kassenabschluss als PDF.</td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="static/hilfe/bilder/antraege-formular.png"><img src="static/hilfe/bilder/antraege-formular.png" alt="Online-Antrag"></a><br><strong>Online-Antrag</strong><br>Öffentliches Formular in 29 Sprachen, mit Nachweisen als Foto.</td>
+<td width="50%" valign="top"><a href="static/hilfe/bilder/warteliste-liste.png"><img src="static/hilfe/bilder/warteliste-liste.png" alt="Anträge und Warteliste"></a><br><strong>Anträge und Warteliste</strong><br>Anträge bearbeiten, zu Terminen einladen, in den Kundenstamm aufnehmen.</td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="static/hilfe/bilder/dienstplan-plan.png"><img src="static/hilfe/bilder/dienstplan-plan.png" alt="Dienstplan"></a><br><strong>Dienstplan</strong><br>Aufgaben je Ausgabetag, feste Besetzung, Ausfälle und Ersatz.</td>
+<td width="50%" valign="top"><a href="static/hilfe/bilder/fahrdienst-plan.png"><img src="static/hilfe/bilder/fahrdienst-plan.png" alt="Fahrdienst"></a><br><strong>Fahrdienst</strong><br>Touren mit Fahrern und Beifahrern, Springer für Ausfälle.</td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="static/hilfe/bilder/statistik-abschnitt.png"><img src="static/hilfe/bilder/statistik-abschnitt.png" alt="Statistik"></a><br><strong>Statistik</strong><br>Abholungen, Haushalte und Personen als Diagramm, Tabelle und CSV.</td>
+<td width="50%" valign="top"><a href="static/hilfe/bilder/ausweis-gestalten.png"><img src="static/hilfe/bilder/ausweis-gestalten.png" alt="Kundenausweis"></a><br><strong>Kundenausweis</strong><br>Ausweis mit Barcode selbst gestalten und als PDF drucken.</td>
+</tr>
+<tr>
+<td width="50%" valign="top"><a href="static/hilfe/bilder/aushang-monitor.png"><img src="static/hilfe/bilder/aushang-monitor.png" alt="Aushang-Monitor"></a><br><strong>Aushang-Monitor</strong><br>Pläne und Hinweise auf einem Bildschirm im Lager, ohne Anmeldung.</td>
+<td width="50%" valign="top"><a href="static/hilfe/bilder/mail-empfaenger.png"><img src="static/hilfe/bilder/mail-empfaenger.png" alt="Wer bekommt welche Mail"></a><br><strong>Wer bekommt welche Mail</strong><br>Alle Mails des Programms an einer Stelle einstellen.</td>
+</tr>
+</table>
+
+Zum Ausprobieren gibt es die [Demoversion](docs/demo-einrichten.md) mit rund 300 erfundenen
+Haushalten.
 
 ## Funktionen des Grundgerüsts
 
