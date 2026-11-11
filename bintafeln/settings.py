@@ -77,6 +77,7 @@ BINTAFELN_MODULE = [
     "apps.aushang",
     "apps.tickets",
     "apps.uebernahme",
+    "apps.vereinsportal",
 ]
 INSTALLED_APPS += BINTAFELN_MODULE
 

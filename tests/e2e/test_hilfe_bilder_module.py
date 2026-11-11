@@ -819,3 +819,51 @@ def test_hilfe_bild_wartezeit_einstellungen(angemeldet, admin, muster):
     aufnehmen(seite, "warten-einstellungen", karte,
               Marke(modus, nummer=1, von="rechts", laenge=40),
               Marke(stellen, "rahmen", 2))  # fmt: skip
+
+
+def test_hilfe_bild_vereinsportal(angemeldet, admin, muster, benutzer_mit_rolle):
+    from decimal import Decimal as D
+
+    from apps.vereinsportal.models import Beleg, Kontakt
+
+    _module("vereinsportal")
+    jahr = timezone.localdate().year
+    spender = [
+        ("Erika Beispiel", "Feldweg 2", "54321 Beispieldorf", ("25.00", "40.00", "25.00")),
+        ("Otto Muster", "Am Markt 5", "12345 Musterstadt", ("100.00",)),
+        ("Bäckerei Probe GmbH", "Hauptstraße 9", "12345 Musterstadt", ("250.00", "250.00")),
+    ]
+    nummer = 0
+    for name, strasse, ort, betraege in spender:
+        for betrag in betraege:
+            nummer += 1
+            Beleg.objects.create(
+                dateiname=f"Spendenbeleg_{nummer:06d}.pdf",
+                belegnummer=str(nummer),
+                name=name,
+                such_name=name.lower(),
+                strasse=strasse,
+                plz_ort=ort,
+                jahr=jahr,
+                betrag=D(betrag),
+                datei="erfunden.bin",
+                im_portal_versendet=nummer == 2,
+            )
+    Kontakt.objects.create(
+        such_name="erika beispiel",
+        vorname="Erika",
+        nachname="Beispiel",
+        email="erika.beispiel@example.org",
+    )
+    berta = benutzer_mit_rolle("berta", rollen.BUERO)
+    seite = oeffnen(angemeldet, berta, reverse("vereinsportal:start"))
+    karte = seite.locator("section.karte")
+    aufnehmen(
+        seite,
+        "vereinsportal-einlesen",
+        [karte],
+        Marke(seite.locator("#finanzexport-form button"), nummer=1, von="rechts", laenge=60),
+        Marke(seite.locator("#spenderliste-form button"), nummer=2, von="rechts", laenge=60),
+        Marke(seite.locator(".kacheln"), art="rahmen", nummer=3),
+        Marke(seite.locator("a[href*='export']"), nummer=4, von="rechts", laenge=60),
+    )
