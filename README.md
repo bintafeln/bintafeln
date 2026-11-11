@@ -7,12 +7,18 @@ Freie Verwaltungssoftware für Tafeln – lizenziert unter der
 > Kundenkonto und Kasse, Mitarbeitende, Personal mit Arbeitszeiterfassung, PDFs (Kundenausweis,
 > Kassenabschluss, Auskunft nach Art. 15 DSGVO), Online-Anträge in 29 Sprachen.
 
+**Gleich ausprobieren:** Die Demoversion läuft unter **<https://demo.bintafeln.de>** – ohne
+Installation, mit erfundenen Daten. Die Zugänge stehen dort auf der Anmeldeseite; die Daten
+werden jede Nacht zurückgesetzt.
+
 **Schnell zum Ziel**
 
+- [Demoversion ansehen](https://demo.bintafeln.de) – im Browser ausprobieren, nichts zu
+  installieren
 - [Installation](#installation-auf-debian-13-trixie-mit-docker) – eine Tafel auf einem eigenen
   Server einrichten
-- [Demoversion einrichten](docs/demo-einrichten.md) – mit erfundenen Daten ausprobieren, neben
-  einer bestehenden Installation oder öffentlich unter eigener Domain
+- [Eigene Demoversion einrichten](docs/demo-einrichten.md) – neben einer bestehenden
+  Installation oder öffentlich unter eigener Domain
 - [So sieht es aus](#so-sieht-es-aus) – Bilder vom Programm
 - [Mehrere Installationen auf einem Server](#mehrere-installationen-auf-einem-server)
 - [Aktualisieren und Versionen](#aktualisieren)
@@ -52,8 +58,9 @@ weiteren liegen in [`static/hilfe/bilder`](static/hilfe/bilder).
 </tr>
 </table>
 
-Zum Ausprobieren gibt es die [Demoversion](docs/demo-einrichten.md) mit rund 300 erfundenen
-Haushalten.
+Zum Ausprobieren gibt es die Demoversion unter <https://demo.bintafeln.de> mit rund 300
+erfundenen Haushalten; wie man eine eigene einrichtet, steht in
+[docs/demo-einrichten.md](docs/demo-einrichten.md).
 
 ## Funktionen des Grundgerüsts
 
