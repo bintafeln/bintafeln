@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block titel %}Dankesbriefe (Vereinsportal){% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'vereinsportal:start' %}">← Belege aus dem Vereinsportal</a></p>
+  <h1>Dankesbriefe zu den Belegen aus dem Vereinsportal</h1>
+  <p class="hinweis">Je Spender ein Brief aus einer <a href="{% url 'serienbriefe:vorlagen' %}">Serienbrief-Vorlage</a>.
+    Einfachspender bekommen ihren Spendenbeleg dazu, Mehrfachspender die
+    <a href="{% url 'vereinsportal:sammel' %}">hochgeladene Sammelbescheinigung</a>. Spender ohne E-Mail kommen in ein
+    Druck-PDF, Spender mit E-Mail bekommen Brief und Anlage als Mail. Erst „Vorschau“; danach gelten die Belege als
+    bedankt und erscheinen hier nicht mehr.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <div class="aktionsleiste"><button type="submit" name="schritt" value="vorschau" class="knopf" data-ziel="ergebnis-vorschau">Vorschau</button></div>
+
+    {% if spender is not None %}
+    <h2 id="ergebnis-vorschau">{{ spender|length }} Spender</h2>
+    {% if spender %}
+    <div class="tabelle-rahmen">
+      <table class="tabelle kompakt" id="portal-briefe">
+        <thead><tr><th>Spender</th><th>Anschrift</th><th class="zahl">Spenden im Jahr</th><th>Anlage</th><th>Versand</th></tr></thead>
+        <tbody>
+          {% for s in spender %}
+          <tr>
+            <td>{{ s.name }}</td>
+            <td>{{ s.strasse }}, {{ s.plz_ort }}</td>
+            <td class="zahl">{{ s.anzahl }}</td>
+            <td>{% if s.mehrfach %}{% if s.sammel %}Sammelbescheinigung{% else %}<strong>Sammelbescheinigung fehlt</strong>{% endif %}{% else %}{{ s.unbedankt|length }} Beleg{{ s.unbedankt|length|pluralize:"e" }}{% endif %}</td>
+            <td>{% if per_mail %}{{ s.email }}{% else %}Brief{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if fehlt %}<p class="hinweis">{{ fehlt }} Mehrfachspender ohne Sammelbescheinigung bleiben aus; bitte erst die
+      <a href="{% url 'vereinsportal:sammel' %}?jahr={{ d.jahr }}">Sammelbescheinigung hochladen</a>.</p>{% endif %}
+    <div class="aktionsleiste">
+      {% if bereit and not per_mail %}<button type="submit" name="schritt" value="pdf" class="knopf" formtarget="_blank">{{ bereit|length }} Brief{{ bereit|length|pluralize:"e" }} als PDF erstellen</button>{% endif %}
+      {% if bereit and per_mail %}{% if mail_bereit %}<button type="submit" name="schritt" value="senden" class="knopf">{{ bereit|length }} E-Mail{{ bereit|length|pluralize:"s" }} senden</button>{% else %}<span class="hinweis">Für E-Mails ist noch kein Mailserver eingerichtet (Einstellungen → Tafel → E-Mail).</span>{% endif %}{% endif %}
+    </div>
+    {% else %}
+    <p class="hinweis">In dieser Gruppe steht kein Dankesbrief mehr aus.</p>
+    {% endif %}
+    {% endif %}
+  </form>
+</section>
+{% endblock %}

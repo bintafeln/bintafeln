@@ -1,6 +1,7 @@
 {% load handbuch %}<p>Dieses Modul ist für Tafeln, die ihre Spendenbescheinigungen weiterhin im <strong>Vereinsportal</strong>
-  ausstellen und versenden. bintafeln liest dessen Belege nur ein und zeigt, welche Spender noch keine Bescheinigung
-  bekommen haben, getrennt nach Einfach- und Mehrfachspendern, mit und ohne E-Mail. Es ist eine Alternative zu
+  ausstellen. bintafeln liest dessen Belege ein, zeigt, welche Spender noch keine Bescheinigung bekommen haben
+  (getrennt nach Einfach- und Mehrfachspendern, mit und ohne E-Mail), und erstellt die Dankesbriefe dazu: als
+  Druck-PDF mit der Bescheinigung dahinter oder als E-Mail mit der Bescheinigung im Anhang. Es ist eine Alternative zu
   „Spenden“ in bintafeln; die eingelesenen Belege erscheinen dort nicht, und bintafeln stellt für sie keine eigenen
   Zuwendungsbestätigungen aus. Das Modul wird unter Einstellungen → Tafel → Tafel und Module eingeschaltet.</p>
 
@@ -14,7 +15,11 @@
         Dazu die Excel-Datei mit dem Blatt „Spenden - Übersicht“ (Spaltennamen in Zeile 6: „Belegnummer“,
         „Versendet am“, „SQ-erstellt Datum“).</td></tr>
     <tr><td><strong>Spender mit E-Mail</strong> (Excel)</td><td>Vereinsportal, Kontaktliste als Excel-Export</td>
-      <td>Erste Zeile mit den Spalten „Vorname“, „Nachname“, „E-Mail“ und, wenn gewünscht, „immer per Post“ (Ja).</td></tr>
+      <td>Erste Zeile mit den Spalten „Vorname“, „Nachname“, „E-Mail“ und, wenn gewünscht, „Anrede“ (Frau/Herr, für
+        die Briefanrede) und „immer per Post“ (Ja).</td></tr>
+    <tr><td><strong>Sammelbescheinigungen</strong> (PDF)</td><td>Vereinsportal, je Mehrfachspender erstellt</td>
+      <td>Im Dateinamen alle Teile des Spendernamens, z. B. „Sammelbescheinigung_Erika_Beispiel.pdf“; sonst ordnen Sie
+        die Datei von Hand zu.</td></tr>
   </tbody>
 </table>
 
@@ -38,7 +43,26 @@
   E-Mail“ und dort ist nicht „immer per Post“ gewählt. Die Nummer eines Belegs öffnet das PDF. „Liste als CSV“ gibt
   die gezeigte Gruppe mit Anschrift für Serienbriefe aus.</p>
 
+<h3>Dankesbriefe</h3>
+<p>Der Brief kommt aus einer Serienbrief-Vorlage (Verein → Serienbriefe → Vorlagen). Sie können darin {anrede},
+  {name}, {spendensumme}, {anzahl_spenden}, {jahr} und {datum} verwenden; Anschrift, Briefkopf und Datum setzt
+  bintafeln wie bei jedem Serienbrief. Die Anrede „Sehr geehrte Frau …“ gibt es nur für Spender aus der Liste
+  „Spender mit E-Mail“; alle anderen werden mit „Sehr geehrte Damen und Herren,“ angesprochen.</p>
+<ol>
+  <li>Für <strong>Mehrfachspender</strong> zuerst unter „Sammelbescheinigungen“ die im Vereinsportal erstellten PDFs
+    hochladen. Ohne Sammelbescheinigung entsteht für einen Mehrfachspender kein Brief.</li>
+  <li>„Dankesbriefe (Vereinsportal)“ öffnen, Vorlage, Jahr und Gruppe wählen, dann „Vorschau“.</li>
+  <li>Gruppen <strong>ohne E-Mail</strong>: „Briefe als PDF erstellen“ gibt ein PDF zum Drucken, je Spender der
+    Brief und dahinter beim Einfachspender sein Spendenbeleg, beim Mehrfachspender die Sammelbescheinigung.</li>
+  <li>Gruppen <strong>mit E-Mail</strong>: „E-Mails senden“ schickt den Brieftext als Mail mit denselben Anlagen
+    als PDF. Das Vereinsportal kann das für Mehrfachspender nicht.</li>
+</ol>
+{% hilfe_bild "vereinsportal-briefe" "① Vorlage und Gruppe wählen, ② „Vorschau“, ③ fehlt die Sammelbescheinigung, bleibt der Spender aus, ④ Briefe als PDF erstellen." %}
+<p>Danach gelten die Belege als bedankt (✉ in der Übersicht) und erscheinen bei den Dankesbriefen nicht mehr; so
+  geht nichts doppelt hinaus. Belege, die laut Finanzexport schon im Vereinsportal versendet sind, liegen keinem
+  Brief bei.</p>
+
 <h3>Einstellungen und Löschfrist</h3>
 <p>Unter „Einstellungen → Verein → Vereinsportal“ steht der Name des Vereins, wie er in der Absenderzeile der Belege
   steht (daran erkennt bintafeln die Zeile mit dem Spender), und wie viele Jahre die eingelesenen Belege aufbewahrt
-  werden. Danach löscht bintafeln sie; die Originale bleiben im Vereinsportal.</p>
+  werden. Danach löscht bintafeln sie samt Sammelbescheinigungen; die Originale bleiben im Vereinsportal.</p>

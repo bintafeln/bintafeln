@@ -345,7 +345,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   kein Produktname, eigene Modelle `Beleg`/`Kontakt` – nie als `Spende` anlegen, sonst gäbe es
   zwei Bestätigungen): Regeln des bisherigen Programms in `apps/vereinsportal/einlesen.py`
   (Finanzexport-ZIP, Blatt „Spenden - Übersicht“, Liste „Spender mit E-Mail“), Gruppen in
-  `auswertung.py`.
+  `auswertung.py`, Dankesbriefe aus Serienbrief-Vorlagen und Sammelbescheinigungen in `briefe.py`
+  (Druck-PDF oder Mail, danach `Beleg.bedankt_am`).
   Hooks `Modul.fristen`, `Modul.auskunft_mitarbeiter`, `Modul.aushang`,
   `Modul.einlass`, `Modul.auskunft_antrag`, `Modul.kopfzeile`, `Modul.seitenleiste`, `Modul.suchen`,
   `Modul.startseite`, `Modul.mein_konto`, `Modul.datenimport` (eigene Übernahmen auf der Seite
