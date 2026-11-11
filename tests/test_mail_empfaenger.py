@@ -132,7 +132,7 @@ def test_niemand_bekommt_die_mail(admin_client, benutzer_mit_rolle):
     assert "anna@example.org" in update._empfaenger()  # andere Mail unberührt
     seite = admin_client.get(SEITE)
     assert seite.context["form"]["niemand_korrekturwunsch"].value() is True
-    assert "Bekommt sie im Moment:\n                niemand" in seite.content.decode()
+    assert "Bekommt sie im Moment: niemand." in seite.content.decode()
     # Haken wieder weg: die Auswahl gilt wieder
     admin_client.post(SEITE, {"korrekturwunsch": [anna.pk]})
     assert korrekturen.empfaenger() == ["anna@example.org"]
@@ -149,3 +149,75 @@ def test_niemand_auch_beim_fahrdienst(admin_client, benutzer_mit_rolle):
     assert "pia@example.org" in plan.empfaenger()
     admin_client.post(SEITE, {"niemand_fahrdienst_ausfall": "on"})
     assert plan.empfaenger() == []
+
+
+def _module_an(*namen):
+    from apps.core.models import TafelEinstellungen
+
+    e = TafelEinstellungen.laden()
+    e.module = [*e.module, *namen]
+    e.save()
+
+
+def test_alle_benachrichtigungen_haben_eine_wahl(admin_client, benutzer_mit_rolle):
+    """Jede Benachrichtigung lässt sich einstellen: Personen wählen oder ganz abstellen."""
+    _module_an("fahrdienst", "dienstplan", "tickets")
+    konto(benutzer_mit_rolle, "anna")
+    for art in benachrichtigung.arten().values():
+        assert art.wahl is not None, art.kennung
+    seite = admin_client.get(SEITE).content.decode()
+    for name in ("fahrdienst_gesund", "dienstplan_ausfall", "dienstplan_gesund", "ticket_neu"):
+        assert f'name="{name}"' in seite and f'name="niemand_{name}"' in seite, name
+    # Antwort auf ein Ticket: geht an die meldende Person, lässt sich nur abstellen
+    assert 'name="niemand_ticket_antwort"' in seite and 'name="ticket_antwort"' not in seite
+
+
+def test_auswahl_ersetzt_die_vorgabe_im_einzelfall(admin_client, benutzer_mit_rolle):
+    """Dienstplan, „wieder gesund“ und Tickets: ohne Auswahl die Vorgabe des Einzelfalls,
+    mit Auswahl die gewählten Personen, mit „niemand“ keiner."""
+    _module_an("dienstplan")
+    pia = konto(benutzer_mit_rolle, "pia", rollen.BUERO)
+    vorgabe = ["teamleitung@example.org"]
+    assert benachrichtigung.an("dienstplan_ausfall", vorgabe) == vorgabe
+    admin_client.post(SEITE, {"dienstplan_ausfall": [pia.pk]})
+    assert benachrichtigung.an("dienstplan_ausfall", vorgabe) == ["pia@example.org"]
+    assert benachrichtigung.an("dienstplan_gesund", vorgabe) == vorgabe  # eigene Wahl je Mail
+    admin_client.post(SEITE, {"dienstplan_ausfall": [pia.pk], "niemand_dienstplan_ausfall": "on"})
+    assert benachrichtigung.an("dienstplan_ausfall", vorgabe) == []
+    # gesperrt: wieder die Vorgabe statt ins Leere
+    admin_client.post(SEITE, {"dienstplan_ausfall": [pia.pk]})
+    pia.is_active = False
+    pia.save()
+    assert benachrichtigung.an("dienstplan_ausfall", vorgabe) == vorgabe
+    # ausgeschaltetes Modul oder unbekannte Art: die Vorgabe
+    assert benachrichtigung.an("ticket_neu", vorgabe) == vorgabe
+
+
+def test_ticket_mails_folgen_der_wahl(admin, admin_client, benutzer_mit_rolle,
+                                      django_capture_on_commit_callbacks):  # fmt: skip
+    from django.core import mail as djmail
+
+    from apps.core.models import MailEinstellungen
+    from apps.tickets import ablauf
+    from apps.tickets.models import Kategorie
+
+    _module_an("tickets")
+    m = MailEinstellungen.laden()
+    m.server, m.absender = "smtp.example.org", "tafel@example.org"
+    m.save()
+    theo = konto(benutzer_mit_rolle, "theo", rollen.AUSGABE)
+    berta = konto(benutzer_mit_rolle, "berta", rollen.BUERO)  # darf alle Tickets bearbeiten
+    technik = Kategorie.objects.create(name="Technik")
+    technik.personen.add(theo)
+
+    def neues():
+        djmail.outbox.clear()
+        with django_capture_on_commit_callbacks(execute=True):
+            ablauf.eroeffnen(admin, technik, "Waage defekt", "Zeigt nichts an")
+        return sorted(a for mail_ in djmail.outbox for a in mail_.to)
+
+    assert neues() == ["theo@example.org"]  # Vorgabe: Zuständige der Kategorie
+    admin_client.post(SEITE, {"ticket_neu": [berta.pk]})
+    assert neues() == ["berta@example.org"]
+    admin_client.post(SEITE, {"niemand_ticket_neu": "on"})
+    assert neues() == []

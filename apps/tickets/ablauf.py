@@ -53,7 +53,9 @@ def eroeffnen(benutzer, kategorie, titel, beschreibung, dateien=(), basis: str =
             name = privatdateien.speichern(Anhang.ORDNER, datei)
             Anhang.objects.create(ticket=t, name=datei.name[:150], datei=name,
                                   typ=datei.content_type[:40])  # fmt: skip
-    an = [k.email for k in zustaendige(kategorie) if k.email and k != benutzer]
+    an = [k.email for k in zustaendige(kategorie) if k.email]
+    # Wer unter „Mail-Empfänger“ gewählt ist, bekommt die Mail statt der Zuständigen (ADR 0125)
+    an = [m for m in benachrichtigung.an("ticket_neu", an) if m != benutzer.email]
     text = (
         f"Neues Ticket in „{kategorie}“ von {benutzer.get_full_name() or benutzer}:\n\n"
         f"{titel}\n\n{beschreibung}" + (f"\n\nAnsehen: {_link(basis, t)}" if basis else "")
@@ -66,6 +68,7 @@ def eroeffnen(benutzer, kategorie, titel, beschreibung, dateien=(), basis: str =
 def _melder_benachrichtigen(t: Ticket, wer, was: str, basis: str) -> None:
     """Meldende Person (und Zuständige) erfahren von Antworten und Statuswechseln."""
     an = [p.email for p in (t.erstellt_von, t.zustaendig) if p and p.email and p != wer]
+    an = benachrichtigung.an("ticket_antwort", an)
     text = f"{was}\n\nTicket: {t.titel}" + (f"\n\nAnsehen: {_link(basis, t)}" if basis else "")
     transaction.on_commit(lambda: benachrichtigung.melden(
         "ticket_antwort", an, f"Ticket {t.pk}: {t.titel}", text, schluessel=t.pk))  # fmt: skip

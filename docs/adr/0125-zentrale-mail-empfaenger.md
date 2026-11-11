@@ -31,9 +31,13 @@ Antrags-Einstellungen, die für Ausfälle im Fahrdienst in den Fahrdienst-Einste
 - **Alle übrigen Mails** (an Kunden, Spender, einzelne Personen) stehen als `Mail` in
   `apps/core/mailuebersicht.py`, die der Module in `Modul.mails`. Sie werden nur erklärt und
   verlinken dorthin, wo Texte und Einstellungen stehen.
+- **Vorgabe im Einzelfall** (`Empfaengerwahl.fest=False`): Bei Dienstplan (Teamleitung des
+  betroffenen Tages), „wieder gesund“ und Tickets (Zuständige der Kategorie) hängt die Vorgabe
+  vom Vorgang ab. Die auslösende Stelle übergibt sie an `benachrichtigung.an(kennung, vorgabe)`;
+  eine Auswahl auf der Seite ersetzt sie, „niemand“ stellt die Mail ab. Die Antwort zu einem
+  Ticket geht an die meldende Person und lässt sich nur abstellen (`berechtigte=None`).
 - **Nicht zentralisiert:** die persönliche Häufigkeit (sofort, gesammelt, nie) unter „Mein
-  Konto“ (ADR 0086) und Empfänger, die sich aus der Sache ergeben (Teamleitung im Dienstplan,
-  Zuständige einer Ticket-Kategorie). Sie werden auf der Seite beschrieben.
+  Konto“ (ADR 0086).
 
 ## Begründung
 

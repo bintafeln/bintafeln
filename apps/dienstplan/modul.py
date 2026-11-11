@@ -1,6 +1,6 @@
 """Beschreibung des Moduls Dienstplan für den Modulrahmen (ADR 0049). Ohne Datenbankzugriff."""
 
-from apps.core.benachrichtigung import Art
+from apps.core.benachrichtigung import Art, Empfaengerwahl
 from apps.core.module import Aushangseite, Modul
 
 
@@ -103,6 +103,16 @@ def _darf(*codes):
     return pruefen
 
 
+def _berechtigte():
+    from apps.core.benachrichtigung import mit_recht
+
+    return mit_recht("dienstplan.planen", "dienstplan.sehen")
+
+
+_VORGABE = ("die Teamleitung der betroffenen Ausgabetage (im Dienstplan je Ausgabetag "
+            "eingetragen), ohne Teamleitung alle, die den Dienstplan planen dürfen")  # fmt: skip
+
+
 MODUL = Modul(
     kennung="dienstplan",
     benachrichtigungen=(
@@ -110,12 +120,11 @@ MODUL = Modul(
             "Entfällt, wenn bis zum Versand für alle betroffenen Plätze Ersatz eingetragen ist.",
             fuer=_darf("dienstplan.planen", "dienstplan.sehen"), offen=_ausfall_offen,
             wann="Sobald für eine Helferin oder einen Helfer ein Ausfall eingetragen wird.",
-            an="Die Teamleitung der betroffenen Ausgabetage (im Dienstplan je Ausgabetag "
-               "eingetragen); ohne Teamleitung alle, die den Dienstplan planen dürfen."),
+            wahl=Empfaengerwahl(_berechtigte, _VORGABE, fest=False)),
         Art("dienstplan_gesund", "Dienstplan: wieder gesund",
             fuer=_darf("dienstplan.planen", "dienstplan.sehen"),
             wann="Sobald sich jemand vor dem Ende des Ausfalls wieder gesund meldet.",
-            an="Dieselben Personen wie beim Ausfall."),
+            wahl=Empfaengerwahl(_berechtigte, _VORGABE, fest=False)),
     ),
     titel="Dienstplan der Ausgabe",
     beschreibung="Dienstplan je Ausgabestelle und Ausgabetag: Aufgaben, feste Besetzung, Ausfälle "

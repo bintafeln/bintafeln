@@ -64,14 +64,16 @@ class EmpfaengerForm(forms.Form):
         self.arten = arten
         konten = get_user_model().objects.order_by("last_name", "first_name", "username")
         for art in arten:
-            gewaehlt = benachrichtigung.gewaehlt(art)
-            erlaubt = {k.pk for k in art.wahl.berechtigte()} | gewaehlt
-            feld = forms.ModelMultipleChoiceField(
-                label=art.titel, required=False, queryset=konten.filter(pk__in=erlaubt),
-                widget=Mehrfachauswahl(leer=art.wahl.leer), initial=sorted(gewaehlt),
-            )  # fmt: skip
-            feld.label_from_instance = _name
-            self.fields[art.kennung] = feld
+            if art.wahl.berechtigte is not None:
+                gewaehlt = benachrichtigung.gewaehlt(art)
+                erlaubt = {k.pk for k in art.wahl.berechtigte()} | gewaehlt
+                leer = art.wahl.leer if art.wahl.fest else "wie unten beschrieben"
+                feld = forms.ModelMultipleChoiceField(
+                    label=art.titel, required=False, queryset=konten.filter(pk__in=erlaubt),
+                    widget=Mehrfachauswahl(leer=leer), initial=sorted(gewaehlt),
+                )  # fmt: skip
+                feld.label_from_instance = _name
+                self.fields[art.kennung] = feld
             if art.wahl.leer != "niemand":
                 self.fields[f"niemand_{art.kennung}"] = forms.BooleanField(
                     label="Niemand bekommt diese Mail",
@@ -81,7 +83,8 @@ class EmpfaengerForm(forms.Form):
 
     def speichern(self) -> None:
         for art in self.arten:
-            benachrichtigung.wahl_speichern(art, self.cleaned_data[art.kennung])
+            if art.kennung in self.fields:
+                benachrichtigung.wahl_speichern(art, self.cleaned_data[art.kennung])
             if f"niemand_{art.kennung}" in self.fields:
                 benachrichtigung.niemand_speichern(art, self.cleaned_data[f"niemand_{art.kennung}"])
 
@@ -102,10 +105,11 @@ def empfaenger(request):
         return redirect("core:mail_empfaenger")
     zeilen = []
     for art in arten:
-        zeile = {"art": art, "feld": form[art.kennung] if art.wahl else None}
+        zeile = {"art": art, "feld": form[art.kennung] if art.kennung in form.fields else None}
         if f"niemand_{art.kennung}" in form.fields:
             zeile["niemand"] = form[f"niemand_{art.kennung}"]
         if art.wahl:
+            zeile["aus"] = benachrichtigung.niemand(art)
             zeile["aktuell"] = [k.get_full_name() or k.username
                                 for k in benachrichtigung.aktuelle(art)]  # fmt: skip
         zeilen.append(zeile)

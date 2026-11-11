@@ -1,6 +1,6 @@
 """Beschreibung des Moduls Tickets für den Modulrahmen (ADR 0049). Ohne Datenbankzugriff."""
 
-from apps.core.benachrichtigung import Art
+from apps.core.benachrichtigung import Art, Empfaengerwahl
 from apps.core.module import Modul
 
 
@@ -50,6 +50,18 @@ def auskunft_mitarbeiter(benutzer, pdf):
                 breiten=[0.08, 0.16, 0.2, 0.4, 0.16])  # fmt: skip
 
 
+def _berechtigte():
+    """Wer Tickets ohnehin sehen kann: mit dem Recht oder als Zuständige einer Kategorie."""
+    from apps.core.benachrichtigung import mit_recht
+    from apps.tickets.ablauf import zustaendige
+    from apps.tickets.models import Kategorie
+
+    konten = {k.pk: k for k in mit_recht("tickets.bearbeiten")}
+    for kategorie in Kategorie.objects.all():
+        konten.update({k.pk: k for k in zustaendige(kategorie) if k.email})
+    return sorted(konten.values(), key=lambda k: (k.last_name, k.first_name, k.username))
+
+
 MODUL = Modul(
     kennung="tickets",
     titel="Tickets",
@@ -74,10 +86,12 @@ MODUL = Modul(
             "Entfällt, wenn es bis zum Versand schon jemand übernommen oder erledigt hat.",
             fuer=_zustaendig, offen=_ticket_offen,
             wann="Sobald jemand ein Ticket anlegt.",
-            an="Die Zuständigen der Kategorie (Personen und Rollen, einstellbar unter "
-               "Einstellungen → Tickets)."),
+            wahl=Empfaengerwahl(
+                _berechtigte, "die Zuständigen der Kategorie (Personen und Rollen, einstellbar "
+                "unter Einstellungen → Ticket-Kategorien)", fest=False)),
         Art("ticket_antwort", "Antwort oder neuer Status zu meinem Ticket",
             wann="Sobald jemand auf ein Ticket antwortet oder den Status ändert.",
-            an="Wer das Ticket gemeldet hat."),
+            wahl=Empfaengerwahl(None, "wer das Ticket gemeldet hat und wer dafür zuständig ist",
+                                fest=False)),
     ),
 )  # fmt: skip

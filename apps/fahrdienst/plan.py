@@ -312,10 +312,10 @@ def _gesund_benachrichtigen(a: Ausfall, adresse: str) -> None:
             + (f" ({len(frei)} noch ohne Ersatz)" if frei else "") + "."
             + (f"\n\nPlan: {adresse}" if adresse else ""))  # fmt: skip
     telegram.benachrichtigen(e, f"🟩 Fahrdienst: {text}")
-    an = empfaenger() if mail.eingerichtet() else []
-    if an:
-        from apps.core import benachrichtigung
+    from apps.core import benachrichtigung
 
+    an = benachrichtigung.an("fahrdienst_gesund", empfaenger()) if mail.eingerichtet() else []
+    if an:
         betreff = f"Fahrdienst: {a.person} wieder da"
         benachrichtigung.melden("fahrdienst_gesund", an, betreff, text)
 
