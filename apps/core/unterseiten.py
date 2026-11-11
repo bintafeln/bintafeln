@@ -112,12 +112,12 @@ UNTERSEITEN = [
         "Ausgabestelle anlegen hinzufügen",
     ),
     Unterseite(
-        "Besuche & Konto nachtragen (tafelarbeit.de)",
-        "bexat:besuche_konto",
+        "Besuche & Konto nachtragen",
+        "uebernahme:besuche_konto",
         ("kunden.importieren",),
-        "Aus Bexat übernehmen",
-        "Kontostand Guthaben Abholungen Tagesliste Bexat einlesen",
-        modul="bexat",
+        "Aus anderem Tafelprogramm übernehmen",
+        "Kontostand Guthaben Abholungen Tagesliste Altprogramm einlesen",
+        modul="uebernahme",
     ),
 ]
 

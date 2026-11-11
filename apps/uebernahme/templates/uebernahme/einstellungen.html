@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% block titel %}Bexat-Zuordnungen{% endblock %}
+{% block titel %}Zuordnungen für die Übernahme{% endblock %}
 {% block inhalt %}
 <section class="karte">
-  <p><a href="{% url 'bexat:start' %}">← Aus Bexat übernehmen</a></p>
-  <h1>Bexat-Zuordnungen</h1>
-  <p>Bexat speichert Ausgabestellen und Einkommensarten teils nur als Nummer. Hier ordnen Sie den
+  <p><a href="{% url 'uebernahme:start' %}">← Aus anderem Tafelprogramm übernehmen</a></p>
+  <h1>Zuordnungen für die Übernahme</h1>
+  <p>Der Export enthält Ausgabestellen und Einkommensarten teils nur als Nummer. Hier ordnen Sie den
     Nummern Namen bzw. Texte zu – eine Zuordnung je Zeile im Format <code>Nummer = Text</code>.</p>
   <p class="hinweis">Die Ausgabestellen stehen meist schon im Export; dann bleibt das Feld leer.
-    Die Einkommensarten-Nummern finden Sie in der Bexat-Kundenkonfiguration. Was hier fehlt, bleibt
+    Die Einkommensarten-Nummern finden Sie in der Konfiguration des bisherigen Programms. Was hier fehlt, bleibt
     beim Import einfach leer.</p>
   <form method="post">
     {% csrf_token %}

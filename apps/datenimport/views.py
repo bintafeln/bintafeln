@@ -96,7 +96,7 @@ def start(request):
     # das Ziel nicht mehr anbieten.
     if KundenEinstellungen.laden().selbst_gefuehrt:
         ziele = [z for z in ziele if z.kennung != "kunden"]
-    # Übernahmen aus Modulen (z. B. Bexat) stehen ebenfalls hier, an einer Stelle
+    # Übernahmen aus Modulen (anderes Tafelprogramm) stehen ebenfalls hier, an einer Stelle
     from apps.core import module
 
     aus_modulen = module.datenimport(request)

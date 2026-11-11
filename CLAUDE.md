@@ -334,16 +334,17 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `Aushangseite.aendern` des Moduls). Arbeitszeit am Monitor stempeln (ADR 0123): Regeln in
   `apps/aushang/stempeln.py` (wo: `an()`, QR-Marke `marke()`/`einloesen()`), mit PIN oder
   wechselndem QR-Code; „nur am Monitor“ über `arbeitszeit.hier_erlaubt()`/`freigeben()`.
-  `bexat` (ADR 0006 ergänzt, ADR 0100, Übernahme aus dem Bexat-Tafelprogramm/tafelarbeit.de):
-  reine Umwandlung in `apps/bexat/konvertieren.py` (`umwandeln(bytes)` → neutrale Importformat-Dateien),
-  herstellerweite Code-Tabellen in `apps/bexat/codes.py`, je-Tafel-Zuordnungen (Ausgabestellen,
-  Einkommensarten) in `BexatEinstellungen`; die Seite schickt den Kundenstamm direkt in den
+  `uebernahme` (ADR 0006 ergänzt, ADR 0100, Übernahme aus einem anderen Tafelprogramm; kein
+  Herstellername in Oberfläche, Doku oder Code – nur Blatt- und Spaltennamen der Exportdatei):
+  reine Umwandlung in `apps/uebernahme/konvertieren.py` (`umwandeln(bytes)` → neutrale Importformat-Dateien),
+  herstellerweite Code-Tabellen in `apps/uebernahme/codes.py`, je-Tafel-Zuordnungen (Ausgabestellen,
+  Einkommensarten) in `UebernahmeEinstellungen`; die Seite schickt den Kundenstamm direkt in den
   Abgleich (`ImportVorbereitung` → `kunden:import_vorschau`), Anträge/Mitarbeitende als CSV.
   Keine festen Tafel-Werte, keine Personendaten; Tests mit erfundenem Workbook.
   Hooks `Modul.fristen`, `Modul.auskunft_mitarbeiter`, `Modul.aushang`,
   `Modul.einlass`, `Modul.auskunft_antrag`, `Modul.kopfzeile`, `Modul.seitenleiste`, `Modul.suchen`,
   `Modul.startseite`, `Modul.mein_konto`, `Modul.datenimport` (eigene Übernahmen auf der Seite
-  „Daten importieren“ statt eigener Menüpunkte, z. B. Bexat). Programmname nur in
+  „Daten importieren“ statt eigener Menüpunkte). Programmname nur in
   `bintafeln/programm.py`; die Kopfzeile kürzt `static/js/kopfzeile.js` über `.kuerz-1…5`.
   Übersicht der übernommenen Altprogramme: `docs/altprogramme.md`.
 - Datenimport aus CSV/Excel (ADR 0078): App `datenimport` – `lesen.py` (CSV/xlsx), `zuordnung.py`

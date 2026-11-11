@@ -1,6 +1,6 @@
-"""Besuche eines Tages aus tafelarbeit.de übernehmen und das Kundenkonto stimmig machen (ADR 0110).
+"""Besuche eines Tages aus dem bisherigen Programm übernehmen, Kundenkonto angleichen (ADR 0110).
 
-Liest die Tages-Abholungsliste aus dem Bexat-Tafelprogramm (Excel **oder** CSV) und trägt je Kunde
+Liest die Tages-Abholungsliste aus dem bisherigen Programm (Excel **oder** CSV) und trägt je Kunde
 den **Besuch** als Abholung nach. Der **Kontostand** wird dabei genau auf den Wert aus der Liste
 gesetzt – nicht direkt, sondern über eine **Korrektur-Buchung** (ADR 0014: Kundenkonto nur über
 ``apps.ausgabe.konto``). Weil der exportierte Stand Vorauszahlungen schon enthält, stimmt das Konto
@@ -28,7 +28,7 @@ from decimal import Decimal, InvalidOperation
 
 import openpyxl
 
-BREITE = 5  # Bexat zeigt die Kundennummer fünfstellig mit führenden Nullen
+BREITE = 5  # Das bisherige Programm zeigt die Kundennummer fünfstellig mit führenden Nullen
 
 SPALTEN = {
     "kundennummer": ("kundennummer", "nummer"),
@@ -119,7 +119,7 @@ def _kopf_finden(zeilen: list[list]) -> int:
             return i
     raise BesucheFehler(
         "In der Datei wurde keine Spalte „Kundennummer“ gefunden. Bitte die Tagesliste der "
-        "Abholungen aus tafelarbeit.de unverändert als Excel- oder CSV-Datei hochladen."
+        "Abholungen aus dem bisherigen Programm unverändert als Excel- oder CSV-Datei hochladen."
     )
 
 
@@ -282,7 +282,7 @@ def uebernehmen(zeilen: list[Zeile], von: str) -> dict:
             differenz = ziel - (h.kontostand or Decimal("0"))
             if differenz != 0:
                 stand = f"Stand {tag:%d.%m.%Y}" if tag else "aktueller Stand"
-                konto_.korrigieren(h, differenz, f"Abgleich tafelarbeit.de ({stand})", von)
+                konto_.korrigieren(h, differenz, f"Abgleich bisheriges Programm ({stand})", von)
                 korrekturen += 1
                 summe += differenz
 

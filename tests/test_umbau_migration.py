@@ -154,3 +154,46 @@ def _mail_empfaenger_stand_bleibt():
         "dienstplan_ausfall": (True, 0),  # wie vorgesehen
         "fahrdienst_ausfall": (False, 0),  # nur die beim Fahrdienst Gewählten
     }
+
+
+def test_uebernahme_modul_umbenannt():
+    """uebernahme.0001: Bestehende Installationen behalten Zuordnungen, eingeschaltetes Modul
+    und Änderungsprotokoll, obwohl Modul und Tabelle jetzt anders heißen."""
+    try:
+        _uebernahme_modul_umbenannt()
+    finally:
+        _migriere(MigrationExecutor(connection).loader.graph.leaf_nodes())
+
+
+def _uebernahme_modul_umbenannt():
+    from django.contrib.contenttypes.models import ContentType
+
+    from apps.core.models import TafelEinstellungen
+    from apps.uebernahme.models import UebernahmeEinstellungen
+
+    alt_app, alt_tabelle = "bex" + "at", "bex" + "at_" + "bex" + "ateinstellungen"
+    e = UebernahmeEinstellungen.laden()
+    e.einkommensarten = {"6": "Rente"}
+    e.save()
+    tafel = TafelEinstellungen.laden()
+    tafel.module = ["aufruf", "uebernahme"]
+    tafel.save()
+    # Zurück auf den Stand vor der Umbenennung: alte Tabelle, altes Modul, alter Eintrag
+    _migriere([("uebernahme", None)])
+    with connection.cursor() as c:
+        assert alt_tabelle in connection.introspection.table_names(c)
+        c.execute("SELECT count(*) FROM django_migrations WHERE app = %s", [alt_app])
+        assert c.fetchone()[0] == 1
+    assert TafelEinstellungen.laden().module == ["aufruf", alt_app]
+    assert ContentType.objects.filter(app_label=alt_app).exists()
+
+    _migriere(MigrationExecutor(connection).loader.graph.leaf_nodes())
+
+    assert UebernahmeEinstellungen.laden().einkommensarten == {"6": "Rente"}
+    assert TafelEinstellungen.laden().module == ["aufruf", "uebernahme"]
+    with connection.cursor() as c:
+        assert alt_tabelle not in connection.introspection.table_names(c)
+        c.execute("SELECT count(*) FROM django_migrations WHERE app = %s", [alt_app])
+        assert c.fetchone()[0] == 0
+    assert not ContentType.objects.filter(app_label=alt_app).exists()
+    assert ContentType.objects.filter(app_label="uebernahme").count() == 1

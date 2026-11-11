@@ -1,8 +1,8 @@
 from django.urls import path
 
-from apps.bexat import views
+from apps.uebernahme import views
 
-app_name = "bexat"
+app_name = "uebernahme"
 
 urlpatterns = [
     path("", views.start, name="start"),

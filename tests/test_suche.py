@@ -279,7 +279,7 @@ def test_seiten_hinter_einem_knopf_werden_gefunden(admin_client, admin, client, 
 
     assert "Online-Zugänge freigeben" in titel(admin, "startpasswort")
     # Jede eingetragene Seite gibt es, und der Admin kann sie öffnen
-    for u, url in unterseiten.fuer(rollen.rechte_von(admin), {"bexat"}):
+    for u, url in unterseiten.fuer(rollen.rechte_von(admin), {"uebernahme"}):
         if u.modul:
             continue  # Modulseiten prüft der Test des Moduls
         assert admin_client.get(url).status_code == 200, u.url_name

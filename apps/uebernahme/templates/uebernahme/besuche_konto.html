@@ -2,9 +2,9 @@
 {% block titel %}Besuche &amp; Konto nachtragen{% endblock %}
 {% block inhalt %}
 <section class="karte">
-  <p><a href="{% url 'bexat:start' %}">← Aus Bexat übernehmen</a></p>
+  <p><a href="{% url 'uebernahme:start' %}">← Aus anderem Tafelprogramm übernehmen</a></p>
   <h1>Besuche &amp; Konto nachtragen</h1>
-  <p>Für die <strong>Übergangszeit</strong>, solange die Ausgabe noch in tafelarbeit.de geführt wird: die
+  <p>Für die <strong>Übergangszeit</strong>, solange die Ausgabe noch im bisherigen Programm geführt wird: die
     <strong>Tagesliste der Abholungen</strong> oder eine reine <strong>Kontostand-Liste</strong> (CSV oder
     Excel) übernehmen. bintafeln trägt je Kunde den <strong>Besuch</strong> als Abholung nach und setzt den
     <strong>Kontostand</strong> genau auf den Wert aus der Liste – über eine nachvollziehbare
@@ -31,7 +31,7 @@
     </div>
     <div class="aktionsleiste">
       <button type="submit" name="aktion" value="pruefen" class="knopf knopf-zweitrangig"
-              hx-post="{% url 'bexat:besuche_konto' %}" hx-target="#bericht" hx-swap="innerHTML"
+              hx-post="{% url 'uebernahme:besuche_konto' %}" hx-target="#bericht" hx-swap="innerHTML"
               hx-disabled-elt="this">Prüfen (Probelauf)</button>
       {% if darf_buchen %}
       <button type="submit" name="aktion" value="uebernehmen" class="knopf"
@@ -43,5 +43,5 @@
   </form>
 </section>
 
-<div id="bericht">{% include "bexat/_besuche_konto_bericht.html" %}</div>
+<div id="bericht">{% include "uebernahme/_besuche_konto_bericht.html" %}</div>
 {% endblock %}

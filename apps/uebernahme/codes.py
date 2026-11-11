@@ -1,7 +1,7 @@
-"""Feste Code-Tabellen des Bexat-Tafelprogramms (Hersteller tafelarbeit.de).
+"""Feste Code-Tabellen des bisherigen Tafelprogramms.
 
 Diese Werte gehören zum Programm, nicht zu einer einzelnen Tafel: Anrede, Wochentag und die
-amtliche Staatsangehörigkeitsliste (1–206) sind bei allen Bexat-Installationen gleich. Sie sind
+amtliche Staatsangehörigkeitsliste (1–206) sind bei allen Installationen gleich. Sie sind
 damit – wie das Importformat – Wissen über das fremde Format und keine festen Werte einer
 bestimmten Tafel.
 
@@ -9,10 +9,10 @@ Was sich je Tafel unterscheidet (Ausgabestellen, Einkommensarten), steht NICHT h
 aus dem Export (Blatt ``offices``/``clientgroups``) bzw. aus den Modul-Einstellungen.
 """
 
-# Anrede (Bexat „title“) -> bintafeln
+# Anrede (Spalte „title“) -> bintafeln
 ANREDE = {"herr": "Herr", "frau": "Frau", "divers": ""}
 
-# Wochentagskürzel (Bexat „weekday“) -> bintafeln
+# Wochentagskürzel (Spalte „weekday“) -> bintafeln
 WOCHENTAG = {
     "mo": "Mo",
     "di": "Di",
@@ -23,7 +23,7 @@ WOCHENTAG = {
     "so": "So",
 }
 
-# Staatsangehörigkeit: nationality_id -> Text (amtliche Liste aus Bexat, 1–206)
+# Staatsangehörigkeit: nationality_id -> Text (amtliche Liste des Exports, 1–206)
 STAATSANGEHOERIGKEIT = {
     1: "Afghanistan", 2: "Ägypten", 3: "Albanien", 4: "Algerien", 5: "Andorra",
     6: "Angola", 7: "Anguilla,Bermuda,Falkl.,Montserrat,Jungfernins",

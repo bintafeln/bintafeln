@@ -33,7 +33,7 @@
   {% if bericht.unbekannt %}
   <p class="hinweis">Unbekannte Kundennummern: {{ bericht.unbekannt|join:", "|truncatechars:300 }}</p>
   {% endif %}
-  <p class="hinweis"><strong>Achtung:</strong> Beim Übernehmen wird der Kontostand jedes Kunden <strong>genau auf den Wert aus der Liste</strong> gesetzt. In bintafeln selbst eingegebene Konto-Änderungen für dieselben Kunden werden dadurch überschrieben – für die Übergangszeit (das Konto läuft noch in tafelarbeit.de) ist das so gewollt.</p>
+  <p class="hinweis"><strong>Achtung:</strong> Beim Übernehmen wird der Kontostand jedes Kunden <strong>genau auf den Wert aus der Liste</strong> gesetzt. In bintafeln selbst eingegebene Konto-Änderungen für dieselben Kunden werden dadurch überschrieben – für die Übergangszeit (das Konto läuft noch im bisherigen Programm) ist das so gewollt.</p>
   {% if darf_buchen %}
   <p class="hinweis">Passt das? Dann oben auf <strong>„Übernehmen“</strong> – die gewählte Datei bleibt erhalten.</p>
   {% else %}
