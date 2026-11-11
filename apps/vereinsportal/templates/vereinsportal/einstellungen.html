@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block titel %}Einstellungen für das Vereinsportal{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Einstellungen für das Vereinsportal</h1>
+  <form method="post" data-autosave>
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+{% endblock %}
