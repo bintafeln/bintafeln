@@ -56,37 +56,40 @@ def _name(konto) -> str:
 
 
 class EmpfaengerForm(forms.Form):
-    """Je Gruppen-Mail ein Auswahlmenü der Berechtigten. Schon Gewählte bleiben wählbar, auch
+    """Je Mail ein Auswahlmenü: „wie vorgesehen“ (wo es vorgesehene Empfänger gibt) und die
+    Berechtigten. Ohne Häkchen bekommt niemand die Mail. Schon Gewählte bleiben wählbar, auch
     wenn sie das Recht inzwischen nicht mehr haben (sonst fielen sie beim Speichern still weg)."""
 
     def __init__(self, *args, arten, **kwargs):
         super().__init__(*args, **kwargs)
         self.arten = arten
-        konten = get_user_model().objects.order_by("last_name", "first_name", "username")
+        alle = get_user_model().objects.order_by("last_name", "first_name", "username")
         for art in arten:
-            if art.wahl.berechtigte is not None:
+            wahl = art.wahl
+            auswahl, gesetzt = [], []
+            if benachrichtigung.hat_vorgabe(art):
+                auswahl.append((benachrichtigung.VORGABE, "Wie vorgesehen"))
+                if benachrichtigung.vorgabe(art):
+                    gesetzt.append(benachrichtigung.VORGABE)
+            if wahl.berechtigte is not None:
                 gewaehlt = benachrichtigung.gewaehlt(art)
-                erlaubt = {k.pk for k in art.wahl.berechtigte()} | gewaehlt
-                leer = art.wahl.leer if art.wahl.fest else "wie unten beschrieben"
-                feld = forms.ModelMultipleChoiceField(
-                    label=art.titel, required=False, queryset=konten.filter(pk__in=erlaubt),
-                    widget=Mehrfachauswahl(leer=leer), initial=sorted(gewaehlt),
-                )  # fmt: skip
-                feld.label_from_instance = _name
-                self.fields[art.kennung] = feld
-            if art.wahl.leer != "niemand":
-                self.fields[f"niemand_{art.kennung}"] = forms.BooleanField(
-                    label="Niemand bekommt diese Mail",
-                    required=False,
-                    initial=benachrichtigung.niemand(art),
-                )
+                erlaubt = {k.pk for k in wahl.berechtigte()} | gewaehlt
+                auswahl += [(str(k.pk), _name(k)) for k in alle.filter(pk__in=erlaubt)]
+                gesetzt += [str(pk) for pk in sorted(gewaehlt)]
+            self.fields[art.kennung] = forms.MultipleChoiceField(
+                label=art.titel, required=False, choices=auswahl, initial=gesetzt,
+                widget=Mehrfachauswahl(leer="niemand"),
+            )  # fmt: skip
 
     def speichern(self) -> None:
         for art in self.arten:
-            if art.kennung in self.fields:
-                benachrichtigung.wahl_speichern(art, self.cleaned_data[art.kennung])
-            if f"niemand_{art.kennung}" in self.fields:
-                benachrichtigung.niemand_speichern(art, self.cleaned_data[f"niemand_{art.kennung}"])
+            werte = set(self.cleaned_data[art.kennung])
+            if benachrichtigung.hat_vorgabe(art):
+                benachrichtigung.vorgabe_speichern(art, benachrichtigung.VORGABE in werte)
+            if art.wahl.berechtigte is not None:
+                pks = [int(w) for w in werte if w != benachrichtigung.VORGABE]
+                konten = get_user_model().objects.filter(pk__in=pks)
+                benachrichtigung.wahl_speichern(art, konten)
 
 
 @never_cache
@@ -105,13 +108,13 @@ def empfaenger(request):
         return redirect("core:mail_empfaenger")
     zeilen = []
     for art in arten:
-        zeile = {"art": art, "feld": form[art.kennung] if art.kennung in form.fields else None}
-        if f"niemand_{art.kennung}" in form.fields:
-            zeile["niemand"] = form[f"niemand_{art.kennung}"]
-        if art.wahl:
-            zeile["aus"] = benachrichtigung.niemand(art)
-            zeile["aktuell"] = [k.get_full_name() or k.username
-                                for k in benachrichtigung.aktuelle(art)]  # fmt: skip
+        zeile = {"art": art, "feld": form[art.kennung] if art.wahl else None}
+        if art.wahl and benachrichtigung.hat_vorgabe(art):
+            # Was „Wie vorgesehen“ bei dieser Mail heißt; bei fester Vorgabe mit den Namen
+            zeile["vorgesehen"] = art.wahl.leer
+            if art.wahl.fest and art.wahl.berechtigte:
+                zeile["namen"] = [k.get_full_name() or k.username
+                                  for k in art.wahl.berechtigte()]  # fmt: skip
         zeilen.append(zeile)
     darf = rollen.rechte_von(request.user)
     return render(request, "core/mail_empfaenger.html", {

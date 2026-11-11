@@ -118,3 +118,39 @@ def _umbau_mit_echten_daten():
     assert b.helfer_id and Adresse.objects.get(pk=b.helfer_id).nachname == "Muster"
     f = FBesetzung2.objects.get(tour=tour.pk)
     assert f.person_id and Adresse.objects.get(pk=f.person_id).konto_id == konto.pk
+
+
+def test_mail_empfaenger_stand_bleibt():
+    """core.0033: Der Haken „Niemand bekommt diese Mail“ wird zum Eintrag „Wie vorgesehen“.
+    Niemand bleibt niemand, ausgewählte Personen bleiben die einzigen, sonst wie vorgesehen."""
+    try:
+        _mail_empfaenger_stand_bleibt()
+    finally:
+        _migriere(MigrationExecutor(connection).loader.graph.leaf_nodes())
+
+
+def _mail_empfaenger_stand_bleibt():
+    ziele_vor = _leaves_mit({"core": "0032_mail_niemand"})
+    _migriere(ziele_vor)
+    apps = MigrationExecutor(connection).loader.project_state(ziele_vor).apps
+    Benutzer = apps.get_model("konten", "Benutzer")
+    MailEmpfaenger = apps.get_model("core", "MailEmpfaenger")
+    Fahrdienst = apps.get_model("fahrdienst", "FahrdienstEinstellungen")
+    anna = Benutzer.objects.create(username="anna", email="anna@example.org")
+    MailEmpfaenger.objects.create(art="korrekturwunsch", niemand=True).personen.add(anna)
+    MailEmpfaenger.objects.create(art="sicherheitsupdate").personen.add(anna)
+    MailEmpfaenger.objects.create(art="dienstplan_ausfall")
+    MailEmpfaenger.objects.create(art="fahrdienst_ausfall")  # Auswahl liegt beim Fahrdienst
+    Fahrdienst.objects.create(pk=1).benachrichtigen.add(anna)
+
+    _migriere(MigrationExecutor(connection).loader.graph.leaf_nodes())
+
+    from apps.core.models import MailEmpfaenger as Neu
+
+    stand = {e.art: (e.vorgabe, e.personen.count()) for e in Neu.objects.all()}
+    assert stand == {
+        "korrekturwunsch": (False, 0),  # niemand
+        "sicherheitsupdate": (False, 1),  # nur Anna
+        "dienstplan_ausfall": (True, 0),  # wie vorgesehen
+        "fahrdienst_ausfall": (False, 0),  # nur die beim Fahrdienst Gewählten
+    }

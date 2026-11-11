@@ -268,7 +268,7 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   entfällt über `Art.offen`; neue Arten in `KERN` bzw. `Modul.benachrichtigungen`; ADR 0086). Jede Mail
   steht auf der Seite „Mail-Empfänger“ (ADR 0125): neue `Art` mit `wann` und `an` oder – bei Mails
   an eine Gruppe – `wahl=Empfaengerwahl(...)` (Empfänger dann über `benachrichtigung.empfaenger()`, bei Vorgabe
-  im Einzelfall `fest=False` und `benachrichtigung.an(kennung, vorgabe)`; „niemand“ ist immer wählbar,
+  im Einzelfall `fest=False` und `benachrichtigung.an(kennung, vorgabe)`; ohne Häkchen bekommt niemand die Mail,
   nie eigene Auswahlfelder); andere Mails als `Mail` in `apps/core/mailuebersicht.py` bzw. `Modul.mails`. Geheimnisse in der Datenbank nur über `apps.core.geheimnis` verschlüsselt
   speichern (ADR 0016). In Tests landen Mails in `django.core.mail.outbox`.
 - Gemeinsamer Cache in der Datenbank (ADR 0093): `CACHES` = DatabaseCache, Tabelle `bintafeln_cache`

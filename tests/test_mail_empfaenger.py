@@ -12,6 +12,7 @@ from apps.konten import rollen
 pytestmark = pytest.mark.django_db
 
 SEITE = reverse("core:mail_empfaenger")
+V = benachrichtigung.VORGABE
 
 
 def konto(benutzer_mit_rolle, name, rolle=rollen.ADMIN, email=None):
@@ -34,32 +35,71 @@ def test_ohne_auswahl_bekommen_alle_berechtigten_die_mail(admin, benutzer_mit_ro
     assert update._empfaenger() == erwartet
 
 
+def einstellen(client, **wahl):
+    """Speichert die Seite wie der Browser: alle Felder mit ihrem Stand, ``wahl`` geändert.
+    Werte: Liste aus Konten und/oder ``V`` („wie vorgesehen“); leere Liste = niemand."""
+    form = client.get(SEITE).context["form"]
+    daten = {name: form[name].value() or [] for name in form.fields}
+    for name, werte in wahl.items():
+        daten[name] = [w if w == V else str(w.pk) for w in werte]
+    antwort = client.post(SEITE, daten)
+    assert antwort.status_code == 302
+    return antwort
+
+
 def test_auswahl_gilt_je_mail(admin_client, benutzer_mit_rolle):
     anna = konto(benutzer_mit_rolle, "anna")
     bert = konto(benutzer_mit_rolle, "bert")
-    antwort = admin_client.post(SEITE, {"korrekturwunsch": [anna.pk]})
-    assert antwort.status_code == 302
+    # Ausgangslage: „wie vorgesehen“ ist angehakt
+    assert admin_client.get(SEITE).context["form"]["korrekturwunsch"].value() == [V]
+    einstellen(admin_client, korrekturwunsch=[anna])
     assert korrekturen.empfaenger() == ["anna@example.org"]
     # die andere Mail bleibt bei der Vorgabe
     assert "bert@example.org" in update._empfaenger()
-    admin_client.post(SEITE, {"korrekturwunsch": [anna.pk], "sicherheitsupdate": [bert.pk]})
+    einstellen(admin_client, sicherheitsupdate=[bert])
     assert update._empfaenger() == ["bert@example.org"]
-    # Auswahl wieder leeren: alle Berechtigten
-    admin_client.post(SEITE, {})
+    assert korrekturen.empfaenger() == ["anna@example.org"]  # unverändert
+    # wieder „wie vorgesehen“: alle Berechtigten
+    einstellen(admin_client, korrekturwunsch=[V])
     assert {"anna@example.org", "bert@example.org"} <= set(korrekturen.empfaenger())
     assert not MailEmpfaenger.objects.get(art="korrekturwunsch").personen.exists()
 
 
-def test_gesperrte_oder_ohne_recht_bekommen_nichts_mehr(benutzer_mit_rolle, recht_nehmen):
+def test_nichts_angehakt_heisst_niemand(admin_client, benutzer_mit_rolle):
+    """Wie beim neuen Antrag: Ohne Häkchen bekommt niemand die Mail – kein Extra-Haken nötig."""
+    konto(benutzer_mit_rolle, "anna")
+    seite = admin_client.get(SEITE).content.decode()
+    assert "Niemand bekommt diese Mail" not in seite and 'name="niemand_' not in seite
+    einstellen(admin_client, korrekturwunsch=[])
+    assert korrekturen.empfaenger() == []
+    assert "anna@example.org" in update._empfaenger()  # andere Mail unberührt
+    assert admin_client.get(SEITE).context["form"]["korrekturwunsch"].value() == []
+
+
+def test_vorgesehene_und_weitere_personen(admin_client, benutzer_mit_rolle):
+    """„Wie vorgesehen“ und einzelne Personen lassen sich zusammen anhaken."""
+    from apps.core.models import TafelEinstellungen
+
+    e = TafelEinstellungen.laden()
+    e.module = [*e.module, "dienstplan"]
+    e.save()
+    pia = konto(benutzer_mit_rolle, "pia", rollen.BUERO)
+    einstellen(admin_client, dienstplan_ausfall=[V, pia])
+    assert benachrichtigung.an("dienstplan_ausfall", ["leitung@example.org"]) == [
+        "leitung@example.org", "pia@example.org",
+    ]  # fmt: skip
+
+
+def test_gesperrte_oder_ohne_recht_bekommen_nichts_mehr(admin_client, benutzer_mit_rolle):
     anna = konto(benutzer_mit_rolle, "anna")
     bert = konto(benutzer_mit_rolle, "bert")
-    art = benachrichtigung.arten()["korrekturwunsch"]
-    benachrichtigung.wahl_speichern(art, [anna])
+    einstellen(admin_client, korrekturwunsch=[anna])
     assert korrekturen.empfaenger() == ["anna@example.org"]
     anna.is_active = False
     anna.save()
     # niemand Gültiges mehr ausgewählt: die Mail geht wieder an alle Berechtigten, nicht ins Leere
     assert korrekturen.empfaenger() == ["bert@example.org"]
+    art = benachrichtigung.arten()["korrekturwunsch"]
     assert bert.pk not in benachrichtigung.gewaehlt(art)
 
 
@@ -108,10 +148,14 @@ def test_fahrdienst_auswahl_bleibt_in_den_fahrdienst_einstellungen(
     konto(benutzer_mit_rolle, "bob", rollen.BUERO)
     FahrdienstEinstellungen.laden().benachrichtigen.set([pia])
     seite = admin_client.get(SEITE)
-    assert seite.context["form"]["fahrdienst_ausfall"].value() == [pia.pk]
-    admin_client.post(SEITE, {})
+    # bisher nur Pia ausgewählt: bleibt nur Pia, „wie vorgesehen“ ist nicht angehakt
+    assert seite.context["form"]["fahrdienst_ausfall"].value() == [str(pia.pk)]
+    assert plan.empfaenger() == ["pia@example.org"]
+    einstellen(admin_client, fahrdienst_ausfall=[V])
     assert not FahrdienstEinstellungen.laden().benachrichtigen.exists()
     assert set(plan.empfaenger()) >= {"pia@example.org", "bob@example.org"}
+    einstellen(admin_client, fahrdienst_ausfall=[])
+    assert plan.empfaenger() == []
 
 
 def test_nur_mit_recht(admin, benutzer_mit_rolle, anmelden):
@@ -121,34 +165,19 @@ def test_nur_mit_recht(admin, benutzer_mit_rolle, anmelden):
     assert client.post(SEITE, {}).status_code == 403
 
 
-def test_niemand_bekommt_die_mail(admin_client, benutzer_mit_rolle):
-    """„Niemand“ ist eine eigene Wahl: Dann geht die Mail an keinen, auch nicht an alle."""
-    anna = konto(benutzer_mit_rolle, "anna")
-    seite = admin_client.get(SEITE).content.decode()
-    assert 'name="niemand_korrekturwunsch"' in seite and 'name="niemand_sicherheitsupdate"' in seite
-    assert 'name="niemand_antrag_neu"' not in seite  # dort heißt „keine Auswahl“ schon niemand
-    admin_client.post(SEITE, {"niemand_korrekturwunsch": "on", "korrekturwunsch": [anna.pk]})
-    assert korrekturen.empfaenger() == []
-    assert "anna@example.org" in update._empfaenger()  # andere Mail unberührt
-    seite = admin_client.get(SEITE)
-    assert seite.context["form"]["niemand_korrekturwunsch"].value() is True
-    assert "Bekommt sie im Moment: niemand." in seite.content.decode()
-    # Haken wieder weg: die Auswahl gilt wieder
-    admin_client.post(SEITE, {"korrekturwunsch": [anna.pk]})
-    assert korrekturen.empfaenger() == ["anna@example.org"]
-
-
-def test_niemand_auch_beim_fahrdienst(admin_client, benutzer_mit_rolle):
+def test_alte_einstellungen_bleiben_beim_update(admin_client, benutzer_mit_rolle):
+    """Ohne gespeicherten Stand gilt: niemand ausgewählt = wie vorgesehen, Personen ausgewählt =
+    nur diese (so stand es vor dem Eintrag „wie vorgesehen“ in den Fahrdienst-Einstellungen)."""
     from apps.core.models import TafelEinstellungen
-    from apps.fahrdienst import plan
+    from apps.fahrdienst.models import FahrdienstEinstellungen
 
     e = TafelEinstellungen.laden()
     e.module = [*e.module, "fahrdienst"]
     e.save()
-    konto(benutzer_mit_rolle, "pia", rollen.BUERO)
-    assert "pia@example.org" in plan.empfaenger()
-    admin_client.post(SEITE, {"niemand_fahrdienst_ausfall": "on"})
-    assert plan.empfaenger() == []
+    art = benachrichtigung.arten()["fahrdienst_ausfall"]
+    assert benachrichtigung.vorgabe(art)
+    FahrdienstEinstellungen.laden().benachrichtigen.set([konto(benutzer_mit_rolle, "pia")])
+    assert not benachrichtigung.vorgabe(art)
 
 
 def _module_an(*namen):
@@ -165,27 +194,30 @@ def test_alle_benachrichtigungen_haben_eine_wahl(admin_client, benutzer_mit_roll
     konto(benutzer_mit_rolle, "anna")
     for art in benachrichtigung.arten().values():
         assert art.wahl is not None, art.kennung
-    seite = admin_client.get(SEITE).content.decode()
+    form = admin_client.get(SEITE).context["form"]
     for name in ("fahrdienst_gesund", "dienstplan_ausfall", "dienstplan_gesund", "ticket_neu"):
-        assert f'name="{name}"' in seite and f'name="niemand_{name}"' in seite, name
-    # Antwort auf ein Ticket: geht an die meldende Person, lässt sich nur abstellen
-    assert 'name="niemand_ticket_antwort"' in seite and 'name="ticket_antwort"' not in seite
+        werte = [w for w, _ in form.fields[name].choices]
+        assert werte[0] == V and len(werte) > 1, name
+    # Antwort auf ein Ticket: nur „wie vorgesehen“ oder niemand
+    assert [w for w, _ in form.fields["ticket_antwort"].choices] == [V]
+    # neuer Antrag: nur Personen, ohne Auswahl niemand
+    assert V not in [w for w, _ in form.fields["antrag_neu"].choices]
 
 
 def test_auswahl_ersetzt_die_vorgabe_im_einzelfall(admin_client, benutzer_mit_rolle):
-    """Dienstplan, „wieder gesund“ und Tickets: ohne Auswahl die Vorgabe des Einzelfalls,
-    mit Auswahl die gewählten Personen, mit „niemand“ keiner."""
+    """Dienstplan, „wieder gesund“ und Tickets: „wie vorgesehen“ nimmt die Empfänger des
+    Einzelfalls, eine Auswahl ohne diesen Haken nur die gewählten Personen, nichts = niemand."""
     _module_an("dienstplan")
     pia = konto(benutzer_mit_rolle, "pia", rollen.BUERO)
     vorgabe = ["teamleitung@example.org"]
     assert benachrichtigung.an("dienstplan_ausfall", vorgabe) == vorgabe
-    admin_client.post(SEITE, {"dienstplan_ausfall": [pia.pk]})
+    einstellen(admin_client, dienstplan_ausfall=[pia])
     assert benachrichtigung.an("dienstplan_ausfall", vorgabe) == ["pia@example.org"]
     assert benachrichtigung.an("dienstplan_gesund", vorgabe) == vorgabe  # eigene Wahl je Mail
-    admin_client.post(SEITE, {"dienstplan_ausfall": [pia.pk], "niemand_dienstplan_ausfall": "on"})
+    einstellen(admin_client, dienstplan_ausfall=[])
     assert benachrichtigung.an("dienstplan_ausfall", vorgabe) == []
     # gesperrt: wieder die Vorgabe statt ins Leere
-    admin_client.post(SEITE, {"dienstplan_ausfall": [pia.pk]})
+    einstellen(admin_client, dienstplan_ausfall=[pia])
     pia.is_active = False
     pia.save()
     assert benachrichtigung.an("dienstplan_ausfall", vorgabe) == vorgabe
@@ -217,7 +249,7 @@ def test_ticket_mails_folgen_der_wahl(admin, admin_client, benutzer_mit_rolle,
         return sorted(a for mail_ in djmail.outbox for a in mail_.to)
 
     assert neues() == ["theo@example.org"]  # Vorgabe: Zuständige der Kategorie
-    admin_client.post(SEITE, {"ticket_neu": [berta.pk]})
+    einstellen(admin_client, ticket_neu=[berta])
     assert neues() == ["berta@example.org"]
-    admin_client.post(SEITE, {"niemand_ticket_neu": "on"})
+    einstellen(admin_client, ticket_neu=[])
     assert neues() == []
