@@ -1,0 +1,26 @@
+<div{% if s.stand == "laeuft" %} hx-get="{% url 'vereinsportal:abruf_stand' %}" hx-trigger="every 2s" hx-target="#abruf-stand"{% endif %}>
+  {% for m in messages %}<p class="meldung {{ m.tags }}">{{ m }}</p>{% endfor %}
+  {% if s.stand == "stoerung" %}
+  <p class="meldung error">{{ s.fehler }}</p>
+  {% elif s.stand == "frei" %}
+  <p class="hinweis">Es läuft kein Abruf.</p>
+  {% elif s.stand == "laeuft" %}
+  <p>⏳ {{ s.schritt }}</p>
+  {% elif s.stand == "warte_auf_code" %}
+  <form hx-post="{% url 'vereinsportal:abruf_stand' %}" hx-target="#abruf-stand" class="aktionsleiste">
+    {% csrf_token %}
+    <input type="hidden" name="aktion" value="code">
+    <label for="abruf-code"><strong>2FA-Code aus dem Vereinsportal</strong> (6 Ziffern)</label>
+    <input type="text" id="abruf-code" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required autofocus>
+    <button type="submit" class="knopf">Code senden</button>
+  </form>
+  {% elif s.stand == "fertig" %}
+  <div hx-post="{% url 'vereinsportal:abruf_stand' %}" hx-vals='{"aktion": "einlesen"}' hx-trigger="load" hx-target="#abruf-stand">⏳ Die Dateien sind geladen, bintafeln liest sie ein …</div>
+  {% elif s.stand == "fehler" %}
+  <p class="meldung error">{{ s.fehler }}</p>
+  <form hx-post="{% url 'vereinsportal:abruf_stand' %}" hx-target="#abruf-stand">{% csrf_token %}<input type="hidden" name="aktion" value="verwerfen"><button type="submit" class="knopf knopf-zweitrangig">Meldung schließen</button></form>
+  {% endif %}
+  {% if aktiv %}
+  <form hx-post="{% url 'vereinsportal:abruf_stand' %}" hx-target="#abruf-stand">{% csrf_token %}<input type="hidden" name="aktion" value="abbrechen"><button type="submit" class="knopf knopf-zweitrangig">Abruf abbrechen</button></form>
+  {% endif %}
+</div>

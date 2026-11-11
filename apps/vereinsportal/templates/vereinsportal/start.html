@@ -23,6 +23,7 @@
     {{ spenderliste.spenderliste }}
     <button type="submit" class="knopf knopf-zweitrangig">Spenderliste ersetzen</button>
   </form>
+  {% if abruf_verfuegbar %}<p><a class="knopf" href="{% url 'vereinsportal:abruf' %}">Automatisch aus dem Vereinsportal holen</a></p>{% endif %}
   <p class="hinweis">Eingelesen: {{ belege }} Beleg{{ belege|pluralize:"e" }} für {{ jahr }}, {{ kontakte }} Spender mit E-Mail.</p>
 
   <p><a class="knopf knopf-zweitrangig" href="{% url 'vereinsportal:briefe' %}?jahr={{ jahr }}">Dankesbriefe erstellen</a>

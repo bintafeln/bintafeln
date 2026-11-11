@@ -923,3 +923,35 @@ def test_hilfe_bild_vereinsportal_briefe(angemeldet, admin, muster, benutzer_mit
         Marke(seite.locator("#portal-briefe strong"), nummer=3, von="rechts", laenge=50),
         Marke(seite.locator("button[value=pdf]"), nummer=4, von="rechts", laenge=60),
     )
+
+
+def test_hilfe_bild_vereinsportal_abruf(
+    angemeldet, admin, muster, benutzer_mit_rolle, settings, monkeypatch
+):
+    from apps.vereinsportal import abruf
+    from apps.vereinsportal.models import PortalEinstellungen
+
+    _module("vereinsportal")
+    settings.ABRUF_SCHLUESSEL = "nur-ein-erfundener-test-schluessel"
+    PortalEinstellungen.objects.update_or_create(
+        pk=1,
+        defaults={
+            "anmeldung_url": "https://portal.example.org/login",
+            "export_url": "https://portal.example.org/export",
+            "email": "buero@example.org",
+            "passwort_verschluesselt": "erfunden",
+        },
+    )
+    stand = {"stand": "warte_auf_code", "schritt": "Bitte den 2FA-Code eingeben", "dateien": {}}
+    monkeypatch.setattr(abruf, "_anfrage", lambda *a, **k: dict(stand, fehler=""))
+    berta = benutzer_mit_rolle("berta", rollen.BUERO)
+    seite = oeffnen(angemeldet, berta, reverse("vereinsportal:abruf"))
+    karte = seite.locator("section.karte")
+    aufnehmen(
+        seite,
+        "vereinsportal-abruf",
+        [karte],
+        Marke(seite.locator("input[name=von]"), nummer=1, von="rechts", laenge=50),
+        Marke(seite.locator("#abruf-form button[type=submit]"), nummer=2, von="rechts", laenge=60),
+        Marke(seite.locator("#abruf-code"), nummer=3, von="rechts", laenge=60),
+    )

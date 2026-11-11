@@ -19,7 +19,7 @@ gemeinsame Verantwortung der nutzenden Tafeln übergehen.
   schon jetzt: alles im Repository muss veröffentlichungsfähig sein.
 - **Technik:** Python, Django (aktuelle LTS), PostgreSQL, Auslieferung per Docker Compose
   (`app`, `db`, `proxy` mit Caddy, `backup` für die verschlüsselte Sicherung, siehe ADR 0008,
-  `updater` für das Update aus der Oberfläche, ADR 0043).
+  `updater` für das Update aus der Oberfläche, ADR 0043, auf Wunsch `abruf`, ADR 0127).
 - **Oberfläche:** serverseitig gerendert mit Django-Templates und HTMX, kein separates
   JavaScript-Framework.
 - **Sprache der Oberfläche:** Deutsch, mobilfreundlich.
@@ -347,6 +347,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   (Finanzexport-ZIP, Blatt „Spenden - Übersicht“, Liste „Spender mit E-Mail“), Gruppen in
   `auswertung.py`, Dankesbriefe aus Serienbrief-Vorlagen und Sammelbescheinigungen in `briefe.py`
   (Druck-PDF oder Mail, danach `Beleg.bedankt_am`).
+  Automatischer Abruf (ADR 0127): Browser nur im optionalen Dienst `abruf` (`docker/abruf/abruf.py`,
+  Compose-Profil `abruf`, Schlüssel `BINTAFELN_ABRUF_SCHLUESSEL`); bintafeln spricht ihn über
+  `apps/vereinsportal/abruf.py` an (in Tests `abruf._anfrage` ersetzen), der Ablauf ist gegen eine
+  nachgebaute Seite in `tests/e2e/test_abruf_dienst.py` getestet.
   Hooks `Modul.fristen`, `Modul.auskunft_mitarbeiter`, `Modul.aushang`,
   `Modul.einlass`, `Modul.auskunft_antrag`, `Modul.kopfzeile`, `Modul.seitenleiste`, `Modul.suchen`,
   `Modul.startseite`, `Modul.mein_konto`, `Modul.datenimport` (eigene Übernahmen auf der Seite

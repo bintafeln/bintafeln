@@ -50,6 +50,8 @@ services:
       BINTAFELN_DEMO_PASSWORT: ${BINTAFELN_DEMO_PASSWORT:-}
       BINTAFELN_VERZEICHNIS_URL: ${BINTAFELN_VERZEICHNIS_URL:-}
       BINTAFELN_VERZEICHNIS_EMPFANG: ${BINTAFELN_VERZEICHNIS_EMPFANG:-false}
+      # Gemeinsamer Schlüssel mit dem Dienst abruf (Abruf aus dem Vereinsportal, ADR 0127)
+      BINTAFELN_ABRUF_SCHLUESSEL: ${BINTAFELN_ABRUF_SCHLUESSEL:-}
       POSTGRES_DB: ${POSTGRES_DB:-bintafeln}
       POSTGRES_USER: ${POSTGRES_USER:-bintafeln}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -139,6 +141,21 @@ services:
       - betrieb:/betrieb
       # Benutzerkonten des Servers: git und Update laufen als Besitzer des Projektordners
       - /etc/passwd:/host-passwd:ro
+
+  # Holt Finanzexport und Spenderliste aus dem Vereinsportal (Modul „Spendenbelege aus dem
+  # Vereinsportal“, ADR 0127). Enthält einen Browser und läuft deshalb nur, wenn die Tafel ihn
+  # einschaltet: COMPOSE_PROFILES=abruf und BINTAFELN_ABRUF_SCHLUESSEL in der .env. Von außen
+  # nicht erreichbar; bintafeln spricht ihn im internen Netz an.
+  abruf:
+    profiles: ["abruf"]
+    build: docker/abruf
+    image: ${COMPOSE_PROJECT_NAME:-bintafeln}-abruf:lokal
+    restart: unless-stopped
+    mem_limit: 1g  # Speicherobergrenze (ADR 0111); der Browser braucht Platz
+    init: true
+    environment:
+      ABRUF_SCHLUESSEL: ${BINTAFELN_ABRUF_SCHLUESSEL:-}
+      TZ: ${BINTAFELN_ZEITZONE:-Europe/Berlin}
 
 volumes:
   db-daten:

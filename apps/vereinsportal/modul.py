@@ -9,6 +9,8 @@ def menue(eintrag):
         ("Verein/Spenden", [
             ("vereinsportal.nutzen", eintrag("Belege aus dem Vereinsportal",
                                              "vereinsportal:start", genau=True)),
+            ("vereinsportal.nutzen", eintrag("Abruf aus dem Vereinsportal",
+                                             "vereinsportal:abruf")),
             ("vereinsportal.nutzen", eintrag("Dankesbriefe (Vereinsportal)",
                                              "vereinsportal:briefe")),
             ("vereinsportal.nutzen", eintrag("Sammelbescheinigungen", "vereinsportal:sammel")),

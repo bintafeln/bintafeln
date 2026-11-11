@@ -60,6 +60,18 @@ class Ergebnis:
     mit_uebersicht: bool = False
 
 
+def bericht(e: Ergebnis) -> str:
+    """Das Ergebnis eines Einlesens als Satz für die Oberfläche."""
+    teile = [f"{e.neu} neue Belege eingelesen", f"{e.doppelt} waren schon vorhanden"]
+    if e.ohne_anschrift:
+        teile.append(f"{e.ohne_anschrift} ohne vollständige Anschrift ausgelassen")
+    teile.append(
+        f"{e.versendet} als im Vereinsportal versendet vermerkt" if e.mit_uebersicht
+        else "keine Übersicht der versendeten Belege in der Datei gefunden"
+    )  # fmt: skip
+    return ", ".join(teile) + "."
+
+
 def normal(name: str) -> str:
     """Name zum Vergleichen: klein geschrieben, einfache Leerzeichen."""
     return " ".join((name or "").strip().lower().split())

@@ -6,6 +6,9 @@
   <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular.html" %}
+    <p class="hinweis">Die Adressen und Zugangsdaten braucht nur der <a href="{% url 'vereinsportal:abruf' %}">automatische
+      Abruf</a>{% if not abruf_verfuegbar %} (auf diesem Server nicht eingeschaltet){% endif %}.
+      {% if passwort_gespeichert %}Ein Passwort ist gespeichert.{% else %}Es ist noch kein Passwort gespeichert.{% endif %}</p>
     <button type="submit" class="knopf">Speichern</button>
   </form>
 </section>
