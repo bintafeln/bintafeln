@@ -145,8 +145,7 @@ def test_zugriffsprotokoll_nur_admin(als, rolle):
         ({"status": "unbekannt"}, {"1001", "1002"}),
         ({"gruppe": "x"}, {"1001", "1002"}),
         ({"merkmal": "schwerbehindert"}, {"1001"}),
-        ({"merkmal": "schwerbehindert", "merkmal_wert": "ja"}, {"1001"}),
-        ({"merkmal": "schwerbehindert", "merkmal_wert": "nein"}, {"1002"}),
+        ({"merkmal": "schwerbehindert"}, {"1001"}),
         ({"merkmal": "gibtsnicht"}, {"1001", "1002"}),
     ],
 )
@@ -433,3 +432,39 @@ def test_werkseinstellungen_vergessen_gemerkte_filter(admin, benutzer_mit_rolle)
     verwaltung.werkseinstellungen(admin, ziel)
     ziel.refresh_from_db()
     assert ziel.listen_filter == {}
+
+
+def test_statusfilter_zeigt_was_am_einlass_gilt(admin_client):
+    """„aktiv“ = in einer Kundengruppe und nicht gesperrt; eine laufende Sperre zählt als
+    gesperrt, auch wenn das Feld „Status“ aktiv sagt."""
+    import datetime as dt
+
+    from apps.kunden.models import Sperre
+
+    heute = dt.date.today()
+    gruppe = Kundengruppe.objects.create(kuerzel="S1", name="Statusgruppe")
+    Haushalt.objects.create(kundennummer="7001", kundengruppe=gruppe)
+    Haushalt.objects.create(kundennummer="7002")  # aktiv, aber ohne Kundengruppe
+    gesperrt = Haushalt.objects.create(kundennummer="7003", kundengruppe=gruppe)
+    Sperre.objects.create(haushalt=gesperrt, von=heute - dt.timedelta(days=3))
+    alt = Haushalt.objects.create(kundennummer="7004", kundengruppe=gruppe)
+    Sperre.objects.create(haushalt=alt, von=heute - dt.timedelta(days=30),
+                          bis=heute - dt.timedelta(days=1))  # fmt: skip
+    Haushalt.objects.create(kundennummer="7005", status="gesperrt")
+    Haushalt.objects.create(kundennummer="7006", status="pausiert")
+    Haushalt.objects.create(kundennummer="7007", status="beendet")
+
+    def nummern(status):
+        seite = admin_client.get(LISTE, {"status": status, "tag": "", "q": "700"})
+        return {z["h"].kundennummer for z in seite.context["zeilen"]}
+
+    assert nummern("aktiv") == {"7001", "7004"}
+    assert nummern("ohne_gruppe") == {"7002"}
+    assert nummern("gesperrt") == {"7003", "7005"}
+    assert nummern("pausiert") == {"7006"}
+    assert nummern("beendet") == {"7007"}
+    assert len(nummern("")) == 7
+    # Die Spalte „Status“ zeigt dasselbe
+    inhalt = admin_client.get(LISTE, {"status": "gesperrt", "tag": "", "q": "700"}).content.decode()
+    assert '<span class="marke-warnung">gesperrt</span>' in inhalt
+    assert "trifft zu" not in inhalt

@@ -38,11 +38,6 @@
       <select name="merkmal" id="merkmal">
         <option value="">alle</option>
         {% for z in merkmale %}<option value="{{ z.schluessel }}"{% if filter.merkmal == z.schluessel %} selected{% endif %}>{{ z.bezeichnung }}</option>{% endfor %}
-      </select></div>
-    <div class="filter-feld"><label for="merkmal_wert">trifft zu</label>
-      <select name="merkmal_wert" id="merkmal_wert">
-        <option value="ja"{% if filter.merkmal_wert != "nein" %} selected{% endif %}>ja</option>
-        <option value="nein"{% if filter.merkmal_wert == "nein" %} selected{% endif %}>nein</option>
       </select></div>{% endif %}
     <div class="filter-feld"><label for="anzahl">Anzeigen</label>
       <select name="anzahl" id="anzahl">

@@ -594,6 +594,17 @@ class Haushalt(models.Model):
                   .order_by("-uhrzeit").values("uhrzeit")[:1])  # fmt: skip
         return qs.annotate(besuch_zeit=models.Subquery(letzte))
 
+    def stand(self, stichtag: dt.date | None = None) -> str:
+        """Status, wie er am Einlass gilt: Eine laufende Sperre zählt als „gesperrt“, auch wenn
+        das Feld „Status“ noch „aktiv“ sagt; aktive Haushalte ohne Kundengruppe sind als solche
+        gekennzeichnet (ADR 0061)."""
+        if self.status == self.Status.AKTIV:
+            if any(s.ist_aktiv(stichtag) for s in self.sperren.all()):
+                return "gesperrt"
+            if self.kundengruppe_id is None:
+                return "ohne Kundengruppe"
+        return self.get_status_display()
+
     @property
     def letzter_besuch_text(self) -> str:
         """„24.10.2026 13:40“, ohne bekannte Uhrzeit nur das Datum, sonst leer."""

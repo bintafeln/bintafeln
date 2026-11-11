@@ -4,7 +4,7 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.db.models import Count, F, OuterRef, Q, Subquery
+from django.db.models import Count, Exists, F, OuterRef, Q, Subquery
 from django.db.models.functions import Length
 from django.http import QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
@@ -111,6 +111,35 @@ ABHOLUNGEN_AUSGABE = 5
 ABHOLUNGEN_BUERO = 20
 
 
+# Statusfilter der Kundenliste: was am Einlass tatsächlich gilt, nicht nur das Feld „Status“.
+# „aktiv“ heißt: Status aktiv, in einer Kundengruppe und nicht gesperrt; eine laufende Sperre
+# zählt als „gesperrt“, auch wenn der Status selbst „aktiv“ ist.
+OHNE_GRUPPE = "ohne_gruppe"
+STATUS_FILTER = [
+    (Haushalt.Status.AKTIV, "aktiv (in einer Kundengruppe)"),
+    (OHNE_GRUPPE, "ohne Kundengruppe"),
+    (Haushalt.Status.PAUSIERT, "pausiert"),
+    (Haushalt.Status.GESPERRT, "gesperrt"),
+    (Haushalt.Status.BEENDET, "beendet"),
+]
+
+
+def _nach_status(haushalte, status: str):
+    heute = timezone.localdate()
+    laufend = Sperre.objects.filter(haushalt=OuterRef("pk"), von__lte=heute).filter(
+        Q(bis__isnull=True) | Q(bis__gte=heute)
+    )
+    haushalte = haushalte.annotate(sperre_laeuft=Exists(laufend))
+    aktiv = Q(status=Haushalt.Status.AKTIV, sperre_laeuft=False)
+    if status == Haushalt.Status.AKTIV:
+        return haushalte.filter(aktiv, kundengruppe__isnull=False)
+    if status == OHNE_GRUPPE:
+        return haushalte.filter(aktiv, kundengruppe__isnull=True)
+    if status == Haushalt.Status.GESPERRT:
+        return haushalte.filter(Q(status=status) | Q(sperre_laeuft=True))
+    return haushalte.filter(status=status, sperre_laeuft=False)
+
+
 def _haushalte_suchen(request):
     """Haushalte nach Suchtext, Status und Kundengruppe; mit Name der Hauptperson."""
     hauptperson = Person.objects.filter(haushalt=OuterRef("pk"), ist_hauptperson=True)
@@ -130,18 +159,19 @@ def _haushalte_suchen(request):
         ).values("haushalt")
         haushalte = haushalte.filter(Q(kundennummer__icontains=wort) | Q(pk__in=personen))
     status = request.GET.get("status", "")
-    if status in Haushalt.Status.values:
-        haushalte = haushalte.filter(status=status)
+    if status in dict(STATUS_FILTER):
+        haushalte = _nach_status(haushalte, status)
+    else:
+        status = ""
     gruppe = request.GET.get("gruppe", "")
     if gruppe.isdigit():
         haushalte = haushalte.filter(kundengruppe_id=int(gruppe))
     merkmal = request.GET.get("merkmal", "")
-    merkmal_wert = request.GET.get("merkmal_wert", "ja")
     feld = next((z for z in merkmale.waehlbar(request.user) if z.schluessel == merkmal), None)
     if feld is not None:
-        haushalte = merkmale.haushalte_mit_merkmal(haushalte, feld, merkmal_wert != "nein")
+        haushalte = merkmale.haushalte_mit_merkmal(haushalte, feld, True)
     else:
-        merkmal = merkmal_wert = ""  # ohne Merkmal nichts in die Adresszeile schreiben
+        merkmal = ""  # ohne Merkmal nichts in die Adresszeile schreiben
     tag = _tag(request)
     haushalte = export.nach_tag(haushalte, tag)
     sortierung = request.GET.get("sort", "")
@@ -152,7 +182,7 @@ def _haushalte_suchen(request):
     haushalte = haushalte.order_by(*_reihenfolge(sortierung or "kundennummer"))
     anzahl = listen.zeilenzahl(request, "anzahl")  # je Person gemerkt, Vorgabe 25
     return haushalte, {"q": suche, "status": status, "gruppe": gruppe, "tag": tag,
-                       "merkmal": merkmal, "merkmal_wert": merkmal_wert,
+                       "merkmal": merkmal,
                        "sort": sortierung, "anzahl": anzahl}  # fmt: skip
 
 
@@ -229,7 +259,7 @@ def _zeilen(seite, keys, spalten, darf) -> list[dict]:
     for h in seite:
         werte = export.zeile(h, keys, darf, zusatzfelder, kind_bis, heute)
         warnung = {
-            "status": h.status != Haushalt.Status.AKTIV,
+            "status": h.stand(heute) != "aktiv",
             "ausweis": bool(h.ausweis_gueltig_bis and h.ausweis_gueltig_bis < heute),
         }
         zeilen.append({"h": h, "zellen": [
@@ -289,7 +319,7 @@ def zuletzt_aufgenommen(request):
     haushalte = (
         zugang.filtern(Haushalt.objects.filter(aufgenommen_am__isnull=False), request.user)
         .select_related("kundengruppe__ausgabestelle")
-        .prefetch_related("personen")
+        .prefetch_related("personen", "sperren")
         .order_by("-aufgenommen_am")[:ZULETZT_AUFGENOMMEN]
     )
     zeilen = [
@@ -302,7 +332,7 @@ def zuletzt_aufgenommen(request):
 
 
 # Filter der Kundenliste, die am Konto gemerkt werden (ohne Suchtext, Seite und Zeilenzahl)
-FILTER_MERKEN = ("status", "gruppe", "tag", "merkmal", "merkmal_wert", "sort")
+FILTER_MERKEN = ("status", "gruppe", "tag", "merkmal", "sort")
 
 
 @rollen.recht_erforderlich("kunden.liste")
@@ -331,7 +361,9 @@ def uebersicht(request):
             messages.error(request, grund)
             fremd = treffer.kundennummer
     haushalte, filter_ = _haushalte_suchen(request)
-    haushalte = haushalte.select_related("kundengruppe__ausgabestelle").prefetch_related("personen")
+    haushalte = haushalte.select_related("kundengruppe__ausgabestelle").prefetch_related(
+        "personen", "sperren"
+    )
     je_seite = listen.je_seite(filter_["anzahl"], haushalte.count(), KUNDENLISTE_JE_SEITE)
     seite = Paginator(haushalte, je_seite).get_page(request.GET.get("seite"))
     darf = rollen.rechte_von(request.user)
@@ -342,7 +374,7 @@ def uebersicht(request):
         "fremd_nummer": fremd,
         "seite": seite,
         "filter": filter_,
-        "status_auswahl": Haushalt.Status.choices,
+        "status_auswahl": STATUS_FILTER,
         "merkmale": merkmale.waehlbar(request.user),
         "anzahl_wahl": ANZAHL_WAHL,
         "gruppen": Kundengruppe.objects.order_by("name")
@@ -647,7 +679,7 @@ def exportieren(request):
     haushalte, filter_ = _haushalte_suchen(request)
     haushalte = listenauswahl.filtern(request, haushalte)
     haushalte = list(haushalte.select_related("kundengruppe__ausgabestelle")
-                     .prefetch_related("personen"))  # fmt: skip
+                     .prefetch_related("personen", "sperren"))  # fmt: skip
     heute = timezone.localdate()
     inhalt = export.csv_text(haushalte, rollen.rechte_von(request.user), heute)
     jetzt = timezone.now()
