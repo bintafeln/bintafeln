@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block titel %}Sammelbescheinigungen{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'vereinsportal:briefe' %}">← Dankesbriefe (Vereinsportal)</a></p>
+  <h1>Sammelbescheinigungen für Mehrfachspender</h1>
+  <p>Die im Vereinsportal erstellten Sammelbescheinigungen als PDF. Sie liegen dem Dankesbrief des Mehrfachspenders
+    bei. Stehen alle Teile des Namens im Dateinamen (z. B. „Sammelbescheinigung_Erika_Beispiel.pdf“), ordnet bintafeln
+    die Datei selbst zu; sonst wählen Sie unten den Spender. Eine neue Datei ersetzt die bisherige des Spenders.</p>
+  <form method="post" enctype="multipart/form-data" class="aktionsleiste" id="sammel-hochladen">
+    {% csrf_token %}
+    <input type="hidden" name="aktion" value="hochladen">
+    <label>Jahr <select name="jahr" onchange="location.search='?jahr='+this.value">{% for j in jahre %}<option value="{{ j }}"{% if j == jahr %} selected{% endif %}>{{ j }}</option>{% endfor %}</select></label>
+    <label for="dateien" class="unsichtbar">PDF-Dateien</label>
+    <input type="file" id="dateien" name="dateien" accept="application/pdf" multiple required>
+    <button type="submit" class="knopf">Hochladen</button>
+  </form>
+
+  {% if offen %}
+  <h2>Noch zuzuordnen</h2>
+  <table class="tabelle kompakt" id="sammel-offen">
+    <thead><tr><th>Datei</th><th>Spender</th><th></th></tr></thead>
+    <tbody>
+      {% for e in offen %}
+      <tr>
+        <td><a href="{% url 'vereinsportal:sammel_datei' e.pk %}" target="_blank" rel="noopener">{{ e.dateiname }}</a></td>
+        <td><form method="post" class="inline">{% csrf_token %}<input type="hidden" name="aktion" value="zuordnen"><input type="hidden" name="jahr" value="{{ jahr }}"><input type="hidden" name="eintrag" value="{{ e.pk }}">
+          <select name="name" required aria-label="Spender für {{ e.dateiname }}"><option value="">– Spender wählen –</option>{% for n in namen %}<option>{{ n }}</option>{% endfor %}</select>
+          <button type="submit" class="knopf knopf-zweitrangig">Zuordnen</button></form></td>
+        <td><form method="post" class="inline" onsubmit="return confirm('Sammelbescheinigung löschen?');">{% csrf_token %}<input type="hidden" name="aktion" value="loeschen"><input type="hidden" name="jahr" value="{{ jahr }}"><input type="hidden" name="eintrag" value="{{ e.pk }}"><button type="submit" class="link">löschen</button></form></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <h2>Zugeordnet ({{ jahr }})</h2>
+  {% if zugeordnet %}
+  <table class="tabelle kompakt" id="sammel-zugeordnet">
+    <thead><tr><th>Spender</th><th>Datei</th><th>Hochgeladen</th><th></th></tr></thead>
+    <tbody>
+      {% for e in zugeordnet %}
+      <tr>
+        <td>{{ e.name }}</td>
+        <td><a href="{% url 'vereinsportal:sammel_datei' e.pk %}" target="_blank" rel="noopener">{{ e.dateiname }}</a></td>
+        <td>{{ e.hochgeladen_am|date:"d.m.Y" }}{% if e.hochgeladen_von %} von {{ e.hochgeladen_von }}{% endif %}</td>
+        <td><form method="post" class="inline" onsubmit="return confirm('Sammelbescheinigung löschen?');">{% csrf_token %}<input type="hidden" name="aktion" value="loeschen"><input type="hidden" name="jahr" value="{{ jahr }}"><input type="hidden" name="eintrag" value="{{ e.pk }}"><button type="submit" class="link">löschen</button></form></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="hinweis">Noch keine Sammelbescheinigung für {{ jahr }}.</p>
+  {% endif %}
+  {% if ohne %}<p class="hinweis"><strong>Noch ohne Sammelbescheinigung:</strong> {{ ohne|join:", " }}</p>{% endif %}
+</section>
+{% endblock %}

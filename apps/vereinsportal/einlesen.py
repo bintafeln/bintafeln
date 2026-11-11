@@ -8,7 +8,8 @@ Die Regeln stammen aus dem bisherigen Spendenbelege-Programm der Tafel:
   werden nicht übernommen. Ein schon eingelesener Dateiname zählt als doppelt.
 - Die Excel-Datei des Finanzexports, Blatt „Spenden - Übersicht“ (Spaltennamen in Zeile 6),
   sagt über „Versendet am“ und „SQ-erstellt Datum“, welche Belegnummern schon versendet sind.
-- Liste „Spender mit E-Mail“ (Excel): Spalten Vorname, Nachname, E-Mail, „immer per Post“.
+- Liste „Spender mit E-Mail“ (Excel): Spalten Vorname, Nachname, E-Mail, dazu auf Wunsch
+  „Anrede“ (für die Briefanrede) und „immer per Post“.
 """
 
 import io
@@ -210,6 +211,7 @@ def spenderliste_einlesen(inhalt: bytes) -> tuple[int, int]:
         )
     spalte = {s: kopf.index(s) for s in ("Vorname", "Nachname", "E-Mail")}
     post = kopf.index("immer per Post") if "immer per Post" in kopf else None
+    anrede = kopf.index("Anrede") if "Anrede" in kopf else None
     kontakte, ohne_mail = {}, 0
     for nummer, z in enumerate(zeilen, start=2):
         if nummer > MAX_ZEILEN + 1:
@@ -227,6 +229,7 @@ def spenderliste_einlesen(inhalt: bytes) -> tuple[int, int]:
         kontakte.setdefault(normal(name), Kontakt(
             such_name=normal(name)[:250], vorname=vorname[:120], nachname=nachname[:120],
             email=email, immer_post=post is not None and _ja(z[post]),
+            anrede="" if anrede is None else str(z[anrede] or "").strip()[:30],
         ))  # fmt: skip
     Kontakt.objects.all().delete()
     Kontakt.objects.bulk_create(kontakte.values())

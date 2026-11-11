@@ -19,8 +19,11 @@ unverändert, in drei Schritten:
    Dateinamen, Spender aus der Zeile unter der Absenderzeile, „bereits versendet“ aus dem Blatt
    „Spenden - Übersicht“), `auswertung.py` bildet die Gruppen Einfach-/Mehrfachspender mit und
    ohne E-Mail.
-2. **Versand an Mehrfachspender:** hochgeladene Sammelbescheinigung je Spender, per E-Mail über
-   `apps.core.mail` oder als Druck-PDF.
+2. **Dankesbriefe:** `briefe.py` erstellt je Spender einen Brief aus einer Serienbrief-Vorlage.
+   Einfachspender bekommen ihren Spendenbeleg dazu, Mehrfachspender die im Vereinsportal
+   erstellte, hier hochgeladene Sammelbescheinigung (Zuordnung über den Namen im Dateinamen).
+   Spender ohne E-Mail kommen in ein Druck-PDF, Spender mit E-Mail bekommen Brief und Anlage
+   über `apps.core.mail`. Die Belege tragen danach `bedankt_am`.
 3. **Automatischer Abruf:** ein eigener, optionaler Dienst mit Browser holt die Dateien nach
    Eingabe des 2FA-Codes; bintafeln selbst bekommt keinen Browser.
 
@@ -34,6 +37,11 @@ Adressbuch.
   geben; die des Vereinsportals gilt.
 - **Kein Produktname, keine festen Werte:** Vereinsnummer, Listen und der Name im Absender
   gehören in die Einstellungen der Tafel; die Oberfläche spricht neutral vom „Vereinsportal“.
+- **Serienbrief-Vorlage statt Word-Datei:** Das bisherige Programm füllte eine Word-Vorlage und
+  brauchte LibreOffice für das PDF. Die Vorlagen aus bintafeln ergeben dasselbe ohne
+  zusätzliches Programm auf dem Server.
+- **Kein Brief ohne Anlage:** Fehlt einem Mehrfachspender die Sammelbescheinigung, entsteht
+  kein Brief, statt eines Dankes ohne Bescheinigung.
 - **Erst der Weg von Hand:** Der Abruf mit Browser hängt an den Seiten des Vereinsportals und
   kann jederzeit brechen. Das Hochladen bleibt deshalb dauerhaft als zweiter Weg.
 - **Datensparsam:** Die Belege sind Kopien; die Originale bleiben im Vereinsportal. Sie werden

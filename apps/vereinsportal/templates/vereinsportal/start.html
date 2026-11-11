@@ -25,6 +25,9 @@
   </form>
   <p class="hinweis">Eingelesen: {{ belege }} Beleg{{ belege|pluralize:"e" }} für {{ jahr }}, {{ kontakte }} Spender mit E-Mail.</p>
 
+  <p><a class="knopf knopf-zweitrangig" href="{% url 'vereinsportal:briefe' %}?jahr={{ jahr }}">Dankesbriefe erstellen</a>
+    <a class="knopf knopf-zweitrangig" href="{% url 'vereinsportal:sammel' %}?jahr={{ jahr }}">Sammelbescheinigungen hochladen</a></p>
+
   <h2>Spender ohne versendete Bescheinigung</h2>
   <form method="get" class="filter-kompakt">
     <div class="filter-feld"><label for="jahr">Jahr</label>
@@ -51,13 +54,13 @@
           <td>{{ s.email|default:"–" }}</td>
           <td class="zahl">{{ s.anzahl }}</td>
           <td class="zahl">{{ s.summe|floatformat:2 }} €</td>
-          <td>{% for b in s.belege %}<a href="{% url 'vereinsportal:beleg' b.pk %}" target="_blank" rel="noopener" title="{{ b.dateiname }}">{{ b.belegnummer|default:b.dateiname }}</a>{% if b.im_portal_versendet %} ✓{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+          <td>{% for b in s.belege %}<a href="{% url 'vereinsportal:beleg' b.pk %}" target="_blank" rel="noopener" title="{{ b.dateiname }}">{{ b.belegnummer|default:b.dateiname }}</a>{% if b.im_portal_versendet %} ✓{% elif b.bedankt_am %} ✉{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-  <p class="hinweis">✓ = laut Finanzexport im Vereinsportal schon versendet.</p>
+  <p class="hinweis">✓ = laut Finanzexport im Vereinsportal schon versendet, ✉ = Dankesbrief aus bintafeln erstellt oder gesendet.</p>
   <p><a class="knopf knopf-zweitrangig" href="{% url 'vereinsportal:export' %}?jahr={{ jahr }}&amp;gruppe={{ gruppe }}">Liste als CSV (für Serienbriefe)</a></p>
   {% else %}
   <p class="hinweis">Keine Spender in dieser Auswahl.</p>

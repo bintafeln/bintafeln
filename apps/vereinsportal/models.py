@@ -53,6 +53,7 @@ class Kontakt(models.Model):
     such_name = models.CharField(max_length=250, unique=True, editable=False)
     vorname = models.CharField("Vorname", max_length=120, blank=True)
     nachname = models.CharField("Nachname", max_length=120, blank=True)
+    anrede = models.CharField("Anrede", max_length=30, blank=True)
     email = models.EmailField("E-Mail")
     immer_post = models.BooleanField("immer per Post", default=False)
 
@@ -83,6 +84,11 @@ class Beleg(models.Model):
         "Im Vereinsportal versendet", default=False,
         help_text="Laut Finanzexport ist die Bescheinigung dort schon versendet oder erstellt.",
     )  # fmt: skip
+    bedankt_am = models.DateField(
+        "Dankesbrief am", null=True, blank=True, editable=False,
+        help_text="Wird beim Erstellen oder Senden des Dankesbriefs gesetzt.",
+    )  # fmt: skip
+    bedankt_per = models.CharField("Dankesbrief per", max_length=10, blank=True, editable=False)
     datei = models.CharField(max_length=100, editable=False)
     eingelesen_am = models.DateTimeField("Eingelesen am", auto_now_add=True)
     eingelesen_von = models.CharField("Eingelesen von", max_length=150, blank=True)
@@ -96,6 +102,31 @@ class Beleg(models.Model):
         return self.dateiname
 
 
+class Sammelbescheinigung(models.Model):
+    """Im Vereinsportal erstellte Sammelbescheinigung eines Mehrfachspenders (PDF), hochgeladen
+    und über den Namen zugeordnet. Sie liegt dem Dankesbrief bei."""
+
+    ORDNER = "vereinsportal-sammel"
+    PRIVATDATEI = (ORDNER, "datei")
+
+    jahr = models.PositiveIntegerField("Jahr")
+    name = models.CharField("Spender", max_length=250, blank=True)
+    such_name = models.CharField(max_length=250, blank=True, db_index=True, editable=False)
+    dateiname = models.CharField("Dateiname", max_length=200)
+    datei = models.CharField(max_length=100, editable=False)
+    hochgeladen_am = models.DateTimeField("Hochgeladen am", auto_now_add=True)
+    hochgeladen_von = models.CharField("Hochgeladen von", max_length=150, blank=True)
+
+    class Meta:
+        verbose_name = "Sammelbescheinigung"
+        verbose_name_plural = "Sammelbescheinigungen"
+        ordering = ["name", "dateiname"]
+
+    def __str__(self):
+        return self.dateiname
+
+
 auditlog.register(PortalEinstellungen)
 auditlog.register(Kontakt)
 auditlog.register(Beleg, exclude_fields=["datei"])
+auditlog.register(Sammelbescheinigung, exclude_fields=["datei"])
