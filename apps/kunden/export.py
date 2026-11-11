@@ -115,7 +115,7 @@ def zeile(h: Haushalt, keys, darf, zusatzfelder, kind_bis, heute) -> list[str]:
         "ausgabestelle": g.ausgabestelle.name if g and g.ausgabestelle else "",
         "wochentage": g.wochentage if g else "",
         "uhrzeit": f"{g.uhrzeit:%H:%M}" if g and g.uhrzeit else "",
-        "status": h.get_status_display(), "personen": erwachsene + kinder,
+        "status": h.stand(heute), "personen": erwachsene + kinder,
         "erwachsene": erwachsene, "kinder": kinder, "ausweis": _datum(h.ausweis_gueltig_bis),
         "letzter_besuch": h.letzter_besuch_text, "kontostand": _zahl(h.kontostand),
         "strasse": h.strasse, "plz": h.plz, "ort": h.ort, "telefon": h.telefon, "email": h.email,
