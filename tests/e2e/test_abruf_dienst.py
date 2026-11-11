@@ -1,0 +1,291 @@
+"""Dienst „abruf“ (ADR 0127) gegen eine nachgebaute Seite: Anmeldung, 2FA-Code, Spenderliste,
+vorhandener und neu erzeugter Finanzexport. Die Seite ahmt nur die Felder und Knöpfe nach, die
+der Dienst benutzt; alle Daten sind erfunden."""
+
+import importlib.util
+import io
+import json
+import os
+import threading
+import time
+import urllib.error
+import urllib.request
+import zipfile
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import parse_qs, urlparse
+
+import pytest
+
+PFAD = Path(__file__).resolve().parents[2] / "docker" / "abruf" / "abruf.py"
+SCHLUESSEL = "nur-ein-erfundener-test-schluessel"
+KURZ = {"code": 20, "nach_anmeldung": 0.2, "nach_code": 0.5, "liste_laden": 0.5,
+        "export_laden": 0.5, "klick": 0.1, "abfangen": 3, "erzeugen": 20,
+        "download": 20}  # fmt: skip
+
+
+def _zip() -> bytes:
+    puffer = io.BytesIO()
+    with zipfile.ZipFile(puffer, "w") as z:
+        z.writestr("Spenden/Spendenbeleg_000001.pdf", b"%PDF erfunden")
+    return puffer.getvalue()
+
+
+def _liste() -> bytes:
+    from openpyxl import Workbook
+
+    mappe, puffer = Workbook(), io.BytesIO()
+    mappe.active.append(["Vorname", "Nachname", "E-Mail"])
+    mappe.active.append(["Erika", "Beispiel", "erika@example.org"])
+    mappe.save(puffer)
+    return puffer.getvalue()
+
+
+ANMELDUNG = """<form method="post" action="/login"><input name="eml-user">
+<input name="psw-user" type="password"><button type="submit">Anmelden</button></form>"""
+ZWEI = """<input name="twoFactorActivate"><button id="ms-two-factor-submit" disabled
+ onclick="fetch('/zwei?code='+document.querySelector('input').value).then(()=>location='/start')"
+>Weiter</button>"""
+LISTE = """<button class="mat-icon-button" disabled>0</button>
+<button class="mat-icon-button">1</button><button class="mat-icon-button">2</button>
+<button class="mat-icon-button">3</button>
+<button class="mat-icon-button" onclick="location='/liste.xlsx'">Export</button>"""
+ZEILEN = """<table>
+<tr><td><em>(01.01.2026 - 31.01.2026)</em></td><td><button pendo-id="tae-download"
+ onclick="fetch('/api/download/falsch.zip')"><span>Herunterladen</span></button></td></tr>
+<tr><td><em>(01.02.2026 - 04.02.2026)</em></td><td><button pendo-id="tae-download"
+ style="pointer-events: none"><span>Herunterladen</span></button></td></tr>
+<tr><td><em>(01.02.2026 - 04.02.2026)</em></td><td>ohne Knopf</td></tr>
+%s</table>"""
+FERTIG = """<tr><td><em>(01.02.2026 - 04.02.2026)</em></td><td><button pendo-id="tae-download"
+ onclick="fetch('/api/download/7.zip')"><span>Herunterladen</span></button></td></tr>"""
+NEU = (
+    (ZEILEN % "")
+    + """<mat-select style="display:block"
+ onclick="document.getElementById('wahl').style.display='block'">Zeitraum</mat-select>
+<div id="wahl" style="display:none"><mat-option style="display:block">Dieses Jahr</mat-option>
+<mat-option style="display:block" onclick="window.eigen=true">Benutzerdefiniert</mat-option></div>
+<input id="mat-input-0"><input id="mat-input-1">
+<button onclick="setTimeout(()=>{const b=document.createElement('button');
+ b.textContent='Herunterladen';const v=document.getElementById('mat-input-0').value,
+ w=document.getElementById('mat-input-1').value;
+ b.onclick=()=>location='/neu.zip?von='+v+'&bis='+w+'&eigen='+window.eigen;
+ document.body.prepend(b)},800)">Erstellen</button>"""
+)
+
+
+class Portal(BaseHTTPRequestHandler):
+    angemeldet = False
+    gesehen: dict = {}
+
+    def log_message(self, *args):
+        pass
+
+    def _html(self, text: str):
+        inhalt = f"<!doctype html><meta charset=utf-8>{text}".encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(inhalt)))
+        self.end_headers()
+        self.wfile.write(inhalt)
+
+    def _datei(self, inhalt: bytes, art: str, name: str = ""):
+        self.send_response(200)
+        self.send_header("Content-Type", art)
+        if name:
+            self.send_header("Content-Disposition", f'attachment; filename="{name}"')
+        self.send_header("Content-Length", str(len(inhalt)))
+        self.end_headers()
+        self.wfile.write(inhalt)
+
+    def do_POST(self):
+        daten = parse_qs(self.rfile.read(int(self.headers["Content-Length"])).decode())
+        type(self).gesehen["anmeldung"] = (daten["eml-user"][0], daten["psw-user"][0])
+        self._html(ZWEI)
+
+    def do_GET(self):
+        teile = urlparse(self.path)
+        pfad, frage = teile.path, parse_qs(teile.query)
+        if pfad == "/login":
+            return self._html(ANMELDUNG)
+        if pfad == "/zwei":
+            type(self).angemeldet = frage.get("code") == ["123456"]
+            return self._html("ok")
+        if not type(self).angemeldet:
+            self.send_response(302)
+            self.send_header("Location", "/login")
+            return self.end_headers()
+        if pfad == "/liste":
+            return self._html(LISTE)
+        if pfad == "/liste.xlsx":
+            return self._datei(_liste(), "application/vnd.ms-excel", "liste.xlsx")
+        if pfad == "/export-vorhanden":
+            return self._html(ZEILEN % FERTIG)
+        if pfad == "/export-neu":
+            return self._html(NEU)
+        if pfad == "/api/download/7.zip":
+            return self._datei(_zip(), "application/zip")
+        if pfad == "/neu.zip":
+            type(self).gesehen["neu"] = {k: v[0] for k, v in frage.items()}
+            return self._datei(_zip(), "application/zip", "export.zip")
+        return self._html("Startseite")
+
+
+def _server(klasse):
+    server = ThreadingHTTPServer(("127.0.0.1", 0), klasse)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server, f"http://127.0.0.1:{server.server_port}"
+
+
+@pytest.fixture
+def dienst(monkeypatch):
+    spec = importlib.util.spec_from_file_location("abruf_dienst", PFAD)
+    modul = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(modul)
+    monkeypatch.setattr(modul, "ZEITEN", dict(KURZ))
+    monkeypatch.setattr(modul, "NUR_HTTPS", False)
+    Portal.angemeldet, Portal.gesehen = False, {}
+    portal, portal_url = _server(Portal)
+
+    class Anfrage(modul.Anfrage):
+        schluessel = SCHLUESSEL
+        auftrag = modul.Auftrag()
+        browser_pfad = os.environ.get("BINTAFELN_E2E_CHROMIUM") or None
+
+    server, url = _server(Anfrage)
+
+    def rufen(pfad, daten=None, schluessel=SCHLUESSEL, roh=False):
+        anfrage = urllib.request.Request(  # noqa: S310
+            url + pfad, data=None if daten is None else json.dumps(daten).encode(),
+            headers={"X-Abruf-Schluessel": schluessel}, method="GET" if daten is None else "POST",
+        )  # fmt: skip
+        try:
+            with urllib.request.urlopen(anfrage, timeout=10) as antwort:  # noqa: S310
+                inhalt = antwort.read()
+                return 200, inhalt if roh else json.loads(inhalt)
+        except urllib.error.HTTPError as fehler:
+            return fehler.code, json.loads(fehler.read())
+
+    def warten_auf(*staende, sekunden=40):
+        ende = time.monotonic() + sekunden
+        while time.monotonic() < ende:
+            stand = rufen("/stand")[1]
+            if stand["stand"] in staende:
+                return stand
+            time.sleep(0.2)
+        raise AssertionError(f"Stand bleibt {stand}")
+
+    def auftrag(export="/export-vorhanden", **mehr):
+        return {"anmeldung_url": f"{portal_url}/login", "liste_url": f"{portal_url}/liste",
+                "export_url": portal_url + export, "email": "buero@example.org",
+                "passwort": "erfunden", "von": "01.02.2026", "bis": "04.02.2026",
+                "mit_liste": True} | mehr  # fmt: skip
+
+    yield type("Dienst", (), {"rufen": staticmethod(rufen), "warten_auf": staticmethod(warten_auf),
+                              "auftrag": staticmethod(auftrag), "modul": modul, "url": url,
+                              "portal": portal_url})  # fmt: skip
+    server.shutdown()
+    portal.shutdown()
+
+
+def test_abruf_mit_vorhandenem_export(dienst):
+    assert dienst.rufen("/stand", schluessel="falsch")[0] == 403
+    assert dienst.rufen("/stand")[1]["stand"] == "frei"
+    assert dienst.rufen("/datei/finanzexport")[0] == 404
+    assert dienst.rufen("/code", {"code": "123456"})[0] == 400  # es wartet noch niemand
+    status, antwort = dienst.rufen("/start", dienst.auftrag())
+    assert (status, antwort["stand"], antwort["nummer"]) == (200, "laeuft", 1)
+    # ein zweiter Auftrag wird abgewiesen
+    assert dienst.rufen("/start", dienst.auftrag())[0] == 409
+    assert dienst.warten_auf("warte_auf_code")["schritt"] == "Bitte den 2FA-Code eingeben"
+    assert dienst.rufen("/code", {"code": "12"})[0] == 400
+    assert dienst.rufen("/code", {"code": "123456"})[1]["stand"] == "laeuft"
+    stand = dienst.warten_auf("fertig", "fehler")
+    assert stand["stand"] == "fertig", stand
+    assert stand["dateien"] == {"spenderliste": True, "finanzexport": True}
+    assert Portal.gesehen["anmeldung"] == ("buero@example.org", "erfunden")
+    assert dienst.rufen("/datei/spenderliste", roh=True)[1].startswith(b"PK")
+    export = dienst.rufen("/datei/finanzexport", roh=True)[1]
+    assert zipfile.ZipFile(io.BytesIO(export)).namelist() == ["Spenden/Spendenbeleg_000001.pdf"]
+    assert "neu" not in Portal.gesehen  # der vorhandene Export wurde wiederverwendet
+    assert dienst.rufen("/fertig", {})[1]["stand"] == "frei"
+    assert dienst.rufen("/datei/finanzexport")[0] == 404
+    assert dienst.rufen("/unbekannt", {})[0] == 404
+
+
+def test_abruf_erzeugt_neuen_export_ohne_spenderliste(dienst):
+    dienst.rufen("/start", dienst.auftrag("/export-neu", mit_liste=False, liste_url=""))
+    dienst.warten_auf("warte_auf_code")
+    dienst.rufen("/code", {"code": "123456"})
+    stand = dienst.warten_auf("fertig", "fehler")
+    assert stand["stand"] == "fertig", stand
+    assert stand["dateien"] == {"spenderliste": False, "finanzexport": True}
+    assert Portal.gesehen["neu"] == {"von": "01.02.2026", "bis": "04.02.2026", "eigen": "true"}
+
+
+def test_falscher_code_meldet_fehler_und_neuer_auftrag_geht(dienst):
+    dienst.rufen("/start", dienst.auftrag())
+    dienst.warten_auf("warte_auf_code")
+    dienst.rufen("/code", {"code": "999999"})
+    stand = dienst.warten_auf("fertig", "fehler")
+    assert stand["stand"] == "fehler" and "Anmeldung hat nicht geklappt" in stand["fehler"]
+    assert dienst.rufen("/start", dienst.auftrag())[1]["nummer"] == 2
+    dienst.warten_auf("warte_auf_code")
+    dienst.rufen("/abbrechen", {})
+    stand = dienst.warten_auf("fehler")
+    assert stand["fehler"] == "Der Abruf wurde abgebrochen."
+
+
+def test_ohne_code_laeuft_die_zeit_ab(dienst):
+    dienst.modul.ZEITEN["code"] = 1
+    dienst.rufen("/start", dienst.auftrag())
+    assert "kein 2FA-Code" in dienst.warten_auf("fehler")["fehler"]
+
+
+def test_auftrag_wird_geprueft(dienst):
+    antwort = dienst.rufen("/start", dienst.auftrag(passwort="", liste_url=""))
+    assert antwort == (409, antwort[1]) and "passwort, liste_url" in antwort[1]["fehler"]
+    dienst.modul.NUR_HTTPS = True
+    assert "https://" in dienst.rufen("/start", dienst.auftrag())[1]["fehler"]
+    assert dienst.rufen("/stand")[1]["stand"] == "frei"
+
+
+def test_dienst_startet_nicht_ohne_schluessel(dienst, monkeypatch):
+    monkeypatch.setenv("ABRUF_SCHLUESSEL", "zu kurz")
+    with pytest.raises(SystemExit, match="BINTAFELN_ABRUF_SCHLUESSEL"):
+        dienst.modul.main()
+
+
+def test_abruf_von_der_seite_bis_zum_einlesen(dienst, angemeldet, admin, settings):
+    """Die ganze Kette im Browser: Seite in bintafeln → Dienst → nachgebaute Portal-Seite."""
+    from django.urls import reverse
+    from playwright.sync_api import expect
+
+    from apps.core import geheimnis
+    from apps.core.models import TafelEinstellungen
+    from apps.vereinsportal.models import Kontakt, PortalEinstellungen
+
+    t = TafelEinstellungen.laden()
+    t.module = ["vereinsportal"]
+    t.save()
+    settings.ABRUF_URL, settings.ABRUF_SCHLUESSEL = dienst.url, SCHLUESSEL
+    e = PortalEinstellungen.laden()
+    e.anmeldung_url, e.liste_url = f"{dienst.portal}/login", f"{dienst.portal}/liste"
+    e.export_url, e.email = f"{dienst.portal}/export-vorhanden", "buero@example.org"
+    e.passwort_verschluesselt = geheimnis.verschluesseln("erfunden")
+    e.save()
+    seite = angemeldet(admin)
+    seite.goto(reverse("vereinsportal:abruf"))
+    seite.fill("input[name=von]", "01.02.2026")
+    seite.fill("input[name=bis]", "04.02.2026")
+    seite.locator("#abruf-form button[type=submit]").click()
+    # der Stand lädt sich selbst nach, bis nach dem 2FA-Code gefragt wird
+    code = seite.locator("#abruf-code")
+    expect(code).to_be_visible(timeout=30_000)
+    code.fill("123456")
+    seite.locator("#abruf-stand button", has_text="Code senden").click()
+    stand = seite.locator("#abruf-stand")
+    expect(stand).to_contain_text("Spenderliste ersetzt: 1 Spender mit E-Mail.", timeout=40_000)
+    expect(stand).to_contain_text("1 ohne vollständige Anschrift ausgelassen")
+    expect(stand).to_contain_text("Es läuft kein Abruf")
+    assert Kontakt.objects.get().email == "erika@example.org"

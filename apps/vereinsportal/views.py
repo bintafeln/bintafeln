@@ -9,9 +9,11 @@ from apps.core import listenexport, mail, papierkorb, privatdateien
 from apps.core.pdf import im_fenster, pdf_antwort
 from apps.konten import rollen
 from apps.konten.views import nicht_in_demo
+from apps.vereinsportal import abruf as portal
 from apps.vereinsportal import auswertung, einlesen
 from apps.vereinsportal import briefe as brief
 from apps.vereinsportal.forms import (
+    AbrufForm,
     BriefForm,
     EinstellungenForm,
     FinanzexportForm,
@@ -34,14 +36,7 @@ def _finanzexport(request, datei) -> None:
         e = einlesen.uebersicht_einlesen(datei.read())
     else:
         e = einlesen.finanzexport_einlesen(datei, request.user.get_username())
-    teile = [f"{e.neu} neue Belege eingelesen", f"{e.doppelt} waren schon vorhanden"]
-    if e.ohne_anschrift:
-        teile.append(f"{e.ohne_anschrift} ohne vollständige Anschrift ausgelassen")
-    teile.append(
-        f"{e.versendet} als im Vereinsportal versendet vermerkt" if e.mit_uebersicht
-        else "keine Übersicht der versendeten Belege in der Datei gefunden"
-    )  # fmt: skip
-    messages.success(request, ", ".join(teile) + ".")
+    messages.success(request, einlesen.bericht(e))
 
 
 def _spenderliste(request, datei) -> None:
@@ -78,7 +73,7 @@ def start(request):
         "belege": Beleg.objects.filter(jahr=jahr).count(),
         "kontakte": Kontakt.objects.count(),
         "finanzexport": FinanzexportForm(), "spenderliste": SpenderlisteForm(),
-        "gruppen": auswertung.GRUPPEN,
+        "gruppen": auswertung.GRUPPEN, "abruf_verfuegbar": portal.verfuegbar(),
     })  # fmt: skip
 
 
@@ -116,7 +111,10 @@ def einstellungen(request):
         form.save()
         messages.success(request, "Gespeichert.")
         return redirect("vereinsportal:einstellungen")
-    return render(request, "vereinsportal/einstellungen.html", {"form": form})
+    return render(request, "vereinsportal/einstellungen.html", {
+        "form": form, "abruf_verfuegbar": portal.verfuegbar(),
+        "passwort_gespeichert": bool(form.instance.passwort_verschluesselt),
+    })  # fmt: skip
 
 
 # --- Dankesbriefe ------------------------------------------------------------------------------
@@ -233,3 +231,59 @@ def sammel_datei(request, pk):
     if inhalt is None:
         raise Http404("Datei nicht mehr lesbar.")
     return pdf_antwort(inhalt, brief.dateiname(eintrag.dateiname))
+
+
+# --- Automatischer Abruf (ADR 0127) ------------------------------------------------------------
+
+
+def _abruf_stand(request, s=None):
+    s = s or portal.stand()
+    return render(request, "vereinsportal/_abruf_stand.html", {"s": s, "aktiv": s["stand"]
+                  in portal.AKTIV})  # fmt: skip
+
+
+@never_cache
+@nutzen
+def abruf(request):
+    """Abruf starten und seinen Stand zeigen."""
+    if not portal.verfuegbar():
+        return render(request, "vereinsportal/abruf.html", {"verfuegbar": False})
+    heute = timezone.localdate()
+    form = AbrufForm(request.POST or None, initial={"von": heute.replace(day=1), "bis": heute})
+    if request.method == "POST" and form.is_valid():
+        d = form.cleaned_data
+        try:
+            _abruf_starten(request, d)
+        except portal.AbrufFehler as fehler:
+            messages.error(request, str(fehler))
+        return redirect("vereinsportal:abruf")
+    return render(request, "vereinsportal/abruf.html", {
+        "verfuegbar": True, "form": form, "s": portal.stand(),
+        "eingerichtet": PortalEinstellungen.laden().abruf_eingerichtet,
+    })  # fmt: skip
+
+
+@nicht_in_demo
+def _abruf_starten(request, d):
+    portal.starten(d["von"], d["bis"], d["mit_liste"])
+
+
+@never_cache
+@nutzen
+def abruf_stand(request):
+    """Der Stand zum Nachladen; POST reicht den 2FA-Code weiter, bricht ab oder liest ein."""
+    if request.method == "POST":
+        aktion = request.POST.get("aktion")
+        try:
+            if aktion == "code":
+                portal.code_senden(request.POST.get("code") or "")
+            elif aktion == "abbrechen":
+                portal.abbrechen()
+            elif aktion == "verwerfen":
+                portal.verwerfen()
+            elif aktion == "einlesen":
+                for gelungen, text in portal.uebernehmen(request.user.get_username()):
+                    (messages.success if gelungen else messages.error)(request, text)
+        except portal.AbrufFehler as fehler:
+            messages.error(request, str(fehler))
+    return _abruf_stand(request)

@@ -36,6 +36,33 @@
 <p>Haben Sie im Vereinsportal inzwischen Bescheinigungen versendet, genügt es, nur die <strong>Excel-Datei</strong> des
   neuen Finanzexports einzulesen: bintafeln vermerkt dann, welche Belege dort versendet sind.</p>
 
+<h3>Automatisch aus dem Vereinsportal holen</h3>
+<p>Statt die Dateien von Hand herunter- und hochzuladen, kann bintafeln sie selbst holen. Dafür läuft auf dem
+  Server ein zusätzlicher Dienst mit einem Browser. Er ist nur da, wenn die Person, die den Server betreut, ihn
+  eingeschaltet hat (siehe unten); das Hochladen von Hand geht immer.</p>
+<ol>
+  <li>Einmalig unter „Einstellungen → Verein → Vereinsportal“ eintragen: die Adresse der Anmeldeseite, die Adresse
+    der Liste „Spender mit E-Mail“ und die Adresse der Seite „Finanzexport“ (jeweils im Vereinsportal öffnen und aus
+    der Adresszeile des Browsers kopieren), dazu E-Mail und Passwort für die Anmeldung. Das Passwort wird
+    verschlüsselt gespeichert und nie wieder angezeigt.</li>
+  <li>„Verein → Spenden → Abruf aus dem Vereinsportal“ öffnen, den Zeitraum wählen (höchstens drei Monate) und
+    „Abruf starten“.</li>
+  <li>Sobald danach gefragt wird, den <strong>2FA-Code</strong> eingeben, den das Vereinsportal Ihnen schickt.
+    Dafür sind fünf Minuten Zeit.</li>
+  <li>bintafeln holt die Spenderliste und den Finanzexport und liest beides ein. Gibt es für den Zeitraum im
+    Vereinsportal schon einen fertigen Export, wird er wiederverwendet; sonst wird er neu erzeugt, das kann einige
+    Minuten dauern. Die Seite darf dabei offen bleiben oder geschlossen werden.</li>
+</ol>
+{% hilfe_bild "vereinsportal-abruf" "① Zeitraum wählen, ② „Abruf starten“, ③ den 2FA-Code eingeben, sobald danach gefragt wird." %}
+<p>Der Abruf bedient die Seiten des Vereinsportals wie ein Mensch. Ändert das Vereinsportal seine Seiten, kann er
+  scheitern; die Meldung steht dann unter „Stand“. Laden Sie die Dateien in diesem Fall von Hand hoch und melden Sie
+  den Fehler, damit der Abruf angepasst wird.</p>
+{% if "einstellungen.tafel" in rechte %}
+<p><strong>Einschalten (Server):</strong> in der Datei <code>.env</code> die Zeilen <code>COMPOSE_PROFILES=abruf</code>
+  und <code>BINTAFELN_ABRUF_SCHLUESSEL=…</code> (ein langer zufälliger Text, mindestens 20 Zeichen) eintragen und
+  <code>./betrieb update</code> ausführen. Der Dienst braucht rund 1 GB Platz und ist von außen nicht erreichbar.</p>
+{% endif %}
+
 <h3>Die Liste</h3>
 <p>Ein Spender ist, wer auf den Belegen denselben Namen trägt. <strong>Mehrfachspender</strong> hat im gewählten Jahr
   mehrere Belege. Ein Spender steht nur in der Liste, solange mindestens ein Beleg im Vereinsportal noch nicht

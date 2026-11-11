@@ -1367,6 +1367,35 @@ die erste aktive mit PLZ oder Ort.
   braucht dafür Zugang ins Internet (https); ohne ihn fehlt die Anzeige einfach.
 - Die Anzeige wird nachgeladen; die Seiten werden dadurch nicht langsamer.
 
+### Spendenbelege aus dem Vereinsportal
+
+Für Tafeln, die ihre Spendenbescheinigungen weiterhin im Vereinsportal ausstellen (ADR 0126). Eine
+Alternative zu „Spenden und Zuwendungsbestätigungen“ in bintafeln; die Belege aus dem
+Vereinsportal erscheinen dort nicht, und bintafeln stellt für sie keine eigenen Bestätigungen aus.
+
+- **Einlesen:** Finanzexport (ZIP) und Liste „Spender mit E-Mail“ (Excel) hochladen. bintafeln
+  liest Name, Anschrift, Jahr und Betrag aus jedem Spendenbeleg und merkt sich, welche Belege im
+  Vereinsportal schon versendet sind.
+- **Übersicht:** Einfach- und Mehrfachspender, mit und ohne E-Mail, die noch keine Bescheinigung
+  bekommen haben; jede Gruppe als CSV.
+- **Dankesbriefe:** aus einer Serienbrief-Vorlage, mit dem Spendenbeleg (Einfachspender) oder der
+  hochgeladenen Sammelbescheinigung (Mehrfachspender) – als Druck-PDF oder per E-Mail.
+- **Automatischer Abruf (optional, ADR 0127):** bintafeln meldet sich selbst im Vereinsportal an
+  und holt die Dateien; Sie geben nur den 2FA-Code ein. Dafür läuft ein zusätzlicher Dienst mit
+  einem Browser (rund 1 GB). Einschalten in der `.env`:
+
+  ```bash
+  COMPOSE_PROFILES=abruf
+  BINTAFELN_ABRUF_SCHLUESSEL=<langer zufälliger Text, z. B. aus: openssl rand -hex 32>
+  ```
+
+  Danach `./betrieb update`. Die Adressen der Seiten im Vereinsportal und die Zugangsdaten stehen
+  unter „Einstellungen → Verein → Vereinsportal“ (Passwort verschlüsselt). Der Abruf bedient die
+  Seiten des Vereinsportals wie ein Mensch und kann scheitern, wenn sie sich ändern; das Hochladen
+  von Hand geht immer.
+
+Welche Dateien und Spalten gebraucht werden, steht im Handbuch im Programm.
+
 ### Kopfzeile
 
 Links Menü, Name der Tafel und Suche, daneben der Programmname (einstellbar an einer Stelle:

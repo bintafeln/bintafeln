@@ -29,6 +29,24 @@ class PortalEinstellungen(models.Model):
         "(gezählt ab Ende des Jahres der Spende). Die Originale bleiben im Vereinsportal.",
     )  # fmt: skip
 
+    # Automatischer Abruf über den Dienst „abruf“ (ADR 0127)
+    anmeldung_url = models.URLField(
+        "Adresse der Anmeldeseite", blank=True,
+        help_text="Die Adresse, unter der Sie sich im Vereinsportal anmelden (https://…).",
+    )  # fmt: skip
+    liste_url = models.URLField(
+        "Adresse der Liste „Spender mit E-Mail“", blank=True, max_length=500,
+        help_text="Die Liste im Vereinsportal öffnen und die Adresse aus der Adresszeile des "
+        "Browsers hierher kopieren. Leer: Die Liste wird nicht abgerufen.",
+    )  # fmt: skip
+    export_url = models.URLField(
+        "Adresse der Seite „Finanzexport“", blank=True, max_length=500,
+        help_text="Die Seite mit dem Export für den Steuerberater öffnen und die Adresse aus "
+        "der Adresszeile hierher kopieren.",
+    )  # fmt: skip
+    email = models.EmailField("E-Mail für die Anmeldung im Vereinsportal", blank=True)
+    passwort_verschluesselt = models.TextField(blank=True, editable=False)
+
     class Meta:
         verbose_name = "Einstellungen für das Vereinsportal"
         verbose_name_plural = "Einstellungen für das Vereinsportal"
@@ -44,6 +62,11 @@ class PortalEinstellungen(models.Model):
     def laden(cls):
         einstellungen, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
         return einstellungen
+
+    @property
+    def abruf_eingerichtet(self) -> bool:
+        return bool(self.anmeldung_url and self.export_url and self.email
+                    and self.passwort_verschluesselt)  # fmt: skip
 
 
 class Kontakt(models.Model):
@@ -126,7 +149,7 @@ class Sammelbescheinigung(models.Model):
         return self.dateiname
 
 
-auditlog.register(PortalEinstellungen)
+auditlog.register(PortalEinstellungen, exclude_fields=["passwort_verschluesselt"])
 auditlog.register(Kontakt)
 auditlog.register(Beleg, exclude_fields=["datei"])
 auditlog.register(Sammelbescheinigung, exclude_fields=["datei"])

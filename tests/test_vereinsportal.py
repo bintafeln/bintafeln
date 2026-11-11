@@ -644,3 +644,288 @@ def test_fristen_loeschen_auch_sammelbescheinigungen(spender_da):
 def test_mail_steht_in_der_uebersicht(admin_client):
     seite = admin_client.get(reverse("core:mail_empfaenger")).content.decode()
     assert "Dankesbrief zu Belegen aus dem Vereinsportal" in seite
+
+
+# --- Automatischer Abruf (Schritt 3, ADR 0127) ------------------------------------------------
+
+
+class FalscherDienst:
+    """Steht für den Dienst „abruf“: merkt sich Aufrufe und liefert vorbereitete Antworten."""
+
+    def __init__(self, dateien=None):
+        self.stand = {"stand": "frei", "schritt": "", "fehler": "", "dateien": {}, "nummer": 0}
+        self.dateien = dateien or {}
+        self.aufrufe = []
+        self.fehler = None
+
+    def __call__(self, pfad, daten=None, ziel=None):
+        from apps.vereinsportal import abruf
+
+        self.aufrufe.append((pfad, daten))
+        if self.fehler:
+            raise abruf.AbrufFehler(self.fehler)
+        if pfad.startswith("/datei/"):
+            ziel.write(self.dateien[pfad.removeprefix("/datei/")])
+            return None
+        if pfad == "/start":
+            self.stand |= {"stand": "laeuft", "schritt": "Starte …"}
+        elif pfad == "/code":
+            self.stand |= {"stand": "laeuft", "schritt": "2FA-Code übermittelt …"}
+        elif pfad == "/fertig":
+            self.stand |= {"stand": "frei", "dateien": {}}
+        return dict(self.stand)
+
+
+@pytest.fixture
+def dienst(settings, monkeypatch):
+    from apps.vereinsportal import abruf
+
+    settings.ABRUF_SCHLUESSEL = "nur-ein-erfundener-test-schluessel"
+    falsch = FalscherDienst()
+    monkeypatch.setattr(abruf, "_anfrage", falsch)
+    return falsch
+
+
+@pytest.fixture
+def zugang():
+    from apps.core import geheimnis
+
+    e = PortalEinstellungen.laden()
+    e.anmeldung_url = "https://portal.example.org/login"
+    e.liste_url = "https://portal.example.org/liste/1"
+    e.export_url = "https://portal.example.org/export"
+    e.email = "buero@example.org"
+    e.passwort_verschluesselt = geheimnis.verschluesseln("erfunden")
+    e.save()
+    return e
+
+
+def test_abruf_starten_schickt_auftrag(dienst, zugang):
+    from apps.vereinsportal import abruf
+
+    abruf.starten(dt.date(2026, 2, 1), dt.date(2026, 2, 4), True)
+    pfad, daten = dienst.aufrufe[-1]
+    assert pfad == "/start" and daten == {
+        "anmeldung_url": "https://portal.example.org/login",
+        "liste_url": "https://portal.example.org/liste/1",
+        "export_url": "https://portal.example.org/export", "email": "buero@example.org",
+        "passwort": "erfunden", "von": "01.02.2026", "bis": "04.02.2026", "mit_liste": True,
+    }  # fmt: skip
+    # ohne Adresse der Liste wird sie nicht geholt
+    zugang.liste_url = ""
+    zugang.save()
+    abruf.starten(dt.date(2026, 2, 1), dt.date(2026, 2, 4), True)
+    assert dienst.aufrufe[-1][1]["mit_liste"] is False
+
+
+def test_abruf_starten_prueft(dienst, zugang):
+    from apps.vereinsportal import abruf
+
+    for von, bis, text in [
+        (dt.date(2026, 2, 4), dt.date(2026, 2, 1), "vor dem Startdatum"),
+        (dt.date(2026, 1, 1), dt.date(2026, 6, 1), "höchstens drei Monate"),
+        (dt.date.today(), dt.date.today() + dt.timedelta(days=2), "in der Zukunft"),
+    ]:
+        with pytest.raises(abruf.AbrufFehler, match=text):
+            abruf.starten(von, bis, False)
+    zugang.passwort_verschluesselt = "nicht lesbar"
+    zugang.save()
+    with pytest.raises(abruf.AbrufFehler, match="nicht mehr lesbar"):
+        abruf.starten(dt.date(2026, 2, 1), dt.date(2026, 2, 4), False)
+    zugang.passwort_verschluesselt = ""
+    zugang.save()
+    with pytest.raises(abruf.AbrufFehler, match="zuerst Adressen und Zugangsdaten"):
+        abruf.starten(dt.date(2026, 2, 1), dt.date(2026, 2, 4), False)
+    assert dienst.aufrufe == []
+
+
+def test_abruf_uebernehmen_liest_ein_und_raeumt_auf(dienst, export):
+    from apps.vereinsportal import abruf
+
+    assert abruf.uebernehmen("buero") == []  # nichts fertig
+    dienst.stand |= {"stand": "fertig", "dateien": {"spenderliste": True, "finanzexport": True}}
+    dienst.dateien = {
+        "finanzexport": export.getvalue(),
+        "spenderliste": spenderliste([(1, "Erika", "Beispiel", "erika@example.org", ""),
+                                      (2, "Ohne", "Mail", "", "")]),
+    }  # fmt: skip
+    meldungen = abruf.uebernehmen("buero")
+    assert meldungen == [
+        (True, "Spenderliste ersetzt: 1 Spender mit E-Mail, 1 Zeilen ohne gültige E-Mail "
+               "ausgelassen."),
+        (True, "3 neue Belege eingelesen, 0 waren schon vorhanden, 1 ohne vollständige Anschrift "
+               "ausgelassen, 1 als im Vereinsportal versendet vermerkt."),
+    ]  # fmt: skip
+    assert Beleg.objects.count() == 3 and Kontakt.objects.count() == 1
+    assert dienst.aufrufe[-1] == ("/fertig", {}) and dienst.stand["stand"] == "frei"
+    # nur der Finanzexport, ohne Zeilen ohne E-Mail
+    dienst.stand |= {"stand": "fertig", "dateien": {"finanzexport": True}}
+    assert len(abruf.uebernehmen("buero")) == 1
+    dienst.stand |= {"stand": "fertig", "dateien": {"spenderliste": True}}
+    dienst.dateien["spenderliste"] = spenderliste([(1, "Erika", "Beispiel", "e@example.org", "")])
+    assert abruf.uebernehmen("buero") == [(True, "Spenderliste ersetzt: 1 Spender mit E-Mail.")]
+    # eine unlesbare Spenderliste hält den Finanzexport nicht auf; danach ist der Dienst frei
+    dienst.stand |= {"stand": "fertig", "dateien": {"spenderliste": True, "finanzexport": True}}
+    dienst.dateien["spenderliste"] = b"keine Excel-Datei"
+    kaputt, gut = abruf.uebernehmen("buero")
+    assert kaputt == (False, "Spenderliste: Die Excel-Datei lässt sich nicht lesen.")
+    assert gut[0] and "3 waren schon vorhanden" in gut[1] and dienst.stand["stand"] == "frei"
+
+
+def test_abruf_uebernehmen_nicht_doppelt(dienst):
+    from django.core.cache import cache
+
+    from apps.vereinsportal import abruf
+
+    dienst.stand |= {"stand": "fertig", "dateien": {}}
+    cache.add(abruf.SPERRE, 1, timeout=60)
+    assert abruf.uebernehmen("buero") == [] and dienst.aufrufe == []
+    cache.delete(abruf.SPERRE)
+
+
+def test_abruf_stand_bei_stoerung(dienst):
+    from apps.vereinsportal import abruf
+
+    dienst.fehler = "Der Abruf-Dienst ist nicht erreichbar."
+    assert abruf.stand() == {"stand": "stoerung", "schritt": "", "dateien": {},
+                             "fehler": "Der Abruf-Dienst ist nicht erreichbar."}  # fmt: skip
+
+
+def test_anfrage_an_den_dienst(settings, monkeypatch):
+    """Die echte Übertragung: Schlüssel im Kopf, JSON hin und zurück, Fehler verständlich."""
+    import urllib.error
+
+    from apps.vereinsportal import abruf
+
+    settings.ABRUF_SCHLUESSEL, settings.ABRUF_URL = "geheim-und-erfunden", "http://abruf.invalid"
+    gesehen = []
+
+    class Antwort(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    def oeffnen(anfrage, timeout):
+        gesehen.append((anfrage.full_url, anfrage.get_method(), anfrage.headers, anfrage.data))
+        return Antwort(b'{"stand": "frei"}')
+
+    monkeypatch.setattr(abruf.urllib.request, "urlopen", oeffnen)
+    assert abruf._anfrage("/stand") == {"stand": "frei"}
+    assert gesehen[0][:2] == ("http://abruf.invalid/stand", "GET")
+    assert gesehen[0][2]["X-abruf-schluessel"] == "geheim-und-erfunden"
+    abruf.code_senden(" 123456 ")
+    assert gesehen[1][1] == "POST" and gesehen[1][3] == b'{"code": "123456"}'
+    abruf.abbrechen()
+    ziel = io.BytesIO()
+    assert abruf._anfrage("/datei/finanzexport", ziel=ziel) is None
+    assert ziel.getvalue() == b'{"stand": "frei"}'
+
+    def http_fehler(inhalt):
+        def oeffnen(anfrage, timeout):
+            raise urllib.error.HTTPError(anfrage.full_url, 409, "x", {}, io.BytesIO(inhalt))
+
+        return oeffnen
+
+    monkeypatch.setattr(abruf.urllib.request, "urlopen", http_fehler(b'{"fehler": "Belegt."}'))
+    with pytest.raises(abruf.AbrufFehler, match="Belegt"):
+        abruf._anfrage("/start", {})
+    monkeypatch.setattr(abruf.urllib.request, "urlopen", http_fehler(b"kein JSON"))
+    with pytest.raises(abruf.AbrufFehler, match=r"meldet einen Fehler \(409\)"):
+        abruf._anfrage("/start", {})
+
+    def nicht_da(anfrage, timeout):
+        raise OSError("keine Verbindung")
+
+    monkeypatch.setattr(abruf.urllib.request, "urlopen", nicht_da)
+    with pytest.raises(abruf.AbrufFehler, match="nicht erreichbar"):
+        abruf._anfrage("/stand")
+
+
+def test_seite_abruf_nicht_eingeschaltet(buero):
+    seite = buero.get(reverse("vereinsportal:abruf")).content.decode()
+    assert "nicht eingeschaltet" in seite and "COMPOSE_PROFILES=abruf" in seite
+    assert "Automatisch aus dem Vereinsportal holen" not in (
+        buero.get(reverse("vereinsportal:start")).content.decode())  # fmt: skip
+
+
+def test_seite_abruf_ablauf(buero, dienst, zugang, export):
+    url, stand_url = reverse("vereinsportal:abruf"), reverse("vereinsportal:abruf_stand")
+    assert "Automatisch aus dem Vereinsportal holen" in (
+        buero.get(reverse("vereinsportal:start")).content.decode())  # fmt: skip
+    seite = buero.get(url).content.decode()
+    assert "Abruf starten" in seite and "Es läuft kein Abruf" in seite
+    # falscher Zeitraum: Fehler am Formular, kein Auftrag
+    seite = buero.post(url, {"von": "04.02.2026", "bis": "01.02.2026"}).content.decode()
+    assert "vor dem Startdatum" in seite and dienst.aufrufe[-1][0] == "/stand"
+    antwort = buero.post(url, {"von": "01.02.2026", "bis": "04.02.2026", "mit_liste": "on"})
+    assert antwort.status_code == 302 and dienst.aufrufe[-1][:1] == ("/start",)
+    teil = buero.get(stand_url).content.decode()
+    assert "Starte …" in teil and 'hx-trigger="every 2s"' in teil and "Abruf abbrechen" in teil
+    dienst.stand |= {"stand": "warte_auf_code", "schritt": "Bitte den 2FA-Code eingeben"}
+    teil = buero.get(stand_url).content.decode()
+    assert 'name="code"' in teil and "every 2s" not in teil
+    teil = buero.post(stand_url, {"aktion": "code", "code": "123456"}).content.decode()
+    assert dienst.aufrufe[-2] == ("/code", {"code": "123456"}) and "2FA-Code übermittelt" in teil
+    dienst.stand |= {"stand": "fertig", "dateien": {"finanzexport": True}}
+    dienst.dateien = {"finanzexport": export.getvalue()}
+    teil = buero.get(stand_url).content.decode()
+    assert 'hx-trigger="load"' in teil and "liest sie ein" in teil
+    teil = buero.post(stand_url, {"aktion": "einlesen"}).content.decode()
+    assert "3 neue Belege eingelesen" in teil and "Es läuft kein Abruf" in teil
+    assert Beleg.objects.count() == 3
+
+
+def test_seite_abruf_fehler_abbrechen_verwerfen(buero, dienst, zugang):
+    url, stand_url = reverse("vereinsportal:abruf"), reverse("vereinsportal:abruf_stand")
+    dienst.stand |= {"stand": "laeuft", "schritt": "Öffne die Anmeldeseite …"}
+    buero.post(stand_url, {"aktion": "abbrechen"})
+    assert dienst.aufrufe[-2] == ("/abbrechen", {})
+    dienst.stand |= {"stand": "fehler", "fehler": "Der Abruf wurde abgebrochen."}
+    teil = buero.get(stand_url).content.decode()
+    assert "Der Abruf wurde abgebrochen." in teil and "Meldung schließen" in teil
+    teil = buero.post(stand_url, {"aktion": "verwerfen"}).content.decode()
+    assert "Es läuft kein Abruf" in teil
+    # der Dienst lehnt ab: Meldung statt Absturz
+    dienst.fehler = "Es läuft schon ein Abruf."
+    seite = buero.post(url, {"von": "01.02.2026", "bis": "04.02.2026"}, follow=True)
+    assert "Es läuft schon ein Abruf." in seite.content.decode()
+    teil = buero.post(stand_url, {"aktion": "code", "code": "1"}).content.decode()
+    assert "Es läuft schon ein Abruf." in teil
+    # kaputte Datei beim Einlesen
+    dienst.fehler = None
+    dienst.stand |= {"stand": "fertig", "dateien": {"finanzexport": True}}
+    dienst.dateien = {"finanzexport": b"kein Archiv"}
+    teil = buero.post(stand_url, {"aktion": "einlesen"}).content.decode()
+    assert "Finanzexport: Die Datei ist kein ZIP-Archiv." in teil and "Es läuft kein Abruf" in teil
+    assert buero.post(stand_url, {"aktion": "unbekannt"}).status_code == 200
+
+
+def test_seite_abruf_ohne_zugangsdaten(buero, dienst):
+    seite = buero.get(reverse("vereinsportal:abruf")).content.decode()
+    assert "zuerst unter" in seite and "Abruf starten" not in seite
+
+
+def test_einstellungen_zugangsdaten_verschluesselt(buero, dienst):
+    from apps.core import geheimnis
+
+    seite = reverse("vereinsportal:einstellungen")
+    assert "noch kein Passwort gespeichert" in buero.get(seite).content.decode()
+    daten = {"aufbewahrung_jahre": "2", "anmeldung_url": "https://portal.example.org/login",
+             "export_url": "https://portal.example.org/export", "email": "buero@example.org",
+             "passwort": "erfunden und geheim"}  # fmt: skip
+    assert buero.post(seite, daten).status_code == 302
+    e = PortalEinstellungen.laden()
+    assert "erfunden" not in e.passwort_verschluesselt
+    assert geheimnis.entschluesseln(e.passwort_verschluesselt) == "erfunden und geheim"
+    assert e.abruf_eingerichtet
+    inhalt = buero.get(seite).content.decode()
+    assert "Ein Passwort ist gespeichert" in inhalt and "erfunden und geheim" not in inhalt
+    # leer lassen behält es, http wird abgelehnt, löschen entfernt es
+    buero.post(seite, daten | {"passwort": ""})
+    assert PortalEinstellungen.laden().passwort_verschluesselt == e.passwort_verschluesselt
+    antwort = buero.post(seite, daten | {"export_url": "http://portal.example.org/export"})
+    assert "muss mit https:// beginnen" in antwort.content.decode()
+    buero.post(seite, daten | {"passwort": "", "passwort_loeschen": "on"})
+    assert not PortalEinstellungen.laden().abruf_eingerichtet

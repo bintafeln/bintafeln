@@ -27,6 +27,9 @@ DEMO_PASSWORT = umgebung.text("BINTAFELN_DEMO_PASSWORT", "")
 # Installation (die des Herausgebers) Meldungen annimmt
 VERZEICHNIS_URL = umgebung.text("BINTAFELN_VERZEICHNIS_URL", "") or programm.VERZEICHNIS_URL
 VERZEICHNIS_EMPFANG = umgebung.schalter("BINTAFELN_VERZEICHNIS_EMPFANG", False)
+# Dienst „abruf“ für das Vereinsportal (ADR 0127); ohne Schlüssel gibt es nur das Hochladen
+ABRUF_URL = umgebung.text("BINTAFELN_ABRUF_URL", "http://abruf:8700")
+ABRUF_SCHLUESSEL = umgebung.text("BINTAFELN_ABRUF_SCHLUESSEL", "")
 
 if PRODUKTION:
     ALLOWED_HOSTS = umgebung.liste("DJANGO_ALLOWED_HOSTS", [DOMAIN])

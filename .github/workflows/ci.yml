@@ -111,6 +111,21 @@ jobs:
           printf 'COMPOSE_FILE=docker-compose.yml:docker/hinter-fremdem-proxy.yml\n' >> .env
           docker compose config --quiet
           sed -i '/^COMPOSE_/d' .env
+      - name: Dienst abruf (ADR 0127) bauen und Browser starten
+        run: |
+          COMPOSE_PROFILES=abruf docker compose config --quiet
+          docker build -t bintafeln-abruf:ci docker/abruf
+          docker run --rm bintafeln-abruf:ci python -c "
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+              b = p.chromium.launch(headless=True)
+              s = b.new_page()
+              s.set_content('<p>bereit</p>')
+              assert s.inner_text('p') == 'bereit'
+              b.close()
+          "
+          # ohne Schlüssel darf der Dienst nicht starten
+          ! docker run --rm bintafeln-abruf:ci
       - name: Caddyfiles prüfen
         run: |
           docker run --rm -e SITE_ADDRESS=:80 -v "$PWD/docker/Caddyfile:/etc/caddy/Caddyfile:ro" \
