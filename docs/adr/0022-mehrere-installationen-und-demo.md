@@ -29,6 +29,13 @@ Ports 80 und 443. Eine Demo braucht außerdem erfundene Daten, die sich regelmä
   erfundenen Beispieldaten aus `docs/beispiele/import` und Demo-Konten an; ohne den Schalter
   verweigert er. Gibt es Konten, die nicht mit `demo-` beginnen, bricht er ebenfalls ab
   (Schutz, falls er versehentlich im Ordner einer echten Installation läuft).
+- **Gut gefüllt (Ergänzung):** Drei Haushalte reichen nicht, um Listen, Filter und Module zu
+  beurteilen. `apps/core/demo_daten.py` erzeugt deshalb aus festen Namenslisten mit festem
+  Startwert je Kundengruppe 30 bis 50 erfundene Haushalte (als Dateien im Importformat, also
+  durch den echten Import) und füllt Adressbuch, Mitglieder, Spenden, Mitarbeitende, Anträge,
+  Tickets, Abrechnung, Serienbriefe, Fahrdienst und Dienstplan. Die Beispieldateien der
+  Dokumentation bleiben klein. Konten der Beispielpläne (`beispiel-fd-`, `beispiel-dp-`)
+  zählen wie `demo-` als Demo-Konten.
 
 ## Begründung
 

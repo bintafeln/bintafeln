@@ -90,9 +90,29 @@ Anmeldeseite stehen die Zugänge:
 | `demo-fest` | Ausgabe und Fahrer, fest angestellt | „Meine Arbeitszeit“ mit Stempeln |
 | Name der ersten Ausgabestelle (z. B. `Ausgabestelle Mitte`) | Konto der Ausgabestelle | Tablet am Einlass: nur deren Kunden, ohne Zwei-Faktor |
 
-Die Module Aufruf, Warteliste, Wochenübersicht, Links, Abrechnung und Listen sind eingeschaltet und mit Beispielen
-gefüllt (Links auf der Startseite, zwei Selbstabholer). Das Wetter bleibt aus, weil es Internet
-und einen echten Ort braucht.
+Die Module Aufruf, Warteliste, Wochenübersicht, Links, Abrechnung, Listen, Fahrdienst, Dienstplan
+und Tickets sind eingeschaltet und mit Beispielen gefüllt. Das Wetter bleibt aus, weil es
+Internet und einen echten Ort braucht.
+
+Damit sich Listen, Filter und Auswertungen wirklich ausprobieren lassen, ist die Demo gut
+gefüllt – alles erfunden (Fantasienamen, Adressen in „Musterstadt“, `example.org`) und nach
+jedem Zurücksetzen gleich:
+
+| Bereich | Inhalt |
+|---|---|
+| Kunden | 3 Ausgabestellen, 8 Kundengruppen mit je rund 25 bis 45 Haushalten (zusammen etwa 300 Haushalte mit 780 Personen), rund 1.600 Abholungen der letzten Wochen; dazu gesperrte, pausierte und beendete Haushalte und solche mit abgelaufenem Ausweis |
+| Adressbuch | 25 Betriebe und Vereine, 45 Personen |
+| Mitglieder | 40 Mitglieder, einige ausgetreten |
+| Spenden | 80 Geld- und Sachspenden aus zwei Jahren |
+| Mitarbeitende | 15 weitere Konten `demo-ehrenamt-01` bis `-15` (Ausgabe, Büro, Fahrer, Personal), Anmeldung mit dem Demo-Passwort |
+| Anträge und Warteliste | 25 Anträge in allen Zuständen, ein Termin mit Eingeladenen |
+| Tickets | 4 Kategorien, 10 Tickets mit Antworten |
+| Abrechnung | je Ausgabestelle drei Monate: bestätigt, eingereicht, offen |
+| Serienbriefe | 2 Vorlagen |
+| Fahrdienst und Dienstplan | die Beispielpläne der Module, je ein Ausfall in der kommenden Woche |
+
+Erzeugt werden die Daten in `apps/core/demo_daten.py`; der Kundenstamm läuft dabei durch
+denselben Import wie echte Daten.
 
 Das Passwort ist für alle Konten das aus `BINTAFELN_DEMO_PASSWORT`. Am Einlass z. B. die
 Kundennummer `1001` eingeben.

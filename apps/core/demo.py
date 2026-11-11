@@ -18,6 +18,7 @@ from django.core.management import call_command
 from django.db import transaction
 from django.utils import timezone
 
+from apps.core import demo_daten
 from apps.core.models import TafelEinstellungen
 from apps.konten import rollen
 from apps.konten.models import DokumentKategorie, Rolle, Stammdaten
@@ -37,14 +38,18 @@ KONTEN = [
 ]
 
 
+# Anfänge der Benutzernamen, die die Demo selbst anlegt (auch die Beispielpläne der Module)
+DEMO_KONTEN = ("demo-", "beispiel-fd-", "beispiel-dp-")
+
+
 def fremde_konten() -> list[str]:
     """Konten, die nicht von der Demo stammen: Hinweis auf eine echte Installation.
 
     Konten von Ausgabestellen (ADR 0059) zählen nicht: Demo-Besucher dürfen welche anlegen.
     """
-    konten = (
-        get_user_model().objects.exclude(username__startswith="demo-").filter(stelle__isnull=True)
-    )
+    konten = get_user_model().objects.filter(stelle__isnull=True)
+    for anfang in DEMO_KONTEN:
+        konten = konten.exclude(username__startswith=anfang)
     return list(konten.order_by("username").values_list("username", flat=True)[:3])
 
 
@@ -69,10 +74,12 @@ def zuruecksetzen(heute: dt.date | None = None, erzwingen: bool = False) -> None
         _kunden(konten["demo-admin"], heute)
         _arbeitszeit(konten["demo-fest"], heute)
         _module()
+        _fuellen(konten, heute)
 
 
 # Module, die die Demo einschaltet; das Wetter nicht (braucht Internet und einen echten Ort).
-DEMO_MODULE = ["aufruf", "warteliste", "wochenuebersicht", "links", "abrechnung", "listen"]
+DEMO_MODULE = ["aufruf", "warteliste", "wochenuebersicht", "links", "abrechnung", "listen",
+               "fahrdienst", "dienstplan", "tickets"]  # fmt: skip
 TABLET = "demo-tablet"
 
 
@@ -173,13 +180,27 @@ def _konten() -> dict:
 def _kunden(admin, heute) -> None:
     merkmale.feste_anlegen()  # u. a. „schwerbehindert“ für die Beispieldaten
     dateien = {d.name: d.read_bytes() for d in sorted(BEISPIELE.glob("*.csv"))}
-    ergebnis = importieren.pruefen(dateien, heute)
-    if ergebnis.fehler:
-        raise ImproperlyConfigured(f"Beispieldaten fehlerhaft: {ergebnis.fehler}")
+    # Erst die Beispieldateien der Dokumentation prüfen, dann um erfundene Haushalte ergänzen
+    # (je Kundengruppe 30 bis 50) und zusammen einlesen.
+    for stand in (dateien, None):
+        ergebnis = importieren.pruefen(stand or demo_daten.kundenstamm(dateien, heute), heute)
+        if ergebnis.fehler:
+            raise ImproperlyConfigured(f"Beispieldaten fehlerhaft: {ergebnis.fehler}")
     importieren.uebernehmen(
         ergebnis.daten, benutzer=admin, dateien=ergebnis.dateien,
         pruefsumme=ergebnis.pruefsumme, anzahl_warnungen=len(ergebnis.warnungen),
     )  # fmt: skip
+
+
+def _fuellen(konten: dict, heute) -> None:
+    """Die übrigen Bereiche mit erfundenen Daten füllen, damit sich alles ausprobieren lässt."""
+    demo_daten.team()
+    demo_daten.adressen_mitglieder_spenden(heute)
+    demo_daten.antraege(heute)
+    demo_daten.tickets(konten)
+    demo_daten.abrechnung(konten, heute)
+    demo_daten.serienbriefe()
+    demo_daten.dienstplaene(heute)
 
 
 def _arbeitszeit(fest, heute) -> None:

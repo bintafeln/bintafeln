@@ -62,7 +62,8 @@ def test_zuruecksetzen(demo, admin, django_user_model, settings, capsys):
     from apps.links.models import Link
     from apps.wochenuebersicht.models import Selbstabholer
 
-    assert e.module == ["aufruf", "warteliste", "wochenuebersicht", "links", "abrechnung", "listen"]
+    assert e.module == ["aufruf", "warteliste", "wochenuebersicht", "links", "abrechnung",
+                        "listen", "fahrdienst", "dienstplan", "tickets"]  # fmt: skip
     assert Link.objects.filter(warnung__gt="").exists() and Selbstabholer.objects.count() == 2
     tablet = django_user_model.objects.get(username="demo-tablet")
     assert tablet.stelle and tablet.check_password(PASSWORT)
@@ -76,7 +77,7 @@ def test_zuruecksetzen(demo, admin, django_user_model, settings, capsys):
                                           .exclude(pk=tablet.stelle_id).first())  # fmt: skip
 
     call_command("demo_zuruecksetzen")  # wiederholbar
-    assert django_user_model.objects.filter(username__startswith="demo-").count() == 6
+    assert django_user_model.objects.filter(username__startswith="demo-").count() == 21
 
 
 def test_zuruecksetzen_ohne_medienordner(demo, settings):
@@ -115,3 +116,72 @@ def test_hinweise_und_sperren(demo, client, admin, anmelden, benutzer_mit_rolle)
 
 def test_ohne_demo_keine_hinweise(client, admin):
     assert "Demo" not in client.get(reverse("konten:anmelden")).content.decode()
+
+
+@pytest.mark.django_db(transaction=True)  # zweimal zurücksetzen braucht echte Transaktionen
+def test_demo_ist_gut_gefuellt(demo, django_user_model):
+    """Genug erfundene Daten, um Listen, Filter und Module auszuprobieren – und bei jedem
+    Zurücksetzen dieselben."""
+    from apps.abrechnung.models import Monatsabrechnung
+    from apps.adressen.models import Adresse
+    from apps.antraege.models import Antrag
+    from apps.dienstplan.models import Ausfall as DienstAusfall
+    from apps.fahrdienst.models import Ausfall as FahrAusfall
+    from apps.fahrdienst.models import Tour
+    from apps.kunden.models import Abholung, Kundengruppe, Person, Sperre
+    from apps.mitglieder.models import Mitglied
+    from apps.serienbriefe.models import Vorlage
+    from apps.spenden.models import Spende
+    from apps.tickets.models import Kategorie, Ticket
+    from apps.warteliste.models import Wartestand
+
+    heute = dt.date(2026, 11, 11)
+    call_command("demo_zuruecksetzen")
+    assert Kundengruppe.objects.count() == 8
+    # in jeder Kundengruppe viele Haushalte, aber nie mehr als 50
+    for gruppe in Kundengruppe.objects.all():
+        assert 20 <= gruppe.haushalte.count() <= 50, gruppe
+    assert Haushalt.objects.count() > 250 and Person.objects.count() > Haushalt.objects.count()
+    assert Abholung.objects.count() > 800
+    # auch die besonderen Fälle für die Filter der Kundenliste
+    assert Haushalt.objects.filter(status="pausiert").exists()
+    assert Haushalt.objects.filter(status="beendet").exists()
+    assert Haushalt.objects.filter(status="aktiv", kundengruppe__isnull=True).exists()
+    assert Sperre.objects.filter(bis__gte=heute).exists() or Sperre.objects.count() > 1
+    assert Adresse.objects.filter(art="organisation").count() == 25
+    assert Mitglied.objects.count() == 40 and Mitglied.objects.filter(austritt__isnull=False)
+    assert Spende.objects.count() == 80 and Spende.objects.filter(art="sach").exists()
+    assert Antrag.objects.count() == 25 and Wartestand.objects.filter(status="eingeladen").exists()
+    assert Kategorie.objects.count() == 4 and Ticket.objects.count() == 10
+    assert Ticket.objects.filter(status="erledigt").exists()
+    assert {a.status for a in Monatsabrechnung.objects.all()} == {
+        "offen", "eingereicht", "bestaetigt",
+    }  # fmt: skip
+    assert Vorlage.objects.count() == 2
+    assert Tour.objects.exists() and FahrAusfall.objects.exists() and DienstAusfall.objects.exists()
+    # alle Mitarbeitenden melden sich mit dem Demo-Passwort an
+    assert django_user_model.objects.get(username="demo-ehrenamt-01").check_password(PASSWORT)
+    # wiederholbar und immer dieselben Namen
+    namen = list(Haushalt.objects.order_by("kundennummer").values_list("kundennummer", flat=True))
+    erste = Person.objects.filter(haushalt__kundennummer="2001", ist_hauptperson=True).get()
+    call_command("demo_zuruecksetzen")
+    assert namen == list(
+        Haushalt.objects.order_by("kundennummer").values_list("kundennummer", flat=True)
+    )
+    wieder = Person.objects.filter(haushalt__kundennummer="2001", ist_hauptperson=True).get()
+    assert (erste.vorname, erste.nachname) == (wieder.vorname, wieder.nachname)
+
+
+def test_seiten_laufen_mit_den_demo_daten(demo, client, django_user_model, anmelden):
+    """Rundgang als Demo-Admin: Die gefüllten Bereiche lassen sich öffnen."""
+    call_command("demo_zuruecksetzen")
+    anmelden(client, django_user_model.objects.get(username="demo-admin"))
+    for name in ("core:start", "kunden:uebersicht", "adressen:liste", "mitglieder:liste",
+                 "spenden:liste", "antraege:liste", "warteliste:liste", "tickets:liste",
+                 "abrechnung:uebersicht", "serienbriefe:vorlagen", "fahrdienst:plan",
+                 "dienstplan:plan", "konten:mitarbeitende", "statistik:uebersicht",
+                 "core:mail_empfaenger"):  # fmt: skip
+        antwort = client.get(reverse(name), follow=True)
+        assert antwort.status_code == 200, name
+    liste = client.get(reverse("kunden:uebersicht"), {"tag": "", "status": "gesperrt"})
+    assert liste.context["seite"].paginator.count >= 1
