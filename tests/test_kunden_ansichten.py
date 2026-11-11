@@ -501,3 +501,15 @@ def test_kundenliste_liest_die_spaltenwahl_nicht_je_spalte(
     admin_client.get(url, {"tag": ""})  # erster Aufruf: Fristen, Regeln
     with django_assert_max_num_queries(80):
         admin_client.get(url, {"tag": ""})
+
+
+def test_kontostand_ohne_buchung_zeigt_null(admin_client):
+    """Ein Haushalt ohne gespeicherten Kontostand zeigt „0,00 €“ statt eines Strichs."""
+    from apps.kunden import export
+
+    h = Haushalt.objects.create(kundennummer="6001")
+    assert h.kontostand is None
+    seite = admin_client.get(detail("6001")).content.decode()
+    assert seite.count("0,00 €") >= 2 and "<dd>–</dd>" not in seite.split("Kontostand")[1][:60]
+    zeile = export.zeile(h, ["kontostand"], {"kunden.konto"}, {}, 18, None)
+    assert zeile == ["0,00"]

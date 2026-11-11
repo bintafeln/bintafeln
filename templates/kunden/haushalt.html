@@ -31,7 +31,7 @@
     <dt>Ausgabestelle</dt><dd>{% if h.kundengruppe %}{{ h.kundengruppe.mit_stelle }}{% if h.kundengruppe.wochentage %} ({{ h.kundengruppe.wochentage }}{% if h.kundengruppe.uhrzeit %} {{ h.kundengruppe.uhrzeit|time:"H:i" }}{% endif %}){% endif %}{% else %}–{% endif %}{% if "kunden.bearbeiten" in rechte %} <a class="leise" href="{% url 'kunden:kundengruppe_aendern' h.kundennummer %}">Kundengruppe ändern</a>{% endif %}</dd>
     {% if geplanter_wechsel %}<dt>Geplanter Umzug</dt><dd class="hinweis">ab {{ geplanter_wechsel.ab|date:"d.m.Y" }} zu {{ geplanter_wechsel.ziel_gruppe.mit_stelle }}</dd>{% endif %}
     <dt>Karte gültig bis</dt><dd>{{ h.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}</dd>
-    {% if kontostand_zeigen %}<dt>Kontostand</dt><dd>{% if h.kontostand is not None %}<strong{% if h.kontostand < 0 %} class="fehler"{% endif %}>{{ h.kontostand|floatformat:2 }} €</strong>{% else %}–{% endif %}</dd>{% endif %}
+    {% if kontostand_zeigen %}<dt>Kontostand</dt><dd><strong{% if h.kontostand < 0 %} class="fehler"{% endif %}>{{ h.kontostand|default_if_none:0|floatformat:2 }} €</strong></dd>{% endif %}
     <dt>Haushalt</dt><dd>{{ erwachsene }} Erwachsene, {{ kinder }} Kind{{ kinder|pluralize:"er" }}</dd>
     {% if "kunden.stammdaten" in rechte %}
       <dt>Letzter Besuch</dt><dd>{{ h.letzter_besuch_text|default:"–" }}</dd>
@@ -177,7 +177,7 @@
 {% if "kunden.konto" in rechte %}
 <section class="karte breit">
   <h2>Kundenkonto</h2>
-  <p>Kontostand: <strong>{% if h.kontostand is not None %}{{ h.kontostand|floatformat:2 }} €{% else %}–{% endif %}</strong></p>
+  <p>Kontostand: <strong>{{ h.kontostand|default_if_none:0|floatformat:2 }} €</strong></p>
   <div class="tabelle-rahmen">
   <table class="tabelle">
     <thead><tr><th>Datum</th><th>Art</th><th>Soll</th><th>Haben</th><th>davon bar</th><th>Anmerkung</th><th>Eingetragen von</th></tr></thead>

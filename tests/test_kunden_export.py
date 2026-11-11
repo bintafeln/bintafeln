@@ -129,7 +129,7 @@ def test_export_vorgabe_und_admin(admin_client, daten):
                        "email"]  # fmt: skip
     e.save()
     zeilen = admin_client.get(EXPORT, {"tag": "Mo"}).content.decode().lstrip("﻿")
-    assert zeilen.splitlines()[1] == "0123;Mitte;aktiv;1;0;;;;Weg 1;1;Musterstadt;"
+    assert zeilen.splitlines()[1] == "0123;Mitte;aktiv;1;0;;;0,00;Weg 1;1;Musterstadt;"
     liste = admin_client.get(LISTE, {"tag": ""}).content.decode()
     assert "Als CSV-Datei (Excel)" in liste and 'form="auswahl"' in liste
 

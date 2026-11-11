@@ -69,7 +69,7 @@ def kunde_pdf(h: Haushalt) -> bytes:
             ("Anschrift", ", ".join(t for t in (h.strasse, f"{h.plz} {h.ort}".strip()) if t)),
             ("Telefon", h.telefon),
             ("E-Mail", h.email),
-            ("Kontostand", euro(h.kontostand) if h.kontostand is not None else ""),
+            ("Kontostand", euro(h.kontostand or 0)),
             ("Erwachsene laut Altsystem", h.anzahl_erwachsene),
             ("Kinder laut Altsystem", h.anzahl_kinder),
             *_zusatz(haushalt_felder, h.zusatz),

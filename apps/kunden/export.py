@@ -117,7 +117,7 @@ def zeile(h: Haushalt, keys, darf, zusatzfelder, kind_bis, heute) -> list[str]:
         "uhrzeit": f"{g.uhrzeit:%H:%M}" if g and g.uhrzeit else "",
         "status": h.stand(heute), "personen": erwachsene + kinder,
         "erwachsene": erwachsene, "kinder": kinder, "ausweis": _datum(h.ausweis_gueltig_bis),
-        "letzter_besuch": h.letzter_besuch_text, "kontostand": _zahl(h.kontostand),
+        "letzter_besuch": h.letzter_besuch_text, "kontostand": _zahl(h.kontostand or 0),
         "strasse": h.strasse, "plz": h.plz, "ort": h.ort, "telefon": h.telefon, "email": h.email,
     }  # fmt: skip
     rechte = {k: r for k, _, r in FELDER}
