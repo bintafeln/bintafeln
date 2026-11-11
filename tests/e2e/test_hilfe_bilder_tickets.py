@@ -91,9 +91,10 @@ def test_hilfe_bild_mail_empfaenger(angemeldet, admin, muster, benutzer_mit_roll
     _ohne_menue(seite)
     zeile = seite.locator("tr", has_text="Korrekturwunsch vom Einlass")
     zeile.locator("summary").click()
-    eintrag = zeile.locator("label", has_text="Anna Beispiel")
+    zeile.locator("label", has_text="Wie vorgesehen").click()
+    eintrag = zeile.locator("label", has_text="Anna Beispiel (anna@")
     eintrag.click()
-    expect(zeile.get_by_text("gespeichert")).to_be_visible()
+    expect(zeile.get_by_text("gespeichert").last).to_be_visible()
     aufnehmen(seite, "mail-empfaenger", seite.locator("section.karte").nth(1),
               Marke(zeile.locator("td").first, "rahmen", 1),
               Marke(zeile.locator("summary"), "rahmen", 2),

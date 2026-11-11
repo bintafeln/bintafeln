@@ -1363,7 +1363,25 @@ def test_mail_empfaenger_auswaehlen_speichert_sofort(angemeldet, admin, benutzer
     seite = angemeldet(admin)
     seite.goto("/einstellungen/mail/empfaenger/")
     zeile = seite.locator("tr", has_text="Korrekturwunsch vom Einlass")
+    expect(zeile.locator("summary")).to_contain_text("Wie vorgesehen")
     zeile.locator("summary").click()
-    zeile.get_by_text("anna (anna@example.org)").click()
+    zeile.locator("label", has_text="anna (anna@example.org)").click()
     expect(zeile.get_by_text("gespeichert")).to_be_visible()
-    assert korrekturen.empfaenger() == ["anna@example.org"]
+    assert set(korrekturen.empfaenger()) == {"anna@example.org", "bert@example.org"}
+
+    def gespeichert(erwartet):
+        """Das Speichern läuft kurz nach dem Klick im Hintergrund: darauf warten."""
+        for _ in range(50):
+            if korrekturen.empfaenger() == erwartet:
+                return True
+            seite.wait_for_timeout(100)
+        return False
+
+    # ohne „Wie vorgesehen“ bekommt nur Anna die Mail
+    zeile.locator("label", has_text="Wie vorgesehen").click()
+    expect(zeile.locator("summary")).not_to_contain_text("Wie vorgesehen")
+    assert gespeichert(["anna@example.org"])
+    # nichts angehakt: niemand
+    zeile.locator("label", has_text="anna (anna@example.org)").click()
+    expect(zeile.locator("summary")).to_contain_text("niemand")
+    assert gespeichert([])

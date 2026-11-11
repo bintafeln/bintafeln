@@ -147,9 +147,9 @@ def test_benachrichtigen_auswahl_nur_berechtigte(benutzer_mit_rolle):
     planer = person(benutzer_mit_rolle, "Pia Plan", rollen.BUERO, "pia@example.org")  # darf planen
     fahrer = person(benutzer_mit_rolle, "Fred Fahrer", rollen.FAHRER, "fred@example.org")  # nicht
     art = benachrichtigung.arten()["fahrdienst_ausfall"]
-    qs = EmpfaengerForm(arten=[art]).fields["fahrdienst_ausfall"].queryset
-    assert planer.konto in qs
-    assert fahrer.konto not in qs
+    werte = [w for w, _ in EmpfaengerForm(arten=[art]).fields["fahrdienst_ausfall"].choices]
+    assert str(planer.konto.pk) in werte
+    assert str(fahrer.konto.pk) not in werte
 
 
 def test_mail_an_die_fahrdienstleitung(team, benutzer_mit_rolle, settings,

@@ -10,8 +10,10 @@
 
 <section class="karte">
   <h2>Benachrichtigungen an Mitarbeitende</h2>
-  <p class="hinweis">Wie oft eine Benachrichtigung kommt (sofort, gesammelt oder nie), stellt jede Person selbst unter
-    „Mein Konto → Benachrichtigungen“ ein. Zur Auswahl stehen nur aktive Konten mit E-Mail-Adresse und dem passenden Recht.</p>
+  <p class="hinweis">In der Spalte „An wen“ haken Sie an, wer die Mail bekommt: „Wie vorgesehen“ steht für die
+    üblichen Empfänger, darunter stehen die einzelnen Personen (nur aktive Konten mit E-Mail-Adresse und dem passenden
+    Recht). <strong>Ist nichts angehakt, bekommt niemand die Mail.</strong> Wie oft eine Benachrichtigung kommt
+    (sofort, gesammelt oder nie), stellt jede Person selbst unter „Mein Konto → Benachrichtigungen“ ein.</p>
   <form method="post" data-autosave>
     {% csrf_token %}
     {{ form.non_field_errors }}
@@ -24,12 +26,10 @@
           <td data-titel="Mail"><strong>{{ z.art.titel }}</strong></td>
           <td data-titel="Wann">{{ z.art.wann|default:"–" }}{% if z.art.beschreibung %}<br><small class="hilfe">{{ z.art.beschreibung }}</small>{% endif %}</td>
           <td data-titel="An wen">
-            {% if z.art.wahl %}
-              {% if z.feld %}<label for="{{ z.feld.id_for_label }}" class="unsichtbar">{{ z.art.titel }}: Empfänger</label>
-              {{ z.feld }}{{ z.feld.errors }}{% endif %}
-              {% if z.niemand %}<label class="mail-niemand">{{ z.niemand }} Niemand bekommt diese Mail</label>{% endif %}
-              <small class="hilfe">{% if z.feld %}Ohne Auswahl{% else %}Empfänger{% endif %}: {{ z.art.wahl.leer }}.
-                Bekommt sie im Moment: {% if z.aus %}niemand{% elif z.aktuell %}{{ z.aktuell|join:", " }}{% elif z.art.wahl.fest %}niemand{% else %}wie eben beschrieben{% endif %}.</small>
+            {% if z.feld %}
+              <label for="{{ z.feld.id_for_label }}" class="unsichtbar">{{ z.art.titel }}: Empfänger</label>
+              {{ z.feld }}{{ z.feld.errors }}
+              {% if z.vorgesehen %}<small class="hilfe">Wie vorgesehen: {{ z.vorgesehen }}{% if z.namen %} (zurzeit {{ z.namen|join:", " }}){% endif %}.</small>{% endif %}
             {% else %}{{ z.art.an|default:"–" }}{% endif %}
           </td>
         </tr>

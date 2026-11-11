@@ -1,30 +1,30 @@
 {% load handbuch %}
 <p>Menü „Einstellungen → Tafel → Mail-Empfänger“. Die Seite zeigt <strong>jede Mail, die bintafeln verschickt</strong>:
   was es für eine Mail ist, wann sie kommt und an wen sie geht. So steht an einer Stelle, wer worüber informiert wird.</p>
-{% hilfe_bild "mail-empfaenger" "① Die Mail und wann sie kommt, ② Auswahl aufklappen, ③ die Personen anhaken, die diese Mail bekommen sollen – gespeichert wird sofort." %}
+{% hilfe_bild "mail-empfaenger" "① Die Mail und wann sie kommt, ② Auswahl aufklappen, ③ anhaken, wer die Mail bekommt: „Wie vorgesehen“ oder einzelne Personen; ohne Häkchen niemand. Gespeichert wird sofort." %}
 <h3>Benachrichtigungen an Mitarbeitende</h3>
 <ul>
-  <li><strong>Jede Benachrichtigung ist einstellbar:</strong> In der Spalte „An wen“ wählen Sie die Personen aus,
-    die diese Mail bekommen sollen – beim Korrekturwunsch vom Einlass, beim Sicherheitsupdate, beim neuen Antrag,
-    bei Ausfall und „wieder gesund“ in Fahrdienst und Dienstplan und beim neuen Ticket. Zur Auswahl stehen nur
-    aktive Konten mit E-Mail-Adresse, die den jeweiligen Bereich im Programm auch sehen dürfen.</li>
-  <li><strong>Ohne Auswahl</strong> gilt die Vorgabe, die unter dem Feld steht: bei Korrekturwunsch, Sicherheitsupdate
-    und Fahrdienst alle mit dem passenden Recht, beim neuen Antrag niemand, beim Dienstplan die Teamleitung des
-    betroffenen Ausgabetags, beim neuen Ticket die Zuständigen der Kategorie. Darunter steht auch, wer die Mail im
-    Moment bekommt.</li>
-  <li><strong>Mit Auswahl</strong> bekommen nur die gewählten Personen die Mail – anstelle der Vorgabe. Wählen Sie
-    z. B. beim Dienstplan-Ausfall eine Person, geht die Mail an sie und nicht mehr an die Teamleitung.</li>
-  <li><strong>Niemand:</strong> Soll eine Mail gar nicht verschickt werden, setzen Sie unter dem Feld den Haken
-    „Niemand bekommt diese Mail“. Dann geht sie an keinen – auch wenn Personen ausgewählt sind. Die Sache selbst
-    (z. B. der Korrekturwunsch) steht weiterhin im Programm.</li>
-  <li><strong>Beispiel:</strong> Nicht alle Admins sollen Korrekturwünsche per Mail bekommen. Wählen Sie bei
-    „Korrekturwunsch vom Einlass“ nur die zuständige Person aus. Entscheiden dürfen den Wunsch weiterhin alle mit dem
-    Recht; nur die Mail geht an die Ausgewählten.</li>
-  <li>Wird eine ausgewählte Person gesperrt oder verliert sie das Recht, bekommt sie keine Mail mehr. Ist dann niemand
-    mehr ausgewählt, gilt wieder die Vorgabe – eine Mail geht also nicht unbemerkt ins Leere.</li>
-  <li><strong>Antwort zu einem Ticket</strong> geht immer an die Person, die es gemeldet hat, und an die zuständige
-    Person. Hier lässt sich niemand anderes wählen, die Mail lässt sich aber mit „Niemand bekommt diese Mail“
-    abstellen.</li>
+  <li><strong>Jede Benachrichtigung ist einstellbar:</strong> In der Spalte „An wen“ klappen Sie die Auswahl auf und
+    haken an, wer die Mail bekommt – beim Korrekturwunsch vom Einlass, beim Sicherheitsupdate, beim neuen Antrag, bei
+    Ausfall und „wieder gesund“ in Fahrdienst und Dienstplan und bei Tickets.</li>
+  <li><strong>Wie vorgesehen:</strong> Der erste Eintrag steht für die üblichen Empfänger – z. B. alle, die
+    Korrekturwünsche entscheiden dürfen (die Namen stehen dahinter), beim Dienstplan die Teamleitung des betroffenen
+    Ausgabetags, beim neuen Ticket die Zuständigen der Kategorie. Nach der Einrichtung ist er angehakt.</li>
+  <li><strong>Einzelne Personen:</strong> Darunter stehen die Personen, die Sie auswählen können: aktive Konten mit
+    E-Mail-Adresse, die den jeweiligen Bereich im Programm auch sehen dürfen. Haken Sie nur Personen an (ohne „Wie
+    vorgesehen“), bekommen nur sie die Mail. Beides zusammen geht auch: die üblichen Empfänger und zusätzlich die
+    angehakten Personen.</li>
+  <li><strong>Niemand:</strong> Ist nichts angehakt, steht im Feld „niemand“, und die Mail wird gar nicht
+    verschickt. Die Sache selbst (z. B. der Korrekturwunsch) steht weiterhin im Programm.</li>
+  <li><strong>Beispiel:</strong> Nicht alle Admins sollen Korrekturwünsche per Mail bekommen. Nehmen Sie bei
+    „Korrekturwunsch vom Einlass“ den Haken bei „Wie vorgesehen“ weg und haken Sie nur die zuständige Person an.
+    Entscheiden dürfen den Wunsch weiterhin alle mit dem Recht; nur die Mail geht an die Ausgewählte.</li>
+  <li><strong>Neuer Antrag</strong> hat keinen Eintrag „Wie vorgesehen“: Die Mail bekommt nur, wer angehakt ist.</li>
+  <li><strong>Antwort zu einem Ticket</strong> geht an die Person, die es gemeldet hat, und an die zuständige
+    Person. Hier gibt es nur „Wie vorgesehen“ oder niemand.</li>
+  <li>Wird eine ausgewählte Person gesperrt oder verliert sie das Recht, bekommt sie keine Mail mehr. Ist dann von
+    den Ausgewählten niemand mehr übrig, gehen die Mails wieder an die üblichen Empfänger – eine Mail geht also
+    nicht unbemerkt ins Leere.</li>
   <li><strong>Wie oft</strong> eine Benachrichtigung kommt – sofort, gesammelt oder nie –, stellt jede Person selbst
     unter „Mein Konto → Benachrichtigungen“ ein. Das Sicherheitsupdate lässt sich dort nicht abschalten.</li>
 </ul>

@@ -39,7 +39,7 @@ class Empfaengerwahl:
     ``leer`` sagt, wer die Mail ohne Auswahl bekommt. Ohne ``lesen``/``speichern`` liegt die
     Auswahl in ``MailEmpfaenger``; bestehende Felder (Anträge, Fahrdienst) geben beide an."""
 
-    # None: keine Auswahl von Personen, die Mail lässt sich nur ganz abstellen („niemand“)
+    # None: keine Auswahl von Personen, nur „wie vorgesehen“ oder niemand
     berechtigte: Callable | None
     leer: str
     lesen: Callable | None = None
@@ -90,20 +90,33 @@ def gewaehlt(art: "Art") -> set[int]:
     return set(eintrag.personen.values_list("pk", flat=True)) if eintrag else set()
 
 
-def niemand(art: "Art") -> bool:
-    """Hat die Tafel für diese Mail „niemand“ gewählt? Dann wird sie gar nicht verschickt."""
+VORGABE = "vorgabe"  # Wert des Eintrags „wie vorgesehen“ in der Auswahl
+
+
+def hat_vorgabe(art: "Art") -> bool:
+    """Gibt es für diese Mail vorgesehene Empfänger (alle Berechtigten, Teamleitung …)? Beim
+    neuen Antrag nicht: Dort bekommt die Mail nur, wer ausgewählt ist."""
+    return art.wahl.leer != "niemand"
+
+
+def vorgabe(art: "Art") -> bool:
+    """Geht die Mail an die vorgesehenen Empfänger? Solange die Tafel nichts eingestellt hat:
+    ja, wenn niemand ausgewählt ist (so war es vor der Auswahl „wie vorgesehen“)."""
+    if not hat_vorgabe(art):
+        return False
     from apps.core.models import MailEmpfaenger
 
-    return MailEmpfaenger.objects.filter(art=art.kennung, niemand=True).exists()
+    eintrag = MailEmpfaenger.objects.filter(art=art.kennung).first()
+    return eintrag.vorgabe if eintrag else not gewaehlt(art)
 
 
-def niemand_speichern(art: "Art", wert: bool) -> None:
+def vorgabe_speichern(art: "Art", wert: bool) -> None:
     from apps.core.models import MailEmpfaenger
 
     eintrag, _ = MailEmpfaenger.objects.get_or_create(art=art.kennung)
-    if eintrag.niemand != wert:
-        eintrag.niemand = wert
-        eintrag.save(update_fields=["niemand"])
+    if eintrag.vorgabe != wert:
+        eintrag.vorgabe = wert
+        eintrag.save(update_fields=["vorgabe"])
 
 
 def wahl_speichern(art: "Art", konten) -> None:
@@ -116,42 +129,49 @@ def wahl_speichern(art: "Art", konten) -> None:
     eintrag.personen.set(konten)
 
 
-def aktuelle(art: "Art") -> list:
-    """Wer die Gruppen-Mail im Moment bekommt. Zentrale Auswahl: die ausgewählten Berechtigten,
-    ohne Auswahl alle Berechtigten – wer das Recht verloren hat oder gesperrt ist, bekommt
-    nichts mehr; bleibt so niemand übrig, geht die Mail wieder an alle. Eigene Ablage (Anträge,
-    Fahrdienst): die ausgewählten aktiven Konten, ohne Auswahl die Vorgabe ``leer``. Hat die
-    Tafel „niemand“ gewählt, bekommt sie keiner."""
-    if niemand(art):
-        return []
-    if art.wahl.berechtigte is None:
-        return []
-    berechtigte = art.wahl.berechtigte()
+def _ausgewaehlte(art: "Art") -> tuple[list, bool]:
+    """(ausgewählte Konten, die die Mail noch bekommen dürfen; ob überhaupt jemand ausgewählt
+    war). Zentrale Ablage: nur Berechtigte; eigene Ablage (Anträge, Fahrdienst): aktive Konten
+    mit E-Mail."""
     wahl = gewaehlt(art)
+    if not wahl or art.wahl.berechtigte is None:
+        return [], False
     if not art.wahl.lesen:
-        ausgewaehlt = [k for k in berechtigte if k.pk in wahl]
-        return ausgewaehlt or (berechtigte if art.wahl.fest else [])
+        return [k for k in art.wahl.berechtigte() if k.pk in wahl], True
     from django.contrib.auth import get_user_model
 
     konten = get_user_model().objects.filter(pk__in=wahl, is_active=True).exclude(email="")
-    konten = list(konten.order_by("last_name", "first_name", "username"))
-    return konten or ([] if art.wahl.leer == "niemand" else berechtigte)
+    return list(konten.order_by("last_name", "first_name", "username")), True
 
 
-def an(kennung: str, vorgabe) -> list[str]:
+def _mit_vorgabe(art: "Art") -> tuple[list, bool]:
+    """(ausgewählte Konten, ob zusätzlich die vorgesehenen Empfänger die Mail bekommen). Sind
+    alle Ausgewählten gesperrt oder ohne Recht, gilt wieder die Vorgabe – eine Mail geht nicht
+    unbemerkt ins Leere. Ist gar nichts gewählt, bekommt sie niemand."""
+    konten, gewaehlt_ = _ausgewaehlte(art)
+    return konten, vorgabe(art) or (gewaehlt_ and not konten and hat_vorgabe(art))
+
+
+def aktuelle(art: "Art") -> list:
+    """Wer die Mail im Moment bekommt, soweit es sich ohne den Einzelfall sagen lässt: die
+    ausgewählten Personen, dazu – bei „wie vorgesehen“ und fester Vorgabe – alle Berechtigten."""
+    konten, mit = _mit_vorgabe(art)
+    if mit and art.wahl.fest and art.wahl.berechtigte:
+        gesehen = {k.pk for k in konten}
+        konten = konten + [k for k in art.wahl.berechtigte() if k.pk not in gesehen]
+    return konten
+
+
+def an(kennung: str, vorgesehen) -> list[str]:
     """Mailadressen für eine Mail, deren Vorgabe vom Einzelfall abhängt (``fest=False``): die
-    unter „Mail-Empfänger“ ausgewählten Berechtigten, sonst ``vorgabe``; bei „niemand“ keiner."""
-    vorgabe = sorted(set(vorgabe))
+    unter „Mail-Empfänger“ ausgewählten Personen, dazu – bei „wie vorgesehen“ – ``vorgesehen``.
+    Ist nichts von beidem gewählt, bekommt sie niemand."""
+    vorgesehen = set(vorgesehen)
     art = arten().get(kennung)
     if art is None or art.wahl is None:
-        return vorgabe
-    if niemand(art):
-        return []
-    if art.wahl.berechtigte is None:
-        return vorgabe
-    wahl = gewaehlt(art)
-    konten = [k for k in art.wahl.berechtigte() if k.pk in wahl]
-    return sorted({k.email for k in konten}) or vorgabe
+        return sorted(vorgesehen)
+    konten, mit = _mit_vorgabe(art)
+    return sorted({k.email for k in konten} | (vorgesehen if mit else set()))
 
 
 def empfaenger(kennung: str) -> list[str]:
