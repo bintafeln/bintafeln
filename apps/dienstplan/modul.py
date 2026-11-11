@@ -108,9 +108,14 @@ MODUL = Modul(
     benachrichtigungen=(
         Art("dienstplan_ausfall", "Dienstplan: Ausfall",
             "Entfällt, wenn bis zum Versand für alle betroffenen Plätze Ersatz eingetragen ist.",
-            fuer=_darf("dienstplan.planen", "dienstplan.sehen"), offen=_ausfall_offen),
+            fuer=_darf("dienstplan.planen", "dienstplan.sehen"), offen=_ausfall_offen,
+            wann="Sobald für eine Helferin oder einen Helfer ein Ausfall eingetragen wird.",
+            an="Die Teamleitung der betroffenen Ausgabetage (im Dienstplan je Ausgabetag "
+               "eingetragen); ohne Teamleitung alle, die den Dienstplan planen dürfen."),
         Art("dienstplan_gesund", "Dienstplan: wieder gesund",
-            fuer=_darf("dienstplan.planen", "dienstplan.sehen")),
+            fuer=_darf("dienstplan.planen", "dienstplan.sehen"),
+            wann="Sobald sich jemand vor dem Ende des Ausfalls wieder gesund meldet.",
+            an="Dieselben Personen wie beim Ausfall."),
     ),
     titel="Dienstplan der Ausgabe",
     beschreibung="Dienstplan je Ausgabestelle und Ausgabetag: Aufgaben, feste Besetzung, Ausfälle "

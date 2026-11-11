@@ -1,5 +1,6 @@
 """Beschreibung des Moduls Aufruf für den Modulrahmen (ADR 0049). Ohne Datenbankzugriff."""
 
+from apps.core.mailuebersicht import Mail
 from apps.core.module import Modul
 
 
@@ -46,6 +47,12 @@ def menue(eintrag):
 
 MODUL = Modul(
     kennung="aufruf",
+    mails=(
+        Mail("Aufruf-Reihenfolge nach der Ausgabe",
+             "Nach Abschluss der Ausgabe, wenn in den Aufruf-Einstellungen eine Adresse steht.",
+             "Die dort eingetragene Adresse (nur Kundennummern, als CSV).",
+             ("Aufruf, Monitor und Kiosk", "aufruf:einstellungen", "einstellungen.aufruf")),
+    ),
     titel="Aufruf",
     beschreibung="Kundennummern der Reihe nach aufrufen: Monitor, Handy-Steuerung, Kiosk",
     app_label="aufruf",

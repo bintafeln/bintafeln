@@ -33,6 +33,19 @@ HAEUFIGKEITEN = [
 
 
 @dataclass(frozen=True)
+class Empfaengerwahl:
+    """Mail an eine Gruppe: Wer sie bekommt, stellt die Tafel zentral unter „Einstellungen →
+    Mail-Empfänger“ ein (ADR 0125). ``berechtigte()`` liefert die Konten, die zur Wahl stehen;
+    ``leer`` sagt, wer die Mail ohne Auswahl bekommt. Ohne ``lesen``/``speichern`` liegt die
+    Auswahl in ``MailEmpfaenger``; bestehende Felder (Anträge, Fahrdienst) geben beide an."""
+
+    berechtigte: Callable
+    leer: str
+    lesen: Callable | None = None
+    speichern: Callable | None = None
+
+
+@dataclass(frozen=True)
 class Art:
     kennung: str
     titel: str
@@ -42,6 +55,66 @@ class Art:
     # offen(schluessel) -> bool: ist die Sache noch offen? Sonst entfällt die gesammelte Meldung.
     offen: Callable | None = None
     nie_erlaubt: bool = True
+    # Für die Übersicht „Mail-Empfänger“: wann die Mail kommt, an wen (fester Empfängerkreis)
+    # oder die Auswahl der Empfänger
+    wann: str = ""
+    an: str = ""
+    wahl: Empfaengerwahl | None = None
+
+
+def mit_recht(code: str, ohne_stellen: bool = False) -> list:
+    """Aktive Konten mit E-Mail und dem Recht ``code``; ``ohne_stellen``: keine
+    Ausgabestellen-Konten."""
+    from django.contrib.auth import get_user_model
+
+    from apps.konten import rollen
+
+    konten = get_user_model().objects.filter(is_active=True).exclude(email="")
+    if ohne_stellen:
+        konten = konten.filter(stelle__isnull=True)
+    konten = konten.order_by("last_name", "first_name", "username")
+    return [k for k in konten if rollen.hat_recht(k, code)]
+
+
+def gewaehlt(art: "Art") -> set[int]:
+    """Die für diese Mail ausgewählten Konten (Schlüssel); leer = keine Auswahl getroffen."""
+    if art.wahl and art.wahl.lesen:
+        return set(art.wahl.lesen())
+    from apps.core.models import MailEmpfaenger
+
+    eintrag = MailEmpfaenger.objects.filter(art=art.kennung).first()
+    return set(eintrag.personen.values_list("pk", flat=True)) if eintrag else set()
+
+
+def wahl_speichern(art: "Art", konten) -> None:
+    if art.wahl.speichern:
+        art.wahl.speichern(konten)
+        return
+    from apps.core.models import MailEmpfaenger
+
+    eintrag, _ = MailEmpfaenger.objects.get_or_create(art=art.kennung)
+    eintrag.personen.set(konten)
+
+
+def aktuelle(art: "Art") -> list:
+    """Wer die Gruppen-Mail im Moment bekommt. Zentrale Auswahl: die ausgewählten Berechtigten,
+    ohne Auswahl alle Berechtigten – wer das Recht verloren hat oder gesperrt ist, bekommt
+    nichts mehr; bleibt so niemand übrig, geht die Mail wieder an alle. Eigene Ablage (Anträge,
+    Fahrdienst): die ausgewählten aktiven Konten, ohne Auswahl die Vorgabe ``leer``."""
+    berechtigte = art.wahl.berechtigte()
+    wahl = gewaehlt(art)
+    if not art.wahl.lesen:
+        return [k for k in berechtigte if k.pk in wahl] or berechtigte
+    from django.contrib.auth import get_user_model
+
+    konten = get_user_model().objects.filter(pk__in=wahl, is_active=True).exclude(email="")
+    konten = list(konten.order_by("last_name", "first_name", "username"))
+    return konten or ([] if art.wahl.leer == "niemand" else berechtigte)
+
+
+def empfaenger(kennung: str) -> list[str]:
+    """Mailadressen für eine Gruppen-Mail mit Auswahl der Empfänger (siehe ``aktuelle``)."""
+    return sorted({k.email for k in aktuelle(arten()[kennung])})
 
 
 def _recht(code):
@@ -57,6 +130,18 @@ def _antrag_offen(schluessel: str) -> bool:
     from apps.antraege.models import Antrag
 
     return Antrag.objects.filter(pk=schluessel or 0, status=Antrag.Status.NEU).exists()
+
+
+def _antrag_lesen():
+    from apps.antraege.models import AntragEinstellungen
+
+    return AntragEinstellungen.laden().benachrichtigen.values_list("pk", flat=True)
+
+
+def _antrag_speichern(konten) -> None:
+    from apps.antraege.models import AntragEinstellungen
+
+    AntragEinstellungen.laden().benachrichtigen.set(konten)
 
 
 def _antrag_fuer(benutzer) -> bool:
@@ -75,13 +160,23 @@ def _korrektur_offen(schluessel: str) -> bool:
 KERN = (
     Art("antrag_neu", "Neuer Antrag eingegangen",
         "Entfällt, wenn der Antrag bis zum Versand bearbeitet wurde.",
-        fuer=_antrag_fuer, offen=_antrag_offen),
+        fuer=_antrag_fuer, offen=_antrag_offen,
+        wann="Sobald jemand das Antragsformular abgeschickt hat.",
+        wahl=Empfaengerwahl(lambda: mit_recht("antraege.sehen", ohne_stellen=True), "niemand",
+                            _antrag_lesen, _antrag_speichern)),
     Art("korrekturwunsch", "Korrekturwunsch vom Einlass",
         "Entfällt, wenn der Wunsch bis zum Versand entschieden wurde.",
-        fuer=_recht("korrekturen.entscheiden"), offen=_korrektur_offen),
+        fuer=_recht("korrekturen.entscheiden"), offen=_korrektur_offen,
+        wann="Sobald am Einlass um die Rücknahme einer Abholung, Zahlung oder Teilnahme "
+             "gebeten wird.",
+        wahl=Empfaengerwahl(lambda: mit_recht("korrekturen.entscheiden"),
+                            "alle, die Korrekturwünsche entscheiden dürfen")),
     Art("sicherheitsupdate", "Sicherheitsupdate verfügbar",
         "Lässt sich nicht abschalten, höchstens täglich sammeln.",
-        fuer=_recht("system.update"), nie_erlaubt=False),
+        fuer=_recht("system.update"), nie_erlaubt=False,
+        wann="Einmal je Sicherheitsupdate, sobald bintafeln davon erfährt.",
+        wahl=Empfaengerwahl(lambda: mit_recht("system.update"),
+                            "alle, die das Programm aktualisieren dürfen")),
 )  # fmt: skip
 
 

@@ -7,6 +7,8 @@
   <p class="hinweis">Das Formular ist öffentlich unter
     <a href="{% url 'antrag:start' %}" target="_blank" rel="noopener">{{ request.scheme }}://{{ request.get_host }}{% url 'antrag:start' %}</a>
     erreichbar, in 29 Sprachen. Auf der Webseite der Tafel einfach diesen Link setzen.</p>
+  <p class="hinweis">Wer bei einem neuen Antrag eine Mail bekommt, steht bei allen anderen Mails unter
+    {% if "einstellungen.mail" in rechte %}<a href="{% url 'core:mail_empfaenger' %}">Einstellungen → Mail-Empfänger</a>{% else %}„Einstellungen → Mail-Empfänger“{% endif %}.</p>
   <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular.html" %}

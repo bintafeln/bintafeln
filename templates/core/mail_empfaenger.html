@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block titel %}Mail-Empfänger{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Wer bekommt welche Mail?</h1>
+  <p class="hinweis">Hier stehen alle Mails, die bintafeln verschickt: was, wann und an wen. Bei Mails an eine Gruppe
+    legen Sie fest, wer sie bekommt. Den Mailserver richten Sie unter <a href="{% url 'core:mail_einstellungen' %}">E-Mail</a> ein{% if darf_archiv %};
+    was tatsächlich verschickt wurde, steht unter <a href="{% url 'core:mails' %}">Gesendete Mails</a>{% endif %}.</p>
+</section>
+
+<section class="karte">
+  <h2>Benachrichtigungen an Mitarbeitende</h2>
+  <p class="hinweis">Wie oft eine Benachrichtigung kommt (sofort, gesammelt oder nie), stellt jede Person selbst unter
+    „Mein Konto → Benachrichtigungen“ ein. Zur Auswahl stehen nur aktive Konten mit E-Mail-Adresse und dem passenden Recht.</p>
+  <form method="post" data-autosave>
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="tabelle-rahmen">
+    <table class="tabelle mail-empfaenger">
+      <thead><tr><th>Mail</th><th>Wann</th><th>An wen</th></tr></thead>
+      <tbody>
+      {% for z in zeilen %}
+        <tr>
+          <td data-titel="Mail"><strong>{{ z.art.titel }}</strong></td>
+          <td data-titel="Wann">{{ z.art.wann|default:"–" }}{% if z.art.beschreibung %}<br><small class="hilfe">{{ z.art.beschreibung }}</small>{% endif %}</td>
+          <td data-titel="An wen">
+            {% if z.feld %}
+              <label for="{{ z.feld.id_for_label }}" class="unsichtbar">{{ z.art.titel }}: Empfänger</label>
+              {{ z.feld }}{{ z.feld.errors }}
+              <small class="hilfe">Ohne Auswahl: {{ z.art.wahl.leer }}. Bekommt sie im Moment:
+                {% if z.aktuell %}{{ z.aktuell|join:", " }}{% else %}niemand{% endif %}.</small>
+            {% else %}{{ z.art.an|default:"–" }}{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+
+<section class="karte">
+  <h2>Weitere Mails</h2>
+  <p class="hinweis">Diese Mails gehen an Kunden, Spender oder einzelne Personen. Hier gibt es nichts auszuwählen; Texte
+    und Einstellungen stehen dort, wohin der Link führt.</p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle">
+    <thead><tr><th>Mail</th><th>Wann</th><th>An wen</th><th>Einstellen</th></tr></thead>
+    <tbody>
+    {% for w in weitere %}
+      <tr>
+        <td data-titel="Mail"><strong>{{ w.mail.titel }}</strong></td>
+        <td data-titel="Wann">{{ w.mail.wann }}</td>
+        <td data-titel="An wen">{{ w.mail.an }}</td>
+        <td data-titel="Einstellen">{% if w.link %}<a href="{{ w.link }}">{{ w.linktext }}</a>{% else %}–{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

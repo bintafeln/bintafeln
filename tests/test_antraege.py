@@ -1692,10 +1692,10 @@ def test_einstellungen_und_texte(admin_client, benutzer_mit_rolle):
     aus.save()
     url = reverse("antraege:einstellungen")
     seite = admin_client.get(url).content.decode()
-    assert "berta" in seite and "Arabisch" in seite and str(AntragEinstellungen.laden())
+    assert "Arabisch" in seite and str(AntragEinstellungen.laden())
     assert "Anton Ausgabe" not in seite  # kein Antrags-Recht → nicht in der Liste
     werte = {f: "optional" for f in AntragEinstellungen.FELDER}
-    werte |= {"aktiv": "on", "modus": "beides", "benachrichtigen": [b.pk],
+    werte |= {"aktiv": "on", "modus": "beides",
               "neu_nach_tagen": 0, "erledigt_nach_tagen": 0, "papierkorb_nach_tagen": 90,
               "max_je_stunde": 5, "erste_nummer": 4201, "gebiet_pruefen": "aus",
               "datenschutz_url": "tafel.example.org/ds",
@@ -1703,6 +1703,12 @@ def test_einstellungen_und_texte(admin_client, benutzer_mit_rolle):
               "voraussetzungen_url": "https://tafel.example.org/wer",
               "einverstaendnis_url": "tafel.example.org/einverstaendnis.pdf"}  # fmt: skip
     admin_client.post(url, werte)
+    # Wer benachrichtigt wird, steht zentral unter „Mail-Empfänger“ (ADR 0125)
+    zentral = reverse("core:mail_empfaenger")
+    assert zentral in seite
+    auswahl = admin_client.get(zentral).content.decode()
+    assert "berta" in auswahl and "Anton Ausgabe" not in auswahl
+    admin_client.post(zentral, {"antrag_neu": [b.pk]})
     e = AntragEinstellungen.laden()
     assert e.aktiv and list(e.benachrichtigen.all()) == [b]
     assert e.datenschutz_url == "https://tafel.example.org/ds"

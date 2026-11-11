@@ -1350,3 +1350,20 @@ def test_stempeln_am_aushang_monitor(seite, admin, benutzer_mit_rolle):
     fenster.get_by_role("button", name="Weiter").click()
     expect(fenster.get_by_role("button", name="Gehen", exact=True)).to_be_visible()
     expect(fenster.get_by_role("button", name="Pause", exact=True)).to_be_visible()
+
+
+def test_mail_empfaenger_auswaehlen_speichert_sofort(angemeldet, admin, benutzer_mit_rolle):
+    """Zentrale Seite „Wer bekommt welche Mail“ (ADR 0125): Häkchen setzen genügt."""
+    from apps.ausgabe import korrekturen
+
+    for name in ("anna", "bert"):
+        b = benutzer_mit_rolle(name, rollen.ADMIN)
+        b.email = f"{name}@example.org"
+        b.save()
+    seite = angemeldet(admin)
+    seite.goto("/einstellungen/mail/empfaenger/")
+    zeile = seite.locator("tr", has_text="Korrekturwunsch vom Einlass")
+    zeile.locator("summary").click()
+    zeile.get_by_text("anna (anna@example.org)").click()
+    expect(zeile.get_by_text("gespeichert")).to_be_visible()
+    assert korrekturen.empfaenger() == ["anna@example.org"]

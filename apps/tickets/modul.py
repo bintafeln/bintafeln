@@ -72,7 +72,12 @@ MODUL = Modul(
     benachrichtigungen=(
         Art("ticket_neu", "Neues Ticket in meiner Kategorie",
             "Entfällt, wenn es bis zum Versand schon jemand übernommen oder erledigt hat.",
-            fuer=_zustaendig, offen=_ticket_offen),
-        Art("ticket_antwort", "Antwort oder neuer Status zu meinem Ticket"),
+            fuer=_zustaendig, offen=_ticket_offen,
+            wann="Sobald jemand ein Ticket anlegt.",
+            an="Die Zuständigen der Kategorie (Personen und Rollen, einstellbar unter "
+               "Einstellungen → Tickets)."),
+        Art("ticket_antwort", "Antwort oder neuer Status zu meinem Ticket",
+            wann="Sobald jemand auf ein Ticket antwortet oder den Status ändert.",
+            an="Wer das Ticket gemeldet hat."),
     ),
 )  # fmt: skip
