@@ -5,6 +5,8 @@ from urllib.parse import urlencode
 from django import template
 from django.utils.html import format_html
 
+from apps.core import listen
+
 register = template.Library()
 
 
@@ -28,6 +30,10 @@ def blaettern(context, seite, abfrage=None, ziel="", zusatz="", zurueck="← zur
         "weiter_text": weiter,
         "zurueck": link(seite.previous_page_number()) if seite.has_previous() else "",
         "weiter": link(seite.next_page_number()) if seite.has_next() else "",
+        # „alle“ gewählt, aber die Liste ist zu lang für eine Seite
+        "begrenzt": listen.ALLE_HOECHSTENS
+        if seite.paginator.per_page == listen.ALLE_HOECHSTENS
+        else 0,
     }  # fmt: skip
 
 
