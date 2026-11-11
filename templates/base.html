@@ -46,6 +46,7 @@
     {% endif %}
     {# Wird die Zeile zu eng, blendet static/js/kopfzeile.js nach und nach .kuerz-1 … .kuerz-5 aus #}
     <span class="kopf-programm kuerz-3" title="{{ programm.name }} – {{ programm.untertitel }}"><strong>{{ programm.name }}</strong><span class="kopf-untertitel kuerz-1">{{ programm.untertitel }}</span></span>
+    {% if demo %}<a class="kopf-github" href="{{ programm.quelltext }}" target="_blank" rel="noopener" title="Quelltext und Anleitung von {{ programm.name }} auf GitHub">GitHub<span class="kuerz-2"> – Quelltext &amp; Anleitung</span> ↗</a>{% endif %}
     <div class="kopf-rechts">
       {% if ausgabestelle is not None or ausgabestellen_wahl %}{% include "ausgabe/_fortschritt.html" %}{% endif %}
       {% for vorlage in kopf_module %}{% include vorlage %}{% endfor %}
@@ -62,7 +63,7 @@
     </div>
   </header>
 
-  {% if demo %}<p class="demo-hinweis">Öffentliche Demo – alle Besucher teilen sich diese Installation und sehen dieselben Daten. Bitte keine echten personenbezogenen Daten eingeben. Alle Daten sind erfunden und werden jede Nacht zurückgesetzt.</p>{% endif %}
+  {% if demo %}<p class="demo-hinweis">Öffentliche Demo – alle Besucher teilen sich diese Installation und sehen dieselben Daten. Bitte keine echten personenbezogenen Daten eingeben. Alle Daten sind erfunden und werden jede Nacht zurückgesetzt. {{ programm.name }} ist freie Software: Quelltext und Anleitung zum Selbst-Betreiben stehen auf <a href="{{ programm.quelltext }}" target="_blank" rel="noopener">GitHub</a>.</p>{% endif %}
   <div class="rahmen">
   {% if menue %}
   <button type="button" class="menue-ausfahren" data-menue-ausfahren aria-controls="seitenmenue" aria-expanded="false" title="Menü ausfahren">»<span class="unsichtbar"> Menü ausfahren</span></button>

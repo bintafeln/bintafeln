@@ -102,6 +102,11 @@ def test_fehlerhafte_beispieldaten(demo, tmp_path, monkeypatch):
 def test_hinweise_und_sperren(demo, client, admin, anmelden, benutzer_mit_rolle):
     anmeldung = client.get(reverse("konten:anmelden")).content.decode()
     assert "Öffentliche Demo" in anmeldung and PASSWORT in anmeldung and "demo-buero" in anmeldung
+    # Hinweis auf Quelltext und Anleitung: in der Kopfzeile und in der Hinweiszeile
+    from bintafeln import programm
+
+    assert anmeldung.count(f'href="{programm.QUELLTEXT_URL}"') == 2
+    assert 'class="kopf-github"' in anmeldung
     b = benutzer_mit_rolle("berta", rollen.BUERO)
     assert not zwei_faktor.ist_pflicht(b)
     anmelden(client, b)
@@ -115,7 +120,8 @@ def test_hinweise_und_sperren(demo, client, admin, anmelden, benutzer_mit_rolle)
 
 
 def test_ohne_demo_keine_hinweise(client, admin):
-    assert "Demo" not in client.get(reverse("konten:anmelden")).content.decode()
+    seite = client.get(reverse("konten:anmelden")).content.decode()
+    assert "Demo" not in seite and "kopf-github" not in seite and "github.com" not in seite
 
 
 @pytest.mark.django_db(transaction=True)  # zweimal zurücksetzen braucht echte Transaktionen
