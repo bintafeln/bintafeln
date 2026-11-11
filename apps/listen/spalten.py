@@ -87,7 +87,7 @@ HAUSHALT = [
            lambda h, k: h.einkommensart.bezeichnung if h.einkommensart else "", STAMMDATEN),
     Spalte("staatsangehoerigkeit", "Staatsangehörigkeit (Hauptperson)",
            lambda h, k: (_hp(h).staatsangehoerigkeit if _hp(h) else ""), STAMMDATEN),
-    Spalte("kontostand", "Kontostand", lambda h, k: h.kontostand, KONTO, zahl=True),
+    Spalte("kontostand", "Kontostand", lambda h, k: h.kontostand or 0, KONTO, zahl=True),
     Spalte("strasse", "Straße", lambda h, k: h.strasse, KONTAKT),
     Spalte("plz", "PLZ", lambda h, k: h.plz, KONTAKT),
     Spalte("ort", "Ort", lambda h, k: h.ort, KONTAKT),
