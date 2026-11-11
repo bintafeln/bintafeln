@@ -1,5 +1,8 @@
 # Demoversion einrichten
 
+> Nur ansehen? Die öffentliche Demo des Projekts läuft unter <https://demo.bintafeln.de>. Diese
+> Anleitung braucht nur, wer eine **eigene** Demo betreiben möchte.
+
 Die Demo ist eine **eigene, vollständig getrennte Installation** von bintafeln. Sie hat einen
 eigenen Ordner, eigene Container, eine eigene Datenbank und eine eigene `.env`. Mit einer echten
 Tafel teilt sie nichts; sie enthält nur erfundene Daten und wird jede Nacht zurückgesetzt
