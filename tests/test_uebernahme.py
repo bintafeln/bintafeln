@@ -1,4 +1,4 @@
-"""Bexat-Import-Modul (ADR 0094). Alle Daten sind erfunden."""
+"""Modul „Übernahme aus einem anderen Programm“ (ADR 0094). Alle Daten sind erfunden."""
 
 import datetime as dt
 import io
@@ -7,14 +7,14 @@ import openpyxl
 import pytest
 from django.urls import reverse
 
-from apps.bexat import konvertieren
-from apps.bexat.models import BexatEinstellungen
+from apps.uebernahme import konvertieren
+from apps.uebernahme.models import UebernahmeEinstellungen
 
 pytestmark = pytest.mark.django_db
 
 
 def _xlsx(blaetter: dict[str, list[list]]) -> bytes:
-    """Baut eine Bexat-ähnliche .xlsx aus {Blattname: [Kopfzeile, Datenzeilen …]}."""
+    """Baut eine passende .xlsx aus {Blattname: [Kopfzeile, Datenzeilen …]}."""
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
     for name, zeilen in blaetter.items():
@@ -249,7 +249,7 @@ def test_umwandeln_ohne_zuordnung_hinweis():
 
 
 def test_umwandeln_unlesbare_datei():
-    with pytest.raises(konvertieren.BexatFehler):
+    with pytest.raises(konvertieren.UebernahmeFehler):
         konvertieren.umwandeln(b"keine excel-datei")
 
 
@@ -258,7 +258,7 @@ def _besuche_xlsx() -> bytes:
     return _xlsx(
         {
             "Sheet1": [
-                ["Bexat Tafelprogramm - kunden die da waren"],
+                ["Tafelprogramm - kunden die da waren"],
                 ["#", "Kundennummer", "Kundengruppe", "Letzter Besuch", "Uhrzeit",
                  "Tafelausweis gültig", "Kontostand", "Beitrag"],
                 [1, "01294", "kleiner Markt Do (DO)", "05.11.2026", "16:09", "30.04.2027",
@@ -284,7 +284,7 @@ def test_besuche_umwandeln():
 
 def test_besuche_umwandeln_falsches_blatt():
     # Datei ohne Spalte „Kundennummer“ (z. B. der volle Export) → klare Meldung.
-    with pytest.raises(konvertieren.BexatFehler, match="Kundennummer"):
+    with pytest.raises(konvertieren.UebernahmeFehler, match="Kundennummer"):
         konvertieren.besuche_umwandeln(_xlsx({"persons": [["id", "firstname"], [1, "A"]]}))
 
 
@@ -316,7 +316,7 @@ def _modul_an():
     from apps.core.models import TafelEinstellungen
 
     t = TafelEinstellungen.laden()
-    t.module = ["bexat"]
+    t.module = ["uebernahme"]
     t.save()
 
 
@@ -326,7 +326,7 @@ def test_start_kundenstamm_leitet_zum_abgleich(admin_client):
     _modul_an()
     datei = io.BytesIO(_beispiel())
     datei.name = "export.xlsx"
-    antwort = admin_client.post(reverse("bexat:start"), {"ziel": "kunden", "datei": datei})
+    antwort = admin_client.post(reverse("uebernahme:start"), {"ziel": "kunden", "datei": datei})
     assert antwort.status_code == 302 and "/kunden/" in antwort["Location"]
     assert ImportVorbereitung.objects.count() == 1
 
@@ -335,7 +335,7 @@ def test_start_antraege_download(admin_client):
     _modul_an()
     datei = io.BytesIO(_beispiel())
     datei.name = "export.xlsx"
-    antwort = admin_client.post(reverse("bexat:start"), {"ziel": "antraege", "datei": datei})
+    antwort = admin_client.post(reverse("uebernahme:start"), {"ziel": "antraege", "datei": datei})
     assert antwort["Content-Type"].startswith("text/csv")
     assert "antraege.csv" in antwort["Content-Disposition"]
     assert "Antrag" in antwort.content.decode("utf-8-sig")
@@ -345,7 +345,7 @@ def test_start_besuche_download(admin_client):
     _modul_an()
     datei = io.BytesIO(_besuche_xlsx())
     datei.name = "kunden-die-da-waren.xlsx"
-    antwort = admin_client.post(reverse("bexat:start"), {"ziel": "besuche", "datei": datei})
+    antwort = admin_client.post(reverse("uebernahme:start"), {"ziel": "besuche", "datei": datei})
     assert antwort["Content-Type"].startswith("text/csv")
     assert "abholungen.csv" in antwort["Content-Disposition"]
     zeilen = _lesen(antwort.content)
@@ -355,7 +355,7 @@ def test_start_besuche_download(admin_client):
 
 def test_start_ohne_datei_meldung(admin_client):
     _modul_an()
-    antwort = admin_client.post(reverse("bexat:start"), {"ziel": "kunden"})
+    antwort = admin_client.post(reverse("uebernahme:start"), {"ziel": "kunden"})
     assert antwort.status_code == 200
     assert "auswählen" in antwort.content.decode()
 
@@ -385,7 +385,7 @@ def test_start_aktiviert_merkmal_schwerbehindert(admin_client):
     Zusatzfeld.objects.filter(schluessel="schwerbehindert").update(aktiv=False)
     datei = io.BytesIO(_beispiel())
     datei.name = "export.xlsx"
-    antwort = admin_client.post(reverse("bexat:start"), {"ziel": "kunden", "datei": datei})
+    antwort = admin_client.post(reverse("uebernahme:start"), {"ziel": "kunden", "datei": datei})
     assert antwort.status_code == 302
     assert Zusatzfeld.objects.get(schluessel="schwerbehindert").aktiv
 
@@ -393,11 +393,11 @@ def test_start_aktiviert_merkmal_schwerbehindert(admin_client):
 def test_einstellungen_speichern(admin_client):
     _modul_an()
     antwort = admin_client.post(
-        reverse("bexat:einstellungen"),
+        reverse("uebernahme:einstellungen"),
         {"ausgabestellen": "1 = Innenstadt\nunfug", "einkommensarten": "6 = Rente\n7 = Lohn"},
     )
     assert antwort.status_code == 302
-    e = BexatEinstellungen.laden()
+    e = UebernahmeEinstellungen.laden()
     assert e.ausgabestellen == {"1": "Innenstadt"}  # „unfug“ ohne „=“ wird verworfen
     assert e.einkommensarten == {"6": "Rente", "7": "Lohn"}
 
@@ -408,7 +408,7 @@ def test_modul_aus_ist_gesperrt(admin_client):
     t = TafelEinstellungen.laden()
     t.module = []
     t.save()
-    assert admin_client.get(reverse("bexat:start")).status_code == 404
+    assert admin_client.get(reverse("uebernahme:start")).status_code == 404
 
 
 def test_ohne_recht_kein_zugriff(client, admin, benutzer_mit_rolle, anmelden):
@@ -416,7 +416,7 @@ def test_ohne_recht_kein_zugriff(client, admin, benutzer_mit_rolle, anmelden):
 
     _modul_an()  # admin sorgt dafür, dass ein Superuser existiert (keine Einrichtungs-Umleitung)
     anmelden(client, benutzer_mit_rolle("anton", rollen.AUSGABE))
-    assert client.get(reverse("bexat:start")).status_code == 403
+    assert client.get(reverse("uebernahme:start")).status_code == 403
 
 
 # ── Besuche & Konto nachtragen (ADR 0110) ────────────────────────────────────
@@ -426,7 +426,7 @@ def _besuche_konto_xlsx(kontostand="12,00 €", knr="01294", datum="05.11.2026")
     return _xlsx(
         {
             "Sheet1": [
-                ["Bexat Tafelprogramm - Abholungen heute"],
+                ["Tafelprogramm - Abholungen heute"],
                 ["#", "Kundennummer", "Letzter Besuch", "Uhrzeit", "Kontostand", "Beitrag"],
                 [1, knr, datum, "16:09", kontostand, "3 €"],
             ]
@@ -437,7 +437,7 @@ def _besuche_konto_xlsx(kontostand="12,00 €", knr="01294", datum="05.11.2026")
 def test_besuche_konto_lesen_xlsx_und_csv():
     from decimal import Decimal
 
-    from apps.bexat import besuche_konto
+    from apps.uebernahme import besuche_konto
 
     z = besuche_konto.lesen(_besuche_konto_xlsx())[0]
     assert z.kundennummer == "01294" and str(z.datum) == "2026-11-05"
@@ -449,7 +449,7 @@ def test_besuche_konto_lesen_xlsx_und_csv():
 
 
 def test_besuche_konto_falsche_datei():
-    from apps.bexat import besuche_konto
+    from apps.uebernahme import besuche_konto
 
     with pytest.raises(besuche_konto.BesucheFehler, match="Kundennummer"):
         besuche_konto.lesen(b"Spalte;Wert\n1;2\n")
@@ -458,7 +458,7 @@ def test_besuche_konto_falsche_datei():
 def test_besuche_konto_euro():
     from decimal import Decimal
 
-    from apps.bexat import besuche_konto
+    from apps.uebernahme import besuche_konto
 
     assert besuche_konto.euro(Decimal("1234.5")) == "1.234,50 €"
     assert besuche_konto.euro(Decimal("-3")) == "-3,00 €"
@@ -467,8 +467,8 @@ def test_besuche_konto_euro():
 def test_besuche_konto_plan_und_uebernehmen():
     from decimal import Decimal
 
-    from apps.bexat import besuche_konto
     from apps.kunden.models import Abholung, Haushalt
+    from apps.uebernahme import besuche_konto
 
     h = Haushalt.objects.create(kundennummer="01294", kontostand=Decimal("0"))
     zeilen = besuche_konto.lesen(_besuche_konto_xlsx("12,00 €"))
@@ -498,8 +498,8 @@ def test_besuche_konto_kontostandliste_letzte_abholung_und_ohne_datum():
     aber kein letzter Besuch) werden trotzdem gesetzt."""
     from decimal import Decimal
 
-    from apps.bexat import besuche_konto
     from apps.kunden.models import Abholung, Haushalt
+    from apps.uebernahme import besuche_konto
 
     h1 = Haushalt.objects.create(kundennummer="01294", kontostand=Decimal("0"))
     h2 = Haushalt.objects.create(kundennummer="08034", kontostand=Decimal("0"))
@@ -533,7 +533,7 @@ def test_besuche_konto_kontostandliste_letzte_abholung_und_ohne_datum():
 
 
 def test_besuche_konto_unbekannte_nummer():
-    from apps.bexat import besuche_konto
+    from apps.uebernahme import besuche_konto
 
     zeilen = besuche_konto.lesen(_besuche_konto_xlsx())  # kein Haushalt angelegt
     plan = besuche_konto.plan(zeilen)
@@ -552,7 +552,7 @@ def test_besuche_konto_view_pruefen_und_uebernehmen(admin_client):
     datei = io.BytesIO(_besuche_konto_xlsx("12,00 €"))
     datei.name = "tag.xlsx"
     antwort = admin_client.post(
-        reverse("bexat:besuche_konto"), {"aktion": "pruefen", "datei": datei},
+        reverse("uebernahme:besuche_konto"), {"aktion": "pruefen", "datei": datei},
         HTTP_HX_REQUEST="true",
     )  # fmt: skip
     inhalt = antwort.content.decode()
@@ -561,7 +561,7 @@ def test_besuche_konto_view_pruefen_und_uebernehmen(admin_client):
     datei = io.BytesIO(_besuche_konto_xlsx("12,00 €"))
     datei.name = "tag.xlsx"
     antwort = admin_client.post(
-        reverse("bexat:besuche_konto"), {"aktion": "uebernehmen", "datei": datei}
+        reverse("uebernahme:besuche_konto"), {"aktion": "uebernehmen", "datei": datei}
     )
     assert antwort.status_code == 302
     h = Haushalt.objects.get(kundennummer="01294")
@@ -586,30 +586,30 @@ def test_besuche_konto_ohne_konto_recht_bucht_nicht(client, admin, benutzer_mit_
     Haushalt.objects.create(kundennummer="01294", kontostand=Decimal("0"))
     datei = io.BytesIO(_besuche_konto_xlsx("12,00 €"))
     datei.name = "tag.xlsx"
-    client.post(reverse("bexat:besuche_konto"), {"aktion": "uebernehmen", "datei": datei})
+    client.post(reverse("uebernahme:besuche_konto"), {"aktion": "uebernehmen", "datei": datei})
     h = Haushalt.objects.get(kundennummer="01294")
     assert h.kontostand == Decimal("0")  # nichts gebucht
     assert not Abholung.objects.filter(haushalt=h).exists()
 
 
-def test_bexat_steht_unter_daten_importieren(admin_client):
-    """Die Bexat-Übernahmen stehen auf der Seite „Daten importieren“ (ein Ort für alle Importe)
+def test_uebernahme_steht_unter_daten_importieren(admin_client):
+    """Die Übernahmen stehen auf der Seite „Daten importieren“ (ein Ort für alle Importe)
     und nicht mehr als eigene Menüpunkte."""
     start = reverse("datenimport:start")
     ohne = admin_client.get(start).content.decode()
-    assert reverse("bexat:start") not in ohne  # Modul aus: kein Abschnitt
+    assert reverse("uebernahme:start") not in ohne  # Modul aus: kein Abschnitt
     _modul_an()
     seite = admin_client.get(start).content.decode()
     assert "Aus einem anderen Programm übernehmen" in seite
     inhalt = seite[seite.index("<main") :] if "<main" in seite else seite
     for name in ("start", "besuche_konto", "einstellungen"):
-        assert reverse(f"bexat:{name}") in inhalt
+        assert reverse(f"uebernahme:{name}") in inhalt
     # im Menü links stehen die drei Seiten nicht mehr
     from apps.core import menue
 
     anfrage = admin_client.get(start).wsgi_request
     adressen = str(menue.menue(anfrage))
-    assert reverse("bexat:start") not in adressen
-    assert reverse("bexat:besuche_konto") not in adressen
-    # von der Bexat-Seite führt ein Link zurück
-    assert start in admin_client.get(reverse("bexat:start")).content.decode()
+    assert reverse("uebernahme:start") not in adressen
+    assert reverse("uebernahme:besuche_konto") not in adressen
+    # von der Seite der Übernahme führt ein Link zurück
+    assert start in admin_client.get(reverse("uebernahme:start")).content.decode()

@@ -1,14 +1,14 @@
-"""Bexat-Export (mehrblättriges Excel) → bintafeln-Importformat (ADR 0006, ADR 0100).
+"""Export des bisherigen Programms (mehrblättriges Excel) → Importformat (ADR 0006, ADR 0100).
 
 Reine Umwandlung ohne Datenbankzugriff: ``umwandeln(bytes)`` liest die Excel-Datei des
-Bexat-Tafelprogramms, verbindet die Blätter über ihre Schlüssel und liefert die Dateien des
+bisherigen Tafelprogramms, verbindet die Blätter über ihre Schlüssel und liefert die Dateien des
 neutralen Importformats als Bytes zurück (Kundenstamm, Anträge, Mitarbeitende). Gespeichert wird
 nichts: Die erzeugten Dateien gehen anschließend durch den normalen Import mit Abgleich.
 
 Was je Tafel verschieden ist, kommt nicht aus festen Werten im Code:
 * Ausgabestellen aus dem Blatt ``offices`` (Nummer → Name), ergänzt um die Zuordnung aus den
   Modul-Einstellungen;
-* Einkommensarten aus den Modul-Einstellungen (Bexat kennt sie nur als Nummer).
+* Einkommensarten aus den Modul-Einstellungen (im Export stehen sie nur als Nummer).
 Fest sind nur die herstellerweiten Tabellen in ``codes.py`` (Anrede, Wochentag, Staaten).
 """
 
@@ -21,18 +21,20 @@ from dataclasses import dataclass, field
 
 import openpyxl
 
-from apps.bexat import codes
+from apps.uebernahme import codes
 
-KUNDENNUMMER_BREITE = 5  # Bexat zeigt die Haushaltsnummer fünfstellig mit führenden Nullen
+KUNDENNUMMER_BREITE = (
+    5  # Das bisherige Programm zeigt die Haushaltsnummer fünfstellig mit führenden Nullen
+)
 
-# Mitgelieferte Ja/Nein-Merkmale, die der Umwandler aus Bexat füllt (Spalte zusatz_<schlüssel>).
-# Vor dem Import stellt die Bexat-Ansicht sicher, dass diese Merkmale angelegt und aktiv sind,
+# Mitgelieferte Ja/Nein-Merkmale, die der Umwandler aus dem Export füllt (zusatz_<schlüssel>).
+# Vor dem Import stellt die Ansicht sicher, dass diese Merkmale angelegt und aktiv sind,
 # damit die Spalte nicht stillschweigend übersprungen wird (ADR 0071, ADR 0100).
 GELIEFERTE_MERKMALE = ("schwerbehindert",)
 
 
-class BexatFehler(Exception):
-    """Die hochgeladene Datei ist keine lesbare Bexat-Excel-Datei."""
+class UebernahmeFehler(Exception):
+    """Die hochgeladene Datei ist keine lesbare Excel-Datei des bisherigen Programms."""
 
 
 # --- Zellwerte --------------------------------------------------------------------------
@@ -73,7 +75,7 @@ def _dmy(d) -> str:
 
 
 def _datum(wert) -> str:
-    """Beliebiges Bexat-Datum → 'TT.MM.JJJJ' (oder '')."""
+    """Beliebiges Datum aus dem Export → 'TT.MM.JJJJ' (oder '')."""
     if wert is None or wert == "":
         return ""
     if isinstance(wert, (dt.datetime, dt.date)):
@@ -207,7 +209,7 @@ def _betrag_report(wert) -> str:
 
 
 def besuche_umwandeln(daten: bytes) -> BesucheUmwandlung:
-    """Bexat-Tagesreport „kunden die da waren“ (ein Blatt, deutsche Spaltenköpfe, nur Nummern –
+    """Tagesliste „kunden die da waren“ (ein Blatt, deutsche Spaltenköpfe, nur Nummern –
     keine Namen) → ``abholungen.csv`` des Importformats. Der Beitrag kommt als ``beitrag`` in die
     Abholung; der Kontostand ist eine Momentaufnahme (keine Buchung) und wird nicht übernommen.
     Die Datei spielt man anschließend über „Kundenstamm importieren → ergänzen“ ein.
@@ -215,9 +217,9 @@ def besuche_umwandeln(daten: bytes) -> BesucheUmwandlung:
     try:
         wb = openpyxl.load_workbook(io.BytesIO(daten), read_only=True, data_only=True)
     except Exception as fehler:  # noqa: BLE001 – openpyxl wirft je nach Datei Verschiedenes
-        raise BexatFehler(
+        raise UebernahmeFehler(
             "Die Datei ließ sich nicht als Excel-Datei (.xlsx) öffnen. Bitte die Liste „kunden die "
-            "da waren“ aus dem Bexat-Tafelprogramm unverändert hochladen."
+            "da waren“ aus dem bisherigen Programm unverändert hochladen."
         ) from fehler
     ws = wb[wb.sheetnames[0]]
     rows = ws.iter_rows(values_only=True)
@@ -227,9 +229,9 @@ def besuche_umwandeln(daten: bytes) -> BesucheUmwandlung:
             kopf = [_text(c).lower() for c in r]
             break
     if kopf is None:
-        raise BexatFehler(
+        raise UebernahmeFehler(
             "In der Datei wurde keine Spalte „Kundennummer“ gefunden. Bitte die Liste „kunden die "
-            "da waren“ aus dem Bexat-Tafelprogramm unverändert als Excel-Datei (.xlsx) hochladen."
+            "da waren“ aus dem bisherigen Programm unverändert als Excel-Datei (.xlsx) hochladen."
         )
 
     def spalte(*namen) -> int:
@@ -263,7 +265,7 @@ def besuche_umwandeln(daten: bytes) -> BesucheUmwandlung:
         })  # fmt: skip
 
     if not abholungen:
-        raise BexatFehler(
+        raise UebernahmeFehler(
             "In der Datei standen keine Besuche mit Datum. Bitte prüfen, ob es die Liste „kunden "
             "die da waren“ mit den Spalten „Kundennummer“ und „Letzter Besuch“ ist."
         )
@@ -279,17 +281,17 @@ def umwandeln(
     einkommensarten: dict | None = None,
     ausgabestellen: dict | None = None,
 ) -> Umwandlung:
-    """Wandelt den Bexat-Export (Bytes der .xlsx) in die Dateien des Importformats um.
+    """Wandelt den Export (Bytes der .xlsx) in die Dateien des Importformats um.
 
     ``einkommensarten`` und ``ausgabestellen`` sind die Zuordnungen aus den Modul-Einstellungen
-    (Nummer → Text), die Bexat nur als Nummer kennt. Beide dürfen leer sein.
+    (Nummer → Text), die im Export nur als Nummer stehen. Beide dürfen leer sein.
     """
     try:
         wb = openpyxl.load_workbook(io.BytesIO(daten), read_only=True, data_only=True)
     except Exception as fehler:  # noqa: BLE001 – openpyxl wirft je nach Datei Verschiedenes
-        raise BexatFehler(
+        raise UebernahmeFehler(
             "Die Datei ließ sich nicht als Excel-Datei (.xlsx) öffnen. Bitte den Export aus dem "
-            "Bexat-Tafelprogramm unverändert hochladen."
+            "bisherigen Tafelprogramm unverändert hochladen."
         ) from fehler
     namen = set(wb.sheetnames)
 
@@ -310,7 +312,7 @@ def umwandeln(
     staff_offices = blatt("staff_offices")
 
     if not haushalte.zeilen and not personen.zeilen:
-        raise BexatFehler(
+        raise UebernahmeFehler(
             "In der Datei stehen keine Haushalte und Personen. Fehlt das Blatt „households“ bzw. "
             "„persons“? Bitte den vollständigen Export hochladen."
         )

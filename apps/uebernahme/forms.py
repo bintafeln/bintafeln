@@ -1,6 +1,6 @@
 from django import forms
 
-from apps.bexat.models import _nummer_text_lesen, _nummer_text_schreiben
+from apps.uebernahme.models import _nummer_text_lesen, _nummer_text_schreiben
 
 
 class EinstellungenForm(forms.Form):
@@ -17,8 +17,9 @@ class EinstellungenForm(forms.Form):
         label="Einkommensarten (Nummer → Text)",
         required=False,
         widget=forms.Textarea(attrs={"rows": 8}),
-        help_text="Die Nummern stehen in der Bexat-Kundenkonfiguration. Eine Zuordnung je Zeile, "
-        "z. B. „6 = Rente“. Ohne Eintrag bleibt die Einkommensart beim Import leer.",
+        help_text="Die Nummern stehen in der Konfiguration des bisherigen Programms. Eine "
+        "Zuordnung je Zeile, z. B. „6 = Rente“. Ohne Eintrag bleibt die Einkommensart beim "
+        "Import leer.",
     )
 
     @classmethod

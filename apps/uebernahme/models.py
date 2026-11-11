@@ -1,6 +1,6 @@
-"""Einstellungen des Bexat-Import-Moduls (ADR 0100).
+"""Einstellungen des Moduls „Übernahme aus einem anderen Programm“ (ADR 0100).
 
-Bexat kennt Ausgabestellen und Einkommensarten nur als Nummer. Die Namen stehen – soweit
+Der Export enthält Ausgabestellen und Einkommensarten nur als Nummer. Die Namen stehen – soweit
 vorhanden – im Export (Blatt ``offices``); die Einkommensarten sind je Tafel verschieden und
 werden hier als Zuordnung (Nummer → Text) gepflegt. So bleiben keine festen, tafelspezifischen
 Werte im Code.
@@ -28,8 +28,8 @@ def _nummer_text_schreiben(zuordnung: dict) -> str:
     return "\n".join(f"{k} = {v}" for k, v in paare)
 
 
-class BexatEinstellungen(models.Model):
-    """Zuordnungen für den Bexat-Import (Singleton)."""
+class UebernahmeEinstellungen(models.Model):
+    """Zuordnungen für den Übernahme aus einem anderen Programm (Singleton)."""
 
     EINZIGE_ID = 1
 
@@ -44,22 +44,23 @@ class BexatEinstellungen(models.Model):
         "Einkommensarten (Nummer → Text)",
         default=dict,
         blank=True,
-        help_text="Die Nummern stehen in der Bexat-Kundenkonfiguration. Eine Zuordnung je Zeile, "
-        "z. B. „6 = Rente“. Ohne Eintrag bleibt die Einkommensart beim Import leer.",
+        help_text="Die Nummern stehen in der Konfiguration des bisherigen Programms. Eine "
+        "Zuordnung je Zeile, z. B. „6 = Rente“. Ohne Eintrag bleibt die Einkommensart beim "
+        "Import leer.",
     )
 
     class Meta:
-        verbose_name = "Bexat-Einstellungen"
-        verbose_name_plural = "Bexat-Einstellungen"
+        verbose_name = "Einstellungen für die Übernahme"
+        verbose_name_plural = "Einstellungen für die Übernahme"
 
     def __str__(self):
-        return "Bexat-Einstellungen"
+        return "Einstellungen für die Übernahme"
 
     def save(self, *args, **kwargs):
         self.pk = self.EINZIGE_ID
         super().save(*args, **kwargs)
 
     @classmethod
-    def laden(cls) -> "BexatEinstellungen":
+    def laden(cls) -> "UebernahmeEinstellungen":
         einstellungen, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
         return einstellungen

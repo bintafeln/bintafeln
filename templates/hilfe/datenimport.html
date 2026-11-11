@@ -2,7 +2,7 @@
   übernehmen, ohne die Datei vorher umzubauen: Kundenstamm (mit Abholungen und Kontobuchungen), Ausgabestellen
   (mit Plätzen, Helfern, Ausstattung, Ausgabezeiten wie „Di 13:00“ und bis zu drei Ansprechpartnern), Kundengruppen
   (Kürzel, Name, Ausgabestelle, Wochentage, Uhrzeit, Maximum, Farbe – Ausgabestellen vorher anlegen), Mitarbeitende
-  (mit Anschrift), Adressbuch, Mitglieder und Anträge. Ist ein Modul für die Übernahme aus einem anderen Programm eingeschaltet (z. B. „Bexat-Import“ für tafelarbeit.de), stehen dessen Seiten ebenfalls hier, im Abschnitt „Aus einem anderen Programm übernehmen“.</p>
+  (mit Anschrift), Adressbuch, Mitglieder und Anträge. Ist das Modul „Übernahme aus einem anderen Programm“ eingeschaltet, stehen dessen Seiten ebenfalls hier, im Abschnitt „Aus einem anderen Programm übernehmen“.</p>
 <p><strong>Anträge:</strong> Ein Antrag (Neuanmeldung) je Zeile mit Antragsteller und Anschrift. Die Liste wird
   <strong>unverändert übernommen</strong>: Jede Zeile wird ein eigener Antrag, es wird nichts zusammengeführt und
   nichts mit vorhandenen Anträgen abgeglichen (auch gleiche Namen bleiben getrennt). Gibt es in der Datei eine
@@ -50,4 +50,39 @@
   ohne Eintritt gilt der heutige Tag.</p>
 <p><strong>Kundenstamm:</strong> Nach der Zuordnung prüft bintafeln die Daten genauso wie beim Importformat und zeigt dann den
   Abgleich aus „Kundenstamm importieren“. Unten auf der Startseite stehen die letzten Importe des Kundenstamms.</p>
+<h3>Aus einem anderen Programm umsteigen</h3>
+<p>bintafeln ist an kein bestimmtes Vorgängerprogramm gebunden. Für den Umstieg brauchen Sie aus dem bisherigen
+  Programm nur <strong>Exporte als CSV- oder Excel-Datei</strong> – eine Tabelle je Bereich, mit einer Kopfzeile.
+  Wie die Spalten heißen, ist gleich: Sie ordnen sie beim Hochladen den Feldern von bintafeln zu, und die Zuordnung
+  lässt sich als Vorlage speichern.</p>
+<div class="tabelle-rahmen">
+<table class="tabelle">
+  <thead><tr><th>Bereich</th><th>Mindestens nötig</th><th>Sinnvoll dazu</th></tr></thead>
+  <tbody>
+    <tr><td>Ausgabestellen</td><td>Name</td><td>Anschrift</td></tr>
+    <tr><td>Kundengruppen</td><td>Name</td><td>Kürzel, Ausgabestelle, Wochentag, Uhrzeit, Höchstzahl</td></tr>
+    <tr><td>Kundenstamm</td><td>Kundennummer, Name der Hauptperson</td><td>Geburtsdatum, Anschrift, Kundengruppe, Status, Ausweis gültig bis, Kunde seit; weitere Personen des Haushalts mit Kundennummer und Name; Abholungen, Sperren, Anmerkungen jeweils mit Kundennummer und Datum</td></tr>
+    <tr><td>Anträge</td><td>Vorname, Nachname</td><td>Eingangsdatum, Anschrift, Telefon, E-Mail, Geburtsdatum</td></tr>
+    <tr><td>Mitarbeitende</td><td>Vorname, Nachname</td><td>E-Mail, Rolle, Anschrift, Eintritt</td></tr>
+    <tr><td>Adressbuch</td><td>Name oder Organisation</td><td>Anschrift, E-Mail, Telefon, Kategorie</td></tr>
+    <tr><td>Mitglieder</td><td>Name</td><td>Eintritt, Mitgliedsart, Jahresbeitrag, Anschrift</td></tr>
+  </tbody>
+</table>
+</div>
+<ul>
+  <li><strong>Reihenfolge:</strong> erst Ausgabestellen und Kundengruppen, dann der Kundenstamm, danach alles
+    Übrige. So finden die Haushalte ihre Kundengruppe.</li>
+  <li><strong>Kundennummer als Schlüssel:</strong> Personen, Abholungen, Sperren und Anmerkungen werden über die
+    Kundennummer dem Haushalt zugeordnet. Sie muss in allen Dateien gleich geschrieben sein.</li>
+  <li><strong>Nummern statt Namen:</strong> Stehen im Export nur Nummern (z. B. für Kundengruppe oder
+    Einkommensart), ersetzen Sie sie vorher in der Tabellenkalkulation durch die Namen – oder exportieren Sie die
+    Liste mit den Namen dazu.</li>
+  <li><strong>Vorher prüfen:</strong> Vor dem Speichern zeigt bintafeln immer einen Abgleich. Es wird nichts
+    übernommen, was Sie nicht bestätigt haben.</li>
+  <li>Für Tafeln, die das neutrale <strong>Importformat</strong> selbst erzeugen können (mehrere CSV-Dateien mit
+    festen Spalten), steht dessen Beschreibung in <code>docs/importformat.md</code>.</li>
+  <li>Gibt das bisherige Programm einen <strong>mehrblättrigen Excel-Gesamtexport</strong> aus, kann das Modul
+    „Übernahme aus einem anderen Programm“ ihn direkt umwandeln; welche Blätter und Spalten es erwartet, steht im
+    Kapitel „Aus einem anderen Tafelprogramm übernehmen“.</li>
+</ul>
 <p>Hochgeladene Daten werden höchstens zwei Stunden aufbewahrt und nach dem Übernehmen oder Verwerfen gelöscht.</p>

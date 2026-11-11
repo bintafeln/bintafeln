@@ -20,7 +20,7 @@ Kundenstamm selbst führt. Ist sie an:
   eines Haushalts verschwinden (gesteuert über den Kontextprozessor `kundenstamm_selbst_gefuehrt`).
 - Der Kundenstamm-Import ist gesperrt: Der Import-Assistent bietet das Ziel „Kundenstamm" nicht
   mehr an, und die Ansichten `kunden:import_vorschau`/`kunden:import_uebernehmen` lehnen ab und
-  leiten zur Übersicht zurück (greift auch für den Weg über den Bexat-Import, der denselben
+  leiten zur Übersicht zurück (greift auch für den Weg über das Übernahme-Modul, das denselben
   Abgleich benutzt).
 
 Die Einstellung steht unter „Einstellungen → Kundenstamm" und lässt sich jederzeit wieder
@@ -31,6 +31,6 @@ abschalten, wenn doch noch einmal importiert werden soll.
 - Eine einzige, umkehrbare Einstellung statt verstreuter Textlöschungen: Tafeln, die noch
   importieren, behalten die korrekten Warnungen; Tafeln, die übernommen haben, werden sie los.
 - Die Sperre sitzt an der gemeinsamen Engstelle (`import_vorschau`/`import_uebernehmen`), über die
-  alle Kundenstamm-Importe laufen – so kann kein Weg (Importformat, Import-Assistent, Bexat) die
+  alle Kundenstamm-Importe laufen – so kann kein Weg (Importformat, Import-Assistent, Übernahme-Modul) die
   selbst geführten Daten versehentlich überschreiben.
 - Kein fester Stichtag im Code; die Tafel entscheidet selbst, wann sie umschaltet (Fachkonzept).

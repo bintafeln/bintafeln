@@ -2,10 +2,10 @@
 
 ## Problem
 
-Tafeln, die von einem Altsystem (z. B. tafelarbeit.de/Bexat) zu bintafeln wechseln, haben oft viele
+Tafeln, die von einem Altsystem (einem anderen Tafelprogramm) zu bintafeln wechseln, haben oft viele
 hundert offene Anträge mit allen Feldern (Name, Adresse, Haushalt, Nachricht) und Nachweisen.
 Bisher konnte bintafeln nur die **Nachweise** im Stapel übernehmen (ADR 0024, ZIP +
-`nachweise.csv`), die Anträge selbst nur einzeln über das öffentliche Formular. Der Bexat-Baustein
+`nachweise.csv`), die Anträge selbst nur einzeln über das öffentliche Formular. Das Modul „Übernahme aus einem anderen Programm“
 (ADR 0100) erzeugte zwar eine `antraege.csv`, es gab aber keine Stelle, die sie einliest.
 
 ## Entscheidung

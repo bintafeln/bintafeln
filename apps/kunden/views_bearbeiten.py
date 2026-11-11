@@ -136,7 +136,7 @@ def haushalt_bearbeiten(request, kundennummer):
 @rollen.recht_erforderlich("kunden.bearbeiten")
 def kundengruppe_aendern(request, kundennummer):
     """Kundengruppe eines Haushalts wählen – mit freien Plätzen je Gruppe, Wochentagsfilter und
-    der bisherigen Gruppen-Historie (ähnlich dem früheren Bexat-Fenster)."""
+    der bisherigen Gruppen-Historie (ähnlich dem Fenster des früheren Programms)."""
     from apps.ausgabe.ampel import WOCHENTAGE
     from apps.ausgabe.ampel import wochentage as _wochentage
 

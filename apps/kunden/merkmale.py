@@ -26,7 +26,8 @@ def feste_anlegen() -> None:
 
 def aktivieren(*schluessel) -> list[str]:
     """Stellt sicher, dass die mitgelieferten Merkmale ``schluessel`` angelegt und aktiv sind –
-    z. B. vor dem Bexat-Import, damit die zugehörige Spalte nicht stillschweigend übersprungen
+    z. B. vor der Übernahme aus einem anderen Programm, damit die zugehörige Spalte nicht still
+    übersprungen
     wird. Gibt die Bezeichnungen der Merkmale zurück, die dadurch (neu angelegt oder wieder
     eingeschaltet) nutzbar wurden, für eine Rückmeldung an die Tafel."""
     vorhanden = dict(

@@ -605,7 +605,7 @@ tr.hervor td { background: var(--erfolg); }
 }
 
 /* Kundengruppe ändern: Auswahl und bisherige Gruppen nebeneinander (wie im früheren
-   Bexat-Fenster). Die Auswahltabelle hugt ihre Spalten, statt über die ganze Bildschirmbreite
+   Fenster des früheren Programms). Die Auswahltabelle hugt ihre Spalten, statt über die ganze Bildschirmbreite
    auseinandergezogen zu werden. Auf schmalen Bildschirmen stehen beide untereinander. */
 .gruppenwahl { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 1rem 1.5rem; }
 .gruppenwahl .karte { margin-bottom: 0; }

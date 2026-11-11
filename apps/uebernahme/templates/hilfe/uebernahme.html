@@ -1,0 +1,95 @@
+{% load handbuch %}<p>Menü „Einstellungen → Systemsteuerung → Daten importieren (CSV, Excel)“, dort der Abschnitt „Aus einem anderen
+  Programm übernehmen“ → „Aus anderem Tafelprogramm übernehmen“ (auch „Besuche &amp; Konto nachtragen“ und die „Zuordnungen für die Übernahme“ stehen
+  dort; eigene Menüpunkte gibt es dafür nicht mehr). Mit diesem Modul übernehmen Sie
+  Daten aus dem <strong>bisherigen Tafelprogramm</strong>, ohne die Datei von
+  Hand umzubauen. Es ist ein zuschaltbares Modul: In den Tafel-Einstellungen einschalten, dann
+  erscheint es unter „Daten importieren“.</p>
+<h3>Was die Datei enthalten muss</h3>
+<p>Das Modul liest eine <strong>Excel-Datei (.xlsx) mit mehreren Blättern</strong> – so, wie das bisherige Programm
+  sie als Gesamtexport ausgibt. Die Datei wird unverändert hochgeladen. Die Blätter und Spalten müssen die
+  folgenden Namen tragen; fehlt ein Blatt, wird der zugehörige Teil einfach nicht übernommen. Mindestens
+  <code>households</code> und <code>persons</code> müssen vorhanden sein.</p>
+<div class="tabelle-rahmen">
+<table class="tabelle">
+  <thead><tr><th>Blatt</th><th>Inhalt</th><th>Gelesene Spalten</th></tr></thead>
+  <tbody>
+    <tr><td><code>households</code></td><td>Haushalte</td><td><code>id</code> (wird zur Kundennummer, fünfstellig), <code>clientgroup_id</code>, <code>household_since</code>, <code>valid</code> (Ausweis gültig bis), <code>lastvisit</code>, <code>income_id</code>, <code>field6</code> (Schwerbehindert Ja/Nein)</td></tr>
+    <tr><td><code>persons</code></td><td>Personen</td><td><code>id</code>, <code>title</code> (Anrede), <code>firstname</code>, <code>lastname</code>, <code>birthday</code>, <code>nationality_id</code>, <code>street</code>, <code>zipcode</code>, <code>city</code>, <code>telprivat</code>, <code>telmobil</code>, <code>email</code></td></tr>
+    <tr><td><code>household_person</code></td><td>Wer gehört zu welchem Haushalt</td><td><code>household_id</code>, <code>person_id</code>, <code>type</code> (Haushaltsvorstand, Angehörige, Abholberechtigte)</td></tr>
+    <tr><td><code>clientgroups</code></td><td>Kundengruppen</td><td><code>id</code>, <code>short</code> (Kürzel), <code>title</code>, <code>description</code>, <code>weekday</code>, <code>max</code>, <code>offices</code></td></tr>
+    <tr><td><code>offices</code></td><td>Ausgabestellen</td><td><code>id</code>, <code>title</code></td></tr>
+    <tr><td><code>receptions</code></td><td>Abholungen</td><td><code>household_id</code>, <code>date</code>, <code>time</code>, <code>fee</code> (Beitrag), <code>office_id</code></td></tr>
+    <tr><td><code>locks</code></td><td>Sperren</td><td><code>household_id</code>, <code>lock_from</code>, <code>lock_until</code>, <code>reason</code></td></tr>
+    <tr><td><code>exceptions</code></td><td>Ausnahmen</td><td><code>household_id</code>, <code>date</code>, <code>reason</code></td></tr>
+    <tr><td><code>notes</code></td><td>Anmerkungen</td><td><code>household_id</code>, <code>created_at</code>, <code>text</code></td></tr>
+    <tr><td><code>applications</code></td><td>Anträge (nur offene)</td><td><code>id</code>, <code>status</code>, <code>created_at</code>, <code>title</code>, <code>firstname</code>, <code>lastname</code>, <code>birthday</code>, <code>nationality_id</code>, <code>street</code>, <code>zipcode</code>, <code>city</code>, <code>telmobil</code>, <code>email</code>, <code>weekday</code>, <code>relatives</code>, <code>message</code>, <code>comment</code></td></tr>
+    <tr><td><code>staff</code>, <code>staff_offices</code></td><td>Mitarbeitende und ihre Ausgabestellen</td><td><code>id</code>, <code>person_id</code>, <code>active</code>, <code>staff_since</code>, <code>office_id</code>; <code>staff_id</code>, <code>office_id</code></td></tr>
+  </tbody>
+</table>
+</div>
+<ul>
+  <li>Die <strong>erste Zeile</strong> jedes Blatts enthält die Spaltennamen. Zeilen mit einem Wert in
+    <code>deleted_at</code> gelten als gelöscht und bleiben außen vor.</li>
+  <li><strong>Nummern statt Namen:</strong> Ausgabestellen (<code>office_id</code>) und Einkommensarten
+    (<code>income_id</code>) stehen nur als Nummer in der Datei. Die Namen der Ausgabestellen kommen aus dem Blatt
+    <code>offices</code>; fehlt es, und für die Einkommensarten immer, tragen Sie die Zuordnung unter „Zuordnungen
+    für die Übernahme“ ein (eine je Zeile, z. B. <code>6 = Rente</code>).</li>
+  <li><strong>Feste Schlüssel:</strong> Anrede, Wochentag und Staatsangehörigkeit erwartet das Modul in der
+    Schreibweise dieses Exports (z. B. Staatsangehörigkeit als Nummer 1–206 der amtlichen Liste).</li>
+  <li>Kommt Ihre Datei aus einem <strong>anderen Programm</strong> und hat sie nicht diesen Aufbau, nehmen Sie den
+    allgemeinen Weg: Kapitel „Daten importieren“, Abschnitt „Aus einem anderen Programm umsteigen“.</li>
+</ul>
+<h3>So gehen Sie vor</h3>
+<ol>
+  <li><strong>Im bisherigen Programm exportieren:</strong> Die Daten als Excel-Datei (.xlsx) exportieren. Es ist
+    die mehrblättrige Datei mit Haushalten, Personen, Abholungen usw.</li>
+  <li><strong>Zuordnungen prüfen:</strong> Unter „Zuordnungen für die Übernahme“ den Ausgabestellen-Nummern
+    Namen und den Einkommensart-Nummern Texte geben (nur nötig, soweit sie nicht schon im Export
+    stehen). Eine Zuordnung je Zeile, z. B. <code>6 = Rente</code>.</li>
+  <li><strong>Hochladen:</strong> Die Exportdatei wählen und entscheiden, was übernommen wird:
+    <ul>
+      <li><strong>Kundenstamm prüfen und abgleichen</strong> wandelt Haushalte, Personen,
+        Abholberechtigte, Abholungen, Sperren, Ausnahmen, Anmerkungen und Kundengruppen um und
+        führt direkt in den gewohnten Abgleich des Kundenstamms. Gespeichert wird erst nach Ihrer
+        Bestätigung.</li>
+      <li><strong>Anträge</strong> und <strong>Mitarbeitende</strong> werden als CSV-Datei
+        heruntergeladen. Diese laden Sie anschließend unter „Daten importieren“ mit dem Ziel
+        „Anträge“ bzw. „Mitarbeitende“ hoch; auch dort wird vor dem Speichern abgeglichen.</li>
+      <li><strong>Besuche:</strong> Für den Knopf „Besuche als CSV herunterladen“ laden Sie <em>nicht</em>
+        den großen Export hoch, sondern die einfache Liste <em>„kunden die da waren“</em> (nur
+        Kundennummern, keine Namen). bintafeln macht daraus <code>abholungen.csv</code> mit
+        Kundennummer, Datum, Uhrzeit und Beitrag. Diese laden Sie danach unter
+        <strong>„Kundenstamm importieren“</strong> mit der Art <strong>„ergänzen“</strong> hoch – die
+        Besuche kommen zu den vorhandenen Haushalten dazu, ohne den Bestand auszutauschen. Der
+        Kontostand aus der Liste wird nicht übernommen, weil er nur eine Momentaufnahme ist (keine
+        einzelne Buchung).</li>
+    </ul>
+  </li>
+</ol>
+<p><strong>Was übernommen wird:</strong> Nur <em>offene</em> Anträge; gelöschte Haushalte bleiben
+  außen vor (Datensparsamkeit). Die Höhe des Einkommens kommt bewusst nicht mit, nur die
+  Einkommensart. Familienstand übernimmt bintafeln nicht. Komplett groß geschriebene Namen aus dem
+  Altsystem (z. B. „BRÜGGE“) werden dabei lesbar gemacht (Brügge); bewusste Schreibweisen wie
+  „McDonald“ bleiben. Das Freifeld „Schwerbehindert Ja/Nein“ wird als Merkmal
+  <strong>„Schwerbehindert“</strong> übernommen; war dieses Merkmal abgeschaltet, schaltet der
+  Import es vorher wieder ein (mit Hinweis), damit die Angabe nicht verloren geht.</p>
+<h3>Besuche &amp; Konto nachtragen (Übergangszeit)</h3>
+<p>Solange die Ausgabe noch im bisherigen Programm läuft, können Sie unter „Besuche &amp; Konto nachtragen“ die
+  <strong>Tagesliste der Abholungen</strong> oder eine reine <strong>Kontostand-Liste</strong> übernehmen (CSV
+  oder Excel; nötig sind nur <code>Kundennummer</code> und <code>Kontostand</code>, ein Datum heißt je nach
+  Export „Letzter Besuch“ oder „Letzte Abholung“, zusätzliche Spalten wie Name werden übergangen). bintafeln
+  trägt je Kunde den <strong>Besuch</strong> als Abholung nach und setzt den <strong>Kontostand</strong> genau
+  auf den Wert aus der Liste – über eine nachvollziehbare Korrektur-Buchung. So sind auch
+  <strong>Vorauszahlungen</strong> (z. B. der ganze Monat im Voraus) automatisch korrekt. Bei mehreren Tagen in
+  einer Datei zählt für den Kontostand der jüngste Tag. Eine reine Kontostand-Liste <strong>ohne Datum</strong>
+  (alle Kunden mit Guthaben) geht auch – dann wird nur der Kontostand gesetzt, kein Besuch nachgetragen.</p>
+<p>Zuerst <strong>„Prüfen“</strong> (Probelauf, bucht nichts): Die Vorschau zeigt je Kunde alten und neuen
+  Kontostand, die Differenz, die Zahl neuer Besuche und unbekannte Kundennummern. Passt es, auf
+  <strong>„Übernehmen“</strong>. Das Buchen der Kontostände braucht zusätzlich das Recht „Kundenkonto
+  korrigieren“. Mehrfach anwendbar: Ein Besuch wird je Kunde und Tag nur einmal angelegt, und eine Korrektur
+  entfällt, wenn der Stand schon passt.</p>
+<p class="hinweis"><strong>Achtung:</strong> Der Kontostand aus der Liste gilt als Wahrheit; in bintafeln selbst
+  eingegebene Konto-Änderungen für dieselben Kunden werden dabei überschrieben – für die Übergangszeit ist das
+  so gewollt. Nach dem vollständigen Umstieg wird diese Seite nicht mehr benutzt.</p>
+<p class="hinweis">Die Daten verlassen Ihren Server nicht. Die hochgeladene Datei wird nur für die
+  Umwandlung gelesen und nicht gespeichert.</p>

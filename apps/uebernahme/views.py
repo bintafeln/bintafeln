@@ -1,16 +1,17 @@
-"""Bexat-Import (ADR 0100): Export hochladen, in das Importformat umwandeln und in den normalen
-Import mit Abgleich übergeben. Es wird nichts ohne Abgleich gespeichert."""
+"""Übernahme aus einem anderen Programm (ADR 0100): Export hochladen, in das Importformat
+umwandeln und in den normalen Import mit Abgleich übergeben. Es wird nichts ohne Abgleich
+gespeichert."""
 
 from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 
-from apps.bexat import besuche_konto as besuche_konto_
-from apps.bexat import konvertieren
-from apps.bexat.forms import EinstellungenForm
-from apps.bexat.models import BexatEinstellungen
 from apps.konten import rollen
+from apps.uebernahme import besuche_konto as besuche_konto_
+from apps.uebernahme import konvertieren
+from apps.uebernahme.forms import EinstellungenForm
+from apps.uebernahme.models import UebernahmeEinstellungen
 
 MAX_DATEIGROESSE = 60 * 1024 * 1024  # 60 MB
 
@@ -27,27 +28,27 @@ def _benutzername(user) -> str:
 
 @rollen.recht_erforderlich("kunden.importieren")
 def start(request):
-    einstellungen = BexatEinstellungen.laden()
+    einstellungen = UebernahmeEinstellungen.laden()
     if request.method != "POST":
-        return render(request, "bexat/start.html", {"einstellungen": einstellungen})
+        return render(request, "uebernahme/start.html", {"einstellungen": einstellungen})
 
     datei = request.FILES.get("datei")
     ziel = request.POST.get("ziel")
     if datei is None:
-        messages.error(request, "Bitte zuerst die Bexat-Exportdatei (.xlsx) auswählen.")
-        return render(request, "bexat/start.html", {"einstellungen": einstellungen})
+        messages.error(request, "Bitte zuerst die Exportdatei (.xlsx) auswählen.")
+        return render(request, "uebernahme/start.html", {"einstellungen": einstellungen})
     if datei.size > MAX_DATEIGROESSE:
         messages.error(request, "Die Datei darf höchstens 60 MB groß sein.")
-        return render(request, "bexat/start.html", {"einstellungen": einstellungen})
+        return render(request, "uebernahme/start.html", {"einstellungen": einstellungen})
 
     if ziel == "besuche":
         # Tagesreport „kunden die da waren“ (ein Blatt, nur Nummern) → abholungen.csv zum
         # Herunterladen; anschließend über „Kundenstamm importieren → ergänzen“ einspielen.
         try:
             besuche = konvertieren.besuche_umwandeln(datei.read())
-        except konvertieren.BexatFehler as fehler:
+        except konvertieren.UebernahmeFehler as fehler:
             messages.error(request, str(fehler))
-            return render(request, "bexat/start.html", {"einstellungen": einstellungen})
+            return render(request, "uebernahme/start.html", {"einstellungen": einstellungen})
         return _csv_antwort("abholungen.csv", besuche.abholungen)
 
     try:
@@ -56,9 +57,9 @@ def start(request):
             einkommensarten=einstellungen.einkommensarten,
             ausgabestellen=einstellungen.ausgabestellen,
         )
-    except konvertieren.BexatFehler as fehler:
+    except konvertieren.UebernahmeFehler as fehler:
         messages.error(request, str(fehler))
-        return render(request, "bexat/start.html", {"einstellungen": einstellungen})
+        return render(request, "uebernahme/start.html", {"einstellungen": einstellungen})
 
     for hinweis in umw.hinweise:
         messages.warning(request, hinweis)
@@ -78,13 +79,13 @@ def start(request):
         messages.info(
             request,
             f"Das Merkmal „{name}“ wurde für den Import angelegt bzw. wieder eingeschaltet, "
-            "damit die Angabe aus Bexat nicht verloren geht.",
+            "damit die Angabe aus dem bisherigen Programm nicht verloren geht.",
         )
     ergebnis = importieren.pruefen(umw.kundenstamm)
     if ergebnis.daten is None:
         return render(
             request,
-            "bexat/start.html",
+            "uebernahme/start.html",
             {
                 "einstellungen": einstellungen,
                 "bericht": importieren.bericht_gruppiert(ergebnis.bericht),
@@ -102,10 +103,10 @@ def start(request):
 
 @rollen.recht_erforderlich("kunden.importieren")
 def besuche_konto(request):
-    """Tagesliste der Abholungen aus tafelarbeit.de übernehmen (ADR 0110): Besuche nachtragen und
-    den Kontostand je Kunde per Korrektur-Buchung auf den Wert aus der Liste setzen. Erst Probelauf
-    (bucht nichts), dann Übernehmen. Das Buchen braucht zusätzlich das Recht „Kundenkonto
-    korrigieren“."""
+    """Tagesliste der Abholungen aus dem bisherigen Programm übernehmen (ADR 0110): Besuche
+    nachtragen und den Kontostand je Kunde per Korrektur-Buchung auf den Wert aus der Liste
+    setzen. Erst Probelauf (bucht nichts), dann Übernehmen. Das Buchen braucht zusätzlich das
+    Recht „Kundenkonto korrigieren“."""
     darf_buchen = rollen.hat_recht(request.user, "konto.korrektur")
     kontext = {"darf_buchen": darf_buchen}
     aktion = request.POST.get("aktion")
@@ -125,7 +126,7 @@ def besuche_konto(request):
                     if not darf_buchen:
                         messages.error(request, "Zum Buchen der Kontostände fehlt das Recht "
                                        "„Kundenkonto korrigieren“.")  # fmt: skip
-                        return redirect("bexat:besuche_konto")
+                        return redirect("uebernahme:besuche_konto")
                     erg = besuche_konto_.uebernehmen(zeilen, _benutzername(request.user))
                     messages.success(
                         request,
@@ -139,19 +140,19 @@ def besuche_konto(request):
                             f"{len(erg['unbekannt'])} Kundennummer(n) gibt es in bintafeln nicht "
                             f"und wurden übersprungen: {', '.join(erg['unbekannt'][:20])}{rest}",
                         )
-                    return redirect("bexat:besuche_konto")
+                    return redirect("uebernahme:besuche_konto")
                 kontext["bericht"] = besuche_konto_.plan(zeilen)
     # Probelauf per htmx: nur den Bericht zurückgeben, damit die gewählte Datei oben stehen bleibt.
     if request.method == "POST" and aktion != "uebernehmen" and request.headers.get("HX-Request"):
-        return render(request, "bexat/_besuche_konto_bericht.html", kontext)
+        return render(request, "uebernahme/_besuche_konto_bericht.html", kontext)
     if "fehler" in kontext:
         messages.error(request, kontext["fehler"])
-    return render(request, "bexat/besuche_konto.html", kontext)
+    return render(request, "uebernahme/besuche_konto.html", kontext)
 
 
 @rollen.recht_erforderlich("kunden.importieren")
 def einstellungen(request):
-    objekt = BexatEinstellungen.laden()
+    objekt = UebernahmeEinstellungen.laden()
     if request.method == "POST":
         form = EinstellungenForm(request.POST)
         if form.is_valid():
@@ -159,7 +160,7 @@ def einstellungen(request):
             objekt.einkommensarten = form.cleaned_data["einkommensarten"]
             objekt.save()
             messages.success(request, "Gespeichert.")
-            return redirect(reverse("bexat:einstellungen"))
+            return redirect(reverse("uebernahme:einstellungen"))
     else:
         form = EinstellungenForm.aus_einstellungen(objekt)
-    return render(request, "bexat/einstellungen.html", {"form": form})
+    return render(request, "uebernahme/einstellungen.html", {"form": form})
