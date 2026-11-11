@@ -285,12 +285,9 @@ def warnung(s: Stand, jetzt: datetime | None = None) -> Warnung | None:
 
 
 def _empfaenger() -> list[str]:
-    from django.contrib.auth import get_user_model
+    from apps.core import benachrichtigung
 
-    from apps.konten import rollen
-
-    benutzer = get_user_model().objects.filter(is_active=True).exclude(email="")
-    return sorted(b.email for b in benutzer if rollen.hat_recht(b, "system.update"))
+    return benachrichtigung.empfaenger("sicherheitsupdate")
 
 
 def sicherheit_melden(w: Warnung | None) -> None:

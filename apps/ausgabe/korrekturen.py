@@ -7,14 +7,11 @@ Mail, wenn ein Mailserver eingerichtet ist.
 
 import datetime as dt
 
-from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Q
 from django.utils import timezone
 
 from apps.ausgabe import konto
 from apps.ausgabe.models import Buchung, Korrekturwunsch, Teilnahme
-from apps.konten import rollen
 from apps.kunden.models import Abholung, Haushalt, abholfrist_beginn
 
 Art = Korrekturwunsch.Art
@@ -61,10 +58,11 @@ def entschiedene(kundennummer) -> list[Korrekturwunsch]:
 
 
 def empfaenger() -> list[str]:
-    """Mailadressen aller aktiven Konten, die Korrekturwünsche entscheiden dürfen."""
-    konten = get_user_model().objects.filter(is_active=True).exclude(email="")
-    konten = konten.filter(Q(is_superuser=True) | Q(groups__rolle__isnull=False)).distinct()
-    return sorted({k.email for k in konten if rollen.hat_recht(k, "korrekturen.entscheiden")})
+    """Mailadressen für Korrekturwünsche: die unter „Mail-Empfänger“ Ausgewählten, sonst alle
+    aktiven Konten, die Korrekturwünsche entscheiden dürfen (ADR 0125)."""
+    from apps.core import benachrichtigung
+
+    return benachrichtigung.empfaenger("korrekturwunsch")
 
 
 def beantragen(art, pk, *, grund, anmerkung, von) -> Korrekturwunsch:

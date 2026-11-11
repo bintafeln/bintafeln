@@ -265,7 +265,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `MailFehler`; mit `art=` aus `mail.ARTEN`, bei Zugangsdaten `vertraulich=True` – jede Mail
   landet im Archiv `GesendeteMail`, Frist `MailEinstellungen.archiv_tage`, ADR 0124). Benachrichtigungen an Mitarbeitende nur über
   `apps.core.benachrichtigung.melden(art, an, …, schluessel)` (Häufigkeit je Person, Erledigtes
-  entfällt über `Art.offen`; neue Arten in `KERN` bzw. `Modul.benachrichtigungen`; ADR 0086). Geheimnisse in der Datenbank nur über `apps.core.geheimnis` verschlüsselt
+  entfällt über `Art.offen`; neue Arten in `KERN` bzw. `Modul.benachrichtigungen`; ADR 0086). Jede Mail
+  steht auf der Seite „Mail-Empfänger“ (ADR 0125): neue `Art` mit `wann` und `an` oder – bei Mails
+  an eine Gruppe – `wahl=Empfaengerwahl(...)` (Empfänger dann über `benachrichtigung.empfaenger()`,
+  nie eigene Auswahlfelder); andere Mails als `Mail` in `apps/core/mailuebersicht.py` bzw. `Modul.mails`. Geheimnisse in der Datenbank nur über `apps.core.geheimnis` verschlüsselt
   speichern (ADR 0016). In Tests landen Mails in `django.core.mail.outbox`.
 - Gemeinsamer Cache in der Datenbank (ADR 0093): `CACHES` = DatabaseCache, Tabelle `bintafeln_cache`
   (Migration `core/0022`); nötig, weil mehrere gunicorn-Prozesse laufen und ein prozesslokaler

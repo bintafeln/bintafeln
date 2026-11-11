@@ -80,3 +80,21 @@ def test_hilfe_bild_benachrichtigungen(angemeldet, admin, muster, benutzer_mit_r
               Marke(seite.get_by_label("Uhrzeit für „täglich“ und „wöchentlich“"), "rahmen", 2),
               Marke(seite.get_by_role("button", name="Speichern"), nummer=3,
                     von="rechts"))  # fmt: skip
+
+
+def test_hilfe_bild_mail_empfaenger(angemeldet, admin, muster, benutzer_mit_rolle):
+    for name, vor, nach in (("anna", "Anna", "Beispiel"), ("bert", "Bert", "Muster")):
+        b = benutzer_mit_rolle(name, rollen.ADMIN)
+        b.first_name, b.last_name, b.email = vor, nach, f"{name}@example.org"
+        b.save()
+    seite = oeffnen(angemeldet, admin, reverse("core:mail_empfaenger"))
+    _ohne_menue(seite)
+    zeile = seite.locator("tr", has_text="Korrekturwunsch vom Einlass")
+    zeile.locator("summary").click()
+    eintrag = zeile.locator("label", has_text="Anna Beispiel")
+    eintrag.click()
+    expect(zeile.get_by_text("gespeichert")).to_be_visible()
+    aufnehmen(seite, "mail-empfaenger", seite.locator("section.karte").nth(1),
+              Marke(zeile.locator("td").first, "rahmen", 1),
+              Marke(zeile.locator("summary"), "rahmen", 2),
+              Marke(eintrag, nummer=3, von="links"))  # fmt: skip

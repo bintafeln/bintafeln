@@ -379,6 +379,10 @@ bearbeitet nur ein Admin. Rollen, die man nicht vergeben darf, bleiben beim Bear
   Sicherheitsupdate, Tickets) sofort, stündlich/täglich/wöchentlich gesammelt oder nie, dazu
   Uhrzeit und Wochentag. Vor dem Versand fällt Erledigtes weg; der App-Container verschickt
   gesammelte Mails alle fünf Minuten (`benachrichtigungen_senden` in `docker/entrypoint.sh`).
+- **Wer bekommt welche Mail** (ADR 0125): „Einstellungen → Tafel → Mail-Empfänger“ zeigt jede
+  Mail des Programms mit Anlass und Empfängern. Bei Mails an eine Gruppe (Korrekturwunsch,
+  Sicherheitsupdate, neuer Antrag, Ausfall im Fahrdienst) wählt die Tafel dort die Personen aus;
+  ohne Auswahl gilt die Vorgabe (alle mit dem passenden Recht, beim neuen Antrag niemand).
 - **Stammdaten** (Person → „Stammdaten, Führerschein, Belehrungen, Schulungen“):
   - Anschrift, Telefon, Handy, Notfallkontakt, Eintritt und Austritt
   - Führerschein-Vermerk (Klassen, gültig bis, gesehen am / von)

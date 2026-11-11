@@ -191,6 +191,22 @@ class Hintergrundbild(models.Model):
         return [h.bild.url for h in cls.objects.filter(bereich=bereich)]
 
 
+class MailEmpfaenger(models.Model):
+    """Wer eine Mail an eine Gruppe bekommt (ADR 0125): je Art die ausgewählten Konten. Ohne
+    Eintrag oder ohne Auswahl gilt die Vorgabe der Art (meist: alle mit dem passenden Recht)."""
+
+    art = models.CharField("Art", max_length=50, unique=True)
+    personen = models.ManyToManyField("konten.Benutzer", blank=True, related_name="+",
+                                      verbose_name="Empfänger")  # fmt: skip
+
+    class Meta:
+        verbose_name = "Mail-Empfänger"
+        verbose_name_plural = "Mail-Empfänger"
+
+    def __str__(self):
+        return self.art
+
+
 class BenachrichtigungsWahl(models.Model):
     """Wie oft eine Person eine Art von Benachrichtigung bekommt (ADR 0086); ohne Eintrag sofort."""
 
@@ -548,6 +564,7 @@ auditlog.register(
 # Das (verschlüsselte) Passwort gehört nicht ins Änderungsprotokoll.
 auditlog.register(MailEinstellungen, exclude_fields=["passwort_verschluesselt"])
 auditlog.register(FotoEinstellungen)
+auditlog.register(MailEmpfaenger, m2m_fields={"personen"})
 
 
 class PapierkorbEintrag(models.Model):

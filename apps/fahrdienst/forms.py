@@ -56,13 +56,6 @@ class EinstellungenForm(forms.ModelForm):
         help_text="Diese Tage sind bei einer neuen Tour schon angehakt. Die tatsächlichen Fahrtage "
         "stellt man je Tour ein.",
     )  # fmt: skip
-    benachrichtigen = forms.ModelMultipleChoiceField(
-        label="Bei einem Ausfall benachrichtigen", queryset=aktive_konten().none(),
-        required=False, widget=forms.CheckboxSelectMultiple,
-        help_text="Per E-Mail; zur Auswahl stehen nur Konten, die den Fahrdienst planen dürfen. "
-        "Leer = alle, die den Fahrdienst planen dürfen.",
-    )  # fmt: skip
-
     telegram_schluessel = forms.CharField(
         label="Telegram: Bot-Schlüssel", required=False, widget=forms.PasswordInput,
         help_text="Von @BotFather in Telegram („/newbot“). Wird verschlüsselt gespeichert; leer "
@@ -74,22 +67,11 @@ class EinstellungenForm(forms.ModelForm):
 
     class Meta:
         model = FahrdienstEinstellungen
-        fields = ["selbst_melden", "benachrichtigen", "fahrtage", "feiertage_frei",
+        fields = ["selbst_melden", "fahrtage", "feiertage_frei",
                   "aufbewahren_monate", "telegram_chats"]  # fmt: skip
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Nur Berechtigte (die den Fahrdienst planen dürfen) zur Auswahl; schon Gewählte bleiben
-        # sichtbar, auch wenn jemand das Recht verloren hat.
-        from apps.fahrdienst import plan
-
-        erlaubt = {k.pk for k in plan.duerfen_planen()}
-        if self.instance.pk:
-            erlaubt |= set(self.instance.benachrichtigen.values_list("pk", flat=True))
-        self.fields["benachrichtigen"].queryset = aktive_konten().filter(pk__in=erlaubt)
-        self.fields["benachrichtigen"].label_from_instance = lambda b: (
-            f"{b.get_full_name() or b.username} ({b.email})"
-        )
         if self.instance.telegram_schluessel_verschluesselt:
             self.fields["telegram_schluessel"].help_text = (
                 "Ein Schlüssel ist gespeichert. " + self.fields["telegram_schluessel"].help_text

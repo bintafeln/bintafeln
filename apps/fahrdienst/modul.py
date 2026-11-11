@@ -1,6 +1,6 @@
 """Beschreibung des Moduls Fahrdienst für den Modulrahmen (ADR 0049). Ohne Datenbankzugriff."""
 
-from apps.core.benachrichtigung import Art
+from apps.core.benachrichtigung import Art, Empfaengerwahl
 from apps.core.module import Aushangseite, Modul
 
 
@@ -86,14 +86,37 @@ def _darf(*codes):
     return pruefen
 
 
+def _berechtigte():
+    from apps.fahrdienst.plan import duerfen_planen
+
+    return duerfen_planen()
+
+
+def _wahl_lesen():
+    from apps.fahrdienst.models import FahrdienstEinstellungen
+
+    return FahrdienstEinstellungen.laden().benachrichtigen.values_list("pk", flat=True)
+
+
+def _wahl_speichern(konten) -> None:
+    from apps.fahrdienst.models import FahrdienstEinstellungen
+
+    FahrdienstEinstellungen.laden().benachrichtigen.set(konten)
+
+
 MODUL = Modul(
     kennung="fahrdienst",
     benachrichtigungen=(
         Art("fahrdienst_ausfall", "Fahrdienst: Ausfall",
             "Entfällt, wenn bis zum Versand für alle betroffenen Plätze Ersatz eingetragen ist.",
-            fuer=_darf("fahrdienst.planen", "fahrdienst.sehen"), offen=_ausfall_offen),
+            fuer=_darf("fahrdienst.planen", "fahrdienst.sehen"), offen=_ausfall_offen,
+            wann="Sobald für eine Fahrerin oder einen Fahrer ein Ausfall eingetragen wird.",
+            wahl=Empfaengerwahl(_berechtigte, "alle, die den Fahrdienst planen dürfen",
+                                _wahl_lesen, _wahl_speichern)),
         Art("fahrdienst_gesund", "Fahrdienst: wieder gesund",
-            fuer=_darf("fahrdienst.planen", "fahrdienst.sehen")),
+            fuer=_darf("fahrdienst.planen", "fahrdienst.sehen"),
+            wann="Sobald sich jemand vor dem Ende des Ausfalls wieder gesund meldet.",
+            an="Dieselben Personen wie beim Ausfall."),
     ),
     titel="Fahrdienst",
     beschreibung="Fahrerplan mit Touren, fester Besetzung und Springern; Ausfälle melden, Ersatz "

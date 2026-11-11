@@ -141,12 +141,13 @@ def test_fahrtage_je_tour(team):
 
 def test_benachrichtigen_auswahl_nur_berechtigte(benutzer_mit_rolle):
     """Zur Auswahl „Bei einem Ausfall benachrichtigen" stehen nur Konten, die planen dürfen."""
-    from apps.fahrdienst.forms import EinstellungenForm
+    from apps.core import benachrichtigung
+    from apps.core.views_mails import EmpfaengerForm
 
     planer = person(benutzer_mit_rolle, "Pia Plan", rollen.BUERO, "pia@example.org")  # darf planen
     fahrer = person(benutzer_mit_rolle, "Fred Fahrer", rollen.FAHRER, "fred@example.org")  # nicht
-    form = EinstellungenForm(instance=FahrdienstEinstellungen.laden())
-    qs = form.fields["benachrichtigen"].queryset
+    art = benachrichtigung.arten()["fahrdienst_ausfall"]
+    qs = EmpfaengerForm(arten=[art]).fields["fahrdienst_ausfall"].queryset
     assert planer.konto in qs
     assert fahrer.konto not in qs
 

@@ -1,7 +1,6 @@
 """Formulare: das öffentliche Antragsformular (in der gewählten Sprache) und die Verwaltung."""
 
 from django import forms
-from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils.html import format_html
 
@@ -346,39 +345,13 @@ class EinstellungenForm(forms.ModelForm):
             "datenschutz_url",
             "impressum_url", "erklaerungen_url", "voraussetzungen_url", "einverstaendnis_url",
             "kopf_zeigen", "ueberschrift_zeigen", "fuss_zeigen", "ausweis_pruefen",
-            "eigenes_css", "benachrichtigen",
+            "eigenes_css",
             "neu_nach_tagen", "erledigt_nach_tagen", "papierkorb_nach_tagen",
             "max_je_stunde",
         ]  # fmt: skip
         widgets = {
-            "benachrichtigen": forms.CheckboxSelectMultiple,
             "eigenes_css": forms.Textarea(attrs={"rows": 4, "class": "html-eingabe"}),
         }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Auswahl statt Freitext, aber nicht das ganze Team: nur die kleine Gruppe, die Anträge
-        # überhaupt sieht (Recht „antraege.sehen“) – aktive Konten mit E-Mail, keine
-        # Ausgabestellen-Konten. Schon ausgewählte Konten bleiben wählbar, auch wenn sich das
-        # Recht später ändert (sonst fielen sie beim Speichern still weg).
-        from apps.konten import rollen
-
-        kandidaten = (
-            get_user_model().objects.filter(is_active=True, stelle__isnull=True).exclude(email="")
-        )
-        schon = (
-            set(self.instance.benachrichtigen.values_list("pk", flat=True))
-            if self.instance.pk
-            else set()
-        )
-        erlaubt = [
-            b.pk for b in kandidaten if b.pk in schon or rollen.hat_recht(b, "antraege.sehen")
-        ]
-        self.fields["benachrichtigen"].queryset = (
-            get_user_model()
-            .objects.filter(pk__in=erlaubt)
-            .order_by("last_name", "first_name", "username")
-        )
 
     def save(self, commit=True):
         instanz = super().save(commit=False)

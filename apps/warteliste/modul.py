@@ -1,5 +1,6 @@
 """Beschreibung des Moduls Warteliste für den Modulrahmen (ADR 0049). Ohne Datenbankzugriff."""
 
+from apps.core.mailuebersicht import Mail
 from apps.core.module import Modul
 
 
@@ -88,6 +89,14 @@ def suchen(benutzer, begriff, grenze):
 
 MODUL = Modul(
     kennung="warteliste",
+    mails=(
+        Mail("Warteliste: Einladung, Absage, Erinnerung",
+             "Wenn jemand in der Warteliste einlädt, absagt oder streicht – mit dem Text der "
+             "jeweiligen Sprache.",
+             "Die antragstellende Person.",
+             ("Warteliste und Einladungen", "warteliste:einstellungen",
+              "einstellungen.warteliste")),
+    ),
     titel="Warteliste",
     beschreibung="Anträge zu Terminen einladen: Wartestatus, Einladungen, Absagen, Streichungen",
     app_label="warteliste",

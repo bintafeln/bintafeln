@@ -116,6 +116,8 @@ class Modul:
     antrag: Callable | None = None
     # Arten von Benachrichtigungen des Moduls (apps.core.benachrichtigung.Art, ADR 0086)
     benachrichtigungen: tuple = ()
+    # Weitere Mails des Moduls für die Übersicht „Mail-Empfänger“ (apps.core.mailuebersicht.Mail)
+    mails: tuple = ()
     # Adresse für das Ausweis-Element „QR-Code Wartezeit“: ausweis_qr(haushalt) -> URL oder ""
     ausweis_qr: Callable | None = None
     # Rechte, die das Modul einem Konto wieder entzieht (z. B. je Ausgabestelle):
