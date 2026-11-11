@@ -237,11 +237,11 @@ def duerfen_planen():
 
 
 def empfaenger() -> list[str]:
-    """Mailadressen für Ausfälle: die eingestellten Personen, sonst alle, die planen dürfen."""
-    gewaehlt = FahrdienstEinstellungen.laden().benachrichtigen.filter(is_active=True)
-    if gewaehlt.exists():
-        return sorted({b.email for b in gewaehlt if b.email})
-    return sorted({k.email for k in duerfen_planen() if k.email})
+    """Mailadressen für Ausfälle: die unter „Mail-Empfänger“ gewählten Personen, sonst alle,
+    die planen dürfen; bei „niemand“ keiner (ADR 0125)."""
+    from apps.core import benachrichtigung
+
+    return benachrichtigung.empfaenger("fahrdienst_ausfall")
 
 
 def _benachrichtigen(ausfall: Ausfall, adresse: str) -> None:

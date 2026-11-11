@@ -86,6 +86,22 @@ def gewaehlt(art: "Art") -> set[int]:
     return set(eintrag.personen.values_list("pk", flat=True)) if eintrag else set()
 
 
+def niemand(art: "Art") -> bool:
+    """Hat die Tafel für diese Mail „niemand“ gewählt? Dann wird sie gar nicht verschickt."""
+    from apps.core.models import MailEmpfaenger
+
+    return MailEmpfaenger.objects.filter(art=art.kennung, niemand=True).exists()
+
+
+def niemand_speichern(art: "Art", wert: bool) -> None:
+    from apps.core.models import MailEmpfaenger
+
+    eintrag, _ = MailEmpfaenger.objects.get_or_create(art=art.kennung)
+    if eintrag.niemand != wert:
+        eintrag.niemand = wert
+        eintrag.save(update_fields=["niemand"])
+
+
 def wahl_speichern(art: "Art", konten) -> None:
     if art.wahl.speichern:
         art.wahl.speichern(konten)
@@ -100,7 +116,10 @@ def aktuelle(art: "Art") -> list:
     """Wer die Gruppen-Mail im Moment bekommt. Zentrale Auswahl: die ausgewählten Berechtigten,
     ohne Auswahl alle Berechtigten – wer das Recht verloren hat oder gesperrt ist, bekommt
     nichts mehr; bleibt so niemand übrig, geht die Mail wieder an alle. Eigene Ablage (Anträge,
-    Fahrdienst): die ausgewählten aktiven Konten, ohne Auswahl die Vorgabe ``leer``."""
+    Fahrdienst): die ausgewählten aktiven Konten, ohne Auswahl die Vorgabe ``leer``. Hat die
+    Tafel „niemand“ gewählt, bekommt sie keiner."""
+    if niemand(art):
+        return []
     berechtigte = art.wahl.berechtigte()
     wahl = gewaehlt(art)
     if not art.wahl.lesen:
@@ -172,7 +191,7 @@ KERN = (
         wahl=Empfaengerwahl(lambda: mit_recht("korrekturen.entscheiden"),
                             "alle, die Korrekturwünsche entscheiden dürfen")),
     Art("sicherheitsupdate", "Sicherheitsupdate verfügbar",
-        "Lässt sich nicht abschalten, höchstens täglich sammeln.",
+        "Die einzelne Person kann sie nicht abschalten, höchstens täglich sammeln.",
         fuer=_recht("system.update"), nie_erlaubt=False,
         wann="Einmal je Sicherheitsupdate, sobald bintafeln davon erfährt.",
         wahl=Empfaengerwahl(lambda: mit_recht("system.update"),

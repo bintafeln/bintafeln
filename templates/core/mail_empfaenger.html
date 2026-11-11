@@ -27,6 +27,7 @@
             {% if z.feld %}
               <label for="{{ z.feld.id_for_label }}" class="unsichtbar">{{ z.art.titel }}: Empfänger</label>
               {{ z.feld }}{{ z.feld.errors }}
+              {% if z.niemand %}<label class="mail-niemand">{{ z.niemand }} Niemand bekommt diese Mail</label>{% endif %}
               <small class="hilfe">Ohne Auswahl: {{ z.art.wahl.leer }}. Bekommt sie im Moment:
                 {% if z.aktuell %}{{ z.aktuell|join:", " }}{% else %}niemand{% endif %}.</small>
             {% else %}{{ z.art.an|default:"–" }}{% endif %}

@@ -72,10 +72,18 @@ class EmpfaengerForm(forms.Form):
             )  # fmt: skip
             feld.label_from_instance = _name
             self.fields[art.kennung] = feld
+            if art.wahl.leer != "niemand":
+                self.fields[f"niemand_{art.kennung}"] = forms.BooleanField(
+                    label="Niemand bekommt diese Mail",
+                    required=False,
+                    initial=benachrichtigung.niemand(art),
+                )
 
     def speichern(self) -> None:
         for art in self.arten:
             benachrichtigung.wahl_speichern(art, self.cleaned_data[art.kennung])
+            if f"niemand_{art.kennung}" in self.fields:
+                benachrichtigung.niemand_speichern(art, self.cleaned_data[f"niemand_{art.kennung}"])
 
 
 @never_cache
@@ -95,6 +103,8 @@ def empfaenger(request):
     zeilen = []
     for art in arten:
         zeile = {"art": art, "feld": form[art.kennung] if art.wahl else None}
+        if f"niemand_{art.kennung}" in form.fields:
+            zeile["niemand"] = form[f"niemand_{art.kennung}"]
         if art.wahl:
             zeile["aktuell"] = [k.get_full_name() or k.username
                                 for k in benachrichtigung.aktuelle(art)]  # fmt: skip

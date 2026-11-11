@@ -119,3 +119,33 @@ def test_nur_mit_recht(admin, benutzer_mit_rolle, anmelden):
     anmelden(client, benutzer_mit_rolle("berta", rollen.BUERO))
     assert client.get(SEITE).status_code == 403
     assert client.post(SEITE, {}).status_code == 403
+
+
+def test_niemand_bekommt_die_mail(admin_client, benutzer_mit_rolle):
+    """„Niemand“ ist eine eigene Wahl: Dann geht die Mail an keinen, auch nicht an alle."""
+    anna = konto(benutzer_mit_rolle, "anna")
+    seite = admin_client.get(SEITE).content.decode()
+    assert 'name="niemand_korrekturwunsch"' in seite and 'name="niemand_sicherheitsupdate"' in seite
+    assert 'name="niemand_antrag_neu"' not in seite  # dort heißt „keine Auswahl“ schon niemand
+    admin_client.post(SEITE, {"niemand_korrekturwunsch": "on", "korrekturwunsch": [anna.pk]})
+    assert korrekturen.empfaenger() == []
+    assert "anna@example.org" in update._empfaenger()  # andere Mail unberührt
+    seite = admin_client.get(SEITE)
+    assert seite.context["form"]["niemand_korrekturwunsch"].value() is True
+    assert "Bekommt sie im Moment:\n                niemand" in seite.content.decode()
+    # Haken wieder weg: die Auswahl gilt wieder
+    admin_client.post(SEITE, {"korrekturwunsch": [anna.pk]})
+    assert korrekturen.empfaenger() == ["anna@example.org"]
+
+
+def test_niemand_auch_beim_fahrdienst(admin_client, benutzer_mit_rolle):
+    from apps.core.models import TafelEinstellungen
+    from apps.fahrdienst import plan
+
+    e = TafelEinstellungen.laden()
+    e.module = [*e.module, "fahrdienst"]
+    e.save()
+    konto(benutzer_mit_rolle, "pia", rollen.BUERO)
+    assert "pia@example.org" in plan.empfaenger()
+    admin_client.post(SEITE, {"niemand_fahrdienst_ausfall": "on"})
+    assert plan.empfaenger() == []
