@@ -338,6 +338,7 @@ def uebersicht(request):
     keys = listen_spalten(request.user)
     aus = set(request.user.kundenliste_aus or [])
     spalten = _spalten(filter_, keys, darf)
+    gewaehlt = set(export.spalten())  # einmal lesen, nicht je Spalte
     kontext = {
         "fremd_nummer": fremd,
         "seite": seite,
@@ -357,7 +358,7 @@ def uebersicht(request):
         "spalten_wahl": [
             (k, n, k not in aus)
             for k, n in export.auswahl()
-            if k in export.spalten() and k != "kundennummer"
+            if k in gewaehlt and k != "kundennummer"
         ],
         "heute": timezone.localdate(),
         "darf_importieren": rollen.hat_recht(request.user, "kunden.importieren"),
