@@ -2009,3 +2009,8 @@ details.amtsdokumente > summary { cursor: pointer; margin: .5rem 0; }
 .karte h2.abruf-titel { margin-top: 1.75rem; }
 .abruf-wann { white-space: nowrap; }
 .abruf-wann .leise { color: var(--leise); font-size: .85rem; }
+
+/* Vereinsportal: die beiden Wege zum Einlesen nebeneinander */
+.wege { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; margin: 1rem 0; }
+.weg { border: 1px solid var(--rand); border-radius: var(--radius); padding: .25rem 1rem 1rem; }
+.weg h2 { margin-top: .75rem; }

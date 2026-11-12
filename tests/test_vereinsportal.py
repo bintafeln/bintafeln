@@ -557,10 +557,14 @@ def test_dankesbriefe_seite_druck_pdf_im_grossen_stil(
     assert not Spende.objects.filter(bedankt_am__isnull=True).exists()
     # Spendenliste: die Herkunft steht in der Spalte „Bestätigung“
     liste = admin_client.get(reverse("spenden:liste"), {"jahr": 2026}).content.decode()
-    assert "Beleg anderes Programm" in liste
+    # der Beleg ist ein Link auf das PDF; die Einzelspende behält ihn als Bestätigung
+    beleg = SpendenBeleg.objects.get(spende__belegnummer="3")
+    assert reverse("spenden:beleg", args=[beleg.pk]) in liste and "📄 Beleg 3" in liste
+    assert "gilt als Bestätigung" in liste and "(Sammelbestätigung)" in liste
+    assert admin_client.get(reverse("spenden:beleg", args=[beleg.pk])).status_code == 200
     Spende.objects.filter(belegnummer="3").update(fremdbeleg=V)
     liste = admin_client.get(reverse("spenden:liste"), {"jahr": 2026}).content.decode()
-    assert "anderes Programm ✓" in liste
+    assert "dort versendet" in liste
 
 
 # --- Seiten -----------------------------------------------------------------------------------
@@ -959,13 +963,13 @@ def test_anfrage_an_den_dienst(settings, monkeypatch):
 def test_seite_abruf_nicht_eingeschaltet(buero):
     seite = buero.get(reverse("vereinsportal:abruf")).content.decode()
     assert "nicht eingeschaltet" in seite and "COMPOSE_PROFILES=abruf" in seite
-    assert "Automatisch aus dem Vereinsportal holen" not in (
+    assert "Abruf starten" not in (
         buero.get(reverse("vereinsportal:start")).content.decode())  # fmt: skip
 
 
 def test_seite_abruf_ablauf(buero, dienst, zugang, export):
     url, stand_url = reverse("vereinsportal:abruf"), reverse("vereinsportal:abruf_stand")
-    assert "Automatisch aus dem Vereinsportal holen" in (
+    assert "Abruf starten" in (
         buero.get(reverse("vereinsportal:start")).content.decode())  # fmt: skip
     seite = buero.get(url).content.decode()
     assert "Abruf starten" in seite and "Es läuft kein Abruf" in seite
@@ -1096,6 +1100,37 @@ def test_abruf_nur_mit_eigenem_recht(admin, benutzer_mit_rolle, anmelden, client
     for name in ("abruf", "abruf_stand", "zugang"):
         assert client.get(reverse(f"vereinsportal:{name}")).status_code == 403
     assert reverse("vereinsportal:abruf") not in client.get(reverse("core:start")).content.decode()
+
+
+def test_spendenliste_zeigt_offene_sammelbestaetigung(eingelesen, einstellungen, admin_client):
+    """Mehrere noch nicht bestätigte Spenden eines Spenders im Jahr: Die Liste sagt, dass
+    bintafeln dafür eine Sammelbestätigung ausstellt."""
+    liste = admin_client.get(reverse("spenden:liste"), {"jahr": 2026}).content.decode()
+    assert "Sammelbestätigung offen (2)" in liste and liste.count("📄 Beleg") == 3
+
+
+def test_eine_seite_fuer_abruf_und_hochladen(
+    admin, benutzer_mit_rolle, recht_geben, recht_nehmen, anmelden, client, dienst
+):
+    """Ein Menüeintrag führt zu beidem; jede Person sieht den Weg, den sie gehen darf."""
+    start = reverse("vereinsportal:start")
+    anmelden(client, benutzer_mit_rolle("dora", rollen.BUERO))  # nur von Hand
+    seite = client.get(start).content.decode()
+    assert "Von Hand hochladen" in seite and "Automatisch holen" not in seite
+    menue = client.get(reverse("core:start")).content.decode()
+    assert menue.count(f'href="{start}"') == 1
+    # nur der automatische Abruf: dieselbe Seite, ohne Hochladen
+    recht_geben(rollen.BUERO, "vereinsportal.abruf")
+    recht_nehmen(rollen.BUERO, "vereinsportal.nutzen")
+    seite = client.get(start).content.decode()
+    assert "Automatisch holen" in seite and "Von Hand hochladen" not in seite
+    assert client.post(start, {}).status_code == 403
+    assert f'href="{start}"' in client.get(reverse("core:start")).content.decode()
+    # beides
+    recht_geben(rollen.BUERO, "vereinsportal.nutzen")
+    seite = client.get(start).content.decode()
+    assert "Automatisch holen" in seite and "Von Hand hochladen" in seite
+    assert client.get(reverse("core:start")).content.decode().count(f'href="{start}"') == 1
 
 
 def test_auskunft_nennt_zugang_und_abrufe(admin, berta, zugang, dienst, pdf_text):

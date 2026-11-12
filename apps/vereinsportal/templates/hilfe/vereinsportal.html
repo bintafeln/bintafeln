@@ -22,7 +22,9 @@
 
 <h3>Einlesen</h3>
 <ol>
-  <li>Menü „Verein → Spenden → Aus dem Vereinsportal einlesen“ öffnen.</li>
+  <li>Menü „Verein → Spenden → Aus dem Vereinsportal einlesen“ öffnen. Die Seite zeigt beide Wege nebeneinander:
+    „Automatisch holen“ (wenn eingeschaltet und Sie das Recht dazu haben) und „Von Hand hochladen“. Das Ergebnis ist
+    dasselbe.</li>
   <li>Den <strong>Finanzexport</strong> wählen und „Finanzexport einlesen“. Je Beleg entsteht eine Spende; den Spender
     sucht bintafeln im Adressbuch (gleicher Name und gleiche PLZ) und legt ihn sonst neu an. Schon eingelesene Belege
     werden übersprungen, Sie können denselben Zeitraum also gefahrlos noch einmal einlesen. Belege ohne vollständige
@@ -51,7 +53,8 @@
   <li>Einmalig für die Tafel unter „Einstellungen → Verein → Vereinsportal“ eintragen: die Adresse der Anmeldeseite,
     die Adresse der Liste „Spender mit E-Mail“ und die Adresse der Seite „Finanzexport“ (jeweils im Vereinsportal
     öffnen und aus der Adresszeile des Browsers kopieren).</li>
-  <li>„Verein → Spenden → Abruf aus dem Vereinsportal“ öffnen. Im Kasten „Ihre persönlichen Zugangsdaten“ einmalig
+  <li>„Verein → Spenden → Aus dem Vereinsportal einlesen“ öffnen und unter „Automatisch holen“ auf „Abruf starten …“
+    klicken. Im Kasten „Ihre persönlichen Zugangsdaten“ einmalig
     „Meine Zugangsdaten eintragen“: E-Mail und Passwort Ihrer Anmeldung im Vereinsportal. Das Passwort wird
     verschlüsselt gespeichert und nie wieder angezeigt; dort lassen sich die Angaben auch ändern oder löschen.</li>
   <li>Den Zeitraum wählen (höchstens drei Monate) und „Abruf starten“.</li>
@@ -98,18 +101,18 @@
 {% endif %}
 
 <h3>Bestätigungen: nie doppelt</h3>
-<p>In der Spendenliste steht in der Spalte „Bestätigung“, woher die Bescheinigung kommt:</p>
+<p>In der Spendenliste steht in der Spalte „Bestätigung“ der Beleg aus dem Vereinsportal als Link
+  („📄 Beleg 123“): Ein Klick öffnet das PDF. Dahinter steht, was damit geschieht:</p>
 <ul>
-  <li><strong>„anderes Programm ✓“</strong>: Das Vereinsportal hat die Bescheinigung schon versendet. bintafeln stellt
+  <li><strong>„dort versendet“</strong>: Das Vereinsportal hat die Bescheinigung schon versendet. bintafeln stellt
     dafür nie eine eigene aus und schreibt keinen Dankesbrief.</li>
-  <li><strong>„Beleg anderes Programm“</strong>: Es gibt den Beleg aus dem Vereinsportal, er ist dort aber noch nicht
-    versendet.
-    <ul>
-      <li>Hat der Spender im Jahr <strong>eine</strong> solche offene Spende, ist dieser Beleg die Bescheinigung; er
-        liegt dem Dankesbrief bei.</li>
-      <li>Hat er <strong>mehrere</strong> offene Spenden, stellt bintafeln eine <strong>Sammelbestätigung</strong> mit
-        eigener Nummer aus. Die Einzelbelege liegen dann nicht bei.</li>
-    </ul></li>
+  <li><strong>„gilt als Bestätigung“</strong>: Der Spender hat im Jahr nur diese eine offene Spende. Der Beleg ist die
+    Bescheinigung; er liegt dem Dankesbrief bei.</li>
+  <li><strong>„Sammelbestätigung offen (3)“</strong>: Der Spender hat im Jahr mehrere noch nicht bestätigte Spenden
+    (hier drei). Die Spendenliste zeigt weiterhin jede Spende einzeln; bintafeln stellt dafür aber <strong>eine
+    Sammelbestätigung</strong> mit eigener Nummer aus – unter „Zuwendungsbestätigungen“ oder beim Erstellen der
+    Dankesbriefe. Die Einzelbelege liegen dann nicht bei. Danach steht in der Spalte „Nr. … (Sammelbestätigung)“ als
+    Link auf das PDF.</li>
 </ul>
 
 <h3>Dankesbriefe mit Bescheinigung</h3>

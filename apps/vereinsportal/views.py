@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
 from django.shortcuts import redirect, render
 from django.utils import timezone
@@ -49,10 +50,14 @@ def stand_je_jahr() -> list[dict]:
 
 
 @never_cache
-@nutzen
+@rollen.recht_erforderlich("vereinsportal.nutzen", "vereinsportal.abruf")
 def start(request):
-    """Finanzexport und Spenderliste einlesen; die Spenden selbst stehen in der Spendenliste."""
+    """Die eine Seite zum Vereinsportal: automatisch abrufen (Recht „abruf“) oder von Hand
+    hochladen (Recht „nutzen“); die Spenden selbst stehen in der Spendenliste."""
+    darf_hochladen = rollen.hat_recht(request.user, "vereinsportal.nutzen")
     if request.method == "POST":
+        if not darf_hochladen:
+            raise PermissionDenied
         formulare = {"finanzexport": (FinanzexportForm, _finanzexport),
                      "spenderliste": (SpenderlisteForm, _spenderliste)}  # fmt: skip
         feld = "spenderliste" if "spenderliste" in request.FILES else "finanzexport"
@@ -69,7 +74,8 @@ def start(request):
     return render(request, "vereinsportal/start.html", {
         "jahre": stand_je_jahr(), "kontakte": Kontakt.objects.count(),
         "finanzexport": FinanzexportForm(), "spenderliste": SpenderlisteForm(),
-        "abruf_verfuegbar": portal.verfuegbar(),
+        "abruf_verfuegbar": portal.verfuegbar(), "darf_hochladen": darf_hochladen,
+        "darf_abrufen": rollen.hat_recht(request.user, "vereinsportal.abruf"),
     })  # fmt: skip
 
 

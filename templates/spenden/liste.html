@@ -48,7 +48,15 @@
         {% if "art" in sichtbar %}<td data-titel="Art">{{ s.get_art_display }}{% if s.mitgliedsbeitrag %} (Mitgliedsbeitrag){% endif %}</td>{% endif %}
         {% if "betrag" in sichtbar %}<td data-titel="Betrag/Wert" class="zahl">{% if s.betrag %}{{ s.betrag|floatformat:2 }} €{% else %}–{% endif %}</td>{% endif %}
         {% if "bezeichnung" in sichtbar %}<td data-titel="Bezeichnung">{{ s.beschreibung|default:s.zweck|default:"–" }}{% if s.menge %} ({{ s.menge|floatformat:"-2" }} {{ s.einheit }}){% endif %}</td>{% endif %}
-        {% if "bestaetigung" in sichtbar %}<td data-titel="Bestätigung">{% if s.bestaetigt %}Nr. {{ s.bestaetigung.nummer }}{% elif s.fremdbeleg == "versendet" %}<span title="{{ s.get_fremdbeleg_display }}">anderes Programm ✓</span>{% elif s.fremdbeleg %}<span title="{{ s.get_fremdbeleg_display }}">Beleg anderes Programm</span>{% else %}–{% endif %}</td>{% endif %}
+        {% if "bestaetigung" in sichtbar %}<td data-titel="Bestätigung">
+          {% if s.bestaetigt %}{% if "spenden.bestaetigen" in rechte %}<a href="{% url 'spenden:pdf' %}?nummern={{ s.bestaetigung.nummer }}" target="_blank" rel="noopener">Nr. {{ s.bestaetigung.nummer }}</a>{% else %}Nr. {{ s.bestaetigung.nummer }}{% endif %}{% if s.bestaetigung.art == "sammel" %} <span class="leise">(Sammelbestätigung)</span>{% endif %}
+          {% elif s.fremdbeleg or s.beleg %}
+            {% if s.beleg %}<a href="{% url 'spenden:beleg' s.beleg.pk %}" target="_blank" rel="noopener" title="Beleg aus dem anderen Programm öffnen">📄 Beleg{% if s.belegnummer %} {{ s.belegnummer }}{% endif %}</a>{% else %}Beleg anderes Programm{% endif %}
+            {% if s.fremdbeleg == "versendet" %}<span class="marke-ok" title="{{ s.get_fremdbeleg_display }}">dort versendet</span>
+            {% elif s.sammel %}<span class="marke-neutral" title="Dieser Spender hat {{ s.sammel }} noch nicht bestätigte Geldspenden im Jahr: bintafeln stellt dafür eine Sammelbestätigung aus.">Sammelbestätigung offen ({{ s.sammel }})</span>
+            {% elif s.fremdbeleg %}<span class="leise" title="Einzige offene Spende des Spenders im Jahr: Der Beleg ist die Bestätigung.">gilt als Bestätigung</span>{% endif %}
+          {% elif s.sammel %}<span class="marke-neutral" title="Dieser Spender hat {{ s.sammel }} noch nicht bestätigte Geldspenden im Jahr: bintafeln stellt dafür eine Sammelbestätigung aus.">Sammelbestätigung offen ({{ s.sammel }})</span>
+          {% else %}–{% endif %}</td>{% endif %}
       </tr>
     {% empty %}
       <tr><td colspan="{{ sichtbar|length|add:1 }}">Keine Spenden gefunden.</td></tr>

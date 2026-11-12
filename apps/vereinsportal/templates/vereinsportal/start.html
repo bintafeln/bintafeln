@@ -8,20 +8,34 @@
     Vereinsportal schon versendet ist, wird vermerkt; dafür stellt bintafeln keine zweite Bestätigung aus.
     <a href="{% url 'core:hilfe' %}#vereinsportal">Welche Dateien gebraucht werden</a></p>
 
-  <h2>Einlesen</h2>
-  <form method="post" enctype="multipart/form-data" class="aktionsleiste" id="finanzexport-form">
-    {% csrf_token %}
-    <label for="{{ finanzexport.finanzexport.id_for_label }}">{{ finanzexport.finanzexport.label }}</label>
-    {{ finanzexport.finanzexport }}
-    <button type="submit" class="knopf">Finanzexport einlesen</button>
-  </form>
-  <form method="post" enctype="multipart/form-data" class="aktionsleiste" id="spenderliste-form">
-    {% csrf_token %}
-    <label for="{{ spenderliste.spenderliste.id_for_label }}">{{ spenderliste.spenderliste.label }}</label>
-    {{ spenderliste.spenderliste }}
-    <button type="submit" class="knopf knopf-zweitrangig">Spenderliste ersetzen</button>
-  </form>
-  {% if abruf_verfuegbar %}<p><a class="knopf" href="{% url 'vereinsportal:abruf' %}">Automatisch aus dem Vereinsportal holen</a></p>{% endif %}
+  <div class="wege">
+    {% if abruf_verfuegbar and darf_abrufen %}
+    <div class="weg" id="weg-abruf">
+      <h2>Automatisch holen</h2>
+      <p>bintafeln meldet sich mit <strong>Ihren</strong> Zugangsdaten im Vereinsportal an, holt Finanzexport und
+        Spenderliste für einen Zeitraum und liest beides ein. Sie geben nur den 2FA-Code ein.</p>
+      <p><a class="knopf" href="{% url 'vereinsportal:abruf' %}">Abruf starten …</a></p>
+    </div>
+    {% endif %}
+    {% if darf_hochladen %}
+    <div class="weg" id="weg-hochladen">
+      <h2>Von Hand hochladen</h2>
+      <p>Die Dateien selbst im Vereinsportal herunterladen und hier hochladen. Das Ergebnis ist dasselbe.</p>
+      <form method="post" enctype="multipart/form-data" class="aktionsleiste" id="finanzexport-form">
+        {% csrf_token %}
+        <label for="{{ finanzexport.finanzexport.id_for_label }}">{{ finanzexport.finanzexport.label }}</label>
+        {{ finanzexport.finanzexport }}
+        <button type="submit" class="knopf{% if abruf_verfuegbar and darf_abrufen %} knopf-zweitrangig{% endif %}">Finanzexport einlesen</button>
+      </form>
+      <form method="post" enctype="multipart/form-data" class="aktionsleiste" id="spenderliste-form">
+        {% csrf_token %}
+        <label for="{{ spenderliste.spenderliste.id_for_label }}">{{ spenderliste.spenderliste.label }}</label>
+        {{ spenderliste.spenderliste }}
+        <button type="submit" class="knopf knopf-zweitrangig">Spenderliste ersetzen</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
   <p class="hinweis">In der Liste „Spender mit E-Mail“ stehen {{ kontakte }} Spender. Ihre E-Mail kommt beim Einlesen ins
     Adressbuch; wer dort „immer per Post“ hat, bekommt Briefe.</p>
 
