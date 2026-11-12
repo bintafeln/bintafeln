@@ -19,7 +19,7 @@ import pytest
 
 PFAD = Path(__file__).resolve().parents[2] / "docker" / "abruf" / "abruf.py"
 SCHLUESSEL = "nur-ein-erfundener-test-schluessel"
-KURZ = {"knopf": 1, "felder": 2, "zwei_faktor": 2, "code": 20, "nach_anmeldung": 0.2,
+KURZ = {"zeile": 2, "knopf": 1, "felder": 2, "zwei_faktor": 2, "code": 20, "nach_anmeldung": 0.2,
         "nach_code": 0.5, "liste_laden": 0.5, "export_laden": 0.5, "klick": 0.1, "abfangen": 3,
         "erzeugen": 20, "download": 20}  # fmt: skip
 
@@ -59,18 +59,37 @@ ZEILEN = """<table>
 %s</table>"""
 FERTIG = """<tr><td><em>(01.02.2026 - 04.02.2026)</em></td><td><button pendo-id="tae-download"
  onclick="fetch('/api/download/7.zip')"><span>Herunterladen</span></button></td></tr>"""
-NEU = (
-    (ZEILEN % "")
-    + """<mat-select style="display:block"
+# Neuen Export erzeugen: Die Datumsfelder tragen absichtlich andere Nummern als im bisherigen
+# Programm (mat-input-7/-8), weil das Vereinsportal sie der Reihe nach vergibt. Nach „Erstellen“
+# erscheint oben eine Zeile mit dem Zeitraum, die erst nach kurzer Zeit herunterladbar ist.
+NEU = (ZEILEN % "") + """<mat-select style="display:block"
  onclick="document.getElementById('wahl').style.display='block'">Zeitraum</mat-select>
 <div id="wahl" style="display:none"><mat-option style="display:block">Dieses Jahr</mat-option>
 <mat-option style="display:block" onclick="window.eigen=true">Benutzerdefiniert</mat-option></div>
-<input id="mat-input-0"><input id="mat-input-1">
-<button onclick="setTimeout(()=>{const b=document.createElement('button');
- b.textContent='Herunterladen';const v=document.getElementById('mat-input-0').value,
- w=document.getElementById('mat-input-1').value;
- b.onclick=()=>location='/neu.zip?von='+v+'&bis='+w+'&eigen='+window.eigen;
- document.body.prepend(b)},800)">Erstellen</button>"""
+<input id="suche" placeholder="Suchen">
+<input id="mat-input-7" class="mat-datepicker-input">
+<input id="mat-input-8" class="mat-datepicker-input">
+<button onclick="erstellen()">Erstellen</button>
+<script>function erstellen() {
+  const v = VON, w = BIS, tr = document.createElement('tr');
+  tr.innerHTML = '<td><em>(' + v + ' - ' + w + ')</em></td><td><button pendo-id="tae-download"'
+    + ' style="pointer-events: none"><span>Herunterladen</span></button></td>';
+  tr.querySelector('button').onclick =
+    () => location = '/neu.zip?von=' + v + '&bis=' + w + '&eigen=' + window.eigen;
+  document.querySelector('table').prepend(tr);
+  setTimeout(() => tr.querySelector('button').removeAttribute('style'), 800);
+}</script>"""  # fmt: skip
+# … wie es sein soll: Das Vereinsportal nimmt den eingestellten Zeitraum
+NEU_RICHTIG = NEU.replace("VON", "document.getElementById('mat-input-7').value").replace(
+    "BIS", "document.getElementById('mat-input-8').value"
+)
+# … und der Fehlerfall: Es erzeugt den Export für einen anderen Zeitraum
+NEU_FALSCH = NEU.replace("VON", "'01.01.2025'").replace("BIS", "'31.12.2025'")
+# … oder die Felder nehmen die Eingabe nicht an
+NEU_STARR = NEU_RICHTIG.replace(
+    "<script>",
+    "<script>for (const f of document.querySelectorAll('.mat-datepicker-input'))"
+    " f.addEventListener('input', () => f.value = '');",
 )
 
 
@@ -134,7 +153,16 @@ class Portal(BaseHTTPRequestHandler):
         if pfad == "/export-vorhanden":
             return self._html(ZEILEN % FERTIG)
         if pfad == "/export-neu":
-            return self._html(NEU)
+            return self._html(NEU_RICHTIG)
+        if pfad == "/export-falsch":
+            return self._html(NEU_FALSCH)
+        if pfad == "/export-starr":
+            return self._html(NEU_STARR)
+        if pfad == "/liste-leer":
+            return self._html("<button>Hilfe</button><button class='x y'>Menü</button>")
+        if pfad == "/api/download/falsch.zip":
+            type(self).gesehen["falsch"] = True
+            return self._datei(_zip(), "application/zip")
         if pfad == "/api/download/7.zip":
             return self._datei(_zip(), "application/zip")
         if pfad == "/neu.zip":
@@ -233,6 +261,60 @@ def test_abruf_erzeugt_neuen_export_ohne_spenderliste(dienst):
     assert stand["stand"] == "fertig", stand
     assert stand["dateien"] == {"spenderliste": False, "finanzexport": True}
     assert Portal.gesehen["neu"] == {"von": "01.02.2026", "bis": "04.02.2026", "eigen": "true"}
+    # nicht irgendein fertiger Export der Seite, sondern genau der für den Zeitraum
+    assert "falsch" not in Portal.gesehen
+    assert stand["hinweise"] == []
+
+
+def test_anderer_zeitraum_laedt_einen_anderen_export(dienst):
+    """Der Fehler vom ersten echten Lauf: Wer den Zeitraum ändert, muss auch den Export für
+    diesen Zeitraum bekommen."""
+    auftrag = dienst.auftrag("/export-neu", mit_liste=False, von="05.03.2026", bis="20.03.2026")
+    dienst.rufen("/start", auftrag)
+    dienst.warten_auf("warte_auf_code")
+    dienst.rufen("/code", {"code": "123456"})
+    stand = dienst.warten_auf("fertig", "fehler")
+    assert stand["stand"] == "fertig", stand
+    assert Portal.gesehen["neu"] == {"von": "05.03.2026", "bis": "20.03.2026", "eigen": "true"}
+
+
+def test_portal_erzeugt_einen_anderen_zeitraum(dienst):
+    """Übernimmt das Vereinsportal den Zeitraum nicht, bricht der Abruf mit einer Erklärung ab,
+    statt den falschen Export einzulesen."""
+    dienst.rufen("/start", dienst.auftrag("/export-falsch", mit_liste=False))
+    dienst.warten_auf("warte_auf_code")
+    dienst.rufen("/code", {"code": "123456"})
+    stand = dienst.warten_auf("fertig", "fehler")
+    assert stand["stand"] == "fehler", stand
+    assert "anderen Zeitraum angelegt (01.01.2025 - 31.12.2025)" in stand["fehler"]
+    assert "statt 01.02.2026 bis 04.02.2026" in stand["fehler"]
+    assert "neu" not in Portal.gesehen and stand["dateien"]["finanzexport"] is False
+
+
+def test_datumsfelder_nehmen_die_eingabe_nicht_an(dienst):
+    dienst.rufen("/start", dienst.auftrag("/export-starr", mit_liste=False))
+    dienst.warten_auf("warte_auf_code")
+    dienst.rufen("/code", {"code": "123456"})
+    stand = dienst.warten_auf("fertig", "fehler")
+    assert stand["stand"] == "fehler", stand
+    assert "Der Zeitraum ließ sich nicht einstellen" in stand["fehler"]
+    assert "statt 01.02.2026 bis 04.02.2026" in stand["fehler"]
+
+
+def test_spenderliste_ohne_export_knopf_wird_gemeldet(dienst, capsys):
+    """Fehlt der Knopf auf der Seite der Liste, läuft der Finanzexport weiter; bintafeln erfährt,
+    dass die Liste fehlt, und das Protokoll nennt, welche Knöpfe die Seite hat."""
+    auftrag = dienst.auftrag()
+    auftrag["liste_url"] = auftrag["liste_url"].replace("/liste", "/liste-leer")
+    dienst.rufen("/start", auftrag)
+    dienst.warten_auf("warte_auf_code")
+    dienst.rufen("/code", {"code": "123456"})
+    stand = dienst.warten_auf("fertig", "fehler")
+    assert stand["stand"] == "fertig", stand
+    assert stand["dateien"] == {"spenderliste": False, "finanzexport": True}
+    assert len(stand["hinweise"]) == 1 and "wurde nicht geholt" in stand["hinweise"][0]
+    protokoll = capsys.readouterr().out
+    assert "Spenderliste: 0 passende Knöpfe" in protokoll and "2 Knöpfe; - | x.y" in protokoll
 
 
 def test_falscher_code_meldet_fehler_und_neuer_auftrag_geht(dienst):
@@ -302,7 +384,8 @@ def test_unerwartete_seite_nennt_schritt_und_seite(dienst):
     dienst.rufen("/code", {"code": "123456"})
     stand = dienst.warten_auf("fehler", "fertig")
     assert stand["stand"] == "fehler", stand
-    assert "Beim Schritt „(2/2) Stelle den Zeitraum ein …“" in stand["fehler"]
+    schritt = "Beim Schritt „(2/2) Stelle den Zeitraum ein: 01.02.2026 bis 04.02.2026 …“"
+    assert schritt in stand["fehler"]
     assert "/liste)" in stand["fehler"]
 
 
