@@ -19,7 +19,7 @@ from apps.spenden import bestaetigung as bst
 from apps.spenden import dank as danken
 from apps.spenden.models import Spende, SpendenBeleg, SpendenEinstellungen
 from apps.vereinsportal import einlesen, namen
-from apps.vereinsportal.models import Kontakt, PortalEinstellungen
+from apps.vereinsportal.models import Abruf, Kontakt, PortalEinstellungen, Zugang
 
 pytestmark = pytest.mark.django_db
 ABSENDER = "Tafel Musterstadt e.V."
@@ -459,8 +459,15 @@ def test_dankesbriefe_seite_druck_pdf_im_grossen_stil(
 
 
 @pytest.fixture
-def buero(admin, benutzer_mit_rolle, anmelden, client):
-    return anmelden(client, benutzer_mit_rolle("berta", rollen.BUERO))
+def berta(admin, benutzer_mit_rolle, recht_geben):
+    """Büro-Konto, das auch automatisch abrufen darf (das Recht hat sonst nur der Admin)."""
+    recht_geben(rollen.BUERO, "vereinsportal.abruf")
+    return benutzer_mit_rolle("berta", rollen.BUERO)
+
+
+@pytest.fixture
+def buero(berta, anmelden, client):
+    return anmelden(client, berta)
 
 
 def hochladen(client, feld, name, inhalt):
@@ -566,38 +573,49 @@ def dienst(settings, monkeypatch):
 
 
 @pytest.fixture
-def zugang():
-    from apps.core import geheimnis
-
+def adressen():
     e = PortalEinstellungen.laden()
     e.anmeldung_url = "https://portal.example.org/login"
     e.liste_url = "https://portal.example.org/liste/1"
     e.export_url = "https://portal.example.org/export"
-    e.email = "buero@example.org"
-    e.passwort_verschluesselt = geheimnis.verschluesseln("erfunden")
     e.save()
     return e
 
 
-def test_abruf_starten_schickt_auftrag(dienst, zugang):
+@pytest.fixture
+def zugang(berta, adressen):
+    """Bertas persönliche Zugangsdaten (erfunden)."""
+    from apps.core import geheimnis
+
+    geheim = geheimnis.verschluesseln("erfunden")
+    return Zugang.objects.create(
+        benutzer=berta, email="berta@example.org", passwort_verschluesselt=geheim
+    )
+
+
+def test_abruf_starten_schickt_auftrag_mit_eigenen_zugangsdaten(dienst, zugang, berta, adressen):
     from apps.vereinsportal import abruf
 
-    abruf.starten(dt.date(2026, 2, 1), dt.date(2026, 2, 4), True)
+    abruf.starten(berta, dt.date(2026, 2, 1), dt.date(2026, 2, 4), True)
     pfad, daten = dienst.aufrufe[-1]
     assert pfad == "/start" and daten == {
         "anmeldung_url": "https://portal.example.org/login",
         "liste_url": "https://portal.example.org/liste/1",
-        "export_url": "https://portal.example.org/export", "email": "buero@example.org",
+        "export_url": "https://portal.example.org/export", "email": "berta@example.org",
         "passwort": "erfunden", "von": "01.02.2026", "bis": "04.02.2026", "mit_liste": True,
     }  # fmt: skip
-    # ohne Adresse der Liste wird sie nicht geholt
-    zugang.liste_url = ""
-    zugang.save()
-    abruf.starten(dt.date(2026, 2, 1), dt.date(2026, 2, 4), True)
+    a = Abruf.objects.get()
+    assert a.benutzer == berta and a.stand == "laeuft" and a.mit_liste and a.wer
+    assert str(a) == "Abruf 01.02.2026–04.02.2026" and str(zugang) == f"Zugang von {berta}"
+    # ohne Adresse der Liste wird sie nicht geholt; der liegengebliebene Abruf gilt als abgebrochen
+    adressen.liste_url = ""
+    adressen.save()
+    abruf.starten(berta, dt.date(2026, 2, 1), dt.date(2026, 2, 4), True)
     assert dienst.aufrufe[-1][1]["mit_liste"] is False
+    assert [x.stand for x in Abruf.objects.order_by("pk")] == ["abgebrochen", "laeuft"]
 
 
-def test_abruf_starten_prueft(dienst, zugang):
+def test_abruf_starten_prueft(dienst, zugang, berta, adressen, benutzer_mit_rolle):
     from apps.vereinsportal import abruf
 
     for von, bis, text in [
@@ -606,16 +624,60 @@ def test_abruf_starten_prueft(dienst, zugang):
         (dt.date.today(), dt.date.today() + dt.timedelta(days=2), "in der Zukunft"),
     ]:
         with pytest.raises(abruf.AbrufFehler, match=text):
-            abruf.starten(von, bis, False)
+            abruf.starten(berta, von, bis, False)
+    # ein anderes Konto hat keine eigenen Zugangsdaten und kann Bertas nicht benutzen
+    carl = benutzer_mit_rolle("carl", rollen.BUERO)
+    with pytest.raises(abruf.AbrufFehler, match="Ihre persönlichen Zugangsdaten"):
+        abruf.starten(carl, dt.date(2026, 2, 1), dt.date(2026, 2, 4), False)
     zugang.passwort_verschluesselt = "nicht lesbar"
     zugang.save()
     with pytest.raises(abruf.AbrufFehler, match="nicht mehr lesbar"):
-        abruf.starten(dt.date(2026, 2, 1), dt.date(2026, 2, 4), False)
+        abruf.starten(berta, dt.date(2026, 2, 1), dt.date(2026, 2, 4), False)
     zugang.passwort_verschluesselt = ""
     zugang.save()
-    with pytest.raises(abruf.AbrufFehler, match="zuerst Adressen und Zugangsdaten"):
-        abruf.starten(dt.date(2026, 2, 1), dt.date(2026, 2, 4), False)
-    assert dienst.aufrufe == []
+    assert abruf.zugang(berta) is None
+    adressen.export_url = ""
+    adressen.save()
+    with pytest.raises(abruf.AbrufFehler, match="zuerst die Adressen"):
+        abruf.starten(berta, dt.date(2026, 2, 1), dt.date(2026, 2, 4), False)
+    assert dienst.aufrufe == [] and not Abruf.objects.exists()
+
+
+def test_abruf_historie_haelt_ergebnis_fest(dienst, zugang, berta, export):
+    from apps.vereinsportal import abruf
+
+    assert abruf.historie()["anzahl"] == 0 and abruf.historie()["letzter"] is None
+    abruf.starten(berta, dt.date(2026, 2, 1), dt.date(2026, 2, 4), True)
+    dienst.stand |= {"stand": "fertig", "dateien": {"spenderliste": True, "finanzexport": True}}
+    dienst.dateien = {
+        "finanzexport": export.getvalue(),
+        "spenderliste": spenderliste([(1, "Erika", "Beispiel", "erika@example.org", "")]),
+    }  # fmt: skip
+    abruf.uebernehmen("berta")
+    a = Abruf.objects.get()
+    assert (a.stand, a.neu, a.doppelt, a.neue_spender, a.versendet, a.kontakte) == (
+        "eingelesen", 3, 0, 2, 1, 1)  # fmt: skip
+    assert a.beendet_am and not a.meldung
+    # Fehler im Dienst und ein abgebrochener Abruf stehen ebenfalls in der Historie
+    abruf.starten(berta, dt.date(2026, 3, 1), dt.date(2026, 3, 4), False)
+    abruf.abgleichen({"stand": "fehler", "fehler": "Anmeldung abgelehnt."})
+    abruf.starten(berta, dt.date(2026, 4, 1), dt.date(2026, 4, 4), False)
+    abruf.abbrechen()
+    abruf.starten(berta, dt.date(2026, 5, 1), dt.date(2026, 5, 4), False)
+    abruf.abgleichen({"stand": "frei"})  # der Dienst wurde neu gestartet
+    abruf.starten(berta, dt.date(2026, 6, 1), dt.date(2026, 6, 4), False)
+    dienst.stand |= {"stand": "fertig", "dateien": {"finanzexport": True}}
+    dienst.dateien = {"finanzexport": b"kein Archiv"}
+    abruf.uebernehmen("berta")
+    staende = [(x.stand, x.meldung) for x in Abruf.objects.order_by("pk")]
+    assert staende == [
+        ("eingelesen", ""), ("fehler", "Anmeldung abgelehnt."), ("abgebrochen", ""),
+        ("abgebrochen", ""), ("fehler", "Finanzexport: Die Datei ist kein ZIP-Archiv."),
+    ]  # fmt: skip
+    h = abruf.historie(grenze=2)
+    assert (h["anzahl"], h["gelungen"], h["neu"], h["neue_spender"], h["mehr"]) == (5, 1, 3, 2, 3)
+    assert h["letzter"] == a and len(h["abrufe"]) == 2
+    assert len(abruf.historie(alle=True)["abrufe"]) == 5 and abruf.historie(alle=True)["mehr"] == 0
 
 
 def test_abruf_uebernehmen_liest_ein_und_raeumt_auf(dienst, export):
@@ -706,7 +768,7 @@ def test_anfrage_an_den_dienst(settings, monkeypatch):
     assert abruf._anfrage("/stand") == {"stand": "frei"}
     assert gesehen[0][:2] == ("http://abruf.invalid/stand", "GET")
     assert gesehen[0][2]["X-abruf-schluessel"] == "geheim-und-erfunden"
-    abruf.code_senden(" 123456 ")
+    abruf._anfrage("/code", {"code": "123456"})
     assert gesehen[1][1] == "POST" and gesehen[1][3] == b'{"code": "123456"}'
     abruf.abbrechen()
     ziel = io.BytesIO()
@@ -747,6 +809,7 @@ def test_seite_abruf_ablauf(buero, dienst, zugang, export):
         buero.get(reverse("vereinsportal:start")).content.decode())  # fmt: skip
     seite = buero.get(url).content.decode()
     assert "Abruf starten" in seite and "Es läuft kein Abruf" in seite
+    assert "Noch kein Abruf" in seite and "berta@example.org" in seite
     # falscher Zeitraum: Fehler am Formular, kein Auftrag
     seite = buero.post(url, {"von": "04.02.2026", "bis": "01.02.2026"}).content.decode()
     assert "vor dem Startdatum" in seite and dienst.aufrufe[-1][0] == "/stand"
@@ -766,6 +829,10 @@ def test_seite_abruf_ablauf(buero, dienst, zugang, export):
     teil = buero.post(stand_url, {"aktion": "einlesen"}).content.decode()
     assert "3 neue Spenden eingelesen" in teil and "Es läuft kein Abruf" in teil
     assert Spende.objects.count() == 3
+    # die Historie zeigt den Abruf mit Zeitraum und Zahlen
+    seite = buero.get(url).content.decode()
+    assert 'id="abruf-historie"' in seite and "01.02.2026 – 04.02.2026" in seite
+    assert "Letzter erfolgreicher Abruf" in seite and "marke-ok" in seite
 
 
 def test_seite_abruf_fehler_abbrechen_verwerfen(buero, dienst, zugang):
@@ -793,30 +860,95 @@ def test_seite_abruf_fehler_abbrechen_verwerfen(buero, dienst, zugang):
     assert buero.post(stand_url, {"aktion": "unbekannt"}).status_code == 200
 
 
-def test_seite_abruf_ohne_zugangsdaten(buero, dienst):
+def test_seite_abruf_ohne_zugangsdaten(buero, dienst, adressen):
     seite = buero.get(reverse("vereinsportal:abruf")).content.decode()
-    assert "zuerst unter" in seite and "Abruf starten" not in seite
+    assert "Meine Zugangsdaten eintragen" in seite and "Abruf starten" not in seite
+    assert "Ihre eigenen</strong> Zugangsdaten" in seite
 
 
-def test_einstellungen_zugangsdaten_verschluesselt(buero, dienst):
+def test_seite_abruf_ohne_adressen(buero, dienst):
+    seite = buero.get(reverse("vereinsportal:abruf")).content.decode()
+    assert "die Adressen des Vereinsportals eintragen" in seite and "Abruf starten" not in seite
+
+
+def test_eigene_zugangsdaten_verschluesselt_und_nur_fuer_das_eigene_konto(
+    buero, berta, dienst, adressen, benutzer_mit_rolle, anmelden, client
+):
     from apps.core import geheimnis
 
-    seite = reverse("vereinsportal:einstellungen")
-    assert "noch kein Passwort gespeichert" in buero.get(seite).content.decode()
-    daten = {"anmeldung_url": "https://portal.example.org/login",
-             "export_url": "https://portal.example.org/export", "email": "buero@example.org",
-             "passwort": "erfunden und geheim"}  # fmt: skip
+    seite = reverse("vereinsportal:zugang")
+    assert "Nur für Ihr Konto" in buero.get(seite).content.decode()
+    # ohne Passwort geht es beim ersten Mal nicht
+    assert "Bitte das Passwort eintragen" in (
+        buero.post(seite, {"email": "berta@example.org"}).content.decode())  # fmt: skip
+    daten = {"email": "berta@example.org", "passwort": "erfunden und geheim"}
     assert buero.post(seite, daten).status_code == 302
-    e = PortalEinstellungen.laden()
-    assert "erfunden" not in e.passwort_verschluesselt
-    assert geheimnis.entschluesseln(e.passwort_verschluesselt) == "erfunden und geheim"
-    assert e.abruf_eingerichtet
+    z = Zugang.objects.get()
+    assert z.benutzer == berta and "erfunden" not in z.passwort_verschluesselt
+    assert geheimnis.entschluesseln(z.passwort_verschluesselt) == "erfunden und geheim"
     inhalt = buero.get(seite).content.decode()
-    assert "Ein Passwort ist gespeichert" in inhalt and "erfunden und geheim" not in inhalt
-    # leer lassen behält es, http wird abgelehnt, löschen entfernt es
-    buero.post(seite, daten | {"passwort": ""})
-    assert PortalEinstellungen.laden().passwort_verschluesselt == e.passwort_verschluesselt
-    antwort = buero.post(seite, daten | {"export_url": "http://portal.example.org/export"})
-    assert "muss mit https:// beginnen" in antwort.content.decode()
-    buero.post(seite, daten | {"passwort": "", "passwort_loeschen": "on"})
-    assert not PortalEinstellungen.laden().abruf_eingerichtet
+    assert "erfunden und geheim" not in inhalt and "Ein Passwort ist gespeichert" in inhalt
+    assert "berta@example.org" in buero.get(reverse("vereinsportal:abruf")).content.decode()
+    # leeres Passwort behält das gespeicherte
+    buero.post(seite, {"email": "neu@example.org", "passwort": ""})
+    z.refresh_from_db()
+    assert z.email == "neu@example.org"
+    assert geheimnis.entschluesseln(z.passwort_verschluesselt) == "erfunden und geheim"
+    # ein anderes Konto sieht nichts davon und legt seinen eigenen Zugang an
+    carl = benutzer_mit_rolle("carl", rollen.BUERO)
+    anmelden(client, carl)
+    inhalt = client.get(seite).content.decode() + client.get(
+        reverse("vereinsportal:abruf")).content.decode()  # fmt: skip
+    assert "neu@example.org" not in inhalt and "Meine Zugangsdaten eintragen" in inhalt
+    client.post(seite, {"email": "carl@example.org", "passwort": "auch erfunden"})
+    assert Zugang.objects.count() == 2 and Zugang.objects.get(benutzer=carl).email == (
+        "carl@example.org")  # fmt: skip
+    # löschen entfernt nur den eigenen
+    assert client.post(seite, {"loeschen": "1"}).status_code == 302
+    assert list(Zugang.objects.all()) == [z]
+    assert client.post(seite, {"loeschen": "1"}).status_code == 302  # nichts mehr da: kein Fehler
+    # die Einstellungen des Moduls kennen keine Zugangsdaten mehr
+    inhalt = client.get(reverse("vereinsportal:einstellungen")).content.decode()
+    assert 'name="passwort"' not in inhalt and 'name="email"' not in inhalt
+
+
+def test_code_gibt_nur_ein_wer_gestartet_hat(
+    buero, berta, dienst, zugang, benutzer_mit_rolle, anmelden, client
+):
+    from django.test import Client
+
+    stand_url = reverse("vereinsportal:abruf_stand")
+    buero.post(reverse("vereinsportal:abruf"), {"von": "01.02.2026", "bis": "04.02.2026"})
+    dienst.stand |= {"stand": "warte_auf_code", "schritt": "Bitte den 2FA-Code eingeben"}
+    anderer = anmelden(Client(), benutzer_mit_rolle("carl", rollen.BUERO))
+    teil = anderer.get(stand_url).content.decode()
+    assert 'name="code"' not in teil and "Den gibt nur" in teil and "every 2s" in teil
+    teil = anderer.post(stand_url, {"aktion": "code", "code": "123456"}).content.decode()
+    assert "nur ein, wer den Abruf gestartet hat" in teil
+    assert not any(pfad == "/code" for pfad, _ in dienst.aufrufe)
+    assert 'name="code"' in buero.get(stand_url).content.decode()
+
+
+def test_abruf_nur_mit_eigenem_recht(admin, benutzer_mit_rolle, anmelden, client, dienst):
+    """Wer nur von Hand einlesen darf (Vorgabe Büro), kommt nicht an den automatischen Abruf."""
+    anmelden(client, benutzer_mit_rolle("dora", rollen.BUERO))
+    assert client.get(reverse("vereinsportal:start")).status_code == 200
+    for name in ("abruf", "abruf_stand", "zugang"):
+        assert client.get(reverse(f"vereinsportal:{name}")).status_code == 403
+    assert reverse("vereinsportal:abruf") not in client.get(reverse("core:start")).content.decode()
+
+
+def test_auskunft_nennt_zugang_und_abrufe(admin, berta, zugang, dienst, pdf_text):
+    from django.http import HttpResponse
+
+    from apps.konten import auskunft
+    from apps.vereinsportal import abruf
+
+    def text(konto):
+        return pdf_text(HttpResponse(auskunft.mitarbeiter_pdf(konto), "application/pdf"))
+
+    assert "Vereinsportal" not in text(admin)
+    abruf.starten(berta, dt.date(2026, 2, 1), dt.date(2026, 2, 4), False)
+    inhalt = text(berta)
+    assert "Vereinsportal" in inhalt and "berta@example.org" in inhalt and "01.02.2026" in inhalt
+    assert "erfunden" not in inhalt

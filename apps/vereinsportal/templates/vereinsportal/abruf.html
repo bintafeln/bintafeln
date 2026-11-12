@@ -2,7 +2,7 @@
 {% block titel %}Abruf aus dem Vereinsportal{% endblock %}
 {% block inhalt %}
 <section class="karte">
-  <p><a href="{% url 'vereinsportal:start' %}">← Belege aus dem Vereinsportal</a></p>
+  <p><a href="{% url 'vereinsportal:start' %}">← Aus dem Vereinsportal einlesen</a></p>
   <h1>Abruf aus dem Vereinsportal</h1>
   {% if not verfuegbar %}
   <p>Der automatische Abruf ist auf diesem Server nicht eingeschaltet. Finanzexport und Spenderliste lassen sich
@@ -14,17 +14,33 @@
   <p>bintafeln meldet sich im Vereinsportal an, holt den Finanzexport für den Zeitraum (und auf Wunsch die Liste
     „Spender mit E-Mail“) und liest beides ein. Sie geben nur den <strong>2FA-Code</strong> ein, wenn danach gefragt
     wird. Höchstens drei Monate auf einmal.</p>
-  {% if not eingerichtet %}
+
+  <div class="zugang-kasten{% if not zugang %} zugang-fehlt{% endif %}" id="mein-zugang">
+    <div>
+      <strong>🔒 Ihre persönlichen Zugangsdaten</strong>
+      {% if zugang %}
+      <p>Sie rufen mit <strong>Ihrem eigenen Konto</strong> im Vereinsportal ab: <strong>{{ zugang.email }}</strong>.
+        Diese Zugangsdaten gehören nur zu Ihrem bintafeln-Konto ({{ request.user.get_full_name|default:request.user.get_username }}).
+        Niemand sonst sieht sie oder kann damit abrufen – auch kein Admin.</p>
+      {% else %}
+      <p>Für den Abruf tragen Sie <strong>Ihre eigenen</strong> Zugangsdaten zum Vereinsportal ein. Sie gehören nur zu
+        Ihrem bintafeln-Konto: Niemand sonst sieht sie oder kann damit abrufen – auch kein Admin. Andere tragen ihre
+        eigenen ein.</p>
+      {% endif %}
+    </div>
+    <a class="knopf{% if zugang %} knopf-zweitrangig{% endif %}" href="{% url 'vereinsportal:zugang' %}">{% if zugang %}Ändern{% else %}Meine Zugangsdaten eintragen{% endif %}</a>
+  </div>
+
+  {% if not adressen %}
   <p class="meldung warnung">Bitte zuerst unter <a href="{% url 'vereinsportal:einstellungen' %}">Einstellungen →
-    Verein → Vereinsportal</a> die Adressen und Zugangsdaten eintragen.</p>
-  {% else %}
+    Verein → Vereinsportal</a> die Adressen des Vereinsportals eintragen.</p>
+  {% elif zugang %}
   <form method="post" id="abruf-form">
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <button type="submit" class="knopf">Abruf starten</button>
   </form>
   {% endif %}
-  <h2>Stand</h2>
   <div id="abruf-stand">{% include "vereinsportal/_abruf_stand.html" %}</div>
   {% endif %}
 </section>

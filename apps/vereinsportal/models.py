@@ -6,6 +6,7 @@ ins Adressbuch kommen.
 """
 
 from auditlog.registry import auditlog
+from django.conf import settings
 from django.db import models
 
 
@@ -35,8 +36,6 @@ class PortalEinstellungen(models.Model):
         help_text="Die Seite mit dem Export für den Steuerberater öffnen und die Adresse aus "
         "der Adresszeile hierher kopieren.",
     )  # fmt: skip
-    email = models.EmailField("E-Mail für die Anmeldung im Vereinsportal", blank=True)
-    passwort_verschluesselt = models.TextField(blank=True, editable=False)
 
     class Meta:
         verbose_name = "Einstellungen für das Vereinsportal"
@@ -55,9 +54,68 @@ class PortalEinstellungen(models.Model):
         return einstellungen
 
     @property
-    def abruf_eingerichtet(self) -> bool:
-        return bool(self.anmeldung_url and self.export_url and self.email
-                    and self.passwort_verschluesselt)  # fmt: skip
+    def adressen_eingerichtet(self) -> bool:
+        return bool(self.anmeldung_url and self.export_url)
+
+
+class Zugang(models.Model):
+    """Persönliche Zugangsdaten eines Kontos zum Vereinsportal (ADR 0129). Sie gehören nur zu
+    diesem Konto: Niemand sonst sieht sie oder ruft damit ab – auch kein Admin."""
+
+    benutzer = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="vereinsportal_zugang"
+    )
+    email = models.EmailField("E-Mail für die Anmeldung im Vereinsportal")
+    passwort_verschluesselt = models.TextField(blank=True, editable=False)
+    geaendert_am = models.DateTimeField("Geändert am", auto_now=True)
+
+    class Meta:
+        verbose_name = "Zugang zum Vereinsportal"
+        verbose_name_plural = "Zugänge zum Vereinsportal"
+
+    def __str__(self):
+        return f"Zugang von {self.benutzer}"
+
+    @property
+    def vollstaendig(self) -> bool:
+        return bool(self.email and self.passwort_verschluesselt)
+
+
+class Abruf(models.Model):
+    """Ein automatischer Abruf (ADR 0129): wer, wann, welcher Zeitraum, was kam heraus. Die
+    Liste ist die Historie auf der Abruf-Seite; der laufende Abruf sagt, wem er gehört."""
+
+    class Stand(models.TextChoices):
+        LAEUFT = "laeuft", "läuft"
+        EINGELESEN = "eingelesen", "eingelesen"
+        FEHLER = "fehler", "fehlgeschlagen"
+        ABGEBROCHEN = "abgebrochen", "abgebrochen"
+
+    benutzer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="+",
+    )  # fmt: skip
+    wer = models.CharField("Abgerufen von", max_length=150, blank=True)
+    von = models.DateField("Spenden von")
+    bis = models.DateField("bis")
+    mit_liste = models.BooleanField("Mit Spenderliste", default=False)
+    gestartet_am = models.DateTimeField("Gestartet am", auto_now_add=True)
+    beendet_am = models.DateTimeField("Beendet am", null=True, blank=True)
+    stand = models.CharField(max_length=12, choices=Stand.choices, default=Stand.LAEUFT)
+    neu = models.PositiveIntegerField("Neue Spenden", default=0)
+    doppelt = models.PositiveIntegerField("Schon vorhanden", default=0)
+    neue_spender = models.PositiveIntegerField("Neue Spender", default=0)
+    versendet = models.PositiveIntegerField("Als versendet vermerkt", default=0)
+    kontakte = models.PositiveIntegerField("Spender mit E-Mail", null=True, blank=True)
+    meldung = models.TextField("Meldung", blank=True)
+
+    class Meta:
+        verbose_name = "Abruf aus dem Vereinsportal"
+        verbose_name_plural = "Abrufe aus dem Vereinsportal"
+        ordering = ["-gestartet_am", "-pk"]
+
+    def __str__(self):
+        return f"Abruf {self.von:%d.%m.%Y}–{self.bis:%d.%m.%Y}"
 
 
 class Kontakt(models.Model):
@@ -105,6 +163,7 @@ class Sammelbescheinigung(models.Model):
         return self.dateiname
 
 
-auditlog.register(PortalEinstellungen, exclude_fields=["passwort_verschluesselt"])
+auditlog.register(PortalEinstellungen)
+auditlog.register(Zugang, exclude_fields=["passwort_verschluesselt"])
 auditlog.register(Kontakt)
 auditlog.register(Sammelbescheinigung, exclude_fields=["datei"])

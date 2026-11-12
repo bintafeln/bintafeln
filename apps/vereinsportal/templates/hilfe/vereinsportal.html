@@ -41,21 +41,33 @@
 <h3>Automatisch aus dem Vereinsportal holen</h3>
 <p>Statt die Dateien von Hand herunter- und hochzuladen, kann bintafeln sie selbst holen. Dafür läuft auf dem
   Server ein zusätzlicher Dienst mit einem Browser. Er ist nur da, wenn die Person, die den Server betreut, ihn
-  eingeschaltet hat (siehe unten); das Hochladen von Hand geht immer.</p>
+  eingeschaltet hat (siehe unten); das Hochladen von Hand geht immer. Den Abruf sieht nur, wer das Recht
+  „Automatischer Abruf mit eigenen Zugangsdaten“ hat (unter „Rollen und Rechte“; der Admin hat es immer).</p>
+<p><strong>Die Zugangsdaten sind persönlich.</strong> Jede Person trägt ihre <em>eigene</em> Anmeldung im Vereinsportal
+  ein. Sie gehört nur zu ihrem bintafeln-Konto: Niemand sonst sieht sie oder kann damit abrufen, auch kein Admin. Wer
+  abruft, meldet sich also immer mit dem eigenen Konto im Vereinsportal an und gibt den eigenen 2FA-Code ein. Was dabei
+  eingelesen wird, sehen danach alle, die Spenden sehen dürfen.</p>
 <ol>
-  <li>Einmalig unter „Einstellungen → Verein → Vereinsportal“ eintragen: die Adresse der Anmeldeseite, die Adresse
-    der Liste „Spender mit E-Mail“ und die Adresse der Seite „Finanzexport“ (jeweils im Vereinsportal öffnen und aus
-    der Adresszeile des Browsers kopieren), dazu E-Mail und Passwort für die Anmeldung. Das Passwort wird
-    verschlüsselt gespeichert und nie wieder angezeigt.</li>
-  <li>„Verein → Spenden → Abruf aus dem Vereinsportal“ öffnen, den Zeitraum wählen (höchstens drei Monate) und
-    „Abruf starten“.</li>
+  <li>Einmalig für die Tafel unter „Einstellungen → Verein → Vereinsportal“ eintragen: die Adresse der Anmeldeseite,
+    die Adresse der Liste „Spender mit E-Mail“ und die Adresse der Seite „Finanzexport“ (jeweils im Vereinsportal
+    öffnen und aus der Adresszeile des Browsers kopieren).</li>
+  <li>„Verein → Spenden → Abruf aus dem Vereinsportal“ öffnen. Im Kasten „Ihre persönlichen Zugangsdaten“ einmalig
+    „Meine Zugangsdaten eintragen“: E-Mail und Passwort Ihrer Anmeldung im Vereinsportal. Das Passwort wird
+    verschlüsselt gespeichert und nie wieder angezeigt; dort lassen sich die Angaben auch ändern oder löschen.</li>
+  <li>Den Zeitraum wählen (höchstens drei Monate) und „Abruf starten“.</li>
   <li>Sobald danach gefragt wird, den <strong>2FA-Code</strong> eingeben, den das Vereinsportal Ihnen schickt.
     Dafür sind fünf Minuten Zeit.</li>
   <li>bintafeln holt die Spenderliste und den Finanzexport und liest beides ein. Gibt es für den Zeitraum im
     Vereinsportal schon einen fertigen Export, wird er wiederverwendet; sonst wird er neu erzeugt, das kann einige
     Minuten dauern. Die Seite darf dabei offen bleiben oder geschlossen werden.</li>
 </ol>
-{% hilfe_bild "vereinsportal-abruf" "① Zeitraum wählen, ② „Abruf starten“, ③ den 2FA-Code eingeben, sobald danach gefragt wird." %}
+{% hilfe_bild "vereinsportal-abruf" "① Ihre persönlichen Zugangsdaten, ② Zeitraum wählen, ③ „Abruf starten“, ④ den 2FA-Code eingeben, sobald danach gefragt wird, ⑤ bisherige Abrufe." %}
+<p>Läuft gerade ein Abruf einer anderen Person, sehen Sie auf der Seite, wer ihn gestartet hat. Den 2FA-Code gibt nur
+  diese Person ein; abbrechen können ihn alle mit dem Recht.</p>
+<p><strong>Bisherige Abrufe:</strong> Unten auf der Seite steht, was schon abgerufen wurde – wann, von wem, für
+  welchen Zeitraum und mit welchem Ergebnis (neue Spenden, schon vorhandene, neue Spender, Spenderliste). Darüber die
+  Kurzübersicht: letzter erfolgreicher Abruf und was die Abrufe insgesamt eingelesen haben. Gezeigt werden die letzten
+  zehn, „Alle anzeigen“ zeigt die übrigen. Fehlgeschlagene und abgebrochene Abrufe stehen mit ihrer Meldung dabei.</p>
 <p>bintafeln holt immer den Export für <strong>genau den gewählten Zeitraum</strong>. Übernimmt das Vereinsportal
   den Zeitraum nicht, bricht der Abruf mit einer Meldung ab, statt einen anderen Export einzulesen. Lässt sich die
   Liste „Spender mit E-Mail“ nicht holen, läuft der Finanzexport trotzdem durch; die Seite sagt dann, dass die Liste
@@ -101,5 +113,6 @@
 
 <h3>Einstellungen</h3>
 <p>Unter „Einstellungen → Verein → Vereinsportal“ steht der Name des Vereins, wie er in der Absenderzeile der Belege
-  steht (daran erkennt bintafeln die Zeile mit dem Spender), dazu die Adressen und Zugangsdaten für den automatischen
-  Abruf.</p>
+  steht (daran erkennt bintafeln die Zeile mit dem Spender), dazu die Adressen für den automatischen
+  Abruf. Zugangsdaten stehen dort nicht: Die trägt jede Person für sich auf der Seite „Abruf aus dem Vereinsportal“
+  ein.</p>

@@ -1997,3 +1997,15 @@ details.amtsdokumente > summary { cursor: pointer; margin: .5rem 0; }
 .platzhalter-legende code { display: inline-block; margin: .1rem .2rem .1rem 0; }
 
 /* Foto eines Nachweises: gesammelte Seiten unter dem Dateifeld */
+
+/* Abruf aus dem Vereinsportal: persönliche Zugangsdaten und Historie (ADR 0129) */
+.zugang-kasten { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; justify-content: space-between; border: 1px solid var(--rand); border-left: .35rem solid var(--akzent); border-radius: var(--radius); padding: .75rem 1rem; margin: 1rem 0; }
+.zugang-kasten > div { flex: 1 1 22rem; }
+.zugang-kasten p { margin: .25rem 0 0; }
+.zugang-fehlt { background: #fff6dc; }
+.abruf-kacheln { margin-bottom: .75rem; }
+.marke-neutral { display: inline-block; padding: .1rem .5rem; border-radius: 999px; font-size: .85rem; background: #eee; }
+.abruf-meldung { font-size: .85rem; color: var(--leise); max-width: 28rem; }
+.karte h2.abruf-titel { margin-top: 1.75rem; }
+.abruf-wann { white-space: nowrap; }
+.abruf-wann .leise { color: var(--leise); font-size: .85rem; }

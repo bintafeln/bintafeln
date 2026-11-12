@@ -273,3 +273,34 @@ def _belege_in_den_spendenpool():
     firma = Adresse.objects.get(organisation="Bäckerei Probe GmbH")
     assert firma.art == "organisation" and firma.spenden.get().belegnummer == "4"
     assert SpendenBeleg.objects.count() == 4 and Spende.objects.count() == 4
+
+
+def test_gemeinsame_zugangsdaten_werden_persoenlich():
+    """vereinsportal.0008 (ADR 0129): Die bisher gemeinsamen Zugangsdaten gehen an das eine
+    Konto mit derselben E-Mail; gibt es keins, entfallen sie. Alle Daten sind erfunden."""
+    try:
+        for konten, erwartet in ((["vera@example.org"], 1), (["x@example.org"], 0),
+                                 (["vera@example.org", "VERA@example.org"], 0)):  # fmt: skip
+            assert _zugang_nach_migration(konten) == erwartet
+    finally:
+        _migriere(MigrationExecutor(connection).loader.graph.leaf_nodes())
+
+
+def _zugang_nach_migration(mails):
+    ziele_vor = _leaves_mit({"vereinsportal": "0007_ohne_eigene_belege"})
+    _migriere(ziele_vor)
+    alt = MigrationExecutor(connection).loader.project_state(ziele_vor).apps
+    Benutzer = alt.get_model("konten", "Benutzer")
+    Benutzer.objects.all().delete()
+    for nr, mail in enumerate(mails):
+        Benutzer.objects.create(username=f"konto{nr}", email=mail)
+    Benutzer.objects.create(username="inaktiv", email="vera@example.org", is_active=False)
+    alt.get_model("vereinsportal", "PortalEinstellungen").objects.update_or_create(
+        pk=1, defaults={"email": "vera@example.org", "passwort_verschluesselt": "verschluesselt"}
+    )
+    _migriere(MigrationExecutor(connection).loader.graph.leaf_nodes())
+    neu = MigrationExecutor(connection).loader.project_state().apps
+    zugaenge = list(neu.get_model("vereinsportal", "Zugang").objects.all())
+    assert all(z.benutzer.username == "konto0" and z.passwort_verschluesselt == "verschluesselt"
+               for z in zugaenge)  # fmt: skip
+    return len(zugaenge)
