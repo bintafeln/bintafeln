@@ -1109,7 +1109,11 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
 - **Geräte im Wartebereich:** Monitor (Nummern, Infos im Wechsel, Ton, Layout per Zahnrad),
   Nummern-Anzeige, Kiosk (Karte scannen, Antwort auf Deutsch und in der Sprache zur
   Staatsangehörigkeit) und Abfrage. Sie brauchen keine Anmeldung, sondern den geheimen Link aus
-  „Einstellungen → Aufruf, Monitor und Kiosk“; „Neue Links erzeugen“ sperrt alte Links.
+  „Einstellungen → Aufruf, Monitor und Kiosk“. „Links der Geräte ungültig machen“ sperrt die alten
+  Links; weil danach jedes Gerät neu eingerichtet werden muss, geht das nur auf einer eigenen
+  Seite nach Bestätigung mit dem eigenen Passwort. Auch die Links der Steuerung (PC und Handy)
+  enthalten einen zufälligen Schlüssel statt der Nummer der Ausgabestelle; sie brauchen
+  zusätzlich immer die Anmeldung.
   Steht eine Nummer gerade auf dem Monitor („Bitte eintreten“), sagen Kiosk, Abfrage und
   Handy-Steuerung „jetzt dran“ – egal an welcher Stelle. „Gleich dran“ heißt: Die Nummer kommt
   mit den nächsten Aufrufen auf den Monitor; sonst steht da, wie viele Kunden noch davor sind.

@@ -7,7 +7,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from apps.aufruf import handy
-from apps.aufruf.forms import EinstellungenForm, HandyForm, InfoForm
+from apps.aufruf.forms import EinstellungenForm, HandyForm, InfoForm, NeueLinksForm
 from apps.aufruf.models import (
     AufrufEinstellungen,
     AufrufInfo,
@@ -63,16 +63,21 @@ def stelle(request, pk):
     return render(request, "aufruf/einstellungen_stelle.html", {"form": form, "s": s})
 
 
-@require_POST
+@never_cache
 @einstellen
 @nicht_in_demo
 def schluessel_neu(request, pk):
+    """Neue Links für die Anzeige-Geräte – nur nach Bestätigung mit dem eigenen Passwort, weil
+    danach jeder Monitor und jeder Kiosk der Ausgabestelle neu eingerichtet werden muss."""
     e = AufrufEinstellungen.laden(get_object_or_404(Ausgabestelle, pk=pk))
-    e.schluessel = neuer_schluessel()
-    e.save()
-    messages.success(request, f"Neue Links für „{e.ausgabestelle}“ erzeugt. Die alten Links "
-                     "funktionieren nicht mehr – bitte an den Geräten neu öffnen.")  # fmt: skip
-    return redirect("aufruf:einstellungen")
+    form = NeueLinksForm(request.POST or None, benutzer=request.user)
+    if request.method == "POST" and form.is_valid():
+        e.schluessel = neuer_schluessel()
+        e.save()
+        messages.success(request, f"Neue Links für „{e.ausgabestelle}“ erzeugt. Die alten Links "
+                         "funktionieren nicht mehr – bitte an den Geräten neu öffnen.")  # fmt: skip
+        return redirect("aufruf:einstellungen")
+    return render(request, "aufruf/neue_links.html", {"form": form, "s": e.ausgabestelle})
 
 
 @never_cache

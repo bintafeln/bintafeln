@@ -33,11 +33,16 @@ def stellen_fuer(benutzer):
     return stellen.filter(pk__in=[s.pk for s in eigene]) if eigene is not None else stellen
 
 
-def _stelle(request, pk) -> Ausgabestelle:
-    stelle = get_object_or_404(Ausgabestelle, pk=pk, aktiv=True)
+def _stelle(request, kennung) -> Ausgabestelle:
+    """Die Ausgabestelle zum Schlüssel aus der Adresse (nicht ihre Nummer: nicht zu erraten)."""
+    stelle = get_object_or_404(Ausgabestelle, aufruf__steuer_schluessel=kennung, aktiv=True)
     if not stellen_fuer(request.user).filter(pk=stelle.pk).exists():
         raise PermissionDenied(f"Sie sind der Ausgabestelle „{stelle.name}“ nicht zugeordnet.")
     return stelle
+
+
+def steuer_schluessel(stelle) -> str:
+    return AufrufEinstellungen.laden(stelle).steuer_schluessel
 
 
 def _farbe(da, i) -> str:
@@ -62,16 +67,16 @@ def _urls(stelle, einstellungen) -> dict:
     def r(name, *args):
         return reverse(f"aufruf:{name}", args=args)
 
-    k = einstellungen.schluessel
+    k, st = einstellungen.schluessel, einstellungen.steuer_schluessel
     return {
-        "stand": r("api_stand", stelle.pk), "status": r("api_status", stelle.pk),
-        "starten": r("api_starten", stelle.pk), "weiter": r("api_weiter", stelle.pk),
-        "zurueck": r("api_zurueck", stelle.pk), "abfrage": r("api_abfrage", stelle.pk),
-        "fortsetzen": r("api_fortsetzen", stelle.pk),
-        "spaetzuender": r("api_spaetzuender", stelle.pk),
-        "starten_formular": r("starten", stelle.pk), "weiter_formular": r("weiter", stelle.pk),
-        "zurueck_formular": r("zurueck", stelle.pk), "neustart_formular": r("neustart", stelle.pk),
-        "mobil": r("mobil", stelle.pk), "liste": r("liste", stelle.pk),
+        "stand": r("api_stand", st), "status": r("api_status", st),
+        "starten": r("api_starten", st), "weiter": r("api_weiter", st),
+        "zurueck": r("api_zurueck", st), "abfrage": r("api_abfrage", st),
+        "fortsetzen": r("api_fortsetzen", st),
+        "spaetzuender": r("api_spaetzuender", st),
+        "starten_formular": r("starten", st), "weiter_formular": r("weiter", st),
+        "zurueck_formular": r("zurueck", st), "neustart_formular": r("neustart", st),
+        "mobil": r("mobil", st), "liste": r("liste", st),
         "anzeige": r("anzeige", k), "monitor": r("monitor", k),
         "abmelden": reverse("konten:abmelden"), "zurueck_bintafeln": reverse("core:start"),
     }  # fmt: skip
@@ -82,14 +87,16 @@ def start(request):
     """Ausgabestelle wählen; bei nur einer gleich zur Handy-Steuerung."""
     stellen = list(stellen_fuer(request.user))
     if len(stellen) == 1:
-        return redirect("aufruf:mobil", stellen[0].pk)
-    return render(request, "aufruf/start.html", {"stellen": stellen})
+        return redirect("aufruf:mobil", steuer_schluessel(stellen[0]))
+    return render(request, "aufruf/start.html", {
+        "stellen": [(s, steuer_schluessel(s)) for s in stellen],
+    })  # fmt: skip
 
 
 @never_cache
 @steuern
-def steuerung(request, pk):
-    stelle = _stelle(request, pk)
+def steuerung(request, kennung):
+    stelle = _stelle(request, kennung)
     e = AufrufEinstellungen.laden(stelle)
     heute = timezone.localdate()
     tag = ablauf.aktualisieren(stelle, heute)
@@ -123,8 +130,8 @@ def steuerung(request, pk):
 
 @never_cache
 @steuern
-def mobil(request, pk):
-    stelle = _stelle(request, pk)
+def mobil(request, kennung):
+    stelle = _stelle(request, kennung)
     e = AufrufEinstellungen.laden(stelle)
     return render(request, "aufruf/mobil.html", {
         "stelle": stelle, "urls": _urls(stelle, e), "anzahl": e.anzahl,
@@ -135,13 +142,13 @@ def mobil(request, pk):
 def _formular(aktion):
     @require_POST
     @steuern
-    def ansicht(request, pk):
-        stelle = _stelle(request, pk)
+    def ansicht(request, kennung):
+        stelle = _stelle(request, kennung)
         try:
             aktion(stelle, timezone.localdate())
         except ablauf.AufrufFehler as fehler:
             messages.error(request, str(fehler))
-        return redirect("aufruf:steuerung", stelle.pk)
+        return redirect("aufruf:steuerung", steuer_schluessel(stelle))
 
     return ansicht
 
@@ -157,8 +164,8 @@ neustart = _formular(ablauf.neu_mischen)
 
 @never_cache
 @steuern
-def api_stand(request, pk):
-    stelle = _stelle(request, pk)
+def api_stand(request, kennung):
+    stelle = _stelle(request, kennung)
     heute = timezone.localdate()
     tag = ablauf.aktualisieren(stelle, heute)
     return JsonResponse(ablauf.stand_fuer_anzeige(tag, AufrufEinstellungen.laden(stelle), heute))
@@ -166,8 +173,8 @@ def api_stand(request, pk):
 
 @never_cache
 @steuern
-def api_status(request, pk):
-    stelle = _stelle(request, pk)
+def api_status(request, kennung):
+    stelle = _stelle(request, kennung)
     heute = timezone.localdate()
     tag = ablauf.tag_holen(stelle, heute)
     tagname = ablauf.tagname(stelle, heute)
@@ -203,8 +210,8 @@ def _api(aktion):
     @never_cache
     @require_POST
     @steuern
-    def ansicht(request, pk):
-        stelle = _stelle(request, pk)
+    def ansicht(request, kennung):
+        stelle = _stelle(request, kennung)
         heute = timezone.localdate()
         try:
             return JsonResponse(aktion(request, stelle, heute))
@@ -278,8 +285,8 @@ def api_spaetzuender(request, stelle, heute):
 
 @never_cache
 @steuern
-def api_abfrage(request, pk):
-    stelle = _stelle(request, pk)
+def api_abfrage(request, kennung):
+    stelle = _stelle(request, kennung)
     nummer = request.GET.get("nummer", "").strip()
     if not nummer:
         return JsonResponse({"error": "Keine Kundennummer angegeben"}, status=400)
@@ -287,14 +294,14 @@ def api_abfrage(request, pk):
 
 
 @steuern
-def liste(request, pk):
+def liste(request, kennung):
     """Reihenfolge des Tages als CSV (nur Kundennummern, wie die bisherige Liste)."""
-    stelle = _stelle(request, pk)
+    stelle = _stelle(request, kennung)
     heute = timezone.localdate()
     tag = ablauf.tag_holen(stelle, heute)
     if tag is None:
         messages.info(request, "Für heute gibt es noch keine Reihenfolge.")
-        return redirect("aufruf:steuerung", stelle.pk)
+        return redirect("aufruf:steuerung", steuer_schluessel(stelle))
     antwort = HttpResponse(content_type="text/csv; charset=utf-8")
     antwort["Content-Disposition"] = (f'attachment; filename="reihenfolge_{heute:%Y-%m-%d}_'
                                       f'{stelle.pk}.csv"')  # fmt: skip
@@ -360,15 +367,15 @@ def leiste(request):
     return render(request, "aufruf/_leiste.html", {
         "stelle": stelle, "d": d, "anzahl": e.anzahl, "fehler": fehler, "steuern": steuern,
         "aktuell": aktuell, "danach": danach, "folgende": folgende,
-        "steuerung": reverse("aufruf:mobil", args=[stelle.pk]),
+        "steuerung": reverse("aufruf:mobil", args=[steuer_schluessel(stelle)]),
     })  # fmt: skip
 
 
 @require_POST
 @steuern
-def verschieben(request, pk, nummer):
+def verschieben(request, kennung, nummer):
     """Knopf am Einlass: zu spät Gekommene neu einsortieren, dann zurück zum Kunden."""
-    stelle = _stelle(request, pk)
+    stelle = _stelle(request, kennung)
     try:
         e = ablauf.spaetzuender(stelle, timezone.localdate(), nummer)
     except ablauf.AufrufFehler as fehler:

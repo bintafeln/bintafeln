@@ -7,24 +7,8 @@ app_name = "aufruf"
 urlpatterns = [
     path("", views.start, name="start"),
     path("leiste/", views.leiste, name="leiste"),
-    path("<int:pk>/", views.steuerung, name="steuerung"),
-    path("<int:pk>/mobil/", views.mobil, name="mobil"),
-    path("<int:pk>/verschieben/<str:nummer>/", views.verschieben, name="verschieben"),
     path("handys/<str:nummer>/zuruecksetzen/", views.handys_zuruecksetzen,
          name="handys_zuruecksetzen"),  # fmt: skip
-    path("<int:pk>/starten/", views.starten, name="starten"),
-    path("<int:pk>/weiter/", views.weiter, name="weiter"),
-    path("<int:pk>/zurueck/", views.zurueck, name="zurueck"),
-    path("<int:pk>/neustart/", views.neustart, name="neustart"),
-    path("<int:pk>/reihenfolge.csv", views.liste, name="liste"),
-    path("<int:pk>/api/stand/", views.api_stand, name="api_stand"),
-    path("<int:pk>/api/status/", views.api_status, name="api_status"),
-    path("<int:pk>/api/starten/", views.api_starten, name="api_starten"),
-    path("<int:pk>/api/weiter/", views.api_weiter, name="api_weiter"),
-    path("<int:pk>/api/zurueck/", views.api_zurueck, name="api_zurueck"),
-    path("<int:pk>/api/fortsetzen/", views.api_fortsetzen, name="api_fortsetzen"),
-    path("<int:pk>/api/abfrage/", views.api_abfrage, name="api_abfrage"),
-    path("<int:pk>/api/spaetzuender/", views.api_spaetzuender, name="api_spaetzuender"),
     # Einstellungen
     path("einstellungen/", views_einstellungen.einstellungen, name="einstellungen"),
     path("einstellungen/<int:pk>/", views_einstellungen.stelle, name="einstellungen_stelle"),
@@ -45,4 +29,23 @@ urlpatterns = [
          name="anzeige_abfrage"),
     path("anzeige/<str:schluessel>/layout/", views_anzeige.layout, name="anzeige_layout"),
     path("anzeige/<str:schluessel>/info/<int:pk>/", views_anzeige.datei, name="anzeige_datei"),
+    # Steuerung (angemeldet, mit Recht): der Schlüssel der Ausgabestelle statt ihrer Nummer, damit
+    # sich die Adressen nicht erraten lassen. Steht am Ende, weil <str:…> sonst die festen
+    # Adressen oben (einstellungen/, anzeige/ …) abfangen würde.
+    path("<str:kennung>/", views.steuerung, name="steuerung"),
+    path("<str:kennung>/mobil/", views.mobil, name="mobil"),
+    path("<str:kennung>/verschieben/<str:nummer>/", views.verschieben, name="verschieben"),
+    path("<str:kennung>/starten/", views.starten, name="starten"),
+    path("<str:kennung>/weiter/", views.weiter, name="weiter"),
+    path("<str:kennung>/zurueck/", views.zurueck, name="zurueck"),
+    path("<str:kennung>/neustart/", views.neustart, name="neustart"),
+    path("<str:kennung>/reihenfolge.csv", views.liste, name="liste"),
+    path("<str:kennung>/api/stand/", views.api_stand, name="api_stand"),
+    path("<str:kennung>/api/status/", views.api_status, name="api_status"),
+    path("<str:kennung>/api/starten/", views.api_starten, name="api_starten"),
+    path("<str:kennung>/api/weiter/", views.api_weiter, name="api_weiter"),
+    path("<str:kennung>/api/zurueck/", views.api_zurueck, name="api_zurueck"),
+    path("<str:kennung>/api/fortsetzen/", views.api_fortsetzen, name="api_fortsetzen"),
+    path("<str:kennung>/api/abfrage/", views.api_abfrage, name="api_abfrage"),
+    path("<str:kennung>/api/spaetzuender/", views.api_spaetzuender, name="api_spaetzuender"),
 ]  # fmt: skip

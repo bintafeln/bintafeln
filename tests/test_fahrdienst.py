@@ -42,6 +42,13 @@ def person(benutzer_mit_rolle, name, rolle=rollen.FAHRER, email=""):
                                   email=email, konto=b)  # fmt: skip
 
 
+@pytest.fixture(autouse=True)
+def heute_ist_mittwoch(monkeypatch):
+    """Die Tests rechnen mit festen Tagen im November 2026. Ohne festes „heute“ scheitern sie,
+    sobald diese Tage in der Vergangenheit liegen (vergangene Tage bieten kein Austragen an)."""
+    monkeypatch.setattr("django.utils.timezone.localdate", lambda *args: MITTWOCH)
+
+
 @pytest.fixture
 def team(benutzer_mit_rolle):
     p = {n.split()[0].lower(): person(benutzer_mit_rolle, n) for n in (

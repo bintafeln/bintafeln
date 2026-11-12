@@ -333,7 +333,9 @@ def test_hilfe_bild_aufruf(angemeldet, admin, muster):
 
     # Handy-Steuerung
     seite.set_viewport_size({"width": 400, "height": 860})
-    seite.goto(reverse("aufruf:mobil", args=[stelle.pk]))
+    from apps.aufruf.models import AufrufEinstellungen as _E
+
+    seite.goto(reverse("aufruf:mobil", args=[_E.laden(stelle).steuer_schluessel]))
     knopf = seite.locator("#nextBtn")
     expect(knopf.locator(".nr-da").first).to_be_visible()
     titel = seite.locator(".card-title")
@@ -954,4 +956,19 @@ def test_hilfe_bild_vereinsportal_abruf(
         Marke(seite.locator("input[name=von]"), nummer=1, von="rechts", laenge=50),
         Marke(seite.locator("#abruf-form button[type=submit]"), nummer=2, von="rechts", laenge=60),
         Marke(seite.locator("#abruf-code"), nummer=3, von="rechts", laenge=60),
+    )
+
+
+def test_hilfe_bild_aufruf_neue_links(angemeldet, admin, muster):
+    _module("aufruf")
+    mitte = Ausgabestelle.objects.get(name="Ausgabestelle Mitte")
+    seite = oeffnen(angemeldet, admin, reverse("aufruf:schluessel_neu", args=[mitte.pk]))
+    karte = seite.locator("section.karte")
+    aufnehmen(
+        seite,
+        "aufruf-neue-links",
+        [karte],
+        Marke(seite.locator("input[name=verstanden]"), nummer=1, von="links", laenge=40),
+        Marke(seite.locator("input[name=passwort]"), nummer=2, von="rechts", laenge=50),
+        Marke(seite.get_by_role("button", name="Neue Links erzeugen"), nummer=3, von="rechts"),
     )

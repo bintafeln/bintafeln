@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block titel %}Links der Geräte ungültig machen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'aufruf:einstellungen' %}">← Aufruf, Monitor und Kiosk</a></p>
+  <h1>Links der Geräte ungültig machen: {{ s.name }}</h1>
+  <p class="meldung warnung"><strong>Achtung:</strong> Danach gelten für Monitor, Nummern-Anzeige, Kiosk und Abfrage
+    dieser Ausgabestelle neue Links. Die bisherigen funktionieren sofort nicht mehr: Die Geräte im Wartebereich zeigen
+    nichts mehr an, bis an jedem einzelnen der neue Link geöffnet und gespeichert wurde.</p>
+  <p>Das ist nur nötig, wenn ein Link in falsche Hände geraten ist. Die Steuerung am PC und am Handy ist davon nicht
+    betroffen.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf knopf-abbrechen">Neue Links erzeugen</button>
+      <a class="knopf knopf-zweitrangig" href="{% url 'aufruf:einstellungen' %}">Abbrechen</a>
+    </div>
+  </form>
+</section>
+{% endblock %}
