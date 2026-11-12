@@ -54,6 +54,11 @@
     Minuten dauern. Die Seite darf dabei offen bleiben oder geschlossen werden.</li>
 </ol>
 {% hilfe_bild "vereinsportal-abruf" "① Zeitraum wählen, ② „Abruf starten“, ③ den 2FA-Code eingeben, sobald danach gefragt wird." %}
+<p><strong>Wenn der Abruf scheitert</strong>, steht unter „Stand“, bei welchem Schritt und auf welcher Seite. Häufige
+  Ursachen: Die „Adresse der Anmeldeseite“ zeigt nicht auf die Seite mit den Feldern für E-Mail und Passwort, oder
+  E-Mail und Passwort stimmen nicht – dann fragt das Vereinsportal gar nicht erst nach dem 2FA-Code, und bintafeln
+  sagt das nach etwa einer halben Minute. Wer den Server betreut, sieht den Verlauf mit
+  <code>docker compose logs abruf</code>; Zugangsdaten stehen dort nie.</p>
 <p>Der Abruf bedient die Seiten des Vereinsportals wie ein Mensch. Ändert das Vereinsportal seine Seiten, kann er
   scheitern; die Meldung steht dann unter „Stand“. Laden Sie die Dateien in diesem Fall von Hand hoch und melden Sie
   den Fehler, damit der Abruf angepasst wird.</p>

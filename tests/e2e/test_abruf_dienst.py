@@ -19,8 +19,8 @@ import pytest
 
 PFAD = Path(__file__).resolve().parents[2] / "docker" / "abruf" / "abruf.py"
 SCHLUESSEL = "nur-ein-erfundener-test-schluessel"
-KURZ = {"code": 20, "nach_anmeldung": 0.2, "nach_code": 0.5, "liste_laden": 0.5,
-        "export_laden": 0.5, "klick": 0.1, "abfangen": 3, "erzeugen": 20,
+KURZ = {"felder": 2, "zwei_faktor": 2, "code": 20, "nach_anmeldung": 0.2, "nach_code": 0.5,
+        "liste_laden": 0.5, "export_laden": 0.5, "klick": 0.1, "abfangen": 3, "erzeugen": 20,
         "download": 20}  # fmt: skip
 
 
@@ -101,7 +101,8 @@ class Portal(BaseHTTPRequestHandler):
     def do_POST(self):
         daten = parse_qs(self.rfile.read(int(self.headers["Content-Length"])).decode())
         type(self).gesehen["anmeldung"] = (daten["eml-user"][0], daten["psw-user"][0])
-        self._html(ZWEI)
+        # wie im Vereinsportal: nur mit richtigem Passwort folgt die Abfrage des 2FA-Codes
+        self._html(ZWEI if daten["psw-user"][0] == "erfunden" else ANMELDUNG + "Falsch.")
 
     def do_GET(self):
         teile = urlparse(self.path)
@@ -229,11 +230,44 @@ def test_falscher_code_meldet_fehler_und_neuer_auftrag_geht(dienst):
     dienst.rufen("/code", {"code": "999999"})
     stand = dienst.warten_auf("fertig", "fehler")
     assert stand["stand"] == "fehler" and "Anmeldung hat nicht geklappt" in stand["fehler"]
+    assert "(Seite: http://127.0.0.1" in stand["fehler"] and "/login)" in stand["fehler"]
     assert dienst.rufen("/start", dienst.auftrag())[1]["nummer"] == 2
     dienst.warten_auf("warte_auf_code")
     dienst.rufen("/abbrechen", {})
     stand = dienst.warten_auf("fehler")
     assert stand["fehler"] == "Der Abruf wurde abgebrochen."
+
+
+def test_falsches_passwort_fragt_gar_nicht_erst_nach_dem_code(dienst):
+    """Nimmt das Vereinsportal die Anmeldung nicht an, kommt sofort eine Erklärung – statt
+    fünf Minuten auf einen Code zu warten, den niemand verschickt hat."""
+    dienst.rufen("/start", dienst.auftrag(passwort="falsch"))
+    stand = dienst.warten_auf("warte_auf_code", "fehler", "fertig")
+    assert stand["stand"] == "fehler", stand
+    assert "nicht nach dem 2FA-Code gefragt" in stand["fehler"]
+    assert "Stimmen E-Mail und Passwort" in stand["fehler"] and "/login)" in stand["fehler"]
+
+
+def test_falsche_adresse_der_anmeldeseite(dienst):
+    auftrag = dienst.auftrag()
+    auftrag["anmeldung_url"] = auftrag["anmeldung_url"].replace("/login", "/zwei")
+    dienst.rufen("/start", auftrag)
+    stand = dienst.warten_auf("warte_auf_code", "fehler", "fertig")
+    assert stand["stand"] == "fehler", stand
+    assert "Felder für E-Mail und Passwort nicht gefunden" in stand["fehler"]
+    assert "Adresse der Anmeldeseite" in stand["fehler"]
+
+
+def test_unerwartete_seite_nennt_schritt_und_seite(dienst):
+    """Sieht eine Seite anders aus als erwartet, steht in der Meldung, bei welchem Schritt."""
+    auftrag = dienst.auftrag("/liste")  # die Seite hat weder einen Export noch „Erstellen“
+    dienst.rufen("/start", auftrag)
+    dienst.warten_auf("warte_auf_code")
+    dienst.rufen("/code", {"code": "123456"})
+    stand = dienst.warten_auf("fehler", "fertig")
+    assert stand["stand"] == "fehler", stand
+    assert "Beim Schritt „(2/2) Stelle den Zeitraum ein …“" in stand["fehler"]
+    assert "/liste)" in stand["fehler"]
 
 
 def test_ohne_code_laeuft_die_zeit_ab(dienst):

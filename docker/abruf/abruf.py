@@ -28,6 +28,8 @@ DATEIEN = {"spenderliste": "spenderliste.xlsx", "finanzexport": "finanzexport.zi
 # Wartezeiten in Sekunden; Tests setzen sie herunter
 ZEITEN = {
     "code": 300,  # so lange wartet der Dienst auf den 2FA-Code
+    "felder": 15,  # so lange dürfen die Felder der Anmeldeseite auf sich warten lassen
+    "zwei_faktor": 30,  # … und die Abfrage des 2FA-Codes nach dem Absenden
     "nach_anmeldung": 3,
     "nach_code": 4,
     "liste_laden": 20,
@@ -41,6 +43,10 @@ ZEITEN = {
 
 class Abbruch(Exception):
     """Vom Menschen abgebrochen."""
+
+
+class Hinweis(RuntimeError):
+    """Störung mit einer Erklärung, was der Mensch prüfen kann."""
 
 
 class Auftrag:
@@ -59,6 +65,7 @@ class Auftrag:
         self.code, self.abbrechen, self.nummer = "", False, 0
 
     def melden(self, schritt: str, stand: str | None = None):
+        print(f"[abruf] {schritt}", flush=True)  # für „docker compose logs abruf“; nie Zugangsdaten
         self.schritt = schritt
         if stand:
             self.stand = stand
@@ -87,10 +94,38 @@ def _warten(auftrag: Auftrag, seite, sekunden: float):
         seite.wait_for_timeout(min(500, max(1, (ende - time.monotonic()) * 1000)))
 
 
+def _da(seite, auswahl: str, sekunden: float) -> bool:
+    """Erscheint das Element rechtzeitig auf der Seite?"""
+    try:
+        seite.wait_for_selector(auswahl, timeout=sekunden * 1000)
+    except Exception:  # noqa: BLE001 – Zeitüberschreitung oder Seite weg: beides heißt „nein“
+        return False
+    return True
+
+
+def _beschreiben(auftrag: Auftrag, seite, fehler: Exception) -> str:
+    """Die Störung so, dass man sie weitergeben kann: Schritt, Ursache und Seite (ohne das, was
+    hinter dem Fragezeichen steht)."""
+    text = str(fehler).splitlines()[0] if str(fehler) else type(fehler).__name__
+    if not isinstance(fehler, Hinweis):
+        if "Timeout" in text:
+            text = f"Die Seite sah anders aus als erwartet oder antwortete zu langsam ({text})"
+        text = f"Beim Schritt „{auftrag.schritt}“: {text}"
+    try:
+        ort = seite.url.split("?")[0]
+    except Exception:  # noqa: BLE001 – der Browser kann schon weg sein
+        ort = ""
+    return f"{text} (Seite: {ort})"[:500] if ort else text[:500]
+
+
 def _anmelden(auftrag: Auftrag, seite, d: dict):
     auftrag.melden("Öffne die Anmeldeseite …")
     seite.goto(d["anmeldung_url"], timeout=30000)
-    seite.wait_for_selector('input[name="eml-user"]', timeout=15000)
+    if not _da(seite, 'input[name="eml-user"]', ZEITEN["felder"]):
+        raise Hinweis(
+            "Auf der Anmeldeseite wurden die Felder für E-Mail und Passwort nicht gefunden. "
+            "Stimmt die „Adresse der Anmeldeseite“ in den Einstellungen?"
+        )
     auftrag.melden("Gebe die Zugangsdaten ein …")
     seite.fill('input[name="eml-user"]', d["email"])
     seite.fill('input[name="psw-user"]', d["passwort"])
@@ -100,6 +135,14 @@ def _anmelden(auftrag: Auftrag, seite, d: dict):
     ).first.click()
     seite.wait_for_load_state("domcontentloaded", timeout=15000)
     _warten(auftrag, seite, ZEITEN["nach_anmeldung"])
+    # Erst nach dem Code fragen, wenn das Vereinsportal ihn wirklich haben will. Sonst wartet
+    # der Mensch fünf Minuten auf einen Code, den das Portal nie verschickt hat.
+    auftrag.melden("Warte auf die Abfrage des 2FA-Codes …")
+    if not _da(seite, 'input[name="twoFactorActivate"]', ZEITEN["zwei_faktor"]):
+        raise Hinweis(
+            "Nach dem Absenden von E-Mail und Passwort hat das Vereinsportal nicht nach dem "
+            "2FA-Code gefragt. Stimmen E-Mail und Passwort in den Einstellungen?"
+        )
 
     auftrag.melden("Bitte den 2FA-Code eingeben", "warte_auf_code")
     ende = time.monotonic() + ZEITEN["code"]
@@ -123,7 +166,7 @@ def _spenderliste(auftrag: Auftrag, seite, d: dict):
     seite.goto(d["liste_url"], wait_until="domcontentloaded", timeout=30000)
     _warten(auftrag, seite, ZEITEN["liste_laden"])
     if "login" in seite.url:
-        raise RuntimeError("Die Anmeldung hat nicht geklappt (Zugangsdaten oder 2FA-Code falsch?).")
+        raise Hinweis("Die Anmeldung hat nicht geklappt. War der 2FA-Code richtig?")
     knoepfe = seite.query_selector_all("button.mat-icon-button:not(.disabled):not([disabled])")
     if len(knoepfe) <= 3:
         auftrag.melden(
@@ -269,10 +312,15 @@ def ablauf(auftrag: Auftrag, d: dict, browser_pfad: str | None = None):
             try:
                 kontext = browser.new_context(accept_downloads=True)
                 seite = kontext.new_page()
-                _anmelden(auftrag, seite, d)
-                if d.get("mit_liste"):
-                    _spenderliste(auftrag, seite, d)
-                _finanzexport(auftrag, kontext, seite, d)
+                try:
+                    _anmelden(auftrag, seite, d)
+                    if d.get("mit_liste"):
+                        _spenderliste(auftrag, seite, d)
+                    _finanzexport(auftrag, kontext, seite, d)
+                except Abbruch:
+                    raise
+                except Exception as fehler:  # noqa: BLE001 – mit Schritt und Seite weitergeben
+                    raise Hinweis(_beschreiben(auftrag, seite, fehler)) from fehler
             finally:
                 browser.close()
         auftrag.melden("Die Dateien sind geladen.", "fertig")
@@ -280,8 +328,8 @@ def ablauf(auftrag: Auftrag, d: dict, browser_pfad: str | None = None):
         auftrag.fehler = "Der Abruf wurde abgebrochen."
         auftrag.melden("Abgebrochen", "fehler")
     except Exception as fehler:  # noqa: BLE001 – jede Störung soll in bintafeln lesbar ankommen
-        auftrag.fehler = str(fehler).splitlines()[0][:300] if str(fehler) else type(fehler).__name__
-        auftrag.melden("Fehlgeschlagen", "fehler")
+        auftrag.fehler = str(fehler).splitlines()[0][:500] if str(fehler) else type(fehler).__name__
+        auftrag.melden(f"Fehlgeschlagen: {auftrag.fehler}", "fehler")
     finally:
         auftrag.code = ""
         d.clear()  # Zugangsdaten nicht länger halten als nötig
