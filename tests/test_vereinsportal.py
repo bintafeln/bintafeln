@@ -102,6 +102,22 @@ def test_beleg_lesen_spender_jahr_betrag():
     assert (a.jahr, a.betrag) == (2026, D("1250.00"))
 
 
+def test_spendendatum_steht_bei_tag_der_zuwendung():
+    """Das Spendendatum ist der Tag der Zuwendung, nicht irgendein Datum im Beleg (z. B. das
+    Ausstellungsdatum davor)."""
+    a = einlesen.beleg_lesen(beleg_pdf(), ABSENDER)
+    assert (a.datum, a.jahr) == (dt.date(2026, 3, 14), 2026)
+    zeilen = ["Musterstadt, 05.01.2027", "Betrag in Ziffern in Buchstaben Tag der Zuwendung",
+              "25,00 fünfundzwanzig 28.12.2026", "Bescheid vom 02.02.2024"]  # fmt: skip
+    assert einlesen.spendendatum(zeilen) == dt.date(2026, 12, 28)
+    assert einlesen.spendendatum(["Tag der Zuwendung: 03.04.2026", "01.01.2020"]) == dt.date(
+        2026, 4, 3
+    )
+    # ohne die Angabe: das erste gültige Datum; ungültige Tage zählen nicht
+    assert einlesen.spendendatum(["am 31.02.2026 oder 01.03.2026"]) == dt.date(2026, 3, 1)
+    assert einlesen.spendendatum(["kein Datum"]) is None
+
+
 def test_beleg_lesen_ohne_absender_gilt_die_erste_zeile_mit_strich():
     assert einlesen.beleg_lesen(beleg_pdf()).name == "Erika Beispiel"
 
@@ -141,6 +157,7 @@ def test_finanzexport_einlesen(export):
     assert (b.name, b.such_name, b.jahr, b.betrag) == ("Erika Beispiel", "erika beispiel", 2026,
                                                        D("25.00"))  # fmt: skip
     assert b.eingelesen_von == "buero" and not b.im_portal_versendet
+    assert b.datum == dt.date(2026, 3, 14)
     assert Beleg.objects.get(belegnummer="3").im_portal_versendet
     # verschlüsselt abgelegt, lesbar nur über privatdateien
     assert privatdateien.lesen(Beleg.ORDNER, b.datei).startswith(b"%PDF")
@@ -152,6 +169,26 @@ def test_finanzexport_zweimal_einlesen_legt_nichts_doppelt_an(export):
     export.seek(0)
     e = einlesen.finanzexport_einlesen(export, "buero")
     assert (e.neu, e.doppelt, Beleg.objects.count()) == (0, 3, 3)
+
+
+def test_spendendatum_wird_fuer_alte_belege_nachgetragen(export):
+    """Belege, die vor dem Spendendatum eingelesen wurden: beim nächsten Einlesen derselben
+    Datei und beim Öffnen der Seite aus dem gespeicherten PDF."""
+    einlesen.finanzexport_einlesen(export, "buero")
+    Beleg.objects.update(datum=None, jahr=2020)
+    export.seek(0)
+    e = einlesen.finanzexport_einlesen(export, "buero")
+    assert (e.neu, e.doppelt) == (0, 3)
+    assert set(Beleg.objects.values_list("datum", "jahr")) == {(dt.date(2026, 3, 14), 2026)}
+    # … und ohne die Datei: aus dem verschlüsselt gespeicherten Beleg
+    Beleg.objects.update(datum=None, jahr=2020)
+    kaputt = Beleg.objects.get(belegnummer="3")
+    privatdateien.loeschen(Beleg.ORDNER, kaputt.datei)
+    assert einlesen.daten_nachtragen() == 2
+    assert Beleg.objects.filter(datum=dt.date(2026, 3, 14), jahr=2026).count() == 2
+    kaputt.refresh_from_db()
+    assert kaputt.datum is None and kaputt.datum_gesucht
+    assert einlesen.daten_nachtragen() == 0  # nicht lesbar: kein zweiter Versuch
 
 
 def test_finanzexport_ohne_uebersicht():
@@ -277,7 +314,9 @@ def test_teilweise_versendet_bleibt_in_der_liste(eingelesen):
 def test_csv(eingelesen):
     text = auswertung.csv_text(auswertung.spender(2026))
     assert text.startswith("﻿Name;Straße")
-    assert "Erika Beispiel;Feldweg 2;54321 Beispieldorf;erika@example.org;2;1275,00;2" in text
+    assert text.splitlines()[0].endswith(";Spendendaten")
+    zeile = "Erika Beispiel;Feldweg 2;54321 Beispieldorf;erika@example.org;2;1275,00;2;"
+    assert zeile + "14.03.2026, 14.03.2026" in text
 
 
 def test_jahre_enthaelt_aktuelles_und_vorhandene(eingelesen):
@@ -329,6 +368,11 @@ def test_seite_einlesen_und_liste(buero, export):
     inhalt = buero.get(reverse("vereinsportal:start"), {"jahr": "2026"}).content.decode()
     assert "Erika Beispiel" in inhalt and "erika@example.org" in inhalt
     assert "Otto Muster" not in inhalt
+    # zu jedem Beleg das Spendendatum; fehlt es, steht das da
+    assert "Gespendet am" in inhalt and "14.03.2026" in inhalt and "Nr. 1" in inhalt
+    Beleg.objects.filter(belegnummer="1").update(datum=None, datum_gesucht=True)
+    inhalt = buero.get(reverse("vereinsportal:start"), {"jahr": "2026"}).content.decode()
+    assert "Datum fehlt" in inhalt
     leer = buero.get(reverse("vereinsportal:start"), {"jahr": "2026", "gruppe": "einfach_post"})
     assert "Keine Spender in dieser Auswahl" in leer.content.decode()
     # unbekannte Angaben fallen auf die Vorgabe zurück
@@ -486,6 +530,7 @@ def test_auswahl_bereit_und_werte(spender_da):
     assert (e.email, e.werte["anrede"], e.werte["nachname"]) == (
         "anna@example.org", "Sehr geehrte Frau Probe,", "Probe")  # fmt: skip
     assert e.werte["spendensumme"] == "5,00 €"
+    assert e.werte["spendendaten"] == "14.03.2026"
     # nicht mehr lesbare Datei: keine Anlage statt Fehler
     privatdateien.loeschen(Beleg.ORDNER, otto.belege[0].datei)
     assert briefe.anlagen(otto) == []

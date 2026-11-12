@@ -12,6 +12,7 @@ Die Regeln stammen aus dem bisherigen Spendenbelege-Programm der Tafel:
   „Anrede“ (für die Briefanrede) und „immer per Post“.
 """
 
+import datetime as dt
 import io
 import re
 import zipfile
@@ -33,7 +34,7 @@ MAX_EXCEL = 30 * 1024 * 1024
 MAX_ZEILEN = 20000
 BLATT = "Spenden - Übersicht"
 KOPFZEILE = 6
-DATUM = re.compile(r"\d{2}\.\d{2}\.(\d{4})")
+TAG = re.compile(r"(\d{2})\.(\d{2})\.(\d{4})")
 BETRAG = re.compile(r"([\d.]+,\d{2})\s+[a-zä-ü\-]+", re.IGNORECASE)
 NUMMER = re.compile(r"_(\d+)\.pdf$", re.IGNORECASE)
 
@@ -49,6 +50,7 @@ class Angaben:
     plz_ort: str
     jahr: int
     betrag: Decimal
+    datum: dt.date | None = None
 
 
 @dataclass
@@ -92,6 +94,23 @@ def _zeilen(inhalt: bytes) -> list[str]:
     return [z.strip() for z in text.split("\n") if z.strip()]
 
 
+def _daten(zeile: str):
+    for tag, monat, jahr in TAG.findall(zeile):
+        try:
+            yield dt.date(int(jahr), int(monat), int(tag))
+        except ValueError:  # z. B. 31.02.
+            continue
+
+
+def spendendatum(zeilen: list[str]) -> dt.date | None:
+    """Der Tag der Zuwendung: das Datum bei „Tag der Zuwendung“ (in derselben oder einer der
+    nächsten Zeilen, je nachdem wie das PDF seine Tabelle ausgibt), sonst das erste Datum im
+    Beleg."""
+    marke = next((i for i, z in enumerate(zeilen) if "tag der zuwendung" in z.lower()), None)
+    bereiche = ([zeilen[marke : marke + 4]] if marke is not None else []) + [zeilen]
+    return next((d for bereich in bereiche for z in bereich for d in _daten(z)), None)
+
+
 def beleg_lesen(inhalt: bytes, absender: str = "") -> Angaben | None:
     """Spender, Jahr und Betrag aus einem Beleg; None ohne vollständige Anschrift."""
     zeilen = _zeilen(inhalt)
@@ -100,7 +119,8 @@ def beleg_lesen(inhalt: bytes, absender: str = "") -> Angaben | None:
         (zeilen[i + 1] for i, z in enumerate(zeilen[:-1]) if "|" in z and gesucht in z.lower()),
         None,
     )
-    jahr = next((int(t.group(1)) for t in map(DATUM.search, zeilen) if t), None)
+    datum = spendendatum(zeilen)
+    jahr = datum.year if datum else None
     if not spender or not jahr:
         return None
     teile = [t.strip() for t in spender.split("|")]
@@ -113,7 +133,7 @@ def beleg_lesen(inhalt: bytes, absender: str = "") -> Angaben | None:
             break
         except InvalidOperation:
             continue
-    return Angaben(teile[0][:250], teile[1][:200], teile[2][:200], jahr, betrag)
+    return Angaben(teile[0][:250], teile[1][:200], teile[2][:200], jahr, betrag, datum)
 
 
 def _mappe(inhalt):
@@ -173,6 +193,7 @@ def finanzexport_einlesen(datei, von: str) -> Ergebnis:
         raise EinleseFehler("Die Datei ist kein ZIP-Archiv.") from fehler
     absender = PortalEinstellungen.laden().absender
     vorhanden = set(Beleg.objects.values_list("dateiname", flat=True))
+    ohne_datum = set(Beleg.objects.filter(datum=None).values_list("dateiname", flat=True))
     ergebnis, nummern = Ergebnis(), set()
     namen = ((i, i.filename.lower()) for i in archiv.infolist())
     belege = [i for i, n in namen if "spenden" in n and n.endswith(".pdf")]
@@ -180,10 +201,12 @@ def finanzexport_einlesen(datei, von: str) -> Ergebnis:
         raise EinleseFehler(f"Mehr als {MAX_BELEGE} Belege; bitte einen kürzeren Zeitraum wählen.")
     for eintrag in belege:
         name = eintrag.filename.rsplit("/", 1)[-1][:200]
+        inhalt = archiv.read(eintrag) if eintrag.file_size <= MAX_PDF else b""
         if name in vorhanden:
             ergebnis.doppelt += 1
+            if name in ohne_datum:  # früher ohne Spendendatum eingelesen: jetzt nachtragen
+                _datum_nachtragen(Beleg.objects.get(dateiname=name), inhalt, absender)
             continue
-        inhalt = archiv.read(eintrag) if eintrag.file_size <= MAX_PDF else b""
         angaben = beleg_lesen(inhalt, absender)
         if angaben is None:
             ergebnis.ohne_anschrift += 1
@@ -191,7 +214,7 @@ def finanzexport_einlesen(datei, von: str) -> Ergebnis:
         Beleg.objects.create(
             dateiname=name, belegnummer=belegnummer(name), name=angaben.name,
             such_name=normal(angaben.name), strasse=angaben.strasse, plz_ort=angaben.plz_ort,
-            jahr=angaben.jahr, betrag=angaben.betrag, eingelesen_von=von,
+            jahr=angaben.jahr, datum=angaben.datum, betrag=angaben.betrag, eingelesen_von=von,
             datei=privatdateien.ablegen(Beleg.ORDNER, inhalt),
         )  # fmt: skip
         vorhanden.add(name)
@@ -204,6 +227,29 @@ def finanzexport_einlesen(datei, von: str) -> Ergebnis:
                 ergebnis.mit_uebersicht = True
     ergebnis.versendet = _versendet_vermerken(nummern)
     return ergebnis
+
+
+def _datum_nachtragen(beleg: Beleg, inhalt: bytes, absender: str) -> bool:
+    angaben = beleg_lesen(inhalt, absender) if inhalt else None
+    if angaben is None or angaben.datum is None:
+        return False
+    beleg.datum, beleg.jahr = angaben.datum, angaben.jahr
+    beleg.save(update_fields=["datum", "jahr"])
+    return True
+
+
+def daten_nachtragen(grenze: int = 300) -> int:
+    """Belege, die vor Einführung des Spendendatums eingelesen wurden: Datum aus dem
+    gespeicherten PDF nachtragen. In Portionen, damit die Seite nicht lange lädt."""
+    absender = PortalEinstellungen.laden().absender
+    anzahl = 0
+    for beleg in Beleg.objects.filter(datum=None, datum_gesucht=False)[:grenze]:
+        inhalt = privatdateien.lesen(Beleg.ORDNER, beleg.datei) or b""
+        if _datum_nachtragen(beleg, inhalt, absender):
+            anzahl += 1
+        else:  # nicht noch einmal versuchen
+            Beleg.objects.filter(pk=beleg.pk).update(datum_gesucht=True)
+    return anzahl
 
 
 def _ja(wert) -> bool:
