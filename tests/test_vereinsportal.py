@@ -126,8 +126,11 @@ def test_beleg_lesen_ohne_absender_gilt_die_erste_zeile_mit_strich():
     assert einlesen.beleg_lesen(beleg_pdf()).name == "Erika Beispiel"
 
 
-def test_beleg_lesen_anderer_absender_findet_nichts():
-    assert einlesen.beleg_lesen(beleg_pdf(), "Anderer Verein") is None
+def test_beleg_lesen_auch_wenn_der_eingetragene_absender_nicht_passt():
+    """Ein anders geschriebener Vereinsname darf das Einlesen nicht verhindern: Die erste Zeile
+    mit „|“ ist der Absender, darunter steht der Spender."""
+    angaben = einlesen.beleg_lesen(beleg_pdf(), "Anderer Verein")
+    assert angaben.name == "Erika Beispiel" and angaben.plz_ort == "54321 Beispieldorf"
 
 
 @pytest.mark.parametrize("pdf", [
@@ -159,10 +162,51 @@ def test_spenderzeile_nimmt_nie_den_verein_und_nichts_entferntes():
     zeilen = [VEREIN, "Nur Name", "a", "b", "c", fuss]
     assert einlesen.spenderzeile(zeilen, ABSENDER) is None
     assert einlesen.spenderzeile([VEREIN, VEREIN], ABSENDER) is None
-    assert einlesen.spenderzeile([ERIKA], ABSENDER) is None  # Verein steht nirgends
+    assert einlesen.spenderzeile(["ohne Strich", "noch eine"], ABSENDER) is None
     assert einlesen.spenderzeile(["ohne Strich"], "") is None
     # ohne Angabe gilt die erste Zeile mit „|“ als Absenderzeile
     assert einlesen.spenderzeile([VEREIN, ERIKA], "")[0] == "Erika Beispiel"
+
+
+def test_spenderzeile_wenn_der_eingetragene_vereinsname_nicht_passt():
+    """Der Name des Vereins ist anders eingetragen, als er auf dem Beleg steht: Die erste Zeile
+    mit „|“ ist trotzdem der Absender, die Zeile darunter der Spender. (So sehen die echten
+    Belege aus: Absender mit vier Teilen, darunter der Spender.)"""
+    erika = ["Erika Beispiel", "Feldweg 2", "54321 Beispieldorf"]
+    verein = VEREIN + " | Deutschland"
+    beleg = [verein, ERIKA, "25,00 fünfundzwanzig 14.03.2026", "X", "Finanzamt Musterstadt"]
+    assert einlesen.spenderzeile(beleg, "Ganz anderer Name") == erika
+    assert einlesen.spenderzeile(beleg, ABSENDER) == erika
+    assert einlesen.spendendatum(beleg) == dt.date(2026, 3, 14)
+    # Spender ohne Anschrift: nur die Absenderzeile hat „|“ – dann nie den Verein nehmen
+    ohne = [verein, "Nur Name", "25,00 fünfundzwanzig 14.03.2026"]
+    assert einlesen.spenderzeile(ohne, "Ganz anderer Name") is None
+    assert einlesen.spenderzeile(ohne, ABSENDER) is None
+    # der Name der Tafel oder der Körperschaft kennzeichnet die Zeile ebenfalls als Absender
+    assert einlesen.spenderzeile([ERIKA, verein], "Ganz anderer Name", eigene=(ABSENDER,)) == erika
+
+
+def test_spenderzeile_anschrift_als_block_unter_dem_absender():
+    erika = ["Erika Beispiel", "Feldweg 2", "54321 Beispieldorf"]
+    assert einlesen.spenderzeile([VEREIN, *erika, "Betrag"], ABSENDER) == erika
+    mit_zusatz = [VEREIN, "Erika Beispiel", "c/o Muster", "Feldweg 2", "54321 Beispieldorf"]
+    assert einlesen.spenderzeile(mit_zusatz, ABSENDER) == erika
+    # auch wenn der eingetragene Name nicht passt
+    assert einlesen.spenderzeile([VEREIN, *erika], "Ganz anderer Name") == erika
+    assert einlesen.spenderzeile([VEREIN, "Nur Name", "Text", "Text"], ABSENDER) is None
+
+
+def test_finanzexport_alle_belege_derselbe_spender_wird_abgelehnt():
+    """Nennen alle Belege denselben Spender, wurde die Anschrift des Vereins gelesen: nichts
+    einlesen, statt den Verein hundertfach als Spender anzulegen."""
+    puffer = io.BytesIO()
+    with zipfile.ZipFile(puffer, "w") as z:
+        for nr in range(1, 6):
+            z.writestr(f"Spenden/Spendenbeleg_{nr:06d}.pdf", beleg_pdf())
+    puffer.seek(0)
+    with pytest.raises(einlesen.EinleseFehler, match="Alle 5 Belege nennen denselben Spender"):
+        einlesen.finanzexport_einlesen(puffer, "berta")
+    assert not Spende.objects.exists() and not Adresse.objects.exists()
 
 
 def test_beleg_lesen_versucht_weitere_lesarten(monkeypatch):
@@ -191,8 +235,15 @@ def test_diagnose_nennt_nur_zahlen():
     text = einlesen.diagnose(beleg_pdf(), "Ganz anderer Verein")
     assert text == (
         "Erster Beleg: 5 Textzeilen, davon 2 mit „|“; Name des Vereins gefunden: nein, in einer "
-        "Zeile mit „|“: nein; Datum gefunden: ja.")  # fmt: skip
-    assert "Erika" not in text and "nicht angegeben" in einlesen.diagnose(beleg_pdf())
+        "Zeile mit „|“: nein; Datum gefunden: ja. Eingetragen ist „Ganz anderer Verein“. Form der "
+        "Zeilen mit „|“ (Buchstaben als x): "
+        "„Xxxxx Xxxxxxxxxxx x.X. | Xxxxxxxxxxx 9 | 99999 Xxxxxxxxxxx“; "
+        "„Xxxxx Xxxxxxxx | Xxxxxxx 9 | 99999 Xxxxxxxxxxxx“.")  # fmt: skip
+    assert (
+        "Erika" not in text
+        and "Feldweg" not in text
+        and "nicht angegeben" in einlesen.diagnose(beleg_pdf())
+    )
 
 
 def test_beleg_lesen_ohne_betrag_null():
@@ -799,19 +850,20 @@ def test_abruf_ohne_belege_ist_kein_erfolg(dienst, zugang, berta):
         "erzeugt, und stimmt der Zeitraum?"))  # fmt: skip
     a = Abruf.objects.get()
     assert a.stand == "fehler" and a.kontakte == 1 and "keine Spendenbelege" in a.meldung
-    # 2) Belege sind da, aber keiner lässt sich lesen (anderer Absender)
+    # 2) Belege sind da, aber keiner lässt sich lesen (Spender ohne Anschrift)
     e = PortalEinstellungen.laden()
     e.absender = "Ganz anderer Verein e.V."
     e.save()
     abruf.starten(berta, dt.date(2026, 3, 1), dt.date(2026, 3, 4), False)
     dienst.stand |= {"stand": "fertig", "dateien": {"finanzexport": True}}
     dienst.dateien = {"finanzexport": archiv({
-        "Spenden/Spendenbeleg_000001.pdf": beleg_pdf(),
-        "Spenden/Spendenbeleg_000002.pdf": beleg_pdf()})}  # fmt: skip
+        "Spenden/Spendenbeleg_000001.pdf": beleg_pdf(spender="Nur Name"),
+        "Spenden/Spendenbeleg_000002.pdf": beleg_pdf(spender="Nur Name")})}  # fmt: skip
     ((gelungen, text),) = abruf.uebernehmen("berta")
     assert not gelungen and "Kein Beleg ließ sich lesen (2 in der Datei)" in text
-    assert "Erster Beleg: 5 Textzeilen, davon 2 mit „|“; Name des Vereins gefunden: nein" in text
-    assert "Absender" in text
+    assert "Erster Beleg: 5 Textzeilen, davon 1 mit „|“; Name des Vereins gefunden: nein" in text
+    assert "Form der Zeilen" in text and "Erika" not in text
+    assert "Anschrift des Spenders" in text
     assert Abruf.objects.first().stand == "fehler" and not Spende.objects.exists()
     # 3) der Dienst liefert gar keinen Finanzexport
     abruf.starten(berta, dt.date(2026, 4, 1), dt.date(2026, 4, 4), True)

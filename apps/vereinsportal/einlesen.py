@@ -33,7 +33,8 @@ from pypdf import PdfReader
 
 from apps.adressen.models import Adresse
 from apps.core import privatdateien, zeichen
-from apps.spenden.models import Spende, SpendenBeleg
+from apps.core.models import TafelEinstellungen
+from apps.spenden.models import Spende, SpendenBeleg, SpendenEinstellungen
 from apps.vereinsportal import namen
 from apps.vereinsportal.models import Kontakt, PortalEinstellungen
 from apps.vereinsportal.namen import normal
@@ -41,6 +42,7 @@ from apps.vereinsportal.namen import normal
 FREMD = (Spende.Fremdbeleg.OFFEN, Spende.Fremdbeleg.VERSENDET)
 MAX_BELEGE = 5000
 MAX_PDF = 10 * 1024 * 1024
+MIN_VERSCHIEDEN = 5  # ab so vielen Belegen muss es mehr als einen Spender geben
 MAX_EXCEL = 30 * 1024 * 1024
 MAX_ZEILEN = 20000
 BLATT = "Spenden - Übersicht"
@@ -90,9 +92,9 @@ class Ergebnis:
                 "Vereinsportal mit den Belegen erzeugt, und stimmt der Zeitraum?"
             )
         return (
-            f"Kein Beleg ließ sich lesen ({self.belege} in der Datei): Bei allen fehlt die Zeile "
-            "mit Absender und Anschrift oder ein Datum. Stimmt der „Name des Vereins im Absender "
-            f"der Belege“ in den Einstellungen zum Vereinsportal? {self.hinweis}"
+            f"Kein Beleg ließ sich lesen ({self.belege} in der Datei): Bei allen fehlt die "
+            "Anschrift des Spenders (unter der Absenderzeile des Vereins) oder ein Datum. "
+            f"{self.hinweis}"
         ).strip()
 
 
@@ -172,41 +174,64 @@ def _teile(zeile: str) -> list[str] | None:
     return teile if len(teile) >= 3 and all(teile[:3]) else None
 
 
-def spenderzeile(zeilen: list[str], absender: str = "") -> list[str] | None:
-    """Die Anschrift des Spenders. Auf dem Beleg steht die Absenderzeile des Vereins
-    („Verein | Straße | Ort“) und direkt darunter der Spender in derselben Form. Je nach
-    Lesart liegt eine Leerzeile oder Zusatzzeile dazwischen, oder der Spender steht davor."""
-    gesucht = _dicht(absender)
-    ist_absender = [bool(gesucht) and gesucht in _dicht(z) for z in zeilen]
-    mit_strich = [i for i, z in enumerate(zeilen) if "|" in z]
-    if gesucht:
-        anker = next((i for i in mit_strich if ist_absender[i]), None)
-    else:  # ohne Angabe gilt die erste Zeile mit „|“ als Absenderzeile
-        anker = mit_strich[0] if mit_strich else None
-    if anker is None:
-        return None
-    # die nächsten drei Zeilen, sonst die Zeile davor – nie eine Zeile des Vereins selbst
-    for i in [*range(anker + 1, anker + 4), anker - 1]:
-        if 0 <= i < len(zeilen) and not ist_absender[i] and (teile := _teile(zeilen[i])):
-            return teile
+PLZ_ORT = re.compile(r"^\d{5}\s+\S")
+
+
+def _block(zeilen: list[str], anker: int) -> list[str] | None:
+    """Anschrift als Block unter der Absenderzeile: Name, (Zusatz,) Straße, „PLZ Ort“ – jede
+    Angabe in ihrer eigenen Zeile, ohne „|“."""
+    for j in range(anker + 3, min(anker + 6, len(zeilen))):
+        if PLZ_ORT.match(zeilen[j]) and "|" not in "".join(zeilen[anker + 1 : j + 1]):
+            return [zeilen[anker + 1], zeilen[j - 1], zeilen[j]]
     return None
 
 
+def spenderzeile(zeilen: list[str], absender: str = "", eigene=()) -> list[str] | None:
+    """Die Anschrift des Spenders. Auf dem Beleg steht die Absenderzeile des Vereins
+    („Verein | Straße | Ort“) und darunter der Spender – in derselben Form oder als Block mit
+    einer Angabe je Zeile. Je nach Lesart liegt eine Zeile dazwischen, oder der Spender steht
+    davor. ``eigene`` sind weitere Namen des Vereins (Name der Tafel, Körperschaft): Eine Zeile,
+    in der einer davon steht, ist nie der Spender."""
+    namen_des_vereins = [n for n in map(_dicht, (absender, *eigene)) if n]
+    vom_verein = [any(n in _dicht(z) for n in namen_des_vereins) for z in zeilen]
+    mit_strich = [i for i, z in enumerate(zeilen) if "|" in z]
+    if not mit_strich:
+        return None
+    # Die Absenderzeile: die Zeile mit „|“, in der der Verein steht. Steht der eingetragene
+    # Name nirgends (anders geschrieben als auf dem Beleg) oder ist keiner eingetragen, gilt die
+    # erste Zeile mit „|“ – dort steht auf den Belegen der Absender.
+    anker = next((i for i in mit_strich if vom_verein[i]), mit_strich[0])
+    # die nächsten drei Zeilen, sonst die Zeile davor – nie eine Zeile des Vereins selbst
+    for i in [*range(anker + 1, anker + 4), anker - 1]:
+        if 0 <= i < len(zeilen) and not vom_verein[i] and (teile := _teile(zeilen[i])):
+            return teile
+    return _block(zeilen, anker)
+
+
+def _muster(text: str) -> str:
+    """Die Form eines Textes ohne seinen Inhalt: Buchstaben als x/X, Ziffern als 9."""
+    return re.sub(r"[a-zäöüß]", "x", re.sub(r"[A-ZÄÖÜ]", "X", re.sub(r"\d", "9", text)))
+
+
 def diagnose(inhalt: bytes, absender: str = "") -> str:
-    """Warum sich ein Beleg nicht lesen ließ – nur Zahlen und Ja/Nein, keine Inhalte."""
+    """Warum sich ein Beleg nicht lesen ließ – Zahlen, Ja/Nein und die Form der Zeilen mit „|“
+    (Buchstaben als x), keine Inhalte."""
     lesarten = list(_lesarten(inhalt))
     if not lesarten:
         return "Aus dem PDF ließ sich kein Text lesen (z. B. eingescannt oder geschützt)."
     zeilen = lesarten[0]
     gesucht = _dicht(absender)
-    striche = sum("|" in z for z in zeilen)
+    striche = [z for z in zeilen if "|" in z]
     gefunden = any(gesucht in _dicht(z) for z in zeilen) if gesucht else None
-    in_strichzeile = any(gesucht in _dicht(z) for z in zeilen if "|" in z) if gesucht else None
+    in_strichzeile = any(gesucht in _dicht(z) for z in striche) if gesucht else None
     ja = {True: "ja", False: "nein", None: "nicht angegeben"}
+    formen = "; ".join(f"„{_muster(z)[:80]}“" for z in striche[:3])
     return (
-        f"Erster Beleg: {len(zeilen)} Textzeilen, davon {striche} mit „|“; Name des Vereins "
+        f"Erster Beleg: {len(zeilen)} Textzeilen, davon {len(striche)} mit „|“; Name des Vereins "
         f"gefunden: {ja[gefunden]}, in einer Zeile mit „|“: {ja[in_strichzeile]}; Datum "
         f"gefunden: {ja[spendendatum(zeilen) is not None]}."
+        + (f" Eingetragen ist „{absender.strip()}“." if gesucht and not gefunden else "")
+        + (f" Form der Zeilen mit „|“ (Buchstaben als x): {formen}." if formen else "")
     )
 
 
@@ -227,10 +252,10 @@ def spendendatum(zeilen: list[str]) -> dt.date | None:
     return next((d for bereich in bereiche for z in bereich for d in _daten(z)), None)
 
 
-def beleg_lesen(inhalt: bytes, absender: str = "") -> Angaben | None:
+def beleg_lesen(inhalt: bytes, absender: str = "", eigene=()) -> Angaben | None:
     """Spender, Jahr und Betrag aus einem Beleg; None ohne vollständige Anschrift."""
     for zeilen in _lesarten(inhalt):
-        teile, datum = spenderzeile(zeilen, absender), spendendatum(zeilen)
+        teile, datum = spenderzeile(zeilen, absender, eigene), spendendatum(zeilen)
         if teile and datum:
             return _angaben(zeilen, teile, datum)
     return None
@@ -356,17 +381,33 @@ def finanzexport_einlesen(datei, von: str) -> Ergebnis:
     ergebnis.pdfs = sum(i.filename.lower().endswith(".pdf") for i in alle)
     if len(belege) > MAX_BELEGE:
         raise EinleseFehler(f"Mehr als {MAX_BELEGE} Belege; bitte einen kürzeren Zeitraum wählen.")
+    # Erst alle neuen Belege lesen, dann anlegen: So lässt sich vorher prüfen, ob das Ergebnis
+    # plausibel ist.
+    eigene = (TafelEinstellungen.laden().name, SpendenEinstellungen.laden().koerperschaft)
+    gelesen = []
     for eintrag in belege:
         name = eintrag.filename.rsplit("/", 1)[-1][:200]
         if name in vorhanden:
             ergebnis.doppelt += 1
             continue
         inhalt = archiv.read(eintrag) if eintrag.file_size <= MAX_PDF else b""
-        angaben = beleg_lesen(inhalt, absender)
+        angaben = beleg_lesen(inhalt, absender, eigene)
         if angaben is None:
             ergebnis.ohne_anschrift += 1
             ergebnis.hinweis = ergebnis.hinweis or diagnose(inhalt, absender)
             continue
+        gelesen.append((eintrag, name, angaben))
+    spender = {normal(a.name) for _, _, a in gelesen}
+    if len(gelesen) >= MIN_VERSCHIEDEN and len(spender) == 1:
+        raise EinleseFehler(
+            f"Alle {len(gelesen)} Belege nennen denselben Spender – das ist vermutlich die "
+            "Anschrift des Vereins selbst, nicht die der Spender. Nichts wurde eingelesen. Bitte "
+            "unter „Einstellungen → Verein → Vereinsportal“ den „Namen des Vereins im Absender "
+            "der Belege“ genau so eintragen, wie er auf einem Beleg in der kleinen Zeile über "
+            "der Anschrift steht."
+        )
+    for eintrag, name, angaben in gelesen:
+        inhalt = archiv.read(eintrag)
         nummer = belegnummer(name)
         spende = nach_nummer.get(nummer) if nummer else None
         if spende is None:
