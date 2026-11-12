@@ -101,8 +101,10 @@ def liste(request):
                 .annotate(s=Sum("betrag")).order_by("datum__month"))  # fmt: skip
     abfrage = request.GET.copy()
     abfrage.pop("seite", None)
+    seite = Paginator(spenden, 50).get_page(request.GET.get("seite"))
+    _belege_und_sammel(seite)
     return render(request, "spenden/liste.html", {
-        "seite": Paginator(spenden, 50).get_page(request.GET.get("seite")),
+        "seite": seite,
         "jahr": jahr, "jahre": _jahre(), "filter": {"art": art, "q": q}, "summen": summen,
         "je_monat": list(je_monat), "arten": Spende.Art.choices, "sort": sort,
         "sichtbar": listen.sichtbare_spalten(request.user, "spenden",
@@ -238,6 +240,26 @@ def loeschen(request, pk):
                             recht="spenden.erfassen")  # fmt: skip
         messages.success(request, "Spende in den Papierkorb gelegt.")
     return redirect("adressen:adresse", pk=s.adresse_id)
+
+
+def _belege_und_sammel(spenden) -> None:
+    """Für die Zeilen einer Seite der Spendenliste: der angehängte Beleg aus einem anderen
+    Programm (zum Öffnen) und – bei noch nicht bestätigten Geldspenden – wie viele Spenden des
+    Spenders im selben Jahr eine Sammelbestätigung aus bintafeln ergeben (ADR 0128)."""
+    spenden = list(spenden)
+    belege = {}
+    for b in SpendenBeleg.objects.filter(spende__in=spenden).order_by("-pk"):
+        belege[b.spende_id] = b
+    offen = {}
+    for s in spenden:
+        s.beleg = belege.get(s.pk)
+        s.sammel = 0
+        if s.bestaetigt or s.art != Spende.Art.GELD or s.fremdbeleg == Spende.Fremdbeleg.VERSENDET:
+            continue
+        schluessel = (s.adresse_id, s.datum.year)
+        if schluessel not in offen:
+            offen[schluessel] = bst.offene_geldspenden(s.adresse, s.datum.year).count()
+        s.sammel = offen[schluessel] if offen[schluessel] > 1 else 0
 
 
 @never_cache
@@ -524,7 +546,7 @@ def belege(request):
 
 
 @never_cache
-@rollen.recht_erforderlich("spenden.bestaetigen")
+@rollen.recht_erforderlich("spenden.bestaetigen", "spenden.sehen")
 def beleg(request, pk):
     b = get_object_or_404(SpendenBeleg, pk=pk)
     inhalt = privatdateien.lesen(SpendenBeleg.ORDNER, b.datei)

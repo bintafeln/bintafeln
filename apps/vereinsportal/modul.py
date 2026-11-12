@@ -6,10 +6,12 @@ from apps.core.module import Modul
 def menue(eintrag):
     return [
         ("Verein/Spenden", [
+            # Ein Eintrag für beides: von Hand hochladen und automatisch abrufen. Er steht für
+            # beide Rechte da (dieselbe Adresse erscheint im Menü nur einmal).
             ("vereinsportal.nutzen", eintrag("Aus dem Vereinsportal einlesen",
-                                             "vereinsportal:start", genau=True)),
-            ("vereinsportal.abruf", eintrag("Abruf aus dem Vereinsportal",
-                                             "vereinsportal:abruf")),
+                                             "vereinsportal:start")),
+            ("vereinsportal.abruf", eintrag("Aus dem Vereinsportal einlesen",
+                                            "vereinsportal:start")),
         ]),
         ("Einstellungen/Verein", [
             ("vereinsportal.nutzen", eintrag("Vereinsportal", "vereinsportal:einstellungen")),
