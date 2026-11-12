@@ -300,6 +300,40 @@ def test_hilfe_bild_spende_erfassen(angemeldet, admin, muster):
                     von="unten", laenge=30))  # fmt: skip
 
 
+def _unterschrift_bild() -> bytes:
+    """Eine gezeichnete, erfundene Unterschrift (keine echte)."""
+    import io
+
+    from PIL import Image, ImageDraw
+
+    bild = Image.new("RGB", (520, 160), "white")
+    stift = ImageDraw.Draw(bild)
+    punkte = [(20, 110), (60, 40), (90, 120), (130, 50), (165, 115), (200, 70), (240, 110),
+              (290, 60), (330, 115), (380, 80), (430, 105), (500, 60)]  # fmt: skip
+    stift.line(punkte, fill=(20, 30, 110), width=5, joint="curve")
+    stift.line([(30, 135), (480, 125)], fill=(20, 30, 110), width=3)
+    puffer = io.BytesIO()
+    bild.save(puffer, "PNG")
+    return puffer.getvalue()
+
+
+def test_hilfe_bild_unterschrift(angemeldet, admin, muster):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from apps.spenden import unterschrift as unterschriften
+
+    datei = SimpleUploadedFile("unterschrift.png", _unterschrift_bild(), "image/png")
+    unterschriften.speichern(admin, "Clara Beispiel, Vorsitzende", datei)
+    seite = oeffnen(angemeldet, admin, reverse("spenden:unterschrift"))
+    _ohne_menue(seite)
+    aufnehmen(seite, "zuwendungsbestaetigungen-unterschrift", seite.locator("section.karte"),
+              Marke(seite.locator(".zugang-kasten"), "rahmen", 1),
+              Marke(seite.locator(".unterschrift-vorschau"), "rahmen", 2),
+              Marke(seite.get_by_label("Name und Funktion"), "rahmen", 3),
+              Marke(seite.locator("input[type=file]"), nummer=4, von="rechts",
+                    laenge=40))  # fmt: skip
+
+
 def test_hilfe_bild_zuwendungsbestaetigungen(angemeldet, admin, muster):
     e = SpendenEinstellungen.laden()
     e.koerperschaft, e.anschrift = "Tafel Musterstadt e. V.", "Marktweg 1, 12345 Musterstadt"

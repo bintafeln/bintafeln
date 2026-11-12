@@ -2009,3 +2009,4 @@ details.amtsdokumente > summary { cursor: pointer; margin: .5rem 0; }
 .karte h2.abruf-titel { margin-top: 1.75rem; }
 .abruf-wann { white-space: nowrap; }
 .abruf-wann .leise { color: var(--leise); font-size: .85rem; }
+.unterschrift-vorschau { max-width: 20rem; max-height: 6rem; border: 1px dashed var(--rand); border-radius: var(--radius); padding: .5rem; background: #fff; }

@@ -22,4 +22,30 @@
   bestätigen.</div>
 {% hilfe_bild "zuwendungsbestaetigungen-ausgestellt" "① Ausgestellte Bestätigungen als PDF öffnen, ② eine falsche Bestätigung stornieren." %}
 {% endif %}
+{% if "spenden.bestaetigen" in rechte %}
+<h3>Mit eingescannter Unterschrift</h3>
+<p>Wer Bestätigungen ausstellt, kann seine <strong>eigene</strong> Unterschrift hinterlegen: auf der Seite
+  „Zuwendungsbestätigungen“ im Kasten „Ihre Unterschrift“ → „Unterschrift hinterlegen“. Dort ein Bild der Unterschrift
+  hochladen (PNG oder JPG, auf weißem Papier, eng zugeschnitten) und <strong>Name und Funktion</strong> eintragen, z. B.
+  „Erika Muster, Kassenwartin“.</p>
+<ul>
+  <li><strong>Nur für das eigene Konto:</strong> Die Unterschrift gehört zu Ihrem Konto. Niemand sonst sieht das Bild
+    oder kann damit ausstellen – auch kein Admin. Wer selbst ausstellt, hinterlegt seine eigene.</li>
+  <li><strong>Beim Ausstellen:</strong> Bestätigungen, die Sie ausstellen (einzeln, „Alle ausstellen“ oder über die
+    Dankesbriefe), tragen Ihre Unterschrift mit Ihrem Namen und Ihrer Funktion. Ohne hinterlegte Unterschrift steht
+    wie bisher eine Linie zum Unterschreiben von Hand da, mit dem Text aus den Einstellungen.</li>
+  <li><strong>Das PDF bleibt, wie es ist:</strong> Eine unterschriebene Bestätigung speichert bintafeln als fertiges
+    PDF und gibt danach immer genau dieses aus. Es ändert sich nicht, wenn später Einstellungen geändert werden oder
+    die Unterschrift gelöscht wird – auch nicht, wenn die Person ausscheidet.</li>
+  <li><strong>Neu ausfertigen:</strong> In der Liste „Ausgestellt“ steht, wer unterschrieben hat. Mit „mit meiner
+    Unterschrift“ fertigt eine andere Person mit hinterlegter Unterschrift dieselbe Bestätigung (gleiche Nummer,
+    gleicher Inhalt) mit ihrer eigenen Unterschrift neu aus. Die frühere Ausfertigung bleibt gespeichert; ausgegeben
+    wird ab dann die neue.</li>
+  <li>Eine stornierte Bestätigung trägt den Vermerk „STORNIERT“ und keine Unterschrift.</li>
+</ul>
+{% hilfe_bild "zuwendungsbestaetigungen-unterschrift" "① nur für Ihr Konto, ② die hinterlegte Unterschrift, ③ Name und Funktion, ④ neues Bild hochladen." %}
+<div class="tipp"><strong>Bitte vorher klären:</strong> Zuwendungsbestätigungen ohne eigenhändige Unterschrift – also
+  auch mit eingescannter – erkennt das Finanzamt nur an, wenn die Tafel das maschinelle Verfahren dort vorher
+  angezeigt hat (R 10b.1 Abs. 4 EStR). Fragen Sie im Zweifel Ihre Steuerberatung.</div>
+{% endif %}
 <p>Spender ohne Anschrift sind in der Liste markiert; eine Zuwendungsbestätigung braucht Name und Anschrift.</p>
