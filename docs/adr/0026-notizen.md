@@ -36,3 +36,10 @@ Notiz-Vorlagen (vom Admin gepflegte Texte) erscheinen am Einlass und auf der Hau
 Knöpfe; ein Klick speichert den Text als Notiz. Jede Notiz ist einzeln löschbar: Büro und Admin
 jede, die Ausgabe nur eigene vom selben Tag, damit ein Versehen korrigierbar ist, aber niemand
 die Notizen anderer entfernt. Dafür merkt sich die Notiz das Konto, das sie geschrieben hat.
+
+## Nachtrag: eigene Notizen an jedem Tag löschen
+
+Die Grenze „nur am selben Tag“ entfällt: Wer Notizen schreiben darf, löscht seine eigenen
+jederzeit, z. B. eine Ausgabestelle eine erledigte Notiz der Vorwoche. Notizen anderer löscht
+weiterhin nur, wer „Alle Notizen löschen“ darf. Gelöschte Notizen liegen im Papierkorb
+(ADR 0073), ein Versehen lässt sich also zurückholen.

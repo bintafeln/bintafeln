@@ -11,10 +11,10 @@
     Notiz „Foto abgelegt: …“ zeigt der Verwaltung, dass etwas dazugekommen ist. Die Fotos stehen bei den Dokumenten des
     Haushalts und werden nach der Frist der Dokumentart automatisch gelöscht. Ansehen kann sie nur, wer „Dokumente
     ansehen“ darf – am Einlass sieht man sie danach nicht mehr.</li>{% endif %}
-  <li><strong>Löschen</strong>: Eigene Notizen vom selben Tag (Versehen) über „löschen“.
+  <li><strong>Löschen</strong>: Eigene Notizen über „löschen“ – auch an späteren Tagen. Notizen anderer bleiben stehen.
     {% if "kunden.notizen_loeschen" in rechte %}Sie dürfen auch Notizen anderer löschen.{% endif %}</li>
 </ul>
-{% hilfe_bild "notizen-einlass" "① Notiz-Knopf: ein Klick speichert den Text als Notiz, ② eigene Notiz schreiben, ③ „Notiz speichern“, ④ eigene Notiz vom selben Tag löschen." %}
+{% hilfe_bild "notizen-einlass" "① Notiz-Knopf: ein Klick speichert den Text als Notiz, ② eigene Notiz schreiben, ③ „Notiz speichern“, ④ eigene Notiz löschen." %}
 {% if "kunden.stammdaten" in rechte %}<h3>Notiz an die Ausgabestelle</h3>
 <p>Auf der Haushaltsseite „An die Ausgabestelle schicken“ anhaken: Die Notiz steht dann zusätzlich auf der Startseite der
   Ausgabestelle, bis dort jemand „✓ gelesen“ klickt. Am Haushalt steht, ob und von wem sie gelesen wurde.</p>
