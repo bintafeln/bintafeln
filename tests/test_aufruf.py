@@ -24,6 +24,7 @@ from apps.kunden.models import (
     Person,
     Zusatzfeld,
 )
+from tests.conftest import PASSWORT
 
 pytestmark = pytest.mark.django_db
 
@@ -41,6 +42,11 @@ def modul_an(admin):
     t = TafelEinstellungen.laden()
     t.module = ["aufruf"]
     t.save()
+
+
+def steuer(stelle) -> str:
+    """Schlüssel der Steuerungs-Links der Ausgabestelle (statt ihrer Nummer in der Adresse)."""
+    return AufrufEinstellungen.laden(stelle).steuer_schluessel
 
 
 @pytest.fixture
@@ -436,44 +442,50 @@ def test_sprachen():
 
 
 def test_steuerung_ablauf_ueber_die_seiten(modul_an, admin_client, mitte, tag_daten):
-    url = reverse("aufruf:steuerung", args=[mitte.pk])
+    url = reverse("aufruf:steuerung", args=[steuer(mitte)])
     # Nur eine Ausgabestelle: gleich zur Handy-Steuerung
-    assert admin_client.get(reverse("aufruf:start")).url == reverse("aufruf:mobil", args=[mitte.pk])
+    assert admin_client.get(reverse("aufruf:start")).url == reverse(
+        "aufruf:mobil", args=[steuer(mitte)]
+    )
     seite = admin_client.get(url).content.decode()
     assert "Ausgabe starten" in seite and "2 Kundengruppen" in seite
-    admin_client.post(reverse("aufruf:starten", args=[mitte.pk]))
+    admin_client.post(reverse("aufruf:starten", args=[steuer(mitte)]))
     seite = admin_client.get(url).content.decode()
     assert "Weiter zu den nächsten Kundennummern" in seite and "Früh (12:00)" in seite
-    admin_client.post(reverse("aufruf:weiter", args=[mitte.pk]))
-    admin_client.post(reverse("aufruf:zurueck", args=[mitte.pk]))
+    admin_client.post(reverse("aufruf:weiter", args=[steuer(mitte)]))
+    admin_client.post(reverse("aufruf:zurueck", args=[steuer(mitte)]))
     for _ in range(4):
-        admin_client.post(reverse("aufruf:weiter", args=[mitte.pk]))
+        admin_client.post(reverse("aufruf:weiter", args=[steuer(mitte)]))
     assert "abgeschlossen" in admin_client.get(url).content.decode()
-    csv = admin_client.get(reverse("aufruf:liste", args=[mitte.pk])).content.decode("utf-8-sig")
+    csv = admin_client.get(reverse("aufruf:liste", args=[steuer(mitte)])).content.decode(
+        "utf-8-sig"
+    )
     assert csv.startswith("Platz gesamt;Kundengruppe") and "101" in csv and "Erika" not in csv
 
 
 def test_api_wie_bisher(modul_an, admin_client, mitte, tag_daten):
     def post(name, **daten):
         return admin_client.post(
-            reverse(f"aufruf:{name}", args=[mitte.pk]),
+            reverse(f"aufruf:{name}", args=[steuer(mitte)]),
             json.dumps(daten),
             content_type="application/json",
         ).json()
 
-    status = admin_client.get(reverse("aufruf:api_status", args=[mitte.pk])).json()
+    status = admin_client.get(reverse("aufruf:api_status", args=[steuer(mitte)])).json()
     assert status["has_active_session"] is False and status["available_days"]
-    stand = admin_client.get(reverse("aufruf:api_stand", args=[mitte.pk])).json()
+    stand = admin_client.get(reverse("aufruf:api_stand", args=[steuer(mitte)])).json()
     assert "error" in stand
     assert post("api_starten")["success"] is True
     d = post("api_weiter")
     assert d["success"] and d["message"] == "3 Kundennummer(n) bearbeitet" and d["can_undo"]
     assert len(d["current_numbers"]) == 2 and "upcoming_numbers" in d
-    erste = admin_client.get(reverse("aufruf:api_stand", args=[mitte.pk])).json()["past_numbers"]
+    erste = admin_client.get(reverse("aufruf:api_stand", args=[steuer(mitte)])).json()[
+        "past_numbers"
+    ]
     s = post("api_spaetzuender", nummer=erste[0])
     assert s["success"] and s["versatz"] == 30
     assert post("api_spaetzuender")["success"] is False
-    abfrage = admin_client.get(reverse("aufruf:api_abfrage", args=[mitte.pk]),
+    abfrage = admin_client.get(reverse("aufruf:api_abfrage", args=[steuer(mitte)]),
                                {"nummer": erste[1]}).json()  # fmt: skip
     assert abfrage["schon_dran"] is True
     assert post("api_zurueck")["success"] is True
@@ -481,9 +493,9 @@ def test_api_wie_bisher(modul_an, admin_client, mitte, tag_daten):
 
 def test_mobil_und_steuerung_seiten(modul_an, admin_client, mitte, tag_daten):
     ablauf.starten(mitte, heute())
-    seite = admin_client.get(reverse("aufruf:mobil", args=[mitte.pk])).content.decode()
+    seite = admin_client.get(reverse("aufruf:mobil", args=[steuer(mitte)])).content.decode()
     assert "Aktuelle Kunden" in seite and "const SPAET_VERSATZ = 30;" in seite
-    assert reverse("aufruf:api_weiter", args=[mitte.pk]) in seite
+    assert reverse("aufruf:api_weiter", args=[steuer(mitte)]) in seite
 
 
 def test_nur_eigene_ausgabestelle(modul_an, client, anmelden, benutzer_mit_rolle, mitte, tag_daten):
@@ -491,8 +503,8 @@ def test_nur_eigene_ausgabestelle(modul_an, client, anmelden, benutzer_mit_rolle
     anton = benutzer_mit_rolle("anton", rollen.AUSGABE)
     anton.ausgabestellen.add(mitte)
     anmelden(client, anton)
-    assert client.get(reverse("aufruf:steuerung", args=[mitte.pk])).status_code == 200
-    assert client.get(reverse("aufruf:steuerung", args=[andere.pk])).status_code == 403
+    assert client.get(reverse("aufruf:steuerung", args=[steuer(mitte)])).status_code == 200
+    assert client.get(reverse("aufruf:steuerung", args=[steuer(andere)])).status_code == 403
     assert client.get(reverse("aufruf:einstellungen")).status_code == 403
 
 
@@ -600,10 +612,51 @@ def test_einstellungen_und_neue_links(modul_an, admin_client, mitte):
     e.refresh_from_db()
     assert (e.anzahl, e.spaetzuender_versatz) == (4, 20)
     alt = e.schluessel
-    admin_client.post(reverse("aufruf:schluessel_neu", args=[mitte.pk]))
+    # Neue Links sind bewusst umständlich: eigene Seite, Folgen bestätigen, eigenes Passwort
+    neu = reverse("aufruf:schluessel_neu", args=[mitte.pk])
+    seite = admin_client.get(neu).content.decode()
+    assert "zeigen" in seite and "nichts mehr an" in seite and 'name="passwort"' in seite
+    for daten in ({}, {"verstanden": "on"}, {"passwort": PASSWORT},
+                  {"verstanden": "on", "passwort": "falsch"}):  # fmt: skip
+        assert admin_client.post(neu, daten).status_code == 200
+        e.refresh_from_db()
+        assert e.schluessel == alt
+    falsch = admin_client.post(neu, {"verstanden": "on", "passwort": "falsch"})
+    assert "Das Passwort stimmt nicht" in falsch.content.decode()
+    steuerung_vorher = e.steuer_schluessel
+    antwort = admin_client.post(neu, {"verstanden": "on", "passwort": PASSWORT})
+    assert antwort.status_code == 302
     e.refresh_from_db()
-    assert e.schluessel != alt
+    assert e.schluessel != alt and e.steuer_schluessel == steuerung_vorher
     assert Client().get(reverse("aufruf:monitor", args=[alt])).status_code == 404
+    # auf der Übersicht steht kein Knopf mehr, der die Links mit einem Klick ändert
+    uebersicht = admin_client.get(reverse("aufruf:einstellungen")).content.decode()
+    assert f'action="{neu}"' not in uebersicht and f'href="{neu}"' in uebersicht
+
+
+def test_steuerung_nur_ueber_den_schluessel(modul_an, admin_client, mitte):
+    """Die Adressen der Steuerung enthalten einen zufälligen Schlüssel, nicht die Nummer der
+    Ausgabestelle; mit der Nummer gibt es die Seite nicht."""
+    schluessel = steuer(mitte)
+    e = AufrufEinstellungen.laden(mitte)
+    assert len(schluessel) >= 30 and schluessel != e.schluessel
+    assert admin_client.get(reverse("aufruf:steuerung", args=[schluessel])).status_code == 200
+    assert admin_client.get(reverse("aufruf:mobil", args=[schluessel])).status_code == 200
+    assert admin_client.get(f"/aufruf/{mitte.pk}/").status_code == 404
+    assert admin_client.get(f"/aufruf/{mitte.pk}/mobil/").status_code == 404
+    # der Schlüssel der Anzeige-Geräte öffnet die Steuerung nicht
+    assert admin_client.get(reverse("aufruf:steuerung", args=[e.schluessel])).status_code == 404
+    # ohne Anmeldung hilft auch der richtige Schlüssel nicht
+    assert Client().get(reverse("aufruf:steuerung", args=[schluessel])).status_code == 302
+    uebersicht = admin_client.get(reverse("aufruf:einstellungen")).content.decode()
+    assert reverse("aufruf:mobil", args=[schluessel]) in uebersicht
+    start = admin_client.get(reverse("aufruf:start"))
+    assert start.url == reverse("aufruf:mobil", args=[schluessel])
+
+
+def test_migration_gibt_jeder_ausgabestelle_einen_eigenen_schluessel(mitte):
+    andere = Ausgabestelle.objects.create(name="Nord")
+    assert steuer(mitte) != steuer(andere)
 
 
 # ── Hinweis am Einlass ───────────────────────────────────────────────────────
@@ -778,7 +831,7 @@ def test_leiste_unter_dem_menue(modul_an, mitte, tag_daten, benutzer_mit_rolle, 
     assert "Aufruf starten" not in seite
     seite = c.get(url, {"steuern": "1"}).content.decode()
     assert "Aufruf starten" in seite
-    assert f'href="{reverse("aufruf:mobil", args=[mitte.pk])}"' in seite  # „Aufruf ↗“
+    assert f'href="{reverse("aufruf:mobil", args=[steuer(mitte)])}"' in seite  # „Aufruf ↗“
     seite = c.post(url, {"aktion": "starten", "steuern": "1"}).content.decode()
     erste = ablauf.tag_holen(mitte, heute()).stand["gruppen"][0]["wartend"][:3]
     assert "Bitte eintreten" in seite and all(f">{n}</span>" in seite for n in erste)
@@ -837,7 +890,7 @@ def test_einlass_knopf_verschieben(modul_an, mitte, tag_daten, benutzer_mit_roll
     konto.ausgabestellen.set([mitte])
     c = anmelden(Client(), konto)
     seite = c.get(reverse("ausgabe:empfang"), {"nummer": erster}).content.decode()
-    url = reverse("aufruf:verschieben", args=[mitte.pk, erster])
+    url = reverse("aufruf:verschieben", args=[steuer(mitte), erster])
     assert f'action="{url}"' in seite and "3 Nummern verschieben" in seite
     assert "wartende Nummern hinter den gerade aufgerufenen" in seite  # Erklärung (Maus darüber)
     antwort = c.post(url, follow=True)
@@ -849,7 +902,7 @@ def test_einlass_knopf_verschieben(modul_an, mitte, tag_daten, benutzer_mit_roll
     assert (
         "noch nicht aufgerufen"
         in c.post(
-            reverse("aufruf:verschieben", args=[mitte.pk, "999"]), follow=True
+            reverse("aufruf:verschieben", args=[steuer(mitte), "999"]), follow=True
         ).content.decode()
     )
     recht_nehmen(rollen.AUSGABE, "aufruf.steuern")
@@ -882,7 +935,7 @@ def test_ausgabestelle_ohne_aufruf(modul_an, admin_client, mitte, tag_daten, ben
     konto.ausgabestellen.set([mitte])
     c = anmelden(Client(), konto)
     assert c.get(reverse("aufruf:leiste")).content == b""
-    assert c.get(reverse("aufruf:steuerung", args=[mitte.pk])).status_code == 403
+    assert c.get(reverse("aufruf:steuerung", args=[steuer(mitte)])).status_code == 403
     # Auch ohne gewählte Ausgabestelle: Wer nur an Stellen ohne Aufruf arbeitet, sieht keinen
     # Kasten; kommt eine teilnehmende Stelle dazu, erscheint der Weg zur Steuerung
     konto.gewaehlte_stelle = None
@@ -950,7 +1003,7 @@ def test_kiosk_meldung_faerbt_die_nummern(modul_an, mitte, tag_daten, admin, adm
     assert f'class="nr-da" title=" am Kiosk gemeldet">{erste}<' in leiste
     assert f'class="nr-fehlt" title=" nicht am Kiosk gemeldet">{zweite}<' in leiste
     assert f'<span class="nr-fehlt">{naechste}</span>' in leiste
-    steuerung = admin_client.get(reverse("aufruf:steuerung", args=[mitte.pk])).content.decode()
+    steuerung = admin_client.get(reverse("aufruf:steuerung", args=[steuer(mitte)])).content.decode()
     assert "number-item nr-da" in steuerung and "number-item nr-fehlt" in steuerung
     assert f'preview-number nr-fehlt">{naechste}<' in steuerung
 
@@ -979,7 +1032,7 @@ def test_alle_aufgerufenen_schon_am_einlass(modul_an, mitte, tag_daten, admin, a
         Abholung.objects.create(haushalt=Haushalt.objects.get(kundennummer=nummer), datum=heute())
     d = ablauf.stand_fuer_anzeige(tag, e, heute())
     assert d["current_numbers"] == [] and d["alle_eingelassen"] and not d["finished"]
-    seite = admin_client.get(reverse("aufruf:steuerung", args=[mitte.pk])).content.decode()
+    seite = admin_client.get(reverse("aufruf:steuerung", args=[steuer(mitte)])).content.decode()
     assert "Alle Aufgerufenen sind schon am Einlass" in seite
     assert "Kundengruppe abgeschlossen" not in seite and "Weiter zu den nächsten" in seite
     # Der große Monitor draußen zeigt sie bis zum nächsten „Weiter“ weiter an
@@ -1131,7 +1184,7 @@ def test_reihenfolge_mail_ueber_api_beim_abschluss(modul_an, admin_client, mitte
     e.save()
 
     def post(name, **daten):
-        antwort = admin_client.post(reverse(f"aufruf:{name}", args=[mitte.pk]),
+        antwort = admin_client.post(reverse(f"aufruf:{name}", args=[steuer(mitte)]),
                                     json.dumps(daten), content_type="application/json")  # fmt: skip
         return antwort.json()
 

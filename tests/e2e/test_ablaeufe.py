@@ -491,7 +491,7 @@ def test_handy_steuerung_zeigt_kiosk_meldungen(angemeldet, admin, benutzer_mit_r
     da = d["current_numbers"][0]
     ablauf.kiosk_melden(stelle, timezone.localdate(), da)
     seite = angemeldet(admin)
-    seite.goto(f"/aufruf/{stelle.pk}/mobil/")
+    seite.goto(f"/aufruf/{AufrufEinstellungen.laden(stelle).steuer_schluessel}/mobil/")
     knopf = seite.locator("#btnNumbers")
     expect(knopf.locator(".nr-da")).to_have_text(da)
     expect(knopf.locator(".nr-fehlt")).to_have_count(len(d["current_numbers"]) - 1)
@@ -816,7 +816,7 @@ def test_danach_zeigt_am_gruppenende_die_naechste_gruppe(angemeldet, admin):
     e.save()
     ablauf.starten(stelle, timezone.localdate())  # beide aus „Jeden Tag“ aufgerufen, danach Später
     seite = angemeldet(admin)
-    seite.goto(f"/aufruf/{stelle.pk}/mobil/")
+    seite.goto(f"/aufruf/{AufrufEinstellungen.laden(stelle).steuer_schluessel}/mobil/")
     expect(seite.locator("#nextCustomersDisplay")).to_contain_text("dann Später")
     expect(seite.locator("#nextCustomersDisplay")).to_contain_text("00099")
 

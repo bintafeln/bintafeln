@@ -57,6 +57,12 @@ class AufrufEinstellungen(models.Model):
         help_text="Steckt in den Links für Monitor, Anzeige und Kiosk. Neu erzeugen macht alte "
         "Links ungültig.",
     )  # fmt: skip
+    steuer_schluessel = models.CharField(
+        "Schlüssel der Steuerungs-Links", max_length=64, unique=True, default=neuer_schluessel,
+        editable=False,
+        help_text="Steckt in den Links der Steuerung am PC und am Handy, damit sie sich nicht "
+        "erraten lassen. Die Steuerung braucht trotzdem Anmeldung und das Recht dazu.",
+    )  # fmt: skip
     anzahl = models.PositiveSmallIntegerField(
         "Nummern je Aufruf", default=3, validators=[MinValueValidator(1), MaxValueValidator(6)],
         help_text="So viele Kundennummern erscheinen gleichzeitig mit „Bitte eintreten“.",

@@ -778,7 +778,7 @@ def _verschieben_knopf(tag, e, haushalt) -> dict:
     versatz = max(e.spaetzuender_versatz, e.anzahl)  # wie spaetzuender()
     return {
         "recht": "aufruf.steuern",
-        "url": reverse("aufruf:verschieben", args=[tag.ausgabestelle_id, haushalt.kundennummer]),
+        "url": reverse("aufruf:verschieben", args=[e.steuer_schluessel, haushalt.kundennummer]),
         "text": f"{versatz} Nummern verschieben",
         "erklaerung": (
             f"Kunde {haushalt.kundennummer} kommt zurück in die Warteschlange: {versatz} wartende "

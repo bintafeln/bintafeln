@@ -96,3 +96,29 @@ class HandyForm(forms.ModelForm):
                     einst.handy = s.pk in gewaehlt
                     einst.save(update_fields=["handy"])
         return e
+
+
+class NeueLinksForm(forms.Form):
+    """Neue Links für Monitor, Anzeige und Kiosk: bewusst umständlich, weil danach jedes Gerät
+    im Wartebereich neu eingerichtet werden muss."""
+
+    verstanden = forms.BooleanField(
+        label="Ich weiß: Monitor, Nummern-Anzeige, Kiosk und Abfrage dieser Ausgabestelle zeigen "
+        "danach nichts mehr an, bis an jedem Gerät der neue Link geöffnet wurde.",
+        error_messages={"required": "Bitte bestätigen, dass Sie die Folgen kennen."},
+    )
+    passwort = forms.CharField(
+        label="Ihr Passwort", strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
+        help_text="Zur Sicherheit: das Passwort Ihres eigenen Kontos.",
+    )  # fmt: skip
+
+    def __init__(self, *args, benutzer, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.benutzer = benutzer
+
+    def clean_passwort(self):
+        passwort = self.cleaned_data["passwort"]
+        if not self.benutzer.check_password(passwort):
+            raise forms.ValidationError("Das Passwort stimmt nicht.")
+        return passwort

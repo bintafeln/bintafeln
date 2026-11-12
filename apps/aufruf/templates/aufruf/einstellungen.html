@@ -5,7 +5,8 @@
   <h1>Aufruf, Monitor und Kiosk</h1>
   <p>Der Aufruf nimmt die Kundennummern direkt aus dem Kundenstamm: alle aktiven Haushalte der Kundengruppen, die heute
     an der Ausgabestelle dran sind. Die Geräte im Wartebereich (Monitor, Nummern-Anzeige, Kiosk) brauchen keine
-    Anmeldung; sie öffnen einen geheimen Link. Diesen Link nur auf den Geräten der Tafel speichern.</p>
+    Anmeldung; sie öffnen einen geheimen Link. Diesen Link nur auf den Geräten der Tafel speichern. Die Steuerung am
+    PC und am Handy braucht immer die Anmeldung; ihr Link enthält ebenfalls einen zufälligen Schlüssel.</p>
   <div class="tabelle-rahmen">
   <table class="tabelle">
     <thead><tr><th>Ausgabestelle</th><th>Einstellungen</th><th>Links für die Geräte</th><th></th></tr></thead>
@@ -18,8 +19,8 @@
         <td data-titel="Links">
           {% with basis=request.scheme|add:"://"|add:request.get_host %}
           <ul style="list-style: none; padding: 0; margin: 0;">
-            <li>Steuerung am PC: <a href="{% url 'aufruf:steuerung' s.pk %}" target="_blank">{{ basis }}{% url 'aufruf:steuerung' s.pk %}</a></li>
-            <li>Handy-Steuerung: <a href="{% url 'aufruf:mobil' s.pk %}" target="_blank">{{ basis }}{% url 'aufruf:mobil' s.pk %}</a></li>
+            <li>Steuerung am PC: <a href="{% url 'aufruf:steuerung' e.steuer_schluessel %}" target="_blank">{{ basis }}{% url 'aufruf:steuerung' e.steuer_schluessel %}</a></li>
+            <li>Handy-Steuerung: <a href="{% url 'aufruf:mobil' e.steuer_schluessel %}" target="_blank">{{ basis }}{% url 'aufruf:mobil' e.steuer_schluessel %}</a></li>
             <li>Monitor: <a href="{% url 'aufruf:monitor' e.schluessel %}" target="_blank">{{ basis }}{% url 'aufruf:monitor' e.schluessel %}</a></li>
             <li>Nummern-Anzeige: <a href="{% url 'aufruf:anzeige' e.schluessel %}" target="_blank">{{ basis }}{% url 'aufruf:anzeige' e.schluessel %}</a></li>
             <li>Kiosk (Karte scannen): <a href="{% url 'aufruf:kiosk' e.schluessel %}" target="_blank">{{ basis }}{% url 'aufruf:kiosk' e.schluessel %}</a></li>
@@ -28,9 +29,7 @@
           {% endwith %}
         </td>
         <td>
-          <form method="post" action="{% url 'aufruf:schluessel_neu' s.pk %}" onsubmit="return confirm('Neue Links erzeugen? Die alten funktionieren danach nicht mehr.');">
-            {% csrf_token %}<button type="submit" class="knopf knopf-abbrechen">Neue Links erzeugen</button>
-          </form>
+<a class="leise" href="{% url 'aufruf:schluessel_neu' s.pk %}">Links der Geräte ungültig machen …</a>
         </td>
       </tr>
     {% empty %}
