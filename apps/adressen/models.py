@@ -8,6 +8,8 @@ from auditlog.registry import auditlog
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from apps.core import zeichen
+
 
 class AdressKategorie(models.Model):
     name = models.CharField("Name", max_length=100, unique=True)
@@ -81,6 +83,16 @@ class Adresse(models.Model):
 
     def __str__(self):
         return self.name
+
+    # Text aus anderen Programmen (Import, ausgelesene PDFs): Ligaturen und unsichtbare Zeichen
+    # erscheinen im Druck als schwarzer Block
+    TEXTFELDER = ("organisation", "vorname", "nachname", "ansprechperson", "strasse", "plz", "ort",
+                  "land")  # fmt: skip
+
+    def save(self, *args, **kwargs):
+        for feld in self.TEXTFELDER:
+            setattr(self, feld, zeichen.bereinigen(getattr(self, feld)))
+        super().save(*args, **kwargs)
 
     def clean(self):
         if self.art == self.Art.PERSON and not self.nachname:

@@ -32,7 +32,7 @@ from openpyxl import load_workbook
 from pypdf import PdfReader
 
 from apps.adressen.models import Adresse
-from apps.core import privatdateien
+from apps.core import privatdateien, zeichen
 from apps.spenden.models import Spende, SpendenBeleg
 from apps.vereinsportal import namen
 from apps.vereinsportal.models import Kontakt, PortalEinstellungen
@@ -100,7 +100,8 @@ def _zeilen(inhalt: bytes) -> list[str]:
         )
     except Exception:  # noqa: BLE001 – ein kaputtes PDF soll den Lauf nicht abbrechen
         return []
-    return [z.strip() for z in text.split("\n") if z.strip()]
+    # PDF-Text enthält Ligaturen („ff“ als ein Zeichen) und unsichtbare Zeichen
+    return [z.strip() for z in zeichen.bereinigen(text).split("\n") if z.strip()]
 
 
 def _daten(zeile: str):

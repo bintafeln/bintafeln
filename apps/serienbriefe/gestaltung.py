@@ -20,6 +20,7 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import HRFlowable, Paragraph, Spacer, Table, TableStyle
 
+from apps.core import zeichen
 from apps.core.html import als_text, bereinigen, ist_html
 from apps.core.pdf import TEXT
 
@@ -67,7 +68,7 @@ def einsetzen(text: str, werte: dict) -> str:
 
     def ersetzen(treffer):
         wert = werte.get(treffer.group(1))
-        return treffer.group(0) if wert is None else str(escape(str(wert)))
+        return treffer.group(0) if wert is None else str(escape(zeichen.bereinigen(str(wert))))
 
     return str(bereinigen(re.sub(r"\{(\w+)\}", ersetzen, als_html(text))))
 
