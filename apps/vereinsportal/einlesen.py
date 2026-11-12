@@ -92,9 +92,9 @@ class Ergebnis:
                 "Vereinsportal mit den Belegen erzeugt, und stimmt der Zeitraum?"
             )
         return (
-            f"Kein Beleg ließ sich lesen ({self.belege} in der Datei): Bei allen fehlt die Zeile "
-            "mit Absender und Anschrift oder ein Datum. Stimmt der „Name des Vereins im Absender "
-            f"der Belege“ in den Einstellungen zum Vereinsportal? {self.hinweis}"
+            f"Kein Beleg ließ sich lesen ({self.belege} in der Datei): Bei allen fehlt die "
+            "Anschrift des Spenders (unter der Absenderzeile des Vereins) oder ein Datum. "
+            f"{self.hinweis}"
         ).strip()
 
 
@@ -192,28 +192,20 @@ def spenderzeile(zeilen: list[str], absender: str = "", eigene=()) -> list[str] 
     einer Angabe je Zeile. Je nach Lesart liegt eine Zeile dazwischen, oder der Spender steht
     davor. ``eigene`` sind weitere Namen des Vereins (Name der Tafel, Körperschaft): Eine Zeile,
     in der einer davon steht, ist nie der Spender."""
-    gesucht = _dicht(absender)
     namen_des_vereins = [n for n in map(_dicht, (absender, *eigene)) if n]
     vom_verein = [any(n in _dicht(z) for n in namen_des_vereins) for z in zeilen]
     mit_strich = [i for i, z in enumerate(zeilen) if "|" in z]
     if not mit_strich:
         return None
-    anker = next((i for i in mit_strich if vom_verein[i]), None)
-    if anker is None and not gesucht:  # ohne Angabe gilt die erste Zeile mit „|“ als Absender
-        anker = mit_strich[0]
-    if anker is not None:
-        # die nächsten drei Zeilen, sonst die Zeile davor – nie eine Zeile des Vereins selbst
-        for i in [*range(anker + 1, anker + 4), anker - 1]:
-            if 0 <= i < len(zeilen) and not vom_verein[i] and (teile := _teile(zeilen[i])):
-                return teile
-        return _block(zeilen, anker)
-    # Der Name des Vereins steht nirgends im Text (anders geschrieben oder als Bild). Gibt es
-    # genau eine Zeile der Form „Name | Straße | PLZ Ort“, ist sie der Spender – außer darunter
-    # steht eine Anschrift als Block: dann war die Zeile der Absender.
-    passende = [i for i in mit_strich if (t := _teile(zeilen[i])) and PLZ_ORT.match(t[2])]
-    if len(passende) != 1:
-        return None
-    return _block(zeilen, passende[0]) or _teile(zeilen[passende[0]])
+    # Die Absenderzeile: die Zeile mit „|“, in der der Verein steht. Steht der eingetragene
+    # Name nirgends (anders geschrieben als auf dem Beleg) oder ist keiner eingetragen, gilt die
+    # erste Zeile mit „|“ – dort steht auf den Belegen der Absender.
+    anker = next((i for i in mit_strich if vom_verein[i]), mit_strich[0])
+    # die nächsten drei Zeilen, sonst die Zeile davor – nie eine Zeile des Vereins selbst
+    for i in [*range(anker + 1, anker + 4), anker - 1]:
+        if 0 <= i < len(zeilen) and not vom_verein[i] and (teile := _teile(zeilen[i])):
+            return teile
+    return _block(zeilen, anker)
 
 
 def _muster(text: str) -> str:
