@@ -46,6 +46,11 @@ class Spender:
         return sum(1 for b in self.belege if not b.im_portal_versendet)
 
     @property
+    def spendendaten(self) -> str:
+        """Die Tage der Zuwendung, z. B. „15.01.2026, 15.06.2026“."""
+        return ", ".join(f"{b.datum:%d.%m.%Y}" for b in self.belege if b.datum)
+
+    @property
     def mehrfach(self) -> bool:
         return self.anzahl > 1
 
@@ -65,7 +70,7 @@ def spender(jahr: int) -> list[Spender]:
     sammel = {s.such_name: s for s in Sammelbescheinigung.objects.filter(jahr=jahr)
               .exclude(such_name="").order_by("hochgeladen_am")}  # fmt: skip
     alle: dict[str, Spender] = {}
-    for b in Beleg.objects.filter(jahr=jahr).order_by("dateiname"):
+    for b in Beleg.objects.filter(jahr=jahr).order_by("datum", "dateiname"):
         k = kontakte.get(b.such_name)
         s = alle.setdefault(b.such_name, Spender(
             b.name, b.strasse, b.plz_ort, k.email if k and not k.immer_post else "",
@@ -89,10 +94,11 @@ def csv_text(liste: list[Spender]) -> str:
     puffer = io.StringIO()
     schreiber = csv.writer(puffer, delimiter=";")
     schreiber.writerow(["Name", "Straße", "PLZ und Ort", "E-Mail", "Anzahl Spenden",
-                        "Gesamtbetrag", "Noch nicht versendet"])  # fmt: skip
+                        "Gesamtbetrag", "Noch nicht versendet", "Spendendaten"])  # fmt: skip
     for s in liste:
-        schreiber.writerow([s.name, s.strasse, s.plz_ort, s.email, s.anzahl,
-                            f"{s.summe:.2f}".replace(".", ","), s.offen])  # fmt: skip
+        summe = f"{s.summe:.2f}".replace(".", ",")
+        schreiber.writerow([s.name, s.strasse, s.plz_ort, s.email, s.anzahl, summe, s.offen,
+                            s.spendendaten])  # fmt: skip
     return "﻿" + puffer.getvalue()
 
 

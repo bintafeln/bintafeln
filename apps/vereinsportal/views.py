@@ -64,6 +64,8 @@ def start(request):
         else:
             messages.error(request, "Bitte eine Datei wählen.")
         return redirect(f"{reverse('vereinsportal:start')}?jahr={jahr}")
+    einlesen.daten_nachtragen()  # Spendendatum für früher eingelesene Belege
+    jahr = _jahr(request)  # das Nachtragen kann das Jahr eines Belegs berichtigen
     alle = auswertung.spender(jahr)
     gruppe = request.GET.get("gruppe") if request.GET.get("gruppe") in GRUPPEN else ""
     return render(request, "vereinsportal/start.html", {

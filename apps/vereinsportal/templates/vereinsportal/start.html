@@ -46,7 +46,7 @@
   {% if spender %}
   <div class="tabelle-rahmen">
     <table class="tabelle kompakt" id="portal-spender">
-      <thead><tr><th>Spender</th><th>Anschrift</th><th>E-Mail</th><th class="zahl">Spenden</th><th class="zahl">Summe</th><th>Belege</th></tr></thead>
+      <thead><tr><th>Spender</th><th>Anschrift</th><th>E-Mail</th><th class="zahl">Spenden</th><th class="zahl">Summe</th><th>Gespendet am (Beleg)</th></tr></thead>
       <tbody>
         {% for s in spender %}
         <tr>
@@ -55,7 +55,8 @@
           <td>{{ s.email|default:"–" }}</td>
           <td class="zahl">{{ s.anzahl }}</td>
           <td class="zahl">{{ s.summe|floatformat:2 }} €</td>
-          <td>{% for b in s.belege %}<a href="{% url 'vereinsportal:beleg' b.pk %}" target="_blank" rel="noopener" title="{{ b.dateiname }}">{{ b.belegnummer|default:b.dateiname }}</a>{% if b.im_portal_versendet %} ✓{% elif b.bedankt_am %} ✉{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+          <td>{% for b in s.belege %}<span style="white-space: nowrap">{% if b.datum %}{{ b.datum|date:"d.m.Y" }}{% else %}<em title="Im Beleg war kein Datum zu lesen">Datum fehlt</em>{% endif %}
+            (<a href="{% url 'vereinsportal:beleg' b.pk %}" target="_blank" rel="noopener" title="{{ b.dateiname }} öffnen">{% if b.belegnummer %}Nr. {{ b.belegnummer }}{% else %}{{ b.dateiname }}{% endif %}</a>{% if b.betrag %}, {{ b.betrag|floatformat:2 }} €{% endif %}){% if b.im_portal_versendet %} ✓{% elif b.bedankt_am %} ✉{% endif %}</span>{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
         </tr>
         {% endfor %}
       </tbody>
