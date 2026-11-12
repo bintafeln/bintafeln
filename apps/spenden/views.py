@@ -8,7 +8,8 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Q, Sum, Value
+from django.db.models.functions import Coalesce, NullIf
 from django.http import Http404, HttpResponse, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -63,7 +64,10 @@ def _jahre():
 # Sortierbare Spalten der Spendenliste (Schlüssel wie in ?sort=…, mit „-“ absteigend):
 SORTIERUNG = {
     "datum": ("datum", "pk"),
-    "spender": ("adresse__organisation", "adresse__nachname", "adresse__vorname"),
+    # „Nachname / Organisation“ und „Vorname“ getrennt; Organisationen stehen mit ihrem Namen
+    # zwischen den Nachnamen
+    "spender": ("sortname", "adresse__vorname", "datum"),
+    "vorname": ("adresse__vorname", "sortname", "datum"),
     "art": ("art",),
     "betrag": ("betrag",),
 }
@@ -71,6 +75,10 @@ SORTIERUNG = {
 SPALTEN = [("datum", "Datum"), ("spender", "Spender"), ("art", "Art"), ("betrag", "Betrag/Wert"),
            ("bezeichnung", "Bezeichnung / Zweck"), ("bestaetigung", "Bestätigung")]  # fmt: skip
 SPALTEN_FEST = {"datum"}
+
+
+# Der Name, nach dem sortiert wird: Nachname, bei Organisationen deren Name
+_SORTNAME = Coalesce(NullIf("adresse__nachname", Value("")), "adresse__organisation")
 
 
 @rollen.recht_erforderlich("spenden.sehen")
@@ -87,6 +95,7 @@ def liste(request):
             | Q(adresse__vorname__icontains=q) | Q(beschreibung__icontains=q)
             | Q(zweck__icontains=q)
         )  # fmt: skip
+    spenden = spenden.annotate(sortname=_SORTNAME)
     spenden, sort = listen.sortieren(spenden, request.GET.get("sort", ""), SORTIERUNG, "-datum")
     if request.GET.get("aktion"):
         return listenexport.ausliefern(request, f"Spenden {jahr}", f"spenden-{jahr}",
@@ -287,6 +296,21 @@ def _pdf_link(liste) -> str:
     return reverse("spenden:pdf") + "?nummern=" + ",".join(str(b.nummer) for b in liste)
 
 
+def _zum_ausstellen(request, jahr) -> list:
+    """Für wen wird ausgestellt? Ein einzelner Spender (Knopf in der Zeile), die angehakten –
+    in der Reihenfolge, in der sie auf der Seite stehen – oder alle mit offenen Geldspenden."""
+    einzeln = request.POST.get("einzeln", "")
+    if einzeln.isdigit():
+        return [get_object_or_404(Adresse, pk=einzeln)]
+    gewaehlt = [int(pk) for pk in request.POST.getlist("adresse") if pk.isdigit()]
+    if "alle" in request.POST or not ("auswahl" in request.POST or gewaehlt):
+        return [a for a, _, _ in bst.jahresliste(jahr)]
+    if not gewaehlt:
+        raise bst.BestaetigungsFehler("Bitte zuerst mindestens einen Spender anhaken.")
+    adressen = Adresse.objects.in_bulk(gewaehlt)
+    return [adressen[pk] for pk in dict.fromkeys(gewaehlt) if pk in adressen]
+
+
 @require_POST
 @rollen.recht_erforderlich("spenden.bestaetigen")
 def ausstellen(request):
@@ -296,11 +320,8 @@ def ausstellen(request):
         if request.POST.get("spende", "").isdigit():
             spende = get_object_or_404(Spende, pk=request.POST["spende"])
             liste = [bst.sach_ausstellen(spende, von, ich)]
-        elif request.POST.get("adresse", "").isdigit():
-            a = get_object_or_404(Adresse, pk=request.POST["adresse"])
-            liste = [bst.geld_ausstellen(a, jahr, von, ich)]
         else:
-            liste = [bst.geld_ausstellen(a, jahr, von, ich) for a, _, _ in bst.jahresliste(jahr)]
+            liste = [bst.geld_ausstellen(a, jahr, von, ich) for a in _zum_ausstellen(request, jahr)]
     except bst.BestaetigungsFehler as fehler:
         messages.error(request, str(fehler))
         return redirect(f"{reverse('spenden:bestaetigungen')}?jahr={jahr}")
@@ -314,8 +335,16 @@ def ausstellen(request):
 def pdf(request):
     nummern = [int(n) for n in request.GET.get("nummern", "").split(",") if n.isdigit()]
     liste = list(Zuwendungsbestaetigung.objects.filter(nummer__in=nummern).order_by("nummer"))
+    # angehakte Bestätigungen: in der Reihenfolge, in der sie auf der Seite stehen
+    gewaehlt = [int(n) for n in request.GET.getlist("nr") if n.isdigit()]
+    if gewaehlt:
+        nach_nummer = Zuwendungsbestaetigung.objects.in_bulk(gewaehlt, field_name="nummer")
+        liste = [nach_nummer[n] for n in dict.fromkeys(gewaehlt) if n in nach_nummer]
     if not liste:
-        raise Http404
+        if "nummern" in request.GET:
+            raise Http404
+        messages.error(request, "Bitte zuerst mindestens eine Bestätigung anhaken.")
+        return redirect("spenden:bestaetigungen")
     name = f"zuwendungsbestaetigung-{liste[0].nummer}" + (
         f"-bis-{liste[-1].nummer}" if len(liste) > 1 else "")  # fmt: skip
     return pdf_antwort(bst.pdf(liste), f"{name}.pdf")
@@ -441,6 +470,24 @@ def dank(request):
     per_brief = [x for x in danke if x not in per_mail]
     schritt = request.POST.get("schritt", "vorschau")
     von = request.user.get_username()
+    if schritt in ("pdf", "senden") and "mit_auswahl" in request.POST:
+        # Von der Seite: nur die angehakten Spender, in der Reihenfolge der Tabelle (so wird
+        # auch gedruckt). Ohne das Feld (direkter Aufruf) gelten alle.
+        gewaehlt = [int(pk) for pk in request.POST.getlist("adresse") if pk.isdigit()]
+        nach_adresse = {x.adresse.pk: x for x in danke}
+        auswahl = [nach_adresse[pk] for pk in dict.fromkeys(gewaehlt) if pk in nach_adresse]
+        mail_ids = {id(x) for x in per_mail}
+        zeigen = kontext | {"danke": danke, "per_mail": per_mail, "per_brief": per_brief, "d": d}
+        per_mail = [x for x in auswahl if id(x) in mail_ids]
+        per_brief = [x for x in auswahl if id(x) not in mail_ids]
+        if not (per_brief if schritt == "pdf" else per_mail):
+            weg = "per Brief" if schritt == "pdf" else "per E-Mail"
+            messages.error(
+                request,
+                f"Unter den angehakten Spendern ist keiner für den Versand {weg}."
+                if auswahl else "Bitte zuerst mindestens einen Spender anhaken.",
+            )  # fmt: skip
+            return render(request, "spenden/dank.html", zeigen)
     if schritt in ("pdf", "senden") and d["mit_bestaetigungen"]:
         fehler = danken.fehlende_ausstellen(per_brief if schritt == "pdf" else per_mail,
                                             d["jahr"], von, request.user)  # fmt: skip

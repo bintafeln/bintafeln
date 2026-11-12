@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block titel %}Dankesbriefe{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
@@ -16,15 +17,26 @@
     {% if danke is not None %}
     <h2 id="ergebnis-vorschau">{{ danke|length }} Spender</h2>
     {% if danke %}
+    <p class="hinweis">Angehakt sind zunächst alle. Ein Klick auf eine Spaltenüberschrift sortiert; in dieser
+      Reihenfolge werden die Briefe auch gedruckt. Erstellt bzw. gesendet wird nur für die angehakten Spender.</p>
+    <input type="hidden" name="mit_auswahl" value="1">
     <div class="tabelle-rahmen">
-      <table class="tabelle kompakt">
-        <thead><tr><th>Spender</th><th class="zahl">Spenden im Jahr</th><th>neu bedankt</th><th>Bestätigung</th><th class="zahl">Belege</th><th>Versand</th></tr></thead>
+      <table class="tabelle kompakt" data-sortierbar id="dank-tabelle">
+        <thead><tr><th class="auswahl"><input type="checkbox" data-alle="adresse" checked aria-label="Alle auswählen" title="alle / keine"></th>
+          <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Nachname / Organisation</button></th>
+          <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Vorname</button></th>
+          <th class="zahl" aria-sort="none"><button type="button" class="sortieren" data-sort="zahl">Spenden im Jahr</button></th>
+          <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">neu bedankt (Datum)</button></th>
+          <th>Bestätigung</th><th class="zahl">Belege</th>
+          <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Versand</button></th></tr></thead>
         <tbody>
           {% for x in danke %}
           <tr>
-            <td><a href="{% url 'adressen:adresse' x.adresse.pk %}">{{ x.adresse.name }}</a></td>
+            <td class="auswahl"><input type="checkbox" name="adresse" value="{{ x.adresse.pk }}" checked aria-label="{{ x.adresse.name }} auswählen"></td>
+            <td><a href="{% url 'adressen:adresse' x.adresse.pk %}">{{ x.adresse.nachname|default:x.adresse.organisation|default:x.adresse.name }}</a></td>
+            <td>{{ x.adresse.vorname }}</td>
             <td class="zahl">{{ x.anzahl_im_jahr }}</td>
-            <td>{% for s in x.spenden %}{{ s.datum|date:"d.m." }}{% if s.betrag %} ({{ s.betrag }} €){% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+            <td data-wert="{{ x.spenden.0.datum|date:'Y-m-d' }}">{% for s in x.spenden %}{{ s.datum|date:"d.m." }}{% if s.betrag %} ({{ s.betrag }} €){% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
             <td>{% for b in x.bestaetigungen %}Nr. {{ b.nummer }}{% if not forloop.last %}, {% endif %}{% empty %}<span class="hinweis">{% if d.mit_bestaetigungen %}wird ausgestellt{% else %}–{% endif %}</span>{% endfor %}</td>
             <td class="zahl">{{ x.belege|length }}</td>
             <td>{% if x in per_mail %}E-Mail{% else %}Brief{% endif %}</td>
@@ -34,8 +46,8 @@
       </table>
     </div>
     <div class="aktionsleiste">
-      {% if per_brief %}<button type="submit" name="schritt" value="pdf" class="knopf" formtarget="_blank">{{ per_brief|length }} Brief{{ per_brief|length|pluralize:"e" }} als PDF erstellen</button>{% endif %}
-      {% if per_mail %}{% if mail_bereit %}<button type="submit" name="schritt" value="senden" class="knopf">{{ per_mail|length }} E-Mail{{ per_mail|length|pluralize:"s" }} senden</button>{% else %}<span class="hinweis">{% if "einstellungen.mail" in rechte %}Für E-Mails bitte zuerst unter „Einstellungen → Tafel → E-Mail“ einen Mailserver einrichten.{% else %}Für E-Mails ist noch kein Mailserver eingerichtet.{% endif %}</span>{% endif %}{% endif %}
+      {% if per_brief %}<button type="submit" name="schritt" value="pdf" class="knopf" formtarget="_blank">Angehakte Briefe als PDF erstellen ({{ per_brief|length }} per Brief)</button>{% endif %}
+      {% if per_mail %}{% if mail_bereit %}<button type="submit" name="schritt" value="senden" class="knopf">Angehakte E-Mails senden ({{ per_mail|length }} per E-Mail)</button>{% else %}<span class="hinweis">{% if "einstellungen.mail" in rechte %}Für E-Mails bitte zuerst unter „Einstellungen → Tafel → E-Mail“ einen Mailserver einrichten.{% else %}Für E-Mails ist noch kein Mailserver eingerichtet.{% endif %}</span>{% endif %}{% endif %}
     </div>
     <p class="hinweis">Zuwendungsbestätigungen für Sachspenden stellen Sie wie bisher einzeln aus.</p>
     {% else %}
@@ -44,4 +56,5 @@
     {% endif %}
   </form>
 </section>
+<script src="{% static 'js/auswahl.js' %}" defer></script>
 {% endblock %}

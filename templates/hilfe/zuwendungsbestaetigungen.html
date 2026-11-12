@@ -11,16 +11,23 @@
 <h3>Ausstellen</h3>
 <ul>
   <li>Jahr wählen. Die Liste zeigt alle Spender mit noch nicht bestätigten Geldspenden.</li>
-  <li>„ausstellen“ für einen Spender oder <strong>„Alle ausstellen“</strong> am Jahresende. Mehrere Spenden eines
-    Spenders ergeben eine <strong>Sammelbestätigung</strong> mit Anlage, eine einzelne eine Einzelbestätigung.</li>
+  <li>Ein Klick auf eine Spaltenüberschrift sortiert die Liste: nach <strong>Nachname</strong>, <strong>Vorname</strong>,
+    Anzahl der Spenden oder Summe.</li>
+  <li>„ausstellen“ für einen Spender, <strong>„Ausgewählte ausstellen“</strong> für alle angehakten (das Kästchen
+    im Tabellenkopf wählt alle oder keinen) oder <strong>„Alle ausstellen“</strong> am Jahresende. Mehrere Spenden
+    eines Spenders ergeben eine <strong>Sammelbestätigung</strong> mit Anlage, eine einzelne eine
+    Einzelbestätigung.</li>
   <li>Danach „Ausgestellte Bestätigungen als PDF öffnen“, drucken, unterschreiben, versenden.</li>
   <li>Sachspenden mit Wert erscheinen darunter und werden einzeln bestätigt.</li>
 </ul>
-{% hilfe_bild "zuwendungsbestaetigungen-ausstellen" "① Jahr wählen, ② für einen Spender „ausstellen“ oder ③ „Alle ausstellen“; ④ ohne Anschrift keine Bestätigung." %}
+{% hilfe_bild "zuwendungsbestaetigungen-ausstellen" "① Jahr wählen, ② für einen Spender „ausstellen“, ③ angehakte ausstellen oder ④ „Alle ausstellen“; ⑤ ohne Anschrift keine Bestätigung, ⑥ Spaltenüberschrift anklicken zum Sortieren." %}
 <div class="tipp">Jede Spende wird nur einmal bestätigt, die Nummern laufen fortlaufend. Eine falsche Bestätigung
   „stornieren“: Die Nummer bleibt vergeben, das PDF trägt den Vermerk „STORNIERT“, und die Spenden lassen sich neu
   bestätigen.</div>
-{% hilfe_bild "zuwendungsbestaetigungen-ausgestellt" "① Ausgestellte Bestätigungen als PDF öffnen, ② eine falsche Bestätigung stornieren." %}
+<p>Auch die Liste „Ausgestellt“ lässt sich sortieren (Nummer, Nachname, Vorname, Datum, Betrag). Angehakte
+  Bestätigungen öffnet „Ausgewählte als PDF öffnen“ zusammen in einem PDF, in der Reihenfolge der Liste – zum
+  Drucken oder Verschicken.</p>
+{% hilfe_bild "zuwendungsbestaetigungen-ausgestellt" "① Ausgestellte Bestätigungen als PDF öffnen, ② eine falsche Bestätigung stornieren, ③ angehakte zusammen als PDF öffnen." %}
 {% endif %}
 {% if "spenden.bestaetigen" in rechte %}
 <h3>Mit eingescannter Unterschrift</h3>

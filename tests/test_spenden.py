@@ -127,7 +127,8 @@ def test_oberflaeche(admin_client, einstellungen, spender, pdf_text):
     adresse = admin_client.get(antwort.url).content.decode()
     assert "Geldspenden je Jahr" in adresse and "50,00 €" in adresse
     liste = admin_client.get(reverse("spenden:liste"), {"jahr": "2026"}).content.decode()
-    assert "Max Probe" in liste and "50,00 €" in liste
+    assert ">Probe</a>" in liste and '<td data-titel="Vorname">Max</td>' in liste
+    assert "50,00 €" in liste
     csv = admin_client.get(reverse("spenden:liste"), {"jahr": "2026", "aktion": "csv"})
     assert "Max Probe;12345;Musterstadt;50,00" in csv.content.decode()
     # Alle ausstellen, dann PDF-Link
@@ -155,3 +156,68 @@ def test_rechte(client, admin, benutzer_mit_rolle, anmelden, spender):
     client.logout()
     anmelden(client, benutzer_mit_rolle("anton", rollen.AUSGABE))
     assert client.get(reverse("spenden:liste")).status_code == 403
+
+
+def test_spendenliste_nach_nachname_und_vorname_sortieren(admin_client):
+    """Nachname und Vorname sind getrennte, einzeln sortierbare Spalten; Organisationen stehen
+    mit ihrem Namen zwischen den Nachnamen."""
+
+    def adresse(**angaben):
+        return Adresse.objects.create(strasse="Weg 1", plz="12345", ort="Musterstadt", **angaben)
+
+    zeta = adresse(art="person", vorname="Anna", nachname="Zeta")
+    alpha = adresse(art="person", vorname="Zoe", nachname="Alpha")
+    markt = adresse(organisation="Markt Beispiel")
+    for nr, a in enumerate((zeta, alpha, markt), start=1):
+        geld(a, dt.date(2026, 1, nr), "10")
+
+    def reihenfolge(sort):
+        seite = admin_client.get(reverse("spenden:liste"), {"jahr": 2026, "sort": sort})
+        return [s.adresse.name for s in seite.context["seite"]]
+
+    assert reihenfolge("spender") == ["Zoe Alpha", "Markt Beispiel", "Anna Zeta"]
+    assert reihenfolge("-spender") == ["Anna Zeta", "Markt Beispiel", "Zoe Alpha"]
+    assert reihenfolge("vorname")[-2:] == ["Anna Zeta", "Zoe Alpha"]  # ohne Vornamen zuerst
+    assert reihenfolge("datum") == ["Anna Zeta", "Zoe Alpha", "Markt Beispiel"]
+    inhalt = admin_client.get(reverse("spenden:liste"), {"jahr": 2026}).content.decode()
+    assert "Nachname / Organisation" in inhalt and ">Markt Beispiel</a>" in inhalt
+
+
+def test_bestaetigungen_fuer_angehakte_ausstellen_und_oeffnen(admin_client, einstellungen):
+    """Auf der Seite lassen sich einzelne Spender anhaken: ausgestellt wird nur für sie, in der
+    Reihenfolge der Seite; ebenso öffnet „Ausgewählte als PDF“ nur die angehakten."""
+    spender = [Adresse.objects.create(art="person", vorname="V", nachname=name, strasse="Weg 1",
+                                      plz="12345", ort="Musterstadt")
+               for name in ("Alpha", "Beta", "Gamma")]  # fmt: skip
+    for a in spender:
+        geld(a, dt.date(2026, 2, 1), "20")
+    alpha, beta, gamma = spender
+    url = reverse("spenden:ausstellen") + "?jahr=2026"
+    seite = admin_client.get(reverse("spenden:bestaetigungen"), {"jahr": 2026}).content.decode()
+    assert 'name="adresse"' in seite and "Ausgewählte ausstellen" in seite
+    assert "data-sortierbar" in seite and "Nachname / Organisation" in seite
+    # nichts angehakt: Meldung, nichts ausgestellt
+    antwort = admin_client.post(url, {"auswahl": "1"}, follow=True)
+    assert "mindestens einen Spender anhaken" in antwort.content.decode()
+    assert not Zuwendungsbestaetigung.objects.exists()
+    # zwei angehakt, in der Reihenfolge der Seite (Gamma vor Alpha)
+    admin_client.post(url, {"auswahl": "1", "adresse": [gamma.pk, alpha.pk]})
+    assert [b.adresse for b in Zuwendungsbestaetigung.objects.order_by("nummer")] == [gamma, alpha]
+    # der Knopf in der Zeile stellt nur diesen einen aus, auch wenn andere angehakt sind
+    admin_client.post(url, {"einzeln": beta.pk, "adresse": [alpha.pk]})
+    assert Zuwendungsbestaetigung.objects.count() == 3
+    # „Alle“ gilt für alle offenen, auch mit Haken
+    neu = Adresse.objects.create(art="person", nachname="Delta", strasse="Weg 1", plz="12345",
+                                 ort="Musterstadt")  # fmt: skip
+    geld(neu, dt.date(2026, 3, 1), "5")
+    geld(alpha, dt.date(2026, 3, 2), "5")
+    admin_client.post(url, {"alle": "1", "adresse": [neu.pk]})
+    assert Zuwendungsbestaetigung.objects.count() == 5
+    # ausgewählte als PDF: nur die angehakten, in der Reihenfolge der Seite
+    nummern = [b.nummer for b in Zuwendungsbestaetigung.objects.order_by("nummer")]
+    pdf = admin_client.get(reverse("spenden:pdf"), {"nr": [nummern[2], nummern[0]]})
+    assert pdf.status_code == 200 and pdf["Content-Type"] == "application/pdf"
+    assert f"zuwendungsbestaetigung-{nummern[2]}-bis-{nummern[0]}" in pdf["Content-Disposition"]
+    leer = admin_client.get(reverse("spenden:pdf"), follow=True)
+    assert "mindestens eine Bestätigung anhaken" in leer.content.decode()
+    assert admin_client.get(reverse("spenden:pdf"), {"nummern": "9999"}).status_code == 404

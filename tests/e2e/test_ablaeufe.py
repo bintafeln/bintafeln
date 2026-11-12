@@ -128,6 +128,51 @@ def test_kundenliste_auswahl_und_export(angemeldet, admin):
     assert seite.url.endswith("/kunden/")
 
 
+def test_bestaetigungen_im_browser_sortieren_und_auswahl_ausstellen(angemeldet, admin):
+    """Ein Klick auf die Spaltenüberschrift sortiert die Tabelle im Browser; ausgestellt wird
+    für die angehakten Spender in der Reihenfolge, die man sieht."""
+    import datetime as dt
+    from decimal import Decimal
+
+    from apps.adressen.models import Adresse
+    from apps.spenden.models import Spende, SpendenEinstellungen, Zuwendungsbestaetigung
+
+    e = SpendenEinstellungen.laden()
+    e.zwecke, e.finanzamt, e.steuernummer = "mildtätiger Zwecke", "Musterstadt", "12/345/67890"
+    e.bescheid_vom, e.veranlagungszeitraum = dt.date(2025, 3, 1), "2021 bis 2023"
+    e.unterzeichnet_von = "Clara Beispiel, Vorsitzende"
+    e.save()
+    jahr = dt.date.today().year
+    for nachname, vorname, betrag in (("Zeta", "Anna", "30"), ("Alpha", "Zoe", "10"),
+                                      ("Mitte", "Max", "20")):  # fmt: skip
+        a = Adresse.objects.create(art="person", vorname=vorname, nachname=nachname,
+                                   strasse="Weg 1", plz="12345", ort="Musterstadt")  # fmt: skip
+        Spende.objects.create(adresse=a, datum=dt.date(jahr, 1, 5), betrag=Decimal(betrag))
+    seite = angemeldet(admin)
+    seite.goto("/spenden/bestaetigungen/")
+    tabelle = seite.locator("#offen-tabelle")
+
+    def namen():
+        return tabelle.locator("tbody tr td:nth-child(2)").all_inner_texts()
+
+    tabelle.get_by_role("button", name="Nachname / Organisation").click()
+    assert [n.strip() for n in namen()] == ["Alpha", "Mitte", "Zeta"]
+    tabelle.get_by_role("button", name="Nachname / Organisation").click()
+    assert [n.strip() for n in namen()] == ["Zeta", "Mitte", "Alpha"]
+    tabelle.get_by_role("button", name="Vorname").click()
+    assert [n.strip() for n in namen()] == ["Zeta", "Mitte", "Alpha"]  # Anna, Max, Zoe
+    tabelle.get_by_role("button", name="Summe").click()
+    assert [n.strip() for n in namen()] == ["Alpha", "Mitte", "Zeta"]  # 10, 20, 30
+    # alle anhaken, einen wieder abwählen, ausstellen
+    tabelle.locator("thead input[type=checkbox]").check()
+    expect(tabelle.locator("tbody input[type=checkbox]:checked")).to_have_count(3)
+    tabelle.locator("tbody tr", has_text="Mitte").locator("input[type=checkbox]").uncheck()
+    seite.get_by_role("button", name="Ausgewählte ausstellen").click()
+    expect(seite.locator("#ausgestellt-tabelle tbody tr")).to_have_count(2)
+    ausgestellt = Zuwendungsbestaetigung.objects.order_by("nummer")
+    assert [b.adresse.nachname for b in ausgestellt] == ["Alpha", "Zeta"]
+
+
 def test_spaltenbreite_ziehen_merken_und_zuruecksetzen(angemeldet, admin):
     """Spaltenbreite per Ziehen: Die Breite bleibt nach dem Neuladen und lässt sich mit
     „Spaltenbreiten zurücksetzen“ wieder entfernen."""
