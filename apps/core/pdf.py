@@ -20,7 +20,16 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.platypus import Flowable, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.lib.utils import ImageReader
+from reportlab.platypus import (
+    Flowable,
+    Image,
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
+    Table,
+    TableStyle,
+)
 
 from apps.core import zeichen
 from apps.core.models import TafelEinstellungen
@@ -158,6 +167,23 @@ class Pdf:
         tabelle.setStyle(
             TableStyle([("LINEBELOW", (i, 0), (i, 0), 0.5, colors.black) for i in spalten[::2]])
         )
+        self.inhalt.append(tabelle)
+
+    def unterschrift_bild(self, bild: bytes, bezeichnung: str) -> None:
+        """Eingescannte Unterschrift über der Linie, darunter die Bezeichnung (ADR 0130)."""
+        leser = ImageReader(io.BytesIO(bild))
+        b, h = leser.getSize()
+        faktor = min(70 * mm / b, 18 * mm / h)
+        tabelle = Table(
+            [[Image(io.BytesIO(bild), width=b * faktor, height=h * faktor)],
+             [Paragraph(text(bezeichnung), KLEIN)]],
+            colWidths=[90 * mm], hAlign="LEFT",
+        )  # fmt: skip
+        tabelle.setStyle(TableStyle([
+            ("LINEBELOW", (0, 0), (0, 0), 0.5, colors.black),
+            ("VALIGN", (0, 0), (0, 0), "BOTTOM"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (0, 0), 1),
+        ]))  # fmt: skip
         self.inhalt.append(tabelle)
 
     # --- Ausgabe ---
