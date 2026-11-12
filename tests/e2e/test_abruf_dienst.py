@@ -19,9 +19,9 @@ import pytest
 
 PFAD = Path(__file__).resolve().parents[2] / "docker" / "abruf" / "abruf.py"
 SCHLUESSEL = "nur-ein-erfundener-test-schluessel"
-KURZ = {"felder": 2, "zwei_faktor": 2, "code": 20, "nach_anmeldung": 0.2, "nach_code": 0.5,
-        "liste_laden": 0.5, "export_laden": 0.5, "klick": 0.1, "abfangen": 3, "erzeugen": 20,
-        "download": 20}  # fmt: skip
+KURZ = {"knopf": 1, "felder": 2, "zwei_faktor": 2, "code": 20, "nach_anmeldung": 0.2,
+        "nach_code": 0.5, "liste_laden": 0.5, "export_laden": 0.5, "klick": 0.1, "abfangen": 3,
+        "erzeugen": 20, "download": 20}  # fmt: skip
 
 
 def _zip() -> bytes:
@@ -74,8 +74,16 @@ NEU = (
 )
 
 
+# Ein Hinweis, der die ganze Seite überdeckt (wie ein Cookie-Hinweis): Klicks kommen nicht durch
+BANNER = '<div id="hinweis" class="cookie banner" style="position:fixed;inset:0;z-index:9">x</div>'
+# Anmeldung ohne Knopf vom Typ „submit“: Das Formular muss direkt abgeschickt werden
+OHNE_KNOPF = """<form method="post" action="/login"><input name="eml-user">
+<input name="psw-user" type="password"><a href="#">Anmelden</a></form>"""
+
+
 class Portal(BaseHTTPRequestHandler):
     angemeldet = False
+    banner = False
     gesehen: dict = {}
 
     def log_message(self, *args):
@@ -102,13 +110,16 @@ class Portal(BaseHTTPRequestHandler):
         daten = parse_qs(self.rfile.read(int(self.headers["Content-Length"])).decode())
         type(self).gesehen["anmeldung"] = (daten["eml-user"][0], daten["psw-user"][0])
         # wie im Vereinsportal: nur mit richtigem Passwort folgt die Abfrage des 2FA-Codes
-        self._html(ZWEI if daten["psw-user"][0] == "erfunden" else ANMELDUNG + "Falsch.")
+        zusatz = BANNER if type(self).banner else ""
+        self._html((ZWEI if daten["psw-user"][0] == "erfunden" else ANMELDUNG + "Falsch.") + zusatz)
 
     def do_GET(self):
         teile = urlparse(self.path)
         pfad, frage = teile.path, parse_qs(teile.query)
         if pfad == "/login":
-            return self._html(ANMELDUNG)
+            return self._html(ANMELDUNG + (BANNER if type(self).banner else ""))
+        if pfad == "/login-ohne-knopf":
+            return self._html(OHNE_KNOPF)
         if pfad == "/zwei":
             type(self).angemeldet = frage.get("code") == ["123456"]
             return self._html("ok")
@@ -145,7 +156,7 @@ def dienst(monkeypatch):
     spec.loader.exec_module(modul)
     monkeypatch.setattr(modul, "ZEITEN", dict(KURZ))
     monkeypatch.setattr(modul, "NUR_HTTPS", False)
-    Portal.angemeldet, Portal.gesehen = False, {}
+    Portal.angemeldet, Portal.gesehen, Portal.banner = False, {}, False
     portal, portal_url = _server(Portal)
 
     class Anfrage(modul.Anfrage):
@@ -238,6 +249,29 @@ def test_falscher_code_meldet_fehler_und_neuer_auftrag_geht(dienst):
     assert stand["fehler"] == "Der Abruf wurde abgebrochen."
 
 
+def test_anmeldung_trotz_hinweis_ueber_der_seite(dienst, capsys):
+    """Ein Hinweis über der ganzen Seite (z. B. zu Cookies) verdeckt Knopf und Code-Feld: Der
+    Abruf kommt trotzdem durch und schreibt ins Protokoll, was über dem Knopf lag."""
+    Portal.banner = True
+    dienst.rufen("/start", dienst.auftrag(mit_liste=False))
+    dienst.warten_auf("warte_auf_code", "fehler")
+    dienst.rufen("/code", {"code": "123456"})
+    stand = dienst.warten_auf("fertig", "fehler")
+    assert stand["stand"] == "fertig", stand
+    protokoll = capsys.readouterr().out
+    assert "Anmelde-Knopf nicht anklickbar" in protokoll
+    assert "darüber liegt: DIV#hinweis.cookie.banner" in protokoll
+    assert "erfunden" not in protokoll and "123456" not in protokoll  # nie Zugangsdaten
+
+
+def test_anmeldung_ohne_passenden_knopf(dienst, capsys):
+    auftrag = dienst.auftrag(mit_liste=False)
+    auftrag["anmeldung_url"] = auftrag["anmeldung_url"].replace("/login", "/login-ohne-knopf")
+    dienst.rufen("/start", auftrag)
+    assert dienst.warten_auf("warte_auf_code", "fehler")["stand"] == "warte_auf_code"
+    assert "Kein Anmelde-Knopf gefunden" in capsys.readouterr().out
+
+
 def test_falsches_passwort_fragt_gar_nicht_erst_nach_dem_code(dienst):
     """Nimmt das Vereinsportal die Anmeldung nicht an, kommt sofort eine Erklärung – statt
     fünf Minuten auf einen Code zu warten, den niemand verschickt hat."""
@@ -250,10 +284,12 @@ def test_falsches_passwort_fragt_gar_nicht_erst_nach_dem_code(dienst):
 
 def test_falsche_adresse_der_anmeldeseite(dienst):
     auftrag = dienst.auftrag()
-    auftrag["anmeldung_url"] = auftrag["anmeldung_url"].replace("/login", "/zwei")
+    auftrag["anmeldung_url"] = auftrag["anmeldung_url"].replace("/login", "/zwei?nummer=7")
     dienst.rufen("/start", auftrag)
     stand = dienst.warten_auf("warte_auf_code", "fehler", "fertig")
     assert stand["stand"] == "fehler", stand
+    # was hinter dem Fragezeichen steht, zeigt die Meldung nicht – aber dass da etwas stand
+    assert "/zwei?…)" in stand["fehler"] and "nummer" not in stand["fehler"]
     assert "Felder für E-Mail und Passwort nicht gefunden" in stand["fehler"]
     assert "Adresse der Anmeldeseite" in stand["fehler"]
 
