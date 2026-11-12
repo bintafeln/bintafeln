@@ -92,3 +92,29 @@ class DankForm(forms.Form):
         self.fields["vorlage"].queryset = Vorlage.objects.all()
         self.fields["jahr"].choices = [(j, j) for j in jahre]
         self.fields["art"].choices = ARTEN
+
+
+class UnterschriftForm(forms.Form):
+    """Die eigene Unterschrift des angemeldeten Kontos (ADR 0130)."""
+
+    name_funktion = forms.CharField(
+        label="Name und Funktion", max_length=200,
+        help_text="Steht unter Ihrer Unterschrift, z. B. „Erika Muster, Kassenwartin“.",
+    )  # fmt: skip
+    bild = forms.FileField(
+        label="Bild der Unterschrift (PNG oder JPG)",
+        required=False,
+        widget=forms.ClearableFileInput(attrs={"accept": "image/png,image/jpeg,image/webp"}),
+        help_text="Am besten auf weißem Papier unterschreiben, fotografieren oder einscannen und "
+        "eng zuschneiden. Leer lassen, um das hinterlegte Bild zu behalten.",
+    )
+
+    def __init__(self, *args, vorhanden=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.vorhanden = vorhanden
+
+    def clean(self):
+        daten = super().clean()
+        if not daten.get("bild") and not self.vorhanden:
+            self.add_error("bild", "Bitte ein Bild Ihrer Unterschrift hochladen.")
+        return daten

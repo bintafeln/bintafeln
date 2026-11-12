@@ -15,6 +15,13 @@ urlpatterns = [
     path("bestaetigungen/ausstellen/", views.ausstellen, name="ausstellen"),
     path("bestaetigungen/pdf/", views.pdf, name="pdf"),
     path("bestaetigungen/<int:nummer>/stornieren/", views.stornieren, name="stornieren"),
+    path(
+        "bestaetigungen/<int:nummer>/unterschreiben/",
+        views.neu_unterschreiben,
+        name="neu_unterschreiben",
+    ),
+    path("bestaetigungen/unterschrift/", views.unterschrift, name="unterschrift"),
+    path("bestaetigungen/unterschrift/bild/", views.unterschrift_bild, name="unterschrift_bild"),
     path("einstellungen/", views.einstellungen, name="einstellungen"),
     path("dankesbriefe/", views.dank, name="dank"),
     path("belege/", views.belege, name="belege"),

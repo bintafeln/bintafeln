@@ -9,7 +9,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
-from django.http import Http404, QueryDict
+from django.http import Http404, HttpResponse, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -33,8 +33,20 @@ from apps.konten.views import nicht_in_demo
 from apps.spenden import bestaetigung as bst
 from apps.spenden import dank as danken
 from apps.spenden import importieren
-from apps.spenden.forms import DankForm, SpendeForm, SpendenEinstellungenForm
-from apps.spenden.models import Spende, SpendenBeleg, SpendenEinstellungen, Zuwendungsbestaetigung
+from apps.spenden import unterschrift as unterschriften
+from apps.spenden.forms import (
+    DankForm,
+    SpendeForm,
+    SpendenEinstellungenForm,
+    UnterschriftForm,
+)
+from apps.spenden.models import (
+    Spende,
+    SpendenBeleg,
+    SpendenEinstellungen,
+    Unterschrift,
+    Zuwendungsbestaetigung,
+)
 
 
 def _jahr(request) -> int:
@@ -235,7 +247,11 @@ def bestaetigungen(request):
     e = SpendenEinstellungen.laden()
     ausgestellt = Zuwendungsbestaetigung.objects.filter(
         ausgestellt_am__year=jahr).select_related("adresse")  # fmt: skip
+    ausgestellt = list(ausgestellt.prefetch_related("ausfertigungen"))
+    for b in ausgestellt:
+        b.ausfertigung = next(iter(b.ausfertigungen.all()), None)
     return render(request, "spenden/bestaetigungen.html", {
+        "unterschrift": bst.eigene_unterschrift(request.user),
         "neu_pdf": request.session.pop("spenden_neu", ""),
         "jahr": jahr, "jahre": _jahre(), "offen": bst.jahresliste(jahr),
         "ausgestellt": ausgestellt, "fehlt": e.fehlende_angaben(),
@@ -253,15 +269,16 @@ def _pdf_link(liste) -> str:
 @rollen.recht_erforderlich("spenden.bestaetigen")
 def ausstellen(request):
     jahr = _jahr(request)
-    von = request.user.get_username()
+    von, ich = request.user.get_username(), request.user
     try:
         if request.POST.get("spende", "").isdigit():
-            liste = [bst.sach_ausstellen(get_object_or_404(Spende, pk=request.POST["spende"]), von)]
+            spende = get_object_or_404(Spende, pk=request.POST["spende"])
+            liste = [bst.sach_ausstellen(spende, von, ich)]
         elif request.POST.get("adresse", "").isdigit():
             a = get_object_or_404(Adresse, pk=request.POST["adresse"])
-            liste = [bst.geld_ausstellen(a, jahr, von)]
+            liste = [bst.geld_ausstellen(a, jahr, von, ich)]
         else:
-            liste = [bst.geld_ausstellen(a, jahr, von) for a, _, _ in bst.jahresliste(jahr)]
+            liste = [bst.geld_ausstellen(a, jahr, von, ich) for a, _, _ in bst.jahresliste(jahr)]
     except bst.BestaetigungsFehler as fehler:
         messages.error(request, str(fehler))
         return redirect(f"{reverse('spenden:bestaetigungen')}?jahr={jahr}")
@@ -290,6 +307,69 @@ def stornieren(request, nummer):
     messages.success(request, f"Zuwendungsbestätigung Nr. {nummer} storniert. Die Spenden lassen "
                               "sich neu bestätigen.")  # fmt: skip
     return redirect(f"{reverse('spenden:bestaetigungen')}?jahr={b.ausgestellt_am.year}")
+
+
+@require_POST
+@rollen.recht_erforderlich("spenden.bestaetigen")
+def neu_unterschreiben(request, nummer):
+    """Dieselbe Bestätigung mit der eigenen Unterschrift neu ausfertigen."""
+    b = get_object_or_404(Zuwendungsbestaetigung, nummer=nummer)
+    try:
+        bst.neu_unterschreiben(b, request.user)
+    except bst.BestaetigungsFehler as fehler:
+        messages.error(request, str(fehler))
+    else:
+        messages.success(
+            request,
+            f"Zuwendungsbestätigung Nr. {nummer} trägt jetzt Ihre Unterschrift. Die frühere "
+            "Ausfertigung bleibt gespeichert.",
+        )
+        request.session["spenden_neu"] = _pdf_link([b])
+    return redirect(f"{reverse('spenden:bestaetigungen')}?jahr={b.ausgestellt_am.year}")
+
+
+@never_cache
+@rollen.recht_erforderlich("spenden.bestaetigen")
+def unterschrift(request):
+    """Die eigene Unterschrift: Jedes Konto sieht, ändert und löscht nur seine."""
+    eigene = Unterschrift.objects.filter(benutzer=request.user).first()
+    if request.method == "POST" and "loeschen" in request.POST:
+        _unterschrift_loeschen(request)
+        return redirect("spenden:unterschrift")
+    start = {"name_funktion": eigene.name_funktion} if eigene else None
+    form = UnterschriftForm(request.POST or None, request.FILES or None, initial=start,
+                            vorhanden=bool(eigene and eigene.bild))  # fmt: skip
+    if request.method == "POST" and form.is_valid():
+        try:
+            _unterschrift_speichern(request, form.cleaned_data)
+        except unterschriften.BildFehler as fehler:
+            form.add_error("bild", str(fehler))
+        else:
+            return redirect("spenden:unterschrift")
+    return render(request, "spenden/unterschrift.html", {"form": form, "eigene": eigene})
+
+
+@nicht_in_demo
+def _unterschrift_speichern(request, d):
+    unterschriften.speichern(request.user, d["name_funktion"], d.get("bild"))
+    messages.success(request, "Ihre Unterschrift ist gespeichert.")
+
+
+@nicht_in_demo
+def _unterschrift_loeschen(request):
+    unterschriften.loeschen(request.user)
+    messages.success(request, "Ihre Unterschrift ist gelöscht.")
+
+
+@never_cache
+@rollen.recht_erforderlich("spenden.bestaetigen")
+def unterschrift_bild(request):
+    """Vorschau der eigenen Unterschrift – immer die des angemeldeten Kontos, ohne Kennung in
+    der Adresse, damit sich keine fremde abrufen lässt."""
+    inhalt = unterschriften.bild(request.user)
+    if not inhalt:
+        raise Http404
+    return HttpResponse(inhalt, content_type="image/png")
 
 
 @never_cache
@@ -341,7 +421,7 @@ def dank(request):
     von = request.user.get_username()
     if schritt in ("pdf", "senden") and d["mit_bestaetigungen"]:
         fehler = danken.fehlende_ausstellen(per_brief if schritt == "pdf" else per_mail,
-                                            d["jahr"], von)  # fmt: skip
+                                            d["jahr"], von, request.user)  # fmt: skip
         if fehler:
             for f in fehler[:5]:
                 messages.error(request, f)

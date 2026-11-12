@@ -74,14 +74,14 @@ def _bestaetigungen(d: Dank) -> list[Zuwendungsbestaetigung]:
     return liste
 
 
-def fehlende_ausstellen(danke: list[Dank], jahr: int, von: str) -> list[str]:
+def fehlende_ausstellen(danke: list[Dank], jahr: int, von: str, unterzeichner=None) -> list[str]:
     """Stellt für offene Geldspenden Bestätigungen aus; liefert Fehlermeldungen."""
     fehler = []
     for d in danke:
         if not bst.offene_geldspenden(d.adresse, jahr).exists():
             continue
         try:
-            bst.geld_ausstellen(d.adresse, jahr, von)
+            bst.geld_ausstellen(d.adresse, jahr, von, unterzeichner)
         except bst.BestaetigungsFehler as grund:
             fehler.append(str(grund))
             if "fehlen noch Angaben" in str(grund):

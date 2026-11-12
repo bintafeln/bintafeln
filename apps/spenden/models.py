@@ -3,6 +3,7 @@
 from decimal import Decimal
 
 from auditlog.registry import auditlog
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 
@@ -236,7 +237,66 @@ def summe(spenden) -> Decimal:
     return spenden.aggregate(s=models.Sum("betrag"))["s"] or Decimal("0")
 
 
+class Unterschrift(models.Model):
+    """Eingescannte Unterschrift eines Kontos für Zuwendungsbestätigungen (ADR 0130), dazu Name
+    und Funktion. Sie gehört nur zu diesem Konto: Niemand sonst sieht das Bild oder stellt damit
+    Bestätigungen aus – auch kein Admin."""
+
+    ORDNER = "unterschriften"
+    PRIVATDATEI = (ORDNER, "bild")
+
+    benutzer = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="spenden_unterschrift"
+    )
+    name_funktion = models.CharField(
+        "Name und Funktion", max_length=200,
+        help_text="Steht unter Ihrer Unterschrift, z. B. „Erika Muster, Kassenwartin“.",
+    )  # fmt: skip
+    bild = models.CharField(max_length=100, editable=False)
+    geaendert_am = models.DateTimeField("Geändert am", auto_now=True)
+
+    class Meta:
+        verbose_name = "Unterschrift für Zuwendungsbestätigungen"
+        verbose_name_plural = "Unterschriften für Zuwendungsbestätigungen"
+
+    def __str__(self):
+        return f"Unterschrift von {self.benutzer}"
+
+
+class Ausfertigung(models.Model):
+    """Das fertige PDF einer Zuwendungsbestätigung mit eingesetzter Unterschrift (ADR 0130).
+
+    Es wird einmal erzeugt und dann nur noch ausgegeben, nie neu berechnet: So bleibt das
+    unterschriebene Dokument, wie es war, und die Unterschrift selbst muss dafür nicht
+    aufbewahrt werden. Stellt eine andere Person die Bestätigung mit ihrer Unterschrift neu aus,
+    kommt eine weitere Ausfertigung dazu; die neueste gilt."""
+
+    ORDNER = "zuwendungsbestaetigungen"
+    PRIVATDATEI = (ORDNER, "datei")
+
+    bestaetigung = models.ForeignKey(
+        Zuwendungsbestaetigung, on_delete=models.CASCADE, related_name="ausfertigungen"
+    )
+    datei = models.CharField(max_length=100, editable=False)
+    unterzeichner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="+",
+    )  # fmt: skip
+    name_funktion = models.CharField("Unterzeichnet von", max_length=200)
+    erstellt_am = models.DateTimeField("Erstellt am", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Ausfertigung einer Zuwendungsbestätigung"
+        verbose_name_plural = "Ausfertigungen von Zuwendungsbestätigungen"
+        ordering = ["-pk"]
+
+    def __str__(self):
+        return f"Nr. {self.bestaetigung.nummer}, unterzeichnet von {self.name_funktion}"
+
+
 auditlog.register(Spende)
+auditlog.register(Unterschrift, exclude_fields=["bild"])
+auditlog.register(Ausfertigung, exclude_fields=["datei"])
 auditlog.register(Zuwendungsbestaetigung)
 auditlog.register(SpendenEinstellungen)
 auditlog.register(SpendenBeleg, exclude_fields=["datei"])

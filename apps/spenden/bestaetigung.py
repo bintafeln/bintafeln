@@ -3,17 +3,28 @@
 Ausstellen vergibt eine fortlaufende Nummer und verknüpft die Spenden, damit keine Spende zweimal
 bestätigt wird. Das PDF entsteht jedes Mal neu aus den gespeicherten Daten; stornierte
 Bestätigungen tragen den Vermerk „STORNIERT“.
+
+Mit eingescannter Unterschrift (ADR 0130): Wer ausstellt und eine eigene ``Unterschrift``
+hinterlegt hat, unterschreibt damit. Das PDF wird dann einmal erzeugt und als ``Ausfertigung``
+gespeichert; ab da wird genau dieses PDF ausgegeben. Es gibt keinen Weg, mit der Unterschrift
+einer anderen Person auszustellen.
 """
+
+import io
 
 from django.db import transaction
 from django.utils import timezone
+from pypdf import PdfReader, PdfWriter
 from reportlab.platypus import PageBreak
 
+from apps.core import privatdateien
 from apps.core.models import TafelEinstellungen
 from apps.core.pdf import Pdf
 from apps.spenden.models import (
+    Ausfertigung,
     Spende,
     SpendenEinstellungen,
+    Unterschrift,
     Zuwendungsbestaetigung,
     naechste_nummer,
     summe,
@@ -76,8 +87,46 @@ def jahresliste(jahr: int) -> list[tuple]:
     return ergebnis
 
 
+def eigene_unterschrift(benutzer) -> Unterschrift | None:
+    """Die Unterschrift dieses Kontos, wenn Bild und Name hinterlegt sind. Der einzige Weg zu
+    einer Unterschrift führt über das angemeldete Konto – nie über eine Auswahl."""
+    if benutzer is None or not getattr(benutzer, "is_authenticated", False):
+        return None
+    u = Unterschrift.objects.filter(benutzer=benutzer).first()
+    return u if u and u.bild and u.name_funktion else None
+
+
+def unterschreiben(b: Zuwendungsbestaetigung, benutzer) -> Ausfertigung | None:
+    """Erzeugt das PDF mit der eigenen Unterschrift von ``benutzer`` und hält es fest. Ohne
+    hinterlegte Unterschrift passiert nichts (die Bestätigung hat dann eine Linie für die
+    Unterschrift von Hand)."""
+    u = eigene_unterschrift(benutzer)
+    bild = privatdateien.lesen(Unterschrift.ORDNER, u.bild) if u else None
+    if not bild or b.storniert_am:
+        return None
+    inhalt = _erzeugen([b], unterschrift=(bild, u.name_funktion))
+    return Ausfertigung.objects.create(
+        bestaetigung=b, unterzeichner=benutzer, name_funktion=u.name_funktion,
+        datei=privatdateien.ablegen(Ausfertigung.ORDNER, inhalt),
+    )  # fmt: skip
+
+
+def neu_unterschreiben(b: Zuwendungsbestaetigung, benutzer) -> Ausfertigung:
+    """Dieselbe Bestätigung (gleiche Nummer, gleicher Inhalt) mit der eigenen Unterschrift neu
+    ausfertigen, z. B. wenn die Person, die sie ausgestellt hat, ausgeschieden ist. Frühere
+    Ausfertigungen bleiben unverändert gespeichert; ab jetzt gilt die neue."""
+    if b.storniert_am:
+        raise BestaetigungsFehler("Eine stornierte Bestätigung lässt sich nicht unterschreiben.")
+    if not eigene_unterschrift(benutzer):
+        raise BestaetigungsFehler("Bitte zuerst Ihre eigene Unterschrift hinterlegen.")
+    ausfertigung = unterschreiben(b, benutzer)
+    if ausfertigung is None:
+        raise BestaetigungsFehler("Ihre Unterschrift ließ sich nicht lesen; bitte neu hochladen.")
+    return ausfertigung
+
+
 @transaction.atomic
-def geld_ausstellen(adresse, jahr: int, von: str) -> Zuwendungsbestaetigung:
+def geld_ausstellen(adresse, jahr: int, von: str, unterzeichner=None) -> Zuwendungsbestaetigung:
     """Eine Spende: Einzelbestätigung; mehrere: Sammelbestätigung für das Jahr."""
     _bereit(SpendenEinstellungen.laden())
     spenden = list(offene_geldspenden(adresse, jahr).select_for_update(of=("self",)))
@@ -90,11 +139,12 @@ def geld_ausstellen(adresse, jahr: int, von: str) -> Zuwendungsbestaetigung:
         betrag=sum(s.betrag for s in spenden), ausgestellt_von=von,
     )  # fmt: skip
     Spende.objects.filter(pk__in=[s.pk for s in spenden]).update(bestaetigung=b)
+    unterschreiben(b, unterzeichner)
     return b
 
 
 @transaction.atomic
-def sach_ausstellen(spende: Spende, von: str) -> Zuwendungsbestaetigung:
+def sach_ausstellen(spende: Spende, von: str, unterzeichner=None) -> Zuwendungsbestaetigung:
     _bereit(SpendenEinstellungen.laden())
     spende = Spende.objects.select_for_update().get(pk=spende.pk)
     if spende.art != Spende.Art.SACH:
@@ -109,6 +159,7 @@ def sach_ausstellen(spende: Spende, von: str) -> Zuwendungsbestaetigung:
     )  # fmt: skip
     spende.bestaetigung = b
     spende.save(update_fields=["bestaetigung"])
+    unterschreiben(b, unterzeichner)
     return b
 
 
@@ -157,7 +208,7 @@ def _grundlage(e) -> list[str]:
     ]
 
 
-def _seite(doc: Pdf, b: Zuwendungsbestaetigung, e, tafel) -> None:
+def _seite(doc: Pdf, b: Zuwendungsbestaetigung, e, tafel, unterschrift=None) -> None:
     name, anschrift = _koerperschaft(e, tafel)
     spenden = list(b.spenden.order_by("datum", "pk"))
     if b.storniert_am:
@@ -230,7 +281,11 @@ def _seite(doc: Pdf, b: Zuwendungsbestaetigung, e, tafel) -> None:
                    "Sammelbestätigung zu entnehmen.")  # fmt: skip
     doc.abstand()
     doc.absatz(f"{e.ort or tafel.ort}, {_datum(b.ausgestellt_am)}")
-    doc.unterschriften([f"Unterschrift des Zuwendungsempfängers: {e.unterzeichnet_von}"])
+    if unterschrift:  # (Bild, Name und Funktion) der Person, die gerade unterschreibt
+        bild, name_funktion = unterschrift
+        doc.unterschrift_bild(bild, f"Unterschrift des Zuwendungsempfängers: {name_funktion}")
+    else:
+        doc.unterschriften([f"Unterschrift des Zuwendungsempfängers: {e.unterzeichnet_von}"])
     doc.abstand()
     doc.absatz(HAFTUNG, klein=True)
     if b.art == b.Art.SAMMEL:
@@ -246,12 +301,36 @@ def _seite(doc: Pdf, b: Zuwendungsbestaetigung, e, tafel) -> None:
                     zeilen, breiten=[0.2, 0.3, 0.3, 0.2], rechts=(3,), summe=True)  # fmt: skip
 
 
-def pdf(bestaetigungen) -> bytes:
+def _erzeugen(bestaetigungen, unterschrift=None) -> bytes:
     e, tafel = SpendenEinstellungen.laden(), TafelEinstellungen.laden()
     doc = Pdf("Zuwendungsbestätigung")
     doc.inhalt = []  # kein großer Titel, jede Bestätigung hat ihre eigene Überschrift
     for nummer, b in enumerate(bestaetigungen):
         if nummer:
             doc.element(PageBreak())
-        _seite(doc, b, e, tafel)
+        _seite(doc, b, e, tafel, unterschrift)
     return doc.erzeugen()
+
+
+def ausfertigung(b: Zuwendungsbestaetigung) -> bytes | None:
+    """Das gespeicherte, unterschriebene PDF (die neueste Ausfertigung), wenn es eines gibt.
+    Stornierte Bestätigungen werden neu erzeugt – mit Vermerk und ohne Unterschrift."""
+    if b.storniert_am:
+        return None
+    neueste = b.ausfertigungen.first()
+    return privatdateien.lesen(Ausfertigung.ORDNER, neueste.datei) if neueste else None
+
+
+def pdf(bestaetigungen) -> bytes:
+    """Alle Bestätigungen in einem PDF: unterschriebene so, wie sie gespeichert sind, die
+    übrigen neu aus den Daten."""
+    bestaetigungen = list(bestaetigungen)
+    fertige = {b.pk: inhalt for b in bestaetigungen if (inhalt := ausfertigung(b))}
+    if not fertige:
+        return _erzeugen(bestaetigungen)
+    gesamt = PdfWriter()
+    for b in bestaetigungen:
+        gesamt.append(PdfReader(io.BytesIO(fertige.get(b.pk) or _erzeugen([b]))))
+    puffer = io.BytesIO()
+    gesamt.write(puffer)
+    return puffer.getvalue()

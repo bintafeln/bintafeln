@@ -57,6 +57,14 @@ def mitarbeiter_pdf(b) -> bytes:
         ]
     )
 
+    unterschrift = getattr(b, "spenden_unterschrift", None)
+    if unterschrift:
+        doc.ueberschrift("Unterschrift für Zuwendungsbestätigungen")
+        doc.absatz(
+            f"Hinterlegt als „{unterschrift.name_funktion}“ (Bild der Unterschrift verschlüsselt "
+            f"gespeichert, zuletzt geändert am {_wert(unterschrift.geaendert_am)})."
+        )
+
     geraete = b.vertraute_geraete.all()
     if geraete:
         doc.ueberschrift("Vertraute Geräte (Anmeldung ohne Zwei-Faktor-Code)")

@@ -1523,6 +1523,13 @@ Adresse im Adressbuch (ADR 0045).
   erstellt am Jahresende für alle Spender auf einmal. Jede Spende wird nur einmal bestätigt;
   Stornieren lässt die Nummer bestehen. Bestätigte Spenden sind nicht mehr änderbar, Adressen
   mit Spenden nicht löschbar.
+- **Eingescannte Unterschrift (ADR 0130):** Wer ausstellt, kann seine eigene Unterschrift mit
+  Name und Funktion hinterlegen („Zuwendungsbestätigungen → Ihre Unterschrift“). Sie gehört nur
+  zum eigenen Konto; niemand sonst sieht sie oder stellt damit aus. Unterschriebene
+  Bestätigungen werden als fertiges PDF gespeichert und bleiben unverändert. Eine andere Person
+  kann dieselbe Bestätigung mit ihrer eigenen Unterschrift neu ausfertigen. Ob das Finanzamt
+  eingescannte Unterschriften anerkennt, hängt davon ab, ob das Verfahren dort angezeigt wurde
+  (R 10b.1 Abs. 4 EStR) – bitte mit der Steuerberatung klären.
 - **Einrichten** (nur Admin) unter „Einstellungen → Spenden und Zuwendungsbestätigungen“: Name
   und Anschrift der Körperschaft, steuerbegünstigte Zwecke, Art des Bescheids
   (Freistellungsbescheid, Anlage zum KSt-Bescheid, Feststellung nach § 60a AO), Finanzamt,

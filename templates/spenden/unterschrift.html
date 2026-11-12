@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titel %}Meine Unterschrift{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'spenden:bestaetigungen' %}">← Zuwendungsbestätigungen</a></p>
+  <h1>Meine Unterschrift für Zuwendungsbestätigungen</h1>
+  <div class="zugang-kasten">
+    <div><strong>🔒 Nur für Ihr Konto: {{ request.user.get_full_name|default:request.user.get_username }}</strong>
+      <p>Hinterlegen Sie hier Ihre <strong>eigene</strong> Unterschrift. bintafeln setzt sie nur auf Bestätigungen, die
+        <strong>Sie selbst</strong> ausstellen, während Sie angemeldet sind. Andere sehen das Bild nicht und können
+        damit nichts ausstellen – auch kein Admin. Wer selbst ausstellt, hinterlegt seine eigene Unterschrift.</p></div>
+  </div>
+  {% if eigene %}
+  <p><strong>Hinterlegt:</strong> {{ eigene.name_funktion }} (zuletzt geändert am {{ eigene.geaendert_am|date:"d.m.Y" }})</p>
+  <p><img src="{% url 'spenden:unterschrift_bild' %}" alt="Ihre hinterlegte Unterschrift" class="unterschrift-vorschau"></p>
+  {% endif %}
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf">Speichern</button>
+      {% if eigene %}<button type="submit" name="loeschen" value="1" class="knopf knopf-zweitrangig" formnovalidate
+        onclick="return confirm('Ihre Unterschrift löschen? Schon unterschriebene Bestätigungen bleiben, wie sie sind.')">Meine Unterschrift löschen</button>{% endif %}
+    </div>
+  </form>
+  <p class="hinweis"><strong>Bitte vorher klären:</strong> Zuwendungsbestätigungen ohne eigenhändige Unterschrift –
+    also auch mit eingescannter – erkennt das Finanzamt nur an, wenn die Tafel das maschinelle Verfahren dort vorher
+    angezeigt hat (R 10b.1 Abs. 4 EStR). Fragen Sie im Zweifel Ihre Steuerberatung. Bestätigungen mit hinterlegter
+    Unterschrift speichert bintafeln als fertiges PDF: Sie bleiben, wie sie ausgestellt wurden, auch wenn die
+    Unterschrift später geändert oder gelöscht wird.</p>
+</section>
+{% endblock %}

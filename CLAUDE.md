@@ -378,6 +378,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Programm; „versendet“ bekommt nie eine Bestätigung aus bintafeln, eine einzelne „offene“ behält
   ihren Beleg, mehrere offene im Jahr ergeben eine Sammelbestätigung – die Regel steht nur in
   `bestaetigung.offene_geldspenden()` und `dank._beizulegende()`.
+  Eingescannte Unterschrift (ADR 0130): `Unterschrift` je Konto (`apps/spenden/unterschrift.py`),
+  nie die eines anderen Kontos anzeigen oder benutzen; `bestaetigung.unterschreiben()` nimmt nur
+  die der Person, die ausstellt; das unterschriebene PDF liegt als `Ausfertigung` und wird nicht
+  neu berechnet (`bestaetigung.pdf()` gibt es aus).
   Import in `apps/spenden/importieren.py` (ADR 0055, `belegnummer` gegen Dubletten),
   Dankesbriefe und hochgeladene Belege in `apps/spenden/dank.py` (ADR 0056; PDFs zusammenfügen
   mit `pypdf`, Mail-Anhänge über `mail.senden(..., anhaenge=…)`).
