@@ -848,6 +848,7 @@ def test_hilfe_bild_vereinsportal(angemeldet, admin, muster, benutzer_mit_rolle)
                 plz_ort=ort,
                 jahr=jahr,
                 betrag=D(betrag),
+                datum=dt.date(jahr, 2 + nummer, 10 + nummer),
                 datei="erfunden.bin",
                 im_portal_versendet=nummer == 2,
             )
@@ -896,6 +897,7 @@ def test_hilfe_bild_vereinsportal_briefe(angemeldet, admin, muster, benutzer_mit
                 plz_ort=ort,
                 jahr=jahr,
                 betrag=D(betrag),
+                datum=dt.date(jahr, 2 + nummer, 10 + nummer),
                 datei="erfunden.bin",
             )
     Sammelbescheinigung.objects.create(

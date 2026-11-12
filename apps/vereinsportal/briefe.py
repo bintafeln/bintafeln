@@ -41,7 +41,7 @@ def werte(s, jahr: int) -> emp.Empfaenger:
         f"p:{normal(s.name)}", s.name, [s.name, s.strasse, s.plz_ort], s.email,
         {"anrede": anrede, "name": s.name, "vorname": k.vorname if k else "",
          "nachname": k.nachname if k else "", "spendensumme": emp._euro(s.summe),
-         "anzahl_spenden": s.anzahl},
+         "anzahl_spenden": s.anzahl, "spendendaten": s.spendendaten},
     )  # fmt: skip
 
 

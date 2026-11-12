@@ -102,6 +102,12 @@ class Beleg(models.Model):
     strasse = models.CharField("Straße und Hausnummer", max_length=200)
     plz_ort = models.CharField("PLZ und Ort", max_length=200)
     jahr = models.PositiveIntegerField("Jahr", db_index=True)
+    datum = models.DateField(
+        "Spendendatum", null=True, blank=True,
+        help_text="Tag der Zuwendung laut Beleg. Fehlt bei Belegen, in denen er nicht zu lesen "
+        "war.",
+    )  # fmt: skip
+    datum_gesucht = models.BooleanField(default=False, editable=False)  # Nachtragen versucht
     betrag = models.DecimalField("Betrag", max_digits=12, decimal_places=2, default=0)
     im_portal_versendet = models.BooleanField(
         "Im Vereinsportal versendet", default=False,
