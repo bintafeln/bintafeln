@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block titel %}{{ a }} – Interesse eintragen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'ausgabe:empfang' %}?nummer={{ h.kundennummer }}">← zurück zum Einlass</a></p>
+  <h1>{{ a.bezeichnung }}</h1>
+  {% if a.beschreibung %}<p>{{ a.beschreibung|linebreaksbr }}</p>{% endif %}
+  <p class="hinweis">Kundennummer {{ h.kundennummer }} · {{ zahlen.anzahl }} von {{ a.hoechstens }} Interessierten,
+    {{ a.plaetze }} Plätze. Interesse heißt noch nicht, dass jemand einen Platz hat: Die Tafel meldet sich.</p>
+
+  {% if da %}
+  <h2>Schon eingetragen</h2>
+  <ul class="liste-schlicht">
+    {% for e in da %}
+    <li>{{ e.name }} – {{ e.get_stand_display }} (seit {{ e.eingetragen_am|date:"d.m.Y" }})
+      <form method="post" action="{% url 'angebote:austragen' e.pk %}" class="inline" onsubmit="return confirm('{{ e.name }} wieder austragen?')">{% csrf_token %}
+        <button type="submit" class="link-knopf">austragen</button></form></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  {% if not offen %}
+  <p class="meldung warnung">{% if a.geschlossen %}Die Anmeldung ist geschlossen.{% else %}Die Liste ist voll oder die Anmeldung läuft nicht mehr.{% endif %} Es kann niemand mehr eingetragen werden.</p>
+  {% elif frei %}
+  <h2>Wer hat Interesse?</h2>
+  <form method="post">
+    {% csrf_token %}
+    {% for p in frei %}
+    <p><label><input type="checkbox" name="person" value="{{ p.pk }}"{% if forloop.first and not da %} checked{% endif %}>
+      {{ p.vorname }} {{ p.nachname }}{% if p.ist_hauptperson %} <span class="leise">(Hauptperson)</span>{% endif %}{% if p.geburtsdatum %} <span class="leise">· geb. {{ p.geburtsdatum|date:"d.m.Y" }}</span>{% endif %}</label></p>
+    {% endfor %}
+    <button type="submit" class="knopf">Interesse eintragen</button>
+  </form>
+  {% else %}
+  <p class="hinweis">Alle Personen dieses Haushalts sind schon eingetragen.</p>
+  {% endif %}
+</section>
+{% endblock %}

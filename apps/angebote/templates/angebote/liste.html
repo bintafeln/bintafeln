@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block titel %}Angebote mit Anmeldung{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Angebote mit Anmeldung</h1>
+  <p>Für Angebote mit begrenzten Plätzen, z. B. einen Kochkurs. Solange die Anmeldung läuft, steht das Angebot am
+    Einlass auf der Karte jedes Haushalts; dort werden Interessierte eingetragen, bis die Liste voll ist.
+    <a href="{% url 'core:hilfe' %}#angebote">So funktioniert es</a></p>
+  <p><a class="knopf" href="{% url 'angebote:neu' %}">Neues Angebot</a></p>
+  {% if angebote %}
+  <div class="tabelle-rahmen">
+    <table class="tabelle" data-sortierbar id="angebote-tabelle">
+      <thead><tr>
+        <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Angebot</button></th>
+        <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Anmeldung</button></th>
+        <th>Stand</th>
+        <th class="zahl" aria-sort="none"><button type="button" class="sortieren" data-sort="zahl">Interessierte</button></th>
+        <th class="zahl">Plätze</th><th class="zahl">zugesagt</th></tr></thead>
+      <tbody>
+        {% for a in angebote %}
+        <tr>
+          <td><a href="{% url 'angebote:angebot' a.pk %}">{{ a.bezeichnung }}</a></td>
+          <td data-wert="{{ a.anmeldung_von|date:'Y-m-d' }}">{{ a.anmeldung_von|date:"d.m.Y" }} – {{ a.anmeldung_bis|date:"d.m.Y" }}</td>
+          <td>{% if a.offen %}<span class="marke-ok">Anmeldung läuft</span>{% elif a.laeuft and a.geschlossen %}<span class="marke-neutral">geschlossen</span>{% elif a.laeuft %}<span class="marke-warnung">Liste voll</span>{% elif a.anmeldung_von > heute %}<span class="marke-neutral">noch nicht begonnen</span>{% else %}<span class="marke-neutral">beendet</span>{% endif %}</td>
+          <td class="zahl" data-wert="{{ a.zahlen.anzahl }}">{{ a.zahlen.anzahl }} von {{ a.hoechstens }}</td>
+          <td class="zahl">{{ a.plaetze }}</td>
+          <td class="zahl">{{ a.zahlen.zugesagt }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="hinweis">Noch kein Angebot angelegt.</p>
+  {% endif %}
+</section>
+{% endblock %}

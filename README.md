@@ -1144,6 +1144,25 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   „Handys zurücksetzen“ am Einlass, Fehlversuche begrenzt. Neu gedruckte Ausweise können einen
   persönlichen QR-Code tragen (Element in der Ausweis-Vorlage, jeder Druck ein neuer Code).
 
+### Angebote mit Anmeldung
+
+Für Angebote mit begrenzten Plätzen, z. B. einen Kochkurs (ADR 0131). Nur Kunden können sich
+eintragen lassen, und nur am Einlass.
+
+- **Anlegen** („Kunden → Angebote mit Anmeldung“, Büro und Admin): Bezeichnung, Beschreibung,
+  Zeitraum der Anmeldung, **Plätze** (z. B. 12) und **Interessierte höchstens** (z. B. 20).
+- **Am Einlass:** Solange die Anmeldung läuft, steht das Angebot bei den Hinweisen auf der Karte
+  jedes Haushalts („Kochkurs – 7 von 20 Interessierten“). „Interesse eintragen …“ zeigt die
+  Personen des Haushalts; jede angehakte Person zählt einzeln. Bei der Höchstzahl schließt die
+  Liste von selbst („Liste voll“), der Einlass fragt dann nicht weiter.
+- **Plätze vergeben:** Die Seite des Angebots zeigt die Interessierten in der Reihenfolge der
+  Anmeldung mit Kundennummer, Name, Telefon und Ausgabestelle (sortierbar, als PDF und CSV).
+  „Plätze nach Reihenfolge vergeben“ gibt den ersten einen Platz und macht die übrigen zu
+  Nachrückern; jeder Stand lässt sich danach einzeln ändern. Die Anmeldung lässt sich von Hand
+  schließen und wieder öffnen.
+- **Datenschutz:** Die Einträge hängen an der Kundennummer, stehen in der Auskunft nach Art. 15
+  und werden eine einstellbare Zahl von Tagen nach dem Ende des Angebots gelöscht.
+
 ### Warteliste mit Einladungen
 
 Ersetzt das bisherige Neuanmeldungs-Programm (ADR 0051) und arbeitet direkt mit den Anträgen.

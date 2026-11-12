@@ -1,0 +1,41 @@
+{% load handbuch %}
+<p>Für Angebote mit begrenzten Plätzen, z. B. einen <strong>Kochkurs</strong>: Am Einlass werden interessierte Kunden
+  eingetragen, bis die Liste voll ist; das Büro vergibt danach die Plätze. Teilnehmen kann nur, wer als Kunde am Einlass
+  aufgerufen ist. Das Modul wird unter Einstellungen → Tafel → Tafel und Module eingeschaltet.</p>
+{% if "angebote.verwalten" in rechte %}
+<h3>Angebot anlegen</h3>
+<ol>
+  <li>Menü „Kunden → Angebote mit Anmeldung“ → „Neues Angebot“.</li>
+  <li>Bezeichnung und eine kurze Beschreibung (was, wann, wo) – sie erscheint am Einlass.</li>
+  <li><strong>Anmeldung von – bis:</strong> In dieser Zeit steht das Angebot am Einlass.</li>
+  <li><strong>Plätze</strong> (z. B. 12) und <strong>Interessierte höchstens</strong> (z. B. 20). Bei der Höchstzahl
+    schließt die Liste von selbst. So bleibt Reserve für Absagen, ohne dass der Einlass unnötig weiterfragt.</li>
+  <li>„Angebot endet am“ und die Löschfrist: So viele Tage nach dem Ende werden die Einträge der Kunden gelöscht.</li>
+</ol>
+{% hilfe_bild "angebote-angebot" "① Stand der Liste und der Plätze, ② Anmeldung von Hand schließen, ③ Liste als PDF oder CSV, ④ Plätze nach Reihenfolge vergeben, ⑤ Stand einer Person von Hand ändern." %}
+<h3>Interessierte und Plätze</h3>
+<ul>
+  <li>Die Seite des Angebots zeigt alle Interessierten in der Reihenfolge der Anmeldung, mit Kundennummer, Name,
+    Telefon und Ausgabestelle. Ein Klick auf eine Spaltenüberschrift sortiert.</li>
+  <li><strong>„Plätze nach Reihenfolge vergeben“:</strong> Die ersten (so viele, wie es Plätze gibt) bekommen „Platz
+    zugesagt“, die übrigen werden „Nachrücker“. Absagen bleiben.</li>
+  <li>Jeden Stand können Sie danach einzeln ändern: interessiert, Platz zugesagt, Nachrücker, abgesagt. Wer absagt,
+    zählt nicht mehr mit; die Liste wird dadurch wieder frei.</li>
+  <li>„Anmeldung schließen“ beendet das Eintragen am Einlass sofort; „wieder öffnen“ hebt das auf.</li>
+  <li>„Liste als PDF“ und „Liste als CSV“ geben die Liste zum Abtelefonieren aus.</li>
+</ul>
+{% endif %}
+{% if "angebote.eintragen" in rechte %}
+<h3>Am Einlass eintragen</h3>
+<ol>
+  <li>Kunde wie gewohnt aufrufen. Läuft eine Anmeldung, steht bei den Hinweisen z. B. „Kochkurs Frühjahr – 7 von 20
+    Interessierten“.</li>
+  <li>Hat der Kunde Interesse: „Interesse eintragen …“. Die nächste Seite zeigt die Personen des Haushalts; die
+    Hauptperson ist angehakt. Jede angehakte Person zählt einzeln.</li>
+  <li>„Interesse eintragen“ – Sie sind wieder am Einlass, dort steht jetzt, wer eingetragen ist.</li>
+</ol>
+{% hilfe_bild "angebote-eintragen" "① Wer aus dem Haushalt Interesse hat, ② „Interesse eintragen“." %}
+<p>Über „Eintrag ändern …“ lässt sich jemand wieder austragen oder eine weitere Person eintragen. Steht dort
+  <strong>„Liste voll“</strong> oder „Anmeldung geschlossen“, brauchen Sie nicht weiter zu fragen. Interesse heißt
+  noch nicht, dass jemand einen Platz hat – die Tafel meldet sich bei den Kunden.</p>
+{% endif %}
