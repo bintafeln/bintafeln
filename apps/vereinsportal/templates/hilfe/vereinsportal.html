@@ -1,9 +1,8 @@
 {% load handbuch %}<p>Dieses Modul ist für Tafeln, die ihre Spendenbescheinigungen weiterhin im <strong>Vereinsportal</strong>
-  ausstellen. bintafeln liest dessen Belege ein, zeigt, welche Spender noch keine Bescheinigung bekommen haben
-  (getrennt nach Einfach- und Mehrfachspendern, mit und ohne E-Mail), und erstellt die Dankesbriefe dazu: als
-  Druck-PDF mit der Bescheinigung dahinter oder als E-Mail mit der Bescheinigung im Anhang. Es ist eine Alternative zu
-  „Spenden“ in bintafeln; die eingelesenen Belege erscheinen dort nicht, und bintafeln stellt für sie keine eigenen
-  Zuwendungsbestätigungen aus. Das Modul wird unter Einstellungen → Tafel → Tafel und Module eingeschaltet.</p>
+  ausstellen. bintafeln liest dessen Finanzexport ein: Jede Spende kommt mit Spendendatum, Betrag, Belegnummer und
+  ihrem Beleg in die <strong>Spendenliste</strong>, der Spender ins Adressbuch. Es gibt also nur einen Spendenpool –
+  Übersicht, Dankesbriefe und Bestätigungen stehen unter „Verein → Spenden“, wie bei von Hand erfassten Spenden. Das
+  Modul wird unter Einstellungen → Tafel → Tafel und Module eingeschaltet.</p>
 
 <h3>Welche Dateien gebraucht werden</h3>
 <table class="tabelle kompakt">
@@ -17,24 +16,27 @@
     <tr><td><strong>Spender mit E-Mail</strong> (Excel)</td><td>Vereinsportal, Kontaktliste als Excel-Export</td>
       <td>Erste Zeile mit den Spalten „Vorname“, „Nachname“, „E-Mail“ und, wenn gewünscht, „Anrede“ (Frau/Herr, für
         die Briefanrede) und „immer per Post“ (Ja).</td></tr>
-    <tr><td><strong>Sammelbescheinigungen</strong> (PDF)</td><td>Vereinsportal, je Mehrfachspender erstellt</td>
-      <td>Im Dateinamen alle Teile des Spendernamens, z. B. „Sammelbescheinigung_Erika_Beispiel.pdf“; sonst ordnen Sie
-        die Datei von Hand zu.</td></tr>
+
   </tbody>
 </table>
 
 <h3>Einlesen</h3>
 <ol>
-  <li>Menü „Verein → Spenden → Belege aus dem Vereinsportal“ öffnen.</li>
-  <li>Den <strong>Finanzexport</strong> wählen und „Finanzexport einlesen“. Neue Belege werden verschlüsselt
-    gespeichert; schon eingelesene Dateien werden übersprungen, Sie können denselben Zeitraum also gefahrlos noch
-    einmal einlesen. Belege ohne vollständige Anschrift werden ausgelassen.</li>
-  <li>Die Liste <strong>Spender mit E-Mail</strong> wählen und „Spenderliste ersetzen“. Jedes Einlesen ersetzt die
-    ganze Liste.</li>
+  <li>Menü „Verein → Spenden → Aus dem Vereinsportal einlesen“ öffnen.</li>
+  <li>Den <strong>Finanzexport</strong> wählen und „Finanzexport einlesen“. Je Beleg entsteht eine Spende; den Spender
+    sucht bintafeln im Adressbuch (gleicher Name und gleiche PLZ) und legt ihn sonst neu an. Schon eingelesene Belege
+    werden übersprungen, Sie können denselben Zeitraum also gefahrlos noch einmal einlesen. Belege ohne vollständige
+    Anschrift werden ausgelassen.</li>
+  <li>Die Liste <strong>Spender mit E-Mail</strong> wählen und „Spenderliste ersetzen“. E-Mail und Anrede kommen ins
+    Adressbuch; wer „immer per Post“ hat, bekommt Briefe statt Mails. Eine im Adressbuch schon eingetragene andere
+    E-Mail bleibt unverändert.</li>
 </ol>
-{% hilfe_bild "vereinsportal-einlesen" "① Finanzexport wählen und einlesen, ② Liste der Spender mit E-Mail ersetzen, ③ die vier Gruppen, ④ Liste als CSV für Serienbriefe." %}
+{% hilfe_bild "vereinsportal-einlesen" "① Finanzexport wählen und einlesen, ② Liste der Spender mit E-Mail ersetzen, ③ Stand im Spendenpool mit dem Weg zur Spendenliste." %}
+<p>Auf dem Beleg steht der Name als ein Stück. bintafeln nimmt bei Personen das letzte Wort als Nachnamen und legt
+  Namen mit „GmbH“, „e.V.“, „Stiftung“ und Ähnlichem als Organisation an. Trifft das einmal nicht, korrigieren Sie die
+  Adresse im Adressbuch.</p>
 <p>Haben Sie im Vereinsportal inzwischen Bescheinigungen versendet, genügt es, nur die <strong>Excel-Datei</strong> des
-  neuen Finanzexports einzulesen: bintafeln vermerkt dann, welche Belege dort versendet sind.</p>
+  neuen Finanzexports einzulesen: bintafeln vermerkt dann, welche Spenden dort versendet sind.</p>
 
 <h3>Automatisch aus dem Vereinsportal holen</h3>
 <p>Statt die Dateien von Hand herunter- und hochzuladen, kann bintafeln sie selbst holen. Dafür läuft auf dem
@@ -73,36 +75,31 @@
   <code>./betrieb update</code> ausführen. Der Dienst braucht rund 1 GB Platz und ist von außen nicht erreichbar.</p>
 {% endif %}
 
-<h3>Die Liste</h3>
-<p>Ein Spender ist, wer auf den Belegen denselben Namen trägt. <strong>Mehrfachspender</strong> hat im gewählten Jahr
-  mehrere Belege. Ein Spender steht nur in der Liste, solange mindestens ein Beleg im Vereinsportal noch nicht
-  versendet ist (versendete Belege tragen ein ✓). „Mit E-Mail“ heißt: Der Name steht in der Liste „Spender mit
-  E-Mail“ und dort ist nicht „immer per Post“ gewählt. Zu jedem Beleg steht das <strong>Spendendatum</strong> (der
-  Tag der Zuwendung laut Beleg), die Belegnummer und der Betrag; die Nummer öffnet das PDF. Für Belege, die vor
-  Einführung des Spendendatums eingelesen wurden, trägt bintafeln es beim Öffnen der Seite aus dem gespeicherten
-  Beleg nach. „Liste als CSV“ gibt
-  die gezeigte Gruppe mit Anschrift für Serienbriefe aus.</p>
+<h3>Bestätigungen: nie doppelt</h3>
+<p>In der Spendenliste steht in der Spalte „Bestätigung“, woher die Bescheinigung kommt:</p>
+<ul>
+  <li><strong>„anderes Programm ✓“</strong>: Das Vereinsportal hat die Bescheinigung schon versendet. bintafeln stellt
+    dafür nie eine eigene aus und schreibt keinen Dankesbrief.</li>
+  <li><strong>„Beleg anderes Programm“</strong>: Es gibt den Beleg aus dem Vereinsportal, er ist dort aber noch nicht
+    versendet.
+    <ul>
+      <li>Hat der Spender im Jahr <strong>eine</strong> solche offene Spende, ist dieser Beleg die Bescheinigung; er
+        liegt dem Dankesbrief bei.</li>
+      <li>Hat er <strong>mehrere</strong> offene Spenden, stellt bintafeln eine <strong>Sammelbestätigung</strong> mit
+        eigener Nummer aus. Die Einzelbelege liegen dann nicht bei.</li>
+    </ul></li>
+</ul>
 
-<h3>Dankesbriefe</h3>
-<p>Der Brief kommt aus einer Serienbrief-Vorlage (Verein → Serienbriefe → Vorlagen). Sie können darin {anrede},
-  {name}, {spendensumme}, {anzahl_spenden}, {spendendaten}, {jahr} und {datum} verwenden; Anschrift, Briefkopf und Datum setzt
-  bintafeln wie bei jedem Serienbrief. Die Anrede „Sehr geehrte Frau …“ gibt es nur für Spender aus der Liste
-  „Spender mit E-Mail“; alle anderen werden mit „Sehr geehrte Damen und Herren,“ angesprochen.</p>
-<ol>
-  <li>Für <strong>Mehrfachspender</strong> zuerst unter „Sammelbescheinigungen“ die im Vereinsportal erstellten PDFs
-    hochladen. Ohne Sammelbescheinigung entsteht für einen Mehrfachspender kein Brief.</li>
-  <li>„Dankesbriefe (Vereinsportal)“ öffnen, Vorlage, Jahr und Gruppe wählen, dann „Vorschau“.</li>
-  <li>Gruppen <strong>ohne E-Mail</strong>: „Briefe als PDF erstellen“ gibt ein PDF zum Drucken, je Spender der
-    Brief und dahinter beim Einfachspender sein Spendenbeleg, beim Mehrfachspender die Sammelbescheinigung.</li>
-  <li>Gruppen <strong>mit E-Mail</strong>: „E-Mails senden“ schickt den Brieftext als Mail mit denselben Anlagen
-    als PDF. Das Vereinsportal kann das für Mehrfachspender nicht.</li>
-</ol>
-{% hilfe_bild "vereinsportal-briefe" "① Vorlage und Gruppe wählen, ② „Vorschau“, ③ fehlt die Sammelbescheinigung, bleibt der Spender aus, ④ Briefe als PDF erstellen." %}
-<p>Danach gelten die Belege als bedankt (✉ in der Übersicht) und erscheinen bei den Dankesbriefen nicht mehr; so
-  geht nichts doppelt hinaus. Belege, die laut Finanzexport schon im Vereinsportal versendet sind, liegen keinem
-  Brief bei.</p>
+<h3>Dankesbriefe mit Bescheinigung</h3>
+<p>Unter „Verein → Spenden → Dankesbriefe“ wählen Sie Vorlage und Jahr, lassen „Zuwendungsbestätigungen aus
+  bintafeln beilegen“ und „Hochgeladene Belege beilegen“ angekreuzt und erstellen nach der Vorschau ein PDF für alle:
+  je Spender der Brief und direkt dahinter seine Bescheinigung (Sammelbestätigung oder Beleg aus dem Vereinsportal).
+  Mit „Spender mit E-Mail-Einwilligung per E-Mail anschreiben“ gehen Brief und Bescheinigung als Mail hinaus – auch die
+  Sammelbestätigung, die das Vereinsportal nicht mailen kann. Über „nur Mehrfachspender“ lassen sich z. B. nur die
+  Sammelbestätigungen verschicken. Für Sammelbestätigungen müssen unter „Einstellungen → Spenden“ Finanzamt,
+  Steuernummer, Bescheid und Unterschrift eingetragen sein.</p>
 
-<h3>Einstellungen und Löschfrist</h3>
+<h3>Einstellungen</h3>
 <p>Unter „Einstellungen → Verein → Vereinsportal“ steht der Name des Vereins, wie er in der Absenderzeile der Belege
-  steht (daran erkennt bintafeln die Zeile mit dem Spender), und wie viele Jahre die eingelesenen Belege aufbewahrt
-  werden. Danach löscht bintafeln sie samt Sammelbescheinigungen; die Originale bleiben im Vereinsportal.</p>
+  steht (daran erkennt bintafeln die Zeile mit dem Spender), dazu die Adressen und Zugangsdaten für den automatischen
+  Abruf.</p>

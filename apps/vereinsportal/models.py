@@ -1,13 +1,11 @@
-"""Spendenbelege aus dem Vereinsportal (ADR 0126).
+"""Einstellungen und Hilfslisten für das Einlesen aus dem Vereinsportal (ADR 0126, 0128).
 
-Die Belege bleiben Belege des Vereinsportals: Sie werden hier nur eingelesen, ausgewertet und
-(für Mehrfachspender) weitergegeben. Mit den Spenden und Zuwendungsbestätigungen aus bintafeln
-(``apps.spenden``) haben sie bewusst nichts zu tun, damit nie zwei Bestätigungen für dieselbe
-Spende entstehen.
+Die Spenden selbst liegen im gemeinsamen Spendenpool (``apps.spenden``); hier stehen nur die
+Einstellungen und die Liste „Spender mit E-Mail“, aus der beim Einlesen E-Mail und Versandweg
+ins Adressbuch kommen.
 """
 
 from auditlog.registry import auditlog
-from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 
@@ -22,13 +20,6 @@ class PortalEinstellungen(models.Model):
         "steht (z. B. „Tafel Musterstadt e.V.“). Die Zeile darunter liest bintafeln als Spender. "
         "Leer: die erste Zeile mit „|“ gilt als Absenderzeile.",
     )  # fmt: skip
-    aufbewahrung_jahre = models.PositiveSmallIntegerField(
-        "Aufbewahrung (Jahre)", default=2,
-        validators=[MinValueValidator(1), MaxValueValidator(10)],
-        help_text="Eingelesene Belege werden nach so vielen vollen Kalenderjahren gelöscht "
-        "(gezählt ab Ende des Jahres der Spende). Die Originale bleiben im Vereinsportal.",
-    )  # fmt: skip
-
     # Automatischer Abruf über den Dienst „abruf“ (ADR 0127)
     anmeldung_url = models.URLField(
         "Adresse der Anmeldeseite", blank=True,
@@ -89,51 +80,10 @@ class Kontakt(models.Model):
         return f"{self.vorname} {self.nachname}".strip()
 
 
-class Beleg(models.Model):
-    """Ein Spendenbeleg (PDF) aus dem Finanzexport, verschlüsselt über ``privatdateien``."""
-
-    ORDNER = "vereinsportal"
-    PRIVATDATEI = (ORDNER, "datei")
-
-    dateiname = models.CharField("Dateiname", max_length=200, unique=True)
-    belegnummer = models.CharField("Belegnummer", max_length=30, blank=True, db_index=True)
-    name = models.CharField("Spender", max_length=250)
-    such_name = models.CharField(max_length=250, db_index=True, editable=False)
-    strasse = models.CharField("Straße und Hausnummer", max_length=200)
-    plz_ort = models.CharField("PLZ und Ort", max_length=200)
-    jahr = models.PositiveIntegerField("Jahr", db_index=True)
-    datum = models.DateField(
-        "Spendendatum", null=True, blank=True,
-        help_text="Tag der Zuwendung laut Beleg. Fehlt bei Belegen, in denen er nicht zu lesen "
-        "war.",
-    )  # fmt: skip
-    datum_gesucht = models.BooleanField(default=False, editable=False)  # Nachtragen versucht
-    betrag = models.DecimalField("Betrag", max_digits=12, decimal_places=2, default=0)
-    im_portal_versendet = models.BooleanField(
-        "Im Vereinsportal versendet", default=False,
-        help_text="Laut Finanzexport ist die Bescheinigung dort schon versendet oder erstellt.",
-    )  # fmt: skip
-    bedankt_am = models.DateField(
-        "Dankesbrief am", null=True, blank=True, editable=False,
-        help_text="Wird beim Erstellen oder Senden des Dankesbriefs gesetzt.",
-    )  # fmt: skip
-    bedankt_per = models.CharField("Dankesbrief per", max_length=10, blank=True, editable=False)
-    datei = models.CharField(max_length=100, editable=False)
-    eingelesen_am = models.DateTimeField("Eingelesen am", auto_now_add=True)
-    eingelesen_von = models.CharField("Eingelesen von", max_length=150, blank=True)
-
-    class Meta:
-        verbose_name = "Spendenbeleg aus dem Vereinsportal"
-        verbose_name_plural = "Spendenbelege aus dem Vereinsportal"
-        ordering = ["name", "dateiname"]
-
-    def __str__(self):
-        return self.dateiname
-
-
 class Sammelbescheinigung(models.Model):
-    """Im Vereinsportal erstellte Sammelbescheinigung eines Mehrfachspenders (PDF), hochgeladen
-    und über den Namen zugeordnet. Sie liegt dem Dankesbrief bei."""
+    """Früher hochgeladene Sammelbescheinigung aus dem Vereinsportal. Wird nicht mehr verwendet:
+    Für Mehrfachspender stellt bintafeln die Sammelbestätigung jetzt selbst aus (ADR 0128). Die
+    Tabelle bleibt, damit beim Update nichts gelöscht wird."""
 
     ORDNER = "vereinsportal-sammel"
     PRIVATDATEI = (ORDNER, "datei")
@@ -157,5 +107,4 @@ class Sammelbescheinigung(models.Model):
 
 auditlog.register(PortalEinstellungen, exclude_fields=["passwort_verschluesselt"])
 auditlog.register(Kontakt)
-auditlog.register(Beleg, exclude_fields=["datei"])
 auditlog.register(Sammelbescheinigung, exclude_fields=["datei"])

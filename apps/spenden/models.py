@@ -105,6 +105,14 @@ class Spende(models.Model):
         GELD = "geld", "Geldspende"
         SACH = "sach", "Sachspende"
 
+    class Fremdbeleg(models.TextChoices):
+        """Für diese Spende gibt es schon einen Beleg aus einem anderen Programm, z. B. dem
+        Vereinsportal (ADR 0128). So entsteht nie eine zweite Bestätigung für dieselbe Spende."""
+
+        KEINER = "", "–"
+        OFFEN = "offen", "Beleg aus anderem Programm, dort noch nicht versendet"
+        VERSENDET = "versendet", "in anderem Programm bescheinigt und versendet"
+
     class Herkunft(models.TextChoices):
         PRIVAT = "privat", "Privatvermögen"
         BETRIEB = "betrieb", "Betriebsvermögen"
@@ -141,6 +149,12 @@ class Spende(models.Model):
         "Belegnummer", max_length=50, blank=True,
         help_text="Z. B. die Nummer im Vereinsportal oder auf dem Kontoauszug. Beim Import wird "
         "eine Spende mit derselben Belegnummer nicht noch einmal angelegt.",
+    )  # fmt: skip
+    fremdbeleg = models.CharField(
+        "Bescheinigung aus anderem Programm", max_length=10, choices=Fremdbeleg.choices,
+        blank=True, editable=False,
+        help_text="Gesetzt beim Einlesen von Belegen aus einem anderen Programm. „Versendet“: "
+        "bintafeln stellt dafür keine eigene Bestätigung aus.",
     )  # fmt: skip
     bestaetigung = models.ForeignKey(
         Zuwendungsbestaetigung, on_delete=models.SET_NULL, null=True, blank=True,

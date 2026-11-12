@@ -1,5 +1,8 @@
 # ADR 0126: Spendenbelege aus dem Vereinsportal
 
+> **Geändert durch ADR 0128:** Die Belege liegen nicht mehr in eigenen Tabellen, sondern als
+> Spenden im gemeinsamen Spendenpool. Die Regeln zum Lesen der Dateien gelten weiter.
+
 ## Problem
 
 Manche Tafeln stellen ihre Spendenbescheinigungen aus rechtlichen Gründen weiterhin im

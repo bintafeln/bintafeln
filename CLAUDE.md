@@ -341,12 +341,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Einkommensarten) in `UebernahmeEinstellungen`; die Seite schickt den Kundenstamm direkt in den
   Abgleich (`ImportVorbereitung` → `kunden:import_vorschau`), Anträge/Mitarbeitende als CSV.
   Keine festen Tafel-Werte, keine Personendaten; Tests mit erfundenem Workbook.
-  `vereinsportal` (ADR 0126, Spendenbelege aus dem Vereinsportal als Alternative zu `spenden`;
-  kein Produktname, eigene Modelle `Beleg`/`Kontakt` – nie als `Spende` anlegen, sonst gäbe es
-  zwei Bestätigungen): Regeln des bisherigen Programms in `apps/vereinsportal/einlesen.py`
-  (Finanzexport-ZIP, Blatt „Spenden - Übersicht“, Liste „Spender mit E-Mail“), Gruppen in
-  `auswertung.py`, Dankesbriefe aus Serienbrief-Vorlagen und Sammelbescheinigungen in `briefe.py`
-  (Druck-PDF oder Mail, danach `Beleg.bedankt_am`).
+  `vereinsportal` (ADR 0126, 0128; kein Produktname): liest Finanzexport-ZIP (Blatt „Spenden -
+  Übersicht“) und Liste „Spender mit E-Mail“ in den gemeinsamen Spendenpool ein
+  (`apps/vereinsportal/einlesen.py`): je Beleg `Spende` + `Adresse` (Namen über `namen.py`) +
+  `SpendenBeleg`. Keine eigenen Belege, Listen oder Dankesbriefe im Modul.
   Automatischer Abruf (ADR 0127): Browser nur im optionalen Dienst `abruf` (`docker/abruf/abruf.py`,
   Compose-Profil `abruf`, Schlüssel `BINTAFELN_ABRUF_SCHLUESSEL`); bintafeln spricht ihn über
   `apps/vereinsportal/abruf.py` an (in Tests `abruf._anfrage` ersetzen), der Ablauf ist gegen eine
@@ -370,7 +368,11 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `data-platzhalter`, Kärtchen mit `data-platzhalter-karte`; Namen in `empfaenger.NAMEN`).
   Einsetzen (Werte immer maskiert), alte Textvorlagen, HTML→ReportLab und Mail in
   `apps/serienbriefe/gestaltung.py` (`brief()`, `mail()`, `flowables()`); PDF in `brief.py`.
-- Spenden: Import in `apps/spenden/importieren.py` (ADR 0055, `belegnummer` gegen Dubletten),
+- Spenden: `Spende.fremdbeleg` (ADR 0128) kennzeichnet Spenden mit Beleg aus einem anderen
+  Programm; „versendet“ bekommt nie eine Bestätigung aus bintafeln, eine einzelne „offene“ behält
+  ihren Beleg, mehrere offene im Jahr ergeben eine Sammelbestätigung – die Regel steht nur in
+  `bestaetigung.offene_geldspenden()` und `dank._beizulegende()`.
+  Import in `apps/spenden/importieren.py` (ADR 0055, `belegnummer` gegen Dubletten),
   Dankesbriefe und hochgeladene Belege in `apps/spenden/dank.py` (ADR 0056; PDFs zusammenfügen
   mit `pypdf`, Mail-Anhänge über `mail.senden(..., anhaenge=…)`).
 - Browser-Tests in `tests/e2e/` (Playwright, ADR 0066): nur mit `pytest -m e2e`, Abhängigkeiten in
