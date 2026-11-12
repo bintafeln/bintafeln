@@ -47,6 +47,9 @@ def auswahl(jahr: int, art: str = "alle", nur_offen: bool = True) -> list[Dank]:
     for s in alle:
         anzahl[s.adresse_id] = anzahl.get(s.adresse_id, 0) + 1
     gewaehlt = alle.filter(bedankt_am__isnull=True) if nur_offen else alle
+    # In einem anderen Programm schon bescheinigt und versendet (ADR 0128): kein Dankesbrief
+    # mehr von hier; für „mehrfach“ zählen diese Spenden trotzdem mit.
+    gewaehlt = gewaehlt.exclude(fremdbeleg=Spende.Fremdbeleg.VERSENDET)
     danke: dict[int, Dank] = {}
     for s in gewaehlt.order_by("adresse__organisation", "adresse__nachname", "datum"):
         n = anzahl[s.adresse_id]
@@ -102,11 +105,27 @@ def anlagen(d: Dank, mit_bestaetigungen: bool, mit_belegen: bool) -> list[tuple[
         for b in d.bestaetigungen:
             liste.append((f"Zuwendungsbestaetigung-{b.nummer}.pdf", bst.pdf([b])))
     if mit_belegen:
-        for b in d.belege:
+        for b in _beizulegende(d):
             inhalt = privatdateien.lesen(SpendenBeleg.ORDNER, b.datei)
             if inhalt:
                 liste.append((_dateiname(b.dateiname), inhalt))
     return liste
+
+
+def _beizulegende(d: Dank) -> list[SpendenBeleg]:
+    """Hochgeladene Belege, die dem Brief beiliegen. Bei Spenden, die aus einem anderen
+    Programm eingelesen wurden (ADR 0128), nicht dabei: Belege zu Spenden, die bintafeln selbst
+    bestätigt hat (sonst gäbe es zwei Bestätigungen), und Belege, die dort schon versendet
+    sind."""
+    belege = SpendenBeleg.objects.filter(pk__in=[b.pk for b in d.belege]).select_related(
+        "spende__bestaetigung"
+    )
+    return [
+        b for b in belege.order_by("hochgeladen_am")
+        if b.spende is None
+        or not b.spende.fremdbeleg  # von Hand hochgeladener Beleg: liegt wie bisher immer bei
+        or not (b.spende.bestaetigt or b.spende.fremdbeleg == Spende.Fremdbeleg.VERSENDET)
+    ]  # fmt: skip
 
 
 def _dateiname(name: str) -> str:
@@ -144,7 +163,7 @@ def vermerken(danke: list[Dank], mit_belegen: bool) -> None:
     heute = timezone.localdate()
     Spende.objects.filter(pk__in=[s.pk for d in danke for s in d.spenden]).update(bedankt_am=heute)
     if mit_belegen:
-        SpendenBeleg.objects.filter(pk__in=[b.pk for d in danke for b in d.belege]).update(
+        SpendenBeleg.objects.filter(pk__in=[b.pk for d in danke for b in _beizulegende(d)]).update(
             beigelegt_am=heute
         )
 

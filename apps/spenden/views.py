@@ -136,7 +136,8 @@ def _csv_text(spenden, jahr) -> str:
                     s.adresse.ort, f"{s.betrag:.2f}".replace(".", ",") if s.betrag else "",
                     "ja" if s.mitgliedsbeitrag else "", s.zahlungsweg, s.beschreibung,
                     s.menge or "", s.einheit, s.zweck,
-                    s.bestaetigung.nummer if s.bestaetigt else ""])  # fmt: skip
+                    s.bestaetigung.nummer if s.bestaetigt else s.get_fremdbeleg_display()
+                    if s.fremdbeleg else ""])  # fmt: skip
     return "﻿" + puffer.getvalue()
 
 

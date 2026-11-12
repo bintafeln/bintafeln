@@ -144,7 +144,10 @@ NAMEN = {"spenderliste": "Spenderliste", "finanzexport": "Finanzexport"}
 
 
 def _spenderliste(datei, von: str) -> str:
-    anzahl, ohne = einlesen.spenderliste_einlesen(datei.read())
+    return spenderliste_bericht(*einlesen.spenderliste_einlesen(datei.read()))
+
+
+def spenderliste_bericht(anzahl: int, ohne: int) -> str:
     zusatz = f", {ohne} Zeilen ohne gültige E-Mail ausgelassen." if ohne else "."
     return f"Spenderliste ersetzt: {anzahl} Spender mit E-Mail{zusatz}"
 

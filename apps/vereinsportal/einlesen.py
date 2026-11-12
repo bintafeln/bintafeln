@@ -1,15 +1,20 @@
-"""Finanzexport und Spenderliste aus dem Vereinsportal einlesen (ADR 0126).
+"""Finanzexport und Spenderliste aus dem Vereinsportal in den Spendenpool einlesen (ADR 0128).
 
-Die Regeln stammen aus dem bisherigen Spendenbelege-Programm der Tafel:
+Die Regeln zum Lesen stammen aus dem bisherigen Spendenbelege-Programm der Tafel:
 
 - Finanzexport (ZIP): jede PDF-Datei mit „spenden“ im Namen ist ein Spendenbeleg. Die
   Belegnummer steht im Dateinamen (``Spendenbeleg_000123.pdf`` -> 123), der Spender in der Zeile
   unter der Absenderzeile (``Name | Straße | PLZ Ort``). Belege ohne vollständige Anschrift
-  werden nicht übernommen. Ein schon eingelesener Dateiname zählt als doppelt.
+  werden nicht übernommen.
 - Die Excel-Datei des Finanzexports, Blatt „Spenden - Übersicht“ (Spaltennamen in Zeile 6),
   sagt über „Versendet am“ und „SQ-erstellt Datum“, welche Belegnummern schon versendet sind.
 - Liste „Spender mit E-Mail“ (Excel): Spalten Vorname, Nachname, E-Mail, dazu auf Wunsch
   „Anrede“ (für die Briefanrede) und „immer per Post“.
+
+Jeder Beleg wird eine Spende im gemeinsamen Spendenpool (``apps.spenden``): der Spender im
+Adressbuch, die Spende mit Datum, Betrag und Belegnummer, das PDF als ``SpendenBeleg`` daran.
+``Spende.fremdbeleg`` hält fest, dass es dafür schon einen Beleg aus dem Vereinsportal gibt und
+ob er dort versendet ist – damit bintafeln nie eine zweite Bestätigung ausstellt.
 """
 
 import datetime as dt
@@ -22,12 +27,18 @@ from decimal import Decimal, InvalidOperation
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.db import transaction
+from django.utils import timezone
 from openpyxl import load_workbook
 from pypdf import PdfReader
 
+from apps.adressen.models import Adresse
 from apps.core import privatdateien
-from apps.vereinsportal.models import Beleg, Kontakt, PortalEinstellungen
+from apps.spenden.models import Spende, SpendenBeleg
+from apps.vereinsportal import namen
+from apps.vereinsportal.models import Kontakt, PortalEinstellungen
+from apps.vereinsportal.namen import normal
 
+FREMD = (Spende.Fremdbeleg.OFFEN, Spende.Fremdbeleg.VERSENDET)
 MAX_BELEGE = 5000
 MAX_PDF = 10 * 1024 * 1024
 MAX_EXCEL = 30 * 1024 * 1024
@@ -56,6 +67,7 @@ class Angaben:
 @dataclass
 class Ergebnis:
     neu: int = 0
+    neue_spender: int = 0
     doppelt: int = 0
     ohne_anschrift: int = 0
     versendet: int = 0
@@ -64,7 +76,9 @@ class Ergebnis:
 
 def bericht(e: Ergebnis) -> str:
     """Das Ergebnis eines Einlesens als Satz für die Oberfläche."""
-    teile = [f"{e.neu} neue Belege eingelesen", f"{e.doppelt} waren schon vorhanden"]
+    teile = [f"{e.neu} neue Spenden eingelesen", f"{e.doppelt} waren schon vorhanden"]
+    if e.neue_spender:
+        teile.append(f"{e.neue_spender} Spender neu ins Adressbuch aufgenommen")
     if e.ohne_anschrift:
         teile.append(f"{e.ohne_anschrift} ohne vollständige Anschrift ausgelassen")
     teile.append(
@@ -72,11 +86,6 @@ def bericht(e: Ergebnis) -> str:
         else "keine Übersicht der versendeten Belege in der Datei gefunden"
     )  # fmt: skip
     return ", ".join(teile) + "."
-
-
-def normal(name: str) -> str:
-    """Name zum Vergleichen: klein geschrieben, einfache Leerzeichen."""
-    return " ".join((name or "").strip().lower().split())
 
 
 def belegnummer(dateiname: str) -> str:
@@ -169,8 +178,8 @@ def versendete(inhalt: bytes) -> set[str] | None:
 
 
 def _versendet_vermerken(nummern: set[str]) -> int:
-    offen = Beleg.objects.filter(belegnummer__in=nummern, im_portal_versendet=False)
-    return offen.update(im_portal_versendet=True)
+    offen = Spende.objects.filter(belegnummer__in=nummern, fremdbeleg=Spende.Fremdbeleg.OFFEN)
+    return offen.update(fremdbeleg=Spende.Fremdbeleg.VERSENDET)
 
 
 def uebersicht_einlesen(inhalt: bytes) -> Ergebnis:
@@ -184,41 +193,94 @@ def uebersicht_einlesen(inhalt: bytes) -> Ergebnis:
     return Ergebnis(versendet=_versendet_vermerken(nummern), mit_uebersicht=True)
 
 
+class _Adressbuch:
+    """Findet den Spender eines Belegs im Adressbuch (Name und PLZ) oder legt ihn an."""
+
+    def __init__(self, von: str):
+        self.von, self.neu = von, 0
+        self.index = {}
+        for a in Adresse.objects.only("pk", "art", "organisation", "vorname", "nachname", "plz"):
+            self.index.setdefault(namen.schluessel(a.name, a.plz), a.pk)
+        self.kontakte = {k.such_name: k for k in Kontakt.objects.all()}
+
+    def adresse(self, angaben: Angaben) -> int:
+        plz, ort = namen.plz_ort(angaben.plz_ort)
+        schluessel = namen.schluessel(angaben.name, plz)
+        if schluessel not in self.index:
+            a = Adresse(**namen.teile(angaben.name), strasse=angaben.strasse, plz=plz, ort=ort,
+                        geaendert_am=timezone.now(), geaendert_von=self.von)  # fmt: skip
+            kontakt_anwenden(a, self.kontakte.get(normal(angaben.name)))
+            a.save()
+            self.index[schluessel] = a.pk
+            self.neu += 1
+        return self.index[schluessel]
+
+
+def kontakt_anwenden(adresse: Adresse, kontakt: Kontakt | None) -> bool:
+    """E-Mail, Anrede und Versandweg aus der Liste „Spender mit E-Mail“ in die Adresse. Eine
+    schon eingetragene andere E-Mail bleibt; „immer per Post“ nimmt die Einwilligung zurück."""
+    if kontakt is None:
+        return False
+    vorher = (adresse.email, adresse.anrede, adresse.einwilligung_email)
+    adresse.email = adresse.email or kontakt.email
+    if adresse.art == Adresse.Art.PERSON:
+        adresse.anrede = adresse.anrede or kontakt.anrede
+    if kontakt.immer_post:
+        adresse.einwilligung_email = None
+    elif adresse.email == kontakt.email:
+        adresse.einwilligung_email = adresse.einwilligung_email or timezone.localdate()
+    return vorher != (adresse.email, adresse.anrede, adresse.einwilligung_email)
+
+
 @transaction.atomic
 def finanzexport_einlesen(datei, von: str) -> Ergebnis:
-    """Der Finanzexport als ZIP: neue Belege speichern, Versendetes vermerken."""
+    """Der Finanzexport als ZIP: neue Belege als Spenden anlegen, Versendetes vermerken."""
     try:
         archiv = zipfile.ZipFile(datei)
     except zipfile.BadZipFile as fehler:
         raise EinleseFehler("Die Datei ist kein ZIP-Archiv.") from fehler
     absender = PortalEinstellungen.laden().absender
-    vorhanden = set(Beleg.objects.values_list("dateiname", flat=True))
-    ohne_datum = set(Beleg.objects.filter(datum=None).values_list("dateiname", flat=True))
-    ergebnis, nummern = Ergebnis(), set()
-    namen = ((i, i.filename.lower()) for i in archiv.infolist())
-    belege = [i for i, n in namen if "spenden" in n and n.endswith(".pdf")]
+    # Was schon da ist: Belege aus dem Vereinsportal (am Dateinamen) und Spenden mit derselben
+    # Belegnummer, z. B. aus einem früheren CSV-Import
+    vorhanden = set(SpendenBeleg.objects.filter(spende__fremdbeleg__in=FREMD)
+                    .values_list("dateiname", flat=True))  # fmt: skip
+    nach_nummer = {s.belegnummer: s for s in Spende.objects.exclude(belegnummer="")}
+    buch, ergebnis, nummern = _Adressbuch(von), Ergebnis(), set()
+    eintraege = ((i, i.filename.lower()) for i in archiv.infolist())
+    belege = [i for i, n in eintraege if "spenden" in n and n.endswith(".pdf")]
     if len(belege) > MAX_BELEGE:
         raise EinleseFehler(f"Mehr als {MAX_BELEGE} Belege; bitte einen kürzeren Zeitraum wählen.")
     for eintrag in belege:
         name = eintrag.filename.rsplit("/", 1)[-1][:200]
-        inhalt = archiv.read(eintrag) if eintrag.file_size <= MAX_PDF else b""
         if name in vorhanden:
             ergebnis.doppelt += 1
-            if name in ohne_datum:  # früher ohne Spendendatum eingelesen: jetzt nachtragen
-                _datum_nachtragen(Beleg.objects.get(dateiname=name), inhalt, absender)
             continue
+        inhalt = archiv.read(eintrag) if eintrag.file_size <= MAX_PDF else b""
         angaben = beleg_lesen(inhalt, absender)
         if angaben is None:
             ergebnis.ohne_anschrift += 1
             continue
-        Beleg.objects.create(
-            dateiname=name, belegnummer=belegnummer(name), name=angaben.name,
-            such_name=normal(angaben.name), strasse=angaben.strasse, plz_ort=angaben.plz_ort,
-            jahr=angaben.jahr, datum=angaben.datum, betrag=angaben.betrag, eingelesen_von=von,
-            datei=privatdateien.ablegen(Beleg.ORDNER, inhalt),
+        nummer = belegnummer(name)
+        spende = nach_nummer.get(nummer) if nummer else None
+        if spende is None:
+            spende = Spende.objects.create(
+                art=Spende.Art.GELD, adresse_id=buch.adresse(angaben), datum=angaben.datum,
+                betrag=angaben.betrag, belegnummer=nummer, eingetragen_von=von,
+                fremdbeleg=Spende.Fremdbeleg.OFFEN,
+            )  # fmt: skip
+            if nummer:
+                nach_nummer[nummer] = spende
+            ergebnis.neu += 1
+        else:  # die Spende gibt es schon: nur den Beleg anhängen und kennzeichnen
+            if not spende.fremdbeleg:
+                spende.fremdbeleg = Spende.Fremdbeleg.OFFEN
+                spende.save(update_fields=["fremdbeleg"])
+            ergebnis.doppelt += 1
+        SpendenBeleg.objects.create(
+            adresse_id=spende.adresse_id, spende=spende, jahr=spende.datum.year, dateiname=name,
+            datei=privatdateien.ablegen(SpendenBeleg.ORDNER, inhalt), hochgeladen_von=von,
         )  # fmt: skip
         vorhanden.add(name)
-        ergebnis.neu += 1
     for eintrag in archiv.infolist():
         if eintrag.filename.lower().endswith(".xlsx") and eintrag.file_size <= MAX_EXCEL:
             gefunden = versendete(archiv.read(eintrag))
@@ -226,30 +288,8 @@ def finanzexport_einlesen(datei, von: str) -> Ergebnis:
                 nummern |= gefunden
                 ergebnis.mit_uebersicht = True
     ergebnis.versendet = _versendet_vermerken(nummern)
+    ergebnis.neue_spender = buch.neu
     return ergebnis
-
-
-def _datum_nachtragen(beleg: Beleg, inhalt: bytes, absender: str) -> bool:
-    angaben = beleg_lesen(inhalt, absender) if inhalt else None
-    if angaben is None or angaben.datum is None:
-        return False
-    beleg.datum, beleg.jahr = angaben.datum, angaben.jahr
-    beleg.save(update_fields=["datum", "jahr"])
-    return True
-
-
-def daten_nachtragen(grenze: int = 300) -> int:
-    """Belege, die vor Einführung des Spendendatums eingelesen wurden: Datum aus dem
-    gespeicherten PDF nachtragen. In Portionen, damit die Seite nicht lange lädt."""
-    absender = PortalEinstellungen.laden().absender
-    anzahl = 0
-    for beleg in Beleg.objects.filter(datum=None, datum_gesucht=False)[:grenze]:
-        inhalt = privatdateien.lesen(Beleg.ORDNER, beleg.datei) or b""
-        if _datum_nachtragen(beleg, inhalt, absender):
-            anzahl += 1
-        else:  # nicht noch einmal versuchen
-            Beleg.objects.filter(pk=beleg.pk).update(datum_gesucht=True)
-    return anzahl
 
 
 def _ja(wert) -> bool:
@@ -291,4 +331,16 @@ def spenderliste_einlesen(inhalt: bytes) -> tuple[int, int]:
         ))  # fmt: skip
     Kontakt.objects.all().delete()
     Kontakt.objects.bulk_create(kontakte.values())
+    kontakte_anwenden()
     return len(kontakte), ohne_mail
+
+
+def kontakte_anwenden() -> int:
+    """Trägt E-Mail und Versandweg bei allen Spendern aus dem Vereinsportal nach."""
+    kontakte = {k.such_name: k for k in Kontakt.objects.all()}
+    geaendert = 0
+    for a in Adresse.objects.filter(spenden__fremdbeleg__in=FREMD).distinct():
+        if kontakt_anwenden(a, kontakte.get(normal(a.name))):
+            a.save(update_fields=["email", "anrede", "einwilligung_email"])
+            geaendert += 1
+    return geaendert
