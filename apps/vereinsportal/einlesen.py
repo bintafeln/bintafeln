@@ -45,7 +45,7 @@ MAX_EXCEL = 30 * 1024 * 1024
 MAX_ZEILEN = 20000
 BLATT = "Spenden - Übersicht"
 KOPFZEILE = 6
-TAG = re.compile(r"(\d{2})\.(\d{2})\.(\d{4})")
+TAG = re.compile(r"\b(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{4})\b")
 BETRAG = re.compile(r"([\d.]+,\d{2})\s+[a-zä-ü\-]+", re.IGNORECASE)
 NUMMER = re.compile(r"_(\d+)\.pdf$", re.IGNORECASE)
 
@@ -75,6 +75,7 @@ class Ergebnis:
     belege: int = 0  # Spendenbelege (PDF) in der Datei
     dateien: int = 0  # alle Dateien im Archiv
     pdfs: int = 0  # davon PDF, auch solche, die keine Spendenbelege sind
+    hinweis: str = ""  # warum sich der erste ausgelassene Beleg nicht lesen ließ (ohne Inhalte)
 
     @property
     def leer(self) -> bool:
@@ -91,8 +92,8 @@ class Ergebnis:
         return (
             f"Kein Beleg ließ sich lesen ({self.belege} in der Datei): Bei allen fehlt die Zeile "
             "mit Absender und Anschrift oder ein Datum. Stimmt der „Name des Vereins im Absender "
-            "der Belege“ in den Einstellungen zum Vereinsportal?"
-        )
+            f"der Belege“ in den Einstellungen zum Vereinsportal? {self.hinweis}"
+        ).strip()
 
 
 def bericht(e: Ergebnis) -> str:
@@ -116,15 +117,97 @@ def belegnummer(dateiname: str) -> str:
     return str(int(treffer.group(1))) if treffer else ""
 
 
-def _zeilen(inhalt: bytes) -> list[str]:
-    try:
-        text = "\n".join(
-            seite.extract_text() or "" for seite in PdfReader(io.BytesIO(inhalt)).pages
-        )
-    except Exception:  # noqa: BLE001 – ein kaputtes PDF soll den Lauf nicht abbrechen
-        return []
+def _zerlegen(text: str) -> list[str]:
     # PDF-Text enthält Ligaturen („ff“ als ein Zeichen) und unsichtbare Zeichen
     return [z.strip() for z in zeichen.bereinigen(text).split("\n") if z.strip()]
+
+
+def _text_pypdf(inhalt: bytes, **optionen) -> str:
+    seiten = PdfReader(io.BytesIO(inhalt)).pages
+    return "\n".join(seite.extract_text(**optionen) or "" for seite in seiten)
+
+
+def _text_pdfium(inhalt: bytes) -> str:
+    import pypdfium2 as pdfium
+
+    dokument = pdfium.PdfDocument(inhalt)
+    try:
+        return "\n".join(seite.get_textpage().get_text_range() for seite in dokument)
+    finally:
+        dokument.close()
+
+
+# Wie ein PDF seinen Text in Zeilen ausgibt, hängt vom Werkzeug ab. Der Reihe nach versuchen:
+# einfache Ausgabe, Ausgabe nach Anordnung auf der Seite, zweite Bibliothek.
+LESARTEN = (
+    lambda inhalt: _text_pypdf(inhalt),
+    lambda inhalt: _text_pypdf(inhalt, extraction_mode="layout"),
+    _text_pdfium,
+)
+
+
+def _lesarten(inhalt: bytes):
+    """Der Text des Belegs in Zeilen, je Lesart einmal; kaputte PDFs liefern nichts."""
+    for lesen in LESARTEN:
+        try:
+            zeilen = _zerlegen(lesen(inhalt))
+        except Exception:  # noqa: BLE001, S112 – ein kaputtes PDF bricht den Lauf nicht ab
+            continue
+        if zeilen:
+            yield zeilen
+
+
+def _zeilen(inhalt: bytes) -> list[str]:
+    return next(_lesarten(inhalt), [])
+
+
+def _dicht(text: str) -> str:
+    """Zum Vergleichen: ohne Leerzeichen und Groß-/Kleinschreibung („e. V.“ = „e.V.“)."""
+    return re.sub(r"\s+", "", text).lower()
+
+
+def _teile(zeile: str) -> list[str] | None:
+    """„Name | Straße | PLZ Ort“ als drei Teile; None, wenn die Zeile das nicht hergibt."""
+    teile = [t.strip() for t in zeile.split("|")]
+    return teile if len(teile) >= 3 and all(teile[:3]) else None
+
+
+def spenderzeile(zeilen: list[str], absender: str = "") -> list[str] | None:
+    """Die Anschrift des Spenders. Auf dem Beleg steht die Absenderzeile des Vereins
+    („Verein | Straße | Ort“) und direkt darunter der Spender in derselben Form. Je nach
+    Lesart liegt eine Leerzeile oder Zusatzzeile dazwischen, oder der Spender steht davor."""
+    gesucht = _dicht(absender)
+    ist_absender = [bool(gesucht) and gesucht in _dicht(z) for z in zeilen]
+    mit_strich = [i for i, z in enumerate(zeilen) if "|" in z]
+    if gesucht:
+        anker = next((i for i in mit_strich if ist_absender[i]), None)
+    else:  # ohne Angabe gilt die erste Zeile mit „|“ als Absenderzeile
+        anker = mit_strich[0] if mit_strich else None
+    if anker is None:
+        return None
+    # die nächsten drei Zeilen, sonst die Zeile davor – nie eine Zeile des Vereins selbst
+    for i in [*range(anker + 1, anker + 4), anker - 1]:
+        if 0 <= i < len(zeilen) and not ist_absender[i] and (teile := _teile(zeilen[i])):
+            return teile
+    return None
+
+
+def diagnose(inhalt: bytes, absender: str = "") -> str:
+    """Warum sich ein Beleg nicht lesen ließ – nur Zahlen und Ja/Nein, keine Inhalte."""
+    lesarten = list(_lesarten(inhalt))
+    if not lesarten:
+        return "Aus dem PDF ließ sich kein Text lesen (z. B. eingescannt oder geschützt)."
+    zeilen = lesarten[0]
+    gesucht = _dicht(absender)
+    striche = sum("|" in z for z in zeilen)
+    gefunden = any(gesucht in _dicht(z) for z in zeilen) if gesucht else None
+    in_strichzeile = any(gesucht in _dicht(z) for z in zeilen if "|" in z) if gesucht else None
+    ja = {True: "ja", False: "nein", None: "nicht angegeben"}
+    return (
+        f"Erster Beleg: {len(zeilen)} Textzeilen, davon {striche} mit „|“; Name des Vereins "
+        f"gefunden: {ja[gefunden]}, in einer Zeile mit „|“: {ja[in_strichzeile]}; Datum "
+        f"gefunden: {ja[spendendatum(zeilen) is not None]}."
+    )
 
 
 def _daten(zeile: str):
@@ -146,19 +229,15 @@ def spendendatum(zeilen: list[str]) -> dt.date | None:
 
 def beleg_lesen(inhalt: bytes, absender: str = "") -> Angaben | None:
     """Spender, Jahr und Betrag aus einem Beleg; None ohne vollständige Anschrift."""
-    zeilen = _zeilen(inhalt)
-    gesucht = absender.strip().lower()
-    spender = next(
-        (zeilen[i + 1] for i, z in enumerate(zeilen[:-1]) if "|" in z and gesucht in z.lower()),
-        None,
-    )
-    datum = spendendatum(zeilen)
-    jahr = datum.year if datum else None
-    if not spender or not jahr:
-        return None
-    teile = [t.strip() for t in spender.split("|")]
-    if len(teile) < 3 or not all(teile[:3]):
-        return None
+    for zeilen in _lesarten(inhalt):
+        teile, datum = spenderzeile(zeilen, absender), spendendatum(zeilen)
+        if teile and datum:
+            return _angaben(zeilen, teile, datum)
+    return None
+
+
+def _angaben(zeilen: list[str], teile: list[str], datum: dt.date) -> Angaben:
+    jahr = datum.year
     betrag = Decimal("0")
     for treffer in filter(None, map(BETRAG.search, zeilen)):
         try:
@@ -286,6 +365,7 @@ def finanzexport_einlesen(datei, von: str) -> Ergebnis:
         angaben = beleg_lesen(inhalt, absender)
         if angaben is None:
             ergebnis.ohne_anschrift += 1
+            ergebnis.hinweis = ergebnis.hinweis or diagnose(inhalt, absender)
             continue
         nummer = belegnummer(name)
         spende = nach_nummer.get(nummer) if nummer else None
