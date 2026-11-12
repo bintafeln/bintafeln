@@ -14,6 +14,7 @@ from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
 from reportlab.platypus import Flowable, PageBreak, Paragraph, SimpleDocTemplate, Spacer
 
+from apps.core import zeichen
 from apps.core.models import TafelEinstellungen
 from apps.core.pdf import text
 from apps.serienbriefe import gestaltung
@@ -82,7 +83,7 @@ class Briefkopf(Flowable):
         canvas.setFont("Helvetica", 10.5)
         zeile = hoehe - 60 * mm
         for teil in self.anschrift[:6]:
-            canvas.drawString(20 * mm + 5 * mm, zeile, teil)
+            canvas.drawString(20 * mm + 5 * mm, zeile, zeichen.bereinigen(teil))
             zeile -= 5 * mm
         canvas.drawRightString(breite - RAND_RECHTS, hoehe - 90 * mm, self.datum)
         # Faltmarken

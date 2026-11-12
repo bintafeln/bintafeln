@@ -22,6 +22,7 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import Flowable, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
+from apps.core import zeichen
 from apps.core.models import TafelEinstellungen
 
 RAND = 18 * mm
@@ -63,7 +64,7 @@ def text(wert) -> str:
     """Wert als sicherer Absatztext (ReportLab liest eine Untermenge von HTML)."""
     if wert is None or wert == "":
         return "–"
-    return escape(str(wert)).replace("\n", "<br/>")
+    return escape(zeichen.bereinigen(str(wert))).replace("\n", "<br/>")
 
 
 class Pdf:
