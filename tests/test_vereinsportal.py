@@ -1,4 +1,4 @@
-"""Modul Spendenbelege aus dem Vereinsportal (ADR 0126). Alle Daten sind erfunden."""
+"""Modul Spendenbelege aus dem Vereinsportal (ADR 0126–0128). Alle Daten sind erfunden."""
 
 import datetime as dt
 import io
@@ -11,11 +11,15 @@ from django.urls import reverse
 from openpyxl import Workbook
 from reportlab.pdfgen import canvas
 
+from apps.adressen.models import Adresse
 from apps.core import privatdateien
 from apps.core.models import TafelEinstellungen
 from apps.konten import rollen
-from apps.vereinsportal import auswertung, einlesen
-from apps.vereinsportal.models import Beleg, Kontakt, PortalEinstellungen
+from apps.spenden import bestaetigung as bst
+from apps.spenden import dank as danken
+from apps.spenden.models import Spende, SpendenBeleg, SpendenEinstellungen
+from apps.vereinsportal import einlesen, namen
+from apps.vereinsportal.models import Kontakt, PortalEinstellungen
 
 pytestmark = pytest.mark.django_db
 ABSENDER = "Tafel Musterstadt e.V."
@@ -143,52 +147,75 @@ def test_belegnummer_aus_dateiname():
     assert einlesen.belegnummer("Spendenbeleg.pdf") == ""
 
 
-def test_normal():
-    assert einlesen.normal("  Erika   BEISPIEL ") == "erika beispiel"
+def test_namen_fuers_adressbuch():
+    assert namen.normal("  Erika   BEISPIEL ") == "erika beispiel"
+    person = namen.teile("Erika Maria Beispiel")
+    assert (person["art"], person["vorname"], person["nachname"]) == (
+        "person", "Erika Maria", "Beispiel")  # fmt: skip
+    assert namen.teile("Cher")["nachname"] == "Cher" and namen.teile("")["nachname"] == ""
+    for firma in ("Bäckerei Probe GmbH", "Förderverein Muster e.V.", "Muster & Söhne",
+                  "Beispiel Stiftung", "Sparkasse Musterstadt"):  # fmt: skip
+        teile = namen.teile(firma)
+        assert (teile["art"], teile["organisation"], teile["nachname"]) == (
+            "organisation", firma, ""), firma  # fmt: skip
+    assert namen.plz_ort("54321 Beispieldorf") == ("54321", "Beispieldorf")
+    assert namen.plz_ort("Beispieldorf") == ("", "Beispieldorf") and namen.plz_ort("") == ("", "")
+    assert namen.schluessel(" Erika  Beispiel", "54321 ") == "erika beispiel|54321"
 
 
-# --- Finanzexport -----------------------------------------------------------------------------
+# --- Finanzexport in den Spendenpool -----------------------------------------------------------
+
+OFFEN, V = Spende.Fremdbeleg.OFFEN, Spende.Fremdbeleg.VERSENDET
 
 
 def test_finanzexport_einlesen(export):
     e = einlesen.finanzexport_einlesen(export, "buero")
-    assert (e.neu, e.doppelt, e.ohne_anschrift, e.versendet, e.mit_uebersicht) == (3, 0, 1, 1, True)
-    b = Beleg.objects.get(belegnummer="2")
-    assert (b.name, b.such_name, b.jahr, b.betrag) == ("Erika Beispiel", "erika beispiel", 2026,
-                                                       D("25.00"))  # fmt: skip
-    assert b.eingelesen_von == "buero" and not b.im_portal_versendet
-    assert b.datum == dt.date(2026, 3, 14)
-    assert Beleg.objects.get(belegnummer="3").im_portal_versendet
-    # verschlüsselt abgelegt, lesbar nur über privatdateien
-    assert privatdateien.lesen(Beleg.ORDNER, b.datei).startswith(b"%PDF")
-    assert b"%PDF" not in privatdateien.pfad(Beleg.ORDNER, b.datei).read_bytes()
+    assert (e.neu, e.neue_spender, e.doppelt, e.ohne_anschrift, e.versendet, e.mit_uebersicht) == (
+        3, 2, 0, 1, 1, True)  # fmt: skip
+    s = Spende.objects.get(belegnummer="2")
+    assert (s.art, s.datum, s.betrag, s.fremdbeleg) == (
+        "geld", dt.date(2026, 3, 14), D("25.00"), OFFEN)  # fmt: skip
+    assert s.eingetragen_von == "buero"
+    # der Spender steht im Adressbuch, beide Spenden bei derselben Adresse
+    erika = s.adresse
+    assert (erika.art, erika.vorname, erika.nachname) == ("person", "Erika", "Beispiel")
+    assert (erika.strasse, erika.plz, erika.ort) == ("Feldweg 2", "54321", "Beispieldorf")
+    assert erika.spenden.count() == 2 and Adresse.objects.count() == 2
+    assert Spende.objects.get(belegnummer="3").fremdbeleg == V
+    # das PDF hängt verschlüsselt an der Spende
+    b = SpendenBeleg.objects.get(spende=s)
+    assert (b.dateiname, b.adresse, b.jahr) == ("Spendenbeleg_000002.pdf", erika, 2026)
+    assert privatdateien.lesen(SpendenBeleg.ORDNER, b.datei).startswith(b"%PDF")
+    assert b"%PDF" not in privatdateien.pfad(SpendenBeleg.ORDNER, b.datei).read_bytes()
+    assert einlesen.bericht(e) == (
+        "3 neue Spenden eingelesen, 0 waren schon vorhanden, 2 Spender neu ins Adressbuch "
+        "aufgenommen, 1 ohne vollständige Anschrift ausgelassen, 1 als im Vereinsportal versendet "
+        "vermerkt."
+    )
 
 
 def test_finanzexport_zweimal_einlesen_legt_nichts_doppelt_an(export):
     einlesen.finanzexport_einlesen(export, "buero")
     export.seek(0)
     e = einlesen.finanzexport_einlesen(export, "buero")
-    assert (e.neu, e.doppelt, Beleg.objects.count()) == (0, 3, 3)
+    assert (e.neu, e.neue_spender, e.doppelt) == (0, 0, 3)
+    assert (Spende.objects.count(), SpendenBeleg.objects.count(), Adresse.objects.count()) == (
+        3, 3, 2)  # fmt: skip
 
 
-def test_spendendatum_wird_fuer_alte_belege_nachgetragen(export):
-    """Belege, die vor dem Spendendatum eingelesen wurden: beim nächsten Einlesen derselben
-    Datei und beim Öffnen der Seite aus dem gespeicherten PDF."""
-    einlesen.finanzexport_einlesen(export, "buero")
-    Beleg.objects.update(datum=None, jahr=2020)
-    export.seek(0)
+def test_vorhandene_adresse_und_vorhandene_spende_werden_wiederverwendet(export):
+    """Der Spender steht schon im Adressbuch, und eine der Spenden kam schon über den CSV-Import:
+    keine zweite Adresse, keine zweite Spende – nur der Beleg kommt dazu."""
+    erika = Adresse.objects.create(art="person", vorname="Erika", nachname="Beispiel",
+                                   plz="54321", email="eigene@example.org")  # fmt: skip
+    vorhanden = Spende.objects.create(adresse=erika, datum=dt.date(2026, 3, 14), betrag=D("25"),
+                                      belegnummer="2")  # fmt: skip
     e = einlesen.finanzexport_einlesen(export, "buero")
-    assert (e.neu, e.doppelt) == (0, 3)
-    assert set(Beleg.objects.values_list("datum", "jahr")) == {(dt.date(2026, 3, 14), 2026)}
-    # … und ohne die Datei: aus dem verschlüsselt gespeicherten Beleg
-    Beleg.objects.update(datum=None, jahr=2020)
-    kaputt = Beleg.objects.get(belegnummer="3")
-    privatdateien.loeschen(Beleg.ORDNER, kaputt.datei)
-    assert einlesen.daten_nachtragen() == 2
-    assert Beleg.objects.filter(datum=dt.date(2026, 3, 14), jahr=2026).count() == 2
-    kaputt.refresh_from_db()
-    assert kaputt.datum is None and kaputt.datum_gesucht
-    assert einlesen.daten_nachtragen() == 0  # nicht lesbar: kein zweiter Versuch
+    assert (e.neu, e.neue_spender, e.doppelt) == (2, 1, 1)
+    assert Adresse.objects.filter(nachname="Beispiel").count() == 1
+    assert erika.spenden.count() == 2
+    vorhanden.refresh_from_db()
+    assert vorhanden.fremdbeleg == OFFEN and vorhanden.belege.count() == 1
 
 
 def test_finanzexport_ohne_uebersicht():
@@ -196,6 +223,14 @@ def test_finanzexport_ohne_uebersicht():
         archiv({"Spendenbeleg_000001.pdf": beleg_pdf(),
                 "anderes.xlsx": uebersicht([], blatt="Konten")}), "buero")  # fmt: skip
     assert (e.neu, e.mit_uebersicht, e.versendet) == (1, False, 0)
+    assert "keine Übersicht der versendeten Belege" in einlesen.bericht(e)
+
+
+def test_beleg_ohne_nummer_im_dateinamen(export):
+    daten = {"spenden/beleg.pdf": beleg_pdf()}
+    assert einlesen.finanzexport_einlesen(archiv(daten), "buero").neu == 1
+    assert einlesen.finanzexport_einlesen(archiv(daten), "buero").doppelt == 1
+    assert Spende.objects.get().belegnummer == ""
 
 
 def test_finanzexport_kein_zip():
@@ -208,7 +243,7 @@ def test_finanzexport_zu_viele_belege(monkeypatch):
     with pytest.raises(einlesen.EinleseFehler, match="Mehr als 1"):
         einlesen.finanzexport_einlesen(
             archiv({"spenden_1.pdf": b"", "spenden_2.pdf": b""}), "buero")  # fmt: skip
-    assert not Beleg.objects.exists()
+    assert not Spende.objects.exists()
 
 
 def test_finanzexport_zu_grosses_pdf_wird_ausgelassen(monkeypatch):
@@ -219,11 +254,16 @@ def test_finanzexport_zu_grosses_pdf_wird_ausgelassen(monkeypatch):
 
 def test_uebersicht_allein_vermerkt_versendete(export):
     einlesen.finanzexport_einlesen(export, "buero")
-    zeilen = [("2", None, "02.05.2026"), (1.0, None, None), (None, "x", None), ("A7", "x", None)]
+    fremd = Spende.objects.create(adresse=Adresse.objects.first(), datum=dt.date(2026, 1, 5),
+                                  betrag=D("5"), belegnummer="77")  # fmt: skip
+    zeilen = [("2", None, "02.05.2026"), (1.0, None, None), (None, "x", None), ("A7", "x", None),
+              (77, "x", None)]  # fmt: skip
     e = einlesen.uebersicht_einlesen(uebersicht(zeilen))
     assert e.versendet == 1
-    assert Beleg.objects.get(belegnummer="2").im_portal_versendet
-    assert not Beleg.objects.get(belegnummer="1").im_portal_versendet
+    assert Spende.objects.get(belegnummer="2").fremdbeleg == V
+    assert Spende.objects.get(belegnummer="1").fremdbeleg == OFFEN
+    fremd.refresh_from_db()
+    assert fremd.fremdbeleg == ""  # eine Spende ohne Beleg aus dem Vereinsportal bleibt unberührt
 
 
 @pytest.mark.parametrize("datei", [
@@ -240,6 +280,8 @@ def test_uebersicht_kaputte_datei():
 
 
 # --- Spenderliste -----------------------------------------------------------------------------
+
+KOPF = ("Vorname", "Nachname", "E-Mail", "Anrede", "immer per Post")
 
 
 def test_spenderliste_ersetzt_und_prueft():
@@ -260,12 +302,6 @@ def test_spenderliste_ersetzt_und_prueft():
     assert Kontakt.objects.filter(such_name="firma beispiel gmbh", immer_post=False).exists()
 
 
-def test_spenderliste_ohne_spalte_immer_per_post():
-    zeilen = [("Erika", "Beispiel", "erika@example.org")]
-    einlesen.spenderliste_einlesen(spenderliste(zeilen, kopf=("Vorname", "Nachname", "E-Mail")))
-    assert not Kontakt.objects.get().immer_post
-
-
 def test_spenderliste_fehlende_spalten_und_zu_lang(monkeypatch):
     with pytest.raises(einlesen.EinleseFehler, match="Es fehlt: E-Mail"):
         einlesen.spenderliste_einlesen(spenderliste([], kopf=("Vorname", "Nachname")))
@@ -276,70 +312,147 @@ def test_spenderliste_fehlende_spalten_und_zu_lang(monkeypatch):
     assert not Kontakt.objects.exists()
 
 
-# --- Auswertung -------------------------------------------------------------------------------
+def test_spenderliste_kommt_ins_adressbuch(export):
+    """E-Mail, Anrede und Versandweg stehen danach bei der Adresse – egal, ob die Liste vor oder
+    nach dem Finanzexport eingelesen wird."""
+    einlesen.spenderliste_einlesen(spenderliste(
+        [("Erika", "Beispiel", "erika@example.org", "Frau", None)], kopf=KOPF))  # fmt: skip
+    einlesen.finanzexport_einlesen(export, "buero")
+    erika = Adresse.objects.get(nachname="Beispiel")
+    assert (erika.email, erika.anrede) == ("erika@example.org", "Frau")
+    assert erika.einwilligung_email == dt.date.today()
+    otto = Adresse.objects.get(nachname="Muster")
+    assert otto.email == "" and otto.einwilligung_email is None
+    # später kommt Otto dazu, und Erika will Briefe: ihre E-Mail bleibt, die Einwilligung nicht
+    einlesen.spenderliste_einlesen(spenderliste([
+        ("Erika", "Beispiel", "erika@example.org", "Frau", "Ja"),
+        ("Otto", "Muster", "otto@example.org", "Herr", None),
+        ("Niemand", "Ohne Spende", "niemand@example.org", "", None),
+    ], kopf=KOPF))  # fmt: skip
+    erika.refresh_from_db()
+    otto.refresh_from_db()
+    assert erika.email == "erika@example.org" and erika.einwilligung_email is None
+    assert (otto.email, otto.anrede, otto.einwilligung_email) == (
+        "otto@example.org", "Herr", dt.date.today())  # fmt: skip
+    assert Adresse.objects.count() == 2  # wer nicht gespendet hat, kommt nicht ins Adressbuch
+
+
+def test_eigene_email_im_adressbuch_bleibt(export):
+    erika = Adresse.objects.create(art="person", vorname="Erika", nachname="Beispiel",
+                                   plz="54321", email="eigene@example.org")  # fmt: skip
+    einlesen.finanzexport_einlesen(export, "buero")
+    einlesen.spenderliste_einlesen(spenderliste(
+        [("Erika", "Beispiel", "andere@example.org", "Frau", None)], kopf=KOPF))  # fmt: skip
+    erika.refresh_from_db()
+    # die schon eingetragene Adresse gilt; für sie gibt die Liste keine Einwilligung her
+    assert erika.email == "eigene@example.org" and erika.einwilligung_email is None
+    assert erika.anrede == "Frau"
+
+
+# --- Keine zweite Bestätigung, Sammelbestätigung für Mehrfachspender ---------------------------
+
+
+@pytest.fixture
+def einstellungen():
+    e = SpendenEinstellungen.laden()
+    e.zwecke, e.finanzamt, e.steuernummer = "die Mildtätigkeit", "Musterstadt", "123/456/789"
+    e.bescheid_vom, e.unterzeichnet_von = dt.date(2025, 5, 2), "Clara Beispiel"
+    e.veranlagungszeitraum = "2021 bis 2023"
+    e.save()
+    return e
 
 
 @pytest.fixture
 def eingelesen(export):
+    """Erika: zwei offene Spenden; Otto: eine, im Vereinsportal schon versendet."""
     einlesen.finanzexport_einlesen(export, "buero")
-    einlesen.spenderliste_einlesen(
-        spenderliste([(1, "Erika", "Beispiel", "erika@example.org", "")])
-    )
+    return Adresse.objects.get(nachname="Beispiel"), Adresse.objects.get(nachname="Muster")
 
 
-def test_gruppen(eingelesen):
-    liste = auswertung.spender(2026)
-    # Otto hat nur einen, schon versendeten Beleg: er steht nicht mehr in der Liste
-    assert [s.name for s in liste] == ["Erika Beispiel"]
-    erika = liste[0]
-    assert (erika.anzahl, erika.summe, erika.offen, erika.gruppe) == (2, D("1275.00"), 2,
-                                                                      "mehrfach_mail")  # fmt: skip
-    assert dict((k, n) for k, _, n in auswertung.zahlen(liste))["mehrfach_mail"] == 1
-    assert auswertung.spender(2025) == []
+def test_offene_geldspenden_regeln(eingelesen, einstellungen):
+    erika, otto = eingelesen
+    # mehrere offene Spenden: bintafeln stellt eine Sammelbestätigung aus
+    assert bst.offene_geldspenden(erika, 2026).count() == 2
+    # im Vereinsportal versendet: nie eine Bestätigung von hier
+    assert not bst.offene_geldspenden(otto, 2026).exists()
+    with pytest.raises(bst.BestaetigungsFehler):
+        bst.geld_ausstellen(otto, 2026, "buero")
+    # eine einzelne offene Spende mit Beleg aus dem Vereinsportal: der Beleg ist die Bestätigung
+    Spende.objects.filter(belegnummer="3").update(fremdbeleg=OFFEN)
+    assert not bst.offene_geldspenden(otto, 2026).exists()
+    # … kommt eine zweite dazu (auch eine von Hand erfasste), wird es eine Sammelbestätigung
+    Spende.objects.create(adresse=otto, datum=dt.date(2026, 6, 1), betrag=D("20"))
+    assert bst.offene_geldspenden(otto, 2026).count() == 2
+    assert {a for a, _, _ in bst.jahresliste(2026)} == {erika, otto}
 
 
-def test_gruppen_immer_per_post_und_einfach(eingelesen):
-    Kontakt.objects.update(immer_post=True)
-    Beleg.objects.filter(belegnummer="3").update(im_portal_versendet=False)
-    gruppen = {s.name: s.gruppe for s in auswertung.spender(2026)}
-    assert gruppen == {"Erika Beispiel": "mehrfach_post", "Otto Muster": "einfach_post"}
+def test_sammelbestaetigung_fuer_mehrfachspender(eingelesen, einstellungen, pdf_text):
+    erika, _ = eingelesen
+    b = bst.geld_ausstellen(erika, 2026, "buero")
+    assert (b.art, b.betrag) == ("sammel", D("1275.00"))
+    assert erika.spenden.filter(bestaetigung=b).count() == 2
+    assert not bst.offene_geldspenden(erika, 2026).exists()  # nie ein zweites Mal
 
 
-def test_teilweise_versendet_bleibt_in_der_liste(eingelesen):
-    Beleg.objects.filter(belegnummer="1").update(im_portal_versendet=True)
-    (erika,) = auswertung.spender(2026)
-    assert (erika.anzahl, erika.offen) == (2, 1)
+@pytest.fixture
+def vorlage():
+    from apps.serienbriefe.models import Vorlage
+
+    return Vorlage.objects.create(
+        name="Dank", betreff="Danke für Ihre Spende",
+        text="{anrede}\n\nvielen Dank, {name}, für {anzahl_spenden} Spende(n) am "
+             "{spendendaten} über {spendensumme}.",
+    )  # fmt: skip
 
 
-def test_csv(eingelesen):
-    text = auswertung.csv_text(auswertung.spender(2026))
-    assert text.startswith("﻿Name;Straße")
-    assert text.splitlines()[0].endswith(";Spendendaten")
-    zeile = "Erika Beispiel;Feldweg 2;54321 Beispieldorf;erika@example.org;2;1275,00;2;"
-    assert zeile + "14.03.2026, 14.03.2026" in text
+def test_dankesbriefe_auswahl_und_anlagen(eingelesen, einstellungen):
+    erika, otto = eingelesen
+    danke = danken.auswahl(2026)
+    # Otto ist im Vereinsportal schon versorgt: kein Brief von hier
+    assert [d.adresse for d in danke] == [erika]
+    (d,) = danke
+    assert danken.fehlende_ausstellen(danke, 2026, "buero") == []
+    anlagen = [name for name, _ in danken.anlagen(d, True, True)]
+    # Sammelbestätigung aus bintafeln – die Einzelbelege liegen dann nicht bei
+    assert len(anlagen) == 1 and anlagen[0].startswith("Zuwendungsbestaetigung-")
 
 
-def test_jahre_enthaelt_aktuelles_und_vorhandene(eingelesen):
-    Beleg.objects.filter(belegnummer="1").update(jahr=2019)
-    assert 2019 in auswertung.jahre() and dt.date.today().year in auswertung.jahre()
+def test_dankesbrief_einfachspender_bekommt_den_beleg_aus_dem_vereinsportal(
+    eingelesen, einstellungen
+):
+    _, otto = eingelesen
+    Spende.objects.filter(belegnummer="3").update(fremdbeleg=OFFEN)
+    (d,) = danken.auswahl(2026, "einfach")
+    assert d.adresse == otto
+    assert danken.fehlende_ausstellen([d], 2026, "buero") == []  # nichts auszustellen
+    assert [name for name, _ in danken.anlagen(d, True, True)] == ["Spendenbeleg_000003.pdf"]
+    assert not otto.spenden.filter(bestaetigung__isnull=False).exists()
+    danken.vermerken([d], True)
+    assert SpendenBeleg.objects.get(dateiname="Spendenbeleg_000003.pdf").beigelegt_am
+    assert danken.auswahl(2026, "einfach") == []
 
 
-def test_fristen(eingelesen):
-    PortalEinstellungen.objects.update_or_create(pk=1, defaults={"aufbewahrung_jahre": 2})
-    assert auswertung.fristen_anwenden(dt.date(2028, 12, 31)) == 0
-    b = Beleg.objects.first()
-    assert auswertung.fristen_anwenden(dt.date(2029, 1, 1)) == 3
-    assert not Beleg.objects.exists() and not Kontakt.objects.exists()
-    assert privatdateien.lesen(Beleg.ORDNER, b.datei) is None
-
-
-def test_fristen_spenderliste_bleibt_solange_belege_da_sind(eingelesen):
-    Beleg.objects.filter(belegnummer="1").update(jahr=2020)
-    assert auswertung.fristen_anwenden(dt.date(2026, 6, 1)) == 1
-    assert Kontakt.objects.exists()
-    from apps.vereinsportal.modul import MODUL
-
-    MODUL.fristen()  # der Hook des Moduls läuft ohne Fehler
+def test_dankesbriefe_seite_druck_pdf_im_grossen_stil(
+    admin_client, eingelesen, einstellungen, vorlage, pdf_text
+):
+    """Die Seite „Dankesbriefe“ liefert alles in einem PDF: Brief und dahinter die Bescheinigung –
+    Sammelbestätigung aus bintafeln oder Beleg aus dem Vereinsportal."""
+    Spende.objects.filter(belegnummer="3").update(fremdbeleg=OFFEN)
+    daten = {"vorlage": vorlage.pk, "jahr": 2026, "art": "alle", "nur_offen": "on",
+             "mit_bestaetigungen": "on", "mit_belegen": "on"}  # fmt: skip
+    url = reverse("spenden:dank")
+    seite = admin_client.post(url, daten | {"schritt": "vorschau"}).content.decode()
+    assert "2 Spender" in seite and "2 Briefe als PDF" in seite
+    text = pdf_text(admin_client.post(url, daten | {"schritt": "pdf"}))
+    assert "2 Spende(n) am 14.03.2026, 14.03.2026" in text and "Sammelbest" in text
+    assert text.count("Sammelbest") >= 1 and "Otto Muster" in text
+    assert not Spende.objects.filter(bedankt_am__isnull=True).exists()
+    # Spendenliste: die Herkunft steht in der Spalte „Bestätigung“
+    liste = admin_client.get(reverse("spenden:liste"), {"jahr": 2026}).content.decode()
+    assert "Beleg anderes Programm" in liste
+    Spende.objects.filter(belegnummer="3").update(fremdbeleg=V)
+    liste = admin_client.get(reverse("spenden:liste"), {"jahr": 2026}).content.decode()
+    assert "anderes Programm ✓" in liste
 
 
 # --- Seiten -----------------------------------------------------------------------------------
@@ -352,76 +465,49 @@ def buero(admin, benutzer_mit_rolle, anmelden, client):
 
 def hochladen(client, feld, name, inhalt):
     return client.post(reverse("vereinsportal:start"), {
-        "jahr": "2026", feld: SimpleUploadedFile(name, inhalt)}, follow=True)  # fmt: skip
+        feld: SimpleUploadedFile(name, inhalt)}, follow=True)  # fmt: skip
 
 
-def test_seite_einlesen_und_liste(buero, export):
-    antwort = hochladen(buero, "finanzexport", "export.zip", export.getvalue())
-    assert "3 neue Belege eingelesen, 0 waren schon vorhanden" in antwort.content.decode()
-    assert "1 ohne vollständige Anschrift ausgelassen" in antwort.content.decode()
-    assert "1 als im Vereinsportal versendet vermerkt" in antwort.content.decode()
+def test_seite_einlesen_und_stand(buero, export):
+    leer = buero.get(reverse("vereinsportal:start")).content.decode()
+    assert "Noch keine Spenden aus dem Vereinsportal eingelesen" in leer
+    seite = hochladen(buero, "finanzexport", "export.zip", export.getvalue()).content.decode()
+    assert "3 neue Spenden eingelesen, 0 waren schon vorhanden" in seite
+    assert "2 Spender neu ins Adressbuch aufgenommen" in seite
+    assert "1 als im Vereinsportal versendet vermerkt" in seite
+    # Stand im Spendenpool: 3 Spenden von 2 Spendern, 1 versendet, 2 offen
+    zeile = seite[seite.index('id="portal-stand"') :]
+    zahlen = [z.split("<")[0] for z in zeile.split('<td class="zahl">')[1:5]]
+    assert zahlen == ["3", "2", "1", "2"]
+    assert reverse("spenden:liste") + "?jahr=2026" in seite and reverse("spenden:dank") in seite
     antwort = hochladen(buero, "spenderliste", "liste.xlsx",
                         spenderliste([(1, "Erika", "Beispiel", "erika@example.org", ""),
                                       (2, "Ohne", "Mail", "", "")]))  # fmt: skip
-    assert "Liste ersetzt: 1 Spender mit E-Mail. 1 Zeilen ohne gültige E-Mail" in (
+    assert "Spenderliste ersetzt: 1 Spender mit E-Mail, 1 Zeilen ohne gültige E-Mail" in (
         antwort.content.decode())  # fmt: skip
-    inhalt = buero.get(reverse("vereinsportal:start"), {"jahr": "2026"}).content.decode()
-    assert "Erika Beispiel" in inhalt and "erika@example.org" in inhalt
-    assert "Otto Muster" not in inhalt
-    # zu jedem Beleg das Spendendatum; fehlt es, steht das da
-    assert "Gespendet am" in inhalt and "14.03.2026" in inhalt and "Nr. 1" in inhalt
-    Beleg.objects.filter(belegnummer="1").update(datum=None, datum_gesucht=True)
-    inhalt = buero.get(reverse("vereinsportal:start"), {"jahr": "2026"}).content.decode()
-    assert "Datum fehlt" in inhalt
-    leer = buero.get(reverse("vereinsportal:start"), {"jahr": "2026", "gruppe": "einfach_post"})
-    assert "Keine Spender in dieser Auswahl" in leer.content.decode()
-    # unbekannte Angaben fallen auf die Vorgabe zurück
-    assert (
-        buero.get(reverse("vereinsportal:start"), {"jahr": "x", "gruppe": "x"}).status_code == 200
-    )
+    assert Adresse.objects.get(nachname="Beispiel").email == "erika@example.org"
 
 
 def test_seite_nur_excel_des_finanzexports(buero, export):
     hochladen(buero, "finanzexport", "export.zip", export.getvalue())
     antwort = hochladen(buero, "finanzexport", "Finanzexport.XLSX", uebersicht([(2, "x", None)]))
-    assert "0 neue Belege eingelesen" in antwort.content.decode()
-    assert Beleg.objects.get(belegnummer="2").im_portal_versendet
+    assert "0 neue Spenden eingelesen" in antwort.content.decode()
+    assert Spende.objects.get(belegnummer="2").fremdbeleg == V
 
 
 def test_seite_fehler(buero):
     antwort = hochladen(buero, "finanzexport", "export.zip", b"kein Archiv")
     assert "kein ZIP-Archiv" in antwort.content.decode()
-    antwort = buero.post(reverse("vereinsportal:start"), {"jahr": "2026"}, follow=True)
+    antwort = buero.post(reverse("vereinsportal:start"), {}, follow=True)
     assert "Bitte eine Datei wählen" in antwort.content.decode()
-    antwort = hochladen(buero, "finanzexport", "ohne.zip",
-                        archiv({"Spendenbeleg_000001.pdf": beleg_pdf()}).getvalue())  # fmt: skip
-    assert "keine Übersicht der versendeten Belege" in antwort.content.decode()
-
-
-def test_beleg_ansehen_und_export(buero, eingelesen):
-    b = Beleg.objects.get(belegnummer="1")
-    antwort = buero.get(reverse("vereinsportal:beleg", args=[b.pk]))
-    assert antwort.status_code == 200 and antwort.content.startswith(b"%PDF")
-    privatdateien.loeschen(Beleg.ORDNER, b.datei)
-    assert buero.get(reverse("vereinsportal:beleg", args=[b.pk])).status_code == 404
-    antwort = buero.get(reverse("vereinsportal:export"), {"jahr": "2026",
-                                                           "gruppe": "mehrfach_mail"})  # fmt: skip
-    assert antwort["Content-Disposition"] == 'attachment; filename="spender-mehrfach_mail-2026.csv"'
-    assert "Erika Beispiel" in antwort.content.decode()
-    alle = buero.get(reverse("vereinsportal:export"), {"jahr": "2026", "gruppe": "x"})
-    assert 'filename="spender-alle-2026.csv"' in alle["Content-Disposition"]
 
 
 def test_einstellungen(buero):
     seite = reverse("vereinsportal:einstellungen")
     assert buero.get(seite).status_code == 200
-    antwort = buero.post(seite, {"absender": ABSENDER, "aufbewahrung_jahre": "3"})
-    assert antwort.status_code == 302
+    assert buero.post(seite, {"absender": ABSENDER}).status_code == 302
     e = PortalEinstellungen.laden()
-    assert (e.absender, e.aufbewahrung_jahre) == (ABSENDER, 3)
-    assert str(e) == "Einstellungen für das Vereinsportal"
-    assert buero.post(seite, {"aufbewahrung_jahre": "99"}).status_code == 200  # Fehler am Feld
-    assert PortalEinstellungen.laden().aufbewahrung_jahre == 3
+    assert e.absender == ABSENDER and str(e) == "Einstellungen für das Vereinsportal"
 
 
 def test_nur_mit_recht_und_modul(admin, benutzer_mit_rolle, anmelden, client):
@@ -437,258 +523,6 @@ def test_menue_und_handbuch(buero):
     inhalt = buero.get(reverse("core:start")).content.decode()
     assert reverse("vereinsportal:start") in inhalt
     assert "Welche Dateien gebraucht werden" in buero.get(reverse("core:hilfe")).content.decode()
-    assert str(Beleg(dateiname="a.pdf")) == "a.pdf"
-
-
-# --- Dankesbriefe und Sammelbescheinigungen (Schritt 2) ---------------------------------------
-
-
-@pytest.fixture
-def vorlage():
-    from apps.serienbriefe.models import Vorlage
-
-    return Vorlage.objects.create(
-        name="Dank", betreff="Danke für Ihre Spende",
-        text="{anrede}\n\nvielen Dank, {name}, für {anzahl_spenden} Spende(n) über "
-             "{spendensumme}.",
-    )  # fmt: skip
-
-
-@pytest.fixture
-def mailserver():
-    from apps.core import geheimnis
-    from apps.core.models import MailEinstellungen
-
-    m = MailEinstellungen.laden()
-    m.server, m.port, m.benutzer, m.absender = "mail.example.org", 587, "tafel", "t@example.org"
-    m.passwort_verschluesselt = geheimnis.verschluesseln("erfunden")
-    m.save()
-
-
-@pytest.fixture
-def spender_da():
-    """Erika: 2 Belege, Otto: 1 Beleg, Anna: 1 Beleg mit E-Mail; nichts im Portal versendet."""
-    anna = "Anna Probe | Ring 7 | 12345 Musterstadt"
-    einlesen.finanzexport_einlesen(archiv({
-        "Spendenbeleg_000001.pdf": beleg_pdf(),
-        "Spendenbeleg_000002.pdf": beleg_pdf(betrag="25,00 fünfundzwanzig"),
-        "Spendenbeleg_000003.pdf": beleg_pdf(spender=OTTO, betrag="10,00 zehn"),
-        "Spendenbeleg_000004.pdf": beleg_pdf(spender=anna, betrag="5,00 fünf"),
-    }), "buero")  # fmt: skip
-    kopf = ("Vorname", "Nachname", "E-Mail", "Anrede")
-    einlesen.spenderliste_einlesen(spenderliste([("Anna", "Probe", "anna@example.org", "Frau")],
-                                                kopf=kopf))  # fmt: skip
-
-
-def sammel_pdf(name="Sammelbescheinigung_Erika_Beispiel.pdf"):
-    return SimpleUploadedFile(name, beleg_pdf(betrag="1.275,00 Sammel"), "application/pdf")
-
-
-def test_zuordnen_ueber_dateiname():
-    from apps.vereinsportal import briefe
-
-    namen = ["Erika Beispiel", "Erika Beispiel Stiftung", "Otto Muster"]
-    assert briefe.zuordnen("Sammelbescheinigung_Erika-Beispiel_2026.pdf", namen) == "Erika Beispiel"
-    assert briefe.zuordnen("SB_erika_beispiel_stiftung.pdf", namen) == "Erika Beispiel Stiftung"
-    assert briefe.zuordnen("Sammelbescheinigung_Erika.pdf", namen) == ""
-    assert briefe.zuordnen("x.pdf", [""]) == ""
-    assert briefe.dateiname("Ä b/c") == "Ä_b_c.pdf" and briefe.dateiname("...") == "Beleg.pdf"
-
-
-def test_sammelbescheinigung_hochladen_zuordnen_ersetzen(spender_da):
-    from apps.vereinsportal import briefe
-    from apps.vereinsportal.models import Sammelbescheinigung
-
-    erste = briefe.hochladen(sammel_pdf(), 2026, "buero")
-    assert (erste.name, erste.such_name, str(erste)) == (
-        "Erika Beispiel", "erika beispiel", "Sammelbescheinigung_Erika_Beispiel.pdf")  # fmt: skip
-    offen = briefe.hochladen(sammel_pdf("scan0001.pdf"), 2026, "buero")
-    assert offen.such_name == ""
-    # von Hand zuordnen ersetzt die bisherige des Spenders samt Datei
-    briefe.zuweisen(offen, "Erika Beispiel")
-    assert list(Sammelbescheinigung.objects.values_list("dateiname", flat=True)) == ["scan0001.pdf"]
-    assert privatdateien.lesen(Sammelbescheinigung.ORDNER, erste.datei) is None
-    (erika,) = [s for s in auswertung.spender(2026) if s.mehrfach]
-    assert erika.sammel.pk == offen.pk
-    with pytest.raises(privatdateien.DateiFehler):
-        briefe.hochladen(SimpleUploadedFile("x.txt", b"x", "text/plain"), 2026, "buero")
-
-
-def test_auswahl_bereit_und_werte(spender_da):
-    from apps.vereinsportal import briefe
-
-    (erika,) = briefe.auswahl(2026, "mehrfach_post")
-    assert not briefe.bereit(erika) and briefe.anlagen(erika) == []
-    (otto,) = briefe.auswahl(2026, "einfach_post")
-    assert briefe.bereit(otto)
-    assert [n for n, _ in briefe.anlagen(otto)] == ["Spendenbeleg_000003.pdf"]
-    e = briefe.werte(otto, 2026)
-    assert e.anschrift == ["Otto Muster", "Am Markt 5", "12345 Musterstadt"]
-    assert e.werte["anrede"] == "Sehr geehrte Damen und Herren," and e.werte["vorname"] == ""
-    (anna,) = briefe.auswahl(2026, "einfach_mail")
-    e = briefe.werte(anna, 2026)
-    assert (e.email, e.werte["anrede"], e.werte["nachname"]) == (
-        "anna@example.org", "Sehr geehrte Frau Probe,", "Probe")  # fmt: skip
-    assert e.werte["spendensumme"] == "5,00 €"
-    assert e.werte["spendendaten"] == "14.03.2026"
-    # nicht mehr lesbare Datei: keine Anlage statt Fehler
-    privatdateien.loeschen(Beleg.ORDNER, otto.belege[0].datei)
-    assert briefe.anlagen(otto) == []
-
-
-def brief_daten(vorlage, gruppe, schritt):
-    return {"vorlage": vorlage.pk, "jahr": 2026, "gruppe": gruppe, "schritt": schritt}
-
-
-def test_seite_briefe_druck_pdf(buero, spender_da, vorlage, pdf_text):
-    from apps.vereinsportal import briefe
-
-    url = reverse("vereinsportal:briefe")
-    assert "Vorschau" in buero.get(url).content.decode()
-    seite = buero.post(url, brief_daten(vorlage, "mehrfach_post", "vorschau")).content.decode()
-    assert "Sammelbescheinigung fehlt" in seite and "als PDF erstellen" not in seite
-    assert "1 Mehrfachspender ohne Sammelbescheinigung" in seite
-    # ohne Sammelbescheinigung entsteht kein Brief
-    seite = buero.post(url, brief_daten(vorlage, "mehrfach_post", "pdf")).content.decode()
-    assert "Sammelbescheinigung fehlt" in seite
-    briefe.hochladen(sammel_pdf(), 2026, "buero")
-    seite = buero.post(url, brief_daten(vorlage, "mehrfach_post", "vorschau")).content.decode()
-    assert "1 Brief als PDF erstellen" in seite
-    text = pdf_text(buero.post(url, brief_daten(vorlage, "mehrfach_post", "pdf")))
-    assert "Erika Beispiel" in text and "2 Spende(n)" in text and "1.275,00" in text
-    erika = Beleg.objects.filter(such_name="erika beispiel")
-    assert {(b.bedankt_per, b.bedankt_am is not None) for b in erika} == {("brief", True)}
-    assert not Beleg.objects.filter(such_name="otto muster", bedankt_am__isnull=False).exists()
-    seite = buero.post(url, brief_daten(vorlage, "mehrfach_post", "vorschau")).content.decode()
-    assert "kein Dankesbrief mehr aus" in seite
-
-
-def test_seite_briefe_einfachspender_mit_beleg_und_warnung(buero, spender_da, vorlage):
-    from pypdf import PdfReader
-
-    url = reverse("vereinsportal:briefe")
-    antwort = buero.post(url, brief_daten(vorlage, "einfach_post", "pdf"))
-    assert len(PdfReader(io.BytesIO(antwort.content)).pages) == 2  # Brief + Beleg
-    # ein kaputter Beleg gibt eine Warnung, der Brief entsteht trotzdem
-    Beleg.objects.filter(such_name="otto muster").update(bedankt_am=None)
-    b = Beleg.objects.get(such_name="otto muster")
-    b.datei = privatdateien.ablegen(Beleg.ORDNER, b"kein PDF")
-    b.save()
-    antwort = buero.post(url, brief_daten(vorlage, "einfach_post", "pdf"))
-    assert len(PdfReader(io.BytesIO(antwort.content)).pages) == 1
-    assert "ist kein lesbares PDF" in buero.get(url).content.decode()
-
-
-def test_seite_briefe_per_mail(buero, spender_da, vorlage, mailserver, mailoutbox):
-    url = reverse("vereinsportal:briefe")
-    seite = buero.post(url, brief_daten(vorlage, "einfach_mail", "vorschau")).content.decode()
-    assert "1 E-Mail senden" in seite and "anna@example.org" in seite
-    # der PDF-Knopf gilt nicht für Gruppen mit E-Mail
-    assert buero.post(url, brief_daten(vorlage, "einfach_mail", "pdf"))["Content-Type"] != (
-        "application/pdf")  # fmt: skip
-    seite = buero.post(url, brief_daten(vorlage, "einfach_mail", "senden"), follow=True)
-    assert "1 Dankesbrief per E-Mail gesendet" in seite.content.decode()
-    (nachricht,) = mailoutbox
-    assert nachricht.to == ["anna@example.org"] and "Sehr geehrte Frau Probe" in nachricht.body
-    assert nachricht.attachments[0][0] == "Spendenbeleg_000004.pdf"
-    assert Beleg.objects.get(belegnummer="4").bedankt_per == "mail"
-    # Senden gilt nicht für Gruppen ohne E-Mail
-    buero.post(url, brief_daten(vorlage, "einfach_post", "senden"))
-    assert len(mailoutbox) == 1
-
-
-def test_seite_briefe_ohne_mailserver_und_mailfehler(buero, spender_da, vorlage, monkeypatch):
-    from apps.core import mail
-
-    url = reverse("vereinsportal:briefe")
-    seite = buero.post(url, brief_daten(vorlage, "einfach_mail", "vorschau")).content.decode()
-    assert "noch kein Mailserver eingerichtet" in seite
-
-    def kaputt(*a, **k):
-        raise mail.MailFehler("Server nicht erreichbar")
-
-    monkeypatch.setattr(mail, "senden", kaputt)
-    Beleg.objects.filter(such_name="otto muster").update(name="Anna Probe", such_name="anna probe",
-                                                         jahr=2025)  # fmt: skip
-    seite = buero.post(url, brief_daten(vorlage, "einfach_mail", "senden"), follow=True)
-    assert "Nicht gesendet: Anna Probe: Server nicht erreichbar" in seite.content.decode()
-    assert not Beleg.objects.filter(bedankt_am__isnull=False).exists()
-
-
-def test_mailversand_bricht_nach_drei_fehlern_ab(buero, vorlage, monkeypatch):
-    from apps.core import mail
-
-    zeilen = []
-    for i, name in enumerate(["Anna", "Berta", "Carla", "Dora"], start=1):
-        Beleg.objects.create(dateiname=f"b_{i}.pdf", belegnummer=str(i), name=f"{name} Probe",
-                             such_name=f"{name.lower()} probe", strasse="Ring 1",
-                             plz_ort="12345 Musterstadt", jahr=2026, datei="fehlt.bin")  # fmt: skip
-        zeilen.append((name, "Probe", f"{name.lower()}@example.org"))
-    einlesen.spenderliste_einlesen(spenderliste(zeilen, kopf=("Vorname", "Nachname", "E-Mail")))
-    versuche = []
-
-    def kaputt(*a, **k):
-        versuche.append(1)
-        raise mail.MailFehler("Server nicht erreichbar")
-
-    monkeypatch.setattr(mail, "senden", kaputt)
-    buero.post(reverse("vereinsportal:briefe"), brief_daten(vorlage, "einfach_mail", "senden"))
-    assert len(versuche) == 3
-
-
-def test_seite_sammelbescheinigungen(buero, spender_da):
-    from apps.vereinsportal.models import Sammelbescheinigung
-
-    url = reverse("vereinsportal:sammel")
-    assert "Noch ohne Sammelbescheinigung:</strong> Erika Beispiel" in (
-        buero.get(url, {"jahr": 2026}).content.decode())  # fmt: skip
-    antwort = buero.post(url, {"aktion": "hochladen", "jahr": 2026, "dateien": [
-        sammel_pdf(), sammel_pdf("scan0001.pdf"),
-        SimpleUploadedFile("falsch.txt", b"x", "text/plain")]}, follow=True)  # fmt: skip
-    seite = antwort.content.decode()
-    assert "1 über den Namen zugeordnet, 1 bitte von Hand zuordnen" in seite
-    assert "falsch.txt" in seite and "Noch zuzuordnen" in seite
-    assert "Noch ohne Sammelbescheinigung" not in seite
-    offen = Sammelbescheinigung.objects.get(such_name="")
-    antwort = buero.get(reverse("vereinsportal:sammel_datei", args=[offen.pk]))
-    assert antwort.content.startswith(b"%PDF")
-    # unbekannter Name ändert nichts, ein Mehrfachspender ersetzt dessen bisherige Datei
-    buero.post(url, {"aktion": "zuordnen", "jahr": 2026, "eintrag": offen.pk, "name": "Fremd"})
-    assert Sammelbescheinigung.objects.count() == 2
-    antwort = buero.post(url, {"aktion": "zuordnen", "jahr": 2026, "eintrag": offen.pk,
-                               "name": "Erika Beispiel"}, follow=True)  # fmt: skip
-    assert "„scan0001.pdf“ Erika Beispiel zugeordnet" in antwort.content.decode()
-    assert Sammelbescheinigung.objects.count() == 1
-    antwort = buero.post(url, {"aktion": "loeschen", "jahr": 2026, "eintrag": offen.pk},
-                         follow=True)  # fmt: skip
-    assert "in den Papierkorb gelegt" in antwort.content.decode()
-    assert not Sammelbescheinigung.objects.exists()
-    assert buero.post(url, {"aktion": "hochladen", "jahr": 2026}).status_code == 302
-    assert buero.post(url, {"aktion": "anderes", "jahr": 2026}).status_code == 302
-
-
-def test_sammel_datei_nicht_mehr_lesbar(buero, spender_da):
-    from apps.vereinsportal import briefe
-    from apps.vereinsportal.models import Sammelbescheinigung
-
-    eintrag = briefe.hochladen(sammel_pdf(), 2026, "buero")
-    privatdateien.loeschen(Sammelbescheinigung.ORDNER, eintrag.datei)
-    assert buero.get(reverse("vereinsportal:sammel_datei", args=[eintrag.pk])).status_code == 404
-
-
-def test_fristen_loeschen_auch_sammelbescheinigungen(spender_da):
-    from apps.vereinsportal import briefe
-    from apps.vereinsportal.models import Sammelbescheinigung
-
-    eintrag = briefe.hochladen(sammel_pdf(), 2026, "buero")
-    auswertung.fristen_anwenden(dt.date(2029, 1, 1))
-    assert not Sammelbescheinigung.objects.exists()
-    assert privatdateien.lesen(Sammelbescheinigung.ORDNER, eintrag.datei) is None
-
-
-def test_mail_steht_in_der_uebersicht(admin_client):
-    seite = admin_client.get(reverse("core:mail_empfaenger")).content.decode()
-    assert "Dankesbrief zu Belegen aus dem Vereinsportal" in seite
 
 
 # --- Automatischer Abruf (Schritt 3, ADR 0127) ------------------------------------------------
@@ -798,10 +632,11 @@ def test_abruf_uebernehmen_liest_ein_und_raeumt_auf(dienst, export):
     assert meldungen == [
         (True, "Spenderliste ersetzt: 1 Spender mit E-Mail, 1 Zeilen ohne gültige E-Mail "
                "ausgelassen."),
-        (True, "3 neue Belege eingelesen, 0 waren schon vorhanden, 1 ohne vollständige Anschrift "
-               "ausgelassen, 1 als im Vereinsportal versendet vermerkt."),
+        (True, "3 neue Spenden eingelesen, 0 waren schon vorhanden, 2 Spender neu ins Adressbuch "
+               "aufgenommen, 1 ohne vollständige Anschrift ausgelassen, 1 als im Vereinsportal "
+               "versendet vermerkt."),
     ]  # fmt: skip
-    assert Beleg.objects.count() == 3 and Kontakt.objects.count() == 1
+    assert Spende.objects.count() == 3 and Kontakt.objects.count() == 1
     assert dienst.aufrufe[-1] == ("/fertig", {}) and dienst.stand["stand"] == "frei"
     # nur der Finanzexport, ohne Zeilen ohne E-Mail
     dienst.stand |= {"stand": "fertig", "dateien": {"finanzexport": True}}
@@ -929,8 +764,8 @@ def test_seite_abruf_ablauf(buero, dienst, zugang, export):
     teil = buero.get(stand_url).content.decode()
     assert 'hx-trigger="load"' in teil and "liest sie ein" in teil
     teil = buero.post(stand_url, {"aktion": "einlesen"}).content.decode()
-    assert "3 neue Belege eingelesen" in teil and "Es läuft kein Abruf" in teil
-    assert Beleg.objects.count() == 3
+    assert "3 neue Spenden eingelesen" in teil and "Es läuft kein Abruf" in teil
+    assert Spende.objects.count() == 3
 
 
 def test_seite_abruf_fehler_abbrechen_verwerfen(buero, dienst, zugang):
@@ -968,7 +803,7 @@ def test_einstellungen_zugangsdaten_verschluesselt(buero, dienst):
 
     seite = reverse("vereinsportal:einstellungen")
     assert "noch kein Passwort gespeichert" in buero.get(seite).content.decode()
-    daten = {"aufbewahrung_jahre": "2", "anmeldung_url": "https://portal.example.org/login",
+    daten = {"anmeldung_url": "https://portal.example.org/login",
              "export_url": "https://portal.example.org/export", "email": "buero@example.org",
              "passwort": "erfunden und geheim"}  # fmt: skip
     assert buero.post(seite, daten).status_code == 302

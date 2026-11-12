@@ -1373,17 +1373,17 @@ die erste aktive mit PLZ oder Ort.
 
 ### Spendenbelege aus dem Vereinsportal
 
-Für Tafeln, die ihre Spendenbescheinigungen weiterhin im Vereinsportal ausstellen (ADR 0126). Eine
-Alternative zu „Spenden und Zuwendungsbestätigungen“ in bintafeln; die Belege aus dem
-Vereinsportal erscheinen dort nicht, und bintafeln stellt für sie keine eigenen Bestätigungen aus.
+Für Tafeln, die ihre Spendenbescheinigungen weiterhin im Vereinsportal ausstellen (ADR 0126,
+0128). Die Spenden von dort kommen in denselben Spendenpool wie von Hand erfasste Spenden.
 
-- **Einlesen:** Finanzexport (ZIP) und Liste „Spender mit E-Mail“ (Excel) hochladen. bintafeln
-  liest Name, Anschrift, Jahr und Betrag aus jedem Spendenbeleg und merkt sich, welche Belege im
-  Vereinsportal schon versendet sind.
-- **Übersicht:** Einfach- und Mehrfachspender, mit und ohne E-Mail, die noch keine Bescheinigung
-  bekommen haben; jede Gruppe als CSV.
-- **Dankesbriefe:** aus einer Serienbrief-Vorlage, mit dem Spendenbeleg (Einfachspender) oder der
-  hochgeladenen Sammelbescheinigung (Mehrfachspender) – als Druck-PDF oder per E-Mail.
+- **Einlesen:** Finanzexport (ZIP) und Liste „Spender mit E-Mail“ (Excel) hochladen. Je Beleg
+  entsteht eine Spende mit Spendendatum, Betrag und Belegnummer, das PDF hängt daran; der Spender
+  kommt ins Adressbuch (vorhandene Adresse mit gleichem Namen und gleicher PLZ, sonst neu).
+- **Nie zwei Bestätigungen:** Was das Vereinsportal schon versendet hat, bestätigt bintafeln
+  nicht noch einmal. Eine einzelne offene Spende behält den Beleg aus dem Vereinsportal; bei
+  mehreren offenen Spenden im Jahr stellt bintafeln eine **Sammelbestätigung** aus.
+- **Dankesbriefe:** über „Spenden → Dankesbriefe“, als ein Druck-PDF (Brief und dahinter die
+  Bescheinigung) oder per E-Mail – auch die Sammelbestätigung.
 - **Automatischer Abruf (optional, ADR 0127):** bintafeln meldet sich selbst im Vereinsportal an
   und holt die Dateien; Sie geben nur den 2FA-Code ein. Dafür läuft ein zusätzlicher Dienst mit
   einem Browser (rund 1 GB). Einschalten in der `.env`:

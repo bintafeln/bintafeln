@@ -53,6 +53,13 @@ def offene_geldspenden(adresse, jahr: int):
     ).exclude(bestaetigung__isnull=False, bestaetigung__storniert_am__isnull=True)
     if not SpendenEinstellungen.laden().mitgliedsbeitraege_abziehbar:
         spenden = spenden.exclude(mitgliedsbeitrag=True)
+    # Spenden mit Beleg aus einem anderen Programm (ADR 0128): Was dort schon versendet ist,
+    # bestätigt bintafeln nie noch einmal. Ein einzelner, dort noch nicht versendeter Beleg ist
+    # selbst die Bestätigung (er liegt dem Dankesbrief bei). Erst bei mehreren offenen Spenden im
+    # Jahr stellt bintafeln eine Sammelbestätigung aus – dann liegen die Einzelbelege nicht bei.
+    spenden = spenden.exclude(fremdbeleg=Spende.Fremdbeleg.VERSENDET)
+    if spenden.count() == 1 and spenden.filter(fremdbeleg=Spende.Fremdbeleg.OFFEN).exists():
+        return spenden.none()
     return spenden
 
 

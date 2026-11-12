@@ -1,71 +1,64 @@
 {% extends "base.html" %}
-{% load liste %}
-{% block titel %}Belege aus dem Vereinsportal{% endblock %}
+{% block titel %}Aus dem Vereinsportal einlesen{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
-  <h1>Spendenbelege aus dem Vereinsportal</h1>
-  <p>Für Tafeln, die ihre Spendenbescheinigungen im Vereinsportal ausstellen. Hier lesen Sie den Finanzexport und
-    die Liste der Spender mit E-Mail ein und sehen, wer noch keine Bescheinigung bekommen hat.
+  <h1>Spenden aus dem Vereinsportal einlesen</h1>
+  <p>Für Tafeln, die ihre Spendenbescheinigungen im Vereinsportal ausstellen. Der Finanzexport bringt die Spenden mit
+    ihren Belegen in die <a href="{% url 'spenden:liste' %}">Spendenliste</a>, die Spender ins Adressbuch. Was im
+    Vereinsportal schon versendet ist, wird vermerkt; dafür stellt bintafeln keine zweite Bestätigung aus.
     <a href="{% url 'core:hilfe' %}#vereinsportal">Welche Dateien gebraucht werden</a></p>
 
   <h2>Einlesen</h2>
   <form method="post" enctype="multipart/form-data" class="aktionsleiste" id="finanzexport-form">
     {% csrf_token %}
-    <input type="hidden" name="jahr" value="{{ jahr }}">
     <label for="{{ finanzexport.finanzexport.id_for_label }}">{{ finanzexport.finanzexport.label }}</label>
     {{ finanzexport.finanzexport }}
     <button type="submit" class="knopf">Finanzexport einlesen</button>
   </form>
   <form method="post" enctype="multipart/form-data" class="aktionsleiste" id="spenderliste-form">
     {% csrf_token %}
-    <input type="hidden" name="jahr" value="{{ jahr }}">
     <label for="{{ spenderliste.spenderliste.id_for_label }}">{{ spenderliste.spenderliste.label }}</label>
     {{ spenderliste.spenderliste }}
     <button type="submit" class="knopf knopf-zweitrangig">Spenderliste ersetzen</button>
   </form>
   {% if abruf_verfuegbar %}<p><a class="knopf" href="{% url 'vereinsportal:abruf' %}">Automatisch aus dem Vereinsportal holen</a></p>{% endif %}
-  <p class="hinweis">Eingelesen: {{ belege }} Beleg{{ belege|pluralize:"e" }} für {{ jahr }}, {{ kontakte }} Spender mit E-Mail.</p>
+  <p class="hinweis">In der Liste „Spender mit E-Mail“ stehen {{ kontakte }} Spender. Ihre E-Mail kommt beim Einlesen ins
+    Adressbuch; wer dort „immer per Post“ hat, bekommt Briefe.</p>
 
-  <p><a class="knopf knopf-zweitrangig" href="{% url 'vereinsportal:briefe' %}?jahr={{ jahr }}">Dankesbriefe erstellen</a>
-    <a class="knopf knopf-zweitrangig" href="{% url 'vereinsportal:sammel' %}?jahr={{ jahr }}">Sammelbescheinigungen hochladen</a></p>
-
-  <h2>Spender ohne versendete Bescheinigung</h2>
-  <form method="get" class="filter-kompakt">
-    <div class="filter-feld"><label for="jahr">Jahr</label>
-      <select name="jahr" id="jahr" onchange="this.form.submit()">{% for j in jahre %}<option value="{{ j }}"{% if j == jahr %} selected{% endif %}>{{ j }}</option>{% endfor %}</select></div>
-    <div class="filter-feld"><label for="gruppe">Gruppe</label>
-      <select name="gruppe" id="gruppe" onchange="this.form.submit()"><option value="">alle</option>{% for k, titel in gruppen %}<option value="{{ k }}"{% if gruppe == k %} selected{% endif %}>{{ titel }}</option>{% endfor %}</select></div>
-    <button type="submit" class="knopf">Anzeigen</button>
-    {% filter_zuruecksetzen %}
-  </form>
-  <div class="kacheln">
-    {% for k, titel, anzahl in zahlen %}
-    <a class="kachel" href="?jahr={{ jahr }}&amp;gruppe={{ k }}"><span class="kachel-titel">{{ titel }}</span><span class="kachel-wert">{{ anzahl }}</span></a>
-    {% endfor %}
-  </div>
-  {% if spender %}
+  <h2>Stand im Spendenpool</h2>
+  {% if jahre %}
   <div class="tabelle-rahmen">
-    <table class="tabelle kompakt" id="portal-spender">
-      <thead><tr><th>Spender</th><th>Anschrift</th><th>E-Mail</th><th class="zahl">Spenden</th><th class="zahl">Summe</th><th>Gespendet am (Beleg)</th></tr></thead>
+    <table class="tabelle kompakt" id="portal-stand">
+      <thead><tr><th>Jahr</th><th class="zahl">Spenden aus dem Vereinsportal</th><th class="zahl">Spender</th><th class="zahl">dort schon versendet</th><th class="zahl">noch offen</th><th></th></tr></thead>
       <tbody>
-        {% for s in spender %}
+        {% for j in jahre %}
         <tr>
-          <td>{{ s.name }}</td>
-          <td>{{ s.strasse }}, {{ s.plz_ort }}</td>
-          <td>{{ s.email|default:"–" }}</td>
-          <td class="zahl">{{ s.anzahl }}</td>
-          <td class="zahl">{{ s.summe|floatformat:2 }} €</td>
-          <td>{% for b in s.belege %}<span style="white-space: nowrap">{% if b.datum %}{{ b.datum|date:"d.m.Y" }}{% else %}<em title="Im Beleg war kein Datum zu lesen">Datum fehlt</em>{% endif %}
-            (<a href="{% url 'vereinsportal:beleg' b.pk %}" target="_blank" rel="noopener" title="{{ b.dateiname }} öffnen">{% if b.belegnummer %}Nr. {{ b.belegnummer }}{% else %}{{ b.dateiname }}{% endif %}</a>{% if b.betrag %}, {{ b.betrag|floatformat:2 }} €{% endif %}){% if b.im_portal_versendet %} ✓{% elif b.bedankt_am %} ✉{% endif %}</span>{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
+          <td>{{ j.jahr }}</td>
+          <td class="zahl">{{ j.anzahl }}</td>
+          <td class="zahl">{{ j.spender }}</td>
+          <td class="zahl">{{ j.versendet }}</td>
+          <td class="zahl">{{ j.offen }}</td>
+          <td><a href="{% url 'spenden:liste' %}?jahr={{ j.jahr }}">Spendenliste {{ j.jahr }}</a></td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-  <p class="hinweis">✓ = laut Finanzexport im Vereinsportal schon versendet, ✉ = Dankesbrief aus bintafeln erstellt oder gesendet.</p>
-  <p><a class="knopf knopf-zweitrangig" href="{% url 'vereinsportal:export' %}?jahr={{ jahr }}&amp;gruppe={{ gruppe }}">Liste als CSV (für Serienbriefe)</a></p>
   {% else %}
-  <p class="hinweis">Keine Spender in dieser Auswahl.</p>
+  <p class="hinweis">Noch keine Spenden aus dem Vereinsportal eingelesen.</p>
   {% endif %}
+
+  <h2>Dankesbriefe und Bescheinigungen</h2>
+  <p>Unter <a href="{% url 'spenden:dank' %}">Spenden → Dankesbriefe</a> entsteht je Spender ein Brief, als PDF zum
+    Drucken oder per E-Mail:</p>
+  <ul>
+    <li><strong>Eine offene Spende im Jahr:</strong> Dem Brief liegt der Spendenbeleg aus dem Vereinsportal bei.</li>
+    <li><strong>Mehrere offene Spenden im Jahr:</strong> bintafeln stellt eine <strong>Sammelbestätigung</strong> aus
+      und legt sie bei; die einzelnen Belege liegen dann nicht bei.</li>
+    <li><strong>Im Vereinsportal schon versendet:</strong> kein Brief und keine Bestätigung von hier.</li>
+  </ul>
+  <p class="hinweis">Dafür in den Dankesbriefen „Zuwendungsbestätigungen aus bintafeln beilegen“ und „Hochgeladene Belege
+    beilegen“ angekreuzt lassen. Für Sammelbestätigungen müssen unter „Einstellungen → Spenden“ Finanzamt,
+    Steuernummer und Bescheid eingetragen sein.</p>
 </section>
 {% endblock %}

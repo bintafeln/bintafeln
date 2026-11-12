@@ -197,3 +197,79 @@ def _uebernahme_modul_umbenannt():
         assert c.fetchone()[0] == 0
     assert not ContentType.objects.filter(app_label=alt_app).exists()
     assert ContentType.objects.filter(app_label="uebernahme").count() == 1
+
+
+def test_belege_aus_dem_vereinsportal_kommen_in_den_spendenpool(settings, tmp_path):
+    """vereinsportal.0006 (ADR 0128): Schon eingelesene Belege werden Spenden mit Adresse und
+    angehängtem PDF; die verschlüsselte Datei zieht mit um. Alle Daten sind erfunden."""
+    settings.MEDIA_ROOT = tmp_path
+    try:
+        _belege_in_den_spendenpool()
+    finally:
+        _migriere(MigrationExecutor(connection).loader.graph.leaf_nodes())
+
+
+def _belege_in_den_spendenpool():
+    from decimal import Decimal as D
+
+    from apps.core import privatdateien
+
+    ziele_vor = _leaves_mit({"vereinsportal": "0005_spendendatum"})
+    _migriere(ziele_vor)
+    alt = MigrationExecutor(connection).loader.project_state(ziele_vor).apps
+    Beleg, Kontakt = (
+        alt.get_model("vereinsportal", "Beleg"),
+        alt.get_model("vereinsportal", "Kontakt"),
+    )
+    AdresseAlt, SpendeAlt = alt.get_model("adressen", "Adresse"), alt.get_model("spenden", "Spende")
+    bekannt = AdresseAlt.objects.create(art="person", vorname="Otto", nachname="Muster",
+                                        plz="12345", email="eigene@example.org")  # fmt: skip
+    schon_da = SpendeAlt.objects.create(adresse=bekannt, datum=dt.date(2026, 5, 2),
+                                        betrag=D("10"), belegnummer="3")  # fmt: skip
+    Kontakt.objects.create(such_name="erika beispiel", vorname="Erika", nachname="Beispiel",
+                           anrede="Frau", email="erika@example.org")  # fmt: skip
+    datei = privatdateien.ablegen("vereinsportal", b"%PDF erfunden")
+
+    def beleg(nummer, name, strasse, ort, **mehr):
+        return Beleg.objects.create(
+            dateiname=f"Spendenbeleg_{nummer:06d}.pdf", belegnummer=str(nummer), name=name,
+            such_name=name.lower(), strasse=strasse, plz_ort=ort, jahr=2026,
+            betrag=D("25"), datei=mehr.pop("datei", f"fehlt{nummer}.bin"), **mehr,
+        )  # fmt: skip
+
+    beleg(1, "Erika Beispiel", "Feldweg 2", "54321 Beispieldorf", datum=dt.date(2026, 3, 14),
+          datei=datei, bedankt_am=dt.date(2026, 6, 1))  # fmt: skip
+    beleg(2, "Erika Beispiel", "Feldweg 2", "54321 Beispieldorf", im_portal_versendet=True)
+    beleg(3, "Otto Muster", "Am Markt 5", "12345 Musterstadt", datum=dt.date(2026, 5, 2))
+    beleg(4, "Bäckerei Probe GmbH", "Hauptstraße 9", "12345 Musterstadt",
+          datum=dt.date(2026, 7, 1))  # fmt: skip
+
+    _migriere(MigrationExecutor(connection).loader.graph.leaf_nodes())
+
+    from apps.adressen.models import Adresse
+    from apps.spenden.models import Spende, SpendenBeleg
+
+    erika = Adresse.objects.get(nachname="Beispiel")
+    assert (erika.art, erika.vorname, erika.plz, erika.ort) == ("person", "Erika", "54321",
+                                                                "Beispieldorf")  # fmt: skip
+    assert (erika.email, erika.anrede) == ("erika@example.org", "Frau")
+    assert erika.einwilligung_email is not None
+    eins, zwei = erika.spenden.order_by("belegnummer")
+    assert (eins.datum, eins.betrag, eins.fremdbeleg, eins.bedankt_am) == (
+        dt.date(2026, 3, 14), D("25"), "offen", dt.date(2026, 6, 1))  # fmt: skip
+    # ohne lesbares Datum: letzter Tag des Jahres, mit Vermerk
+    assert (zwei.datum, zwei.fremdbeleg) == (dt.date(2026, 12, 31), "versendet")
+    assert "nicht lesbar" in zwei.zweck
+    # die verschlüsselte Datei ist mit umgezogen
+    angehaengt = SpendenBeleg.objects.get(spende=eins)
+    assert (angehaengt.dateiname, angehaengt.adresse) == ("Spendenbeleg_000001.pdf", erika)
+    assert privatdateien.lesen(SpendenBeleg.ORDNER, angehaengt.datei) == b"%PDF erfunden"
+    assert not privatdateien.pfad("vereinsportal", datei).exists()
+    # vorhandene Adresse und vorhandene Spende werden wiederverwendet
+    otto = Adresse.objects.get(nachname="Muster")
+    assert otto.pk == bekannt.pk and otto.email == "eigene@example.org"
+    assert otto.spenden.count() == 1
+    assert Spende.objects.get(pk=schon_da.pk).fremdbeleg == "offen"
+    firma = Adresse.objects.get(organisation="Bäckerei Probe GmbH")
+    assert firma.art == "organisation" and firma.spenden.get().belegnummer == "4"
+    assert SpendenBeleg.objects.count() == 4 and Spende.objects.count() == 4
