@@ -138,6 +138,63 @@ def test_beleg_lesen_unvollstaendig(pdf):
     assert einlesen.beleg_lesen(pdf, ABSENDER) is None
 
 
+VEREIN = f"{ABSENDER} | Hauptstraße 1 | 12345 Musterstadt"
+
+
+@pytest.mark.parametrize("zeilen", [
+    [VEREIN, ERIKA],  # wie bisher: direkt darunter
+    [VEREIN, "Persönlich / Vertraulich", ERIKA],  # eine Zeile dazwischen
+    [ERIKA, VEREIN, "Bestätigung über Geldzuwendungen"],  # Spender steht davor
+    [VEREIN.replace("e.V.", "e. V.").replace(" | ", "  |  "), ERIKA],  # andere Leerzeichen
+    [VEREIN.upper(), ERIKA],
+])  # fmt: skip
+def test_spenderzeile_findet_den_spender_in_jeder_anordnung(zeilen):
+    assert einlesen.spenderzeile(zeilen, ABSENDER) == [
+        "Erika Beispiel", "Feldweg 2", "54321 Beispieldorf"]  # fmt: skip
+
+
+def test_spenderzeile_nimmt_nie_den_verein_und_nichts_entferntes():
+    fuss = "Bank Musterstadt | IBAN DE00 | BIC XXXX"
+    # Spender ohne Anschrift: weder die Zeile des Vereins noch die Fußzeile weit unten
+    zeilen = [VEREIN, "Nur Name", "a", "b", "c", fuss]
+    assert einlesen.spenderzeile(zeilen, ABSENDER) is None
+    assert einlesen.spenderzeile([VEREIN, VEREIN], ABSENDER) is None
+    assert einlesen.spenderzeile([ERIKA], ABSENDER) is None  # Verein steht nirgends
+    assert einlesen.spenderzeile(["ohne Strich"], "") is None
+    # ohne Angabe gilt die erste Zeile mit „|“ als Absenderzeile
+    assert einlesen.spenderzeile([VEREIN, ERIKA], "")[0] == "Erika Beispiel"
+
+
+def test_beleg_lesen_versucht_weitere_lesarten(monkeypatch):
+    """Gibt die erste Lesart die Anschrift nicht her, hilft die nächste."""
+    lesarten = (
+        lambda inhalt: "Bestätigung\nTag der Zuwendung: 14.3.2026",  # kein Spender
+        lambda inhalt: 1 / 0,  # eine Lesart scheitert ganz
+        lambda inhalt: f"{VEREIN}\n{ERIKA}\nTag der Zuwendung: 14.3.2026\n25,00 fünfundzwanzig",
+    )
+    monkeypatch.setattr(einlesen, "LESARTEN", lesarten)
+    angaben = einlesen.beleg_lesen(b"egal", ABSENDER)
+    assert angaben.name == "Erika Beispiel" and angaben.datum == dt.date(2026, 3, 14)
+    assert angaben.betrag == D("25.00")
+
+
+def test_beleg_lesen_mit_allen_lesarten_des_echten_pdfs():
+    for lesen in einlesen.LESARTEN:
+        zeilen = einlesen._zerlegen(lesen(beleg_pdf()))
+        assert einlesen.spenderzeile(zeilen, ABSENDER)[0] == "Erika Beispiel"
+        assert einlesen.spendendatum(zeilen) == dt.date(2026, 3, 14)
+
+
+def test_diagnose_nennt_nur_zahlen():
+    assert einlesen.diagnose(b"kein PDF") == (
+        "Aus dem PDF ließ sich kein Text lesen (z. B. eingescannt oder geschützt).")  # fmt: skip
+    text = einlesen.diagnose(beleg_pdf(), "Ganz anderer Verein")
+    assert text == (
+        "Erster Beleg: 5 Textzeilen, davon 2 mit „|“; Name des Vereins gefunden: nein, in einer "
+        "Zeile mit „|“: nein; Datum gefunden: ja.")  # fmt: skip
+    assert "Erika" not in text and "nicht angegeben" in einlesen.diagnose(beleg_pdf())
+
+
 def test_beleg_lesen_ohne_betrag_null():
     assert einlesen.beleg_lesen(beleg_pdf(betrag="unbekannt")).betrag == D("0")
 
@@ -753,6 +810,7 @@ def test_abruf_ohne_belege_ist_kein_erfolg(dienst, zugang, berta):
         "Spenden/Spendenbeleg_000002.pdf": beleg_pdf()})}  # fmt: skip
     ((gelungen, text),) = abruf.uebernehmen("berta")
     assert not gelungen and "Kein Beleg ließ sich lesen (2 in der Datei)" in text
+    assert "Erster Beleg: 5 Textzeilen, davon 2 mit „|“; Name des Vereins gefunden: nein" in text
     assert "Absender" in text
     assert Abruf.objects.first().stand == "fehler" and not Spende.objects.exists()
     # 3) der Dienst liefert gar keinen Finanzexport
