@@ -18,6 +18,7 @@ import shutil
 import tempfile
 import threading
 import time
+import zipfile
 from collections import Counter
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -386,6 +387,20 @@ def _neu_erzeugen(auftrag: Auftrag, kontext, seite, von: str, bis: str, ziel: Pa
     raise Hinweis("Das Vereinsportal hat den Export nicht rechtzeitig erzeugt.")
 
 
+def _inhalt_melden(ziel: Path) -> None:
+    """Was im geladenen Export steckt – nur Zahlen, keine Dateinamen (für die Fehlersuche)."""
+    try:
+        with zipfile.ZipFile(ziel) as archiv:
+            namen = [i.filename.lower() for i in archiv.infolist() if not i.is_dir()]
+    except (OSError, zipfile.BadZipFile):
+        print(f"[abruf] Finanzexport: {ziel.stat().st_size} Bytes, kein ZIP-Archiv.", flush=True)
+        return
+    pdfs = [n for n in namen if n.endswith(".pdf")]
+    belege = [n for n in pdfs if "spenden" in n]
+    print(f"[abruf] Finanzexport: {len(namen)} Dateien, davon {len(pdfs)} PDF, "
+          f"{len(belege)} Spendenbelege.", flush=True)  # fmt: skip
+
+
 def _finanzexport(auftrag: Auftrag, kontext, seite, d: dict):
     auftrag.melden("(2/2) Öffne den Finanzexport …")
     seite.goto(d["export_url"], wait_until="domcontentloaded", timeout=30000)
@@ -399,8 +414,10 @@ def _finanzexport(auftrag: Auftrag, kontext, seite, d: dict):
             f"(2/2) Für {d['von']} bis {d['bis']} gibt es schon einen Export, lade herunter …"
         )
         if _vorhandenen_laden(auftrag, kontext, seite, fertige[-1], ziel):
+            _inhalt_melden(ziel)
             return
     _neu_erzeugen(auftrag, kontext, seite, d["von"], d["bis"], ziel)
+    _inhalt_melden(ziel)
 
 
 def ablauf(auftrag: Auftrag, d: dict, browser_pfad: str | None = None):

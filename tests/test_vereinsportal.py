@@ -705,13 +705,63 @@ def test_abruf_uebernehmen_liest_ein_und_raeumt_auf(dienst, export):
     assert len(abruf.uebernehmen("buero")) == 1
     dienst.stand |= {"stand": "fertig", "dateien": {"spenderliste": True}}
     dienst.dateien["spenderliste"] = spenderliste([(1, "Erika", "Beispiel", "e@example.org", "")])
-    assert abruf.uebernehmen("buero") == [(True, "Spenderliste ersetzt: 1 Spender mit E-Mail.")]
+    assert abruf.uebernehmen("buero") == [
+        (True, "Spenderliste ersetzt: 1 Spender mit E-Mail."),
+        (False, "Der Finanzexport wurde nicht geholt."),
+    ]
     # eine unlesbare Spenderliste hält den Finanzexport nicht auf; danach ist der Dienst frei
     dienst.stand |= {"stand": "fertig", "dateien": {"spenderliste": True, "finanzexport": True}}
     dienst.dateien["spenderliste"] = b"keine Excel-Datei"
     kaputt, gut = abruf.uebernehmen("buero")
     assert kaputt == (False, "Spenderliste: Die Excel-Datei lässt sich nicht lesen.")
     assert gut[0] and "3 waren schon vorhanden" in gut[1] and dienst.stand["stand"] == "frei"
+
+
+def test_abruf_ohne_belege_ist_kein_erfolg(dienst, zugang, berta):
+    """Kommt aus dem Finanzexport nichts an, steht der Abruf nicht als „eingelesen“ da, sondern
+    sagt, was in der Datei war."""
+    from apps.vereinsportal import abruf
+
+    def archiv(dateien):
+        puffer = io.BytesIO()
+        with zipfile.ZipFile(puffer, "w") as z:
+            for name, inhalt in dateien.items():
+                z.writestr(name, inhalt)
+        return puffer.getvalue()
+
+    liste = spenderliste([(1, "Erika", "Beispiel", "erika@example.org", "")])
+    # 1) ein Archiv ganz ohne Spendenbelege; die Spenderliste klappt
+    abruf.starten(berta, dt.date(2026, 2, 1), dt.date(2026, 2, 4), True)
+    dienst.stand |= {"stand": "fertig", "dateien": {"spenderliste": True, "finanzexport": True}}
+    ohne_belege = archiv({"Buchungen.csv": b"x", "Anlage/Rechnung.pdf": b"y"})
+    dienst.dateien = {"spenderliste": liste, "finanzexport": ohne_belege}
+    ok, kaputt = abruf.uebernehmen("berta")
+    assert ok[0] and kaputt == (False, (
+        "Finanzexport: Die Datei enthält keine Spendenbelege: 2 Dateien, davon 1 PDF, aber "
+        "keines mit „Spenden“ im Namen. Wurde der Export im Vereinsportal mit den Belegen "
+        "erzeugt, und stimmt der Zeitraum?"))  # fmt: skip
+    a = Abruf.objects.get()
+    assert a.stand == "fehler" and a.kontakte == 1 and "keine Spendenbelege" in a.meldung
+    # 2) Belege sind da, aber keiner lässt sich lesen (anderer Absender)
+    e = PortalEinstellungen.laden()
+    e.absender = "Ganz anderer Verein e.V."
+    e.save()
+    abruf.starten(berta, dt.date(2026, 3, 1), dt.date(2026, 3, 4), False)
+    dienst.stand |= {"stand": "fertig", "dateien": {"finanzexport": True}}
+    dienst.dateien = {"finanzexport": archiv({
+        "Spenden/Spendenbeleg_000001.pdf": beleg_pdf(),
+        "Spenden/Spendenbeleg_000002.pdf": beleg_pdf()})}  # fmt: skip
+    ((gelungen, text),) = abruf.uebernehmen("berta")
+    assert not gelungen and "Kein Beleg ließ sich lesen (2 in der Datei)" in text
+    assert "Absender" in text
+    assert Abruf.objects.first().stand == "fehler" and not Spende.objects.exists()
+    # 3) der Dienst liefert gar keinen Finanzexport
+    abruf.starten(berta, dt.date(2026, 4, 1), dt.date(2026, 4, 4), True)
+    dienst.stand |= {"stand": "fertig", "dateien": {"spenderliste": True}}
+    dienst.dateien = {"spenderliste": liste}
+    assert abruf.uebernehmen("berta")[-1] == (False, "Der Finanzexport wurde nicht geholt.")
+    assert Abruf.objects.first().stand == "fehler"
+    assert abruf.historie()["gelungen"] == 0
 
 
 def test_abruf_uebernehmen_reicht_hinweise_des_dienstes_weiter(dienst, export):
