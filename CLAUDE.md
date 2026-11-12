@@ -348,7 +348,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Automatischer Abruf (ADR 0127): Browser nur im optionalen Dienst `abruf` (`docker/abruf/abruf.py`,
   Compose-Profil `abruf`, Schlüssel `BINTAFELN_ABRUF_SCHLUESSEL`); bintafeln spricht ihn über
   `apps/vereinsportal/abruf.py` an (in Tests `abruf._anfrage` ersetzen), der Ablauf ist gegen eine
-  nachgebaute Seite in `tests/e2e/test_abruf_dienst.py` getestet.
+  nachgebaute Seite in `tests/e2e/test_abruf_dienst.py` getestet. Zugangsdaten sind persönlich
+  (ADR 0129): `Zugang` je Konto, nie fremde anzeigen oder benutzen; eigenes Recht
+  `vereinsportal.abruf`; den 2FA-Code gibt nur ein, wer gestartet hat; jeder Abruf steht als
+  `Abruf` in der Historie (`abruf.historie()`).
   Hooks `Modul.fristen`, `Modul.auskunft_mitarbeiter`, `Modul.aushang`,
   `Modul.einlass`, `Modul.auskunft_antrag`, `Modul.kopfzeile`, `Modul.seitenleiste`, `Modul.suchen`,
   `Modul.startseite`, `Modul.mein_konto`, `Modul.datenimport` (eigene Übernahmen auf der Seite

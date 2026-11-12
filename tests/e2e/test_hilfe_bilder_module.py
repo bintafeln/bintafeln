@@ -866,10 +866,12 @@ def test_hilfe_bild_vereinsportal(angemeldet, admin, muster, benutzer_mit_rolle)
 
 
 def test_hilfe_bild_vereinsportal_abruf(
-    angemeldet, admin, muster, benutzer_mit_rolle, settings, monkeypatch
+    angemeldet, admin, muster, benutzer_mit_rolle, recht_geben, settings, monkeypatch
 ):
+    import datetime as dt
+
     from apps.vereinsportal import abruf
-    from apps.vereinsportal.models import PortalEinstellungen
+    from apps.vereinsportal.models import Abruf, PortalEinstellungen, Zugang
 
     _module("vereinsportal")
     settings.ABRUF_SCHLUESSEL = "nur-ein-erfundener-test-schluessel"
@@ -878,22 +880,41 @@ def test_hilfe_bild_vereinsportal_abruf(
         defaults={
             "anmeldung_url": "https://portal.example.org/login",
             "export_url": "https://portal.example.org/export",
-            "email": "buero@example.org",
-            "passwort_verschluesselt": "erfunden",
         },
     )
     stand = {"stand": "warte_auf_code", "schritt": "Bitte den 2FA-Code eingeben", "dateien": {}}
     monkeypatch.setattr(abruf, "_anfrage", lambda *a, **k: dict(stand, fehler=""))
+    recht_geben(rollen.BUERO, "vereinsportal.abruf")
     berta = benutzer_mit_rolle("berta", rollen.BUERO)
+    Zugang.objects.create(
+        benutzer=berta, email="berta@example.org", passwort_verschluesselt="erfunden"
+    )
+    E, F = Abruf.Stand.EINGELESEN, Abruf.Stand.FEHLER
+    for von, bis, wer, zustand, zahlen in [
+        (dt.date(2026, 1, 1), dt.date(2026, 3, 31), "Berta Büro", E, (41, 0, 23, 38)),
+        (dt.date(2026, 4, 1), dt.date(2026, 6, 30), "Vera Vorstand", F, None),
+        (dt.date(2026, 4, 1), dt.date(2026, 6, 30), "Vera Vorstand", E, (36, 2, 9, 40)),
+    ]:
+        neu, doppelt, spender, kontakte = zahlen or (0, 0, 0, None)
+        Abruf.objects.create(
+            von=von, bis=bis, wer=wer, stand=zustand, neu=neu, doppelt=doppelt,
+            neue_spender=spender, kontakte=kontakte,
+            meldung="" if zahlen else "Die Anmeldung wurde abgelehnt.",
+        )  # fmt: skip
+    Abruf.objects.create(
+        benutzer=berta, wer="Berta Büro", von=dt.date(2026, 7, 1), bis=dt.date(2026, 9, 30)
+    )
     seite = oeffnen(angemeldet, berta, reverse("vereinsportal:abruf"))
     karte = seite.locator("section.karte")
     aufnehmen(
         seite,
         "vereinsportal-abruf",
         [karte],
-        Marke(seite.locator("input[name=von]"), nummer=1, von="rechts", laenge=50),
-        Marke(seite.locator("#abruf-form button[type=submit]"), nummer=2, von="rechts", laenge=60),
-        Marke(seite.locator("#abruf-code"), nummer=3, von="rechts", laenge=60),
+        Marke(seite.locator("#mein-zugang"), art="rahmen", nummer=1),
+        Marke(seite.locator("input[name=von]"), nummer=2, von="rechts", laenge=50),
+        Marke(seite.locator("#abruf-form button[type=submit]"), nummer=3, von="rechts", laenge=60),
+        Marke(seite.locator("#abruf-code"), nummer=4, von="rechts", laenge=60),
+        Marke(seite.locator("#abruf-historie"), art="rahmen", nummer=5),
     )
 
 

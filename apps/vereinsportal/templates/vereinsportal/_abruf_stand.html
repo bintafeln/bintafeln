@@ -1,5 +1,8 @@
-<div{% if s.stand == "laeuft" %} hx-get="{% url 'vereinsportal:abruf_stand' %}" hx-trigger="every 2s" hx-target="#abruf-stand"{% endif %}>
+<div{% if s.stand == "laeuft" or aktiv and not meiner %} hx-get="{% url 'vereinsportal:abruf_stand' %}{% if 'alle' in request.GET %}?alle=1{% endif %}" hx-trigger="every 2s" hx-target="#abruf-stand"{% endif %}>
+  <h2 class="abruf-titel">Stand</h2>
   {% for m in messages %}<p class="meldung {{ m.tags }}">{{ m }}</p>{% endfor %}
+  {% if aktiv and laufender %}<p class="hinweis">Abruf von <strong>{{ laufender.wer }}</strong> für
+    {{ laufender.von|date:"d.m.Y" }} – {{ laufender.bis|date:"d.m.Y" }}, gestartet um {{ laufender.gestartet_am|date:"H:i" }} Uhr.</p>{% endif %}
   {% if s.stand == "stoerung" %}
   <p class="meldung error">{{ s.fehler }}</p>
   {% elif s.stand == "frei" %}
@@ -7,6 +10,7 @@
   {% elif s.stand == "laeuft" %}
   <p>⏳ {{ s.schritt }}</p>
   {% elif s.stand == "warte_auf_code" %}
+  {% if meiner %}
   <form hx-post="{% url 'vereinsportal:abruf_stand' %}" hx-target="#abruf-stand" class="aktionsleiste">
     {% csrf_token %}
     <input type="hidden" name="aktion" value="code">
@@ -14,6 +18,9 @@
     <input type="text" id="abruf-code" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required autofocus>
     <button type="submit" class="knopf">Code senden</button>
   </form>
+  {% else %}
+  <p>⏳ Das Vereinsportal fragt nach dem 2FA-Code. Den gibt nur {{ laufender.wer|default:"die Person, die den Abruf gestartet hat," }} ein.</p>
+  {% endif %}
   {% elif s.stand == "fertig" %}
   <div hx-post="{% url 'vereinsportal:abruf_stand' %}" hx-vals='{"aktion": "einlesen"}' hx-trigger="load" hx-target="#abruf-stand">⏳ Die Dateien sind geladen, bintafeln liest sie ein …</div>
   {% elif s.stand == "fehler" %}
@@ -22,5 +29,49 @@
   {% endif %}
   {% if aktiv %}
   <form hx-post="{% url 'vereinsportal:abruf_stand' %}" hx-target="#abruf-stand">{% csrf_token %}<input type="hidden" name="aktion" value="abbrechen"><button type="submit" class="knopf knopf-zweitrangig">Abruf abbrechen</button></form>
+  {% endif %}
+
+  <h2 class="abruf-titel">Bisherige Abrufe</h2>
+  {% if not historie.anzahl %}
+  <p class="hinweis">Noch kein Abruf. Hier steht danach, welche Zeiträume schon abgerufen wurden und was dabei
+    eingelesen wurde.</p>
+  {% else %}
+  <div class="kacheln abruf-kacheln">
+    <div class="kachel"><span class="kachel-titel">Letzter erfolgreicher Abruf</span>
+      {% if historie.letzter %}<span class="kachel-wert">{{ historie.letzter.gestartet_am|date:"d.m.Y" }}</span>
+      <span class="kachel-unter">Spenden {{ historie.letzter.von|date:"d.m.Y" }} – {{ historie.letzter.bis|date:"d.m.Y" }}</span>
+      {% else %}<span class="kachel-wert">–</span>{% endif %}</div>
+    <div class="kachel"><span class="kachel-titel">Abrufe</span>
+      <span class="kachel-wert">{{ historie.gelungen }}</span>
+      <span class="kachel-unter">erfolgreich, von {{ historie.anzahl }} gestarteten</span></div>
+    <div class="kachel"><span class="kachel-titel">Neue Spenden</span>
+      <span class="kachel-wert">{{ historie.neu }}</span>
+      <span class="kachel-unter">durch Abrufe eingelesen</span></div>
+    <div class="kachel"><span class="kachel-titel">Neue Spender</span>
+      <span class="kachel-wert">{{ historie.neue_spender }}</span>
+      <span class="kachel-unter">ins Adressbuch aufgenommen</span></div>
+  </div>
+  <div class="tabelle-rahmen">
+    <table class="tabelle" id="abruf-historie">
+      <thead><tr><th>Abgerufen</th><th>Spenden von – bis</th><th>Ergebnis</th>
+        <th class="zahl">Neue Spenden</th><th class="zahl">Schon da</th><th class="zahl">Neue Spender</th>
+        <th class="zahl" title="Spender mit E-Mail in der neu geholten Liste">Liste</th></tr></thead>
+      <tbody>
+        {% for a in historie.abrufe %}
+        <tr>
+          <td class="abruf-wann">{{ a.gestartet_am|date:"d.m.Y, H:i" }}<br><span class="leise">{{ a.wer|default:"–" }}</span></td>
+          <td class="abruf-wann">{{ a.von|date:"d.m.Y" }} – {{ a.bis|date:"d.m.Y" }}</td>
+          <td><span class="{% if a.stand == 'eingelesen' %}marke-ok{% elif a.stand == 'fehler' %}marke-warnung{% else %}marke-neutral{% endif %}">{{ a.get_stand_display }}</span>
+            {% if a.meldung %}<details class="abruf-meldung"><summary>Meldung</summary>{{ a.meldung }}</details>{% endif %}</td>
+          {% if a.stand == "eingelesen" %}
+          <td class="zahl">{{ a.neu }}</td><td class="zahl">{{ a.doppelt }}</td><td class="zahl">{{ a.neue_spender }}</td>
+          <td class="zahl">{% if a.kontakte is None %}–{% else %}{{ a.kontakte }}{% endif %}</td>
+          {% else %}<td class="zahl">–</td><td class="zahl">–</td><td class="zahl">–</td><td class="zahl">–</td>{% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if historie.mehr %}<p><a href="{% url 'vereinsportal:abruf' %}?alle=1">Alle anzeigen ({{ historie.mehr }} ältere)</a></p>{% endif %}
   {% endif %}
 </div>

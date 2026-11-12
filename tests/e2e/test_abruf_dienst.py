@@ -416,7 +416,7 @@ def test_abruf_von_der_seite_bis_zum_einlesen(dienst, angemeldet, admin, setting
 
     from apps.core import geheimnis
     from apps.core.models import TafelEinstellungen
-    from apps.vereinsportal.models import Kontakt, PortalEinstellungen
+    from apps.vereinsportal.models import Abruf, Kontakt, PortalEinstellungen, Zugang
 
     t = TafelEinstellungen.laden()
     t.module = ["vereinsportal"]
@@ -424,9 +424,12 @@ def test_abruf_von_der_seite_bis_zum_einlesen(dienst, angemeldet, admin, setting
     settings.ABRUF_URL, settings.ABRUF_SCHLUESSEL = dienst.url, SCHLUESSEL
     e = PortalEinstellungen.laden()
     e.anmeldung_url, e.liste_url = f"{dienst.portal}/login", f"{dienst.portal}/liste"
-    e.export_url, e.email = f"{dienst.portal}/export-vorhanden", "buero@example.org"
-    e.passwort_verschluesselt = geheimnis.verschluesseln("erfunden")
+    e.export_url = f"{dienst.portal}/export-vorhanden"
     e.save()
+    Zugang.objects.create(
+        benutzer=admin, email="buero@example.org",
+        passwort_verschluesselt=geheimnis.verschluesseln("erfunden"),
+    )  # fmt: skip
     seite = angemeldet(admin)
     seite.goto(reverse("vereinsportal:abruf"))
     seite.fill("input[name=von]", "01.02.2026")
@@ -442,3 +445,6 @@ def test_abruf_von_der_seite_bis_zum_einlesen(dienst, angemeldet, admin, setting
     expect(stand).to_contain_text("1 ohne vollständige Anschrift ausgelassen")
     expect(stand).to_contain_text("Es läuft kein Abruf")
     assert Kontakt.objects.get().email == "erika@example.org"
+    # der Abruf steht in der Historie
+    expect(seite.locator("#abruf-historie")).to_contain_text("01.02.2026 – 04.02.2026")
+    assert Abruf.objects.get().stand == "eingelesen"

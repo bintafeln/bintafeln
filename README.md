@@ -1393,8 +1393,11 @@ Für Tafeln, die ihre Spendenbescheinigungen weiterhin im Vereinsportal ausstell
   BINTAFELN_ABRUF_SCHLUESSEL=<langer zufälliger Text, z. B. aus: openssl rand -hex 32>
   ```
 
-  Danach `./betrieb update`. Die Adressen der Seiten im Vereinsportal und die Zugangsdaten stehen
-  unter „Einstellungen → Verein → Vereinsportal“ (Passwort verschlüsselt). Der Abruf bedient die
+  Danach `./betrieb update`. Die Adressen der Seiten im Vereinsportal stehen unter „Einstellungen
+  → Verein → Vereinsportal“. Die **Zugangsdaten sind persönlich** (ADR 0129): Jede Person mit dem
+  Recht „Automatischer Abruf mit eigenen Zugangsdaten“ trägt ihre eigene Anmeldung auf der Seite
+  „Abruf aus dem Vereinsportal“ ein (Passwort verschlüsselt); niemand sonst sieht sie oder ruft
+  damit ab. Die Seite zeigt außerdem die bisherigen Abrufe mit Zeitraum und Ergebnis. Der Abruf bedient die
   Seiten des Vereinsportals wie ein Mensch und kann scheitern, wenn sie sich ändern; das Hochladen
   von Hand geht immer.
 

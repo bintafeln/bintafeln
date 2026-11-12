@@ -4,6 +4,10 @@ bintafeln hat keinen Browser. Es schickt dem Dienst den Auftrag (Adressen, Zugan
 Zeitraum), reicht den 2FA-Code weiter, holt am Ende die Dateien ab und liest sie mit denselben
 Regeln ein wie beim Hochladen von Hand (``einlesen.py``). Der Stand liegt im Dienst, damit alle
 Serverprozesse dasselbe sehen. In Tests ``abruf._anfrage`` ersetzen.
+
+Die Zugangsdaten sind persönlich (ADR 0129): Jeder ruft mit dem eigenen ``Zugang`` ab, den
+2FA-Code gibt nur ein, wer den Abruf gestartet hat. Jeder Abruf steht als ``Abruf`` in der
+Historie; was er einliest, sehen alle.
 """
 
 import datetime as dt
@@ -14,10 +18,12 @@ import urllib.request
 
 from django.conf import settings
 from django.core.cache import cache
+from django.db.models import Sum
+from django.utils import timezone
 
 from apps.core import geheimnis
 from apps.vereinsportal import einlesen
-from apps.vereinsportal.models import PortalEinstellungen
+from apps.vereinsportal.models import Abruf, PortalEinstellungen, Zugang
 
 MAX_TAGE = 93  # wie im bisherigen Programm: höchstens drei Monate
 SPERRE = "vereinsportal-abruf-einlesen"
@@ -81,31 +87,78 @@ def zeitraum_pruefen(von: dt.date, bis: dt.date) -> None:
         raise AbrufFehler("Das Enddatum liegt in der Zukunft.")
 
 
-def starten(von: dt.date, bis: dt.date, mit_liste: bool) -> dict:
+def zugang(benutzer) -> Zugang | None:
+    """Der persönliche Zugang dieses Kontos, wenn E-Mail und Passwort gespeichert sind."""
+    z = Zugang.objects.filter(benutzer=benutzer).first()
+    return z if z and z.vollstaendig else None
+
+
+def laufender() -> Abruf | None:
+    return Abruf.objects.filter(stand=Abruf.Stand.LAEUFT).first()
+
+
+def _beenden(stand: str, meldung: str = "", **werte) -> None:
+    """Schließt den laufenden Abruf in der Historie ab."""
+    Abruf.objects.filter(stand=Abruf.Stand.LAEUFT).update(
+        stand=stand, meldung=meldung[:2000], beendet_am=timezone.now(), **werte
+    )
+
+
+def abgleichen(s: dict) -> None:
+    """Hält die Historie am Stand des Dienstes: Ein Fehler dort beendet den Abruf hier; läuft
+    dort nichts mehr (z. B. nach einem Neustart des Dienstes), gilt er als abgebrochen."""
+    if s["stand"] == "fehler":
+        _beenden(Abruf.Stand.FEHLER, s.get("fehler") or "")
+    elif s["stand"] == "frei":
+        _beenden(Abruf.Stand.ABGEBROCHEN)
+
+
+def starten(benutzer, von: dt.date, bis: dt.date, mit_liste: bool) -> dict:
     e = PortalEinstellungen.laden()
-    if not e.abruf_eingerichtet:
-        raise AbrufFehler("Bitte zuerst Adressen und Zugangsdaten in den Einstellungen eintragen.")
-    passwort = geheimnis.entschluesseln(e.passwort_verschluesselt)
+    if not e.adressen_eingerichtet:
+        raise AbrufFehler("Bitte zuerst die Adressen in den Einstellungen eintragen.")
+    z = zugang(benutzer)
+    if not z:
+        raise AbrufFehler("Bitte zuerst Ihre persönlichen Zugangsdaten eintragen.")
+    passwort = geheimnis.entschluesseln(z.passwort_verschluesselt)
     if not passwort:
         raise AbrufFehler("Das gespeicherte Passwort ist nicht mehr lesbar; bitte neu eintragen.")
     zeitraum_pruefen(von, bis)
-    return _anfrage("/start", {
+    mit_liste = bool(mit_liste and e.liste_url)
+    antwort = _anfrage("/start", {
         "anmeldung_url": e.anmeldung_url, "liste_url": e.liste_url, "export_url": e.export_url,
-        "email": e.email, "passwort": passwort, "von": f"{von:%d.%m.%Y}", "bis": f"{bis:%d.%m.%Y}",
-        "mit_liste": bool(mit_liste and e.liste_url),
+        "email": z.email, "passwort": passwort, "von": f"{von:%d.%m.%Y}", "bis": f"{bis:%d.%m.%Y}",
+        "mit_liste": mit_liste,
     })  # fmt: skip
+    _beenden(Abruf.Stand.ABGEBROCHEN)  # Reste eines Abrufs, den der Dienst nicht mehr kennt
+    Abruf.objects.create(
+        benutzer=benutzer, wer=benutzer.get_full_name() or benutzer.get_username(),
+        von=von, bis=bis, mit_liste=mit_liste,
+    )  # fmt: skip
+    return antwort
 
 
-def code_senden(code: str) -> dict:
+def gehoert(benutzer) -> bool:
+    """Darf dieses Konto den 2FA-Code eingeben? Nur wer den laufenden Abruf gestartet hat."""
+    a = laufender()
+    return bool(a and a.benutzer_id == benutzer.pk)
+
+
+def code_senden(benutzer, code: str) -> dict:
+    if not gehoert(benutzer):
+        raise AbrufFehler("Den Code gibt nur ein, wer den Abruf gestartet hat.")
     return _anfrage("/code", {"code": code.strip()})
 
 
 def abbrechen() -> dict:
-    return _anfrage("/abbrechen", {})
+    antwort = _anfrage("/abbrechen", {})
+    _beenden(Abruf.Stand.ABGEBROCHEN)
+    return antwort
 
 
 def verwerfen() -> None:
     _anfrage("/fertig", {})
+    _beenden(Abruf.Stand.ABGEBROCHEN)
 
 
 def uebernehmen(von: str) -> list[tuple[bool, str]]:
@@ -121,7 +174,7 @@ def uebernehmen(von: str) -> list[tuple[bool, str]]:
         s = _anfrage("/stand")
         if s.get("stand") != "fertig":
             return []
-        meldungen = []
+        meldungen, werte = [], {}
         for art, lesen in (("spenderliste", _spenderliste), ("finanzexport", _finanzexport)):
             if not s["dateien"].get(art):
                 continue
@@ -129,12 +182,17 @@ def uebernehmen(von: str) -> list[tuple[bool, str]]:
                 with tempfile.TemporaryFile() as datei:
                     _anfrage(f"/datei/{art}", ziel=datei)
                     datei.seek(0)
-                    meldungen.append((True, lesen(datei, von)))
+                    text, zahlen = lesen(datei, von)
+                    meldungen.append((True, text))
+                    werte |= zahlen
             except (AbrufFehler, einlesen.EinleseFehler) as fehler:
                 meldungen.append((False, f"{NAMEN[art]}: {fehler}"))
         # Was der Dienst nicht holen konnte, ohne den Abruf abzubrechen (z. B. die Spenderliste)
         meldungen += [(False, hinweis) for hinweis in s.get("hinweise") or []]
-        verwerfen()
+        _anfrage("/fertig", {})
+        fehler = " ".join(text for gelungen, text in meldungen if not gelungen)
+        ok = any(gelungen for gelungen, _ in meldungen)
+        _beenden(Abruf.Stand.EINGELESEN if ok else Abruf.Stand.FEHLER, fehler, **werte)
         return meldungen
     finally:
         cache.delete(SPERRE)
@@ -143,8 +201,9 @@ def uebernehmen(von: str) -> list[tuple[bool, str]]:
 NAMEN = {"spenderliste": "Spenderliste", "finanzexport": "Finanzexport"}
 
 
-def _spenderliste(datei, von: str) -> str:
-    return spenderliste_bericht(*einlesen.spenderliste_einlesen(datei.read()))
+def _spenderliste(datei, von: str) -> tuple[str, dict]:
+    anzahl, ohne = einlesen.spenderliste_einlesen(datei.read())
+    return spenderliste_bericht(anzahl, ohne), {"kontakte": anzahl}
 
 
 def spenderliste_bericht(anzahl: int, ohne: int) -> str:
@@ -152,5 +211,23 @@ def spenderliste_bericht(anzahl: int, ohne: int) -> str:
     return f"Spenderliste ersetzt: {anzahl} Spender mit E-Mail{zusatz}"
 
 
-def _finanzexport(datei, von: str) -> str:
-    return einlesen.bericht(einlesen.finanzexport_einlesen(datei, von))
+def _finanzexport(datei, von: str) -> tuple[str, dict]:
+    e = einlesen.finanzexport_einlesen(datei, von)
+    zahlen = {"neu": e.neu, "doppelt": e.doppelt, "neue_spender": e.neue_spender,
+              "versendet": e.versendet}  # fmt: skip
+    return einlesen.bericht(e), zahlen
+
+
+def historie(alle: bool = False, grenze: int = 10) -> dict:
+    """Die bisherigen Abrufe für die Abruf-Seite: Kurzstatistik und Liste (neueste zuerst)."""
+    abrufe = Abruf.objects.all()
+    gelungen = abrufe.filter(stand=Abruf.Stand.EINGELESEN)
+    summe = gelungen.aggregate(neu=Sum("neu"), spender=Sum("neue_spender"))
+    anzahl = abrufe.count()
+    return {
+        "anzahl": anzahl, "gelungen": gelungen.count(),
+        "neu": summe["neu"] or 0, "neue_spender": summe["spender"] or 0,
+        "letzter": gelungen.first(),
+        "abrufe": abrufe if alle else abrufe[:grenze],
+        "mehr": 0 if alle else max(anzahl - grenze, 0),
+    }  # fmt: skip
