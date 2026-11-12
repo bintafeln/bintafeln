@@ -14,10 +14,12 @@ from apps.vereinsportal.forms import (
     EinstellungenForm,
     FinanzexportForm,
     SpenderlisteForm,
+    ZugangForm,
 )
-from apps.vereinsportal.models import Kontakt, PortalEinstellungen
+from apps.vereinsportal.models import Kontakt, PortalEinstellungen, Zugang
 
 nutzen = rollen.recht_erforderlich("vereinsportal.nutzen")
+abrufen = rollen.recht_erforderlich("vereinsportal.abruf")
 
 
 def _finanzexport(request, datei) -> None:
@@ -81,23 +83,27 @@ def einstellungen(request):
         return redirect("vereinsportal:einstellungen")
     return render(request, "vereinsportal/einstellungen.html", {
         "form": form, "abruf_verfuegbar": portal.verfuegbar(),
-        "passwort_gespeichert": bool(form.instance.passwort_verschluesselt),
     })  # fmt: skip
 
 
-# --- Automatischer Abruf (ADR 0127) ------------------------------------------------------------
+# --- Automatischer Abruf (ADR 0127, 0129) ------------------------------------------------------
 
 
 def _abruf_stand(request, s=None):
     s = s or portal.stand()
-    return render(request, "vereinsportal/_abruf_stand.html", {"s": s, "aktiv": s["stand"]
-                  in portal.AKTIV})  # fmt: skip
+    portal.abgleichen(s)
+    laufender = portal.laufender()
+    return render(request, "vereinsportal/_abruf_stand.html", {
+        "s": s, "aktiv": s["stand"] in portal.AKTIV, "laufender": laufender,
+        "meiner": bool(laufender and laufender.benutzer_id == request.user.pk),
+        "historie": portal.historie(alle="alle" in request.GET),
+    })  # fmt: skip
 
 
 @never_cache
-@nutzen
+@abrufen
 def abruf(request):
-    """Abruf starten und seinen Stand zeigen."""
+    """Abruf mit den eigenen Zugangsdaten starten; Stand und Historie sehen alle mit dem Recht."""
     if not portal.verfuegbar():
         return render(request, "vereinsportal/abruf.html", {"verfuegbar": False})
     heute = timezone.localdate()
@@ -109,26 +115,61 @@ def abruf(request):
         except portal.AbrufFehler as fehler:
             messages.error(request, str(fehler))
         return redirect("vereinsportal:abruf")
+    s = portal.stand()
+    portal.abgleichen(s)
+    laufender = portal.laufender()
     return render(request, "vereinsportal/abruf.html", {
-        "verfuegbar": True, "form": form, "s": portal.stand(),
-        "eingerichtet": PortalEinstellungen.laden().abruf_eingerichtet,
+        "verfuegbar": True, "form": form, "s": s, "aktiv": s["stand"] in portal.AKTIV,
+        "laufender": laufender,
+        "meiner": bool(laufender and laufender.benutzer_id == request.user.pk),
+        "adressen": PortalEinstellungen.laden().adressen_eingerichtet,
+        "zugang": portal.zugang(request.user),
+        "historie": portal.historie(alle="alle" in request.GET),
     })  # fmt: skip
 
 
 @nicht_in_demo
 def _abruf_starten(request, d):
-    portal.starten(d["von"], d["bis"], d["mit_liste"])
+    portal.starten(request.user, d["von"], d["bis"], d["mit_liste"])
 
 
 @never_cache
-@nutzen
+@abrufen
+def zugang(request):
+    """Die eigenen Zugangsdaten zum Vereinsportal: Jedes Konto sieht und ändert nur seine."""
+    eigener = Zugang.objects.filter(benutzer=request.user).first()
+    if request.method == "POST" and "loeschen" in request.POST:
+        _zugang_loeschen(request, eigener)
+        return redirect("vereinsportal:abruf")
+    form = ZugangForm(request.POST or None, instance=eigener or Zugang(benutzer=request.user))
+    if request.method == "POST" and form.is_valid():
+        _zugang_speichern(request, form)
+        return redirect("vereinsportal:abruf")
+    return render(request, "vereinsportal/zugang.html", {"form": form, "eigener": eigener})
+
+
+@nicht_in_demo
+def _zugang_speichern(request, form):
+    form.save()
+    messages.success(request, "Ihre Zugangsdaten sind gespeichert.")
+
+
+@nicht_in_demo
+def _zugang_loeschen(request, eigener):
+    if eigener:
+        eigener.delete()  # Geheimnis: endgültig, nicht in den Papierkorb
+    messages.success(request, "Ihre Zugangsdaten sind gelöscht.")
+
+
+@never_cache
+@abrufen
 def abruf_stand(request):
     """Der Stand zum Nachladen; POST reicht den 2FA-Code weiter, bricht ab oder liest ein."""
     if request.method == "POST":
         aktion = request.POST.get("aktion")
         try:
             if aktion == "code":
-                portal.code_senden(request.POST.get("code") or "")
+                portal.code_senden(request.user, request.POST.get("code") or "")
             elif aktion == "abbrechen":
                 portal.abbrechen()
             elif aktion == "verwerfen":

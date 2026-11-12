@@ -3,7 +3,7 @@ from django.db import models
 
 from apps.core import geheimnis
 from apps.konten.forms import DatumEingabe
-from apps.vereinsportal.models import PortalEinstellungen
+from apps.vereinsportal.models import PortalEinstellungen, Zugang
 
 
 class FinanzexportForm(forms.Form):
@@ -28,17 +28,9 @@ def _feld(feld, **angaben):
 
 
 class EinstellungenForm(forms.ModelForm):
-    passwort = forms.CharField(
-        label="Passwort für die Anmeldung im Vereinsportal", required=False, strip=False,
-        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
-        help_text="Leer lassen, um das gespeicherte Passwort zu behalten. Es wird verschlüsselt "
-        "gespeichert und nie wieder angezeigt.",
-    )  # fmt: skip
-    passwort_loeschen = forms.BooleanField(label="Gespeichertes Passwort löschen", required=False)
-
     class Meta:
         model = PortalEinstellungen
-        fields = ["absender", "anmeldung_url", "liste_url", "export_url", "email"]
+        fields = ["absender", "anmeldung_url", "liste_url", "export_url"]
         formfield_callback = _feld
 
     def clean(self):
@@ -48,11 +40,30 @@ class EinstellungenForm(forms.ModelForm):
                 self.add_error(feld, "Die Adresse muss mit https:// beginnen.")
         return daten
 
+
+class ZugangForm(forms.ModelForm):
+    """Die persönlichen Zugangsdaten des angemeldeten Kontos (ADR 0129)."""
+
+    passwort = forms.CharField(
+        label="Passwort für die Anmeldung im Vereinsportal", required=False, strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+        help_text="Es wird verschlüsselt gespeichert und nie wieder angezeigt. Leer lassen, um "
+        "das gespeicherte Passwort zu behalten.",
+    )  # fmt: skip
+
+    class Meta:
+        model = Zugang
+        fields = ["email"]
+
+    def clean(self):
+        daten = super().clean()
+        if not daten.get("passwort") and not self.instance.passwort_verschluesselt:
+            self.add_error("passwort", "Bitte das Passwort eintragen.")
+        return daten
+
     def save(self, commit=True):
         instanz = super().save(commit=False)
-        if self.cleaned_data.get("passwort_loeschen"):
-            instanz.passwort_verschluesselt = ""
-        elif self.cleaned_data.get("passwort"):
+        if self.cleaned_data.get("passwort"):
             instanz.passwort_verschluesselt = geheimnis.verschluesseln(
                 self.cleaned_data["passwort"]
             )
