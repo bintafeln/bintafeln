@@ -18,6 +18,7 @@ import shutil
 import tempfile
 import threading
 import time
+from collections import Counter
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -36,6 +37,7 @@ ZEITEN = {
     "liste_laden": 20,
     "export_laden": 5,
     "klick": 1,
+    "zeile": 30,  # so lange darf die Zeile des neuen Exports auf sich warten lassen
     "abfangen": 30,  # Antwort mit der Download-Adresse
     "erzeugen": 4 * 3600,  # ein neuer Export kann lange brauchen
     "download": 600,
@@ -64,6 +66,7 @@ class Auftrag:
         self.ordner = None
         self.stand, self.schritt, self.fehler = "frei", "", ""
         self.code, self.abbrechen, self.nummer = "", False, 0
+        self.hinweise: list[str] = []  # was nicht geklappt hat, ohne den Abruf abzubrechen
 
     def melden(self, schritt: str, stand: str | None = None):
         print(f"[abruf] {schritt}", flush=True)  # für „docker compose logs abruf“; nie Zugangsdaten
@@ -81,7 +84,8 @@ class Auftrag:
     def als_json(self) -> dict:
         vorhanden = {a: bool(self.ordner and self.datei(a).exists()) for a in DATEIEN}
         return {"stand": self.stand, "schritt": self.schritt, "fehler": self.fehler,
-                "dateien": vorhanden, "nummer": self.nummer}  # fmt: skip
+                "dateien": vorhanden, "nummer": self.nummer,
+                "hinweise": list(self.hinweise)}  # fmt: skip
 
 
 AUFTRAG = Auftrag()
@@ -199,17 +203,35 @@ def _anmelden(auftrag: Auftrag, seite, d: dict):
     _warten(auftrag, seite, ZEITEN["nach_code"])
 
 
+# Die kleinen Knöpfe mit Symbol über der Liste; je nach Stand des Portals heißen sie anders
+LISTEN_KNOEPFE = ", ".join(
+    f"{k}:not(.disabled):not([disabled])"
+    for k in ("button.mat-icon-button", "button.mat-mdc-icon-button", "button[mat-icon-button]")
+)
+KNOEPFE_ZEIGEN = """() => { const alle = [...document.querySelectorAll('button')];
+    return alle.length + ' Knöpfe; ' + alle.slice(0, 12).map(b =>
+        (typeof b.className === 'string' ? b.className.trim().split(/\\s+/).slice(0, 3).join('.')
+                                         : '') || '-').join(' | '); }"""
+
+
 def _spenderliste(auftrag: Auftrag, seite, d: dict):
     auftrag.melden("(1/2) Öffne die Spenderliste …")
     seite.goto(d["liste_url"], wait_until="domcontentloaded", timeout=30000)
     _warten(auftrag, seite, ZEITEN["liste_laden"])
     if "login" in seite.url:
         raise Hinweis("Die Anmeldung hat nicht geklappt. War der 2FA-Code richtig?")
-    knoepfe = seite.query_selector_all("button.mat-icon-button:not(.disabled):not([disabled])")
+    knoepfe = seite.query_selector_all(LISTEN_KNOEPFE)
     if len(knoepfe) <= 3:
-        auftrag.melden(
-            f"(1/2) Export-Knopf der Spenderliste nicht gefunden ({len(knoepfe)} Knöpfe)"
+        # Für die Fehlersuche: Was für Knöpfe hat die Seite überhaupt?
+        print(f"[abruf] Spenderliste: {len(knoepfe)} passende Knöpfe auf "
+              f"{seite.url.split('?')[0]}; vorhanden: {seite.evaluate(KNOEPFE_ZEIGEN)}",
+              flush=True)  # fmt: skip
+        auftrag.hinweise.append(
+            "Die Liste „Spender mit E-Mail“ wurde nicht geholt: Auf der Seite fehlt der Knopf "
+            "zum Exportieren. Stimmt die „Adresse der Liste“ in den Einstellungen? Die Liste "
+            "lässt sich weiterhin von Hand hochladen."
         )
+        auftrag.melden("(1/2) Export-Knopf der Spenderliste nicht gefunden")
         return
     with seite.expect_download(timeout=60000) as geladen:
         knoepfe[3].click()
@@ -275,51 +297,93 @@ def _vorhandenen_laden(auftrag: Auftrag, kontext, seite, knopf, ziel: Path) -> b
         return False
 
 
-FELD_SETZEN = """([id, wert]) => {
-    const feld = document.getElementById(id);
-    if (!feld) return;
+# Die beiden Datumsfelder finden und markieren. Ihre Nummern (mat-input-0, -1 …) vergibt die
+# Seite der Reihe nach, sie hängen davon ab, was vorher geöffnet war – darauf ist kein Verlass.
+FELDER_FINDEN = """() => {
+    const sichtbar = e => e.offsetParent !== null;
+    const alle = [...document.querySelectorAll('input')].filter(sichtbar);
+    let f = alle.filter(e => e.classList.contains('mat-datepicker-input')
+        || e.hasAttribute('data-mat-calendar') || e.getAttribute('aria-haspopup') === 'dialog');
+    if (f.length < 2)
+        f = ['mat-input-0', 'mat-input-1'].map(i => document.getElementById(i)).filter(Boolean);
+    if (f.length < 2) f = alle.filter(e => e.id.startsWith('mat-input-'));
+    f = f.slice(0, 2);
+    f.forEach((e, i) => e.setAttribute('data-abruf-datum', i));
+    return {gefunden: f.length,
+            alle: alle.slice(0, 12).map(e => [e.id, e.type, e.placeholder].join('/')).join(' | ')};
+}"""
+FELD_SETZEN = """([nummer, wert]) => {
+    const feld = document.querySelector('[data-abruf-datum="' + nummer + '"]');
     Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
         .call(feld, wert);
     for (const art of ['input', 'change', 'blur'])
         feld.dispatchEvent(new Event(art, {bubbles: true}));
 }"""
-ZAHL_FERTIG = """() => [...document.querySelectorAll('button')].filter(
-    b => b.textContent.toLowerCase().includes('herunterladen') && !b.disabled).length"""
-ERSTEN_KLICKEN = """() => { const b = [...document.querySelectorAll('button')].find(
-    b => b.textContent.toLowerCase().includes('herunterladen') && !b.disabled);
-    if (b) b.click(); }"""
+FELD_LESEN = """n => document.querySelector('[data-abruf-datum="' + n + '"]')?.value || ''"""
+ZEITRAEUME = """() => [...document.querySelectorAll('table tr em')].map(e => e.innerText.trim())"""
 
 
-def _neu_erzeugen(auftrag: Auftrag, seite, von: str, bis: str, ziel: Path):
-    auftrag.melden("(2/2) Stelle den Zeitraum ein …")
+def _zeitraum_einstellen(auftrag: Auftrag, seite, von: str, bis: str):
     seite.click("mat-select", timeout=5000)
     _warten(auftrag, seite, ZEITEN["klick"])
+    gewaehlt = False
     for wahl in seite.query_selector_all('mat-option, [role="option"]'):
         if "benutzerdefiniert" in (wahl.inner_text() or "").lower():
             wahl.click()
+            gewaehlt = True
             break
+    if not gewaehlt:
+        raise Hinweis("Die Auswahl „Benutzerdefiniert“ für den Zeitraum wurde nicht gefunden.")
     _warten(auftrag, seite, ZEITEN["klick"])
-    seite.evaluate(FELD_SETZEN, ["mat-input-0", von])
-    seite.evaluate(FELD_SETZEN, ["mat-input-1", bis])
+    felder = seite.evaluate(FELDER_FINDEN)
+    if felder["gefunden"] < 2:
+        raise Hinweis(
+            "Die beiden Datumsfelder für den Zeitraum wurden nicht gefunden. Felder der Seite: "
+            f"{felder['alle'] or 'keine'}"
+        )
+    seite.evaluate(FELD_SETZEN, [0, von])
+    seite.evaluate(FELD_SETZEN, [1, bis])
     _warten(auftrag, seite, ZEITEN["klick"])
-    vorher = seite.evaluate(ZAHL_FERTIG)
+    steht = [seite.evaluate(FELD_LESEN, 0), seite.evaluate(FELD_LESEN, 1)]
+    if steht != [von, bis]:
+        raise Hinweis(
+            f"Der Zeitraum ließ sich nicht einstellen: In den Feldern steht „{steht[0]}“ bis "
+            f"„{steht[1]}“ statt {von} bis {bis}."
+        )
+
+
+def _neu_erzeugen(auftrag: Auftrag, kontext, seite, von: str, bis: str, ziel: Path):
+    auftrag.melden(f"(2/2) Stelle den Zeitraum ein: {von} bis {bis} …")
+    _zeitraum_einstellen(auftrag, seite, von, bis)
+    vorher = Counter(seite.evaluate(ZEITRAEUME))
     erstellen = next((k for k in seite.query_selector_all("button")
                       if "erstellen" in (k.inner_text() or "").lower()), None)  # fmt: skip
     if not erstellen:
-        raise RuntimeError("Der Knopf „Erstellen“ wurde auf der Seite nicht gefunden.")
+        raise Hinweis("Der Knopf „Erstellen“ wurde auf der Seite nicht gefunden.")
     erstellen.click()
     beginn = time.monotonic()
-    while time.monotonic() - beginn < ZEITEN["erzeugen"]:
-        minuten = int((time.monotonic() - beginn) // 60)
-        auftrag.melden(f"(2/2) Das Vereinsportal erzeugt den Export … ({minuten} min)")
-        if seite.evaluate(ZAHL_FERTIG) > vorher:
+    while (vergangen := time.monotonic() - beginn) < ZEITEN["erzeugen"]:
+        auftrag.melden(
+            f"(2/2) Das Vereinsportal erzeugt den Export {von} bis {bis} … "
+            f"({int(vergangen // 60)} min)"
+        )
+        # Nur der Export mit genau diesem Zeitraum zählt – nicht irgendein fertiger der Seite
+        fertige = _fertige_exporte(seite, von, bis)
+        if fertige:
             auftrag.melden("(2/2) Der Export ist fertig, lade herunter …")
-            with seite.expect_download(timeout=ZEITEN["download"] * 1000) as geladen:
-                seite.evaluate(ERSTEN_KLICKEN)
-            geladen.value.save_as(str(ziel))
-            return
+            if _vorhandenen_laden(auftrag, kontext, seite, fertige[-1], ziel):
+                return
+            raise Hinweis("Der fertige Export ließ sich nicht herunterladen.")
+        # Zeilen, die seit „Erstellen“ dazugekommen sind (gezählt, weil es denselben Zeitraum
+        # schon geben kann): Ist keine davon unsere, hat das Portal den Zeitraum nicht übernommen
+        neue = list((Counter(seite.evaluate(ZEITRAEUME)) - vorher).elements())
+        if neue and vergangen > ZEITEN["zeile"] and not any(von in z and bis in z for z in neue):
+            raise Hinweis(
+                f"Das Vereinsportal hat einen Export für einen anderen Zeitraum angelegt "
+                f"{neue[0]} statt {von} bis {bis}. Der Zeitraum wurde dort nicht übernommen."
+            )
         _warten(auftrag, seite, 1)
-    raise RuntimeError("Das Vereinsportal hat den Export nicht rechtzeitig erzeugt.")
+    raise Hinweis("Das Vereinsportal hat den Export nicht rechtzeitig erzeugt.")
 
 
 def _finanzexport(auftrag: Auftrag, kontext, seite, d: dict):
@@ -331,10 +395,12 @@ def _finanzexport(auftrag: Auftrag, kontext, seite, d: dict):
     ziel = auftrag.datei("finanzexport")
     fertige = _fertige_exporte(seite, d["von"], d["bis"])
     if fertige:
-        auftrag.melden("(2/2) Für den Zeitraum gibt es schon einen Export, lade herunter …")
+        auftrag.melden(
+            f"(2/2) Für {d['von']} bis {d['bis']} gibt es schon einen Export, lade herunter …"
+        )
         if _vorhandenen_laden(auftrag, kontext, seite, fertige[-1], ziel):
             return
-    _neu_erzeugen(auftrag, seite, d["von"], d["bis"], ziel)
+    _neu_erzeugen(auftrag, kontext, seite, d["von"], d["bis"], ziel)
 
 
 def ablauf(auftrag: Auftrag, d: dict, browser_pfad: str | None = None):

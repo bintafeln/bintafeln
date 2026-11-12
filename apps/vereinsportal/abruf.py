@@ -132,6 +132,8 @@ def uebernehmen(von: str) -> list[tuple[bool, str]]:
                     meldungen.append((True, lesen(datei, von)))
             except (AbrufFehler, einlesen.EinleseFehler) as fehler:
                 meldungen.append((False, f"{NAMEN[art]}: {fehler}"))
+        # Was der Dienst nicht holen konnte, ohne den Abruf abzubrechen (z. B. die Spenderliste)
+        meldungen += [(False, hinweis) for hinweis in s.get("hinweise") or []]
         verwerfen()
         return meldungen
     finally:

@@ -772,6 +772,17 @@ def test_abruf_uebernehmen_liest_ein_und_raeumt_auf(dienst, export):
     assert gut[0] and "3 waren schon vorhanden" in gut[1] and dienst.stand["stand"] == "frei"
 
 
+def test_abruf_uebernehmen_reicht_hinweise_des_dienstes_weiter(dienst, export):
+    """Konnte der Dienst die Spenderliste nicht holen, steht das auf der Seite."""
+    from apps.vereinsportal import abruf
+
+    hinweis = "Die Liste „Spender mit E-Mail“ wurde nicht geholt."
+    dienst.stand |= {"stand": "fertig", "dateien": {"finanzexport": True}, "hinweise": [hinweis]}
+    dienst.dateien = {"finanzexport": export.getvalue()}
+    gut, gemeldet = abruf.uebernehmen("buero")
+    assert gut[0] and gemeldet == (False, hinweis)
+
+
 def test_abruf_uebernehmen_nicht_doppelt(dienst):
     from django.core.cache import cache
 
