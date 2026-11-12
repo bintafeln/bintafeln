@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% load static %}
+{% load l10n %}
 {% block titel %}Zuwendungsbestätigungen {{ jahr }}{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
@@ -32,24 +34,33 @@
 <section class="karte breit">
   <h2>Noch nicht bestätigte Geldspenden {{ jahr }}</h2>
   {% if offen %}
+  <form method="post" action="{% url 'spenden:ausstellen' %}?jahr={{ jahr }}" id="offen-form">
+  {% csrf_token %}
   <div class="tabelle-rahmen">
-  <table class="tabelle">
-    <thead><tr><th>Spender</th><th class="zahl">Spenden</th><th class="zahl">Summe</th><th></th></tr></thead>
+  <table class="tabelle" data-sortierbar id="offen-tabelle">
+    <thead><tr><th class="auswahl"><input type="checkbox" data-alle="adresse" aria-label="Alle auswählen" title="alle / keine"></th>
+      <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Nachname / Organisation</button></th>
+      <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Vorname</button></th>
+      <th class="zahl" aria-sort="none"><button type="button" class="sortieren" data-sort="zahl">Spenden</button></th>
+      <th class="zahl" aria-sort="none"><button type="button" class="sortieren" data-sort="zahl">Summe</button></th><th></th></tr></thead>
     <tbody>
     {% for a, summe, anzahl in offen %}
       <tr>
-        <td data-titel="Spender"><a href="{% url 'adressen:adresse' a.pk %}">{{ a.name }}</a>{% if not a.strasse %} <span class="marke-warnung">Anschrift fehlt</span>{% endif %}</td>
+        <td class="auswahl"><input type="checkbox" name="adresse" value="{{ a.pk }}" aria-label="{{ a.name }} auswählen"></td>
+        <td data-titel="Nachname / Organisation"><a href="{% url 'adressen:adresse' a.pk %}">{{ a.nachname|default:a.organisation|default:a.name }}</a>{% if not a.strasse %} <span class="marke-warnung">Anschrift fehlt</span>{% endif %}</td>
+        <td data-titel="Vorname">{{ a.vorname }}</td>
         <td data-titel="Spenden" class="zahl">{{ anzahl }}</td>
-        <td data-titel="Summe" class="zahl">{{ summe|floatformat:2 }} €</td>
-        <td data-titel="Aktion"><form method="post" action="{% url 'spenden:ausstellen' %}?jahr={{ jahr }}" class="inline">{% csrf_token %}
-          <input type="hidden" name="adresse" value="{{ a.pk }}"><button type="submit" class="link-knopf"{% if fehlt %} disabled{% endif %}>ausstellen</button></form></td>
+        <td data-titel="Summe" class="zahl" data-wert="{{ summe|unlocalize }}">{{ summe|floatformat:2 }} €</td>
+        <td data-titel="Aktion"><button type="submit" name="einzeln" value="{{ a.pk }}" class="link-knopf"{% if fehlt %} disabled{% endif %}>ausstellen</button></td>
       </tr>
     {% endfor %}
     </tbody>
   </table>
   </div>
-  <form method="post" action="{% url 'spenden:ausstellen' %}?jahr={{ jahr }}" onsubmit="return confirm('Für alle {{ offen|length }} Spender eine Bestätigung ausstellen?')">
-    {% csrf_token %}<button type="submit" class="knopf"{% if fehlt %} disabled{% endif %}>Alle {{ offen|length }} ausstellen</button>
+  <div class="aktionsleiste">
+    <button type="submit" name="auswahl" value="1" class="knopf"{% if fehlt %} disabled{% endif %}>Ausgewählte ausstellen</button>
+    <button type="submit" name="alle" value="1" class="knopf knopf-zweitrangig"{% if fehlt %} disabled{% endif %} onclick="return confirm('Für alle {{ offen|length }} Spender eine Bestätigung ausstellen?')">Alle {{ offen|length }} ausstellen</button>
+  </div>
   </form>
   {% else %}<p>Keine offenen Geldspenden.</p>{% endif %}
 </section>
@@ -71,24 +82,36 @@
 <section class="karte breit">
   <h2>Ausgestellt {{ jahr }}</h2>
   {% if ausgestellt %}
+  <form method="get" action="{% url 'spenden:pdf' %}" target="_blank" id="pdf-form"></form>
   <div class="tabelle-rahmen">
-  <table class="tabelle">
-    <thead><tr><th>Nr.</th><th>Spender</th><th>Art</th><th>Ausgestellt</th><th>Unterschrift</th><th class="zahl">Betrag</th><th></th></tr></thead>
+  <table class="tabelle" data-sortierbar id="ausgestellt-tabelle">
+    <thead><tr><th class="auswahl"><input type="checkbox" data-alle="nr" form="pdf-form" aria-label="Alle auswählen" title="alle / keine"></th>
+      <th aria-sort="none"><button type="button" class="sortieren" data-sort="zahl">Nr.</button></th>
+      <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Nachname / Organisation</button></th>
+      <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Vorname</button></th>
+      <th>Art</th>
+      <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Ausgestellt</button></th>
+      <th>Unterschrift</th>
+      <th class="zahl" aria-sort="none"><button type="button" class="sortieren" data-sort="zahl">Betrag</button></th><th></th></tr></thead>
     <tbody>
     {% for b in ausgestellt %}
       <tr>
-        <td data-titel="Nr."><a href="{% url 'spenden:pdf' %}?nummern={{ b.nummer }}" target="_blank" rel="noopener">{{ b.nummer }}</a></td>
-        <td data-titel="Spender">{{ b.adresse.name }}</td>
+        <td class="auswahl"><input type="checkbox" name="nr" value="{{ b.nummer }}" form="pdf-form" aria-label="Nr. {{ b.nummer }} auswählen"></td>
+        <td data-titel="Nr." data-wert="{{ b.nummer }}"><a href="{% url 'spenden:pdf' %}?nummern={{ b.nummer }}" target="_blank" rel="noopener">{{ b.nummer }}</a></td>
+        <td data-titel="Nachname / Organisation">{{ b.adresse.nachname|default:b.adresse.organisation|default:b.adresse.name }}</td>
+        <td data-titel="Vorname">{{ b.adresse.vorname }}</td>
         <td data-titel="Art">{{ b.get_art_display }}{% if b.storniert_am %} <span class="marke-warnung">storniert</span>{% endif %}</td>
-        <td data-titel="Ausgestellt">{{ b.ausgestellt_am|date:"d.m.Y" }} · {{ b.ausgestellt_von }}</td>
+        <td data-titel="Ausgestellt" data-wert="{{ b.ausgestellt_am|date:'Y-m-d' }}">{{ b.ausgestellt_am|date:"d.m.Y" }} · {{ b.ausgestellt_von }}</td>
         <td data-titel="Unterschrift">{% if b.storniert_am %}–{% elif b.ausfertigung %}{{ b.ausfertigung.name_funktion }}{% else %}<span class="leise">von Hand</span>{% endif %}</td>
-        <td data-titel="Betrag" class="zahl">{{ b.betrag|floatformat:2 }} €</td>
+        <td data-titel="Betrag" class="zahl" data-wert="{{ b.betrag|unlocalize }}">{{ b.betrag|floatformat:2 }} €</td>
         <td data-titel="Aktion">{% if not b.storniert_am and unterschrift and b.ausfertigung.unterzeichner_id != request.user.pk %}<form method="post" action="{% url 'spenden:neu_unterschreiben' b.nummer %}" class="inline" onsubmit="return confirm('Bestätigung Nr. {{ b.nummer }} mit Ihrer Unterschrift neu ausfertigen? Nummer und Inhalt bleiben gleich.')">{% csrf_token %}<button type="submit" class="link-knopf">mit meiner Unterschrift</button></form> {% endif %}{% if not b.storniert_am %}<form method="post" action="{% url 'spenden:stornieren' b.nummer %}" class="inline" onsubmit="return confirm('Bestätigung Nr. {{ b.nummer }} stornieren? Die Nummer bleibt vergeben.')">{% csrf_token %}<button type="submit" class="link-knopf">stornieren</button></form>{% endif %}</td>
       </tr>
     {% endfor %}
     </tbody>
   </table>
   </div>
+  <div class="aktionsleiste"><button type="submit" form="pdf-form" class="knopf knopf-zweitrangig">Ausgewählte als PDF öffnen</button></div>
   {% else %}<p>Noch keine.</p>{% endif %}
 </section>
+<script src="{% static 'js/auswahl.js' %}" defer></script>
 {% endblock %}

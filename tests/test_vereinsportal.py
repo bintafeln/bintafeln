@@ -550,7 +550,7 @@ def test_dankesbriefe_seite_druck_pdf_im_grossen_stil(
              "mit_bestaetigungen": "on", "mit_belegen": "on"}  # fmt: skip
     url = reverse("spenden:dank")
     seite = admin_client.post(url, daten | {"schritt": "vorschau"}).content.decode()
-    assert "2 Spender" in seite and "2 Briefe als PDF" in seite
+    assert "2 Spender" in seite and "(2 per Brief)" in seite
     text = pdf_text(admin_client.post(url, daten | {"schritt": "pdf"}))
     assert "2 Spende(n) am 14.03.2026, 14.03.2026" in text and "Sammelbest" in text
     assert text.count("Sammelbest") >= 1 and "Otto Muster" in text

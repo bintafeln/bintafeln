@@ -355,10 +355,13 @@ def test_hilfe_bild_zuwendungsbestaetigungen(angemeldet, admin, muster):
               [seite.locator("section.karte").first, offen],
               Marke(seite.locator("#jahr"), nummer=1, von="rechts", laenge=30),
               Marke(zeile.get_by_role("button", name="ausstellen"), nummer=2, von="rechts"),
-              Marke(offen.get_by_role("button", name="Alle 3 ausstellen"), nummer=3,
+              Marke(offen.get_by_role("button", name="Ausgewählte ausstellen"), nummer=3,
+                    von="unten", laenge=30),
+              Marke(offen.get_by_role("button", name="Alle 3 ausstellen"), nummer=4,
                     von="rechts"),
-              Marke(offen.locator(".marke-warnung"), nummer=4, von="rechts",
-                    laenge=50))  # fmt: skip
+              Marke(offen.locator(".marke-warnung"), nummer=5, von="rechts", laenge=50),
+              Marke(offen.get_by_role("button", name="Nachname / Organisation"), nummer=6,
+                    von="oben", laenge=25))  # fmt: skip
     zeile.get_by_role("button", name="ausstellen").click()
     oeffnen_knopf = seite.get_by_role("link", name="Ausgestellte Bestätigungen als PDF öffnen")
     ausgestellt = seite.locator("section.karte").last
@@ -366,7 +369,9 @@ def test_hilfe_bild_zuwendungsbestaetigungen(angemeldet, admin, muster):
               [seite.locator("main.inhalt > *").first, ausgestellt],
               Marke(oeffnen_knopf, nummer=1, von="rechts"),
               Marke(ausgestellt.get_by_role("button", name="stornieren"), nummer=2,
-                    von="rechts", laenge=50))  # fmt: skip
+                    von="rechts", laenge=50),
+              Marke(ausgestellt.get_by_role("button", name="Ausgewählte als PDF öffnen"),
+                    nummer=3, von="rechts"))  # fmt: skip
 
 
 # --- Statistik --------------------------------------------------------------------------------

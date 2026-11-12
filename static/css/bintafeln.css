@@ -2015,3 +2015,4 @@ details.amtsdokumente > summary { cursor: pointer; margin: .5rem 0; }
 .weg { border: 1px solid var(--rand); border-radius: var(--radius); padding: .25rem 1rem 1rem; }
 .weg h2 { margin-top: .75rem; }
 .unterschrift-vorschau { max-width: 20rem; max-height: 6rem; border: 1px dashed var(--rand); border-radius: var(--radius); padding: .5rem; background: #fff; }
+button.sortieren { background: none; border: 0; padding: 0; font: inherit; font-weight: inherit; cursor: pointer; }

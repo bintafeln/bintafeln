@@ -23,6 +23,7 @@
   <script src="{% static 'js/nach_oben.js' %}" defer></script>
   <script src="{% static 'js/tabelle_oben.js' %}" defer></script>
   <script src="{% static 'js/spaltenbreite.js' %}" defer></script>
+  <script src="{% static 'js/sortieren.js' %}" defer></script>
   {% if menue %}<script src="{% static 'js/menue_einfahren.js' %}"></script>{% endif %}
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'{% if menue %} class="mit-menue"{% endif %}{% if user.is_authenticated %} data-ansicht-stand="{{ user.ansicht_stand }}"{% endif %}>

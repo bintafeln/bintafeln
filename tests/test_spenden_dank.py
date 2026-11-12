@@ -121,7 +121,7 @@ def test_dankesbriefe_als_pdf(admin_client, einstellungen, vorlage, spender, pdf
     daten = {"vorlage": vorlage.pk, "jahr": JAHR, "art": "alle", "nur_offen": "on",
              "mit_bestaetigungen": "on", "mit_belegen": "on"}  # fmt: skip
     seite = admin_client.post(url, daten | {"schritt": "vorschau"}).content.decode()
-    assert "2 Spender" in seite and "wird ausgestellt" in seite and "2 Briefe als PDF" in seite
+    assert "2 Spender" in seite and "wird ausgestellt" in seite and "(2 per Brief)" in seite
     antwort = admin_client.post(url, daten | {"schritt": "pdf"})
     text = pdf_text(antwort)
     assert "Sehr geehrte Frau Muster" in text and "2 Spende(n) am 15.01.2025, 15.02.2025" in text
@@ -135,6 +135,47 @@ def test_dankesbriefe_als_pdf(admin_client, einstellungen, vorlage, spender, pdf
     assert "0 Spender" in seite and "Keine passenden Spenden" in seite
     auskunft = pdf_text(admin_client.get(reverse("adressen:auskunft", args=[einmal.pk])))
     assert "Hochgeladene Spendenbelege" in auskunft and "Spendenbeleg_123.pdf" in auskunft
+
+
+def test_dankesbriefe_nur_fuer_angehakte_in_der_reihenfolge_der_seite(
+    admin_client, einstellungen, vorlage, spender, pdf_text
+):
+    """Auf der Seite sind alle angehakt; erstellt wird nur für die angehakten, in der
+    Reihenfolge, in der sie (nach dem Sortieren) in der Tabelle stehen."""
+    einmal, oft = spender
+    url = reverse("spenden:dank")
+    daten = {"vorlage": vorlage.pk, "jahr": JAHR, "art": "alle", "nur_offen": "on",
+             "mit_auswahl": "1"}  # fmt: skip
+    seite = admin_client.post(url, daten | {"schritt": "vorschau"}).content.decode()
+    assert seite.count('name="adresse"') == 2 and "data-sortierbar" in seite
+    assert "Nachname / Organisation" in seite and "Angehakte Briefe als PDF erstellen" in seite
+    # nichts angehakt: Meldung, nichts gilt als bedankt
+    seite = admin_client.post(url, daten | {"schritt": "pdf"}).content.decode()
+    assert "mindestens einen Spender anhaken" in seite
+    assert not Spende.objects.filter(bedankt_am__isnull=False).exists()
+    # angehakt ist nur einer – per E-Mail geht er nicht
+    seite = admin_client.post(url, daten | {"schritt": "senden", "adresse": [oft.pk]})
+    assert "keiner für den Versand per E-Mail" in seite.content.decode()
+    # nur „oft“: ein Brief, „einmal“ bleibt offen
+    text = pdf_text(admin_client.post(url, daten | {"schritt": "pdf", "adresse": [oft.pk]}))
+    assert "Frau Muster" in text and "Herr Probe" not in text
+    assert Spende.objects.filter(adresse=einmal, bedankt_am__isnull=True).exists()
+    offen = Spende.objects.filter(adresse=oft, datum__year=JAHR, bedankt_am__isnull=True)
+    assert not offen.exists() and Versand.objects.get().anzahl == 1
+
+
+def test_dankesbriefe_reihenfolge_wie_angehakt(admin_client, einstellungen, vorlage, spender,
+                                               pdf_text):  # fmt: skip
+    einmal, oft = spender
+    daten = {"vorlage": vorlage.pk, "jahr": JAHR, "art": "alle", "nur_offen": "on",
+             "mit_auswahl": "1", "schritt": "pdf"}  # fmt: skip
+    text = pdf_text(admin_client.post(reverse("spenden:dank"),
+                                      daten | {"adresse": [einmal.pk, oft.pk]}))  # fmt: skip
+    assert text.index("Herr Probe") < text.index("Frau Muster")
+    Spende.objects.update(bedankt_am=None)
+    text = pdf_text(admin_client.post(reverse("spenden:dank"),
+                                      daten | {"adresse": [oft.pk, einmal.pk]}))  # fmt: skip
+    assert text.index("Frau Muster") < text.index("Herr Probe")
 
 
 def _kaputt():
@@ -177,7 +218,7 @@ def test_per_mail_mit_anhang(admin_client, einstellungen, vorlage, spender):
              "mit_bestaetigungen": "on", "mit_belegen": "on", "mail": "on"}  # fmt: skip
     seite = admin_client.post(reverse("spenden:dank"), daten | {"schritt": "vorschau"})
     seite = seite.content.decode()
-    assert "1 E-Mail senden" in seite and "1 Brief als PDF" in seite
+    assert "(1 per E-Mail)" in seite and "(1 per Brief)" in seite
     seite = admin_client.post(reverse("spenden:dank"), daten | {"schritt": "senden"})
     assert "1 Dankesbrief per E-Mail gesendet" in seite.content.decode()
     nachricht = postfach.outbox[0]
