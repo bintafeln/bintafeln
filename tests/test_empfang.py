@@ -431,7 +431,7 @@ def test_einlass_zeigt_angaben_und_notizen(ausgabe, haushalt):
     assert '<div class="notiz">' in inhalt  # gespeicherte Notizen farbig hinterlegt
     n = Notiz.objects.get()
     assert n.kundennummer == "00042" and n.verfasst_von == "ausgabe"
-    # eigene Notiz vom selben Tag darf die Ausgabe löschen (Versehen), fremde nicht
+    # eigene Notizen darf die Ausgabe löschen (auch ältere), fremde nicht
     assert "löschen</button>" in inhalt
     fremd = Notiz.objects.create(kundennummer="00042", text="Von Berta", verfasst_von="Berta")
     inhalt = ausgabe.get(EMPFANG, {"nummer": "42"}, **HX).content.decode()
@@ -441,8 +441,6 @@ def test_einlass_zeigt_angaben_und_notizen(ausgabe, haushalt):
     gestern = timezone.now() - dt.timedelta(days=2)  # zwei Tage: auch über eine Zeitumstellung
     Notiz.objects.filter(pk=n.pk).update(erstellt_am=gestern)
     url = reverse("ausgabe:notiz_loeschen", args=[n.pk])
-    assert "nur Büro und Admin" in ausgabe.post(url, **HX).content.decode()
-    Notiz.objects.filter(pk=n.pk).update(erstellt_am=timezone.now())
     assert "Notiz in den Papierkorb gelegt." in ausgabe.post(url, **HX).content.decode()
     assert list(Notiz.objects.all()) == [fremd]
 

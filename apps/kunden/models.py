@@ -787,13 +787,12 @@ class Notiz(models.Model):
         return "Krank gemeldet" if self.krank_grund in gesundheit else "Abwesend"
 
     def darf_loeschen(self, benutzer) -> bool:
-        """Mit Recht „Alle Notizen löschen“ immer; sonst nur eigene vom selben Tag (Versehen)."""
+        """Mit Recht „Alle Notizen löschen“ jede; sonst nur die eigenen – an jedem Tag."""
         from apps.konten import rollen
 
         if rollen.hat_recht(benutzer, "kunden.notizen_loeschen"):
             return True
-        heute = timezone.localdate()
-        return self.benutzer_id == benutzer.pk and timezone.localdate(self.erstellt_am) == heute
+        return self.benutzer_id is not None and self.benutzer_id == benutzer.pk
 
 
 class NotizVorlage(models.Model):

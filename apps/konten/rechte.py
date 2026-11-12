@@ -66,7 +66,7 @@ KATALOG = [
     Recht("kunden.abholungen_alle", KUNDEN, "Alle Abholungen mit Beitrag und Erfasser sehen"),
     Recht("kunden.konto", KUNDEN, "Kundenkonto und Buchungen sehen"),
     Recht("kunden.anmerkungen", KUNDEN, "Interne Anmerkungen sehen"),
-    Recht("kunden.notizen", KUNDEN, "Notizen schreiben und eigene vom selben Tag löschen"),
+    Recht("kunden.notizen", KUNDEN, "Notizen schreiben und eigene löschen"),
     Recht("kunden.notizen_loeschen", KUNDEN, "Alle Notizen löschen"),
     Recht("kunden.nachrichten", KUNDEN, "Nachrichten der Ausgabestellen zu Kunden lesen",
           "Ausgabestellen schreiben sie zu Kunden, die sie nicht aufrufen dürfen."),

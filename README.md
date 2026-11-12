@@ -708,8 +708,8 @@ Dokumente, Historie.
 - **Notizen:** Ausgabe, Büro und Admin schreiben Notizen zum Haushalt, auf der Haushaltsseite
   oder direkt am Einlass. **Notiz-Vorlagen** („Einstellungen → Kundenstamm → Listen →
   Notiz-Vorlagen“, Admin) erscheinen abgesetzt unter den Notizen als umrandete „+“-Knöpfe (deutlich anders als Notizen): ein Klick speichert den Text als Notiz. Jede
-  Notiz lässt sich einzeln löschen: Büro und Admin jede, die Ausgabe ihre eigenen vom selben
-  Tag (Versehen). Notizen hängen an der Kundennummer und
+  Notiz lässt sich einzeln löschen: Büro und Admin jede, die Ausgabe ihre eigenen (auch an
+  späteren Tagen), nie die anderer. Notizen hängen an der Kundennummer und
   bleiben beim Import erhalten; gibt es die Kundennummer nicht mehr, werden sie gelöscht
   (ADR 0026). Die **internen Anmerkungen** aus dem Altsystem sehen nur Büro und Admin.
 - **Krankmeldung** (ADR 0075, einschalten unter „Einstellungen → Kundenstamm“): Einlass und
