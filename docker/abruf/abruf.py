@@ -28,6 +28,7 @@ DATEIEN = {"spenderliste": "spenderliste.xlsx", "finanzexport": "finanzexport.zi
 # Wartezeiten in Sekunden; Tests setzen sie herunter
 ZEITEN = {
     "code": 300,  # so lange wartet der Dienst auf den 2FA-Code
+    "knopf": 5,  # so lange darf der Anmelde-Knopf brauchen, bis er sich anklicken lässt
     "felder": 15,  # so lange dürfen die Felder der Anmeldeseite auf sich warten lassen
     "zwei_faktor": 30,  # … und die Abfrage des 2FA-Codes nach dem Absenden
     "nach_anmeldung": 3,
@@ -112,10 +113,49 @@ def _beschreiben(auftrag: Auftrag, seite, fehler: Exception) -> str:
             text = f"Die Seite sah anders aus als erwartet oder antwortete zu langsam ({text})"
         text = f"Beim Schritt „{auftrag.schritt}“: {text}"
     try:
-        ort = seite.url.split("?")[0]
+        ort, _, zusatz = seite.url.partition("?")
+        ort += "?…" if zusatz else ""  # zeigen, dass etwas abgeschnitten wurde
     except Exception:  # noqa: BLE001 – der Browser kann schon weg sein
         ort = ""
     return f"{text} (Seite: {ort})"[:500] if ort else text[:500]
+
+
+KNOPF = (
+    'form:has(input[name="eml-user"]) input[type="submit"], '
+    'form:has(input[name="eml-user"]) button[type="submit"]'
+)
+# Was liegt über der Mitte des Elements? (z. B. ein Cookie-Hinweis über dem Anmelde-Knopf)
+DARUEBER = """el => { const r = el.getBoundingClientRect();
+    const o = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    if (!o || o === el || el.contains(o)) return '';
+    return (o.tagName + (o.id ? '#' + o.id : '') + (typeof o.className === 'string' && o.className
+        ? '.' + o.className.trim().split(/\\s+/).slice(0, 3).join('.') : '')).slice(0, 120); }"""
+
+
+FORMULAR_ABSENDEN = """() => { const f = document.querySelector('input[name="eml-user"]')?.form;
+    if (!f) return false; f.requestSubmit(); return true; }"""
+
+
+def _absenden(seite):
+    """Schickt die Anmeldung ab. Erst der gewöhnliche Klick; lässt sich der Knopf nicht anklicken
+    (verdeckt, etwa von einem Cookie-Hinweis), ein Klick direkt auf dem Knopf; gibt es keinen
+    passenden Knopf, wird das Formular direkt abgeschickt (ohne Formular: Eingabetaste)."""
+    knopf = seite.locator(KNOPF).first
+    try:
+        knopf.click(timeout=ZEITEN["knopf"] * 1000)
+        return
+    except Exception as fehler:  # noqa: BLE001 – dann auf anderem Weg absenden
+        grund = str(fehler).splitlines()[0]
+    if knopf.count():
+        darueber = knopf.evaluate(DARUEBER)
+        print(f"[abruf] Anmelde-Knopf nicht anklickbar ({grund}); darüber liegt: "
+              f"{darueber or 'nichts Erkennbares'}. Klicke direkt.", flush=True)  # fmt: skip
+        knopf.evaluate("el => el.click()")
+    else:
+        print("[abruf] Kein Anmelde-Knopf gefunden; sende das Formular direkt ab.", flush=True)
+        # Ohne Knopf schickt die Eingabetaste ein Formular mit zwei Feldern nicht ab
+        if not seite.evaluate(FORMULAR_ABSENDEN):
+            seite.press('input[name="psw-user"]', "Enter")
 
 
 def _anmelden(auftrag: Auftrag, seite, d: dict):
@@ -129,10 +169,7 @@ def _anmelden(auftrag: Auftrag, seite, d: dict):
     auftrag.melden("Gebe die Zugangsdaten ein …")
     seite.fill('input[name="eml-user"]', d["email"])
     seite.fill('input[name="psw-user"]', d["passwort"])
-    seite.locator(
-        'form:has(input[name="eml-user"]) input[type="submit"], '
-        'form:has(input[name="eml-user"]) button[type="submit"]'
-    ).first.click()
+    _absenden(seite)
     seite.wait_for_load_state("domcontentloaded", timeout=15000)
     _warten(auftrag, seite, ZEITEN["nach_anmeldung"])
     # Erst nach dem Code fragen, wenn das Vereinsportal ihn wirklich haben will. Sonst wartet
@@ -153,8 +190,9 @@ def _anmelden(auftrag: Auftrag, seite, d: dict):
         time.sleep(0.2)
     auftrag.melden("Der 2FA-Code wird eingetragen …", "laeuft")
     # Ziffern einzeln tippen, damit die Seite den Knopf freigibt
-    seite.click('input[name="twoFactorActivate"]')
-    seite.type('input[name="twoFactorActivate"]', auftrag.code, delay=150)
+    # focus statt Klick: Ein Hinweis über der Seite darf das Feld nicht blockieren
+    seite.focus('input[name="twoFactorActivate"]')
+    seite.keyboard.type(auftrag.code, delay=150)
     _warten(auftrag, seite, ZEITEN["klick"] * 2)
     seite.evaluate("document.getElementById('ms-two-factor-submit').removeAttribute('disabled')")
     seite.evaluate("document.getElementById('ms-two-factor-submit').click()")
