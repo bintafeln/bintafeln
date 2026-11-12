@@ -442,9 +442,10 @@ def test_abruf_von_der_seite_bis_zum_einlesen(dienst, angemeldet, admin, setting
     seite.locator("#abruf-stand button", has_text="Code senden").click()
     stand = seite.locator("#abruf-stand")
     expect(stand).to_contain_text("Spenderliste ersetzt: 1 Spender mit E-Mail.", timeout=40_000)
-    expect(stand).to_contain_text("1 ohne vollständige Anschrift ausgelassen")
+    # der nachgebaute Export enthält nur einen unlesbaren Beleg: das ist kein Erfolg
+    expect(stand).to_contain_text("Kein Beleg ließ sich lesen (1 in der Datei)")
     expect(stand).to_contain_text("Es läuft kein Abruf")
     assert Kontakt.objects.get().email == "erika@example.org"
     # der Abruf steht in der Historie
     expect(seite.locator("#abruf-historie")).to_contain_text("01.02.2026 – 04.02.2026")
-    assert Abruf.objects.get().stand == "eingelesen"
+    assert Abruf.objects.get().stand == "fehler"

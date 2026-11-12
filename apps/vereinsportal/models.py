@@ -102,6 +102,8 @@ class Abruf(models.Model):
     gestartet_am = models.DateTimeField("Gestartet am", auto_now_add=True)
     beendet_am = models.DateTimeField("Beendet am", null=True, blank=True)
     stand = models.CharField(max_length=12, choices=Stand.choices, default=Stand.LAEUFT)
+    belege = models.PositiveIntegerField("Belege in der Datei", default=0)
+    ausgelassen = models.PositiveIntegerField("Ausgelassen", default=0)
     neu = models.PositiveIntegerField("Neue Spenden", default=0)
     doppelt = models.PositiveIntegerField("Schon vorhanden", default=0)
     neue_spender = models.PositiveIntegerField("Neue Spender", default=0)

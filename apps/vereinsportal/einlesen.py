@@ -72,10 +72,33 @@ class Ergebnis:
     ohne_anschrift: int = 0
     versendet: int = 0
     mit_uebersicht: bool = False
+    belege: int = 0  # Spendenbelege (PDF) in der Datei
+    dateien: int = 0  # alle Dateien im Archiv
+    pdfs: int = 0  # davon PDF, auch solche, die keine Spendenbelege sind
+
+    @property
+    def leer(self) -> bool:
+        """Aus einem Archiv kam kein einziger Beleg an (weder neu noch schon vorhanden)."""
+        return bool(self.dateien) and not (self.neu or self.doppelt)
+
+    def warum_leer(self) -> str:
+        if not self.belege:
+            return (
+                f"Die Datei enthält keine Spendenbelege: {self.dateien} Dateien, davon "
+                f"{self.pdfs} PDF, aber keines mit „Spenden“ im Namen. Wurde der Export im "
+                "Vereinsportal mit den Belegen erzeugt, und stimmt der Zeitraum?"
+            )
+        return (
+            f"Kein Beleg ließ sich lesen ({self.belege} in der Datei): Bei allen fehlt die Zeile "
+            "mit Absender und Anschrift oder ein Datum. Stimmt der „Name des Vereins im Absender "
+            "der Belege“ in den Einstellungen zum Vereinsportal?"
+        )
 
 
 def bericht(e: Ergebnis) -> str:
     """Das Ergebnis eines Einlesens als Satz für die Oberfläche."""
+    if e.leer:
+        return e.warum_leer()
     teile = [f"{e.neu} neue Spenden eingelesen", f"{e.doppelt} waren schon vorhanden"]
     if e.neue_spender:
         teile.append(f"{e.neue_spender} Spender neu ins Adressbuch aufgenommen")
@@ -248,6 +271,9 @@ def finanzexport_einlesen(datei, von: str) -> Ergebnis:
     buch, ergebnis, nummern = _Adressbuch(von), Ergebnis(), set()
     eintraege = ((i, i.filename.lower()) for i in archiv.infolist())
     belege = [i for i, n in eintraege if "spenden" in n and n.endswith(".pdf")]
+    alle = [i for i in archiv.infolist() if not i.is_dir()]
+    ergebnis.dateien, ergebnis.belege = len(alle), len(belege)
+    ergebnis.pdfs = sum(i.filename.lower().endswith(".pdf") for i in alle)
     if len(belege) > MAX_BELEGE:
         raise EinleseFehler(f"Mehr als {MAX_BELEGE} Belege; bitte einen kürzeren Zeitraum wählen.")
     for eintrag in belege:

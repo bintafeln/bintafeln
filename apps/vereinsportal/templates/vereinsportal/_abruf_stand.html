@@ -54,7 +54,8 @@
   <div class="tabelle-rahmen">
     <table class="tabelle" id="abruf-historie">
       <thead><tr><th>Abgerufen</th><th>Spenden von – bis</th><th>Ergebnis</th>
-        <th class="zahl">Neue Spenden</th><th class="zahl">Schon da</th><th class="zahl">Neue Spender</th>
+        <th class="zahl" title="Spendenbelege im Finanzexport">Belege</th>
+        <th class="zahl">Neue Spenden</th><th class="zahl">Schon da</th><th class="zahl" title="Belege ohne lesbare Anschrift">Ausgelassen</th><th class="zahl">Neue Spender</th>
         <th class="zahl" title="Spender mit E-Mail in der neu geholten Liste">Liste</th></tr></thead>
       <tbody>
         {% for a in historie.abrufe %}
@@ -62,11 +63,13 @@
           <td class="abruf-wann">{{ a.gestartet_am|date:"d.m.Y, H:i" }}<br><span class="leise">{{ a.wer|default:"–" }}</span></td>
           <td class="abruf-wann">{{ a.von|date:"d.m.Y" }} – {{ a.bis|date:"d.m.Y" }}</td>
           <td><span class="{% if a.stand == 'eingelesen' %}marke-ok{% elif a.stand == 'fehler' %}marke-warnung{% else %}marke-neutral{% endif %}">{{ a.get_stand_display }}</span>
-            {% if a.meldung %}<details class="abruf-meldung"><summary>Meldung</summary>{{ a.meldung }}</details>{% endif %}</td>
+            {% if a.meldung %}<details class="abruf-meldung"{% if a.stand == 'fehler' %} open{% endif %}><summary>Meldung</summary>{{ a.meldung }}</details>{% endif %}</td>
           {% if a.stand == "eingelesen" %}
-          <td class="zahl">{{ a.neu }}</td><td class="zahl">{{ a.doppelt }}</td><td class="zahl">{{ a.neue_spender }}</td>
+          <td class="zahl">{{ a.belege }}</td>
+          <td class="zahl">{{ a.neu }}</td><td class="zahl">{{ a.doppelt }}</td><td class="zahl">{% if a.ausgelassen %}<strong>{{ a.ausgelassen }}</strong>{% else %}0{% endif %}</td><td class="zahl">{{ a.neue_spender }}</td>
           <td class="zahl">{% if a.kontakte is None %}–{% else %}{{ a.kontakte }}{% endif %}</td>
-          {% else %}<td class="zahl">–</td><td class="zahl">–</td><td class="zahl">–</td><td class="zahl">–</td>{% endif %}
+          {% else %}<td class="zahl">–</td><td class="zahl">–</td><td class="zahl">–</td><td class="zahl">–</td><td class="zahl">–</td>
+          <td class="zahl">{% if a.kontakte is None %}–{% else %}{{ a.kontakte }}{% endif %}</td>{% endif %}
         </tr>
         {% endfor %}
       </tbody>
