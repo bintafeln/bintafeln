@@ -174,7 +174,7 @@ def uebernehmen(von: str) -> list[tuple[bool, str]]:
         s = _anfrage("/stand")
         if s.get("stand") != "fertig":
             return []
-        meldungen, werte = [], {}
+        meldungen, werte, export_ok = [], {}, False
         for art, lesen in (("spenderliste", _spenderliste), ("finanzexport", _finanzexport)):
             if not s["dateien"].get(art):
                 continue
@@ -185,14 +185,18 @@ def uebernehmen(von: str) -> list[tuple[bool, str]]:
                     text, zahlen = lesen(datei, von)
                     meldungen.append((True, text))
                     werte |= zahlen
+                    export_ok = export_ok or art == "finanzexport"
             except (AbrufFehler, einlesen.EinleseFehler) as fehler:
                 meldungen.append((False, f"{NAMEN[art]}: {fehler}"))
+        if not s["dateien"].get("finanzexport"):
+            meldungen.append((False, "Der Finanzexport wurde nicht geholt."))
         # Was der Dienst nicht holen konnte, ohne den Abruf abzubrechen (z. B. die Spenderliste)
         meldungen += [(False, hinweis) for hinweis in s.get("hinweise") or []]
         _anfrage("/fertig", {})
         fehler = " ".join(text for gelungen, text in meldungen if not gelungen)
-        ok = any(gelungen for gelungen, _ in meldungen)
-        _beenden(Abruf.Stand.EINGELESEN if ok else Abruf.Stand.FEHLER, fehler, **werte)
+        # Der Abruf gilt nur als gelungen, wenn aus dem Finanzexport Belege ankamen – die
+        # Spenderliste allein ist kein Ergebnis.
+        _beenden(Abruf.Stand.EINGELESEN if export_ok else Abruf.Stand.FEHLER, fehler, **werte)
         return meldungen
     finally:
         cache.delete(SPERRE)
@@ -213,8 +217,12 @@ def spenderliste_bericht(anzahl: int, ohne: int) -> str:
 
 def _finanzexport(datei, von: str) -> tuple[str, dict]:
     e = einlesen.finanzexport_einlesen(datei, von)
-    zahlen = {"neu": e.neu, "doppelt": e.doppelt, "neue_spender": e.neue_spender,
-              "versendet": e.versendet}  # fmt: skip
+    if e.leer:  # nichts angekommen ist kein Erfolg, auch wenn die Datei lesbar war
+        raise einlesen.EinleseFehler(e.warum_leer())
+    zahlen = {
+        "neu": e.neu, "doppelt": e.doppelt, "neue_spender": e.neue_spender,
+        "versendet": e.versendet, "belege": e.belege, "ausgelassen": e.ohne_anschrift,
+    }  # fmt: skip
     return einlesen.bericht(e), zahlen
 
 
