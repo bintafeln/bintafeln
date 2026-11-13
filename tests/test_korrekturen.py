@@ -42,7 +42,10 @@ def test_ausgabe_beantragt_admin_entscheidet(
     client.post(reverse("ausgabe:eintragen", args=["42"]), {"bar": "1,50"}, **HX)
     a = Abholung.objects.get()
     seite = client.get(reverse("ausgabe:empfang"), {"nummer": "42"}, **HX).content.decode()
-    assert "Korrektur beantragen" in seite and "Versehentlich gebucht" in seite
+    assert "Rücknahme beantragen" in seite and "Versehentlich gebucht" in seite
+    # oben in der Ampel-Karte, nicht unten bei der Zahlung
+    ampel = seite.split('class="karte ampel')[1].split("</section>")[0]
+    assert "↩ Rücknahme beantragen" in ampel and "als abgeholt eingetragen" in ampel
     assert client.post(reverse("ausgabe:zuruecknehmen", args=[a.pk])).status_code == 403
 
     url = reverse("ausgabe:korrektur_beantragen", args=["abholung", a.pk])
@@ -114,8 +117,9 @@ def test_recht_zum_entscheiden_und_zuruecknehmen(client, admin, benutzer_mit_rol
     assert client.get(reverse("ausgabe:korrekturen")).status_code == 200
     client.post(reverse("ausgabe:eintragen", args=["42"]), {"bar": "1,50"}, **HX)
     seite = client.get(reverse("ausgabe:empfang"), {"nummer": "42"}, **HX).content.decode()
-    assert "Abholung von" in seite and "zurücknehmen</button>" in seite
-    assert "Korrektur beantragen" not in seite
+    ampel = seite.split('class="karte ampel')[1].split("</section>")[0]
+    assert "↩ Abholung zurücknehmen</button>" in ampel
+    assert "Rücknahme beantragen" not in seite
 
 
 def test_ungueltige_art(client, admin, benutzer_mit_rolle, anmelden):

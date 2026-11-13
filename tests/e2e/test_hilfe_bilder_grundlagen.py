@@ -304,17 +304,18 @@ def test_hilfe_bild_korrigieren(angemeldet, admin, muster, benutzer_mit_rolle):
     seite = oeffnen(angemeldet, anna, reverse("ausgabe:empfang"))
     _abholung(seite, "00042")
     _kunde(seite, "00042")
-    wunsch = seite.locator("details.korrektur-wunsch").first
+    karte = seite.locator("section.karte.ampel")
+    wunsch = karte.locator("details.ruecknahme-antrag").first
     wunsch.locator("summary").click()
     wunsch.get_by_label("Grund").select_option("Falscher Kunde aufgerufen")
     wunsch.get_by_label("Anmerkung (optional)").fill("war Kunde 24")
-    aufnehmen(seite, "korrigieren-wunsch", wunsch,
+    senden = wunsch.get_by_role("button", name="Rücknahme beantragen", exact=True)
+    aufnehmen(seite, "korrigieren-wunsch", karte,
               Marke(wunsch.locator("summary"), nummer=1, von="rechts"),
               Marke(wunsch.get_by_label("Grund"), nummer=2, von="rechts"),
-              Marke(wunsch.get_by_role("button", name="Korrekturwunsch senden"), nummer=3,
-                    von="rechts"))  # fmt: skip
-    wunsch.get_by_role("button", name="Korrekturwunsch senden").click()
-    hinweis = seite.get_by_text(re.compile("Korrektur beantragt"))
+              Marke(senden, nummer=3, von="rechts"))  # fmt: skip
+    senden.click()
+    hinweis = seite.get_by_text(re.compile("Rücknahme beantragt"))
     expect(hinweis).to_be_visible()
     aufnehmen(seite, "korrigieren-beantragt", seite.locator("section.karte", has=hinweis),
               Marke(hinweis, "rahmen", 3))  # fmt: skip
