@@ -244,6 +244,11 @@ def _spenderliste(auftrag: Auftrag, seite, d: dict):
 
 def _fertige_exporte(seite, von: str, bis: str) -> list:
     """Knöpfe „Herunterladen“ in den Zeilen, deren Zeitraum passt und die fertig erzeugt sind."""
+    return [knopf for knopf, _ in _fertige_zeilen(seite, von, bis)]
+
+
+def _fertige_zeilen(seite, von: str, bis: str) -> list:
+    """Wie ``_fertige_exporte``, dazu der Text der Zeile (z. B. mit der Zeit der Erstellung)."""
     knoepfe = []
     for zeile in seite.query_selector_all("table tr"):
         zeitraum = zeile.query_selector("em")
@@ -255,7 +260,7 @@ def _fertige_exporte(seite, von: str, bis: str) -> list:
             continue  # fehlt oder wird noch erzeugt
         beschriftung = knopf.query_selector("span")
         if beschriftung and "herunterladen" in (beschriftung.inner_text() or "").lower():
-            knoepfe.append(knopf)
+            knoepfe.append((knopf, " ".join((zeile.inner_text() or "").split())))
     return knoepfe
 
 
@@ -489,15 +494,37 @@ def _versandspalten(auftrag: Auftrag, seite) -> None:
         )  # fmt: skip
 
 
-def _neu_erzeugen(auftrag: Auftrag, kontext, seite, von: str, bis: str, ziel: Path,
-                  ohne=()):  # fmt: skip
-    """Neuen Export erzeugen; ``ohne`` sind Knöpfe schon vorhandener Exporte desselben
-    Zeitraums, die nicht gemeint sind (ihnen fehlen die Spalten zum Versand)."""
+def _neu_laden(auftrag: Auftrag, kontext, seite, zeilen: list, alte: Counter, ziel: Path) -> bool:
+    """Den neuen unter den fertigen Exporten desselben Zeitraums laden. WISO MeinVerein baut die
+    Liste nach „Erstellen“ neu auf; erkannt wird der neue deshalb nicht an einer Markierung,
+    sondern am Text seiner Zeile (anders als die alten) – sonst nacheinander alle, bis einer die
+    Spalten zum Versand enthält. Ergebnis: ob ein Export mit diesen Spalten geladen ist."""
+    rest = Counter(alte)
+    neue, andere = [], []
+    for knopf, text in zeilen:
+        if rest[text]:
+            rest[text] -= 1
+            andere.append(knopf)
+        else:
+            neue.append(knopf)
+    geladen = False
+    for knopf in neue + andere:
+        if _vorhandenen_laden(auftrag, kontext, seite, knopf, ziel):
+            geladen = True
+            if mit_versand(ziel):
+                return True
+    if not geladen:
+        raise Hinweis("Der fertige Export ließ sich nicht herunterladen.")
+    return False
+
+
+def _neu_erzeugen(auftrag: Auftrag, kontext, seite, von: str, bis: str, ziel: Path):
+    """Neuen Export für den Zeitraum erzeugen und laden. Schon vorhandene Exporte desselben
+    Zeitraums werden gezählt, damit nicht einer von ihnen geladen wird."""
     auftrag.melden(f"(2/2) Stelle den Zeitraum ein: {von} bis {bis} …")
     _zeitraum_einstellen(auftrag, seite, von, bis)
     _versandspalten(auftrag, seite)
-    for knopf in ohne:
-        knopf.evaluate("el => el.setAttribute('data-abruf-alt', '')")
+    alte = Counter(text for _, text in _fertige_zeilen(seite, von, bis))
     vorher = Counter(seite.evaluate(ZEITRAEUME))
     erstellen = next((k for k in seite.query_selector_all("button")
                       if "erstellen" in (k.inner_text() or "").lower()), None)  # fmt: skip
@@ -510,14 +537,13 @@ def _neu_erzeugen(auftrag: Auftrag, kontext, seite, von: str, bis: str, ziel: Pa
             f"(2/2) WISO MeinVerein erzeugt den Export {von} bis {bis} … "
             f"({int(vergangen // 60)} min)"
         )
-        # Nur der Export mit genau diesem Zeitraum zählt – nicht irgendein fertiger der Seite
-        fertige = [k for k in _fertige_exporte(seite, von, bis)
-                   if k.get_attribute("data-abruf-alt") is None]  # fmt: skip
-        if fertige:
+        # Nur der Export mit genau diesem Zeitraum zählt – und erst, wenn einer mehr fertig ist
+        # als vorher (es kann ihn für den Zeitraum schon geben)
+        zeilen = _fertige_zeilen(seite, von, bis)
+        if len(zeilen) > sum(alte.values()):
             auftrag.melden("(2/2) Der Export ist fertig, lade herunter …")
-            if _vorhandenen_laden(auftrag, kontext, seite, fertige[-1], ziel):
-                return
-            raise Hinweis("Der fertige Export ließ sich nicht herunterladen.")
+            _neu_laden(auftrag, kontext, seite, zeilen, alte, ziel)
+            return
         # Zeilen, die seit „Erstellen“ dazugekommen sind (gezählt, weil es denselben Zeitraum
         # schon geben kann): Ist keine davon unsere, hat das Portal den Zeitraum nicht übernommen
         neue = list((Counter(seite.evaluate(ZEITRAEUME)) - vorher).elements())
@@ -582,8 +608,7 @@ def _finanzexport(auftrag: Auftrag, kontext, seite, d: dict):
         auftrag.melden("(2/2) Dem vorhandenen Export fehlen die Spalten zum Versand, erzeuge neu …")
         seite.goto(d["export_url"], wait_until="domcontentloaded", timeout=30000)
         _warten(auftrag, seite, ZEITEN["export_laden"])
-        fertige = _fertige_exporte(seite, d["von"], d["bis"])
-    _neu_erzeugen(auftrag, kontext, seite, d["von"], d["bis"], ziel, ohne=fertige)
+    _neu_erzeugen(auftrag, kontext, seite, d["von"], d["bis"], ziel)
     _inhalt_melden(ziel)
     if not mit_versand(ziel) and not any("ankreuzen" in h for h in auftrag.hinweise):
         auftrag.hinweise.append(
