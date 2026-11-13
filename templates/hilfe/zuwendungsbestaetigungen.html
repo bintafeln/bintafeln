@@ -26,7 +26,12 @@
 {% if "spenden.bestaetigen" in rechte %}
 <h3>Ausstellen</h3>
 <ul>
-  <li>Jahr wählen. Die Liste zeigt alle Spender mit noch nicht bestätigten Geldspenden.</li>
+  <li>Jahr wählen. Die Liste „Spender“ zeigt <strong>alle Spender</strong> mit Geldspenden im Jahr und in der Spalte
+    „Bescheinigung“, wie es um sie steht: „✓ … im Vereinsportal verschickt“, „✓ … von bintafeln bestätigt“ und
+    „… offen“ mit dem Betrag. Anhaken und ausstellen lassen sich nur Spender mit offenen Spenden.</li>
+  <li><strong>Offen</strong> ist alles, was weder im Vereinsportal verschickt noch von bintafeln bestätigt ist – auch
+    eine einzelne Spende, deren Beleg im Vereinsportal erzeugt, aber dort noch nicht verschickt ist. bintafeln stellt
+    dafür die Bestätigung aus; den Beleg aus dem Vereinsportal bitte dann dort nicht mehr verschicken.</li>
   <li>Ein Klick auf eine Spaltenüberschrift sortiert die Liste: nach <strong>Nachname</strong>, <strong>Vorname</strong>,
     Anzahl der Spenden oder Summe.</li>
   <li>„ausstellen“ für einen Spender, <strong>„Ausgewählte ausstellen“</strong> für alle angehakten (das Kästchen
@@ -36,7 +41,7 @@
   <li>Danach „Ausgestellte Bestätigungen als PDF öffnen“, drucken, unterschreiben, versenden.</li>
   <li>Sachspenden mit Wert erscheinen darunter und werden einzeln bestätigt.</li>
 </ul>
-{% hilfe_bild "zuwendungsbestaetigungen-ausstellen" "① Jahr wählen, ② für einen Spender „ausstellen“, ③ angehakte ausstellen oder ④ „Alle ausstellen“; ⑤ ohne Anschrift keine Bestätigung, ⑥ Spaltenüberschrift anklicken zum Sortieren." %}
+{% hilfe_bild "zuwendungsbestaetigungen-ausstellen" "① Jahr wählen, ② für einen Spender „ausstellen“, ③ angehakte ausstellen oder ④ „Alle ausstellen“; ⑤ ohne Anschrift keine Bestätigung, ⑥ Spaltenüberschrift anklicken zum Sortieren, ⑦ schon über das Vereinsportal verschickt – nichts mehr zu tun." %}
 <div class="tipp">Jede Spende wird nur einmal bestätigt, die Nummern laufen fortlaufend. Eine falsche Bestätigung
   „stornieren“: Die Nummer bleibt vergeben, das PDF trägt den Vermerk „STORNIERT“, und die Spenden lassen sich neu
   bestätigen.</div>

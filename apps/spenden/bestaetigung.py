@@ -14,6 +14,7 @@ einer anderen Person auszustellen.
 import io
 
 from django.db import transaction
+from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from pypdf import PdfReader, PdfWriter
 
@@ -55,13 +56,33 @@ def offene_geldspenden(adresse, jahr: int):
     if not SpendenEinstellungen.laden().mitgliedsbeitraege_abziehbar:
         spenden = spenden.exclude(mitgliedsbeitrag=True)
     # Spenden mit Beleg aus einem anderen Programm (ADR 0128): Was dort schon versendet ist,
-    # bestätigt bintafeln nie noch einmal. Ein einzelner, dort noch nicht versendeter Beleg ist
-    # selbst die Bestätigung (er liegt dem Dankesbrief bei). Erst bei mehreren offenen Spenden im
-    # Jahr stellt bintafeln eine Sammelbestätigung aus – dann liegen die Einzelbelege nicht bei.
-    spenden = spenden.exclude(fremdbeleg=Spende.Fremdbeleg.VERSENDET)
-    if spenden.count() == 1 and spenden.filter(fremdbeleg=Spende.Fremdbeleg.OFFEN).exists():
-        return spenden.none()
-    return spenden
+    # bestätigt bintafeln nie noch einmal. Alles dort noch nicht Versendete bestätigt bintafeln
+    # selbst – eine Spende einzeln, mehrere im Jahr als Sammelbestätigung; die Belege aus dem
+    # anderen Programm liegen dann nicht bei.
+    return spenden.exclude(fremdbeleg=Spende.Fremdbeleg.VERSENDET)
+
+
+def spenderuebersicht(jahr: int) -> list[dict]:
+    """Alle Spender mit Geldspenden im Jahr und wie es um ihre Bescheinigung steht: wie viele
+    Spenden im Vereinsportal schon versendet sind, wie viele bintafeln bestätigt hat und welche
+    noch offen sind (die bintafeln jetzt bestätigen kann)."""
+    from apps.adressen.models import Adresse
+
+    gueltig = Q(bestaetigung__isnull=False, bestaetigung__storniert_am__isnull=True)
+    geld = Spende.objects.filter(art=Spende.Art.GELD, datum__year=jahr, betrag__gt=0)
+    zahlen = geld.values("adresse_id").annotate(
+        anzahl=Count("pk"), summe=Sum("betrag"),
+        im_portal=Count("pk", filter=Q(fremdbeleg=Spende.Fremdbeleg.VERSENDET) & ~gueltig),
+        von_hier=Count("pk", filter=gueltig),
+    )  # fmt: skip
+    adressen = Adresse.objects.in_bulk([z["adresse_id"] for z in zahlen])
+    zeilen = []
+    for z in zahlen:
+        a = adressen[z["adresse_id"]]
+        offen = list(offene_geldspenden(a, jahr).values_list("betrag", flat=True))
+        zeilen.append(z | {"adresse": a, "offen": len(offen), "offen_summe": sum(offen)})
+    return sorted(zeilen, key=lambda z: (z["adresse"].nachname or z["adresse"].organisation or
+                                         z["adresse"].name).lower())  # fmt: skip
 
 
 def jahresliste(jahr: int) -> list[tuple]:
