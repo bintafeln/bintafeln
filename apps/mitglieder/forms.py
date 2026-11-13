@@ -82,6 +82,24 @@ class MitgliedForm(forms.ModelForm):
         return [(t, felder) for t, felder in abschnitte if felder]  # z. B. ohne Beiträge
 
 
+class AdressnummerForm(forms.ModelForm):
+    """Nächste Adressnummer für alle Adressen ohne Mitgliedschaft (ADR 0133)."""
+
+    class Meta:
+        from apps.adressen.models import AdressEinstellungen
+
+        model = AdressEinstellungen
+        fields = ["naechste_nummer"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["naechste_nummer"].required = False
+
+    def clean_naechste_nummer(self):
+        # leer gelassen: die bisherige Nummer bleiben
+        return self.cleaned_data["naechste_nummer"] or self.instance.naechste_nummer
+
+
 class MitgliederEinstellungenForm(forms.ModelForm):
     class Meta:
         model = MitgliederEinstellungen

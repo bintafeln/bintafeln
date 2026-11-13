@@ -16,7 +16,7 @@ from django.views.decorators.http import require_POST
 
 from apps.core import listen, listenauswahl, listenexport, papierkorb
 from apps.konten import rollen
-from apps.mitglieder.forms import MitgliederEinstellungenForm, MitgliedForm
+from apps.mitglieder.forms import AdressnummerForm, MitgliederEinstellungenForm, MitgliedForm
 from apps.mitglieder.models import Mitglied, MitgliederEinstellungen, nummer_verbraucht
 
 
@@ -213,10 +213,21 @@ def loeschen(request, pk):
 @never_cache
 @rollen.recht_erforderlich("einstellungen.mitglieder")
 def einstellungen(request):
-    form = MitgliederEinstellungenForm(request.POST or None,
-                                       instance=MitgliederEinstellungen.laden())  # fmt: skip
-    if request.method == "POST" and form.is_valid():
+    from apps.adressen.models import Adresse, AdressEinstellungen
+
+    e = MitgliederEinstellungen.laden()
+    form = MitgliederEinstellungenForm(request.POST or None, instance=e)
+    nummern = AdressnummerForm(request.POST or None, instance=AdressEinstellungen.laden(),
+                               prefix="adr")  # fmt: skip
+    if request.method == "POST" and form.is_valid() and nummern.is_valid():
         form.save()
+        nummern.save()
         messages.success(request, "Einstellungen gespeichert.")
         return redirect("mitglieder:einstellungen")
-    return render(request, "mitglieder/einstellungen.html", {"form": form})
+    # Mitgliedsnummern dürfen nicht in den Bereich der Adressnummern wachsen (ADR 0133)
+    kleinste = Adresse.objects.filter(nummer__isnull=False).order_by("nummer").first()
+    grenze = kleinste.nummer if kleinste else nummern.instance.naechste_nummer
+    return render(request, "mitglieder/einstellungen.html", {
+        "form": form, "nummern": nummern, "grenze": grenze,
+        "zu_nah": e.naechste_nummer >= grenze,
+    })  # fmt: skip

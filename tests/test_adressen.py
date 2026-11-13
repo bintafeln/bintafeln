@@ -614,3 +614,106 @@ def test_sammel_bearbeiten_braucht_recht(client, anmelden, admin, django_user_mo
     anmelden(client, nutzer)
     antwort = client.get(reverse("adressen:sammel_bearbeiten"))
     assert antwort.status_code == 403
+
+
+# --- Adressnummern (ADR 0133) -----------------------------------------------------------------
+
+
+def _person(nachname, **mehr):
+    return Adresse.objects.create(art="person", nachname=nachname, **mehr)
+
+
+def test_adressnummern_ab_2000_und_mitgliedsnummern_ueberspringen():
+    from apps.mitglieder.models import Mitglied
+
+    erste, zweite = _person("Erste"), _person("Zweite")
+    assert (erste.nummer, zweite.nummer) == (2000, 2001)
+    # Ein Mitglied mit der Nummer 2002 (von Hand vergeben): die Adressnummer springt darüber
+    m_adresse = Adresse(art="person", nachname="Mitglied")
+    m_adresse.als_mitglied = True
+    m_adresse.save()
+    Mitglied.objects.create(adresse=m_adresse, nummer="2002", art="Aktives Mitglied",
+                            eintritt=dt.date(2026, 1, 1))  # fmt: skip
+    assert m_adresse.nummer is None and m_adresse.nummer_anzeige == "2002"
+    assert _person("Dritte").nummer == 2003
+    erste.save()  # erneutes Speichern ändert die Nummer nicht
+    assert Adresse.objects.get(pk=erste.pk).nummer == 2000
+
+
+def test_neues_mitglied_bekommt_keine_adressnummer_spender_behaelt_seine(admin_client):
+    from apps.mitglieder.models import Mitglied
+
+    daten = {"art": "person", "nachname": "Probe", "ist_mitglied": "1", "m-nummer": "5",
+             "m-art": "Aktives Mitglied", "m-eintritt": "2026-01-01"}  # fmt: skip
+    admin_client.post(reverse("adressen:neu"), daten)
+    probe = Adresse.objects.get(nachname="Probe")
+    assert probe.nummer is None and probe.nummer_anzeige == "5"
+    # Ein Spender wird später Mitglied: Er behält die Adressnummer, angezeigt wird die
+    # Mitgliedsnummer.
+    spender = _person("Spender")
+    Mitglied.objects.create(adresse=spender, nummer="6", art="Aktives Mitglied",
+                            eintritt=dt.date(2026, 1, 1))  # fmt: skip
+    spender = Adresse.objects.get(pk=spender.pk)
+    assert spender.nummer == 2000 and spender.nummer_anzeige == "6"
+    seite = admin_client.get(reverse("adressen:adresse", args=[spender.pk])).content.decode()
+    assert "Mitgliedsnummer 6 · Adressnummer 2000" in seite
+    seite = admin_client.get(reverse("adressen:adresse", args=[_person("Neu").pk])).content.decode()
+    assert "Adressnummer 2001" in seite
+
+
+def test_liste_zeigt_sucht_und_sortiert_nummern(admin_client):
+    from apps.mitglieder.models import Mitglied
+
+    spender = _person("Zander")
+    mitglied = Adresse(art="person", nachname="Abel")
+    mitglied.als_mitglied = True
+    mitglied.save()
+    Mitglied.objects.create(adresse=mitglied, nummer="9", art="Aktives Mitglied",
+                            eintritt=dt.date(2026, 1, 1))  # fmt: skip
+    _person("Berg")  # 2001
+    seite = admin_client.get(LISTE, {"sort": "nummer"}).content.decode()
+    assert seite.index("Abel") < seite.index("Zander") < seite.index("Berg")  # 9 < 2000 < 2001
+    assert 'title="Mitgliedsnummer">9</td>' in seite and 'title="Adressnummer">2000</td>' in seite
+    seite = admin_client.get(LISTE, {"sort": "-nummer"}).content.decode()
+    assert seite.index("Berg") < seite.index("Zander") < seite.index("Abel")
+    gefunden = admin_client.get(LISTE, {"q": str(spender.nummer)}).content.decode()
+    assert "Zander" in gefunden and "Berg" not in gefunden
+    assert "Abel" in admin_client.get(LISTE, {"q": "9"}).content.decode()
+
+
+def test_nachtrag_vergibt_nummern_in_anlage_reihenfolge():
+    import importlib
+
+    from django.apps import apps
+
+    from apps.adressen.models import AdressEinstellungen
+    from apps.mitglieder.models import Mitglied
+
+    alt = _person("Alt")
+    _person("Jung")
+    mitglied = _person("Mitglied")
+    Mitglied.objects.create(adresse=mitglied, nummer="2001", art="Aktives Mitglied",
+                            eintritt=dt.date(2026, 1, 1))  # fmt: skip
+    Adresse.objects.update(nummer=None)  # Stand vor dem Update: noch keine Nummern
+    Adresse.objects.filter(pk=alt.pk).update(angelegt_am=dt.datetime(2020, 1, 1, tzinfo=dt.UTC))
+    nachtrag = importlib.import_module("apps.adressen.migrations.0015_adressnummer")
+    nachtrag.nummern_vergeben(apps, None)
+    nummern = dict(Adresse.objects.values_list("nachname", "nummer"))
+    assert nummern == {"Alt": 2000, "Jung": 2002, "Mitglied": None}  # 2001 ist Mitgliedsnummer
+    assert AdressEinstellungen.laden().naechste_nummer == 2003
+
+
+def test_einstellung_naechste_adressnummer_und_warnung(admin_client):
+    from apps.adressen.models import AdressEinstellungen
+    from apps.mitglieder.models import MitgliederEinstellungen
+
+    url = reverse("mitglieder:einstellungen")
+    seite = admin_client.get(url).content.decode()
+    assert 'name="adr-naechste_nummer"' in seite and 'value="2000"' in seite
+    admin_client.post(url, {"naechste_nummer": 1, "adr-naechste_nummer": 5000})
+    assert AdressEinstellungen.laden().naechste_nummer == 5000
+    assert _person("Hoch").nummer == 5000
+    assert "erreicht den Bereich der Adressnummern" not in admin_client.get(url).content.decode()
+    MitgliederEinstellungen.objects.update(naechste_nummer=5000)
+    seite = admin_client.get(url).content.decode()
+    assert "erreicht den Bereich der Adressnummern" in seite and "(ab 5000)" in seite

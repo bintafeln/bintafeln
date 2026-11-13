@@ -14,6 +14,8 @@
     {% endif %}
   </div>
   <h1>{{ a.name }}</h1>
+  {% if a.mitgliedsnummer %}<p class="leise">Mitgliedsnummer {{ a.mitgliedsnummer }}{% if a.nummer %} · Adressnummer {{ a.nummer }}{% endif %}</p>
+  {% elif a.nummer %}<p class="leise">Adressnummer {{ a.nummer }}</p>{% endif %}
   <p>{% for k in a.kategorien.all %}<span class="marke-rolle">{{ k.name }}</span> {% endfor %}<small class="leise">{{ a.get_art_display }}</small></p>
   <address class="anschrift">{% for z in a.anschrift_zeilen %}{{ z }}<br>{% endfor %}</address>
   <dl class="angaben">

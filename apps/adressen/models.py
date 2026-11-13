@@ -6,9 +6,52 @@ bleiben im Kundenstamm.
 
 from auditlog.registry import auditlog
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 
 from apps.core import zeichen
+
+# Adressnummern beginnen hier (ADR 0133): Mitglieder haben ihre Mitgliedsnummer (1, 2, 3 …), alle
+# anderen Adressen eine Nummer aus diesem eigenen Bereich – wie in Vereinsprogrammen üblich.
+ADRESSNUMMER_AB = 2000
+
+
+class AdressEinstellungen(models.Model):
+    EINZIGE_ID = 1
+    naechste_nummer = models.PositiveIntegerField(
+        "Nächste Adressnummer", default=ADRESSNUMMER_AB,
+        help_text="Für Spender und alle anderen Adressen ohne Mitgliedschaft. Mitglieder haben "
+        "ihre Mitgliedsnummer. Wählen Sie die Zahl so, dass Mitgliedsnummern sie nie erreichen.",
+    )  # fmt: skip
+
+    class Meta:
+        verbose_name = "Einstellungen für Adressnummern"
+        verbose_name_plural = "Einstellungen für Adressnummern"
+
+    def __str__(self):
+        return "Einstellungen für Adressnummern"
+
+    @classmethod
+    def laden(cls):
+        einstellungen, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
+        return einstellungen
+
+
+def naechste_adressnummer() -> int:
+    """Nächste freie Adressnummer (Zeile gesperrt, damit nie doppelt). Übersprungen werden
+    vergebene Adressnummern und gleich lautende Mitgliedsnummern, damit eine Nummer im Adressbuch
+    immer nur eine Person meint (ADR 0133)."""
+    from apps.mitglieder.models import Mitglied
+
+    with transaction.atomic():
+        e = AdressEinstellungen.laden()
+        e = AdressEinstellungen.objects.select_for_update().get(pk=e.pk)
+        nummer = e.naechste_nummer
+        while (Adresse.objects.filter(nummer=nummer).exists()
+               or Mitglied.objects.filter(nummer=str(nummer)).exists()):  # fmt: skip
+            nummer += 1
+        e.naechste_nummer = nummer + 1
+        e.save(update_fields=["naechste_nummer"])
+        return nummer
 
 
 class AdressKategorie(models.Model):
@@ -51,6 +94,11 @@ class Adresse(models.Model):
     mobil = models.CharField("Mobil", max_length=50, blank=True)
     email = models.EmailField("E-Mail", blank=True)
     webseite = models.URLField("Webseite", blank=True)
+    nummer = models.PositiveIntegerField(
+        "Adressnummer", null=True, blank=True, unique=True,
+        help_text="Wird automatisch vergeben, außer bei Mitgliedern (die haben ihre "
+        "Mitgliedsnummer).",
+    )  # fmt: skip
     kategorien = models.ManyToManyField(
         AdressKategorie, blank=True, related_name="adressen", verbose_name="Kategorien"
     )
@@ -92,7 +140,29 @@ class Adresse(models.Model):
     def save(self, *args, **kwargs):
         for feld in self.TEXTFELDER:
             setattr(self, feld, zeichen.bereinigen(getattr(self, feld)))
+        # Adressnummer für alle ohne Mitgliedschaft (ADR 0133). Wer gerade als Mitglied angelegt
+        # wird, setzt ``als_mitglied`` – er bekommt seine Mitgliedsnummer statt einer Adressnummer.
+        if (
+            self.nummer is None
+            and not getattr(self, "als_mitglied", False)
+            and not self.mitgliedsnummer
+        ):
+            self.nummer = naechste_adressnummer()
         super().save(*args, **kwargs)
+
+    @property
+    def mitgliedsnummer(self) -> str:
+        if self.pk is None:
+            return ""
+        try:
+            return self.mitglied.nummer
+        except models.ObjectDoesNotExist:
+            return ""
+
+    @property
+    def nummer_anzeige(self) -> str:
+        """Die Nummer im Adressbuch: bei Mitgliedern die Mitgliedsnummer, sonst die Adressnummer."""
+        return self.mitgliedsnummer or (str(self.nummer) if self.nummer else "")
 
     def clean(self):
         if self.art == self.Art.PERSON and not self.nachname:
@@ -134,3 +204,4 @@ class Adresse(models.Model):
 
 auditlog.register(Adresse, m2m_fields={"kategorien"}, exclude_fields=["geaendert_am"])
 auditlog.register(AdressKategorie)
+auditlog.register(AdressEinstellungen)

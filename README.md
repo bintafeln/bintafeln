@@ -1440,6 +1440,10 @@ Serienbriefe (Modul 5, ADR 0044); Kunden stehen weiter im Kundenstamm.
 - **Adresse**: Organisation (mit Ansprechperson) oder Person, Anschrift, Telefon, Mobil, E-Mail,
   Webseite, Kategorien (Mehrfachauswahl, gepflegt unter „Einstellungen → Adresskategorien“),
   Notiz.
+- **Nummern** (ADR 0133): Mitglieder haben ihre Mitgliedsnummer, alle anderen Adressen bekommen
+  automatisch eine Adressnummer aus einem eigenen Bereich ab 2000 (einstellbar unter
+  „Einstellungen → Mitglieder“). Spalte „Nr.“ in der Liste, sortier- und durchsuchbar. Beim Update
+  bekommen alle vorhandenen Adressen ohne Mitgliedschaft einmal eine Nummer.
 - **Mitarbeit** (nur bei einer Person, ADR 0097): Kennzeichen **Helfer** mit **aktiv/inaktiv** – wer
   als aktiver Helfer markiert ist, lässt sich später im Dienstplan und Fahrdienst einteilen. Wer
   Mitarbeitende verwalten darf, kann die Person zusätzlich mit ihrem **Anmelde-Konto** verknüpfen;

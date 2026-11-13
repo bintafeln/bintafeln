@@ -6,6 +6,13 @@
   <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular.html" %}
+    <h2>Adressnummern</h2>
+    <p class="hinweis">Mitglieder haben ihre Mitgliedsnummer. Spender und alle anderen Adressen ohne Mitgliedschaft
+      bekommen automatisch eine Adressnummer aus einem eigenen Bereich, z. B. ab 2000. So erkennt man an der Nummer,
+      ob jemand Mitglied ist.</p>
+    {% if zu_nah %}<p class="fehler" role="alert">Die nächste Mitgliedsnummer erreicht den Bereich der Adressnummern
+      (ab {{ grenze }}). Bitte die nächste Adressnummer höher setzen – vorhandene Nummern bleiben, wie sie sind.</p>{% endif %}
+    {% include "includes/formular.html" with form=nummern %}
     <button type="submit" class="knopf">Speichern</button>
   </form>
 </section>
