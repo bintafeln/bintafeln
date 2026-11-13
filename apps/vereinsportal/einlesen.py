@@ -7,7 +7,9 @@ Die Regeln zum Lesen stammen aus dem bisherigen Spendenbelege-Programm der Tafel
   unter der Absenderzeile (``Name | Straße | PLZ Ort``). Belege ohne vollständige Anschrift
   werden nicht übernommen.
 - Die Excel-Datei des Finanzexports, Blatt „Spenden - Übersicht“ (Spaltennamen in Zeile 6),
-  sagt über „Versendet am“ und „SQ-erstellt Datum“, welche Belegnummern schon versendet sind.
+  sagt über „Versendet am“, „SQ-erstellt Datum“ und „SQ-verschickt“, welche Belegnummern schon
+  versendet sind. Diese Spalten kommen nur mit, wenn sie beim Erzeugen des Exports unter
+  „Erweiterte Einstellungen → Spalten“ angekreuzt sind (der Dienst ``abruf`` tut das).
 - Liste „Spender mit E-Mail“ (Excel): Spalten Vorname, Nachname, E-Mail, dazu auf Wunsch
   „Anrede“ (für die Briefanrede) und „immer per Post“.
 
@@ -47,6 +49,9 @@ MAX_EXCEL = 30 * 1024 * 1024
 MAX_ZEILEN = 20000
 BLATT = "Spenden - Übersicht"
 KOPFZEILE = 6
+DATUMSSPALTEN = ("Versendet am", "SQ-erstellt Datum")  # versendet, wenn ein Datum drinsteht
+JA_NEIN_SPALTE = "SQ-verschickt"  # versendet, wenn etwas anderes als „nein“ drinsteht
+NEIN = {"", "nein", "n", "0", "false", "falsch", "none", "-", "–"}
 TAG = re.compile(r"\b(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{4})\b")
 BETRAG = re.compile(r"([\d.]+,\d{2})\s+[a-zä-ü\-]+", re.IGNORECASE)
 NUMMER = re.compile(r"_(\d+)\.pdf$", re.IGNORECASE)
@@ -74,6 +79,7 @@ class Ergebnis:
     ohne_anschrift: int = 0
     versendet: int = 0
     mit_uebersicht: bool = False
+    ohne_versandspalten: bool = False  # Übersicht da, aber ohne die Spalten zum Versand
     belege: int = 0  # Spendenbelege (PDF) in der Datei
     dateien: int = 0  # alle Dateien im Archiv
     pdfs: int = 0  # davon PDF, auch solche, die keine Spendenbelege sind
@@ -107,11 +113,22 @@ def bericht(e: Ergebnis) -> str:
         teile.append(f"{e.neue_spender} Spender neu ins Adressbuch aufgenommen")
     if e.ohne_anschrift:
         teile.append(f"{e.ohne_anschrift} ohne vollständige Anschrift ausgelassen")
-    teile.append(
-        f"{e.versendet} als im Vereinsportal versendet vermerkt" if e.mit_uebersicht
-        else "keine Übersicht der versendeten Belege in der Datei gefunden"
-    )  # fmt: skip
+    if e.ohne_versandspalten:
+        teile.append(OHNE_SPALTEN)
+    else:
+        teile.append(
+            f"{e.versendet} als im Vereinsportal versendet vermerkt" if e.mit_uebersicht
+            else "keine Übersicht der versendeten Belege in der Datei gefunden"
+        )  # fmt: skip
     return ", ".join(teile) + "."
+
+
+OHNE_SPALTEN = (
+    "aber in der Übersicht fehlen die Spalten „Versendet am“, „SQ-verschickt“ und "
+    "„SQ-erstellt Datum“ – so weiß bintafeln nicht, was im Vereinsportal schon versendet ist. "
+    "Bitte im Vereinsportal beim Finanzexport unter „Erweiterte Einstellungen → Spalten“ diese "
+    "drei ankreuzen und den Export neu erstellen"
+)
 
 
 def belegnummer(dateiname: str) -> str:
@@ -287,22 +304,36 @@ def _nummer(wert) -> str:
         return str(wert).strip()
 
 
-def versendete(inhalt: bytes) -> set[str] | None:
-    """Belegnummern, die laut Übersicht schon versendet sind; None, wenn das Blatt fehlt."""
+def _vermerkt(wert) -> bool:
+    return wert is not None and str(wert).strip().lower() not in NEIN
+
+
+def uebersicht(inhalt: bytes) -> tuple[set[str] | None, bool]:
+    """(Belegnummern, die laut Übersicht schon versendet sind; ob die Spalten zum Versand da
+    sind). Belegnummern None, wenn das Blatt oder die Spalte „Belegnummer“ fehlt."""
     mappe = _mappe(inhalt)
     if BLATT not in mappe.sheetnames:
-        return None
+        return None, False
     zeilen = mappe[BLATT].iter_rows(min_row=KOPFZEILE, values_only=True)
     kopf = [str(z or "").strip() for z in next(zeilen, ())]
     if "Belegnummer" not in kopf:
-        return None
+        return None, False
     nummer = kopf.index("Belegnummer")
-    spalten = [kopf.index(s) for s in ("Versendet am", "SQ-erstellt Datum") if s in kopf]
-    return {
-        _nummer(z[nummer])
-        for z in zeilen
-        if z[nummer] not in (None, "") and any(z[s] not in (None, "") for s in spalten)
-    }
+    datum = [kopf.index(s) for s in DATUMSSPALTEN if s in kopf]
+    ja_nein = kopf.index(JA_NEIN_SPALTE) if JA_NEIN_SPALTE in kopf else None
+
+    def versendet(z) -> bool:
+        if any(z[s] not in (None, "") for s in datum):
+            return True
+        return ja_nein is not None and _vermerkt(z[ja_nein])
+
+    nummern = {_nummer(z[nummer]) for z in zeilen if z[nummer] not in (None, "") and versendet(z)}
+    return nummern, bool(datum or ja_nein is not None)
+
+
+def versendete(inhalt: bytes) -> set[str] | None:
+    """Belegnummern, die laut Übersicht schon versendet sind; None, wenn das Blatt fehlt."""
+    return uebersicht(inhalt)[0]
 
 
 def _versendet_vermerken(nummern: set[str]) -> int:
@@ -312,12 +343,14 @@ def _versendet_vermerken(nummern: set[str]) -> int:
 
 def uebersicht_einlesen(inhalt: bytes) -> Ergebnis:
     """Nur die Excel-Datei des Finanzexports: vermerkt, was inzwischen versendet ist."""
-    nummern = versendete(inhalt)
+    nummern, spalten = uebersicht(inhalt)
     if nummern is None:
         raise EinleseFehler(
             f"In der Datei fehlt das Blatt „{BLATT}“ mit der Spalte „Belegnummer“ in Zeile "
             f"{KOPFZEILE}."
         )
+    if not spalten:
+        raise EinleseFehler("Die Übersicht ist da, " + OHNE_SPALTEN + ".")
     return Ergebnis(versendet=_versendet_vermerken(nummern), mit_uebersicht=True)
 
 
@@ -431,10 +464,11 @@ def finanzexport_einlesen(datei, von: str) -> Ergebnis:
         vorhanden.add(name)
     for eintrag in archiv.infolist():
         if eintrag.filename.lower().endswith(".xlsx") and eintrag.file_size <= MAX_EXCEL:
-            gefunden = versendete(archiv.read(eintrag))
+            gefunden, spalten = uebersicht(archiv.read(eintrag))
             if gefunden is not None:
                 nummern |= gefunden
                 ergebnis.mit_uebersicht = True
+                ergebnis.ohne_versandspalten = not spalten
     ergebnis.versendet = _versendet_vermerken(nummern)
     ergebnis.neue_spender = buch.neu
     return ergebnis

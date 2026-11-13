@@ -362,6 +362,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Übersicht“) und Liste „Spender mit E-Mail“ in den gemeinsamen Spendenpool ein
   (`apps/vereinsportal/einlesen.py`): je Beleg `Spende` + `Adresse` (Namen über `namen.py`) +
   `SpendenBeleg`. Keine eigenen Belege, Listen oder Dankesbriefe im Modul.
+  Versendet im Vereinsportal nur über die Spalten `VERSANDSPALTEN` (im Export unter „Erweiterte
+  Einstellungen → Spalten“ anzukreuzen; `abruf._versandspalten()` tut das, `einlesen.uebersicht()`
+  wertet sie aus).
   Automatischer Abruf (ADR 0127): Browser nur im optionalen Dienst `abruf` (`docker/abruf/abruf.py`,
   Compose-Profil `abruf`, Schlüssel `BINTAFELN_ABRUF_SCHLUESSEL`); bintafeln spricht ihn über
   `apps/vereinsportal/abruf.py` an (in Tests `abruf._anfrage` ersetzen), der Ablauf ist gegen eine

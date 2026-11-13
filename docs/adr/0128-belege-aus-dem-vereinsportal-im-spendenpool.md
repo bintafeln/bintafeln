@@ -53,3 +53,18 @@ Datei in den Spendenpool.
   eingetragene andere E-Mail wird nicht überschrieben.
 - **Nichts wird gelöscht:** Früher hochgeladene Sammelbescheinigungen bleiben in ihrer Tabelle,
   werden aber nicht mehr verwendet.
+
+## Nachtrag: Spalten zum Versand im Finanzexport
+
+Die Spalten „Versendet am“, „SQ-verschickt“ und „SQ-erstellt Datum“ stehen nur in der Übersicht
+des Finanzexports, wenn sie beim Erstellen unter „Erweiterte Einstellungen → Spalten“ angekreuzt
+sind; anfangs sind sie es nicht. Ohne sie wusste bintafeln (wie zuvor das alte Programm) nicht,
+was im Vereinsportal schon versendet ist. Deshalb:
+
+- Der Dienst `abruf` (ADR 0127) kreuzt die drei Spalten vor „Erstellen“ an und lässt alle
+  anderen Häkchen, wie sie sind. Einen schon vorhandenen Export desselben Zeitraums ohne diese
+  Spalten benutzt er nicht, sondern erzeugt ihn neu.
+- Als versendet gilt eine Spende, wenn „Versendet am“ oder „SQ-erstellt Datum“ ausgefüllt ist
+  oder „SQ-verschickt“ nicht „Nein“ (bzw. leer, 0, falsch) ist.
+- Fehlen die Spalten in einer hochgeladenen Datei, meldet das Einlesen das ausdrücklich mit dem
+  Weg dorthin, statt „0 versendet“ zu sagen.
