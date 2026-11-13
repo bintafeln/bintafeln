@@ -47,16 +47,15 @@
           <li><em>kommt in die Sammelbestätigung</em>: Er hat im Jahr mehrmals gespendet. bintafeln fasst alle offenen
             Spenden zu einer Sammelbestätigung zusammen; die einzelnen Belege aus dem Vereinsportal werden dafür nicht
             verschickt.</li>
-          <li><em>dieser Beleg ist die Bescheinigung</em>: Er hat im Jahr nur einmal gespendet; der Beleg aus dem
-            Vereinsportal liegt dem Dankesbrief bei.</li>
-          <li><em>bintafeln stellt eine Einzelbestätigung aus</em>: eine einzelne Spende ohne Beleg aus dem
-            Vereinsportal.</li>
+          <li><em>bintafeln stellt eine Einzelbestätigung aus</em>: Er hat im Jahr nur einmal gespendet. Auch wenn es
+            dafür einen Beleg aus dem Vereinsportal gibt, der dort noch nicht verschickt ist, bestätigt bintafeln die
+            Spende selbst; der Beleg aus dem Vereinsportal wird dann nicht verschickt.</li>
         </ul></li>
       <li>Ein Klick auf das Blatt 📄 öffnet den Beleg aus dem Vereinsportal.</li>
     </ul>
     <p class="hinweis">Mit dem Filter „Bescheinigung“ oben lassen sich nur die schon verschickten oder nur die noch
       offenen zeigen. Ob das Vereinsportal etwas verschickt hat, liest bintafeln aus der Übersicht im Finanzexport
-      (Spalte „Versendet am“) – beim nächsten Abruf wird das aktualisiert.</p>
+      (Spalten „Versendet am“, „SQ-verschickt“, „SQ-erstellt Datum“) – beim nächsten Abruf wird das aktualisiert.</p>
   </details>
   {% auswahl_formular "" %}
   <div class="liste-aktionen">
@@ -83,12 +82,10 @@
           {% elif s.fremdbeleg == "versendet" %}<span class="status status-fertig">✓ Schon verschickt (Vereinsportal)</span>
           {% elif s.sammel %}<span class="status status-offen">Noch nicht verschickt</span>
             <span class="leise">kommt in die Sammelbestätigung aus bintafeln ({{ s.sammel }} Spenden {{ s.datum.year }})</span>
-          {% elif s.fremdbeleg %}<span class="status status-offen">Noch nicht verschickt</span>
-            <span class="leise">dieser Beleg ist die Bescheinigung und liegt dem Dankesbrief bei</span>
           {% elif s.einzeln %}<span class="status status-offen">Noch nicht verschickt</span>
             <span class="leise">bintafeln stellt eine Einzelbestätigung aus</span>
           {% else %}<span class="leise">–</span>{% endif %}
-          {% if s.beleg %}<a class="beleg-link" href="{% url 'spenden:beleg' s.beleg.pk %}" target="_blank" rel="noopener" title="Beleg aus dem Vereinsportal öffnen">📄 Beleg{% if s.belegnummer %} {{ s.belegnummer }}{% endif %}{% if s.sammel %} <span class="leise">(wird nicht verschickt)</span>{% endif %}</a>{% endif %}
+          {% if s.beleg %}<a class="beleg-link" href="{% url 'spenden:beleg' s.beleg.pk %}" target="_blank" rel="noopener" title="Beleg aus dem Vereinsportal öffnen">📄 Beleg{% if s.belegnummer %} {{ s.belegnummer }}{% endif %}{% if s.sammel or s.einzeln %} <span class="leise">(wird nicht verschickt)</span>{% endif %}</a>{% endif %}
         </td>{% endif %}
       </tr>
     {% empty %}

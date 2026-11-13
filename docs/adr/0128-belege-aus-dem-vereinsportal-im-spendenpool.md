@@ -68,3 +68,13 @@ was im Vereinsportal schon versendet ist. Deshalb:
   oder „SQ-verschickt“ nicht „Nein“ (bzw. leer, 0, falsch) ist.
 - Fehlen die Spalten in einer hochgeladenen Datei, meldet das Einlesen das ausdrücklich mit dem
   Weg dorthin, statt „0 versendet“ zu sagen.
+
+## Nachtrag: Einzelspenden bestätigt bintafeln selbst
+
+Bisher war ein einzelner, im Vereinsportal noch nicht versendeter Beleg selbst die Bestätigung
+(er lag dem Dankesbrief bei). Seit die Bestätigung aus bintafeln genauso aussieht wie die aus dem
+Vereinsportal (ADR 0136), stellt bintafeln auch dafür die Bestätigung aus: Alles, was im
+Vereinsportal nicht versendet ist, bestätigt bintafeln – eine Spende einzeln, mehrere im Jahr als
+Sammelbestätigung. Der Beleg aus dem Vereinsportal liegt dann nicht bei und sollte dort nicht mehr
+verschickt werden. Die Seite „Zuwendungsbestätigungen“ zeigt dazu alle Spender des Jahres mit dem
+Stand ihrer Bescheinigung (`bestaetigung.spenderuebersicht()`).

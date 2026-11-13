@@ -510,9 +510,9 @@ def test_offene_geldspenden_regeln(eingelesen, einstellungen):
     assert not bst.offene_geldspenden(otto, 2026).exists()
     with pytest.raises(bst.BestaetigungsFehler):
         bst.geld_ausstellen(otto, 2026, "buero")
-    # eine einzelne offene Spende mit Beleg aus dem Vereinsportal: der Beleg ist die Bestätigung
+    # eine einzelne, dort noch nicht versendete Spende: bintafeln bestätigt sie selbst
     Spende.objects.filter(belegnummer="3").update(fremdbeleg=OFFEN)
-    assert not bst.offene_geldspenden(otto, 2026).exists()
+    assert bst.offene_geldspenden(otto, 2026).count() == 1
     # … kommt eine zweite dazu (auch eine von Hand erfasste), wird es eine Sammelbestätigung
     Spende.objects.create(adresse=otto, datum=dt.date(2026, 6, 1), betrag=D("20"))
     assert bst.offene_geldspenden(otto, 2026).count() == 2
@@ -550,18 +550,23 @@ def test_dankesbriefe_auswahl_und_anlagen(eingelesen, einstellungen):
     assert len(anlagen) == 1 and anlagen[0].startswith("Zuwendungsbestaetigung-")
 
 
-def test_dankesbrief_einfachspender_bekommt_den_beleg_aus_dem_vereinsportal(
+def test_dankesbrief_einfachspender_bekommt_einzelbestaetigung_aus_bintafeln(
     eingelesen, einstellungen
 ):
+    """Ein Einfachspender, dessen Beleg im Vereinsportal noch nicht versendet ist, bekommt die
+    Einzelbestätigung aus bintafeln; der Beleg aus dem Vereinsportal liegt dann nicht bei."""
     _, otto = eingelesen
     Spende.objects.filter(belegnummer="3").update(fremdbeleg=OFFEN)
     (d,) = danken.auswahl(2026, "einfach")
     assert d.adresse == otto
-    assert danken.fehlende_ausstellen([d], 2026, "buero") == []  # nichts auszustellen
-    assert [name for name, _ in danken.anlagen(d, True, True)] == ["Spendenbeleg_000003.pdf"]
-    assert not otto.spenden.filter(bestaetigung__isnull=False).exists()
+    # ohne Bestätigungen aus bintafeln liegt wie bisher der Beleg aus dem Vereinsportal bei
+    assert [name for name, _ in danken.anlagen(d, False, True)] == ["Spendenbeleg_000003.pdf"]
+    assert danken.fehlende_ausstellen([d], 2026, "buero") == []
+    b = otto.spenden.get().bestaetigung
+    assert b.art == "geld"
+    assert [name for name, _ in danken.anlagen(d, True, True)] == [
+        f"Zuwendungsbestaetigung-{b.nummer}.pdf"]  # fmt: skip
     danken.vermerken([d], True)
-    assert SpendenBeleg.objects.get(dateiname="Spendenbeleg_000003.pdf").beigelegt_am
     assert danken.auswahl(2026, "einfach") == []
 
 
@@ -582,13 +587,15 @@ def test_dankesbriefe_seite_druck_pdf_im_grossen_stil(
     assert not Spende.objects.filter(bedankt_am__isnull=True).exists()
     # Spendenliste: die Herkunft steht in der Spalte „Bestätigung“
     liste = admin_client.get(reverse("spenden:liste"), {"jahr": 2026}).content.decode()
-    # der Beleg ist ein Link auf das PDF; die Einzelspende behält ihn als Bestätigung
+    # der Beleg ist ein Link auf das PDF; die Einzelspende hat eine Bestätigung aus bintafeln
     beleg = SpendenBeleg.objects.get(spende__belegnummer="3")
     assert reverse("spenden:beleg", args=[beleg.pk]) in liste and "📄 Beleg 3" in liste
-    assert "dieser Beleg ist die Bescheinigung" in liste and "Sammelbestätigung Nr." in liste
+    assert ">Bestätigung Nr." in liste and "Sammelbestätigung Nr." in liste
     assert "✓ Bescheinigt von bintafeln" in liste
     assert admin_client.get(reverse("spenden:beleg", args=[beleg.pk])).status_code == 200
-    Spende.objects.filter(belegnummer="3").update(fremdbeleg=V)
+    # eine weitere Spende, im Vereinsportal schon versendet
+    Spende.objects.create(adresse=Adresse.objects.get(nachname="Muster"), datum=dt.date(2026, 5, 1),
+                          betrag=D("15"), belegnummer="9", fremdbeleg=V)  # fmt: skip
     liste = admin_client.get(reverse("spenden:liste"), {"jahr": 2026}).content.decode()
     assert "✓ Schon verschickt (Vereinsportal)</span>\n" in liste
     # Filter „Bescheinigung“: nur schon verschickte bzw. nur noch offene

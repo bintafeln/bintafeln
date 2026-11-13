@@ -1418,8 +1418,11 @@ Für Tafeln, die ihre Spendenbescheinigungen weiterhin im Vereinsportal ausstell
   Erstellen unter „Erweiterte Einstellungen → Spalten“ angekreuzt sind; der automatische Abruf
   kreuzt sie an und erzeugt einen vorhandenen Export ohne diese Spalten neu.
 - **Nie zwei Bestätigungen:** Was das Vereinsportal schon versendet hat, bestätigt bintafeln
-  nicht noch einmal. Eine einzelne offene Spende behält den Beleg aus dem Vereinsportal; bei
-  mehreren offenen Spenden im Jahr stellt bintafeln eine **Sammelbestätigung** aus.
+  nicht noch einmal. Alles dort noch nicht Versendete bestätigt bintafeln selbst: eine Spende als
+  **Einzelbestätigung**, mehrere im Jahr als **Sammelbestätigung**; die Belege aus dem
+  Vereinsportal liegen dann nicht bei. Die Seite „Zuwendungsbestätigungen“ zeigt alle Spender des
+  Jahres mit dem Stand ihrer Bescheinigung (im Vereinsportal verschickt, von bintafeln bestätigt,
+  offen).
 - **Dankesbriefe:** über „Spenden → Dankesbriefe“, als ein Druck-PDF (Brief und dahinter die
   Bescheinigung) oder per E-Mail – auch die Sammelbestätigung.
 - **Automatischer Abruf (optional, ADR 0127):** bintafeln meldet sich selbst im Vereinsportal an
