@@ -1,7 +1,7 @@
 """Beschreibung des Moduls Aushang-Monitore für den Modulrahmen (ADR 0049, 0080). Ohne
 Datenbankzugriff."""
 
-from apps.core.module import Modul
+from apps.core.module import Aushangseite, Modul
 
 
 def menue(eintrag):
@@ -43,6 +43,13 @@ def auskunft_mitarbeiter(benutzer, pdf):
                    "die PIN selbst.")  # fmt: skip
 
 
+def aushang():
+    from apps.aushang import fortschritt
+
+    return [Aushangseite("fortschritt", "Fortschritt der Ausgabe", "aushang.einrichten",
+                         fortschritt.auswahl, fortschritt.folien)]  # fmt: skip
+
+
 MODUL = Modul(
     kennung="aushang",
     titel="Aushang-Monitore",
@@ -50,6 +57,7 @@ MODUL = Modul(
     "mehrere Seiten im Wechsel oder nebeneinander",
     app_label="aushang",
     pfade=("/aushang/",),
+    aushang=aushang,
     rechte=(
         ("aushang.einrichten", "Aushang-Monitore einrichten",
          "Seiten eines Plans nur mit dem Recht, ihn zu planen."),

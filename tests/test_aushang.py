@@ -196,7 +196,8 @@ def test_ohne_moegliche_seiten_ein_hinweis(admin_client):
     t.save()
     aushang = Aushang.objects.create(name="Monitor")
     html = admin_client.get(reverse("aushang:bearbeiten", args=[aushang.pk])).content.decode()
-    assert "Sie können keine Seiten hinzufügen" in html
+    # Ohne Plan-Module bleibt der Fortschritt der Ausgabe (ADR 0135) – immer möglich
+    assert "Sie können keine Seiten hinzufügen" not in html and "Fortschritt der Ausgabe" in html
     assert "Monitor" in admin_client.get(LISTE).content.decode()
 
 
@@ -376,3 +377,73 @@ def test_dienstplan_am_monitor_helfer_mit_konto(plaene, heute, client, benutzer_
     assert Ausfall.objects.get().helfer == h
     html = Client().get(reverse("aushang:anzeige", args=[aushang.schluessel])).content.decode()
     assert f'data-platz="{kennung}"' not in html  # Aushang ohne Seiten
+
+
+# --- Fortschritt der Ausgabe (ADR 0135) ---------------------------------------------------------
+
+
+@pytest.fixture
+def ausgabe():
+    """Ausgabestelle Mitte mit einer Kundengruppe, die heute (Mittwoch) dran ist: 5 Haushalte."""
+    from apps.kunden.models import Haushalt, Kundengruppe
+
+    stelle = Ausgabestelle.objects.create(name="Mitte")
+    g = Kundengruppe.objects.create(name="Mittwoch", ausgabestelle=stelle, wochentage="Mi")
+    for n in range(1, 6):
+        Haushalt.objects.create(kundennummer=f"70{n}", kundengruppe=g)
+    return stelle
+
+
+def test_fortschritt_ohne_aufruf_abgeholt_von_erwartet(ausgabe, heute, admin_client):
+    from apps.aushang import fortschritt
+    from apps.kunden.models import Abholung, Haushalt
+
+    for nummer in ("701", "702"):
+        Abholung.objects.create(haushalt=Haushalt.objects.get(kundennummer=nummer), datum=heute,
+                                ausgabestelle=ausgabe)  # fmt: skip
+    assert fortschritt.zahlen(ausgabe, heute) == {"fertig": 2, "gesamt": 5, "art": "da"}
+    assert fortschritt.zahlen(ausgabe, heute + dt.timedelta(days=1)) is None  # kein Ausgabetag
+    # Einrichten: Seite je Ausgabestelle wählbar, Monitor zeigt groß „2 von 5“
+    aushang = Aushang.objects.create(name="Verteilung")
+    seite = reverse("aushang:bearbeiten", args=[aushang.pk])
+    assert f'value="fortschritt:{ausgabe.pk}"' in admin_client.get(seite).content.decode()
+    admin_client.post(seite, {"aktion": "seite", "seite": f"fortschritt:{ausgabe.pk}",
+                              "zeitraum": "m1"})  # fmt: skip
+    html = Client().get(reverse("aushang:anzeige", args=[aushang.schluessel])).content.decode()
+    assert '<span class="fortschritt-fertig">2</span>' in html and "von</span> 5" in html
+    assert "da gewesen" in html and "data-schnell" in html and "Mitte" in html
+    assert "701" not in html  # keine Kundennummern
+    assert "aushang-qr" not in html  # kein QR-Code: nichts zu ändern
+
+
+def test_fortschritt_mit_aufruf_aufgerufen_von_allen(ausgabe, heute):
+    from apps.aufruf import ablauf
+    from apps.aufruf.models import AufrufEinstellungen
+    from apps.aushang import fortschritt
+
+    t = TafelEinstellungen.laden()
+    t.module = [*t.module, "aufruf"]
+    t.save()
+    e = AufrufEinstellungen.laden(ausgabe)
+    e.aktiv, e.anzahl = True, 2
+    e.save()
+    assert fortschritt.zahlen(ausgabe, heute)["art"] == "da"  # Aufruf noch nicht gestartet
+    ablauf.starten(ausgabe, heute)
+    ablauf.weiter(ausgabe, heute)
+    z = fortschritt.zahlen(ausgabe, heute)
+    assert z["art"] == "aufgerufen" and z["gesamt"] == 5 and z["fertig"] == 2
+    # Aufruf-Modul ausgeschaltet: wieder abgeholt von erwartet
+    t.module = ["aushang"]
+    t.save()
+    assert fortschritt.zahlen(ausgabe, heute)["art"] == "da"
+
+
+def test_fortschritt_heute_keine_ausgabe(ausgabe, heute):
+    from apps.aushang import fortschritt
+    from apps.kunden.models import Kundengruppe
+
+    folien = fortschritt.folien(str(ausgabe.pk), heute, heute)
+    assert folien[0][0] == "Fortschritt Mitte" and "von</span> 5" in folien[0][1]
+    Kundengruppe.objects.update(wochentage="Mo")
+    assert "Heute keine Ausgabe" in fortschritt.folien(str(ausgabe.pk), heute, heute)[0][1]
+    assert fortschritt.folien("999", heute, heute) == []

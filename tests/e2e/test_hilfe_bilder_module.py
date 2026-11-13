@@ -435,6 +435,38 @@ def test_hilfe_bild_aushang(angemeldet, admin, muster, benutzer_mit_rolle, recht
     )
 
 
+def test_hilfe_bild_aushang_fortschritt(seite, admin, muster):
+    """Monitor „Fortschritt der Ausgabe“ (ADR 0135): erfundene Ausgabestelle mit 225 Haushalten,
+    davon 200 heute da gewesen."""
+    from apps.ausgabe.ampel import WOCHENTAGE
+    from apps.aushang.models import Aushang, AushangSeite
+    from apps.kunden.models import Abholung, Haushalt, Kundengruppe
+
+    _module("aushang")
+    heute = timezone.localdate()
+    stelle = Ausgabestelle.objects.create(name="Ausgabestelle Süd")
+    g = Kundengruppe.objects.create(name="Süd heute", ausgabestelle=stelle,
+                                    wochentage=WOCHENTAGE[heute.weekday()])  # fmt: skip
+    haushalte = Haushalt.objects.bulk_create(
+        [Haushalt(kundennummer=f"9{n:04d}", kundengruppe=g) for n in range(225)]
+    )
+    Abholung.objects.bulk_create(
+        [Abholung(haushalt=h, datum=heute, ausgabestelle=stelle) for h in haushalte[:200]]
+    )
+    aushang = Aushang.objects.create(name="Monitor Verteilung")
+    AushangSeite.objects.create(aushang=aushang, art="fortschritt", wert=str(stelle.pk))
+    seite.set_viewport_size({"width": 1280, "height": 720})
+    seite.goto(reverse("aushang:anzeige", args=[aushang.schluessel]))
+    zahl = seite.locator(".fortschritt-zahl")
+    expect(zahl).to_contain_text("200")
+    expect(zahl).to_contain_text("225")
+    seite.evaluate("""() => { document.body.style.boxSizing = 'border-box';
+        document.body.style.padding = '40px 0 0 16px'; }""")
+    aufnehmen(seite, "aushang-fortschritt", seite.locator("body"),
+              Marke(zahl, "rahmen", 1),
+              Marke(seite.locator(".fortschritt-balken"), "rahmen", 2), rand=0)  # fmt: skip
+
+
 def test_hilfe_bild_wetter(angemeldet, admin, muster, monkeypatch):
     from apps.wetter import wetter
 

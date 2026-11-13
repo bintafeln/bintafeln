@@ -345,6 +345,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `Aushangseite.aendern` des Moduls). Arbeitszeit am Monitor stempeln (ADR 0123): Regeln in
   `apps/aushang/stempeln.py` (wo: `an()`, QR-Marke `marke()`/`einloesen()`), mit PIN oder
   wechselndem QR-Code; „nur am Monitor“ über `arbeitszeit.hier_erlaubt()`/`freigeben()`.
+  Seite „Fortschritt der Ausgabe“ (ADR 0135) in `apps/aushang/fortschritt.py` (`zahlen()`: Aufruf
+  gestartet → aufgerufen/alle, sonst `stelle.fortschritt()`); Folien mit `data-schnell` lädt der
+  Monitor alle 20 Sekunden neu.
   `uebernahme` (ADR 0006 ergänzt, ADR 0100, Übernahme aus einem anderen Tafelprogramm; kein
   Herstellername in Oberfläche, Doku oder Code – nur Blatt- und Spaltennamen der Exportdatei):
   reine Umwandlung in `apps/uebernahme/konvertieren.py` (`umwandeln(bytes)` → neutrale Importformat-Dateien),

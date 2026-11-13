@@ -8,6 +8,7 @@
   "use strict";
 
   var NEU_LADEN = 60 * 1000;
+  var SCHNELL = 20 * 1000;
   var RUHE_GROSS = 30 * 1000; // ohne Eingabe zurück zur Übersicht
   var GANZ_NEU = 6 * 60 * 60 * 1000; // neue Programmversion: Seite ganz neu laden
   var body = document.body;
@@ -310,6 +311,7 @@
   // Schriften laden manchmal erst nach dem ersten Einpassen und ändern die Maße
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(zeigen);
   setInterval(weiter, dauer);
-  setInterval(neuLaden, NEU_LADEN);
+  // Fortschritt der Ausgabe (data-schnell) öfter neu laden, Pläne einmal in der Minute
+  setInterval(neuLaden, document.querySelector("[data-schnell]") ? SCHNELL : NEU_LADEN);
   setTimeout(function () { window.location.reload(); }, GANZ_NEU);
 })();
