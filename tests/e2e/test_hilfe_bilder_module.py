@@ -931,3 +931,59 @@ def test_hilfe_bild_aufruf_neue_links(angemeldet, admin, muster):
         Marke(seite.locator("input[name=passwort]"), nummer=2, von="rechts", laenge=50),
         Marke(seite.get_by_role("button", name="Neue Links erzeugen"), nummer=3, von="rechts"),
     )
+
+
+def test_hilfe_bild_angebote(angemeldet, admin, muster):
+    from apps.angebote import ablauf
+    from apps.angebote.models import Angebot, Interesse
+    from apps.kunden.models import Haushalt, Person
+
+    _module("angebote")
+    heute = timezone.localdate()
+    mitte = Ausgabestelle.objects.get(name="Ausgabestelle Mitte")
+    kurs = Angebot.objects.create(
+        bezeichnung="Kochkurs Frühjahr", plaetze=3, hoechstens=6,
+        beschreibung="4 Abende, dienstags 17–19 Uhr, Gemeindehaus Musterstadt",
+        anmeldung_von=heute - dt.timedelta(days=5), anmeldung_bis=heute + dt.timedelta(days=20),
+    )  # fmt: skip
+    namen = [("Anna", "Beispiel"), ("Bernd", "Probe"), ("Clara", "Test"), ("Dora", "Muster")]
+    for nr, (vorname, nachname) in enumerate(namen, start=1):
+        h = Haushalt.objects.create(kundennummer=f"001{nr:02d}", telefon=f"0123 4567{nr}")
+        p = Person.objects.create(haushalt=h, ist_hauptperson=True, vorname=vorname,
+                                  nachname=nachname, geburtsdatum=dt.date(1975, 1, nr))  # fmt: skip
+        e = ablauf.eintragen(kurs, h, p, stelle=mitte, von="clara")
+        Interesse.objects.filter(pk=e.pk).update(
+            eingetragen_am=timezone.now() - dt.timedelta(hours=10 - nr))  # fmt: skip
+    ablauf.plaetze_vergeben(kurs)
+    seite = oeffnen(angemeldet, admin, reverse("angebote:angebot", args=[kurs.pk]))
+    karten = seite.locator("section.karte")
+    aufnehmen(
+        seite,
+        "angebote-angebot",
+        [karten.first, karten.nth(1)],
+        Marke(seite.locator(".kacheln"), art="rahmen", nummer=1),
+        Marke(seite.get_by_role("button", name="Anmeldung schließen"), nummer=2, von="unten",
+              laenge=25),
+        Marke(seite.get_by_role("link", name="Liste als PDF"), nummer=3, von="unten", laenge=25),
+        Marke(seite.get_by_role("button", name="Plätze nach Reihenfolge vergeben"), nummer=4,
+              von="rechts", laenge=40),
+        Marke(seite.locator("#interessierte-tabelle select").first, nummer=5, von="rechts",
+              laenge=30),
+    )  # fmt: skip
+    # Eintragen am Einlass: der Haushalt aus „muster“ mit einer zweiten Person
+    erika = Haushalt.objects.get(kundennummer="00042")
+    Person.objects.create(haushalt=erika, vorname="Max", nachname="Muster",
+                          geburtsdatum=dt.date(1990, 8, 3))  # fmt: skip
+    seite = oeffnen(angemeldet, admin, reverse("angebote:eintragen", args=[kurs.pk, "00042"]))
+    aufnehmen(
+        seite,
+        "angebote-eintragen",
+        [seite.locator("section.karte")],
+        Marke(seite.locator("input[name=person]").first, nummer=1, von="links", laenge=30),
+        Marke(
+            seite.get_by_role("button", name="Interesse eintragen"),
+            nummer=2,
+            von="rechts",
+            laenge=40,
+        ),
+    )

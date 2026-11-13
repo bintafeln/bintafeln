@@ -344,6 +344,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Einkommensarten) in `UebernahmeEinstellungen`; die Seite schickt den Kundenstamm direkt in den
   Abgleich (`ImportVorbereitung` → `kunden:import_vorschau`), Anträge/Mitarbeitende als CSV.
   Keine festen Tafel-Werte, keine Personendaten; Tests mit erfundenem Workbook.
+  `angebote` (ADR 0131, Angebote mit begrenzten Plätzen wie ein Kochkurs: Regeln in
+  `apps/angebote/ablauf.py`, `Interesse` je Person an der Kundennummer, Eintragen nur am Einlass
+  über `Modul.einlass`, Höchstzahl schließt die Liste, Plätze nach Reihenfolge).
   `vereinsportal` (ADR 0126, 0128; kein Produktname): liest Finanzexport-ZIP (Blatt „Spenden -
   Übersicht“) und Liste „Spender mit E-Mail“ in den gemeinsamen Spendenpool ein
   (`apps/vereinsportal/einlesen.py`): je Beleg `Spende` + `Adresse` (Namen über `namen.py`) +

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load static %}
+{% block titel %}{{ a }}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'angebote:liste' %}">← Angebote mit Anmeldung</a></p>
+  <h1>{{ a.bezeichnung }}</h1>
+  {% if a.beschreibung %}<p>{{ a.beschreibung|linebreaksbr }}</p>{% endif %}
+  <p class="hinweis">Anmeldung {{ a.anmeldung_von|date:"d.m.Y" }} – {{ a.anmeldung_bis|date:"d.m.Y" }} ·
+    {% if offen %}<span class="marke-ok">läuft am Einlass</span>{% elif laeuft and a.geschlossen %}<span class="marke-neutral">von Hand geschlossen</span>{% elif laeuft %}<span class="marke-warnung">Liste voll – der Einlass fragt nicht weiter</span>{% else %}<span class="marke-neutral">nicht im Zeitraum</span>{% endif %}</p>
+  <div class="kacheln">
+    <div class="kachel"><span class="kachel-titel">Interessierte</span><span class="kachel-wert">{{ zahlen.anzahl }} von {{ a.hoechstens }}</span><span class="kachel-unter">noch {{ zahlen.frei }} frei auf der Liste</span></div>
+    <div class="kachel"><span class="kachel-titel">Plätze</span><span class="kachel-wert">{{ zahlen.zugesagt }} von {{ a.plaetze }}</span><span class="kachel-unter">zugesagt</span></div>
+    <div class="kachel"><span class="kachel-titel">Nachrücker</span><span class="kachel-wert">{{ zahlen.nachruecker }}</span></div>
+    <div class="kachel"><span class="kachel-titel">Abgesagt</span><span class="kachel-wert">{{ zahlen.abgesagt }}</span></div>
+  </div>
+  <div class="aktionsleiste">
+    <a class="knopf knopf-zweitrangig" href="{% url 'angebote:bearbeiten' a.pk %}">Bearbeiten</a>
+    <form method="post" action="{% url 'angebote:schliessen' a.pk %}" class="inline">{% csrf_token %}
+      <input type="hidden" name="geschlossen" value="{% if a.geschlossen %}0{% else %}1{% endif %}">
+      <button type="submit" class="knopf knopf-zweitrangig">{% if a.geschlossen %}Anmeldung wieder öffnen{% else %}Anmeldung schließen{% endif %}</button></form>
+    <a class="knopf knopf-zweitrangig" href="{% url 'angebote:liste_pdf' a.pk %}" target="_blank" rel="noopener">Liste als PDF</a>
+    <a class="knopf knopf-zweitrangig" href="{% url 'angebote:liste_csv' a.pk %}">Liste als CSV</a>
+    <form method="post" action="{% url 'angebote:loeschen' a.pk %}" class="inline" onsubmit="return confirm('Angebot mit allen Einträgen in den Papierkorb legen?')">{% csrf_token %}
+      <button type="submit" class="knopf knopf-zweitrangig">Löschen</button></form>
+  </div>
+</section>
+
+<section class="karte breit">
+  <h2>Interessierte</h2>
+  {% if interessierte %}
+  <form method="post" action="{% url 'angebote:plaetze' a.pk %}" class="aktionsleiste" onsubmit="return confirm('Die ersten {{ a.plaetze }} in der Reihenfolge der Anmeldung bekommen einen Platz, die übrigen werden Nachrücker. Absagen bleiben. Fortfahren?')">{% csrf_token %}
+    <button type="submit" class="knopf">Plätze nach Reihenfolge vergeben</button>
+    <span class="hinweis">Die ersten {{ a.plaetze }} bekommen einen Platz, die übrigen werden Nachrücker. Danach lässt sich jeder Stand einzeln ändern.</span>
+  </form>
+  <div class="tabelle-rahmen">
+    <table class="tabelle" data-sortierbar id="interessierte-tabelle">
+      <thead><tr>
+        <th class="zahl" aria-sort="none"><button type="button" class="sortieren" data-sort="zahl">Nr.</button></th>
+        <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Kundennr.</button></th>
+        <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Nachname</button></th>
+        <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Vorname</button></th>
+        <th>Telefon</th>
+        <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Ausgabestelle</button></th>
+        <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Eingetragen</button></th>
+        <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Stand</button></th></tr></thead>
+      <tbody>
+        {% for e in interessierte %}
+        <tr>
+          <td class="zahl" data-wert="{{ forloop.counter }}">{{ forloop.counter }}</td>
+          <td>{% if "kunden.ansehen" in rechte %}<a href="{% url 'kunden:haushalt' e.kundennummer %}">{{ e.kundennummer }}</a>{% else %}{{ e.kundennummer }}{% endif %}</td>
+          <td>{{ e.nachname }}</td>
+          <td>{{ e.vorname }}</td>
+          <td>{{ e.telefon|default:"–" }}</td>
+          <td>{{ e.ausgabestelle|default:"–" }}</td>
+          <td data-wert="{{ e.eingetragen_am|date:'Y-m-d H:i:s' }}">{{ e.eingetragen_am|date:"d.m.Y" }} · {{ e.eingetragen_von }}</td>
+          <td data-wert="{{ e.get_stand_display }}">
+            <form method="post" action="{% url 'angebote:stand' e.pk %}" class="inline">{% csrf_token %}
+              <select name="stand" aria-label="Stand von {{ e.name }}" onchange="this.form.submit()">{% for wert, text in staende %}<option value="{{ wert }}"{% if wert == e.stand %} selected{% endif %}>{{ text }}</option>{% endfor %}</select>
+              <noscript><button type="submit" class="link-knopf">ändern</button></noscript>
+            </form></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="hinweis">Noch niemand eingetragen. Am Einlass steht das Angebot auf der Karte jedes Haushalts, solange die
+    Anmeldung läuft.</p>
+  {% endif %}
+</section>
+{% endblock %}
