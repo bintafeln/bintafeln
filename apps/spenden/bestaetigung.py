@@ -64,7 +64,7 @@ def offene_geldspenden(adresse, jahr: int):
 
 def spenderuebersicht(jahr: int) -> list[dict]:
     """Alle Spender mit Geldspenden im Jahr und wie es um ihre Bescheinigung steht: wie viele
-    Spenden im Vereinsportal schon versendet sind, wie viele bintafeln bestätigt hat und welche
+    Spenden in WISO MeinVerein schon versendet sind, wie viele bintafeln bestätigt hat und welche
     noch offen sind (die bintafeln jetzt bestätigen kann)."""
     from apps.adressen.models import Adresse
 

@@ -1,4 +1,4 @@
-{% load handbuch %}<p>Dieses Modul ist für Tafeln, die ihre Spendenbescheinigungen weiterhin im <strong>Vereinsportal</strong>
+{% load handbuch %}<p>Dieses Modul ist für Tafeln, die ihre Spendenbescheinigungen weiterhin im <strong>WISO MeinVerein</strong>
   ausstellen. bintafeln liest dessen Finanzexport ein: Jede Spende kommt mit Spendendatum, Betrag, Belegnummer und
   ihrem Beleg in die <strong>Spendenliste</strong>, der Spender ins Adressbuch. Es gibt also nur einen Spendenpool –
   Übersicht, Dankesbriefe und Bestätigungen stehen unter „Verein → Spenden“, wie bei von Hand erfassten Spenden. Das
@@ -8,7 +8,7 @@
 <table class="tabelle kompakt">
   <thead><tr><th>Datei</th><th>Woher</th><th>Was drinstehen muss</th></tr></thead>
   <tbody>
-    <tr><td><strong>Finanzexport</strong> (ZIP)</td><td>Vereinsportal, Export für den Steuerberater, für einen Zeitraum</td>
+    <tr><td><strong>Finanzexport</strong> (ZIP)</td><td>WISO MeinVerein, Export für den Steuerberater, für einen Zeitraum</td>
       <td>Die Spendenbelege als PDF mit „spenden“ im Dateinamen und der Belegnummer am Ende (z. B.
         „Spendenbeleg_000123.pdf“). Im Beleg steht unter der Absenderzeile die Zeile „Name | Straße | PLZ Ort“.
         Dazu die Excel-Datei mit dem Blatt „Spenden - Übersicht“ (Spaltennamen in Zeile 6: „Belegnummer“,
@@ -16,7 +16,7 @@
         mit, wenn sie beim Erstellen des Exports unter „Erweiterte Einstellungen → Spalten“ angekreuzt sind (anfangs
         sind sie es nicht). Der automatische Abruf kreuzt sie selbst an; klappt das nicht, sagt
         ein Hinweis nach dem Abruf, welche Kästchen er auf der Seite gesehen hat.</td></tr>
-    <tr><td><strong>Spender mit E-Mail</strong> (Excel)</td><td>Vereinsportal, Kontaktliste als Excel-Export</td>
+    <tr><td><strong>Spender mit E-Mail</strong> (Excel)</td><td>WISO MeinVerein, Kontaktliste als Excel-Export</td>
       <td>Erste Zeile mit den Spalten „Vorname“, „Nachname“, „E-Mail“ und, wenn gewünscht, „Anrede“ (Frau/Herr, für
         die Briefanrede) und „immer per Post“ (Ja).</td></tr>
 
@@ -25,7 +25,7 @@
 
 <h3>Einlesen</h3>
 <ol>
-  <li>Menü „Verein → Spenden → Aus dem Vereinsportal einlesen“ öffnen. Die Seite zeigt beide Wege nebeneinander:
+  <li>Menü „Verein → Spenden → Aus WISO MeinVerein einlesen“ öffnen. Die Seite zeigt beide Wege nebeneinander:
     „Automatisch holen“ (wenn eingeschaltet und Sie das Recht dazu haben) und „Von Hand hochladen“. Das Ergebnis ist
     dasselbe.</li>
   <li>Den <strong>Finanzexport</strong> wählen und „Finanzexport einlesen“. Je Beleg entsteht eine Spende; den Spender
@@ -40,33 +40,33 @@
 <p>Auf dem Beleg steht der Name als ein Stück. bintafeln nimmt bei Personen das letzte Wort als Nachnamen und legt
   Namen mit „GmbH“, „e.V.“, „Stiftung“ und Ähnlichem als Organisation an. Trifft das einmal nicht, korrigieren Sie die
   Adresse im Adressbuch.</p>
-<p>Haben Sie im Vereinsportal inzwischen Bescheinigungen versendet, genügt es, nur die <strong>Excel-Datei</strong> des
+<p>Haben Sie in WISO MeinVerein inzwischen Bescheinigungen versendet, genügt es, nur die <strong>Excel-Datei</strong> des
   neuen Finanzexports einzulesen: bintafeln vermerkt dann, welche Spenden dort versendet sind. Als versendet gilt eine
   Spende, wenn bei ihr „Versendet am“ oder „SQ-erstellt Datum“ ausgefüllt ist oder „SQ-verschickt“ nicht „Nein“ ist.
   Fehlen die drei Spalten, sagt bintafeln das beim Einlesen deutlich, statt „0 versendet“ zu melden.</p>
 
-<h3>Automatisch aus dem Vereinsportal holen</h3>
+<h3>Automatisch aus WISO MeinVerein holen</h3>
 <p>Statt die Dateien von Hand herunter- und hochzuladen, kann bintafeln sie selbst holen. Dafür läuft auf dem
   Server ein zusätzlicher Dienst mit einem Browser. Er ist nur da, wenn die Person, die den Server betreut, ihn
   eingeschaltet hat (siehe unten); das Hochladen von Hand geht immer. Den Abruf sieht nur, wer das Recht
   „Automatischer Abruf mit eigenen Zugangsdaten“ hat (unter „Rollen und Rechte“; der Admin hat es immer).</p>
-<p><strong>Die Zugangsdaten sind persönlich.</strong> Jede Person trägt ihre <em>eigene</em> Anmeldung im Vereinsportal
+<p><strong>Die Zugangsdaten sind persönlich.</strong> Jede Person trägt ihre <em>eigene</em> Anmeldung in WISO MeinVerein
   ein. Sie gehört nur zu ihrem bintafeln-Konto: Niemand sonst sieht sie oder kann damit abrufen, auch kein Admin. Wer
-  abruft, meldet sich also immer mit dem eigenen Konto im Vereinsportal an und gibt den eigenen 2FA-Code ein. Was dabei
+  abruft, meldet sich also immer mit dem eigenen Konto in WISO MeinVerein an und gibt den eigenen 2FA-Code ein. Was dabei
   eingelesen wird, sehen danach alle, die Spenden sehen dürfen.</p>
 <ol>
-  <li>Einmalig für die Tafel unter „Einstellungen → Verein → Vereinsportal“ eintragen: die Adresse der Anmeldeseite,
-    die Adresse der Liste „Spender mit E-Mail“ und die Adresse der Seite „Finanzexport“ (jeweils im Vereinsportal
+  <li>Einmalig für die Tafel unter „Einstellungen → Verein → WISO MeinVerein“ eintragen: die Adresse der Anmeldeseite,
+    die Adresse der Liste „Spender mit E-Mail“ und die Adresse der Seite „Finanzexport“ (jeweils in WISO MeinVerein
     öffnen und aus der Adresszeile des Browsers kopieren).</li>
-  <li>„Verein → Spenden → Aus dem Vereinsportal einlesen“ öffnen und unter „Automatisch holen“ auf „Abruf starten …“
+  <li>„Verein → Spenden → Aus WISO MeinVerein einlesen“ öffnen und unter „Automatisch holen“ auf „Abruf starten …“
     klicken. Im Kasten „Ihre persönlichen Zugangsdaten“ einmalig
-    „Meine Zugangsdaten eintragen“: E-Mail und Passwort Ihrer Anmeldung im Vereinsportal. Das Passwort wird
+    „Meine Zugangsdaten eintragen“: E-Mail und Passwort Ihrer Anmeldung in WISO MeinVerein. Das Passwort wird
     verschlüsselt gespeichert und nie wieder angezeigt; dort lassen sich die Angaben auch ändern oder löschen.</li>
   <li>Den Zeitraum wählen (höchstens drei Monate) und „Abruf starten“.</li>
-  <li>Sobald danach gefragt wird, den <strong>2FA-Code</strong> eingeben, den das Vereinsportal Ihnen schickt.
+  <li>Sobald danach gefragt wird, den <strong>2FA-Code</strong> eingeben, den WISO MeinVerein Ihnen schickt.
     Dafür sind fünf Minuten Zeit.</li>
-  <li>bintafeln holt die Spenderliste und den Finanzexport und liest beides ein. Gibt es für den Zeitraum im
-    Vereinsportal schon einen fertigen Export, wird er wiederverwendet; sonst wird er neu erzeugt, das kann einige
+  <li>bintafeln holt die Spenderliste und den Finanzexport und liest beides ein. Gibt es für den Zeitraum in
+    WISO MeinVerein schon einen fertigen Export, wird er wiederverwendet; sonst wird er neu erzeugt, das kann einige
     Minuten dauern. Die Seite darf dabei offen bleiben oder geschlossen werden.</li>
 </ol>
 {% hilfe_bild "vereinsportal-abruf" "① Ihre persönlichen Zugangsdaten, ② Zeitraum wählen, ③ „Abruf starten“, ④ den 2FA-Code eingeben, sobald danach gefragt wird, ⑤ bisherige Abrufe." %}
@@ -91,17 +91,17 @@
   mit „|“, ob der Name des Vereins und ein Datum vorkommen, welcher Name eingetragen ist und welche Form die Zeilen
   mit „|“ haben (Buchstaben als x, Ziffern als 9). Nennen alle Belege denselben Spender, liest bintafeln nichts ein:
   Dann wurde die Anschrift des Vereins statt der Spender gelesen, und der eingetragene Name passt nicht.</p>
-<p>bintafeln holt immer den Export für <strong>genau den gewählten Zeitraum</strong>. Übernimmt das Vereinsportal
+<p>bintafeln holt immer den Export für <strong>genau den gewählten Zeitraum</strong>. Übernimmt WISO MeinVerein
   den Zeitraum nicht, bricht der Abruf mit einer Meldung ab, statt einen anderen Export einzulesen. Lässt sich die
   Liste „Spender mit E-Mail“ nicht holen, läuft der Finanzexport trotzdem durch; die Seite sagt dann, dass die Liste
   fehlt, und Sie können sie von Hand hochladen.</p>
 <p><strong>Wenn der Abruf scheitert</strong>, steht unter „Stand“, bei welchem Schritt und auf welcher Seite. Von
   der Adresse zeigt die Meldung nur den Teil vor dem Fragezeichen („?…“ heißt: dahinter stand noch etwas). Häufige
   Ursachen: Die „Adresse der Anmeldeseite“ zeigt nicht auf die Seite mit den Feldern für E-Mail und Passwort, oder
-  E-Mail und Passwort stimmen nicht – dann fragt das Vereinsportal gar nicht erst nach dem 2FA-Code, und bintafeln
+  E-Mail und Passwort stimmen nicht – dann fragt WISO MeinVerein gar nicht erst nach dem 2FA-Code, und bintafeln
   sagt das nach etwa einer halben Minute. Wer den Server betreut, sieht den Verlauf mit
   <code>docker compose logs abruf</code>; Zugangsdaten stehen dort nie.</p>
-<p>Der Abruf bedient die Seiten des Vereinsportals wie ein Mensch. Ändert das Vereinsportal seine Seiten, kann er
+<p>Der Abruf bedient die Seiten von WISO MeinVerein wie ein Mensch. Ändert WISO MeinVerein seine Seiten, kann er
   scheitern; die Meldung steht dann unter „Stand“. Laden Sie die Dateien in diesem Fall von Hand hoch und melden Sie
   den Fehler, damit der Abruf angepasst wird.</p>
 {% if "einstellungen.tafel" in rechte %}
@@ -114,40 +114,40 @@
 <p>In der Spendenliste zeigt die Spalte „Bescheinigung“ für jede Spende, ob der Spender seine Bescheinigung schon
   hat. Die Erklärung steht auch auf der Seite selbst unter „Was bedeutet die Spalte ‚Bescheinigung‘?“.</p>
 <ul>
-  <li><strong>„✓ Schon verschickt (Vereinsportal)“</strong>: Das Vereinsportal hat die Bescheinigung schon
+  <li><strong>„✓ Schon verschickt (WISO MeinVerein)“</strong>: WISO MeinVerein hat die Bescheinigung schon
     verschickt. bintafeln stellt dafür nie eine eigene aus und schreibt keinen Dankesbrief. Das liest bintafeln aus
     der Übersicht im Finanzexport (Spalten „Versendet am“, „SQ-verschickt“, „SQ-erstellt Datum“); fehlt die
     Übersicht, meldet das Einlesen „keine Übersicht der versendeten Belege in der Datei gefunden“, fehlen nur die
-    Spalten, erklärt es, wo man sie im Vereinsportal ankreuzt.</li>
+    Spalten, erklärt es, wo man sie in WISO MeinVerein ankreuzt.</li>
   <li><strong>„✓ Bescheinigt von bintafeln“</strong>: bintafeln hat eine Bestätigung oder Sammelbestätigung
     ausgestellt; ein Klick auf die Nummer öffnet das PDF.</li>
   <li><strong>„Noch nicht verschickt“</strong>: Der Spender hat noch keine Bescheinigung. Darunter steht, welche er
     bekommt:
     <ul>
       <li><em>„bintafeln stellt eine Einzelbestätigung aus“</em>: Der Spender hat im Jahr nur diese eine offene
-        Spende. Auch wenn es dafür einen Beleg aus dem Vereinsportal gibt, der dort noch nicht verschickt ist, stellt
-        bintafeln die Bestätigung aus; der Beleg wird dann nicht verschickt („wird nicht verschickt“) und sollte im
-        Vereinsportal auch nicht mehr verschickt werden.</li>
+        Spende. Auch wenn es dafür einen Beleg aus WISO MeinVerein gibt, der dort noch nicht verschickt ist, stellt
+        bintafeln die Bestätigung aus; der Beleg wird dann nicht verschickt („wird nicht verschickt“) und sollte in
+        WISO MeinVerein auch nicht mehr verschickt werden.</li>
       <li><em>„kommt in die Sammelbestätigung aus bintafeln (3 Spenden …)“</em>: Der Spender hat im Jahr mehrere noch
         nicht bestätigte Spenden. Die Liste zeigt weiterhin jede Spende einzeln; bintafeln stellt dafür aber
         <strong>eine Sammelbestätigung</strong> mit eigener Nummer aus – unter „Zuwendungsbestätigungen“ oder beim
         Erstellen der Dankesbriefe. Die Einzelbelege werden dann nicht verschickt („wird nicht verschickt“).</li>
     </ul></li>
 </ul>
-<p>Ein Klick auf „📄 Beleg 123“ öffnet den Beleg aus dem Vereinsportal. Mit dem Filter „Bescheinigung“ lassen sich nur
+<p>Ein Klick auf „📄 Beleg 123“ öffnet den Beleg aus WISO MeinVerein. Mit dem Filter „Bescheinigung“ lassen sich nur
   die schon verschickten oder nur die noch offenen Spenden zeigen.</p>
 
 <h3>Dankesbriefe mit Bescheinigung</h3>
 <p>Unter „Verein → Spenden → Dankesbriefe“ wählen Sie Vorlage und Jahr, lassen „Zuwendungsbestätigungen aus
   bintafeln beilegen“ und „Hochgeladene Belege beilegen“ angekreuzt und erstellen nach der Vorschau ein PDF für alle:
-  je Spender der Brief und direkt dahinter seine Bescheinigung (Sammelbestätigung oder Beleg aus dem Vereinsportal).
+  je Spender der Brief und direkt dahinter seine Bescheinigung (Sammelbestätigung oder Beleg aus WISO MeinVerein).
   Mit „Spender mit E-Mail-Einwilligung per E-Mail anschreiben“ gehen Brief und Bescheinigung als Mail hinaus – auch die
-  Sammelbestätigung, die das Vereinsportal nicht mailen kann. Über „nur Mehrfachspender“ lassen sich z. B. nur die
+  Sammelbestätigung, die WISO MeinVerein nicht mailen kann. Über „nur Mehrfachspender“ lassen sich z. B. nur die
   Sammelbestätigungen verschicken. Für Sammelbestätigungen müssen unter „Einstellungen → Spenden“ Finanzamt,
   Steuernummer, Bescheid und Unterschrift eingetragen sein.</p>
 
 <h3>Einstellungen</h3>
-<p>Unter „Einstellungen → Verein → Vereinsportal“ steht der Name des Vereins, wie er in der Absenderzeile der Belege
+<p>Unter „Einstellungen → Verein → WISO MeinVerein“ steht der Name des Vereins, wie er in der Absenderzeile der Belege
   steht (daran erkennt bintafeln die Zeile mit dem Spender), dazu die Adressen für den automatischen
-  Abruf. Zugangsdaten stehen dort nicht: Die trägt jede Person für sich auf der Seite „Abruf aus dem Vereinsportal“
+  Abruf. Zugangsdaten stehen dort nicht: Die trägt jede Person für sich auf der Seite „Abruf aus WISO MeinVerein“
   ein.</p>

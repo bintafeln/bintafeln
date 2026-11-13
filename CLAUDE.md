@@ -358,11 +358,12 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `angebote` (ADR 0131, Angebote mit begrenzten Plätzen wie ein Kochkurs: Regeln in
   `apps/angebote/ablauf.py`, `Interesse` je Person an der Kundennummer, Eintragen nur am Einlass
   über `Modul.einlass`, Höchstzahl schließt die Liste, Plätze nach Reihenfolge).
-  `vereinsportal` (ADR 0126, 0128; kein Produktname): liest Finanzexport-ZIP (Blatt „Spenden -
+  `vereinsportal` (ADR 0126, 0128; in Oberfläche und Doku „WISO MeinVerein“, im Code der neutrale
+  Name `vereinsportal`): liest Finanzexport-ZIP (Blatt „Spenden -
   Übersicht“) und Liste „Spender mit E-Mail“ in den gemeinsamen Spendenpool ein
   (`apps/vereinsportal/einlesen.py`): je Beleg `Spende` + `Adresse` (Namen über `namen.py`) +
   `SpendenBeleg`. Keine eigenen Belege, Listen oder Dankesbriefe im Modul.
-  Versendet im Vereinsportal nur über die Spalten `VERSANDSPALTEN` (im Export unter „Erweiterte
+  Versendet in WISO MeinVerein nur über die Spalten `VERSANDSPALTEN` (im Export unter „Erweiterte
   Einstellungen → Spalten“ anzukreuzen; `abruf._versandspalten()` tut das, `einlesen.uebersicht()`
   wertet sie aus).
   Automatischer Abruf (ADR 0127): Browser nur im optionalen Dienst `abruf` (`docker/abruf/abruf.py`,

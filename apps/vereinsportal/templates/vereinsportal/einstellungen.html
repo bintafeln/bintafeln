@@ -1,14 +1,14 @@
 {% extends "base.html" %}
-{% block titel %}Einstellungen für das Vereinsportal{% endblock %}
+{% block titel %}Einstellungen für WISO MeinVerein{% endblock %}
 {% block inhalt %}
 <section class="karte">
-  <h1>Einstellungen für das Vereinsportal</h1>
+  <h1>Einstellungen für WISO MeinVerein</h1>
   <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <p class="hinweis">Die Adressen braucht nur der <a href="{% url 'vereinsportal:abruf' %}">automatische
       Abruf</a>{% if not abruf_verfuegbar %} (auf diesem Server nicht eingeschaltet){% endif %}. Die Zugangsdaten stehen
-      nicht hier: Jede Person trägt ihre eigenen auf der Seite „Abruf aus dem Vereinsportal“ ein.</p>
+      nicht hier: Jede Person trägt ihre eigenen auf der Seite „Abruf aus WISO MeinVerein“ ein.</p>
     <button type="submit" class="knopf">Speichern</button>
   </form>
 </section>

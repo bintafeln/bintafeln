@@ -14,14 +14,14 @@
 <p>Eine bestätigte Spende lässt sich nicht mehr ändern oder löschen. Ist ein Fehler passiert, zuerst die Bestätigung
   stornieren.</p>
 <h3>Spenden importieren</h3>
-<p>„Verein → Spenden → Spenden importieren“ liest eine CSV-Datei ein, z. B. den Export aus dem Vereinsportal (in Excel als CSV
+<p>„Verein → Spenden → Spenden importieren“ liest eine CSV-Datei ein, z. B. den Export aus WISO MeinVerein (in Excel als CSV
   speichern) oder eine selbst erstellte Liste vom Kontoauszug. Die Seite nennt die Spalten; Pflicht sind Datum,
   Betrag und Name bzw. Organisation. Zuerst erscheint ein <strong>Prüfbericht</strong>: wie viele Spenden, welche
   Summe, welche Spender neu angelegt werden und welche Zeilen Fehler haben. Erst „übernehmen“ legt alles an.</p>
 <ul>
   <li>Spender werden über die E-Mail oder über Name und PLZ im Adressbuch gefunden; sonst wird eine neue Adresse angelegt.
     Vorhandene Adressen ändert der Import nicht.</li>
-  <li>Mit einer <strong>Belegnummer</strong> (z. B. der Nummer im Vereinsportal) wird keine Spende doppelt angelegt.
+  <li>Mit einer <strong>Belegnummer</strong> (z. B. der Nummer in WISO MeinVerein) wird keine Spende doppelt angelegt.
     Dieselbe oder eine überlappende Datei kann also gefahrlos noch einmal eingelesen werden.</li>
 </ul>
 {% endif %}
@@ -58,7 +58,7 @@
     anschreiben (z. B. mit unterschiedlichen Vorlagen).</li>
   <li>Anlagen: <strong>Zuwendungsbestätigungen aus bintafeln</strong> (fehlende werden für Geldspenden dabei
     ausgestellt, bei mehreren Spenden als Sammelbestätigung) und/oder <strong>hochgeladene Belege</strong>, z. B. aus
-    dem Vereinsportal. Beides geht auch zusammen.</li>
+    WISO MeinVerein. Beides geht auch zusammen.</li>
   <li>„Vorschau“ zeigt die Spender, zunächst alle angehakt. Ein Klick auf eine Spaltenüberschrift sortiert die
     Liste – nach <strong>Nachname</strong>, <strong>Vorname</strong>, Anzahl der Spenden, Datum oder Versandweg. Wer
     keinen Brief bekommen soll, wird abgewählt; das Kästchen im Tabellenkopf wählt alle oder keinen.</li>
@@ -68,16 +68,16 @@
   <li>Danach gelten die Spenden als bedankt; mit „Nur Spenden ohne Dankesbrief“ erscheinen sie nicht noch einmal.</li>
 </ol>
 <p>Die Spalte „Bescheinigung“ sagt, ob der Spender seine Bescheinigung schon hat: <strong>„✓ Schon verschickt
-  (Vereinsportal)“</strong> (bintafeln stellt keine eigene aus und schreibt keinen Dankesbrief), <strong>„✓ Bescheinigt
+  (WISO MeinVerein)“</strong> (bintafeln stellt keine eigene aus und schreibt keinen Dankesbrief), <strong>„✓ Bescheinigt
   von bintafeln“</strong> mit der Nummer als Link, oder <strong>„Noch nicht verschickt“</strong> mit dem Hinweis,
   welche Bescheinigung kommt: eine Sammelbestätigung aus bintafeln (bei mehreren Spenden im Jahr) oder eine
-  Einzelbestätigung aus bintafeln – auch dann, wenn der Beleg einer Spende aus dem Vereinsportal kommt und dort noch
+  Einzelbestätigung aus bintafeln – auch dann, wenn der Beleg einer Spende aus WISO MeinVerein kommt und dort noch
   nicht verschickt ist. Eingelesene
-  Belege (z. B. aus dem Modul „Spendenbelege aus dem Vereinsportal“) öffnen sich über „📄 Beleg“. Der Filter
+  Belege (z. B. aus dem Modul „Spendenbelege aus WISO MeinVerein“) öffnen sich über „📄 Beleg“. Der Filter
   „Bescheinigung“ zeigt nur die schon verschickten oder nur die noch offenen; die Erklärung steht auch auf der Seite
   unter „Was bedeutet die Spalte ‚Bescheinigung‘?“.</p>
 
-<h3>Belege aus dem Vereinsportal</h3>
+<h3>Belege aus WISO MeinVerein</h3>
 <p>„Verein → Spenden → Belege hochladen“ nimmt mehrere PDFs auf einmal an. Steht die Belegnummer der Spende im Dateinamen
   (z. B. „Spendenbeleg_000123.pdf“), ordnet bintafeln den Beleg selbst zu; Sammelbescheinigungen und andere ordnen Sie
   in der Liste „Noch zuzuordnen“ dem Spender zu. Die Dateien liegen verschlüsselt auf dem Server.</p>

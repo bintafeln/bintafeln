@@ -1,13 +1,13 @@
-"""Dienst „abruf“: holt Finanzexport und Spenderliste aus dem Vereinsportal (ADR 0127).
+"""Dienst „abruf“: holt Finanzexport und Spenderliste aus WISO MeinVerein (ADR 0127).
 
 bintafeln selbst hat keinen Browser. Dieser kleine Dienst läuft nur bei Tafeln, die ihn
 einschalten (Compose-Profil ``abruf``), ist von außen nicht erreichbar und nimmt Aufträge nur mit
-dem gemeinsamen Schlüssel an. Er meldet sich im Vereinsportal an, wartet auf den 2FA-Code,
+dem gemeinsamen Schlüssel an. Er meldet sich in WISO MeinVerein an, wartet auf den 2FA-Code,
 lädt die Dateien herunter und hält sie bereit, bis bintafeln sie abgeholt hat. Zugangsdaten und
 Dateien liegen nur im Arbeitsspeicher bzw. in einem vorübergehenden Ordner.
 
 Der Ablauf (Schritte, Felder und Knöpfe der Seiten) stammt aus dem bisherigen
-Spendenbelege-Programm der Tafel. Ändert das Vereinsportal seine Seiten, muss ``ablauf()``
+Spendenbelege-Programm der Tafel. Ändert WISO MeinVerein seine Seiten, muss ``ablauf()``
 angepasst werden; das Hochladen von Hand in bintafeln geht immer.
 """
 
@@ -177,12 +177,12 @@ def _anmelden(auftrag: Auftrag, seite, d: dict):
     _absenden(seite)
     seite.wait_for_load_state("domcontentloaded", timeout=15000)
     _warten(auftrag, seite, ZEITEN["nach_anmeldung"])
-    # Erst nach dem Code fragen, wenn das Vereinsportal ihn wirklich haben will. Sonst wartet
+    # Erst nach dem Code fragen, wenn WISO MeinVerein ihn wirklich haben will. Sonst wartet
     # der Mensch fünf Minuten auf einen Code, den das Portal nie verschickt hat.
     auftrag.melden("Warte auf die Abfrage des 2FA-Codes …")
     if not _da(seite, 'input[name="twoFactorActivate"]', ZEITEN["zwei_faktor"]):
         raise Hinweis(
-            "Nach dem Absenden von E-Mail und Passwort hat das Vereinsportal nicht nach dem "
+            "Nach dem Absenden von E-Mail und Passwort hat WISO MeinVerein nicht nach dem "
             "2FA-Code gefragt. Stimmen E-Mail und Passwort in den Einstellungen?"
         )
 
@@ -323,7 +323,7 @@ FELD_SETZEN = """([nummer, wert]) => {
 FELD_LESEN = """n => document.querySelector('[data-abruf-datum="' + n + '"]')?.value || ''"""
 ZEITRAEUME = """() => [...document.querySelectorAll('table tr em')].map(e => e.innerText.trim())"""
 
-# Spalten, ohne die bintafeln nicht erfährt, was im Vereinsportal schon versendet ist. Sie stehen
+# Spalten, ohne die bintafeln nicht erfährt, was in WISO MeinVerein schon versendet ist. Sie stehen
 # unter „Erweiterte Einstellungen → Spalten“ und sind dort anfangs nicht angekreuzt.
 VERSANDSPALTEN = ("Versendet am", "SQ-verschickt", "SQ-erstellt Datum")
 # Kreuzt die genannten Kästchen an, die es gibt und die noch nicht angekreuzt sind. Ergebnis:
@@ -432,7 +432,7 @@ def _versandspalten(auftrag: Auftrag, seite) -> None:
         auftrag.hinweise.append(
             "Im Finanzexport ließen sich die Spalten „" + "“, „".join(nicht) + "“ nicht "
             "ankreuzen (unter „Erweiterte Einstellungen → Spalten“). Ohne sie erfährt bintafeln "
-            "nicht, welche Belege im Vereinsportal schon versendet sind. "
+            "nicht, welche Belege in WISO MeinVerein schon versendet sind. "
             + (f"Kästchen auf der Seite: {', '.join(stand['gesehen'][:12])}."
                if stand["gesehen"] else "Auf der Seite wurde kein Kästchen gefunden.")
             + ("" if aufgeklappt is not False
@@ -458,7 +458,7 @@ def _neu_erzeugen(auftrag: Auftrag, kontext, seite, von: str, bis: str, ziel: Pa
     beginn = time.monotonic()
     while (vergangen := time.monotonic() - beginn) < ZEITEN["erzeugen"]:
         auftrag.melden(
-            f"(2/2) Das Vereinsportal erzeugt den Export {von} bis {bis} … "
+            f"(2/2) WISO MeinVerein erzeugt den Export {von} bis {bis} … "
             f"({int(vergangen // 60)} min)"
         )
         # Nur der Export mit genau diesem Zeitraum zählt – nicht irgendein fertiger der Seite
@@ -474,11 +474,11 @@ def _neu_erzeugen(auftrag: Auftrag, kontext, seite, von: str, bis: str, ziel: Pa
         neue = list((Counter(seite.evaluate(ZEITRAEUME)) - vorher).elements())
         if neue and vergangen > ZEITEN["zeile"] and not any(von in z and bis in z for z in neue):
             raise Hinweis(
-                f"Das Vereinsportal hat einen Export für einen anderen Zeitraum angelegt "
+                f"WISO MeinVerein hat einen Export für einen anderen Zeitraum angelegt "
                 f"{neue[0]} statt {von} bis {bis}. Der Zeitraum wurde dort nicht übernommen."
             )
         _warten(auftrag, seite, 1)
-    raise Hinweis("Das Vereinsportal hat den Export nicht rechtzeitig erzeugt.")
+    raise Hinweis("WISO MeinVerein hat den Export nicht rechtzeitig erzeugt.")
 
 
 def _inhalt_melden(ziel: Path) -> None:

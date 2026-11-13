@@ -1,4 +1,4 @@
-"""Modul Spendenbelege aus dem Vereinsportal (ADR 0126–0128). Alle Daten sind erfunden."""
+"""Modul Spendenbelege aus WISO MeinVerein (ADR 0126–0128). Alle Daten sind erfunden."""
 
 import datetime as dt
 import io
@@ -297,8 +297,8 @@ def test_finanzexport_einlesen(export):
     assert b"%PDF" not in privatdateien.pfad(SpendenBeleg.ORDNER, b.datei).read_bytes()
     assert einlesen.bericht(e) == (
         "3 neue Spenden eingelesen, 0 waren schon vorhanden, 2 Spender neu ins Adressbuch "
-        "aufgenommen, 1 ohne vollständige Anschrift ausgelassen, 1 als im Vereinsportal versendet "
-        "vermerkt."
+        "aufgenommen, 1 ohne vollständige Anschrift ausgelassen, 1 als in WISO MeinVerein "
+        "versendet vermerkt."
     )
 
 
@@ -371,7 +371,7 @@ def test_uebersicht_allein_vermerkt_versendete(export):
     assert Spende.objects.get(belegnummer="2").fremdbeleg == V
     assert Spende.objects.get(belegnummer="1").fremdbeleg == OFFEN
     fremd.refresh_from_db()
-    assert fremd.fremdbeleg == ""  # eine Spende ohne Beleg aus dem Vereinsportal bleibt unberührt
+    assert fremd.fremdbeleg == ""  # eine Spende ohne Beleg aus WISO MeinVerein bleibt unberührt
 
 
 @pytest.mark.parametrize("datei", [
@@ -404,7 +404,7 @@ def test_uebersicht_ohne_spalten_zum_versand(export):
     assert (e.mit_uebersicht, e.ohne_versandspalten) == (True, True)
     bericht = einlesen.bericht(e)
     assert "fehlen die Spalten „Versendet am“, „SQ-verschickt“" in bericht
-    assert "als im Vereinsportal versendet vermerkt" not in bericht
+    assert "als in WISO MeinVerein versendet vermerkt" not in bericht
 
 
 def test_uebersicht_kaputte_datei():
@@ -497,7 +497,7 @@ def einstellungen():
 
 @pytest.fixture
 def eingelesen(export):
-    """Erika: zwei offene Spenden; Otto: eine, im Vereinsportal schon versendet."""
+    """Erika: zwei offene Spenden; Otto: eine, in WISO MeinVerein schon versendet."""
     einlesen.finanzexport_einlesen(export, "buero")
     return Adresse.objects.get(nachname="Beispiel"), Adresse.objects.get(nachname="Muster")
 
@@ -506,7 +506,7 @@ def test_offene_geldspenden_regeln(eingelesen, einstellungen):
     erika, otto = eingelesen
     # mehrere offene Spenden: bintafeln stellt eine Sammelbestätigung aus
     assert bst.offene_geldspenden(erika, 2026).count() == 2
-    # im Vereinsportal versendet: nie eine Bestätigung von hier
+    # in WISO MeinVerein versendet: nie eine Bestätigung von hier
     assert not bst.offene_geldspenden(otto, 2026).exists()
     with pytest.raises(bst.BestaetigungsFehler):
         bst.geld_ausstellen(otto, 2026, "buero")
@@ -541,7 +541,7 @@ def vorlage():
 def test_dankesbriefe_auswahl_und_anlagen(eingelesen, einstellungen):
     erika, otto = eingelesen
     danke = danken.auswahl(2026)
-    # Otto ist im Vereinsportal schon versorgt: kein Brief von hier
+    # Otto ist in WISO MeinVerein schon versorgt: kein Brief von hier
     assert [d.adresse for d in danke] == [erika]
     (d,) = danke
     assert danken.fehlende_ausstellen(danke, 2026, "buero") == []
@@ -553,13 +553,13 @@ def test_dankesbriefe_auswahl_und_anlagen(eingelesen, einstellungen):
 def test_dankesbrief_einfachspender_bekommt_einzelbestaetigung_aus_bintafeln(
     eingelesen, einstellungen
 ):
-    """Ein Einfachspender, dessen Beleg im Vereinsportal noch nicht versendet ist, bekommt die
-    Einzelbestätigung aus bintafeln; der Beleg aus dem Vereinsportal liegt dann nicht bei."""
+    """Ein Einfachspender, dessen Beleg in WISO MeinVerein noch nicht versendet ist, bekommt die
+    Einzelbestätigung aus bintafeln; der Beleg aus WISO MeinVerein liegt dann nicht bei."""
     _, otto = eingelesen
     Spende.objects.filter(belegnummer="3").update(fremdbeleg=OFFEN)
     (d,) = danken.auswahl(2026, "einfach")
     assert d.adresse == otto
-    # ohne Bestätigungen aus bintafeln liegt wie bisher der Beleg aus dem Vereinsportal bei
+    # ohne Bestätigungen aus bintafeln liegt wie bisher der Beleg aus WISO MeinVerein bei
     assert [name for name, _ in danken.anlagen(d, False, True)] == ["Spendenbeleg_000003.pdf"]
     assert danken.fehlende_ausstellen([d], 2026, "buero") == []
     b = otto.spenden.get().bestaetigung
@@ -574,7 +574,7 @@ def test_dankesbriefe_seite_druck_pdf_im_grossen_stil(
     admin_client, eingelesen, einstellungen, vorlage, pdf_text
 ):
     """Die Seite „Dankesbriefe“ liefert alles in einem PDF: Brief und dahinter die Bescheinigung –
-    Sammelbestätigung aus bintafeln oder Beleg aus dem Vereinsportal."""
+    Sammelbestätigung aus bintafeln oder Beleg aus WISO MeinVerein."""
     Spende.objects.filter(belegnummer="3").update(fremdbeleg=OFFEN)
     daten = {"vorlage": vorlage.pk, "jahr": 2026, "art": "alle", "nur_offen": "on",
              "mit_bestaetigungen": "on", "mit_belegen": "on"}  # fmt: skip
@@ -593,11 +593,11 @@ def test_dankesbriefe_seite_druck_pdf_im_grossen_stil(
     assert ">Bestätigung Nr." in liste and "Sammelbestätigung Nr." in liste
     assert "✓ Bescheinigt von bintafeln" in liste
     assert admin_client.get(reverse("spenden:beleg", args=[beleg.pk])).status_code == 200
-    # eine weitere Spende, im Vereinsportal schon versendet
+    # eine weitere Spende, in WISO MeinVerein schon versendet
     Spende.objects.create(adresse=Adresse.objects.get(nachname="Muster"), datum=dt.date(2026, 5, 1),
                           betrag=D("15"), belegnummer="9", fremdbeleg=V)  # fmt: skip
     liste = admin_client.get(reverse("spenden:liste"), {"jahr": 2026}).content.decode()
-    assert "✓ Schon verschickt (Vereinsportal)</span>\n" in liste
+    assert "✓ Schon verschickt (WISO MeinVerein)</span>\n" in liste
     # Filter „Bescheinigung“: nur schon verschickte bzw. nur noch offene
     verschickt = admin_client.get(
         reverse("spenden:liste"), {"jahr": 2026, "bescheinigung": "verschickt"}
@@ -630,11 +630,11 @@ def hochladen(client, feld, name, inhalt):
 
 def test_seite_einlesen_und_stand(buero, export):
     leer = buero.get(reverse("vereinsportal:start")).content.decode()
-    assert "Noch keine Spenden aus dem Vereinsportal eingelesen" in leer
+    assert "Noch keine Spenden aus WISO MeinVerein eingelesen" in leer
     seite = hochladen(buero, "finanzexport", "export.zip", export.getvalue()).content.decode()
     assert "3 neue Spenden eingelesen, 0 waren schon vorhanden" in seite
     assert "2 Spender neu ins Adressbuch aufgenommen" in seite
-    assert "1 als im Vereinsportal versendet vermerkt" in seite
+    assert "1 als in WISO MeinVerein versendet vermerkt" in seite
     # Stand im Spendenpool: 3 Spenden von 2 Spendern, 1 versendet, 2 offen
     zeile = seite[seite.index('id="portal-stand"') :]
     zahlen = [z.split("<")[0] for z in zeile.split('<td class="zahl">')[1:5]]
@@ -667,7 +667,7 @@ def test_einstellungen(buero):
     assert buero.get(seite).status_code == 200
     assert buero.post(seite, {"absender": ABSENDER}).status_code == 302
     e = PortalEinstellungen.laden()
-    assert e.absender == ABSENDER and str(e) == "Einstellungen für das Vereinsportal"
+    assert e.absender == ABSENDER and str(e) == "Einstellungen für WISO MeinVerein"
 
 
 def test_nur_mit_recht_und_modul(admin, benutzer_mit_rolle, anmelden, client):
@@ -848,7 +848,7 @@ def test_abruf_uebernehmen_liest_ein_und_raeumt_auf(dienst, export):
         (True, "Spenderliste ersetzt: 1 Spender mit E-Mail, 1 Zeilen ohne gültige E-Mail "
                "ausgelassen."),
         (True, "3 neue Spenden eingelesen, 0 waren schon vorhanden, 2 Spender neu ins Adressbuch "
-               "aufgenommen, 1 ohne vollständige Anschrift ausgelassen, 1 als im Vereinsportal "
+               "aufgenommen, 1 ohne vollständige Anschrift ausgelassen, 1 als in WISO MeinVerein "
                "versendet vermerkt."),
     ]  # fmt: skip
     assert Spende.objects.count() == 3 and Kontakt.objects.count() == 1
@@ -891,7 +891,7 @@ def test_abruf_ohne_belege_ist_kein_erfolg(dienst, zugang, berta):
     ok, kaputt = abruf.uebernehmen("berta")
     assert ok[0] and kaputt == (False, (
         "Finanzexport: Die Datei enthält keine Spendenbelege: 2 Dateien, davon 1 PDF, aber "
-        "keines mit „Spenden“ im Namen. Wurde der Export im Vereinsportal mit den Belegen "
+        "keines mit „Spenden“ im Namen. Wurde der Export in WISO MeinVerein mit den Belegen "
         "erzeugt, und stimmt der Zeitraum?"))  # fmt: skip
     a = Abruf.objects.get()
     assert a.stand == "fehler" and a.kontakte == 1 and "keine Spendenbelege" in a.meldung
@@ -1076,7 +1076,7 @@ def test_seite_abruf_ohne_zugangsdaten(buero, dienst, adressen):
 
 def test_seite_abruf_ohne_adressen(buero, dienst):
     seite = buero.get(reverse("vereinsportal:abruf")).content.decode()
-    assert "die Adressen des Vereinsportals eintragen" in seite and "Abruf starten" not in seite
+    assert "die Adressen von WISO MeinVerein eintragen" in seite and "Abruf starten" not in seite
 
 
 def test_eigene_zugangsdaten_verschluesselt_und_nur_fuer_das_eigene_konto(
@@ -1187,8 +1187,8 @@ def test_auskunft_nennt_zugang_und_abrufe(admin, berta, zugang, dienst, pdf_text
     def text(konto):
         return pdf_text(HttpResponse(auskunft.mitarbeiter_pdf(konto), "application/pdf"))
 
-    assert "Vereinsportal" not in text(admin)
+    assert "WISO MeinVerein" not in text(admin)
     abruf.starten(berta, dt.date(2026, 2, 1), dt.date(2026, 2, 4), False)
     inhalt = text(berta)
-    assert "Vereinsportal" in inhalt and "berta@example.org" in inhalt and "01.02.2026" in inhalt
+    assert "WISO MeinVerein" in inhalt and "berta@example.org" in inhalt and "01.02.2026" in inhalt
     assert "erfunden" not in inhalt

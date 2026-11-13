@@ -37,24 +37,24 @@
   <details class="abruf-hinweis" id="bescheinigung-erklaerung">
     <summary>Was bedeutet die Spalte „Bescheinigung“?</summary>
     <ul>
-      <li><span class="status status-fertig">✓ Schon verschickt (Vereinsportal)</span> – Der Spender hat die
-        Bescheinigung über das Vereinsportal bekommen. bintafeln stellt keine aus und schreibt keinen Dankesbrief.</li>
+      <li><span class="status status-fertig">✓ Schon verschickt (WISO MeinVerein)</span> – Der Spender hat die
+        Bescheinigung über WISO MeinVerein bekommen. bintafeln stellt keine aus und schreibt keinen Dankesbrief.</li>
       <li><span class="status status-fertig">✓ Bescheinigt von bintafeln</span> – bintafeln hat die Bestätigung
         ausgestellt; ein Klick auf die Nummer öffnet sie.</li>
       <li><span class="status status-offen">Noch nicht verschickt</span> – Der Spender hat noch keine Bescheinigung.
         Dahinter steht, welche er bekommt:
         <ul>
           <li><em>kommt in die Sammelbestätigung</em>: Er hat im Jahr mehrmals gespendet. bintafeln fasst alle offenen
-            Spenden zu einer Sammelbestätigung zusammen; die einzelnen Belege aus dem Vereinsportal werden dafür nicht
+            Spenden zu einer Sammelbestätigung zusammen; die einzelnen Belege aus WISO MeinVerein werden dafür nicht
             verschickt.</li>
           <li><em>bintafeln stellt eine Einzelbestätigung aus</em>: Er hat im Jahr nur einmal gespendet. Auch wenn es
-            dafür einen Beleg aus dem Vereinsportal gibt, der dort noch nicht verschickt ist, bestätigt bintafeln die
-            Spende selbst; der Beleg aus dem Vereinsportal wird dann nicht verschickt.</li>
+            dafür einen Beleg aus WISO MeinVerein gibt, der dort noch nicht verschickt ist, bestätigt bintafeln die
+            Spende selbst; der Beleg aus WISO MeinVerein wird dann nicht verschickt.</li>
         </ul></li>
-      <li>Ein Klick auf das Blatt 📄 öffnet den Beleg aus dem Vereinsportal.</li>
+      <li>Ein Klick auf das Blatt 📄 öffnet den Beleg aus WISO MeinVerein.</li>
     </ul>
     <p class="hinweis">Mit dem Filter „Bescheinigung“ oben lassen sich nur die schon verschickten oder nur die noch
-      offenen zeigen. Ob das Vereinsportal etwas verschickt hat, liest bintafeln aus der Übersicht im Finanzexport
+      offenen zeigen. Ob WISO MeinVerein etwas verschickt hat, liest bintafeln aus der Übersicht im Finanzexport
       (Spalten „Versendet am“, „SQ-verschickt“, „SQ-erstellt Datum“) – beim nächsten Abruf wird das aktualisiert.</p>
   </details>
   {% auswahl_formular "" %}
@@ -79,13 +79,13 @@
         {% if "bestaetigung" in sichtbar %}<td data-titel="Bescheinigung" class="bescheinigung">
           {% if s.bestaetigt %}<span class="status status-fertig">✓ Bescheinigt von bintafeln</span>
             {% if "spenden.bestaetigen" in rechte %}<a href="{% url 'spenden:pdf' %}?nummern={{ s.bestaetigung.nummer }}" target="_blank" rel="noopener">{% if s.bestaetigung.art == "sammel" %}Sammelbestätigung{% else %}Bestätigung{% endif %} Nr. {{ s.bestaetigung.nummer }}</a>{% else %}<span class="leise">Nr. {{ s.bestaetigung.nummer }}</span>{% endif %}
-          {% elif s.fremdbeleg == "versendet" %}<span class="status status-fertig">✓ Schon verschickt (Vereinsportal)</span>
+          {% elif s.fremdbeleg == "versendet" %}<span class="status status-fertig">✓ Schon verschickt (WISO MeinVerein)</span>
           {% elif s.sammel %}<span class="status status-offen">Noch nicht verschickt</span>
             <span class="leise">kommt in die Sammelbestätigung aus bintafeln ({{ s.sammel }} Spenden {{ s.datum.year }})</span>
           {% elif s.einzeln %}<span class="status status-offen">Noch nicht verschickt</span>
             <span class="leise">bintafeln stellt eine Einzelbestätigung aus</span>
           {% else %}<span class="leise">–</span>{% endif %}
-          {% if s.beleg %}<a class="beleg-link" href="{% url 'spenden:beleg' s.beleg.pk %}" target="_blank" rel="noopener" title="Beleg aus dem Vereinsportal öffnen">📄 Beleg{% if s.belegnummer %} {{ s.belegnummer }}{% endif %}{% if s.sammel or s.einzeln %} <span class="leise">(wird nicht verschickt)</span>{% endif %}</a>{% endif %}
+          {% if s.beleg %}<a class="beleg-link" href="{% url 'spenden:beleg' s.beleg.pk %}" target="_blank" rel="noopener" title="Beleg aus WISO MeinVerein öffnen">📄 Beleg{% if s.belegnummer %} {{ s.belegnummer }}{% endif %}{% if s.sammel or s.einzeln %} <span class="leise">(wird nicht verschickt)</span>{% endif %}</a>{% endif %}
         </td>{% endif %}
       </tr>
     {% empty %}

@@ -33,10 +33,10 @@
 
 <section class="karte breit">
   <h2>Spender {{ jahr }}</h2>
-  <p class="hinweis">Alle Spender mit Geldspenden im Jahr und wie es um ihre Bescheinigung steht. Was im Vereinsportal
+  <p class="hinweis">Alle Spender mit Geldspenden im Jahr und wie es um ihre Bescheinigung steht. Was in WISO MeinVerein
     schon verschickt ist, bestätigt bintafeln nie noch einmal. Alles andere ist „offen“: Dafür stellt bintafeln die
-    Bestätigung aus – bei einer Spende eine Einzelbestätigung, bei mehreren eine Sammelbestätigung. Ein Beleg aus dem
-    Vereinsportal für eine solche Spende sollte dort dann nicht mehr verschickt werden.</p>
+    Bestätigung aus – bei einer Spende eine Einzelbestätigung, bei mehreren eine Sammelbestätigung. Ein Beleg aus
+    WISO MeinVerein für eine solche Spende sollte dort dann nicht mehr verschickt werden.</p>
   {% if spender %}
   <form method="post" action="{% url 'spenden:ausstellen' %}?jahr={{ jahr }}" id="offen-form">
   {% csrf_token %}
@@ -57,7 +57,7 @@
         <td data-titel="Spenden" class="zahl">{{ z.anzahl }}</td>
         <td data-titel="Summe" class="zahl" data-wert="{{ z.summe|unlocalize }}">{{ z.summe|floatformat:2 }} €</td>
         <td data-titel="Bescheinigung" class="bescheinigung">
-          {% if z.im_portal %}<span class="status status-fertig">✓ {{ z.im_portal }} im Vereinsportal verschickt</span>{% endif %}
+          {% if z.im_portal %}<span class="status status-fertig">✓ {{ z.im_portal }} in WISO MeinVerein verschickt</span>{% endif %}
           {% if z.von_hier %}<span class="status status-fertig">✓ {{ z.von_hier }} von bintafeln bestätigt</span>{% endif %}
           {% if z.offen %}<span class="status status-offen">{{ z.offen }} offen ({{ z.offen_summe|floatformat:2 }} €)</span>
             <span class="leise">{% if z.offen == 1 %}Einzelbestätigung{% else %}Sammelbestätigung{% endif %} aus bintafeln</span>{% endif %}

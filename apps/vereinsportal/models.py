@@ -1,4 +1,4 @@
-"""Einstellungen und Hilfslisten für das Einlesen aus dem Vereinsportal (ADR 0126, 0128).
+"""Einstellungen und Hilfslisten für das Einlesen aus WISO MeinVerein (ADR 0126, 0128).
 
 Die Spenden selbst liegen im gemeinsamen Spendenpool (``apps.spenden``); hier stehen nur die
 Einstellungen und die Liste „Spender mit E-Mail“, aus der beim Einlesen E-Mail und Versandweg
@@ -24,11 +24,11 @@ class PortalEinstellungen(models.Model):
     # Automatischer Abruf über den Dienst „abruf“ (ADR 0127)
     anmeldung_url = models.URLField(
         "Adresse der Anmeldeseite", blank=True,
-        help_text="Die Adresse, unter der Sie sich im Vereinsportal anmelden (https://…).",
+        help_text="Die Adresse, unter der Sie sich in WISO MeinVerein anmelden (https://…).",
     )  # fmt: skip
     liste_url = models.URLField(
         "Adresse der Liste „Spender mit E-Mail“", blank=True, max_length=500,
-        help_text="Die Liste im Vereinsportal öffnen und die Adresse aus der Adresszeile des "
+        help_text="Die Liste in WISO MeinVerein öffnen und die Adresse aus der Adresszeile des "
         "Browsers hierher kopieren. Leer: Die Liste wird nicht abgerufen.",
     )  # fmt: skip
     export_url = models.URLField(
@@ -38,11 +38,11 @@ class PortalEinstellungen(models.Model):
     )  # fmt: skip
 
     class Meta:
-        verbose_name = "Einstellungen für das Vereinsportal"
-        verbose_name_plural = "Einstellungen für das Vereinsportal"
+        verbose_name = "Einstellungen für WISO MeinVerein"
+        verbose_name_plural = "Einstellungen für WISO MeinVerein"
 
     def __str__(self):
-        return "Einstellungen für das Vereinsportal"
+        return "Einstellungen für WISO MeinVerein"
 
     def save(self, *args, **kwargs):
         self.pk = self.EINZIGE_ID
@@ -59,19 +59,19 @@ class PortalEinstellungen(models.Model):
 
 
 class Zugang(models.Model):
-    """Persönliche Zugangsdaten eines Kontos zum Vereinsportal (ADR 0129). Sie gehören nur zu
+    """Persönliche Zugangsdaten eines Kontos zu WISO MeinVerein (ADR 0129). Sie gehören nur zu
     diesem Konto: Niemand sonst sieht sie oder ruft damit ab – auch kein Admin."""
 
     benutzer = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="vereinsportal_zugang"
     )
-    email = models.EmailField("E-Mail für die Anmeldung im Vereinsportal")
+    email = models.EmailField("E-Mail für die Anmeldung in WISO MeinVerein")
     passwort_verschluesselt = models.TextField(blank=True, editable=False)
     geaendert_am = models.DateTimeField("Geändert am", auto_now=True)
 
     class Meta:
-        verbose_name = "Zugang zum Vereinsportal"
-        verbose_name_plural = "Zugänge zum Vereinsportal"
+        verbose_name = "Zugang zu WISO MeinVerein"
+        verbose_name_plural = "Zugänge zu WISO MeinVerein"
 
     def __str__(self):
         return f"Zugang von {self.benutzer}"
@@ -112,8 +112,8 @@ class Abruf(models.Model):
     meldung = models.TextField("Meldung", blank=True)
 
     class Meta:
-        verbose_name = "Abruf aus dem Vereinsportal"
-        verbose_name_plural = "Abrufe aus dem Vereinsportal"
+        verbose_name = "Abruf aus WISO MeinVerein"
+        verbose_name_plural = "Abrufe aus WISO MeinVerein"
         ordering = ["-gestartet_am", "-pk"]
 
     def __str__(self):
@@ -121,7 +121,7 @@ class Abruf(models.Model):
 
 
 class Kontakt(models.Model):
-    """Zeile der Liste „Spender mit E-Mail“ aus dem Vereinsportal. Jedes Einlesen ersetzt die
+    """Zeile der Liste „Spender mit E-Mail“ aus WISO MeinVerein. Jedes Einlesen ersetzt die
     Liste vollständig."""
 
     such_name = models.CharField(max_length=250, unique=True, editable=False)
@@ -141,7 +141,7 @@ class Kontakt(models.Model):
 
 
 class Sammelbescheinigung(models.Model):
-    """Früher hochgeladene Sammelbescheinigung aus dem Vereinsportal. Wird nicht mehr verwendet:
+    """Früher hochgeladene Sammelbescheinigung aus WISO MeinVerein. Wird nicht mehr verwendet:
     Für Mehrfachspender stellt bintafeln die Sammelbestätigung jetzt selbst aus (ADR 0128). Die
     Tabelle bleibt, damit beim Update nichts gelöscht wird."""
 

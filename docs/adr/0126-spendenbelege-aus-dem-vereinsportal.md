@@ -50,3 +50,11 @@ Adressbuch.
 - **Datensparsam:** Die Belege sind Kopien; die Originale bleiben im Vereinsportal. Sie werden
   verschlüsselt gespeichert (`privatdateien`) und nach der eingestellten Zeit gelöscht
   (Vorgabe 2 Jahre). Die Spenderliste wird bei jedem Einlesen vollständig ersetzt.
+
+## Nachtrag: Name „WISO MeinVerein“
+
+Auf Wunsch des Maintainers heißt das Programm in Oberfläche, Handbuch, Meldungen und README so,
+wie die Tafeln es kennen: „WISO MeinVerein“ statt neutral „Vereinsportal“. Im Code (App
+`vereinsportal`, Adressen, Modelle, Rechte) bleibt der neutrale Name, damit Adressen, Migrationen
+und Rechte stabil bleiben. Vereinsnummer, Adressen und der Name im Absender bleiben Einstellungen
+der Tafel. Frühere ADRs sprechen weiter vom „Vereinsportal“.

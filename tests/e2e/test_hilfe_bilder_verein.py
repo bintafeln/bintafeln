@@ -394,7 +394,7 @@ def test_hilfe_bild_zuwendungsbestaetigungen(angemeldet, admin, muster):
         Spende.objects.create(adresse=probe, datum=tag, betrag=Decimal("50"))
     Spende.objects.create(adresse=markt, datum=dt.date(JAHR, 3, 2), betrag=Decimal("250"))
     Spende.objects.create(adresse=verein, datum=dt.date(JAHR, 4, 20), betrag=Decimal("100"))
-    # eine Spenderin, deren Bescheinigung schon über das Vereinsportal verschickt ist
+    # eine Spenderin, deren Bescheinigung schon über WISO MeinVerein verschickt ist
     portal = Adresse.objects.create(
         art="person", vorname="Greta", nachname="Gärtner", strasse="Lindenweg 4", plz="12345",
         ort="Musterstadt",

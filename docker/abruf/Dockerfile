@@ -1,4 +1,4 @@
-# Dienst "abruf" (ADR 0127): Browser für den Abruf aus dem Vereinsportal. Läuft nur mit dem
+# Dienst "abruf" (ADR 0127): Browser für den Abruf aus WISO MeinVerein. Läuft nur mit dem
 # Compose-Profil "abruf"; bintafeln selbst bekommt keinen Browser.
 FROM python:3.13-slim-bookworm
 
