@@ -304,7 +304,7 @@ def _belege_und_sammel(spenden) -> None:
         schluessel = (s.adresse_id, s.datum.year)
         if schluessel not in offen:
             offen[schluessel] = bst.offene_geldspenden(s.adresse, s.datum.year).count()
-        # mehrere offene: Sammelbestätigung; genau eine ohne fremden Beleg: Einzelbestätigung
+        # mehrere offene: Sammelbestätigung; genau eine: Einzelbestätigung
         s.sammel = offen[schluessel] if offen[schluessel] > 1 else 0
         s.einzeln = offen[schluessel] == 1
 
@@ -322,7 +322,8 @@ def bestaetigungen(request):
     return render(request, "spenden/bestaetigungen.html", {
         "unterschrift": bst.eigene_unterschrift(request.user),
         "neu_pdf": request.session.pop("spenden_neu", ""),
-        "jahr": jahr, "jahre": _jahre(), "offen": bst.jahresliste(jahr),
+        "jahr": jahr, "jahre": _jahre(), "spender": (spender := bst.spenderuebersicht(jahr)),
+        "offen_anzahl": sum(1 for z in spender if z["offen"]),
         "ausgestellt": ausgestellt, "fehlt": e.fehlende_angaben(),
         "sachspenden": Spende.objects.filter(art=Spende.Art.SACH, datum__year=jahr)
         .exclude(bestaetigung__isnull=False, bestaetigung__storniert_am__isnull=True)
