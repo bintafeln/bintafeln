@@ -25,7 +25,9 @@ Programmen aussehen.
 - Anlage zur Sammelbestätigung als Tabelle, neueste Spende zuerst, mit Gesamtsumme; bei vielen
   Spenden über mehrere Seiten.
 - Unter der Unterschrift steht wie im Vordruck kein Name. Wer unterschrieben hat, steht in der
-  `Ausfertigung` und in der Liste „Ausgestellt“ (ADR 0130 bleibt sonst unverändert).
+  `Ausfertigung` und in der Liste „Ausgestellt“ (ADR 0130 bleibt sonst unverändert). Die
+  Einstellung „Unterschrift: Name und Funktion“ entfällt deshalb in der Oberfläche und ist keine
+  Pflichtangabe mehr; die Spalte `unterzeichnet_von` bleibt, damit nichts verloren geht.
 - Neue Einstellung `SpendenEinstellungen.maschinell_angezeigt`: Nur wenn die Tafel die
   maschinelle Erstellung dem Finanzamt angezeigt hat (R 10b.1 Abs. 4 EStR), steht der Satz dazu
   unten auf der Bestätigung.

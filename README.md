@@ -1586,7 +1586,7 @@ Adresse im Adressbuch (ADR 0045).
 - **Einrichten** (nur Admin) unter „Einstellungen → Spenden und Zuwendungsbestätigungen“: Name
   und Anschrift der Körperschaft, steuerbegünstigte Zwecke, Art des Bescheids
   (Freistellungsbescheid, Anlage zum KSt-Bescheid, Feststellung nach § 60a AO), Finanzamt,
-  Steuernummer, Datum, Veranlagungszeitraum, Unterschrift, Startnummer, „Maschinelle Erstellung
+  Steuernummer, Datum, Veranlagungszeitraum, Startnummer, „Maschinelle Erstellung
   dem Finanzamt angezeigt“. Ob die Angaben zur
   Tafel passen, bitte mit der Steuerberatung klären.
 

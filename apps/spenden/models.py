@@ -47,6 +47,8 @@ class SpendenEinstellungen(models.Model):
         help_text="Bei mildtätigen Zwecken in der Regel ja (§ 10b Abs. 1 EStG). Im Zweifel "
         "Steuerberatung fragen.",
     )  # fmt: skip
+    # Nicht mehr in Gebrauch (ADR 0136: auf der Bestätigung steht wie im Vordruck kein Name unter
+    # der Unterschrift); die Spalte bleibt, damit kein gespeicherter Wert verloren geht.
     unterzeichnet_von = models.CharField(
         "Unterschrift: Name und Funktion", max_length=200, blank=True,
         help_text="Z. B. „Erika Muster, Kassenwartin“.",
@@ -76,8 +78,8 @@ class SpendenEinstellungen(models.Model):
     def fehlende_angaben(self) -> list[str]:
         """Was für eine Zuwendungsbestätigung noch fehlt."""
         felder = [("zwecke", "steuerbegünstigte Zwecke"), ("finanzamt", "Finanzamt"),
-                  ("steuernummer", "Steuernummer"), ("bescheid_vom", "Datum des Bescheids"),
-                  ("unterzeichnet_von", "Unterschrift")]  # fmt: skip
+                  ("steuernummer", "Steuernummer"),
+                  ("bescheid_vom", "Datum des Bescheids")]  # fmt: skip
         if self.grundlage != self.Grundlage.FESTSTELLUNG:
             felder.append(("veranlagungszeitraum", "Veranlagungszeitraum"))
         return [name for feld, name in felder if not getattr(self, feld)]
