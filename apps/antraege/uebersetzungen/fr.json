@@ -88,5 +88,8 @@
   "fehler_gebiet": "Nous ne pouvons malheureusement accepter que les demandes de personnes habitant à {gebiet}.",
   "fehler_einwilligung": "Veuillez donner votre accord pour que nous puissions traiter votre demande.",
   "fehler_zu_viele": "Trop de demandes ont été envoyées en peu de temps. Veuillez réessayer plus tard.",
-  "gelesen_bestaetigt": "J’ai lu : {was}"
+  "gelesen_bestaetigt": "J’ai lu : {was}",
+  "nicht_abgeschickt": "Votre demande n'a PAS encore été envoyée !",
+  "bitte_ergaenzen": "Veuillez compléter ou corriger les informations marquées en rouge :",
+  "noch_offen": "Il manque encore {anzahl} information(s) obligatoire(s) – ensuite seulement vous pourrez envoyer la demande."
 }

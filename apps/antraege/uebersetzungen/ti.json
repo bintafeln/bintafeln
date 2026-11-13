@@ -88,5 +88,8 @@
   "fehler_gebiet": "ይቕሬታ፡ ኣብ {gebiet} ዝነብሩ ሰባት ጥራይ ኢና ጠለብ ክንቕበል እንኽእል።",
   "fehler_einwilligung": "ሕቶኹም ክንሰርሖ ምእንቲ በጃኹም ተሰማምዑ።",
   "fehler_zu_viele": "ኣብ ሓጺር ግዜ ብዙሕ ሕቶታት ተላኢኹ። በጃኹም ጸኒሕኩም ፈትኑ።",
-  "gelesen_bestaetigt": "ኣንቢበ፦ {was}"
+  "gelesen_bestaetigt": "ኣንቢበ፦ {was}",
+  "nicht_abgeschickt": "ሕቶኹም ገና ኣይተላእከን!",
+  "bitte_ergaenzen": "በጃኹም ብቀይሕ ዝተመልከቱ ሓበሬታታት ኣማልኡ ወይ ኣዕርዩ:",
+  "noch_offen": "ገና {anzahl} ግዴታዊ ሓበሬታ ይጎድል – ድሕሪኡ ጥራይ ሕቶ ክትልእኩ ትኽእሉ።"
 }

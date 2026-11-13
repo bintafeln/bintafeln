@@ -88,5 +88,8 @@
   "fehler_gebiet": "Wir können leider nur Anträge von Menschen annehmen, die in {gebiet} wohnen.",
   "fehler_einwilligung": "Bitte stimmen Sie zu, damit wir Ihren Antrag bearbeiten können.",
   "fehler_zu_viele": "Es wurden in kurzer Zeit zu viele Anträge gesendet. Bitte versuchen Sie es später noch einmal.",
-  "gelesen_bestaetigt": "Ich habe gelesen: {was}"
+  "gelesen_bestaetigt": "Ich habe gelesen: {was}",
+  "nicht_abgeschickt": "Ihr Antrag wurde noch NICHT abgeschickt!",
+  "bitte_ergaenzen": "Bitte ergänzen oder korrigieren Sie die rot markierten Angaben:",
+  "noch_offen": "Noch {anzahl} Pflichtangabe(n) offen – erst dann können Sie den Antrag absenden."
 }

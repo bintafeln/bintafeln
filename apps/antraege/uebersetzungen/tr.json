@@ -88,5 +88,8 @@
   "fehler_gebiet": "Maalesef yalnızca {gebiet} bölgesinde yaşayan kişilerin başvurularını kabul edebiliyoruz.",
   "fehler_einwilligung": "Başvurunuzu işleyebilmemiz için lütfen onay verin.",
   "fehler_zu_viele": "Kısa sürede çok fazla başvuru gönderildi. Lütfen daha sonra tekrar deneyin.",
-  "gelesen_bestaetigt": "Okudum: {was}"
+  "gelesen_bestaetigt": "Okudum: {was}",
+  "nicht_abgeschickt": "Başvurunuz henüz GÖNDERİLMEDİ!",
+  "bitte_ergaenzen": "Lütfen kırmızıyla işaretlenmiş bilgileri tamamlayın veya düzeltin:",
+  "noch_offen": "Hâlâ {anzahl} zorunlu bilgi eksik – ancak bundan sonra başvuruyu gönderebilirsiniz."
 }

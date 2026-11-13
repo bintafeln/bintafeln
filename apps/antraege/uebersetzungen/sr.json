@@ -88,5 +88,8 @@
   "fehler_gebiet": "Nažalost, možemo da primamo samo zahteve osoba koje žive u mestu {gebiet}.",
   "fehler_einwilligung": "Molimo dajte saglasnost kako bismo mogli da obradimo vaš zahtev.",
   "fehler_zu_viele": "Za kratko vreme poslato je previše zahteva. Pokušajte ponovo kasnije.",
-  "gelesen_bestaetigt": "Прочитао/ла сам: {was}"
+  "gelesen_bestaetigt": "Прочитао/ла сам: {was}",
+  "nicht_abgeschickt": "Vaš zahtev još NIJE poslat!",
+  "bitte_ergaenzen": "Molimo dopunite ili ispravite podatke označene crvenom bojom:",
+  "noch_offen": "Nedostaje još {anzahl} obaveznih podataka – tek tada možete poslati zahtev."
 }

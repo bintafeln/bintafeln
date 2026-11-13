@@ -88,5 +88,8 @@
   "fehler_gebiet": "Mixabin em tenê dikarin serlêdanên kesên ku li {gebiet} dijîn qebûl bikin.",
   "fehler_einwilligung": "Ji kerema xwe razî bin da ku em bikarin daxwaza we bikin.",
   "fehler_zu_viele": "Di demeke kurt de gelek daxwaz hatin şandin. Ji kerema xwe paşê dîsa biceribînin.",
-  "gelesen_bestaetigt": "Min xwend: {was}"
+  "gelesen_bestaetigt": "Min xwend: {was}",
+  "nicht_abgeschickt": "Serlêdana te hîn NEHATIYE şandin!",
+  "bitte_ergaenzen": "Ji kerema xwe agahiyên bi sor nîşankirî temam bike an rast bike:",
+  "noch_offen": "Hîn {anzahl} agahiyên mecbûrî kêm in – tenê piştî wê tu dikarî serlêdanê bişînî."
 }

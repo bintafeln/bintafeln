@@ -88,5 +88,8 @@
   "fehler_gebiet": "很抱歉，我们只能受理居住在{gebiet}的人的申请。",
   "fehler_einwilligung": "请表示同意，以便我们处理您的申请。",
   "fehler_zu_viele": "短时间内提交的申请过多。请稍后再试。",
-  "gelesen_bestaetigt": "我已阅读：{was}"
+  "gelesen_bestaetigt": "我已阅读：{was}",
+  "nicht_abgeschickt": "您的申请尚未发送！",
+  "bitte_ergaenzen": "请补充或更正以红色标出的信息：",
+  "noch_offen": "还有 {anzahl} 项必填信息未填写——填写完毕后才能发送申请。"
 }

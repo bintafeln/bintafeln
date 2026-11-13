@@ -88,5 +88,8 @@
   "fehler_gebiet": "Unfortunately, we can only accept applications from people who live in {gebiet}.",
   "fehler_einwilligung": "Please agree so that we can process your application.",
   "fehler_zu_viele": "Too many applications were sent in a short time. Please try again later.",
-  "gelesen_bestaetigt": "I have read: {was}"
+  "gelesen_bestaetigt": "I have read: {was}",
+  "nicht_abgeschickt": "Your application has NOT been sent yet!",
+  "bitte_ergaenzen": "Please complete or correct the details marked in red:",
+  "noch_offen": "{anzahl} required detail(s) still missing – only then can you send the application."
 }

@@ -88,5 +88,8 @@
   "fehler_gebiet": "Niestety możemy przyjmować wnioski tylko od osób mieszkających w miejscowości {gebiet}.",
   "fehler_einwilligung": "Wyraź zgodę, abyśmy mogli rozpatrzyć Twój wniosek.",
   "fehler_zu_viele": "W krótkim czasie wysłano zbyt wiele wniosków. Spróbuj ponownie później.",
-  "gelesen_bestaetigt": "Przeczytałem/am: {was}"
+  "gelesen_bestaetigt": "Przeczytałem/am: {was}",
+  "nicht_abgeschickt": "Twój wniosek NIE został jeszcze wysłany!",
+  "bitte_ergaenzen": "Prosimy uzupełnić lub poprawić dane zaznaczone na czerwono:",
+  "noch_offen": "Brakuje jeszcze {anzahl} obowiązkowych danych – dopiero wtedy można wysłać wniosek."
 }

@@ -10,7 +10,7 @@ from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.html import format_html, format_html_join
+from django.utils.html import format_html, format_html_join, strip_tags
 from django.views.decorators.http import require_POST
 
 from apps.antraege import ausweis_scan, nachweise, sprachen
@@ -128,10 +128,26 @@ def formular(request, sprache):
                 request.session["antrag_mail"] = _bestaetigen(request, antrag)
                 _benachrichtigen(request, antrag, e)
                 return redirect("antrag:danke", sprache=sprache)
+            if datei_fehler and "anhaenge" in form.fields:
+                form.add_error("anhaenge", datei_fehler[0])  # am Feld, nicht nur oben
             kontext["fehler"] = datei_fehler[0] if datei_fehler else t["fehler_formular"]
+            kontext["fehlerliste"] = _fehlerliste(form)
+    vorhanden = nachweise.eintraege(request)
     return render(request, "antraege/formular.html",
-                  {**kontext, "form": form, "max_anhaenge": MAX_ANHAENGE,
-                   "nachweise": nachweise.eintraege(request)})  # fmt: skip
+                  {**kontext, "form": form, "max_anhaenge": MAX_ANHAENGE, "nachweise": vorhanden,
+                   "nachweise_pflicht": getattr(form, "nachweise_pflicht", False)
+                   and not vorhanden.exists()})  # fmt: skip
+
+
+def _fehlerliste(form) -> list[tuple[str, str, str]]:
+    """Je fehlerhaftem Feld (Sprungziel, Bezeichnung, Fehler) – für den großen Kasten oben, damit
+    niemand übersieht, dass der Antrag nicht abgeschickt ist und was fehlt."""
+    liste = []
+    for feld in form:
+        if feld.errors:
+            bezeichnung = strip_tags(str(feld.label)).strip().rstrip("*").strip()
+            liste.append((feld.id_for_label or f"id_{feld.name}", bezeichnung, feld.errors[0]))
+    return liste
 
 
 @require_POST
