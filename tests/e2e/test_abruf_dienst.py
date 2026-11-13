@@ -24,10 +24,17 @@ KURZ = {"zeile": 2, "knopf": 1, "felder": 2, "zwei_faktor": 2, "code": 20, "nach
         "erzeugen": 20, "download": 20}  # fmt: skip
 
 
-def _zip() -> bytes:
+def _zip(mit_spalten=True) -> bytes:
+    """Ein erfundener Export; mit Übersicht, in der die Spalten zum Versand stehen, oder ohne."""
+    from openpyxl import Workbook
+
+    mappe, excel = Workbook(), io.BytesIO()
+    mappe.active.append(["Belegnummer", "Versendet am"] if mit_spalten else ["Belegnummer"])
+    mappe.save(excel)
     puffer = io.BytesIO()
     with zipfile.ZipFile(puffer, "w") as z:
         z.writestr("Spenden/Spendenbeleg_000001.pdf", b"%PDF erfunden")
+        z.writestr("Finanzexport.xlsx", excel.getvalue())
     return puffer.getvalue()
 
 
@@ -57,6 +64,8 @@ ZEILEN = """<table>
  style="pointer-events: none"><span>Herunterladen</span></button></td></tr>
 <tr><td><em>(01.02.2026 - 04.02.2026)</em></td><td>ohne Knopf</td></tr>
 %s</table>"""
+FERTIG_ALT = """<tr><td><em>(01.02.2026 - 04.02.2026)</em></td><td><button pendo-id="tae-download"
+ onclick="fetch('/api/download/alt.zip')"><span>Herunterladen</span></button></td></tr>"""
 FERTIG = """<tr><td><em>(01.02.2026 - 04.02.2026)</em></td><td><button pendo-id="tae-download"
  onclick="fetch('/api/download/7.zip')"><span>Herunterladen</span></button></td></tr>"""
 # Neuen Export erzeugen: Die Datumsfelder tragen absichtlich andere Nummern als im bisherigen
@@ -69,13 +78,25 @@ NEU = (ZEILEN % "") + """<mat-select style="display:block"
 <input id="suche" placeholder="Suchen">
 <input id="mat-input-7" class="mat-datepicker-input">
 <input id="mat-input-8" class="mat-datepicker-input">
+<div onclick="aufklappen()"><span>Erweiterte Einstellungen</span></div>
+<div id="erweitert"></div>
 <button onclick="erstellen()">Erstellen</button>
-<script>function erstellen() {
+<script>
+// Wie im Vereinsportal: die Spalten gibt es erst, wenn „Erweiterte Einstellungen“ aufgeklappt ist
+function aufklappen() {
+  document.getElementById('erweitert').innerHTML = ['Status', '+Name', '+Versendet am',
+    'SQ-verschickt', 'SQ-erstellt Datum'].map(n => '<mat-checkbox><label><input type="checkbox"'
+    + (n[0] === '+' ? ' checked' : '') + '> ' + n.replace('+', '') + '</label></mat-checkbox>')
+    .join('');
+}
+function erstellen() {
   const v = VON, w = BIS, tr = document.createElement('tr');
+  const spalten = [...document.querySelectorAll('#erweitert input:checked')]
+    .map(i => i.parentElement.innerText.trim()).join('|');
   tr.innerHTML = '<td><em>(' + v + ' - ' + w + ')</em></td><td><button pendo-id="tae-download"'
     + ' style="pointer-events: none"><span>Herunterladen</span></button></td>';
-  tr.querySelector('button').onclick =
-    () => location = '/neu.zip?von=' + v + '&bis=' + w + '&eigen=' + window.eigen;
+  tr.querySelector('button').onclick = () => location = '/neu.zip?von=' + v + '&bis=' + w
+    + '&eigen=' + window.eigen + '&spalten=' + encodeURIComponent(spalten);
   document.querySelector('table').prepend(tr);
   setTimeout(() => tr.querySelector('button').removeAttribute('style'), 800);
 }</script>"""  # fmt: skip
@@ -158,6 +179,8 @@ class Portal(BaseHTTPRequestHandler):
             return self._html(NEU_FALSCH)
         if pfad == "/export-starr":
             return self._html(NEU_STARR)
+        if pfad == "/export-ohne-spalten":  # fertiger Export, aber ohne Spalten zum Versand
+            return self._html(NEU_RICHTIG.replace("</table>", FERTIG_ALT + "</table>", 1))
         if pfad == "/liste-leer":
             return self._html("<button>Hilfe</button><button class='x y'>Menü</button>")
         if pfad == "/api/download/falsch.zip":
@@ -165,7 +188,11 @@ class Portal(BaseHTTPRequestHandler):
             return self._datei(_zip(), "application/zip")
         if pfad == "/api/download/7.zip":
             return self._datei(_zip(), "application/zip")
+        if pfad == "/api/download/alt.zip":
+            type(self).gesehen["alt"] = True
+            return self._datei(_zip(mit_spalten=False), "application/zip")
         if pfad == "/neu.zip":
+            type(self).gesehen["spalten"] = frage.pop("spalten", [""])[0].split("|")
             type(self).gesehen["neu"] = {k: v[0] for k, v in frage.items()}
             return self._datei(_zip(), "application/zip", "export.zip")
         return self._html("Startseite")
@@ -246,7 +273,8 @@ def test_abruf_mit_vorhandenem_export(dienst):
     assert Portal.gesehen["anmeldung"] == ("buero@example.org", "erfunden")
     assert dienst.rufen("/datei/spenderliste", roh=True)[1].startswith(b"PK")
     export = dienst.rufen("/datei/finanzexport", roh=True)[1]
-    assert zipfile.ZipFile(io.BytesIO(export)).namelist() == ["Spenden/Spendenbeleg_000001.pdf"]
+    assert zipfile.ZipFile(io.BytesIO(export)).namelist() == [
+        "Spenden/Spendenbeleg_000001.pdf", "Finanzexport.xlsx"]  # fmt: skip
     assert "neu" not in Portal.gesehen  # der vorhandene Export wurde wiederverwendet
     assert dienst.rufen("/fertig", {})[1]["stand"] == "frei"
     assert dienst.rufen("/datei/finanzexport")[0] == 404
@@ -264,6 +292,24 @@ def test_abruf_erzeugt_neuen_export_ohne_spenderliste(dienst):
     # nicht irgendein fertiger Export der Seite, sondern genau der für den Zeitraum
     assert "falsch" not in Portal.gesehen
     assert stand["hinweise"] == []
+    # die Spalten zum Versand sind angekreuzt, alles andere ist geblieben, wie es war
+    assert Portal.gesehen["spalten"] == ["Name", "Versendet am", "SQ-verschickt",
+                                         "SQ-erstellt Datum"]  # fmt: skip
+
+
+def test_vorhandener_export_ohne_spalten_wird_neu_erzeugt(dienst):
+    """Einem schon vorhandenen Export fehlen die Spalten zum Versand: Er wird nicht benutzt,
+    sondern mit den Spalten neu erzeugt."""
+    dienst.rufen("/start", dienst.auftrag("/export-ohne-spalten", mit_liste=False))
+    dienst.warten_auf("warte_auf_code")
+    dienst.rufen("/code", {"code": "123456"})
+    stand = dienst.warten_auf("fertig", "fehler")
+    assert stand["stand"] == "fertig", stand
+    assert Portal.gesehen["alt"] and Portal.gesehen["neu"]["von"] == "01.02.2026"
+    assert "SQ-erstellt Datum" in Portal.gesehen["spalten"]
+    export = dienst.rufen("/datei/finanzexport", roh=True)[1]
+    assert dienst.modul.mit_versand(io.BytesIO(export))
+    assert not dienst.modul.mit_versand(io.BytesIO(_zip(mit_spalten=False)))
 
 
 def test_anderer_zeitraum_laedt_einen_anderen_export(dienst):
