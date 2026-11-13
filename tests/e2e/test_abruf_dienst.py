@@ -109,6 +109,27 @@ function erstellen() {
 NEU_RICHTIG = NEU.replace("VON", "document.getElementById('mat-input-7').value").replace(
     "BIS", "document.getElementById('mat-input-8').value"
 )
+# … mit eigenen Kästchen (wie WISO MeinVerein: Bausteine mit „checkbox“ in der Klasse, angekreuzt
+# über die Klasse „checked“). Der Bereich ist schon offen; ein Klick auf die Überschrift würde ihn
+# zuklappen und die Kästchen entfernen.
+NEU_EIGENE = NEU_RICHTIG.replace(
+    "<script>",
+    """<script>document.addEventListener('DOMContentLoaded', () => {
+  const ziel = document.getElementById('erweitert');
+  ziel.innerHTML = ['Status', '+Versendet am', 'SQ-verschickt', 'SQ-erstellt Datum'].map(n =>
+    '<div class="zeile"><span class="ms-checkbox' + (n[0] === '+' ? ' checked' : '') + '"'
+    + ' onclick="this.classList.toggle(\\'checked\\')"></span><span>' + n.replace('+', '')
+    + '</span></div>').join('');
+  window.aufklappen = () => { ziel.innerHTML = ''; };
+  window.gewaehlt = () => [...ziel.querySelectorAll('.ms-checkbox.checked')]
+    .map(k => k.nextElementSibling.innerText.trim());
+});
+""",
+).replace(
+    "const spalten = [...document.querySelectorAll('#erweitert input:checked')]\n"
+    "    .map(i => i.closest('mat-checkbox').querySelector('label').innerText.trim()).join('|');",
+    "const spalten = window.gewaehlt().join('|');",
+)
 # … und der Fehlerfall: Es erzeugt den Export für einen anderen Zeitraum
 NEU_FALSCH = NEU.replace("VON", "'01.01.2025'").replace("BIS", "'31.12.2025'")
 # … oder die Felder nehmen die Eingabe nicht an
@@ -184,6 +205,8 @@ class Portal(BaseHTTPRequestHandler):
             return self._html(NEU_FALSCH)
         if pfad == "/export-starr":
             return self._html(NEU_STARR)
+        if pfad == "/export-eigene-kaestchen":
+            return self._html(NEU_EIGENE)
         if pfad == "/export-ohne-erweitert":  # die Seite hat (noch) keinen Bereich mit Spalten
             return self._html(NEU_RICHTIG.replace("Erweiterte Einstellungen", "Mehr"))
         if pfad == "/export-ohne-spalten":  # fertiger Export, aber ohne Spalten zum Versand
@@ -514,6 +537,19 @@ def test_spalten_nicht_gefunden_gibt_einen_hinweis(dienst):
     assert stand["stand"] == "fertig", stand
     (hinweis,) = stand["hinweise"]
     assert "„Versendet am“, „SQ-verschickt“, „SQ-erstellt Datum“ nicht ankreuzen" in hinweis
-    assert "Auf der Seite wurde kein Kästchen gefunden." in hinweis
+    assert "Für die Fehlersuche: Kästchen auf der Seite: 0; keine Beschriftung gefunden" in hinweis
     assert "„Erweiterte Einstellungen“ wurde nicht gefunden." in hinweis
     assert Portal.gesehen["spalten"] == [""]
+
+
+def test_eigene_kaestchen_im_offenen_bereich(dienst):
+    """Wie bei WISO MeinVerein: eigene Kästchen, der Bereich „Erweiterte Einstellungen“ ist schon
+    offen. Angekreuzt wird über die Beschriftung, schon angekreuzte bleiben, und der Bereich wird
+    nicht zugeklappt."""
+    dienst.rufen("/start", dienst.auftrag("/export-eigene-kaestchen", mit_liste=False))
+    dienst.warten_auf("warte_auf_code")
+    dienst.rufen("/code", {"code": "123456"})
+    stand = dienst.warten_auf("fertig", "fehler")
+    assert stand["stand"] == "fertig", stand
+    assert stand["hinweise"] == []
+    assert Portal.gesehen["spalten"] == ["Versendet am", "SQ-verschickt", "SQ-erstellt Datum"]
