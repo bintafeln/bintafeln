@@ -104,14 +104,15 @@ def test_ausstellen_setzt_nur_die_eigene_unterschrift_ein(
 ):
     unterschriften.speichern(vera, "Vera Vorstand, Vorsitzende", bild())
     spende(spender)
-    # Otto hat keine Unterschrift: Linie von Hand mit dem gemeinsamen Text, nichts gespeichert
+    # Otto hat keine Unterschrift: leere Linie für die Unterschrift von Hand, nichts gespeichert
     b = bst.geld_ausstellen(spender, JAHR, "otto", otto)
     assert not b.ausfertigungen.exists() and bilder_im_pdf(bst.pdf([b])) == 0
-    assert "Gemeinsamer Text, Vorstand" in text(pdf_text, bst.pdf([b]))
+    assert "(Ort, Datum und Unterschrift des Zuwendungsempfängers)" in text(pdf_text, bst.pdf([b]))
     # ohne Angabe, wer unterschreibt (z. B. ältere Aufrufe), ebenfalls keine Unterschrift
     bst.stornieren(b, "otto")
     assert not bst.geld_ausstellen(spender, JAHR, "otto").ausfertigungen.exists()
-    # Vera stellt aus: ihr Bild, ihr Name und ihre Funktion; das PDF ist gespeichert
+    # Vera stellt aus: ihr Bild über der Linie (wie im Vordruck ohne Namen darunter); das PDF ist
+    # gespeichert, wer unterschrieben hat, steht in der Ausfertigung
     anderer = Adresse.objects.create(art="person", nachname="Beispiel", strasse="Gasse 1",
                                      plz="12345", ort="Musterstadt")  # fmt: skip
     spende(anderer)
@@ -121,8 +122,7 @@ def test_ausstellen_setzt_nur_die_eigene_unterschrift_ein(
     assert str(a) == f"Nr. {b.nummer}, unterzeichnet von Vera Vorstand, Vorsitzende"
     inhalt = bst.pdf([b])
     assert bilder_im_pdf(inhalt) == 1
-    lesbar = text(pdf_text, inhalt)
-    assert "Vera Vorstand, Vorsitzende" in lesbar and "Gemeinsamer Text" not in lesbar
+    assert bst.ausfertigung(b) == privatdateien.lesen(Ausfertigung.ORDNER, a.datei)
     assert bst.eigene_unterschrift(otto) is None and bst.eigene_unterschrift(None) is None
 
 
@@ -158,9 +158,9 @@ def test_andere_person_fertigt_mit_eigener_unterschrift_neu_aus(
     unterschriften.speichern(otto, "Otto Ordner, Kassenwart", bild(farbe=(120, 20, 20)))
     neu = bst.neu_unterschreiben(b, otto)
     assert neu.unterzeichner == otto and b.ausfertigungen.count() == 2
-    lesbar = text(pdf_text, bst.pdf([b]))
-    assert "Otto Ordner, Kassenwart" in lesbar and "Vera Vorstand" not in lesbar
-    assert f"Nr. {b.nummer}" in lesbar  # Nummer und Inhalt bleiben
+    # ab jetzt gilt Ottos Ausfertigung; Nummer und Inhalt bleiben
+    assert bst.ausfertigung(b) == privatdateien.lesen(Ausfertigung.ORDNER, neu.datei) != alt
+    assert f"Nr. {b.nummer}" in text(pdf_text, bst.pdf([b]))
     # Veras Ausfertigung ist unverändert noch da
     assert privatdateien.lesen(Ausfertigung.ORDNER, erste.datei) == alt
     bst.stornieren(b, "otto")

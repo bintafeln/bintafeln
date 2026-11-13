@@ -56,7 +56,8 @@ class SpendenEinstellungenForm(forms.ModelForm):
         model = SpendenEinstellungen
         fields = ["koerperschaft", "anschrift", "zwecke", "grundlage", "finanzamt", "steuernummer",
                   "bescheid_vom", "veranlagungszeitraum", "mitgliedsbeitraege_abziehbar",
-                  "unterzeichnet_von", "ort", "naechste_nummer"]  # fmt: skip
+                  "unterzeichnet_von", "ort", "naechste_nummer",
+                  "maschinell_angezeigt"]  # fmt: skip
         widgets = {"bescheid_vom": DatumEingabe(), "zwecke": forms.Textarea(attrs={"rows": 3})}
 
 
@@ -99,7 +100,8 @@ class UnterschriftForm(forms.Form):
 
     name_funktion = forms.CharField(
         label="Name und Funktion", max_length=200,
-        help_text="Steht unter Ihrer Unterschrift, z. B. „Erika Muster, Kassenwartin“.",
+        help_text="Steht in der Liste „Ausgestellt“ bei den Bestätigungen, die Sie unterschreiben, "
+        "z. B. „Erika Muster, Kassenwartin“.",
     )  # fmt: skip
     bild = forms.FileField(
         label="Bild der Unterschrift (PNG oder JPG)",

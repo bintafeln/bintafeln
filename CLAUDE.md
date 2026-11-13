@@ -396,6 +396,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   nie die eines anderen Kontos anzeigen oder benutzen; `bestaetigung.unterschreiben()` nimmt nur
   die der Person, die ausstellt; das unterschriebene PDF liegt als `Ausfertigung` und wird nicht
   neu berechnet (`bestaetigung.pdf()` gibt es aus).
+  Aussehen der Bestätigung wie der bekannte Vordruck (ADR 0136): gezeichnet in
+  `apps/spenden/vordruck.py` mit festen Maßen (nicht über den `Pdf`-Rahmen), Betrag ziffernweise
+  (`vordruck.ziffern()`), Satz zur maschinellen Erstellung nur mit
+  `SpendenEinstellungen.maschinell_angezeigt`.
   Kategorie „Spender“ setzt `Spende.save()` über `adressen.models.als_spender_markieren()` (nur
   hinzufügen, nicht bei `mitgliedsbeitrag`, ADR 0132).
   Spendenentwicklung (Grafiken je Jahr) in `apps/spenden/entwicklung.py`, gezeichnet mit

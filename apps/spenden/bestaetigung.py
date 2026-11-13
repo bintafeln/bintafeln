@@ -1,4 +1,5 @@
-"""Zuwendungsbestätigungen (ADR 0045) nach den amtlichen Mustern (BMF-Schreiben zu § 10b EStG).
+"""Zuwendungsbestätigungen (ADR 0045) nach den amtlichen Mustern (BMF-Schreiben zu § 10b EStG),
+gezeichnet als Vordruck in ``vordruck.py`` (ADR 0136).
 
 Ausstellen vergibt eine fortlaufende Nummer und verknüpft die Spenden, damit keine Spende zweimal
 bestätigt wird. Das PDF entsteht jedes Mal neu aus den gespeicherten Daten; stornierte
@@ -15,11 +16,11 @@ import io
 from django.db import transaction
 from django.utils import timezone
 from pypdf import PdfReader, PdfWriter
-from reportlab.platypus import PageBreak
 
 from apps.core import privatdateien
 from apps.core.models import TafelEinstellungen
-from apps.core.pdf import Pdf
+from apps.core.pdf import text
+from apps.spenden import vordruck
 from apps.spenden.models import (
     Ausfertigung,
     Spende,
@@ -29,18 +30,7 @@ from apps.spenden.models import (
     naechste_nummer,
     summe,
 )
-from apps.spenden.worte import euro
-
-HAFTUNG = (
-    "Hinweis: Wer vorsätzlich oder grob fahrlässig eine unrichtige Zuwendungsbestätigung erstellt "
-    "oder veranlasst, dass Zuwendungen nicht zu den in der Zuwendungsbestätigung angegebenen "
-    "steuerbegünstigten Zwecken verwendet werden, haftet für die entgangene Steuer (§ 10b Abs. 4 "
-    "EStG, § 9 Abs. 3 KStG, § 9 Nr. 5 GewStG). Diese Bestätigung wird nicht als Nachweis für die "
-    "steuerliche Berücksichtigung der Zuwendung anerkannt, wenn das Datum des "
-    "Freistellungsbescheides länger als 5 Jahre bzw. das Datum der Feststellung der Einhaltung der "
-    "satzungsmäßigen Voraussetzungen nach § 60a Abs. 1 AO länger als 3 Jahre seit Ausstellung "
-    "des Bescheides zurückliegt (§ 63 Abs. 5 AO)."
-)
+from apps.spenden.vordruck import Vordruck
 
 
 class BestaetigungsFehler(ValueError):
@@ -176,140 +166,109 @@ def stornieren(b: Zuwendungsbestaetigung, von: str) -> None:
 # --- PDF ---------------------------------------------------------------------------------------
 
 
-def _beitrag(b) -> str:
-    return f"{b:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
-
-
-def _datum(d) -> str:
-    return f"{d:%d.%m.%Y}" if d else "–"
-
-
 def _koerperschaft(e, tafel) -> tuple[str, str]:
     return e.koerperschaft or tafel.name, e.anschrift or tafel.anschrift
 
 
-def _grundlage(e) -> list[str]:
-    zwecke = e.zwecke
-    if e.grundlage == SpendenEinstellungen.Grundlage.FESTSTELLUNG:
-        return [
-            f"Die Einhaltung der satzungsmäßigen Voraussetzungen nach den §§ 51, 59, 60 und 61 AO "
-            f"wurde vom Finanzamt {e.finanzamt}, StNr. {e.steuernummer} mit Bescheid vom "
-            f"{_datum(e.bescheid_vom)} nach § 60a AO gesondert festgestellt. Wir fördern nach "
-            f"unserer Satzung {zwecke}.",
-        ]
-    bescheid = ("dem Freistellungsbescheid" if e.grundlage == SpendenEinstellungen.Grundlage.
-                FREISTELLUNG else "der Anlage zum Körperschaftsteuerbescheid")  # fmt: skip
-    return [
-        f"Wir sind wegen Förderung {zwecke} nach {bescheid} des Finanzamtes {e.finanzamt}, "
-        f"StNr. {e.steuernummer} vom {_datum(e.bescheid_vom)} für den letzten "
-        f"Veranlagungszeitraum {e.veranlagungszeitraum} nach § 5 Abs. 1 Nr. 9 des "
-        "Körperschaftsteuergesetzes von der Körperschaftsteuer und nach § 3 Nr. 6 des "
-        "Gewerbesteuergesetzes von der Gewerbesteuer befreit.",
-    ]
+def _zuwendender(adresse) -> list[str]:
+    """Name in der ersten Zeile, die Anschrift in der zweiten (Teile mit „ | “ getrennt)."""
+    zeilen = adresse.anschrift_zeilen
+    return [zeilen[0], " | ".join(zeilen[1:])] if len(zeilen) > 1 else zeilen
 
 
-def _seite(doc: Pdf, b: Zuwendungsbestaetigung, e, tafel, unterschrift=None) -> None:
+def _seite(v: Vordruck, b: Zuwendungsbestaetigung, e, tafel, unterschrift=None) -> None:
+    """Eine Bestätigung im Aufbau der amtlichen Vordrucke; Sammelbestätigung mit Anlage."""
     name, anschrift = _koerperschaft(e, tafel)
     spenden = list(b.spenden.order_by("datum", "pk"))
-    if b.storniert_am:
-        doc.ueberschrift(f"STORNIERT am {timezone.localtime(b.storniert_am):%d.%m.%Y} – "
-                         "diese Bestätigung ist ungültig")  # fmt: skip
-    doc.absatz(f"Aussteller (steuerbegünstigte Einrichtung): {name}, {anschrift}")
-    if b.art == b.Art.SACH:
-        doc.ueberschrift("Bestätigung über Sachzuwendungen")
-    elif b.art == b.Art.SAMMEL:
-        doc.ueberschrift("Sammelbestätigung über Geldzuwendungen/Mitgliedsbeiträge")
+    sammel, sach = b.art == b.Art.SAMMEL, b.art == b.Art.SACH
+    luft = 4 if b.art == b.Art.GELD else 0  # Einzelbestätigung: etwas höhere Kästen
+    v.nummer = b.nummer
+    v.storniert = (f"STORNIERT am {timezone.localtime(b.storniert_am):%d.%m.%Y} – diese "
+                   "Bestätigung ist ungültig") if b.storniert_am else ""  # fmt: skip
+
+    t = v.feldkasten(102.5 if sammel else 64.5,
+                     "Aussteller (Bezeichnung und Anschrift der steuerbegünstigten Einrichtung)",
+                     [vordruck.zeile(name, anschrift)], mindestens=37 + luft)  # fmt: skip
+    if sach:
+        titel = "Bestätigung über Sachzuwendungen"
+    elif sammel:
+        titel = "Sammelbestätigung über Geldzuwendungen/Mitgliedsbeiträge"
     else:
-        doc.ueberschrift("Bestätigung über Geldzuwendungen/Mitgliedsbeitrag")
-    doc.absatz(
-        "im Sinne des § 10b des Einkommensteuergesetzes an eine der in § 5 Abs. 1 Nr. 9 des "
-        "Körperschaftsteuergesetzes bezeichneten Körperschaften, Personenvereinigungen oder "
-        f"Vermögensmassen. Nr. {b.nummer}", klein=True,
-    )  # fmt: skip
-    doc.angaben([("Name und Anschrift des Zuwendenden", ", ".join(b.adresse.anschrift_zeilen))])
-    if b.art == b.Art.SAMMEL:
-        zeitraum = f"{_datum(spenden[0].datum)} bis {_datum(spenden[-1].datum)}" if spenden else ""
-        doc.angaben([
-            ("Gesamtbetrag der Zuwendung in Ziffern", _beitrag(b.betrag)),
-            ("in Buchstaben", euro(b.betrag)),
-            ("Zeitraum der Sammelbestätigung", zeitraum),
-        ])  # fmt: skip
+        titel = "Bestätigung über Geldzuwendungen/Mitgliedsbeitrag"
+    t = v.absatz(text(titel), t + 9.1 + luft / 2, vordruck.TITEL)
+    t = v.absatz("im Sinne des § 10b des Einkommensteuergesetzes an eine der in § 5 Abs. 1 Nr. 9 "
+                 "des Körperschaftsteuergesetzes bezeichneten Körperschaften, "
+                 "Personenvereinigungen oder Vermögensmassen", t + 1.4)  # fmt: skip
+    t = v.feldkasten(t + 9.5 + luft / 2, "Name und Anschrift des Zuwendenden:",
+                     _zuwendender(b.adresse), mindestens=37 + luft)  # fmt: skip
+
+    if sammel:
+        zeitraum = (f"{vordruck.datum(spenden[0].datum)} - {vordruck.datum(spenden[-1].datum)}"
+                    if spenden else "")  # fmt: skip
+        felder = [("Gesamtbetrag der Zuwendung in € - in Ziffern -", vordruck.betrag(b.betrag)),
+                  ("- in Buchstaben -", vordruck.ziffern(b.betrag)),
+                  ("Zeitraum der Sammelbestätigung:", zeitraum)]  # fmt: skip
     else:
-        tag = _datum(spenden[0].datum) if spenden else ""
-        doc.angaben([
-            (("Wert" if b.art == b.Art.SACH else "Betrag") + " der Zuwendung in Ziffern",
-             _beitrag(b.betrag)),
-            ("in Buchstaben", euro(b.betrag)),
-            ("Tag der Zuwendung", tag),
-        ])  # fmt: skip
-    if b.art == b.Art.SACH and spenden:
-        s = spenden[0]
-        doc.angaben([("Genaue Bezeichnung der Sachzuwendung mit Alter, Zustand, Kaufpreis usw.",
-                      s.beschreibung)])  # fmt: skip
-        herkunft = {
-            Spende.Herkunft.BETRIEB: "Die Sachzuwendung stammt nach den Angaben des Zuwendenden "
-            "aus dem Betriebsvermögen. Die Zuwendung wurde nach dem Wert der Entnahme (ggf. mit "
-            "dem niedrigeren gemeinen Wert) und nach der Umsatzsteuer, die auf die Entnahme "
-            "entfällt, bewertet.",
-            Spende.Herkunft.PRIVAT: "Die Sachzuwendung stammt nach den Angaben des Zuwendenden "
-            "aus dem Privatvermögen.",
-            Spende.Herkunft.UNBEKANNT: "Der Zuwendende hat trotz Aufforderung keine Angaben zur "
-            "Herkunft der Sachzuwendung gemacht.",
-        }.get(s.herkunft)
-        if herkunft:
-            doc.absatz("[x] " + herkunft)
-        if s.unterlagen:
-            doc.absatz("[x] Geeignete Unterlagen, die zur Wertermittlung gedient haben, z. B. "
-                       "Rechnung, Gutachten, liegen vor.")  # fmt: skip
-    elif b.art == b.Art.GELD and spenden:
-        verzicht = "Ja [x]  Nein [ ]" if spenden[0].verzicht_aufwand else "Ja [ ]  Nein [x]"
-        doc.absatz(f"Es handelt sich um den Verzicht auf Erstattung von Aufwendungen: {verzicht}")
-    doc.abstand()
-    for satz in _grundlage(e):
-        doc.absatz(satz)
-    doc.absatz(f"Es wird bestätigt, dass die Zuwendung nur zur Förderung {e.zwecke} verwendet "
-               "wird.")  # fmt: skip
-    if b.art != b.Art.SACH and not e.mitgliedsbeitraege_abziehbar:
-        doc.absatz("Es wird bestätigt, dass es sich nicht um einen Mitgliedsbeitrag handelt, "
-                   "dessen Abzug nach § 10b Abs. 1 des Einkommensteuergesetzes ausgeschlossen "
-                   "ist.")  # fmt: skip
-    if b.art == b.Art.SAMMEL:
-        doc.absatz("Es wird bestätigt, dass über die in der Gesamtsumme enthaltenen Zuwendungen "
-                   "keine weiteren Bestätigungen, weder formelle Zuwendungsbestätigungen noch "
-                   "Beitragsquittungen oder ähnliches ausgestellt wurden und werden. Ob es sich um "
-                   "den Verzicht auf Erstattung von Aufwendungen handelt, ist der Anlage zur "
-                   "Sammelbestätigung zu entnehmen.")  # fmt: skip
-    doc.abstand()
-    doc.absatz(f"{e.ort or tafel.ort}, {_datum(b.ausgestellt_am)}")
-    if unterschrift:  # (Bild, Name und Funktion) der Person, die gerade unterschreibt
-        bild, name_funktion = unterschrift
-        doc.unterschrift_bild(bild, f"Unterschrift des Zuwendungsempfängers: {name_funktion}")
+        felder = [
+            (
+                ("Wert" if sach else "Betrag") + " der Zuwendung in € - in Ziffern -",
+                vordruck.betrag(b.betrag),
+            ),
+            ("- in Buchstaben -", vordruck.ziffern(b.betrag)),
+            ("Tag der Zuwendung:", vordruck.datum(spenden[0].datum) if spenden else ""),
+        ]
+    t = v.betragskasten(t + 19 + luft / 4, felder, mindestens=37 + luft)  # fmt: skip
+
+    if sach:
+        s = spenden[0] if spenden else None
+        bezeichnung = "Genaue Bezeichnung der Sachzuwendung mit Alter, Zustand, Kaufpreis usw."
+        t = v.feldkasten(t + 12, bezeichnung, [s.beschreibung if s else ""], mindestens=30)
+        t += 10
+        for wert, satz in vordruck.HERKUNFT.items():
+            v.kreuz(vordruck.TX, t, bool(s) and s.herkunft == wert)
+            t = v.absatz(satz, t, x=vordruck.EINRUECKEN) + 5
+        v.kreuz(vordruck.TX, t, bool(s) and s.unterlagen)
+        t = v.absatz("Geeignete Unterlagen, die zur Wertermittlung gedient haben, z. B. Rechnung, "
+                     "Gutachten, liegen vor.", t, x=vordruck.EINRUECKEN) + 16  # fmt: skip
+    elif sammel:
+        t += 28
     else:
-        doc.unterschriften([f"Unterschrift des Zuwendungsempfängers: {e.unterzeichnet_von}"])
-    doc.abstand()
-    doc.absatz(HAFTUNG, klein=True)
-    if b.art == b.Art.SAMMEL:
-        doc.element(PageBreak())
-        doc.ueberschrift(f"Anlage zur Sammelbestätigung Nr. {b.nummer}")
-        zeilen = [[_datum(s.datum),
-                   "Mitgliedsbeitrag" if s.mitgliedsbeitrag else "Geldzuwendung",
-                   "ja" if s.verzicht_aufwand else "nein", _beitrag(s.betrag)]
-                  for s in spenden]  # fmt: skip
-        zeilen.append(["Gesamtsumme", "", "", _beitrag(b.betrag)])
-        doc.tabelle(["Datum der Zuwendung", "Art der Zuwendung",
-                     "Verzicht auf die Erstattung von Aufwendungen (ja/nein)", "Betrag"],
-                    zeilen, breiten=[0.2, 0.3, 0.3, 0.2], rechts=(3,), summe=True)  # fmt: skip
+        verzicht = bool(spenden) and spenden[0].verzicht_aufwand
+        t += 20.5
+        v.absatz("Es handelt sich um den Verzicht auf Erstattung von Aufwendungen", t)
+        v.wort("Ja", 369, t)
+        v.kreuz(381, t, verzicht)
+        v.wort("Nein", 403, t)
+        v.kreuz(421, t, not verzicht)
+        t += 30
+
+    unten = vordruck.verwendung(v, vordruck.grundlage(v, t, e), e, mitgliedsbeitrag_satz=not sach,
+                                luft=luft * 4.5)  # fmt: skip
+    if sammel:
+        t = v.absatz("Es wird bestätigt, dass über die in der Gesamtsumme enthaltenen Zuwendungen "
+                     "keine weiteren Bestätigungen, weder formelle Zuwendungsbestätigungen noch "
+                     "Beitragsquittungen oder Ähnliches, ausgestellt wurden und werden.",
+                     unten + 19)  # fmt: skip
+        t = v.absatz("Ob es sich um den Verzicht auf Erstattung von Aufwendungen handelt, ist der "
+                     "Anlage zur Sammelbestätigung zu entnehmen.", t + 10)  # fmt: skip
+        linie = t + 44.5
+    else:
+        linie = unten + 86.5
+    vordruck.unterschrift(v, linie, f"{e.ort or tafel.ort}, {vordruck.datum(b.ausgestellt_am)}",
+                          unterschrift[0] if unterschrift else None)  # fmt: skip
+    vordruck.hinweis(v, linie + 20 + luft / 2, e)
+    v.seite_fertig()
+    if sammel:
+        vordruck.anlage(v, spenden, b.betrag)
+        v.seite_fertig()
 
 
 def _erzeugen(bestaetigungen, unterschrift=None) -> bytes:
     e, tafel = SpendenEinstellungen.laden(), TafelEinstellungen.laden()
-    doc = Pdf("Zuwendungsbestätigung")
-    doc.inhalt = []  # kein großer Titel, jede Bestätigung hat ihre eigene Überschrift
-    for nummer, b in enumerate(bestaetigungen):
-        if nummer:
-            doc.element(PageBreak())
-        _seite(doc, b, e, tafel, unterschrift)
-    return doc.erzeugen()
+    v = Vordruck("Zuwendungsbestätigung", e.koerperschaft or tafel.name or "bintafeln")
+    for b in bestaetigungen:
+        _seite(v, b, e, tafel, unterschrift)
+    return v.erzeugen()
 
 
 def ausfertigung(b: Zuwendungsbestaetigung) -> bytes | None:

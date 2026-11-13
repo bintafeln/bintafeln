@@ -1,15 +1,17 @@
 """Spenden und Zuwendungsbestätigungen (ADR 0045). Alle Daten sind erfunden."""
 
 import datetime as dt
+import io
 from decimal import Decimal
 
 import pytest
 from django.urls import reverse
+from pypdf import PdfReader
 
 from apps.adressen.models import Adresse
 from apps.konten import rollen
 from apps.spenden import bestaetigung as bst
-from apps.spenden import worte
+from apps.spenden import vordruck, worte
 from apps.spenden.models import Spende, SpendenEinstellungen, Zuwendungsbestaetigung
 
 pytestmark = pytest.mark.django_db
@@ -80,9 +82,13 @@ def test_einzel_und_sammelbestaetigung(einstellungen, spender, pdf_text, admin_c
     antwort = admin_client.get(reverse("spenden:pdf"), {"nummern": "7,8"})
     text = pdf_text(antwort)
     assert "Sammelbestätigung über Geldzuwendungen/Mitgliedsbeiträge" in text
-    assert "einhundertfünfzig Euro und fünfzig Cent" in text and "05.01.2026 bis 01.03.2026" in text
-    assert "Anlage zur Sammelbestätigung Nr. 7" in text and "Herr Max Probe" in text
-    assert "12/345/67890" in text and "§ 63 Abs. 5 AO" in text and "dreißig Euro" in text
+    # wie im Vordruck: Betrag ziffernweise, Zeitraum, Anlage mit allen Spenden (neueste zuerst)
+    assert "eins-fünf-null-komma-fünf-null" in text and "05.01.2026 - 01.03.2026" in text
+    assert "Anlage zur Sammelbestätigung" in text and "Nr. 7" in text and "Herr Max Probe" in text
+    assert text.rindex("01.03.2026") < text.rindex("05.01.2026")
+    assert (
+        "12/345/67890" in text and "§ 63 Abs. 5 AO" in text and "drei-null-komma-null-null" in text
+    )
 
     # Storno: Nummer bleibt, Spenden lassen sich neu bestätigen
     bst.stornieren(sammel, "chefin")
@@ -102,7 +108,7 @@ def test_sachspende(einstellungen, spender, pdf_text, admin_client):
     b = bst.sach_ausstellen(s, "chefin")
     text = pdf_text(admin_client.get(reverse("spenden:pdf"), {"nummern": b.nummer}))
     assert "Bestätigung über Sachzuwendungen" in text and "Kühlschrank" in text
-    assert "aus dem Privatvermögen" in text and "einhundertzwanzig Euro" in text
+    assert "aus dem Privatvermögen" in text and "eins-zwei-null-komma-null-null" in text
 
 
 def test_mitgliedsbeitraege_nicht_abziehbar(einstellungen, spender):
@@ -276,3 +282,51 @@ def test_nachtrag_markiert_vorhandene_spender(spender):
     nachtrag = importlib.import_module("apps.spenden.migrations.0007_spender_kategorie")
     nachtrag.markieren(apps, None)
     assert _kategorien(spender) == {"Spender"} and _kategorien(beitrag) == set()
+
+
+def test_vordruck_betraege():
+    assert vordruck.ziffern(D("500")) == "fünf-null-null-komma-null-null"
+    assert vordruck.ziffern(D("2000")) == "zwei-null-null-null-komma-null-null"
+    assert vordruck.ziffern(D("12.5")) == "eins-zwei-komma-fünf-null"
+    assert vordruck.betrag(D("2000")) == "2.000,00" and vordruck.betrag(D("0.5")) == "0,50"
+    assert vordruck.zeile("Tafel e. V.", "Marktweg 1, 12345 Musterstadt") == (
+        "Tafel e. V. | Marktweg 1 | 12345 Musterstadt")  # fmt: skip
+
+
+def test_vordruck_grundlage_und_maschinelle_erstellung(einstellungen, spender, pdf_text,
+                                                       admin_client):  # fmt: skip
+    geld(spender, dt.date(2026, 1, 5), "50", verzicht_aufwand=True)
+    b = bst.geld_ausstellen(spender, 2026, "chefin")
+    url = reverse("spenden:pdf")
+    text = pdf_text(admin_client.get(url, {"nummern": b.nummer}))
+    assert "Bestätigung über Geldzuwendungen/Mitgliedsbeitrag" in text
+    assert "Es handelt sich um den Verzicht auf Erstattung von Aufwendungen" in text
+    assert "Aussteller (Bezeichnung und Anschrift der steuerbegünstigten Einrichtung)" in text
+    assert "Tafel Musterstadt e. V. | Marktweg 1 | 12345 Musterstadt" in text
+    assert "Weg 2 | 12345 Musterstadt" in text and "Tag der Zuwendung:" in text
+    # Freistellungsbescheid: Angaben in den Lücken des ersten Ankreuzfelds
+    assert "2021 bis 2023" in text and "01.03.2025" in text
+    assert "R 10b.1" not in text  # ohne Anzeige beim Finanzamt kein Satz dazu
+    einstellungen.grundlage = einstellungen.Grundlage.FESTSTELLUNG
+    einstellungen.maschinell_angezeigt = True
+    einstellungen.save()
+    text = pdf_text(admin_client.get(url, {"nummern": b.nummer}))
+    assert "2021 bis 2023" not in text and "01.03.2025" in text
+    assert "Finanzamt Musterstadt gem" in text and "R 10b.1 Abs. 4 EStR angezeigt" in text
+    einstellungen.finanzamt = "Finanzamt Musterstadt-Süd"
+    einstellungen.save()
+    text = pdf_text(admin_client.get(url, {"nummern": b.nummer}))
+    assert "Finanzamt Musterstadt-Süd gem" in text and "Finanzamt Finanzamt" not in text
+
+
+def test_vordruck_lange_anlage_auf_mehreren_seiten(einstellungen, spender, pdf_text,
+                                                   admin_client):  # fmt: skip
+    for i in range(70):
+        geld(spender, dt.date(2026, 1, 1) + dt.timedelta(days=i * 5), "10",
+             mitgliedsbeitrag=i == 0)  # fmt: skip
+    b = bst.geld_ausstellen(spender, 2026, "chefin")
+    inhalt = bst.pdf([b])
+    assert len(PdfReader(io.BytesIO(inhalt)).pages) == 3  # Bestätigung + zwei Seiten Anlage
+    text = pdf_text(admin_client.get(reverse("spenden:pdf"), {"nummern": b.nummer}))
+    assert text.count("Anlage zur Sammelbestätigung") == 3  # Satz auf Seite 1 + zwei Überschriften
+    assert "Mitgliedsbeitrag" in text and "700,00" in text
