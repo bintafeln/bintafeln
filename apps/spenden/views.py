@@ -470,7 +470,37 @@ def einstellungen(request):
         form.save()
         messages.success(request, "Einstellungen gespeichert.")
         return redirect("spenden:einstellungen")
-    return render(request, "spenden/einstellungen.html", {"form": form})
+    return render(request, "spenden/einstellungen.html", {
+        "form": form, "stempel": bool(SpendenEinstellungen.laden().stempel)})  # fmt: skip
+
+
+@require_POST
+@rollen.recht_erforderlich("einstellungen.spenden")
+@nicht_in_demo
+def stempel(request):
+    """Stempel der Tafel hochladen oder entfernen (ADR 0137)."""
+    if "loeschen" in request.POST:
+        unterschriften.stempel_loeschen()
+        messages.success(request, "Der Stempel ist entfernt.")
+    elif not request.FILES.get("stempel"):
+        messages.error(request, "Bitte ein Bild des Stempels wählen.")
+    else:
+        try:
+            unterschriften.stempel_speichern(request.FILES["stempel"])
+        except unterschriften.BildFehler as fehler:
+            messages.error(request, str(fehler))
+        else:
+            messages.success(request, "Der Stempel ist gespeichert.")
+    return redirect(reverse("spenden:einstellungen") + "#stempel")
+
+
+@never_cache
+@rollen.recht_erforderlich("einstellungen.spenden")
+def stempel_bild(request):
+    inhalt = unterschriften.stempel()
+    if not inhalt:
+        raise Http404
+    return HttpResponse(inhalt, content_type="image/png")
 
 
 # --- Dankesbriefe (ADR 0056) ---------------------------------------------------------------------
