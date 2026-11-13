@@ -282,4 +282,188 @@ def test_auskunft_nennt_handys(client, mitte, admin_client, pdf_text):
     anmelden(client)
     antwort = admin_client.get(reverse("kunden:auskunft", args=["109"]))
     text = pdf_text(antwort)
-    assert "Wartezeit aufs Handy" in text and "Gerät" in text
+    assert "Wartezeit aufs Handy" in text and "Gerät" in text and "Push" in text
+
+
+# --- Push-Nachrichten (ADR 0134) ----------------------------------------------------------------
+
+
+def _browser():
+    """Schlüssel wie im Browser eines Handys: privat, öffentlich (base64url), Auth-Geheimnis."""
+    import os
+
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import ec
+
+    from apps.aufruf import push
+
+    privat = ec.generate_private_key(ec.SECP256R1())
+    oeffentlich = privat.public_key().public_bytes(
+        serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint
+    )
+    auth = os.urandom(16)
+    return privat, push._b64(oeffentlich), push._b64(auth)
+
+
+def _entschluesseln(daten, privat, p256dh, auth):
+    """Wie der Browser (RFC 8291): beweist, dass nur das Handy die Nachricht lesen kann."""
+    import struct
+
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+    from apps.aufruf import push
+
+    salz, rs, laenge = daten[:16], struct.unpack("!I", daten[16:20])[0], daten[20]
+    absender = daten[21 : 21 + laenge]
+    assert rs == 4096 and laenge == 65
+    gemeinsam = privat.exchange(
+        ec.ECDH(), ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), absender)
+    )
+    browser = push._unb64(p256dh)
+    ikm = push._hkdf(push._unb64(auth), b"WebPush: info\x00" + browser + absender, 32, gemeinsam)
+    cek = push._hkdf(salz, b"Content-Encoding: aes128gcm\x00", 16, ikm)
+    nonce = push._hkdf(salz, b"Content-Encoding: nonce\x00", 12, ikm)
+    klar = AESGCM(cek).decrypt(nonce, daten[21 + laenge :], None)
+    assert klar.endswith(b"\x02")
+    return klar[:-1]
+
+
+def test_push_verschluesselt_und_unterschrieben(db):
+    import base64
+    import json
+
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.hazmat.primitives.asymmetric.utils import encode_dss_signature
+
+    from apps.aufruf import push
+
+    privat, p256dh, auth = _browser()
+    daten = push.verschluesseln(b'{"titel": "Hallo"}', p256dh, auth)
+    assert _entschluesseln(daten, privat, p256dh, auth) == b'{"titel": "Hallo"}'
+    # VAPID: Unterschrift passt zum öffentlichen Schlüssel, der auch dem Browser gegeben wird
+    schluessel = push.oeffentlicher_schluessel()
+    assert schluessel == push.oeffentlicher_schluessel()  # einmal erzeugt, dann gespeichert
+    assert HandyEinstellungen.laden().push_schluessel.startswith("gAAAA")  # verschlüsselt
+    kopf = push.vapid_kopf("https://fcm.googleapis.com/fcm/send/abc")
+    token, k = kopf.removeprefix("vapid t=").split(", k=")
+    assert k == schluessel
+    a, b, c = token.split(".")
+    inhalt = json.loads(base64.urlsafe_b64decode(b + "=="))
+    assert inhalt["aud"] == "https://fcm.googleapis.com" and inhalt["sub"]
+    sig = push._unb64(c)
+    oeff = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), push._unb64(k))
+    oeff.verify(encode_dss_signature(int.from_bytes(sig[:32], "big"),
+                                     int.from_bytes(sig[32:], "big")),
+                f"{a}.{b}".encode(), ec.ECDSA(hashes.SHA256()))  # fmt: skip
+
+
+def test_push_einschalten_nur_mit_handy_und_push_dienst(client, mitte):
+    import json
+
+    from apps.aufruf import push
+
+    _, p256dh, auth = _browser()
+    abo = {"endpoint": "https://fcm.googleapis.com/fcm/send/abc", "keys": {"p256dh": p256dh,
+           "auth": auth}}  # fmt: skip
+    url = reverse("warten:push_an")
+
+    def senden(c, daten):
+        return c.post(url, json.dumps(daten), content_type="application/json")
+
+    assert senden(client, {"abo": abo}).status_code == 403  # ohne angemeldetes Handy
+    anmelden(client)
+    seite = client.get(SEITE).content.decode()
+    assert "data-push" in seite and push.oeffentlicher_schluessel() in seite
+    assert "Benachrichtigung aufs Handy" in seite and "warten.js" in seite
+    fremd = {**abo, "endpoint": "https://intern.example.org/geheim"}
+    assert senden(client, {"abo": fremd}).status_code == 400  # nur Push-Dienste der Browser
+    assert senden(client, {"abo": abo, "sprache": "uk"}).status_code == 200
+    z = HandyZugang.objects.get()
+    assert (z.push_adresse, z.push_sprache) == (abo["endpoint"], "uk")
+    assert 'data-ist-an="1"' in client.get(SEITE).content.decode()
+    assert client.post(reverse("warten:push_aus")).status_code == 200
+    assert HandyZugang.objects.get().push_adresse == ""
+
+
+def test_push_bald_und_jetzt_je_einmal(
+    client, mitte, monkeypatch, django_capture_on_commit_callbacks
+):
+    import json
+
+    from apps.aufruf import push
+
+    gesendet = []
+    privat, p256dh, auth = _browser()
+
+    def _senden(adresse, daten, kopf):
+        klar = json.loads(_entschluesseln(daten, privat, p256dh, auth))
+        gesendet.append((adresse, klar, kopf["Content-Encoding"], kopf["TTL"]))
+        return 201
+
+    monkeypatch.setattr(push, "_senden", _senden)
+    monkeypatch.setattr(push, "_im_hintergrund", lambda fn: fn())
+    e = HandyEinstellungen.laden()
+    e.push_vorher = 2
+    e.save()
+    anmelden(client)
+    z = HandyZugang.objects.get()
+    push.abonnieren(z, "https://fcm.googleapis.com/fcm/send/abc", p256dh, auth, "de")
+    with django_capture_on_commit_callbacks(execute=True):
+        tag = ablauf.starten(mitte, heute())
+    reihe = tag.stand["gruppen"][0]["wartend"]
+    for _ in range(6):
+        with django_capture_on_commit_callbacks(execute=True):
+            ablauf.weiter(mitte, heute())
+        if gesendet and gesendet[-1][1]["titel"] == "Sie sind dran!":
+            break
+    titel = [g[1]["titel"] for g in gesendet]
+    assert titel.count("Sie sind dran!") == 1, (titel, reihe)
+    if reihe.index("109") >= AufrufEinstellungen.laden(mitte).anzahl:  # nicht gleich am Start dran
+        assert titel[0] == "Gleich sind Sie dran" and "vor Ihnen" in gesendet[0][1]["text"]
+    assert "109" in gesendet[-1][1]["text"]
+    assert all(g[2] == "aes128gcm" and g[3] == "900" for g in gesendet)
+    # noch einmal: nichts Neues
+    vorher = len(gesendet)
+    assert push.benachrichtigen(mitte, heute()) == 0 and len(gesendet) == vorher
+    # Push-Dienst sagt „gibt es nicht mehr“: Abo wird vergessen
+    monkeypatch.setattr(push, "_senden", lambda *a: 410)
+    z.refresh_from_db()
+    assert not push.senden(z, "x", "y") and HandyZugang.objects.get().push_adresse == ""
+
+
+def test_push_stufen():
+    from apps.aufruf import push
+
+    assert push.stufe({"art": "jetzt"}, 3) == "jetzt"
+    assert push.stufe({"art": "warten", "vor": 3}, 3) == "bald"
+    assert push.stufe({"art": "warten", "vor": 4}, 3) == ""
+    assert (
+        push.stufe({"art": "warten", "vor": 5, "vor_aufruf": 2}, 3) == "bald"
+    )  # Monitor zählt nicht
+    assert push.stufe({"art": "warten", "vor": 1}, 0) == ""  # 0 = nur beim Aufruf
+    assert push.stufe({"art": "aufgerufen"}, 3) == ""
+    assert push.erlaubt("https://web.push.apple.com/abc")
+    assert not push.erlaubt("http://fcm.googleapis.com/x")
+    assert not push.erlaubt("https://fcm.googleapis.com:8443/x")
+    assert not push.erlaubt("https://googleapis.com.example.org/x")
+
+
+def test_service_worker_und_manifest(client, mitte):
+    sw = client.get(reverse("warten:sw"))
+    assert sw["Content-Type"].startswith("application/javascript")
+    inhalt = sw.content.decode()
+    assert "showNotification" in inhalt and reverse("warten:seite") in inhalt
+    assert "__SYMBOL__" not in inhalt
+    m = client.get(reverse("warten:manifest")).json()
+    assert m["start_url"] == m["scope"] == reverse("warten:seite")
+    anmelden(client)
+    assert reverse("warten:manifest") in client.get(SEITE).content.decode()
+
+
+def test_einstellung_push_vorher(admin_client, mitte):
+    url = reverse("aufruf:einstellungen")
+    admin_client.post(url, {"modus": "alle", "geraete": 2, "push_vorher": 5})
+    assert HandyEinstellungen.laden().push_vorher == 5
+    assert "Push-Nachricht, wenn noch" in admin_client.get(url).content.decode()

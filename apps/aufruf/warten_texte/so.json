@@ -21,5 +21,16 @@
   "stelle": "Goobta qaybinta",
   "aktualisiert": "Xaaladda {uhrzeit} – boggu iskiis ayuu u cusboonaysiiyaa.",
   "abmelden": "Ka bax taleefankan",
-  "sprache": "Luqadda"
+  "sprache": "Luqadda",
+  "push_an": "Ogeysiis taleefanka",
+  "push_ist_an": "Ogeysiisku waa shidan yahay: waxaad heli doontaa fariin wax yar ka hor intaan kaa gaarin – xitaa haddii boggan xiran yahay.",
+  "push_aus": "dami",
+  "push_iphone": "Ogeysiisyada iPhone: hoos ku taabo „Wadaag“, kadibna „Ku dar shaashadda guriga“. Kadib waqtiga sugitaanka ka fur astaanta cusub.",
+  "push_nicht": "Biraawsarkani ma taageero ogeysiisyada. Boggu si kastaba iskiis ayuu u cusboonaysiiyaa.",
+  "push_blockiert": "Ogeysiisyada waa laga xannibay boggan. Fadlan ka oggolow dejinta biraawsarka.",
+  "push_fehler": "Ma suurtagelin. Fadlan mar dambe isku day.",
+  "push_bald_titel": "Dhowaan waa kaa",
+  "push_bald": "Hortaada: {vor} – fadlan imow albaabka.",
+  "push_jetzt_titel": "Waa kaa!",
+  "push_jetzt": "Fadlan hadda gal. Lambarka macmiilka {nummer}."
 }

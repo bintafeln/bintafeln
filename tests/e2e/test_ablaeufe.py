@@ -1195,6 +1195,64 @@ def test_wartezeit_handy_sprachhinweis(seite, admin):
     expect(seite.get_by_text("Bu telefonun oturumunu kapat")).to_be_visible()
 
 
+def test_wartezeit_push_einschalten(seite, admin):
+    """Benachrichtigung aufs Handy (ADR 0134): Service Worker meldet sich an, das Abo kommt beim
+    Server an, der Knopf wird zu „Benachrichtigung ist an“ und lässt sich wieder ausschalten. Der
+    Push-Dienst des Browsers ist im Test durch ein festes Abo ersetzt (kein Netz nötig)."""
+    from apps.aufruf.models import HandyEinstellungen, HandyZugang
+    from apps.core.models import TafelEinstellungen
+
+    t = TafelEinstellungen.laden()
+    t.module = ["aufruf"]
+    t.save()
+    HandyEinstellungen.objects.update_or_create(pk=1, defaults={"modus": "alle"})
+    stelle = Ausgabestelle.objects.create(name="Mitte")
+    g = Kundengruppe.objects.create(name="Gruppe", ausgabestelle=stelle)
+    h = Haushalt.objects.create(kundennummer="00078", kundengruppe=g)
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Ayla", nachname="Probe",
+                          geburtsdatum=dt.date(1975, 3, 12))  # fmt: skip
+    # öffentlicher Beispielschlüssel aus RFC 8291 (kein Geheimnis)
+    p256dh = (
+        "BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4"
+    )
+    seite.context.grant_permissions(["notifications"])
+    seite.add_init_script(
+        "var P256DH = '"
+        + p256dh
+        + "';"
+        + """
+      // Erlaubnis wie nach „Zulassen“ (manche Testbrowser melden sonst immer „blockiert“)
+      if (window.Notification) {
+        Object.defineProperty(Notification, "permission",
+                              { get: function () { return "granted"; } });
+        Notification.requestPermission = function () { return Promise.resolve("granted"); };
+      }
+      if (window.PushManager) {
+        PushManager.prototype.getSubscription = function () { return Promise.resolve(null); };
+        PushManager.prototype.subscribe = function () {
+          return Promise.resolve({ unsubscribe: function () { return Promise.resolve(true); },
+            toJSON: function () { return { endpoint: "https://fcm.googleapis.com/fcm/send/probe",
+              keys: { p256dh: P256DH, auth: "BTBZMqHH6r4Tts7J_aSIgg" } }; } });
+        };
+      }"""
+    )
+    seite.goto(reverse("warten:seite"))
+    seite.get_by_label("Kundennummer").fill("00078")
+    seite.get_by_label("Geburtsdatum der Hauptperson").fill("1975-03-12")
+    seite.get_by_role("button", name="Anmelden").click()
+    knopf = seite.get_by_role("button", name=re.compile("Benachrichtigung aufs Handy"))
+    expect(knopf).to_be_visible()
+    knopf.click()
+    status = seite.locator(".push-status")
+    expect(status).to_be_visible()
+    expect(status).to_contain_text("Benachrichtigung ist an")
+    assert HandyZugang.objects.get().push_adresse == "https://fcm.googleapis.com/fcm/send/probe"
+    status.get_by_role("button", name="ausschalten").click()
+    expect(knopf).to_be_visible()
+    seite.wait_for_timeout(300)
+    assert HandyZugang.objects.get().push_adresse == ""
+
+
 def test_pdf_aus_formular_in_der_ipad_app(angemeldet, admin):
     """In der App vom Home-Bildschirm öffnen auch POST-Formulare (Vorschau einer Vorlage) das
     PDF über einen Link in einem eigenen Fenster; die Seite mit dem Formular bleibt."""

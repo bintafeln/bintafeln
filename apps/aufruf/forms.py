@@ -77,14 +77,19 @@ class HandyForm(forms.ModelForm):
 
     class Meta:
         model = HandyEinstellungen
-        fields = ["modus", "stellen", "geraete"]
+        fields = ["modus", "stellen", "geraete", "push_vorher"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["push_vorher"].required = False
         self.fields["stellen"].queryset = Ausgabestelle.objects.filter(aktiv=True).order_by("name")
         self.initial["stellen"] = list(
             AufrufEinstellungen.objects.filter(handy=True).values_list("ausgabestelle", flat=True)
         )
+
+    def clean_push_vorher(self):
+        wert = self.cleaned_data.get("push_vorher")
+        return self.instance.push_vorher if wert is None else wert
 
     def save(self, commit=True):
         e = super().save(commit)

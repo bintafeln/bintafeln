@@ -21,5 +21,16 @@
   "stelle": "Punct de distribuție",
   "aktualisiert": "Situația la {uhrzeit} – pagina se actualizează singură.",
   "abmelden": "Deconectați acest telefon",
-  "sprache": "Limbă"
+  "sprache": "Limbă",
+  "push_an": "Notificări pe telefon",
+  "push_ist_an": "Notificările sunt pornite: veți primi un mesaj cu puțin înainte să vă vină rândul – chiar dacă pagina este închisă.",
+  "push_aus": "oprire",
+  "push_iphone": "Pentru notificări pe iPhone: atingeți „Partajare” jos, apoi „Adaugă pe ecranul principal”. Apoi deschideți timpul de așteptare din noua pictogramă.",
+  "push_nicht": "Acest browser nu suportă notificări. Pagina se actualizează totuși singură.",
+  "push_blockiert": "Notificările sunt blocate pentru această pagină. Vă rugăm să le permiteți în setările browserului.",
+  "push_fehler": "Nu a reușit. Vă rugăm să încercați mai târziu.",
+  "push_bald_titel": "Urmează curând rândul dumneavoastră",
+  "push_bald": "Înaintea dumneavoastră: {vor} – vă rugăm să veniți la intrare.",
+  "push_jetzt_titel": "Este rândul dumneavoastră!",
+  "push_jetzt": "Vă rugăm să intrați acum. Număr de client {nummer}."
 }

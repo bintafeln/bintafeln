@@ -21,5 +21,16 @@
   "stelle": "Điểm phát",
   "aktualisiert": "Cập nhật lúc {uhrzeit} – trang tự cập nhật.",
   "abmelden": "Đăng xuất điện thoại này",
-  "sprache": "Ngôn ngữ"
+  "sprache": "Ngôn ngữ",
+  "push_an": "Thông báo trên điện thoại",
+  "push_ist_an": "Thông báo đang bật: bạn sẽ nhận tin nhắn ngay trước khi đến lượt – kể cả khi trang này đã đóng.",
+  "push_aus": "tắt",
+  "push_iphone": "Để nhận thông báo trên iPhone: chạm „Chia sẻ“ ở dưới, rồi „Thêm vào MH chính“. Sau đó mở thời gian chờ bằng biểu tượng mới.",
+  "push_nicht": "Trình duyệt này không hỗ trợ thông báo. Trang vẫn tự cập nhật.",
+  "push_blockiert": "Thông báo bị chặn cho trang này. Vui lòng cho phép trong cài đặt trình duyệt.",
+  "push_fehler": "Không thành công. Vui lòng thử lại sau.",
+  "push_bald_titel": "Sắp đến lượt bạn",
+  "push_bald": "Trước bạn còn {vor} – vui lòng đến lối vào.",
+  "push_jetzt_titel": "Đến lượt bạn!",
+  "push_jetzt": "Vui lòng vào ngay. Mã khách hàng {nummer}."
 }

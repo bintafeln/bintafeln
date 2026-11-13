@@ -154,7 +154,14 @@ def stand(z: HandyZugang, heute: dt.date | None = None) -> dict:
     tag = ablauf.tag_holen(stelle, heute)
     je = minuten_je_nummer(tag) if tag else None
     minuten = max(5, round(vor * je / 5) * 5) if je and vor else None
-    return {**basis, "art": "warten", "vor": vor, "minuten": minuten}
+    return {
+        **basis,
+        "art": "warten",
+        "vor": vor,
+        "minuten": minuten,
+        # so viele Nummern kommen noch auf den Monitor, bevor diese dort steht (Push, ADR 0134)
+        "vor_aufruf": ergebnis.get("vor_aufruf", vor),
+    }
 
 
 def ausweis_qr(h) -> str:

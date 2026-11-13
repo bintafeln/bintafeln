@@ -21,5 +21,16 @@
   "stelle": "Ausgabestelle",
   "aktualisiert": "Stand {uhrzeit} – die Seite aktualisiert sich von selbst.",
   "abmelden": "Dieses Handy abmelden",
-  "sprache": "Sprache"
+  "sprache": "Sprache",
+  "push_an": "Benachrichtigung aufs Handy",
+  "push_ist_an": "Benachrichtigung ist an: Sie bekommen eine Nachricht, kurz bevor Sie dran sind – auch wenn diese Seite geschlossen ist.",
+  "push_aus": "ausschalten",
+  "push_iphone": "Für Benachrichtigungen auf dem iPhone: unten auf „Teilen“ tippen, dann „Zum Home-Bildschirm“. Danach die Wartezeit über das neue Symbol öffnen.",
+  "push_nicht": "Dieser Browser kann keine Benachrichtigungen. Die Seite aktualisiert sich aber von selbst.",
+  "push_blockiert": "Benachrichtigungen sind für diese Seite blockiert. Bitte in den Einstellungen des Browsers erlauben.",
+  "push_fehler": "Das hat nicht geklappt. Bitte später noch einmal versuchen.",
+  "push_bald_titel": "Gleich sind Sie dran",
+  "push_bald": "Noch {vor} vor Ihnen – bitte kommen Sie zum Eingang.",
+  "push_jetzt_titel": "Sie sind dran!",
+  "push_jetzt": "Bitte jetzt eintreten. Kundennummer {nummer}."
 }

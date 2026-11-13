@@ -243,6 +243,14 @@ class HandyEinstellungen(models.Model):
         "Handys je Haushalt", default=2, validators=[MinValueValidator(1), MaxValueValidator(5)],
         help_text="Danach heißt es „Bitte am Einlass melden“; der Einlass kann zurücksetzen.",
     )  # fmt: skip
+    push_vorher = models.PositiveSmallIntegerField(
+        "Push-Nachricht, wenn noch … vor dem Kunden sind", default=3,
+        validators=[MaxValueValidator(50)],
+        help_text="Wer die Benachrichtigung eingeschaltet hat, bekommt dann „Gleich sind Sie dran“ "
+        "aufs Handy und beim Aufruf „Sie sind dran“. 0 = nur beim Aufruf.",
+    )  # fmt: skip
+    # Schlüssel für Push-Nachrichten (VAPID, ADR 0134): einmal erzeugt, verschlüsselt gespeichert
+    push_schluessel = models.TextField(blank=True, editable=False)
 
     class Meta:
         verbose_name = "Wartezeit aufs Handy"
@@ -271,6 +279,13 @@ class HandyZugang(models.Model):
     geraet = models.CharField("Gerät", max_length=120, blank=True)
     eingerichtet_am = models.DateTimeField("Eingerichtet am", auto_now_add=True)
     zuletzt_am = models.DateTimeField("Zuletzt angesehen", null=True, blank=True)
+    # Push-Nachrichten (ADR 0134): Adresse und Schlüssel des Browsers, Sprache der Nachricht und
+    # was heute schon geschickt wurde („JJJJ-MM-TT:bald“), damit nichts doppelt kommt.
+    push_adresse = models.TextField("Push-Adresse", blank=True, editable=False)
+    push_p256dh = models.CharField(max_length=200, blank=True, editable=False)
+    push_auth = models.CharField(max_length=100, blank=True, editable=False)
+    push_sprache = models.CharField(max_length=10, blank=True, editable=False)
+    push_gesendet = models.CharField(max_length=40, blank=True, editable=False)
 
     class Meta:
         verbose_name = "Handy-Zugang zur Wartezeit"
@@ -298,5 +313,5 @@ class HandyCode(models.Model):
 
 
 auditlog.register(AufrufEinstellungen)
-auditlog.register(HandyEinstellungen)
+auditlog.register(HandyEinstellungen, exclude_fields=["push_schluessel"])
 auditlog.register(AufrufInfo)

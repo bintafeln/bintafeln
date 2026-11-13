@@ -21,5 +21,16 @@
   "stelle": "Punto de reparto",
   "aktualisiert": "Estado a las {uhrzeit} – la página se actualiza sola.",
   "abmelden": "Cerrar sesión en este teléfono",
-  "sprache": "Idioma"
+  "sprache": "Idioma",
+  "push_an": "Avisos en el móvil",
+  "push_ist_an": "Los avisos están activados: recibirá un mensaje poco antes de su turno, aunque esta página esté cerrada.",
+  "push_aus": "desactivar",
+  "push_iphone": "Para avisos en el iPhone: toque «Compartir» abajo y luego «Añadir a pantalla de inicio». Después abra el tiempo de espera desde el nuevo icono.",
+  "push_nicht": "Este navegador no admite avisos. La página se actualiza sola de todos modos.",
+  "push_blockiert": "Los avisos están bloqueados para esta página. Permítalos en los ajustes del navegador.",
+  "push_fehler": "No ha funcionado. Inténtelo más tarde.",
+  "push_bald_titel": "Pronto es su turno",
+  "push_bald": "Delante de usted: {vor}. Por favor, venga a la entrada.",
+  "push_jetzt_titel": "¡Es su turno!",
+  "push_jetzt": "Por favor, entre ahora. Número de cliente {nummer}."
 }

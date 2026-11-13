@@ -8,8 +8,9 @@
   <title>{{ t.titel }} – {{ tafel_name }}</title>
   <link rel="stylesheet" href="{% static 'css/bintafeln.css' %}">
   {% include "includes/farben.html" %}
-  {% include "includes/app_symbol.html" %}
+  {% url 'warten:manifest' as manifest_url %}{% include "includes/app_symbol.html" with manifest_url=manifest_url %}
   <script src="{% static 'js/sprachhinweis.js' %}" defer></script>
+  <script src="{% static 'js/warten.js' %}" defer></script>
 </head>
 <body class="oeffentlich warten">
   <header class="kopf antrag-kopf">
