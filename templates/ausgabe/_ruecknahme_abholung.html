@@ -1,0 +1,40 @@
+{% comment %}Heute eingetragene Abholung zurücknehmen – oben in der Ampel-Karte, damit man es sofort
+findet (ADR 0035): mit Recht direkt, sonst als Antrag mit Grund an Admins bzw. berechtigte
+Rollen. Zahlungen und Sonderaktionen bleiben bei ihrer Karte.{% endcomment %}
+{% load ausgabe_extras %}
+{% for a in heute_erfasst %}
+{% with offen=korrektur_offen|korrektur:"abholung"|korrektur_fuer:a.pk %}
+<div class="ruecknahme">
+  <p class="ruecknahme-text">✓ Heute{% if a.uhrzeit %} um {{ a.uhrzeit|time:"H:i" }} Uhr{% endif %} als abgeholt eingetragen{% if a.beitrag %} ({{ a.beitrag|floatformat:2 }} €){% endif %}.</p>
+  {% if darf_zuruecknehmen %}
+  <form method="post" action="{% url 'ausgabe:zuruecknehmen' a.pk %}" hx-post="{% url 'ausgabe:zuruecknehmen' a.pk %}"
+        hx-target="#einlass" hx-confirm="Abholung von {{ a.uhrzeit|time:'H:i' }} Uhr zurücknehmen?">
+    {% csrf_token %}<button type="submit" class="knopf knopf-ruecknahme">↩ Abholung zurücknehmen</button>
+  </form>
+  {% elif offen %}
+  <p class="ruecknahme-beantragt">⏳ Rücknahme beantragt ({{ offen.grund }}) – wartet auf Entscheidung.</p>
+  {% else %}
+  <details class="ruecknahme-antrag">
+    <summary class="knopf knopf-ruecknahme">↩ Rücknahme beantragen</summary>
+    <form method="post" action="{% url 'ausgabe:korrektur_beantragen' 'abholung' a.pk %}"
+          hx-post="{% url 'ausgabe:korrektur_beantragen' 'abholung' a.pk %}" hx-target="#einlass">
+      {% csrf_token %}
+      <p class="hilfe">Versehentlich eingetragen? Die Rücknahme entscheidet ein Admin bzw. eine berechtigte Person.</p>
+      <div class="feld">
+        <label for="grund-abholung-{{ a.pk }}">Grund *</label>
+        <select name="grund" id="grund-abholung-{{ a.pk }}" required>
+          <option value="">bitte wählen</option>
+          {% for g in korrekturgruende %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="feld">
+        <label for="anmerkung-abholung-{{ a.pk }}">Anmerkung (optional)</label>
+        <textarea name="anmerkung" id="anmerkung-abholung-{{ a.pk }}" rows="2" maxlength="300"></textarea>
+      </div>
+      <button type="submit" class="knopf">Rücknahme beantragen</button>
+    </form>
+  </details>
+  {% endif %}
+</div>
+{% endwith %}
+{% endfor %}
