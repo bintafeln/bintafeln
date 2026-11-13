@@ -410,7 +410,7 @@ def test_fortschritt_ohne_aufruf_abgeholt_von_erwartet(ausgabe, heute, admin_cli
     admin_client.post(seite, {"aktion": "seite", "seite": f"fortschritt:{ausgabe.pk}",
                               "zeitraum": "m1"})  # fmt: skip
     html = Client().get(reverse("aushang:anzeige", args=[aushang.schluessel])).content.decode()
-    assert '<span class="fortschritt-fertig">2</span>' in html and "von</span> 5" in html
+    assert '<span class="monitor-fertig">2</span>' in html and "von</span> 5" in html
     assert "da gewesen" in html and "data-schnell" in html and "Mitte" in html
     assert "701" not in html  # keine Kundennummern
     assert "aushang-qr" not in html  # kein QR-Code: nichts zu ändern
@@ -447,3 +447,19 @@ def test_fortschritt_heute_keine_ausgabe(ausgabe, heute):
     Kundengruppe.objects.update(wochentage="Mo")
     assert "Heute keine Ausgabe" in fortschritt.folien(str(ausgabe.pk), heute, heute)[0][1]
     assert fortschritt.folien("999", heute, heute) == []
+
+
+def test_fortschritt_stile_nur_im_monitor():
+    """Regression: Der Monitor nutzte „.fortschritt-zahl“ – denselben Namen wie die Anzeige in der
+    Kopfzeile am Einlass (ADR 0067), die dadurch riesig wurde. Seine Stile gelten nur innerhalb
+    von .fortschritt-monitor."""
+    from pathlib import Path
+
+    from django.conf import settings
+
+    css = (Path(settings.BASE_DIR) / "static/css/bintafeln.css").read_text(encoding="utf-8")
+    regeln = [z for z in css.splitlines() if "monitor-" in z and "{" in z]
+    assert regeln and all(z.startswith(".fortschritt-monitor ") for z in regeln), regeln
+    assert not any(z.startswith(".fortschritt-zahl") for z in css.splitlines())
+    vorlage = Path(settings.BASE_DIR) / "apps/aushang/templates/aushang/_fortschritt.html"
+    assert "fortschritt-zahl" not in vorlage.read_text(encoding="utf-8")
