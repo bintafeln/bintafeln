@@ -37,7 +37,7 @@ def _spenderliste(request, datei) -> None:
 
 
 def stand_je_jahr() -> list[dict]:
-    """Was aus dem Vereinsportal im Spendenpool liegt: je Jahr Anzahl, dort schon versendet und
+    """Was aus WISO MeinVerein im Spendenpool liegt: je Jahr Anzahl, dort schon versendet und
     noch offen."""
     V = Spende.Fremdbeleg.VERSENDET
     zeilen = (Spende.objects.filter(fremdbeleg__in=einlesen.FREMD)
@@ -52,7 +52,7 @@ def stand_je_jahr() -> list[dict]:
 @never_cache
 @rollen.recht_erforderlich("vereinsportal.nutzen", "vereinsportal.abruf")
 def start(request):
-    """Die eine Seite zum Vereinsportal: automatisch abrufen (Recht „abruf“) oder von Hand
+    """Die eine Seite zu WISO MeinVerein: automatisch abrufen (Recht „abruf“) oder von Hand
     hochladen (Recht „nutzen“); die Spenden selbst stehen in der Spendenliste."""
     darf_hochladen = rollen.hat_recht(request.user, "vereinsportal.nutzen")
     if request.method == "POST":
@@ -142,7 +142,7 @@ def _abruf_starten(request, d):
 @never_cache
 @abrufen
 def zugang(request):
-    """Die eigenen Zugangsdaten zum Vereinsportal: Jedes Konto sieht und ändert nur seine."""
+    """Die eigenen Zugangsdaten zu WISO MeinVerein: Jedes Konto sieht und ändert nur seine."""
     eigener = Zugang.objects.filter(benutzer=request.user).first()
     if request.method == "POST" and "loeschen" in request.POST:
         _zugang_loeschen(request, eigener)

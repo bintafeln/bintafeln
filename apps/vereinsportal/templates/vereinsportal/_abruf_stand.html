@@ -9,7 +9,7 @@
   <p class="hinweis">Es läuft kein Abruf.</p>
   {% elif s.stand == "laeuft" %}
   <p>⏳ {{ s.schritt }}</p>
-  {% if meiner %}<p class="hinweis">Sie können diese Seite verlassen, der Abruf läuft weiter. Fragt das Vereinsportal
+  {% if meiner %}<p class="hinweis">Sie können diese Seite verlassen, der Abruf läuft weiter. Fragt WISO MeinVerein
     nach dem 2FA-Code, muss er innerhalb von 5 Minuten hier eingegeben werden; eingelesen wird beim nächsten Öffnen
     dieser Seite.</p>{% endif %}
   {% elif s.stand == "warte_auf_code" %}
@@ -17,12 +17,12 @@
   <form hx-post="{% url 'vereinsportal:abruf_stand' %}" hx-target="#abruf-stand" class="aktionsleiste">
     {% csrf_token %}
     <input type="hidden" name="aktion" value="code">
-    <label for="abruf-code"><strong>2FA-Code aus dem Vereinsportal</strong> (6 Ziffern)</label>
+    <label for="abruf-code"><strong>2FA-Code aus WISO MeinVerein</strong> (6 Ziffern)</label>
     <input type="text" id="abruf-code" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required autofocus>
     <button type="submit" class="knopf">Code senden</button>
   </form>
   {% else %}
-  <p>⏳ Das Vereinsportal fragt nach dem 2FA-Code. Den gibt nur {{ laufender.wer|default:"die Person, die den Abruf gestartet hat," }} ein.</p>
+  <p>⏳ WISO MeinVerein fragt nach dem 2FA-Code. Den gibt nur {{ laufender.wer|default:"die Person, die den Abruf gestartet hat," }} ein.</p>
   {% endif %}
   {% elif s.stand == "fertig" %}
   <div hx-post="{% url 'vereinsportal:abruf_stand' %}" hx-vals='{"aktion": "einlesen"}' hx-trigger="load" hx-target="#abruf-stand">⏳ Die Dateien sind geladen, bintafeln liest sie ein …</div>

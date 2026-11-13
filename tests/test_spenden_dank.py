@@ -22,7 +22,7 @@ pytestmark = pytest.mark.django_db
 JAHR = 2025
 
 
-def pdf_datei(name, text="Beleg aus dem Vereinsportal"):
+def pdf_datei(name, text="Beleg aus WISO MeinVerein"):
     doc = Pdf(text)
     return SimpleUploadedFile(name, doc.erzeugen(), content_type="application/pdf")
 
@@ -125,7 +125,7 @@ def test_dankesbriefe_als_pdf(admin_client, einstellungen, vorlage, spender, pdf
     antwort = admin_client.post(url, daten | {"schritt": "pdf"})
     text = pdf_text(antwort)
     assert "Sehr geehrte Frau Muster" in text and "2 Spende(n) am 15.01.2025, 15.02.2025" in text
-    assert "Sammelbest" in text and "Beleg aus dem Vereinsportal" in text
+    assert "Sammelbest" in text and "Beleg aus WISO MeinVerein" in text
     assert Spende.objects.filter(datum__year=JAHR, bedankt_am__isnull=True).count() == 0
     assert not Spende.objects.filter(datum__year=JAHR, bestaetigung__isnull=True).exists()
     assert SpendenBeleg.objects.get(dateiname="Spendenbeleg_123.pdf").beigelegt_am is not None

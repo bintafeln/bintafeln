@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block titel %}Meine Zugangsdaten zum Vereinsportal{% endblock %}
+{% block titel %}Meine Zugangsdaten zu WISO MeinVerein{% endblock %}
 {% block inhalt %}
 <section class="karte">
-  <p><a href="{% url 'vereinsportal:abruf' %}">← Abruf aus dem Vereinsportal</a></p>
-  <h1>Meine Zugangsdaten zum Vereinsportal</h1>
+  <p><a href="{% url 'vereinsportal:abruf' %}">← Abruf aus WISO MeinVerein</a></p>
+  <h1>Meine Zugangsdaten zu WISO MeinVerein</h1>
   <div class="zugang-kasten">
     <div><strong>🔒 Nur für Ihr Konto: {{ request.user.get_full_name|default:request.user.get_username }}</strong>
-      <p>Tragen Sie hier Ihre <strong>eigene</strong> Anmeldung im Vereinsportal ein – nicht die einer anderen Person.
+      <p>Tragen Sie hier Ihre <strong>eigene</strong> Anmeldung in WISO MeinVerein ein – nicht die einer anderen Person.
         bintafeln nutzt sie nur, wenn <strong>Sie selbst</strong> einen Abruf starten; den 2FA-Code geben dann auch nur
         Sie ein. Andere sehen diese Angaben nicht und können damit nicht abrufen, auch kein Admin. Das Passwort wird
         verschlüsselt gespeichert und nie wieder angezeigt.</p></div>
@@ -18,7 +18,7 @@
     <div class="aktionsleiste">
       <button type="submit" class="knopf">Speichern</button>
       {% if eigener %}<button type="submit" name="loeschen" value="1" class="knopf knopf-zweitrangig" formnovalidate
-        onclick="return confirm('Ihre Zugangsdaten zum Vereinsportal löschen?')">Meine Zugangsdaten löschen</button>{% endif %}
+        onclick="return confirm('Ihre Zugangsdaten zu WISO MeinVerein löschen?')">Meine Zugangsdaten löschen</button>{% endif %}
     </div>
   </form>
 </section>

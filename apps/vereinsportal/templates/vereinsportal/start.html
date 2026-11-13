@@ -1,18 +1,18 @@
 {% extends "base.html" %}
-{% block titel %}Aus dem Vereinsportal einlesen{% endblock %}
+{% block titel %}Aus WISO MeinVerein einlesen{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
-  <h1>Spenden aus dem Vereinsportal einlesen</h1>
-  <p>Für Tafeln, die ihre Spendenbescheinigungen im Vereinsportal ausstellen. Der Finanzexport bringt die Spenden mit
-    ihren Belegen in die <a href="{% url 'spenden:liste' %}">Spendenliste</a>, die Spender ins Adressbuch. Was im
-    Vereinsportal schon versendet ist, wird vermerkt; dafür stellt bintafeln keine zweite Bestätigung aus.
+  <h1>Spenden aus WISO MeinVerein einlesen</h1>
+  <p>Für Tafeln, die ihre Spendenbescheinigungen in WISO MeinVerein ausstellen. Der Finanzexport bringt die Spenden mit
+    ihren Belegen in die <a href="{% url 'spenden:liste' %}">Spendenliste</a>, die Spender ins Adressbuch. Was in
+    WISO MeinVerein schon versendet ist, wird vermerkt; dafür stellt bintafeln keine zweite Bestätigung aus.
     <a href="{% url 'core:hilfe' %}#vereinsportal">Welche Dateien gebraucht werden</a></p>
 
   <div class="wege">
     {% if abruf_verfuegbar and darf_abrufen %}
     <div class="weg" id="weg-abruf">
       <h2>Automatisch holen</h2>
-      <p>bintafeln meldet sich mit <strong>Ihren</strong> Zugangsdaten im Vereinsportal an, holt Finanzexport und
+      <p>bintafeln meldet sich mit <strong>Ihren</strong> Zugangsdaten in WISO MeinVerein an, holt Finanzexport und
         Spenderliste für einen Zeitraum und liest beides ein. Sie geben nur den 2FA-Code ein.</p>
       <p><a class="knopf" href="{% url 'vereinsportal:abruf' %}">Abruf starten …</a></p>
     </div>
@@ -20,7 +20,7 @@
     {% if darf_hochladen %}
     <div class="weg" id="weg-hochladen">
       <h2>Von Hand hochladen</h2>
-      <p>Die Dateien selbst im Vereinsportal herunterladen und hier hochladen. Das Ergebnis ist dasselbe.</p>
+      <p>Die Dateien selbst in WISO MeinVerein herunterladen und hier hochladen. Das Ergebnis ist dasselbe.</p>
       <form method="post" enctype="multipart/form-data" class="aktionsleiste" id="finanzexport-form">
         {% csrf_token %}
         <label for="{{ finanzexport.finanzexport.id_for_label }}">{{ finanzexport.finanzexport.label }}</label>
@@ -43,7 +43,7 @@
   {% if jahre %}
   <div class="tabelle-rahmen">
     <table class="tabelle kompakt" id="portal-stand">
-      <thead><tr><th>Jahr</th><th class="zahl">Spenden aus dem Vereinsportal</th><th class="zahl">Spender</th><th class="zahl">dort schon versendet</th><th class="zahl">noch offen</th><th></th></tr></thead>
+      <thead><tr><th>Jahr</th><th class="zahl">Spenden aus WISO MeinVerein</th><th class="zahl">Spender</th><th class="zahl">dort schon versendet</th><th class="zahl">noch offen</th><th></th></tr></thead>
       <tbody>
         {% for j in jahre %}
         <tr>
@@ -59,17 +59,17 @@
     </table>
   </div>
   {% else %}
-  <p class="hinweis">Noch keine Spenden aus dem Vereinsportal eingelesen.</p>
+  <p class="hinweis">Noch keine Spenden aus WISO MeinVerein eingelesen.</p>
   {% endif %}
 
   <h2>Dankesbriefe und Bescheinigungen</h2>
   <p>Unter <a href="{% url 'spenden:dank' %}">Spenden → Dankesbriefe</a> entsteht je Spender ein Brief, als PDF zum
     Drucken oder per E-Mail:</p>
   <ul>
-    <li><strong>Eine offene Spende im Jahr:</strong> Dem Brief liegt der Spendenbeleg aus dem Vereinsportal bei.</li>
+    <li><strong>Eine offene Spende im Jahr:</strong> Dem Brief liegt der Spendenbeleg aus WISO MeinVerein bei.</li>
     <li><strong>Mehrere offene Spenden im Jahr:</strong> bintafeln stellt eine <strong>Sammelbestätigung</strong> aus
       und legt sie bei; die einzelnen Belege liegen dann nicht bei.</li>
-    <li><strong>Im Vereinsportal schon versendet:</strong> kein Brief und keine Bestätigung von hier.</li>
+    <li><strong>In WISO MeinVerein schon versendet:</strong> kein Brief und keine Bestätigung von hier.</li>
   </ul>
   <p class="hinweis">Dafür in den Dankesbriefen „Zuwendungsbestätigungen aus bintafeln beilegen“ und „Hochgeladene Belege
     beilegen“ angekreuzt lassen. Für Sammelbestätigungen müssen unter „Einstellungen → Spenden“ Finanzamt,

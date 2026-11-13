@@ -338,7 +338,7 @@ def test_vordruck_lange_anlage_auf_mehreren_seiten(einstellungen, spender, pdf_t
 
 def test_spenderuebersicht_zeigt_alle_spender(einstellungen, admin_client):
     """Alle Spender des Jahres mit dem Stand ihrer Bescheinigung; ausstellen lässt sich nur für
-    das, was weder im Vereinsportal verschickt noch von bintafeln bestätigt ist."""
+    das, was weder in WISO MeinVerein verschickt noch von bintafeln bestätigt ist."""
 
     def person(nachname):
         return Adresse.objects.create(art="person", vorname="Eva", nachname=nachname,
@@ -360,13 +360,13 @@ def test_spenderuebersicht_zeigt_alle_spender(einstellungen, admin_client):
     ]
     assert (zeilen[mehrfach]["offen"], zeilen[mehrfach]["offen_summe"]) == (2, D("30"))
     assert (zeilen[portal]["im_portal"], zeilen[portal]["offen"]) == (1, 0)
-    # eine einzelne, im Vereinsportal noch nicht versendete Spende bestätigt bintafeln selbst
+    # eine einzelne, in WISO MeinVerein noch nicht versendete Spende bestätigt bintafeln selbst
     assert zeilen[einfach]["offen"] == 1
     assert (zeilen[fertig]["von_hier"], zeilen[fertig]["offen"]) == (1, 0)
 
     seite = admin_client.get(reverse("spenden:bestaetigungen"), {"jahr": 2026}).content.decode()
     assert "Spender 2026" in seite and "Dorn" in seite and "Berg" in seite
-    assert "✓ 1 im Vereinsportal verschickt" in seite and "✓ 1 von bintafeln bestätigt" in seite
+    assert "✓ 1 in WISO MeinVerein verschickt" in seite and "✓ 1 von bintafeln bestätigt" in seite
     assert "2 offen (30,00 €)" in seite and "Sammelbestätigung aus bintafeln" in seite
     assert "Einzelbestätigung aus bintafeln" in seite and "Alle 2 offenen ausstellen" in seite
     assert seite.count('name="adresse" value=') == 2  # nur die offenen sind anzuhaken

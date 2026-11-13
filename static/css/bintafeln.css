@@ -1998,7 +1998,7 @@ details.amtsdokumente > summary { cursor: pointer; margin: .5rem 0; }
 
 /* Foto eines Nachweises: gesammelte Seiten unter dem Dateifeld */
 
-/* Abruf aus dem Vereinsportal: persönliche Zugangsdaten und Historie (ADR 0129) */
+/* Abruf aus WISO MeinVerein: persönliche Zugangsdaten und Historie (ADR 0129) */
 .zugang-kasten { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; justify-content: space-between; border: 1px solid var(--rand); border-left: .35rem solid var(--akzent); border-radius: var(--radius); padding: .75rem 1rem; margin: 1rem 0; }
 .zugang-kasten > div { flex: 1 1 22rem; }
 .zugang-kasten p { margin: .25rem 0 0; }
@@ -2010,7 +2010,7 @@ details.amtsdokumente > summary { cursor: pointer; margin: .5rem 0; }
 .abruf-wann { white-space: nowrap; }
 .abruf-wann .leise { color: var(--leise); font-size: .85rem; }
 
-/* Vereinsportal: die beiden Wege zum Einlesen nebeneinander */
+/* WISO MeinVerein: die beiden Wege zum Einlesen nebeneinander */
 .wege { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem; margin: 1rem 0; }
 .weg { border: 1px solid var(--rand); border-radius: var(--radius); padding: .25rem 1rem 1rem; }
 .weg h2 { margin-top: .75rem; }

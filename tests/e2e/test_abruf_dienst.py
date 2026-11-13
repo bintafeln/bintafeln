@@ -69,7 +69,7 @@ FERTIG_ALT = """<tr><td><em>(01.02.2026 - 04.02.2026)</em></td><td><button pendo
 FERTIG = """<tr><td><em>(01.02.2026 - 04.02.2026)</em></td><td><button pendo-id="tae-download"
  onclick="fetch('/api/download/7.zip')"><span>Herunterladen</span></button></td></tr>"""
 # Neuen Export erzeugen: Die Datumsfelder tragen absichtlich andere Nummern als im bisherigen
-# Programm (mat-input-7/-8), weil das Vereinsportal sie der Reihe nach vergibt. Nach „Erstellen“
+# Programm (mat-input-7/-8), weil WISO MeinVerein sie der Reihe nach vergibt. Nach „Erstellen“
 # erscheint oben eine Zeile mit dem Zeitraum, die erst nach kurzer Zeit herunterladbar ist.
 NEU = (ZEILEN % "") + """<mat-select style="display:block"
  onclick="document.getElementById('wahl').style.display='block'">Zeitraum</mat-select>
@@ -82,7 +82,7 @@ NEU = (ZEILEN % "") + """<mat-select style="display:block"
 <div id="erweitert"></div>
 <button onclick="erstellen()">Erstellen</button>
 <script>
-// Wie im Vereinsportal: die Spalten gibt es erst, wenn „Erweiterte Einstellungen“ aufgeklappt ist
+// Wie in WISO MeinVerein: die Spalten gibt es erst, wenn „Erweiterte Einstellungen“ aufgeklappt ist
 function aufklappen() {
   document.getElementById('erweitert').innerHTML = ['Status', '+Name', '+Versendet am',
     'SQ-verschickt', 'SQ-erstellt Datum'].map(n => '<mat-checkbox><label><input type="checkbox"'
@@ -100,7 +100,7 @@ function erstellen() {
   document.querySelector('table').prepend(tr);
   setTimeout(() => tr.querySelector('button').removeAttribute('style'), 800);
 }</script>"""  # fmt: skip
-# … wie es sein soll: Das Vereinsportal nimmt den eingestellten Zeitraum
+# … wie es sein soll: WISO MeinVerein nimmt den eingestellten Zeitraum
 NEU_RICHTIG = NEU.replace("VON", "document.getElementById('mat-input-7').value").replace(
     "BIS", "document.getElementById('mat-input-8').value"
 )
@@ -149,7 +149,7 @@ class Portal(BaseHTTPRequestHandler):
     def do_POST(self):
         daten = parse_qs(self.rfile.read(int(self.headers["Content-Length"])).decode())
         type(self).gesehen["anmeldung"] = (daten["eml-user"][0], daten["psw-user"][0])
-        # wie im Vereinsportal: nur mit richtigem Passwort folgt die Abfrage des 2FA-Codes
+        # wie in WISO MeinVerein: nur mit richtigem Passwort folgt die Abfrage des 2FA-Codes
         zusatz = BANNER if type(self).banner else ""
         self._html((ZWEI if daten["psw-user"][0] == "erfunden" else ANMELDUNG + "Falsch.") + zusatz)
 
@@ -325,7 +325,7 @@ def test_anderer_zeitraum_laedt_einen_anderen_export(dienst):
 
 
 def test_portal_erzeugt_einen_anderen_zeitraum(dienst):
-    """Übernimmt das Vereinsportal den Zeitraum nicht, bricht der Abruf mit einer Erklärung ab,
+    """Übernimmt WISO MeinVerein den Zeitraum nicht, bricht der Abruf mit einer Erklärung ab,
     statt den falschen Export einzulesen."""
     dienst.rufen("/start", dienst.auftrag("/export-falsch", mit_liste=False))
     dienst.warten_auf("warte_auf_code")
@@ -401,7 +401,7 @@ def test_anmeldung_ohne_passenden_knopf(dienst, capsys):
 
 
 def test_falsches_passwort_fragt_gar_nicht_erst_nach_dem_code(dienst):
-    """Nimmt das Vereinsportal die Anmeldung nicht an, kommt sofort eine Erklärung – statt
+    """Nimmt WISO MeinVerein die Anmeldung nicht an, kommt sofort eine Erklärung – statt
     fünf Minuten auf einen Code zu warten, den niemand verschickt hat."""
     dienst.rufen("/start", dienst.auftrag(passwort="falsch"))
     stand = dienst.warten_auf("warte_auf_code", "fehler", "fertig")
