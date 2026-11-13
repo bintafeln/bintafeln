@@ -5,7 +5,8 @@ import base64
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import ProtectedError, Q, Sum
+from django.db.models import CharField, ProtectedError, Q, Sum, Value
+from django.db.models.functions import Cast, Coalesce, LPad
 from django.http import QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -66,9 +67,11 @@ BLAETTER_SCHLUESSEL = ("q", "kategorie", "art", "verein", "sort")
 def _gefiltert(user, params):
     """Adressbuch nach den Filtern aus ``params`` (QueryDict); ``user`` steuert die „Im Verein“.
     Ohne die je Person gemerkte Zeilenzahl – die setzt die Listen-Ansicht selbst."""
-    adressen = Adresse.objects.prefetch_related("kategorien")
+    adressen = Adresse.objects.select_related("mitglied").prefetch_related("kategorien")
     q = (params.get("q") or "").strip()
-    if q:
+    if q.isdigit():  # eine Zahl: Adress- oder Mitgliedsnummer (ADR 0133) oder PLZ
+        adressen = adressen.filter(Q(nummer=int(q)) | Q(mitglied__nummer=q) | Q(plz__startswith=q))
+    elif q:
         adressen = adressen.filter(
             Q(organisation__icontains=q) | Q(vorname__icontains=q) | Q(nachname__icontains=q)
             | Q(ansprechperson__icontains=q) | Q(ort__icontains=q) | Q(plz__startswith=q)
@@ -101,8 +104,19 @@ def _blaetter_abfrage(params) -> str:
 def _reihenfolge(user, params) -> list[int]:
     """Die Adress-pks in genau der Reihenfolge der Liste (Filter + Sortierung), ohne Blättern."""
     adressen, _ = _gefiltert(user, params)
-    adressen, _ = listen.sortieren(adressen, params.get("sort", ""), SORTIERUNG, "name")
+    adressen, _ = listen.sortieren(_mit_nr(adressen), params.get("sort", ""), SORTIERUNG, "name")
     return list(adressen.values_list("pk", flat=True))
+
+
+def _mit_nr(adressen):
+    """Sortierbare Nummer: Mitgliedsnummer, sonst Adressnummer – links mit Nullen aufgefüllt, damit
+    „10“ hinter „9“ kommt (ADR 0133)."""
+    return adressen.annotate(
+        nr=Coalesce(
+            LPad("mitglied__nummer", 12, Value("0")),
+            LPad(Cast("nummer", CharField()), 12, Value("0")),
+        )
+    )
 
 
 # Anzeigen: Adressen je Seite zur Wahl (Vorgabe 25), „alle“ ohne Blättern – wie in anderen Listen.
@@ -110,6 +124,7 @@ ANZAHL_WAHL = ("25", "50", "100", "alle")
 JE_SEITE = 25
 # Sortierbare Spalten des Adressbuchs (Schlüssel wie in ?sort=…, mit „-“ absteigend):
 SORTIERUNG = {
+    "nummer": ("nr",),
     "name": ("organisation", "nachname", "vorname"),
     "vorname": ("vorname", "nachname"),
     "anrede": ("anrede",),
@@ -121,9 +136,9 @@ SORTIERUNG = {
 }
 # Zu-/abwählbare Spalten (Nachname öffnet die Adresse und steht immer, darum nicht hier) –
 # getrennte Spalten wie in der Mitarbeitendenliste, standardmäßig alle sichtbar.
-SPALTEN = [("vorname", "Vorname"), ("anrede", "Anrede"), ("strasse", "Straße"), ("plz", "PLZ"),
-           ("ort", "Ort"), ("telefon", "Telefon"), ("mobil", "Handy"), ("email", "E-Mail"),
-           ("geburtsdatum", "Geburtstag"),
+SPALTEN = [("nummer", "Nr."), ("vorname", "Vorname"), ("anrede", "Anrede"), ("strasse", "Straße"),
+           ("plz", "PLZ"), ("ort", "Ort"), ("telefon", "Telefon"), ("mobil", "Handy"),
+           ("email", "E-Mail"), ("geburtsdatum", "Geburtstag"),
            ("kategorien", "Kategorien"), ("helfer", "Mitarbeit")]  # fmt: skip
 SPALTEN_FEST: set = set()
 
@@ -132,7 +147,9 @@ SPALTEN_FEST: set = set()
 def liste(request):
     adressen, filter_ = _gefiltert(request.user, request.GET)
     filter_["anzahl"] = listen.zeilenzahl(request, "anzahl")  # je Person gemerkt, Vorgabe 25
-    adressen, sort = listen.sortieren(adressen, request.GET.get("sort", ""), SORTIERUNG, "name")
+    adressen, sort = listen.sortieren(
+        _mit_nr(adressen), request.GET.get("sort", ""), SORTIERUNG, "name"
+    )
     if request.GET.get("aktion"):
         adressen = listenauswahl.filtern(request, adressen)
         basis = f"adressen-{timezone.localdate():%Y-%m-%d}"
@@ -182,7 +199,9 @@ def sammel_bearbeiten(request):
 
     adressen, filter_ = _gefiltert(request.user, request.GET)
     filter_["anzahl"] = listen.zeilenzahl(request, "anzahl")
-    adressen, _ = listen.sortieren(adressen, request.GET.get("sort", ""), SORTIERUNG, "name")
+    adressen, _ = listen.sortieren(
+        _mit_nr(adressen), request.GET.get("sort", ""), SORTIERUNG, "name"
+    )
     je_seite = listen.je_seite(filter_["anzahl"], adressen.count(), JE_SEITE)
     seite = Paginator(adressen, je_seite).get_page(request.GET.get("seite"))
     basis = adressen.filter(pk__in=[a.pk for a in seite])  # genau diese Seite, in ihrer Reihenfolge
@@ -292,6 +311,8 @@ def bearbeiten(request, pk=None):
         with transaction.atomic():
             a = form.save(commit=False)
             a.geaendert_am, a.geaendert_von = timezone.now(), request.user.get_username()
+            # Neues Mitglied: Mitgliedsnummer statt Adressnummer (ADR 0133)
+            a.als_mitglied = m_form is not None and ist_mitglied
             a.save()
             form.save_m2m()
             form.rollen_anwenden()  # Rollen auf das verknüpfte Konto schreiben (ADR 0097)

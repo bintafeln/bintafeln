@@ -1440,6 +1440,10 @@ Serienbriefe (Modul 5, ADR 0044); Kunden stehen weiter im Kundenstamm.
 - **Adresse**: Organisation (mit Ansprechperson) oder Person, Anschrift, Telefon, Mobil, E-Mail,
   Webseite, Kategorien (Mehrfachauswahl, gepflegt unter „Einstellungen → Adresskategorien“),
   Notiz.
+- **Nummern** (ADR 0133): Mitglieder haben ihre Mitgliedsnummer, alle anderen Adressen bekommen
+  automatisch eine Adressnummer aus einem eigenen Bereich ab 2000 (einstellbar unter
+  „Einstellungen → Mitglieder“). Spalte „Nr.“ in der Liste, sortier- und durchsuchbar. Beim Update
+  bekommen alle vorhandenen Adressen ohne Mitgliedschaft einmal eine Nummer.
 - **Kategorie „Spender“ automatisch** (ADR 0132): Wer eine Spende hat (von Hand, Import oder
   Vereinsportal; reine Mitgliedsbeiträge zählen nicht), bekommt die Kategorie „Spender“
   zusätzlich zu seinen anderen. Beim Update werden alle vorhandenen Spender einmal nachgetragen.

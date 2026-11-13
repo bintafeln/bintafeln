@@ -1392,6 +1392,7 @@ class Mitglieder(_AdressRegeln):
         neu = 0
         for werte in entscheidung.anlegen:
             adresse = self._adresse_finden(werte) or Adresse()
+            adresse.als_mitglied = True  # Mitgliedsnummer statt Adressnummer (ADR 0133)
             adress_werte = {
                 k: v for k, v in werte.items() if k in {f.schluessel for f in ADRESS_FELDER}
             }
