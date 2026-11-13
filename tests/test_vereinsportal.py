@@ -983,6 +983,8 @@ def test_seite_abruf_ablauf(buero, dienst, zugang, export):
     seite = buero.get(url).content.decode()
     assert "Abruf starten" in seite and "Es läuft kein Abruf" in seite
     assert "Noch kein Abruf" in seite and "berta@example.org" in seite
+    assert "Was passiert, wenn ich die Seite verlasse?" in seite
+    assert "Der Abruf läuft auf dem Server weiter" in seite
     # falscher Zeitraum: Fehler am Formular, kein Auftrag
     seite = buero.post(url, {"von": "04.02.2026", "bis": "01.02.2026"}).content.decode()
     assert "vor dem Startdatum" in seite and dienst.aufrufe[-1][0] == "/stand"
@@ -990,6 +992,7 @@ def test_seite_abruf_ablauf(buero, dienst, zugang, export):
     assert antwort.status_code == 302 and dienst.aufrufe[-1][:1] == ("/start",)
     teil = buero.get(stand_url).content.decode()
     assert "Starte …" in teil and 'hx-trigger="every 2s"' in teil and "Abruf abbrechen" in teil
+    assert "Sie können diese Seite verlassen, der Abruf läuft weiter" in teil
     dienst.stand |= {"stand": "warte_auf_code", "schritt": "Bitte den 2FA-Code eingeben"}
     teil = buero.get(stand_url).content.decode()
     assert 'name="code"' in teil and "every 2s" not in teil

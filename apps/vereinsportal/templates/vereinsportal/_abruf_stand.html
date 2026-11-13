@@ -9,6 +9,9 @@
   <p class="hinweis">Es läuft kein Abruf.</p>
   {% elif s.stand == "laeuft" %}
   <p>⏳ {{ s.schritt }}</p>
+  {% if meiner %}<p class="hinweis">Sie können diese Seite verlassen, der Abruf läuft weiter. Fragt das Vereinsportal
+    nach dem 2FA-Code, muss er innerhalb von 5 Minuten hier eingegeben werden; eingelesen wird beim nächsten Öffnen
+    dieser Seite.</p>{% endif %}
   {% elif s.stand == "warte_auf_code" %}
   {% if meiner %}
   <form hx-post="{% url 'vereinsportal:abruf_stand' %}" hx-target="#abruf-stand" class="aktionsleiste">
