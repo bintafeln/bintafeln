@@ -275,8 +275,9 @@ def _seite(v: Vordruck, b: Zuwendungsbestaetigung, e, tafel, unterschrift=None) 
         linie = t + 44.5
     else:
         linie = unten + 86.5
+    stempel = privatdateien.lesen(e.ORDNER, e.stempel) if e.stempel else None
     vordruck.unterschrift(v, linie, f"{e.ort or tafel.ort}, {vordruck.datum(b.ausgestellt_am)}",
-                          unterschrift[0] if unterschrift else None)  # fmt: skip
+                          unterschrift[0] if unterschrift else None, stempel)  # fmt: skip
     vordruck.hinweis(v, linie + 20 + luft / 2, e)
     v.seite_fertig()
     if sammel:

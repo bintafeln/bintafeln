@@ -12,4 +12,22 @@
     <button type="submit" class="knopf">Speichern</button>
   </form>
 </section>
+<section class="karte breit" id="stempel">
+  <h2>Stempel</h2>
+  <p>Ist hier ein Stempel der Tafel hinterlegt, steht er auf jeder Zuwendungsbestätigung leicht schräg rechts neben
+    der Unterschrift – wie von Hand gestempelt. Am besten den Stempel auf weißes Papier drücken, einscannen oder
+    fotografieren und eng zuschneiden (PNG oder JPG). Den weißen Hintergrund macht bintafeln durchsichtig, damit der
+    Stempel keinen Text der Bestätigung verdeckt. Schon unterschriebene Bestätigungen bleiben, wie sie sind.</p>
+  {% if stempel %}<p><img src="{% url 'spenden:stempel_bild' %}" alt="Hinterlegter Stempel" class="unterschrift-vorschau"></p>{% endif %}
+  <form method="post" action="{% url 'spenden:stempel' %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="feld"><label for="stempel-datei">{% if stempel %}Neues Bild des Stempels{% else %}Bild des Stempels{% endif %}</label>
+      <input type="file" name="stempel" id="stempel-datei" accept="image/png,image/jpeg,image/webp"></div>
+    <div class="aktionsleiste">
+      <button type="submit" class="knopf">Stempel speichern</button>
+      {% if stempel %}<button type="submit" name="loeschen" value="1" class="knopf knopf-zweitrangig"
+        onclick="return confirm('Den Stempel entfernen? Schon unterschriebene Bestätigungen bleiben, wie sie sind.')">Stempel entfernen</button>{% endif %}
+    </div>
+  </form>
+</section>
 {% endblock %}

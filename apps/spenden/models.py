@@ -19,6 +19,8 @@ class SpendenEinstellungen(models.Model):
         FESTSTELLUNG = "feststellung", "Feststellung nach § 60a AO (neu gegründet)"
 
     EINZIGE_ID = 1
+    ORDNER = "stempel"
+    PRIVATDATEI = (ORDNER, "stempel")
     koerperschaft = models.CharField(
         "Name der Körperschaft", max_length=200, blank=True,
         help_text="Leer = Name der Tafel aus den Einstellungen.",
@@ -56,6 +58,7 @@ class SpendenEinstellungen(models.Model):
     ort = models.CharField("Ort für Ort und Datum", max_length=100, blank=True,
                            help_text="Leer = Ort der Tafel.")  # fmt: skip
     naechste_nummer = models.PositiveIntegerField("Nächste Bestätigungsnummer", default=1)
+    stempel = models.CharField("Stempel", max_length=100, blank=True, editable=False)
     maschinell_angezeigt = models.BooleanField(
         "Maschinelle Erstellung dem Finanzamt angezeigt", default=False,
         help_text="Nur ankreuzen, wenn die Tafel dem Finanzamt angezeigt hat, dass sie "
