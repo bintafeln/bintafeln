@@ -1,5 +1,5 @@
 {% extends "aufruf/warten_basis.html" %}
-{% block kopf %}<meta http-equiv="refresh" content="{{ aktualisieren }}">{% endblock %}
+{% block kopf %}<noscript><meta http-equiv="refresh" content="{{ aktualisieren }}"></noscript>{% endblock %}
 {% block inhalt %}
 <section class="karte antrag-karte warten-karte warten-{{ stand.art }}" aria-live="polite">
   {% if stand.nummer %}<p class="warten-kopf"><span>{{ t.nummer }}: <strong dir="ltr">{{ stand.nummer }}</strong></span>
@@ -14,7 +14,20 @@
   {% else %}
     <p class="warten-mittel">{{ stand.text }}</p>
   {% endif %}
-  <p class="hinweis">{{ aktualisiert }}</p>
+  <p class="hinweis" data-aktualisieren="{{ aktualisieren }}">{{ aktualisiert }}</p>
+  {% if push %}{# Benachrichtigung aufs Handy (static/js/warten.js, ADR 0134); ohne JavaScript unsichtbar #}
+  <div class="warten-push" data-push data-schluessel="{{ push_schluessel }}" data-csrf="{{ csrf_token }}"
+       data-sw="{% url 'warten:sw' %}" data-bereich="{% url 'warten:seite' %}" data-an="{% url 'warten:push_an' %}"
+       data-aus="{% url 'warten:push_aus' %}" data-sprache="{{ s.code }}"{% if push_an %} data-ist-an="1"{% endif %}>
+    <button type="button" class="knopf push-an" data-zeige="aus" hidden>🔔 {{ t.push_an }}</button>
+    <p class="push-status" data-zeige="an" hidden>🔔 {{ t.push_ist_an }}
+      <button type="button" class="knopf-link push-aus">{{ t.push_aus }}</button></p>
+    <p class="hinweis" data-zeige="iphone" hidden>{{ t.push_iphone }}</p>
+    <p class="hinweis" data-zeige="nicht" hidden>{{ t.push_nicht }}</p>
+    <p class="hinweis" data-zeige="blockiert" hidden>{{ t.push_blockiert }}</p>
+    <p class="hinweis" data-zeige="fehler" hidden>{{ t.push_fehler }}</p>
+  </div>
+  {% endif %}
   <form method="post" action="{% url 'warten:abmelden' %}">
     {% csrf_token %}
     <button type="submit" class="knopf knopf-zweitrangig">{{ t.abmelden }}</button>

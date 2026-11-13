@@ -21,5 +21,16 @@
   "stelle": "Osztóhely",
   "aktualisiert": "Állapot: {uhrzeit} – az oldal magától frissül.",
   "abmelden": "Kijelentkezés ezen a telefonon",
-  "sprache": "Nyelv"
+  "sprache": "Nyelv",
+  "push_an": "Értesítés a telefonra",
+  "push_ist_an": "Az értesítés be van kapcsolva: röviddel az Ön sorra kerülése előtt üzenetet kap – akkor is, ha ez az oldal zárva van.",
+  "push_aus": "kikapcsolás",
+  "push_iphone": "iPhone-on az értesítésekhez: koppintson lent a „Megosztás”, majd a „Főképernyőhöz adás” gombra. Utána nyissa meg a várakozási időt az új ikonnal.",
+  "push_nicht": "Ez a böngésző nem támogatja az értesítéseket. Az oldal azonban magától frissül.",
+  "push_blockiert": "Az értesítések le vannak tiltva ennél az oldalnál. Kérjük, engedélyezze őket a böngésző beállításaiban.",
+  "push_fehler": "Nem sikerült. Kérjük, próbálja később.",
+  "push_bald_titel": "Hamarosan Ön következik",
+  "push_bald": "Ön előtt: {vor} – kérjük, jöjjön a bejárathoz.",
+  "push_jetzt_titel": "Ön következik!",
+  "push_jetzt": "Kérjük, most lépjen be. Ügyfélszám {nummer}."
 }

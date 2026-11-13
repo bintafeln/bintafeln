@@ -353,6 +353,9 @@ def starten(stelle, datum) -> AufrufTag:
             tag.gestartet_am = timezone.now()
             _aktivitaet(tag.stand)
             tag.save()
+            from apps.aufruf import push
+
+            push.anstossen(stelle, datum)  # die ersten sind gleich dran (ADR 0134)
     return tag
 
 
@@ -395,6 +398,9 @@ def weiter(stelle, datum) -> AufrufTag:
         if tag.stand["index"] < len(tag.stand["gruppen"]):
             _weiter_im_stand(tag.stand, stelle, datum, einstellungen)
             tag.save()
+            from apps.aufruf import push
+
+            push.anstossen(stelle, datum)  # nach dem Speichern, im Hintergrund (ADR 0134)
     return tag
 
 

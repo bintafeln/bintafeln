@@ -21,5 +21,16 @@
   "stelle": "Distribution point",
   "aktualisiert": "As of {uhrzeit} – the page updates itself.",
   "abmelden": "Sign out this phone",
-  "sprache": "Language"
+  "sprache": "Language",
+  "push_an": "Notifications on this phone",
+  "push_ist_an": "Notifications are on: you will get a message shortly before it is your turn – even if this page is closed.",
+  "push_aus": "turn off",
+  "push_iphone": "For notifications on an iPhone: tap “Share” at the bottom, then “Add to Home Screen”. Then open the waiting time using the new icon.",
+  "push_nicht": "This browser cannot show notifications. The page still updates by itself.",
+  "push_blockiert": "Notifications are blocked for this page. Please allow them in your browser settings.",
+  "push_fehler": "That did not work. Please try again later.",
+  "push_bald_titel": "Your turn is coming up",
+  "push_bald": "{vor} ahead of you – please come to the entrance.",
+  "push_jetzt_titel": "It is your turn!",
+  "push_jetzt": "Please come in now. Customer number {nummer}."
 }

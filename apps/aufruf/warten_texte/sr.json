@@ -21,5 +21,16 @@
   "stelle": "Mesto podele",
   "aktualisiert": "Stanje u {uhrzeit} – stranica se sama osvežava.",
   "abmelden": "Odjavite ovaj telefon",
-  "sprache": "Jezik"
+  "sprache": "Jezik",
+  "push_an": "Obaveštenja na telefonu",
+  "push_ist_an": "Obaveštenja su uključena: dobićete poruku malo pre nego što dođete na red – čak i kada je ova stranica zatvorena.",
+  "push_aus": "isključi",
+  "push_iphone": "Za obaveštenja na iPhone-u: dodirnite „Deli” dole, zatim „Dodaj na početni ekran”. Posle toga otvarajte vreme čekanja preko nove ikone.",
+  "push_nicht": "Ovaj pregledač ne podržava obaveštenja. Stranica se ipak sama osvežava.",
+  "push_blockiert": "Obaveštenja su blokirana za ovu stranicu. Molimo dozvolite ih u podešavanjima pregledača.",
+  "push_fehler": "Nije uspelo. Molimo pokušajte kasnije.",
+  "push_bald_titel": "Uskoro ste na redu",
+  "push_bald": "Ispred vas: {vor} – molimo dođite do ulaza.",
+  "push_jetzt_titel": "Na redu ste!",
+  "push_jetzt": "Molimo uđite sada. Broj kupca {nummer}."
 }

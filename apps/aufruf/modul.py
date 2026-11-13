@@ -27,11 +27,11 @@ def auskunft_haushalt(haushalt, pdf):
         return
     pdf.ueberschrift("Wartezeit aufs Handy")
     if handys:
-        pdf.tabelle(["Eingerichtet", "Zuletzt angesehen", "Gerät"], [
+        pdf.tabelle(["Eingerichtet", "Zuletzt angesehen", "Push", "Gerät"], [
             [f"{timezone.localtime(z.eingerichtet_am):%d.%m.%Y}",
              f"{timezone.localtime(z.zuletzt_am):%d.%m.%Y %H:%M}" if z.zuletzt_am else "–",
-             z.geraet or "–"] for z in handys
-        ], breiten=[0.2, 0.25, 0.55])  # fmt: skip
+             "an" if z.push_adresse else "aus", z.geraet or "–"] for z in handys
+        ], breiten=[0.18, 0.25, 0.1, 0.47])  # fmt: skip
     if code:
         pdf.absatz(f"QR-Code auf dem Ausweis, erzeugt am "
                    f"{timezone.localtime(code.erstellt_am):%d.%m.%Y}.")  # fmt: skip

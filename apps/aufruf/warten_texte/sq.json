@@ -21,5 +21,16 @@
   "stelle": "Pika e shpërndarjes",
   "aktualisiert": "Gjendja në {uhrzeit} – faqja përditësohet vetë.",
   "abmelden": "Dilni nga ky telefon",
-  "sprache": "Gjuha"
+  "sprache": "Gjuha",
+  "push_an": "Njoftime në telefon",
+  "push_ist_an": "Njoftimet janë aktive: do të merrni një mesazh pak para radhës suaj – edhe nëse kjo faqe është e mbyllur.",
+  "push_aus": "çaktivizo",
+  "push_iphone": "Për njoftime në iPhone: prekni „Ndaj“ poshtë, pastaj „Shto në ekranin kryesor“. Më pas hapni kohën e pritjes nga ikona e re.",
+  "push_nicht": "Ky shfletues nuk mbështet njoftime. Faqja megjithatë rifreskohet vetë.",
+  "push_blockiert": "Njoftimet janë bllokuar për këtë faqe. Ju lutemi lejojini në cilësimet e shfletuesit.",
+  "push_fehler": "Nuk funksionoi. Ju lutemi provoni më vonë.",
+  "push_bald_titel": "Së shpejti është radha juaj",
+  "push_bald": "Para jush: {vor} – ju lutemi ejani te hyrja.",
+  "push_jetzt_titel": "Është radha juaj!",
+  "push_jetzt": "Ju lutemi hyni tani. Numri i klientit {nummer}."
 }
