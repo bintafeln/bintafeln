@@ -283,6 +283,31 @@ def test_hilfe_bild_serienbrief_vorlage(angemeldet, admin, muster):
 # --- Spenden und Zuwendungsbestätigungen ------------------------------------------------------
 
 
+def test_hilfe_bild_spendenentwicklung(angemeldet, admin, muster):
+    """Erfundene Spenden über zwei Jahre (Jahr davor vollständig, dieses bis heute)."""
+    import random
+
+    probe, markt, verein = _spender()
+    zufall = random.Random(7)  # noqa: S311 – nur erfundene Beispieldaten
+    heute = timezone.localdate()
+    for jahr in (heute.year - 1, heute.year):
+        for monat in range(1, 13 if jahr < heute.year else heute.month + 1):
+            for adresse in (probe, markt, verein):
+                if zufall.random() < 0.7:
+                    betrag = Decimal(zufall.choice(["20", "25", "50", "50", "100", "250"]))
+                    tag = dt.date(jahr, monat, zufall.randint(1, 28))
+                    Spende.objects.create(adresse=adresse, betrag=betrag, datum=tag)
+    seite = oeffnen(angemeldet, admin, reverse("spenden:entwicklung"), breite=1250)
+    _ohne_menue(seite)
+    verlauf = seite.locator("#verlauf")
+    aufnehmen(seite, "spenden-entwicklung", [seite.locator("section.karte").first, verlauf],
+              Marke(seite.locator("#jahr"), nummer=1, von="rechts", laenge=30),
+              Marke(seite.locator("#spenden-kennzahlen"), "rahmen", 2),
+              Marke(verlauf.locator("svg"), "rahmen", 3),
+              Marke(verlauf.get_by_role("link", name="CSV"), nummer=4, von="links",
+                    laenge=30))  # fmt: skip
+
+
 def test_hilfe_bild_spende_erfassen(angemeldet, admin, muster):
     probe, _, _ = _spender()
     seite = oeffnen(angemeldet, admin, reverse("spenden:neu") + f"?adresse={probe.pk}",

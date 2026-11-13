@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load static %}
+{% block titel %}Spendenentwicklung {{ jahr }}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Spendenentwicklung {{ jahr }}</h1>
+  <form class="filter" method="get">
+    <label for="jahr">Jahr</label>
+    <select name="jahr" id="jahr" onchange="this.form.submit()">{% for j in jahre %}<option value="{{ j }}"{% if j == jahr %} selected{% endif %}>{{ j }}</option>{% endfor %}</select>
+  </form>
+  <div class="kacheln" id="spenden-kennzahlen">
+    <div class="kachel"><span class="kachel-titel">Geldspenden {{ jahr }}</span><span class="kachel-wert">{{ k.summe }}</span>
+      <span class="kachel-unter">{% if k.vergleich is not None %}{% if k.vergleich >= 0 %}+{% endif %}{{ k.vergleich }} % gegenüber dem Vorjahr bis Ende {{ k.bis_monat }}{% else %}kein Vorjahr zum Vergleich{% endif %}</span></div>
+    <div class="kachel"><span class="kachel-titel">Spenden</span><span class="kachel-wert">{{ k.anzahl }}</span><span class="kachel-unter">einzelne Geldspenden</span></div>
+    <div class="kachel"><span class="kachel-titel">Spender</span><span class="kachel-wert">{{ k.spender }}</span></div>
+    <div class="kachel"><span class="kachel-titel">Durchschnitt</span><span class="kachel-wert">{{ k.schnitt }}</span><span class="kachel-unter">je Spende</span></div>
+  </div>
+  <p class="hinweis">Gezählt werden Geldspenden. Jede Grafik gibt es auch als Tabelle („Zahlen als Tabelle“) und als
+    CSV; ein Klick auf eine Grafik zeigt sie groß. <a href="{% url 'spenden:liste' %}?jahr={{ jahr }}">Zur Spendenliste</a></p>
+</section>
+<div class="statistik-raster">
+{% for a in abschnitte %}{% include "statistik/_abschnitt.html" %}{% endfor %}
+</div>
+<dialog class="diagramm-gross" id="diagramm-gross" aria-labelledby="diagramm-gross-titel">
+  <div class="diagramm-gross-kopf">
+    <button type="button" class="knopf knopf-zweitrangig" data-zurueck>← Zurück</button>
+    <h2 id="diagramm-gross-titel"></h2>
+  </div>
+  <div class="diagramm-gross-inhalt"></div>
+</dialog>
+<script src="{% static 'js/diagramm_gross.js' %}" defer></script>
+{% endblock %}
