@@ -15,6 +15,23 @@
     „Spender mit E-Mail“) und liest beides ein. Sie geben nur den <strong>2FA-Code</strong> ein, wenn danach gefragt
     wird. Höchstens drei Monate auf einmal.</p>
 
+  <details class="abruf-hinweis" id="abruf-hinweis">
+    <summary>Was passiert, wenn ich die Seite verlasse?</summary>
+    <ul>
+      <li><strong>Der Abruf läuft auf dem Server weiter</strong> – auch wenn Sie eine andere Seite öffnen, das Fenster
+        schließen oder sich abmelden. Anmelden und Herunterladen dauern oft einige Minuten.</li>
+      <li><strong>Bis zum 2FA-Code bitte hierbleiben:</strong> Fragt das Vereinsportal nach dem Code, muss er
+        innerhalb von 5 Minuten hier eingegeben werden – nur von Ihnen, wenn Sie den Abruf gestartet haben. Sonst
+        bricht der Abruf ab.</li>
+      <li><strong>Eingelesen wird beim nächsten Öffnen dieser Seite:</strong> Sind die Dateien geladen, liest
+        bintafeln sie ein, sobald jemand mit dem Recht diese Seite wieder öffnet. Bis dahin warten sie auf dem Server.
+        Das Ergebnis steht danach unten unter „Bisherige Abrufe“.</li>
+      <li>Während ein Abruf läuft, kann niemand einen zweiten starten. Wird der Server in der Zwischenzeit neu
+        gestartet (z. B. bei einem Update), geht ein noch nicht eingelesener Abruf verloren – dann einfach neu
+        starten. Schon Eingelesenes wird nie doppelt angelegt.</li>
+    </ul>
+  </details>
+
   <div class="zugang-kasten{% if not zugang %} zugang-fehlt{% endif %}" id="mein-zugang">
     <div>
       <strong>🔒 Ihre persönlichen Zugangsdaten</strong>
