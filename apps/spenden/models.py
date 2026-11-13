@@ -7,7 +7,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 
-from apps.adressen.models import Adresse
+from apps.adressen.models import Adresse, als_spender_markieren
 
 
 class SpendenEinstellungen(models.Model):
@@ -179,6 +179,12 @@ class Spende(models.Model):
 
     def __str__(self):
         return f"{self.get_art_display()} vom {self.datum:%d.%m.%Y}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Wer spendet, ist Spender – ein reiner Mitgliedsbeitrag macht niemanden dazu (ADR 0132)
+        if self.adresse_id and not self.mitgliedsbeitrag:
+            als_spender_markieren([self.adresse_id])
 
     def clean(self):
         if self.art == self.Art.GELD and not self.betrag:

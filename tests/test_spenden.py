@@ -221,3 +221,58 @@ def test_bestaetigungen_fuer_angehakte_ausstellen_und_oeffnen(admin_client, eins
     leer = admin_client.get(reverse("spenden:pdf"), follow=True)
     assert "mindestens eine Bestätigung anhaken" in leer.content.decode()
     assert admin_client.get(reverse("spenden:pdf"), {"nummern": "9999"}).status_code == 404
+
+
+# --- Kategorie „Spender“ (ADR 0132) -----------------------------------------------------------
+
+
+def _kategorien(adresse):
+    return set(adresse.kategorien.values_list("name", flat=True))
+
+
+def test_spende_macht_zum_spender_und_nimmt_nichts_weg(spender):
+    """Wer spendet, bekommt die Kategorie „Spender“; vorhandene Kategorien bleiben."""
+    from apps.adressen.models import AdressKategorie
+
+    spender.kategorien.add(AdressKategorie.objects.get_or_create(name="Ehrenamtliche Helfer")[0])
+    geld(spender, dt.date(2026, 3, 1), "20")
+    assert _kategorien(spender) == {"Spender", "Ehrenamtliche Helfer"}
+    geld(spender, dt.date(2026, 4, 1), "30")  # zweite Spende: keine doppelte Zuordnung
+    assert spender.kategorien.filter(name="Spender").count() == 1
+
+
+def test_mitgliedsbeitrag_macht_nicht_zum_spender(spender):
+    geld(spender, dt.date(2026, 3, 1), "24", mitgliedsbeitrag=True)
+    assert _kategorien(spender) == set()
+
+
+def test_abgeschaltete_kategorie_wird_nicht_vergeben(spender):
+    from apps.adressen.models import AdressKategorie
+
+    AdressKategorie.objects.update_or_create(name="Spender", defaults={"aktiv": False})
+    geld(spender, dt.date(2026, 3, 1), "20")
+    assert _kategorien(spender) == set()
+
+
+def test_fehlende_kategorie_wird_angelegt(spender):
+    from apps.adressen.models import AdressKategorie
+
+    AdressKategorie.objects.filter(name="Spender").delete()
+    geld(spender, dt.date(2026, 3, 1), "20")
+    assert _kategorien(spender) == {"Spender"}
+
+
+def test_nachtrag_markiert_vorhandene_spender(spender):
+    """Die Datenmigration markiert alle, die schon gespendet haben – nicht die reinen
+    Beitragszahler."""
+    import importlib
+
+    from django.apps import apps
+
+    beitrag = Adresse.objects.create(art="person", vorname="Berta", nachname="Beitrag")
+    geld(spender, dt.date(2026, 3, 1), "20")
+    geld(beitrag, dt.date(2026, 3, 1), "24", mitgliedsbeitrag=True)
+    spender.kategorien.clear()  # Stand vor dem Update: noch nicht markiert
+    nachtrag = importlib.import_module("apps.spenden.migrations.0007_spender_kategorie")
+    nachtrag.markieren(apps, None)
+    assert _kategorien(spender) == {"Spender"} and _kategorien(beitrag) == set()

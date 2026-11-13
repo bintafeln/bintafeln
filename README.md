@@ -1444,6 +1444,9 @@ Serienbriefe (Modul 5, ADR 0044); Kunden stehen weiter im Kundenstamm.
   automatisch eine Adressnummer aus einem eigenen Bereich ab 2000 (einstellbar unter
   „Einstellungen → Mitglieder“). Spalte „Nr.“ in der Liste, sortier- und durchsuchbar. Beim Update
   bekommen alle vorhandenen Adressen ohne Mitgliedschaft einmal eine Nummer.
+- **Kategorie „Spender“ automatisch** (ADR 0132): Wer eine Spende hat (von Hand, Import oder
+  Vereinsportal; reine Mitgliedsbeiträge zählen nicht), bekommt die Kategorie „Spender“
+  zusätzlich zu seinen anderen. Beim Update werden alle vorhandenen Spender einmal nachgetragen.
 - **Mitarbeit** (nur bei einer Person, ADR 0097): Kennzeichen **Helfer** mit **aktiv/inaktiv** – wer
   als aktiver Helfer markiert ist, lässt sich später im Dienstplan und Fahrdienst einteilen. Wer
   Mitarbeitende verwalten darf, kann die Person zusätzlich mit ihrem **Anmelde-Konto** verknüpfen;

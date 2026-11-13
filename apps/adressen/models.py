@@ -68,6 +68,18 @@ class AdressKategorie(models.Model):
         return self.name
 
 
+SPENDER = "Spender"  # Kategorie aus Migration 0002, wird bei Spenden automatisch gesetzt
+
+
+def als_spender_markieren(adressen) -> None:
+    """Gibt den Adressen die Kategorie „Spender“ (ADR 0132). Nur hinzufügen, nie entfernen: Wer
+    Mitglied oder Helfer ist, bleibt es. Hat die Tafel die Kategorie abgeschaltet, passiert nichts;
+    fehlt sie, wird sie angelegt."""
+    kategorie, _ = AdressKategorie.objects.get_or_create(name=SPENDER)
+    if kategorie.aktiv:
+        kategorie.adressen.add(*adressen)
+
+
 class Adresse(models.Model):
     class Art(models.TextChoices):
         ORGANISATION = "organisation", "Organisation (Markt, Firma, Verein, Behörde …)"

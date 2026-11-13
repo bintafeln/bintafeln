@@ -390,6 +390,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   nie die eines anderen Kontos anzeigen oder benutzen; `bestaetigung.unterschreiben()` nimmt nur
   die der Person, die ausstellt; das unterschriebene PDF liegt als `Ausfertigung` und wird nicht
   neu berechnet (`bestaetigung.pdf()` gibt es aus).
+  Kategorie „Spender“ setzt `Spende.save()` über `adressen.models.als_spender_markieren()` (nur
+  hinzufügen, nicht bei `mitgliedsbeitrag`, ADR 0132).
   Spendenentwicklung (Grafiken je Jahr) in `apps/spenden/entwicklung.py`, gezeichnet mit
   `apps/statistik/diagramme.py`, Abschnitte wie in der Statistik (`statistik/_abschnitt.html`).
   Import in `apps/spenden/importieren.py` (ADR 0055, `belegnummer` gegen Dubletten),
