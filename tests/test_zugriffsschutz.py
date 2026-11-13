@@ -34,6 +34,10 @@ OEFFENTLICH = {
     # Wartezeit aufs Handy für Kunden (ADR 0090): Kundennummer + Geburtsdatum oder Ausweis-Code
     "warten:seite",
     "warten:abmelden",
+    "warten:push_an",  # Benachrichtigung ein/aus: nur mit dem Handy-Cookie wirksam (ADR 0134)
+    "warten:push_aus",
+    "warten:sw",  # Service Worker und Manifest der Wartezeit, öffentlich
+    "warten:manifest",
     "warten:code",  # Empfang der Verzeichnis-Meldungen, nur beim Herausgeber (ADR 0089)
     "antrag:start",  # Online-Antrag (ADR 0024)
     "antrag:formular",

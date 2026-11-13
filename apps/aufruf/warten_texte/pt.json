@@ -21,5 +21,16 @@
   "stelle": "Ponto de distribuição",
   "aktualisiert": "Atualizado às {uhrzeit} – a página atualiza-se sozinha.",
   "abmelden": "Terminar sessão neste telemóvel",
-  "sprache": "Idioma"
+  "sprache": "Idioma",
+  "push_an": "Notificações no telemóvel",
+  "push_ist_an": "As notificações estão ativas: receberá uma mensagem pouco antes da sua vez – mesmo com esta página fechada.",
+  "push_aus": "desativar",
+  "push_iphone": "Para notificações no iPhone: toque em «Partilhar» em baixo e depois em «Adicionar ao ecrã principal». Depois abra o tempo de espera pelo novo ícone.",
+  "push_nicht": "Este navegador não suporta notificações. A página atualiza-se sozinha na mesma.",
+  "push_blockiert": "As notificações estão bloqueadas para esta página. Permita-as nas definições do navegador.",
+  "push_fehler": "Não funcionou. Tente mais tarde.",
+  "push_bald_titel": "Está quase na sua vez",
+  "push_bald": "À sua frente: {vor} – por favor, venha até à entrada.",
+  "push_jetzt_titel": "É a sua vez!",
+  "push_jetzt": "Por favor, entre agora. Número de cliente {nummer}."
 }

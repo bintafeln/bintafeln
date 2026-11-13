@@ -21,5 +21,16 @@
   "stelle": "Cihê belavkirinê",
   "aktualisiert": "Rewş di {uhrzeit} de – rûpel bi xwe nû dibe.",
   "abmelden": "Vî telefonî derxînin",
-  "sprache": "Ziman"
+  "sprache": "Ziman",
+  "push_an": "Agahdarî li ser telefonê",
+  "push_ist_an": "Agahdarî vekirî ye: hinekî berî ku dora te were tu ê peyamekê bistînî – heta ku ev rûpel girtî be jî.",
+  "push_aus": "vemirandin",
+  "push_iphone": "Ji bo agahdariyan li ser iPhone: li jêr li „Parve bike“ bitikîne, paşê „Li ekrana sereke zêde bike“. Paşê dema bendewariyê bi sembola nû veke.",
+  "push_nicht": "Ev gerok agahdariyan piştgirî nake. Lê rûpel bi xwe nû dibe.",
+  "push_blockiert": "Agahdarî ji bo vê rûpelê hatine astengkirin. Ji kerema xwe di mîhengên gerokê de destûr bide.",
+  "push_fehler": "Ev bi ser neket. Ji kerema xwe paşê dîsa biceribîne.",
+  "push_bald_titel": "Dora te nêzîk e",
+  "push_bald": "Li pêşiya te: {vor} – ji kerema xwe were ber derî.",
+  "push_jetzt_titel": "Dora te ye!",
+  "push_jetzt": "Ji kerema xwe niha were hundir. Hejmara xerîdar {nummer}."
 }

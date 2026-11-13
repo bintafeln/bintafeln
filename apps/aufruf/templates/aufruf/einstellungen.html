@@ -51,6 +51,7 @@
     {% with feld=handy_form.modus %}{% include "includes/feld.html" %}{% endwith %}
     <div data-zeigen-bei="modus=auswahl">{% with feld=handy_form.stellen %}{% include "includes/feld.html" %}{% endwith %}</div>
     {% with feld=handy_form.geraete %}{% include "includes/feld.html" %}{% endwith %}
+    {% with feld=handy_form.push_vorher %}{% include "includes/feld.html" %}{% endwith %}
     <button type="submit" class="knopf">Speichern</button>
   </form>
   {% if not handy_an %}<p class="hinweis">Zurzeit an keiner Ausgabestelle eingeschaltet.</p>{% endif %}

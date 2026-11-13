@@ -21,5 +21,16 @@
   "stelle": "Dağıtım noktası",
   "aktualisiert": "Saat {uhrzeit} itibarıyla – sayfa kendiliğinden güncellenir.",
   "abmelden": "Bu telefonun oturumunu kapat",
-  "sprache": "Dil"
+  "sprache": "Dil",
+  "push_an": "Telefona bildirim",
+  "push_ist_an": "Bildirim açık: Sıranız gelmeden kısa süre önce bir mesaj alırsınız – bu sayfa kapalı olsa bile.",
+  "push_aus": "kapat",
+  "push_iphone": "iPhone'da bildirimler için: Alttaki „Paylaş“ düğmesine, ardından „Ana Ekrana Ekle“ye dokunun. Sonra bekleme süresini yeni simgeden açın.",
+  "push_nicht": "Bu tarayıcı bildirimleri desteklemiyor. Sayfa yine de kendiliğinden yenilenir.",
+  "push_blockiert": "Bu sayfa için bildirimler engellendi. Lütfen tarayıcı ayarlarından izin verin.",
+  "push_fehler": "Olmadı. Lütfen daha sonra tekrar deneyin.",
+  "push_bald_titel": "Sıranız yaklaşıyor",
+  "push_bald": "Önünüzde {vor} kişi var – lütfen girişe gelin.",
+  "push_jetzt_titel": "Sıra sizde!",
+  "push_jetzt": "Lütfen şimdi girin. Müşteri numarası {nummer}."
 }

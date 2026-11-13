@@ -21,5 +21,16 @@
   "stelle": "Punkt wydawania",
   "aktualisiert": "Stan na {uhrzeit} – strona odświeża się sama.",
   "abmelden": "Wyloguj ten telefon",
-  "sprache": "Język"
+  "sprache": "Język",
+  "push_an": "Powiadomienia na telefon",
+  "push_ist_an": "Powiadomienia są włączone: otrzymasz wiadomość krótko przed swoją kolejką – nawet gdy ta strona jest zamknięta.",
+  "push_aus": "wyłącz",
+  "push_iphone": "Aby dostawać powiadomienia na iPhonie: dotknij „Udostępnij” na dole, potem „Do ekranu początkowego”. Następnie otwórz czas oczekiwania nową ikoną.",
+  "push_nicht": "Ta przeglądarka nie obsługuje powiadomień. Strona i tak odświeża się sama.",
+  "push_blockiert": "Powiadomienia są zablokowane dla tej strony. Zezwól na nie w ustawieniach przeglądarki.",
+  "push_fehler": "Nie udało się. Spróbuj ponownie później.",
+  "push_bald_titel": "Za chwilę Twoja kolej",
+  "push_bald": "Przed Tobą: {vor} – prosimy podejść do wejścia.",
+  "push_jetzt_titel": "Twoja kolej!",
+  "push_jetzt": "Prosimy wejść teraz. Numer klienta {nummer}."
 }

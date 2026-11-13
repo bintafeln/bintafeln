@@ -11,13 +11,15 @@ from pathlib import Path
 
 from django.conf import settings
 from django.core.cache import cache as zwischenspeicher
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from apps.antraege import sprachen
-from apps.aufruf import handy
+from apps.aufruf import handy, push
 from apps.core.models import TafelEinstellungen
 
 TEXTE = Path(__file__).resolve().parent / "warten_texte"
@@ -128,6 +130,9 @@ def seite(request):
         "stand": stand, "aktualisieren": AKTUALISIEREN,
         "aktualisiert": t["aktualisiert"].format(uhrzeit=uhrzeit),
         "vorschlag": "" if gewaehlt else handy.sprache_vorschlag(z),
+        "push": stand["art"] != "nicht_verfuegbar", "push_an": bool(z.push_adresse),
+        "push_schluessel": push.oeffentlicher_schluessel() if stand["art"] != "nicht_verfuegbar"
+        else "",
     })  # fmt: skip
 
 
@@ -153,3 +158,60 @@ def code(request, code):
             _fehlversuch(request)
         return _antwort(request, "aufruf/warten.html", {"fehler": e.args[0]})
     return _merken(redirect("warten:seite"), schluessel)
+
+
+# ── Push-Nachrichten (ADR 0134) ─────────────────────────────────────────────
+
+
+@require_POST
+def push_an(request):
+    """Der Browser schickt sein Push-Abo; es gilt für das Handy hinter dem Cookie."""
+    z = handy.zugang(request.COOKIES.get(handy.COOKIE, ""))
+    if z is None:
+        return JsonResponse({"ok": False}, status=403)
+    try:
+        daten = json.loads(request.body or b"{}")
+        abo = daten.get("abo") or {}
+        schluessel = abo.get("keys") or {}
+        sprache = daten.get("sprache") if daten.get("sprache") in sprachen.NACH_CODE else "de"
+        push.abonnieren(z, str(abo.get("endpoint", "")), str(schluessel.get("p256dh", "")),
+                        str(schluessel.get("auth", "")), sprache)  # fmt: skip
+    except (ValueError, TypeError, AttributeError):
+        return JsonResponse({"ok": False}, status=400)
+    return JsonResponse({"ok": True})
+
+
+@require_POST
+def push_aus(request):
+    z = handy.zugang(request.COOKIES.get(handy.COOKIE, ""))
+    if z is not None:
+        push.abbestellen(z)
+    return JsonResponse({"ok": True})
+
+
+@cache
+def _sw_quelle() -> str:
+    return (Path(__file__).resolve().parent / "warten_sw.js").read_text(encoding="utf-8")
+
+
+def service_worker(request):
+    """Unter /warten/, damit er für die Wartezeit-Seite zuständig ist."""
+    quelle = _sw_quelle().replace("__SYMBOL__", reverse("core:app_symbol", args=[192]))
+    quelle = quelle.replace("__START__", reverse("warten:seite"))
+    antwort = HttpResponse(quelle, content_type="application/javascript; charset=utf-8")
+    antwort["Cache-Control"] = "no-cache"
+    return antwort
+
+
+def manifest(request):
+    """Eigenes Manifest: Vom Startbildschirm öffnet sich die Wartezeit, nicht die Anmeldung der
+    Mitarbeitenden (auf dem iPhone gehen Push-Nachrichten nur so)."""
+    tafel = TafelEinstellungen.laden()
+    name = f"{texte('de')['titel']} – {tafel.name or 'Tafel'}"
+    return JsonResponse({
+        "name": name, "short_name": (tafel.name or texte("de")["titel"])[:12],
+        "start_url": reverse("warten:seite"), "scope": reverse("warten:seite"),
+        "display": "standalone", "theme_color": tafel.farbe, "background_color": "#ffffff",
+        "icons": [{"src": reverse("core:app_symbol", args=[g]), "sizes": f"{g}x{g}",
+                   "type": "image/png"} for g in (192, 512)],
+    }, content_type="application/manifest+json")  # fmt: skip

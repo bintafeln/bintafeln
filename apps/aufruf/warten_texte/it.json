@@ -21,5 +21,16 @@
   "stelle": "Punto di distribuzione",
   "aktualisiert": "Aggiornato alle {uhrzeit} – la pagina si aggiorna da sola.",
   "abmelden": "Disconnetti questo telefono",
-  "sprache": "Lingua"
+  "sprache": "Lingua",
+  "push_an": "Notifiche sul telefono",
+  "push_ist_an": "Le notifiche sono attive: riceverà un messaggio poco prima del suo turno, anche se questa pagina è chiusa.",
+  "push_aus": "disattiva",
+  "push_iphone": "Per le notifiche su iPhone: tocchi «Condividi» in basso e poi «Aggiungi alla schermata Home». Poi apra il tempo di attesa dalla nuova icona.",
+  "push_nicht": "Questo browser non supporta le notifiche. La pagina si aggiorna comunque da sola.",
+  "push_blockiert": "Le notifiche sono bloccate per questa pagina. Le consenta nelle impostazioni del browser.",
+  "push_fehler": "Non ha funzionato. Riprovi più tardi.",
+  "push_bald_titel": "Tra poco tocca a lei",
+  "push_bald": "Davanti a lei: {vor} – venga all'ingresso.",
+  "push_jetzt_titel": "Tocca a lei!",
+  "push_jetzt": "Entri ora, per favore. Numero cliente {nummer}."
 }

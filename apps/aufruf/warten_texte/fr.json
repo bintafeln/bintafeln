@@ -21,5 +21,16 @@
   "stelle": "Point de distribution",
   "aktualisiert": "État à {uhrzeit} – la page se met à jour toute seule.",
   "abmelden": "Déconnecter ce téléphone",
-  "sprache": "Langue"
+  "sprache": "Langue",
+  "push_an": "Notifications sur le téléphone",
+  "push_ist_an": "Les notifications sont activées : vous recevrez un message peu avant votre tour, même si cette page est fermée.",
+  "push_aus": "désactiver",
+  "push_iphone": "Pour les notifications sur iPhone : touchez « Partager » en bas, puis « Sur l'écran d'accueil ». Ouvrez ensuite le temps d'attente avec la nouvelle icône.",
+  "push_nicht": "Ce navigateur ne prend pas en charge les notifications. La page se met quand même à jour toute seule.",
+  "push_blockiert": "Les notifications sont bloquées pour cette page. Veuillez les autoriser dans les réglages du navigateur.",
+  "push_fehler": "Cela n'a pas fonctionné. Veuillez réessayer plus tard.",
+  "push_bald_titel": "C'est bientôt votre tour",
+  "push_bald": "Encore {vor} avant vous – merci de venir à l'entrée.",
+  "push_jetzt_titel": "C'est votre tour !",
+  "push_jetzt": "Veuillez entrer maintenant. Numéro client {nummer}."
 }

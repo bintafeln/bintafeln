@@ -2045,3 +2045,8 @@ button.sortieren { background: none; border: 0; padding: 0; font: inherit; font-
 .antrag-nicht-gesendet a { color: var(--fehler); font-weight: 700; }
 .antrag-absenden.knopf-gesperrt { background: #9aa09a; border-color: #9aa09a; color: #fff; cursor: not-allowed; }
 .antrag-noch-offen { color: var(--fehler); font-weight: 600; margin: .4rem 0 0; }
+/* Wartezeit aufs Handy: Benachrichtigung ein/aus (ADR 0134) */
+.warten-push { margin: 1rem 0; }
+.warten-push .push-an { font-size: 1.1rem; width: 100%; }
+.push-status { margin: 0; padding: .6rem .8rem; border-radius: var(--radius); background: #e6f4ea; color: #1e6b34; font-weight: 600; }
+.knopf-link { background: none; border: 0; padding: 0; color: inherit; font: inherit; font-weight: 400; text-decoration: underline; cursor: pointer; }
