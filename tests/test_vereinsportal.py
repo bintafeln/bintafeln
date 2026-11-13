@@ -560,11 +560,20 @@ def test_dankesbriefe_seite_druck_pdf_im_grossen_stil(
     # der Beleg ist ein Link auf das PDF; die Einzelspende behält ihn als Bestätigung
     beleg = SpendenBeleg.objects.get(spende__belegnummer="3")
     assert reverse("spenden:beleg", args=[beleg.pk]) in liste and "📄 Beleg 3" in liste
-    assert "gilt als Bestätigung" in liste and "(Sammelbestätigung)" in liste
+    assert "dieser Beleg ist die Bescheinigung" in liste and "Sammelbestätigung Nr." in liste
+    assert "✓ Bescheinigt von bintafeln" in liste
     assert admin_client.get(reverse("spenden:beleg", args=[beleg.pk])).status_code == 200
     Spende.objects.filter(belegnummer="3").update(fremdbeleg=V)
     liste = admin_client.get(reverse("spenden:liste"), {"jahr": 2026}).content.decode()
-    assert "dort versendet" in liste
+    assert "✓ Schon verschickt (Vereinsportal)</span>\n" in liste
+    # Filter „Bescheinigung“: nur schon verschickte bzw. nur noch offene
+    verschickt = admin_client.get(
+        reverse("spenden:liste"), {"jahr": 2026, "bescheinigung": "verschickt"}
+    )
+    offen = admin_client.get(reverse("spenden:liste"), {"jahr": 2026, "bescheinigung": "offen"})
+    verschickt, offen = verschickt.content.decode(), offen.content.decode()
+    assert "📄 Beleg 3" in verschickt and "Sammelbestätigung aus bintafeln (" not in verschickt
+    assert "📄 Beleg 3" not in offen
 
 
 # --- Seiten -----------------------------------------------------------------------------------
@@ -1109,7 +1118,8 @@ def test_spendenliste_zeigt_offene_sammelbestaetigung(eingelesen, einstellungen,
     """Mehrere noch nicht bestätigte Spenden eines Spenders im Jahr: Die Liste sagt, dass
     bintafeln dafür eine Sammelbestätigung ausstellt."""
     liste = admin_client.get(reverse("spenden:liste"), {"jahr": 2026}).content.decode()
-    assert "Sammelbestätigung offen (2)" in liste and liste.count("📄 Beleg") == 3
+    assert "kommt in die Sammelbestätigung aus bintafeln (2 Spenden 2026)" in liste
+    assert liste.count("📄 Beleg") == 3 and "(wird nicht verschickt)" in liste
 
 
 def test_eine_seite_fuer_abruf_und_hochladen(

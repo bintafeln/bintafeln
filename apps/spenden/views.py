@@ -73,9 +73,16 @@ SORTIERUNG = {
 }
 # Spalten zum Zu-/Abwählen je Person (Datum bleibt immer sichtbar):
 SPALTEN = [("datum", "Datum"), ("spender", "Spender"), ("art", "Art"), ("betrag", "Betrag/Wert"),
-           ("bezeichnung", "Bezeichnung / Zweck"), ("bestaetigung", "Bestätigung")]  # fmt: skip
+           ("bezeichnung", "Bezeichnung / Zweck"), ("bestaetigung", "Bescheinigung")]  # fmt: skip
 SPALTEN_FEST = {"datum"}
 
+
+# Filter „Bescheinigung“: verschickt heißt aus bintafeln bestätigt (nicht storniert) oder im
+# anderen Programm versendet (ADR 0128)
+_VERSCHICKT = Q(bestaetigung__isnull=False, bestaetigung__storniert_am__isnull=True) | Q(
+    fremdbeleg=Spende.Fremdbeleg.VERSENDET
+)
+BESCHEINIGT = {"verschickt": _VERSCHICKT, "offen": ~_VERSCHICKT & Q(art=Spende.Art.GELD)}
 
 # Der Name, nach dem sortiert wird: Nachname, bei Organisationen deren Name
 _SORTNAME = Coalesce(NullIf("adresse__nachname", Value("")), "adresse__organisation")
@@ -88,6 +95,9 @@ def liste(request):
     art = request.GET.get("art", "")
     if art in Spende.Art.values:
         spenden = spenden.filter(art=art)
+    bescheinigung = request.GET.get("bescheinigung", "")
+    if bescheinigung in BESCHEINIGT:
+        spenden = spenden.filter(BESCHEINIGT[bescheinigung])
     q = request.GET.get("q", "").strip()
     if q:
         spenden = spenden.filter(
@@ -114,7 +124,8 @@ def liste(request):
     _belege_und_sammel(seite)
     return render(request, "spenden/liste.html", {
         "seite": seite,
-        "jahr": jahr, "jahre": _jahre(), "filter": {"art": art, "q": q}, "summen": summen,
+        "jahr": jahr, "jahre": _jahre(), "summen": summen,
+        "filter": {"art": art, "q": q, "bescheinigung": bescheinigung},
         "je_monat": list(je_monat), "arten": Spende.Art.choices, "sort": sort,
         "sichtbar": listen.sichtbare_spalten(request.user, "spenden",
                                              [k for k, _ in SPALTEN], SPALTEN_FEST),
@@ -287,13 +298,15 @@ def _belege_und_sammel(spenden) -> None:
     offen = {}
     for s in spenden:
         s.beleg = belege.get(s.pk)
-        s.sammel = 0
+        s.sammel = s.einzeln = 0
         if s.bestaetigt or s.art != Spende.Art.GELD or s.fremdbeleg == Spende.Fremdbeleg.VERSENDET:
             continue
         schluessel = (s.adresse_id, s.datum.year)
         if schluessel not in offen:
             offen[schluessel] = bst.offene_geldspenden(s.adresse, s.datum.year).count()
+        # mehrere offene: Sammelbestätigung; genau eine ohne fremden Beleg: Einzelbestätigung
         s.sammel = offen[schluessel] if offen[schluessel] > 1 else 0
+        s.einzeln = offen[schluessel] == 1
 
 
 @never_cache
