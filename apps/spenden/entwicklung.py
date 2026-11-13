@@ -14,7 +14,8 @@ from apps.statistik.auswertung import Serie
 
 MONATE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"]
 # Spendenhöhe in Stufen (bis einschließlich)
-STUFEN = [(Decimal("25"), "bis 25 €"), (Decimal("100"), "25,01 – 100 €"),
+STUFEN = [(Decimal("10"), "bis 10 €"), (Decimal("25"), "10,01 – 25 €"),
+          (Decimal("50"), "25,01 – 50 €"), (Decimal("100"), "50,01 – 100 €"),
           (Decimal("500"), "100,01 – 500 €"), (None, "über 500 €")]  # fmt: skip
 
 
