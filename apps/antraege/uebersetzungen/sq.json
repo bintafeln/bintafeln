@@ -88,5 +88,8 @@
   "fehler_gebiet": "Fatkeqësisht, mund të pranojmë vetëm kërkesa nga persona që jetojnë në {gebiet}.",
   "fehler_einwilligung": "Ju lutemi jepni pëlqimin që të mund ta përpunojmë kërkesën tuaj.",
   "fehler_zu_viele": "Janë dërguar shumë kërkesa në pak kohë. Ju lutemi provoni përsëri më vonë.",
-  "gelesen_bestaetigt": "Kam lexuar: {was}"
+  "gelesen_bestaetigt": "Kam lexuar: {was}",
+  "nicht_abgeschickt": "Kërkesa juaj ende NUK është dërguar!",
+  "bitte_ergaenzen": "Ju lutemi plotësoni ose korrigjoni të dhënat e shënuara me të kuqe:",
+  "noch_offen": "Mungojnë ende {anzahl} të dhëna të detyrueshme – vetëm atëherë mund ta dërgoni kërkesën."
 }

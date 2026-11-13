@@ -1430,3 +1430,45 @@ def test_mail_empfaenger_auswaehlen_speichert_sofort(angemeldet, admin, benutzer
     zeile.locator("label", has_text="anna (anna@example.org)").click()
     expect(zeile.locator("summary")).to_contain_text("niemand")
     assert gespeichert([])
+
+
+def test_antrag_erst_absenden_wenn_pflichtangaben_da(seite, admin):
+    """Fehlen Pflichtangaben, ist der Absende-Knopf sichtbar gesperrt; ein Klick schickt nichts ab,
+    sondern markiert die Felder rot und zeigt über dem Knopf, was fehlt (ADR 0024)."""
+    from apps.antraege.models import Antrag, AntragEinstellungen
+
+    e = AntragEinstellungen.laden()
+    e.aktiv = True
+    e.save()
+    seite.goto("/antrag/de/")
+    knopf = seite.locator(".antrag-absenden")
+    expect(knopf).to_have_class(re.compile("knopf-gesperrt"))
+    expect(seite.locator(".antrag-noch-offen")).to_contain_text("Pflichtangabe(n) offen")
+    knopf.click(force=True)  # „gesperrt“ heißt: Klick erklärt, was fehlt, statt abzuschicken
+    kasten = seite.locator("#antrag-pruefung")
+    expect(kasten).to_be_visible()
+    expect(kasten).to_contain_text("Ihr Antrag wurde noch NICHT abgeschickt!")
+    expect(kasten.locator("li", has_text="Vorname")).to_be_visible()
+    vorname = seite.locator(".feld", has=seite.locator("#id_vorname"))
+    expect(vorname).to_have_class(re.compile("hat-fehler"))
+    expect(seite).to_have_url(re.compile("/antrag/de/$"))
+    assert not Antrag.objects.exists()
+    # Ausfüllen: Markierung verschwindet sofort, am Ende ist der Knopf frei
+    seite.fill("#id_vorname", "Erika")
+    expect(vorname).not_to_have_class(re.compile("hat-fehler"))
+    expect(kasten.locator("li", has_text="Vorname")).to_have_count(0)
+    seite.fill("#id_nachname", "Beispiel")
+    seite.fill("#id_geburtsdatum", "03.02.1980")
+    seite.fill("#id_strasse", "Erfundene Gasse 1")
+    seite.fill("#id_plz", "12345")
+    seite.fill("#id_ort", "Musterstadt")
+    for haken in seite.locator(".antrag-formular .feld-haken input[type=checkbox]").all():
+        haken.check()
+    art = seite.locator("input[name=art]")
+    if art.count():
+        art.first.check()
+    expect(knopf).not_to_have_class(re.compile("knopf-gesperrt"))
+    expect(seite.locator(".antrag-noch-offen")).to_be_hidden()
+    knopf.click()
+    seite.wait_for_url("**/danke/**")
+    assert Antrag.objects.get().vorname == "Erika"

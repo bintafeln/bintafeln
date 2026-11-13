@@ -205,7 +205,7 @@ def test_verlaengerung_und_pflichtfelder(client, offen):
     offen.anrede = offen.email = Abfrage.AUS
     offen.save()
     seite = client.post(FORMULAR, daten()).content.decode()
-    assert "Bitte prüfen Sie die markierten Angaben" in seite and "Bitte ausfüllen" in seite
+    assert "NICHT abgeschickt" in seite and "Bitte ausfüllen" in seite
     assert 'name="anrede"' not in seite
     client.post(FORMULAR, daten(kundennummer="1001", telefon="0000 000000"))
     a = Antrag.objects.get()
@@ -391,7 +391,7 @@ def test_staatsangehoerigkeit_als_auswahl(client, offen):
     assert '<option value="Syrien" data-land="SY">Syrien</option>' in seite
     assert '<option value="staatenlos">عديم الجنسية</option>' in seite and "staaten.js" in seite
     falsch = client.post(FORMULAR, daten(staatsangehoerigkeit="Atlantis")).content.decode()
-    assert "Bitte prüfen Sie die markierten Angaben" in falsch
+    assert "NICHT abgeschickt" in falsch
     client.post(FORMULAR, daten(staatsangehoerigkeit="Syrien"))
     assert Antrag.objects.get().staatsangehoerigkeit == "Syrien"
 
@@ -2179,3 +2179,39 @@ def test_flyer_und_voraussetzungen_pflicht(client, offen):
     e.voraussetzungen_abfragen = e.erklaerungen_abfragen = False
     e.save()
     assert 'name="voraussetzungen_bestaetigt"' not in client.get(FORMULAR).content.decode()
+
+
+def test_fehlender_pflichtangaben_grosser_kasten_mit_sprungzielen(client, offen):
+    """Fehlt etwas, steht oben unübersehbar „NICHT abgeschickt“ mit jedem fehlenden Feld als
+    Sprung zum Feld; die Felder tragen data-pflicht für die Prüfung im Browser."""
+    leer = client.get(FORMULAR).content.decode()
+    assert "antrag_pruefen.js" in leer and "data-antrag-pruefen" in leer
+    assert "data-pflicht" in leer and "Ihr Antrag wurde noch NICHT abgeschickt" in leer  # Vorlage
+    assert 'id="antrag-fehler"' not in leer
+    seite = client.post(FORMULAR, daten(vorname="", einwilligung="")).content.decode()
+    assert 'id="antrag-fehler"' in seite
+    kasten = seite.split('id="antrag-fehler"')[1].split("</div>")[0]
+    assert "Ihr Antrag wurde noch NICHT abgeschickt!" in kasten
+    assert '<a href="#id_vorname">Vorname</a>: Bitte ausfüllen.' in kasten
+    assert 'href="#id_einwilligung"' in kasten
+    assert not Antrag.objects.exists()
+    # in der gewählten Sprache
+    tr = sprachen.texte("tr")
+    seite = client.post(reverse("antrag:formular", args=["tr"]), daten(vorname="")).content.decode()
+    assert tr["nicht_abgeschickt"] in seite and tr["bitte_ergaenzen"] in seite
+
+
+def test_pflicht_nachweise_mit_stern_und_fehler_am_feld(client, offen):
+    offen.anhaenge = Abfrage.PFLICHT
+    offen.save()
+    seite = client.get(FORMULAR).content.decode()
+    ablage = seite.split("data-ablage")[1].split("</fieldset>")[0]
+    assert "data-pflicht" in ablage and " *</label>" in ablage
+    seite = client.post(FORMULAR, daten()).content.decode()
+    ablage = seite.split("data-ablage")[1].split("</fieldset>")[0]
+    assert "hat-fehler" in ablage and "Bitte ausfüllen." in ablage
+    assert 'href="#id_anhaenge"' in seite.split('id="antrag-fehler"')[1]
+    # Schon hochgeladen: dann ist das Feld keine offene Pflicht mehr
+    client.post(FORMULAR, daten(vorname="", anhaenge=[pdf()]))
+    ablage = client.get(FORMULAR).content.decode().split("data-ablage")[1].split("</fieldset>")[0]
+    assert "data-pflicht" not in ablage

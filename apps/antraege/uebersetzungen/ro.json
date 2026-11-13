@@ -88,5 +88,8 @@
   "fehler_gebiet": "Din păcate, putem accepta doar cereri de la persoane care locuiesc în {gebiet}.",
   "fehler_einwilligung": "Vă rugăm să vă dați acordul pentru a putea procesa cererea.",
   "fehler_zu_viele": "Au fost trimise prea multe cereri într-un timp scurt. Încercați din nou mai târziu.",
-  "gelesen_bestaetigt": "Am citit: {was}"
+  "gelesen_bestaetigt": "Am citit: {was}",
+  "nicht_abgeschickt": "Cererea dumneavoastră NU a fost încă trimisă!",
+  "bitte_ergaenzen": "Vă rugăm să completați sau să corectați datele marcate cu roșu:",
+  "noch_offen": "Mai lipsesc {anzahl} date obligatorii – abia apoi puteți trimite cererea."
 }

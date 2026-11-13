@@ -863,6 +863,11 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
   (`static/js/sprachhinweis.js`, Zuordnung `LAND_SPRACHE` in `apps/antraege/sprachen.py`). Beim
   Umstellen bleiben die schon eingetragenen Angaben erhalten (nur im Browser-Tab, danach
   gelöscht); hochgeladene Dateien muss man neu wählen.
+- **Pflichtangaben vor dem Absenden** (`static/js/antrag_pruefen.js`): Solange Pflichtangaben
+  fehlen, ist „Antrag absenden“ grau und darunter steht, wie viele noch offen sind. Ein Tippen
+  darauf schickt nichts ab, sondern markiert die fehlenden Felder rot und zeigt über dem Knopf
+  den Kasten „Ihr Antrag wurde noch NICHT abgeschickt!“ mit jedem fehlenden Feld zum Antippen.
+  Lehnt der Server eine Angabe ab, steht derselbe Kasten oben auf der Seite.
 - **Eigene Texte je Sprache** („Texte je Sprache“): Überschrift, Einleitung, Seite nach dem
   Absenden, Betreff und Inhalt der Antwortmail. Die Texte dürfen **HTML** enthalten
   (Überschriften, Absätze, Listen, Links, Bilder, Tabellen, Farben über `style="…"`);

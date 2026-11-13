@@ -88,5 +88,8 @@
   "fehler_gebiet": "Infelizmente, só podemos aceitar pedidos de pessoas que moram em {gebiet}.",
   "fehler_einwilligung": "Dê o seu consentimento para podermos tratar o seu pedido.",
   "fehler_zu_viele": "Foram enviados demasiados pedidos em pouco tempo. Tente novamente mais tarde.",
-  "gelesen_bestaetigt": "Eu li: {was}"
+  "gelesen_bestaetigt": "Eu li: {was}",
+  "nicht_abgeschickt": "O seu pedido ainda NÃO foi enviado!",
+  "bitte_ergaenzen": "Por favor, complete ou corrija os dados assinalados a vermelho:",
+  "noch_offen": "Faltam ainda {anzahl} dados obrigatórios – só depois poderá enviar o pedido."
 }

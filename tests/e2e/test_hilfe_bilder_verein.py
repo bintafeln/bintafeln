@@ -73,6 +73,28 @@ def test_hilfe_bild_antrag_formular(seite, admin, muster):
               Marke(namen, "rahmen", 3))  # fmt: skip
 
 
+def test_hilfe_bild_antrag_pflichtangaben(seite, admin, muster):
+    """Pflichtangaben fehlen: rote Felder, Kasten über dem Knopf, gesperrter Knopf."""
+    e = AntragEinstellungen.laden()
+    e.aktiv = True
+    e.save()
+    seite.set_viewport_size({"width": 700, "height": 900})
+    seite.goto("/antrag/de/")
+    seite.locator(".sprach-hinweis-zu").click()
+    seite.get_by_label("Vorname").first.fill("Erika")
+    for name in ("Nachname", "Geburtsdatum"):
+        seite.get_by_label(name).first.fill("Muster" if name == "Nachname" else "03.02.1980")
+    seite.locator(".antrag-absenden").click(force=True)
+    kasten = seite.locator("#antrag-pruefung")
+    expect(kasten).to_be_visible()
+    feld = seite.locator(".feld.hat-fehler").first
+    aufnehmen(seite, "antraege-pflichtangaben",
+              [kasten, seite.locator(".antrag-absenden"), seite.locator(".antrag-noch-offen")],
+              Marke(kasten, "rahmen", 1),
+              Marke(seite.locator(".antrag-absenden"), "rahmen", 2))  # fmt: skip
+    assert feld.is_visible()
+
+
 def test_hilfe_bild_antraege_liste(angemeldet, admin, muster):
     _antrag(vorname="Jonas", nachname="Probe", geburtsdatum=dt.date(1990, 2, 1),
             email="jonas@example.org", staatsangehoerigkeit="deutsch")  # fmt: skip

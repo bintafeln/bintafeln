@@ -88,5 +88,8 @@
   "fehler_gebiet": "Purtroppo possiamo accettare solo domande di persone che abitano a {gebiet}.",
   "fehler_einwilligung": "Dia il suo consenso affinché possiamo gestire la sua domanda.",
   "fehler_zu_viele": "Sono state inviate troppe domande in poco tempo. Riprovi più tardi.",
-  "gelesen_bestaetigt": "Ho letto: {was}"
+  "gelesen_bestaetigt": "Ho letto: {was}",
+  "nicht_abgeschickt": "La sua domanda NON è ancora stata inviata!",
+  "bitte_ergaenzen": "Completi o corregga i dati segnati in rosso:",
+  "noch_offen": "Mancano ancora {anzahl} dati obbligatori: solo dopo potrà inviare la domanda."
 }

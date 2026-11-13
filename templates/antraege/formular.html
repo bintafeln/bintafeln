@@ -9,8 +9,14 @@
     {% if rechtslinks.einverstaendnis %}<li><a href="{{ rechtslinks.einverstaendnis }}" target="_blank" rel="noopener">{{ t.einverstaendnis }}</a></li>{% endif %}
   </ul>{% endif %}
   <p class="hinweis">{{ t.pflicht_hinweis }}</p>
-  {% if fehler %}<p class="sicherung sicherung-fehler" role="alert">{{ fehler }}</p>{% endif %}
-  <form method="post" enctype="multipart/form-data" class="antrag-formular">
+  {% if fehlerliste %}<div class="antrag-nicht-gesendet" role="alert" tabindex="-1" id="antrag-fehler">
+    <p class="antrag-nicht-gesendet-titel">⚠ {{ t.nicht_abgeschickt }}</p>
+    <p>{{ t.bitte_ergaenzen }}</p>
+    <ul>{% for ziel, bezeichnung, meldung in fehlerliste %}<li><a href="#{{ ziel }}">{{ bezeichnung }}</a>: {{ meldung }}</li>{% endfor %}</ul>
+  </div>
+  {% elif fehler %}<p class="sicherung sicherung-fehler" role="alert">{{ fehler }}</p>{% endif %}
+  <form method="post" enctype="multipart/form-data" class="antrag-formular" data-antrag-pruefen
+        data-text-pflicht="{{ t.fehler_pflicht }}" data-text-haken="{{ t.fehler_bestaetigen }}" data-text-offen="{{ t.noch_offen }}">
     {% csrf_token %}
     {% if form.art %}{% include "antraege/_feld.html" with feld=form.art %}{% endif %}
     <fieldset class="abschnitt">
@@ -75,7 +81,7 @@
            data-text-ziehen="{{ t.ablage_ziehen }}" data-text-waehlen="{{ t.ablage_waehlen }}"
            data-text-foto="{{ t.ablage_foto }}" data-text-entfernen="{{ t.ablage_entfernen }}"
            data-text-anzahl="{{ t.fehler_datei_anzahl }}" data-text-typ="{{ t.fehler_datei_typ }}">
-        {% include "antraege/_feld.html" with feld=form.anhaenge %}
+        {% include "antraege/_feld.html" with feld=form.anhaenge pflicht=nachweise_pflicht %}
       </div>
       {% if nachweise %}
       <p class="hinweis">{{ t.nachweise_behalten|default:"Bereits hochgeladen:" }}</p>
@@ -90,27 +96,27 @@
     </fieldset>
     {% endif %}
     {% include "antraege/_feld.html" with feld=form.nachricht %}
-    {% if form.datenschutz_bestaetigt %}<div class="feld feld-haken{% if form.datenschutz_bestaetigt.errors %} hat-fehler{% endif %}">
+    {% if form.datenschutz_bestaetigt %}<div class="feld feld-haken{% if form.datenschutz_bestaetigt.errors %} hat-fehler{% endif %}" data-pflicht>
       <label for="{{ form.datenschutz_bestaetigt.id_for_label }}">{{ form.datenschutz_bestaetigt }} {{ t.datenschutz_bestaetigt }} *</label>
       {% if rechtslinks.datenschutz %}<small class="hilfe"><a href="{{ rechtslinks.datenschutz }}" target="_blank" rel="noopener">{{ t.datenschutz }}</a></small>{% endif %}
       {% for fehler in form.datenschutz_bestaetigt.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
     </div>{% endif %}
-    {% if form.einverstaendnis_bestaetigt %}<div class="feld feld-haken{% if form.einverstaendnis_bestaetigt.errors %} hat-fehler{% endif %}">
+    {% if form.einverstaendnis_bestaetigt %}<div class="feld feld-haken{% if form.einverstaendnis_bestaetigt.errors %} hat-fehler{% endif %}" data-pflicht>
       <label for="{{ form.einverstaendnis_bestaetigt.id_for_label }}">{{ form.einverstaendnis_bestaetigt }} {{ t.einverstaendnis_bestaetigt }} *</label>
       {% if rechtslinks.einverstaendnis %}<small class="hilfe"><a href="{{ rechtslinks.einverstaendnis }}" target="_blank" rel="noopener">{{ t.einverstaendnis }}</a></small>{% endif %}
       {% for fehler in form.einverstaendnis_bestaetigt.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
     </div>{% endif %}
-    {% if form.voraussetzungen_bestaetigt %}<div class="feld feld-haken{% if form.voraussetzungen_bestaetigt.errors %} hat-fehler{% endif %}">
+    {% if form.voraussetzungen_bestaetigt %}<div class="feld feld-haken{% if form.voraussetzungen_bestaetigt.errors %} hat-fehler{% endif %}" data-pflicht>
       <label for="{{ form.voraussetzungen_bestaetigt.id_for_label }}">{{ form.voraussetzungen_bestaetigt }} {{ form.voraussetzungen_bestaetigt.label }} *</label>
       {% if e.voraussetzungen_url %}<small class="hilfe"><a href="{{ e.voraussetzungen_url }}" target="_blank" rel="noopener">{{ t.voraussetzungen }}</a></small>{% endif %}
       {% for fehler in form.voraussetzungen_bestaetigt.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
     </div>{% endif %}
-    {% if form.erklaerungen_bestaetigt %}<div class="feld feld-haken{% if form.erklaerungen_bestaetigt.errors %} hat-fehler{% endif %}">
+    {% if form.erklaerungen_bestaetigt %}<div class="feld feld-haken{% if form.erklaerungen_bestaetigt.errors %} hat-fehler{% endif %}" data-pflicht>
       <label for="{{ form.erklaerungen_bestaetigt.id_for_label }}">{{ form.erklaerungen_bestaetigt }} {{ form.erklaerungen_bestaetigt.label }} *</label>
       {% if e.erklaerungen_url %}<small class="hilfe"><a href="{{ e.erklaerungen_url }}" target="_blank" rel="noopener">{{ t.erklaerungen }}</a></small>{% endif %}
       {% for fehler in form.erklaerungen_bestaetigt.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
     </div>{% endif %}
-    {% if form.einwilligung %}<div class="feld feld-haken{% if form.einwilligung.errors %} hat-fehler{% endif %}">
+    {% if form.einwilligung %}<div class="feld feld-haken{% if form.einwilligung.errors %} hat-fehler{% endif %}" data-pflicht>
       <label for="{{ form.einwilligung.id_for_label }}">{{ form.einwilligung }} {{ t.einwilligung }} *</label>
       {% for fehler in form.einwilligung.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}
     </div>{% endif %}
@@ -118,7 +124,15 @@
       <label for="id_webseite">Webseite</label>
       <input type="text" name="webseite" id="id_webseite" tabindex="-1" autocomplete="off">
     </div>
+    {% comment %}Prüfung vor dem Absenden (static/js/antrag_pruefen.js): Kasten über dem Knopf mit
+    allem, was noch fehlt; ohne JavaScript prüft der Server wie bisher.{% endcomment %}
+    <div class="antrag-nicht-gesendet" id="antrag-pruefung" role="alert" tabindex="-1" hidden>
+      <p class="antrag-nicht-gesendet-titel">⚠ {{ t.nicht_abgeschickt }}</p>
+      <p>{{ t.bitte_ergaenzen }}</p>
+      <ul></ul>
+    </div>
     <button type="submit" class="knopf antrag-absenden">{{ t.absenden }}</button>
+    <p class="antrag-noch-offen" aria-live="polite" hidden></p>
   </form>
   {% comment %}Eigene kleine Formulare zum Wegnehmen schon hochgeladener Nachweise – außerhalb des
   Hauptformulars (verschachtelte Formulare sind nicht erlaubt), verbunden über das form-Attribut

@@ -88,5 +88,8 @@
   "fehler_gebiet": "Rất tiếc, chúng tôi chỉ có thể nhận đơn của những người sống tại {gebiet}.",
   "fehler_einwilligung": "Vui lòng đồng ý để chúng tôi có thể xử lý đơn của bạn.",
   "fehler_zu_viele": "Có quá nhiều đơn được gửi trong thời gian ngắn. Vui lòng thử lại sau.",
-  "gelesen_bestaetigt": "Tôi đã đọc: {was}"
+  "gelesen_bestaetigt": "Tôi đã đọc: {was}",
+  "nicht_abgeschickt": "Đơn của bạn CHƯA được gửi!",
+  "bitte_ergaenzen": "Vui lòng bổ sung hoặc sửa các thông tin được đánh dấu màu đỏ:",
+  "noch_offen": "Còn thiếu {anzahl} thông tin bắt buộc – chỉ khi đó bạn mới có thể gửi đơn."
 }

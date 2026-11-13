@@ -88,5 +88,8 @@
   "fehler_gebiet": "Nasiib darro, waxaan kaliya aqbali karnaa codsiyada dadka ku nool {gebiet}.",
   "fehler_einwilligung": "Fadlan ogolow si aan uga shaqayno codsigaaga.",
   "fehler_zu_viele": "Codsiyo badan ayaa la diray waqti gaaban. Fadlan mar dambe isku day.",
-  "gelesen_bestaetigt": "Waan akhriyay: {was}"
+  "gelesen_bestaetigt": "Waan akhriyay: {was}",
+  "nicht_abgeschickt": "Codsigaaga weli LAMA dirin!",
+  "bitte_ergaenzen": "Fadlan buuxi ama sax xogta lagu calaamadeeyay casaanka:",
+  "noch_offen": "Weli {anzahl} xog oo khasab ah ayaa maqan – kaliya markaas ayaad diri kartaa codsiga."
 }
