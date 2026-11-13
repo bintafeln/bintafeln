@@ -1357,6 +1357,10 @@ Aushang-Monitore“ (Recht „Aushang-Monitore einrichten“, Vorgabe Büro).
   Monat“ oder „die nächsten Wochen ab heute“ mit einstellbarer Anzahl Wochen (Vorgabe 9; der
   Fahrerplan dann als eine Seite). Vergangene Tage fallen immer weg. Der Zeitraum lässt sich
   je Seite nachträglich ändern. Seiten eines Plans nur mit dem Recht, ihn zu planen.
+- **Fortschritt der Ausgabe** (ADR 0135) je Ausgabestelle für einen Monitor in der Verteilung:
+  groß „200 von 225“ mit Balken, alle 20 Sekunden neu. Läuft heute der Aufruf, zählen die
+  aufgerufenen Nummern („aufgerufen“), sonst die Abholungen von den heute erwarteten Haushalten
+  („da gewesen“, wie der Fortschritt in der Kopfzeile). Nur Zahlen, keine Namen.
 - **Nacheinander** im Wechsel (Sekunden je Seite) oder **zwei nebeneinander**.
 - Die Schrift passt sich an, damit jede Seite ganz zu sehen ist; neuer Stand jede Minute;
   Vollbild per Knopf oder Browser mit `--kiosk`. Nur Namen, nie Kontaktdaten.
