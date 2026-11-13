@@ -2017,3 +2017,7 @@ details.amtsdokumente > summary { cursor: pointer; margin: .5rem 0; }
 .unterschrift-vorschau { max-width: 20rem; max-height: 6rem; border: 1px dashed var(--rand); border-radius: var(--radius); padding: .5rem; background: #fff; }
 button.sortieren { background: none; border: 0; padding: 0; font: inherit; font-weight: inherit; cursor: pointer; }
 .kacheln + .aktionsleiste { margin-top: .75rem; }
+.abruf-hinweis { margin: 1rem 0; border: 1px solid var(--rand); border-radius: var(--radius); padding: .5rem 1rem; }
+.abruf-hinweis summary { cursor: pointer; font-weight: 600; }
+.abruf-hinweis ul { margin: .5rem 0 0; padding-left: 1.2rem; }
+.abruf-hinweis li + li { margin-top: .35rem; }
