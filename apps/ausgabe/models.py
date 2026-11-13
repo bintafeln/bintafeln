@@ -51,10 +51,12 @@ class AusgabeEinstellungen(models.Model):
         default=True,
         help_text="Ein: rot (nur mit Ausnahme). Aus: gelb, nur ein Hinweis.",
     )
-    vorwarnung_tage = models.PositiveSmallIntegerField(
-        "Vorwarnung vor Ablauf des Ausweises (Tage)",
-        default=14,
-        validators=[MaxValueValidator(365)],
+    vorwarnung_wochen = models.PositiveSmallIntegerField(
+        "Vorwarnung vor Ablauf des Ausweises (Wochen)",
+        default=5,
+        validators=[MaxValueValidator(52)],
+        help_text="So viele Wochen vor Ablauf des Ausweises zeigt die Ampel gelb. 0 = keine "
+        "Vorwarnung.",
     )
     zahlt_ab_alter = models.PositiveSmallIntegerField(
         "Beitrag zahlen Personen ab … Jahren",

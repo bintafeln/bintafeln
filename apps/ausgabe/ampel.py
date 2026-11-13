@@ -151,7 +151,9 @@ def bewerten(haushalt, heute: dt.date, ausgabestelle, einstellungen) -> Bewertun
     elif ausweis < heute:
         datum = f"{ausweis:%d.%m.%Y}"
         melden(ROT, t("ausweis_abgelaufen", f"Ausweis abgelaufen am {datum}", datum=datum))
-    elif ausweis <= heute + dt.timedelta(days=einstellungen.vorwarnung_tage):
+    elif einstellungen.vorwarnung_wochen and ausweis <= heute + dt.timedelta(
+        weeks=einstellungen.vorwarnung_wochen
+    ):
         datum = f"{ausweis:%d.%m.%Y}"
         melden(GELB, t("ausweis_bald", f"Ausweis läuft am {datum} ab", datum=datum))
 

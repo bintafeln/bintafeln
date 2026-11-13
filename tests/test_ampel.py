@@ -69,12 +69,61 @@ def test_aktive_sperre(haushalt, einstellungen):
         (dt.date(2026, 10, 20), "rot", "Ausweis abgelaufen am 20.10.2026"),
         (dt.date(2026, 10, 21), "gelb", "Ausweis läuft am 21.10.2026 ab"),
         (dt.date(2026, 11, 4), "gelb", "Ausweis läuft am 04.11.2026 ab"),
-        (dt.date(2026, 11, 5), "gruen", "Alles in Ordnung"),
+        (dt.date(2026, 11, 25), "gelb", "Ausweis läuft am 25.11.2026 ab"),  # genau 5 Wochen
+        (dt.date(2026, 11, 26), "gruen", "Alles in Ordnung"),
     ],
 )
 def test_ausweis(haushalt, einstellungen, ausweis, farbe, text):
     haushalt.ausweis_gueltig_bis = ausweis
     assert farbe_und_texte(haushalt, einstellungen) == (farbe, [text])
+
+
+@pytest.mark.parametrize(
+    ("wochen", "farbe"), [(5, "gelb"), (3, "gelb"), (2, "gruen"), (0, "gruen")]
+)
+def test_vorwarnung_in_wochen_einstellbar(haushalt, einstellungen, wochen, farbe):
+    """Ausweis bis 30.11., heute Mittwoch 11.11. (19 Tage): gelb ab 3 Wochen, 0 = keine."""
+    assert AusgabeEinstellungen().vorwarnung_wochen == 5  # Vorgabe
+    einstellungen.vorwarnung_wochen = wochen
+    haushalt.ausweis_gueltig_bis = dt.date(2026, 11, 30)
+    assert farbe_und_texte(haushalt, einstellungen, heute=dt.date(2026, 11, 11))[0] == farbe
+
+
+@pytest.mark.parametrize(("tage", "wochen"), [(14, 5), (7, 1), (10, 2), (0, 0)])
+def test_umstellung_tage_auf_wochen(einstellungen, tage, wochen):
+    """Migration ausgabe/0012: alte Vorgabe 14 Tage → 5 Wochen, sonst aufgerundet."""
+    import importlib
+
+    from django.apps import apps
+
+    umstellung = importlib.import_module("apps.ausgabe.migrations.0012_vorwarnung_wochen")
+
+    class Alt:  # Stand vor der Migration
+        def __init__(self):
+            self.vorwarnung_tage, self.vorwarnung_wochen = tage, None
+
+        def save(self, update_fields):
+            self.gespeichert = update_fields
+
+    alt = Alt()
+
+    class Modell:
+        class objects:  # noqa: N801
+            @staticmethod
+            def all():
+                return [alt]
+
+    class Apps:
+        @staticmethod
+        def get_model(app, name):
+            return Modell
+
+    umstellung.in_wochen(Apps, None)
+    assert alt.vorwarnung_wochen == wochen
+    alt.vorwarnung_wochen = 3
+    umstellung.in_tage(Apps, None)
+    assert alt.vorwarnung_tage == 21
+    assert apps.is_installed("apps.ausgabe")
 
 
 def test_heute_schon_abgeholt(haushalt, einstellungen):
