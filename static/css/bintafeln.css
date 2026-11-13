@@ -2017,3 +2017,9 @@ details.amtsdokumente > summary { cursor: pointer; margin: .5rem 0; }
 .unterschrift-vorschau { max-width: 20rem; max-height: 6rem; border: 1px dashed var(--rand); border-radius: var(--radius); padding: .5rem; background: #fff; }
 button.sortieren { background: none; border: 0; padding: 0; font: inherit; font-weight: inherit; cursor: pointer; }
 .kacheln + .aktionsleiste { margin-top: .75rem; }
+.bescheinigung .status { display: inline-block; padding: .05rem .5rem; border-radius: 999px; font-size: .85rem; white-space: nowrap; }
+.status-fertig { background: #e6f4ea; color: #1e6b34; }
+.status-offen { background: #fff1c9; color: #6b4b00; }
+.bescheinigung .leise { display: block; font-size: .85rem; }
+.bescheinigung .beleg-link { display: block; font-size: .9rem; }
+#bescheinigung-erklaerung .status { display: inline-block; padding: 0 .45rem; border-radius: 999px; font-size: .85rem; }

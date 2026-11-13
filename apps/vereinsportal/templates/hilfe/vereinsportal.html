@@ -101,19 +101,28 @@
 {% endif %}
 
 <h3>Bestätigungen: nie doppelt</h3>
-<p>In der Spendenliste steht in der Spalte „Bestätigung“ der Beleg aus dem Vereinsportal als Link
-  („📄 Beleg 123“): Ein Klick öffnet das PDF. Dahinter steht, was damit geschieht:</p>
+<p>In der Spendenliste zeigt die Spalte „Bescheinigung“ für jede Spende, ob der Spender seine Bescheinigung schon
+  hat. Die Erklärung steht auch auf der Seite selbst unter „Was bedeutet die Spalte ‚Bescheinigung‘?“.</p>
 <ul>
-  <li><strong>„dort versendet“</strong>: Das Vereinsportal hat die Bescheinigung schon versendet. bintafeln stellt
-    dafür nie eine eigene aus und schreibt keinen Dankesbrief.</li>
-  <li><strong>„gilt als Bestätigung“</strong>: Der Spender hat im Jahr nur diese eine offene Spende. Der Beleg ist die
-    Bescheinigung; er liegt dem Dankesbrief bei.</li>
-  <li><strong>„Sammelbestätigung offen (3)“</strong>: Der Spender hat im Jahr mehrere noch nicht bestätigte Spenden
-    (hier drei). Die Spendenliste zeigt weiterhin jede Spende einzeln; bintafeln stellt dafür aber <strong>eine
-    Sammelbestätigung</strong> mit eigener Nummer aus – unter „Zuwendungsbestätigungen“ oder beim Erstellen der
-    Dankesbriefe. Die Einzelbelege liegen dann nicht bei. Danach steht in der Spalte „Nr. … (Sammelbestätigung)“ als
-    Link auf das PDF.</li>
+  <li><strong>„✓ Schon verschickt (Vereinsportal)“</strong>: Das Vereinsportal hat die Bescheinigung schon
+    verschickt. bintafeln stellt dafür nie eine eigene aus und schreibt keinen Dankesbrief. Das liest bintafeln aus
+    der Übersicht im Finanzexport (Spalte „Versendet am“); fehlt sie, meldet das Einlesen „keine Übersicht der
+    versendeten Belege in der Datei gefunden“.</li>
+  <li><strong>„✓ Bescheinigt von bintafeln“</strong>: bintafeln hat eine Bestätigung oder Sammelbestätigung
+    ausgestellt; ein Klick auf die Nummer öffnet das PDF.</li>
+  <li><strong>„Noch nicht verschickt“</strong>: Der Spender hat noch keine Bescheinigung. Darunter steht, welche er
+    bekommt:
+    <ul>
+      <li><em>„dieser Beleg ist die Bescheinigung und liegt dem Dankesbrief bei“</em>: Der Spender hat im Jahr nur
+        diese eine offene Spende; der Beleg aus dem Vereinsportal ist die Bescheinigung.</li>
+      <li><em>„kommt in die Sammelbestätigung aus bintafeln (3 Spenden …)“</em>: Der Spender hat im Jahr mehrere noch
+        nicht bestätigte Spenden. Die Liste zeigt weiterhin jede Spende einzeln; bintafeln stellt dafür aber
+        <strong>eine Sammelbestätigung</strong> mit eigener Nummer aus – unter „Zuwendungsbestätigungen“ oder beim
+        Erstellen der Dankesbriefe. Die Einzelbelege werden dann nicht verschickt („wird nicht verschickt“).</li>
+    </ul></li>
 </ul>
+<p>Ein Klick auf „📄 Beleg 123“ öffnet den Beleg aus dem Vereinsportal. Mit dem Filter „Bescheinigung“ lassen sich nur
+  die schon verschickten oder nur die noch offenen Spenden zeigen.</p>
 
 <h3>Dankesbriefe mit Bescheinigung</h3>
 <p>Unter „Verein → Spenden → Dankesbriefe“ wählen Sie Vorlage und Jahr, lassen „Zuwendungsbestätigungen aus
