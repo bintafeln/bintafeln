@@ -347,7 +347,7 @@ def test_einstellungen_speichern(admin_client):
             "max_je_tag": "2",
             "max_abholungen": "2",
             "zeitraum": "monat",
-            "vorwarnung_tage": "7",
+            "vorwarnung_wochen": "3",
             "zahlt_ab_alter": "16",
             "beitrag_je_person": "2,00",
             "zusatzbeitraege": "on",

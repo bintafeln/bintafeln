@@ -20,7 +20,7 @@ class AusgabeEinstellungenForm(forms.ModelForm):
             "max_abholungen",
             "zeitraum",
             "nicht_dran_rot",
-            "vorwarnung_tage",
+            "vorwarnung_wochen",
             "zahlt_ab_alter",
             "beitrag_je_person",
             "zusatzbeitraege",
@@ -58,7 +58,7 @@ class AusgabeEinstellungenForm(forms.ModelForm):
 
     ABSCHNITTE = [
         ("Ampel", ["max_je_tag", "max_abholungen", "zeitraum", "nicht_dran_rot",
-                   "vorwarnung_tage"]),
+                   "vorwarnung_wochen"]),
         ("Beitrag", ["zahlt_ab_alter", "beitrag_je_person", "anschreiben_erlaubt",
                      "kontostand_anzeigen", "zusatzbeitraege", "beitrag_je_abholung",
                      "beitrag_je_erwachsenem", "beitrag_je_kind"]),

@@ -945,8 +945,8 @@ Menschen können sich online anmelden oder ihre Berechtigung verlängern (ADR 00
    - 🔴 Sperre, Status gesperrt/beendet, Ausweis abgelaufen, heute schon so oft abgeholt wie
      erlaubt, Höchstzahl je Woche/14 Tage/Monat erreicht, keine Kundengruppe, heute nicht dran
      (einstellbar rot oder gelb)
-   - 🟡 Ausweis läuft bald ab oder fehlt, andere Ausgabestelle, Status pausiert, heute schon
-     abgeholt, wenn mehrfaches Abholen erlaubt ist, Kundengruppe ohne Wochentage (dann lässt sich
+   - 🟡 Ausweis läuft bald ab (Vorwarnung in Wochen, Vorgabe 5, einstellbar) oder fehlt,
+     andere Ausgabestelle, Status pausiert, heute schon abgeholt, wenn mehrfaches Abholen erlaubt ist, Kundengruppe ohne Wochentage (dann lässt sich
      nicht prüfen, ob heute dran ist; für „jeden Tag“ alle Tage anhaken)
    - Unter „Einstellungen → Ausgabe und Ampel“: **Abholungen am selben Tag** (1 = einmal,
      2 = zweimal, 0 = beliebig oft) und **Höchstzahl je Zeitraum** (0 = keine Grenze).
