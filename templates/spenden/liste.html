@@ -17,6 +17,10 @@
       <select name="jahr" id="jahr" onchange="this.form.submit()">{% for j in jahre %}<option value="{{ j }}"{% if j == jahr %} selected{% endif %}>{{ j }}</option>{% endfor %}</select></div>
     <div class="filter-feld"><label for="art">Art</label>
       <select name="art" id="art" onchange="this.form.submit()"><option value="">alle</option>{% for w, n in arten %}<option value="{{ w }}"{% if filter.art == w %} selected{% endif %}>{{ n }}</option>{% endfor %}</select></div>
+    <div class="filter-feld"><label for="bescheinigung">Bescheinigung</label>
+      <select name="bescheinigung" id="bescheinigung" onchange="this.form.submit()"><option value="">alle</option>
+        <option value="verschickt"{% if filter.bescheinigung == "verschickt" %} selected{% endif %}>schon verschickt</option>
+        <option value="offen"{% if filter.bescheinigung == "offen" %} selected{% endif %}>noch nicht verschickt</option></select></div>
     <div class="filter-feld filter-suche"><label for="q">Suche</label>
       <input type="search" name="q" id="q" value="{{ filter.q }}" placeholder="Spender, Bezeichnung, Zweck" {% live_suche %}></div>
     <button type="submit" class="knopf">Suchen</button>
@@ -30,6 +34,30 @@
     <div class="kachel"><span class="kachel-titel">Spender</span><span class="kachel-wert">{{ summen.spender }}</span></div>
   </div>
   {% if je_monat %}<p class="hinweis">Geldspenden je Monat: {% for monat, summe in je_monat %}{{ monat }}/{{ jahr }}: {{ summe|floatformat:2 }} €{% if not forloop.last %} · {% endif %}{% endfor %}</p>{% endif %}
+  <details class="abruf-hinweis" id="bescheinigung-erklaerung">
+    <summary>Was bedeutet die Spalte „Bescheinigung“?</summary>
+    <ul>
+      <li><span class="status status-fertig">✓ Schon verschickt (Vereinsportal)</span> – Der Spender hat die
+        Bescheinigung über das Vereinsportal bekommen. bintafeln stellt keine aus und schreibt keinen Dankesbrief.</li>
+      <li><span class="status status-fertig">✓ Bescheinigt von bintafeln</span> – bintafeln hat die Bestätigung
+        ausgestellt; ein Klick auf die Nummer öffnet sie.</li>
+      <li><span class="status status-offen">Noch nicht verschickt</span> – Der Spender hat noch keine Bescheinigung.
+        Dahinter steht, welche er bekommt:
+        <ul>
+          <li><em>kommt in die Sammelbestätigung</em>: Er hat im Jahr mehrmals gespendet. bintafeln fasst alle offenen
+            Spenden zu einer Sammelbestätigung zusammen; die einzelnen Belege aus dem Vereinsportal werden dafür nicht
+            verschickt.</li>
+          <li><em>dieser Beleg ist die Bescheinigung</em>: Er hat im Jahr nur einmal gespendet; der Beleg aus dem
+            Vereinsportal liegt dem Dankesbrief bei.</li>
+          <li><em>bintafeln stellt eine Einzelbestätigung aus</em>: eine einzelne Spende ohne Beleg aus dem
+            Vereinsportal.</li>
+        </ul></li>
+      <li>Ein Klick auf das Blatt 📄 öffnet den Beleg aus dem Vereinsportal.</li>
+    </ul>
+    <p class="hinweis">Mit dem Filter „Bescheinigung“ oben lassen sich nur die schon verschickten oder nur die noch
+      offenen zeigen. Ob das Vereinsportal etwas verschickt hat, liest bintafeln aus der Übersicht im Finanzexport
+      (Spalte „Versendet am“) – beim nächsten Abruf wird das aktualisiert.</p>
+  </details>
   {% auswahl_formular "" %}
   <div class="liste-aktionen">
     <span class="hinweis">{{ seite.paginator.count }} Spende{{ seite.paginator.count|pluralize:"n" }}</span>
@@ -39,7 +67,7 @@
   {% blaettern seite %}
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th class="auswahl"><input type="checkbox" data-alle="id" form="auswahl" aria-label="Alle auswählen" title="alle / keine"></th>{% sortkopf "Datum" "datum" sort %}{% if "spender" in sichtbar %}{% sortkopf "Nachname / Organisation" "spender" sort %}{% sortkopf "Vorname" "vorname" sort %}{% endif %}{% if "art" in sichtbar %}{% sortkopf "Art" "art" sort %}{% endif %}{% if "betrag" in sichtbar %}{% sortkopf "Betrag/Wert" "betrag" sort "zahl" %}{% endif %}{% if "bezeichnung" in sichtbar %}{% sortkopf "Bezeichnung / Zweck" %}{% endif %}{% if "bestaetigung" in sichtbar %}{% sortkopf "Bestätigung" %}{% endif %}</tr></thead>
+    <thead><tr><th class="auswahl"><input type="checkbox" data-alle="id" form="auswahl" aria-label="Alle auswählen" title="alle / keine"></th>{% sortkopf "Datum" "datum" sort %}{% if "spender" in sichtbar %}{% sortkopf "Nachname / Organisation" "spender" sort %}{% sortkopf "Vorname" "vorname" sort %}{% endif %}{% if "art" in sichtbar %}{% sortkopf "Art" "art" sort %}{% endif %}{% if "betrag" in sichtbar %}{% sortkopf "Betrag/Wert" "betrag" sort "zahl" %}{% endif %}{% if "bezeichnung" in sichtbar %}{% sortkopf "Bezeichnung / Zweck" %}{% endif %}{% if "bestaetigung" in sichtbar %}{% sortkopf "Bescheinigung" %}{% endif %}</tr></thead>
     <tbody>
     {% for s in seite %}
       <tr><td class="auswahl"><input type="checkbox" name="id" value="{{ s.pk }}" form="auswahl" aria-label="Zeile auswählen"></td>
@@ -49,15 +77,19 @@
         {% if "art" in sichtbar %}<td data-titel="Art">{{ s.get_art_display }}{% if s.mitgliedsbeitrag %} (Mitgliedsbeitrag){% endif %}</td>{% endif %}
         {% if "betrag" in sichtbar %}<td data-titel="Betrag/Wert" class="zahl">{% if s.betrag %}{{ s.betrag|floatformat:2 }} €{% else %}–{% endif %}</td>{% endif %}
         {% if "bezeichnung" in sichtbar %}<td data-titel="Bezeichnung">{{ s.beschreibung|default:s.zweck|default:"–" }}{% if s.menge %} ({{ s.menge|floatformat:"-2" }} {{ s.einheit }}){% endif %}</td>{% endif %}
-        {% if "bestaetigung" in sichtbar %}<td data-titel="Bestätigung">
-          {% if s.bestaetigt %}{% if "spenden.bestaetigen" in rechte %}<a href="{% url 'spenden:pdf' %}?nummern={{ s.bestaetigung.nummer }}" target="_blank" rel="noopener">Nr. {{ s.bestaetigung.nummer }}</a>{% else %}Nr. {{ s.bestaetigung.nummer }}{% endif %}{% if s.bestaetigung.art == "sammel" %} <span class="leise">(Sammelbestätigung)</span>{% endif %}
-          {% elif s.fremdbeleg or s.beleg %}
-            {% if s.beleg %}<a href="{% url 'spenden:beleg' s.beleg.pk %}" target="_blank" rel="noopener" title="Beleg aus dem anderen Programm öffnen">📄 Beleg{% if s.belegnummer %} {{ s.belegnummer }}{% endif %}</a>{% else %}Beleg anderes Programm{% endif %}
-            {% if s.fremdbeleg == "versendet" %}<span class="marke-ok" title="{{ s.get_fremdbeleg_display }}">dort versendet</span>
-            {% elif s.sammel %}<span class="marke-neutral" title="Dieser Spender hat {{ s.sammel }} noch nicht bestätigte Geldspenden im Jahr: bintafeln stellt dafür eine Sammelbestätigung aus.">Sammelbestätigung offen ({{ s.sammel }})</span>
-            {% elif s.fremdbeleg %}<span class="leise" title="Einzige offene Spende des Spenders im Jahr: Der Beleg ist die Bestätigung.">gilt als Bestätigung</span>{% endif %}
-          {% elif s.sammel %}<span class="marke-neutral" title="Dieser Spender hat {{ s.sammel }} noch nicht bestätigte Geldspenden im Jahr: bintafeln stellt dafür eine Sammelbestätigung aus.">Sammelbestätigung offen ({{ s.sammel }})</span>
-          {% else %}–{% endif %}</td>{% endif %}
+        {% if "bestaetigung" in sichtbar %}<td data-titel="Bescheinigung" class="bescheinigung">
+          {% if s.bestaetigt %}<span class="status status-fertig">✓ Bescheinigt von bintafeln</span>
+            {% if "spenden.bestaetigen" in rechte %}<a href="{% url 'spenden:pdf' %}?nummern={{ s.bestaetigung.nummer }}" target="_blank" rel="noopener">{% if s.bestaetigung.art == "sammel" %}Sammelbestätigung{% else %}Bestätigung{% endif %} Nr. {{ s.bestaetigung.nummer }}</a>{% else %}<span class="leise">Nr. {{ s.bestaetigung.nummer }}</span>{% endif %}
+          {% elif s.fremdbeleg == "versendet" %}<span class="status status-fertig">✓ Schon verschickt (Vereinsportal)</span>
+          {% elif s.sammel %}<span class="status status-offen">Noch nicht verschickt</span>
+            <span class="leise">kommt in die Sammelbestätigung aus bintafeln ({{ s.sammel }} Spenden {{ s.datum.year }})</span>
+          {% elif s.fremdbeleg %}<span class="status status-offen">Noch nicht verschickt</span>
+            <span class="leise">dieser Beleg ist die Bescheinigung und liegt dem Dankesbrief bei</span>
+          {% elif s.einzeln %}<span class="status status-offen">Noch nicht verschickt</span>
+            <span class="leise">bintafeln stellt eine Einzelbestätigung aus</span>
+          {% else %}<span class="leise">–</span>{% endif %}
+          {% if s.beleg %}<a class="beleg-link" href="{% url 'spenden:beleg' s.beleg.pk %}" target="_blank" rel="noopener" title="Beleg aus dem Vereinsportal öffnen">📄 Beleg{% if s.belegnummer %} {{ s.belegnummer }}{% endif %}{% if s.sammel %} <span class="leise">(wird nicht verschickt)</span>{% endif %}</a>{% endif %}
+        </td>{% endif %}
       </tr>
     {% empty %}
       <tr><td colspan="{{ sichtbar|length|add:2 }}">Keine Spenden gefunden.</td></tr>
