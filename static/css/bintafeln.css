@@ -2050,3 +2050,19 @@ button.sortieren { background: none; border: 0; padding: 0; font: inherit; font-
 .warten-push .push-an { font-size: 1.1rem; width: 100%; }
 .push-status { margin: 0; padding: .6rem .8rem; border-radius: var(--radius); background: #e6f4ea; color: #1e6b34; font-weight: 600; }
 .knopf-link { background: none; border: 0; padding: 0; color: inherit; font: inherit; font-weight: 400; text-decoration: underline; cursor: pointer; }
+/* Einlass: heute eingetragene Abholung zurücknehmen – oben in der Ampel-Karte */
+.ruecknahme {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem;
+  margin-top: .75rem; padding-top: .75rem; border-top: 1px solid var(--rand);
+}
+.ruecknahme-text { margin: 0; font-weight: 600; }
+.knopf-ruecknahme {
+  background: var(--flaeche); color: var(--fehler); border: 2px solid var(--fehler); font-weight: 700;
+}
+.knopf-ruecknahme:hover { background: color-mix(in srgb, var(--fehler) 10%, var(--flaeche)); }
+.ruecknahme-antrag { flex-basis: 100%; }
+.ruecknahme-antrag > summary { display: inline-block; list-style: none; cursor: pointer; }
+.ruecknahme-antrag > summary::-webkit-details-marker { display: none; }
+.ruecknahme-antrag[open] > summary { margin-bottom: .5rem; }
+.ruecknahme-antrag form { max-width: 28rem; }
+.ruecknahme-beantragt { margin: 0; padding: .3rem .7rem; border-radius: 999px; background: #fff1c9; color: #6b4b00; font-weight: 600; }

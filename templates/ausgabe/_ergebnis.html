@@ -38,6 +38,7 @@
   <ul class="ampel-gruende">
     {% for m in bewertung.meldungen %}<li class="grund-{{ m.farbe }}">{{ m.text }}</li>{% endfor %}
   </ul>
+  {% include "ausgabe/_ruecknahme_abholung.html" %}
 </section>
 {% if krank %}<p class="karte krank-hinweis" role="status"><strong>{{ krank.abwesenheit_titel }}</strong> ({{ krank.get_krank_grund_display }})
   bis {{ krank.krank_bis|date:"d.m.Y" }}. Abholen darf nur, wer beim Haushalt als abholberechtigt eingetragen ist.</p>{% endif %}
@@ -113,8 +114,9 @@ Einlass am häufigsten an); Aufruf-/Modulhinweise und die Zahlung weiter unten.{
 {% endif %}
 
 {% comment %}Bei möglicher Abholung steht alles oben in der Leiste; die Karte nur für Zahlung ohne
-Abholung, Rücknahmen von heute und die Ausnahme{% endcomment %}
-{% if not bewertung.darf_abholen or beitragsfrei or heute_erfasst or einzahlungen_heute or bewertung.ausnahme_hilft and darf_ausnahme %}
+Abholung, Rücknahmen von Zahlungen und die Ausnahme. Abholungen nimmt man oben in der
+Ampel-Karte zurück (_ruecknahme_abholung.html).{% endcomment %}
+{% if not bewertung.darf_abholen or beitragsfrei or einzahlungen_heute or bewertung.ausnahme_hilft and darf_ausnahme %}
 <section class="karte">
   {% if bewertung.darf_abholen %}
   {% if beitragsfrei %}<p class="meldung" role="status">Heute beitragsfrei: {{ beitragsfrei.bezeichnung }} (bis {{ beitragsfrei.bis|date:"d.m.Y" }}).</p>{% endif %}
@@ -133,14 +135,8 @@ Abholung, Rücknahmen von heute und die Ausnahme{% endcomment %}
   </form>
   {% endif %}
 
-  {% if heute_erfasst or einzahlungen_heute %}
+  {% if einzahlungen_heute %}
   <div class="aktionen abseits">
-    {% for a in heute_erfasst %}
-    {% url 'ausgabe:zuruecknehmen' a.pk as ziel %}
-    {% with uhr=a.uhrzeit|time:"H:i" %}{% with titel="Abholung von "|add:uhr|add:" Uhr" %}
-    {% include "ausgabe/_zuruecknehmen.html" with art="abholung" obj=a ziel=ziel %}
-    {% endwith %}{% endwith %}
-    {% endfor %}
     {% for b in einzahlungen_heute %}
     {% url 'ausgabe:einzahlung_zuruecknehmen' b.pk as ziel %}
     {% with betrag=b.haben|floatformat:2 %}{% with titel="Zahlung "|add:betrag|add:" €" %}
