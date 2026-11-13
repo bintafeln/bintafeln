@@ -12,7 +12,9 @@
       <td>Die Spendenbelege als PDF mit „spenden“ im Dateinamen und der Belegnummer am Ende (z. B.
         „Spendenbeleg_000123.pdf“). Im Beleg steht unter der Absenderzeile die Zeile „Name | Straße | PLZ Ort“.
         Dazu die Excel-Datei mit dem Blatt „Spenden - Übersicht“ (Spaltennamen in Zeile 6: „Belegnummer“,
-        „Versendet am“, „SQ-erstellt Datum“).</td></tr>
+        „Versendet am“, „SQ-verschickt“, „SQ-erstellt Datum“). <strong>Wichtig:</strong> Diese drei Spalten kommen nur
+        mit, wenn sie beim Erstellen des Exports unter „Erweiterte Einstellungen → Spalten“ angekreuzt sind (anfangs
+        sind sie es nicht). Der automatische Abruf kreuzt sie selbst an.</td></tr>
     <tr><td><strong>Spender mit E-Mail</strong> (Excel)</td><td>WISO MeinVerein, Kontaktliste als Excel-Export</td>
       <td>Erste Zeile mit den Spalten „Vorname“, „Nachname“, „E-Mail“ und, wenn gewünscht, „Anrede“ (Frau/Herr, für
         die Briefanrede) und „immer per Post“ (Ja).</td></tr>
@@ -38,7 +40,9 @@
   Namen mit „GmbH“, „e.V.“, „Stiftung“ und Ähnlichem als Organisation an. Trifft das einmal nicht, korrigieren Sie die
   Adresse im Adressbuch.</p>
 <p>Haben Sie in WISO MeinVerein inzwischen Bescheinigungen versendet, genügt es, nur die <strong>Excel-Datei</strong> des
-  neuen Finanzexports einzulesen: bintafeln vermerkt dann, welche Spenden dort versendet sind.</p>
+  neuen Finanzexports einzulesen: bintafeln vermerkt dann, welche Spenden dort versendet sind. Als versendet gilt eine
+  Spende, wenn bei ihr „Versendet am“ oder „SQ-erstellt Datum“ ausgefüllt ist oder „SQ-verschickt“ nicht „Nein“ ist.
+  Fehlen die drei Spalten, sagt bintafeln das beim Einlesen deutlich, statt „0 versendet“ zu melden.</p>
 
 <h3>Automatisch aus WISO MeinVerein holen</h3>
 <p>Statt die Dateien von Hand herunter- und hochzuladen, kann bintafeln sie selbst holen. Dafür läuft auf dem
@@ -111,8 +115,9 @@
 <ul>
   <li><strong>„✓ Schon verschickt (WISO MeinVerein)“</strong>: WISO MeinVerein hat die Bescheinigung schon
     verschickt. bintafeln stellt dafür nie eine eigene aus und schreibt keinen Dankesbrief. Das liest bintafeln aus
-    der Übersicht im Finanzexport (Spalte „Versendet am“); fehlt sie, meldet das Einlesen „keine Übersicht der
-    versendeten Belege in der Datei gefunden“.</li>
+    der Übersicht im Finanzexport (Spalten „Versendet am“, „SQ-verschickt“, „SQ-erstellt Datum“); fehlt die
+    Übersicht, meldet das Einlesen „keine Übersicht der versendeten Belege in der Datei gefunden“, fehlen nur die
+    Spalten, erklärt es, wo man sie in WISO MeinVerein ankreuzt.</li>
   <li><strong>„✓ Bescheinigt von bintafeln“</strong>: bintafeln hat eine Bestätigung oder Sammelbestätigung
     ausgestellt; ein Klick auf die Nummer öffnet das PDF.</li>
   <li><strong>„Noch nicht verschickt“</strong>: Der Spender hat noch keine Bescheinigung. Darunter steht, welche er

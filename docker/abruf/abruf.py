@@ -323,6 +323,35 @@ FELD_SETZEN = """([nummer, wert]) => {
 FELD_LESEN = """n => document.querySelector('[data-abruf-datum="' + n + '"]')?.value || ''"""
 ZEITRAEUME = """() => [...document.querySelectorAll('table tr em')].map(e => e.innerText.trim())"""
 
+# Spalten, ohne die bintafeln nicht erfährt, was in WISO MeinVerein schon versendet ist. Sie stehen
+# unter „Erweiterte Einstellungen → Spalten“ und sind dort anfangs nicht angekreuzt.
+VERSANDSPALTEN = ("Versendet am", "SQ-verschickt", "SQ-erstellt Datum")
+# Kreuzt die genannten Kästchen an, die es gibt und die noch nicht angekreuzt sind. Ergebnis:
+# welche fehlen und welche angeklickt wurden.
+SPALTEN_ANKREUZEN = """(namen) => {
+    const norm = t => (t || '').replace(/\\s+/g, ' ').trim().toLowerCase();
+    const kaestchen = [...document.querySelectorAll(
+        'mat-checkbox, .mat-checkbox, .mat-mdc-checkbox, label')];
+    const finden = name => kaestchen.find(k => norm(k.innerText) === norm(name));
+    const fehlen = [], geklickt = [];
+    for (const name of namen) {
+        let k = finden(name);
+        if (!k) { fehlen.push(name); continue; }
+        k = k.closest('mat-checkbox, .mat-checkbox, .mat-mdc-checkbox') || k;
+        const feld = k.querySelector('input[type=checkbox]')
+            || (k.htmlFor ? document.getElementById(k.htmlFor) : null);
+        const an = feld ? feld.checked : /checkbox-checked/.test(k.className);
+        if (!an) { (feld || k).click(); geklickt.push(name); }
+    }
+    return {fehlen, geklickt};
+}"""
+ERWEITERT_OEFFNEN = """() => {
+    const kopf = [...document.querySelectorAll('*')].find(e => e.children.length <= 2
+        && (e.innerText || '').trim().toLowerCase() === 'erweiterte einstellungen');
+    if (kopf) kopf.click();
+    return !!kopf;
+}"""
+
 
 def _zeitraum_einstellen(auftrag: Auftrag, seite, von: str, bis: str):
     seite.click("mat-select", timeout=5000)
@@ -353,9 +382,34 @@ def _zeitraum_einstellen(auftrag: Auftrag, seite, von: str, bis: str):
         )
 
 
-def _neu_erzeugen(auftrag: Auftrag, kontext, seite, von: str, bis: str, ziel: Path):
+def _versandspalten(auftrag: Auftrag, seite) -> None:
+    """Die Spalten „Versendet am“, „SQ-verschickt“ und „SQ-erstellt Datum“ ankreuzen (unter
+    „Erweiterte Einstellungen“, die dafür aufgeklappt werden). Klappt das nicht, läuft der Abruf
+    weiter, aber mit einem Hinweis: Ohne die Spalten bleibt „versendet“ in bintafeln leer."""
+    stand = seite.evaluate(SPALTEN_ANKREUZEN, list(VERSANDSPALTEN))
+    if stand["fehlen"] and seite.evaluate(ERWEITERT_OEFFNEN):
+        _warten(auftrag, seite, ZEITEN["klick"])
+        stand = seite.evaluate(SPALTEN_ANKREUZEN, list(VERSANDSPALTEN))
+    _warten(auftrag, seite, ZEITEN["klick"])
+    nochmal = seite.evaluate(SPALTEN_ANKREUZEN, list(VERSANDSPALTEN))
+    if stand["fehlen"] or nochmal["geklickt"]:
+        nicht = stand["fehlen"] or nochmal["geklickt"]
+        auftrag.hinweise.append(
+            "Im Finanzexport ließen sich die Spalten „" + "“, „".join(nicht) + "“ nicht "
+            "ankreuzen (unter „Erweiterte Einstellungen → Spalten“). Ohne sie erfährt bintafeln "
+            "nicht, welche Belege in WISO MeinVerein schon versendet sind."
+        )
+
+
+def _neu_erzeugen(auftrag: Auftrag, kontext, seite, von: str, bis: str, ziel: Path,
+                  ohne=()):  # fmt: skip
+    """Neuen Export erzeugen; ``ohne`` sind Knöpfe schon vorhandener Exporte desselben
+    Zeitraums, die nicht gemeint sind (ihnen fehlen die Spalten zum Versand)."""
     auftrag.melden(f"(2/2) Stelle den Zeitraum ein: {von} bis {bis} …")
     _zeitraum_einstellen(auftrag, seite, von, bis)
+    _versandspalten(auftrag, seite)
+    for knopf in ohne:
+        knopf.evaluate("el => el.setAttribute('data-abruf-alt', '')")
     vorher = Counter(seite.evaluate(ZEITRAEUME))
     erstellen = next((k for k in seite.query_selector_all("button")
                       if "erstellen" in (k.inner_text() or "").lower()), None)  # fmt: skip
@@ -369,7 +423,8 @@ def _neu_erzeugen(auftrag: Auftrag, kontext, seite, von: str, bis: str, ziel: Pa
             f"({int(vergangen // 60)} min)"
         )
         # Nur der Export mit genau diesem Zeitraum zählt – nicht irgendein fertiger der Seite
-        fertige = _fertige_exporte(seite, von, bis)
+        fertige = [k for k in _fertige_exporte(seite, von, bis)
+                   if k.get_attribute("data-abruf-alt") is None]  # fmt: skip
         if fertige:
             auftrag.melden("(2/2) Der Export ist fertig, lade herunter …")
             if _vorhandenen_laden(auftrag, kontext, seite, fertige[-1], ziel):
@@ -398,7 +453,26 @@ def _inhalt_melden(ziel: Path) -> None:
     pdfs = [n for n in namen if n.endswith(".pdf")]
     belege = [n for n in pdfs if "spenden" in n]
     print(f"[abruf] Finanzexport: {len(namen)} Dateien, davon {len(pdfs)} PDF, "
-          f"{len(belege)} Spendenbelege.", flush=True)  # fmt: skip
+          f"{len(belege)} Spendenbelege, Spalten zum Versand: "
+          f"{'ja' if mit_versand(ziel) else 'nein'}.", flush=True)  # fmt: skip
+
+
+def mit_versand(ziel: Path) -> bool:
+    """Steckt im Export eine Excel-Datei mit den Spalten zum Versand? Nur in den Texten der
+    Excel-Datei gesucht (eine .xlsx ist selbst ein ZIP), ohne weitere Abhängigkeit."""
+    gesucht = [n.encode() for n in VERSANDSPALTEN]
+    try:
+        with zipfile.ZipFile(ziel) as archiv:
+            for eintrag in archiv.infolist():
+                if not eintrag.filename.lower().endswith(".xlsx"):
+                    continue
+                with zipfile.ZipFile(archiv.open(eintrag)) as mappe:
+                    for teil in mappe.namelist():
+                        if teil.endswith(".xml") and any(g in mappe.read(teil) for g in gesucht):
+                            return True
+    except (OSError, zipfile.BadZipFile):
+        return False
+    return False
 
 
 def _finanzexport(auftrag: Auftrag, kontext, seite, d: dict):
@@ -413,10 +487,15 @@ def _finanzexport(auftrag: Auftrag, kontext, seite, d: dict):
         auftrag.melden(
             f"(2/2) Für {d['von']} bis {d['bis']} gibt es schon einen Export, lade herunter …"
         )
-        if _vorhandenen_laden(auftrag, kontext, seite, fertige[-1], ziel):
+        if _vorhandenen_laden(auftrag, kontext, seite, fertige[-1], ziel) and mit_versand(ziel):
             _inhalt_melden(ziel)
             return
-    _neu_erzeugen(auftrag, kontext, seite, d["von"], d["bis"], ziel)
+        # ohne die Spalten zum Versand neu erzeugen, sonst bliebe „versendet“ leer
+        auftrag.melden("(2/2) Dem vorhandenen Export fehlen die Spalten zum Versand, erzeuge neu …")
+        seite.goto(d["export_url"], wait_until="domcontentloaded", timeout=30000)
+        _warten(auftrag, seite, ZEITEN["export_laden"])
+        fertige = _fertige_exporte(seite, d["von"], d["bis"])
+    _neu_erzeugen(auftrag, kontext, seite, d["von"], d["bis"], ziel, ohne=fertige)
     _inhalt_melden(ziel)
 
 

@@ -382,6 +382,31 @@ def test_uebersicht_ohne_blatt_oder_spalte(datei):
         einlesen.uebersicht_einlesen(datei)
 
 
+def test_uebersicht_mit_sq_verschickt(export):
+    """„SQ-verschickt“ (Ja/Nein) zählt wie ein Datum in „Versendet am“."""
+    einlesen.finanzexport_einlesen(export, "buero")
+    kopf = ("Belegnummer", "SQ-verschickt")
+    for wert, erwartet in [("Nein", OFFEN), ("", OFFEN), (False, OFFEN), ("Ja", V)]:
+        einlesen.uebersicht_einlesen(uebersicht([(2, wert)], kopf=kopf))
+        assert Spende.objects.get(belegnummer="2").fremdbeleg == erwartet, wert
+    einlesen.uebersicht_einlesen(uebersicht([(1, True)], kopf=kopf))
+    assert Spende.objects.get(belegnummer="1").fremdbeleg == V
+
+
+def test_uebersicht_ohne_spalten_zum_versand(export):
+    """Ohne die angekreuzten Spalten im Finanzexport sagt bintafeln, was zu tun ist, statt
+    stillschweigend „0 versendet“ zu melden."""
+    ohne = uebersicht([(2,)], kopf=("Belegnummer",))
+    with pytest.raises(einlesen.EinleseFehler, match="Erweiterte Einstellungen → Spalten"):
+        einlesen.uebersicht_einlesen(ohne)
+    e = einlesen.finanzexport_einlesen(archiv({"Spenden/Spendenbeleg_000009.pdf": beleg_pdf(),
+                                               "Finanzexport.xlsx": ohne}), "buero")  # fmt: skip
+    assert (e.mit_uebersicht, e.ohne_versandspalten) == (True, True)
+    bericht = einlesen.bericht(e)
+    assert "fehlen die Spalten „Versendet am“, „SQ-verschickt“" in bericht
+    assert "als in WISO MeinVerein versendet vermerkt" not in bericht
+
+
 def test_uebersicht_kaputte_datei():
     with pytest.raises(einlesen.EinleseFehler, match="nicht lesen"):
         einlesen.uebersicht_einlesen(b"keine Excel-Datei")

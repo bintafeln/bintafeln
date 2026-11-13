@@ -1413,6 +1413,10 @@ Für Tafeln, die ihre Spendenbescheinigungen weiterhin in WISO MeinVerein ausste
 - **Einlesen:** Finanzexport (ZIP) und Liste „Spender mit E-Mail“ (Excel) hochladen. Je Beleg
   entsteht eine Spende mit Spendendatum, Betrag und Belegnummer, das PDF hängt daran; der Spender
   kommt ins Adressbuch (vorhandene Adresse mit gleichem Namen und gleicher PLZ, sonst neu).
+- **Was schon versendet ist,** steht in der Übersicht des Finanzexports in den Spalten
+  „Versendet am“, „SQ-verschickt“ und „SQ-erstellt Datum“. Sie kommen nur mit, wenn sie beim
+  Erstellen unter „Erweiterte Einstellungen → Spalten“ angekreuzt sind; der automatische Abruf
+  kreuzt sie an und erzeugt einen vorhandenen Export ohne diese Spalten neu.
 - **Nie zwei Bestätigungen:** Was WISO MeinVerein schon versendet hat, bestätigt bintafeln
   nicht noch einmal. Alles dort noch nicht Versendete bestätigt bintafeln selbst: eine Spende als
   **Einzelbestätigung**, mehrere im Jahr als **Sammelbestätigung**; die Belege aus
