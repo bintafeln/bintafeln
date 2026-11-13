@@ -2066,12 +2066,13 @@ button.sortieren { background: none; border: 0; padding: 0; font: inherit; font-
 .ruecknahme-antrag[open] > summary { margin-bottom: .5rem; }
 .ruecknahme-antrag form { max-width: 28rem; }
 .ruecknahme-beantragt { margin: 0; padding: .3rem .7rem; border-radius: 999px; background: #fff1c9; color: #6b4b00; font-weight: 600; }
-/* Aushang: Fortschritt der Ausgabe (ADR 0135) – aus der Entfernung lesbar */
+/* Aushang: Fortschritt der Ausgabe (ADR 0135) – aus der Entfernung lesbar. Nur innerhalb von
+   .fortschritt-monitor: „.fortschritt-zahl“ gehört der Kopfzeile am Einlass (ADR 0067). */
 .fortschritt-monitor { text-align: center; padding: 4vh 2vw; }
-.fortschritt-zahl { font-size: clamp(4rem, 16vw, 14rem); font-weight: 800; line-height: 1; margin: 0; font-variant-numeric: tabular-nums; }
-.fortschritt-fertig { color: var(--akzent-dunkel); }
-.fortschritt-von { font-size: .35em; font-weight: 600; vertical-align: middle; }
-.fortschritt-art { font-size: clamp(1.5rem, 4vw, 3rem); margin: 1vh 0 3vh; }
-.fortschritt-balken { height: clamp(1rem, 3vh, 2.5rem); background: var(--rand); border-radius: 999px; overflow: hidden; max-width: 80vw; margin: 0 auto; }
-.fortschritt-balken span { display: block; height: 100%; background: var(--akzent); }
-.fortschritt-leer { font-size: clamp(2rem, 8vw, 6rem); font-weight: 700; margin: 6vh 0; }
+.fortschritt-monitor .monitor-zahl { font-size: clamp(4rem, 16vw, 14rem); font-weight: 800; line-height: 1; margin: 0; font-variant-numeric: tabular-nums; }
+.fortschritt-monitor .monitor-fertig { color: var(--akzent-dunkel); }
+.fortschritt-monitor .monitor-von { font-size: .35em; font-weight: 600; vertical-align: middle; }
+.fortschritt-monitor .monitor-art { font-size: clamp(1.5rem, 4vw, 3rem); margin: 1vh 0 3vh; }
+.fortschritt-monitor .monitor-balken { height: clamp(1rem, 3vh, 2.5rem); background: var(--rand); border-radius: 999px; overflow: hidden; max-width: 80vw; margin: 0 auto; }
+.fortschritt-monitor .monitor-balken span { display: block; height: 100%; background: var(--akzent); }
+.fortschritt-monitor .monitor-leer { font-size: clamp(2rem, 8vw, 6rem); font-weight: 700; margin: 6vh 0; }

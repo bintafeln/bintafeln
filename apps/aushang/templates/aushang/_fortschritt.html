@@ -1,10 +1,10 @@
 {# Fortschritt der Ausgabe auf dem Aushang-Monitor (ADR 0135): nur Zahlen, keine Namen; data-schnell lässt den Monitor öfter neu laden #}
 <div class="fortschritt-monitor" data-schnell>
   {% if z %}
-  <p class="fortschritt-zahl"><span class="fortschritt-fertig">{{ z.fertig }}</span> <span class="fortschritt-von">von</span> {{ z.gesamt }}</p>
-  <p class="fortschritt-art">{% if z.art == "aufgerufen" %}aufgerufen{% else %}da gewesen{% endif %}</p>
-  <div class="fortschritt-balken" role="img" aria-label="{{ anteil }} Prozent"><span style="width: {{ anteil }}%"></span></div>
+  <p class="monitor-zahl"><span class="monitor-fertig">{{ z.fertig }}</span> <span class="monitor-von">von</span> {{ z.gesamt }}</p>
+  <p class="monitor-art">{% if z.art == "aufgerufen" %}aufgerufen{% else %}da gewesen{% endif %}</p>
+  <div class="monitor-balken" role="img" aria-label="{{ anteil }} Prozent"><span style="width: {{ anteil }}%"></span></div>
   {% else %}
-  <p class="fortschritt-leer">Heute keine Ausgabe</p>
+  <p class="monitor-leer">Heute keine Ausgabe</p>
   {% endif %}
 </div>
