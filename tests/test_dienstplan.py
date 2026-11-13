@@ -174,7 +174,10 @@ def test_ohne_teamleitung_alle_die_planen(team, benutzer_mit_rolle):
     assert "bea@example.org" in plan.empfaenger(plan.einsaetze(h["paul"], FREITAG, FREITAG))
 
 
-def test_helfer_mit_konto_traegt_sich_selbst_aus(team, client, anmelden, admin):
+def test_helfer_mit_konto_traegt_sich_selbst_aus(team, client, anmelden, admin, monkeypatch):
+    # „heute“ fest auf den Freitag: Austragen gibt es nur für heute und später, und der Test soll
+    # nicht davon abhängen, an welchem Tag er läuft
+    monkeypatch.setattr("django.utils.timezone.localdate", lambda *args: FREITAG)
     ds, h, a = team
     anmelden(client, h["erika"].konto)
     seite = client.get(PLAN, {"stelle": ds.ausgabestelle_id, "monat": "2026-11"}).content.decode()
