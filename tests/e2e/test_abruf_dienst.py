@@ -95,6 +95,10 @@ function aufklappen() {
     + n.replace('+', '') + ' </label></div></mat-checkbox>').join(''), 150);
 }
 function erstellen() {
+  // Wie WISO MeinVerein: Nach „Erstellen“ wird die Liste neu aufgebaut – was ein Programm an den
+  // alten Zeilen markiert hat, ist danach weg.
+  const tabelle = document.querySelector('table');
+  tabelle.innerHTML = tabelle.innerHTML.replace(/ data-[a-z-]+=""/g, '');
   const v = VON, w = BIS, tr = document.createElement('tr');
   const spalten = [...document.querySelectorAll('#erweitert input:checked')]
     .map(i => i.closest('mat-checkbox').querySelector('label').innerText.trim()).join('|');
