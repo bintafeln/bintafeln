@@ -248,13 +248,36 @@ def verwendung(v: Vordruck, oben: float, e, mitgliedsbeitrag_satz: bool, luft=0.
     return unten
 
 
-def unterschrift(v: Vordruck, linie: float, ort_datum: str, bild: bytes | None) -> None:
-    """Ort und Datum links, darüber rechts die eingescannte Unterschrift, darunter die Linie."""
+STEMPEL_MITTE = 470  # waagerecht, rechts neben der Unterschrift
+STEMPEL_GROESSE = (95, 62)  # höchstens so breit und hoch (Punkt), Seitenverhältnis bleibt
+STEMPEL_DREHUNG = 8  # Grad gegen den Uhrzeigersinn – wie von Hand gestempelt
+
+
+def stempel(v: Vordruck, linie: float, bild: bytes) -> None:
+    """Der Stempel der Tafel, leicht schräg, rechts neben der Unterschrift über der Linie."""
+    leser = ImageReader(io.BytesIO(bild))
+    b, h = leser.getSize()
+    faktor = min(STEMPEL_GROESSE[0] / b, STEMPEL_GROESSE[1] / h)
+    b, h = b * faktor, h * faktor
+    v.c.saveState()
+    v.c.translate(STEMPEL_MITTE, HOEHE - linie + 4 + STEMPEL_GROESSE[1] / 2)
+    v.c.rotate(STEMPEL_DREHUNG)
+    v.c.drawImage(leser, -b / 2, -h / 2, b, h, mask="auto")
+    v.c.restoreState()
+
+
+def unterschrift(v: Vordruck, linie: float, ort_datum: str, bild: bytes | None,
+                 stempel_bild: bytes | None = None) -> None:  # fmt: skip
+    """Ort und Datum links, darüber rechts die eingescannte Unterschrift, daneben der Stempel,
+    darunter die Linie. Beide Bilder haben einen durchsichtigen Hintergrund."""
+    if stempel_bild:
+        stempel(v, linie, stempel_bild)
     if bild:
         leser = ImageReader(io.BytesIO(bild))
         b, h = leser.getSize()
         faktor = min(160 / b, 45 / h)
-        v.c.drawImage(leser, 340, HOEHE - linie + 2, b * faktor, h * faktor, mask="auto")
+        v.c.drawImage(leser, 340 - (40 if stempel_bild else 0), HOEHE - linie + 2, b * faktor,
+                      h * faktor, mask="auto")  # fmt: skip
     v.c.setFont("Helvetica", 8.5)
     v.c.drawString(88, HOEHE - linie + 4, ort_datum)
     v.c.setLineWidth(0.6)
