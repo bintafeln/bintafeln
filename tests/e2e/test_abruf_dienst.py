@@ -78,21 +78,26 @@ NEU = (ZEILEN % "") + """<mat-select style="display:block"
 <input id="suche" placeholder="Suchen">
 <input id="mat-input-7" class="mat-datepicker-input">
 <input id="mat-input-8" class="mat-datepicker-input">
-<div onclick="aufklappen()"><span>Erweiterte Einstellungen</span></div>
+<div class="mat-expansion-panel-header" onclick="aufklappen()"><span>Erweiterte Einstellungen</span>
+<mat-icon>expand_more</mat-icon></div>
 <div id="erweitert"></div>
 <button onclick="erstellen()">Erstellen</button>
 <script>
-// Wie in WISO MeinVerein: die Spalten gibt es erst, wenn „Erweiterte Einstellungen“ aufgeklappt ist
+// Wie in WISO MeinVerein (Angular Material): Die Spalten gibt es erst, wenn „Erweiterte
+// Einstellungen“ aufgeklappt ist – das dauert einen Moment; die Überschrift trägt ein Symbol als
+// Text, die Beschriftung steht neben dem Kästchen, nicht darum herum.
 function aufklappen() {
-  document.getElementById('erweitert').innerHTML = ['Status', '+Name', '+Versendet am',
-    'SQ-verschickt', 'SQ-erstellt Datum'].map(n => '<mat-checkbox><label><input type="checkbox"'
-    + (n[0] === '+' ? ' checked' : '') + '> ' + n.replace('+', '') + '</label></mat-checkbox>')
-    .join('');
+  setTimeout(() => document.getElementById('erweitert').innerHTML = ['Status', '+Name',
+    '+Versendet am', 'SQ-verschickt', 'SQ-erstellt Datum'].map((n, i) => '<mat-checkbox'
+    + ' class="mat-mdc-checkbox"><div class="mdc-form-field"><div class="mdc-checkbox">'
+    + '<input type="checkbox" class="mdc-checkbox__native-control" id="k' + i + '"'
+    + (n[0] === '+' ? ' checked' : '') + '></div><label for="k' + i + '"> '
+    + n.replace('+', '') + ' </label></div></mat-checkbox>').join(''), 150);
 }
 function erstellen() {
   const v = VON, w = BIS, tr = document.createElement('tr');
   const spalten = [...document.querySelectorAll('#erweitert input:checked')]
-    .map(i => i.parentElement.innerText.trim()).join('|');
+    .map(i => i.closest('mat-checkbox').querySelector('label').innerText.trim()).join('|');
   tr.innerHTML = '<td><em>(' + v + ' - ' + w + ')</em></td><td><button pendo-id="tae-download"'
     + ' style="pointer-events: none"><span>Herunterladen</span></button></td>';
   tr.querySelector('button').onclick = () => location = '/neu.zip?von=' + v + '&bis=' + w
@@ -179,6 +184,8 @@ class Portal(BaseHTTPRequestHandler):
             return self._html(NEU_FALSCH)
         if pfad == "/export-starr":
             return self._html(NEU_STARR)
+        if pfad == "/export-ohne-erweitert":  # die Seite hat (noch) keinen Bereich mit Spalten
+            return self._html(NEU_RICHTIG.replace("Erweiterte Einstellungen", "Mehr"))
         if pfad == "/export-ohne-spalten":  # fertiger Export, aber ohne Spalten zum Versand
             return self._html(NEU_RICHTIG.replace("</table>", FERTIG_ALT + "</table>", 1))
         if pfad == "/liste-leer":
@@ -495,3 +502,18 @@ def test_abruf_von_der_seite_bis_zum_einlesen(dienst, angemeldet, admin, setting
     # der Abruf steht in der Historie
     expect(seite.locator("#abruf-historie")).to_contain_text("01.02.2026 – 04.02.2026")
     assert Abruf.objects.get().stand == "fehler"
+
+
+def test_spalten_nicht_gefunden_gibt_einen_hinweis(dienst):
+    """Findet der Dienst die Kästchen nicht, läuft der Abruf trotzdem durch und sagt, was er auf
+    der Seite gesehen hat – damit sich das Ankreuzen an eine geänderte Seite anpassen lässt."""
+    dienst.rufen("/start", dienst.auftrag("/export-ohne-erweitert", mit_liste=False))
+    dienst.warten_auf("warte_auf_code")
+    dienst.rufen("/code", {"code": "123456"})
+    stand = dienst.warten_auf("fertig", "fehler")
+    assert stand["stand"] == "fertig", stand
+    (hinweis,) = stand["hinweise"]
+    assert "„Versendet am“, „SQ-verschickt“, „SQ-erstellt Datum“ nicht ankreuzen" in hinweis
+    assert "Auf der Seite wurde kein Kästchen gefunden." in hinweis
+    assert "„Erweiterte Einstellungen“ wurde nicht gefunden." in hinweis
+    assert Portal.gesehen["spalten"] == [""]
