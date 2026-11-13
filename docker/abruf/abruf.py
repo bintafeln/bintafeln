@@ -330,26 +330,52 @@ VERSANDSPALTEN = ("Versendet am", "SQ-verschickt", "SQ-erstellt Datum")
 # welche fehlen und welche angeklickt wurden.
 SPALTEN_ANKREUZEN = """(namen) => {
     const norm = t => (t || '').replace(/\\s+/g, ' ').trim().toLowerCase();
-    const kaestchen = [...document.querySelectorAll(
-        'mat-checkbox, .mat-checkbox, .mat-mdc-checkbox, label')];
-    const finden = name => kaestchen.find(k => norm(k.innerText) === norm(name));
+    const huelle = 'mat-checkbox, .mat-checkbox, .mat-mdc-checkbox';
+    // Jedes Kästchen nur einmal: die Material-Hülle, sonst das Eingabefeld selbst
+    const kaestchen = [...new Set([...document.querySelectorAll(
+        huelle + ', [role=checkbox], input[type=checkbox]')]
+        .map(k => k.closest(huelle) || k))];
+    const beschriftung = k => {
+        if (k.matches('input')) {
+            const l = (k.labels && k.labels[0]) || k.closest('label') || k.parentElement;
+            return norm(l ? l.innerText || l.textContent : '');
+        }
+        const l = k.querySelector('label');
+        return norm((l && (l.innerText || l.textContent)) || k.innerText || k.textContent);
+    };
+    // genau gleich oder mit wenig Beiwerk (z. B. ein Symbol als Text davor oder dahinter)
+    const finden = name => {
+        const n = norm(name);
+        return kaestchen.find(k => beschriftung(k) === n) || kaestchen.find(k => {
+            const t = beschriftung(k);
+            return t.length <= n.length + 20 && (t.startsWith(n) || t.endsWith(n));
+        });
+    };
     const fehlen = [], geklickt = [];
     for (const name of namen) {
-        let k = finden(name);
+        const k = finden(name);
         if (!k) { fehlen.push(name); continue; }
-        k = k.closest('mat-checkbox, .mat-checkbox, .mat-mdc-checkbox') || k;
-        const feld = k.querySelector('input[type=checkbox]')
-            || (k.htmlFor ? document.getElementById(k.htmlFor) : null);
-        const an = feld ? feld.checked : /checkbox-checked/.test(k.className);
+        const feld = k.matches('input') ? k : k.querySelector('input[type=checkbox]');
+        const an = feld ? feld.checked : (k.getAttribute('aria-checked') === 'true'
+            || /checkbox-checked/.test(k.className));
         if (!an) { (feld || k).click(); geklickt.push(name); }
     }
-    return {fehlen, geklickt};
+    return {fehlen, geklickt, gesehen: kaestchen.map(beschriftung).filter(Boolean).slice(0, 40)};
 }"""
+# Klappt „Erweiterte Einstellungen“ auf. Die Überschrift kann ein Symbol als Text enthalten
+# (z. B. „expand_more“), deshalb zählt der Anfang; geklickt wird auf das kleinste Element damit
+# oder seinen anklickbaren Rahmen.
 ERWEITERT_OEFFNEN = """() => {
-    const kopf = [...document.querySelectorAll('*')].find(e => e.children.length <= 2
-        && (e.innerText || '').trim().toLowerCase() === 'erweiterte einstellungen');
-    if (kopf) kopf.click();
-    return !!kopf;
+    const norm = t => (t || '').replace(/\\s+/g, ' ').trim().toLowerCase();
+    const treffer = [...document.querySelectorAll('body *')].filter(e => {
+        const t = norm(e.innerText);
+        return t.startsWith('erweiterte einstellungen') && t.length <= 45;
+    });
+    if (!treffer.length) return false;
+    const kopf = treffer[treffer.length - 1];
+    (kopf.closest('button, [role=button], mat-expansion-panel-header, '
+        + '.mat-expansion-panel-header') || kopf).click();
+    return true;
 }"""
 
 
@@ -387,18 +413,31 @@ def _versandspalten(auftrag: Auftrag, seite) -> None:
     „Erweiterte Einstellungen“, die dafür aufgeklappt werden). Klappt das nicht, läuft der Abruf
     weiter, aber mit einem Hinweis: Ohne die Spalten bleibt „versendet“ in bintafeln leer."""
     stand = seite.evaluate(SPALTEN_ANKREUZEN, list(VERSANDSPALTEN))
-    if stand["fehlen"] and seite.evaluate(ERWEITERT_OEFFNEN):
-        _warten(auftrag, seite, ZEITEN["klick"])
-        stand = seite.evaluate(SPALTEN_ANKREUZEN, list(VERSANDSPALTEN))
+    aufgeklappt = None
+    if stand["fehlen"]:
+        aufgeklappt = seite.evaluate(ERWEITERT_OEFFNEN)
+        for _ in range(3):  # der Bereich kann sich langsam öffnen
+            _warten(auftrag, seite, ZEITEN["klick"])
+            stand = seite.evaluate(SPALTEN_ANKREUZEN, list(VERSANDSPALTEN))
+            if not stand["fehlen"]:
+                break
     _warten(auftrag, seite, ZEITEN["klick"])
     nochmal = seite.evaluate(SPALTEN_ANKREUZEN, list(VERSANDSPALTEN))
+    # Für die Fehlersuche ins Protokoll des Dienstes: nur Beschriftungen der Seite, keine Daten
+    print(f"[abruf] Spalten: fehlen {stand['fehlen']}, angeklickt {stand['geklickt']}, danach "
+          f"noch aus {nochmal['geklickt']}, „Erweiterte Einstellungen“ aufgeklappt: "
+          f"{aufgeklappt}, Kästchen der Seite: {stand['gesehen']}", flush=True)  # fmt: skip
     if stand["fehlen"] or nochmal["geklickt"]:
         nicht = stand["fehlen"] or nochmal["geklickt"]
         auftrag.hinweise.append(
             "Im Finanzexport ließen sich die Spalten „" + "“, „".join(nicht) + "“ nicht "
             "ankreuzen (unter „Erweiterte Einstellungen → Spalten“). Ohne sie erfährt bintafeln "
-            "nicht, welche Belege im Vereinsportal schon versendet sind."
-        )
+            "nicht, welche Belege im Vereinsportal schon versendet sind. "
+            + (f"Kästchen auf der Seite: {', '.join(stand['gesehen'][:12])}."
+               if stand["gesehen"] else "Auf der Seite wurde kein Kästchen gefunden.")
+            + ("" if aufgeklappt is not False
+               else " „Erweiterte Einstellungen“ wurde nicht gefunden.")
+        )  # fmt: skip
 
 
 def _neu_erzeugen(auftrag: Auftrag, kontext, seite, von: str, bis: str, ziel: Path,
