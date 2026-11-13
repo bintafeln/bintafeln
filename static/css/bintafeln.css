@@ -2029,7 +2029,7 @@ button.sortieren { background: none; border: 0; padding: 0; font: inherit; font-
 .abruf-hinweis li + li { margin-top: .35rem; }
 /* Antragsformular: Pflichtangaben fehlen – nicht zu übersehen (antrag_pruefen.js) */
 .antrag-formular .feld.hat-fehler {
-  border-left: 6px solid var(--fehler); padding: .4rem .6rem; border-radius: 6px;
+  border-inline-start: 6px solid var(--fehler); padding: .4rem .6rem; border-radius: 6px;
   background: color-mix(in srgb, var(--fehler) 7%, transparent);
 }
 .antrag-formular .hat-fehler .fehler { display: block; font-size: 1rem; margin-top: .2rem; }
