@@ -250,3 +250,75 @@ def test_auskunft_nennt_die_unterschrift_ohne_bild(vera, pdf_text):
     unterschriften.speichern(vera, "Vera Vorstand, Vorsitzende", bild())
     vera.refresh_from_db()
     assert "Vera Vorstand, Vorsitzende" in text(pdf_text, auskunft.mitarbeiter_pdf(vera))
+
+
+# --- Durchsichtiger Hintergrund und Stempel (ADR 0137) ------------------------------------------
+
+
+def papier(format="PNG") -> SimpleUploadedFile:
+    """Dunkle Tinte auf weißem Papier, mit hellgrauem Rand (wie ein Scan)."""
+    b = Image.new("RGB", (300, 120), (255, 255, 255))
+    for x in range(40, 260):
+        for y in range(50, 70):
+            b.putpixel((x, y), (20, 20, 120))
+    for x in range(300):
+        b.putpixel((x, 0), (240, 240, 240))
+        b.putpixel((x, 1), (205, 205, 205))
+    puffer = io.BytesIO()
+    b.save(puffer, format)
+    return SimpleUploadedFile(f"scan.{format.lower()}", puffer.getvalue(), "image/png")
+
+
+def test_weisser_hintergrund_wird_durchsichtig():
+    """Papier, auch hellgraues, wird durchsichtig, Tinte bleibt deckend – so verdeckt die
+    Unterschrift keinen Text der Bestätigung."""
+    for format in ("PNG", "JPEG"):
+        b = Image.open(io.BytesIO(unterschriften.aufbereiten(papier(format))))
+        assert b.mode == "RGBA"
+        assert b.getpixel((5, 10))[3] == 0  # weiß
+        assert b.getpixel((5, 0))[3] == 0  # hellgrau (über der Grenze)
+        assert 0 < b.getpixel((5, 1))[3] < 255  # dazwischen: weicher Übergang
+        assert b.getpixel((100, 60))[3] > 240  # Tinte (beim JPEG fast deckend)
+
+
+def test_stempel_hinterlegen_und_auf_der_bestaetigung(einstellungen, spender, vera, admin_client):
+    seite = reverse("spenden:einstellungen")
+    assert "Bild des Stempels" in admin_client.get(seite).content.decode()
+    assert admin_client.get(reverse("spenden:stempel_bild")).status_code == 404
+    # ohne Datei oder mit etwas anderem als einem Bild: Meldung, nichts gespeichert
+    antwort = admin_client.post(reverse("spenden:stempel"), {}, follow=True)
+    assert "Bitte ein Bild des Stempels wählen." in antwort.content.decode()
+    kaputt = SimpleUploadedFile("stempel.png", b"kein Bild", "image/png")
+    antwort = admin_client.post(reverse("spenden:stempel"), {"stempel": kaputt}, follow=True)
+    assert "Bitte ein Bild des Stempels hochladen" in antwort.content.decode()
+    assert not SpendenEinstellungen.laden().stempel
+
+    antwort = admin_client.post(reverse("spenden:stempel"), {"stempel": papier()}, follow=True)
+    assert "Der Stempel ist gespeichert." in antwort.content.decode()
+    gespeichert = admin_client.get(reverse("spenden:stempel_bild"))
+    assert Image.open(io.BytesIO(gespeichert.content)).getpixel((5, 10))[3] == 0
+    # auf jeder Bestätigung: ohne Unterschrift nur der Stempel, mit Unterschrift beide
+    spende(spender)
+    b = bst.geld_ausstellen(spender, JAHR, "admin")
+    assert bilder_im_pdf(bst.pdf([b])) == 1
+    unterschriften.speichern(vera, "Vera Vorstand, Vorsitzende", bild())
+    anderer = Adresse.objects.create(art="person", nachname="Beispiel", strasse="Gasse 1",
+                                     plz="12345", ort="Musterstadt")  # fmt: skip
+    spende(anderer)
+    assert bilder_im_pdf(bst.pdf([bst.geld_ausstellen(anderer, JAHR, "vera", vera)])) == 2
+    # ein neuer Stempel ersetzt den alten, Entfernen löscht die Datei
+    alt = SpendenEinstellungen.laden().stempel
+    admin_client.post(reverse("spenden:stempel"), {"stempel": papier("JPEG")})
+    neu = SpendenEinstellungen.laden().stempel
+    assert neu != alt and not privatdateien.pfad(SpendenEinstellungen.ORDNER, alt).exists()
+    antwort = admin_client.post(reverse("spenden:stempel"), {"loeschen": "1"}, follow=True)
+    assert "Der Stempel ist entfernt." in antwort.content.decode()
+    assert not SpendenEinstellungen.laden().stempel
+    assert not privatdateien.pfad(SpendenEinstellungen.ORDNER, neu).exists()
+    assert bilder_im_pdf(bst.pdf([b])) == 0
+
+
+def test_stempel_nur_mit_recht(client, anmelden, vera):
+    anmelden(client, vera)
+    assert client.post(reverse("spenden:stempel"), {"loeschen": "1"}).status_code == 403
+    assert client.get(reverse("spenden:stempel_bild")).status_code == 403

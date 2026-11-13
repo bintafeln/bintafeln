@@ -399,7 +399,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Aussehen der Bestätigung wie der bekannte Vordruck (ADR 0136): gezeichnet in
   `apps/spenden/vordruck.py` mit festen Maßen (nicht über den `Pdf`-Rahmen), Betrag ziffernweise
   (`vordruck.ziffern()`), Satz zur maschinellen Erstellung nur mit
-  `SpendenEinstellungen.maschinell_angezeigt`.
+  `SpendenEinstellungen.maschinell_angezeigt`. Stempel der Tafel (ADR 0137) als
+  `SpendenEinstellungen.stempel` (verschlüsselt, `unterschrift.stempel_speichern()`); Unterschrift
+  und Stempel werden beim Hochladen freigestellt (`unterschrift.freistellen()`, weiß → durchsichtig).
   Kategorie „Spender“ setzt `Spende.save()` über `adressen.models.als_spender_markieren()` (nur
   hinzufügen, nicht bei `mitgliedsbeitrag`, ADR 0132).
   Spendenentwicklung (Grafiken je Jahr) in `apps/spenden/entwicklung.py`, gezeichnet mit

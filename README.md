@@ -1579,6 +1579,10 @@ Adresse im Adressbuch (ADR 0045).
   kann dieselbe Bestätigung mit ihrer eigenen Unterschrift neu ausfertigen. Ob das Finanzamt
   eingescannte Unterschriften anerkennt, hängt davon ab, ob das Verfahren dort angezeigt wurde
   (R 10b.1 Abs. 4 EStR) – bitte mit der Steuerberatung klären.
+- **Stempel der Tafel (ADR 0137):** unter „Einstellungen → Spenden und Zuwendungsbestätigungen“
+  als Bild hinterlegen; er steht leicht schräg rechts neben der Unterschrift auf jeder
+  Bestätigung. Bei Stempel und Unterschrift macht bintafeln den weißen Hintergrund durchsichtig,
+  damit kein Text der Bestätigung verdeckt wird.
 - **Einrichten** (nur Admin) unter „Einstellungen → Spenden und Zuwendungsbestätigungen“: Name
   und Anschrift der Körperschaft, steuerbegünstigte Zwecke, Art des Bescheids
   (Freistellungsbescheid, Anlage zum KSt-Bescheid, Feststellung nach § 60a AO), Finanzamt,
