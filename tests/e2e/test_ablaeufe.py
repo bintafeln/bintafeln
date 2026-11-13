@@ -1221,6 +1221,12 @@ def test_wartezeit_push_einschalten(seite, admin):
         + p256dh
         + "';"
         + """
+      // Erlaubnis wie nach „Zulassen“ (manche Testbrowser melden sonst immer „blockiert“)
+      if (window.Notification) {
+        Object.defineProperty(Notification, "permission",
+                              { get: function () { return "granted"; } });
+        Notification.requestPermission = function () { return Promise.resolve("granted"); };
+      }
       if (window.PushManager) {
         PushManager.prototype.getSubscription = function () { return Promise.resolve(null); };
         PushManager.prototype.subscribe = function () {
