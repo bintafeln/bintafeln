@@ -68,6 +68,7 @@ class Auftrag:
         self.stand, self.schritt, self.fehler = "frei", "", ""
         self.code, self.abbrechen, self.nummer = "", False, 0
         self.hinweise: list[str] = []  # was nicht geklappt hat, ohne den Abruf abzubrechen
+        self.versand_bau = ""  # Bauplan der Kästchen zum Versand, für die Fehlersuche
 
     def melden(self, schritt: str, stand: str | None = None):
         print(f"[abruf] {schritt}", flush=True)  # für „docker compose logs abruf“; nie Zugangsdaten
@@ -328,39 +329,78 @@ ZEITRAEUME = """() => [...document.querySelectorAll('table tr em')].map(e => e.i
 VERSANDSPALTEN = ("Versendet am", "SQ-verschickt", "SQ-erstellt Datum")
 # Kreuzt die genannten Kästchen an, die es gibt und die noch nicht angekreuzt sind. Ergebnis:
 # welche fehlen und welche angeklickt wurden.
-SPALTEN_ANKREUZEN = """(namen) => {
+SPALTEN_ANKREUZEN = """([namen, klicken]) => {
+    // Gesucht wird über die Beschriftung, denn die Kästchen von WISO MeinVerein sind eigene
+    // Bausteine. Alle Elemente, auch in offenen Shadow-DOMs.
     const norm = t => (t || '').replace(/\\s+/g, ' ').trim().toLowerCase();
-    const huelle = 'mat-checkbox, .mat-checkbox, .mat-mdc-checkbox';
-    // Jedes Kästchen nur einmal: die Material-Hülle, sonst das Eingabefeld selbst
-    const kaestchen = [...new Set([...document.querySelectorAll(
-        huelle + ', [role=checkbox], input[type=checkbox]')]
-        .map(k => k.closest(huelle) || k))];
-    const beschriftung = k => {
-        if (k.matches('input')) {
-            const l = (k.labels && k.labels[0]) || k.closest('label') || k.parentElement;
-            return norm(l ? l.innerText || l.textContent : '');
+    const alle = [];
+    const sammeln = wurzel => {
+        for (const e of wurzel.querySelectorAll('*')) {
+            alle.push(e);
+            if (e.shadowRoot) sammeln(e.shadowRoot);
         }
-        const l = k.querySelector('label');
-        return norm((l && (l.innerText || l.textContent)) || k.innerText || k.textContent);
     };
-    // genau gleich oder mit wenig Beiwerk (z. B. ein Symbol als Text davor oder dahinter)
-    const finden = name => {
-        const n = norm(name);
-        return kaestchen.find(k => beschriftung(k) === n) || kaestchen.find(k => {
-            const t = beschriftung(k);
-            return t.length <= n.length + 20 && (t.startsWith(n) || t.endsWith(n));
-        });
+    sammeln(document);
+    const text = e => norm(e.innerText || e.textContent);
+    const klasse = e => (typeof e.className === 'string' ? e.className
+        : (e.className && e.className.baseVal) || '');
+    const STEUER = 'input[type=checkbox], [role=checkbox], [aria-checked], mat-checkbox, '
+        + '.mat-mdc-checkbox, .mat-checkbox';
+    // das innerste Element mit genau dieser Beschriftung
+    const beschriftung = name => {
+        const n = norm(name), t = alle.filter(e => text(e) === n);
+        return t.length ? t[t.length - 1] : null;
     };
-    const fehlen = [], geklickt = [];
+    // eigene Bausteine erkennt man meist an „checkbox“ in der Klasse
+    const AEHNLICH = '[class*=checkbox], [class*=check-box], [class*=Checkbox]';
+    // das Kästchen dazu: in der Beschriftung oder bis zu vier Ebenen darüber
+    const kaestchen = e => {
+        for (const sel of [STEUER, AEHNLICH])
+            for (let a = e, i = 0; a && i < 5; i++, a = a.parentElement) {
+                const k = a.matches(sel) ? a : a.querySelector(sel);
+                if (k) return k;
+            }
+        return null;
+    };
+    const angekreuzt = (k, e) => {
+        if (k) {
+            const f = k.matches('input') ? k : k.querySelector('input[type=checkbox]');
+            if (f) return f.checked;
+            const mit = k.hasAttribute('aria-checked') ? k : k.querySelector('[aria-checked]');
+            if (mit) return mit.getAttribute('aria-checked') === 'true';
+        }
+        for (let a = k || e, i = 0; a && i < 4; i++, a = a.parentElement)
+            if (/(^|[-_\\s])(checked|selected)(\\s|$)/i.test(klasse(a))) return true;
+        return null;  // nicht zu erkennen
+    };
+    // Bauplan für die Fehlersuche: nur Bausteine, Klassen und Zustände, keine Inhalte
+    const bau = e => {
+        const teile = [];
+        for (let a = e, i = 0; a && i < 5; i++, a = a.parentElement) {
+            const kl = klasse(a).trim().split(/\\s+/).filter(Boolean).slice(0, 3).join('.');
+            const at = ['role', 'aria-checked', 'type'].filter(x => a.hasAttribute(x))
+                .map(x => '[' + x + '=' + a.getAttribute(x) + ']').join('');
+            teile.push(a.tagName.toLowerCase() + (kl ? '.' + kl : '') + at);
+        }
+        return teile.reverse().join(' > ');
+    };
+    const fehlen = [], geklickt = [], aus = [], unklar = [], bauplaene = [];
     for (const name of namen) {
-        const k = finden(name);
-        if (!k) { fehlen.push(name); continue; }
-        const feld = k.matches('input') ? k : k.querySelector('input[type=checkbox]');
-        const an = feld ? feld.checked : (k.getAttribute('aria-checked') === 'true'
-            || /checkbox-checked/.test(k.className));
-        if (!an) { (feld || k).click(); geklickt.push(name); }
+        const e = beschriftung(name);
+        if (!e) { fehlen.push(name); continue; }
+        const k = kaestchen(e), an = angekreuzt(k, e);
+        bauplaene.push(name + ': ' + bau(k || e));
+        if (an === false) aus.push(name);
+        if (an === null) unklar.push(name);
+        if (klicken && an !== true) {
+            const ziel = k ? (k.matches('input') ? k
+                : k.querySelector('input[type=checkbox]') || k) : e;
+            ziel.click();
+            geklickt.push(name);
+        }
     }
-    return {fehlen, geklickt, gesehen: kaestchen.map(beschriftung).filter(Boolean).slice(0, 40)};
+    return {fehlen, geklickt, aus, unklar, bauplaene,
+            steuer: alle.filter(e => e.matches(STEUER)).length};
 }"""
 # Klappt „Erweiterte Einstellungen“ auf. Die Überschrift kann ein Symbol als Text enthalten
 # (z. B. „expand_more“), deshalb zählt der Anfang; geklickt wird auf das kleinste Element damit
@@ -410,33 +450,42 @@ def _zeitraum_einstellen(auftrag: Auftrag, seite, von: str, bis: str):
 
 def _versandspalten(auftrag: Auftrag, seite) -> None:
     """Die Spalten „Versendet am“, „SQ-verschickt“ und „SQ-erstellt Datum“ ankreuzen (unter
-    „Erweiterte Einstellungen“, die dafür aufgeklappt werden). Klappt das nicht, läuft der Abruf
-    weiter, aber mit einem Hinweis: Ohne die Spalten bleibt „versendet“ in bintafeln leer."""
-    stand = seite.evaluate(SPALTEN_ANKREUZEN, list(VERSANDSPALTEN))
+    „Erweiterte Einstellungen“, die nur aufgeklappt werden, wenn die Spalten nicht zu sehen sind
+    – ein Klick auf einen offenen Bereich klappt ihn zu). Klappt das nicht, läuft der Abruf
+    weiter, aber mit einem Hinweis samt Bauplan der Seite für die Fehlersuche."""
+    namen = list(VERSANDSPALTEN)
+    stand = seite.evaluate(SPALTEN_ANKREUZEN, [namen, False])
     aufgeklappt = None
     if stand["fehlen"]:
         aufgeklappt = seite.evaluate(ERWEITERT_OEFFNEN)
         for _ in range(3):  # der Bereich kann sich langsam öffnen
             _warten(auftrag, seite, ZEITEN["klick"])
-            stand = seite.evaluate(SPALTEN_ANKREUZEN, list(VERSANDSPALTEN))
+            stand = seite.evaluate(SPALTEN_ANKREUZEN, [namen, False])
             if not stand["fehlen"]:
                 break
-    _warten(auftrag, seite, ZEITEN["klick"])
-    nochmal = seite.evaluate(SPALTEN_ANKREUZEN, list(VERSANDSPALTEN))
-    # Für die Fehlersuche ins Protokoll des Dienstes: nur Beschriftungen der Seite, keine Daten
-    print(f"[abruf] Spalten: fehlen {stand['fehlen']}, angeklickt {stand['geklickt']}, danach "
-          f"noch aus {nochmal['geklickt']}, „Erweiterte Einstellungen“ aufgeklappt: "
-          f"{aufgeklappt}, Kästchen der Seite: {stand['gesehen']}", flush=True)  # fmt: skip
-    if stand["fehlen"] or nochmal["geklickt"]:
-        nicht = stand["fehlen"] or nochmal["geklickt"]
+    if not stand["fehlen"]:
+        stand = seite.evaluate(SPALTEN_ANKREUZEN, [namen, True])
+        _warten(auftrag, seite, ZEITEN["klick"])
+    danach = seite.evaluate(SPALTEN_ANKREUZEN, [namen, False])
+    auftrag.versand_bau = f"Kästchen auf der Seite: {danach['steuer']}; " + " | ".join(
+        danach["bauplaene"] or ["keine Beschriftung gefunden"]
+    )
+    # Für die Fehlersuche ins Protokoll des Dienstes: nur Bausteine der Seite, keine Daten
+    print(
+        f"[abruf] Spalten: fehlen {danach['fehlen']}, angeklickt {stand['geklickt']}, "
+        f"danach aus {danach['aus']}, Stand unklar {danach['unklar']}, „Erweiterte "
+        f"Einstellungen“ aufgeklappt: {aufgeklappt}; {auftrag.versand_bau}",
+        flush=True,
+    )
+    nicht = danach["fehlen"] or danach["aus"]
+    if nicht:
         auftrag.hinweise.append(
             "Im Finanzexport ließen sich die Spalten „" + "“, „".join(nicht) + "“ nicht "
             "ankreuzen (unter „Erweiterte Einstellungen → Spalten“). Ohne sie erfährt bintafeln "
             "nicht, welche Belege in WISO MeinVerein schon versendet sind. "
-            + (f"Kästchen auf der Seite: {', '.join(stand['gesehen'][:12])}."
-               if stand["gesehen"] else "Auf der Seite wurde kein Kästchen gefunden.")
-            + ("" if aufgeklappt is not False
-               else " „Erweiterte Einstellungen“ wurde nicht gefunden.")
+            + ("„Erweiterte Einstellungen“ wurde nicht gefunden. " if aufgeklappt is False
+               else "")
+            + f"Für die Fehlersuche: {auftrag.versand_bau}"
         )  # fmt: skip
 
 
@@ -536,6 +585,12 @@ def _finanzexport(auftrag: Auftrag, kontext, seite, d: dict):
         fertige = _fertige_exporte(seite, d["von"], d["bis"])
     _neu_erzeugen(auftrag, kontext, seite, d["von"], d["bis"], ziel, ohne=fertige)
     _inhalt_melden(ziel)
+    if not mit_versand(ziel) and not any("ankreuzen" in h for h in auftrag.hinweise):
+        auftrag.hinweise.append(
+            "Die Kästchen für „Versendet am“, „SQ-verschickt“ und „SQ-erstellt Datum“ wurden "
+            "angeklickt, der Export enthält die Spalten aber trotzdem nicht. Für die "
+            f"Fehlersuche: {auftrag.versand_bau}"
+        )
 
 
 def ablauf(auftrag: Auftrag, d: dict, browser_pfad: str | None = None):
