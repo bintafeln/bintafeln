@@ -12,6 +12,7 @@ from apps.adressen.models import Adresse
 from apps.konten import rollen
 from apps.spenden import bestaetigung as bst
 from apps.spenden import vordruck, worte
+from apps.spenden.forms import SpendenEinstellungenForm
 from apps.spenden.models import Spende, SpendenEinstellungen, Zuwendungsbestaetigung
 
 pytestmark = pytest.mark.django_db
@@ -59,6 +60,9 @@ def test_fehlende_angaben_verhindern_bestaetigung(spender):
         bst.geld_ausstellen(spender, 2026, "chefin")
     e.grundlage = e.Grundlage.FESTSTELLUNG
     assert "Veranlagungszeitraum" not in e.fehlende_angaben()
+    # wer unterschreibt, ist keine Pflichtangabe mehr (ADR 0136) und steht nicht im Formular
+    assert "Unterschrift" not in e.fehlende_angaben()
+    assert "unterzeichnet_von" not in SpendenEinstellungenForm().fields
 
 
 def test_einzel_und_sammelbestaetigung(einstellungen, spender, pdf_text, admin_client):

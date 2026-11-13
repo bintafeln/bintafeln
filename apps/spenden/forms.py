@@ -56,8 +56,7 @@ class SpendenEinstellungenForm(forms.ModelForm):
         model = SpendenEinstellungen
         fields = ["koerperschaft", "anschrift", "zwecke", "grundlage", "finanzamt", "steuernummer",
                   "bescheid_vom", "veranlagungszeitraum", "mitgliedsbeitraege_abziehbar",
-                  "unterzeichnet_von", "ort", "naechste_nummer",
-                  "maschinell_angezeigt"]  # fmt: skip
+                  "ort", "naechste_nummer", "maschinell_angezeigt"]  # fmt: skip
         widgets = {"bescheid_vom": DatumEingabe(), "zwecke": forms.Textarea(attrs={"rows": 3})}
 
 
