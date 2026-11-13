@@ -40,8 +40,10 @@ def test_rechnen(daten):
     assert ew.je_monat(2025)[:4] == [20.0, 0.0, 780.0, 100.0]
     assert ew.anzahl_je_monat(2025)[:4] == [1, 0, 2, 1]
     assert ew.laufend([1.0, 2.0, 3.0, 4.0], 3) == [1.0, 3.0, 6.0]
-    assert [ew.stufe(D(b)) for b in ("25", "25.01", "100", "500", "500.01")] == [
-        "bis 25 €", "25,01 – 100 €", "25,01 – 100 €", "100,01 – 500 €", "über 500 €"]  # fmt: skip
+    grenzen = ("10", "10.01", "25", "25.01", "50", "50.01", "100", "500", "500.01")
+    assert [ew.stufe(D(b)) for b in grenzen] == [
+        "bis 10 €", "10,01 – 25 €", "10,01 – 25 €", "25,01 – 50 €", "25,01 – 50 €",
+        "50,01 – 100 €", "50,01 – 100 €", "100,01 – 500 €", "über 500 €"]  # fmt: skip
 
 
 def test_abschnitte(daten):
@@ -58,7 +60,8 @@ def test_abschnitte(daten):
     assert monate["zeilen"][2] == ["Mär", "780,00 €", "100,00 €"] and "<svg" in monate["svg"]
     hoehe = ew.abschnitt_hoehe(2025)
     assert hoehe["zeilen"] == [
-        ["bis 25 €", 1, "20,00 €"], ["25,01 – 100 €", 2, "130,00 €"],
+        ["bis 10 €", 0, "0,00 €"], ["10,01 – 25 €", 1, "20,00 €"],
+        ["25,01 – 50 €", 1, "30,00 €"], ["50,01 – 100 €", 1, "100,00 €"],
         ["100,01 – 500 €", 0, "0,00 €"], ["über 500 €", 1, "750,00 €"],
     ]  # fmt: skip
     spender = ew.abschnitt_spender(2025)
