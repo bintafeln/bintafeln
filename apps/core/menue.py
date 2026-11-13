@@ -167,6 +167,7 @@ def menue(request) -> list[dict]:
     ])  # fmt: skip
     dazu("Verein/Spenden", [
         ("spenden.sehen", _eintrag("Spendenliste", "spenden:liste", genau=True)),
+        ("spenden.sehen", _eintrag("Spendenentwicklung", "spenden:entwicklung")),
         ("spenden.erfassen", _eintrag("Spende erfassen", "spenden:neu")),
         ("spenden.erfassen", _eintrag("Spenden importieren", "spenden:importieren")),
         ("spenden.bestaetigen", _eintrag("Zuwendungsbestätigungen", "spenden:bestaetigungen")),

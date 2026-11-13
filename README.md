@@ -1537,6 +1537,10 @@ Adresse im Adressbuch (ADR 0045).
   **hochgeladenen Belegen** aus einem anderen Programm (z. B. Vereinsportal; Zuordnung über die
   Belegnummer im Dateinamen oder von Hand). Ein PDF für den Druck oder E-Mails mit PDF-Anhang an
   Spender mit E-Mail-Einwilligung; danach gelten die Spenden als bedankt.
+- **Spendenentwicklung** („Spenden → Spendenentwicklung“): Grafiken zu den Geldspenden eines
+  Jahres – Summe im Jahresverlauf mit dem Vorjahr zum Vergleich, Spenden je Monat, Anzahl je
+  Monat, Spenden nach Höhe, Einmal- und Mehrfachspender, Summe je Jahr. Jede Grafik auch als
+  Tabelle und CSV.
 - **Zuwendungsbestätigungen** als PDF nach den amtlichen Mustern: Einzel-, Sammel- (mit Anlage)
   und Sachbestätigung, Betrag in Ziffern und Worten, fortlaufende Nummer. „Alle ausstellen“
   erstellt am Jahresende für alle Spender auf einmal. Jede Spende wird nur einmal bestätigt;

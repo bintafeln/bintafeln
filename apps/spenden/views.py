@@ -123,6 +123,31 @@ def liste(request):
     })  # fmt: skip
 
 
+@never_cache
+@rollen.recht_erforderlich("spenden.sehen")
+def entwicklung(request):
+    """Spendenentwicklung als Grafik; jeder Abschnitt auch als Tabelle und CSV."""
+    from apps.spenden import entwicklung as ew
+
+    jahr, heute = _jahr(request), timezone.localdate()
+    teile = ew.abschnitte(jahr, heute)
+    teil = next((t for t in teile if t["id"] == request.GET.get("csv")), None)
+    if teil is not None:
+        antwort = HttpResponse(content_type="text/csv; charset=utf-8")
+        antwort["Content-Disposition"] = (
+            f'attachment; filename="spendenentwicklung-{teil["id"]}-{jahr}.csv"'
+        )
+        antwort.write("\ufeff")
+        schreiber = csv.writer(antwort, delimiter=";")
+        schreiber.writerow(teil["kopf"])
+        schreiber.writerows(teil["zeilen"])
+        return antwort
+    return render(request, "spenden/entwicklung.html", {
+        "jahr": jahr, "jahre": _jahre(), "abschnitte": teile, "abfrage": f"jahr={jahr}",
+        "k": ew.kennzahlen(jahr, heute),
+    })  # fmt: skip
+
+
 @require_POST
 @rollen.recht_erforderlich("spenden.sehen")
 def spalten(request):
