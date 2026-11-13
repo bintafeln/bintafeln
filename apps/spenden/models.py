@@ -54,6 +54,12 @@ class SpendenEinstellungen(models.Model):
     ort = models.CharField("Ort für Ort und Datum", max_length=100, blank=True,
                            help_text="Leer = Ort der Tafel.")  # fmt: skip
     naechste_nummer = models.PositiveIntegerField("Nächste Bestätigungsnummer", default=1)
+    maschinell_angezeigt = models.BooleanField(
+        "Maschinelle Erstellung dem Finanzamt angezeigt", default=False,
+        help_text="Nur ankreuzen, wenn die Tafel dem Finanzamt angezeigt hat, dass sie "
+        "Bestätigungen maschinell ohne eigenhändige Unterschrift erstellt (R 10b.1 Abs. 4 EStR). "
+        "Dann steht ein Satz dazu unten auf jeder Bestätigung.",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Einstellungen für Spenden"

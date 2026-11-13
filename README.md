@@ -1564,7 +1564,11 @@ Adresse im Adressbuch (ADR 0045).
   Monat, Spenden nach Höhe, Einmal- und Mehrfachspender, Summe je Jahr. Jede Grafik auch als
   Tabelle und CSV.
 - **Zuwendungsbestätigungen** als PDF nach den amtlichen Mustern: Einzel-, Sammel- (mit Anlage)
-  und Sachbestätigung, Betrag in Ziffern und Worten, fortlaufende Nummer. „Alle ausstellen“
+  und Sachbestätigung, Betrag in Ziffern und ziffernweise in Buchstaben, fortlaufende Nummer.
+  Aufbau wie der bekannte Vordruck (ADR 0136): gerahmte Kästen, Ankreuzfelder zur
+  Steuerbegünstigung, Linie für Ort, Datum und Unterschrift, Anlage mit allen Spenden (neueste
+  zuerst). Ist die maschinelle Erstellung dem Finanzamt angezeigt (Einstellung), steht der Satz
+  dazu unten auf jeder Bestätigung. „Alle ausstellen“
   erstellt am Jahresende für alle Spender auf einmal. Jede Spende wird nur einmal bestätigt;
   Stornieren lässt die Nummer bestehen. Bestätigte Spenden sind nicht mehr änderbar, Adressen
   mit Spenden nicht löschbar.
@@ -1578,7 +1582,8 @@ Adresse im Adressbuch (ADR 0045).
 - **Einrichten** (nur Admin) unter „Einstellungen → Spenden und Zuwendungsbestätigungen“: Name
   und Anschrift der Körperschaft, steuerbegünstigte Zwecke, Art des Bescheids
   (Freistellungsbescheid, Anlage zum KSt-Bescheid, Feststellung nach § 60a AO), Finanzamt,
-  Steuernummer, Datum, Veranlagungszeitraum, Unterschrift, Startnummer. Ob die Angaben zur
+  Steuernummer, Datum, Veranlagungszeitraum, Unterschrift, Startnummer, „Maschinelle Erstellung
+  dem Finanzamt angezeigt“. Ob die Angaben zur
   Tafel passen, bitte mit der Steuerberatung klären.
 
 ## Statistik
