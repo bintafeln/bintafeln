@@ -76,7 +76,7 @@ class DankForm(forms.Form):
         help_text="Fehlende Bestätigungen für Geldspenden werden dabei ausgestellt.",
     )  # fmt: skip
     mit_belegen = forms.BooleanField(
-        label="Hochgeladene Belege beilegen (z. B. aus dem Vereinsportal)", required=False,
+        label="Hochgeladene Belege beilegen (z. B. aus WISO MeinVerein)", required=False,
         initial=True,
     )  # fmt: skip
     mail = forms.BooleanField(

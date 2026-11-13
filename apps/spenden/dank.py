@@ -2,7 +2,7 @@
 
 Je Spender ein Brief aus einer Serienbrief-Vorlage. Beigelegt werden auf Wunsch die
 Zuwendungsbestätigungen aus bintafeln (fehlende werden dabei ausgestellt) und hochgeladene Belege
-aus anderen Programmen, z. B. dem Vereinsportal (``SpendenBeleg``). Einfach- und Mehrfachspender
+aus anderen Programmen, z. B. WISO MeinVerein (``SpendenBeleg``). Einfach- und Mehrfachspender
 lassen sich getrennt auswählen. Nach dem Erstellen trägt jede Spende ``bedankt_am``.
 """
 

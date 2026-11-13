@@ -1,4 +1,4 @@
-"""Finanzexport und Spenderliste aus dem Vereinsportal in den Spendenpool einlesen (ADR 0128).
+"""Finanzexport und Spenderliste aus WISO MeinVerein in den Spendenpool einlesen (ADR 0128).
 
 Die Regeln zum Lesen stammen aus dem bisherigen Spendenbelege-Programm der Tafel:
 
@@ -13,7 +13,7 @@ Die Regeln zum Lesen stammen aus dem bisherigen Spendenbelege-Programm der Tafel
 
 Jeder Beleg wird eine Spende im gemeinsamen Spendenpool (``apps.spenden``): der Spender im
 Adressbuch, die Spende mit Datum, Betrag und Belegnummer, das PDF als ``SpendenBeleg`` daran.
-``Spende.fremdbeleg`` hält fest, dass es dafür schon einen Beleg aus dem Vereinsportal gibt und
+``Spende.fremdbeleg`` hält fest, dass es dafür schon einen Beleg aus WISO MeinVerein gibt und
 ob er dort versendet ist – damit bintafeln nie eine zweite Bestätigung ausstellt.
 """
 
@@ -88,8 +88,8 @@ class Ergebnis:
         if not self.belege:
             return (
                 f"Die Datei enthält keine Spendenbelege: {self.dateien} Dateien, davon "
-                f"{self.pdfs} PDF, aber keines mit „Spenden“ im Namen. Wurde der Export im "
-                "Vereinsportal mit den Belegen erzeugt, und stimmt der Zeitraum?"
+                f"{self.pdfs} PDF, aber keines mit „Spenden“ im Namen. Wurde der Export in "
+                "WISO MeinVerein mit den Belegen erzeugt, und stimmt der Zeitraum?"
             )
         return (
             f"Kein Beleg ließ sich lesen ({self.belege} in der Datei): Bei allen fehlt die "
@@ -108,7 +108,7 @@ def bericht(e: Ergebnis) -> str:
     if e.ohne_anschrift:
         teile.append(f"{e.ohne_anschrift} ohne vollständige Anschrift ausgelassen")
     teile.append(
-        f"{e.versendet} als im Vereinsportal versendet vermerkt" if e.mit_uebersicht
+        f"{e.versendet} als in WISO MeinVerein versendet vermerkt" if e.mit_uebersicht
         else "keine Übersicht der versendeten Belege in der Datei gefunden"
     )  # fmt: skip
     return ", ".join(teile) + "."
@@ -368,7 +368,7 @@ def finanzexport_einlesen(datei, von: str) -> Ergebnis:
     except zipfile.BadZipFile as fehler:
         raise EinleseFehler("Die Datei ist kein ZIP-Archiv.") from fehler
     absender = PortalEinstellungen.laden().absender
-    # Was schon da ist: Belege aus dem Vereinsportal (am Dateinamen) und Spenden mit derselben
+    # Was schon da ist: Belege aus WISO MeinVerein (am Dateinamen) und Spenden mit derselben
     # Belegnummer, z. B. aus einem früheren CSV-Import
     vorhanden = set(SpendenBeleg.objects.filter(spende__fremdbeleg__in=FREMD)
                     .values_list("dateiname", flat=True))  # fmt: skip
@@ -402,7 +402,7 @@ def finanzexport_einlesen(datei, von: str) -> Ergebnis:
         raise EinleseFehler(
             f"Alle {len(gelesen)} Belege nennen denselben Spender – das ist vermutlich die "
             "Anschrift des Vereins selbst, nicht die der Spender. Nichts wurde eingelesen. Bitte "
-            "unter „Einstellungen → Verein → Vereinsportal“ den „Namen des Vereins im Absender "
+            "unter „Einstellungen → Verein → WISO MeinVerein“ den „Namen des Vereins im Absender "
             "der Belege“ genau so eintragen, wie er auf einem Beleg in der kleinen Zeile über "
             "der Anschrift steht."
         )
@@ -484,7 +484,7 @@ def spenderliste_einlesen(inhalt: bytes) -> tuple[int, int]:
 
 
 def kontakte_anwenden() -> int:
-    """Trägt E-Mail und Versandweg bei allen Spendern aus dem Vereinsportal nach."""
+    """Trägt E-Mail und Versandweg bei allen Spendern aus WISO MeinVerein nach."""
     kontakte = {k.such_name: k for k in Kontakt.objects.all()}
     geaendert = 0
     for a in Adresse.objects.filter(spenden__fremdbeleg__in=FREMD).distinct():

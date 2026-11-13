@@ -1,11 +1,11 @@
-"""Spenden aus einer CSV-Datei übernehmen, z. B. aus dem Export eines Vereinsportals oder einer
+"""Spenden aus einer CSV-Datei übernehmen, z. B. aus dem Export von WISO MeinVerein oder einer
 Kontoliste (ADR 0055). Neutrales Format wie beim Adress-Import: erst ``pruefen()`` mit Bericht,
 dann ``uebernehmen()`` in einer Transaktion.
 
 Der Spender wird über die E-Mail oder über Name und PLZ einer vorhandenen Adresse zugeordnet;
 unbekannte Spender werden als neue Adresse angelegt (vorhandene Adressen werden nie geändert).
-Eine ``belegnummer`` (z. B. die Nummer im Vereinsportal) verhindert, dass dieselbe Spende bei einem
-späteren Import noch einmal angelegt wird.
+Eine ``belegnummer`` (z. B. die Nummer in WISO MeinVerein) verhindert, dass dieselbe Spende bei
+einem späteren Import noch einmal angelegt wird.
 """
 
 import csv

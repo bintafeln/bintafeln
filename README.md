@@ -1405,20 +1405,20 @@ die erste aktive mit PLZ oder Ort.
   braucht dafür Zugang ins Internet (https); ohne ihn fehlt die Anzeige einfach.
 - Die Anzeige wird nachgeladen; die Seiten werden dadurch nicht langsamer.
 
-### Spendenbelege aus dem Vereinsportal
+### Spendenbelege aus WISO MeinVerein
 
-Für Tafeln, die ihre Spendenbescheinigungen weiterhin im Vereinsportal ausstellen (ADR 0126,
+Für Tafeln, die ihre Spendenbescheinigungen weiterhin in WISO MeinVerein ausstellen (ADR 0126,
 0128). Die Spenden von dort kommen in denselben Spendenpool wie von Hand erfasste Spenden.
 
 - **Einlesen:** Finanzexport (ZIP) und Liste „Spender mit E-Mail“ (Excel) hochladen. Je Beleg
   entsteht eine Spende mit Spendendatum, Betrag und Belegnummer, das PDF hängt daran; der Spender
   kommt ins Adressbuch (vorhandene Adresse mit gleichem Namen und gleicher PLZ, sonst neu).
-- **Nie zwei Bestätigungen:** Was das Vereinsportal schon versendet hat, bestätigt bintafeln
-  nicht noch einmal. Eine einzelne offene Spende behält den Beleg aus dem Vereinsportal; bei
+- **Nie zwei Bestätigungen:** Was WISO MeinVerein schon versendet hat, bestätigt bintafeln
+  nicht noch einmal. Eine einzelne offene Spende behält den Beleg aus WISO MeinVerein; bei
   mehreren offenen Spenden im Jahr stellt bintafeln eine **Sammelbestätigung** aus.
 - **Dankesbriefe:** über „Spenden → Dankesbriefe“, als ein Druck-PDF (Brief und dahinter die
   Bescheinigung) oder per E-Mail – auch die Sammelbestätigung.
-- **Automatischer Abruf (optional, ADR 0127):** bintafeln meldet sich selbst im Vereinsportal an
+- **Automatischer Abruf (optional, ADR 0127):** bintafeln meldet sich selbst in WISO MeinVerein an
   und holt die Dateien; Sie geben nur den 2FA-Code ein. Dafür läuft ein zusätzlicher Dienst mit
   einem Browser (rund 1 GB). Einschalten in der `.env`:
 
@@ -1427,12 +1427,12 @@ Für Tafeln, die ihre Spendenbescheinigungen weiterhin im Vereinsportal ausstell
   BINTAFELN_ABRUF_SCHLUESSEL=<langer zufälliger Text, z. B. aus: openssl rand -hex 32>
   ```
 
-  Danach `./betrieb update`. Die Adressen der Seiten im Vereinsportal stehen unter „Einstellungen
-  → Verein → Vereinsportal“. Die **Zugangsdaten sind persönlich** (ADR 0129): Jede Person mit dem
+  Danach `./betrieb update`. Die Adressen der Seiten in WISO MeinVerein stehen unter „Einstellungen
+  → Verein → WISO MeinVerein“. Die **Zugangsdaten sind persönlich** (ADR 0129): Jede Person mit dem
   Recht „Automatischer Abruf mit eigenen Zugangsdaten“ trägt ihre eigene Anmeldung auf der Seite
-  „Abruf aus dem Vereinsportal“ ein (Passwort verschlüsselt); niemand sonst sieht sie oder ruft
+  „Abruf aus WISO MeinVerein“ ein (Passwort verschlüsselt); niemand sonst sieht sie oder ruft
   damit ab. Die Seite zeigt außerdem die bisherigen Abrufe mit Zeitraum und Ergebnis. Der Abruf bedient die
-  Seiten des Vereinsportals wie ein Mensch und kann scheitern, wenn sie sich ändern; das Hochladen
+  Seiten von WISO MeinVerein wie ein Mensch und kann scheitern, wenn sie sich ändern; das Hochladen
   von Hand geht immer.
 
 Welche Dateien und Spalten gebraucht werden, steht im Handbuch im Programm.
@@ -1460,7 +1460,7 @@ Serienbriefe (Modul 5, ADR 0044); Kunden stehen weiter im Kundenstamm.
   „Einstellungen → Mitglieder“). Spalte „Nr.“ in der Liste, sortier- und durchsuchbar. Beim Update
   bekommen alle vorhandenen Adressen ohne Mitgliedschaft einmal eine Nummer.
 - **Kategorie „Spender“ automatisch** (ADR 0132): Wer eine Spende hat (von Hand, Import oder
-  Vereinsportal; reine Mitgliedsbeiträge zählen nicht), bekommt die Kategorie „Spender“
+  WISO MeinVerein; reine Mitgliedsbeiträge zählen nicht), bekommt die Kategorie „Spender“
   zusätzlich zu seinen anderen. Beim Update werden alle vorhandenen Spender einmal nachgetragen.
 - **Mitarbeit** (nur bei einer Person, ADR 0097): Kennzeichen **Helfer** mit **aktiv/inaktiv** – wer
   als aktiver Helfer markiert ist, lässt sich später im Dienstplan und Fahrdienst einteilen. Wer
@@ -1550,13 +1550,13 @@ Adresse im Adressbuch (ADR 0045).
   Herkunft (Privat-/Betriebsvermögen), Unterlagen zur Wertermittlung.
 - **Übersicht** je Jahr mit Summen, Geldspenden je Monat, Filter und CSV-Export; auf der Seite
   einer Adresse deren Spenden und Summen je Jahr.
-- **Import** aus einer CSV-Datei (ADR 0055), z. B. dem Export eines Vereinsportals: Prüfbericht
+- **Import** aus einer CSV-Datei (ADR 0055), z. B. dem Export von WISO MeinVerein: Prüfbericht
   vorab, Spender über E-Mail oder Name+PLZ zugeordnet bzw. neu angelegt, eine **Belegnummer**
   verhindert doppelte Spenden bei erneutem Import. Spalten und Beispiel:
   [docs/beispiele/spenden/spenden.csv](docs/beispiele/spenden/spenden.csv).
 - **Dankesbriefe** (ADR 0056) aus einer Serienbrief-Vorlage, getrennt für Einfach- und
   Mehrfachspender, mit Zuwendungsbestätigung aus bintafeln (fehlende werden ausgestellt) und/oder
-  **hochgeladenen Belegen** aus einem anderen Programm (z. B. Vereinsportal; Zuordnung über die
+  **hochgeladenen Belegen** aus einem anderen Programm (z. B. WISO MeinVerein; Zuordnung über die
   Belegnummer im Dateinamen oder von Hand). Ein PDF für den Druck oder E-Mails mit PDF-Anhang an
   Spender mit E-Mail-Einwilligung; danach gelten die Spenden als bedankt.
 - **Spendenentwicklung** („Spenden → Spendenentwicklung“): Grafiken zu den Geldspenden eines

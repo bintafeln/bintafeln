@@ -8,13 +8,13 @@ def menue(eintrag):
         ("Verein/Spenden", [
             # Ein Eintrag für beides: von Hand hochladen und automatisch abrufen. Er steht für
             # beide Rechte da (dieselbe Adresse erscheint im Menü nur einmal).
-            ("vereinsportal.nutzen", eintrag("Aus dem Vereinsportal einlesen",
+            ("vereinsportal.nutzen", eintrag("Aus WISO MeinVerein einlesen",
                                              "vereinsportal:start")),
-            ("vereinsportal.abruf", eintrag("Aus dem Vereinsportal einlesen",
+            ("vereinsportal.abruf", eintrag("Aus WISO MeinVerein einlesen",
                                             "vereinsportal:start")),
         ]),
         ("Einstellungen/Verein", [
-            ("vereinsportal.nutzen", eintrag("Vereinsportal", "vereinsportal:einstellungen")),
+            ("vereinsportal.nutzen", eintrag("WISO MeinVerein", "vereinsportal:einstellungen")),
         ]),
     ]  # fmt: skip
 
@@ -26,7 +26,7 @@ def auskunft_mitarbeiter(benutzer, pdf):
     abrufe = Abruf.objects.filter(benutzer=benutzer)
     if not zugang and not abrufe.exists():
         return
-    pdf.ueberschrift("Vereinsportal")
+    pdf.ueberschrift("WISO MeinVerein")
     if zugang:
         pdf.absatz(f"Gespeicherte Zugangsdaten: E-Mail {zugang.email}, Passwort verschlüsselt "
                    f"gespeichert (geändert am {zugang.geaendert_am:%d.%m.%Y}).")  # fmt: skip
@@ -39,24 +39,24 @@ def auskunft_mitarbeiter(benutzer, pdf):
 
 MODUL = Modul(
     kennung="vereinsportal",
-    titel="Spendenbelege aus dem Vereinsportal",
-    beschreibung="Für Tafeln, die ihre Spendenbescheinigungen im Vereinsportal ausstellen: "
+    titel="Spendenbelege aus WISO MeinVerein",
+    beschreibung="Für Tafeln, die ihre Spendenbescheinigungen in WISO MeinVerein ausstellen: "
     "Finanzexport und die Liste der Spender mit E-Mail einlesen (von Hand oder automatisch). Die "
     "Spenden kommen in die Spendenliste, die Spender ins Adressbuch; bintafeln stellt für sie "
     "keine zweite Bestätigung aus, erstellt aber Sammelbestätigungen für Mehrfachspender.",
     app_label="vereinsportal",
     pfade=("/vereinsportal/",),
     rechte=(
-        ("vereinsportal.nutzen", "Spenden aus dem Vereinsportal einlesen",
+        ("vereinsportal.nutzen", "Spenden aus WISO MeinVerein einlesen",
          "Finanzexport und Spenderliste von Hand einlesen und die Einstellungen dazu ändern. "
          "Dabei entstehen Spenden und Adressen."),
         ("vereinsportal.abruf", "Automatischer Abruf mit eigenen Zugangsdaten",
-         "Finanzexport und Spenderliste automatisch aus dem Vereinsportal holen. Jedes Konto "
+         "Finanzexport und Spenderliste automatisch aus WISO MeinVerein holen. Jedes Konto "
          "trägt dafür seine eigenen Zugangsdaten ein; andere sehen und nutzen sie nicht. "
          "Gedacht für Vorstand und Admin."),
     ),
     vorgaben={"Büro": ("vereinsportal.nutzen",)},
-    kapitel=(("vereinsportal", "Spendenbelege aus dem Vereinsportal",
+    kapitel=(("vereinsportal", "Spendenbelege aus WISO MeinVerein",
               ("vereinsportal.nutzen",)),),
     menue=menue,
     auskunft_mitarbeiter=auskunft_mitarbeiter,

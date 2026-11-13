@@ -45,7 +45,7 @@ class ZugangForm(forms.ModelForm):
     """Die persönlichen Zugangsdaten des angemeldeten Kontos (ADR 0129)."""
 
     passwort = forms.CharField(
-        label="Passwort für die Anmeldung im Vereinsportal", required=False, strip=False,
+        label="Passwort für die Anmeldung in WISO MeinVerein", required=False, strip=False,
         widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
         help_text="Es wird verschlüsselt gespeichert und nie wieder angezeigt. Leer lassen, um "
         "das gespeicherte Passwort zu behalten.",

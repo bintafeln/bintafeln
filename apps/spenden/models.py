@@ -115,8 +115,8 @@ class Spende(models.Model):
         SACH = "sach", "Sachspende"
 
     class Fremdbeleg(models.TextChoices):
-        """Für diese Spende gibt es schon einen Beleg aus einem anderen Programm, z. B. dem
-        Vereinsportal (ADR 0128). So entsteht nie eine zweite Bestätigung für dieselbe Spende."""
+        """Für diese Spende gibt es schon einen Beleg aus einem anderen Programm, z. B.
+        WISO MeinVerein (ADR 0128). So entsteht nie eine zweite Bestätigung für dieselbe Spende."""
 
         KEINER = "", "–"
         OFFEN = "offen", "Beleg aus anderem Programm, dort noch nicht versendet"
@@ -156,7 +156,7 @@ class Spende(models.Model):
     zweck = models.CharField("Zweck / Anmerkung", max_length=200, blank=True)
     belegnummer = models.CharField(
         "Belegnummer", max_length=50, blank=True,
-        help_text="Z. B. die Nummer im Vereinsportal oder auf dem Kontoauszug. Beim Import wird "
+        help_text="Z. B. die Nummer in WISO MeinVerein oder auf dem Kontoauszug. Beim Import wird "
         "eine Spende mit derselben Belegnummer nicht noch einmal angelegt.",
     )  # fmt: skip
     fremdbeleg = models.CharField(
@@ -209,7 +209,7 @@ class Spende(models.Model):
 
 
 class SpendenBeleg(models.Model):
-    """Beleg aus einem anderen Programm, z. B. eine Zuwendungsbestätigung aus dem Vereinsportal
+    """Beleg aus einem anderen Programm, z. B. eine Zuwendungsbestätigung aus WISO MeinVerein
     (ADR 0056). Verschlüsselt über ``apps.core.privatdateien``; liegt dem Dankesbrief bei."""
 
     ORDNER = "spendenbelege"

@@ -5,7 +5,7 @@
   <p><a href="{% url 'spenden:liste' %}">← Spenden</a></p>
   <h1>Spenden importieren</h1>
   {% if not bericht %}
-  <p>Eine CSV-Datei mit einer Kopfzeile, z. B. aus dem Export eines Vereinsportals oder einer Kontoliste
+  <p>Eine CSV-Datei mit einer Kopfzeile, z. B. aus dem Export von WISO MeinVerein oder einer Kontoliste
     (in Excel „Speichern unter → CSV (Trennzeichen-getrennt)“). Bekannte Spalten:</p>
   <p><code>{{ spalten|join:";" }}</code></p>
   <ul>
@@ -13,7 +13,7 @@
       oder <code>nachname</code>.</li>
     <li><code>art</code>: Geld (leer) oder Sach; bei Sachspenden <code>beschreibung</code>.
       <code>mitgliedsbeitrag</code>: ja/nein.</li>
-    <li><code>belegnummer</code>: z. B. die Nummer im Vereinsportal. Eine Spende mit einer Belegnummer, die es schon
+    <li><code>belegnummer</code>: z. B. die Nummer in WISO MeinVerein. Eine Spende mit einer Belegnummer, die es schon
       gibt, wird nicht noch einmal angelegt – Sie können dieselbe Datei also gefahrlos erneut einlesen.</li>
     <li>Der Spender wird über die E-Mail oder über Name und PLZ einer vorhandenen Adresse gefunden; sonst wird eine
       neue Adresse angelegt. Vorhandene Adressen werden nicht verändert. Einwilligungen (Post, E-Mail) als Datum.</li>

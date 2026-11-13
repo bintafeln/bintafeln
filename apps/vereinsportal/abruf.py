@@ -1,4 +1,4 @@
-"""Automatischer Abruf aus dem Vereinsportal über den Dienst „abruf“ (ADR 0127).
+"""Automatischer Abruf aus WISO MeinVerein über den Dienst „abruf“ (ADR 0127).
 
 bintafeln hat keinen Browser. Es schickt dem Dienst den Auftrag (Adressen, Zugangsdaten,
 Zeitraum), reicht den 2FA-Code weiter, holt am Ende die Dateien ab und liest sie mit denselben
