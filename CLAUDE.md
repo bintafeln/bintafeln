@@ -390,9 +390,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Einsetzen (Werte immer maskiert), alte Textvorlagen, HTML→ReportLab und Mail in
   `apps/serienbriefe/gestaltung.py` (`brief()`, `mail()`, `flowables()`); PDF in `brief.py`.
 - Spenden: `Spende.fremdbeleg` (ADR 0128) kennzeichnet Spenden mit Beleg aus einem anderen
-  Programm; „versendet“ bekommt nie eine Bestätigung aus bintafeln, eine einzelne „offene“ behält
-  ihren Beleg, mehrere offene im Jahr ergeben eine Sammelbestätigung – die Regel steht nur in
-  `bestaetigung.offene_geldspenden()` und `dank._beizulegende()`.
+  Programm; „versendet“ bekommt nie eine Bestätigung aus bintafeln, „offene“ bestätigt bintafeln
+  selbst (eine einzeln, mehrere im Jahr als Sammelbestätigung, dann ohne den fremden Beleg) – die
+  Regel steht nur in `bestaetigung.offene_geldspenden()` und `dank._beizulegende()`; Übersicht aller
+  Spender eines Jahres in `bestaetigung.spenderuebersicht()`.
   Eingescannte Unterschrift (ADR 0130): `Unterschrift` je Konto (`apps/spenden/unterschrift.py`),
   nie die eines anderen Kontos anzeigen oder benutzen; `bestaetigung.unterschreiben()` nimmt nur
   die der Person, die ausstellt; das unterschriebene PDF liegt als `Ausfertigung` und wird nicht

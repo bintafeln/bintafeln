@@ -334,3 +334,47 @@ def test_vordruck_lange_anlage_auf_mehreren_seiten(einstellungen, spender, pdf_t
     text = pdf_text(admin_client.get(reverse("spenden:pdf"), {"nummern": b.nummer}))
     assert text.count("Anlage zur Sammelbestätigung") == 3  # Satz auf Seite 1 + zwei Überschriften
     assert "Mitgliedsbeitrag" in text and "700,00" in text
+
+
+def test_spenderuebersicht_zeigt_alle_spender(einstellungen, admin_client):
+    """Alle Spender des Jahres mit dem Stand ihrer Bescheinigung; ausstellen lässt sich nur für
+    das, was weder in WISO MeinVerein verschickt noch von bintafeln bestätigt ist."""
+
+    def person(nachname):
+        return Adresse.objects.create(art="person", vorname="Eva", nachname=nachname,
+                                      strasse="Weg 1", plz="12345", ort="Musterstadt")  # fmt: skip
+
+    mehrfach, portal, einfach, fertig = (person(n) for n in ("Anton", "Berg", "Clausen", "Dorn"))
+    geld(mehrfach, dt.date(2026, 2, 1), "10")
+    geld(mehrfach, dt.date(2026, 3, 1), "20")
+    geld(portal, dt.date(2026, 2, 1), "50", fremdbeleg="versendet", belegnummer="1")
+    geld(einfach, dt.date(2026, 2, 1), "30", fremdbeleg="offen", belegnummer="2")
+    geld(fertig, dt.date(2026, 1, 1), "40")
+    bst.geld_ausstellen(fertig, 2026, "chefin")
+    zeilen = {z["adresse"]: z for z in bst.spenderuebersicht(2026)}
+    assert [z["adresse"] for z in bst.spenderuebersicht(2026)] == [
+        mehrfach,
+        portal,
+        einfach,
+        fertig,
+    ]
+    assert (zeilen[mehrfach]["offen"], zeilen[mehrfach]["offen_summe"]) == (2, D("30"))
+    assert (zeilen[portal]["im_portal"], zeilen[portal]["offen"]) == (1, 0)
+    # eine einzelne, in WISO MeinVerein noch nicht versendete Spende bestätigt bintafeln selbst
+    assert zeilen[einfach]["offen"] == 1
+    assert (zeilen[fertig]["von_hier"], zeilen[fertig]["offen"]) == (1, 0)
+
+    seite = admin_client.get(reverse("spenden:bestaetigungen"), {"jahr": 2026}).content.decode()
+    assert "Spender 2026" in seite and "Dorn" in seite and "Berg" in seite
+    assert "✓ 1 in WISO MeinVerein verschickt" in seite and "✓ 1 von bintafeln bestätigt" in seite
+    assert "2 offen (30,00 €)" in seite and "Sammelbestätigung aus bintafeln" in seite
+    assert "Einzelbestätigung aus bintafeln" in seite and "Alle 2 offenen ausstellen" in seite
+    assert seite.count('name="adresse" value=') == 2  # nur die offenen sind anzuhaken
+    admin_client.post(reverse("spenden:ausstellen") + "?jahr=2026", {"alle": "1"})
+    assert einfach.spenden.get().bestaetigung.art == "geld"
+    assert mehrfach.spenden.first().bestaetigung.art == "sammel"
+    assert portal.spenden.get().bestaetigung is None
+    seite = admin_client.get(reverse("spenden:bestaetigungen"), {"jahr": 2026}).content.decode()
+    assert "Alle Spender haben ihre Bescheinigung." in seite
+    leer = admin_client.get(reverse("spenden:bestaetigungen"), {"jahr": 2020}).content.decode()
+    assert "Keine Geldspenden im Jahr 2020." in leer

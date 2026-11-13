@@ -394,6 +394,13 @@ def test_hilfe_bild_zuwendungsbestaetigungen(angemeldet, admin, muster):
         Spende.objects.create(adresse=probe, datum=tag, betrag=Decimal("50"))
     Spende.objects.create(adresse=markt, datum=dt.date(JAHR, 3, 2), betrag=Decimal("250"))
     Spende.objects.create(adresse=verein, datum=dt.date(JAHR, 4, 20), betrag=Decimal("100"))
+    # eine Spenderin, deren Bescheinigung schon über WISO MeinVerein verschickt ist
+    portal = Adresse.objects.create(
+        art="person", vorname="Greta", nachname="Gärtner", strasse="Lindenweg 4", plz="12345",
+        ort="Musterstadt",
+    )  # fmt: skip
+    Spende.objects.create(adresse=portal, datum=dt.date(JAHR, 2, 3), betrag=Decimal("80"),
+                          belegnummer="17", fremdbeleg=Spende.Fremdbeleg.VERSENDET)  # fmt: skip
     seite = oeffnen(angemeldet, admin, reverse("spenden:bestaetigungen"))
     _ohne_menue(seite)
     offen = seite.locator("section.karte").nth(1)
@@ -404,11 +411,12 @@ def test_hilfe_bild_zuwendungsbestaetigungen(angemeldet, admin, muster):
               Marke(zeile.get_by_role("button", name="ausstellen"), nummer=2, von="rechts"),
               Marke(offen.get_by_role("button", name="Ausgewählte ausstellen"), nummer=3,
                     von="unten", laenge=30),
-              Marke(offen.get_by_role("button", name="Alle 3 ausstellen"), nummer=4,
+              Marke(offen.get_by_role("button", name="Alle 3 offenen ausstellen"), nummer=4,
                     von="rechts"),
               Marke(offen.locator(".marke-warnung"), nummer=5, von="rechts", laenge=50),
-              Marke(offen.get_by_role("button", name="Nachname / Organisation"), nummer=6,
-                    von="oben", laenge=25))  # fmt: skip
+              Marke(offen.get_by_role("button", name="Summe"), nummer=6, von="oben", laenge=25),
+              Marke(offen.locator("tr", has_text="Gärtner").locator(".status"), nummer=7,
+                    von="rechts", laenge=40))  # fmt: skip
     zeile.get_by_role("button", name="ausstellen").click()
     oeffnen_knopf = seite.get_by_role("link", name="Ausgestellte Bestätigungen als PDF öffnen")
     ausgestellt = seite.locator("section.karte").last

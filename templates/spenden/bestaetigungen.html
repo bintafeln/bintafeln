@@ -32,8 +32,12 @@
 </section>
 
 <section class="karte breit">
-  <h2>Noch nicht bestätigte Geldspenden {{ jahr }}</h2>
-  {% if offen %}
+  <h2>Spender {{ jahr }}</h2>
+  <p class="hinweis">Alle Spender mit Geldspenden im Jahr und wie es um ihre Bescheinigung steht. Was in WISO MeinVerein
+    schon verschickt ist, bestätigt bintafeln nie noch einmal. Alles andere ist „offen“: Dafür stellt bintafeln die
+    Bestätigung aus – bei einer Spende eine Einzelbestätigung, bei mehreren eine Sammelbestätigung. Ein Beleg aus
+    WISO MeinVerein für eine solche Spende sollte dort dann nicht mehr verschickt werden.</p>
+  {% if spender %}
   <form method="post" action="{% url 'spenden:ausstellen' %}?jahr={{ jahr }}" id="offen-form">
   {% csrf_token %}
   <div class="tabelle-rahmen">
@@ -42,27 +46,36 @@
       <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Nachname / Organisation</button></th>
       <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Vorname</button></th>
       <th class="zahl" aria-sort="none"><button type="button" class="sortieren" data-sort="zahl">Spenden</button></th>
-      <th class="zahl" aria-sort="none"><button type="button" class="sortieren" data-sort="zahl">Summe</button></th><th></th></tr></thead>
+      <th class="zahl" aria-sort="none"><button type="button" class="sortieren" data-sort="zahl">Summe</button></th>
+      <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Bescheinigung</button></th><th></th></tr></thead>
     <tbody>
-    {% for a, summe, anzahl in offen %}
+    {% for z in spender %}{% with a=z.adresse %}
       <tr>
-        <td class="auswahl"><input type="checkbox" name="adresse" value="{{ a.pk }}" aria-label="{{ a.name }} auswählen"></td>
-        <td data-titel="Nachname / Organisation"><a href="{% url 'adressen:adresse' a.pk %}">{{ a.nachname|default:a.organisation|default:a.name }}</a>{% if not a.strasse %} <span class="marke-warnung">Anschrift fehlt</span>{% endif %}</td>
+        <td class="auswahl">{% if z.offen %}<input type="checkbox" name="adresse" value="{{ a.pk }}" aria-label="{{ a.name }} auswählen">{% endif %}</td>
+        <td data-titel="Nachname / Organisation"><a href="{% url 'adressen:adresse' a.pk %}">{{ a.nachname|default:a.organisation|default:a.name }}</a>{% if z.offen and not a.strasse %} <span class="marke-warnung">Anschrift fehlt</span>{% endif %}</td>
         <td data-titel="Vorname">{{ a.vorname }}</td>
-        <td data-titel="Spenden" class="zahl">{{ anzahl }}</td>
-        <td data-titel="Summe" class="zahl" data-wert="{{ summe|unlocalize }}">{{ summe|floatformat:2 }} €</td>
-        <td data-titel="Aktion"><button type="submit" name="einzeln" value="{{ a.pk }}" class="link-knopf"{% if fehlt %} disabled{% endif %}>ausstellen</button></td>
+        <td data-titel="Spenden" class="zahl">{{ z.anzahl }}</td>
+        <td data-titel="Summe" class="zahl" data-wert="{{ z.summe|unlocalize }}">{{ z.summe|floatformat:2 }} €</td>
+        <td data-titel="Bescheinigung" class="bescheinigung">
+          {% if z.im_portal %}<span class="status status-fertig">✓ {{ z.im_portal }} in WISO MeinVerein verschickt</span>{% endif %}
+          {% if z.von_hier %}<span class="status status-fertig">✓ {{ z.von_hier }} von bintafeln bestätigt</span>{% endif %}
+          {% if z.offen %}<span class="status status-offen">{{ z.offen }} offen ({{ z.offen_summe|floatformat:2 }} €)</span>
+            <span class="leise">{% if z.offen == 1 %}Einzelbestätigung{% else %}Sammelbestätigung{% endif %} aus bintafeln</span>{% endif %}
+        </td>
+        <td data-titel="Aktion">{% if z.offen %}<button type="submit" name="einzeln" value="{{ a.pk }}" class="link-knopf"{% if fehlt %} disabled{% endif %}>ausstellen</button>{% endif %}</td>
       </tr>
-    {% endfor %}
+    {% endwith %}{% endfor %}
     </tbody>
   </table>
   </div>
+  {% if offen_anzahl %}
   <div class="aktionsleiste">
     <button type="submit" name="auswahl" value="1" class="knopf"{% if fehlt %} disabled{% endif %}>Ausgewählte ausstellen</button>
-    <button type="submit" name="alle" value="1" class="knopf knopf-zweitrangig"{% if fehlt %} disabled{% endif %} onclick="return confirm('Für alle {{ offen|length }} Spender eine Bestätigung ausstellen?')">Alle {{ offen|length }} ausstellen</button>
+    <button type="submit" name="alle" value="1" class="knopf knopf-zweitrangig"{% if fehlt %} disabled{% endif %} onclick="return confirm('Für alle {{ offen_anzahl }} Spender mit offenen Spenden eine Bestätigung ausstellen?')">Alle {{ offen_anzahl }} offenen ausstellen</button>
   </div>
+  {% else %}<p>Alle Spender haben ihre Bescheinigung.</p>{% endif %}
   </form>
-  {% else %}<p>Keine offenen Geldspenden.</p>{% endif %}
+  {% else %}<p>Keine Geldspenden im Jahr {{ jahr }}.</p>{% endif %}
 </section>
 
 {% if sachspenden %}
