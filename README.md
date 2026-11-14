@@ -418,6 +418,9 @@ bearbeitet nur ein Admin. Rollen, die man nicht vergeben darf, bleiben beim Bear
   - Niemand kann sich selbst sperren oder sich die Admin-Rolle nehmen.
   - Das Büro bearbeitet keine Admin-Konten.
 - Jede Person kann unter „Mein Konto“ ihr **Passwort ändern**.
+- „Mein Konto“ ist der eine Ort für persönliche Angaben: PIN für Aushang-Monitore, Zugangsdaten
+  zu WISO MeinVerein und eingescannte Unterschrift werden nur dort eingetragen, geändert und
+  gelöscht; andere Seiten zeigen nur, ob etwas hinterlegt ist, und verweisen dorthin.
 - **Benachrichtigungen** (ADR 0086): Unter „Mein Konto → Benachrichtigungen“ wählt jede Person je
   Art (neuer Antrag, Korrekturwunsch, Ausfall und Gesundmeldung in Dienstplan und Fahrdienst,
   Sicherheitsupdate, Tickets) sofort, stündlich/täglich/wöchentlich gesammelt oder nie, dazu
@@ -1436,8 +1439,8 @@ Für Tafeln, die ihre Spendenbescheinigungen weiterhin in WISO MeinVerein ausste
 
   Danach `./betrieb update`. Die Adressen der Seiten in WISO MeinVerein stehen unter „Einstellungen
   → Verein → WISO MeinVerein“. Die **Zugangsdaten sind persönlich** (ADR 0129): Jede Person mit dem
-  Recht „Automatischer Abruf mit eigenen Zugangsdaten“ trägt ihre eigene Anmeldung auf der Seite
-  „Abruf aus WISO MeinVerein“ ein (Passwort verschlüsselt); niemand sonst sieht sie oder ruft
+  Recht „Automatischer Abruf mit eigenen Zugangsdaten“ trägt ihre eigene Anmeldung unter „Mein
+  Konto“ ein (Passwort verschlüsselt; ändern und löschen nur dort); niemand sonst sieht sie oder ruft
   damit ab. Die Seite zeigt außerdem die bisherigen Abrufe mit Zeitraum und Ergebnis. Der Abruf bedient die
   Seiten von WISO MeinVerein wie ein Mensch und kann scheitern, wenn sie sich ändern; das Hochladen
   von Hand geht immer.
@@ -1580,7 +1583,7 @@ Adresse im Adressbuch (ADR 0045).
   Stornieren lässt die Nummer bestehen. Bestätigte Spenden sind nicht mehr änderbar, Adressen
   mit Spenden nicht löschbar.
 - **Eingescannte Unterschrift (ADR 0130):** Wer ausstellt, kann seine eigene Unterschrift mit
-  Name und Funktion hinterlegen („Zuwendungsbestätigungen → Ihre Unterschrift“). Sie gehört nur
+  Name und Funktion hinterlegen („Mein Konto → Meine Unterschrift“; ändern und löschen nur dort). Sie gehört nur
   zum eigenen Konto; niemand sonst sieht sie oder stellt damit aus. Unterschriebene
   Bestätigungen werden als fertiges PDF gespeichert und bleiben unverändert. Eine andere Person
   kann dieselbe Bestätigung mit ihrer eigenen Unterschrift neu ausfertigen. Ob das Finanzamt

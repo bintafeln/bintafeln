@@ -19,6 +19,21 @@ def menue(eintrag):
     ]  # fmt: skip
 
 
+def mein_konto(request):
+    """Kachel auf „Mein Konto“: die eigenen Zugangsdaten – nur dort werden sie eingetragen,
+    geändert und gelöscht."""
+    from django.template.loader import render_to_string
+
+    from apps.konten import rollen
+    from apps.vereinsportal.models import Zugang
+
+    if not rollen.hat_recht(request.user, "vereinsportal.abruf"):
+        return ""
+    zugang = Zugang.objects.filter(benutzer=request.user).first()
+    return render_to_string("vereinsportal/_mein_konto.html", {"zugang": zugang},
+                            request=request)  # fmt: skip
+
+
 def auskunft_mitarbeiter(benutzer, pdf):
     from apps.vereinsportal.models import Abruf, Zugang
 
@@ -60,5 +75,6 @@ MODUL = Modul(
               ("vereinsportal.nutzen",)),),
     menue=menue,
     auskunft_mitarbeiter=auskunft_mitarbeiter,
+    mein_konto=mein_konto,
     sicherung_bereich="adressen",
 )  # fmt: skip

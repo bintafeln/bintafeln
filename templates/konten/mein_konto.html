@@ -43,6 +43,15 @@
     </div>
     {% endif %}
 
+    {% if unterschrift is not None %}
+    <div class="konto-kachel" id="meine-unterschrift">
+      <h2>Meine Unterschrift</h2>
+      <p>Eingescannte Unterschrift für Zuwendungsbestätigungen, die Sie ausstellen. Sie gehört nur zu Ihrem Konto.</p>
+      <p class="sicherung{% if unterschrift %} sicherung-ok{% endif %}">{% if unterschrift %}Hinterlegt: {{ unterschrift.name_funktion }} (zuletzt geändert am {{ unterschrift.geaendert_am|date:"d.m.Y" }}).{% else %}Keine Unterschrift hinterlegt.{% endif %}</p>
+      <p><a class="knopf{% if unterschrift %} knopf-zweitrangig{% endif %}" href="{% url 'spenden:unterschrift' %}">{% if unterschrift %}Ändern oder löschen{% else %}Unterschrift hinterlegen{% endif %}</a></p>
+    </div>
+    {% endif %}
+
     {% for teil in modul_konto %}{{ teil }}{% endfor %}
 
     {% if not user.stelle_id %}{# Konto einer Ausgabestelle: keine Person, keine Auskunft (ADR 0059) #}

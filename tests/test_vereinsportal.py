@@ -1070,8 +1070,14 @@ def test_seite_abruf_fehler_abbrechen_verwerfen(buero, dienst, zugang):
 
 def test_seite_abruf_ohne_zugangsdaten(buero, dienst, adressen):
     seite = buero.get(reverse("vereinsportal:abruf")).content.decode()
-    assert "Meine Zugangsdaten eintragen" in seite and "Abruf starten" not in seite
-    assert "Ihre eigenen</strong> Zugangsdaten" in seite
+    assert "Abruf starten" not in seite and "Ihre eigenen</strong> Zugangsdaten" in seite
+    # eingetragen wird nur unter „Mein Konto“; die Abruf-Seite verweist dorthin
+    assert "Eintragen, ändern oder löschen unter" in seite
+    assert reverse("konten:mein_konto") + "#zugang-wiso" in seite
+    assert reverse("vereinsportal:zugang") not in seite
+    konto = buero.get(reverse("konten:mein_konto")).content.decode()
+    assert "Zugangsdaten WISO MeinVerein" in konto and "Noch keine Zugangsdaten." in konto
+    assert reverse("vereinsportal:zugang") in konto
 
 
 def test_seite_abruf_ohne_adressen(buero, dienst):
@@ -1090,13 +1096,17 @@ def test_eigene_zugangsdaten_verschluesselt_und_nur_fuer_das_eigene_konto(
     assert "Bitte das Passwort eintragen" in (
         buero.post(seite, {"email": "berta@example.org"}).content.decode())  # fmt: skip
     daten = {"email": "berta@example.org", "passwort": "erfunden und geheim"}
-    assert buero.post(seite, daten).status_code == 302
+    antwort = buero.post(seite, daten)
+    assert antwort["Location"] == reverse("konten:mein_konto") + "#zugang-wiso"
     z = Zugang.objects.get()
     assert z.benutzer == berta and "erfunden" not in z.passwort_verschluesselt
     assert geheimnis.entschluesseln(z.passwort_verschluesselt) == "erfunden und geheim"
     inhalt = buero.get(seite).content.decode()
     assert "erfunden und geheim" not in inhalt and "Ein Passwort ist gespeichert" in inhalt
     assert "berta@example.org" in buero.get(reverse("vereinsportal:abruf")).content.decode()
+    konto = buero.get(reverse("konten:mein_konto")).content.decode()
+    assert "Hinterlegt: berta@example.org" in konto and "Ändern oder löschen" in konto
+    assert "← Mein Konto" in inhalt
     # leeres Passwort behält das gespeicherte
     buero.post(seite, {"email": "neu@example.org", "passwort": ""})
     z.refresh_from_db()
@@ -1106,8 +1116,9 @@ def test_eigene_zugangsdaten_verschluesselt_und_nur_fuer_das_eigene_konto(
     carl = benutzer_mit_rolle("carl", rollen.BUERO)
     anmelden(client, carl)
     inhalt = client.get(seite).content.decode() + client.get(
-        reverse("vereinsportal:abruf")).content.decode()  # fmt: skip
-    assert "neu@example.org" not in inhalt and "Meine Zugangsdaten eintragen" in inhalt
+        reverse("vereinsportal:abruf")).content.decode() + client.get(
+        reverse("konten:mein_konto")).content.decode()  # fmt: skip
+    assert "neu@example.org" not in inhalt and "Noch keine Zugangsdaten." in inhalt
     client.post(seite, {"email": "carl@example.org", "passwort": "auch erfunden"})
     assert Zugang.objects.count() == 2 and Zugang.objects.get(benutzer=carl).email == (
         "carl@example.org")  # fmt: skip

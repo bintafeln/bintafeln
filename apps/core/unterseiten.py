@@ -56,6 +56,21 @@ UNTERSEITEN = [
         "Passwort ändern", "konten:passwort_aendern", (), "Mein Konto", "Kennwort neues Passwort"
     ),
     Unterseite(
+        "Meine Unterschrift",
+        "spenden:unterschrift",
+        ("spenden.bestaetigen",),
+        "Mein Konto",
+        "eingescannte Unterschrift Zuwendungsbestätigung unterschreiben",
+    ),
+    Unterseite(
+        "Meine Zugangsdaten zu WISO MeinVerein",
+        "vereinsportal:zugang",
+        ("vereinsportal.abruf",),
+        "Mein Konto",
+        "Passwort Anmeldung automatischer Abruf",
+        modul="vereinsportal",
+    ),
+    Unterseite(
         "Benachrichtigungen einstellen",
         "konten:benachrichtigungen",
         (),
