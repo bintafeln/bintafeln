@@ -425,7 +425,7 @@ def unterschrift(request):
     eigene = Unterschrift.objects.filter(benutzer=request.user).first()
     if request.method == "POST" and "loeschen" in request.POST:
         _unterschrift_loeschen(request)
-        return redirect("spenden:unterschrift")
+        return redirect(reverse("konten:mein_konto") + "#meine-unterschrift")
     start = {"name_funktion": eigene.name_funktion} if eigene else None
     form = UnterschriftForm(request.POST or None, request.FILES or None, initial=start,
                             vorhanden=bool(eigene and eigene.bild))  # fmt: skip
@@ -435,7 +435,7 @@ def unterschrift(request):
         except unterschriften.BildFehler as fehler:
             form.add_error("bild", str(fehler))
         else:
-            return redirect("spenden:unterschrift")
+            return redirect(reverse("konten:mein_konto") + "#meine-unterschrift")
     return render(request, "spenden/unterschrift.html", {"form": form, "eigene": eigene})
 
 

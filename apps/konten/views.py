@@ -237,8 +237,19 @@ def mein_konto(request):
             "vertrauen_tage": zwei_faktor.vertrauen_tage(),
             "zwei_faktor_erlaubt": zwei_faktor.erlaubt(request.user),
             "modul_konto": module.mein_konto(request),
+            "unterschrift": _eigene_unterschrift(request.user),
         },
     )
+
+
+def _eigene_unterschrift(benutzer):
+    """Die eigene Unterschrift für Zuwendungsbestätigungen (ADR 0130) – nur für Konten, die
+    Bestätigungen ausstellen dürfen; „Mein Konto“ ist der Ort, sie zu ändern oder zu löschen."""
+    if benutzer.stelle_id or not rollen.hat_recht(benutzer, "spenden.bestaetigen"):
+        return None
+    from apps.spenden.models import Unterschrift
+
+    return Unterschrift.objects.filter(benutzer=benutzer).first() or False
 
 
 def _vertraute_geraete(benutzer):

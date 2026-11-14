@@ -26,8 +26,9 @@
         Unterschreiben von Hand. Mit einer hinterlegten Unterschrift setzt bintafeln sie ein – nur bei Bestätigungen,
         die Sie selbst ausstellen.</p>
       {% endif %}
+      <p class="hinweis">Hinterlegen, ändern oder löschen unter
+        <a href="{% url 'konten:mein_konto' %}#meine-unterschrift">Mein Konto</a> (oben rechts auf Ihren Namen).</p>
     </div>
-    <a class="knopf knopf-zweitrangig" href="{% url 'spenden:unterschrift' %}">{% if unterschrift %}Ändern{% else %}Unterschrift hinterlegen{% endif %}</a>
   </div>
 </section>
 

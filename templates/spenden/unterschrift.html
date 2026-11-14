@@ -2,7 +2,7 @@
 {% block titel %}Meine Unterschrift{% endblock %}
 {% block inhalt %}
 <section class="karte">
-  <p><a href="{% url 'spenden:bestaetigungen' %}">← Zuwendungsbestätigungen</a></p>
+  <p><a href="{% url 'konten:mein_konto' %}">← Mein Konto</a></p>
   <h1>Meine Unterschrift für Zuwendungsbestätigungen</h1>
   <div class="zugang-kasten">
     <div><strong>🔒 Nur für Ihr Konto: {{ request.user.get_full_name|default:request.user.get_username }}</strong>

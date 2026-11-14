@@ -44,8 +44,9 @@
         Ihrem bintafeln-Konto: Niemand sonst sieht sie oder kann damit abrufen – auch kein Admin. Andere tragen ihre
         eigenen ein.</p>
       {% endif %}
+      <p class="hinweis">Eintragen, ändern oder löschen unter
+        <a href="{% url 'konten:mein_konto' %}#zugang-wiso">Mein Konto</a> (oben rechts auf Ihren Namen).</p>
     </div>
-    <a class="knopf{% if zugang %} knopf-zweitrangig{% endif %}" href="{% url 'vereinsportal:zugang' %}">{% if zugang %}Ändern{% else %}Meine Zugangsdaten eintragen{% endif %}</a>
   </div>
 
   {% if not adressen %}

@@ -198,8 +198,16 @@ def test_seiten_nur_die_eigene_unterschrift(
     kaputt = SimpleUploadedFile("x.png", b"kein Bild", "image/png")
     antwort = als_vera.post(seite, {"name_funktion": "Vera", "bild": kaputt})
     assert "Bitte ein Bild der Unterschrift hochladen" in antwort.content.decode()
+    # „Mein Konto“ ist der Ort dafür: Kachel mit Stand, Zuwendungsbestätigungen verweisen dorthin
+    konto = reverse("konten:mein_konto")
+    inhalt = als_vera.get(konto).content.decode()
+    assert "Meine Unterschrift" in inhalt and "Keine Unterschrift hinterlegt." in inhalt
+    liste = als_vera.get(reverse("spenden:bestaetigungen")).content.decode()
+    assert konto + "#meine-unterschrift" in liste and seite not in liste
+    assert "← Mein Konto" in als_vera.get(seite).content.decode()
     daten = {"name_funktion": "Vera Vorstand, Vorsitzende", "bild": bild()}
-    assert als_vera.post(seite, daten).status_code == 302
+    assert als_vera.post(seite, daten)["Location"] == konto + "#meine-unterschrift"
+    assert "Hinterlegt: Vera Vorstand, Vorsitzende" in als_vera.get(konto).content.decode()
     assert als_vera.get(bild_url)["Content-Type"] == "image/png"
     inhalt = als_vera.get(seite).content.decode()
     assert "Hinterlegt:" in inhalt and "R 10b.1" in inhalt
@@ -322,3 +330,11 @@ def test_stempel_nur_mit_recht(client, anmelden, vera):
     anmelden(client, vera)
     assert client.post(reverse("spenden:stempel"), {"loeschen": "1"}).status_code == 403
     assert client.get(reverse("spenden:stempel_bild")).status_code == 403
+
+
+def test_mein_konto_ohne_recht_keine_kachel(benutzer_mit_rolle, anmelden, client):
+    """Wer keine Bestätigungen ausstellt, sieht auf „Mein Konto“ keine Kachel für die
+    Unterschrift."""
+    erika = benutzer_mit_rolle("erika", rollen.AUSGABE)
+    inhalt = anmelden(client, erika).get(reverse("konten:mein_konto")).content.decode()
+    assert "Meine Unterschrift" not in inhalt and "Zugangsdaten WISO MeinVerein" not in inhalt

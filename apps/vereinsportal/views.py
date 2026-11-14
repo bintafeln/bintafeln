@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 
@@ -146,11 +147,11 @@ def zugang(request):
     eigener = Zugang.objects.filter(benutzer=request.user).first()
     if request.method == "POST" and "loeschen" in request.POST:
         _zugang_loeschen(request, eigener)
-        return redirect("vereinsportal:abruf")
+        return redirect(reverse("konten:mein_konto") + "#zugang-wiso")
     form = ZugangForm(request.POST or None, instance=eigener or Zugang(benutzer=request.user))
     if request.method == "POST" and form.is_valid():
         _zugang_speichern(request, form)
-        return redirect("vereinsportal:abruf")
+        return redirect(reverse("konten:mein_konto") + "#zugang-wiso")
     return render(request, "vereinsportal/zugang.html", {"form": form, "eigener": eigener})
 
 

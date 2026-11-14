@@ -375,7 +375,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `Abruf` in der Historie (`abruf.historie()`).
   Hooks `Modul.fristen`, `Modul.auskunft_mitarbeiter`, `Modul.aushang`,
   `Modul.einlass`, `Modul.auskunft_antrag`, `Modul.kopfzeile`, `Modul.seitenleiste`, `Modul.suchen`,
-  `Modul.startseite`, `Modul.mein_konto`, `Modul.datenimport` (eigene Übernahmen auf der Seite
+  `Modul.startseite`, `Modul.mein_konto` (persönliche Angaben eines Kontos – PIN, Zugangsdaten,
+  Unterschrift – werden nur auf „Mein Konto“ eingetragen, geändert und gelöscht; andere Seiten
+  zeigen nur den Stand und verweisen dorthin), `Modul.datenimport` (eigene Übernahmen auf der Seite
   „Daten importieren“ statt eigener Menüpunkte). Programmname nur in
   `bintafeln/programm.py`; die Kopfzeile kürzt `static/js/kopfzeile.js` über `.kuerz-1…5`.
   Übersicht der übernommenen Altprogramme: `docs/altprogramme.md`.

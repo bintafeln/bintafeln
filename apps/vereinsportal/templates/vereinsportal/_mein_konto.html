@@ -1,0 +1,7 @@
+{# Kachel auf „Mein Konto“: die eigenen Zugangsdaten zu WISO MeinVerein (ADR 0129) #}
+<div class="konto-kachel" id="zugang-wiso">
+  <h2>Zugangsdaten WISO MeinVerein</h2>
+  <p>Für den automatischen Abruf von Finanzexport und Spenderliste. Sie gehören nur zu Ihrem Konto.</p>
+  <p class="sicherung{% if zugang %} sicherung-ok{% endif %}">{% if zugang %}Hinterlegt: {{ zugang.email }} (zuletzt geändert am {{ zugang.geaendert_am|date:"d.m.Y" }}).{% else %}Noch keine Zugangsdaten.{% endif %}</p>
+  <p><a class="knopf{% if zugang %} knopf-zweitrangig{% endif %}" href="{% url 'vereinsportal:zugang' %}">{% if zugang %}Ändern oder löschen{% else %}Zugangsdaten eintragen{% endif %}</a></p>
+</div>
