@@ -99,7 +99,6 @@ def test_abwesend_nicht_gesundheit_heisst_abwesend(h, an, admin_client):
     ({"krank_grund": "grippe"}, "Bitte einen Grund wählen."),
     ({"krank_von": ""}, "Bitte Beginn und Ende angeben."),
     ({"krank_bis": "2000-01-01"}, "Das Ende liegt vor dem Beginn."),
-    ({"krank_von": "2000-01-01", "krank_bis": "2000-01-02"}, "Das Ende liegt in der Vergangenh"),
     ({"krank_bis": "2099-01-01"}, "Höchstens 365 Tage."),
 ])  # fmt: skip
 def test_falsche_angaben(h, an, admin_client, daten, fehler):
@@ -121,17 +120,47 @@ def test_einlass_zeigt_und_meldet(h, an, client, admin, benutzer_mit_rolle, anme
     assert "Bitte einen Grund wählen." in fehler
 
 
-def test_nach_dem_ende_weg(h, an, admin_client):
+def test_rueckwirkend_eintragen(h, an, admin_client):
+    """Auch eine schon vorbei Krankmeldung lässt sich eintragen (z. B. für gestern)."""
+    gestern = (HEUTE - dt.timedelta(days=1)).isoformat()
+    daten = {"krank_grund": "krank", "krank_von": gestern, "krank_bis": gestern}
+    admin_client.post(reverse("kunden:krank_neu", args=["00042"]), daten)
+    n = Notiz.objects.get(krank_grund="krank")
+    assert krankmeldung.aktuelle("00042") == n
+
+
+def test_bleibt_nach_dem_ende_bis_der_kunde_wieder_kommt(h, an, admin_client, admin):
+    """Das Ende allein löscht nie: Sonst sähe niemand mehr, dass der Kunde entschuldigt gefehlt
+    hat. Erst die nächste Abholung ab dem Beginn macht die Meldung überflüssig."""
+    from apps.kunden.models import Abholung
+
     alt = Notiz.objects.create(kundennummer="00042", text="krank", krank_grund="krank",
                                krank_von=HEUTE - dt.timedelta(days=9),
                                krank_bis=HEUTE - dt.timedelta(days=1))  # fmt: skip
     Notiz.objects.create(kundennummer="00042", text="Bringt Bescheid")
     seite = admin_client.get(reverse("kunden:haushalt", args=["00042"])).content.decode()
-    assert "Bringt Bescheid" in seite and "notiz-krank" not in seite
+    assert "Bringt Bescheid" in seite and "notiz-krank" in seite
+    assert krankmeldung.aktuelle("00042") == alt
+    fristen_anwenden()
+    assert Notiz.objects.filter(pk=alt.pk).exists()  # nicht gelöscht, nur weil das Ende vorbei ist
+    Abholung.objects.create(haushalt=h, datum=HEUTE)  # der Kunde ist wieder da
     assert krankmeldung.aktuelle("00042") is None
     fristen_anwenden()
     assert not Notiz.objects.filter(pk=alt.pk).exists()
     assert Notiz.objects.filter(text="Bringt Bescheid").exists()
+
+
+def test_einlass_zeigt_vergangene_als_entschuldigt(
+    h, an, client, admin, benutzer_mit_rolle, anmelden
+):
+    """Am Einlass rückwirkend eintragen; die Meldung steht danach als „entschuldigt“."""
+    vorgestern = (HEUTE - dt.timedelta(days=2)).isoformat()
+    anmelden(client, benutzer_mit_rolle("ausgabe", rollen.AUSGABE))
+    seite = client.post(reverse("ausgabe:krank", args=["00042"]),
+                        {"krank_grund": "krank", "krank_von": vorgestern, "krank_bis": vorgestern},
+                        HTTP_HX_REQUEST="true").content.decode()  # fmt: skip
+    assert "Abwesenheit gespeichert." in seite
+    assert "<strong>Krank gemeldet</strong>" in seite and "entschuldigt" in seite
 
 
 def test_faellt_weg_wenn_kunde_wieder_kommt(h, an, admin):

@@ -850,12 +850,11 @@ class Nachricht(models.Model):
 
 
 def verwaiste_notizen_loeschen() -> int:
-    """Notizen zu Kundennummern, die es nicht mehr gibt, und Krankmeldungen, die nicht mehr
-    gelten (Gesundheitsdaten nur so lange wie nötig, ADR 0075): abgelaufene und solche, bei
-    denen der Kunde seit dem Beginn schon abgeholt hat (dann ist er offenbar wieder da)."""
+    """Notizen zu Kundennummern, die es nicht mehr gibt, und Krankmeldungen, sobald der Kunde
+    seit dem Beginn wieder abgeholt hat (ADR 0075). Nie allein, weil das Ende vorbei ist: Bis der
+    Kunde wieder kommt, muss sichtbar bleiben, dass er entschuldigt gefehlt hat."""
     vorhanden = Haushalt.objects.values("kundennummer")
     weg = Notiz.objects.exclude(kundennummer__in=vorhanden).delete()[0]
-    weg += Notiz.objects.filter(krank_bis__lt=timezone.localdate()).delete()[0]
     abgeholt = Abholung.objects.filter(
         haushalt__kundennummer=models.OuterRef("kundennummer"),
         datum__gte=models.OuterRef("krank_von"),

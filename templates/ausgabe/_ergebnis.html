@@ -41,7 +41,7 @@
   {% include "ausgabe/_ruecknahme_abholung.html" %}
 </section>
 {% if krank %}<p class="karte krank-hinweis" role="status"><strong>{{ krank.abwesenheit_titel }}</strong> ({{ krank.get_krank_grund_display }})
-  bis {{ krank.krank_bis|date:"d.m.Y" }}. Abholen darf nur, wer beim Haushalt als abholberechtigt eingetragen ist.</p>{% endif %}
+  {% if krank.krank_bis < heute %}vom {{ krank.krank_von|date:"d.m.Y" }} bis {{ krank.krank_bis|date:"d.m.Y" }} – entschuldigt; die Meldung verschwindet mit der nächsten Abholung.{% else %}bis {{ krank.krank_bis|date:"d.m.Y" }}. Abholen darf nur, wer beim Haushalt als abholberechtigt eingetragen ist.{% endif %}</p>{% endif %}
 {% comment %}Reihenfolge links: Ampel, Krankmeldung, dann „Letzte Abholungen“ oben (sieht der
 Einlass am häufigsten an); Aufruf-/Modulhinweise und die Zahlung weiter unten.{% endcomment %}
 {% if einstellungen.einlass_abholungen %}

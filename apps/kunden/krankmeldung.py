@@ -2,9 +2,10 @@
 
 Zuschaltbar in den Einstellungen des Kundenstamms. Der Grund kann krank, Reha oder Krankenhaus
 (Gesundheitsdaten, Anzeige „Krank gemeldet“) oder Urlaub, verhindert bzw. sonstiges (Anzeige
-„Abwesend“) sein. Die Notiz verschwindet in allen Fällen nach dem Ende aus der Anzeige und wird
-beim nächsten täglichen Lauf gelöscht (``verwaiste_notizen_loeschen``); kommt der Kunde innerhalb
-der Zeit wieder, gilt sie als überholt. Wer in der Zeit für den Kunden abholen darf, legt allein
+„Abwesend“) sein. Die Notiz bleibt – auch nach dem Ende – stehen, bis der Kunde wieder zur
+Ausgabe kommt (eine Abholung ab dem Beginn); dann gilt sie als überholt und wird beim nächsten
+täglichen Lauf gelöscht (``verwaiste_notizen_loeschen``). Rückwirkend eintragen geht. Wer in
+der Zeit für den Kunden abholen darf, legt allein
 die Verwaltung beim Haushalt fest (Abholer), nicht die Abwesenheitsmeldung.
 """
 
@@ -48,8 +49,6 @@ def melden(h: Haushalt, benutzer, von, bis, grund: str, anmerkung: str = "") -> 
         raise Fehler("Bitte Beginn und Ende angeben.")
     if bis < von:
         raise Fehler("Das Ende liegt vor dem Beginn.")
-    if bis < timezone.localdate():
-        raise Fehler("Das Ende liegt in der Vergangenheit.")
     if (bis - von).days >= LAENGSTENS_TAGE:
         raise Fehler(f"Höchstens {LAENGSTENS_TAGE} Tage.")
     anmerkung = anmerkung.strip()[:300]
@@ -62,15 +61,16 @@ def melden(h: Haushalt, benutzer, von, bis, grund: str, anmerkung: str = "") -> 
 
 
 def aktuelle(kundennummer: str, heute: dt.date | None = None) -> Notiz | None:
-    """Die Krankmeldung, die heute gilt (die am längsten laufende).
+    """Die Krankmeldung, die heute gilt oder schon vorbei ist, solange der Kunde seitdem nicht
+    wieder abgeholt hat (die am längsten laufende).
 
-    Fällt weg, sobald der Kunde seit dem Beginn schon einmal abgeholt hat: Wer wieder kommt,
-    ist offenbar nicht mehr krank, dann muss niemand die Meldung von Hand löschen.
+    Fällt erst weg, sobald der Kunde seit dem Beginn schon einmal abgeholt hat: Wer wieder kommt,
+    ist offenbar nicht mehr krank, dann muss niemand die Meldung von Hand löschen. Das Ende allein
+    lässt sie nie verschwinden – sonst sähe niemand mehr, dass er entschuldigt gefehlt hat.
     """
     heute = heute or timezone.localdate()
-    return (Notiz.objects.filter(kundennummer=kundennummer, krank_von__lte=heute,
-                                 krank_bis__gte=heute).exclude(_ueberholt())
-            .order_by("-krank_bis").first())  # fmt: skip
+    return (Notiz.objects.filter(kundennummer=kundennummer, krank_von__lte=heute)
+            .exclude(_ueberholt()).order_by("-krank_bis").first())  # fmt: skip
 
 
 def _ueberholt():

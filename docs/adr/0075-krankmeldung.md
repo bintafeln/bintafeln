@@ -24,8 +24,8 @@ Zeitraum; sie blieb stehen, bis jemand sie löschte, obwohl sie Gesundheitsdaten
   heißen weiterhin `krank_*` (Stabilität), auch für die neuen Gründe.
 - Der Einlass zeigt eine laufende Abwesenheit unter der Ampel. Die Ampel selbst ändert sich nicht.
   Der Auslöser ist ein richtiger Knopf („Abwesend melden …“), wie die Notiz-Vorlagen darüber.
-- Nach dem Ende ist die Notiz nicht mehr zu sehen und wird beim täglichen Lauf gelöscht
-  (`verwaiste_notizen_loeschen()`). Höchstens 365 Tage.
+- ~~Nach dem Ende ist die Notiz nicht mehr zu sehen und wird beim täglichen Lauf gelöscht.~~
+  Geändert (siehe Nachtrag): Das Ende allein löscht nie. Höchstens 365 Tage.
 - Kommt der Kunde, während die Meldung läuft, schon einmal zur Abholung (eine `Abholung` mit
   Datum ab `krank_von`), gilt die Krankmeldung als überholt: `aktuelle()` zeigt sie nicht mehr an
   und der tägliche Lauf löscht sie. Wer wieder kommt, ist offenbar nicht mehr krank, so muss
@@ -39,3 +39,17 @@ Zeitraum; sie blieb stehen, bis jemand sie löschte, obwohl sie Gesundheitsdaten
 Als Notiz hängt die Krankmeldung an der Kundennummer, übersteht den Import und ist ohne Weiteres
 in Auskunft, Papierkorb und Datensicherung enthalten. Ein grober Grund und das automatische
 Löschen halten die Gesundheitsdaten so knapp und so kurz wie möglich.
+
+## Nachtrag: bleibt bis zur nächsten Abholung, rückwirkend eintragen
+
+Meldungen kommen meist für einen einzigen Tag und oft erst danach. Verschwand die Meldung am
+Ende, sah niemand mehr, dass der Kunde entschuldigt gefehlt hatte – und er konnte deshalb
+fälschlich aus seiner Kundengruppe genommen werden. Deshalb:
+
+- Eine Abwesenheit lässt sich auch rückwirkend eintragen (das Ende darf in der Vergangenheit
+  liegen).
+- Sie bleibt nach dem Ende sichtbar (beim Haushalt und am Einlass als „entschuldigt“), bis der
+  Kunde wieder zur Ausgabe kommt: Erst eine Abholung ab dem Beginn macht sie überflüssig, dann
+  löscht sie der tägliche Lauf (`verwaiste_notizen_loeschen()`). Das Ende allein löscht nie.
+- Datensparsamkeit bleibt gewahrt: Die Gesundheitsangabe liegt nur so lange, bis der Kunde wieder
+  da ist; bleibt er dauerhaft weg, endet sie spätestens mit dem Haushalt.
