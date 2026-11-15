@@ -3,8 +3,10 @@
 import smtplib
 import socket
 import ssl
+from email.mime.image import MIMEImage
 
 from django.core.mail import EmailMultiAlternatives, get_connection
+from django.core.mail.message import SafeMIMEMultipart
 
 from apps.core import geheimnis
 from apps.core.models import MailEinstellungen
@@ -109,10 +111,33 @@ def fristen_anwenden(jetzt=None) -> int:
     return GesendeteMail.objects.filter(gesendet_am__lt=grenze).delete()[0]
 
 
+class _MitBildern(EmailMultiAlternatives):
+    """HTML-Mail mit eingebetteten Bildern: Text und HTML (alternative) liegen zusammen mit den
+    Bildern in einem multipart/related, Anhänge wie PDFs daneben (mixed)."""
+
+    def __init__(self, *args, bilder=(), **kwargs):
+        super().__init__(*args, **kwargs)
+        self.bilder = list(bilder)
+
+    def _create_alternatives(self, msg):
+        msg = super()._create_alternatives(msg)
+        if not self.bilder:
+            return msg
+        verwandt = SafeMIMEMultipart(_subtype="related", encoding=self.encoding)
+        verwandt.attach(msg)
+        for cid, inhalt, typ in self.bilder:
+            bild = MIMEImage(inhalt, _subtype=typ.split("/", 1)[1])
+            bild.add_header("Content-ID", f"<{cid}>")
+            bild.add_header("Content-Disposition", "inline", filename=cid.split("@", 1)[0])
+            verwandt.attach(bild)
+        return verwandt
+
+
 def senden(betreff: str, text: str, an: list[str], html: str | None = None,
-           anhaenge=(), art: str = "", vertraulich: bool = False) -> None:  # fmt: skip
+           anhaenge=(), art: str = "", vertraulich: bool = False, bilder=()) -> None:  # fmt: skip
     """Sendet ``text``; mit ``html`` zusätzlich eine gestaltete Fassung (Mailprogramme wählen).
 
+    ``bilder`` = [(Content-ID, Inhalt, Medientyp)]: im HTML über ``cid:<Content-ID>`` eingebettet.
     ``anhaenge`` = [(Dateiname, Inhalt, Medientyp)], z. B. ein PDF. ``art`` (Schlüssel aus
     ``ARTEN``) ordnet die Mail im Archiv ein; ``vertraulich`` bei Zugangsdaten (Link zum
     Passwort): Dann steht sie ohne Inhalt im Archiv. Auch ein Fehlschlag wird festgehalten.
@@ -124,7 +149,8 @@ def senden(betreff: str, text: str, an: list[str], html: str | None = None,
     except MailFehler as fehler:
         _archivieren(betreff, text, an, anhaenge, art, vertraulich, str(fehler))
         raise
-    nachricht = EmailMultiAlternatives(betreff, text, e.absenderadresse, an, connection=verbindung)
+    nachricht = _MitBildern(betreff, text, e.absenderadresse, an, connection=verbindung,
+                            bilder=bilder if html else ())  # fmt: skip
     if html:
         nachricht.attach_alternative(html, "text/html")
     for name, inhalt, typ in anhaenge:

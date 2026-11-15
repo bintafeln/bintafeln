@@ -1662,7 +1662,7 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 @media (prefers-reduced-motion: reduce) { .einschweben { animation: none; } }
 
 /* Editor für eigene HTML-Texte (static/js/html_editor.js) */
-.editor { border: 1px solid var(--rand); border-radius: var(--radius); overflow: hidden; background: var(--flaeche); }
+.editor { position: relative; border: 1px solid var(--rand); border-radius: var(--radius); overflow: hidden; background: var(--flaeche); }
 .editor-reiter { display: flex; border-bottom: 1px solid var(--rand); }
 .editor-reiter button { border: 0; background: none; padding: .45rem .9rem; font: inherit; cursor: pointer; color: var(--leise); }
 .editor-reiter button[aria-selected="true"] { color: var(--text); font-weight: 600; box-shadow: inset 0 -3px 0 var(--akzent); }
@@ -1673,7 +1673,26 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 .editor-leiste input[type="color"] { width: 2.4rem; height: 2rem; padding: .1rem; border: 1px solid var(--rand); border-radius: 6px; }
 .editor-flaeche { min-height: 9rem; max-height: 32rem; overflow: auto; padding: .75rem 1rem; outline: none; }
 .editor-flaeche:focus { box-shadow: inset 0 0 0 3px var(--fokus); }
-.editor-flaeche img { max-width: 100%; height: auto; }
+.editor-flaeche img { max-width: 100%; height: auto; vertical-align: bottom; cursor: pointer; }
+.editor-flaeche img:hover { outline: 2px solid var(--akzent); outline-offset: 2px; }
+.grafik-aendern { position: absolute; z-index: 5; padding: .3rem .7rem; font-size: .9rem; }
+/* Dialog „Grafik einfügen“ (ADR 0138) */
+.grafik-dialog { width: min(40rem, calc(100vw - 2rem)); border: 1px solid var(--rand); border-radius: var(--radius);
+  padding: 1rem 1.25rem; }
+.grafik-dialog h2 { margin-top: 0; }
+.grafik-groesse { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; border: 0; padding: 0; margin: 0 0 .5rem; }
+.grafik-groesse legend { font-weight: 600; padding: 0; margin-bottom: .25rem; }
+.grafik-liste { list-style: none; margin: .5rem 0 .75rem; padding: 0; display: grid; gap: .5rem;
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr)); max-height: 50vh; overflow-y: auto; }
+.grafik-liste li { position: relative; margin: 0; }
+.grafik-wahl { display: block; width: 100%; aspect-ratio: 4 / 3; padding: .3rem; border: 1px solid var(--rand);
+  border-radius: var(--radius); background: #fff; cursor: pointer; }
+.grafik-wahl:hover, .grafik-wahl:focus-visible { border-color: var(--akzent); box-shadow: 0 0 0 2px var(--akzent); }
+.grafik-wahl img { width: 100%; height: 100%; object-fit: contain; }
+.grafik-weg { position: absolute; top: .2rem; right: .2rem; width: 1.6rem; height: 1.6rem; padding: 0; border: 1px solid var(--rand);
+  border-radius: 999px; background: var(--flaeche); cursor: pointer; line-height: 1; }
+.grafik-weg:hover { background: var(--fehler); color: #fff; }
+.grafik-hochladen { display: inline-block; cursor: pointer; }
 .editor textarea { border: 0; border-radius: 0; width: 100%; }
 .editor-leiste { gap: .35rem .75rem; }
 .editor-gruppe { display: flex; flex-wrap: wrap; gap: .25rem; align-items: center; padding-right: .75rem;

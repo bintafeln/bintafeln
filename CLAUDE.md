@@ -396,6 +396,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `apps/serienbriefe/gestaltung.py` (`brief()`, `mail()`, `flowables()`); PDF in `brief.py`.
   Live-Vorschau neben dem Editor: `views.vorlage_bild` (erste Seite als PNG über pypdfium2,
   Seitenzahl im Kopf `X-Seiten`), geladen von `static/js/brief_vorschau.js`.
+  Grafiken (ADR 0138): `Grafik` + `apps/serienbriefe/grafiken.py` (`speichern()` verkleinert und
+  speichert ohne Metadaten neu, `aus_src()` nur eigene Adressen, `fuer_mail()` → `cid:`); im Text
+  `<img src="…/grafiken/<pk>/" width="25%|50%|100%">`; Mails mit Bildern über
+  `mail.senden(..., bilder=…)`; nie Bilder aus dem Internet abrufen.
 - Spenden: `Spende.fremdbeleg` (ADR 0128) kennzeichnet Spenden mit Beleg aus einem anderen
   Programm; „versendet“ bekommt nie eine Bestätigung aus bintafeln, „offene“ bestätigt bintafeln
   selbst (eine einzeln, mehrere im Jahr als Sammelbestätigung, dann ohne den fremden Beleg) – die

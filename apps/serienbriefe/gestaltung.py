@@ -9,6 +9,7 @@ unterstrichen, Text- und Markierfarbe, Schriftgröße, Ausrichtung je Absatz, Ü
 Listen und farbige Kästen. Was es nicht kennt, erscheint als normaler Text.
 """
 
+import io
 import re
 from html import escape as xml_escape
 from html.parser import HTMLParser
@@ -18,7 +19,7 @@ from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT, TA_RIGHT
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
-from reportlab.platypus import HRFlowable, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import HRFlowable, Image, Paragraph, Spacer, Table, TableStyle
 
 from apps.core import zeichen
 from apps.core.html import als_text, bereinigen, ist_html
@@ -36,6 +37,7 @@ GROESSEN = {"xx-small": 0.6, "x-small": 0.625, "small": 0.8125, "medium": 1.0, "
 BLOECKE = {"p", "div", "h1", "h2", "h3", "h4", "ul", "ol", "li", "blockquote", "table", "tr",
            "thead", "tbody", "header", "footer", "section", "nav", "hr"}  # fmt: skip
 LEER = {"br", "hr", "img"}
+MAX_BILDHOEHE = 200 * mm  # eine Grafik passt immer auf eine Seite
 
 _PLATZHALTER_SPAN = re.compile(
     r'<span\b[^>]*\bdata-platzhalter="(\w+)"[^>]*>.*?</span>', re.IGNORECASE | re.DOTALL
@@ -264,6 +266,10 @@ class _Umsetzer:
                 puffer.kinder = []
 
         for kind in knoten.kinder:
+            if isinstance(kind, _Knoten) and kind.tag == "img":  # Grafik als eigene Zeile
+                leeren()
+                ergebnis.extend(self.bild(kind, stil, einzug))
+                continue
             if isinstance(kind, str) or kind.tag not in BLOECKE:
                 if isinstance(kind, str) and not puffer.kinder and not kind.strip():
                     continue  # Leerraum zwischen Blöcken
@@ -273,6 +279,30 @@ class _Umsetzer:
             ergebnis.extend(self.block(kind, stil, einzug))
         leeren()
         return ergebnis
+
+    def bild(self, knoten: _Knoten, stil: ParagraphStyle, einzug: float) -> list:
+        """Eigene Grafik (ADR 0138) in der Breite aus ``width`` (Anteil der Textbreite),
+        ausgerichtet wie der Absatz; fremde Bildadressen werden nie abgerufen."""
+        from apps.serienbriefe import grafiken
+
+        g = grafiken.aus_src(knoten.attrs.get("src") or "")
+        if g is None or not g.breite or not g.hoehe:
+            return []
+        verfuegbar = self.breite - einzug
+        anteil = grafiken.anteil(knoten.attrs.get("width"))
+        breite = verfuegbar * anteil if anteil else min(g.breite * 0.75, verfuegbar)
+        hoehe = breite * g.hoehe / g.breite
+        if hoehe > MAX_BILDHOEHE:
+            breite, hoehe = breite * MAX_BILDHOEHE / hoehe, MAX_BILDHOEHE
+        try:
+            with g.bild.open("rb") as f:
+                daten = io.BytesIO(f.read())
+        except OSError:  # Datei fehlt (z. B. nach unvollständiger Wiederherstellung)
+            return []
+        bild = Image(daten, width=breite, height=hoehe)
+        bild.hAlign = {TA_CENTER: "CENTER", TA_RIGHT: "RIGHT"}.get(stil.alignment, "LEFT")
+        bild.spaceBefore, bild.spaceAfter = 1 * mm, 2 * mm
+        return [bild]
 
     def _absatzstil(self, knoten: _Knoten, stil: ParagraphStyle, einzug: float, **mehr):
         css = _stil(knoten)
@@ -376,9 +406,12 @@ def brief(vorlage, empfaenger, allgemein: dict) -> tuple[str, str]:
     return text_einsetzen(vorlage.betreff, empfaenger, allgemein), einsetzen(vorlage.text, werte)
 
 
-def mail(vorlage, empfaenger, allgemein: dict) -> tuple[str, str, str]:
-    """(Betreff, Klartext, HTML) für ``apps.core.mail.senden(betreff, text, an, html=…)``."""
+def mail(vorlage, empfaenger, allgemein: dict) -> tuple[str, str, str, list]:
+    """(Betreff, Klartext, HTML, Bilder) für ``apps.core.mail.senden(betreff, text, an, html=…,
+    bilder=…)``; Grafiken stehen im HTML an ihrer Stelle im Text (eingebettet, kein Anhang)."""
+    from apps.serienbriefe import grafiken
+
     betreff, html = brief(vorlage, empfaenger, allgemein)
-    ganz = mail_html(html, vorlage.fusszeile)
+    ganz, bilder = grafiken.fuer_mail(mail_html(html, vorlage.fusszeile))
     fuss = mail_text(str(bereinigen(als_html(vorlage.fusszeile or ""))))
-    return betreff, mail_text(html) + (f"\n\n-- \n{fuss}" if fuss else ""), ganz
+    return betreff, mail_text(html) + (f"\n\n-- \n{fuss}" if fuss else ""), ganz, bilder

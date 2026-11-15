@@ -1576,3 +1576,57 @@ def test_serienbrief_vorlage_live_vorschau(angemeldet, admin):
     # schmaler Bildschirm: keine Vorschau
     seite.set_viewport_size({"width": 700, "height": 900})
     expect(seite.locator(".brief-vorschau")).to_be_hidden()
+
+
+def test_serienbrief_vorlage_grafik_einfuegen(angemeldet, admin, tmp_path):
+    """Grafik hochladen, an der Schreibmarke einfügen, Größe ändern, entfernen (ADR 0138)."""
+    import io
+
+    from PIL import Image
+
+    from apps.serienbriefe.models import Grafik, Vorlage
+
+    datei = tmp_path / "logo.png"
+    puffer = io.BytesIO()
+    Image.new("RGB", (300, 100), (232, 113, 10)).save(puffer, "PNG")
+    datei.write_bytes(puffer.getvalue())
+    seite = angemeldet(admin)
+    seite.set_viewport_size({"width": 1400, "height": 900})
+    seite.goto(reverse("serienbriefe:vorlage_neu"))
+    seite.locator("#id_name").fill("Mit Logo")
+    seite.get_by_label("Betreff").fill("Hallo")
+    editor = seite.locator(".editor", has=seite.locator("#id_text"))
+    flaeche = editor.locator(".editor-flaeche")
+    flaeche.click()
+    seite.keyboard.type("Vorher ")
+    editor.locator(".editor-leiste").get_by_role("button", name="Grafik").click()
+    dialog = seite.locator("dialog.grafik-dialog")
+    expect(dialog.get_by_role("heading", name="Grafik einfügen")).to_be_visible()
+    dialog.locator("input[type=file]").set_input_files(str(datei))
+    bild = flaeche.locator("img")
+    expect(bild).to_have_count(1)
+    expect(bild).to_have_attribute("width", "50%")
+    expect(dialog).to_be_hidden()
+    g = Grafik.objects.get()
+    assert flaeche.inner_html().index("Vorher") < flaeche.inner_html().index("<img")
+    # Größe ändern über „Grafik ändern“ an der Grafik
+    bild.click()
+    seite.get_by_role("button", name="Grafik ändern").click()
+    expect(dialog.get_by_role("heading", name="Grafik ändern")).to_be_visible()
+    dialog.get_by_label("klein").check()
+    expect(bild).to_have_attribute("width", "25%")
+    dialog.get_by_role("button", name="Schließen").click()
+    # noch einmal aus der Liste einfügen und wieder entfernen
+    flaeche.click()
+    seite.keyboard.press("Control+End")
+    editor.locator(".editor-leiste").get_by_role("button", name="Grafik").click()
+    dialog.locator(".grafik-wahl").first.click()
+    expect(flaeche.locator("img")).to_have_count(2)
+    flaeche.locator("img").last.click()
+    seite.get_by_role("button", name="Grafik ändern").click()
+    dialog.get_by_role("button", name="Grafik entfernen").click()
+    expect(flaeche.locator("img")).to_have_count(1)
+    seite.get_by_role("button", name="Speichern").click()
+    expect(seite.get_by_text("Vorlage „Mit Logo“ gespeichert.")).to_be_visible()
+    text = Vorlage.objects.get(name="Mit Logo").text
+    assert f'src="/serienbriefe/grafiken/{g.pk}/"' in text and 'width="25%"' in text

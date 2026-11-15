@@ -308,6 +308,42 @@ def test_hilfe_bild_serienbrief_vorlage(angemeldet, admin, muster):
               Marke(seite.locator(".brief-vorschau-knopf"), "rahmen", 6))  # fmt: skip
 
 
+def test_hilfe_bild_serienbrief_grafik(angemeldet, admin, muster):
+    import io
+
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    from PIL import Image, ImageDraw
+
+    from apps.serienbriefe import grafiken
+    from apps.serienbriefe.models import Vorlage
+
+    for farbe, text in (((232, 113, 10), "Logo"), ((46, 125, 50), "Sommerfest")):
+        bild = Image.new("RGB", (480, 300), farbe)
+        ImageDraw.Draw(bild).text((40, 130), text, fill="white", font_size=56)
+        puffer = io.BytesIO()
+        bild.save(puffer, "PNG")
+        grafiken.speichern(SimpleUploadedFile(f"{text}.png", puffer.getvalue()))
+    v = Vorlage.objects.get(name="Dank für Spenden")
+    seite = oeffnen(angemeldet, admin, reverse("serienbriefe:vorlage", args=[v.pk]), breite=1400,
+                    hoehe=900)  # fmt: skip
+    _ohne_menue(seite)
+    editor = seite.locator(".editor", has=seite.locator("#id_text"))
+    editor.locator(".editor-flaeche p").first.click()
+    editor.locator(".editor-leiste").get_by_role("button", name="Grafik").click()
+    dialog = seite.locator("dialog.grafik-dialog")
+    expect(dialog.locator(".grafik-wahl")).to_have_count(2)
+    # ohne Modal-Ebene, damit die Marken darüber liegen
+    dialog.evaluate(
+        "d => { d.close(); Object.assign(d.style, {position: 'fixed', top: '160px', left: '0', "
+        "right: '0', margin: '0 auto', zIndex: '10'}); d.show(); }"
+    )
+    seite.wait_for_timeout(300)
+    aufnehmen(seite, "serienbriefe-grafik", [dialog],
+              Marke(dialog.locator(".grafik-groesse"), "rahmen", 1),
+              Marke(dialog.locator(".grafik-wahl").first, "rahmen", 2),
+              Marke(dialog.locator(".grafik-hochladen"), "rahmen", 3))  # fmt: skip
+
+
 # --- Spenden und Zuwendungsbestätigungen ------------------------------------------------------
 
 
