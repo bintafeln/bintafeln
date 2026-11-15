@@ -300,6 +300,18 @@ def test_falsche_anmeldung_nennt_geburtsdatum_und_einlass(client, mitte):
     assert "falsches Geburtsdatum" not in client.get(SEITE).content.decode()
 
 
+def test_hinweis_zum_geburtsdatum_in_jeder_sprache(mitte):
+    """Der Hinweis erscheint in jeder einstellbaren Sprache (und immer auf Deutsch)."""
+    from django.utils.html import escape
+
+    daten = {"kundennummer": "109", "geburtsdatum": "1999-01-01"}
+    for s in sprachen.SPRACHEN:
+        cache.clear()  # nicht wegen zu vieler Fehlversuche sperren
+        seite = Client().post(f"{SEITE}?sprache={s.code}", daten).content.decode()
+        for code in {"de", s.code}:
+            assert escape(views_warten.texte(code)["geburtsdatum_hinweis"]) in seite, s.code
+
+
 def test_push_nachricht_zweisprachig():
     from apps.aufruf import push
 
