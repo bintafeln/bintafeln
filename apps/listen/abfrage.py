@@ -150,8 +150,11 @@ def objekte(liste: Liste, benutzer, p, mit_abholungen=False) -> tuple[list, dict
     heute = timezone.localdate()
     haushalte = _haushalte(benutzer, p)
     k = {"heute": heute, "kind_bis": KundenEinstellungen.laden().kind_bis_alter,
-         "abholungen": _abholungen(haushalte, p) if mit_abholungen else {}}  # fmt: skip
+         "abholungen": _abholungen(haushalte, p) if mit_abholungen or p.get("nur_abgeholt")
+         else {}}  # fmt: skip
     hh = list(haushalte)
+    if p.get("nur_abgeholt"):  # nur Haushalte, die im Zeitraum mindestens einmal abgeholt haben
+        hh = [h for h in hh if k["abholungen"].get(h.pk)]
     if (ab := _zahl(p.get("personen_ab"))) is not None:
         hh = [h for h in hh if sum(h.groesse(k["kind_bis"], heute)) >= ab]
     if (tag := p.get("tag")) in WOCHENTAGE:

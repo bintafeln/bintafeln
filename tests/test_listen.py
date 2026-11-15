@@ -130,6 +130,14 @@ def test_vorgaben_und_filter(admin_client, daten):
     antwort = admin_client.get(*url("abholungen", s=["kundennummer", "abholungen"],
                                     sort="-abholungen"))  # fmt: skip
     assert zeilen(antwort)[0] == "1" and antwort.context["e"].summen == {"abholungen": 1}
+    assert len(zeilen(antwort)) > 1  # ohne Häkchen auch Haushalte ohne Abholung (mit 0)
+    nur = admin_client.get(*url("abholungen", s=["kundennummer", "abholungen"], nur_abgeholt="1"))
+    assert zeilen(nur) == ["1"] and "nur mit Abholungen im Zeitraum" in nur.text
+    # beim ersten Öffnen ist das Häkchen gesetzt
+    assert (
+        admin_client.get(reverse("listen:liste", args=["abholungen"])).context["p"]["nur_abgeholt"]
+        == "1"
+    )
 
 
 def test_personenlisten(admin_client, daten):
