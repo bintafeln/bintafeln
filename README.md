@@ -1533,7 +1533,10 @@ auch an Kunden“, nur Admin) schreibt viele Empfänger auf einmal an (ADR 0047)
 - **Gestalten wie in einem Schreibprogramm** (ADR 0088): fett, kursiv, unterstrichen,
   Überschrift, Ausrichtung (links/Mitte/rechts/Blocksatz), Aufzählung und Nummerierung; im Menü
   „Mehr“ Schriftgröße (klein/normal/groß), Text- und Markierfarbe, farbiger Kasten, Format weg;
-  im Reiter „HTML“ der Quelltext. Die Platzhalter stehen mit verständlichem Namen („Briefanrede“,
+  im Reiter „HTML“ der Quelltext. **Grafiken** (ADR 0138): Knopf „Grafik“ lädt Bilder (PNG/JPG)
+  hoch oder wählt vorhandene; klein/mittel/ganze Breite, ausgerichtet wie Text; sie stehen im
+  PDF und in der E-Mail an derselben Stelle im Text (in der Mail eingebettet, kein Anhang).
+  Beim Hochladen verkleinert und ohne Metadaten gespeichert. Die Platzhalter stehen mit verständlichem Namen („Briefanrede“,
   „Spendensumme“ …) unter dem Text: in den Text ziehen oder antippen (fügt an der Schreibmarke
   ein, auch auf dem iPad; zuletzt im Betreff gewesen, dann dort). Im Text erscheinen sie als
   farbige Felder. Je Vorlage **Briefkopf** (Logo und Kontakt der Tafel oben rechts, abschaltbar

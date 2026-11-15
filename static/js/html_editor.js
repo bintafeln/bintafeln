@@ -173,6 +173,191 @@
     });
     if (mehrInhalt.children.length) leiste.appendChild(mehr);
 
+    // Knopf „Grafik“ (ADR 0138): eigene Bilder auswählen oder hochladen, Größe wählen, entfernen.
+    // data-editor-grafiken="<Adresse>": GET liefert die Liste, POST (Feld „datei“) lädt hoch.
+    if (feld.dataset.editorGrafiken) grafikenEinrichten(feld.dataset.editorGrafiken);
+
+    function grafikenEinrichten(liste) {
+      var GROESSE = {klein: "25%", mittel: "50%", gross: "100%"};
+      var stelleVorher = null, gewaehlt = null;
+      var gruppe = document.createElement("div");
+      gruppe.className = "editor-gruppe";
+      var k = document.createElement("button");
+      k.type = "button";
+      k.textContent = "Grafik";
+      k.title = "Grafik oder Bild in den Text einfügen";
+      k.addEventListener("mousedown", function (e) { e.preventDefault(); });
+      gruppe.appendChild(k);
+      leiste.insertBefore(gruppe, leiste.querySelector(".editor-mehr"));
+
+      var dialog = document.createElement("dialog");
+      dialog.className = "grafik-dialog";
+      dialog.innerHTML =
+        '<form method="dialog"><h2></h2>' +
+        '<fieldset class="grafik-groesse"><legend>Größe</legend>' +
+        '<label><input type="radio" name="groesse" value="klein"> klein</label>' +
+        '<label><input type="radio" name="groesse" value="mittel" checked> mittel</label>' +
+        '<label><input type="radio" name="groesse" value="gross"> ganze Breite</label></fieldset>' +
+        '<p class="hinweis grafik-ausrichtung">Ausrichten wie Text: Grafik antippen, dann „Links“, „Mitte“ oder „Rechts“.</p>' +
+        '<div class="grafik-auswahl"><p class="hinweis">Antippen fügt die Grafik an der Schreibmarke ein.</p>' +
+        '<ul class="grafik-liste"></ul>' +
+        '<label class="knopf knopf-zweitrangig grafik-hochladen">Neue Grafik hochladen …' +
+        '<input type="file" accept="image/png,image/jpeg" hidden></label></div>' +
+        '<p class="fehler grafik-fehler" role="alert" hidden></p>' +
+        '<div class="aktionsleiste"><button type="button" class="knopf knopf-gefahr grafik-entfernen">Grafik entfernen</button>' +
+        '<button value="zu" class="knopf knopf-abbrechen">Schließen</button></div></form>';
+      document.body.appendChild(dialog); // nicht ins Formular der Seite (keine verschachtelten Formulare)
+      var titel = dialog.querySelector("h2"), ul = dialog.querySelector(".grafik-liste");
+      var fehler = dialog.querySelector(".grafik-fehler"), datei = dialog.querySelector("input[type=file]");
+      var entfernen = dialog.querySelector(".grafik-entfernen"), auswahl = dialog.querySelector(".grafik-auswahl");
+      var token = feld.form && feld.form.querySelector("[name=csrfmiddlewaretoken]");
+
+      function groesse() { return GROESSE[dialog.querySelector("[name=groesse]:checked").value]; }
+      function melden(text) { fehler.textContent = text || ""; fehler.hidden = !text; }
+
+      function einfuegen(g) {
+        var img = document.createElement("img");
+        img.src = g.adresse;
+        img.alt = g.name;
+        img.setAttribute("width", groesse());
+        var r = stelleVorher;
+        if (!r || !flaeche.contains(r.startContainer)) {
+          r = document.createRange();
+          r.selectNodeContents(flaeche);
+          r.collapse(false);
+        }
+        r.deleteContents();
+        r.insertNode(img);
+        r.setStartAfter(img);
+        r.collapse(true);
+        var s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+        uebertragen();
+        dialog.close();
+      }
+
+      function eintrag(g) {
+        var li = document.createElement("li");
+        var wahl = document.createElement("button");
+        wahl.type = "button";
+        wahl.className = "grafik-wahl";
+        wahl.title = g.name + " einfügen";
+        var bild = document.createElement("img");
+        bild.src = g.adresse;
+        bild.alt = g.name;
+        bild.loading = "lazy";
+        wahl.appendChild(bild);
+        wahl.addEventListener("click", function () { einfuegen(g); });
+        var weg = document.createElement("button");
+        weg.type = "button";
+        weg.className = "grafik-weg";
+        weg.textContent = "×";
+        weg.title = g.name + " löschen (in den Papierkorb)";
+        weg.setAttribute("aria-label", weg.title);
+        weg.addEventListener("click", function () {
+          if (!window.confirm("Grafik „" + g.name + "“ löschen? Vorlagen, die sie zeigen, lassen die Stelle dann leer.")) return;
+          var daten = new FormData();
+          if (token) daten.append("csrfmiddlewaretoken", token.value);
+          fetch(g.loeschen, {method: "POST", body: daten, credentials: "same-origin"}).then(function (a) {
+            if (a.ok) li.remove(); else melden("Löschen ging nicht.");
+          });
+        });
+        li.appendChild(wahl);
+        li.appendChild(weg);
+        return li;
+      }
+
+      function laden() {
+        ul.textContent = "";
+        fetch(liste, {credentials: "same-origin"}).then(function (a) { return a.json(); }).then(function (d) {
+          d.grafiken.forEach(function (g) { ul.appendChild(eintrag(g)); });
+        }).catch(function () { melden("Die Grafiken konnten nicht geladen werden."); });
+      }
+
+      datei.addEventListener("change", function () {
+        if (!datei.files.length) return;
+        var daten = new FormData();
+        daten.append("datei", datei.files[0]);
+        if (token) daten.append("csrfmiddlewaretoken", token.value);
+        melden("");
+        fetch(liste, {method: "POST", body: daten, credentials: "same-origin"})
+          .then(function (a) { return a.json().then(function (d) { return {ok: a.ok, d: d}; }); })
+          .then(function (x) {
+            datei.value = "";
+            if (!x.ok) return melden(x.d.fehler || "Hochladen ging nicht.");
+            einfuegen(x.d);
+          })
+          .catch(function () { melden("Hochladen ging nicht."); });
+      });
+
+      dialog.querySelectorAll("[name=groesse]").forEach(function (r) {
+        r.addEventListener("change", function () {
+          if (!gewaehlt) return;
+          gewaehlt.setAttribute("width", groesse());
+          uebertragen();
+        });
+      });
+      entfernen.addEventListener("click", function () {
+        if (gewaehlt) { gewaehlt.remove(); uebertragen(); }
+        dialog.close();
+      });
+      dialog.addEventListener("close", function () { gewaehlt = null; });
+
+      function oeffnen(img) {
+        gewaehlt = img || null;
+        melden("");
+        titel.textContent = img ? "Grafik ändern" : "Grafik einfügen";
+        auswahl.hidden = !!img;
+        entfernen.hidden = !img;
+        var jetzt = img ? (img.getAttribute("width") || "50%") : "50%";
+        Object.keys(GROESSE).forEach(function (n) {
+          dialog.querySelector("[name=groesse][value=" + n + "]").checked = GROESSE[n] === jetzt;
+        });
+        if (!img) laden();
+        dialog.showModal();
+      }
+
+      k.addEventListener("click", function () {
+        var s = window.getSelection();
+        stelleVorher = s.rangeCount && flaeche.contains(s.anchorNode) ? s.getRangeAt(0).cloneRange() : null;
+        oeffnen(null);
+      });
+      flaeche.addEventListener("dblclick", function (e) {
+        if (e.target.tagName === "IMG") oeffnen(e.target);
+      });
+      flaeche.addEventListener("click", function (e) {
+        if (e.target.tagName !== "IMG") return;
+        var r = document.createRange(); // Grafik antippen: Schreibmarke dahinter (zum Ausrichten)
+        r.setStartAfter(e.target);
+        r.collapse(true);
+        var s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+        if (e.detail === 1) window.setTimeout(function () { if (!dialog.open) oeffnenFrage(e.target); }, 0);
+      });
+      function oeffnenFrage(img) { // kleiner Knopf an der Grafik: „Ändern“
+        var alt = rahmen.querySelector(".grafik-aendern");
+        if (alt) alt.remove();
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "knopf grafik-aendern";
+        b.textContent = "Grafik ändern";
+        var r1 = img.getBoundingClientRect(), r2 = rahmen.getBoundingClientRect();
+        b.style.top = (r1.top - r2.top + 6) + "px";
+        b.style.left = (r1.left - r2.left + 6) + "px";
+        b.addEventListener("mousedown", function (e) { e.preventDefault(); });
+        b.addEventListener("click", function () { b.remove(); oeffnen(img); });
+        rahmen.appendChild(b);
+        var weg = function (e) {
+          if (e.target === b) return;
+          b.remove();
+          document.removeEventListener("pointerdown", weg, true);
+        };
+        document.addEventListener("pointerdown", weg, true);
+      }
+    }
+
     // „Standard"-Knopf: setzt den Text auf die mitgelieferte Vorgabe zurück (nur wenn eine
     // Vorgabe über data-standard hinterlegt ist).
     if (feld.dataset.standard != null) {

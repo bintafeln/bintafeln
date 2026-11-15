@@ -1,6 +1,7 @@
 import json
 
 from django import forms
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.adressen.models import AdressKategorie
@@ -30,6 +31,8 @@ class VorlageForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         namen = {k: name for k, name, _ in karten()}
         self.fields["text"].widget.attrs["data-platzhalter"] = json.dumps(namen)
+        # Knopf „Grafik“ im Editor (ADR 0138): Liste und Hochladen über diese Adresse
+        self.fields["text"].widget.attrs["data-editor-grafiken"] = reverse("serienbriefe:grafiken")
         for feld in ("text", "fusszeile"):  # ältere Vorlagen aus reinem Text als Absätze
             if self.instance.pk and not self.is_bound:
                 self.initial[feld] = gestaltung.als_html(getattr(self.instance, feld))

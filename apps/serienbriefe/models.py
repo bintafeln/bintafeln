@@ -60,4 +60,24 @@ class Versand(models.Model):
         return f"{self.betreff} ({self.am:%d.%m.%Y})"
 
 
+class Grafik(models.Model):
+    """Bild für Vorlagen (Logo, Foto, Unterschrift …), ADR 0138. Beim Hochladen neu gespeichert
+    (``grafiken.speichern()``): verkleinert und ohne Metadaten wie Ort oder Kamera."""
+
+    name = models.CharField("Name", max_length=150)
+    bild = models.ImageField("Bild", upload_to="serienbriefe/grafiken/")
+    breite = models.PositiveIntegerField("Breite (Pixel)")
+    hoehe = models.PositiveIntegerField("Höhe (Pixel)")
+    hochgeladen_am = models.DateTimeField("Hochgeladen am", auto_now_add=True)
+    hochgeladen_von = models.CharField("Hochgeladen von", max_length=150, blank=True)
+
+    class Meta:
+        verbose_name = "Grafik für Serienbriefe"
+        verbose_name_plural = "Grafiken für Serienbriefe"
+        ordering = ["-hochgeladen_am"]
+
+    def __str__(self):
+        return self.name
+
+
 auditlog.register(Vorlage, exclude_fields=["geaendert_am"])

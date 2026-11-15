@@ -3,8 +3,9 @@
 import io
 
 from django.contrib import messages
-from django.http import HttpResponse
+from django.http import FileResponse, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
@@ -16,10 +17,10 @@ from apps.core.pdf import im_fenster, pdf_antwort
 from apps.konten import rollen
 from apps.konten.views import nicht_in_demo
 from apps.serienbriefe import empfaenger as emp
-from apps.serienbriefe import gestaltung
+from apps.serienbriefe import gestaltung, grafiken
 from apps.serienbriefe.brief import briefe_pdf
 from apps.serienbriefe.forms import AuswahlForm, VorlageForm
-from apps.serienbriefe.models import Versand, Vorlage
+from apps.serienbriefe.models import Grafik, Versand, Vorlage
 
 VORSCHAU_SKALA = 1.5  # A4 ≈ 890 × 1260 Pixel: scharf auch auf hochauflösenden Bildschirmen
 
@@ -84,6 +85,46 @@ def vorlage_bild(request):
     antwort = HttpResponse(puffer.getvalue(), content_type="image/png")
     antwort["X-Seiten"] = str(seiten)
     return antwort
+
+
+def _grafik_daten(g: Grafik) -> dict:
+    loeschen = reverse("serienbriefe:grafik_loeschen", args=[g.pk])
+    return {"id": g.pk, "name": g.name, "adresse": grafiken.adresse(g), "breite": g.breite,
+            "hoehe": g.hoehe, "loeschen": loeschen}  # fmt: skip
+
+
+@never_cache
+@rollen.recht_erforderlich("serienbriefe.erstellen")
+def grafiken_liste(request):
+    """GET: alle Grafiken für den Editor; POST: eine neue hochladen (Feld ``datei``)."""
+    if request.method == "POST":
+        datei = request.FILES.get("datei")
+        if not datei:
+            return JsonResponse({"fehler": "Bitte eine Bilddatei wählen."}, status=400)
+        try:
+            g = grafiken.speichern(datei, von=request.user.get_username())
+        except grafiken.GrafikFehler as fehler:
+            return JsonResponse({"fehler": str(fehler)}, status=400)
+        return JsonResponse(_grafik_daten(g), status=201)
+    return JsonResponse({"grafiken": [_grafik_daten(g) for g in Grafik.objects.all()]})
+
+
+@rollen.recht_erforderlich("serienbriefe.erstellen")
+def grafik(request, pk):
+    g = get_object_or_404(Grafik, pk=pk)
+    antwort = FileResponse(g.bild.open("rb"))
+    antwort["Cache-Control"] = "private, max-age=86400"
+    return antwort
+
+
+@require_POST
+@rollen.recht_erforderlich("serienbriefe.erstellen")
+def grafik_loeschen(request, pk):
+    """In den Papierkorb; Vorlagen, die sie noch zeigen, drucken die Stelle einfach leer."""
+    g = get_object_or_404(Grafik, pk=pk)
+    papierkorb.loeschen(request.user, "Grafik für Serienbriefe", g.name, g,
+                        recht="serienbriefe.erstellen")  # fmt: skip
+    return JsonResponse({"geloescht": pk})
 
 
 @require_POST
@@ -160,8 +201,8 @@ def _senden(request, v, d, erreichbar, allgemein):
     gesendet, fehler = [], []
     for e in erreichbar:
         try:
-            betreff, text, html = gestaltung.mail(v, e, allgemein)
-            mail.senden(betreff, text, [e.email], html=html, art="serienbrief")
+            betreff, text, html, bilder = gestaltung.mail(v, e, allgemein)
+            mail.senden(betreff, text, [e.email], html=html, art="serienbrief", bilder=bilder)
         except mail.MailFehler as grund:
             fehler.append(f"{e.name}: {grund}")
             if len(fehler) >= 3 and not gesendet:

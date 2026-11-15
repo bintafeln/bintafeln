@@ -595,9 +595,9 @@ def _dank_senden(request, form, per_mail):
             for n, inhalt in danken.anlagen(x, d["mit_bestaetigungen"], d["mit_belegen"])
         ]
         try:
-            betreff, text, html = gestaltung.mail(d["vorlage"], e, allgemein)
+            betreff, text, html, bilder = gestaltung.mail(d["vorlage"], e, allgemein)
             mail.senden(betreff, text, [x.adresse.email], html=html, anhaenge=anhaenge,
-                        art="spenden")  # fmt: skip
+                        art="spenden", bilder=bilder)  # fmt: skip
         except mail.MailFehler as grund:
             fehler.append(f"{x.adresse.name}: {grund}")
             if len(fehler) >= 3 and not gesendet:
