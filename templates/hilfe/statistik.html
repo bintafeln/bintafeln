@@ -18,7 +18,9 @@
   <li><strong>Je Ausgabestelle und Wochentag</strong>: für jede Ausgabestelle und jeden Wochentag, an dem sie öffnet,
     eine eigene Grafik über die einzelnen Ausgabetage – wie viele Haushalte abgeholt haben und wie viele Personen
     (heutige Haushaltsgröße) dahinterstehen. Eine Ausgabestelle mit zwei Tagen (z. B. Treff24 montags und
-    donnerstags) bekommt zwei Grafiken.</li>
+    donnerstags) bekommt zwei Grafiken. Jede Abholung zählt für die Ausgabestelle, an der sie eingetragen wurde; war
+    keine gewählt (oder kam sie aus der Übernahme der Besuche), gilt die Ausgabestelle der Kundengruppe des Haushalts.
+    „ohne Ausgabestelle“ bleibt nur bei Haushalten ohne Kundengruppe.</li>
   {% if "spenden.sehen" in rechte or "mitglieder.sehen" in rechte %}<li><strong>Spenden und Mitglieder</strong> erscheinen,
     wenn keine Ausgabestelle gewählt ist (sie gehören zum Verein): {% if "spenden.sehen" in rechte %}Geldspenden im
     Verlauf und nach Zweck, Sachspenden{% endif %}{% if "spenden.sehen" in rechte and "mitglieder.sehen" in rechte %};
