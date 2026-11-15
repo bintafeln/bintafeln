@@ -199,6 +199,8 @@ def _beschreibung(liste, p) -> str:
                         ("von", "von"), ("bis", "bis")):  # fmt: skip
         if p.get(name):
             teile.append(f"{titel}: {p[name]}")
+    if p.get("nur_abgeholt") and "nur_abgeholt" in liste.filter:
+        teile.append("nur mit Abholungen im Zeitraum")
     if p.get("merkmal"):
         from apps.kunden.models import Zusatzfeld
 
