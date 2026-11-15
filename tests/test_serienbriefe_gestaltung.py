@@ -182,6 +182,32 @@ def test_vorschau_mit_beispiel_empfaenger(admin_client, pdf_text):
     assert admin_client.get(reverse("serienbriefe:vorlage_vorschau")).status_code == 405
 
 
+def test_live_vorschau_als_bild(admin_client):
+    """Die Live-Vorschau neben dem Editor: erste Seite als PNG, Seitenzahl im Kopf; mit und ohne
+    Briefkopf sieht sie anders aus; nichts wird gespeichert."""
+    import io
+
+    from PIL import Image
+
+    tafel = TafelEinstellungen.laden()
+    tafel.name = "Tafel Musterstadt"
+    tafel.save()
+    vorher = Vorlage.objects.count()
+    adresse = reverse("serienbriefe:vorlage_bild")
+    daten = {"name": "Neu", "betreff": "Dank", "text": "<p>{anrede}</p>", "briefkopf": "on"}
+    mit = admin_client.post(adresse, daten)
+    assert mit.status_code == 200 and mit["Content-Type"] == "image/png"
+    assert mit["X-Seiten"] == "1"
+    bild = Image.open(io.BytesIO(mit.content))
+    assert bild.width < bild.height  # A4 hoch
+    ohne = admin_client.post(adresse, {**daten, "briefkopf": ""})
+    assert ohne.content != mit.content
+    lang = admin_client.post(adresse, {**daten, "text": "<p>Zeile</p>" * 120})
+    assert int(lang["X-Seiten"]) > 1
+    assert Vorlage.objects.count() == vorher
+    assert admin_client.get(adresse).status_code == 405
+
+
 def test_vorschau_als_link_fuer_die_ipad_app(admin_client, pdf_text):
     """Mit „_fenster“ (iPad-App): erst ein Link, der Link liefert das PDF genau einmal."""
     adresse = reverse("serienbriefe:vorlage_vorschau")

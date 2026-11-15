@@ -2,6 +2,7 @@
 {% block titel %}{% if v.pk %}Vorlage „{{ v.name }}“{% else %}Neue Vorlage{% endif %}{% endblock %}
 {% block inhalt %}
 <script src="{% static 'js/html_editor.js' %}" defer></script>
+<script src="{% static 'js/brief_vorschau.js' %}" defer></script>
 <div class="vorlage-raster">
 <section class="karte">
   <p><a href="{% url 'serienbriefe:vorlagen' %}">← Vorlagen</a></p>
@@ -22,6 +23,18 @@
   </form>
   {% endif %}
 </section>
+<div class="vorlage-seitenspalte">
+<section class="karte brief-vorschau" aria-labelledby="vorschau-titel">
+  <h2 id="vorschau-titel">Vorschau</h2>
+  <button type="submit" form="vorlage-formular" class="brief-vorschau-knopf"
+          formaction="{% url 'serienbriefe:vorlage_vorschau' %}" formtarget="_blank"
+          title="Antippen öffnet die Vorschau als PDF">
+    <img data-brief-vorschau="{% url 'serienbriefe:vorlage_bild' %}" data-formular="vorlage-formular"
+         alt="Vorschau der ersten Seite mit einem erfundenen Empfänger" width="595" height="842">
+  </button>
+  <p class="hinweis" data-brief-vorschau-stand aria-live="polite">Erste Seite mit einem erfundenen Empfänger;
+    aktualisiert sich beim Schreiben.</p>
+</section>
 <section class="karte platzhalter-spalte" aria-labelledby="platzhalter-titel">
   <h2 id="platzhalter-titel">Platzhalter</h2>
   <p class="hinweis">In den Text ziehen oder antippen: Der Platzhalter landet an der Schreibmarke. bintafeln setzt je
@@ -35,5 +48,6 @@
     </button></li>{% endfor %}
   </ul>
 </section>
+</div>
 </div>
 {% endblock %}

@@ -10,5 +10,6 @@ urlpatterns = [
     path("vorlagen/neu/", views.vorlage, name="vorlage_neu"),
     path("vorlagen/<int:pk>/", views.vorlage, name="vorlage"),
     path("vorlagen/vorschau/", views.vorlage_vorschau, name="vorlage_vorschau"),
+    path("vorlagen/vorschau/bild/", views.vorlage_bild, name="vorlage_bild"),
     path("vorlagen/<int:pk>/loeschen/", views.vorlage_loeschen, name="vorlage_loeschen"),
 ]

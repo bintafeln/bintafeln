@@ -1539,7 +1539,8 @@ auch an Kunden“, nur Admin) schreibt viele Empfänger auf einmal an (ADR 0047)
   farbige Felder. Je Vorlage **Briefkopf** (Logo und Kontakt der Tafel oben rechts, abschaltbar
   für eigenes Briefpapier) und **Fußzeile** (z. B. Bankverbindung, auf jeder Seite und unter
   jeder E-Mail). **Vorschau (PDF)** zeigt den Brief mit einem erfundenen Empfänger, ohne zu
-  speichern. Ältere Vorlagen aus reinem Text werden beim Update zu Absätzen.
+  speichern. Auf breiten Bildschirmen steht rechts neben dem Text eine **Live-Vorschau** der
+  ersten Seite (das echte PDF als Bild), die sich kurz nach jeder Änderung selbst erneuert. Ältere Vorlagen aus reinem Text werden beim Update zu Absätzen.
 - **Empfänger**: Adressen nach Kategorie, Mitglieder (Arten, nur offener Beitrag), Spender eines
   Jahres (Mindestsumme), Kunden (aktive Haushalte, Kundengruppen). Für Adressen und Spender ist
   „nur mit Einwilligung“ (Post bzw. E-Mail) vorgewählt.
