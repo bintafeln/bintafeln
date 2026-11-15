@@ -1088,6 +1088,33 @@ def test_serienbrief_vorlage_platzhalter_ziehen_und_antippen(angemeldet, admin):
     assert v.betreff == "Einladung {jahr}" and "platzhalter" not in v.text
 
 
+def test_serienbrief_vorlage_platzhalter_entfernen(angemeldet, admin):
+    """Ein gesetzter Platzhalter lässt sich über das × oder markiert mit Entf wieder entfernen."""
+    seite = angemeldet(admin)
+    seite.goto(reverse("serienbriefe:vorlage_neu"))
+    editor = seite.locator(".editor", has=seite.locator("#id_text"))
+    flaeche = editor.locator(".editor-flaeche")
+    flaeche.click()
+    seite.keyboard.type("Hallo ")
+    seite.locator('[data-platzhalter-karte="anrede"]').click()
+    seite.locator('[data-platzhalter-karte="vorname"]').click()
+    expect(flaeche.locator(".platzhalter")).to_have_count(2)
+    # × am rechten Rand des Feldes antippen
+    anrede = flaeche.locator('[data-platzhalter="anrede"]')
+    box = anrede.bounding_box()
+    seite.mouse.click(box["x"] + box["width"] - 8, box["y"] + box["height"] / 2)
+    expect(anrede).to_have_count(0)
+    # Feld antippen (markiert es) und Entf
+    vorname = flaeche.locator('[data-platzhalter="vorname"]')
+    vorname.click(position={"x": 5, "y": 5})
+    seite.keyboard.press("Delete")
+    expect(flaeche.locator(".platzhalter")).to_have_count(0)
+    expect(flaeche).to_contain_text("Hallo")
+    editor.locator(".editor-reiter").get_by_role("tab", name="HTML").click()
+    html = seite.locator("#id_text").input_value()
+    assert "{anrede}" not in html and "{vorname}" not in html and "Hallo" in html
+
+
 def test_warteliste_spalten_waehlen_bleibt_gemerkt(angemeldet, admin):
     from apps.antraege.models import Antrag
     from apps.core.models import TafelEinstellungen

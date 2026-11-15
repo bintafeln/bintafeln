@@ -7,7 +7,8 @@
 // Am Textfeld: data-editor-ohne="link bild" blendet Knöpfe aus. data-platzhalter='{"anrede":
 // "Briefanrede", …}' zeigt {anrede} im Reiter „Gestalten“ als farbiges, nicht editierbares Feld;
 // im Textfeld steht weiter {anrede}. Knöpfe mit data-platzhalter-karte="anrede" data-fuer="<id>"
-// lassen sich in den Text ziehen oder antippen (fügt an der Schreibmarke ein, ADR 0088).
+// lassen sich in den Text ziehen oder antippen (fügt an der Schreibmarke ein, ADR 0088). Das × am
+// Feld (oder Feld antippen und Entf/Rücktaste) entfernt es wieder.
 (function () {
   "use strict";
 
@@ -311,6 +312,40 @@
         uebertragen();
       };
       if (feld.id) editoren[feld.id] = einfuegen;
+
+      // Entfernen: das × am Feld antippen, oder Feld antippen (markiert es) und Entf/Rücktaste
+      var entfernen = function (span) {
+        var r = document.createRange();
+        r.setStartBefore(span);
+        r.collapse(true);
+        span.remove();
+        var s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+        marke = r.cloneRange();
+        uebertragen();
+      };
+      flaeche.addEventListener("click", function (e) {
+        var span = e.target.closest && e.target.closest(".platzhalter");
+        if (!span || !flaeche.contains(span)) return;
+        if (e.clientX >= span.getBoundingClientRect().right - 22) { e.preventDefault(); entfernen(span); }
+      });
+      flaeche.addEventListener("keydown", function (e) {
+        if (e.key !== "Backspace" && e.key !== "Delete") return;
+        var s = window.getSelection();
+        if (!s.rangeCount || s.isCollapsed) return;
+        var r = s.getRangeAt(0);
+        var start = r.startContainer.nodeType === 1 ? r.startContainer : r.startContainer.parentElement;
+        var span = start && start.closest(".platzhalter");
+        if (!span) { // ganzes Feld markiert: Bereich umschließt genau ein Feld
+          var felder = Array.prototype.filter.call(flaeche.querySelectorAll(".platzhalter"),
+            function (f) { return r.intersectsNode(f); });
+          if (felder.length !== 1 || r.toString().trim() !== felder[0].textContent.trim()) return;
+          span = felder[0];
+        }
+        e.preventDefault();
+        entfernen(span);
+      });
 
       var gezogen = function (e) {
         return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, TYP) >= 0;

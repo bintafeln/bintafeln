@@ -1756,6 +1756,9 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 .editor-flaeche .platzhalter { display: inline-block; padding: 0 .4em; margin: 0 .05em; border-radius: 999px;
   background: var(--erfolg); border: 1px solid var(--akzent); color: var(--akzent-dunkel); font-weight: 600;
   font-size: .92em; line-height: 1.35; white-space: nowrap; cursor: default; user-select: all; }
+.editor-flaeche .platzhalter::after { content: "×"; display: inline-block; width: 1.1em; margin-left: .3em;
+  border-radius: 999px; text-align: center; cursor: pointer; color: var(--akzent-dunkel); opacity: .7; }
+.editor-flaeche .platzhalter:hover::after { opacity: 1; background: var(--akzent); color: var(--auf-akzent); }
 .serienbrief-fuss { margin-top: 1rem; padding-top: .5rem; border-top: 1px solid var(--rand); font-size: .8rem; color: var(--leise); }
 
 /* Tickets (apps/tickets) */
