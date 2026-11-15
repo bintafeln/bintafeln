@@ -394,6 +394,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `data-platzhalter`, Kärtchen mit `data-platzhalter-karte`; Namen in `empfaenger.NAMEN`).
   Einsetzen (Werte immer maskiert), alte Textvorlagen, HTML→ReportLab und Mail in
   `apps/serienbriefe/gestaltung.py` (`brief()`, `mail()`, `flowables()`); PDF in `brief.py`.
+  Live-Vorschau neben dem Editor: `views.vorlage_bild` (erste Seite als PNG über pypdfium2,
+  Seitenzahl im Kopf `X-Seiten`), geladen von `static/js/brief_vorschau.js`.
 - Spenden: `Spende.fremdbeleg` (ADR 0128) kennzeichnet Spenden mit Beleg aus einem anderen
   Programm; „versendet“ bekommt nie eine Bestätigung aus bintafeln, „offene“ bestätigt bintafeln
   selbst (eine einzeln, mehrere im Jahr als Sammelbestätigung, dann ohne den fremden Beleg) – die

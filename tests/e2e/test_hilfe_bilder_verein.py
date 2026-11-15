@@ -3,6 +3,7 @@ Serienbriefe, Spenden, Zuwendungsbestätigungen, Statistik (Werkzeug und Anleitu
 ``hilfe_bilder.py``)."""
 
 import datetime as dt
+import re
 from decimal import Decimal
 
 from django.urls import reverse
@@ -292,14 +293,19 @@ def test_hilfe_bild_serienbrief_vorlage(angemeldet, admin, muster):
     seite.locator('[data-platzhalter-karte="vorname"]').click()
     seite.keyboard.type("!")
     expect(flaeche.locator('.kasten [data-platzhalter="vorname"]')).to_be_visible()
-    karten = seite.locator(".platzhalter-spalte")
-    aufnehmen(seite, "serienbriefe-vorlage", [seite.locator("#vorlage-formular"), karten],
+    bild = seite.locator("img[data-brief-vorschau]")
+    seite.wait_for_timeout(1200)  # Vorschau lädt nach der letzten Änderung neu
+    expect(bild).to_have_attribute("src", re.compile(r"^blob:"))
+    expect(seite.locator(".brief-vorschau")).not_to_have_class(re.compile("laedt"))
+    spalte = seite.locator(".vorlage-seitenspalte")
+    aufnehmen(seite, "serienbriefe-vorlage", [seite.locator("#vorlage-formular"), spalte],
               Marke(editor.locator(".editor-leiste"), "rahmen", 1),
               Marke(flaeche.locator('[data-platzhalter="vorname"]'), nummer=2, von="unten",
                     laenge=40),
               Marke(seite.locator('[data-platzhalter-karte="vorname"]'), "rahmen", 3),
               Marke(seite.get_by_label("Briefkopf"), "rahmen", 4),
-              Marke(seite.get_by_role("button", name="Vorschau (PDF)"), "rahmen", 5))  # fmt: skip
+              Marke(seite.get_by_role("button", name="Vorschau (PDF)"), "rahmen", 5),
+              Marke(seite.locator(".brief-vorschau-knopf"), "rahmen", 6))  # fmt: skip
 
 
 # --- Spenden und Zuwendungsbestätigungen ------------------------------------------------------

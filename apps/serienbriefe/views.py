@@ -1,6 +1,9 @@
 """Serienbriefe (ADR 0047): Vorlagen pflegen, Empfänger wählen, PDF oder E-Mails."""
 
+import io
+
 from django.contrib import messages
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
@@ -17,6 +20,8 @@ from apps.serienbriefe import gestaltung
 from apps.serienbriefe.brief import briefe_pdf
 from apps.serienbriefe.forms import AuswahlForm, VorlageForm
 from apps.serienbriefe.models import Versand, Vorlage
+
+VORSCHAU_SKALA = 1.5  # A4 ≈ 890 × 1260 Pixel: scharf auch auf hochauflösenden Bildschirmen
 
 
 @rollen.recht_erforderlich("serienbriefe.erstellen")
@@ -40,11 +45,7 @@ def vorlage(request, pk=None):
     })  # fmt: skip
 
 
-@im_fenster
-@require_POST
-@never_cache
-@rollen.recht_erforderlich("serienbriefe.erstellen")
-def vorlage_vorschau(request):
+def _vorschau_pdf(request) -> bytes:
     """Der Brief aus dem (noch nicht gespeicherten) Formular mit einem erfundenen Empfänger."""
     d = request.POST
     v = Vorlage(name=d.get("name", ""), betreff=d.get("betreff", ""),
@@ -53,7 +54,36 @@ def vorlage_vorschau(request):
     beispiel = emp.Empfaenger("vorschau", "Erika Beispiel", emp.BEISPIEL_ANSCHRIFT,
                               "erika@example.org", emp.BEISPIEL)  # fmt: skip
     betreff, html = gestaltung.brief(v, beispiel, _allgemein(timezone.localdate().year))
-    return pdf_antwort(briefe_pdf([(beispiel.anschrift, betreff, html)], v), "vorschau.pdf")
+    return briefe_pdf([(beispiel.anschrift, betreff, html)], v)
+
+
+@im_fenster
+@require_POST
+@never_cache
+@rollen.recht_erforderlich("serienbriefe.erstellen")
+def vorlage_vorschau(request):
+    return pdf_antwort(_vorschau_pdf(request), "vorschau.pdf")
+
+
+@require_POST
+@never_cache
+@rollen.recht_erforderlich("serienbriefe.erstellen")
+def vorlage_bild(request):
+    """Live-Vorschau neben dem Editor: die erste Seite des Vorschau-PDFs als PNG; die Zahl der
+    Seiten steht im Kopf ``X-Seiten``."""
+    import pypdfium2 as pdfium
+
+    pdf = pdfium.PdfDocument(_vorschau_pdf(request))
+    try:
+        seiten = len(pdf)
+        bild = pdf[0].render(scale=VORSCHAU_SKALA).to_pil().convert("RGB")
+    finally:
+        pdf.close()
+    puffer = io.BytesIO()
+    bild.save(puffer, "PNG", optimize=True)
+    antwort = HttpResponse(puffer.getvalue(), content_type="image/png")
+    antwort["X-Seiten"] = str(seiten)
+    return antwort
 
 
 @require_POST

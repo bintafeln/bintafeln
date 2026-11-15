@@ -1741,8 +1741,17 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 .vorlage-raster { display: grid; gap: 0 1.25rem; grid-template-columns: minmax(0, 1fr); align-items: start; }
 @media (min-width: 64rem) {
   .vorlage-raster { grid-template-columns: minmax(0, 1fr) minmax(15rem, 19rem); }
-  .platzhalter-spalte { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; }
+  .vorlage-seitenspalte { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; }
 }
+/* Live-Vorschau des Briefs (static/js/brief_vorschau.js): nur auf breiten Bildschirmen */
+.vorlage-seitenspalte { display: contents; }
+@media (min-width: 64rem) { .vorlage-seitenspalte { display: block; } }
+.brief-vorschau { display: none; }
+@media (min-width: 64rem) { .brief-vorschau { display: block; } }
+.brief-vorschau-knopf { display: block; width: 100%; padding: 0; border: 1px solid var(--rand); border-radius: 4px;
+  background: #fff; cursor: zoom-in; overflow: hidden; box-shadow: 0 1px 4px rgb(0 0 0 / .15); }
+.brief-vorschau-knopf img { display: block; width: 100%; height: auto; aspect-ratio: 595 / 842; transition: opacity .2s; }
+.brief-vorschau.laedt img { opacity: .55; }
 .platzhalter-karten { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
 .platzhalter-karten li { margin: 0; }
 .platzhalter-karte { display: grid; grid-template-columns: 1fr auto; gap: 0 .5rem; width: 100%; text-align: left;

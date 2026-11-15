@@ -1557,3 +1557,19 @@ def test_antrag_erst_absenden_wenn_pflichtangaben_da(seite, admin):
     knopf.click()
     seite.wait_for_url("**/danke/**")
     assert Antrag.objects.get().vorname == "Erika"
+
+
+def test_serienbrief_vorlage_live_vorschau(angemeldet, admin):
+    """Rechts neben dem Editor erscheint die erste Seite; Briefkopf abwählen lädt sie neu."""
+    seite = angemeldet(admin)
+    seite.set_viewport_size({"width": 1400, "height": 900})
+    seite.goto(reverse("serienbriefe:vorlage_neu"))
+    bild = seite.locator("img[data-brief-vorschau]")
+    expect(bild).to_have_attribute("src", re.compile(r"^blob:"))
+    erstes = bild.get_attribute("src")
+    seite.get_by_label("Briefkopf").uncheck()
+    expect(bild).not_to_have_attribute("src", erstes)
+    expect(seite.locator("[data-brief-vorschau-stand]")).to_contain_text("erfundenen Empfänger")
+    # schmaler Bildschirm: keine Vorschau
+    seite.set_viewport_size({"width": 700, "height": 900})
+    expect(seite.locator(".brief-vorschau")).to_be_hidden()
