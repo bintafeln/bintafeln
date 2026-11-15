@@ -6,6 +6,7 @@
   "anmelden": "Zaloguj się",
   "datenschutz": "Zapisujemy tylko to, że ten telefon należy do Twojego gospodarstwa domowego.",
   "falsch": "Numer klienta lub data urodzenia są nieprawidłowe.",
+  "geburtsdatum_hinweis": "Możliwe, że zapisaliśmy błędną datę urodzenia. Jeśli są Państwo pewni, że numer klienta i data urodzenia są prawidłowe, a mimo to nie można przejść dalej, prosimy zgłosić się przy wejściu i poprosić o poprawienie daty urodzenia.",
   "gesperrt": "Zbyt wiele prób. Spróbuj ponownie później.",
   "zu_viele": "Dla Twojego gospodarstwa skonfigurowano już wystarczająco telefonów. Zgłoś się przy wejściu.",
   "nicht_verfuegbar": "W Twoim punkcie wydawania nie ma tej funkcji.",

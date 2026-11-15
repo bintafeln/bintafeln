@@ -1867,6 +1867,12 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 .warten-jetzt { background: #e6f4ea; }
 .warten-jetzt .warten-gross { color: #1e7b34; }
 .warten-karte form .feld { text-align: start; }
+/* zweite Sprache unter dem deutschen Text (Deutsch immer, dazu die Sprache der Kunden) */
+.zweitsprache { display: block; margin-top: .2em; font-size: .85em; font-weight: 400; color: var(--leise); }
+.warten-gross .zweitsprache { font-size: .6em; font-weight: 600; color: inherit; opacity: .85; }
+.warten-mittel .zweitsprache, .warten-zeit .zweitsprache { font-size: .85em; }
+.knopf .zweitsprache, .meldung .zweitsprache { color: inherit; opacity: .9; }
+.warten-geburtsdatum { margin-top: .5rem; font-size: .95rem; }
 /* Abholungen nachtragen (ADR 0091) */
 .nachtragen tr.erledigt td { color: var(--leise); }
 .nachtragen input.betrag { width: 6rem; }

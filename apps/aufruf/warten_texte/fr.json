@@ -6,6 +6,7 @@
   "anmelden": "Se connecter",
   "datenschutz": "Nous enregistrons seulement que ce téléphone appartient à votre foyer.",
   "falsch": "Le numéro client ou la date de naissance n’est pas correct.",
+  "geburtsdatum_hinweis": "Il est possible que nous ayons enregistré une date de naissance erronée. Si vous êtes sûr que le numéro client et la date de naissance sont corrects et que cela ne fonctionne toujours pas, veuillez vous adresser à l'entrée et demander la correction de la date de naissance.",
   "gesperrt": "Trop de tentatives. Veuillez réessayer plus tard.",
   "zu_viele": "Assez de téléphones sont déjà enregistrés pour votre foyer. Veuillez vous adresser à l’entrée.",
   "nicht_verfuegbar": "Cet affichage n’existe pas dans votre point de distribution.",

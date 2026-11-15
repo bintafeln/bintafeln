@@ -2,35 +2,35 @@
 {% block kopf %}<noscript><meta http-equiv="refresh" content="{{ aktualisieren }}"></noscript>{% endblock %}
 {% block inhalt %}
 <section class="karte antrag-karte warten-karte warten-{{ stand.art }}" aria-live="polite">
-  {% if stand.nummer %}<p class="warten-kopf"><span>{{ t.nummer }}: <strong dir="ltr">{{ stand.nummer }}</strong></span>
-    <span>{{ t.stelle }}: {{ stand.stelle }}</span></p>{% endif %}
+  {% if stand.nummer %}<p class="warten-kopf"><span>{{ t.nummer }}{% if t2 and t2.nummer != t.nummer %} · <span lang="{{ s2.code }}">{{ t2.nummer }}</span>{% endif %}: <strong dir="ltr">{{ stand.nummer }}</strong></span>
+    <span>{{ t.stelle }}{% if t2 and t2.stelle != t.stelle %} · <span lang="{{ s2.code }}">{{ t2.stelle }}</span>{% endif %}: {{ stand.stelle }}</span></p>{% endif %}
   {% if stand.art == "warten" %}
-    <p class="warten-gross">{{ stand.vor_text }}</p>
-    {% if stand.minuten_text %}<p class="warten-zeit">{{ stand.minuten_text }}</p>{% endif %}
+    <p class="warten-gross">{% include "aufruf/_zwei.html" with a=stand.vor_text b=stand2.vor_text %}</p>
+    {% if stand.minuten_text %}<p class="warten-zeit">{% include "aufruf/_zwei.html" with a=stand.minuten_text b=stand2.minuten_text %}</p>{% endif %}
   {% elif stand.art == "vorschau" %}
-    <p class="warten-mittel">{{ stand.vorschau_text }}</p>
+    <p class="warten-mittel">{% include "aufruf/_zwei.html" with a=stand.vorschau_text b=stand2.vorschau_text %}</p>
   {% elif stand.art == "jetzt" %}
-    <p class="warten-gross">{{ t.jetzt }}</p>
+    <p class="warten-gross">{% include "aufruf/_zwei.html" with a=t.jetzt b=t2.jetzt %}</p>
   {% else %}
-    <p class="warten-mittel">{{ stand.text }}</p>
+    <p class="warten-mittel">{% include "aufruf/_zwei.html" with a=stand.text b=stand2.text %}</p>
   {% endif %}
-  <p class="hinweis" data-aktualisieren="{{ aktualisieren }}">{{ aktualisiert }}</p>
+  <p class="hinweis" data-aktualisieren="{{ aktualisieren }}">{% include "aufruf/_zwei.html" with a=aktualisiert b=aktualisiert2 %}</p>
   {% if push %}{# Benachrichtigung aufs Handy (static/js/warten.js, ADR 0134); ohne JavaScript unsichtbar #}
   <div class="warten-push" data-push data-schluessel="{{ push_schluessel }}" data-csrf="{{ csrf_token }}"
        data-sw="{% url 'warten:sw' %}" data-bereich="{% url 'warten:seite' %}" data-an="{% url 'warten:push_an' %}"
-       data-aus="{% url 'warten:push_aus' %}" data-sprache="{{ s.code }}"{% if push_an %} data-ist-an="1"{% endif %}>
-    <button type="button" class="knopf push-an" data-zeige="aus" hidden>🔔 {{ t.push_an }}</button>
-    <p class="push-status" data-zeige="an" hidden>🔔 {{ t.push_ist_an }}
-      <button type="button" class="knopf-link push-aus">{{ t.push_aus }}</button></p>
-    <p class="hinweis" data-zeige="iphone" hidden>{{ t.push_iphone }}</p>
-    <p class="hinweis" data-zeige="nicht" hidden>{{ t.push_nicht }}</p>
-    <p class="hinweis" data-zeige="blockiert" hidden>{{ t.push_blockiert }}</p>
-    <p class="hinweis" data-zeige="fehler" hidden>{{ t.push_fehler }}</p>
+       data-aus="{% url 'warten:push_aus' %}" data-sprache="{{ wahl }}"{% if push_an %} data-ist-an="1"{% endif %}>
+    <button type="button" class="knopf push-an" data-zeige="aus" hidden>🔔 {% include "aufruf/_zwei.html" with a=t.push_an b=t2.push_an %}</button>
+    <p class="push-status" data-zeige="an" hidden>🔔 {% include "aufruf/_zwei.html" with a=t.push_ist_an b=t2.push_ist_an %}
+      <button type="button" class="knopf-link push-aus">{{ t.push_aus }}{% if t2 and t2.push_aus != t.push_aus %} · <span lang="{{ s2.code }}">{{ t2.push_aus }}</span>{% endif %}</button></p>
+    <p class="hinweis" data-zeige="iphone" hidden>{% include "aufruf/_zwei.html" with a=t.push_iphone b=t2.push_iphone %}</p>
+    <p class="hinweis" data-zeige="nicht" hidden>{% include "aufruf/_zwei.html" with a=t.push_nicht b=t2.push_nicht %}</p>
+    <p class="hinweis" data-zeige="blockiert" hidden>{% include "aufruf/_zwei.html" with a=t.push_blockiert b=t2.push_blockiert %}</p>
+    <p class="hinweis" data-zeige="fehler" hidden>{% include "aufruf/_zwei.html" with a=t.push_fehler b=t2.push_fehler %}</p>
   </div>
   {% endif %}
   <form method="post" action="{% url 'warten:abmelden' %}">
     {% csrf_token %}
-    <button type="submit" class="knopf knopf-zweitrangig">{{ t.abmelden }}</button>
+    <button type="submit" class="knopf knopf-zweitrangig">{% include "aufruf/_zwei.html" with a=t.abmelden b=t2.abmelden %}</button>
   </form>
 </section>
 {% endblock %}

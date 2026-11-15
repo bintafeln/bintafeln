@@ -6,6 +6,7 @@
   "anmelden": "Entrar",
   "datenschutz": "Guardamos apenas que este telemóvel pertence ao seu agregado.",
   "falsch": "O número de cliente ou a data de nascimento não estão corretos.",
+  "geburtsdatum_hinweis": "É possível que tenhamos registado uma data de nascimento errada. Se tem a certeza de que o número de cliente e a data de nascimento estão corretos e mesmo assim não consegue avançar, dirija-se à entrada e peça para corrigirem a data de nascimento.",
   "gesperrt": "Demasiadas tentativas. Tente novamente mais tarde.",
   "zu_viele": "Já existem telemóveis suficientes registados para o seu agregado. Dirija-se à entrada.",
   "nicht_verfuegbar": "Esta visualização não existe no seu ponto de distribuição.",

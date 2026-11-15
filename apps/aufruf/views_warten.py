@@ -61,27 +61,50 @@ def _datum(text: str) -> dt.date | None:
     return None
 
 
-def _sprache(request):
-    wahl = (request.GET.get("sprache") or request.COOKIES.get(SPRACH_COOKIE)
-            or sprachen.aus_browser(request.META.get("HTTP_ACCEPT_LANGUAGE", "")))  # fmt: skip
-    return sprachen.sprache(wahl)
+def _zweite(request, z=None):
+    """Zweite Sprache neben Deutsch: selbst gewählt, sonst die des Browsers, nach der Anmeldung
+    sonst die zur Staatsangehörigkeit der Hauptperson. ``None``: nur Deutsch (auch wenn jemand
+    ausdrücklich Deutsch gewählt hat)."""
+    gewaehlt = request.GET.get("sprache") or request.COOKIES.get(SPRACH_COOKIE)
+    if gewaehlt in sprachen.NACH_CODE:
+        code = gewaehlt
+    else:
+        code = sprachen.aus_browser(request.META.get("HTTP_ACCEPT_LANGUAGE", ""))
+        if code == "de" and z is not None:
+            code = handy.sprache_vorschlag(z) or "de"
+    return None if code == "de" else sprachen.sprache(code)
 
 
-def _antwort(request, vorlage, kontext):
-    s = _sprache(request)
-    t = texte(s.code)
+def _antwort(request, vorlage, kontext, z=None):
+    """Seite immer auf Deutsch, darunter jeweils in der zweiten Sprache (``t2``)."""
+    s, t = sprachen.sprache("de"), texte("de")
+    s2 = _zweite(request, z)
+    t2 = texte(s2.code) if s2 else {}
     if kontext.get("fehler"):
         kontext["fehler_text"] = t.get(kontext["fehler"], "")
+        kontext["fehler_text2"] = t2.get(kontext["fehler"], "")
     tafel = TafelEinstellungen.laden()
     antwort = render(request, vorlage, {
-        **kontext, "s": s, "t": t, "sprachen": sprachen.SPRACHEN, "tafel": tafel,
-        "tafel_name": tafel.name or "Tafel", "sprach_hinweise": sprachen.hinweise(),
-        "land_sprache": {},
+        **kontext, "s": s, "t": t, "s2": s2, "t2": t2, "wahl": s2.code if s2 else "de",
+        "sprachen": sprachen.SPRACHEN, "tafel": tafel, "tafel_name": tafel.name or "Tafel",
+        "sprach_hinweise": sprachen.hinweise(), "land_sprache": {},
     })  # fmt: skip
     if request.GET.get("sprache") in sprachen.NACH_CODE:
-        antwort.set_cookie(SPRACH_COOKIE, s.code, max_age=handy.COOKIE_TAGE * 86400,
-                           samesite="Lax", secure=settings.PRODUKTION)  # fmt: skip
+        antwort.set_cookie(SPRACH_COOKIE, request.GET["sprache"],
+                           max_age=handy.COOKIE_TAGE * 86400, samesite="Lax",
+                           secure=settings.PRODUKTION)  # fmt: skip
     return antwort
+
+
+def _stand_texte(stand: dict, t: dict) -> dict:
+    """Die Texte zum Stand in einer Sprache (``t``)."""
+    texte_ = {"text": t.get(stand["art"], "")}
+    if "vor" in stand:
+        texte_["vor_text"] = t["vor_ihnen"].format(vor=stand["vor"])
+        texte_["vorschau_text"] = t["vorschau"].format(vor=stand["vor"])
+    if stand.get("minuten"):
+        texte_["minuten_text"] = t["etwa"].format(minuten=stand["minuten"])
+    return texte_
 
 
 def _merken(antwort, schluessel: str):
@@ -114,26 +137,20 @@ def seite(request):
                 return _merken(redirect("warten:seite"), schluessel)
     if z is None:
         return _antwort(request, "aufruf/warten.html", {"fehler": fehler})
-    s = _sprache(request)
-    t = texte(s.code)
+    s2 = _zweite(request, z)
+    t, t2 = texte("de"), texte(s2.code) if s2 else {}
     stand = handy.stand(z)
-    stand["text"] = t.get(stand["art"], "")
-    if "vor" in stand:
-        stand["vor_text"] = t["vor_ihnen"].format(vor=stand["vor"])
-        stand["vorschau_text"] = t["vorschau"].format(vor=stand["vor"])
-    if stand.get("minuten"):
-        stand["minuten_text"] = t["etwa"].format(minuten=stand["minuten"])
+    stand |= _stand_texte(stand, t)
     uhrzeit = timezone.localtime().strftime("%H:%M")
-    # Sprache zur Staatsangehörigkeit vorschlagen, solange niemand selbst gewählt hat
-    gewaehlt = request.GET.get("sprache") or request.COOKIES.get(SPRACH_COOKIE)
     return _antwort(request, "aufruf/warten_stand.html", {
-        "stand": stand, "aktualisieren": AKTUALISIEREN,
+        "stand": stand, "stand2": _stand_texte(stand, t2) if t2 else {},
+        "aktualisieren": AKTUALISIEREN, "uhrzeit": uhrzeit,
         "aktualisiert": t["aktualisiert"].format(uhrzeit=uhrzeit),
-        "vorschlag": "" if gewaehlt else handy.sprache_vorschlag(z),
+        "aktualisiert2": t2["aktualisiert"].format(uhrzeit=uhrzeit) if t2 else "",
         "push": stand["art"] != "nicht_verfuegbar", "push_an": bool(z.push_adresse),
         "push_schluessel": push.oeffentlicher_schluessel() if stand["art"] != "nicht_verfuegbar"
         else "",
-    })  # fmt: skip
+    }, z)  # fmt: skip
 
 
 @require_POST

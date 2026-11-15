@@ -6,6 +6,7 @@
   "anmelden": "Anmelden",
   "datenschutz": "Gespeichert wird nur, dass dieses Handy zu Ihrem Haushalt gehört.",
   "falsch": "Kundennummer oder Geburtsdatum stimmen nicht.",
+  "geburtsdatum_hinweis": "Vielleicht haben wir ein falsches Geburtsdatum gespeichert. Wenn Sie sicher sind, dass Kundennummer und Geburtsdatum stimmen, und trotzdem nicht weiterkommen: Bitte melden Sie sich am Einlass und lassen Sie das Geburtsdatum korrigieren.",
   "gesperrt": "Zu viele Versuche. Bitte versuchen Sie es später noch einmal.",
   "zu_viele": "Für Ihren Haushalt sind schon genug Handys eingerichtet. Bitte melden Sie sich am Einlass.",
   "nicht_verfuegbar": "An Ihrer Ausgabestelle gibt es diese Anzeige nicht.",

@@ -807,8 +807,9 @@ def test_hilfe_bild_wartezeit_handy(seite, admin, muster):
     hp.geburtsdatum = dt.date(1975, 3, 12)
     hp.save()
     seite.set_viewport_size({"width": 400, "height": 760})
-    seite.goto(reverse("warten:seite"))
-    seite.locator(".sprach-hinweis-zu").click()  # Hinweis auf die Sprachwahl schließen
+    seite.goto(reverse("warten:seite") + "?sprache=uk")  # zweisprachig: Deutsch und Ukrainisch
+    if seite.locator(".sprach-hinweis-zu").is_visible():
+        seite.locator(".sprach-hinweis-zu").click()  # Hinweis auf die Sprachwahl schließen
     seite.get_by_label("Kundennummer").fill(nummer)
     seite.get_by_label("Geburtsdatum der Hauptperson").fill("1975-03-12")
     karte = seite.locator("section.karte").first

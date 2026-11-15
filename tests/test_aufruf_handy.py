@@ -266,16 +266,65 @@ def test_zentral_fuer_alle_oder_aus(client, admin_client, mitte):
     assert "Zurzeit an keiner Ausgabestelle" in admin_client.get(einstellungen).content.decode()
 
 
-def test_sprachvorschlag_nach_staatsangehoerigkeit(client, mitte):
+def test_zweisprachig_nach_staatsangehoerigkeit(client, mitte):
+    """Deutsch immer, dazu nach der Anmeldung die Sprache zur Staatsangehörigkeit."""
     hp = Haushalt.objects.get(kundennummer="109").hauptperson
     hp.staatsangehoerigkeit = "Türkei"
     hp.save()
     anmelden(client)
     seite = client.get(SEITE).content.decode()
-    assert 'data-vorschlag="tr"' in seite and 'id="sprach-hinweise"' in seite
-    assert "sprachhinweis.js" in seite
+    assert '<html lang="de"' in seite and "Dieses Handy abmelden" in seite
+    assert '<span class="zweitsprache" lang="tr" dir="ltr">' in seite
+    assert views_warten.texte("tr")["abmelden"] in seite
+    assert '<option value="tr" lang="tr" selected>' in seite
     seite = client.get(SEITE, {"sprache": "de"}).content.decode()
-    assert "data-vorschlag" not in seite  # selbst gewählt: kein Vorschlag mehr
+    assert "zweitsprache" not in seite  # ausdrücklich Deutsch gewählt: nur Deutsch
+
+
+def test_zweisprachig_vor_der_anmeldung(client, mitte):
+    seite = client.get(SEITE, {"sprache": "uk"}).content.decode()
+    assert "Geburtsdatum der Hauptperson" in seite
+    assert views_warten.texte("uk")["geburtsdatum"] in seite and 'lang="uk"' in seite
+    ar = client.get(SEITE, {"sprache": "ar"}).content.decode()
+    assert '<html lang="de" dir="ltr">' in ar and 'lang="ar" dir="rtl"' in ar
+    browser = Client(HTTP_ACCEPT_LANGUAGE="ru-RU,ru;q=0.9").get(SEITE).content.decode()
+    assert views_warten.texte("ru")["anmelden"] in browser
+    assert "zweitsprache" not in Client().get(SEITE).content.decode()
+
+
+def test_falsche_anmeldung_nennt_geburtsdatum_und_einlass(client, mitte):
+    daten = {"kundennummer": "109", "geburtsdatum": "1999-01-01"}
+    seite = client.post(f"{SEITE}?sprache=uk", daten).content.decode()
+    assert "stimmen nicht" in seite and "falsches Geburtsdatum" in seite and "am Einlass" in seite
+    assert views_warten.texte("uk")["geburtsdatum_hinweis"] in seite
+    assert "falsches Geburtsdatum" not in client.get(SEITE).content.decode()
+
+
+def test_hinweis_zum_geburtsdatum_in_jeder_sprache(mitte):
+    """Der Hinweis erscheint in jeder einstellbaren Sprache (und immer auf Deutsch)."""
+    from django.utils.html import escape
+
+    daten = {"kundennummer": "109", "geburtsdatum": "1999-01-01"}
+    for s in sprachen.SPRACHEN:
+        cache.clear()  # nicht wegen zu vieler Fehlversuche sperren
+        seite = Client().post(f"{SEITE}?sprache={s.code}", daten).content.decode()
+        for code in {"de", s.code}:
+            assert escape(views_warten.texte(code)["geburtsdatum_hinweis"]) in seite, s.code
+
+
+def test_push_nachricht_zweisprachig():
+    from apps.aufruf import push
+
+    titel, text = push.nachricht({"nummer": "109"}, push.JETZT, "uk")
+    uk = views_warten.texte("uk")
+    assert titel == f"Sie sind dran! · {uk['push_jetzt_titel']}"
+    assert (
+        text.startswith("Bitte jetzt eintreten. Kundennummer 109.") and "109" in text.split("\n")[1]
+    )
+    assert push.nachricht({"vor": 3}, push.BALD, "de") == (
+        "Gleich sind Sie dran",
+        "Noch 3 vor Ihnen – bitte kommen Sie zum Eingang.",
+    )
 
 
 def test_auskunft_nennt_handys(client, mitte, admin_client, pdf_text):

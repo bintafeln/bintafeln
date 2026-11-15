@@ -204,10 +204,17 @@ def stufe(stand: dict, vorher: int) -> str:
 def nachricht(stand: dict, art: str, sprache: str) -> tuple[str, str]:
     from apps.aufruf.views_warten import texte
 
-    t = texte(sprache or "de")
-    if art == JETZT:
-        return t["push_jetzt_titel"], t["push_jetzt"].format(nummer=stand.get("nummer", ""))
-    return t["push_bald_titel"], t["push_bald"].format(vor=stand.get("vor", ""))
+    def in_sprache(t):
+        if art == JETZT:
+            return t["push_jetzt_titel"], t["push_jetzt"].format(nummer=stand.get("nummer", ""))
+        return t["push_bald_titel"], t["push_bald"].format(vor=stand.get("vor", ""))
+
+    titel, text = in_sprache(texte("de"))  # Deutsch immer, dazu die Sprache der Kunden
+    if sprache and sprache != "de":
+        titel2, text2 = in_sprache(texte(sprache))
+        titel = titel if titel2 == titel else f"{titel} · {titel2}"
+        text = text if text2 == text else f"{text}\n{text2}"
+    return titel, text
 
 
 def benachrichtigen(stelle, datum) -> int:

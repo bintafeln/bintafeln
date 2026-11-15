@@ -6,6 +6,7 @@
   "anmelden": "Prijava",
   "datenschutz": "Pohranjuje se samo da ovaj telefon pripada vašem kućanstvu.",
   "falsch": "Broj korisnika ili datum rođenja nisu točni.",
+  "geburtsdatum_hinweis": "Moguće je da smo spremili pogrešan datum rođenja. Ako ste sigurni da su broj korisnika i datum rođenja točni, a i dalje ne možete nastaviti, molimo javite se na ulazu i zatražite ispravak datuma rođenja.",
   "gesperrt": "Previše pokušaja. Pokušajte kasnije.",
   "zu_viele": "Za vaše kućanstvo već je postavljeno dovoljno telefona. Javite se na ulazu.",
   "nicht_verfuegbar": "Na vašem mjestu podjele ovaj prikaz ne postoji.",

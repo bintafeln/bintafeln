@@ -319,7 +319,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Erstes Modul: `aufruf` (ADR 0050, Regeln in `apps/aufruf/ablauf.py`, Seiten aus dem
   bisherigen Aufrufsystem in `apps/aufruf/templates/aufruf/`, Geräte ohne Anmeldung nur über
   den Schlüssel im Link; Wartezeit aufs Handy unter `/warten/` in `apps/aufruf/handy.py`,
-  Texte in `apps/aufruf/warten_texte/`, ADR 0090; Push-Nachrichten über `apps/aufruf/push.py`,
+  Texte in `apps/aufruf/warten_texte/`, immer Deutsch plus zweite Sprache über `views_warten._zweite()`
+  und die Vorlage `aufruf/_zwei.html`, ADR 0090; Push-Nachrichten über `apps/aufruf/push.py`,
   Web Push mit `cryptography` ohne weitere Abhängigkeit, nur an Push-Dienste der Browser, ausgelöst
   nach `ablauf.weiter()`/`starten()`, in Tests `push._senden` und `push._im_hintergrund` ersetzen,
   ADR 0134). `warteliste` (ADR 0051, Regeln in `apps/warteliste/ablauf.py`,

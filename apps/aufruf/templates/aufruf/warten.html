@@ -1,21 +1,24 @@
 {% extends "aufruf/warten_basis.html" %}
 {% block inhalt %}
 <section class="karte antrag-karte warten-karte">
-  <h1>{{ t.titel }}</h1>
-  {% if fehler_text %}<p class="meldung error" role="alert">{{ fehler_text }}</p>{% endif %}
-  <p>{{ t.einleitung }}</p>
+  <h1>{% include "aufruf/_zwei.html" with a=t.titel b=t2.titel %}</h1>
+  {% if fehler_text %}<div class="meldung error" role="alert">
+    <p>{% include "aufruf/_zwei.html" with a=fehler_text b=fehler_text2 %}</p>
+    {% if fehler == "falsch" %}<p class="warten-geburtsdatum">{% include "aufruf/_zwei.html" with a=t.geburtsdatum_hinweis b=t2.geburtsdatum_hinweis %}</p>{% endif %}
+  </div>{% endif %}
+  <p>{% include "aufruf/_zwei.html" with a=t.einleitung b=t2.einleitung %}</p>
   <form method="post" action="{% url 'warten:seite' %}{% if request.GET.sprache %}?sprache={{ request.GET.sprache }}{% endif %}">
     {% csrf_token %}
     <div class="feld">
-      <label for="kundennummer">{{ t.kundennummer }}</label>
+      <label for="kundennummer">{% include "aufruf/_zwei.html" with a=t.kundennummer b=t2.kundennummer %}</label>
       <input type="text" name="kundennummer" id="kundennummer" inputmode="numeric" autocomplete="off" required maxlength="20">
     </div>
     <div class="feld">
-      <label for="geburtsdatum">{{ t.geburtsdatum }}</label>
+      <label for="geburtsdatum">{% include "aufruf/_zwei.html" with a=t.geburtsdatum b=t2.geburtsdatum %}</label>
       <input type="date" name="geburtsdatum" id="geburtsdatum" required>
     </div>
-    <button type="submit" class="knopf knopf-gross">{{ t.anmelden }}</button>
+    <button type="submit" class="knopf knopf-gross">{% include "aufruf/_zwei.html" with a=t.anmelden b=t2.anmelden %}</button>
   </form>
-  <p class="hinweis">{{ t.datenschutz }}</p>
+  <p class="hinweis">{% include "aufruf/_zwei.html" with a=t.datenschutz b=t2.datenschutz %}</p>
 </section>
 {% endblock %}

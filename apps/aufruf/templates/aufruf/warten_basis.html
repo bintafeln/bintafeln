@@ -19,9 +19,9 @@
       <span>{{ tafel_name }}</span>
     </span>
     <form method="get" class="sprachwahl">
-      <label for="sprache">{{ t.sprache }}</label>
+      <label for="sprache">{{ t.sprache }}{% if t2 and t2.sprache != t.sprache %} · <span lang="{{ s2.code }}">{{ t2.sprache }}</span>{% endif %}</label>
       <select name="sprache" id="sprache">
-        {% for x in sprachen %}<option value="{{ x.code }}" lang="{{ x.code }}"{% if x.code == s.code %} selected{% endif %}>{{ x.name }}</option>{% endfor %}
+        {% for x in sprachen %}<option value="{{ x.code }}" lang="{{ x.code }}"{% if x.code == wahl %} selected{% endif %}>{{ x.name }}</option>{% endfor %}
       </select>
       <noscript><button type="submit" class="knopf">OK</button></noscript>
     </form>
