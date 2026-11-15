@@ -14,20 +14,20 @@
 
   var VERBOTEN = ["SCRIPT", "STYLE", "IFRAME", "OBJECT", "EMBED", "FORM", "INPUT", "BUTTON",
                   "TEXTAREA", "SELECT", "LINK", "META", "BASE"];
-  // Gruppen der Werkzeugleiste: [Name, [[Befehl, Aufschrift, Erklärung], …]]
+  // Gruppen der Werkzeugleiste: [Name, [[Befehl, Aufschrift, Erklärung], …], im Menü „Mehr“?]
   var GRUPPEN = [
     ["Schrift", [["bold", "F", "Fett"], ["italic", "K", "Kursiv"], ["underline", "U", "Unterstrichen"],
                  ["h2", "Überschrift", "Überschrift"], ["p", "Absatz", "Normaler Absatz"]]],
     ["Größe", [["klein", "klein", "Kleine Schrift"], ["normal", "normal", "Normale Schrift"],
-               ["gross", "groß", "Große Schrift"]]],
+               ["gross", "groß", "Große Schrift"]], true],
     ["Ausrichtung", [["justifyLeft", "Links", "Linksbündig"], ["justifyCenter", "Mitte", "Zentriert"],
                      ["justifyRight", "Rechts", "Rechtsbündig"], ["justifyFull", "Blocksatz", "Blocksatz"]]],
     ["Liste", [["insertUnorderedList", "• Liste", "Aufzählung"],
                ["insertOrderedList", "1. Liste", "Nummerierung"]]],
     ["Farbe", [["farbe", "Text", "Textfarbe der Auswahl"], ["markieren", "Markieren", "Hintergrundfarbe der Auswahl"],
-               ["kasten", "Kasten", "Farbiger Kasten: Auswahl (oder neuer Text) mit Hintergrundfarbe"]]],
-    ["Einfügen", [["link", "Link", "Link"], ["bild", "Bild", "Bild (Adresse)"],
-                  ["removeFormat", "Format weg", "Formatierung entfernen"]]],
+               ["kasten", "Kasten", "Farbiger Kasten: Auswahl (oder neuer Text) mit Hintergrundfarbe"]], true],
+    ["Einfügen", [["link", "Link", "Link"], ["bild", "Bild", "Bild (Adresse)"]]],
+    ["Format", [["removeFormat", "Format weg", "Formatierung entfernen"]], true],
   ];
   var FARBEN = {farbe: "#c1121f", markieren: "#fff3a3", kasten: "#fdf3d8"};
   var KASTEN = "padding:12px 16px;border-radius:8px;margin:8px 0;background-color:";
@@ -113,6 +113,19 @@
       s.addRange(gemerkt);
     }
 
+    // Seltenes (Größe, Farben, Format weg) im aufklappbaren Menü „Mehr“, damit die Leiste ruhig bleibt
+    var mehr = document.createElement("details");
+    mehr.className = "editor-mehr";
+    var mehrTitel = document.createElement("summary");
+    mehrTitel.textContent = "Mehr";
+    mehrTitel.title = "Schriftgröße, Farben, Kasten, Format entfernen";
+    mehrTitel.addEventListener("mousedown", function (e) { e.preventDefault(); }); // Auswahl behalten
+    var mehrInhalt = document.createElement("div");
+    mehrInhalt.className = "editor-mehr-inhalt";
+    mehr.appendChild(mehrTitel);
+    mehr.appendChild(mehrInhalt);
+    document.addEventListener("click", function (e) { if (mehr.open && !mehr.contains(e.target)) mehr.open = false; });
+
     GRUPPEN.forEach(function (g) {
       var gruppe = document.createElement("div");
       gruppe.className = "editor-gruppe";
@@ -155,8 +168,10 @@
         k.addEventListener("click", function () { knopf(b[0]); });
         gruppe.appendChild(k);
       });
-      leiste.appendChild(gruppe);
+      if (!gruppe.children.length) return; // alle Knöpfe ausgeblendet
+      (g[2] ? mehrInhalt : leiste).appendChild(gruppe);
     });
+    if (mehrInhalt.children.length) leiste.appendChild(mehr);
 
     // „Standard"-Knopf: setzt den Text auf die mitgelieferte Vorgabe zurück (nur wenn eine
     // Vorgabe über data-standard hinterlegt ist).

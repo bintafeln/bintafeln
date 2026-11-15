@@ -297,7 +297,7 @@ def test_hilfe_bild_serienbrief_vorlage(angemeldet, admin, muster):
     seite.wait_for_timeout(1200)  # Vorschau lädt nach der letzten Änderung neu
     expect(bild).to_have_attribute("src", re.compile(r"^blob:"))
     expect(seite.locator(".brief-vorschau")).not_to_have_class(re.compile("laedt"))
-    spalte = seite.locator(".vorlage-seitenspalte")
+    spalte = seite.locator(".brief-vorschau")
     aufnehmen(seite, "serienbriefe-vorlage", [seite.locator("#vorlage-formular"), spalte],
               Marke(editor.locator(".editor-leiste"), "rahmen", 1),
               Marke(flaeche.locator('[data-platzhalter="vorname"]'), nummer=2, von="unten",

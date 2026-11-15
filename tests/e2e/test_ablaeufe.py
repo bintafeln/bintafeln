@@ -279,6 +279,8 @@ def test_editor_gestalten_und_html(angemeldet, admin):
     leiste = editor.locator(".editor-leiste")
     flaeche.click()
     seite.keyboard.press("Control+a")
+    expect(leiste.get_by_role("button", name="Kasten")).to_be_hidden()  # im Menü „Mehr“
+    leiste.locator(".editor-mehr summary").click()
     leiste.get_by_role("button", name="Kasten").click()
     expect(flaeche.locator(".kasten")).to_have_count(1)
     flaeche.locator(".kasten").click()
@@ -1070,6 +1072,7 @@ def test_serienbrief_vorlage_platzhalter_ziehen_und_antippen(angemeldet, admin):
     assert text_vorher.index("Briefanrede") < text_vorher.index("Liebe")  # an der Schreibmarke
     seite.locator('[data-platzhalter-karte="vorname"]').drag_to(flaeche)
     expect(flaeche.locator('[data-platzhalter="vorname"]')).to_have_text("Vorname")
+    editor.locator(".editor-mehr summary").click()  # Seltenes steckt im Menü „Mehr“
     editor.locator(".editor-leiste").get_by_role("button", name="groß").click()
     # Im Betreff gewesen: dort einfügen
     seite.get_by_label("Betreff").click()
