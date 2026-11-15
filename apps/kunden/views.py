@@ -544,9 +544,8 @@ def notizen_kontext(kundennummer: str, benutzer) -> dict:
     from apps.kunden import krankmeldung
 
     heute = timezone.localdate()
-    # Abgelaufene Abwesenheiten sind nicht mehr zu sehen (gelöscht werden sie täglich)
-    notizen = list(Notiz.objects.filter(kundennummer=kundennummer)
-                   .exclude(krank_bis__lt=heute))  # fmt: skip
+    # Abwesenheiten bleiben auch nach dem Ende sichtbar, bis der Kunde wieder abholt (ADR 0075)
+    notizen = list(Notiz.objects.filter(kundennummer=kundennummer))
     for n in notizen:
         n.loeschbar = n.darf_loeschen(benutzer)
     return {

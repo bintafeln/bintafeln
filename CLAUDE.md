@@ -156,7 +156,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Sammel-Verlängerung der Ausweise: Regeln in `apps/kunden/verlaengerung.py`, Bedingungen in
   `KundenEinstellungen.verlaengern_*`, Anliegen der `Nachricht` in `apps/core/auswahl.py` (ADR 0068).
   Krankmeldung eines Kunden: `Notiz` mit `krank_von/bis/grund`, Logik in `apps/kunden/krankmeldung.py`,
-  zuschaltbar, nach dem Ende gelöscht (ADR 0075).
+  zuschaltbar, auch rückwirkend; bleibt nach dem Ende stehen und wird erst gelöscht, wenn der Kunde
+  wieder abgeholt hat – nie wegen des Endes (ADR 0075).
   `Abholung.save()` setzt eine fehlende Ausgabestelle aus der Kundengruppe des Haushalts
   (`stelle_der_gruppe()`); `bulk_create` umgeht das, dort selbst setzen (wie `importieren._abholung`).
   Notizen an die Ausgabestelle (`Notiz.an_stelle`, Startseite, Antwort beim Ausweisdruck) in
