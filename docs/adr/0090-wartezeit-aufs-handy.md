@@ -36,3 +36,15 @@ Ein geheimer Link pro Ausgabestelle würde weitergegeben. Das Geheimnis liegt de
 Kunden selbst (Kundennummer und Geburtsdatum), der Aushang darf öffentlich sein. Die
 Handy-Bindung macht weitergegebene Zugänge wertlos, und die Anzeige verrät ohnehin nur einen
 Platz ohne Namen. Die Ausweise bekommen den Code nach und nach, ohne Sonderdruck.
+
+## Nachtrag: zweisprachig und Hinweis zum Geburtsdatum
+
+- Die Seite steht immer auf Deutsch, darunter jeweils in einer zweiten Sprache. Diese ist die
+  oben gewählte Sprache, sonst die Sprache des Browsers, nach der Anmeldung sonst die Sprache zur
+  Staatsangehörigkeit der Hauptperson. Wer ausdrücklich Deutsch wählt, sieht nur Deutsch. Auch
+  Push-Nachrichten kommen auf Deutsch und in der zweiten Sprache. Das Team am Einlass versteht
+  so immer, was auf dem Handy steht, und die Kunden lesen es in ihrer Sprache.
+- Viele Geburtsdaten im Kundenstamm stammen aus Altsystemen und sind nicht immer richtig. Bei
+  einer abgelehnten Anmeldung erklärt die Seite deshalb, dass ein falsches Geburtsdatum
+  gespeichert sein kann: Wer sich sicher ist, soll sich am Einlass melden und es korrigieren
+  lassen (Text `geburtsdatum_hinweis`).

@@ -1,0 +1,1 @@
+{# Text auf Deutsch (a), darunter in der zweiten Sprache (b, ADR 0090 ergänzt); gleiche Texte nur einmal #}{{ a }}{% if s2 and b and b != a %}<span class="zweitsprache" lang="{{ s2.code }}" dir="{% if s2.rtl %}rtl{% else %}ltr{% endif %}">{{ b }}</span>{% endif %}

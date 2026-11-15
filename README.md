@@ -1147,14 +1147,16 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   (Aushang mit QR-Code als PDF unter „Aufruf, Monitor und Kiosk“, einmal drucken), melden sich
   einmal mit Kundennummer und Geburtsdatum der Hauptperson an und sehen dann auf dem Handy nur
   ihren eigenen Platz an ihrer Ausgabestelle („noch 7 vor Ihnen, ca. 20 Minuten“, „Bitte jetzt
-  eintreten“), in 29 Sprachen (Hinweis auf die Sprachwahl, Vorschlag nach Staatsangehörigkeit), ohne Namen.
+  eintreten“), immer auf Deutsch und darunter in einer zweiten Sprache (gewählt, Sprache des Handys
+  oder nach Staatsangehörigkeit; 29 Sprachen), ohne Namen. Klappt die Anmeldung nicht, weist die
+  Seite auf ein möglicherweise falsch gespeichertes Geburtsdatum hin (Korrektur am Einlass).
   Höchstens 2 Handys je Haushalt (zentral einstellbar),
   „Handys zurücksetzen“ am Einlass, Fehlversuche begrenzt. Neu gedruckte Ausweise können einen
   persönlichen QR-Code tragen (Element in der Ausweis-Vorlage, jeder Druck ein neuer Code).
 - **Push-Nachricht aufs Handy** (ADR 0134): Auf `/warten/` schaltet der Kunde „🔔 Benachrichtigung
   aufs Handy“ ein und bekommt dann – auch bei geschlossener Seite – „Gleich sind Sie dran“, sobald
   nur noch wenige Nummern vor ihm aufgerufen werden (einstellbar, Vorgabe 3), und „Sie sind dran!“
-  beim Aufruf, in seiner Sprache. Web Push ohne App und ohne fremde Dienste außer dem Push-Dienst
+  beim Aufruf, auf Deutsch und in seiner Sprache. Web Push ohne App und ohne fremde Dienste außer dem Push-Dienst
   des Browsers (Inhalt verschlüsselt); auf dem iPhone ab iOS 16.4 nach „Zum Home-Bildschirm“. Der
   Schlüssel der Tafel wird beim ersten Mal erzeugt und verschlüsselt gespeichert; nichts einzurichten.
 

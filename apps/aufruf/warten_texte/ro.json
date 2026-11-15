@@ -6,6 +6,7 @@
   "anmelden": "Autentificare",
   "datenschutz": "Se salvează doar faptul că acest telefon aparține gospodăriei dvs.",
   "falsch": "Numărul de client sau data nașterii nu sunt corecte.",
+  "geburtsdatum_hinweis": "Este posibil să avem salvată o dată de naștere greșită. Dacă sunteți sigur că numărul de client și data nașterii sunt corecte și totuși nu puteți continua, vă rugăm să vă adresați la intrare și să cereți corectarea datei de naștere.",
   "gesperrt": "Prea multe încercări. Vă rugăm să încercați mai târziu.",
   "zu_viele": "Pentru gospodăria dvs. sunt deja configurate suficiente telefoane. Vă rugăm să vă adresați la intrare.",
   "nicht_verfuegbar": "La punctul dvs. de distribuție această afișare nu există.",

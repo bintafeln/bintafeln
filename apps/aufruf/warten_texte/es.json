@@ -6,6 +6,7 @@
   "anmelden": "Entrar",
   "datenschutz": "Solo se guarda que este teléfono pertenece a su hogar.",
   "falsch": "El número de cliente o la fecha de nacimiento no son correctos.",
+  "geburtsdatum_hinweis": "Es posible que tengamos guardada una fecha de nacimiento incorrecta. Si está seguro de que el número de cliente y la fecha de nacimiento son correctos y aun así no puede continuar, acuda a la entrada y pida que corrijan la fecha de nacimiento.",
   "gesperrt": "Demasiados intentos. Por favor, inténtelo más tarde.",
   "zu_viele": "Ya hay suficientes teléfonos registrados para su hogar. Por favor, pregunte en la entrada.",
   "nicht_verfuegbar": "Esta pantalla no está disponible en su punto de reparto.",

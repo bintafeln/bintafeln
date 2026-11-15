@@ -6,6 +6,7 @@
   "anmelden": "Accedi",
   "datenschutz": "Salviamo solo che questo telefono appartiene al Suo nucleo familiare.",
   "falsch": "Numero cliente o data di nascita non corretti.",
+  "geburtsdatum_hinweis": "È possibile che abbiamo registrato una data di nascita errata. Se è sicuro che il numero cliente e la data di nascita sono corretti e non riesce comunque ad andare avanti, si rivolga all'ingresso e chieda di correggere la data di nascita.",
   "gesperrt": "Troppi tentativi. Riprovi più tardi.",
   "zu_viele": "Per il Suo nucleo sono già registrati abbastanza telefoni. Si rivolga all’ingresso.",
   "nicht_verfuegbar": "Questa visualizzazione non è disponibile nel Suo punto di distribuzione.",

@@ -6,6 +6,7 @@
   "anmelden": "Sign in",
   "datenschutz": "We only store that this phone belongs to your household.",
   "falsch": "Customer number or date of birth is not correct.",
+  "geburtsdatum_hinweis": "We may have saved a wrong date of birth. If you are sure that the customer number and date of birth are correct and it still does not work, please go to the entrance desk and ask for the date of birth to be corrected.",
   "gesperrt": "Too many attempts. Please try again later.",
   "zu_viele": "Enough phones are already set up for your household. Please ask at the entrance.",
   "nicht_verfuegbar": "This display is not available at your distribution point.",
