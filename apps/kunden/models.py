@@ -1097,6 +1097,22 @@ class Abholung(models.Model):
     def __str__(self):
         return f"Abholung am {self.datum:%d.%m.%Y}"
 
+    def save(self, *args, **kwargs):
+        # Ohne Ausgabestelle (Einlass ohne gewählte Ausgabestelle, übernommene Besuche) gilt die
+        # der Kundengruppe des Haushalts – sonst zählt die Statistik „ohne Ausgabestelle“.
+        if self.ausgabestelle_id is None and self.haushalt_id:
+            self.ausgabestelle_id = stelle_der_gruppe(self.haushalt_id)
+        super().save(*args, **kwargs)
+
+
+def stelle_der_gruppe(haushalt_id):
+    """Ausgabestelle der Kundengruppe eines Haushalts (``None`` ohne Gruppe oder Stelle)."""
+    return (
+        Haushalt.objects.filter(pk=haushalt_id)
+        .values_list("kundengruppe__ausgabestelle", flat=True)
+        .first()
+    )
+
 
 class Ausnahme(models.Model):
     """Erlaubt eine Abholung trotz Regel, z. B. außerhalb des eigenen Termins."""
