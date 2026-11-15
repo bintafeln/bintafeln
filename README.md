@@ -1531,10 +1531,10 @@ auch an Kunden“, nur Admin) schreibt viele Empfänger auf einmal an (ADR 0047)
   `{spendensumme}`, `{kundennummer}`, `{jahr}`, `{datum}`, `{tafel}`. Mitgeliefert: Dank für
   Spenden, Erinnerung Mitgliedsbeitrag, Einladung Mitgliederversammlung.
 - **Gestalten wie in einem Schreibprogramm** (ADR 0088): fett, kursiv, unterstrichen,
-  Überschrift, Schriftgröße (klein/normal/groß), Ausrichtung (links/Mitte/rechts/Blocksatz),
-  Aufzählung und Nummerierung, Text- und Markierfarbe, farbiger Kasten; im Reiter „HTML“ der
-  Quelltext. Die Platzhalter stehen als Kärtchen mit verständlichem Namen („Briefanrede“,
-  „Spendensumme“ …) neben dem Text: in den Text ziehen oder antippen (fügt an der Schreibmarke
+  Überschrift, Ausrichtung (links/Mitte/rechts/Blocksatz), Aufzählung und Nummerierung; im Menü
+  „Mehr“ Schriftgröße (klein/normal/groß), Text- und Markierfarbe, farbiger Kasten, Format weg;
+  im Reiter „HTML“ der Quelltext. Die Platzhalter stehen mit verständlichem Namen („Briefanrede“,
+  „Spendensumme“ …) unter dem Text: in den Text ziehen oder antippen (fügt an der Schreibmarke
   ein, auch auf dem iPad; zuletzt im Betreff gewesen, dann dort). Im Text erscheinen sie als
   farbige Felder. Je Vorlage **Briefkopf** (Logo und Kontakt der Tafel oben rechts, abschaltbar
   für eigenes Briefpapier) und **Fußzeile** (z. B. Bankverbindung, auf jeder Seite und unter

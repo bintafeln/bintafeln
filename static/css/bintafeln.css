@@ -1682,6 +1682,17 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 .editor-farbpaar { display: inline-flex; align-items: center; gap: 2px; }
 .editor-leiste .editor-farbknopf { box-shadow: inset 0 -4px 0 var(--farbe); }
 .editor-leiste .editor-farbpaar input[type="color"] { width: 1.6rem; height: 2rem; }
+.editor-mehr { position: relative; }
+.editor-mehr > summary { list-style: none; padding: .25rem .6rem; border: 1px solid var(--rand); border-radius: 6px;
+  background: var(--flaeche); font-weight: 600; cursor: pointer; white-space: nowrap; }
+.editor-mehr > summary::-webkit-details-marker { display: none; }
+.editor-mehr > summary::after { content: " ▾"; color: var(--leise); }
+.editor-mehr[open] > summary { border-color: var(--akzent); }
+.editor-mehr-inhalt { position: absolute; z-index: 20; top: calc(100% + .3rem); right: 0; display: grid; gap: .5rem;
+  padding: .6rem; min-width: max-content; border: 1px solid var(--rand); border-radius: var(--radius);
+  background: var(--flaeche); box-shadow: 0 6px 18px rgb(0 0 0 / .15); }
+.editor-mehr-inhalt .editor-gruppe { border-right: 0; padding-right: 0; }
+@media (max-width: 40rem) { .editor-mehr-inhalt { right: auto; left: 0; } }
 
 /* Antragsformular: Merkzeichen nebeneinander */
 [data-merkzeichen-fuer] .feld > div { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; }
@@ -1737,31 +1748,32 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 .serienbrief-auswahl .abschnitt-titel { font-size: 1.05rem; margin: .5rem 0 .4rem; }
 [data-zeigen-bei][hidden] { display: none; }
 
-/* Serienbrief-Vorlagen (ADR 0088): Editor breit, Platzhalter als Kärtchen daneben */
+/* Serienbrief-Vorlagen (ADR 0088): Editor links, Live-Vorschau rechts, Platzhalter als Leiste unter dem Text */
 .vorlage-raster { display: grid; gap: 0 1.25rem; grid-template-columns: minmax(0, 1fr); align-items: start; }
-@media (min-width: 64rem) {
-  .vorlage-raster { grid-template-columns: minmax(0, 1fr) minmax(15rem, 19rem); }
-  .vorlage-seitenspalte { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; }
-}
+.vorlage-kopf { display: grid; gap: 0 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); }
+.vorlage-seite { margin: 1rem 0; padding: .75rem 1rem; border: 1px solid var(--rand); border-radius: var(--radius); }
+.vorlage-seite legend { padding: 0 .4rem; font-weight: 600; }
 /* Live-Vorschau des Briefs (static/js/brief_vorschau.js): nur auf breiten Bildschirmen */
-.vorlage-seitenspalte { display: contents; }
-@media (min-width: 64rem) { .vorlage-seitenspalte { display: block; } }
 .brief-vorschau { display: none; }
-@media (min-width: 64rem) { .brief-vorschau { display: block; } }
+@media (min-width: 64rem) {
+  .vorlage-raster { grid-template-columns: minmax(0, 1fr) minmax(18rem, 27rem); }
+  .brief-vorschau { display: block; position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; }
+}
+.brief-vorschau h2 { margin-top: 0; }
 .brief-vorschau-knopf { display: block; width: 100%; padding: 0; border: 1px solid var(--rand); border-radius: 4px;
   background: #fff; cursor: zoom-in; overflow: hidden; box-shadow: 0 1px 4px rgb(0 0 0 / .15); }
 .brief-vorschau-knopf img { display: block; width: 100%; height: auto; aspect-ratio: 595 / 842; transition: opacity .2s; }
 .brief-vorschau.laedt img { opacity: .55; }
-.platzhalter-karten { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; }
+.platzhalter-spalte { margin: .5rem 0 0; padding: .5rem .6rem; border: 1px solid var(--rand); border-radius: var(--radius);
+  background: var(--flaeche); }
+.platzhalter-spalte h2 { font-size: 1rem; margin: 0 0 .35rem; }
+.platzhalter-karten { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .35rem; }
 .platzhalter-karten li { margin: 0; }
-.platzhalter-karte { display: grid; grid-template-columns: 1fr auto; gap: 0 .5rem; width: 100%; text-align: left;
-  padding: .45rem .6rem; border: 1px solid var(--rand); border-left: 4px solid var(--akzent); border-radius: var(--radius);
-  background: var(--flaeche); color: var(--text); font: inherit; cursor: grab; touch-action: manipulation; }
-.platzhalter-karte:hover, .platzhalter-karte:focus-visible { border-color: var(--akzent); background: var(--erfolg); }
+.platzhalter-karte { display: inline-block; padding: .3rem .65rem; border: 1px solid var(--akzent); border-radius: 999px;
+  background: var(--erfolg); color: var(--akzent-dunkel); font: inherit; font-size: .92rem; font-weight: 600;
+  cursor: grab; touch-action: manipulation; }
+.platzhalter-karte:hover, .platzhalter-karte:focus-visible { background: var(--akzent); color: var(--auf-akzent); }
 .platzhalter-karte:active { cursor: grabbing; }
-.platzhalter-karte-name { font-weight: 600; }
-.platzhalter-karte code { font-size: .75rem; color: var(--leise); align-self: center; }
-.platzhalter-karte-text { grid-column: 1 / -1; font-size: .8rem; color: var(--leise); }
 .editor-flaeche .platzhalter { display: inline-block; padding: 0 .4em; margin: 0 .05em; border-radius: 999px;
   background: var(--erfolg); border: 1px solid var(--akzent); color: var(--akzent-dunkel); font-weight: 600;
   font-size: .92em; line-height: 1.35; white-space: nowrap; cursor: default; user-select: all; }
@@ -1780,14 +1792,10 @@ form:has(select[name="dauer"] option[value="bis"]:checked) .aushang-felder .aush
 .editor:has(#id_fusszeile) .editor-flaeche { min-height: 4rem; }
 .benachrichtigungs-wahl select { font: inherit; min-height: 2.4rem; padding: .3rem 1.9rem .3rem .6rem;
   border: 1px solid var(--rand); border-radius: var(--radius); }
-@media (max-width: 63.99rem) { /* Tablet/Handy: Platzhalter als kompakte Leiste unten am Bildschirm */
+@media (max-width: 63.99rem) { /* Tablet/Handy: Platzhalter-Leiste bleibt unten am Bildschirm */
   .platzhalter-spalte { position: sticky; bottom: 0; z-index: 5; max-height: 34vh; overflow-y: auto;
-    padding-top: .5rem; padding-bottom: .5rem; box-shadow: 0 -4px 14px rgba(0, 0, 0, .12); }
-  .platzhalter-spalte h2 { font-size: 1rem; margin: 0 0 .35rem; }
+    box-shadow: 0 -4px 14px rgba(0, 0, 0, .12); }
   .platzhalter-spalte .hinweis { display: none; }
-  .platzhalter-karten { display: flex; flex-wrap: wrap; gap: .35rem; }
-  .platzhalter-karte { display: inline-block; width: auto; padding: .35rem .65rem; }
-  .platzhalter-karte-text, .platzhalter-karte code { display: none; }
 }
 
 /* Warteliste: Einladen und Status nebeneinander, Datum/von/bis in einer Zeile */
