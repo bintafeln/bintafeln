@@ -187,10 +187,20 @@
     <div class="aufnahme-adresse-zeile">
       <input type="text" id="kunden-adresse" value="{{ adresse }}" readonly>
       <button type="button" class="knopf knopf-zweitrangig" data-kopieren="kunden-adresse">Kopieren</button>
-      {% if stellen_link %}<a class="knopf knopf-zweitrangig" href="{{ stellen_link }}" target="_blank" rel="noopener">Ausgabestellen-Übersicht ↗</a>{% endif %}
     </div>
-    <small class="hilfe">Zum Suchen der nächstgelegenen Ausgabestelle{% if stellen_link %}: kopieren und in der Übersicht (neuer Tab) einfügen{% endif %}.</small>
   </div>
+  {% if wege %}
+  <section class="aufnahme-wege" aria-labelledby="wege-titel">
+    <h3 id="wege-titel">Weg zur Ausgabestelle</h3>
+    <p class="hinweis">Je Ausgabestelle ein Link: Er öffnet Google Maps in einem neuen Tab mit der Route von der Adresse des Kunden zu dieser Ausgabestelle
+      (mit dem Auto, dort umschaltbar): Entfernung und Dauer stehen dort, Street View über das gelbe Männchen.
+      Die Adresse geht erst beim Klick an Google.</p>
+    <ul class="aufnahme-wege-liste">
+      {% for w in wege %}<li>{% if w.link %}<a class="knopf knopf-zweitrangig knopf-klein" href="{{ w.link }}" target="_blank" rel="noopener">Weg zu {{ w.stelle.name }} ↗</a>{% endif %}
+        <small class="hinweis">{{ w.stelle.anschrift }}</small></li>{% endfor %}
+    </ul>
+  </section>
+  {% endif %}
   <div class="tabelle-rahmen">
   <table class="tabelle">
     <thead><tr><th></th><th>Ausgabestelle</th><th>Kundengruppe</th><th>Termin</th><th>Belegt</th><th>Frei</th></tr></thead>

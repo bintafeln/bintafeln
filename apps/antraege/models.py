@@ -148,12 +148,6 @@ class AntragEinstellungen(models.Model):
         help_text="z. B. PDF der Tafel zum Ausdrucken und Unterschreiben (Einverständnis zur "
         "Verarbeitung der Daten).",
     )  # fmt: skip
-    ausgabestellen_url = models.URLField(
-        "Link zur Übersicht der Ausgabestellen", blank=True,
-        help_text="Erscheint bei der Aufnahme im Schritt „Ausgabestelle und Kundengruppe“ neben "
-        "der Adresse des Kunden und öffnet sich in einem neuen Tab, z. B. eine Karte, auf der man "
-        "die nächstgelegene Ausgabestelle findet.",
-    )  # fmt: skip
     # Der interne Text zu Datenschutz, Impressum und Einverständnis liegt in den Tafel-Einstellungen
     # (ADR 0094); hier stehen nur noch die externen Links als Rückfallebene (oben).
     # API-Schlüssel für die KI-Übersetzung der eigenen Texte (ADR 0082), verschlüsselt (ADR 0016)

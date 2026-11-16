@@ -26,6 +26,16 @@ def karten_links(stelle: Ausgabestelle) -> dict | None:
     }
 
 
+def weg_link(von: str, stelle: Ausgabestelle) -> str:
+    """Link zu Google Maps mit der Route (mit dem Auto) von ``von`` zur Ausgabestelle. Die Adresse
+    geht erst an Google, wenn jemand den Link öffnet; dort gibt es Entfernung, Dauer und Street
+    View. Ohne Adresse oder Anschrift leer."""
+    if not von or not stelle.anschrift:
+        return ""
+    return (f"https://www.google.com/maps/dir/?api=1&origin={quote_plus(von)}"
+            f"&destination={quote_plus(stelle.anschrift)}&travelmode=driving")  # fmt: skip
+
+
 @rollen.recht_erforderlich("kunden.liste")
 def liste(request):
     stellen = Ausgabestelle.objects.prefetch_related("zeiten").order_by("-aktiv", "name")
