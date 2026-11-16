@@ -2,6 +2,7 @@
 {% load aufnahme_anzeige static %}
 {% block titel %}Aufnahme Antrag {{ a.nummer }}{% endblock %}
 {% block inhalt %}
+<script src="{% static 'js/kopieren.js' %}" defer></script>
 <section class="karte">
   <p><a href="{% url 'antraege:antrag' a.pk %}">← Antrag {{ a.nummer }}</a></p>
   <h1>Aufnahme: Antrag {{ a.nummer }} · {{ a.name }}{% if a.geburtsdatum %}, geb. {{ a.geburtsdatum|date:"d.m.Y" }}{% endif %}</h1>
@@ -181,6 +182,15 @@
   <h2>5. Ausgabestelle und Kundengruppe</h2>
   <p class="hinweis">Angeboten werden nur Gruppen mit freiem Platz (gezählt in Haushalten).
     {% if wunsch or wunsch_tage %}Wunsch laut Antrag: {{ wunsch|default:"Ausgabestelle egal" }}{% if wunsch_tage %}, {{ wunsch_tage }}{% endif %}.{% endif %}</p>
+  <div class="feld aufnahme-adresse">
+    <label for="kunden-adresse">Adresse des Kunden</label>
+    <div class="aufnahme-adresse-zeile">
+      <input type="text" id="kunden-adresse" value="{{ adresse }}" readonly>
+      <button type="button" class="knopf knopf-zweitrangig" data-kopieren="kunden-adresse">Kopieren</button>
+      {% if stellen_link %}<a class="knopf knopf-zweitrangig" href="{{ stellen_link }}" target="_blank" rel="noopener">Ausgabestellen-Übersicht ↗</a>{% endif %}
+    </div>
+    <small class="hilfe">Zum Suchen der nächstgelegenen Ausgabestelle{% if stellen_link %}: kopieren und in der Übersicht (neuer Tab) einfügen{% endif %}.</small>
+  </div>
   <div class="tabelle-rahmen">
   <table class="tabelle">
     <thead><tr><th></th><th>Ausgabestelle</th><th>Kundengruppe</th><th>Termin</th><th>Belegt</th><th>Frei</th></tr></thead>

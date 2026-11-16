@@ -1631,3 +1631,20 @@ def test_serienbrief_vorlage_grafik_einfuegen(angemeldet, admin, tmp_path):
     expect(seite.get_by_text("Vorlage „Mit Logo“ gespeichert.")).to_be_visible()
     text = Vorlage.objects.get(name="Mit Logo").text
     assert f'src="/serienbriefe/grafiken/{g.pk}/"' in text and 'width="25%"' in text
+
+
+def test_aufnahme_adresse_kopieren(angemeldet, admin):
+    """Aufnahme, Schritt „Ausgabestelle“: „Kopieren“ legt die Adresse in die Zwischenablage."""
+    from apps.antraege.models import Antrag
+
+    a = Antrag.objects.create(vorname="Erika", nachname="Beispiel", strasse="Weg 1",
+                              plz="12345", ort="Musterstadt")  # fmt: skip
+    seite = angemeldet(admin)
+    seite.context.grant_permissions(["clipboard-read", "clipboard-write"])
+    seite.goto(reverse("antraege:aufnahme", args=[a.pk]))
+    seite.get_by_role("button", name="Weiter", exact=True).click()  # Kunde suchen: neuer Kunde
+    seite.goto(reverse("antraege:aufnahme_schritt", args=[a.pk, "gruppe"]))
+    expect(seite.get_by_label("Adresse des Kunden")).to_have_value("Weg 1, 12345 Musterstadt")
+    seite.get_by_role("button", name="Kopieren").click()
+    expect(seite.get_by_role("button", name="✓ Kopiert")).to_be_visible()
+    assert seite.evaluate("navigator.clipboard.readText()") == "Weg 1, 12345 Musterstadt"
