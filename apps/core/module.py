@@ -114,6 +114,10 @@ class Modul:
     # So zeigt z. B. die Warteliste ihre Aktionen (Status, Einladen, Anmerkungen) direkt auf der
     # ganzen Antragsseite, statt auf einer eigenen Seite.
     antrag: Callable | None = None
+    # Ziel nach abgeschlossener Aufnahme eines Antrags: nach_aufnahme(request, antrag) ->
+    # (url, text) oder None. Die Seite „Aufnahme abgeschlossen“ bietet es als ersten Weg zurück an
+    # (z. B. die Warteliste: zurück zur Terminliste des Tages).
+    nach_aufnahme: Callable | None = None
     # Arten von Benachrichtigungen des Moduls (apps.core.benachrichtigung.Art, ADR 0086)
     benachrichtigungen: tuple = ()
     # Weitere Mails des Moduls für die Übersicht „Mail-Empfänger“ (apps.core.mailuebersicht.Mail)
@@ -234,6 +238,15 @@ def antrag(request, antrag) -> list[str]:
     an = eingeschaltet()
     teile = [m.antrag(request, antrag) for m in alle() if m.kennung in an and m.antrag]
     return [t for t in teile if t]
+
+
+def nach_aufnahme(request, antrag) -> tuple[str, str] | None:
+    """Erstes Ziel eines eingeschalteten Moduls nach der Aufnahme eines Antrags, sonst None."""
+    an = eingeschaltet()
+    for m in alle():
+        if m.kennung in an and m.nach_aufnahme and (ziel := m.nach_aufnahme(request, antrag)):
+            return ziel
+    return None
 
 
 def aushangseiten() -> dict[str, Aushangseite]:

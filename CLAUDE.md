@@ -205,6 +205,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
 - Lange Mehrfachauswahlen als aufklappbares Menü: Widget `Mehrfachauswahl` (`apps/core/forms.py`,
   `static/js/mehrfachauswahl.js`, Suchfeld ab 8 Einträgen); Felder nur bei passender Auswahl
   zeigen mit `data-zeigen-bei="feld=wert1 wert2"` (`static/js/zeigen_bei.js`).
+- Datumsfelder immer TT.MM.JJJJ: im Formular `DatumEingabe` (`apps/konten/forms.py`); ein
+  einfaches `<input type="date">` stellt `static/js/datum.js` selbst um (Textfeld TT.MM.JJJJ, das
+  versteckte Feld mit dem Namen schickt weiter JJJJ-MM-TT). Öffentliche Seiten binden `datum.js` ein.
 - Nach dem Absenden eines Formulars an dieselbe Seite bleibt die Position (`static/js/position.js`);
   Knöpfe, deren Ergebnis weiter unten erscheint (Vorschau, Prüfen), bekommen `data-ziel="<id>"`.
   PDFs in einem neuen Fenster öffnen per Link oder GET-Formular mit `target="_blank"`
@@ -384,7 +387,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `Modul.startseite`, `Modul.mein_konto` (persönliche Angaben eines Kontos – PIN, Zugangsdaten,
   Unterschrift – werden nur auf „Mein Konto“ eingetragen, geändert und gelöscht; andere Seiten
   zeigen nur den Stand und verweisen dorthin), `Modul.datenimport` (eigene Übernahmen auf der Seite
-  „Daten importieren“ statt eigener Menüpunkte). Programmname nur in
+  „Daten importieren“ statt eigener Menüpunkte), `Modul.nach_aufnahme` (Weg zurück nach dem
+  Aufnahme-Assistenten, z. B. zur Terminliste der Warteliste). Programmname nur in
   `bintafeln/programm.py`; die Kopfzeile kürzt `static/js/kopfzeile.js` über `.kuerz-1…5`.
   Übersicht der übernommenen Altprogramme: `docs/altprogramme.md`.
 - Datenimport aus CSV/Excel (ADR 0078): App `datenimport` – `lesen.py` (CSV/xlsx), `zuordnung.py`

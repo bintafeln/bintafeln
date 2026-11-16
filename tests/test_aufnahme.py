@@ -1,6 +1,7 @@
 """Antragsliste, Antragsnummern und Aufnahme-Assistent (ADR 0028). Nur erfundene Daten."""
 
 import datetime as dt
+import re
 
 import pytest
 from django.urls import reverse
@@ -223,6 +224,23 @@ def test_schritt_gruppe_zeigt_adresse_und_link_zur_uebersicht(admin_client, best
     seite = schritt(admin_client, a, "gruppe").content.decode()
     assert ('href="https://karte.example.org/stellen.html" target="_blank" rel="noopener"'
             in seite)  # fmt: skip
+
+
+def test_angehoerige_bekommen_staatsangehoerigkeit_der_hauptperson(admin_client, bestand):
+    """Angehörige ohne Angabe (und neue, leere Karten) übernehmen die Staatsangehörigkeit der
+    Hauptperson; eine eigene Angabe bleibt."""
+    a = antrag(vorname="Max", nachname="Probe", geburtsdatum=dt.date(1990, 1, 1), plz="99999",
+               staatsangehoerigkeit="Ukraine")  # fmt: skip
+    AntragPerson.objects.create(antrag=a, vorname="Lina", nachname="Probe")
+    AntragPerson.objects.create(antrag=a, vorname="Ali", nachname="Probe",
+                                staatsangehoerigkeit="Türkei")  # fmt: skip
+    schritt(admin_client, a, "kunde", {"haushalt": "neu"})
+    seite = schritt(admin_client, a, "personen").content.decode()
+    gewaehlt = re.findall(r'name="p(\d+)_staatsangehoerigkeit".*?<option value="([^"]*)"[^>]*'
+                          r' selected>', seite, re.S)  # fmt: skip
+    nach_karte = dict(gewaehlt)
+    assert nach_karte["0"] == "Ukraine" and nach_karte["1"] == "Türkei"
+    assert nach_karte["2"] == "Ukraine"  # leere Karte für eine weitere Person
 
 
 def test_aufnahme_neuer_kunde(admin_client, bestand):

@@ -12,6 +12,7 @@ from django.utils import timezone
 
 from apps.antraege import aufnahme, gebiet
 from apps.antraege.models import Abfrage, Antrag, AntragEinstellungen
+from apps.core import module
 from apps.core.auswahl import (
     GDB_STUFEN,
     gdb_text,
@@ -211,14 +212,19 @@ def _vorschlag_personen(a, h) -> list[dict]:
 
 def _kontext_personen(request, a, z, h):
     personen = z.get("personen")
+    # Staatsangehörigkeit der Hauptperson (wie in Schritt 2 gewählt) für Angehörige ohne Angabe
+    haupt_nat = (z.get("werte") or {}).get("staatsangehoerigkeit") or a.staatsangehoerigkeit
     if personen is None:
-        personen = _vorschlag_personen(a, h)
+        personen = [
+            p | {"staatsangehoerigkeit": p["staatsangehoerigkeit"] or haupt_nat}
+            for p in _vorschlag_personen(a, h)
+        ]
     leer = {
         "pk": None,
         "vorname": "",
         "nachname": "",
         "geburtsdatum": "",
-        "staatsangehoerigkeit": "",
+        "staatsangehoerigkeit": haupt_nat,
         "gdb": "",
     }
     staaten = staatsangehoerigkeiten()
@@ -384,4 +390,6 @@ def fertig(request, pk):
     z = request.session.get(_schluessel(a.pk), {})
     nummer = z.get("ergebnis") or a.kundennummer
     h = get_object_or_404(Haushalt, kundennummer=nummer)
-    return render(request, "antraege/aufnahme_fertig.html", {"a": a, "h": h})
+    return render(request, "antraege/aufnahme_fertig.html", {
+        "a": a, "h": h, "zurueck": module.nach_aufnahme(request, a),
+    })  # fmt: skip
