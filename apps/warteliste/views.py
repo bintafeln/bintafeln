@@ -271,19 +271,19 @@ def einladen(request):
 def status_mehrere(request):
     antraege = _ausgewaehlt(request)
     form = StatusForm(request.POST)
+    zurueck = request.POST.get("zurueck", "")
+    if not url_has_allowed_host_and_scheme(zurueck, allowed_hosts={request.get_host()}):
+        zurueck = ""
     if not antraege or not form.is_valid():
         messages.error(request, "Bitte Anträge und einen Status wählen (bei Wartezeit mit Datum).")
-        return redirect("warteliste:liste")
+        return redirect(zurueck or "warteliste:liste")
     for a in antraege:
         ws, _ = Wartestand.objects.get_or_create(antrag=a)
         ablauf.status_setzen(ws, form.cleaned_data["status"], _von(request),
                              form.cleaned_data.get("wartezeit_bis"))  # fmt: skip
     messages.success(request, f"Status bei {len(antraege)} Antr"
                      f"{'ag' if len(antraege) == 1 else 'ägen'} gesetzt.")  # fmt: skip
-    zurueck = request.POST.get("zurueck", "")
-    if url_has_allowed_host_and_scheme(zurueck, allowed_hosts={request.get_host()}):
-        return redirect(zurueck)
-    return redirect("warteliste:liste")
+    return redirect(zurueck or "warteliste:liste")
 
 
 @never_cache

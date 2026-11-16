@@ -1063,11 +1063,14 @@ def test_suche_findet_anmerkungen(admin_client, modul_an):
 
 def test_antragsseite_zeigt_warteliste_abschnitt(admin_client, modul_an):
     """Ein Antrag aus der Warteliste öffnet die ganze Antragsseite; der Warteliste-Abschnitt
-    (Status setzen, Einladen, ähnliche Haushalte) erscheint dort (ADR 0115)."""
+    (Einladen, ähnliche Haushalte) erscheint dort (ADR 0115); den Status gibt es nur oben."""
     a = antrag(geburtsdatum=dt.date(1980, 2, 3))
     ablauf.automatik()  # legt den Wartestand an
     seite = admin_client.get(reverse("antraege:antrag", args=[a.pk])).content.decode()
-    assert 'id="warteliste"' in seite and "Status setzen" in seite
+    assert 'id="warteliste"' in seite and "Status setzen" not in seite
+    # Nur ein Status: der der Warteliste, oben bei den Angaben – ohne die Antrags-Auswahl
+    assert seite.count('name="status"') == 1 and 'value="in_bearbeitung"' not in seite
+    assert 'class="status wl-wartend"' in seite and 'data-pflicht-bei="status=wartezeit"' in seite
     assert reverse("warteliste:antrag_treffer", args=[a.pk]) in seite  # Treffer werden nachgeladen
     # Status von der Antragsseite aus setzen führt wieder zur Antragsseite zurück
     antwort = admin_client.post(
@@ -1076,6 +1079,12 @@ def test_antragsseite_zeigt_warteliste_abschnitt(admin_client, modul_an):
     )
     assert antwort.status_code == 302 and antwort.url == reverse("antraege:antrag", args=[a.pk])
     assert ws(a).status == S.ERSCHIENEN
+    # Ohne Datum bei „Wartezeit“: Fehler und zurück zur Antragsseite (nicht zur Warteliste)
+    antwort = admin_client.post(
+        reverse("warteliste:status"),
+        {"ids": a.pk, "status": "wartezeit", "zurueck": reverse("antraege:antrag", args=[a.pk])},
+    )
+    assert antwort.url == reverse("antraege:antrag", args=[a.pk]) and ws(a).status == S.ERSCHIENEN
     # Der Treffer-Abschnitt lädt eigenständig (htmx)
     assert admin_client.get(reverse("warteliste:antrag_treffer", args=[a.pk])).status_code == 200
 
@@ -1157,3 +1166,20 @@ def test_termine_zaehlen_eingeladen_entschuldigt_erschienen_aufgenommen(admin_cl
     zahlen = re.findall(r'data-titel="[^"]+">(\d+)</td>', zeile)
     assert zahlen == ["6", "2", "3", "2"]  # eingeladen, entschuldigt/abgesagt, erschienen, aufg.
     assert "Alle" not in seite
+
+
+def test_antragsstatus_ohne_wartestand_und_ohne_recht(
+    admin_client, modul_an, client, anmelden, benutzer_mit_rolle, recht_nehmen
+):
+    """Ohne Wartestand bleibt der Antragsstatus; ohne Recht zum Bearbeiten nur die Anzeige."""
+    a = antrag(geburtsdatum=dt.date(1980, 2, 3))
+    seite = admin_client.get(reverse("antraege:antrag", args=[a.pk])).content.decode()
+    assert 'value="in_bearbeitung"' in seite  # noch kein Wartestand: Antragsstatus
+    ablauf.automatik()
+    Wartestand.objects.filter(antrag=a).update(status=S.EINGELADEN)
+    seite = admin_client.get(reverse("antraege:antrag", args=[a.pk])).content.decode()
+    assert '<option value="eingeladen" selected disabled>' in seite  # von selbst entstanden
+    recht_nehmen(rollen.BUERO, "warteliste.bearbeiten")
+    anmelden(client, benutzer_mit_rolle("dora", rollen.BUERO))
+    seite = client.get(reverse("antraege:antrag", args=[a.pk])).content.decode()
+    assert 'class="status wl-eingeladen"' in seite and 'name="status"' not in seite

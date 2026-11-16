@@ -545,7 +545,8 @@ def test_bearbeiten_und_loeschen(admin_client, antrag):
     # Keine eigene „Bearbeiten“-Karte mehr: Status steht bei den Angaben, die Anmerkungen in
     # derselben Karte vor der Auskunft
     seite = admin_client.get(reverse("antraege:antrag", args=[antrag.pk])).content.decode()
-    assert "<h2>Bearbeiten</h2>" not in seite and "Status speichern" in seite
+    assert "<h2>Bearbeiten</h2>" not in seite and 'name="status" id="status"' in seite
+    assert "Status speichern" not in seite and "data-sofort" in seite  # Auswahl speichert sofort
     assert seite.index('id="anmerkungen"') < seite.index("Auskunft nach Art. 15")
     assert "Angerufen" in seite and "Neue Anmerkung" in seite
     # Löschen legt den Antrag in den gemeinsamen Papierkorb (ADR 0073), nicht mehr in einen eigenen

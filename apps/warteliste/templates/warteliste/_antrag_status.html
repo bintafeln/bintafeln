@@ -1,0 +1,19 @@
+{% comment %}Der eine Status eines Antrags auf der Warteliste – oben auf der Antragsseite (Modul-Haken
+antrag_status). Die Auswahl speichert sofort (sofort.js); „Wartezeit“ erst mit Datum.{% endcomment %}
+<form method="post" action="{% url 'warteliste:status' %}" class="status-aendern" data-sofort>
+  {% csrf_token %}
+  <input type="hidden" name="ids" value="{{ a.pk }}">
+  <input type="hidden" name="zurueck" value="{{ request.path }}">
+  {% include "warteliste/_status.html" %}
+  {% if darf %}
+  <select name="status" id="status" aria-label="Status ändern">
+    {% for wert, name in auswahl %}<option value="{{ wert }}"{% if wert == ws.status %} selected{% endif %}{% if wert not in hand %} disabled{% endif %}>{{ name }}</option>{% endfor %}
+  </select>
+  <span class="status-wartezeit" data-zeigen-bei="status=wartezeit" data-pflicht-bei="status=wartezeit">
+    <label for="status-wartezeit-bis">bis</label>
+    <input type="date" name="wartezeit_bis" id="status-wartezeit-bis" value="{{ ws.wartezeit_bis|date:'Y-m-d' }}">
+  </span>
+  <noscript><button type="submit" class="knopf knopf-zweitrangig">Speichern</button></noscript>
+  {% endif %}
+  {% if a.bearbeitet_von %}<span class="hinweis">zuletzt {{ a.bearbeitet_von }}</span>{% endif %}
+</form>
