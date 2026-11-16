@@ -222,8 +222,8 @@ def test_schritt_gruppe_zeigt_adresse_und_weg_zu_jeder_ausgabestelle(admin_clien
     weg = ("https://www.google.com/maps/dir/?api=1&amp;origin=Neue+Gasse+5%2C+99999+Musterstadt"
            "&amp;destination=Marktplatz+1%2C+99999+Musterstadt&amp;travelmode=driving")  # fmt: skip
     assert f'href="{weg}" target="_blank" rel="noopener"' in seite
-    assert seite.count("Weg zeigen ↗") == 1  # ohne Anschrift oder archiviert: kein Link
-    assert "Ohne Anschrift" not in seite.split("wege-titel")[1].split("</ul>")[0]
+    assert ">Weg zu Mitte ↗</a>" in seite  # der Knopf trägt den Namen der Ausgabestelle
+    assert seite.count("Weg zu ") == 1  # ohne Anschrift oder archiviert: kein Link
 
 
 def test_weg_link_ohne_adresse_leer():

@@ -192,12 +192,12 @@
   {% if wege %}
   <section class="aufnahme-wege" aria-labelledby="wege-titel">
     <h3 id="wege-titel">Weg zur Ausgabestelle</h3>
-    <p class="hinweis">„Weg zeigen“ öffnet Google Maps in einem neuen Tab mit der Route von der Adresse des Kunden
+    <p class="hinweis">Je Ausgabestelle ein Link: Er öffnet Google Maps in einem neuen Tab mit der Route von der Adresse des Kunden zu dieser Ausgabestelle
       (mit dem Auto, dort umschaltbar): Entfernung und Dauer stehen dort, Street View über das gelbe Männchen.
       Die Adresse geht erst beim Klick an Google.</p>
     <ul class="aufnahme-wege-liste">
-      {% for w in wege %}<li><span><strong>{{ w.stelle.name }}</strong> <small class="hinweis">{{ w.stelle.anschrift }}</small></span>
-        {% if w.link %}<a class="knopf knopf-zweitrangig knopf-klein" href="{{ w.link }}" target="_blank" rel="noopener">Weg zeigen ↗</a>{% endif %}</li>{% endfor %}
+      {% for w in wege %}<li>{% if w.link %}<a class="knopf knopf-zweitrangig knopf-klein" href="{{ w.link }}" target="_blank" rel="noopener">Weg zu {{ w.stelle.name }} ↗</a>{% endif %}
+        <small class="hinweis">{{ w.stelle.anschrift }}</small></li>{% endfor %}
     </ul>
   </section>
   {% endif %}
