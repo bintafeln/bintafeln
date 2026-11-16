@@ -182,7 +182,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   auch als Tabelle und CSV.
 - Löschen in der Oberfläche nur über `apps.core.papierkorb.loeschen(...)` (Papierkorb, ADR 0073;
   `recht=` wer wiederherstellen darf, `kundennummer=` bei Kundendaten), nie direkt `delete()`;
-  verschlüsselte Datei im Modell als `PRIVATDATEI = (ordner, feld)`. Löschfristen löschen direkt.
+  verschlüsselte Datei im Modell als `PRIVATDATEI = (ordner, feld)`. Löschfristen löschen direkt;
+  Ausnahme Notizen: auch automatisch über `kunden.models.notizen_in_papierkorb()`, `still=True`
+  (zählt nicht als neu im Menü).
 - Datensicherung in der Oberfläche: `apps/core/datensicherung.py` (Export mit Passwort,
   `lesen()`, `vorschau()`, `zuruecklesen(ersetzen=False)` löscht nie; ADR 0037). Neue Modelle
   landen automatisch im passenden Bereich (`modelle()`); vorübergehende Daten in `AUSGENOMMEN`.

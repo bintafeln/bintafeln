@@ -324,7 +324,8 @@ def menue(request) -> list[dict]:
     sichtbar = papierkorb.sichtbar(b)
     if sichtbar.exists():
         gesehen = b.papierkorb_gesehen_am
-        neu = sichtbar.filter(geloescht_am__gt=gesehen).count() if gesehen else sichtbar.count()
+        laut = sichtbar.filter(still=False)  # Notizen u. Ä. zählen nicht als neu
+        neu = laut.filter(geloescht_am__gt=gesehen).count() if gesehen else laut.count()
         korb = _eintrag("Papierkorb", "core:papierkorb")
         korb.update(zahl=neu or None, zahl_titel="neu im Papierkorb")
         bereiche.append({"titel": "Papierkorb", "eintraege": [korb], "zahl": neu or None,

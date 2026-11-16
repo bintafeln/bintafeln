@@ -590,6 +590,10 @@ class PapierkorbEintrag(models.Model):
     verweise = models.JSONField("Verweise", default=list, help_text="Felder anderer Datensätze, "
                                 "die beim Löschen geleert wurden.")  # fmt: skip
     dateien = models.JSONField("Verschlüsselte Dateien", default=list)
+    still = models.BooleanField(
+        "Still", default=False,
+        help_text="Zählt nicht als „neu im Papierkorb“ im Menü (z. B. Notizen).",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Eintrag im Papierkorb"

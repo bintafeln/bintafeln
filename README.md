@@ -1678,7 +1678,10 @@ Daten der Module (Selbstabholer, Links, Termine der Warteliste, eigene Listen, S
 
 - Der Menüpunkt „Papierkorb“ erscheint, sobald etwas darin liegt, das man sehen darf: gleiches
   Recht wie zum Löschen, bei Kundendaten auch nur die eigenen Ausgabestellen. Die Zahl daneben
-  zählt nur, was seit dem letzten Öffnen des Papierkorbs neu dazugekommen ist.
+  zählt nur, was seit dem letzten Öffnen des Papierkorbs neu dazugekommen ist – ohne Notizen:
+  Gelöschte Notizen liegen still darin, auch die automatisch entfernten (Krankmeldung nach der
+  nächsten Abholung, Notizen zu nicht mehr vorhandenen Kundennummern), und lassen sich so
+  wiederherstellen.
 - **Wiederherstellen** legt alles mit denselben Nummern wieder an, Kontobuchungen hängen danach
   wieder am Haushalt. Ist die Kundennummer inzwischen neu vergeben oder fehlt etwas (z. B. die
   Kundengruppe), ändert sich nichts und es gibt eine Meldung. Eine Rolle stellt nur wieder her, wer

@@ -854,13 +854,29 @@ def verwaiste_notizen_loeschen() -> int:
     seit dem Beginn wieder abgeholt hat (ADR 0075). Nie allein, weil das Ende vorbei ist: Bis der
     Kunde wieder kommt, muss sichtbar bleiben, dass er entschuldigt gefehlt hat."""
     vorhanden = Haushalt.objects.values("kundennummer")
-    weg = Notiz.objects.exclude(kundennummer__in=vorhanden).delete()[0]
+    weg = notizen_in_papierkorb(Notiz.objects.exclude(kundennummer__in=vorhanden))
     abgeholt = Abholung.objects.filter(
         haushalt__kundennummer=models.OuterRef("kundennummer"),
         datum__gte=models.OuterRef("krank_von"),
     )
-    weg += Notiz.objects.filter(krank_von__isnull=False).filter(models.Exists(abgeholt)).delete()[0]
+    weg += notizen_in_papierkorb(
+        Notiz.objects.filter(krank_von__isnull=False).filter(models.Exists(abgeholt))
+    )
     return weg
+
+
+def notizen_in_papierkorb(notizen) -> int:
+    """Automatisch gelöschte Notizen still in den Papierkorb (wiederherstellbar, solange der
+    Papierkorb sie aufbewahrt, ohne als „neu“ zu zählen)."""
+    from apps.core import papierkorb
+
+    anzahl = 0
+    for n in notizen:
+        papierkorb.loeschen(None, "Notiz", f"{n.text[:60]} (Haushalt {n.kundennummer})", n,
+                            recht="kunden.notizen_loeschen", kundennummer=n.kundennummer,
+                            still=True, von="automatisch")  # fmt: skip
+        anzahl += 1
+    return anzahl
 
 
 class Dokumentart(models.Model):
