@@ -68,9 +68,18 @@ def test_passwort_fehler(admin_client, mitte):
     daten = {"passwort1": PW, "passwort2": PW + "x"}
     seite = admin_client.post(reverse("konten:stelle", args=[mitte.pk]), daten).content.decode()
     assert "stimmen nicht überein" in seite
-    seite = konto_anlegen(admin_client, mitte, "123").content.decode()
-    assert "zu kurz" in seite or "zu häufig" in seite
     assert not get_user_model().objects.filter(stelle=mitte).exists()
+
+
+def test_passwort_ohne_regeln(admin_client, mitte):
+    """Das Passwort eines Ausgabestellen-Kontos legt der Admin frei fest – auch kurz oder dem
+    Namen der Ausgabestelle ähnlich."""
+    konto_anlegen(admin_client, mitte, "123")
+    konto = get_user_model().objects.get(stelle=mitte)
+    assert konto.check_password("123")
+    konto_anlegen(admin_client, mitte, mitte.name)
+    konto.refresh_from_db()
+    assert konto.check_password(mitte.name)
 
 
 def test_sperren_und_entsperren(admin_client, mitte):

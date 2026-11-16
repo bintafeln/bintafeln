@@ -37,3 +37,7 @@ Konto verwischt dagegen, wer was darf.
 
 Ein leichtes Login am Tablet hält den Einlass am Laufen; die Begrenzung auf eine Ausgabestelle,
 die Rolle Ausgabe und die automatische Abmeldung halten den möglichen Schaden klein.
+
+**Nachtrag:** Das Passwort eines Ausgabestellen-Kontos legt der Admin ohne Passwort-Regeln fest
+(Wunsch der Tafeln: ein Passwort, das am Tablet leicht einzugeben ist). Schutz bieten weiter die
+Anmelde-Sperre nach Fehlversuchen (ADR 0120) und die automatische Abmeldung.

@@ -6,9 +6,9 @@ Angaben der Ausgabestelle und verwaltet das Konto (Passwort, sperren).
 """
 
 from django.contrib import messages
-from django.contrib.auth import get_user_model, password_validation
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
@@ -65,19 +65,16 @@ def stelle(request, pk):
                 konto = get_user_model()(username=f"ausgabestelle-{s.pk}", stelle=s)
             konto.first_name = s.name[:150]
             konto.last_name = ""
-            try:
-                password_validation.validate_password(passwort, konto)
-            except ValidationError as fehler:
-                form.add_error("passwort1", fehler)
-            else:
-                konto.set_password(passwort)
-                konto.passwort_aendern = False
-                konto.save()
-                konto.groups.set(Group.objects.filter(name=rollen.AUSGABE))
-                konto.ausgabestellen.set([s])
-                messages.success(request, f"Konto für „{s.name}“ gespeichert. Anmelden am Tablet: "
-                                          f"„{s.name}“ und das neue Passwort.")  # fmt: skip
-                return redirect("konten:stelle", pk=s.pk)
+            # Bewusst ohne Passwort-Regeln: Das Passwort legt der Admin für das Tablet fest
+            # (Wunsch der Tafeln); die Anmelde-Sperre nach Fehlversuchen schützt weiter.
+            konto.set_password(passwort)
+            konto.passwort_aendern = False
+            konto.save()
+            konto.groups.set(Group.objects.filter(name=rollen.AUSGABE))
+            konto.ausgabestellen.set([s])
+            messages.success(request, f"Konto für „{s.name}“ gespeichert. Anmelden am Tablet: "
+                                      f"„{s.name}“ und das neue Passwort.")  # fmt: skip
+            return redirect("konten:stelle", pk=s.pk)
     from apps.konten import anmeldesperre
 
     return render(request, "konten/stelle.html", {
