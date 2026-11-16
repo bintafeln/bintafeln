@@ -2121,3 +2121,7 @@ button.sortieren { background: none; border: 0; padding: 0; font: inherit; font-
 .fortschritt-monitor .monitor-balken { height: clamp(1rem, 3vh, 2.5rem); background: var(--rand); border-radius: 999px; overflow: hidden; max-width: 80vw; margin: 0 auto; }
 .fortschritt-monitor .monitor-balken span { display: block; height: 100%; background: var(--akzent); }
 .fortschritt-monitor .monitor-leer { font-size: clamp(2rem, 8vw, 6rem); font-weight: 700; margin: 6vh 0; }
+
+/* Aufnahme, Schritt Ausgabestelle: Adresse zum Kopieren und Link zur Übersicht der Ausgabestellen */
+.aufnahme-adresse-zeile { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.aufnahme-adresse-zeile input { flex: 1 1 18rem; min-width: 0; }

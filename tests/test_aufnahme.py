@@ -203,6 +203,29 @@ def schritt(client, a, name, daten=None):
     return client.post(url, daten or {}) if daten is not None else client.get(url)
 
 
+def test_schritt_gruppe_zeigt_adresse_und_link_zur_uebersicht(admin_client, bestand):
+    """Die (in Schritt 2 aktualisierte) Adresse steht bei der Wahl der Ausgabestelle, dazu der
+    Link zur Übersicht der Ausgabestellen aus den Einstellungen – in einem neuen Tab."""
+    from apps.antraege.models import AntragEinstellungen
+
+    a = antrag(vorname="Max", nachname="Probe", geburtsdatum=dt.date(1990, 1, 1), plz="99999")
+    schritt(admin_client, a, "kunde", {"haushalt": "neu"})
+    daten = {f: getattr(a, f) or "" for f in ("anrede", "vorname", "nachname", "plz", "ort",
+                                              "telefon", "email", "familienstand",
+                                              "staatsangehoerigkeit")}  # fmt: skip
+    daten |= {"geburtsdatum": "01.01.1990", "strasse": "Neue Gasse 5"}
+    schritt(admin_client, a, "abgleich", daten)
+    seite = schritt(admin_client, a, "gruppe").content.decode()
+    assert 'value="Neue Gasse 5, 99999 Musterstadt"' in seite and "data-kopieren" in seite
+    assert "Ausgabestellen-Übersicht" not in seite  # ohne Link in den Einstellungen
+    e = AntragEinstellungen.laden()
+    e.ausgabestellen_url = "https://karte.example.org/stellen.html"
+    e.save()
+    seite = schritt(admin_client, a, "gruppe").content.decode()
+    assert ('href="https://karte.example.org/stellen.html" target="_blank" rel="noopener"'
+            in seite)  # fmt: skip
+
+
 def test_angehoerige_bekommen_staatsangehoerigkeit_der_hauptperson(admin_client, bestand):
     """Angehörige ohne Angabe (und neue, leere Karten) übernehmen die Staatsangehörigkeit der
     Hauptperson; eine eigene Angabe bleibt."""

@@ -326,8 +326,14 @@ def _post_bescheid(request, a, z, h):
 def _kontext_gruppe(request, a, z, h):
     gruppen = aufnahme.freie_gruppen(h)
     gewaehlt = z.get("kundengruppe") or (h.kundengruppe_id if h else None)
+    # Adresse wie in Schritt 2 abgeglichen (sonst aus dem Antrag), zum Suchen der Ausgabestelle
+    werte = z.get("werte") or {}
+    strasse = werte.get("strasse", a.strasse) or ""
+    ort = " ".join(x for x in (werte.get("plz", a.plz), werte.get("ort", a.ort)) if x)
     return {"gruppen": gruppen, "gruppe_gewaehlt": gewaehlt,
-            "wunsch": a.ausgabestelle, "wunsch_tage": a.wochentage}  # fmt: skip
+            "wunsch": a.ausgabestelle, "wunsch_tage": a.wochentage,
+            "adresse": ", ".join(x for x in (strasse, ort) if x),
+            "stellen_link": AntragEinstellungen.laden().ausgabestellen_url}  # fmt: skip
 
 
 def _post_gruppe(request, a, z, h):

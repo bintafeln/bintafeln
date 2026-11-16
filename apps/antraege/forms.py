@@ -325,6 +325,11 @@ class EinstellungenForm(forms.ModelForm):
         help_text=AntragEinstellungen._meta.get_field("einverstaendnis_url").help_text,
     )  # fmt: skip
 
+    ausgabestellen_url = forms.URLField(
+        label="Link zur Übersicht der Ausgabestellen", required=False, assume_scheme="https",
+        help_text=AntragEinstellungen._meta.get_field("ausgabestellen_url").help_text,
+    )  # fmt: skip
+
     ki_schluessel = forms.CharField(
         label="API-Schlüssel für die KI-Übersetzung (Claude)", required=False, strip=True,
         widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
@@ -344,6 +349,7 @@ class EinstellungenForm(forms.ModelForm):
             "gebiet_pruefen", "gebiet_plz", "gebiet_orte", "gebiet_name",
             "datenschutz_url",
             "impressum_url", "erklaerungen_url", "voraussetzungen_url", "einverstaendnis_url",
+            "ausgabestellen_url",
             "kopf_zeigen", "ueberschrift_zeigen", "fuss_zeigen", "ausweis_pruefen",
             "eigenes_css",
             "neu_nach_tagen", "erledigt_nach_tagen", "papierkorb_nach_tagen",
