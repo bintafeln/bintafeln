@@ -386,8 +386,8 @@ class StellenKontoForm(forms.Form):
     passwort1 = forms.CharField(
         label="Passwort", strip=False,
         widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
-        help_text="Bitte lang wählen (z. B. drei Wörter mit Zahl): Für diese Konten gibt es keinen "
-        "Zwei-Faktor-Code.",
+        help_text="Frei wählbar, ohne Passwort-Regeln. Für diese Konten gibt es keinen "
+        "Zwei-Faktor-Code – ein längeres Passwort schützt besser.",
     )  # fmt: skip
     passwort2 = forms.CharField(
         label="Passwort wiederholen", strip=False,
