@@ -910,15 +910,20 @@ tr.wunsch td { background: var(--erfolg); }
 /* Aufnahme Schritt 1: Antragsdaten fest neben den Treffer-Karten, Einstufung als Ampel.
    Nur innerhalb des Abgleichs (die schmale, klebende Seitenkarte); sonst würde das öffentliche
    Antragsformular, das dieselbe Klasse „antrag-karte“ trägt, am PC auf 20rem schrumpfen. */
-.abgleich-gegenueber { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; }
-.abgleich-gegenueber .antrag-karte { flex: 1 1 14rem; background: var(--grund);
-  border: 1px solid var(--rand); border-radius: var(--radius); padding: .5rem 1rem; }
+.abgleich-gegenueber { display: flex; flex-direction: column; gap: 1rem; }
+/* Angaben aus dem Antrag über die ganze Breite: je Angabe ein Feld mit kleiner Überschrift,
+   so viele nebeneinander wie Platz ist – nichts wird mitten im Wort umgebrochen */
+.abgleich-gegenueber .antrag-karte { background: var(--grund); border: 1px solid var(--rand);
+  border-radius: var(--radius); padding: .6rem 1rem .8rem; }
 .abgleich-gegenueber .antrag-karte h3 { margin: .25rem 0 .5rem; }
-.abgleich-gegenueber .antrag-karte .angaben { margin: 0; }
-.treffer-liste { flex: 2 1 22rem; min-width: 0; display: flex; flex-direction: column; gap: .6rem; }
-@media (min-width: 48rem) {
-  .abgleich-gegenueber .antrag-karte { position: sticky; top: .5rem; max-width: 20rem; }
-}
+.abgleich-gegenueber .antrag-karte .angaben { margin: 0; display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: .6rem 1.5rem; }
+.abgleich-gegenueber .antrag-karte .angaben > div { min-width: 0; }
+.abgleich-gegenueber .antrag-karte .angaben dt { font-weight: 400; font-size: .85rem;
+  color: var(--leise); }
+.abgleich-gegenueber .antrag-karte .angaben dd { margin: 0; font-weight: 600;
+  overflow-wrap: break-word; }
+.treffer-liste { min-width: 0; display: flex; flex-direction: column; gap: .6rem; }
 .treffer-karte { border: 1px solid var(--rand); border-radius: var(--radius); padding: .6rem .8rem; }
 .treffer-karte:has(input:checked) { border-color: var(--akzent); box-shadow: 0 0 0 2px var(--fokus); }
 .treffer-wahl { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; cursor: pointer; }
@@ -2142,3 +2147,14 @@ button.sortieren { background: none; border: 0; padding: 0; font: inherit; font-
   border: 1px solid color-mix(in srgb, var(--akzent) 35%, transparent); border-radius: var(--radius);
   background: color-mix(in srgb, var(--akzent) 4%, var(--flaeche)); }
 .anmerkungen-liste .bemerkung p { margin: 0 0 .25rem; }
+/* Aufnahme-Kopf: Titel; darunter die Schritte und am Ende der letzten Zeile ganz rechts
+   Weiter/Zurück/Abbrechen. Erledigte Schritte nur als Nummer (Name als Tooltip), der aktuelle und
+   die kommenden ausgeschrieben. Die Schritte sind dafür direkt Teil der umbrechenden Zeile. */
+.aufnahme-titel { font-size: 1.3rem; margin: 0 0 .6rem; }
+.aufnahme-leiste { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+.aufnahme-leiste .schritte { display: contents; }
+.aufnahme-leiste .aktionen { margin: 0 0 0 auto; padding-left: .6rem; }
+.schritte-kompakt li { margin: 0; }
+.schritte-kompakt li::before { content: none; }
+.schritte-kompakt li.erledigt .schritt-titel { display: none; }
+.schritte-kompakt li.erledigt { padding: .3rem .55rem; }

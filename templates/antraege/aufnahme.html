@@ -4,20 +4,22 @@
 {% block inhalt %}
 <script src="{% static 'js/kopieren.js' %}" defer></script>
 <section class="karte">
-  <p><a href="{% url 'antraege:antrag' a.pk %}">← Antrag {{ a.nummer }}</a></p>
-  <h1>Aufnahme: Antrag {{ a.nummer }} · {{ a.name }}{% if a.geburtsdatum %}, geb. {{ a.geburtsdatum|date:"d.m.Y" }}{% endif %}</h1>
-  <ol class="schritte">
-    {% for k, titel in schritte %}<li class="{% if k == schritt %}aktuell{% elif forloop.counter < nr %}erledigt{% endif %}">{% if forloop.counter < nr %}<a href="{% url 'antraege:aufnahme_schritt' a.pk k %}">{{ titel }}</a>{% else %}{{ titel }}{% endif %}</li>{% endfor %}
-  </ol>
+  <h1 class="aufnahme-titel">Aufnahme: <a href="{% url 'antraege:antrag' a.pk %}">Antrag {{ a.nummer }}</a> · {{ a.name }}{% if a.geburtsdatum %}, geb. {{ a.geburtsdatum|date:"d.m.Y" }}{% endif %}</h1>
+  {% comment %}Darunter die Schritte (erledigte nur als Nummer mit dem Namen als Tooltip) und am
+  Ende ganz rechts Weiter/Zurück/Abbrechen. Der Knopf „Weiter“ gehört über
+  form="aufnahme-formular" zum Formular darunter.{% endcomment %}
+  <div class="aufnahme-leiste">
+    <ol class="schritte schritte-kompakt">
+      {% for k, titel in schritte %}<li class="{% if k == schritt %}aktuell{% elif forloop.counter < nr %}erledigt{% endif %}" title="{{ titel }}">{% if forloop.counter < nr %}<a href="{% url 'antraege:aufnahme_schritt' a.pk k %}" aria-label="{{ forloop.counter }}. {{ titel }}"><b>{{ forloop.counter }}.</b><span class="schritt-titel"> {{ titel }}</span></a>{% else %}<b>{{ forloop.counter }}.</b><span class="schritt-titel"> {{ titel }}</span>{% endif %}</li>{% endfor %}
+    </ol>
+    <div class="aktionen">
+      <button type="submit" class="knopf knopf-klein" form="aufnahme-formular">{% if schritt == "pruefen" %}Aufnehmen und speichern{% else %}Weiter{% endif %}</button>
+      {% if zurueck %}<a class="knopf knopf-zweitrangig knopf-klein" href="{% url 'antraege:aufnahme_schritt' a.pk zurueck %}">← Zurück</a>{% endif %}
+      <a class="knopf knopf-zweitrangig knopf-klein" href="{% url 'antraege:antrag' a.pk %}">Abbrechen</a>
+    </div>
+  </div>
   {% if gebiet_grund %}<p class="sicherung sicherung-veraltet" role="status">Die Anschrift ({{ a.plz }} {{ a.ort }}) liegt nicht im Einzugsgebiet der Tafel ({{ gebiet_grund }}).</p>{% endif %}
   {% if fehler %}<p class="sicherung sicherung-fehler" role="alert">{{ fehler }}</p>{% endif %}
-  {% comment %}Weiter/Zurück/Abbrechen oben, damit man nicht bis unten scrollen muss; der Knopf
-  gehört über form="aufnahme-formular" zum Formular darunter.{% endcomment %}
-  <div class="aktionen">
-    <button type="submit" class="knopf" form="aufnahme-formular">{% if schritt == "pruefen" %}Aufnehmen und speichern{% else %}Weiter{% endif %}</button>
-    {% if zurueck %}<a class="knopf knopf-zweitrangig" href="{% url 'antraege:aufnahme_schritt' a.pk zurueck %}">← Zurück</a>{% endif %}
-    <a class="knopf knopf-zweitrangig" href="{% url 'antraege:antrag' a.pk %}">Abbrechen</a>
-  </div>
   {% if h %}<p class="hinweis">Gewählt: bestehender Kunde <a href="{% url 'kunden:haushalt' h.kundennummer %}" target="_blank" rel="noopener">{{ h.kundennummer }}</a>.</p>{% elif "haushalt" in z %}<p class="hinweis">Gewählt: neuer Kunde.</p>{% endif %}
 </section>
 
@@ -30,18 +32,16 @@
     <div class="antrag-karte">
       <h3>Angaben aus dem Antrag</h3>
       <dl class="angaben">
-        <dt>Name</dt><dd>{{ a.anrede }} {{ a.vorname }} {{ a.nachname }}</dd>
-        <dt>Geburtsdatum</dt><dd>{{ a.geburtsdatum|date:"d.m.Y"|default:"–" }}</dd>
-        <dt>Anschrift</dt><dd>{{ a.strasse|default:"–" }}{% if a.plz %}<br>{{ a.plz }} {{ a.ort }}{% endif %}</dd>
-        <dt>Telefon</dt><dd>{{ a.telefon|default:"–" }}</dd>
-        <dt>E-Mail</dt><dd>{{ a.email|default:"–" }}</dd>
-        {% if a.staatsangehoerigkeit %}<dt>Staatsangehörigkeit</dt><dd>{{ a.staatsangehoerigkeit }}</dd>{% endif %}
-        <dt>Angehörige</dt><dd>{{ a.personen.count }}</dd>
+        <div><dt>Name</dt><dd>{{ a.anrede }} {{ a.vorname }} {{ a.nachname }}</dd></div>
+        <div><dt>Geburtsdatum</dt><dd>{{ a.geburtsdatum|date:"d.m.Y"|default:"–" }}</dd></div>
+        <div><dt>Anschrift</dt><dd>{{ a.strasse|default:"–" }}{% if a.plz %}<br>{{ a.plz }} {{ a.ort }}{% endif %}</dd></div>
+        <div><dt>Telefon</dt><dd>{{ a.telefon|default:"–" }}</dd></div>
+        <div><dt>E-Mail</dt><dd>{{ a.email|default:"–" }}</dd></div>
+        {% if a.staatsangehoerigkeit %}<div><dt>Staatsangehörigkeit</dt><dd>{{ a.staatsangehoerigkeit }}</dd></div>{% endif %}
+        <div><dt>Angehörige</dt><dd>{{ a.personen.count }}</dd></div>
       </dl>
     </div>
     <div class="treffer-liste">
-      <p class="hinweis">Gesucht wird auch bei vertauschten Vor- und Nachnamen und Tippfehlern, dazu nach
-        Geburtsdatum und Anschrift. „Vorschau“ zeigt den Kunden ohne Wechsel in einen neuen Tab.</p>
       {% for t in treffer %}
         <div class="treffer-karte">
           <label class="treffer-wahl">
