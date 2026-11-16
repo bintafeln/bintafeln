@@ -203,11 +203,13 @@ def schritt(client, a, name, daten=None):
     return client.post(url, daten or {}) if daten is not None else client.get(url)
 
 
-def test_schritt_gruppe_zeigt_adresse_und_link_zur_uebersicht(admin_client, bestand):
-    """Die (in Schritt 2 aktualisierte) Adresse steht bei der Wahl der Ausgabestelle, dazu der
-    Link zur Übersicht der Ausgabestellen aus den Einstellungen – in einem neuen Tab."""
-    from apps.antraege.models import AntragEinstellungen
-
+def test_schritt_gruppe_zeigt_adresse_und_weg_zu_jeder_ausgabestelle(admin_client, bestand):
+    """Die (in Schritt 2 aktualisierte) Adresse steht bei der Wahl der Ausgabestelle, dazu je
+    aktiver Ausgabestelle mit Anschrift ein Link zur Route in Google Maps – in einem neuen Tab."""
+    Ausgabestelle.objects.filter(name="Mitte").update(strasse="Marktplatz 1", plz="99999",
+                                                       ort="Musterstadt")  # fmt: skip
+    Ausgabestelle.objects.create(name="Ohne Anschrift")
+    Ausgabestelle.objects.create(name="Alt", strasse="Weg 2", ort="Musterstadt", aktiv=False)
     a = antrag(vorname="Max", nachname="Probe", geburtsdatum=dt.date(1990, 1, 1), plz="99999")
     schritt(admin_client, a, "kunde", {"haushalt": "neu"})
     daten = {f: getattr(a, f) or "" for f in ("anrede", "vorname", "nachname", "plz", "ort",
@@ -217,13 +219,18 @@ def test_schritt_gruppe_zeigt_adresse_und_link_zur_uebersicht(admin_client, best
     schritt(admin_client, a, "abgleich", daten)
     seite = schritt(admin_client, a, "gruppe").content.decode()
     assert 'value="Neue Gasse 5, 99999 Musterstadt"' in seite and "data-kopieren" in seite
-    assert "Ausgabestellen-Übersicht" not in seite  # ohne Link in den Einstellungen
-    e = AntragEinstellungen.laden()
-    e.ausgabestellen_url = "https://karte.example.org/stellen.html"
-    e.save()
-    seite = schritt(admin_client, a, "gruppe").content.decode()
-    assert ('href="https://karte.example.org/stellen.html" target="_blank" rel="noopener"'
-            in seite)  # fmt: skip
+    weg = ("https://www.google.com/maps/dir/?api=1&amp;origin=Neue+Gasse+5%2C+99999+Musterstadt"
+           "&amp;destination=Marktplatz+1%2C+99999+Musterstadt&amp;travelmode=driving")  # fmt: skip
+    assert f'href="{weg}" target="_blank" rel="noopener"' in seite
+    assert seite.count("Weg zeigen ↗") == 1  # ohne Anschrift oder archiviert: kein Link
+    assert "Ohne Anschrift" not in seite.split("wege-titel")[1].split("</ul>")[0]
+
+
+def test_weg_link_ohne_adresse_leer():
+    from apps.kunden.views_ausgabestellen import weg_link
+
+    stelle = Ausgabestelle(name="X", strasse="Marktplatz 1", ort="Musterstadt")
+    assert weg_link("", stelle) == "" and weg_link("Weg 1", Ausgabestelle(name="Y")) == ""
 
 
 def test_angehoerige_bekommen_staatsangehoerigkeit_der_hauptperson(admin_client, bestand):

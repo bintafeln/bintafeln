@@ -22,7 +22,14 @@ from apps.core.auswahl import (
     staatsangehoerigkeiten,
 )
 from apps.konten import rollen
-from apps.kunden.models import Einkommensart, Haushalt, KundenEinstellungen, Kundengruppe
+from apps.kunden.models import (
+    Ausgabestelle,
+    Einkommensart,
+    Haushalt,
+    KundenEinstellungen,
+    Kundengruppe,
+)
+from apps.kunden.views_ausgabestellen import weg_link
 
 bearbeiter = rollen.recht_erforderlich("antraege.aufnehmen")
 
@@ -330,10 +337,16 @@ def _kontext_gruppe(request, a, z, h):
     werte = z.get("werte") or {}
     strasse = werte.get("strasse", a.strasse) or ""
     ort = " ".join(x for x in (werte.get("plz", a.plz), werte.get("ort", a.ort)) if x)
+    adresse = ", ".join(x for x in (strasse, ort) if x)
+    # Je aktive Ausgabestelle mit Anschrift ein Link zur Route in Google Maps (neuer Tab)
+    wege = [
+        {"stelle": s, "link": weg_link(adresse, s)}
+        for s in Ausgabestelle.objects.filter(aktiv=True).order_by("name")
+        if s.anschrift
+    ]
     return {"gruppen": gruppen, "gruppe_gewaehlt": gewaehlt,
             "wunsch": a.ausgabestelle, "wunsch_tage": a.wochentage,
-            "adresse": ", ".join(x for x in (strasse, ort) if x),
-            "stellen_link": AntragEinstellungen.laden().ausgabestellen_url}  # fmt: skip
+            "adresse": adresse, "wege": wege}  # fmt: skip
 
 
 def _post_gruppe(request, a, z, h):

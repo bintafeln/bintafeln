@@ -113,6 +113,10 @@ def _aufnahme_daten(muster):
     from apps.kunden.models import Kundengruppe
 
     stelle = Ausgabestelle.objects.get(name="Ausgabestelle Mitte")
+    stelle.strasse, stelle.plz, stelle.ort = "Marktplatz 1", "12345", "Musterstadt"
+    stelle.save()
+    Ausgabestelle.objects.filter(name="Ausgabestelle Nord").update(
+        strasse="Feldweg 3", plz="12347", ort="Musterstadt")  # fmt: skip
     Einkommensart.objects.create(bezeichnung="Bürgergeld", aktiv=True)
     muster.strasse, muster.plz, muster.ort = "Alte Straße 9", "12345", "Musterstadt"
     muster.save()
@@ -147,6 +151,15 @@ def test_hilfe_bild_aufnahme(angemeldet, admin, muster):
               Marke(seite.locator('input[name="wahl_strasse"][value="antrag"]'), nummer=2),
               Marke(seite.get_by_role("button", name="Weiter"), nummer=3, von="rechts",
                     laenge=40))  # fmt: skip
+    seite.get_by_role("button", name="Weiter").click()
+    expect(seite.get_by_role("heading", name="3. Angehörige")).to_be_visible()
+    seite.goto(reverse("antraege:aufnahme_schritt", args=[a.pk, "gruppe"]))
+    weg = seite.get_by_role("link", name="Weg zeigen ↗").first
+    aufnehmen(seite, "aufnahme-gruppe", [seite.locator("form section.karte").first],
+              Marke(seite.locator("#kunden-adresse"), nummer=1, von="oben", laenge=30),
+              Marke(weg, nummer=2, von="rechts", laenge=40),
+              Marke(seite.locator('input[name="kundengruppe"]').first, nummer=3, von="links",
+                    laenge=30))  # fmt: skip
 
 
 # --- Sonderaktionen ---------------------------------------------------------------------------

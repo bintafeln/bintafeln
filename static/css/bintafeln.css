@@ -2125,3 +2125,6 @@ button.sortieren { background: none; border: 0; padding: 0; font: inherit; font-
 /* Aufnahme, Schritt Ausgabestelle: Adresse zum Kopieren und Link zur Übersicht der Ausgabestellen */
 .aufnahme-adresse-zeile { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
 .aufnahme-adresse-zeile input { flex: 1 1 18rem; min-width: 0; }
+.aufnahme-wege-liste { list-style: none; padding: 0; margin: .3rem 0 1rem; }
+.aufnahme-wege-liste li { display: flex; flex-wrap: wrap; gap: .4rem 1rem; align-items: center;
+  justify-content: space-between; padding: .4rem 0; border-bottom: 1px solid var(--rand); }
