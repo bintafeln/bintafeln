@@ -14,7 +14,7 @@
     einen schließt sich das andere. Unter „Spalten wählen“
     blendet jede Person selbst einzelne Spalten ein oder aus (die Nummer # bleibt immer).</li>
   <li>Die Knöpfe rechts in der Liste bleiben beim seitlichen Rollen immer sichtbar; lange E-Mail-Adressen werden gekürzt.</li>
-  <li>Aktionen je Zeile: ansehen 👁{% if "antraege.bearbeiten" in rechte %}, bearbeiten ✎, Anmerkung 💬, löschen 🗑 (in den gemeinsamen Papierkorb – gehört zum Bearbeiten und steht immer bei den anderen Knöpfen){% endif %}{% if "antraege.aufnehmen" in rechte %}, aufnehmen ➜{% endif %}.</li>
+  <li>Aktionen je Zeile: ansehen 👁{% if "antraege.bearbeiten" in rechte %}, bearbeiten ✎, Anmerkung 💬, löschen 🗑 (in den gemeinsamen Papierkorb – gehört zum Bearbeiten und steht immer bei den anderen Knöpfen){% endif %}{% if "antraege.aufnehmen" in rechte %}, aufnehmen ➜ (bei schon aufgenommenen Anträgen nicht mehr – die Antragsseite führt dann mit „Zum Kunden …“ direkt in den Kundenstamm){% endif %}.</li>
   {% if "antraege.bearbeiten" in rechte %}<li>Status setzen: auf der Antragsseite direkt bei „Status“ – die Auswahl speichert sofort. Ist die Warteliste eingeschaltet, steht dort nur ihr Status (wartend, eingeladen, erschienen …); erledigt bzw. abgelehnt folgt daraus von selbst (aufgenommen bzw. gestrichen). Außerdem interne Anmerkungen schreiben (stehen dort unter den Angaben und Nachweisen); Tippfehler im Antrag vor der Aufnahme unter „Bearbeiten“ korrigieren. Dort lässt sich auch die <strong>Antragsnummer</strong> ändern (muss eindeutig sein; eine schon vergebene wird abgelehnt).</li>{% endif %}
   <li>Auf der Antragsseite oben führt neben „← Anträge“ auch <strong>„‹ Antrag …“</strong> und <strong>„Antrag … ›“</strong> zum vorigen bzw. nächsten Antrag (nach Nummer) – so blättert man bequem durch die Anträge.</li>
   <li>Hat die Tafel ein Einzugsgebiet eingestellt, steht bei Anträgen außerhalb des Gebiets ein Hinweis, der genau sagt, <strong>was</strong> nicht passt – „PLZ außerhalb des Gebiets“, „Ort außerhalb des Gebiets“ oder „PLZ und Ort außerhalb des Gebiets“ (auch im Aufnahme-Assistenten). Sind PLZ und Orte eingetragen, muss beides passen; korrigiert man unter „Bearbeiten“ die Anschrift, verschwindet der Hinweis beim nächsten Öffnen – bzw. zeigt dann nur noch den verbliebenen Grund.</li>
@@ -36,5 +36,7 @@
   <strong>0</strong> bleiben Anträge „neu“, bis jemand sie anfasst. Das ist unabhängig von „Unbearbeitete
   Anträge gelten nach … Tagen als erledigt“: Steht dort <strong>0</strong>, wird auch „in Bearbeitung“
   nie automatisch erledigt oder gelöscht.</p>
-<p>Erledigte und abgelehnte Anträge kommen nach der eingestellten Frist automatisch in den gemeinsamen
-  Papierkorb und werden dort nach der Tafel-weiten Frist („Papierkorb leeren nach“) endgültig gelöscht.</p>
+<p>Erledigte (z. B. aufgenommene) und abgelehnte Anträge kommen nach der eingestellten Frist („Abgeschlossene
+  Anträge nach … Tagen in den Papierkorb“) automatisch in den gemeinsamen Papierkorb: <strong>0</strong> = sofort,
+  <strong>leer</strong> = nie automatisch – dann nur von Hand über 🗑. Im Papierkorb lassen sie sich wiederherstellen;
+  endgültig gelöscht werden sie nach der Tafel-weiten Frist („Papierkorb leeren nach“).</p>

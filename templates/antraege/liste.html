@@ -96,7 +96,7 @@
                   onsubmit="return confirm(this.dataset.frage)" data-frage="Antrag {{ a.nummer }} von {{ a.name }} in den Papierkorb legen?">
               {% csrf_token %}<button type="submit" class="symbol gefahr" title="Löschen (in den Papierkorb)" aria-label="Antrag {{ a.nummer }} löschen">🗑</button></form>
           {% endif %}
-          <a class="symbol aufnehmen" href="{% url 'antraege:aufnahme' a.pk %}" title="Aufnehmen" aria-label="Antrag {{ a.nummer }} aufnehmen">➜</a>
+          {% if not a.status == "erledigt" or not a.kundennummer %}<a class="symbol aufnehmen" href="{% url 'antraege:aufnahme' a.pk %}" title="Aufnehmen" aria-label="Antrag {{ a.nummer }} aufnehmen">➜</a>{% endif %}
         </td>
       </tr>
     {% empty %}

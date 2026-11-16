@@ -13,7 +13,7 @@
     <h1>Antrag {{ a.nummer }} · {{ a.name }}</h1>
   </div>
   <div class="aktionsleiste">
-    <a class="knopf" href="{% url 'antraege:aufnahme' a.pk %}">Aufnehmen</a>
+    {% if a.status == "erledigt" and a.kundennummer %}<a class="knopf" href="{% url 'kunden:haushalt' a.kundennummer %}">Zum Kunden {{ a.kundennummer }}</a>{% else %}<a class="knopf" href="{% url 'antraege:aufnahme' a.pk %}">Aufnehmen</a>{% endif %}
     <a class="knopf knopf-zweitrangig" href="{% url 'antraege:bearbeiten' a.pk %}">Bearbeiten</a>
     {% if "antraege.loeschen" in rechte %}
     <form method="post" action="{% url 'antraege:papierkorb' a.pk %}" class="inline"
