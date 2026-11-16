@@ -139,18 +139,18 @@ def test_hilfe_bild_aufnahme(angemeldet, admin, muster):
     treffer.check()
     weiter = seite.get_by_role("button", name="Weiter")
     aufnehmen(seite, "aufnahme-kunde", [seite.locator("section.karte").first,
-                                         seite.locator(".aktionen")],
+                                         seite.locator("form section.karte")],
               Marke(treffer, nummer=1, von="oben", laenge=40),
               Marke(seite.locator(".treffer-neu"), "rahmen", 2),
-              Marke(weiter, nummer=3, von="unten", laenge=30))  # fmt: skip
+              Marke(weiter, nummer=3, von="unten", laenge=25))  # fmt: skip
     weiter.click()
     seite.locator('input[name="wahl_strasse"][value="antrag"]').check()
-    aufnehmen(seite, "aufnahme-abgleich", [seite.locator("form section.karte"),
-                                            seite.locator(".aktionen")],
+    aufnehmen(seite, "aufnahme-abgleich", [seite.locator("section.karte").first,
+                                            seite.locator("form section.karte")],
               Marke(seite.locator('input[name="wahl_vorname"][value="bestand"]'), nummer=1),
               Marke(seite.locator('input[name="wahl_strasse"][value="antrag"]'), nummer=2),
-              Marke(seite.get_by_role("button", name="Weiter"), nummer=3, von="rechts",
-                    laenge=40))  # fmt: skip
+              Marke(seite.get_by_role("button", name="Weiter"), nummer=3, von="unten",
+                    laenge=25))  # fmt: skip
     seite.get_by_role("button", name="Weiter").click()
     expect(seite.get_by_role("heading", name="3. Angehörige")).to_be_visible()
     seite.goto(reverse("antraege:aufnahme_schritt", args=[a.pk, "gruppe"]))
