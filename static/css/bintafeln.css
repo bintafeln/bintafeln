@@ -2136,3 +2136,9 @@ button.sortieren { background: none; border: 0; padding: 0; font: inherit; font-
 .aufnahme-wege-liste { list-style: none; padding: 0; margin: .3rem 0 1rem; display: flex;
   flex-wrap: wrap; gap: .4rem; }
 .tabelle tr.erledigt td { color: var(--leise); }
+/* Antragsseite: jede Anmerkung als dezent gerahmtes Kärtchen in der Farbe der Tafel */
+.anmerkungen-liste { display: grid; gap: .6rem; margin-bottom: 1rem; }
+.anmerkungen-liste .bemerkung { margin: 0; padding: .6rem .8rem; border: 1px solid var(--rand);
+  border: 1px solid color-mix(in srgb, var(--akzent) 35%, transparent); border-radius: var(--radius);
+  background: color-mix(in srgb, var(--akzent) 4%, var(--flaeche)); }
+.anmerkungen-liste .bemerkung p { margin: 0 0 .25rem; }
