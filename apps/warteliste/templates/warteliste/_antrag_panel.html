@@ -2,25 +2,10 @@
 <section class="karte breit warteliste-abschnitt" id="warteliste">
   <h2>Warteliste</h2>
   <dl class="angaben">
-    <dt>Status</dt><dd>{% include "warteliste/_status.html" %}</dd>
     <dt>Termin</dt><dd>{% if ws.termin %}<a href="{% url 'warteliste:termin' ws.termin.pk %}">{{ ws.termin }}</a>{% else %}–{% endif %}</dd>
   </dl>
   {% if darf %}
   <div class="abschnitte">
-    <div class="abschnitt">
-      <h3>Status setzen</h3>
-      <form method="post" action="{% url 'warteliste:status' %}">
-        {% csrf_token %}
-        <input type="hidden" name="ids" value="{{ a.pk }}">
-        <input type="hidden" name="zurueck" value="{{ request.path }}">
-        <div class="formular-raster">
-          {% with feld=form.status %}{% include "includes/feld.html" %}{% endwith %}
-          {% with feld=form.wartezeit_bis %}{% include "includes/feld.html" %}{% endwith %}
-        </div>
-        <button type="submit" class="knopf">Status speichern</button>
-      </form>
-      <p class="hinweis">„Entschuldigt“ vermerkt den Termin bei den Anmerkungen. „Gestrichen“ kommt auf die Streichungsliste und lehnt den Antrag ab.</p>
-    </div>
     <div class="abschnitt">
       <h3>{% if ws.termin %}Neu einladen{% else %}Einladen{% endif %}</h3>
       <form method="post" action="{% url 'warteliste:einladen' %}">

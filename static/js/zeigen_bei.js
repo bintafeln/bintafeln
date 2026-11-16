@@ -25,7 +25,8 @@
     verbinden(block, block.dataset.zeigenBei, function (passt) { block.hidden = !passt; });
   });
   document.querySelectorAll("[data-pflicht-bei]").forEach(function (block) {
-    var eingaben = block.querySelectorAll("input, textarea, select");
+    // Ohne das unsichtbare Kalender-Feld von datum.js: Pflicht ist nur das sichtbare Datumsfeld
+    var eingaben = block.querySelectorAll("input:not(.datum-pick), textarea, select");
     verbinden(block, block.dataset.pflichtBei, function (passt) {
       block.classList.toggle("pflicht", passt);
       eingaben.forEach(function (e) { e.required = passt; });
