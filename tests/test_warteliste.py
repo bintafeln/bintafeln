@@ -1108,3 +1108,29 @@ def test_menue_zeigt_offene_faelle(admin_client, modul_an, monkeypatch):
     assert "Dubletten" in eintraege["Doppelte Anträge"].get("zahl_titel", "")
     # Für den Abgleich wurde noch nichts berechnet → kein Abzeichen (statt teuer zu rechnen).
     assert "zahl" not in eintraege["Abgleich mit Kundenstamm"]
+
+
+def test_nach_aufnahme_zurueck_zur_terminliste(admin_client, modul_an, client, anmelden,
+                                               benutzer_mit_rolle, recht_nehmen):  # fmt: skip
+    Haushalt.objects.create(kundennummer="905")
+    a = antrag(kundennummer="905")
+    fertig = reverse("antraege:aufnahme_fertig", args=[a.pk])
+    # Ohne Termin (auch heute keiner): nur die üblichen Wege
+    seite = admin_client.get(fertig).content.decode()
+    assert "Zurück zur Terminliste" not in seite and "Zur Antragsliste" in seite
+    # Heutiger Termin, wenn der Antrag zu keinem eingeladen war
+    heute = termin(tage=0)
+    seite = admin_client.get(fertig).content.decode()
+    assert f'href="{reverse("warteliste:termin", args=[heute.pk])}"' in seite
+    # Sonst der Termin, zu dem eingeladen war
+    eigener = termin(tage=-2)
+    ablauf.wartestaende_anlegen()
+    Wartestand.objects.filter(antrag=a).update(termin=eigener, status=S.AUFGENOMMEN)
+    seite = admin_client.get(fertig).content.decode()
+    assert f'href="{reverse("warteliste:termin", args=[eigener.pk])}"' in seite
+    assert "Zurück zur Terminliste" in seite
+    # Wer die Warteliste nicht sehen darf, bekommt den Link nicht
+    recht_nehmen(rollen.BUERO, "warteliste.sehen")
+    anmelden(client, benutzer_mit_rolle("dora", rollen.BUERO))
+    seite = client.get(fertig).content.decode()
+    assert "Kunde 905 aufgenommen" in seite and "Zurück zur Terminliste" not in seite

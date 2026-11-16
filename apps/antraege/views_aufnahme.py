@@ -12,6 +12,7 @@ from django.utils import timezone
 
 from apps.antraege import aufnahme, gebiet
 from apps.antraege.models import Abfrage, Antrag, AntragEinstellungen
+from apps.core import module
 from apps.core.auswahl import (
     GDB_STUFEN,
     gdb_text,
@@ -383,4 +384,6 @@ def fertig(request, pk):
     z = request.session.get(_schluessel(a.pk), {})
     nummer = z.get("ergebnis") or a.kundennummer
     h = get_object_or_404(Haushalt, kundennummer=nummer)
-    return render(request, "antraege/aufnahme_fertig.html", {"a": a, "h": h})
+    return render(request, "antraege/aufnahme_fertig.html", {
+        "a": a, "h": h, "zurueck": module.nach_aufnahme(request, a),
+    })  # fmt: skip

@@ -49,6 +49,24 @@ def auskunft_antrag(antrag, pdf):
     ablauf.auskunft(antrag, pdf)
 
 
+def nach_aufnahme(request, a):
+    """Nach der Aufnahme zurück zur Terminliste: zum Termin, zu dem der Antrag eingeladen war,
+    sonst zum heutigen Termin. Nur für wer die Warteliste sehen darf."""
+    from django.urls import reverse
+    from django.utils import timezone
+
+    from apps.konten import rollen
+    from apps.warteliste.models import Termin, Wartestand
+
+    if not rollen.hat_recht(request.user, "warteliste.sehen"):
+        return None
+    ws = Wartestand.objects.filter(antrag=a).select_related("termin").first()
+    termin = (ws and ws.termin) or Termin.objects.filter(datum=timezone.localdate()).first()
+    if not termin:
+        return None
+    return reverse("warteliste:termin", args=[termin.pk]), f"Zurück zur Terminliste ({termin})"
+
+
 def antrag_abschnitt(request, a):
     """Warteliste-Abschnitt auf der ganzen Antragsseite (ADR 0115): Status, Einladen und die
     Einladungs-/Absage-Historie sowie – nachgeladen – ähnliche Haushalte. Nur wenn der Antrag auf
@@ -116,6 +134,7 @@ MODUL = Modul(
     fristen=fristen,
     auskunft_antrag=auskunft_antrag,
     antrag=antrag_abschnitt,
+    nach_aufnahme=nach_aufnahme,
     suchen=suchen,
     sicherung_bereich="antraege",
 )  # fmt: skip
