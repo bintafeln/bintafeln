@@ -336,17 +336,18 @@ def _kontext_gruppe(request, a, z, h):
     # Adresse wie in Schritt 2 abgeglichen (sonst aus dem Antrag), zum Suchen der Ausgabestelle
     werte = z.get("werte") or {}
     strasse = werte.get("strasse", a.strasse) or ""
-    ort = " ".join(x for x in (werte.get("plz", a.plz), werte.get("ort", a.ort)) if x)
-    adresse = ", ".join(x for x in (strasse, ort) if x)
+    plz, ort = werte.get("plz", a.plz) or "", werte.get("ort", a.ort) or ""
+    # Angezeigt ohne PLZ; die Route bekommt die volle Adresse, damit Google sie sicher findet
+    adresse = ", ".join(x for x in (strasse, " ".join(x for x in (plz, ort) if x)) if x)
     # Je aktive Ausgabestelle mit Anschrift ein Link zur Route in Google Maps (neuer Tab)
     wege = [
-        {"stelle": s, "link": weg_link(adresse, s)}
+        {"stelle": s, "link": link}
         for s in Ausgabestelle.objects.filter(aktiv=True).order_by("name")
-        if s.anschrift
+        if (link := weg_link(adresse, s))
     ]
     return {"gruppen": gruppen, "gruppe_gewaehlt": gewaehlt,
             "wunsch": a.ausgabestelle, "wunsch_tage": a.wochentage,
-            "adresse": adresse, "wege": wege}  # fmt: skip
+            "adresse": ", ".join(x for x in (strasse, ort) if x), "wege": wege}  # fmt: skip
 
 
 def _post_gruppe(request, a, z, h):

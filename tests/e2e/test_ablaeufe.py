@@ -1644,10 +1644,10 @@ def test_aufnahme_adresse_kopieren(angemeldet, admin):
     seite.goto(reverse("antraege:aufnahme", args=[a.pk]))
     seite.get_by_role("button", name="Weiter", exact=True).click()  # Kunde suchen: neuer Kunde
     seite.goto(reverse("antraege:aufnahme_schritt", args=[a.pk, "gruppe"]))
-    expect(seite.get_by_label("Adresse des Kunden")).to_have_value("Weg 1, 12345 Musterstadt")
+    expect(seite.get_by_label("Adresse des Kunden")).to_have_value("Weg 1, Musterstadt")
     seite.get_by_role("button", name="Kopieren").click()
     expect(seite.get_by_role("button", name="✓ Kopiert")).to_be_visible()
-    assert seite.evaluate("navigator.clipboard.readText()") == "Weg 1, 12345 Musterstadt"
+    assert seite.evaluate("navigator.clipboard.readText()") == "Weg 1, Musterstadt"
 
 
 def test_datumsfelder_immer_tt_mm_jjjj(angemeldet, admin):

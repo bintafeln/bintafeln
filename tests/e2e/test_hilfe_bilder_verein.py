@@ -154,10 +154,10 @@ def test_hilfe_bild_aufnahme(angemeldet, admin, muster):
     seite.get_by_role("button", name="Weiter").click()
     expect(seite.get_by_role("heading", name="3. Angehörige")).to_be_visible()
     seite.goto(reverse("antraege:aufnahme_schritt", args=[a.pk, "gruppe"]))
-    weg = seite.get_by_role("link", name="Weg zu Ausgabestelle Mitte ↗")
+    weg = seite.get_by_role("link", name="Ausgabestelle Nord ↗")
     aufnehmen(seite, "aufnahme-gruppe", [seite.locator("form section.karte").first],
               Marke(seite.locator("#kunden-adresse"), nummer=1, von="oben", laenge=30),
-              Marke(weg, nummer=2, von="oben", laenge=30),
+              Marke(weg, nummer=2, von="rechts", laenge=40),
               Marke(seite.locator('input[name="kundengruppe"]').first, nummer=3, von="links",
                     laenge=30))  # fmt: skip
 
