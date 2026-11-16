@@ -83,8 +83,12 @@ def _bestand(h: Haushalt | None) -> dict:
 
 @bearbeiter
 def start(request, pk):
-    """Beginnt die Aufnahme neu (verwirft einen angefangenen Zwischenstand)."""
+    """Beginnt die Aufnahme neu (verwirft einen angefangenen Zwischenstand). Ein schon
+    aufgenommener Antrag führt zum Kunden – noch einmal aufnehmen ist nicht nötig."""
     a = get_object_or_404(Antrag, pk=pk)
+    if a.status == Antrag.Status.ERLEDIGT and a.kundennummer:
+        messages.info(request, f"Antrag {a.nummer} ist schon aufgenommen: Kunde {a.kundennummer}.")
+        return redirect("kunden:haushalt", a.kundennummer)
     _speichern(request, a.pk, {})
     return redirect("antraege:aufnahme_schritt", pk=a.pk, schritt="kunde")
 

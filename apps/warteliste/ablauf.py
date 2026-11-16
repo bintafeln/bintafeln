@@ -55,19 +55,26 @@ def _setzen(ws, status, **felder) -> None:
     ws.save()
 
 
-def automatik(heute: dt.date | None = None) -> None:
-    """Status nach Fristen fortschreiben und die Streichungsliste kürzen (läuft regelmäßig)."""
-    heute = heute or timezone.localdate()
-    e = WartelisteEinstellungen.laden()
-    wartestaende_anlegen()
-    offen = Wartestand.objects.exclude(status__in=Wartestand.ABGESCHLOSSEN)
-    # Aufgenommen (Aufnahme-Assistent) und abgelehnt (in den Anträgen) übernehmen
+def abschluesse_uebernehmen(wartestaende=None) -> None:
+    """Aufgenommen (Aufnahme-Assistent) und abgelehnt (in den Anträgen) sofort übernehmen – schnell
+    genug für jeden Seitenaufruf, z. B. die Terminliste nach einer Aufnahme."""
+    offen = (wartestaende if wartestaende is not None else Wartestand.objects).exclude(
+        status__in=Wartestand.ABGESCHLOSSEN
+    )
     offen.filter(antrag__status=Antrag.Status.ERLEDIGT).exclude(antrag__kundennummer="").update(
         status=S.AUFGENOMMEN, geaendert_am=timezone.now()
     )
     offen.filter(antrag__status=Antrag.Status.ABGELEHNT).update(
         status=S.GESTRICHEN, geaendert_am=timezone.now()
     )
+
+
+def automatik(heute: dt.date | None = None) -> None:
+    """Status nach Fristen fortschreiben und die Streichungsliste kürzen (läuft regelmäßig)."""
+    heute = heute or timezone.localdate()
+    e = WartelisteEinstellungen.laden()
+    wartestaende_anlegen()
+    abschluesse_uebernehmen()
     beginn = timezone.make_aware(dt.datetime.combine(heute, dt.time()))
     Wartestand.objects.filter(status=S.NEU, antrag__eingegangen_am__lt=beginn).update(
         status=S.WARTEND
