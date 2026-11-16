@@ -1631,3 +1631,22 @@ def test_serienbrief_vorlage_grafik_einfuegen(angemeldet, admin, tmp_path):
     expect(seite.get_by_text("Vorlage „Mit Logo“ gespeichert.")).to_be_visible()
     text = Vorlage.objects.get(name="Mit Logo").text
     assert f'src="/serienbriefe/grafiken/{g.pk}/"' in text and 'width="25%"' in text
+
+
+def test_datumsfelder_immer_tt_mm_jjjj(angemeldet, admin):
+    """Einfache Kalenderfelder zeigen und nehmen TT.MM.JJJJ – unabhängig von der Sprache des
+    Browsers –, an den Server geht weiter JJJJ-MM-TT."""
+    seite = angemeldet(admin)
+    seite.goto(reverse("statistik:uebersicht") + "?zeitraum=eigen")
+    von = seite.get_by_label("von", exact=True)
+    expect(von).to_have_attribute("placeholder", "TT.MM.JJJJ")
+    expect(von).to_have_value(re.compile(r"^\d{2}\.\d{2}\.\d{4}$"))
+    assert seite.locator('input[type="hidden"][name="von"]').count() == 1
+    von.fill("1.10.2026")
+    with seite.expect_navigation():
+        von.press("Tab")  # das Formular schickt sich beim Ändern selbst ab
+    assert "von=2026-10-01" in seite.url  # beim Server kommt JJJJ-MM-TT an
+    # Falsche Schreibweise wird angemahnt statt still verschluckt
+    feld = seite.get_by_label("bis", exact=True)
+    feld.fill("10/31/2026")
+    assert "TT.MM.JJJJ" in feld.evaluate("f => f.validationMessage")

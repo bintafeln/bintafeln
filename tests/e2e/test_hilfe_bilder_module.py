@@ -811,7 +811,7 @@ def test_hilfe_bild_wartezeit_handy(seite, admin, muster):
     if seite.locator(".sprach-hinweis-zu").is_visible():
         seite.locator(".sprach-hinweis-zu").click()  # Hinweis auf die Sprachwahl schließen
     seite.get_by_label("Kundennummer").fill(nummer)
-    seite.get_by_label("Geburtsdatum der Hauptperson").fill("1975-03-12")
+    seite.get_by_label("Geburtsdatum der Hauptperson").fill("12.03.1975")
     karte = seite.locator("section.karte").first
     aufnehmen(seite, "warten-handy", karte,
               Marke(seite.get_by_label("Kundennummer"), nummer=1, von="rechts", laenge=30),
