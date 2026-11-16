@@ -2135,3 +2135,4 @@ button.sortieren { background: none; border: 0; padding: 0; font: inherit; font-
 .aufnahme-adresse-zeile input { flex: 1 1 18rem; min-width: 0; }
 .aufnahme-wege-liste { list-style: none; padding: 0; margin: .3rem 0 1rem; display: flex;
   flex-wrap: wrap; gap: .4rem; }
+.tabelle tr.erledigt td { color: var(--leise); }

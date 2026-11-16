@@ -1145,6 +1145,28 @@ def test_nach_aufnahme_zurueck_zur_terminliste(admin_client, modul_an, client, a
     assert "Kunde 905 aufgenommen" in seite and "Zurück zur Terminliste" not in seite
 
 
+def test_terminliste_zeigt_aufgenommene_sofort_ohne_aktionen(admin_client, modul_an):
+    """Nach der Aufnahme steht der Antragsteller auf der Terminliste sofort als „aufgenommen“ –
+    ohne Häkchen und mit Link zum Kunden; noch einmal aufnehmen führt zum Kunden."""
+    Haushalt.objects.create(kundennummer="906")
+    t = termin(tage=0)
+    a, b = antrag(), antrag("Max", "Probe")
+    ablauf.automatik()
+    Wartestand.objects.filter(antrag__in=[a, b]).update(termin=t, status=S.EINGELADEN)
+    a.kundennummer = "906"  # wie nach dem Aufnahme-Assistenten
+    a.save()
+    a.status_setzen(Antrag.Status.ERLEDIGT, "Büro")
+    seite = admin_client.get(reverse("warteliste:termin", args=[t.pk])).content.decode()
+    assert ws(a).status == S.AUFGENOMMEN  # ohne auf die Automatik zu warten
+    assert f'value="{a.pk}"' not in seite and f'value="{b.pk}"' in seite
+    assert f'href="{reverse("kunden:haushalt", args=["906"])}"' in seite and "Kunde 906" in seite
+    antrag_seite = admin_client.get(reverse("antraege:antrag", args=[a.pk])).content.decode()
+    assert "Zum Kunden 906" in antrag_seite
+    assert reverse("antraege:aufnahme", args=[a.pk]) not in antrag_seite
+    antwort = admin_client.get(reverse("antraege:aufnahme", args=[a.pk]))
+    assert antwort.url == reverse("kunden:haushalt", args=["906"])
+
+
 def test_antragsstatus_ohne_wartestand_und_ohne_recht(
     admin_client, modul_an, client, anmelden, benutzer_mit_rolle, recht_nehmen
 ):

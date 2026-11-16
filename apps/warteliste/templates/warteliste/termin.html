@@ -17,9 +17,10 @@
       <thead><tr><th><input type="checkbox" aria-label="Alle auswählen" onclick="document.querySelectorAll('#auswahl input[name=ids]').forEach(c => c.checked = this.checked)"></th><th>#</th><th>Name</th><th>Kontakt</th><th>Status</th></tr></thead>
       <tbody>
       {% for ws in wartende %}{% with a=ws.antrag %}
-        <tr>
-          <td><input type="checkbox" name="ids" value="{{ a.pk }}" aria-label="{{ a.name }} auswählen"></td>
-          <td data-titel="#"><a href="{% url 'warteliste:eintrag' a.pk %}">{{ a.nummer }}</a></td>
+        {# Schon Aufgenommene: fertig – kein Häkchen (kein Status/keine Absage mehr), Link zum Kunden #}
+        <tr{% if ws.status == "aufgenommen" %} class="erledigt"{% endif %}>
+          <td>{% if ws.status != "aufgenommen" %}<input type="checkbox" name="ids" value="{{ a.pk }}" aria-label="{{ a.name }} auswählen">{% endif %}</td>
+          <td data-titel="#">{% if ws.status == "aufgenommen" and a.kundennummer %}<a href="{% url 'kunden:haushalt' a.kundennummer %}" title="Zum Kunden">Kunde {{ a.kundennummer }}</a>{% else %}<a href="{% url 'warteliste:eintrag' a.pk %}">{{ a.nummer }}</a>{% endif %}</td>
           <td data-titel="Name">{{ a.nachname }}, {{ a.vorname }}</td>
           <td data-titel="Kontakt">{{ a.telefon|default:"" }}{% if a.telefon and a.email %} · {% endif %}{{ a.email|default:"" }}</td>
           <td data-titel="Status">{% include "warteliste/_status.html" %}</td>

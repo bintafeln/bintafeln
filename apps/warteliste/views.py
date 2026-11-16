@@ -345,6 +345,8 @@ def termin_bearbeiten(request, pk=None):
 @sehen
 def termin(request, pk):
     t = get_object_or_404(Termin, pk=pk)
+    # Wer gerade aufgenommen wurde, steht hier sofort als „aufgenommen“ (nicht erst nach Stunden)
+    ablauf.abschluesse_uebernehmen(t.wartende.all())
     wartende = t.wartende.select_related("antrag").order_by("antrag__nachname", "antrag__vorname")
     return render(request, "warteliste/termin.html", {
         "t": t, "wartende": wartende, "status_form": StatusForm(),
