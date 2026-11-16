@@ -12,6 +12,7 @@
   <div class="aktionen">
     <a class="knopf knopf-gross" href="{% url 'kunden:ausweis' h.kundennummer %}" target="_blank" rel="noopener">Ausweis drucken (PDF)</a>
     <a class="knopf knopf-zweitrangig" href="{% url 'kunden:haushalt' h.kundennummer %}">Zum Kunden</a>
+    {% if zurueck %}<a class="knopf" href="{{ zurueck.0 }}">{{ zurueck.1 }}</a>{% endif %}
     <a class="knopf knopf-zweitrangig" href="{% url 'antraege:liste' %}">Zur Antragsliste</a>
   </div>
 </section>
