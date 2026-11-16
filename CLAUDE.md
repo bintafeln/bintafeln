@@ -205,6 +205,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
 - Lange Mehrfachauswahlen als aufklappbares Menü: Widget `Mehrfachauswahl` (`apps/core/forms.py`,
   `static/js/mehrfachauswahl.js`, Suchfeld ab 8 Einträgen); Felder nur bei passender Auswahl
   zeigen mit `data-zeigen-bei="feld=wert1 wert2"` (`static/js/zeigen_bei.js`).
+- Datumsfelder immer TT.MM.JJJJ: im Formular `DatumEingabe` (`apps/konten/forms.py`); ein
+  einfaches `<input type="date">` stellt `static/js/datum.js` selbst um (Textfeld TT.MM.JJJJ, das
+  versteckte Feld mit dem Namen schickt weiter JJJJ-MM-TT). Öffentliche Seiten binden `datum.js` ein.
 - Nach dem Absenden eines Formulars an dieselbe Seite bleibt die Position (`static/js/position.js`);
   Knöpfe, deren Ergebnis weiter unten erscheint (Vorschau, Prüfen), bekommen `data-ziel="<id>"`.
   PDFs in einem neuen Fenster öffnen per Link oder GET-Formular mit `target="_blank"`
