@@ -2147,15 +2147,14 @@ button.sortieren { background: none; border: 0; padding: 0; font: inherit; font-
   border: 1px solid color-mix(in srgb, var(--akzent) 35%, transparent); border-radius: var(--radius);
   background: color-mix(in srgb, var(--akzent) 4%, var(--flaeche)); }
 .anmerkungen-liste .bemerkung p { margin: 0 0 .25rem; }
-/* Aufnahme-Kopf in zwei Zeilen: Titel; darunter die Schritte (nur der aktuelle mit Namen) und
-   rechts Weiter/Zurück/Abbrechen */
+/* Aufnahme-Kopf: Titel; darunter die Schritte und am Ende der letzten Zeile ganz rechts
+   Weiter/Zurück/Abbrechen. Erledigte Schritte nur als Nummer (Name als Tooltip), der aktuelle und
+   die kommenden ausgeschrieben. Die Schritte sind dafür direkt Teil der umbrechenden Zeile. */
 .aufnahme-titel { font-size: 1.3rem; margin: 0 0 .6rem; }
-.aufnahme-leiste { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-  gap: .5rem 1rem; }
-.aufnahme-leiste .schritte { margin: 0; }
-.aufnahme-leiste .aktionen { margin: 0 0 0 auto; }
-.schritte-kompakt li::before { content: none; }
-.schritte-kompakt li:not(.aktuell) .schritt-titel { display: none; }
-.schritte-kompakt { gap: .3rem; }
+.aufnahme-leiste { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+.aufnahme-leiste .schritte { display: contents; }
+.aufnahme-leiste .aktionen { margin: 0 0 0 auto; padding-left: .6rem; }
 .schritte-kompakt li { margin: 0; }
-.schritte-kompakt li:not(.aktuell) { padding: .3rem .55rem; }
+.schritte-kompakt li::before { content: none; }
+.schritte-kompakt li.erledigt .schritt-titel { display: none; }
+.schritte-kompakt li.erledigt { padding: .3rem .55rem; }

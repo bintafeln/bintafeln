@@ -5,8 +5,8 @@
 <script src="{% static 'js/kopieren.js' %}" defer></script>
 <section class="karte">
   <h1 class="aufnahme-titel">Aufnahme: <a href="{% url 'antraege:antrag' a.pk %}">Antrag {{ a.nummer }}</a> · {{ a.name }}{% if a.geburtsdatum %}, geb. {{ a.geburtsdatum|date:"d.m.Y" }}{% endif %}</h1>
-  {% comment %}Zweite Zeile: die Schritte (nur der aktuelle mit Namen, die anderen als Nummer mit
-  dem Namen als Tooltip) und rechts Weiter/Zurück/Abbrechen. Der Knopf „Weiter“ gehört über
+  {% comment %}Darunter die Schritte (erledigte nur als Nummer mit dem Namen als Tooltip) und am
+  Ende ganz rechts Weiter/Zurück/Abbrechen. Der Knopf „Weiter“ gehört über
   form="aufnahme-formular" zum Formular darunter.{% endcomment %}
   <div class="aufnahme-leiste">
     <ol class="schritte schritte-kompakt">
