@@ -48,12 +48,14 @@ def _stelle(kundennummer: str):
 
 
 def loeschen(benutzer, art: str, bezeichnung: str, *objekte, recht: str,
-             kundennummer: str = "") -> PapierkorbEintrag:  # fmt: skip
+             kundennummer: str = "", still: bool = False,
+             von: str = "") -> PapierkorbEintrag:  # fmt: skip
     """Löscht ``objekte`` (Instanzen oder QuerySets) samt allem, was daran hängt, in den Papierkorb.
 
     ``recht``: wer den Eintrag sehen und wiederherstellen darf; ``kundennummer`` bei Daten zu
-    einem Haushalt. Löst wie ``delete()`` ``ProtectedError`` aus, wenn noch etwas darauf
-    verweist; dann wird nichts gelöscht."""
+    einem Haushalt. ``still``: zählt im Menü nicht als neu (z. B. Notizen); ``von`` ohne
+    ``benutzer`` (automatisches Löschen), z. B. „automatisch“. Löst wie ``delete()``
+    ``ProtectedError`` aus, wenn noch etwas darauf verweist; dann wird nichts gelöscht."""
     with transaction.atomic():
         sammler = Collector(using="default")
         for gruppe in _gruppen(objekte):
@@ -75,9 +77,9 @@ def loeschen(benutzer, art: str, bezeichnung: str, *objekte, recht: str,
         eintrag = PapierkorbEintrag.objects.create(
             art=art, bezeichnung=bezeichnung[:300], recht=recht, kundennummer=kundennummer,
             stelle_id=_stelle(kundennummer) if kundennummer else None,
-            geloescht_von=benutzer.get_username() if benutzer else "",
+            geloescht_von=benutzer.get_username() if benutzer else von,
             daten=json.loads(serializers.serialize("json", instanzen)),
-            verweise=verweise, dateien=dateien,
+            verweise=verweise, dateien=dateien, still=still,
         )  # fmt: skip
         sammler.delete()
     return eintrag

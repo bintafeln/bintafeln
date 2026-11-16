@@ -47,3 +47,12 @@ Abfrage muss gelöschte Datensätze ausblenden, Eindeutigkeiten (Kundennummer) b
 und neue Modelle sind ohne Zutun dabei. Die Kopie im Format der Datensicherung ist dieselbe
 Technik wie ADR 0037. Die Frist hält die Datensparsamkeit ein: Gelöschtes bleibt nur kurz
 wiederherstellbar.
+
+## Nachtrag: Notizen still, auch automatisch gelöschte
+
+Auch Notizen, die bintafeln selbst entfernt (Krankmeldung nach der nächsten Abholung, ADR 0075;
+Notizen zu Kundennummern, die es nicht mehr gibt), gehen jetzt in den Papierkorb
+(`kunden.models.notizen_in_papierkorb()`, „gelöscht von: automatisch“) statt endgültig gelöscht zu
+werden. So lässt sich jede Notiz mindestens so lange wiederherstellen, wie der Papierkorb aufbewahrt
+(ab 30 Tage). Notizen sind dabei `still`: Sie erhöhen die Zahl „neu im Papierkorb“ im Menü nicht,
+weil gelöschte Notizen im Alltag selten interessieren.

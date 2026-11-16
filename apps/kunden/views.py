@@ -610,7 +610,7 @@ def _notiz_in_papierkorb(benutzer, notiz) -> None:
     """Auch vom Einlass aus; wiederherstellen darf, wer fremde Notizen löschen darf."""
     papierkorb.loeschen(benutzer, "Notiz", f"{notiz.text[:60]} (Haushalt {notiz.kundennummer})",
                         notiz, recht="kunden.notizen_loeschen",
-                        kundennummer=notiz.kundennummer)  # fmt: skip
+                        kundennummer=notiz.kundennummer, still=True)  # fmt: skip
 
 
 @require_POST

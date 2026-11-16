@@ -290,3 +290,29 @@ def test_inhalt_lesbar(admin, admin_client):
     nummer = gruppe.pk
     gruppe.delete()
     assert dict(papierkorb.inhalt(e)[0]["felder"])["Kundengruppe"] == f"Nr. {nummer}"
+
+
+def test_notizen_still_im_papierkorb_auch_automatisch(admin, admin_client, stellen):
+    """Gelöschte Notizen lassen sich wiederherstellen, zählen aber nicht als „neu“ im Menü – auch
+    die automatisch gelöschten (Krankmeldung nach der Abholung, Kundennummer gibt es nicht mehr)."""
+    from apps.kunden.models import Abholung, verwaiste_notizen_loeschen
+
+    h = haushalt("5", stellen["Mitte"])
+    heute = timezone.localdate()
+    hand = Notiz.objects.create(kundennummer="5", text="Bringt Bescheid mit")
+    krank = Notiz.objects.create(kundennummer="5", text="krank", krank_grund="krank",
+                                 krank_von=heute - dt.timedelta(days=3),
+                                 krank_bis=heute - dt.timedelta(days=3))  # fmt: skip
+    Notiz.objects.create(kundennummer="999", text="zu gelöschtem Haushalt")
+    admin_client.get(KORB)  # alles bisher gesehen
+    admin_client.post(reverse("kunden:notiz_loeschen", args=[hand.pk]))
+    Abholung.objects.create(haushalt=h, datum=heute)
+    assert verwaiste_notizen_loeschen() == 2
+    assert not Notiz.objects.exists()
+    eintraege = PapierkorbEintrag.objects.filter(art="Notiz")
+    assert eintraege.count() == 3 and all(e.still for e in eintraege)
+    assert set(eintraege.values_list("geloescht_von", flat=True)) == {admin.username, "automatisch"}
+    seite = admin_client.get(reverse("core:start")).content.decode()
+    assert 'title="neu im Papierkorb"' not in seite  # keine Zahl für Notizen
+    papierkorb.wiederherstellen(eintraege.get(bezeichnung__startswith="krank"))
+    assert Notiz.objects.filter(pk=krank.pk).exists()
