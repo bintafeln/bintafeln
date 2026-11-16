@@ -114,6 +114,10 @@ class Modul:
     # So zeigt z. B. die Warteliste ihre Aktionen (Status, Einladen, Anmerkungen) direkt auf der
     # ganzen Antragsseite, statt auf einer eigenen Seite.
     antrag: Callable | None = None
+    # Status eines Antrags, wenn das Modul ihn führt: antrag_status(request, antrag) -> HTML/"".
+    # Ersetzt oben auf der Antragsseite die Auswahl neu/in Bearbeitung/erledigt/abgelehnt, damit es
+    # nur einen Status gibt (z. B. den der Warteliste, aus dem der Antragsstatus folgt).
+    antrag_status: Callable | None = None
     # Ziel nach abgeschlossener Aufnahme eines Antrags: nach_aufnahme(request, antrag) ->
     # (url, text) oder None. Die Seite „Aufnahme abgeschlossen“ bietet es als ersten Weg zurück an
     # (z. B. die Warteliste: zurück zur Terminliste des Tages).
@@ -238,6 +242,15 @@ def antrag(request, antrag) -> list[str]:
     an = eingeschaltet()
     teile = [m.antrag(request, antrag) for m in alle() if m.kennung in an and m.antrag]
     return [t for t in teile if t]
+
+
+def antrag_status(request, antrag) -> str:
+    """Status-Anzeige eines eingeschalteten Moduls für die Antragsseite, sonst ""."""
+    an = eingeschaltet()
+    for m in alle():
+        if m.kennung in an and m.antrag_status and (html := m.antrag_status(request, antrag)):
+            return html
+    return ""
 
 
 def nach_aufnahme(request, antrag) -> tuple[str, str] | None:

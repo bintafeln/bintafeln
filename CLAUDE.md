@@ -388,7 +388,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Unterschrift – werden nur auf „Mein Konto“ eingetragen, geändert und gelöscht; andere Seiten
   zeigen nur den Stand und verweisen dorthin), `Modul.datenimport` (eigene Übernahmen auf der Seite
   „Daten importieren“ statt eigener Menüpunkte), `Modul.nach_aufnahme` (Weg zurück nach dem
-  Aufnahme-Assistenten, z. B. zur Terminliste der Warteliste). Programmname nur in
+  Aufnahme-Assistenten, z. B. zur Terminliste der Warteliste), `Modul.antrag_status` (der eine Status
+  oben auf der Antragsseite, ADR 0139). Programmname nur in
   `bintafeln/programm.py`; die Kopfzeile kürzt `static/js/kopfzeile.js` über `.kuerz-1…5`.
   Übersicht der übernommenen Altprogramme: `docs/altprogramme.md`.
 - Datenimport aus CSV/Excel (ADR 0078): App `datenimport` – `lesen.py` (CSV/xlsx), `zuordnung.py`
