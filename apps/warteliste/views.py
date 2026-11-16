@@ -30,6 +30,7 @@ from apps.warteliste.forms import (
 )
 from apps.warteliste.models import (
     AbgleichEntscheidung,
+    Einladung,
     Streichung,
     Termin,
     WartelisteEinstellungen,
@@ -316,15 +317,36 @@ def antrag_treffer(request, pk):
 @sehen
 def termine(request):
     heute = timezone.localdate()
+    ablauf.automatik()  # gerade Aufgenommene sofort mitzählen
+    # Zahlen je Termin: Eingeladen zählt jede Einladung zu diesem Termin (auch wer später abgesagt
+    # oder einen anderen Termin bekam); erschienen schließt aufgenommen ein – wer ohne gültigen
+    # Bescheid kam, ist erschienen, aber (noch) nicht aufgenommen.
     alle = Termin.objects.annotate(
-        eingeladen=Count("wartende", filter=Q(wartende__status=S.EINGELADEN)),
-        erschienen=Count("wartende", filter=Q(wartende__status=S.ERSCHIENEN)),
-        gesamt=Count("wartende"),
+        abgesagt=Count("einladungen__antrag", filter=Q(einladungen__art=Einladung.Art.ABSAGE),
+                       distinct=True),
+        entschuldigt=Count("wartende", filter=Q(wartende__status=S.ENTSCHULDIGT), distinct=True),
+        erschienen=Count("wartende", filter=Q(wartende__status__in=[S.ERSCHIENEN, S.AUFGENOMMEN]),
+                         distinct=True),
+        aufgenommen=Count("wartende", filter=Q(wartende__status=S.AUFGENOMMEN), distinct=True),
     )  # fmt: skip
-    return render(request, "warteliste/termine.html", {
-        "kommend": alle.filter(datum__gte=heute),
-        "vergangen": alle.filter(datum__lt=heute).order_by("-datum", "-von")[:30],
-    })  # fmt: skip
+    kommend = list(alle.filter(datum__gte=heute))
+    vergangen = list(alle.filter(datum__lt=heute).order_by("-datum", "-von")[:30])
+    _eingeladene_zaehlen(kommend + vergangen)
+    return render(request, "warteliste/termine.html", {"kommend": kommend, "vergangen": vergangen})
+
+
+def _eingeladene_zaehlen(termine) -> None:
+    """Eingeladen = jede Person, die zu diesem Termin eine Einladung bekam oder (noch) für ihn
+    eingetragen ist – auch wer danach abgesagt oder einen anderen Termin bekommen hat."""
+    personen = {t.pk: set() for t in termine}
+    for termin_id, antrag_id in (
+        Einladung.objects.filter(termin__in=personen, art=Einladung.Art.EINLADUNG)
+        .values_list("termin_id", "antrag_id")
+        .union(Wartestand.objects.filter(termin__in=personen).values_list("termin_id", "antrag_id"))
+    ):
+        personen[termin_id].add(antrag_id)
+    for t in termine:
+        t.eingeladen = len(personen[t.pk])
 
 
 @never_cache

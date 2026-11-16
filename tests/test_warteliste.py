@@ -1,6 +1,7 @@
 """Modul Warteliste (ADR 0051): Status, Einladen, Termine, Abgleich, Dubletten, Streichungen."""
 
 import datetime as dt
+import re
 
 import pytest
 from django.core import mail as django_mail
@@ -1134,3 +1135,25 @@ def test_nach_aufnahme_zurueck_zur_terminliste(admin_client, modul_an, client, a
     anmelden(client, benutzer_mit_rolle("dora", rollen.BUERO))
     seite = client.get(fertig).content.decode()
     assert "Kunde 905 aufgenommen" in seite and "Zurück zur Terminliste" not in seite
+
+
+def test_termine_zaehlen_eingeladen_entschuldigt_erschienen_aufgenommen(admin_client, modul_an):
+    """Die Übersicht der Termine zählt: jede Einladung zum Termin, entschuldigt oder abgesagt,
+    erschienen (einschließlich aufgenommen) und aufgenommen – Erschienene ohne gültigen Bescheid
+    bleiben erschienen, aber nicht aufgenommen."""
+    t = termin(tage=0)
+    leute = [antrag(f"P{i}", "Beispiel") for i in range(6)]
+    ablauf.automatik()
+    ablauf.einladen(leute, t, "Büro", mail_senden=False)
+    ablauf.absagen(t, [leute[0]], "Büro")  # danach wieder „wartend“ ohne Termin
+    Wartestand.objects.filter(antrag=leute[1]).update(status=S.ENTSCHULDIGT)
+    Wartestand.objects.filter(antrag=leute[2]).update(status=S.ERSCHIENEN)  # ohne Bescheid
+    for a in leute[3:5]:
+        a.kundennummer = "9" + str(a.pk)
+        a.save()
+        a.status_setzen(Antrag.Status.ERLEDIGT, "Büro")  # aufgenommen (noch ohne Automatik)
+    seite = admin_client.get(reverse("warteliste:termine")).content.decode()
+    zeile = seite.split(reverse("warteliste:termin", args=[t.pk]))[1].split("</tr>")[0]
+    zahlen = re.findall(r'data-titel="[^"]+">(\d+)</td>', zeile)
+    assert zahlen == ["6", "2", "3", "2"]  # eingeladen, entschuldigt/abgesagt, erschienen, aufg.
+    assert "Alle" not in seite
