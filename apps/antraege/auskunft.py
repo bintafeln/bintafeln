@@ -64,12 +64,17 @@ def antrag_pdf(a) -> bytes:
     for satz in [
         "Zweck: Bearbeitung Ihres Antrags auf Berechtigung bei der Tafel "
         "(Art. 6 Abs. 1 lit. a und b DSGVO).",
-        f"Speicherdauer: Abgeschlossene Anträge kommen nach {e.papierkorb_nach_tagen} Tagen in "
-        "den Papierkorb und werden dort nach der eingestellten Frist endgültig gelöscht, samt "
-        "Nachweisen.",
+        _speicherdauer(e.papierkorb_nach_tagen),
         "Ihre Rechte: Berichtigung, Löschung, Einschränkung der Verarbeitung, Widerruf der "
         "Einwilligung und Beschwerde bei einer Datenschutz-Aufsichtsbehörde.",
     ]:
         doc.absatz(satz)
         doc.abstand(1.5)
     return doc.erzeugen()
+
+
+def _speicherdauer(tage: int | None) -> str:
+    wann = ("nicht automatisch, sondern erst von Hand" if tage is None
+            else "gleich nach dem Abschluss" if tage == 0 else f"nach {tage} Tagen")  # fmt: skip
+    return (f"Speicherdauer: Abgeschlossene Anträge kommen {wann} in den Papierkorb und werden "
+            "dort nach der eingestellten Frist endgültig gelöscht, samt Nachweisen.")  # fmt: skip

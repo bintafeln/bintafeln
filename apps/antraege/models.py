@@ -10,7 +10,7 @@ import datetime as dt
 from auditlog.context import disable_auditlog
 from auditlog.registry import auditlog
 from django.conf import settings
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MaxValueValidator
 from django.db import models, transaction
 from django.utils import timezone
 
@@ -188,9 +188,13 @@ class AntragEinstellungen(models.Model):
     papierkorb_nach_tagen = models.PositiveSmallIntegerField(
         "Abgeschlossene Anträge nach … Tagen in den Papierkorb",
         default=90,
-        validators=[MinValueValidator(1), MaxValueValidator(3650)],
-        help_text="Danach liegen sie im gemeinsamen Papierkorb und werden dort nach der "
-        "Tafel-weiten Frist („Papierkorb leeren nach“) endgültig gelöscht.",
+        null=True,
+        blank=True,
+        validators=[MaxValueValidator(3650)],
+        help_text="Gilt für erledigte (z. B. aufgenommene) und abgelehnte Anträge. 0 = sofort "
+        "(beim nächsten Aufruf der Startseite), leer = nie automatisch – dann nur von Hand löschen "
+        "(🗑). Im gemeinsamen Papierkorb lassen sie sich wiederherstellen, bis sie nach der "
+        "Tafel-weiten Frist („Papierkorb leeren nach“) endgültig gelöscht werden.",
     )
     max_je_stunde = models.PositiveSmallIntegerField(
         "Anträge je Stunde und Internetanschluss",
@@ -532,8 +536,10 @@ def fristen_anwenden(jetzt=None) -> int:
             status__in=Antrag.OFFEN,
             eingegangen_am__lt=jetzt - tage(days=e.erledigt_nach_tagen),
         ).update(status=Antrag.Status.ERLEDIGT, abgeschlossen_am=jetzt, bearbeitet_von="Frist")
+    if e.papierkorb_nach_tagen is None:  # nie automatisch, nur von Hand
+        return 0
     faellig = list(Antrag.objects.filter(
-        abgeschlossen_am__lt=jetzt - tage(days=e.papierkorb_nach_tagen)))  # fmt: skip
+        abgeschlossen_am__lte=jetzt - tage(days=e.papierkorb_nach_tagen)))  # fmt: skip
     for antrag in faellig:
         in_papierkorb(antrag)
     return len(faellig)

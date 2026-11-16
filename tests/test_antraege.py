@@ -1767,6 +1767,26 @@ def test_fristen(antrag, django_capture_on_commit_callbacks):
     assert not privatdateien.pfad(ANHANG_ORDNER, name).exists()
 
 
+def test_abgeschlossene_sofort_oder_nie_in_den_papierkorb(antrag):
+    """0 = gleich nach dem Abschluss in den Papierkorb, leer = nie automatisch (nur von Hand)."""
+    from apps.antraege import auskunft
+
+    e = AntragEinstellungen.laden()
+    e.papierkorb_nach_tagen = None
+    e.save()
+    antrag.status_setzen(Antrag.Status.ERLEDIGT, "Büro")
+    assert fristen_anwenden(timezone.now() + dt.timedelta(days=4000)) == 0
+    assert Antrag.objects.filter(pk=antrag.pk).exists()
+    assert "nicht automatisch" in auskunft._speicherdauer(None)
+    assert "nach 90 Tagen" in auskunft._speicherdauer(90)
+    auskunft.antrag_pdf(antrag)  # Auskunft geht auch ohne Frist
+    e.papierkorb_nach_tagen = 0
+    e.save()
+    assert "gleich nach dem Abschluss" in auskunft._speicherdauer(0)
+    assert fristen_anwenden() == 1 and not Antrag.objects.filter(pk=antrag.pk).exists()
+    assert PapierkorbEintrag.objects.filter(art="Antrag").count() == 1  # wiederherstellbar
+
+
 def test_neu_nach_tagen_wechselt_auf_in_bearbeitung(antrag):
     """„neu“ gilt nur für den eingestellten Zeitraum; danach wird der Antrag auf „in Bearbeitung“
     gesetzt (reiner Statuswechsel). Mit „erledigt nach = 0“ wird er danach nicht gelöscht."""
