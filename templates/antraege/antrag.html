@@ -56,6 +56,26 @@
   </dl>
   <h2>Weitere Personen im Haushalt</h2>
   {% for p in a.personen.all %}{% if forloop.first %}<ul>{% endif %}<li>{{ p.vorname }} {{ p.nachname }}{% if p.geburtsdatum %}, geb. {{ p.geburtsdatum|date:"d.m.Y" }}{% endif %}{% if p.staatsangehoerigkeit %}, {{ p.staatsangehoerigkeit }}{% endif %}{% if p.gdb_text %}, {{ p.gdb_text }}{% endif %}</li>{% if forloop.last %}</ul>{% endif %}{% empty %}<p>Keine.</p>{% endfor %}
+  <h2 id="anmerkungen">Anmerkungen</h2>
+  {# Jede Anmerkung als eigenes, dezent gerahmtes Kärtchen #}
+  <div class="anmerkungen-liste">
+  {% for x in a.anmerkungen.all %}<div class="bemerkung"><p class="vorformatiert">{{ x.text }}</p><p class="hinweis">{{ x.zeitpunkt|date:"d.m.Y H:i" }} · {{ x.von }}</p>
+    {% if "antraege.bearbeiten" in rechte %}
+    <details class="anmerkung-aendern">
+      <summary>Ändern</summary>
+      <form method="post" action="{% url 'antraege:anmerkung_bearbeiten' a.pk x.pk %}">
+        {% csrf_token %}
+        <div class="feld"><label for="anm-{{ x.pk }}" class="unsichtbar">Anmerkung ändern</label><textarea name="text" id="anm-{{ x.pk }}" rows="3" required>{{ x.text }}</textarea></div>
+        <button type="submit" class="knopf knopf-zweitrangig">Änderung speichern</button>
+      </form>
+    </details>
+    {% endif %}</div>{% empty %}<p>Noch keine.</p>{% endfor %}
+  </div>
+  <form method="post" action="{% url 'antraege:anmerkung' a.pk %}">
+    {% csrf_token %}
+    <div class="feld"><label for="text">Neue Anmerkung</label><textarea name="text" id="text" rows="3" required></textarea></div>
+    <button type="submit" class="knopf knopf-zweitrangig">Anmerkung speichern</button>
+  </form>
   <h2>Nachweise</h2>
   {% include "antraege/_nachweis_kacheln.html" with verwalten=True %}
   {% if "antraege.bearbeiten" in rechte %}
@@ -72,23 +92,6 @@
     </form>
   </details>
   {% endif %}
-  <h2 id="anmerkungen">Anmerkungen</h2>
-  {% for x in a.anmerkungen.all %}<div class="bemerkung"><p class="vorformatiert">{{ x.text }}</p><p class="hinweis">{{ x.zeitpunkt|date:"d.m.Y H:i" }} · {{ x.von }}</p>
-    {% if "antraege.bearbeiten" in rechte %}
-    <details class="anmerkung-aendern">
-      <summary>Ändern</summary>
-      <form method="post" action="{% url 'antraege:anmerkung_bearbeiten' a.pk x.pk %}">
-        {% csrf_token %}
-        <div class="feld"><label for="anm-{{ x.pk }}" class="unsichtbar">Anmerkung ändern</label><textarea name="text" id="anm-{{ x.pk }}" rows="3" required>{{ x.text }}</textarea></div>
-        <button type="submit" class="knopf knopf-zweitrangig">Änderung speichern</button>
-      </form>
-    </details>
-    {% endif %}</div>{% empty %}<p>Noch keine.</p>{% endfor %}
-  <form method="post" action="{% url 'antraege:anmerkung' a.pk %}">
-    {% csrf_token %}
-    <div class="feld"><label for="text">Neue Anmerkung</label><textarea name="text" id="text" rows="3" required></textarea></div>
-    <button type="submit" class="knopf knopf-zweitrangig">Anmerkung speichern</button>
-  </form>
   <p><a href="{% url 'antraege:auskunft' a.pk %}" target="_blank" rel="noopener">Auskunft nach Art. 15 DSGVO (PDF)</a></p>
 </section>
 
