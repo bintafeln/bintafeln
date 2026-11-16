@@ -32,11 +32,15 @@
     <dt>Art</dt><dd>{{ a.get_art_display }}</dd>
     <dt>Sprache</dt><dd>{{ sprache.deutsch }}</dd>
     <dt><label for="status">Status</label></dt><dd>
-      <form method="post" action="{% url 'antraege:status' a.pk %}" class="inline status-aendern">
+      {% if modul_status %}{{ modul_status }}{% else %}
+      {# Ein Status; die Auswahl speichert sofort (sofort.js), ohne eigenen Knopf #}
+      <form method="post" action="{% url 'antraege:status' a.pk %}" class="status-aendern" data-sofort>
         {% csrf_token %}
-        <select name="status" id="status">{% for wert, name in status_auswahl %}<option value="{{ wert }}"{% if wert == a.status %} selected{% endif %}>{{ name }}</option>{% endfor %}</select>
-        <button type="submit" class="knopf knopf-zweitrangig">Status speichern</button>
-      </form>{% if a.bearbeitet_von %} <span class="hinweis">(zuletzt {{ a.bearbeitet_von }})</span>{% endif %}</dd>
+        <span class="status status-{{ a.status }}">{{ a.get_status_display }}</span>
+        {% if "antraege.bearbeiten" in rechte %}<select name="status" id="status" aria-label="Status ändern">{% for wert, name in status_auswahl %}<option value="{{ wert }}"{% if wert == a.status %} selected{% endif %}>{{ name }}</option>{% endfor %}</select>
+        <noscript><button type="submit" class="knopf knopf-zweitrangig">Speichern</button></noscript>{% endif %}
+        {% if a.bearbeitet_von %}<span class="hinweis">zuletzt {{ a.bearbeitet_von }}</span>{% endif %}
+      </form>{% endif %}</dd>
     {% if a.kundennummer %}<dt>Kundennummer</dt><dd><a href="{% url 'kunden:haushalt' a.kundennummer %}">{{ a.kundennummer }}</a></dd>{% endif %}
     <dt>Name</dt><dd>{{ a.anrede }} {{ a.vorname }} {{ a.nachname }}</dd>
     <dt>Geburtsdatum</dt><dd>{{ a.geburtsdatum|date:"d.m.Y"|default:"–" }}</dd>

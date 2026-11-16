@@ -213,6 +213,7 @@ def antrag(request, pk):
     from apps.core import module
 
     kontext["modul_antrag"] = module.antrag(request, a)
+    kontext["modul_status"] = module.antrag_status(request, a)
     return render(request, "antraege/antrag.html", kontext)
 
 

@@ -871,7 +871,15 @@ a.knopf-gefahr { color: #fff; }
   .antraege-liste th:last-child, .antraege-liste td.zeilen-aktionen {
     position: sticky; right: 0; background: var(--flaeche); box-shadow: -8px 0 6px -6px rgba(0, 0, 0, .18); }
 }
-.status-aendern { display: inline-flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.status-aendern { display: inline-flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+/* Ein Status je Antrag: Kärtchen, daneben eine normal große Auswahl, die sofort speichert */
+.status-aendern .status { font-size: 1rem; padding: .3rem .8rem; }
+.status-aendern select, .status-wartezeit input { font: inherit; min-height: 2.5rem; padding: .4rem .6rem;
+  border: 1px solid var(--rand); border-radius: var(--radius); width: auto; }
+.status-aendern select { padding-right: 1.9rem; }
+.status-wartezeit { display: inline-flex; gap: .4rem; align-items: center; }
+.status-wartezeit label { white-space: nowrap; flex: none; }
+.status-wartezeit[hidden] { display: none; }
 .zeilen-aktionen { display: flex; gap: .25rem; }
 .symbol {
   display: inline-flex; align-items: center; justify-content: center; width: 2.1rem; height: 2.1rem;

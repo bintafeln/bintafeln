@@ -67,15 +67,41 @@ def nach_aufnahme(request, a):
     return reverse("warteliste:termin", args=[termin.pk]), f"Zurück zur Terminliste ({termin})"
 
 
+def antrag_status(request, a):
+    """Mit der Warteliste gibt es auf der Antragsseite nur ihren Status (der Antragsstatus folgt
+    daraus: aufgenommen → erledigt, gestrichen → abgelehnt). Ohne Wartestand bleibt der
+    Antragsstatus."""
+    from django.template.loader import render_to_string
+
+    from apps.konten import rollen
+    from apps.warteliste.forms import STATUS_HAND
+    from apps.warteliste.models import Wartestand
+
+    if not rollen.hat_recht(request.user, "warteliste.sehen"):
+        return ""
+    ws = Wartestand.objects.filter(antrag=a).first()
+    if ws is None:
+        return ""
+    hand = [wert for wert, _ in STATUS_HAND]
+    # Den aktuellen Status immer zeigen, auch wenn er von selbst entsteht (neu, eingeladen …)
+    auswahl = list(STATUS_HAND)
+    if ws.status not in hand:
+        auswahl.insert(0, (ws.status, ws.get_status_display()))
+    return render_to_string("warteliste/_antrag_status.html", {
+        "a": a, "ws": ws, "auswahl": auswahl, "hand": hand,
+        "darf": rollen.hat_recht(request.user, "warteliste.bearbeiten"),
+    }, request=request)  # fmt: skip
+
+
 def antrag_abschnitt(request, a):
-    """Warteliste-Abschnitt auf der ganzen Antragsseite (ADR 0115): Status, Einladen und die
+    """Warteliste-Abschnitt auf der ganzen Antragsseite (ADR 0115): Termin, Einladen und die
     Einladungs-/Absage-Historie sowie – nachgeladen – ähnliche Haushalte. Nur wenn der Antrag auf
     der Warteliste steht und man sie sehen darf."""
     from django.template.loader import render_to_string
 
     from apps.konten import rollen
     from apps.warteliste import ablauf
-    from apps.warteliste.forms import EinladenForm, StatusForm
+    from apps.warteliste.forms import EinladenForm
     from apps.warteliste.models import Wartestand
 
     if not rollen.hat_recht(request.user, "warteliste.sehen"):
@@ -85,7 +111,6 @@ def antrag_abschnitt(request, a):
         return ""
     return render_to_string("warteliste/_antrag_panel.html", {
         "a": a, "ws": ws, "darf": rollen.hat_recht(request.user, "warteliste.bearbeiten"),
-        "form": StatusForm(initial={"status": ws.status, "wartezeit_bis": ws.wartezeit_bis}),
         "einladen": EinladenForm(termine=ablauf.kommende_termine()),
         "einladungen": a.einladungen.all(),
     }, request=request)  # fmt: skip
@@ -134,6 +159,7 @@ MODUL = Modul(
     fristen=fristen,
     auskunft_antrag=auskunft_antrag,
     antrag=antrag_abschnitt,
+    antrag_status=antrag_status,
     nach_aufnahme=nach_aufnahme,
     suchen=suchen,
     sicherung_bereich="antraege",

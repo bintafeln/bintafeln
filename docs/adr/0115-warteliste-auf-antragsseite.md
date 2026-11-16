@@ -20,7 +20,7 @@ Vorlage `warteliste/_antrag_panel.html`) – nur, wenn der Antrag auf der Wartel
 sehen darf.
 
 - Status setzen postet an `warteliste:status` (mit `zurueck` zur Antragsseite), Einladen an
-  `warteliste:einladen`; beide gab es schon.
+  `warteliste:einladen`; beide gab es schon. (Seit ADR 0139 steht der Status oben bei den Angaben.)
 - „Ähnliche Haushalte im Kundenstamm“ lädt der Abschnitt **per htmx nach**
   (`warteliste:antrag_treffer`), damit die Antragsseite nicht auf den (teuren) Abgleich wartet.
   `abgleich_entscheiden` akzeptiert `weiter` jetzt auch auf `/antraege/`, sodass das Entscheiden zur

@@ -7,6 +7,8 @@
   document.querySelectorAll("form[data-sofort]").forEach(function (formular) {
     var zeit = null;
     function senden() {
+      // Unvollständig (z. B. „Wartezeit“ noch ohne Datum): erst absenden, wenn alles passt
+      if (formular.checkValidity && !formular.checkValidity()) return;
       if (formular.requestSubmit) formular.requestSubmit(); else formular.submit();
     }
     formular.addEventListener("change", function (ereignis) {

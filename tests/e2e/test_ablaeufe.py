@@ -1667,3 +1667,38 @@ def test_datumsfelder_immer_tt_mm_jjjj(angemeldet, admin):
     feld = seite.get_by_label("bis", exact=True)
     feld.fill("10/31/2026")
     assert "TT.MM.JJJJ" in feld.evaluate("f => f.validationMessage")
+
+
+def test_antrag_ein_status_speichert_sofort(angemeldet, admin):
+    """Antragsseite mit Warteliste: nur ein Status; die Auswahl speichert sofort, „Wartezeit“ erst,
+    wenn das Datum dazu eingetragen ist."""
+    from apps.antraege.models import Antrag
+    from apps.core.models import TafelEinstellungen
+    from apps.warteliste import ablauf
+    from apps.warteliste.models import Wartestand
+
+    t = TafelEinstellungen.laden()
+    t.module = ["warteliste"]
+    t.save()
+    a = Antrag.objects.create(
+        vorname="Erika", nachname="Beispiel", geburtsdatum=dt.date(1980, 2, 3)
+    )
+    Antrag.objects.filter(pk=a.pk).update(eingegangen_am=timezone.now() - dt.timedelta(days=3))
+    ablauf.automatik()
+    seite = angemeldet(admin)
+    seite.goto(reverse("antraege:antrag", args=[a.pk]))
+    auswahl = seite.locator("select#status")
+    expect(seite.locator(".status.wl-wartend")).to_be_visible()
+    with seite.expect_navigation():
+        auswahl.select_option("erschienen")
+    expect(seite.locator(".status.wl-erschienen")).to_be_visible()
+    # „Wartezeit“ wartet auf das Datum
+    seite.locator("select#status").select_option("wartezeit")
+    datum = seite.locator("#status-wartezeit-bis")
+    expect(datum).to_be_visible()
+    assert Wartestand.objects.get(antrag=a).status == "erschienen"
+    bis = (timezone.localdate() + dt.timedelta(days=30)).strftime("%d.%m.%Y")
+    datum.fill(bis)
+    with seite.expect_navigation():
+        datum.press("Tab")
+    expect(seite.locator(".status.wl-wartezeit")).to_contain_text(f"bis {bis}")
