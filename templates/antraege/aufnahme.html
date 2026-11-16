@@ -11,18 +11,17 @@
   </ol>
   {% if gebiet_grund %}<p class="sicherung sicherung-veraltet" role="status">Die Anschrift ({{ a.plz }} {{ a.ort }}) liegt nicht im Einzugsgebiet der Tafel ({{ gebiet_grund }}).</p>{% endif %}
   {% if fehler %}<p class="sicherung sicherung-fehler" role="alert">{{ fehler }}</p>{% endif %}
+  {% comment %}Weiter/Zurück/Abbrechen oben, damit man nicht bis unten scrollen muss; der Knopf
+  gehört über form="aufnahme-formular" zum Formular darunter.{% endcomment %}
+  <div class="aktionen">
+    <button type="submit" class="knopf" form="aufnahme-formular">{% if schritt == "pruefen" %}Aufnehmen und speichern{% else %}Weiter{% endif %}</button>
+    {% if zurueck %}<a class="knopf knopf-zweitrangig" href="{% url 'antraege:aufnahme_schritt' a.pk zurueck %}">← Zurück</a>{% endif %}
+    <a class="knopf knopf-zweitrangig" href="{% url 'antraege:antrag' a.pk %}">Abbrechen</a>
+  </div>
   {% if h %}<p class="hinweis">Gewählt: bestehender Kunde <a href="{% url 'kunden:haushalt' h.kundennummer %}" target="_blank" rel="noopener">{{ h.kundennummer }}</a>.</p>{% elif "haushalt" in z %}<p class="hinweis">Gewählt: neuer Kunde.</p>{% endif %}
 </section>
 
-{% if a.anhaenge.all and "antraege.sehen" in rechte %}
-<section class="karte nachweise-aufnahme">
-  <h2>Nachweise zum Antrag</h2>
-  <p class="hinweis">Jederzeit einsehbar. Ein Foto anklicken zeigt es groß; „entfernen“ gibt es nur auf der Antragsseite.</p>
-  {% include "antraege/_nachweis_kacheln.html" %}
-</section>
-{% endif %}
-
-<form method="post">
+<form method="post" id="aufnahme-formular">
 {% csrf_token %}
 <section class="karte">
 {% if schritt == "kunde" %}
@@ -239,10 +238,13 @@
   <p class="hinweis">Mit dem Speichern wird der Antrag erledigt und mit dem Kunden verknüpft. Danach geht es zum Ausweisdruck.</p>
 {% endif %}
 </section>
-<div class="aktionen">
-  <button type="submit" class="knopf">{% if schritt == "pruefen" %}Aufnehmen und speichern{% else %}Weiter{% endif %}</button>
-  {% if zurueck %}<a class="knopf knopf-zweitrangig" href="{% url 'antraege:aufnahme_schritt' a.pk zurueck %}">← Zurück</a>{% endif %}
-  <a class="knopf knopf-zweitrangig" href="{% url 'antraege:antrag' a.pk %}">Abbrechen</a>
-</div>
 </form>
+
+{% if a.anhaenge.all and "antraege.sehen" in rechte %}
+<section class="karte nachweise-aufnahme">
+  <h2>Nachweise zum Antrag</h2>
+  <p class="hinweis">Jederzeit einsehbar. Ein Foto anklicken zeigt es groß; „entfernen“ gibt es nur auf der Antragsseite.</p>
+  {% include "antraege/_nachweis_kacheln.html" %}
+</section>
+{% endif %}
 {% endblock %}
