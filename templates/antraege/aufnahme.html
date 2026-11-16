@@ -30,13 +30,13 @@
     <div class="antrag-karte">
       <h3>Angaben aus dem Antrag</h3>
       <dl class="angaben">
-        <dt>Name</dt><dd>{{ a.anrede }} {{ a.vorname }} {{ a.nachname }}</dd>
-        <dt>Geburtsdatum</dt><dd>{{ a.geburtsdatum|date:"d.m.Y"|default:"–" }}</dd>
-        <dt>Anschrift</dt><dd>{{ a.strasse|default:"–" }}{% if a.plz %}<br>{{ a.plz }} {{ a.ort }}{% endif %}</dd>
-        <dt>Telefon</dt><dd>{{ a.telefon|default:"–" }}</dd>
-        <dt>E-Mail</dt><dd>{{ a.email|default:"–" }}</dd>
-        {% if a.staatsangehoerigkeit %}<dt>Staatsangehörigkeit</dt><dd>{{ a.staatsangehoerigkeit }}</dd>{% endif %}
-        <dt>Angehörige</dt><dd>{{ a.personen.count }}</dd>
+        <div><dt>Name</dt><dd>{{ a.anrede }} {{ a.vorname }} {{ a.nachname }}</dd></div>
+        <div><dt>Geburtsdatum</dt><dd>{{ a.geburtsdatum|date:"d.m.Y"|default:"–" }}</dd></div>
+        <div><dt>Anschrift</dt><dd>{{ a.strasse|default:"–" }}{% if a.plz %}<br>{{ a.plz }} {{ a.ort }}{% endif %}</dd></div>
+        <div><dt>Telefon</dt><dd>{{ a.telefon|default:"–" }}</dd></div>
+        <div><dt>E-Mail</dt><dd>{{ a.email|default:"–" }}</dd></div>
+        {% if a.staatsangehoerigkeit %}<div><dt>Staatsangehörigkeit</dt><dd>{{ a.staatsangehoerigkeit }}</dd></div>{% endif %}
+        <div><dt>Angehörige</dt><dd>{{ a.personen.count }}</dd></div>
       </dl>
     </div>
     <div class="treffer-liste">
