@@ -211,14 +211,19 @@ def _vorschlag_personen(a, h) -> list[dict]:
 
 def _kontext_personen(request, a, z, h):
     personen = z.get("personen")
+    # Staatsangehörigkeit der Hauptperson (wie in Schritt 2 gewählt) für Angehörige ohne Angabe
+    haupt_nat = (z.get("werte") or {}).get("staatsangehoerigkeit") or a.staatsangehoerigkeit
     if personen is None:
-        personen = _vorschlag_personen(a, h)
+        personen = [
+            p | {"staatsangehoerigkeit": p["staatsangehoerigkeit"] or haupt_nat}
+            for p in _vorschlag_personen(a, h)
+        ]
     leer = {
         "pk": None,
         "vorname": "",
         "nachname": "",
         "geburtsdatum": "",
-        "staatsangehoerigkeit": "",
+        "staatsangehoerigkeit": haupt_nat,
         "gdb": "",
     }
     staaten = staatsangehoerigkeiten()
