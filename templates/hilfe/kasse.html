@@ -6,6 +6,9 @@
     Ausgabestellen zugeordnet ist, sieht nur deren Kasse; alle Ausgabestellen sieht nur, wer das
     Recht „Kunden aller Ausgabestellen“ hat.</li>
   <li>Spalten: Abholungen, Beiträge, bar eingenommen, aus Guthaben, angeschrieben, Einzahlungen.</li>
+  <li><strong>Importierte Abholungen:</strong> Bringt ein Import (z. B. die Tagesliste aus dem bisherigen Programm)
+    zu einer Abholung einen Beitrag mit, bucht bintafeln ihn als Bareinnahme in die Kasse des Tages (Anmerkung „Beitrag
+    laut Import“). Steht für den Kunden an dem Tag schon eine Abholungs-Buchung da, zählt nur diese.</li>
   <li>„Kassenabschluss drucken (PDF)“ (Tag) bzw. „Kassenbericht drucken (PDF)“ (Monat, Jahr) für die Kassenführung.</li>
   {% if "kasse.einzelbuchungen" in rechte %}<li>In der Tagesansicht sehen Sie zusätzlich jede Einzelbuchung mit Kundennummer.</li>{% endif %}
 </ul>
