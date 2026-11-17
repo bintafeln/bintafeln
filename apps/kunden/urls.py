@@ -6,6 +6,7 @@ from apps.kunden import (
     views_bearbeiten,
     views_dokumente,
     views_nachrichten,
+    views_notizen,
     views_post,
     views_verlaengerung,
 )
@@ -90,6 +91,8 @@ urlpatterns = [
     path("dokument/<int:pk>/loeschen/", views_dokumente.loeschen, name="dokument_loeschen"),
     path("haushalt/<path:kundennummer>/auskunft/", views.auskunft, name="auskunft"),
     path("haushalt/<path:kundennummer>/ausweis/", views.ausweis, name="ausweis"),
+    path("notizen/", views_notizen.liste, name="notizen"),
+    path("notizen/loeschen/", views_notizen.loeschen, name="notizen_loeschen"),
     path("notizen-an-ausgabestelle/", views.notizen_an_stelle, name="notizen_an_stelle"),
     path("notiz/<int:pk>/gelesen/", views.notiz_gelesen, name="notiz_gelesen"),
     path("haushalt/<path:kundennummer>/", views.haushalt, name="haushalt"),

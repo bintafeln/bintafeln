@@ -148,6 +148,35 @@ def test_hilfe_bild_kunden_nachrichten(angemeldet, admin, muster):
     # fmt: skip
 
 
+def test_hilfe_bild_notizen_liste(angemeldet, admin, muster):
+    """Liste aller Notizen: Bild fürs Handbuch und der Ablauf „anhaken, löschen“."""
+    from apps.kunden.models import Notiz
+
+    Notiz.objects.create(kundennummer="00042", text="Bringt eigene Taschen mit.",
+                         verfasst_von="Büro")  # fmt: skip
+    Notiz.objects.create(kundennummer="00042", text="Bitte den neuen Bescheid zeigen lassen.",
+                         verfasst_von="Büro", an_stelle=True)  # fmt: skip
+    seite = oeffnen(angemeldet, admin, reverse("kunden:notizen"))
+    karte = seite.locator("section.karte").first
+    erste = seite.locator('tbody input[name="id"]').first
+    erste.check()
+    expect(seite.locator('[data-auswahl-zahl="auswahl"]')).to_have_text("1 ausgewählt")
+    aufnehmen(seite, "notizen-liste", [karte],
+              Marke(seite.locator("form.filter-kompakt"), "rahmen", 1),
+              Marke(erste, nummer=2, von="links", laenge=30),
+              Marke(seite.locator("[data-notizen-loeschen]"), "rahmen", 3),
+              Marke(seite.locator(".listen-werkzeuge summary"), "rahmen", 4))  # fmt: skip
+    vorher = Notiz.objects.count()
+    seite.once("dialog", lambda d: d.accept())
+    seite.locator("[data-notizen-loeschen]").click()
+    expect(seite.get_by_text("1 Notiz in den Papierkorb gelegt.")).to_be_visible()
+    assert Notiz.objects.count() == vorher - 1
+    # ohne Haken: Hinweis statt Löschen
+    seite.once("dialog", lambda d: d.accept())
+    seite.locator("[data-notizen-loeschen]").click()
+    assert Notiz.objects.count() == vorher - 1
+
+
 def test_hilfe_bild_eulenpost(angemeldet, admin, muster):
     from apps.kunden import eulenpost
 
