@@ -1,3 +1,5 @@
+import re
+
 from django import forms
 from django.contrib.auth import authenticate, get_user_model
 from django_otp import devices_for_user, match_token, user_has_device
@@ -15,6 +17,21 @@ from apps.konten.models import (
 from apps.konten.zwei_faktor import code_bereinigen
 
 
+def _ohne_leer(text: str) -> str:
+    """Zum Vergleich von Namen: ohne Leerzeichen um Punkte, ohne Groß/Klein."""
+    return re.sub(r"\s*\.\s*", ".", text.strip()).casefold()
+
+
+def _hinweis_leerzeichen(passwort: str) -> str:
+    """Erklärt bei einer gescheiterten Anmeldung ein Leerzeichen im Passwort, das man nicht sieht –
+    am iPad setzt die Tastatur nach einem Punkt oft eines."""
+    if passwort != passwort.strip() or re.search(r"\.\s", passwort):
+        return (" Achtung: Im eingegebenen Passwort steht ein Leerzeichen (z. B. nach einem Punkt"
+                " oder am Ende). Das fügt die Tastatur am iPad oft von selbst ein – bitte ohne"
+                " Leerzeichen eingeben.")  # fmt: skip
+    return ""
+
+
 class AnmeldeForm(forms.Form):
     """Erster Schritt der Anmeldung: Benutzername und Passwort.
 
@@ -22,8 +39,13 @@ class AnmeldeForm(forms.Form):
     Gerät, folgt ein zweiter Schritt mit dem Code (``ZweiterSchrittForm``).
     """
 
-    username = forms.CharField(label="Benutzername", max_length=150)
-    password = forms.CharField(label="Passwort", strip=False, widget=forms.PasswordInput)
+    # Ohne Autokorrektur und automatische Großschreibung: Das iPad macht sonst z. B. aus
+    # „St.Gertrud“ ein „St. Gertrud“ (Leerzeichen nach dem Punkt), und die Anmeldung scheitert.
+    _OHNE_KORREKTUR = {"autocapitalize": "none", "autocorrect": "off", "spellcheck": "false"}
+    username = forms.CharField(label="Benutzername", max_length=150, widget=forms.TextInput(
+        attrs={**_OHNE_KORREKTUR, "autocomplete": "username"}))  # fmt: skip
+    password = forms.CharField(label="Passwort", strip=False, widget=forms.PasswordInput(
+        attrs={**_OHNE_KORREKTUR, "autocomplete": "current-password"}))  # fmt: skip
 
     fehler = "Benutzername oder Passwort ist falsch."
     gesperrt = ("Zu viele falsche Versuche. Bitte {minuten} Minuten warten und dann erneut "
@@ -47,9 +69,18 @@ class AnmeldeForm(forms.Form):
         model = get_user_model()
         if model.objects.filter(username__iexact=eingabe).exists():
             return eingabe
-        stelle = Ausgabestelle.objects.filter(name__iexact=eingabe.strip(),
-                                              konto__isnull=False).first()  # fmt: skip
-        return stelle.konto.username if stelle else eingabe
+        # Leerzeichen um einen Punkt (oft von der Autokorrektur eingefügt) zählen nicht
+        ohne = re.sub(r"\s*\.\s*", ".", eingabe.strip())
+        if ohne != eingabe and model.objects.filter(username__iexact=ohne).exists():
+            return ohne
+        vergleich = _ohne_leer(eingabe)
+        for stelle in Ausgabestelle.objects.filter(konto__isnull=False).select_related("konto"):
+            if (
+                _ohne_leer(stelle.name) == vergleich
+                or stelle.name.casefold() == eingabe.strip().casefold()
+            ):
+                return stelle.konto.username
+        return eingabe
 
     def clean(self):
         from apps.konten import anmeldesperre
@@ -65,7 +96,7 @@ class AnmeldeForm(forms.Form):
         benutzer = authenticate(self.request, username=benutzername, password=passwort)
         if benutzer is None:
             anmeldesperre.fehlversuch(benutzername)
-            raise forms.ValidationError(self.fehler)
+            raise forms.ValidationError(self.fehler + _hinweis_leerzeichen(passwort))
         anmeldesperre.aufheben(benutzername)
         # Online-Zugang einzeln gesperrt (ADR 0114): Passwort stimmt, aber Anmeldung ist für diese
         # Person vorübergehend abgestellt. Kein Fehlversuch – deshalb erst nach dem Zurücksetzen.
@@ -385,9 +416,10 @@ class StellenKontoForm(forms.Form):
 
     passwort1 = forms.CharField(
         label="Passwort", strip=False,
-        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
-        help_text="Frei wählbar, ohne Passwort-Regeln. Für diese Konten gibt es keinen "
-        "Zwei-Faktor-Code – ein längeres Passwort schützt besser.",
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password", "autocapitalize": "none",
+                                          "autocorrect": "off"}),
+        help_text="Frei wählbar, ohne Passwort-Regeln (nur ohne Leerzeichen). Für diese Konten "
+        "gibt es keinen Zwei-Faktor-Code – ein längeres Passwort schützt besser.",
     )  # fmt: skip
     passwort2 = forms.CharField(
         label="Passwort wiederholen", strip=False,
@@ -398,6 +430,13 @@ class StellenKontoForm(forms.Form):
         super().__init__(*args, **kwargs)
         if not neu:
             self.fields["passwort1"].label = "Neues Passwort"
+
+    def clean_passwort1(self):
+        from apps.konten.validierung import leerzeichen_pruefen
+
+        passwort = self.cleaned_data["passwort1"]
+        leerzeichen_pruefen(passwort)
+        return passwort
 
     def clean(self):
         daten = super().clean()
