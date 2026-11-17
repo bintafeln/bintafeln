@@ -1286,7 +1286,7 @@ def test_wartezeit_push_einschalten(seite, admin):
 
 def test_pdf_aus_formular_in_der_ipad_app(angemeldet, admin):
     """In der App vom Home-Bildschirm öffnen auch POST-Formulare (Vorschau einer Vorlage) das
-    PDF über einen Link in einem eigenen Fenster; die Seite mit dem Formular bleibt."""
+    PDF über der Seite statt in einem eigenen Fenster, aus dem man nicht zurückkäme (ADR 0141)."""
     seite = angemeldet(admin)
     seite.add_init_script("Object.defineProperty(navigator, 'standalone', {get: () => true})")
     seite.goto(reverse("serienbriefe:vorlage_neu"))
@@ -1294,23 +1294,14 @@ def test_pdf_aus_formular_in_der_ipad_app(angemeldet, admin):
     seite.get_by_label("Betreff").fill("Hallo")
     seite.locator(".editor-flaeche").first.click()
     seite.keyboard.type("Liebe Grüße")
+    vorher = len(seite.context.pages)
     seite.get_by_role("button", name="Vorschau (PDF)").click()
-    dialog = seite.locator(".fenster-dialog")
-    expect(dialog).to_be_visible()
-    link = dialog.get_by_role("link", name="PDF öffnen")
-    expect(link).to_have_attribute("href", re.compile(r"/vorschau/\?ablage="))
-    adressen = []
-
-    def ersetzen(route):
-        adressen.append(route.request.url)
-        route.fulfill(status=200, content_type="text/html", body="<p>PDF</p>")
-
-    seite.context.route(re.compile(r"\?ablage="), ersetzen)
-    with seite.expect_popup() as fenster:
-        link.click()
-    fenster.value.wait_for_load_state()
-    assert "ablage=" in adressen[-1]
-    expect(dialog).to_have_count(0)
+    fenster = seite.locator("dialog.pdf-fenster")
+    expect(fenster.locator("img.druck-seite").first).to_be_visible()
+    expect(fenster.get_by_role("button", name="🖨 Drucken")).to_be_visible()
+    assert len(seite.context.pages) == vorher
+    fenster.get_by_role("button", name="✕ Schließen").click()
+    expect(fenster).to_have_count(0)
     assert seite.url.endswith(reverse("serienbriefe:vorlage_neu"))
 
 
@@ -1704,9 +1695,9 @@ def test_antrag_ein_status_speichert_sofort(angemeldet, admin):
     expect(seite.locator(".status.wl-wartezeit")).to_contain_text(f"bis {bis}")
 
 
-def test_druckansicht_kassenabschluss_am_tablet(angemeldet, admin, live_server, settings):
-    """Kiosk-Tablet (ADR 0141): Der Kassenabschluss öffnet als Seite mit „Drucken“, Mail und
-    „Zurück“; gedruckt werden nur die Seiten."""
+def _tablet(seite, live_server, settings):
+    """Kiosk-Tablet einer Ausgabestelle (Druckansicht an), Mailserver und Teilen-Menü nachgebaut:
+    ``window.geteilt`` sammelt, was geteilt wurde (Name und Art der Datei)."""
     from apps.core import druckansicht
     from apps.core.models import MailEinstellungen, TafelEinstellungen
 
@@ -1717,25 +1708,49 @@ def test_druckansicht_kassenabschluss_am_tablet(angemeldet, admin, live_server, 
     t = TafelEinstellungen.laden()
     t.email = "tafel@example.org"
     t.save()
-    seite = angemeldet(admin)
     seite.context.add_cookies([{"name": druckansicht.COOKIE, "value": "1", "url": live_server.url}])
-    seite.context.add_init_script("window.gedruckt = 0; window.print = () => window.gedruckt++;")
+    seite.context.add_init_script(
+        "window.geteilt = []; window.gedruckt = 0; window.print = () => window.gedruckt++;"
+        "navigator.canShare = () => true;"
+        "navigator.share = (d) => { window.geteilt.push(d.files.map(f => f.name + '|' + f.type));"
+        " return Promise.resolve(); };"
+    )
+
+
+def test_pdf_fenster_kassenabschluss_am_tablet(angemeldet, admin, live_server, settings):
+    """Kiosk-Tablet bzw. App vom Home-Bildschirm (ADR 0141): Das PDF öffnet nicht in einem neuen
+    Fenster, sondern über der Seite; „Drucken“ öffnet das Teilen-Menü mit dem PDF, „Schließen“
+    führt zurück, ohne die Seite zu verlassen."""
+    seite = angemeldet(admin)
+    _tablet(seite, live_server, settings)
     seite.goto(reverse("ausgabe:kasse"))
-    with seite.expect_popup() as fenster:
-        seite.get_by_role("link", name=re.compile("drucken \\(PDF\\)")).click()
-    druck = fenster.value
-    druck.wait_for_load_state()
-    expect(druck.locator("img.druck-seite").first).to_be_visible()
-    druck.get_by_role("button", name="🖨 Drucken").click()
-    assert druck.evaluate("window.gedruckt") == 1
-    druck.emulate_media(media="print")
-    expect(druck.locator("header.kopf")).to_be_hidden()
-    expect(druck.locator(".druck-leiste")).to_be_hidden()
-    expect(druck.locator("img.druck-seite").first).to_be_visible()
-    druck.emulate_media(media="screen")
-    druck.locator("summary", has_text="Per E-Mail senden").click()
-    druck.get_by_role("button", name="Senden").click()
-    ergebnis = druck.frame_locator("iframe[name=druck-mail-ergebnis]")
-    expect(ergebnis.get_by_text("Das PDF wurde an tafel@example.org gesendet.")).to_be_visible()
-    with druck.expect_event("close"):
-        druck.get_by_role("button", name="← Zurück").click()
+    vorher = len(seite.context.pages)
+    seite.get_by_role("link", name=re.compile("drucken \\(PDF\\)")).click()
+    fenster = seite.locator("dialog.pdf-fenster")
+    expect(fenster.locator("img.druck-seite").first).to_be_visible()
+    assert len(seite.context.pages) == vorher  # kein neues Fenster
+    fenster.get_by_role("button", name="🖨 Drucken").click()
+    seite.wait_for_function("window.geteilt.length === 1")
+    name, art = seite.evaluate("window.geteilt[0][0]").split("|")
+    assert name.endswith(".pdf") and art == "application/pdf"
+    fenster.locator("summary", has_text="Per E-Mail").click()
+    fenster.get_by_role("button", name="Senden").click()
+    expect(fenster.get_by_text("Das PDF wurde an tafel@example.org gesendet.")).to_be_visible()
+    fenster.get_by_role("button", name="✕ Schließen").click()
+    expect(seite.locator("dialog.pdf-fenster")).to_have_count(0)
+    assert seite.url.endswith(reverse("ausgabe:kasse"))
+
+
+def test_druckansicht_als_seite(angemeldet, admin, live_server, settings):
+    """Wird ein PDF direkt als Seite geöffnet (ADR 0141): Druckansicht mit Teilen-Menü; gedruckt
+    werden nur die Seiten."""
+    seite = angemeldet(admin)
+    _tablet(seite, live_server, settings)
+    seite.goto(reverse("ausgabe:kasse") + "?ansicht=tag&format=pdf")
+    expect(seite.locator("img.druck-seite").first).to_be_visible()
+    seite.get_by_role("button", name="🖨 Drucken").click()
+    seite.wait_for_function("window.geteilt.length === 1")
+    seite.emulate_media(media="print")
+    expect(seite.locator("header.kopf")).to_be_hidden()
+    expect(seite.locator(".druck-leiste")).to_be_hidden()
+    expect(seite.locator("img.druck-seite").first).to_be_visible()

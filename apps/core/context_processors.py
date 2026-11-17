@@ -24,6 +24,12 @@ def _ausgabestelle(request) -> dict:
     return kontext(request)
 
 
+def _pdf_im_fenster(request) -> bool:
+    from apps.core import druckansicht
+
+    return druckansicht.aktiv(request)
+
+
 def _hilfe_kennung(request) -> str:
     """Passendes Hilfe-Kapitel zur aktuellen Seite (für das „?“ oben rechts)."""
     from apps.core import hilfe
@@ -78,6 +84,8 @@ def tafel(request):
         "impressum_url": _impressum(),
         # Tablet einer Ausgabestelle: Seite lädt nach Ablauf neu, die Middleware meldet ab
         "stellen_konto_sekunden": 30 * 60 + 5 if angemeldet and benutzer.stelle_id else None,
+        # PDFs im Fenster über der Seite (Kiosk-Tablets, ADR 0141); die App erkennt das JS selbst
+        "pdf_im_fenster": angemeldet and _pdf_im_fenster(request),
         # Beiträge eingeschalteter Module zur Kopfzeile (z. B. Wetter), nur angemeldet
         "kopf_module": module.kopfzeile() if angemeldet and not offen else [],
         "seiten_module": module.seitenleiste() if angemeldet and not offen else [],
