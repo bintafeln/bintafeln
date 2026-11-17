@@ -426,6 +426,11 @@ def _hinzufuegen(nummern: set[str], daten, bezuege, listen_auch: set[str]) -> in
             neue.append(bauen(haushalte[e["kundennummer"]], e))
         modell.objects.bulk_create(neue, batch_size=5000)
         anzahl += len(neue)
+    # Beiträge der Abholungen in die Kasse – auch für früher ergänzte Abholungen dieser Haushalte,
+    # die noch keine Buchung haben (z. B. aus einer älteren Version eingespielt)
+    from apps.ausgabe import konto
+
+    konto.beitraege_aus_import(Abholung.objects.filter(haushalt__kundennummer__in=list(haushalte)))
     return anzahl
 
 

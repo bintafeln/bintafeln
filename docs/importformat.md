@@ -175,7 +175,7 @@ Kundengruppen bleiben erhalten.
 | `kundennummer` | **ja** | |
 | `datum` | **ja** | Datum der Abholung |
 | `uhrzeit` | | `HH:MM` |
-| `beitrag` | | gezahlter Beitrag in Euro |
+| `beitrag` | | gezahlter Beitrag in Euro. Erscheint als Bareinnahme in der Kasse – außer `buchungen.csv` bringt für Kunde und Tag schon eine Abholungs-Buchung mit (dann zählt diese). Das Format ändert sich dadurch nicht. |
 | `ausgabestelle` | | Name der Ausgabestelle. Leer = die Ausgabestelle der Kundengruppe des Haushalts. Unbekannte werden angelegt (Warnung) |
 | `eingetragen_von` | | Name als Text |
 
