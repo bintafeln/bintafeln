@@ -1098,6 +1098,11 @@ def _anlegen(daten: dict, bezuege: _Bezuege) -> dict[str, Haushalt]:
 
         Buchung.objects.bulk_create((_buchung(nach_nummer[b["kundennummer"]], b, bezuege)
                                      for b in daten["buchungen"]), batch_size=5000)  # fmt: skip
+    if daten.get("abholungen"):
+        # Beiträge der Abholungen in die Kasse (ohne doppelt zu zählen, was buchungen.csv bringt)
+        from apps.ausgabe import konto
+
+        konto.beitraege_aus_import(Abholung.objects.filter(haushalt__in=nach_nummer.values()))
     return nach_nummer
 
 
