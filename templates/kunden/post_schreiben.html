@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block titel %}Post an Ausgabestellen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>{% include "kunden/_eule.html" %} Post an Ausgabestellen</h1>
+  <p class="hinweis">Bei der Ausgabestelle fliegt eine Eule mit dem Brief oben rechts in die Kopfzeile und bleibt dort, bis jemand
+    die Post gelesen hat – auch am Einlass, ohne dass die Seite neu geladen werden muss. Antworten kommen unter
+    „Nachrichten der Ausgabestellen“ an.</p>
+  <form method="post">{% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Eule losschicken</button>
+  </form>
+</section>
+<section class="karte">
+  <h2>Gesendet</h2>
+  <ul class="nachrichten">
+  {% for r in gesendet %}
+    <li class="nachricht">
+      <div class="nachricht-kopf"><strong>{{ r.betreff }}</strong>{% if r.wichtig %}<span class="nachricht-anliegen">wichtig</span>{% endif %}</div>
+      <div class="hinweis">{{ r.erstellt_am|date:"d.m.Y H:i" }} · {{ r.von }}</div>
+      <p class="nachricht-text">{{ r.text|linebreaksbr }}</p>
+      <ul class="post-lesestand">{% for e in r.empfaenge.all %}
+        <li>{{ e.stelle.name }}: {% if e.gelesen_am %}✓ gelesen {{ e.gelesen_am|date:"d.m. H:i" }}{% if e.gelesen_von %} von {{ e.gelesen_von }}{% endif %}{% else %}<strong>noch nicht gelesen</strong>{% endif %}</li>
+      {% endfor %}</ul>
+    </li>
+  {% empty %}
+    <li class="hinweis">Noch keine Post geschrieben.</li>
+  {% endfor %}
+  </ul>
+</section>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block titel %}Post der Verwaltung{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>{% include "kunden/_eule.html" %} Post der Verwaltung</h1>
+  {% if stelle %}
+  <p class="hinweis">Post der Verwaltung an {{ stelle.name }}. Neue Post bringt die Eule oben rechts; „✓ Gelesen“ gilt für alle
+    an dieser Ausgabestelle. Antworten Sie über „Nachricht an die Verwaltung“.</p>
+  <p class="aktionen"><button type="button" class="knopf knopf-zweitrangig" data-eulenton>🔔 Ton auf diesem Gerät</button>
+    <a class="knopf knopf-zweitrangig" href="{% url 'kunden:an_verwaltung' %}">✉ Nachricht an die Verwaltung</a></p>
+  <ul class="nachrichten">
+  {% for e in post %}{% with r=e.rundschreiben %}
+    <li class="nachricht{% if e.gelesen_am %} erledigt{% else %} ungelesen{% endif %}">
+      <div class="nachricht-kopf"><strong>{{ r.betreff }}</strong>
+        <span class="nachricht-anliegen">{% if r.wichtig %}wichtig · {% endif %}{% if e.gelesen_am %}gelesen{% else %}neu{% endif %}</span></div>
+      <div class="hinweis">{{ r.erstellt_am|date:"d.m.Y H:i" }} · {{ r.von }}{% if e.gelesen_am %} · gelesen {{ e.gelesen_am|date:"d.m.Y H:i" }} von {{ e.gelesen_von }}{% endif %}</div>
+      <p class="nachricht-text">{{ r.text|linebreaksbr }}</p>
+      {% if not e.gelesen_am %}<form method="post" action="{% url 'kunden:post_gelesen' e.pk %}" class="nachricht-knoepfe">{% csrf_token %}
+        <button type="submit" class="knopf">✓ Gelesen</button></form>{% endif %}
+    </li>
+  {% endwith %}{% empty %}
+    <li class="hinweis">Noch keine Post.</li>
+  {% endfor %}
+  </ul>
+  {% else %}
+  <p class="sicherung">Bitte zuerst oben im Menü die Ausgabestelle wählen.</p>
+  {% endif %}
+</section>
+{% endblock %}
