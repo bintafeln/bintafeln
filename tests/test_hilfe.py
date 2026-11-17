@@ -94,3 +94,11 @@ def test_bilder_in_der_anleitung_gibt_es():
     )
     assert len(pfade) >= 10
     assert not [p for p in pfade if not (wurzel / p).is_file()]
+
+
+def test_kapitel_link_nach_oben_ist_kein_schwebender_knopf(admin_client):
+    # .nach-oben ist der eine schwebende Knopf unten rechts (base.html); bekäme jedes Kapitel
+    # die Klasse, stapelten sich dort lauter orange Kreise mit „↑ nach oben“.
+    inhalt = admin_client.get(URL).content.decode()
+    assert inhalt.count('class="nach-oben"') == 1
+    assert 'class="kapitel-oben"' in inhalt
