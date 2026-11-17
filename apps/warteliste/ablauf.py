@@ -672,9 +672,17 @@ def offene_antraege():
             .filter(Q(status__in=Antrag.OFFEN)))  # fmt: skip
 
 
-def kommende_termine(heute=None):
-    heute = heute or timezone.localdate()
-    return Termin.objects.filter(datum__gte=heute)
+def vorbei(jetzt=None) -> Q:
+    """Termine, die vorbei sind: an einem früheren Tag oder heute schon zu Ende (Ende = „bis“,
+    ohne „bis“ der Beginn)."""
+    jetzt = timezone.localtime(jetzt) if jetzt else timezone.localtime()
+    ende_vorbei = Q(bis__lt=jetzt.time()) | Q(bis__isnull=True, von__lt=jetzt.time())
+    return Q(datum__lt=jetzt.date()) | (Q(datum=jetzt.date()) & ende_vorbei)
+
+
+def kommende_termine(jetzt=None):
+    """Termine, die noch bevorstehen oder heute noch laufen."""
+    return Termin.objects.exclude(vorbei(jetzt))
 
 
 # ── Auskunft nach Art. 15 ────────────────────────────────────────────────────

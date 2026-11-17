@@ -1205,3 +1205,29 @@ def test_antragsstatus_ohne_wartestand_und_ohne_recht(
     anmelden(client, benutzer_mit_rolle("dora", rollen.BUERO))
     seite = client.get(reverse("antraege:antrag", args=[a.pk])).content.decode()
     assert 'class="status wl-eingeladen"' in seite and 'name="status"' not in seite
+
+
+def test_termin_von_heute_ist_nach_dem_ende_vergangen(admin_client, modul_an):
+    """Ein Termin von heute steht nur bis zu seinem Ende bei den kommenden – danach bei den
+    vergangenen, und einladen kann man zu ihm nicht mehr."""
+    heute = timezone.localdate()
+    morgens = Termin.objects.create(datum=heute, von=dt.time(10), bis=dt.time(11, 30))
+    ohne_ende = Termin.objects.create(datum=heute, von=dt.time(15))
+    morgen = Termin.objects.create(datum=heute + dt.timedelta(days=1), von=dt.time(10))
+    gestern = Termin.objects.create(datum=heute - dt.timedelta(days=1), von=dt.time(10))
+
+    def um(stunde, minute=0):
+        zeit = timezone.make_aware(dt.datetime.combine(heute, dt.time(stunde, minute)))
+        return set(ablauf.kommende_termine(zeit))
+
+    assert um(9) == {morgens, ohne_ende, morgen}
+    assert um(11, 30) == {morgens, ohne_ende, morgen}  # läuft noch bis zur letzten Minute
+    assert um(11, 31) == {ohne_ende, morgen}
+    assert um(15, 1) == {morgen}  # ohne Ende: vorbei, sobald der Beginn vorbei ist
+    assert gestern not in um(0, 1)
+    # Die Seite teilt genauso
+    seite = admin_client.get(reverse("warteliste:termine"))
+    kommend, vergangen = set(seite.context["kommend"]), set(seite.context["vergangen"])
+    assert kommend == set(ablauf.kommende_termine()) and gestern in vergangen
+    assert kommend | vergangen == {morgens, ohne_ende, morgen, gestern}
+    assert not kommend & vergangen

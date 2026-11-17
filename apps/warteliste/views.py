@@ -316,7 +316,6 @@ def antrag_treffer(request, pk):
 @never_cache
 @sehen
 def termine(request):
-    heute = timezone.localdate()
     ablauf.automatik()  # gerade Aufgenommene sofort mitzählen
     # Zahlen je Termin: Eingeladen zählt jede Einladung zu diesem Termin (auch wer später abgesagt
     # oder einen anderen Termin bekam); erschienen schließt aufgenommen ein – wer ohne gültigen
@@ -329,8 +328,10 @@ def termine(request):
                          distinct=True),
         aufgenommen=Count("wartende", filter=Q(wartende__status=S.AUFGENOMMEN), distinct=True),
     )  # fmt: skip
-    kommend = list(alle.filter(datum__gte=heute))
-    vergangen = list(alle.filter(datum__lt=heute).order_by("-datum", "-von")[:30])
+    # Ein Termin von heute, der schon zu Ende ist, steht bei den vergangenen
+    vorbei = ablauf.vorbei()
+    kommend = list(alle.exclude(vorbei))
+    vergangen = list(alle.filter(vorbei).order_by("-datum", "-von")[:30])
     _eingeladene_zaehlen(kommend + vergangen)
     return render(request, "warteliste/termine.html", {"kommend": kommend, "vergangen": vergangen})
 
