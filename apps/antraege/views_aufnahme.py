@@ -223,17 +223,22 @@ def _vorschlag_personen(a, h) -> list[dict]:
 
 def _kontext_personen(request, a, z, h):
     personen = z.get("personen")
-    # Staatsangehörigkeit der Hauptperson (wie in Schritt 2 gewählt) für Angehörige ohne Angabe
-    haupt_nat = (z.get("werte") or {}).get("staatsangehoerigkeit") or a.staatsangehoerigkeit
+    # Nachname und Staatsangehörigkeit der Hauptperson (wie in Schritt 2) für Angehörige ohne
+    # Angabe und für neue Karten vorbelegt; beides lässt sich ändern
+    werte = z.get("werte") or {}
+    haupt_nat = werte.get("staatsangehoerigkeit") or a.staatsangehoerigkeit
+    haupt_name = werte.get("nachname") or a.nachname
     if personen is None:
         personen = [
-            p | {"staatsangehoerigkeit": p["staatsangehoerigkeit"] or haupt_nat}
+            p | {"staatsangehoerigkeit": p["staatsangehoerigkeit"] or haupt_nat,
+                 "nachname": p["nachname"] or haupt_name}
             for p in _vorschlag_personen(a, h)
-        ]
+        ]  # fmt: skip
     leer = {
+        "leer": True,  # neue Karte: ausgeblendet, bis „Weitere Person hinzufügen“
         "pk": None,
         "vorname": "",
-        "nachname": "",
+        "nachname": haupt_name,
         "geburtsdatum": "",
         "staatsangehoerigkeit": haupt_nat,
         "gdb": "",

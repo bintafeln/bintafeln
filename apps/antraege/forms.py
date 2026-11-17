@@ -519,6 +519,13 @@ class AntragPersonForm(MerkzeichenMixin, forms.ModelForm):
         )
         self._merkzeichen_einrichten()
 
+    def has_changed(self):
+        """Neue Zeilen sind mit Nachname und Staatsangehörigkeit vorbelegt: ohne Vorname gilt
+        eine neue Zeile als leer und wird nicht gespeichert (wie im Aufnahme-Assistenten)."""
+        if not self.instance.pk and not str(self.data.get(self.add_prefix("vorname"), "")).strip():
+            return False
+        return super().has_changed()
+
 
 AntragPersonenFormset = forms.inlineformset_factory(
     Antrag, AntragPerson, form=AntragPersonForm, extra=2, can_delete=True
