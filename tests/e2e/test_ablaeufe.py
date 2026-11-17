@@ -1695,6 +1695,47 @@ def test_antrag_ein_status_speichert_sofort(angemeldet, admin):
     expect(seite.locator(".status.wl-wartezeit")).to_contain_text(f"bis {bis}")
 
 
+def test_eulenpost_fliegt_ein_und_landet(angemeldet, admin):
+    """Post der Verwaltung (ADR 0142): Die Eule fliegt bei neuer Post ein und landet in der
+    Kopfzeile; wichtige Post öffnet einen Hinweis; neue Post kommt ohne Neuladen an."""
+    from apps.kunden import eulenpost
+    from apps.kunden.models import PostEmpfang
+
+    mitte = Ausgabestelle.objects.create(name="Mitte")
+    admin.gewaehlte_stelle = mitte
+    admin.save()
+    eulenpost.schreiben([mitte], admin, "Kühlware", "Morgen keine Kühlware.", wichtig=True)
+    seite = angemeldet(admin)
+    seite.goto(reverse("ausgabe:empfang"))
+    expect(seite.locator(".eule-flieger")).to_be_attached()
+    expect(seite.locator(".eulen-landeplatz.eule-gelandet")).to_be_visible(timeout=6000)
+    dialog = seite.locator("dialog.eulen-dialog")
+    expect(dialog).to_be_visible()
+    expect(dialog).to_contain_text("Morgen keine Kühlware.")
+    dialog.get_by_role("button", name="Später").click()
+    expect(dialog).to_have_count(0)
+    # beim nächsten Seitenaufruf fliegt sie nicht noch einmal, der Hinweis kommt wieder
+    seite.reload()
+    expect(seite.locator("dialog.eulen-dialog")).to_be_visible()
+    expect(seite.locator(".eule-flieger")).to_have_count(0)
+    seite.locator("dialog.eulen-dialog").get_by_role("button", name="✓ Gelesen").click()
+    expect(seite.locator(".eulen-landeplatz")).to_have_count(0)
+    assert PostEmpfang.objects.get().gelesen_am
+    # neue Post kommt ohne Neuladen (Kopfzeile fragt nach; hier sofort ausgelöst)
+    eulenpost.schreiben([mitte], admin, "Schlüssel", "Bitte abgeben.")
+    kopf = reverse("kunden:post_kopf")
+    seite.evaluate(f"htmx.ajax('GET', '{kopf}', {{target: '#eulenpost', swap: 'outerHTML'}})")
+    expect(seite.locator(".eulen-landeplatz.eule-gelandet")).to_be_visible(timeout=6000)
+    expect(seite.locator(".eulen-zahl")).to_have_text("1")
+    # Ton je Gerät abschalten
+    seite.locator(".eulen-landeplatz").click()
+    knopf = seite.locator("[data-eulenton]")
+    expect(knopf).to_contain_text("an")
+    knopf.click()
+    expect(knopf).to_contain_text("aus")
+    assert seite.evaluate("localStorage.getItem('bintafeln-eulenton')") == "aus"
+
+
 def _tablet(seite, live_server, settings):
     """Kiosk-Tablet einer Ausgabestelle (Druckansicht an), Mailserver und Teilen-Menü nachgebaut:
     ``window.geteilt`` sammelt, was geteilt wurde (Name und Art der Datei)."""

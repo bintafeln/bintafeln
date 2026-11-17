@@ -25,6 +25,7 @@
   <script src="{% static 'js/tabelle_oben.js' %}" defer></script>
   <script src="{% static 'js/spaltenbreite.js' %}" defer></script>
   <script src="{% static 'js/sortieren.js' %}" defer></script>
+  <script src="{% static 'js/eulenpost.js' %}" defer></script>
   {% if menue %}<script src="{% static 'js/menue_einfahren.js' %}"></script>{% endif %}
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'{% if menue %} class="mit-menue"{% endif %}{% if user.is_authenticated %} data-ansicht-stand="{{ user.ansicht_stand }}" data-pdf-vorschau="{% url 'core:druck_vorschau' %}"{% if pdf_im_fenster %} data-pdf-fenster="1"{% endif %}{% endif %}>
@@ -50,6 +51,7 @@
     <span class="kopf-programm kuerz-3" title="{{ programm.name }} – {{ programm.untertitel }}"><strong>{{ programm.name }}</strong><span class="kopf-untertitel kuerz-1">{{ programm.untertitel }}</span></span>
     {% if demo %}<a class="kopf-github" href="{{ programm.quelltext }}" target="_blank" rel="noopener" title="Quelltext und Anleitung von {{ programm.name }} auf GitHub">GitHub<span class="kuerz-2"> – Quelltext &amp; Anleitung</span> ↗</a>{% endif %}
     <div class="kopf-rechts">
+      {% if eulenpost is not None %}{% include "kunden/_eulenpost.html" %}{% endif %}
       {% if ausgabestelle is not None or ausgabestellen_wahl %}{% include "ausgabe/_fortschritt.html" %}{% endif %}
       {% for vorlage in kopf_module %}{% include vorlage %}{% endfor %}
       {% if user.is_authenticated and menue %}<a class="hilfe-knopf" href="{% url 'core:hilfe' %}{% if hilfe_kennung %}#{{ hilfe_kennung }}{% endif %}" title="Hilfe zu dieser Seite" aria-label="Hilfe zu dieser Seite">?</a>{% endif %}

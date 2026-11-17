@@ -2159,6 +2159,37 @@ button.sortieren { background: none; border: 0; padding: 0; font: inherit; font-
 .schritte-kompakt li.erledigt .schritt-titel { display: none; }
 .schritte-kompakt li.erledigt { padding: .3rem .55rem; }
 
+/* Post der Verwaltung an die Ausgabestellen (ADR 0142): die Eule in der Kopfzeile. */
+.eule { width: 2rem; height: 2rem; flex: none; vertical-align: middle; }
+.eule-siegel { fill: var(--akzent); }
+h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
+.eulenpost { display: inline-flex; align-items: center; }
+.eulen-landeplatz { position: relative; display: inline-flex; align-items: center; text-decoration: none;
+  background: var(--flaeche); border-radius: 50%; padding: .1rem; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); }
+.eulen-landeplatz .eule { width: 2.4rem; height: 2.4rem; animation: eule-wippen 2.4s ease-in-out infinite; }
+.eulen-zahl { position: absolute; top: -.3rem; right: -.45rem; min-width: 1.15rem; height: 1.15rem; padding: 0 .25rem;
+  border-radius: 999px; background: var(--fehler); color: #fff; font-size: .75rem; font-weight: 700; line-height: 1.15rem;
+  text-align: center; box-shadow: 0 0 0 2px var(--flaeche); }
+.eulen-landeplatz.eule-wartet { visibility: hidden; }
+.eulen-landeplatz.eule-gelandet .eule { animation: eule-landen .6s ease-out, eule-wippen 2.4s ease-in-out .6s infinite; }
+.eule-flieger { position: fixed; left: 0; top: 0; z-index: 1000; pointer-events: none;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .3)); }
+.eule-flieger .eule-fluegel-l { transform-origin: 17px 32px; animation: eule-schlag-l .25s ease-in-out infinite alternate; }
+.eule-flieger .eule-fluegel-r { transform-origin: 47px 32px; animation: eule-schlag-r .25s ease-in-out infinite alternate; }
+@keyframes eule-schlag-l { to { transform: rotate(-35deg); } }
+@keyframes eule-schlag-r { to { transform: rotate(35deg); } }
+@keyframes eule-wippen { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-6deg); } }
+@keyframes eule-landen { 0% { transform: scale(1.4); } 60% { transform: scale(.9); } 100% { transform: scale(1); } }
+.eulen-dialog { max-width: min(36rem, 92vw); border: 3px solid var(--fehler); border-radius: .6rem; }
+.eulen-dialog::backdrop { background: rgba(0, 0, 0, .55); }
+.eulen-dialog h2 { display: flex; align-items: center; gap: .4rem; margin-top: 0; color: var(--fehler); }
+.eulen-dialog .eule { animation: none; }
+.nachricht.ungelesen { border-left: 4px solid var(--fehler); }
+.post-lesestand { margin: .25rem 0 0; padding-left: 1.1rem; font-size: .9rem; }
+@media (prefers-reduced-motion: reduce) {
+  .eulen-landeplatz .eule, .eulen-landeplatz.eule-gelandet .eule { animation: none; }
+}
+
 /* Druckansicht eines PDFs (ADR 0141): am Bildschirm Seiten untereinander, beim Drucken nur die
    Seiten, jede auf einem eigenen Blatt. */
 .druck-leiste { display: grid; gap: .5rem; margin-bottom: 1rem; }

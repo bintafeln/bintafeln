@@ -1,0 +1,84 @@
+"""Post der Verwaltung an die Ausgabestellen mit der Eule in der Kopfzeile (ADR 0142).
+Alle Daten sind erfunden."""
+
+import datetime as dt
+
+import pytest
+from django.test import Client
+from django.urls import reverse
+from django.utils import timezone
+
+from apps.konten import rollen
+from apps.kunden import eulenpost
+from apps.kunden.models import Ausgabestelle, PostEmpfang, Rundschreiben, alte_nachrichten_loeschen
+
+pytestmark = pytest.mark.django_db
+SCHREIBEN = reverse("kunden:post_schreiben")
+POSTFACH = reverse("kunden:postfach")
+
+
+@pytest.fixture
+def stellen(admin, benutzer_mit_rolle, anmelden):
+    mitte = Ausgabestelle.objects.create(name="Mitte")
+    nord = Ausgabestelle.objects.create(name="Nord")
+    Ausgabestelle.objects.create(name="Alt", aktiv=False)
+    anton = benutzer_mit_rolle("anton", rollen.AUSGABE)
+    anton.ausgabestellen.set([mitte])
+    return anmelden(Client(), anton), mitte, nord
+
+
+def test_schreiben_eule_lesen(stellen, admin_client):
+    c, mitte, nord = stellen
+    seite = admin_client.get(SCHREIBEN).content.decode()
+    assert "Eule losschicken" in seite and "Alt" not in seite  # nur aktive Ausgabestellen
+    # nichts angehakt = alle aktiven
+    antwort = admin_client.post(SCHREIBEN, {"betreff": "Kühlware", "text": "Morgen keine Kühlware.",
+                                            "wichtig": "on"})  # fmt: skip
+    assert antwort.url == SCHREIBEN
+    r = Rundschreiben.objects.get()
+    assert r.wichtig and r.von == "chefin"
+    assert sorted(e.stelle.name for e in r.empfaenge.all()) == ["Mitte", "Nord"]
+    admin_client.post(SCHREIBEN, {"stellen": [nord.pk], "betreff": "Nur Nord", "text": "Hallo"})
+    assert PostEmpfang.objects.filter(stelle=mitte).count() == 1
+    # Ausgabestelle: Eule in der Kopfzeile (auch am Einlass), wichtige Post als Hinweis
+    start = c.get("/").content.decode()
+    assert 'id="eulenpost"' in start and 'class="eulen-landeplatz"' in start
+    assert "eulen-wichtig" in start and "Morgen keine Kühlware." in start
+    kopf = c.get(reverse("kunden:post_kopf")).content.decode()
+    assert 'data-schluessel="' in kopf and "1 neue Post" in kopf
+    assert "Nur Nord" not in c.get(POSTFACH).content.decode()
+    empfang = PostEmpfang.objects.get(stelle=mitte)
+    gelesen = reverse("kunden:post_gelesen", args=[empfang.pk])
+    assert c.post(gelesen, {"zurueck": "https://boese.example/"}).url == POSTFACH
+    empfang.refresh_from_db()
+    assert empfang.gelesen_am and empfang.gelesen_von == "anton"
+    assert "eulen-landeplatz" not in c.get("/").content.decode()
+    # HTMX: frische Kopfzeile ohne Eule
+    htmx = c.post(gelesen, headers={"HX-Request": "true"}).content.decode()
+    assert 'id="eulenpost"' in htmx and "eulen-landeplatz" not in htmx
+    # fremde Post kann man nicht als gelesen markieren
+    fremd = PostEmpfang.objects.get(stelle=nord, rundschreiben__betreff="Nur Nord")
+    assert c.post(reverse("kunden:post_gelesen", args=[fremd.pk])).status_code == 404
+    # Verwaltung sieht den Lesestand
+    gesendet = admin_client.get(SCHREIBEN).content.decode()
+    assert "Mitte: ✓ gelesen" in gesendet and "noch nicht gelesen" in gesendet
+    # die Ausgabestelle darf nicht schreiben
+    assert c.get(SCHREIBEN).status_code == 403
+
+
+def test_ohne_aktive_stellen_und_frist(admin, admin_client):
+    Ausgabestelle.objects.create(name="Alt", aktiv=False)
+    antwort = admin_client.post(SCHREIBEN, {"betreff": "x", "text": "y"})
+    assert "keine aktive Ausgabestelle" in antwort.content.decode()
+    mitte = Ausgabestelle.objects.create(name="Mitte")
+    alt = eulenpost.schreiben([mitte], admin, "Alt", "Text")
+    Rundschreiben.objects.filter(pk=alt.pk).update(
+        erstellt_am=timezone.now() - dt.timedelta(days=91))  # fmt: skip
+    alte_nachrichten_loeschen()
+    assert Rundschreiben.objects.filter(pk=alt.pk).exists()  # noch nicht gelesen: bleibt
+    eulenpost.gelesen(alt.empfaenge.get(), admin)
+    alte_nachrichten_loeschen()
+    assert not Rundschreiben.objects.filter(pk=alt.pk).exists()
+    assert eulenpost.stand(None) == {"zahl": 0, "wichtig": None, "schluessel": ""}
+    assert not eulenpost.postfach(None).exists()
+    assert "Post der Verwaltung an Mitte" in admin_client.get(POSTFACH).content.decode()
