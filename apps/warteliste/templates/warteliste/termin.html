@@ -7,6 +7,7 @@
   <p>{{ ort|linebreaksbr }}{% if t.anmerkung %}<br>{{ t.anmerkung }}{% endif %}</p>
   <div class="aktionsleiste">
     <a class="knopf knopf-zweitrangig" href="{% url 'warteliste:druckliste' t.pk %}">Druckliste (PDF)</a>
+    <a class="knopf knopf-zweitrangig" href="{% url 'warteliste:termin_kalender' t.pk %}" title="Tag, Uhrzeit, Ort und Zahl der Eingeladenen als Kalendereintrag – ohne Namen">📅 In meinen Kalender</a>
     {% if "warteliste.bearbeiten" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'warteliste:termin_bearbeiten' t.pk %}">Termin ändern</a>{% endif %}
   </div>
   <form method="post" id="auswahl">
