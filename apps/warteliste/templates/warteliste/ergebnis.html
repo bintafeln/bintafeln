@@ -4,6 +4,7 @@
 <section class="karte breit">
   <p><a href="{% url 'warteliste:liste' %}">← Warteliste</a>{% if termin %} · <a href="{% url 'warteliste:termin' termin.pk %}">Termin {{ termin }}</a>{% endif %}</p>
   <h1>{{ titel }}</h1>
+  {% if termin %}<div class="aktionsleiste"><a class="knopf" href="{% url 'warteliste:termin_kalender' termin.pk %}" title="Tag, Uhrzeit, Ort und Zahl der Eingeladenen als Kalendereintrag – ohne Namen">📅 Termin in meinen Kalender eintragen</a></div>{% endif %}
   <div class="tabelle-rahmen">
   <table class="tabelle">
     <thead><tr><th>#</th><th>Name</th><th>Telefon</th><th>Ergebnis</th></tr></thead>

@@ -10,7 +10,7 @@
       <td data-titel="Erschienen">{{ t.erschienen }}</td>
       <td data-titel="Aufgenommen">{{ t.aufgenommen }}</td>
       <td data-titel="Anmerkung">{{ t.anmerkung|default:"" }}</td>
-      <td><a href="{% url 'warteliste:druckliste' t.pk %}">Druckliste (PDF)</a></td>
+      <td><a href="{% url 'warteliste:druckliste' t.pk %}">Druckliste (PDF)</a> · <a href="{% url 'warteliste:termin_kalender' t.pk %}" title="Als Kalendereintrag, ohne Namen">📅 Kalender</a></td>
     </tr>
   {% empty %}
     <tr><td colspan="7">Keine.</td></tr>

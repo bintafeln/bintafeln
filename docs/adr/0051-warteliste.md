@@ -41,3 +41,14 @@ mussten zurückgeschrieben werden, und es gab keine Anmeldung.
 
 Die Anträge liegen schon in bintafeln; die Warteliste darauf aufzubauen spart Import, doppelte Daten
 und Abgleich der Kommentare. Status und Ablauf bleiben, wie das Team sie kennt.
+
+## Nachtrag (2026-11-17): Termin in den eigenen Kalender
+
+Wer Einladungen verschickt, kann den Termin mit einem Klick in den eigenen Kalender übernehmen:
+`warteliste:termin_kalender` liefert ihn als iCalendar-Datei (`apps/warteliste/kalender.py`) mit
+Tag, Uhrzeit (in UTC, damit jedes Kalenderprogramm die Ortszeit richtig zeigt), Ort, Anmerkung und
+der Zahl der Eingeladenen (ohne Entschuldigte und Gestrichene). **Keine Namen** und keine anderen
+Angaben zu Antragstellern: Die Datei landet in privaten Kalendern außerhalb von bintafeln. Die
+Kennung (`UID`) bleibt je Termin gleich, sodass ein erneut geladener Eintrag den alten ersetzt.
+Keine neue Abhängigkeit; ein Abonnement (Kalender-Feed) gibt es bewusst nicht, weil es einen
+Zugang ohne Anmeldung bräuchte.
