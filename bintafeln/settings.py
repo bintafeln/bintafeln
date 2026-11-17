@@ -158,6 +158,8 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    # Kein Leerzeichen: Am iPad setzt die Tastatur sonst nach einem Punkt oft eines unbemerkt ein
+    {"NAME": "apps.konten.validierung.KeineLeerzeichenValidator"},
 ]
 
 LOGIN_URL = "konten:anmelden"

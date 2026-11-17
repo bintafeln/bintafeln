@@ -77,9 +77,9 @@ def test_passwort_ohne_regeln(admin_client, mitte):
     konto_anlegen(admin_client, mitte, "123")
     konto = get_user_model().objects.get(stelle=mitte)
     assert konto.check_password("123")
-    konto_anlegen(admin_client, mitte, mitte.name)
+    konto_anlegen(admin_client, mitte, "Carnaper.Tisch")  # wie der Name der Ausgabestelle
     konto.refresh_from_db()
-    assert konto.check_password(mitte.name)
+    assert konto.check_password("Carnaper.Tisch")
 
 
 def test_sperren_und_entsperren(admin_client, mitte):
@@ -226,3 +226,41 @@ def test_rollen_unter_mein_konto_nicht_auf_der_startseite(admin_client):
     assert "Ihre Rollen" not in start and "keine Rolle zugeordnet" not in start
     konto = admin_client.get(reverse("konten:mein_konto")).content.decode()
     assert "Ihre Rollen" in konto and '<span class="marke-rolle">Admin</span>' in konto
+
+
+def test_anmeldung_trotz_leerzeichen_nach_punkt(admin_client):
+    """Am iPad macht die Autokorrektur aus „St.Probe“ oft „St. Probe“ – die Anmeldung klappt
+    trotzdem; Personen-Benutzernamen mit Punkt ebenso."""
+    stelle = Ausgabestelle.objects.create(name="St.Probe")
+    konto_anlegen(admin_client, stelle, "eins.zwei.drei")
+    for name in ("St.Probe", "St. Probe", "st . probe"):
+        antwort = Client().post(reverse("konten:anmelden"),
+                                {"username": name, "password": "eins.zwei.drei"})  # fmt: skip
+        assert antwort.status_code == 302, name
+    get_user_model().objects.create_user(username="erika.muster", password="Ein.langes.Wort9")
+    daten = {"username": "erika. muster", "password": "Ein.langes.Wort9"}
+    antwort = Client().post(reverse("konten:anmelden"), daten)
+    assert antwort.status_code == 302
+    seite = Client().get(reverse("konten:anmelden")).content.decode()
+    assert 'autocapitalize="none"' in seite and 'autocorrect="off"' in seite
+
+
+def test_hinweis_bei_leerzeichen_im_passwort(admin_client, mitte):
+    """Leerzeichen im Passwort sieht man nicht: beim Festlegen abgelehnt, bei der Anmeldung
+    erklärt."""
+    seite = konto_anlegen(admin_client, mitte, "eins. zwei").content.decode()
+    assert "enthält ein Leerzeichen" in seite
+    assert not get_user_model().objects.filter(stelle=mitte).exists()
+    konto_anlegen(admin_client, mitte, "eins.zwei")
+    daten = {"username": mitte.name, "password": "eins. zwei"}
+    seite = Client().post(reverse("konten:anmelden"), daten).content.decode()
+    assert "Leerzeichen" in seite and "falsch" in seite
+
+
+def test_personen_passwort_ohne_leerzeichen():
+    from django.contrib.auth import password_validation
+    from django.core.exceptions import ValidationError
+
+    with pytest.raises(ValidationError, match="Leerzeichen"):
+        password_validation.validate_password("Sehr.langes Passwort42")
+    password_validation.validate_password("Sehr.langes.Passwort42")
