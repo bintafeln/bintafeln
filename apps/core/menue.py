@@ -108,6 +108,7 @@ def menue(request) -> list[dict]:
     dazu("Ausgabestelle/Verwaltung", [
         ("sonderaktionen.verwalten", _eintrag("Sonderaktionen", "ausgabe:sonderaktionen")),
         ("korrekturen.entscheiden", _eintrag("Korrekturwünsche", "ausgabe:korrekturen")),
+        ("kunden.nachrichten", _eintrag("Post an Ausgabestellen", "kunden:post_schreiben")),
     ])  # fmt: skip
     if darf_stempeln(b):  # nur, wer selbst stempelt
         dazu("Meine Arbeitszeit", [
@@ -134,7 +135,6 @@ def menue(request) -> list[dict]:
         ("kunden.liste", _eintrag("Zuletzt aufgenommen", "kunden:zuletzt_aufgenommen")),
         ("kunden.bearbeiten", verlaengern),
         ("kunden.nachrichten", nachrichten),
-        ("kunden.nachrichten", _eintrag("Post an Ausgabestellen", "kunden:post_schreiben")),
     ], vorn=True)  # fmt: skip
     antraege_zahl = None  # Abzeichen des Bereichs „Anträge und Warteliste“: nur die offenen Anträge
     if "antraege.sehen" in darf:

@@ -61,5 +61,14 @@ def gesendet(anzahl: int = 30):
     return Rundschreiben.objects.prefetch_related("empfaenge__stelle")[:anzahl]
 
 
+def loeschen(rundschreiben: Rundschreiben, benutzer):
+    """Die Post ganz löschen – bei allen Ausgabestellen, gelesen oder nicht – in den Papierkorb
+    (wiederherstellbar mit dem Recht „kunden.nachrichten“)."""
+    from apps.core import papierkorb
+
+    return papierkorb.loeschen(benutzer, "Post an Ausgabestellen", rundschreiben.betreff,
+                               rundschreiben, recht="kunden.nachrichten")  # fmt: skip
+
+
 def waehlbare_stellen():
     return Ausgabestelle.objects.filter(aktiv=True).order_by("name")

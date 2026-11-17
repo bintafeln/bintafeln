@@ -11,7 +11,7 @@ from django.views.decorators.http import require_POST
 from apps.core.forms import Mehrfachauswahl
 from apps.konten import rollen
 from apps.kunden import eulenpost
-from apps.kunden.models import Ausgabestelle, PostEmpfang
+from apps.kunden.models import Ausgabestelle, PostEmpfang, Rundschreiben
 
 
 def _stelle(request):
@@ -55,6 +55,16 @@ def schreiben(request):
             return redirect("kunden:post_schreiben")
     return render(request, "kunden/post_schreiben.html",
                   {"form": form, "gesendet": eulenpost.gesendet()})  # fmt: skip
+
+
+@require_POST
+@rollen.recht_erforderlich("kunden.nachrichten")
+def loeschen(request, pk):
+    rundschreiben = get_object_or_404(Rundschreiben, pk=pk)
+    eulenpost.loeschen(rundschreiben, request.user)
+    messages.success(request, f"„{rundschreiben.betreff}“ gelöscht – bei allen Ausgabestellen. "
+                     "Im Papierkorb lässt sie sich wiederherstellen.")  # fmt: skip
+    return redirect("kunden:post_schreiben")
 
 
 @never_cache

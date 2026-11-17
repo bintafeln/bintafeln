@@ -22,6 +22,10 @@
       <ul class="post-lesestand">{% for e in r.empfaenge.all %}
         <li>{{ e.stelle.name }}: {% if e.gelesen_am %}✓ gelesen {{ e.gelesen_am|date:"d.m. H:i" }}{% if e.gelesen_von %} von {{ e.gelesen_von }}{% endif %}{% else %}<strong>noch nicht gelesen</strong>{% endif %}</li>
       {% endfor %}</ul>
+      <form method="post" action="{% url 'kunden:post_loeschen' r.pk %}"
+            onsubmit="return confirm('Diese Post bei allen Ausgabestellen löschen?')">{% csrf_token %}
+        <button type="submit" class="knopf knopf-zweitrangig knopf-klein">Löschen</button>
+      </form>
     </li>
   {% empty %}
     <li class="hinweis">Noch keine Post geschrieben.</li>
