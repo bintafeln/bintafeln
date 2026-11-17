@@ -73,6 +73,16 @@
   wann gelesen wurde und von wem. <strong>„Löschen“</strong> entfernt eine Post ganz – bei allen Ausgabestellen,
   gelesen oder nicht (im Papierkorb wiederherstellbar). Gelesene Post wird sonst 90 Tage nach dem Schreiben gelöscht.</p>
 {% hilfe_bild "kunden-bearbeiten-nachrichten" "① Nach Anliegen filtern (mit Zahl der offenen), ② „✓ erledigt“ hakt eine Nachricht ab, ③ unter „Antworten“ den Text eintragen und „Antwort senden“." %}{% endif %}
+{% if "kunden.notizen_loeschen" in rechte %}<h3>Alle Notizen in einer Liste</h3>
+<p>Unter „Kunden → Notizen“ stehen alle Notizen zu Kunden in einer Liste, neueste zuerst – sonst sieht man sie nur beim
+  jeweiligen Haushalt. Filtern Sie nach <strong>Art</strong> (an die Ausgabestelle gerichtet, davon noch nicht gelesen,
+  Krankmeldungen und Abwesenheiten, einfache Notizen), nach <strong>Ausgabestelle</strong> und nach dem Zeitraum, oder
+  suchen Sie nach Text, Kundennummer, Name oder Verfasser. Die Kundennummer führt zum Haushalt.</p>
+<p><strong>Löschen:</strong> Notizen links anhaken und „Angehakte löschen“ – sie liegen danach im Papierkorb und lassen sich
+  dort wiederherstellen. <strong>„Herunterladen …“</strong> gibt die angehakten (ohne Haken: alle gefilterten) Notizen als
+  CSV-Datei oder PDF aus oder schickt sie per E-Mail. Die Seite sieht, wer das Recht „Alle Notizen löschen“ hat; Konten
+  einer Ausgabestelle sehen nur die Notizen ihrer Kunden.</p>
+{% hilfe_bild "notizen-liste" "① Nach Art, Ausgabestelle und Zeitraum filtern oder suchen, ② Notizen anhaken, ③ „Angehakte löschen“ legt sie in den Papierkorb, ④ „Herunterladen …“ für CSV, PDF oder E-Mail." %}{% endif %}
 {% if "kunden.bearbeiten" in rechte %}<h3>Ausweise zusammen verlängern</h3>
 <p>Melden Ausgabestellen „Bescheid geprüft – Ausweis verlängern“ (im Nachrichten-Fenster oder mit einem Notiz-Knopf,
   bei dem unter „Einstellungen → Notiz-Vorlagen“ „Meldet der Verwaltung“ gewählt ist), stehen diese Haushalte unter „Kunden → Ausweise
