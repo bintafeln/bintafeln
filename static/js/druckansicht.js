@@ -11,7 +11,22 @@
     document.head.appendChild(stil);
   }
   var drucken = ansicht.querySelector("[data-drucken]");
-  if (drucken) drucken.addEventListener("click", function () { window.print(); });
+  // Mit Teilen-Menü (iPad/iPhone, auch in der App ohne Browserleiste): das PDF teilen, dort
+  // „Drucken“; sonst der Druckdialog des Browsers.
+  if (drucken) drucken.addEventListener("click", function () {
+    var link = ansicht.querySelector("a[download]");
+    if (link && navigator.canShare && navigator.share) {
+      fetch(link.href).then(function (a) { return a.blob(); }).then(function (blob) {
+        var datei = new File([blob], link.getAttribute("download"), { type: "application/pdf" });
+        if (navigator.canShare({ files: [datei] })) {
+          return navigator.share({ files: [datei], title: datei.name });
+        }
+        window.print();
+      }).catch(function () { /* abgebrochen */ });
+      return;
+    }
+    window.print();
+  });
   var zurueck = ansicht.querySelector("[data-zurueck]");
   if (zurueck) zurueck.addEventListener("click", function () {
     if (window.history.length > 1) { window.history.back(); return; }

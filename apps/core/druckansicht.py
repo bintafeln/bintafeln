@@ -25,6 +25,9 @@ COOKIE_JAHRE = 5
 HOECHSTENS_SEITEN = 30  # größere PDFs (z. B. Serienbriefe) öffnen wie bisher direkt
 SKALA = 2.0  # ≈ 144 dpi: scharf genug zum Drucken, klein genug für die Seite
 ROH = "_pdf"  # ?_pdf=roh: das PDF selbst, ohne Druckansicht
+# Kopfzeile, mit der static/js/pdf_fenster.js ein PDF im Hintergrund abholt; die Antwort trägt dann
+# Signatur und Dateinamen, damit Vorschau und Mail nur von bintafeln erzeugte PDFs annehmen.
+ABHOLEN = "X-Bintafeln-Pdf"
 SALZ = "bintafeln.druckansicht"
 
 
@@ -157,4 +160,16 @@ class DruckansichtMiddleware:
             and aktiv(request)
         ):
             return anzeigen(request, antwort)
+        if (
+            request.headers.get(ABHOLEN)
+            and antwort.status_code == 200
+            and antwort.get("Content-Type", "").startswith("application/pdf")
+            and getattr(request, "user", None) is not None
+            and request.user.is_authenticated
+        ):
+            inhalt = b"".join(antwort.streaming_content) if antwort.streaming else antwort.content
+            if antwort.streaming:
+                antwort.streaming_content = [inhalt]
+            antwort["X-Pdf-Signatur"] = signieren(inhalt)
+            antwort["X-Pdf-Name"] = _dateiname(antwort).encode("ascii", "ignore").decode()
         return antwort

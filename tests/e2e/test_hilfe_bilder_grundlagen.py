@@ -430,12 +430,19 @@ def test_hilfe_bild_druckansicht(angemeldet, admin, muster, live_server):
     seite = angemeldet(admin)
     seite.context.add_cookies([{"name": druckansicht.COOKIE, "value": "1", "url": live_server.url}])
     seite.set_viewport_size({"width": BREITE, "height": HOEHE})
-    seite.goto(reverse("ausgabe:kasse") + "?ansicht=tag&format=pdf")
-    mail_knopf = seite.locator("summary", has_text="Per E-Mail senden")
+    seite.goto(reverse("ausgabe:kasse"))
+    seite.get_by_role("link", name=re.compile("drucken \\(PDF\\)")).click()
+    fenster = seite.locator("dialog.pdf-fenster")
+    expect(fenster.locator("img.druck-seite").first).to_be_visible()
+    mail_knopf = fenster.locator("summary", has_text="Per E-Mail")
     mail_knopf.click()
-    aufnehmen(seite, "druckansicht", seite.locator("section.druckansicht"),
-              Marke(seite.get_by_role("button", name="🖨 Drucken"), "rahmen", 1),
+    # Fürs Bild nicht modal (sonst liegen die Marken unter dem Fenster), als Seite ganz oben
+    seite.evaluate("""() => { const d = document.querySelector('dialog.pdf-fenster');
+        d.close(); d.show();
+        Object.assign(d.style, {position: 'fixed', top: '1rem', zIndex: '50'}); }""")
+    aufnehmen(seite, "druckansicht", fenster,
+              Marke(fenster.get_by_role("button", name="🖨 Drucken"), "rahmen", 1),
               Marke(mail_knopf, "rahmen", 2),
-              Marke(seite.get_by_role("button", name="← Zurück"), "rahmen", 3),
-              Marke(seite.locator("img.druck-seite").first, nummer=4, von="links",
+              Marke(fenster.get_by_role("button", name="✕ Schließen"), "rahmen", 3),
+              Marke(fenster.locator("img.druck-seite").first, nummer=4, von="links",
                     laenge=40))  # fmt: skip

@@ -5,6 +5,7 @@ import binascii
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseBadRequest
 from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.clickjacking import xframe_options_sameorigin
@@ -20,15 +21,39 @@ def _zurueck(request, vorgabe="/"):
     return vorgabe
 
 
+def _pdf(request) -> bytes:
+    """Das PDF aus der Anfrage: als Datei (PDF-Fenster in der App) oder Base64 (Druckansicht)."""
+    if datei := request.FILES.get("datei"):
+        return datei.read(MAX_GROESSE + 1)  # zu große erkennt die Prüfung an der Länge
+    try:
+        return base64.b64decode(request.POST.get("pdf", ""), validate=True)
+    except (binascii.Error, ValueError):
+        return b""
+
+
+MAX_GROESSE = 20 * 1024 * 1024
+
+
+@require_POST
+@login_required
+def vorschau(request):
+    """Für das PDF-Fenster in der App: Seiten als Bilder, Knöpfe und Mail-Auswahl (HTML-Teil)."""
+    inhalt = _pdf(request)
+    if (not inhalt or len(inhalt) > MAX_GROESSE
+            or not druckansicht.pruefen(inhalt, request.POST.get("signatur", ""))):  # fmt: skip
+        return HttpResponseBadRequest("Das PDF ist nicht mehr gültig. Bitte noch einmal öffnen.")
+    return render(request, "core/_pdf_fenster.html", {
+        "seiten": druckansicht.seiten(inhalt) or [],
+        "empfaenger": druckansicht.empfaenger(request), "mail_bereit": mail.eingerichtet(),
+    })  # fmt: skip
+
+
 @xframe_options_sameorigin  # das Ergebnis erscheint im kleinen Rahmen der Druckansicht
 @require_POST
 @login_required
 def senden(request):
     """Das PDF der Druckansicht an eine der angebotenen Adressen schicken."""
-    try:
-        inhalt = base64.b64decode(request.POST.get("pdf", ""), validate=True)
-    except (binascii.Error, ValueError):
-        inhalt = b""
+    inhalt = _pdf(request)
     an = request.POST.get("an", "")
     erlaubt = dict(druckansicht.empfaenger(request))
     name = (request.POST.get("dateiname") or "dokument.pdf")[:100]
@@ -59,5 +84,5 @@ def umschalten(request):
     antwort = redirect(_zurueck(request))
     druckansicht.cookie_setzen(request, antwort, an)
     messages.success(request, "PDFs öffnen auf diesem Gerät jetzt " +
-                     ("als Druckansicht." if an else "direkt."))  # fmt: skip
+                     ("im Fenster über der Seite." if an else "direkt."))  # fmt: skip
     return antwort

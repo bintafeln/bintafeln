@@ -82,5 +82,6 @@ urlpatterns = [
     ),
     path("sicherungen/<int:pk>/jetzt/", views_sicherung.jetzt, name="sicherung_jetzt"),
     path("druckansicht/senden/", views_druck.senden, name="druck_senden"),
+    path("druckansicht/vorschau/", views_druck.vorschau, name="druck_vorschau"),
     path("druckansicht/umschalten/", views_druck.umschalten, name="druck_umschalten"),
 ]
