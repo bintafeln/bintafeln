@@ -114,13 +114,13 @@
 
 {% elif schritt == "personen" %}
   <h2>3. Angehörige</h2>
-  <p class="hinweis">Aus dem Haushalt und dem Antrag vorausgefüllt. Mit „Weitere Person hinzufügen“ kommt eine leere Karte dazu; Karten ohne Vorname werden ignoriert.</p>
+  <p class="hinweis">Aus dem Haushalt und dem Antrag vorausgefüllt. Mit „Weitere Person hinzufügen“ kommt eine neue Karte dazu, Nachname und Staatsangehörigkeit der Hauptperson sind schon eingetragen (änderbar); Karten ohne Vorname werden ignoriert.</p>
   <input type="hidden" name="anzahl" value="{{ personen|length }}">
   {# Je Person eine Karte mit beschrifteten Feldern (statt einer engen Tabelle) #}
   <div class="personen-karten" data-zeilen>
     {% for p in personen %}
-    <fieldset class="person-karte"{% if not p.vorname and not p.nachname %} data-leere-zeile{% endif %}>
-      <legend>{% if p.vorname or p.nachname %}{{ p.vorname }} {{ p.nachname }}{% else %}Weitere Person{% endif %}</legend>
+    <fieldset class="person-karte"{% if p.leer or not p.vorname and not p.nachname %} data-leere-zeile{% endif %}>
+      <legend>{% if p.leer or not p.vorname and not p.nachname %}Weitere Person{% else %}{{ p.vorname }} {{ p.nachname }}{% endif %}</legend>
       <input type="hidden" name="p{{ forloop.counter0 }}_pk" value="{{ p.pk|default:'' }}">
       <div class="person-felder">
         <div class="feld"><label for="p{{ forloop.counter0 }}_vorname">Vorname</label>

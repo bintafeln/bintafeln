@@ -153,7 +153,11 @@ def spalten(request):
 def bearbeiten(request, pk):
     a = get_object_or_404(Antrag, pk=pk)
     form = AntragBearbeitenForm(request.POST or None, instance=a)
-    personen = AntragPersonenFormset(request.POST or None, instance=a, prefix="p")
+    # Neue Zeilen: Nachname und Staatsangehörigkeit des Antragstellers vorbelegt (änderbar);
+    # eine Zeile ohne weitere Eingabe gilt weiter als leer
+    vorbelegt = {"nachname": a.nachname, "staatsangehoerigkeit": a.staatsangehoerigkeit}
+    personen = AntragPersonenFormset(request.POST or None, instance=a, prefix="p",
+                                     initial=[vorbelegt] * AntragPersonenFormset.extra)  # fmt: skip
     if request.method == "POST" and form.is_valid() and personen.is_valid():
         with transaction.atomic():
             a = form.save(commit=False)

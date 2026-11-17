@@ -251,6 +251,28 @@ def test_angehoerige_bekommen_staatsangehoerigkeit_der_hauptperson(admin_client,
     assert nach_karte["2"] == "Ukraine"  # leere Karte für eine weitere Person
 
 
+def test_angehoerige_bekommen_nachnamen_der_hauptperson(admin_client, bestand):
+    """Neue Karten und Angehörige ohne Nachnamen tragen den Nachnamen der Hauptperson schon ein
+    (änderbar); eine neue Karte ohne Vorname bleibt ausgeblendet und legt niemanden an."""
+    a = antrag(vorname="Max", nachname="Probe", geburtsdatum=dt.date(1990, 1, 1), plz="99999")
+    AntragPerson.objects.create(antrag=a, vorname="Lina", nachname="")
+    AntragPerson.objects.create(antrag=a, vorname="Ali", nachname="Anders")
+    schritt(admin_client, a, "kunde", {"haushalt": "neu"})
+    seite = schritt(admin_client, a, "personen").content.decode()
+    namen = dict(re.findall(r'name="p(\d+)_nachname"[^>]*value="([^"]*)"', seite))
+    assert namen["0"] == "Probe" and namen["1"] == "Anders" and namen["2"] == "Probe"
+    karten = re.findall(r'<fieldset class="person-karte"([^>]*)>\s*<legend>([^<]*)</legend>', seite)
+    assert "data-leere-zeile" not in karten[0][0] and "Lina Probe" in karten[0][1]
+    assert "data-leere-zeile" in karten[2][0] and karten[2][1] == "Weitere Person"
+    # nur der vorbelegte Nachname: wird nicht als Person übernommen
+    daten = {"anzahl": "3", "p0_vorname": "Lina", "p0_nachname": "Probe", "p1_vorname": "Ali",
+             "p1_nachname": "Anders", "p2_vorname": "", "p2_nachname": "Probe"}  # fmt: skip
+    schritt(admin_client, a, "personen", daten)
+    seite = schritt(admin_client, a, "personen").content.decode()
+    assert seite.count('name="p2_vorname" id="p2_vorname" value=""') == 1
+    assert 'value="Lina"' in seite and 'value="Ali"' in seite
+
+
 def test_aufnahme_neuer_kunde(admin_client, bestand):
     a = antrag(vorname="Max", nachname="Probe", geburtsdatum=dt.date(1990, 1, 1), plz="99999")
     AntragPerson.objects.create(antrag=a, vorname="Lina", nachname="Probe",

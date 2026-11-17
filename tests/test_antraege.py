@@ -530,6 +530,31 @@ def test_liste_verweist_auf_gemeinsamen_papierkorb(admin_client, antrag):
     assert admin_client.get(reverse("antraege:liste"), {"ansicht": "papierkorb"}).status_code == 200
 
 
+def test_bearbeiten_neue_personen_vorbelegt(admin_client, antrag):
+    """Antrag bearbeiten: neue Zeilen tragen Nachname und Staatsangehörigkeit des Antragstellers
+    schon ein; eine Zeile nur mit diesen Vorgaben legt keine Person an."""
+    antrag.nachname, antrag.staatsangehoerigkeit = "Probe", "Ukraine"
+    antrag.save()
+    url = reverse("antraege:bearbeiten", args=[antrag.pk])
+    antwort = admin_client.get(url)
+    formset = antwort.context["personen"]
+    neu = formset.forms[-1]
+    assert neu.initial == {"nachname": "Probe", "staatsangehoerigkeit": "Ukraine"}
+    assert not neu.instance.pk
+    # abgeschickt nur mit den Vorgaben: unverändert, wird nicht gespeichert
+    neu_gebunden = formset.form(
+        {f"{neu.prefix}-nachname": "Probe", f"{neu.prefix}-staatsangehoerigkeit": "Ukraine"},
+        prefix=neu.prefix, initial=neu.initial)  # fmt: skip
+    assert not neu_gebunden.has_changed()
+    # auch mit gelöschtem Nachnamen, solange kein Vorname eingetragen ist
+    ohne_namen = formset.form({f"{neu.prefix}-nachname": ""}, prefix=neu.prefix,
+                              initial=neu.initial)  # fmt: skip
+    assert not ohne_namen.has_changed()
+    mit_vorname = formset.form({f"{neu.prefix}-vorname": "Lina"}, prefix=neu.prefix,
+                               initial=neu.initial)  # fmt: skip
+    assert mit_vorname.has_changed()
+
+
 def test_bearbeiten_und_loeschen(admin_client, antrag):
     admin_client.post(reverse("antraege:status", args=[antrag.pk]), {"status": "erledigt"})
     antrag.refresh_from_db()
