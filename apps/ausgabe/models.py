@@ -330,6 +330,11 @@ class Sonderaktion(models.Model):
         help_text="Kinder bis zum Alter aus „Einstellungen → Kundenstamm → Kind bis“.",
     )
 
+    ausgabestellen = models.ManyToManyField(
+        Ausgabestelle, blank=True, related_name="+", verbose_name="Ausgabestellen",
+        help_text="Nur an diesen Ausgabestellen. Nichts angehakt = an allen Ausgabestellen.",
+    )  # fmt: skip
+
     class Meta:
         verbose_name = "Sonderaktion"
         verbose_name_plural = "Sonderaktionen"
@@ -346,6 +351,12 @@ class Sonderaktion(models.Model):
 
     def laeuft(self, tag) -> bool:
         return self.von <= tag <= self.bis
+
+    def gilt_an(self, stelle) -> bool:
+        """Läuft die Aktion an dieser Ausgabestelle? Ohne Auswahl an allen; ist die
+        Ausgabestelle nicht bekannt, nur Aktionen für alle."""
+        stellen = {s.pk for s in self.ausgabestellen.all()}
+        return not stellen or (stelle is not None and stelle.pk in stellen)
 
 
 class SonderaktionAuswahl(models.Model):

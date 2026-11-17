@@ -7,18 +7,20 @@
     <a class="knopf" href="{% url 'ausgabe:sonderaktion_neu' %}">Neue Sonderaktion</a>
   </div>
   <p class="hinweis">Aktionen neben der normalen Ausgabe, z. B. Gutscheine vor Weihnachten. Während eine Aktion läuft,
-    zeigt der Einlass sie bei jedem berechtigten Haushalt an; dort wird die Teilnahme eingetragen.</p>
+    zeigt der Einlass sie bei jedem berechtigten Haushalt an; dort wird die Teilnahme eingetragen. Eine Aktion kann für
+    alle oder nur für einzelne Ausgabestellen gelten.</p>
   {% for titel, aktionen in abschnitte %}
   <h2>{{ titel }}</h2>
   {% if aktionen %}
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Bezeichnung</th><th>Zeitraum</th><th>Wie viel</th><th>Teilnahmen</th><th>Stück</th></tr></thead>
+    <thead><tr><th>Bezeichnung</th><th>Zeitraum</th><th>Ausgabestellen</th><th>Wie viel</th><th>Teilnahmen</th><th>Stück</th></tr></thead>
     <tbody>
     {% for a in aktionen %}
       <tr>
         <td data-titel="Bezeichnung"><a href="{% url 'ausgabe:sonderaktion' a.pk %}">{{ a.bezeichnung }}</a>{% if a.nur_mit_kindern %} <small class="hinweis">(nur mit Kindern)</small>{% endif %}</td>
         <td data-titel="Zeitraum">{{ a.von|date:"d.m.Y" }} – {{ a.bis|date:"d.m.Y" }}</td>
+        <td data-titel="Ausgabestellen">{% for s in a.ausgabestellen.all %}{{ s.name }}{% if not forloop.last %}, {% endif %}{% empty %}alle{% endfor %}</td>
         <td data-titel="Wie viel">{{ a.get_menge_display }}</td>
         <td data-titel="Teilnahmen">{{ a.anzahl }}</td>
         <td data-titel="Stück">{{ a.summe|default:0 }}</td>

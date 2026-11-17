@@ -151,7 +151,9 @@ def _ergebnis(request, h, meldung=None):
         "heute_erfasst": [a for a in abholungen if a.datum == heute and a.erfasst_am],
         "darf_ausnahme": rollen.hat_recht(request.user, "einlass.ausnahme"),
         **notizen_kontext(h.kundennummer, request.user),
-        "sonderaktionen": sonderaktionen.fuer_haushalt(h, heute, erwachsene, kinder),
+        "sonderaktionen": sonderaktionen.fuer_haushalt(
+            h, heute, erwachsene, kinder, stelle=_stelle(request)
+        ),
         "darf_zuruecknehmen": rollen.hat_recht(request.user, "einlass.zuruecknehmen"),
         "korrektur_offen": korrekturen.offene(h.kundennummer),
         "korrekturen_entschieden": korrekturen.entschiedene(h.kundennummer),
