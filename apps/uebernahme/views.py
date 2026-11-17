@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 
+from apps.ausgabe import konto
 from apps.konten import rollen
 from apps.uebernahme import besuche_konto as besuche_konto_
 from apps.uebernahme import konvertieren
@@ -110,6 +111,14 @@ def besuche_konto(request):
     darf_buchen = rollen.hat_recht(request.user, "konto.korrektur")
     kontext = {"darf_buchen": darf_buchen}
     aktion = request.POST.get("aktion")
+    if request.method == "POST" and aktion == "nachrechnen":
+        if not darf_buchen:
+            messages.error(request, "Zum Nachrechnen fehlt das Recht „Kundenkonto korrigieren“.")
+        else:
+            erg = konto.abgleiche_nachrechnen(_benutzername(request.user))
+            messages.success(request, f"Für {erg['kunden']} Kunden nachgerechnet: "
+                             f"{erg['buchungen']} Buchung(en) in Kasse und Konto.")  # fmt: skip
+        return redirect("uebernahme:besuche_konto")
     if request.method == "POST":
         datei = request.FILES.get("datei")
         if datei is None:
@@ -130,8 +139,9 @@ def besuche_konto(request):
                     erg = besuche_konto_.uebernehmen(zeilen, _benutzername(request.user))
                     messages.success(
                         request,
-                        f"{erg['besuche_neu']} Besuch(e) nachgetragen, "
-                        f"{erg['korrekturen']} Kontostand/-stände korrigiert.",
+                        f"{erg['besuche_neu']} Besuch(e) nachgetragen, {erg['buchungen']} "
+                        f"Buchung(en) in Kasse und Konto, {erg['korrekturen']} Kontostand/-stände "
+                        "ohne Datum angeglichen.",
                     )
                     if erg["unbekannt"]:
                         rest = " …" if len(erg["unbekannt"]) > 20 else ""
@@ -147,6 +157,7 @@ def besuche_konto(request):
         return render(request, "uebernahme/_besuche_konto_bericht.html", kontext)
     if "fehler" in kontext:
         messages.error(request, kontext["fehler"])
+    kontext["alte_abgleiche"] = konto.abgleiche_vorschau()
     return render(request, "uebernahme/besuche_konto.html", kontext)
 
 

@@ -478,15 +478,17 @@ def test_besuche_konto_plan_und_uebernehmen():
     assert plan["konto"][0]["ziel"] == "12,00 €" and plan["unbekannt"] == []
 
     erg = besuche_konto.uebernehmen(zeilen, "Büro")
-    assert erg["besuche_neu"] == 1 and erg["korrekturen"] == 1
+    assert erg["besuche_neu"] == 1 and erg["korrekturen"] == 0 and erg["buchungen"] >= 1
     h.refresh_from_db()
     assert h.kontostand == Decimal("12")  # Kontostand auf den Wert aus der Liste gesetzt
     a = Abholung.objects.get(haushalt=h)
-    assert str(a.datum) == "2026-11-05" and a.beitrag == Decimal("3") and a.nachgetragen
+    assert str(a.datum) == "2026-11-05" and a.nachgetragen
+    # Haushalt ohne Personen kostet nach den Regeln nichts: die 12 € kamen bar in die Kasse
+    assert sum(b.bar for b in h.buchungen.all()) == Decimal("12")
 
     # Zweiter Lauf: Besuch schon da, Kontostand passt → nichts doppelt
     erg = besuche_konto.uebernehmen(zeilen, "Büro")
-    assert erg["besuche_neu"] == 0 and erg["korrekturen"] == 0
+    assert erg["besuche_neu"] == 0 and erg["korrekturen"] == 0 and erg["buchungen"] == 0
     assert Abholung.objects.filter(haushalt=h).count() == 1
     h.refresh_from_db()
     assert h.kontostand == Decimal("12")
@@ -519,7 +521,7 @@ def test_besuche_konto_kontostandliste_letzte_abholung_und_ohne_datum():
     assert plan["ohne_datum"] == 1
 
     erg = besuche_konto.uebernehmen(zeilen, "Büro")
-    assert erg["korrekturen"] == 2
+    assert erg["korrekturen"] == 1  # nur der Kunde ohne Datum; der andere wird in die Kasse gebucht
     h1.refresh_from_db()
     h2.refresh_from_db()
     assert h1.kontostand == Decimal("4.5") and h2.kontostand == Decimal("12")
@@ -529,7 +531,7 @@ def test_besuche_konto_kontostandliste_letzte_abholung_und_ohne_datum():
 
     # Zweiter Lauf ändert nichts doppelt
     erg = besuche_konto.uebernehmen(zeilen, "Büro")
-    assert erg["korrekturen"] == 0
+    assert erg["korrekturen"] == 0 and erg["buchungen"] == 0
 
 
 def test_besuche_konto_unbekannte_nummer():

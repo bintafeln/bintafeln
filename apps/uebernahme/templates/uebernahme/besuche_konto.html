@@ -7,9 +7,10 @@
   <p>Für die <strong>Übergangszeit</strong>, solange die Ausgabe noch im bisherigen Programm geführt wird: die
     <strong>Tagesliste der Abholungen</strong> oder eine reine <strong>Kontostand-Liste</strong> (CSV oder
     Excel) übernehmen. bintafeln trägt je Kunde den <strong>Besuch</strong> als Abholung nach und setzt den
-    <strong>Kontostand</strong> genau auf den Wert aus der Liste – über eine nachvollziehbare
-    Korrektur-Buchung. So sind auch <strong>Vorauszahlungen</strong> (z. B. der ganze Monat im Voraus)
-    automatisch korrekt.</p>
+    <strong>Kontostand</strong> genau auf den Wert aus der Liste. Was der Kunde bar gezahlt hat, ergibt
+    sich daraus (Kosten des Besuchs + Kontostand danach − Kontostand vorher) und steht in der
+    <strong>Kasse</strong>. So sind auch <strong>Vorauszahlungen</strong> (z. B. der ganze Monat im
+    Voraus) automatisch korrekt.</p>
   <h2>So sieht die Datei aus</h2>
   <ul>
     <li>Spalten (Reihenfolge egal, die Überschriften müssen stimmen): <code>Kundennummer</code> und
@@ -42,6 +43,38 @@
       unten, die Datei bleibt oben gewählt. Passt es, auf <strong>„Übernehmen“</strong>.</p>
   </form>
 </section>
+
+{% if alte_abgleiche.kunden %}
+<section class="karte" id="nachrechnen">
+  <h2>Frühere Abgleiche in die Kasse übernehmen</h2>
+  <p>Ältere Versionen haben beim Übernehmen nur den Kontostand angeglichen (Korrektur „Abgleich …“) –
+    in der Kasse fehlte dadurch, was bar gezahlt wurde. Das lässt sich nachrechnen:
+    <strong>{{ alte_abgleiche.kunden }}</strong> Kunde{{ alte_abgleiche.kunden|pluralize:"n" }} mit
+    <strong>{{ alte_abgleiche.korrekturen }}</strong> solchen Korrektur{{ alte_abgleiche.korrekturen|pluralize:"en" }}.
+    Die Kontostände bleiben dabei, wie sie sind.</p>
+  {% if alte_abgleiche.tage %}
+  <div class="tabelle-rahmen">
+  <table class="tabelle kompakt">
+    <thead><tr><th>Tag</th><th>käme bar in die Kasse</th></tr></thead>
+    <tbody>
+    {% for tag, bar in alte_abgleiche.tage %}
+      <tr><td data-titel="Tag">{{ tag|date:"d.m.Y" }}</td><td data-titel="bar">{{ bar|floatformat:2 }} €</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+  {% if darf_buchen %}
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" name="aktion" value="nachrechnen" class="knopf"
+            onclick="return confirm('Frühere Abgleiche jetzt in Kassenbuchungen umrechnen?')">Nachrechnen</button>
+  </form>
+  {% else %}
+  <p class="fehler">Zum Nachrechnen fehlt das Recht „Kundenkonto korrigieren“.</p>
+  {% endif %}
+</section>
+{% endif %}
 
 <div id="bericht">{% include "uebernahme/_besuche_konto_bericht.html" %}</div>
 {% endblock %}

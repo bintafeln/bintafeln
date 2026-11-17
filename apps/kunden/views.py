@@ -15,6 +15,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from apps.ausgabe.ampel import WOCHENTAGE
+from apps.ausgabe.konto import mit_bar_gezahlt
 from apps.ausgabe.models import AusgabeEinstellungen
 from apps.core import listen, listenauswahl, listenexport, papierkorb, sicherung
 from apps.core.pdf import pdf_antwort
@@ -477,9 +478,16 @@ def haushalt(request, kundennummer):
             "ausnahmen": h.ausnahmen.all()[
                 : None if "kunden.sperren_alle" in darf else ABHOLUNGEN_AUSGABE
             ],
-            "abholungen": abholungen[
-                : ABHOLUNGEN_BUERO if "kunden.abholungen_alle" in darf else ABHOLUNGEN_AUSGABE
-            ],
+            "abholungen": mit_bar_gezahlt(
+                h,
+                list(
+                    abholungen[
+                        : ABHOLUNGEN_BUERO
+                        if "kunden.abholungen_alle" in darf
+                        else ABHOLUNGEN_AUSGABE
+                    ]
+                ),
+            ),
             "abholungen_gesamt": abholungen.count(),
             "bemerkungen": h.bemerkungen.all() if "kunden.anmerkungen" in darf else [],
             **notizen_kontext(h.kundennummer, request.user),

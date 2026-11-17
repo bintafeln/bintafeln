@@ -275,17 +275,22 @@ def uebernehmen(zeilen: list[Zeile], von: str) -> dict:
 
         korrekturen = 0
         summe = Decimal("0")
+        stand: dict[str, tuple] = {}
         for knr, (tag, ziel) in ziele.items():
             h = bekannt.get(knr)
             if h is None:
                 continue
             differenz = ziel - (h.kontostand or Decimal("0"))
-            if differenz != 0:
-                stand = f"Stand {tag:%d.%m.%Y}" if tag else "aktueller Stand"
-                konto_.korrigieren(h, differenz, f"Abgleich bisheriges Programm ({stand})", von)
+            summe += differenz
+            if tag:  # Tagesliste: Abholungen nach dem Gezahlten in die Kasse buchen
+                stand[knr] = (ziel, tag)
+            elif differenz != 0:  # reine Kontostand-Liste: nur angleichen
+                konto_.korrigieren(
+                    h, differenz, "Abgleich bisheriges Programm (aktueller Stand)", von
+                )
                 korrekturen += 1
-                summe += differenz
+        buchungen = konto_.zahlungen_aus_kontostand(stand, von) if stand else 0
 
     unbekannt = sorted({z.kundennummer for z in zeilen if z.kundennummer not in bekannt})
-    return {"besuche_neu": besuche_neu, "korrekturen": korrekturen, "summe": summe,
-            "unbekannt": unbekannt}  # fmt: skip
+    return {"besuche_neu": besuche_neu, "korrekturen": korrekturen, "buchungen": buchungen,
+            "summe": summe, "unbekannt": unbekannt}  # fmt: skip
