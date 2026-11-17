@@ -162,6 +162,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   (`stelle_der_gruppe()`); `bulk_create` umgeht das, dort selbst setzen (wie `importieren._abholung`).
   Notizen an die Ausgabestelle (`Notiz.an_stelle`, Startseite, Antwort beim Ausweisdruck) in
   `apps/kunden/an_stelle.py`; feste Notiz-Vorlagen zu `FESTE_ANLIEGEN` (ADR 0070).
+  Nachricht einer Ausgabestelle an die Verwaltung ohne Kunden (`StellenNachricht`, Startseite,
+  Mail über die Benachrichtigung `nachricht_verwaltung`, Antwort auf der Startseite der Stelle) in
+  `apps/kunden/an_verwaltung.py` (ADR 0140).
 - Statische Dateien laufen im Betrieb über `ManifestStaticFilesStorage` (Dateinamen mit
   Prüfsumme), weil Caddy sie einen Tag zwischenspeichern lässt. Tests nutzen die einfache
   Ablage.

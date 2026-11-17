@@ -849,6 +849,40 @@ class Nachricht(models.Model):
         return f"Nachricht zu {self.kundennummer}"
 
 
+class StellenNachricht(models.Model):
+    """Nachricht einer Ausgabestelle an die Verwaltung ohne Bezug zu einem Kunden (ADR 0140).
+    Geht per Mail an die Tafel; die Verwaltung antwortet im Programm, die Antwort steht auf der
+    Startseite der Ausgabestelle, bis dort jemand „gelesen“ klickt. Logik in
+    ``apps/kunden/an_verwaltung.py``; erledigte werden nach ``AUFBEWAHREN_TAGE`` gelöscht."""
+
+    AUFBEWAHREN_TAGE = 90
+
+    stelle = models.ForeignKey("Ausgabestelle", null=True, blank=True, on_delete=models.SET_NULL,
+                               related_name="+", verbose_name="Ausgabestelle")  # fmt: skip
+    von = models.CharField("Von", max_length=150, blank=True)
+    benutzer = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                 on_delete=models.SET_NULL, related_name="+",
+                                 verbose_name="Geschrieben von")  # fmt: skip
+    betreff = models.CharField("Betreff", max_length=200)
+    text = models.TextField("Nachricht", max_length=2000)
+    erstellt_am = models.DateTimeField("Geschrieben am", default=timezone.now)
+    antwort = models.TextField("Antwort", max_length=2000, blank=True)
+    antwort_von = models.CharField("Antwort von", max_length=150, blank=True)
+    beantwortet_am = models.DateTimeField("Beantwortet am", null=True, blank=True)
+    gelesen_am = models.DateTimeField("Antwort gelesen am", null=True, blank=True)
+    gelesen_von = models.CharField("Antwort gelesen von", max_length=150, blank=True)
+    erledigt_am = models.DateTimeField("Erledigt am", null=True, blank=True)
+    erledigt_von = models.CharField("Erledigt von", max_length=150, blank=True)
+
+    class Meta:
+        verbose_name = "Nachricht an die Verwaltung"
+        verbose_name_plural = "Nachrichten an die Verwaltung"
+        ordering = ["-erstellt_am"]
+
+    def __str__(self):
+        return self.betreff
+
+
 def verwaiste_notizen_loeschen() -> int:
     """Notizen zu Kundennummern, die es nicht mehr gibt, und Krankmeldungen, sobald der Kunde
     seit dem Beginn wieder abgeholt hat (ADR 0075). Nie allein, weil das Ende vorbei ist: Bis der
@@ -1255,7 +1289,9 @@ def fristen_anwenden() -> int:
 
 def alte_nachrichten_loeschen() -> int:
     grenze = timezone.now() - dt.timedelta(days=Nachricht.AUFBEWAHREN_TAGE)
-    return Nachricht.objects.filter(erledigt_am__lt=grenze).delete()[0]
+    weg = Nachricht.objects.filter(erledigt_am__lt=grenze).delete()[0]
+    grenze = timezone.now() - dt.timedelta(days=StellenNachricht.AUFBEWAHREN_TAGE)
+    return weg + StellenNachricht.objects.filter(erledigt_am__lt=grenze).delete()[0]
 
 
 def _gruppenregel() -> int:
@@ -1352,4 +1388,5 @@ for modell in (
 auditlog.register(Person, exclude_fields=["such_name"])  # such_name ist abgeleitet
 auditlog.register(HaushaltDokument, exclude_fields=["datei"])
 auditlog.register(Nachricht)
+auditlog.register(StellenNachricht)
 auditlog.register(GeplanterWechsel)

@@ -219,6 +219,12 @@ def _korrektur_offen(schluessel: str) -> bool:
                                           status=Korrekturwunsch.Status.OFFEN).exists()  # fmt: skip
 
 
+def _verwaltung_offen(schluessel: str) -> bool:
+    from apps.kunden import an_verwaltung
+
+    return an_verwaltung.offen(schluessel)
+
+
 KERN = (
     Art("antrag_neu", "Neuer Antrag eingegangen",
         "Entfällt, wenn der Antrag bis zum Versand bearbeitet wurde.",
@@ -233,6 +239,13 @@ KERN = (
              "gebeten wird.",
         wahl=Empfaengerwahl(lambda: mit_recht("korrekturen.entscheiden"),
                             "alle, die Korrekturwünsche entscheiden dürfen")),
+    Art("nachricht_verwaltung", "Nachricht einer Ausgabestelle an die Verwaltung",
+        "Entfällt, wenn die Nachricht bis zum Versand beantwortet oder erledigt wurde.",
+        fuer=_recht("kunden.nachrichten"), offen=_verwaltung_offen,
+        wann="Sobald eine Ausgabestelle über die Startseite eine Nachricht an die Verwaltung "
+             "schreibt.",
+        wahl=Empfaengerwahl(lambda: mit_recht("kunden.nachrichten", ohne_stellen=True),
+                            "die E-Mail der Tafel (Tafel-Einstellungen)", fest=False)),
     Art("sicherheitsupdate", "Sicherheitsupdate verfügbar",
         "Die einzelne Person kann sie nicht abschalten, höchstens täglich sammeln.",
         fuer=_recht("system.update"), nie_erlaubt=False,

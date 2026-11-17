@@ -3,8 +3,10 @@
 
 from collections import Counter
 
+from django import forms
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
@@ -12,8 +14,8 @@ from django.views.decorators.http import require_POST
 
 from apps.core.auswahl import NACHRICHT_ANLIEGEN, NACHRICHT_ANLIEGEN_WAEHLBAR
 from apps.konten import rollen
-from apps.kunden import an_stelle
-from apps.kunden.models import Haushalt, Nachricht
+from apps.kunden import an_stelle, an_verwaltung
+from apps.kunden.models import Haushalt, Nachricht, StellenNachricht
 
 
 def _stelle(request):
@@ -44,20 +46,73 @@ def schreiben(request, kundennummer):
     return redirect(zurueck)
 
 
+class VerwaltungForm(forms.Form):
+    betreff = forms.CharField(label="Betreff", max_length=200)
+    text = forms.CharField(label="Nachricht", max_length=2000,
+                           widget=forms.Textarea(attrs={"rows": 6}))  # fmt: skip
+
+
+ALLGEMEIN = "allgemein"  # Reiter für Nachrichten ohne Kunden (ADR 0140)
+
+
 def offene() -> int:
-    return Nachricht.objects.filter(erledigt_am__isnull=True).count()
+    zu_kunden = Nachricht.objects.filter(erledigt_am__isnull=True).count()
+    return zu_kunden + an_verwaltung.offene_anzahl()
 
 
 def offene_je_anliegen() -> list[tuple[str, str, int]]:
     """(Schlüssel, Bezeichnung, Anzahl) der offenen Nachrichten, für die Startseite."""
     zahlen = Counter(Nachricht.objects.filter(erledigt_am__isnull=True)
                      .values_list("anliegen", flat=True))  # fmt: skip
-    return [(k, name, zahlen[k]) for k, name in NACHRICHT_ANLIEGEN if zahlen[k]]
+    allgemein = an_verwaltung.offene_anzahl()
+    return ([(ALLGEMEIN, "ohne Kunde", allgemein)] if allgemein else []) + [
+        (k, name, zahlen[k]) for k, name in NACHRICHT_ANLIEGEN if zahlen[k]
+    ]
+
+
+@never_cache
+@rollen.recht_erforderlich("einlass.nutzen")
+def an_die_verwaltung(request):
+    """Ausgabestelle schreibt an die Verwaltung (ohne Kunden) und sieht ihre letzten Nachrichten
+    mit den Antworten (ADR 0140)."""
+    stelle = _stelle(request)
+    form = VerwaltungForm(request.POST if request.method == "POST" else None)
+    if stelle is not None and form.is_valid():
+        basis = request.build_absolute_uri("/").rstrip("/")
+        an_verwaltung.schreiben(stelle, request.user, form.cleaned_data["betreff"],
+                                form.cleaned_data["text"], basis=basis)  # fmt: skip
+        messages.success(request, "Nachricht an die Verwaltung gesendet. Die Antwort "
+                         "erscheint hier und auf der Startseite.")  # fmt: skip
+        return redirect("kunden:an_verwaltung")
+    return render(request, "kunden/an_verwaltung.html", {
+        "stelle": stelle, "form": form, "nachrichten": an_verwaltung.von_stelle(stelle),
+    })  # fmt: skip
+
+
+@require_POST
+@rollen.recht_erforderlich("einlass.nutzen")
+def antwort_gelesen(request, pk):
+    n = get_object_or_404(an_verwaltung.antworten_offen(_stelle(request)), pk=pk)
+    an_verwaltung.gelesen(n, request.user)
+    zurueck = request.POST.get("zurueck", "")
+    if not url_has_allowed_host_and_scheme(zurueck, allowed_hosts={request.get_host()}):
+        zurueck = "/"
+    return redirect(zurueck)
 
 
 @never_cache
 @rollen.recht_erforderlich("kunden.nachrichten")
 def liste(request):
+    if request.method == "POST" and "stellen_nachricht" in request.POST:
+        pk = request.POST["stellen_nachricht"]
+        n = get_object_or_404(StellenNachricht, pk=int(pk) if pk.isdigit() else 0)
+        if antwort := request.POST.get("antwort", "").strip():
+            an_verwaltung.antworten(n, antwort, request.user)
+            messages.success(request, "Antwort an " + (n.stelle.name if n.stelle else
+                             "die Ausgabestelle") + " gesendet, Nachricht erledigt.")  # fmt: skip
+        else:
+            an_verwaltung.umschalten(n, request.user)
+        return redirect(f"{reverse('kunden:nachrichten')}?anliegen={ALLGEMEIN}")
     if request.method == "POST":
         n = get_object_or_404(Nachricht, pk=request.POST.get("nachricht") or 0)
         if antwort := request.POST.get("antwort", "").strip():
@@ -80,12 +135,19 @@ def liste(request):
     # nur Anliegen mit offenen Nachrichten als Reiter (und das gewählte), mit Zahl
     reiter = [(k, name, zahlen[k]) for k, name in NACHRICHT_ANLIEGEN_WAEHLBAR
               if zahlen[k] or k == anliegen]  # fmt: skip
+    allgemein = StellenNachricht.objects.select_related("stelle")
+    allgemein_offen = list(allgemein.filter(erledigt_am__isnull=True))
+    if allgemein_offen or anliegen == ALLGEMEIN:
+        reiter.insert(0, (ALLGEMEIN, "ohne Kunde", len(allgemein_offen)))
     if anliegen in dict(NACHRICHT_ANLIEGEN):
         alle = alle.filter(anliegen=anliegen)
     return render(request, "kunden/nachrichten.html", {
         "offen": alle.filter(erledigt_am__isnull=True),
         "erledigt": list(alle.filter(erledigt_am__isnull=False).order_by("-erledigt_am")[:100]),
-        "offen_gesamt": sum(zahlen.values()),
+        "offen_gesamt": sum(zahlen.values()) + len(allgemein_offen),
+        "allgemein": ALLGEMEIN, "allgemein_offen": allgemein_offen,
+        "allgemein_erledigt": list(allgemein.filter(erledigt_am__isnull=False)
+                                   .order_by("-erledigt_am")[:100]),
         "tage": Nachricht.AUFBEWAHREN_TAGE,
         "anliegen": anliegen, "anliegen_liste": reiter,
         "darf_verlaengern": rollen.hat_recht(request.user, "kunden.bearbeiten"),

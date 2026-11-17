@@ -17,8 +17,12 @@
   {% elif notizen_an_stelle %}
   <p class="sicherung"><a href="{% url 'kunden:notizen_an_stelle' %}">{{ notizen_an_stelle|length }} neue Notizen der Verwaltung</a> an {{ ausgabestelle.name }}.</p>
   {% endif %}
+  {% for n in antworten_verwaltung %}
+  <div class="sicherung"><strong>Antwort der Verwaltung</strong>{% include "kunden/_antwort_verwaltung.html" %}</div>
+  {% endfor %}
   {% if "einlass.nutzen" in rechte %}
-    <p><a class="knopf" href="{% url 'ausgabe:empfang' %}">Zum Einlass</a></p>
+    <p class="aktionen"><a class="knopf" href="{% url 'ausgabe:empfang' %}">Zum Einlass</a>
+      <a class="knopf knopf-zweitrangig" href="{% url 'kunden:an_verwaltung' %}">✉ Nachricht an die Verwaltung</a></p>
   {% endif %}
 </section>
 {% for teil in modul_startseite %}{{ teil }}{% endfor %}
