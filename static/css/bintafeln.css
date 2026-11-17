@@ -2188,6 +2188,7 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 .post-lesestand { margin: .25rem 0 0; padding-left: 1.1rem; font-size: .9rem; }
 @media (prefers-reduced-motion: reduce) {
   .eulen-landeplatz .eule, .eulen-landeplatz.eule-gelandet .eule { animation: none; }
+}
 
 /* Druckansicht eines PDFs (ADR 0141): am Bildschirm Seiten untereinander, beim Drucken nur die
    Seiten, jede auf einem eigenen Blatt. */
