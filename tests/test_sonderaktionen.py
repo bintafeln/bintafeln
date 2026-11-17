@@ -159,3 +159,70 @@ def test_frist_auskunft_und_haushalt(admin_client, h, pdf_text):
     assert "Teilnahmen an Sonderaktionen" in seite
     admin_client.post(reverse("kunden:haushalt_loeschen", args=["4712"]))
     assert not Teilnahme.objects.exists()
+
+
+# ── Nur an einzelnen Ausgabestellen ──────────────────────────────────────────
+
+
+def _stellen():
+    from apps.kunden.models import Ausgabestelle
+
+    return (Ausgabestelle.objects.create(name="Mitte"), Ausgabestelle.objects.create(name="Nord"),
+            Ausgabestelle.objects.create(name="Süd"))  # fmt: skip
+
+
+def _namen(h, stelle=None):
+    heute = timezone.localdate()
+    return [e["aktion"].bezeichnung
+            for e in sonderaktionen.fuer_haushalt(h, heute, 1, 2, stelle=stelle)]  # fmt: skip
+
+
+def test_aktion_nur_an_gewaehlten_ausgabestellen(h):
+    from apps.kunden.models import Kundengruppe
+
+    mitte, nord, sued = _stellen()
+    aktion(bezeichnung="Für alle")
+    nur = aktion(bezeichnung="Nur Mitte und Nord")
+    nur.ausgabestellen.set([mitte, nord])
+    assert nur.gilt_an(mitte) and nur.gilt_an(nord) and not nur.gilt_an(sued)
+    assert not nur.gilt_an(None)  # Ausgabestelle unbekannt: nur Aktionen für alle
+
+    # am Einlass zählt die dort gewählte Ausgabestelle
+    assert _namen(h, mitte) == ["Für alle", "Nur Mitte und Nord"]
+    assert _namen(h, sued) == ["Für alle"]
+    # ohne gewählte Ausgabestelle die der Kundengruppe des Haushalts
+    assert _namen(h) == ["Für alle"]
+    h.kundengruppe = Kundengruppe.objects.create(name="Nord A", ausgabestelle=nord)
+    h.save()
+    assert _namen(h) == ["Für alle", "Nur Mitte und Nord"]
+    assert _namen(h, sued) == ["Für alle"]  # die gewählte Stelle geht vor
+
+    # eintragen: an der falschen Ausgabestelle nicht, an der richtigen ja
+    with pytest.raises(sonderaktionen.SonderaktionFehler, match="Ausgabestelle"):
+        sonderaktionen.eintragen(nur, h, auswahl=None, erwachsene=1, kinder=2, stelle=sued,
+                                 von="Einlass")  # fmt: skip
+    t = sonderaktionen.eintragen(nur, h, auswahl=None, erwachsene=1, kinder=2, stelle=mitte,
+                                 von="Einlass")  # fmt: skip
+    assert t.ausgabestelle == mitte
+
+
+def test_ausgabestellen_im_formular_und_in_der_liste(admin_client):
+    mitte, nord, sued = _stellen()
+    sued.aktiv = False
+    sued.save()
+    neu = reverse("ausgabe:sonderaktion_neu")
+    formular = admin_client.get(neu).content.decode()
+    assert "Ausgabestellen" in formular and "Mitte" in formular and "Süd" not in formular
+    heute = timezone.localdate()
+    daten = {"bezeichnung": "Nikolaus", "von": heute.isoformat(), "bis": heute.isoformat(),
+             "menge": "einmal", "auswahl_text": ""}  # fmt: skip
+    admin_client.post(neu, {**daten, "ausgabestellen": [mitte.pk]})
+    a = Sonderaktion.objects.get(bezeichnung="Nikolaus")
+    assert list(a.ausgabestellen.all()) == [mitte]
+    liste = admin_client.get(reverse("ausgabe:sonderaktionen")).content.decode()
+    assert '<td data-titel="Ausgabestellen">Mitte</td>' in liste
+    # nichts angehakt = alle
+    admin_client.post(reverse("ausgabe:sonderaktion_bearbeiten", args=[a.pk]), daten)
+    assert not a.ausgabestellen.exists()
+    liste = admin_client.get(reverse("ausgabe:sonderaktionen")).content.decode()
+    assert '<td data-titel="Ausgabestellen">alle</td>' in liste

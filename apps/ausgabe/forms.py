@@ -8,6 +8,7 @@ from apps.ausgabe.models import (
     SonderaktionAuswahl,
     Sonderausgabe,
 )
+from apps.core.forms import Mehrfachauswahl
 from apps.konten.forms import DatumEingabe
 from apps.kunden.models import Ausgabestelle, Kundengruppe
 
@@ -141,11 +142,19 @@ class SonderaktionForm(forms.ModelForm):
 
     class Meta:
         model = Sonderaktion
-        fields = ["bezeichnung", "von", "bis", "menge", "nur_mit_kindern", "beschreibung"]
-        widgets = {"von": DatumEingabe(), "bis": DatumEingabe()}
+        fields = ["bezeichnung", "von", "bis", "ausgabestellen", "menge", "nur_mit_kindern",
+                  "beschreibung"]  # fmt: skip
+        widgets = {"von": DatumEingabe(), "bis": DatumEingabe(),
+                   "ausgabestellen": Mehrfachauswahl(leer="alle Ausgabestellen")}  # fmt: skip
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # aktive Ausgabestellen; schon gewählte bleiben wählbar, auch wenn sie inzwischen ruhen
+        gewaehlt = self.instance.ausgabestellen.all() if self.instance.pk else []
+        self.fields["ausgabestellen"].queryset = (
+            Ausgabestelle.objects.filter(aktiv=True)
+            | Ausgabestelle.objects.filter(pk__in=[s.pk for s in gewaehlt])
+        ).distinct().order_by("name")  # fmt: skip
         if self.instance.pk:
             self.initial["auswahl_text"] = "\n".join(
                 a.bezeichnung for a in self.instance.auswahl.all()

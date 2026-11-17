@@ -26,3 +26,11 @@ Fachkonzept nennt Zeitraum, Auswahlmöglichkeiten und Teilnahmen.
 
 Eine Teilnahme ist ein Ereignis wie eine Abholung und bekommt dieselbe Frist. Die Regeln liegen
 als reine Funktionen in `apps/ausgabe/sonderaktionen.py`, damit sie ohne Oberfläche testbar sind.
+
+## Nachtrag (2026-11-17): Aktion nur an einzelnen Ausgabestellen
+
+Eine Sonderaktion kann auf Ausgabestellen beschränkt werden (`Sonderaktion.ausgabestellen`,
+Mehrfachauswahl; nichts angehakt = alle, so bleiben bestehende Aktionen unverändert).
+`Sonderaktion.gilt_an(stelle)` entscheidet; am Einlass zählt die dort gewählte Ausgabestelle,
+ohne gewählte die der Kundengruppe des Haushalts (`sonderaktionen.stelle_fuer()`). Ist keine
+Ausgabestelle bekannt, erscheinen nur Aktionen für alle. `eintragen()` prüft dasselbe.

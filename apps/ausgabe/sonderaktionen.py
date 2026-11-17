@@ -21,11 +21,23 @@ def menge(aktion: Sonderaktion, erwachsene: int, kinder: int) -> int:
     return 1
 
 
-def fuer_haushalt(h, heute: dt.date, erwachsene: int, kinder: int) -> list[dict]:
-    """Heute laufende Aktionen mit Teilnahme (falls schon eingetragen) und Berechtigung."""
-    aktionen = Sonderaktion.objects.filter(von__lte=heute, bis__gte=heute).prefetch_related(
-        "auswahl"
+def stelle_fuer(h, stelle=None):
+    """An welcher Ausgabestelle die Aktion zählt: die am Einlass gewählte, sonst die der
+    Kundengruppe des Haushalts."""
+    if stelle is not None:
+        return stelle
+    gruppe = h.kundengruppe
+    return gruppe.ausgabestelle if gruppe else None
+
+
+def fuer_haushalt(h, heute: dt.date, erwachsene: int, kinder: int, stelle=None) -> list[dict]:
+    """Heute an dieser Ausgabestelle laufende Aktionen mit Teilnahme (falls schon eingetragen)
+    und Berechtigung. ``stelle``: die am Einlass gewählte Ausgabestelle."""
+    ort = stelle_fuer(h, stelle)
+    laufende = Sonderaktion.objects.filter(von__lte=heute, bis__gte=heute).prefetch_related(
+        "auswahl", "ausgabestellen"
     )
+    aktionen = [a for a in laufende if a.gilt_an(ort)]
     teilnahmen = {
         t.aktion_id: t
         for t in Teilnahme.objects.filter(kundennummer=h.kundennummer, aktion__in=aktionen)
@@ -48,6 +60,8 @@ def eintragen(aktion, h, *, auswahl, erwachsene, kinder, stelle, von, heute=None
     heute = heute or timezone.localdate()
     if not aktion.laeuft(heute):
         raise SonderaktionFehler(f"„{aktion}“ läuft heute nicht.")
+    if not aktion.gilt_an(stelle_fuer(h, stelle)):
+        raise SonderaktionFehler(f"„{aktion}“ gibt es an dieser Ausgabestelle nicht.")
     if aktion.nur_mit_kindern and not kinder:
         raise SonderaktionFehler(f"„{aktion}“ gibt es nur für Haushalte mit Kindern.")
     anzahl = menge(aktion, erwachsene, kinder)
