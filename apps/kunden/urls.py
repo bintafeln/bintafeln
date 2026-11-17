@@ -103,6 +103,7 @@ urlpatterns = [
     path("post/", views_post.postfach, name="postfach"),
     path("post/kopf/", views_post.kopf, name="post_kopf"),
     path("post/<int:pk>/gelesen/", views_post.gelesen, name="post_gelesen"),
+    path("post/<int:pk>/loeschen/", views_post.loeschen, name="post_loeschen"),
     path(
         "an-die-verwaltung/<int:pk>/gelesen/",
         views_nachrichten.antwort_gelesen,

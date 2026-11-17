@@ -9,7 +9,7 @@ auch wirklich gesehen wird.
 
 ## Entscheidung
 
-- Die Verwaltung (Recht `kunden.nachrichten`) schreibt unter „Kunden → Post an Ausgabestellen“
+- Die Verwaltung (Recht `kunden.nachrichten`) schreibt unter „Ausgabestelle → Post an Ausgabestellen“
   an eine, mehrere oder alle aktiven Ausgabestellen: Betreff, Text, auf Wunsch „Wichtig“.
   `Rundschreiben` mit einem `PostEmpfang` je Ausgabestelle (Lesestand), Logik in
   `apps/kunden/eulenpost.py`.
@@ -33,3 +33,10 @@ Die Kopfzeile ist auf jeder Seite sichtbar, auch am Einlass, und braucht kein Ne
 Bewegung über den Bildschirm fällt im Trubel der Ausgabe auf, ohne die Arbeit zu blockieren;
 nur wirklich Wichtiges unterbricht mit einem Hinweis. Lesestand je Ausgabestelle (nicht je
 Person) passt zu den gemeinsam genutzten Tablets.
+
+## Nachtrag (2026-11-17)
+
+- Der Menüpunkt steht unter „Ausgabestelle“ (Abschnitt Verwaltung), nicht unter „Kunden“: Die Post
+  hat nichts mit einzelnen Kunden zu tun.
+- Unter „Gesendet“ löscht „Löschen“ eine Post ganz – bei allen Ausgabestellen, gelesen oder nicht –
+  über den Papierkorb (`eulenpost.loeschen()`, wiederherstellbar mit `kunden.nachrichten`).

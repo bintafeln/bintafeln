@@ -82,3 +82,33 @@ def test_ohne_aktive_stellen_und_frist(admin, admin_client):
     assert eulenpost.stand(None) == {"zahl": 0, "wichtig": None, "schluessel": ""}
     assert not eulenpost.postfach(None).exists()
     assert "Post der Verwaltung an Mitte" in admin_client.get(POSTFACH).content.decode()
+
+
+def test_post_ganz_loeschen(stellen, admin_client):
+    from apps.core.models import PapierkorbEintrag
+
+    c, mitte, nord = stellen
+    admin_client.post(SCHREIBEN, {"betreff": "Versehen", "text": "Falsch geschickt"})
+    r = Rundschreiben.objects.get()
+    empfang = PostEmpfang.objects.get(stelle=mitte)
+    eulenpost.gelesen(empfang, r.benutzer)  # gelesen oder nicht: beide verschwinden
+    assert "Löschen</button>" in admin_client.get(SCHREIBEN).content.decode()
+    url = reverse("kunden:post_loeschen", args=[r.pk])
+    assert c.post(url).status_code == 403  # die Ausgabestelle darf das nicht
+    assert admin_client.get(url).status_code == 405
+    assert admin_client.post(url).url == SCHREIBEN
+    assert not Rundschreiben.objects.exists() and not PostEmpfang.objects.exists()
+    assert "Falsch geschickt" not in c.get(POSTFACH).content.decode()
+    assert PapierkorbEintrag.objects.get().art == "Post an Ausgabestellen"
+
+
+def test_post_im_menue_unter_ausgabestelle(admin):
+    from django.test import RequestFactory
+
+    from apps.core.menue import menue
+
+    anfrage = RequestFactory().get("/")
+    anfrage.user = admin
+    bereiche = {b["titel"]: str(b) for b in menue(anfrage)}
+    ziel = reverse("kunden:post_schreiben")
+    assert ziel in bereiche["Ausgabestelle"] and ziel not in bereiche.get("Kunden", "")
