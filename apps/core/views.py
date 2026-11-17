@@ -284,7 +284,7 @@ def suche(request):
         menue=menue(request),
     )
     kontext = {"e": ergebnis, "kuerzel": such.kuerzel_fuer(request.user),
-               "mindestlaenge": such.MINDESTLAENGE}  # fmt: skip
+               "mindestlaenge": such.mindestlaenge(ergebnis.kuerzel)}  # fmt: skip
     vorlage = "core/_suche.html" if kurz else "core/suche.html"
     return render(request, vorlage, kontext)
 

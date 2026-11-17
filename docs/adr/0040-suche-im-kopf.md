@@ -10,7 +10,7 @@ Notizen und Anmerkungen ließen sich gar nicht durchsuchen.
 
 ## Entscheidung
 
-- Auf jeder Seite (angemeldet) steht im Seitenkopf ein Suchfeld. Ab 3 Zeichen holt es per HTMX
+- Auf jeder Seite (angemeldet) steht im Seitenkopf ein Suchfeld. Ab 3 Zeichen (mit den Kürzeln für Notizen und Anmerkungen ab einem Zeichen) holt es per HTMX
   die Treffer (`/suche/`, `apps/core/suche.py`) und zeigt sie darunter, je Bereich höchstens 8;
   Enter öffnet die Ergebnisseite (je Bereich bis 50).
 - Ohne Kürzel: Kunden (Vor- und Nachname, Kundennummer, Abholberechtigte), Anträge,
