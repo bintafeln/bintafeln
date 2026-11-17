@@ -102,6 +102,9 @@ def start(request):
     return redirect("kunden:import_vorschau", pk=vorbereitung.pk)
 
 
+NACHRECHNEN_S = 15  # so lange rechnet ein Aufruf höchstens nach, dann der nächste
+
+
 @rollen.recht_erforderlich("kunden.importieren")
 def besuche_konto(request):
     """Tagesliste der Abholungen aus dem bisherigen Programm übernehmen (ADR 0110): Besuche
@@ -112,13 +115,24 @@ def besuche_konto(request):
     kontext = {"darf_buchen": darf_buchen}
     aktion = request.POST.get("aktion")
     if request.method == "POST" and aktion == "nachrechnen":
+        ziel = reverse("uebernahme:besuche_konto")
         if not darf_buchen:
             messages.error(request, "Zum Nachrechnen fehlt das Recht „Kundenkonto korrigieren“.")
         else:
-            erg = konto.abgleiche_nachrechnen(_benutzername(request.user))
-            messages.success(request, f"Für {erg['kunden']} Kunden nachgerechnet: "
-                             f"{erg['buchungen']} Buchung(en) in Kasse und Konto.")  # fmt: skip
-        return redirect("uebernahme:besuche_konto")
+            # In Portionen: nach einigen Sekunden aufhören, die Seite ruft von selbst weiter auf.
+            erg = konto.abgleiche_nachrechnen(_benutzername(request.user), sekunden=NACHRECHNEN_S)
+            if erg["offen"]:
+                # Die Zahl der offenen Kunden in der Adresse: so ändert sie sich mit jeder
+                # Portion, und der Browser lädt die Seite wirklich neu.
+                ziel += f"?laeuft={erg['offen']}#nachrechnen"
+            else:
+                messages.success(request, "Frühere Abgleiche sind nachgerechnet: Was bar gezahlt "
+                                 "wurde, steht jetzt in der Kasse.")  # fmt: skip
+        if request.headers.get("HX-Request"):
+            antwort = HttpResponse(status=204)
+            antwort["HX-Redirect"] = ziel
+            return antwort
+        return redirect(ziel)
     if request.method == "POST":
         datei = request.FILES.get("datei")
         if datei is None:
@@ -157,7 +171,8 @@ def besuche_konto(request):
         return render(request, "uebernahme/_besuche_konto_bericht.html", kontext)
     if "fehler" in kontext:
         messages.error(request, kontext["fehler"])
-    kontext["alte_abgleiche"] = konto.abgleiche_vorschau()
+    kontext["alte_abgleiche"] = konto.abgleiche_stand()
+    kontext["nachrechnen_laeuft"] = bool(request.GET.get("laeuft")) and darf_buchen
     return render(request, "uebernahme/besuche_konto.html", kontext)
 
 

@@ -225,77 +225,76 @@ ABGLEICH = re.compile(r"^Abgleich .+ \(Stand (\d\d)\.(\d\d)\.(\d{4})\)$")
 
 def abgleiche_finden():
     """Korrekturen aus „Besuche übernehmen“ älterer Versionen, die den Kontostand angeglichen
-    haben, ohne die Zahlung in die Kasse zu buchen. {Haushalt-pk: [Buchungen]}."""
+    haben, ohne die Zahlung in die Kasse zu buchen. {Haushalt-pk: [Buchungs-pk]} – nur eine
+    Abfrage, damit die Seite auch bei vielen Kunden sofort öffnet."""
     gefunden: dict[int, list] = {}
     art = Buchung.Art.KORREKTUR
     korrekturen = Buchung.objects.filter(art=art, bemerkung__startswith="Abgleich ")
-    for b in korrekturen.order_by("pk"):
-        if b.haushalt_id and ABGLEICH.match(b.bemerkung):
-            gefunden.setdefault(b.haushalt_id, []).append(b)
+    zeilen = korrekturen.order_by("pk").values_list("pk", "haushalt_id", "bemerkung")
+    for pk, haushalt_id, bemerkung in zeilen:
+        if haushalt_id and ABGLEICH.match(bemerkung):
+            gefunden.setdefault(haushalt_id, []).append(pk)
     return gefunden
 
 
+def abgleiche_stand() -> dict:
+    """Wie viele Kunden und alte Abgleich-Korrekturen es noch gibt (schnell, ändert nichts)."""
+    gefunden = abgleiche_finden()
+    return {"kunden": len(gefunden), "korrekturen": sum(map(len, gefunden.values()))}
+
+
 @transaction.atomic
-def abgleiche_nachrechnen(von: str = "") -> dict:
+def _abgleich_umrechnen(pk: int, ids: set, von: str) -> int:
+    """Ein Kunde: Abgleich-Korrekturen durch Kassenbuchungen ersetzen (siehe
+    ``abgleiche_nachrechnen``). Rückgabe: Zahl der neuen Buchungen."""
+    h = Haushalt.objects.select_for_update().get(pk=pk)
+    # in der Reihenfolge des Anlegens: Kontostand nach jeder Buchung
+    alle = list(Buchung.objects.filter(haushalt=h).order_by("pk"))
+    korrekturen = [b for b in alle if b.pk in ids]
+    stand = (h.kontostand or NULL) - sum((b.wirkung for b in alle), NULL)
+    ziele: dict[dt.date, Decimal] = {}
+    for i, b in enumerate(alle):
+        stand += b.wirkung
+        if b.pk in ids:  # je Tag der Liste zählt die letzte Angleichung
+            t, m, j = ABGLEICH.match(b.bemerkung).groups()
+            spaeter = sum((x.wirkung for x in alle[i + 1 :] if x.pk not in ids), NULL)
+            # was danach noch gebucht wurde (z. B. am Einlass), bleibt und zählt mit
+            ziele[dt.date(int(j), int(m), int(t))] = stand + spaeter
+    vorher = h.kontostand or NULL
+    Buchung.objects.filter(pk__in=ids).delete()
+    h.kontostand = vorher - sum((b.wirkung for b in korrekturen), NULL)
+    h.save(update_fields=["kontostand"])
+    buchungen = 0
+    for tag in sorted(ziele):
+        buchungen += _aus_kontostand(h, ziele[tag], tag, von)
+    if (h.kontostand or NULL) != vorher:  # Sicherheitsnetz: Kontostand bleibt, wie er war
+        diff = vorher - (h.kontostand or NULL)
+        _buchen(h, art=Buchung.Art.KORREKTUR, soll=max(-diff, NULL), haben=max(diff, NULL),
+                bemerkung="Ausgleich beim Nachrechnen", eingetragen_von=von)  # fmt: skip
+    return buchungen
+
+
+def abgleiche_nachrechnen(von: str = "", sekunden: float | None = None) -> dict:
     """Wandelt die alten Abgleich-Korrekturen in Kassenbuchungen um: je Stand (Tag der Liste)
     den Kontostand von damals bestimmen, die Korrekturen entfernen und die Abholungen bis zu dem
     Tag nach ``_aus_kontostand`` buchen – in der Reihenfolge der Tage. Der Kontostand ist danach
-    derselbe wie vorher. Rückgabe: Zahl der Kunden und neuen Buchungen."""
-    kunden = buchungen = 0
-    for pk, korrekturen in abgleiche_finden().items():
-        h = Haushalt.objects.select_for_update().get(pk=pk)
-        # in der Reihenfolge des Anlegens: Kontostand nach jeder Buchung
-        alle = list(Buchung.objects.filter(haushalt=h).order_by("pk"))
-        stand = (h.kontostand or NULL) - sum((b.wirkung for b in alle), NULL)
-        ids = {b.pk for b in korrekturen}
-        ziele: dict[dt.date, Decimal] = {}
-        for i, b in enumerate(alle):
-            stand += b.wirkung
-            if b.pk in ids:  # je Tag der Liste zählt die letzte Angleichung
-                t, m, j = ABGLEICH.match(b.bemerkung).groups()
-                spaeter = sum((x.wirkung for x in alle[i + 1 :] if x.pk not in ids), NULL)
-                # was danach noch gebucht wurde (z. B. am Einlass), bleibt und zählt mit
-                ziele[dt.date(int(j), int(m), int(t))] = stand + spaeter
-        vorher = h.kontostand or NULL
-        Buchung.objects.filter(pk__in=ids).delete()
-        h.kontostand = vorher - sum((b.wirkung for b in korrekturen), NULL)
-        h.save(update_fields=["kontostand"])
-        for tag in sorted(ziele):
-            buchungen += _aus_kontostand(h, ziele[tag], tag, von)
-        if (h.kontostand or NULL) != vorher:  # Sicherheitsnetz: Kontostand bleibt, wie er war
-            diff = vorher - (h.kontostand or NULL)
-            _buchen(h, art=Buchung.Art.KORREKTUR, soll=max(-diff, NULL), haben=max(diff, NULL),
-                    bemerkung="Ausgleich beim Nachrechnen", eingetragen_von=von)  # fmt: skip
-        kunden += 1
-    return {"kunden": kunden, "buchungen": buchungen}
+    derselbe wie vorher.
 
+    Je Kunde eine eigene Transaktion. Mit ``sekunden`` hört der Lauf nach dieser Zeit auf (die
+    Seite ruft ihn dann erneut auf), damit bei vielen Kunden keine Anfrage zu lange dauert und
+    kein Konto lange gesperrt ist. Rückgabe: Zahl der Kunden, neuen Buchungen und noch offenen
+    Kunden."""
+    import time
 
-class _Probelauf(Exception):
-    pass
-
-
-def abgleiche_vorschau() -> dict:
-    """Was ``abgleiche_nachrechnen`` täte, ohne etwas zu ändern: Zahl der Kunden und alten
-    Korrekturen und je Tag, was bar in die Kasse käme. Rechnet in einer Transaktion, die danach
-    zurückgerollt wird."""
+    ende = time.monotonic() + sekunden if sekunden else None
     gefunden = abgleiche_finden()
-    ergebnis = {"kunden": len(gefunden), "korrekturen": sum(map(len, gefunden.values())),
-                "tage": []}  # fmt: skip
-    if not gefunden:
-        return ergebnis
-    zuletzt = Buchung.objects.order_by("-pk").values_list("pk", flat=True).first() or 0
-    try:
-        with transaction.atomic():
-            abgleiche_nachrechnen()
-            tage: dict[dt.date, Decimal] = {}
-            for datum, bar in Buchung.objects.filter(pk__gt=zuletzt).values_list("datum", "bar"):
-                if datum and bar:
-                    tage[datum] = tage.get(datum, NULL) + bar
-            ergebnis["tage"] = sorted(tage.items())
-            raise _Probelauf
-    except _Probelauf:
-        pass
-    return ergebnis
+    kunden = buchungen = 0
+    for pk, ids in gefunden.items():
+        if ende and kunden and time.monotonic() >= ende:
+            break
+        buchungen += _abgleich_umrechnen(pk, set(ids), von)
+        kunden += 1
+    return {"kunden": kunden, "buchungen": buchungen, "offen": len(gefunden) - kunden}
 
 
 @transaction.atomic
