@@ -94,6 +94,16 @@ def mitarbeiter_pdf(b) -> bytes:
                     [[k.ausgabestelle.name, k.zustaendigkeit, k.telefon, k.email]
                      for k in kontakte])  # fmt: skip
 
+    from apps.kunden.models import StellenNachricht
+
+    nachrichten = StellenNachricht.objects.filter(benutzer=b).select_related("stelle")
+    if nachrichten:
+        doc.ueberschrift("Nachrichten an die Verwaltung")
+        doc.tabelle(["Geschrieben", "Ausgabestelle", "Betreff", "Nachricht", "Antwort"],
+                    [[f"{timezone.localtime(n.erstellt_am):%d.%m.%Y %H:%M}",
+                      n.stelle.name if n.stelle else "", n.betreff, n.text, n.antwort]
+                     for n in nachrichten])  # fmt: skip
+
     doc.ueberschrift("Stammdaten")
     s = Stammdaten.objects.filter(benutzer=b).first()
     if s is None:

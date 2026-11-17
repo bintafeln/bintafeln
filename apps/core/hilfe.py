@@ -150,6 +150,7 @@ _SEITE = {
     "kunden:zuletzt_aufgenommen": "kunden-finden",
     "kunden:verlaengern": "kunden-finden",
     "kunden:nachrichten": "notizen",
+    "kunden:an_verwaltung": "einlass",
     "kunden:haushalt_neu": "kunden-bearbeiten",
     "kunden:bearbeiten": "kunden-bearbeiten",
     "kunden:ausgabestellen": "ausgabestellen",

@@ -1,0 +1,34 @@
+{# Nachrichten der Ausgabestellen ohne Kunden (ADR 0140), Karten wie _nachrichten_tabelle.html #}
+<ul class="nachrichten">
+{% for n in liste %}
+  <li class="nachricht{% if n.erledigt_am %} erledigt{% endif %}">
+    <div class="nachricht-kopf">
+      <strong>{{ n.betreff }}</strong>
+      <span class="nachricht-anliegen">{{ n.stelle.name|default:"ohne Ausgabestelle" }}</span>
+    </div>
+    <div class="hinweis">{{ n.erstellt_am|date:"d.m.Y H:i" }} · {{ n.von }}</div>
+    <p class="nachricht-text">{{ n.text|linebreaksbr }}</p>
+    {% if n.antwort %}<div class="hinweis">Antwort {{ n.beantwortet_am|date:"d.m.Y H:i" }} von {{ n.antwort_von }}{% if n.gelesen_am %} · gelesen {{ n.gelesen_am|date:"d.m.Y H:i" }}{% endif %}:</div>
+    <p class="nachricht-text">{{ n.antwort|linebreaksbr }}</p>
+    {% elif n.erledigt_am %}<div class="hinweis">✓ erledigt {{ n.erledigt_am|date:"d.m.Y" }} von {{ n.erledigt_von }}</div>{% endif %}
+    <div class="nachricht-knoepfe">
+      {% if not n.antwort %}<form method="post" action="{% url 'kunden:nachrichten' %}" class="inline">{% csrf_token %}
+        <input type="hidden" name="stellen_nachricht" value="{{ n.pk }}">
+        <button type="submit" class="knopf knopf-zweitrangig">{% if n.erledigt_am %}wieder öffnen{% else %}✓ erledigt{% endif %}</button></form>{% endif %}
+      {% if not n.erledigt_am %}
+      <details class="nachricht-antwort">
+        <summary class="knopf knopf-zweitrangig">Antworten</summary>
+        <form method="post" action="{% url 'kunden:nachrichten' %}">{% csrf_token %}
+          <input type="hidden" name="stellen_nachricht" value="{{ n.pk }}">
+          <label for="stellen-antwort-{{ n.pk }}">Antwort an {{ n.stelle.name|default:"die Ausgabestelle" }}</label>
+          <textarea name="antwort" id="stellen-antwort-{{ n.pk }}" rows="3" maxlength="2000" required></textarea>
+          <button type="submit" class="knopf">Antwort senden</button>
+          <small class="hilfe">Erscheint auf der Startseite der Ausgabestelle; die Nachricht ist danach erledigt.</small>
+        </form>
+      </details>{% endif %}
+    </div>
+  </li>
+{% empty %}
+  <li class="hinweis">Keine.</li>
+{% endfor %}
+</ul>

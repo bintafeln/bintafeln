@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block titel %}Nachricht an die Verwaltung{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Nachricht an die Verwaltung</h1>
+  {% if stelle %}
+  <p class="hinweis">Für alles, was keinen bestimmten Kunden betrifft. Die Nachricht geht per E-Mail an die Verwaltung;
+    die Antwort erscheint hier und auf der Startseite von {{ stelle.name }}. Zu einem Kunden schreiben Sie am Einlass.</p>
+  <form method="post">{% csrf_token %}
+    {% include "includes/formular.html" %}
+    <p class="hinweis">Absender: {{ user.get_full_name|default:user.username }}, {{ stelle.name }}</p>
+    <button type="submit" class="knopf">Nachricht senden</button>
+  </form>
+  {% else %}
+  <p class="sicherung">Bitte zuerst oben im Menü die Ausgabestelle wählen, für die Sie schreiben.</p>
+  {% endif %}
+</section>
+{% if nachrichten %}
+<section class="karte">
+  <h2>Bisherige Nachrichten von {{ stelle.name }}</h2>
+  <ul class="nachrichten">
+  {% for n in nachrichten %}
+    <li class="nachricht{% if n.erledigt_am %} erledigt{% endif %}">
+      <div class="nachricht-kopf"><strong>{{ n.betreff }}</strong>
+        <span class="nachricht-anliegen">{% if n.antwort %}beantwortet{% elif n.erledigt_am %}erledigt{% else %}offen{% endif %}</span></div>
+      <div class="hinweis">{{ n.erstellt_am|date:"d.m.Y H:i" }} · {{ n.von }}</div>
+      <p class="nachricht-text">{{ n.text|linebreaksbr }}</p>
+      {% if n.antwort %}<div class="hinweis">Antwort {{ n.beantwortet_am|date:"d.m.Y H:i" }} von {{ n.antwort_von }}:</div>
+      <p class="nachricht-text">{{ n.antwort|linebreaksbr }}</p>{% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

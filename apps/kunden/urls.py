@@ -97,6 +97,12 @@ urlpatterns = [
     path("spalten/", views.spalten_waehlen, name="spalten"),
     path("nachricht/<str:kundennummer>/", views_nachrichten.schreiben, name="nachricht"),
     path("nachrichten/", views_nachrichten.liste, name="nachrichten"),
+    path("an-die-verwaltung/", views_nachrichten.an_die_verwaltung, name="an_verwaltung"),
+    path(
+        "an-die-verwaltung/<int:pk>/gelesen/",
+        views_nachrichten.antwort_gelesen,
+        name="antwort_gelesen",
+    ),
     path("verlaengern/", views_verlaengerung.verlaengern, name="verlaengern"),
     path("ausweise/", views.ausweise, name="ausweise"),
     path("ausweise/auswahl/", views.ausweise_auswahl, name="ausweise_auswahl"),

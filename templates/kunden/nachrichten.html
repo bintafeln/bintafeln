@@ -3,7 +3,7 @@
 {% block inhalt %}
 <section class="karte breit">
   <h1>Nachrichten der Ausgabestellen</h1>
-  <p class="hinweis">Ausgabestellen schreiben hier an die Verwaltung, mit einem Anliegen und auf Wunsch einem Text. Erledigte
+  <p class="hinweis">Ausgabestellen schreiben hier an die Verwaltung: zu einem Kunden mit einem Anliegen und auf Wunsch einem Text, oder über die Startseite ohne Kunden mit Betreff und Text. Erledigte
     werden nach {{ tage }} Tagen gelöscht.</p>
   {% if darf_verlaengern or ausweise_gemeldet %}<div class="aktionen">
     {% if darf_verlaengern %}<a class="knopf" href="{% url 'kunden:verlaengern' %}">Gemeldete Ausweise zusammen prüfen und verlängern</a>{% endif %}
@@ -15,11 +15,20 @@
     <a href="{% url 'kunden:nachrichten' %}"{% if not anliegen %} aria-current="page"{% endif %}>alle <span class="zahl">{{ offen_gesamt }}</span></a>
     {% for wert, name, zahl in anliegen_liste %}<a href="?anliegen={{ wert }}"{% if wert == anliegen %} aria-current="page"{% endif %}>{{ name }} <span class="zahl">{{ zahl }}</span></a>{% endfor %}
   </nav>
-  <h2>Offen ({{ offen|length }})</h2>
+  {% if not anliegen or anliegen == allgemein %}{% if allgemein_offen or anliegen == allgemein %}
+  <h2>Ohne Kunde: offen ({{ allgemein_offen|length }})</h2>
+  {% include "kunden/_stellen_nachrichten.html" with liste=allgemein_offen %}
+  {% endif %}{% if anliegen == allgemein %}
+  <details class="nachrichten-erledigt">
+    <summary><h2>Ohne Kunde: erledigt ({{ allgemein_erledigt|length }})</h2></summary>
+    {% include "kunden/_stellen_nachrichten.html" with liste=allgemein_erledigt %}
+  </details>{% endif %}{% endif %}
+  {% if anliegen != allgemein %}
+  <h2>{% if allgemein_offen and not anliegen %}Zu Kunden: offen{% else %}Offen{% endif %} ({{ offen|length }})</h2>
   {% include "kunden/_nachrichten_tabelle.html" with liste=offen %}
   <details class="nachrichten-erledigt">
     <summary><h2>Erledigt ({{ erledigt|length }})</h2></summary>
     {% include "kunden/_nachrichten_tabelle.html" with liste=erledigt %}
-  </details>
+  </details>{% endif %}
 </section>
 {% endblock %}

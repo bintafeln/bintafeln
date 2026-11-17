@@ -148,6 +148,27 @@ def test_hilfe_bild_kunden_nachrichten(angemeldet, admin, muster):
     # fmt: skip
 
 
+def test_hilfe_bild_an_verwaltung(angemeldet, admin, muster):
+    from apps.kunden.models import StellenNachricht
+
+    mitte = Ausgabestelle.objects.get(name="Ausgabestelle Mitte")
+    admin.gewaehlte_stelle = mitte
+    admin.save()
+    StellenNachricht.objects.create(
+        stelle=mitte, von="Einlass", betreff="Kühlschrank", text="Die Tür schließt nicht mehr.",
+        antwort="Der Hausmeister kommt am Freitag.", antwort_von="Büro",
+        beantwortet_am=timezone.now(), erledigt_am=timezone.now())  # fmt: skip
+    seite = oeffnen(angemeldet, admin, reverse("kunden:an_verwaltung"))
+    seite.get_by_label("Betreff").fill("Schlüssel für das Lager")
+    seite.get_by_label("Nachricht").fill("Wer hat diese Woche den Schlüssel für das Lager?")
+    karten = seite.locator("section.karte")
+    aufnehmen(seite, "an-verwaltung", [karten.nth(0), karten.nth(1)],
+              Marke(seite.get_by_label("Betreff"), "rahmen", 1),
+              Marke(seite.get_by_role("button", name="Nachricht senden"), nummer=2, von="rechts",
+                    laenge=40),
+              Marke(karten.nth(1).locator("li.nachricht").first, "rahmen", 3))  # fmt: skip
+
+
 # --- Ausgabestellen ---------------------------------------------------------------------
 
 
