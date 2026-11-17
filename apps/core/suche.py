@@ -20,6 +20,15 @@ from django.utils.html import strip_tags
 from apps.konten import rollen
 
 MINDESTLAENGE = 3
+# In Notizen und Anmerkungen (Kürzel „n“, „a“) reicht ein Zeichen: Dort sucht man im Text, und
+# die Liste ist ohnehin begrenzt.
+AB_EINEM_ZEICHEN = ("notizen", "anmerkungen")
+
+
+def mindestlaenge(kuerzel) -> int:
+    return 1 if kuerzel and kuerzel.bereich in AB_EINEM_ZEICHEN else MINDESTLAENGE
+
+
 JE_BEREICH = 8  # in der Liste unter dem Suchfeld
 JE_BEREICH_SEITE = 50  # auf der Ergebnisseite
 
@@ -475,7 +484,7 @@ def suchen(benutzer, eingabe: str, grenze: int = JE_BEREICH, menue=()) -> Ergebn
     """``menue``: das Menü des Kontos (``apps.core.menue.menue``) für die Suche nach Seiten."""
     kuerzel, begriff = zerlegen(eingabe or "")
     ergebnis = Ergebnis(eingabe=eingabe or "", begriff=begriff, kuerzel=kuerzel)
-    if len(begriff) < MINDESTLAENGE:
+    if len(begriff) < mindestlaenge(kuerzel):
         ergebnis.zu_kurz = True
         return ergebnis
     erlaubt = {k.bereich for k in kuerzel_fuer(benutzer)}

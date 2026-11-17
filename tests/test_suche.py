@@ -96,10 +96,29 @@ def test_rechte_und_ausgabestelle(client, benutzer_mit_rolle, anmelden, daten):
     assert e.gruppen[0].treffer[0].url == reverse("kunden:haushalt", args=["1001"])
     notizen = [t.titel for g in suche.suchen(b, "n bescheid").gruppen for t in g.treffer]
     assert notizen == ["Kunde 1001: Bringt den neuen Bescheid mit."]
+
     assert not suche.suchen(b, "s linden").gruppen  # keine Anschrift ohne Recht
     assert not suche.suchen(b, "m chef").gruppen
     zeichen = [k.zeichen for k in suche.kuerzel_fuer(b)]
     assert "m" not in zeichen and "n" in zeichen and "h" in zeichen
+
+
+def test_notizen_und_anmerkungen_ab_einem_zeichen(admin, admin_client, daten):
+    from apps.kunden.models import Bemerkung, Haushalt
+
+    Bemerkung.objects.create(haushalt=Haushalt.objects.get(kundennummer="1001"),
+                             datum=dt.date(2026, 11, 1), text="Zahlt im Voraus.")  # fmt: skip
+    e = suche.suchen(admin, "n e")
+    assert not e.zu_kurz and len(e.gruppen[0].treffer) == 2  # beide Notizen enthalten ein e
+    assert [t.titel for g in suche.suchen(admin, "a z").gruppen for t in g.treffer] == [
+        "Kunde 1001: Zahlt im Voraus."
+    ]
+    # andere Bereiche und die Suche ohne Kürzel bleiben bei 3 Zeichen
+    assert suche.suchen(admin, "k e").zu_kurz and suche.suchen(admin, "e").zu_kurz
+    assert suche.suchen(admin, "n").zu_kurz  # nur das Kürzel: noch kein Begriff
+    kurz = admin_client.get(URL, {"q": "k e"}, **HX).content.decode()
+    assert "mindestens 3 Zeichen" in kurz
+    assert "Bringt den neuen Bescheid" in admin_client.get(URL, {"q": "n e"}, **HX).content.decode()
 
 
 def test_nur_einlass_fuehrt_zum_einlass(client, benutzer_mit_rolle, daten):
