@@ -1815,3 +1815,35 @@ def test_uebernahmen_auf_daten_importieren_lesbar(angemeldet, admin):
     assert breite > 300 and hoehe < 150
     link.click()
     assert seite.url.endswith(reverse("uebernahme:besuche_konto"))
+
+
+def test_fruehere_abgleiche_rechnen_von_selbst_weiter(angemeldet, admin, monkeypatch):
+    """„Nachrechnen“ in Portionen: Die Seite ruft sich selbst weiter auf, bis nichts mehr offen
+    ist (hier: je Aufruf ein Kunde)."""
+    import datetime as dt
+    from decimal import Decimal
+
+    from apps.ausgabe import konto
+    from apps.core.models import TafelEinstellungen
+    from apps.kunden.models import Abholung, Haushalt
+    from apps.uebernahme import views
+
+    t = TafelEinstellungen.laden()
+    t.module = sorted(set(t.module or []) | {"uebernahme"})
+    t.save()
+    tag = dt.date(2026, 11, 3)
+    for nummer in ("04711", "04712", "04713"):
+        h = Haushalt.objects.create(kundennummer=nummer, kontostand=Decimal("0"))
+        Abholung.objects.create(haushalt=h, datum=tag, nachgetragen=True)
+        grund = f"Abgleich bisheriges Programm (Stand {tag:%d.%m.%Y})"
+        konto.korrigieren(h, Decimal("4.50"), grund, "Büro")
+    monkeypatch.setattr(views, "NACHRECHNEN_S", 0.000001)
+    seite = angemeldet(admin)
+    seite.goto(reverse("uebernahme:besuche_konto"))
+    expect(seite.locator("#nachrechnen")).to_contain_text("3 Kunden")
+    seite.once("dialog", lambda d: d.accept())
+    seite.get_by_role("button", name="Nachrechnen", exact=True).click()
+    expect(seite.get_by_text("Frühere Abgleiche sind nachgerechnet")).to_be_visible()
+    expect(seite.locator("#nachrechnen")).to_have_count(0)
+    assert konto.abgleiche_stand()["kunden"] == 0
+    assert {h.kontostand for h in Haushalt.objects.all()} == {Decimal("4.50")}

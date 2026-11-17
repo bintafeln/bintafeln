@@ -101,10 +101,8 @@ def test_fruehere_abgleiche_nachrechnen(kundin):
     kundin.refresh_from_db()
     assert kundin.kontostand == Decimal("1.50") and _bar_je_tag(kundin) == {}
 
-    vorschau = konto.abgleiche_vorschau()
-    assert vorschau["kunden"] == 1 and vorschau["korrekturen"] == 5
-    assert vorschau["tage"] == [(dt.date(2026, 11, 3), Decimal("6.00"))]
-    assert Buchung.objects.count() == 5  # die Vorschau ändert nichts
+    assert konto.abgleiche_stand() == {"kunden": 1, "korrekturen": 5}
+    assert Buchung.objects.count() == 5  # der Stand ändert nichts
 
     erg = konto.abgleiche_nachrechnen("Büro")
     assert erg["kunden"] == 1
@@ -113,7 +111,7 @@ def test_fruehere_abgleiche_nachrechnen(kundin):
     assert _bar_je_tag(kundin) == {dt.date(2026, 11, 3): Decimal("6.00")}
     assert not Buchung.objects.filter(art=Buchung.Art.KORREKTUR).exists()
     # ein zweites Mal: nichts mehr zu tun
-    assert konto.abgleiche_nachrechnen("Büro") == {"kunden": 0, "buchungen": 0}
+    assert konto.abgleiche_nachrechnen("Büro") == {"kunden": 0, "buchungen": 0, "offen": 0}
 
 
 def test_nachrechnen_laesst_einlass_buchungen_stehen(kundin):
@@ -142,10 +140,11 @@ def test_knopf_nachrechnen(admin_client, kundin):
         _alter_abgleich(kundin, tag, beitrag, stand)
     url = reverse("uebernahme:besuche_konto")
     inhalt = admin_client.get(url).content.decode()
-    assert "Frühere Abgleiche in die Kasse übernehmen" in inhalt and "6,00 €" in inhalt
+    assert "Frühere Abgleiche in die Kasse übernehmen" in inhalt
+    assert "Nachrechnen läuft" not in inhalt
     assert admin_client.post(url, {"aktion": "nachrechnen"}).status_code == 302
     assert _bar_je_tag(kundin) == {dt.date(2026, 11, 3): Decimal("6.00")}
-    assert "Frühere Abgleiche" not in admin_client.get(url).content.decode()
+    assert 'id="nachrechnen"' not in admin_client.get(url).content.decode()
 
 
 def test_haushaltsseite_zeigt_bar_gezahlt(admin_client, kundin):
@@ -155,3 +154,51 @@ def test_haushaltsseite_zeigt_bar_gezahlt(admin_client, kundin):
         besuche_konto.uebernehmen(besuche_konto.lesen(_liste(tag, beitrag, stand)), "Büro")
     inhalt = admin_client.get(reverse("kunden:haushalt", args=["04711"])).content.decode()
     assert "Bar gezahlt" in inhalt and "6,00 €" in inhalt
+
+
+def _zweite_kundin():
+    h = Haushalt.objects.create(kundennummer="04712", kontostand=Decimal("0"))
+    Person.objects.create(haushalt=h, vorname="Hanna", nachname="Beispiel",
+                          geburtsdatum=dt.date(1965, 3, 2), ist_hauptperson=True)  # fmt: skip
+    return h
+
+
+def test_nachrechnen_in_portionen(admin_client, kundin, monkeypatch):
+    """Viele Kunden: Ein Aufruf hört nach der Zeit auf, die Seite ruft von selbst weiter auf –
+    und öffnet sofort, ohne vorher alles durchzurechnen."""
+    from apps.core.models import TafelEinstellungen
+    from apps.uebernahme import views
+
+    t = TafelEinstellungen.laden()
+    t.module = sorted(set(t.module or []) | {"uebernahme"})
+    t.save()
+    zweite = _zweite_kundin()
+    for h in (kundin, zweite):
+        for tag, beitrag, stand in TAGE:
+            _alter_abgleich(h, tag, beitrag, stand)
+    # Zeit sofort um: je Aufruf genau ein Kunde
+    erg = konto.abgleiche_nachrechnen("Büro", sekunden=0.000001)
+    assert erg["kunden"] == 1 and erg["offen"] == 1
+    assert konto.abgleiche_stand()["kunden"] == 1
+
+    # Seite öffnen rechnet nichts um
+    url = reverse("uebernahme:besuche_konto")
+    monkeypatch.setattr(konto, "_abgleich_umrechnen", lambda *a, **k: pytest.fail("rechnet"))
+    assert "Frühere Abgleiche" in admin_client.get(url).content.decode()
+    monkeypatch.undo()
+
+    # Weiterlaufen über htmx: solange etwas offen ist, zurück auf die Seite mit „läuft“
+    for h in (kundin,):
+        _alter_abgleich(h, dt.date(2026, 11, 24), "1,50", "0,00")
+    monkeypatch.setattr(views, "NACHRECHNEN_S", 0.000001)
+    antwort = admin_client.post(url, {"aktion": "nachrechnen"}, HTTP_HX_REQUEST="true")
+    assert antwort.status_code == 204 and "laeuft=1#" in antwort["HX-Redirect"]
+    laeuft = admin_client.get(url + "?laeuft=1").content.decode()
+    assert 'hx-trigger="load delay:300ms"' in laeuft and "Nachrechnen läuft" in laeuft
+    antwort = admin_client.post(url, {"aktion": "nachrechnen"}, HTTP_HX_REQUEST="true")
+    assert antwort["HX-Redirect"] == url
+    assert konto.abgleiche_stand() == {"kunden": 0, "korrekturen": 0}
+    for h in (kundin, zweite):
+        h.refresh_from_db()
+        assert _bar_je_tag(h)[dt.date(2026, 11, 3)] == Decimal("6.00")
+    assert kundin.kontostand == Decimal("0.00") and zweite.kontostand == Decimal("1.50")

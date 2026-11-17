@@ -76,6 +76,7 @@ an dem jemand für den Monat zahlte, stand in bintafeln nichts in der Kasse. Des
   Programm“) – auch wenn es keinen offenen Besuch gibt.
 - Zeilen **ohne Datum** setzen weiter nur den Kontostand per Korrektur.
 - **Frühere Abgleiche** (Korrekturen „Abgleich … (Stand TT.MM.JJJJ)“) rechnet
-  `konto.abgleiche_nachrechnen()` auf Knopfdruck um (mit Vorschau `abgleiche_vorschau()`): je Stand
+  `konto.abgleiche_nachrechnen()` auf Knopfdruck um (in Portionen von einigen Sekunden, je Kunde eine Transaktion; die Seite ruft
+  von selbst weiter auf, Stand über `abgleiche_stand()`): je Stand
   der damalige Kontostand, Korrekturen entfernen, Besuche bis zu dem Tag nach derselben Regel buchen.
   Der Kontostand bleibt gleich; mehrfach anwendbar.
