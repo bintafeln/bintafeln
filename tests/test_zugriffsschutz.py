@@ -65,6 +65,8 @@ ALLE_ANGEMELDETEN = {
     "konten:anmelden_code",
     "konten:abmelden",
     "konten:mein_konto",
+    "core:druck_senden",
+    "core:druck_umschalten",
     "konten:benachrichtigungen",
     "konten:passwort_aendern",
     "konten:meine_auskunft",

@@ -4,6 +4,7 @@ from apps.core import (
     views,
     views_app,
     views_datensicherung,
+    views_druck,
     views_mails,
     views_papierkorb,
     views_produktivstart,
@@ -80,4 +81,6 @@ urlpatterns = [
         name="sicherungsauftrag_loeschen",
     ),
     path("sicherungen/<int:pk>/jetzt/", views_sicherung.jetzt, name="sicherung_jetzt"),
+    path("druckansicht/senden/", views_druck.senden, name="druck_senden"),
+    path("druckansicht/umschalten/", views_druck.umschalten, name="druck_umschalten"),
 ]
