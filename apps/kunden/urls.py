@@ -2,6 +2,7 @@ from django.urls import path
 
 from apps.kunden import (
     views,
+    views_anmerkungen,
     views_ausgabestellen,
     views_bearbeiten,
     views_dokumente,
@@ -91,6 +92,8 @@ urlpatterns = [
     path("dokument/<int:pk>/loeschen/", views_dokumente.loeschen, name="dokument_loeschen"),
     path("haushalt/<path:kundennummer>/auskunft/", views.auskunft, name="auskunft"),
     path("haushalt/<path:kundennummer>/ausweis/", views.ausweis, name="ausweis"),
+    path("anmerkungen/", views_anmerkungen.liste, name="anmerkungen"),
+    path("anmerkungen/loeschen/", views_anmerkungen.loeschen, name="anmerkungen_loeschen"),
     path("notizen/", views_notizen.liste, name="notizen"),
     path("notizen/loeschen/", views_notizen.loeschen, name="notizen_loeschen"),
     path("notizen-an-ausgabestelle/", views.notizen_an_stelle, name="notizen_an_stelle"),

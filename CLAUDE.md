@@ -163,7 +163,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `Abholung.save()` setzt eine fehlende Ausgabestelle aus der Kundengruppe des Haushalts
   (`stelle_der_gruppe()`); `bulk_create` umgeht das, dort selbst setzen (wie `importieren._abholung`).
   Liste aller Notizen (Filter, Export, Löschen in den Papierkorb; Recht `kunden.notizen_loeschen`) in
-  `apps/kunden/views_notizen.py` (ADR 0143).
+  `apps/kunden/views_notizen.py`, aller Anmerkungen in `views_anmerkungen.py` (ADR 0143); „Angehakte
+  löschen“ über `static/js/liste_loeschen.js`.
   Notizen an die Ausgabestelle (`Notiz.an_stelle`, Startseite, Antwort beim Ausweisdruck) in
   `apps/kunden/an_stelle.py`; feste Notiz-Vorlagen zu `FESTE_ANLIEGEN` (ADR 0070).
   Nachricht einer Ausgabestelle an die Verwaltung ohne Kunden (`StellenNachricht`, Startseite,

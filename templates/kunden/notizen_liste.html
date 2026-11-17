@@ -29,7 +29,7 @@
   </form>
   <div id="ergebnis">
   {% auswahl_formular "" %}
-  <form id="notizen-loeschen" method="post" action="{% url 'kunden:notizen_loeschen' %}">{% csrf_token %}
+  <form id="notizen-loeschen" method="post" action="{% url 'kunden:notizen_loeschen' %}" data-liste-loeschen data-eins="Notiz" data-viele="Notizen">{% csrf_token %}
     <input type="hidden" name="zurueck" value="{{ request.get_full_path }}">
   </form>
   <div class="liste-aktionen">
@@ -60,5 +60,5 @@
   </div>
 </section>
 <script src="{% static 'js/auswahl.js' %}" defer></script>
-<script src="{% static 'js/notizen_liste.js' %}" defer></script>
+<script src="{% static 'js/liste_loeschen.js' %}" defer></script>
 {% endblock %}

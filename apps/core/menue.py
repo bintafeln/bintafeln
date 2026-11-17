@@ -136,6 +136,7 @@ def menue(request) -> list[dict]:
         ("kunden.bearbeiten", verlaengern),
         ("kunden.nachrichten", nachrichten),
         ("kunden.notizen_loeschen", _eintrag("Notizen", "kunden:notizen")),
+        ("kunden.anmerkungen", _eintrag("Anmerkungen", "kunden:anmerkungen")),
     ], vorn=True)  # fmt: skip
     antraege_zahl = None  # Abzeichen des Bereichs „Anträge und Warteliste“: nur die offenen Anträge
     if "antraege.sehen" in darf:
