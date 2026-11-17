@@ -31,3 +31,22 @@ Eine eigene Seite mit Bildern druckt auf jedem Gerät über den normalen Druckdi
 Kiosk-Modus, und hat immer einen Weg zurück. Die Umsetzung an einer Stelle (Middleware) erfasst
 alle vorhandenen und künftigen PDFs, ohne jede Ansicht anzufassen. Die Wahl je Gerät passt dazu,
 dass dieselbe Person am PC das PDF direkt, am Tablet die Druckansicht braucht.
+
+## Nachtrag: PDF im Fenster über der Seite (App vom Home-Bildschirm)
+
+Im Einsatz zeigte sich: In der App vom Home-Bildschirm (Vollbild, keine Browserleiste) öffnet
+jedes PDF in einem eigenen Fenster, aus dem man nicht zurückkommt („PDF öffnen“ blieb schwarz),
+und `window.print()` tut dort nichts. Deshalb:
+
+- `static/js/pdf_fenster.js` holt PDFs (Links mit `target="_blank"` auf eigene Seiten, GET- und
+  POST-Formulare über `neues_fenster.js`) im Hintergrund und zeigt sie in einem Fenster über der
+  Seite (`<dialog>`): Vorschau aller Seiten (`core:druck_vorschau`), „Drucken“, „Sichern“,
+  „Per E-Mail“ und ein großes „Schließen“. Die Seite wird nie verlassen.
+- „Drucken“ teilt das PDF über das Teilen-Menü des Geräts (Web Share mit Datei); dort steht
+  „Drucken“ (AirPrint). Ohne Teilen-Menü der Druckdialog über einen unsichtbaren Rahmen.
+- Aktiv in der App (`display-mode: standalone/fullscreen`, `navigator.standalone`) und auf
+  Geräten mit Druckansicht (`<body data-pdf-fenster="1">`). Signatur und Dateiname kommen beim
+  Abholen (`X-Bintafeln-Pdf`) als Kopfzeilen der Antwort, Vorschau und Mail nehmen das PDF als
+  Datei mit dieser Signatur.
+- Die Druckansicht als Seite bleibt für PDFs, die direkt als Seite geöffnet werden; auch dort
+  teilt „Drucken“ das PDF, wenn das Gerät es kann.

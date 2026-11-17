@@ -49,14 +49,17 @@
     var methode = ((knopf && knopf.getAttribute("formmethod")) || formular.getAttribute("method") ||
       "get").toLowerCase();
     if (ziel !== "_blank" || ereignis.defaultPrevented) return;
-    if (methode === "post" && !alsApp()) return;
+    var imFenster = window.bintafelnPdf && window.bintafelnPdf.aktiv();
+    if (methode === "post" && !alsApp() && !imFenster) return;
     ereignis.preventDefault();
     var daten = new FormData(formular);
     if (knopf && knopf.name) daten.append(knopf.name, knopf.value);
     var aktion = (knopf && knopf.getAttribute("formaction")) ? knopf.formAction : formular.action;
     if (methode !== "post") {
       var abfrage = new URLSearchParams(daten).toString();
-      window.open(aktion.split("?")[0] + (abfrage ? "?" + abfrage : ""), "_blank", "noopener");
+      var ziel = aktion.split("?")[0] + (abfrage ? "?" + abfrage : "");
+      if (imFenster) { window.bintafelnPdf.zeigen(ziel); return; }
+      window.open(ziel, "_blank", "noopener");
       return;
     }
     daten.append("_fenster", "1");
@@ -65,7 +68,10 @@
         if (!antwort.ok) throw new Error(antwort.status);
         return antwort.json();
       })
-      .then(function (inhalt) { anbieten(inhalt.adresse); })
+      .then(function (inhalt) {
+        if (imFenster) { window.bintafelnPdf.zeigen(inhalt.adresse); return; }
+        anbieten(inhalt.adresse);
+      })
       .catch(function () { window.alert("Das PDF konnte nicht erstellt werden. Bitte noch einmal versuchen."); });
   });
 })();

@@ -1,0 +1,18 @@
+{# Inhalt des PDF-Fensters über der Seite (ADR 0141): Knöpfe und die Seiten als Bilder; static/js/pdf_fenster.js füllt es #}
+<div class="pdf-fenster-knoepfe">
+  <button type="button" class="knopf" data-pdf-drucken>🖨 Drucken</button>
+  <button type="button" class="knopf knopf-zweitrangig" data-pdf-sichern>⬇ Sichern</button>
+  {% if mail_bereit and empfaenger %}<details class="druck-mail">
+    <summary class="knopf knopf-zweitrangig">✉ Per E-Mail</summary>
+    <form method="post" action="{% url 'core:druck_senden' %}" data-pdf-mail>
+      <label for="pdf-an">An</label>
+      <select name="an" id="pdf-an">{% for adresse, text in empfaenger %}<option value="{{ adresse }}">{{ text }}</option>{% endfor %}</select>
+      <button type="submit" class="knopf">Senden</button>
+      <span class="pdf-mail-ergebnis" role="status"></span>
+    </form>
+  </details>{% endif %}
+</div>
+<p class="hinweis">„Drucken“ öffnet das Teilen-Menü des Geräts – dort „Drucken“ wählen. {{ seiten|length }} Seite{{ seiten|length|pluralize:"n" }}.</p>
+<div class="druck-seiten">
+  {% for s in seiten %}<img class="druck-seite" src="data:image/png;base64,{{ s.bild }}" alt="Seite {{ forloop.counter }}">{% endfor %}
+</div>
