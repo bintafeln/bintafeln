@@ -9,7 +9,7 @@ pypdf==6.20.1
 openpyxl==3.1.5
 et-xmlfile==2.0.0
 nh3==0.3.7
-gunicorn==26.2.0
+gunicorn==27.0.1
 pillow==13.0.0
 # PDF-Nachweise rendern: kleine Vorschau und Seiten für die Ausweisprüfung (ADR 0107). PDFium
 # (Google), ein Wheel ohne Systempaket, BSD/Apache-lizenziert (AGPL-verträglich).
