@@ -165,6 +165,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Nachricht einer Ausgabestelle an die Verwaltung ohne Kunden (`StellenNachricht`, Startseite,
   Mail über die Benachrichtigung `nachricht_verwaltung`, Antwort auf der Startseite der Stelle) in
   `apps/kunden/an_verwaltung.py` (ADR 0140).
+  Post der Verwaltung an Ausgabestellen (`Rundschreiben`/`PostEmpfang`, Eule in der Kopfzeile über
+  `templates/kunden/_eulenpost.html` und `static/js/eulenpost.js`) in `apps/kunden/eulenpost.py` (ADR 0142).
 - Statische Dateien laufen im Betrieb über `ManifestStaticFilesStorage` (Dateinamen mit
   Prüfsumme), weil Caddy sie einen Tag zwischenspeichern lässt. Tests nutzen die einfache
   Ablage.

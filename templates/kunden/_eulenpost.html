@@ -1,0 +1,13 @@
+{# Post der Verwaltung in der Kopfzeile (ADR 0142): fragt jede Minute nach; static/js/eulenpost.js lässt bei neuer Post die Eule einfliegen #}
+{% with p=eulenpost %}<span id="eulenpost" class="eulenpost" hx-get="{% url 'kunden:post_kopf' %}" hx-trigger="every 60s" hx-swap="outerHTML" data-schluessel="{{ p.schluessel }}">{% if p.zahl %}<a href="{% url 'kunden:postfach' %}" class="eulen-landeplatz" title="{{ p.zahl }} neue Post der Verwaltung" aria-label="{{ p.zahl }} neue Post der Verwaltung">{% include "kunden/_eule.html" %}<span class="eulen-zahl">{{ p.zahl }}</span></a>{% if p.wichtig %}
+<template class="eulen-wichtig" data-schluessel="{{ p.wichtig.pk }}">
+  <h2>{% include "kunden/_eule.html" %} Wichtige Post der Verwaltung</h2>
+  <p class="hinweis">{{ p.wichtig.rundschreiben.erstellt_am|date:"d.m.Y H:i" }} · {{ p.wichtig.rundschreiben.von }}</p>
+  <h3>{{ p.wichtig.rundschreiben.betreff }}</h3>
+  <p class="eulen-text">{{ p.wichtig.rundschreiben.text|linebreaksbr }}</p>
+  <form method="post" action="{% url 'kunden:post_gelesen' p.wichtig.pk %}" class="aktionen">{% csrf_token %}
+    <input type="hidden" name="zurueck" value="{{ request.get_full_path }}">
+    <button type="submit" class="knopf">✓ Gelesen</button>
+    <button type="button" class="knopf knopf-zweitrangig" data-spaeter>Später</button>
+  </form>
+</template>{% endif %}{% endif %}</span>{% endwith %}

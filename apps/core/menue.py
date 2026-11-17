@@ -103,6 +103,7 @@ def menue(request) -> list[dict]:
         ("kasse.sehen", _eintrag("Kasse", "ausgabe:kasse")),
         ("einlass.nachtragen", _eintrag("Abholungen nachtragen", "ausgabe:nachtragen")),
         *([("kunden.liste", alle_kunden)] if an_der_stelle else []),
+        ("einlass.nutzen", _eintrag("Post der Verwaltung", "kunden:postfach")),
     ], vorn=True)  # fmt: skip
     dazu("Ausgabestelle/Verwaltung", [
         ("sonderaktionen.verwalten", _eintrag("Sonderaktionen", "ausgabe:sonderaktionen")),
@@ -133,6 +134,7 @@ def menue(request) -> list[dict]:
         ("kunden.liste", _eintrag("Zuletzt aufgenommen", "kunden:zuletzt_aufgenommen")),
         ("kunden.bearbeiten", verlaengern),
         ("kunden.nachrichten", nachrichten),
+        ("kunden.nachrichten", _eintrag("Post an Ausgabestellen", "kunden:post_schreiben")),
     ], vorn=True)  # fmt: skip
     antraege_zahl = None  # Abzeichen des Bereichs „Anträge und Warteliste“: nur die offenen Anträge
     if "antraege.sehen" in darf:
