@@ -177,6 +177,31 @@ def test_hilfe_bild_notizen_liste(angemeldet, admin, muster):
     assert Notiz.objects.count() == vorher - 1
 
 
+def test_hilfe_bild_anmerkungen_liste(angemeldet, admin, muster):
+    """Liste aller Anmerkungen: Bild fürs Handbuch und der Ablauf „anhaken, löschen“."""
+    from apps.kunden.models import Bemerkung
+
+    h = Haushalt.objects.get(kundennummer="00042")
+    Bemerkung.objects.filter(haushalt=h).delete()
+    for tag, text in ((3, "Zahlt den Beitrag für den ganzen Monat im Voraus."),
+                      (10, "Neue Anschrift ab Dezember, Bescheid folgt.")):  # fmt: skip
+        Bemerkung.objects.create(haushalt=h, datum=dt.date(2026, 11, tag), text=text,
+                                 verfasst_von="Büro")  # fmt: skip
+    seite = oeffnen(angemeldet, admin, reverse("kunden:anmerkungen"))
+    karte = seite.locator("section.karte").first
+    erste = seite.locator('tbody input[name="id"]').first
+    erste.check()
+    aufnehmen(seite, "anmerkungen-liste", [karte],
+              Marke(seite.locator("form.filter-kompakt"), "rahmen", 1),
+              Marke(erste, nummer=2, von="links", laenge=30),
+              Marke(seite.locator("[data-anmerkungen-loeschen]"), "rahmen", 3),
+              Marke(seite.locator(".listen-werkzeuge summary"), "rahmen", 4))  # fmt: skip
+    seite.once("dialog", lambda d: d.accept())
+    seite.locator("[data-anmerkungen-loeschen]").click()
+    expect(seite.get_by_text("1 Anmerkung in den Papierkorb gelegt.")).to_be_visible()
+    assert Bemerkung.objects.filter(haushalt=h).count() == 1
+
+
 def test_hilfe_bild_eulenpost(angemeldet, admin, muster):
     from apps.kunden import eulenpost
 

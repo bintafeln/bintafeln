@@ -1,4 +1,4 @@
-# 0143: Liste aller Notizen
+# 0143: Listen aller Notizen und Anmerkungen
 
 - Status: Angenommen
 - Datum: 2026-11-17
@@ -36,3 +36,14 @@ Haushalt löschen.
 
 - Der Export enthält Notiztexte zu Kunden (auch Krankmeldungen). Er geht deshalb nur an
   Berechtigte und über die bestehenden Wege (Download, Mail an die angegebene Adresse).
+
+## Ergänzung: Liste aller Anmerkungen
+
+Dasselbe gilt für interne Anmerkungen zu Haushalten (`Bemerkung`): „Kunden → Anmerkungen“
+(`apps/kunden/views_anmerkungen.py`, `kunden:anmerkungen`) mit Filter nach Ausgabestelle und
+Zeitraum, Suche, Export und Löschen angehakter Anmerkungen über den Papierkorb.
+
+- **Rechte:** sehen mit `kunden.anmerkungen`, löschen wie beim Haushalt mit `kunden.bearbeiten`.
+- Anmerkungen zu Anträgen (`AntragAnmerkung`) gehören nicht dazu; sie bleiben beim Antrag.
+- Das gemeinsame Skript für „Angehakte löschen“ ist `static/js/liste_loeschen.js`
+  (`data-liste-loeschen` am Formular).
