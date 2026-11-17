@@ -1,0 +1,29 @@
+# Dependabot: schlägt neue Versionen der Abhängigkeiten als Pull Request vor (wie jede Änderung
+# erst nach Prüfung und Merge durch den Maintainer). Sicherheitsupdates kommen zusätzlich sofort,
+# wenn sie in den Einstellungen des Repositorys eingeschaltet sind.
+#
+# Bewusst nicht dabei: die Docker-Images (postgres, caddy, python, docker). Deren Hauptversionen
+# sind absichtlich festgelegt – ein neues PostgreSQL braucht z. B. eine Datenübernahme und kommt
+# nur mit eigenem PR und Anleitung.
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "Abhängigkeiten"
+    groups:
+      kleine-updates:
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "CI"
+    groups:
+      actions:
+        patterns: ["*"]

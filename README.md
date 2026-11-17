@@ -2171,6 +2171,11 @@ tests/              pytest-Tests und Ende-zu-Ende-Test der Sicherung
 - Keine festen IP-Adressen, Pfade oder Tafel-Namen im Code; alles kommt aus `.env` oder der
   Datenbank.
 
+## Sicherheitslücken melden
+
+Bitte vertraulich über „Security → Report a vulnerability“ in diesem Repository, nicht als
+öffentliches Issue. Einzelheiten in [SECURITY.md](SECURITY.md).
+
 ## Lizenz
 
 bintafeln ist freie Software unter der [GNU AGPL v3.0](LICENSE). Wer eine veränderte Version
