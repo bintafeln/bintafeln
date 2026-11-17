@@ -151,6 +151,8 @@ _SEITE = {
     "kunden:verlaengern": "kunden-finden",
     "kunden:nachrichten": "notizen",
     "kunden:an_verwaltung": "einlass",
+    "kunden:postfach": "einlass",
+    "kunden:post_schreiben": "kunden-bearbeiten",
     "kunden:haushalt_neu": "kunden-bearbeiten",
     "kunden:bearbeiten": "kunden-bearbeiten",
     "kunden:ausgabestellen": "ausgabestellen",

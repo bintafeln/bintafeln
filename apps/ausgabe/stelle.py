@@ -139,9 +139,12 @@ def kontext(request) -> dict:
     benutzer = request.user
     if not rollen.hat_recht(benutzer, "einlass.nutzen"):
         return {}
+    from apps.kunden import eulenpost
+
     stelle = aktuelle(benutzer)
     return {
         "ausgabestelle": stelle,
+        "eulenpost": eulenpost.stand(stelle) if stelle else None,
         "ausgabestellen_wahl": [] if benutzer.stelle_id else waehlbar(benutzer),
         "ausgabe_fortschritt": fortschritt(stelle, timezone.localdate()),
     }

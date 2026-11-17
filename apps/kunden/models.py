@@ -883,6 +883,52 @@ class StellenNachricht(models.Model):
         return self.betreff
 
 
+class Rundschreiben(models.Model):
+    """Post der Verwaltung an eine oder mehrere Ausgabestellen (ADR 0142). Je Ausgabestelle ein
+    ``PostEmpfang`` mit Lesestand; Logik in ``apps/kunden/eulenpost.py``."""
+
+    AUFBEWAHREN_TAGE = 90
+
+    betreff = models.CharField("Betreff", max_length=200)
+    text = models.TextField("Nachricht", max_length=4000)
+    wichtig = models.BooleanField("Wichtig", default=False, help_text=(
+        "Legt bei der Ausgabestelle zusätzlich einen Hinweis über die Seite, bis jemand ihn "
+        "als gelesen bestätigt."))  # fmt: skip
+    von = models.CharField("Von", max_length=150, blank=True)
+    benutzer = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                 on_delete=models.SET_NULL, related_name="+",
+                                 verbose_name="Geschrieben von")  # fmt: skip
+    erstellt_am = models.DateTimeField("Geschrieben am", default=timezone.now)
+
+    class Meta:
+        verbose_name = "Post an Ausgabestellen"
+        verbose_name_plural = "Post an Ausgabestellen"
+        ordering = ["-erstellt_am"]
+
+    def __str__(self):
+        return self.betreff
+
+
+class PostEmpfang(models.Model):
+    """Eine Ausgabestelle als Empfängerin eines Rundschreibens, mit Lesestand."""
+
+    rundschreiben = models.ForeignKey(Rundschreiben, on_delete=models.CASCADE,
+                                      related_name="empfaenge")  # fmt: skip
+    stelle = models.ForeignKey("Ausgabestelle", on_delete=models.CASCADE, related_name="+",
+                               verbose_name="Ausgabestelle")  # fmt: skip
+    gelesen_am = models.DateTimeField("Gelesen am", null=True, blank=True)
+    gelesen_von = models.CharField("Gelesen von", max_length=150, blank=True)
+
+    class Meta:
+        verbose_name = "Empfang der Post"
+        verbose_name_plural = "Empfang der Post"
+        constraints = [models.UniqueConstraint(fields=["rundschreiben", "stelle"],
+                                               name="post_einmal_je_stelle")]  # fmt: skip
+
+    def __str__(self):
+        return f"{self.rundschreiben} → {self.stelle}"
+
+
 def verwaiste_notizen_loeschen() -> int:
     """Notizen zu Kundennummern, die es nicht mehr gibt, und Krankmeldungen, sobald der Kunde
     seit dem Beginn wieder abgeholt hat (ADR 0075). Nie allein, weil das Ende vorbei ist: Bis der
@@ -1291,7 +1337,13 @@ def alte_nachrichten_loeschen() -> int:
     grenze = timezone.now() - dt.timedelta(days=Nachricht.AUFBEWAHREN_TAGE)
     weg = Nachricht.objects.filter(erledigt_am__lt=grenze).delete()[0]
     grenze = timezone.now() - dt.timedelta(days=StellenNachricht.AUFBEWAHREN_TAGE)
-    return weg + StellenNachricht.objects.filter(erledigt_am__lt=grenze).delete()[0]
+    weg += StellenNachricht.objects.filter(erledigt_am__lt=grenze).delete()[0]
+    # Post an Ausgabestellen: wenn alle gelesen haben und die Frist seit dem Schreiben um ist
+    grenze = timezone.now() - dt.timedelta(days=Rundschreiben.AUFBEWAHREN_TAGE)
+    alt = Rundschreiben.objects.filter(erstellt_am__lt=grenze).exclude(
+        empfaenge__gelesen_am__isnull=True
+    )
+    return weg + alt.delete()[0]
 
 
 def _gruppenregel() -> int:
@@ -1389,4 +1441,6 @@ auditlog.register(Person, exclude_fields=["such_name"])  # such_name ist abgelei
 auditlog.register(HaushaltDokument, exclude_fields=["datei"])
 auditlog.register(Nachricht)
 auditlog.register(StellenNachricht)
+auditlog.register(Rundschreiben)
+auditlog.register(PostEmpfang)
 auditlog.register(GeplanterWechsel)

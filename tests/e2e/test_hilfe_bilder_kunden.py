@@ -148,6 +148,28 @@ def test_hilfe_bild_kunden_nachrichten(angemeldet, admin, muster):
     # fmt: skip
 
 
+def test_hilfe_bild_eulenpost(angemeldet, admin, muster):
+    from apps.kunden import eulenpost
+
+    mitte = Ausgabestelle.objects.get(name="Ausgabestelle Mitte")
+    alt = eulenpost.schreiben(
+        [mitte], admin, "Neue Öffnungszeiten", "Ab Dezember öffnen wir um 10 Uhr."
+    )
+    eulenpost.gelesen(alt.empfaenge.get(), admin)
+    eulenpost.schreiben(
+        [mitte], admin, "Kühlware", "Morgen kommt keine Kühlware, bitte Bescheid geben."
+    )
+    seite = oeffnen(angemeldet, admin, reverse("kunden:postfach"))
+    expect(seite.locator(".eulen-landeplatz.eule-gelandet")).to_be_visible(timeout=6000)
+    seite.wait_for_timeout(700)  # Landung abwarten
+    karte = seite.locator("section.karte").first
+    aufnehmen(seite, "eulenpost", [seite.locator(".kopf-rechts"), karte],
+              Marke(seite.locator(".eulen-landeplatz"), "rahmen", 1),
+              Marke(karte.get_by_role("button", name="✓ Gelesen"), nummer=2, von="rechts",
+                    laenge=40),
+              Marke(seite.locator("[data-eulenton]"), "rahmen", 3))  # fmt: skip
+
+
 def test_hilfe_bild_an_verwaltung(angemeldet, admin, muster):
     from apps.kunden.models import StellenNachricht
 
