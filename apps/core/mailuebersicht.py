@@ -38,6 +38,11 @@ KERN = (
     Mail("Liste als Mail (Export)",
          "Wenn jemand in einer Liste „per Mail senden“ wählt.",
          "Die Adresse, die dabei eingegeben wird."),
+    Mail("PDF aus der Druckansicht",
+         "Wenn jemand in der Druckansicht eines PDFs (Tablets der Ausgabestellen) „Per E-Mail "
+         "senden“ wählt.",
+         "Die dabei gewählte Adresse: die E-Mail der Ausgabestelle, die eigene oder die der "
+         "Tafel."),
     Mail("Testmail",
          "Wenn jemand unter „E-Mail“ die Testmail auslöst.",
          "Die dabei angegebene Adresse.",

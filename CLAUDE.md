@@ -277,6 +277,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Zeichen, die im Druck als schwarzer Block erscheinen: `apps.core.zeichen.bereinigen()` beim
   Hereinkommen (`Adresse.save()`, PDF-Text) und als Netz beim Drucken (`pdf.text()`).
 - PDFs nur über `apps.core.pdf` (`Pdf`-Rahmen, `pdf_antwort()` ohne Zwischenspeichern; ADR 0021).
+  Druckansicht für Tablets im Kiosk-Modus (ADR 0141): `apps.core.druckansicht.DruckansichtMiddleware`
+  zeigt PDFs als Seite mit Drucken/Mail/Zurück (Vorgabe für Ausgabestellen-Konten, sonst je Gerät
+  per Cookie unter „Mein Konto“; `?_pdf=roh` liefert das PDF selbst).
   Auskunft Art. 15: `apps/kunden/auskunft.py` und `apps/konten/auskunft.py`, Kundenausweis
   `apps/kunden/ausweis.py` nach `AusweisVorlage` (ADR 0027; Kundennummer und Barcode Pflicht),
   Kassenbericht `kasse.bericht_pdf()`. Neue gespeicherte Daten zu Personen gehören auch in die

@@ -1,0 +1,5 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Versand</title>
+<style>body { font-family: system-ui, sans-serif; margin: .25rem 0; font-size: .95rem; }
+.ok { color: #1b6e2a; } .fehler { color: #a61b1b; }</style></head>
+<body><p class="{{ ok|yesno:'ok,fehler' }}">{% if ok %}✓ {% endif %}{{ ergebnis }}</p></body></html>

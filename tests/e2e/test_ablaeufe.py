@@ -1743,3 +1743,40 @@ def test_eulenpost_fliegt_ein_und_landet(angemeldet, admin):
     knopf.click()
     expect(knopf).to_contain_text("aus")
     assert seite.evaluate("localStorage.getItem('bintafeln-eulenton')") == "aus"
+
+
+def test_druckansicht_kassenabschluss_am_tablet(angemeldet, admin, live_server, settings):
+    """Kiosk-Tablet (ADR 0141): Der Kassenabschluss öffnet als Seite mit „Drucken“, Mail und
+    „Zurück“; gedruckt werden nur die Seiten."""
+    from apps.core import druckansicht
+    from apps.core.models import MailEinstellungen, TafelEinstellungen
+
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+    e = MailEinstellungen.laden()
+    e.server, e.absender = "smtp.example.org", "absender@example.org"
+    e.save()
+    t = TafelEinstellungen.laden()
+    t.email = "tafel@example.org"
+    t.save()
+    seite = angemeldet(admin)
+    seite.context.add_cookies([{"name": druckansicht.COOKIE, "value": "1", "url": live_server.url}])
+    seite.context.add_init_script("window.gedruckt = 0; window.print = () => window.gedruckt++;")
+    seite.goto(reverse("ausgabe:kasse"))
+    with seite.expect_popup() as fenster:
+        seite.get_by_role("link", name=re.compile("drucken \\(PDF\\)")).click()
+    druck = fenster.value
+    druck.wait_for_load_state()
+    expect(druck.locator("img.druck-seite").first).to_be_visible()
+    druck.get_by_role("button", name="🖨 Drucken").click()
+    assert druck.evaluate("window.gedruckt") == 1
+    druck.emulate_media(media="print")
+    expect(druck.locator("header.kopf")).to_be_hidden()
+    expect(druck.locator(".druck-leiste")).to_be_hidden()
+    expect(druck.locator("img.druck-seite").first).to_be_visible()
+    druck.emulate_media(media="screen")
+    druck.locator("summary", has_text="Per E-Mail senden").click()
+    druck.get_by_role("button", name="Senden").click()
+    ergebnis = druck.frame_locator("iframe[name=druck-mail-ergebnis]")
+    expect(ergebnis.get_by_text("Das PDF wurde an tafel@example.org gesendet.")).to_be_visible()
+    with druck.expect_event("close"):
+        druck.get_by_role("button", name="← Zurück").click()

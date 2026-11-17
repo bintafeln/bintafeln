@@ -2188,4 +2188,27 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 .post-lesestand { margin: .25rem 0 0; padding-left: 1.1rem; font-size: .9rem; }
 @media (prefers-reduced-motion: reduce) {
   .eulen-landeplatz .eule, .eulen-landeplatz.eule-gelandet .eule { animation: none; }
+
+/* Druckansicht eines PDFs (ADR 0141): am Bildschirm Seiten untereinander, beim Drucken nur die
+   Seiten, jede auf einem eigenen Blatt. */
+.druck-leiste { display: grid; gap: .5rem; margin-bottom: 1rem; }
+.druck-leiste h1 { margin: 0; font-size: 1.2rem; overflow-wrap: anywhere; }
+.druck-mail form { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .5rem; }
+.druck-mail > summary { display: inline-flex; width: auto; list-style: none; }
+.druck-mail > summary::-webkit-details-marker { display: none; }
+.druck-mail select { width: auto; max-width: 100%; }
+.druck-mail-ergebnis { border: 0; width: 100%; height: 2rem; display: block; }
+.druck-seiten { display: grid; gap: 1rem; justify-items: center; }
+.druck-seite { max-width: 100%; height: auto; box-shadow: 0 1px 4px rgba(0, 0, 0, .25); background: #fff; }
+.druck-umschalten { margin-top: 1rem; }
+@media print {
+  @page { margin: 0; }
+  body:has(.druckansicht) .kopf, body:has(.druckansicht) .seitenmenue, body:has(.druckansicht) .fuss,
+  body:has(.druckansicht) .meldungen, body:has(.druckansicht) .menue-knopf,
+  .druck-leiste, .druck-umschalten { display: none !important; }
+  body:has(.druckansicht) .rahmen, body:has(.druckansicht) .inhalt, .druckansicht { margin: 0 !important; padding: 0 !important;
+    border: 0 !important; box-shadow: none !important; max-width: none !important; }
+  .druck-seiten { display: block; }
+  .druck-seite { display: block; width: 100%; max-width: none; box-shadow: none; break-after: page; }
+  .druck-seite:last-child { break-after: auto; }
 }
