@@ -60,6 +60,7 @@ EINSTELLUNGS_MODELLE = {
     "kunden.zusatzfeld", "kunden.ausgabestelle", "kunden.kundengruppe", "kunden.einkommensart",
     "kunden.notizvorlage", "kunden.dokumentart", "kunden.ausweisvorlage",
     "ausgabe.ausgabeeinstellungen", "ausgabe.beitragsfreierzeitraum", "ausgabe.sonderausgabe",
+    "ausgabe.schliesszeit",
     "antraege.antrageinstellungen", "antraege.antragtext", "personal.arbeitszeiteinstellungen",
     "konten.personaleinstellungen", "konten.dokumentkategorie", "adressen.adresskategorie",
     "spenden.spendeneinstellungen", "mitglieder.mitgliedereinstellungen",

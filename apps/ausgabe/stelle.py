@@ -139,6 +139,7 @@ def kontext(request) -> dict:
     benutzer = request.user
     if not rollen.hat_recht(benutzer, "einlass.nutzen"):
         return {}
+    from apps.ausgabe.models import Schliesszeit
     from apps.kunden import eulenpost
 
     stelle = aktuelle(benutzer)
@@ -147,4 +148,6 @@ def kontext(request) -> dict:
         "eulenpost": eulenpost.stand(stelle) if stelle else None,
         "ausgabestellen_wahl": [] if benutzer.stelle_id else waehlbar(benutzer),
         "ausgabe_fortschritt": fortschritt(stelle, timezone.localdate()),
+        # laufende oder bald beginnende Schließzeit: Hinweis am Einlass und auf der Startseite
+        "schliesszeit": Schliesszeit.hinweis(stelle, timezone.localdate()),
     }

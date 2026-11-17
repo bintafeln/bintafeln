@@ -4,6 +4,7 @@ from apps.ausgabe.ampel import MELDUNGEN
 from apps.ausgabe.models import (
     AusgabeEinstellungen,
     BeitragsfreierZeitraum,
+    Schliesszeit,
     Sonderaktion,
     SonderaktionAuswahl,
     Sonderausgabe,
@@ -89,6 +90,17 @@ class BeitragsfreiForm(forms.ModelForm):
         model = BeitragsfreierZeitraum
         fields = ["bezeichnung", "von", "bis"]
         widgets = {"von": DatumEingabe(), "bis": DatumEingabe()}
+
+
+class SchliesszeitForm(forms.ModelForm):
+    class Meta:
+        model = Schliesszeit
+        fields = ["ausgabestelle", "von", "bis", "bezeichnung"]
+        widgets = {"von": DatumEingabe(), "bis": DatumEingabe()}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["ausgabestelle"].queryset = Ausgabestelle.objects.order_by("name")
 
 
 class GruppenAuswahl(forms.ModelMultipleChoiceField):

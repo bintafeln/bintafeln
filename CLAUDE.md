@@ -149,6 +149,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   alte Abgleich-Korrekturen über `konto.abgleiche_nachrechnen()`), `beitrag` ist nie Bargeld; Kasse-Auswertung in
   `apps/ausgabe/kasse.py`; Kamera-Scanner `static/js/kamera_scanner.js` für Felder mit
   `data-kamera`, Bibliothek fest unter `static/vendor/barcode-detector`, kein CDN, ADR 0029;
+  Schließzeiten je Ausgabestelle (`Schliesszeit`, ADR 0144): zählen im Vorauszahlungs-Vorschlag nicht mit
+  (`konto.vorschlaege()`), Hinweis am Einlass über `stelle.kontext`;
   Sonderaktionen: Regeln in `apps/ausgabe/sonderaktionen.py`, `Teilnahme` an der Kundennummer,
   ADR 0032; aktuelle Ausgabestelle nur über `apps/ausgabe/stelle.py` (`aktuelle()`, Auswahl oben
   im Menü, `Benutzer.gewaehlte_stelle`, Fortschritt in der Kopfzeile, ADR 0067); wer an einem

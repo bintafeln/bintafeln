@@ -16,7 +16,12 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.ausgabe.ampel import WOCHENTAGE
-from apps.ausgabe.models import AusgabeEinstellungen, BeitragsfreierZeitraum, Buchung
+from apps.ausgabe.models import (
+    AusgabeEinstellungen,
+    BeitragsfreierZeitraum,
+    Buchung,
+    Schliesszeit,
+)
 from apps.core.feiertage import feiertage, ist_feiertag
 from apps.core.models import TafelEinstellungen
 from apps.kunden.models import Haushalt, abholfrist_beginn
@@ -455,6 +460,9 @@ def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]
         tage = _tage(von, bis, wochentage)
         frei = [t for t in tage if ist_feiertag(t, land)]
         tage = [t for t in tage if t not in frei]
+        zu = Schliesszeit.tage(gruppe.ausgabestelle, von, bis)
+        geschlossen = [t for t in tage if t in zu]
+        tage = [t for t in tage if t not in zu]
         ohne_beitrag = [t for t in tage if BeitragsfreierZeitraum.am(t)]
         tage = [t for t in tage if t not in ohne_beitrag]
         if h.ausweis_gueltig_bis and any(t > h.ausweis_gueltig_bis for t in tage):
@@ -489,15 +497,18 @@ def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]
                 f"{WOCHENTAGE[t.weekday()]} {t:%d.%m.} ({feiertage(t.year, land)[t]})" for t in frei
             )
             v.erklaerung.append(f"Nicht gezählt, weil Feiertag: {namen}.")
-        if land:
-            v.erklaerung.append(
-                "Ausfallende Ausgabetage (z. B. Betriebsferien) sind nicht berücksichtigt."
-            )
-        else:
+        if geschlossen:
+            namen = ", ".join(f"{WOCHENTAGE[t.weekday()]} {t:%d.%m.}" for t in geschlossen)
+            v.erklaerung.append(f"Nicht gezählt, weil die Ausgabestelle geschlossen hat: {namen}")
+        if not land:
             v.erklaerung.append(
                 "Feiertage sind nicht berücksichtigt (in den Einstellungen der Tafel ist kein "
-                "Bundesland gewählt), ausfallende Ausgabetage ebenfalls nicht."
+                "Bundesland gewählt)."
             )
+        v.erklaerung.append(
+            "Schließzeiten der Ausgabestelle zählen nur, wenn sie unter „Einstellungen → "
+            "Schließzeiten“ eingetragen sind."
+        )
         ergebnis.append(v)
     if not ergebnis:
         return [], (f"Kein Vorschlag: Bis Monatsende sind weniger als {VORSCHLAG_AB_TAGEN} "

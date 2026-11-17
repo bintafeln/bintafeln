@@ -118,9 +118,9 @@ def test_vorschlag_laesst_feiertage_aus(land):
     e.max_abholungen = 0
     heute = dt.date(2026, 12, 17)  # Donnerstag; 25.12.2026 ist ein Freitag
     rest = konto.vorschlaege(h, heute, e, D("1"))[0][0]
-    assert len(rest.tage) == 5 and "kein Bundesland gewählt" in rest.erklaerung[-1]
+    assert len(rest.tage) == 5 and "kein Bundesland gewählt" in rest.erklaerung[-2]
     land("NW")
     rest = konto.vorschlaege(h, heute, e, D("1"))[0][0]
     assert dt.date(2026, 12, 25) not in rest.tage and len(rest.tage) == 4
     assert "Nicht gezählt, weil Feiertag: Fr 25.12. (1. Weihnachtstag)." in rest.erklaerung
-    assert "Betriebsferien" in rest.erklaerung[-1]
+    assert "Schließzeiten" in rest.erklaerung[-1]

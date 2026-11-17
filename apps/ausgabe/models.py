@@ -1,6 +1,7 @@
 """Ausgabe (Modul 4): Einstellungen für Einlass und Ampel. Fachliche Grundlage:
 docs/fachkonzept.md, Entscheidung: docs/adr/0013-empfang-erfasst-abholungen.md."""
 
+import datetime as dt
 from decimal import Decimal
 
 from auditlog.registry import auditlog
@@ -187,7 +188,76 @@ class BeitragsfreierZeitraum(models.Model):
         return cls.objects.filter(von__lte=tag, bis__gte=tag).first()
 
 
+class Schliesszeit(models.Model):
+    """Eine Ausgabestelle hat in diesem Zeitraum geschlossen, z. B. Sommerpause oder zwischen
+    den Jahren (ADR 0144). Die Tage zählen im Vorauszahlungs-Vorschlag nicht mit, und der
+    Einlass weist darauf hin."""
+
+    ausgabestelle = models.ForeignKey(
+        Ausgabestelle, on_delete=models.CASCADE, related_name="schliesszeiten",
+        verbose_name="Ausgabestelle",
+    )  # fmt: skip
+    bezeichnung = models.CharField("Bezeichnung", max_length=100, blank=True,
+                                   help_text="z. B. Sommerpause")  # fmt: skip
+    von = models.DateField("Von")
+    bis = models.DateField("Bis einschließlich")
+
+    class Meta:
+        verbose_name = "Schließzeit"
+        verbose_name_plural = "Schließzeiten"
+        ordering = ["-von", "ausgabestelle__name"]
+
+    def __str__(self):
+        name = f" ({self.bezeichnung})" if self.bezeichnung else ""
+        return f"{self.ausgabestelle}: {self.von:%d.%m.%Y} bis {self.bis:%d.%m.%Y}{name}"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if self.von and self.bis and self.bis < self.von:
+            raise ValidationError({"bis": "„Bis“ darf nicht vor „Von“ liegen."})
+
+    @property
+    def aktiv(self) -> bool:
+        """Für die Listenansicht: vergangene Schließzeiten gelten als inaktiv."""
+        return self.bis >= timezone.localdate()
+
+    @property
+    def laeuft(self) -> bool:
+        return self.von <= timezone.localdate() <= self.bis
+
+    @classmethod
+    def am(cls, stelle, tag) -> "Schliesszeit | None":
+        """Die Schließzeit der Ausgabestelle an diesem Tag."""
+        if stelle is None:
+            return None
+        return cls.objects.filter(ausgabestelle=stelle, von__lte=tag, bis__gte=tag).first()
+
+    @classmethod
+    def tage(cls, stelle, von, bis) -> set:
+        """Alle geschlossenen Tage der Ausgabestelle zwischen ``von`` und ``bis``."""
+        geschlossen = set()
+        if stelle is None:
+            return geschlossen
+        for z in cls.objects.filter(ausgabestelle=stelle, von__lte=bis, bis__gte=von):
+            tag = max(z.von, von)
+            while tag <= min(z.bis, bis):
+                geschlossen.add(tag)
+                tag += dt.timedelta(days=1)
+        return geschlossen
+
+    @classmethod
+    def hinweis(cls, stelle, heute, vorlauf_tage: int = 14) -> "Schliesszeit | None":
+        """Die laufende oder die nächste Schließzeit, die in den nächsten Tagen beginnt."""
+        if stelle is None:
+            return None
+        return (cls.objects.filter(ausgabestelle=stelle, bis__gte=heute,
+                                   von__lte=heute + dt.timedelta(days=vorlauf_tage))
+                .order_by("von").first())  # fmt: skip
+
+
 auditlog.register(AusgabeEinstellungen)
+auditlog.register(Schliesszeit)
 
 
 class Buchung(models.Model):
