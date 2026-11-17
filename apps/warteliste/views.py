@@ -376,6 +376,21 @@ def termin(request, pk):
     })  # fmt: skip
 
 
+@never_cache
+@sehen
+def termin_kalender(request, pk):
+    """Der Termin als Kalendereintrag (.ics) für den eigenen Kalender: Tag, Uhrzeit, Ort und
+    die Zahl der Eingeladenen – keine Namen."""
+    from apps.warteliste import kalender
+
+    t = get_object_or_404(Termin, pk=pk)
+    adresse = request.build_absolute_uri(reverse("warteliste:termin", args=[t.pk]))
+    text = kalender.ics(t, ablauf.ort(t), request.get_host().split(":")[0], adresse)
+    antwort = HttpResponse(text, content_type="text/calendar; charset=utf-8")
+    antwort["Content-Disposition"] = f'attachment; filename="neuanmeldung-{t.datum:%Y-%m-%d}.ics"'
+    return antwort
+
+
 @require_POST
 @bearbeiten
 def termin_absagen(request, pk):
