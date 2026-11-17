@@ -22,7 +22,7 @@ from django.views.decorators.http import require_POST
 from django_otp import login as otp_login
 from django_otp import match_token
 
-from apps.core import anlaesse, mail, module
+from apps.core import anlaesse, druckansicht, mail, module
 from apps.konten import anmeldeprotokoll, einladung, rollen, zwei_faktor
 from apps.konten.forms import AnmeldeEinstellungenForm, AnmeldeForm, CodeForm, ZweiterSchrittForm
 from apps.konten.models import AnmeldeEinstellungen, VertrautesGeraet
@@ -238,6 +238,7 @@ def mein_konto(request):
             "zwei_faktor_erlaubt": zwei_faktor.erlaubt(request.user),
             "modul_konto": module.mein_konto(request),
             "unterschrift": _eigene_unterschrift(request.user),
+            "druckansicht": druckansicht.aktiv(request),
         },
     )
 

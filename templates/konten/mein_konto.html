@@ -54,6 +54,17 @@
 
     {% for teil in modul_konto %}{{ teil }}{% endfor %}
 
+    <div class="konto-kachel" id="druckansicht">
+      <h2>PDFs auf diesem Gerät</h2>
+      <p>Für Tablets im Kiosk-Modus: PDFs öffnen als <strong>Druckansicht</strong> mit den Knöpfen „Drucken“, „Per E-Mail
+        senden“ und „Zurück“. Gilt nur für diesen Browser.</p>
+      <p class="sicherung{% if druckansicht %} sicherung-ok{% endif %}">Im Moment: {% if druckansicht %}als Druckansicht{% else %}direkt als PDF{% endif %}.</p>
+      <form method="post" action="{% url 'core:druck_umschalten' %}">{% csrf_token %}
+        <input type="hidden" name="an" value="{{ druckansicht|yesno:'0,1' }}"><input type="hidden" name="zurueck" value="{{ request.path }}#druckansicht">
+        <button type="submit" class="knopf knopf-zweitrangig">{% if druckansicht %}PDFs direkt öffnen{% else %}PDFs als Druckansicht öffnen{% endif %}</button>
+      </form>
+    </div>
+
     {% if not user.stelle_id %}{# Konto einer Ausgabestelle: keine Person, keine Auskunft (ADR 0059) #}
     <div class="konto-kachel">
       <h2>Meine Daten</h2>

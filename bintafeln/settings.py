@@ -102,6 +102,7 @@ MIDDLEWARE = [
     "apps.konten.middleware.PasswortAendernMiddleware",
     "apps.konten.middleware.ZweiFaktorMiddleware",
     "apps.konten.middleware.StellenKontoMiddleware",
+    "apps.core.druckansicht.DruckansichtMiddleware",
 ]
 
 ROOT_URLCONF = "bintafeln.urls"

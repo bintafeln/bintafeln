@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block titel %}Druckansicht{% endblock %}
+{% block inhalt %}
+{# PDF als Seite für Tablets im Kiosk-Modus (ADR 0141); jede Seite als Bild, gedruckt über den Druckdialog des Geräts #}
+<section class="karte druckansicht" data-quer="{{ quer|yesno:'1,0' }}">
+  <div class="druck-leiste">
+    <h1>{{ dateiname }}</h1>
+    <div class="aktionen">
+      <button type="button" class="knopf" data-drucken>🖨 Drucken</button>
+      <a class="knopf knopf-zweitrangig" href="data:application/pdf;base64,{{ pdf }}" download="{{ dateiname }}">⬇ PDF herunterladen</a>
+      <button type="button" class="knopf knopf-zweitrangig" data-zurueck>← Zurück</button>
+    </div>
+    {% if mail_bereit and empfaenger %}
+    <details class="druck-mail">
+      <summary class="knopf knopf-zweitrangig">✉ Per E-Mail senden</summary>
+      <form method="post" action="{% url 'core:druck_senden' %}" target="druck-mail-ergebnis">
+        {% csrf_token %}
+        <input type="hidden" name="pdf" value="{{ pdf }}">
+        <input type="hidden" name="signatur" value="{{ signatur }}">
+        <input type="hidden" name="dateiname" value="{{ dateiname }}">
+        <label for="druck-an">An</label>
+        <select name="an" id="druck-an">{% for adresse, text in empfaenger %}<option value="{{ adresse }}">{{ text }}</option>{% endfor %}</select>
+        <button type="submit" class="knopf">Senden</button>
+      </form>
+      <iframe name="druck-mail-ergebnis" title="Ergebnis des Versands" class="druck-mail-ergebnis"></iframe>
+    </details>
+    {% endif %}
+    <p class="hinweis">„Drucken“ öffnet den Druckdialog dieses Geräts. {{ seiten|length }} Seite{{ seiten|length|pluralize:"n" }}.</p>
+  </div>
+  <div class="druck-seiten">
+    {% for s in seiten %}<img class="druck-seite{% if s.quer %} quer{% endif %}" src="data:image/png;base64,{{ s.bild }}" alt="Seite {{ forloop.counter }}">{% endfor %}
+  </div>
+  <form method="post" action="{% url 'core:druck_umschalten' %}" class="druck-umschalten">
+    {% csrf_token %}<input type="hidden" name="an" value="0"><input type="hidden" name="zurueck" value="{% url 'konten:mein_konto' %}">
+    <button type="submit" class="link-knopf">PDFs auf diesem Gerät künftig direkt öffnen</button>
+  </form>
+</section>
+{% load static %}<script src="{% static 'js/druckansicht.js' %}" defer></script>
+{% endblock %}

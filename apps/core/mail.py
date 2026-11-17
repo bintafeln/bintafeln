@@ -78,6 +78,7 @@ ARTEN = {
     "serienbrief": "Serienbrief",
     "aufruf": "Aufruf",
     "export": "Listen-Export",
+    "druck": "PDF aus der Druckansicht",
     "test": "Testmail",
 }
 OHNE_INHALT = "(Inhalt nicht gespeichert: Die Mail enthält Zugangsdaten.)"

@@ -413,3 +413,29 @@ def test_hilfe_bild_nachtragen(angemeldet, admin, muster):
               Marke(seite.get_by_label("00042 nachtragen"), nummer=2, von="links", laenge=40),
               Marke(betrag, nummer=3, von="rechts", laenge=50),
               Marke(knopf, nummer=4, von="unten", laenge=30))  # fmt: skip
+
+
+def test_hilfe_bild_druckansicht(angemeldet, admin, muster, live_server):
+    from apps.ausgabe import konto
+    from apps.core import druckansicht
+    from apps.core.models import MailEinstellungen
+
+    e = MailEinstellungen.laden()
+    e.server, e.absender = "smtp.example.org", "tafel@example.org"
+    e.save()
+    t = TafelEinstellungen.laden()
+    t.email = "tafel@example.org"
+    t.save()
+    konto.einzahlen(muster, Decimal("10.00"), admin.gewaehlte_stelle, "Clara Beispiel")
+    seite = angemeldet(admin)
+    seite.context.add_cookies([{"name": druckansicht.COOKIE, "value": "1", "url": live_server.url}])
+    seite.set_viewport_size({"width": BREITE, "height": HOEHE})
+    seite.goto(reverse("ausgabe:kasse") + "?ansicht=tag&format=pdf")
+    mail_knopf = seite.locator("summary", has_text="Per E-Mail senden")
+    mail_knopf.click()
+    aufnehmen(seite, "druckansicht", seite.locator("section.druckansicht"),
+              Marke(seite.get_by_role("button", name="🖨 Drucken"), "rahmen", 1),
+              Marke(mail_knopf, "rahmen", 2),
+              Marke(seite.get_by_role("button", name="← Zurück"), "rahmen", 3),
+              Marke(seite.locator("img.druck-seite").first, nummer=4, von="links",
+                    laenge=40))  # fmt: skip
