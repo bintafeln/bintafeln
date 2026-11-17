@@ -1205,3 +1205,87 @@ def test_antragsstatus_ohne_wartestand_und_ohne_recht(
     anmelden(client, benutzer_mit_rolle("dora", rollen.BUERO))
     seite = client.get(reverse("antraege:antrag", args=[a.pk])).content.decode()
     assert 'class="status wl-eingeladen"' in seite and 'name="status"' not in seite
+
+
+def test_termin_von_heute_ist_nach_dem_ende_vergangen(admin_client, modul_an):
+    """Ein Termin von heute steht nur bis zu seinem Ende bei den kommenden – danach bei den
+    vergangenen, und einladen kann man zu ihm nicht mehr."""
+    heute = timezone.localdate()
+    morgens = Termin.objects.create(datum=heute, von=dt.time(10), bis=dt.time(11, 30))
+    ohne_ende = Termin.objects.create(datum=heute, von=dt.time(15))
+    morgen = Termin.objects.create(datum=heute + dt.timedelta(days=1), von=dt.time(10))
+    gestern = Termin.objects.create(datum=heute - dt.timedelta(days=1), von=dt.time(10))
+
+    def um(stunde, minute=0):
+        zeit = timezone.make_aware(dt.datetime.combine(heute, dt.time(stunde, minute)))
+        return set(ablauf.kommende_termine(zeit))
+
+    assert um(9) == {morgens, ohne_ende, morgen}
+    assert um(11, 30) == {morgens, ohne_ende, morgen}  # läuft noch bis zur letzten Minute
+    assert um(11, 31) == {ohne_ende, morgen}
+    assert um(15, 1) == {morgen}  # ohne Ende: vorbei, sobald der Beginn vorbei ist
+    assert gestern not in um(0, 1)
+    # Die Seite teilt genauso
+    seite = admin_client.get(reverse("warteliste:termine"))
+    kommend, vergangen = set(seite.context["kommend"]), set(seite.context["vergangen"])
+    assert kommend == set(ablauf.kommende_termine()) and gestern in vergangen
+    assert kommend | vergangen == {morgens, ohne_ende, morgen, gestern}
+    assert not kommend & vergangen
+
+
+# ── Termin in den eigenen Kalender ───────────────────────────────────────────
+
+
+def test_termin_als_kalendereintrag(admin_client, modul_an, mailserver):
+    """„In meinen Kalender“: Tag, Uhrzeit, Ort und Zahl der Eingeladenen – ohne Namen."""
+    from apps.warteliste import kalender
+
+    a, b, c = antrag(email="erika@example.org"), antrag("Max", "Probe"), antrag("Ina", "Test")
+    ablauf.automatik()
+    t = Termin.objects.create(datum=dt.date(2026, 12, 3), von=dt.time(10), bis=dt.time(11, 30),
+                              ort="Tafelbüro; Hinterhaus\nMusterweg 1, 12345 Neustadt",
+                              anmerkung="Bitte Schlüssel holen")  # fmt: skip
+    ablauf.einladen([a, b, c], t, "Büro")
+    ablauf.status_setzen(ws(c), S.ENTSCHULDIGT, "Büro")
+    assert kalender.erwartet(t) == 2  # wer entschuldigt ist, zählt nicht mehr
+
+    antwort = admin_client.get(reverse("warteliste:termin_kalender", args=[t.pk]))
+    assert antwort["Content-Type"] == "text/calendar; charset=utf-8"
+    assert 'filename="neuanmeldung-2026-12-03.ics"' in antwort["Content-Disposition"]
+    text = antwort.content.decode()
+    assert text.startswith("BEGIN:VCALENDAR\r\n") and text.endswith("END:VCALENDAR\r\n")
+    entfaltet = text.replace("\r\n ", "")
+    # 10:00–11:30 Uhr in Berlin (Winterzeit) = 09:00–10:30 UTC
+    assert "DTSTART:20261203T090000Z" in entfaltet and "DTEND:20261203T103000Z" in entfaltet
+    assert "SUMMARY:Neuanmeldung (2 Eingeladene)" in entfaltet
+    assert r"LOCATION:Tafelbüro\; Hinterhaus\, Musterweg 1\, 12345 Neustadt" in entfaltet
+    assert "Bitte Schlüssel holen" in entfaltet
+    assert reverse("warteliste:termin", args=[t.pk]) in entfaltet
+    assert f"UID:warteliste-termin-{t.pk}@" in entfaltet
+    assert all(len(z.encode()) <= 75 for z in text.split("\r\n"))
+    for name in ("Beispiel", "Probe", "Erika", "example.org"):  # keine Personendaten
+        assert name not in text
+    # Knöpfe: auf der Terminseite, in der Terminliste und nach dem Einladen
+    ziel = reverse("warteliste:termin_kalender", args=[t.pk])
+    assert ziel in admin_client.get(reverse("warteliste:termin", args=[t.pk])).content.decode()
+    assert ziel in admin_client.get(reverse("warteliste:termine")).content.decode()
+
+
+def test_kalendereintrag_ohne_ende_und_einzahl(admin_client, modul_an):
+    from apps.warteliste import kalender
+
+    a = antrag()
+    ablauf.automatik()
+    t = Termin.objects.create(datum=dt.date(2026, 7, 2), von=dt.time(14))
+    ablauf.einladen([a], t, "Büro", mail_senden=False)
+    text = kalender.ics(t, ablauf.ort(t), "tafel.example").replace("\r\n ", "")
+    # 14:00 Uhr Sommerzeit = 12:00 UTC; ohne Ende eine Stunde
+    assert "DTSTART:20260702T120000Z" in text and "DTEND:20260702T130000Z" in text
+    assert "SUMMARY:Neuanmeldung (1 Eingeladene/r)" in text
+    assert "UID:warteliste-termin-" in text and "@tafel.example" in text
+
+
+def test_kalendereintrag_nur_mit_recht(client, admin, modul_an, benutzer_mit_rolle, anmelden):
+    t = termin()
+    c = anmelden(client, benutzer_mit_rolle("anton", rollen.AUSGABE))
+    assert c.get(reverse("warteliste:termin_kalender", args=[t.pk])).status_code == 403
