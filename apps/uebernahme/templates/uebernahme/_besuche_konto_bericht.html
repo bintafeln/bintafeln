@@ -7,7 +7,7 @@
   <p>{{ bericht.zeilen }} Zeile{{ bericht.zeilen|pluralize:"n" }} gelesen.</p>
   <ul class="angaben">
     <li><strong>{{ bericht.besuche_neu }}</strong> neue Besuch{{ bericht.besuche_neu|pluralize:"e" }} würden nachgetragen.</li>
-    <li><strong>{{ bericht.konto|length }}</strong> Kontostand/-stände würden korrigiert (Summe der Änderungen: {{ bericht.summe }}).</li>
+    <li><strong>{{ bericht.konto|length }}</strong> Kontostand/-stände würden sich ändern (Summe der Änderungen: {{ bericht.summe }}).</li>
     {% if bericht.unbekannt %}<li><strong>{{ bericht.unbekannt|length }}</strong> Kundennummer(n) gibt es in bintafeln nicht – werden übersprungen.</li>{% endif %}
     {% if bericht.ohne_datum %}<li><strong>{{ bericht.ohne_datum }}</strong> Zeile(n) ohne Datum – daraus wird kein Besuch, der Kontostand kann aber gesetzt werden.</li>{% endif %}
   </ul>
@@ -33,7 +33,7 @@
   {% if bericht.unbekannt %}
   <p class="hinweis">Unbekannte Kundennummern: {{ bericht.unbekannt|join:", "|truncatechars:300 }}</p>
   {% endif %}
-  <p class="hinweis"><strong>Achtung:</strong> Beim Übernehmen wird der Kontostand jedes Kunden <strong>genau auf den Wert aus der Liste</strong> gesetzt. In bintafeln selbst eingegebene Konto-Änderungen für dieselben Kunden werden dadurch überschrieben – für die Übergangszeit (das Konto läuft noch im bisherigen Programm) ist das so gewollt.</p>
+  <p class="hinweis"><strong>So wird gebucht:</strong> Jeder Besuch kostet, was die Beitragsregeln in bintafeln sagen. Bar gezahlt ist, was dazu nötig war, den Kontostand aus der Liste zu erreichen: Kosten + Kontostand danach − Kontostand vorher. Das landet in der <strong>Kasse</strong> (Abholung, Rest als Einzahlung). Wer von seinem Guthaben lebt, zahlt 0 €. Am Ende steht der Kontostand <strong>genau auf dem Wert aus der Liste</strong>; eine Abweichung gleicht eine Korrektur aus. Zeilen ohne Datum setzen nur den Kontostand.</p>
   {% if darf_buchen %}
   <p class="hinweis">Passt das? Dann oben auf <strong>„Übernehmen“</strong> – die gewählte Datei bleibt erhalten.</p>
   {% else %}

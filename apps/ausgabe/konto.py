@@ -7,6 +7,7 @@ Transaktion mit gesperrter Haushaltszeile.
 
 import calendar
 import datetime as dt
+import re
 from dataclasses import dataclass, field
 from decimal import Decimal
 
@@ -115,13 +116,12 @@ BEITRAG_AUS_IMPORT = "Beitrag laut Import"  # alte, falsche Bar-Buchungen (entfe
 AUS_KONTOSTAND = "laut Import (Kontostand)"
 
 
-def _import_buchen(h: Haushalt, besuch, **felder) -> Buchung:
-    """Wie ``_buchen``, aber als Import (Tag und Zeit der Abholung ``besuch``, gekennzeichnet)."""
-    uhrzeit = besuch.uhrzeit or dt.time(12, 0)
-    return _buchen(h, datum=besuch.datum, ausgabestelle=besuch.ausgabestelle,
-                   zeitpunkt=timezone.make_aware(dt.datetime.combine(besuch.datum, uhrzeit)),
-                   eingetragen_von=besuch.eingetragen_von, importiert=True,
-                   bemerkung=AUS_KONTOSTAND, **felder)  # fmt: skip
+def _import_buchen(h: Haushalt, datum, uhrzeit=None, stelle=None, von="", **felder) -> Buchung:
+    """Wie ``_buchen``, aber als Import (Tag und Zeit der Abholung, gekennzeichnet)."""
+    zeitpunkt = timezone.make_aware(dt.datetime.combine(datum, uhrzeit or dt.time(12, 0)))
+    felder.setdefault("bemerkung", AUS_KONTOSTAND)
+    return _buchen(h, datum=datum, ausgabestelle=stelle, zeitpunkt=zeitpunkt,
+                   eingetragen_von=von, importiert=True, **felder)  # fmt: skip
 
 
 def mit_bar_gezahlt(haushalt, abholungen) -> list:
@@ -138,62 +138,164 @@ def mit_bar_gezahlt(haushalt, abholungen) -> list:
     return abholungen
 
 
-@transaction.atomic
-def zahlungen_aus_kontostand(stand: dict) -> int:
-    """Bucht importierte Abholungen nach dem, was wirklich gezahlt wurde.
+def _kosten(h: Haushalt, abholung) -> Decimal:
+    """Was die Abholung kostet – nach den Beitragsregeln der Tafel, nicht nach der Liste des
+    bisherigen Programms (dort steht am Zahltag die ganze Vorauszahlung)."""
+    from apps.ausgabe.models import AusgabeEinstellungen
+    from apps.kunden.models import KundenEinstellungen
 
-    Die Tagesliste des bisherigen Programms nennt je Kunde den fälligen Beitrag und den
-    Kontostand danach, aber nicht, was bar gezahlt wurde. Das ergibt sich aus dem Konto:
-    gezahlt = Beiträge + Kontostand danach − Kontostand vorher (der Stand in bintafeln vor dem
-    Einlesen). Wer im Voraus bezahlt hat, zahlt so 0 € (aus Guthaben), wer mehr gibt, bekommt
-    den Rest als Einzahlung gutgeschrieben – genau wie am Einlass (``abholung_buchen``). Am Ende
-    steht das Konto auf dem Kontostand der Liste (eine Korrektur gleicht Abweichungen aus).
+    kind_bis = KundenEinstellungen.laden().kind_bis_alter
+    return AusgabeEinstellungen.laden().beitrag_fuer(h, abholung.datum, kind_bis) or NULL
+
+
+def _aus_kontostand(h: Haushalt, danach: Decimal, bis: dt.date, von: str = "") -> int:
+    """Bucht die offenen Abholungen eines Kunden bis ``bis`` so, dass das Konto danach auf
+    ``danach`` steht (siehe ``zahlungen_aus_kontostand``). Rückgabe: Zahl der Buchungen."""
+    from apps.kunden.models import Abholung
+
+    schon = set(Buchung.objects.filter(art=Buchung.Art.ABHOLUNG, kundennummer=h.kundennummer)
+                .values_list("datum", flat=True))  # fmt: skip
+    offen = [a for a in Abholung.objects.filter(haushalt=h, buchung__isnull=True, datum__lte=bis)
+             .order_by("datum", "uhrzeit") if a.datum not in schon]  # fmt: skip
+    anzahl = 0
+    kosten = []
+    for a in offen:
+        k = _kosten(h, a)
+        if a.beitrag != k:  # die Abholung kostet, was die Regeln sagen
+            a.beitrag = k
+            a.save(update_fields=["beitrag"])
+        kosten.append(k)
+    gezahlt = max(sum(kosten, NULL) + danach - (h.kontostand or NULL), NULL)
+    for i, (a, beitrag) in enumerate(zip(offen, kosten, strict=True)):
+        bar = gezahlt if i == len(offen) - 1 else min(gezahlt, beitrag)
+        gezahlt -= bar
+        fuer_beitrag = min(bar, beitrag)
+        rest = beitrag - fuer_beitrag
+        vom_konto = min(rest, max(h.kontostand or NULL, NULL))
+        if rest - vom_konto:
+            zahlweise = Buchung.Zahlweise.ANSCHREIBEN
+        elif vom_konto:
+            zahlweise = Buchung.Zahlweise.GUTHABEN
+        else:
+            zahlweise = Buchung.Zahlweise.BAR
+        ort = {"datum": a.datum, "uhrzeit": a.uhrzeit, "stelle": a.ausgabestelle,
+               "von": von or a.eingetragen_von}  # fmt: skip
+        if beitrag:
+            _import_buchen(h, **ort, art=Buchung.Art.ABHOLUNG, zahlweise=zahlweise, soll=beitrag,
+                           haben=fuer_beitrag, bar=fuer_beitrag, abholung=a)  # fmt: skip
+            anzahl += 1
+        if bar - fuer_beitrag:
+            _import_buchen(h, **ort, art=Buchung.Art.EINZAHLUNG, haben=bar - fuer_beitrag,
+                           bar=bar - fuer_beitrag)  # fmt: skip
+            anzahl += 1
+    if (h.kontostand or NULL) != danach:  # z. B. eine Korrektur im bisherigen Programm
+        diff = danach - (h.kontostand or NULL)
+        _import_buchen(h, bis, von=von, art=Buchung.Art.KORREKTUR, soll=max(-diff, NULL),
+                       haben=max(diff, NULL), bemerkung=f"Kontostand laut bisherigem Programm "
+                       f"(Stand {bis:%d.%m.%Y})")  # fmt: skip
+        anzahl += 1
+    return anzahl
+
+
+@transaction.atomic
+def zahlungen_aus_kontostand(stand: dict, von: str = "") -> int:
+    """Bucht Abholungen aus dem bisherigen Programm nach dem, was wirklich gezahlt wurde.
+
+    Die Tagesliste nennt je Kunde, was er an dem Tag zahlen musste (am Zahltag die ganze
+    Vorauszahlung), und den Kontostand danach – nicht, was bar auf dem Tisch lag. Das ergibt sich
+    aus dem Konto: gezahlt = Kosten der Abholungen (nach den Beitragsregeln der Tafel) + Kontostand
+    danach − Kontostand vorher. Wer im Voraus bezahlt hat, zahlt so 0 € (aus Guthaben), wer für den
+    Monat zahlt, den ganzen Betrag (der Rest wird Einzahlung) – genau wie am Einlass
+    (``abholung_buchen``). Am Ende steht das Konto auf dem Kontostand der Liste (eine Korrektur
+    gleicht Abweichungen aus).
 
     ``stand`` = {Kundennummer: (Kontostand danach, Datum der Liste)}. Gebucht werden Abholungen
     bis zu diesem Datum ohne Buchung; ein Tag, an dem es schon eine Abholungs-Buchung gibt
     (am Einlass oder aus buchungen.csv), wird nicht doppelt gebucht. Rückgabe: Zahl der Buchungen.
     """
-    from apps.kunden.models import Abholung
-
     anzahl = 0
     for h in Haushalt.objects.select_for_update().filter(kundennummer__in=list(stand)):
         danach, bis = stand[h.kundennummer]
-        schon = set(Buchung.objects.filter(art=Buchung.Art.ABHOLUNG, kundennummer=h.kundennummer)
-                    .values_list("datum", flat=True))  # fmt: skip
-        offen = [a for a in Abholung.objects.filter(haushalt=h, buchung__isnull=True,
-                                                     datum__lte=bis).order_by("datum", "uhrzeit")
-                 if a.datum not in schon]  # fmt: skip
-        if not offen:
-            continue
-        beitraege = sum((a.beitrag or NULL for a in offen), NULL)
-        gezahlt = max(beitraege + danach - (h.kontostand or NULL), NULL)
-        for i, a in enumerate(offen):
-            beitrag = a.beitrag or NULL
-            bar = gezahlt if i == len(offen) - 1 else min(gezahlt, beitrag)
-            gezahlt -= bar
-            fuer_beitrag = min(bar, beitrag)
-            rest = beitrag - fuer_beitrag
-            vom_konto = min(rest, max(h.kontostand or NULL, NULL))
-            if rest - vom_konto:
-                zahlweise = Buchung.Zahlweise.ANSCHREIBEN
-            elif vom_konto:
-                zahlweise = Buchung.Zahlweise.GUTHABEN
-            else:
-                zahlweise = Buchung.Zahlweise.BAR
-            if beitrag:
-                _import_buchen(h, a, art=Buchung.Art.ABHOLUNG, zahlweise=zahlweise, soll=beitrag,
-                               haben=fuer_beitrag, bar=fuer_beitrag, abholung=a)  # fmt: skip
-                anzahl += 1
-            if bar - fuer_beitrag:
-                _import_buchen(h, a, art=Buchung.Art.EINZAHLUNG, haben=bar - fuer_beitrag,
-                               bar=bar - fuer_beitrag)  # fmt: skip
-                anzahl += 1
-        if (h.kontostand or NULL) != danach:  # z. B. eine Korrektur im bisherigen Programm
-            diff = danach - (h.kontostand or NULL)
-            _import_buchen(h, offen[-1], art=Buchung.Art.KORREKTUR, soll=max(-diff, NULL),
-                           haben=max(diff, NULL))  # fmt: skip
-            anzahl += 1
+        anzahl += _aus_kontostand(h, danach, bis, von)
     return anzahl
+
+
+ABGLEICH = re.compile(r"^Abgleich .+ \(Stand (\d\d)\.(\d\d)\.(\d{4})\)$")
+
+
+def abgleiche_finden():
+    """Korrekturen aus „Besuche übernehmen“ älterer Versionen, die den Kontostand angeglichen
+    haben, ohne die Zahlung in die Kasse zu buchen. {Haushalt-pk: [Buchungen]}."""
+    gefunden: dict[int, list] = {}
+    art = Buchung.Art.KORREKTUR
+    korrekturen = Buchung.objects.filter(art=art, bemerkung__startswith="Abgleich ")
+    for b in korrekturen.order_by("pk"):
+        if b.haushalt_id and ABGLEICH.match(b.bemerkung):
+            gefunden.setdefault(b.haushalt_id, []).append(b)
+    return gefunden
+
+
+@transaction.atomic
+def abgleiche_nachrechnen(von: str = "") -> dict:
+    """Wandelt die alten Abgleich-Korrekturen in Kassenbuchungen um: je Stand (Tag der Liste)
+    den Kontostand von damals bestimmen, die Korrekturen entfernen und die Abholungen bis zu dem
+    Tag nach ``_aus_kontostand`` buchen – in der Reihenfolge der Tage. Der Kontostand ist danach
+    derselbe wie vorher. Rückgabe: Zahl der Kunden und neuen Buchungen."""
+    kunden = buchungen = 0
+    for pk, korrekturen in abgleiche_finden().items():
+        h = Haushalt.objects.select_for_update().get(pk=pk)
+        # in der Reihenfolge des Anlegens: Kontostand nach jeder Buchung
+        alle = list(Buchung.objects.filter(haushalt=h).order_by("pk"))
+        stand = (h.kontostand or NULL) - sum((b.wirkung for b in alle), NULL)
+        ids = {b.pk for b in korrekturen}
+        ziele: dict[dt.date, Decimal] = {}
+        for i, b in enumerate(alle):
+            stand += b.wirkung
+            if b.pk in ids:  # je Tag der Liste zählt die letzte Angleichung
+                t, m, j = ABGLEICH.match(b.bemerkung).groups()
+                spaeter = sum((x.wirkung for x in alle[i + 1 :] if x.pk not in ids), NULL)
+                # was danach noch gebucht wurde (z. B. am Einlass), bleibt und zählt mit
+                ziele[dt.date(int(j), int(m), int(t))] = stand + spaeter
+        vorher = h.kontostand or NULL
+        Buchung.objects.filter(pk__in=ids).delete()
+        h.kontostand = vorher - sum((b.wirkung for b in korrekturen), NULL)
+        h.save(update_fields=["kontostand"])
+        for tag in sorted(ziele):
+            buchungen += _aus_kontostand(h, ziele[tag], tag, von)
+        if (h.kontostand or NULL) != vorher:  # Sicherheitsnetz: Kontostand bleibt, wie er war
+            diff = vorher - (h.kontostand or NULL)
+            _buchen(h, art=Buchung.Art.KORREKTUR, soll=max(-diff, NULL), haben=max(diff, NULL),
+                    bemerkung="Ausgleich beim Nachrechnen", eingetragen_von=von)  # fmt: skip
+        kunden += 1
+    return {"kunden": kunden, "buchungen": buchungen}
+
+
+class _Probelauf(Exception):
+    pass
+
+
+def abgleiche_vorschau() -> dict:
+    """Was ``abgleiche_nachrechnen`` täte, ohne etwas zu ändern: Zahl der Kunden und alten
+    Korrekturen und je Tag, was bar in die Kasse käme. Rechnet in einer Transaktion, die danach
+    zurückgerollt wird."""
+    gefunden = abgleiche_finden()
+    ergebnis = {"kunden": len(gefunden), "korrekturen": sum(map(len, gefunden.values())),
+                "tage": []}  # fmt: skip
+    if not gefunden:
+        return ergebnis
+    zuletzt = Buchung.objects.order_by("-pk").values_list("pk", flat=True).first() or 0
+    try:
+        with transaction.atomic():
+            abgleiche_nachrechnen()
+            tage: dict[dt.date, Decimal] = {}
+            for datum, bar in Buchung.objects.filter(pk__gt=zuletzt).values_list("datum", "bar"):
+                if datum and bar:
+                    tage[datum] = tage.get(datum, NULL) + bar
+            ergebnis["tage"] = sorted(tage.items())
+            raise _Probelauf
+    except _Probelauf:
+        pass
+    return ergebnis
 
 
 @transaction.atomic

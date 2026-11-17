@@ -59,7 +59,7 @@
   <h2>Letzte Abholungen</h2>
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Datum</th><th>Uhrzeit</th><th>Ausgabestelle</th>{% if "kunden.abholungen_alle" in rechte %}<th>Beitrag</th><th>Eingetragen von</th>{% endif %}</tr></thead>
+    <thead><tr><th>Datum</th><th>Uhrzeit</th><th>Ausgabestelle</th>{% if "kunden.abholungen_alle" in rechte %}<th>Bar gezahlt</th><th>Eingetragen von</th>{% endif %}</tr></thead>
     <tbody>
     {% for a in abholungen %}
       <tr>
@@ -67,7 +67,7 @@
         <td data-titel="Uhrzeit">{{ a.uhrzeit|time:"H:i"|default:"–" }}{% if a.nachgetragen %} (nachgetragen){% endif %}</td>
         <td data-titel="Ausgabestelle">{{ a.ausgabestelle.name|default:"–" }}</td>
         {% if "kunden.abholungen_alle" in rechte %}
-        <td data-titel="Beitrag">{% if a.beitrag is not None %}{{ a.beitrag|floatformat:2 }} €{% else %}–{% endif %}</td>
+        <td data-titel="Bar gezahlt">{% if a.bar_gezahlt is not None %}{{ a.bar_gezahlt|floatformat:2 }} €{% else %}–{% endif %}</td>
         <td data-titel="Eingetragen von">{{ a.eingetragen_von|default:"–" }}</td>
         {% endif %}
       </tr>

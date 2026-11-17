@@ -59,3 +59,23 @@ Kundennummern, keine Namen) mit Kundennummer, Tag, Betrag und **Kontostand**.
 - Unbekannte Kundennummern (nicht in bintafeln) werden übersprungen und gemeldet.
 - Mehrfaches Einlesen desselben Tages ändert nichts doppelt (Besuch-Dedupe je Kunde+Tag, Korrektur
   nur bei Differenz).
+
+## Nachtrag (2026-11-17): Gezahltes in die Kasse
+
+Die Korrektur-Buchung allein ließ die **Kasse leer**: Eine Korrektur ist kein Bargeld, und am Tag,
+an dem jemand für den Monat zahlte, stand in bintafeln nichts in der Kasse. Deshalb bucht
+„Übernehmen“ datierte Einträge jetzt wie der Kundenimport über
+`konto.zahlungen_aus_kontostand()`:
+
+- Jeder Besuch **kostet nach den Beitragsregeln** in bintafeln (`beitrag_fuer`), nicht den
+  „Beitrag“ der Liste – der ist am Zahltag die ganze Vorauszahlung. `Abholung.beitrag` wird darauf
+  gesetzt.
+- **Bar gezahlt = Kosten + Kontostand danach − Kontostand vorher**; das wird als Abholung (Rest als
+  Einzahlung) in die Kasse gebucht, aus Guthaben bezahlte Besuche mit 0 € bar.
+- Bleibt danach eine Abweichung, gleicht sie eine Korrektur aus („Kontostand laut bisherigem
+  Programm“) – auch wenn es keinen offenen Besuch gibt.
+- Zeilen **ohne Datum** setzen weiter nur den Kontostand per Korrektur.
+- **Frühere Abgleiche** (Korrekturen „Abgleich … (Stand TT.MM.JJJJ)“) rechnet
+  `konto.abgleiche_nachrechnen()` auf Knopfdruck um (mit Vorschau `abgleiche_vorschau()`): je Stand
+  der damalige Kontostand, Korrekturen entfernen, Besuche bis zu dem Tag nach derselben Regel buchen.
+  Der Kontostand bleibt gleich; mehrfach anwendbar.
