@@ -1,6 +1,6 @@
 # Laufzeit-Abhängigkeiten (feste Versionen für reproduzierbare Builds)
 Django==5.2.18
-django-auditlog==3.4.1
+django-auditlog==3.4.2
 django-otp==1.7.5
 segno==1.6.6
 cryptography==46.0.7
@@ -13,8 +13,8 @@ gunicorn==26.2.0
 pillow==13.0.0
 # PDF-Nachweise rendern: kleine Vorschau und Seiten für die Ausweisprüfung (ADR 0107). PDFium
 # (Google), ein Wheel ohne Systempaket, BSD/Apache-lizenziert (AGPL-verträglich).
-pypdfium2==5.14.0
-psycopg[binary]==3.3.6
+pypdfium2==5.15.2
+psycopg[binary]==3.3.9
 # Lokale Ausweisprüfung (MRZ lesen) – Tesseract-OCR-Anbindung und MRZ-Parser (ADR 0107)
 pytesseract==0.3.13
 mrz==0.6.2
@@ -34,7 +34,7 @@ fonttools==4.68.0
 kiwisolver==1.5.1
 pyparsing==3.3.3
 imageio==2.38.1
-tifffile==2026.10.15
+tifffile==2026.11.12
 networkx==3.7
 lazy-loader==0.6
 joblib==1.6.0
@@ -42,21 +42,21 @@ threadpoolctl==3.8.0
 narwhals==2.28.0
 cloudpickle==3.1.2
 pdfminer==20191125
-pycryptodome==4.3.0
+pycryptodome==4.4.0
 # KI-Übersetzung der eigenen Antragstexte (ADR 0082) und ihre Abhängigkeiten
-anthropic==2.3.0
+anthropic==2.8.0
 annotated-types==0.8.0
-anyio==4.15.1
+anyio==4.16.0
 docstring_parser==0.18.0
 h11==0.16.0
 idna==3.20
 httpcore2==2.16.0
 httpx2==2.16.0
-jiter==0.18.0
-opentelemetry-api==1.45.1
-pydantic==2.14.1
-pydantic_core==2.50.1
+jiter==0.19.0
+opentelemetry-api==1.45.2
+pydantic==2.14.3
+pydantic_core==2.50.4
 sniffio==1.3.1
 truststore==0.10.5
-typing-inspection==0.4.4
+typing-inspection==0.4.5
 typing_extensions==4.16.0
