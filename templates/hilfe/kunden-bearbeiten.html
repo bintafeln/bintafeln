@@ -19,7 +19,7 @@
 {% hilfe_bild "haushalt-neu-behinderung" "Abschnitt 3: ① Grad der Behinderung wählen, ② dann erscheinen die Merkzeichen zum Ankreuzen." %}
 {% hilfe_bild "haushalt-neu-angehoerige" "Abschnitt 4: ① Angehörige Zeile für Zeile eintragen, ② die Behinderung genauso wie bei der Hauptperson." %}
 <p>Die <strong>Kundennummer</strong> vergibt bintafeln selbst{% if "kunden.nummer_aendern" in rechte %}; Sie dürfen sie
-  ändern{% endif %}. Neue Kunden aus Anträgen besser über den Aufnahme-Assistenten anlegen (Kapitel „Antrag aufnehmen“).</p>
+  ändern{% endif %}. Neue Kunden aus Anträgen besser über den Aufnahme-Assistenten anlegen (Kapitel „Einen Antrag in den Kundenstamm aufnehmen“).</p>
 <h3>Bearbeiten</h3>
 <p>Die Kundengruppe wird nicht über ein einfaches Auswahlmenü geändert, sondern über <strong>„Kundengruppe
   ändern“</strong> – sowohl auf der Haushaltsseite als auch auf der Seite „Bearbeiten“ (dort steht die aktuelle Gruppe
@@ -52,7 +52,8 @@
   dann verschwindet dieser Hinweis und der Import ist gesperrt.</div>{% endif %}{% endif %}
 {% if "kunden.loeschen" in rechte %}<h3>Löschen</h3>
 <p>„Löschen …“ zeigt zuerst, was alles mitgelöscht wird (Personen, Abholungen, Notizen, Dokumente, Historie …). Erst
-  „Ja, … endgültig löschen“ löscht. Kontobuchungen bleiben ohne Haushalt für die Kasse erhalten.</p>{% endif %}
+  „Ja, Haushalt … in den Papierkorb legen“ löscht. Aus dem Papierkorb lässt sich der Haushalt so lange wiederherstellen,
+  wie unter „Papierkorb leeren nach“ eingestellt ist. Kontobuchungen bleiben ohne Haushalt für die Kasse erhalten.</p>{% endif %}
 {% if "kunden.nachrichten" in rechte %}<h3>Nachrichten der Ausgabestellen</h3>
 <p>Ausgabestellen schreiben am Einlass eine Nachricht an die Verwaltung, zu eigenen und zu fremden Kunden, immer mit einem
   <strong>Anliegen</strong> (z. B. „Bescheid geprüft – Ausweis verlängern“, „Neue Anschrift“) und auf Wunsch einem Text.
