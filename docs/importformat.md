@@ -1,9 +1,10 @@
 # Importformat für den Kundenstamm
 
-Version 1.4
+Version 1.5
 
 | Version | Änderung |
 |---|---|
+| 1.5 | neue optionale Spalte `kontostand` in `abholungen.csv` (Kontostand nach dem Besuch). Daraus rechnet „ergänzen“ den wirklich gezahlten Betrag. `beitrag` ist der fällige Beitrag, keine Zahlung. Dateien der Version 1.4 bleiben gültig. |
 | 1.4 | neue optionale Datei `buchungen.csv` (Kontobuchungen). Beim Ergänzen darf `haushalte.csv` fehlen: Dann werden die übrigen Dateien vorhandenen Haushalten hinzugefügt (Nachreichen in Teilen). Dateien der Version 1.3 bleiben gültig. |
 | 1.3 | Das Format bleibt gleich. Neu: Der Import kann den Kundenstamm auch ergänzen statt ersetzen (siehe Grundsätze), und der Import-Assistent nimmt beliebige CSV- und Excel-Dateien und schreibt sie in dieses Format um (ADR 0078). |
 | 1.2 | leeres `wochentage` in `kundengruppen.csv` überschreibt keine in bintafeln eingetragenen Wochentage mehr. Dateien bleiben gültig. |
@@ -175,7 +176,8 @@ Kundengruppen bleiben erhalten.
 | `kundennummer` | **ja** | |
 | `datum` | **ja** | Datum der Abholung |
 | `uhrzeit` | | `HH:MM` |
-| `beitrag` | | gezahlter Beitrag in Euro. Erscheint als Bareinnahme in der Kasse – außer `buchungen.csv` bringt für Kunde und Tag schon eine Abholungs-Buchung mit (dann zählt diese). Das Format ändert sich dadurch nicht. |
+| `beitrag` | | fälliger Beitrag in Euro (was die Abholung kostet), keine Zahlung |
+| `kontostand` | | Kontostand des Kunden **nach** dem Besuch, z. B. `-1,50`. Nur beim Ergänzen: bintafeln bucht dann, was wirklich gezahlt wurde – gezahlt = Beiträge + Kontostand danach − Kontostand vorher (der Stand in bintafeln vor dem Einlesen). Wer im Voraus bezahlt hat, zahlt so 0 € (aus Guthaben), Mehrzahlungen werden Einzahlungen, Fehlbeträge angeschrieben; am Ende steht das Konto auf diesem Wert. Tage mit schon vorhandener Abholungs-Buchung (Einlass, `buchungen.csv`) werden nicht doppelt gebucht. Ohne diese Spalte entsteht keine Kassenbuchung. |
 | `ausgabestelle` | | Name der Ausgabestelle. Leer = die Ausgabestelle der Kundengruppe des Haushalts. Unbekannte werden angelegt (Warnung) |
 | `eingetragen_von` | | Name als Text |
 

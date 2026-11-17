@@ -144,7 +144,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   ab Alter × Betrag, Zusatzbeiträge optional, `BeitragsfreierZeitraum`;
   Ampel-Regeln als reine Funktion in `apps/ausgabe/ampel.py`,
   Einstellungen in `AusgabeEinstellungen`; Kundenkonto nur über `apps/ausgabe/konto.py`
-  buchen, nie `Haushalt.kontostand` direkt ändern, ADR 0014; Kasse-Auswertung in
+  buchen, nie `Haushalt.kontostand` direkt ändern, ADR 0014; importierte Tageslisten bucht
+  `konto.zahlungen_aus_kontostand()` (gezahlt = Beitrag + Kontostand danach − vorher), `beitrag` ist nie Bargeld; Kasse-Auswertung in
   `apps/ausgabe/kasse.py`; Kamera-Scanner `static/js/kamera_scanner.js` für Felder mit
   `data-kamera`, Bibliothek fest unter `static/vendor/barcode-detector`, kein CDN, ADR 0029;
   Sonderaktionen: Regeln in `apps/ausgabe/sonderaktionen.py`, `Teilnahme` an der Kundennummer,

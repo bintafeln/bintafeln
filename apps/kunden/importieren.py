@@ -100,7 +100,7 @@ SPALTEN = {
     },
     ABHOLUNGEN: {
         "pflicht": ["kundennummer", "datum"],
-        "optional": ["uhrzeit", "beitrag", "ausgabestelle", "eingetragen_von"],
+        "optional": ["uhrzeit", "beitrag", "ausgabestelle", "eingetragen_von", "kontostand"],
     },
     AUSNAHMEN: {
         "pflicht": ["kundennummer", "datum"],
@@ -532,6 +532,11 @@ class _Pruefung:
             except werte.UngueltigerWert:
                 self.warnung(ABHOLUNGEN, n, "„beitrag“ ist kein Betrag, bleibt leer.")
                 beitrag = None
+            try:
+                kontostand = werte.betrag(z.get("kontostand", ""))
+            except werte.UngueltigerWert:
+                self.warnung(ABHOLUNGEN, n, "„kontostand“ ist kein Betrag, wird ignoriert.")
+                kontostand = None
             eintrag = {
                 "kundennummer": z.get("kundennummer", ""),
                 "datum": datum,
@@ -539,6 +544,7 @@ class _Pruefung:
                 "beitrag": str(beitrag) if beitrag is not None else None,
                 "ausgabestelle": stelle,
                 "eingetragen_von": self.text(ABHOLUNGEN, n, z, "eingetragen_von"),
+                "kontostand": str(kontostand) if kontostand is not None else None,
             }
             if datum and datum < beginn:
                 self.warnung(
@@ -1098,11 +1104,8 @@ def _anlegen(daten: dict, bezuege: _Bezuege) -> dict[str, Haushalt]:
 
         Buchung.objects.bulk_create((_buchung(nach_nummer[b["kundennummer"]], b, bezuege)
                                      for b in daten["buchungen"]), batch_size=5000)  # fmt: skip
-    if daten.get("abholungen"):
-        # Beiträge der Abholungen in die Kasse (ohne doppelt zu zählen, was buchungen.csv bringt)
-        from apps.ausgabe import konto
-
-        konto.beitraege_aus_import(Abholung.objects.filter(haushalt__in=nach_nummer.values()))
+    # Kein Kassenbuchen aus „beitrag“: der Beitrag sagt nicht, was gezahlt wurde. Echte Zahlungen
+    # bringt buchungen.csv; die Kontostände kommen aus haushalte.csv.
     return nach_nummer
 
 

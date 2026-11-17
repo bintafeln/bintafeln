@@ -969,45 +969,86 @@ def test_leere_haushalte_liste_im_assistenten(admin_client, sicherung):
     assert not Haushalt.objects.exists()
 
 
-def test_beitraege_der_abholungen_kommen_in_die_kasse(admin_client, sicherung):
-    """Die Tagesliste aus dem bisherigen Programm bringt den Beitrag nur an der Abholung mit –
-    trotzdem steht er in der Kasse (als Bar-Buchung), ohne den Kontostand zu ändern und ohne
-    doppelt zu zählen, auch nicht beim zweiten Einspielen."""
-    from apps.ausgabe import kasse, konto
+def _tagesliste(admin_client, *zeilen, kopf="kundennummer;datum;beitrag;kontostand"):
+    """Eine Tagesliste (abholungen.csv) über „Kundenstamm importieren → ergänzen“ einspielen."""
+    from apps.kunden.models import ImportVorbereitung
+
+    admin_client.post(reverse("kunden:import"),
+                      {"dateien": [csv_datei("abholungen.csv", kopf, *zeilen)]})  # fmt: skip
+    v = ImportVorbereitung.objects.latest("pk")
+    admin_client.post(reverse("kunden:import_uebernehmen", args=[v.pk]), {"modus": "vollaustausch"})
+
+
+def test_gezahlt_aus_dem_kontostand(admin_client, sicherung):
+    """Die Tagesliste des bisherigen Programms nennt nur den fälligen Beitrag und den Kontostand
+    danach. Gezahlt = Beitrag + Kontostand danach − Kontostand vorher: Wer im Voraus bezahlt hat,
+    zahlt 0 € bar (aus Guthaben), Mehrzahlungen werden Einzahlungen, Fehlbeträge angeschrieben.
+    Am Ende stimmt der Kontostand mit der Liste; nichts zählt doppelt."""
+    from apps.ausgabe import kasse
     from apps.ausgabe.models import Buchung
-    from apps.kunden.models import Abholung, ImportVorbereitung
 
-    h = _haushalt("1", "Anna", "Alt")
-    _haushalt("2", "Ben", "Bär")
     heute = timezone.localdate()
-    gestern = heute - dt.timedelta(days=1)
-    # Für Kunde 2 gibt es gestern schon eine Abholungs-Buchung (z. B. aus buchungen.csv)
-    Buchung.objects.create(haushalt=Haushalt.objects.get(kundennummer="2"), kundennummer="2",
-                           datum=gestern, art=Buchung.Art.ABHOLUNG, soll=Decimal("2"),
-                           haben=Decimal("2"), bar=Decimal("2"), importiert=True)  # fmt: skip
-    datei = [csv_datei(
-        "abholungen.csv", "kundennummer;datum;beitrag",
-        f"1;{heute:%d.%m.%Y};3", f"1;{gestern:%d.%m.%Y};1,50", f"2;{gestern:%d.%m.%Y};2",
-        f"2;{heute:%d.%m.%Y};",
-    )]  # fmt: skip
+    _haushalt("1", "Anna", "Alt", kontostand=Decimal("4.50"))  # hat vorausbezahlt
+    _haushalt("2", "Ben", "Bär")  # zahlt genau den Beitrag
+    _haushalt("3", "Cem", "Cyan")  # zahlt für drei Abholungen
+    _haushalt("4", "Dana", "Dorn")  # lässt anschreiben
+    h5 = _haushalt("5", "Emil", "Erle", kontostand=Decimal("1.00"))
+    # Für Kunde 5 hat der Einlass heute schon gebucht: wird nicht doppelt gebucht
+    b = Decimal("1.50")
+    Buchung.objects.create(haushalt=h5, kundennummer="5", datum=heute, art=Buchung.Art.ABHOLUNG,
+                           soll=b, haben=b, bar=b)  # fmt: skip
+    zeilen = [f"1;{heute:%d.%m.%Y};1,50;3,00", f"2;{heute:%d.%m.%Y};1,50;0,00",
+              f"3;{heute:%d.%m.%Y};1,50;3,00", f"4;{heute:%d.%m.%Y};1,50;-1,50",
+              f"5;{heute:%d.%m.%Y};1,50;1,00"]  # fmt: skip
     for _ in range(2):  # zweimal eingespielt: nichts doppelt
-        admin_client.post(reverse("kunden:import"), {"dateien": datei})
-        datei[0].seek(0)
-        v = ImportVorbereitung.objects.get()
-        admin_client.post(reverse("kunden:import_uebernehmen", args=[v.pk]),
-                          {"modus": "vollaustausch"})  # fmt: skip
-    assert Abholung.objects.count() == 4
-    neu = Buchung.objects.filter(bemerkung=konto.BEITRAG_AUS_IMPORT)
-    assert sorted(b.bar for b in neu) == [Decimal("1.50"), Decimal("3.00")]
-    assert all(b.abholung_id and b.zahlweise == "bar" for b in neu)
-    assert kasse.summe(Buchung.objects.filter(datum=heute))["beitraege_bar"] == Decimal("3")
-    assert kasse.summe(Buchung.objects.filter(datum=gestern))["bar_gesamt"] == Decimal("3.50")
-    h.refresh_from_db()
-    assert not h.kontostand  # Soll = Haben: der Kontostand bleibt
+        _tagesliste(admin_client, *zeilen)
+
+    def buchungen(nr):
+        return list(Buchung.objects.filter(kundennummer=nr).order_by("art"))
+
+    eins = buchungen("1")
+    assert [(b.art, b.zahlweise, b.soll, b.bar) for b in eins] == [
+        ("abholung", "guthaben", Decimal("1.50"), Decimal("0.00"))
+    ]
+    assert buchungen("2")[0].bar == Decimal("1.50") and buchungen("2")[0].zahlweise == "bar"
+    assert sorted((b.art, b.bar) for b in buchungen("3")) == [
+        ("abholung", Decimal("1.50")),
+        ("einzahlung", Decimal("3.00")),
+    ]
+    assert buchungen("4")[0].zahlweise == "anschreiben" and buchungen("4")[0].bar == 0
+    assert len(buchungen("5")) == 1  # nur die vom Einlass
+    stand = dict(Haushalt.objects.values_list("kundennummer", "kontostand"))
+    assert stand == {"1": Decimal("3.00"), "2": Decimal("0.00"), "3": Decimal("3.00"),
+                     "4": Decimal("-1.50"), "5": Decimal("1.00")}  # fmt: skip
+    summe = kasse.summe(Buchung.objects.filter(datum=heute, importiert=True))
+    assert summe["bar_gesamt"] == Decimal("6.00")  # 0 + 1,50 + 4,50 + 0
+    assert summe["beitraege"] == Decimal("6.00") and summe["vom_konto"] == Decimal("1.50")
+    assert summe["angeschrieben"] == Decimal("1.50")
 
 
-def test_migration_traegt_fehlende_beitraege_nach():
-    """Die Datenmigration bucht Beiträge früher eingespielter Abholungen nach – einmal."""
+def test_ohne_kontostand_keine_kassenbuchung(admin_client, sicherung):
+    """Ohne Kontostand lässt sich nicht sagen, was gezahlt wurde: keine Buchung, nur die
+    Abholung mit ihrem Beitrag. Ein abweichender Kontostand (z. B. eine Korrektur im bisherigen
+    Programm) wird mit einer Korrektur ausgeglichen."""
+    from apps.ausgabe.models import Buchung
+    from apps.kunden.models import Abholung
+
+    heute = timezone.localdate()
+    _haushalt("1", "Anna", "Alt")
+    _haushalt("2", "Ben", "Bär", kontostand=Decimal("5.00"))
+    _tagesliste(admin_client, f"1;{heute:%d.%m.%Y};1,50", kopf="kundennummer;datum;beitrag")
+    assert Abholung.objects.get().beitrag == Decimal("1.50") and not Buchung.objects.exists()
+    # Kunde 2: 5 € Guthaben, Beitrag 1,50, danach nur 2 € → 1,50 aus Guthaben, 1,50 Korrektur
+    _tagesliste(admin_client, f"2;{heute:%d.%m.%Y};1,50;2,00")
+    arten = sorted((b.art, b.soll, b.haben) for b in Buchung.objects.filter(kundennummer="2"))
+    assert arten == [("abholung", Decimal("1.50"), Decimal("0.00")),
+                     ("korrektur", Decimal("1.50"), Decimal("0.00"))]  # fmt: skip
+    assert Haushalt.objects.get(kundennummer="2").kontostand == Decimal("2.00")
+
+
+def test_migration_entfernt_falsche_bar_buchungen():
+    """0013 hatte Beiträge als Bareinnahme gebucht; 0014 entfernt genau diese, rückwärts kommen
+    sie wieder. Andere Buchungen bleiben."""
     import importlib
 
     from django.apps import apps as django_apps
@@ -1015,13 +1056,16 @@ def test_migration_traegt_fehlende_beitraege_nach():
     from apps.ausgabe.models import Buchung
     from apps.kunden.models import Abholung
 
-    migration = importlib.import_module(
-        "apps.ausgabe.migrations.0013_beitraege_aus_import_nachtragen"
-    )
+    alt = importlib.import_module("apps.ausgabe.migrations.0013_beitraege_aus_import_nachtragen")
+    neu = importlib.import_module("apps.ausgabe.migrations.0014_import_beitraege_nicht_bar")
     h = _haushalt("1", "Anna", "Alt")
     Abholung.objects.create(haushalt=h, datum=timezone.localdate(), beitrag=Decimal("2"))
-    migration.nachtragen(django_apps, None)
-    migration.nachtragen(django_apps, None)
-    assert Buchung.objects.get().bar == Decimal("2")
-    migration.entfernen(django_apps, None)
-    assert not Buchung.objects.exists()
+    eigene = Buchung.objects.create(haushalt=h, kundennummer="1", datum=timezone.localdate(),
+                                    art=Buchung.Art.EINZAHLUNG, haben=Decimal("5"),
+                                    bar=Decimal("5"))  # fmt: skip
+    alt.nachtragen(django_apps, None)
+    assert Buchung.objects.count() == 2
+    neu.entfernen(django_apps, None)
+    assert list(Buchung.objects.all()) == [eigene]
+    neu.wiederherstellen(django_apps, None)
+    assert Buchung.objects.filter(bemerkung=alt.ANMERKUNG).count() == 1

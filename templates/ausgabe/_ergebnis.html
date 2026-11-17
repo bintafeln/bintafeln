@@ -49,9 +49,10 @@ Einlass am häufigsten an); Aufruf-/Modulhinweise und die Zahlung weiter unten.{
   <h2>Letzte Abholungen</h2>
   {% if abholungen %}
   <table class="tabelle kompakt">
+    <thead><tr><th>Tag</th><th>Ausgabestelle</th><th class="zahl" title="Was der Kunde an dem Tag bar gezahlt hat (auch Vorauszahlungen); vom Guthaben Abgebuchtes zählt nicht">bar gezahlt</th></tr></thead>
     <tbody>
     {% for a in abholungen %}
-      <tr><td>{{ a.datum|date:"d.m.Y" }}{% if a.uhrzeit %} {{ a.uhrzeit|time:"H:i" }}{% endif %}</td><td>{{ a.ausgabestelle.name|default:"–" }}</td><td class="zahl">{% if a.beitrag is not None %}{{ a.beitrag|floatformat:2 }} €{% endif %}</td></tr>
+      <tr><td>{{ a.datum|date:"d.m.Y" }}{% if a.uhrzeit %} {{ a.uhrzeit|time:"H:i" }}{% endif %}</td><td>{{ a.ausgabestelle.name|default:"–" }}</td><td class="zahl">{% if a.bar_gezahlt is not None %}{{ a.bar_gezahlt|floatformat:2 }} €{% else %}–{% endif %}</td></tr>
     {% endfor %}
     </tbody>
   </table>
