@@ -168,6 +168,9 @@ input::-webkit-date-and-time-value { text-align: left; margin: 0; }
 .tabelle-gitter th, .tabelle-gitter td { border: 1px solid var(--rand); }
 .aenderungen { margin: 0; padding-left: 1rem; }
 .angaben { display: grid; grid-template-columns: max-content 1fr; gap: .35rem 1rem; margin: 0 0 1rem; }
+/* Als Liste (ul) kein Raster: sonst landet jeder zweite Punkt in einer zu schmalen Spalte */
+ul.angaben { display: block; padding-left: 1.3rem; }
+ul.angaben li { margin: .3rem 0; }
 .angaben dt { font-weight: 600; }
 .angaben dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 /* Handy: Bezeichnung über dem Wert statt daneben, damit der Wert die volle Breite hat und

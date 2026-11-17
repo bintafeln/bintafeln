@@ -1795,3 +1795,23 @@ def test_druckansicht_als_seite(angemeldet, admin, live_server, settings):
     expect(seite.locator("header.kopf")).to_be_hidden()
     expect(seite.locator(".druck-leiste")).to_be_hidden()
     expect(seite.locator("img.druck-seite").first).to_be_visible()
+
+
+def test_uebernahmen_auf_daten_importieren_lesbar(angemeldet, admin):
+    """Die Punkte unter „Aus einem anderen Programm übernehmen“ stehen untereinander und sind
+    lesbar – als Raster wäre jeder zweite in eine zu schmale Spalte gequetscht."""
+    from apps.core.models import TafelEinstellungen
+
+    t = TafelEinstellungen.laden()
+    t.module = sorted(set(t.module or []) | {"uebernahme"})
+    t.save()
+    seite = angemeldet(admin)
+    seite.set_viewport_size({"width": 1024, "height": 768})
+    seite.goto(reverse("datenimport:start"))
+    link = seite.get_by_role("link", name="Besuche & Konto nachtragen")
+    expect(link).to_be_visible()
+    breite = link.evaluate("e => e.closest('li').getBoundingClientRect().width")
+    hoehe = link.evaluate("e => e.closest('li').getBoundingClientRect().height")
+    assert breite > 300 and hoehe < 150
+    link.click()
+    assert seite.url.endswith(reverse("uebernahme:besuche_konto"))
