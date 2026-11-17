@@ -17,6 +17,11 @@ updates:
     groups:
       kleine-updates:
         update-types: ["minor", "patch"]
+    ignore:
+      # Django bleibt auf der LTS-Reihe (CLAUDE.md: „Django (aktuelle LTS)“). Korrekturen innerhalb
+      # der Reihe kommen weiter; der Wechsel auf die nächste LTS ist ein eigener, geprüfter PR.
+      - dependency-name: "django"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
