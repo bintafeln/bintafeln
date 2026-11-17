@@ -46,7 +46,9 @@ def test_zuruecksetzen(demo, admin, django_user_model, settings, capsys):
     call_command("demo_zuruecksetzen", "--auch-fremde-konten")
     assert "Demo zurückgesetzt" in capsys.readouterr().out
     assert not django_user_model.objects.filter(username="chefin").exists()
-    assert not Buchung.objects.exists() and not any(settings.MEDIA_ROOT.iterdir())
+    # Die eigene Buchung ist weg; geblieben sind nur die Beiträge der Demo-Abholungen (Kasse)
+    assert not Buchung.objects.filter(importiert=False).exists()
+    assert not any(settings.MEDIA_ROOT.iterdir())
     assert Haushalt.objects.filter(kundennummer="1001").exists()
     e = TafelEinstellungen.laden()
     assert e.name == "Demo-Tafel Musterstadt"

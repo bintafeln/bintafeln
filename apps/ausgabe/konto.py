@@ -111,6 +111,43 @@ def abholung_buchen(abholung, beitrag, bar, einstellungen, stelle, von) -> Zahlu
     )
 
 
+BEITRAG_AUS_IMPORT = "Beitrag laut Import"
+
+
+def beitraege_aus_import(abholungen) -> int:
+    """Bucht für importierte Abholungen mit Beitrag den gezahlten Betrag in die Kasse.
+
+    Die Tagesliste aus dem bisherigen Programm bringt den Beitrag nur an der Abholung mit; die
+    Kasse zählt aber Buchungen. Deshalb je Abholung eine Bar-Buchung (Soll = Haben = Beitrag,
+    der Kontostand ändert sich nicht). Ausgelassen wird, was schon eine Buchung hat – an der
+    Abholung oder als Abholungs-Buchung desselben Kunden am selben Tag (z. B. aus buchungen.csv),
+    damit nichts doppelt zählt. Gibt die Zahl der neuen Buchungen zurück.
+    """
+    kandidaten = [a for a in abholungen.filter(beitrag__gt=0, buchung__isnull=True)
+                  .select_related("haushalt")]  # fmt: skip
+    if not kandidaten:
+        return 0
+    nummern = {a.haushalt.kundennummer for a in kandidaten}
+    schon = set(Buchung.objects.filter(art=Buchung.Art.ABHOLUNG, kundennummer__in=nummern)
+                .values_list("kundennummer", "datum"))  # fmt: skip
+    neue = []
+    for a in kandidaten:
+        schluessel = (a.haushalt.kundennummer, a.datum)
+        if schluessel in schon:
+            continue
+        schon.add(schluessel)
+        uhrzeit = a.uhrzeit or dt.time(12, 0)
+        neue.append(Buchung(
+            haushalt=a.haushalt, kundennummer=a.haushalt.kundennummer, datum=a.datum,
+            zeitpunkt=timezone.make_aware(dt.datetime.combine(a.datum, uhrzeit)),
+            art=Buchung.Art.ABHOLUNG, zahlweise=Buchung.Zahlweise.BAR, soll=a.beitrag,
+            haben=a.beitrag, bar=a.beitrag, abholung=a, ausgabestelle=a.ausgabestelle,
+            bemerkung=BEITRAG_AUS_IMPORT, eingetragen_von=a.eingetragen_von, importiert=True,
+        ))  # fmt: skip
+    Buchung.objects.bulk_create(neue, batch_size=5000)
+    return len(neue)
+
+
 @transaction.atomic
 def einzahlen(haushalt, betrag, stelle, von, bemerkung="") -> Buchung:
     if betrag is None or betrag <= 0:
