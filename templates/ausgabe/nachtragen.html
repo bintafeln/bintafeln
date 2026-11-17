@@ -46,7 +46,7 @@
           <td data-titel="Kunde">{% if "kunden.ansehen" in rechte %}<a href="{% url 'kunden:haushalt' z.h.kundennummer %}" target="_blank" rel="noopener"><strong>{{ z.h.kundennummer }}</strong></a>{% else %}<strong>{{ z.h.kundennummer }}</strong>{% endif %}</td>
           <td data-titel="Name">{% with hp=z.hauptperson %}{% if hp %}{{ hp.nachname }}, {{ hp.vorname }}{% endif %}{% endwith %}</td>
           <td data-titel="Kundengruppe">{{ z.gruppe }}</td>
-          <td data-titel="Bar gezahlt" class="ohne-umbruch">{% if z.schon %}{% for a in z.schon %}{{ a.beitrag|floatformat:2|default:"–" }} €{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}<input type="text" name="betrag_{{ z.h.kundennummer }}" value="{{ z.beitrag|floatformat:2 }}" inputmode="decimal" class="betrag" aria-label="Betrag für {{ z.h.kundennummer }}"{% if z.rot and not alle %} disabled{% endif %}> €{% endif %}</td>
+          <td data-titel="Bar gezahlt" class="ohne-umbruch">{% if z.schon %}{% for a in z.schon %}{% if a.bar_gezahlt is not None %}{{ a.bar_gezahlt|floatformat:2 }} €{% else %}–{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}<input type="text" name="betrag_{{ z.h.kundennummer }}" value="{{ z.beitrag|floatformat:2 }}" inputmode="decimal" class="betrag" aria-label="Betrag für {{ z.h.kundennummer }}"{% if z.rot and not alle %} disabled{% endif %}> €{% endif %}</td>
           <td data-titel="Hinweis">{% if z.schon %}schon eingetragen{% for a in z.schon %}{% if a.uhrzeit %} um {{ a.uhrzeit|time:"H:i" }}{% endif %}{% if a.nachgetragen %} (nachgetragen){% endif %}{% endfor %}{% elif z.rot %}<span class="marke-warnung">Rot:</span> {{ z.gruende }}{% if not alle %} – trägt ein Admin nach{% endif %}{% endif %}</td>
         </tr>
       {% endfor %}

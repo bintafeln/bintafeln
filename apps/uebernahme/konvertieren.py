@@ -211,7 +211,8 @@ def _betrag_report(wert) -> str:
 def besuche_umwandeln(daten: bytes) -> BesucheUmwandlung:
     """Tagesliste „kunden die da waren“ (ein Blatt, deutsche Spaltenköpfe, nur Nummern –
     keine Namen) → ``abholungen.csv`` des Importformats. Der Beitrag kommt als ``beitrag`` in die
-    Abholung; der Kontostand ist eine Momentaufnahme (keine Buchung) und wird nicht übernommen.
+    Abholung, der Kontostand nach dem Besuch als ``kontostand``: daraus rechnet der Import das
+    wirklich Gezahlte (``konto.zahlungen_aus_kontostand``).
     Die Datei spielt man anschließend über „Kundenstamm importieren → ergänzen“ ein.
     """
     try:
@@ -244,6 +245,7 @@ def besuche_umwandeln(daten: bytes) -> BesucheUmwandlung:
     i_datum = spalte("letzter besuch", "besuch", "datum")
     i_zeit = spalte("uhrzeit", "zeit")
     i_beitrag = spalte("beitrag")
+    i_konto = spalte("kontostand")
 
     abholungen, ohne_datum = [], 0
     for r in rows:
@@ -262,6 +264,8 @@ def besuche_umwandeln(daten: bytes) -> BesucheUmwandlung:
             "datum": datum,
             "uhrzeit": _uhrzeit(r[i_zeit]) if 0 <= i_zeit < len(r) else "",
             "beitrag": _betrag_report(r[i_beitrag]) if 0 <= i_beitrag < len(r) else "",
+            # Kontostand nach dem Besuch: daraus rechnet der Import, was wirklich gezahlt wurde
+            "kontostand": _betrag_report(r[i_konto]) if 0 <= i_konto < len(r) else "",
         })  # fmt: skip
 
     if not abholungen:
@@ -272,7 +276,8 @@ def besuche_umwandeln(daten: bytes) -> BesucheUmwandlung:
     hinweise = []
     if ohne_datum:
         hinweise.append(f"{ohne_datum} Zeile(n) ohne Datum („Letzter Besuch“) übersprungen.")
-    csv_bytes = _csv_bytes(["kundennummer", "datum", "uhrzeit", "beitrag"], abholungen)
+    csv_bytes = _csv_bytes(["kundennummer", "datum", "uhrzeit", "beitrag", "kontostand"],
+                           abholungen)  # fmt: skip
     return BesucheUmwandlung(abholungen=csv_bytes, anzahl=len(abholungen), hinweise=hinweise)
 
 

@@ -441,3 +441,27 @@ def test_import_behaelt_buchungen_fuer_die_kasse(haushalt):
     b = Buchung.objects.get()
     assert b.haushalt is None and b.kundennummer == "00042"
     assert Haushalt.objects.get().kontostand == D("1.00")
+
+
+def test_letzte_abholungen_zeigen_was_bar_gezahlt_wurde(admin_client):
+    """Einlass „Letzte Abholungen“: was an dem Tag bar auf dem Tisch lag (auch eine
+    Vorauszahlung), nicht der fällige Beitrag; ohne Buchung „–“."""
+    h = Haushalt.objects.create(kundennummer="777", kontostand=D("3.00"))
+    tag1, tag2, tag3 = (timezone.localdate() - dt.timedelta(days=n) for n in (14, 7, 0))
+    for tag in (tag1, tag2, tag3):
+        Abholung.objects.create(haushalt=h, datum=tag, beitrag=D("1.50"))
+    # Tag 1: zahlt für drei Abholungen, Tag 2: aus Guthaben, Tag 3: keine Buchung
+    Buchung.objects.create(haushalt=h, kundennummer="777", datum=tag1, art=Buchung.Art.ABHOLUNG,
+                           soll=D("1.50"), haben=D("1.50"), bar=D("1.50"))  # fmt: skip
+    Buchung.objects.create(haushalt=h, kundennummer="777", datum=tag1, art=Buchung.Art.EINZAHLUNG,
+                           haben=D("3.00"), bar=D("3.00"))  # fmt: skip
+    Buchung.objects.create(haushalt=h, kundennummer="777", datum=tag2, art=Buchung.Art.ABHOLUNG,
+                           zahlweise=Buchung.Zahlweise.GUTHABEN, soll=D("1.50"))  # fmt: skip
+    abholungen = konto.mit_bar_gezahlt(h, list(h.abholungen.all()))
+    assert {a.datum: a.bar_gezahlt for a in abholungen} == {
+        tag1: D("4.50"),
+        tag2: D("0.00"),
+        tag3: None,
+    }
+    seite = admin_client.get(reverse("ausgabe:empfang"), {"nummer": "777"}).content.decode()
+    assert "bar gezahlt" in seite and "4,50 €" in seite and "0,00 €" in seite

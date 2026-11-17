@@ -111,41 +111,89 @@ def abholung_buchen(abholung, beitrag, bar, einstellungen, stelle, von) -> Zahlu
     )
 
 
-BEITRAG_AUS_IMPORT = "Beitrag laut Import"
+BEITRAG_AUS_IMPORT = "Beitrag laut Import"  # alte, falsche Bar-Buchungen (entfernt mit 0014)
+AUS_KONTOSTAND = "laut Import (Kontostand)"
 
 
-def beitraege_aus_import(abholungen) -> int:
-    """Bucht für importierte Abholungen mit Beitrag den gezahlten Betrag in die Kasse.
+def _import_buchen(h: Haushalt, besuch, **felder) -> Buchung:
+    """Wie ``_buchen``, aber als Import (Tag und Zeit der Abholung ``besuch``, gekennzeichnet)."""
+    uhrzeit = besuch.uhrzeit or dt.time(12, 0)
+    return _buchen(h, datum=besuch.datum, ausgabestelle=besuch.ausgabestelle,
+                   zeitpunkt=timezone.make_aware(dt.datetime.combine(besuch.datum, uhrzeit)),
+                   eingetragen_von=besuch.eingetragen_von, importiert=True,
+                   bemerkung=AUS_KONTOSTAND, **felder)  # fmt: skip
 
-    Die Tagesliste aus dem bisherigen Programm bringt den Beitrag nur an der Abholung mit; die
-    Kasse zählt aber Buchungen. Deshalb je Abholung eine Bar-Buchung (Soll = Haben = Beitrag,
-    der Kontostand ändert sich nicht). Ausgelassen wird, was schon eine Buchung hat – an der
-    Abholung oder als Abholungs-Buchung desselben Kunden am selben Tag (z. B. aus buchungen.csv),
-    damit nichts doppelt zählt. Gibt die Zahl der neuen Buchungen zurück.
+
+def mit_bar_gezahlt(haushalt, abholungen) -> list:
+    """Hängt an jede Abholung ``bar_gezahlt``: was der Kunde an dem Tag bar auf den Tisch gelegt
+    hat (Bareinnahmen aller Buchungen des Tages – Beitrag und Einzahlung), ``None`` ohne Buchung.
+    Nicht der Beitrag: Wer am Monatsanfang für alle Abholungen zahlt, zahlt danach 0 €."""
+    from django.db.models import Sum
+
+    tage = {a.datum for a in abholungen}
+    bar = dict(Buchung.objects.filter(kundennummer=haushalt.kundennummer, datum__in=tage)
+               .values("datum").annotate(bar=Sum("bar")).values_list("datum", "bar"))  # fmt: skip
+    for a in abholungen:
+        a.bar_gezahlt = bar.get(a.datum)
+    return abholungen
+
+
+@transaction.atomic
+def zahlungen_aus_kontostand(stand: dict) -> int:
+    """Bucht importierte Abholungen nach dem, was wirklich gezahlt wurde.
+
+    Die Tagesliste des bisherigen Programms nennt je Kunde den fälligen Beitrag und den
+    Kontostand danach, aber nicht, was bar gezahlt wurde. Das ergibt sich aus dem Konto:
+    gezahlt = Beiträge + Kontostand danach − Kontostand vorher (der Stand in bintafeln vor dem
+    Einlesen). Wer im Voraus bezahlt hat, zahlt so 0 € (aus Guthaben), wer mehr gibt, bekommt
+    den Rest als Einzahlung gutgeschrieben – genau wie am Einlass (``abholung_buchen``). Am Ende
+    steht das Konto auf dem Kontostand der Liste (eine Korrektur gleicht Abweichungen aus).
+
+    ``stand`` = {Kundennummer: (Kontostand danach, Datum der Liste)}. Gebucht werden Abholungen
+    bis zu diesem Datum ohne Buchung; ein Tag, an dem es schon eine Abholungs-Buchung gibt
+    (am Einlass oder aus buchungen.csv), wird nicht doppelt gebucht. Rückgabe: Zahl der Buchungen.
     """
-    kandidaten = [a for a in abholungen.filter(beitrag__gt=0, buchung__isnull=True)
-                  .select_related("haushalt")]  # fmt: skip
-    if not kandidaten:
-        return 0
-    nummern = {a.haushalt.kundennummer for a in kandidaten}
-    schon = set(Buchung.objects.filter(art=Buchung.Art.ABHOLUNG, kundennummer__in=nummern)
-                .values_list("kundennummer", "datum"))  # fmt: skip
-    neue = []
-    for a in kandidaten:
-        schluessel = (a.haushalt.kundennummer, a.datum)
-        if schluessel in schon:
+    from apps.kunden.models import Abholung
+
+    anzahl = 0
+    for h in Haushalt.objects.select_for_update().filter(kundennummer__in=list(stand)):
+        danach, bis = stand[h.kundennummer]
+        schon = set(Buchung.objects.filter(art=Buchung.Art.ABHOLUNG, kundennummer=h.kundennummer)
+                    .values_list("datum", flat=True))  # fmt: skip
+        offen = [a for a in Abholung.objects.filter(haushalt=h, buchung__isnull=True,
+                                                     datum__lte=bis).order_by("datum", "uhrzeit")
+                 if a.datum not in schon]  # fmt: skip
+        if not offen:
             continue
-        schon.add(schluessel)
-        uhrzeit = a.uhrzeit or dt.time(12, 0)
-        neue.append(Buchung(
-            haushalt=a.haushalt, kundennummer=a.haushalt.kundennummer, datum=a.datum,
-            zeitpunkt=timezone.make_aware(dt.datetime.combine(a.datum, uhrzeit)),
-            art=Buchung.Art.ABHOLUNG, zahlweise=Buchung.Zahlweise.BAR, soll=a.beitrag,
-            haben=a.beitrag, bar=a.beitrag, abholung=a, ausgabestelle=a.ausgabestelle,
-            bemerkung=BEITRAG_AUS_IMPORT, eingetragen_von=a.eingetragen_von, importiert=True,
-        ))  # fmt: skip
-    Buchung.objects.bulk_create(neue, batch_size=5000)
-    return len(neue)
+        beitraege = sum((a.beitrag or NULL for a in offen), NULL)
+        gezahlt = max(beitraege + danach - (h.kontostand or NULL), NULL)
+        for i, a in enumerate(offen):
+            beitrag = a.beitrag or NULL
+            bar = gezahlt if i == len(offen) - 1 else min(gezahlt, beitrag)
+            gezahlt -= bar
+            fuer_beitrag = min(bar, beitrag)
+            rest = beitrag - fuer_beitrag
+            vom_konto = min(rest, max(h.kontostand or NULL, NULL))
+            if rest - vom_konto:
+                zahlweise = Buchung.Zahlweise.ANSCHREIBEN
+            elif vom_konto:
+                zahlweise = Buchung.Zahlweise.GUTHABEN
+            else:
+                zahlweise = Buchung.Zahlweise.BAR
+            if beitrag:
+                _import_buchen(h, a, art=Buchung.Art.ABHOLUNG, zahlweise=zahlweise, soll=beitrag,
+                               haben=fuer_beitrag, bar=fuer_beitrag, abholung=a)  # fmt: skip
+                anzahl += 1
+            if bar - fuer_beitrag:
+                _import_buchen(h, a, art=Buchung.Art.EINZAHLUNG, haben=bar - fuer_beitrag,
+                               bar=bar - fuer_beitrag)  # fmt: skip
+                anzahl += 1
+        if (h.kontostand or NULL) != danach:  # z. B. eine Korrektur im bisherigen Programm
+            diff = danach - (h.kontostand or NULL)
+            _import_buchen(h, offen[-1], art=Buchung.Art.KORREKTUR, soll=max(-diff, NULL),
+                           haben=max(diff, NULL))  # fmt: skip
+            anzahl += 1
+    return anzahl
 
 
 @transaction.atomic

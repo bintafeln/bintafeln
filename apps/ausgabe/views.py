@@ -147,7 +147,7 @@ def _ergebnis(request, h, meldung=None):
         "vorschlag_hinweis": vorschlag_hinweis,
         "einzahlungen_heute": h.buchungen.filter(art=Buchung.Art.EINZAHLUNG, datum=heute),
         "einstellungen": einstellungen,
-        "abholungen": abholungen[:LETZTE_ABHOLUNGEN],
+        "abholungen": konto.mit_bar_gezahlt(h, abholungen[:LETZTE_ABHOLUNGEN]),
         "heute_erfasst": [a for a in abholungen if a.datum == heute and a.erfasst_am],
         "darf_ausnahme": rollen.hat_recht(request.user, "einlass.ausnahme"),
         **notizen_kontext(h.kundennummer, request.user),

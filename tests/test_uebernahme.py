@@ -277,8 +277,8 @@ def test_besuche_umwandeln():
     assert umw.anzahl == 2  # die Zeile ohne „Letzter Besuch“ wird übersprungen
     assert any("1 Zeile" in h for h in umw.hinweise)
     assert [z["kundennummer"] for z in zeilen] == ["01294", "02015"]
-    assert zeilen[0] == {"kundennummer": "01294", "datum": "05.11.2026",
-                         "uhrzeit": "16:09", "beitrag": "3"}  # fmt: skip
+    assert zeilen[0] == {"kundennummer": "01294", "datum": "05.11.2026", "uhrzeit": "16:09",
+                         "beitrag": "3", "kontostand": "0,00"}  # fmt: skip
     assert zeilen[1]["beitrag"] == "1,5"  # „1,5 €“ → „1,5“
 
 

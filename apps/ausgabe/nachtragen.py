@@ -77,11 +77,16 @@ def _haushalte():
 def zeile(h: Haushalt, datum: dt.date, stelle) -> Zeile:
     e = AusgabeEinstellungen.laden()
     kind_bis = KundenEinstellungen.laden().kind_bis_alter
+    schon = [a for a in h.abholungen.all() if a.datum == datum]
+    if schon:  # was an dem Tag wirklich bar gezahlt wurde, nicht der Beitrag
+        from apps.ausgabe import konto
+
+        konto.mit_bar_gezahlt(h, schon)
     return Zeile(
         h=h,
         beitrag=e.beitrag_fuer(h, datum, kind_bis),
         bewertung=ampel.bewerten(h, datum, stelle, e),
-        schon=[a for a in h.abholungen.all() if a.datum == datum],
+        schon=schon,
         gruppe=h.kundengruppe.name if h.kundengruppe else "",
     )
 

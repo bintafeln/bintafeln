@@ -426,11 +426,19 @@ def _hinzufuegen(nummern: set[str], daten, bezuege, listen_auch: set[str]) -> in
             neue.append(bauen(haushalte[e["kundennummer"]], e))
         modell.objects.bulk_create(neue, batch_size=5000)
         anzahl += len(neue)
-    # Beiträge der Abholungen in die Kasse – auch für früher ergänzte Abholungen dieser Haushalte,
-    # die noch keine Buchung haben (z. B. aus einer älteren Version eingespielt)
+    # Gezahltes aus dem Kontostand (Tagesliste): Beitrag + Kontostand danach − Kontostand vorher,
+    # auch für früher ergänzte Abholungen dieser Kunden ohne Buchung
     from apps.ausgabe import konto
 
-    konto.beitraege_aus_import(Abholung.objects.filter(haushalt__kundennummer__in=list(haushalte)))
+    stand: dict[str, tuple] = {}
+    for e in daten.get("abholungen", []):
+        if e.get("kontostand") is None or e["kundennummer"] not in haushalte:
+            continue
+        datum = dt.date.fromisoformat(e["datum"])
+        if e["kundennummer"] not in stand or datum >= stand[e["kundennummer"]][1]:
+            stand[e["kundennummer"]] = (Decimal(e["kontostand"]), datum)
+    if stand:
+        konto.zahlungen_aus_kontostand(stand)
     return anzahl
 
 

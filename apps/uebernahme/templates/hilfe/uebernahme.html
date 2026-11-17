@@ -58,12 +58,14 @@
       <li><strong>Besuche:</strong> Für den Knopf „Besuche als CSV herunterladen“ laden Sie <em>nicht</em>
         den großen Export hoch, sondern die einfache Liste <em>„kunden die da waren“</em> (nur
         Kundennummern, keine Namen). bintafeln macht daraus <code>abholungen.csv</code> mit
-        Kundennummer, Datum, Uhrzeit und Beitrag. Diese laden Sie danach unter
+        Kundennummer, Datum, Uhrzeit, Beitrag und Kontostand. Diese laden Sie danach unter
         <strong>„Kundenstamm importieren“</strong> mit der Art <strong>„ergänzen“</strong> hoch – die
-        Besuche kommen zu den vorhandenen Haushalten dazu, ohne den Bestand auszutauschen. Der gezahlte
-        <strong>Beitrag</strong> erscheint dabei als Bareinnahme in der <strong>Kasse</strong> des Tages. Der
-        Kontostand aus der Liste wird nicht übernommen, weil er nur eine Momentaufnahme ist (keine
-        einzelne Buchung).</li>
+        Besuche kommen zu den vorhandenen Haushalten dazu, ohne den Bestand auszutauschen. Was die Kunden
+        <strong>wirklich bar gezahlt</strong> haben, rechnet bintafeln aus dem Kontostand der Liste: Beitrag
+        + Kontostand danach − Kontostand vorher. Wer im Voraus bezahlt hat, steht in der <strong>Kasse</strong>
+        und beim Einlass unter „Letzte Abholungen“ mit 0 € bar (aus Guthaben), wer für mehrere Abholungen
+        zahlt, mit dem ganzen Betrag; das Konto steht danach auf dem Kontostand der Liste. Listen in der
+        Reihenfolge der Tage einspielen.</li>
     </ul>
   </li>
 </ol>
