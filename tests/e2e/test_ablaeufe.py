@@ -1129,8 +1129,12 @@ def test_serienbrief_vorlage_platzhalter_ziehen_und_antippen(angemeldet, admin):
     assert text_vorher.index("Briefanrede") < text_vorher.index("Liebe")  # an der Schreibmarke
     seite.locator('[data-platzhalter-karte="vorname"]').drag_to(flaeche)
     expect(flaeche.locator('[data-platzhalter="vorname"]')).to_have_text("Vorname")
-    editor.locator(".editor-mehr summary").click()  # Seltenes steckt im Menü „Mehr“
-    editor.locator(".editor-leiste").get_by_role("button", name="groß").click()
+    # Schriftgröße: ohne Markierung gilt sie für die Zeile, in der die Schreibmarke steht
+    flaeche.click()
+    seite.keyboard.press("End")
+    editor.get_by_label("Schriftgröße").select_option(label="groß")
+    assert "x-large" in flaeche.inner_html()
+    expect(editor.get_by_label("Schriftgröße")).to_have_value("")  # wieder bereit
     # Im Betreff gewesen: dort einfügen
     seite.get_by_label("Betreff").click()
     seite.keyboard.press("End")

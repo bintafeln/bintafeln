@@ -49,6 +49,13 @@ def test_anrede_und_platzhalter():
     assert emp.briefanrede("Herr", "", "Probe", False) == "Sehr geehrter Herr Probe,"
     assert emp.briefanrede("", "Kim", "Test", False) == "Guten Tag Kim Test,"
     assert emp.briefanrede("", "", "", True) == "Sehr geehrte Damen und Herren,"
+    # persönliche Anrede: Liebe/Lieber richtet sich nach der Anrede
+    assert emp.anrede_du("Frau", "Erika", "Muster", False) == "Liebe Erika,"
+    assert emp.anrede_du("Herr", " Max ", "Probe", False) == "Lieber Max,"
+    assert emp.anrede_du("", "Kim", "Test", False) == "Hallo Kim,"  # Anrede unbekannt
+    assert emp.anrede_du("Divers", "Kim", "Test", False) == "Hallo Kim,"
+    assert emp.anrede_du("Herr", "", "Probe", False) == "Sehr geehrter Herr Probe,"  # kein Vorname
+    assert emp.anrede_du("", "Erika", "", True) == "Sehr geehrte Damen und Herren,"
     e = emp.Empfaenger("a:1", "X", [], werte={"name": "Erika"})
     assert emp.einsetzen("Hallo {name}, {unbekannt} {", e, {"jahr": 2026}) == (
         "Hallo Erika, {unbekannt} {")  # fmt: skip
@@ -69,6 +76,9 @@ def test_quellen(daten, admin):
     assert mitglieder[0].werte["anrede"] == "Sehr geehrte Damen und Herren,"
     kunden = emp.suchen("kunden", d, admin)
     assert kunden[0].werte["anrede"] == "Sehr geehrter Herr Kunde,"
+    assert kunden[0].werte["anrede_du"].startswith("Lieber ")
+    assert mitglieder[0].werte["anrede_du"] == "Sehr geehrte Damen und Herren,"
+    assert ("anrede_du", "Liebe/Lieber + Vorname") in [(k, n) for k, n, _ in emp.karten()]
     assert kunden[0].anschrift == ["Herr Max Kunde", "Kundenweg 3", "12345 Musterstadt"]
     ok, ohne = emp.aufteilen(kunden, "email")
     assert not ok and ohne

@@ -20,6 +20,7 @@ QUELLEN = [
 ]
 PLATZHALTER = [
     ("anrede", "Briefanrede, z. B. „Sehr geehrte Frau Muster,“"),
+    ("anrede_du", "persönliche Anrede mit Vornamen: „Liebe Erika,“ bzw. „Lieber Max,“"),
     ("name", "ganzer Name bzw. Organisation"), ("vorname", "Vorname"), ("nachname", "Nachname"),
     ("organisation", "Organisation"), ("mitgliedsnummer", "Mitgliedsnummer"),
     ("jahresbeitrag", "Jahresbeitrag"), ("beitrag_offen", "offener Beitrag im gewählten Jahr"),
@@ -32,7 +33,8 @@ PLATZHALTER = [
 
 # Verständliche Namen für die Kärtchen neben dem Editor und die Felder im Text (ADR 0088)
 NAMEN = {
-    "anrede": "Briefanrede", "name": "Ganzer Name", "vorname": "Vorname", "nachname": "Nachname",
+    "anrede": "Briefanrede", "anrede_du": "Liebe/Lieber + Vorname",
+    "name": "Ganzer Name", "vorname": "Vorname", "nachname": "Nachname",
     "organisation": "Organisation", "mitgliedsnummer": "Mitgliedsnummer",
     "jahresbeitrag": "Jahresbeitrag", "beitrag_offen": "Offener Beitrag",
     "spendensumme": "Spendensumme", "anzahl_spenden": "Anzahl Spenden",
@@ -41,7 +43,8 @@ NAMEN = {
 }  # fmt: skip
 # Erfundener Empfänger für die Vorschau beim Bearbeiten einer Vorlage
 BEISPIEL = {
-    "anrede": "Sehr geehrte Frau Beispiel,", "name": "Erika Beispiel", "vorname": "Erika",
+    "anrede": "Sehr geehrte Frau Beispiel,", "anrede_du": "Liebe Erika,",
+    "name": "Erika Beispiel", "vorname": "Erika",
     "nachname": "Beispiel", "organisation": "", "mitgliedsnummer": "42",
     "jahresbeitrag": "36,00 €", "beitrag_offen": "36,00 €", "spendensumme": "150,00 €",
     "anzahl_spenden": "2", "spendendaten": "15.01., 15.06.", "kundennummer": "1234",
@@ -88,6 +91,22 @@ def briefanrede(anrede: str, vorname: str, nachname: str, organisation: bool) ->
     return "Sehr geehrte Damen und Herren,"
 
 
+def anrede_du(anrede: str, vorname: str, nachname: str, organisation: bool) -> str:
+    """Persönliche Anrede mit Vornamen: „Liebe Erika,“ / „Lieber Max,“ nach der Anrede.
+
+    Ohne Anrede (Frau/Herr) lässt sich „Liebe“ oder „Lieber“ nicht sicher wählen: dann „Hallo
+    Kim,“. Ohne Vornamen oder bei Organisationen bleibt es bei der förmlichen Briefanrede.
+    """
+    vorname = (vorname or "").strip()
+    if organisation or not vorname:
+        return briefanrede(anrede, vorname, nachname, organisation)
+    if anrede == "Frau":
+        return f"Liebe {vorname},"
+    if anrede == "Herr":
+        return f"Lieber {vorname},"
+    return f"Hallo {vorname},"
+
+
 def _aus_adresse(a, jahr: int, **mehr) -> Empfaenger:
     from apps.spenden.models import Spende
 
@@ -95,6 +114,7 @@ def _aus_adresse(a, jahr: int, **mehr) -> Empfaenger:
     summe = a.spenden.filter(art=Spende.Art.GELD, datum__year=jahr).aggregate(s=Sum("betrag"))
     werte = {
         "anrede": briefanrede("" if org else a.anrede, a.vorname, a.nachname, org),
+        "anrede_du": anrede_du("" if org else a.anrede, a.vorname, a.nachname, org),
         "name": a.name, "vorname": a.vorname, "nachname": a.nachname,
         "organisation": a.organisation, "spendensumme": _euro(summe["s"]),
     } | mehr  # fmt: skip
@@ -160,6 +180,7 @@ def suchen(quelle: str, d: dict, benutzer=None) -> list[Empfaenger]:
             zeilen = [" ".join(t for t in ((p.anrede if p else ""), name) if t), h.strasse,
                       " ".join(t for t in (h.plz, h.ort) if t)]  # fmt: skip
             werte = {"anrede": briefanrede(p.anrede if p else "", vorname, nachname, False),
+                     "anrede_du": anrede_du(p.anrede if p else "", vorname, nachname, False),
                      "name": name, "vorname": vorname, "nachname": nachname,
                      "kundennummer": h.kundennummer}  # fmt: skip
             ergebnis.append(Empfaenger(f"k:{h.kundennummer}", name,
