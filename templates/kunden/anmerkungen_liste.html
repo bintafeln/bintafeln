@@ -31,10 +31,14 @@
   <form id="anmerkungen-loeschen" method="post" action="{% url 'kunden:anmerkungen_loeschen' %}" data-liste-loeschen data-eins="Anmerkung" data-viele="Anmerkungen">{% csrf_token %}
     <input type="hidden" name="zurueck" value="{{ request.get_full_path }}">
   </form>
+  {% if darf_loeschen %}<form id="anmerkungen-umwandeln" method="post" action="{% url 'kunden:anmerkungen_umwandeln' %}" data-liste-loeschen data-eins="Anmerkung" data-viele="Anmerkungen" data-tun="in Notizen umwandeln" data-wofuer="zu Notizen werden sollen" data-hinweis="Sie stehen danach unter „Kunden → Notizen“ und beim Kunden unter „Notizen“; Datum, Text und Verfasser bleiben.">{% csrf_token %}
+    <input type="hidden" name="zurueck" value="{{ request.get_full_path }}">
+  </form>{% endif %}
   <div class="liste-aktionen">
     <span class="hinweis">{{ seite.paginator.count }} Anmerkung{{ seite.paginator.count|pluralize:"en" }}</span>
     <span class="hinweis" data-auswahl-zahl="auswahl"></span>
-    {% if darf_loeschen %}<button type="submit" form="anmerkungen-loeschen" class="knopf knopf-zweitrangig knopf-klein" data-anmerkungen-loeschen>🗑 Angehakte löschen</button>{% endif %}
+    {% if darf_loeschen %}<button type="submit" form="anmerkungen-loeschen" class="knopf knopf-zweitrangig knopf-klein" data-anmerkungen-loeschen>🗑 Angehakte löschen</button>
+    <button type="submit" form="anmerkungen-umwandeln" class="knopf knopf-zweitrangig knopf-klein" title="Macht aus den angehakten Anmerkungen Notizen, z. B. wenn bei der Übernahme alte Notizen als Anmerkungen angekommen sind">↪ Angehakte in Notizen umwandeln</button>{% endif %}
   </div>
   <div class="tabelle-rahmen">
   <table class="tabelle">

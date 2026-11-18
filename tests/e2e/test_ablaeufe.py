@@ -1872,3 +1872,35 @@ def test_fruehere_abgleiche_rechnen_von_selbst_weiter(angemeldet, admin, monkeyp
     expect(seite.locator("#nachrechnen")).to_have_count(0)
     assert konto.abgleiche_stand()["kunden"] == 0
     assert {h.kontostand for h in Haushalt.objects.all()} == {Decimal("4.50")}
+
+
+def test_anmerkungen_in_notizen_umwandeln(angemeldet, admin):
+    """Anmerkungen-Liste: anhaken, „in Notizen umwandeln“ mit Rückfrage; ohne Haken ein Hinweis."""
+    from apps.kunden.models import Bemerkung, Notiz
+
+    h = Haushalt.objects.create(kundennummer="00042")
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika", nachname="Muster")
+    Bemerkung.objects.create(haushalt=h, datum=dt.date(2026, 10, 5), text="Kommt mit Begleitung")
+    Bemerkung.objects.create(haushalt=h, datum=dt.date(2026, 9, 1), text="Umzug angekündigt")
+    seite = angemeldet(admin)
+    seite.goto(reverse("kunden:anmerkungen"))
+    knopf = seite.get_by_role("button", name="Angehakte in Notizen umwandeln")
+    fragen = []
+
+    def merken(dialog):
+        fragen.append(dialog.message)
+        dialog.accept()
+
+    seite.once("dialog", merken)
+    knopf.click()  # nichts angehakt
+    assert "anhaken, die zu Notizen werden sollen" in fragen[-1]
+    assert Bemerkung.objects.count() == 2
+    zeile = seite.locator("tbody tr", has_text="Kommt mit Begleitung")
+    zeile.locator('input[name="id"]').check()
+    seite.once("dialog", merken)
+    knopf.click()
+    expect(seite.get_by_text("1 Anmerkung in Notiz umgewandelt.")).to_be_visible()
+    assert fragen[-1].startswith("1 Anmerkung in Notizen umwandeln?")
+    assert "Papierkorb" not in fragen[-1]
+    assert [b.text for b in Bemerkung.objects.all()] == ["Umzug angekündigt"]
+    assert Notiz.objects.get().text == "Kommt mit Begleitung"
