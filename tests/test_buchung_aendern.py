@@ -120,3 +120,24 @@ def test_vorhandener_eintrag_speichert_sofort(admin_client, haushalt):
     aktion = Sonderaktion.objects.create(bezeichnung="Aktion", von=heute, bis=heute)
     seite = admin_client.get(reverse("ausgabe:sonderaktion_bearbeiten", args=[aktion.pk]))
     assert "data-autosave" in seite.content.decode()
+
+
+def test_mitarbeitende_und_personal_speichern_sofort(admin_client, admin, benutzer_mit_rolle):
+    """Teil 2 von ADR 0145: Konto, Stammdaten, Rolle, Benachrichtigungen, Arbeitszeit."""
+    from apps.konten.models import Rolle
+
+    person = benutzer_mit_rolle(rollen.AUSGABE)
+    rolle = Rolle.objects.first()
+    for ziel in (
+        reverse("konten:mitarbeiter", args=[person.pk]),
+        reverse("konten:stammdaten", args=[person.pk]),
+        reverse("konten:rolle", args=[rolle.pk]),
+        reverse("personal:arbeitszeit_einstellungen"),
+    ):
+        assert "data-autosave" in admin_client.get(ziel).content.decode(), ziel
+    konto_seite = admin_client.get(reverse("konten:mitarbeiter", args=[person.pk]))
+    assert "data-autosave-spaet" in konto_seite.content.decode()
+    for ziel in (reverse("konten:mitarbeiter_neu"), reverse("konten:rolle_neu")):
+        seite = admin_client.get(ziel).content.decode()
+        # „data-autosave-spaet“ am Benutzernamen zählt nicht: es wirkt nur mit data-autosave
+        assert " data-autosave>" not in seite and ">Anlegen<" in seite, ziel

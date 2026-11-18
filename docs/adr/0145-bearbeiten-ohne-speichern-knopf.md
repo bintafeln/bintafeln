@@ -28,6 +28,9 @@ vergaß, verlor die Änderung; wer viel pflegt, drückte den Knopf ständig.
   Zeilentabellen (z. B. Zeiten einer Ausgabestelle) folgen gesondert, weil dort nach jedem
   Speichern die Zeilen neu geladen werden müssen.
 
+- Bewusst mit Knopf bleibt die Zeitbuchung („Zeit nachtragen/korrigieren“): Mit Pause wird sie
+  als zwei Buchungen gespeichert, ein Speichern je Feld würde Buchungen vervielfachen.
+
 ## Begründung
 
 Dasselbe Skript wie bei den Einstellungen; Prüfung, Rechte, Historie und Änderungsprotokoll laufen

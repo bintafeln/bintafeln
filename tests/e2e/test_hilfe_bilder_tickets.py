@@ -78,8 +78,7 @@ def test_hilfe_bild_benachrichtigungen(angemeldet, admin, muster, benutzer_mit_r
     aufnehmen(seite, "benachrichtigungen", seite.locator("section.karte").first,
               Marke(seite.locator('select[name="art_korrekturwunsch"]'), nummer=1, von="rechts"),
               Marke(seite.get_by_label("Uhrzeit für „täglich“ und „wöchentlich“"), "rahmen", 2),
-              Marke(seite.get_by_role("button", name="Speichern"), nummer=3,
-                    von="rechts"))  # fmt: skip
+              Marke(seite.locator(".autosave-hinweis"), nummer=3, von="rechts"))  # fmt: skip
 
 
 def test_hilfe_bild_mail_empfaenger(angemeldet, admin, muster, benutzer_mit_rolle):

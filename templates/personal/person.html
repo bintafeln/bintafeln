@@ -65,7 +65,7 @@
   </dl>
   <details>
     <summary>Abweichungen für {{ jahr }} (Anspruch, Verfallsdatum)</summary>
-    <form method="post" action="{% url 'personal:urlaubsjahr' p.pk %}">
+    <form method="post" action="{% url 'personal:urlaubsjahr' p.pk %}" data-autosave>
       {% csrf_token %}<input type="hidden" name="jahr" value="{{ jahr }}">
       {% include "includes/formular.html" with form=urlaubsjahr_form %}
       <p class="hinweis">Leer = berechnet: Anspruch anteilig nach vollen Vertragsmonaten, Verfall laut „Fristen einstellen“.</p>

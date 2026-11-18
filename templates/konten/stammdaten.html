@@ -7,7 +7,7 @@
   {% if s.geleert_am %}
     <p class="sicherung">Die persönlichen Angaben wurden am {{ s.geleert_am|date:"d.m.Y" }} nach Ablauf der Löschfrist geleert.</p>
   {% endif %}
-  <form method="post">
+  <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular_abschnitte.html" %}
     <button type="submit" class="knopf">Speichern</button>

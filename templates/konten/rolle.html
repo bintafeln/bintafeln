@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block titel %}{% if rolle %}Rolle {{ rolle }}{% else %}Neue Rolle{% endif %}{% endblock %}
 {% block inhalt %}
-<form method="post" class="rolle-form">
+<form method="post" class="rolle-form"{% if rolle %} data-autosave{% endif %}>
   {% csrf_token %}
   <section class="karte breit">
     <p><a href="{% url 'konten:rollen' %}">← Rollen und Rechte</a></p>
@@ -39,7 +39,7 @@
     </fieldset>
     {% endfor %}
     {% endif %}
-    <button type="submit" class="knopf">Speichern</button>
+    <button type="submit" class="knopf">{% if rolle %}Speichern{% else %}Anlegen{% endif %}</button>
   </section>
 </form>
 {% if rolle and not rolle.ist_admin %}

@@ -9,7 +9,7 @@
     entschieden), steht dann nicht mehr darin; bleibt nichts übrig, kommt keine Mail.</p>
   {% if ohne_mail %}<p class="meldung error">Ihr Konto hat keine E-Mail-Adresse. Bitte an einen Admin wenden, sonst kommen keine Benachrichtigungen an.</p>{% endif %}
   {% if zeilen %}
-  <form method="post">
+  <form method="post" data-autosave>
     {% csrf_token %}
     <div class="tabelle-rahmen">
     <table class="tabelle benachrichtigungs-wahl">

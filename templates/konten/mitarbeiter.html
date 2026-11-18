@@ -15,7 +15,7 @@
       muss die Person ein eigenes wählen. Mit Einladung bekommt sie einen Link, über den sie ihr Passwort selbst
       festlegt (nur, wenn ein Mailserver eingerichtet ist{% if "einstellungen.mail" in rechte %}, „Einstellungen → E-Mail“{% endif %}).</p>
   {% endif %}
-  <form method="post">
+  <form method="post"{% if ziel %} data-autosave{% endif %}>
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <button type="submit" class="knopf">{% if ziel %}Speichern{% else %}Anlegen{% endif %}</button>

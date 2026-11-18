@@ -10,7 +10,7 @@
     Ausgeschaltet fehlt „Meine Arbeitszeit“ bei allen im Menü; erfasste Zeiten bleiben erhalten.
     Für <strong>einzelne Personen</strong> lässt sich das abweichend festlegen: unter „Verträge &amp; Zeiten“ die Person
     öffnen und bei „Stundenkonto“ die Arbeitszeiterfassung auf „stempelt (immer)“ oder „stempelt nicht“ stellen.</p>
-  <form method="post">
+  <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <button type="submit" class="knopf">Speichern</button>
