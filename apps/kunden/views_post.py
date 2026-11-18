@@ -1,9 +1,12 @@
 """Post der Verwaltung an die Ausgabestellen (ADR 0142): schreiben, Postfach, Eule in der
 Kopfzeile."""
 
+from urllib.parse import urlsplit
+
 from django import forms
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
@@ -78,9 +81,15 @@ def postfach(request):
 @never_cache
 @rollen.recht_erforderlich("einlass.nutzen")
 def kopf(request):
-    """Die Eule in der Kopfzeile frisch (HTMX, jede Minute)."""
-    return render(request, "kunden/_eulenpost.html",
-                  {"eulenpost": eulenpost.stand(_stelle(request))})  # fmt: skip
+    """Die Eule in der Kopfzeile frisch (HTMX, jede Minute).
+
+    „Gelesen“ im Hinweis führt zurück auf die Seite, auf der man gerade ist – nicht auf diese
+    Adresse, die nur das Stück Kopfzeile liefert (das gäbe eine fast leere, weiße Seite).
+    """
+    return render(request, "kunden/_eulenpost.html", {
+        "eulenpost": eulenpost.stand(_stelle(request)),
+        "eulen_zurueck": request.headers.get("HX-Current-URL", "") or reverse("kunden:postfach"),
+    })  # fmt: skip
 
 
 @require_POST
@@ -92,6 +101,8 @@ def gelesen(request, pk):
     if request.headers.get("HX-Request"):
         return render(request, "kunden/_eulenpost.html", {"eulenpost": eulenpost.stand(stelle)})
     zurueck = request.POST.get("zurueck", "")
-    if not url_has_allowed_host_and_scheme(zurueck, allowed_hosts={request.get_host()}):
+    if not url_has_allowed_host_and_scheme(zurueck, allowed_hosts={request.get_host()}) or urlsplit(
+        zurueck
+    ).path == reverse("kunden:post_kopf"):  # nur ein Stück Kopfzeile
         zurueck = "kunden:postfach"
     return redirect(zurueck)
