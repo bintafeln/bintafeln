@@ -6,7 +6,7 @@
   <h3>{{ p.wichtig.rundschreiben.betreff }}</h3>
   <p class="eulen-text">{{ p.wichtig.rundschreiben.text|linebreaksbr }}</p>
   <form method="post" action="{% url 'kunden:post_gelesen' p.wichtig.pk %}" class="aktionen">{% csrf_token %}
-    <input type="hidden" name="zurueck" value="{{ request.get_full_path }}">
+    <input type="hidden" name="zurueck" value="{{ eulen_zurueck|default:request.get_full_path }}">
     <button type="submit" class="knopf">✓ Gelesen</button>
     <button type="button" class="knopf knopf-zweitrangig" data-spaeter>Später</button>
   </form>

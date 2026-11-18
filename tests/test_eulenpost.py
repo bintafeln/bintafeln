@@ -46,10 +46,20 @@ def test_schreiben_eule_lesen(stellen, admin_client):
     assert "eulen-wichtig" in start and "Morgen keine Kühlware." in start
     kopf = c.get(reverse("kunden:post_kopf")).content.decode()
     assert 'data-schluessel="' in kopf and "1 neue Post" in kopf
+    # Die Kopfzeile lädt sich jede Minute neu: „Gelesen“ führt dann auf die Seite zurück, auf der
+    # man ist – nie auf das Stück Kopfzeile selbst (das wäre eine weiße Seite)
+    kopf_adresse = reverse("kunden:post_kopf")
+    assert f'name="zurueck" value="{kopf_adresse}"' not in kopf
+    assert f'name="zurueck" value="{POSTFACH}"' in kopf  # ohne Angabe: Postfach
+    seite = "http://testserver/ausgabe/?nummer=42"
+    kopf = c.get(kopf_adresse, headers={"HX-Current-URL": seite}).content.decode()
+    assert 'name="zurueck" value="http://testserver/ausgabe/?nummer=42"' in kopf
     assert "Nur Nord" not in c.get(POSTFACH).content.decode()
     empfang = PostEmpfang.objects.get(stelle=mitte)
     gelesen = reverse("kunden:post_gelesen", args=[empfang.pk])
     assert c.post(gelesen, {"zurueck": "https://boese.example/"}).url == POSTFACH
+    assert c.post(gelesen, {"zurueck": kopf_adresse}).url == POSTFACH
+    assert c.post(gelesen, {"zurueck": seite}).url == seite
     empfang.refresh_from_db()
     assert empfang.gelesen_am and empfang.gelesen_von == "anton"
     assert "eulen-landeplatz" not in c.get("/").content.decode()
