@@ -7,7 +7,7 @@
 <section class="karte">
   <p><a href="{% url 'serienbriefe:vorlagen' %}">← Vorlagen</a></p>
   <h1>{% if v.pk %}Vorlage „{{ v.name }}“{% else %}Neue Vorlage{% endif %}</h1>
-  <form method="post" id="vorlage-formular">
+  <form method="post" id="vorlage-formular"{% if v.pk %} data-autosave{% endif %}>
     {% csrf_token %}
     {% if form.non_field_errors %}
     <div class="fehler" role="alert">{% for fehler in form.non_field_errors %}<p>{{ fehler }}</p>{% endfor %}</div>
@@ -33,10 +33,10 @@
       {% include "includes/feld.html" with feld=form.fusszeile %}
     </fieldset>
     <div class="aktionsleiste">
-      <button type="submit" class="knopf">Speichern</button>
+      <button type="submit" class="knopf" data-autosave-knopf>{% if v.pk %}Speichern{% else %}Anlegen{% endif %}</button>
       <button type="submit" class="knopf knopf-zweitrangig" formaction="{% url 'serienbriefe:vorlage_vorschau' %}"
               formtarget="_blank" title="Zeigt den Brief mit einem erfundenen Empfänger als PDF in einem neuen Tab; speichert nichts">Vorschau (PDF)</button>
-      <a class="knopf knopf-abbrechen" href="{% url 'serienbriefe:vorlagen' %}">Abbrechen</a>
+      <a class="knopf knopf-abbrechen" href="{% url 'serienbriefe:vorlagen' %}">{% if v.pk %}Zurück{% else %}Abbrechen{% endif %}</a>
     </div>
   </form>
   {% if v.pk %}

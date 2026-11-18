@@ -10,7 +10,7 @@
     <strong>HTML</strong>). <strong>Ist in den Antrags-Einstellungen kein externer Link eingetragen</strong>, führt der
     Link im Antragsformular (und beim Impressum auch im Footer) auf eine eigene Seite mit diesem Text. Ist dort ein
     externer Link gesetzt, hat dieser Vorrang – der Text hier dient dann nicht. Skripte werden beim Anzeigen entfernt.</p>
-  <form method="post">
+  <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <div class="aktionen"><button type="submit" class="knopf">Speichern</button></div>

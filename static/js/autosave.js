@@ -161,6 +161,10 @@
     });
     // Enter in einem Textfeld speichert ebenfalls, ohne die Seite zu verlassen
     formular.addEventListener("submit", function (ereignis) {
+      // Andere Knöpfe im selben Formular (Vorschau, PDF in neuem Fenster) tun weiter ihre Sache
+      var ausloeser = ereignis.submitter;
+      if (ausloeser && ausloeser !== knopf && ausloeser.tagName === "BUTTON" &&
+          (ausloeser.name || ausloeser.hasAttribute("formaction"))) return;
       ereignis.preventDefault();
       var feld = document.activeElement && formular.contains(document.activeElement)
         ? document.activeElement : formular.querySelector("[name]");
