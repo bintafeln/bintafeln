@@ -289,7 +289,10 @@ def test_editor_gestalten_und_html(angemeldet, admin):
     html = feld.input_value()
     assert "text-align: center" in html and 'class="kasten"' in html
     assert "background-color" in html
-    seite.get_by_role("button", name="Speichern").click()
+    # kein Speichern-Knopf: Was im Reiter „Gestalten“ geschrieben wurde, speichert sich selbst
+    expect(seite.get_by_role("button", name="Speichern")).to_be_hidden()
+    expect(seite.get_by_role("button", name="Vorschau")).to_be_visible()
+    expect(seite.locator(".autosave-ok").first).to_be_visible()
     gespeichert = AntragText.objects.get(sprache="de").einleitung
     assert "Welt" in gespeichert and "kasten" in gespeichert
 
@@ -1138,7 +1141,7 @@ def test_serienbrief_vorlage_platzhalter_ziehen_und_antippen(angemeldet, admin):
     assert "{anrede}" in html and "{vorname}" in html and "platzhalter" not in html
     editor.locator(".editor-reiter").get_by_role("tab", name="Gestalten").click()
     expect(flaeche.locator(".platzhalter")).to_have_count(2)
-    seite.get_by_role("button", name="Speichern").click()
+    seite.get_by_role("button", name="Anlegen").click()
     expect(seite.get_by_text("Vorlage „Probe“ gespeichert.")).to_be_visible()
     v = Vorlage.objects.get(name="Probe")
     assert "{anrede}" in v.text and "{vorname}" in v.text and "Liebe Grüße" in v.text
@@ -1672,7 +1675,7 @@ def test_serienbrief_vorlage_grafik_einfuegen(angemeldet, admin, tmp_path):
     seite.get_by_role("button", name="Grafik ändern").click()
     dialog.get_by_role("button", name="Grafik entfernen").click()
     expect(flaeche.locator("img")).to_have_count(1)
-    seite.get_by_role("button", name="Speichern").click()
+    seite.get_by_role("button", name="Anlegen").click()
     expect(seite.get_by_text("Vorlage „Mit Logo“ gespeichert.")).to_be_visible()
     text = Vorlage.objects.get(name="Mit Logo").text
     assert f'src="/serienbriefe/grafiken/{g.pk}/"' in text and 'width="25%"' in text

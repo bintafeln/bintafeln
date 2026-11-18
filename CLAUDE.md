@@ -236,7 +236,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Ebenso Seiten, die einen vorhandenen Datensatz bearbeiten (ADR 0145): `data-autosave` nur mit
   `pk`, beim Neuanlegen bleibt der Knopf und heißt „Anlegen“; Felder, die halb getippt Schaden
   anrichten (Kundennummer), bekommen `data-autosave-spaet`; ändert das Speichern die Adresse der
-  Seite, `data-autosave-folgen`. Knöpfe mit eigener Aktion und Löschen bleiben Knöpfe.
+  Seite, `data-autosave-folgen`. Knöpfe mit eigener Aktion und Löschen bleiben Knöpfe;
+  stehen sie im selben Formular (Vorschau), bekommt der Speichern-Knopf `data-autosave-knopf`.
   Zeilentabellen (Formsets) auf solchen Seiten: `<tbody id="…" data-autosave-zeilen>`, sonst legt
   das nächste Speichern neue Zeilen doppelt an.
 - Menü links: Einträge je Rolle in `apps/core/menue.py` (neue Seiten dort eintragen statt

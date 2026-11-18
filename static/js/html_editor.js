@@ -403,12 +403,19 @@
     }
 
     function uebertragen() {
-      if (!namen) { feld.value = flaeche.innerHTML; return; }
-      var kopie = flaeche.cloneNode(true); // Felder wieder als {anrede}
-      kopie.querySelectorAll("[data-platzhalter]").forEach(function (s) {
-        s.parentNode.replaceChild(document.createTextNode("{" + s.dataset.platzhalter + "}"), s);
-      });
-      feld.value = kopie.innerHTML;
+      var vorher = feld.value;
+      if (!namen) {
+        feld.value = flaeche.innerHTML;
+      } else {
+        var kopie = flaeche.cloneNode(true); // Felder wieder als {anrede}
+        kopie.querySelectorAll("[data-platzhalter]").forEach(function (s) {
+          s.parentNode.replaceChild(document.createTextNode("{" + s.dataset.platzhalter + "}"), s);
+        });
+        feld.value = kopie.innerHTML;
+      }
+      // Dem Formular Bescheid geben: Seiten ohne Speichern-Knopf speichern dann von selbst
+      // (autosave.js hört auf das Textfeld, nicht auf die Gestalten-Fläche)
+      if (feld.value !== vorher) feld.dispatchEvent(new Event("input", {bubbles: true}));
     }
 
     function befehl(name, wert) {

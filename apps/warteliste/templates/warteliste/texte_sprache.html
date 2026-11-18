@@ -10,7 +10,7 @@
     im Feld), solange der deutsche Text der Vorgabe entspricht. Platzhalter wie
     <code>{vorname}</code> oder <code>{datum}</code> unverändert übernehmen.</p>
   {% if fehlt %}<p class="meldung error">Es fehlen Übersetzungen; Mails gehen in dieser Sprache bis dahin nur auf Deutsch.</p>{% endif %}
-  <form method="post" lang="{{ s.code }}" dir="{% if s.rtl %}rtl{% else %}ltr{% endif %}">
+  <form method="post" lang="{{ s.code }}" dir="{% if s.rtl %}rtl{% else %}ltr{% endif %}" data-autosave>
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <button type="submit" class="knopf">Speichern</button>
