@@ -36,3 +36,13 @@ ausfallenden Ausgabetage mit, Kunden zahlten also für Tage ohne Ausgabe im Vora
   weiter von Hand gepflegt.
 - Schließzeiten gehören zum Bereich „Einstellungen“ der Datensicherung und stehen im
   Änderungsprotokoll.
+
+## Nachtrag (2026-11-18): Beitragsfreie Zeiträume je Ausgabestelle
+
+Auch ein beitragsfreier Zeitraum kann auf Ausgabestellen beschränkt werden
+(`BeitragsfreierZeitraum.ausgabestellen`, Mehrfachauswahl; nichts angehakt = alle, so bleiben
+bestehende Zeiträume unverändert). `BeitragsfreierZeitraum.am(tag, stelle)` und
+`AusgabeEinstellungen.beitrag_fuer(..., stelle=…)` beachten das; es zählt die am Einlass gewählte
+Ausgabestelle, sonst die der Kundengruppe (`models.stelle_von()`, dieselbe Regel wie bei den
+Sonderaktionen), bei importierten Abholungen die Ausgabestelle der Abholung, im
+Vorauszahlungs-Vorschlag die der Kundengruppe.

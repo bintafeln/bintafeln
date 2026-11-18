@@ -141,7 +141,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Ohne gültigen Ausweis keine Kundengruppe (ADR 0061): `apps/kunden/gruppen.py` (`pruefen()` nach
   jeder Änderung, `regel_anwenden()` täglich und beim Import), Zeiten in `Gruppenzeit`.
   `ausgabe` (Einlass; Beitrag über `AusgabeEinstellungen.beitrag_fuer()` – zahlende Personen
-  ab Alter × Betrag, Zusatzbeiträge optional, `BeitragsfreierZeitraum`;
+  ab Alter × Betrag, Zusatzbeiträge optional, `BeitragsfreierZeitraum` (für alle oder einzelne
+  Ausgabestellen; welche zählt: `models.stelle_von()`);
   Ampel-Regeln als reine Funktion in `apps/ausgabe/ampel.py`,
   Einstellungen in `AusgabeEinstellungen`; Kundenkonto nur über `apps/ausgabe/konto.py`
   buchen, nie `Haushalt.kontostand` direkt ändern, ADR 0014; importierte Tageslisten (auch „Besuche & Konto nachtragen“) bucht

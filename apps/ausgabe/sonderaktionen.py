@@ -5,7 +5,7 @@ import datetime as dt
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from apps.ausgabe.models import Sonderaktion, Teilnahme
+from apps.ausgabe.models import Sonderaktion, Teilnahme, stelle_von
 from apps.kunden.models import abholfrist_beginn
 
 
@@ -24,10 +24,7 @@ def menge(aktion: Sonderaktion, erwachsene: int, kinder: int) -> int:
 def stelle_fuer(h, stelle=None):
     """An welcher Ausgabestelle die Aktion zählt: die am Einlass gewählte, sonst die der
     Kundengruppe des Haushalts."""
-    if stelle is not None:
-        return stelle
-    gruppe = h.kundengruppe
-    return gruppe.ausgabestelle if gruppe else None
+    return stelle_von(h, stelle)
 
 
 def fuer_haushalt(h, heute: dt.date, erwachsene: int, kinder: int, stelle=None) -> list[dict]:

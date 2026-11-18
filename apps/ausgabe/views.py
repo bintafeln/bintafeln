@@ -24,6 +24,7 @@ from apps.ausgabe.models import (
     Buchung,
     Sonderaktion,
     Teilnahme,
+    stelle_von,
 )
 from apps.core import module
 from apps.core.auswahl import KORREKTURGRUENDE
@@ -123,7 +124,7 @@ def _ergebnis(request, h, meldung=None):
         ampel.bewerten(h, heute, _stelle(request), einstellungen), hinweise
     )
     abholungen = list(h.abholungen.all())
-    beitrag = einstellungen.beitrag_fuer(h, heute, kind_bis)
+    beitrag = einstellungen.beitrag_fuer(h, heute, kind_bis, stelle=_stelle(request))
     regulaer = einstellungen.beitrag_fuer(h, heute, kind_bis, frei_beachten=False)
     vorschlaege, vorschlag_hinweis = konto.vorschlaege(h, heute, einstellungen, regulaer)
     merkmale_zeilen, merkmale_art9 = merkmale.einlass(h, request.user)
@@ -141,7 +142,7 @@ def _ergebnis(request, h, meldung=None):
         "kinder": kinder,
         "bewertung": bewertung,
         "beitrag": beitrag,
-        "beitragsfrei": BeitragsfreierZeitraum.am(heute),
+        "beitragsfrei": BeitragsfreierZeitraum.am(heute, stelle_von(h, _stelle(request))),
         "bar_vorschlag": konto.bar_vorschlag(beitrag, h.kontostand),
         "vorschlaege": vorschlaege,
         "vorschlag_hinweis": vorschlag_hinweis,
