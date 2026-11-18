@@ -22,22 +22,27 @@
       <input type="date" name="bis" id="bis" value="{{ filter.bis }}"></div>
     <div class="filter-feld filter-suche"><label for="q">Suche</label>
       <input type="search" name="q" id="q" value="{{ filter.q }}" placeholder="Text, Kundennummer, Name, Verfasser" {% live_suche %}></div>
+    <input type="hidden" name="sort" value="{{ filter.sort }}">
     <button type="submit" class="knopf">Suchen</button>
-    {% filter_zuruecksetzen %}
+    {% filter_zuruecksetzen "sort" %}
   </form>
   <div id="ergebnis">
   {% auswahl_formular "" %}
   <form id="anmerkungen-loeschen" method="post" action="{% url 'kunden:anmerkungen_loeschen' %}" data-liste-loeschen data-eins="Anmerkung" data-viele="Anmerkungen">{% csrf_token %}
     <input type="hidden" name="zurueck" value="{{ request.get_full_path }}">
   </form>
+  {% if darf_loeschen %}<form id="anmerkungen-umwandeln" method="post" action="{% url 'kunden:anmerkungen_umwandeln' %}" data-liste-loeschen data-eins="Anmerkung" data-viele="Anmerkungen" data-tun="in Notizen umwandeln" data-wofuer="zu Notizen werden sollen" data-hinweis="Sie stehen danach unter „Kunden → Notizen“ und beim Kunden unter „Notizen“; Datum, Text und Verfasser bleiben.">{% csrf_token %}
+    <input type="hidden" name="zurueck" value="{{ request.get_full_path }}">
+  </form>{% endif %}
   <div class="liste-aktionen">
     <span class="hinweis">{{ seite.paginator.count }} Anmerkung{{ seite.paginator.count|pluralize:"en" }}</span>
     <span class="hinweis" data-auswahl-zahl="auswahl"></span>
-    {% if darf_loeschen %}<button type="submit" form="anmerkungen-loeschen" class="knopf knopf-zweitrangig knopf-klein" data-anmerkungen-loeschen>🗑 Angehakte löschen</button>{% endif %}
+    {% if darf_loeschen %}<button type="submit" form="anmerkungen-loeschen" class="knopf knopf-zweitrangig knopf-klein" data-anmerkungen-loeschen>🗑 Angehakte löschen</button>
+    <button type="submit" form="anmerkungen-umwandeln" class="knopf knopf-zweitrangig knopf-klein" title="Macht aus den angehakten Anmerkungen Notizen, z. B. wenn bei der Übernahme alte Notizen als Anmerkungen angekommen sind">↪ Angehakte in Notizen umwandeln</button>{% endif %}
   </div>
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th class="auswahl"><input type="checkbox" data-alle="id" form="auswahl" aria-label="Alle auswählen" title="alle / keine"></th><th>Datum</th><th>Kunde</th><th>Ausgabestelle</th><th>Anmerkung</th><th>Verfasst von</th></tr></thead>
+    <thead><tr><th class="auswahl"><input type="checkbox" data-alle="id" form="auswahl" aria-label="Alle auswählen" title="alle / keine"></th>{% sortkopf "Datum" "datum" filter.sort %}{% sortkopf "Kunde" "kunde" filter.sort %}{% sortkopf "Ausgabestelle" "stelle" filter.sort %}{% sortkopf "Anmerkung" "text" filter.sort %}{% sortkopf "Verfasst von" "von" filter.sort %}</tr></thead>
     <tbody>
     {% for a in zeilen %}
       <tr><td class="auswahl"><input type="checkbox" name="id" value="{{ a.pk }}" form="auswahl" aria-label="Zeile auswählen"></td>

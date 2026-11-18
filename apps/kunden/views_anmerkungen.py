@@ -13,16 +13,18 @@ import io
 
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from apps.core import listenauswahl, listenexport, papierkorb
 from apps.konten import rollen
 from apps.kunden import historie, zugang
-from apps.kunden.models import Ausgabestelle, Bemerkung, Haushalt, Person
+from apps.kunden.models import Ausgabestelle, Bemerkung, Haushalt, Notiz, Person
 
 JE_SEITE = 50
 RECHT = "kunden.anmerkungen"
@@ -34,6 +36,25 @@ def _datum(wert: str):
         return dt.date.fromisoformat(wert)
     except ValueError:
         return None
+
+
+# Sortieren per Klick auf den Spaltenkopf (wie in den anderen Listen); Vorgabe: neueste zuerst
+SORTIERUNG = {
+    "datum": "datum",
+    "kunde": "haushalt__kundennummer",
+    "stelle": "haushalt__kundengruppe__ausgabestelle__name",
+    "text": "text",
+    "von": "verfasst_von",
+}
+
+
+def _sortiert(anmerkungen, sort: str):
+    """``sort`` wie in der Adresse („kunde“ oder „-kunde“); Unbekanntes zählt als Vorgabe."""
+    feld = SORTIERUNG.get(sort.lstrip("-"))
+    if not feld:
+        return anmerkungen.order_by("-datum", "-pk"), ""
+    ab = "-" if sort.startswith("-") else ""
+    return anmerkungen.order_by(f"{ab}{feld}", "-datum", "-pk"), sort
 
 
 def _anmerkungen(request):
@@ -64,7 +85,8 @@ def _anmerkungen(request):
             | Q(verfasst_von__icontains=f["q"]) | Q(haushalt__in=namen)
         )  # fmt: skip
     anmerkungen = anmerkungen.select_related("haushalt__kundengruppe__ausgabestelle")
-    return anmerkungen.order_by("-datum", "-pk"), f, stellen
+    anmerkungen, f["sort"] = _sortiert(anmerkungen, request.GET.get("sort", ""))
+    return anmerkungen, f, stellen
 
 
 def _mit_namen(anmerkungen) -> list:
@@ -130,6 +152,44 @@ def loeschen(request):
                          "Papierkorb gelegt.")  # fmt: skip
     else:
         messages.error(request, "Bitte zuerst die Anmerkungen anhaken, die gelöscht werden "
+                       "sollen.")  # fmt: skip
+    zurueck = request.POST.get("zurueck", "")
+    if not zurueck.startswith(reverse("kunden:anmerkungen")):
+        zurueck = reverse("kunden:anmerkungen")
+    return redirect(zurueck)
+
+
+@require_POST
+@rollen.recht_erforderlich(LOESCHEN)
+def umwandeln(request):
+    """Macht aus den angehakten Anmerkungen Notizen – nur von Kunden, die das Konto sieht.
+
+    Gedacht für die Übernahme aus einem anderen Programm, bei der Notizen als Anmerkungen
+    ankommen. Datum, Text und Verfasser bleiben; die Anmerkung verschwindet (nicht in den
+    Papierkorb: Sie ist nicht gelöscht, sondern steht jetzt als Notiz da – ein Wiederherstellen
+    ergäbe sie doppelt). Der Haushalt gilt danach als in bintafeln geändert.
+    """
+    from apps.kunden.views_bearbeiten import _festhalten, geaendert
+
+    ids = [int(x) for x in request.POST.getlist("id") if x.isdigit()]
+    sichtbar, _, _ = _anmerkungen(request)
+    anzahl = 0
+    for a in sichtbar.filter(pk__in=ids):
+        h = a.haushalt
+        vorher = historie.schnappschuss(h)
+        mittags = timezone.make_aware(dt.datetime.combine(a.datum, dt.time(12)))
+        with transaction.atomic():
+            Notiz.objects.create(kundennummer=h.kundennummer, text=a.text,
+                                 verfasst_von=a.verfasst_von, erstellt_am=mittags)  # fmt: skip
+            a.delete()
+            geaendert(h, request)
+            _festhalten(h, vorher, request)
+        anzahl += 1
+    if anzahl:
+        messages.success(request, f"{anzahl} Anmerkung{'en' if anzahl != 1 else ''} in "
+                         f"Notiz{'en' if anzahl != 1 else ''} umgewandelt.")  # fmt: skip
+    else:
+        messages.error(request, "Bitte zuerst die Anmerkungen anhaken, die zu Notizen werden "
                        "sollen.")  # fmt: skip
     zurueck = request.POST.get("zurueck", "")
     if not zurueck.startswith(reverse("kunden:anmerkungen")):

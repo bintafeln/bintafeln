@@ -1,6 +1,8 @@
 // Listen mit Auswahlkästchen: „Angehakte löschen“ schickt die angehakten Zeilen (Kästchen
 // name="id", gehören zum Auswahl-Formular) mit dem Lösch-Formular ab – nach Rückfrage.
 // Das Formular trägt data-liste-loeschen und die Wörter: data-eins="Notiz" data-viele="Notizen".
+// Für andere Sammelaktionen dieselbe Mechanik: data-tun="in Notizen umwandeln" (statt „löschen“),
+// data-wofuer="umgewandelt werden sollen" und data-hinweis="…" (statt des Satzes zum Papierkorb).
 (function () {
   "use strict";
   document.addEventListener("submit", function (e) {
@@ -14,12 +16,16 @@
     );
     if (!gewaehlt.length) {
       e.preventDefault();
-      window.alert("Bitte zuerst die " + viele + " anhaken, die gelöscht werden sollen.");
+      window.alert("Bitte zuerst die " + viele + " anhaken, die " +
+        (form.dataset.wofuer || "gelöscht werden sollen") + ".");
       return;
     }
-    var frage = gewaehlt.length === 1 ? "1 " + eins + " löschen?"
-      : gewaehlt.length + " " + viele + " löschen?";
-    if (!window.confirm(frage + " Gelöschtes liegt danach im Papierkorb.")) {
+    var tun = form.dataset.tun || "löschen";
+    var frage = gewaehlt.length === 1 ? "1 " + eins + " " + tun + "?"
+      : gewaehlt.length + " " + viele + " " + tun + "?";
+    var hinweis = "hinweis" in form.dataset ? form.dataset.hinweis
+      : "Gelöschtes liegt danach im Papierkorb.";
+    if (!window.confirm(frage + (hinweis ? " " + hinweis : ""))) {
       e.preventDefault();
       return;
     }

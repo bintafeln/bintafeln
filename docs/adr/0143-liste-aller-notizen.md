@@ -47,3 +47,9 @@ Zeitraum, Suche, Export und Löschen angehakter Anmerkungen über den Papierkorb
 - Anmerkungen zu Anträgen (`AntragAnmerkung`) gehören nicht dazu; sie bleiben beim Antrag.
 - Das gemeinsame Skript für „Angehakte löschen“ ist `static/js/liste_loeschen.js`
   (`data-liste-loeschen` am Formular).
+- **Anmerkungen in Notizen umwandeln** (`views_anmerkungen.umwandeln`, Recht `kunden.bearbeiten`):
+  Bei der Übernahme aus einem anderen Programm kommen dessen Notizen als Anmerkungen an, weil die
+  Exportdatei den Unterschied nicht kennt. Die Liste wandelt angehakte Anmerkungen in Notizen um
+  (Datum, Text, Verfasser bleiben). Die Anmerkung wird dabei direkt entfernt, nicht in den
+  Papierkorb gelegt: Sie ist nicht gelöscht, sondern verschoben; ein Wiederherstellen ergäbe sie
+  doppelt. Die Änderung steht in Historie und Änderungsprotokoll.

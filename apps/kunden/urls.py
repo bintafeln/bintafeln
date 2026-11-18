@@ -94,6 +94,7 @@ urlpatterns = [
     path("haushalt/<path:kundennummer>/ausweis/", views.ausweis, name="ausweis"),
     path("anmerkungen/", views_anmerkungen.liste, name="anmerkungen"),
     path("anmerkungen/loeschen/", views_anmerkungen.loeschen, name="anmerkungen_loeschen"),
+    path("anmerkungen/umwandeln/", views_anmerkungen.umwandeln, name="anmerkungen_umwandeln"),
     path("notizen/", views_notizen.liste, name="notizen"),
     path("notizen/loeschen/", views_notizen.loeschen, name="notizen_loeschen"),
     path("notizen-an-ausgabestelle/", views.notizen_an_stelle, name="notizen_an_stelle"),
