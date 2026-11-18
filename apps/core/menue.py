@@ -267,6 +267,7 @@ def menue(request) -> list[dict]:
             ("einstellungen.listen",
              _eintrag("Beitragsfreie Zeiträume", *_liste("beitragsfrei"))),
             ("einstellungen.listen", _eintrag("Sonderausgaben", *_liste("sonderausgaben"))),
+            ("einstellungen.listen", _eintrag("Schließzeiten", *_liste("schliesszeiten"))),
         ],
         "Verein": [
             ("einstellungen.listen", _eintrag("Adresskategorien", *_liste("adresskategorien"))),

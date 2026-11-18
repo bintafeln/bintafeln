@@ -19,8 +19,8 @@ from django.views.decorators.http import require_POST
 from apps.adressen.forms import AdressKategorieForm
 from apps.adressen.models import AdressKategorie
 from apps.ausgabe import konto
-from apps.ausgabe.forms import BeitragsfreiForm, SonderausgabeForm
-from apps.ausgabe.models import BeitragsfreierZeitraum, Sonderausgabe, Teilnahme
+from apps.ausgabe.forms import BeitragsfreiForm, SchliesszeitForm, SonderausgabeForm
+from apps.ausgabe.models import BeitragsfreierZeitraum, Schliesszeit, Sonderausgabe, Teilnahme
 from apps.core import papierkorb
 from apps.core.models import TafelEinstellungen
 from apps.core.pdf import im_fenster, pdf_antwort
@@ -355,6 +355,7 @@ LISTEN = {
         "Beitragsfreier Zeitraum",
     ),
     "sonderausgaben": (Sonderausgabe, SonderausgabeForm, "Sonderausgaben", "Sonderausgabe"),
+    "schliesszeiten": (Schliesszeit, SchliesszeitForm, "Schließzeiten", "Schließzeit"),
 }
 
 
@@ -366,6 +367,8 @@ SPALTEN = {
                       ("Farbe", "get_farbe_display")],
     "dokumentarten": [("Bezeichnung", "__str__"), ("Aufbewahren (Monate)", "aufbewahren_monate")],
     "beitragsfrei": [("Bezeichnung", "bezeichnung"), ("von", "von"), ("bis", "bis")],
+    "schliesszeiten": [("Ausgabestelle", "ausgabestelle"), ("von", "von"), ("bis", "bis"),
+                       ("Bezeichnung", "bezeichnung")],
     "sonderausgaben": [("Datum", "datum"), ("Ausgabestelle", "ausgabestelle"),
                        ("Wer ist dran", "wer"), ("Anmerkung", "anmerkung")],
     "notizvorlagen": [("Text", "text"), ("Reihenfolge", "reihenfolge"),
