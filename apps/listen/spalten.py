@@ -78,6 +78,8 @@ HAUSHALT = [
     Spalte("letzter_besuch", "Letzter Besuch", lambda h, k: h.letzter_besuch_zeitpunkt()),
     Spalte("abholungen", "Abholungen im Zeitraum", lambda h, k: k["abholungen"].get(h.pk, 0),
            zahl=True),
+    Spalte("ohne_stelle", "Abholungen ohne Ausgabestelle",
+           lambda h, k: "; ".join(k.get("ohne_stelle", {}).get(h.pk, []))),
     Spalte("kunde_seit", "Kunde seit", lambda h, k: h.kunde_seit, STAMMDATEN),
     Spalte("seit_monat", "Kunde seit (Monat)",
            lambda h, k: f"{h.kunde_seit:%Y-%m}" if h.kunde_seit else "", STAMMDATEN),
