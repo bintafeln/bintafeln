@@ -37,9 +37,14 @@ vergaß, verlor die Änderung; wer viel pflegt, drückte den Knopf ständig.
   übernimmt Kennungen und Zähler der Zeilen und hängt neue freie Zeilen an; die Tabelle ersetzt
   es nur ganz, wenn niemand darin tippt oder eine Zeile entfernt wurde. Sonst legte das nächste
   Speichern eine neue Zeile ein zweites Mal an.
-- Noch offen (eigene Schritte): „Antrag bearbeiten“ (Zeilen mit Datumsfeld und Merkzeichen, die
-  eigene Skripte brauchen) und Seiten mit Text-Editor und Vorschau (Antragstexte, Serienbrief-Vorlage,
-  Rechtstexte, Wartelisten-Texte, Ausweis gestalten).
+- Fünfter Schritt, Seiten mit Text-Editor: Rechtstexte, Antragstexte, Wartelisten-Texte und
+  vorhandene Serienbrief-Vorlagen. Der Editor (`static/js/html_editor.js`) meldet Änderungen im
+  Reiter „Gestalten“ jetzt als Eingabe am Textfeld, damit das Speichern anspringt. Andere Knöpfe
+  im selben Formular (Vorschau, PDF im neuen Fenster) bleiben und lösen kein Speichern aus; der
+  Speichern-Knopf trägt dort `data-autosave-knopf`.
+- Bewusst mit Knopf bleiben „Antrag bearbeiten“ (Zeilen mit Datumsfeld und Merkzeichen, die
+  eigene Skripte brauchen) und „Ausweis gestalten“ (die Gestaltung entsteht durch Ziehen mit
+  eigener Vorschau; ein Zwischenstand soll nicht sofort für alle Ausweise gelten).
 - Bewusst mit Knopf bleibt die Zeitbuchung („Zeit nachtragen/korrigieren“): Mit Pause wird sie
   als zwei Buchungen gespeichert, ein Speichern je Feld würde Buchungen vervielfachen.
 

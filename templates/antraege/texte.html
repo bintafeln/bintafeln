@@ -24,12 +24,12 @@
       <p><strong>Betreff der Antwortmail:</strong> {{ t.mail_betreff }}</p>
     </div>
   </details>
-  <form method="post" lang="{{ s.code }}" dir="{% if s.rtl %}rtl{% else %}ltr{% endif %}">
+  <form method="post" lang="{{ s.code }}" dir="{% if s.rtl %}rtl{% else %}ltr{% endif %}" data-autosave>
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <div class="aktionen">
       <button type="submit" name="vorschau" value="1" class="knopf knopf-zweitrangig" data-ziel="vorschau">Vorschau</button>
-      <button type="submit" class="knopf">Speichern</button>
+      <button type="submit" class="knopf" data-autosave-knopf>Speichern</button>
     </div>
   </form>
   {% if s.code == "de" %}
