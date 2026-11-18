@@ -343,7 +343,8 @@ def test_kundenstamm_merkzeichen_erst_mit_gdb(angemeldet, admin):
     expect(g).to_be_hidden()
     seite.select_option("#id_gdb", "80")
     g.check()
-    seite.get_by_role("button", name="Speichern").click()
+    # kein Speichern-Knopf mehr: die Seite speichert sofort (ADR 0145)
+    expect(seite.locator(".feld", has=g).locator(".autosave-ok")).to_be_visible()
     erika.refresh_from_db()
     assert erika.zusatz["gdb"] == "GdB 80" and erika.zusatz["schwerbehindert"]
 
