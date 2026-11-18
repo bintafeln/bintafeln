@@ -91,6 +91,23 @@
   CSV-Datei oder PDF aus oder schickt sie per E-Mail. Die Seite sieht, wer das Recht „Alle Notizen löschen“ hat; Konten
   einer Ausgabestelle sehen nur die Notizen ihrer Kunden.</p>
 {% hilfe_bild "notizen-liste" "① Nach Art, Ausgabestelle und Zeitraum filtern oder suchen, ② Notizen anhaken, ③ „Angehakte löschen“ legt sie in den Papierkorb, ④ „Herunterladen …“ für CSV, PDF oder E-Mail." %}{% endif %}
+<h3>Einkommensart vieler Haushalte auf einmal ändern</h3>
+<p>Unter „Einstellungen → Kunden → Einkommensart sammelweise ändern“ stellen Sie die Einkommensart vieler Haushalte in
+  einem Schritt um – aktive wie nicht mehr aktive. Beispiel: Alle mit „Sonstiges“, deren Hauptperson 65 oder älter
+  ist, bekommen „Grundsicherung“; danach alle unter 65 „Bürgergeld“.</p>
+<ol>
+  <li>Bisherige Einkommensart wählen, dazu das Alter der Hauptperson („ab … Jahren“, „unter … Jahren“ oder „egal“)
+    und die neue Einkommensart.</li>
+  <li>„Anzeigen, wen es betrifft“: Die Seite nennt die Zahl der Haushalte und zeigt sie als Liste. Geändert ist damit
+    noch nichts.</li>
+  <li>„Jetzt ändern“ stellt um. Bei vielen Haushalten arbeitet die Seite in Portionen und lädt sich dabei neu.</li>
+</ol>
+<p>Wer genau heute so alt wird, zählt schon zu „ab … Jahren“. Haushalte, deren Hauptperson <strong>kein
+  Geburtsdatum</strong> hat, bleiben unverändert; die Seite nennt ihre Zahl. Jede Änderung steht in der Historie des
+  Haushalts und im Änderungsprotokoll. Solange der Kundenstamm noch aus dem bisherigen Programm eingelesen wird,
+  überschreibt ein neuer Import die Einkommensart wieder, wenn Sie die geänderten Haushalte im Abgleich nicht
+  behalten.</p>
+{% hilfe_bild "einkommensart-umstellen" "① Bisherige Einkommensart, Alter der Hauptperson und neue Einkommensart wählen, ② „Anzeigen, wen es betrifft“, ③ die betroffenen Haushalte prüfen, ④ „Jetzt ändern“." %}
 {% if "kunden.anmerkungen" in rechte %}<h3>Alle Anmerkungen in einer Liste</h3>
 <p>Unter „Kunden → Anmerkungen“ stehen alle internen Anmerkungen zu Haushalten in einer Liste, neueste zuerst; ein
   Klick auf einen Spaltenkopf sortiert nach dieser Spalte. Filtern Sie
