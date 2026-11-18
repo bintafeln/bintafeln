@@ -343,7 +343,8 @@ def test_kundenstamm_merkzeichen_erst_mit_gdb(angemeldet, admin):
     expect(g).to_be_hidden()
     seite.select_option("#id_gdb", "80")
     g.check()
-    seite.get_by_role("button", name="Speichern").click()
+    # kein Speichern-Knopf mehr: die Seite speichert sofort (ADR 0145)
+    expect(seite.locator(".feld", has=g).locator(".autosave-ok")).to_be_visible()
     erika.refresh_from_db()
     assert erika.zusatz["gdb"] == "GdB 80" and erika.zusatz["schwerbehindert"]
 
@@ -773,6 +774,30 @@ def test_statistik_legende_blendet_reihe_aus(angemeldet, admin):
     # Erneutes Tippen blendet wieder ein
     seite.locator("#verlauf_stellen .legende-schalter").first.click()
     expect(seite.locator("#verlauf_stellen svg path.linie")).to_have_count(2)
+
+
+def test_haushalt_bearbeiten_speichert_sofort(angemeldet, admin):
+    """Haushalt bearbeiten ohne Speichern-Knopf; die Kundennummer erst beim Verlassen (ADR 0145)."""
+    from apps.kunden.models import Haushalt
+
+    Haushalt.objects.create(kundennummer="00042", ort="Altdorf")
+    seite = angemeldet(admin)
+    seite.goto(reverse("kunden:bearbeiten", args=["00042"]))
+    expect(seite.get_by_role("button", name="Haushalt speichern")).to_be_hidden()
+    expect(seite.locator(".autosave-hinweis")).to_have_text("Änderungen werden sofort gespeichert.")
+    ort = seite.get_by_label("Ort", exact=True)
+    ort.fill("Musterstadt")
+    expect(seite.locator(".feld", has=ort).locator(".autosave-ok")).to_be_visible()
+    assert Haushalt.objects.get(kundennummer="00042").ort == "Musterstadt"
+    # halb getippte Kundennummer wird nicht gespeichert; nach dem Verlassen wechselt die Seite
+    nummer = seite.get_by_label("Kundennummer")
+    nummer.fill("0004")
+    seite.wait_for_timeout(1600)
+    assert Haushalt.objects.filter(kundennummer="00042").exists()
+    nummer.fill("00043")
+    nummer.press("Tab")
+    seite.wait_for_url("**" + reverse("kunden:bearbeiten", args=["00043"]))
+    assert Haushalt.objects.get(kundennummer="00043").ort == "Musterstadt"
 
 
 def test_einstellungen_speichern_sofort(angemeldet, admin):

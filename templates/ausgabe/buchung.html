@@ -6,9 +6,9 @@
   <h1>Buchung ändern</h1>
   <p>{{ buchung.get_art_display }} vom {{ buchung.zeitpunkt|date:"d.m.Y H:i" }}{% if buchung.eingetragen_von %}, eingetragen von {{ buchung.eingetragen_von }}{% endif %}.
     Kontostand jetzt: <strong>{{ h.kontostand|default_if_none:0|floatformat:2 }} €</strong>.</p>
-  <p class="hinweis">Nach dem Speichern rechnet bintafeln den Kontostand um den Unterschied neu. Die Änderung steht
+  <p class="hinweis">Jede Änderung wird sofort gespeichert; dabei rechnet bintafeln den Kontostand um den Unterschied neu. Die Änderung steht
     im Änderungsprotokoll.</p>
-  <form method="post">
+  <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <button type="submit" class="knopf">Speichern</button>

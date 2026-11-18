@@ -232,6 +232,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   bietet „PDF öffnen“ als Link an.
 - Einstellungsseiten speichern sofort: Formular mit `data-autosave` (`static/js/autosave.js`,
   ADR 0076); die Ansicht leitet nach Erfolg weiter und zeigt Fehler wie gewohnt am Feld.
+  Ebenso Seiten, die einen vorhandenen Datensatz bearbeiten (ADR 0145): `data-autosave` nur mit
+  `pk`, beim Neuanlegen bleibt der Knopf und heißt „Anlegen“; Felder, die halb getippt Schaden
+  anrichten (Kundennummer), bekommen `data-autosave-spaet`; ändert das Speichern die Adresse der
+  Seite, `data-autosave-folgen`. Knöpfe mit eigener Aktion und Löschen bleiben Knöpfe.
 - Menü links: Einträge je Rolle in `apps/core/menue.py` (neue Seiten dort eintragen statt
   Links in die Seiten zu setzen). Alles Einstellungsartige unter „Einstellungen“, jede Adresse
   nur einmal (`tests/test_menue.py`); Fahrdienst und Dienstplan unter „Dienstpläne“.

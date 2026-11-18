@@ -189,6 +189,9 @@ class HaushaltForm(ZusatzMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         e = KundenEinstellungen.laden()
+        # Die Seite speichert sofort (ADR 0145); eine halb getippte Kundennummer darf dabei
+        # nicht gespeichert werden, deshalb erst beim Verlassen des Feldes
+        self.fields["kundennummer"].widget.attrs["data-autosave-spaet"] = ""
         if self.instance.pk:
             erwachsene, kinder = self.instance.groesse(e.kind_bis_alter)
             self.initial["groesse"] = (f"{erwachsene} Erwachsene, {kinder} Kind"

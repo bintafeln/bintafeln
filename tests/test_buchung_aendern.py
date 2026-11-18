@@ -4,6 +4,7 @@ from decimal import Decimal as D
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.ausgabe import konto
 from apps.ausgabe.models import Buchung
@@ -87,3 +88,35 @@ def test_ohne_recht_gesperrt(admin, anmelden, client, haushalt, benutzer_mit_rol
     assert client.get(reverse("ausgabe:buchung", args=[b.pk])).status_code == 403
     assert client.post(reverse("ausgabe:buchung_loeschen", args=[b.pk])).status_code == 403
     assert Buchung.objects.count() == 1
+
+
+def test_bearbeiten_speichert_sofort_anlegen_mit_knopf(admin_client, haushalt):
+    """Vorhandenes bearbeiten: Formular mit data-autosave; Neues: Knopf „Anlegen“ (ADR 0145)."""
+    b = konto.einzahlen(haushalt, D("5.00"), None, "Kasse")
+    for ziel in (
+        reverse("kunden:bearbeiten", args=["42"]),
+        reverse("ausgabe:buchung", args=[b.pk]),
+    ):
+        assert "data-autosave" in admin_client.get(ziel).content.decode()
+    seite = admin_client.get(reverse("kunden:bearbeiten", args=["42"])).content.decode()
+    assert "data-autosave-folgen" in seite and "data-autosave-spaet" in seite
+    neu = admin_client.get(reverse("kunden:teil_neu", args=["42", "abholer"])).content.decode()
+    assert "data-autosave" not in neu and ">Anlegen<" in neu
+    for art in ("beitragsfrei", "schliesszeiten"):
+        neu = admin_client.get(reverse("kunden:listeneintrag_neu", args=[art])).content.decode()
+        assert "data-autosave" not in neu and ">Anlegen<" in neu
+    neu = admin_client.get(reverse("ausgabe:sonderaktion_neu")).content.decode()
+    assert "data-autosave" not in neu and ">Anlegen<" in neu
+
+
+def test_vorhandener_eintrag_speichert_sofort(admin_client, haushalt):
+    from apps.ausgabe.models import Sonderaktion
+    from apps.kunden.models import Abholer
+
+    a = Abholer.objects.create(haushalt=haushalt, vorname="Erika", nachname="Beispiel")
+    seite = admin_client.get(reverse("kunden:teil", args=["42", "abholer", a.pk])).content.decode()
+    assert "data-autosave" in seite and ">Anlegen<" not in seite
+    heute = timezone.localdate()
+    aktion = Sonderaktion.objects.create(bezeichnung="Aktion", von=heute, bis=heute)
+    seite = admin_client.get(reverse("ausgabe:sonderaktion_bearbeiten", args=[aktion.pk]))
+    assert "data-autosave" in seite.content.decode()

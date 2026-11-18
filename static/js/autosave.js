@@ -3,6 +3,7 @@
 // Formular geht wie bisher an den Server; die Ansicht bleibt unverändert. Leitet der Server weiter,
 // war das Speichern erfolgreich; sonst zeigt die Antwort die Fehler, die hier am Feld erscheinen –
 // gespeichert bleibt dann der alte Wert. Ohne JavaScript bleibt der Speichern-Knopf sichtbar.
+// Seit ADR 0145 auch auf Seiten, die einen vorhandenen Datensatz bearbeiten (Haushalt, Person …).
 (function () {
   "use strict";
 
@@ -46,7 +47,13 @@
   document.querySelectorAll("form[data-autosave]").forEach(function (formular) {
     var knopf = formular.querySelector("[data-autosave-knopf]") ||
       formular.querySelector('button[type="submit"]');
-    if (knopf) knopf.hidden = true;
+    if (knopf) {
+      knopf.hidden = true;
+      var sofort = document.createElement("p");
+      sofort.className = "hinweis autosave-hinweis";
+      sofort.textContent = "Änderungen werden sofort gespeichert.";
+      knopf.parentNode.insertBefore(sofort, knopf);
+    }
     var kette = Promise.resolve();
 
     function speichern(feld) {
@@ -66,6 +73,13 @@
             hinweis(feld, fehler.join(" "), true);
           } else {
             hinweis(feld, "✓ gespeichert", false);
+            // Hat sich mit dem Speichern die Adresse der Seite geändert (z. B. neue
+            // Kundennummer), dorthin wechseln – sonst gingen alle Links ins Leere
+            if (formular.hasAttribute("data-autosave-folgen") && antwort.redirected &&
+                new URL(antwort.url).pathname !== window.location.pathname) {
+              window.location.replace(antwort.url);
+              return;
+            }
             // Teile der Seite, die von den Einstellungen abhängen, aus der neuen Seite übernehmen
             var neu = new DOMParser().parseFromString(html, "text/html");
             document.querySelectorAll("[data-autosave-aktualisieren][id]").forEach(function (alt) {
@@ -95,6 +109,8 @@
       if (!feld.name || !tippfeld(feld) || feld.closest("[data-nicht-autosave]")) return;
       clearTimeout(zeit);
       offen = feld;
+      // data-autosave-spaet: erst beim Verlassen des Feldes (halb getippt wäre hier falsch)
+      if (feld.hasAttribute("data-autosave-spaet")) return;
       zeit = setTimeout(function () { einreihen(feld); }, 1200);
     });
     formular.addEventListener("change", function (ereignis) {

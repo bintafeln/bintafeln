@@ -4,10 +4,10 @@
 <section class="karte">
   <p><a href="{% if aktion %}{% url 'ausgabe:sonderaktion' aktion.pk %}{% else %}{% url 'ausgabe:sonderaktionen' %}{% endif %}">← zurück</a></p>
   <h1>{% if aktion %}{{ aktion }} bearbeiten{% else %}Neue Sonderaktion{% endif %}</h1>
-  <form method="post">
+  <form method="post"{% if aktion %} data-autosave{% endif %}>
     {% csrf_token %}
     {% include "includes/formular.html" %}
-    <button type="submit" class="knopf">Speichern</button>
+    <button type="submit" class="knopf">{% if aktion %}Speichern{% else %}Anlegen{% endif %}</button>
   </form>
 </section>
 {% endblock %}
