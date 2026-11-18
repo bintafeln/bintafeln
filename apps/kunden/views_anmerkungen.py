@@ -36,6 +36,25 @@ def _datum(wert: str):
         return None
 
 
+# Sortieren per Klick auf den Spaltenkopf (wie in den anderen Listen); Vorgabe: neueste zuerst
+SORTIERUNG = {
+    "datum": "datum",
+    "kunde": "haushalt__kundennummer",
+    "stelle": "haushalt__kundengruppe__ausgabestelle__name",
+    "text": "text",
+    "von": "verfasst_von",
+}
+
+
+def _sortiert(anmerkungen, sort: str):
+    """``sort`` wie in der Adresse („kunde“ oder „-kunde“); Unbekanntes zählt als Vorgabe."""
+    feld = SORTIERUNG.get(sort.lstrip("-"))
+    if not feld:
+        return anmerkungen.order_by("-datum", "-pk"), ""
+    ab = "-" if sort.startswith("-") else ""
+    return anmerkungen.order_by(f"{ab}{feld}", "-datum", "-pk"), sort
+
+
 def _anmerkungen(request):
     """Die Anmerkungen nach den Filtern der Seite, neueste zuerst; dazu die gewählten Filter."""
     f = {k: request.GET.get(k, "").strip() for k in ("stelle", "von", "bis", "q")}
@@ -64,7 +83,8 @@ def _anmerkungen(request):
             | Q(verfasst_von__icontains=f["q"]) | Q(haushalt__in=namen)
         )  # fmt: skip
     anmerkungen = anmerkungen.select_related("haushalt__kundengruppe__ausgabestelle")
-    return anmerkungen.order_by("-datum", "-pk"), f, stellen
+    anmerkungen, f["sort"] = _sortiert(anmerkungen, request.GET.get("sort", ""))
+    return anmerkungen, f, stellen
 
 
 def _mit_namen(anmerkungen) -> list:

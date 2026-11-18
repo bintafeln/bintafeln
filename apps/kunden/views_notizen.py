@@ -11,7 +11,7 @@ import io
 
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Case, IntegerField, OuterRef, Q, Subquery, Value, When
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -43,8 +43,37 @@ def _datum(wert: str):
         return None
 
 
+# Sortieren per Klick auf den Spaltenkopf (wie in den anderen Listen); Vorgabe: neueste zuerst
+SORTIERUNG = {
+    "datum": "erstellt_am",
+    "kunde": "kundennummer",
+    "stelle": "stelle_sort",
+    "art": "art_sort",
+    "text": "text",
+    "von": "verfasst_von",
+}
+
+
+def _sortiert(notizen, sort: str):
+    """``sort`` wie in der Adresse („kunde“ oder „-kunde“); Unbekanntes zählt als Vorgabe."""
+    feld = SORTIERUNG.get(sort.lstrip("-"))
+    if not feld:
+        return notizen.order_by("-erstellt_am", "-pk"), ""
+    if feld == "stelle_sort":
+        notizen = notizen.annotate(stelle_sort=Subquery(
+            Haushalt.objects.filter(kundennummer=OuterRef("kundennummer"))
+            .values("kundengruppe__ausgabestelle__name")[:1]))  # fmt: skip
+    elif feld == "art_sort":  # Notiz, an die Ausgabestelle, abwesend
+        notizen = notizen.annotate(art_sort=Case(
+            When(krank_von__isnull=False, then=Value(2)),
+            When(an_stelle=True, then=Value(1)),
+            default=Value(0), output_field=IntegerField()))  # fmt: skip
+    ab = "-" if sort.startswith("-") else ""
+    return notizen.order_by(f"{ab}{feld}", "-erstellt_am", "-pk"), sort
+
+
 def _notizen(request):
-    """Die Notizen nach den Filtern der Seite, neueste zuerst; dazu die gewählten Filter."""
+    """Die Notizen nach den Filtern der Seite, sortiert; dazu Filter und Sortierung."""
     f = {k: request.GET.get(k, "").strip() for k in ("art", "stelle", "von", "bis", "q")}
     notizen = Notiz.objects.all()
     eigene = zugang.stellen(request.user)
@@ -82,7 +111,8 @@ def _notizen(request):
             Q(text__icontains=f["q"]) | Q(kundennummer__icontains=f["q"])
             | Q(verfasst_von__icontains=f["q"]) | Q(kundennummer__in=namen)
         )  # fmt: skip
-    return notizen.order_by("-erstellt_am", "-pk"), f, stellen
+    notizen, f["sort"] = _sortiert(notizen, request.GET.get("sort", ""))
+    return notizen, f, stellen
 
 
 def _mit_haushalt(notizen) -> list:

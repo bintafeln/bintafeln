@@ -121,3 +121,25 @@ def test_im_menue_unter_kunden(admin):
     anfrage.user = admin
     bereiche = {b["titel"]: str(b) for b in menue(anfrage)}
     assert URL in bereiche["Kunden"]
+
+
+def _reihenfolge(antwort):
+    inhalt = antwort.content.decode()
+    texte = ("Bringt Tüten mit", "Bitte Ausweis zeigen lassen", "Krank gemeldet")
+    return [t.split()[0] for t in sorted(texte, key=inhalt.index)]
+
+
+def test_spalten_sortieren(admin_client, notizen):
+    """Jeder Spaltenkopf sortiert, wie in den anderen Listen; Vorgabe: neueste zuerst."""
+    assert _reihenfolge(admin_client.get(URL)) == ["Bringt", "Bitte", "Krank"]
+    assert _reihenfolge(admin_client.get(URL, {"sort": "datum"})) == ["Krank", "Bitte", "Bringt"]
+    assert _reihenfolge(admin_client.get(URL, {"sort": "text"})) == ["Bitte", "Bringt", "Krank"]
+    assert _reihenfolge(admin_client.get(URL, {"sort": "-text"})) == ["Krank", "Bringt", "Bitte"]
+    assert _reihenfolge(admin_client.get(URL, {"sort": "kunde"}))[0] == "Bringt"  # 00042 vor 00077
+    assert _reihenfolge(admin_client.get(URL, {"sort": "-stelle"}))[-1] == "Bringt"  # Nord, Mitte
+    assert _reihenfolge(admin_client.get(URL, {"sort": "art"})) == ["Bringt", "Bitte", "Krank"]
+    assert _reihenfolge(admin_client.get(URL, {"sort": "von"}))[-1] == "Krank"  # Büro, Einlass
+    assert _reihenfolge(admin_client.get(URL, {"sort": "unsinn"})) == ["Bringt", "Bitte", "Krank"]
+    inhalt = admin_client.get(URL, {"sort": "text", "art": "einfach"}).content.decode()
+    assert 'name="sort" value="text"' in inhalt  # der Filter behält die Sortierung
+    assert "sort=-text" in inhalt and "art=einfach" in inhalt  # der Kopf behält den Filter

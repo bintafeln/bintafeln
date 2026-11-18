@@ -110,3 +110,22 @@ def test_im_menue_unter_kunden(admin):
     anfrage.user = admin
     bereiche = {b["titel"]: str(b) for b in menue(anfrage)}
     assert URL in bereiche["Kunden"]
+
+
+def _reihenfolge(antwort):
+    inhalt = antwort.content.decode()
+    return [TEXTE.index(t) for t in sorted(TEXTE, key=inhalt.index)]
+
+
+def test_spalten_sortieren(admin_client, anmerkungen):
+    """Jeder Spaltenkopf sortiert, wie in den anderen Listen; Vorgabe: neueste zuerst."""
+    assert _reihenfolge(admin_client.get(URL)) == [0, 1, 2]
+    assert _reihenfolge(admin_client.get(URL, {"sort": "datum"})) == [2, 1, 0]
+    assert _reihenfolge(admin_client.get(URL, {"sort": "-kunde"}))[-1] == 0  # 00077 vor 00042
+    assert _reihenfolge(admin_client.get(URL, {"sort": "stelle"}))[0] == 0  # Mitte vor Nord
+    assert _reihenfolge(admin_client.get(URL, {"sort": "-von"}))[0] == 2  # Verwaltung vor Büro
+    nach_text = sorted(range(3), key=lambda i: TEXTE[i])
+    assert _reihenfolge(admin_client.get(URL, {"sort": "text"})) == nach_text
+    assert _reihenfolge(admin_client.get(URL, {"sort": "unsinn"})) == [0, 1, 2]
+    inhalt = admin_client.get(URL, {"sort": "text"}).content.decode()
+    assert 'name="sort" value="text"' in inhalt and "sort=-text" in inhalt
