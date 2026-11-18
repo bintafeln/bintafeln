@@ -4,12 +4,12 @@
 <section class="karte breit">
   <p><a href="{% url 'links:liste' %}">← Links</a></p>
   <h1>{% if obj %}{{ name }} „{{ obj }}“ ändern{% else %}{{ name }} anlegen{% endif %}</h1>
-  <form method="post" enctype="multipart/form-data">
+  <form method="post" enctype="multipart/form-data"{% if obj %} data-autosave{% endif %}>
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <div class="aktionsleiste">
-      <button type="submit" class="knopf">Speichern</button>
-      <a class="knopf knopf-abbrechen" href="{% url 'links:liste' %}">Abbrechen</a>
+      <button type="submit" class="knopf">{% if obj %}Speichern{% else %}Anlegen{% endif %}</button>
+      <a class="knopf knopf-abbrechen" href="{% url 'links:liste' %}">{% if obj %}Zurück{% else %}Abbrechen{% endif %}</a>
     </div>
   </form>
   {% if obj %}

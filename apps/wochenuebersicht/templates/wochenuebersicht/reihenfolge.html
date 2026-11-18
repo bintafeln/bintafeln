@@ -5,7 +5,7 @@
   <p><a href="{% url 'wochenuebersicht:uebersicht' %}">← Wochenübersicht</a></p>
   <h1>Reihenfolge der Ausgabestellen</h1>
   <p class="hinweis">Kleinere Zahlen stehen in der Wochenübersicht weiter oben; gleiche Zahlen nach Name. Kundengruppen ohne Ausgabestelle stehen am Ende.</p>
-  <form method="post">
+  <form method="post" data-autosave>
     {% csrf_token %}
     <table class="tabelle kompakt">
       <thead><tr><th>Ausgabestelle</th><th>Reihenfolge</th></tr></thead>

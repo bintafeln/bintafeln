@@ -14,12 +14,12 @@
     {% if "adressen.sehen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'adressen:liste' %}">Adressbuch öffnen</a>{% endif %}
   </div>
   {% endif %}
-  <form method="post">
+  <form method="post"{% if m.pk %} data-autosave{% endif %}>
     {% csrf_token %}
     {% include "includes/formular_abschnitte.html" %}
     <div class="aktionsleiste">
-      <button type="submit" class="knopf">Speichern</button>
-      <a class="knopf knopf-abbrechen" href="{% if m.pk %}{% url 'mitglieder:mitglied' m.pk %}{% else %}{% url 'mitglieder:liste' %}{% endif %}">Abbrechen</a>
+      <button type="submit" class="knopf">{% if m.pk %}Speichern{% else %}Anlegen{% endif %}</button>
+      <a class="knopf knopf-abbrechen" href="{% if m.pk %}{% url 'mitglieder:mitglied' m.pk %}{% else %}{% url 'mitglieder:liste' %}{% endif %}">{% if m.pk %}Zurück{% else %}Abbrechen{% endif %}</a>
     </div>
   </form>
   {% if m.pk %}

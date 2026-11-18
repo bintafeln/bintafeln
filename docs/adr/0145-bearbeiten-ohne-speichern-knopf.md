@@ -28,6 +28,13 @@ vergaß, verlor die Änderung; wer viel pflegt, drückte den Knopf ständig.
   Zeilentabellen (z. B. Zeiten einer Ausgabestelle) folgen gesondert, weil dort nach jedem
   Speichern die Zeilen neu geladen werden müssen.
 
+- Dritter Schritt: Spenden, Mitgliedschaften, Sicherungsaufträge, Statistik-Einstellungen und
+  die Module (Tickets, Fahrdienst: Springer und feste Besetzung, Dienstplan: Aufgaben, Links,
+  Aufruf: Infos, Angebote, Warteliste: Termine, Wochenübersicht: Reihenfolge, Übernahme). Neben
+  dem Formular heißt „Abbrechen“ dann „Zurück“.
+- Noch offen (eigene Schritte): Seiten mit Zeilentabellen (Ausgabestelle, Antrag bearbeiten,
+  Selbstabholer) und Seiten mit Text-Editor und Vorschau (Antragstexte, Serienbrief-Vorlage,
+  Rechtstexte, Wartelisten-Texte, Ausweis gestalten).
 - Bewusst mit Knopf bleibt die Zeitbuchung („Zeit nachtragen/korrigieren“): Mit Pause wird sie
   als zwei Buchungen gespeichert, ein Speichern je Feld würde Buchungen vervielfachen.
 

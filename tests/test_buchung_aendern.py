@@ -141,3 +141,11 @@ def test_mitarbeitende_und_personal_speichern_sofort(admin_client, admin, benutz
         seite = admin_client.get(ziel).content.decode()
         # „data-autosave-spaet“ am Benutzernamen zählt nicht: es wirkt nur mit data-autosave
         assert " data-autosave>" not in seite and ">Anlegen<" in seite, ziel
+
+
+def test_spenden_mitglieder_statistik_speichern_sofort(admin_client):
+    """Teil 3 von ADR 0145: vorhandene Einträge ohne Knopf, neue mit „Anlegen“."""
+    for ziel in (reverse("statistik:einstellungen"),):
+        assert " data-autosave>" in admin_client.get(ziel).content.decode(), ziel
+    neu = admin_client.get(reverse("spenden:neu")).content.decode()
+    assert " data-autosave>" not in neu and ">Anlegen<" in neu and ">Abbrechen<" in neu
