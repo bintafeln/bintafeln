@@ -177,6 +177,32 @@ def test_hilfe_bild_notizen_liste(angemeldet, admin, muster):
     assert Notiz.objects.count() == vorher - 1
 
 
+def test_hilfe_bild_einkommensart_umstellen(angemeldet, admin, muster):
+    """Einkommensart sammelweise ändern: Bild fürs Handbuch und der Ablauf bis „geändert“."""
+    from apps.kunden.models import Einkommensart
+
+    sonstiges = Einkommensart.objects.create(bezeichnung="Sonstiges")
+    ziel = Einkommensart.objects.create(bezeichnung="Grundsicherung")
+    Haushalt.objects.filter(kundennummer="00042").update(einkommensart=sonstiges)
+    seite = oeffnen(angemeldet, admin, reverse("kunden:einkommensart_umstellen"))
+    seite.get_by_label("Haushalte mit Einkommensart").select_option(str(sonstiges.pk))
+    seite.get_by_label("bekommen die Einkommensart").select_option(str(ziel.pk))
+    seite.get_by_role("button", name="Anzeigen, wen es betrifft").click()
+    expect(seite.get_by_role("heading", name="1 Haushalt betroffen")).to_be_visible()
+    karten = seite.locator("section.karte")
+    aendern = seite.get_by_role("button", name="Jetzt ändern")
+    aufnehmen(seite, "einkommensart-umstellen", [karten.nth(0), karten.nth(1)],
+              Marke(seite.locator("form.filter"), "rahmen", 1),
+              Marke(seite.get_by_role("button", name="Anzeigen, wen es betrifft"), nummer=2,
+                    von="rechts", laenge=40),
+              Marke(seite.locator("#betroffen table"), "rahmen", 3),
+              Marke(aendern, nummer=4, von="rechts", laenge=40))  # fmt: skip
+    seite.once("dialog", lambda d: d.accept())
+    aendern.click()
+    expect(seite.get_by_text("Einkommensart geändert")).to_be_visible()
+    assert Haushalt.objects.get(kundennummer="00042").einkommensart == ziel
+
+
 def test_hilfe_bild_anmerkungen_liste(angemeldet, admin, muster):
     """Liste aller Anmerkungen: Bild fürs Handbuch und der Ablauf „anhaken, löschen“."""
     from apps.kunden.models import Bemerkung

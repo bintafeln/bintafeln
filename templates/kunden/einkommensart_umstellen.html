@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block titel %}Einkommensart sammelweise ändern{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'kunden:liste' 'einkommensarten' %}">← Einkommensarten</a></p>
+  <h1>Einkommensart sammelweise ändern</h1>
+  <p class="hinweis">Ändert die Einkommensart vieler Haushalte auf einmal, aktive wie nicht mehr aktive – z. B. alle
+    mit „Sonstiges“, deren Hauptperson 65 oder älter ist. Zuerst sehen Sie nur, wen es betrifft; geändert wird erst
+    mit „Jetzt ändern“. Jede Änderung steht in der Historie des Haushalts und im Änderungsprotokoll.</p>
+  <form method="get" class="filter filter-kompakt">
+    {% for fehler in form.non_field_errors %}<p class="fehler" role="alert">{{ fehler }}</p>{% endfor %}
+    {% for feld in form %}
+    <div class="filter-feld"><label for="{{ feld.id_for_label }}">{{ feld.label }}</label>{{ feld }}
+      {% for fehler in feld.errors %}<small class="fehler">{{ fehler }}</small>{% endfor %}</div>
+    {% endfor %}
+    <button type="submit" class="knopf" data-ziel="betroffen">Anzeigen, wen es betrifft</button>
+  </form>
+</section>
+
+{% if gewaehlt %}
+<section class="karte breit" id="betroffen">
+  <h2>{{ anzahl }} Haushalt{{ anzahl|pluralize:"e" }} {% if laeuft %}noch offen{% else %}betroffen{% endif %}</h2>
+  <p>„{{ gewaehlt.von }}“ → „{{ gewaehlt.nach }}“{% if gewaehlt.alter != "alle" %}, Hauptperson
+    {% if gewaehlt.alter == "ab" %}{{ gewaehlt.jahre }} Jahre oder älter{% else %}jünger als {{ gewaehlt.jahre }} Jahre{% endif %}{% endif %}.
+    Davon {{ aktiv }} aktiv.</p>
+  {% if ohne %}<p class="meldung" role="status"><strong>{{ ohne }} Haushalt{{ ohne|pluralize:"e" }} ohne Geburtsdatum der
+    Hauptperson</strong> {{ ohne|pluralize:"bleibt,bleiben" }} wie {{ ohne|pluralize:"er ist,sie sind" }}: Ohne Geburtsdatum lässt sich das Alter nicht prüfen.</p>{% endif %}
+  {% if anzahl %}
+  <form method="post"{% if laeuft %} hx-post="{{ request.get_full_path }}" hx-trigger="load delay:300ms" hx-swap="none"{% endif %}>
+    {% csrf_token %}
+    <input type="hidden" name="von" value="{{ gewaehlt.von.pk }}">
+    <input type="hidden" name="alter" value="{{ gewaehlt.alter }}">
+    <input type="hidden" name="jahre" value="{{ gewaehlt.jahre }}">
+    <input type="hidden" name="nach" value="{{ gewaehlt.nach.pk }}">
+    {% if laeuft %}
+    <p class="hinweis" role="status"><strong>Ändern läuft …</strong> Die Seite arbeitet in Portionen und lädt sich
+      dabei neu. Bitte offen lassen. Wird sie geschlossen, geht nichts verloren – „Weiter ändern“ setzt fort.</p>
+    <button type="submit" class="knopf knopf-zweitrangig">Weiter ändern</button>
+    {% else %}
+    <button type="submit" class="knopf"
+            onclick="return confirm('Einkommensart von {{ anzahl }} Haushalt{{ anzahl|pluralize:"en" }} jetzt ändern? Zurück geht es nur von Hand oder mit einer zweiten Sammeländerung.')">Jetzt ändern</button>
+    {% endif %}
+  </form>
+  <div class="tabelle-rahmen abseits">
+  <table class="tabelle">
+    <thead><tr><th>Kundennummer</th><th>Hauptperson</th><th>Geburtsdatum</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for h in zeilen %}
+      <tr><td data-titel="Kundennummer"><a href="{% url 'kunden:haushalt' h.kundennummer %}">{{ h.kundennummer }}</a></td>
+        <td data-titel="Hauptperson">{% if h.haupt %}{{ h.haupt.nachname }}, {{ h.haupt.vorname }}{% else %}–{% endif %}</td>
+        <td data-titel="Geburtsdatum">{{ h.haupt.geburtsdatum|date:"d.m.Y"|default:"–" }}</td>
+        <td data-titel="Status">{{ h.get_status_display }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if anzahl > vorschau %}<p class="hinweis">Gezeigt werden die ersten {{ vorschau }}; geändert werden alle {{ anzahl }}.</p>{% endif %}
+  {% else %}
+  <p>Kein Haushalt passt auf diese Auswahl.</p>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

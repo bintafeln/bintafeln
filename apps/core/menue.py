@@ -252,6 +252,8 @@ def menue(request) -> list[dict]:
              _eintrag("Kundenstamm und Zusatzfelder", "kunden:einstellungen")),
             ("einstellungen.listen", _eintrag("Kundengruppen", *_liste("kundengruppen"))),
             ("einstellungen.listen", _eintrag("Einkommensarten", *_liste("einkommensarten"))),
+            ("kunden.bearbeiten",
+             _eintrag("Einkommensart sammelweise ändern", "kunden:einkommensart_umstellen")),
             ("einstellungen.listen", _eintrag("Notiz-Vorlagen", *_liste("notizvorlagen"))),
             ("einstellungen.listen", _eintrag("Dokumentarten", *_liste("dokumentarten"))),
             ("einstellungen.ausweis", _eintrag("Kundenausweis", "kunden:ausweis_gestalten")),
