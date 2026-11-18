@@ -73,3 +73,14 @@ lädt sich selbst nach, sobald es fertig ist (`None` = noch nichts, `[]` = gerec
 Zusätzlich wärmt `vorwaermen()` beide Auswertungen schon beim Betreten des Warteliste-Bereichs
 (`warteliste:liste`) im Hintergrund vor, sodass „Doppelte Anträge“ und „Abgleich mit dem
 Kundenstamm“ beim Öffnen meist ohne Warten da sind.
+
+## Nachtrag: Entscheidung im Abgleich erneuert nur einen Antrag
+
+Bisher verwarf jede Entscheidung im Abgleich (und ihre Rücknahme) das ganze gespeicherte Ergebnis.
+Folge: Die Zahl im Menü verschwand, und beim nächsten Öffnen wurde der ganze Kundenstamm neu
+durchsucht – obwohl sich nur ein Antrag geändert hatte.
+
+Jetzt erneuert `vorberechnung.abgleich_antrag_erneuern()` nur den Eintrag dieses einen Antrags.
+Passte das Ergebnis vorher zum Stand (Signatur vor der Entscheidung), gilt es danach weiter als
+aktuell; war es schon veraltet, bleibt es das und wird wie gewohnt im Hintergrund aufgefrischt.
+Streichen eines Antrags und Entscheidungen bei „Doppelte Anträge“ verwerfen weiterhin alles.

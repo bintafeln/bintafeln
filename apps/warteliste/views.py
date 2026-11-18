@@ -532,8 +532,11 @@ def abgleich_ergebnis(request):
 def abgleich_entscheiden(request):
     """Treffer des Abgleichs bestätigen („derselbe Haushalt“) oder verwerfen; oder zurücknehmen."""
     if pk := request.POST.get("zuruecknehmen"):
+        stand = vorberechnung.abgleich_signatur()
+        antraege = list(AbgleichEntscheidung.objects.filter(pk=pk).values_list("antrag", flat=True))
         AbgleichEntscheidung.objects.filter(pk=pk).delete()
-        vorberechnung.veraltet(abgleich=True)  # Treffer steht wieder zur Prüfung an
+        for antrag_pk in antraege:  # Treffer steht wieder zur Prüfung an
+            vorberechnung.abgleich_antrag_erneuern(antrag_pk, stand)
         messages.success(
             request,
             "Prüfung zurückgenommen; der Treffer steht wieder in der Liste. "

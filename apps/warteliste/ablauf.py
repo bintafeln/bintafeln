@@ -634,11 +634,12 @@ def entscheiden(a, kundennummer: str, gleich: bool, von: str, heute=None) -> str
     from apps.warteliste import vorberechnung
 
     heute = heute or timezone.localdate()
+    stand = vorberechnung.abgleich_signatur()  # nur diesen Antrag erneuern, nicht alles verwerfen
     if not gleich:
         AbgleichEntscheidung.objects.update_or_create(
             antrag=a, kundennummer=kundennummer,
             defaults={"gleich": False, "von": von, "ergebnis": "anderer Haushalt"})  # fmt: skip
-        vorberechnung.veraltet(abgleich=True)
+        vorberechnung.abgleich_antrag_erneuern(a.pk, stand)
         return f"Antrag {a.nummer}: Kunde {kundennummer} ist ein anderer Haushalt."
     h = Haushalt.objects.filter(kundennummer=kundennummer).first()
     if h is None:
@@ -662,7 +663,7 @@ def entscheiden(a, kundennummer: str, gleich: bool, von: str, heute=None) -> str
     AbgleichEntscheidung.objects.update_or_create(
         antrag=a, kundennummer=kundennummer,
         defaults={"gleich": True, "von": von, "ergebnis": ergebnis})  # fmt: skip
-    vorberechnung.veraltet(abgleich=True)
+    vorberechnung.abgleich_antrag_erneuern(a.pk, stand)
     return f"Antrag {a.nummer}: derselbe Haushalt wie Kunde {kundennummer} – {ergebnis}."
 
 

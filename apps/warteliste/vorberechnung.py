@@ -223,18 +223,17 @@ def _rechnen_abgleich():
     from apps.warteliste import ablauf
 
     offene = ablauf.offene_antraege().select_related("wartestand").order_by("eingegangen_am")
-    ergebnis = []
-    for e in ablauf.kundenabgleich(offene):
-        a = e["antrag"]
-        try:
-            status = a.wartestand.status
-        except ObjectDoesNotExist:
-            status = ""
-        ergebnis.append(
-            {"antrag_pk": a.pk, "antrag": _antrag_dict(a), "status": status,
-             "sperr": e["sperr"], "treffer": [_treffer_dict(t) for t in e["treffer"]]}
-        )  # fmt: skip
-    return ergebnis
+    return [_abgleich_eintrag(e) for e in ablauf.kundenabgleich(offene)]
+
+
+def _abgleich_eintrag(e) -> dict:
+    a = e["antrag"]
+    try:
+        status = a.wartestand.status
+    except ObjectDoesNotExist:
+        status = ""
+    return {"antrag_pk": a.pk, "antrag": _antrag_dict(a), "status": status,
+            "sperr": e["sperr"], "treffer": [_treffer_dict(t) for t in e["treffer"]]}  # fmt: skip
 
 
 # ── Öffentlich ───────────────────────────────────────────────────────────────
@@ -248,6 +247,45 @@ def dubletten_daten():
 def abgleich_daten():
     """(ergebnis_aller_offenen, frisch, laeuft) für die Abgleich-Seite."""
     return _holen(ABG, _sig_abgleich, _rechnen_abgleich)
+
+
+def abgleich_signatur():
+    """Stand, zu dem das Ergebnis des Abgleichs passt – vor einer Entscheidung merken und an
+    ``abgleich_antrag_erneuern`` übergeben."""
+    return _sig_abgleich()
+
+
+def abgleich_antrag_erneuern(antrag_pk: int, sig_vorher) -> None:
+    """Nach einer Entscheidung (oder ihrer Rücknahme) nur diesen einen Antrag im gespeicherten
+    Ergebnis erneuern – statt alles zu verwerfen.
+
+    Verwerfen hieße: Die Zahl im Menü verschwindet, und die Seite sucht beim nächsten Öffnen den
+    ganzen Kundenstamm neu durch (bei vielen Kunden 10–20 Sekunden und mehr), obwohl sich nur ein
+    Antrag geändert hat. Passte das Ergebnis vorher zum Stand (``sig_vorher``), gilt es danach
+    weiter als aktuell; war es schon vorher veraltet, bleibt es das und wird wie gewohnt im
+    Hintergrund aufgefrischt. Liegt gar kein Ergebnis vor, passiert nichts.
+    """
+    from apps.warteliste import ablauf
+
+    stand = cache.get(ABG)
+    if not (stand and "daten" in stand):
+        return
+    antrag = ablauf.offene_antraege().select_related("wartestand").filter(pk=antrag_pk).first()
+    neu = [_abgleich_eintrag(e) for e in ablauf.kundenabgleich([antrag])] if antrag else []
+    daten, ersetzt = [], False
+    for e in stand["daten"]:
+        if e["antrag_pk"] != antrag_pk:
+            daten.append(e)
+        elif not ersetzt:
+            daten.extend(neu)
+            ersetzt = True
+    if not ersetzt:  # stand nicht (mehr) in der Liste, z. B. nach „Zurücknehmen“
+        daten.extend(neu)
+    stand = dict(stand)
+    stand["daten"] = daten
+    if stand.get("signatur") == sig_vorher:
+        stand["signatur"] = _sig_abgleich()
+    cache.set(ABG, stand, DAUER)
 
 
 def _anzahl(key) -> int | None:

@@ -660,6 +660,67 @@ def test_menue_zaehler_abgleich_nur_neu_und_wartend(modul_an, monkeypatch):
     assert vorberechnung.anzahl_abgleich() == 1  # der Zähler zählt nur den „wartenden“
 
 
+def test_entscheidung_erneuert_nur_den_einen_antrag(modul_an, admin_client, monkeypatch):
+    """Nach „Ja/Nein“ im Abgleich bleibt das gespeicherte Ergebnis: nur der entschiedene Antrag
+    wird erneuert. Die Zahl im Menü bleibt, und nichts sucht den ganzen Kundenstamm neu durch."""
+    from django.core.cache import cache
+
+    from apps.warteliste import vorberechnung
+    from apps.warteliste.models import AbgleichEntscheidung
+
+    cache.clear()
+    # zwei ganz verschiedene Namen, damit jeder Antrag nur seinen einen Treffer hat
+    for nr, vorname, nachname, gb in (
+        ("900", "Erika", "Beispiel", dt.date(1980, 2, 3)),
+        ("901", "Konrad", "Zimmermann", dt.date(1975, 5, 6)),
+    ):
+        h = Haushalt.objects.create(kundennummer=nr)
+        Person.objects.create(haushalt=h, ist_hauptperson=True, vorname=vorname,
+                              nachname=nachname, geburtsdatum=gb)  # fmt: skip
+    a = antrag(geburtsdatum=dt.date(1980, 2, 3))
+    b = antrag(vorname="Konrad", nachname="Zimmermann", geburtsdatum=dt.date(1975, 5, 6))
+    ablauf.automatik()
+    vorberechnung.vorwaermen(synchron=True)
+    assert vorberechnung.anzahl_abgleich() == 2
+    # ab jetzt darf nie wieder alles gerechnet werden
+    monkeypatch.setattr(vorberechnung, "_rechnen_abgleich",
+                        lambda: pytest.fail("ganzer Kundenstamm neu durchsucht"))  # fmt: skip
+    ziel = reverse("warteliste:abgleich_entscheiden")
+    admin_client.post(ziel, {"antrag": a.pk, "kundennummer": "900", "gleich": "0"})
+    assert vorberechnung.anzahl_abgleich() == 1  # die Zahl bleibt, nur einer weniger
+    daten, frisch, laeuft = vorberechnung.abgleich_daten()
+    assert frisch and not laeuft and {e["antrag_pk"] for e in daten} == {b.pk}
+    assert not vorberechnung.kalt()
+    # Zurücknehmen: der Treffer steht wieder da, wieder ohne alles neu zu rechnen
+    entscheidung = AbgleichEntscheidung.objects.get(antrag=a)
+    admin_client.post(ziel, {"zuruecknehmen": entscheidung.pk})
+    daten, frisch, _ = vorberechnung.abgleich_daten()
+    assert frisch and {e["antrag_pk"] for e in daten} == {a.pk, b.pk}
+    assert vorberechnung.anzahl_abgleich() == 2
+
+
+def test_entscheidung_bei_veraltetem_stand_frischt_weiter_auf(modul_an, monkeypatch):
+    """War das Ergebnis schon vor der Entscheidung veraltet, bleibt es das (und wird wie gewohnt im
+    Hintergrund aufgefrischt); ohne gespeichertes Ergebnis passiert nichts."""
+    from django.core.cache import cache
+
+    from apps.warteliste import vorberechnung
+
+    cache.clear()
+    _abgleich_daten_anlegen()
+    a = Antrag.objects.get()
+    vorberechnung.abgleich_antrag_erneuern(a.pk, vorberechnung.abgleich_signatur())
+    assert vorberechnung.kalt()  # nichts gespeichert: nichts zu erneuern
+    vorberechnung.vorwaermen(synchron=True)
+    alt = "anderer Stand"
+    vorberechnung.abgleich_antrag_erneuern(a.pk, alt)
+    assert cache.get(vorberechnung.ABG)["signatur"] != alt
+    stand = dict(cache.get(vorberechnung.ABG), signatur=alt)
+    cache.set(vorberechnung.ABG, stand, 60)
+    vorberechnung.abgleich_antrag_erneuern(a.pk, "noch ein anderer")
+    assert cache.get(vorberechnung.ABG)["signatur"] == alt  # bleibt veraltet
+
+
 def test_auskunft_enthaelt_warteliste(pdf_text):
     a = antrag()
     ablauf.einladen([a], termin(), "Büro", mail_senden=False)
