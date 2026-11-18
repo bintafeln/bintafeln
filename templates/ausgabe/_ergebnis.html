@@ -129,7 +129,7 @@ Ampel-Karte zurück (_ruecknahme_abholung.html).{% endcomment %}
     <div class="feld">
       <label for="einzahlung">Gezahlt ohne Abholung (Euro)</label>
       <input type="text" name="betrag" id="einzahlung" inputmode="decimal" class="betrag" required>
-      <small class="hilfe">Zum Beispiel eine Vorauszahlung; der Betrag wird Guthaben.</small>
+      <small class="hilfe">Zum Beispiel eine Vorauszahlung; der Betrag wird Guthaben. Mit Minus (z. B. −3) eine Auszahlung: Geld geht bar zurück.</small>
     </div>
     {% include "ausgabe/_vorschlaege.html" with feld="einzahlung" %}
     <button type="submit" class="knopf knopf-zweitrangig">Zahlung buchen</button>

@@ -58,7 +58,7 @@
   <li>Letzte Abholungen und Notizen</li>
   {% if "kunden.dokumente" in rechte %}<li>Dokumente</li>{% endif %}
   {% if "kunden.historie" in rechte %}<li>Historie: was sich wann geändert hat</li>{% endif %}
-  {% if "kunden.konto" in rechte %}<li>Kundenkonto mit allen Buchungen{% if "konto.korrektur" in rechte %} und Korrekturbuchung{% endif %}</li>{% endif %}
+  {% if "kunden.konto" in rechte %}<li>Kundenkonto mit allen Buchungen{% if "konto.korrektur" in rechte %} und Korrekturbuchung{% endif %}{% if "konto.buchung_aendern" in rechte %}; jede Buchung lässt sich dort mit „ändern“ berichtigen (Soll, Haben, davon bar, Ausgabestelle, Anmerkung) oder mit „löschen“ entfernen – der Kontostand rechnet sich neu, die Änderung steht im Änderungsprotokoll{% endif %}</li>{% endif %}
   {% if "kunden.anmerkungen" in rechte %}<li>Interne Anmerkungen aus dem bisherigen Programm</li>{% endif %}
 </ul>
 {% hilfe_bild "kunden-finden-haushalt" "① Die Knöpfe oben (je nach Rechten), ② darunter die Angaben zum Haushalt." %}

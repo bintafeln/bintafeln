@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block titel %}Buchung ändern{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'kunden:haushalt' h.kundennummer %}">← zurück zum Kunden {{ h.kundennummer }}</a></p>
+  <h1>Buchung ändern</h1>
+  <p>{{ buchung.get_art_display }} vom {{ buchung.zeitpunkt|date:"d.m.Y H:i" }}{% if buchung.eingetragen_von %}, eingetragen von {{ buchung.eingetragen_von }}{% endif %}.
+    Kontostand jetzt: <strong>{{ h.kontostand|default_if_none:0|floatformat:2 }} €</strong>.</p>
+  <p class="hinweis">Nach dem Speichern rechnet bintafeln den Kontostand um den Unterschied neu. Die Änderung steht
+    im Änderungsprotokoll.</p>
+  <form method="post">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+{% endblock %}
