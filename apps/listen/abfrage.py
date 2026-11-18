@@ -145,6 +145,22 @@ def _abholungen(haushalte, p) -> dict:
     return dict(qs.values("haushalt").annotate(n=Count("pk")).values_list("haushalt", "n"))
 
 
+def _ohne_stelle(haushalte, p) -> dict:
+    """Je Haushalt die Abholungen ohne Ausgabestelle: „03.11.2026 10:15 (anton)“, neueste zuerst."""
+    qs = Abholung.objects.filter(haushalt__in=haushalte, ausgabestelle__isnull=True)
+    if (von := _datum(p.get("von"))) is not None:
+        qs = qs.filter(datum__gte=von)
+    if (bis := _datum(p.get("bis"))) is not None:
+        qs = qs.filter(datum__lte=bis)
+    ergebnis = {}
+    for haushalt, datum, uhrzeit, von_wem in qs.order_by("-datum", "-uhrzeit").values_list(
+        "haushalt", "datum", "uhrzeit", "eingetragen_von"
+    ):
+        text = f"{datum:%d.%m.%Y}" + (f" {uhrzeit:%H:%M}" if uhrzeit else "")
+        ergebnis.setdefault(haushalt, []).append(text + (f" ({von_wem})" if von_wem else ""))
+    return ergebnis
+
+
 def objekte(liste: Liste, benutzer, p, mit_abholungen=False) -> tuple[list, dict]:
     """Haushalte bzw. Personen nach den Filtern, dazu der Rechenkontext."""
     heute = timezone.localdate()
@@ -155,6 +171,9 @@ def objekte(liste: Liste, benutzer, p, mit_abholungen=False) -> tuple[list, dict
     hh = list(haushalte)
     if p.get("nur_abgeholt"):  # nur Haushalte, die im Zeitraum mindestens einmal abgeholt haben
         hh = [h for h in hh if k["abholungen"].get(h.pk)]
+    if liste.kennung == "ohne_stelle":  # nur Haushalte, die solche Abholungen haben
+        k["ohne_stelle"] = _ohne_stelle(haushalte, p)
+        hh = [h for h in hh if h.pk in k["ohne_stelle"]]
     if (ab := _zahl(p.get("personen_ab"))) is not None:
         hh = [h for h in hh if sum(h.groesse(k["kind_bis"], heute)) >= ab]
     if (tag := p.get("tag")) in WOCHENTAGE:

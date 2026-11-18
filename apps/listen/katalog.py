@@ -105,6 +105,13 @@ LISTEN = [
                     "nur_abgeholt": "1"},
           spalten=("kundennummer", "nachname", "vorname", "kundengruppe", "abholungen",
                    "letzter_besuch"), sort="-abholungen"),
+    Liste("ohne_stelle", KUNDEN, "Abholungen ohne Ausgabestelle",
+          "Haushalte mit Abholungen, bei denen keine Ausgabestelle eingetragen ist – mit Tag, "
+          "Uhrzeit und wer eingetragen hat. Solche Abholungen fehlen in Kasse und Statistik der "
+          "Ausgabestellen.",
+          filter=("gruppe", "status", "zeitraum"),
+          spalten=("kundennummer", "nachname", "vorname", "kundengruppe", "ohne_stelle"),
+          sort="kundennummer"),
     Liste("negativer_kontostand", KUNDEN, "Offene Beträge (Kontostand im Minus)",
           "Haushalte, deren Kundenkonto im Minus ist (angeschrieben).", recht="kunden.konto",
           filter=("stelle", "gruppe", "tag", "status", "kontostand_minus"),

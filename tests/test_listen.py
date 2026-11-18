@@ -414,3 +414,28 @@ def test_merkmal_nur_mit_art9_recht(
     assert "merkmal:schwerbehindert" not in {
         s.schluessel for s in spalten.erlaubte("haushalt", darf)
     }
+
+
+def test_abholungen_ohne_ausgabestelle(admin_client, daten):
+    """Welche Abholungen haben keine Ausgabestelle? Je Haushalt mit Tag, Uhrzeit, Eintragendem."""
+    import datetime as dt
+
+    from apps.kunden.models import Abholung
+
+    Abholung.objects.all().delete()
+    ohne = Haushalt.objects.get(kundennummer="3")
+    Haushalt.objects.filter(pk=ohne.pk).update(kundengruppe=None)
+    ohne.refresh_from_db()
+    Abholung.objects.create(haushalt=ohne, datum=dt.date(2026, 11, 3), uhrzeit=dt.time(10, 15),
+                            eingetragen_von="anton")  # fmt: skip
+    Abholung.objects.create(haushalt=ohne, datum=dt.date(2026, 10, 6))
+    mit = Haushalt.objects.get(kundennummer="1")
+    Abholung.objects.create(haushalt=mit, datum=dt.date(2026, 11, 3))  # Stelle aus der Kundengruppe
+    antwort = admin_client.get(*url("ohne_stelle", status=""))
+    assert zeilen(antwort) == ["3"]
+    assert "03.11.2026 10:15 (anton); 06.10.2026" in antwort.text
+    # Zeitraum grenzt ein
+    assert (
+        "06.10.2026" not in admin_client.get(*url("ohne_stelle", status="", von="2026-11-01")).text
+    )
+    assert zeilen(admin_client.get(*url("ohne_stelle", status="", bis="2026-09-30"))) == []
