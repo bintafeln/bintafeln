@@ -8,10 +8,11 @@
   {% else %}<p><a href="{% url 'kunden:uebersicht' %}">← Kunden</a></p>{% endif %}
   <h1>{{ titel }}</h1>
   {% if h or not zurueck %}{% include "kunden/_import_hinweis.html" %}{% endif %}
-  <form method="post">
+  {# Vorhandenes speichert sofort (ADR 0145); Neues braucht einmal „Anlegen“ #}
+  <form method="post"{% if form.instance.pk %} data-autosave{% endif %}>
     {% csrf_token %}
     {% include "includes/formular.html" %}
-    <button type="submit" class="knopf">Speichern</button>
+    <button type="submit" class="knopf">{% if form.instance.pk %}Speichern{% else %}Anlegen{% endif %}</button>
   </form>
   {% if loeschen %}
   <form method="post" action="{{ loeschen }}" class="abseits" onsubmit="return confirm(this.dataset.frage)" data-frage="{{ loeschen_frage|default:'Wirklich löschen?' }}">

@@ -36,7 +36,14 @@
   Person aus „Behinderung (Art. 9)“ mit GdB und Merkzeichen. <strong>Erwachsene und Kinder</strong> trägt niemand ein:
   bintafeln zählt sie aus den Angehörigen (unter dem Alter aus „Kind bis“, Vorgabe 18, ist man Kind; ohne
   Geburtsdatum erwachsen). Nur wenn außer der Hauptperson niemand erfasst ist, gelten die Zahlen aus dem Altsystem.</p>
-{% hilfe_bild "kunden-bearbeiten-haushalt" "Oben die Angaben zum Haushalt, z. B. ① „Ausweis gültig bis“ oder ② die Anschrift ändern, dann ③ „Haushalt speichern“." %}
+{% hilfe_bild "kunden-bearbeiten-haushalt" "Oben die Angaben zum Haushalt, z. B. ① „Ausweis gültig bis“ oder ② die Anschrift ändern, gespeichert wird sofort (③)." %}
+<p><strong>Ohne Speichern-Knopf:</strong> Beim Bearbeiten wird jede Änderung sofort gespeichert – Häkchen, Auswahl und
+  Datum gleich, Textfelder kurz nach dem Tippen. Am Feld erscheint kurz „✓ gespeichert“; ist ein Wert ungültig, steht
+  dort eine rote Meldung, und es bleibt der alte Wert. Das gilt für den Haushalt, für Personen, Abholberechtigte,
+  Sperren, Ausnahmen und Anmerkungen{% if "konto.buchung_aendern" in rechte %}, für Buchungen im Kundenkonto{% endif %}
+  und für die Einträge der Listen unter „Einstellungen“. Ein „Abbrechen“ gibt es deshalb nicht: Ein Versehen stellen
+  Sie von Hand zurück; was vorher stand, zeigt die Historie. Die <strong>Kundennummer</strong> wird erst gespeichert,
+  wenn Sie das Feld verlassen. Nur wer etwas <strong>neu anlegt</strong>, drückt einmal „Anlegen“.</p>
 {% hilfe_bild "kunden-bearbeiten-personen" "Darunter je eine Karte für Personen, Abholberechtigte, Sperren, Ausnahmen und Anmerkungen: ① einen Eintrag anklicken, um ihn zu ändern, ② „Hinzufügen“ für einen neuen." %}
 <h3>Kundengruppe nur mit gültigem Ausweis</h3>
 <p>Wer <strong>pausiert, gesperrt oder beendet</strong> ist oder dessen <strong>Ausweis abgelaufen</strong> ist, fällt

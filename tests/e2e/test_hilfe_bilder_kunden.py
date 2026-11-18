@@ -110,7 +110,7 @@ def test_hilfe_bild_kunden_bearbeiten(angemeldet, admin, muster):
     seite.get_by_label("PLZ", exact=True).fill("12345")
     seite.get_by_label("Ort", exact=True).fill("Musterstadt")
     titel = seite.get_by_role("link", name="← Haushalt 00042")
-    speichern = seite.get_by_role("button", name="Haushalt speichern")
+    speichern = seite.locator(".autosave-hinweis")  # kein Knopf: speichert sofort (ADR 0145)
     aufnehmen(seite, "kunden-bearbeiten-haushalt", [titel, speichern],
               Marke(seite.get_by_label("Ausweis gültig bis"), nummer=1, von="rechts", laenge=50),
               Marke(seite.get_by_label("Straße und Hausnummer"), nummer=2, von="rechts",

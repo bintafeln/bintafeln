@@ -182,7 +182,7 @@ def test_hilfe_bild_sonderaktion(angemeldet, admin, muster):
               Marke(menge, "rahmen", 2),
               Marke(seite.get_by_label("Hinweis für den Einlass"), "rahmen", 3),
               Marke(seite.get_by_label("Auswahlmöglichkeiten"), "rahmen", 4),
-              Marke(seite.get_by_role("button", name="Speichern"), nummer=5, von="rechts",
+              Marke(seite.get_by_role("button", name="Anlegen"), nummer=5, von="rechts",
                     laenge=40))  # fmt: skip
 
     aktion = Sonderaktion.objects.create(bezeichnung="Schulranzen", von=heute,
