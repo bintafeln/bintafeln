@@ -84,7 +84,7 @@ def zeile(h: Haushalt, datum: dt.date, stelle) -> Zeile:
         konto.mit_bar_gezahlt(h, schon)
     return Zeile(
         h=h,
-        beitrag=e.beitrag_fuer(h, datum, kind_bis),
+        beitrag=e.beitrag_fuer(h, datum, kind_bis, stelle=stelle),
         bewertung=ampel.bewerten(h, datum, stelle, e),
         schon=schon,
         gruppe=h.kundengruppe.name if h.kundengruppe else "",

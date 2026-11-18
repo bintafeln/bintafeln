@@ -150,7 +150,9 @@ def _kosten(h: Haushalt, abholung) -> Decimal:
     from apps.kunden.models import KundenEinstellungen
 
     kind_bis = KundenEinstellungen.laden().kind_bis_alter
-    return AusgabeEinstellungen.laden().beitrag_fuer(h, abholung.datum, kind_bis) or NULL
+    stelle = abholung.ausgabestelle  # wo abgeholt wurde; sonst die der Kundengruppe
+    einstellungen = AusgabeEinstellungen.laden()
+    return einstellungen.beitrag_fuer(h, abholung.datum, kind_bis, stelle=stelle) or NULL
 
 
 def _aus_kontostand(h: Haushalt, danach: Decimal, bis: dt.date, von: str = "") -> int:
@@ -463,7 +465,7 @@ def vorschlaege(h, heute, einstellungen, beitrag) -> tuple[list[Vorschlag], str]
         zu = Schliesszeit.tage(gruppe.ausgabestelle, von, bis)
         geschlossen = [t for t in tage if t in zu]
         tage = [t for t in tage if t not in zu]
-        ohne_beitrag = [t for t in tage if BeitragsfreierZeitraum.am(t)]
+        ohne_beitrag = [t for t in tage if BeitragsfreierZeitraum.am(t, gruppe.ausgabestelle)]
         tage = [t for t in tage if t not in ohne_beitrag]
         if h.ausweis_gueltig_bis and any(t > h.ausweis_gueltig_bis for t in tage):
             tage = [t for t in tage if t <= h.ausweis_gueltig_bis]

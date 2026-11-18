@@ -148,13 +148,24 @@ class AusgabeEinstellungen(models.Model):
             )
         return summe
 
-    def beitrag_fuer(self, haushalt, heute, kind_bis_alter: int, frei_beachten=True) -> Decimal:
-        """Beitrag eines Haushalts an einem Tag; in beitragsfreien Zeiträumen 0."""
-        if frei_beachten and BeitragsfreierZeitraum.am(heute):
+    def beitrag_fuer(self, haushalt, heute, kind_bis_alter: int, frei_beachten=True,
+                     stelle=None) -> Decimal:  # fmt: skip
+        """Beitrag eines Haushalts an einem Tag; in beitragsfreien Zeiträumen 0. ``stelle``: die
+        Ausgabestelle, an der abgeholt wird (am Einlass gewählt); sonst die der Kundengruppe."""
+        if frei_beachten and BeitragsfreierZeitraum.am(heute, stelle_von(haushalt, stelle)):
             return Decimal("0.00")
         zahlende, _ = haushalt.groesse(self.zahlt_ab_alter, heute)
         erwachsene, kinder = haushalt.groesse(kind_bis_alter, heute)
         return self.beitrag(zahlende, erwachsene, kinder)
+
+
+def stelle_von(haushalt, stelle=None):
+    """Welche Ausgabestelle für einen Haushalt zählt: die am Einlass gewählte, sonst die der
+    Kundengruppe."""
+    if stelle is not None:
+        return stelle
+    gruppe = haushalt.kundengruppe
+    return gruppe.ausgabestelle if gruppe else None
 
 
 class BeitragsfreierZeitraum(models.Model):
@@ -163,6 +174,10 @@ class BeitragsfreierZeitraum(models.Model):
     bezeichnung = models.CharField("Bezeichnung", max_length=100, help_text="z. B. Weihnachten")
     von = models.DateField("Von")
     bis = models.DateField("Bis einschließlich")
+    ausgabestellen = models.ManyToManyField(
+        Ausgabestelle, blank=True, related_name="+", verbose_name="Ausgabestellen",
+        help_text="Nur an diesen Ausgabestellen. Nichts angehakt = an allen Ausgabestellen.",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Beitragsfreier Zeitraum"
@@ -183,9 +198,25 @@ class BeitragsfreierZeitraum(models.Model):
         """Für die Listenansicht: vergangene Zeiträume gelten als inaktiv."""
         return self.bis >= timezone.localdate()
 
+    def gilt_an(self, stelle) -> bool:
+        """Ohne Auswahl an allen Ausgabestellen; ist die Ausgabestelle nicht bekannt, nur
+        Zeiträume für alle."""
+        stellen = {s.pk for s in self.ausgabestellen.all()}
+        return not stellen or (stelle is not None and stelle.pk in stellen)
+
+    def wo(self) -> str:
+        """Für die Listenansicht: „alle“ oder die Namen der Ausgabestellen."""
+        if not self.pk:
+            return "alle"
+        return ", ".join(s.name for s in self.ausgabestellen.all()) or "alle"
+
     @classmethod
-    def am(cls, tag) -> "BeitragsfreierZeitraum | None":
-        return cls.objects.filter(von__lte=tag, bis__gte=tag).first()
+    def am(cls, tag, stelle=None) -> "BeitragsfreierZeitraum | None":
+        """Der beitragsfreie Zeitraum an diesem Tag, der an der Ausgabestelle gilt."""
+        zeitraeume = cls.objects.filter(von__lte=tag, bis__gte=tag).prefetch_related(
+            "ausgabestellen"
+        )
+        return next((z for z in zeitraeume if z.gilt_an(stelle)), None)
 
 
 class Schliesszeit(models.Model):

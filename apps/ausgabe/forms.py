@@ -88,8 +88,18 @@ class AusgabeEinstellungenForm(forms.ModelForm):
 class BeitragsfreiForm(forms.ModelForm):
     class Meta:
         model = BeitragsfreierZeitraum
-        fields = ["bezeichnung", "von", "bis"]
-        widgets = {"von": DatumEingabe(), "bis": DatumEingabe()}
+        fields = ["bezeichnung", "von", "bis", "ausgabestellen"]
+        widgets = {"von": DatumEingabe(), "bis": DatumEingabe(),
+                   "ausgabestellen": Mehrfachauswahl(leer="alle Ausgabestellen")}  # fmt: skip
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # aktive Ausgabestellen; schon gewählte bleiben wählbar, auch wenn sie inzwischen ruhen
+        gewaehlt = self.instance.ausgabestellen.all() if self.instance.pk else []
+        self.fields["ausgabestellen"].queryset = (
+            Ausgabestelle.objects.filter(aktiv=True)
+            | Ausgabestelle.objects.filter(pk__in=[s.pk for s in gewaehlt])
+        ).distinct().order_by("name")  # fmt: skip
 
 
 class SchliesszeitForm(forms.ModelForm):
