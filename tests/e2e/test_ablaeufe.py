@@ -800,6 +800,35 @@ def test_haushalt_bearbeiten_speichert_sofort(angemeldet, admin):
     assert Haushalt.objects.get(kundennummer="00043").ort == "Musterstadt"
 
 
+def test_ausgabestelle_zeilen_speichern_sofort(angemeldet, admin):
+    """Zeilentabelle ohne Speichern-Knopf: neue Zeile nur einmal, Entfernen wirkt (ADR 0145)."""
+    from apps.kunden.models import AusgabestelleZeit
+
+    stelle = Ausgabestelle.objects.create(name="Mitte")
+    seite = angemeldet(admin)
+    seite.goto(reverse("kunden:ausgabestelle_bearbeiten", args=[stelle.pk]))
+    expect(seite.get_by_role("button", name="Speichern")).to_be_hidden()
+    zeilen = seite.locator("#zeilen-zeiten tr")
+    expect(zeilen).to_have_count(3)
+    seite.select_option("#id_z-0-wochentag", index=1)
+    seite.fill("#id_z-0-von", "10:00")
+    seite.fill("#id_z-0-bis", "12:00")
+    seite.locator("#id_z-0-bis").press("Tab")
+    expect(zeilen).to_have_count(4)  # gespeichert: eine freie Zeile kam dazu
+    assert AusgabestelleZeit.objects.filter(ausgabestelle=stelle).count() == 1
+    # dieselbe Zeile weiter ändern: kein zweiter Eintrag
+    hinweis = seite.locator("#id_z-0-hinweis")
+    hinweis.fill("nur gerade Wochen")
+    hinweis.press("Tab")
+    expect(seite.locator("td", has=hinweis).locator(".autosave-ok")).to_be_visible()
+    zeit = AusgabestelleZeit.objects.get(ausgabestelle=stelle)
+    assert zeit.hinweis == "nur gerade Wochen"
+    # entfernen: die Tabelle wird neu aufgebaut, die Zeile ist weg
+    seite.locator("#id_z-0-DELETE").check()
+    expect(zeilen).to_have_count(3)
+    assert not AusgabestelleZeit.objects.filter(ausgabestelle=stelle).exists()
+
+
 def test_einstellungen_speichern_sofort(angemeldet, admin):
     """Einstellungen ohne Speichern-Knopf: jede Änderung gleich gespeichert, Fehler am Feld."""
     from apps.kunden.models import KundenEinstellungen

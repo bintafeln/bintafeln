@@ -87,11 +87,51 @@
               if (ersatz) alt.innerHTML = ersatz.innerHTML;
             });
             if (feld.type === "file") feld.value = "";  // nicht beim nächsten Mal erneut hochladen
+            return zeilenAbgleichen(feld);
           }
         });
       }).catch(function () {
         hinweis(feld, "Nicht gespeichert – keine Verbindung. Bitte erneut versuchen.", true);
       });
+    }
+
+    // Zeilentabellen (Django-Formsets, [data-autosave-zeilen] am <tbody>): Nach dem Speichern hat
+    // eine neue Zeile eine Kennung, und es gibt wieder freie Zeilen. Ohne Abgleich legte das
+    // nächste Speichern die Zeile noch einmal an. Deshalb die Seite frisch holen: Kennungen und
+    // Zähler immer übernehmen, fehlende Zeilen anhängen; die ganze Tabelle nur ersetzen, wenn
+    // niemand darin tippt oder eine Zeile entfernt wurde (dann verschieben sich die Nummern).
+    function zeilenAbgleichen(feld) {
+      var tabellen = formular.querySelectorAll("[data-autosave-zeilen][id]");
+      if (!tabellen.length) return null;
+      return fetch(window.location.href, { credentials: "same-origin" }).then(function (antwort) {
+        return antwort.ok ? antwort.text() : null;
+      }).then(function (html) {
+        if (!html) return;
+        var neu = new DOMParser().parseFromString(html, "text/html");
+        var entfernt = feld.type === "checkbox" && /-DELETE$/.test(feld.name || "");
+        neu.querySelectorAll('input[type="hidden"][name]').forEach(function (h) {
+          if (!/-(TOTAL_FORMS|INITIAL_FORMS|id)$/.test(h.name)) return;
+          var alt = formular.querySelector('input[type="hidden"][name="' + h.name + '"]');
+          if (alt) alt.value = h.value;
+        });
+        tabellen.forEach(function (alt) {
+          var ersatz = neu.getElementById(alt.id);
+          if (!ersatz) return;
+          if (entfernt || !alt.contains(document.activeElement)) {
+            alt.innerHTML = ersatz.innerHTML;
+            return;
+          }
+          // Zeilen, in denen gerade niemand tippt, zeigen den gespeicherten Stand
+          for (var z = 0; z < alt.children.length && z < ersatz.children.length; z++) {
+            if (!alt.children[z].contains(document.activeElement)) {
+              alt.children[z].innerHTML = ersatz.children[z].innerHTML;
+            }
+          }
+          for (var i = alt.children.length; i < ersatz.children.length; i++) {
+            alt.appendChild(document.importNode(ersatz.children[i], true));
+          }
+        });
+      }).catch(function () { /* beim nächsten Speichern wieder */ });
     }
 
     var zeit = null, offen = null;
