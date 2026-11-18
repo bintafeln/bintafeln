@@ -18,8 +18,6 @@
   var GRUPPEN = [
     ["Schrift", [["bold", "F", "Fett"], ["italic", "K", "Kursiv"], ["underline", "U", "Unterstrichen"],
                  ["h2", "Überschrift", "Überschrift"], ["p", "Absatz", "Normaler Absatz"]]],
-    ["Größe", [["klein", "klein", "Kleine Schrift"], ["normal", "normal", "Normale Schrift"],
-               ["gross", "groß", "Große Schrift"]], true],
     ["Ausrichtung", [["justifyLeft", "Links", "Linksbündig"], ["justifyCenter", "Mitte", "Zentriert"],
                      ["justifyRight", "Rechts", "Rechtsbündig"], ["justifyFull", "Blocksatz", "Blocksatz"]]],
     ["Liste", [["insertUnorderedList", "• Liste", "Aufzählung"],
@@ -31,7 +29,11 @@
   ];
   var FARBEN = {farbe: "#c1121f", markieren: "#fff3a3", kasten: "#fdf3d8"};
   var KASTEN = "padding:12px 16px;border-radius:8px;margin:8px 0;background-color:";
-  var GROESSEN = {klein: "2", normal: "3", gross: "5"}; // execCommand: small, medium, x-large
+  // Schriftgröße als Auswahl in der Leiste: [Stufe für execCommand, Aufschrift]; mit styleWithCSS
+  // wird daraus font-size: x-small … xx-large (so versteht es auch der PDF-Druck)
+  var GROESSEN = [["1", "sehr klein"], ["2", "klein"], ["3", "normal"], ["4", "etwas größer"],
+                  ["5", "groß"], ["6", "sehr groß"]];
+  var BLOCK = "p, div, li, h1, h2, h3, h4, blockquote, td, th";
   var TYP = "application/x-bintafeln-platzhalter";
   var editoren = {}; // id des Textfelds -> Funktion, die einen Platzhalter einfügt
 
@@ -113,12 +115,12 @@
       s.addRange(gemerkt);
     }
 
-    // Seltenes (Größe, Farben, Format weg) im aufklappbaren Menü „Mehr“, damit die Leiste ruhig bleibt
+    // Seltenes (Farben, Format weg) im aufklappbaren Menü „Mehr“, damit die Leiste ruhig bleibt
     var mehr = document.createElement("details");
     mehr.className = "editor-mehr";
     var mehrTitel = document.createElement("summary");
     mehrTitel.textContent = "Mehr";
-    mehrTitel.title = "Schriftgröße, Farben, Kasten, Format entfernen";
+    mehrTitel.title = "Farben, Kasten, Format entfernen";
     mehrTitel.addEventListener("mousedown", function (e) { e.preventDefault(); }); // Auswahl behalten
     var mehrInhalt = document.createElement("div");
     mehrInhalt.className = "editor-mehr-inhalt";
@@ -171,6 +173,41 @@
       if (!gruppe.children.length) return; // alle Knöpfe ausgeblendet
       (g[2] ? mehrInhalt : leiste).appendChild(gruppe);
     });
+    // Schriftgröße: Auswahl gleich neben „Schrift“. Mit markiertem Text gilt sie für die
+    // Markierung, ohne Markierung für die ganze Zeile, in der die Schreibmarke steht.
+    if (ohne.indexOf("groesse") < 0) {
+      var groesse = document.createElement("div");
+      groesse.className = "editor-gruppe";
+      groesse.setAttribute("role", "group");
+      groesse.setAttribute("aria-label", "Größe");
+      var wahlGroesse = document.createElement("select");
+      wahlGroesse.className = "editor-groesse";
+      wahlGroesse.title = "Schriftgröße der Markierung – ohne Markierung der ganzen Zeile";
+      wahlGroesse.setAttribute("aria-label", "Schriftgröße");
+      var leer = document.createElement("option");
+      leer.value = "";
+      leer.textContent = "Schriftgröße";
+      wahlGroesse.appendChild(leer);
+      GROESSEN.forEach(function (g) {
+        var o = document.createElement("option");
+        o.value = g[0];
+        o.textContent = g[1];
+        wahlGroesse.appendChild(o);
+      });
+      wahlGroesse.addEventListener("pointerdown", merken);
+      wahlGroesse.addEventListener("focus", merken);
+      wahlGroesse.addEventListener("change", function () {
+        var stufe = wahlGroesse.value;
+        wahlGroesse.value = "";  // zeigt wieder „Schriftgröße“: die Auswahl ist ein Befehl
+        if (!stufe) return;
+        zurueck();
+        zeileWaehlen();
+        befehl("fontSize", stufe);
+      });
+      groesse.appendChild(wahlGroesse);
+      var nachSchrift = leiste.querySelector('.editor-gruppe[aria-label="Schrift"]');
+      leiste.insertBefore(groesse, nachSchrift ? nachSchrift.nextSibling : leiste.firstChild);
+    }
     if (mehrInhalt.children.length) leiste.appendChild(mehr);
 
     // Knopf „Grafik“ (ADR 0138): eigene Bilder auswählen oder hochladen, Größe wählen, entfernen.
@@ -411,6 +448,19 @@
       feld.value = kopie.innerHTML;
     }
 
+    // Ohne Markierung die Zeile (den Absatz) wählen, in der die Schreibmarke steht
+    function zeileWaehlen() {
+      var s = window.getSelection();
+      if (!s.rangeCount || !s.isCollapsed || !flaeche.contains(s.anchorNode)) return;
+      var knoten = s.anchorNode.nodeType === 1 ? s.anchorNode : s.anchorNode.parentElement;
+      var zeile = knoten && knoten.closest(BLOCK);
+      if (!zeile || !flaeche.contains(zeile) || zeile === flaeche) zeile = flaeche;
+      var bereich = document.createRange();
+      bereich.selectNodeContents(zeile);
+      s.removeAllRanges();
+      s.addRange(bereich);
+    }
+
     function befehl(name, wert) {
       flaeche.focus();
       document.execCommand("styleWithCSS", false, true);
@@ -449,7 +499,6 @@
       if (name === "markieren") return befehl("hiliteColor", FARBEN.markieren);
       if (name === "kasten") return kasten(ausFarbfeld);
       if (name === "h2" || name === "p") return befehl("formatBlock", "<" + name + ">");
-      if (GROESSEN[name]) return befehl("fontSize", GROESSEN[name]);
       if (name === "link") {
         var url = window.prompt("Adresse des Links (https://…)", "https://");
         if (url && /^(https?:|mailto:|tel:)/i.test(url)) befehl("createLink", url);
