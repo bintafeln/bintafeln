@@ -29,7 +29,7 @@
 {% if darf %}
 <section class="karte">
   <h2>Bearbeiten</h2>
-  <form method="post">
+  <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular.html" with form=bearbeiten %}
     <button type="submit" name="aendern" value="1" class="knopf">Speichern</button>

@@ -6,13 +6,13 @@
   <h1>{% if s.pk %}Spende bearbeiten{% else %}Spende erfassen{% endif %}</h1>
   <p class="hinweis">Geldspende: Betrag und Zahlungsweg. Sachspende: was genau (mit Zustand), Menge und, falls eine
     Zuwendungsbestätigung gewünscht ist, der Wert und die Herkunft.</p>
-  <form method="post">
+  <form method="post"{% if s.pk %} data-autosave{% endif %}>
     {% csrf_token %}
     {% include "includes/formular_abschnitte.html" %}
     <div class="aktionsleiste">
-      <button type="submit" class="knopf">Speichern</button>
+      <button type="submit" class="knopf">{% if s.pk %}Speichern{% else %}Anlegen{% endif %}</button>
       {% if not s.pk %}<button type="submit" name="weiter" value="1" class="knopf knopf-zweitrangig">Speichern und nächste Spende</button>{% endif %}
-      <a class="knopf knopf-abbrechen" href="{% url 'spenden:liste' %}">Abbrechen</a>
+      <a class="knopf knopf-abbrechen" href="{% url 'spenden:liste' %}">{% if s.pk %}Zurück{% else %}Abbrechen{% endif %}</a>
     </div>
   </form>
   {% if s.pk %}

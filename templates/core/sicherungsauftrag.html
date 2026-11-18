@@ -7,12 +7,12 @@
   {% if a.standard %}<p class="hinweis">Dieser Auftrag sichert in den Sicherungsordner des Servers. Dorthin sichern auch
     „./betrieb sichern“ und das Update, und von dort stellt „./betrieb wiederherstellen“ wieder her. Er lässt sich
     deshalb nicht löschen, aber ausschalten.</p>{% endif %}
-  <form method="post">
+  <form method="post"{% if a.pk %} data-autosave{% endif %}>
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <div class="aktionsleiste">
-      <button type="submit" class="knopf">Speichern</button>
-      <a class="knopf knopf-abbrechen" href="{% url 'core:sicherungen' %}">Abbrechen</a>
+      <button type="submit" class="knopf">{% if a.pk %}Speichern{% else %}Anlegen{% endif %}</button>
+      <a class="knopf knopf-abbrechen" href="{% url 'core:sicherungen' %}">{% if a.pk %}Zurück{% else %}Abbrechen{% endif %}</a>
     </div>
   </form>
   {% if a.pk and not a.standard %}

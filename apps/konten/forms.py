@@ -210,6 +210,9 @@ class MitarbeiterForm(forms.ModelForm):
 
         super().__init__(*args, **kwargs)
         self.verwalter = verwalter
+        # Die Seite speichert sofort (ADR 0145); ein halb getippter Benutzername darf nicht
+        # gespeichert werden, deshalb erst beim Verlassen des Feldes
+        self.fields["username"].widget.attrs["data-autosave-spaet"] = ""
         self.fields["ausgabetage"].choices = [(t, t) for t in WOCHENTAGE]
         self.initial["ausgabetage"] = [
             t.strip() for t in (self.instance.ausgabetage or "").split(",") if t.strip()

@@ -4,7 +4,7 @@
 <section class="karte">
   <p><a href="{{ zurueck }}">← {{ a.stelle }}</a></p>
   <h1>Aufgabe: {{ a }}</h1>
-  <form method="post">
+  <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <button type="submit" class="knopf">Speichern</button>

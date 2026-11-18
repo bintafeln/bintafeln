@@ -29,7 +29,7 @@
 </section>
 <section class="karte">
   <h2>Aufbewahrung</h2>
-  <form method="post">
+  <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <button type="submit" class="knopf">Speichern</button>

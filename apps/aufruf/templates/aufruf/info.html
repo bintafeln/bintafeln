@@ -4,12 +4,12 @@
 <section class="karte breit">
   <p><a href="{% url 'aufruf:einstellungen' %}">← Aufruf, Monitor und Kiosk</a></p>
   <h1>{% if info %}Info „{{ info.titel }}“{% else %}Neue Info für den Monitor{% endif %}</h1>
-  <form method="post" enctype="multipart/form-data">
+  <form method="post" enctype="multipart/form-data"{% if info %} data-autosave{% endif %}>
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <div class="aktionsleiste">
-      <button type="submit" class="knopf">Speichern</button>
-      <a href="{% url 'aufruf:einstellungen' %}" class="knopf knopf-abbrechen">Abbrechen</a>
+      <button type="submit" class="knopf">{% if info %}Speichern{% else %}Anlegen{% endif %}</button>
+      <a href="{% url 'aufruf:einstellungen' %}" class="knopf knopf-abbrechen">{% if info %}Zurück{% else %}Abbrechen{% endif %}</a>
     </div>
   </form>
   {% if info %}

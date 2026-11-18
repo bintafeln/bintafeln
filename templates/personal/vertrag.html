@@ -4,7 +4,7 @@
 <section class="karte">
   <p><a href="{% url 'personal:person' p.pk %}?jahr={{ v.beginn|date:'Y' }}">← {{ p }}</a></p>
   <h1>{{ v }}</h1>
-  <form method="post" class="vertrag-formular">
+  <form method="post" class="vertrag-formular" data-autosave>
     {% csrf_token %}
     {% if form.non_field_errors %}<div class="fehler" role="alert">{% for fehler in form.non_field_errors %}<p>{{ fehler }}</p>{% endfor %}</div>{% endif %}
     <div class="reihe">

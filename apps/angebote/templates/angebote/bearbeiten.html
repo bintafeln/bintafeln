@@ -4,12 +4,12 @@
 <section class="karte">
   <p><a href="{% if angebot %}{% url 'angebote:angebot' angebot.pk %}{% else %}{% url 'angebote:liste' %}{% endif %}">← zurück</a></p>
   <h1>{% if angebot %}{{ angebot }} bearbeiten{% else %}Neues Angebot{% endif %}</h1>
-  <form method="post">
+  <form method="post"{% if angebot %} data-autosave{% endif %}>
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <p class="hinweis">Beispiel: 12 Plätze, höchstens 20 Interessierte. Sind 20 eingetragen, schließt die Liste am
       Einlass von selbst.</p>
-    <button type="submit" class="knopf">Speichern</button>
+    <button type="submit" class="knopf">{% if angebot %}Speichern{% else %}Anlegen{% endif %}</button>
   </form>
 </section>
 {% endblock %}

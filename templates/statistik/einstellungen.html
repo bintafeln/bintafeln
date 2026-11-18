@@ -7,7 +7,7 @@
   <p class="hinweis">Hier legt die Tafel fest, welche Diagramme auf der Statistik-Seite und im
     PDF-Jahresbericht erscheinen. Abgewählte Diagramme werden nirgends mehr angezeigt; die Wahl
     gilt für die ganze Tafel. Die Kennzahlen oben auf der Seite bleiben immer sichtbar.</p>
-  <form method="post">
+  <form method="post" data-autosave>
     {% csrf_token %}
     <div class="spalten-haken">
       {% for schluessel, name, an in diagramme %}

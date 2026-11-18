@@ -9,7 +9,7 @@
   <p class="hinweis">Die Ausgabestellen stehen meist schon im Export; dann bleibt das Feld leer.
     Die Einkommensarten-Nummern finden Sie in der Konfiguration des bisherigen Programms. Was hier fehlt, bleibt
     beim Import einfach leer.</p>
-  <form method="post">
+  <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular.html" %}
     <button type="submit" class="knopf">Speichern</button>
