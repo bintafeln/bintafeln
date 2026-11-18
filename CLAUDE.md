@@ -236,6 +236,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `pk`, beim Neuanlegen bleibt der Knopf und heißt „Anlegen“; Felder, die halb getippt Schaden
   anrichten (Kundennummer), bekommen `data-autosave-spaet`; ändert das Speichern die Adresse der
   Seite, `data-autosave-folgen`. Knöpfe mit eigener Aktion und Löschen bleiben Knöpfe.
+  Zeilentabellen (Formsets) auf solchen Seiten: `<tbody id="…" data-autosave-zeilen>`, sonst legt
+  das nächste Speichern neue Zeilen doppelt an.
 - Menü links: Einträge je Rolle in `apps/core/menue.py` (neue Seiten dort eintragen statt
   Links in die Seiten zu setzen). Alles Einstellungsartige unter „Einstellungen“, jede Adresse
   nur einmal (`tests/test_menue.py`); Fahrdienst und Dienstplan unter „Dienstpläne“.

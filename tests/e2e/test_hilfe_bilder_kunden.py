@@ -269,7 +269,6 @@ def test_hilfe_bild_ausgabestellen(angemeldet, admin, muster):
     aufnehmen(seite, "ausgabestellen-bearbeiten", [zeiten, kontakte],
               Marke(zeiten.locator("tbody tr").nth(2), "rahmen", 1),
               Marke(kontakte.locator("tbody tr").first.locator("select").nth(1), "rahmen", 2),
-              Marke(seite.get_by_role("button", name="Speichern"), "rahmen", 3),
               rand=8)  # fmt: skip
 
 
