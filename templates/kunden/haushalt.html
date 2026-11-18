@@ -180,7 +180,7 @@
   <p>Kontostand: <strong>{{ h.kontostand|default_if_none:0|floatformat:2 }} €</strong></p>
   <div class="tabelle-rahmen">
   <table class="tabelle">
-    <thead><tr><th>Datum</th><th>Art</th><th>Soll</th><th>Haben</th><th>davon bar</th><th>Anmerkung</th><th>Eingetragen von</th></tr></thead>
+    <thead><tr><th>Datum</th><th>Art</th><th>Soll</th><th>Haben</th><th>davon bar</th><th>Anmerkung</th><th>Eingetragen von</th>{% if "konto.buchung_aendern" in rechte %}<th>Aktion</th>{% endif %}</tr></thead>
     <tbody>
     {% for b in buchungen %}
       <tr>
@@ -191,9 +191,18 @@
         <td data-titel="davon bar">{{ b.bar|floatformat:2 }} €</td>
         <td data-titel="Anmerkung">{{ b.bemerkung|default:"–" }}</td>
         <td data-titel="Eingetragen von">{{ b.eingetragen_von|default:"–" }}</td>
+        {% if "konto.buchung_aendern" in rechte %}
+        <td data-titel="Aktion">
+          <a href="{% url 'ausgabe:buchung' b.pk %}">ändern</a>
+          <form method="post" action="{% url 'ausgabe:buchung_loeschen' b.pk %}" class="inline"
+                onsubmit="return confirm('Diese Buchung löschen? Der Kontostand wird so, als hätte es sie nie gegeben.{% if b.abholung_id %} Die Abholung selbst bleibt eingetragen.{% endif %}')">
+            {% csrf_token %}<button type="submit" class="link-knopf">löschen</button>
+          </form>
+        </td>
+        {% endif %}
       </tr>
     {% empty %}
-      <tr><td colspan="7">Noch keine Buchungen in bintafeln. Der Kontostand stammt aus dem Import.</td></tr>
+      <tr><td colspan="8">Noch keine Buchungen in bintafeln. Der Kontostand stammt aus dem Import.</td></tr>
     {% endfor %}
     </tbody>
   </table>

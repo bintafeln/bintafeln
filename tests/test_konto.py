@@ -385,7 +385,7 @@ def test_empfang_einzahlung_und_vorschlag(ausgabe, haushalt, recht_geben, monkey
     assert stand(haushalt) == D("6.00") and not Buchung.objects.exists()
 
     url = reverse("ausgabe:einzahlung", args=["00042"])
-    assert "Betrag größer als 0" in ausgabe.post(url, {"betrag": "abc"}, **HX).content.decode()
+    assert "Betrag ungleich 0" in ausgabe.post(url, {"betrag": "abc"}, **HX).content.decode()
     inhalt = ausgabe.post(url, {"betrag": "10,00"}, **HX).content.decode()
     assert "Einzahlung von 10,00 € gebucht. Bar erhalten: 10,00 €. Kontostand jetzt: 16,00 €." in (
         inhalt

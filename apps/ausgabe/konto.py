@@ -306,8 +306,9 @@ def abgleiche_nachrechnen(von: str = "", sekunden: float | None = None) -> dict:
 
 @transaction.atomic
 def einzahlen(haushalt, betrag, stelle, von, bemerkung="") -> Buchung:
-    if betrag is None or betrag <= 0:
-        raise KontoFehler("Bitte einen Betrag größer als 0 angeben.")
+    """Zahlung ohne Abholung. Mit Minus eine Auszahlung: Geld geht bar zurück an den Kunden."""
+    if not betrag:
+        raise KontoFehler("Bitte einen Betrag ungleich 0 angeben (mit Minus für eine Auszahlung).")
     return _buchen(
         _gesperrt(haushalt),
         art=Buchung.Art.EINZAHLUNG,
@@ -334,6 +335,26 @@ def korrigieren(haushalt, betrag, begruendung, von) -> Buchung:
         bemerkung=begruendung.strip()[:200],
         eingetragen_von=von,
     )
+
+
+AENDERBAR = ("soll", "haben", "bar", "ausgabestelle", "bemerkung")
+
+
+@transaction.atomic
+def aendern(buchung: Buchung, **felder) -> Buchung:
+    """Ändert eine einzelne Buchung und zieht den Kontostand um den Unterschied nach."""
+    fremd = set(felder) - set(AENDERBAR)
+    if fremd:
+        raise KontoFehler(f"Nicht änderbar: {', '.join(sorted(fremd))}.")
+    vorher = buchung.wirkung
+    for name, wert in felder.items():
+        setattr(buchung, name, wert)
+    buchung.save(update_fields=list(felder))
+    if buchung.haushalt_id and buchung.wirkung != vorher:
+        h = _gesperrt(buchung.haushalt)
+        h.kontostand = (h.kontostand or NULL) + buchung.wirkung - vorher
+        h.save(update_fields=["kontostand"])
+    return buchung
 
 
 @transaction.atomic

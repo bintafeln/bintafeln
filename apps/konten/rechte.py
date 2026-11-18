@@ -47,6 +47,9 @@ KATALOG = [
     Recht("kasse.sehen", EINLASS, "Kasse und Kassenbericht ansehen"),
     Recht("kasse.einzelbuchungen", EINLASS, "In der Kasse Einzelbuchungen mit Kundennummer sehen"),
     Recht("konto.korrektur", EINLASS, "Kundenkonto korrigieren"),
+    Recht("konto.buchung_aendern", EINLASS, "Einzelne Buchungen im Kundenkonto ändern und löschen",
+          "Jede Buchung, auch von früheren Tagen; der Kontostand zieht nach. Die Änderung steht "
+          "im Änderungsprotokoll."),
     Recht("sonderaktionen.verwalten", EINLASS, "Sonderaktionen anlegen, ändern und auswerten"),
     # Kunden
     Recht("kunden.liste", KUNDEN, "Kundenliste und Suche"),

@@ -145,7 +145,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Ausgabestellen; welche zählt: `models.stelle_von()`);
   Ampel-Regeln als reine Funktion in `apps/ausgabe/ampel.py`,
   Einstellungen in `AusgabeEinstellungen`; Kundenkonto nur über `apps/ausgabe/konto.py`
-  buchen, nie `Haushalt.kontostand` direkt ändern, ADR 0014; importierte Tageslisten (auch „Besuche & Konto nachtragen“) bucht
+  buchen, nie `Haushalt.kontostand` direkt ändern, ADR 0014; einzelne Buchungen ändern/löschen nur über
+  `konto.aendern()`/`korrekturen.zuruecknehmen()` (Recht `konto.buchung_aendern`); Zahlung ohne Abholung mit Minus = Auszahlung; importierte Tageslisten (auch „Besuche & Konto nachtragen“) bucht
   `konto.zahlungen_aus_kontostand()` (gezahlt = Kosten nach Beitragsregel + Kontostand danach − vorher,
   alte Abgleich-Korrekturen über `konto.abgleiche_nachrechnen()`), `beitrag` ist nie Bargeld; Kasse-Auswertung in
   `apps/ausgabe/kasse.py`; Kamera-Scanner `static/js/kamera_scanner.js` für Felder mit

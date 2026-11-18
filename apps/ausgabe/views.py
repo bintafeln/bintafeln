@@ -17,7 +17,7 @@ from django.views.decorators.http import require_POST
 
 from apps.ausgabe import ampel, kasse, konto, korrekturen, sonderaktionen
 from apps.ausgabe import stelle as stelle_wahl
-from apps.ausgabe.forms import AusgabeEinstellungenForm
+from apps.ausgabe.forms import AusgabeEinstellungenForm, BuchungForm
 from apps.ausgabe.models import (
     AusgabeEinstellungen,
     BeitragsfreierZeitraum,
@@ -401,15 +401,19 @@ def einzahlung(request, kundennummer):
         )
     except (werte.UngueltigerWert, konto.KontoFehler):
         return _zurueck(
-            request, h, "Nicht gebucht: Bitte einen Betrag größer als 0 angeben.", messages.ERROR
+            request,
+            h,
+            "Nicht gebucht: Bitte einen Betrag ungleich 0 angeben (mit Minus für eine Auszahlung).",
+            messages.ERROR,
         )
     h.refresh_from_db()
-    return _zurueck(
-        request,
-        h,
-        f"Einzahlung von {konto.euro(betrag)} gebucht. Bar erhalten: {konto.euro(betrag)}. "
-        f"Kontostand jetzt: {konto.euro(h.kontostand)}.",
-    )
+    if betrag < 0:
+        text = (
+            f"Auszahlung von {konto.euro(-betrag)} gebucht. Bar ausgezahlt: {konto.euro(-betrag)}. "
+        )
+    else:
+        text = f"Einzahlung von {konto.euro(betrag)} gebucht. Bar erhalten: {konto.euro(betrag)}. "
+    return _zurueck(request, h, f"{text}Kontostand jetzt: {konto.euro(h.kontostand)}.")
 
 
 @require_POST
@@ -442,6 +446,42 @@ def korrektur(request, kundennummer):
         messages.error(request, f"Nicht gebucht: {text}")
     else:
         messages.success(request, "Korrektur gebucht.")
+    return redirect("kunden:haushalt", kundennummer=h.kundennummer)
+
+
+def _buchung(request, pk):
+    """Die Buchung und ihr Haushalt; nur Kunden, die die Person sehen darf (ADR 0034)."""
+    buchung = get_object_or_404(Buchung, pk=pk, haushalt__isnull=False)
+    return buchung, zugang.haushalt(request.user, buchung.haushalt.kundennummer)
+
+
+@rollen.recht_erforderlich("konto.buchung_aendern")
+def buchung_aendern(request, pk):
+    """Eine einzelne Buchung im Kundenkonto ändern; der Kontostand zieht nach."""
+    buchung, h = _buchung(request, pk)
+    form = BuchungForm(request.POST or None, instance=buchung)
+    if request.method == "POST" and form.is_valid():
+        # das Formular hat die Werte schon in die Buchung geschrieben; für den Unterschied zum
+        # Kontostand braucht ``konto.aendern`` den Stand aus der Datenbank
+        konto.aendern(Buchung.objects.get(pk=buchung.pk), **form.cleaned_data)
+        h.refresh_from_db()
+        messages.success(
+            request, f"Buchung geändert. Kontostand jetzt: {konto.euro(h.kontostand or 0)}."
+        )
+        return redirect("kunden:haushalt", kundennummer=h.kundennummer)
+    return render(request, "ausgabe/buchung.html", {"form": form, "buchung": buchung, "h": h})
+
+
+@require_POST
+@rollen.recht_erforderlich("konto.buchung_aendern")
+def buchung_loeschen(request, pk):
+    """Eine einzelne Buchung löschen; der Kontostand wird so, als hätte es sie nie gegeben."""
+    buchung, h = _buchung(request, pk)
+    korrekturen.zuruecknehmen(korrekturen.Art.ZAHLUNG, buchung)
+    h.refresh_from_db()
+    messages.success(
+        request, f"Buchung gelöscht. Kontostand jetzt: {konto.euro(h.kontostand or 0)}."
+    )
     return redirect("kunden:haushalt", kundennummer=h.kundennummer)
 
 

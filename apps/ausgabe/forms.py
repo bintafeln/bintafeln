@@ -4,6 +4,7 @@ from apps.ausgabe.ampel import MELDUNGEN
 from apps.ausgabe.models import (
     AusgabeEinstellungen,
     BeitragsfreierZeitraum,
+    Buchung,
     Schliesszeit,
     Sonderaktion,
     SonderaktionAuswahl,
@@ -100,6 +101,25 @@ class BeitragsfreiForm(forms.ModelForm):
             Ausgabestelle.objects.filter(aktiv=True)
             | Ausgabestelle.objects.filter(pk__in=[s.pk for s in gewaehlt])
         ).distinct().order_by("name")  # fmt: skip
+
+
+class BuchungForm(forms.ModelForm):
+    """Eine einzelne Buchung im Kundenkonto ändern (Recht ``konto.buchung_aendern``)."""
+
+    class Meta:
+        model = Buchung
+        fields = ["soll", "haben", "bar", "ausgabestelle", "bemerkung"]
+        localized_fields = ["soll", "haben", "bar"]  # „3,00“ wie gewohnt
+        help_texts = {
+            "soll": "Belastet das Konto, z. B. der Beitrag einer Abholung.",
+            "haben": "Schreibt dem Konto gut, z. B. eine Zahlung. Kontostand = Haben − Soll.",
+            "bar": "Was davon bar in die Kasse kam (mit Minus: bar ausgezahlt).",
+            "ausgabestelle": "In deren Kasse die Buchung zählt.",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["ausgabestelle"].queryset = Ausgabestelle.objects.order_by("name")
 
 
 class SchliesszeitForm(forms.ModelForm):
