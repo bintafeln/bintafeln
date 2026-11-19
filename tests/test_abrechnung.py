@@ -110,7 +110,7 @@ def test_ausgabestelle_fuehrt_eigene_abrechnung(mitte_client, stellen):
     antwort = posten(mitte_client, mitte, datei=txt)
     assert "Foto (JPG, PNG, WebP) oder ein PDF" in antwort.content.decode()
     antwort = posten(mitte_client, mitte, datum="2026-10-01")
-    assert "nach dem Ende des Abrechnungsmonats" in antwort.content.decode()
+    assert "nach dem Ende des Abrechnungszeitraums" in antwort.content.decode()
     abr = Monatsabrechnung.objects.get(stelle=mitte, monat=MONAT)
     z = ablauf.zahlen(abr)
     assert z["einnahmen_summe"] == D("7.00") and z["ausgaben_summe"] == D("16.50")
@@ -168,6 +168,102 @@ def test_einreichen_pruefen_zurueckgeben(mitte_client, stellen, admin_client):
     assert abr.status == "bestaetigt" and abr.bestaetigt_von and abr.rueckgabe == ""
     assert admin_client.post(reverse("abrechnung:aktion", args=[abr.pk, "quatsch"])
                              ).status_code == 404  # fmt: skip
+
+
+def test_ausgabestelle_nimmt_einreichen_zurueck(mitte_client, stellen, admin_client):
+    """Versehentlich eingereicht: Die Ausgabestelle öffnet selbst wieder, bis das Büro bestätigt."""
+    mitte, nord = stellen
+    posten(mitte_client, mitte)
+    abr = Monatsabrechnung.objects.get(stelle=mitte)
+    zurueck = reverse("abrechnung:aktion", args=[abr.pk, "zuruecknehmen"])
+    assert "schon offen" in mitte_client.post(zurueck, follow=True).content.decode()
+    assert "Einreichen zurücknehmen" not in mitte_client.get(seite(mitte)).content.decode()
+    mitte_client.post(reverse("abrechnung:aktion", args=[abr.pk, "einreichen"]))
+    assert "Einreichen zurücknehmen" in mitte_client.get(seite(mitte)).content.decode()
+    # Das Büro ohne Zuordnung zur Stelle führt sie nicht, eine fremde Stelle auch nicht
+    fremd = Monatsabrechnung.objects.create(stelle=nord, monat=MONAT, status="eingereicht")
+    fremd_url = reverse("abrechnung:aktion", args=[fremd.pk, "zuruecknehmen"])
+    assert mitte_client.post(fremd_url).status_code == 403
+    mitte_client.post(zurueck)
+    abr.refresh_from_db()
+    assert abr.offen and abr.einnahmen == {} and abr.eingereicht_am is None
+    posten(mitte_client, mitte, betrag="3")  # wieder änderbar
+    assert Posten.objects.filter(betrag=D("3")).exists()
+    # Nach der Bestätigung nur noch über das Büro
+    mitte_client.post(reverse("abrechnung:aktion", args=[abr.pk, "einreichen"]))
+    admin_client.post(reverse("abrechnung:aktion", args=[abr.pk, "bestaetigen"]))
+    antwort = mitte_client.post(zurueck, follow=True).content.decode()
+    assert "schon bestätigt" in antwort and "Einreichen zurücknehmen</button>" not in antwort
+    abr.refresh_from_db()
+    assert abr.status == "bestaetigt"
+
+
+def test_abrechnung_ueber_mehrere_monate(mitte_client, stellen, admin_client, pdf_text):
+    mitte, _ = stellen
+    posten(mitte_client, mitte)
+    abr = Monatsabrechnung.objects.get(stelle=mitte)
+    assert abr.monate == 1 and ablauf.zeitraum_name(abr) == "September 2026"
+    assert ablauf.zeitraeume(abr)[1] == (2, "Oktober 2026")
+    # Im Oktober hat die Stelle schon eine offene Abrechnung mit einer Ausgabe
+    mitte_client.post(seite(mitte, dt.date(2026, 10, 1)),
+                      {"datum": "2026-10-05", "betrag": "4", "art": "Müll"})  # fmt: skip
+    assert Monatsabrechnung.objects.filter(stelle=mitte).count() == 2
+    zeitraum = reverse("abrechnung:aktion", args=[abr.pk, "zeitraum"])
+    for falsch in ("0", "7", "x"):
+        assert "1 bis 6 Monate" in mitte_client.post(zeitraum, {"monate": falsch}, follow=True
+                                                     ).content.decode()  # fmt: skip
+    antwort = mitte_client.post(zeitraum, {"monate": "3"}, follow=True).content.decode()
+    assert "Zeitraum: September – November 2026." in antwort
+    abr = Monatsabrechnung.objects.get(stelle=mitte)  # die vom Oktober ist darin aufgegangen
+    assert abr.bis == dt.date(2026, 11, 1) and abr.monate == 3 and abr.posten.count() == 2
+    assert ablauf.zahlen(abr)["einnahmen_summe"] == D("14.00")  # September 7 + Oktober 7
+    # Jeder Monat des Zeitraums führt zu dieser Abrechnung; Ausgaben bis Ende November
+    assert mitte_client.get(seite(mitte, dt.date(2026, 11, 1))).context["abr"] == abr
+    assert Monatsabrechnung.objects.filter(stelle=mitte).count() == 1
+    mitte_client.post(seite(mitte), {"datum": "2026-11-30", "betrag": "6", "art": "Müll"})
+    antwort = mitte_client.post(seite(mitte), {"datum": "2026-12-01", "betrag": "8", "art": "Müll"})
+    assert "nach dem Ende des Abrechnungszeitraums" in antwort.content.decode()
+    assert abr.posten.count() == 3
+    # Kürzen geht nicht vor die letzte Ausgabe
+    antwort = mitte_client.post(zeitraum, {"monate": "1"}, follow=True).content.decode()
+    assert "Es gibt Ausgaben nach September 2026" in antwort
+    # Büro: in jedem Monat des Zeitraums sichtbar, mit Zeitraum; PDF nennt ihn
+    for monat in ("2026-09", "2026-10", "2026-11"):
+        zeile = admin_client.get(reverse("abrechnung:uebersicht"), {"monat": monat}
+                                 ).context["zeilen"][0]  # fmt: skip
+        assert zeile["abr"] == abr and zeile["zeitraum"] == "September – November 2026"
+    assert admin_client.get(reverse("abrechnung:uebersicht"), {"monat": "2026-12"}
+                            ).context["zeilen"][0]["abr"].pk is None  # fmt: skip
+    assert "September – November 2026" in pdf_text(
+        mitte_client.get(reverse("abrechnung:pdf", args=[abr.pk])))  # fmt: skip
+    assert mitte_client.get(seite(mitte)).context["vor"] == "2026-12"
+    # Eingereicht: Zeitraum fest; ein eingereichter Monat lässt sich nicht dazunehmen
+    mitte_client.post(reverse("abrechnung:aktion", args=[abr.pk, "einreichen"]))
+    assert "Änderungen erst nach" in mitte_client.post(zeitraum, {"monate": "2"}, follow=True
+                                                       ).content.decode()  # fmt: skip
+    august = Monatsabrechnung.objects.create(stelle=mitte, monat=dt.date(2026, 8, 1))
+    antwort = mitte_client.post(reverse("abrechnung:aktion", args=[august.pk, "zeitraum"]),
+                                {"monate": "2"}, follow=True).content.decode()  # fmt: skip
+    assert "schon eine eingereichte Abrechnung" in antwort
+    august.refresh_from_db()
+    assert august.bis is None
+    # Über den Jahreswechsel; mehr als sechs Monate auch durch Zusammenlegen nicht
+    winter = Monatsabrechnung.objects.create(stelle=mitte, monat=dt.date(2027, 1, 1),
+                                             bis=dt.date(2027, 6, 1))  # fmt: skip
+    dezember = Monatsabrechnung.objects.create(stelle=mitte, monat=dt.date(2026, 12, 1))
+    ablauf.zeitraum_aendern(dezember, 1)
+    with pytest.raises(ablauf.AbrechnungFehler, match="1 bis 6 Monate"):
+        ablauf.zeitraum_aendern(dezember, 2)
+    assert Monatsabrechnung.objects.filter(pk=winter.pk).exists()  # nichts verloren
+    winter.bis = dt.date(2027, 2, 1)
+    winter.save()
+    ablauf.zeitraum_aendern(dezember, 2)
+    dezember.refresh_from_db()
+    assert ablauf.zeitraum_name(dezember) == "Dezember 2026 – Februar 2027"
+    # Aufbewahrung zählt ab dem Jahr des letzten Monats
+    AbrechnungEinstellungen.objects.update_or_create(pk=1, defaults={"aufbewahrung_jahre": 1})
+    ablauf.fristen_anwenden(dt.date(2028, 3, 1))
+    assert list(Monatsabrechnung.objects.values_list("pk", flat=True)) == [dezember.pk]
 
 
 def test_pdf_und_zip(mitte_client, stellen, admin_client, pdf_text):

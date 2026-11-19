@@ -7,7 +7,7 @@ import zipfile
 from decimal import Decimal
 
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.utils import timezone
 
 from apps.abrechnung.models import AbrechnungEinstellungen, Monatsabrechnung, Posten
@@ -88,17 +88,44 @@ def monatsname(monat: dt.date) -> str:
     return f"{MONATE[monat.month - 1]} {monat.year}"
 
 
+HOECHSTENS = 6  # so viele Monate darf eine Abrechnung umfassen
+
+
+def zeitraum_name(abr: Monatsabrechnung) -> str:
+    """„September 2026“, „September – November 2026“ oder „November 2025 – Januar 2026“."""
+    if abr.ende == abr.monat:
+        return monatsname(abr.monat)
+    if abr.ende.year == abr.monat.year:
+        return f"{MONATE[abr.monat.month - 1]} – {monatsname(abr.ende)}"
+    return f"{monatsname(abr.monat)} – {monatsname(abr.ende)}"
+
+
+def im_monat(monat: dt.date):
+    """Abrechnungen, deren Zeitraum den Monat enthält."""
+    monat = monatsanfang(monat)
+    return Monatsabrechnung.objects.filter(Q(monat=monat) | Q(monat__lt=monat, bis__gte=monat))
+
+
 def holen(stelle, monat: dt.date) -> Monatsabrechnung:
+    """Die Abrechnung der Stelle, in deren Zeitraum der Monat liegt; sonst eine neue für ihn."""
+    vorhanden = im_monat(monat).filter(stelle=stelle).first()
+    if vorhanden:
+        return vorhanden
     abr, _ = Monatsabrechnung.objects.get_or_create(stelle=stelle, monat=monatsanfang(monat))
     return abr
+
+
+def zeitraeume(abr: Monatsabrechnung) -> list[tuple[int, str]]:
+    """Auswahl „bis einschließlich …“: (Anzahl Monate, Name des letzten Monats)."""
+    return [(n, monatsname(verschieben(abr.monat, n - 1))) for n in range(1, HOECHSTENS + 1)]
 
 
 # --- Zahlen ---
 
 
-def _kasse(stelle, monat: dt.date) -> dict:
-    buchungen = Buchung.objects.filter(ausgabestelle=stelle, datum__gte=monat,
-                                       datum__lte=monatsende(monat))  # fmt: skip
+def _kasse(abr: Monatsabrechnung) -> dict:
+    buchungen = Buchung.objects.filter(ausgabestelle=abr.stelle, datum__gte=abr.monat,
+                                       datum__lte=monatsende(abr.ende))  # fmt: skip
     return kasse.summe(buchungen)
 
 
@@ -106,7 +133,7 @@ def einnahmen(abr: Monatsabrechnung) -> dict:
     """Kennzahlen der Kasse: festgehalten, sobald eingereicht, sonst aktuell gerechnet."""
     if not abr.offen and abr.einnahmen:
         return {k: (Decimal(v) if k != "abholungen" else int(v)) for k, v in abr.einnahmen.items()}
-    return _kasse(abr.stelle, abr.monat)
+    return _kasse(abr)
 
 
 def ausgaben_summe(abr: Monatsabrechnung) -> Decimal:
@@ -138,8 +165,8 @@ def posten_anlegen(abr, daten: dict, datei, benutzer) -> Posten:
     """Neue Ausgabe; die Quittung (Foto oder PDF) wird verschlüsselt gespeichert."""
     if not abr.offen:
         raise AbrechnungFehler("Die Abrechnung ist eingereicht; Änderungen erst nach Rückgabe.")
-    if daten["datum"] > monatsende(abr.monat):
-        raise AbrechnungFehler("Das Datum liegt nach dem Ende des Abrechnungsmonats.")
+    if daten["datum"] > monatsende(abr.ende):
+        raise AbrechnungFehler("Das Datum liegt nach dem Ende des Abrechnungszeitraums.")
     posten = Posten(abrechnung=abr, eingetragen_von=benutzer.get_username(), **daten)
     if datei:
         posten.quittung = privatdateien.speichern(Posten.ORDNER, datei, max_mb=10)
@@ -160,10 +187,59 @@ def einreichen(abr, benutzer, anmerkung="") -> None:
         abr = _sperren(abr)
         if not abr.offen:
             raise AbrechnungFehler("Die Abrechnung ist schon eingereicht.")
-        abr.einnahmen = {k: str(v) for k, v in _kasse(abr.stelle, abr.monat).items()}
+        abr.einnahmen = {k: str(v) for k, v in _kasse(abr).items()}
         abr.status = Monatsabrechnung.Status.EINGEREICHT
         abr.eingereicht_am, abr.eingereicht_von = timezone.now(), benutzer.get_username()
         abr.anmerkung, abr.rueckgabe = anmerkung.strip(), ""
+        abr.save()
+
+
+def zuruecknehmen(abr) -> None:
+    """Die Ausgabestelle öffnet ihre eingereichte Abrechnung selbst wieder – nur solange das
+    Büro sie nicht bestätigt hat."""
+    with transaction.atomic():
+        abr = _sperren(abr)
+        if abr.status == Monatsabrechnung.Status.BESTAETIGT:
+            raise AbrechnungFehler("Die Abrechnung ist schon bestätigt; nur das Büro kann sie "
+                                   "zurückgeben.")  # fmt: skip
+        if abr.offen:
+            raise AbrechnungFehler("Die Abrechnung ist schon offen.")
+        abr.status, abr.einnahmen = Monatsabrechnung.Status.OFFEN, {}
+        abr.eingereicht_am, abr.eingereicht_von = None, ""
+        abr.save()
+
+
+def zeitraum_aendern(abr, monate: int) -> None:
+    """Die offene Abrechnung umfasst ab ihrem ersten Monat ``monate`` Monate (1 bis 6). Offene
+    Abrechnungen der dazugenommenen Monate gehen mit ihren Ausgaben in dieser auf."""
+    if not 1 <= monate <= HOECHSTENS:
+        raise AbrechnungFehler(f"Eine Abrechnung umfasst 1 bis {HOECHSTENS} Monate.")
+    with transaction.atomic():
+        abr = _sperren(abr)
+        if not abr.offen:
+            raise AbrechnungFehler("Die Abrechnung ist eingereicht; Änderungen erst nach "
+                                   "Rückgabe.")  # fmt: skip
+        ende = verschieben(abr.monat, monate - 1)
+        spaeter = abr.posten.filter(datum__gt=monatsende(ende)).count()
+        if spaeter:
+            raise AbrechnungFehler(
+                f"Es gibt Ausgaben nach {monatsname(ende)}; der Zeitraum lässt sich nicht "
+                "davor beenden."
+            )
+        andere = list(Monatsabrechnung.objects.select_for_update().filter(
+            stelle=abr.stelle, monat__gt=abr.monat, monat__lte=ende))  # fmt: skip
+        fest = [a for a in andere if not a.offen]
+        if fest:
+            raise AbrechnungFehler(
+                f"Für {zeitraum_name(fest[0])} gibt es schon eine eingereichte Abrechnung."
+            )
+        for a in andere:  # offene Abrechnungen der dazugenommenen Monate gehen hier auf
+            ende = max(ende, a.ende)
+            a.posten.update(abrechnung=abr)
+            a.delete()
+        if (ende.year - abr.monat.year) * 12 + ende.month - abr.monat.month >= HOECHSTENS:
+            raise AbrechnungFehler(f"Eine Abrechnung umfasst 1 bis {HOECHSTENS} Monate.")
+        abr.bis = ende if ende != abr.monat else None
         abr.save()
 
 
@@ -221,7 +297,7 @@ def quittungen_zip(abrechnungen) -> tuple[bytes, int]:
 
 def pdf(abr: Monatsabrechnung) -> bytes:
     z = zahlen(abr)
-    doc = Pdf("Abrechnung", f"{abr.stelle.name} · {monatsname(abr.monat)}")
+    doc = Pdf("Abrechnung", f"{abr.stelle.name} · {zeitraum_name(abr)}")
     stand = abr.get_status_display()
     if abr.eingereicht_am:
         stand += f", eingereicht {timezone.localtime(abr.eingereicht_am):%d.%m.%Y} von " \
@@ -259,7 +335,9 @@ def fristen_anwenden(heute: dt.date | None = None) -> int:
     """Löscht Abrechnungen samt Quittungen nach Ablauf der Aufbewahrung (volle Kalenderjahre)."""
     heute = heute or timezone.localdate()
     jahre = AbrechnungEinstellungen.laden().aufbewahrung_jahre
-    alt = Monatsabrechnung.objects.filter(monat__year__lt=heute.year - jahre)
+    grenze = heute.year - jahre  # bei mehreren Monaten zählt das Jahr des letzten Monats
+    alt = Monatsabrechnung.objects.filter(
+        Q(bis__isnull=True, monat__year__lt=grenze) | Q(bis__year__lt=grenze))  # fmt: skip
     anzahl = 0
     for abr in alt:
         for p in abr.posten.all():

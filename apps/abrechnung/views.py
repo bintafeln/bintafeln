@@ -45,7 +45,7 @@ def uebersicht(request):
             return redirect("abrechnung:monat", ziel.pk, f"{monat:%Y-%m}")
         return render(request, "abrechnung/uebersicht.html", {"stellen": stellen,
                       "monat": monat, "zeilen": None})  # fmt: skip
-    vorhanden = {a.stelle_id: a for a in Monatsabrechnung.objects.filter(monat=monat)}
+    vorhanden = {a.stelle_id: a for a in ablauf.im_monat(monat)}
     zeilen = []
     for s in stellen:
         abr = vorhanden.get(s.pk) or Monatsabrechnung(stelle=s, monat=monat)
@@ -53,6 +53,7 @@ def uebersicht(request):
             {
                 "stelle": s,
                 "abr": abr,
+                "zeitraum": ablauf.zeitraum_name(abr) if abr.monate > 1 else "",
                 **ablauf.zahlen(abr),
                 "quittungen": abr.posten.exclude(quittung="").count() if abr.pk else 0,
             }
@@ -73,7 +74,7 @@ def monat(request, stelle, monat):
     form = PostenForm(
         request.POST or None,
         request.FILES or None,
-        initial={"datum": min(timezone.localdate(), ablauf.monatsende(abr.monat))},
+        initial={"datum": min(timezone.localdate(), ablauf.monatsende(abr.ende))},
     )
     if request.method == "POST":
         if not darf_fuehren:
@@ -88,14 +89,15 @@ def monat(request, stelle, monat):
                 messages.success(request, "Ausgabe gespeichert.")
                 return _zur_abrechnung(abr)
     return render(request, "abrechnung/monat.html", {
-        "abr": abr, "stelle": stelle, "name": ablauf.monatsname(abr.monat), "form": form,
+        "abr": abr, "stelle": stelle, "name": ablauf.zeitraum_name(abr), "form": form,
+        "von": ablauf.monatsname(abr.monat), "zeitraeume": ablauf.zeitraeume(abr),
         "z": ablauf.zahlen(abr), "posten": abr.posten.all(), "darf_fuehren": darf_fuehren,
         "quittungen": abr.posten.exclude(quittung="").count(),
         "darf_pruefen": ablauf.darf_pruefen(request.user),
         "einreichen_form": EinreichenForm(initial={"anmerkung": abr.anmerkung}),
         "rueckgabe_form": RueckgabeForm(), "stellen": ablauf.stellen_fuer(request.user),
         "zurueck": f"{ablauf.verschieben(abr.monat, -1):%Y-%m}",
-        "vor": f"{ablauf.verschieben(abr.monat, 1):%Y-%m}",
+        "vor": f"{ablauf.verschieben(abr.ende, 1):%Y-%m}",
     })  # fmt: skip
 
 
@@ -112,6 +114,18 @@ def aktion(request, pk, was):
             form.is_valid()
             ablauf.einreichen(abr, request.user, form.cleaned_data.get("anmerkung", ""))
             messages.success(request, "Abrechnung eingereicht. Das Büro prüft sie.")
+        elif was in ("zuruecknehmen", "zeitraum"):
+            if not ablauf.darf_fuehren(request.user, abr.stelle):
+                raise PermissionDenied
+            if was == "zuruecknehmen":
+                ablauf.zuruecknehmen(abr)
+                messages.success(request, "Die Abrechnung ist wieder offen. Bitte nach den "
+                                          "Änderungen erneut einreichen.")  # fmt: skip
+            else:
+                monate = request.POST.get("monate", "")
+                ablauf.zeitraum_aendern(abr, int(monate) if monate.isdigit() else 0)
+                abr.refresh_from_db()
+                messages.success(request, f"Zeitraum: {ablauf.zeitraum_name(abr)}.")
         elif was in ("bestaetigen", "zurueckgeben"):
             if not ablauf.darf_pruefen(request.user):
                 raise PermissionDenied
@@ -173,7 +187,7 @@ def quittungen(request, monat):
     """ZIP mit allen Quittungen eines Monats, auf Wunsch nur einer Ausgabestelle. Ohne das Recht
     zu prüfen nur für eine eigene Ausgabestelle."""
     beginn = ablauf.monat_lesen(monat, timezone.localdate())
-    abrechnungen = Monatsabrechnung.objects.filter(monat=beginn).select_related("stelle")
+    abrechnungen = ablauf.im_monat(beginn).select_related("stelle")
     if request.GET.get("stelle", "").isdigit():
         stelle = _stelle(request, int(request.GET["stelle"]))
         abrechnungen = abrechnungen.filter(stelle=stelle)

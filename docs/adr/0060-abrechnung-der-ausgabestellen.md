@@ -41,3 +41,15 @@ eine Fehlerquelle. Das Festhalten beim Einreichen macht die Abrechnung prüfbar 
 Löschfristen. Fotos direkt aus dem Browser brauchen keine App und funktionieren auf den Tablets
 am Einlass. Steuerliche Aufbewahrungsfristen hängen vom Verein ab, deshalb ist die Frist
 einstellbar.
+
+## Nachtrag: mehrere Monate, Einreichen zurücknehmen
+
+- Eine Abrechnung kann **einen bis sechs Monate** umfassen (`Monatsabrechnung.bis`, leer = der
+  eine Monat). Die Ausgabestelle wählt den letzten Monat frei, solange die Abrechnung offen ist
+  (`ablauf.zeitraum_aendern()`); offene Abrechnungen der dazugenommenen Monate gehen mit ihren
+  Ausgaben darin auf, eingereichte lassen sich nicht dazunehmen. Jeder Monat des Zeitraums führt
+  zu derselben Abrechnung (`ablauf.holen()`, `ablauf.im_monat()`); Einnahmen, Übersicht des Büros,
+  PDF und ZIP rechnen über den ganzen Zeitraum. Die Aufbewahrung zählt ab dem letzten Monat.
+- Die Ausgabestelle kann ihr **Einreichen selbst zurücknehmen**, solange das Büro nicht bestätigt
+  hat (`ablauf.zuruecknehmen()`); danach bleibt nur die Rückgabe durch das Büro. Grund: Ein
+  versehentlicher Klick auf „Einreichen“ soll niemanden aussperren.
