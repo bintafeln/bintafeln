@@ -177,13 +177,14 @@ def platz(request, datum, aufgabe):
     if tag not in plan.ausgabetage(a.stelle, tag, tag, a.wochentag):
         raise Http404
     zurueck = _link(a.stelle, a.wochentag, tag.replace(day=1))
-    frei = plan.verfuegbar(tag)
+    frei = plan.verfuegbar(tag, a.stelle)
     if request.method == "POST":
         wahl, gast = request.POST.get("helfer", ""), request.POST.get("gast", "").strip()
         neu = get_object_or_404(plan.einteilbare(), pk=wahl) if wahl else None
         if neu is not None and neu not in frei:
             messages.error(request, f"{neu} kann am {tag:%d.%m.%Y} nicht einspringen "
-                                    "(Ausfall gemeldet oder schon eingeteilt).")  # fmt: skip
+                                    "(Ausfall gemeldet oder schon an einer anderen Ausgabestelle "
+                                    "eingeteilt).")  # fmt: skip
             return redirect(request.path)
         plan.ersatz_eintragen(tag, a, neu, request.user.get_username(), gast=gast)
         text = (
@@ -322,10 +323,14 @@ def stelle(request, pk):
             messages.success(request, f"Aufgabe „{a}“ angelegt.")
             return redirect(hier)
         if aktion == "besetzung" and tag:
-            doppelt = _besetzung_speichern(request, ds, tag)
+            doppelt, mehrfach = _besetzung_speichern(request, ds, tag)
             if doppelt:
-                messages.warning(request, "Niemand kann an einem Tag doppelt eingeteilt sein; "
-                                          "übergangen: " + ", ".join(doppelt) + ".")  # fmt: skip
+                messages.warning(request, "Niemand kann an einem Tag an zwei Ausgabestellen "
+                                          "eingeteilt sein; übergangen: " + ", ".join(doppelt)
+                                          + ".")  # fmt: skip
+            if mehrfach:
+                messages.info(request, "Mehrere Aufgaben an diesem Tag: " + "; ".join(mehrfach)
+                              + ".")  # fmt: skip
             messages.success(request, "Feste Besetzung gespeichert.")
             return redirect(hier)
         if aktion == "standard":
@@ -352,10 +357,11 @@ def stelle(request, pk):
     })  # fmt: skip
 
 
-def _besetzung_speichern(request, ds, tag) -> list[str]:
-    """Speichert die feste Besetzung eines Wochentags. Niemand steht an einem Tag doppelt im Plan
-    (weder bei zwei Aufgaben dieser Ausgabestelle noch zugleich an einer anderen); solche
-    Einträge werden übergangen und zurückgemeldet."""
+def _besetzung_speichern(request, ds, tag) -> tuple[list[str], list[str]]:
+    """Speichert die feste Besetzung eines Wochentags. An derselben Ausgabestelle kann eine Person
+    mehrere Aufgaben haben (z. B. Teamleitung und Kasse) – das wird nur gemeldet. An zwei
+    Ausgabestellen zugleich kann niemand stehen; solche Einträge werden übergangen. Rückgabe:
+    (übergangene Einträge, Personen mit mehreren Aufgaben)."""
     gueltig = {str(h.pk): h for h in helfer_aktiv()}
     woanders = {
         b.helfer_id: b.aufgabe.stelle
@@ -363,22 +369,23 @@ def _besetzung_speichern(request, ds, tag) -> list[str]:
         .exclude(aufgabe__stelle=ds)
         .select_related("aufgabe__stelle__ausgabestelle")
     }
-    gesehen, doppelt = set(), []
+    aufgaben_von: dict = {}
+    doppelt = []
     for a in ds.aufgaben.filter(wochentag=tag):
         wahl = request.POST.get(f"h_{a.pk}", "")
         if wahl in gueltig:
             helfer = gueltig[wahl]
-            if helfer.pk in gesehen or helfer.pk in woanders:
-                wo = f"bei {woanders[helfer.pk]}" if helfer.pk in woanders else "an diesem Tag"
-                doppelt.append(f"{helfer} ({a.name}, schon {wo} eingeteilt)")
-                # stand hier schon: sonst bliebe die Person doch doppelt
+            if helfer.pk in woanders:
+                doppelt.append(f"{helfer} ({a.name}, schon bei {woanders[helfer.pk]} eingeteilt)")
+                # stand hier schon: sonst bliebe die Person doch an zwei Ausgabestellen
                 Besetzung.objects.filter(aufgabe=a, helfer=helfer).delete()
                 continue
-            gesehen.add(helfer.pk)
+            aufgaben_von.setdefault(helfer, []).append(a.name or "weitere Zeile")
             Besetzung.objects.update_or_create(aufgabe=a, defaults={"helfer": helfer})
         elif not wahl:
             Besetzung.objects.filter(aufgabe=a).delete()
-    return doppelt
+    mehrfach = [f"{h} ({', '.join(namen)})" for h, namen in aufgaben_von.items() if len(namen) > 1]
+    return doppelt, mehrfach
 
 
 @never_cache
