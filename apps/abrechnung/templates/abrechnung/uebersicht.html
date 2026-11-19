@@ -23,7 +23,7 @@
     <tbody>
       {% for z in zeilen %}
       <tr>
-        <td data-titel="Ausgabestelle"><a href="{% url 'abrechnung:monat' z.stelle.pk monat|date:'Y-m' %}">{{ z.stelle.name }}</a></td>
+        <td data-titel="Ausgabestelle"><a href="{% url 'abrechnung:monat' z.stelle.pk monat|date:'Y-m' %}">{{ z.stelle.name }}</a>{% if z.zeitraum %} <span class="hinweis">({{ z.zeitraum }})</span>{% endif %}</td>
         <td data-titel="Einnahmen bar" class="zahl">{{ z.einnahmen_summe|floatformat:2 }} €</td>
         <td data-titel="Ausgaben" class="zahl">{{ z.ausgaben_summe|floatformat:2 }} €</td>
         <td data-titel="Saldo" class="zahl">{{ z.saldo|floatformat:2 }} €</td>
@@ -37,7 +37,8 @@
   </table>
   </div>
   <p class="hinweis">Einnahmen bar = bar gezahlte Beiträge und Einzahlungen am Einlass der Ausgabestelle (wie in der Kasse).
-    Offene Abrechnungen zeigen den aktuellen Stand, eingereichte den Stand beim Einreichen.</p>
+    Offene Abrechnungen zeigen den aktuellen Stand, eingereichte den Stand beim Einreichen. Umfasst eine Abrechnung
+    mehrere Monate, steht der Zeitraum hinter der Ausgabestelle; die Zahlen gelten dann für den ganzen Zeitraum.</p>
   {% endif %}
 </section>
 {% endblock %}

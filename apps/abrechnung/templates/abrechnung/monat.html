@@ -4,8 +4,8 @@
 <section class="karte breit">
   <h1>Abrechnung {{ stelle.name }} · {{ name }}</h1>
   <div class="aktionsleiste">
-    <a class="knopf knopf-zweitrangig" href="{% url 'abrechnung:monat' stelle.pk zurueck %}">← Vormonat</a>
-    <a class="knopf knopf-zweitrangig" href="{% url 'abrechnung:monat' stelle.pk vor %}">Folgemonat →</a>
+    <a class="knopf knopf-zweitrangig" href="{% url 'abrechnung:monat' stelle.pk zurueck %}">← Davor</a>
+    <a class="knopf knopf-zweitrangig" href="{% url 'abrechnung:monat' stelle.pk vor %}">Danach →</a>
     {% if stellen|length > 1 %}
     <form method="get" class="inline filter" onchange="location.href=this.querySelector('select').value">
       <select aria-label="Ausgabestelle">{% for s in stellen %}<option value="{% url 'abrechnung:monat' s.pk abr.monat|date:'Y-m' %}"{% if s.pk == stelle.pk %} selected{% endif %}>{{ s.name }}</option>{% endfor %}</select>
@@ -16,6 +16,16 @@
     {% if darf_pruefen %}<a class="knopf knopf-zweitrangig" href="{% url 'abrechnung:uebersicht' %}?monat={{ abr.monat|date:'Y-m' }}">Alle Ausgabestellen</a>{% endif %}
   </div>
   <p>Status: {% include "abrechnung/_status.html" %}</p>
+  {% if abr.offen and darf_fuehren %}
+  <form method="post" action="{% url 'abrechnung:aktion' abr.pk 'zeitraum' %}" class="inline filter">
+    {% csrf_token %}
+    <label>Zeitraum der Abrechnung: {{ von }} bis einschließlich
+      <select name="monate" onchange="this.form.submit()">{% for n, monat in zeitraeume %}<option value="{{ n }}"{% if n == abr.monate %} selected{% endif %}>{{ monat }}{% if n > 1 %} ({{ n }} Monate){% endif %}</option>{% endfor %}</select>
+    </label>
+    <noscript><button type="submit" class="knopf knopf-zweitrangig">Zeitraum ändern</button></noscript>
+  </form>
+  <p class="hinweis">Eine Abrechnung kann einen bis sechs Monate umfassen. Für einen anderen ersten Monat mit „← Davor“ oder „Danach →“ dorthin wechseln.</p>
+  {% endif %}
   {% if abr.rueckgabe %}<div class="fehler" role="alert"><p>Vom Büro zurückgegeben: {{ abr.rueckgabe }}</p></div>{% endif %}
   {% if abr.anmerkung %}<p><strong>Anmerkung:</strong> {{ abr.anmerkung|linebreaksbr }}</p>{% endif %}
 
@@ -70,10 +80,18 @@
   </form>
 
   <h2>Abrechnung einreichen</h2>
-  <form method="post" action="{% url 'abrechnung:aktion' abr.pk 'einreichen' %}" onsubmit="return confirm('Abrechnung für {{ name|escapejs }} einreichen? Danach sind keine Änderungen mehr möglich, bis das Büro sie zurückgibt.')">
+  <form method="post" action="{% url 'abrechnung:aktion' abr.pk 'einreichen' %}" onsubmit="return confirm('Abrechnung für {{ name|escapejs }} einreichen? Solange das Büro sie nicht bestätigt hat, können Sie das Einreichen noch zurücknehmen.')">
     {% csrf_token %}
     {% include "includes/formular.html" with form=einreichen_form %}
     <button type="submit" class="knopf">Einreichen</button>
+  </form>
+  {% endif %}
+
+  {% if abr.status == "eingereicht" and darf_fuehren %}
+  <h2>Noch etwas ändern?</h2>
+  <p class="hinweis">Solange das Büro die Abrechnung nicht bestätigt hat, können Sie das Einreichen zurücknehmen, die Abrechnung ändern und danach erneut einreichen.</p>
+  <form method="post" action="{% url 'abrechnung:aktion' abr.pk 'zuruecknehmen' %}">
+    {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">Einreichen zurücknehmen</button>
   </form>
   {% endif %}
 

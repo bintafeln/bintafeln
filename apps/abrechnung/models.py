@@ -1,4 +1,4 @@
-"""Monatsabrechnung je Ausgabestelle (ADR 0060).
+"""Abrechnung je Ausgabestelle über einen bis sechs Monate (ADR 0060).
 
 Einnahmen kommen aus den Kontobuchungen der Ausgabestelle (Kasse, ADR 0014); beim Einreichen
 werden sie in ``einnahmen`` festgehalten, weil Buchungen nach ihrer Frist gelöscht werden.
@@ -62,7 +62,11 @@ class Monatsabrechnung(models.Model):
 
     stelle = models.ForeignKey(Ausgabestelle, on_delete=models.PROTECT, related_name="+",
                                verbose_name="Ausgabestelle")  # fmt: skip
-    monat = models.DateField("Monat", help_text="Immer der Erste des Monats.")
+    monat = models.DateField("Monat", help_text="Immer der Erste des (ersten) Monats.")
+    bis = models.DateField(
+        "Bis Monat", null=True, blank=True,
+        help_text="Erster des letzten Monats, wenn die Abrechnung mehrere Monate umfasst.",
+    )  # fmt: skip
     status = models.CharField("Status", max_length=12, choices=Status.choices,
                               default=Status.OFFEN)  # fmt: skip
     # Kennzahlen der Kasse beim Einreichen (Beträge als Text), leer solange offen
@@ -87,6 +91,15 @@ class Monatsabrechnung(models.Model):
     @property
     def offen(self) -> bool:
         return self.status == self.Status.OFFEN
+
+    @property
+    def ende(self):
+        """Erster des letzten Monats der Abrechnung (ohne ``bis``: der eine Monat)."""
+        return self.bis or self.monat
+
+    @property
+    def monate(self) -> int:
+        return (self.ende.year - self.monat.year) * 12 + self.ende.month - self.monat.month + 1
 
 
 class Posten(models.Model):
