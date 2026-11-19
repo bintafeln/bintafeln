@@ -1,0 +1,22 @@
+{# Karte einer Sonderaktion am Einlass (ADR 0032); erwartet s (aktion, teilnahme, grund, menge, auswahl) und h #}
+<section class="karte sonderaktion">
+  <h2>Sonderaktion: {{ s.aktion }}</h2>
+  {% if s.aktion.beschreibung %}<p class="hinweis">{{ s.aktion.beschreibung }}</p>{% endif %}
+  {% if s.teilnahme %}
+  <p class="sonderaktion-erhalten">✓ Erhalten am {{ s.teilnahme.zeitpunkt|date:"d.m.Y" }}: {{ s.teilnahme.menge }}×{% if s.teilnahme.auswahl %} {{ s.teilnahme.auswahl }}{% endif %}</p>
+  {% url 'ausgabe:teilnahme_zuruecknehmen' s.teilnahme.pk as ziel %}
+  {% include "ausgabe/_zuruecknehmen.html" with art="teilnahme" obj=s.teilnahme ziel=ziel titel="Teilnahme" aufklapp="Teilnahme ist erfolgt: Korrigieren" %}
+  {% elif s.grund %}
+  <p class="hinweis">{{ s.grund }}</p>
+  {% else %}
+  <form method="post" action="{% url 'ausgabe:sonderaktion_eintragen' h.kundennummer s.aktion.pk %}" class="aktionsleiste"
+        hx-post="{% url 'ausgabe:sonderaktion_eintragen' h.kundennummer s.aktion.pk %}" hx-target="#einlass">
+    {% csrf_token %}
+    {% for o in s.auswahl %}
+    <button type="submit" name="auswahl" value="{{ o.pk }}" class="knopf">{{ s.menge }}× {{ o.bezeichnung }}</button>
+    {% empty %}
+    <button type="submit" class="knopf">{{ s.menge }}× ausgeben und eintragen</button>
+    {% endfor %}
+  </form>
+  {% endif %}
+</section>
