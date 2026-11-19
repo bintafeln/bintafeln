@@ -199,19 +199,11 @@ def platz(request, datum, aufgabe):
     })  # fmt: skip
 
 
-@never_cache
 @sehen
 def meine(request):
-    """Eigene Dienste der nächsten vier Wochen und eigene Ausfälle."""
-    heute = timezone.localdate()
-    ich = plan.helfer_von(request.user)
-    return render(request, "dienstplan/meine.html", {
-        "ich": ich, "heute": heute,
-        "dienste": plan.einsaetze(ich, heute, heute + dt.timedelta(days=27)) if ich else [],
-        "ausfaelle": Ausfall.objects.filter(helfer=ich, bis__gte=heute) if ich else [],
-        "darf_melden": plan.darf_selbst_melden(request.user),
-        "planen": rollen.hat_recht(request.user, "dienstplan.planen"),
-    })  # fmt: skip
+    """Früher eine eigene Seite; die eigenen Dienste stehen jetzt mit allen anderen Einsätzen auf
+    „Meine Einsätze“ (``modul.meine_einsaetze``)."""
+    return redirect(reverse("core:meine_einsaetze") + "#einsaetze-ausgabe")
 
 
 @never_cache
@@ -237,10 +229,10 @@ def ausfall(request):
         anzahl = len(plan.einsaetze(wer, a.von, a.bis))
         messages.success(request, f"Ausfall eingetragen ({anzahl} Dienst(e) betroffen). Die "
                                   "Teamleitung wird benachrichtigt.")  # fmt: skip
-        return redirect("dienstplan:plan" if darf_planen else "dienstplan:meine")
+        return redirect("dienstplan:plan" if darf_planen else "core:meine_einsaetze")
     return render(request, "dienstplan/ausfall.html", {
         "form": form,
-        "zurueck": reverse("dienstplan:plan" if darf_planen else "dienstplan:meine"),
+        "zurueck": reverse("dienstplan:plan" if darf_planen else "core:meine_einsaetze"),
     })  # fmt: skip
 
 
@@ -257,7 +249,7 @@ def ausfall_loeschen(request, pk):
     messages.success(request, "Ausfall zurückgenommen.")
     weiter = request.POST.get("weiter", "")
     if not url_has_allowed_host_and_scheme(weiter, {request.get_host()}):
-        weiter = reverse("dienstplan:meine")
+        weiter = reverse("core:meine_einsaetze")
     return redirect(weiter)
 
 
@@ -473,5 +465,5 @@ def ausfall_gesund(request, pk):
         messages.info(request, "Dieser Ausfall ist schon vorbei oder bereits gesund gemeldet.")
     weiter = request.POST.get("weiter", "")
     if not url_has_allowed_host_and_scheme(weiter, {request.get_host()}):
-        weiter = reverse("dienstplan:meine")
+        weiter = reverse("core:meine_einsaetze")
     return redirect(weiter)

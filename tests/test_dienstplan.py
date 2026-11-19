@@ -184,7 +184,7 @@ def test_helfer_mit_konto_traegt_sich_selbst_aus(team, client, anmelden, admin, 
     ausfall = reverse("dienstplan:ausfall")
     assert f'href="{ausfall}?von=2026-11-13" title="Ich kann nicht – austragen"' in seite
     assert "/dienstplan/platz/" not in seite  # ohne Planungsrecht kein Ersatz
-    meine = client.get(reverse("dienstplan:meine")).content.decode()
+    meine = client.get(reverse("core:meine_einsaetze")).content.decode()
     assert "Mitte · Kasse 11.30-15.00" in meine
     client.post(ausfall, {"von": "2026-11-13", "dauer": "14", "bis": "", "grund": "urlaub"})
     x = Ausfall.objects.get(helfer=h["erika"])

@@ -8,13 +8,36 @@ def menue(eintrag):
     return [
         ("Dienstpläne/Fahrdienst", [
             ("fahrdienst.sehen", eintrag("Fahrerplan", "fahrdienst:plan", genau=True)),
-            ("fahrdienst.sehen", eintrag("Meine Einsätze", "fahrdienst:meine")),
         ]),
         ("Einstellungen/Dienstpläne", [
             ("fahrdienst.planen", eintrag("Fahrdienst: Touren und Springer",
                                           "fahrdienst:einstellungen")),
         ]),
     ]  # fmt: skip
+
+
+def meine_einsaetze(request):
+    """Abschnitt „Fahrdienst“ auf „Meine Einsätze“: eigene Fahrten der nächsten vier Wochen und
+    eigene Ausfälle."""
+    import datetime as dt
+
+    from django.template.loader import render_to_string
+    from django.utils import timezone
+
+    from apps.fahrdienst import plan
+    from apps.fahrdienst.models import Ausfall
+    from apps.konten import rollen
+
+    if not rollen.hat_recht(request.user, "fahrdienst.sehen"):
+        return ""
+    heute = timezone.localdate()
+    ich = plan.person_von(request.user)
+    return render_to_string("fahrdienst/_meine.html", {
+        "einsaetze": plan.einsaetze(ich, heute, heute + dt.timedelta(days=27)),
+        "ausfaelle": Ausfall.objects.filter(person=ich, bis__gte=heute) if ich else [],
+        "darf_melden": plan.darf_selbst_melden(request.user),
+        "planen": rollen.hat_recht(request.user, "fahrdienst.planen"),
+    }, request=request)  # fmt: skip
 
 
 def fristen():
@@ -134,6 +157,8 @@ MODUL = Modul(
     kapitel=(("fahrdienst", "Fahrdienst: Fahrerplan, Ausfälle und Ersatz",
               ("fahrdienst.sehen", "fahrdienst.planen")),),
     menue=menue,
+    meine_einsaetze=meine_einsaetze,
+    einsaetze_recht="fahrdienst.sehen",
     fristen=fristen,
     auskunft_mitarbeiter=auskunft_mitarbeiter,
     sicherung_bereich="mitarbeitende",

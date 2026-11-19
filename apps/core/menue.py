@@ -54,7 +54,7 @@ def menue(request) -> list[dict]:
     inhalt = {
         "Ausgabestelle": {"": [], "Wochenübersicht": [], "Verwaltung": []},
         # Dienstpläne aller Art unter einem Punkt; die Module hängen sich als Abschnitt ein
-        "Dienstpläne": {"Ausgabe": [], "Fahrdienst": []},
+        "Dienstpläne": {"": [], "Ausgabe": [], "Fahrdienst": []},
         "Meine Arbeitszeit": {"": []},
         "Kunden": {"": []},
         # „Anträge und Warteliste“ ist ein eigener Hauptbereich (direkt unter „Kunden“); sein
@@ -88,6 +88,9 @@ def menue(request) -> list[dict]:
                     modul_einstellungen.append((gruppe, eintraege))
                 else:
                     dazu(titel, eintraege)
+    # Eigene Einsätze aller Dienstpläne auf einer Seite – ein Eintrag, nicht einer je Modul
+    if darf & module.einsaetze_rechte():
+        dazu("Dienstpläne", [(None, _eintrag("Meine Einsätze", "core:meine_einsaetze"))])
 
     # Ausgabestelle: was die Ausgabestellen täglich brauchen; Module (z. B. Abrechnung) stehen
     # hinter Einlass, Kasse und Kundenliste

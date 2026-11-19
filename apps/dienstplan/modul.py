@@ -8,13 +8,37 @@ def menue(eintrag):
     return [
         ("Dienstpläne/Ausgabe", [
             ("dienstplan.sehen", eintrag("Dienstplan der Ausgabe", "dienstplan:plan", genau=True)),
-            ("dienstplan.sehen", eintrag("Meine Dienste", "dienstplan:meine")),
         ]),
         ("Einstellungen/Dienstpläne", [
             ("dienstplan.planen", eintrag("Ausgabe: Aufgaben und Besetzung",
                                           "dienstplan:einstellungen")),
         ]),
     ]  # fmt: skip
+
+
+def meine_einsaetze(request):
+    """Abschnitt „Ausgabe“ auf „Meine Einsätze“: eigene Dienste der nächsten vier Wochen und
+    eigene Ausfälle."""
+    import datetime as dt
+
+    from django.template.loader import render_to_string
+    from django.utils import timezone
+
+    from apps.dienstplan import plan
+    from apps.dienstplan.models import Ausfall
+    from apps.konten import rollen
+
+    if not rollen.hat_recht(request.user, "dienstplan.sehen"):
+        return ""
+    heute = timezone.localdate()
+    ich = plan.helfer_von(request.user)
+    return render_to_string("dienstplan/_meine.html", {
+        "ich": ich,
+        "dienste": plan.einsaetze(ich, heute, heute + dt.timedelta(days=27)) if ich else [],
+        "ausfaelle": Ausfall.objects.filter(helfer=ich, bis__gte=heute) if ich else [],
+        "darf_melden": plan.darf_selbst_melden(request.user),
+        "planen": rollen.hat_recht(request.user, "dienstplan.planen"),
+    }, request=request)  # fmt: skip
 
 
 def fristen():
@@ -140,6 +164,8 @@ MODUL = Modul(
     vorgaben={"Büro": ("dienstplan.sehen", "dienstplan.planen"), "Ausgabe": ("dienstplan.sehen",)},
     kapitel=(("dienstplan", "Dienstplan der Ausgabe", ("dienstplan.sehen", "dienstplan.planen")),),
     menue=menue,
+    meine_einsaetze=meine_einsaetze,
+    einsaetze_recht="dienstplan.sehen",
     fristen=fristen,
     auskunft_mitarbeiter=auskunft_mitarbeiter,
     sicherung_bereich="mitarbeitende",
