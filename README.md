@@ -491,7 +491,8 @@ bearbeitet nur ein Admin. Rollen, die man nicht vergeben darf, bleiben beim Bear
 - **Korrigieren und nachtragen** nur durch Admin und Personal: bei der Person auf
   „Arbeitszeiten“, mit Grund; Datum, Kommen, Pause von/bis und Gehen in einer Zeile. Eine
   eingetragene Pause teilt die Zeit in zwei Buchungen (vor und nach der Pause). Die Korrektur trägt den Namen und steht im Änderungsprotokoll.
-- Unter „Personal → Arbeitszeiterfassung einstellen“: auch Ehrenamtliche stempeln lassen,
+- Unter „Personal → Arbeitszeiterfassung einstellen“: auch Ehrenamtliche stempeln lassen
+  (alle oder nur ausgewählte),
   automatischen Pausenabzug ab- oder einschalten, Grenze für vergessenes Gehen.
 
 **Feiertage:** Unter „Einstellungen“ das **Bundesland** der Tafel wählen. Dann zählen dessen

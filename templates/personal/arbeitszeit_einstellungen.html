@@ -9,7 +9,9 @@
   <p class="hinweis">Mit dem ersten Schalter stellen Sie die Arbeitszeiterfassung für die ganze Tafel an oder ab.
     Ausgeschaltet fehlt „Meine Arbeitszeit“ bei allen im Menü; erfasste Zeiten bleiben erhalten.
     Für <strong>einzelne Personen</strong> lässt sich das abweichend festlegen: unter „Verträge &amp; Zeiten“ die Person
-    öffnen und bei „Stundenkonto“ die Arbeitszeiterfassung auf „stempelt (immer)“ oder „stempelt nicht“ stellen.</p>
+    öffnen und bei „Stundenkonto“ die Arbeitszeiterfassung auf „stempelt (immer)“ oder „stempelt nicht“ stellen.
+    Sollen nur <strong>bestimmte Ehrenamtliche</strong> stempeln, wählen Sie sie unten bei „Diese Ehrenamtlichen
+    stempeln“ aus.</p>
   <form method="post" data-autosave>
     {% csrf_token %}
     {% include "includes/formular.html" %}
