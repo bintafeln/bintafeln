@@ -110,3 +110,26 @@ def test_automatische_abmeldung_und_filter(client, anmelden, admin, admin_client
     assert e.ergebnis == "abgemeldet (automatisch)"
     seite = admin_client.get(reverse("konten:anmeldeprotokoll"), {"nur": "abmeldungen"})
     assert "abgemeldet (automatisch)" in seite.content.decode()
+
+
+def test_konten_der_ausgabestellen_stehen_mit_namen(admin_client):
+    """Statt „ausgabestelle-8“ steht der Name der Ausgabestelle – auch bei Fehlversuchen ohne
+    Konto – und die Suche findet ihn."""
+    from django.contrib.auth import get_user_model
+
+    from apps.kunden.models import Ausgabestelle
+
+    mitte = Ausgabestelle.objects.create(name="Musterstraße Mitte")
+    konto = get_user_model().objects.create_user(username="ausgabestelle-8", stelle=mitte)
+    AnmeldeProtokoll.objects.create(benutzer=konto, benutzername="ausgabestelle-8", erfolg=True)
+    AnmeldeProtokoll.objects.create(benutzername="ausgabestelle-8", erfolg=False, grund="Passwort")
+    AnmeldeProtokoll.objects.create(benutzername="erika", erfolg=True)
+    url = reverse("konten:anmeldeprotokoll")
+    inhalt = admin_client.get(url).content.decode()
+    assert ">Musterstraße Mitte</a>" in inhalt and ">Musterstraße Mitte</span>" in inhalt
+    assert ">ausgabestelle-8<" not in inhalt
+    assert "Konto der Ausgabestelle (ausgabestelle-8)" in inhalt and "erika" in inhalt
+    gesucht = admin_client.get(url, {"q": "musterstraße"}).content.decode()
+    assert ">Musterstraße Mitte</a>" in gesucht and ">Musterstraße Mitte</span>" in gesucht
+    assert "erika" not in gesucht
+    assert "Musterstraße Mitte" in admin_client.get(url, {"q": "stelle-8"}).content.decode()

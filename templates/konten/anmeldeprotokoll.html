@@ -19,7 +19,7 @@
         <option value="abmeldungen"{% if nur == "abmeldungen" %} selected{% endif %}>nur Abmeldungen</option>
       </select></div>
     <div class="filter-feld filter-suche"><label for="q">Suche</label>
-      <input type="search" name="q" id="q" value="{{ q }}" placeholder="Benutzername oder IP" {% live_suche %}></div>
+      <input type="search" name="q" id="q" value="{{ q }}" placeholder="Benutzername, Ausgabestelle oder IP" {% live_suche %}></div>
     <button type="submit" class="knopf">Suchen</button>
     {% filter_zuruecksetzen %}
   </form>
@@ -32,7 +32,7 @@
         {% for e in seite %}
         <tr>
           <td data-titel="Zeitpunkt">{{ e.zeitpunkt|date:"d.m.Y H:i:s" }}</td>
-          <td data-titel="Benutzername">{% if e.benutzer %}<a href="{% url 'konten:mitarbeiter' e.benutzer.pk %}">{{ e.benutzername|default:"?" }}</a>{% else %}{{ e.benutzername|default:"?" }}{% endif %}</td>
+          <td data-titel="Benutzername">{% if e.benutzer %}<a href="{% url 'konten:mitarbeiter' e.benutzer.pk %}"{% if e.stelle_name %} title="Konto der Ausgabestelle ({{ e.benutzername }})"{% endif %}>{{ e.stelle_name|default:e.benutzername|default:"?" }}</a>{% else %}<span{% if e.stelle_name %} title="Konto der Ausgabestelle ({{ e.benutzername }})"{% endif %}>{{ e.stelle_name|default:e.benutzername|default:"?" }}</span>{% endif %}</td>
           <td data-titel="Ergebnis">{% if e.ist_abmeldung %}<span class="marke">{{ e.ergebnis }}</span>{% elif e.erfolg %}<span class="marke-ok">angemeldet</span>{% else %}<span class="marke-warnung">Fehlversuch{% if e.grund %} ({{ e.grund }}){% endif %}</span>{% endif %}</td>
           <td data-titel="IP-Adresse">{{ e.ip|default:"–" }}</td>
           <td data-titel="Browser/System"><small class="leise">{{ e.browser|default:"–" }}</small></td>
