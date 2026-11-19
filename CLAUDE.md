@@ -148,7 +148,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   buchen, nie `Haushalt.kontostand` direkt ändern, ADR 0014; einzelne Buchungen ändern/löschen nur über
   `konto.aendern()`/`korrekturen.zuruecknehmen()` (Recht `konto.buchung_aendern`); Zahlung ohne Abholung mit Minus = Auszahlung; importierte Tageslisten (auch „Besuche & Konto nachtragen“) bucht
   `konto.zahlungen_aus_kontostand()` (gezahlt = Kosten nach Beitragsregel + Kontostand danach − vorher,
-  alte Abgleich-Korrekturen über `konto.abgleiche_nachrechnen()`), `beitrag` ist nie Bargeld; Kasse-Auswertung in
+  alte Abgleich-Korrekturen über `konto.abgleiche_nachrechnen()`; alte Abholungen ganz ohne Kassendaten nur als gekennzeichnete
+  Schätzung über `konto.alte_abholungen_schaetzen()`, rücknehmbar mit `schaetzung_entfernen()`), `beitrag` ist nie Bargeld; Kasse-Auswertung in
   `apps/ausgabe/kasse.py`; Kamera-Scanner `static/js/kamera_scanner.js` für Felder mit
   `data-kamera`, Bibliothek fest unter `static/vendor/barcode-detector`, kein CDN, ADR 0029;
   Schließzeiten je Ausgabestelle (`Schliesszeit`, ADR 0144): zählen im Vorauszahlungs-Vorschlag nicht mit

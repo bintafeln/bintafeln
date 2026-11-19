@@ -202,3 +202,120 @@ def test_nachrechnen_in_portionen(admin_client, kundin, monkeypatch):
         h.refresh_from_db()
         assert _bar_je_tag(h)[dt.date(2026, 11, 3)] == Decimal("6.00")
     assert kundin.kontostand == Decimal("0.00") and zweite.kontostand == Decimal("1.50")
+
+
+def _alte_abholungen(h):
+    """Drei alte Abholungen aus dem bisherigen Programm, ohne jede Buchung."""
+    for tag, _, _ in TAGE:
+        Abholung.objects.create(haushalt=h, datum=tag, beitrag=Decimal("6.00"))
+
+
+def test_alte_abholungen_schaetzen(kundin):
+    """Ohne Kassendaten bleibt die Kasse leer; die Schätzung bucht den Beitrag nach den Regeln als
+    bar gezahlt am Tag der Abholung – gekennzeichnet, ohne den Kontostand zu ändern."""
+    from apps.ausgabe import kasse
+    from apps.ausgabe.models import BeitragsfreierZeitraum
+
+    kundin.kontostand = Decimal("1.50")
+    kundin.save()
+    _alte_abholungen(kundin)
+    # nicht angefasst: am Einlass erfasst, schon gebucht, nach dem Stichtag, beitragsfreier Tag
+    erfasst = dt.datetime(2026, 11, 5, 10, tzinfo=dt.UTC)
+    einlass = Abholung.objects.create(haushalt=kundin, datum=erfasst.date(), erfasst_am=erfasst)
+    Abholung.objects.create(haushalt=kundin, datum=dt.date(2026, 11, 12))
+    Buchung.objects.create(haushalt=kundin, kundennummer="04711", datum=dt.date(2026, 11, 12),
+                           art=Buchung.Art.ABHOLUNG, soll=Decimal("1.50"), haben=Decimal("1.50"),
+                           bar=Decimal("1.50"))  # fmt: skip
+    spaeter = Abholung.objects.create(haushalt=kundin, datum=dt.date(2026, 11, 24))
+    Abholung.objects.create(haushalt=kundin, datum=dt.date(2026, 10, 27))
+    BeitragsfreierZeitraum.objects.create(bezeichnung="Herbst", von=dt.date(2026, 10, 26),
+                                          bis=dt.date(2026, 10, 30))  # fmt: skip
+    Abholung.objects.create(haushalt=kundin, datum=TAGE[0][0], uhrzeit=dt.time(11))  # doppelt
+    bis = dt.date(2026, 11, 20)
+    stand = konto.schaetzung_stand(bis)
+    assert stand["offen"]["anzahl"] == 5 and stand["offen"]["kunden"] == 1
+    assert stand["geschaetzt"] == 0
+
+    erg = konto.alte_abholungen_schaetzen(bis, "Büro")
+    assert erg == {"buchungen": 3, "summe": Decimal("4.50"), "weiter": None}
+    kundin.refresh_from_db()
+    assert kundin.kontostand == Decimal("1.50")  # unverändert
+    neu = Buchung.objects.filter(bemerkung=konto.GESCHAETZT)
+    assert {b.datum for b in neu} == {t for t, _, _ in TAGE}
+    assert all(b.bar == b.soll == b.haben == Decimal("1.50") and b.importiert for b in neu)
+    assert not Buchung.objects.filter(abholung__in=[einlass, spaeter]).exists()
+    assert kasse.summe(Buchung.objects.filter(datum=TAGE[1][0]))["bar_gesamt"] == Decimal("1.50")
+    # Noch einmal: nichts doppelt
+    assert konto.alte_abholungen_schaetzen(bis, "Büro")["buchungen"] == 0
+    assert konto.schaetzung_stand(bis)["summe"] == Decimal("4.50")
+    # Wieder entfernen: alles wie vorher
+    assert konto.schaetzung_entfernen() == 3
+    kundin.refresh_from_db()
+    assert kundin.kontostand == Decimal("1.50") and Buchung.objects.count() == 1
+
+
+def test_knopf_schaetzen_in_portionen(admin_client, kundin, monkeypatch):
+    from apps.core.models import TafelEinstellungen
+    from apps.uebernahme import views
+
+    t = TafelEinstellungen.laden()
+    t.module = sorted(set(t.module or []) | {"uebernahme"})
+    t.save()
+    zweite = Haushalt.objects.create(kundennummer="04712", kontostand=Decimal("0"))
+    Person.objects.create(haushalt=zweite, vorname="Max", nachname="Beispiel",
+                          geburtsdatum=dt.date(1980, 1, 1), ist_hauptperson=True)  # fmt: skip
+    url = reverse("uebernahme:besuche_konto")
+    assert 'id="schaetzen"' not in admin_client.get(url).content.decode()
+    _alte_abholungen(kundin)
+    _alte_abholungen(zweite)
+    seite = admin_client.get(url).content.decode()
+    assert "Alte Abholungen ohne Kassendaten schätzen" in seite and "<strong>6</strong>" in seite
+    # Solange alte Abgleiche offen sind, erst nachrechnen
+    abgleich = Buchung.objects.create(haushalt=kundin, kundennummer="04711", haben=Decimal("0"),
+                                      art=Buchung.Art.KORREKTUR,
+                                      bemerkung="Abgleich Liste (Stand 03.11.2026)")  # fmt: skip
+    antwort = admin_client.post(url, {"aktion": "schaetzen", "bis": "2026-11-30"}, follow=True)
+    assert "zuerst die früheren Abgleiche nachrechnen" in antwort.content.decode()
+    abgleich.delete()
+    # Jede Portion schafft einen Kunden; die Seite ruft sich über HX-Redirect weiter auf
+    monkeypatch.setattr(views, "NACHRECHNEN_S", 0.000001)
+    antwort = admin_client.post(url, {"aktion": "schaetzen", "bis": "2026-11-30"},
+                                HTTP_HX_REQUEST="true")  # fmt: skip
+    ziel = antwort["HX-Redirect"]
+    assert antwort.status_code == 204 and f"schaetzen={kundin.pk}#schaetzen" in ziel
+    assert Buchung.objects.filter(bemerkung=konto.GESCHAETZT).count() == 3
+    seite = admin_client.get(ziel).content.decode()
+    assert "Schätzen läuft" in seite and f'name="ab" value="{kundin.pk}"' in seite
+    antwort = admin_client.post(url, {"aktion": "schaetzen", "bis": "2026-11-30",
+                                      "ab": str(kundin.pk)}, follow=True)  # fmt: skip
+    seite = antwort.content.decode()
+    assert "Alte Abholungen sind geschätzt" in seite
+    assert "Bisher geschätzt: <strong>6</strong>" in seite and "9,00 €" in seite
+    # Haushaltsseite: kein Strich mehr, im Konto steht „geschätzt“
+    haushalt = admin_client.get(reverse("kunden:haushalt", args=["04711"])).content.decode()
+    assert "geschätzt (alte Abholung ohne Kassendaten)" in haushalt
+    antwort = admin_client.post(url, {"aktion": "schaetzung_entfernen"}, follow=True)
+    assert "6 geschätzte Buchung(en) entfernt" in antwort.content.decode()
+    assert not Buchung.objects.exists()
+
+
+def test_schaetzen_braucht_recht_kundenkonto_korrigieren(
+    admin, kundin, benutzer_mit_rolle, anmelden, recht_geben, client
+):
+    from apps.core.models import TafelEinstellungen
+    from apps.konten import rollen
+
+    t = TafelEinstellungen.laden()
+    t.module = sorted(set(t.module or []) | {"uebernahme"})
+    t.save()
+    b = benutzer_mit_rolle("anton", rollen.AUSGABE)
+    recht_geben(rollen.AUSGABE, "kunden.importieren")
+    assert not rollen.hat_recht(b, "konto.korrektur")
+    _alte_abholungen(kundin)
+    c = anmelden(client, b)
+    url = reverse("uebernahme:besuche_konto")
+    assert "Zum Schätzen fehlt das Recht" in c.get(url).content.decode()
+    for aktion in ("schaetzen", "schaetzung_entfernen"):
+        antwort = c.post(url, {"aktion": aktion}, follow=True)
+        assert "fehlt das Recht" in antwort.content.decode()
+    assert not Buchung.objects.exists()
