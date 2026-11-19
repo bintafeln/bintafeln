@@ -145,9 +145,12 @@ def platz(datum: dt.date, aufgabe: Aufgabe) -> Platz:
     return plaetze([datum], [aufgabe])[datum][0]
 
 
-def eingesetzt(datum: dt.date) -> set[int]:
-    """Helfer, die an dem Tag schon irgendwo einen Platz haben (nicht: ausgefallen)."""
-    return {p.wer.pk for p in plaetze([datum])[datum] if p.wer is not None and not p.ausfall}
+def eingesetzt(datum: dt.date, ausser=None) -> set[int]:
+    """Helfer, die an dem Tag schon irgendwo einen Platz haben (nicht: ausgefallen). Plätze an
+    der Ausgabestelle ``ausser`` zählen nicht: Dort kann eine Person mehrere Aufgaben haben."""
+    return {p.wer.pk for p in plaetze([datum])[datum]
+            if p.wer is not None and not p.ausfall
+            and (ausser is None or p.aufgabe.stelle_id != ausser.pk)}  # fmt: skip
 
 
 def einteilbare_rollen() -> list[str]:
@@ -163,10 +166,12 @@ def einteilbare():
             .select_related("konto").distinct().order_by("nachname", "vorname"))  # fmt: skip
 
 
-def verfuegbar(datum: dt.date) -> list[Adresse]:
+def verfuegbar(datum: dt.date, stelle=None) -> list[Adresse]:
     """Wer an dem Tag einspringen kann: über die Rolle einteilbar, nicht ausgefallen und noch
-    nirgends eingeteilt."""
-    belegt = eingesetzt(datum) | set(
+    nirgends eingeteilt. Mit ``stelle`` (wo jemand fehlt) auch, wer an dieser Ausgabestelle
+    schon eine Aufgabe hat – eine Person kann dort zwei Aufgaben übernehmen, z. B. Teamleitung
+    und Kasse. An zwei Ausgabestellen zugleich kann niemand sein."""
+    belegt = eingesetzt(datum, ausser=stelle) | set(
         Ausfall.objects.filter(ausfallregeln.krank_am(datum)).values_list("helfer_id", flat=True)
     )
     return [h for h in einteilbare() if h.pk not in belegt]
@@ -244,7 +249,9 @@ def _benachrichtigen(ausfall: Ausfall, adresse: str) -> None:
         return
     zeilen = []
     for p in betroffen:
-        frei = ", ".join(str(h) for h in verfuegbar(p.datum)[:8]) or "niemand frei"
+        frei = (
+            ", ".join(str(h) for h in verfuegbar(p.datum, p.aufgabe.stelle)[:8]) or "niemand frei"
+        )
         zeilen.append(f"- {kuerzel(p.datum)} {p.datum:%d.%m.%Y}, {p.aufgabe.stelle}: "
                       f"{p.aufgabe}. Frei: {frei}")  # fmt: skip
     zeit = (f"am {ausfall.von:%d.%m.%Y}" if ausfall.von == ausfall.bis

@@ -148,20 +148,11 @@ def platz(request, datum, tour, nr):
     })  # fmt: skip
 
 
-@never_cache
 @sehen
 def meine(request):
-    """Eigene Einsätze der nächsten vier Wochen und eigene Ausfälle."""
-    heute = timezone.localdate()
-    ich = plan.person_von(request.user)
-    return render(request, "fahrdienst/meine.html", {
-        "ich": ich,
-        "einsaetze": plan.einsaetze(ich, heute, heute + dt.timedelta(days=27)),
-        "heute": heute,
-        "ausfaelle": Ausfall.objects.filter(person=ich, bis__gte=heute) if ich else [],
-        "darf_melden": plan.darf_selbst_melden(request.user),
-        "planen": rollen.hat_recht(request.user, "fahrdienst.planen"),
-    })  # fmt: skip
+    """Früher eine eigene Seite; die eigenen Fahrten stehen jetzt mit allen anderen Einsätzen auf
+    „Meine Einsätze“ (``modul.meine_einsaetze``)."""
+    return redirect(reverse("core:meine_einsaetze") + "#einsaetze-fahrdienst")
 
 
 @never_cache
@@ -190,10 +181,9 @@ def ausfall(request):
                                   "Die Fahrdienstleitung wird benachrichtigt.")  # fmt: skip
         if darf_planen:
             return redirect(f"{reverse('fahrdienst:plan')}?monat={a.von:%Y-%m}")
-        return redirect("fahrdienst:meine")
-    return render(request, "fahrdienst/ausfall.html", {
-        "form": form, "zurueck": reverse("fahrdienst:plan" if darf_planen else "fahrdienst:meine"),
-    })  # fmt: skip
+        return redirect("core:meine_einsaetze")
+    zurueck = reverse("fahrdienst:plan" if darf_planen else "core:meine_einsaetze")
+    return render(request, "fahrdienst/ausfall.html", {"form": form, "zurueck": zurueck})
 
 
 @require_POST
@@ -210,7 +200,7 @@ def ausfall_loeschen(request, pk):
     messages.success(request, "Ausfall zurückgenommen.")
     weiter = request.POST.get("weiter", "")
     if not url_has_allowed_host_and_scheme(weiter, {request.get_host()}):
-        weiter = reverse("fahrdienst:meine")  # nur Adressen dieser Installation
+        weiter = reverse("core:meine_einsaetze")  # nur Adressen dieser Installation
     return redirect(weiter)
 
 
@@ -407,5 +397,5 @@ def ausfall_gesund(request, pk):
         messages.info(request, "Dieser Ausfall ist schon vorbei oder bereits gesund gemeldet.")
     weiter = request.POST.get("weiter", "")
     if not url_has_allowed_host_and_scheme(weiter, {request.get_host()}):
-        weiter = reverse("fahrdienst:meine")
+        weiter = reverse("core:meine_einsaetze")
     return redirect(weiter)

@@ -180,13 +180,14 @@ def platz(request, datum, aufgabe):
     if tag not in plan.ausgabetage(a.stelle, tag, tag, a.wochentag):
         raise Http404
     zurueck = _link(a.stelle, a.wochentag, tag.replace(day=1))
-    frei = plan.verfuegbar(tag)
+    frei = plan.verfuegbar(tag, a.stelle)
     if request.method == "POST":
         wahl, gast = request.POST.get("helfer", ""), request.POST.get("gast", "").strip()
         neu = get_object_or_404(plan.einteilbare(), pk=wahl) if wahl else None
         if neu is not None and neu not in frei:
             messages.error(request, f"{neu} kann am {tag:%d.%m.%Y} nicht einspringen "
-                                    "(Ausfall gemeldet oder schon eingeteilt).")  # fmt: skip
+                                    "(Ausfall gemeldet oder schon an einer anderen Ausgabestelle "
+                                    "eingeteilt).")  # fmt: skip
             return redirect(request.path)
         plan.ersatz_eintragen(tag, a, neu, request.user.get_username(), gast=gast)
         text = (
@@ -202,19 +203,11 @@ def platz(request, datum, aufgabe):
     })  # fmt: skip
 
 
-@never_cache
 @sehen
 def meine(request):
-    """Eigene Dienste der nächsten vier Wochen und eigene Ausfälle."""
-    heute = timezone.localdate()
-    ich = plan.helfer_von(request.user)
-    return render(request, "dienstplan/meine.html", {
-        "ich": ich, "heute": heute,
-        "dienste": plan.einsaetze(ich, heute, heute + dt.timedelta(days=27)) if ich else [],
-        "ausfaelle": Ausfall.objects.filter(helfer=ich, bis__gte=heute) if ich else [],
-        "darf_melden": plan.darf_selbst_melden(request.user),
-        "planen": rollen.hat_recht(request.user, "dienstplan.planen"),
-    })  # fmt: skip
+    """Früher eine eigene Seite; die eigenen Dienste stehen jetzt mit allen anderen Einsätzen auf
+    „Meine Einsätze“ (``modul.meine_einsaetze``)."""
+    return redirect(reverse("core:meine_einsaetze") + "#einsaetze-ausgabe")
 
 
 @never_cache
@@ -240,10 +233,10 @@ def ausfall(request):
         anzahl = len(plan.einsaetze(wer, a.von, a.bis))
         messages.success(request, f"Ausfall eingetragen ({anzahl} Dienst(e) betroffen). Die "
                                   "Teamleitung wird benachrichtigt.")  # fmt: skip
-        return redirect("dienstplan:plan" if darf_planen else "dienstplan:meine")
+        return redirect("dienstplan:plan" if darf_planen else "core:meine_einsaetze")
     return render(request, "dienstplan/ausfall.html", {
         "form": form,
-        "zurueck": reverse("dienstplan:plan" if darf_planen else "dienstplan:meine"),
+        "zurueck": reverse("dienstplan:plan" if darf_planen else "core:meine_einsaetze"),
     })  # fmt: skip
 
 
@@ -260,7 +253,7 @@ def ausfall_loeschen(request, pk):
     messages.success(request, "Ausfall zurückgenommen.")
     weiter = request.POST.get("weiter", "")
     if not url_has_allowed_host_and_scheme(weiter, {request.get_host()}):
-        weiter = reverse("dienstplan:meine")
+        weiter = reverse("core:meine_einsaetze")
     return redirect(weiter)
 
 
@@ -325,10 +318,14 @@ def stelle(request, pk):
             messages.success(request, f"Aufgabe „{a}“ angelegt.")
             return redirect(hier)
         if aktion == "besetzung" and tag:
-            doppelt = _besetzung_speichern(request, ds, tag)
+            doppelt, mehrfach = _besetzung_speichern(request, ds, tag)
             if doppelt:
-                messages.warning(request, "Niemand kann an einem Tag doppelt eingeteilt sein; "
-                                          "übergangen: " + ", ".join(doppelt) + ".")  # fmt: skip
+                messages.warning(request, "Niemand kann an einem Tag an zwei Ausgabestellen "
+                                          "eingeteilt sein; übergangen: " + ", ".join(doppelt)
+                                          + ".")  # fmt: skip
+            if mehrfach:
+                messages.info(request, "Mehrere Aufgaben an diesem Tag: " + "; ".join(mehrfach)
+                              + ".")  # fmt: skip
             messages.success(request, "Feste Besetzung gespeichert.")
             return redirect(hier)
         if aktion == "standard":
@@ -355,10 +352,11 @@ def stelle(request, pk):
     })  # fmt: skip
 
 
-def _besetzung_speichern(request, ds, tag) -> list[str]:
-    """Speichert die feste Besetzung eines Wochentags. Niemand steht an einem Tag doppelt im Plan
-    (weder bei zwei Aufgaben dieser Ausgabestelle noch zugleich an einer anderen); solche
-    Einträge werden übergangen und zurückgemeldet."""
+def _besetzung_speichern(request, ds, tag) -> tuple[list[str], list[str]]:
+    """Speichert die feste Besetzung eines Wochentags. An derselben Ausgabestelle kann eine Person
+    mehrere Aufgaben haben (z. B. Teamleitung und Kasse) – das wird nur gemeldet. An zwei
+    Ausgabestellen zugleich kann niemand stehen; solche Einträge werden übergangen. Rückgabe:
+    (übergangene Einträge, Personen mit mehreren Aufgaben)."""
     gueltig = {str(h.pk): h for h in helfer_aktiv()}
     woanders = {
         b.helfer_id: b.aufgabe.stelle
@@ -366,22 +364,23 @@ def _besetzung_speichern(request, ds, tag) -> list[str]:
         .exclude(aufgabe__stelle=ds)
         .select_related("aufgabe__stelle__ausgabestelle")
     }
-    gesehen, doppelt = set(), []
+    aufgaben_von: dict = {}
+    doppelt = []
     for a in ds.aufgaben.filter(wochentag=tag):
         wahl = request.POST.get(f"h_{a.pk}", "")
         if wahl in gueltig:
             helfer = gueltig[wahl]
-            if helfer.pk in gesehen or helfer.pk in woanders:
-                wo = f"bei {woanders[helfer.pk]}" if helfer.pk in woanders else "an diesem Tag"
-                doppelt.append(f"{helfer} ({a.name}, schon {wo} eingeteilt)")
-                # stand hier schon: sonst bliebe die Person doch doppelt
+            if helfer.pk in woanders:
+                doppelt.append(f"{helfer} ({a.name}, schon bei {woanders[helfer.pk]} eingeteilt)")
+                # stand hier schon: sonst bliebe die Person doch an zwei Ausgabestellen
                 Besetzung.objects.filter(aufgabe=a, helfer=helfer).delete()
                 continue
-            gesehen.add(helfer.pk)
+            aufgaben_von.setdefault(helfer, []).append(a.name or "weitere Zeile")
             Besetzung.objects.update_or_create(aufgabe=a, defaults={"helfer": helfer})
         elif not wahl:
             Besetzung.objects.filter(aufgabe=a).delete()
-    return doppelt
+    mehrfach = [f"{h} ({', '.join(namen)})" for h, namen in aufgaben_von.items() if len(namen) > 1]
+    return doppelt, mehrfach
 
 
 @never_cache
@@ -476,5 +475,5 @@ def ausfall_gesund(request, pk):
         messages.info(request, "Dieser Ausfall ist schon vorbei oder bereits gesund gemeldet.")
     weiter = request.POST.get("weiter", "")
     if not url_has_allowed_host_and_scheme(weiter, {request.get_host()}):
-        weiter = reverse("dienstplan:meine")
+        weiter = reverse("core:meine_einsaetze")
     return redirect(weiter)

@@ -648,7 +648,8 @@ def test_breite_liste_scrollbalken_oben(angemeldet, admin):
 
 
 def test_liste_zeigt_kriterium_sofort(angemeldet, admin):
-    """Listen: Ein gewähltes Kriterium zeigt das Ergebnis ohne „Anzeigen“; die Spaltenwahl nicht."""
+    """Listen: Ein gewähltes Kriterium zeigt das Ergebnis ohne „Anzeigen“ – auch die Spaltenwahl,
+    die dabei aufgeklappt bleibt."""
     from apps.core.models import TafelEinstellungen
 
     t = TafelEinstellungen.laden()
@@ -664,10 +665,23 @@ def test_liste_zeigt_kriterium_sofort(angemeldet, admin):
     expect(seite.locator("tbody input[name=id]")).to_have_count(2)
     assert "status=&" in seite.url or seite.url.endswith("status=")
     seite.click(".spalten-wahl summary")
-    adresse = seite.url
-    seite.locator(".spalten-haken input").first.uncheck()
-    seite.wait_for_timeout(300)
-    assert seite.url == adresse  # Spalten warten auf „Anzeigen“
+    spalten = seite.locator("thead th").count()
+    erste = seite.locator(".spalten-haken input").first
+    wert = erste.get_attribute("value")
+    with seite.expect_navigation():
+        erste.uncheck()
+    assert f"s={wert}" not in seite.url
+    expect(seite.locator("thead th")).to_have_count(spalten - 1)
+    # Die Spaltenwahl bleibt offen: gleich das nächste Häkchen, ohne neu aufzuklappen
+    expect(seite.locator(".spalten-haken")).to_be_visible()
+    with seite.expect_navigation():
+        seite.locator(".spalten-haken input").first.check()
+    expect(seite.locator("thead th")).to_have_count(spalten)
+    # Ein anderes Kriterium klappt sie nicht wieder auf
+    seite.click(".spalten-wahl summary")
+    with seite.expect_navigation():
+        seite.select_option("#f-status", "aktiv")
+    expect(seite.locator(".spalten-haken")).to_be_hidden()
 
 
 def test_warteliste_erscheint_sofort_sperrhinweis_laedt_nach(angemeldet, admin):

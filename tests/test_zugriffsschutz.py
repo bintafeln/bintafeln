@@ -78,6 +78,7 @@ ALLE_ANGEMELDETEN = {
     "konten:geraet_entfernen",
     "core:start",
     "core:hilfe",
+    "core:meine_einsaetze",  # zeigt je Modul nur, was dessen Recht erlaubt
     "core:suche",
     "core:menue_zahlen",
     "wetter:kopf",

@@ -109,11 +109,11 @@ def test_wieder_gesund_im_programm(fahrer, heute, client, anmelden):  # noqa: F8
     anmelden(client, leute["jan"])
     assert client.post(url).status_code == 403  # fremder Ausfall
     anmelden(client, leute["max"])
-    assert "wieder gesund" in client.get(reverse("fahrdienst:meine")).content.decode()
-    assert client.post(url).url == reverse("fahrdienst:meine")
+    assert "wieder gesund" in client.get(reverse("core:meine_einsaetze")).content.decode()
+    assert client.post(url).url == reverse("core:meine_einsaetze")
     a.refresh_from_db()
     assert a.gesund_ab == heute
-    seite = client.get(reverse("fahrdienst:meine")).content.decode()
+    seite = client.get(reverse("core:meine_einsaetze")).content.decode()
     assert "wieder da ab 11.11.2026" in seite
     client.post(url)  # zweites Mal: nur ein Hinweis
     assert plan.platz(heute + WOCHE, tour, 1).status == plan.OFFEN

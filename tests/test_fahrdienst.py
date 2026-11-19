@@ -207,7 +207,7 @@ def test_seiten_und_rechte(team, client, admin_client, anmelden, benutzer_mit_ro
     assert antwort.status_code == 302
     a = Ausfall.objects.get(person=p["eva"])
     assert a.bis == a.von == dt.date(2026, 11, 16) and a.eingetragen_von == "eva"
-    meine = client.get(reverse("fahrdienst:meine")).content.decode()
+    meine = client.get(reverse("core:meine_einsaetze")).content.decode()
     assert "Gemeldete Ausfälle" in meine and "16.11.2026" in meine
     client.post(reverse("fahrdienst:ausfall_loeschen", args=[a.pk]))
     assert not Ausfall.objects.filter(person=p["eva"]).exists()
@@ -217,7 +217,7 @@ def test_seiten_und_rechte(team, client, admin_client, anmelden, benutzer_mit_ro
     assert client.post(reverse("fahrdienst:ausfall_loeschen", args=[kai.pk])).status_code == 403
     FahrdienstEinstellungen.objects.update(selbst_melden=False)
     assert client.get(reverse("fahrdienst:ausfall")).status_code == 403
-    assert "Ausfall melden" not in client.get(reverse("fahrdienst:meine")).content.decode()
+    assert "Ausfall melden" not in client.get(reverse("core:meine_einsaetze")).content.decode()
 
 
 def test_falsche_eingaben(team, admin_client):
@@ -494,7 +494,7 @@ def test_fahrer_traegt_sich_selbst_aus(team, admin, client, anmelden):
     assert f'href="{ausfall}?von=2026-11-11" title="Ich kann nicht – austragen"' in seite
     assert (
         f'href="{ausfall}?von=2026-11-11"'
-        in client.get(reverse("fahrdienst:meine")).content.decode()
+        in client.get(reverse("core:meine_einsaetze")).content.decode()
     )
     formular = client.get(ausfall, {"von": "2026-11-11"}).content.decode()
     assert 'value="11.11.2026"' in formular and "3 Wochen" in formular
@@ -539,7 +539,7 @@ def test_planung_meldet_nur_ausfall_ohne_ersatz(team, admin_client):
     a = Ausfall.objects.create(person=p["kai"], von=MITTWOCH, bis=MITTWOCH, grund="krank")
     fremd = reverse("fahrdienst:ausfall_loeschen", args=[a.pk])
     assert admin_client.post(fremd, {"weiter": "https://example.org/"}).url == reverse(
-        "fahrdienst:meine"
+        "core:meine_einsaetze"
     )
 
 

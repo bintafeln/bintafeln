@@ -229,7 +229,7 @@ def test_helfer_mit_konto_traegt_sich_selbst_aus(team, client, anmelden, admin, 
     ausfall = reverse("dienstplan:ausfall")
     assert f'href="{ausfall}?von=2026-11-13" title="Ich kann nicht – austragen"' in seite
     assert "/dienstplan/platz/" not in seite  # ohne Planungsrecht kein Ersatz
-    meine = client.get(reverse("dienstplan:meine")).content.decode()
+    meine = client.get(reverse("core:meine_einsaetze")).content.decode()
     assert "Mitte · Kasse 11.30-15.00" in meine
     client.post(ausfall, {"von": "2026-11-13", "dauer": "14", "bis": "", "grund": "urlaub"})
     x = Ausfall.objects.get(helfer=h["erika"])
@@ -256,7 +256,8 @@ def test_einstellungen_stelle_aufgaben_kopieren(team, admin_client):
                                          f"h_{a[1].pk}": ""})  # fmt: skip
     assert Besetzung.objects.get(aufgabe=a[3]).helfer == h["uwe"]
     assert not Besetzung.objects.filter(aufgabe=a[1]).exists()
-    # Niemand doppelt an einem Tag: Uwe kann freitags nicht zwei Aufgaben fest übernehmen
+    # An derselben Ausgabestelle kann eine Person zwei Aufgaben haben (z. B. Teamleitung und
+    # Kasse); bintafeln weist nur darauf hin
     antwort = admin_client.post(
         f"{url}?tag=Fr",
         {"aktion": "besetzung", f"h_{a[1].pk}": h["uwe"].pk, f"h_{a[2].pk}": h["paul"].pk,
@@ -264,8 +265,23 @@ def test_einstellungen_stelle_aufgaben_kopieren(team, admin_client):
         follow=True,
     )  # fmt: skip
     assert Besetzung.objects.get(aufgabe=a[1]).helfer == h["uwe"]
-    assert not Besetzung.objects.filter(aufgabe=a[3]).exists()  # dort stand Uwe bisher
-    assert "doppelt eingeteilt" in antwort.content.decode()
+    assert Besetzung.objects.get(aufgabe=a[3]).helfer == h["uwe"]
+    inhalt = antwort.content.decode()
+    assert "Mehrere Aufgaben an diesem Tag" in inhalt and "übergangen" not in inhalt
+    # An zwei Ausgabestellen am selben Tag aber nicht
+    nord = DienstStelle.objects.create(
+        ausgabestelle=Ausgabestelle.objects.create(name="Zweite Stelle"), tage="Fr")  # fmt: skip
+    kasse_nord = Aufgabe.objects.create(stelle=nord, wochentag="Fr", name="Kasse")
+    antwort = admin_client.post(
+        reverse("dienstplan:stelle", args=[nord.ausgabestelle_id]) + "?tag=Fr",
+        {"aktion": "besetzung", f"h_{kasse_nord.pk}": h["uwe"].pk}, follow=True)  # fmt: skip
+    assert "an zwei Ausgabestellen" in antwort.content.decode()
+    assert not Besetzung.objects.filter(aufgabe=kasse_nord).exists()
+    # Einspringen: an der eigenen Ausgabestelle auch mit Aufgabe, an einer anderen nicht
+    assert h["uwe"] not in plan.verfuegbar(FREITAG)
+    assert h["uwe"] in plan.verfuegbar(FREITAG, ds)
+    assert h["uwe"] not in plan.verfuegbar(FREITAG, nord)
+    nord.delete()
     admin_client.post(f"{url}?tag=Fr", {"aktion": "tag", "teamleitung": h["tom"].pk,
                                          "telefon": ""})  # fmt: skip
     assert Diensttag.objects.get(stelle=ds, wochentag="Fr").teamleitung == h["tom"]
