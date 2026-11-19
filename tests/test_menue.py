@@ -176,6 +176,12 @@ def test_dienstplaene_unter_einem_punkt(admin):
     dp = next(g for g in b["Einstellungen"]["gruppen"] if g["titel"] == "Dienstpläne")
     assert sorted(e["titel"] for e in dp["eintraege"]) == ["Ausgabe: Aufgaben und Besetzung",
                                                      "Fahrdienst: Touren und Springer"]  # fmt: skip
+    # Aushang-Monitore gehören nicht zu den Dienstplänen, sondern zu „Einstellungen → Ausgabe“
+    b = alle_bereiche(admin, ["fahrdienst", "dienstplan", "aushang"])
+    gruppen = {g["titel"]: [e["titel"] for e in g["eintraege"]]
+               for g in b["Einstellungen"]["gruppen"]}  # fmt: skip
+    assert "Aushang-Monitore" in gruppen["Ausgabe"]
+    assert "Aushang-Monitore" not in gruppen["Dienstpläne"]
     assert list(b).index("Dienstpläne") == list(b).index("Ausgabestelle") + 1
 
 

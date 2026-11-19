@@ -1359,7 +1359,7 @@ abgelegt). Zuschaltbares Modul (ADR 0087).
 ### Aushang-Monitore
 
 Zeigt Dienstplan und Fahrerplan ganzseitig auf einem Monitor, ohne Menü und ohne Anmeldung
-(ADR 0080). Zuschaltbares Modul, Einstellungen unter „Einstellungen → Dienstpläne →
+(ADR 0080). Zuschaltbares Modul, Einstellungen unter „Einstellungen → Ausgabe →
 Aushang-Monitore“ (Recht „Aushang-Monitore einrichten“, Vorgabe Büro).
 
 - **Ein Aushang je Monitor** mit eigenem geheimen Link; „Neuen Link erzeugen“ sperrt den alten,
