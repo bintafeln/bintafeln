@@ -2022,6 +2022,9 @@ details.amtsdokumente > summary { cursor: pointer; margin: .5rem 0; }
   min-width: 0; padding: 0; margin: 0; border: 0; opacity: 0; cursor: pointer;
   -webkit-appearance: none; appearance: none; }
 .datum-feld .datum-knopf:focus-within .datum-kalender { outline: 3px solid var(--fokus); }
+/* Knöpfe „Heute“/„Morgen“ unter einem Datumsfeld (data-schnell) */
+.datum-schnell { display: flex; gap: 1rem; margin-top: .25rem; }
+.datum-schnell .link-knopf { min-height: 2rem; padding: .2rem 0; }
 
 /* Sammelweises Bearbeiten: Eingabefelder füllen die Zelle und sind gut greifbar hoch. Die Felder
    stehen hier ohne .feld-Rahmen direkt in der Tabelle, bekommen Höhe/Rand/Abstand darum hier. */

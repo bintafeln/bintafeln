@@ -1381,6 +1381,47 @@ def test_nach_oben_knopf(angemeldet, admin):
     expect(knopf).to_be_hidden()
 
 
+def test_abwesend_melden_bis_springt_mit_und_heute_morgen(angemeldet, admin):
+    """Abwesend melden: Stellt man „Von“ auf einen späteren Tag, springt „Bis“ mit (nie „von
+    morgen bis heute“); unter beiden Feldern setzen „Heute“ und „Morgen“ das Datum."""
+    from apps.kunden.models import Haushalt, KundenEinstellungen, Notiz, Person
+
+    k = KundenEinstellungen.laden()
+    k.krankmeldung = True
+    k.save()
+    h = Haushalt.objects.create(kundennummer="04711")
+    Person.objects.create(haushalt=h, vorname="Erika", nachname="Beispiel", ist_hauptperson=True)
+    heute = dt.date.today()
+    morgen = heute + dt.timedelta(days=1)
+    seite = angemeldet(admin)
+    seite.goto(reverse("kunden:haushalt", args=["04711"]))
+    seite.get_by_text("Abwesend melden …").click()
+    von, bis = seite.locator("#krank-von"), seite.locator("#krank-bis")
+    expect(von).to_have_value(f"{heute:%d.%m.%Y}")
+    felder = seite.locator(".krank-felder .feld")
+    felder.nth(1).get_by_role("button", name="Morgen").click()
+    expect(von).to_have_value(f"{morgen:%d.%m.%Y}")
+    expect(bis).to_have_value(f"{morgen:%d.%m.%Y}")  # springt mit
+    # Ein späteres „Bis“ bleibt stehen, wenn „Von“ davor liegt
+    spaeter = heute + dt.timedelta(days=9)
+    bis.fill(f"{spaeter:%d.%m.%Y}")
+    bis.blur()
+    felder.nth(1).get_by_role("button", name="Heute").click()
+    expect(von).to_have_value(f"{heute:%d.%m.%Y}")
+    expect(bis).to_have_value(f"{spaeter:%d.%m.%Y}")
+    # Getippt statt getippt-per-Knopf: auch dann springt „Bis“ mit
+    weit = heute + dt.timedelta(days=20)
+    von.fill(f"{weit:%d.%m.%Y}")
+    von.blur()
+    expect(bis).to_have_value(f"{weit:%d.%m.%Y}")
+    felder.nth(2).get_by_role("button", name="Morgen").click()  # „Bis“ selbst zurückstellen …
+    felder.nth(1).get_by_role("button", name="Morgen").click()
+    seite.get_by_role("button", name="Abwesenheit speichern").click()
+    seite.wait_for_load_state()
+    n = Notiz.objects.get(kundennummer="04711")
+    assert (n.krank_von, n.krank_bis) == (morgen, morgen)
+
+
 def test_datum_tippen_und_kalender(angemeldet, admin):
     """Datumsfeld: man kann TT.MM.JJJJ eintippen (kein Zwang zum Kalender); der 📅-Knopf
     (static/js/datum.js) steht als Alternative daneben und schreibt die Kalenderwahl ins Feld."""
