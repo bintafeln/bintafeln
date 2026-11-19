@@ -79,7 +79,7 @@ def platz(teil: str) -> dict | None:
         "dauer": AUSFALL_DAUER,
         "datum": p.datum.isoformat(),
         "kann_gesund": p.ausfall is not None and not p.ausfall.gesund_ab,
-        "frei": [(h.pk, str(h), h.konto_id) for h in plan.verfuegbar(p.datum)],
+        "frei": [(h.pk, str(h), h.konto_id) for h in plan.verfuegbar(p.datum, p.aufgabe.stelle)],
         "hat_ersatz": p.ersatz is not None,
         "recht": "dienstplan.planen",
     }
@@ -124,7 +124,7 @@ def aendern(teil: str, daten, person, von: str, basis: str) -> str:
                 "bzw. beim Ersatz: Bitte dort wieder eintragen, wo noch jemand fehlt.")  # fmt: skip
     if aktion == "ersatz":
         h = plan.einteilbare().filter(pk=daten.get("helfer") or 0).first()
-        if h is None or h not in plan.verfuegbar(datum):
+        if h is None or h not in plan.verfuegbar(datum, p.aufgabe.stelle):
             raise ValueError("Diese Person kann an dem Tag nicht einspringen.")
         if not planer and (h.konto_id != person.pk or not (p.fehlt or p.status == plan.LEER)):
             raise ValueError("Einspringen kann man nur selbst und nur auf einem freien Platz (oder "

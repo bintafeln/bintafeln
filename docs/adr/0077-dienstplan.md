@@ -39,3 +39,11 @@ Der Aufbau des Fahrdienstes hat sich bewährt; dieselben Begriffe (Ausfall, Ersa
 beide Module leicht verständlich. Helfer ohne Konto sind nötig, weil viele Ehrenamtliche nur
 gelegentlich kommen und kein Konto brauchen. Die Teamleitung je Ausgabetag ist die Person, die
 auf Papier die Abmeldungen annimmt, deshalb bekommt sie die Nachricht.
+
+## Nachtrag: mehrere Aufgaben an derselben Ausgabestelle
+
+Eine Person kann an einem Tag an **derselben** Ausgabestelle mehrere Aufgaben haben, z. B.
+Teamleitung und Kasse: in der festen Besetzung (bintafeln weist beim Speichern nur darauf hin)
+und beim Einspringen (`plan.verfuegbar(datum, stelle)`). An **zwei Ausgabestellen** am selben Tag
+bleibt es ausgeschlossen. Welche Aufgaben sich vertragen, entscheidet, wer plant – eine Liste
+erlaubter Paare gibt es nicht, damit keine Aufgabennamen fest im Programm stehen.
