@@ -9,7 +9,8 @@ auch wirklich gesehen wird.
 
 ## Entscheidung
 
-- Die Verwaltung (Recht `kunden.nachrichten`) schreibt unter „Ausgabestelle → Post an Ausgabestellen“
+- Die Verwaltung (Recht `kunden.nachrichten`) schreibt unter „Einstellungen → Ausgabe → Post an Ausgabestellen“ (bis November 2026:
+  „Ausgabestelle → Post an Ausgabestellen“)
   an eine, mehrere oder alle aktiven Ausgabestellen: Betreff, Text, auf Wunsch „Wichtig“.
   `Rundschreiben` mit einem `PostEmpfang` je Ausgabestelle (Lesestand), Logik in
   `apps/kunden/eulenpost.py`.
