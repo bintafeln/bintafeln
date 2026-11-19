@@ -3,6 +3,11 @@
 // klickt, kann das also weiter tun, muss aber nicht. Ohne JavaScript bleibt das reine Textfeld, in
 // das man tippt. Der Server versteht beide Schreibweisen (TT.MM.JJJJ und JJJJ-MM-TT).
 // Auch einfache <input type="date"> werden so zum Feld TT.MM.JJJJ (siehe umstellen()).
+// Zwei Zusätze, die ein Feld einschalten kann:
+//   data-schnell="heute morgen"  → Knöpfe „Heute“ und „Morgen“ unter dem Feld (der Kalender des
+//                                   Browsers lässt sich nicht um eigene Knöpfe erweitern)
+//   data-nicht-vor="<id>"        → „Bis“-Feld: liegt es vor dem Feld mit dieser id („Von“), springt
+//                                   es auf dessen Datum mit
 (function () {
   "use strict";
 
@@ -51,6 +56,34 @@
     stelle.appendChild(knopf);
     stelle.appendChild(pick);
     huelle.appendChild(stelle);
+    schnellwahl(feld, huelle);
+  }
+
+  var SCHNELL = { heute: ["Heute", 0], morgen: ["Morgen", 1] };
+  function tag(inTagen) {
+    var d = new Date();
+    d.setDate(d.getDate() + inTagen);
+    return String(d.getDate()).padStart(2, "0") + "." + String(d.getMonth() + 1).padStart(2, "0") +
+      "." + d.getFullYear();
+  }
+  // Knöpfe „Heute“/„Morgen“ unter dem Feld (data-schnell)
+  function schnellwahl(feld, huelle) {
+    var welche = (feld.dataset.schnell || "").split(/\s+/).filter(function (w) { return SCHNELL[w]; });
+    if (!welche.length) return;
+    var zeile = document.createElement("span");
+    zeile.className = "datum-schnell";
+    welche.forEach(function (w) {
+      var knopf = document.createElement("button");
+      knopf.type = "button";
+      knopf.className = "link-knopf";
+      knopf.textContent = SCHNELL[w][0];
+      knopf.addEventListener("click", function () {
+        feld.value = tag(SCHNELL[w][1]);
+        feuere(feld);
+      });
+      zeile.appendChild(knopf);
+    });
+    huelle.parentNode.insertBefore(zeile, huelle.nextSibling);
   }
 
   // Einfache Kalenderfelder (<input type="date">) zeigt der Browser in der Schreibweise seiner
@@ -75,6 +108,9 @@
     });
     if (alt.min) feld.dataset.min = alt.min;
     if (alt.max) feld.dataset.max = alt.max;
+    ["schnell", "nichtVor"].forEach(function (a) {
+      if (alt.dataset[a]) feld.dataset[a] = alt.dataset[a];
+    });
     feld.value = nachDeutsch(alt.value);
     alt.dataset.datumBereit = "1";
     alt.parentNode.insertBefore(feld, alt);
@@ -147,6 +183,22 @@
       feld.value = nachDeutsch(pick.value);
       feuere(feld);
     }
+  });
+
+  // „Bis“ nie vor „Von“: Wird „Von“ später gesetzt, springt „Bis“ mit (data-nicht-vor am Bis-Feld)
+  document.addEventListener("change", function (e) {
+    var von = e.target;
+    if (!von.matches || !von.matches("input[data-datum]") || !von.id) return;
+    var ab = ausDeutsch(von.value);
+    if (!ab) return;
+    document.querySelectorAll("input[data-datum][data-nicht-vor]").forEach(function (bis) {
+      if (bis.dataset.nichtVor !== von.id || bis === von) return;
+      var ende = ausDeutsch(bis.value);
+      if (ende && ende < ab) {
+        bis.value = nachDeutsch(ab);
+        feuere(bis);
+      }
+    });
   });
 
   if (document.readyState !== "loading") los();
