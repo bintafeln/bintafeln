@@ -123,6 +123,33 @@ def test_pdf_mit_gestaltung_fusszeile_und_logo(admin_client, erika, pdf_text):
     assert "01234 5678" not in ohne and "Kastentext" in ohne
 
 
+def test_ohne_briefkopf_keine_faltmarken_und_anschrift_tiefer(db):
+    """Vorgedruckter Briefbogen: keine Faltmarken, Anschrift einen halben Zentimeter tiefer."""
+    from reportlab.lib.units import mm
+
+    from apps.serienbriefe.brief import Briefkopf
+
+    class Blatt:
+        def __init__(self):
+            self.linien, self.texte = [], {}
+
+        def line(self, *punkte):
+            self.linien.append(punkte)
+
+        def drawString(self, x, y, text):  # noqa: N802 (Name aus ReportLab)
+            self.texte[text] = y
+
+        def __getattr__(self, name):
+            return lambda *a, **k: None
+
+    tafel = TafelEinstellungen.laden()
+    mit, ohne = Blatt(), Blatt()
+    Briefkopf(tafel, ["Erika Muster"], "01.01.2030", True).drawOn(mit, 0, 0)
+    Briefkopf(tafel, ["Erika Muster"], "01.01.2030", False).drawOn(ohne, 0, 0)
+    assert len(mit.linien) == 2 and ohne.linien == []
+    assert round((mit.texte["Erika Muster"] - ohne.texte["Erika Muster"]) / mm) == 5
+
+
 def test_alte_textvorlage_im_pdf(admin_client, erika, pdf_text):
     v = Vorlage.objects.create(name="Alt", betreff="Hallo", text="{anrede}\n\nErster Absatz.")
     text = pdf_text(_absenden(admin_client, v, schritt="pdf"))

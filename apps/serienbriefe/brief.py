@@ -30,6 +30,7 @@ BETREFF = ParagraphStyle("betreff", parent=gestaltung.BRIEF, fontName="Helvetica
 FUSS = ParagraphStyle("fuss", parent=gestaltung.BRIEF, fontSize=7.5, leading=9.5, spaceAfter=0,
                       textColor="#555555")  # fmt: skip
 LOGO_HOEHE, LOGO_BREITE = 18 * mm, 55 * mm
+TIEFER_OHNE_KOPF = 5 * mm  # Anschrift auf vorgedrucktem Briefbogen etwas tiefer
 
 
 def _logo(tafel):
@@ -76,20 +77,25 @@ class Briefkopf(Flowable):
         canvas.saveState()
         if self.mit_kopf:
             self.kopf(canvas, breite, hoehe)
-        # Anschriftfeld: 45 mm von oben, 20 mm von links, 85 x 45 mm
+        # Anschriftfeld: 45 mm von oben, 20 mm von links, 85 x 45 mm; ohne Briefkopf (eigener,
+        # vorgedruckter Briefbogen) sitzt es etwas tiefer und die Faltmarken entfallen.
+        tiefer = 0 if self.mit_kopf else TIEFER_OHNE_KOPF
         absender = " · ".join(t for t in (self.tafel.name, self.tafel.anschrift) if t)
         canvas.setFont("Helvetica", 7)
-        canvas.drawString(20 * mm + 5 * mm, hoehe - 50 * mm, absender[:95])
+        canvas.drawString(20 * mm + 5 * mm, hoehe - 50 * mm - tiefer, absender[:95])
         canvas.setFont("Helvetica", 10.5)
-        zeile = hoehe - 60 * mm
+        zeile = hoehe - 60 * mm - tiefer
         for teil in self.anschrift[:6]:
             canvas.drawString(20 * mm + 5 * mm, zeile, zeichen.bereinigen(teil))
             zeile -= 5 * mm
         canvas.drawRightString(breite - RAND_RECHTS, hoehe - 90 * mm, self.datum)
-        # Faltmarken
-        canvas.setLineWidth(0.3)
-        for marke in (105 * mm, 210 * mm):
-            canvas.line(5 * mm, hoehe - marke, 9 * mm, hoehe - marke)
+        if self.mit_kopf:
+            # Faltmarken: fein, kurz und grau, damit sie auf keinem Drucker als Balken erscheinen
+            canvas.setLineWidth(0.2)
+            canvas.setLineCap(0)
+            canvas.setStrokeColor("#888888")
+            for marke in (105 * mm, 210 * mm):
+                canvas.line(5 * mm, hoehe - marke, 8 * mm, hoehe - marke)
         canvas.restoreState()
 
     def draw(self):  # pragma: no cover - drawOn zeichnet alles
