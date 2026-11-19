@@ -53,7 +53,7 @@
     </div>
     <div class="listen-fuss">
       <label class="listen-haken"><input type="checkbox" name="summen" value="1"{% if summen %} checked{% endif %}> nur Anzahl und Summen je Gruppe</label>
-      <details class="spalten-wahl" data-nicht-sofort><summary>Spalten wählen</summary>
+      <details class="spalten-wahl" id="listen-spalten"><summary>Spalten wählen</summary>
         <div class="spalten-haken">{% for k, t, an in spalten_wahl %}<label><input type="checkbox" name="s" value="{{ k }}"{% if an %} checked{% endif %}> {{ t }}</label>{% endfor %}</div>
       </details>
       {% if p.sort %}<input type="hidden" name="sort" value="{{ p.sort }}">{% endif %}
