@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from apps.konten import personal, rollen, verwaltung
 from apps.personal import arbeitszeit, berechnung
-from apps.personal.forms import ZeitbuchungForm
+from apps.personal.forms import ArbeitszeitEinstellungenForm, ZeitbuchungForm
 from apps.personal.models import Arbeitsvertrag, ArbeitszeitEinstellungen, Zeitbuchung
 
 pytestmark = pytest.mark.django_db
@@ -222,6 +222,34 @@ def test_einstellungen(admin_client, client, anmelden, fest):
     )  # fmt: skip
     anmelden(client, fest)
     assert client.get(url).status_code == 403
+
+
+def test_einzelne_ehrenamtliche_auswaehlen(admin_client, benutzer_mit_rolle, ehrenamt, fest):
+    """In den Einstellungen wählt man aus, welche Ehrenamtlichen stempeln."""
+    url = reverse("personal:arbeitszeit_einstellungen")
+    andere = benutzer_mit_rolle("emil", rollen.AUSGABE)
+    nie = benutzer_mit_rolle("erna", rollen.AUSGABE)
+    nie.zeiterfassung = "aus"
+    nie.save()
+    seite = admin_client.get(url).content.decode()
+    assert "Diese Ehrenamtlichen stempeln" in seite
+    assert f'value="{ehrenamt.pk}"' in seite and f'value="{fest.pk}"' not in seite  # nur Ehrenamt
+    daten = {"aktiv": "on", "offen_hoechstens_stunden": "14"}
+    admin_client.post(url, daten | {"stempelnde": [ehrenamt.pk]})
+    for b in (ehrenamt, andere, nie):
+        b.refresh_from_db()
+    assert arbeitszeit.erfasst(ehrenamt) and not arbeitszeit.erfasst(andere)
+    assert (ehrenamt.zeiterfassung, andere.zeiterfassung, nie.zeiterfassung) == ("an", "", "aus")
+    assert ArbeitszeitEinstellungenForm().fields["stempelnde"].initial == [ehrenamt]
+    # Häkchen weg: wieder wie die Tafel; „stempelt nicht“ bleibt
+    admin_client.post(url, daten | {"stempelnde": [andere.pk]})
+    for b in (ehrenamt, andere, nie):
+        b.refresh_from_db()
+    assert (ehrenamt.zeiterfassung, andere.zeiterfassung, nie.zeiterfassung) == ("", "an", "aus")
+    # eine fest angestellte Person lässt sich hier nicht auswählen
+    assert admin_client.post(url, daten | {"stempelnde": [fest.pk]}).status_code == 200
+    andere.refresh_from_db()
+    assert andere.zeiterfassung == "an"
 
 
 def test_loeschfrist_entfernt_zeiten(admin, fest):

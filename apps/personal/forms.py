@@ -4,7 +4,9 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
+from apps.core.forms import Mehrfachauswahl
 from apps.konten.forms import DatumEingabe
+from apps.konten.models import Benutzer
 from apps.personal import arbeitszeit
 from apps.personal.models import (
     Abwesenheit,
@@ -161,7 +163,39 @@ class ZeitbuchungForm(forms.Form):
 
 
 class ArbeitszeitEinstellungenForm(forms.ModelForm):
+    # Welche Ehrenamtlichen stempeln, wenn nicht alle stempeln: gespeichert bei der Person
+    # (``Benutzer.zeiterfassung`` = „stempelt (immer)“), hier nur gesammelt auswählbar.
+    stempelnde = forms.ModelMultipleChoiceField(
+        label="Diese Ehrenamtlichen stempeln",
+        queryset=Benutzer.objects.none(),
+        required=False,
+        widget=Mehrfachauswahl(leer="niemand einzeln ausgewählt"),
+        help_text="Wer hier ein Häkchen hat, stempelt – auch wenn „Auch Ehrenamtliche stempeln“ "
+        "ausgeschaltet ist. Ist es eingeschaltet, stempeln ohnehin alle Ehrenamtlichen.",
+    )
+
     class Meta:
         model = ArbeitszeitEinstellungen
-        fields = ["aktiv", "nur_am_monitor", "ehrenamtliche_stempeln", "pausen_automatisch",
-                  "offen_hoechstens_stunden"]  # fmt: skip
+        fields = ["aktiv", "nur_am_monitor", "ehrenamtliche_stempeln", "stempelnde",
+                  "pausen_automatisch", "offen_hoechstens_stunden"]  # fmt: skip
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        feld = self.fields["stempelnde"]
+        feld.queryset = Benutzer.objects.filter(
+            is_active=True, beschaeftigung=Benutzer.Beschaeftigung.EHRENAMTLICH
+        ).order_by("last_name", "first_name", "username")
+        feld.initial = list(feld.queryset.filter(zeiterfassung=Benutzer.Zeiterfassung.AN))
+
+    def save(self, commit=True):
+        """Häkchen gesetzt: „stempelt (immer)“. Häkchen entfernt: wieder „wie in den Einstellungen
+        der Tafel“. Wer auf „stempelt nicht“ steht und kein Häkchen bekommt, bleibt so."""
+        einstellungen = super().save(commit)
+        an, standard = Benutzer.Zeiterfassung.AN, Benutzer.Zeiterfassung.STANDARD
+        gewaehlt = {b.pk for b in self.cleaned_data["stempelnde"]}
+        for b in self.fields["stempelnde"].queryset:
+            neu = an if b.pk in gewaehlt else standard if b.zeiterfassung == an else b.zeiterfassung
+            if neu != b.zeiterfassung:
+                b.zeiterfassung = neu
+                b.save(update_fields=["zeiterfassung"])  # einzeln: steht im Änderungsprotokoll
+        return einstellungen
