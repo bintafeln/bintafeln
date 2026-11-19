@@ -647,6 +647,31 @@ def test_breite_liste_scrollbalken_oben(angemeldet, admin):
     assert oben.evaluate("el => el.scrollLeft") < 50
 
 
+def test_listen_am_handy_mit_spaltenueberschrift(angemeldet, admin):
+    """Hochkant am Handy steht jede Zeile als Karte da, vor jedem Wert die Spaltenüberschrift –
+    auch in Listen, deren Vorlage sie nicht selbst mitgibt (static/js/tabellen_titel.js)."""
+    from apps.core.models import TafelEinstellungen
+    from apps.wochenuebersicht.models import Selbstabholer
+
+    t = TafelEinstellungen.laden()
+    t.module = ["wochenuebersicht"]
+    t.save()
+    Selbstabholer.objects.create(name="Beispielhilfe", tage="Mo, Fr", personen=70)
+    seite = angemeldet(admin)
+    seite.set_viewport_size({"width": 390, "height": 800})
+    seite.goto(reverse("wochenuebersicht:selbstabholer"))
+    zeile = seite.locator("table.tabelle tbody tr").first
+    zellen = zeile.locator("td")
+    expect(zellen.nth(1)).to_have_attribute("data-titel", "Tage")
+    expect(zellen.nth(2)).to_have_attribute("data-titel", "Personen")
+    davor = "el => getComputedStyle(el, '::before').content"
+    assert zellen.nth(1).evaluate(davor) == '"Tage: "'
+    assert zellen.nth(0).evaluate(davor) == '"Einrichtung: "'
+    expect(zellen.nth(4)).to_be_hidden()  # kein Telefon: kein leeres Feld mit Doppelpunkt
+    seite.set_viewport_size({"width": 1280, "height": 900})
+    expect(zellen.nth(4)).to_be_visible()  # breit: normale Tabelle mit allen Spalten
+
+
 def test_liste_zeigt_kriterium_sofort(angemeldet, admin):
     """Listen: Ein gewähltes Kriterium zeigt das Ergebnis ohne „Anzeigen“ – auch die Spaltenwahl,
     die dabei aufgeklappt bleibt."""

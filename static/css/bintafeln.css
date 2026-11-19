@@ -220,6 +220,11 @@ a.blaettern-knopf:hover { border-color: var(--akzent); }
   .tabelle tr { display: block; border-bottom: 2px solid var(--rand); padding: .5rem 0; }
   .tabelle td { display: block; border: 0; padding: .15rem 0; }
   .tabelle td::before { content: attr(data-titel) ": "; font-weight: 600; }
+  /* Ohne Überschrift (z. B. Spalte mit Knöpfen) kein einsamer Doppelpunkt; leere Felder fallen
+     weg. Fehlende Überschriften trägt static/js/tabellen_titel.js aus dem Tabellenkopf nach. */
+  .tabelle td:not([data-titel])::before, .tabelle td[data-titel=""]::before,
+  .tabelle td[colspan]::before { content: none; }
+  .tabelle td:empty { display: none; }
 }
 
 /* Tabellen, die oft in schmalen Spalten stehen (z. B. Nachrichten auf der Haushaltsseite): als

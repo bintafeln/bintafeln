@@ -218,6 +218,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Treffer der Seite in `<div id="ergebnis">`; nur dieser Bereich wird ausgetauscht.
   Jedes Filterformular bekommt `{% filter_zuruecksetzen %}` (Knopf „Zurücksetzen“; Angaben, die
   bleiben sollen, als Argumente, z. B. `"sort"`).
+- Listen am Handy: unter 40rem zeigt jede `table.tabelle` ihre Zeilen als Karten mit der
+  Spaltenüberschrift vor jedem Wert (`data-titel`); fehlt sie, trägt `static/js/tabellen_titel.js` sie
+  aus dem Tabellenkopf nach. Jede Liste braucht deshalb einen `<thead>`.
 - Spaltenbreite in Listen per Ziehen: `static/js/spaltenbreite.js` (alle Tabellen in
   `.tabelle-rahmen`, Breiten je Liste im localStorage `bintafeln-breite-…`, Knopf zum Zurücksetzen).
 - Lange Mehrfachauswahlen als aufklappbares Menü: Widget `Mehrfachauswahl` (`apps/core/forms.py`,
