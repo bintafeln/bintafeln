@@ -1,4 +1,5 @@
 import datetime as dt
+from collections import Counter
 
 from django import forms
 from django.core.exceptions import ValidationError
@@ -182,9 +183,13 @@ class ArbeitszeitEinstellungenForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         feld = self.fields["stempelnde"]
+        # wie die Mitarbeitendenliste: ohne die Konten der Ausgabestellen
         feld.queryset = Benutzer.objects.filter(
-            is_active=True, beschaeftigung=Benutzer.Beschaeftigung.EHRENAMTLICH
+            is_active=True, stelle__isnull=True, beschaeftigung=Benutzer.Beschaeftigung.EHRENAMTLICH
         ).order_by("last_name", "first_name", "username")
+        # Mehrere Konten mit demselben Namen unterscheidet der Benutzername
+        namen = Counter(str(b) for b in feld.queryset)
+        feld.label_from_instance = lambda b: f"{b} ({b.username})" if namen[str(b)] > 1 else str(b)
         feld.initial = list(feld.queryset.filter(zeiterfassung=Benutzer.Zeiterfassung.AN))
 
     def save(self, commit=True):

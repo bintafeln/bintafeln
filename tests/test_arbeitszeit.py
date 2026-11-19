@@ -246,6 +246,18 @@ def test_einzelne_ehrenamtliche_auswaehlen(admin_client, benutzer_mit_rolle, ehr
     for b in (ehrenamt, andere, nie):
         b.refresh_from_db()
     assert (ehrenamt.zeiterfassung, andere.zeiterfassung, nie.zeiterfassung) == ("", "an", "aus")
+    # Konten der Ausgabestellen stehen nicht in der Liste; gleiche Namen bekommen den Benutzernamen
+    from apps.kunden.models import Ausgabestelle
+
+    konto = benutzer_mit_rolle("ausgabe-nord", rollen.AUSGABE)
+    konto.stelle = Ausgabestelle.objects.create(name="Nord")
+    konto.save()
+    for b in (ehrenamt, andere):
+        b.first_name, b.last_name = "Eli", "Muster"
+        b.save()
+    seite = admin_client.get(url).content.decode()
+    assert f'value="{konto.pk}"' not in seite
+    assert "Eli Muster (eli)" in seite and "Eli Muster (emil)" in seite and "(erna)" not in seite
     # eine fest angestellte Person lässt sich hier nicht auswählen
     assert admin_client.post(url, daten | {"stempelnde": [fest.pk]}).status_code == 200
     andere.refresh_from_db()
