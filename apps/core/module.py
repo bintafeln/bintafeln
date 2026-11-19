@@ -110,6 +110,11 @@ class Modul:
     # Kachel auf „Mein Konto“: mein_konto(request) -> HTML (render_to_string, ein
     # <div class="konto-kachel"> mit <h2>) oder ""
     mein_konto: Callable | None = None
+    # Eigene Einsätze auf der gemeinsamen Seite „Meine Einsätze“ (Dienstpläne): einsaetze_recht
+    # ist das Recht, mit dem die Seite im Menü steht; meine_einsaetze(request) -> HTML (ein
+    # <section class="karte"> mit <h2>) oder "".
+    meine_einsaetze: Callable | None = None
+    einsaetze_recht: str = ""
     # Abschnitt auf der Antragsseite (apps/antraege): antrag(request, antrag) -> HTML oder "".
     # So zeigt z. B. die Warteliste ihre Aktionen (Status, Einladen, Anmerkungen) direkt auf der
     # ganzen Antragsseite, statt auf einer eigenen Seite.
@@ -235,6 +240,20 @@ def mein_konto(request) -> list[str]:
     an = eingeschaltet()
     teile = [m.mein_konto(request) for m in alle() if m.kennung in an and m.mein_konto]
     return [t for t in teile if t]
+
+
+def meine_einsaetze(request) -> list[str]:
+    """HTML-Abschnitte der eingeschalteten Module für „Meine Einsätze“ (leere fallen weg)."""
+    an = eingeschaltet()
+    teile = [m.meine_einsaetze(request) for m in alle()
+             if m.kennung in an and m.meine_einsaetze]  # fmt: skip
+    return [t for t in teile if t]
+
+
+def einsaetze_rechte() -> set[str]:
+    """Rechte, mit denen „Meine Einsätze“ im Menü steht (eines genügt)."""
+    an = eingeschaltet()
+    return {m.einsaetze_recht for m in alle() if m.kennung in an and m.meine_einsaetze}
 
 
 def antrag(request, antrag) -> list[str]:

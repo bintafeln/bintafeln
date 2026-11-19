@@ -64,6 +64,7 @@ urlpatterns = [
     path("app/symbol-<int:groesse>.png", views_app.symbol, name="app_symbol"),
     path("app/manifest.webmanifest", views_app.manifest, name="manifest"),
     path("hilfe/", views.hilfe, name="hilfe"),
+    path("einsaetze/", views.meine_einsaetze, name="meine_einsaetze"),
     path("suche/", views.suche, name="suche"),
     path("menue-zahlen/", views.menue_zahlen, name="menue_zahlen"),
     path("update/", views_update.seite, name="update"),

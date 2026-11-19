@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block titel %}Meine Einsätze{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Meine Einsätze</h1>
+  <p class="hinweis titel-text">Ihre Einsätze der nächsten vier Wochen aus allen Dienstplänen.</p>
+  {% if not abschnitte %}<p>Für Ihr Konto gibt es keinen Dienstplan.</p>{% endif %}
+</section>
+{% for abschnitt in abschnitte %}{{ abschnitt }}{% endfor %}
+{% endblock %}

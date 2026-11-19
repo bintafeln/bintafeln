@@ -157,8 +157,8 @@ def test_hilfe_bild_dienstplan(angemeldet, admin, muster, benutzer_mit_rolle, re
     b = Besetzung.objects.filter(aufgabe__stelle=stelle, aufgabe__name="Brot")
     b.update(helfer=helferin)
     seite.context.clear_cookies()
-    seite = oeffnen(angemeldet, ines, reverse("dienstplan:meine"))
-    karte = seite.locator("section.karte")
+    seite = oeffnen(angemeldet, ines, reverse("core:meine_einsaetze"))
+    karte = seite.locator("#einsaetze-ausgabe")
     aufnehmen(
         seite,
         "dienstplan-meine",
@@ -252,7 +252,7 @@ def test_hilfe_bild_fahrdienst(angemeldet, admin, muster):
     kai_person.save(update_fields=["konto"])
     assert plan.einsaetze(kai_person, heute, heute + dt.timedelta(days=27))
     seite.context.clear_cookies()
-    seite = oeffnen(angemeldet, kai, reverse("fahrdienst:meine"))
+    seite = oeffnen(angemeldet, kai, reverse("core:meine_einsaetze"))
     seite.get_by_role("link", name="kann nicht", exact=True).first.click()
     karte = seite.locator("section.karte")
     seite.select_option("#id_dauer", "14")

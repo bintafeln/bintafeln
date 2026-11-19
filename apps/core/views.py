@@ -298,3 +298,12 @@ def menue_zahlen(request):
     from apps.core.menue import menue, zahlen_flach
 
     return render(request, "includes/_menue_zahlen.html", {"zahlen": zahlen_flach(menue(request))})
+
+
+@never_cache
+@login_required
+def meine_einsaetze(request):
+    """Eigene Einsätze aus allen Dienstplänen (Ausgabe, Fahrdienst …) auf einer Seite. Was ein
+    Konto sieht, entscheidet jedes Modul nach seinen Rechten (``Modul.meine_einsaetze``)."""
+    return render(request, "core/meine_einsaetze.html",
+                  {"abschnitte": module.meine_einsaetze(request)})  # fmt: skip

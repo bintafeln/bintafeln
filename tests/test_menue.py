@@ -170,8 +170,9 @@ def test_dienstplaene_unter_einem_punkt(admin):
     teile = {
         a["titel"]: [e["titel"] for e in a["eintraege"]] for a in b["Dienstpläne"]["abschnitte"]
     }
-    assert teile == {"Ausgabe": ["Dienstplan der Ausgabe", "Meine Dienste"],
-                     "Fahrdienst": ["Fahrerplan", "Meine Einsätze"]}  # fmt: skip
+    # „Meine Einsätze“ steht nur einmal oben, nicht je Dienstplan
+    assert teile == {"": ["Meine Einsätze"], "Ausgabe": ["Dienstplan der Ausgabe"],
+                     "Fahrdienst": ["Fahrerplan"]}  # fmt: skip
     dp = next(g for g in b["Einstellungen"]["gruppen"] if g["titel"] == "Dienstpläne")
     assert sorted(e["titel"] for e in dp["eintraege"]) == ["Ausgabe: Aufgaben und Besetzung",
                                                      "Fahrdienst: Touren und Springer"]  # fmt: skip
@@ -235,3 +236,29 @@ def test_menue_zahl_ids_stabil_und_eindeutig(admin):
     ids = [z["zahl_id"] for z in flach]
     assert ids and len(ids) == len(set(ids))  # eindeutig
     assert [z["zahl_id"] for z in zahlen_flach(_bereiche(admin))] == ids  # deterministisch
+
+
+def test_meine_einsaetze_auf_einer_seite(admin, client, anmelden, benutzer_mit_rolle):
+    """Wer in Ausgabe und Fahrdienst hilft, sieht alle Einsätze auf einer Seite; jedes Modul zeigt
+    seinen Abschnitt nur mit dem eigenen Recht, und die alten Adressen führen dorthin."""
+    from apps.konten import rollen
+
+    alle_bereiche(admin, ["fahrdienst", "dienstplan"])  # schaltet die Module ein
+    url = reverse("core:meine_einsaetze")
+    c = anmelden(client, admin)
+    seite = c.get(url).content.decode()
+    assert 'id="einsaetze-ausgabe"' in seite and 'id="einsaetze-fahrdienst"' in seite
+    assert c.get(reverse("dienstplan:meine")).url == url + "#einsaetze-ausgabe"
+    assert c.get(reverse("fahrdienst:meine")).url == url + "#einsaetze-fahrdienst"
+    # Rolle Ausgabe: nur der Dienstplan der Ausgabe, im Menü trotzdem genau ein Eintrag
+    helfer = benutzer_mit_rolle("helga", rollen.AUSGABE)
+    seite = anmelden(client, helfer).get(url).content.decode()
+    assert 'id="einsaetze-ausgabe"' in seite and 'id="einsaetze-fahrdienst"' not in seite
+    b = alle_bereiche(helfer, ["fahrdienst", "dienstplan"])
+    oben = [e["titel"] for a in b["Dienstpläne"]["abschnitte"] if not a["titel"]
+            for e in a["eintraege"]]  # fmt: skip
+    assert oben == ["Meine Einsätze"]
+    # Ohne Dienstplan-Module: kein Eintrag, die Seite sagt es
+    b = alle_bereiche(admin, [])
+    assert "Dienstpläne" not in b
+    assert "keinen Dienstplan" in anmelden(client, admin).get(url).content.decode()
