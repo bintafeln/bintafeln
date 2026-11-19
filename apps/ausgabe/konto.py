@@ -304,6 +304,89 @@ def abgleiche_nachrechnen(von: str = "", sekunden: float | None = None) -> dict:
     return {"kunden": kunden, "buchungen": buchungen, "offen": len(gefunden) - kunden}
 
 
+GESCHAETZT = "geschätzt (alte Abholung ohne Kassendaten)"
+
+
+def _ohne_kasse(bis: dt.date):
+    """Alte Abholungen aus dem bisherigen Programm (nicht am Einlass erfasst) bis ``bis``, zu denen
+    es keine Buchung gibt – auch keine andere Abholungs-Buchung des Kunden am selben Tag."""
+    from django.db.models import Exists, OuterRef
+
+    from apps.kunden.models import Abholung
+
+    gebucht = Buchung.objects.filter(art=Buchung.Art.ABHOLUNG, datum=OuterRef("datum"),
+                                     kundennummer=OuterRef("haushalt__kundennummer"))  # fmt: skip
+    return Abholung.objects.filter(buchung__isnull=True, erfasst_am__isnull=True,
+                                   datum__lte=bis).exclude(Exists(gebucht))  # fmt: skip
+
+
+def schaetzung_stand(bis: dt.date) -> dict:
+    """Was es zu schätzen gäbe und was schon geschätzt ist (schnell, ändert nichts)."""
+    from django.db.models import Count, Max, Min, Sum
+
+    offen = _ohne_kasse(bis).aggregate(anzahl=Count("pk"), kunden=Count("haushalt", distinct=True),
+                                       von=Min("datum"), bis=Max("datum"))  # fmt: skip
+    schon = Buchung.objects.filter(bemerkung=GESCHAETZT, importiert=True).aggregate(
+        anzahl=Count("pk"), summe=Sum("bar"))  # fmt: skip
+    return {"offen": offen, "geschaetzt": schon["anzahl"], "summe": schon["summe"] or NULL}
+
+
+def alte_abholungen_schaetzen(bis: dt.date, von: str = "", ab: int = 0,
+                              sekunden: float | None = None) -> dict:  # fmt: skip
+    """Bucht für alte Abholungen ohne Kassendaten den Beitrag nach den Beitragsregeln als bar
+    gezahlt an dem Tag – eine Schätzung, gekennzeichnet mit ``GESCHAETZT``.
+
+    Was an einem alten Tag wirklich bar gezahlt wurde, steht nirgends: Die Listen des bisherigen
+    Programms nannten es nicht. Ohne Buchung bleiben Kasse und Abrechnung für diese Zeit leer.
+    Die Schätzung nimmt an, dass jede Abholung an ihrem Tag bar bezahlt wurde (Soll = Haben, der
+    Kontostand bleibt). Summen über längere Zeit stimmen so ungefähr; Vorauszahlungen stehen am
+    Abholtag statt am Zahltag, und Angeschriebenes zählt als bezahlt. Abholungen ohne Beitrag
+    (beitragsfreie Zeit) bekommen keine Buchung.
+
+    In Portionen wie ``abgleiche_nachrechnen``: ``ab`` ist der letzte bearbeitete Haushalt; mit
+    ``sekunden`` hört der Lauf nach dieser Zeit auf. Rückgabe: Zahl und Summe der Buchungen und
+    ``weiter`` (Haushalt, ab dem der nächste Aufruf weitermacht, sonst ``None``)."""
+    import time
+
+    from apps.kunden.models import KundenEinstellungen
+
+    ende = time.monotonic() + sekunden if sekunden else None
+    einstellungen = AusgabeEinstellungen.laden()
+    kind_bis = KundenEinstellungen.laden().kind_bis_alter
+    offen = _ohne_kasse(bis)
+    haushalte = sorted(set(offen.filter(haushalt_id__gt=ab).values_list("haushalt_id", flat=True)))
+    buchungen, summe, weiter = 0, NULL, None
+    for nummer, pk in enumerate(haushalte):
+        if ende and nummer and time.monotonic() >= ende:
+            weiter = haushalte[nummer - 1]
+            break
+        with transaction.atomic(), disable_auditlog():
+            h = Haushalt.objects.select_for_update().get(pk=pk)
+            tage = set()
+            for a in offen.filter(haushalt=h).select_related("ausgabestelle").order_by(
+                    "datum", "uhrzeit"):  # fmt: skip
+                if a.datum in tage:  # zwei Abholungen an einem Tag: nur einmal
+                    continue
+                tage.add(a.datum)
+                kosten = einstellungen.beitrag_fuer(h, a.datum, kind_bis, stelle=a.ausgabestelle)
+                if not kosten:
+                    continue
+                _import_buchen(h, a.datum, a.uhrzeit, a.ausgabestelle, von or a.eingetragen_von,
+                               art=Buchung.Art.ABHOLUNG, zahlweise=Buchung.Zahlweise.BAR,
+                               soll=kosten, haben=kosten, bar=kosten, abholung=a,
+                               bemerkung=GESCHAETZT)  # fmt: skip
+                buchungen += 1
+                summe += kosten
+    return {"buchungen": buchungen, "summe": summe, "weiter": weiter}
+
+
+def schaetzung_entfernen() -> int:
+    """Nimmt alle geschätzten Buchungen wieder heraus (Soll = Haben: der Kontostand bleibt)."""
+    with transaction.atomic(), disable_auditlog():
+        anzahl, _ = Buchung.objects.filter(bemerkung=GESCHAETZT, importiert=True).delete()
+    return anzahl
+
+
 @transaction.atomic
 def einzahlen(haushalt, betrag, stelle, von, bemerkung="") -> Buchung:
     """Zahlung ohne Abholung. Mit Minus eine Auszahlung: Geld geht bar zurück an den Kunden."""

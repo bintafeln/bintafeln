@@ -75,5 +75,63 @@
 </section>
 {% endif %}
 
+{% if schaetzen.offen.anzahl or schaetzen.geschaetzt %}
+<section class="karte" id="schaetzen">
+  <h2>Alte Abholungen ohne Kassendaten schätzen</h2>
+  <p>Für alte Abholungen aus dem bisherigen Programm weiß bintafeln nicht, was an dem Tag bar gezahlt wurde.
+    Ohne Buchung steht dort bei „Bar gezahlt“ ein Strich, und Kasse und Abrechnung sind für diese Zeit leer.
+    Das Schätzen bucht für jede solche Abholung den <strong>Beitrag nach Ihren Beitragsregeln</strong> als bar
+    gezahlt an dem Tag, gekennzeichnet als „geschätzt“. Die Kontostände bleiben, wie sie sind.</p>
+  <p class="hinweis">Eine Schätzung: Summen über einen längeren Zeitraum stimmen ungefähr. Vorauszahlungen stehen
+    am Tag der Abholung statt am Zahltag, und Angeschriebenes zählt als bezahlt. Abholungen in beitragsfreier Zeit
+    bekommen keine Buchung. Am Einlass erfasste Abholungen bleiben unberührt.</p>
+  {% if schaetzen.offen.anzahl %}
+  <p>Bis {{ schaetzen.bis|date:"d.m.Y" }}: <strong>{{ schaetzen.offen.anzahl }}</strong> Abholung{{ schaetzen.offen.anzahl|pluralize:"en" }}
+    ohne Kassendaten bei <strong>{{ schaetzen.offen.kunden }}</strong> Kunde{{ schaetzen.offen.kunden|pluralize:"n" }}
+    ({{ schaetzen.offen.von|date:"d.m.Y" }} bis {{ schaetzen.offen.bis|date:"d.m.Y" }}).</p>
+  {% if not darf_buchen %}
+  <p class="fehler">Zum Schätzen fehlt das Recht „Kundenkonto korrigieren“.</p>
+  {% elif alte_abgleiche.kunden %}
+  <p class="fehler">Bitte zuerst oben die früheren Abgleiche nachrechnen – das ist genauer als eine Schätzung.</p>
+  {% else %}
+  {% if not schaetzen.laeuft %}
+  <form method="get" action="{% url 'uebernahme:besuche_konto' %}#schaetzen" class="inline filter">
+    <label>Schätzen bis einschließlich <input type="date" name="bis" value="{{ schaetzen.bis|date:'Y-m-d' }}"></label>
+    <button type="submit" class="knopf knopf-zweitrangig">Anzeigen</button>
+  </form>
+  {% endif %}
+  <form method="post" action="{% url 'uebernahme:besuche_konto' %}"
+        {% if schaetzen.laeuft %}hx-post="{% url 'uebernahme:besuche_konto' %}" hx-trigger="load delay:300ms" hx-swap="none"{% endif %}>
+    {% csrf_token %}
+    <input type="hidden" name="aktion" value="schaetzen">
+    <input type="hidden" name="bis" value="{{ schaetzen.bis|date:'Y-m-d' }}">
+    {% if schaetzen.laeuft %}
+    <input type="hidden" name="ab" value="{{ schaetzen.laeuft }}">
+    <p class="hinweis" role="status"><strong>Schätzen läuft …</strong> Die Seite rechnet in Portionen weiter und
+      lädt sich dabei neu. Bitte offen lassen, bis die Meldung „geschätzt“ erscheint. Wird sie geschlossen,
+      geht nichts verloren – „Weiter schätzen“ setzt später fort.</p>
+    <button type="submit" class="knopf knopf-zweitrangig">Weiter schätzen</button>
+    {% else %}
+    <button type="submit" class="knopf"
+            onclick="return confirm('Für {{ schaetzen.offen.anzahl }} alte Abholung(en) den Beitrag als geschätzte Bareinnahme buchen? Die Kontostände bleiben unverändert; die Schätzung lässt sich wieder entfernen.')">Schätzen</button>
+    {% endif %}
+  </form>
+  {% endif %}
+  {% endif %}
+  {% if schaetzen.geschaetzt %}
+  <p>Bisher geschätzt: <strong>{{ schaetzen.geschaetzt }}</strong> Buchung{{ schaetzen.geschaetzt|pluralize:"en" }},
+    zusammen <strong>{{ schaetzen.summe|floatformat:2 }} €</strong>.</p>
+  {% if darf_buchen and not schaetzen.laeuft %}
+  <form method="post" action="{% url 'uebernahme:besuche_konto' %}">
+    {% csrf_token %}
+    <input type="hidden" name="aktion" value="schaetzung_entfernen">
+    <button type="submit" class="knopf knopf-zweitrangig"
+            onclick="return confirm('Alle {{ schaetzen.geschaetzt }} geschätzten Buchungen wieder entfernen? Die Kontostände bleiben unverändert.')">Schätzung wieder entfernen</button>
+  </form>
+  {% endif %}
+  {% endif %}
+</section>
+{% endif %}
+
 <div id="bericht">{% include "uebernahme/_besuche_konto_bericht.html" %}</div>
 {% endblock %}

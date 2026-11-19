@@ -2,10 +2,13 @@
 umwandeln und in den normalen Import mit Abgleich übergeben. Es wird nichts ohne Abgleich
 gespeichert."""
 
+import datetime as dt
+
 from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.ausgabe import konto
 from apps.konten import rollen
@@ -105,6 +108,46 @@ def start(request):
 NACHRECHNEN_S = 15  # so lange rechnet ein Aufruf höchstens nach, dann der nächste
 
 
+def _schaetzen_bis(text):
+    """Bis zu welchem Tag geschätzt wird: die Eingabe, sonst gestern (heute bucht der Einlass)."""
+    try:
+        return dt.date.fromisoformat(text or "")
+    except ValueError:
+        return timezone.localdate() - dt.timedelta(days=1)
+
+
+def _schaetzen(request, aktion, darf_buchen):
+    """Alte Abholungen ohne Kassendaten schätzen bzw. die Schätzung wieder entfernen."""
+    ziel = reverse("uebernahme:besuche_konto")
+    if not darf_buchen:
+        messages.error(request, "Zum Schätzen fehlt das Recht „Kundenkonto korrigieren“.")
+    elif aktion == "schaetzung_entfernen":
+        anzahl = konto.schaetzung_entfernen()
+        messages.success(request, f"{anzahl} geschätzte Buchung(en) entfernt. Die Kontostände "
+                         "sind unverändert.")  # fmt: skip
+    elif konto.abgleiche_stand()["kunden"]:
+        messages.error(request, "Bitte zuerst die früheren Abgleiche nachrechnen – das ist "
+                       "genauer als eine Schätzung.")  # fmt: skip
+    else:
+        bis = _schaetzen_bis(request.POST.get("bis"))
+        ab = request.POST.get("ab", "")
+        erg = konto.alte_abholungen_schaetzen(bis, _benutzername(request.user),
+                                              ab=int(ab) if ab.isdigit() else 0,
+                                              sekunden=NACHRECHNEN_S)  # fmt: skip
+        if erg["weiter"]:
+            ziel += f"?bis={bis.isoformat()}&schaetzen={erg['weiter']}#schaetzen"
+        else:
+            messages.success(request, "Alte Abholungen sind geschätzt: Der Beitrag steht jetzt "
+                             "als „geschätzt“ in Kasse und Abrechnung. Die Kontostände sind "
+                             "unverändert.")  # fmt: skip
+            ziel += "#schaetzen"
+    if request.headers.get("HX-Request"):
+        antwort = HttpResponse(status=204)
+        antwort["HX-Redirect"] = ziel
+        return antwort
+    return redirect(ziel)
+
+
 @rollen.recht_erforderlich("kunden.importieren")
 def besuche_konto(request):
     """Tagesliste der Abholungen aus dem bisherigen Programm übernehmen (ADR 0110): Besuche
@@ -133,6 +176,8 @@ def besuche_konto(request):
             antwort["HX-Redirect"] = ziel
             return antwort
         return redirect(ziel)
+    if request.method == "POST" and aktion in ("schaetzen", "schaetzung_entfernen"):
+        return _schaetzen(request, aktion, darf_buchen)
     if request.method == "POST":
         datei = request.FILES.get("datei")
         if datei is None:
@@ -172,6 +217,9 @@ def besuche_konto(request):
     if "fehler" in kontext:
         messages.error(request, kontext["fehler"])
     kontext["alte_abgleiche"] = konto.abgleiche_stand()
+    bis = _schaetzen_bis(request.GET.get("bis"))
+    laeuft = request.GET.get("schaetzen") if darf_buchen else None
+    kontext["schaetzen"] = {"bis": bis, **konto.schaetzung_stand(bis), "laeuft": laeuft}
     kontext["nachrechnen_laeuft"] = bool(request.GET.get("laeuft")) and darf_buchen
     return render(request, "uebernahme/besuche_konto.html", kontext)
 
