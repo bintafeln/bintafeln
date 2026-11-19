@@ -111,8 +111,10 @@ def test_neue_ordnung_fuer_die_verwaltung(admin):
     assert abschnitte[""][:2] == ["Einlass", "Kasse"]
     assert "Abrechnung" in abschnitte[""] and "Kundenliste" not in abschnitte[""]
     assert "Selbstabholer" in abschnitte["Wochenübersicht"]
-    assert "Alle Ausgabestellen" not in abschnitte["Verwaltung"]  # jetzt unter Einstellungen
+    assert "Verwaltung" not in abschnitte  # alles Verwalten steht unter Einstellungen → Ausgabe
     ausgabe = next(g for g in b["Einstellungen"]["gruppen"] if g["titel"] == "Ausgabe")
+    assert {"Sonderaktionen", "Korrekturwünsche", "Post an Ausgabestellen", "Schließzeiten",
+            "Abrechnung"} <= {e["titel"] for e in ausgabe["eintraege"]}  # fmt: skip
     assert [e["titel"] for e in ausgabe["eintraege"]][:2] == [
         "Ausgabestellen",
         "Ausgabestellen-Konten",

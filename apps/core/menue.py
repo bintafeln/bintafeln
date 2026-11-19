@@ -52,7 +52,7 @@ def menue(request) -> list[dict]:
     # Bereiche mit Abschnitten: {bereich: {abschnitt: [(recht, eintrag), …]}}. Abschnitt "" steht
     # oben ohne Überschrift. Module hängen sich mit "Bereich" oder "Bereich/Abschnitt" ein.
     inhalt = {
-        "Ausgabestelle": {"": [], "Wochenübersicht": [], "Verwaltung": []},
+        "Ausgabestelle": {"": [], "Wochenübersicht": []},
         # Dienstpläne aller Art unter einem Punkt; die Module hängen sich als Abschnitt ein
         "Dienstpläne": {"": [], "Ausgabe": [], "Fahrdienst": []},
         "Meine Arbeitszeit": {"": []},
@@ -108,11 +108,6 @@ def menue(request) -> list[dict]:
         *([("kunden.liste", alle_kunden)] if an_der_stelle else []),
         ("einlass.nutzen", _eintrag("Post der Verwaltung", "kunden:postfach")),
     ], vorn=True)  # fmt: skip
-    dazu("Ausgabestelle/Verwaltung", [
-        ("sonderaktionen.verwalten", _eintrag("Sonderaktionen", "ausgabe:sonderaktionen")),
-        ("korrekturen.entscheiden", _eintrag("Korrekturwünsche", "ausgabe:korrekturen")),
-        ("kunden.nachrichten", _eintrag("Post an Ausgabestellen", "kunden:post_schreiben")),
-    ])  # fmt: skip
     if darf_stempeln(b):  # nur, wer selbst stempelt
         dazu("Meine Arbeitszeit", [
             (None, _eintrag("Meine Arbeitszeit", "personal:meine_arbeitszeit")),
@@ -273,6 +268,10 @@ def menue(request) -> list[dict]:
              _eintrag("Beitragsfreie Zeiträume", *_liste("beitragsfrei"))),
             ("einstellungen.listen", _eintrag("Sonderausgaben", *_liste("sonderausgaben"))),
             ("einstellungen.listen", _eintrag("Schließzeiten", *_liste("schliesszeiten"))),
+            # Auch die laufende Verwaltung der Ausgabe steht hier – alles an einem Ort
+            ("sonderaktionen.verwalten", _eintrag("Sonderaktionen", "ausgabe:sonderaktionen")),
+            ("korrekturen.entscheiden", _eintrag("Korrekturwünsche", "ausgabe:korrekturen")),
+            ("kunden.nachrichten", _eintrag("Post an Ausgabestellen", "kunden:post_schreiben")),
         ],
         "Verein": [
             ("einstellungen.listen", _eintrag("Adresskategorien", *_liste("adresskategorien"))),

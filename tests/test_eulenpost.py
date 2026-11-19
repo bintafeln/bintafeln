@@ -112,7 +112,7 @@ def test_post_ganz_loeschen(stellen, admin_client):
     assert PapierkorbEintrag.objects.get().art == "Post an Ausgabestellen"
 
 
-def test_post_im_menue_unter_ausgabestelle(admin):
+def test_post_im_menue_unter_einstellungen_ausgabe(admin):
     from django.test import RequestFactory
 
     from apps.core.menue import menue
@@ -121,4 +121,6 @@ def test_post_im_menue_unter_ausgabestelle(admin):
     anfrage.user = admin
     bereiche = {b["titel"]: str(b) for b in menue(anfrage)}
     ziel = reverse("kunden:post_schreiben")
-    assert ziel in bereiche["Ausgabestelle"] and ziel not in bereiche.get("Kunden", "")
+    # Alles Verwalten der Ausgabe steht an einem Ort: Einstellungen → Ausgabe
+    assert ziel in bereiche["Einstellungen"]
+    assert ziel not in bereiche["Ausgabestelle"] and ziel not in bereiche.get("Kunden", "")

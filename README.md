@@ -1049,7 +1049,7 @@ Anmerkung.
 - Alle mit dem Recht „Korrekturwünsche vom Einlass entscheiden“ (Admin immer; z. B. dem Büro
   geben) bekommen eine Mail, wenn ein Mailserver eingerichtet ist, und sehen auf der Startseite
   die Zahl der offenen Wünsche.
-- „Ausgabestelle → Korrekturwünsche“: **Zurücknehmen** führt die Korrektur aus (Kundenkonto und Kasse
+- „Einstellungen → Ausgabe → Korrekturwünsche“: **Zurücknehmen** führt die Korrektur aus (Kundenkonto und Kasse
   werden mitkorrigiert), **Ablehnen** lässt alles, wie es ist; beides optional mit Antwort.
 - Am Einlass steht beim Eintrag „Korrektur beantragt …, wartet auf Entscheidung“.
 - Wer das Recht zum Zurücknehmen hat, kann es direkt tun, auch an späteren Tagen.
@@ -1057,7 +1057,7 @@ Anmerkung.
 
 ### Sonderaktionen
 
-„Ausgabestelle → Sonderaktionen“ (Admin, Büro): Aktionen neben der normalen Ausgabe, z. B.
+„Einstellungen → Ausgabe → Sonderaktionen“ (Admin, Büro): Aktionen neben der normalen Ausgabe, z. B.
 Weihnachtsgutscheine oder Schulranzen.
 
 - **Anlegen:** Bezeichnung, Zeitraum, wie viel je Haushalt (einmal je Haushalt, je Kind oder je
