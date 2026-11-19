@@ -647,6 +647,34 @@ def test_breite_liste_scrollbalken_oben(angemeldet, admin):
     assert oben.evaluate("el => el.scrollLeft") < 50
 
 
+def test_antragsliste_knoepfe_bleiben_rechts_sichtbar(angemeldet, admin):
+    """Antragsliste auf dem Tablet: Ist die Tabelle breiter als der Bildschirm, bleiben die Knöpfe
+    jeder Zeile (ansehen, bearbeiten … aufnehmen) am rechten Rand sichtbar – nicht nur die
+    Überschrift."""
+    from apps.antraege.models import Antrag
+
+    for i in range(3):
+        Antrag.objects.create(
+            vorname="Erika", nachname=f"Beispiel-Langername {i}", email="erika@example.org",
+            telefon="0123 456789", staatsangehoerigkeit="Deutschland",
+        )  # fmt: skip
+    seite = angemeldet(admin)
+    seite.set_viewport_size({"width": 1000, "height": 750})
+    seite.goto(reverse("antraege:liste"))
+    rahmen = seite.locator(".tabelle-rahmen").first
+    assert rahmen.evaluate("el => el.scrollWidth > el.clientWidth")  # breiter als der Platz
+    rand = rahmen.bounding_box()
+    rechts = rand["x"] + rand["width"]
+    zeile = seite.locator("table.antraege-liste tbody tr").first
+    for name in ("ansehen", "bearbeiten", "aufnehmen"):
+        knopf = zeile.get_by_role("link", name=name).bounding_box()
+        assert knopf["x"] >= rand["x"] and knopf["x"] + knopf["width"] <= rechts + 1, name
+    # auch nach dem Rollen ganz nach links und rechts
+    rahmen.evaluate("el => el.scrollLeft = el.scrollWidth")
+    knopf = zeile.get_by_role("link", name="aufnehmen").bounding_box()
+    assert knopf["x"] + knopf["width"] <= rechts + 1
+
+
 def test_listen_am_handy_mit_spaltenueberschrift(angemeldet, admin):
     """Hochkant am Handy steht jede Zeile als Karte da, vor jedem Wert die Spaltenüberschrift –
     auch in Listen, deren Vorlage sie nicht selbst mitgibt (static/js/tabellen_titel.js)."""
