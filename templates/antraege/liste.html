@@ -87,7 +87,7 @@
         {% if "art" in sichtbar %}<td data-titel="Art">{{ a.get_art_display }}</td>{% endif %}
         {% if "staat" in sichtbar %}<td data-titel="Staatsangehörigkeit">{{ a.staatsangehoerigkeit|default:"–" }}</td>{% endif %}
         <td data-titel="Anmerkung">{{ a.kommentar|default:""|truncatechars:60 }}</td>
-        <td data-titel="Aktionen" class="zeilen-aktionen">
+        <td data-titel="Aktionen" class="aktionen-zelle"><div class="zeilen-aktionen">
           <a class="symbol" href="{% url 'antraege:antrag' a.pk %}" title="Ansehen" aria-label="Antrag {{ a.nummer }} ansehen">👁</a>
           <a class="symbol" href="{% url 'antraege:bearbeiten' a.pk %}" title="Bearbeiten" aria-label="Antrag {{ a.nummer }} bearbeiten">✎</a>
           <a class="symbol" href="{% url 'antraege:antrag' a.pk %}#anmerkungen" title="Anmerkung" aria-label="Anmerkung zu Antrag {{ a.nummer }}">💬</a>
@@ -97,7 +97,7 @@
               {% csrf_token %}<button type="submit" class="symbol gefahr" title="Löschen (in den Papierkorb)" aria-label="Antrag {{ a.nummer }} löschen">🗑</button></form>
           {% endif %}
           {% if not a.status == "erledigt" or not a.kundennummer %}<a class="symbol aufnehmen" href="{% url 'antraege:aufnahme' a.pk %}" title="Aufnehmen" aria-label="Antrag {{ a.nummer }} aufnehmen">➜</a>{% endif %}
-        </td>
+        </div></td>
       </tr>
     {% empty %}
       <tr><td colspan="{{ spalten|length|add:3 }}">Keine Anträge.</td></tr>

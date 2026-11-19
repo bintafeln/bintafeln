@@ -874,9 +874,11 @@ a.knopf-gefahr { color: #fff; }
 /* Schmalere Spalten: lange E-Mail-Adressen und Staatsangehörigkeiten werden gekürzt (voll im Antrag) */
 .antraege-liste td[data-titel="E-Mail"], .antraege-liste td[data-titel="Staatsangehörigkeit"] {
   max-width: 11rem; overflow: hidden; text-overflow: ellipsis; }
-/* Die Knöpfe rechts bleiben beim seitlichen Rollen immer sichtbar */
+/* Die Knöpfe rechts bleiben beim seitlichen Rollen immer sichtbar. Die Zelle selbst muss eine
+   Tabellenzelle bleiben (die Knöpfe stehen in einem Kasten darin): Als Flex-Kasten haftet sie in
+   Safari (iPad) nicht, und die Knöpfe rutschten rechts aus dem Bild. */
 @media (min-width: 761px) {
-  .antraege-liste th:last-child, .antraege-liste td.zeilen-aktionen {
+  .antraege-liste th:last-child, .antraege-liste td.aktionen-zelle {
     position: sticky; right: 0; background: var(--flaeche); box-shadow: -8px 0 6px -6px rgba(0, 0, 0, .18); }
 }
 .status-aendern { display: inline-flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
