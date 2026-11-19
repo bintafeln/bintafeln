@@ -13,22 +13,40 @@ FREIE_PFADE = ("/static/", "/media/", "/healthz/", "/app/")
 
 
 class HtmxAnmeldeMiddleware:
-    """Läuft die Sitzung während eines htmx-Aufrufs ab (Abmeldung, Zeitüberschreitung oder
-    Neustart beim Update), leitet bintafeln auf die Anmeldeseite um. htmx würde deren HTML sonst
-    in einen Seitenbereich einfügen – es entsteht ein doppeltes „Anmelden" über der Seite.
-    Stattdessen schicken wir htmx per ``HX-Redirect`` die ganze Seite zur Anmeldung."""
+    """Läuft die Sitzung ab (Abmeldung, Zeitüberschreitung oder Neustart beim Update), leitet
+    bintafeln auf die Anmeldeseite um – und merkt sich in ``next``, wohin es danach gehen soll.
+
+    - Bei einem htmx-Aufruf würde htmx das HTML der Anmeldeseite in einen Seitenbereich einfügen
+      – es entsteht ein doppeltes „Anmelden" über der Seite. Stattdessen schicken wir htmx per
+      ``HX-Redirect`` die ganze Seite zur Anmeldung.
+    - ``next`` bleibt nur stehen, wenn eine ganze Seite aufgerufen wurde. Kam die Anfrage aus dem
+      Hintergrund (htmx, ``fetch``, eingebettetes PDF) oder war sie ein abgeschicktes Formular,
+      zeigte ``next`` auf einen Seitenbaustein oder eine Adresse, die nur Eingaben annimmt: Nach
+      dem Anmelden stand dort nur ein Bruchstück oder eine Fehlerseite. Dann geht es nach dem
+      Anmelden zur Startseite."""
 
     def __init__(self, get_response):
         self.get_response = get_response
 
+    @staticmethod
+    def _ganze_seite(request) -> bool:
+        """Hat der Browser eine ganze Seite angefordert (Link, Adresszeile, Neuladen)?"""
+        if request.method not in ("GET", "HEAD") or request.headers.get("HX-Request"):
+            return False
+        # Browser nennen das Ziel der Anfrage; ältere ohne diese Angabe gelten als Seitenaufruf
+        return request.headers.get("Sec-Fetch-Dest", "document") == "document"
+
     def __call__(self, request):
         response = self.get_response(request)
-        if request.headers.get("HX-Request") and response.status_code in (301, 302):
-            ziel = response.headers.get("Location", "")
-            if urlparse(ziel).path == reverse("konten:anmelden"):
-                leer = HttpResponse(status=204)
-                leer["HX-Redirect"] = ziel
-                return leer
+        if response.status_code in (301, 302):
+            ziel = urlparse(response.headers.get("Location", ""))
+            if ziel.path == reverse("konten:anmelden"):
+                if not self._ganze_seite(request) and ziel.query:
+                    response["Location"] = ziel._replace(query="").geturl()
+                if request.headers.get("HX-Request"):
+                    leer = HttpResponse(status=204)
+                    leer["HX-Redirect"] = response["Location"]
+                    return leer
         return response
 
 
