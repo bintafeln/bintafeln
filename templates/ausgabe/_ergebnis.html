@@ -44,6 +44,8 @@
   {% if krank.krank_bis < heute %}vom {{ krank.krank_von|date:"d.m.Y" }} bis {{ krank.krank_bis|date:"d.m.Y" }} – entschuldigt; die Meldung verschwindet mit der nächsten Abholung.{% else %}bis {{ krank.krank_bis|date:"d.m.Y" }}. Abholen darf nur, wer beim Haushalt als abholberechtigt eingetragen ist.{% endif %}</p>{% endif %}
 {% comment %}Reihenfolge links: Ampel, Krankmeldung, dann „Letzte Abholungen“ oben (sieht der
 Einlass am häufigsten an); Aufruf-/Modulhinweise und die Zahlung weiter unten.{% endcomment %}
+{# Sonderaktion, die der Kunde noch bekommen kann: ganz oben, damit sie niemand übersieht #}
+{% for s in sonderaktionen %}{% if not s.teilnahme and not s.grund %}{% include "ausgabe/_sonderaktion.html" %}{% endif %}{% endfor %}
 {% if einstellungen.einlass_abholungen %}
 <section class="karte">
   <h2>Letzte Abholungen</h2>
@@ -75,29 +77,8 @@ Einlass am häufigsten an); Aufruf-/Modulhinweise und die Zahlung weiter unten.{
 </section>
 {% endif %}
 
-{% for s in sonderaktionen %}
-<section class="karte sonderaktion">
-  <h2>Sonderaktion: {{ s.aktion }}</h2>
-  {% if s.aktion.beschreibung %}<p class="hinweis">{{ s.aktion.beschreibung }}</p>{% endif %}
-  {% if s.teilnahme %}
-  <p class="sonderaktion-erhalten">✓ Erhalten am {{ s.teilnahme.zeitpunkt|date:"d.m.Y" }}: {{ s.teilnahme.menge }}×{% if s.teilnahme.auswahl %} {{ s.teilnahme.auswahl }}{% endif %}</p>
-  {% url 'ausgabe:teilnahme_zuruecknehmen' s.teilnahme.pk as ziel %}
-  {% include "ausgabe/_zuruecknehmen.html" with art="teilnahme" obj=s.teilnahme ziel=ziel titel="Teilnahme" aufklapp="Teilnahme ist erfolgt: Korrigieren" %}
-  {% elif s.grund %}
-  <p class="hinweis">{{ s.grund }}</p>
-  {% else %}
-  <form method="post" action="{% url 'ausgabe:sonderaktion_eintragen' h.kundennummer s.aktion.pk %}" class="aktionsleiste"
-        hx-post="{% url 'ausgabe:sonderaktion_eintragen' h.kundennummer s.aktion.pk %}" hx-target="#einlass">
-    {% csrf_token %}
-    {% for o in s.auswahl %}
-    <button type="submit" name="auswahl" value="{{ o.pk }}" class="knopf">{{ s.menge }}× {{ o.bezeichnung }}</button>
-    {% empty %}
-    <button type="submit" class="knopf">{{ s.menge }}× ausgeben und eintragen</button>
-    {% endfor %}
-  </form>
-  {% endif %}
-</section>
-{% endfor %}
+{# Schon erhalten oder nicht berechtigt: hier unten, damit es beim nächsten Kunden nicht ablenkt #}
+{% for s in sonderaktionen %}{% if s.teilnahme or s.grund %}{% include "ausgabe/_sonderaktion.html" %}{% endif %}{% endfor %}
 
 {% if modul_hinweise %}
 {% with f=modul_hinweise.0.farbe %}

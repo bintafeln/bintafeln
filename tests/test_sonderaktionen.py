@@ -82,11 +82,16 @@ def test_einlass(client, admin, benutzer_mit_rolle, anmelden, h):
     seite = client.get(reverse("ausgabe:empfang"), {"nummer": "4711"}, **HX).content.decode()
     assert "Sonderaktion: Weihnachtsgutschein" in seite and "Nur gegen Unterschrift" in seite
     assert "2× Spielzeug" in seite and "2× Kleidung" in seite
+    # Noch nichts erhalten: die Karte steht oberhalb von „Letzte Abholungen“
+    assert seite.index("Sonderaktion: Weihnachtsgutschein") < seite.index("Letzte Abholungen")
 
     url = reverse("ausgabe:sonderaktion_eintragen", args=["4711", a.pk])
     seite = client.post(url, {"auswahl": kleidung.pk}, **HX).content.decode()
     assert "Weihnachtsgutschein (Kleidung) eingetragen: 2×." in seite
     assert "✓ Erhalten am" in seite and "Teilnahme ist erfolgt: Korrigieren" in seite
+    # Erhalten: jetzt darunter, und nur einmal auf der Seite
+    assert seite.index("Letzte Abholungen") < seite.index("Sonderaktion: Weihnachtsgutschein")
+    assert seite.count("Sonderaktion: Weihnachtsgutschein") == 1
     t = Teilnahme.objects.get()
     assert (t.kundennummer, t.menge, t.auswahl, t.eingetragen_von) == ("4711", 2, kleidung, "anton")
     seite = client.post(url, {"auswahl": kleidung.pk}, **HX).content.decode()
