@@ -93,6 +93,43 @@ def test_rolle_ohne_konto_legt_konto_an(admin_client):
     assert Adresse.objects.get(nachname="Rolle").konto_id is None
 
 
+def test_rollen_nacheinander_anhaken_legt_nur_ein_konto_an(admin_client, django_user_model):
+    """Die Adress-Maske speichert sofort, ohne die Seite neu zu laden: Nach dem ersten Häkchen bei
+    den Rollen weiß die offene Seite noch nichts vom frisch angelegten Konto und schickt „kein
+    Konto“ mit. Daraus darf weder ein zweites Konto entstehen noch das Konto gelöst werden."""
+    a = Adresse.objects.create(art="person", vorname="Rosa", nachname="Dreifach")
+    url = reverse("adressen:bearbeiten", args=[a.pk])
+    vorher = django_user_model.objects.count()
+    daten = {
+        "art": "person",
+        "vorname": "Rosa",
+        "nachname": "Dreifach",
+        "konto": "",
+        "konto_stand": "",
+    }  # Stand der offenen Seite: noch kein Konto
+    for gewaehlt in ([rollen.FAHRER], [rollen.FAHRER, rollen.BEIFAHRER],
+                     [rollen.FAHRER, rollen.BEIFAHRER, rollen.BUERO]):  # fmt: skip
+        admin_client.post(url, daten | {"rollen": gewaehlt})
+    a.refresh_from_db()
+    assert django_user_model.objects.count() == vorher + 1
+    assert set(a.konto.groups.values_list("name", flat=True)) == {
+        rollen.FAHRER, rollen.BEIFAHRER, rollen.BUERO
+    }  # fmt: skip
+    # Alle Häkchen wieder weg, Seite immer noch die alte: Konto bleibt verknüpft, Fehler am Feld
+    antwort = admin_client.post(url, daten)
+    a.refresh_from_db()
+    assert antwort.status_code == 200 and a.konto_id is not None
+    assert "mindestens eine Rolle" in antwort.content.decode()
+    # Frisch geladene Seite kennt das Konto: bewusst lösen geht weiterhin
+    seite = admin_client.get(url).content.decode()
+    assert f'name="konto_stand" value="{a.konto_id}"' in seite
+    a.konto.is_active = False
+    a.konto.save()
+    admin_client.post(url, daten | {"konto_stand": str(a.konto_id)})
+    a.refresh_from_db()
+    assert a.konto_id is None
+
+
 def test_liste_filter_csv_auskunft(admin_client, markt, pdf_text):
     Adresse.objects.create(art="person", vorname="Max", nachname="Presse", ort="Anderswo")
     inhalt = admin_client.get(LISTE, {"q": "frisch"}).content.decode()

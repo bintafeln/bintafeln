@@ -91,8 +91,20 @@ class AdresseForm(forms.ModelForm):
             Q(aktiv=True) | Q(pk__in=gewaehlt)  # gespeicherte bleiben wählbar
         )
 
+    def _seite_veraltet(self) -> bool:
+        """Die Maske speichert sofort, ohne neu zu laden (ADR 0145). Legt das erste Häkchen bei
+        den Rollen ein Konto an, kennt die offene Seite es noch nicht und schickt weiter „kein
+        Konto“. Die Seite nennt deshalb in ``konto_stand``, welches Konto sie beim Laden kannte;
+        weicht das vom gespeicherten ab, gilt ihre Angabe zum Konto nicht."""
+        if "konto" not in self.fields or "konto_stand" not in self.data:
+            return False
+        return self.data.get("konto_stand", "") != str(self.instance.konto_id or "")
+
     def clean(self):
         cleaned = super().clean()
+        if self._seite_veraltet():
+            # sonst entstünde je Häkchen ein weiteres Konto, oder das Konto würde gelöst
+            cleaned["konto"] = self.instance.konto
         if cleaned.get("art") == Adresse.Art.ORGANISATION and cleaned.get("konto"):
             self.add_error("konto", "Ein Konto gibt es nur bei einer Person.")
         # Jedes aktive Konto braucht mindestens eine Rolle (ADR 0097). Gesperrte (ausgeschiedene)

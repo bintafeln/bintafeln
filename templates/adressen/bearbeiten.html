@@ -8,6 +8,7 @@
     mit dem Datum eintragen, an dem sie erteilt wurden; leer = keine Einwilligung.</p>
   <form method="post"{% if a.pk %} data-autosave{% endif %}>
     {% csrf_token %}
+    {% if konto_waehlbar and a.pk %}<input type="hidden" name="konto_stand" value="{{ a.konto_id|default:'' }}">{% endif %}
     {% include "includes/formular_abschnitte.html" %}
     {% if m_form %}
     <section class="mitglied-wahl" aria-labelledby="mitglied-titel">
