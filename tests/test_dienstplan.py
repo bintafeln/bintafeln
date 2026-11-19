@@ -130,6 +130,51 @@ def test_plan_wie_auf_papier(team, admin_client, pdf_text):
     assert "11.30-15.00" in text
 
 
+def test_pdf_ohne_abmeldenummer_und_alle_tage_auf_einem_blatt(team, admin_client, pdf_text):
+    """Ohne „Abmeldungen unter“ beim Tag nimmt das PDF die Nummer der Teamleitung (früher:
+    Serverfehler). Mit „blatt=1“ stehen alle Ausgabetage des Monats auf einem Blatt, A3 quer."""
+    import io
+
+    from pypdf import PdfReader
+
+    ds, h, a = team
+    tag = Diensttag.objects.get(stelle=ds, wochentag="Fr")
+    tag.telefon = ""
+    tag.save()
+    Adresse.objects.filter(pk=tag.teamleitung_id).update(telefon="", mobil="0170 000")
+    wahl = {"stelle": ds.ausgabestelle_id, "monat": "2026-11"}
+    antwort = admin_client.get(reverse("dienstplan:pdf"), wahl)
+    assert "Abmeldungen bitte bei Lea Leitung unter 0170 000" in pdf_text(antwort)
+    Adresse.objects.filter(pk=tag.teamleitung_id).update(mobil="")
+    text = pdf_text(admin_client.get(reverse("dienstplan:pdf"), wahl))
+    assert "Abmeldungen bitte bei Lea Leitung" in text and "unter" not in text
+    # Ein zweiter Ausgabetag mit teils anderen Aufgaben
+    ds.tage = "Mo, Fr"
+    ds.save()
+    kasse = Aufgabe.objects.create(stelle=ds, wochentag="Mo", name="Kasse", reihenfolge=1,
+                                   von=a[1].von, bis=a[1].bis)  # fmt: skip
+    Aufgabe.objects.create(stelle=ds, wochentag="Mo", name="Vorsortierung", reihenfolge=2)
+    Besetzung.objects.create(aufgabe=kasse, helfer=h["tom"])
+    einzeln = admin_client.get(reverse("dienstplan:pdf"), wahl)
+    blatt = admin_client.get(reverse("dienstplan:pdf"), {**wahl, "blatt": "1"})
+    assert "ein-blatt" in blatt["Content-Disposition"]
+    seiten = PdfReader(io.BytesIO(einzeln.content)).pages
+    gross = PdfReader(io.BytesIO(blatt.content)).pages
+    assert len(seiten) == 2 and len(gross) == 1  # je Tag ein Blatt bzw. alles auf einem
+    breite, hoehe = (round(float(x) / 72 * 25.4) for x in gross[0].mediabox[2:])
+    assert (breite, hoehe) == (420, 297)  # A3 quer
+    text = pdf_text(blatt)
+    assert "Vorsortierung" in text and "Paul Probe" in text and h["tom"].name in text
+    assert text.count("Kasse") == 1  # Montag und Freitag teilen sich die Zeile
+    assert "Montag Lea Leitung" not in text and "Freitag Lea Leitung" in text
+    assert "Montag der Teamleitung" in text
+    # Monat ohne Ausgabetage: Hinweis statt Fehler
+    ds.tage = ""
+    ds.save()
+    leer = pdf_text(admin_client.get(reverse("dienstplan:pdf"), {**wahl, "blatt": "1"}))
+    assert "keine Ausgabetage" in leer
+
+
 def test_ausfall_ersatz_und_benachrichtigung(team, admin_client, settings,
                                              django_capture_on_commit_callbacks):  # fmt: skip
     ds, h, a = team

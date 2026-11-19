@@ -141,7 +141,8 @@ def _karten(daten, zeilen) -> dict:
 @never_cache
 @sehen
 def plan_pdf(request):
-    """A4 quer zum Aushängen: eine Seite je Wochentag der Stelle (oder nur der gewählte)."""
+    """Zum Aushängen: A4 quer, eine Seite je Wochentag der Stelle (oder nur der gewählte) –
+    oder mit ``blatt=1`` alle Ausgabetage des Monats auf einem Blatt, A3 quer."""
     from apps.dienstplan import pdf
 
     stelle = get_object_or_404(plan.stellen(), ausgabestelle_id=request.GET.get("stelle"))
@@ -160,8 +161,10 @@ def plan_pdf(request):
                 Diensttag.objects.filter(stelle=stelle, wochentag=tag).first(),
             )
         )
-    inhalt = pdf.monat(stelle, MONATE[erster.month - 1], erster.year, seiten)
-    return pdf_antwort(inhalt, f"dienstplan-{erster:%Y-%m}.pdf")
+    ein_blatt = bool(request.GET.get("blatt"))
+    erzeugen = pdf.uebersicht if ein_blatt else pdf.monat
+    inhalt = erzeugen(stelle, MONATE[erster.month - 1], erster.year, seiten)
+    return pdf_antwort(inhalt, f"dienstplan-{erster:%Y-%m}{'-ein-blatt' if ein_blatt else ''}.pdf")
 
 
 @never_cache
