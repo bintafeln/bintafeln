@@ -366,8 +366,20 @@ def anmeldeprotokoll_ansicht(request):
         eintraege = eintraege.filter(grund__startswith=anmeldeprotokoll.ABMELDUNG)
     suche = (request.GET.get("q") or "").strip()
     if suche:
-        eintraege = eintraege.filter(Q(benutzername__icontains=suche) | Q(ip__icontains=suche))
+        # Konten der Ausgabestellen heißen intern „ausgabestelle-8“: auch nach dem Namen suchen
+        stellen = get_user_model().objects.filter(stelle__name__icontains=suche)
+        eintraege = eintraege.filter(
+            Q(benutzername__icontains=suche) | Q(ip__icontains=suche)
+            | Q(benutzername__in=stellen.values("username"))
+        )  # fmt: skip
     seite = Paginator(eintraege, 50).get_page(request.GET.get("seite"))
+    # Statt des internen Kontonamens den Namen der Ausgabestelle zeigen (auch bei Fehlversuchen,
+    # die an kein Konto gebunden sind)
+    namen = dict(get_user_model().objects.filter(
+        stelle__isnull=False, username__in={e.benutzername for e in seite}
+    ).values_list("username", "stelle__name"))  # fmt: skip
+    for e in seite:
+        e.stelle_name = namen.get(e.benutzername, "")
     return render(request, "konten/anmeldeprotokoll.html", {
         "seite": seite, "nur": nur, "q": suche,
         "tage": AnmeldeEinstellungen.laden().protokoll_tage,
