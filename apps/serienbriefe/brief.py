@@ -78,11 +78,12 @@ class Briefkopf(Flowable):
         if self.mit_kopf:
             self.kopf(canvas, breite, hoehe)
         # Anschriftfeld: 45 mm von oben, 20 mm von links, 85 x 45 mm; ohne Briefkopf (eigener,
-        # vorgedruckter Briefbogen) sitzt es etwas tiefer und die Faltmarken entfallen.
+        # vorgedruckter Briefbogen) sitzt es etwas tiefer, Rücksendeangabe und Faltmarken entfallen.
         tiefer = 0 if self.mit_kopf else TIEFER_OHNE_KOPF
-        absender = " · ".join(t for t in (self.tafel.name, self.tafel.anschrift) if t)
-        canvas.setFont("Helvetica", 7)
-        canvas.drawString(20 * mm + 5 * mm, hoehe - 50 * mm - tiefer, absender[:95])
+        if self.mit_kopf:  # Rücksendeangabe; auf dem vorgedruckten Briefbogen steht sie schon
+            absender = " · ".join(t for t in (self.tafel.name, self.tafel.anschrift) if t)
+            canvas.setFont("Helvetica", 7)
+            canvas.drawString(20 * mm + 5 * mm, hoehe - 50 * mm, absender[:95])
         canvas.setFont("Helvetica", 10.5)
         zeile = hoehe - 60 * mm - tiefer
         for teil in self.anschrift[:6]:

@@ -124,7 +124,7 @@ def test_pdf_mit_gestaltung_fusszeile_und_logo(admin_client, erika, pdf_text):
 
 
 def test_ohne_briefkopf_keine_faltmarken_und_anschrift_tiefer(db):
-    """Vorgedruckter Briefbogen: keine Faltmarken, Anschrift einen halben Zentimeter tiefer."""
+    """Vorgedruckter Briefbogen: keine Faltmarken, keine Absenderzeile, Anschrift 5 mm tiefer."""
     from reportlab.lib.units import mm
 
     from apps.serienbriefe.brief import Briefkopf
@@ -143,10 +143,14 @@ def test_ohne_briefkopf_keine_faltmarken_und_anschrift_tiefer(db):
             return lambda *a, **k: None
 
     tafel = TafelEinstellungen.laden()
+    tafel.name = "Tafel Musterstadt"
     mit, ohne = Blatt(), Blatt()
     Briefkopf(tafel, ["Erika Muster"], "01.01.2030", True).drawOn(mit, 0, 0)
     Briefkopf(tafel, ["Erika Muster"], "01.01.2030", False).drawOn(ohne, 0, 0)
     assert len(mit.linien) == 2 and ohne.linien == []
+    # Die Absenderzeile im Fenster steht schon auf dem Briefbogen
+    assert any("Tafel Musterstadt" in t for t in mit.texte)
+    assert not any("Tafel Musterstadt" in t for t in ohne.texte)
     assert round((mit.texte["Erika Muster"] - ohne.texte["Erika Muster"]) / mm) == 5
 
 
