@@ -380,7 +380,7 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `apps/dienstplan/plan.py`, `Helfer` mit oder ohne Konto). Telegram für beide: `apps/core/telegram.py`.
   `tickets` (ADR 0087, Regeln in `apps/tickets/ablauf.py`: wer sieht/bearbeitet, Zuständige je
   Kategorie aus Personen und Rollen, Benachrichtigung über ADR 0086, Frist für erledigte).
-  Ausfälle beider: Dauer und „wieder gesund“ (`Ausfall.gesund_ab`, nie automatisch zurück) in
+  Ausfälle beider: Dauer und „wieder gesund“ (`Ausfall.gesund_ab`: ab dann wieder auf den eigenen Plätzen, außer wo schon Ersatz steht) in
   `apps/core/ausfall.py` (ADR 0085).
   `aushang` (ADR 0080, Aushang-Monitore ohne Anmeldung über den Schlüssel im Link; Seiten bieten
   Module über `Modul.aushang` als `Aushangseite` an, z. B. `apps/dienstplan/aushang.py`; Inhalt in

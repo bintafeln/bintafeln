@@ -166,7 +166,7 @@ class Ausfall(models.Model):
     anmerkung = models.CharField("Anmerkung", max_length=200, blank=True)
     eingetragen_von = models.CharField("Eingetragen von", max_length=150, blank=True)
     eingetragen_am = models.DateTimeField("Eingetragen am", auto_now_add=True)
-    # Wieder gesund gemeldet (ADR 0085): kann ab dann einspringen, feste Plätze bleiben frei
+    # Wieder gesund gemeldet (ADR 0085): ab dann wieder auf den eigenen Plätzen (außer bei Ersatz)
     gesund_ab = models.DateField("Wieder da ab", null=True, blank=True)
 
     class Meta:

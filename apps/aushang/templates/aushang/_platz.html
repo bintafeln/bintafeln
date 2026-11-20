@@ -24,8 +24,8 @@
   {% csrf_token %}<input type="hidden" name="platz" value="{{ d.kennung }}"><input type="hidden" name="aktion" value="gesund">
   <input type="hidden" name="person" value="{{ d.wer_konto }}">
   <h3>Ich bin {{ d.wer }} und wieder gesund</h3>
-  <p class="aushang-dialog-hinweis">Ab heute können Sie wieder einspringen. Ihre Plätze bleiben frei bzw. beim Ersatz; tragen Sie sich
-    dort wieder ein, wo noch jemand fehlt.</p>
+  <p class="aushang-dialog-hinweis">Ab heute stehen Sie wieder auf Ihren Plätzen. Wo schon ein Ersatz eingetragen ist,
+    bleibt der Ersatz.</p>
   <div class="aushang-felder">
     <label>Meine PIN <input type="password" name="pin" inputmode="numeric" autocomplete="off" minlength="{{ mindestlaenge }}" required></label>
   </div>

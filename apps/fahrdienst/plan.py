@@ -292,8 +292,8 @@ def ausfall_melden(person, von, bis, grund, anmerkung, eingetragen_von,
 
 
 def gesund_melden(a: Ausfall, ab: dt.date, adresse: str = "") -> bool:
-    """Wieder gesund ab ``ab`` (ADR 0085): Die Person kann einspringen, ihre festen Plätze bleiben
-    frei. False, wenn der Ausfall dann schon vorbei ist."""
+    """Wieder gesund ab ``ab`` (ADR 0085): Die Person steht wieder auf ihren Plätzen; wo schon
+    ein Ersatz eingetragen ist, bleibt der Ersatz. False, wenn der Ausfall dann schon vorbei ist."""
     if ab > a.bis or a.gesund_ab:
         return False
     a.gesund_ab = max(ab, a.von)
@@ -306,10 +306,15 @@ def _gesund_benachrichtigen(a: Ausfall, adresse: str) -> None:
     from apps.core import mail, telegram
 
     e = FahrdienstEinstellungen.laden()
-    frei = [p for p in einsaetze(a.person, a.gesund_ab, a.bis) if p.fehlt]
-    text = (f"{a.person} ist ab {a.gesund_ab:%d.%m.%Y} wieder da und kann einspringen. Die "
-            "eigenen Touren bis " f"{a.bis:%d.%m.%Y} bleiben frei bzw. beim Ersatz"
-            + (f" ({len(frei)} noch ohne Ersatz)" if frei else "") + "."
+    beim_ersatz = [
+        p
+        for p in einsaetze(a.person, a.gesund_ab, a.bis)
+        if p.wer is not None and p.wer.pk != a.person.pk
+    ]
+    text = (f"{a.person} ist ab {a.gesund_ab:%d.%m.%Y} wieder da und steht wieder auf den "
+            "eigenen Plätzen."
+            + (f" {len(beim_ersatz)} Touren bis {a.bis:%d.%m.%Y} bleiben beim schon "
+               "eingetragenen Ersatz." if beim_ersatz else "")
             + (f"\n\nPlan: {adresse}" if adresse else ""))  # fmt: skip
     telegram.benachrichtigen(e, f"🟩 Fahrdienst: {text}")
     from apps.core import benachrichtigung
