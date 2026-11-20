@@ -189,7 +189,12 @@ def _nach_nummer(zeilen, absteigend):
     return zeilen
 
 
-def _mitarbeitende_seite(request, konten, *, archiv, art=None):
+def _mitarbeitende_seite(request, konten, *, archiv, art=None, ehemalige=False):
+    titel = (
+        "Ehemalige Ehrenamtliche" if ehemalige
+        else "Archiv" if archiv
+        else BESCHAEFTIGUNG_TITEL.get(art, "Team")
+    )  # fmt: skip
     # Filter, Suche und Sortierung am Konto merken: Wer einen Eintrag öffnet und zurückkommt,
     # findet die Liste wie verlassen – bis „Zurücksetzen“.
     # Je Liste (Ehrenamtliche, Angestellte, Archiv …) getrennt.
@@ -211,7 +216,6 @@ def _mitarbeitende_seite(request, konten, *, archiv, art=None):
         konten, sort = listen.sortieren(konten, roh, SORTIERUNG, "name")
         zeilen = _zeilen(konten)
     if request.GET.get("aktion"):
-        titel = "Archiv" if archiv else BESCHAEFTIGUNG_TITEL.get(art, "Team")
         basis = f"mitarbeitende-{timezone.localdate():%Y-%m-%d}"
         # Im PDF fehlen die Spalten, die die Person in der Liste ausgeblendet hat
         return listenexport.ausliefern(
@@ -225,10 +229,11 @@ def _mitarbeitende_seite(request, konten, *, archiv, art=None):
         {
             "zeilen": zeilen,
             "archiv": archiv,
+            "ehemalige": ehemalige,
             "art": art,
             "q": q,
             "sort": sort,
-            "titel": "Archiv" if archiv else BESCHAEFTIGUNG_TITEL.get(art, "Team"),
+            "titel": titel,
             "faellig": None if archiv else personal.faelligkeiten(),
             "sichtbar": listen.sichtbare_spalten(
                 request.user, LISTE, [k for k, _ in SPALTEN], SPALTEN_FEST
@@ -241,11 +246,20 @@ def _mitarbeitende_seite(request, konten, *, archiv, art=None):
     )
 
 
+def _ehemalig():
+    """Konten, deren Adresse die Kategorie „Ehemalige Ehrenamtliche“ trägt (ADR 0098)."""
+    return Q(adresse__kategorien__name=verwaltung.EHEMALIGE_KATEGORIE)
+
+
 def _liste(request, art):
     personal.stammdaten_leeren()
     konten = get_user_model().objects.filter(is_active=True, stelle__isnull=True)
     if art:
         konten = konten.filter(beschaeftigung=art)
+    if art == "ehrenamtlich":
+        # Wer als ehemalig geführt wird, steht in der eigenen Liste „Ehemalige Ehrenamtliche“
+        ehemalige = get_user_model().objects.filter(_ehemalig()).values("pk")
+        konten = konten.exclude(pk__in=ehemalige)
     return _mitarbeitende_seite(request, konten, archiv=False, art=art)
 
 
@@ -262,6 +276,19 @@ def ehrenamtliche(request):
 @verwalter_erforderlich
 def angestellte(request):
     return _liste(request, art="fest")
+
+
+@verwalter_erforderlich
+def ehemalige(request):
+    """Ehemalige Ehrenamtliche: gesperrte Konten und solche, deren Adresse als ehemalig
+    gekennzeichnet ist – auch wenn das Konto (noch) nicht gesperrt wurde."""
+    konten = (
+        get_user_model()
+        .objects.filter(stelle__isnull=True, beschaeftigung="ehrenamtlich")
+        .filter(Q(is_active=False) | _ehemalig())
+        .distinct()
+    )
+    return _mitarbeitende_seite(request, konten, archiv=True, ehemalige=True)
 
 
 @verwalter_erforderlich

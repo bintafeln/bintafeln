@@ -153,6 +153,7 @@ def test_herunterladen_hat_sein_formular(admin_client):
         "konten:mitarbeitende",
         "konten:ehrenamtliche",
         "konten:angestellte",
+        "konten:ehemalige",
         "konten:mitarbeitende_archiv",
     ):
         seite = admin_client.get(reverse(name)).content.decode()
@@ -842,3 +843,60 @@ def test_zugang_sperren_view_und_knoepfe(admin_client, benutzer_mit_rolle):
 def test_zugang_sperren_nur_verwalter(als, admin):
     client, _ = als(rollen.AUSGABE)
     assert client.post(url("zugang_sperren", admin)).status_code == 403
+
+
+# --- Ehemalige Ehrenamtliche ----------------------------------------------------------------
+
+
+def _namen(client, name):
+    return [z["b"].username for z in client.get(reverse(f"konten:{name}")).context["zeilen"]]
+
+
+def test_ehemalige_ehrenamtliche_stehen_in_eigener_liste(admin_client, admin, benutzer_mit_rolle):
+    """Wer im Adressbuch als „Ehemalige Ehrenamtliche“ geführt wird oder gesperrt ist, steht nicht
+    unter „Ehrenamtliche“, sondern in der eigenen Liste – Angestellte nie."""
+    from apps.adressen.models import Adresse, AdressKategorie
+
+    ehemalig = AdressKategorie.objects.get_or_create(name=verwaltung.EHEMALIGE_KATEGORIE)[0]
+    konten = {}
+    for name, art in (("aktiv", "ehrenamtlich"), ("markiert", "ehrenamtlich"),
+                      ("gesperrt", "ehrenamtlich"), ("fest", "fest")):  # fmt: skip
+        b = benutzer_mit_rolle(name, rollen.AUSGABE)
+        b.beschaeftigung = art
+        b.save(update_fields=["beschaeftigung"])
+        konten[name] = b
+    # nur als ehemalig gekennzeichnet, Konto noch aktiv (z. B. Kategorie von Hand oder aus Import)
+    adresse = Adresse.objects.filter(konto=konten["markiert"]).first() or Adresse.objects.create(
+        art="person", vorname="M", nachname="Muster", konto=konten["markiert"]
+    )
+    adresse.kategorien.add(ehemalig)
+    verwaltung.sperren(admin, konten["gesperrt"])
+    verwaltung.sperren(admin, konten["fest"])
+
+    assert set(_namen(admin_client, "ehrenamtliche")) >= {"aktiv"}
+    assert not {"markiert", "gesperrt"} & set(_namen(admin_client, "ehrenamtliche"))
+    assert set(_namen(admin_client, "ehemalige")) == {"markiert", "gesperrt"}
+    seite = admin_client.get(reverse("konten:ehemalige")).content.decode()
+    assert "<h1>Ehemalige Ehrenamtliche</h1>" in seite
+    # das Archiv zeigt weiter alle gesperrten Konten
+    assert {"gesperrt", "fest"} <= set(_namen(admin_client, "mitarbeitende_archiv"))
+    # im Menü als Unterpunkt von „Ehrenamtliche“
+    assert reverse("konten:ehemalige") in seite
+
+
+def test_entsperren_nimmt_die_kategorie_ehemalige_wieder_weg(admin_client, admin,
+                                                             benutzer_mit_rolle):  # fmt: skip
+    from apps.adressen.models import Adresse
+
+    for weg in ("entsperren", "freigeben"):
+        ziel = benutzer_mit_rolle(f"kim-{weg}", rollen.AUSGABE)
+        if not Adresse.objects.filter(konto=ziel).exists():
+            Adresse.objects.create(art="person", vorname="K", nachname=weg, konto=ziel)
+        from apps.konten.models import Stammdaten
+
+        Stammdaten.objects.update_or_create(benutzer=ziel, defaults={"strasse": "Musterweg 1"})
+        verwaltung.sperren(admin, ziel)
+        assert ziel.username in _namen(admin_client, "ehemalige")
+        getattr(verwaltung, weg)(admin, ziel)
+        assert ziel.username not in _namen(admin_client, "ehemalige")
+        assert ziel.username in _namen(admin_client, "ehrenamtliche"), weg
