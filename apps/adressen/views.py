@@ -145,6 +145,11 @@ SPALTEN_FEST: set = set()
 
 @rollen.recht_erforderlich("adressen.sehen")
 def liste(request):
+    # Filter, Suche und Sortierung am Konto merken: Wer einen Eintrag öffnet und zurückkommt,
+    # findet die Liste wie verlassen – bis „Zurücksetzen“.
+    gemerkt = listen.filter_merken(request, "adressen", BLAETTER_SCHLUESSEL)
+    if gemerkt:
+        return gemerkt
     adressen, filter_ = _gefiltert(request.user, request.GET)
     filter_["anzahl"] = listen.zeilenzahl(request, "anzahl")  # je Person gemerkt, Vorgabe 25
     adressen, sort = listen.sortieren(

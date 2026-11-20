@@ -60,6 +60,12 @@ def _spalten(beitraege, benutzer) -> list[tuple[str, str]]:
 
 @rollen.recht_erforderlich("mitglieder.sehen")
 def liste(request):
+    # Filter, Suche und Sortierung am Konto merken: Wer einen Eintrag öffnet und zurückkommt,
+    # findet die Liste wie verlassen – bis „Zurücksetzen“.
+    # Das Jahr bleibt außen vor – sonst stünde im neuen Jahr noch das alte.
+    gemerkt = listen.filter_merken(request, "mitglieder", ("stand", "nur_offen", "q", "sort"))
+    if gemerkt:
+        return gemerkt
     jahr = _jahr(request)
     stand = request.GET.get("stand", "aktiv")
     # Nummern wie Zahlen sortieren: 1, 2, 3 … 10 statt 1, 10, 11 … 2

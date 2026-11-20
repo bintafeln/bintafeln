@@ -218,6 +218,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Treffer der Seite in `<div id="ergebnis">`; nur dieser Bereich wird ausgetauscht.
   Jedes Filterformular bekommt `{% filter_zuruecksetzen %}` (Knopf „Zurücksetzen“; Angaben, die
   bleiben sollen, als Argumente, z. B. `"sort"`).
+  Listen, aus denen man Einträge öffnet, merken Filter, Suche und Sortierung am Konto:
+  `listen.filter_merken(request, liste, parameter)` am Anfang der Ansicht (Rückgabe ausliefern,
+  wenn nicht `None`); Jahres- und Datumsfilter nicht merken.
 - Listen am Handy: unter 40rem zeigt jede `table.tabelle` ihre Zeilen als Karten mit der
   Spaltenüberschrift vor jedem Wert (`data-titel`); fehlt sie, trägt `static/js/tabellen_titel.js` sie
   aus dem Tabellenkopf nach. Jede Liste braucht deshalb einen `<thead>`.

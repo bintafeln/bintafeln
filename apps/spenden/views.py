@@ -101,6 +101,12 @@ _SORTNAME = Coalesce(NullIf("adresse__nachname", Value("")), "adresse__organisat
 
 @rollen.recht_erforderlich("spenden.sehen")
 def liste(request):
+    # Filter, Suche und Sortierung am Konto merken: Wer einen Eintrag öffnet und zurückkommt,
+    # findet die Liste wie verlassen – bis „Zurücksetzen“.
+    # Das Jahr bleibt außen vor – sonst stünde im neuen Jahr noch das alte.
+    gemerkt = listen.filter_merken(request, "spenden", ("art", "bescheinigung", "q", "sort"))
+    if gemerkt:
+        return gemerkt
     jahr = _jahr(request)
     spenden = Spende.objects.filter(datum__year=jahr).select_related("adresse", "bestaetigung")
     art = request.GET.get("art", "")

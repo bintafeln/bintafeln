@@ -197,6 +197,14 @@ def _mitarbeitende_seite(request, konten, *, archiv, art=None, ehemalige=False):
         else "Archiv" if archiv
         else BESCHAEFTIGUNG_TITEL.get(art, "Team")
     )  # fmt: skip
+    # Filter, Suche und Sortierung am Konto merken: Wer einen Eintrag öffnet und zurückkommt,
+    # findet die Liste wie verlassen – bis „Zurücksetzen“.
+    # Je Liste (Ehrenamtliche, Angestellte, Archiv …) getrennt.
+    gemerkt = listen.filter_merken(
+        request, f"team-{request.resolver_match.url_name}", ("q", "sort")
+    )
+    if gemerkt:
+        return gemerkt
     q = (request.GET.get("q") or "").strip()
     konten = _suchen(konten, q)
     roh = request.GET.get("sort", "")

@@ -97,6 +97,11 @@ def _sortiert(request, antraege):
 
 @rollen.recht_erforderlich("antraege.sehen")
 def liste(request):
+    # Filter, Suche und Sortierung am Konto merken: Wer einen Eintrag öffnet und zurückkommt,
+    # findet die Liste wie verlassen – bis „Zurücksetzen“.
+    gemerkt = listen.filter_merken(request, "antraege", ("ansicht", "suche", "sort"))
+    if gemerkt:
+        return gemerkt
     ansicht, suche, antraege = _gefiltert(request)
     sort, antraege = _sortiert(request, antraege)
     zeilen = listen.zeilenzahl(request, "zeilen")

@@ -203,7 +203,9 @@ def test_liste_spalten_sortieren_export(admin_client):
         reverse("konten:mitarbeitende_spalten"), {"spalte": ["vorname", "ort"]}, HTTP_REFERER=ehren
     )
     assert antwort.status_code == 302
-    sichtbar = admin_client.get(ehren).context["sichtbar"]
+    # die Liste merkt sich die Sortierung: ohne Angabe führt sie dorthin zurück
+    assert admin_client.get(ehren).url == f"{ehren}?sort=ort"
+    sichtbar = admin_client.get(ehren, follow=True).context["sichtbar"]
     assert "telefon" not in sichtbar and {"vorname", "ort"} <= sichtbar
 
     # CSV-Export: alle Felder, egal welche Spalten sichtbar sind
