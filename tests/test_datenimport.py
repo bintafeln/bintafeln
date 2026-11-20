@@ -494,6 +494,36 @@ def test_mitarbeitende_import_fuellt_adresse(admin_client):
     assert adresse.mail == "kevin@example.org"
 
 
+def test_mitarbeitende_import_fuehrerschein_gesehen(admin_client, admin, benutzer_mit_rolle):
+    """Eine Liste „Führerschein vorgelegt am“ lässt sich einlesen: vorhandene Mitarbeitende werden
+    über den Namen erkannt und bekommen das Datum, sonst bleibt alles, wie es ist."""
+    import datetime as dt
+
+    from apps.konten import rollen
+    from apps.konten.models import Stammdaten
+
+    fahrer = benutzer_mit_rolle("fritz", rollen.FAHRER)
+    fahrer.first_name, fahrer.last_name = "Fritz", "Fahrwerk"
+    fahrer.save()
+    Stammdaten.objects.create(benutzer=fahrer, strasse="Beispielweg 3", fs_klassen="B")
+    datei = csv_datei(
+        "fs.csv",
+        "Nachname;Vorname;Führerschein zuletzt gesehen am;Führerschein gesehen von",
+        "Fahrwerk;Fritz;27.07.2026;Büro",
+    )
+    sitzung = hochladen(admin_client, "mitarbeitende", datei)
+    weiter(admin_client, sitzung)
+    # Im Abgleich steht die Person als „geändert“ mit den beiden neuen Feldern, vorausgewählt
+    sitzung.refresh_from_db()
+    (eintrag,) = sitzung.plan["geaendert"]
+    assert {f["feld"] for f in eintrag["felder"]} == {"fs_gesehen_am", "fs_gesehen_von"}
+    _alles_uebernehmen(admin_client, sitzung)
+    s = Stammdaten.objects.get(benutzer=fahrer)
+    assert (s.fs_gesehen_am, s.fs_gesehen_von) == (dt.date(2026, 7, 27), "Büro")
+    assert (s.strasse, s.fs_klassen) == ("Beispielweg 3", "B")  # nichts anderes angefasst
+    assert fahrer.__class__.objects.filter(last_name="Fahrwerk").count() == 1  # kein Doppel
+
+
 def test_antraege_anmerkung_eigene_spalte(admin_client):
     # „Nachricht“ (vom Antragsteller) und „Anmerkung“ (intern) sind getrennte Spalten.
     from apps.antraege.models import Antrag
