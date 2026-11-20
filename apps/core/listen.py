@@ -43,8 +43,42 @@ def sortieren_liste(zeilen, sort, schluessel, standard):
 # Antragsliste haben eigene ältere Felder und nutzen diese Helfer nicht.
 
 
+# Spalten, die erst erscheinen, wenn die Person sie einschaltet (z. B. die Adressfelder in der
+# Mitglieder- und der Spendenliste): je Liste mit ``standard_aus()`` angemeldet. Eingeschaltete
+# stehen unter ``{liste}:an`` – so bleiben sie auch bei Konten aus, die ihre Wahl schon früher
+# gespeichert haben.
+_STANDARD_AUS: dict[str, set] = {}
+
+# Die Adressfelder einer Person als wählbare Spalten (Schlüssel = Feld der Adresse). Listen, deren
+# Zeilen an einer Adresse hängen, bieten sie alle an; die Titel sind zugleich die CSV-Überschriften.
+ADRESS_SPALTEN = [("anrede", "Anrede"), ("strasse", "Straße"), ("plz", "PLZ"), ("ort", "Ort"),
+                  ("telefon", "Telefon"), ("mobil", "Handy"), ("email", "E-Mail"),
+                  ("geburtsdatum", "Geburtstag")]  # fmt: skip
+
+
+def standard_aus(liste, schluessel) -> None:
+    """Meldet Spalten einer Liste an, die in der Vorgabe ausgeblendet sind."""
+    _STANDARD_AUS[liste] = set(schluessel)
+
+
+def adress_spalten(benutzer) -> list[tuple[str, str]]:
+    """Die Adressfelder als Spalten – nur für Konten, die das Adressbuch sehen dürfen."""
+    from apps.konten import rollen
+
+    return list(ADRESS_SPALTEN) if rollen.hat_recht(benutzer, "adressen.sehen") else []
+
+
+def adress_werte(adresse) -> dict[str, str]:
+    """Die Werte zu ``ADRESS_SPALTEN`` für den Export, je Überschrift."""
+    werte = {titel: getattr(adresse, feld) or "" for feld, titel in ADRESS_SPALTEN}
+    werte["Geburtstag"] = f"{adresse.geburtsdatum:%d.%m.%Y}" if adresse.geburtsdatum else ""
+    return werte
+
+
 def _ausgeblendet(benutzer, liste) -> set:
-    return set((getattr(benutzer, "listen_spalten_aus", None) or {}).get(liste, []))
+    daten = getattr(benutzer, "listen_spalten_aus", None) or {}
+    standard = _STANDARD_AUS.get(liste, set()) - set(daten.get(f"{liste}:an", []))
+    return set(daten.get(liste, [])) | standard
 
 
 def sichtbare_spalten(benutzer, liste, schluessel, fest=()) -> set:
@@ -76,6 +110,8 @@ def spalten_speichern(benutzer, liste, gewaehlt, spalten, fest=()) -> None:
     aus = [k for k, _ in spalten if k not in fest and k not in gewaehlt]
     daten = dict(getattr(benutzer, "listen_spalten_aus", None) or {})
     daten[liste] = aus
+    if liste in _STANDARD_AUS:
+        daten[f"{liste}:an"] = sorted(_STANDARD_AUS[liste] & gewaehlt)
     benutzer.listen_spalten_aus = daten
     benutzer.save(update_fields=["listen_spalten_aus"])
 
