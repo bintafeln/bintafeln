@@ -1,0 +1,2 @@
+{% load liste %}{% comment %}Spaltenköpfe der wählbaren Adressfelder (apps/core/listen.ADRESS_SPALTEN). Erwartet:
+adress_spalten, sichtbar, sort.{% endcomment %}{% for k, t in adress_spalten %}{% if k in sichtbar %}{% sortkopf t k sort %}{% endif %}{% endfor %}
