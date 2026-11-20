@@ -312,6 +312,16 @@ def _stammdaten_formular(request, a: Adresse):
     )  # fmt: skip
 
 
+def _zugang(a: Adresse, konto_waehlbar: bool) -> dict:
+    """Stand und Aktionen zum Zugang des verknüpften Kontos (Passwort, Zwei-Faktor, Online-Zugang)
+    für die Adress-Maske – derselbe Baustein wie auf der Seite des Kontos."""
+    if not (konto_waehlbar and a.pk and a.konto_id) or a.konto.stelle_id:
+        return {}
+    from apps.konten.views_mitarbeitende import zugang_kontext
+
+    return {"ziel": a.konto, **zugang_kontext(a.konto)}
+
+
 @never_cache
 @rollen.recht_erforderlich("adressen.bearbeiten")
 def bearbeiten(request, pk=None):
@@ -349,6 +359,7 @@ def bearbeiten(request, pk=None):
     return render(request, "adressen/bearbeiten.html", {
         "form": form, "a": a, "m_form": m_form, "ist_mitglied": ist_mitglied,
         "stamm_form": _stammdaten_formular(request, a) if konto_waehlbar else None,
+        **_zugang(a, konto_waehlbar),
         "schon_mitglied": m_form is not None and m_form.instance.pk is not None,
         "konto_waehlbar": konto_waehlbar,
         "konto_aktiv": bool(a.konto_id and a.konto.is_active),

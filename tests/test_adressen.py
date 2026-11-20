@@ -223,6 +223,59 @@ def test_stammdaten_in_der_adress_maske(admin_client, admin):
     assert "strasse" in admin_client.get(ziel).context["form"].fields
 
 
+def test_zugang_in_der_adress_maske(admin_client, admin):
+    """Passwort, Online-Zugang und Zwei-Faktor eines Kontos lassen sich von der Adress-Maske aus
+    verwalten; danach landet man wieder dort."""
+    import datetime as dt
+
+    from apps.konten import verwaltung
+
+    a = Adresse.objects.create(
+        art="person",
+        vorname="Zita",
+        nachname="Zugang",
+        geburtsdatum=dt.date(1980, 3, 15),
+        strasse="Beispielweg 3",
+    )
+    url = reverse("adressen:bearbeiten", args=[a.pk])
+    assert 'id="zugang"' not in admin_client.get(url).content.decode()  # ohne Konto kein Abschnitt
+    konto = verwaltung.konto_fuer_adresse(admin, a, [rollen.AUSGABE])
+    verwaltung.stammdaten_aus_adresse(a)
+    seite = admin_client.get(url).content.decode()
+    weiter = f"{url}#zugang"
+    assert 'id="zugang"' in seite and "Online-Zugang noch nicht freigeschaltet" in seite
+    assert "{#" not in seite and "#}" not in seite  # kein Vorlagen-Kommentar als Text auf der Seite
+    assert f'name="weiter" value="{weiter}"' in seite
+    # Sperren und Löschen bleiben beim eigenen Abschnitt „Mitarbeit beenden“
+    assert reverse("konten:sperren", args=[konto.pk]) not in seite
+    assert "Person hört auf" in seite
+    # Online-Zugang freigeben: zurück zur Adresse
+    antwort = admin_client.post(reverse("konten:zugang_freigeben", args=[konto.pk]),
+                                {"weiter": weiter})  # fmt: skip
+    assert antwort.url == weiter
+    konto.refresh_from_db()
+    assert konto.has_usable_password()
+    # Online-Zugang sperren und wieder freigeben
+    antwort = admin_client.post(reverse("konten:zugang_sperren", args=[konto.pk]),
+                                {"weiter": weiter})  # fmt: skip
+    konto.refresh_from_db()
+    assert antwort.url == weiter and konto.zugang_gesperrt
+    assert "Online-Zugang gesperrt" in admin_client.get(url).content.decode()
+    # Passwort zurücksetzen: „Fertig“ führt zurück zur Adresse
+    seite = admin_client.post(reverse("konten:passwort_zuruecksetzen", args=[konto.pk]),
+                              {"weiter": weiter}).content.decode()  # fmt: skip
+    assert f'href="{weiter}">Fertig' in seite
+    # ohne Angabe und bei fremder Adresse: wie bisher zur Seite des Kontos
+    seite_konto = reverse("konten:mitarbeiter", args=[konto.pk])
+    ziel = reverse("konten:werkseinstellungen", args=[konto.pk])
+    assert admin_client.post(ziel).url == seite_konto
+    assert admin_client.post(ziel, {"weiter": "https://boese.example/"}).url == seite_konto
+    # die Seite des Kontos zeigt denselben Abschnitt, dort mit „Sperren“
+    assert (
+        reverse("konten:sperren", args=[konto.pk]) in admin_client.get(seite_konto).content.decode()
+    )
+
+
 def test_liste_filter_csv_auskunft(admin_client, markt, pdf_text):
     Adresse.objects.create(art="person", vorname="Max", nachname="Presse", ort="Anderswo")
     inhalt = admin_client.get(LISTE, {"q": "frisch"}).content.decode()

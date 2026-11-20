@@ -9,6 +9,6 @@
   <p class="sicherung">Dieses Passwort wird <strong>nur jetzt</strong> angezeigt. Bitte persönlich weitergeben,
     nicht per Messenger oder unverschlüsselter Mail. Bei der ersten Anmeldung muss
     {{ ziel.get_full_name|default:ziel.username }} ein eigenes Passwort wählen.</p>
-  <p><a class="knopf" href="{% url 'konten:mitarbeiter' ziel.pk %}">Fertig</a></p>
+  <p><a class="knopf" href="{{ fertig }}">Fertig</a></p>
 </section>
 {% endblock %}
