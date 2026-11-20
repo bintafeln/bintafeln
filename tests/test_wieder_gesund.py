@@ -1,4 +1,5 @@
-"""Längere Ausfälle am Monitor und „wieder gesund“ ohne automatisches Zurücktragen (ADR 0085).
+"""Längere Ausfälle am Monitor und „wieder gesund“: zurück auf die eigenen Plätze, außer wo schon
+ein Ersatz steht (ADR 0085 mit Nachtrag).
 Alle Namen sind erfunden."""
 
 import datetime as dt
@@ -54,7 +55,7 @@ def test_am_monitor_fuer_mehrere_wochen_austragen(fahrer, heute, client):  # noq
     assert plan.platz(heute + 3 * WOCHE, tour, 1).status == plan.OK
 
 
-def test_wieder_gesund_traegt_nicht_zurueck_ein(fahrer, heute, client):  # noqa: F811
+def test_wieder_gesund_zurueck_wo_kein_ersatz_steht(fahrer, heute, client):  # noqa: F811
     leute, pers, tour, aushang = fahrer
     max_ = pers["max"]
     a = Ausfall.objects.create(person=max_, von=heute - WOCHE, bis=heute + 3 * WOCHE,
@@ -67,22 +68,20 @@ def test_wieder_gesund_traegt_nicht_zurueck_ein(fahrer, heute, client):  # noqa:
     daten = {"platz": kennung, "aktion": "gesund", "person": leute["jan"].pk, "pin": "482915"}
     assert "nur die Person selbst" in client.post(_platz(aushang), daten).json()["fehler"]
     antwort = client.post(_platz(aushang), {**daten, "person": leute["max"].pk}).json()
-    assert antwort["ok"] and "bleiben frei bzw. beim Ersatz" in antwort["meldung"]
+    assert antwort["ok"] and "steht wieder auf den eigenen Plätzen" in antwort["meldung"]
     a.refresh_from_db()
     assert a.gesund_ab == heute and a.bis == heute + 3 * WOCHE
-    # nicht zurück: heute und in zwei Wochen fehlt jemand, nächste Woche bleibt Ole
-    assert plan.platz(heute, tour, 1).status == plan.OFFEN
-    assert plan.platz(heute + WOCHE, tour, 1).wer == pers["ole"]
-    assert plan.platz(heute + 2 * WOCHE, tour, 1).status == plan.OFFEN
-    # aber Max kann jetzt einspringen, auch auf seinem alten Platz
-    assert max_ in _frei(heute + 2 * WOCHE)
+    # zurück auf dem eigenen Platz: heute und in zwei Wochen fährt Max wieder ganz normal;
+    # nächste Woche ist schon Ole als Ersatz eingetragen, dort bleibt Ole
+    for tag in (heute, heute + 2 * WOCHE):
+        p = plan.platz(tag, tour, 1)
+        assert p.status == plan.OK and p.wer == max_ and p.ausfall is None
+    naechste = plan.platz(heute + WOCHE, tour, 1)
+    assert naechste.wer == pers["ole"] and naechste.status == plan.ERSETZT
+    # die Tage vor der Gesundmeldung bleiben als Ausfall stehen
+    assert plan.platz(heute - WOCHE, tour, 1).status == plan.OFFEN
     html = client.get(_platz(aushang), {"platz": kennung}).content.decode()
-    assert "wieder da, der Platz bleibt aber frei" in html and "wieder gesund" not in html
-    selbst = {"platz": f"fahrdienst|{heute + 2 * WOCHE:%Y-%m-%d}|{tour.pk}|1",
-              "aktion": "einspringen", "einspringer": f"{pers['max'].pk}:{leute['max'].pk}",
-              "pin": "482915"}  # fmt: skip
-    assert client.post(_platz(aushang), selbst).json()["ok"]
-    assert plan.platz(heute + 2 * WOCHE, tour, 1).status == plan.ERSETZT
+    assert "wieder gesund" not in html and "kann nicht" in html  # wieder ein normaler Platz
     # ein zweites Mal geht nicht
     antwort = client.post(_platz(aushang), {**daten, "person": leute["max"].pk}).json()
     assert antwort["fehler"] == "Hier ist kein Ausfall, der noch läuft."
@@ -115,8 +114,11 @@ def test_wieder_gesund_im_programm(fahrer, heute, client, anmelden):  # noqa: F8
     assert a.gesund_ab == heute
     seite = client.get(reverse("core:meine_einsaetze")).content.decode()
     assert "wieder da ab 11.11.2026" in seite
+    assert "Sie stehen wieder auf Ihren Plätzen" in seite
     client.post(url)  # zweites Mal: nur ein Hinweis
-    assert plan.platz(heute + WOCHE, tour, 1).status == plan.OFFEN
+    assert plan.platz(heute + WOCHE, tour, 1).status == plan.OK  # wieder ganz normal im Plan
+    # auch am Tag der Meldung selbst (krank gemeldet und gleich wieder gesund)
+    assert plan.platz(heute, tour, 1).status == plan.OK
 
 
 def test_dienstplan_wieder_gesund(heute):  # noqa: F811
@@ -132,17 +134,27 @@ def test_dienstplan_wieder_gesund(heute):  # noqa: F811
     assert h not in dplan.verfuegbar(heute + WOCHE)
     assert dplan.gesund_melden(a, heute + WOCHE) and a.gesund_ab == heute + WOCHE
     assert not dplan.gesund_melden(a, heute + WOCHE)  # schon gemeldet
-    assert dplan.platz(heute + WOCHE, aufgabe).status == dplan.OFFEN  # Platz bleibt frei
-    assert h in dplan.verfuegbar(heute + WOCHE) and h not in dplan.verfuegbar(heute)
-    dplan.ersatz_eintragen(heute + WOCHE, aufgabe, h, "test")
-    assert dplan.platz(heute + WOCHE, aufgabe).status == dplan.ERSETZT
+    assert dplan.platz(heute, aufgabe).status == dplan.OFFEN  # davor: weiter ausgefallen
+    for tag in (heute + WOCHE, heute + 2 * WOCHE):  # ab der Gesundmeldung wieder normal im Plan
+        p = dplan.platz(tag, aufgabe)
+        assert p.status == dplan.OK and p.wer == h
+    assert h not in dplan.verfuegbar(heute)
+    # Steht für einen Tag schon ein Ersatz, bleibt der Ersatz
+    b = DAusfall.objects.create(helfer=h, von=heute + 3 * WOCHE, bis=heute + 4 * WOCHE,
+                                grund="krank")  # fmt: skip
+    andere = next(x for x in dplan.verfuegbar(heute + 4 * WOCHE) if x.pk != h.pk)
+    dplan.ersatz_eintragen(heute + 4 * WOCHE, aufgabe, andere, "test")
+    assert dplan.gesund_melden(b, heute + 3 * WOCHE)
+    assert dplan.platz(heute + 3 * WOCHE, aufgabe).wer == h
+    p = dplan.platz(heute + 4 * WOCHE, aufgabe)
+    assert p.wer == andere and p.status == dplan.ERSETZT
     vorbei = DAusfall.objects.create(helfer=h, von=heute, bis=heute, grund="krank")
     assert not dplan.gesund_melden(vorbei, heute + WOCHE)
 
 
 def test_eingesprungen_und_dann_selbst_krank(fahrer, heute, client):  # noqa: F811
     """Ole ist für Max eingesprungen, wird selbst krank, meldet sich für zwei Wochen ab und später
-    gesund: Seine Plätze als Ersatz bleiben abgesagt, bis er sich neu einträgt."""
+    gesund: Er steht wieder auf seinen Plätzen als Ersatz."""
     leute, pers, tour, aushang = fahrer
     ole = pers["ole"]
     Ausfall.objects.create(person=pers["max"], von=heute, bis=heute + 3 * WOCHE, grund="urlaub")
@@ -164,9 +176,7 @@ def test_eingesprungen_und_dann_selbst_krank(fahrer, heute, client):  # noqa: F8
     assert "Ich bin Ole Hansen und wieder gesund" in html
     antwort = client.post(_platz(aushang), {**daten, "aktion": "gesund"}).json()
     assert antwort["ok"]
-    # nicht automatisch zurück: der alte Ersatz-Eintrag nächste Woche bleibt abgesagt …
-    assert plan.platz(heute + WOCHE, tour, 1).status == plan.OFFEN
-    assert ole in _frei(heute + WOCHE)
-    # … bis Ole sich neu einträgt
-    plan.ersatz_eintragen(heute + WOCHE, tour, 1, ole, "test")
-    assert plan.platz(heute + WOCHE, tour, 1).status == plan.ERSETZT
+    # Ole ist wieder da: Seine Einsätze als Ersatz gelten wieder, ohne neu einzutragen
+    for woche in range(2):
+        p = plan.platz(heute + woche * WOCHE, tour, 1)
+        assert p.status == plan.ERSETZT and p.wer == ole

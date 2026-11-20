@@ -1,8 +1,8 @@
 """Gemeinsame Regeln für Ausfälle in Dienstplan und Fahrdienst (ADR 0085).
 
 Ein Ausfall gilt von ``von`` bis ``bis``. Meldet sich jemand vorher wieder gesund, bekommt der
-Ausfall ``gesund_ab``: Ab dann kann die Person wieder einspringen, ihre festen Plätze bleiben
-aber frei (bzw. beim Ersatz). Sie wird nie automatisch wieder eingetragen.
+Ausfall ``gesund_ab``: Ab dann steht die Person wieder auf ihren Plätzen und kann einspringen.
+Nur wo für einen Tag schon ein Ersatz eingetragen ist, bleibt der Ersatz stehen.
 """
 
 import datetime as dt
@@ -35,19 +35,17 @@ def bis_berechnen(von: dt.date, dauer: str, bis_text: str = "") -> dt.date:
 
 def deckt(ausfall, datum: dt.date, nur_krank: bool = False) -> bool:
     """Gilt der Ausfall an ``datum``? ``nur_krank``: nur, solange die Person nicht wieder gesund
-    gemeldet ist (für „kann einspringen“); sonst auch danach (der feste Platz bleibt frei)."""
+    gemeldet ist; sonst im ganzen gemeldeten Zeitraum."""
     if not ausfall.von <= datum <= ausfall.bis:
         return False
     return not (nur_krank and ausfall.gesund_ab and datum >= ausfall.gesund_ab)
 
 
 def betrifft(ausfall, datum: dt.date, ersatz=None) -> bool:
-    """Fällt die Person auf diesem Platz aus? Auf dem festen Platz: im ganzen Zeitraum, auch nach
-    „wieder gesund“. Als Ersatz: solange sie krank ist; ein Einspringen, das schon vor der
-    Krankmeldung eingetragen war, bleibt aber abgesagt (nie automatisch zurück)."""
-    if ersatz is None or (ersatz.eingetragen_am and ausfall.eingetragen_am
-                          and ersatz.eingetragen_am <= ausfall.eingetragen_am):  # fmt: skip
-        return deckt(ausfall, datum)
+    """Fällt die Person auf diesem Platz aus? Nur solange sie krank ist: Ab „wieder gesund“ steht
+    sie wieder dort – auf dem festen Platz ebenso wie als Ersatz. Einen Platz, für den inzwischen
+    ein anderer Ersatz eingetragen wurde, bekommt sie nicht zurück; dort steht der Ersatz, und
+    diese Regel wird für sie gar nicht gefragt (ADR 0085, Nachtrag)."""
     return deckt(ausfall, datum, nur_krank=True)
 
 

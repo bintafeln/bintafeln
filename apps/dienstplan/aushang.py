@@ -86,8 +86,6 @@ def platz(teil: str) -> dict | None:
 
 
 def _status(p, status) -> str:
-    if p.ausfall and p.ausfall.gesund_ab and p.datum >= p.ausfall.gesund_ab:
-        return "wieder da, der Platz bleibt aber frei (noch kein Ersatz)"
     return status
 
 
@@ -120,8 +118,8 @@ def aendern(teil: str, daten, person, von: str, basis: str) -> str:
             raise ValueError("Gesund melden kann sich nur die Person selbst (oder wer den "
                              "Dienstplan plant).")  # fmt: skip
         plan.gesund_melden(p.ausfall, timezone.localdate(), f"{basis}{reverse('dienstplan:plan')}")
-        return (f"{p.wer} ist wieder da und kann einspringen. Die eigenen Dienste bleiben frei "
-                "bzw. beim Ersatz: Bitte dort wieder eintragen, wo noch jemand fehlt.")  # fmt: skip
+        return (f"{p.wer} ist wieder da und steht wieder auf den eigenen Plätzen. Wo schon ein "
+                "Ersatz eingetragen ist, bleibt der Ersatz.")  # fmt: skip
     if aktion == "ersatz":
         h = plan.einteilbare().filter(pk=daten.get("helfer") or 0).first()
         if h is None or h not in plan.verfuegbar(datum, p.aufgabe.stelle):

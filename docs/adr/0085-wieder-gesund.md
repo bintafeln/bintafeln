@@ -27,3 +27,13 @@ abgesprochen, und das ginge dabei unter.
 
 Niemand soll durch eine Gesundmeldung aus Versehen doppelt eingeteilt werden oder einen
 abgesprochenen Ersatz verdrängen. Die Person trägt sich bewusst dort ein, wo noch jemand fehlt.
+
+## Nachtrag (2026-11-20): zurück auf die eigenen Plätze, wo kein Ersatz steht
+
+In der Praxis verwirrte, dass jemand nach „wieder gesund“ im Plan weiter als offen stand. Neu:
+
+- Ab `gesund_ab` steht die Person wieder auf ihren festen Plätzen (und auf Plätzen, an denen sie
+  als Ersatz eingetragen ist).
+- Ist für einen Tag schon ein Ersatz eingetragen, bleibt der Ersatz stehen. Das Anliegen von oben –
+  einen abgesprochenen Ersatz nicht zu verdrängen – bleibt damit erfüllt.
+- Technisch: `ausfall.betrifft()` gilt nur noch, solange die Person krank ist.

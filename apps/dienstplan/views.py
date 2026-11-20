@@ -460,7 +460,7 @@ def beispiel(request):
 @require_POST
 @sehen
 def ausfall_gesund(request, pk):
-    """Wieder gesund ab heute (ADR 0085): kann einspringen, die eigenen Plätze bleiben frei."""
+    """Wieder gesund ab heute (ADR 0085): wieder auf den eigenen Plätzen, außer wo Ersatz steht."""
     a = get_object_or_404(Ausfall, pk=pk)
     ich = plan.helfer_von(request.user)
     eigener = ich is not None and a.helfer_id == ich.pk and plan.darf_selbst_melden(request.user)
@@ -468,9 +468,9 @@ def ausfall_gesund(request, pk):
         raise PermissionDenied
     if plan.gesund_melden(a, timezone.localdate(),
                           request.build_absolute_uri(reverse("dienstplan:plan"))):  # fmt: skip
-        messages.success(request, "Wieder gesund gemeldet. Die eigenen Plätze bleiben frei "
-                                  "bzw. beim Ersatz; bitte dort eintragen, wo noch jemand "
-                                  "fehlt.")  # fmt: skip
+        messages.success(request, "Wieder gesund gemeldet. Sie stehen wieder auf Ihren "
+                                  "Plätzen; wo schon ein Ersatz eingetragen ist, bleibt der "
+                                  "Ersatz.")  # fmt: skip
     else:
         messages.info(request, "Dieser Ausfall ist schon vorbei oder bereits gesund gemeldet.")
     weiter = request.POST.get("weiter", "")
