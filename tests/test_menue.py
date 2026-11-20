@@ -190,8 +190,8 @@ def test_dienstplaene_unter_einem_punkt(admin):
 def test_ausgabe_sieht_keine_warteliste_und_stempeln_nur_wer_stempelt(benutzer_mit_rolle):
     anton = benutzer_mit_rolle("anton", rollen.AUSGABE)
     b = alle_bereiche(anton, ["warteliste", "abrechnung"])
-    assert "Ausgabestelle" in b and "Meine Arbeitszeit" not in b
     alles = [e["titel"] for x in b.values() for e in x["eintraege"]]
+    assert "Ausgabestelle" in b and "Meine Arbeitszeit" not in alles
     assert "Warteliste" not in alles and "Abrechnung" in alles
 
 
@@ -207,7 +207,13 @@ def test_fest_angestellte_stempeln_im_menue(benutzer_mit_rolle):
     berta = benutzer_mit_rolle("berta", rollen.AUSGABE)
     berta.beschaeftigung = berta.Beschaeftigung.FEST
     berta.save()
-    assert "Meine Arbeitszeit" in alle_bereiche(berta)
+    # unter „Dienstpläne“, kein eigener Bereich mehr – auch ohne Dienstplan-Module
+    b = alle_bereiche(berta)
+    assert "Meine Arbeitszeit" not in b
+    assert "Meine Arbeitszeit" in [e["titel"] for e in b["Dienstpläne"]["eintraege"]]
+    b = alle_bereiche(berta, ["dienstplan"])
+    titel = [e["titel"] for e in b["Dienstpläne"]["eintraege"]]
+    assert titel.index("Meine Arbeitszeit") == titel.index("Meine Einsätze") + 1
 
 
 def test_mitarbeitende_sammelliste_oeffnet_verein(admin):
