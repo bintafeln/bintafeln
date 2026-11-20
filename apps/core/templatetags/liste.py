@@ -92,6 +92,9 @@ def filter_zuruecksetzen(context, *behalten):
     for name in list(werte):
         if name not in behalten:
             del werte[name]
+    if getattr(request, "filter_gemerkt", None):
+        # Die Liste merkt ihre Filter am Konto (listen.filter_merken): auch das vergessen
+        werte["filter"] = "zuruecksetzen"
     ziel = request.path + (f"?{werte.urlencode()}" if werte else "")
     return format_html(
         '<a class="knopf knopf-zweitrangig filter-zuruecksetzen" href="{}" '

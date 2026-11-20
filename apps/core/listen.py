@@ -120,7 +120,8 @@ def je_seite(wert: str, gesamt: int, standard: int = 25) -> int:
 def filter_merken(request, liste: str, parameter, vorgaben: dict | None = None):
     """Merkt die Filter einer Liste am Konto, damit sie beim nächsten Aufruf wieder gelten.
 
-    ``parameter``: die Filter der Liste (ohne Suchtext und Seite). Kommt die Seite ohne jede
+    ``parameter``: die Filter der Liste (ohne Seite; Suchtext nur, wo er nach dem Öffnen eines
+    Eintrags beim Zurückkommen noch gelten soll). Kommt die Seite ohne jede
     Angabe, leitet die Funktion auf die gemerkten Filter um (Rückgabe: die Umleitung, sonst
     ``None``). ``?filter=zuruecksetzen`` vergisst sie. ``vorgaben``: Werte, die nicht gemerkt
     werden, solange sie der Vorgabe entsprechen – z. B. der heutige Ausgabetag, der sonst am
@@ -135,10 +136,21 @@ def filter_merken(request, liste: str, parameter, vorgaben: dict | None = None):
         benutzer.listen_filter = alle
         benutzer.save(update_fields=["listen_filter"])
 
+    # Für den Knopf „Zurücksetzen“ ({% filter_zuruecksetzen %}): Er muss das Gemerkte vergessen
+    request.filter_gemerkt = liste
     if request.GET.get("filter") == "zuruecksetzen":
-        if alle.pop(liste, None) is not None:
+        # Was der Knopf ausdrücklich behält (z. B. die Sortierung), bleibt auch gemerkt
+        bleibt = QueryDict(mutable=True)
+        for p in parameter:
+            if p in request.GET:
+                bleibt.setlist(p, request.GET.getlist(p))
+        text = bleibt.urlencode()
+        if alle.get(liste, "") != text:
+            alle[liste] = text
+            if not text:
+                del alle[liste]
             speichern()
-        return redirect(request.path)
+        return redirect(f"{request.path}?{text}" if text else request.path)
     if any(p in request.GET for p in parameter):
         gemerkt = QueryDict(mutable=True)
         for p in parameter:
@@ -150,6 +162,7 @@ def filter_merken(request, liste: str, parameter, vorgaben: dict | None = None):
             alle[liste] = text
             speichern()
         return None
-    if alle.get(liste) and not request.GET and not request.headers.get("HX-Request"):
+    if (alle.get(liste) and request.method == "GET" and not request.GET
+            and not request.headers.get("HX-Request")):  # fmt: skip
         return redirect(f"{request.path}?{alle[liste]}")
     return None

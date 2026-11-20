@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
-from apps.core import papierkorb, privatdateien
+from apps.core import listen, papierkorb, privatdateien
 from apps.konten import rollen
 from apps.tickets import ablauf
 from apps.tickets.forms import (
@@ -34,6 +34,10 @@ def _ticket(request, pk) -> Ticket:
 @never_cache
 @login_required
 def liste(request):
+    # Filter am Konto merken: beim Zurückkommen aus einem Ticket gilt er weiter
+    gemerkt = listen.filter_merken(request, "tickets", ("status", "kategorie"))
+    if gemerkt:
+        return gemerkt
     status = request.GET.get("status", "offen")
     tickets = ablauf.sichtbar(request.user)
     if status == "offen":

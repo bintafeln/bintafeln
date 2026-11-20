@@ -1,6 +1,7 @@
 """Listen als PDF herunterladen und per E-Mail senden (ADR 0096)."""
 
 import pytest
+from django.contrib.auth import get_user_model
 from django.core import mail as django_mail
 from django.urls import reverse
 
@@ -157,3 +158,47 @@ def test_warteliste_spalten_passen_zum_export():
         listen_spalten_aus = {"warteliste": ["wohnort", "termin"]}
 
     assert listen.pdf_ohne(Person(), "warteliste", dict(views.SPALTEN)) == {"Wohnort", "Termin"}
+
+
+def test_listen_merken_filter_und_suche(admin_client, admin, benutzer_mit_rolle):
+    """Wer aus einer Liste einen Eintrag öffnet und über „Zurück“ oder das Menü wiederkommt,
+    findet Filter, Suche und Sortierung wie verlassen – bis „Zurücksetzen“."""
+    from apps.core.models import TafelEinstellungen
+    from apps.konten import rollen
+
+    tafel = TafelEinstellungen.laden()
+    tafel.module = ["tickets"]
+    tafel.save()
+    benutzer_mit_rolle("erna.eifrig", rollen.AUSGABE)
+    faelle = [
+        (reverse("adressen:liste"), "adressen", {"q": "Muster", "art": "person", "sort": "ort"},
+         "sort=ort"),
+        (reverse("mitglieder:liste"), "mitglieder", {"stand": "", "q": "Muster", "sort": "-name"},
+         "sort=-name"),
+        (reverse("spenden:liste"), "spenden", {"art": "geld", "q": "Muster", "sort": "betrag"},
+         "sort=betrag"),
+        (reverse("antraege:liste"), "antraege", {"ansicht": "alle", "suche": "Muster"},
+         "ansicht=alle"),
+        (reverse("konten:ehrenamtliche"), "team-ehrenamtliche", {"q": "erna", "sort": "ort"}, ""),
+        (reverse("tickets:liste"), "tickets", {"status": "erledigt", "kategorie": ""}, ""),
+    ]  # fmt: skip
+    for url, liste, filter_, bleibt in faelle:
+        assert admin_client.get(url).status_code == 200, liste  # noch nichts gemerkt
+        seite = admin_client.get(url, filter_)
+        assert seite.status_code == 200, liste
+        assert "filter=zuruecksetzen" in seite.content.decode(), liste
+        zurueck = admin_client.get(url)  # „Zurück“ oder Menü: ohne Angaben
+        assert zurueck.status_code == 302, liste
+        for name, wert in filter_.items():
+            assert f"{name}={wert}" in zurueck.url, (liste, name)
+        # die Suche beim Tippen (htmx) wird nie umgeleitet
+        assert admin_client.get(url, HTTP_HX_REQUEST="true").status_code == 200, liste
+        # „Zurücksetzen“ vergisst die Filter; was der Knopf behält (Sortierung), bleibt
+        behalten = dict(p.split("=") for p in bleibt.split("&") if p)
+        antwort = admin_client.get(url, {**behalten, "filter": "zuruecksetzen"})
+        assert antwort.url == (f"{url}?{bleibt}" if bleibt else url), liste
+        admin.refresh_from_db()
+        assert admin.listen_filter.get(liste, "") == bleibt, liste
+    # eine andere Person hat ihre eigenen Filter
+    andere = get_user_model().objects.get(username="erna.eifrig")
+    assert "adressen" not in (andere.listen_filter or {})
