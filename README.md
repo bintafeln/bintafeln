@@ -127,7 +127,7 @@ erfundenen Haushalten; wie man eine eigene einrichtet, steht in
   Kundenliste, Abrechnung, Wochenübersicht, Sonderaktionen, Korrekturwünsche, alle
   Ausgabestellen), **Kunden** (mit Anträgen und Warteliste), **Verein** (Mitglieder, Spenden,
   Adressen, Serienbriefe, Team), **Auswertungen** (Statistik, Listen), Einstellungen, Hilfe.
-  „Meine Arbeitszeit“ steht nur bei Mitarbeitenden, die stempeln, als eigener Punkt; „Mein
+  „Meine Arbeitszeit“ steht nur bei Mitarbeitenden, die stempeln, unter „Dienstpläne“ (ohne Dienstplan-Module direkt im Menü); „Mein
   Konto“ öffnet der eigene Name oben rechts. Module hängen sich in die passenden Bereiche ein
   (`apps/core/menue.py`). Der Knopf « oben im Menü fährt es ein, » holt es zurück (Wahl bleibt im
   Browser, `static/js/menue_einfahren.js`). Ein Bereich klappt erst seine Einträge und Untergruppen auf, eine

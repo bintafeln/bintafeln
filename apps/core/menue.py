@@ -55,7 +55,6 @@ def menue(request) -> list[dict]:
         "Ausgabestelle": {"": [], "Wochenübersicht": []},
         # Dienstpläne aller Art unter einem Punkt; die Module hängen sich als Abschnitt ein
         "Dienstpläne": {"": [], "Ausgabe": [], "Fahrdienst": []},
-        "Meine Arbeitszeit": {"": []},
         "Kunden": {"": []},
         # „Anträge und Warteliste“ ist ein eigener Hauptbereich (direkt unter „Kunden“); sein
         # Abzeichen zeigt nur die Zahl der aktuellen Anträge, nicht zusätzlich die Abgleich-Fälle.
@@ -108,8 +107,8 @@ def menue(request) -> list[dict]:
         *([("kunden.liste", alle_kunden)] if an_der_stelle else []),
         ("einlass.nutzen", _eintrag("Post der Verwaltung", "kunden:postfach")),
     ], vorn=True)  # fmt: skip
-    if darf_stempeln(b):  # nur, wer selbst stempelt
-        dazu("Meine Arbeitszeit", [
+    if darf_stempeln(b):  # nur, wer selbst stempelt; steht bei den Dienstplänen
+        dazu("Dienstpläne", [
             (None, _eintrag("Meine Arbeitszeit", "personal:meine_arbeitszeit")),
         ])  # fmt: skip
 

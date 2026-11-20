@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.core.validators import validate_email
 from django.db import transaction
+from django.db.models import Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -236,10 +237,22 @@ def protokoll(request):
     modell = request.GET.get("modell", "")
     if modell.isdigit():
         eintraege = eintraege.filter(content_type_id=int(modell))
+    # Suche nach Stichworten: jedes Wort muss vorkommen – im Datensatz, bei der Person, die
+    # geändert hat, oder in den Werten vorher/nachher
+    q = (request.GET.get("q") or "").strip()[:200]
+    for wort in q.split():
+        eintraege = eintraege.filter(
+            Q(object_repr__icontains=wort)
+            | Q(changes__icontains=wort)
+            | Q(actor__username__icontains=wort)
+            | Q(actor__first_name__icontains=wort)
+            | Q(actor__last_name__icontains=wort)
+        )
     seite = Paginator(eintraege, 50).get_page(request.GET.get("seite"))
     kontext = {
         "seite": seite,
         "modell": modell,
+        "q": q,
         "modelle": ContentType.objects.filter(
             pk__in=LogEntry.objects.values("content_type").distinct()
         ).order_by("model"),
