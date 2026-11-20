@@ -900,3 +900,38 @@ def test_einstellung_naechste_adressnummer_und_warnung(admin_client):
     MitgliederEinstellungen.objects.update(naechste_nummer=5000)
     seite = admin_client.get(url).content.decode()
     assert "erreicht den Bereich der Adressnummern" in seite and "(ab 5000)" in seite
+
+
+def test_konto_auswahl_nur_ohne_konto_und_teamliste_oeffnet_adresse(
+    admin_client, admin, client, anmelden, benutzer_mit_rolle, recht_geben
+):
+    """Ist ein Konto verknüpft, zeigt die Maske kein Auswahlfeld „Konto“ mehr (nur noch den
+    Benutzernamen); die Team-Liste öffnet die Adressseite der Person."""
+    from apps.konten import verwaltung
+
+    a = Adresse.objects.create(art="person", vorname="Marta", nachname="Muster")
+    url = reverse("adressen:bearbeiten", args=[a.pk])
+    seite = admin_client.get(url).content.decode()
+    assert '<select name="konto"' in seite  # noch keins: vorhandenes Konto wählbar
+    konto = verwaltung.konto_fuer_adresse(admin, a, [rollen.FAHRER])
+    seite = admin_client.get(url).content.decode()
+    assert '<select name="konto"' not in seite and ">Konto</label>" not in seite
+    assert f'<input type="hidden" name="konto" value="{konto.pk}"' in seite
+    assert 'name="benutzername"' in seite and konto.username in seite
+    # Speichern behält die Verknüpfung
+    admin_client.post(url, {"art": "person", "vorname": "Marta", "nachname": "Muster",
+                            "konto": konto.pk, "konto_stand": str(konto.pk),
+                            "rollen": [rollen.FAHRER], "mitarbeit_felder": "1",
+                            "beschaeftigung": "ehrenamtlich"})  # fmt: skip
+    a.refresh_from_db()
+    assert a.konto_id == konto.pk
+
+    liste = admin_client.get(reverse("konten:ehrenamtliche")).content.decode()
+    assert f'href="{url}">Muster</a>' in liste
+    # ohne Recht, Adressen zu bearbeiten: wie bisher die Konto-Seite
+    ohne = benutzer_mit_rolle("teamleitung", rollen.AUSGABE)
+    recht_geben(rollen.AUSGABE, "mitarbeitende.verwalten")
+    anmelden(client, ohne)
+    liste = client.get(reverse("konten:ehrenamtliche")).content.decode()
+    assert url not in liste
+    assert f'href="{reverse("konten:mitarbeiter", args=[konto.pk])}">Muster</a>' in liste
