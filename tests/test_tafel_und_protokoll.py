@@ -1,6 +1,7 @@
 import io
 
 import pytest
+from auditlog.context import set_actor
 from auditlog.models import LogEntry
 from django.contrib.auth.models import Group
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -117,6 +118,40 @@ def test_protokoll_ansicht_und_htmx_filter(admin_client):
 
     leer = admin_client.get(reverse("core:protokoll"), {"modell": 999999, "seite": "x"})
     assert "Noch keine Einträge" in leer.content.decode()
+
+
+def test_protokoll_suche_nach_stichworten(admin_client, admin):
+    from apps.kunden.models import Ausgabestelle
+
+    einstellungen = TafelEinstellungen.laden()
+    einstellungen.name = "Tafel Blaubeerhausen"
+    einstellungen.save()
+    with set_actor(admin):
+        stelle = Ausgabestelle.objects.create(name="Kirschgarten")
+        stelle.name = "Pflaumenhof"
+        stelle.save()
+    url = reverse("core:protokoll")
+
+    def treffer(**angaben):
+        # nur die Liste (wie beim Tippen): im Seitenmenü stehen die Namen der Ausgabestellen
+        teil = admin_client.get(url, angaben, HTTP_HX_REQUEST="true",
+                                HTTP_HX_TARGET="protokoll-liste").content.decode()  # fmt: skip
+        assert "<html" not in teil
+        return teil
+
+    assert (
+        'name="q" id="q" value="pflaume"'
+        in admin_client.get(url, {"q": "pflaume"}).content.decode()
+    )
+    seite = treffer(q="blaubeer")  # Groß/Klein egal, Wert aus „nachher“
+    assert "Blaubeerhausen" in seite and "Pflaumenhof" not in seite
+    assert "Pflaumenhof" in treffer(q="kirschgarten")  # alter Wert („vorher“)
+    assert "Pflaumenhof" in treffer(q="chefin pflaumen")  # wer geändert hat + Stichwort
+    assert "Blaubeerhausen" not in treffer(q="chefin")  # ohne Person geändert
+    assert "Keine Einträge zu „gibtesnicht“" in treffer(q="gibtesnicht")
+    # mit der Datensatzart verbinden
+    art = LogEntry.objects.get_for_object(stelle).first().content_type_id
+    assert "Keine Einträge" in treffer(q="blaubeer", modell=art)
 
 
 def test_protokoll_blaettern(admin_client):
