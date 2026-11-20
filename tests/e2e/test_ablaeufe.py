@@ -2048,3 +2048,18 @@ def test_anmerkungen_in_notizen_umwandeln(angemeldet, admin):
     assert "Papierkorb" not in fragen[-1]
     assert [b.text for b in Bemerkung.objects.all()] == ["Umzug angekündigt"]
     assert Notiz.objects.get().text == "Kommt mit Begleitung"
+
+
+def test_demo_anmelden_mit_einem_klick(seite, admin, benutzer_mit_rolle, settings):
+    """Demo: Die Anmeldeseite nennt Benutzername und Passwort je Zugang; „Anmelden als …“ trägt
+    beides ein und meldet an."""
+    settings.DEMO, settings.DEMO_PASSWORT = True, "demo-erfunden-1"
+    konto = benutzer_mit_rolle("demo-buero", rollen.BUERO)
+    konto.set_password(settings.DEMO_PASSWORT)
+    konto.save()
+    seite.goto(reverse("konten:anmelden"))
+    zeile = seite.locator("#demo-zugaenge li", has_text="demo-buero")
+    expect(zeile).to_contain_text("demo-erfunden-1")
+    zeile.get_by_role("button", name=re.compile("Anmelden als")).click()
+    expect(seite.locator("a.angemeldet")).to_be_visible()
+    assert "/anmelden" not in seite.url

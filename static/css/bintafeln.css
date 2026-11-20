@@ -2242,3 +2242,11 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 .pdf-fenster-knoepfe { display: flex; flex-wrap: wrap; gap: .5rem; align-items: flex-start; margin-bottom: .5rem; }
 .pdf-mail-ergebnis { flex-basis: 100%; }
 .pdf-druckrahmen { position: fixed; width: 1px; height: 1px; right: 0; bottom: 0; border: 0; opacity: 0; }
+
+/* Demo-Zugänge auf der Anmeldeseite: Benutzername und Passwort deutlich, je Zugang ein Knopf */
+.demo-zugaenge p { margin: 0 0 .6rem; }
+.demo-liste { list-style: none; margin: 0; padding: 0; }
+.demo-liste li { padding: .5rem 0; border-top: 1px solid rgba(0, 0, 0, .12); }
+.demo-liste .knopf { display: block; width: 100%; white-space: normal; margin-bottom: .3rem; }
+.demo-angaben { display: block; font-size: .9rem; line-height: 1.9; }
+.demo-wert { font-weight: 700; background: #fff; padding: .1rem .35rem; border-radius: 4px; white-space: nowrap; }

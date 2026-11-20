@@ -2,6 +2,7 @@ import datetime as dt
 
 import pytest
 from django.core.management import CommandError, call_command
+from django.test import Client
 from django.urls import reverse
 
 from apps.ausgabe.models import Buchung
@@ -74,6 +75,11 @@ def test_zuruecksetzen(demo, admin, django_user_model, settings, capsys):
 
     assert (tablet.stelle.name, "Tablet am Einlass (Konto der Ausgabestelle)") in (
         _demo_zugaenge()["demo_konten"])  # fmt: skip
+    # Anmeldeseite: je Zugang Benutzername und Passwort ausgeschrieben und ein Knopf zum Anmelden
+    seite = Client().get(reverse("konten:anmelden")).content.decode()
+    assert 'data-demo-name="demo-admin"' in seite and "Anmelden als Admin" in seite
+    assert f'Passwort: <code class="demo-wert">{PASSWORT}</code>' in seite
+    assert f'data-demo-name="{tablet.stelle.name}"' in seite
     # Ein von Besuchern angelegtes Konto einer Ausgabestelle blockiert das Zurücksetzen nicht
     django_user_model.objects.create_user(username="ausgabestelle-99", stelle=Ausgabestelle.objects
                                           .exclude(pk=tablet.stelle_id).first())  # fmt: skip
