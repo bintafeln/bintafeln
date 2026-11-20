@@ -109,7 +109,7 @@
         {% if not archiv and vergebbare_rollen %}<td class="auswahl"><input type="checkbox" name="id" value="{{ z.b.pk }}" form="rollen-sammel"{% if z.b.pk in markiert %} checked{% endif %} aria-label="{{ z.b.last_name|default:z.b.username }} auswählen"></td>{% endif %}
         {% if "nummer" in sichtbar %}<td data-titel="Nummer">{{ z.nummer|default:"–" }}</td>{% endif %}
         {% if "anrede" in sichtbar %}<td data-titel="Anrede">{{ z.sd.anrede }}</td>{% endif %}
-        <td data-titel="Nachname"><a href="{% url 'konten:mitarbeiter' z.b.pk %}">{{ z.b.last_name|default:z.b.username }}</a></td>
+        <td data-titel="Nachname"><a href="{% if z.adresse_pk and "adressen.bearbeiten" in rechte %}{% url 'adressen:bearbeiten' z.adresse_pk %}{% else %}{% url 'konten:mitarbeiter' z.b.pk %}{% endif %}">{{ z.b.last_name|default:z.b.username }}</a></td>
         {% if "vorname" in sichtbar %}<td data-titel="Vorname">{{ z.b.first_name }}</td>{% endif %}
         {% if "strasse" in sichtbar %}<td data-titel="Straße">{{ z.sd.strasse }}</td>{% endif %}
         {% if "plz" in sichtbar %}<td data-titel="PLZ">{{ z.sd.plz }}</td>{% endif %}

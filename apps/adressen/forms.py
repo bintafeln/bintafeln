@@ -96,6 +96,11 @@ class AdresseForm(forms.ModelForm):
                 widget=forms.Select(attrs={"data-zeigen-bei": "art=person"}),
             )
             self.initial.setdefault("konto", self.instance.konto_id)
+            if self.instance.pk and self.instance.konto_id:
+                # Schon verknüpft: Adresse und Konto gehören fest zusammen. Das Auswahlfeld würde
+                # nur verwirren – der Benutzername steht bei „Mitarbeit“. Der Wert reist verdeckt
+                # mit, damit die übrige Logik (Rollen, Sperren) unverändert bleibt.
+                self.fields["konto"].widget = forms.HiddenInput()
         if self.rollen_bearbeitbar:
             from apps.konten import verwaltung
 
@@ -223,7 +228,7 @@ class AdresseForm(forms.ModelForm):
 
     def abschnitte(self):
         alle = (
-            (titel, [self[n] for n in namen if n in self.fields])
+            (titel, [self[n] for n in namen if n in self.fields and not self[n].is_hidden])
             for titel, namen in self.ABSCHNITTE
         )
         return [(titel, felder) for titel, felder in alle if felder]

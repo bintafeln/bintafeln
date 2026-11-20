@@ -108,13 +108,15 @@ def _zeilen(konten):
             sd = Stammdaten(benutzer=b)
         try:
             geburtstag = b.adresse.geburtsdatum  # Geburtsdatum steht an der Adresse (ADR 0097)
+            adresse_pk = b.adresse.pk
         except ObjectDoesNotExist:
-            geburtstag = None
+            geburtstag = adresse_pk = None
         zeilen.append(
             {
                 "b": b,
                 "sd": sd,
                 "geburtstag": geburtstag,
+                "adresse_pk": adresse_pk,  # die Liste öffnet die Adressseite der Person
                 "nummer": verwaltung.personennummer(b),
                 "rollen": [
                     r.name
