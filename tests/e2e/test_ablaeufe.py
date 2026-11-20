@@ -2059,3 +2059,24 @@ def test_anmerkungen_in_notizen_umwandeln(angemeldet, admin):
     assert "Papierkorb" not in fragen[-1]
     assert [b.text for b in Bemerkung.objects.all()] == ["Umzug angekündigt"]
     assert Notiz.objects.get().text == "Kommt mit Begleitung"
+
+
+def test_aenderungsprotokoll_sucht_beim_tippen(angemeldet, admin):
+    """Das Suchfeld im Änderungsprotokoll sucht beim Tippen und bleibt beim Blättern erhalten."""
+    from apps.core.models import TafelEinstellungen
+
+    t = TafelEinstellungen.laden()
+    for name in ("Tafel Blaubeerhausen", "Tafel Kirschgarten"):
+        t.name = name
+        t.save()
+    seite = angemeldet(admin)
+    seite.goto(reverse("core:protokoll"))
+    liste = seite.locator("#protokoll-liste tbody tr")
+    vorher = liste.count()
+    seite.locator("#q").fill("blaubeer")
+    expect(liste).not_to_have_count(vorher)
+    expect(seite.locator("#protokoll-liste")).to_contain_text("Blaubeerhausen")
+    assert "q=blaubeer" in seite.url
+    seite.get_by_role("link", name="Zurücksetzen").click()
+    expect(seite.locator("#q")).to_have_value("")
+    expect(seite.locator("#protokoll-liste")).to_contain_text("Kirschgarten")  # wieder alles

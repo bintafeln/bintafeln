@@ -18,7 +18,7 @@
       </td>
     </tr>
   {% empty %}
-    <tr><td colspan="5">Noch keine Einträge.</td></tr>
+    <tr><td colspan="5">{% if q %}Keine Einträge zu „{{ q }}“.{% else %}Noch keine Einträge.{% endif %}</td></tr>
   {% endfor %}
   </tbody>
 </table>

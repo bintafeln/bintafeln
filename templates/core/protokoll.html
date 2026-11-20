@@ -4,7 +4,10 @@
 <section class="karte">
   <h1>Änderungsprotokoll</h1>
   <form class="filter" hx-get="{% url 'core:protokoll' %}" hx-target="#protokoll-liste"
-        hx-trigger="change" hx-push-url="true">
+        hx-trigger="change, input changed delay:400ms from:#q, search from:#q" hx-push-url="true">
+    <label for="q">Suche</label>
+    <input type="search" name="q" id="q" value="{{ q }}" autocomplete="off"
+           placeholder="Stichwort, Name …">
     <label for="modell">Datensatzart</label>
     <select name="modell" id="modell">
       <option value="">Alle</option>
