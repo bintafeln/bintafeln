@@ -68,6 +68,11 @@ def zuruecksetzen(heute: dt.date | None = None, erzwingen: bool = False) -> None
     heute = heute or timezone.localdate()
     call_command("flush", interactive=False, verbosity=0)
     _medien_leeren()
+    anlegen(heute)
+
+
+def anlegen(heute: dt.date) -> None:
+    """Legt die erfundenen Demo-Daten in einer leeren Datenbank an (ohne vorher zu löschen)."""
     with transaction.atomic(), disable_auditlog():
         _grundlagen()
         konten = _konten()

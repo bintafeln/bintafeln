@@ -128,6 +128,17 @@ def test_kundenliste_auswahl_und_export(angemeldet, admin):
     assert seite.url.endswith("/kunden/")
 
 
+def test_ehrenamtliche_liste_herunterladen(angemeldet, admin, benutzer_mit_rolle):
+    """„Herunterladen …“ in der Liste der Ehrenamtlichen: CSV kommt als Datei."""
+    benutzer_mit_rolle("erna", rollen.AUSGABE)
+    seite = angemeldet(admin)
+    seite.goto(reverse("konten:ehrenamtliche"))
+    seite.locator("summary", has_text="Herunterladen").click()
+    with seite.expect_download() as laden:
+        seite.get_by_role("button", name=re.compile("Als CSV-Datei")).click()
+    assert "erna" in Path(laden.value.path()).read_text(encoding="utf-8-sig")
+
+
 def test_bestaetigungen_im_browser_sortieren_und_auswahl_ausstellen(angemeldet, admin):
     """Ein Klick auf die Spaltenüberschrift sortiert die Tabelle im Browser; ausgestellt wird
     für die angehakten Spender in der Reihenfolge, die man sieht."""
