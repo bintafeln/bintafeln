@@ -45,3 +45,9 @@ Konto, Kategorien gelten auch für Organisationen). Die Automatik verbindet beid
 der Pflege hilft: Wer mitarbeitet, steht ohne Zusatzaufwand als Helfer im Adressbuch und bleibt es
 auch nach dem Ausscheiden – getrennt in aktive und ehemalige, damit Serienbriefe gezielt gehen.
 Additiv und nie automatisch löschend, damit keine Spur ungewollt verschwindet.
+
+**Nachtrag 2:** Wer die Kategorie „Ehemalige Ehrenamtliche“ trägt, steht nicht mehr in der Liste
+„Ehrenamtliche“, sondern zusammen mit den gesperrten Konten von Ehrenamtlichen in der eigenen Liste
+„Ehemalige Ehrenamtliche“ (Menü: Verein → Team → Ehrenamtliche). Damit niemand dort hängen bleibt,
+entfernt das Entsperren eines Kontos (auch „Online-Zugang freigeben“) diese eine Kategorie wieder –
+die einzige Ausnahme von „nie automatisch entfernt“.

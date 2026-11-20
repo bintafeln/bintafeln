@@ -150,6 +150,14 @@ def _kategorie_ergaenzen(ziel, name) -> None:
     adresse.kategorien.add(kategorie)
 
 
+def _kategorie_entfernen(ziel, name) -> None:
+    from apps.adressen.models import Adresse
+
+    adresse = Adresse.objects.filter(konto=ziel).first()
+    if adresse is not None:
+        adresse.kategorien.remove(*adresse.kategorien.filter(name=name))
+
+
 def helfer_kennzeichnen(ziel) -> None:
     """Wer ein Konto mit mindestens einer Rolle hat, gilt als ehrenamtlicher Helfer (ADR 0098):
     die Kategorie „Ehrenamtliche Helfer“ wird additiv gesetzt und bleibt erhalten, auch wenn
@@ -374,6 +382,9 @@ def entsperren(verwalter, ziel) -> None:
     ziel.gesperrt_am = None
     ziel.gesperrt_von = ""
     ziel.save(update_fields=["is_active", "gesperrt_am", "gesperrt_von"])
+    # Wer wieder mitmacht, ist nicht mehr „ehemalig“ – sonst bliebe die Person in der Liste
+    # „Ehemalige Ehrenamtliche“ stehen.
+    _kategorie_entfernen(ziel, EHEMALIGE_KATEGORIE)
 
 
 def zugang_sperren(verwalter, ziel) -> None:
@@ -511,4 +522,5 @@ def freigeben(verwalter, ziel) -> str:
     ziel.zugang_gesperrt = False
     ziel.save(update_fields=["password", "passwort_aendern", "is_active",
                              "gesperrt_am", "gesperrt_von", "zugang_gesperrt"])  # fmt: skip
+    _kategorie_entfernen(ziel, EHEMALIGE_KATEGORIE)
     return basis
