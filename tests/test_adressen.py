@@ -130,6 +130,59 @@ def test_rollen_nacheinander_anhaken_legt_nur_ein_konto_an(admin_client, django_
     assert a.konto_id is None
 
 
+def test_mitarbeit_in_der_adress_maske(admin_client, admin, django_user_model, client, anmelden,
+                                       benutzer_mit_rolle, recht_geben):  # fmt: skip
+    """Ausgabetage, Ausgabestellen, Beschäftigung und Benutzername lassen sich im Adressbuch
+    bearbeiten – ohne in die Team-Liste zu wechseln."""
+    from apps.kunden.models import Ausgabestelle
+
+    mitte = Ausgabestelle.objects.create(name="Mitte")
+    nord = Ausgabestelle.objects.create(name="Nord")
+    alt = Ausgabestelle.objects.create(name="Alt", aktiv=False)
+    # neu anlegen: Rolle, Ausgabestelle und Tage in einem Zug – das Konto entsteht dabei
+    daten = {"art": "person", "vorname": "Tilda", "nachname": "Tagwerk", "mitarbeit_felder": "1",
+             "rollen": [rollen.AUSGABE], "beschaeftigung": "ehrenamtlich",
+             "ausgabestellen": [mitte.pk], "ausgabetage": ["Mi", "Mo"]}  # fmt: skip
+    admin_client.post(reverse("adressen:neu"), daten)
+    a = Adresse.objects.get(nachname="Tagwerk")
+    konto = a.konto
+    assert (konto.ausgabetage, konto.beschaeftigung) == ("Mo, Mi", "ehrenamtlich")
+    assert list(konto.ausgabestellen.all()) == [mitte]
+    # bearbeiten: die Maske zeigt den Stand und nimmt Änderungen an
+    url = reverse("adressen:bearbeiten", args=[a.pk])
+    seite = admin_client.get(url).content.decode()
+    assert 'name="benutzername" value="tilda.tagwerk"' in seite
+    assert "Ausgabetage" in seite and ">Alt<" not in seite  # nur aktive Ausgabestellen
+    daten |= {"beschaeftigung": "fest", "ausgabestellen": [mitte.pk, nord.pk],
+              "ausgabetage": ["Fr"], "benutzername": "tilda", "konto": konto.pk,
+              "konto_stand": str(konto.pk)}  # fmt: skip
+    assert admin_client.post(url, daten).status_code == 302
+    konto.refresh_from_db()
+    assert (konto.username, konto.beschaeftigung, konto.ausgabetage) == ("tilda", "fest", "Fr")
+    assert set(konto.ausgabestellen.all()) == {mitte, nord}
+    # gespeicherte, inzwischen inaktive Ausgabestelle bleibt wählbar
+    konto.ausgabestellen.add(alt)
+    wahl = admin_client.get(url).context["form"].fields["ausgabestellen"].queryset
+    assert set(wahl) == {mitte, nord, alt}
+    # vergebener Benutzername: Fehler am Feld, nichts geändert
+    antwort = admin_client.post(url, daten | {"benutzername": admin.username})
+    assert "bereits vergeben" in antwort.content.decode()
+    konto.refresh_from_db()
+    assert konto.username == "tilda"
+    # eine Anfrage ohne die Felder (z. B. von einer alten Seite) leert nichts
+    ohne = {"art": "person", "vorname": "Tilda", "nachname": "Tagwerk", "konto": konto.pk,
+            "rollen": [rollen.AUSGABE]}  # fmt: skip
+    admin_client.post(url, ohne)
+    konto.refresh_from_db()
+    assert konto.ausgabetage == "Fr" and konto.ausgabestellen.count() == 3
+    # ohne das Recht, Mitarbeitende zu verwalten, gibt es die Felder nicht
+    recht_geben(rollen.AUSGABE, "adressen.sehen", "adressen.bearbeiten")
+    anmelden(client, benutzer_mit_rolle("bea", rollen.AUSGABE))
+    seite = client.get(url).content.decode()
+    assert "Nachname" in seite and 'name="ausgabetage"' not in seite
+    assert 'name="mitarbeit_felder"' not in seite
+
+
 def test_liste_filter_csv_auskunft(admin_client, markt, pdf_text):
     Adresse.objects.create(art="person", vorname="Max", nachname="Presse", ort="Anderswo")
     inhalt = admin_client.get(LISTE, {"q": "frisch"}).content.decode()

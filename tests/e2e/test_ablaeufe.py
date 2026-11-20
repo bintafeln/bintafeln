@@ -2095,3 +2095,19 @@ def test_demo_anmelden_mit_einem_klick(seite, admin, benutzer_mit_rolle, setting
     zeile.get_by_role("button", name=re.compile("Anmelden als")).click()
     expect(seite.locator("a.angemeldet")).to_be_visible()
     assert "/anmelden" not in seite.url
+
+
+def test_adresse_mitarbeit_speichert_sofort(angemeldet, admin):
+    """Ausgabetage einer Person im Adressbuch anhaken: gespeichert wird sofort am Konto."""
+    from apps.adressen.models import Adresse
+    from apps.konten import verwaltung
+
+    a = Adresse.objects.create(art="person", vorname="Tilda", nachname="Tagwerk")
+    konto = verwaltung.konto_fuer_adresse(admin, a, [rollen.AUSGABE])
+    seite = angemeldet(admin)
+    seite.goto(reverse("adressen:bearbeiten", args=[a.pk]))
+    expect(seite.get_by_label("Benutzername")).to_have_value("tilda.tagwerk")
+    seite.get_by_label("Fr", exact=True).check()
+    expect(seite.locator(".autosave-ok")).to_be_visible()
+    konto.refresh_from_db()
+    assert konto.ausgabetage == "Fr"

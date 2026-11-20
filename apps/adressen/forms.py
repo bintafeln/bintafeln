@@ -21,12 +21,35 @@ class AdresseForm(forms.ModelForm):
         "(Fahrer/Beifahrer). Jedes Konto braucht mindestens eine Rolle.",
     )  # fmt: skip
 
+    # Angaben zur Mitarbeit hängen am Konto (wie die Rollen) und lassen sich hier mitbearbeiten,
+    # damit man dafür nicht in die Team-Liste wechseln muss. ``mitarbeit_felder`` zeigt an, dass die
+    # Seite diese Felder überhaupt hatte: Nur dann werden sie gespeichert – sonst leerte eine
+    # Anfrage ohne die Felder Ausgabetage und Ausgabestellen.
+    mitarbeit_felder = forms.CharField(required=False, widget=forms.HiddenInput, initial="1")
+    beschaeftigung = forms.ChoiceField(label="Beschäftigung", required=False)
+    ausgabestellen = forms.ModelMultipleChoiceField(
+        label="Ausgabestellen", queryset=None, required=False,
+        widget=Mehrfachauswahl(leer="keine"),
+        help_text="An welchen Ausgabestellen die Person mitarbeitet.",
+    )  # fmt: skip
+    ausgabetage = forms.MultipleChoiceField(
+        label="Ausgabetage", required=False, widget=forms.CheckboxSelectMultiple,
+        help_text="An welchen Tagen die Person meist arbeitet; die Kundenliste startet mit diesem "
+        "Tag.",
+    )  # fmt: skip
+    benutzername = forms.CharField(
+        label="Benutzername", required=False, max_length=150,
+        help_text="Zum Anmelden. Buchstaben, Ziffern und @ . + - _",
+    )  # fmt: skip
+    MITARBEIT = ("beschaeftigung", "ausgabestellen", "ausgabetage", "benutzername")
+
     ABSCHNITTE = [
         ("Name", ["art", "organisation", "ansprechperson", "anrede", "vorname", "nachname",
                   "geburtsdatum", "kategorien"]),
         ("Anschrift und Kontakt", ["strasse", "plz", "ort", "land", "telefon", "mobil", "email",
                                    "webseite"]),
-        ("Mitarbeit", ["konto", "rollen"]),
+        ("Mitarbeit", ["konto", "rollen", "beschaeftigung", "ausgabestellen", "ausgabetage",
+                       "benutzername"]),
         ("Einwilligungen und Notiz", ["einwilligung_post", "einwilligung_email",
                                       "veroeffentlichen", "notiz"]),
     ]  # fmt: skip
@@ -83,8 +106,10 @@ class AdresseForm(forms.ModelForm):
             konto = self.instance.konto if self.instance.pk else None
             if konto is not None:
                 self.initial.setdefault("rollen", list(konto.groups.values_list("name", flat=True)))
+            self._mitarbeit_felder(konto)
         else:
-            del self.fields["rollen"]
+            for name in ("rollen", "mitarbeit_felder", *self.MITARBEIT):
+                del self.fields[name]
         gewaehlt = list(self.instance.kategorien.values_list("pk", flat=True)) if (
             self.instance.pk) else []  # fmt: skip
         self.fields["kategorien"].queryset = AdressKategorie.objects.filter(
@@ -99,6 +124,48 @@ class AdresseForm(forms.ModelForm):
         if "konto" not in self.fields or "konto_stand" not in self.data:
             return False
         return self.data.get("konto_stand", "") != str(self.instance.konto_id or "")
+
+    def _mitarbeit_felder(self, konto) -> None:
+        """Beschäftigung, Ausgabestellen, Ausgabetage und Benutzername des verknüpften Kontos."""
+        from apps.ausgabe.ampel import WOCHENTAGE
+        from apps.konten.models import Benutzer
+        from apps.kunden.models import Ausgabestelle
+
+        gewaehlt = list(konto.ausgabestellen.values_list("pk", flat=True)) if konto else []
+        self.fields["beschaeftigung"].choices = Benutzer.Beschaeftigung.choices
+        self.fields["ausgabestellen"].queryset = Ausgabestelle.objects.filter(
+            Q(aktiv=True) | Q(pk__in=gewaehlt)  # gespeicherte bleiben wählbar
+        ).order_by("name")
+        self.fields["ausgabetage"].choices = [(t, t) for t in WOCHENTAGE]
+        for name in self.MITARBEIT:
+            self.fields[name].widget.attrs["data-zeigen-bei"] = "art=person"
+        if konto is None:
+            # Den Benutzernamen vergibt bintafeln beim Anlegen des Kontos selbst
+            del self.fields["benutzername"]
+            self.initial.setdefault("beschaeftigung", Benutzer.Beschaeftigung.EHRENAMTLICH)
+            return
+        # ein halb getippter Benutzername darf nicht gespeichert werden (ADR 0145)
+        self.fields["benutzername"].widget.attrs["data-autosave-spaet"] = ""
+        self.initial.setdefault("beschaeftigung", konto.beschaeftigung)
+        self.initial.setdefault("ausgabestellen", gewaehlt)
+        self.initial.setdefault(
+            "ausgabetage", [t.strip() for t in (konto.ausgabetage or "").split(",") if t.strip()]
+        )
+        self.initial.setdefault("benutzername", konto.username)
+
+    def clean_benutzername(self):
+        from django.contrib.auth.validators import UnicodeUsernameValidator
+
+        from apps.konten.models import Benutzer
+
+        name = (self.cleaned_data.get("benutzername") or "").strip()
+        konto = self.instance.konto if self.instance.pk else None
+        if not name or konto is None:
+            return ""
+        UnicodeUsernameValidator()(name)
+        if Benutzer.objects.filter(username__iexact=name).exclude(pk=konto.pk).exists():
+            raise forms.ValidationError("Dieser Benutzername ist bereits vergeben.")
+        return name
 
     def clean(self):
         cleaned = super().clean()
@@ -141,6 +208,18 @@ class AdresseForm(forms.ModelForm):
             verwaltung.rollen_setzen(self.verwalter, self.instance.konto, gewaehlt)
         elif gewaehlt and self.instance.art == Adresse.Art.PERSON:
             verwaltung.konto_fuer_adresse(self.verwalter, self.instance, gewaehlt)
+        # Angaben zur Mitarbeit: nur, wenn die Seite die Felder hatte, und nur mit Konto
+        if self.instance.konto_id and self.cleaned_data.get("mitarbeit_felder"):
+            from apps.ausgabe.ampel import WOCHENTAGE
+
+            tage = self.cleaned_data.get("ausgabetage") or []
+            verwaltung.mitarbeit_setzen(
+                self.verwalter, self.instance.konto,
+                beschaeftigung=self.cleaned_data.get("beschaeftigung") or "",
+                ausgabestellen=self.cleaned_data.get("ausgabestellen"),
+                ausgabetage=", ".join(t for t in WOCHENTAGE if t in tage),
+                benutzername=self.cleaned_data.get("benutzername") or "",
+            )  # fmt: skip
 
     def abschnitte(self):
         alle = (
