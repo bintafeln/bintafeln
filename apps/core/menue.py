@@ -199,6 +199,9 @@ def menue(request) -> list[dict]:
         # Die Sammel-Liste und die Detail-/Bearbeiten-Seiten liegen unter /konten/mitarbeitende/
         # (ohne eigenen Menüeintrag). Sie öffnen deshalb den Bereich über „Ehrenamtliche“.
         ehrenamtliche["auch"] = [reverse("konten:mitarbeitende")]
+        ehrenamtliche["kinder"] = [
+            _eintrag("Ehemalige Ehrenamtliche", "konten:ehemalige", genau=True)
+        ]
         team = [(None, ehrenamtliche), (None, angestellte)]
     elif "personal.sehen" in darf:
         team = [(None, _eintrag("Verträge & Zeiten", "personal:liste", genau=True))]

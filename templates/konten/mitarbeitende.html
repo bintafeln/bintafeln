@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% load liste static %}
-{% block titel %}{% if archiv %}Archiv{% else %}{{ titel|default:"Team" }}{% endif %}{% endblock %}
+{% block titel %}{{ titel|default:"Team" }}{% endblock %}
 {% block inhalt %}
 <section class="karte">
   <div class="titel-zeile">
-    <h1>{% if archiv %}Archiv{% else %}{{ titel|default:"Team" }}{% endif %}</h1>
+    <h1>{{ titel|default:"Team" }}</h1>
     <div class="titel-knoepfe">
       {% if not archiv %}<a class="knopf" href="{% url 'konten:mitarbeiter_neu' %}{% if art %}?art={{ art }}{% endif %}">{% if art == 'fest' %}Angestellte anlegen{% elif art == 'ehrenamtlich' %}Ehrenamtliche anlegen{% else %}Konto anlegen{% endif %}</a>{% endif %}
       {% if "adressen.sehen" in rechte %}<a class="knopf knopf-zweitrangig" href="{% url 'adressen:druckliste' %}">🖨 Liste zusammenstellen</a>{% endif %}
@@ -22,12 +22,17 @@
   </div>
   <nav class="reiter" aria-label="Ansicht">
     <a href="{% url 'konten:ehrenamtliche' %}"{% if art == 'ehrenamtlich' %} aria-current="page"{% endif %}>Ehrenamtliche</a>
+    <a href="{% url 'konten:ehemalige' %}"{% if ehemalige %} aria-current="page"{% endif %}>Ehemalige Ehrenamtliche</a>
     <a href="{% url 'konten:angestellte' %}"{% if art == 'fest' %} aria-current="page"{% endif %}>Angestellte</a>
     {% if art == 'fest' and "personal.sehen" in rechte %}<a href="{% url 'personal:liste' %}">Verträge &amp; Zeiten</a>{% endif %}
-    <a href="{% url 'konten:mitarbeitende_archiv' %}"{% if archiv %} aria-current="page"{% endif %}>Archiv (gesperrt)</a>
+    <a href="{% url 'konten:mitarbeitende_archiv' %}"{% if archiv and not ehemalige %} aria-current="page"{% endif %}>Archiv (gesperrt)</a>
     <a href="{% url 'konten:stellen' %}">Ausgabestellen</a>
   </nav>
-  {% if archiv %}
+  {% if ehemalige %}
+    <p class="hinweis">Hier steht, wer nicht mehr mithilft: gesperrte Konten von Ehrenamtlichen und Personen, die im
+      Adressbuch die Kategorie „Ehemalige Ehrenamtliche“ tragen. Wer wieder mitmacht: Konto entsperren bzw. die
+      Kategorie in der Adresse entfernen – dann steht die Person wieder unter „Ehrenamtliche“.</p>
+  {% elif archiv %}
     <p class="hinweis">Gesperrte Konten werden nicht gelöscht. So bleibt auch Jahre später nachvollziehbar, wer wann
       dabei war und was eingetragen hat (Änderungsprotokoll, Abholungen, Buchungen).</p>
   {% else %}
@@ -123,7 +128,7 @@
         {% if archiv %}<td data-titel="Gesperrt">{{ z.b.gesperrt_am|date:"d.m.Y"|default:"–" }}{% if z.b.gesperrt_von %} von {{ z.b.gesperrt_von }}{% endif %}</td>{% endif %}
       </tr>
     {% empty %}
-      <tr><td colspan="20">{% if q %}Keine Treffer für „{{ q }}“.{% elif archiv %}Keine gesperrten Konten.{% else %}Keine aktiven Konten.{% endif %}</td></tr>
+      <tr><td colspan="20">{% if q %}Keine Treffer für „{{ q }}“.{% elif ehemalige %}Keine ehemaligen Ehrenamtlichen.{% elif archiv %}Keine gesperrten Konten.{% else %}Keine aktiven Konten.{% endif %}</td></tr>
     {% endfor %}
     </tbody>
   </table>

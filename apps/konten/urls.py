@@ -25,6 +25,7 @@ urlpatterns = [
     path("geburtstage/", views_mitarbeitende.geburtstage, name="geburtstage"),
     path("mitarbeitende/", views_mitarbeitende.liste, name="mitarbeitende"),
     path("mitarbeitende/ehrenamtliche/", views_mitarbeitende.ehrenamtliche, name="ehrenamtliche"),
+    path("mitarbeitende/ehemalige/", views_mitarbeitende.ehemalige, name="ehemalige"),
     path("mitarbeitende/angestellte/", views_mitarbeitende.angestellte, name="angestellte"),
     path("ausgabestellen/", views_stellen.liste, name="stellen"),
     path("ausgabestellen/<int:pk>/", views_stellen.stelle, name="stelle"),
