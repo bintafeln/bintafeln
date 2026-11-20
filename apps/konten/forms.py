@@ -314,9 +314,17 @@ class StammdatenForm(forms.ModelForm):
         ("Sonstiges", ["bemerkung"]),
     ]
 
-    def __init__(self, *args, angemeldet=None, nummer_erlaubt=False, **kwargs):
+    # Diese Angaben stehen auch in der Adresse der Person (ADR 0097). Im Adressbuch werden sie
+    # dort bearbeitet; der Stammdaten-Teil der Adress-Maske lässt sie deshalb weg.
+    ADRESSFELDER = ("anrede", "geburtsdatum", "strasse", "plz", "ort", "telefon", "handy")
+
+    def __init__(self, *args, angemeldet=None, nummer_erlaubt=False, ohne_adresse=False,
+                 **kwargs):  # fmt: skip
         super().__init__(*args, **kwargs)
         s = self.instance
+        if ohne_adresse:
+            for name in self.ADRESSFELDER:
+                del self.fields[name]
         if nummer_erlaubt:
             self.fields["personalnummer"] = forms.IntegerField(
                 label="Mitarbeiternummer", required=False, min_value=1,
@@ -324,7 +332,8 @@ class StammdatenForm(forms.ModelForm):
                 "Ist die Person Vereinsmitglied, zählt stattdessen die Mitgliedsnummer.",
             )  # fmt: skip
             self.initial["personalnummer"] = s.personalnummer
-        self.fields["anrede"].choices = mit_vorhandenem(ANREDEN, s.anrede)
+        if "anrede" in self.fields:
+            self.fields["anrede"].choices = mit_vorhandenem(ANREDEN, s.anrede)
         vorhanden = [k.strip() for k in s.fs_klassen.split(",") if k.strip()]
         self.initial["fs_klassen"] = vorhanden
         # Gespeicherte Klassen, die nicht (mehr) in der Liste stehen, bleiben wählbar.

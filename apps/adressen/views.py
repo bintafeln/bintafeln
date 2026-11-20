@@ -297,6 +297,21 @@ def adresse(request, pk):
     return render(request, "adressen/adresse.html", kontext)
 
 
+def _stammdaten_formular(request, a: Adresse):
+    """Stammdaten der Mitarbeit (Eintritt, Notfallkontakt, Führerschein, Belehrungen) für die
+    Adress-Maske – ohne Anschrift und Kontakt, die stehen schon in der Adresse. Gespeichert wird
+    über die Stammdaten-Ansicht des Kontos."""
+    if not (a.pk and a.konto_id) or a.konto.stelle_id:
+        return None
+    from apps.konten.forms import StammdatenForm
+    from apps.konten.models import Stammdaten
+
+    return StammdatenForm(
+        instance=Stammdaten.objects.get_or_create(benutzer=a.konto)[0], angemeldet=request.user,
+        nummer_erlaubt=rollen.hat_recht(request.user, "mitarbeitende.nummer"), ohne_adresse=True,
+    )  # fmt: skip
+
+
 @never_cache
 @rollen.recht_erforderlich("adressen.bearbeiten")
 def bearbeiten(request, pk=None):
@@ -333,6 +348,7 @@ def bearbeiten(request, pk=None):
         return redirect("adressen:adresse", pk=a.pk)
     return render(request, "adressen/bearbeiten.html", {
         "form": form, "a": a, "m_form": m_form, "ist_mitglied": ist_mitglied,
+        "stamm_form": _stammdaten_formular(request, a) if konto_waehlbar else None,
         "schon_mitglied": m_form is not None and m_form.instance.pk is not None,
         "konto_waehlbar": konto_waehlbar,
         "konto_aktiv": bool(a.konto_id and a.konto.is_active),
