@@ -330,7 +330,7 @@ def _startpasswort_zeigen(request, ziel, passwort, neu):
     return render(
         request,
         "konten/startpasswort.html",
-        {"ziel": ziel, "passwort": passwort, "neu": neu},
+        {"ziel": ziel, "passwort": passwort, "neu": neu, "fertig": _zurueck(request, ziel).url},
     )
 
 
@@ -394,18 +394,30 @@ def bearbeiten(request, pk):
     return render(
         request,
         "konten/mitarbeiter.html",
-        {
-            "form": form,
-            "ziel": ziel,
-            "zwei_faktor": user_has_device(ziel),
-            "vertraute_geraete": ziel.vertraute_geraete.filter(
-                gueltig_bis__gt=timezone.now()
-            ).count(),
-            "mail": mail.eingerichtet(),
-            "nummer": verwaltung.personennummer(ziel),
-            "anmeldung_gesperrt": anmeldesperre.ist_gesperrt(ziel.get_username()),
-        },
-    )
+        {"form": form, "ziel": ziel, "nummer": verwaltung.personennummer(ziel),
+         **zugang_kontext(ziel)},
+    )  # fmt: skip
+
+
+def zugang_kontext(ziel) -> dict:
+    """Angaben für den Baustein ``konten/_zugang.html`` (Stand und Aktionen zum Zugang)."""
+    return {
+        "zwei_faktor": user_has_device(ziel),
+        "vertraute_geraete": ziel.vertraute_geraete.filter(gueltig_bis__gt=timezone.now()).count(),
+        "mail": mail.eingerichtet(),
+        "anmeldung_gesperrt": anmeldesperre.ist_gesperrt(ziel.get_username()),
+    }
+
+
+def _zurueck(request, ziel):
+    """Nach einer Aktion zum Konto: zurück auf die Seite, von der sie kam (``weiter``, z. B. die
+    Adress-Maske) – sonst auf die Seite des Kontos."""
+    from django.utils.http import url_has_allowed_host_and_scheme
+
+    weiter = request.POST.get("weiter", "")
+    if weiter and url_has_allowed_host_and_scheme(weiter, {request.get_host()}):
+        return redirect(weiter)
+    return redirect("konten:mitarbeiter", pk=ziel.pk)
 
 
 def _aktion(request, pk, funktion, erfolg):
@@ -416,7 +428,7 @@ def _aktion(request, pk, funktion, erfolg):
         messages.error(request, str(fehler))
     else:
         messages.success(request, erfolg.format(ziel=ziel))
-    return redirect("konten:mitarbeiter", pk=ziel.pk)
+    return _zurueck(request, ziel)
 
 
 @require_POST
@@ -539,7 +551,7 @@ def link_senden(request, pk):
         messages.error(request, f"Nicht gesendet: {fehler}")
     else:
         messages.success(request, f"Link zum Festlegen eines Passworts an {ziel.email} gesendet.")
-    return redirect("konten:mitarbeiter", pk=ziel.pk)
+    return _zurueck(request, ziel)
 
 
 @never_cache
@@ -586,7 +598,7 @@ def freigeben(request, pk):
     """Online-Zugang eines einzelnen Kontos freigeben."""
     ziel = _ziel(request, pk)
     _freigeben_und_melden(request, ziel)
-    return redirect("konten:mitarbeiter", pk=ziel.pk)
+    return _zurueck(request, ziel)
 
 
 def _nicht_freigeschaltet():

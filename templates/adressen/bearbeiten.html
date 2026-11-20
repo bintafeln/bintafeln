@@ -43,6 +43,12 @@
     </form>
   </section>
   {% endif %}
+  {% if ziel %}
+  <section class="adresse-zugang" id="zugang">
+    <h2>Zugang</h2>
+    {% with weiter=request.path|add:"#zugang" ohne_sperren=True %}{% include "konten/_zugang.html" %}{% endwith %}
+  </section>
+  {% endif %}
   {% if konto_waehlbar and a.konto_id %}
   <div class="konto-ausscheiden">
     <h2>Mitarbeit beenden</h2>

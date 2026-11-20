@@ -1,0 +1,99 @@
+{% comment %}
+Zugang eines Kontos: Stand und Aktionen (Passwort, Zwei-Faktor, Online-Zugang, Sperren). Braucht
+„ziel“ und die Angaben aus views_mitarbeitende.zugang_kontext(). „weiter“: wohin die Aktionen
+zurückführen (sonst zur Seite des Kontos); „ohne_sperren“: ohne Sperren und Löschen, wenn die Seite
+dafür eigene Knöpfe hat (Adress-Maske).
+{% endcomment %}
+  <p>Dabei seit {{ ziel.date_joined|date:"d.m.Y" }} · letzte Anmeldung {{ ziel.last_login|date:"d.m.Y H:i"|default:"noch nie" }}
+    · Zwei-Faktor {{ zwei_faktor|yesno:"eingerichtet,nicht eingerichtet" }}{% if ziel.passwort_aendern %} · Startpasswort noch nicht geändert{% endif %}
+    {% if not ziel.has_usable_password %}· <strong>Online-Zugang noch nicht freigeschaltet</strong>{% elif ziel.zugang_gesperrt %}· <strong>Online-Zugang gesperrt</strong>{% endif %}</p>
+  {% if ziel.has_usable_password and ziel.is_active and ziel.zugang_gesperrt %}
+  <p class="sicherung sicherung-veraltet">Der Online-Zugang ist gesperrt: Diese Person kann sich
+    zurzeit nicht anmelden, bleibt aber aktiver Helfer. Rollen, Rechte und Passwort bleiben.</p>
+  {% endif %}
+  {% if not ziel.has_usable_password %}
+  <p class="hinweis">Dieses Konto kann sich noch nicht anmelden. „Online-Zugang freigeben“ setzt als
+    vorläufiges Passwort das <strong>Geburtsdatum</strong> (sonst die <strong>Straße</strong>) und
+    schickt – falls eine E-Mail-Adresse hinterlegt ist – eine Einladung. Beim ersten Anmelden muss
+    ein eigenes Passwort gewählt werden.</p>
+  <div class="aktionen">
+    <form method="post" action="{% url 'konten:zugang_freigeben' ziel.pk %}" class="inline">
+      {% csrf_token %}{% if weiter %}<input type="hidden" name="weiter" value="{{ weiter }}">{% endif %}
+      <button type="submit" class="knopf">Online-Zugang freigeben</button>
+    </form>
+    <a class="knopf knopf-zweitrangig" href="{% url 'konten:zugaenge_freigeben' %}">Alle offenen Zugänge …</a>
+  </div>
+  {% endif %}
+  <div class="aktionen">
+    <form method="post" action="{% url 'konten:passwort_zuruecksetzen' ziel.pk %}" class="inline"
+          onsubmit="return confirm('Neues Startpasswort für {{ ziel|escapejs }} erzeugen? Das bisherige Passwort gilt dann nicht mehr.')">
+      {% csrf_token %}{% if weiter %}<input type="hidden" name="weiter" value="{{ weiter }}">{% endif %}
+      <button type="submit" class="knopf knopf-zweitrangig">Passwort zurücksetzen</button>
+    </form>
+    {% if mail and ziel.email %}
+    <form method="post" action="{% url 'konten:link_senden' ziel.pk %}" class="inline">
+      {% csrf_token %}{% if weiter %}<input type="hidden" name="weiter" value="{{ weiter }}">{% endif %}
+      <button type="submit" class="knopf knopf-zweitrangig">Link zum neuen Passwort per Mail</button>
+    </form>
+    {% endif %}
+    {% if zwei_faktor %}
+    <form method="post" action="{% url 'konten:zwei_faktor_zuruecksetzen' ziel.pk %}" class="inline"
+          onsubmit="return confirm('Zwei-Faktor für {{ ziel|escapejs }} zurücksetzen (z. B. Handy verloren)?')">
+      {% csrf_token %}{% if weiter %}<input type="hidden" name="weiter" value="{{ weiter }}">{% endif %}
+      <button type="submit" class="knopf knopf-zweitrangig">Zwei-Faktor zurücksetzen</button>
+    </form>
+    {% endif %}
+    {% if vertraute_geraete %}
+    <form method="post" action="{% url 'konten:geraete_zuruecksetzen' ziel.pk %}" class="inline"
+          onsubmit="return confirm('Vertraute Geräte von {{ ziel|escapejs }} entfernen? Danach ist überall wieder der Code nötig.')">
+      {% csrf_token %}{% if weiter %}<input type="hidden" name="weiter" value="{{ weiter }}">{% endif %}
+      <button type="submit" class="knopf knopf-zweitrangig">Vertraute Geräte entfernen ({{ vertraute_geraete }})</button>
+    </form>
+    {% endif %}
+    <form method="post" action="{% url 'konten:werkseinstellungen' ziel.pk %}" class="inline"
+          onsubmit="return confirm('{{ ziel|escapejs }} auf Werkseinstellungen zurücksetzen? Persönliche Ansichten (Spalten der Kundenliste, gewählte Ausgabestelle, eingefahrenes Menü …) werden wie beim Anlegen; Rollen und Rechte bleiben.')">
+      {% csrf_token %}{% if weiter %}<input type="hidden" name="weiter" value="{{ weiter }}">{% endif %}
+      <button type="submit" class="knopf knopf-zweitrangig" title="Persönliche Anpassungen zurücksetzen; Rollen und Rechte bleiben">Werkseinstellungen</button>
+    </form>
+    {% if anmeldung_gesperrt %}
+      <form method="post" action="{% url 'konten:anmeldesperre_aufheben' ziel.pk %}" class="inline">
+        {% csrf_token %}{% if weiter %}<input type="hidden" name="weiter" value="{{ weiter }}">{% endif %}
+        <button type="submit" class="knopf" title="Zu viele falsche Passwörter: Die Anmeldung ist vorübergehend gesperrt. Hier sofort wieder erlauben; das Passwort bleibt.">Anmelde-Sperre aufheben</button>
+      </form>
+    {% endif %}
+    {% if ziel.has_usable_password and ziel.is_active %}
+      {% if ziel.zugang_gesperrt %}
+      <form method="post" action="{% url 'konten:zugang_entsperren' ziel.pk %}" class="inline">
+        {% csrf_token %}{% if weiter %}<input type="hidden" name="weiter" value="{{ weiter }}">{% endif %}
+        <button type="submit" class="knopf" title="Anmeldung wieder erlauben; bisheriges Passwort gilt sofort">Online-Zugang freigeben</button>
+      </form>
+      {% else %}
+      <form method="post" action="{% url 'konten:zugang_sperren' ziel.pk %}" class="inline"
+            onsubmit="return confirm('Online-Zugang von {{ ziel|escapejs }} sperren? Die Person kann sich dann nicht mehr anmelden, bleibt aber aktiver Helfer (nicht im Archiv). Rollen, Rechte und Passwort bleiben.')">
+        {% csrf_token %}{% if weiter %}<input type="hidden" name="weiter" value="{{ weiter }}">{% endif %}
+        <button type="submit" class="knopf knopf-zweitrangig" title="Anmeldung sperren, ohne die Person zu archivieren">Online-Zugang sperren</button>
+      </form>
+      {% endif %}
+    {% endif %}
+    {% if not ohne_sperren %}
+    {% if ziel.is_active %}
+    <form method="post" action="{% url 'konten:sperren' ziel.pk %}" class="inline"
+          onsubmit="return confirm('{{ ziel|escapejs }} sperren? Die Person ist sofort abgemeldet und steht dann im Archiv.')">
+      {% csrf_token %}{% if weiter %}<input type="hidden" name="weiter" value="{{ weiter }}">{% endif %}
+      <button type="submit" class="knopf knopf-gefahr">Sperren</button>
+    </form>
+    {% else %}
+    <form method="post" action="{% url 'konten:entsperren' ziel.pk %}" class="inline">
+      {% csrf_token %}{% if weiter %}<input type="hidden" name="weiter" value="{{ weiter }}">{% endif %}
+      <button type="submit" class="knopf">Wieder freischalten</button>
+    </form>
+    {% if "mitarbeitende.loeschen" in rechte %}
+    <form method="post" action="{% url 'konten:entfernen' ziel.pk %}" class="inline"
+          onsubmit="return confirm('„{{ ziel|escapejs }}“ endgültig löschen? Konto, Stammdaten und die verknüpfte Adresse kommen in den Papierkorb (Verträge, Stunden, Urlaub und Ähnliches gehen mit). Von dort lässt sich das eine Zeit lang wiederherstellen.')">
+      {% csrf_token %}{% if weiter %}<input type="hidden" name="weiter" value="{{ weiter }}">{% endif %}
+      <button type="submit" class="knopf knopf-gefahr" title="Konto samt Adresse in den Papierkorb legen">Endgültig löschen</button>
+    </form>
+    {% endif %}
+    {% endif %}
+    {% endif %}
+  </div>
