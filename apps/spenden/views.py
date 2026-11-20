@@ -108,9 +108,15 @@ def liste(request):
     spenden = spenden.annotate(sortname=_SORTNAME)
     spenden, sort = listen.sortieren(spenden, request.GET.get("sort", ""), SORTIERUNG, "-datum")
     if request.GET.get("aktion"):
-        return listenexport.ausliefern(request, f"Spenden {jahr}", f"spenden-{jahr}",
-                                       _csv_text(listenauswahl.filtern(request, spenden), jahr),
-                                       weiter=reverse("spenden:liste"))  # fmt: skip
+        zuordnung = {"spender": ("Spender", "PLZ", "Ort"), "art": "Art", "betrag": "Betrag/Wert",
+                     "bezeichnung": ("Bezeichnung", "Menge", "Einheit", "Zweck"),
+                     "bestaetigung": "Bestätigung"}  # fmt: skip
+        return listenexport.ausliefern(
+            request, f"Spenden {jahr}", f"spenden-{jahr}",
+            _csv_text(listenauswahl.filtern(request, spenden), jahr),
+            weiter=reverse("spenden:liste"),
+            ohne_spalten=listen.pdf_ohne(request.user, "spenden", zuordnung, SPALTEN_FEST),
+        )  # fmt: skip
     summen = spenden.aggregate(
         geld=Sum("betrag", filter=Q(art=Spende.Art.GELD)),
         sach=Sum("betrag", filter=Q(art=Spende.Art.SACH)),

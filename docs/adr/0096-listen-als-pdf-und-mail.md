@@ -32,3 +32,11 @@ Der Helfer erzeugt PDF und E-Mail aus dem bereits vorhandenen CSV-Text, statt je
 aufzubauen – wenig Code, überall gleiches Verhalten. Das PDF deckt „ansehen/drucken“ (auch auf dem
 Tablet) ab, die E-Mail das „auf einen anderen Rechner bringen“, und die CSV im Anhang bleibt für
 die Weiterverarbeitung in Excel/LibreOffice erhalten.
+
+## Nachtrag (2026-11-20): Das PDF folgt der Spaltenauswahl
+
+Wer in einer Liste Spalten ausblendet, erwartet sie auch im Ausdruck nicht. Das PDF (auch das im
+Mail-Anhang) lässt deshalb die Spalten weg, die die Person in dieser Liste ausgeblendet hat
+(`listenexport.ausliefern(ohne_spalten=…)`, Zuordnung über `listen.pdf_ohne()`). Die CSV-Datei
+bleibt vollständig: Sie ist der Datenexport, das PDF die Ansicht zum Drucken. Spalten der CSV, zu
+denen es in der Liste keine wählbare Spalte gibt, bleiben im PDF stehen.

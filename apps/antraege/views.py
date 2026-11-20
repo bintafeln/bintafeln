@@ -847,8 +847,15 @@ def export(request):
     for a in antraege.prefetch_related("personen"):
         schreiber.writerow([_wert(a, name) for name in EXPORT_SPALTEN])
     basis = f"antraege-{ansicht}-{timezone.localdate():%Y-%m-%d}"
-    return listenexport.ausliefern(request, "Anträge", basis, puffer.getvalue(),
-                                   weiter=reverse("antraege:liste"))  # fmt: skip
+    # Im PDF fehlen die Spalten, die die Person in der Antragsliste ausgeblendet hat
+    zuordnung = {"status": "status", "kundennummer": "kundennummer", "nachname": "nachname",
+                 "vorname": "vorname", "eingang": "eingegangen_am", "email": "email",
+                 "telefon": "telefon", "art": "art", "staat": "staatsangehoerigkeit"}  # fmt: skip
+    aus = set(request.user.antraege_liste_aus or []) - SPALTEN_FEST
+    return listenexport.ausliefern(
+        request, "Anträge", basis, puffer.getvalue(), weiter=reverse("antraege:liste"),
+        ohne_spalten={zuordnung[k] for k in aus if k in zuordnung},
+    )  # fmt: skip
 
 
 # --- Einstellungen (Admin) ---------------------------------------------------------------

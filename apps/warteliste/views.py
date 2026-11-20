@@ -480,8 +480,10 @@ def export(request):
     for eintrag in ws:
         schreiber.writerow(_export_zeile(eintrag))
     basis = f"warteliste-{timezone.localdate():%Y-%m-%d}"
-    return listenexport.ausliefern(request, "Warteliste", basis, puffer.getvalue(),
-                                   weiter=reverse("warteliste:liste"))  # fmt: skip
+    return listenexport.ausliefern(
+        request, "Warteliste", basis, puffer.getvalue(), weiter=reverse("warteliste:liste"),
+        ohne_spalten=listen.pdf_ohne(request.user, "warteliste", dict(SPALTEN)),
+    )  # fmt: skip
 
 
 # ── Abgleich, Dubletten, Streichungen ────────────────────────────────────────

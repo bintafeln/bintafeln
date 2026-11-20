@@ -53,6 +53,17 @@ def sichtbare_spalten(benutzer, liste, schluessel, fest=()) -> set:
     return {k for k in schluessel if k in fest or k not in aus}
 
 
+def pdf_ohne(benutzer, liste, zuordnung: dict, fest=()) -> set:
+    """Für den PDF-Export (``listenexport.ausliefern(ohne_spalten=…)``): die Überschriften der
+    CSV-Spalten, die zu ausgeblendeten Listenspalten gehören. ``zuordnung``: je Spaltenschlüssel
+    eine Überschrift oder mehrere."""
+    weg = set()
+    for schluessel in _ausgeblendet(benutzer, liste) - set(fest):
+        namen = zuordnung.get(schluessel, ())
+        weg |= {namen} if isinstance(namen, str) else set(namen)
+    return weg
+
+
 def spalten_wahl(benutzer, liste, spalten, fest=()) -> list[tuple]:
     """Für das Auswahlmenü: je Spalte (schluessel, titel, sichtbar, fest)."""
     aus = _ausgeblendet(benutzer, liste)

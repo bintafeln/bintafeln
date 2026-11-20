@@ -91,9 +91,14 @@ def liste(request):
         schluessel |= {f: (lambda z, f=f: z[f]) for f in ("soll", "gezahlt", "offen")}
     zeilen, sort = listen.sortieren_liste(zeilen, request.GET.get("sort", ""), schluessel, "nummer")
     if request.GET.get("aktion"):
-        return listenexport.ausliefern(request, f"Mitglieder {jahr}", f"mitglieder-{jahr}",
-                                       _csv_text(zeilen, jahr, beitraege),
-                                       weiter=reverse("mitglieder:liste"))  # fmt: skip
+        zuordnung = {"name": "Name", "art": "Art", "eintritt": "Eintritt",
+                     "soll": f"Soll {jahr}", "gezahlt": f"Gezahlt {jahr}",
+                     "offen": f"Offen {jahr}"}  # fmt: skip
+        return listenexport.ausliefern(
+            request, f"Mitglieder {jahr}", f"mitglieder-{jahr}",
+            _csv_text(zeilen, jahr, beitraege), weiter=reverse("mitglieder:liste"),
+            ohne_spalten=listen.pdf_ohne(request.user, "mitglieder", zuordnung, SPALTEN_FEST),
+        )  # fmt: skip
     alle = Mitglied.objects.all()
     kennzahlen = {
         "mitglieder": sum(1 for m in alle if m.ist_mitglied(heute)),
