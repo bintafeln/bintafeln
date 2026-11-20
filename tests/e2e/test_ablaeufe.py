@@ -2111,3 +2111,24 @@ def test_adresse_mitarbeit_speichert_sofort(angemeldet, admin):
     expect(seite.locator(".autosave-ok")).to_be_visible()
     konto.refresh_from_db()
     assert konto.ausgabetage == "Fr"
+
+
+def test_adresse_stammdaten_speichern_sofort(angemeldet, admin):
+    """Stammdaten der Mitarbeit in der Adress-Maske: Notfallkontakt eintragen, sofort gespeichert,
+    die Anschrift der Adresse bleibt."""
+    from apps.adressen.models import Adresse
+    from apps.konten import verwaltung
+    from apps.konten.models import Stammdaten
+
+    a = Adresse.objects.create(art="person", vorname="Nora", nachname="Notfall",
+                               strasse="Beispielweg 3")  # fmt: skip
+    konto = verwaltung.konto_fuer_adresse(admin, a, [rollen.FAHRER])
+    seite = angemeldet(admin)
+    seite.goto(reverse("adressen:bearbeiten", args=[a.pk]))
+    teil = seite.locator("#stammdaten")
+    teil.get_by_label("Notfallkontakt: Name").fill("Nils Notfall")
+    teil.get_by_label("Notfallkontakt: Telefon").click()
+    expect(teil.locator(".autosave-ok")).to_be_visible()
+    assert Stammdaten.objects.get(benutzer=konto).notfall_name == "Nils Notfall"
+    a.refresh_from_db()
+    assert a.strasse == "Beispielweg 3" and a.konto_id == konto.pk

@@ -183,6 +183,46 @@ def test_mitarbeit_in_der_adress_maske(admin_client, admin, django_user_model, c
     assert 'name="mitarbeit_felder"' not in seite
 
 
+def test_stammdaten_in_der_adress_maske(admin_client, admin):
+    """Eintritt, Notfallkontakt, Führerschein und Belehrungen stehen in der Adress-Maske; Anschrift
+    und Kontakt bleiben dabei unberührt (die stehen in der Adresse selbst)."""
+    import datetime as dt
+
+    from apps.konten import verwaltung
+    from apps.konten.models import Stammdaten
+
+    a = Adresse.objects.create(art="person", vorname="Nora", nachname="Notfall",
+                               strasse="Beispielweg 3", telefon="0000 111")  # fmt: skip
+    url = reverse("adressen:bearbeiten", args=[a.pk])
+    assert "Stammdaten der Mitarbeit" not in admin_client.get(url).content.decode()  # kein Konto
+    konto = verwaltung.konto_fuer_adresse(admin, a, [rollen.FAHRER])
+    verwaltung.stammdaten_aus_adresse(a)
+    seite = admin_client.get(url).content.decode()
+    ziel = reverse("konten:stammdaten", args=[konto.pk])
+    assert "Stammdaten der Mitarbeit" in seite and f'action="{ziel}"' in seite
+    stamm = admin_client.get(url).context["stamm_form"]
+    assert "notfall_name" in stamm.fields and "eintritt" in stamm.fields
+    assert not {"strasse", "telefon", "anrede"} & set(stamm.fields)
+    antwort = admin_client.post(ziel, {
+        "teil": "mitarbeit", "weiter": f"{url}#stammdaten", "eintritt": "01.03.2024",
+        "notfall_name": "Nils Notfall", "notfall_telefon": "0000 222", "fs_klassen": ["B", "C1"],
+        "fs_gueltig_bis": "31.12.2030",
+    })  # fmt: skip
+    assert antwort.url == f"{url}#stammdaten"
+    s = Stammdaten.objects.get(benutzer=konto)
+    assert (s.eintritt, s.notfall_name, s.fs_klassen) == (dt.date(2024, 3, 1), "Nils Notfall",
+                                                          "B, C1")  # fmt: skip
+    # Anschrift und Kontakt sind nicht geleert worden – weder in den Stammdaten noch in der Adresse
+    a.refresh_from_db()
+    assert (s.strasse, s.telefon) == ("Beispielweg 3", "0000 111")
+    assert (a.strasse, a.telefon) == ("Beispielweg 3", "0000 111")
+    # fremdes Ziel wird nicht angesprungen
+    antwort = admin_client.post(ziel, {"teil": "mitarbeit", "weiter": "https://boese.example/"})
+    assert antwort.url == ziel
+    # die Stammdaten-Seite selbst arbeitet weiter mit allen Feldern
+    assert "strasse" in admin_client.get(ziel).context["form"].fields
+
+
 def test_liste_filter_csv_auskunft(admin_client, markt, pdf_text):
     Adresse.objects.create(art="person", vorname="Max", nachname="Presse", ort="Anderswo")
     inhalt = admin_client.get(LISTE, {"q": "frisch"}).content.decode()

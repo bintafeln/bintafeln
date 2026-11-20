@@ -635,18 +635,26 @@ def stammdaten(request, pk):
     ziel = _ziel(request, pk)
     s = _stammdaten(ziel)
     nummer_erlaubt = rollen.hat_recht(request.user, "mitarbeitende.nummer")
+    # Aus der Adress-Maske kommt nur der Teil ohne Anschrift und Kontakt (die stehen dort schon)
+    aus_adresse = request.method == "POST" and request.POST.get("teil") == "mitarbeit"
     form = StammdatenForm(request.POST or None, instance=s, angemeldet=request.user,
-                          nummer_erlaubt=nummer_erlaubt)  # fmt: skip
+                          nummer_erlaubt=nummer_erlaubt, ohne_adresse=aus_adresse)  # fmt: skip
     if request.method == "POST" and form.is_valid():
         form.save()
-        # Dieselbe Adresse steht auch im Adressbuch – sie mitziehen, damit beide Stände
-        # zusammenbleiben (ADR 0097).
-        verwaltung.adresse_aus_stammdaten(ziel, von=request.user.get_username())
+        if not aus_adresse:
+            # Dieselbe Adresse steht auch im Adressbuch – sie mitziehen, damit beide Stände
+            # zusammenbleiben (ADR 0097).
+            verwaltung.adresse_aus_stammdaten(ziel, von=request.user.get_username())
         if nummer_erlaubt and form.cleaned_data.get("personalnummer"):
             # Eigenen Personalnummern-Zähler weiterrücken, damit die automatische Vergabe diese
             # Nummer nicht erneut nimmt.
             verwaltung.personalnummer_verbraucht(int(form.cleaned_data["personalnummer"]))
         messages.success(request, f"Stammdaten von {ziel} gespeichert.")
+        from django.utils.http import url_has_allowed_host_and_scheme
+
+        weiter = request.POST.get("weiter", "")
+        if aus_adresse and url_has_allowed_host_and_scheme(weiter, {request.get_host()}):
+            return redirect(weiter)
         return redirect("konten:stammdaten", pk=ziel.pk)
     return render(
         request,

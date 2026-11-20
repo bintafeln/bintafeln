@@ -28,6 +28,21 @@
       <a class="knopf knopf-abbrechen" href="{% if a.pk %}{% url 'adressen:adresse' a.pk %}{% else %}{% url 'adressen:liste' %}{% endif %}">Abbrechen</a>
     </div>
   </form>
+  {% if stamm_form %}
+  <section class="adresse-stammdaten" id="stammdaten">
+    <h2>Stammdaten der Mitarbeit</h2>
+    <p class="hinweis">Eintritt, Notfallkontakt, Führerschein und Belehrungen von {{ a.name }}. Anschrift und Kontakt stehen
+      oben in der Adresse. Kopie des Führerscheins, Schulungen und Dokumente:
+      <a href="{% url 'konten:stammdaten' a.konto_id %}">alle Stammdaten öffnen</a>.</p>
+    <form method="post" action="{% url 'konten:stammdaten' a.konto_id %}" data-autosave>
+      {% csrf_token %}
+      <input type="hidden" name="teil" value="mitarbeit">
+      <input type="hidden" name="weiter" value="{{ request.path }}#stammdaten">
+      {% include "includes/formular_abschnitte.html" with form=stamm_form %}
+      <div class="aktionsleiste"><button type="submit" class="knopf">Stammdaten speichern</button></div>
+    </form>
+  </section>
+  {% endif %}
   {% if konto_waehlbar and a.konto_id %}
   <div class="konto-ausscheiden">
     <h2>Mitarbeit beenden</h2>
