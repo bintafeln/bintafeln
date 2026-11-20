@@ -698,8 +698,13 @@ def exportieren(request):
     ])  # fmt: skip
     teil = f"-{filter_['tag'].lower()}" if filter_["tag"] else ""
     basis = f"kunden{teil}-{heute:%Y-%m-%d}"
-    return listenexport.ausliefern(request, "Kundenliste", basis, inhalt,
-                                   weiter=reverse("kunden:uebersicht"))  # fmt: skip
+    # Im PDF fehlen die Spalten, die die Person in der Kundenliste ausgeblendet hat
+    namen = dict(export.auswahl())
+    aus = set(request.user.kundenliste_aus or []) - {"kundennummer"}
+    return listenexport.ausliefern(
+        request, "Kundenliste", basis, inhalt, weiter=reverse("kunden:uebersicht"),
+        ohne_spalten={namen[k] for k in aus if k in namen},
+    )  # fmt: skip
 
 
 @never_cache

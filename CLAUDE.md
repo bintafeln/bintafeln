@@ -259,7 +259,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Adressnummer).
 - Mitarbeitende: Logik und Schutzregeln in `apps/konten/verwaltung.py` (nie löschen, nur
   sperren; ADR 0015). Liste in `apps/konten/views_mitarbeitende.py` (getrennte Namen, wählbare
-  Spalten über `apps/core/listen.py`, Export über `apps/core/listenexport.py`, Suche).
+  Spalten über `apps/core/listen.py`, Export über `apps/core/listenexport.py`, Suche). Das PDF
+  einer Liste lässt ausgeblendete Spalten weg (`ausliefern(ohne_spalten=listen.pdf_ohne(…))`,
+  ADR 0096), die CSV behält alle – neue Listen mit Spaltenauswahl ebenso anschließen.
   Personalnummer (ADR 0116, ersetzt ADR 0101): `Stammdaten.personalnummer`, eigener Nummernkreis –
   unabhängig von den Mitgliedsnummern, dieselbe Zahl darf in beiden vorkommen. Automatisch aus
   `PersonalEinstellungen.naechste_personalnummer` über `verwaltung.naechste_personalnummer()` in

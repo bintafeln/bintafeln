@@ -153,9 +153,13 @@ def liste(request):
     if request.GET.get("aktion"):
         adressen = listenauswahl.filtern(request, adressen)
         basis = f"adressen-{timezone.localdate():%Y-%m-%d}"
-        return listenexport.ausliefern(request, "Adressbuch", basis,
-                                       importieren.exportieren(adressen),
-                                       weiter=reverse("adressen:liste"))  # fmt: skip
+        # Die CSV hat die Spaltennamen des Imports; die meisten heißen wie die Listenspalten
+        zuordnung = {k: k for k, _ in SPALTEN}
+        return listenexport.ausliefern(
+            request, "Adressbuch", basis, importieren.exportieren(adressen),
+            weiter=reverse("adressen:liste"),
+            ohne_spalten=listen.pdf_ohne(request.user, "adressen", zuordnung, SPALTEN_FEST),
+        )  # fmt: skip
     je_seite = listen.je_seite(filter_["anzahl"], adressen.count(), JE_SEITE)
     seite = Paginator(
         adressen.select_related("konto").prefetch_related("konto__groups"), je_seite

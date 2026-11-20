@@ -151,6 +151,8 @@ def _csv(zeilen, archiv) -> str:
         "Ausgabestellen",
         "Beschäftigung",
         "Dabei seit",
+        "Zwei-Faktor",
+        "Letzte Anmeldung",
     ]
     if archiv:
         kopf += ["Gesperrt am", "Gesperrt von"]
@@ -164,6 +166,8 @@ def _csv(zeilen, archiv) -> str:
             b.username, ", ".join(z["rollen"]), z["stellen"],
             b.get_beschaeftigung_display(),
             z["dabei_seit"].strftime("%d.%m.%Y") if z["dabei_seit"] else "",
+            "eingerichtet" if z["zwei_faktor"] else "",
+            timezone.localtime(b.last_login).strftime("%d.%m.%Y %H:%M") if b.last_login else "",
         ]  # fmt: skip
         if archiv:
             reihe += [b.gesperrt_am.strftime("%d.%m.%Y") if b.gesperrt_am else "", b.gesperrt_von]
@@ -201,9 +205,11 @@ def _mitarbeitende_seite(request, konten, *, archiv, art=None):
     if request.GET.get("aktion"):
         titel = "Archiv" if archiv else BESCHAEFTIGUNG_TITEL.get(art, "Team")
         basis = f"mitarbeitende-{timezone.localdate():%Y-%m-%d}"
+        # Im PDF fehlen die Spalten, die die Person in der Liste ausgeblendet hat
         return listenexport.ausliefern(
             request, f"Mitarbeitende – {titel}", basis, _csv(zeilen, archiv),
             weiter=request.path,
+            ohne_spalten=listen.pdf_ohne(request.user, LISTE, dict(SPALTEN), SPALTEN_FEST),
         )  # fmt: skip
     return render(
         request,

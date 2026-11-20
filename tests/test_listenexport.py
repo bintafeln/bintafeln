@@ -58,3 +58,102 @@ def test_mail_ohne_adresse_sendet_nicht(admin_client):
     _mailserver()
     antwort = admin_client.get(reverse("adressen:liste"), {"aktion": "mail", "email": ""})
     assert antwort.status_code == 302 and not django_mail.outbox
+
+
+def test_pdf_laesst_ausgeblendete_spalten_weg(pdf_text):
+    """Das PDF zeigt nur die Spalten, die nicht ausgeblendet sind; ohne Angabe alle."""
+    from django.http import HttpResponse
+
+    def text(*ohne):
+        return pdf_text(
+            HttpResponse(
+                listenexport.pdf_aus_csv("Testliste", CSV, *ohne), content_type="application/pdf"
+            )
+        )
+
+    alles = text()
+    assert "Erika Beispiel" in alles and "Musterstadt" in alles
+    ohne = text({"Ort"})
+    assert "Erika Beispiel" in ohne and "Musterstadt" not in ohne and "Ort" not in ohne
+    # blendet jemand alles aus, kommt lieber die ganze Liste als ein leeres Blatt
+    assert "Musterstadt" in text({"Name", "Ort"})
+
+
+def _pdf_woerter(pdf_text, antwort) -> str:
+    """Der Text eines Listen-PDFs ohne Leerzeichen und Umbrüche: Schmale Spalten brechen Wörter
+    mitten im Wort um, deshalb alle Textstücke aneinanderhängen."""
+    import re
+
+    return "".join(re.findall(r"\(((?:[^()\\]|\\.)*)\) Tj", pdf_text(antwort))).replace(" ", "")
+
+
+def test_spaltenauswahl_gilt_im_pdf_jeder_liste(admin_client, admin, pdf_text, benutzer_mit_rolle):
+    """In jeder Liste mit Spaltenauswahl folgt das PDF der eigenen Auswahl; die CSV-Datei behält
+    alle Spalten."""
+    from apps.konten import rollen
+    from apps.kunden.models import Haushalt, Person
+    from apps.mitglieder.models import Mitglied
+    from apps.spenden.models import Spende
+
+    # Team-Liste: Benutzername ausgeblendet
+    benutzer_mit_rolle("erna.eifrig", rollen.AUSGABE)
+    admin.listen_spalten_aus = {"mitarbeitende": ["benutzername", "rollen"],
+                                "adressen": ["ort"], "mitglieder": ["art"],
+                                "spenden": ["bezeichnung"]}  # fmt: skip
+    admin.kundenliste_aus = ["nachname"]
+    admin.antraege_liste_aus = ["email"]
+    admin.save()
+    url = reverse("konten:ehrenamtliche")
+    text = _pdf_woerter(pdf_text, admin_client.get(url, {"aktion": "pdf"}))
+    assert "Nachname" in text and "erna.eifrig" not in text and "Benutzername" not in text
+    assert "Rollen" not in text and "Zwei-Faktor" in text  # sichtbare Spalte ist jetzt im Export
+    csv_text = admin_client.get(url, {"aktion": "csv"}).content.decode("utf-8-sig")
+    assert "Benutzername" in csv_text and "erna.eifrig" in csv_text  # CSV bleibt vollständig
+
+    # Adressbuch: Ort ausgeblendet
+    a = Adresse.objects.create(art="person", vorname="Otto", nachname="Ortlos", ort="Musterstadt",
+                               strasse="Beispielweg 3")  # fmt: skip
+    text = _pdf_woerter(pdf_text, admin_client.get(reverse("adressen:liste"), {"aktion": "pdf"}))
+    assert "Ortlos" in text and "Beispielweg3" in text and "Musterstadt" not in text
+
+    # Mitglieder: Art ausgeblendet
+    Mitglied.objects.create(adresse=a, nummer="7", art="Fördermitglied", eintritt="2024-01-01")
+    text = _pdf_woerter(pdf_text, admin_client.get(reverse("mitglieder:liste"), {"aktion": "pdf"}))
+    assert "Ortlos" in text and "Fördermitglied" not in text
+
+    # Spenden: Bezeichnung/Zweck ausgeblendet
+    import datetime as dt
+
+    Spende.objects.create(adresse=a, datum=dt.date.today(), art="geld", betrag=25,
+                          beschreibung="Kollekte", zweck="Jugendarbeit")  # fmt: skip
+    text = _pdf_woerter(pdf_text, admin_client.get(reverse("spenden:liste"), {"aktion": "pdf"}))
+    assert "Ortlos" in text and "Kollekte" not in text and "Jugendarbeit" not in text
+
+    # Kundenliste: Nachname ausgeblendet
+    h = Haushalt.objects.create(kundennummer="00042")
+    Person.objects.create(haushalt=h, ist_hauptperson=True, vorname="Erika", nachname="Geheimname")
+    text = _pdf_woerter(
+        pdf_text, admin_client.get(reverse("kunden:exportieren"), {"aktion": "pdf"})
+    )
+    assert "00042" in text and "Erika" in text and "Geheimname" not in text
+
+    # Anträge: E-Mail ausgeblendet
+    from apps.antraege.models import Antrag
+
+    Antrag.objects.create(vorname="Anna", nachname="Antrag", email="anna@example.org")
+    text = _pdf_woerter(pdf_text, admin_client.get(reverse("antraege:export"), {"aktion": "pdf"}))
+    assert "Antrag" in text and "anna@example.org" not in text
+
+
+def test_warteliste_spalten_passen_zum_export():
+    """Die Spaltenauswahl der Warteliste trifft im PDF nur, wenn die Überschriften der Liste auch
+    die des Exports sind."""
+    from apps.core import listen
+    from apps.warteliste import views
+
+    assert {titel for _, titel in views.SPALTEN} <= set(views.EXPORT_KOPF)
+
+    class Person:
+        listen_spalten_aus = {"warteliste": ["wohnort", "termin"]}
+
+    assert listen.pdf_ohne(Person(), "warteliste", dict(views.SPALTEN)) == {"Wohnort", "Termin"}
