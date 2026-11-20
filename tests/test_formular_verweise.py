@@ -6,10 +6,10 @@ import re
 from html.parser import HTMLParser
 
 import pytest
-from django.core.management import call_command
 from django.test import Client
+from django.utils import timezone
 
-from apps.core import module
+from apps.core import demo, module
 from apps.core.models import TafelEinstellungen
 
 # Bewusst an kein Formular gebunden (Eingaben, die nur JavaScript liest)
@@ -43,10 +43,10 @@ def _muster(adresse: str) -> str:
     return re.sub(r"\d+", "N", pfad) + "?" + "&".join(namen)
 
 
-@pytest.mark.django_db(transaction=True, serialized_rollback=True)
+@pytest.mark.django_db
 def test_jeder_verweis_hat_sein_formular(settings, django_user_model, anmelden):
     settings.DEMO, settings.DEMO_PASSWORT = True, "Demo-Passwort-erfunden-1"
-    call_command("demo_zuruecksetzen")
+    demo.anlegen(timezone.localdate())
     t = TafelEinstellungen.laden()
     t.module = [m.kennung for m in module.alle()]
     t.save()
