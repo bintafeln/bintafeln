@@ -141,6 +141,37 @@ def test_liste_suche(admin_client):
     assert leer.context["zeilen"] == [] and "Keine Treffer" in leer.content.decode()
 
 
+def test_herunterladen_hat_sein_formular(admin_client):
+    """Die Knöpfe hinter „Herunterladen …“ schicken das Formular „auswahl“ ab. Fehlt es auf der
+    Seite, passiert beim Klicken nichts – deshalb für jede Liste mit diesem Aufklapper prüfen."""
+    import re
+    from pathlib import Path
+
+    from django.conf import settings
+
+    for name in (
+        "konten:mitarbeitende",
+        "konten:ehrenamtliche",
+        "konten:angestellte",
+        "konten:mitarbeitende_archiv",
+    ):
+        seite = admin_client.get(reverse(name)).content.decode()
+        assert 'form="auswahl" name="aktion" value="csv"' in seite
+        assert '<form id="auswahl" method="get"' in seite, name
+    # alle Vorlagen mit dem Aufklapper binden das Formular ein (selbst oder über einen Baustein)
+    wurzel = Path(settings.BASE_DIR)
+    vorlagen = {p.name: p for p in [*wurzel.glob("templates/**/*.html"),
+                                    *wurzel.glob("apps/*/templates/**/*.html")]}  # fmt: skip
+    for pfad in vorlagen.values():
+        text = pfad.read_text(encoding="utf-8")
+        if "includes/herunterladen.html" not in text:
+            continue
+        teile = [vorlagen[n.rsplit("/", 1)[-1]].read_text(encoding="utf-8")
+                 for n in re.findall(r'{% include "([^"]+)"', text)
+                 if n.rsplit("/", 1)[-1] in vorlagen]  # fmt: skip
+        assert any("auswahl_formular" in t for t in [text, *teile]), pfad
+
+
 def test_liste_spalten_sortieren_export(admin_client):
     from apps.konten.models import Stammdaten
 
