@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block titel %}Anmelden{% endblock %}
 {% block hintergrund %}{% include "includes/hintergrund.html" with bilder=tafel.anmeldung_bilder bereich="anmeldung" %}{% endblock %}
 {% block inhalt %}
@@ -13,10 +14,24 @@
     <button type="submit" class="knopf">Anmelden</button>
   </form>
   {% if demo_konten %}
-  <div class="sicherung abseits">
-    <p><strong>Demo-Zugänge</strong> (Passwort für alle: <code>{{ demo_passwort }}</code>):</p>
-    <ul>{% for name, rolle in demo_konten %}<li><code>{{ name }}</code> – {{ rolle }}</li>{% endfor %}</ul>
+  <div class="sicherung abseits demo-zugaenge" id="demo-zugaenge">
+    <p><strong>Demo zum Ausprobieren</strong> – suchen Sie sich einen Zugang aus und klicken Sie auf
+      <strong>„Anmelden als …“</strong>. Benutzername und Passwort werden dann für Sie eingetragen.</p>
+    <p>Wer lieber selbst tippt: oben bei <strong>Benutzername</strong> den Namen genau so eingeben, wie er unten
+      steht (zum Beispiel <code class="demo-wert">demo-admin</code>, nicht nur „admin“), bei <strong>Passwort</strong> immer
+      <code class="demo-wert">{{ demo_passwort }}</code>.</p>
+    <ul class="demo-liste">
+      {% for name, rolle in demo_konten %}
+      <li>
+        <button type="button" class="knopf knopf-zweitrangig" data-demo-name="{{ name }}"
+                data-demo-passwort="{{ demo_passwort }}">Anmelden als {{ rolle }}</button>
+        <span class="demo-angaben">Benutzername: <code class="demo-wert">{{ name }}</code></span>
+        <span class="demo-angaben">Passwort: <code class="demo-wert">{{ demo_passwort }}</code></span>
+      </li>
+      {% endfor %}
+    </ul>
   </div>
+  <script src="{% static 'js/demo_anmelden.js' %}" defer></script>
   {% endif %}
   {% if mail %}<p class="abseits"><a href="{% url 'konten:passwort_vergessen' %}">Passwort vergessen?</a></p>{% endif %}
   {% if impressum_url %}<p class="abseits anmelden-impressum"><small>Wer steht dahinter? <a href="{{ impressum_url }}" rel="noopener">Impressum{% if tafel.name %} der {{ tafel.name }}{% endif %}</a></small></p>{% endif %}
