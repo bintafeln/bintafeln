@@ -606,6 +606,31 @@ MA_FELDER = [
     Feld("austritt", "Austritt", ("austrittsdatum", "ende"), typ="datum"),
     Feld("fs_klassen", "Führerscheinklassen", ("fuehrerschein", "klassen", "fsklasse"), laenge=100),
     Feld(
+        "fs_gueltig_bis",
+        "Führerschein gültig bis",
+        ("fuehrerscheingueltigbis", "fsgueltigbis", "fsgueltig"),
+        typ="datum",
+    ),
+    Feld(
+        "fs_gesehen_am",
+        "Führerschein zuletzt gesehen am",
+        (
+            "fuehrerscheingesehenam",
+            "fuehrerscheingesehen",
+            "fsgesehenam",
+            "fsgesehen",
+            "gesehenam",
+            "vorgelegtam",
+        ),
+        typ="datum",
+    ),  # fmt: skip
+    Feld(
+        "fs_gesehen_von",
+        "Führerschein gesehen von",
+        ("fuehrerscheingesehenvon", "fsgesehenvon", "gesehenvon"),
+        laenge=150,
+    ),
+    Feld(
         "beschaeftigung",
         "Beschäftigung (ehrenamtlich/fest)",
         ("anstellung", "art", "beschaeftigungsart"),
@@ -639,9 +664,12 @@ STAMMDATEN = [
     "eintritt",
     "austritt",
     "fs_klassen",
+    "fs_gueltig_bis",
+    "fs_gesehen_am",
+    "fs_gesehen_von",
     "bemerkung",
 ]
-DATUMSFELDER = {"geburtsdatum", "eintritt", "austritt"}
+DATUMSFELDER = {"geburtsdatum", "eintritt", "austritt", "fs_gueltig_bis", "fs_gesehen_am"}
 
 
 def _beschaeftigung(text: str) -> str:
