@@ -174,6 +174,26 @@ def rollen_setzen(verwalter, konto, rollen_namen) -> None:
 
 
 @transaction.atomic
+def mitarbeit_setzen(verwalter, konto, *, beschaeftigung: str, ausgabestellen, ausgabetage: str,
+                     benutzername: str = "") -> None:  # fmt: skip
+    """Angaben zur Mitarbeit aus der Adress-Maske aufs Konto schreiben: Beschäftigung,
+    Ausgabestellen, Ausgabetage und – wenn angegeben – der Benutzername. Prüft wie beim
+    Bearbeiten in der Team-Liste (Admin-Konten nur durch einen Admin)."""
+    _pruefen(verwalter, konto)
+    geaendert = []
+    for feld, wert in (("beschaeftigung", beschaeftigung), ("username", benutzername)):
+        if wert and getattr(konto, feld) != wert:
+            setattr(konto, feld, wert)
+            geaendert.append(feld)
+    if konto.ausgabetage != ausgabetage:
+        konto.ausgabetage = ausgabetage
+        geaendert.append("ausgabetage")
+    if geaendert:
+        konto.save(update_fields=geaendert)
+    if ausgabestellen is not None:
+        konto.ausgabestellen.set(ausgabestellen)
+
+
 def sammel_rolle(verwalter, konten, rolle_name: str, *, entfernen: bool) -> int:
     """Fügt mehreren Konten auf einmal eine einzelne Rolle hinzu oder nimmt sie ihnen; die übrigen
     Rollen bleiben. Liefert die Zahl der tatsächlich geänderten Konten. Unangetastet bleiben Konten,
