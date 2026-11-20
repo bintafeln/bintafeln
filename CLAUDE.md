@@ -265,6 +265,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Spalten über `apps/core/listen.py`, Export über `apps/core/listenexport.py`, Suche). Das PDF
   einer Liste lässt ausgeblendete Spalten weg (`ausliefern(ohne_spalten=listen.pdf_ohne(…))`,
   ADR 0096), die CSV behält alle – neue Listen mit Spaltenauswahl ebenso anschließen.
+  Listen, deren Zeilen an einer Adresse hängen (Mitglieder, Spenden), bieten deren Felder als
+  Spalten an: `listen.ADRESS_SPALTEN`/`adress_spalten()` (nur mit `adressen.sehen`), Bausteine
+  `includes/adress_spalten_kopf.html`/`…_zellen.html`; in der Vorgabe ausgeblendet über
+  `listen.standard_aus()`.
   Personalnummer (ADR 0116, ersetzt ADR 0101): `Stammdaten.personalnummer`, eigener Nummernkreis –
   unabhängig von den Mitgliedsnummern, dieselbe Zahl darf in beiden vorkommen. Automatisch aus
   `PersonalEinstellungen.naechste_personalnummer` über `verwaltung.naechste_personalnummer()` in

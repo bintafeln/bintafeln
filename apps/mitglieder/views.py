@@ -2,6 +2,7 @@
 
 import csv
 import io
+from datetime import date
 from decimal import Decimal
 
 from django.contrib import messages
@@ -45,10 +46,13 @@ def _zeilen(mitglieder, jahr: int):
 # Spalten zum Zu-/Abwählen je Person (Nr. öffnet das Mitglied und bleibt immer sichtbar);
 # die Beitragsspalten gibt es nur, wenn Beiträge eingeschaltet sind.
 SPALTEN_FEST = {"nummer"}
+# Die Adressfelder des Mitglieds sind wählbar, in der Vorgabe aber ausgeblendet
+listen.standard_aus("mitglieder", [k for k, _ in listen.ADRESS_SPALTEN])
 
 
-def _spalten(beitraege) -> list[tuple[str, str]]:
-    spalten = [("nummer", "Nr."), ("name", "Name"), ("art", "Art"), ("eintritt", "Eintritt")]
+def _spalten(beitraege, benutzer) -> list[tuple[str, str]]:
+    spalten = [("nummer", "Nr."), ("name", "Name"), *listen.adress_spalten(benutzer),
+               ("art", "Art"), ("eintritt", "Eintritt")]  # fmt: skip
     if beitraege:
         spalten += [("soll", "Soll"), ("gezahlt", "gezahlt"), ("offen", "offen")]
     return spalten
@@ -93,17 +97,25 @@ def liste(request):
         "art": lambda z: z["m"].art,
         "eintritt": lambda z: z["m"].eintritt,
     }
+    adress_spalten = listen.adress_spalten(request.user)
+    for feld, _ in adress_spalten:
+        if feld == "geburtsdatum":  # ohne Datum ans Ende
+            schluessel[feld] = lambda z: z["m"].adresse.geburtsdatum or date.max
+        else:
+            schluessel[feld] = lambda z, f=feld: (getattr(z["m"].adresse, f) or "").lower()
     if beitraege:
         schluessel |= {f: (lambda z, f=f: z[f]) for f in ("soll", "gezahlt", "offen")}
     zeilen, sort = listen.sortieren_liste(zeilen, request.GET.get("sort", ""), schluessel, "nummer")
     if request.GET.get("aktion"):
         zuordnung = {"name": "Name", "art": "Art", "eintritt": "Eintritt",
                      "soll": f"Soll {jahr}", "gezahlt": f"Gezahlt {jahr}",
-                     "offen": f"Offen {jahr}"}  # fmt: skip
+                     "offen": f"Offen {jahr}"} | dict(listen.ADRESS_SPALTEN)  # fmt: skip
+        # Im PDF steht die Anschrift nur über die gewählten Spalten (Straße, PLZ, Ort)
+        ohne = listen.pdf_ohne(request.user, "mitglieder", zuordnung, SPALTEN_FEST) | {"Anschrift"}
         return listenexport.ausliefern(
             request, f"Mitglieder {jahr}", f"mitglieder-{jahr}",
-            _csv_text(zeilen, jahr, beitraege), weiter=reverse("mitglieder:liste"),
-            ohne_spalten=listen.pdf_ohne(request.user, "mitglieder", zuordnung, SPALTEN_FEST),
+            _csv_text(zeilen, jahr, beitraege, bool(adress_spalten)),
+            weiter=reverse("mitglieder:liste"), ohne_spalten=ohne,
         )  # fmt: skip
     alle = Mitglied.objects.all()
     kennzahlen = {
@@ -114,12 +126,12 @@ def liste(request):
     if beitraege:
         for feld in ("soll", "gezahlt", "offen"):
             kennzahlen[feld] = sum(z[feld] for z in zeilen)
-    spalten = _spalten(beitraege)
+    spalten = _spalten(beitraege, request.user)
     abfrage = request.GET.copy()
     abfrage.pop("seite", None)
     return render(request, "mitglieder/liste.html", {
         "zeilen": zeilen, "jahr": jahr, "jahre": _jahre(), "k": kennzahlen, "beitraege": beitraege,
-        "sort": sort,
+        "sort": sort, "adress_spalten": adress_spalten,
         "sichtbar": listen.sichtbare_spalten(request.user, "mitglieder",
                                              [k for k, _ in spalten], SPALTEN_FEST),
         "spalten_wahl": listen.spalten_wahl(request.user, "mitglieder", spalten, SPALTEN_FEST),
@@ -132,7 +144,7 @@ def liste(request):
 @rollen.recht_erforderlich("mitglieder.sehen")
 def spalten(request):
     """Speichert, welche Spalten diese Person in der Mitgliederliste sieht."""
-    spalten = _spalten(MitgliederEinstellungen.mit_beitraegen())
+    spalten = _spalten(MitgliederEinstellungen.mit_beitraegen(), request.user)
     listen.spalten_speichern(request.user, "mitglieder", request.POST.getlist("spalte"),
                              spalten, SPALTEN_FEST)  # fmt: skip
     zurueck = QueryDict(request.POST.get("zurueck", "")).urlencode()
@@ -140,10 +152,13 @@ def spalten(request):
     return redirect(f"{ziel}?{zurueck}" if zurueck else ziel)
 
 
-def _csv_text(zeilen, jahr, beitraege) -> str:
+def _csv_text(zeilen, jahr, beitraege, mit_adresse=False) -> str:
+    """``mit_adresse``: zusätzlich die einzelnen Adressfelder (nur mit Recht aufs Adressbuch)."""
     puffer = io.StringIO()
     w = csv.writer(puffer, delimiter=";", lineterminator="\r\n")
-    kopf = ["Nummer", "Name", "Anschrift", "E-Mail", "Art", "Eintritt", "Austritt"]
+    # E-Mail steht schon immer in der Liste; die übrigen Adressfelder kommen dazu
+    extra = [t for _, t in listen.ADRESS_SPALTEN if t != "E-Mail"] if mit_adresse else []
+    kopf = ["Nummer", "Name", "Anschrift", *extra, "E-Mail", "Art", "Eintritt", "Austritt"]
     if beitraege:
         kopf += ["Jahresbeitrag", "Zahlungsart", f"Soll {jahr}", f"Gezahlt {jahr}", f"Offen {jahr}"]
     w.writerow(kopf)
@@ -157,6 +172,7 @@ def _csv_text(zeilen, jahr, beitraege) -> str:
             m.nummer,
             m.adresse.name,
             ", ".join(m.adresse.anschrift_zeilen[1:]),
+            *[listen.adress_werte(m.adresse)[t] for t in extra],
             m.adresse.email,
             m.art,
             f"{m.eintritt:%d.%m.%Y}",

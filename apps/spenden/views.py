@@ -70,11 +70,22 @@ SORTIERUNG = {
     "vorname": ("adresse__vorname", "sortname", "datum"),
     "art": ("art",),
     "betrag": ("betrag",),
+} | {
+    # die wählbaren Adressfelder des Spenders
+    feld: (f"adresse__{feld}", "sortname", "datum")
+    for feld, _ in listen.ADRESS_SPALTEN
 }
 # Spalten zum Zu-/Abwählen je Person (Datum bleibt immer sichtbar):
 SPALTEN = [("datum", "Datum"), ("spender", "Spender"), ("art", "Art"), ("betrag", "Betrag/Wert"),
            ("bezeichnung", "Bezeichnung / Zweck"), ("bestaetigung", "Bescheinigung")]  # fmt: skip
 SPALTEN_FEST = {"datum"}
+# Die Adressfelder des Spenders sind wählbar, in der Vorgabe aber ausgeblendet
+listen.standard_aus("spenden", [k for k, _ in listen.ADRESS_SPALTEN])
+
+
+def _spalten(benutzer) -> list[tuple[str, str]]:
+    """Spalten der Liste; die Adressfelder stehen hinter dem Spender."""
+    return SPALTEN[:2] + listen.adress_spalten(benutzer) + SPALTEN[2:]
 
 
 # Filter „Bescheinigung“: verschickt heißt aus bintafeln bestätigt (nicht storniert) oder im
@@ -113,13 +124,15 @@ def liste(request):
         )  # fmt: skip
     spenden = spenden.annotate(sortname=_SORTNAME)
     spenden, sort = listen.sortieren(spenden, request.GET.get("sort", ""), SORTIERUNG, "-datum")
+    adress_spalten = listen.adress_spalten(request.user)
+    spalten = _spalten(request.user)
     if request.GET.get("aktion"):
-        zuordnung = {"spender": ("Spender", "PLZ", "Ort"), "art": "Art", "betrag": "Betrag/Wert",
+        zuordnung = {"spender": "Spender", "art": "Art", "betrag": "Betrag/Wert",
                      "bezeichnung": ("Bezeichnung", "Menge", "Einheit", "Zweck"),
-                     "bestaetigung": "Bestätigung"}  # fmt: skip
+                     "bestaetigung": "Bestätigung"} | dict(listen.ADRESS_SPALTEN)  # fmt: skip
         return listenexport.ausliefern(
             request, f"Spenden {jahr}", f"spenden-{jahr}",
-            _csv_text(listenauswahl.filtern(request, spenden), jahr),
+            _csv_text(listenauswahl.filtern(request, spenden), jahr, bool(adress_spalten)),
             weiter=reverse("spenden:liste"),
             ohne_spalten=listen.pdf_ohne(request.user, "spenden", zuordnung, SPALTEN_FEST),
         )  # fmt: skip
@@ -139,9 +152,10 @@ def liste(request):
         "jahr": jahr, "jahre": _jahre(), "summen": summen,
         "filter": {"art": art, "q": q, "bescheinigung": bescheinigung},
         "je_monat": list(je_monat), "arten": Spende.Art.choices, "sort": sort,
+        "adress_spalten": adress_spalten,
         "sichtbar": listen.sichtbare_spalten(request.user, "spenden",
-                                             [k for k, _ in SPALTEN], SPALTEN_FEST),
-        "spalten_wahl": listen.spalten_wahl(request.user, "spenden", SPALTEN, SPALTEN_FEST),
+                                             [k for k, _ in spalten], SPALTEN_FEST),
+        "spalten_wahl": listen.spalten_wahl(request.user, "spenden", spalten, SPALTEN_FEST),
         "abfrage": abfrage.urlencode(),
     })  # fmt: skip
 
@@ -176,15 +190,18 @@ def entwicklung(request):
 def spalten(request):
     """Speichert, welche Spalten diese Person in der Spendenliste sieht."""
     listen.spalten_speichern(request.user, "spenden", request.POST.getlist("spalte"),
-                             SPALTEN, SPALTEN_FEST)  # fmt: skip
+                             _spalten(request.user), SPALTEN_FEST)  # fmt: skip
     zurueck = QueryDict(request.POST.get("zurueck", "")).urlencode()
     ziel = reverse("spenden:liste")
     return redirect(f"{ziel}?{zurueck}" if zurueck else ziel)
 
 
-def _csv_text(spenden, jahr) -> str:
+def _csv_text(spenden, jahr, mit_adresse=False) -> str:
+    """``mit_adresse``: zusätzlich die übrigen Adressfelder (nur mit Recht aufs Adressbuch)."""
     puffer = io.StringIO()
     w = csv.writer(puffer, delimiter=";", lineterminator="\r\n")
+    # PLZ und Ort stehen schon immer in der Liste; die übrigen Adressfelder kommen dazu
+    extra = [t for _, t in listen.ADRESS_SPALTEN if t not in ("PLZ", "Ort")] if mit_adresse else []
     w.writerow(
         [
             "Datum",
@@ -192,6 +209,7 @@ def _csv_text(spenden, jahr) -> str:
             "Spender",
             "PLZ",
             "Ort",
+            *extra,
             "Betrag/Wert",
             "Mitgliedsbeitrag",
             "Zahlungsweg",
@@ -204,7 +222,8 @@ def _csv_text(spenden, jahr) -> str:
     )
     for s in spenden:
         w.writerow([f"{s.datum:%d.%m.%Y}", s.get_art_display(), s.adresse.name, s.adresse.plz,
-                    s.adresse.ort, f"{s.betrag:.2f}".replace(".", ",") if s.betrag else "",
+                    s.adresse.ort, *[listen.adress_werte(s.adresse)[t] for t in extra],
+                    f"{s.betrag:.2f}".replace(".", ",") if s.betrag else "",
                     "ja" if s.mitgliedsbeitrag else "", s.zahlungsweg, s.beschreibung,
                     s.menge or "", s.einheit, s.zweck,
                     s.bestaetigung.nummer if s.bestaetigt else s.get_fremdbeleg_display()

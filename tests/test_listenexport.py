@@ -160,6 +160,63 @@ def test_warteliste_spalten_passen_zum_export():
     assert listen.pdf_ohne(Person(), "warteliste", dict(views.SPALTEN)) == {"Wohnort", "Termin"}
 
 
+def test_adressfelder_als_spalten_in_mitglieder_und_spenden(
+    admin_client, admin, pdf_text, client, anmelden, benutzer_mit_rolle, recht_geben
+):
+    """Mitglieder- und Spendenliste bieten die Adressfelder als Spalten an: in der Vorgabe
+    ausgeblendet, je Person einschaltbar, im PDF genau die eingeblendeten – und nur für Konten,
+    die das Adressbuch sehen dürfen."""
+    import datetime as dt
+
+    from apps.konten import rollen
+    from apps.mitglieder.models import Mitglied
+    from apps.spenden.models import Spende
+
+    a = Adresse.objects.create(art="person", vorname="Berta", nachname="Beispiel",
+                               strasse="Musterweg 5", plz="12345", ort="Musterstadt",
+                               telefon="0000-111", email="berta@example.org")  # fmt: skip
+    Mitglied.objects.create(adresse=a, nummer="7", art="Mitglied", eintritt="2024-01-01")
+    Spende.objects.create(adresse=a, datum=dt.date.today(), art="geld", betrag=25)
+    # früher gespeicherte Wahl ohne die neuen Spalten: sie bleiben trotzdem ausgeblendet
+    admin.listen_spalten_aus = {"mitglieder": ["art"]}
+    admin.save()
+
+    for liste in ("mitglieder", "spenden"):
+        url = reverse(f"{liste}:liste")
+        seite = admin_client.get(url).content.decode()
+        assert 'value="strasse"' in seite and 'value="strasse" checked' not in seite, liste
+        assert "Musterweg 5" not in seite
+        text = _pdf_woerter(pdf_text, admin_client.get(url, {"aktion": "pdf"}))
+        assert "Beispiel" in text and "Musterweg5" not in text and "0000-111" not in text, liste
+
+        vorgabe = ["name", "eintritt"] if liste == "mitglieder" else ["spender", "betrag"]
+        admin_client.post(reverse(f"{liste}:spalten"),
+                          {"spalte": [*vorgabe, "strasse", "telefon"]})  # fmt: skip
+        admin.refresh_from_db()
+        seite = admin_client.get(url).content.decode()
+        assert 'value="strasse" checked' in seite and 'value="ort" checked' not in seite
+        assert "Musterweg 5" in seite and "0000-111" in seite and "Musterstadt" not in seite
+        text = _pdf_woerter(pdf_text, admin_client.get(url, {"aktion": "pdf"}))
+        assert "Musterweg5" in text and "0000-111" in text and "Musterstadt" not in text, liste
+        # die CSV behält alle Spalten
+        csv_text = admin_client.get(url, {"aktion": "csv"}).content.decode("utf-8-sig")
+        assert "Straße" in csv_text and "Musterstadt" in csv_text and "Telefon" in csv_text
+        # nach einem Adressfeld sortieren
+        assert admin_client.get(url, {"sort": "-strasse"}).status_code == 200
+        assert admin_client.get(url, {"sort": "geburtsdatum"}).status_code == 200
+
+    # ohne Recht aufs Adressbuch: keine Adressspalten, auch nicht in der CSV
+    ohne = benutzer_mit_rolle("nur.spenden", rollen.AUSGABE)
+    recht_geben(rollen.AUSGABE, "spenden.sehen", "mitglieder.sehen")
+    anmelden(client, ohne)
+    for liste in ("mitglieder", "spenden"):
+        url = reverse(f"{liste}:liste")
+        assert 'value="strasse"' not in client.get(url).content.decode()
+        client.post(reverse(f"{liste}:spalten"), {"spalte": ["strasse", "telefon"]})
+        assert "Musterweg 5" not in client.get(url).content.decode()
+        assert "Telefon" not in client.get(url, {"aktion": "csv"}).content.decode("utf-8-sig")
+
+
 def test_listen_merken_filter_und_suche(admin_client, admin, benutzer_mit_rolle):
     """Wer aus einer Liste einen Eintrag öffnet und über „Zurück“ oder das Menü wiederkommt,
     findet Filter, Suche und Sortierung wie verlassen – bis „Zurücksetzen“."""
