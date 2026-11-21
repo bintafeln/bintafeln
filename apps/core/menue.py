@@ -275,6 +275,9 @@ def menue(request) -> list[dict]:
             ("korrekturen.entscheiden", _eintrag("Korrekturwünsche", "ausgabe:korrekturen")),
             ("kunden.nachrichten", _eintrag("Post an Ausgabestellen", "kunden:post_schreiben")),
         ],
+        # Alles rund um Bildschirme an einem Ort: Aufruf-Monitor, Nummern-Anzeige, Kiosk,
+        # Aushang-Monitore. Die Einträge (samt den Links zu den Anzeigen) bringen die Module mit.
+        "Monitore": [],
         "Verein": [
             ("einstellungen.listen", _eintrag("Adresskategorien", *_liste("adresskategorien"))),
             ("einstellungen.mitglieder", _eintrag("Mitglieder", "mitglieder:einstellungen")),
