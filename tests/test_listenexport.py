@@ -259,3 +259,38 @@ def test_listen_merken_filter_und_suche(admin_client, admin, benutzer_mit_rolle)
     # eine andere Person hat ihre eigenen Filter
     andere = get_user_model().objects.get(username="erna.eifrig")
     assert "adressen" not in (andere.listen_filter or {})
+
+
+def test_kategorie_filter_in_team_mitglieder_spenden(admin_client, admin, benutzer_mit_rolle):
+    """Team-, Mitglieder- und Spendenliste lassen sich wie das Adressbuch nach der Kategorie der
+    Adresse filtern; der Filter gilt auch im Export und wird gemerkt."""
+    import datetime as dt
+
+    from apps.adressen.models import AdressKategorie
+    from apps.konten import rollen, verwaltung
+    from apps.mitglieder.models import Mitglied
+    from apps.spenden.models import Spende
+
+    presse = AdressKategorie.objects.get_or_create(name="Presse")[0]
+    drin = Adresse.objects.create(art="person", vorname="Paula", nachname="Passend")
+    draussen = Adresse.objects.create(art="person", vorname="Olaf", nachname="Ohne")
+    drin.kategorien.add(presse)
+    for i, a in enumerate((drin, draussen)):
+        verwaltung.konto_fuer_adresse(admin, a, [rollen.FAHRER])
+        Mitglied.objects.create(adresse=a, nummer=str(70 + i), art="Mitglied",
+                                eintritt="2024-01-01")  # fmt: skip
+        Spende.objects.create(adresse=a, datum=dt.date.today(), art="geld", betrag=10 + i)
+
+    for name in ("konten:ehrenamtliche", "mitglieder:liste", "spenden:liste"):
+        url = reverse(name)
+        alle = admin_client.get(url).content.decode()
+        assert "Passend" in alle and "Ohne" in alle and '<select name="kategorie"' in alle, name
+        seite = admin_client.get(url, {"kategorie": presse.pk}).content.decode()
+        assert "Passend" in seite and ">Ohne<" not in seite, name
+        assert f'<option value="{presse.pk}" selected>Presse</option>' in seite, name
+        csv_text = admin_client.get(url, {"kategorie": presse.pk, "aktion": "csv"})
+        csv_text = csv_text.content.decode("utf-8-sig")
+        assert "Passend" in csv_text and "Ohne" not in csv_text, name
+        # gemerkt: ohne Angaben zurück zur gefilterten Liste; Unsinn im Filter zeigt alle
+        assert f"kategorie={presse.pk}" in admin_client.get(url).url, name
+        assert "Ohne" in admin_client.get(url, {"kategorie": "x"}).content.decode(), name

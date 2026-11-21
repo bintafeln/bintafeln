@@ -15,6 +15,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
+from apps.adressen.models import AdressKategorie, nach_kategorie
 from apps.core import listen, listenauswahl, listenexport, papierkorb
 from apps.konten import rollen
 from apps.mitglieder.forms import AdressnummerForm, MitgliederEinstellungenForm, MitgliedForm
@@ -63,7 +64,8 @@ def liste(request):
     # Filter, Suche und Sortierung am Konto merken: Wer einen Eintrag öffnet und zurückkommt,
     # findet die Liste wie verlassen – bis „Zurücksetzen“.
     # Das Jahr bleibt außen vor – sonst stünde im neuen Jahr noch das alte.
-    gemerkt = listen.filter_merken(request, "mitglieder", ("stand", "nur_offen", "q", "sort"))
+    gemerkt = listen.filter_merken(request, "mitglieder", ("stand", "nur_offen", "q", "sort",
+                                                          "kategorie"))  # fmt: skip
     if gemerkt:
         return gemerkt
     jahr = _jahr(request)
@@ -81,6 +83,7 @@ def liste(request):
             Q(nummer__icontains=q) | Q(adresse__organisation__icontains=q)
             | Q(adresse__nachname__icontains=q) | Q(adresse__vorname__icontains=q)
         )  # fmt: skip
+    mitglieder, kategorie = nach_kategorie(mitglieder, request.GET.get("kategorie", ""))
     if request.GET.get("aktion"):
         mitglieder = listenauswahl.filtern(request, mitglieder)
     beitraege = MitgliederEinstellungen.mit_beitraegen()
@@ -137,6 +140,7 @@ def liste(request):
         "spalten_wahl": listen.spalten_wahl(request.user, "mitglieder", spalten, SPALTEN_FEST),
         "abfrage": abfrage.urlencode(),
         "filter": {"stand": stand, "q": q, "nur_offen": request.GET.get("nur_offen", "")},
+        "kategorie": kategorie, "kategorien": AdressKategorie.objects.all(),
     })  # fmt: skip
 
 

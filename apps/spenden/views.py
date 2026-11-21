@@ -18,7 +18,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from apps.adressen.forms import ImportForm
-from apps.adressen.models import Adresse
+from apps.adressen.models import Adresse, AdressKategorie, nach_kategorie
 from apps.core import (
     geheimnis,
     listen,
@@ -104,7 +104,8 @@ def liste(request):
     # Filter, Suche und Sortierung am Konto merken: Wer einen Eintrag öffnet und zurückkommt,
     # findet die Liste wie verlassen – bis „Zurücksetzen“.
     # Das Jahr bleibt außen vor – sonst stünde im neuen Jahr noch das alte.
-    gemerkt = listen.filter_merken(request, "spenden", ("art", "bescheinigung", "q", "sort"))
+    gemerkt = listen.filter_merken(request, "spenden", ("art", "bescheinigung", "q", "sort",
+                                                       "kategorie"))  # fmt: skip
     if gemerkt:
         return gemerkt
     jahr = _jahr(request)
@@ -115,6 +116,7 @@ def liste(request):
     bescheinigung = request.GET.get("bescheinigung", "")
     if bescheinigung in BESCHEINIGT:
         spenden = spenden.filter(BESCHEINIGT[bescheinigung])
+    spenden, kategorie = nach_kategorie(spenden, request.GET.get("kategorie", ""))
     q = request.GET.get("q", "").strip()
     if q:
         spenden = spenden.filter(
@@ -153,6 +155,7 @@ def liste(request):
         "filter": {"art": art, "q": q, "bescheinigung": bescheinigung},
         "je_monat": list(je_monat), "arten": Spende.Art.choices, "sort": sort,
         "adress_spalten": adress_spalten,
+        "kategorie": kategorie, "kategorien": AdressKategorie.objects.all(),
         "sichtbar": listen.sichtbare_spalten(request.user, "spenden",
                                              [k for k, _ in spalten], SPALTEN_FEST),
         "spalten_wahl": listen.spalten_wahl(request.user, "spenden", spalten, SPALTEN_FEST),
