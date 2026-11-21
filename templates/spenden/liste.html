@@ -21,6 +21,7 @@
       <select name="bescheinigung" id="bescheinigung" onchange="this.form.submit()"><option value="">alle</option>
         <option value="verschickt"{% if filter.bescheinigung == "verschickt" %} selected{% endif %}>schon verschickt</option>
         <option value="offen"{% if filter.bescheinigung == "offen" %} selected{% endif %}>noch nicht verschickt</option></select></div>
+    {% include "includes/kategorie_filter.html" %}
     <div class="filter-feld filter-suche"><label for="q">Suche</label>
       <input type="search" name="q" id="q" value="{{ filter.q }}" placeholder="Spender, Bezeichnung, Zweck" {% live_suche %}></div>
     <button type="submit" class="knopf">Suchen</button>

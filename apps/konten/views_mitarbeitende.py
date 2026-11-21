@@ -201,10 +201,13 @@ def _mitarbeitende_seite(request, konten, *, archiv, art=None, ehemalige=False):
     # findet die Liste wie verlassen – bis „Zurücksetzen“.
     # Je Liste (Ehrenamtliche, Angestellte, Archiv …) getrennt.
     gemerkt = listen.filter_merken(
-        request, f"team-{request.resolver_match.url_name}", ("q", "sort")
+        request, f"team-{request.resolver_match.url_name}", ("q", "sort", "kategorie")
     )
     if gemerkt:
         return gemerkt
+    from apps.adressen.models import AdressKategorie, nach_kategorie
+
+    konten, kategorie = nach_kategorie(konten, request.GET.get("kategorie", ""))
     q = (request.GET.get("q") or "").strip()
     konten = _suchen(konten, q)
     roh = request.GET.get("sort", "")
@@ -232,6 +235,8 @@ def _mitarbeitende_seite(request, konten, *, archiv, art=None, ehemalige=False):
             "zeilen": zeilen,
             "archiv": archiv,
             "ehemalige": ehemalige,
+            "kategorie": kategorie,
+            "kategorien": AdressKategorie.objects.all(),
             "art": art,
             "q": q,
             "sort": sort,

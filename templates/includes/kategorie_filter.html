@@ -1,0 +1,7 @@
+{% comment %}Auswahl „Kategorie“ für ein Filterformular (Adresskategorien, wie im Adressbuch). Erwartet:
+kategorien (alle AdressKategorie), kategorie (gewählte als Text, leer = alle).{% endcomment %}
+<div class="filter-feld"><label for="kategorie">Kategorie</label>
+  <select name="kategorie" id="kategorie" onchange="this.form.submit()">
+    <option value="">alle</option>
+    {% for k in kategorien %}<option value="{{ k.pk }}"{% if kategorie == k.pk|stringformat:"d" %} selected{% endif %}>{{ k.name }}</option>{% endfor %}
+  </select></div>

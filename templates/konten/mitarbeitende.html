@@ -51,10 +51,12 @@
     {% endif %}
   {% endif %}
   <form class="filter-kompakt" method="get">
+    <input type="hidden" name="sort" value="{{ sort }}">
+    {% include "includes/kategorie_filter.html" %}
     <div class="filter-feld filter-suche"><label for="q">Suche</label>
       <input type="search" name="q" id="q" value="{{ q }}" placeholder="Name oder Benutzername" {% live_suche %}></div>
     <button type="submit" class="knopf">Suchen</button>
-    {% filter_zuruecksetzen %}
+    {% filter_zuruecksetzen "sort" %}
   </form>
   <div id="ergebnis">
   {# Formular hinter „Herunterladen …“ (CSV, PDF, E-Mail): schickt Suche und Sortierung mit #}
