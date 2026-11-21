@@ -20,7 +20,9 @@ AUSGABE = "Ausgabe"
 KIOSK = "Kiosk"
 FAHRER = "Fahrer"
 BEIFAHRER = "Beifahrer"
-PERSONAL = "Angestellte"  # Rolle für die Angestellten-Verwaltung (früher „Personal“)
+# Rolle für die Verwaltung der Angestellten (Verträge, Stunden). Hieß erst „Personal“, dann
+# „Angestellte“ – das wurde mit der Beschäftigung „angestellt“ verwechselt.
+PERSONAL = "Personalverwaltung"
 
 # Mitgelieferte Rollen: Reihenfolge, Zwei-Faktor Pflicht, Belehrung (IfSG), Führerschein
 MITGELIEFERT = {

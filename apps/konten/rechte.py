@@ -206,7 +206,7 @@ VORGABEN = {
     "Kiosk": [],
     "Fahrer": [],
     "Beifahrer": [],
-    "Angestellte": ["personal.sehen", "einstellungen.arbeitszeit"],
+    "Personalverwaltung": ["personal.sehen", "einstellungen.arbeitszeit"],
 }  # fmt: skip
 
 _module_einsammeln()

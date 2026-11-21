@@ -303,7 +303,7 @@ class Schulung(models.Model):
 class DokumentKategorie(models.Model):
     name = models.CharField("Name", max_length=100, unique=True)
     nur_personal = models.BooleanField(
-        "Nur für Admin und Rolle Angestellte sichtbar",
+        "Nur für Admin und Rolle Personalverwaltung sichtbar",
         default=False,
         help_text="Z. B. Arbeitsverträge oder Lohnunterlagen.",
     )
