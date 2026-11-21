@@ -161,6 +161,18 @@ class Adresse(models.Model):
         ):
             self.nummer = naechste_adressnummer()
         super().save(*args, **kwargs)
+        self._email_ans_konto()
+
+    def _email_ans_konto(self) -> None:
+        """Adresse und Konto gehören zusammen: Die E-Mail der Adresse gilt auch fürs Konto (dorthin
+        gehen Einladung und Passwort-Link, sie steht in den Team-Listen). Eine leere E-Mail löscht
+        die des Kontos nicht."""
+        if not self.konto_id or not self.email:
+            return
+        konto = self.konto
+        if konto.stelle_id is None and konto.email != self.email:
+            konto.email = self.email
+            konto.save(update_fields=["email"])
 
     @property
     def mitgliedsnummer(self) -> str:

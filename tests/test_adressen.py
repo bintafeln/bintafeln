@@ -935,3 +935,61 @@ def test_konto_auswahl_nur_ohne_konto_und_teamliste_oeffnet_adresse(
     liste = client.get(reverse("konten:ehrenamtliche")).content.decode()
     assert url not in liste
     assert f'href="{reverse("konten:mitarbeiter", args=[konto.pk])}">Muster</a>' in liste
+
+
+def test_email_von_adresse_und_konto_bleibt_gleich(admin_client, admin):
+    """Die E-Mail steht an Adresse und Konto; wer sie an einer Stelle einträgt, hat sie an beiden –
+    sonst fehlte sie in der Team-Liste, obwohl sie in der Adresse steht."""
+    from apps.konten import verwaltung
+
+    a = Adresse.objects.create(art="person", vorname="Edda", nachname="Emsig")
+    konto = verwaltung.konto_fuer_adresse(admin, a, [rollen.FAHRER])
+    assert konto.email == ""
+    # in der Adresse eingetragen: gilt auch fürs Konto und steht in der Team-Liste
+    a.email = "edda@example.org"
+    a.save()
+    konto.refresh_from_db()
+    assert konto.email == "edda@example.org"
+    assert "edda@example.org" in admin_client.get(reverse("konten:ehrenamtliche")).content.decode()
+    # am Konto geändert: gilt auch in der Adresse
+    konto.email = "emsig@example.org"
+    konto.save()
+    a.refresh_from_db()
+    assert a.email == "emsig@example.org"
+    # leer löscht die andere Seite nicht
+    a.email = ""
+    a.save()
+    konto.refresh_from_db()
+    assert konto.email == "emsig@example.org"
+    # andere Felder speichern (z. B. Anmeldung) fasst die Adresse nicht an
+    konto.save(update_fields=["last_login"])
+    a.refresh_from_db()
+    assert a.email == ""
+
+
+def test_migration_gleicht_email_an(admin):
+    """Die Nachtrag-Migration füllt nur die leere Seite; Abweichendes bleibt."""
+    import importlib
+
+    from django.apps import apps as django_apps
+    from django.contrib.auth import get_user_model
+
+    Benutzer = get_user_model()
+    paare = []
+    for name, adr_mail, konto_mail in (("nur-adresse", "a@example.org", ""),
+                                       ("nur-konto", "", "k@example.org"),
+                                       ("beide", "x@example.org", "y@example.org")):  # fmt: skip
+        konto = Benutzer.objects.create(username=name)
+        a = Adresse.objects.create(art="person", nachname=name, konto=konto)
+        Adresse.objects.filter(pk=a.pk).update(email=adr_mail)
+        Benutzer.objects.filter(pk=konto.pk).update(email=konto_mail)
+        paare.append((a, konto))
+    modul = importlib.import_module("apps.adressen.migrations.0016_email_konto_adresse")
+    modul.angleichen(django_apps, None)
+    stand = []
+    for a, konto in paare:
+        a.refresh_from_db()
+        konto.refresh_from_db()
+        stand.append((a.email, konto.email))
+    assert stand == [("a@example.org", "a@example.org"), ("k@example.org", "k@example.org"),
+                     ("x@example.org", "y@example.org")]  # fmt: skip

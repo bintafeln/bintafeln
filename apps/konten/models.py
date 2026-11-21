@@ -121,6 +121,19 @@ class Benutzer(AbstractUser):
         verbose_name = "Benutzer"
         verbose_name_plural = "Benutzer"
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Konto und Adresse gehören zusammen: Eine hier eingetragene E-Mail gilt auch im Adressbuch
+        # (umgekehrt zieht ``Adresse.save()`` das Konto mit). Leer löscht dort nichts.
+        felder = kwargs.get("update_fields")
+        if self.email and self.stelle_id is None and (felder is None or "email" in felder):
+            from apps.adressen.models import Adresse
+
+            adresse = Adresse.objects.filter(konto=self).exclude(email=self.email).first()
+            if adresse is not None:
+                adresse.email = self.email
+                adresse.save(update_fields=["email"])
+
     def __str__(self):
         return self.get_full_name() or self.username
 
