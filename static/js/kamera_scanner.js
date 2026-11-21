@@ -107,6 +107,8 @@
     var meldung = dialog.querySelector(".kamera-meldung");
     var hinweis = dialog.querySelector(".kamera-hilfe");
     var HINWEIS = hinweis.textContent;
+    // Was statt der Kamera geht (z. B. beim QR-Code zum Stempeln nicht „Kundennummer eintippen“)
+    var ERSATZ = feld.dataset.kameraErsatz || "Bitte die Kundennummer eintippen.";
     var strom = null;
     var laeuft = false;
 
@@ -193,7 +195,7 @@
         zeigen(["Die Kamera gibt der Browser nur über eine sichere Verbindung frei (Adresse beginnt " +
                 "mit „https“). Diese Seite ist über http geöffnet, deshalb fragt der Browser gar " +
                 "nicht erst nach der Kamera.",
-                "Bitte die Kundennummer eintippen oder einen Handscanner verwenden.",
+                feld.dataset.kameraErsatz || "Bitte die Kundennummer eintippen oder einen Handscanner verwenden.",
                 "Admin, im Produktivbetrieb: bintafeln mit eigener Adresse (BINTAFELN_DOMAIN) " +
                   "betreiben, dann ist https automatisch an.",
                 "Admin, zum Testen im Heimnetz: in der Datei .env BINTAFELN_HEIMNETZ_ADRESSE auf " +
@@ -221,7 +223,7 @@
                   "Andere Apps mit Kamera (z. B. Videoanruf, Kamera-App) schließen.",
                   "Dann „Erneut versuchen“ antippen."], true);
         } else {
-          zeigen("Es wurde keine Kamera gefunden. Bitte die Kundennummer eintippen.", true);
+          zeigen("Es wurde keine Kamera gefunden. " + ERSATZ, true);
         }
         return;
       }
@@ -247,7 +249,7 @@
         lesen(await detektor(feld));
       } catch (e) {
         stoppen();
-        zeigen("Der Barcode-Leser konnte nicht geladen werden. Bitte die Kundennummer eingeben.");
+        zeigen("Der Barcode-Leser konnte nicht geladen werden. " + ERSATZ);
       }
     }
 

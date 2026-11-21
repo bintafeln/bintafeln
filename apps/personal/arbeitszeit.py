@@ -62,7 +62,7 @@ def stand(benutzer, jetzt=None) -> tuple[str, list[tuple[str, str]]]:
     pause = in_pause(benutzer, jetzt)
     if pause:
         seit = timezone.localtime(pause.ende)
-        return (f"Pause oder Feierabend seit {seit:%H:%M} Uhr.",
+        return (f"Pause seit {seit:%H:%M} Uhr.",
                 [("kommen", "Pause beenden")])  # fmt: skip
     return "Nicht eingestempelt.", [("kommen", "Kommen")]
 
@@ -74,7 +74,7 @@ def stempeln(benutzer, aktion: str, jetzt=None) -> str:
         return f"Kommen um {timezone.localtime(b.beginn):%H:%M} gestempelt."
     if aktion not in ("pause", "gehen"):
         raise StempelFehler("Unbekannte Aktion.")
-    b = gehen(benutzer, jetzt)
+    b = gehen(benutzer, jetzt, pause=aktion == "pause")
     um = f"{timezone.localtime(b.ende):%H:%M}"
     if aktion == "pause":
         return f"Pause ab {um} gestempelt. Danach „Pause beenden“."
@@ -110,7 +110,8 @@ def kommen(benutzer, jetzt=None) -> Zeitbuchung:
     return Zeitbuchung.objects.create(benutzer=benutzer, beginn=jetzt.replace(microsecond=0))
 
 
-def gehen(benutzer, jetzt=None) -> Zeitbuchung:
+def gehen(benutzer, jetzt=None, pause: bool = False) -> Zeitbuchung:
+    """Beendet die offene Buchung; ``pause=True`` merkt sich, dass es nur eine Pause ist."""
     jetzt = jetzt or timezone.now()
     buchung = laufend(benutzer, jetzt)
     if buchung is None:
@@ -118,19 +119,23 @@ def gehen(benutzer, jetzt=None) -> Zeitbuchung:
             "Kein offenes „Kommen“. Bitte die Zeit von den Zuständigen nachtragen lassen."
         )
     buchung.ende = max(jetzt.replace(microsecond=0), buchung.beginn + dt.timedelta(minutes=1))
+    buchung.pause = pause
     buchung.save()
     return buchung
 
 
 def in_pause(benutzer, jetzt=None) -> Zeitbuchung | None:
-    """Nicht eingestempelt, aber heute schon gearbeitet: die letzte Buchung von heute (für
-    „Pause beenden“; die Lücke bis zum nächsten Kommen zählt als Pause)."""
+    """Nicht eingestempelt und heute zuletzt mit „Pause“ (nicht „Gehen“) ausgestempelt: die
+    letzte Buchung von heute (für „Pause beenden“; die Lücke bis zum nächsten Kommen zählt als
+    Pause). Nach „Gehen“ wird wieder „Kommen“ angeboten."""
     jetzt = jetzt or timezone.now()
     if laufend(benutzer, jetzt):
         return None
     heute = timezone.localtime(jetzt).date()
-    letzte = benutzer.zeitbuchungen.filter(ende__isnull=False).order_by("-ende").first()
-    return letzte if letzte and timezone.localtime(letzte.ende).date() == heute else None
+    letzte = benutzer.zeitbuchungen.filter(ende__isnull=False).order_by("-ende", "-pk").first()
+    if letzte is None or not letzte.pause:
+        return None
+    return letzte if timezone.localtime(letzte.ende).date() == heute else None
 
 
 def ueberschneidung(buchung: Zeitbuchung) -> Zeitbuchung | None:

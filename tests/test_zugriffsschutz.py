@@ -89,6 +89,8 @@ ALLE_ANGEMELDETEN = {
     "core:papierkorb_loeschen",
     # Eigene PIN fürs Ändern am Aushang-Monitor (ADR 0080)
     "aushang:meine_pin",
+    # QR-Code des Monitors im Browser einlesen: gibt nur die eigene Sitzung frei (ADR 0123)
+    "aushang:stempeln_scan",
     # Tickets: jede Person meldet und sieht ihre eigenen; fremde nur als Zuständige (ADR 0087)
     "tickets:liste",
     "tickets:neu",

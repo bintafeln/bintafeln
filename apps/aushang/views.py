@@ -264,6 +264,27 @@ def stempeln_handy(request, marke):
 
 
 @never_cache
+@require_POST
+@login_required
+def stempeln_scan(request):
+    """QR-Code des Monitors, eingelesen mit dem Scanner auf „Meine Arbeitszeit“: wie der Aufruf
+    des Codes mit der Kamera-App, aber im selben Fenster statt in einem neuen."""
+    from urllib.parse import urlsplit
+
+    from django.urls import Resolver404, resolve
+
+    try:
+        treffer = resolve(urlsplit(request.POST.get("code", "").strip()).path)
+    except Resolver404:
+        treffer = None
+    if treffer is None or treffer.view_name != "aushang:stempeln_handy":
+        messages.error(request, "Das ist nicht der QR-Code zum Stempeln. Bitte den Code im "
+                       "Fenster „Stempeln“ am Monitor scannen.")  # fmt: skip
+        return redirect("personal:meine_arbeitszeit")
+    return stempeln_handy(request, treffer.kwargs["marke"])
+
+
+@never_cache
 @login_required
 def meine_pin(request):
     """Eigene PIN für das Ändern am Aushang-Monitor festlegen, ändern oder löschen."""

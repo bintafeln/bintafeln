@@ -287,6 +287,13 @@ def test_pause_stempeln(client, admin, anmelden, fest):
     weiter = client.post(reverse("personal:stempeln"), {"aktion": "kommen"}, follow=True)
     assert "Eingestempelt seit" in weiter.content.decode() and Zeitbuchung.objects.count() == 2
     assert arbeitszeit.in_pause(fest) is None  # eingestempelt
+    # Nach „Gehen“ ist es keine Pause: wieder „Kommen“ statt „Pause beenden“
+    gehen = client.post(reverse("personal:stempeln"), {"aktion": "gehen"}, follow=True)
+    inhalt = gehen.content.decode()
+    assert "Gehen um" in inhalt and "Pause beenden</button>" not in inhalt
+    assert ">Kommen</button>" in inhalt and arbeitszeit.in_pause(fest) is None
+    assert arbeitszeit.stand(fest)[1] == [("kommen", "Kommen")]
+    assert not Zeitbuchung.objects.order_by("-ende", "-pk").first().pause
     # Gestern gearbeitet: heute ist es keine Pause, sondern einfach „Kommen“
     Zeitbuchung.objects.all().delete()
     gestern = timezone.now() - dt.timedelta(days=1)
@@ -387,3 +394,16 @@ def test_arbeitszeiterfassung_je_person(fest, ehrenamt, client, anmelden, admin)
     client.post(reverse("personal:zeiterfassung", args=[fest.pk]), {"zeiterfassung": "unsinn"})
     fest.refresh_from_db()
     assert fest.zeiterfassung == "aus"  # ungültige Angabe ändert nichts
+
+
+def test_auskunft_zeigt_pause(fest):
+    """In der Auskunft steht bei einer mit „Pause“ beendeten Zeit „(Pause)“."""
+    from apps.konten.auskunft import _gehen
+
+    jetzt = timezone.now()
+    b = Zeitbuchung(benutzer=fest, beginn=jetzt - dt.timedelta(hours=2), ende=jetzt, pause=True)
+    assert _gehen(b).endswith(" (Pause)")
+    b.pause = False
+    assert "Pause" not in _gehen(b)
+    b.ende = None
+    assert _gehen(b) == "offen"

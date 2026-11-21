@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.ausgabe.konto import MONATE
-from apps.core import papierkorb
+from apps.core import module, papierkorb
 from apps.konten import rollen
 from apps.personal import arbeitszeit, berechnung
 from apps.personal.forms import ArbeitszeitEinstellungenForm, ZeitbuchungForm
@@ -65,6 +65,7 @@ def meine(request):
         raise PermissionDenied
     heute = timezone.localdate()
     hat_vertrag = request.user.vertraege.exists()
+    erlaubt = arbeitszeit.hier_erlaubt(request)
     return render(
         request,
         "personal/meine_arbeitszeit.html",
@@ -72,7 +73,9 @@ def meine(request):
             "laufend": arbeitszeit.laufend(request.user),
             "in_pause": arbeitszeit.in_pause(request.user),
             "vergessen": arbeitszeit.vergessen(request.user),
-            "stempeln_erlaubt": arbeitszeit.hier_erlaubt(request),
+            "stempeln_erlaubt": erlaubt,
+            # QR-Code des Monitors hier im Browser einlesen statt mit der Kamera-App (ADR 0123)
+            "qr_scannen": not erlaubt and module.aktiv("aushang"),
             "saldo": _saldo(request.user, heute) if hat_vertrag else None,
             **_monatsdaten(request.user, _monat(request)),
         },
