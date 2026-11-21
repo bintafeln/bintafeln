@@ -6,7 +6,7 @@ from apps.core.module import Aushangseite, Modul
 
 def menue(eintrag):
     return [
-        ("Einstellungen/Ausgabe", [
+        ("Einstellungen/Monitore", [
             ("aushang.einrichten", eintrag("Aushang-Monitore", "aushang:liste")),
         ]),
     ]  # fmt: skip

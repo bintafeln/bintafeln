@@ -53,14 +53,14 @@ def test_admin_sieht_alle_untermenues(admin):
     assert "Statistik" in gruppen["Auswertungen"]
     assert gruppen["Protokolle"] == ["Änderungsprotokoll", "Anmeldeprotokoll"]
     assert "Kundengruppen" in gruppen["Kunden"] and "Sicherungen" in gruppen["Systemsteuerung"]
-    assert "Aufruf, Monitor und Kiosk" not in gruppen["Ausgabe"]  # Modul aus
+    assert "Monitore" not in gruppen  # Modul aus: die Gruppe erscheint gar nicht
 
 
 def test_modul_haengt_sich_ins_passende_untermenue(admin):
     t = TafelEinstellungen.laden()
     t.module = ["aufruf"]
     t.save()
-    assert "Aufruf, Monitor und Kiosk" in titel(einstellungen(admin))["Ausgabe"]
+    assert "Aufruf, Monitor und Kiosk" in titel(einstellungen(admin))["Monitore"]
 
 
 def test_aktive_seite_oeffnet_ihr_untermenue(admin):
@@ -178,11 +178,12 @@ def test_dienstplaene_unter_einem_punkt(admin):
     dp = next(g for g in b["Einstellungen"]["gruppen"] if g["titel"] == "Dienstpläne")
     assert sorted(e["titel"] for e in dp["eintraege"]) == ["Ausgabe: Aufgaben und Besetzung",
                                                      "Fahrdienst: Touren und Springer"]  # fmt: skip
-    # Aushang-Monitore gehören nicht zu den Dienstplänen, sondern zu „Einstellungen → Ausgabe“
+    # Alles rund um Bildschirme steht an einem Ort: „Einstellungen → Monitore“
     b = alle_bereiche(admin, ["fahrdienst", "dienstplan", "aushang"])
     gruppen = {g["titel"]: [e["titel"] for e in g["eintraege"]]
                for g in b["Einstellungen"]["gruppen"]}  # fmt: skip
-    assert "Aushang-Monitore" in gruppen["Ausgabe"]
+    assert "Aushang-Monitore" in gruppen["Monitore"]
+    assert "Aushang-Monitore" not in gruppen["Ausgabe"]
     assert "Aushang-Monitore" not in gruppen["Dienstpläne"]
     assert list(b).index("Dienstpläne") == list(b).index("Ausgabestelle") + 1
 

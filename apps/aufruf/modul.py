@@ -39,7 +39,7 @@ def auskunft_haushalt(haushalt, pdf):
 
 def menue(eintrag):
     return [
-        ("Einstellungen/Ausgabe", [
+        ("Einstellungen/Monitore", [
             ("einstellungen.aufruf", eintrag("Aufruf, Monitor und Kiosk", "aufruf:einstellungen")),
         ]),
     ]  # fmt: skip
