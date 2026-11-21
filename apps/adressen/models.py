@@ -87,15 +87,17 @@ def emails_ordnen(text: str, haupt: str = "") -> list[str]:
     return liste
 
 
-def nach_kategorie(queryset, wert, pfad="adresse__kategorien"):
-    """Filter „Kategorie“ für Listen, deren Zeilen an einer Adresse hängen (Team, Mitglieder,
-    Spenden): nur Zeilen, deren Adresse die Kategorie trägt. Liefert die gefilterte Abfrage und
-    den geprüften Wert (leer = alle)."""
-    wert = wert if (wert or "").isdigit() else ""
-    if wert:
-        # eine Kategorie hängt höchstens einmal an einer Adresse – keine doppelten Zeilen
-        queryset = queryset.filter(**{f"{pfad}__pk": wert})
-    return queryset, wert
+def nach_kategorie(queryset, werte, adresse="adresse"):
+    """Filter „Kategorie“ (mehrere wählbar) für Listen, deren Zeilen an einer Adresse hängen
+    (Team, Mitglieder, Spenden): nur Zeilen, deren Adresse eine der Kategorien trägt. ``adresse``
+    ist der Weg von der Zeile zur Adresse („pk“ im Adressbuch selbst). Liefert die gefilterte
+    Abfrage und die geprüften Werte (leer = alle)."""
+    werte = [w for w in werte if str(w).isdigit()]
+    if werte:
+        # über eine Unterabfrage: keine doppelten Zeilen, wenn eine Adresse mehrere davon trägt
+        mit = Adresse.objects.filter(kategorien__pk__in=werte).values("pk")
+        queryset = queryset.filter(**{f"{adresse}__in": mit})
+    return queryset, werte
 
 
 SPENDER = "Spender"  # Kategorie aus Migration 0002, wird bei Spenden automatisch gesetzt

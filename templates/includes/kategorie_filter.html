@@ -1,7 +1,3 @@
-{% comment %}Auswahl „Kategorie“ für ein Filterformular (Adresskategorien, wie im Adressbuch). Erwartet:
-kategorien (alle AdressKategorie), kategorie (gewählte als Text, leer = alle).{% endcomment %}
-<div class="filter-feld"><label for="kategorie">Kategorie</label>
-  <select name="kategorie" id="kategorie" onchange="this.form.submit()">
-    <option value="">alle</option>
-    {% for k in kategorien %}<option value="{{ k.pk }}"{% if kategorie == k.pk|stringformat:"d" %} selected{% endif %}>{{ k.name }}</option>{% endfor %}
-  </select></div>
+{% load liste %}{% comment %}Filter „Kategorie“ für ein Filterformular (Adresskategorien, mehrere wählbar – aufklappbares
+Menü mit Häkchen). Erwartet: kategorien (Liste aus (pk, Name)), kategorie (die gewählten pks).{% endcomment %}
+<div class="filter-feld"><span class="feld-titel">Kategorie</span>{% mehrfach "kategorie" kategorien kategorie %}</div>
