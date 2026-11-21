@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load liste %}
+{% block titel %}{{ s.name }}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'touren:stationen' %}">← Stationen</a></p>
+  <h1>{{ s.name }}</h1>
+  <p><span class="marke-rolle">{{ s.get_art_display }}</span>{% if s.kette %} <small class="leise">{{ s.kette }}{% if s.filialnummer %} · Filiale {{ s.filialnummer }}{% endif %}</small>{% endif %}
+    {% if not s.aktiv %} <span class="marke-warnung">wird nicht mehr angefahren</span>{% endif %}</p>
+  <address class="anschrift">{{ s.strasse_hausnummer }}<br>{{ s.plz }} {{ s.ort }}{% if s.ortsteil %} ({{ s.ortsteil }}){% endif %}</address>
+  <div class="aktionsleiste">
+    <a class="knopf" href="{{ s.navigation }}" target="_blank" rel="noopener noreferrer">🧭 Navigation (Google Maps)</a>
+    <a class="knopf knopf-zweitrangig" href="{{ s.karte }}" target="_blank" rel="noopener noreferrer">Auf der Karte</a>
+  </div>
+  {% if s.anfahrt %}<div class="notiz"><p class="notiz-text"><strong>Anfahrt:</strong> {{ s.anfahrt|linebreaksbr }}</p></div>{% endif %}
+  <dl class="angaben">
+    {% if s.abholtage %}<dt>Abholtage</dt><dd>{{ s.abholtage }}</dd>{% endif %}
+    {% if s.abholzeit %}<dt>Abholzeit</dt><dd>{{ s.abholzeit }}</dd>{% endif %}
+    {% if s.oeffnungszeiten %}<dt>Öffnungszeiten</dt><dd>{{ s.oeffnungszeiten }}</dd>{% endif %}
+    {% if s.ansprechpartner %}<dt>Ansprechpartner</dt><dd>{{ s.ansprechpartner }}</dd>{% endif %}
+    {% if s.telefon %}<dt>Telefon</dt><dd>{{ s.telefon|anrufen }}</dd>{% endif %}
+    {% if s.email %}<dt>E-Mail</dt><dd><a href="mailto:{{ s.email }}">{{ s.email }}</a></dd>{% endif %}
+    <dt>Lieferschein</dt><dd>{% if s.lieferschein %}ja{% if s.lieferschein_an %}, an <a href="mailto:{{ s.lieferschein_an }}">{{ s.lieferschein_an }}</a>{% else %} <span class="marke-warnung">keine E-Mail eingetragen</span>{% endif %}{% else %}nein{% endif %}</dd>
+    <dt>Kennung</dt><dd>{{ s.kennung }}</dd>
+    {% if s.breite is not None %}<dt>Koordinaten</dt><dd>{{ s.breite }}, {{ s.laenge }}</dd>{% endif %}
+    <dt>Adressbuch</dt><dd>{% if s.adresse %}{% if "adressen.sehen" in rechte %}<a href="{% url 'adressen:adresse' s.adresse.pk %}">{{ s.adresse }}</a>{% else %}{{ s.adresse }}{% endif %}{% else %}noch nicht übertragen{% endif %}</dd>
+  </dl>
+  {% if s.notiz %}<div class="notiz"><p class="notiz-text">{{ s.notiz|linebreaksbr }}</p></div>{% endif %}
+  {% if darf_bearbeiten %}
+  <div class="aktionsleiste">
+    <a class="knopf knopf-zweitrangig" href="{% url 'touren:bearbeiten' s.pk %}">Bearbeiten</a>
+    {% if darf_uebertragen and not s.adresse %}
+    <form method="post" action="{% url 'touren:uebertragen' s.pk %}" class="inline">{% csrf_token %}
+      <button type="submit" class="knopf knopf-zweitrangig">{% if vorhanden %}Mit „{{ vorhanden }}“ im Adressbuch verknüpfen{% else %}Ins Adressbuch übertragen{% endif %}</button></form>
+    {% endif %}
+  </div>
+  <p class="hinweis">Angelegt am {{ s.angelegt_am|date:"d.m.Y" }}{% if s.geaendert_am %}, zuletzt geändert am {{ s.geaendert_am|date:"d.m.Y H:i" }} von {{ s.geaendert_von }}{% endif %}.</p>
+  <form method="post" action="{% url 'touren:loeschen' s.pk %}" class="abseits" onsubmit="return confirm('Station „{{ s.name|escapejs }}“ in den Papierkorb legen?')">
+    {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Station löschen</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

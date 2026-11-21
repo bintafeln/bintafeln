@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block titel %}{% if s %}{{ s }} bearbeiten{% else %}Neue Station{% endif %}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% if s %}{% url 'touren:station' s.pk %}{% else %}{% url 'touren:stationen' %}{% endif %}">← zurück</a></p>
+  <h1>{% if s %}{{ s }} bearbeiten{% else %}Neue Station{% endif %}</h1>
+  <form method="post"{% if s %} data-autosave{% endif %}>
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <p class="hinweis">Die Navigation öffnet Google Maps mit der Anschrift. Nur wenn Google die Station damit nicht findet
+      (z. B. Zufahrt über eine andere Straße), Breiten- und Längengrad eintragen; dann gelten diese.</p>
+    <button type="submit" class="knopf">{% if s %}Speichern{% else %}Anlegen{% endif %}</button>
+  </form>
+</section>
+{% endblock %}

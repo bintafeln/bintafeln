@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load liste %}
+{% block titel %}Stationen{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <div class="titel-zeile">
+    <h1>Stationen</h1>
+    <div class="titel-knoepfe">
+      {% if darf_bearbeiten %}<a class="knopf" href="{% url 'touren:neu' %}">Neue Station</a>
+      <a class="knopf knopf-zweitrangig" href="{% url 'touren:importieren' %}">Importieren</a>
+      <a class="knopf knopf-zweitrangig" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&amp;{% endif %}format=csv">CSV herunterladen</a>{% endif %}
+    </div>
+  </div>
+  <p class="hinweis">Märkte, Bäckereien, Lieferanten und andere Stationen der Abholtouren. <a href="{% url 'core:hilfe' %}#touren">So funktioniert es</a></p>
+  <form class="filter-kompakt" method="get">
+    <div class="filter-feld"><label for="art">Art</label>
+      <select name="art" id="art" onchange="this.form.submit()"><option value="">alle</option>{% for wert, text in arten %}<option value="{{ wert }}"{% if filter.art == wert %} selected{% endif %}>{{ text }}</option>{% endfor %}</select></div>
+    <div class="filter-feld"><label for="stand">Stand</label>
+      <select name="stand" id="stand" onchange="this.form.submit()">{% for wert, text in staende %}<option value="{{ wert }}"{% if filter.stand == wert %} selected{% endif %}>{{ text }}</option>{% endfor %}</select></div>
+    <div class="filter-feld filter-suche"><label for="q">Suche</label>
+      <input type="search" name="q" id="q" value="{{ filter.q }}" placeholder="Name, Kette, Straße, Ort, Kennung" {% live_suche %}></div>
+    <button type="submit" class="knopf">Suchen</button>
+    {% filter_zuruecksetzen %}
+  </form>
+  <div id="ergebnis">
+  <div class="liste-aktionen">
+    <span class="hinweis">{{ stationen|length }} Station{{ stationen|length|pluralize:"en" }}</span>
+    {% if darf_uebertragen and ohne_adressbuch %}
+    <form method="post" action="{% url 'touren:alle_uebertragen' %}" class="inline" onsubmit="return confirm('{{ ohne_adressbuch }} aktive Station{{ ohne_adressbuch|pluralize:"en" }} ohne Eintrag ins Adressbuch übertragen? Vorhandene Organisationen mit gleichem Namen und gleicher PLZ werden verknüpft statt doppelt angelegt.')">{% csrf_token %}
+      <button type="submit" class="knopf knopf-zweitrangig knopf-klein">Alle {{ ohne_adressbuch }} ohne Eintrag ins Adressbuch übertragen</button></form>
+    {% endif %}
+  </div>
+  <div class="tabelle-rahmen">
+  <table class="tabelle" data-sortierbar id="stationen-tabelle">
+    <thead><tr>
+      <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Name</button></th>
+      <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Art</button></th>
+      <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Anschrift</button></th>
+      <th aria-sort="none"><button type="button" class="sortieren" data-sort="text">Ortsteil</button></th>
+      <th>Abholtage</th>
+      <th>Navigation</th>
+    </tr></thead>
+    <tbody>
+    {% for s in stationen %}
+      <tr>
+        <td data-titel="Name"><a href="{% url 'touren:station' s.pk %}">{{ s.name }}</a>{% if not s.aktiv %} <span class="marke-warnung">nicht mehr</span>{% endif %}</td>
+        <td data-titel="Art">{{ s.get_art_display }}</td>
+        <td data-titel="Anschrift">{{ s.anschrift }}</td>
+        <td data-titel="Ortsteil">{{ s.ortsteil|default:"–" }}</td>
+        <td data-titel="Abholtage">{{ s.abholtage|default:"–" }}</td>
+        <td data-titel="Navigation"><a href="{{ s.navigation }}" target="_blank" rel="noopener noreferrer">🧭 Google Maps</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6">Keine Stationen gefunden.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  </div>
+</section>
+{% endblock %}

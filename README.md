@@ -1317,6 +1317,31 @@ Ersetzt den gedruckten Fahrerplan mit den gelben Aufklebern (ADR 0074).
   Ausfalls. WhatsApp geht nur über die kostenpflichtige WhatsApp-Business-Plattform von Meta
   (Firmenkonto, vorab genehmigte Nachrichtenvorlagen) und ist deshalb nicht eingebaut.
 
+### Touren
+
+Die Stationen der Abholtouren – Märkte, Bäckereien, Lieferanten, Lager, Ausgabestellen,
+Einrichtungen – in einer eigenen Liste (ADR 0147). Touren und Lieferscheine bauen darauf auf.
+
+- **Stationen** („Dienstpläne → Touren → Stationen“, Recht „Stationen sehen und hinnavigieren“,
+  Vorgabe Büro, Fahrer, Beifahrer): Name, Art, Kette, Anschrift mit Ortsteil, Telefon,
+  Ansprechpartner, Öffnungszeiten, Abholtage und -zeit, Anfahrt für die Fahrer. Filter nach Art
+  und Stand, Suche, auch über die Suche im Seitenkopf.
+- **Navigation:** Der Knopf „🧭 Navigation (Google Maps)“ öffnet Google Maps mit der Route zur
+  Anschrift (am Handy die App). Kein API-Schlüssel; an Google geht erst etwas, wenn jemand den
+  Knopf antippt. Breiten- und Längengrad nur eintragen, wenn die Anschrift nicht zur richtigen
+  Zufahrt führt.
+- **Pflegen** (Recht „Stationen anlegen, bearbeiten, importieren und löschen“, Vorgabe Büro):
+  von Hand anlegen (Kennung wird vorgeschlagen), bearbeiten, „Aktiv“ ausschalten, wenn eine
+  Station nicht mehr angefahren wird, Löschen in den Papierkorb.
+- **Import** („Daten importieren → Stationen der Touren“): `stationen.csv` nach
+  [docs/importformat-touren.md](docs/importformat-touren.md). Die Kennung entscheidet, ob eine
+  Station neu ist oder aktualisiert wird; nur gefüllte Zellen überschreiben, gelöscht wird nie.
+  Erst Prüfbericht, dann übernehmen. „CSV herunterladen“ liefert dasselbe Format.
+- **Ins Adressbuch übertragen** (zusätzlich Recht „Adressen anlegen und bearbeiten“): einzeln
+  oder alle aktiven Stationen auf einmal; legt eine Organisation mit der Art der Station als
+  Kategorie an oder verknüpft eine vorhandene mit gleichem Namen und gleicher PLZ. Einmalig –
+  danach laufen Station und Adresse getrennt.
+
 ### Dienstplan der Ausgabe
 
 Ersetzt den ausgehängten Papierplan der Ausgabe (ADR 0077), wie der Fahrdienst aufgebaut.

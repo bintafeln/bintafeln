@@ -66,7 +66,10 @@ def test_zuruecksetzen(demo, admin, django_user_model, settings, capsys):
     from apps.wochenuebersicht.models import Selbstabholer
 
     assert e.module == ["aufruf", "warteliste", "wochenuebersicht", "links", "abrechnung",
-                        "listen", "fahrdienst", "dienstplan", "tickets"]  # fmt: skip
+                        "listen", "fahrdienst", "dienstplan", "tickets", "touren"]  # fmt: skip
+    from apps.touren.models import Station
+
+    assert Station.objects.filter(art="markt").exists()
     assert Link.objects.filter(warnung__gt="").exists() and Selbstabholer.objects.count() == 2
     tablet = django_user_model.objects.get(username="demo-tablet")
     assert tablet.stelle and tablet.check_password(PASSWORT)
