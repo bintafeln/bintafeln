@@ -24,6 +24,7 @@
     {% if a.telefon %}<dt>Telefon</dt><dd><a href="tel:{{ a.telefon }}">{{ a.telefon }}</a></dd>{% endif %}
     {% if a.mobil %}<dt>Mobil</dt><dd><a href="tel:{{ a.mobil }}">{{ a.mobil }}</a></dd>{% endif %}
     {% if a.email %}<dt>E-Mail</dt><dd><a href="mailto:{{ a.email }}">{{ a.email }}</a></dd>{% endif %}
+    {% if a.email_weitere %}<dt>Weitere E-Mail-Adressen</dt><dd>{% for e in a.emails|slice:"1:" %}<a href="mailto:{{ e }}">{{ e }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</dd>{% endif %}
     {% if a.webseite %}<dt>Webseite</dt><dd><a href="{{ a.webseite }}" target="_blank" rel="noopener noreferrer">{{ a.webseite }}</a></dd>{% endif %}
   </dl>
   {% if a.notiz %}<div class="notiz"><p class="notiz-text">{{ a.notiz|linebreaksbr }}</p></div>{% endif %}

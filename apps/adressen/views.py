@@ -132,15 +132,18 @@ SORTIERUNG = {
     "ort": ("ort", "plz"),
     "telefon": ("telefon", "mobil"),
     "email": ("email",),
+    "email_weitere": ("email_weitere",),
     "geburtsdatum": ("geburtsdatum",),
 }
 # Zu-/abwählbare Spalten (Nachname öffnet die Adresse und steht immer, darum nicht hier) –
 # getrennte Spalten wie in der Mitarbeitendenliste, standardmäßig alle sichtbar.
 SPALTEN = [("nummer", "Nr."), ("vorname", "Vorname"), ("anrede", "Anrede"), ("strasse", "Straße"),
            ("plz", "PLZ"), ("ort", "Ort"), ("telefon", "Telefon"), ("mobil", "Handy"),
-           ("email", "E-Mail"), ("geburtsdatum", "Geburtstag"),
+           ("email", "E-Mail"), ("email_weitere", "Weitere E-Mails"),
+           ("geburtsdatum", "Geburtstag"),
            ("kategorien", "Kategorien"), ("helfer", "Mitarbeit")]  # fmt: skip
 SPALTEN_FEST: set = set()
+listen.standard_aus("adressen", ["email_weitere"])  # erst zeigen, wenn jemand sie einschaltet
 
 
 @rollen.recht_erforderlich("adressen.sehen")

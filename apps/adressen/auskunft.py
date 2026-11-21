@@ -55,6 +55,7 @@ def adresse_pdf(a) -> bytes:
         ("Telefon", a.telefon),
         ("Mobil", a.mobil),
         ("E-Mail", a.email),
+        ("Weitere E-Mail-Adressen", a.email_weitere),
         ("Webseite", a.webseite),
         ("Kategorien", ", ".join(k.name for k in a.kategorien.all())),
         ("Notiz", a.notiz),

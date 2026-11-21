@@ -68,6 +68,25 @@ class AdressKategorie(models.Model):
         return self.name
 
 
+def emails_ordnen(text: str, haupt: str = "") -> list[str]:
+    """Zerlegt „Weitere E-Mail-Adressen“ (Komma, Semikolon, Leerraum oder Zeilenwechsel) in eine
+    geprüfte Liste ohne Doppelte und ohne die Haupt-E-Mail. Ungültiges: ``ValidationError``."""
+    from django.core.validators import validate_email
+
+    gesehen, liste = {(haupt or "").strip().lower()}, []
+    for teil in (text or "").replace(";", ",").replace("\n", ",").replace(" ", ",").split(","):
+        teil = teil.strip()
+        if not teil or teil.lower() in gesehen:
+            continue
+        try:
+            validate_email(teil)
+        except ValidationError:
+            raise ValidationError(f"„{teil}“ ist keine gültige E-Mail-Adresse.") from None
+        gesehen.add(teil.lower())
+        liste.append(teil)
+    return liste
+
+
 SPENDER = "Spender"  # Kategorie aus Migration 0002, wird bei Spenden automatisch gesetzt
 
 
@@ -105,6 +124,13 @@ class Adresse(models.Model):
     telefon = models.CharField("Telefon", max_length=50, blank=True)
     mobil = models.CharField("Mobil", max_length=50, blank=True)
     email = models.EmailField("E-Mail", blank=True)
+    # Die Haupt-E-Mail oben gilt für Konto, Einladungen und Serienbriefe; hier steht, unter
+    # welchen Adressen die Person sonst noch erreichbar ist.
+    email_weitere = models.CharField(
+        "Weitere E-Mail-Adressen", max_length=500, blank=True,
+        help_text="Mehrere mit Komma trennen. Post aus bintafeln (Einladung, Serienbrief) geht "
+        "an die E-Mail darüber.",
+    )  # fmt: skip
     webseite = models.URLField("Webseite", blank=True)
     nummer = models.PositiveIntegerField(
         "Adressnummer", null=True, blank=True, unique=True,
@@ -196,6 +222,21 @@ class Adresse(models.Model):
         if self.art == self.Art.ORGANISATION and self.konto_id:
             raise ValidationError("Ein Konto gibt es nur bei einer Person, nicht bei einer "
                                   "Organisation.")  # fmt: skip
+        try:
+            weitere = emails_ordnen(self.email_weitere, self.email)
+        except ValidationError as fehler:
+            raise ValidationError({"email_weitere": fehler.messages}) from None
+        if weitere and not self.email:
+            self.email = weitere.pop(0)  # ohne Haupt-E-Mail rückt die erste nach
+        self.email_weitere = ", ".join(weitere)
+        if len(self.email_weitere) > 500:
+            raise ValidationError({"email_weitere": "Das sind zu viele Adressen für dieses Feld."})
+
+    @property
+    def emails(self) -> list[str]:
+        """Alle E-Mail-Adressen der Person, die Haupt-E-Mail zuerst."""
+        weitere = [t.strip() for t in self.email_weitere.split(",") if t.strip()]
+        return ([self.email] if self.email else []) + weitere
 
     @property
     def personenname(self) -> str:

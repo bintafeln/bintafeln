@@ -53,7 +53,7 @@ _STANDARD_AUS: dict[str, set] = {}
 # Zeilen an einer Adresse hängen, bieten sie alle an; die Titel sind zugleich die CSV-Überschriften.
 ADRESS_SPALTEN = [("anrede", "Anrede"), ("strasse", "Straße"), ("plz", "PLZ"), ("ort", "Ort"),
                   ("telefon", "Telefon"), ("mobil", "Handy"), ("email", "E-Mail"),
-                  ("geburtsdatum", "Geburtstag")]  # fmt: skip
+                  ("email_weitere", "Weitere E-Mails"), ("geburtsdatum", "Geburtstag")]  # fmt: skip
 
 
 def standard_aus(liste, schluessel) -> None:
