@@ -281,13 +281,28 @@ def test_kategorie_filter_in_team_mitglieder_spenden(admin_client, admin, benutz
                                 eintritt="2024-01-01")  # fmt: skip
         Spende.objects.create(adresse=a, datum=dt.date.today(), art="geld", betrag=10 + i)
 
-    for name in ("konten:ehrenamtliche", "mitglieder:liste", "spenden:liste"):
+    behoerde = AdressKategorie.objects.get_or_create(name="Behörde")[0]
+    dritte = Adresse.objects.create(art="person", vorname="Berta", nachname="Behoerdlich")
+    dritte.kategorien.add(behoerde, presse)  # trägt beide: darf nicht doppelt erscheinen
+    verwaltung.konto_fuer_adresse(admin, dritte, [rollen.FAHRER])
+    Mitglied.objects.create(adresse=dritte, nummer="79", art="Mitglied", eintritt="2024-01-01")
+    Spende.objects.create(adresse=dritte, datum=dt.date.today(), art="geld", betrag=99)
+
+    for name in ("konten:ehrenamtliche", "mitglieder:liste", "spenden:liste", "adressen:liste"):
         url = reverse(name)
         alle = admin_client.get(url).content.decode()
-        assert "Passend" in alle and "Ohne" in alle and '<select name="kategorie"' in alle, name
+        assert "Passend" in alle and "Ohne" in alle, name
+        # Mehrfachauswahl mit Häkchen statt einfachem Auswahlfeld
+        assert "data-mehrfach" in alle and 'type="checkbox" name="kategorie"' in alle, name
         seite = admin_client.get(url, {"kategorie": presse.pk}).content.decode()
         assert "Passend" in seite and ">Ohne<" not in seite, name
-        assert f'<option value="{presse.pk}" selected>Presse</option>' in seite, name
+        assert f'name="kategorie" value="{presse.pk}"' in seite, name
+        # zwei Kategorien: alle mit einer davon, jede Zeile nur einmal
+        beide = admin_client.get(url, {"kategorie": [presse.pk, behoerde.pk]}).content.decode()
+        assert "Passend" in beide and ">Ohne<" not in beide, name
+        assert beide.count("Behoerdlich</a>") == 1, name
+        nur = admin_client.get(url, {"kategorie": [behoerde.pk]}).content.decode()
+        assert "Behoerdlich" in nur and "Passend" not in nur, name
         csv_text = admin_client.get(url, {"kategorie": presse.pk, "aktion": "csv"})
         csv_text = csv_text.content.decode("utf-8-sig")
         assert "Passend" in csv_text and "Ohne" not in csv_text, name

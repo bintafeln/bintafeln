@@ -19,11 +19,7 @@
     <input type="hidden" name="sort" value="{{ sort }}">
     <div class="filter-feld filter-suche"><label for="q">Suche</label>
       <input type="search" name="q" id="q" value="{{ filter.q }}" placeholder="Name, Ort, PLZ, E-Mail oder Nummer" {% live_suche %}></div>
-    <div class="filter-feld"><label for="kategorie">Kategorie</label>
-      <select name="kategorie" id="kategorie" onchange="this.form.submit()">
-        <option value="">alle</option>
-        {% for k in kategorien %}<option value="{{ k.pk }}"{% if filter.kategorie == k.pk|stringformat:"d" %} selected{% endif %}>{{ k.name }}</option>{% endfor %}
-      </select></div>
+    {% include "includes/kategorie_filter.html" %}
     <div class="filter-feld"><label for="verein">Im Verein</label>
       <select name="verein" id="verein" onchange="this.form.submit()">
         <option value="">alle</option>

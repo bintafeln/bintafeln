@@ -17,7 +17,7 @@ from django.views.decorators.http import require_POST
 from apps.adressen import importieren
 from apps.adressen.auskunft import adresse_pdf
 from apps.adressen.forms import AdresseForm, ImportForm, SammelAdresseForm
-from apps.adressen.models import Adresse, AdressKategorie
+from apps.adressen.models import Adresse, AdressKategorie, nach_kategorie
 from apps.core import geheimnis, listen, listenauswahl, listenexport, module, papierkorb
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
@@ -77,9 +77,7 @@ def _gefiltert(user, params):
             | Q(ansprechperson__icontains=q) | Q(ort__icontains=q) | Q(plz__startswith=q)
             | Q(email__icontains=q)
         )  # fmt: skip
-    kategorie = params.get("kategorie", "")
-    if kategorie.isdigit():
-        adressen = adressen.filter(kategorien__pk=kategorie)
+    adressen, kategorie = nach_kategorie(adressen, params.getlist("kategorie"), "pk")
     art = params.get("art", "")
     if art in Adresse.Art.values:
         adressen = adressen.filter(art=art)
@@ -95,9 +93,9 @@ def _blaetter_abfrage(params) -> str:
     Rücksprung in die gefilterte Liste."""
     teile = QueryDict(mutable=True)
     for schluessel in BLAETTER_SCHLUESSEL:
-        wert = params.get(schluessel)
-        if wert:
-            teile[schluessel] = wert
+        werte = [w for w in params.getlist(schluessel) if w]  # „kategorie“ kann mehrere haben
+        if werte:
+            teile.setlist(schluessel, werte)
     return teile.urlencode()
 
 
@@ -180,7 +178,8 @@ def liste(request):
     return render(request, "adressen/liste.html", {
         "seite": seite, "filter": filter_, "anzahl": seite.paginator.count, "sort": sort,
         "anzahl_wahl": ANZAHL_WAHL,
-        "kategorien": AdressKategorie.objects.all(), "arten": Adresse.Art.choices,
+        "kategorien": list(AdressKategorie.objects.values_list("pk", "name")),
+        "kategorie": filter_["kategorie"], "arten": Adresse.Art.choices,
         "sichtbar": listen.sichtbare_spalten(request.user, "adressen",
                                              [k for k, _ in SPALTEN], SPALTEN_FEST),
         "spalten_wahl": listen.spalten_wahl(request.user, "adressen", SPALTEN, SPALTEN_FEST),

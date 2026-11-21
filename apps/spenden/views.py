@@ -116,7 +116,7 @@ def liste(request):
     bescheinigung = request.GET.get("bescheinigung", "")
     if bescheinigung in BESCHEINIGT:
         spenden = spenden.filter(BESCHEINIGT[bescheinigung])
-    spenden, kategorie = nach_kategorie(spenden, request.GET.get("kategorie", ""))
+    spenden, kategorie = nach_kategorie(spenden, request.GET.getlist("kategorie"))
     q = request.GET.get("q", "").strip()
     if q:
         spenden = spenden.filter(
@@ -157,7 +157,8 @@ def liste(request):
         "filter": {"art": art, "q": q, "bescheinigung": bescheinigung},
         "je_monat": list(je_monat), "arten": Spende.Art.choices, "sort": sort,
         "adress_spalten": adress_spalten,
-        "kategorie": kategorie, "kategorien": AdressKategorie.objects.all(),
+        "kategorie": kategorie,
+        "kategorien": list(AdressKategorie.objects.values_list("pk", "name")),
         "sichtbar": listen.sichtbare_spalten(request.user, "spenden",
                                              [k for k, _ in spalten], SPALTEN_FEST),
         "spalten_wahl": listen.spalten_wahl(request.user, "spenden", spalten, SPALTEN_FEST),

@@ -209,7 +209,7 @@ def _mitarbeitende_seite(request, konten, *, archiv, art=None, ehemalige=False):
         return gemerkt
     from apps.adressen.models import AdressKategorie, nach_kategorie
 
-    konten, kategorie = nach_kategorie(konten, request.GET.get("kategorie", ""))
+    konten, kategorie = nach_kategorie(konten, request.GET.getlist("kategorie"))
     q = (request.GET.get("q") or "").strip()
     konten = _suchen(konten, q)
     roh = request.GET.get("sort", "")
@@ -239,7 +239,7 @@ def _mitarbeitende_seite(request, konten, *, archiv, art=None, ehemalige=False):
             "archiv": archiv,
             "ehemalige": ehemalige,
             "kategorie": kategorie,
-            "kategorien": AdressKategorie.objects.all(),
+            "kategorien": list(AdressKategorie.objects.values_list("pk", "name")),
             "art": art,
             "q": q,
             "sort": sort,

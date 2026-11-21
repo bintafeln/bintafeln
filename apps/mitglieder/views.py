@@ -83,7 +83,7 @@ def liste(request):
             Q(nummer__icontains=q) | Q(adresse__organisation__icontains=q)
             | Q(adresse__nachname__icontains=q) | Q(adresse__vorname__icontains=q)
         )  # fmt: skip
-    mitglieder, kategorie = nach_kategorie(mitglieder, request.GET.get("kategorie", ""))
+    mitglieder, kategorie = nach_kategorie(mitglieder, request.GET.getlist("kategorie"))
     if request.GET.get("aktion"):
         mitglieder = listenauswahl.filtern(request, mitglieder)
     beitraege = MitgliederEinstellungen.mit_beitraegen()
@@ -144,7 +144,8 @@ def liste(request):
         "spalten_folge": True, "folge": listen.eigene_folge(request.user, "mitglieder", spalten),
         "abfrage": abfrage.urlencode(),
         "filter": {"stand": stand, "q": q, "nur_offen": request.GET.get("nur_offen", "")},
-        "kategorie": kategorie, "kategorien": AdressKategorie.objects.all(),
+        "kategorie": kategorie,
+        "kategorien": list(AdressKategorie.objects.values_list("pk", "name")),
     })  # fmt: skip
 
 
