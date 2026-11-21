@@ -131,12 +131,14 @@ def liste(request):
     if request.GET.get("aktion"):
         zuordnung = {"spender": "Spender", "art": "Art", "betrag": "Betrag/Wert",
                      "bezeichnung": ("Bezeichnung", "Menge", "Einheit", "Zweck"),
-                     "bestaetigung": "Bestätigung"} | dict(listen.ADRESS_SPALTEN)  # fmt: skip
+                     "bestaetigung": "Bestätigung", "datum": "Datum",
+                     **dict(listen.ADRESS_SPALTEN)}  # fmt: skip
         return listenexport.ausliefern(
             request, f"Spenden {jahr}", f"spenden-{jahr}",
             _csv_text(listenauswahl.filtern(request, spenden), jahr, bool(adress_spalten)),
             weiter=reverse("spenden:liste"),
             ohne_spalten=listen.pdf_ohne(request.user, "spenden", zuordnung, SPALTEN_FEST),
+            reihenfolge=listen.pdf_folge(request.user, "spenden", zuordnung, spalten),
         )  # fmt: skip
     summen = spenden.aggregate(
         geld=Sum("betrag", filter=Q(art=Spende.Art.GELD)),
@@ -159,6 +161,7 @@ def liste(request):
         "sichtbar": listen.sichtbare_spalten(request.user, "spenden",
                                              [k for k, _ in spalten], SPALTEN_FEST),
         "spalten_wahl": listen.spalten_wahl(request.user, "spenden", spalten, SPALTEN_FEST),
+        "spalten_folge": True, "folge": listen.eigene_folge(request.user, "spenden", spalten),
         "abfrage": abfrage.urlencode(),
     })  # fmt: skip
 
@@ -192,8 +195,7 @@ def entwicklung(request):
 @rollen.recht_erforderlich("spenden.sehen")
 def spalten(request):
     """Speichert, welche Spalten diese Person in der Spendenliste sieht."""
-    listen.spalten_speichern(request.user, "spenden", request.POST.getlist("spalte"),
-                             _spalten(request.user), SPALTEN_FEST)  # fmt: skip
+    listen.spalten_aus_post(request, "spenden", _spalten(request.user), SPALTEN_FEST)
     zurueck = QueryDict(request.POST.get("zurueck", "")).urlencode()
     ziel = reverse("spenden:liste")
     return redirect(f"{ziel}?{zurueck}" if zurueck else ziel)

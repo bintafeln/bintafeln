@@ -116,6 +116,32 @@ def anrufen(nummer):
 
 
 @register.simple_tag
+def spalte(schluessel):
+    """Kennzeichnet die folgende(n) Tabellenzelle(n) als Spalte ``schluessel``, damit
+    ``{% spaltenfolge %}`` sie in die Reihenfolge der Person bringen kann (apps/core/listen.py)."""
+    return format_html("<!--s:{}-->", schluessel)
+
+
+class _Spaltenfolge(template.Node):
+    def __init__(self, inhalt, folge):
+        self.inhalt, self.folge = inhalt, folge
+
+    def render(self, context):
+        folge = self.folge.resolve(context, ignore_failures=True)
+        return listen.spalten_ordnen(self.inhalt.render(context), folge)
+
+
+@register.tag
+def spaltenfolge(parser, token):
+    """``{% spaltenfolge folge %}<table>…</table>{% endspaltenfolge %}``: ordnet die mit
+    ``{% spalte %}`` gekennzeichneten Zellen jeder Zeile nach ``folge`` (leer = wie ausgegeben)."""
+    _, ausdruck = token.split_contents()
+    inhalt = parser.parse(("endspaltenfolge",))
+    parser.delete_first_token()
+    return _Spaltenfolge(inhalt, parser.compile_filter(ausdruck))
+
+
+@register.simple_tag
 def mehrfach(name, optionen, gewaehlt, leer="alle"):
     """Mehrfachauswahl für ein Filterformular (aufklappbares Menü mit Häkchen, wie das Widget
     ``Mehrfachauswahl``): ``optionen`` als (Wert, Bezeichnung), ``gewaehlt`` die gewählten Werte."""

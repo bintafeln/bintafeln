@@ -269,6 +269,11 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Spalten an: `listen.ADRESS_SPALTEN`/`adress_spalten()` (nur mit `adressen.sehen`), Bausteine
   `includes/adress_spalten_kopf.html`/`…_zellen.html`; in der Vorgabe ausgeblendet über
   `listen.standard_aus()`.
+  Reihenfolge der Spalten je Person (Team, Adressbuch, Mitglieder, Spenden): Pfeile unter
+  „Spalten wählen“ (`static/js/spalten_folge.js`, Speichern über `listen.spalten_aus_post()`);
+  Vorlagen kennzeichnen jede Zelle mit `{% spalte "schluessel" %}` und umschließen die Tabelle mit
+  `{% spaltenfolge folge %}` (`listen.spalten_ordnen()`), `SPALTEN` steht in der Reihenfolge der
+  Vorlage; das PDF folgt über `ausliefern(reihenfolge=listen.pdf_folge(…))`.
   Personalnummer (ADR 0116, ersetzt ADR 0101): `Stammdaten.personalnummer`, eigener Nummernkreis –
   unabhängig von den Mitgliedsnummern, dieselbe Zahl darf in beiden vorkommen. Automatisch aus
   `PersonalEinstellungen.naechste_personalnummer` über `verwaltung.naechste_personalnummer()` in

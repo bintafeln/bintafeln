@@ -66,19 +66,19 @@
   {% url 'spenden:spalten' as spalten_aktion %}{% include "includes/spalten_wahl.html" %}
   {% blaettern seite %}
   <div class="tabelle-rahmen">
-  <table class="tabelle">
-    <thead><tr><th class="auswahl"><input type="checkbox" data-alle="id" form="auswahl" aria-label="Alle auswählen" title="alle / keine"></th>{% sortkopf "Datum" "datum" sort %}{% if "spender" in sichtbar %}{% sortkopf "Nachname / Organisation" "spender" sort %}{% sortkopf "Vorname" "vorname" sort %}{% endif %}{% include "includes/adress_spalten_kopf.html" %}{% if "art" in sichtbar %}{% sortkopf "Art" "art" sort %}{% endif %}{% if "betrag" in sichtbar %}{% sortkopf "Betrag/Wert" "betrag" sort "zahl" %}{% endif %}{% if "bezeichnung" in sichtbar %}{% sortkopf "Bezeichnung / Zweck" %}{% endif %}{% if "bestaetigung" in sichtbar %}{% sortkopf "Bescheinigung" %}{% endif %}</tr></thead>
+  {% spaltenfolge folge %}<table class="tabelle">
+    <thead><tr><th class="auswahl"><input type="checkbox" data-alle="id" form="auswahl" aria-label="Alle auswählen" title="alle / keine"></th>{% spalte "datum" %}{% sortkopf "Datum" "datum" sort %}{% spalte "spender" %}{% if "spender" in sichtbar %}{% sortkopf "Nachname / Organisation" "spender" sort %}{% sortkopf "Vorname" "vorname" sort %}{% endif %}{% include "includes/adress_spalten_kopf.html" %}{% spalte "art" %}{% if "art" in sichtbar %}{% sortkopf "Art" "art" sort %}{% endif %}{% spalte "betrag" %}{% if "betrag" in sichtbar %}{% sortkopf "Betrag/Wert" "betrag" sort "zahl" %}{% endif %}{% spalte "bezeichnung" %}{% if "bezeichnung" in sichtbar %}{% sortkopf "Bezeichnung / Zweck" %}{% endif %}{% spalte "bestaetigung" %}{% if "bestaetigung" in sichtbar %}{% sortkopf "Bescheinigung" %}{% endif %}</tr></thead>
     <tbody>
     {% for s in seite %}
       <tr><td class="auswahl"><input type="checkbox" name="id" value="{{ s.pk }}" form="auswahl" aria-label="Zeile auswählen"></td>
-        <td data-titel="Datum">{% if "spenden.erfassen" in rechte and not s.bestaetigt %}<a href="{% url 'spenden:bearbeiten' s.pk %}">{{ s.datum|date:"d.m.Y" }}</a>{% else %}{{ s.datum|date:"d.m.Y" }}{% endif %}</td>
-        {% if "spender" in sichtbar %}<td data-titel="Nachname / Organisation"><a href="{% url 'adressen:adresse' s.adresse_id %}">{{ s.adresse.nachname|default:s.adresse.organisation|default:s.adresse.name }}</a></td>
+        {% spalte "datum" %}<td data-titel="Datum">{% if "spenden.erfassen" in rechte and not s.bestaetigt %}<a href="{% url 'spenden:bearbeiten' s.pk %}">{{ s.datum|date:"d.m.Y" }}</a>{% else %}{{ s.datum|date:"d.m.Y" }}{% endif %}</td>
+        {% spalte "spender" %}{% if "spender" in sichtbar %}<td data-titel="Nachname / Organisation"><a href="{% url 'adressen:adresse' s.adresse_id %}">{{ s.adresse.nachname|default:s.adresse.organisation|default:s.adresse.name }}</a></td>
         <td data-titel="Vorname">{{ s.adresse.vorname }}</td>{% endif %}
         {% include "includes/adress_spalten_zellen.html" with a=s.adresse %}
-        {% if "art" in sichtbar %}<td data-titel="Art">{{ s.get_art_display }}{% if s.mitgliedsbeitrag %} (Mitgliedsbeitrag){% endif %}</td>{% endif %}
-        {% if "betrag" in sichtbar %}<td data-titel="Betrag/Wert" class="zahl">{% if s.betrag %}{{ s.betrag|floatformat:2 }} €{% else %}–{% endif %}</td>{% endif %}
-        {% if "bezeichnung" in sichtbar %}<td data-titel="Bezeichnung">{{ s.beschreibung|default:s.zweck|default:"–" }}{% if s.menge %} ({{ s.menge|floatformat:"-2" }} {{ s.einheit }}){% endif %}</td>{% endif %}
-        {% if "bestaetigung" in sichtbar %}<td data-titel="Bescheinigung" class="bescheinigung">
+        {% spalte "art" %}{% if "art" in sichtbar %}<td data-titel="Art">{{ s.get_art_display }}{% if s.mitgliedsbeitrag %} (Mitgliedsbeitrag){% endif %}</td>{% endif %}
+        {% spalte "betrag" %}{% if "betrag" in sichtbar %}<td data-titel="Betrag/Wert" class="zahl">{% if s.betrag %}{{ s.betrag|floatformat:2 }} €{% else %}–{% endif %}</td>{% endif %}
+        {% spalte "bezeichnung" %}{% if "bezeichnung" in sichtbar %}<td data-titel="Bezeichnung">{{ s.beschreibung|default:s.zweck|default:"–" }}{% if s.menge %} ({{ s.menge|floatformat:"-2" }} {{ s.einheit }}){% endif %}</td>{% endif %}
+        {% spalte "bestaetigung" %}{% if "bestaetigung" in sichtbar %}<td data-titel="Bescheinigung" class="bescheinigung">
           {% if s.bestaetigt %}<span class="status status-fertig">✓ Bescheinigt von bintafeln</span>
             {% if "spenden.bestaetigen" in rechte %}<a href="{% url 'spenden:pdf' %}?nummern={{ s.bestaetigung.nummer }}" target="_blank" rel="noopener">{% if s.bestaetigung.art == "sammel" %}Sammelbestätigung{% else %}Bestätigung{% endif %} Nr. {{ s.bestaetigung.nummer }}</a>{% else %}<span class="leise">Nr. {{ s.bestaetigung.nummer }}</span>{% endif %}
           {% elif s.fremdbeleg == "versendet" %}<span class="status status-fertig">✓ Schon verschickt (WISO MeinVerein)</span>
@@ -94,7 +94,7 @@
       <tr><td colspan="{{ sichtbar|length|add:2 }}">Keine Spenden gefunden.</td></tr>
     {% endfor %}
     </tbody>
-  </table>
+  </table>{% endspaltenfolge %}
   </div>
   {% blaettern seite %}
 </div>

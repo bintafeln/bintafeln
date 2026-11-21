@@ -1,14 +1,19 @@
-{% comment %}Auswahlmenü „Spalten wählen" für eine Liste. Erwartet: spalten_aktion (URL der
+{% load static %}{% comment %}Auswahlmenü „Spalten wählen" für eine Liste. Erwartet: spalten_aktion (URL der
 spalten-Ansicht), spalten_wahl (Liste aus apps/core/listen.spalten_wahl), abfrage (aktuelle
-Filter als URL-Text, damit man danach zur selben Ansicht zurückkommt).{% endcomment %}
+Filter als URL-Text, damit man danach zur selben Ansicht zurückkommt). Mit ``spalten_folge``
+(Liste merkt die Reihenfolge, listen.spalten_aus_post) lassen sich die Spalten mit den Pfeilen
+verschieben – static/js/spalten_folge.js; mit eigener Reihenfolge (``folge``) gibt es „zurücksetzen“.{% endcomment %}
 <details class="spalten-wahl">
   <summary>Spalten wählen</summary>
   <form method="post" action="{{ spalten_aktion }}">
     {% csrf_token %}
     <input type="hidden" name="zurueck" value="{{ abfrage }}">
-    <div class="spalten-haken">
-      {% for k, name, an, fest in spalten_wahl %}<label><input type="checkbox" name="spalte" value="{{ k }}"{% if an %} checked{% endif %}{% if fest %} disabled title="immer sichtbar"{% endif %}> {{ name }}</label>{% endfor %}
+    <div class="spalten-haken"{% if spalten_folge %} data-spalten-folge{% endif %}>
+      {% for k, name, an, fest in spalten_wahl %}<label><input type="checkbox" name="spalte" value="{{ k }}"{% if an %} checked{% endif %}{% if fest %} disabled title="immer sichtbar"{% endif %}> {{ name }}{% if spalten_folge %}<input type="hidden" name="folge" value="{{ k }}">{% endif %}</label>{% endfor %}
     </div>
+    {% if spalten_folge %}<p class="hinweis spalten-folge-hinweis" hidden>Reihenfolge: mit ◀ ▶ neben einer Spalte verschieben, dann „Übernehmen“.</p>{% endif %}
     <button type="submit" class="knopf knopf-zweitrangig">Übernehmen</button>
+    {% if spalten_folge and folge %}<button type="submit" name="folge_zuruecksetzen" value="1" class="knopf knopf-zweitrangig">Reihenfolge zurücksetzen</button>{% endif %}
   </form>
 </details>
+{% if spalten_folge %}<script src="{% static 'js/spalten_folge.js' %}" defer></script>{% endif %}

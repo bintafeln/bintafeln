@@ -294,3 +294,91 @@ def test_kategorie_filter_in_team_mitglieder_spenden(admin_client, admin, benutz
         # gemerkt: ohne Angaben zurück zur gefilterten Liste; Unsinn im Filter zeigt alle
         assert f"kategorie={presse.pk}" in admin_client.get(url).url, name
         assert "Ohne" in admin_client.get(url, {"kategorie": "x"}).content.decode(), name
+
+
+def test_spalten_reihenfolge_je_person(admin_client, admin, pdf_text):
+    """Unter „Spalten wählen“ lässt sich die Reihenfolge der Spalten festlegen: Sie gilt in der
+    Liste und im PDF, je Person, bis „Reihenfolge zurücksetzen“."""
+    import datetime as dt
+    import re
+
+    from django.http import HttpResponse
+
+    from apps.core import listen
+    from apps.konten import rollen, verwaltung
+    from apps.mitglieder.models import Mitglied
+    from apps.spenden.models import Spende
+
+    def koepfe(url):
+        seite = admin_client.get(url, follow=True).content.decode()
+        assert "<!--s:" not in seite  # die Marken der Vorlage fallen immer weg
+        kopf = seite[seite.index("<thead>") : seite.index("</thead>")]
+        zellen = re.findall(r"<th\b.*?</th>", kopf, re.S)
+        return [re.sub(r"<[^>]+>|[↕▲▼]", "", t).strip() for t in zellen]
+
+    a = Adresse.objects.create(art="person", vorname="Rita", nachname="Reihe", ort="Musterstadt",
+                               plz="12345", telefon="0123 4")  # fmt: skip
+    verwaltung.konto_fuer_adresse(admin, a, [rollen.FAHRER])
+    verwaltung.stammdaten_aus_adresse(a)
+    Mitglied.objects.create(adresse=a, nummer="7", art="Mitglied", eintritt="2024-01-01")
+    Spende.objects.create(adresse=a, datum=dt.date.today(), art="geld", betrag=25)
+
+    faelle = [  # Liste, Speichern, sichtbare Spalten, gewünschte Folge, erwartete Köpfe vorn
+        ("konten:ehrenamtliche", "konten:mitarbeitende_spalten", ["ort", "vorname", "telefon"],
+         ["ort", "nachname", "telefon", "vorname"], ["Ort", "Nachname", "Telefon", "Vorname"]),
+        ("adressen:liste", "adressen:spalten", ["ort", "vorname", "telefon"],
+         ["telefon", "ort", "name", "vorname"], ["Telefon", "Ort", "Nachname", "Vorname"]),
+        ("mitglieder:liste", "mitglieder:spalten", ["name", "art", "eintritt"],
+         ["eintritt", "name", "nummer", "art"], ["Eintritt", "Name", "Nr.", "Art"]),
+        ("spenden:liste", "spenden:spalten", ["spender", "betrag", "art"],
+         ["betrag", "art", "datum", "spender"],
+         ["Betrag/Wert", "Art", "Datum", "Nachname / Organisation", "Vorname"]),
+    ]  # fmt: skip
+    for liste, speichern, sichtbar, folge, erwartet in faelle:
+        url = reverse(liste)
+        vorher = koepfe(url)
+        seite = admin_client.get(url, follow=True).content.decode()
+        assert "data-spalten-folge" in seite and 'name="folge"' in seite, liste
+        assert "Reihenfolge zurücksetzen" not in seite, liste
+        admin_client.post(reverse(speichern), {"spalte": sichtbar, "folge": folge},
+                          HTTP_REFERER=url)  # fmt: skip
+        nachher = koepfe(url)
+        assert nachher[0] == "", liste  # das Auswahlkästchen bleibt vorn
+        assert nachher[1 : 1 + len(erwartet)] == erwartet, (liste, nachher)
+        # die Zeilen folgen derselben Ordnung wie der Kopf
+        seite = admin_client.get(url, follow=True).content.decode()
+        zeile = seite[seite.index("<tbody>") :]
+        zeile = zeile[: zeile.index("</tr>")]
+        titel = re.findall(r'<td[^>]*data-titel="([^"]+)"', zeile)
+        assert titel[: len(erwartet)] == erwartet, (liste, titel)
+        assert "Reihenfolge zurücksetzen" in seite, liste
+        # das Menü zeigt die Spalten in der neuen Folge
+        menue = re.findall(r'name="folge" value="([a-z_]+)"', seite)
+        assert menue[: len(folge)] == folge, liste
+        # PDF in derselben Reihenfolge
+        pdf = admin_client.get(url, {"aktion": "pdf"})
+        assert pdf["Content-Type"] == "application/pdf", liste
+        # zurücksetzen: wieder wie die Vorlage
+        admin_client.post(reverse(speichern), {"spalte": sichtbar, "folge_zuruecksetzen": "1",
+                                               "folge": folge}, HTTP_REFERER=url)  # fmt: skip
+        admin.refresh_from_db()
+        assert not any(k.endswith(":folge") for k in admin.listen_spalten_aus), liste
+        zurueck = koepfe(url)
+        assert [k for k in zurueck if k in vorher] == [k for k in vorher if k in zurueck], liste
+
+    # PDF: Spalten in der gewählten Reihenfolge, der Rest dahinter; ohne Angabe wie die CSV
+    csv_text = "Nummer;Nachname;Ort\r\n1;Reihe;Musterstadt\r\n"
+
+    def als_pdf(**angaben):
+        daten = listenexport.pdf_aus_csv("T", csv_text, **angaben)
+        return pdf_text(HttpResponse(daten, content_type="application/pdf"))
+
+    text = als_pdf(reihenfolge=["Ort"])
+    assert text.index("Ort") < text.index("Nummer") < text.index("Nachname")
+    text = als_pdf()
+    assert text.index("Nummer") < text.index("Nachname") < text.index("Ort")
+    # die reine Funktion: Vorspann bleibt, Unbekanntes hinten, ohne Folge nur Marken weg
+    html = "<tr><td>x</td><!--s:a--><td>A</td><!--s:b--><td>B</td><!--s:_z--><td>Z</td></tr>"
+    geordnet = "<tr><td>x</td><td>B</td><td>A</td><td>Z</td></tr>"
+    assert listen.spalten_ordnen(html, ["b", "a"]) == geordnet
+    assert listen.spalten_ordnen(html, None) == "<tr><td>x</td><td>A</td><td>B</td><td>Z</td></tr>"
