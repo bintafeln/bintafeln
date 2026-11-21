@@ -2261,3 +2261,23 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 .spalten-pfeil { border: 1px solid var(--rand); background: var(--flaeche); color: var(--leise); border-radius: 6px;
   min-width: 1.6rem; min-height: 1.6rem; padding: 0 .2rem; font-size: .7rem; line-height: 1; cursor: pointer; }
 .spalten-pfeil:hover, .spalten-pfeil:focus-visible { border-color: var(--akzent); color: var(--text); }
+
+/* Touren für unterwegs (ADR 0148): große Tippflächen, eine Station je Karte */
+.tour-tage { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem; }
+.tour-tage .knopf { width: auto; flex: 1 1 auto; }
+.tour-karte { border: 1px solid var(--rand); border-radius: 10px; padding: .75rem; margin-bottom: .75rem; }
+.tour-karte h2 { margin: 0 0 .25rem; }
+.tour-meine { border-color: var(--akzent); border-width: 2px; }
+.tour-knopf { display: block; width: 100%; text-align: center; font-size: 1.1rem; padding: .85rem 1rem; margin-top: .5rem; }
+.tour-route { margin-top: .75rem; }
+.tour-route summary { cursor: pointer; font-weight: 600; padding: .4rem 0; }
+.tour-halte { list-style: none; padding: 0; margin: 0; }
+.tour-halt-kopf { display: flex; gap: .75rem; align-items: flex-start; }
+.tour-halt-kopf h2 { margin: 0; font-size: 1.2rem; }
+.tour-halt-kopf address { font-style: normal; }
+.tour-nr { flex: 0 0 auto; width: 2.2rem; height: 2.2rem; border-radius: 50%; background: var(--akzent); color: var(--auf-akzent);
+  display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.tour-halt-fuss { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; margin: .6rem 0 0; }
+.tour-tagewahl { display: flex; flex-wrap: wrap; gap: .1rem .6rem; }
+.tour-tagewahl label { white-space: nowrap; }
+.tour-folge { display: flex; gap: .3rem; }

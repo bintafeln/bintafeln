@@ -582,3 +582,24 @@ def touren() -> None:
             abholtage=tage, abholzeit=zeit, lieferschein=art != "lager",
             geaendert_von="demo-buero",
         )  # fmt: skip
+    _touren_folgen()
+
+
+def _touren_folgen() -> None:
+    """Zwei Touren aus dem Fahrerplan mit Stationsfolge und eine eigene Tour (ADR 0148)."""
+    from apps.fahrdienst.models import Tour as FahrdienstTour
+    from apps.touren import ablauf
+    from apps.touren.models import Station, Tour
+
+    stationen = {s.kennung: s for s in Station.objects.all()}
+    folgen = [["S-8", "S-4", "S-1", "S-3"], ["S-8", "S-2", "S-7", "S-6"]]
+    for ft, folge in zip(
+        FahrdienstTour.objects.order_by("reihenfolge", "pk"), folgen, strict=False
+    ):
+        tour = Tour.objects.create(name=ft.name, fahrdienst_tour=ft, angelegt_von="demo-buero")
+        for kennung in folge:
+            ablauf.halt_anhaengen(tour, stationen[kennung])
+    samstag = Tour.objects.create(name="Samstag Backwaren", fahrtage="Sa",
+                                  angelegt_von="demo-buero")  # fmt: skip
+    ablauf.halt_anhaengen(samstag, stationen["S-4"])
+    ablauf.halt_anhaengen(samstag, stationen["S-5"])
