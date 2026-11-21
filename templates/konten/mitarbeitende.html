@@ -82,58 +82,58 @@
   </div>
   {% url 'konten:mitarbeitende_spalten' as spalten_aktion %}{% include "includes/spalten_wahl.html" %}
   <div class="tabelle-rahmen oben-scrollen">
-  <table class="tabelle tabelle-gitter">
+  {% spaltenfolge folge %}<table class="tabelle tabelle-gitter">
     <thead><tr>
       {% if not archiv and vergebbare_rollen %}<th class="auswahl"><input type="checkbox" data-alle="id" form="rollen-sammel" aria-label="Alle auswählen" title="alle / keine"></th>{% endif %}
-      {% if "nummer" in sichtbar %}{% sortkopf "Nummer" "nummer" sort %}{% endif %}
-      {% if "anrede" in sichtbar %}{% sortkopf "Anrede" "anrede" sort %}{% endif %}
-      {% sortkopf "Nachname" "name" sort %}
-      {% if "vorname" in sichtbar %}{% sortkopf "Vorname" "vorname" sort %}{% endif %}
-      {% if "strasse" in sichtbar %}{% sortkopf "Straße" "strasse" sort %}{% endif %}
-      {% if "plz" in sichtbar %}{% sortkopf "PLZ" %}{% endif %}
-      {% if "ort" in sichtbar %}{% sortkopf "Ort" "ort" sort %}{% endif %}
-      {% if "telefon" in sichtbar %}{% sortkopf "Telefon" "telefon" sort %}{% endif %}
-      {% if "handy" in sichtbar %}{% sortkopf "Handy" %}{% endif %}
-      {% if "email" in sichtbar %}{% sortkopf "E-Mail" "email" sort %}{% endif %}
-      {% if "geburtstag" in sichtbar %}{% sortkopf "Geburtstag" %}{% endif %}
-      {% if "benutzername" in sichtbar %}{% sortkopf "Benutzername" "benutzername" sort %}{% endif %}
-      {% if "rollen" in sichtbar %}{% sortkopf "Rollen" %}{% endif %}
-      {% if "ausgabestellen" in sichtbar %}{% sortkopf "Ausgabestellen" %}{% endif %}
-      {% if "beschaeftigung" in sichtbar %}{% sortkopf "Beschäftigung" "beschaeftigung" sort %}{% endif %}
-      {% if "eintritt" in sichtbar %}{% sortkopf "Dabei seit" "eintritt" sort %}{% endif %}
-      {% if "zwei_faktor" in sichtbar %}{% sortkopf "Zwei-Faktor" %}{% endif %}
-      {% if "anmeldung" in sichtbar %}{% sortkopf "Letzte Anmeldung" "anmeldung" sort %}{% endif %}
-      {% if archiv %}{% sortkopf "Gesperrt" %}{% endif %}
+      {% spalte "nummer" %}{% if "nummer" in sichtbar %}{% sortkopf "Nummer" "nummer" sort %}{% endif %}
+      {% spalte "anrede" %}{% if "anrede" in sichtbar %}{% sortkopf "Anrede" "anrede" sort %}{% endif %}
+      {% spalte "nachname" %}{% sortkopf "Nachname" "name" sort %}
+      {% spalte "vorname" %}{% if "vorname" in sichtbar %}{% sortkopf "Vorname" "vorname" sort %}{% endif %}
+      {% spalte "strasse" %}{% if "strasse" in sichtbar %}{% sortkopf "Straße" "strasse" sort %}{% endif %}
+      {% spalte "plz" %}{% if "plz" in sichtbar %}{% sortkopf "PLZ" %}{% endif %}
+      {% spalte "ort" %}{% if "ort" in sichtbar %}{% sortkopf "Ort" "ort" sort %}{% endif %}
+      {% spalte "telefon" %}{% if "telefon" in sichtbar %}{% sortkopf "Telefon" "telefon" sort %}{% endif %}
+      {% spalte "handy" %}{% if "handy" in sichtbar %}{% sortkopf "Handy" %}{% endif %}
+      {% spalte "email" %}{% if "email" in sichtbar %}{% sortkopf "E-Mail" "email" sort %}{% endif %}
+      {% spalte "geburtstag" %}{% if "geburtstag" in sichtbar %}{% sortkopf "Geburtstag" %}{% endif %}
+      {% spalte "benutzername" %}{% if "benutzername" in sichtbar %}{% sortkopf "Benutzername" "benutzername" sort %}{% endif %}
+      {% spalte "rollen" %}{% if "rollen" in sichtbar %}{% sortkopf "Rollen" %}{% endif %}
+      {% spalte "ausgabestellen" %}{% if "ausgabestellen" in sichtbar %}{% sortkopf "Ausgabestellen" %}{% endif %}
+      {% spalte "beschaeftigung" %}{% if "beschaeftigung" in sichtbar %}{% sortkopf "Beschäftigung" "beschaeftigung" sort %}{% endif %}
+      {% spalte "eintritt" %}{% if "eintritt" in sichtbar %}{% sortkopf "Dabei seit" "eintritt" sort %}{% endif %}
+      {% spalte "zwei_faktor" %}{% if "zwei_faktor" in sichtbar %}{% sortkopf "Zwei-Faktor" %}{% endif %}
+      {% spalte "anmeldung" %}{% if "anmeldung" in sichtbar %}{% sortkopf "Letzte Anmeldung" "anmeldung" sort %}{% endif %}
+      {% spalte "_gesperrt" %}{% if archiv %}{% sortkopf "Gesperrt" %}{% endif %}
     </tr></thead>
     <tbody>
     {% for z in zeilen %}
       <tr>
         {% if not archiv and vergebbare_rollen %}<td class="auswahl"><input type="checkbox" name="id" value="{{ z.b.pk }}" form="rollen-sammel"{% if z.b.pk in markiert %} checked{% endif %} aria-label="{{ z.b.last_name|default:z.b.username }} auswählen"></td>{% endif %}
-        {% if "nummer" in sichtbar %}<td data-titel="Nummer">{{ z.nummer|default:"–" }}</td>{% endif %}
-        {% if "anrede" in sichtbar %}<td data-titel="Anrede">{{ z.sd.anrede }}</td>{% endif %}
-        <td data-titel="Nachname"><a href="{% if z.adresse_pk and "adressen.bearbeiten" in rechte %}{% url 'adressen:bearbeiten' z.adresse_pk %}{% else %}{% url 'konten:mitarbeiter' z.b.pk %}{% endif %}">{{ z.b.last_name|default:z.b.username }}</a></td>
-        {% if "vorname" in sichtbar %}<td data-titel="Vorname">{{ z.b.first_name }}</td>{% endif %}
-        {% if "strasse" in sichtbar %}<td data-titel="Straße">{{ z.sd.strasse }}</td>{% endif %}
-        {% if "plz" in sichtbar %}<td data-titel="PLZ">{{ z.sd.plz }}</td>{% endif %}
-        {% if "ort" in sichtbar %}<td data-titel="Ort">{{ z.sd.ort }}</td>{% endif %}
-        {% if "telefon" in sichtbar %}<td data-titel="Telefon">{{ z.sd.telefon|anrufen }}</td>{% endif %}
-        {% if "handy" in sichtbar %}<td data-titel="Handy">{{ z.sd.handy|anrufen }}</td>{% endif %}
-        {% if "email" in sichtbar %}<td data-titel="E-Mail">{% if z.b.email %}<a href="mailto:{{ z.b.email }}">{{ z.b.email }}</a>{% endif %}</td>{% endif %}
-        {% if "geburtstag" in sichtbar %}<td data-titel="Geburtstag">{{ z.geburtstag|date:"d.m.Y" }}</td>{% endif %}
-        {% if "benutzername" in sichtbar %}<td data-titel="Benutzername">{{ z.b.username }}</td>{% endif %}
-        {% if "rollen" in sichtbar %}<td data-titel="Rollen">{% for r in z.rollen %}<span class="marke-rolle">{{ r }}</span> {% empty %}–{% endfor %}</td>{% endif %}
-        {% if "ausgabestellen" in sichtbar %}<td data-titel="Ausgabestellen">{{ z.stellen|default:"–" }}</td>{% endif %}
-        {% if "beschaeftigung" in sichtbar %}<td data-titel="Beschäftigung">{{ z.b.get_beschaeftigung_display }}</td>{% endif %}
-        {% if "eintritt" in sichtbar %}<td data-titel="Dabei seit">{{ z.dabei_seit|date:"d.m.Y" }}</td>{% endif %}
-        {% if "zwei_faktor" in sichtbar %}<td data-titel="Zwei-Faktor">{{ z.zwei_faktor|yesno:"eingerichtet,–" }}</td>{% endif %}
-        {% if "anmeldung" in sichtbar %}<td data-titel="Letzte Anmeldung">{{ z.b.last_login|date:"d.m.Y H:i"|default:"noch nie" }}</td>{% endif %}
-        {% if archiv %}<td data-titel="Gesperrt">{{ z.b.gesperrt_am|date:"d.m.Y"|default:"–" }}{% if z.b.gesperrt_von %} von {{ z.b.gesperrt_von }}{% endif %}</td>{% endif %}
+        {% spalte "nummer" %}{% if "nummer" in sichtbar %}<td data-titel="Nummer">{{ z.nummer|default:"–" }}</td>{% endif %}
+        {% spalte "anrede" %}{% if "anrede" in sichtbar %}<td data-titel="Anrede">{{ z.sd.anrede }}</td>{% endif %}
+        {% spalte "nachname" %}<td data-titel="Nachname"><a href="{% if z.adresse_pk and "adressen.bearbeiten" in rechte %}{% url 'adressen:bearbeiten' z.adresse_pk %}{% else %}{% url 'konten:mitarbeiter' z.b.pk %}{% endif %}">{{ z.b.last_name|default:z.b.username }}</a></td>
+        {% spalte "vorname" %}{% if "vorname" in sichtbar %}<td data-titel="Vorname">{{ z.b.first_name }}</td>{% endif %}
+        {% spalte "strasse" %}{% if "strasse" in sichtbar %}<td data-titel="Straße">{{ z.sd.strasse }}</td>{% endif %}
+        {% spalte "plz" %}{% if "plz" in sichtbar %}<td data-titel="PLZ">{{ z.sd.plz }}</td>{% endif %}
+        {% spalte "ort" %}{% if "ort" in sichtbar %}<td data-titel="Ort">{{ z.sd.ort }}</td>{% endif %}
+        {% spalte "telefon" %}{% if "telefon" in sichtbar %}<td data-titel="Telefon">{{ z.sd.telefon|anrufen }}</td>{% endif %}
+        {% spalte "handy" %}{% if "handy" in sichtbar %}<td data-titel="Handy">{{ z.sd.handy|anrufen }}</td>{% endif %}
+        {% spalte "email" %}{% if "email" in sichtbar %}<td data-titel="E-Mail">{% if z.b.email %}<a href="mailto:{{ z.b.email }}">{{ z.b.email }}</a>{% endif %}</td>{% endif %}
+        {% spalte "geburtstag" %}{% if "geburtstag" in sichtbar %}<td data-titel="Geburtstag">{{ z.geburtstag|date:"d.m.Y" }}</td>{% endif %}
+        {% spalte "benutzername" %}{% if "benutzername" in sichtbar %}<td data-titel="Benutzername">{{ z.b.username }}</td>{% endif %}
+        {% spalte "rollen" %}{% if "rollen" in sichtbar %}<td data-titel="Rollen">{% for r in z.rollen %}<span class="marke-rolle">{{ r }}</span> {% empty %}–{% endfor %}</td>{% endif %}
+        {% spalte "ausgabestellen" %}{% if "ausgabestellen" in sichtbar %}<td data-titel="Ausgabestellen">{{ z.stellen|default:"–" }}</td>{% endif %}
+        {% spalte "beschaeftigung" %}{% if "beschaeftigung" in sichtbar %}<td data-titel="Beschäftigung">{{ z.b.get_beschaeftigung_display }}</td>{% endif %}
+        {% spalte "eintritt" %}{% if "eintritt" in sichtbar %}<td data-titel="Dabei seit">{{ z.dabei_seit|date:"d.m.Y" }}</td>{% endif %}
+        {% spalte "zwei_faktor" %}{% if "zwei_faktor" in sichtbar %}<td data-titel="Zwei-Faktor">{{ z.zwei_faktor|yesno:"eingerichtet,–" }}</td>{% endif %}
+        {% spalte "anmeldung" %}{% if "anmeldung" in sichtbar %}<td data-titel="Letzte Anmeldung">{{ z.b.last_login|date:"d.m.Y H:i"|default:"noch nie" }}</td>{% endif %}
+        {% spalte "_gesperrt" %}{% if archiv %}<td data-titel="Gesperrt">{{ z.b.gesperrt_am|date:"d.m.Y"|default:"–" }}{% if z.b.gesperrt_von %} von {{ z.b.gesperrt_von }}{% endif %}</td>{% endif %}
       </tr>
     {% empty %}
       <tr><td colspan="20">{% if q %}Keine Treffer für „{{ q }}“.{% elif ehemalige %}Keine ehemaligen Ehrenamtlichen.{% elif archiv %}Keine gesperrten Konten.{% else %}Keine aktiven Konten.{% endif %}</td></tr>
     {% endfor %}
     </tbody>
-  </table>
+  </table>{% endspaltenfolge %}
   </div>
   </div>
 </section>

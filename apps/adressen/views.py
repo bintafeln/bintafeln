@@ -135,14 +135,15 @@ SORTIERUNG = {
     "email_weitere": ("email_weitere",),
     "geburtsdatum": ("geburtsdatum",),
 }
-# Zu-/abwählbare Spalten (Nachname öffnet die Adresse und steht immer, darum nicht hier) –
-# getrennte Spalten wie in der Mitarbeitendenliste, standardmäßig alle sichtbar.
-SPALTEN = [("nummer", "Nr."), ("vorname", "Vorname"), ("anrede", "Anrede"), ("strasse", "Straße"),
+# Spalten in der Reihenfolge der Vorlage; getrennte Spalten wie in der Mitarbeitendenliste,
+# standardmäßig alle sichtbar. Der Nachname öffnet die Adresse und steht immer.
+SPALTEN = [("nummer", "Nr."), ("name", "Nachname"), ("vorname", "Vorname"),
+           ("anrede", "Anrede"), ("strasse", "Straße"),
            ("plz", "PLZ"), ("ort", "Ort"), ("telefon", "Telefon"), ("mobil", "Handy"),
            ("email", "E-Mail"), ("email_weitere", "Weitere E-Mails"),
            ("geburtsdatum", "Geburtstag"),
            ("kategorien", "Kategorien"), ("helfer", "Mitarbeit")]  # fmt: skip
-SPALTEN_FEST: set = set()
+SPALTEN_FEST = {"name"}  # öffnet die Adresse: nicht ausblendbar, aber verschiebbar
 listen.standard_aus("adressen", ["email_weitere"])  # erst zeigen, wenn jemand sie einschaltet
 
 
@@ -163,10 +164,12 @@ def liste(request):
         basis = f"adressen-{timezone.localdate():%Y-%m-%d}"
         # Die CSV hat die Spaltennamen des Imports; die meisten heißen wie die Listenspalten
         zuordnung = {k: k for k, _ in SPALTEN}
+        zuordnung["name"] = ("organisation", "nachname")
         return listenexport.ausliefern(
             request, "Adressbuch", basis, importieren.exportieren(adressen),
             weiter=reverse("adressen:liste"),
             ohne_spalten=listen.pdf_ohne(request.user, "adressen", zuordnung, SPALTEN_FEST),
+            reihenfolge=listen.pdf_folge(request.user, "adressen", zuordnung, SPALTEN),
         )  # fmt: skip
     je_seite = listen.je_seite(filter_["anzahl"], adressen.count(), JE_SEITE)
     seite = Paginator(
@@ -181,6 +184,7 @@ def liste(request):
         "sichtbar": listen.sichtbare_spalten(request.user, "adressen",
                                              [k for k, _ in SPALTEN], SPALTEN_FEST),
         "spalten_wahl": listen.spalten_wahl(request.user, "adressen", SPALTEN, SPALTEN_FEST),
+        "spalten_folge": True, "folge": listen.eigene_folge(request.user, "adressen", SPALTEN),
         "abfrage": abfrage.urlencode(),
         "blaetter_abfrage": _blaetter_abfrage(request.GET),
         "verein_wahl": _verein_wahl(request.user),
@@ -255,8 +259,7 @@ def sammel_bearbeiten(request):
 @rollen.recht_erforderlich("adressen.sehen")
 def spalten(request):
     """Speichert, welche Spalten diese Person im Adressbuch sieht, und kehrt zur Liste zurück."""
-    listen.spalten_speichern(request.user, "adressen", request.POST.getlist("spalte"),
-                             SPALTEN, SPALTEN_FEST)  # fmt: skip
+    listen.spalten_aus_post(request, "adressen", SPALTEN, SPALTEN_FEST)
     zurueck = QueryDict(request.POST.get("zurueck", "")).urlencode()
     ziel = reverse("adressen:liste")
     return redirect(f"{ziel}?{zurueck}" if zurueck else ziel)

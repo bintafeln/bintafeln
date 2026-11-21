@@ -71,16 +71,18 @@ SORTIERUNG = {
 }
 # Zu-/abwählbare Spalten (Nachname öffnet das Konto und steht immer; Vorname und die übrigen sind
 # frei wählbar und standardmäßig alle sichtbar).
+# In der Reihenfolge der Vorlage (so stehen die Spalten ohne eigene Reihenfolge); der Nachname
+# öffnet die Person und lässt sich nicht ausblenden, aber wie jede Spalte verschieben.
 SPALTEN = [
-    ("nummer", "Nummer"),
-    ("vorname", "Vorname"), ("anrede", "Anrede"), ("strasse", "Straße"), ("plz", "PLZ"),
+    ("nummer", "Nummer"), ("anrede", "Anrede"), ("nachname", "Nachname"), ("vorname", "Vorname"),
+    ("strasse", "Straße"), ("plz", "PLZ"),
     ("ort", "Ort"), ("telefon", "Telefon"), ("handy", "Handy"), ("email", "E-Mail"),
     ("geburtstag", "Geburtstag"),
     ("benutzername", "Benutzername"), ("rollen", "Rollen"), ("ausgabestellen", "Ausgabestellen"),
     ("beschaeftigung", "Beschäftigung"), ("eintritt", "Dabei seit"),
     ("zwei_faktor", "Zwei-Faktor"), ("anmeldung", "Letzte Anmeldung"),
 ]  # fmt: skip
-SPALTEN_FEST: set = set()
+SPALTEN_FEST = {"nachname"}
 LISTE = "mitarbeitende"
 
 
@@ -227,6 +229,7 @@ def _mitarbeitende_seite(request, konten, *, archiv, art=None, ehemalige=False):
             request, f"Mitarbeitende – {titel}", basis, _csv(zeilen, archiv),
             weiter=request.path,
             ohne_spalten=listen.pdf_ohne(request.user, LISTE, dict(SPALTEN), SPALTEN_FEST),
+            reihenfolge=listen.pdf_folge(request.user, LISTE, dict(SPALTEN), SPALTEN),
         )  # fmt: skip
     return render(
         request,
@@ -246,6 +249,8 @@ def _mitarbeitende_seite(request, konten, *, archiv, art=None, ehemalige=False):
                 request.user, LISTE, [k for k, _ in SPALTEN], SPALTEN_FEST
             ),
             "spalten_wahl": listen.spalten_wahl(request.user, LISTE, SPALTEN, SPALTEN_FEST),
+            "spalten_folge": True,
+            "folge": listen.eigene_folge(request.user, LISTE, SPALTEN),
             "abfrage": request.GET.urlencode(),
             "vergebbare_rollen": [] if archiv else verwaltung.vergebbare_rollen(request.user),
             "markiert": {int(x) for x in request.GET.getlist("markiert") if x.isdigit()},
@@ -311,9 +316,7 @@ def spalten(request):
     Liste, auf der man war (eine der drei: Ehrenamtliche/Angestellte/Archiv)."""
     from django.utils.http import url_has_allowed_host_and_scheme
 
-    listen.spalten_speichern(
-        request.user, LISTE, request.POST.getlist("spalte"), SPALTEN, SPALTEN_FEST
-    )
+    listen.spalten_aus_post(request, LISTE, SPALTEN, SPALTEN_FEST)
     herkunft = request.META.get("HTTP_REFERER", "")
     sicher = url_has_allowed_host_and_scheme(herkunft, {request.get_host()}, request.is_secure())
     if herkunft and sicher:

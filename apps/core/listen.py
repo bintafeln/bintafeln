@@ -9,6 +9,8 @@ Der Schlüssel steht wie beim CSV-Export in der URL; ein führendes „-“ bede
 bekannte Schlüssel sind erlaubt, sonst gilt die Vorgabe – so kann über die URL nichts
 Unerwartetes sortiert werden."""
 
+import re
+
 from django.db.models import F
 
 
@@ -99,17 +101,101 @@ def pdf_ohne(benutzer, liste, zuordnung: dict, fest=()) -> set:
 
 
 def spalten_wahl(benutzer, liste, spalten, fest=()) -> list[tuple]:
-    """Für das Auswahlmenü: je Spalte (schluessel, titel, sichtbar, fest)."""
+    """Für das Auswahlmenü: je Spalte (schluessel, titel, sichtbar, fest) – in der Reihenfolge,
+    die die Person gewählt hat."""
     aus = _ausgeblendet(benutzer, liste)
-    return [(k, t, k not in aus or k in fest, k in fest) for k, t in spalten]
+    titel = dict(spalten)
+    return [(k, titel[k], k not in aus or k in fest, k in fest)
+            for k in reihenfolge(benutzer, liste, spalten)]  # fmt: skip
 
 
-def spalten_speichern(benutzer, liste, gewaehlt, spalten, fest=()) -> None:
-    """Speichert die ausgeblendeten Spalten (alles außer ``gewaehlt`` und ``fest``)."""
+# --- Reihenfolge der Spalten je Person -------------------------------------------------------
+# Unter „Spalten wählen“ lassen sich die Spalten verschieben. Gespeichert wird die Folge der
+# Schlüssel unter ``{liste}:folge`` (neben den ausgeblendeten Spalten). Die Vorlagen geben ihre
+# Zellen weiter in fester Reihenfolge aus und kennzeichnen sie mit ``{% spalte "schluessel" %}``;
+# ``{% spaltenfolge folge %}…{% endspaltenfolge %}`` um die Tabelle ordnet sie um
+# (``spalten_ordnen``). ``spalten`` einer Liste steht deshalb in der Reihenfolge der Vorlage.
+
+_MARKE = re.compile(r"<!--s:([\w-]+)-->")
+_ZEILE = re.compile(r"(<tr\b[^>]*>)(.*?)(</tr>)", re.S)
+
+
+def _gemerkte_folge(benutzer, liste, spalten) -> list[str]:
+    schluessel = [k for k, _ in spalten]
+    daten = getattr(benutzer, "listen_spalten_aus", None) or {}
+    return list(dict.fromkeys(k for k in daten.get(f"{liste}:folge", []) if k in schluessel))
+
+
+def reihenfolge(benutzer, liste, spalten) -> list[str]:
+    """Die Spaltenschlüssel in der Reihenfolge der Person; ohne eigene Wahl wie ``spalten``.
+    Spalten, die sie noch nicht einsortiert hat (neu dazugekommen), stehen hinten."""
+    vorn = _gemerkte_folge(benutzer, liste, spalten)
+    return vorn + [k for k, _ in spalten if k not in vorn]
+
+
+def eigene_folge(benutzer, liste, spalten) -> list[str] | None:
+    """Wie ``reihenfolge``, aber ``None``, solange die Person nichts umgestellt hat – dann bleibt
+    die Tabelle, wie die Vorlage sie ausgibt."""
+    return (
+        reihenfolge(benutzer, liste, spalten) if _gemerkte_folge(benutzer, liste, spalten) else None
+    )
+
+
+def spalten_ordnen(html: str, folge) -> str:
+    """Ordnet in jeder Tabellenzeile die mit ``{% spalte %}`` gekennzeichneten Zellen nach
+    ``folge``. Was vor der ersten Marke steht (Auswahlkästchen), bleibt vorn; Zellen, die in
+    ``folge`` nicht vorkommen, bleiben in ihrer Reihenfolge am Ende. Die Marken fallen weg."""
+    if "<!--s:" not in html:
+        return html
+    if not folge:
+        return _MARKE.sub("", html)
+    rang = {k: i for i, k in enumerate(folge)}
+
+    def zeile(treffer):
+        teile = _MARKE.split(treffer.group(2))
+        if len(teile) == 1:
+            return treffer.group(0)
+        zellen = list(zip(teile[1::2], teile[2::2], strict=True))
+        zellen.sort(key=lambda z: rang.get(z[0], len(rang)))  # stabil: Rest behält die Ordnung
+        return treffer.group(1) + teile[0] + "".join(h for _, h in zellen) + treffer.group(3)
+
+    return _ZEILE.sub(zeile, html)
+
+
+def pdf_folge(benutzer, liste, zuordnung: dict, spalten) -> list[str]:
+    """Für den PDF-Export (``listenexport.ausliefern(reihenfolge=…)``): die CSV-Überschriften in
+    der Spaltenfolge der Person; leer, solange sie nichts umgestellt hat."""
+    titel = []
+    for schluessel in eigene_folge(benutzer, liste, spalten) or []:
+        namen = zuordnung.get(schluessel, ())
+        titel += [namen] if isinstance(namen, str) else list(namen)
+    return titel
+
+
+def spalten_aus_post(request, liste, spalten, fest=()) -> None:
+    """Speichert die Angaben des Menüs „Spalten wählen“: sichtbare Spalten und – wenn die Seite
+    sie mitschickt – deren Reihenfolge; „Reihenfolge zurücksetzen“ vergisst sie."""
+    folge = request.POST.getlist("folge") if "folge" in request.POST else None
+    if request.POST.get("folge_zuruecksetzen"):
+        folge = []
+    spalten_speichern(request.user, liste, request.POST.getlist("spalte"), spalten, fest, folge)
+
+
+def spalten_speichern(benutzer, liste, gewaehlt, spalten, fest=(), folge=None) -> None:
+    """Speichert die ausgeblendeten Spalten (alles außer ``gewaehlt`` und ``fest``) und – mit
+    ``folge`` – die Reihenfolge; entspricht sie der Vorgabe (oder ist leer), wird sie vergessen."""
     gewaehlt = set(gewaehlt)
     aus = [k for k, _ in spalten if k not in fest and k not in gewaehlt]
     daten = dict(getattr(benutzer, "listen_spalten_aus", None) or {})
     daten[liste] = aus
+    if folge is not None:
+        schluessel = [k for k, _ in spalten]
+        folge = list(dict.fromkeys(k for k in folge if k in schluessel))
+        folge += [k for k in schluessel if k not in folge]
+        if folge and folge != schluessel:
+            daten[f"{liste}:folge"] = folge
+        else:
+            daten.pop(f"{liste}:folge", None)
     if liste in _STANDARD_AUS:
         daten[f"{liste}:an"] = sorted(_STANDARD_AUS[liste] & gewaehlt)
     benutzer.listen_spalten_aus = daten

@@ -2250,3 +2250,8 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 .demo-liste .knopf { display: block; width: 100%; white-space: normal; margin-bottom: .3rem; }
 .demo-angaben { display: block; font-size: .9rem; line-height: 1.9; }
 .demo-wert { font-weight: 700; background: #fff; padding: .1rem .35rem; border-radius: 4px; white-space: nowrap; }
+/* Spalten verschieben im Menü „Spalten wählen“ (static/js/spalten_folge.js) */
+.spalten-haken[data-spalten-folge] label { display: inline-flex; align-items: center; gap: .3rem; }
+.spalten-pfeil { border: 1px solid var(--rand); background: var(--flaeche); color: var(--leise); border-radius: 6px;
+  min-width: 1.6rem; min-height: 1.6rem; padding: 0 .2rem; font-size: .7rem; line-height: 1; cursor: pointer; }
+.spalten-pfeil:hover, .spalten-pfeil:focus-visible { border-color: var(--akzent); color: var(--text); }

@@ -112,13 +112,16 @@ def liste(request):
     if request.GET.get("aktion"):
         zuordnung = {"name": "Name", "art": "Art", "eintritt": "Eintritt",
                      "soll": f"Soll {jahr}", "gezahlt": f"Gezahlt {jahr}",
-                     "offen": f"Offen {jahr}"} | dict(listen.ADRESS_SPALTEN)  # fmt: skip
+                     "offen": f"Offen {jahr}", "nummer": "Nummer",
+                     **dict(listen.ADRESS_SPALTEN)}  # fmt: skip
+        spalten = _spalten(beitraege, request.user)
         # Im PDF steht die Anschrift nur über die gewählten Spalten (Straße, PLZ, Ort)
         ohne = listen.pdf_ohne(request.user, "mitglieder", zuordnung, SPALTEN_FEST) | {"Anschrift"}
         return listenexport.ausliefern(
             request, f"Mitglieder {jahr}", f"mitglieder-{jahr}",
             _csv_text(zeilen, jahr, beitraege, bool(adress_spalten)),
             weiter=reverse("mitglieder:liste"), ohne_spalten=ohne,
+            reihenfolge=listen.pdf_folge(request.user, "mitglieder", zuordnung, spalten),
         )  # fmt: skip
     alle = Mitglied.objects.all()
     kennzahlen = {
@@ -138,6 +141,7 @@ def liste(request):
         "sichtbar": listen.sichtbare_spalten(request.user, "mitglieder",
                                              [k for k, _ in spalten], SPALTEN_FEST),
         "spalten_wahl": listen.spalten_wahl(request.user, "mitglieder", spalten, SPALTEN_FEST),
+        "spalten_folge": True, "folge": listen.eigene_folge(request.user, "mitglieder", spalten),
         "abfrage": abfrage.urlencode(),
         "filter": {"stand": stand, "q": q, "nur_offen": request.GET.get("nur_offen", "")},
         "kategorie": kategorie, "kategorien": AdressKategorie.objects.all(),
@@ -149,8 +153,7 @@ def liste(request):
 def spalten(request):
     """Speichert, welche Spalten diese Person in der Mitgliederliste sieht."""
     spalten = _spalten(MitgliederEinstellungen.mit_beitraegen(), request.user)
-    listen.spalten_speichern(request.user, "mitglieder", request.POST.getlist("spalte"),
-                             spalten, SPALTEN_FEST)  # fmt: skip
+    listen.spalten_aus_post(request, "mitglieder", spalten, SPALTEN_FEST)
     zurueck = QueryDict(request.POST.get("zurueck", "")).urlencode()
     ziel = reverse("mitglieder:liste")
     return redirect(f"{ziel}?{zurueck}" if zurueck else ziel)
