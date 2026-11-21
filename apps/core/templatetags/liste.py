@@ -113,3 +113,15 @@ def anrufen(nummer):
     if len(ziel.lstrip("+")) < 3:
         return text
     return format_html('<a href="tel:{}">{}</a>', ziel, text)
+
+
+@register.simple_tag
+def mehrfach(name, optionen, gewaehlt, leer="alle"):
+    """Mehrfachauswahl für ein Filterformular (aufklappbares Menü mit Häkchen, wie das Widget
+    ``Mehrfachauswahl``): ``optionen`` als (Wert, Bezeichnung), ``gewaehlt`` die gewählten Werte."""
+    from apps.core.forms import Mehrfachauswahl
+
+    wahl = [(str(wert), bezeichnung) for wert, bezeichnung in optionen]
+    return Mehrfachauswahl(choices=wahl, leer=leer).render(
+        name, [str(g) for g in gewaehlt], {"id": name}
+    )
