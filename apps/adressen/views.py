@@ -23,7 +23,7 @@ from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 
 SITZUNG_IMPORT = "adressen_import"
-HELFER = "Ehrenamtliche Helfer"  # Kategorie aus Migration 0003
+HELFER = "Helfer"  # Kategorie aus Migration 0003, umbenannt in 0017
 
 # Filter „Im Verein“: (Schlüssel, Bezeichnung, nötiges Recht)
 VEREIN = [
@@ -50,7 +50,7 @@ def _im_verein(adressen, wahl: str):
     if wahl == "passiv":
         return adressen.filter(mitglied, mitglied__art="Nicht aktives Mitglied")
     if wahl == "helfer":
-        # Mitarbeitende (Person mit Konto), die alte Kategorie „Ehrenamtliche Helfer“ oder aktive
+        # Mitarbeitende (Person mit Konto), die Kategorie „Helfer“ oder aktive
         # Mitglieder gelten als Helfer (ADR 0097: Einteilbarkeit regelt die Rolle des Kontos).
         return adressen.filter(Q(konto__isnull=False) | Q(kategorien__name=HELFER)
                                | (mitglied & Q(mitglied__art="Aktives Mitglied")))  # fmt: skip
@@ -379,7 +379,7 @@ def bearbeiten(request, pk=None):
 @rollen.recht_erforderlich("mitarbeitende.verwalten")
 def konto_sperren(request, pk):
     """„Person hört auf“: sperrt das verknüpfte Konto (Archiv). Die Adresse und die Historie
-    bleiben; die Kategorie „Ehemalige Ehrenamtliche“ kommt dabei automatisch dazu (ADR 0098).
+    bleiben; die Kategorie „Ehemalige Helfer“ kommt dabei automatisch dazu (ADR 0098).
     Danach ist keine Rolle mehr nötig."""
     from apps.konten import verwaltung
 

@@ -51,3 +51,8 @@ Additiv und nie automatisch löschend, damit keine Spur ungewollt verschwindet.
 „Ehemalige Ehrenamtliche“ (Menü: Verein → Team → Ehrenamtliche). Damit niemand dort hängen bleibt,
 entfernt das Entsperren eines Kontos (auch „Online-Zugang freigeben“) diese eine Kategorie wieder –
 die einzige Ausnahme von „nie automatisch entfernt“.
+
+**Nachtrag 3:** Die beiden Kategorien heißen jetzt **„Helfer“** und **„Ehemalige Helfer“**
+(Migration `adressen/0017`, Zuordnungen bleiben). „Ehrenamtliche Helfer“ war irreführend, weil auch
+fest Angestellte die Kategorie bekommen; ob jemand ehrenamtlich oder angestellt ist, sagt allein
+das Feld „Beschäftigung“ am Konto. Der übrige Text dieses ADR nennt noch die alten Namen.

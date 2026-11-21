@@ -1463,7 +1463,7 @@ Wettertext, Programmname, Name der Tafel (wenn ein Logo da ist), das Wort „Men
 „Verein → Adressen → Adressbuch“ (Rechte „Adressbuch ansehen …“, „Adressen anlegen und bearbeiten“,
 „Adressen löschen“, „Adressen importieren“; Büro hat alle außer Löschen) sammelt Spender, Märkte,
 Lieferanten, Partner, Presse, Behörden, Mitglieder und ehrenamtliche Helfer (Kategorie
-„Ehrenamtliche Helfer“ für alle, die mithelfen, ohne Mitglied zu sein). Es ist die Grundlage für Spenden, Mitglieder und
+„Helfer“ für alle, die mithelfen, ohne Mitglied zu sein). Es ist die Grundlage für Spenden, Mitglieder und
 Serienbriefe (Modul 5, ADR 0044); Kunden stehen weiter im Kundenstamm.
 
 - **Adresse**: Organisation (mit Ansprechperson) oder Person, Anschrift, Telefon, Mobil, E-Mail,
