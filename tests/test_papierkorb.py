@@ -6,6 +6,7 @@ from decimal import Decimal
 import pytest
 from django.contrib.auth.models import Group
 from django.db.models import ProtectedError
+from django.test import RequestFactory
 from django.urls import reverse
 from django.utils import timezone
 
@@ -122,20 +123,20 @@ def test_sichtbar_nur_mit_recht_und_eigener_stelle(admin, client, benutzer_mit_r
     anton.ausgabestellen.add(stellen["Mitte"].ausgabestelle)
     sichtbar = list(papierkorb.sichtbar(anton).values_list("bezeichnung", flat=True))
     assert sichtbar == ["Mitte"]  # nur die eigene Ausgabestelle, keine Adresse
-    from apps.konten.models import Benutzer
-
-    Benutzer.objects.filter(pk=anton.pk).update(papierkorb_gesehen_am=None)  # nie angesehen
     seite = client.get(reverse("core:start")).content.decode()
-    assert 'title="neu im Papierkorb">1<' in seite
-    # Einmal angesehen: keine Zahl mehr, der Eintrag bleibt; Neues zählt wieder
-    client.get(KORB)
-    seite = client.get(reverse("core:start")).content.decode()
-    assert 'title="neu im Papierkorb"' not in seite and "Papierkorb</a>" in seite
+    # Der Papierkorb steht im Menü, aber ohne Zahl – auch bei neuen Einträgen
+    assert "Papierkorb</a>" in seite and "neu im Papierkorb" not in seite
     assert papierkorb.sichtbar(anton).count() == 1
     papierkorb.loeschen(admin, "Haushalt", "Mitte 2", haushalt("3", stellen["Mitte"]),
                         recht="kunden.loeschen", kundennummer="3")  # fmt: skip
     seite = client.get(reverse("core:start")).content.decode()
-    assert 'title="neu im Papierkorb">1<' in seite
+    assert "Papierkorb</a>" in seite and "neu im Papierkorb" not in seite
+    from apps.core import menue as menue_
+
+    anfrage = RequestFactory().get("/")
+    anfrage.user = anton
+    korb = next(b_ for b_ in menue_.menue(anfrage) if b_["titel"] == "Papierkorb")
+    assert korb["zahl"] is None and not korb["eintraege"][0].get("zahl")
     # Filter nach Art (Admin sieht alles)
     assert set(papierkorb.sichtbar(admin).values_list("art", flat=True)) == {"Haushalt", "Adresse"}
 
@@ -312,7 +313,5 @@ def test_notizen_still_im_papierkorb_auch_automatisch(admin, admin_client, stell
     eintraege = PapierkorbEintrag.objects.filter(art="Notiz")
     assert eintraege.count() == 3 and all(e.still for e in eintraege)
     assert set(eintraege.values_list("geloescht_von", flat=True)) == {admin.username, "automatisch"}
-    seite = admin_client.get(reverse("core:start")).content.decode()
-    assert 'title="neu im Papierkorb"' not in seite  # keine Zahl für Notizen
     papierkorb.wiederherstellen(eintraege.get(bezeichnung__startswith="krank"))
     assert Notiz.objects.filter(pk=krank.pk).exists()
