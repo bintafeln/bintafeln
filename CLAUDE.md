@@ -392,6 +392,11 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Regeln in `apps/fahrdienst/plan.py`, Plan aus fester Besetzung, Ausfall und Ersatz je Tag).
   `dienstplan` (ADR 0077, wie Fahrdienst je Ausgabestelle und Ausgabetag, Regeln in
   `apps/dienstplan/plan.py`, `Helfer` mit oder ohne Konto). Telegram für beide: `apps/core/telegram.py`.
+  `touren` (ADR 0147, Stationen der Abholtouren als eigene Liste `Station`, nicht das Adressbuch;
+  Import nach `docs/importformat-touren.md` in `apps/touren/importieren.py` – Kennung entscheidet,
+  leere Zellen ändern nichts, nie löschen; einmaliges Übertragen ins Adressbuch in
+  `apps/touren/adressbuch.py`; Navigation nur als Link zu Google Maps über `Station.navigation`,
+  kein API-Schlüssel, keine Karte).
   `tickets` (ADR 0087, Regeln in `apps/tickets/ablauf.py`: wer sieht/bearbeitet, Zuständige je
   Kategorie aus Personen und Rollen, Benachrichtigung über ADR 0086, Frist für erledigte).
   Ausfälle beider: Dauer und „wieder gesund“ (`Ausfall.gesund_ab`: ab dann wieder auf den eigenen Plätzen, außer wo schon Ersatz steht) in

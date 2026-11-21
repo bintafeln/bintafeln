@@ -1,0 +1,58 @@
+{% load handbuch %}
+<p>Die <strong>Stationen</strong> sind alle Stellen, die der Fahrdienst anfährt: Märkte, Bäckereien, Lieferanten,
+  Lager, Ausgabestellen und Einrichtungen. Sie stehen in einer eigenen Liste (nicht im Adressbuch), mit allem, was die
+  Fahrer an der Station brauchen. Das Modul wird unter Einstellungen → Tafel → Tafel und Module eingeschaltet.</p>
+<h3>Stationen finden und hinfahren</h3>
+<ul>
+  <li>Menü „Dienstpläne → Touren → Stationen“. Gefiltert wird nach Art und Stand (aktiv, nicht mehr angefahren,
+    alle); die Suche findet Name, Kette, Straße, Ort, Ortsteil und Kennung.</li>
+  <li><strong>🧭 Navigation (Google Maps)</strong> öffnet Google Maps mit der Route zur Station – am Handy die App,
+    am PC die Webseite. Die Anschrift geht erst beim Antippen an Google; bintafeln selbst schickt nichts dorthin.</li>
+  <li>Auf der Seite einer Station stehen <strong>Anfahrt</strong> (Zufahrt, Rampe, Klingel), Abholtage und -zeit,
+    Öffnungszeiten, Ansprechpartner und Telefon (zum Anrufen antippen).</li>
+</ul>
+{% hilfe_bild "touren-stationen" "① Filter und Suche, ② Stationen aus einer CSV-Datei einlesen, ③ Navigation zur Station in Google Maps, ④ alle aktiven Stationen ins Adressbuch übertragen (② und ④ nur für das Büro)." %}
+{% hilfe_bild "touren-station" "① Navigation starten, ② Anfahrt für die Fahrer, ③ diese Station ins Adressbuch übertragen." %}
+{% if "touren.stationen_bearbeiten" in rechte %}
+<h3>Stationen pflegen</h3>
+<ul>
+  <li>„Neue Station“ legt eine Station von Hand an; die Kennung wird vorgeschlagen (S-1, S-2 …). Änderungen an einer
+    vorhandenen Station werden sofort gespeichert.</li>
+  <li><strong>Breiten- und Längengrad</strong> nur eintragen, wenn Google die Station über die Anschrift nicht richtig
+    findet; dann navigiert der Knopf zu diesen Koordinaten.</li>
+  <li><strong>Lieferschein</strong> und <strong>E-Mail für Lieferscheine</strong>: ob an dieser Station ein Lieferschein
+    ausgefüllt wird und an welche Adresse er geht (leer = die allgemeine E-Mail).</li>
+  <li>„Station löschen“ legt sie in den Papierkorb. Wird eine Station nur nicht mehr angefahren, besser „Aktiv“
+    ausschalten; dann bleibt sie erhalten.</li>
+</ul>
+<h3>Stationen importieren</h3>
+<p>Unter „Daten importieren → Stationen der Touren“ oder „Importieren“ in der Liste. Die Datei <code>stationen.csv</code>
+  ist UTF-8 mit Semikolon und einer Kopfzeile. Pflicht sind <code>kennung</code>, <code>art</code>, <code>name</code>,
+  <code>strasse</code>, <code>plz</code> und <code>ort</code>; die übrigen Spalten sind freiwillig:</p>
+<p><code>kennung;art;name;kette;filialnummer;strasse;hausnummer;plz;ort;ortsteil;telefon;email;email_lieferschein;ansprechpartner;oeffnungszeiten;abholtage;abholzeit;anfahrt;lieferschein;aktiv;breite;laenge;notiz</code></p>
+<ul>
+  <li><code>kennung</code> bleibt bei jedem Import gleich (z. B. die Nummer aus dem bisherigen System). Gibt es sie
+    schon, wird die Station aktualisiert, sonst neu angelegt.</li>
+  <li>Beim Aktualisieren überschreiben nur <strong>gefüllte Zellen</strong>. Eine leere Zelle ändert nichts, und
+    Stationen, die in der Datei fehlen, bleiben, wie sie sind. So kann ein unvollständiger Auszug nichts löschen.</li>
+  <li><code>art</code>: markt, baeckerei, lieferant, lager, ausgabestelle, einrichtung oder sonstiges.
+    <code>abholtage</code>: z. B. <code>Mo, Mi, Fr</code>. <code>lieferschein</code> und <code>aktiv</code>:
+    <code>ja</code> oder <code>nein</code> (leer bei neuen Stationen: ja). <code>breite</code>/<code>laenge</code>
+    mit Dezimalpunkt, nur zusammen.</li>
+  <li>Erst kommt ein Prüfbericht (neu, aktualisiert mit den geänderten Feldern, Fehler je Zeile); übernommen wird erst
+    mit dem Knopf darunter.</li>
+  <li>„CSV herunterladen“ in der Liste liefert eine Datei mit genau diesen Spalten, z. B. als Vorlage oder um
+    Änderungen in Excel zu machen und wieder einzulesen.</li>
+</ul>
+{% if "adressen.bearbeiten" in rechte %}
+<h3>Ins Adressbuch übertragen</h3>
+<ul>
+  <li>Auf der Seite einer Station „Ins Adressbuch übertragen“, oder in der Liste „Alle … ohne Eintrag ins Adressbuch
+    übertragen“ für alle aktiven Stationen auf einmal.</li>
+  <li>Angelegt wird eine Organisation mit Name, Ansprechpartner, Anschrift, Telefon und E-Mail; als Kategorie die Art
+    der Station (z. B. „Markt“, „Bäckerei“). Gibt es schon eine Organisation mit gleichem Namen und gleicher PLZ, wird
+    sie nur verknüpft, nicht doppelt angelegt.</li>
+  <li>Das Übertragen geschieht einmal. Spätere Änderungen an der Station ändern den Eintrag im Adressbuch nicht.</li>
+</ul>
+{% endif %}
+{% endif %}

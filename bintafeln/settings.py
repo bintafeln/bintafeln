@@ -82,6 +82,7 @@ BINTAFELN_MODULE = [
     "apps.uebernahme",
     "apps.vereinsportal",
     "apps.angebote",
+    "apps.touren",
 ]
 INSTALLED_APPS += BINTAFELN_MODULE
 

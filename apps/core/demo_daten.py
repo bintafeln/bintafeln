@@ -536,3 +536,49 @@ def dienstplaene(heute: dt.date) -> None:
     if helfer:
         DienstAusfall.objects.create(helfer=helfer.helfer, von=von, bis=bis, grund="urlaub",
                                      eingetragen_von="demo-buero")  # fmt: skip
+
+
+# --- Touren -------------------------------------------------------------------------------------
+
+STATIONEN = [
+    (
+        "markt",
+        "Supermarkt Frischekorb Mitte",
+        "Frischekorb",
+        "Mitte",
+        "Mo, Di, Mi, Do, Fr",
+        "ab 7:30, Rampe hinten",
+    ),
+    ("markt", "Supermarkt Frischekorb Nord", "Frischekorb", "Nord", "Mo, Mi, Fr", "ab 8:00"),
+    ("markt", "Biomarkt Grünes Blatt", "", "Süd", "Di, Do", "ab 9:00, am Lieferanteneingang"),
+    (
+        "baeckerei",
+        "Bäckerei Kornblume",
+        "Kornblume",
+        "Mitte",
+        "Mo, Di, Mi, Do, Fr, Sa",
+        "Backwaren vom Vortag, ab 7:00",
+    ),
+    ("baeckerei", "Konditorei Zuckerwerk", "", "Nord", "Sa", "nach Ladenschluss, 13:00"),
+    ("lieferant", "Gemüsehof Sonnenacker", "", "Süd", "Mi", "Hofeinfahrt, bitte klingeln"),
+    ("lieferant", "Großhandel Marktplatz", "", "Nord", "Do", "Tor 3, Anmeldung an der Pforte"),
+    ("lager", "Lager der Tafel", "", "Mitte", "", ""),
+]
+
+
+def touren() -> None:
+    """Stationen der Abholtouren (Modul Touren, ADR 0147)."""
+    from apps.touren.models import Station
+
+    zufall = random.Random(STARTWERT + 9)  # noqa: S311
+    for nr, (art, name, kette, ortsteil, tage, zeit) in enumerate(STATIONEN, start=1):
+        strasse, _, hausnummer = _anschrift(zufall).rpartition(" ")
+        kurz = "".join(c for c in name.lower() if c.isascii() and c.isalpha())[:18]
+        Station.objects.create(
+            kennung=f"S-{nr}", art=art, name=name, kette=kette, strasse=strasse,
+            hausnummer=hausnummer, plz=PLZ, ort=ORT, ortsteil=ortsteil,
+            telefon=f"0000 {zufall.randint(100000, 999999)}",
+            email=f"filiale@{kurz}.example.org" if art != "lager" else "",
+            abholtage=tage, abholzeit=zeit, lieferschein=art != "lager",
+            geaendert_von="demo-buero",
+        )  # fmt: skip

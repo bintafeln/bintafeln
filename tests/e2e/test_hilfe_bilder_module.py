@@ -1020,3 +1020,38 @@ def test_hilfe_bild_angebote(angemeldet, admin, muster):
             laenge=40,
         ),
     )
+
+
+def test_hilfe_bild_touren(angemeldet, admin, muster):
+    from apps.core import demo_daten
+    from apps.touren.models import Station
+
+    _module("touren")
+    demo_daten.touren()
+    markt = Station.objects.get(kennung="S-1")
+    markt.anfahrt = "Rampe hinten links, bitte an der Warenannahme klingeln."
+    markt.ansprechpartner = "Frau Muster, Marktleitung"
+    markt.oeffnungszeiten = "Mo–Sa 7–21"
+    markt.save()
+    seite = oeffnen(angemeldet, admin, reverse("touren:stationen"))
+    aufnehmen(
+        seite,
+        "touren-stationen",
+        [seite.locator("section.karte")],
+        Marke(seite.locator("form.filter-kompakt"), art="rahmen", nummer=1),
+        Marke(seite.get_by_role("link", name="Importieren"), nummer=2, von="oben", laenge=20),
+        Marke(seite.get_by_role("link", name="🧭 Google Maps").first, nummer=3, von="rechts",
+              laenge=30),
+        Marke(seite.get_by_role("button", name=re.compile("ins Adressbuch übertragen")),
+              nummer=4, von="rechts", laenge=40),
+    )  # fmt: skip
+    seite = oeffnen(angemeldet, admin, reverse("touren:station", args=[markt.pk]))
+    aufnehmen(
+        seite,
+        "touren-station",
+        [seite.locator("section.karte")],
+        Marke(seite.locator(".aktionsleiste").first, art="rahmen", nummer=1),
+        Marke(seite.locator(".notiz").first, art="rahmen", nummer=2),
+        Marke(seite.get_by_role("button", name="Ins Adressbuch übertragen"), nummer=3,
+              von="rechts", laenge=40),
+    )  # fmt: skip

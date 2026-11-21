@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block titel %}Stationen importieren{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <p><a href="{% url 'touren:stationen' %}">← Stationen</a></p>
+  <h1>Stationen importieren</h1>
+  {% if not bericht %}
+  <p>Eine CSV-Datei <code>stationen.csv</code> (UTF-8, Trennzeichen Semikolon) mit einer Kopfzeile. Bekannte Spalten,
+    Pflicht sind <code>{{ pflicht|join:", " }}</code>:</p>
+  <p><code>{{ spalten|join:";" }}</code></p>
+  <ul>
+    <li><code>kennung</code>: bleibt bei jedem Import gleich. Gibt es die Kennung schon, wird die Station aktualisiert, sonst neu angelegt.</li>
+    <li>Beim Aktualisieren überschreiben nur gefüllte Zellen. Leere Zellen ändern nichts; Stationen, die in der Datei fehlen, bleiben unverändert.</li>
+    <li><code>art</code>: {{ arten|join:", " }}.</li>
+    <li><code>abholtage</code>: z. B. <code>Mo, Mi, Fr</code>; <code>lieferschein</code> und <code>aktiv</code>: <code>ja</code> oder <code>nein</code>.</li>
+  </ul>
+  <p class="hinweis">Die genaue Beschreibung steht im Handbuch. „CSV herunterladen“ in der Liste der Stationen liefert eine Datei mit genau diesen Spalten.</p>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf" data-ziel="pruefbericht">Prüfen</button>
+  </form>
+  {% else %}
+  <h2 id="pruefbericht">Prüfbericht</h2>
+  <ul>
+    <li><strong>{{ bericht.neu|length }}</strong> neue Station{{ bericht.neu|length|pluralize:"en" }} werden angelegt.</li>
+    <li><strong>{{ bericht.geaendert|length }}</strong> Station{{ bericht.geaendert|length|pluralize:"en" }} werden aktualisiert.</li>
+    <li>{{ bericht.unveraendert|length }} unverändert.</li>
+    <li>{{ bericht.fehler|length }} Zeile{{ bericht.fehler|length|pluralize:"n" }} mit Fehlern (werden übersprungen).</li>
+    {% if bericht.unbekannte_spalten %}<li>Unbekannte Spalten (werden ignoriert): {{ bericht.unbekannte_spalten|join:", " }}</li>{% endif %}
+  </ul>
+  {% if bericht.fehler %}
+  <details open><summary>Fehler</summary><ul>{% for zeile, grund in bericht.fehler %}<li>Zeile {{ zeile }}: {{ grund }}</li>{% endfor %}</ul></details>
+  {% endif %}
+  {% if bericht.neu %}
+  <details><summary>Neu</summary><ul>{% for d in bericht.neu %}<li>{{ d.name }} ({{ d.kennung }})</li>{% endfor %}</ul></details>
+  {% endif %}
+  {% if bericht.geaendert %}
+  <details><summary>Aktualisiert</summary><ul>{% for zeile, name, felder, _ in bericht.geaendert %}<li>Zeile {{ zeile }}: {{ name }} – {{ felder|join:", " }}</li>{% endfor %}</ul></details>
+  {% endif %}
+  <div class="aktionsleiste">
+    {% if bericht.etwas_zu_tun %}
+    <form method="post" class="inline">{% csrf_token %}<input type="hidden" name="schritt" value="uebernehmen">
+      <button type="submit" class="knopf">Übernehmen ({{ bericht.neu|length }} neu, {{ bericht.geaendert|length }} aktualisiert)</button></form>
+    {% endif %}
+    <a class="knopf knopf-abbrechen" href="{% url 'touren:importieren' %}">Andere Datei wählen</a>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

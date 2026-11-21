@@ -84,7 +84,7 @@ def anlegen(heute: dt.date) -> None:
 
 # Module, die die Demo einschaltet; das Wetter nicht (braucht Internet und einen echten Ort).
 DEMO_MODULE = ["aufruf", "warteliste", "wochenuebersicht", "links", "abrechnung", "listen",
-               "fahrdienst", "dienstplan", "tickets"]  # fmt: skip
+               "fahrdienst", "dienstplan", "tickets", "touren"]  # fmt: skip
 TABLET = "demo-tablet"
 
 
@@ -206,6 +206,7 @@ def _fuellen(konten: dict, heute) -> None:
     demo_daten.abrechnung(konten, heute)
     demo_daten.serienbriefe()
     demo_daten.dienstplaene(heute)
+    demo_daten.touren()
 
 
 def _arbeitszeit(fest, heute) -> None:

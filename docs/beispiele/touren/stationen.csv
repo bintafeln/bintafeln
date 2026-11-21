@@ -1,0 +1,5 @@
+kennung;art;name;kette;filialnummer;strasse;hausnummer;plz;ort;ortsteil;telefon;email;email_lieferschein;ansprechpartner;oeffnungszeiten;abholtage;abholzeit;anfahrt;lieferschein;aktiv;breite;laenge;notiz
+M-001;markt;Beispielmarkt Musterstraße;Beispielkette;4711;Musterstraße;1;12345;Musterstadt;Mitte;0000 123456;markt001@example.org;lieferschein001@example.org;Frau Muster, Marktleitung;Mo–Sa 7–21;Mo, Mi, Fr;ab 7:30;"Rampe hinten links; bitte klingeln";ja;ja;;;
+B-002;baeckerei;Bäckerei Probe;;;Probeweg;7a;12345;Musterstadt;Nord;0000 654321;;;;Mo–Sa 6–18;Sa;nach Ladenschluss;;nein;ja;;;Backwaren vom Vortag
+L-003;lieferant;Gemüsehof Beispiel;;;Feldrain;12;12345;Musterstadt;Süd;;hof@example.org;;;;Mi;;Hofeinfahrt, Tor 2;ja;ja;51.000000;7.000000;
+A-004;lager;Lager der Tafel;;;Dorfanger;3;12345;Musterstadt;Mitte;;;;;;;;;nein;ja;;;
