@@ -249,7 +249,7 @@ def _mitarbeitende_seite(request, konten, *, archiv, art=None, ehemalige=False):
 
 
 def _ehemalig():
-    """Konten, deren Adresse die Kategorie „Ehemalige Ehrenamtliche“ trägt (ADR 0098)."""
+    """Konten, deren Adresse die Kategorie „Ehemalige Helfer“ trägt (ADR 0098)."""
     return Q(adresse__kategorien__name=verwaltung.EHEMALIGE_KATEGORIE)
 
 

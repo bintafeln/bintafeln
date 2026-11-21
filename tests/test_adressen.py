@@ -27,7 +27,7 @@ def markt():
 def test_vorgaben_und_name():
     assert list(AdressKategorie.objects.values_list("name", flat=True)) == [
         "Spender", "Lieferant/Markt", "Partner", "Presse", "Behörde",
-        "Ehrenamtliche Helfer", "Ehemalige Ehrenamtliche", "Verstorben"]  # fmt: skip
+        "Helfer", "Ehemalige Helfer", "Verstorben"]  # fmt: skip
     p = Adresse(art=Adresse.Art.PERSON, anrede="Frau", vorname="Erika", nachname="Muster",
                 strasse="Weg 2", plz="12345", ort="Musterstadt")  # fmt: skip
     assert p.name == "Erika Muster"
@@ -399,7 +399,7 @@ def test_filter_im_verein(admin_client, benutzer_mit_rolle, anmelden, client):
         a.kategorien.set(AdressKategorie.objects.filter(name__in=kategorien))
         return a
 
-    adresse("Helferin", "Ehrenamtliche Helfer")
+    adresse("Helferin", "Helfer")
     aktiv = adresse("Aktiv")
     Mitglied.objects.create(adresse=aktiv, nummer="1", art="Aktives Mitglied",
                             eintritt=dt.date(2020, 1, 1))  # fmt: skip
@@ -993,3 +993,30 @@ def test_migration_gleicht_email_an(admin):
         stand.append((a.email, konto.email))
     assert stand == [("a@example.org", "a@example.org"), ("k@example.org", "k@example.org"),
                      ("x@example.org", "y@example.org")]  # fmt: skip
+
+
+def test_migration_benennt_helfer_kategorien_um():
+    """„Ehrenamtliche Helfer“ → „Helfer“, „Ehemalige Ehrenamtliche“ → „Ehemalige Helfer“:
+    Zuordnungen bleiben; gibt es den neuen Namen schon, werden beide zusammengeführt."""
+    import importlib
+
+    from django.apps import apps as django_apps
+
+    modul = importlib.import_module("apps.adressen.migrations.0017_kategorien_helfer")
+    namen = set(AdressKategorie.objects.values_list("name", flat=True))
+    assert {"Helfer", "Ehemalige Helfer"} <= namen  # frische Installation: schon umbenannt
+    assert not {"Ehrenamtliche Helfer", "Ehemalige Ehrenamtliche"} & namen
+    # alter Stand: „Helfer“ gibt es (von der Tafel angelegt) neben der alten Kategorie
+    alt = AdressKategorie.objects.create(name="Ehrenamtliche Helfer")
+    AdressKategorie.objects.filter(name="Ehemalige Helfer").update(name="Ehemalige Ehrenamtliche")
+    a = Adresse.objects.create(art="person", nachname="Alt")
+    a.kategorien.add(alt, AdressKategorie.objects.get(name="Ehemalige Ehrenamtliche"))
+    modul.vorwaerts(django_apps, None)
+    assert set(a.kategorien.values_list("name", flat=True)) == {"Helfer", "Ehemalige Helfer"}
+    assert not AdressKategorie.objects.filter(name__startswith="Ehrenamtliche").exists()
+    assert AdressKategorie.objects.filter(name="Helfer").count() == 1
+    # und zurück (für das Einspielen einer älteren Version)
+    modul.rueckwaerts(django_apps, None)
+    assert set(a.kategorien.values_list("name", flat=True)) == {
+        "Ehrenamtliche Helfer", "Ehemalige Ehrenamtliche"}  # fmt: skip
+    modul.vorwaerts(django_apps, None)

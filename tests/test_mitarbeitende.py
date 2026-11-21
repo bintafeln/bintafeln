@@ -467,7 +467,7 @@ def test_anlegen_legt_adresse_an(admin):
 def test_rolle_macht_ehrenamtlichen_helfer(admin):
     from apps.adressen.models import Adresse
 
-    # Wer ein Konto mit Rolle hat, wird automatisch als „Ehrenamtliche Helfer“ geführt (ADR 0098).
+    # Wer ein Konto mit Rolle hat, wird automatisch als „Helfer“ geführt (ADR 0098).
     ziel, _ = verwaltung.anlegen(
         admin, {"username": "lea", "last_name": "Helfer"}, [rollen.AUSGABE]
     )
@@ -490,7 +490,7 @@ def test_helfer_kategorie_bleibt_auch_ohne_rolle(admin):
 def test_sperren_setzt_ehemalige(admin):
     from apps.adressen.models import Adresse
 
-    # Beim Sperren kommt „Ehemalige Ehrenamtliche“ dazu; „Ehrenamtliche Helfer“ bleibt (ADR 0098).
+    # Beim Sperren kommt „Ehemalige Helfer“ dazu; „Helfer“ bleibt (ADR 0098).
     ziel, _ = verwaltung.anlegen(
         admin, {"username": "lea", "last_name": "Helfer"}, [rollen.AUSGABE]
     )
@@ -853,7 +853,7 @@ def _namen(client, name):
 
 
 def test_ehemalige_ehrenamtliche_stehen_in_eigener_liste(admin_client, admin, benutzer_mit_rolle):
-    """Wer im Adressbuch als „Ehemalige Ehrenamtliche“ geführt wird oder gesperrt ist, steht nicht
+    """Wer im Adressbuch als „Ehemalige Helfer“ geführt wird oder gesperrt ist, steht nicht
     unter „Ehrenamtliche“, sondern in der eigenen Liste – Angestellte nie."""
     from apps.adressen.models import Adresse, AdressKategorie
 

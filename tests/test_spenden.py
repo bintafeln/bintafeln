@@ -246,9 +246,9 @@ def test_spende_macht_zum_spender_und_nimmt_nichts_weg(spender):
     """Wer spendet, bekommt die Kategorie „Spender“; vorhandene Kategorien bleiben."""
     from apps.adressen.models import AdressKategorie
 
-    spender.kategorien.add(AdressKategorie.objects.get_or_create(name="Ehrenamtliche Helfer")[0])
+    spender.kategorien.add(AdressKategorie.objects.get_or_create(name="Helfer")[0])
     geld(spender, dt.date(2026, 3, 1), "20")
-    assert _kategorien(spender) == {"Spender", "Ehrenamtliche Helfer"}
+    assert _kategorien(spender) == {"Spender", "Helfer"}
     geld(spender, dt.date(2026, 4, 1), "30")  # zweite Spende: keine doppelte Zuordnung
     assert spender.kategorien.filter(name="Spender").count() == 1
 

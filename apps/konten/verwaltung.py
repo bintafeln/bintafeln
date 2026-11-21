@@ -132,8 +132,8 @@ def stammdaten_aus_adresse(adresse) -> None:
 # Kategorien, die eine Mitarbeit im Adressbuch sichtbar machen (ADR 0098). Beide werden immer nur
 # ergänzt, nie automatisch entfernt: So bleibt jemand auch nach dem Ausscheiden als (ehemaliger)
 # Helfer auffindbar, z. B. für einen Serienbrief.
-HELFER_KATEGORIE = "Ehrenamtliche Helfer"
-EHEMALIGE_KATEGORIE = "Ehemalige Ehrenamtliche"
+HELFER_KATEGORIE = "Helfer"
+EHEMALIGE_KATEGORIE = "Ehemalige Helfer"
 
 
 def _kategorie_ergaenzen(ziel, name) -> None:
@@ -160,7 +160,7 @@ def _kategorie_entfernen(ziel, name) -> None:
 
 def helfer_kennzeichnen(ziel) -> None:
     """Wer ein Konto mit mindestens einer Rolle hat, gilt als ehrenamtlicher Helfer (ADR 0098):
-    die Kategorie „Ehrenamtliche Helfer“ wird additiv gesetzt und bleibt erhalten, auch wenn
+    die Kategorie „Helfer“ wird additiv gesetzt und bleibt erhalten, auch wenn
     später eine Rolle wegfällt."""
     if ziel.groups.exists():
         _kategorie_ergaenzen(ziel, HELFER_KATEGORIE)
@@ -372,7 +372,7 @@ def sperren(verwalter, ziel) -> None:
     ziel.gesperrt_von = str(verwalter)[:150]
     ziel.save(update_fields=["is_active", "gesperrt_am", "gesperrt_von"])
     # Ausgeschiedene Mitarbeitende zusätzlich als „Ehemalige“ führen (ADR 0098); die Kategorie
-    # „Ehrenamtliche Helfer“ bleibt dabei erhalten.
+    # „Helfer“ bleibt dabei erhalten.
     _kategorie_ergaenzen(ziel, EHEMALIGE_KATEGORIE)
 
 
