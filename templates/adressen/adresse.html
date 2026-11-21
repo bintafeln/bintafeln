@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load liste %}
 {% block titel %}{{ a.name }}{% endblock %}
 {% block inhalt %}
 <div class="seiten-raster">
@@ -21,8 +22,8 @@
   <dl class="angaben">
     {% if a.art == "organisation" and a.personenname %}<dt>Person</dt><dd>{{ a.anrede }} {{ a.personenname }}</dd>{% endif %}
     {% if a.geburtsdatum %}<dt>Geburtsdatum</dt><dd>{{ a.geburtsdatum|date:"d.m.Y" }}</dd>{% endif %}
-    {% if a.telefon %}<dt>Telefon</dt><dd><a href="tel:{{ a.telefon }}">{{ a.telefon }}</a></dd>{% endif %}
-    {% if a.mobil %}<dt>Mobil</dt><dd><a href="tel:{{ a.mobil }}">{{ a.mobil }}</a></dd>{% endif %}
+    {% if a.telefon %}<dt>Telefon</dt><dd>{{ a.telefon|anrufen }}</dd>{% endif %}
+    {% if a.mobil %}<dt>Mobil</dt><dd>{{ a.mobil|anrufen }}</dd>{% endif %}
     {% if a.email %}<dt>E-Mail</dt><dd><a href="mailto:{{ a.email }}">{{ a.email }}</a></dd>{% endif %}
     {% if a.email_weitere %}<dt>Weitere E-Mail-Adressen</dt><dd>{% for e in a.emails|slice:"1:" %}<a href="mailto:{{ e }}">{{ e }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</dd>{% endif %}
     {% if a.webseite %}<dt>Webseite</dt><dd><a href="{{ a.webseite }}" target="_blank" rel="noopener noreferrer">{{ a.webseite }}</a></dd>{% endif %}
