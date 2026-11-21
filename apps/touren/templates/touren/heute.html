@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block titel %}Touren {{ tag|date:"d.m." }}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Touren {% if ist_heute %}heute{% else %}am {{ tag|date:"D d.m.Y" }}{% endif %}</h1>
+  <nav class="tour-tage" aria-label="Tag wählen">
+    <a class="knopf knopf-zweitrangig" href="?tag={{ davor|date:'Y-m-d' }}">← {{ davor|date:"D d.m." }}</a>
+    {% if not ist_heute %}<a class="knopf knopf-zweitrangig" href="{% url 'touren:heute' %}">Heute</a>{% endif %}
+    <a class="knopf knopf-zweitrangig" href="?tag={{ danach|date:'Y-m-d' }}">{{ danach|date:"D d.m." }} →</a>
+  </nav>
+  {% for z in zeilen %}
+  <article class="tour-karte{% if z.meine %} tour-meine{% endif %}">
+    <h2>{{ z.tour.name }}{% if z.meine %} <span class="marke-ok">Ihre Tour</span>{% endif %}{% if z.tour.kurzfristig %} <span class="marke-warnung">kurzfristig</span>{% endif %}</h2>
+    <p class="leise">{{ z.stationen }} Station{{ z.stationen|pluralize:"en" }}{% if z.besetzung %} · {% for b in z.besetzung %}{% if b.offen %}<span class="marke-warnung">{{ b.rolle }} offen</span>{% else %}{{ b.name }}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}</p>
+    <a class="knopf tour-knopf" href="{% url 'touren:fahren' z.tour.pk %}?tag={{ tag|date:'Y-m-d' }}">Tour öffnen</a>
+  </article>
+  {% empty %}
+  <p class="hinweis">An diesem Tag fährt keine Tour.</p>
+  {% endfor %}
+  {% if darf_planen %}<p><a href="{% url 'touren:touren' %}">Touren planen</a> · <a href="{% url 'touren:tour_neu' %}?kurz&amp;tag={{ tag|date:'Y-m-d' }}">Kurzfristige Tour für diesen Tag</a></p>{% endif %}
+</section>
+{% endblock %}

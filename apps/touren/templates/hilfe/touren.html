@@ -1,7 +1,54 @@
 {% load handbuch %}
-<p>Die <strong>Stationen</strong> sind alle Stellen, die der Fahrdienst anfährt: Märkte, Bäckereien, Lieferanten,
-  Lager, Ausgabestellen und Einrichtungen. Sie stehen in einer eigenen Liste (nicht im Adressbuch), mit allem, was die
-  Fahrer an der Station brauchen. Das Modul wird unter Einstellungen → Tafel → Tafel und Module eingeschaltet.</p>
+<p>Das Modul <strong>Touren</strong> führt die Fahrer am Handy durch ihre Abholtour: Station für Station, mit
+  Navigation in Google Maps. Dahinter stehen die <strong>Stationen</strong> (Märkte, Bäckereien, Lieferanten, Lager …)
+  in einer eigenen Liste und die <strong>Touren</strong>, die sie in Fahrtreihenfolge bringen. Das Modul wird unter
+  Einstellungen → Tafel → Tafel und Module eingeschaltet.</p>
+{% if "touren.fahren" in rechte %}
+<h3>Unterwegs: die Tour am Handy</h3>
+<ul>
+  <li>Wer heute eine Tour fährt, findet sie gleich auf der <strong>Startseite</strong> („Ihre Tour heute“). Alle Touren
+    eines Tages stehen unter „Dienstpläne → Touren → Touren heute“; die eigene steht oben. Mit den Knöpfen darüber
+    geht es zum Vortag oder zum nächsten Tag.</li>
+  <li>„Tour öffnen“ zeigt die Stationen der Reihe nach, je Station eine Karte mit Anschrift, Abholzeit, Anfahrt und
+    Telefon (antippen zum Anrufen).</li>
+  <li><strong>🧭 Navigation starten</strong> öffnet Google Maps mit der Route von Ihrem Standort zur Station. Die
+    Anschrift geht erst beim Antippen an Google.</li>
+  <li>„Ganze Tour in Google Maps“ öffnet alle Stationen als eine Route. Google nimmt höchstens zehn Stationen in einen
+    Link; längere Touren sind in Abschnitte geteilt. Ohne die Google-Maps-App zeigt der Browser am Handy nur die ersten
+    Stationen – dann die Navigation je Station nehmen.</li>
+  <li>Stationen, die nur an bestimmten Wochentagen angefahren werden, erscheinen nur an diesen Tagen.</li>
+</ul>
+{% hilfe_bild "touren-fahren" "① wer fährt, ② die ganze Tour als Route, ③ Navigation zur Station starten, ④ Anfahrt für die Fahrer." %}
+{% endif %}
+{% if "touren.planen" in rechte %}
+<h3>Touren planen</h3>
+<p>Unter „Einstellungen → Dienstpläne → Touren: Stationsfolgen und kurzfristige Touren“. Es gibt drei Arten:</p>
+<ul>
+  <li><strong>Tour aus dem Fahrerplan:</strong> bei „Tour im Fahrerplan“ die Tour des Fahrdienstes wählen. Fahrtage und
+    Besetzung (mit Ersatz und Ausfällen) kommen dann von dort; hier legen Sie nur die Stationen fest.</li>
+  <li><strong>Eigene Tour:</strong> „Tour im Fahrerplan“ leer lassen, Fahrtage anhaken (nichts angehakt = jeden Tag)
+    und bei „Wer fährt“ die Personen wählen. Zur Wahl stehen Fahrer, Beifahrer und Angestellte.</li>
+  <li><strong>Kurzfristige Tour:</strong> nur für einen Tag, z. B. eine Sonderabholung. Tag, Personen und Stationen
+    wählen, dann <strong>„✉ An die Fahrer schicken“</strong>: Die Gewählten bekommen eine E-Mail mit den Stationen und
+    einem Link zur Tour. Wer keine E-Mail-Adresse hat, wird genannt. Kurzfristige Touren werden 90 Tage nach ihrem
+    Tag gelöscht.</li>
+  <li><strong>Stationen:</strong> unten „Station anhängen“; mit ↑ und ↓ in die Fahrtreihenfolge bringen, mit ✕ von
+    der Tour nehmen (die Station selbst bleibt). „Nur an diesen Tagen“ anhaken, wenn eine Station nicht an jedem
+    Fahrtag angefahren wird.</li>
+  <li>„So sehen es die Fahrer“ zeigt die Tour wie am Handy.</li>
+  <li>„Für die Fahrer“ ist ein Text, der oben auf der Tour steht.</li>
+</ul>
+<h3>Stationsfolgen importieren</h3>
+<p>„Importieren“ auf der Seite „Touren planen“ oder „Daten importieren → Stationsfolgen der Touren“. Die Datei
+  <code>tourstationen.csv</code> hat je Zeile eine Station auf einer Tour:</p>
+<p><code>tour;reihenfolge;station;wochentage</code></p>
+<ul>
+  <li><code>station</code> ist die Kennung der Station; die Stationen müssen also zuerst importiert sein.</li>
+  <li>Für jede Tour in der Datei wird die bisherige Stationsfolge <strong>ersetzt</strong>; andere Touren bleiben.</li>
+  <li>Unbekannte Touren werden angelegt. Heißt eine Tour im Fahrerplan genauso, wird sie mit ihr verbunden.</li>
+</ul>
+{% endif %}
+{% if "touren.stationen" in rechte %}
 <h3>Stationen finden und hinfahren</h3>
 <ul>
   <li>Menü „Dienstpläne → Touren → Stationen“. Gefiltert wird nach Art und Stand (aktiv, nicht mehr angefahren,
@@ -54,5 +101,6 @@
     sie nur verknüpft, nicht doppelt angelegt.</li>
   <li>Das Übertragen geschieht einmal. Spätere Änderungen an der Station ändern den Eintrag im Adressbuch nicht.</li>
 </ul>
+{% endif %}
 {% endif %}
 {% endif %}

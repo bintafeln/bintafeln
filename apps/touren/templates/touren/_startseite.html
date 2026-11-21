@@ -1,0 +1,5 @@
+{# Beitrag zur Startseite (Modul.startseite): die eigenen Touren von heute #}
+<section class="karte" id="touren-heute">
+  <h2>Ihre Tour heute</h2>
+  {% for t in touren %}<a class="knopf tour-knopf" href="{% url 'touren:fahren' t.pk %}">🚚 {{ t.name }} öffnen</a>{% endfor %}
+</section>

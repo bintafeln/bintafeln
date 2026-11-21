@@ -1319,9 +1319,25 @@ Ersetzt den gedruckten Fahrerplan mit den gelben Aufklebern (ADR 0074).
 
 ### Touren
 
-Die Stationen der Abholtouren – Märkte, Bäckereien, Lieferanten, Lager, Ausgabestellen,
-Einrichtungen – in einer eigenen Liste (ADR 0147). Touren und Lieferscheine bauen darauf auf.
+Führt die Fahrer am Handy durch ihre Abholtour (ADR 0147, 0148): Stationen – Märkte, Bäckereien,
+Lieferanten, Lager … – in einer eigenen Liste, Touren als Stationsfolge, Navigation in Google
+Maps. Lieferscheine bauen darauf auf.
 
+- **Unterwegs** („Dienstpläne → Touren → Touren heute“, Recht „Touren sehen und fahren“, Vorgabe
+  Büro, Fahrer, Beifahrer): die Touren des Tages, die eigene oben und zusätzlich auf der
+  Startseite. In der Tour je Station eine Karte mit Anschrift, Abholzeit, Anfahrt, Telefon und
+  dem Knopf „Navigation starten“. „Ganze Tour in Google Maps“ öffnet alle Stationen als Route
+  (höchstens zehn je Link, längere Touren in Abschnitten).
+- **Touren planen** („Einstellungen → Dienstpläne → Touren: Stationsfolgen und kurzfristige
+  Touren“, Recht „Touren planen“, Vorgabe Büro): Stationen anhängen, mit ↑/↓ ordnen, je Station
+  auf Wochentage beschränken. Eine Tour nimmt Fahrtage und Besetzung **aus dem Fahrerplan**
+  (mit Ersatz und Ausfällen) oder ist eine **eigene Tour** mit eigenen Fahrtagen und Personen.
+- **Kurzfristige Tour** für einen Tag: Personen (Fahrer, Beifahrer, Angestellte) und Stationen
+  wählen, „An die Fahrer schicken“ – sie bekommen eine E-Mail mit den Stationen und dem Link zur
+  Tour (Benachrichtigung „Touren: Tour für Sie eingetragen“). Gelöscht 90 Tage nach ihrem Tag.
+- **Stationsfolgen importieren:** `tourstationen.csv` nach
+  [docs/importformat-touren.md](docs/importformat-touren.md); je Tour ersetzt die Datei die
+  Stationsfolge.
 - **Stationen** („Dienstpläne → Touren → Stationen“, Recht „Stationen sehen und hinnavigieren“,
   Vorgabe Büro, Fahrer, Beifahrer): Name, Art, Kette, Anschrift mit Ortsteil, Telefon,
   Ansprechpartner, Öffnungszeiten, Abholtage und -zeit, Anfahrt für die Fahrer. Filter nach Art

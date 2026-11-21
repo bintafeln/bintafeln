@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load liste %}
+{% block titel %}{{ tour.name }}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'touren:heute' %}?tag={{ tag|date:'Y-m-d' }}">← Touren am {{ tag|date:"d.m." }}</a></p>
+  <h1>{{ tour.name }}</h1>
+  <p class="leise">{{ tag|date:"l, d.m.Y" }} · {{ halte|length }} Station{{ halte|length|pluralize:"en" }}{% if not faehrt %} · <span class="marke-warnung">fährt an diesem Tag nicht</span>{% endif %}</p>
+  {% if besetzung %}<p>{% for b in besetzung %}{% if b.offen %}<span class="marke-warnung">{{ b.rolle }} offen</span>{% else %}{% if b.rolle %}<small class="leise">{{ b.rolle }}</small> {% endif %}{{ b.name }}{% endif %}{% if not forloop.last %} · {% endif %}{% endfor %}</p>{% endif %}
+  {% if tour.hinweis %}<div class="notiz"><p class="notiz-text">{{ tour.hinweis|linebreaksbr }}</p></div>{% endif %}
+  {% if routen %}
+  <details class="tour-route">
+    <summary>Ganze Tour in Google Maps</summary>
+    <div class="aktionsleiste">
+      {% for r in routen %}<a class="knopf knopf-zweitrangig" href="{{ r.url }}" target="_blank" rel="noopener noreferrer">{% if routen|length == 1 %}Alle Stationen als Route{% else %}Stationen {{ r.von }}–{{ r.bis }}{% endif %}</a>{% endfor %}
+    </div>
+    <p class="hinweis">Start ist Ihr Standort. Ohne die Google-Maps-App zeigt der Browser am Handy nur die ersten Stationen; dann die Navigation je Station nehmen.</p>
+  </details>
+  {% endif %}
+</section>
+<ol class="tour-halte">
+  {% for h in halte %}{% with s=h.station %}
+  <li class="karte tour-halt" id="halt-{{ forloop.counter }}">
+    <div class="tour-halt-kopf"><span class="tour-nr" aria-hidden="true">{{ forloop.counter }}</span>
+      <div><h2>{{ s.name }}</h2>
+        <address>{{ s.strasse_hausnummer }}, {{ s.plz }} {{ s.ort }}{% if s.ortsteil %} ({{ s.ortsteil }}){% endif %}</address></div></div>
+    {% if s.abholzeit %}<p><strong>Abholzeit:</strong> {{ s.abholzeit }}</p>{% endif %}
+    {% if s.anfahrt %}<div class="notiz"><p class="notiz-text"><strong>Anfahrt:</strong> {{ s.anfahrt|linebreaksbr }}</p></div>{% endif %}
+    <a class="knopf tour-knopf" href="{{ s.navigation }}" target="_blank" rel="noopener noreferrer">🧭 Navigation starten</a>
+    <p class="tour-halt-fuss">{% if s.telefon %}<span>📞 {{ s.telefon|anrufen }}{% if s.ansprechpartner %} <small class="leise">{{ s.ansprechpartner }}</small>{% endif %}</span>{% endif %}
+      {% if "touren.stationen" in rechte %}<a href="{% url 'touren:station' s.pk %}">Alle Angaben</a>{% endif %}</p>
+  </li>
+  {% endwith %}{% empty %}
+  <li class="karte"><p class="hinweis">Für diesen Tag sind keine Stationen eingetragen.</p></li>
+  {% endfor %}
+</ol>
+{% if darf_planen %}<p><a href="{% url 'touren:tour' tour.pk %}">Tour bearbeiten</a></p>{% endif %}
+{% endblock %}

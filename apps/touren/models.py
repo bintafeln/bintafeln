@@ -143,3 +143,80 @@ class Station(models.Model):
 
 
 auditlog.register(Station)
+
+
+class Tour(models.Model):
+    """Eine Abholtour: Stationen in Fahrtreihenfolge (ADR 0148).
+
+    Drei Arten, je nachdem, was gesetzt ist: mit ``fahrdienst_tour`` kommen Fahrtage und
+    Besetzung aus dem Fahrerplan; ohne ist es eine eigene Tour mit eigenen Fahrtagen und
+    Personen; mit ``datum`` eine kurzfristige Tour nur für diesen Tag.
+    """
+
+    name = models.CharField("Name", max_length=80, help_text="z. B. „Tour 3“ oder „Sonderfahrt“")
+    fahrdienst_tour = models.ForeignKey(
+        "fahrdienst.Tour", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="abholtouren", verbose_name="Tour im Fahrerplan",
+        help_text="Dann kommen Fahrtage und Besetzung aus dem Fahrerplan. Leer = eigene Tour, "
+        "die nicht im Fahrerplan steht.",
+    )  # fmt: skip
+    datum = models.DateField(
+        "Nur am", null=True, blank=True,
+        help_text="Kurzfristige Tour: fährt nur an diesem Tag.",
+    )  # fmt: skip
+    fahrtage = models.CharField(
+        "Fahrtage", max_length=40, blank=True,
+        help_text="Nur für eigene Touren ohne Fahrerplan. Nichts angehakt = an jedem Tag.",
+    )  # fmt: skip
+    personen = models.ManyToManyField(
+        "adressen.Adresse", blank=True, related_name="abholtouren", verbose_name="Wer fährt",
+        help_text="Für eigene und kurzfristige Touren. Bei einer Tour aus dem Fahrerplan steht "
+        "die Besetzung dort.",
+    )  # fmt: skip
+    hinweis = models.TextField(
+        "Für die Fahrer", blank=True,
+        help_text="Steht oben auf der Tour, z. B. „Heute zuerst zum Lager“.",
+    )  # fmt: skip
+    aktiv = models.BooleanField("Aktiv", default=True)
+    gesendet_am = models.DateTimeField("An die Fahrer geschickt am", null=True, blank=True)
+    angelegt_am = models.DateTimeField("Angelegt am", auto_now_add=True)
+    angelegt_von = models.CharField("Angelegt von", max_length=150, blank=True)
+
+    class Meta:
+        verbose_name = "Abholtour"
+        verbose_name_plural = "Abholtouren"
+        ordering = ["datum", "name", "pk"]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def kurzfristig(self) -> bool:
+        return self.datum is not None
+
+
+class Halt(models.Model):
+    """Eine Station auf einer Tour, an ihrer Stelle in der Fahrtreihenfolge."""
+
+    tour = models.ForeignKey(Tour, on_delete=models.CASCADE, related_name="halte")
+    station = models.ForeignKey(Station, on_delete=models.CASCADE, related_name="halte")
+    reihenfolge = models.PositiveSmallIntegerField("Reihenfolge", default=0)
+    wochentage = models.CharField(
+        "Nur an diesen Tagen", max_length=40, blank=True,
+        help_text="Leer = an allen Fahrtagen der Tour.",
+    )  # fmt: skip
+
+    class Meta:
+        verbose_name = "Halt"
+        verbose_name_plural = "Halte"
+        ordering = ["reihenfolge", "pk"]
+        constraints = [
+            models.UniqueConstraint(fields=["tour", "station"], name="halt_station_einmal_je_tour")
+        ]
+
+    def __str__(self):
+        return f"{self.tour}: {self.station}"
+
+
+auditlog.register(Tour, m2m_fields={"personen"})
+auditlog.register(Halt)
