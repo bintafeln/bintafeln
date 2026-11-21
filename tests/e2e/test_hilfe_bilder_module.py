@@ -1055,3 +1055,35 @@ def test_hilfe_bild_touren(angemeldet, admin, muster):
         Marke(seite.get_by_role("button", name="Ins Adressbuch übertragen"), nummer=3,
               von="rechts", laenge=40),
     )  # fmt: skip
+
+
+def test_hilfe_bild_touren_fahren(angemeldet, admin, muster):
+    from apps.core import demo_daten
+    from apps.fahrdienst import beispiel
+    from apps.touren.models import Station, Tour
+
+    _module("touren", "fahrdienst")
+    beispiel.anlegen(seed=1)
+    demo_daten.touren()
+    markt = Station.objects.get(kennung="S-4")
+    markt.anfahrt = "Hintereingang in der Seitenstraße, bitte klingeln."
+    markt.save()
+    tour = Tour.objects.filter(fahrdienst_tour__isnull=False).order_by("pk").first()
+    montag = timezone.localdate() + dt.timedelta(days=7 - timezone.localdate().weekday())
+    adresse = reverse("touren:fahren", args=[tour.pk]) + f"?tag={montag:%Y-%m-%d}"
+    seite = oeffnen(angemeldet, admin, adresse)
+    seite.set_viewport_size({"width": 400, "height": 900})
+    seite.locator(".tour-route summary").click()
+    karten = seite.locator(".karte")
+    aufnehmen(
+        seite,
+        "touren-fahren",
+        [karten.first, karten.nth(2)],
+        Marke(seite.locator("section.karte p").nth(2), art="rahmen", nummer=1),
+        Marke(seite.locator(".tour-route .aktionsleiste"), art="rahmen", nummer=2),
+        Marke(seite.get_by_role("link", name="🧭 Navigation starten").nth(1), art="rahmen",
+              nummer=3),
+        Marke(seite.locator(".tour-halt .notiz").first, art="rahmen", nummer=4),
+        rand=8,
+    )  # fmt: skip
+    seite.set_viewport_size({"width": 1280, "height": 900})

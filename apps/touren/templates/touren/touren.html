@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block titel %}Touren planen{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <div class="titel-zeile">
+    <h1>Touren planen</h1>
+    <div class="titel-knoepfe">
+      <a class="knopf" href="{% url 'touren:tour_neu' %}?kurz">Kurzfristige Tour</a>
+      <a class="knopf knopf-zweitrangig" href="{% url 'touren:tour_neu' %}">Neue regelmäßige Tour</a>
+      <a class="knopf knopf-zweitrangig" href="{% url 'touren:touren_importieren' %}">Importieren</a>
+    </div>
+  </div>
+  <p class="hinweis">Eine Tour ist eine Folge von Stationen. Was die Fahrer unterwegs sehen, steht unter
+    <a href="{% url 'touren:heute' %}">Touren heute</a>. <a href="{% url 'core:hilfe' %}#touren">So funktioniert es</a></p>
+  {% if kurzfristig %}
+  <h2>Kurzfristige Touren</h2>
+  <div class="tabelle-rahmen"><table class="tabelle" id="touren-kurz">
+    <thead><tr><th>Am</th><th>Tour</th><th class="zahl">Stationen</th><th>Wer fährt</th><th>Geschickt</th></tr></thead>
+    <tbody>{% for t in kurzfristig %}
+      <tr><td data-titel="Am">{{ t.datum|date:"D d.m.Y" }}</td>
+        <td data-titel="Tour"><a href="{% url 'touren:tour' t.pk %}">{{ t.name }}</a>{% if not t.aktiv %} <span class="marke-neutral">aus</span>{% endif %}</td>
+        <td data-titel="Stationen" class="zahl">{{ t.halte.all|length }}</td>
+        <td data-titel="Wer fährt">{% for p in t.personen.all %}{{ p.name }}{% if not forloop.last %}, {% endif %}{% empty %}<span class="marke-warnung">niemand</span>{% endfor %}</td>
+        <td data-titel="Geschickt">{% if t.gesendet_am %}{{ t.gesendet_am|date:"d.m. H:i" }}{% else %}–{% endif %}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% endif %}
+  <h2>Regelmäßige Touren</h2>
+  {% if regelmaessig %}
+  <div class="tabelle-rahmen"><table class="tabelle" id="touren-regel">
+    <thead><tr><th>Tour</th><th>Besetzung und Fahrtage</th><th class="zahl">Stationen</th></tr></thead>
+    <tbody>{% for t in regelmaessig %}
+      <tr><td data-titel="Tour"><a href="{% url 'touren:tour' t.pk %}">{{ t.name }}</a>{% if not t.aktiv %} <span class="marke-neutral">aus</span>{% endif %}</td>
+        <td data-titel="Besetzung und Fahrtage">{% if t.fahrdienst_tour %}aus dem Fahrerplan: {{ t.fahrdienst_tour.name }} ({{ t.fahrdienst_tour.fahrtage }}){% else %}eigene Tour · {{ t.fahrtage|default:"jeden Tag" }}{% endif %}</td>
+        <td data-titel="Stationen" class="zahl">{{ t.halte.all|length }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="hinweis">Noch keine Tour angelegt.</p>{% endif %}
+  {% if vergangen %}
+  <details><summary>Vergangene kurzfristige Touren</summary>
+    <ul>{% for t in vergangen %}<li>{{ t.datum|date:"d.m.Y" }} · <a href="{% url 'touren:tour' t.pk %}">{{ t.name }}</a></li>{% endfor %}</ul>
+    <p class="hinweis">Sie werden 90 Tage nach ihrem Tag gelöscht.</p>
+  </details>
+  {% endif %}
+</section>
+{% endblock %}

@@ -112,13 +112,24 @@ def test_beispieldatei_der_dokumentation():
     assert not bericht.fehler and not bericht.unbekannte_spalten
     assert len(bericht.neu) == 4
     assert bericht.neu[0]["anfahrt"] == "Rampe hinten links; bitte klingeln"
+    # die Stationsfolgen passen zu den Stationen der Beispieldatei
+    from apps.touren import importieren_touren
+
+    importieren.uebernehmen(bericht, "anton")
+    roh = (Path(settings.BASE_DIR) / "docs/beispiele/touren/tourstationen.csv").read_bytes()
+    folgen = importieren_touren.pruefen(importieren_touren.text_lesen(roh))
+    assert not folgen.fehler and folgen.halte == 5
 
 
 def test_demo_daten():
     from apps.core import demo_daten
+    from apps.fahrdienst import beispiel
+    from apps.touren.models import Tour
 
+    beispiel.anlegen(seed=1)
     demo_daten.touren()
     assert Station.objects.count() == len(demo_daten.STATIONEN)
+    assert Tour.objects.filter(fahrdienst_tour__isnull=False, halte__isnull=False).exists()
     assert all(s.strasse and s.hausnummer for s in Station.objects.all())
 
 
