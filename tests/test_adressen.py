@@ -610,7 +610,7 @@ def test_druckliste_zusammenstellen_und_pdf(admin_client, django_user_model, pdf
     assert seite.context["darf_mitarbeit"] is True
     inhalt = seite.content.decode()
     # Mitarbeiter-Filter stehen zur Wahl, ebenso die Konto-Spalten
-    assert "nur Mitarbeitende" in inhalt and "Ausgabestelle" in inhalt
+    assert "Adressen ohne Konto" in inhalt and "Ausgabestelle" in inhalt
     assert 'value="rollen"' in inhalt and 'value="notfall"' in inhalt
     # Vorschau enthält beide Personen
     assert seite.context["anzahl"] == 2
@@ -657,11 +657,11 @@ def test_druckliste_ohne_mitarbeiter_recht(client, anmelden, admin, django_user_
     seite = client.get(DRUCK)
     assert seite.status_code == 200 and seite.context["darf_mitarbeit"] is False
     inhalt = seite.content.decode()
-    assert "nur Mitarbeitende" not in inhalt and 'value="notfall"' not in inhalt
+    assert "Adressen ohne Konto" not in inhalt and 'value="notfall"' not in inhalt
     # Konto-Spalte lässt sich nicht über die URL erzwingen
     erzwungen = client.get(DRUCK, {"spalte": ["nachname", "notfall"], "mitarbeit": "angestellt"})
     assert "Notfallkontakt" not in erzwungen.context["kopf"]
-    assert erzwungen.context["f"]["mitarbeit"] == "alle"
+    assert erzwungen.context["f"]["mitarbeit"] == []
 
 
 def test_personen_art_heilen_zeigt_sie_in_der_druckliste(admin_client, django_user_model):
@@ -1087,3 +1087,64 @@ def test_telefonnummern_sind_anklickbar(admin_client, admin):
         seite = admin_client.get(url).content.decode()
         assert '<a href="tel:037512345">0375 12345</a>' in seite, url
         assert '<a href="tel:017155566">0171/555 66</a>' in seite, url
+
+
+def test_druckliste_mehrfach_filtern_und_kategorie(admin_client, admin, client, anmelden,
+                                                   benutzer_mit_rolle, recht_geben):  # fmt: skip
+    """„Liste zusammenstellen“: Wer, Rolle, Ausgabestelle und Kategorie sind mehrfach wählbar;
+    nach Kategorie (z. B. „Helfer“, „Ehemalige Helfer“) filtert jede Person mit Adressbuch-Recht."""
+    from apps.konten import verwaltung
+
+    def namen(c=admin_client, **filter_):
+        seite = c.get(DRUCK, filter_ | {"spalte": ["nachname"]})
+        return {zeile[0] for _, zeile in seite.context["vorschau"]}
+
+    def person(nachname, rolle=None, art="ehrenamtlich"):
+        a = Adresse.objects.create(art="person", vorname="V", nachname=nachname)
+        if rolle:
+            konto = verwaltung.konto_fuer_adresse(admin, a, [rolle])
+            konto.beschaeftigung = art
+            konto.save(update_fields=["beschaeftigung"])
+        return a
+
+    person("Fahrerin", rollen.FAHRER)
+    person("Ausgeberin", rollen.AUSGABE, art="fest")
+    ehemalig = person("Ehemals", rollen.BEIFAHRER)
+    verwaltung.sperren(admin, ehemalig.konto)
+    spender = person("Spenderin")
+    spender.kategorien.add(AdressKategorie.objects.get(name="Spender"))
+    helfer = AdressKategorie.objects.get(name=verwaltung.HELFER_KATEGORIE)
+    ehemalige = AdressKategorie.objects.get(name=verwaltung.EHEMALIGE_KATEGORIE)
+    alle = {"Fahrerin", "Ausgeberin", "Ehemals", "Spenderin"}
+    assert alle <= namen()
+
+    # Kategorie: eine oder mehrere
+    assert namen(kategorie=[ehemalige.pk]) & alle == {"Ehemals"}
+    assert namen(kategorie=[helfer.pk]) & alle == {"Fahrerin", "Ausgeberin", "Ehemals"}
+    spender_pk = AdressKategorie.objects.get(name="Spender").pk
+    assert namen(kategorie=[ehemalige.pk, spender_pk]) & alle == {"Ehemals", "Spenderin"}
+    # Wer: mehrere Gruppen zusammen
+    assert namen(mitarbeit=["angestellt"]) & alle == {"Ausgeberin"}
+    assert namen(mitarbeit=["angestellt", "ohne_konto"]) & alle == {"Ausgeberin", "Spenderin"}
+    # Rollen: mehrere; zusammen mit dem Status
+    assert namen(rolle=[rollen.FAHRER, rollen.BEIFAHRER]) & alle == {"Fahrerin", "Ehemals"}
+    assert namen(rolle=[rollen.FAHRER, rollen.BEIFAHRER], status="aktiv") & alle == {"Fahrerin"}
+    # alte Links und leere Angaben zeigen weiter alle bzw. die Mitarbeitenden
+    assert alle <= namen(mitarbeit="alle", rolle="", stelle="", kategorie="")
+    assert namen(mitarbeit="mitarbeitende") & alle == {"Fahrerin", "Ausgeberin", "Ehemals"}
+
+    seite = admin_client.get(DRUCK, {"kategorie": [helfer.pk, ehemalige.pk]}).content.decode()
+    assert seite.count('name="kategorie"') >= 3 and "data-mehrfach" in seite
+    assert f'name="kategorie" value="{helfer.pk}" ' in seite.replace("checked", " checked")
+    # das PDF folgt den Filtern
+    pdf = admin_client.get(DRUCK, {"kategorie": [ehemalige.pk], "aktion": "pdf"})
+    assert pdf["Content-Type"] == "application/pdf"
+
+    # ohne Mitarbeiter-Recht: Kategorie ja, Konto-Filter nein
+    ohne = benutzer_mit_rolle("nur.adressen", rollen.AUSGABE)
+    recht_geben(rollen.AUSGABE, "adressen.sehen")
+    anmelden(client, ohne)
+    inhalt = client.get(DRUCK).content.decode()
+    assert 'name="kategorie"' in inhalt and 'name="rolle"' not in inhalt
+    assert namen(client, kategorie=[spender_pk]) & alle == {"Spenderin"}
+    assert alle <= namen(client, mitarbeit=["angestellt"])  # wird ohne Recht nicht angewandt

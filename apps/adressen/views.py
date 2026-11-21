@@ -561,9 +561,12 @@ def druckliste(request):
         "spalten_wahl": [(k, t, k in dl.SPALTEN_FEST or k in gewaehlt, k in dl.SPALTEN_FEST)
                          for k, t in katalog],
         "kopf": [t for _, t in spalten], "vorschau": vorschau, "anzahl": len(adressen),
-        "rollen_wahl": (sorted(Group.objects.values_list("name", flat=True))
+        "wer_wahl": dl.WER_WAHL,
+        "rollen_wahl": ([(n, n) for n in sorted(Group.objects.values_list("name", flat=True))]
                         if darf_mitarbeit else []),
-        "stellen": Ausgabestelle.objects.order_by("name") if darf_mitarbeit else [],
+        "stellen_wahl": (list(Ausgabestelle.objects.order_by("name").values_list("pk", "name"))
+                         if darf_mitarbeit else []),
+        "kategorien_wahl": list(AdressKategorie.objects.values_list("pk", "name")),
         "format": "a3" if request.GET.get("format") == "a3" else "a4",
         "ausrichtung": "hoch" if request.GET.get("ausrichtung") == "hoch" else "quer",
     })  # fmt: skip

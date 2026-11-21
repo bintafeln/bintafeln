@@ -36,7 +36,16 @@ SPALTEN = [
 ]
 SPALTEN_FEST: set[str] = {"nachname"}  # der Nachname ist immer dabei
 
-BESCHAEFTIGUNG = {"ehrenamtlich": "ehrenamtlich", "angestellt": "fest"}
+# Filter „Wer“ (mehrere wählbar, dann zählt jede der gewählten Gruppen); „mitarbeitende“ gibt es
+# noch für alte Links.
+WER = {
+    "ehrenamtlich": Q(konto__beschaeftigung="ehrenamtlich"),
+    "angestellt": Q(konto__beschaeftigung="fest"),
+    "ohne_konto": Q(konto__isnull=True),
+    "mitarbeitende": Q(konto__isnull=False),
+}
+WER_WAHL = [("ehrenamtlich", "Ehrenamtliche"), ("angestellt", "Angestellte"),
+            ("ohne_konto", "Adressen ohne Konto")]  # fmt: skip
 
 
 def spalten_katalog(darf_mitarbeit: bool) -> list[tuple[str, str]]:
@@ -48,22 +57,23 @@ def filtern(request, darf_mitarbeit: bool):
     """Adressbuch-Personen nach den Filtern der Seite. Ohne das Mitarbeiter-Recht nur die reinen
     Personen-Angaben; die konto-bezogenen Filter werden dann nicht angewandt."""
     f = {
-        "mitarbeit": request.GET.get("mitarbeit", "alle"),
+        # Mehrfach wählbar; leere Werte und „alle“ (alte Links) zählen nicht als Auswahl
+        "mitarbeit": [w for w in request.GET.getlist("mitarbeit") if w in WER],
         "status": request.GET.get("status", "alle"),
-        # Leere Werte verwerfen: die „alle“-Option sendet rolle=/stelle= mit, getlist liefert dann
-        # [""] – das wäre „wahr“ und würde auf eine leere Rolle/Stelle filtern (→ nichts).
         "rollen": [r for r in request.GET.getlist("rolle") if r],
-        "stellen": [s for s in request.GET.getlist("stelle") if s],
+        "stellen": [s for s in request.GET.getlist("stelle") if s.isdigit()],
+        "kategorien": [k for k in request.GET.getlist("kategorie") if k.isdigit()],
         "suche": (request.GET.get("suche") or "").strip(),
     }
     qs = Adresse.objects.filter(art=Adresse.Art.PERSON)
+    if f["kategorien"]:
+        qs = qs.filter(kategorien__pk__in=f["kategorien"])
     if darf_mitarbeit:
-        if f["mitarbeit"] == "mitarbeitende":
-            qs = qs.filter(konto__isnull=False)
-        elif f["mitarbeit"] == "ohne_konto":
-            qs = qs.filter(konto__isnull=True)
-        elif f["mitarbeit"] in BESCHAEFTIGUNG:
-            qs = qs.filter(konto__beschaeftigung=BESCHAEFTIGUNG[f["mitarbeit"]])
+        if f["mitarbeit"]:
+            wer = Q()
+            for wahl in f["mitarbeit"]:
+                wer |= WER[wahl]
+            qs = qs.filter(wer)
         if f["status"] == "aktiv":
             qs = qs.filter(konto__is_active=True)
         elif f["status"] == "archiv":
@@ -71,9 +81,9 @@ def filtern(request, darf_mitarbeit: bool):
         if f["rollen"]:
             qs = qs.filter(konto__groups__name__in=f["rollen"])
         if f["stellen"]:
-            qs = qs.filter(konto__ausgabestellen__pk__in=[s for s in f["stellen"] if s.isdigit()])
+            qs = qs.filter(konto__ausgabestellen__pk__in=f["stellen"])
     else:
-        f["mitarbeit"], f["status"], f["rollen"], f["stellen"] = "alle", "alle", [], []
+        f["mitarbeit"], f["status"], f["rollen"], f["stellen"] = [], "alle", [], []
     for wort in f["suche"].split():
         qs = qs.filter(Q(nachname__icontains=wort) | Q(vorname__icontains=wort))
     qs = (

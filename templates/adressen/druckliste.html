@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static liste %}
 {% block titel %}Liste drucken{% endblock %}
 {% block inhalt %}
 <script src="{% static 'js/auswahl.js' %}" defer></script>
@@ -12,27 +12,17 @@
   <form method="get" id="druck" data-auswahl>
     <div class="filter-kompakt">
       {% if darf_mitarbeit %}
-      <div class="filter-feld"><label for="mitarbeit">Wer</label>
-        <select name="mitarbeit" id="mitarbeit">
-          <option value="alle"{% if f.mitarbeit == "alle" %} selected{% endif %}>alle Personen</option>
-          <option value="mitarbeitende"{% if f.mitarbeit == "mitarbeitende" %} selected{% endif %}>nur Mitarbeitende</option>
-          <option value="ehrenamtlich"{% if f.mitarbeit == "ehrenamtlich" %} selected{% endif %}>nur Ehrenamtliche</option>
-          <option value="angestellt"{% if f.mitarbeit == "angestellt" %} selected{% endif %}>nur Angestellte</option>
-          <option value="ohne_konto"{% if f.mitarbeit == "ohne_konto" %} selected{% endif %}>nur Adressen ohne Konto</option>
-        </select></div>
+      <div class="filter-feld"><span class="feld-titel">Wer</span>{% mehrfach "mitarbeit" wer_wahl f.mitarbeit "alle Personen" %}</div>
       <div class="filter-feld"><label for="status">Status</label>
         <select name="status" id="status">
           <option value="alle"{% if f.status == "alle" %} selected{% endif %}>alle</option>
           <option value="aktiv"{% if f.status == "aktiv" %} selected{% endif %}>aktive</option>
           <option value="archiv"{% if f.status == "archiv" %} selected{% endif %}>Archiv (gesperrt)</option>
         </select></div>
-      <div class="filter-feld"><label for="rolle">Rolle</label>
-        <select name="rolle" id="rolle"><option value="">alle</option>
-          {% for r in rollen_wahl %}<option value="{{ r }}"{% if r in f.rollen %} selected{% endif %}>{{ r }}</option>{% endfor %}</select></div>
-      <div class="filter-feld"><label for="stelle">Ausgabestelle</label>
-        <select name="stelle" id="stelle"><option value="">alle</option>
-          {% for s in stellen %}<option value="{{ s.pk }}"{% if s.pk|stringformat:"s" in f.stellen %} selected{% endif %}>{{ s.name }}</option>{% endfor %}</select></div>
+      <div class="filter-feld"><span class="feld-titel">Rolle</span>{% mehrfach "rolle" rollen_wahl f.rollen %}</div>
+      <div class="filter-feld"><span class="feld-titel">Ausgabestelle</span>{% mehrfach "stelle" stellen_wahl f.stellen %}</div>
       {% endif %}
+      <div class="filter-feld"><span class="feld-titel">Kategorie</span>{% mehrfach "kategorie" kategorien_wahl f.kategorien %}</div>
       <div class="filter-feld filter-suche"><label for="suche">Suche</label>
         <input type="search" name="suche" id="suche" value="{{ f.suche }}" placeholder="Name"></div>
       <button type="submit" class="knopf knopf-zweitrangig">Vorschau</button>
