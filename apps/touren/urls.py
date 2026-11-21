@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.touren import views, views_touren
+from apps.touren import views, views_lieferscheine, views_touren
 
 app_name = "touren"
 
@@ -15,6 +15,18 @@ urlpatterns = [
     path("planen/<int:pk>/senden/", views_touren.tour_senden, name="tour_senden"),
     path("planen/<int:pk>/halt/", views_touren.halt_neu, name="halt_neu"),
     path("planen/halt/<int:pk>/", views_touren.halt_aendern, name="halt_aendern"),
+    path("einstellungen/", views_lieferscheine.einstellungen, name="einstellungen"),
+    path("lieferscheine/", views_lieferscheine.liste, name="lieferscheine"),
+    path("lieferscheine/<int:pk>.pdf", views_lieferscheine.pdf, name="lieferschein_pdf"),
+    path(
+        "lieferscheine/<int:pk>/senden/", views_lieferscheine.nachsenden, name="lieferschein_senden"
+    ),
+    path(
+        "lieferscheine/<int:pk>/loeschen/",
+        views_lieferscheine.loeschen,
+        name="lieferschein_loeschen",
+    ),
+    path("stationen/<int:pk>/lieferschein/", views_lieferscheine.ausfuellen, name="lieferschein"),
     path("stationen/", views.stationen, name="stationen"),
     path("stationen/neu/", views.bearbeiten, name="neu"),
     path("stationen/importieren/", views.importieren_ansicht, name="importieren"),

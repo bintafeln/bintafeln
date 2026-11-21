@@ -1335,6 +1335,14 @@ Maps. Lieferscheine bauen darauf auf.
 - **Kurzfristige Tour** für einen Tag: Personen (Fahrer, Beifahrer, Angestellte) und Stationen
   wählen, „An die Fahrer schicken“ – sie bekommen eine E-Mail mit den Stationen und dem Link zur
   Tour (Benachrichtigung „Touren: Tour für Sie eingetragen“). Gelöscht 90 Tage nach ihrem Tag.
+- **Lieferscheine** (ADR 0149; Recht „Lieferscheine ausfüllen und unterschreiben“, Vorgabe Büro,
+  Fahrer, Beifahrer): in der Tour bei der Station „Lieferschein ausfüllen“ – je Warengruppe Menge
+  in Kisten oder kg, Anmerkung, Unterschrift mit dem Finger. Der Lieferschein bekommt eine
+  fortlaufende Nummer, liegt als PDF verschlüsselt in bintafeln und geht per E-Mail nur an die
+  Station. Ohne E-Mail-Adresse oder bei einem Versandfehler bleibt er gespeichert und „nicht
+  verschickt“; das Büro sendet unter „Dienstpläne → Touren → Lieferscheine“ nach. Warengruppen,
+  Mailtext, Aufbewahrung (Vorgabe 10 Jahre) und der Hauptschalter unter „Einstellungen →
+  Dienstpläne → Touren: Lieferscheine und Warengruppen“ (Admin); je Station abschaltbar.
 - **Stationsfolgen importieren:** `tourstationen.csv` nach
   [docs/importformat-touren.md](docs/importformat-touren.md); je Tour ersetzt die Datei die
   Stationsfolge.

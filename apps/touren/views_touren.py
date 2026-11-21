@@ -14,7 +14,7 @@ from apps.adressen.forms import ImportForm
 from apps.ausgabe.ampel import WOCHENTAGE
 from apps.core import geheimnis, module, papierkorb
 from apps.konten import rollen
-from apps.touren import ablauf, importieren_touren
+from apps.touren import ablauf, importieren_touren, lieferscheine
 from apps.touren.forms import HaltForm, KurzfristigForm, TourForm
 from apps.touren.models import Halt, Tour
 
@@ -62,6 +62,11 @@ def fahren(request, pk):
     tour = get_object_or_404(Tour.objects.select_related("fahrdienst_tour"), pk=pk)
     tag = tour.datum or _tag(request)
     halte = ablauf.halte(tour, tag)
+    darf_schein = lieferscheine.an() and rollen.hat_recht(request.user, "touren.lieferschein")
+    scheine = lieferscheine.am_tag(tag, [h.station_id for h in halte]) if darf_schein else {}
+    for h in halte:
+        h.schein = scheine.get(h.station_id)
+        h.schein_moeglich = darf_schein and h.station.lieferschein
     return render(request, "touren/fahren.html", {
         "tour": tour, "tag": tag, "halte": halte, "faehrt": ablauf.faehrt_am(tour, tag),
         "besetzung": ablauf.besetzung(tour, tag),

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block titel %}Touren: Lieferscheine einstellen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Touren: Lieferscheine</h1>
+  <form method="post" data-autosave>
+    {% csrf_token %}<input type="hidden" name="einstellungen" value="1">
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+  <p class="hinweis">Ob an einer einzelnen Station ein Lieferschein ausgefüllt wird und an welche E-Mail-Adresse er geht, steht bei der <a href="{% url 'touren:stationen' %}">Station</a>.</p>
+</section>
+<section class="karte" id="warengruppen">
+  <h2>Warengruppen</h2>
+  <p class="hinweis">Die Zeilen des Lieferscheins, in dieser Reihenfolge (kleinste Zahl zuerst). Nicht mehr gebrauchte Warengruppen ausschalten; in schon ausgefüllten Lieferscheinen bleiben sie stehen.</p>
+  <form method="post" action="#warengruppen">
+    {% csrf_token %}<input type="hidden" name="warengruppen" value="1">
+    {{ gruppen.management_form }}
+    {% if gruppen.non_form_errors %}<p class="fehler">{{ gruppen.non_form_errors|join:" " }}</p>{% endif %}
+    <div class="tabelle-rahmen"><table class="tabelle" id="warengruppen-tabelle">
+      <thead><tr><th>Name</th><th>Reihenfolge</th><th>Aktiv</th></tr></thead>
+      <tbody>{% for f in gruppen %}
+        <tr>{{ f.id }}
+          <td data-titel="Name">{{ f.name }}{% if f.name.errors %}<small class="fehler">{{ f.name.errors|join:" " }}</small>{% endif %}</td>
+          <td data-titel="Reihenfolge">{{ f.reihenfolge }}</td>
+          <td data-titel="Aktiv">{{ f.aktiv }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    <p class="hinweis">Die leeren Zeilen unten sind für neue Warengruppen.</p>
+    <button type="submit" class="knopf">Warengruppen speichern</button>
+  </form>
+</section>
+{% endblock %}

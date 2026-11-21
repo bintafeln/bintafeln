@@ -79,6 +79,7 @@ ARTEN = {
     "aufruf": "Aufruf",
     "export": "Listen-Export",
     "druck": "PDF aus der Druckansicht",
+    "lieferschein": "Lieferschein",
     "test": "Testmail",
 }
 OHNE_INHALT = "(Inhalt nicht gespeichert: Die Mail enthält Zugangsdaten.)"

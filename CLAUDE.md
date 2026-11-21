@@ -400,7 +400,11 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `Halt`, `fahrdienst.Tour` bleibt der Personalplan; Regeln nur in `apps/touren/ablauf.py`
   (`faehrt_am()`, `halte()`, `besetzung()` – aus dem Fahrerplan, sonst `Tour.personen`; `routen()`
   höchstens zehn Stationen je Link; `senden()` über die Benachrichtigung `touren_tour`). Ansichten
-  für unterwegs in `views_touren.py` zuerst fürs Handy bauen und in Handybreite prüfen.)
+  für unterwegs in `views_touren.py` zuerst fürs Handy bauen und in Handybreite prüfen.
+  Lieferscheine (ADR 0149): Regeln nur in `apps/touren/lieferscheine.py`; das PDF ist der
+  Lieferschein – einmal erzeugt, verschlüsselt in `Lieferschein.datei`, nie neu berechnet, die
+  Unterschrift (`static/js/unterschrift_feld.js`) wird nicht aufbewahrt; Versand nur an die
+  Station, Speichern geht vor Senden (`mail_fehler`).)
   `tickets` (ADR 0087, Regeln in `apps/tickets/ablauf.py`: wer sieht/bearbeitet, Zuständige je
   Kategorie aus Personen und Rollen, Benachrichtigung über ADR 0086, Frist für erledigte).
   Ausfälle beider: Dauer und „wieder gesund“ (`Ausfall.gesund_ab`: ab dann wieder auf den eigenen Plätzen, außer wo schon Ersatz steht) in

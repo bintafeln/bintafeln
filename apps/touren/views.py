@@ -15,7 +15,7 @@ from django.views.decorators.http import require_POST
 from apps.adressen.forms import ImportForm
 from apps.core import geheimnis, listen, papierkorb
 from apps.konten import rollen
-from apps.touren import adressbuch, importieren
+from apps.touren import adressbuch, importieren, lieferscheine
 from apps.touren.forms import StationForm, neue_kennung
 from apps.touren.models import Station
 
@@ -90,6 +90,7 @@ def station(request, pk):
         "darf_bearbeiten": rollen.hat_recht(request.user, "touren.stationen_bearbeiten"),
         "darf_uebertragen": _darf_uebertragen(request.user),
         "vorhanden": None if s.adresse_id else adressbuch.vorhandene(s),
+        "lieferscheine_an": lieferscheine.an(),
     })  # fmt: skip
 
 

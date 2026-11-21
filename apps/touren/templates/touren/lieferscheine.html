@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load liste %}
+{% block titel %}Lieferscheine{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Lieferscheine</h1>
+  <p class="hinweis">Alle unterwegs ausgefüllten Lieferscheine, neueste zuerst. <a href="{% url 'core:hilfe' %}#touren">So funktioniert es</a></p>
+  <form class="filter-kompakt" method="get">
+    <div class="filter-feld"><label for="stand">Stand</label>
+      <select name="stand" id="stand" onchange="this.form.submit()"><option value="">alle</option><option value="offen"{% if filter.stand == "offen" %} selected{% endif %}>nicht verschickt ({{ offen }})</option></select></div>
+    <div class="filter-feld"><label for="von">Von</label><input type="date" name="von" id="von" value="{{ filter.von }}"></div>
+    <div class="filter-feld"><label for="bis">bis</label><input type="date" name="bis" id="bis" value="{{ filter.bis }}"></div>
+    <div class="filter-feld filter-suche"><label for="q">Suche</label>
+      <input type="search" name="q" id="q" value="{{ filter.q }}" placeholder="Station, Tour, Name, Nummer" {% live_suche %}></div>
+    <button type="submit" class="knopf">Suchen</button>
+    {% filter_zuruecksetzen %}
+  </form>
+  <div id="ergebnis">
+  <p class="hinweis">{{ seite.paginator.count }} Lieferschein{{ seite.paginator.count|pluralize:"e" }}</p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle" id="lieferscheine-tabelle">
+    <thead><tr><th class="zahl">Nr.</th><th>Datum</th><th>Station</th><th>Mengen</th><th>Unterschrieben von</th><th>Verschickt</th><th></th></tr></thead>
+    <tbody>
+    {% for ls in zeilen %}
+      <tr>
+        <td data-titel="Nr." class="zahl"><a href="{% url 'touren:lieferschein_pdf' ls.pk %}" target="_blank" rel="noopener">{{ ls.nummer }}</a></td>
+        <td data-titel="Datum" class="ohne-umbruch">{{ ls.datum|date:"d.m.Y" }}</td>
+        <td data-titel="Station">{% if ls.station %}<a href="{% url 'touren:station' ls.station.pk %}">{{ ls.station_name }}</a>{% else %}{{ ls.station_name }}{% endif %}{% if ls.tour_name %}<br><small class="leise">{{ ls.tour_name }}</small>{% endif %}</td>
+        <td data-titel="Mengen">{% for p in ls.positionen.all %}{{ p.warengruppe }}: {{ p.menge_text }}{% if not forloop.last %}<br>{% endif %}{% endfor %}{% if ls.anmerkung %}<br><small class="leise">{{ ls.anmerkung }}</small>{% endif %}</td>
+        <td data-titel="Unterschrieben von">{{ ls.unterschrieben_von }}</td>
+        <td data-titel="Verschickt">{% if ls.gesendet_am %}{{ ls.gesendet_am|date:"d.m.Y H:i" }}<br><small class="leise">{{ ls.gesendet_an }}</small>{% else %}<span class="marke-warnung">nein</span>{% if ls.mail_fehler %}<br><small class="leise">{{ ls.mail_fehler }}</small>{% endif %}{% endif %}</td>
+        <td data-titel="Aktionen">
+          <form method="post" action="{% url 'touren:lieferschein_senden' ls.pk %}" class="inline">{% csrf_token %}<input type="hidden" name="zurueck" value="{{ request.get_full_path }}">
+            <button type="submit" class="knopf knopf-zweitrangig knopf-klein">{% if ls.gesendet_am %}Erneut senden{% else %}Senden{% endif %}</button></form>
+          <form method="post" action="{% url 'touren:lieferschein_loeschen' ls.pk %}" class="inline" onsubmit="return confirm('Lieferschein Nr. {{ ls.nummer }} in den Papierkorb legen?')">{% csrf_token %}
+            <button type="submit" class="knopf knopf-zweitrangig knopf-klein" aria-label="Lieferschein {{ ls.nummer }} löschen">🗑</button></form>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7">Keine Lieferscheine gefunden.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% blaettern seite zusatz="Lieferscheine" %}
+  </div>
+</section>
+{% endblock %}

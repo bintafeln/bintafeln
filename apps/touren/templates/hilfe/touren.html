@@ -19,6 +19,23 @@
   <li>Stationen, die nur an bestimmten Wochentagen angefahren werden, erscheinen nur an diesen Tagen.</li>
 </ul>
 {% hilfe_bild "touren-fahren" "① wer fährt, ② die ganze Tour als Route, ③ Navigation zur Station starten, ④ Anfahrt für die Fahrer." %}
+{% if "touren.lieferschein" in rechte %}
+<h3>Unterwegs: Lieferschein ausfüllen</h3>
+<ol>
+  <li>In der Tour bei der Station auf <strong>„📝 Lieferschein ausfüllen“</strong> tippen (den Knopf gibt es nur an
+    Stationen, bei denen ein Lieferschein vorgesehen ist).</li>
+  <li>Je Warengruppe die Menge eintragen und <strong>Kisten oder kg</strong> wählen. Leere Zeilen bleiben weg.</li>
+  <li>Im Feld mit dem Finger <strong>unterschreiben</strong>. „Unterschrift löschen“ leert das Feld.</li>
+  <li>„Unterschreiben und abschicken“: Der Lieferschein bekommt eine fortlaufende Nummer, wird als PDF gespeichert und
+    der Station per E-Mail geschickt. In der Tour steht danach „✓ Lieferschein Nr. …“, die Station ist damit als
+    erledigt markiert.</li>
+  <li>Hat die Station keine E-Mail-Adresse oder klappt der Versand nicht, bleibt der Lieferschein gespeichert und ist als
+    „nicht verschickt“ markiert; das Büro sendet ihn nach.</li>
+</ol>
+<p>Ein abgeschickter Lieferschein lässt sich nicht ändern. Stimmt etwas nicht, füllen Sie einen neuen aus und sagen im
+  Büro Bescheid.</p>
+{% hilfe_bild "touren-lieferschein" "① Mengen je Warengruppe, Kisten oder kg, ② mit dem Finger unterschreiben, ③ abschicken." %}
+{% endif %}
 {% endif %}
 {% if "touren.planen" in rechte %}
 <h3>Touren planen</h3>
@@ -46,6 +63,27 @@
   <li><code>station</code> ist die Kennung der Station; die Stationen müssen also zuerst importiert sein.</li>
   <li>Für jede Tour in der Datei wird die bisherige Stationsfolge <strong>ersetzt</strong>; andere Touren bleiben.</li>
   <li>Unbekannte Touren werden angelegt. Heißt eine Tour im Fahrerplan genauso, wird sie mit ihr verbunden.</li>
+</ul>
+{% endif %}
+{% if "touren.lieferscheine" in rechte %}
+<h3>Lieferscheine im Büro</h3>
+<ul>
+  <li>„Dienstpläne → Touren → Lieferscheine“: alle Lieferscheine, neueste zuerst, mit Mengen, wer unterschrieben hat
+    und ob sie verschickt sind. Die Nummer öffnet das PDF.</li>
+  <li>Filter „nicht verschickt“ zeigt, was noch offen ist. „Senden“ bzw. „Erneut senden“ schickt das PDF an die
+    E-Mail-Adresse der Station (vorher dort eintragen, falls sie fehlte).</li>
+  <li>Der Lieferschein geht nur an die Station; in bintafeln bleibt er gespeichert. 🗑 legt ihn in den Papierkorb.</li>
+</ul>
+{% endif %}
+{% if "einstellungen.touren" in rechte %}
+<h3>Lieferscheine einstellen</h3>
+<ul>
+  <li>„Einstellungen → Dienstpläne → Touren: Lieferscheine und Warengruppen“: Lieferscheine ganz ein- oder
+    ausschalten, den Text der E-Mail an die Station und die Aufbewahrungszeit in Jahren (Vorgabe 10); danach werden
+    Lieferscheine automatisch gelöscht.</li>
+  <li><strong>Warengruppen:</strong> Name, Reihenfolge und „Aktiv“. Ausgeschaltete erscheinen nicht mehr auf neuen
+    Lieferscheinen.</li>
+  <li>Je Station: „Lieferschein“ ja/nein und die „E-Mail für Lieferscheine“ stehen bei der Station.</li>
 </ul>
 {% endif %}
 {% if "touren.stationen" in rechte %}
