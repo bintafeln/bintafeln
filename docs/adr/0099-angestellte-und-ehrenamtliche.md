@@ -34,3 +34,8 @@ zeigen beseitigt die Doppelung und ist selbsterklärend. Da die Unterscheidung s
 Beschäftigungs-Feld steckt, braucht es dafür nur gefilterte Listen, kein neues Modell. Technische
 Namen (URLs, Rechte, App-Label `personal`, Importformat) bleiben, damit Links und Migrationen
 stabil bleiben.
+
+**Nachtrag:** Die Rolle heißt jetzt **„Personalverwaltung“** (Migration `konten/0045`). Der Name
+„Angestellte“ wurde als Kennzeichnung „diese Person ist angestellt“ missverstanden und so auch an
+Angestellte vergeben, die damit Verträge und Stunden aller sehen durften. Ob jemand angestellt ist,
+sagt allein das Feld „Beschäftigung“ (in der Adresse unter „Mitarbeit“).

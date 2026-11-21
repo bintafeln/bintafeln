@@ -174,3 +174,27 @@ def test_vorgaben_wiederherstellen():
 def test_admin_rolle_fuer_admins_verlinkt(admin_client):
     seite = admin_client.get(reverse("konten:rollen")).content.decode()
     assert f'href="{reverse("konten:rolle", args=[rolle(rollen.ADMIN).pk])}"' in seite
+
+
+def test_rolle_personalverwaltung_umbenannt(admin_client, admin):
+    """Die Rolle für Verträge und Stunden heißt „Personalverwaltung“, nicht mehr „Angestellte“ –
+    der alte Name wurde mit der Beschäftigung „angestellt“ verwechselt. Die Migration benennt nur
+    um; Rechte und Zuordnungen bleiben."""
+    import importlib
+
+    from django.apps import apps as django_apps
+    from django.contrib.auth.models import Group
+
+    assert rollen.PERSONAL == "Personalverwaltung"
+    assert Group.objects.filter(name="Personalverwaltung").exists()
+    assert not Group.objects.filter(name="Angestellte").exists()
+    modul = importlib.import_module("apps.konten.migrations.0045_rolle_personalverwaltung")
+    gruppe = Group.objects.get(name="Personalverwaltung")
+    admin.groups.add(gruppe)
+    modul.zurueck(django_apps, None)
+    gruppe.refresh_from_db()
+    assert gruppe.name == "Angestellte"
+    modul.umbenennen(django_apps, None)
+    gruppe.refresh_from_db()
+    assert gruppe.name == "Personalverwaltung" and admin.groups.filter(pk=gruppe.pk).exists()
+    assert "personal.sehen" in gruppe.rolle.rechte
