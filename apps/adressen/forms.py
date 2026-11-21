@@ -47,7 +47,7 @@ class AdresseForm(forms.ModelForm):
         ("Name", ["art", "organisation", "ansprechperson", "anrede", "vorname", "nachname",
                   "geburtsdatum", "kategorien"]),
         ("Anschrift und Kontakt", ["strasse", "plz", "ort", "land", "telefon", "mobil", "email",
-                                   "webseite"]),
+                                   "email_weitere", "webseite"]),
         ("Mitarbeit", ["konto", "rollen", "beschaeftigung", "ausgabestellen", "ausgabetage",
                        "benutzername"]),
         ("Einwilligungen und Notiz", ["einwilligung_post", "einwilligung_email",
@@ -59,8 +59,8 @@ class AdresseForm(forms.ModelForm):
         fields = [
             "art", "organisation", "ansprechperson", "anrede", "vorname", "nachname",
             "geburtsdatum", "kategorien",
-            "strasse", "plz", "ort", "land", "telefon", "mobil", "email", "webseite",
-            "einwilligung_post", "einwilligung_email", "veroeffentlichen", "notiz",
+            "strasse", "plz", "ort", "land", "telefon", "mobil", "email", "email_weitere",
+            "webseite", "einwilligung_post", "einwilligung_email", "veroeffentlichen", "notiz",
         ]  # fmt: skip
         widgets = {
             "geburtsdatum": DatumEingabe(),

@@ -1020,3 +1020,48 @@ def test_migration_benennt_helfer_kategorien_um():
     assert set(a.kategorien.values_list("name", flat=True)) == {
         "Ehrenamtliche Helfer", "Ehemalige Ehrenamtliche"}  # fmt: skip
     modul.vorwaerts(django_apps, None)
+
+
+def test_weitere_email_adressen(admin_client, pdf_text):
+    """Neben der Haupt-E-Mail lassen sich weitere Adressen eintragen: geprüft, ohne Doppelte, in
+    Ansicht, Liste (wählbare Spalte), Export, Import und Auskunft."""
+    from apps.adressen import importieren
+
+    a = Adresse.objects.create(art="person", vorname="Vera", nachname="Viel",
+                               email="vera@example.org")  # fmt: skip
+    url = reverse("adressen:bearbeiten", args=[a.pk])
+    daten = {"art": "person", "vorname": "Vera", "nachname": "Viel", "email": "vera@example.org"}
+    # ungültige Adresse: Fehler am Feld, nichts gespeichert
+    antwort = admin_client.post(url, daten | {"email_weitere": "buero@example.org, kaputt"})
+    assert "„kaputt“ ist keine gültige E-Mail-Adresse." in antwort.content.decode()
+    # gültig: Trenner egal, Doppelte und die Haupt-E-Mail fallen weg
+    wirr = "buero@example.org; VERA@example.org privat@example.org,buero@example.org"
+    admin_client.post(url, daten | {"email_weitere": wirr})
+    a.refresh_from_db()
+    assert a.email_weitere == "buero@example.org, privat@example.org"
+    assert a.emails == ["vera@example.org", "buero@example.org", "privat@example.org"]
+    # ohne Haupt-E-Mail rückt die erste nach
+    b = Adresse(art="person", nachname="Ohne", email_weitere="eins@example.org, zwei@example.org")
+    b.clean()
+    assert (b.email, b.email_weitere) == ("eins@example.org", "zwei@example.org")
+
+    seite = admin_client.get(reverse("adressen:adresse", args=[a.pk])).content.decode()
+    assert "Weitere E-Mail-Adressen" in seite and 'href="mailto:privat@example.org"' in seite
+    liste = reverse("adressen:liste")
+    inhalt = admin_client.get(liste).content.decode()
+    assert 'value="email_weitere"' in inhalt and "privat@example.org" not in inhalt  # Vorgabe: aus
+    admin_client.post(reverse("adressen:spalten"), {"spalte": ["vorname", "email_weitere"]})
+    assert "privat@example.org" in admin_client.get(liste).content.decode()
+    csv_text = admin_client.get(liste, {"aktion": "csv"}).content.decode("utf-8-sig")
+    assert "email_weitere" in csv_text and "buero@example.org, privat@example.org" in csv_text
+    auskunft = pdf_text(admin_client.get(reverse("adressen:auskunft", args=[a.pk])))
+    assert "privat@example.org" in auskunft
+
+    # Import: Spalte freiwillig, wird geprüft und geordnet
+    kopf = "nachname;plz;email;email_weitere\r\n"
+    bericht = importieren.pruefen(kopf + "Neu;12345;neu@example.org;a@example.org, a@example.org"
+                                  "\r\nSchief;12345;;nix\r\n")  # fmt: skip
+    assert [d["email_weitere"] for d in bericht.neu] == ["a@example.org"]
+    assert len(bericht.fehler) == 1 and "nix" in str(bericht.fehler[0])
+    alt = importieren.pruefen("nachname;plz\r\nAlt;54321\r\n")  # Datei ohne die Spalte
+    assert alt.neu[0]["email_weitere"] == ""

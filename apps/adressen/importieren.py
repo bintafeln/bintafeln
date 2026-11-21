@@ -22,7 +22,7 @@ from apps.kunden import werte
 SPALTEN = [
     "art", "organisation", "ansprechperson", "anrede", "vorname", "nachname", "geburtsdatum",
     "strasse", "plz", "ort", "land", "telefon", "mobil", "email", "webseite", "kategorien", "notiz",
-    "einwilligung_post", "einwilligung_email", "veroeffentlichen",
+    "einwilligung_post", "einwilligung_email", "veroeffentlichen", "email_weitere",
 ]  # fmt: skip
 DATUMSFELDER = ("geburtsdatum", "einwilligung_post", "einwilligung_email", "veroeffentlichen")
 MAX_ZEILEN = 20000
@@ -119,6 +119,8 @@ def _zeile(w: dict, kategorien: dict, bericht: Bericht) -> dict:
         URLValidator(message=f"keine gültige Webseite: {daten['webseite']}")(daten["webseite"])
     probe = Adresse(**{k: v for k, v in daten.items()})
     probe.clean()
+    # clean() ordnet die weiteren E-Mail-Adressen (prüft, entfernt Doppelte)
+    daten["email"], daten["email_weitere"] = probe.email, probe.email_weitere
     for feld in ("organisation", "vorname", "nachname", "strasse", "plz", "ort", "telefon"):
         grenze = Adresse._meta.get_field(feld).max_length
         if len(daten[feld]) > grenze:

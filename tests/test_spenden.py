@@ -142,7 +142,7 @@ def test_oberflaeche(admin_client, einstellungen, spender, pdf_text):
     csv = admin_client.get(reverse("spenden:liste"), {"jahr": "2026", "aktion": "csv"})
     inhalt = csv.content.decode()
     # zwischen Ort und Betrag stehen die übrigen Adressfelder des Spenders
-    assert "Max Probe;12345;Musterstadt;Herr;Weg 2;;;;;50,00" in inhalt
+    assert "Max Probe;12345;Musterstadt;Herr;Weg 2;;;;;;50,00" in inhalt
     # Alle ausstellen, dann PDF-Link
     url = reverse("spenden:ausstellen") + "?jahr=2026"
     seite = admin_client.post(url, follow=True).content.decode()

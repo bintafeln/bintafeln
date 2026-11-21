@@ -1023,6 +1023,12 @@ ADRESS_FELDER = [
     Feld("telefon", "Telefon", ("tel", "telefonnummer", "festnetz"), typ="telefon", laenge=50),
     Feld("mobil", "Mobil", ("handy", "mobiltelefon", "handynummer"), typ="telefon", laenge=50),
     Feld("email", "E-Mail", ("mail", "emailadresse"), typ="email", laenge=254),
+    Feld(
+        "email_weitere",
+        "Weitere E-Mail-Adressen (mit Komma getrennt)",
+        ("weitere emails", "weitere e-mails", "email2", "zweite email", "zweitemail"),
+        laenge=500,
+    ),
     Feld("webseite", "Webseite", ("homepage", "internet", "url", "web", "www")),
     Feld(
         "kategorien",
@@ -1111,6 +1117,16 @@ class _AdressRegeln(Ziel):
             return art or ""
         if f.schluessel == "webseite" and wert and "://" not in wert:
             return "https://" + wert
+        if f.schluessel == "email_weitere" and wert:
+            from django.core.exceptions import ValidationError
+
+            from apps.adressen.models import emails_ordnen
+
+            try:
+                return ", ".join(emails_ordnen(wert))
+            except ValidationError as fehler:
+                warnen(f"{fehler.messages[0]} Weitere E-Mail-Adressen bleiben leer.")
+                return ""
         if f.schluessel == "kategorien":
             return ", ".join(sorted({t[:100] for t in _liste(wert)}))
         return wert

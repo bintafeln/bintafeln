@@ -1492,7 +1492,7 @@ Serienbriefe (Modul 5, ADR 0044); Kunden stehen weiter im Kundenstamm.
   Adressen werden angelegt; gleicher Name mit gleicher PLZ oder gleiche E-Mail gilt als
   vorhanden. Spalten: `art;organisation;ansprechperson;anrede;vorname;nachname;strasse;plz;ort;`
   `land;telefon;mobil;email;webseite;kategorien;notiz;einwilligung_post;einwilligung_email;`
-  `veroeffentlichen` (alle freiwillig außer `organisation` oder `nachname`; Kategorien durch Komma
+  `veroeffentlichen;email_weitere` (alle freiwillig außer `organisation` oder `nachname`; Kategorien durch Komma
   getrennt, unbekannte werden angelegt; Daten als TT.MM.JJJJ). Der CSV-Export hat dieselben
   Spalten.
 
