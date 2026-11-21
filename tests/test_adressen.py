@@ -1065,3 +1065,25 @@ def test_weitere_email_adressen(admin_client, pdf_text):
     assert len(bericht.fehler) == 1 and "nix" in str(bericht.fehler[0])
     alt = importieren.pruefen("nachname;plz\r\nAlt;54321\r\n")  # Datei ohne die Spalte
     assert alt.neu[0]["email_weitere"] == ""
+
+
+def test_telefonnummern_sind_anklickbar(admin_client, admin):
+    """Telefon und Handy sind Links zum Anrufen (tel:), wie die E-Mail zum Schreiben – in der
+    Adresse, im Adressbuch und in der Team-Liste; im Link nur Ziffern."""
+    from apps.core.templatetags.liste import anrufen
+    from apps.konten import verwaltung
+
+    assert anrufen("0375 / 12 34-5") == '<a href="tel:037512345">0375 / 12 34-5</a>'
+    assert anrufen("+49 (171) 555") == '<a href="tel:+49171555">+49 (171) 555</a>'
+    assert anrufen("") == "" and anrufen(None) == "" and anrufen("privat") == "privat"
+    assert "&lt;b&gt;" in anrufen("<b>0375 1</b>")  # nichts Eingetragenes wird ausgeführt
+
+    a = Adresse.objects.create(art="person", vorname="Tina", nachname="Ton",
+                               telefon="0375 12345", mobil="0171/555 66")  # fmt: skip
+    verwaltung.konto_fuer_adresse(admin, a, [rollen.FAHRER])
+    verwaltung.stammdaten_aus_adresse(a)
+    for url in (reverse("adressen:adresse", args=[a.pk]), reverse("adressen:liste"),
+                reverse("konten:ehrenamtliche")):  # fmt: skip
+        seite = admin_client.get(url).content.decode()
+        assert '<a href="tel:037512345">0375 12345</a>' in seite, url
+        assert '<a href="tel:017155566">0171/555 66</a>' in seite, url

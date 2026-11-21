@@ -101,3 +101,15 @@ def filter_zuruecksetzen(context, *behalten):
         'title="Alle Filter dieser Seite entfernen">Zurücksetzen</a>',
         ziel,
     )
+
+
+@register.filter
+def anrufen(nummer):
+    """Telefonnummer als Link zum Anrufen (``tel:``), wie die E-Mail als ``mailto:``. Im Link
+    stehen nur Ziffern und ein führendes „+“, angezeigt wird die Nummer wie eingetragen. Ohne
+    brauchbare Nummer (kein Wert, nur Text) bleibt es beim Text."""
+    text = str(nummer or "").strip()
+    ziel = ("+" if text.startswith("+") else "") + "".join(z for z in text if z.isdigit())
+    if len(ziel.lstrip("+")) < 3:
+        return text
+    return format_html('<a href="tel:{}">{}</a>', ziel, text)

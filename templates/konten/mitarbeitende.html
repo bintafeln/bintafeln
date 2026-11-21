@@ -114,8 +114,8 @@
         {% if "strasse" in sichtbar %}<td data-titel="Straße">{{ z.sd.strasse }}</td>{% endif %}
         {% if "plz" in sichtbar %}<td data-titel="PLZ">{{ z.sd.plz }}</td>{% endif %}
         {% if "ort" in sichtbar %}<td data-titel="Ort">{{ z.sd.ort }}</td>{% endif %}
-        {% if "telefon" in sichtbar %}<td data-titel="Telefon">{{ z.sd.telefon }}</td>{% endif %}
-        {% if "handy" in sichtbar %}<td data-titel="Handy">{{ z.sd.handy }}</td>{% endif %}
+        {% if "telefon" in sichtbar %}<td data-titel="Telefon">{{ z.sd.telefon|anrufen }}</td>{% endif %}
+        {% if "handy" in sichtbar %}<td data-titel="Handy">{{ z.sd.handy|anrufen }}</td>{% endif %}
         {% if "email" in sichtbar %}<td data-titel="E-Mail">{% if z.b.email %}<a href="mailto:{{ z.b.email }}">{{ z.b.email }}</a>{% endif %}</td>{% endif %}
         {% if "geburtstag" in sichtbar %}<td data-titel="Geburtstag">{{ z.geburtstag|date:"d.m.Y" }}</td>{% endif %}
         {% if "benutzername" in sichtbar %}<td data-titel="Benutzername">{{ z.b.username }}</td>{% endif %}

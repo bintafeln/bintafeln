@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load liste %}
 {% block titel %}{{ s.name }} – Konto{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
@@ -53,7 +54,7 @@
   {% if s.zeiten.all %}<ul>{% for z in s.zeiten.all %}<li>{{ z.get_wochentag_display }} {{ z.von|time:"H:i" }}{% if z.bis %}–{{ z.bis|time:"H:i" }}{% endif %} Uhr {{ z.art }}{% if z.hinweis %} ({{ z.hinweis }}){% endif %}</li>{% endfor %}</ul>
   {% else %}<p class="hinweis">Keine Zeiten eingetragen.</p>{% endif %}
   <h3>Ansprechpartner</h3>
-  {% if s.kontakte.all %}<ul>{% for k in s.kontakte.all %}<li>{{ k.zustaendigkeit }}: {{ k.anzeige_name }}{% if k.telefon %}, {{ k.telefon }}{% endif %}</li>{% endfor %}</ul>
+  {% if s.kontakte.all %}<ul>{% for k in s.kontakte.all %}<li>{{ k.zustaendigkeit }}: {{ k.anzeige_name }}{% if k.telefon %}, {{ k.telefon|anrufen }}{% endif %}</li>{% endfor %}</ul>
   {% else %}<p class="hinweis">Keine Ansprechpartner eingetragen.</p>{% endif %}
   {% if "kunden.liste" in rechte %}<p><a href="{% url 'kunden:ausgabestelle' s.pk %}">Alle Angaben mit Karte und Kundengruppen</a></p>{% endif %}
 </section>
