@@ -20,13 +20,15 @@
 </section>
 <ol class="tour-halte">
   {% for h in halte %}{% with s=h.station %}
-  <li class="karte tour-halt" id="halt-{{ forloop.counter }}">
+  <li class="karte tour-halt{% if h.schein %} tour-erledigt{% endif %}" id="halt-{{ forloop.counter }}">
     <div class="tour-halt-kopf"><span class="tour-nr" aria-hidden="true">{{ forloop.counter }}</span>
       <div><h2>{{ s.name }}</h2>
         <address>{{ s.strasse_hausnummer }}, {{ s.plz }} {{ s.ort }}{% if s.ortsteil %} ({{ s.ortsteil }}){% endif %}</address></div></div>
     {% if s.abholzeit %}<p><strong>Abholzeit:</strong> {{ s.abholzeit }}</p>{% endif %}
     {% if s.anfahrt %}<div class="notiz"><p class="notiz-text"><strong>Anfahrt:</strong> {{ s.anfahrt|linebreaksbr }}</p></div>{% endif %}
     <a class="knopf tour-knopf" href="{{ s.navigation }}" target="_blank" rel="noopener noreferrer">🧭 Navigation starten</a>
+    {% if h.schein %}<p class="tour-schein"><span class="marke-ok">✓ Lieferschein Nr. {{ h.schein.nummer }}</span> <a href="{% url 'touren:lieferschein_pdf' h.schein.pk %}" target="_blank" rel="noopener">ansehen</a>{% if not h.schein.gesendet_am %} <span class="marke-warnung">nicht verschickt</span>{% endif %}</p>
+    {% elif h.schein_moeglich %}<a class="knopf knopf-zweitrangig tour-knopf" href="{% url 'touren:lieferschein' s.pk %}?tour={{ tour.pk }}&amp;tag={{ tag|date:'Y-m-d' }}">📝 Lieferschein ausfüllen</a>{% endif %}
     <p class="tour-halt-fuss">{% if s.telefon %}<span>📞 {{ s.telefon|anrufen }}{% if s.ansprechpartner %} <small class="leise">{{ s.ansprechpartner }}</small>{% endif %}</span>{% endif %}
       {% if "touren.stationen" in rechte %}<a href="{% url 'touren:station' s.pk %}">Alle Angaben</a>{% endif %}</p>
   </li>

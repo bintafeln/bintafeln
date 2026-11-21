@@ -2170,3 +2170,52 @@ def test_qr_code_zum_stempeln_im_browser_scannen(angemeldet, admin, benutzer_mit
     expect(seite.get_by_text("Vor Ort bestätigt")).to_be_visible()
     expect(seite.get_by_role("button", name="Kommen")).to_be_visible()
     assert len(seite.context.pages) == seiten_vorher  # kein neues Fenster
+
+
+def test_lieferschein_am_handy_unterschreiben(seite, angemeldet, admin):
+    """Unterwegs: Lieferschein ausfüllen, mit dem Finger unterschreiben, abschicken
+    (static/js/unterschrift_feld.js, ADR 0149)."""
+    from apps.core.models import TafelEinstellungen
+    from apps.touren import ablauf
+    from apps.touren.models import Lieferschein, Station, Tour
+
+    t = TafelEinstellungen.laden()
+    t.module = ["touren"]
+    t.save()
+    station = Station.objects.create(kennung="M-1", name="Beispielmarkt", strasse="Musterweg",
+                                     hausnummer="1", plz="12345", ort="Musterstadt")  # fmt: skip
+    tour = Tour.objects.create(name="Tour 1")
+    ablauf.halt_anhaengen(tour, station)
+    angemeldet(admin)
+    seite.set_viewport_size({"width": 390, "height": 800})
+    seite.goto(reverse("touren:fahren", args=[tour.pk]))
+    seite.get_by_role("link", name="📝 Lieferschein ausfüllen").click()
+    seite.get_by_label("Obst/Gemüse: Menge").fill("4")
+    seite.get_by_label("Backwaren: Menge").fill("2,5")
+    seite.get_by_label("Backwaren: Einheit").select_option("kg")
+    # ohne Unterschrift: Fehler, die Mengen bleiben stehen
+    seite.get_by_role("button", name="Unterschreiben und abschicken").click()
+    expect(seite.get_by_role("alert")).to_contain_text("Bitte im Feld unterschreiben")
+    expect(seite.get_by_label("Obst/Gemüse: Menge")).to_have_value("4")
+    flaeche = seite.locator("#unterschrift-flaeche")
+    flaeche.scroll_into_view_if_needed()
+    kasten = flaeche.bounding_box()
+    seite.mouse.move(kasten["x"] + 30, kasten["y"] + 100)
+    seite.mouse.down()
+    seite.mouse.move(kasten["x"] + 120, kasten["y"] + 40, steps=5)
+    seite.mouse.move(kasten["x"] + 250, kasten["y"] + 110, steps=5)
+    seite.mouse.up()
+    expect(seite.locator("#unterschrift")).to_have_value(re.compile("^data:image/png;base64,"))
+    # löschen leert das Feld, danach neu unterschreiben
+    seite.get_by_role("button", name="Unterschrift löschen").click()
+    expect(seite.locator("#unterschrift")).to_have_value("")
+    seite.mouse.move(kasten["x"] + 30, kasten["y"] + 60)
+    seite.mouse.down()
+    seite.mouse.move(kasten["x"] + 200, kasten["y"] + 90, steps=8)
+    seite.mouse.up()
+    seite.get_by_role("button", name="Unterschreiben und abschicken").click()
+    expect(seite).to_have_url(re.compile(rf"/touren/tour/{tour.pk}/"))
+    expect(seite.locator(".tour-schein")).to_contain_text("Lieferschein Nr. 1")
+    ls = Lieferschein.objects.get()
+    assert [p.menge_text for p in ls.positionen.all()] == ["4 Kisten", "2,5 kg"]
+    assert not ls.gesendet_am and "keine E-Mail" in ls.mail_fehler

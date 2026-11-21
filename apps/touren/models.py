@@ -218,5 +218,136 @@ class Halt(models.Model):
         return f"{self.tour}: {self.station}"
 
 
+class TourenEinstellungen(models.Model):
+    """Einstellungen des Moduls Touren (Singleton)."""
+
+    EINZIGE_ID = 1
+
+    lieferscheine = models.BooleanField(
+        "Lieferscheine an den Stationen", default=True,
+        help_text="Unterwegs lässt sich an jeder Station, bei der „Lieferschein“ eingeschaltet "
+        "ist, ein Lieferschein ausfüllen und unterschreiben. Die Station bekommt ihn als PDF per "
+        "E-Mail; in bintafeln bleibt er gespeichert.",
+    )  # fmt: skip
+    mail_text = models.TextField(
+        "Text der E-Mail an die Station",
+        default="Guten Tag,\n\nvielen Dank für Ihre Spende. Im Anhang finden Sie den "
+        "Lieferschein zur heutigen Abholung.\n\nMit freundlichen Grüßen",
+        help_text="Darunter steht automatisch der Name der Tafel.",
+    )  # fmt: skip
+    aufbewahrung_jahre = models.PositiveSmallIntegerField(
+        "Lieferscheine aufbewahren (Jahre)", default=10,
+        validators=[MinValueValidator(1), MaxValueValidator(30)],
+        help_text="Danach werden sie automatisch gelöscht.",
+    )  # fmt: skip
+    naechste_nummer = models.PositiveIntegerField(
+        "Nächste Lieferscheinnummer", default=1,
+        help_text="Wird fortlaufend vergeben.",
+    )  # fmt: skip
+
+    class Meta:
+        verbose_name = "Touren-Einstellungen"
+        verbose_name_plural = "Touren-Einstellungen"
+
+    def __str__(self):
+        return "Touren-Einstellungen"
+
+    def save(self, *args, **kwargs):
+        self.pk = self.EINZIGE_ID
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def laden(cls) -> "TourenEinstellungen":
+        einstellungen, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
+        return einstellungen
+
+
+class Warengruppe(models.Model):
+    """Zeile auf dem Lieferschein, z. B. „Obst/Gemüse“; die Tafel pflegt die Liste."""
+
+    name = models.CharField("Name", max_length=60, unique=True)
+    reihenfolge = models.PositiveSmallIntegerField("Reihenfolge", default=0)
+    aktiv = models.BooleanField("Aktiv", default=True)
+
+    class Meta:
+        verbose_name = "Warengruppe"
+        verbose_name_plural = "Warengruppen"
+        ordering = ["reihenfolge", "name"]
+
+    def __str__(self):
+        return self.name
+
+
+class Lieferschein(models.Model):
+    """Ein ausgefüllter und unterschriebener Lieferschein (ADR 0149).
+
+    Das PDF wird einmal erzeugt und liegt verschlüsselt in ``datei``; es wird nie neu berechnet,
+    die Unterschrift selbst wird deshalb nicht aufbewahrt. Name und Anschrift der Station und
+    der Name der Tour sind festgehalten, wie sie beim Ausfüllen waren.
+    """
+
+    ORDNER = "lieferscheine"
+    PRIVATDATEI = (ORDNER, "datei")
+
+    nummer = models.PositiveIntegerField("Nummer", unique=True)
+    station = models.ForeignKey(
+        Station, null=True, blank=True, on_delete=models.SET_NULL, related_name="lieferscheine"
+    )
+    station_name = models.CharField("Station", max_length=150)
+    station_anschrift = models.CharField("Anschrift", max_length=300, blank=True)
+    tour = models.ForeignKey(
+        Tour, null=True, blank=True, on_delete=models.SET_NULL, related_name="lieferscheine"
+    )
+    tour_name = models.CharField("Tour", max_length=80, blank=True)
+    datum = models.DateField("Datum")
+    anmerkung = models.TextField("Anmerkung", blank=True)
+    datei = models.CharField(max_length=100, editable=False, blank=True)
+    erstellt_von = models.ForeignKey(
+        "konten.Benutzer", null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    unterschrieben_von = models.CharField("Unterschrieben von", max_length=200)
+    erstellt_am = models.DateTimeField("Erstellt am", auto_now_add=True)
+    gesendet_an = models.CharField("Geschickt an", max_length=254, blank=True)
+    gesendet_am = models.DateTimeField("Geschickt am", null=True, blank=True)
+    mail_fehler = models.CharField("Nicht verschickt, weil", max_length=300, blank=True)
+
+    class Meta:
+        verbose_name = "Lieferschein"
+        verbose_name_plural = "Lieferscheine"
+        ordering = ["-nummer"]
+
+    def __str__(self):
+        return f"Lieferschein {self.nummer}"
+
+
+class Position(models.Model):
+    class Einheit(models.TextChoices):
+        KISTEN = "kisten", "Kisten"
+        KG = "kg", "kg"
+
+    lieferschein = models.ForeignKey(Lieferschein, on_delete=models.CASCADE,
+                                     related_name="positionen")  # fmt: skip
+    warengruppe = models.CharField("Warengruppe", max_length=60)
+    menge = models.DecimalField("Menge", max_digits=7, decimal_places=1)
+    einheit = models.CharField("Einheit", max_length=10, choices=Einheit.choices,
+                               default=Einheit.KISTEN)  # fmt: skip
+
+    class Meta:
+        verbose_name = "Position"
+        verbose_name_plural = "Positionen"
+        ordering = ["pk"]
+
+    def __str__(self):
+        return f"{self.warengruppe}: {self.menge_text}"
+
+    @property
+    def menge_text(self) -> str:
+        zahl = f"{self.menge:.1f}".replace(".", ",").removesuffix(",0")
+        return f"{zahl} {self.get_einheit_display()}"
+
+
 auditlog.register(Tour, m2m_fields={"personen"})
 auditlog.register(Halt)
+auditlog.register(TourenEinstellungen)
+auditlog.register(Warengruppe)
+auditlog.register(Lieferschein)

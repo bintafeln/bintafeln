@@ -1087,3 +1087,37 @@ def test_hilfe_bild_touren_fahren(angemeldet, admin, muster):
         rand=8,
     )  # fmt: skip
     seite.set_viewport_size({"width": 1280, "height": 900})
+
+
+def test_hilfe_bild_touren_lieferschein(angemeldet, admin, muster):
+    from apps.core import demo_daten
+    from apps.touren.models import Station
+
+    _module("touren")
+    demo_daten.touren()
+    markt = Station.objects.get(kennung="S-1")
+    seite = oeffnen(angemeldet, admin, reverse("touren:lieferschein", args=[markt.pk]))
+    seite.set_viewport_size({"width": 400, "height": 900})
+    seite.get_by_label("Obst/Gemüse: Menge").fill("6")
+    seite.get_by_label("Backwaren: Menge").fill("3,5")
+    seite.get_by_label("Backwaren: Einheit").select_option("kg")
+    flaeche = seite.locator("#unterschrift-flaeche")
+    flaeche.scroll_into_view_if_needed()
+    k = flaeche.bounding_box()
+    punkte = [(30, 110), (60, 50), (90, 120), (130, 60), (170, 115), (230, 70), (300, 100)]
+    seite.mouse.move(k["x"] + punkte[0][0], k["y"] + punkte[0][1])
+    seite.mouse.down()
+    for x, y in punkte[1:]:
+        seite.mouse.move(k["x"] + x, k["y"] + y, steps=6)
+    seite.mouse.up()
+    aufnehmen(
+        seite,
+        "touren-lieferschein",
+        [seite.locator("section.karte")],
+        Marke(seite.locator(".ls-zeilen"), art="rahmen", nummer=1),
+        Marke(flaeche, art="rahmen", nummer=2),
+        Marke(seite.get_by_role("button", name="Unterschreiben und abschicken"), art="rahmen",
+              nummer=3),
+        rand=8,
+    )  # fmt: skip
+    seite.set_viewport_size({"width": 1280, "height": 900})

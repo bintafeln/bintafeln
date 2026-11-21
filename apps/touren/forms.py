@@ -3,7 +3,7 @@ from django import forms
 from apps.core.forms import Mehrfachauswahl
 from apps.fahrdienst.forms import TageFeld
 from apps.konten.forms import DatumEingabe
-from apps.touren.models import Station, Tour
+from apps.touren.models import Station, Tour, TourenEinstellungen, Warengruppe
 
 
 class StationForm(forms.ModelForm):
@@ -121,3 +121,15 @@ class HaltForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.fields["station"].queryset = Station.objects.filter(aktiv=True).exclude(
             halte__tour=tour)  # fmt: skip
+
+
+class EinstellungenForm(forms.ModelForm):
+    class Meta:
+        model = TourenEinstellungen
+        fields = ["lieferscheine", "mail_text", "aufbewahrung_jahre"]
+        widgets = {"mail_text": forms.Textarea(attrs={"rows": 5})}
+
+
+WarengruppenFormSet = forms.modelformset_factory(
+    Warengruppe, fields=["name", "reihenfolge", "aktiv"], extra=2, can_delete=False
+)

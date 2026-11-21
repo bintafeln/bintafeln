@@ -2,6 +2,7 @@
 Datenbankzugriff."""
 
 from apps.core.benachrichtigung import Art
+from apps.core.mailuebersicht import Mail
 from apps.core.module import Modul
 
 
@@ -10,10 +11,13 @@ def menue(eintrag):
         ("Dienstpläne/Touren", [
             ("touren.fahren", eintrag("Touren heute", "touren:heute", genau=True)),
             ("touren.stationen", eintrag("Stationen", "touren:stationen")),
+            ("touren.lieferscheine", eintrag("Lieferscheine", "touren:lieferscheine")),
         ]),
         ("Einstellungen/Dienstpläne", [
             ("touren.planen", eintrag("Touren: Stationsfolgen und kurzfristige Touren",
                                       "touren:touren")),
+            ("einstellungen.touren", eintrag("Touren: Lieferscheine und Warengruppen",
+                                             "touren:einstellungen")),
         ]),
     ]  # fmt: skip
 
@@ -75,18 +79,25 @@ def startseite(request):
 
 
 def fristen():
-    from apps.touren import ablauf
+    from apps.touren import ablauf, lieferscheine
 
     ablauf.fristen_anwenden()
+    lieferscheine.fristen_anwenden()
 
 
 def auskunft_mitarbeiter(benutzer, pdf):
-    from apps.touren.models import Tour
+    from apps.touren.models import Lieferschein, Tour
 
     touren = Tour.objects.filter(personen__konto=benutzer).distinct()
-    if not touren:
+    scheine = Lieferschein.objects.filter(erstellt_von=benutzer)
+    if not touren and not scheine:
         return
     pdf.ueberschrift("Touren")
+    pdf.tabelle(
+        ["Lieferschein unterschrieben", "Datum", "Station"],
+        [[f"Nr. {ls.nummer}", f"{ls.datum:%d.%m.%Y}", ls.station_name] for ls in scheine],
+        breiten=[0.3, 0.2, 0.5],
+    )
     pdf.tabelle(
         ["Tour", "Am", "Geschickt am"],
         [[t.name, f"{t.datum:%d.%m.%Y}" if t.datum else "regelmäßig",
@@ -112,7 +123,8 @@ MODUL = Modul(
     titel="Touren",
     beschreibung="Abholtouren fürs Handy: Stationen (Märkte, Bäckereien, Lieferanten …) in "
     "Fahrtreihenfolge mit Navigation in Google Maps; Besetzung aus dem Fahrerplan oder eigene "
-    "und kurzfristige Touren, die den Fahrern per E-Mail geschickt werden; Import aus CSV",
+    "und kurzfristige Touren; Lieferscheine mit Unterschrift am Handy, als PDF per E-Mail an "
+    "die Station; Import aus CSV",
     app_label="touren",
     pfade=("/touren/",),
     rechte=(
@@ -125,11 +137,23 @@ MODUL = Modul(
          "schicken, Stationsfolgen importieren."),
         ("touren.stationen_bearbeiten", "Stationen anlegen, bearbeiten, importieren und löschen",
          "Ins Adressbuch übertragen nur zusammen mit „Adressen anlegen und bearbeiten“."),
+        ("touren.lieferschein", "Lieferscheine ausfüllen und unterschreiben",
+         "An einer Station den Lieferschein ausfüllen; die eigenen Lieferscheine ansehen."),
+        ("touren.lieferscheine", "Alle Lieferscheine ansehen, nachsenden und löschen", ""),
+        ("einstellungen.touren", "Touren einstellen: Lieferscheine und Warengruppen", ""),
     ),
     vorgaben={"Büro": ("touren.fahren", "touren.stationen", "touren.planen",
-                       "touren.stationen_bearbeiten"),
-              "Fahrer": ("touren.fahren", "touren.stationen"),
-              "Beifahrer": ("touren.fahren", "touren.stationen")},
+                       "touren.stationen_bearbeiten", "touren.lieferschein",
+                       "touren.lieferscheine"),
+              "Fahrer": ("touren.fahren", "touren.stationen", "touren.lieferschein"),
+              "Beifahrer": ("touren.fahren", "touren.stationen", "touren.lieferschein")},
+    mails=(
+        Mail("Touren: Lieferschein",
+             "Sobald unterwegs ein Lieferschein unterschrieben wird, oder beim Nachsenden.",
+             "Die Station: ihre „E-Mail für Lieferscheine“, sonst ihre E-Mail. Sonst niemand.",
+             ("Touren: Lieferscheine und Warengruppen", "touren:einstellungen",
+              "einstellungen.touren")),
+    ),
     kapitel=(("touren", "Touren: unterwegs, Stationen, Planung",
               ("touren.fahren", "touren.stationen")),),
     benachrichtigungen=(

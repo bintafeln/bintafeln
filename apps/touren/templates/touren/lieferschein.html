@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load static %}
+{% block titel %}Lieferschein {{ station.name }}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{{ zurueck }}">← zurück</a></p>
+  <h1>Lieferschein</h1>
+  <p><strong>{{ station.name }}</strong><br><span class="leise">{{ station.anschrift }} · {{ tag|date:"d.m.Y" }}{% if tour %} · {{ tour.name }}{% endif %}</span></p>
+  {% if schon %}<p class="hinweis"><span class="marke-warnung">Heute gibt es hier schon Lieferschein Nr. {{ schon.nummer }}.</span> Ein weiterer kommt dazu, er ersetzt den ersten nicht.</p>{% endif %}
+  {% if not station.lieferschein_an %}<p class="hinweis"><span class="marke-warnung">Keine E-Mail-Adresse bei dieser Station.</span> Der Lieferschein wird gespeichert, aber nicht verschickt.</p>{% endif %}
+  {% if fehler %}<p class="fehler" role="alert">{{ fehler }}</p>{% endif %}
+  <form method="post" id="lieferschein-form">
+    {% csrf_token %}
+    <input type="hidden" name="tag" value="{{ tag|date:'Y-m-d' }}">
+    {% if tour %}<input type="hidden" name="tour" value="{{ tour.pk }}">{% endif %}
+    <div class="ls-zeilen">
+      {% for g in gruppen %}
+      <div class="ls-zeile">
+        <label for="menge_{{ g.pk }}">{{ g.name }}</label>
+        <input type="text" inputmode="decimal" name="menge_{{ g.pk }}" id="menge_{{ g.pk }}" value="{{ g.menge }}" placeholder="0" autocomplete="off" aria-label="{{ g.name }}: Menge">
+        <select name="einheit_{{ g.pk }}" aria-label="{{ g.name }}: Einheit">{% for wert, text in einheiten %}<option value="{{ wert }}"{% if g.einheit == wert %} selected{% endif %}>{{ text }}</option>{% endfor %}</select>
+      </div>
+      {% empty %}<p class="hinweis">Es sind keine Warengruppen eingerichtet.</p>
+      {% endfor %}
+    </div>
+    <div class="feld"><label for="anmerkung">Anmerkung</label>
+      <textarea name="anmerkung" id="anmerkung" rows="2" maxlength="1000">{{ anmerkung }}</textarea></div>
+    <div class="feld">
+      <label for="unterschrift-flaeche">Unterschrift ({{ request.user.get_full_name|default:request.user.get_username }})</label>
+      <canvas id="unterschrift-flaeche" class="unterschrift-flaeche" data-unterschrift="unterschrift" aria-label="Hier mit dem Finger unterschreiben"></canvas>
+      <input type="hidden" name="unterschrift" id="unterschrift">
+      <button type="button" class="knopf knopf-zweitrangig knopf-klein" data-unterschrift-leeren="unterschrift">Unterschrift löschen</button>
+      <noscript><p class="fehler">Zum Unterschreiben muss JavaScript eingeschaltet sein.</p></noscript>
+    </div>
+    <button type="submit" class="knopf tour-knopf">Unterschreiben und abschicken</button>
+  </form>
+</section>
+<script src="{% static 'js/unterschrift_feld.js' %}" defer></script>
+{% endblock %}
