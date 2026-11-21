@@ -176,6 +176,11 @@ class Zeitbuchung(models.Model):
     )
     beginn = models.DateTimeField("Kommen")
     ende = models.DateTimeField("Gehen", null=True, blank=True)
+    pause = models.BooleanField(
+        "Danach Pause",
+        default=False,
+        help_text="Mit „Pause“ statt „Gehen“ beendet: Danach wird „Pause beenden“ angeboten.",
+    )
     bemerkung = models.CharField("Anmerkung", max_length=200, blank=True)
     korrigiert_von = models.CharField("Korrigiert von", max_length=150, blank=True)
 

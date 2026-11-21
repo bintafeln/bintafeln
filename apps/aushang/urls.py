@@ -13,6 +13,7 @@ urlpatterns = [
     path("zeigen/<str:schluessel>/platz/", views.platz, name="platz"),
     path("zeigen/<str:schluessel>/stempeln/", views.stempeln_monitor, name="stempeln"),
     path("stempeln/<str:marke>/", views.stempeln_handy, name="stempeln_handy"),
+    path("stempeln-scan/", views.stempeln_scan, name="stempeln_scan"),
     # Eigene PIN fürs Ändern am Monitor (jedes angemeldete Konto)
     path("meine-pin/", views.meine_pin, name="meine_pin"),
 ]

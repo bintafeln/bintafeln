@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block titel %}Meine Arbeitszeit{% endblock %}
 {% block inhalt %}
 <section class="karte">
@@ -23,8 +24,28 @@
   </form>
   {% else %}
   <p class="hinweis"><strong>Stempeln geht nur am Aushang-Monitor vor Ort.</strong> Dort oben auf „Stempeln“ tippen und
-    entweder Namen und PIN eingeben oder den QR-Code mit diesem Handy scannen – danach erscheinen hier die Knöpfe
-    für ein paar Minuten. Ihre PIN legen Sie unter „Mein Konto“ (eigener Name oben rechts) fest.</p>
+    entweder Namen und PIN eingeben oder den QR-Code mit diesem Handy scannen{% if qr_scannen %} – am einfachsten
+    hier mit „QR-Code scannen“{% endif %}. Danach erscheinen hier die Knöpfe für ein paar Minuten. Ihre PIN legen Sie
+    unter „Mein Konto“ (eigener Name oben rechts) fest.</p>
+  {% if qr_scannen %}
+  <form method="post" action="{% url 'aushang:stempeln_scan' %}" class="stempel-scan">
+    {% csrf_token %}
+    <input type="hidden" name="code" data-kamera="qr-scannen"
+           data-kamera-skript="{% static 'vendor/barcode-detector/ponyfill.js' %}"
+           data-kamera-wasm="{% static 'vendor/barcode-detector/zxing_reader.wasm' %}"
+           data-kamera-ersatz="Bitte den QR-Code mit der Kamera-App des Handys scannen."
+           {% if heimnetz_https and not request.is_secure %}data-kamera-https="https://{{ heimnetz_https }}{% url 'personal:meine_arbeitszeit' %}"{% endif %}>
+    <button type="button" class="knopf stempeln" id="qr-scannen" hidden>📷 QR-Code scannen</button>
+  </form>
+  <dialog id="qr-scannen-dialog" class="kamera-dialog" aria-label="QR-Code am Monitor scannen">
+    <p class="kamera-hilfe">Den QR-Code im Fenster „Stempeln“ am Monitor in den Rahmen halten.</p>
+    <video playsinline muted></video>
+    <div class="kamera-meldung meldung error" role="alert" hidden></div>
+    <button type="button" class="knopf kamera-nochmal" hidden>Erneut versuchen</button>
+    <button type="button" class="knopf knopf-zweitrangig kamera-schliessen">Schließen</button>
+  </dialog>
+  <script src="{% static 'js/kamera_scanner.js' %}" defer></script>
+  {% endif %}
   {% endif %}
   {% for b in vergessen %}
     <p class="sicherung sicherung-veraltet">Am {{ b.beginn|date:"d.m.Y" }} um {{ b.beginn|time:"H:i" }} fehlt das „Gehen“.

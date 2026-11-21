@@ -2132,3 +2132,41 @@ def test_adresse_stammdaten_speichern_sofort(angemeldet, admin):
     assert Stammdaten.objects.get(benutzer=konto).notfall_name == "Nils Notfall"
     a.refresh_from_db()
     assert a.strasse == "Beispielweg 3" and a.konto_id == konto.pk
+
+
+def test_qr_code_zum_stempeln_im_browser_scannen(angemeldet, admin, benutzer_mit_rolle):
+    """„Meine Arbeitszeit“ bei „nur am Monitor“: Der Scanner öffnet sich in der Seite, der
+    gelesene QR-Code wird im selben Fenster eingelöst, danach erscheint „Kommen“. Die Kamera
+    liefert nur ein Testbild, deshalb liest ein Ersatz-Detektor den Code des Monitors."""
+    import json
+
+    from apps.aushang import stempeln
+    from apps.aushang.models import Aushang, AushangSeite
+    from apps.core.models import TafelEinstellungen
+    from apps.personal.models import ArbeitszeitEinstellungen
+
+    t = TafelEinstellungen.laden()
+    t.module = ["aushang", "dienstplan"]
+    t.save()
+    e = ArbeitszeitEinstellungen.laden()
+    e.aktiv = e.nur_am_monitor = True
+    e.save()
+    monitor = Aushang.objects.create(name="Monitor Ausgabe")
+    AushangSeite.objects.create(aushang=monitor, art="dienstplan", wert="1")
+    kim = benutzer_mit_rolle("kim", rollen.AUSGABE)
+    kim.beschaeftigung = "fest"
+    kim.save()
+    seite = angemeldet(kim)
+    adresse = reverse("aushang:stempeln_handy", args=[stempeln.marke(monitor)])
+    seite.add_init_script(
+        "window.BarcodeDetector = class { static async getSupportedFormats() {"
+        " return ['code_128', 'qr_code']; }"
+        f" async detect() {{ return [{{rawValue: location.origin + {json.dumps(adresse)}}}]; }} }};"
+    )
+    seite.goto(reverse("personal:meine_arbeitszeit"))
+    expect(seite.get_by_role("button", name="Kommen")).to_have_count(0)
+    seiten_vorher = len(seite.context.pages)
+    seite.get_by_role("button", name=re.compile("QR-Code scannen")).click()
+    expect(seite.get_by_text("Vor Ort bestätigt")).to_be_visible()
+    expect(seite.get_by_role("button", name="Kommen")).to_be_visible()
+    assert len(seite.context.pages) == seiten_vorher  # kein neues Fenster

@@ -24,6 +24,9 @@ läuft:
   (`django.core.signing`, 90 Sekunden gültig, alle 30 Sekunden neu). Das Handy löst sie ein und
   bekommt in seiner Sitzung für fünf Minuten die Freigabe (`arbeitszeit.freigeben()`); die
   Freigabe übersteht die Anmeldung. Gestempelt wird dann wie gewohnt unter „Meine Arbeitszeit“.
+  Wer „Meine Arbeitszeit“ schon offen hat, liest den Code dort mit dem Kamera-Scanner der Seite
+  (`static/js/kamera_scanner.js`, ADR 0029) und löst ihn über `aushang:stempeln_scan` im selben
+  Fenster ein – die Kamera-App des Handys würde bei jedem Scan eine neue Browserseite öffnen.
 - **„Stempeln nur am Aushang-Monitor“** (`ArbeitszeitEinstellungen.nur_am_monitor`, Vorgabe aus):
   Ohne Freigabe fehlen die Knöpfe unter „Meine Arbeitszeit“, und die Stempel-Adresse lehnt ab
   (`arbeitszeit.hier_erlaubt()`). Nachtragen durch das Personal bleibt überall möglich.

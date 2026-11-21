@@ -28,6 +28,13 @@ def _wert(wert) -> str:
     return str(wert)
 
 
+def _gehen(z) -> str:
+    """Ende einer Zeitbuchung; mit „(Pause)“, wenn sie mit „Pause“ statt „Gehen“ endete."""
+    if z.ende is None:
+        return "offen"
+    return _wert(z.ende) + (" (Pause)" if z.pause else "")
+
+
 def mitarbeiter_pdf(b) -> bytes:
     doc = Pdf("Auskunft nach Art. 15 DSGVO", f"Gespeicherte Daten zu {b.get_full_name() or b}")
     doc.absatz(
@@ -169,7 +176,7 @@ def mitarbeiter_pdf(b) -> bytes:
     doc.tabelle(
         ["Kommen", "Gehen", "Anmerkung", "Korrigiert von"],
         [
-            [_wert(z.beginn), _wert(z.ende) or "offen", z.bemerkung, z.korrigiert_von]
+            [_wert(z.beginn), _gehen(z), z.bemerkung, z.korrigiert_von]
             for z in b.zeitbuchungen.order_by("beginn")
         ],
     )

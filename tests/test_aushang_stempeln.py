@@ -104,6 +104,8 @@ def test_stempeln_mit_name_und_pin(dienstplan_monitor, kim, benutzer_mit_rolle):
     assert not doppelt["ok"] and "schon eingestempelt" in doppelt["fehler"]
     c.post(url, {"person": kim.pk, "pin": "482915", "aktion": "gehen"})
     assert not arbeitszeit.laufend(kim) and Zeitbuchung.objects.get().ende
+    stand = c.post(url, {"person": kim.pk, "pin": "482915"}).json()
+    assert stand["aktionen"] == [["kommen", "Kommen"]]  # nach „Gehen“ keine Pause
     # Mit der PIN einer Person, die nicht stempelt, geht nichts
     nein = c.post(url, {"person": ehrenamt.pk, "pin": "482915", "aktion": "kommen"}).json()
     assert not nein["ok"] and Zeitbuchung.objects.count() == 1
@@ -178,3 +180,34 @@ def test_pin_abschnitt_auf_mein_konto_auch_fuers_stempeln(kim, anmelden, recht_n
         recht_nehmen("Ausgabe", recht)
     c = anmelden(Client(), get_user_model().objects.get(pk=kim.pk))
     assert "PIN für Aushang-Monitore" in c.get(reverse("konten:mein_konto")).content.decode()
+
+
+def test_qr_code_im_browser_scannen(dienstplan_monitor, kim, anmelden):
+    """„Meine Arbeitszeit“ bietet den Scanner an, solange keine Freigabe besteht; der gelesene
+    Code wird im selben Fenster eingelöst (keine neue Browserseite je Scan)."""
+    e = ArbeitszeitEinstellungen.laden()
+    e.nur_am_monitor = True
+    e.save()
+    c = anmelden(Client(), kim)
+    seite = c.get(reverse("personal:meine_arbeitszeit")).content.decode()
+    assert 'id="qr-scannen"' in seite and reverse("aushang:stempeln_scan") in seite
+    scan = reverse("aushang:stempeln_scan")
+    # Ein fremder Code gibt nichts frei
+    antwort = c.post(scan, {"code": "https://example.org/irgendwas/"}, follow=True)
+    assert "nicht der QR-Code zum Stempeln" in antwort.content.decode()
+    assert not arbeitszeit.hier_erlaubt(antwort.wsgi_request)
+    # Der Code vom Monitor: Freigabe, die Knöpfe erscheinen, der Scanner verschwindet
+    code = "https://tafel.example" + reverse(
+        "aushang:stempeln_handy", args=[stempeln.marke(dienstplan_monitor)]
+    )
+    antwort = c.post(scan, {"code": code}, follow=True)
+    seite = antwort.content.decode()
+    assert antwort.redirect_chain[-1][0] == reverse("personal:meine_arbeitszeit")
+    assert "Vor Ort bestätigt" in seite and 'value="kommen"' in seite
+    assert 'id="qr-scannen"' not in seite
+    # Ohne das Modul „Aushang-Monitore“ gibt es keinen Scanner
+    t = TafelEinstellungen.laden()
+    t.module = []
+    t.save()
+    c2 = anmelden(Client(), kim)
+    assert 'id="qr-scannen"' not in c2.get(reverse("personal:meine_arbeitszeit")).content.decode()
