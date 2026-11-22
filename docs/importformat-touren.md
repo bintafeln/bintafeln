@@ -65,6 +65,31 @@ Beispieldateien mit erfundenen Daten: [beispiele/touren/](beispiele/touren/)
 Die Navigation nutzt die Anschrift. `breite` und `laenge` sind nur nötig, wenn die Anschrift
 nicht zur richtigen Zufahrt führt; sind sie gesetzt, gelten sie.
 
+### Marktliste und Lieferadressen aus der eco-platform
+
+Die eco-platform exportiert Märkte und Lieferadressen in einem festen Format. Der Import nimmt
+diese beiden Dateien
+auch so, wie sie sind (`apps/touren/listen_einlesen.py`). Erkannt werden sie an der Kopfzeile;
+bintafeln schreibt sie vor dem Prüfbericht in das Format oben um.
+
+| Datei | Kopfzeile | wird zu |
+| --- | --- | --- |
+| Marktliste | `Name;Handelskette;Externe Marktkennung;Adresse;Bemerkung;Empfänger der Lieferscheine;Kontakt Name;Kontakt Telefon;Kontakt E-Mail-Adresse;Nur digitaler Lieferschein` | Art `markt` (bei „Bäcker…“, „Konditorei“, „BackWerk“ im Namen `baeckerei`) |
+| Lieferadressen | `Name;Adresse;Kontakt;Öffnungszeiten` | Art `einrichtung`, `lieferschein` = nein |
+
+- **Adresse** steht in einer Zelle („Musterstraße 1, 12345 Musterstadt, Deutschland“) und wird in
+  Straße, Hausnummer, PLZ und Ort zerlegt; ein Zusatz hinter dem Ort („Musterstadt - Nordviertel“,
+  „Musterstadt / Ostdorf“, „Musterstadt-Stadtbezirk IV“) wird zum Ortsteil. Lässt sich die
+  Anschrift nicht zerlegen (z. B. keine Postleitzahl), meldet der Prüfbericht die Zeile.
+- **Kennung:** aus Handelskette und Marktkennung (`beispielkette-ab12`), sonst aus Name und
+  Anschrift (`m-…` bzw. `l-…`). Gleiche Angaben ergeben bei jedem Import dieselbe Kennung; ändert
+  sich Name oder Anschrift einer Station ohne Marktkennung, entsteht eine neue Station.
+- **Marktliste:** Handelskette → `kette`, Marktkennung → `filialnummer`, Empfänger der
+  Lieferscheine → `email_lieferschein`, Kontakt → `ansprechpartner`/`telefon`/`email`, Bemerkung →
+  `notiz`, „Nur digitaler Lieferschein“ (ja/nein) → `lieferschein`.
+- **Kontakt:** Steht hinter der Telefonnummer – durch einen Tabulator getrennt – ein Name, wird er
+  zum Ansprechpartner.
+
 ## tourstationen.csv
 
 Welche Stationen jede Tour in welcher Reihenfolge anfährt. Wird getrennt eingelesen („Touren

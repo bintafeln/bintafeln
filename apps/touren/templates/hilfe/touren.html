@@ -116,6 +116,10 @@
   <code>strasse</code>, <code>plz</code> und <code>ort</code>; die übrigen Spalten sind freiwillig:</p>
 <p><code>kennung;art;name;kette;filialnummer;strasse;hausnummer;plz;ort;ortsteil;telefon;email;email_lieferschein;ansprechpartner;oeffnungszeiten;abholtage;abholzeit;anfahrt;lieferschein;aktiv;breite;laenge;notiz</code></p>
 <ul>
+  <li>Die <strong>Marktliste</strong> und die <strong>Lieferadressen</strong> aus der eco-platform können Sie
+    unverändert hochladen: bintafeln erkennt sie an der Kopfzeile, zerlegt die Anschrift und vergibt die Kennung selbst.
+    Märkte werden zur Art „Markt“ (Bäckereien zu „Bäckerei“), Lieferadressen zur Art „Einrichtung“ – das lässt sich
+    danach je Station ändern.</li>
   <li><code>kennung</code> bleibt bei jedem Import gleich (z. B. die Nummer aus dem bisherigen System). Gibt es sie
     schon, wird die Station aktualisiert, sonst neu angelegt.</li>
   <li>Beim Aktualisieren überschreiben nur <strong>gefüllte Zellen</strong>. Eine leere Zelle ändert nichts, und

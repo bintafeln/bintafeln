@@ -12,6 +12,9 @@
     <li><code>kennung</code>: bleibt bei jedem Import gleich. Gibt es die Kennung schon, wird die Station aktualisiert, sonst neu angelegt.</li>
     <li>Beim Aktualisieren überschreiben nur gefüllte Zellen. Leere Zellen ändern nichts; Stationen, die in der Datei fehlen, bleiben unverändert.</li>
     <li><code>art</code>: {{ arten|join:", " }}.</li>
+    <li>Auch die <strong>Marktliste</strong> und die <strong>Lieferadressen</strong>, wie die eco-platform sie exportiert, lassen sich
+      so, wie sie sind, hochladen (Spalten „Name; Handelskette; Externe Marktkennung; Adresse; …“ bzw. „Name; Adresse; Kontakt;
+      Öffnungszeiten“): bintafeln zerlegt die Anschrift und bildet die Kennung selbst.</li>
     <li><code>abholtage</code>: z. B. <code>Mo, Mi, Fr</code>; <code>lieferschein</code> und <code>aktiv</code>: <code>ja</code> oder <code>nein</code>.</li>
   </ul>
   <p class="hinweis">Die genaue Beschreibung steht im Handbuch. „CSV herunterladen“ in der Liste der Stationen liefert eine Datei mit genau diesen Spalten.</p>
