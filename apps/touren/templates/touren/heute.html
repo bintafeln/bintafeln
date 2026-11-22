@@ -8,6 +8,7 @@
     {% if not ist_heute %}<a class="knopf knopf-zweitrangig" href="{% url 'touren:heute' %}">Heute</a>{% endif %}
     <a class="knopf knopf-zweitrangig" href="?tag={{ danach|date:'Y-m-d' }}">{{ danach|date:"D d.m." }} →</a>
   </nav>
+  <div class="tour-liste">
   {% for z in zeilen %}
   <article class="tour-karte{% if z.meine %} tour-meine{% endif %}">
     <h2>{{ z.tour.name }}{% if z.meine %} <span class="marke-ok">Ihre Tour</span>{% endif %}{% if z.tour.kurzfristig %} <span class="marke-warnung">kurzfristig</span>{% endif %}</h2>
@@ -22,6 +23,7 @@
   {% empty %}
   <p class="hinweis">An diesem Tag fährt keine Tour.</p>
   {% endfor %}
+  </div>
   {% if eco %}<p><a class="knopf knopf-zweitrangig" href="{{ eco }}" target="_blank" rel="noopener noreferrer">ECO-Plattform ↗</a></p>{% endif %}
   {% if darf_planen %}<p><a href="{% url 'touren:touren' %}">Touren planen</a> · <a href="{% url 'touren:tour_neu' %}?kurz&amp;tag={{ tag|date:'Y-m-d' }}">Kurzfristige Tour für diesen Tag</a></p>{% endif %}
 </section>
