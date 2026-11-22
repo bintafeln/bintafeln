@@ -5,6 +5,8 @@
 (function () {
   "use strict";
 
+  var MAX_BREITE = 1600;  // Pixel des Bildes
+
   function einrichten(flaeche) {
     var feld = document.getElementById(flaeche.dataset.unterschrift);
     if (!feld) return;
@@ -17,6 +19,8 @@
       if (gezeichnet) return;
       var kasten = flaeche.getBoundingClientRect();
       var dichte = Math.min(window.devicePixelRatio || 1, 2);
+      // auf großen Bildschirmen nicht breiter als nötig: sonst wird das Bild unnötig groß
+      if (kasten.width * dichte > MAX_BREITE) dichte = MAX_BREITE / kasten.width;
       flaeche.width = Math.round(kasten.width * dichte);
       flaeche.height = Math.round(kasten.height * dichte);
       stift.setTransform(dichte, 0, 0, dichte, 0, 0);
