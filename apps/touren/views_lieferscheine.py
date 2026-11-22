@@ -24,7 +24,14 @@ from apps.touren.forms import (
     FahrzeugFormSet,
     WarengruppenFormSet,
 )
-from apps.touren.models import Lieferschein, Position, Station, Tour, TourenEinstellungen
+from apps.touren.models import (
+    Fahrzeug,
+    Lieferschein,
+    Position,
+    Station,
+    Tour,
+    TourenEinstellungen,
+)
 
 ausfuellen_recht = rollen.recht_erforderlich("touren.lieferschein")
 sehen = rollen.recht_erforderlich("touren.lieferscheine")
@@ -182,5 +189,8 @@ def einrichten(request):
     return render(request, "touren/einrichten.html", {
         "form": formulare["einrichten"], "gruppen": formulare["warengruppen"],
         "fahrzeuge": formulare["fahrzeuge"],
+        "fahrzeugarten": sorted(set(
+            Fahrzeug.objects.exclude(typ="").values_list("typ", flat=True)
+        )),
         "darf_einstellen": rollen.hat_recht(request.user, "einstellungen.touren"),
     })  # fmt: skip

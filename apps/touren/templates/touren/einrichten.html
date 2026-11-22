@@ -39,16 +39,20 @@
     {{ fahrzeuge.management_form }}
     {% if fahrzeuge.non_form_errors %}<p class="fehler">{{ fahrzeuge.non_form_errors|join:" " }}</p>{% endif %}
     <div class="tabelle-rahmen"><table class="tabelle" id="fahrzeuge-tabelle">
-      <thead><tr><th>Name</th><th>Kennzeichen</th><th>Kilometerstand</th><th>Reihenfolge</th><th>Aktiv</th></tr></thead>
+      <thead><tr><th>Name</th><th>Kennzeichen</th><th>Fahrzeugart</th><th>Erstzulassung</th><th>Kilometerstand</th><th>Reihenfolge</th><th>Aktiv</th><th>Papiere</th></tr></thead>
       <tbody>{% for f in fahrzeuge %}
         <tr>{{ f.id }}
           <td data-titel="Name">{{ f.name }}{% if f.name.errors %}<small class="fehler">{{ f.name.errors|join:" " }}</small>{% endif %}</td>
           <td data-titel="Kennzeichen">{{ f.kennzeichen }}</td>
+          <td data-titel="Fahrzeugart">{{ f.typ }}</td>
+          <td data-titel="Erstzulassung">{{ f.erstzulassung }}{% if f.erstzulassung.errors %}<small class="fehler">{{ f.erstzulassung.errors|join:" " }}</small>{% endif %}</td>
           <td data-titel="Kilometerstand">{{ f.kilometerstand }}{% if f.kilometerstand.errors %}<small class="fehler">{{ f.kilometerstand.errors|join:" " }}</small>{% endif %}</td>
           <td data-titel="Reihenfolge">{{ f.reihenfolge }}</td>
-          <td data-titel="Aktiv">{{ f.aktiv }}</td></tr>
+          <td data-titel="Aktiv">{{ f.aktiv }}</td>
+          <td data-titel="Papiere">{% if f.instance.pk %}<a href="{% url 'touren:fahrzeug' f.instance.pk %}">{{ f.instance.dokumente.count }} hinterlegt</a>{% else %}<small class="leise">nach dem Speichern</small>{% endif %}</td></tr>
       {% endfor %}</tbody>
     </table></div>
+    <datalist id="fz-arten">{% for art in fahrzeugarten %}<option value="{{ art }}">{% endfor %}</datalist>
     <p class="hinweis">Die leeren Zeilen unten sind für neue Fahrzeuge.</p>
     <button type="submit" class="knopf">Fahrzeuge speichern</button>
   </form>

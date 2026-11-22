@@ -419,6 +419,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   das Recht `touren.besetzung` hat; Änderung als `Ersatz` im Fahrerplan); eigene `fahrtage` einer
   Tour aus dem Fahrerplan grenzen ein („Montag Nordtour“ ↔ „Nordtour“,
   `importieren_touren.wochentag_im_namen()`).
+  Fahrzeuge (ADR 0160): `Fahrzeug.typ` frei mit Vorschlägen, `erstzulassung`; Papiere als
+  `FahrzeugDokument` (verschlüsselt über `privatdateien`, sehen mit `touren.planen` oder
+  `touren.fahrten`, ändern nur mit `touren.planen`), Seite `views_fahrten.fahrzeug`.
   Fahrten (ADR 0151): `Fahrt` je Tour und Tag mit `Fahrzeug` und Kilometerstand bei Abfahrt und
   Ankunft, Regeln nur in `apps/touren/fahrten.py` (`beginnen()`, `beenden()`, `berichtigen()`; wer
   darf, entscheidet `start.darf()`; kein Ort wird geprüft), Fahrtenbuch in `views_fahrten.py`

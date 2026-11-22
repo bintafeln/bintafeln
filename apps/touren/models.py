@@ -239,6 +239,9 @@ class Fahrzeug(models.Model):
     name = models.CharField("Name", max_length=60, unique=True,
                             help_text="z. B. „Kühlwagen“ oder „Transporter 2“")  # fmt: skip
     kennzeichen = models.CharField("Kennzeichen", max_length=15, blank=True)
+    typ = models.CharField("Fahrzeugart", max_length=60, blank=True,
+                           help_text="z. B. Sprinter, Koffer oder E-Vito")  # fmt: skip
+    erstzulassung = models.DateField("Erstzulassung", null=True, blank=True)
     kilometerstand = models.PositiveIntegerField(
         "Kilometerstand", null=True, blank=True, validators=[MaxValueValidator(9_999_999)],
         help_text="Der aktuelle Stand. Er wird bei „Fahrt beginnen“ vorgeschlagen und mit jeder "
@@ -254,6 +257,43 @@ class Fahrzeug(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.kennzeichen})" if self.kennzeichen else self.name
+
+
+class FahrzeugDokument(models.Model):
+    """Papiere eines Fahrzeugs als Datei (ADR 0160): Fahrzeugschein, Fahrzeugbrief und Weiteres.
+    Verschlüsselt über ``apps.core.privatdateien``; sehen darf sie nur die Fahrdienstleitung."""
+
+    ORDNER = "touren_fahrzeug"
+    PRIVATDATEI = (ORDNER, "datei")  # Papierkorb (ADR 0073)
+
+    class Art(models.TextChoices):
+        SCHEIN = "schein", "Fahrzeugschein (Zulassungsbescheinigung Teil I)"
+        BRIEF = "brief", "Fahrzeugbrief (Zulassungsbescheinigung Teil II)"
+        SONSTIGES = "sonstiges", "Sonstiges"
+
+    fahrzeug = models.ForeignKey(Fahrzeug, on_delete=models.CASCADE, related_name="dokumente")
+    art = models.CharField("Art", max_length=10, choices=Art.choices, default=Art.SCHEIN)
+    bezeichnung = models.CharField(
+        "Bezeichnung", max_length=100, blank=True,
+        help_text="nur bei „Sonstiges“, z. B. „Versicherung“")  # fmt: skip
+    datei = models.CharField(max_length=100, editable=False)
+    datei_typ = models.CharField(max_length=50, editable=False)
+    hochgeladen_am = models.DateTimeField("Hochgeladen am", auto_now_add=True)
+    hochgeladen_von_name = models.CharField("Hochgeladen von", max_length=150, blank=True)
+
+    class Meta:
+        verbose_name = "Papier zum Fahrzeug"
+        verbose_name_plural = "Papiere zum Fahrzeug"
+        ordering = ["art", "-hochgeladen_am"]
+
+    def __str__(self):
+        return f"{self.titel} – {self.fahrzeug}"
+
+    @property
+    def titel(self) -> str:
+        if self.art == self.Art.SONSTIGES and self.bezeichnung:
+            return self.bezeichnung
+        return self.get_art_display().split(" (")[0]
 
 
 class Fahrt(models.Model):
@@ -633,6 +673,7 @@ auditlog.register(TourenEinstellungen, exclude_fields=["karten_schluessel_versch
 auditlog.register(Warengruppe)
 auditlog.register(Lieferschein)
 auditlog.register(Fahrzeug)
+auditlog.register(FahrzeugDokument, exclude_fields=["datei"])
 auditlog.register(Fahrt)
 auditlog.register(Fahrzeugmeldung)
 auditlog.register(Zusatzstopp)
