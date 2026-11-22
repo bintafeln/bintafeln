@@ -1,7 +1,8 @@
 # bintafeln
 
 Freie Verwaltungssoftware für Tafeln – lizenziert unter der
-[GNU Affero General Public License v3.0](LICENSE).
+[GNU Affero General Public License v3.0](LICENSE). Ohne Gewährleistung, siehe
+[Gewährleistung und Haftung](#gewährleistung-und-haftung).
 
 > **Stand:** Grundgerüst, Kundenstamm (Import, Bearbeiten durch den Admin), Einlass mit Ampel,
 > Kundenkonto und Kasse, Mitarbeitende, Personal mit Arbeitszeiterfassung, PDFs (Kundenausweis,
@@ -2234,3 +2235,21 @@ Bitte vertraulich über „Security → Report a vulnerability“ in diesem Repo
 
 bintafeln ist freie Software unter der [GNU AGPL v3.0](LICENSE). Wer eine veränderte Version
 als Netzdienst betreibt, muss den Nutzerinnen und Nutzern den Quelltext zugänglich machen.
+
+## Gewährleistung und Haftung
+
+bintafeln wird unentgeltlich und **ohne Gewährleistung** bereitgestellt – so, wie es ist. Eine
+Haftung für Schäden aus der Nutzung ist ausgeschlossen, soweit das Gesetz es zulässt; es gelten
+die Abschnitte 15 und 16 der [Lizenz](LICENSE). Unberührt bleibt die Haftung für Vorsatz und für
+arglistig verschwiegene Mängel.
+
+Jede Tafel betreibt ihre Installation in eigener Verantwortung. Dazu gehören insbesondere:
+
+- **eigene Sicherungen** und die Prüfung, dass sie sich zurückspielen lassen
+  (siehe [Betrieb](#betrieb)),
+- das **Einspielen von Updates**, vor allem von Sicherheitsupdates,
+- der **Datenschutz**: Verantwortlich im Sinne der DSGVO für die gespeicherten Daten ist die
+  Tafel, die die Installation betreibt – nicht das Projekt bintafeln.
+
+Vor dem Einsatz mit echten Daten empfiehlt sich ein Probebetrieb, zum Beispiel mit der
+[Demoversion](https://demo.bintafeln.de) oder einer eigenen Testinstallation.
