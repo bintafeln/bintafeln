@@ -2283,7 +2283,11 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 .tour-tagewahl label { white-space: nowrap; }
 .tour-folge { display: flex; gap: .3rem; }
 /* Lieferschein unterwegs (ADR 0149) */
-.tour-erledigt { border-left: 6px solid var(--akzent); }
+/* Schon angefahren: bleibt stehen, tritt aber zurück (grau, Haken statt Nummer) */
+.tour-erledigt { border-left: 6px solid var(--akzent); background: var(--grund); }
+.tour-erledigt .tour-nr { background: var(--leise); }
+.tour-erledigt h2, .tour-erledigt address { color: var(--leise); }
+.tour-aktuell { border: 2px solid var(--akzent); scroll-margin-top: 1rem; }
 .tour-schein { margin: .6rem 0 0; }
 .ls-zeilen { margin-bottom: 1rem; }
 /* Jede Warengruppe ein hinterlegtes Feld; der Name bricht nur zwischen Wörtern oder nach „/“ um
