@@ -17,9 +17,11 @@
     Link; längere Touren sind in Abschnitte geteilt. Ohne die Google-Maps-App zeigt der Browser am Handy nur die ersten
     Stationen – dann die Navigation je Station nehmen.</li>
   <li>Stationen, die nur an bestimmten Wochentagen angefahren werden, erscheinen nur an diesen Tagen.</li>
-  <li><strong>„✓ Hier waren wir“</strong> kennzeichnet eine Station als angefahren: Sie bleibt in der Tour stehen (falls
+  <li><strong>„✓ Ohne Lieferschein abhaken“</strong> kennzeichnet eine Station als angefahren. Sie wählen dabei, was
+    dort war – „Abgeholt“, „Keine Ware“, „Markt geschlossen“, „Blockiert durch andere“ oder „Sonstiges“ – und können
+    eine kurze Anmerkung dazuschreiben (bei „Sonstiges“ ist sie Pflicht). Die Station bleibt in der Tour stehen (falls
     man noch einmal hin muss), wird aber <strong>grün</strong>, bekommt einen Haken statt der Nummer, der Name ist
-    durchgestrichen und es steht „✓ Erledigt“ mit der Uhrzeit dabei. Die Karte klappt zusammen; „Noch einmal hin?
+    durchgestrichen und es steht „✓ Erledigt“ mit dem Umstand, der Uhrzeit und der Anmerkung dabei. Die Karte klappt zusammen; „Noch einmal hin?
     Angaben und Navigation zeigen“ klappt sie wieder auf – dort steht auch „zurücknehmen“. Ein ausgefüllter
     Lieferschein kennzeichnet die Station ebenfalls.</li>
   <li>Auf „Touren heute“ ist eine <strong>fertige Tour</strong> (alle Stationen angefahren oder Fahrt beendet) grün
@@ -243,7 +245,9 @@
 <ul>
   <li>„Touren → Statistik“ zeigt für ein Jahr: abgeholte Menge in Kilogramm, Lieferscheine, Fahrten, Stunden unterwegs
     und Kilometer – oben als Kennzahlen mit Vergleich zum Vorjahr, darunter je Monat, Warengruppe, Tour, Fahrzeug,
-    Station und Handelskette. Am Ende stehen die Stationen, zu denen es im Jahr keinen Lieferschein gibt.</li>
+    Station und Handelskette. „Ohne Lieferschein abgehakt“ zählt je Station, wie oft dort was war (z. B. dreimal
+    „Keine Ware“) – je Station, nie je Person. Am Ende stehen die Stationen, zu denen es im Jahr keinen Lieferschein
+    gibt.</li>
   <li><strong>Kisten werden in Kilogramm umgerechnet</strong>, damit es eine Gesamtzahl gibt: mit „kg je Kiste“ der
     Warengruppe, sonst mit dem allgemeinen Durchschnittsgewicht. Beides stellen Sie unter „Touren → Einrichten“ ein.
     Die Tabellen zeigen daneben weiter die Kisten und die gewogenen Kilogramm.</li>
@@ -273,6 +277,10 @@
     (Einstellungen → Rechtstexte), der Link dorthin.</li>
   <li><strong>Warengruppen:</strong> Name, Reihenfolge und „Aktiv“. Ausgeschaltete erscheinen nicht mehr auf neuen
     Lieferscheinen.</li>
+  <li><strong>Station ohne Lieferschein: Was war?</strong> Die Liste, aus der die Mannschaft beim Abhaken wählt.
+    Mitgeliefert sind „Abgeholt“, „Keine Ware“, „Markt geschlossen“, „Blockiert durch andere“ und „Sonstiges“; Sie
+    können Einträge umbenennen, ergänzen, ausschalten und festlegen, bei welchen eine Anmerkung nötig ist. Schon
+    Eingetragenes bleibt, wie es war. Sind alle ausgeschaltet, wird ohne Auswahl abgehakt.</li>
   <li><strong>Fahrzeuge:</strong> Name, Kennzeichen, Kilometerstand, Reihenfolge und „Aktiv“.</li>
 </ul>
 {% endif %}

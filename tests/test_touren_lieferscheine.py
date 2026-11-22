@@ -380,6 +380,33 @@ def test_einrichten_fuer_die_fahrdienstleitung(buero):
     assert buero.get(reverse("touren:einstellungen")).status_code == 403
 
 
+def test_umstaende_pflegt_die_tafel_selbst(buero):
+    """Die Liste „Was war an der Station?“ steht unter „Einrichten“ (ADR 0163)."""
+    from apps.touren.models import Umstand
+
+    namen = list(Umstand.objects.values_list("name", flat=True))
+    assert namen == ["Abgeholt", "Keine Ware", "Markt geschlossen", "Blockiert durch andere",
+                     "Sonstiges"]  # fmt: skip
+    assert Umstand.objects.get(name="Sonstiges").anmerkung_pflicht
+    seite = buero.get(reverse("touren:einrichten")).content.decode()
+    assert "Station ohne Lieferschein: Was war?" in seite and "Markt geschlossen" in seite
+    alle = list(Umstand.objects.all())
+    daten = {"umstaende": "1", "um-TOTAL_FORMS": len(alle) + 1, "um-INITIAL_FORMS": len(alle),
+             "um-MIN_NUM_FORMS": 0, "um-MAX_NUM_FORMS": 1000}  # fmt: skip
+    for nr, u in enumerate(alle):
+        daten |= {f"um-{nr}-id": u.pk, f"um-{nr}-name": u.name,
+                  f"um-{nr}-reihenfolge": u.reihenfolge}  # fmt: skip
+        if u.name != "Blockiert durch andere":
+            daten[f"um-{nr}-aktiv"] = "on"
+    daten |= {f"um-{len(alle)}-name": "Rampe zugeparkt", f"um-{len(alle)}-reihenfolge": 45,
+              f"um-{len(alle)}-aktiv": "on", f"um-{len(alle)}-anmerkung_pflicht": "on"}  # fmt: skip
+    assert buero.post(reverse("touren:einrichten"), daten).status_code == 302
+    neu = Umstand.objects.get(name="Rampe zugeparkt")
+    assert neu.aktiv and neu.anmerkung_pflicht
+    assert not Umstand.objects.get(name="Blockiert durch andere").aktiv
+    assert str(neu) == "Rampe zugeparkt"
+
+
 def test_einrichten_nicht_fuer_fahrer(fahrer):
     assert fahrer.get(reverse("touren:einrichten")).status_code == 403
 
