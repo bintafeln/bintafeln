@@ -242,6 +242,11 @@ class Fahrzeug(models.Model):
     typ = models.CharField("Fahrzeugart", max_length=60, blank=True,
                            help_text="z. B. Sprinter, Koffer oder E-Vito")  # fmt: skip
     erstzulassung = models.DateField("Erstzulassung", null=True, blank=True)
+    verkauft_am = models.DateField(
+        "Verkauft am", null=True, blank=True,
+        help_text="Mit einem Datum gilt das Fahrzeug als verkauft: Es steht dann im Archiv und "
+        "nicht mehr zur Wahl. Fahrten, Meldungen und Papiere bleiben erhalten.",
+    )  # fmt: skip
     kilometerstand = models.PositiveIntegerField(
         "Kilometerstand", null=True, blank=True, validators=[MaxValueValidator(9_999_999)],
         help_text="Der aktuelle Stand. Er wird bei „Fahrt beginnen“ vorgeschlagen und mit jeder "
@@ -257,6 +262,13 @@ class Fahrzeug(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.kennzeichen})" if self.kennzeichen else self.name
+
+    def save(self, *args, **kwargs):
+        if self.verkauft_am:  # verkauft = archiviert: nicht mehr zur Wahl (ADR 0160)
+            self.aktiv = False
+            if kwargs.get("update_fields") is not None:
+                kwargs["update_fields"] = {*kwargs["update_fields"], "aktiv"}
+        super().save(*args, **kwargs)
 
 
 class FahrzeugDokument(models.Model):

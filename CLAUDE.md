@@ -423,6 +423,7 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `FahrzeugDokument` (verschlüsselt über `privatdateien`, sehen mit `touren.planen` oder
   `touren.fahrten`, ändern nur mit `touren.planen`). Unter „Einrichten“ nur die Liste; anlegen
   und ändern je Fahrzeug auf eigener Seite (`views_fahrten.fahrzeug`/`fahrzeug_neu`, `FahrzeugForm`).
+  Verkauft: `Fahrzeug.verkauft_am` = Archiv (`save()` schaltet aus), nie löschen.
   Fahrten (ADR 0151): `Fahrt` je Tour und Tag mit `Fahrzeug` und Kilometerstand bei Abfahrt und
   Ankunft, Regeln nur in `apps/touren/fahrten.py` (`beginnen()`, `beenden()`, `berichtigen()`; wer
   darf, entscheidet `start.darf()`; kein Ort wird geprüft), Fahrtenbuch in `views_fahrten.py`

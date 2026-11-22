@@ -38,17 +38,17 @@
   {% if fahrzeuge %}
   <div class="tabelle-rahmen"><table class="tabelle" id="fahrzeuge-tabelle">
     <thead><tr><th>Fahrzeug</th><th>Kennzeichen</th><th>Fahrzeugart</th><th>Erstzulassung</th><th class="zahl">Kilometerstand</th><th>Papiere</th></tr></thead>
-    <tbody>{% for f in fahrzeuge %}
-      <tr{% if not f.aktiv %} class="leise"{% endif %}>
-        <td data-titel="Fahrzeug"><a href="{% url 'touren:fahrzeug' f.pk %}"><strong>{{ f.name }}</strong></a>{% if not f.aktiv %} <span class="marke-warnung">ausgeschaltet</span>{% endif %}</td>
-        <td data-titel="Kennzeichen">{{ f.kennzeichen|default:"–" }}</td>
-        <td data-titel="Fahrzeugart">{{ f.typ|default:"–" }}</td>
-        <td data-titel="Erstzulassung">{{ f.erstzulassung|date:"d.m.Y"|default:"–" }}</td>
-        <td data-titel="Kilometerstand" class="zahl">{% if f.kilometerstand is None %}–{% else %}{{ f.kilometerstand }} km{% endif %}</td>
-        <td data-titel="Papiere">{% if f.papiere %}<a href="{% url 'touren:fahrzeug' f.pk %}#papiere"><span class="marke-ok">📄 {{ f.papiere }} hinterlegt</span></a>{% else %}<a href="{% url 'touren:fahrzeug' f.pk %}#papiere">hinterlegen</a>{% endif %}</td>
-      </tr>
-    {% endfor %}</tbody>
+    <tbody>{% for f in fahrzeuge %}{% include "touren/_fahrzeug_zeile.html" %}{% endfor %}</tbody>
   </table></div>
   {% else %}<p class="hinweis">Noch kein Fahrzeug angelegt.</p>{% endif %}
+  {% if verkauft %}
+  <details id="fahrzeuge-archiv">
+    <summary><strong>Archiv:</strong> {{ verkauft|length }} verkaufte{{ verkauft|length|pluralize:"s," }} Fahrzeug{{ verkauft|length|pluralize:"e" }}</summary>
+    <div class="tabelle-rahmen"><table class="tabelle" id="fahrzeuge-archiv-tabelle">
+      <thead><tr><th>Fahrzeug</th><th>Kennzeichen</th><th>Fahrzeugart</th><th>Verkauft am</th><th class="zahl">Kilometerstand</th><th>Papiere</th></tr></thead>
+      <tbody>{% for f in verkauft %}{% include "touren/_fahrzeug_zeile.html" with archiv=1 %}{% endfor %}</tbody>
+    </table></div>
+  </details>
+  {% endif %}
 </section>
 {% endblock %}
