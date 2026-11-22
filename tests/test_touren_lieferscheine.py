@@ -295,9 +295,40 @@ def test_fehler_bleiben_im_formular(fahrer):
     assert not Lieferschein.objects.exists()
 
 
-def test_abgeschaltet_je_station_und_insgesamt(fahrer):
+def test_abgabe_lieferschein(fahrer, pdf_text):
+    """Abgabe (ADR 0165): Die Tafel gibt Ware ab – auf dem Lieferschein sind Spender und
+    Empfänger vertauscht, und er zählt nicht als abgeholte Menge."""
+    from apps.touren import statistik
+
+    lager = station(kennung="E-1", name="Einrichtung Beispiel", lieferschein=False)
+    adresse = reverse("touren:lieferschein", args=[lager.pk])
+    seite = fahrer.get(adresse + "?art=abgabe").content.decode()
+    assert 'value="abgabe" checked' in seite and "Abholung – wir holen Ware ab" in seite
+    obst = gruppe("Obst/Gemüse")
+    antwort = fahrer.post(adresse, {"art": "abgabe", f"menge_{obst.pk}": "3",
+                                    f"einheit_{obst.pk}": "kisten",
+                                    "unterschrift": unterschrift()})  # fmt: skip
+    assert antwort.status_code == 302
+    ls = Lieferschein.objects.get()
+    assert ls.abgabe and ls.art == "abgabe"
+    text = pdf_text(fahrer.get(reverse("touren:lieferschein_pdf", args=[ls.pk])))
+    spender, empfaenger = text.index("Spender/in:"), text.index("Empfänger/in:")
+    # die Tafel steht als Spenderin vor „Empfänger/in“, die Einrichtung danach
+    assert spender < text.index("Tafel Musterstadt", spender) < empfaenger
+    assert text.index("Einrichtung Beispiel", spender) > empfaenger
+    assert "Unterschrift Spender/in" in text
+    # Unsinn im Feld „art“ ist eine Abholung
+    assert lieferscheine.art_lesen("geschenkt") == "abholung"
+    d = statistik.Daten(ls.datum.year)
+    assert statistik.kennzahlen(d)["kg"] == "0" and d.scheine == 0
+    assert statistik.abschnitt_abgaben(d)["zeilen"] == [["Einrichtung Beispiel", 1, "3", "0", "30"]]
+
+
+def test_an_jeder_station_und_insgesamt_abschaltbar(fahrer):
+    """Ein Lieferschein lässt sich an jeder Station ausfüllen, auch wo keiner erwartet wird
+    (ADR 0165) – außer Lieferscheine sind insgesamt ausgeschaltet."""
     aus = station(lieferschein=False)
-    assert fahrer.get(reverse("touren:lieferschein", args=[aus.pk])).status_code == 404
+    assert fahrer.get(reverse("touren:lieferschein", args=[aus.pk])).status_code == 200
     an = station(kennung="M-2", name="Zweiter")
     e = TourenEinstellungen.laden()
     e.lieferscheine = False
