@@ -25,7 +25,13 @@ from apps.touren import (
     zusatz,
 )
 from apps.touren import start as tourstart
-from apps.touren.forms import HaltForm, KurzfristigForm, NeueStationForm, TourForm
+from apps.touren.forms import (
+    HaltForm,
+    KurzfristigForm,
+    MannschaftForm,
+    NeueStationForm,
+    TourForm,
+)
 from apps.touren.models import Halt, Station, Tour, TourenEinstellungen
 
 fahren_recht = rollen.recht_erforderlich("touren.fahren")
@@ -82,6 +88,11 @@ def fahren(request, pk):
     gefragt = tag == timezone.localdate() and tourstart.gefragt(tour, tag)
     gestartet = tourstart.gestartet(tour, tag) if gefragt else None
     darf_start = gefragt and tourstart.darf(request.user, tour, tag)
+    # am Tag selbst ändert die Mannschaft ihre Besetzung auch selbst (Fahrerplan: als Ersatz für
+    # den Tag; kurzfristige Tour: direkt an der Tour)
+    darf_besetzung = darf_start or (
+        tour.datum == tag == timezone.localdate() and tourstart.darf(request.user, tour, tag)
+    )
     if darf_start and gestartet is None:
         return redirect(reverse("touren:start", args=[tour.pk]))  # erst: „Seid ihr …?“
     fahrt = fahrten.heute(tour, tag)
@@ -111,6 +122,7 @@ def fahren(request, pk):
                                 TourenEinstellungen.laden().start_ziel),
         "darf_planen": rollen.hat_recht(request.user, "touren.planen"),
         "gefragt": gefragt, "gestartet": gestartet, "darf_start": darf_start,
+        "darf_besetzung": darf_besetzung,
         "fahrt": fahrt, "fahrt_moeglich": fahrt_moeglich,
         "darf_zusatz": zusatz.darf(request.user, tour, tag),
         "aktuell": aktuell, "erledigt": sum(1 for h in halte if h.angefahren),
@@ -231,6 +243,8 @@ def start(request, pk):
     tour = get_object_or_404(Tour.objects.select_related("fahrdienst_tour"), pk=pk)
     tag = timezone.localdate()
     ziel = reverse("touren:fahren", args=[tour.pk])
+    if tour.datum == tag and not tourstart.gefragt(tour, tag):
+        return _mannschaft(request, tour, ziel)
     if not tourstart.gefragt(tour, tag):
         return redirect(ziel)
     if not tourstart.darf(request.user, tour, tag):
@@ -250,8 +264,22 @@ def start(request, pk):
     plaetze = tourstart.plaetze(tour, tag)
     return render(request, "touren/start.html", {
         "tour": tour, "tag": tag, "plaetze": plaetze, "frage": tourstart.frage(plaetze),
-        "gestartet": tourstart.gestartet(tour, tag),
+        "gestartet": tourstart.gestartet(tour, tag), "offen": "aendern" in request.GET,
     })  # fmt: skip
+
+
+def _mannschaft(request, tour, ziel):
+    """Kurzfristige Tour von heute: Die Mannschaft ändert oder ergänzt ihre Besetzung selbst."""
+    if not tourstart.darf(request.user, tour, tour.datum):
+        messages.error(request, "Sie sind für diese Tour nicht eingetragen. Bitte im Büro melden.")
+        return redirect(ziel)
+    wer = None if tourstart.darf_alle(request.user) else ablauf.person_von(request.user)
+    form = MannschaftForm(request.POST or None, instance=tour, wer=wer)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Besetzung geändert.")
+        return redirect(ziel)
+    return render(request, "touren/mannschaft.html", {"tour": tour, "form": form, "zurueck": ziel})
 
 
 # --- Planen -------------------------------------------------------------------------------------
