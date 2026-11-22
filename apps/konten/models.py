@@ -41,6 +41,17 @@ class Benutzer(AbstractUser):
         default="",
         help_text="Gilt für diese Person und geht der allgemeinen Einstellung vor.",
     )
+
+    class Darstellung(models.TextChoices):
+        HELL = "hell", "Hell"
+        DUNKEL = "dunkel", "Dunkel (Nachtmodus)"
+        GERAET = "geraet", "Wie das Gerät"
+
+    darstellung = models.CharField(
+        "Darstellung", max_length=6, choices=Darstellung.choices, default=Darstellung.HELL,
+        help_text="Helle oder dunkle Oberfläche; „Wie das Gerät“ folgt der Einstellung von "
+        "Handy, Tablet oder PC.",
+    )  # fmt: skip
     passwort_aendern = models.BooleanField(
         "Muss das Passwort bei der nächsten Anmeldung ändern", default=False
     )

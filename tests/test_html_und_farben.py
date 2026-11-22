@@ -55,6 +55,28 @@ def test_farbtoene():
     assert orange["akzent"] == STANDARDFARBE and orange["auf_akzent"] == "#ffffff"
     assert farbtoene("#ffff00")["auf_akzent"] == "#1f2421"  # Gelb: dunkle Schrift
     assert farbtoene("kaputt") == orange
+    assert orange["akzent_nacht"] == "#f2b178"  # heller Ton für Links im Nachtmodus
+
+
+@pytest.mark.django_db
+def test_nachtmodus_je_konto(admin_client, admin):
+    """Darstellung hell/dunkel/wie das Gerät unter „Mein Konto“ (ADR 0164); Vorgabe hell."""
+    konto = reverse("konten:mein_konto")
+    seite = admin_client.get(konto).content.decode()
+    assert "data-nacht" not in seite and "data-darstellung" not in seite
+    assert "Dunkel (Nachtmodus)" in seite and "Wie das Gerät" in seite
+    antwort = admin_client.post(reverse("konten:darstellung"), {"darstellung": "dunkel"})
+    assert antwort.status_code == 302 and antwort.url == konto + "#darstellung"
+    seite = admin_client.get(konto).content.decode()
+    assert '<html lang="de" data-darstellung="dunkel" data-nacht>' in seite
+    assert "js/darstellung.js" not in seite and "--akzent-nacht:" in seite
+    admin_client.post(reverse("konten:darstellung"), {"darstellung": "geraet"})
+    seite = admin_client.get(konto).content.decode()
+    assert '<html lang="de" data-darstellung="geraet">' in seite and "js/darstellung.js" in seite
+    admin_client.post(reverse("konten:darstellung"), {"darstellung": "bunt"})  # Unsinn: bleibt
+    admin.refresh_from_db()
+    assert admin.darstellung == "geraet"
+    assert admin_client.get(reverse("konten:darstellung")).status_code == 405
 
 
 @pytest.mark.django_db

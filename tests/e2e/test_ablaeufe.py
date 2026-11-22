@@ -2419,6 +2419,27 @@ def test_lieferschein_am_handy_unterschreiben(seite, angemeldet, admin):
     assert not ls.gesendet_am and "ausgeschaltet" in ls.mail_fehler  # Vorgabe: nur speichern
 
 
+def test_nachtmodus_wie_das_geraet(seite, angemeldet, admin):
+    """„Wie das Gerät“: Steht das Gerät auf dunkel, ist die Seite dunkel – und folgt, wenn das
+    Gerät umschaltet (static/js/darstellung.js, ADR 0164)."""
+    admin.darstellung = "geraet"
+    admin.save()
+    angemeldet(admin)
+    seite.emulate_media(color_scheme="dark")
+    seite.goto(reverse("konten:mein_konto"))
+    wurzel = seite.locator("html")
+    expect(wurzel).to_have_attribute("data-nacht", "")
+    dunkel = seite.evaluate("getComputedStyle(document.body).backgroundColor")
+    assert dunkel == "rgb(20, 23, 21)"
+    seite.emulate_media(color_scheme="light")
+    expect(wurzel).not_to_have_attribute("data-nacht", "")
+    assert seite.evaluate("getComputedStyle(document.body).backgroundColor") != dunkel
+    # fest auf dunkel stellen: gilt dann auch bei hellem Gerät
+    seite.get_by_label("Darstellung", exact=True).select_option("dunkel")
+    seite.locator("#darstellung").get_by_role("button", name="Übernehmen").click()
+    expect(seite.locator("html")).to_have_attribute("data-nacht", "")
+
+
 def test_pdf_fenster_am_handy_im_hochformat(angemeldet, admin, live_server):
     """Im Hochformat stand der Dateiname Buchstabe für Buchstabe untereinander, der Knopf
     „Schließen“ ragte aus dem Fenster, und vom PDF war nichts zu sehen."""

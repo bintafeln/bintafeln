@@ -1,10 +1,11 @@
 {% load static %}<!doctype html>
-<html lang="de">
+<html lang="de"{% if user.is_authenticated and user.darstellung != "hell" %} data-darstellung="{{ user.darstellung }}"{% if user.darstellung == "dunkel" %} data-nacht{% endif %}{% endif %}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   {% if stellen_konto_sekunden %}<script src="{% static 'js/stellen_konto.js' %}" data-sekunden="{{ stellen_konto_sekunden }}" defer></script>{% endif %}
   <title>{% block titel %}{% endblock %}{% if tafel.name %} – {{ tafel.name }}{% else %} – {{ programm.name }}{% endif %}</title>
+  {% if user.is_authenticated and user.darstellung == "geraet" %}<script src="{% static 'js/darstellung.js' %}"></script>{% endif %}
   <link rel="stylesheet" href="{% static 'css/bintafeln.css' %}">
   {% include "includes/farben.html" %}
   {% include "includes/app_symbol.html" %}

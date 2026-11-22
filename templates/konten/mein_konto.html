@@ -78,6 +78,19 @@
 
     {% for teil in modul_konto %}{{ teil }}{% endfor %}
 
+    <div class="konto-kachel" id="darstellung">
+      <h2>Darstellung</h2>
+      <p>Hell oder dunkel (Nachtmodus). „Wie das Gerät“ folgt der Einstellung von Handy, Tablet oder PC.
+        Gilt für Ihr Konto, auf jedem Gerät. PDFs und Ausdrucke bleiben immer hell.</p>
+      <form method="post" action="{% url 'konten:darstellung' %}">{% csrf_token %}
+        <div class="feld"><label for="darstellung-wahl">Darstellung</label>
+          <select name="darstellung" id="darstellung-wahl">
+            {% for wert, name in darstellungen %}<option value="{{ wert }}"{% if wert == user.darstellung %} selected{% endif %}>{{ name }}</option>{% endfor %}
+          </select></div>
+        <button type="submit" class="knopf knopf-zweitrangig">Übernehmen</button>
+      </form>
+    </div>
+
     <div class="konto-kachel" id="druckansicht">
       <h2>PDFs auf diesem Gerät</h2>
       <p>Für Tablets im Kiosk-Modus: PDFs öffnen in einem <strong>Fenster über der Seite</strong> mit „Drucken“

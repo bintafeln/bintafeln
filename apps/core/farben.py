@@ -42,5 +42,7 @@ def farbtoene(farbe: str) -> dict[str, str]:
         "akzent_dunkel": _hex(_mischen(rgb, 0, 0.35)),
         "erfolg": _hex(_mischen(rgb, 255, 0.86)),
         "fokus": _hex(_mischen(rgb, 255, 0.5)),
+        # heller Ton für Links und Text auf dunklem Grund (Nachtmodus, ADR 0164)
+        "akzent_nacht": _hex(_mischen(rgb, 255, 0.45)),
         "auf_akzent": "#ffffff" if weiss_kontrast >= 3 else "#1f2421",
     }
