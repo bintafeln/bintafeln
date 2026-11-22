@@ -438,3 +438,27 @@ def test_import_verbindet_wochentag_im_namen_mit_dem_fahrerplan():
     assert Tour.objects.get(name="Freitag Sonderfahrt").fahrdienst_tour is None
     assert Tour.objects.get(name="Montag").fahrdienst_tour is None
     assert importieren_touren.wochentag_im_namen("Mo. Nordtour") == ("Mo", "Nordtour")
+
+
+def test_alle_angaben_fuehrt_zurueck_zur_tour(fahrer):
+    """Aus der Tour geöffnet, führt „zurück“ auf der Seite der Station wieder in die Tour."""
+    heute = timezone.localdate()
+    t = tour_mit(2, name="Sonderfahrt", datum=heute)
+    t.personen.add(fahrer.person)
+    erste = t.halte.first().station
+    seite = fahrer.get(reverse("touren:fahren", args=[t.pk])).content.decode()
+    ziel = f"{reverse('touren:station', args=[erste.pk])}?tour={t.pk}&amp;tag={heute:%Y-%m-%d}"
+    assert f'class="tour-alle-angaben" href="{ziel}&amp;halt=1"' in seite
+    werte = {"tour": t.pk, "tag": f"{heute:%Y-%m-%d}", "halt": "1"}
+    station = fahrer.get(reverse("touren:station", args=[erste.pk]), werte).content.decode()
+    zurueck = f"{reverse('touren:fahren', args=[t.pk])}?tag={heute:%Y-%m-%d}#halt-1"
+    assert f'href="{zurueck}"' in station and "zurück zur Tour „Sonderfahrt“" in station
+    assert "← Stationen" not in station
+    # ohne Tour, mit unbekannter Tour oder kaputtem Tag: wie bisher bzw. ohne Tag
+    einfach = fahrer.get(reverse("touren:station", args=[erste.pk])).content.decode()
+    assert "← Stationen" in einfach
+    fremd = fahrer.get(reverse("touren:station", args=[erste.pk]), {"tour": "999999"})
+    assert "← Stationen" in fremd.content.decode()
+    kaputt = {"tour": t.pk, "tag": "morgen", "halt": "x"}
+    ohne_tag = fahrer.get(reverse("touren:station", args=[erste.pk]), kaputt).content.decode()
+    assert f'href="{reverse("touren:fahren", args=[t.pk])}"' in ohne_tag

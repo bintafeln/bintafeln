@@ -2,12 +2,14 @@
 Adressbuch übertragen."""
 
 import base64
+import datetime as dt
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
@@ -17,7 +19,7 @@ from apps.core import geheimnis, listen, papierkorb
 from apps.konten import rollen
 from apps.touren import adressbuch, importieren, lieferscheine
 from apps.touren.forms import StationForm, neue_kennung
-from apps.touren.models import Station
+from apps.touren.models import Station, Tour
 
 sehen = rollen.recht_erforderlich("touren.stationen")
 bearbeiten_recht = rollen.recht_erforderlich("touren.stationen_bearbeiten")
@@ -86,12 +88,32 @@ def stationen(request):
 def station(request, pk):
     s = get_object_or_404(Station.objects.select_related("adresse"), pk=pk)
     return render(request, "touren/station.html", {
-        "s": s,
+        "s": s, "zur_tour": _zur_tour(request),
         "darf_bearbeiten": rollen.hat_recht(request.user, "touren.stationen_bearbeiten"),
         "darf_uebertragen": _darf_uebertragen(request.user),
         "vorhanden": None if s.adresse_id else adressbuch.vorhandene(s),
         "lieferscheine_an": lieferscheine.an(),
     })  # fmt: skip
+
+
+def _zur_tour(request) -> dict | None:
+    """Kommt jemand aus einer Tour („Alle Angaben“), führt „zurück“ wieder dorthin – an die
+    Stelle der Station – und nicht in die Stationsliste."""
+    werte = request.GET
+    if not werte.get("tour", "").isdigit() or not rollen.hat_recht(request.user, "touren.fahren"):
+        return None
+    tour = Tour.objects.filter(pk=int(werte["tour"])).first()
+    if tour is None:
+        return None
+    url, anhang = reverse("touren:fahren", args=[tour.pk]), f"?tour={tour.pk}"
+    try:
+        tag = f"{dt.date.fromisoformat(werte.get('tag', '')):%Y-%m-%d}"
+        url, anhang = f"{url}?tag={tag}", f"{anhang}&tag={tag}"
+    except ValueError:
+        pass
+    if werte.get("halt", "").isdigit():
+        url += f"#halt-{int(werte['halt'])}"
+    return {"url": url, "name": tour.name, "anhang": anhang}
 
 
 @never_cache
