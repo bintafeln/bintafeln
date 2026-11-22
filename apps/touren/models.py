@@ -290,6 +290,29 @@ class Fahrt(models.Model):
         return self.beendet_am - self.begonnen_am if self.beendet_am else None
 
 
+class Anfahrt(models.Model):
+    """„Hier waren wir“: Die Station wurde an dem Tag auf der Tour angefahren (ADR 0152). Die
+    Station bleibt in der Tour stehen – man fährt manchmal ein zweites Mal hin."""
+
+    tour = models.ForeignKey(Tour, on_delete=models.CASCADE, related_name="anfahrten")
+    station = models.ForeignKey("Station", on_delete=models.CASCADE, related_name="anfahrten")
+    datum = models.DateField("Tag")
+    am = models.DateTimeField("Angefahren am", auto_now_add=True)
+    von = models.CharField("Eingetragen von", max_length=150, blank=True)
+
+    class Meta:
+        verbose_name = "Anfahrt"
+        verbose_name_plural = "Anfahrten"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tour", "station", "datum"], name="touren_anfahrt_je_tag"
+            )  # fmt: skip
+        ]
+
+    def __str__(self):
+        return f"{self.station} am {self.datum:%d.%m.%Y}"
+
+
 class Halt(models.Model):
     """Eine Station auf einer Tour, an ihrer Stelle in der Fahrtreihenfolge."""
 

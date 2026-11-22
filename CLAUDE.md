@@ -411,6 +411,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Ankunft, Regeln nur in `apps/touren/fahrten.py` (`beginnen()`, `beenden()`, `berichtigen()`; wer
   darf, entscheidet `start.darf()`; kein Ort wird geprüft), Fahrtenbuch in `views_fahrten.py`
   (Recht `touren.fahrten`); Namen von Tour und Fahrzeug stehen als Text in der Fahrt.
+  „Hier waren wir“ (ADR 0152): `Anfahrt` je Tour, Station und Tag über `apps/touren/anfahrten.py`
+  (Station bleibt stehen, ein Lieferschein gilt auch als angefahren); die Tour springt über
+  `static/js/tour_aktuell.js` zur nächsten offenen Station.
   Lieferscheine (ADR 0149): Regeln nur in `apps/touren/lieferscheine.py`; das PDF ist der
   Lieferschein – einmal erzeugt, verschlüsselt in `Lieferschein.datei`, nie neu berechnet, die
   Unterschrift (`static/js/unterschrift_feld.js`) wird nicht aufbewahrt; Versand nur an die
