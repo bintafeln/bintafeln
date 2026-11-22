@@ -138,12 +138,10 @@ def berichtigen(fahrt: Fahrt, benutzer, km_start, km_ende, fahrzeug_pk=None) -> 
     return fahrt
 
 
-def loeschen(fahrt: Fahrt, benutzer) -> None:
-    """Eine Fahrt ganz aus dem Fahrtenbuch nehmen (z. B. eine Testfahrt); sie kommt in den
-    Papierkorb. War es die letzte Fahrt des Fahrzeugs und steht dessen Kilometerstand noch auf
-    dem Stand dieser Fahrt, geht er auf den Stand davor zurück."""
-    from apps.core import papierkorb
-
+def stand_zurueck(fahrt: Fahrt):
+    """Vor dem Löschen einer Fahrt aufrufen; liefert eine Funktion, die danach den Kilometerstand
+    des Fahrzeugs zurückstellt: War es die letzte Fahrt des Fahrzeugs und steht dessen Stand noch
+    auf dem dieser Fahrt, geht er auf den Stand davor zurück."""
     fahrzeug = fahrt.fahrzeug
     letzter = fahrt.km_ende if fahrt.km_ende is not None else fahrt.km_start
     war_letzte = fahrzeug is not None and not Fahrt.objects.filter(
@@ -157,12 +155,25 @@ def loeschen(fahrt: Fahrt, benutzer) -> None:
             vorher = davor.km_ende if davor.km_ende is not None else davor.km_start
         else:
             vorher = fahrt.km_start
+
+    def zurueck() -> None:
+        if war_letzte:
+            fahrzeug.refresh_from_db()  # der Stand kann inzwischen von Hand geändert sein
+            if fahrzeug.kilometerstand == letzter:
+                _stand_merken(fahrzeug, vorher)
+
+    return zurueck
+
+
+def loeschen(fahrt: Fahrt, benutzer) -> None:
+    """Eine Fahrt ganz aus dem Fahrtenbuch nehmen (z. B. eine Testfahrt); sie kommt in den
+    Papierkorb, der Kilometerstand des Fahrzeugs geht zurück (``stand_zurueck()``)."""
+    from apps.core import papierkorb
+
+    zurueck = stand_zurueck(fahrt)
     papierkorb.loeschen(benutzer, "Fahrt", f"{fahrt.tour_name} am {fahrt.datum:%d.%m.%Y}", fahrt,
                         recht="touren.fahrten")  # fmt: skip
-    if war_letzte:
-        fahrzeug.refresh_from_db()  # der Stand kann inzwischen von Hand geändert sein
-        if fahrzeug.kilometerstand == letzter:
-            _stand_merken(fahrzeug, vorher)
+    zurueck()
 
 
 def fristen_anwenden(heute_: dt.date | None = None) -> int:

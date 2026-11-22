@@ -97,6 +97,18 @@
 </section>
 {% endif %}
 {% if darf_planen %}<p><a href="{% url 'touren:tour' tour.pk %}?tag={{ tag|date:'Y-m-d' }}">Tour bearbeiten</a> · <a href="{% url 'touren:tour' tour.pk %}?tag={{ tag|date:'Y-m-d' }}#besetzung">Besetzung für diesen Tag ändern (auch Gast)</a></p>{% endif %}
+{% if tourtag %}
+<details class="karte tour-zuruecksetzen" id="zuruecksetzen">
+  <summary>Diesen Tourtag zurücksetzen (z. B. nach einer Testtour)</summary>
+  <p>Legt <strong>alles</strong>, was am {{ tag|date:"d.m.Y" }} zu dieser Tour eingetragen wurde, in den Papierkorb:</p>
+  <ul>{% for name, anzahl in tourtag %}<li>{{ anzahl }} × {{ name }}</li>{% endfor %}</ul>
+  <p class="hinweis">Damit verschwinden die Einträge auch aus Fahrtenbuch, Lieferscheinliste und Statistik; der Kilometerstand des Fahrzeugs geht auf den Stand davor zurück. Die Tour selbst und ihre Stationen bleiben. Schon verschickte Lieferschein-Mails lassen sich nicht zurückholen. Aus dem Papierkorb lässt sich alles gemeinsam wiederherstellen.</p>
+  <form method="post" action="{% url 'touren:tourtag_zuruecksetzen' tour.pk %}" onsubmit="return confirm('Wirklich alles vom {{ tag|date:"d.m.Y" }} zu dieser Tour zurücksetzen?')">{% csrf_token %}
+    <input type="hidden" name="tag" value="{{ tag|date:'Y-m-d' }}">
+    <button type="submit" class="knopf knopf-gefahr">Tourtag zurücksetzen</button>
+  </form>
+</details>
+{% endif %}
 {% if fahrt_moeglich and not fahrt %}<script src="{% static 'js/fahrt_km.js' %}" defer></script>{% endif %}
 <script src="{% static 'js/tour_aktuell.js' %}" defer></script>
 {% endblock %}

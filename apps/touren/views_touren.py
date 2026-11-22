@@ -4,6 +4,7 @@ import base64
 import datetime as dt
 
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -22,6 +23,7 @@ from apps.touren import (
     importieren_touren,
     lieferscheine,
     suche,
+    tourtag,
     zusatz,
 )
 from apps.touren import start as tourstart
@@ -123,6 +125,7 @@ def fahren(request, pk):
         "darf_planen": rollen.hat_recht(request.user, "touren.planen"),
         "gefragt": gefragt, "gestartet": gestartet, "darf_start": darf_start,
         "darf_besetzung": darf_besetzung,
+        "tourtag": tourtag.inhalt(tour, tag) if tourtag.darf(request.user) else [],
         "fahrt": fahrt, "fahrt_moeglich": fahrt_moeglich,
         "darf_zusatz": zusatz.darf(request.user, tour, tag),
         "aktuell": aktuell, "erledigt": sum(1 for h in halte if h.angefahren),
@@ -209,6 +212,26 @@ def heuler_gesehen(request, pk):
         messages.error(request, "Diesen Stopp kann nur die Mannschaft der Tour bestätigen.")
         return redirect("touren:heute")
     return redirect(f"{heuler.adresse(stopp)}#zusatz-{stopp.pk}")
+
+
+@require_POST
+@fahren_recht
+def tourtag_zuruecksetzen(request, pk):
+    """Alles, was an einem Tag auf der Tour eingetragen wurde, in den Papierkorb (ADR 0162)."""
+    if not tourtag.darf(request.user):
+        raise PermissionDenied
+    tour = get_object_or_404(Tour, pk=pk)
+    try:
+        tag = dt.date.fromisoformat(request.POST.get("tag", ""))
+    except ValueError:
+        tag = timezone.localdate()
+    weg = tourtag.zuruecksetzen(tour, tag, request.user)
+    if weg:
+        teile = ", ".join(f"{anzahl} × {name}" for name, anzahl in weg)
+        messages.success(request, f"Zurückgesetzt und in den Papierkorb gelegt: {teile}.")
+    else:
+        messages.info(request, "An diesem Tag ist zu der Tour nichts eingetragen.")
+    return redirect(f"{reverse('touren:fahren', args=[tour.pk])}?tag={tag:%Y-%m-%d}")
 
 
 @require_POST
