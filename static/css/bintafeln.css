@@ -2393,3 +2393,66 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 
 /* Fahrtenbuch: Kilometer ohne Eintrag (ADR 0161) */
 .fahrt-unbekannt td { background: var(--grund); font-style: italic; }
+
+/* --- Nachtmodus (ADR 0164): dunkle Oberfläche, wählbar je Konto unter „Mein Konto“.
+   data-nacht am <html> setzt base.html („Dunkel“) oder static/js/darstellung.js („Wie das
+   Gerät“). Neue Regeln mit fester heller Farbe brauchen hier ein dunkles Gegenstück. --- */
+:root[data-nacht] {
+  color-scheme: dark;
+  --grund: #141715;
+  --flaeche: #1f2421;
+  --flaeche-2: #2a302c;
+  --text: #e9ece9;
+  --leise: #a5aea8;
+  --text-leise: #a5aea8;
+  --rand: #414a44;
+  --rahmen: #414a44;
+  --fehler: #f0796f;
+  --akzent-dunkel: var(--akzent-nacht, #f3ae6e);
+  --erfolg: color-mix(in srgb, var(--akzent) 22%, var(--flaeche));
+  --akzent-hell: color-mix(in srgb, var(--akzent) 22%, var(--flaeche));
+  --karte-bg: var(--flaeche);
+}
+/* --akzent-dunkel ist im Nachtmodus hell (Links, Text); als Fläche unter weißer Schrift taugt es
+   dann nicht */
+:root[data-nacht] .knopf:hover { background: color-mix(in srgb, var(--akzent) 82%, #000); }
+:root[data-nacht] .menue-zahl, :root[data-nacht] .knopf-zweitrangig:hover { background: color-mix(in srgb, var(--akzent) 30%, var(--flaeche)); color: var(--text); }
+:root[data-nacht] .knopf-zweitrangig, :root[data-nacht] .kopf-github:hover,
+:root[data-nacht] .kopf-github:focus-visible, :root[data-nacht] .demo-wert { background: var(--flaeche); }
+:root[data-nacht] .hintergrund { filter: brightness(.35); }
+:root[data-nacht] .grund-rot, :root[data-nacht] .aufruf-leiste-fehler, :root[data-nacht] .fd-offen-text { color: var(--fehler); }
+/* bleibt weiß (Bilder, Vorschauen, Unterschrift, Ausdrucke): dunkle Schrift erzwingen */
+:root[data-nacht] .logo, :root[data-nacht] .qr-code svg, :root[data-nacht] .mail-vorschau, :root[data-nacht] .ausweis-karte, :root[data-nacht] .bild-vorschau, :root[data-nacht] .grafik-wahl, :root[data-nacht] .brief-vorschau-knopf, :root[data-nacht] .unterschrift-vorschau, :root[data-nacht] .druck-seite, :root[data-nacht] .unterschrift-flaeche, :root[data-nacht] .ausweis-mini, :root[data-nacht] .sprach-hinweis { color: #1f2421; }
+/* helle Flächen ohne eigene Schriftfarbe: derselbe Farbton, dunkel getönt */
+:root[data-nacht] .meldung.error { background: color-mix(in srgb, #df2020 22%, var(--flaeche)); }
+:root[data-nacht] .marke-warnung { background: color-mix(in srgb, #df2020 22%, var(--flaeche)); }
+:root[data-nacht] .marke-art9 { background: color-mix(in srgb, #7020df 22%, var(--flaeche)); }
+:root[data-nacht] .zeile-aktiv td { background: color-mix(in srgb, #df2020 22%, var(--flaeche)); }
+:root[data-nacht] .sicherung { background: color-mix(in srgb, #dfab20 22%, var(--flaeche)); }
+:root[data-nacht] .sicherung-fehler, :root[data-nacht] .sicherung-veraltet { background: color-mix(in srgb, #df2020 22%, var(--flaeche)); }
+:root[data-nacht] .update-sicherheit { background: color-mix(in srgb, #df2020 22%, var(--flaeche)); }
+:root[data-nacht] .stufe-sicherheit { background: color-mix(in srgb, #df2020 22%, var(--flaeche)); }
+:root[data-nacht] .knopf-zweitrangig { background: var(--flaeche-2); }
+:root[data-nacht] .ampel-rot { background: color-mix(in srgb, #df2a20 22%, var(--flaeche)); }
+:root[data-nacht] .ampel-gelb { background: color-mix(in srgb, #dfae20 22%, var(--flaeche)); }
+:root[data-nacht] .ampel-gruen { background: color-mix(in srgb, #20df2f 22%, var(--flaeche)); }
+:root[data-nacht] .vorschlag { background: color-mix(in srgb, #20df20 22%, var(--flaeche)); }
+:root[data-nacht] .faellig { background: color-mix(in srgb, #dfae20 22%, var(--flaeche)); }
+:root[data-nacht] .notiz { background: color-mix(in srgb, #208edf 22%, var(--flaeche)); }
+:root[data-nacht] .symbol.gefahr:hover { background: color-mix(in srgb, #df2020 22%, var(--flaeche)); }
+:root[data-nacht] .status-in_bearbeitung { background: color-mix(in srgb, #dfae20 22%, var(--flaeche)); }
+:root[data-nacht] .status-erledigt, :root[data-nacht] .status-abgelehnt { background: var(--flaeche-2); }
+:root[data-nacht] .abgleich tr.unterschied td { background: color-mix(in srgb, #dfae20 22%, var(--flaeche)); }
+:root[data-nacht] tr.unterschied td { background: color-mix(in srgb, #dfae20 22%, var(--flaeche)); }
+:root[data-nacht] .gruppe-grau { background: var(--flaeche-2); }
+:root[data-nacht] .handbuch .achtung { background: color-mix(in srgb, #df9820 22%, var(--flaeche)); }
+:root[data-nacht] .kopf-github:hover, :root[data-nacht] .kopf-github:focus-visible { background: var(--flaeche-2); }
+:root[data-nacht] .wochen-selbst td { background: color-mix(in srgb, #df8c20 22%, var(--flaeche)); }
+:root[data-nacht] .link-warnung { background: color-mix(in srgb, #df2020 22%, var(--flaeche)); }
+:root[data-nacht] .ticket-offen { background: color-mix(in srgb, #df3420 22%, var(--flaeche)); }
+:root[data-nacht] .warten-jetzt { background: color-mix(in srgb, #20df57 22%, var(--flaeche)); }
+:root[data-nacht] .zugang-fehlt { background: color-mix(in srgb, #dfae20 22%, var(--flaeche)); }
+:root[data-nacht] .marke-neutral { background: var(--flaeche-2); }
+:root[data-nacht] .antrag-nicht-gesendet { background: color-mix(in srgb, #df2020 22%, var(--flaeche)); }
+:root[data-nacht] .antrag-absenden.knopf-gesperrt { background: var(--flaeche-2); }
+:root[data-nacht] .demo-wert { background: var(--flaeche-2); }

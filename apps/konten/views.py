@@ -11,7 +11,7 @@ from django.core.cache import cache
 from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.cache import add_never_cache_headers
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -25,7 +25,7 @@ from django_otp import match_token
 from apps.core import anlaesse, druckansicht, mail, module, push
 from apps.konten import anmeldeprotokoll, einladung, rollen, zwei_faktor
 from apps.konten.forms import AnmeldeEinstellungenForm, AnmeldeForm, CodeForm, ZweiterSchrittForm
-from apps.konten.models import AnmeldeEinstellungen, VertrautesGeraet
+from apps.konten.models import AnmeldeEinstellungen, Benutzer, VertrautesGeraet
 
 logger = logging.getLogger(__name__)
 
@@ -239,9 +239,21 @@ def mein_konto(request):
             "modul_konto": module.mein_konto(request),
             "unterschrift": _eigene_unterschrift(request.user),
             "druckansicht": druckansicht.aktiv(request),
+            "darstellungen": Benutzer.Darstellung.choices,
             "push_schluessel": push.oeffentlicher_schluessel(),
         },
     )
+
+
+@login_required
+@require_POST
+def darstellung(request):
+    """Helle oder dunkle Oberfläche für das eigene Konto (ADR 0164)."""
+    wahl = request.POST.get("darstellung", "")
+    if wahl in Benutzer.Darstellung.values:
+        request.user.darstellung = wahl
+        request.user.save(update_fields=["darstellung"])
+    return redirect(reverse("konten:mein_konto") + "#darstellung")
 
 
 def _eigene_unterschrift(benutzer):
