@@ -313,6 +313,37 @@ def importieren_ansicht(request):
 
 @require_POST
 @rollen.recht_erforderlich("spenden.erfassen")
+def versand_vermerk(request, pk):
+    """Den Vermerk „in WISO MeinVerein schon verschickt“ einer Spende von Hand setzen oder
+    zurücknehmen (ADR 0128, Nachtrag). Was von Hand gesetzt ist, ändert das Einlesen nicht mehr;
+    „auto“ gibt die Spende wieder frei."""
+    s = get_object_or_404(Spende, pk=pk)
+    wahl = request.POST.get("vermerk", "")
+    ziel = redirect("spenden:bearbeiten", pk=s.pk)
+    if not s.fremdbeleg:
+        messages.error(request, "Zu dieser Spende gibt es keinen Beleg aus einem anderen Programm.")
+        return ziel
+    if s.bestaetigt:
+        messages.error(request, "Diese Spende ist schon von bintafeln bestätigt.")
+        return ziel
+    if wahl == "auto":
+        s.fremdbeleg_von_hand = False
+        text = "Der Vermerk richtet sich wieder nach dem nächsten Einlesen."
+    elif wahl in (Spende.Fremdbeleg.OFFEN, Spende.Fremdbeleg.VERSENDET):
+        s.fremdbeleg, s.fremdbeleg_von_hand = wahl, True
+        if wahl == Spende.Fremdbeleg.VERSENDET:
+            text = "Als „schon verschickt“ vermerkt: bintafeln stellt keine Bestätigung aus."
+        else:
+            text = "Vermerk zurückgenommen: Die Spende gilt als noch nicht verschickt."
+    else:
+        return ziel
+    s.save(update_fields=["fremdbeleg", "fremdbeleg_von_hand"])
+    messages.success(request, text)
+    return ziel
+
+
+@require_POST
+@rollen.recht_erforderlich("spenden.erfassen")
 def loeschen(request, pk):
     s = get_object_or_404(Spende, pk=pk)
     if s.bestaetigt:

@@ -84,3 +84,14 @@ Vereinsportal nicht versendet ist, bestätigt bintafeln – eine Spende einzeln,
 Sammelbestätigung. Der Beleg aus dem Vereinsportal liegt dann nicht bei und sollte dort nicht mehr
 verschickt werden. Die Seite „Zuwendungsbestätigungen“ zeigt dazu alle Spender des Jahres mit dem
 Stand ihrer Bescheinigung (`bestaetigung.spenderuebersicht()`).
+
+## Nachtrag: Vermerk an der einzelnen Spende von Hand
+
+Auf der Seite einer Spende mit Beleg aus WISO MeinVerein lässt sich der Vermerk „dort schon
+verschickt“ von Hand setzen oder zurücknehmen (`spenden.views.versand_vermerk`, Recht
+`spenden.erfassen`). `Spende.fremdbeleg_von_hand` merkt sich das; `_versendet_vermerken()` und
+`_versand_zuruecknehmen()` lassen solche Spenden beim Einlesen in Ruhe. „Wieder nach dem Einlesen
+richten“ nimmt die Sperre zurück.
+
+Eine Zuordnung über mehr als die Belegnummer ist nicht nötig: `Spende.belegnummer` ist in der
+Datenbank eindeutig, ein Vermerk trifft also immer genau eine Spende.

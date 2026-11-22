@@ -427,6 +427,45 @@ def test_falscher_vermerk_wird_beim_naechsten_einlesen_berichtigt(export):
     assert e.berichtigt == 0 and Spende.objects.get(belegnummer="1").fremdbeleg == V
 
 
+def test_vermerk_von_hand_an_der_spende(export, admin_client):
+    """Auf der Seite der Spende lässt sich der Vermerk von Hand setzen und zurücknehmen; das
+    Einlesen ändert ihn danach nicht mehr, bis man ihn wieder freigibt (ADR 0128, Nachtrag)."""
+    einlesen.finanzexport_einlesen(export, "buero")
+    spende = Spende.objects.get(belegnummer="2")
+    Spende.objects.filter(pk=spende.pk).update(fremdbeleg=V)
+    seite = admin_client.get(reverse("spenden:bearbeiten", args=[spende.pk])).content.decode()
+    assert "dort schon verschickt" in seite and "Stimmt nicht: noch nicht verschickt" in seite
+    ziel = reverse("spenden:versand_vermerk", args=[spende.pk])
+    assert admin_client.post(ziel, {"vermerk": "offen"}).status_code == 302
+    spende.refresh_from_db()
+    assert (spende.fremdbeleg, spende.fremdbeleg_von_hand) == (OFFEN, True)
+    seite = admin_client.get(reverse("spenden:bearbeiten", args=[spende.pk])).content.decode()
+    assert "von Hand gesetzt" in seite and "Doch schon verschickt" in seite
+    # das Einlesen sagt „versendet“ – der Vermerk von Hand bleibt
+    kopf = ("Belegnummer", "Versendet am")
+    datei = uebersicht([(2, dt.date(2026, 5, 3))], kopf=kopf)
+    assert einlesen.uebersicht_einlesen(datei).versendet == 0
+    assert Spende.objects.get(pk=spende.pk).fremdbeleg == OFFEN
+    # und umgekehrt: von Hand „versendet“ nimmt das Einlesen nicht zurück
+    admin_client.post(ziel, {"vermerk": "versendet"})
+    assert einlesen.uebersicht_einlesen(uebersicht([(2, None)], kopf=kopf)).berichtigt == 0
+    assert Spende.objects.get(pk=spende.pk).fremdbeleg == V
+    # wieder freigeben: das nächste Einlesen entscheidet
+    admin_client.post(ziel, {"vermerk": "auto"})
+    assert not Spende.objects.get(pk=spende.pk).fremdbeleg_von_hand
+    assert einlesen.uebersicht_einlesen(uebersicht([(2, None)], kopf=kopf)).berichtigt == 1
+    admin_client.post(ziel, {"vermerk": "quatsch"})  # ändert nichts
+    assert Spende.objects.get(pk=spende.pk).fremdbeleg == OFFEN
+    # ohne Beleg aus einem anderen Programm gibt es nichts zu vermerken
+    ohne = Spende.objects.filter(fremdbeleg="").first() or Spende.objects.create(
+        adresse=spende.adresse, datum=spende.datum, betrag=5, art=spende.art
+    )
+    antwort = admin_client.post(reverse("spenden:versand_vermerk", args=[ohne.pk]),
+                                {"vermerk": "versendet"}, follow=True)  # fmt: skip
+    assert "keinen Beleg aus einem anderen Programm" in antwort.content.decode()
+    assert Spende.objects.get(pk=ohne.pk).fremdbeleg == ""
+
+
 def test_uebersicht_mit_sq_verschickt(export):
     """„SQ-verschickt“ (Ja/Nein) zählt wie ein Datum in „Versendet am“."""
     einlesen.finanzexport_einlesen(export, "buero")

@@ -362,14 +362,16 @@ def versendete(inhalt: bytes) -> set[str] | None:
 
 
 def _versendet_vermerken(nummern: set[str]) -> int:
-    offen = Spende.objects.filter(belegnummer__in=nummern, fremdbeleg=Spende.Fremdbeleg.OFFEN)
+    """Was von Hand gesetzt wurde (``fremdbeleg_von_hand``), bleibt, wie es ist."""
+    offen = Spende.objects.filter(belegnummer__in=nummern, fremdbeleg=Spende.Fremdbeleg.OFFEN,
+                                  fremdbeleg_von_hand=False)  # fmt: skip
     return offen.update(fremdbeleg=Spende.Fremdbeleg.VERSENDET)
 
 
 def _versand_zuruecknehmen(nummern: set[str]) -> int:
     """Steht ein Beleg in der Übersicht ohne Versand, gilt er wieder als offen – so berichtigt
     das nächste Einlesen einen früher falsch gesetzten Vermerk."""
-    falsch = Spende.objects.filter(belegnummer__in=nummern,
+    falsch = Spende.objects.filter(belegnummer__in=nummern, fremdbeleg_von_hand=False,
                                    fremdbeleg=Spende.Fremdbeleg.VERSENDET)  # fmt: skip
     return falsch.update(fremdbeleg=Spende.Fremdbeleg.OFFEN)
 

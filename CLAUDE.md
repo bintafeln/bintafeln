@@ -547,7 +547,7 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `<img src="…/grafiken/<pk>/" width="25%|50%|100%">`; Mails mit Bildern über
   `mail.senden(..., bilder=…)`; nie Bilder aus dem Internet abrufen.
 - Spenden: `Spende.fremdbeleg` (ADR 0128) kennzeichnet Spenden mit Beleg aus einem anderen
-  Programm; „versendet“ bekommt nie eine Bestätigung aus bintafeln, „offene“ bestätigt bintafeln
+  Programm (von Hand an der Spende änderbar; `fremdbeleg_von_hand` schützt das vor dem Einlesen); „versendet“ bekommt nie eine Bestätigung aus bintafeln, „offene“ bestätigt bintafeln
   selbst (eine einzeln, mehrere im Jahr als Sammelbestätigung, dann ohne den fremden Beleg) – die
   Regel steht nur in `bestaetigung.offene_geldspenden()` und `dank._beizulegende()`; Übersicht aller
   Spender eines Jahres in `bestaetigung.spenderuebersicht()`.

@@ -15,6 +15,19 @@
       <a class="knopf knopf-abbrechen" href="{% url 'spenden:liste' %}">{% if s.pk %}Zurück{% else %}Abbrechen{% endif %}</a>
     </div>
   </form>
+  {% if s.pk and s.fremdbeleg %}
+  <div class="notiz" id="versand">
+    <p class="notiz-text"><strong>Bescheinigung aus WISO MeinVerein:</strong>
+      {% if s.fremdbeleg == "versendet" %}dort schon verschickt – bintafeln stellt keine eigene Bestätigung aus.{% else %}dort noch nicht verschickt – bintafeln stellt die Bestätigung aus.{% endif %}
+      {% if s.fremdbeleg_von_hand %}<span class="marke-warnung">von Hand gesetzt</span> Das Einlesen ändert diesen Vermerk nicht mehr.{% else %}<span class="leise">So steht es im zuletzt eingelesenen Finanzexport.</span>{% endif %}</p>
+    <form method="post" action="{% url 'spenden:versand_vermerk' s.pk %}" class="aktionsleiste">
+      {% csrf_token %}
+      {% if s.fremdbeleg == "versendet" %}<button type="submit" name="vermerk" value="offen" class="knopf knopf-zweitrangig">Stimmt nicht: noch nicht verschickt</button>
+      {% else %}<button type="submit" name="vermerk" value="versendet" class="knopf knopf-zweitrangig">Doch schon verschickt</button>{% endif %}
+      {% if s.fremdbeleg_von_hand %}<button type="submit" name="vermerk" value="auto" class="knopf knopf-zweitrangig">Wieder nach dem Einlesen richten</button>{% endif %}
+    </form>
+  </div>
+  {% endif %}
   {% if s.pk %}
   <form method="post" action="{% url 'spenden:loeschen' s.pk %}" class="abseits" onsubmit="return confirm('Diese Spende löschen?')">
     {% csrf_token %}<button type="submit" class="knopf knopf-gefahr">Spende löschen</button>

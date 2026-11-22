@@ -12,6 +12,7 @@ urlpatterns = [
     path("import/", views.importieren_ansicht, name="importieren"),
     path("<int:pk>/", views.bearbeiten, name="bearbeiten"),
     path("<int:pk>/loeschen/", views.loeschen, name="loeschen"),
+    path("<int:pk>/versand/", views.versand_vermerk, name="versand_vermerk"),
     path("bestaetigungen/", views.bestaetigungen, name="bestaetigungen"),
     path("bestaetigungen/ausstellen/", views.ausstellen, name="ausstellen"),
     path("bestaetigungen/pdf/", views.pdf, name="pdf"),
