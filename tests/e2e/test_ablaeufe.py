@@ -2388,3 +2388,28 @@ def test_lieferschein_am_handy_unterschreiben(seite, angemeldet, admin):
     ls = Lieferschein.objects.get()
     assert [p.menge_text for p in ls.positionen.all()] == ["4 Kisten", "2,5 kg"]
     assert not ls.gesendet_am and "ausgeschaltet" in ls.mail_fehler  # Vorgabe: nur speichern
+
+
+def test_pdf_fenster_am_handy_im_hochformat(angemeldet, admin, live_server):
+    """Im Hochformat stand der Dateiname Buchstabe für Buchstabe untereinander, der Knopf
+    „Schließen“ ragte aus dem Fenster, und vom PDF war nichts zu sehen."""
+    from apps.core import druckansicht
+
+    seite = angemeldet(admin)
+    seite.context.add_cookies([{"name": druckansicht.COOKIE, "value": "1", "url": live_server.url}])
+    seite.set_viewport_size({"width": 390, "height": 800})
+    seite.goto(reverse("ausgabe:kasse"))
+    seite.get_by_role("link", name=re.compile("drucken \\(PDF\\)")).click()
+    fenster = seite.locator("dialog.pdf-fenster")
+    bild = fenster.locator("img.druck-seite").first
+    expect(bild).to_be_visible()
+    rahmen = fenster.bounding_box()
+    kopf = fenster.locator(".pdf-fenster-kopf").bounding_box()
+    titel = fenster.locator(".pdf-fenster-kopf strong").bounding_box()
+    knopf = fenster.get_by_role("button", name="✕ Schließen").bounding_box()
+    # Der Knopf liegt ganz im Fenster, der Name hat Platz neben ihm
+    assert knopf["x"] + knopf["width"] <= rahmen["x"] + rahmen["width"]
+    assert titel["width"] > 150
+    # Der Kopf bleibt eine schmale Leiste; darunter ist das PDF zu sehen
+    assert kopf["height"] < 120
+    assert bild.bounding_box()["y"] < rahmen["y"] + rahmen["height"]
