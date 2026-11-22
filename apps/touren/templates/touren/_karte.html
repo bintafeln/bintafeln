@@ -1,0 +1,17 @@
+<div class="tour-karte-rahmen" id="tour-karte" data-tourkarte>
+  <h3>So wird gefahren</h3>
+  {% if not vorschau.links %}<p class="hinweis">Sobald Stationen gewählt sind, erscheint hier die Route{% if vorschau.zentrale %} – von der Zentrale über die Stationen zurück zur Zentrale{% endif %}.</p>
+  {% else %}
+  <p class="leise">{% if vorschau.zentrale %}Start und Ziel: {{ vorschau.zentrale }}{% else %}Von der ersten zur letzten Station (keine Zentrale eingetragen).{% endif %}</p>
+  {% if vorschau.karten %}
+  <div data-tourkarte-karten hidden>
+    {% for adresse in vorschau.karten %}{% if vorschau.karten|length > 1 %}<p class="leise">Abschnitt {{ forloop.counter }} von {{ vorschau.karten|length }}</p>{% endif %}
+    <div class="tour-karte" data-src="{{ adresse }}" data-titel="Route der Tour{% if vorschau.karten|length > 1 %}, Abschnitt {{ forloop.counter }}{% endif %}"></div>{% endfor %}
+  </div>
+  <p data-tourkarte-frage><button type="button" class="knopf knopf-zweitrangig" data-tourkarte-zeigen>🗺 Karte zeigen</button>
+    <small class="hilfe">Die Karte kommt von Google Maps; dabei gehen die Anschriften der Stationen an Google. Die Wahl merkt sich dieses Gerät.</small></p>
+  <p data-tourkarte-aus hidden><button type="button" class="knopf knopf-zweitrangig knopf-klein" data-tourkarte-verbergen>Karte nicht mehr automatisch zeigen</button></p>
+  {% endif %}
+  <p>{% for adresse in vorschau.links %}<a class="knopf knopf-zweitrangig knopf-klein" href="{{ adresse }}" target="_blank" rel="noopener noreferrer">{% if vorschau.links|length == 1 %}Route in Google Maps öffnen ↗{% else %}Abschnitt {{ forloop.counter }} öffnen ↗{% endif %}</a> {% endfor %}</p>
+  {% endif %}
+</div>

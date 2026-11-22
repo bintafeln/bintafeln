@@ -18,6 +18,7 @@ from apps.core import zeichen
 
 GOOGLE_MAPS_SUCHE = "https://www.google.com/maps/search/?"
 GOOGLE_MAPS_ROUTE = "https://www.google.com/maps/dir/?"
+GOOGLE_MAPS_KARTE = "https://www.google.com/maps/embed/v1/directions?"
 
 
 class Station(models.Model):
@@ -391,6 +392,17 @@ class TourenEinstellungen(models.Model):
     )  # fmt: skip
     eco_adresse = models.URLField(
         "Adresse der ECO-Plattform", default="https://eco.tafel.de", blank=True)  # fmt: skip
+    zentrale = models.CharField(
+        "Start und Ziel der Touren (Zentrale)", max_length=200, blank=True,
+        help_text="Anschrift, an der die Touren beginnen und enden, z. B. „Musterstraße 1, 12345 "
+        "Musterstadt“. Leer = die Anschrift der Tafel. Sie ist Start und Ziel in der "
+        "Routenvorschau der Planung und das letzte Ziel der Route am Handy.",
+    )  # fmt: skip
+    zentrale_aus = models.BooleanField(
+        "Touren enden nicht an der Zentrale", default=False,
+        help_text="Dann rechnet die Route nur von Station zu Station.",
+    )  # fmt: skip
+    karten_schluessel_verschluesselt = models.TextField(blank=True, editable=False)
     aufbewahrung_jahre = models.PositiveSmallIntegerField(
         "Lieferscheine aufbewahren (Jahre)", default=10,
         validators=[MinValueValidator(1), MaxValueValidator(30)],
@@ -411,6 +423,26 @@ class TourenEinstellungen(models.Model):
     def save(self, *args, **kwargs):
         self.pk = self.EINZIGE_ID
         super().save(*args, **kwargs)
+
+    @property
+    def start_ziel(self) -> str:
+        """Anschrift der Zentrale für die Routen – leer, wenn Touren dort nicht enden oder
+        keine Anschrift bekannt ist."""
+        if self.zentrale_aus:
+            return ""
+        if self.zentrale.strip():
+            return self.zentrale.strip()
+        from apps.core.models import TafelEinstellungen
+
+        return TafelEinstellungen.laden().anschrift
+
+    @property
+    def karten_schluessel(self) -> str:
+        from apps.core import geheimnis
+
+        if not self.karten_schluessel_verschluesselt:
+            return ""
+        return geheimnis.entschluesseln(self.karten_schluessel_verschluesselt) or ""
 
     @property
     def eco_link(self) -> str:
@@ -509,7 +541,7 @@ class Position(models.Model):
 
 auditlog.register(Tour, m2m_fields={"personen"})
 auditlog.register(Halt)
-auditlog.register(TourenEinstellungen)
+auditlog.register(TourenEinstellungen, exclude_fields=["karten_schluessel_verschluesselt"])
 auditlog.register(Warengruppe)
 auditlog.register(Lieferschein)
 auditlog.register(Fahrzeug)

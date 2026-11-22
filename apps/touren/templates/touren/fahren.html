@@ -15,7 +15,7 @@
   <details class="tour-route">
     <summary>Ganze Tour in Google Maps</summary>
     <div class="aktionsleiste">
-      {% for r in routen %}<a class="knopf knopf-zweitrangig" href="{{ r.url }}" target="_blank" rel="noopener noreferrer">{% if routen|length == 1 %}Alle Stationen als Route{% else %}Stationen {{ r.von }}–{{ r.bis }}{% endif %}</a>{% endfor %}
+      {% for r in routen %}<a class="knopf knopf-zweitrangig" href="{{ r.url }}" target="_blank" rel="noopener noreferrer">{% if routen|length == 1 %}Alle Stationen als Route{% elif r.von > r.bis %}Zurück zur Zentrale{% else %}Stationen {{ r.von }}–{{ r.bis }}{% endif %}{% if r.zentrale and r.von <= r.bis %} und zurück zur Zentrale{% endif %}</a>{% endfor %}
     </div>
     <p class="hinweis">Start ist Ihr Standort. Ohne die Google-Maps-App zeigt der Browser am Handy nur die ersten Stationen; dann die Navigation je Station nehmen.</p>
   </details>

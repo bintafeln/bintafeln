@@ -23,6 +23,12 @@
     if (leer) { leer.hidden = liste.children.length > 0; }
   }
 
+  // Die Routenvorschau (touren/_karte.html) lädt sich bei diesem Ereignis neu
+  function geaendert() {
+    stand();
+    document.body.dispatchEvent(new CustomEvent("stationswahl-geaendert", { bubbles: true }));
+  }
+
   function hinzufuegen(pk, name, ort) {
     if (liste.querySelector('input[name="stationen"][value="' + pk + '"]')) { return; }
     var zeile = document.createElement("li");
@@ -48,7 +54,7 @@
     zeile.appendChild(text);
     zeile.appendChild(knoepfe);
     liste.appendChild(zeile);
-    stand();
+    geaendert();
   }
 
   rahmen.addEventListener("click", function (ereignis) {
@@ -62,11 +68,13 @@
       if (suche) { suche.focus(); }
     } else if (ziel.hasAttribute("data-station-weg") && zeile) {
       zeile.remove();
-      stand();
+      geaendert();
     } else if (ziel.hasAttribute("data-station-hoch") && zeile && zeile.previousElementSibling) {
       liste.insertBefore(zeile, zeile.previousElementSibling);
+      geaendert();
     } else if (ziel.hasAttribute("data-station-runter") && zeile && zeile.nextElementSibling) {
       liste.insertBefore(zeile.nextElementSibling, zeile);
+      geaendert();
     }
   });
 

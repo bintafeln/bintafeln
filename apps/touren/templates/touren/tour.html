@@ -39,6 +39,7 @@
                hx-trigger="input[this.value.trim().length >= 3 || !this.value] changed delay:300ms">
         <small class="hilfe">Ab drei Zeichen erscheinen die Treffer. Gesucht wird in allen Angaben der Station.</small></div>
       <div id="station-treffer" aria-live="polite"></div>
+      <div hx-get="{% url 'touren:karte' %}" hx-trigger="stationswahl-geaendert from:body" hx-include="[data-stationswahl-liste]" hx-swap="innerHTML">{% include "touren/_karte.html" %}</div>
       <p class="hinweis" data-stationswahl-leer{% if gewaehlt %} hidden{% endif %}>Noch keine Station gewählt.</p>
       <ol class="stationswahl-liste" data-stationswahl-liste>
         {% for s in gewaehlt %}<li><input type="hidden" name="stationen" value="{{ s.pk }}"><span><strong>{{ s.name }}</strong><br><small class="leise">{{ s.anschrift }}</small></span>
@@ -69,7 +70,9 @@
   {% endif %}
 </section>
 {% if tour %}
-<section class="karte" id="stationen">
+<section class="karte breit tour-planung" id="stationen">
+  <div class="tour-planung-karte">{% include "touren/_karte.html" %}</div>
+  <div class="tour-planung-liste">
   <h2>Stationen in Fahrtreihenfolge</h2>
   {% if halte %}
   <div class="tabelle-rahmen"><table class="tabelle" id="tour-halte">
@@ -103,6 +106,7 @@
     <div class="filter-feld filter-suche"><label for="{{ halt_form.station.id_for_label }}">{{ halt_form.station.label }}</label>{{ halt_form.station }}</div>
     <button type="submit" class="knopf">Anhängen</button>
   </form>
+  </div>
 </section>
 <section class="karte">
   <form method="post" action="{% url 'touren:tour_loeschen' tour.pk %}" class="abseits" onsubmit="return confirm('Tour „{{ tour.name|escapejs }}“ in den Papierkorb legen? Die Stationen selbst bleiben.')">
@@ -111,4 +115,5 @@
 </section>
 {% endif %}
 {% if kurz and not tour %}<script src="{% static 'js/stationswahl.js' %}" defer></script>{% endif %}
+<script src="{% static 'js/tour_karte.js' %}" defer></script>
 {% endblock %}

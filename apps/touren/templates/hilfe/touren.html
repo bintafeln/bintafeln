@@ -125,6 +125,20 @@
   <li>„Für die Fahrer“ ist ein Text, der oben auf der Tour steht.</li>
 </ul>
 {% hilfe_bild "touren-kurzfristig" "① Laden oder Lieferadresse suchen, ② Treffer hinzufügen, ③ gewählte Stationen in Fahrtreihenfolge, ④ Tour anlegen." %}
+<h3>Routenvorschau: „So wird gefahren“</h3>
+<ul>
+  <li>In der Planung steht neben den Stationen (am schmalen Bildschirm darüber) die <strong>Route der Tour</strong>:
+    von der Zentrale über die Stationen in Ihrer Reihenfolge zurück zur Zentrale. So sehen Sie gleich, ob die
+    Reihenfolge sinnvoll ist. Nach jedem Umsortieren zeigt sie den neuen Stand; in der Maske der kurzfristigen Tour
+    folgt sie der Auswahl.</li>
+  <li><strong>„Route in Google Maps öffnen ↗“</strong> geht immer und öffnet die Route in einem eigenen Fenster
+    (bei langen Touren in Abschnitten).</li>
+  <li><strong>„🗺 Karte zeigen“</strong> lädt die Route als Karte in die Seite. Das gibt es, sobald der Admin einen
+    Google-Schlüssel eingetragen hat (unten). Die Karte kommt von Google Maps; dabei gehen die Anschriften der Stationen
+    an Google. Deshalb lädt sie erst nach dem Klick; danach merkt sich das Gerät die Wahl.</li>
+  <li>Die Fahrer sehen diese Vorschau nicht. Ihre Route am Handy endet aber ebenfalls an der Zentrale.</li>
+</ul>
+{% hilfe_bild "touren-karte" "① Stationen in Fahrtreihenfolge, ② die Route von der Zentrale und zurück, ③ Karte in der Seite zeigen oder in einem eigenen Fenster öffnen." %}
 <h3>Stationsfolgen importieren</h3>
 <p>„Importieren“ auf der Seite „Touren planen“ oder „Daten importieren → Stationsfolgen der Touren“. Die Datei
   <code>tourstationen.csv</code> hat je Zeile eine Station auf einer Tour:</p>
@@ -158,7 +172,14 @@
     Station bekommt Post; im Betreff steht „[Test]“ und im Text, an wen die Mail sonst gegangen wäre. „An die Station“
     verschickt richtig. Lieferscheine aus der Zeit davor stehen in der Liste als „nicht verschickt“ und lassen sich
     dort mit „Senden“ nachschicken.</li>
-<li><strong>ECO-Plattform:</strong> Arbeitet Ihre Tafel (auch) mit der ECO-Plattform, haken Sie das an. Dann steht
+<li><strong>Start und Ziel der Touren (Zentrale):</strong> die Anschrift, an der die Touren beginnen und enden. Leer =
+    die Anschrift der Tafel. Enden Ihre Touren nicht an der Zentrale, haken Sie das an.</li>
+  <li><strong>Google-Schlüssel für die Karte:</strong> In der Google-Cloud (console.cloud.google.com) ein Projekt
+    anlegen, die <em>Maps Embed API</em> einschalten und unter „Anmeldedaten“ einen API-Schlüssel erstellen. Den
+    Schlüssel am besten auf die Adresse Ihrer bintafeln-Installation („HTTP-Verweis-URLs“) und auf die Maps Embed API
+    beschränken. Die Maps Embed API ist bei Google kostenlos. Den Schlüssel hier eintragen; er wird verschlüsselt
+    gespeichert und nicht wieder angezeigt.</li>
+  <li><strong>ECO-Plattform:</strong> Arbeitet Ihre Tafel (auch) mit der ECO-Plattform, haken Sie das an. Dann steht
     bei „Touren heute“ und „Touren planen“ ein Link dorthin. Touren, Stationen und Lieferscheine in bintafeln bleiben
     nutzbar.</li>
   <li>Je Station: „Lieferschein“ ja/nein und die „E-Mail für Lieferscheine“ stehen bei der Station.</li>

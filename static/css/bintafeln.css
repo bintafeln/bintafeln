@@ -2321,6 +2321,16 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 .tour-besetzung { border: 1px solid var(--rand); border-radius: var(--radius); padding: .6rem .8rem; margin: 0 0 1rem; background: var(--grund); }
 .tour-besetzung h2 { margin: 0 0 .3rem; font-size: 1.1rem; }
 .tour-besetzung-namen { display: flex; flex-wrap: wrap; gap: .3rem 1.2rem; margin: 0 0 .4rem; font-size: 1.1rem; }
+/* Tourenplanung: Stationen links, Routenvorschau rechts (schmal: Karte darüber) */
+.tour-karte-rahmen { border: 1px solid var(--rand); border-radius: var(--radius); padding: .6rem .8rem; margin: 0 0 1rem; background: var(--grund); }
+.tour-karte-rahmen h3 { margin: 0 0 .3rem; font-size: 1.05rem; }
+.tour-karte iframe { display: block; width: 100%; height: 22rem; border: 0; border-radius: 6px; margin-bottom: .5rem; }
+@media (min-width: 70rem) {
+  .tour-planung { display: grid; grid-template-columns: minmax(0, 3fr) minmax(20rem, 2fr); gap: 1.2rem; align-items: start; }
+  .tour-planung-liste { grid-column: 1; grid-row: 1; }
+  .tour-planung-karte { grid-column: 2; grid-row: 1; position: sticky; top: 1rem; }
+  .tour-planung-karte .tour-karte iframe { height: 30rem; }
+}
 .tour-frage { font-size: 1.35rem; font-weight: 600; margin: 1rem 0; }
 .tour-aendern { margin-top: 1.25rem; }
 .tour-aendern summary { cursor: pointer; padding: .5rem 0; }
