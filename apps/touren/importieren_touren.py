@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from django.db import transaction
 
 from apps.adressen.importieren import ImportFehler, text_lesen
-from apps.ausgabe.ampel import wochentage
+from apps.ausgabe.ampel import WOCHENTAGE, wochentage
 from apps.core import module
 from apps.touren.models import Halt, Station, Tour
 
@@ -22,6 +22,14 @@ __all__ = ["ImportFehler", "text_lesen", "pruefen", "uebernehmen", "SPALTEN"]
 SPALTEN = ["tour", "reihenfolge", "station", "wochentage"]
 PFLICHT = ["tour", "reihenfolge", "station"]
 MAX_ZEILEN = 5000
+TAGESNAMEN = {
+    lang: kurz
+    for kurz, lang in zip(
+        WOCHENTAGE,
+        ["montag", "dienstag", "mittwoch", "donnerstag", "freitag", "samstag", "sonntag"],
+        strict=True,
+    )
+} | {k.lower(): k for k in WOCHENTAGE}
 
 
 @dataclass
@@ -34,6 +42,15 @@ class Bericht:
     @property
     def halte(self) -> int:
         return sum(len(h) for h in self.touren.values())
+
+
+def wochentag_im_namen(name: str) -> tuple[str, str]:
+    """„Montag Katernberg“ → ("Mo", "Katernberg"): Beginnt der Name mit einem Wochentag, ist es
+    die Tour „Katernberg“ aus dem Fahrerplan in der Reihenfolge dieses Tages. Sonst ("", name)."""
+    erstes, _, rest = name.strip().partition(" ")
+    if rest.strip() and erstes.strip(".").lower() in TAGESNAMEN:
+        return TAGESNAMEN[erstes.strip(".").lower()], rest.strip()
+    return "", name
 
 
 def _vorhandene() -> dict[str, Tour]:
@@ -108,9 +125,18 @@ def uebernehmen(bericht: Bericht, von: str) -> tuple[int, int]:
         im_fahrerplan = {t.name.lower(): t for t in FahrdienstTour.objects.all()}
     for name, liste in bericht.touren.items():
         tour = vorhandene.get(name.lower())
+        tag, rest = wochentag_im_namen(name)
+        ft = im_fahrerplan.get(name.lower()) or (im_fahrerplan.get(rest.lower()) if tag else None)
         if tour is None:
-            tour = Tour.objects.create(name=name, angelegt_von=von,
-                                       fahrdienst_tour=im_fahrerplan.get(name.lower()))  # fmt: skip
+            tour = Tour.objects.create(name=name, angelegt_von=von, fahrdienst_tour=ft,
+                                       fahrtage=tag if ft and ft.name.lower() != name.lower()
+                                       else "")  # fmt: skip
+        elif tour.fahrdienst_tour_id is None and ft is not None:
+            # schon eingelesen, bevor es die Tour im Fahrerplan gab: jetzt verbinden
+            tour.fahrdienst_tour = ft
+            if not tour.fahrtage and ft.name.lower() != name.lower():
+                tour.fahrtage = tag
+            tour.save(update_fields=["fahrdienst_tour", "fahrtage"])
         tour.halte.all().delete()
         Halt.objects.bulk_create(
             Halt(tour=tour, station=stationen[kennung], reihenfolge=nr, wochentage=tage)

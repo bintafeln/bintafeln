@@ -19,6 +19,21 @@
   <li>Stationen, die nur an bestimmten Wochentagen angefahren werden, erscheinen nur an diesen Tagen.</li>
 </ul>
 {% hilfe_bild "touren-fahren" "① wer fährt, ② die ganze Tour als Route, ③ Navigation zur Station starten, ④ Anfahrt für die Fahrer." %}
+<h3>Vor der Abfahrt: „Seid ihr Peter und Paul?“</h3>
+<ul>
+  <li>Öffnen Sie <strong>heute</strong> eine Tour aus dem Fahrerplan, fragt bintafeln zuerst, ob die Namen aus dem
+    Fahrerplan stimmen. <strong>„Ja, stimmt“</strong> – und die Tour öffnet sich.</li>
+  <li><strong>„Nein, ändern“</strong>: je Platz (Fahrer, Beifahrer) die Person wählen, die heute wirklich fährt. Zur
+    Wahl steht, wer an dem Tag noch nicht eingeteilt ist und keinen Ausfall gemeldet hat; auf den Fahrerplatz nur
+    Fahrer. Die Änderung gilt nur für heute und steht dann auch im <strong>Fahrerplan</strong> als Ersatz.</li>
+  <li>Bestätigen und ändern kann nur, wer an dem Tag <strong>selbst auf der Tour eingetragen</strong> ist. Niemand
+    trägt sich selbst in eine fremde Tour ein oder nimmt sich selbst heraus – das macht das Büro (Recht „Besetzung
+    jeder Tour beim Start bestätigen und ändern“). Alle anderen sehen die Tour mit dem Vermerk „Besetzung noch nicht
+    bestätigt“.</li>
+  <li>In der Tour steht danach, wer wann bestätigt hat; über „ändern“ lässt sich die Besetzung am selben Tag noch
+    berichtigen. Eigene und kurzfristige Touren fragen nicht.</li>
+</ul>
+{% hilfe_bild "touren-start" "① die Frage mit den Namen aus dem Fahrerplan, ② bestätigen, ③ oder für heute berichtigen." %}
 {% if "touren.lieferschein" in rechte %}
 <h3>Unterwegs: Lieferschein ausfüllen</h3>
 <ol>
@@ -45,7 +60,10 @@
 <p>Unter „Einstellungen → Dienstpläne → Touren: Stationsfolgen und kurzfristige Touren“. Es gibt drei Arten:</p>
 <ul>
   <li><strong>Tour aus dem Fahrerplan:</strong> bei „Tour im Fahrerplan“ die Tour des Fahrdienstes wählen. Fahrtage und
-    Besetzung (mit Ersatz und Ausfällen) kommen dann von dort; hier legen Sie nur die Stationen fest.</li>
+    Besetzung (mit Ersatz und Ausfällen) kommen dann von dort; hier legen Sie nur die Stationen fest.
+    Fährt die Tour je Wochentag in anderer Reihenfolge, legen Sie je Tag eine Tour an (z. B. „Montag Nordtour“),
+    verbinden alle mit derselben Tour im Fahrerplan und haken bei „Fahrtage“ nur den einen Tag an. Der Import macht
+    das von selbst, wenn der Name mit dem Wochentag beginnt und der Rest wie die Tour im Fahrerplan heißt.</li>
   <li><strong>Eigene Tour:</strong> „Tour im Fahrerplan“ leer lassen, Fahrtage anhaken (nichts angehakt = jeden Tag)
     und bei „Wer fährt“ die Personen wählen. Zur Wahl stehen Fahrer, Beifahrer und Angestellte.</li>
   <li><strong>Kurzfristige Tour:</strong> nur für einen Tag, z. B. eine Sonderabholung. Tag, Personen und Stationen

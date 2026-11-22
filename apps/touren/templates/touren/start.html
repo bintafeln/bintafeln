@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titel %}{{ tour.name }} – Besetzung{% endblock %}
+{% block inhalt %}
+<section class="karte tour-start">
+  <p><a href="{% url 'touren:heute' %}">← Touren heute</a></p>
+  <h1>{{ tour.name }}</h1>
+  <p class="leise">{{ tag|date:"l, d.m.Y" }}{% if gestartet %} · bestätigt von {{ gestartet.bestaetigt_von }}, {{ gestartet.bestaetigt_am|date:"H:i" }} Uhr{% endif %}</p>
+  <p class="tour-frage">{{ frage }}</p>
+  <form method="post">{% csrf_token %}
+    <button type="submit" class="knopf tour-knopf">Ja, stimmt</button>
+  </form>
+  <details class="tour-aendern">
+    <summary>Nein, ändern</summary>
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="aendern" value="1">
+      {% for p in plaetze %}
+      <div class="feld"><label for="platz_{{ p.nr }}">{{ p.rolle }}</label>
+        <select name="platz_{{ p.nr }}" id="platz_{{ p.nr }}">
+          <option value="">{% if p.person %}{{ p.person.name }}{% elif p.gast %}{{ p.gast }} (Gast){% else %}– offen –{% endif %}</option>
+          {% for w in p.wahl %}<option value="{{ w.pk }}">{{ w.name }}</option>{% endfor %}
+        </select></div>
+      {% endfor %}
+      <p class="hinweis">Zur Wahl steht, wer an diesem Tag noch nicht eingeteilt ist und keinen Ausfall gemeldet hat. Die Änderung gilt nur für heute und steht dann auch im Fahrerplan.</p>
+      <button type="submit" class="knopf knopf-zweitrangig tour-knopf">So fahren wir heute</button>
+    </form>
+  </details>
+</section>
+{% endblock %}

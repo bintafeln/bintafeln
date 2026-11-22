@@ -76,8 +76,13 @@ def test_tour_aus_dem_fahrerplan(django_user_model):
     ft = FahrdienstTour.objects.create(name="Tour 3", fahrtage="Mo, Di", plaetze=2)
     fritz = person(django_user_model, "Fritz")
     Besetzung.objects.create(tour=ft, wochentag="Mo", platz=1, person=fritz)
-    t = Tour.objects.create(name="Tour 3", fahrdienst_tour=ft, fahrtage="Fr")
+    t = Tour.objects.create(name="Tour 3", fahrdienst_tour=ft)
     assert ablauf.faehrt_am(t, MONTAG) and not ablauf.faehrt_am(t, dt.date(2026, 11, 27))
+    # eigene Fahrtage grenzen ein: die Montags-Reihenfolge der Tour gilt nur montags
+    montags = Tour.objects.create(name="Montag Tour 3", fahrdienst_tour=ft, fahrtage="Mo")
+    assert ablauf.faehrt_am(montags, MONTAG) and not ablauf.faehrt_am(montags, DIENSTAG)
+    assert ablauf.faehrt_am(t, DIENSTAG)
+    montags.delete()
     wer = ablauf.besetzung(t, MONTAG)
     assert wer[0]["name"] == fritz.name and wer[0]["rolle"] == "Fahrer"
     assert wer[1]["offen"]  # Pflichtplatz 2 ist nicht besetzt
@@ -298,3 +303,138 @@ def test_tour_loeschen_in_den_papierkorb(buero):
     buero.post(reverse("touren:tour_loeschen", args=[t.pk]))
     assert not Tour.objects.exists() and Station.objects.count() == 2
     assert PapierkorbEintrag.objects.filter(art="Tour").exists()
+
+
+# --- Tourstart: „Seid ihr Peter und Paul?“ (ADR 0150) -------------------------------------------
+
+
+@pytest.fixture
+def heute_tour(admin, django_user_model):
+    """Eine Tour aus dem Fahrerplan, die heute fährt, mit Fritz (Fahrer) und Paula (Beifahrerin);
+    Klaus und Berta könnten einspringen."""
+    from apps.touren import start
+
+    heute = timezone.localdate()
+    ft = FahrdienstTour.objects.create(name="Nordtour", plaetze=2,
+                                       fahrtage="Mo, Di, Mi, Do, Fr, Sa, So")  # fmt: skip
+    fritz, paula = person(django_user_model, "Fritz"), person(django_user_model, "Paula",
+                                                              "Beifahrer")  # fmt: skip
+    klaus, berta = person(django_user_model, "Klaus"), person(django_user_model, "Berta",
+                                                              "Beifahrer")  # fmt: skip
+    tag = ablauf.kuerzel(heute)
+    Besetzung.objects.create(tour=ft, wochentag=tag, platz=1, person=fritz)
+    Besetzung.objects.create(tour=ft, wochentag=tag, platz=2, person=paula)
+    t = Tour.objects.create(name="Nordtour", fahrdienst_tour=ft)
+    ablauf.halt_anhaengen(t, station("n1"))
+    return {"tour": t, "ft": ft, "heute": heute, "fritz": fritz, "paula": paula, "klaus": klaus,
+            "berta": berta, "start": start}  # fmt: skip
+
+
+def test_tourstart_fragt_und_bestaetigt(client, anmelden, heute_tour):
+    t, start = heute_tour["tour"], heute_tour["start"]
+    anmelden(client, heute_tour["fritz"].konto)
+    antwort = client.get(reverse("touren:fahren", args=[t.pk]))
+    assert antwort.status_code == 302 and antwort.url == reverse("touren:start", args=[t.pk])
+    seite = client.get(antwort.url).content.decode()
+    assert "Seid ihr Fritz Probe und Paula Probe?" in seite and "Nein, ändern" in seite
+    assert "Klaus Probe" in seite and "Berta Probe" in seite  # könnten einspringen
+    assert client.post(antwort.url).status_code == 302
+    eintrag = start.gestartet(t, heute_tour["heute"])
+    assert eintrag and not eintrag.geaendert and eintrag.bestaetigt_von
+    seite = client.get(reverse("touren:fahren", args=[t.pk])).content.decode()
+    assert "Besetzung bestätigt" in seite and "Navigation starten" in seite
+    # an einem anderen Tag wird nicht gefragt
+    morgen = (heute_tour["heute"] + dt.timedelta(days=1)).isoformat()
+    assert client.get(reverse("touren:fahren", args=[t.pk]), {"tag": morgen}).status_code == 200
+
+
+def test_tourstart_aendern_steht_im_fahrerplan(client, anmelden, heute_tour):
+    from apps.fahrdienst import plan
+    from apps.fahrdienst.models import Ersatz
+
+    t, heute = heute_tour["tour"], heute_tour["heute"]
+    anmelden(client, heute_tour["fritz"].konto)
+    adresse = reverse("touren:start", args=[t.pk])
+    client.post(adresse, {"aendern": "1", "platz_1": "", "platz_2": heute_tour["berta"].pk})
+    ersatz = Ersatz.objects.get(datum=heute, tour=heute_tour["ft"], platz=2)
+    assert ersatz.person == heute_tour["berta"] and ersatz.eingetragen_von == "fritz"
+    assert plan.platz(heute, heute_tour["ft"], 2).wer == heute_tour["berta"]
+    assert [b["name"] for b in ablauf.besetzung(t, heute)] == ["Fritz Probe", "Berta Probe"]
+    assert heute_tour["start"].gestartet(t, heute).geaendert
+    assert heute_tour["start"].frage(heute_tour["start"].plaetze(t, heute)) == (
+        "Seid ihr Fritz Probe und Berta Probe?")  # fmt: skip
+
+
+def test_tourstart_fremde_tragen_sich_nicht_ein(client, anmelden, heute_tour, recht_geben):
+    from apps.fahrdienst.models import Ersatz
+
+    t, heute, start = heute_tour["tour"], heute_tour["heute"], heute_tour["start"]
+    klaus = heute_tour["klaus"]
+    anmelden(client, klaus.konto)
+    # nicht eingetragen: sieht die Tour, wird aber nicht gefragt und kann nichts bestätigen
+    seite = client.get(reverse("touren:fahren", args=[t.pk]))
+    assert seite.status_code == 200 and "noch nicht bestätigt" in seite.content.decode()
+    adresse = reverse("touren:start", args=[t.pk])
+    assert client.get(adresse).status_code == 302
+    client.post(adresse, {"aendern": "1", "platz_1": klaus.pk})
+    assert not Ersatz.objects.exists() and start.gestartet(t, heute) is None
+    with pytest.raises(start.StartFehler):
+        start.bestaetigen(t, heute, klaus.konto, {1: klaus.pk})
+    # wer eingetragen ist, nimmt sich nicht selbst heraus und wählt nur, wer einspringen kann
+    fritz = heute_tour["fritz"].konto
+    with pytest.raises(start.StartFehler, match="selbst"):
+        start.bestaetigen(t, heute, fritz, {1: klaus.pk})
+    with pytest.raises(start.StartFehler, match="kann an dem Tag nicht"):
+        start.bestaetigen(t, heute, fritz, {1: heute_tour["berta"].pk})  # Beifahrerin, kein Fahrer
+    with pytest.raises(start.StartFehler):
+        start.bestaetigen(t, heute, fritz, {2: klaus.pk, 1: klaus.pk})
+    assert not Ersatz.objects.exists()
+    # mit dem Recht „touren.besetzung“ geht es auch ohne eigenen Platz
+    recht_geben("Fahrer", "touren.besetzung")
+    assert client.get(reverse("touren:fahren", args=[t.pk])).status_code == 302
+    client.post(adresse, {"aendern": "1", "platz_1": klaus.pk})
+    assert Ersatz.objects.get(platz=1).person == klaus and start.gestartet(t, heute).geaendert
+
+
+def test_tourstart_nur_fuer_touren_aus_dem_fahrerplan(client, anmelden, heute_tour):
+    start, heute = heute_tour["start"], heute_tour["heute"]
+    eigene = tour_mit(1, name="Eigene")
+    eigene.personen.add(heute_tour["fritz"])
+    assert not start.gefragt(eigene, heute) and start.gefragt(heute_tour["tour"], heute)
+    anmelden(client, heute_tour["fritz"].konto)
+    assert client.get(reverse("touren:fahren", args=[eigene.pk])).status_code == 200
+    assert client.get(reverse("touren:start", args=[eigene.pk])).status_code == 302
+    assert start.frage([]).startswith("Für diese Tour ist niemand")
+    einer = [{"person": heute_tour["fritz"], "gast": ""}, {"person": None, "gast": ""}]
+    assert start.frage(einer) == "Bist du Fritz Probe?"
+
+
+def test_tourstart_frist():
+    from apps.touren import start
+    from apps.touren.models import Tourstart
+
+    t = Tour.objects.create(name="Alt")
+    Tourstart.objects.create(tour=t, datum=dt.date(2026, 1, 1), bestaetigt_von="x")
+    Tourstart.objects.create(tour=t, datum=dt.date(2026, 6, 1), bestaetigt_von="x")
+    assert start.fristen_anwenden(dt.date(2026, 6, 15)) == 1 and Tourstart.objects.count() == 1
+
+
+def test_import_verbindet_wochentag_im_namen_mit_dem_fahrerplan():
+    """„Montag Nordtour“ ist die Tour „Nordtour“ des Fahrerplans in der Montags-Reihenfolge."""
+    station(1)
+    ft = FahrdienstTour.objects.create(name="Nordtour")
+    schon = Tour.objects.create(name="Dienstag Nordtour")  # früher ohne Verbindung eingelesen
+    zeilen = ["Montag Nordtour;1;M-1;Mo", "Dienstag Nordtour;1;M-1;Di", "Nordtour;1;M-1;",
+              "Freitag Sonderfahrt;1;M-1;", "Montag;1;M-1;"]  # fmt: skip
+    text = "\n".join([KOPF, *zeilen])
+    importieren_touren.uebernehmen(importieren_touren.pruefen(text), "anton")
+    montag = Tour.objects.get(name="Montag Nordtour")
+    assert (montag.fahrdienst_tour, montag.fahrtage) == (ft, "Mo")
+    assert ablauf.faehrt_am(montag, MONTAG) and not ablauf.faehrt_am(montag, DIENSTAG)
+    schon.refresh_from_db()
+    assert (schon.fahrdienst_tour, schon.fahrtage) == (ft, "Di")
+    gleich = Tour.objects.get(name="Nordtour")
+    assert (gleich.fahrdienst_tour, gleich.fahrtage) == (ft, "")
+    assert Tour.objects.get(name="Freitag Sonderfahrt").fahrdienst_tour is None
+    assert Tour.objects.get(name="Montag").fahrdienst_tour is None
+    assert importieren_touren.wochentag_im_namen("Mo. Nordtour") == ("Mo", "Nordtour")

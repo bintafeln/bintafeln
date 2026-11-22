@@ -1089,6 +1089,40 @@ def test_hilfe_bild_touren_fahren(angemeldet, admin, muster):
     seite.set_viewport_size({"width": 1280, "height": 900})
 
 
+def test_hilfe_bild_touren_start(angemeldet, admin, muster):
+    """Vor der Tour: „Seid ihr …?“ mit den Namen aus dem Fahrerplan (ADR 0150)."""
+    from apps.ausgabe.ampel import WOCHENTAGE
+    from apps.core import demo_daten
+    from apps.fahrdienst import beispiel
+    from apps.fahrdienst.models import Besetzung
+    from apps.touren.models import Tour
+
+    _module("touren", "fahrdienst")
+    beispiel.anlegen(seed=1)
+    demo_daten.touren()
+    tour = Tour.objects.filter(fahrdienst_tour__isnull=False).order_by("pk").first()
+    ft = tour.fahrdienst_tour
+    ft.fahrtage = "Mo, Di, Mi, Do, Fr, Sa, So"
+    ft.save()
+    heute = WOCHENTAGE[timezone.localdate().weekday()]
+    if not Besetzung.objects.filter(tour=ft, wochentag=heute).exists():
+        for b in Besetzung.objects.filter(tour=ft, wochentag="Mo"):
+            Besetzung.objects.create(tour=ft, wochentag=heute, platz=b.platz, person=b.person)
+    seite = oeffnen(angemeldet, admin, reverse("touren:fahren", args=[tour.pk]))
+    seite.set_viewport_size({"width": 400, "height": 900})
+    seite.locator(".tour-aendern summary").click()
+    aufnehmen(
+        seite,
+        "touren-start",
+        [seite.locator(".tour-start")],
+        Marke(seite.locator(".tour-frage"), art="rahmen", nummer=1),
+        Marke(seite.get_by_role("button", name="Ja, stimmt"), art="rahmen", nummer=2),
+        Marke(seite.locator(".tour-aendern form"), art="rahmen", nummer=3),
+        rand=8,
+    )  # fmt: skip
+    seite.set_viewport_size({"width": 1280, "height": 900})
+
+
 def test_hilfe_bild_touren_lieferschein(angemeldet, admin, muster):
     from apps.core import demo_daten
     from apps.touren.models import Station

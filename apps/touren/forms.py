@@ -58,7 +58,9 @@ class TourForm(forms.ModelForm):
 
     fahrtage = TageFeld(
         label="Fahrtage", required=False,
-        help_text="Nur für eigene Touren ohne Fahrerplan. Nichts angehakt = an jedem Tag.",
+        help_text="Nichts angehakt = an jedem Tag. Bei einer Tour aus dem Fahrerplan: an jedem "
+        "Tag, an dem sie dort fährt – oder nur an den angehakten davon (z. B. die "
+        "Montags-Reihenfolge).",
     )  # fmt: skip
     personen = PersonenFeld(
         queryset=None, required=False, label="Wer fährt",

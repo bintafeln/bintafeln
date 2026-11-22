@@ -31,7 +31,7 @@
     <thead><tr><th>Tour</th><th>Besetzung und Fahrtage</th><th class="zahl">Stationen</th></tr></thead>
     <tbody>{% for t in regelmaessig %}
       <tr><td data-titel="Tour"><a href="{% url 'touren:tour' t.pk %}">{{ t.name }}</a>{% if not t.aktiv %} <span class="marke-neutral">aus</span>{% endif %}</td>
-        <td data-titel="Besetzung und Fahrtage">{% if t.fahrdienst_tour %}aus dem Fahrerplan: {{ t.fahrdienst_tour.name }} ({{ t.fahrdienst_tour.fahrtage }}){% else %}eigene Tour · {{ t.fahrtage|default:"jeden Tag" }}{% endif %}</td>
+        <td data-titel="Besetzung und Fahrtage">{% if t.fahrdienst_tour %}aus dem Fahrerplan: {{ t.fahrdienst_tour.name }} ({{ t.fahrtage|default:t.fahrdienst_tour.fahrtage }}){% else %}eigene Tour · {{ t.fahrtage|default:"jeden Tag" }}{% endif %}</td>
         <td data-titel="Stationen" class="zahl">{{ t.halte.all|length }}</td></tr>
     {% endfor %}</tbody>
   </table></div>
