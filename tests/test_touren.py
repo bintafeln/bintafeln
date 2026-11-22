@@ -320,3 +320,81 @@ def test_modul_aus_keine_seiten(buero):
     t.module = []
     t.save()
     assert buero.get(reverse("touren:stationen")).status_code == 404
+
+
+# --- Marktliste und Lieferadressen im Exportformat der eco-platform (erfundene Daten) ----------
+
+MARKTLISTE = (
+    "\ufeffName;Handelskette;Externe Marktkennung;Adresse;Bemerkung;Empfänger der Lieferscheine;"
+    "Kontakt Name;Kontakt Telefon;Kontakt E-Mail-Adresse;Nur digitaler Lieferschein\r\n"
+    "Beispielmarkt Musterstraße 98;Beispielkette;AB65;Musterstr. 98, 12345 Musterstadt, "
+    "Deutschland;;scheine@example.org;;0123 456\tFrau Probe;markt@example.org;ja\r\n"
+    "Beispielmarkt;;;Probeweg 2-6, 12345 Musterstadt - Nordviertel, DE;Nicht vor 9 Uhr;;"
+    "Herr Muster;0123 789\tFrau Zweit;;nein\r\n"
+    "Bäckerei Probe;;;Am Markt 1, 12345 Musterstadt-Stadtbezirk IV, Deutschland;;;;;;nein\r\n"
+    "Ohne Postleitzahl;;;Irgendwo, 45 Musterstadt, Deutschland;;;;;;nein\r\n"
+)
+LIEFERADRESSEN = (
+    "Name;Adresse;Kontakt;Öffnungszeiten\r\n"
+    "Treff Beispiel;Zielweg 12a, 12345 Musterstadt, Deutschland;0123 111\tHr. Ziel;Mo–Fr 9–12\r\n"
+    "Haus Muster;Zielweg 14, 12345 Musterstadt / Ostdorf, Deutschland;;\r\n"
+)
+
+
+def test_marktliste_wird_erkannt_und_umgeschrieben():
+    bericht = importieren.pruefen(MARKTLISTE)
+    assert bericht.fehler == [(5, "PLZ „45“ ist keine Postleitzahl")]
+    assert not bericht.unbekannte_spalten and len(bericht.neu) == 3
+    assert importieren.uebernehmen(bericht, "anton") == (3, 0)
+    m = Station.objects.get(kennung="beispielkette-ab65")
+    assert (m.art, m.kette, m.filialnummer) == ("markt", "Beispielkette", "AB65")
+    assert (m.strasse, m.hausnummer, m.plz, m.ort) == ("Musterstr.", "98", "12345", "Musterstadt")
+    assert (m.telefon, m.ansprechpartner) == ("0123 456", "Frau Probe")
+    assert (m.email, m.email_lieferschein) == ("markt@example.org", "scheine@example.org")
+    assert m.lieferschein
+    ohne = Station.objects.get(name="Beispielmarkt")
+    assert ohne.kennung == "m-beispielmarkt-probeweg-2-6-12345"
+    assert (ohne.hausnummer, ohne.ort, ohne.ortsteil) == ("2-6", "Musterstadt", "Nordviertel")
+    assert ohne.ansprechpartner == "Herr Muster" and not ohne.lieferschein
+    assert ohne.notiz == "Kontakt am Telefon: Frau Zweit\nNicht vor 9 Uhr"
+    b = Station.objects.get(name="Bäckerei Probe")
+    assert (b.art, b.ort, b.ortsteil) == ("baeckerei", "Musterstadt", "Stadtbezirk IV")
+    # dieselbe Datei noch einmal: nichts neu, nichts geändert
+    wieder = importieren.pruefen(MARKTLISTE)
+    assert not wieder.neu and not wieder.geaendert and len(wieder.unveraendert) == 3
+
+
+def test_lieferadressen_werden_erkannt():
+    bericht = importieren.pruefen(LIEFERADRESSEN)
+    assert not bericht.fehler and len(bericht.neu) == 2
+    importieren.uebernehmen(bericht, "anton")
+    t = Station.objects.get(name="Treff Beispiel")
+    assert t.kennung == "l-treff-beispiel-zielweg-12a-12345" and t.art == "einrichtung"
+    assert (t.strasse, t.hausnummer) == ("Zielweg", "12a")
+    assert (t.telefon, t.ansprechpartner, t.oeffnungszeiten) == (
+        "0123 111",
+        "Hr. Ziel",
+        "Mo–Fr 9–12",
+    )
+    assert not t.lieferschein
+    assert Station.objects.get(name="Haus Muster").ortsteil == "Ostdorf"
+
+
+def test_eigenes_format_bleibt_unberuehrt():
+    from apps.touren import listen_einlesen
+
+    eigene = csv("M-1;markt;Beispielmarkt Mitte;;Musterstraße;1;12345;Musterstadt;;;;;;")
+    assert listen_einlesen.umschreiben(eigene) == eigene
+    assert listen_einlesen.umschreiben("") == ""
+    # langer Text statt Telefonnummer kommt in die Notiz, nichts wird abgeschnitten
+    lang = "Name;Adresse;Kontakt;Öffnungszeiten\nX;Weg 1, 12345 Ort, DE;" + "bitte " * 12 + ";\n"
+    daten = importieren.pruefen(lang).neu[0]
+    assert "telefon" not in daten and daten["notiz"].startswith("Kontakt: bitte bitte")
+
+
+def test_marktliste_ueber_die_importseite(buero):
+    datei = SimpleUploadedFile("maerkte.csv", MARKTLISTE.encode())
+    seite = buero.post(reverse("touren:importieren"), {"datei": datei}).content.decode()
+    assert "Prüfbericht" in seite and "keine Postleitzahl" in seite
+    buero.post(reverse("touren:importieren"), {"schritt": "uebernehmen"})
+    assert Station.objects.count() == 3

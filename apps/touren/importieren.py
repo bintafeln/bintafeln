@@ -22,6 +22,7 @@ from django.utils import timezone
 from apps.adressen.importieren import ImportFehler, text_lesen
 from apps.ausgabe.ampel import wochentage
 from apps.kunden import werte
+from apps.touren import listen_einlesen
 from apps.touren.models import Station
 
 __all__ = ["ImportFehler", "text_lesen", "pruefen", "uebernehmen", "exportieren", "SPALTEN"]
@@ -63,6 +64,8 @@ def _bezeichnung(feld: str) -> str:
 
 
 def pruefen(text: str) -> Bericht:
+    # Marktliste und Lieferadressen aus einem anderen Programm kommen erst ins eigene Format
+    text = listen_einlesen.umschreiben(text)
     zeilen = text.splitlines()
     if not zeilen:
         raise ImportFehler("Die Datei ist leer.")
