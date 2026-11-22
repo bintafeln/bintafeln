@@ -2408,7 +2408,7 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
   --rand: #414a44;
   --rahmen: #414a44;
   --fehler: #f0796f;
-  --akzent-dunkel: var(--akzent-nacht, #f3ae6e);
+  --akzent-dunkel: var(--akzent-nacht, #f2b178);
   --erfolg: color-mix(in srgb, var(--akzent) 22%, var(--flaeche));
   --akzent-hell: color-mix(in srgb, var(--akzent) 22%, var(--flaeche));
   --karte-bg: var(--flaeche);
@@ -2456,3 +2456,6 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 :root[data-nacht] .antrag-nicht-gesendet { background: color-mix(in srgb, #df2020 22%, var(--flaeche)); }
 :root[data-nacht] .antrag-absenden.knopf-gesperrt { background: var(--flaeche-2); }
 :root[data-nacht] .demo-wert { background: var(--flaeche-2); }
+/* Eingabefelder ohne eigene Farbe bekämen sonst das Grau des Browsers */
+:root[data-nacht] input:not([type=checkbox], [type=radio], [type=range], [type=file], [type=color], [type=submit], [type=button]),
+:root[data-nacht] textarea, :root[data-nacht] select { background-color: var(--flaeche-2); color: var(--text); }

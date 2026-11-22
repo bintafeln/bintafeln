@@ -527,6 +527,11 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Mitglieder, Kundenstamm; Kontobuchungen über `buchungen.csv`, `Buchung.importiert`).
   Neue Ziele dort ergänzen. Kundenstamm: Assistent schreibt ins Importformat um, Ergänzen in
   `apps/kunden/import_ergaenzen.py`; Haushalt in den Papierkorb über `apps/kunden/entfernen.py`.
+- Nachtmodus (ADR 0164): `Benutzer.darstellung` (hell/dunkel/wie das Gerät, nur auf „Mein Konto“),
+  `data-nacht` am `<html>` (bei „Wie das Gerät“ über `static/js/darstellung.js`); dunkle Farben am
+  Ende von bintafeln.css unter `:root[data-nacht]`. In CSS Flächen und Schrift über die Variablen
+  (`--flaeche`, `--flaeche-2`, `--text`, `--rand`); eine neue Regel mit fester heller Fläche bekommt
+  dort ein dunkles Gegenstück. PDFs, Unterschriftsfelder und Vorschauen bleiben hell.
 - Überraschungen auf der Anmeldeseite an Festtagen: `apps/core/anlaesse.py` und
   `templates/includes/anlass.html` (SVG + CSS, kein JavaScript; ADR 0079).
 - Serienbriefe (ADR 0047, 0088): Vorlagen-Text und Fußzeile als bereinigtes HTML aus
