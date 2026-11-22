@@ -84,6 +84,15 @@ class _Blatt:
         return self.puffer.getvalue()
 
 
+def fuer_wen(name: str) -> str:
+    """Die Zeile unter „Lieferschein“: der Name der Tafel aus den Einstellungen. Ohne Namen der
+    allgemeine Text des Vordrucks."""
+    name = " ".join((name or "").split())
+    if not name:
+        return "für die Tafeln in Deutschland"
+    return f"für die {name}" if "tafel" in name.lower() else f"für {name}"
+
+
 def zeichnen(*, tafel, nummer, datum, station_name, station_anschrift, zeilen, anmerkung,
              unterschrift: bytes, unterschrieben_von: str) -> bytes:  # fmt: skip
     """``zeilen``: [(Mengentext oder "", Warengruppe)] in der Reihenfolge der Tabelle."""
@@ -99,7 +108,7 @@ def zeichnen(*, tafel, nummer, datum, station_name, station_anschrift, zeilen, a
         b.zeile(LINKS, 48, tafel.name or "", FETT, 20)
     b.zeile(LINKS, 83, "Vereinfachtes Dokumentationsverfahren | Verordnung (EG) Nr. 178/2002")
     b.zeile(LINKS, 141, "Lieferschein", FETT, 25)
-    b.zeile(LINKS, 189, "für die Tafeln in Deutschland", groesse=12.5)
+    b.zeile(LINKS, 189, fuer_wen(tafel.name), groesse=12.5)
     # --- Spender/in und Empfänger/in, rechts Datum und Nummer ---------------------------------
     b.kasten(LINKS, 212, 298, 280)
     b.linie(LINKS, 246, 298)

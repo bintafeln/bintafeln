@@ -135,6 +135,17 @@ def test_pdf_inhalt(admin, pdf_text, client, anmelden):
     assert "Molkereiprodukte" in text  # jede Warengruppe hat ihre Zeile, auch ohne Menge
     assert "Unterschrift Empfänger/in" in text
     assert "Erstellt am" not in text and "Seite 1" not in text  # keine Fußzeile
+    # unter „Lieferschein“ steht die eigene Tafel, nicht „die Tafeln in Deutschland“
+    assert "für die Tafel Musterstadt" in text and "Tafeln in Deutschland" not in text
+
+
+def test_vordruck_fuer_wen():
+    from apps.touren import vordruck
+
+    assert vordruck.fuer_wen("Tafel Musterstadt e.V.") == "für die Tafel Musterstadt e.V."
+    assert vordruck.fuer_wen("Musterstädter  Tafel") == "für die Musterstädter Tafel"
+    assert vordruck.fuer_wen("Brot und Butter e.V.") == "für Brot und Butter e.V."
+    assert vordruck.fuer_wen("") == "für die Tafeln in Deutschland"  # noch kein Name eingetragen
 
 
 def test_pdf_mit_logo_und_anmerkung(admin, settings, tmp_path):
