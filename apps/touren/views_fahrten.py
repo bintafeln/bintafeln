@@ -188,6 +188,16 @@ def bearbeiten(request, pk):
     })  # fmt: skip
 
 
+@require_POST
+@buch
+def fahrt_loeschen(request, pk):
+    fahrt = get_object_or_404(Fahrt.objects.select_related("fahrzeug"), pk=pk)
+    fahrten.loeschen(fahrt, request.user)
+    messages.success(request, f"Fahrt „{fahrt.tour_name}“ am {fahrt.datum:%d.%m.%Y} gelöscht. "
+                     "Sie liegt im Papierkorb.")  # fmt: skip
+    return redirect("touren:fahrten")
+
+
 # ── Papiere zum Fahrzeug (ADR 0160) ─────────────────────────────────────────
 
 

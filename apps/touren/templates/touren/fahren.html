@@ -91,7 +91,7 @@
   </details>
 </section>
 {% endif %}
-{% if darf_planen %}<p><a href="{% url 'touren:tour' tour.pk %}">Tour bearbeiten</a></p>{% endif %}
+{% if darf_planen %}<p><a href="{% url 'touren:tour' tour.pk %}?tag={{ tag|date:'Y-m-d' }}">Tour bearbeiten</a> · <a href="{% url 'touren:tour' tour.pk %}?tag={{ tag|date:'Y-m-d' }}#besetzung">Besetzung für diesen Tag ändern (auch Gast)</a></p>{% endif %}
 {% if fahrt_moeglich and not fahrt %}<script src="{% static 'js/fahrt_km.js' %}" defer></script>{% endif %}
 <script src="{% static 'js/tour_aktuell.js' %}" defer></script>
 {% endblock %}

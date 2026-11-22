@@ -31,6 +31,7 @@ urlpatterns = [
     path("fahrten/meldungen/<int:pk>/", views_fahrten.meldung_erledigen, name="meldung_erledigen"),
     path("fahrten/<int:pk>/melden/", views_fahrten.melden, name="fahrt_melden"),
     path("fahrten/<int:pk>/", views_fahrten.bearbeiten, name="fahrt"),
+    path("fahrten/<int:pk>/loeschen/", views_fahrten.fahrt_loeschen, name="fahrt_loeschen"),
     path("fahrten/<int:pk>/beenden/", views_fahrten.beenden, name="fahrt_beenden"),
     path("planen/", views_touren.touren, name="touren"),
     path("planen/neu/", views_touren.tour_neu, name="tour_neu"),
