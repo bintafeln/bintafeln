@@ -261,21 +261,20 @@ class EinrichtenForm(forms.ModelForm):
         widgets = {"mail_text": forms.Textarea(attrs={"rows": 5})}
 
 
-FahrzeugFormSet = forms.modelformset_factory(
-    Fahrzeug,
-    fields=[
-        "name",
-        "kennzeichen",
-        "typ",
-        "erstzulassung",
-        "kilometerstand",
-        "reihenfolge",
-        "aktiv",
-    ],
-    widgets={"erstzulassung": DatumEingabe(), "typ": forms.TextInput(attrs={"list": "fz-arten"})},
-    extra=2,
-    can_delete=False,
-)
+class FahrzeugForm(forms.ModelForm):
+    """Ein Fahrzeug anlegen oder ändern (eigene Seite je Fahrzeug)."""
+
+    class Meta:
+        model = Fahrzeug
+        fields = ["name", "kennzeichen", "typ", "erstzulassung", "kilometerstand", "reihenfolge",
+                  "aktiv"]  # fmt: skip
+        widgets = {
+            "erstzulassung": DatumEingabe(),
+            "typ": forms.TextInput(attrs={"list": "fz-arten", "autocomplete": "off"}),
+        }
+        help_texts = {"reihenfolge": "Kleinere Zahl = weiter oben in der Auswahl der Fahrer.",
+                      "aktiv": "Ausschalten, wenn das Fahrzeug nicht mehr gefahren wird; im "
+                               "Fahrtenbuch bleibt es stehen."}  # fmt: skip
 
 
 class FahrzeugDokumentForm(forms.ModelForm):

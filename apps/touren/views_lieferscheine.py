@@ -6,7 +6,7 @@ import datetime as dt
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -21,7 +21,6 @@ from apps.touren import lieferscheine
 from apps.touren.forms import (
     EinrichtenForm,
     EinstellungenForm,
-    FahrzeugFormSet,
     WarengruppenFormSet,
 )
 from apps.touren.models import (
@@ -177,7 +176,6 @@ def einrichten(request):
     teile = {
         "einrichten": lambda daten: EinrichtenForm(daten, instance=TourenEinstellungen.laden()),
         "warengruppen": lambda daten: WarengruppenFormSet(daten, prefix="wg"),
-        "fahrzeuge": lambda daten: FahrzeugFormSet(daten, prefix="fz"),
     }
     welches = next((name for name in teile if name in request.POST), None)
     formulare = {name: bauen(request.POST if name == welches else None)
@@ -188,9 +186,6 @@ def einrichten(request):
         return redirect("touren:einrichten")
     return render(request, "touren/einrichten.html", {
         "form": formulare["einrichten"], "gruppen": formulare["warengruppen"],
-        "fahrzeuge": formulare["fahrzeuge"],
-        "fahrzeugarten": sorted(set(
-            Fahrzeug.objects.exclude(typ="").values_list("typ", flat=True)
-        )),
+        "fahrzeuge": Fahrzeug.objects.annotate(papiere=Count("dokumente")),
         "darf_einstellen": rollen.hat_recht(request.user, "einstellungen.touren"),
     })  # fmt: skip

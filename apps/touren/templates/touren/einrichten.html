@@ -33,28 +33,22 @@
 </section>
 <section class="karte" id="fahrzeuge">
   <h2>Fahrzeuge</h2>
-  <p class="hinweis">Beim Beginn einer Fahrt wählen die Fahrer das Fahrzeug und tragen den Kilometerstand ein. Ohne Fahrzeuge hier wird nur der Kilometerstand gefragt. Der <strong>Kilometerstand</strong> wird bei „Fahrt beginnen“ vorgeschlagen und mit jeder Fahrt fortgeschrieben; tragen Sie hier den Anfangsstand ein und ändern Sie ihn, wenn das Fahrzeug anderweitig gefahren wurde. Nicht mehr gebrauchte Fahrzeuge ausschalten; im Fahrtenbuch bleiben sie stehen.</p>
-  <form method="post" action="#fahrzeuge">
-    {% csrf_token %}<input type="hidden" name="fahrzeuge" value="1">
-    {{ fahrzeuge.management_form }}
-    {% if fahrzeuge.non_form_errors %}<p class="fehler">{{ fahrzeuge.non_form_errors|join:" " }}</p>{% endif %}
-    <div class="tabelle-rahmen"><table class="tabelle" id="fahrzeuge-tabelle">
-      <thead><tr><th>Name</th><th>Kennzeichen</th><th>Fahrzeugart</th><th>Erstzulassung</th><th>Kilometerstand</th><th>Reihenfolge</th><th>Aktiv</th><th>Papiere</th></tr></thead>
-      <tbody>{% for f in fahrzeuge %}
-        <tr>{{ f.id }}
-          <td data-titel="Name">{{ f.name }}{% if f.name.errors %}<small class="fehler">{{ f.name.errors|join:" " }}</small>{% endif %}</td>
-          <td data-titel="Kennzeichen">{{ f.kennzeichen }}</td>
-          <td data-titel="Fahrzeugart">{{ f.typ }}</td>
-          <td data-titel="Erstzulassung">{{ f.erstzulassung }}{% if f.erstzulassung.errors %}<small class="fehler">{{ f.erstzulassung.errors|join:" " }}</small>{% endif %}</td>
-          <td data-titel="Kilometerstand">{{ f.kilometerstand }}{% if f.kilometerstand.errors %}<small class="fehler">{{ f.kilometerstand.errors|join:" " }}</small>{% endif %}</td>
-          <td data-titel="Reihenfolge">{{ f.reihenfolge }}</td>
-          <td data-titel="Aktiv">{{ f.aktiv }}</td>
-          <td data-titel="Papiere">{% if f.instance.pk %}<a href="{% url 'touren:fahrzeug' f.instance.pk %}">{{ f.instance.dokumente.count }} hinterlegt</a>{% else %}<small class="leise">nach dem Speichern</small>{% endif %}</td></tr>
-      {% endfor %}</tbody>
-    </table></div>
-    <datalist id="fz-arten">{% for art in fahrzeugarten %}<option value="{{ art }}">{% endfor %}</datalist>
-    <p class="hinweis">Die leeren Zeilen unten sind für neue Fahrzeuge.</p>
-    <button type="submit" class="knopf">Fahrzeuge speichern</button>
-  </form>
+  <p class="hinweis">Beim Beginn einer Fahrt wählen die Fahrer das Fahrzeug und tragen den Kilometerstand ein; ohne Fahrzeuge hier wird nur der Kilometerstand gefragt. Ein Fahrzeug antippen, um es zu ändern und <strong>Papiere</strong> (Fahrzeugschein, Fahrzeugbrief …) zu hinterlegen.</p>
+  <p><a class="knopf" href="{% url 'touren:fahrzeug_neu' %}">＋ Neues Fahrzeug</a></p>
+  {% if fahrzeuge %}
+  <div class="tabelle-rahmen"><table class="tabelle" id="fahrzeuge-tabelle">
+    <thead><tr><th>Fahrzeug</th><th>Kennzeichen</th><th>Fahrzeugart</th><th>Erstzulassung</th><th class="zahl">Kilometerstand</th><th>Papiere</th></tr></thead>
+    <tbody>{% for f in fahrzeuge %}
+      <tr{% if not f.aktiv %} class="leise"{% endif %}>
+        <td data-titel="Fahrzeug"><a href="{% url 'touren:fahrzeug' f.pk %}"><strong>{{ f.name }}</strong></a>{% if not f.aktiv %} <span class="marke-warnung">ausgeschaltet</span>{% endif %}</td>
+        <td data-titel="Kennzeichen">{{ f.kennzeichen|default:"–" }}</td>
+        <td data-titel="Fahrzeugart">{{ f.typ|default:"–" }}</td>
+        <td data-titel="Erstzulassung">{{ f.erstzulassung|date:"d.m.Y"|default:"–" }}</td>
+        <td data-titel="Kilometerstand" class="zahl">{% if f.kilometerstand is None %}–{% else %}{{ f.kilometerstand }} km{% endif %}</td>
+        <td data-titel="Papiere">{% if f.papiere %}<a href="{% url 'touren:fahrzeug' f.pk %}#papiere"><span class="marke-ok">📄 {{ f.papiere }} hinterlegt</span></a>{% else %}<a href="{% url 'touren:fahrzeug' f.pk %}#papiere">hinterlegen</a>{% endif %}</td>
+      </tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<p class="hinweis">Noch kein Fahrzeug angelegt.</p>{% endif %}
 </section>
 {% endblock %}
