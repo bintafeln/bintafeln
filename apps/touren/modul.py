@@ -12,11 +12,12 @@ def menue(eintrag):
             ("touren.fahren", eintrag("Touren heute", "touren:heute", genau=True)),
             ("touren.stationen", eintrag("Stationen", "touren:stationen")),
             ("touren.lieferscheine", eintrag("Lieferscheine", "touren:lieferscheine")),
+            ("touren.fahrten", eintrag("Fahrtenbuch", "touren:fahrten")),
         ]),
         ("Einstellungen/Dienstpläne", [
             ("touren.planen", eintrag("Touren: Stationsfolgen und kurzfristige Touren",
                                       "touren:touren")),
-            ("einstellungen.touren", eintrag("Touren: Lieferscheine und Warengruppen",
+            ("einstellungen.touren", eintrag("Touren: Lieferscheine, Warengruppen, Fahrzeuge",
                                              "touren:einstellungen")),
         ]),
     ]  # fmt: skip
@@ -79,21 +80,31 @@ def startseite(request):
 
 
 def fristen():
-    from apps.touren import ablauf, lieferscheine, start
+    from apps.touren import ablauf, fahrten, lieferscheine, start
 
+    fahrten.fristen_anwenden()
     ablauf.fristen_anwenden()
     lieferscheine.fristen_anwenden()
     start.fristen_anwenden()
 
 
 def auskunft_mitarbeiter(benutzer, pdf):
-    from apps.touren.models import Lieferschein, Tour
+    from django.db.models import Q
+
+    from apps.touren.models import Fahrt, Lieferschein, Tour
 
     touren = Tour.objects.filter(personen__konto=benutzer).distinct()
     scheine = Lieferschein.objects.filter(erstellt_von=benutzer)
-    if not touren and not scheine:
+    fahrten = Fahrt.objects.filter(Q(begonnen_von=benutzer) | Q(beendet_von=benutzer))
+    if not touren and not scheine and not fahrten:
         return
     pdf.ueberschrift("Touren")
+    pdf.tabelle(
+        ["Fahrt begonnen oder beendet", "Tour", "Fahrzeug", "km"],
+        [[f"{x.datum:%d.%m.%Y}", x.tour_name, x.fahrzeug_name,
+          "" if x.km is None else str(x.km)] for x in fahrten],
+        breiten=[0.3, 0.3, 0.25, 0.15],
+    )  # fmt: skip
     pdf.tabelle(
         ["Lieferschein unterschrieben", "Datum", "Station"],
         [[f"Nr. {ls.nummer}", f"{ls.datum:%d.%m.%Y}", ls.station_name] for ls in scheine],
@@ -144,18 +155,21 @@ MODUL = Modul(
         ("touren.lieferschein", "Lieferscheine ausfüllen und unterschreiben",
          "An einer Station den Lieferschein ausfüllen; die eigenen Lieferscheine ansehen."),
         ("touren.lieferscheine", "Alle Lieferscheine ansehen, nachsenden und löschen", ""),
-        ("einstellungen.touren", "Touren einstellen: Lieferscheine und Warengruppen", ""),
+        ("touren.fahrten", "Fahrtenbuch ansehen und Kilometerstände berichtigen",
+         "Alle Fahrten mit Fahrzeug, Besetzung und Kilometerstand."),
+        ("einstellungen.touren", "Touren einstellen: Lieferscheine, Warengruppen und Fahrzeuge",
+         ""),
     ),
     vorgaben={"Büro": ("touren.fahren", "touren.besetzung", "touren.stationen", "touren.planen",
                        "touren.stationen_bearbeiten", "touren.lieferschein",
-                       "touren.lieferscheine"),
+                       "touren.lieferscheine", "touren.fahrten"),
               "Fahrer": ("touren.fahren", "touren.stationen", "touren.lieferschein"),
               "Beifahrer": ("touren.fahren", "touren.stationen", "touren.lieferschein")},
     mails=(
         Mail("Touren: Lieferschein",
              "Sobald unterwegs ein Lieferschein unterschrieben wird, oder beim Nachsenden.",
              "Die Station: ihre „E-Mail für Lieferscheine“, sonst ihre E-Mail. Sonst niemand.",
-             ("Touren: Lieferscheine und Warengruppen", "touren:einstellungen",
+             ("Touren: Lieferscheine, Warengruppen, Fahrzeuge", "touren:einstellungen",
               "einstellungen.touren")),
     ),
     kapitel=(("touren", "Touren: unterwegs, Stationen, Planung",

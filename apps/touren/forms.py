@@ -3,7 +3,7 @@ from django import forms
 from apps.core.forms import Mehrfachauswahl
 from apps.fahrdienst.forms import TageFeld
 from apps.konten.forms import DatumEingabe
-from apps.touren.models import Station, Tour, TourenEinstellungen, Warengruppe
+from apps.touren.models import Fahrzeug, Station, Tour, TourenEinstellungen, Warengruppe
 
 
 class StationForm(forms.ModelForm):
@@ -141,6 +141,9 @@ class EinstellungenForm(forms.ModelForm):
         return daten
 
 
+FahrzeugFormSet = forms.modelformset_factory(
+    Fahrzeug, fields=["name", "kennzeichen", "reihenfolge", "aktiv"], extra=2, can_delete=False
+)
 WarengruppenFormSet = forms.modelformset_factory(
     Warengruppe, fields=["name", "reihenfolge", "aktiv"], extra=2, can_delete=False
 )

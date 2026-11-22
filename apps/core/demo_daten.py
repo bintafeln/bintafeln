@@ -585,12 +585,18 @@ def touren() -> None:
     _touren_folgen()
 
 
+FAHRZEUGE = [("Kühlwagen", "MU-ST 101"), ("Transporter", "MU-ST 102")]
+
+
 def _touren_folgen() -> None:
     """Zwei Touren aus dem Fahrerplan mit Stationsfolge und eine eigene Tour (ADR 0148)."""
     from apps.fahrdienst.models import Tour as FahrdienstTour
     from apps.touren import ablauf
-    from apps.touren.models import Station, Tour
+    from apps.touren.models import Fahrzeug, Station, Tour
 
+    for nr, (name, kennzeichen) in enumerate(FAHRZEUGE, start=1):
+        Fahrzeug.objects.get_or_create(name=name, defaults={"kennzeichen": kennzeichen,
+                                                           "reihenfolge": nr})  # fmt: skip
     stationen = {s.kennung: s for s in Station.objects.all()}
     folgen = [["S-8", "S-4", "S-1", "S-3"], ["S-8", "S-2", "S-7", "S-6"]]
     for ft, folge in zip(

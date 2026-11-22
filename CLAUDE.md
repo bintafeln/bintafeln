@@ -407,6 +407,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   das Recht `touren.besetzung` hat; Änderung als `Ersatz` im Fahrerplan); eigene `fahrtage` einer
   Tour aus dem Fahrerplan grenzen ein („Montag Nordtour“ ↔ „Nordtour“,
   `importieren_touren.wochentag_im_namen()`).
+  Fahrten (ADR 0151): `Fahrt` je Tour und Tag mit `Fahrzeug` und Kilometerstand bei Abfahrt und
+  Ankunft, Regeln nur in `apps/touren/fahrten.py` (`beginnen()`, `beenden()`, `berichtigen()`; wer
+  darf, entscheidet `start.darf()`; kein Ort wird geprüft), Fahrtenbuch in `views_fahrten.py`
+  (Recht `touren.fahrten`); Namen von Tour und Fahrzeug stehen als Text in der Fahrt.
   Lieferscheine (ADR 0149): Regeln nur in `apps/touren/lieferscheine.py`; das PDF ist der
   Lieferschein – einmal erzeugt, verschlüsselt in `Lieferschein.datei`, nie neu berechnet, die
   Unterschrift (`static/js/unterschrift_feld.js`) wird nicht aufbewahrt; Versand nur an die

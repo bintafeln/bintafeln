@@ -1123,6 +1123,52 @@ def test_hilfe_bild_touren_start(angemeldet, admin, muster):
     seite.set_viewport_size({"width": 1280, "height": 900})
 
 
+def test_hilfe_bild_touren_fahrt(angemeldet, admin, muster):
+    """Fahrt beginnen am Handy und das Fahrtenbuch (ADR 0151)."""
+    from apps.core import demo_daten
+    from apps.fahrdienst import beispiel
+    from apps.touren.models import Fahrt, Fahrzeug, Tour
+
+    _module("touren", "fahrdienst")
+    beispiel.anlegen(seed=1)
+    demo_daten.touren()
+    wagen, transporter = Fahrzeug.objects.order_by("reihenfolge")
+    tour = Tour.objects.create(name="Sonderfahrt Lager", datum=timezone.localdate())
+    for nr, (name, km, weg, f) in enumerate(
+        [("Nordtour", 48210, 62, wagen), ("Südtour", 91340, 47, transporter),
+         ("Nordtour", 48272, 58, wagen)], start=1):  # fmt: skip
+        tag = timezone.localdate() - dt.timedelta(days=nr)
+        beginn = timezone.now() - dt.timedelta(days=nr, hours=3)
+        Fahrt.objects.create(
+            tour=None, tour_name=name, datum=tag, fahrzeug=f, fahrzeug_name=str(f),
+            besetzung="Ina Kurz, Ole Hansen", km_start=km, km_ende=km + weg, begonnen_am=beginn,
+            begonnen_von_name="Ina Kurz", beendet_am=beginn + dt.timedelta(hours=3, minutes=20),
+            beendet_von_name="Ina Kurz")  # fmt: skip
+    seite = oeffnen(angemeldet, admin, reverse("touren:fahren", args=[tour.pk]))
+    seite.set_viewport_size({"width": 400, "height": 900})
+    seite.get_by_label("Fahrzeug").select_option(label=str(wagen))
+    aufnehmen(
+        seite,
+        "touren-fahrt",
+        [seite.locator(".tour-fahrt")],
+        Marke(seite.get_by_label("Fahrzeug"), art="rahmen", nummer=1),
+        Marke(seite.get_by_label("Kilometerstand bei Abfahrt"), art="rahmen", nummer=2),
+        Marke(seite.get_by_role("button", name="Fahrt beginnen"), art="rahmen", nummer=3),
+        rand=8,
+    )
+    seite.set_viewport_size({"width": 1280, "height": 900})
+    seite = oeffnen(angemeldet, admin, reverse("touren:fahrten"))
+    aufnehmen(
+        seite,
+        "touren-fahrtenbuch",
+        [seite.locator("section.karte")],
+        Marke(seite.locator("form.filter-kompakt"), art="rahmen", nummer=1),
+        Marke(seite.locator("#ergebnis p.hinweis strong").first, art="rahmen", nummer=2),
+        Marke(seite.get_by_role("link", name="Berichtigen").first, art="rahmen", nummer=3),
+        rand=8,
+    )
+
+
 def test_hilfe_bild_touren_lieferschein(angemeldet, admin, muster):
     from apps.core import demo_daten
     from apps.touren.models import Station

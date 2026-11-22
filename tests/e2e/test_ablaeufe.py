@@ -2172,6 +2172,46 @@ def test_qr_code_zum_stempeln_im_browser_scannen(angemeldet, admin, benutzer_mit
     assert len(seite.context.pages) == seiten_vorher  # kein neues Fenster
 
 
+def test_fahrt_beginnen_und_beenden_am_handy(seite, angemeldet, admin):
+    """Unterwegs: Fahrzeug wählen, der letzte Kilometerstand wird vorgeschlagen
+    (static/js/fahrt_km.js), Fahrt beginnen und die Tour mit dem Stand bei Ankunft beenden
+    (ADR 0151)."""
+    from apps.core.models import TafelEinstellungen
+    from apps.touren import ablauf
+    from apps.touren.models import Fahrt, Fahrzeug, Station, Tour
+
+    t = TafelEinstellungen.laden()
+    t.module = ["touren"]
+    t.save()
+    station = Station.objects.create(kennung="M-1", name="Beispielmarkt", strasse="Musterweg",
+                                     hausnummer="1", plz="12345", ort="Musterstadt")  # fmt: skip
+    tour = Tour.objects.create(name="Tour 1")
+    ablauf.halt_anhaengen(tour, station)
+    wagen = Fahrzeug.objects.create(name="Kühlwagen", kennzeichen="MU-ST 1")
+    Fahrzeug.objects.create(name="Transporter", reihenfolge=2)
+    Fahrt.objects.create(tour=None, tour_name="Gestern", datum=dt.date(2026, 1, 5), km_start=900,
+                         km_ende=1000, fahrzeug=wagen, begonnen_am=timezone.now())  # fmt: skip
+    angemeldet(admin)
+    seite.set_viewport_size({"width": 390, "height": 800})
+    seite.goto(reverse("touren:fahren", args=[tour.pk]))
+    stand = seite.get_by_label("Kilometerstand bei Abfahrt")
+    expect(stand).to_have_value("")
+    seite.get_by_label("Fahrzeug").select_option(label="Kühlwagen (MU-ST 1)")
+    expect(stand).to_have_value("1000")  # Vorschlag: letzter Stand dieses Fahrzeugs
+    expect(seite.locator("#km-letzter")).to_contain_text("1000 km")
+    seite.get_by_label("Fahrzeug").select_option(label="Transporter")
+    expect(stand).to_have_value("")  # kein Stand bekannt, Vorschlag wieder weg
+    seite.get_by_label("Fahrzeug").select_option(label="Kühlwagen (MU-ST 1)")
+    stand.fill("1004")
+    seite.get_by_role("button", name="Fahrt beginnen").click()
+    expect(seite.locator("section.karte").first).to_contain_text("Unterwegs")
+    seite.get_by_label("Kilometerstand bei Ankunft").fill("1050")
+    seite.get_by_role("button", name="Tour beenden").click()
+    expect(seite.locator(".meldung").first).to_contain_text("46 km gefahren")
+    fahrt = Fahrt.objects.get(tour=tour)
+    assert (fahrt.km_start, fahrt.km_ende, fahrt.fahrzeug) == (1004, 1050, wagen)
+
+
 def test_lieferschein_am_handy_unterschreiben(seite, angemeldet, admin):
     """Unterwegs: Lieferschein ausfüllen, mit dem Finger unterschreiben, abschicken
     (static/js/unterschrift_feld.js, ADR 0149)."""
