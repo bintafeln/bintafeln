@@ -68,6 +68,12 @@ was im Vereinsportal schon versendet ist. Deshalb:
   oder „SQ-verschickt“ nicht „Nein“ (bzw. leer, 0, falsch) ist.
 - Fehlen die Spalten in einer hochgeladenen Datei, meldet das Einlesen das ausdrücklich mit dem
   Weg dorthin, statt „0 versendet“ zu sagen.
+- **Berichtigung:** „ausgefüllt“ heißt in den Datumsspalten: Es steht ein Datum darin
+  (`einlesen._ist_datum()`). WISO MeinVerein schreibt in leere Datumsfelder teils den Text
+  „Invalid Date“; der galt zuerst als ausgefüllt, und Spenden ohne versendete Bescheinigung
+  standen fälschlich als versendet da. Steht ein Beleg in der Übersicht ohne Versand, nimmt das
+  Einlesen einen früheren Vermerk zurück (`_versand_zuruecknehmen()`); was in der Übersicht nicht
+  vorkommt, bleibt unberührt.
 
 ## Nachtrag: Einzelspenden bestätigt bintafeln selbst
 

@@ -499,8 +499,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   (`apps/vereinsportal/einlesen.py`): je Beleg `Spende` + `Adresse` (Namen über `namen.py`) +
   `SpendenBeleg`. Keine eigenen Belege, Listen oder Dankesbriefe im Modul.
   Versendet in WISO MeinVerein nur über die Spalten `VERSANDSPALTEN` (im Export unter „Erweiterte
-  Einstellungen → Spalten“ anzukreuzen; `abruf._versandspalten()` tut das, `einlesen.uebersicht()`
-  wertet sie aus).
+  Einstellungen → Spalten“ anzukreuzen; `abruf._versandspalten()` tut das, `einlesen.stand()`
+  wertet sie aus: nur echte Daten zählen, nicht der Text „Invalid Date“; ein Beleg ohne Versand in
+  der Übersicht nimmt einen früheren Vermerk zurück).
   Automatischer Abruf (ADR 0127): Browser nur im optionalen Dienst `abruf` (`docker/abruf/abruf.py`,
   Compose-Profil `abruf`, Schlüssel `BINTAFELN_ABRUF_SCHLUESSEL`); bintafeln spricht ihn über
   `apps/vereinsportal/abruf.py` an (in Tests `abruf._anfrage` ersetzen), der Ablauf ist gegen eine

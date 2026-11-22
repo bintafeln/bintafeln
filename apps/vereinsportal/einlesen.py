@@ -50,6 +50,7 @@ MAX_ZEILEN = 20000
 BLATT = "Spenden - Übersicht"
 KOPFZEILE = 6
 DATUMSSPALTEN = ("Versendet am", "SQ-erstellt Datum")  # versendet, wenn ein Datum drinsteht
+ISO_TAG = re.compile(r"(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)")
 JA_NEIN_SPALTE = "SQ-verschickt"  # versendet, wenn etwas anderes als „nein“ drinsteht
 NEIN = {"", "nein", "n", "0", "false", "falsch", "none", "-", "–"}
 TAG = re.compile(r"\b(\d{1,2})\.\s?(\d{1,2})\.\s?(\d{4})\b")
@@ -78,6 +79,7 @@ class Ergebnis:
     doppelt: int = 0
     ohne_anschrift: int = 0
     versendet: int = 0
+    berichtigt: int = 0  # galten als versendet, sind es laut Übersicht aber nicht
     mit_uebersicht: bool = False
     ohne_versandspalten: bool = False  # Übersicht da, aber ohne die Spalten zum Versand
     belege: int = 0  # Spendenbelege (PDF) in der Datei
@@ -120,6 +122,9 @@ def bericht(e: Ergebnis) -> str:
             f"{e.versendet} als in WISO MeinVerein versendet vermerkt" if e.mit_uebersicht
             else "keine Übersicht der versendeten Belege in der Datei gefunden"
         )  # fmt: skip
+        if e.berichtigt:
+            teile.append(f"bei {e.berichtigt} den Vermerk „versendet“ zurückgenommen, weil die "
+                         "Übersicht kein Versanddatum nennt")  # fmt: skip
     return ", ".join(teile) + "."
 
 
@@ -308,27 +313,47 @@ def _vermerkt(wert) -> bool:
     return wert is not None and str(wert).strip().lower() not in NEIN
 
 
-def uebersicht(inhalt: bytes) -> tuple[set[str] | None, bool]:
-    """(Belegnummern, die laut Übersicht schon versendet sind; ob die Spalten zum Versand da
-    sind). Belegnummern None, wenn das Blatt oder die Spalte „Belegnummer“ fehlt."""
+def _ist_datum(wert) -> bool:
+    """Steht in der Zelle wirklich ein Datum? WISO MeinVerein schreibt in leere Datumsfelder
+    teils den Text „Invalid Date“ – das ist kein Versand."""
+    if isinstance(wert, dt.date):  # auch datetime
+        return True
+    text = str(wert or "")
+    return bool(TAG.search(text) or ISO_TAG.search(text))
+
+
+def stand(inhalt: bytes) -> tuple[set[str] | None, set[str], bool]:
+    """Die Übersicht des Finanzexports: (Belegnummern, die dort als versendet stehen; Beleg-
+    nummern, die dort stehen und **nicht** versendet sind; ob die Spalten zum Versand da sind).
+    Erstes None, wenn das Blatt oder die Spalte „Belegnummer“ fehlt."""
     mappe = _mappe(inhalt)
     if BLATT not in mappe.sheetnames:
-        return None, False
+        return None, set(), False
     zeilen = mappe[BLATT].iter_rows(min_row=KOPFZEILE, values_only=True)
     kopf = [str(z or "").strip() for z in next(zeilen, ())]
     if "Belegnummer" not in kopf:
-        return None, False
+        return None, set(), False
     nummer = kopf.index("Belegnummer")
     datum = [kopf.index(s) for s in DATUMSSPALTEN if s in kopf]
     ja_nein = kopf.index(JA_NEIN_SPALTE) if JA_NEIN_SPALTE in kopf else None
 
     def versendet(z) -> bool:
-        if any(z[s] not in (None, "") for s in datum):
+        if any(_ist_datum(z[s]) for s in datum):
             return True
         return ja_nein is not None and _vermerkt(z[ja_nein])
 
-    nummern = {_nummer(z[nummer]) for z in zeilen if z[nummer] not in (None, "") and versendet(z)}
-    return nummern, bool(datum or ja_nein is not None)
+    ja, nein = set(), set()
+    for z in zeilen:
+        if z[nummer] not in (None, ""):
+            (ja if versendet(z) else nein).add(_nummer(z[nummer]))
+    return ja, nein - ja, bool(datum or ja_nein is not None)
+
+
+def uebersicht(inhalt: bytes) -> tuple[set[str] | None, bool]:
+    """(Belegnummern, die laut Übersicht schon versendet sind; ob die Spalten zum Versand da
+    sind). Belegnummern None, wenn das Blatt oder die Spalte „Belegnummer“ fehlt."""
+    ja, _, spalten = stand(inhalt)
+    return ja, spalten
 
 
 def versendete(inhalt: bytes) -> set[str] | None:
@@ -341,9 +366,17 @@ def _versendet_vermerken(nummern: set[str]) -> int:
     return offen.update(fremdbeleg=Spende.Fremdbeleg.VERSENDET)
 
 
+def _versand_zuruecknehmen(nummern: set[str]) -> int:
+    """Steht ein Beleg in der Übersicht ohne Versand, gilt er wieder als offen – so berichtigt
+    das nächste Einlesen einen früher falsch gesetzten Vermerk."""
+    falsch = Spende.objects.filter(belegnummer__in=nummern,
+                                   fremdbeleg=Spende.Fremdbeleg.VERSENDET)  # fmt: skip
+    return falsch.update(fremdbeleg=Spende.Fremdbeleg.OFFEN)
+
+
 def uebersicht_einlesen(inhalt: bytes) -> Ergebnis:
     """Nur die Excel-Datei des Finanzexports: vermerkt, was inzwischen versendet ist."""
-    nummern, spalten = uebersicht(inhalt)
+    nummern, nicht, spalten = stand(inhalt)
     if nummern is None:
         raise EinleseFehler(
             f"In der Datei fehlt das Blatt „{BLATT}“ mit der Spalte „Belegnummer“ in Zeile "
@@ -351,7 +384,9 @@ def uebersicht_einlesen(inhalt: bytes) -> Ergebnis:
         )
     if not spalten:
         raise EinleseFehler("Die Übersicht ist da, " + OHNE_SPALTEN + ".")
-    return Ergebnis(versendet=_versendet_vermerken(nummern), mit_uebersicht=True)
+    berichtigt = _versand_zuruecknehmen(nicht)
+    return Ergebnis(versendet=_versendet_vermerken(nummern), berichtigt=berichtigt,
+                    mit_uebersicht=True)  # fmt: skip
 
 
 class _Adressbuch:
@@ -406,7 +441,7 @@ def finanzexport_einlesen(datei, von: str) -> Ergebnis:
     vorhanden = set(SpendenBeleg.objects.filter(spende__fremdbeleg__in=FREMD)
                     .values_list("dateiname", flat=True))  # fmt: skip
     nach_nummer = {s.belegnummer: s for s in Spende.objects.exclude(belegnummer="")}
-    buch, ergebnis, nummern = _Adressbuch(von), Ergebnis(), set()
+    buch, ergebnis, nummern, nicht = _Adressbuch(von), Ergebnis(), set(), set()
     eintraege = ((i, i.filename.lower()) for i in archiv.infolist())
     belege = [i for i, n in eintraege if "spenden" in n and n.endswith(".pdf")]
     alle = [i for i in archiv.infolist() if not i.is_dir()]
@@ -464,11 +499,14 @@ def finanzexport_einlesen(datei, von: str) -> Ergebnis:
         vorhanden.add(name)
     for eintrag in archiv.infolist():
         if eintrag.filename.lower().endswith(".xlsx") and eintrag.file_size <= MAX_EXCEL:
-            gefunden, spalten = uebersicht(archiv.read(eintrag))
+            gefunden, ohne_versand, spalten = stand(archiv.read(eintrag))
             if gefunden is not None:
                 nummern |= gefunden
+                if spalten:  # ohne die Spalten weiß die Datei nichts über den Versand
+                    nicht |= ohne_versand
                 ergebnis.mit_uebersicht = True
                 ergebnis.ohne_versandspalten = not spalten
+    ergebnis.berichtigt = _versand_zuruecknehmen(nicht - nummern)
     ergebnis.versendet = _versendet_vermerken(nummern)
     ergebnis.neue_spender = buch.neu
     return ergebnis

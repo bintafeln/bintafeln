@@ -42,8 +42,13 @@
   Adresse im Adressbuch.</p>
 <p>Haben Sie in WISO MeinVerein inzwischen Bescheinigungen versendet, genügt es, nur die <strong>Excel-Datei</strong> des
   neuen Finanzexports einzulesen: bintafeln vermerkt dann, welche Spenden dort versendet sind. Als versendet gilt eine
-  Spende, wenn bei ihr „Versendet am“ oder „SQ-erstellt Datum“ ausgefüllt ist oder „SQ-verschickt“ nicht „Nein“ ist.
-  Fehlen die drei Spalten, sagt bintafeln das beim Einlesen deutlich, statt „0 versendet“ zu melden.</p>
+  Spende, wenn bei ihr in „Versendet am“ oder „SQ-erstellt Datum“ ein <strong>Datum</strong> steht oder
+  „SQ-verschickt“ nicht „Nein“ ist. Der Text „Invalid Date“, den WISO MeinVerein in leere Datumsfelder schreibt, ist
+  kein Datum und zählt nicht. Fehlen die drei Spalten, sagt bintafeln das beim Einlesen deutlich, statt „0 versendet“
+  zu melden.</p>
+<p><strong>Falscher Vermerk „versendet“?</strong> Lesen Sie den Finanzexport (oder nur seine Excel-Datei) noch einmal
+  ein. Steht eine Spende in der Übersicht ohne Versand, nimmt bintafeln den Vermerk zurück und meldet, bei wie vielen.
+  Spenden, die in der Übersicht gar nicht vorkommen, bleiben, wie sie sind – über sie sagt die Datei nichts.</p>
 
 <h3>Automatisch aus WISO MeinVerein holen</h3>
 <p>Statt die Dateien von Hand herunter- und hochzuladen, kann bintafeln sie selbst holen. Dafür läuft auf dem
