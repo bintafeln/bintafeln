@@ -79,10 +79,11 @@ def startseite(request):
 
 
 def fristen():
-    from apps.touren import ablauf, lieferscheine
+    from apps.touren import ablauf, lieferscheine, start
 
     ablauf.fristen_anwenden()
     lieferscheine.fristen_anwenden()
+    start.fristen_anwenden()
 
 
 def auskunft_mitarbeiter(benutzer, pdf):
@@ -130,6 +131,9 @@ MODUL = Modul(
     rechte=(
         ("touren.fahren", "Touren sehen und fahren",
          "Die Touren des Tages mit Stationen, Besetzung und Navigation."),
+        ("touren.besetzung", "Besetzung jeder Tour beim Start bestätigen und ändern",
+         "Ohne dieses Recht geht das nur für Touren, auf denen man an dem Tag selbst eingetragen "
+         "ist. Eine Änderung steht für den Tag als Ersatz im Fahrerplan."),
         ("touren.stationen", "Stationen sehen und hinnavigieren",
          "Liste und Angaben der Stationen mit Anfahrt und Navigation (Google Maps)."),
         ("touren.planen", "Touren planen",
@@ -142,7 +146,7 @@ MODUL = Modul(
         ("touren.lieferscheine", "Alle Lieferscheine ansehen, nachsenden und löschen", ""),
         ("einstellungen.touren", "Touren einstellen: Lieferscheine und Warengruppen", ""),
     ),
-    vorgaben={"Büro": ("touren.fahren", "touren.stationen", "touren.planen",
+    vorgaben={"Büro": ("touren.fahren", "touren.besetzung", "touren.stationen", "touren.planen",
                        "touren.stationen_bearbeiten", "touren.lieferschein",
                        "touren.lieferscheine"),
               "Fahrer": ("touren.fahren", "touren.stationen", "touren.lieferschein"),

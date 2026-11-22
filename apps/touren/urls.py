@@ -7,6 +7,7 @@ app_name = "touren"
 urlpatterns = [
     path("", views_touren.heute, name="heute"),
     path("tour/<int:pk>/", views_touren.fahren, name="fahren"),
+    path("tour/<int:pk>/start/", views_touren.start, name="start"),
     path("planen/", views_touren.touren, name="touren"),
     path("planen/neu/", views_touren.tour_neu, name="tour_neu"),
     path("planen/importieren/", views_touren.touren_importieren, name="touren_importieren"),

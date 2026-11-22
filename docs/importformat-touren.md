@@ -1,9 +1,10 @@
 # Importformat für die Stationen und Touren
 
-Version 1.1
+Version 1.2
 
 | Version | Änderung |
 |---|---|
+| 1.2 | `tourstationen.csv`: Beginnt der Name einer Tour mit einem Wochentag („Montag Nordtour“), wird sie mit der Tour „Nordtour“ des Fahrerplans verbunden und fährt nur an diesem Tag (ADR 0150). Spalten unverändert. |
 | 1.1 | neue Datei `tourstationen.csv` (Stationsfolge je Tour, ADR 0148). `stationen.csv` unverändert. |
 | 1 | erste Fassung: `stationen.csv` (ADR 0147) |
 
@@ -78,6 +79,10 @@ planen → Importieren“), nach `stationen.csv`.
 - Touren werden über ihren Namen gefunden (Groß-/Kleinschreibung egal; nur regelmäßige Touren,
   keine kurzfristigen). Unbekannte Touren werden als eigene Tour angelegt; gibt es im Fahrerplan
   eine Tour mit demselben Namen, wird die neue Tour mit ihr verbunden.
+- Beginnt der Name mit einem Wochentag („Montag Nordtour“, „Mo Nordtour“) und heißt der Rest wie
+  eine Tour im Fahrerplan („Nordtour“), ist das diese Tour in der Reihenfolge dieses Tages: Sie
+  wird mit der Tour im Fahrerplan verbunden und fährt nur an diesem Wochentag. Das gilt auch für
+  schon eingelesene Touren, die noch nicht verbunden sind.
 - Stationen werden über ihre `kennung` gefunden; unbekannte Kennungen sind ein Fehler der Zeile.
 - Eine Station steht je Tour höchstens einmal.
 

@@ -31,8 +31,9 @@ def faehrt_am(tour: Tour, datum: dt.date) -> bool:
     if tour.datum:
         return tour.datum == datum
     if tour.fahrdienst_tour_id and _fahrdienst_an():
-        ft = tour.fahrdienst_tour
-        return ft.aktiv and ft.faehrt_am(datum)
+        # eigene Fahrtage grenzen ein: „Montag Katernberg“ ist die Tour „Katernberg“ am Montag
+        ft, tage = tour.fahrdienst_tour, wochentage(tour.fahrtage)
+        return ft.aktiv and ft.faehrt_am(datum) and (not tage or kuerzel(datum) in tage)
     tage = wochentage(tour.fahrtage)
     return not tage or kuerzel(datum) in tage
 

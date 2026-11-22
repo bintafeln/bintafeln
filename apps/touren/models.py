@@ -166,7 +166,8 @@ class Tour(models.Model):
     )  # fmt: skip
     fahrtage = models.CharField(
         "Fahrtage", max_length=40, blank=True,
-        help_text="Nur für eigene Touren ohne Fahrerplan. Nichts angehakt = an jedem Tag.",
+        help_text="Nichts angehakt = an jedem Tag (bei einer Tour aus dem Fahrerplan: an jedem "
+        "Tag, an dem sie dort fährt). Angehakt z. B. nur „Mo“ für die Montags-Reihenfolge.",
     )  # fmt: skip
     personen = models.ManyToManyField(
         "adressen.Adresse", blank=True, related_name="abholtouren", verbose_name="Wer fährt",
@@ -193,6 +194,26 @@ class Tour(models.Model):
     @property
     def kurzfristig(self) -> bool:
         return self.datum is not None
+
+
+class Tourstart(models.Model):
+    """Die Besetzung einer Tour wurde an einem Tag am Handy bestätigt (ADR 0150)."""
+
+    tour = models.ForeignKey(Tour, on_delete=models.CASCADE, related_name="starts")
+    datum = models.DateField("Tag")
+    bestaetigt_von = models.CharField("Bestätigt von", max_length=150)
+    bestaetigt_am = models.DateTimeField("Bestätigt am", auto_now=True)
+    geaendert = models.BooleanField("Besetzung dabei geändert", default=False)
+
+    class Meta:
+        verbose_name = "Tourstart"
+        verbose_name_plural = "Tourstarts"
+        constraints = [
+            models.UniqueConstraint(fields=["tour", "datum"], name="touren_start_je_tag")
+        ]
+
+    def __str__(self):
+        return f"{self.tour} am {self.datum:%d.%m.%Y}"
 
 
 class Halt(models.Model):

@@ -15,6 +15,7 @@ from apps.ausgabe.ampel import WOCHENTAGE
 from apps.core import geheimnis, module, papierkorb
 from apps.konten import rollen
 from apps.touren import ablauf, importieren_touren, lieferscheine
+from apps.touren import start as tourstart
 from apps.touren.forms import HaltForm, KurzfristigForm, TourForm
 from apps.touren.models import Halt, Tour
 
@@ -61,6 +62,11 @@ def fahren(request, pk):
     """Eine Tour für unterwegs: Stationen der Reihe nach, je Station Navigation und Anfahrt."""
     tour = get_object_or_404(Tour.objects.select_related("fahrdienst_tour"), pk=pk)
     tag = tour.datum or _tag(request)
+    gefragt = tag == timezone.localdate() and tourstart.gefragt(tour, tag)
+    gestartet = tourstart.gestartet(tour, tag) if gefragt else None
+    darf_start = gefragt and tourstart.darf(request.user, tour, tag)
+    if darf_start and gestartet is None:
+        return redirect(reverse("touren:start", args=[tour.pk]))  # erst: „Seid ihr …?“
     halte = ablauf.halte(tour, tag)
     darf_schein = lieferscheine.an() and rollen.hat_recht(request.user, "touren.lieferschein")
     scheine = lieferscheine.am_tag(tag, [h.station_id for h in halte]) if darf_schein else {}
@@ -72,6 +78,39 @@ def fahren(request, pk):
         "besetzung": ablauf.besetzung(tour, tag),
         "routen": ablauf.routen([h.station for h in halte]),
         "darf_planen": rollen.hat_recht(request.user, "touren.planen"),
+        "gefragt": gefragt, "gestartet": gestartet, "darf_start": darf_start,
+    })  # fmt: skip
+
+
+@never_cache
+@fahren_recht
+def start(request, pk):
+    """Vor der Tour: „Seid ihr Peter und Paul?“ – bestätigen oder die Besetzung berichtigen."""
+    tour = get_object_or_404(Tour.objects.select_related("fahrdienst_tour"), pk=pk)
+    tag = timezone.localdate()
+    ziel = reverse("touren:fahren", args=[tour.pk])
+    if not tourstart.gefragt(tour, tag):
+        return redirect(ziel)
+    if not tourstart.darf(request.user, tour, tag):
+        messages.error(request, "Sie sind für diese Tour nicht eingetragen. Bitte im Büro melden.")
+        return redirect(ziel)
+    if request.method == "POST":
+        wahl = {}
+        if "aendern" in request.POST:
+            wahl = {int(k[6:]): int(v) for k, v in request.POST.items()
+                    if k.startswith("platz_") and k[6:].isdigit() and v.isdigit()}  # fmt: skip
+        try:
+            tourstart.bestaetigen(tour, tag, request.user, wahl)
+        except tourstart.StartFehler as grund:
+            messages.error(request, str(grund))
+            return redirect(request.path)
+        messages.success(request, "Besetzung geändert und im Fahrerplan eingetragen."
+                         if wahl else "Besetzung bestätigt. Gute Fahrt!")  # fmt: skip
+        return redirect(ziel)
+    plaetze = tourstart.plaetze(tour, tag)
+    return render(request, "touren/start.html", {
+        "tour": tour, "tag": tag, "plaetze": plaetze, "frage": tourstart.frage(plaetze),
+        "gestartet": tourstart.gestartet(tour, tag),
     })  # fmt: skip
 
 

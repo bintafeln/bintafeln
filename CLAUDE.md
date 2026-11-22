@@ -401,6 +401,11 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   (`faehrt_am()`, `halte()`, `besetzung()` – aus dem Fahrerplan, sonst `Tour.personen`; `routen()`
   höchstens zehn Stationen je Link; `senden()` über die Benachrichtigung `touren_tour`). Ansichten
   für unterwegs in `views_touren.py` zuerst fürs Handy bauen und in Handybreite prüfen.
+  Tourstart (ADR 0150): „Seid ihr …?“ vor einer Tour aus dem Fahrerplan am heutigen Tag, Regeln nur
+  in `apps/touren/start.py` (`bestaetigen()` prüft selbst: nur wer auf der Tour eingetragen ist oder
+  das Recht `touren.besetzung` hat; Änderung als `Ersatz` im Fahrerplan); eigene `fahrtage` einer
+  Tour aus dem Fahrerplan grenzen ein („Montag Nordtour“ ↔ „Nordtour“,
+  `importieren_touren.wochentag_im_namen()`).
   Lieferscheine (ADR 0149): Regeln nur in `apps/touren/lieferscheine.py`; das PDF ist der
   Lieferschein – einmal erzeugt, verschlüsselt in `Lieferschein.datei`, nie neu berechnet, die
   Unterschrift (`static/js/unterschrift_feld.js`) wird nicht aufbewahrt; Versand nur an die
