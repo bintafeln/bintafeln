@@ -24,7 +24,6 @@
   <p class="hinweis">An diesem Tag fährt keine Tour.</p>
   {% endfor %}
   </div>
-  {% if eco %}<p><a class="knopf knopf-zweitrangig" href="{{ eco }}" target="_blank" rel="noopener noreferrer">ECO-Plattform ↗</a></p>{% endif %}
   {% if darf_planen %}<p><a href="{% url 'touren:touren' %}">Touren planen</a> · <a href="{% url 'touren:tour_neu' %}?kurz&amp;tag={{ tag|date:'Y-m-d' }}">Kurzfristige Tour für diesen Tag</a></p>{% endif %}
 </section>
 {% endblock %}

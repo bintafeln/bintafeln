@@ -10,6 +10,10 @@ def menue(eintrag):
     """Alles zu den Touren steht im eigenen Hauptbereich „Touren“ – auch das, was die
     Fahrdienstleitung einrichtet. Unter „Einstellungen → Touren“ bleibt nur, was der Admin
     entscheidet (Mailversand, Karte, Aufbewahrung)."""
+    from apps.touren.models import TourenEinstellungen
+
+    eco = ([("touren.fahren", eintrag("ECO-Plattform ↗", "touren:eco", extern=True))]
+           if TourenEinstellungen.laden().eco_link else [])  # fmt: skip
     return [
         ("Touren", [
             ("touren.fahren", eintrag("Touren heute", "touren:heute", genau=True)),
@@ -21,6 +25,7 @@ def menue(eintrag):
             ("touren.statistik", eintrag("Statistik", "touren:statistik")),
             ("touren.planen", eintrag("Einrichten: Warengruppen, Fahrzeuge, Zentrale",
                                       "touren:einrichten")),
+            *eco,
         ]),
         ("Einstellungen/Touren", [
             ("einstellungen.touren", eintrag("Mailversand, Karte und Aufbewahrung",

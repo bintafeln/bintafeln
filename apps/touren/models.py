@@ -564,8 +564,8 @@ class TourenEinstellungen(models.Model):
     )  # fmt: skip
     eco_plattform = models.BooleanField(
         "Wir arbeiten (auch) mit der ECO-Plattform", default=False,
-        help_text="Dann steht bei den Touren ein Link zur ECO-Plattform. Touren, Stationen und "
-        "Lieferscheine in bintafeln bleiben nutzbar.",
+        help_text="Dann steht im Menü unter „Touren“ ein Link zur ECO-Plattform. Touren, "
+        "Stationen und Lieferscheine in bintafeln bleiben nutzbar.",
     )  # fmt: skip
     eco_adresse = models.URLField(
         "Adresse der ECO-Plattform", default="https://eco.tafel.de", blank=True)  # fmt: skip

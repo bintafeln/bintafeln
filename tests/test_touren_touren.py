@@ -757,15 +757,21 @@ def test_eco_plattform_link(buero, admin_client):
     from apps.touren.models import TourenEinstellungen
 
     assert "ECO-Plattform" not in buero.get(reverse("touren:heute")).content.decode()
+    assert buero.get(reverse("touren:eco")).status_code == 404  # ausgeschaltet
     admin_client.post(reverse("touren:einstellungen"), {
         "einstellungen": "1", "lieferscheine": "on", "versand": "aus", "mail_text": "Hallo",
         "aufbewahrung_jahre": "10", "eco_plattform": "on",
         "eco_adresse": "https://eco.tafel.de"})  # fmt: skip
     e = TourenEinstellungen.laden()
     assert e.eco_plattform and e.eco_link == "https://eco.tafel.de"
+    # nur im Menü unter „Touren“, nicht mehr als Knopf auf den Seiten
+    assert buero.get(reverse("touren:eco")).status_code == 302
+    assert buero.get(reverse("touren:eco")).url == "https://eco.tafel.de"
     for name in ("touren:heute", "touren:touren"):
         seite = buero.get(reverse(name)).content.decode()
-        assert 'href="https://eco.tafel.de"' in seite and "ECO-Plattform" in seite
+        assert seite.count("ECO-Plattform") == 1
+        eintrag = f'<a href="{reverse("touren:eco")}" target="_blank" rel="noopener">'
+        assert eintrag + "ECO-Plattform ↗" in seite
     # Touren, Stationen und Lieferscheine bleiben nutzbar
     assert buero.get(reverse("touren:stationen")).status_code == 200
 

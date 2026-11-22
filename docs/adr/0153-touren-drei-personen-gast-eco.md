@@ -23,7 +23,8 @@ Daneben arbeiten manche Tafeln (auch) mit der ECO-Plattform und wollen von den T
 - **Gast am Handy:** Bei „Nein, ändern“ lässt sich je Beifahrerplatz ein Gast mit Namen
   eintragen. Auf dem Fahrerplatz steht nie ein Gast; niemand ersetzt sich selbst durch einen Gast.
 - **ECO-Plattform:** eine Einstellung der Touren (`eco_plattform`, `eco_adresse`). Ist sie an,
-  steht bei „Touren heute“ und „Touren planen“ ein Link dorthin. Mehr nicht: Touren, Stationen
+  steht im Menü unter „Touren“ der Eintrag „ECO-Plattform ↗“ (`touren:eco` leitet weiter) – nicht
+  mehr auf den Seiten der Touren. Mehr nicht: Touren, Stationen
   und Lieferscheine in bintafeln bleiben nutzbar, es werden keine Daten ausgetauscht.
 
 ## Begründung
