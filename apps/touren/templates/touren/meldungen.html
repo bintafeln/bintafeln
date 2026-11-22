@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load liste %}
+{% block titel %}Meldungen zum Fahrzeug{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Meldungen zum Fahrzeug</h1>
+  <p class="hinweis">Was die Fahrer zum Fahrzeug melden: Beanstandungen, „getankt“, Anmerkungen. Offene stehen auch auf Ihrer Startseite. <a href="{% url 'core:hilfe' %}#touren">So funktioniert es</a></p>
+  <form class="filter-kompakt" method="get">
+    <div class="filter-feld"><label for="stand">Stand</label>
+      <select name="stand" id="stand" onchange="this.form.submit()"><option value="offen"{% if filter.stand == "offen" %} selected{% endif %}>offen ({{ offen }})</option><option value="alle"{% if filter.stand != "offen" %} selected{% endif %}>alle</option></select></div>
+    <div class="filter-feld"><label for="fahrzeug">Fahrzeug</label>
+      <select name="fahrzeug" id="fahrzeug" onchange="this.form.submit()"><option value="">alle</option>{% for fz in fahrzeuge %}<option value="{{ fz.pk }}"{% if filter.fahrzeug == fz.pk|stringformat:"s" %} selected{% endif %}>{{ fz }}</option>{% endfor %}</select></div>
+    <noscript><button type="submit" class="knopf">Zeigen</button></noscript>
+    {% filter_zuruecksetzen %}
+  </form>
+  {% if zeilen %}{% include "touren/_meldungen.html" with meldungen=zeilen %}
+  {% else %}<p class="hinweis">Keine Meldungen.</p>{% endif %}
+  {% blaettern seite zusatz="Meldungen" %}
+</section>
+{% endblock %}

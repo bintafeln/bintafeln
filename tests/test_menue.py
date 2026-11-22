@@ -297,7 +297,8 @@ def test_touren_als_eigener_hauptbereich(admin, benutzer_mit_rolle):
     assert namen.index("Touren") == namen.index("Dienstpläne") + 1
     touren = [e["titel"] for e in next(b for b in alle if b["titel"] == "Touren")["eintraege"]]
     assert touren == ["Touren heute", "Touren planen", "Stationen", "Lieferscheine",
-                      "Fahrtenbuch", "Einrichten: Warengruppen, Fahrzeuge, Zentrale"]  # fmt: skip
+                      "Fahrtenbuch", "Meldungen zum Fahrzeug",
+                      "Einrichten: Warengruppen, Fahrzeuge, Zentrale"]  # fmt: skip
     plaene = [e["titel"] for e in next(b for b in alle if b["titel"] == "Dienstpläne")["eintraege"]]
     assert "Touren heute" not in plaene and "Fahrtenbuch" not in plaene
     gruppen = titel(einstellungen(admin))

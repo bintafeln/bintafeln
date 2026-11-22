@@ -1240,6 +1240,38 @@ def test_hilfe_bild_touren_karte(angemeldet, admin, muster):
     seite.evaluate("window.localStorage.removeItem('bintafeln-tourkarte')")
 
 
+def test_hilfe_bild_touren_meldungen(angemeldet, admin, muster):
+    """Meldungen zum Fahrzeug auf der Startseite der Fahrdienstleitung (ADR 0155)."""
+    from apps.core import demo_daten
+    from apps.fahrdienst import beispiel
+    from apps.touren.models import Fahrzeug, Fahrzeugmeldung
+
+    _module("touren", "fahrdienst")
+    beispiel.anlegen(seed=1)
+    demo_daten.touren()
+    wagen, transporter = Fahrzeug.objects.order_by("reihenfolge")
+    for fahrzeug, art, text, tour in (
+        (wagen, "mangel", "Abblendlicht links defekt", "Nordtour"),
+        (transporter, "getankt", "vollgetankt, 52 Liter", "Südtour"),
+        (wagen, "sonstiges", "Kühlung braucht lange, bis sie kalt ist", "Nordtour"),
+    ):
+        Fahrzeugmeldung.objects.create(
+            fahrzeug=fahrzeug, fahrzeug_name=str(fahrzeug), tour_name=tour, art=art, text=text,
+            gemeldet_von_name="Ina Kurz")  # fmt: skip
+    seite = oeffnen(angemeldet, admin, reverse("core:start"))
+    block = seite.locator("#fahrzeug-meldungen")
+    block.locator("input[name='notiz']").first.fill("Birne getauscht")
+    aufnehmen(
+        seite,
+        "touren-meldungen",
+        [block],
+        Marke(block.locator("h2"), art="rahmen", nummer=1),
+        Marke(block.locator(".meldung-fahrzeug > div").first, art="rahmen", nummer=2),
+        Marke(block.locator(".meldung-aktion").first, art="rahmen", nummer=3),
+        rand=8,
+    )
+
+
 def test_hilfe_bild_touren_lieferschein(angemeldet, admin, muster):
     from apps.core import demo_daten
     from apps.touren.models import Station

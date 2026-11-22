@@ -1,5 +1,14 @@
-{# Beitrag zur Startseite (Modul.startseite): die eigenen Touren von heute #}
+{# Beitrag zur Startseite (Modul.startseite): eigene Touren von heute, offene Fahrzeug-Meldungen #}
+{% if touren %}
 <section class="karte" id="touren-heute">
   <h2>Ihre Tour heute</h2>
   {% for t in touren %}<a class="knopf tour-knopf" href="{% url 'touren:fahren' t.pk %}">🚚 {{ t.name }} öffnen</a>{% endfor %}
 </section>
+{% endif %}
+{% if meldungen %}
+<section class="karte" id="fahrzeug-meldungen">
+  <h2>Meldungen zum Fahrzeug <span class="marke-warnung">{{ meldungen|length }} offen</span></h2>
+  {% include "touren/_meldungen.html" %}
+  <p><a href="{% url 'touren:meldungen' %}">Alle Meldungen</a></p>
+</section>
+{% endif %}

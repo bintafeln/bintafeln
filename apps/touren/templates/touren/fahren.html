@@ -68,8 +68,24 @@
   <form method="post" action="{% url 'touren:fahrt_beenden' fahrt.pk %}">{% csrf_token %}
     <div class="feld"><label for="km_ende">Kilometerstand bei Ankunft</label>
       <input type="text" inputmode="numeric" pattern="[0-9 .]*" name="km_ende" id="km_ende" required autocomplete="off"></div>
+    <details class="tour-aendern">
+      <summary>Etwas zum Fahrzeug melden (Defekt, getankt …)</summary>
+      {% include "touren/_meldung_felder.html" %}
+      <p class="hinweis">Geht mit „Tour beenden“ an die Fahrdienstleitung.</p>
+    </details>
     <button type="submit" class="knopf tour-knopf">Tour beenden</button>
   </form>
+</section>
+{% endif %}
+{% if fahrt and fahrt_moeglich %}
+<section class="karte tour-fahrt" id="{% if fahrt.beendet_am %}fahrt{% else %}fahrzeug-melden{% endif %}">
+  <details class="tour-aendern">
+    <summary>Zwischendurch etwas zum Fahrzeug melden</summary>
+    <form method="post" action="{% url 'touren:fahrt_melden' fahrt.pk %}">{% csrf_token %}
+      {% include "touren/_meldung_felder.html" with nr="2" %}
+      <button type="submit" class="knopf knopf-zweitrangig tour-knopf">Meldung abschicken</button>
+    </form>
+  </details>
 </section>
 {% endif %}
 {% if darf_planen %}<p><a href="{% url 'touren:tour' tour.pk %}">Tour bearbeiten</a></p>{% endif %}

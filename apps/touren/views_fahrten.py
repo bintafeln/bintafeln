@@ -15,8 +15,8 @@ from django.views.decorators.http import require_POST
 
 from apps.core import listenexport
 from apps.konten import rollen
-from apps.touren import fahrten
-from apps.touren.models import Fahrt, Fahrzeug, Tour
+from apps.touren import fahrten, meldungen
+from apps.touren.models import Fahrt, Fahrzeug, Fahrzeugmeldung, Tour
 
 fahren_recht = rollen.recht_erforderlich("touren.fahren")
 buch = rollen.recht_erforderlich("touren.fahrten")
@@ -47,7 +47,63 @@ def beenden(request, pk):
         ziel = reverse("touren:fahren", args=[fahrt.tour_id]) if fahrt.tour_id else None
         return redirect(f"{ziel}#fahrt" if ziel else "touren:heute")
     messages.success(request, f"Tour beendet: {fahrt.km} km gefahren. Danke!")
+    if request.POST.get("meldung", "").strip():  # gleich mitgemeldet: Beanstandung, getankt …
+        _melden(request, fahrt)
     return redirect("touren:heute")
+
+
+def _melden(request, fahrt) -> bool:
+    try:
+        meldungen.melden(fahrt, request.user, request.POST.get("meldung_art", ""),
+                         request.POST.get("meldung", ""))  # fmt: skip
+    except meldungen.MeldungFehler as grund:
+        messages.error(request, str(grund))
+        return False
+    messages.success(request, "Meldung zum Fahrzeug ist bei der Fahrdienstleitung.")
+    return True
+
+
+@require_POST
+@fahren_recht
+def melden(request, pk):
+    """Etwas zum Fahrzeug melden, ohne die Tour zu beenden (oder danach)."""
+    fahrt = get_object_or_404(Fahrt.objects.select_related("tour__fahrdienst_tour"), pk=pk)
+    _melden(request, fahrt)
+    if fahrt.tour_id:
+        return redirect(reverse("touren:fahren", args=[fahrt.tour_id]) + "#fahrt")
+    return redirect("touren:heute")
+
+
+@never_cache
+@buch
+def meldungen_liste(request):
+    """Alle Meldungen zum Fahrzeug; offene zuerst."""
+    f = {"stand": request.GET.get("stand", "offen"), "fahrzeug": request.GET.get("fahrzeug", "")}
+    liste = Fahrzeugmeldung.objects.select_related("fahrzeug")
+    if f["stand"] == "offen":
+        liste = liste.filter(erledigt_am__isnull=True)
+    if f["fahrzeug"].isdigit():
+        liste = liste.filter(fahrzeug_id=int(f["fahrzeug"]))
+    else:
+        f["fahrzeug"] = ""
+    seite = Paginator(liste, 50).get_page(request.GET.get("seite"))
+    return render(request, "touren/meldungen.html", {
+        "seite": seite, "zeilen": seite.object_list, "filter": f,
+        "fahrzeuge": Fahrzeug.objects.all(), "offen": meldungen.offene().count(),
+    })  # fmt: skip
+
+
+@require_POST
+@buch
+def meldung_erledigen(request, pk):
+    meldung = get_object_or_404(Fahrzeugmeldung, pk=pk)
+    if "oeffnen" in request.POST:
+        meldungen.wieder_oeffnen(meldung)
+    else:
+        meldungen.erledigen(meldung, request.user, request.POST.get("notiz", ""))
+    ziel = request.POST.get("zurueck", "")
+    return redirect(ziel if ziel.startswith("/") and not ziel.startswith("//")
+                    else "touren:meldungen")  # fmt: skip
 
 
 def _gefiltert(request):

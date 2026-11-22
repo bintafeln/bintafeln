@@ -418,6 +418,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Ankunft, Regeln nur in `apps/touren/fahrten.py` (`beginnen()`, `beenden()`, `berichtigen()`; wer
   darf, entscheidet `start.darf()`; kein Ort wird geprüft), Fahrtenbuch in `views_fahrten.py`
   (Recht `touren.fahrten`); Namen von Tour und Fahrzeug stehen als Text in der Fahrt.
+  Meldungen zum Fahrzeug (ADR 0155): `Fahrzeugmeldung` über `apps/touren/meldungen.py` (melden beim
+  Beenden der Tour oder zwischendurch; offene über `Modul.startseite` bei allen mit `touren.fahrten`).
   „Hier waren wir“ (ADR 0152): `Anfahrt` je Tour, Station und Tag über `apps/touren/anfahrten.py`
   (Station bleibt stehen, ein Lieferschein gilt auch als angefahren); die Tour springt über
   `static/js/tour_aktuell.js` zur nächsten offenen Station.

@@ -2331,6 +2331,14 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
   .tour-planung-karte { grid-column: 2; grid-row: 1; position: sticky; top: 1rem; }
   .tour-planung-karte .tour-karte iframe { height: 30rem; }
 }
+.meldungen-liste { list-style: none; padding: 0; margin: .4rem 0 .8rem; }
+.meldung-fahrzeug { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; justify-content: space-between;
+  padding: .55rem .7rem; border: 1px solid var(--rand); border-radius: var(--radius); margin-bottom: .4rem; }
+.meldung-fahrzeug > div { flex: 1 1 16rem; }
+.meldung-erledigt { background: var(--grund); color: var(--leise); }
+.meldung-aktion { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.meldung-aktion input[type="text"] { min-width: 12rem; flex: 1 1 12rem; padding: .4rem .55rem; font-size: 1rem;
+  border: 1px solid var(--rand); border-radius: 6px; background: var(--flaeche); }
 .tour-frage { font-size: 1.35rem; font-weight: 600; margin: 1rem 0; }
 .tour-aendern { margin-top: 1.25rem; }
 .tour-aendern summary { cursor: pointer; padding: .5rem 0; }
