@@ -186,6 +186,11 @@ def einrichten(request):
         return redirect("touren:einrichten")
     return render(request, "touren/einrichten.html", {
         "form": formulare["einrichten"], "gruppen": formulare["warengruppen"],
-        "fahrzeuge": Fahrzeug.objects.annotate(papiere=Count("dokumente")),
+        "fahrzeuge": Fahrzeug.objects.filter(verkauft_am=None).annotate(
+            papiere=Count("dokumente")
+        ),
+        "verkauft": Fahrzeug.objects.exclude(verkauft_am=None).annotate(
+            papiere=Count("dokumente")
+        ).order_by("-verkauft_am", "name"),
         "darf_einstellen": rollen.hat_recht(request.user, "einstellungen.touren"),
     })  # fmt: skip

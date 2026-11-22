@@ -495,3 +495,43 @@ def test_link_zur_besetzung_des_gewaehlten_tages(admin_client, lage):
     ).content.decode()
     ziel = f"{reverse('touren:tour', args=[lage['tour'].pk])}?tag={morgen:%Y-%m-%d}#besetzung"
     assert ziel in seite and "Besetzung für diesen Tag ändern" in seite
+
+
+def test_fahrzeug_verkaufen_und_archiv(admin_client, lage):
+    tour, fritz, wagen = lage["tour"], lage["fritz"], lage["wagen"]
+    fahrt = fahrten.beginnen(tour, fritz, "100", wagen.pk)
+    fahrten.beenden(fahrt, fritz, "150")
+    seite_url = reverse("touren:fahrzeug", args=[wagen.pk])
+    daten = {"angaben": "1", "name": wagen.name, "kennzeichen": wagen.kennzeichen,
+             "kilometerstand": "150", "reihenfolge": "0", "aktiv": "on",
+             "erstzulassung": "01.06.2019", "verkauft_am": "31.10.2026"}  # fmt: skip
+    assert admin_client.post(seite_url, daten).status_code == 302
+    wagen.refresh_from_db()
+    # verkauft = archiviert: nicht mehr aktiv, auch wenn „Aktiv“ angehakt war
+    assert wagen.verkauft_am == dt.date(2026, 10, 31) and not wagen.aktiv
+    assert fahrten.fahrzeuge() == []  # steht den Fahrern nicht mehr zur Wahl
+    seite = admin_client.get(reverse("touren:einrichten")).content.decode()
+    assert "Noch kein Fahrzeug angelegt" in seite  # die Liste zeigt nur, was noch da ist
+    assert "Archiv:</strong> 1 verkauftes Fahrzeug" in seite and "31.10.2026" in seite
+    assert "Verkauft am 31.10.2026" in admin_client.get(seite_url).content.decode()
+    # Fahrtenbuch und Fahrt bleiben, wie sie waren
+    assert Fahrt.objects.get().fahrzeug == wagen
+    assert "Kühlwagen" in admin_client.get(reverse("touren:fahrten")).content.decode()
+    # ein Verkauf vor der Erstzulassung ist ein Tippfehler
+    daten["verkauft_am"] = "31.10.2018"
+    antwort = admin_client.post(seite_url, daten)
+    assert antwort.status_code == 200 and "vor der Erstzulassung" in antwort.content.decode()
+    # Datum leeren und „Aktiv“ anhaken holt das Fahrzeug zurück
+    daten["verkauft_am"] = ""
+    assert admin_client.post(seite_url, daten).status_code == 302
+    wagen.refresh_from_db()
+    assert wagen.verkauft_am is None and wagen.aktiv and fahrten.fahrzeuge() == [wagen]
+
+
+def test_verkauftes_fahrzeug_bleibt_ausgeschaltet_beim_fortschreiben(lage):
+    wagen = lage["wagen"]
+    wagen.verkauft_am, wagen.aktiv = dt.date(2026, 10, 31), True
+    wagen.kilometerstand = 500
+    wagen.save(update_fields=["verkauft_am", "kilometerstand"])
+    wagen.refresh_from_db()
+    assert not wagen.aktiv and wagen.kilometerstand == 500

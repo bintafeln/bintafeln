@@ -65,6 +65,11 @@ def heute(request):
             "meine": person is not None and any(
                 b["person"] is not None and b["person"].pk == person.pk for b in wer),
         })  # fmt: skip
+    for z in zeilen:  # fertig: Fahrt beendet oder jede Station angefahren
+        stand, fahrt = z["stand"], z["fahrt"]
+        z["fertig"] = bool(fahrt and fahrt.beendet_am) or (
+            stand["gesamt"] > 0 and stand["erledigt"] == stand["gesamt"]
+        )
     zeilen.sort(key=lambda z: not z["meine"])
     return render(request, "touren/heute.html", {
         "tag": tag, "ist_heute": tag == heute_, "zeilen": zeilen,

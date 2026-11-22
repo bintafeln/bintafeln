@@ -4,6 +4,7 @@
 <section class="karte">
   <p><a href="{% url 'touren:einrichten' %}#fahrzeuge">← Fahrzeuge</a></p>
   <h1>{% if fahrzeug %}{{ fahrzeug.name }}{% else %}Neues Fahrzeug{% endif %}</h1>
+  {% if fahrzeug.verkauft_am %}<p class="hinweis"><span class="marke-warnung">Verkauft am {{ fahrzeug.verkauft_am|date:"d.m.Y" }}</span> Das Fahrzeug steht im Archiv und nicht mehr zur Wahl. Fahrten, Meldungen und Papiere bleiben erhalten. Datum leeren und „Aktiv“ anhaken holt es zurück.</p>{% endif %}
   {% if fahrzeug %}<p class="aktionen"><a class="knopf knopf-zweitrangig" href="#papiere">📄 Papiere{% if papiere %} ({{ papiere|length }}){% endif %}</a></p>{% endif %}
   {% if darf_aendern %}
   <form method="post">{% csrf_token %}<input type="hidden" name="angaben" value="1">
@@ -20,6 +21,7 @@
     <dt>Fahrzeugart</dt><dd>{{ fahrzeug.typ|default:"–" }}</dd>
     <dt>Erstzulassung</dt><dd>{{ fahrzeug.erstzulassung|date:"d.m.Y"|default:"–" }}</dd>
     <dt>Kilometerstand</dt><dd>{% if fahrzeug.kilometerstand is not None %}{{ fahrzeug.kilometerstand }} km{% else %}–{% endif %}</dd>
+    {% if fahrzeug.verkauft_am %}<dt>Verkauft am</dt><dd>{{ fahrzeug.verkauft_am|date:"d.m.Y" }}</dd>{% endif %}
   </dl>
   {% endif %}
 </section>
