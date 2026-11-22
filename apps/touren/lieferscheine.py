@@ -10,11 +10,10 @@ from decimal import Decimal, InvalidOperation
 from django.db import transaction
 from django.utils import timezone
 from PIL import Image, UnidentifiedImageError
-from reportlab.lib.units import mm
 
 from apps.core import mail, privatdateien
 from apps.core.models import TafelEinstellungen
-from apps.core.pdf import Pdf
+from apps.touren import vordruck
 from apps.touren.models import Lieferschein, Position, Station, TourenEinstellungen, Warengruppe
 
 MAX_UNTERSCHRIFT = 400_000  # Bytes der PNG-Datei aus dem Unterschriftsfeld
@@ -100,24 +99,17 @@ def _name(benutzer) -> str:
 
 
 def _pdf(ls: Lieferschein, positionen, unterschrift: bytes) -> bytes:
-    tafel = TafelEinstellungen.laden()
-    pdf = Pdf(f"Lieferschein Nr. {ls.nummer}", f"{ls.datum:%d.%m.%Y}")
-    pdf.angaben([
-        ("Abgeholt bei", ls.station_name),
-        ("Anschrift", ls.station_anschrift),
-        ("Abgeholt von", tafel.name),
-        ("Datum", f"{ls.datum:%d.%m.%Y}"),
-    ])  # fmt: skip
-    pdf.abstand()
-    pdf.tabelle(["Warengruppe", "Menge"], [[w, Position(menge=m, einheit=e).menge_text]
-                                          for w, m, e in positionen],
-                breiten=[0.7, 0.3], gitter=True)  # fmt: skip
-    if ls.anmerkung:
-        pdf.abstand()
-        pdf.absatz(f"Anmerkung: {ls.anmerkung}")
-    pdf.abstand(10 * mm)
-    pdf.unterschrift_bild(unterschrift, f"{ls.unterschrieben_von}, für {tafel.name}".rstrip(", "))
-    return pdf.erzeugen()
+    """Der Lieferschein im Aussehen des bekannten Vordrucks (``vordruck.py``): Jede Warengruppe
+    hat ihre Zeile, auch ohne Menge („-“) – so sieht die Station, dass nichts vergessen wurde."""
+    mengen = {w: Position(menge=m, einheit=e).menge_text for w, m, e in positionen}
+    gruppen = [g.name for g in warengruppen()]
+    gruppen += [w for w in mengen if w not in gruppen]  # inzwischen abgeschaltete Gruppe
+    return vordruck.zeichnen(
+        tafel=TafelEinstellungen.laden(), nummer=ls.nummer, datum=ls.datum,
+        station_name=ls.station_name, station_anschrift=ls.station_anschrift,
+        zeilen=[(mengen.get(g, ""), g) for g in gruppen], anmerkung=ls.anmerkung,
+        unterschrift=unterschrift, unterschrieben_von=ls.unterschrieben_von,
+    )  # fmt: skip
 
 
 @transaction.atomic

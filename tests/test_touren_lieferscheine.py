@@ -119,8 +119,54 @@ def test_pdf_inhalt(admin, pdf_text, client, anmelden):
                                  lieferscheine.unterschrift_lesen(unterschrift()))  # fmt: skip
     anmelden(client, admin)
     text = pdf_text(client.get(reverse("touren:lieferschein_pdf", args=[ls.pk])))
-    assert "Lieferschein Nr. 1" in text and "Beispielmarkt Mitte" in text
-    assert "12 Kisten" in text and "Tafel Musterstadt" in text
+    # Aussehen des bekannten Vordrucks: Spender, Empfänger, Datum, Nummer, Tabelle
+    assert "Lieferschein" in text and "Verordnung (EG) Nr. 178/2002" in text
+    assert "Spender/in:" in text and "Beispielmarkt Mitte" in text
+    assert "Empfänger/in:" in text and "Tafel Musterstadt" in text
+    assert "Nr:" in text and f"{ls.datum:%d.%m.%Y}" in text
+    assert "Produktbezeichnung" in text and "12 Kisten" in text
+    assert "Molkereiprodukte" in text  # jede Warengruppe hat ihre Zeile, auch ohne Menge
+    assert "Unterschrift Empfänger/in" in text
+    assert "Erstellt am" not in text and "Seite 1" not in text  # keine Fußzeile
+
+
+def test_pdf_mit_logo_und_anmerkung(admin, settings, tmp_path):
+    """Oben steht das Logo der Tafel; lässt es sich nicht lesen, ersatzweise ihr Name."""
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    from pypdf import PdfReader
+
+    settings.MEDIA_ROOT = tmp_path
+    puffer = io.BytesIO()
+    Image.new("RGBA", (300, 100), (0, 90, 160, 255)).save(puffer, format="PNG")
+    t = TafelEinstellungen.laden()
+    t.logo = SimpleUploadedFile("logo.png", puffer.getvalue(), content_type="image/png")
+    t.save()
+    zeichnung = lieferscheine.unterschrift_lesen(unterschrift())
+    ls = lieferscheine.erstellen(station(), admin, [("Backwaren", Decimal("2"), "kisten")],
+                                 zeichnung, anmerkung="Brot von gestern")  # fmt: skip
+    seite = PdfReader(io.BytesIO(lieferscheine.pdf(ls))).pages[0]
+    assert len(seite.images) == 2  # Logo und Unterschrift
+    assert "Bemerkungen: Brot von gestern" in " ".join(seite.extract_text().split())
+    t.logo = "oeffentlich/logo/fehlt.png"
+    t.save()
+    ls = lieferscheine.erstellen(station(kennung="zwei"), admin,
+                                 [("Backwaren", Decimal("2"), "kisten")], zeichnung)  # fmt: skip
+    seite = PdfReader(io.BytesIO(lieferscheine.pdf(ls))).pages[0]
+    assert len(seite.images) == 1 and "Tafel Musterstadt" in seite.extract_text()
+
+
+def test_pdf_viele_und_abgeschaltete_warengruppen(admin):
+    """Viele Warengruppen passen auf eine Seite; eine Menge zu einer Gruppe, die es nicht (mehr)
+    gibt, steht trotzdem darauf."""
+    from pypdf import PdfReader
+
+    for nr in range(25):
+        Warengruppe.objects.create(name=f"Gruppe {nr}", reihenfolge=100 + nr)
+    ls = lieferscheine.erstellen(station(), admin, [("Blumen", Decimal("3"), "kisten")],
+                                 lieferscheine.unterschrift_lesen(unterschrift()))  # fmt: skip
+    leser = PdfReader(io.BytesIO(lieferscheine.pdf(ls)))
+    text = leser.pages[0].extract_text()
+    assert len(leser.pages) == 1 and "Gruppe 24" in text and "Blumen" in text
 
 
 def test_ohne_mail_gespeichert_aber_nicht_verschickt(admin):
