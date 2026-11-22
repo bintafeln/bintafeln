@@ -223,11 +223,27 @@ class TourenEinstellungen(models.Model):
 
     EINZIGE_ID = 1
 
+    class Versand(models.TextChoices):
+        AUS = "aus", "ausgeschaltet – nur speichern"
+        TEST = "test", "zum Test – nur an die Test-Adresse"
+        AN = "an", "an die Station"
+
     lieferscheine = models.BooleanField(
         "Lieferscheine an den Stationen", default=True,
         help_text="Unterwegs lässt sich an jeder Station, bei der „Lieferschein“ eingeschaltet "
-        "ist, ein Lieferschein ausfüllen und unterschreiben. Die Station bekommt ihn als PDF per "
-        "E-Mail; in bintafeln bleibt er gespeichert.",
+        "ist, ein Lieferschein ausfüllen und unterschreiben. In bintafeln bleibt er als PDF "
+        "gespeichert.",
+    )  # fmt: skip
+    versand = models.CharField(
+        "Lieferscheine per E-Mail verschicken", max_length=10, choices=Versand.choices,
+        default=Versand.AUS,
+        help_text="Ausgeschaltet: Lieferscheine werden nur gespeichert. Zum Test: Jeder "
+        "Lieferschein geht nur an die Test-Adresse, keine Station bekommt Post. Später lassen "
+        "sich gespeicherte Lieferscheine in der Liste nachsenden.",
+    )  # fmt: skip
+    test_email = models.EmailField(
+        "Test-Adresse", blank=True,
+        help_text="Im Testbetrieb gehen alle Lieferscheine hierhin statt an die Station.",
     )  # fmt: skip
     mail_text = models.TextField(
         "Text der E-Mail an die Station",

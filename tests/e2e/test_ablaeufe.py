@@ -2218,4 +2218,4 @@ def test_lieferschein_am_handy_unterschreiben(seite, angemeldet, admin):
     expect(seite.locator(".tour-schein")).to_contain_text("Lieferschein Nr. 1")
     ls = Lieferschein.objects.get()
     assert [p.menge_text for p in ls.positionen.all()] == ["4 Kisten", "2,5 kg"]
-    assert not ls.gesendet_am and "keine E-Mail" in ls.mail_fehler
+    assert not ls.gesendet_am and "ausgeschaltet" in ls.mail_fehler  # Vorgabe: nur speichern

@@ -143,27 +143,44 @@ def dateiname(ls: Lieferschein) -> str:
 
 
 def senden(ls: Lieferschein) -> bool:
-    """Schickt das PDF an die Station. Hält fest, wohin es ging oder warum nicht."""
-    ziel = ls.station.lieferschein_an if ls.station else ""
+    """Schickt das PDF an die Station – je nach Einstellung gar nicht oder zum Test nur an die
+    Test-Adresse (dann gilt der Lieferschein weiter als nicht verschickt und lässt sich später
+    richtig senden). Hält fest, wohin es ging oder warum nicht."""
+    einstellungen = TourenEinstellungen.laden()
+    Versand = TourenEinstellungen.Versand
+    test = einstellungen.versand == Versand.TEST
+    an_station = ls.station.lieferschein_an if ls.station else ""
+    ziel = einstellungen.test_email if test else an_station
     inhalt = pdf(ls)
     fehler = ""
-    if not ziel:
-        fehler = "Bei der Station ist keine E-Mail-Adresse eingetragen."
+    if einstellungen.versand == Versand.AUS:
+        fehler = "Der Versand per E-Mail ist ausgeschaltet (Einstellungen → Touren)."
+    elif not ziel:
+        fehler = ("Für den Testbetrieb ist keine Test-Adresse eingetragen." if test
+                  else "Bei der Station ist keine E-Mail-Adresse eingetragen.")  # fmt: skip
     elif inhalt is None:
         fehler = "Das PDF fehlt."
     elif not mail.eingerichtet():
         fehler = "Es ist kein Mailserver eingerichtet."
     else:
         tafel = TafelEinstellungen.laden()
-        text = f"{TourenEinstellungen.laden().mail_text.strip()}\n{tafel.name}".strip()
+        text = f"{einstellungen.mail_text.strip()}\n{tafel.name}".strip()
+        betreff = f"Lieferschein Nr. {ls.nummer} vom {ls.datum:%d.%m.%Y} – {tafel.name}"
+        if test:
+            betreff = f"[Test] {betreff}"
+            text = (f"Testbetrieb: Diese Mail ginge sonst an {an_station or '(keine Adresse)'} "
+                    f"({ls.station_name}).\n\n{text}")  # fmt: skip
         try:
             mail.senden(
-                f"Lieferschein Nr. {ls.nummer} vom {ls.datum:%d.%m.%Y} – {tafel.name}".rstrip(" –"),
+                betreff.rstrip(" –"),
                 text, [ziel], anhaenge=[(dateiname(ls), inhalt, "application/pdf")],
                 art="lieferschein",
             )  # fmt: skip
         except mail.MailFehler as grund:
             fehler = str(grund)
+        else:
+            if test:
+                fehler = f"Testbetrieb: nur an {ziel} geschickt, nicht an die Station."
     ls.mail_fehler = fehler[:300]
     if not fehler:
         ls.gesendet_an, ls.gesendet_am = ziel, timezone.now()

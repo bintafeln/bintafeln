@@ -77,6 +77,7 @@ def ausfuellen(request, pk):
         "einheiten": Position.Einheit.choices, "anmerkung": request.POST.get("anmerkung", ""),
         "zurueck": _zurueck(tour, tag, station),
         "schon": Lieferschein.objects.filter(station=station, datum=tag).first(),
+        "versand": TourenEinstellungen.laden().versand,
     })  # fmt: skip
 
 

@@ -31,6 +31,11 @@ gespeichert bleiben.
   Warengruppe („-“ ohne Menge), rechts unten die Unterschrift. Keine Kopf- und keine Fußzeile.
   Märkte kennen dieses Blatt; ein anderes Aussehen führt zu Rückfragen.
 - **Nummer** fortlaufend aus `TourenEinstellungen.naechste_nummer`, unter Zeilensperre.
+- **Versand abschaltbar, mit Testbetrieb** (`TourenEinstellungen.versand`): „ausgeschaltet“
+  (Vorgabe – der Lieferschein wird nur gespeichert), „zum Test“ (jede Mail geht mit „[Test]“ im
+  Betreff nur an `test_email`, nie an die Station; der Lieferschein gilt weiter als nicht
+  verschickt) oder „an die Station“. So lässt sich der Ablauf erproben, ohne dass ein Markt Post
+  bekommt; gespeicherte Lieferscheine lassen sich danach in der Liste nachsenden.
 - **Versand** nur an die Station (`Station.lieferschein_an`), über `mail.senden()` mit der neuen
   Art „Lieferschein“; niemand in der Tafel bekommt eine Kopie. Fehlt die Adresse oder scheitert
   der Versand, bleibt der Lieferschein gespeichert und trägt den Grund (`mail_fehler`); das Büro
