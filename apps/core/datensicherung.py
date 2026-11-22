@@ -53,7 +53,7 @@ EIGENE_APPS = [
 AUSGENOMMEN = {"kunden.importvorbereitung", "antraege.antragversuch", "core.sicherungsdienst",
                "konten.vertrautesgeraet", "datenimport.importsitzung", "core.meldung",
                "antraege.antragentwurfnachweis",
-               "core.gesendetemail"}  # fmt: skip
+               "core.gesendetemail", "core.pushabo"}  # fmt: skip
 EINSTELLUNGS_MODELLE = {
     "core.tafeleinstellungen", "core.maileinstellungen", "core.fotoeinstellungen",
     "kunden.kundeneinstellungen",

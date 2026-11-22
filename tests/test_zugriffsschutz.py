@@ -30,6 +30,7 @@ OEFFENTLICH = {
     "core:healthz",
     "core:app_symbol",  # Symbol im Browser-Tab, auch auf der Anmeldeseite
     "core:manifest",
+    "core:push_sw",  # Service Worker für Nachrichten an Mitarbeitende, nichts Vertrauliches
     "core:verzeichnis_melden",
     # Wartezeit aufs Handy für Kunden (ADR 0090): Kundennummer + Geburtsdatum oder Ausweis-Code
     "warten:seite",
@@ -68,6 +69,10 @@ ALLE_ANGEMELDETEN = {
     "core:druck_senden",
     "core:druck_umschalten",
     "core:druck_vorschau",
+    "core:push_an",  # Nachrichten aufs eigene Gerät, nur fürs eigene Konto (ADR 0158)
+    "core:push_aus",
+    "core:push_stand",
+    "core:push_probe",
     "konten:benachrichtigungen",
     "konten:passwort_aendern",
     "konten:meine_auskunft",

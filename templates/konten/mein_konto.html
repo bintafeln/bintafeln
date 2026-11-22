@@ -43,6 +43,30 @@
     </div>
     {% endif %}
 
+    {% if not user.stelle_id %}{% load static %}<script src="{% static 'js/push.js' %}" defer></script>{# Nachrichten aufs Handy (static/js/push.js, ADR 0158); ohne JavaScript nur der Hinweis #}
+    <div class="konto-kachel" id="push" data-push data-schluessel="{{ push_schluessel }}" data-csrf="{{ csrf_token }}"
+         data-sw="{% url 'core:push_sw' %}" data-an="{% url 'core:push_an' %}" data-aus="{% url 'core:push_aus' %}"
+         data-stand="{% url 'core:push_stand' %}" data-probe="{% url 'core:push_probe' %}">
+      <h2>Nachrichten auf dieses Gerät</h2>
+      <p>Eilige Nachrichten erscheinen auf diesem Gerät wie eine SMS – auch wenn {{ programm.name }} gerade nicht offen
+        ist. Gilt nur für dieses Gerät und dieses Konto; auf jedem weiteren Gerät einzeln einschalten.</p>
+      <p class="sicherung" data-zeige="aus" hidden>Im Moment: ausgeschaltet.</p>
+      <p data-zeige="aus" hidden><button type="button" class="knopf push-an">🔔 Einschalten</button></p>
+      <p class="sicherung sicherung-ok" data-zeige="an" hidden>Im Moment: eingeschaltet.</p>
+      <p class="aktionen" data-zeige="an" hidden>
+        <button type="button" class="knopf knopf-zweitrangig push-probe">Probe-Nachricht schicken</button>
+        <button type="button" class="knopf knopf-zweitrangig push-aus">Ausschalten</button></p>
+      <p class="hinweis push-ergebnis" role="status"></p>
+      <p class="hinweis" data-zeige="iphone" hidden>Auf dem iPhone und iPad geht das nur in der App vom Home-Bildschirm:
+        in Safari „Teilen“ → „Zum Home-Bildschirm“, {{ programm.name }} von dort öffnen und hier einschalten.</p>
+      <p class="hinweis" data-zeige="nicht" hidden>Dieser Browser kann keine Nachrichten empfangen.</p>
+      <p class="hinweis" data-zeige="blockiert" hidden>Mitteilungen sind für diese Seite gesperrt. Bitte in den
+        Einstellungen des Browsers für diese Seite erlauben und die Seite neu laden.</p>
+      <p class="hinweis" data-zeige="fehler" hidden>Das Einschalten hat nicht geklappt. Bitte noch einmal versuchen.</p>
+      <noscript><p class="hinweis">Dafür muss JavaScript eingeschaltet sein.</p></noscript>
+    </div>
+    {% endif %}
+
     {% if unterschrift is not None %}
     <div class="konto-kachel" id="meine-unterschrift">
       <h2>Meine Unterschrift</h2>

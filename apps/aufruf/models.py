@@ -249,8 +249,6 @@ class HandyEinstellungen(models.Model):
         help_text="Wer die Benachrichtigung eingeschaltet hat, bekommt dann „Gleich sind Sie dran“ "
         "aufs Handy und beim Aufruf „Sie sind dran“. 0 = nur beim Aufruf.",
     )  # fmt: skip
-    # Schlüssel für Push-Nachrichten (VAPID, ADR 0134): einmal erzeugt, verschlüsselt gespeichert
-    push_schluessel = models.TextField(blank=True, editable=False)
 
     class Meta:
         verbose_name = "Wartezeit aufs Handy"
@@ -313,5 +311,5 @@ class HandyCode(models.Model):
 
 
 auditlog.register(AufrufEinstellungen)
-auditlog.register(HandyEinstellungen, exclude_fields=["push_schluessel"])
+auditlog.register(HandyEinstellungen)
 auditlog.register(AufrufInfo)
