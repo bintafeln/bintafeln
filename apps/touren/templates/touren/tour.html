@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block titel %}{% if tour %}{{ tour }}{% elif kurz %}Kurzfristige Tour{% else %}Neue Tour{% endif %}{% endblock %}
 {% block inhalt %}
 <section class="karte">
@@ -8,7 +9,31 @@
   <form method="post"{% if tour %} data-autosave{% endif %}>
     {% csrf_token %}
     {% include "includes/formular.html" %}
-    <button type="submit" class="knopf">{% if tour %}Speichern{% else %}Anlegen{% endif %}</button>
+    {% if kurz and not tour %}
+    <fieldset class="stationswahl" data-stationswahl>
+      <legend>Stationen</legend>
+      <div class="feld"><label for="station-suche">Laden oder Lieferadresse suchen</label>
+        <input type="search" id="station-suche" name="q" placeholder="Name, Straße, Ort, Telefon …" autocomplete="off"
+               hx-get="{% url 'touren:stationen_suche' %}" hx-target="#station-treffer" hx-sync="this:replace"
+               hx-trigger="input[this.value.trim().length >= 3 || !this.value] changed delay:300ms">
+        <small class="hilfe">Ab drei Zeichen erscheinen die Treffer. Gesucht wird in allen Angaben der Station.</small></div>
+      <div id="station-treffer" aria-live="polite"></div>
+      <p class="hinweis" data-stationswahl-leer{% if gewaehlt %} hidden{% endif %}>Noch keine Station gewählt.</p>
+      <ol class="stationswahl-liste" data-stationswahl-liste>
+        {% for s in gewaehlt %}<li><input type="hidden" name="stationen" value="{{ s.pk }}"><span><strong>{{ s.name }}</strong><br><small class="leise">{{ s.anschrift }}</small></span>
+          <span class="tour-folge"><button type="button" class="knopf knopf-zweitrangig knopf-klein" data-station-hoch aria-label="{{ s.name }} früher">↑</button><button type="button" class="knopf knopf-zweitrangig knopf-klein" data-station-runter aria-label="{{ s.name }} später">↓</button><button type="button" class="knopf knopf-zweitrangig knopf-klein" data-station-weg aria-label="{{ s.name }} entfernen">✕</button></span></li>{% endfor %}
+      </ol>
+      {% if neu %}
+      <details class="stationswahl-neu"{% if neu.errors %} open{% endif %}>
+        <summary>Die Adresse steht noch nicht in der Liste – hier eintragen</summary>
+        <p class="hinweis">Sie wird als neue Station angelegt und ans Ende der Tour gehängt. Leer lassen, wenn nicht nötig.</p>
+        {% with form=neu %}{% include "includes/formular.html" %}{% endwith %}
+      </details>
+      {% endif %}
+    </fieldset>
+    <div class="feld feld-haken"><label><input type="checkbox" name="senden" value="1"{% if senden %} checked{% endif %}> Gleich per E-Mail an die gewählten Fahrer schicken</label></div>
+    {% endif %}
+    <button type="submit" class="knopf">{% if tour %}Speichern{% elif kurz %}Tour anlegen{% else %}Anlegen{% endif %}</button>
   </form>
   {% if tour %}
   <div class="aktionsleiste">
@@ -47,6 +72,12 @@
   </table></div>
   <p class="hinweis">Kein Tag angehakt = die Station wird an allen Fahrtagen der Tour angefahren.</p>
   {% else %}<p class="hinweis">Noch keine Station auf dieser Tour.</p>{% endif %}
+  <div class="feld"><label for="station-suche">Station suchen und anhängen</label>
+    <input type="search" id="station-suche" name="q" placeholder="Name, Straße, Ort, Telefon …" autocomplete="off"
+           hx-get="{% url 'touren:stationen_suche' %}?tour={{ tour.pk }}" hx-target="#station-treffer" hx-sync="this:replace"
+           hx-trigger="input[this.value.trim().length >= 3 || !this.value] changed delay:300ms">
+    <small class="hilfe">Ab drei Zeichen erscheinen die Treffer. Gesucht wird in allen Angaben der Station.</small></div>
+  <div id="station-treffer" aria-live="polite"></div>
   <form method="post" action="{% url 'touren:halt_neu' tour.pk %}" class="filter-kompakt">{% csrf_token %}
     <div class="filter-feld filter-suche"><label for="{{ halt_form.station.id_for_label }}">{{ halt_form.station.label }}</label>{{ halt_form.station }}</div>
     <button type="submit" class="knopf">Anhängen</button>
@@ -58,4 +89,5 @@
   </form>
 </section>
 {% endif %}
+{% if kurz and not tour %}<script src="{% static 'js/stationswahl.js' %}" defer></script>{% endif %}
 {% endblock %}

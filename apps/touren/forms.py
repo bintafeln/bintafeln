@@ -1,4 +1,5 @@
 from django import forms
+from django.utils import timezone
 
 from apps.core.forms import Mehrfachauswahl
 from apps.fahrdienst.forms import TageFeld
@@ -113,6 +114,41 @@ class KurzfristigForm(forms.ModelForm):
         self.fields["datum"].required = True
         self.fields["datum"].label = "Am"
         self.fields["datum"].help_text = ""
+
+
+class NeueStationForm(forms.ModelForm):
+    """Eine Station, die noch nicht in der Liste steht, gleich in der Maske der kurzfristigen
+    Tour eintragen. Leer gelassen = keine neue Station."""
+
+    # Die Felder stehen eingeklappt in der Maske der Tour und dürfen leer bleiben; der Browser
+    # darf das Absenden deshalb nicht an ihnen aufhalten. Geprüft wird im Server.
+    use_required_attribute = False
+
+    class Meta:
+        model = Station
+        fields = ["name", "art", "strasse", "hausnummer", "plz", "ort", "telefon",
+                  "ansprechpartner", "anfahrt"]  # fmt: skip
+        widgets = {"anfahrt": forms.Textarea(attrs={"rows": 2})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["art"].initial = Station.Art.SONSTIGES
+        for feld in self.fields.values():
+            feld.help_text = ""
+
+    def ausgefuellt(self) -> bool:
+        """Wurde überhaupt etwas eingetragen (außer der vorbelegten Art)?"""
+        return self.is_bound and any(
+            (self.data.get(self.add_prefix(name)) or "").strip()
+            for name in self.fields if name != "art"
+        )  # fmt: skip
+
+    def anlegen(self, von: str) -> Station:
+        station = self.save(commit=False)
+        station.kennung = neue_kennung()
+        station.geaendert_am, station.geaendert_von = timezone.now(), von
+        station.save()
+        return station
 
 
 class HaltForm(forms.Form):

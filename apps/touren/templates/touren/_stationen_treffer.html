@@ -1,0 +1,20 @@
+{% load liste %}
+{% if zu_kurz %}<p class="hinweis">Bitte mindestens {{ mindestens }} Zeichen eingeben.</p>
+{% elif not treffer %}<p class="hinweis">Keine Station gefunden{% if tour %}, die noch nicht auf der Tour steht{% endif %}.</p>
+{% else %}
+<ul class="station-treffer">
+  {% for s in treffer %}
+  <li>
+    <div><strong>{{ s.name }}</strong>{% if s.kette %} <small class="leise">{{ s.kette }}</small>{% endif %} <small class="leise">· {{ s.get_art_display }}</small><br>
+      <small class="leise">{{ s.anschrift }}{% if s.telefon %} · {{ s.telefon }}{% endif %}{% if s.ansprechpartner %} · {{ s.ansprechpartner }}{% endif %}</small></div>
+    {% if tour %}
+    <form method="post" action="{% url 'touren:halt_neu' tour.pk %}">{% csrf_token %}<input type="hidden" name="station" value="{{ s.pk }}">
+      <button type="submit" class="knopf knopf-klein" aria-label="{{ s.name }} anhängen">Anhängen</button></form>
+    {% else %}
+    <button type="button" class="knopf knopf-klein" data-station-waehlen="{{ s.pk }}" data-station-name="{{ s.name }}" data-station-ort="{{ s.anschrift }}" aria-label="{{ s.name }} hinzufügen">Hinzufügen</button>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% if treffer|length >= grenze %}<p class="hinweis">Mehr als {{ grenze }} Treffer – bitte genauer suchen.</p>{% endif %}
+{% endif %}

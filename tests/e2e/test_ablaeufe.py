@@ -2172,6 +2172,48 @@ def test_qr_code_zum_stempeln_im_browser_scannen(angemeldet, admin, benutzer_mit
     assert len(seite.context.pages) == seiten_vorher  # kein neues Fenster
 
 
+def test_kurzfristige_tour_in_einer_maske(seite, angemeldet, admin):
+    """Kurzfristige Tour: Stationen beim Tippen suchen, hinzufügen, umsortieren und alles in
+    einer Maske anlegen (static/js/stationswahl.js); danach die Suche beim Anhängen."""
+    from apps.core.models import TafelEinstellungen
+    from apps.touren.models import Station, Tour
+
+    t = TafelEinstellungen.laden()
+    t.module = ["touren"]
+    t.save()
+    for nr, name in enumerate(["Supermarkt Nord", "Bäckerei Probe", "Hofladen Beispiel"], 1):
+        Station.objects.create(kennung=f"M-{nr}", name=name, strasse="Musterweg",
+                               hausnummer=str(nr), plz="12345", ort="Musterstadt",
+                               telefon=f"01234 5550{nr}")  # fmt: skip
+    angemeldet(admin)
+    seite.goto(reverse("touren:tour_neu") + "?kurz")
+    seite.get_by_label("Name").first.fill("Sonderabholung")
+    suche = seite.get_by_label("Laden oder Lieferadresse suchen")
+    suche.fill("su")
+    expect(seite.locator("#station-treffer li")).to_have_count(0)  # erst ab drei Zeichen
+    suche.fill("sup")
+    seite.get_by_role("button", name="Supermarkt Nord hinzufügen").click()
+    suche.fill("55502")  # Telefonnummer
+    seite.get_by_role("button", name="Bäckerei Probe hinzufügen").click()
+    liste = seite.locator("[data-stationswahl-liste] li")
+    expect(liste).to_have_count(2)
+    expect(seite.locator("[data-stationswahl-leer]")).to_be_hidden()
+    seite.get_by_role("button", name="Bäckerei Probe früher").click()
+    expect(liste.first).to_contain_text("Bäckerei Probe")
+    suche.fill("hofladen")
+    seite.get_by_role("button", name="Hofladen Beispiel hinzufügen").click()
+    seite.get_by_role("button", name="Hofladen Beispiel entfernen").click()
+    expect(liste).to_have_count(2)
+    seite.get_by_role("button", name="Tour anlegen").click()
+    expect(seite.locator(".meldung").first).to_contain_text("mit 2 Stationen angelegt")
+    tour = Tour.objects.get(name="Sonderabholung")
+    assert [h.station.name for h in tour.halte.all()] == ["Bäckerei Probe", "Supermarkt Nord"]
+    # auf der Seite der Tour: suchen und anhängen
+    seite.get_by_label("Station suchen und anhängen").fill("hofl")
+    seite.get_by_role("button", name="Hofladen Beispiel anhängen").click()
+    expect(seite.locator("#tour-halte tbody tr")).to_have_count(3)
+
+
 def test_lieferschein_am_handy_unterschreiben(seite, angemeldet, admin):
     """Unterwegs: Lieferschein ausfüllen, mit dem Finger unterschreiben, abschicken
     (static/js/unterschrift_feld.js, ADR 0149)."""

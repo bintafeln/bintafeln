@@ -10,6 +10,7 @@ urlpatterns = [
     path("tour/<int:pk>/start/", views_touren.start, name="start"),
     path("planen/", views_touren.touren, name="touren"),
     path("planen/neu/", views_touren.tour_neu, name="tour_neu"),
+    path("planen/stationen-suche/", views_touren.stationen_suche, name="stationen_suche"),
     path("planen/importieren/", views_touren.touren_importieren, name="touren_importieren"),
     path("planen/<int:pk>/", views_touren.tour, name="tour"),
     path("planen/<int:pk>/loeschen/", views_touren.tour_loeschen, name="tour_loeschen"),

@@ -14,10 +14,10 @@ from apps.adressen.forms import ImportForm
 from apps.ausgabe.ampel import WOCHENTAGE
 from apps.core import geheimnis, module, papierkorb
 from apps.konten import rollen
-from apps.touren import ablauf, importieren_touren, lieferscheine
+from apps.touren import ablauf, importieren_touren, lieferscheine, suche
 from apps.touren import start as tourstart
-from apps.touren.forms import HaltForm, KurzfristigForm, TourForm
-from apps.touren.models import Halt, Tour
+from apps.touren.forms import HaltForm, KurzfristigForm, NeueStationForm, TourForm
+from apps.touren.models import Halt, Station, Tour
 
 fahren_recht = rollen.recht_erforderlich("touren.fahren")
 planen = rollen.recht_erforderlich("touren.planen")
@@ -139,17 +139,59 @@ def _form(request, tour, kurz):
 
 @never_cache
 @planen
+def stationen_suche(request):
+    """Treffer der Stationssuche als Baustein: zum Anhängen an eine Tour (``tour``) oder zur
+    Auswahl in der Maske der kurzfristigen Tour."""
+    begriff = request.GET.get("q", "").strip()
+    wert = request.GET.get("tour", "")
+    tour = Tour.objects.filter(pk=int(wert)).first() if wert.isdigit() else None
+    grenze = 25
+    return render(request, "touren/_stationen_treffer.html", {
+        "treffer": suche.stationen(begriff, ohne_tour=tour, grenze=grenze), "tour": tour,
+        "zu_kurz": 0 < len(begriff) < suche.MINDESTENS, "mindestens": suche.MINDESTENS,
+        "grenze": grenze, "leer": not begriff,
+    })  # fmt: skip
+
+
+def _gewaehlte(request) -> list[Station]:
+    """Die in der Maske gewählten Stationen in ihrer Reihenfolge (jede nur einmal)."""
+    pks = [int(p) for p in request.POST.getlist("stationen") if p.isdigit()]
+    vorhanden = Station.objects.in_bulk(pks)
+    return [vorhanden[p] for p in dict.fromkeys(pks) if p in vorhanden]
+
+
+@never_cache
+@planen
 def tour_neu(request):
+    """Neue Tour. Eine kurzfristige Tour entsteht in einer Maske: Angaben, Stationen (gesucht
+    oder gleich neu eingetragen) und auf Wunsch sofort an die Fahrer schicken."""
     kurz = "kurz" in request.GET
     form = _form(request, None, kurz)
-    if request.method == "POST" and form.is_valid():
+    darf_neu = kurz and rollen.hat_recht(request.user, "touren.stationen_bearbeiten")
+    neu = NeueStationForm(request.POST or None, prefix="neu") if darf_neu else None
+    gewaehlt = _gewaehlte(request) if kurz and request.method == "POST" else []
+    neu_ok = neu is None or not neu.ausgefuellt() or neu.is_valid()
+    if request.method == "POST" and form.is_valid() and neu_ok:
         tour = form.save(commit=False)
         tour.angelegt_von = request.user.get_username()
         tour.save()
         form.save_m2m()
-        messages.success(request, f"Tour „{tour}“ angelegt. Jetzt die Stationen anhängen.")
+        if not kurz:
+            messages.success(request, f"Tour „{tour}“ angelegt. Jetzt die Stationen anhängen.")
+            return redirect("touren:tour", pk=tour.pk)
+        if neu is not None and neu.ausgefuellt():
+            gewaehlt.append(neu.anlegen(request.user.get_username()))
+        for station in gewaehlt:
+            ablauf.halt_anhaengen(tour, station)
+        messages.success(request, f"Tour „{tour}“ mit {len(gewaehlt)} "
+                         f"Station{'' if len(gewaehlt) == 1 else 'en'} angelegt.")  # fmt: skip
+        if "senden" in request.POST:
+            return tour_senden(request, tour.pk)
         return redirect("touren:tour", pk=tour.pk)
-    return render(request, "touren/tour.html", {"form": form, "tour": None, "kurz": kurz})
+    return render(request, "touren/tour.html", {
+        "form": form, "tour": None, "kurz": kurz, "gewaehlt": gewaehlt, "neu": neu,
+        "senden": "senden" in request.POST,
+    })  # fmt: skip
 
 
 @never_cache

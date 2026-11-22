@@ -2293,6 +2293,15 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 .unterschrift-flaeche { display: block; width: 100%; height: 11rem; border: 2px dashed var(--rand); border-radius: 8px;
   background: #fff; touch-action: none; margin-bottom: .4rem; }
 .unterschrift-flaeche.unterschrift-da { border-style: solid; border-color: var(--akzent); }
+.station-treffer, .stationswahl-liste { list-style: none; padding: 0; margin: .4rem 0 .8rem; }
+.station-treffer li, .stationswahl-liste li { display: flex; gap: .6rem; align-items: center; justify-content: space-between;
+  padding: .45rem .6rem; border: 1px solid var(--rand); border-radius: var(--radius); margin-bottom: .35rem; background: var(--flaeche); }
+.stationswahl-liste { counter-reset: stationswahl; }
+.stationswahl-liste li { counter-increment: stationswahl; background: var(--grund); }
+.stationswahl-liste li > span:first-of-type::before { content: counter(stationswahl) ". "; font-weight: 600; }
+.stationswahl { border: 1px solid var(--rand); border-radius: var(--radius); padding: .6rem .8rem; margin: 0 0 1rem; }
+.stationswahl legend { font-weight: 600; padding: 0 .3rem; }
+.stationswahl-neu summary { cursor: pointer; padding: .4rem 0; }
 .tour-frage { font-size: 1.35rem; font-weight: 600; margin: 1rem 0; }
 .tour-aendern { margin-top: 1.25rem; }
 .tour-aendern summary { cursor: pointer; padding: .5rem 0; }
