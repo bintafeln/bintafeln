@@ -14,6 +14,11 @@ urlpatterns = [
     path("", views_touren.heute, name="heute"),
     path("tour/<int:pk>/", views_touren.fahren, name="fahren"),
     path("tour/<int:pk>/start/", views_touren.start, name="start"),
+    path(
+        "tour/<int:pk>/zuruecksetzen/",
+        views_touren.tourtag_zuruecksetzen,
+        name="tourtag_zuruecksetzen",
+    ),
     path("tour/<int:pk>/zusatzstopp/", views_touren.zusatzstopp, name="zusatzstopp"),
     path("zusatzstopp/<int:pk>/entfernen/", views_touren.zusatzstopp_weg, name="zusatzstopp_weg"),
     path("neuer-stopp/", views_touren.heuler_stand, name="heuler"),

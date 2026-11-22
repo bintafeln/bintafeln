@@ -426,6 +426,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Ankunft, Regeln nur in `apps/touren/fahrten.py` (`beginnen()`, `beenden()`, `berichtigen()`; wer
   darf, entscheidet `start.darf()`; kein Ort wird geprüft), Fahrtenbuch in `views_fahrten.py`
   (Recht `touren.fahrten`); Namen von Tour und Fahrzeug stehen als Text in der Fahrt.
+  Ganzen Tourtag zurücksetzen (ADR 0162): nur über `apps/touren/tourtag.py` (`inhalt()`,
+  `zuruecksetzen()` – Fahrt, Lieferscheine, Anfahrten, Zusatzstopps, Meldungen, Tourstart als ein
+  Papierkorb-Eintrag; Rechte `touren.fahrten` und `touren.lieferscheine`); neue Daten je Tour und
+  Tag dort in `_mengen()` aufnehmen.
   Höherer Stand bei der Abfahrt als bekannt (ADR 0161): `Fahrt.km_vorher`, im Fahrtenbuch als Zeile
   „unbekannt“ (`Fahrt.km_unbekannt`); Fahrzeug und Stand merkt sich `static/js/fahrt_km.js` bis
   zum Beginn im Gerät (localStorage `bintafeln-fahrt-…`).
