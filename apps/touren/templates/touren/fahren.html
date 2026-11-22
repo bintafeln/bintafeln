@@ -46,6 +46,9 @@
         <address>{{ s.strasse_hausnummer }}, {{ s.plz }} {{ s.ort }}{% if s.ortsteil %} ({{ s.ortsteil }}){% endif %}</address></div></div>
     {% if h.zusatz %}<div class="notiz tour-zusatz" id="zusatz-{{ h.zusatz.pk }}"><p class="notiz-text">{% if h.zusatz.hinweis %}<strong>{{ h.zusatz.hinweis }}</strong><br>{% endif %}<small class="leise">eingefügt {{ h.zusatz.angelegt_am|date:"H:i" }} Uhr von {{ h.zusatz.angelegt_von_name }}{% if h.zusatz.vom_buero %} · {% if h.zusatz.gesehen_am %}gesehen {{ h.zusatz.gesehen_am|date:"H:i" }} Uhr von {{ h.zusatz.gesehen_von_name }}{% else %}<span class="marke-warnung">von der Mannschaft noch nicht gesehen</span>{% endif %}{% endif %}</small></p>
       {% if darf_zusatz %}<form method="post" action="{% url 'touren:zusatzstopp_weg' h.zusatz.pk %}" onsubmit="return confirm('Zusatzstopp „{{ s.name|escapejs }}“ entfernen?')">{% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig knopf-klein">Zusatzstopp entfernen</button></form>{% endif %}</div>{% endif %}
+    {% if h.angefahren %}{# Schon angefahren: grün und eingeklappt; aufklappen, wenn man noch einmal hin muss #}
+    <p class="tour-erledigt-zeile">✓ Erledigt{% if h.anfahrt %} · hier waren wir um {{ h.anfahrt.am|date:"H:i" }} Uhr{% elif h.schein %} · Lieferschein Nr. {{ h.schein.nummer }}{% endif %}</p>
+    <details class="tour-erledigt-mehr"><summary>Noch einmal hin? Angaben und Navigation zeigen</summary>{% endif %}
     {% if s.abholzeit %}<p><strong>Abholzeit:</strong> {{ s.abholzeit }}</p>{% endif %}
     {% if s.anfahrt %}<div class="notiz"><p class="notiz-text"><strong>Anfahrt:</strong> {{ s.anfahrt|linebreaksbr }}</p></div>{% endif %}
     <a class="knopf tour-knopf" href="{{ s.navigation }}" target="_blank" rel="noopener noreferrer">🧭 Navigation starten</a>
@@ -59,6 +62,7 @@
     {% elif h.anfahrt %}<p class="tour-schein"><span class="marke-ok">✓ angefahren</span> <small class="leise">{{ h.anfahrt.am|date:"H:i" }} Uhr</small></p>{% endif %}
     <p class="tour-halt-fuss">{% if s.telefon %}<span>📞 {{ s.telefon|anrufen }}{% if s.ansprechpartner %} <small class="leise">{{ s.ansprechpartner }}</small>{% endif %}</span>{% endif %}
       {% if "touren.stationen" in rechte %}<a class="tour-alle-angaben" href="{% url 'touren:station' s.pk %}?tour={{ tour.pk }}&amp;tag={{ tag|date:'Y-m-d' }}&amp;halt={{ forloop.counter }}">Alle Angaben</a>{% endif %}</p>
+    {% if h.angefahren %}</details>{% endif %}
   </li>
   {% endwith %}{% empty %}
   <li class="karte"><p class="hinweis">Für diesen Tag sind keine Stationen eingetragen.</p></li>

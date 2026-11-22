@@ -2295,9 +2295,23 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 .tour-folge { display: flex; gap: .3rem; }
 /* Lieferschein unterwegs (ADR 0149) */
 /* Schon angefahren: bleibt stehen, tritt aber zurück (grau, Haken statt Nummer) */
-.tour-erledigt { border-left: 6px solid var(--akzent); background: var(--grund); }
-.tour-erledigt .tour-nr { background: var(--leise); }
-.tour-erledigt h2, .tour-erledigt address { color: var(--leise); }
+.tour-halte, .tour-liste { --erledigt: #2e7d32; }
+.tour-erledigt { border: 1px solid var(--erledigt); border-left: 10px solid var(--erledigt);
+  background: color-mix(in srgb, var(--erledigt) 9%, var(--flaeche)); padding-top: .6rem; padding-bottom: .6rem; }
+.tour-erledigt .tour-nr { background: var(--erledigt); color: #fff; font-size: 1.3rem; }
+.tour-erledigt h2 { color: var(--leise); text-decoration: line-through; text-decoration-color: var(--erledigt); }
+.tour-erledigt address { color: var(--leise); }
+.tour-erledigt-zeile { margin: .5rem 0 .2rem; font-weight: 700; color: var(--erledigt); }
+.tour-erledigt-mehr summary { cursor: pointer; color: var(--leise); padding: .3rem 0; }
+.tour-erledigt-mehr[open] summary { margin-bottom: .4rem; }
+/* Touren heute: fertige Tour (alle Stationen angefahren oder Fahrt beendet) */
+.tour-fertig { border: 2px solid var(--erledigt); border-left-width: 10px;
+  background: color-mix(in srgb, var(--erledigt) 9%, var(--flaeche)); }
+.tour-fertig .tour-stand span { background: var(--erledigt); }
+.tour-fertig-haken { display: inline-flex; align-items: center; justify-content: center; width: 1.6rem; height: 1.6rem;
+  border-radius: 50%; background: var(--erledigt); color: #fff; font-size: 1rem; vertical-align: middle; }
+.tour-fertig-marke { display: inline-block; border-radius: 999px; padding: 0 .5rem; font-size: .85rem;
+  background: var(--erledigt); color: #fff; }
 .tour-aktuell { border: 2px solid var(--akzent); scroll-margin-top: 1rem; }
 .tour-schein { margin: .6rem 0 0; }
 .ls-zeilen { margin-bottom: 1rem; }
