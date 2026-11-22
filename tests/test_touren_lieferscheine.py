@@ -332,7 +332,8 @@ def test_admin_stellt_ein(admin_client):
     seite = admin_client.get(reverse("touren:einrichten")).content.decode()
     assert "Warengruppen" in seite and "Obst/Gemüse" in seite and "Fahrzeuge" in seite
     admin_client.post(reverse("touren:einrichten"), {
-        "einrichten": "1", "mail_text": "Hallo", "zentrale": "Zentralweg 1"})  # fmt: skip
+        "einrichten": "1", "mail_text": "Hallo", "zentrale": "Zentralweg 1",
+        "kiste_kg": "10"})  # fmt: skip
     e = TourenEinstellungen.laden()
     assert e.mail_text == "Hallo" and e.zentrale == "Zentralweg 1"
     assert e.aufbewahrung_jahre == 6  # die Admin-Angaben bleiben unberührt
@@ -364,7 +365,7 @@ def test_einrichten_fuer_die_fahrdienstleitung(buero):
     assert "Touren einrichten" in seite and "stellt der Admin ein" in seite
     assert buero.post(reverse("touren:einrichten"), {
         "einrichten": "1", "mail_text": "Guten Tag", "zentrale": "Lagerweg 2",
-        "zentrale_aus": ""}).status_code == 302  # fmt: skip
+        "zentrale_aus": "", "kiste_kg": "10"}).status_code == 302  # fmt: skip
     assert TourenEinstellungen.laden().zentrale == "Lagerweg 2"
     assert buero.get(reverse("touren:einstellungen")).status_code == 403
 

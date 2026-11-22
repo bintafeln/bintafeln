@@ -249,7 +249,8 @@ class EinrichtenForm(forms.ModelForm):
 
     class Meta:
         model = TourenEinstellungen
-        fields = ["zentrale", "zentrale_aus", "mail_text"]
+        fields = ["zentrale", "zentrale_aus", "kiste_kg", "mail_text"]
+        localized_fields = ["kiste_kg"]  # „8,5“ mit Komma
         widgets = {"mail_text": forms.Textarea(attrs={"rows": 5})}
 
 
@@ -260,5 +261,9 @@ FahrzeugFormSet = forms.modelformset_factory(
     can_delete=False,
 )
 WarengruppenFormSet = forms.modelformset_factory(
-    Warengruppe, fields=["name", "reihenfolge", "aktiv"], extra=2, can_delete=False
+    Warengruppe,
+    fields=["name", "reihenfolge", "kiste_kg", "aktiv"],
+    extra=2,
+    can_delete=False,
+    localized_fields=["kiste_kg"],
 )

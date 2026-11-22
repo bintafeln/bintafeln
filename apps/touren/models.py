@@ -474,6 +474,12 @@ class TourenEinstellungen(models.Model):
         help_text="Dann rechnet die Route nur von Station zu Station.",
     )  # fmt: skip
     karten_schluessel_verschluesselt = models.TextField(blank=True, editable=False)
+    kiste_kg = models.DecimalField(
+        "Durchschnittsgewicht einer Kiste (kg)", max_digits=5, decimal_places=1, default=10,
+        validators=[MinValueValidator(0)],
+        help_text="Damit rechnet die Statistik Kisten in Kilogramm um. Je Warengruppe lässt sich "
+        "unten ein eigener Wert eintragen.",
+    )  # fmt: skip
     aufbewahrung_jahre = models.PositiveSmallIntegerField(
         "Lieferscheine aufbewahren (Jahre)", default=10,
         validators=[MinValueValidator(1), MaxValueValidator(30)],
@@ -532,6 +538,12 @@ class Warengruppe(models.Model):
     name = models.CharField("Name", max_length=60, unique=True)
     reihenfolge = models.PositiveSmallIntegerField("Reihenfolge", default=0)
     aktiv = models.BooleanField("Aktiv", default=True)
+    kiste_kg = models.DecimalField(
+        "kg je Kiste", max_digits=5, decimal_places=1, null=True, blank=True,
+        validators=[MinValueValidator(0)],
+        help_text="Für die Statistik: Durchschnittsgewicht einer Kiste dieser Warengruppe. "
+        "Leer = der allgemeine Wert.",
+    )  # fmt: skip
 
     class Meta:
         verbose_name = "Warengruppe"
