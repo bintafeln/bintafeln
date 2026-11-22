@@ -1338,6 +1338,36 @@ def test_hilfe_bild_touren_neuer_stopp(angemeldet, admin, muster, benutzer_mit_r
     seite.set_viewport_size({"width": 1280, "height": 900})
 
 
+def test_hilfe_bild_touren_fahrzeug(angemeldet, admin, muster):
+    """Ein Fahrzeug mit hinterlegten Papieren (ADR 0160)."""
+    from apps.core import privatdateien
+    from apps.touren.models import Fahrzeug, FahrzeugDokument
+
+    _module("touren")
+    wagen = Fahrzeug.objects.create(
+        name="Kühlwagen", kennzeichen="MU-ST 1", typ="Sprinter", kilometerstand=84210,
+        erstzulassung=dt.date(2019, 6, 14),
+    )  # fmt: skip
+    for art in ("schein", "brief"):
+        FahrzeugDokument.objects.create(
+            fahrzeug=wagen, art=art, datei_typ="application/pdf",
+            datei=privatdateien.ablegen(FahrzeugDokument.ORDNER, b"%PDF-1.4 erfunden"),
+            hochgeladen_von_name="Clara Beispiel",
+        )  # fmt: skip
+    seite = oeffnen(angemeldet, admin, reverse("touren:fahrzeug", args=[wagen.pk]))
+    seite.get_by_label("Art").select_option("sonstiges")
+    seite.get_by_label("Bezeichnung").fill("Versicherung")
+    aufnehmen(
+        seite,
+        "touren-fahrzeug",
+        [seite.locator("section.karte").first, seite.locator("#papiere")],
+        Marke(seite.locator("dl.angaben"), art="rahmen", nummer=1),
+        Marke(seite.locator("#papiere table"), art="rahmen", nummer=2),
+        Marke(seite.locator("#papiere form").last, art="rahmen", nummer=3),
+        rand=8,
+    )
+
+
 def test_hilfe_bild_touren_statistik(angemeldet, admin, muster):
     """Statistik der Touren mit erfundenen Lieferscheinen und Fahrten (ADR 0157)."""
     import random

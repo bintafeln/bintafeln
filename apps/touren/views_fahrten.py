@@ -5,18 +5,22 @@ import datetime as dt
 import io
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
-from apps.core import listenexport
+from apps.core import listenexport, papierkorb, privatdateien
 from apps.konten import rollen
 from apps.touren import fahrten, meldungen
-from apps.touren.models import Fahrt, Fahrzeug, Fahrzeugmeldung, Tour
+from apps.touren.forms import FahrzeugDokumentForm
+from apps.touren.models import Fahrt, Fahrzeug, FahrzeugDokument, Fahrzeugmeldung, Tour
 
 fahren_recht = rollen.recht_erforderlich("touren.fahren")
 buch = rollen.recht_erforderlich("touren.fahrten")
@@ -134,12 +138,17 @@ def liste(request):
     """Das Fahrtenbuch: alle Fahrten, neueste zuerst, mit Summe der Kilometer."""
     f, fahrten_ = _gefiltert(request)
     if request.GET.get("export") == "csv":
-        zeilen = [[x.datum.strftime("%d.%m.%Y"), x.tour_name, x.fahrzeug_name, x.besetzung,
-                   x.km_start, "" if x.km_ende is None else x.km_ende,
-                   "" if x.km is None else x.km,
-                   timezone.localtime(x.begonnen_am).strftime("%H:%M"),
-                   timezone.localtime(x.beendet_am).strftime("%H:%M") if x.beendet_am else ""]
-                  for x in fahrten_]  # fmt: skip
+        zeilen = []
+        for x in fahrten_:
+            zeilen.append([x.datum.strftime("%d.%m.%Y"), x.tour_name, x.fahrzeug_name, x.besetzung,
+                           x.km_start, "" if x.km_ende is None else x.km_ende,
+                           "" if x.km is None else x.km,
+                           timezone.localtime(x.begonnen_am).strftime("%H:%M"),
+                           timezone.localtime(x.beendet_am).strftime("%H:%M")
+                           if x.beendet_am else ""])  # fmt: skip
+            if x.km_unbekannt:  # davor gefahren, ohne Eintrag
+                zeilen.append([f"vor {x.datum:%d.%m.%Y}", "unbekannt", x.fahrzeug_name, "unbekannt",
+                               x.km_vorher, x.km_start, x.km_unbekannt, "", ""])  # fmt: skip
         puffer = io.StringIO()
         schreiber = csv.writer(puffer, delimiter=";")
         schreiber.writerow(["Datum", "Tour", "Fahrzeug", "Besetzung", "km Abfahrt", "km Ankunft",
@@ -148,9 +157,11 @@ def liste(request):
         return listenexport.ausliefern(request, "Fahrtenbuch", "fahrten", puffer.getvalue(),
                                        weiter=reverse("touren:fahrten"))  # fmt: skip
     summe = sum(x.km or 0 for x in fahrten_)
+    unbekannt = sum(x.km_unbekannt or 0 for x in fahrten_)
     seite = Paginator(fahrten_, 50).get_page(request.GET.get("seite"))
     return render(request, "touren/fahrten.html", {
         "seite": seite, "zeilen": seite.object_list, "filter": f, "summe": summe,
+        "unbekannt": unbekannt,
         "fahrzeuge": Fahrzeug.objects.all(), "heute": timezone.localdate(),
         "offen": Fahrt.objects.filter(km_ende__isnull=True,
                                       datum__lt=timezone.localdate()).count(),
@@ -175,3 +186,76 @@ def bearbeiten(request, pk):
         "fahrt": fahrt,
         "fahrzeuge": Fahrzeug.objects.filter(Q(aktiv=True) | Q(pk=fahrt.fahrzeug_id)),
     })  # fmt: skip
+
+
+# ── Papiere zum Fahrzeug (ADR 0160) ─────────────────────────────────────────
+
+
+def _papiere_sehen(benutzer) -> None:
+    """Fahrzeugschein und -brief sieht die Fahrdienstleitung: wer Touren plant oder das
+    Fahrtenbuch führt."""
+    if not (rollen.hat_recht(benutzer, "touren.planen")
+            or rollen.hat_recht(benutzer, "touren.fahrten")):  # fmt: skip
+        raise PermissionDenied
+
+
+@never_cache
+@login_required
+def fahrzeug(request, pk):
+    """Ein Fahrzeug mit seinen Papieren; hochladen darf, wer Touren plant."""
+    _papiere_sehen(request.user)
+    wagen = get_object_or_404(Fahrzeug, pk=pk)
+    darf_aendern = rollen.hat_recht(request.user, "touren.planen")
+    form = FahrzeugDokumentForm(request.POST or None, request.FILES or None)
+    if request.method == "POST":
+        if not darf_aendern:
+            raise PermissionDenied
+        if form.is_valid():
+            try:
+                name = privatdateien.speichern(FahrzeugDokument.ORDNER,
+                                               form.cleaned_data["datei"], max_mb=10)  # fmt: skip
+            except privatdateien.DateiFehler as grund:
+                form.add_error("datei", str(grund))
+            else:
+                papier = form.save(commit=False)
+                papier.fahrzeug, papier.datei = wagen, name
+                papier.datei_typ = form.cleaned_data["datei"].content_type
+                papier.hochgeladen_von_name = (
+                    request.user.get_full_name() or request.user.get_username()
+                )[:150]
+                papier.save()
+                messages.success(request, f"{papier.titel} hinterlegt.")
+                return redirect("touren:fahrzeug", pk=wagen.pk)
+    return render(request, "touren/fahrzeug.html", {
+        "fahrzeug": wagen, "papiere": wagen.dokumente.all(), "form": form,
+        "darf_aendern": darf_aendern,
+    })  # fmt: skip
+
+
+@never_cache
+@login_required
+def papier(request, pk):
+    _papiere_sehen(request.user)
+    dokument = get_object_or_404(FahrzeugDokument.objects.select_related("fahrzeug"), pk=pk)
+    inhalt = privatdateien.lesen(FahrzeugDokument.ORDNER, dokument.datei)
+    if inhalt is None:
+        raise Http404("Keine lesbare Datei.")
+    endung = {"application/pdf": "pdf", "image/png": "png", "image/webp": "webp"}.get(
+        dokument.datei_typ, "jpg"
+    )
+    name = "".join(z if z.isalnum() else "-" for z in f"{dokument.titel}-{dokument.fahrzeug.name}")
+    antwort = HttpResponse(inhalt, content_type=dokument.datei_typ or "application/octet-stream")
+    antwort["Content-Disposition"] = f'inline; filename="{name}.{endung}"'
+    antwort["X-Content-Type-Options"] = "nosniff"
+    return antwort
+
+
+@require_POST
+@rollen.recht_erforderlich("touren.planen")
+def papier_weg(request, pk):
+    dokument = get_object_or_404(FahrzeugDokument.objects.select_related("fahrzeug"), pk=pk)
+    wagen = dokument.fahrzeug
+    papierkorb.loeschen(request.user, "Papier zum Fahrzeug", f"{dokument.titel} ({wagen})",
+                        dokument, recht="touren.planen")  # fmt: skip
+    messages.success(request, f"{dokument.titel} entfernt.")
+    return redirect("touren:fahrzeug", pk=wagen.pk)

@@ -2201,6 +2201,12 @@ def test_fahrt_beginnen_und_beenden_am_handy(seite, angemeldet, admin):
     expect(stand).to_have_value("")  # kein Stand bekannt, Vorschlag wieder weg
     seite.get_by_label("Fahrzeug").select_option(label="Kühlwagen (MU-ST 1)")
     stand.fill("1004")
+    # vor dem Beginn noch etwas anderes ansehen: Fahrzeug und Stand bleiben eingetragen
+    seite.goto(reverse("touren:heute"))
+    seite.goto(reverse("touren:fahren", args=[tour.pk]))
+    expect(seite.get_by_label("Fahrzeug")).to_have_value(str(wagen.pk))
+    stand = seite.get_by_label("Kilometerstand bei Abfahrt")
+    expect(stand).to_have_value("1004")
     seite.get_by_role("button", name="Fahrt beginnen").click()
     expect(seite.locator("section.karte").first).to_contain_text("Unterwegs")
     seite.get_by_label("Kilometerstand bei Ankunft").fill("1050")
@@ -2210,6 +2216,11 @@ def test_fahrt_beginnen_und_beenden_am_handy(seite, angemeldet, admin):
     assert (fahrt.km_start, fahrt.km_ende, fahrt.fahrzeug) == (1004, 1050, wagen)
     wagen.refresh_from_db()
     assert wagen.kilometerstand == 1050  # fortgeschrieben
+    # 1000 war bekannt, 1004 eingetragen: 4 km stehen als „unbekannt“ im Fahrtenbuch
+    seite.goto(reverse("touren:fahrten"))
+    luecke = seite.locator("tr.fahrt-unbekannt")
+    expect(luecke).to_contain_text("unbekannt")
+    expect(luecke).to_contain_text("4 km")
 
 
 def test_tour_springt_zur_aktuellen_station(seite, angemeldet, admin):

@@ -3,7 +3,14 @@ from django.utils import timezone
 
 from apps.fahrdienst.forms import TageFeld
 from apps.konten.forms import DatumEingabe
-from apps.touren.models import Fahrzeug, Station, Tour, TourenEinstellungen, Warengruppe
+from apps.touren.models import (
+    Fahrzeug,
+    FahrzeugDokument,
+    Station,
+    Tour,
+    TourenEinstellungen,
+    Warengruppe,
+)
 
 
 class StationForm(forms.ModelForm):
@@ -287,10 +294,30 @@ class EinrichtenForm(forms.ModelForm):
 
 FahrzeugFormSet = forms.modelformset_factory(
     Fahrzeug,
-    fields=["name", "kennzeichen", "kilometerstand", "reihenfolge", "aktiv"],
+    fields=[
+        "name",
+        "kennzeichen",
+        "typ",
+        "erstzulassung",
+        "kilometerstand",
+        "reihenfolge",
+        "aktiv",
+    ],
+    widgets={"erstzulassung": DatumEingabe(), "typ": forms.TextInput(attrs={"list": "fz-arten"})},
     extra=2,
     can_delete=False,
 )
+
+
+class FahrzeugDokumentForm(forms.ModelForm):
+    datei = forms.FileField(label="Datei", help_text="Foto (JPG, PNG, WebP) oder PDF, bis 10 MB.")
+
+    class Meta:
+        model = FahrzeugDokument
+        fields = ["art", "bezeichnung"]
+        widgets = {"bezeichnung": forms.TextInput(attrs={"data-zeigen-bei": "art=sonstiges"})}
+
+
 WarengruppenFormSet = forms.modelformset_factory(
     Warengruppe,
     fields=["name", "reihenfolge", "kiste_kg", "aktiv"],

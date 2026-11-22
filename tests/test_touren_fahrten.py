@@ -71,6 +71,36 @@ def test_beginnen_und_beenden(lage):
     wagen.kilometerstand = 123900
     wagen.save()
     assert fahrten.staende() == {wagen.pk: 123900}
+    assert fahrt.km_vorher is None and fahrt.km_unbekannt is None  # erster Stand: keine Lücke
+
+
+def test_hoeherer_stand_als_bekannt_steht_als_unbekannt_im_fahrtenbuch(lage, admin_client):
+    tour, fritz, wagen = lage["tour"], lage["fritz"], lage["wagen"]
+    wagen.kilometerstand = 5000
+    wagen.save()
+    fahrt = fahrten.beginnen(tour, fritz, "5120", wagen.pk)  # 120 km ohne Eintrag gefahren
+    assert (fahrt.km_vorher, fahrt.km_unbekannt) == (5000, 120)
+    fahrten.beenden(fahrt, fritz, "5160")
+    seite = admin_client.get(reverse("touren:fahrten")).content.decode()
+    assert "fahrt-unbekannt" in seite and "120 km" in seite and "120 km unbekannt" in seite
+    assert "zusammen <strong>40 km</strong>" in seite  # die Summe zählt nur eingetragene Fahrten
+    csv_ = admin_client.get(reverse("touren:fahrten") + "?export=csv").content.decode("utf-8-sig")
+    assert ";unbekannt;Kühlwagen (MU-ST 1);unbekannt;5000;5120;120;;" in csv_
+    # das Büro berichtigt die Abfahrt auf den bekannten Stand: Die Lücke ist weg
+    fahrten.berichtigen(fahrt, fritz, "5000", "5160", wagen.pk)
+    assert fahrt.km_unbekannt is None
+    assert "fahrt-unbekannt" not in admin_client.get(reverse("touren:fahrten")).content.decode()
+
+
+def test_gleicher_oder_kleinerer_stand_ohne_luecke(lage):
+    tour, fritz, wagen = lage["tour"], lage["fritz"], lage["wagen"]
+    wagen.kilometerstand = 5000
+    wagen.save()
+    fahrt = fahrten.beginnen(tour, fritz, "5000", wagen.pk)
+    assert fahrt.km_vorher is None and fahrt.km_unbekannt is None
+    fahrt.delete()
+    fahrt = fahrten.beginnen(tour, fritz, "4990", wagen.pk)  # Stand am Fahrzeug war zu hoch
+    assert fahrt.km_vorher is None and fahrt.km_unbekannt is None
 
 
 def test_nur_wer_eingetragen_ist_oder_das_recht_hat(lage, recht_geben):
@@ -316,3 +346,84 @@ def test_meldungen_frist_und_auskunft(lage, pdf_text):
     antwort = HttpResponse(auskunft.mitarbeiter_pdf(lage["fritz"]), content_type="application/pdf")
     text = pdf_text(antwort)
     assert "Zum Fahrzeug gemeldet" in text and "Spiegel wackelt" in text
+
+
+# --- Fahrzeugart, Erstzulassung und Papiere (ADR 0160) ------------------------------------------
+
+PDF = b"%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"
+
+
+def test_fahrzeugart_und_erstzulassung(admin_client):
+    Fahrzeug.objects.create(name="Kühlwagen", typ="Koffer")
+    daten = {"fahrzeuge": "1", "fz-TOTAL_FORMS": 1, "fz-INITIAL_FORMS": 0,
+             "fz-MIN_NUM_FORMS": 0, "fz-MAX_NUM_FORMS": 1000,
+             "fz-0-name": "Stromer", "fz-0-typ": "E-Vito", "fz-0-erstzulassung": "15.03.2021",
+             "fz-0-reihenfolge": "1", "fz-0-aktiv": "on"}  # fmt: skip
+    assert admin_client.post(reverse("touren:einrichten"), daten).status_code == 302
+    wagen = Fahrzeug.objects.get(name="Stromer")
+    assert wagen.typ == "E-Vito" and wagen.erstzulassung == dt.date(2021, 3, 15)
+    seite = admin_client.get(reverse("touren:einrichten")).content.decode()
+    # schon benutzte Fahrzeugarten werden vorgeschlagen, jede andere lässt sich eintragen
+    assert '<option value="E-Vito">' in seite and '<option value="Koffer">' in seite
+    assert reverse("touren:fahrzeug", args=[wagen.pk]) in seite and "0 hinterlegt" in seite
+    daten["fz-0-erstzulassung"] = "kein Datum"
+    daten["fz-0-name"] = "Zweiter"
+    assert admin_client.post(reverse("touren:einrichten"), daten).status_code == 200
+
+
+def test_papiere_hinterlegen_ansehen_entfernen(admin_client):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from apps.core import privatdateien
+    from apps.core.models import PapierkorbEintrag
+    from apps.touren.models import FahrzeugDokument
+
+    wagen = Fahrzeug.objects.create(name="Kühlwagen", kennzeichen="MU-ST 1", typ="Sprinter",
+                                    erstzulassung=dt.date(2019, 6, 1))  # fmt: skip
+    seite_url = reverse("touren:fahrzeug", args=[wagen.pk])
+    seite = admin_client.get(seite_url).content.decode()
+    assert "Sprinter" in seite and "01.06.2019" in seite and "Noch nichts hinterlegt" in seite
+
+    def hochladen(art, name="schein.pdf", typ="application/pdf", **mehr):
+        datei = SimpleUploadedFile(name, PDF, content_type=typ)
+        return admin_client.post(seite_url, {"art": art, "datei": datei, **mehr})
+
+    assert hochladen("schein").status_code == 302
+    assert hochladen("brief").status_code == 302
+    assert hochladen("sonstiges", bezeichnung="Versicherung").status_code == 302
+    titel = {p.titel for p in FahrzeugDokument.objects.all()}
+    assert titel == {"Fahrzeugschein", "Fahrzeugbrief", "Versicherung"}
+    schein = FahrzeugDokument.objects.get(art="schein")
+    assert schein.hochgeladen_von_name and schein.datei.endswith(".bin")
+    # verschlüsselt abgelegt, über die Seite lesbar
+    assert PDF not in privatdateien.pfad(FahrzeugDokument.ORDNER, schein.datei).read_bytes()
+    antwort = admin_client.get(reverse("touren:fahrzeug_papier", args=[schein.pk]))
+    assert antwort.content == PDF and antwort["Content-Type"] == "application/pdf"
+    assert antwort["Content-Disposition"] == 'inline; filename="Fahrzeugschein-Kühlwagen.pdf"'
+    assert "3 hinterlegt" in admin_client.get(reverse("touren:einrichten")).content.decode()
+    # falscher Dateityp wird abgelehnt
+    antwort = hochladen("schein", "schein.exe", "application/x-msdownload")
+    assert antwort.status_code == 200 and "Foto" in antwort.content.decode()
+    assert FahrzeugDokument.objects.count() == 3
+    # entfernen: in den Papierkorb
+    admin_client.post(reverse("touren:fahrzeug_papier_weg", args=[schein.pk]))
+    assert not FahrzeugDokument.objects.filter(pk=schein.pk).exists()
+    assert PapierkorbEintrag.objects.filter(art="Papier zum Fahrzeug").exists()
+
+
+def test_papiere_nur_fuer_die_fahrdienstleitung(client, anmelden, lage, recht_geben):
+    from apps.touren.models import FahrzeugDokument
+
+    papier = FahrzeugDokument.objects.create(
+        fahrzeug=lage["wagen"], art="brief", datei="fehlt.bin", datei_typ="application/pdf"
+    )
+    adressen = [reverse("touren:fahrzeug", args=[lage["wagen"].pk]),
+                reverse("touren:fahrzeug_papier", args=[papier.pk])]  # fmt: skip
+    anmelden(client, lage["fritz"])  # fährt, plant aber nicht
+    assert [client.get(a).status_code for a in adressen] == [403, 403]
+    assert client.post(reverse("touren:fahrzeug_papier_weg", args=[papier.pk])).status_code == 403
+    # mit dem Recht fürs Fahrtenbuch: ansehen ja, hochladen nein; fehlende Datei = nicht gefunden
+    recht_geben("Fahrer", "touren.fahrten")
+    assert [client.get(a).status_code for a in adressen] == [200, 404]
+    assert "Papier hinterlegen" not in client.get(adressen[0]).content.decode()
+    assert client.post(adressen[0], {"art": "schein"}).status_code == 403

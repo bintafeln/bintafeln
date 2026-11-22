@@ -2270,6 +2270,16 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 .tour-karte h2 { margin: 0 0 .25rem; }
 .tour-meine { border-color: var(--akzent); border-width: 2px; }
 .tour-knopf { display: block; width: 100%; text-align: center; font-size: 1.1rem; padding: .85rem 1rem; margin-top: .5rem; }
+/* Am PC: Touren nebeneinander, Knöpfe nicht über die ganze Bildschirmbreite */
+@media (min-width: 50rem) {
+  .tour-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr)); gap: .75rem;
+    align-items: start; }
+  .tour-liste .tour-karte { margin-bottom: 0; }
+  .tour-knopf { display: inline-block; width: auto; min-width: 14rem; margin-right: .5rem; }
+  .tour-karte .tour-knopf { display: block; width: 100%; min-width: 0; margin-right: 0; }
+  .tour-tage .knopf { flex: 0 0 auto; }
+  .tour-halte, .tour-fahrt { max-width: 52rem; }
+}
 .tour-route { margin-top: .75rem; }
 .tour-route summary { cursor: pointer; font-weight: 600; padding: .4rem 0; }
 .tour-halte { list-style: none; padding: 0; margin: 0; }
@@ -2366,3 +2376,6 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
   40% { transform: translateX(8px) rotate(1.5deg); } 60% { transform: translateX(-6px) rotate(-1deg); } 80% { transform: translateX(6px) rotate(1deg); } }
 @keyframes heuler-pochen { from { transform: scale(1); } to { transform: scale(1.12); } }
 @media (prefers-reduced-motion: reduce) { .heuler-dialog, .heuler-umschlag svg { animation: none; } }
+
+/* Fahrtenbuch: Kilometer ohne Eintrag (ADR 0161) */
+.fahrt-unbekannt td { background: var(--grund); font-style: italic; }

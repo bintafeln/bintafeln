@@ -21,6 +21,11 @@ urlpatterns = [
     path("tour/<int:pk>/angefahren/<int:station_pk>/", views_touren.angefahren, name="angefahren"),
     path("tour/<int:pk>/beginnen/", views_fahrten.beginnen, name="fahrt_beginnen"),
     path("statistik/", views_statistik.uebersicht, name="statistik"),
+    path("fahrzeug/<int:pk>/", views_fahrten.fahrzeug, name="fahrzeug"),
+    path("fahrzeug/papier/<int:pk>/", views_fahrten.papier, name="fahrzeug_papier"),
+    path(
+        "fahrzeug/papier/<int:pk>/entfernen/", views_fahrten.papier_weg, name="fahrzeug_papier_weg"
+    ),
     path("fahrten/", views_fahrten.liste, name="fahrten"),
     path("fahrten/meldungen/", views_fahrten.meldungen_liste, name="meldungen"),
     path("fahrten/meldungen/<int:pk>/", views_fahrten.meldung_erledigen, name="meldung_erledigen"),

@@ -419,10 +419,16 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   das Recht `touren.besetzung` hat; Änderung als `Ersatz` im Fahrerplan); eigene `fahrtage` einer
   Tour aus dem Fahrerplan grenzen ein („Montag Nordtour“ ↔ „Nordtour“,
   `importieren_touren.wochentag_im_namen()`).
+  Fahrzeuge (ADR 0160): `Fahrzeug.typ` frei mit Vorschlägen, `erstzulassung`; Papiere als
+  `FahrzeugDokument` (verschlüsselt über `privatdateien`, sehen mit `touren.planen` oder
+  `touren.fahrten`, ändern nur mit `touren.planen`), Seite `views_fahrten.fahrzeug`.
   Fahrten (ADR 0151): `Fahrt` je Tour und Tag mit `Fahrzeug` und Kilometerstand bei Abfahrt und
   Ankunft, Regeln nur in `apps/touren/fahrten.py` (`beginnen()`, `beenden()`, `berichtigen()`; wer
   darf, entscheidet `start.darf()`; kein Ort wird geprüft), Fahrtenbuch in `views_fahrten.py`
   (Recht `touren.fahrten`); Namen von Tour und Fahrzeug stehen als Text in der Fahrt.
+  Höherer Stand bei der Abfahrt als bekannt (ADR 0161): `Fahrt.km_vorher`, im Fahrtenbuch als Zeile
+  „unbekannt“ (`Fahrt.km_unbekannt`); Fahrzeug und Stand merkt sich `static/js/fahrt_km.js` bis
+  zum Beginn im Gerät (localStorage `bintafeln-fahrt-…`).
   Zusatzstopps und Fortschritt (ADR 0156): `Zusatzstopp` je Tour und Tag über `apps/touren/zusatz.py`
   (freie Adresse wird Station; Mannschaft nur an der eigenen Tour, `zusatz.darf()`); `ablauf.halte(tour,
   datum)` reiht sie als ungespeicherten `Halt` mit `h.zusatz` ein – nie `Halt` aus dieser Liste speichern.
