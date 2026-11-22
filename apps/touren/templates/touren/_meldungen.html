@@ -1,0 +1,17 @@
+{# Offene Meldungen zum Fahrzeug – auf der Startseite der Fahrdienstleitung und in der Liste #}
+<ul class="meldungen-liste">
+  {% for m in meldungen %}
+  <li class="meldung-fahrzeug{% if not m.offen %} meldung-erledigt{% endif %}">
+    <div><span class="{% if m.art == 'mangel' and m.offen %}marke-warnung{% else %}marke-ok{% endif %}">{{ m.get_art_display }}</span>
+      <strong>{{ m.fahrzeug_name|default:"ohne Fahrzeug" }}</strong><br>
+      {{ m.text }}<br>
+      <small class="leise">{{ m.gemeldet_am|date:"D d.m.Y H:i" }} · {{ m.gemeldet_von_name }}{% if m.tour_name %} · {{ m.tour_name }}{% endif %}{% if not m.offen %} · erledigt {{ m.erledigt_am|date:"d.m.Y" }} von {{ m.erledigt_von }}{% if m.erledigt_notiz %}: {{ m.erledigt_notiz }}{% endif %}{% endif %}</small></div>
+    <form method="post" action="{% url 'touren:meldung_erledigen' m.pk %}" class="meldung-aktion">{% csrf_token %}
+      <input type="hidden" name="zurueck" value="{{ request.get_full_path }}">
+      {% if m.offen %}<input type="text" name="notiz" maxlength="300" placeholder="Was wurde getan? (freiwillig)" aria-label="Was wurde getan?">
+      <button type="submit" class="knopf knopf-klein" aria-label="Meldung erledigt: {{ m.text|truncatechars:40 }}">✓ Erledigt</button>
+      {% else %}<button type="submit" name="oeffnen" value="1" class="knopf knopf-zweitrangig knopf-klein">wieder öffnen</button>{% endif %}
+    </form>
+  </li>
+  {% endfor %}
+</ul>

@@ -194,3 +194,125 @@ def test_frist_und_auskunft(lage, pdf_text):
     antwort = HttpResponse(auskunft.mitarbeiter_pdf(lage["fritz"]), content_type="application/pdf")
     text = pdf_text(antwort)
     assert "Fahrt begonnen oder beendet" in text and "Südtour" in text and "Kühlwagen" in text
+
+
+# --- Meldungen zum Fahrzeug (ADR 0155) ----------------------------------------------------------
+
+
+def test_meldung_beim_beenden_und_zwischendurch(client, anmelden, lage):
+    from apps.touren.models import Fahrzeugmeldung
+
+    tour, wagen = lage["tour"], lage["wagen"]
+    anmelden(client, lage["fritz"])
+    client.post(reverse("touren:fahrt_beginnen", args=[tour.pk]),
+                {"fahrzeug": wagen.pk, "km_start": "5000"})  # fmt: skip
+    fahrt = Fahrt.objects.get()
+    seite = client.get(reverse("touren:fahren", args=[tour.pk])).content.decode()
+    assert "Etwas zum Fahrzeug melden" in seite and "Zwischendurch etwas zum Fahrzeug" in seite
+    # zwischendurch: getankt
+    antwort = client.post(reverse("touren:fahrt_melden", args=[fahrt.pk]),
+                          {"meldung_art": "getankt", "meldung": "  vollgetankt,  52 Liter "},
+                          follow=True)  # fmt: skip
+    assert "bei der Fahrdienstleitung" in antwort.content.decode()
+    getankt = Fahrzeugmeldung.objects.get()
+    assert (getankt.art, getankt.text, getankt.fahrzeug) == ("getankt", "vollgetankt, 52 Liter",
+                                                             wagen)  # fmt: skip
+    assert getankt.fahrzeug_name == "Kühlwagen (MU-ST 1)" and getankt.tour_name == "Südtour"
+    assert getankt.gemeldet_von == lage["fritz"] and getankt.offen
+    # leer oder unbekannte Art
+    client.post(reverse("touren:fahrt_melden", args=[fahrt.pk]), {"meldung": "  "})
+    assert Fahrzeugmeldung.objects.count() == 1
+    # beim Beenden gleich mitgemeldet
+    client.post(reverse("touren:fahrt_beenden", args=[fahrt.pk]),
+                {"km_ende": "5040", "meldung_art": "mangel",
+                 "meldung": "Abblendlicht links defekt"})  # fmt: skip
+    mangel = Fahrzeugmeldung.objects.get(art="mangel")
+    assert mangel.text == "Abblendlicht links defekt" and Fahrt.objects.get().km == 40
+    assert str(mangel).startswith("Beanstandung / Defekt: Abblendlicht")
+    # nach dem Beenden geht es am selben Tag weiter; ohne Meldungstext entsteht nichts
+    seite = client.get(reverse("touren:fahren", args=[tour.pk])).content.decode()
+    assert "Zwischendurch etwas zum Fahrzeug" in seite
+    assert Fahrzeugmeldung.objects.count() == 2
+
+
+def test_meldung_nur_wer_faehrt_und_nur_am_tag(lage):
+    from apps.touren import meldungen
+    from apps.touren.models import Fahrzeugmeldung
+
+    fahrt = fahrten.beginnen(lage["tour"], lage["fritz"], "100", lage["wagen"].pk)
+    with pytest.raises(meldungen.MeldungFehler, match="nicht eingetragen"):
+        meldungen.melden(fahrt, lage["klaus"], "mangel", "Reifen")
+    with pytest.raises(meldungen.MeldungFehler, match="beschreiben"):
+        meldungen.melden(fahrt, lage["fritz"], "mangel", "")
+    m = meldungen.melden(fahrt, lage["fritz"], "unsinn", "Sitz klemmt")
+    assert m.art == "sonstiges"
+    Fahrt.objects.update(datum=timezone.localdate() - dt.timedelta(days=1))
+    fahrt.refresh_from_db()
+    with pytest.raises(meldungen.MeldungFehler, match="nichts mehr melden"):
+        meldungen.melden(fahrt, lage["fritz"], "mangel", "Reifen")
+    assert Fahrzeugmeldung.objects.count() == 1
+
+
+def test_fahrdienstleitung_sieht_meldungen_auf_der_startseite(client, anmelden, lage,
+                                                              benutzer_mit_rolle):  # fmt: skip
+    from apps.touren import meldungen
+    from apps.touren.models import Fahrzeugmeldung
+
+    fahrt = fahrten.beginnen(lage["tour"], lage["fritz"], "100", lage["wagen"].pk)
+    meldungen.melden(fahrt, lage["fritz"], "mangel", "Abblendlicht links defekt")
+    meldungen.melden(fahrt, lage["fritz"], "getankt", "52 Liter")
+    # der Fahrer selbst sieht auf der Startseite seine Tour, aber keine Meldungen
+    anmelden(client, lage["fritz"])
+    start = client.get(reverse("core:start")).content.decode()
+    assert "Ihre Tour heute" in start and "Meldungen zum Fahrzeug" not in start
+    assert client.get(reverse("touren:meldungen")).status_code == 403
+    mangel = Fahrzeugmeldung.objects.get(art="mangel")
+    assert client.post(reverse("touren:meldung_erledigen", args=[mangel.pk])).status_code == 403
+    client.logout()
+    anmelden(client, benutzer_mit_rolle("bernd", "Büro"))
+    start = client.get(reverse("core:start")).content.decode()
+    assert "Meldungen zum Fahrzeug" in start and "2 offen" in start
+    assert "Abblendlicht links defekt" in start and "Kühlwagen" in start and "· fritz" in start
+    # abhaken – mit Notiz; danach steht sie nicht mehr auf der Startseite
+    daten = {"notiz": "Birne getauscht", "zurueck": reverse("core:start")}
+    antwort = client.post(reverse("touren:meldung_erledigen", args=[mangel.pk]), daten)
+    assert antwort.url == reverse("core:start")
+    mangel.refresh_from_db()
+    assert not mangel.offen and (mangel.erledigt_von, mangel.erledigt_notiz) == (
+        "bernd", "Birne getauscht")  # fmt: skip
+    start = client.get(reverse("core:start")).content.decode()
+    assert "Abblendlicht" not in start and "1 offen" in start
+    # die Liste: offen / alle, nach Fahrzeug; wieder öffnen
+    offen = client.get(reverse("touren:meldungen")).content.decode()
+    assert "52 Liter" in offen and "Abblendlicht" not in offen
+    alle = client.get(reverse("touren:meldungen"),
+                      {"stand": "alle", "fahrzeug": lage["wagen"].pk}).content.decode()  # fmt: skip
+    assert "Abblendlicht" in alle and "Birne getauscht" in alle and "wieder öffnen" in alle
+    wirr = client.get(reverse("touren:meldungen"), {"fahrzeug": "x", "stand": "x"})
+    assert "Abblendlicht" in wirr.content.decode()  # unbekannte Filter: alle
+    antwort = client.post(reverse("touren:meldung_erledigen", args=[mangel.pk]),
+                          {"oeffnen": "1", "zurueck": "//fremd.example"})  # fmt: skip
+    assert antwort.url == reverse("touren:meldungen")
+    assert Fahrzeugmeldung.objects.get(pk=mangel.pk).offen
+
+
+def test_meldungen_frist_und_auskunft(lage, pdf_text):
+    from django.http import HttpResponse
+
+    from apps.konten import auskunft
+    from apps.touren import meldungen
+    from apps.touren.models import Fahrzeugmeldung
+
+    fahrt = fahrten.beginnen(lage["tour"], lage["fritz"], "100", lage["wagen"].pk)
+    alt = meldungen.melden(fahrt, lage["fritz"], "mangel", "Uralte Beule")
+    offen = meldungen.melden(fahrt, lage["fritz"], "mangel", "Spiegel wackelt")
+    meldungen.erledigen(alt, lage["fritz"])
+    Fahrzeugmeldung.objects.filter(pk=alt.pk).update(
+        erledigt_am=timezone.now() - dt.timedelta(days=366 * 11)
+    )
+    assert meldungen.fristen_anwenden() == 1  # nur erledigte, alte; offene bleiben
+    assert list(Fahrzeugmeldung.objects.all()) == [offen]
+    assert meldungen.fristen_anwenden(dt.date(2028, 2, 29)) == 0
+    antwort = HttpResponse(auskunft.mitarbeiter_pdf(lage["fritz"]), content_type="application/pdf")
+    text = pdf_text(antwort)
+    assert "Zum Fahrzeug gemeldet" in text and "Spiegel wackelt" in text

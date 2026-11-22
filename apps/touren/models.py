@@ -329,6 +329,45 @@ class Anfahrt(models.Model):
         return f"{self.station} am {self.datum:%d.%m.%Y}"
 
 
+class Fahrzeugmeldung(models.Model):
+    """Was die Fahrer zum Fahrzeug melden (ADR 0155): Beanstandung („Lampe defekt“), „getankt“
+    oder eine Anmerkung. Offene Meldungen sieht die Fahrdienstleitung auf ihrer Startseite."""
+
+    class Art(models.TextChoices):
+        MANGEL = "mangel", "Beanstandung / Defekt"
+        GETANKT = "getankt", "Getankt"
+        SONSTIGES = "sonstiges", "Anmerkung"
+
+    fahrzeug = models.ForeignKey(Fahrzeug, null=True, blank=True, on_delete=models.SET_NULL,
+                                 related_name="meldungen")  # fmt: skip
+    fahrzeug_name = models.CharField("Fahrzeug", max_length=80, blank=True)
+    fahrt = models.ForeignKey(Fahrt, null=True, blank=True, on_delete=models.SET_NULL,
+                              related_name="meldungen")  # fmt: skip
+    tour_name = models.CharField("Tour", max_length=80, blank=True)
+    art = models.CharField("Art", max_length=10, choices=Art.choices, default=Art.MANGEL)
+    text = models.CharField("Meldung", max_length=500)
+    gemeldet_am = models.DateTimeField("Gemeldet am", auto_now_add=True)
+    gemeldet_von = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="+")  # fmt: skip
+    gemeldet_von_name = models.CharField("Gemeldet von", max_length=150, blank=True)
+    erledigt_am = models.DateTimeField("Erledigt am", null=True, blank=True)
+    erledigt_von = models.CharField("Erledigt von", max_length=150, blank=True)
+    erledigt_notiz = models.CharField("Was wurde getan?", max_length=300, blank=True)
+
+    class Meta:
+        verbose_name = "Meldung zum Fahrzeug"
+        verbose_name_plural = "Meldungen zum Fahrzeug"
+        ordering = ["-gemeldet_am"]
+
+    def __str__(self):
+        return f"{self.get_art_display()}: {self.text[:40]}"
+
+    @property
+    def offen(self) -> bool:
+        return self.erledigt_am is None
+
+
 class Halt(models.Model):
     """Eine Station auf einer Tour, an ihrer Stelle in der Fahrtreihenfolge."""
 
@@ -546,3 +585,4 @@ auditlog.register(Warengruppe)
 auditlog.register(Lieferschein)
 auditlog.register(Fahrzeug)
 auditlog.register(Fahrt)
+auditlog.register(Fahrzeugmeldung)

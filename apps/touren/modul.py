@@ -16,7 +16,8 @@ def menue(eintrag):
             ("touren.planen", eintrag("Touren planen", "touren:touren")),
             ("touren.stationen", eintrag("Stationen", "touren:stationen")),
             ("touren.lieferscheine", eintrag("Lieferscheine", "touren:lieferscheine")),
-            ("touren.fahrten", eintrag("Fahrtenbuch", "touren:fahrten")),
+            ("touren.fahrten", eintrag("Fahrtenbuch", "touren:fahrten", genau=True)),
+            ("touren.fahrten", eintrag("Meldungen zum Fahrzeug", "touren:meldungen")),
             ("touren.planen", eintrag("Einrichten: Warengruppen, Fahrzeuge, Zentrale",
                                       "touren:einrichten")),
         ]),
@@ -68,25 +69,30 @@ def datenimport(request):
 
 
 def startseite(request):
-    """Wer heute eine Tour fährt, hat sie auf der Startseite: ein Tipp bis zur Navigation."""
+    """Wer heute eine Tour fährt, hat sie auf der Startseite: ein Tipp bis zur Navigation. Die
+    Fahrdienstleitung sieht dort die offenen Meldungen zum Fahrzeug (ADR 0155)."""
     from django.template.loader import render_to_string
     from django.utils import timezone
 
     from apps.konten import rollen
-    from apps.touren import ablauf
+    from apps.touren import ablauf, meldungen
 
-    if not rollen.hat_recht(request.user, "touren.fahren"):
+    touren, offen = [], []
+    if rollen.hat_recht(request.user, "touren.fahren"):
+        touren = ablauf.meine(request.user, timezone.localdate())
+    if rollen.hat_recht(request.user, "touren.fahrten"):  # Fahrdienstleitung
+        offen = list(meldungen.offene()[:20])
+    if not touren and not offen:
         return ""
-    touren = ablauf.meine(request.user, timezone.localdate())
-    if not touren:
-        return ""
-    return render_to_string("touren/_startseite.html", {"touren": touren}, request=request)
+    return render_to_string("touren/_startseite.html", {"touren": touren, "meldungen": offen},
+                            request=request)  # fmt: skip
 
 
 def fristen():
-    from apps.touren import ablauf, anfahrten, fahrten, lieferscheine, start
+    from apps.touren import ablauf, anfahrten, fahrten, lieferscheine, meldungen, start
 
     fahrten.fristen_anwenden()
+    meldungen.fristen_anwenden()
     anfahrten.fristen_anwenden()
     ablauf.fristen_anwenden()
     lieferscheine.fristen_anwenden()
@@ -96,14 +102,21 @@ def fristen():
 def auskunft_mitarbeiter(benutzer, pdf):
     from django.db.models import Q
 
-    from apps.touren.models import Fahrt, Lieferschein, Tour
+    from apps.touren.models import Fahrt, Fahrzeugmeldung, Lieferschein, Tour
 
     touren = Tour.objects.filter(personen__konto=benutzer).distinct()
     scheine = Lieferschein.objects.filter(erstellt_von=benutzer)
     fahrten = Fahrt.objects.filter(Q(begonnen_von=benutzer) | Q(beendet_von=benutzer))
-    if not touren and not scheine and not fahrten:
+    gemeldet = Fahrzeugmeldung.objects.filter(gemeldet_von=benutzer)
+    if not touren and not scheine and not fahrten and not gemeldet:
         return
     pdf.ueberschrift("Touren")
+    pdf.tabelle(
+        ["Zum Fahrzeug gemeldet", "Fahrzeug", "Meldung"],
+        [[f"{x.gemeldet_am:%d.%m.%Y}", x.fahrzeug_name, f"{x.get_art_display()}: {x.text}"]
+         for x in gemeldet],
+        breiten=[0.25, 0.25, 0.5],
+    )  # fmt: skip
     pdf.tabelle(
         ["Fahrt begonnen oder beendet", "Tour", "Fahrzeug", "km"],
         [[f"{x.datum:%d.%m.%Y}", x.tour_name, x.fahrzeug_name,
@@ -160,8 +173,9 @@ MODUL = Modul(
         ("touren.lieferschein", "Lieferscheine ausfüllen und unterschreiben",
          "An einer Station den Lieferschein ausfüllen; die eigenen Lieferscheine ansehen."),
         ("touren.lieferscheine", "Alle Lieferscheine ansehen, nachsenden und löschen", ""),
-        ("touren.fahrten", "Fahrtenbuch ansehen und Kilometerstände berichtigen",
-         "Alle Fahrten mit Fahrzeug, Besetzung und Kilometerstand."),
+        ("touren.fahrten", "Fahrtenbuch und Meldungen zum Fahrzeug",
+         "Alle Fahrten mit Fahrzeug, Besetzung und Kilometerstand ansehen und berichtigen; "
+         "Meldungen der Fahrer zum Fahrzeug auf der Startseite sehen und abhaken."),
         ("einstellungen.touren", "Touren einstellen: Mailversand, Karte und Aufbewahrung",
          "Warengruppen, Fahrzeuge und die Zentrale richtet ein, wer Touren plant."),
     ),
