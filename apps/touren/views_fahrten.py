@@ -138,12 +138,17 @@ def liste(request):
     """Das Fahrtenbuch: alle Fahrten, neueste zuerst, mit Summe der Kilometer."""
     f, fahrten_ = _gefiltert(request)
     if request.GET.get("export") == "csv":
-        zeilen = [[x.datum.strftime("%d.%m.%Y"), x.tour_name, x.fahrzeug_name, x.besetzung,
-                   x.km_start, "" if x.km_ende is None else x.km_ende,
-                   "" if x.km is None else x.km,
-                   timezone.localtime(x.begonnen_am).strftime("%H:%M"),
-                   timezone.localtime(x.beendet_am).strftime("%H:%M") if x.beendet_am else ""]
-                  for x in fahrten_]  # fmt: skip
+        zeilen = []
+        for x in fahrten_:
+            zeilen.append([x.datum.strftime("%d.%m.%Y"), x.tour_name, x.fahrzeug_name, x.besetzung,
+                           x.km_start, "" if x.km_ende is None else x.km_ende,
+                           "" if x.km is None else x.km,
+                           timezone.localtime(x.begonnen_am).strftime("%H:%M"),
+                           timezone.localtime(x.beendet_am).strftime("%H:%M")
+                           if x.beendet_am else ""])  # fmt: skip
+            if x.km_unbekannt:  # davor gefahren, ohne Eintrag
+                zeilen.append([f"vor {x.datum:%d.%m.%Y}", "unbekannt", x.fahrzeug_name, "unbekannt",
+                               x.km_vorher, x.km_start, x.km_unbekannt, "", ""])  # fmt: skip
         puffer = io.StringIO()
         schreiber = csv.writer(puffer, delimiter=";")
         schreiber.writerow(["Datum", "Tour", "Fahrzeug", "Besetzung", "km Abfahrt", "km Ankunft",
@@ -152,9 +157,11 @@ def liste(request):
         return listenexport.ausliefern(request, "Fahrtenbuch", "fahrten", puffer.getvalue(),
                                        weiter=reverse("touren:fahrten"))  # fmt: skip
     summe = sum(x.km or 0 for x in fahrten_)
+    unbekannt = sum(x.km_unbekannt or 0 for x in fahrten_)
     seite = Paginator(fahrten_, 50).get_page(request.GET.get("seite"))
     return render(request, "touren/fahrten.html", {
         "seite": seite, "zeilen": seite.object_list, "filter": f, "summe": summe,
+        "unbekannt": unbekannt,
         "fahrzeuge": Fahrzeug.objects.all(), "heute": timezone.localdate(),
         "offen": Fahrt.objects.filter(km_ende__isnull=True,
                                       datum__lt=timezone.localdate()).count(),

@@ -24,7 +24,7 @@
 {% if fahrt_moeglich and not fahrt %}
 <section class="karte tour-fahrt" id="fahrt">
   <h2>Fahrt beginnen</h2>
-  <form method="post" action="{% url 'touren:fahrt_beginnen' tour.pk %}">{% csrf_token %}
+  <form method="post" action="{% url 'touren:fahrt_beginnen' tour.pk %}" data-fahrt-merken="{{ tour.pk }}-{{ tag|date:'Y-m-d' }}">{% csrf_token %}
     {% if fahrzeuge %}<div class="feld"><label for="fahrzeug">Fahrzeug</label>
       <select name="fahrzeug" id="fahrzeug" required data-km-ziel="km_start">
         {% if fahrzeuge|length > 1 %}<option value="">– bitte wählen –</option>{% endif %}
