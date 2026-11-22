@@ -1162,6 +1162,9 @@ kommen direkt aus dem Kundenstamm, ein Download von Listen entfällt.
   beim Aufruf, auf Deutsch und in seiner Sprache. Web Push ohne App und ohne fremde Dienste außer dem Push-Dienst
   des Browsers (Inhalt verschlüsselt); auf dem iPhone ab iOS 16.4 nach „Zum Home-Bildschirm“. Der
   Schlüssel der Tafel wird beim ersten Mal erzeugt und verschlüsselt gespeichert; nichts einzurichten.
+- **Push-Nachricht an Mitarbeitende** (ADR 0158): Dieselbe Technik steht im Kern (`apps/core/push.py`)
+  allen Modulen offen. Mitarbeitende schalten sie je Gerät unter „Mein Konto → Nachrichten auf dieses
+  Gerät“ ein (mit Probe-Nachricht); Module schicken Eiliges mit `push.an_benutzer(...)`.
 
 ### Angebote mit Anmeldung
 

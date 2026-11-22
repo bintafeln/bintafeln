@@ -655,3 +655,50 @@ class VerzeichnisEintrag(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class PushEinstellungen(models.Model):
+    """Schlüssel der Tafel für Push-Nachrichten (VAPID, ADR 0134, 0158): einmal erzeugt,
+    verschlüsselt gespeichert. Nur über ``apps.core.push``."""
+
+    EINZIGE_ID = 1
+
+    schluessel = models.TextField(blank=True, editable=False)
+
+    class Meta:
+        verbose_name = "Schlüssel für Push-Nachrichten"
+        verbose_name_plural = "Schlüssel für Push-Nachrichten"
+
+    def __str__(self):
+        return "Schlüssel für Push-Nachrichten"
+
+    def save(self, *args, **kwargs):
+        self.pk = self.EINZIGE_ID
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def laden(cls) -> "PushEinstellungen":
+        einstellungen, _ = cls.objects.get_or_create(pk=cls.EINZIGE_ID)
+        return einstellungen
+
+
+class PushAbo(models.Model):
+    """Ein Gerät, auf dem jemand Nachrichten für das eigene Konto eingeschaltet hat (ADR 0158).
+    Die Adresse beim Push-Dienst des Browsers; eingetragen und gelöscht nur auf „Mein Konto“."""
+
+    benutzer = models.ForeignKey(
+        "konten.Benutzer", on_delete=models.CASCADE, related_name="push_abos"
+    )
+    adresse = models.TextField("Push-Adresse", editable=False)
+    p256dh = models.CharField(max_length=200, editable=False)
+    auth = models.CharField(max_length=100, editable=False)
+    geraet = models.CharField("Gerät", max_length=200, blank=True)
+    angelegt_am = models.DateTimeField("Eingeschaltet am", auto_now_add=True)
+
+    class Meta:
+        ordering = ["-angelegt_am"]
+        verbose_name = "Gerät mit Benachrichtigung"
+        verbose_name_plural = "Geräte mit Benachrichtigung"
+
+    def __str__(self):
+        return f"{self.benutzer} – {self.geraet or 'Gerät'}"

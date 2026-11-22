@@ -339,6 +339,12 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   im Einzelfall `fest=False` und `benachrichtigung.an(kennung, vorgabe)`; ohne Häkchen bekommt niemand die Mail,
   nie eigene Auswahlfelder); andere Mails als `Mail` in `apps/core/mailuebersicht.py` bzw. `Modul.mails`. Geheimnisse in der Datenbank nur über `apps.core.geheimnis` verschlüsselt
   speichern (ADR 0016). In Tests landen Mails in `django.core.mail.outbox`.
+- Push-Nachrichten aufs Handy nur über `apps/core/push.py` (Web Push mit `cryptography`, ein
+  Schlüssel der Tafel in `PushEinstellungen`, ADR 0134, 0158): an Mitarbeitende mit
+  `push.an_benutzer(konten, titel, text, link, kennung)`, nach dem Speichern über
+  `push.nach_speichern(...)`; eingeschaltet wird je Gerät nur auf „Mein Konto“ (`PushAbo`,
+  `static/js/push.js`, Service Worker `/push-sw.js`). In Tests `push._senden` und
+  `push._im_hintergrund` ersetzen.
 - Gemeinsamer Cache in der Datenbank (ADR 0093): `CACHES` = DatabaseCache, Tabelle `bintafeln_cache`
   (Migration `core/0022`); nötig, weil mehrere gunicorn-Prozesse laufen und ein prozesslokaler
   Cache Zähler nicht teilt und beim Update vergisst. Darauf bauen die Anmelde-Sperre
@@ -380,10 +386,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   bisherigen Aufrufsystem in `apps/aufruf/templates/aufruf/`, Geräte ohne Anmeldung nur über
   den Schlüssel im Link; Wartezeit aufs Handy unter `/warten/` in `apps/aufruf/handy.py`,
   Texte in `apps/aufruf/warten_texte/`, immer Deutsch plus zweite Sprache über `views_warten._zweite()`
-  und die Vorlage `aufruf/_zwei.html`, ADR 0090; Push-Nachrichten über `apps/aufruf/push.py`,
-  Web Push mit `cryptography` ohne weitere Abhängigkeit, nur an Push-Dienste der Browser, ausgelöst
-  nach `ablauf.weiter()`/`starten()`, in Tests `push._senden` und `push._im_hintergrund` ersetzen,
-  ADR 0134). `warteliste` (ADR 0051, Regeln in `apps/warteliste/ablauf.py`,
+  und die Vorlage `aufruf/_zwei.html`, ADR 0090; Push-Nachrichten an Kunden über
+  `apps/aufruf/push.py` (wann wer was bekommt; Technik in `apps/core/push.py`), ausgelöst nach
+  `ablauf.weiter()`/`starten()`, ADR 0134). `warteliste` (ADR 0051, Regeln in `apps/warteliste/ablauf.py`,
   `Wartestand` je Antrag; Mails deutsch + Sprache aus `sprachen.mail_sprachen()`, Texte je
   Sprache in `apps/warteliste/uebersetzungen/` bzw. `WartelisteText`). `wetter` (ADR 0053, Abruf bei Open-Meteo nur im Server in
   `apps/wetter/wetter.py`, in Tests `wetter._json` ersetzen). `wochenuebersicht` (ADR 0054,
