@@ -168,6 +168,10 @@ class Spende(models.Model):
         help_text="Gesetzt beim Einlesen von Belegen aus einem anderen Programm. „Versendet“: "
         "bintafeln stellt dafür keine eigene Bestätigung aus.",
     )  # fmt: skip
+    # Von Hand gesetzt (ADR 0128, Nachtrag): Das Einlesen ändert den Vermerk dann nicht mehr
+    fremdbeleg_von_hand = models.BooleanField(
+        "Vermerk von Hand gesetzt", default=False, editable=False
+    )
     bestaetigung = models.ForeignKey(
         Zuwendungsbestaetigung, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="spenden", editable=False,
