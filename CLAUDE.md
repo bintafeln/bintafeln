@@ -405,7 +405,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Lieferscheine (ADR 0149): Regeln nur in `apps/touren/lieferscheine.py`; das PDF ist der
   Lieferschein – einmal erzeugt, verschlüsselt in `Lieferschein.datei`, nie neu berechnet, die
   Unterschrift (`static/js/unterschrift_feld.js`) wird nicht aufbewahrt; Versand nur an die
-  Station, Speichern geht vor Senden (`mail_fehler`).)
+  Station, Speichern geht vor Senden (`mail_fehler`); Aussehen wie der bekannte Vordruck, fest
+  gezeichnet in `apps/touren/vordruck.py` (Logo der Tafel, keine Fußzeile).)
   `tickets` (ADR 0087, Regeln in `apps/tickets/ablauf.py`: wer sieht/bearbeitet, Zuständige je
   Kategorie aus Personen und Rollen, Benachrichtigung über ADR 0086, Frist für erledigte).
   Ausfälle beider: Dauer und „wieder gesund“ (`Ausfall.gesund_ab`: ab dann wieder auf den eigenen Plätzen, außer wo schon Ersatz steht) in

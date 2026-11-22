@@ -24,6 +24,12 @@ gespeichert bleiben.
   `privatdateien` abgelegt und nie neu berechnet (wie die Ausfertigung in ADR 0130). Die
   Unterschrift selbst wird nicht aufbewahrt. Ein abgeschickter Lieferschein lässt sich nicht
   ändern; ein weiterer am selben Tag kommt dazu.
+- **Aussehen wie der bekannte Vordruck** (vereinfachtes Dokumentationsverfahren nach der
+  Verordnung (EG) Nr. 178/2002), gezeichnet mit festen Maßen in `apps/touren/vordruck.py` statt
+  über den `Pdf`-Rahmen: oben das Logo der Tafel (ohne Logo ihr Name), Kasten mit Spender/in
+  (Station) und Empfänger/in (Tafel), rechts Datum und Nummer, Tabelle mit einer Zeile je
+  Warengruppe („-“ ohne Menge), rechts unten die Unterschrift. Keine Kopf- und keine Fußzeile.
+  Märkte kennen dieses Blatt; ein anderes Aussehen führt zu Rückfragen.
 - **Nummer** fortlaufend aus `TourenEinstellungen.naechste_nummer`, unter Zeilensperre.
 - **Versand** nur an die Station (`Station.lieferschein_an`), über `mail.senden()` mit der neuen
   Art „Lieferschein“; niemand in der Tafel bekommt eine Kopie. Fehlt die Adresse oder scheitert
