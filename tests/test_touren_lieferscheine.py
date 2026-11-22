@@ -213,11 +213,30 @@ def fahrer(client, admin, django_user_model, benutzer_mit_rolle, anmelden):
     return anmelden(client, konto)
 
 
+def _auf_die_tour(tour, benutzername="fritz"):
+    """Trägt das Konto als Fahrer der Tour ein (Lieferscheine gibt es nur auf der eigenen)."""
+    from apps.adressen.models import Adresse
+    from apps.konten.models import Benutzer
+
+    konto = Benutzer.objects.get(username=benutzername)
+    person = Adresse.objects.filter(konto=konto).first() or Adresse.objects.create(
+        art=Adresse.Art.PERSON, vorname="Fritz", nachname="Probe", konto=konto
+    )
+    tour.fahrer = person
+    tour.save()
+    tour.personen.add(person)
+    return person
+
+
 def test_fahrer_fuellt_unterwegs_aus(fahrer):
     s = station()
     tour = Tour.objects.create(name="Tour 1")
     ablauf.halt_anhaengen(tour, s)
     heute = timezone.localdate()
+    # auf einer fremden Tour: kein Lieferschein zu sehen oder auszufüllen (ADR 0156)
+    fremd = fahrer.get(reverse("touren:fahren", args=[tour.pk])).content.decode()
+    assert "Lieferschein ausfüllen" not in fremd
+    _auf_die_tour(tour)
     seite = fahrer.get(reverse("touren:fahren", args=[tour.pk])).content.decode()
     ziel = reverse("touren:lieferschein", args=[s.pk])
     assert "Lieferschein ausfüllen" in seite and ziel in seite

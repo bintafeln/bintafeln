@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block titel %}Zusatzstopp – {{ tour.name }}{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{{ zurueck }}">← zurück zur Tour</a></p>
+  <h1>Zusatzstopp einfügen</h1>
+  <p class="leise">{{ tour.name }} · {{ tag|date:"l, d.m.Y" }}. Der Stopp gilt nur für diesen Tag; die feste Reihenfolge der Tour bleibt.</p>
+  <form method="post">{% csrf_token %}
+    <div class="feld"><label for="station-suche">Station suchen</label>
+      <input type="search" id="station-suche" name="q" value="{{ q }}" placeholder="Name, Straße, Ort, Telefon …" autocomplete="off"
+             hx-get="{{ request.get_full_path }}" hx-target="#station-treffer" hx-select="#station-treffer" hx-swap="outerHTML" hx-sync="this:replace"
+             hx-trigger="input[this.value.trim().length >= {{ mindestens }} || !this.value] changed delay:300ms">
+      <small class="hilfe">Ab drei Zeichen erscheinen die Treffer.</small></div>
+    <div id="station-treffer" aria-live="polite">
+      {% if treffer %}<ul class="station-treffer">
+        {% for s in treffer %}<li><label class="zusatz-wahl"><input type="radio" name="station" value="{{ s.pk }}"{% if treffer|length == 1 %} checked{% endif %}> <span><strong>{{ s.name }}</strong>{% if s.kette %} <small class="leise">{{ s.kette }}</small>{% endif %}<br><small class="leise">{{ s.anschrift }}{% if s.telefon %} · {{ s.telefon }}{% endif %}</small></span></label></li>{% endfor %}
+      </ul>{% elif q %}<p class="hinweis">Keine Station gefunden. Sie können die Adresse unten selbst eintragen.</p>{% endif %}
+    </div>
+    <details class="stationswahl-neu"{% if neu.errors or neu.is_bound and not treffer %} open{% endif %}>
+      <summary>Die Adresse steht nicht in der Liste – hier eintragen</summary>
+      <p class="hinweis">Sie wird als Station angelegt. Leer lassen, wenn Sie oben eine Station gewählt haben.</p>
+      {% with form=neu %}{% include "includes/formular.html" %}{% endwith %}
+    </details>
+    <div class="feld"><label for="hinweis">Was ist zu tun?</label>
+      <input type="text" name="hinweis" id="hinweis" maxlength="300" value="{{ hinweis }}" placeholder="z. B. 3 Paletten Joghurt, Rampe hinten"></div>
+    <div class="feld"><label for="stelle">Wann?</label>
+      <select name="stelle" id="stelle"><option value="naechste">als Nächstes</option><option value="ende">am Ende der Tour</option></select></div>
+    <button type="submit" class="knopf tour-knopf">Zusatzstopp einfügen</button>
+  </form>
+</section>
+{% endblock %}

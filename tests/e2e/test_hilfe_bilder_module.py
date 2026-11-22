@@ -1272,6 +1272,35 @@ def test_hilfe_bild_touren_meldungen(angemeldet, admin, muster):
     )
 
 
+def test_hilfe_bild_touren_zusatzstopp(angemeldet, admin, muster):
+    """Zusatzstopp einfügen am Handy (ADR 0156)."""
+    from apps.core import demo_daten
+    from apps.touren import ablauf
+    from apps.touren.models import Station, Tour
+
+    _module("touren")
+    demo_daten.touren()
+    tour = Tour.objects.create(name="Nordtour heute", datum=timezone.localdate())
+    for kennung in ("S-1", "S-2"):
+        ablauf.halt_anhaengen(tour, Station.objects.get(kennung=kennung))
+    seite = oeffnen(angemeldet, admin, reverse("touren:zusatzstopp", args=[tour.pk]))
+    seite.set_viewport_size({"width": 400, "height": 900})
+    seite.get_by_label("Station suchen").fill("bäck")
+    expect(seite.locator("#station-treffer li").first).to_contain_text("äck")
+    seite.locator("#station-treffer input[type=radio]").first.check()
+    seite.get_by_label("Was ist zu tun?").fill("3 Kisten Brot vom Vortag")
+    aufnehmen(
+        seite,
+        "touren-zusatzstopp",
+        [seite.locator("section.karte").first],
+        Marke(seite.locator("#station-treffer"), art="rahmen", nummer=1),
+        Marke(seite.locator(".stationswahl-neu summary"), art="rahmen", nummer=2),
+        Marke(seite.get_by_label("Was ist zu tun?"), art="rahmen", nummer=3),
+        rand=8,
+    )
+    seite.set_viewport_size({"width": 1280, "height": 900})
+
+
 def test_hilfe_bild_touren_lieferschein(angemeldet, admin, muster):
     from apps.core import demo_daten
     from apps.touren.models import Station

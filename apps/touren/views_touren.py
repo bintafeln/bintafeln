@@ -21,6 +21,7 @@ from apps.touren import (
     importieren_touren,
     lieferscheine,
     suche,
+    zusatz,
 )
 from apps.touren import start as tourstart
 from apps.touren.forms import HaltForm, KurzfristigForm, NeueStationForm, TourForm
@@ -52,6 +53,8 @@ def heute(request):
         wer = ablauf.besetzung(t, tag)
         zeilen.append({
             "tour": t, "besetzung": wer, "stationen": len(ablauf.halte(t, tag)),
+            "stand": anfahrten.fortschritt(t, tag), "fahrt": fahrten.heute(t, tag),
+            "darf_zusatz": zusatz.darf(request.user, t, tag),
             "meine": person is not None and any(
                 b["person"] is not None and b["person"].pk == person.pk for b in wer),
         })  # fmt: skip
@@ -79,15 +82,20 @@ def fahren(request, pk):
     fahrt_moeglich = (tag == timezone.localdate() and ablauf.faehrt_am(tour, tag)
                       and tourstart.darf(request.user, tour, tag))  # fmt: skip
     halte = ablauf.halte(tour, tag)
-    darf_schein = lieferscheine.an() and rollen.hat_recht(request.user, "touren.lieferschein")
-    scheine = lieferscheine.am_tag(tag, [h.station_id for h in halte]) if darf_schein else {}
+    # Lieferscheine sieht und füllt nur aus, wer auf dieser Tour fährt – das Büro alle (ADR 0156)
+    eigene = tourstart.darf(request.user, tour, tag) or rollen.hat_recht(
+        request.user, "touren.lieferscheine")  # fmt: skip
+    darf_schein = (lieferscheine.an() and eigene
+                   and rollen.hat_recht(request.user, "touren.lieferschein"))  # fmt: skip
+    alle_scheine = lieferscheine.am_tag(tag, [h.station_id for h in halte])
+    scheine = alle_scheine if eigene else {}
     da = anfahrten.am_tag(tour, tag)
     aktuell = None  # die erste Station, an der noch niemand war
     for nr, h in enumerate(halte, start=1):
         h.schein = scheine.get(h.station_id)
         h.schein_moeglich = darf_schein and h.station.lieferschein
         h.anfahrt = da.get(h.station_id)
-        h.angefahren = h.anfahrt is not None or h.schein is not None
+        h.angefahren = h.anfahrt is not None or h.station_id in alle_scheine
         if aktuell is None and not h.angefahren:
             aktuell = nr
     return render(request, "touren/fahren.html", {
@@ -98,10 +106,70 @@ def fahren(request, pk):
         "darf_planen": rollen.hat_recht(request.user, "touren.planen"),
         "gefragt": gefragt, "gestartet": gestartet, "darf_start": darf_start,
         "fahrt": fahrt, "fahrt_moeglich": fahrt_moeglich,
+        "darf_zusatz": zusatz.darf(request.user, tour, tag),
         "aktuell": aktuell, "erledigt": sum(1 for h in halte if h.angefahren),
         "fahrzeuge": fahrten.fahrzeuge() if fahrt_moeglich and fahrt is None else [],
         "staende": fahrten.staende() if fahrt_moeglich and fahrt is None else {},
     })  # fmt: skip
+
+
+@never_cache
+@fahren_recht
+def zusatzstopp(request, pk):
+    """Einen Zusatzstopp für einen Tag einfügen: eine Station suchen oder eine freie Adresse
+    eintragen. Für das Büro an jeder Tour des Tages, für die Mannschaft an der eigenen."""
+    tour = get_object_or_404(Tour.objects.select_related("fahrdienst_tour"), pk=pk)
+    tag = tour.datum or _tag(request)
+    ziel = f"{reverse('touren:fahren', args=[tour.pk])}?tag={tag:%Y-%m-%d}"
+    if not zusatz.darf(request.user, tour, tag):
+        messages.error(request, "Sie können an dieser Tour keinen Zusatzstopp einfügen.")
+        return redirect(ziel)
+    neu = NeueStationForm(request.POST or None, prefix="neu")
+    begriff = (request.POST.get("q") or request.GET.get("q") or "").strip()
+    if request.method == "POST":
+        wahl = request.POST.get("station", "")
+        station = Station.objects.filter(pk=int(wahl)).first() if wahl.isdigit() else None
+        fehler = ""
+        if station is None and neu.ausgefuellt():
+            if neu.is_valid():
+                station = neu.anlegen(request.user.get_username())
+            else:
+                fehler = "Bitte die Adresse vollständig eintragen."
+        elif station is None:
+            fehler = "Bitte eine Station wählen oder eine Adresse eintragen."
+        if station is not None:
+            try:
+                zusatz.einfuegen(tour, tag, request.user, station,
+                                 request.POST.get("hinweis", ""),
+                                 am_ende=request.POST.get("stelle") == "ende")  # fmt: skip
+            except zusatz.ZusatzFehler as grund:
+                fehler = str(grund)
+            else:
+                messages.success(request, f"Zusatzstopp „{station.name}“ eingefügt.")
+                return redirect(ziel)
+        messages.error(request, fehler)
+    return render(request, "touren/zusatzstopp.html", {
+        "tour": tour, "tag": tag, "neu": neu, "q": begriff, "zurueck": ziel,
+        "treffer": suche.stationen(begriff, ohne_tour=None, grenze=15),
+        "hinweis": request.POST.get("hinweis", ""), "mindestens": suche.MINDESTENS,
+    })  # fmt: skip
+
+
+@require_POST
+@fahren_recht
+def zusatzstopp_weg(request, pk):
+    from apps.touren.models import Zusatzstopp
+
+    stopp = get_object_or_404(Zusatzstopp.objects.select_related("tour", "station"), pk=pk)
+    ziel = f"{reverse('touren:fahren', args=[stopp.tour_id])}?tag={stopp.datum:%Y-%m-%d}"
+    if not zusatz.darf(request.user, stopp.tour, stopp.datum):
+        messages.error(request, "Sie können diesen Zusatzstopp nicht entfernen.")
+        return redirect(ziel)
+    papierkorb.loeschen(request.user, "Zusatzstopp",
+                        f"{stopp.station.name} ({stopp.tour}, {stopp.datum:%d.%m.%Y})", stopp,
+                        recht="touren.planen")  # fmt: skip
+    messages.success(request, f"Zusatzstopp „{stopp.station.name}“ entfernt.")
+    return redirect(ziel)
 
 
 @require_POST

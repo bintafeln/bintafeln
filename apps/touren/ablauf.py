@@ -52,8 +52,23 @@ def halte(tour: Tour, datum: dt.date | None = None) -> list[Halt]:
     if datum is None:
         return alle
     tag = kuerzel(datum)
-    return [h for h in alle if h.station.aktiv
-            and (not wochentage(h.wochentage) or tag in wochentage(h.wochentage))]  # fmt: skip
+    liste = [h for h in alle if h.station.aktiv
+             and (not wochentage(h.wochentage) or tag in wochentage(h.wochentage))]  # fmt: skip
+    for h in liste:
+        h.zusatz = None
+    # Zusatzstopps des Tages (ADR 0156) an ihrer Stelle einreihen – als Halt, der nicht
+    # gespeichert ist; Navigation, „Hier waren wir“ und Lieferschein gehen damit wie gewohnt.
+    schon = {h.station_id for h in liste}
+    versatz = 0
+    for z in tour.zusatzstopps.filter(datum=datum).select_related("station"):
+        if z.station_id in schon:
+            continue
+        halt = Halt(tour=tour, station=z.station)
+        halt.zusatz = z
+        liste.insert(min(z.nach + versatz, len(liste)), halt)
+        versatz += 1
+        schon.add(z.station_id)
+    return liste
 
 
 def besetzung(tour: Tour, datum: dt.date) -> list[dict]:
