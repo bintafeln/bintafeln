@@ -28,6 +28,7 @@ def eingerichtet():
     e = MailEinstellungen.laden()
     e.server, e.absender = "smtp.example.org", "tafel@example.org"
     e.save()
+    versand("an")
 
 
 def unterschrift(leer=False) -> str:
@@ -37,6 +38,12 @@ def unterschrift(leer=False) -> str:
     puffer = io.BytesIO()
     bild.save(puffer, "PNG")
     return "data:image/png;base64," + base64.b64encode(puffer.getvalue()).decode()
+
+
+def versand(wert, test_email=""):
+    e = TourenEinstellungen.laden()
+    e.versand, e.test_email = wert, test_email
+    e.save()
 
 
 def station(**mehr):
@@ -297,7 +304,8 @@ def test_admin_stellt_ein(admin_client):
     seite = admin_client.get(reverse("touren:einstellungen")).content.decode()
     assert "Warengruppen" in seite and "Obst/Gemüse" in seite
     admin_client.post(reverse("touren:einstellungen"), {
-        "einstellungen": "1", "mail_text": "Hallo", "aufbewahrung_jahre": "6"})  # fmt: skip
+        "einstellungen": "1", "versand": "aus", "mail_text": "Hallo",
+        "aufbewahrung_jahre": "6"})  # fmt: skip
     e = TourenEinstellungen.laden()
     assert not e.lieferscheine and e.mail_text == "Hallo" and e.aufbewahrung_jahre == 6
     gruppen = list(Warengruppe.objects.all())
@@ -320,3 +328,43 @@ def test_admin_stellt_ein(admin_client):
               f"wg-{len(gruppen) + 1}-aktiv": "on"}  # fmt: skip
     admin_client.post(reverse("touren:einstellungen"), daten)
     assert [g.name for g in lieferscheine.warengruppen()] == ["Getränke"]
+
+
+def test_versand_ausgeschaltet_speichert_nur(admin):
+    """Vorgabe: Es geht keine Mail hinaus; der Lieferschein bleibt zum Nachsenden stehen."""
+    assert TourenEinstellungen._meta.get_field("versand").default == "aus"
+    versand("aus")
+    ls = lieferscheine.erstellen(station(), admin, [("Backwaren", Decimal("1"), "kg")],
+                                 lieferscheine.unterschrift_lesen(unterschrift()))  # fmt: skip
+    assert not lieferscheine.senden(ls)
+    assert not mail.outbox and ls.gesendet_am is None and "ausgeschaltet" in ls.mail_fehler
+    versand("an")  # später eingeschaltet: nachsenden geht an die Station
+    assert lieferscheine.senden(ls)
+    assert mail.outbox[0].to == ["markt@example.org"] and ls.gesendet_am and not ls.mail_fehler
+
+
+def test_versand_zum_test_nur_an_die_testadresse(admin):
+    versand("test", "probe@example.org")
+    ls = lieferscheine.erstellen(station(), admin, [("Backwaren", Decimal("1"), "kg")],
+                                 lieferscheine.unterschrift_lesen(unterschrift()))  # fmt: skip
+    assert not lieferscheine.senden(ls)  # gilt weiter als nicht an die Station verschickt
+    (post,) = mail.outbox
+    assert post.to == ["probe@example.org"] and post.subject.startswith("[Test] ")
+    assert "markt@example.org" in post.body and len(post.attachments) == 1
+    assert ls.gesendet_am is None and ls.gesendet_an == ""
+    assert "probe@example.org" in ls.mail_fehler
+    versand("test")  # ohne Test-Adresse geht nichts hinaus – auch nicht an die Station
+    assert not lieferscheine.senden(ls) and len(mail.outbox) == 1
+    assert "Test-Adresse" in ls.mail_fehler
+
+
+def test_einstellungen_testbetrieb_braucht_adresse(client, admin, anmelden):
+    anmelden(client, admin)
+    daten = {"einstellungen": "1", "lieferscheine": "on", "versand": "test", "test_email": "",
+             "mail_text": "Hallo", "aufbewahrung_jahre": "10"}  # fmt: skip
+    antwort = client.post(reverse("touren:einstellungen"), daten)
+    assert "bitte eine Adresse" in antwort.content.decode()
+    antwort = client.post(reverse("touren:einstellungen"), {**daten, "test_email": "p@example.org"})
+    assert antwort.status_code == 302
+    e = TourenEinstellungen.laden()
+    assert (e.versand, e.test_email) == ("test", "p@example.org")

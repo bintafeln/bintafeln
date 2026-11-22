@@ -126,8 +126,17 @@ class HaltForm(forms.Form):
 class EinstellungenForm(forms.ModelForm):
     class Meta:
         model = TourenEinstellungen
-        fields = ["lieferscheine", "mail_text", "aufbewahrung_jahre"]
-        widgets = {"mail_text": forms.Textarea(attrs={"rows": 5})}
+        fields = ["lieferscheine", "versand", "test_email", "mail_text", "aufbewahrung_jahre"]
+        widgets = {
+            "mail_text": forms.Textarea(attrs={"rows": 5}),
+            "test_email": forms.EmailInput(attrs={"data-zeigen-bei": "versand=test"}),
+        }
+
+    def clean(self):
+        daten = super().clean()
+        if daten.get("versand") == TourenEinstellungen.Versand.TEST and not daten.get("test_email"):
+            self.add_error("test_email", "Für den Testbetrieb bitte eine Adresse eintragen.")
+        return daten
 
 
 WarengruppenFormSet = forms.modelformset_factory(
