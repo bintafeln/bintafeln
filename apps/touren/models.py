@@ -370,15 +370,40 @@ class Fahrt(models.Model):
         return self.beendet_am - self.begonnen_am if self.beendet_am else None
 
 
+class Umstand(models.Model):
+    """Was an einer Station ohne Lieferschein war, z. B. „Keine Ware“ oder „Markt geschlossen“
+    (ADR 0163); die Tafel pflegt die Liste."""
+
+    name = models.CharField("Name", max_length=60, unique=True)
+    reihenfolge = models.PositiveSmallIntegerField("Reihenfolge", default=0)
+    aktiv = models.BooleanField("Aktiv", default=True)
+    anmerkung_pflicht = models.BooleanField(
+        "Anmerkung nötig", default=False,
+        help_text="Wer das wählt, muss kurz dazuschreiben, was war (z. B. bei „Sonstiges“).",
+    )  # fmt: skip
+
+    class Meta:
+        verbose_name = "Umstand"
+        verbose_name_plural = "Umstände"
+        ordering = ["reihenfolge", "name"]
+
+    def __str__(self):
+        return self.name
+
+
 class Anfahrt(models.Model):
-    """„Hier waren wir“: Die Station wurde an dem Tag auf der Tour angefahren (ADR 0152). Die
-    Station bleibt in der Tour stehen – man fährt manchmal ein zweites Mal hin."""
+    """Station ohne Lieferschein abgehakt: Sie wurde an dem Tag auf der Tour angefahren
+    (ADR 0152), mit dem Umstand und einer Anmerkung (ADR 0163). Die Station bleibt in der Tour
+    stehen – man fährt manchmal ein zweites Mal hin."""
 
     tour = models.ForeignKey(Tour, on_delete=models.CASCADE, related_name="anfahrten")
     station = models.ForeignKey("Station", on_delete=models.CASCADE, related_name="anfahrten")
     datum = models.DateField("Tag")
     am = models.DateTimeField("Angefahren am", auto_now_add=True)
     von = models.CharField("Eingetragen von", max_length=150, blank=True)
+    # als Text festgehalten, wie er beim Abhaken hieß – die Liste kann sich später ändern
+    umstand = models.CharField("Umstand", max_length=60, blank=True)
+    anmerkung = models.CharField("Anmerkung", max_length=200, blank=True)
 
     class Meta:
         verbose_name = "Anfahrt"

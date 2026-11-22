@@ -3,7 +3,7 @@
 {% block inhalt %}
 <section class="karte">
   <h1>Touren einrichten</h1>
-  <p class="hinweis">Zentrale, Warengruppen und Fahrzeuge.{% if darf_einstellen %} Mailversand, Karte und Aufbewahrung stehen unter <a href="{% url 'touren:einstellungen' %}">Einstellungen → Touren</a>.{% else %} Ob Lieferscheine per E-Mail verschickt werden, stellt der Admin ein.{% endif %}</p>
+  <p class="hinweis">Zentrale, Warengruppen, die Liste „Was war an der Station?“ und Fahrzeuge.{% if darf_einstellen %} Mailversand, Karte und Aufbewahrung stehen unter <a href="{% url 'touren:einstellungen' %}">Einstellungen → Touren</a>.{% else %} Ob Lieferscheine per E-Mail verschickt werden, stellt der Admin ein.{% endif %}</p>
   <form method="post" data-autosave>
     {% csrf_token %}<input type="hidden" name="einrichten" value="1">
     {% include "includes/formular.html" %}
@@ -29,6 +29,27 @@
     </table></div>
     <p class="hinweis">Die leeren Zeilen unten sind für neue Warengruppen.</p>
     <button type="submit" class="knopf">Warengruppen speichern</button>
+  </form>
+</section>
+<section class="karte" id="umstaende">
+  <h2>Station ohne Lieferschein: Was war?</h2>
+  <p class="hinweis">Hakt die Mannschaft eine Station ohne Lieferschein ab, wählt sie aus dieser Liste, was dort war (kleinste Zahl zuerst). Bei „Anmerkung nötig“ muss sie kurz dazuschreiben, was war. Nicht mehr gebrauchte Einträge ausschalten; schon Eingetragenes bleibt stehen. Sind alle ausgeschaltet, wird ohne Auswahl abgehakt.</p>
+  <form method="post" action="#umstaende">
+    {% csrf_token %}<input type="hidden" name="umstaende" value="1">
+    {{ umstaende.management_form }}
+    {% if umstaende.non_form_errors %}<p class="fehler">{{ umstaende.non_form_errors|join:" " }}</p>{% endif %}
+    <div class="tabelle-rahmen"><table class="tabelle" id="umstaende-tabelle">
+      <thead><tr><th>Name</th><th>Reihenfolge</th><th>Anmerkung nötig</th><th>Aktiv</th></tr></thead>
+      <tbody>{% for f in umstaende %}
+        <tr>{{ f.id }}
+          <td data-titel="Name">{{ f.name }}{% if f.name.errors %}<small class="fehler">{{ f.name.errors|join:" " }}</small>{% endif %}</td>
+          <td data-titel="Reihenfolge">{{ f.reihenfolge }}</td>
+          <td data-titel="Anmerkung nötig">{{ f.anmerkung_pflicht }}</td>
+          <td data-titel="Aktiv">{{ f.aktiv }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    <p class="hinweis">Die leeren Zeilen unten sind für neue Einträge.</p>
+    <button type="submit" class="knopf">Liste speichern</button>
   </form>
 </section>
 <section class="karte" id="fahrzeuge">

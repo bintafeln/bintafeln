@@ -14,6 +14,7 @@ from decimal import Decimal
 
 from apps.statistik import diagramme
 from apps.touren.models import (
+    Anfahrt,
     Fahrt,
     Lieferschein,
     Position,
@@ -242,7 +243,27 @@ def abschnitt_ohne(d: Daten) -> dict:
     }  # fmt: skip
 
 
+def abschnitt_umstaende(d: Daten) -> dict:
+    """Stationen, die ohne Lieferschein abgehakt wurden: wie oft welcher Umstand, je Station
+    (ADR 0163) – nie je Person."""
+    je = defaultdict(lambda: defaultdict(int))
+    namen = defaultdict(int)
+    for station, umstand in (Anfahrt.objects.filter(datum__year=d.jahr).exclude(umstand="")
+                             .values_list("station__name", "umstand")):  # fmt: skip
+        je[station][umstand] += 1
+        namen[umstand] += 1
+    spalten = sorted(namen, key=lambda n: (-namen[n], n))
+    reihe = sorted(je, key=lambda s: (-sum(je[s].values()), s))
+    return {
+        "id": "umstaende", "titel": "Ohne Lieferschein abgehakt",
+        "text": "Wie oft an einer Station was war, wenn sie ohne Lieferschein abgehakt wurde.",
+        "svg": "", "kopf": ["Station", *spalten, "Gesamt"],
+        "zeilen": [[s, *[je[s].get(n, 0) or "" for n in spalten], sum(je[s].values())]
+                   for s in reihe],
+    }  # fmt: skip
+
+
 def abschnitte(d: Daten) -> list[dict]:
     return [abschnitt_mengen(d), abschnitt_warengruppen(d), abschnitt_fahrten(d),
             abschnitt_touren(d), abschnitt_fahrzeuge(d), abschnitt_stationen(d),
-            abschnitt_ketten(d), abschnitt_ohne(d)]  # fmt: skip
+            abschnitt_ketten(d), abschnitt_umstaende(d), abschnitt_ohne(d)]  # fmt: skip

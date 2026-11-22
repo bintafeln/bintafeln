@@ -128,6 +128,7 @@ def fahren(request, pk):
         "tourtag": tourtag.inhalt(tour, tag) if tourtag.darf(request.user) else [],
         "fahrt": fahrt, "fahrt_moeglich": fahrt_moeglich,
         "darf_zusatz": zusatz.darf(request.user, tour, tag),
+        "umstaende": anfahrten.umstaende() if fahrt_moeglich else [],
         "aktuell": aktuell, "erledigt": sum(1 for h in halte if h.angefahren),
         "fahrzeuge": fahrten.fahrzeuge() if fahrt_moeglich and fahrt is None else [],
         "staende": fahrten.staende() if fahrt_moeglich and fahrt is None else {},
@@ -237,14 +238,16 @@ def tourtag_zuruecksetzen(request, pk):
 @require_POST
 @fahren_recht
 def angefahren(request, pk, station_pk):
-    """„Hier waren wir“ setzen oder zurücknehmen; danach weiter zur nächsten offenen Station."""
+    """Station ohne Lieferschein abhaken (mit Umstand) oder das zurücknehmen; danach weiter zur
+    nächsten offenen Station."""
     tour = get_object_or_404(Tour.objects.select_related("fahrdienst_tour"), pk=pk)
     station = get_object_or_404(Station, pk=station_pk)
     try:
         if "zurueck" in request.POST:
             anfahrten.zuruecknehmen(tour, station, request.user)
         else:
-            anfahrten.markieren(tour, station, request.user)
+            anfahrten.markieren(tour, station, request.user, request.POST.get("umstand"),
+                                request.POST.get("anmerkung", ""))  # fmt: skip
     except anfahrten.AnfahrtFehler as grund:
         messages.error(request, str(grund))
     return redirect(reverse("touren:fahren", args=[tour.pk]))
