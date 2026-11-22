@@ -2243,7 +2243,10 @@ def test_tour_springt_zur_aktuellen_station(seite, angemeldet, admin):
     seite.goto(reverse("touren:fahren", args=[tour.pk]))
     assert seite.evaluate("window.scrollY") == 0  # noch nichts angefahren: oben bleiben
     for nr in (1, 2, 3):
-        seite.locator(f"#halt-{nr}").get_by_role("button", name="✓ Hier waren wir").click()
+        halt = seite.locator(f"#halt-{nr}")
+        halt.locator("summary", has_text="Ohne Lieferschein abhaken").click()
+        halt.get_by_label("Was war hier?").select_option(label="Keine Ware")
+        halt.get_by_role("button", name="Abhaken").click()
         expect(seite.locator(f"#halt-{nr}")).to_contain_text("zurücknehmen")
     assert Anfahrt.objects.count() == 3
     seite.goto(reverse("touren:fahren", args=[tour.pk]))

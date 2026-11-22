@@ -449,8 +449,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `TourenEinstellungen.kiste_kg`); **nie eine Auswertung je Person**. Recht `touren.statistik`.
   Meldungen zum Fahrzeug (ADR 0155): `Fahrzeugmeldung` über `apps/touren/meldungen.py` (melden beim
   Beenden der Tour oder zwischendurch; offene über `Modul.startseite` bei allen mit `touren.fahrten`).
-  „Hier waren wir“ (ADR 0152): `Anfahrt` je Tour, Station und Tag über `apps/touren/anfahrten.py`
-  (Station bleibt stehen, ein Lieferschein gilt auch als angefahren); die Tour springt über
+  „Ohne Lieferschein abhaken“ (ADR 0152, 0163): `Anfahrt` je Tour, Station und Tag über
+  `apps/touren/anfahrten.py` (Station bleibt stehen, ein Lieferschein gilt auch als angefahren; mit
+  Umstand aus der Liste `Umstand` der Tafel und Anmerkung, beides als Text in der Anfahrt); die Tour springt über
   `static/js/tour_aktuell.js` zur nächsten offenen Station.
   Drei Personen und Gast (ADR 0153): eigene/kurzfristige Touren mit `Tour.fahrer`, `beifahrer`,
   `beifahrer2`, `gast` (`personen` folgt daraus, `BesetzungMixin`); Tour aus dem Fahrerplan: Tages-

@@ -17,6 +17,7 @@ from apps.touren.models import (
     Lieferschein,
     Station,
     Tour,
+    Umstand,
     Zusatzstopp,
 )
 from tests.test_touren_lieferscheine import unterschrift
@@ -35,7 +36,7 @@ def gefahren(lage):
     eins, zwei = Station.objects.get(kennung="M-1"), Station.objects.get(kennung="M-2")
     bild = lieferscheine.unterschrift_lesen(unterschrift())
     lieferscheine.erstellen(eins, fritz, [("Obst/Gemüse", Decimal("4"), "kisten")], bild, "", nord)
-    anfahrten.markieren(nord, zwei, fritz)
+    anfahrten.markieren(nord, zwei, fritz, Umstand.objects.get(name="Abgeholt").pk)
     zusatz.einfuegen(nord, heute, fritz, station(20, name="Hofladen"))
     meldungen.melden(fahrt, fritz, "mangel", "Lampe defekt")
     fahrten.beenden(fahrt, fritz, "5060")
@@ -48,7 +49,7 @@ def gefahren(lage):
 def test_inhalt_und_zuruecksetzen(gefahren, admin):
     nord, heute, wagen = gefahren["nord"], gefahren["heute"], gefahren["wagen"]
     assert dict(tourtag.inhalt(nord, heute)) == {
-        "Fahrt": 1, "Lieferschein": 1, "„Hier waren wir“": 1, "Zusatzstopp": 1,
+        "Fahrt": 1, "Lieferschein": 1, "Ohne Lieferschein abgehakt": 1, "Zusatzstopp": 1,
         "Meldung zum Fahrzeug": 1,
     }  # fmt: skip
     weg = tourtag.zuruecksetzen(nord, heute, admin)
