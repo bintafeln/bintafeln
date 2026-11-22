@@ -1301,6 +1301,43 @@ def test_hilfe_bild_touren_zusatzstopp(angemeldet, admin, muster):
     seite.set_viewport_size({"width": 1280, "height": 900})
 
 
+def test_hilfe_bild_touren_neuer_stopp(angemeldet, admin, muster, benutzer_mit_rolle):
+    """Neuer Stopp vom Büro: roter Brief über der Seite, „Gesehen“ führt zur Tour (ADR 0159)."""
+    from apps.adressen.models import Adresse
+    from apps.core import demo_daten
+    from apps.touren import ablauf, zusatz
+    from apps.touren.models import Station, Tour, Zusatzstopp
+
+    _module("touren")
+    demo_daten.touren()
+    ich = Adresse.objects.filter(konto=admin).first() or Adresse.objects.create(
+        art=Adresse.Art.PERSON, vorname="Clara", nachname="Beispiel", konto=admin
+    )
+    tour = Tour.objects.create(name="Nordtour", datum=timezone.localdate(), fahrer=ich)
+    tour.personen.add(ich)
+    for kennung in ("S-1", "S-2"):
+        ablauf.halt_anhaengen(tour, Station.objects.get(kennung=kennung))
+    buero = benutzer_mit_rolle("bernd", "Büro")
+    buero.first_name, buero.last_name = "Bernd", "Büro"
+    buero.save()
+    stopp = zusatz.einfuegen(tour, tour.datum, buero, Station.objects.get(kennung="S-3"),
+                             "3 Kisten Brot vom Vortag, bitte an der Rampe klingeln")  # fmt: skip
+    seite = oeffnen(angemeldet, admin, reverse("core:start"))
+    seite.set_viewport_size({"width": 400, "height": 900})
+    brief = seite.locator("dialog.heuler-dialog")
+    expect(brief).to_be_visible()
+    expect(brief).to_contain_text("Neuer Stopp für die Tour Nordtour")
+    seite.keyboard.press("Escape")  # lässt sich nicht wegdrücken
+    expect(brief).to_be_visible()
+    seite.wait_for_timeout(1600)  # Rütteln abwarten
+    aufnehmen(seite, "touren-neuer-stopp", [brief], rand=8)
+    brief.get_by_role("button", name="✓ Gesehen – zur Tour").click()
+    expect(seite).to_have_url(re.compile(rf"/tour/{tour.pk}/.*#zusatz-{stopp.pk}$"))
+    expect(seite.locator("dialog.heuler-dialog")).to_have_count(0)
+    assert Zusatzstopp.objects.get(pk=stopp.pk).gesehen_am is not None
+    seite.set_viewport_size({"width": 1280, "height": 900})
+
+
 def test_hilfe_bild_touren_statistik(angemeldet, admin, muster):
     """Statistik der Touren mit erfundenen Lieferscheinen und Fahrten (ADR 0157)."""
     import random

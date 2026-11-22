@@ -1,0 +1,1 @@
+{% load static %}{% if "touren.fahren" in rechte %}{# Neuer Stopp vom Büro (ADR 0159): fragt alle 30 Sekunden nach; static/js/heuler.js zeigt den roten Brief #}<span id="tour-heuler" hidden hx-get="{% url 'touren:heuler' %}" hx-trigger="load, every 30s" hx-swap="outerHTML"></span><script src="{% static 'js/heuler.js' %}" defer></script>{% endif %}
