@@ -35,7 +35,7 @@ def _mengen(tour: Tour, datum: dt.date) -> dict:
     return {
         "Fahrt": eigene,
         "Lieferschein": Lieferschein.objects.filter(tour=tour, datum=datum),
-        "„Hier waren wir“": Anfahrt.objects.filter(tour=tour, datum=datum),
+        "Ohne Lieferschein abgehakt": Anfahrt.objects.filter(tour=tour, datum=datum),
         "Zusatzstopp": Zusatzstopp.objects.filter(tour=tour, datum=datum),
         MELDUNG: Fahrzeugmeldung.objects.filter(fahrt__in=eigene),
         "bestätigte Besetzung": Tourstart.objects.filter(tour=tour, datum=datum),

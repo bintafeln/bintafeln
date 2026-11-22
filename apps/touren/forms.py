@@ -9,6 +9,7 @@ from apps.touren.models import (
     Station,
     Tour,
     TourenEinstellungen,
+    Umstand,
     Warengruppe,
 )
 
@@ -324,6 +325,13 @@ class FahrzeugDokumentForm(forms.ModelForm):
         fields = ["art", "bezeichnung"]
         widgets = {"bezeichnung": forms.TextInput(attrs={"data-zeigen-bei": "art=sonstiges"})}
 
+
+UmstaendeFormSet = forms.modelformset_factory(
+    Umstand,
+    fields=["name", "reihenfolge", "anmerkung_pflicht", "aktiv"],
+    extra=2,
+    can_delete=False,
+)
 
 WarengruppenFormSet = forms.modelformset_factory(
     Warengruppe,

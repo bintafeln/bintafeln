@@ -12,7 +12,7 @@ from django.utils import timezone
 from apps.adressen.models import Adresse
 from apps.core.models import PapierkorbEintrag, TafelEinstellungen
 from apps.touren import ablauf, anfahrten, lieferscheine, zusatz
-from apps.touren.models import Station, Tour, Zusatzstopp
+from apps.touren.models import Station, Tour, Umstand, Zusatzstopp
 from tests.test_touren_lieferscheine import unterschrift
 
 pytestmark = pytest.mark.django_db
@@ -23,6 +23,10 @@ def module_an(admin):
     t = TafelEinstellungen.laden()
     t.module = ["touren", "fahrdienst"]
     t.save()
+
+
+def ABGEHOLT():  # noqa: N802
+    return Umstand.objects.get(name="Abgeholt").pk
 
 
 def station(nr, **mehr):
@@ -64,7 +68,7 @@ def namen(tour, tag):
 def test_zusatzstopp_als_naechstes_und_am_ende(lage):
     nord, heute, fritz = lage["nord"], lage["heute"], lage["fritz"]
     extra, spaet = station(20, name="Hofladen"), station(21, name="Lager")
-    anfahrten.markieren(nord, Station.objects.get(kennung="M-1"), fritz)
+    anfahrten.markieren(nord, Station.objects.get(kennung="M-1"), fritz, ABGEHOLT())
     z = zusatz.einfuegen(nord, heute, fritz, extra, "  3 Paletten   Joghurt ")
     assert (z.hinweis, z.nach, z.angelegt_von) == ("3 Paletten Joghurt", 1, fritz)
     assert str(z).startswith("Hofladen (Zusatzstopp")
@@ -76,7 +80,7 @@ def test_zusatzstopp_als_naechstes_und_am_ende(lage):
     assert [h.zusatz is not None for h in ablauf.halte(nord, heute)] == [False, True, False,
                                                                          False, True]  # fmt: skip
     # „Hier waren wir“ und der Fortschritt zählen den Zusatzstopp mit
-    anfahrten.markieren(nord, extra, fritz)
+    anfahrten.markieren(nord, extra, fritz, ABGEHOLT())
     stand = anfahrten.fortschritt(nord, heute)
     assert (stand["gesamt"], stand["erledigt"], stand["zusatz"], stand["prozent"]) == (5, 2, 2, 40)
     assert stand["naechste"].name == "Markt 2"
@@ -160,7 +164,7 @@ def test_fremde_tour_kein_zusatzstopp_am_handy(client, anmelden, lage):
 
 def test_buero_sieht_fortschritt_und_fuegt_ein(client, anmelden, lage):
     nord, sued, heute = lage["nord"], lage["sued"], lage["heute"]
-    anfahrten.markieren(nord, Station.objects.get(kennung="M-1"), lage["fritz"])
+    anfahrten.markieren(nord, Station.objects.get(kennung="M-1"), lage["fritz"], ABGEHOLT())
     anmelden(client, lage["buero"])
     seite = client.get(reverse("touren:heute")).content.decode()
     assert "1 von 3</strong> angefahren" in seite and "als Nächstes: Markt 2" in seite

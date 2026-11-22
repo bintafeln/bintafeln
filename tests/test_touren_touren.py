@@ -15,7 +15,7 @@ from apps.core.models import MailEinstellungen, TafelEinstellungen
 from apps.fahrdienst.models import Besetzung
 from apps.fahrdienst.models import Tour as FahrdienstTour
 from apps.touren import ablauf, importieren_touren
-from apps.touren.models import Halt, Station, Tour
+from apps.touren.models import Halt, Station, Tour, Umstand
 
 pytestmark = pytest.mark.django_db
 
@@ -486,32 +486,75 @@ def test_angefahren_markieren_und_zuruecknehmen(fahrer, django_user_model):
     erste, zweite, _ = [h.station for h in t.halte.all()]
     adresse = reverse("touren:fahren", args=[t.pk])
     seite = fahrer.get(adresse).content.decode()
-    assert seite.count("✓ Hier waren wir</button>") == 3 and "data-tour-aktuell" not in seite
-    antwort = fahrer.post(reverse("touren:angefahren", args=[t.pk, erste.pk]))
+    assert seite.count("✓ Ohne Lieferschein abhaken</summary>") == 3
+    assert "data-tour-aktuell" not in seite and "Markt geschlossen</option>" in seite
+    ziel = reverse("touren:angefahren", args=[t.pk, erste.pk])
+    # ohne Auswahl geht es nicht; „Sonstiges“ braucht eine Anmerkung
+    assert "Bitte wählen" in fahrer.post(ziel, follow=True).content.decode()
+    sonstiges = Umstand.objects.get(name="Sonstiges")
+    seite = fahrer.post(ziel, {"umstand": sonstiges.pk}, follow=True).content.decode()
+    assert "kurz dazuschreiben" in seite and not Anfahrt.objects.exists()
+    zu = Umstand.objects.get(name="Markt geschlossen")
+    antwort = fahrer.post(ziel, {"umstand": zu.pk, "anmerkung": " Inventur,  bis  Montag "})
     assert antwort.status_code == 302 and antwort.url == adresse
+    eintrag = Anfahrt.objects.get()
+    assert (eintrag.umstand, eintrag.anmerkung) == ("Markt geschlossen", "Inventur, bis Montag")
     seite = fahrer.get(adresse).content.decode()
+    assert "<strong>Markt geschlossen</strong>" in seite and "„Inventur, bis Montag“" in seite
     # die Station bleibt stehen, ist aber gekennzeichnet; die nächste offene ist die aktuelle
     assert erste.name in seite and "1 angefahren" in seite and "zurücknehmen" in seite
     assert 'class="karte tour-halt tour-erledigt" id="halt-1"' in seite
     assert 'id="halt-2" data-tour-aktuell' in seite
-    assert seite.count("✓ Hier waren wir</button>") == 2
-    fahrer.post(reverse("touren:angefahren", args=[t.pk, erste.pk]))  # doppelt schadet nicht
+    assert seite.count("✓ Ohne Lieferschein abhaken</summary>") == 2
+    fahrer.post(ziel, {"umstand": zu.pk})  # doppelt schadet nicht
     assert Anfahrt.objects.count() == 1
     fahrer.post(reverse("touren:angefahren", args=[t.pk, erste.pk]), {"zurueck": "1"})
     assert not Anfahrt.objects.exists()
     # wer nicht eingetragen ist, kennzeichnet nichts; eine fremde Station auch nicht
     klaus = person(django_user_model, "Klaus").konto
     with pytest.raises(anfahrten.AnfahrtFehler, match="nicht eingetragen"):
-        anfahrten.markieren(t, erste, klaus)
+        anfahrten.markieren(t, erste, klaus, zu.pk)
     fremd = station("fremd")
     with pytest.raises(anfahrten.AnfahrtFehler, match="nicht auf der Tour"):
-        anfahrten.markieren(t, fremd, fahrer.person.konto)
-    fahrer.post(reverse("touren:angefahren", args=[t.pk, fremd.pk]))
+        anfahrten.markieren(t, fremd, fahrer.person.konto, zu.pk)
+    fahrer.post(reverse("touren:angefahren", args=[t.pk, fremd.pk]), {"umstand": zu.pk})
     assert not Anfahrt.objects.exists()
-    # Frist: nach 90 Tagen weg
+    # Frist: nach 90 Tagen weg, wenn kein Umstand dabeisteht
     alt = Anfahrt.objects.create(tour=t, station=zweite, datum=heute - dt.timedelta(days=91))
     assert str(alt).startswith(zweite.name)
-    assert anfahrten.fristen_anwenden() == 1
+    # mit Umstand bleibt der Eintrag für die Statistik, aber ohne den Namen
+    Anfahrt.objects.create(tour=t, station=erste, datum=heute - dt.timedelta(days=91),
+                           von="Fritz Probe", umstand="Keine Ware")  # fmt: skip
+    uralt = Anfahrt.objects.create(tour=t, station=erste, umstand="Keine Ware",
+                                   datum=heute - dt.timedelta(days=365 * 11))  # fmt: skip
+    assert anfahrten.fristen_anwenden() == 2
+    bleibt = Anfahrt.objects.get()
+    assert (bleibt.umstand, bleibt.von) == ("Keine Ware", "") and bleibt.pk != uralt.pk
+
+
+def test_abhaken_ohne_liste_und_statistik(fahrer):
+    """Sind alle Umstände ausgeschaltet, wird wie früher ohne Auswahl abgehakt. Die Statistik
+    zählt je Station, nie je Person."""
+    from apps.touren import anfahrten, statistik
+    from apps.touren.models import Anfahrt
+
+    heute = timezone.localdate()
+    t = tour_mit(2, name="Sonderfahrt", datum=heute)
+    t.personen.add(fahrer.person)
+    erste, zweite = [h.station for h in t.halte.all()]
+    keine = Umstand.objects.get(name="Keine Ware")
+    anfahrten.markieren(t, erste, fahrer.person.konto, keine.pk)
+    Anfahrt.objects.create(tour=t, station=erste, umstand="Keine Ware",
+                           datum=heute - dt.timedelta(days=1))  # fmt: skip
+    Anfahrt.objects.filter(datum__year__lt=heute.year).update(datum=heute)  # Jahreswechsel
+    teil = statistik.abschnitt_umstaende(statistik.Daten(heute.year))
+    assert teil["kopf"] == ["Station", "Keine Ware", "Gesamt"]
+    assert teil["zeilen"] == [[erste.name, 2, 2]]
+    Umstand.objects.update(aktiv=False)
+    seite = fahrer.get(reverse("touren:fahren", args=[t.pk])).content.decode()
+    assert seite.count("✓ Hier waren wir</button>") == 1
+    fahrer.post(reverse("touren:angefahren", args=[t.pk, zweite.pk]))
+    assert Anfahrt.objects.get(station=zweite).umstand == ""
 
 
 def test_lieferschein_gilt_als_angefahren(fahrer):
@@ -529,7 +572,8 @@ def test_lieferschein_gilt_als_angefahren(fahrer):
                             zeichnung, "", t, heute)  # fmt: skip
     seite = fahrer.get(reverse("touren:fahren", args=[t.pk])).content.decode()
     assert "1 angefahren" in seite and 'id="halt-2" data-tour-aktuell' in seite
-    assert seite.count("✓ Hier waren wir</button>") == 1  # an der ersten steht der Lieferschein
+    # an der ersten steht der Lieferschein
+    assert seite.count("✓ Ohne Lieferschein abhaken</summary>") == 1
 
 
 # --- Stationen suchen und kurzfristige Tour in einer Maske ---------------------------------------
