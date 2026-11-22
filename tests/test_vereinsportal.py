@@ -364,8 +364,9 @@ def test_uebersicht_allein_vermerkt_versendete(export):
     einlesen.finanzexport_einlesen(export, "buero")
     fremd = Spende.objects.create(adresse=Adresse.objects.first(), datum=dt.date(2026, 1, 5),
                                   betrag=D("5"), belegnummer="77")  # fmt: skip
-    zeilen = [("2", None, "02.05.2026"), (1.0, None, None), (None, "x", None), ("A7", "x", None),
-              (77, "x", None)]  # fmt: skip
+    tag = dt.date(2026, 5, 3)
+    zeilen = [("2", None, "02.05.2026"), (1.0, None, None), (None, tag, None), ("A7", tag, None),
+              (77, tag, None)]  # fmt: skip
     e = einlesen.uebersicht_einlesen(uebersicht(zeilen))
     assert e.versendet == 1
     assert Spende.objects.get(belegnummer="2").fremdbeleg == V
@@ -380,6 +381,50 @@ def test_uebersicht_allein_vermerkt_versendete(export):
 def test_uebersicht_ohne_blatt_oder_spalte(datei):
     with pytest.raises(einlesen.EinleseFehler, match="Spenden - Übersicht"):
         einlesen.uebersicht_einlesen(datei)
+
+
+def test_invalid_date_ist_kein_versand(export):
+    """WISO MeinVerein schreibt in leere Datumsfelder teils „Invalid Date“. Das ist kein Datum:
+    Die Bescheinigung gilt damit nicht als versendet."""
+    einlesen.finanzexport_einlesen(export, "buero")
+    Spende.objects.filter(belegnummer="2").update(fremdbeleg=OFFEN)
+    kopf = ("Belegnummer", "Versendet am", "SQ-verschickt", "SQ-erstellt Datum")
+    kein = [(None, "Nein", "Invalid Date"), ("Invalid Date", "Nein", None),
+            ("invalid date", "", "Invalid Date"), ("", None, "ungültig")]  # fmt: skip
+    for versendet_am, verschickt, erstellt in kein:
+        e = einlesen.uebersicht_einlesen(
+            uebersicht([(2, versendet_am, verschickt, erstellt)], kopf=kopf)
+        )
+        assert e.versendet == 0 and Spende.objects.get(belegnummer="2").fremdbeleg == OFFEN
+    echt = [
+        (dt.date(2026, 5, 3), "Nein", "Invalid Date"),
+        (None, "Nein", "03.05.2026"),
+        (None, "Nein", "2026-05-03T10:00:00"),
+        ("Invalid Date", "Ja", "Invalid Date"),
+    ]
+    for versendet_am, verschickt, erstellt in echt:
+        Spende.objects.filter(belegnummer="2").update(fremdbeleg=OFFEN)
+        e = einlesen.uebersicht_einlesen(
+            uebersicht([(2, versendet_am, verschickt, erstellt)], kopf=kopf)
+        )
+        assert e.versendet == 1 and Spende.objects.get(belegnummer="2").fremdbeleg == V
+
+
+def test_falscher_vermerk_wird_beim_naechsten_einlesen_berichtigt(export):
+    """Eine Spende, die früher wegen „Invalid Date“ als versendet galt, ist nach dem nächsten
+    Einlesen wieder offen. Was in der Übersicht nicht vorkommt, bleibt, wie es ist."""
+    einlesen.finanzexport_einlesen(export, "buero")
+    Spende.objects.filter(belegnummer__in=["1", "2"]).update(fremdbeleg=V)
+    kopf = ("Belegnummer", "Versendet am", "SQ-verschickt", "SQ-erstellt Datum")
+    e = einlesen.uebersicht_einlesen(uebersicht([(2, None, "Nein", "Invalid Date")], kopf=kopf))
+    assert (e.versendet, e.berichtigt) == (0, 1)
+    assert Spende.objects.get(belegnummer="2").fremdbeleg == OFFEN
+    assert Spende.objects.get(belegnummer="1").fremdbeleg == V  # steht nicht in der Datei
+    assert "bei 1 den Vermerk „versendet“ zurückgenommen" in einlesen.bericht(e)
+    # steht dieselbe Nummer einmal mit und einmal ohne Versand in der Datei, gilt der Versand
+    zeilen = [(1, None, "Nein", None), (1, dt.date(2026, 5, 3), "Ja", None)]
+    e = einlesen.uebersicht_einlesen(uebersicht(zeilen, kopf=kopf))
+    assert e.berichtigt == 0 and Spende.objects.get(belegnummer="1").fremdbeleg == V
 
 
 def test_uebersicht_mit_sq_verschickt(export):
@@ -650,7 +695,9 @@ def test_seite_einlesen_und_stand(buero, export):
 
 def test_seite_nur_excel_des_finanzexports(buero, export):
     hochladen(buero, "finanzexport", "export.zip", export.getvalue())
-    antwort = hochladen(buero, "finanzexport", "Finanzexport.XLSX", uebersicht([(2, "x", None)]))
+    antwort = hochladen(
+        buero, "finanzexport", "Finanzexport.XLSX", uebersicht([(2, "03.05.2026", None)])
+    )
     assert "0 neue Spenden eingelesen" in antwort.content.decode()
     assert Spende.objects.get(belegnummer="2").fremdbeleg == V
 
