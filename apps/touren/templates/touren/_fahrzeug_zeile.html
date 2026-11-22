@@ -1,0 +1,9 @@
+{# Eine Zeile der Fahrzeugliste unter „Einrichten“; mit archiv=1 für verkaufte Fahrzeuge #}
+<tr{% if not f.aktiv %} class="leise"{% endif %}>
+  <td data-titel="Fahrzeug"><a href="{% url 'touren:fahrzeug' f.pk %}"><strong>{{ f.name }}</strong></a>{% if not f.aktiv and not archiv %} <span class="marke-warnung">ausgeschaltet</span>{% endif %}</td>
+  <td data-titel="Kennzeichen">{{ f.kennzeichen|default:"–" }}</td>
+  <td data-titel="Fahrzeugart">{{ f.typ|default:"–" }}</td>
+  {% if archiv %}<td data-titel="Verkauft am">{{ f.verkauft_am|date:"d.m.Y" }}</td>{% else %}<td data-titel="Erstzulassung">{{ f.erstzulassung|date:"d.m.Y"|default:"–" }}</td>{% endif %}
+  <td data-titel="Kilometerstand" class="zahl">{% if f.kilometerstand is None %}–{% else %}{{ f.kilometerstand }} km{% endif %}</td>
+  <td data-titel="Papiere">{% if f.papiere %}<a href="{% url 'touren:fahrzeug' f.pk %}#papiere"><span class="marke-ok">📄 {{ f.papiere }} hinterlegt</span></a>{% else %}<a href="{% url 'touren:fahrzeug' f.pk %}#papiere">hinterlegen</a>{% endif %}</td>
+</tr>

@@ -292,21 +292,28 @@ class EinrichtenForm(forms.ModelForm):
         widgets = {"mail_text": forms.Textarea(attrs={"rows": 5})}
 
 
-FahrzeugFormSet = forms.modelformset_factory(
-    Fahrzeug,
-    fields=[
-        "name",
-        "kennzeichen",
-        "typ",
-        "erstzulassung",
-        "kilometerstand",
-        "reihenfolge",
-        "aktiv",
-    ],
-    widgets={"erstzulassung": DatumEingabe(), "typ": forms.TextInput(attrs={"list": "fz-arten"})},
-    extra=2,
-    can_delete=False,
-)
+class FahrzeugForm(forms.ModelForm):
+    """Ein Fahrzeug anlegen oder ändern (eigene Seite je Fahrzeug)."""
+
+    class Meta:
+        model = Fahrzeug
+        fields = ["name", "kennzeichen", "typ", "erstzulassung", "kilometerstand", "reihenfolge",
+                  "aktiv", "verkauft_am"]  # fmt: skip
+        widgets = {
+            "erstzulassung": DatumEingabe(),
+            "verkauft_am": DatumEingabe(),
+            "typ": forms.TextInput(attrs={"list": "fz-arten", "autocomplete": "off"}),
+        }
+        help_texts = {"reihenfolge": "Kleinere Zahl = weiter oben in der Auswahl der Fahrer.",
+                      "aktiv": "Ausschalten, wenn das Fahrzeug nicht mehr gefahren wird; im "
+                               "Fahrtenbuch bleibt es stehen."}  # fmt: skip
+
+    def clean(self):
+        daten = super().clean()
+        zugelassen, verkauft = daten.get("erstzulassung"), daten.get("verkauft_am")
+        if zugelassen and verkauft and verkauft < zugelassen:
+            self.add_error("verkauft_am", "Der Verkauf kann nicht vor der Erstzulassung liegen.")
+        return daten
 
 
 class FahrzeugDokumentForm(forms.ModelForm):

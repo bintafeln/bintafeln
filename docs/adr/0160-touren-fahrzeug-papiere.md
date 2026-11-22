@@ -28,3 +28,12 @@ Fahrzeugbrief griffbereit – nicht im Ordner im Büro.
 - Der Fahrzeugbrief ist ein Eigentumsnachweis und gehört nicht in jede Hand; deshalb verschlüsselt
   und nur für die Fahrdienstleitung.
 - Kein neues Recht nötig: Wer Fahrzeuge einrichtet, pflegt auch ihre Papiere.
+
+## Nachtrag: Verkaufte Fahrzeuge
+
+- `Fahrzeug.verkauft_am`: Mit einem Verkaufsdatum ist das Fahrzeug archiviert. `Fahrzeug.save()`
+  schaltet es dann aus (`aktiv = False`); es steht den Fahrern nicht mehr zur Wahl.
+- Unter „Einrichten“ zeigt die Liste nur Fahrzeuge ohne Verkaufsdatum; verkaufte stehen darunter
+  aufklappbar im Archiv mit dem Datum.
+- Nichts wird gelöscht: Fahrten, Meldungen und Papiere bleiben, die Seite des Fahrzeugs ist weiter
+  erreichbar. Ein Fahrzeug zu löschen würde das Fahrtenbuch lückenhaft machen.
