@@ -418,6 +418,11 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Ankunft, Regeln nur in `apps/touren/fahrten.py` (`beginnen()`, `beenden()`, `berichtigen()`; wer
   darf, entscheidet `start.darf()`; kein Ort wird geprüft), Fahrtenbuch in `views_fahrten.py`
   (Recht `touren.fahrten`); Namen von Tour und Fahrzeug stehen als Text in der Fahrt.
+  Zusatzstopps und Fortschritt (ADR 0156): `Zusatzstopp` je Tour und Tag über `apps/touren/zusatz.py`
+  (freie Adresse wird Station; Mannschaft nur an der eigenen Tour, `zusatz.darf()`); `ablauf.halte(tour,
+  datum)` reiht sie als ungespeicherten `Halt` mit `h.zusatz` ein – nie `Halt` aus dieser Liste speichern.
+  Fortschritt über `anfahrten.fortschritt()`. Lieferscheine sieht nur die Mannschaft der Tour
+  (`lieferscheine.darf_sehen()`), das Büro alle.
   Meldungen zum Fahrzeug (ADR 0155): `Fahrzeugmeldung` über `apps/touren/meldungen.py` (melden beim
   Beenden der Tour oder zwischendurch; offene über `Modul.startseite` bei allen mit `touren.fahrten`).
   „Hier waren wir“ (ADR 0152): `Anfahrt` je Tour, Station und Tag über `apps/touren/anfahrten.py`

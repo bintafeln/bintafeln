@@ -368,6 +368,38 @@ class Fahrzeugmeldung(models.Model):
         return self.erledigt_am is None
 
 
+class Zusatzstopp(models.Model):
+    """Ein zusätzlicher Stopp einer Tour an einem Tag (ADR 0156): ein kurzfristiger
+    Abholauftrag vom Büro oder von der Mannschaft selbst. Die feste Stationsfolge bleibt, wie
+    sie ist."""
+
+    tour = models.ForeignKey(Tour, on_delete=models.CASCADE, related_name="zusatzstopps")
+    datum = models.DateField("Tag")
+    station = models.ForeignKey("Station", on_delete=models.CASCADE, related_name="zusatzstopps")
+    nach = models.PositiveSmallIntegerField(
+        "Nach wie vielen Stationen", default=0,
+        help_text="0 = ganz vorn; die Zahl der Stationen der Tour = am Ende.")  # fmt: skip
+    hinweis = models.CharField("Was ist zu tun?", max_length=300, blank=True)
+    angelegt_am = models.DateTimeField("Eingetragen am", auto_now_add=True)
+    angelegt_von = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="+")  # fmt: skip
+    angelegt_von_name = models.CharField("Eingetragen von", max_length=150, blank=True)
+
+    class Meta:
+        verbose_name = "Zusatzstopp"
+        verbose_name_plural = "Zusatzstopps"
+        ordering = ["nach", "angelegt_am"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tour", "datum", "station"], name="touren_zusatzstopp_einmal"
+            )  # fmt: skip
+        ]
+
+    def __str__(self):
+        return f"{self.station} (Zusatzstopp {self.datum:%d.%m.%Y})"
+
+
 class Halt(models.Model):
     """Eine Station auf einer Tour, an ihrer Stelle in der Fahrtreihenfolge."""
 
@@ -586,3 +618,4 @@ auditlog.register(Lieferschein)
 auditlog.register(Fahrzeug)
 auditlog.register(Fahrt)
 auditlog.register(Fahrzeugmeldung)
+auditlog.register(Zusatzstopp)

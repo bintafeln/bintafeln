@@ -2339,6 +2339,12 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 .meldung-aktion { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
 .meldung-aktion input[type="text"] { min-width: 12rem; flex: 1 1 12rem; padding: .4rem .55rem; font-size: 1rem;
   border: 1px solid var(--rand); border-radius: 6px; background: var(--flaeche); }
+.tour-stand { height: .55rem; background: var(--rand); border-radius: 999px; overflow: hidden; margin: .5rem 0 .2rem; }
+.tour-stand span { display: block; height: 100%; background: var(--akzent); }
+.tour-stand-text { margin: 0 0 .4rem; }
+.tour-zusatz { border-left: 4px solid var(--akzent); }
+.zusatz-wahl { display: flex; gap: .6rem; align-items: flex-start; width: 100%; cursor: pointer; }
+.zusatz-wahl input { margin-top: .35rem; }
 .tour-frage { font-size: 1.35rem; font-weight: 600; margin: 1rem 0; }
 .tour-aendern { margin-top: 1.25rem; }
 .tour-aendern summary { cursor: pointer; padding: .5rem 0; }

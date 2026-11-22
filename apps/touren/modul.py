@@ -89,9 +89,10 @@ def startseite(request):
 
 
 def fristen():
-    from apps.touren import ablauf, anfahrten, fahrten, lieferscheine, meldungen, start
+    from apps.touren import ablauf, anfahrten, fahrten, lieferscheine, meldungen, start, zusatz
 
     fahrten.fristen_anwenden()
+    zusatz.fristen_anwenden()
     meldungen.fristen_anwenden()
     anfahrten.fristen_anwenden()
     ablauf.fristen_anwenden()

@@ -22,6 +22,21 @@ def am_tag(tour: Tour, datum: dt.date) -> dict[int, Anfahrt]:
     return {a.station_id: a for a in Anfahrt.objects.filter(tour=tour, datum=datum)}
 
 
+def fortschritt(tour: Tour, datum: dt.date) -> dict:
+    """Wie weit die Tour ist: {"gesamt", "erledigt", "naechste" (Station | None), "prozent"}.
+    Angefahren ist eine Station mit „Hier waren wir“ oder mit einem Lieferschein des Tages."""
+    from apps.touren import lieferscheine
+
+    halte = ablauf.halte(tour, datum)
+    da = set(am_tag(tour, datum))
+    da |= set(lieferscheine.am_tag(datum, [h.station_id for h in halte]))
+    offen = [h.station for h in halte if h.station_id not in da]
+    erledigt = len(halte) - len(offen)
+    return {"gesamt": len(halte), "erledigt": erledigt, "naechste": offen[0] if offen else None,
+            "prozent": round(100 * erledigt / len(halte)) if halte else 0,
+            "zusatz": sum(1 for h in halte if h.zusatz is not None)}  # fmt: skip
+
+
 def _pruefen(tour: Tour, station: Station, benutzer) -> dt.date:
     datum = timezone.localdate()
     if not ablauf.faehrt_am(tour, datum) or not start.darf(benutzer, tour, datum):

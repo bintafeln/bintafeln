@@ -89,10 +89,11 @@ def ausfuellen(request, pk):
 @never_cache
 @rollen.recht_erforderlich("touren.lieferscheine", "touren.lieferschein")
 def pdf(request, pk):
-    """Das PDF: für alle mit „Lieferscheine ansehen“, sonst nur das selbst ausgefüllte."""
+    """Das PDF: für alle mit „Lieferscheine ansehen“; sonst nur für die, die es ausgefüllt
+    haben oder an dem Tag auf dieser Tour gefahren sind – nie für andere Touren (ADR 0156)."""
     alle = rollen.hat_recht(request.user, "touren.lieferscheine")
-    ls = Lieferschein.objects.filter(pk=pk).first()
-    if ls is None or (not alle and ls.erstellt_von_id != request.user.pk):
+    ls = Lieferschein.objects.select_related("tour__fahrdienst_tour").filter(pk=pk).first()
+    if ls is None or not (alle or lieferscheine.darf_sehen(request.user, ls)):
         if alle:
             raise Http404
         raise PermissionDenied

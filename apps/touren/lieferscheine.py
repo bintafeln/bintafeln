@@ -188,6 +188,17 @@ def senden(ls: Lieferschein) -> bool:
     return not fehler
 
 
+def darf_sehen(benutzer, ls: Lieferschein) -> bool:
+    """Ohne das Recht, alle Lieferscheine zu sehen: nur der eigene und die der Tour, auf der man
+    an dem Tag gefahren ist."""
+    from apps.touren import ablauf
+
+    if ls.erstellt_von_id == benutzer.pk:
+        return True
+    return ls.tour is not None and ablauf.faehrt_mit(ls.tour, ls.datum,
+                                                     ablauf.person_von(benutzer))  # fmt: skip
+
+
 def am_tag(tag: dt.date, stationen) -> dict[int, Lieferschein]:
     """Der (neueste) Lieferschein des Tages je Station – für die Ansicht unterwegs."""
     scheine = Lieferschein.objects.filter(datum=tag, station__in=stationen).order_by("nummer")
