@@ -131,6 +131,7 @@ def fahren(request, pk):
         "darf_zusatz": zusatz.darf(request.user, tour, tag),
         "umstaende": anfahrten.umstaende() if fahrt_moeglich else [],
         "aktuell": aktuell, "erledigt": sum(1 for h in halte if h.angefahren),
+        "offen": sum(1 for h in halte if not h.angefahren), "alles_erledigt": aktuell is None,
         "fahrzeuge": fahrten.fahrzeuge() if fahrt_moeglich and fahrt is None else [],
         "staende": fahrten.staende() if fahrt_moeglich and fahrt is None else {},
     })  # fmt: skip

@@ -82,20 +82,19 @@
 </ol>
 {% if darf_zusatz %}<p><a class="knopf knopf-zweitrangig tour-knopf" href="{% url 'touren:zusatzstopp' tour.pk %}?tag={{ tag|date:'Y-m-d' }}">＋ Zusatzstopp einfügen</a></p>{% endif %}
 {% if fahrt and not fahrt.beendet_am and fahrt_moeglich %}
+{% if alles_erledigt %}
 <section class="karte tour-fahrt" id="fahrt">
   <h2>Tour beenden</h2>
-  <p class="hinweis">Wenn das Fahrzeug abgestellt ist: Kilometerstand ablesen und die Tour beenden. Abfahrt war bei km {{ fahrt.km_start }}.</p>
-  <form method="post" action="{% url 'touren:fahrt_beenden' fahrt.pk %}">{% csrf_token %}
-    <div class="feld"><label for="km_ende">Kilometerstand bei Ankunft</label>
-      <input type="text" inputmode="numeric" pattern="[0-9 .]*" name="km_ende" id="km_ende" required autocomplete="off"></div>
-    <details class="tour-aendern">
-      <summary>Etwas zum Fahrzeug melden (Defekt, getankt …)</summary>
-      {% include "touren/_meldung_felder.html" %}
-      <p class="hinweis">Geht mit „Tour beenden“ an die Fahrdienstleitung.</p>
-    </details>
-    <button type="submit" class="knopf tour-knopf">Tour beenden</button>
-  </form>
+  <p class="hinweis">{% if halte %}Alle Stationen sind erledigt. {% endif %}Wenn das Fahrzeug abgestellt ist: Kilometerstand ablesen und die Tour beenden. Abfahrt war bei km {{ fahrt.km_start }}.</p>
+  {% include "touren/_fahrt_beenden.html" %}
 </section>
+{% else %}{# Unterwegs: nur ein unauffälliger Link; groß wird es erst, wenn alle Stationen erledigt sind #}
+<details class="tour-vorzeitig" id="fahrt">
+  <summary>Tour vorzeitig beenden</summary>
+  <p class="hinweis">Noch {{ offen }} Station{{ offen|pluralize:"en" }} offen. Sind alle erledigt, erscheint „Tour beenden“ hier groß. Müssen Sie vorher abbrechen: Kilometerstand ablesen, wenn das Fahrzeug abgestellt ist. Abfahrt war bei km {{ fahrt.km_start }}.</p>
+  {% include "touren/_fahrt_beenden.html" %}
+</details>
+{% endif %}
 {% endif %}
 {% if fahrt and fahrt_moeglich %}
 <section class="karte tour-fahrt" id="{% if fahrt.beendet_am %}fahrt{% else %}fahrzeug-melden{% endif %}">

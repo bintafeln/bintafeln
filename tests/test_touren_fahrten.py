@@ -139,6 +139,20 @@ def test_am_handy(client, anmelden, lage):
     fahrt = Fahrt.objects.get()
     seite = client.get(adresse).content.decode()
     assert "Unterwegs" in seite and "Tour beenden" in seite and "Fahrt beginnen" not in seite
+    # solange eine Station offen ist: nur der Link „Tour vorzeitig beenden“, kein großer Abschnitt
+    assert (
+        '<details class="tour-vorzeitig" id="fahrt">' in seite and "Noch 1 Station offen" in seite
+    )
+    assert "<h2>Tour beenden</h2>" not in seite
+    from apps.touren import anfahrten
+    from apps.touren.models import Umstand
+
+    station = tour.halte.get().station
+    anfahrten.markieren(tour, station, lage["fritz"], Umstand.objects.get(name="Abgeholt").pk)
+    seite = client.get(adresse).content.decode()
+    assert "<h2>Tour beenden</h2>" in seite and "Alle Stationen sind erledigt." in seite
+    assert "tour-vorzeitig" not in seite
+    anfahrten.zuruecknehmen(tour, station, lage["fritz"])
     antwort = client.post(reverse("touren:fahrt_beenden", args=[fahrt.pk]), {"km_ende": "4000"},
                           follow=True)  # fmt: skip
     assert "kleiner" in antwort.content.decode() and Fahrt.objects.get().km_ende is None
