@@ -402,6 +402,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   (`faehrt_am()`, `halte()`, `besetzung()` – aus dem Fahrerplan, sonst `Tour.personen`; `routen()`
   höchstens zehn Stationen je Link; `senden()` über die Benachrichtigung `touren_tour`). Ansichten
   für unterwegs in `views_touren.py` zuerst fürs Handy bauen und in Handybreite prüfen.
+  Stationen beim Planen suchen: `apps/touren/suche.py` (alle Angaben, ab drei Zeichen, Treffer als
+  Baustein `touren/_stationen_treffer.html`); die kurzfristige Tour entsteht in einer Maske
+  (`views_touren.tour_neu`, Auswahl über `static/js/stationswahl.js`, neue Adresse über `NeueStationForm`).
   Tourstart (ADR 0150): „Seid ihr …?“ vor einer Tour aus dem Fahrerplan am heutigen Tag, Regeln nur
   in `apps/touren/start.py` (`bestaetigen()` prüft selbst: nur wer auf der Tour eingetragen ist oder
   das Recht `touren.besetzung` hat; Änderung als `Ersatz` im Fahrerplan); eigene `fahrtage` einer

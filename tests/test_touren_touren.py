@@ -521,3 +521,89 @@ def test_lieferschein_gilt_als_angefahren(fahrer):
     seite = fahrer.get(reverse("touren:fahren", args=[t.pk])).content.decode()
     assert "1 angefahren" in seite and 'id="halt-2" data-tour-aktuell' in seite
     assert seite.count("✓ Hier waren wir</button>") == 1  # an der ersten steht der Lieferschein
+
+
+# --- Stationen suchen und kurzfristige Tour in einer Maske ---------------------------------------
+
+
+def test_stationssuche_ueber_alle_angaben():
+    from apps.touren import suche
+
+    a = station(1, name="Supermarkt Nord", kette="Beispielkette", telefon="01234 567890",
+                ansprechpartner="Frau Muster")  # fmt: skip
+    b = station(2, name="Bäckerei Probe", strasse="Hauptstraße", notiz="Hintereingang")
+    station(3, name="Geschlossen", aktiv=False, strasse="Hauptstraße")
+    assert suche.stationen("su") == []  # erst ab drei Zeichen
+    assert suche.stationen("super") == [a] and suche.stationen("beispielk") == [a]
+    assert suche.stationen("567890") == [a] and suche.stationen("01234 567") == [a]
+    assert suche.stationen("muster nord") == [a]  # jedes Wort muss vorkommen
+    assert suche.stationen("haupt") == [b] and suche.stationen("hintereingang") == [b]
+    assert suche.stationen("12345") == [b, a]  # PLZ, nur aktive, nach Name
+    t = Tour.objects.create(name="Tour 1")
+    ablauf.halt_anhaengen(t, a)
+    assert suche.stationen("musterstadt", ohne_tour=t) == [b]
+    assert len(suche.stationen("musterstadt", grenze=1)) == 1
+
+
+def test_suche_beim_anhaengen(buero):
+    a = station(1, name="Supermarkt Nord")
+    t = Tour.objects.create(name="Tour 1")
+    seite = buero.get(reverse("touren:tour", args=[t.pk])).content.decode()
+    assert "Station suchen und anhängen" in seite
+    assert f"{reverse('touren:stationen_suche')}?tour={t.pk}" in seite
+    adresse = reverse("touren:stationen_suche")
+    assert "mindestens 3 Zeichen" in buero.get(adresse, {"q": "su", "tour": t.pk}).content.decode()
+    treffer = buero.get(adresse, {"q": "super", "tour": t.pk}).content.decode()
+    assert "Supermarkt Nord" in treffer and reverse("touren:halt_neu", args=[t.pk]) in treffer
+    assert "Keine Station gefunden" in buero.get(adresse, {"q": "xyzxyz"}).content.decode()
+    buero.post(reverse("touren:halt_neu", args=[t.pk]), {"station": a.pk})
+    leer = buero.get(adresse, {"q": "super", "tour": t.pk}).content.decode()
+    assert "noch nicht auf der Tour" in leer  # steht schon darauf
+    wahl = buero.get(adresse, {"q": "super"}).content.decode()  # ohne Tour: zur Auswahl
+    assert f'data-station-waehlen="{a.pk}"' in wahl
+
+
+def test_suche_nur_mit_recht_planen(fahrer):
+    assert fahrer.get(reverse("touren:stationen_suche"), {"q": "super"}).status_code == 403
+
+
+def test_kurzfristige_tour_in_einer_maske(buero, django_user_model, mail_an):
+    a, b = station(1, name="Supermarkt Nord"), station(2, name="Bäckerei Probe")
+    fritz = person(django_user_model, "Fritz")
+    adresse = reverse("touren:tour_neu") + "?kurz"
+    seite = buero.get(adresse).content.decode()
+    assert "Laden oder Lieferadresse suchen" in seite and "noch nicht in der Liste" in seite
+    daten = {"name": "Sonderabholung", "datum": "24.11.2026", "personen": [fritz.pk],
+             "hinweis": "", "aktiv": "on", "stationen": [b.pk, a.pk, b.pk], "senden": "1",
+             "neu-name": "Hofladen Beispiel", "neu-art": "sonstiges", "neu-strasse": "Feldweg",
+             "neu-hausnummer": "3", "neu-plz": "12345", "neu-ort": "Musterstadt"}  # fmt: skip
+    antwort = buero.post(adresse, daten)
+    t = Tour.objects.get(name="Sonderabholung")
+    assert antwort.status_code == 302 and antwort.url == reverse("touren:tour", args=[t.pk])
+    neu = Station.objects.get(name="Hofladen Beispiel")
+    assert neu.kennung.startswith("S-") and neu.geaendert_von == "bernd"
+    # Reihenfolge wie gewählt, jede Station nur einmal, die neue am Ende
+    assert [h.station for h in t.halte.all()] == [b, a, neu]
+    assert t.datum == dt.date(2026, 11, 24) and list(t.personen.all()) == [fritz]
+    assert len(mail.outbox) == 1 and "Bäckerei Probe" in mail.outbox[0].body  # gleich geschickt
+
+
+def test_kurzfristige_tour_fehler_behaelt_die_auswahl(buero):
+    a = station(1, name="Supermarkt Nord")
+    adresse = reverse("touren:tour_neu") + "?kurz"
+    # neue Adresse nur halb eingetragen: nichts wird angelegt, die Auswahl bleibt stehen
+    daten = {"name": "Sonderabholung", "datum": "24.11.2026", "aktiv": "on",
+             "stationen": [a.pk], "neu-name": "Hofladen", "neu-art": "sonstiges"}  # fmt: skip
+    antwort = buero.post(adresse, daten)
+    seite = antwort.content.decode()
+    assert antwort.status_code == 200 and not Tour.objects.exists()
+    assert f'name="stationen" value="{a.pk}"' in seite and "Supermarkt Nord" in seite
+    assert not Station.objects.filter(name="Hofladen").exists()
+    # ohne neue Adresse und ohne Senden
+    del daten["neu-name"]
+    buero.post(adresse, daten)
+    t = Tour.objects.get()
+    assert [h.station for h in t.halte.all()] == [a] and not mail.outbox
+    # die regelmäßige Tour bleibt beim alten Ablauf
+    assert "Laden oder Lieferadresse suchen" not in buero.get(
+        reverse("touren:tour_neu")).content.decode()  # fmt: skip
