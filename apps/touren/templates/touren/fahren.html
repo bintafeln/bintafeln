@@ -49,7 +49,7 @@
     {% if h.schein %}<p class="tour-schein"><span class="marke-ok">✓ Lieferschein Nr. {{ h.schein.nummer }}</span> <a href="{% url 'touren:lieferschein_pdf' h.schein.pk %}" target="_blank" rel="noopener">ansehen</a>{% if not h.schein.gesendet_am %} <span class="marke-warnung">nicht verschickt</span>{% endif %}</p>
     {% elif h.schein_moeglich %}<a class="knopf knopf-zweitrangig tour-knopf" href="{% url 'touren:lieferschein' s.pk %}?tour={{ tour.pk }}&amp;tag={{ tag|date:'Y-m-d' }}">📝 Lieferschein ausfüllen</a>{% endif %}
     <p class="tour-halt-fuss">{% if s.telefon %}<span>📞 {{ s.telefon|anrufen }}{% if s.ansprechpartner %} <small class="leise">{{ s.ansprechpartner }}</small>{% endif %}</span>{% endif %}
-      {% if "touren.stationen" in rechte %}<a href="{% url 'touren:station' s.pk %}">Alle Angaben</a>{% endif %}</p>
+      {% if "touren.stationen" in rechte %}<a class="tour-alle-angaben" href="{% url 'touren:station' s.pk %}?tour={{ tour.pk }}&amp;tag={{ tag|date:'Y-m-d' }}&amp;halt={{ forloop.counter }}">Alle Angaben</a>{% endif %}</p>
   </li>
   {% endwith %}{% empty %}
   <li class="karte"><p class="hinweis">Für diesen Tag sind keine Stationen eingetragen.</p></li>
