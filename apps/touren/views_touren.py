@@ -93,7 +93,8 @@ def fahren(request, pk):
     return render(request, "touren/fahren.html", {
         "tour": tour, "tag": tag, "halte": halte, "faehrt": ablauf.faehrt_am(tour, tag),
         "besetzung": ablauf.besetzung(tour, tag),
-        "routen": ablauf.routen([h.station for h in halte]),
+        "routen": ablauf.routen([h.station for h in halte],
+                                TourenEinstellungen.laden().start_ziel),
         "darf_planen": rollen.hat_recht(request.user, "touren.planen"),
         "gefragt": gefragt, "gestartet": gestartet, "darf_start": darf_start,
         "fahrt": fahrt, "fahrt_moeglich": fahrt_moeglich,
@@ -197,6 +198,22 @@ def stationen_suche(request):
     })  # fmt: skip
 
 
+def _vorschau(stationen: list[Station]) -> dict:
+    e = TourenEinstellungen.laden()
+    return ablauf.vorschau(stationen, e.start_ziel, e.karten_schluessel)
+
+
+@never_cache
+@planen
+def karte(request):
+    """Routenvorschau als Baustein für die Maske der kurzfristigen Tour: die dort gewählten
+    Stationen in ihrer Reihenfolge (``stationen`` mehrfach)."""
+    pks = [int(p) for p in request.GET.getlist("stationen") if p.isdigit()]
+    vorhanden = Station.objects.in_bulk(pks)
+    gewaehlt = [vorhanden[p] for p in dict.fromkeys(pks) if p in vorhanden]
+    return render(request, "touren/_karte.html", {"vorschau": _vorschau(gewaehlt)})
+
+
 def _gewaehlte(request) -> list[Station]:
     """Die in der Maske gewählten Stationen in ihrer Reihenfolge (jede nur einmal)."""
     pks = [int(p) for p in request.POST.getlist("stationen") if p.isdigit()]
@@ -234,6 +251,7 @@ def tour_neu(request):
         return redirect("touren:tour", pk=tour.pk)
     return render(request, "touren/tour.html", {
         "form": form, "tour": None, "kurz": kurz, "gewaehlt": gewaehlt, "neu": neu,
+        "vorschau": _vorschau(gewaehlt) if kurz else None,
         "senden": "senden" in request.POST,
     })  # fmt: skip
 
@@ -253,6 +271,7 @@ def tour(request, pk):
     aenderbar = aus_plan and tourstart.aenderbar(t, tag) and tourstart.darf(request.user, t, tag)
     return render(request, "touren/tour.html", {
         "plaetze": tourstart.plaetze(t, tag) if aenderbar else [], "aenderbar": aenderbar,
+        "vorschau": _vorschau([h.station for h in ablauf.halte(t) if h.station.aktiv]),
         "form": form, "tour": t, "kurz": t.kurzfristig, "halte": ablauf.halte(t),
         "halt_form": HaltForm(tour=t), "wochentage": WOCHENTAGE,
         "besetzung": ablauf.besetzung(t, tag), "tag": tag,

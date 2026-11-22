@@ -2285,6 +2285,62 @@ def test_kurzfristige_tour_in_einer_maske(seite, angemeldet, admin):
     expect(seite.locator("#tour-halte tbody tr")).to_have_count(3)
 
 
+def test_routenvorschau_in_der_planung(seite, angemeldet, admin):
+    """Tourenplanung: Die Google-Karte lädt erst nach „Karte zeigen“, die Wahl bleibt gemerkt
+    (static/js/tour_karte.js); in der Maske der kurzfristigen Tour folgt die Vorschau der
+    Auswahl (ADR 0154). Google selbst wird im Test nicht aufgerufen."""
+    from apps.core import geheimnis
+    from apps.core.models import TafelEinstellungen
+    from apps.touren import ablauf
+    from apps.touren.models import Station, Tour, TourenEinstellungen
+
+    t = TafelEinstellungen.laden()
+    t.module = ["touren"]
+    t.save()
+    e = TourenEinstellungen.laden()
+    e.zentrale = "Zentralweg 1, 12345 Musterstadt"
+    e.karten_schluessel_verschluesselt = geheimnis.verschluesseln("test-schluessel")
+    e.save()
+    tour = Tour.objects.create(name="Nordtour")
+    for nr, name in enumerate(["Supermarkt Nord", "Bäckerei Probe"], 1):
+        ablauf.halt_anhaengen(tour, Station.objects.create(
+            kennung=f"M-{nr}", name=name, strasse="Musterweg", hausnummer=str(nr), plz="12345",
+            ort="Musterstadt"))  # fmt: skip
+    aufrufe = []
+
+    def google(route):
+        aufrufe.append(route.request.url)
+        route.fulfill(status=200, content_type="text/html", body="<p>Karte</p>")
+
+    seite.route("https://www.google.com/**", google)
+    angemeldet(admin)
+    seite.goto(reverse("touren:tour", args=[tour.pk]))
+    expect(seite.get_by_text("Start und Ziel: Zentralweg 1")).to_be_visible()
+    assert not aufrufe and seite.locator(".tour-karte iframe").count() == 0  # erst nach Klick
+    seite.get_by_role("button", name="🗺 Karte zeigen").click()
+    bild = seite.locator(".tour-karte iframe")
+    expect(bild).to_have_count(1)
+    expect(bild).to_have_attribute("src", re.compile(r"embed/v1/directions\?key=test-schluessel"))
+    expect(bild).to_have_attribute("src", re.compile(r"origin=Zentralweg"))
+    seite.reload()  # gemerkt: die Karte kommt von selbst
+    expect(seite.locator(".tour-karte iframe")).to_have_count(1)
+    seite.get_by_role("button", name="Karte nicht mehr automatisch zeigen").click()
+    expect(seite.locator(".tour-karte iframe")).to_have_count(0)
+    seite.reload()
+    expect(seite.get_by_role("button", name="🗺 Karte zeigen")).to_be_visible()
+    # Maske der kurzfristigen Tour: die Vorschau folgt der Auswahl
+    seite.goto(reverse("touren:tour_neu") + "?kurz")
+    expect(seite.get_by_text("Sobald Stationen gewählt sind")).to_be_visible()
+    seite.get_by_label("Laden oder Lieferadresse suchen").fill("super")
+    seite.get_by_role("button", name="Supermarkt Nord hinzufügen").click()
+    expect(seite.get_by_role("link", name="Route in Google Maps öffnen ↗")).to_be_visible()
+    seite.get_by_role("button", name="🗺 Karte zeigen").click()
+    expect(seite.locator(".tour-karte iframe")).to_have_attribute(
+        "src", re.compile(r"waypoints=Musterweg\+1"))  # fmt: skip
+    seite.get_by_role("button", name="Supermarkt Nord entfernen").click()
+    expect(seite.get_by_text("Sobald Stationen gewählt sind")).to_be_visible()
+
+
 def test_lieferschein_am_handy_unterschreiben(seite, angemeldet, admin):
     """Unterwegs: Lieferschein ausfüllen, mit dem Finger unterschreiben, abschicken
     (static/js/unterschrift_feld.js, ADR 0149)."""

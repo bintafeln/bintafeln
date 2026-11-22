@@ -421,6 +421,11 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `beifahrer2`, `gast` (`personen` folgt daraus, `BesetzungMixin`); Tour aus dem Fahrerplan: Tages-
   besetzung nur über `start.aendern()` (auch Gast auf Beifahrerplätzen, aus der Planung über
   `views_touren.besetzung_aendern`). ECO-Plattform: `TourenEinstellungen.eco_link` (nur ein Link).
+  Routenvorschau in der Planung (ADR 0154, ergänzt ADR 0147): `ablauf.vorschau()` – Zentrale
+  (`TourenEinstellungen.start_ziel`) → Stationen → Zentrale; eingebettete Google-Karte nur mit
+  Schlüssel (`karten_schluessel`, verschlüsselt) und erst nach Klick (`static/js/tour_karte.js`,
+  Baustein `touren/_karte.html`), sonst nur Link; nie bei den Fahrern. Deren Route endet über
+  `ablauf.routen(…, zentrale)` ebenfalls an der Zentrale.
   Lieferscheine (ADR 0149): Regeln nur in `apps/touren/lieferscheine.py`; das PDF ist der
   Lieferschein – einmal erzeugt, verschlüsselt in `Lieferschein.datei`, nie neu berechnet, die
   Unterschrift (`static/js/unterschrift_feld.js`) wird nicht aufbewahrt; Versand nur an die

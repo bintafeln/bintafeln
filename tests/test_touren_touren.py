@@ -719,3 +719,119 @@ def test_eco_plattform_link(buero, admin_client):
         assert 'href="https://eco.tafel.de"' in seite and "ECO-Plattform" in seite
     # Touren, Stationen und Lieferscheine bleiben nutzbar
     assert buero.get(reverse("touren:stationen")).status_code == 200
+
+
+# --- Routenvorschau in der Planung, Zentrale als Start und Ziel (ADR 0154) -----------------------
+
+
+def _einstellen(**werte):
+    from apps.touren.models import TourenEinstellungen
+
+    e = TourenEinstellungen.laden()
+    for name, wert in werte.items():
+        setattr(e, name, wert)
+    e.save()
+    return e
+
+
+def test_route_am_handy_endet_an_der_zentrale():
+    stationen = [station(n) for n in range(1, 4)]
+    ohne = ablauf.routen(stationen)
+    assert len(ohne) == 1 and not ohne[0]["zentrale"] and "Zentralweg" not in ohne[0]["url"]
+    mit = ablauf.routen(stationen, "Zentralweg 1, 12345 Musterstadt")
+    assert len(mit) == 1 and mit[0]["zentrale"] and (mit[0]["von"], mit[0]["bis"]) == (1, 3)
+    assert "destination=Zentralweg+1" in mit[0]["url"] and mit[0]["url"].count("Musterweg") == 3
+    # zehn Stationen: die Zentrale passt nicht mehr in den Link und bekommt einen eigenen
+    viele = ablauf.routen([station(n) for n in range(10, 20)], "Zentralweg 1")
+    assert [(r["von"], r["bis"], r["zentrale"]) for r in viele] == [(1, 10, False),
+                                                                   (11, 10, True)]  # fmt: skip
+    assert ablauf.routen([], "Zentralweg 1") == []
+
+
+def test_vorschau_von_der_zentrale_und_zurueck():
+    stationen = [station(n) for n in range(1, 4)]
+    leer = ablauf.vorschau([], "Zentralweg 1", "schluessel")
+    assert leer == {"karten": [], "links": [], "zentrale": "Zentralweg 1"}
+    ohne_schluessel = ablauf.vorschau(stationen, "Zentralweg 1")
+    assert ohne_schluessel["karten"] == [] and len(ohne_schluessel["links"]) == 1
+    link = ohne_schluessel["links"][0]
+    assert "origin=Zentralweg+1" in link and "destination=Zentralweg+1" in link
+    assert link.count("Musterweg") == 3 and link.startswith("https://www.google.com/maps/dir/")
+    mit = ablauf.vorschau(stationen, "Zentralweg 1", "abc123")
+    (karte,) = mit["karten"]
+    assert karte.startswith("https://www.google.com/maps/embed/v1/directions?key=abc123")
+    assert "origin=Zentralweg+1" in karte and "waypoints=" in karte and "mode=driving" in karte
+    # ohne Zentrale: von der ersten zur letzten Station
+    frei = ablauf.vorschau(stationen, "", "abc123")
+    assert "origin=Musterweg+1" in frei["karten"][0] and "Zentralweg" not in frei["karten"][0]
+    assert ablauf.vorschau(stationen[:1], "", "abc123") == {"karten": [], "links": [],
+                                                            "zentrale": ""}  # fmt: skip
+    # lange Tour: Karte in Abschnitten zu 20 Zwischenstopps, Links zu neun
+    lang = ablauf.vorschau([station(n) for n in range(100, 125)], "Zentralweg 1", "abc123")
+    assert len(lang["karten"]) == 2 and len(lang["links"]) == 3
+    erster, zweiter = lang["karten"]
+    assert erster.count("%7C") == 19 and "origin=Zentralweg+1" in erster
+    assert "destination=Zentralweg+1" in zweiter and "origin=Musterweg+120" in zweiter
+
+
+def test_zentrale_einstellung():
+    t = TafelEinstellungen.laden()
+    t.strasse, t.plz, t.ort = "Tafelweg 5", "12345", "Musterstadt"
+    t.save()
+    assert _einstellen().start_ziel == "Tafelweg 5, 12345 Musterstadt"  # Vorgabe: die Tafel
+    assert _einstellen(zentrale=" Lagerstraße 2, 12345 Musterstadt ").start_ziel == (
+        "Lagerstraße 2, 12345 Musterstadt")  # fmt: skip
+    assert _einstellen(zentrale_aus=True).start_ziel == ""
+
+
+def test_planung_zeigt_routenvorschau(buero, admin_client):
+    from apps.touren.models import TourenEinstellungen
+
+    _einstellen(zentrale="Zentralweg 1, 12345 Musterstadt")
+    t = tour_mit(3, name="Nordtour")
+    adresse = reverse("touren:tour", args=[t.pk])
+    seite = buero.get(adresse).content.decode()
+    assert "So wird gefahren" in seite and "Start und Ziel: Zentralweg 1" in seite
+    assert "Route in Google Maps öffnen" in seite and "origin=Zentralweg" in seite
+    assert "Karte zeigen" not in seite and "embed/v1" not in seite  # ohne Schlüssel keine Karte
+    # der Admin trägt den Google-Schlüssel ein: verschlüsselt gespeichert, nie im Formular
+    daten = {"einstellungen": "1", "lieferscheine": "on", "versand": "aus", "mail_text": "Hallo",
+             "aufbewahrung_jahre": "10", "zentrale": "Zentralweg 1, 12345 Musterstadt",
+             "eco_adresse": "https://eco.tafel.de", "karten_schluessel": " abc123 "}  # fmt: skip
+    assert admin_client.post(reverse("touren:einstellungen"), daten).status_code == 302
+    e = TourenEinstellungen.laden()
+    assert e.karten_schluessel == "abc123" and "abc123" not in e.karten_schluessel_verschluesselt
+    formular = admin_client.get(reverse("touren:einstellungen")).content.decode()
+    assert "abc123" not in formular and "Ein Schlüssel ist gespeichert" in formular
+    seite = buero.get(adresse).content.decode()
+    assert "Karte zeigen" in seite and "embed/v1/directions?key=abc123" in seite
+    assert "<iframe" not in seite  # erst nach dem Klick (static/js/tour_karte.js)
+    # leer gespeichert: der Schlüssel bleibt; löschen entfernt ihn
+    admin_client.post(reverse("touren:einstellungen"), {**daten, "karten_schluessel": ""})
+    assert TourenEinstellungen.laden().karten_schluessel == "abc123"
+    weg = {**daten, "karten_schluessel": "", "karten_schluessel_loeschen": "on"}
+    admin_client.post(reverse("touren:einstellungen"), weg)
+    assert TourenEinstellungen.laden().karten_schluessel == ""
+    # die Fahrer bekommen keine Karte, aber die Zentrale als letztes Ziel der Route
+    fahren = buero.get(reverse("touren:fahren", args=[t.pk])).content.decode()
+    assert "So wird gefahren" not in fahren and "destination=Zentralweg" in fahren
+    assert "Alle Stationen als Route und zurück zur Zentrale" in fahren
+
+
+def test_karte_baustein_fuer_die_maske(buero):
+    _einstellen(zentrale="Zentralweg 1", karten_schluessel_verschluesselt="")
+    a, b = station(1), station(2)
+    adresse = reverse("touren:karte")
+    leer = buero.get(adresse).content.decode()
+    assert "Sobald Stationen gewählt sind" in leer
+    seite = buero.get(adresse, {"stationen": [b.pk, a.pk, b.pk, "x"]}).content.decode()
+    assert "Route in Google Maps öffnen" in seite
+    assert seite.index("Musterweg+2") < seite.index("Musterweg+1")  # Reihenfolge der Auswahl
+    maske = buero.get(reverse("touren:tour_neu") + "?kurz").content.decode()
+    assert "So wird gefahren" in maske and reverse("touren:karte") in maske
+    assert "So wird gefahren" not in buero.get(reverse("touren:tour_neu")).content.decode()
+
+
+def test_karte_nur_mit_recht_planen(client, anmelden, heute_tour):
+    anmelden(client, heute_tour["klaus"].konto)
+    assert client.get(reverse("touren:karte")).status_code == 403

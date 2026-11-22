@@ -10,7 +10,7 @@ from django.utils import timezone
 
 from apps.ausgabe.ampel import WOCHENTAGE, wochentage
 from apps.core import module
-from apps.touren.models import GOOGLE_MAPS_ROUTE, Halt, Station, Tour
+from apps.touren.models import GOOGLE_MAPS_KARTE, GOOGLE_MAPS_ROUTE, Halt, Station, Tour
 
 # Google Maps nimmt in einem Link höchstens neun Zwischenstopps (im mobilen Browser ohne App
 # nur drei); längere Touren werden in Abschnitte geteilt.
@@ -104,20 +104,65 @@ def meine(benutzer, datum: dt.date) -> list[Tour]:
     return [t for t in touren_am(datum) if faehrt_mit(t, datum, person)]
 
 
-def routen(stationen: list[Station]) -> list[dict]:
-    """Die ganze Tour als Links zu Google Maps: [{"url", "von", "bis"}] (Nummern der Stationen,
-    ab 1). Start ist der eigene Standort; ein Link fasst höchstens zehn Stationen (neun
-    Zwischenstopps und das Ziel)."""
+def routen(stationen: list[Station], zentrale: str = "") -> list[dict]:
+    """Die ganze Tour als Links zu Google Maps: [{"url", "von", "bis", "zentrale"}] (Nummern
+    der Stationen, ab 1). Start ist der eigene Standort; ein Link fasst höchstens zehn Ziele
+    (neun Zwischenstopps und das Ziel). Mit ``zentrale`` endet die Route dort („zentrale“ am
+    letzten Link)."""
+    ziele = [s.ziel for s in stationen] + ([zentrale] if zentrale and stationen else [])
     links = []
     schritt = MAX_ZWISCHENSTOPPS + 1
-    for anfang in range(0, len(stationen), schritt):
-        teil = stationen[anfang : anfang + schritt]
-        werte = {"api": "1", "destination": teil[-1].ziel, "travelmode": "driving"}
+    for anfang in range(0, len(ziele), schritt):
+        teil = ziele[anfang : anfang + schritt]
+        werte = {"api": "1", "destination": teil[-1], "travelmode": "driving"}
         if len(teil) > 1:
-            werte["waypoints"] = "|".join(s.ziel for s in teil[:-1])
+            werte["waypoints"] = "|".join(teil[:-1])
+        endet_dort = bool(zentrale) and anfang + len(teil) == len(ziele)
         links.append({"url": GOOGLE_MAPS_ROUTE + urlencode(werte), "von": anfang + 1,
-                      "bis": anfang + len(teil)})  # fmt: skip
+                      "bis": min(anfang + len(teil), len(stationen)),
+                      "zentrale": endet_dort})  # fmt: skip
+    if len(links) > 1 and links[-1]["von"] > len(stationen):
+        links[-1]["von"] = len(stationen) + 1  # letzter Link führt nur noch zur Zentrale
     return links
+
+
+MAX_KARTE = 20  # Zwischenstopps, die Google in einer eingebetteten Route zeigt
+
+
+def vorschau(stationen: list[Station], zentrale: str = "", schluessel: str = "") -> dict:
+    """Die Route für die Planung: Zentrale → Stationen in Reihenfolge → Zentrale.
+
+    ``karten``: Adressen zum Einbetten (nur mit Google-Schlüssel; je Karte höchstens 20
+    Zwischenstopps, längere Touren in Abschnitten). ``links``: dieselbe Route zum Öffnen in
+    einem eigenen Fenster (höchstens neun Zwischenstopps je Link) – der Weg ohne Schlüssel."""
+    punkte = [s.ziel for s in stationen]
+    if not punkte:
+        return {"karten": [], "links": [], "zentrale": zentrale}
+    kette = ([zentrale] if zentrale else []) + punkte + ([zentrale] if zentrale else [])
+
+    def teilen(groesse: int) -> list[list[str]]:
+        # Abschnitte, die sich an den Enden überlappen: Ziel des einen = Start des nächsten
+        teile, anfang = [], 0
+        while anfang < len(kette) - 1:
+            teile.append(kette[anfang : anfang + groesse + 2])
+            anfang += groesse + 1
+        return teile or [kette]
+
+    def werte(teil: list[str]) -> dict:
+        w = {"origin": teil[0], "destination": teil[-1]}
+        if len(teil) > 2:
+            w["waypoints"] = "|".join(teil[1:-1])
+        return w
+
+    karten = []
+    if schluessel and len(kette) > 1:
+        karten = [GOOGLE_MAPS_KARTE + urlencode({"key": schluessel, **werte(t), "mode": "driving"})
+                  for t in teilen(MAX_KARTE)]  # fmt: skip
+    links = []
+    if len(kette) > 1:
+        links = [GOOGLE_MAPS_ROUTE + urlencode({"api": "1", **werte(t), "travelmode": "driving"})
+                 for t in teilen(MAX_ZWISCHENSTOPPS)]  # fmt: skip
+    return {"karten": karten, "links": links, "zentrale": zentrale}
 
 
 # --- Halte pflegen ------------------------------------------------------------------------------

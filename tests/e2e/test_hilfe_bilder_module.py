@@ -1195,6 +1195,51 @@ def test_hilfe_bild_touren_kurzfristig(angemeldet, admin, muster):
     )
 
 
+def test_hilfe_bild_touren_karte(angemeldet, admin, muster):
+    """Routenvorschau in der Planung (ADR 0154). Statt Google zeigt der Test eine gezeichnete
+    Skizze, damit das Bild ohne Netz entsteht."""
+    from apps.core import demo_daten, geheimnis
+    from apps.fahrdienst import beispiel
+    from apps.touren.models import Tour, TourenEinstellungen
+
+    _module("touren", "fahrdienst")
+    beispiel.anlegen(seed=1)
+    demo_daten.touren()
+    e = TourenEinstellungen.laden()
+    e.zentrale = "Tafelweg 1, 12345 Musterstadt"
+    e.karten_schluessel_verschluesselt = geheimnis.verschluesseln("beispiel")
+    e.save()
+    skizze = (
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' width='100%' height='100%'>"
+        "<rect width='400' height='300' fill='#e8eee6'/>"
+        "<path d='M60 240 L120 90 L230 60 L330 130 L270 230 Z' fill='none' stroke='#2b6cb0' "
+        "stroke-width='6' stroke-linejoin='round'/>"
+        "<g fill='#c53030'><circle cx='120' cy='90' r='9'/><circle cx='230' cy='60' r='9'/>"
+        "<circle cx='330' cy='130' r='9'/><circle cx='270' cy='230' r='9'/></g>"
+        "<circle cx='60' cy='240' r='11' fill='#276749'/>"
+        "<text x='76' y='262' font-family='sans-serif' font-size='15'>Zentrale</text></svg>"
+    )
+    tour = Tour.objects.filter(fahrdienst_tour__isnull=False).order_by("pk").first()
+    seite = oeffnen(angemeldet, admin, reverse("touren:touren"))
+    seite.route("https://www.google.com/**", lambda r: r.fulfill(
+        status=200, content_type="text/html",
+        body=f"<body style='margin:0'>{skizze}</body>"))  # fmt: skip
+    seite.goto(seite.url.split("/touren/")[0] + reverse("touren:tour", args=[tour.pk]))
+    seite.get_by_role("button", name="🗺 Karte zeigen").click()
+    expect(seite.locator(".tour-karte iframe")).to_have_count(1)
+    seite.frame_locator(".tour-karte iframe").locator("svg").wait_for()
+    aufnehmen(
+        seite,
+        "touren-karte",
+        [seite.locator("#stationen")],
+        Marke(seite.locator("#tour-halte"), art="rahmen", nummer=1),
+        Marke(seite.locator(".tour-karte"), art="rahmen", nummer=2),
+        Marke(seite.locator("#tour-karte p").last, art="rahmen", nummer=3),
+        rand=8,
+    )
+    seite.evaluate("window.localStorage.removeItem('bintafeln-tourkarte')")
+
+
 def test_hilfe_bild_touren_lieferschein(angemeldet, admin, muster):
     from apps.core import demo_daten
     from apps.touren.models import Station

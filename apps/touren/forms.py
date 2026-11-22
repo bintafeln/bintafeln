@@ -196,14 +196,49 @@ class EinstellungenForm(forms.ModelForm):
     eco_adresse = forms.URLField(label="Adresse der ECO-Plattform", required=False,
                                  assume_scheme="https")  # fmt: skip
 
+    karten_schluessel = forms.CharField(
+        label="Google-Schlüssel für die Karte in der Tourenplanung", required=False,
+        widget=forms.PasswordInput,
+        help_text="Schlüssel der „Maps Embed API“ aus der Google-Cloud (kostenlos). Damit zeigt "
+        "die Tourenplanung die Route als Karte in der Seite; ohne Schlüssel gibt es einen Knopf, "
+        "der die Route in einem eigenen Fenster öffnet. Wird verschlüsselt gespeichert; leer "
+        "lassen = bleibt wie er ist.",
+    )  # fmt: skip
+    karten_schluessel_loeschen = forms.BooleanField(
+        label="Gespeicherten Google-Schlüssel löschen", required=False
+    )
+
     class Meta:
         model = TourenEinstellungen
         fields = ["lieferscheine", "versand", "test_email", "mail_text", "aufbewahrung_jahre",
-                  "eco_plattform", "eco_adresse"]  # fmt: skip
+                  "zentrale", "zentrale_aus", "eco_plattform", "eco_adresse"]  # fmt: skip
         widgets = {
             "mail_text": forms.Textarea(attrs={"rows": 5}),
             "test_email": forms.EmailInput(attrs={"data-zeigen-bei": "versand=test"}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.karten_schluessel_verschluesselt:
+            self.fields["karten_schluessel"].help_text = (
+                "Ein Schlüssel ist gespeichert. " + self.fields["karten_schluessel"].help_text
+            )
+        else:
+            del self.fields["karten_schluessel_loeschen"]
+
+    def save(self, commit=True):
+        from apps.core import geheimnis
+
+        e = super().save(commit=False)
+        if self.cleaned_data.get("karten_schluessel_loeschen"):
+            e.karten_schluessel_verschluesselt = ""
+        elif self.cleaned_data.get("karten_schluessel"):
+            e.karten_schluessel_verschluesselt = geheimnis.verschluesseln(
+                self.cleaned_data["karten_schluessel"].strip()
+            )
+        if commit:
+            e.save()
+        return e
 
     def clean(self):
         daten = super().clean()
