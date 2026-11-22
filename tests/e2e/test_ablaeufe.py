@@ -2251,7 +2251,15 @@ def test_tour_springt_zur_aktuellen_station(seite, angemeldet, admin):
     expect(aktuell).to_have_attribute("data-tour-aktuell", "")
     expect(aktuell).to_be_in_viewport()
     assert seite.evaluate("window.scrollY") > 300
-    expect(seite.locator("#halt-1")).to_have_class(re.compile("tour-erledigt"))  # bleibt stehen
+    erste = seite.locator("#halt-1")
+    expect(erste).to_have_class(re.compile("tour-erledigt"))  # bleibt stehen
+    # Erledigtes ist deutlich gekennzeichnet und eingeklappt, aber wieder aufklappbar
+    expect(erste.locator(".tour-erledigt-zeile")).to_contain_text("Erledigt")
+    expect(erste.get_by_role("link", name="🧭 Navigation starten")).to_be_hidden()
+    erste.locator("summary").click()
+    expect(erste.get_by_role("link", name="🧭 Navigation starten")).to_be_visible()
+    erste.get_by_role("button", name="zurücknehmen").click()
+    expect(seite.locator("#halt-1")).not_to_have_class(re.compile("tour-erledigt"))
 
 
 def test_kurzfristige_tour_in_einer_maske(seite, angemeldet, admin):

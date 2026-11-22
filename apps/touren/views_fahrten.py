@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Max, Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -19,7 +19,7 @@ from django.views.decorators.http import require_POST
 from apps.core import listenexport, papierkorb, privatdateien
 from apps.konten import rollen
 from apps.touren import fahrten, meldungen
-from apps.touren.forms import FahrzeugDokumentForm
+from apps.touren.forms import FahrzeugDokumentForm, FahrzeugForm
 from apps.touren.models import Fahrt, Fahrzeug, FahrzeugDokument, Fahrzeugmeldung, Tour
 
 fahren_recht = rollen.recht_erforderlich("touren.fahren")
@@ -209,36 +209,65 @@ def _papiere_sehen(benutzer) -> None:
         raise PermissionDenied
 
 
+def _fahrzeugarten() -> list[str]:
+    """Schon benutzte Fahrzeugarten als Vorschläge."""
+    return sorted(set(Fahrzeug.objects.exclude(typ="").values_list("typ", flat=True)))
+
+
+@never_cache
+@rollen.recht_erforderlich("touren.planen")
+def fahrzeug_neu(request):
+    naechste = (Fahrzeug.objects.aggregate(n=Max("reihenfolge"))["n"] or 0) + 1
+    form = FahrzeugForm(request.POST or None, initial={"reihenfolge": naechste, "aktiv": True})
+    if request.method == "POST" and form.is_valid():
+        wagen = form.save()
+        messages.success(request, f"Fahrzeug „{wagen.name}“ angelegt. Jetzt können Sie Papiere "
+                         "hinterlegen.")  # fmt: skip
+        return redirect(f"{reverse('touren:fahrzeug', args=[wagen.pk])}#papiere")
+    return render(request, "touren/fahrzeug.html", {
+        "form": form, "darf_aendern": True, "fahrzeugarten": _fahrzeugarten(),
+    })  # fmt: skip
+
+
 @never_cache
 @login_required
 def fahrzeug(request, pk):
-    """Ein Fahrzeug mit seinen Papieren; hochladen darf, wer Touren plant."""
+    """Ein Fahrzeug: Angaben ändern und Papiere hinterlegen (wer Touren plant); ansehen darf
+    auch, wer das Fahrtenbuch führt."""
     _papiere_sehen(request.user)
     wagen = get_object_or_404(Fahrzeug, pk=pk)
     darf_aendern = rollen.hat_recht(request.user, "touren.planen")
-    form = FahrzeugDokumentForm(request.POST or None, request.FILES or None)
-    if request.method == "POST":
-        if not darf_aendern:
-            raise PermissionDenied
-        if form.is_valid():
-            try:
-                name = privatdateien.speichern(FahrzeugDokument.ORDNER,
-                                               form.cleaned_data["datei"], max_mb=10)  # fmt: skip
-            except privatdateien.DateiFehler as grund:
-                form.add_error("datei", str(grund))
-            else:
-                papier = form.save(commit=False)
-                papier.fahrzeug, papier.datei = wagen, name
-                papier.datei_typ = form.cleaned_data["datei"].content_type
-                papier.hochgeladen_von_name = (
-                    request.user.get_full_name() or request.user.get_username()
-                )[:150]
-                papier.save()
-                messages.success(request, f"{papier.titel} hinterlegt.")
-                return redirect("touren:fahrzeug", pk=wagen.pk)
+    if request.method == "POST" and not darf_aendern:
+        raise PermissionDenied
+    angaben = "angaben" in request.POST
+    form = FahrzeugForm(request.POST if angaben else None, instance=wagen)
+    papier_form = FahrzeugDokumentForm(
+        None if angaben else request.POST or None, None if angaben else request.FILES or None
+    )
+    if request.method == "POST" and angaben and form.is_valid():
+        form.save()
+        messages.success(request, "Gespeichert.")
+        return redirect("touren:fahrzeug", pk=wagen.pk)
+    if request.method == "POST" and not angaben and papier_form.is_valid():
+        try:
+            datei = papier_form.cleaned_data["datei"]
+            name = privatdateien.speichern(FahrzeugDokument.ORDNER, datei, max_mb=10)
+        except privatdateien.DateiFehler as grund:
+            papier_form.add_error("datei", str(grund))
+        else:
+            papier = papier_form.save(commit=False)
+            papier.fahrzeug, papier.datei = wagen, name
+            papier.datei_typ = papier_form.cleaned_data["datei"].content_type
+            papier.hochgeladen_von_name = (
+                request.user.get_full_name() or request.user.get_username()
+            )[:150]
+            papier.save()
+            messages.success(request, f"{papier.titel} hinterlegt.")
+            return redirect(f"{reverse('touren:fahrzeug', args=[wagen.pk])}#papiere")
     return render(request, "touren/fahrzeug.html", {
         "fahrzeug": wagen, "papiere": wagen.dokumente.all(), "form": form,
-        "darf_aendern": darf_aendern,
+        "papier_form": papier_form, "darf_aendern": darf_aendern,
+        "fahrzeugarten": _fahrzeugarten(),
     })  # fmt: skip
 
 

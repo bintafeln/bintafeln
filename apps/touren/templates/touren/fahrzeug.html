@@ -1,27 +1,41 @@
 {% extends "base.html" %}
-{% block titel %}{{ fahrzeug.name }}{% endblock %}
+{% block titel %}{% if fahrzeug %}{{ fahrzeug.name }}{% else %}Neues Fahrzeug{% endif %}{% endblock %}
 {% block inhalt %}
 <section class="karte">
   <p><a href="{% url 'touren:einrichten' %}#fahrzeuge">← Fahrzeuge</a></p>
-  <h1>{{ fahrzeug.name }}</h1>
+  <h1>{% if fahrzeug %}{{ fahrzeug.name }}{% else %}Neues Fahrzeug{% endif %}</h1>
+  {% if fahrzeug.verkauft_am %}<p class="hinweis"><span class="marke-warnung">Verkauft am {{ fahrzeug.verkauft_am|date:"d.m.Y" }}</span> Das Fahrzeug steht im Archiv und nicht mehr zur Wahl. Fahrten, Meldungen und Papiere bleiben erhalten. Datum leeren und „Aktiv“ anhaken holt es zurück.</p>{% endif %}
+  {% if fahrzeug %}<p class="aktionen"><a class="knopf knopf-zweitrangig" href="#papiere">📄 Papiere{% if papiere %} ({{ papiere|length }}){% endif %}</a></p>{% endif %}
+  {% if darf_aendern %}
+  <form method="post">{% csrf_token %}<input type="hidden" name="angaben" value="1">
+    {% if form.non_field_errors %}<p class="fehler">{{ form.non_field_errors|join:" " }}</p>{% endif %}
+    <div class="formular-raster">
+    {% for feld in form %}<div class="feld">{{ feld.label_tag }}{{ feld }}{% if feld.help_text %}<small class="hilfe">{{ feld.help_text }}</small>{% endif %}{% if feld.errors %}<small class="fehler">{{ feld.errors|join:" " }}</small>{% endif %}</div>{% endfor %}
+    </div>
+    <datalist id="fz-arten">{% for art in fahrzeugarten %}<option value="{{ art }}">{% endfor %}</datalist>
+    <button type="submit" class="knopf">{% if fahrzeug %}Speichern{% else %}Anlegen{% endif %}</button>
+  </form>
+  {% else %}
   <dl class="angaben">
     <dt>Kennzeichen</dt><dd>{{ fahrzeug.kennzeichen|default:"–" }}</dd>
     <dt>Fahrzeugart</dt><dd>{{ fahrzeug.typ|default:"–" }}</dd>
     <dt>Erstzulassung</dt><dd>{{ fahrzeug.erstzulassung|date:"d.m.Y"|default:"–" }}</dd>
     <dt>Kilometerstand</dt><dd>{% if fahrzeug.kilometerstand is not None %}{{ fahrzeug.kilometerstand }} km{% else %}–{% endif %}</dd>
+    {% if fahrzeug.verkauft_am %}<dt>Verkauft am</dt><dd>{{ fahrzeug.verkauft_am|date:"d.m.Y" }}</dd>{% endif %}
   </dl>
-  {% if darf_aendern %}<p class="hinweis">Diese Angaben ändern Sie unter <a href="{% url 'touren:einrichten' %}#fahrzeuge">Touren → Einrichten</a>.</p>{% endif %}
+  {% endif %}
 </section>
+{% if fahrzeug %}
 <section class="karte" id="papiere">
-  <h2>Papiere</h2>
+  <h2>📄 Papiere</h2>
   <p class="hinweis">Fahrzeugschein, Fahrzeugbrief und Weiteres als Foto oder PDF. Die Dateien liegen verschlüsselt; sehen kann sie nur, wer Touren plant oder das Fahrtenbuch führt.</p>
   {% if papiere %}
   <div class="tabelle-rahmen"><table class="tabelle">
     <thead><tr><th>Papier</th><th>Hochgeladen</th><th></th></tr></thead>
     <tbody>{% for p in papiere %}
-      <tr><td data-titel="Papier"><a href="{% url 'touren:fahrzeug_papier' p.pk %}" target="_blank">{{ p.titel }}</a></td>
+      <tr><td data-titel="Papier"><a href="{% url 'touren:fahrzeug_papier' p.pk %}" target="_blank"><strong>{{ p.titel }}</strong> ansehen</a></td>
         <td data-titel="Hochgeladen">{{ p.hochgeladen_am|date:"d.m.Y" }}{% if p.hochgeladen_von_name %} von {{ p.hochgeladen_von_name }}{% endif %}</td>
-        <td>{% if darf_aendern %}<form method="post" action="{% url 'touren:fahrzeug_papier_weg' p.pk %}" onsubmit="return confirm('„{{ p.titel|escapejs }}“ entfernen? Es kommt in den Papierkorb.')">{% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig knopf-klein">Entfernen</button></form>{% endif %}</td></tr>
+        <td data-titel="Aktionen">{% if darf_aendern %}<form method="post" action="{% url 'touren:fahrzeug_papier_weg' p.pk %}" onsubmit="return confirm('„{{ p.titel|escapejs }}“ entfernen? Es kommt in den Papierkorb.')">{% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig knopf-klein">Entfernen</button></form>{% endif %}</td></tr>
     {% endfor %}</tbody>
   </table></div>
   {% else %}<p class="hinweis">Noch nichts hinterlegt.</p>{% endif %}
@@ -29,9 +43,10 @@
   <h3>Papier hinterlegen</h3>
   <form method="post" enctype="multipart/form-data" action="#papiere">
     {% csrf_token %}
-    {% for feld in form %}<div class="feld">{{ feld.label_tag }}{{ feld }}{% if feld.help_text %}<small class="hinweis">{{ feld.help_text }}</small>{% endif %}{% if feld.errors %}<small class="fehler">{{ feld.errors|join:" " }}</small>{% endif %}</div>{% endfor %}
+    {% for feld in papier_form %}<div class="feld">{{ feld.label_tag }}{{ feld }}{% if feld.help_text %}<small class="hilfe">{{ feld.help_text }}</small>{% endif %}{% if feld.errors %}<small class="fehler">{{ feld.errors|join:" " }}</small>{% endif %}</div>{% endfor %}
     <button type="submit" class="knopf">Hinterlegen</button>
   </form>
   {% endif %}
 </section>
+{% endif %}
 {% endblock %}

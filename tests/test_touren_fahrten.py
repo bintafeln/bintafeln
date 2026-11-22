@@ -195,18 +195,34 @@ def test_fahrtenbuch_und_berichtigen(client, anmelden, benutzer_mit_rolle, lage)
     assert wagen.kilometerstand == 170  # die letzte Fahrt bestimmt den Stand
 
 
-def test_einstellungen_fahrzeuge(admin_client):
+def test_fahrzeug_anlegen_und_aendern(admin_client):
     seite = admin_client.get(reverse("touren:einrichten")).content.decode()
-    assert "Fahrzeuge" in seite
-    daten = {"fahrzeuge": "1", "fz-TOTAL_FORMS": 2, "fz-INITIAL_FORMS": 0,
-             "fz-MIN_NUM_FORMS": 0, "fz-MAX_NUM_FORMS": 1000,
-             "fz-0-name": "Transporter", "fz-0-kennzeichen": "MU-ST 2", "fz-0-reihenfolge": "1",
-             "fz-0-kilometerstand": "45000",
-             "fz-0-aktiv": "on", "fz-1-name": "", "fz-1-kennzeichen": "",
-             "fz-1-reihenfolge": "0", "fz-1-aktiv": "on"}  # fmt: skip
-    assert admin_client.post(reverse("touren:einrichten"), daten).status_code == 302
+    assert "Fahrzeuge" in seite and reverse("touren:fahrzeug_neu") in seite
+    assert "Noch kein Fahrzeug angelegt" in seite
+    assert "Neues Fahrzeug" in admin_client.get(reverse("touren:fahrzeug_neu")).content.decode()
+    daten = {"name": "Transporter", "kennzeichen": "MU-ST 2", "kilometerstand": "45000",
+             "reihenfolge": "1", "aktiv": "on"}  # fmt: skip
+    antwort = admin_client.post(reverse("touren:fahrzeug_neu"), daten)
     wagen = Fahrzeug.objects.get()
+    assert antwort.url == reverse("touren:fahrzeug", args=[wagen.pk]) + "#papiere"
     assert str(wagen) == "Transporter (MU-ST 2)" and wagen.kilometerstand == 45000
+    # ändern auf der Seite des Fahrzeugs; ausgeschaltet bleibt es in der Übersicht stehen
+    daten |= {"angaben": "1", "kilometerstand": "45100"}
+    del daten["aktiv"]
+    seite_url = reverse("touren:fahrzeug", args=[wagen.pk])
+    assert admin_client.post(seite_url, daten).status_code == 302
+    wagen.refresh_from_db()
+    assert wagen.kilometerstand == 45100 and not wagen.aktiv
+    seite = admin_client.get(reverse("touren:einrichten")).content.decode()
+    assert "Transporter" in seite and "ausgeschaltet" in seite and "45100 km" in seite
+    # ein zweites Fahrzeug bekommt die nächste Stelle vorgeschlagen; gleicher Name geht nicht
+    assert (
+        'name="reihenfolge" value="2"'
+        in admin_client.get(reverse("touren:fahrzeug_neu")).content.decode()
+    )
+    antwort = admin_client.post(reverse("touren:fahrzeug_neu"), {"name": "Transporter",
+                                                                "reihenfolge": "2"})  # fmt: skip
+    assert antwort.status_code == 200 and Fahrzeug.objects.count() == 1
 
 
 def test_frist_und_auskunft(lage, pdf_text):
@@ -355,20 +371,20 @@ PDF = b"%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"
 
 def test_fahrzeugart_und_erstzulassung(admin_client):
     Fahrzeug.objects.create(name="Kühlwagen", typ="Koffer")
-    daten = {"fahrzeuge": "1", "fz-TOTAL_FORMS": 1, "fz-INITIAL_FORMS": 0,
-             "fz-MIN_NUM_FORMS": 0, "fz-MAX_NUM_FORMS": 1000,
-             "fz-0-name": "Stromer", "fz-0-typ": "E-Vito", "fz-0-erstzulassung": "15.03.2021",
-             "fz-0-reihenfolge": "1", "fz-0-aktiv": "on"}  # fmt: skip
-    assert admin_client.post(reverse("touren:einrichten"), daten).status_code == 302
+    daten = {"name": "Stromer", "typ": "E-Vito", "erstzulassung": "15.03.2021",
+             "reihenfolge": "1", "aktiv": "on"}  # fmt: skip
+    assert admin_client.post(reverse("touren:fahrzeug_neu"), daten).status_code == 302
     wagen = Fahrzeug.objects.get(name="Stromer")
     assert wagen.typ == "E-Vito" and wagen.erstzulassung == dt.date(2021, 3, 15)
-    seite = admin_client.get(reverse("touren:einrichten")).content.decode()
     # schon benutzte Fahrzeugarten werden vorgeschlagen, jede andere lässt sich eintragen
-    assert '<option value="E-Vito">' in seite and '<option value="Koffer">' in seite
-    assert reverse("touren:fahrzeug", args=[wagen.pk]) in seite and "0 hinterlegt" in seite
-    daten["fz-0-erstzulassung"] = "kein Datum"
-    daten["fz-0-name"] = "Zweiter"
-    assert admin_client.post(reverse("touren:einrichten"), daten).status_code == 200
+    maske = admin_client.get(reverse("touren:fahrzeug_neu")).content.decode()
+    assert '<option value="E-Vito">' in maske and '<option value="Koffer">' in maske
+    seite = admin_client.get(reverse("touren:einrichten")).content.decode()
+    assert "E-Vito" in seite and "15.03.2021" in seite
+    assert reverse("touren:fahrzeug", args=[wagen.pk]) + "#papiere" in seite
+    assert ">hinterlegen</a>" in seite  # noch keine Papiere: der Link lädt dazu ein
+    daten |= {"name": "Zweiter", "erstzulassung": "kein Datum"}
+    assert admin_client.post(reverse("touren:fahrzeug_neu"), daten).status_code == 200
 
 
 def test_papiere_hinterlegen_ansehen_entfernen(admin_client):
@@ -383,6 +399,7 @@ def test_papiere_hinterlegen_ansehen_entfernen(admin_client):
     seite_url = reverse("touren:fahrzeug", args=[wagen.pk])
     seite = admin_client.get(seite_url).content.decode()
     assert "Sprinter" in seite and "01.06.2019" in seite and "Noch nichts hinterlegt" in seite
+    assert 'href="#papiere"' in seite  # der Weg zu den Papieren steht gleich oben
 
     def hochladen(art, name="schein.pdf", typ="application/pdf", **mehr):
         datei = SimpleUploadedFile(name, PDF, content_type=typ)
@@ -478,3 +495,43 @@ def test_link_zur_besetzung_des_gewaehlten_tages(admin_client, lage):
     ).content.decode()
     ziel = f"{reverse('touren:tour', args=[lage['tour'].pk])}?tag={morgen:%Y-%m-%d}#besetzung"
     assert ziel in seite and "Besetzung für diesen Tag ändern" in seite
+
+
+def test_fahrzeug_verkaufen_und_archiv(admin_client, lage):
+    tour, fritz, wagen = lage["tour"], lage["fritz"], lage["wagen"]
+    fahrt = fahrten.beginnen(tour, fritz, "100", wagen.pk)
+    fahrten.beenden(fahrt, fritz, "150")
+    seite_url = reverse("touren:fahrzeug", args=[wagen.pk])
+    daten = {"angaben": "1", "name": wagen.name, "kennzeichen": wagen.kennzeichen,
+             "kilometerstand": "150", "reihenfolge": "0", "aktiv": "on",
+             "erstzulassung": "01.06.2019", "verkauft_am": "31.10.2026"}  # fmt: skip
+    assert admin_client.post(seite_url, daten).status_code == 302
+    wagen.refresh_from_db()
+    # verkauft = archiviert: nicht mehr aktiv, auch wenn „Aktiv“ angehakt war
+    assert wagen.verkauft_am == dt.date(2026, 10, 31) and not wagen.aktiv
+    assert fahrten.fahrzeuge() == []  # steht den Fahrern nicht mehr zur Wahl
+    seite = admin_client.get(reverse("touren:einrichten")).content.decode()
+    assert "Noch kein Fahrzeug angelegt" in seite  # die Liste zeigt nur, was noch da ist
+    assert "Archiv:</strong> 1 verkauftes Fahrzeug" in seite and "31.10.2026" in seite
+    assert "Verkauft am 31.10.2026" in admin_client.get(seite_url).content.decode()
+    # Fahrtenbuch und Fahrt bleiben, wie sie waren
+    assert Fahrt.objects.get().fahrzeug == wagen
+    assert "Kühlwagen" in admin_client.get(reverse("touren:fahrten")).content.decode()
+    # ein Verkauf vor der Erstzulassung ist ein Tippfehler
+    daten["verkauft_am"] = "31.10.2018"
+    antwort = admin_client.post(seite_url, daten)
+    assert antwort.status_code == 200 and "vor der Erstzulassung" in antwort.content.decode()
+    # Datum leeren und „Aktiv“ anhaken holt das Fahrzeug zurück
+    daten["verkauft_am"] = ""
+    assert admin_client.post(seite_url, daten).status_code == 302
+    wagen.refresh_from_db()
+    assert wagen.verkauft_am is None and wagen.aktiv and fahrten.fahrzeuge() == [wagen]
+
+
+def test_verkauftes_fahrzeug_bleibt_ausgeschaltet_beim_fortschreiben(lage):
+    wagen = lage["wagen"]
+    wagen.verkauft_am, wagen.aktiv = dt.date(2026, 10, 31), True
+    wagen.kilometerstand = 500
+    wagen.save(update_fields=["verkauft_am", "kilometerstand"])
+    wagen.refresh_from_db()
+    assert not wagen.aktiv and wagen.kilometerstand == 500

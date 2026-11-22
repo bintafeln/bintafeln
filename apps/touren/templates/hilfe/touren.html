@@ -18,8 +18,12 @@
     Stationen – dann die Navigation je Station nehmen.</li>
   <li>Stationen, die nur an bestimmten Wochentagen angefahren werden, erscheinen nur an diesen Tagen.</li>
   <li><strong>„✓ Hier waren wir“</strong> kennzeichnet eine Station als angefahren: Sie bleibt in der Tour stehen (falls
-    man noch einmal hin muss), wird aber grau und bekommt einen Haken statt der Nummer. Ein ausgefüllter Lieferschein
-    kennzeichnet die Station ebenfalls. „zurücknehmen“ hebt das Kennzeichen wieder auf.</li>
+    man noch einmal hin muss), wird aber <strong>grün</strong>, bekommt einen Haken statt der Nummer, der Name ist
+    durchgestrichen und es steht „✓ Erledigt“ mit der Uhrzeit dabei. Die Karte klappt zusammen; „Noch einmal hin?
+    Angaben und Navigation zeigen“ klappt sie wieder auf – dort steht auch „zurücknehmen“. Ein ausgefüllter
+    Lieferschein kennzeichnet die Station ebenfalls.</li>
+  <li>Auf „Touren heute“ ist eine <strong>fertige Tour</strong> (alle Stationen angefahren oder Fahrt beendet) grün
+    umrandet und mit „✓ erledigt“ gekennzeichnet.</li>
   <li>Öffnen Sie die Tour erneut, springt die Seite gleich zur <strong>nächsten offenen Station</strong> (umrandet).
     Oben steht, wie viele Stationen schon angefahren sind.</li>
 </ul>
@@ -132,20 +136,29 @@
     bleiben. Gedacht für Testtouren; es braucht die Rechte fürs Fahrtenbuch und für alle Lieferscheine. Schon
     verschickte Mails lassen sich nicht zurückholen. Einen einzelnen Lieferschein löschen Sie wie bisher in der
     Liste der Lieferscheine.</li>
-  <li>Die <strong>Fahrzeuge</strong> legen Sie unter „Touren → Einrichten: Warengruppen, Fahrzeuge, Zentrale“ an
-    (wer Touren planen darf). Ohne Fahrzeuge wird beim Beginn nur der Kilometerstand gefragt.
-    Zu jedem Fahrzeug steht dort der <strong>Kilometerstand</strong>: Tragen Sie den Anfangsstand ein. bintafeln
-    schreibt ihn mit jeder Fahrt fort und schlägt ihn bei „Fahrt beginnen“ vor; wurde das Fahrzeug anderweitig gefahren,
-    ändern Sie ihn dort.</li>
-  <li>Dazu je Fahrzeug die <strong>Fahrzeugart</strong> (z. B. Sprinter, Koffer, E-Vito – frei einzutragen; schon
-    benutzte Arten werden vorgeschlagen) und das Datum der <strong>Erstzulassung</strong>.</li>
-  <li><strong>Papiere hinterlegen:</strong> In der Spalte „Papiere“ führt der Link zum Fahrzeug. Dort hinterlegen Sie
-    <strong>Fahrzeugschein</strong>, <strong>Fahrzeugbrief</strong> und Weiteres (z. B. Versicherung) als Foto oder PDF
-    und rufen sie mit einem Klick wieder auf. Die Dateien liegen verschlüsselt; sehen kann sie, wer Touren plant oder
-    das Fahrtenbuch führt, hinterlegen und entfernen nur, wer Touren plant. Entferntes liegt im Papierkorb.</li>
+  <li>Die <strong>Fahrzeuge</strong> stehen unter „Touren → Einrichten: Warengruppen, Fahrzeuge, Zentrale“ als Liste
+    (wer Touren planen darf): Name, Kennzeichen, Fahrzeugart, Erstzulassung, Kilometerstand und ob Papiere hinterlegt
+    sind. „＋ Neues Fahrzeug“ legt eins an; ein Fahrzeug <strong>antippen</strong> öffnet seine Seite. Ohne Fahrzeuge
+    wird beim Beginn einer Fahrt nur der Kilometerstand gefragt.</li>
+  <li>Auf der Seite des Fahrzeugs ändern Sie die Angaben. <strong>Kilometerstand:</strong> Tragen Sie den Anfangsstand
+    ein; bintafeln schreibt ihn mit jeder Fahrt fort und schlägt ihn bei „Fahrt beginnen“ vor. Wurde das Fahrzeug
+    anderweitig gefahren, ändern Sie ihn hier. <strong>Fahrzeugart</strong> (z. B. Sprinter, Koffer, E-Vito) ist frei
+    einzutragen; schon benutzte Arten werden vorgeschlagen. Nicht mehr gefahrene Fahrzeuge schalten Sie bei „Aktiv“
+    aus; im Fahrtenbuch bleiben sie stehen.</li>
+  <li><strong>Fahrzeug verkauft:</strong> Tragen Sie auf der Seite des Fahrzeugs bei „Verkauft am“ das Datum ein. Das
+    Fahrzeug wandert damit ins <strong>Archiv</strong> (unter der Liste aufklappbar) und steht den Fahrern nicht mehr
+    zur Wahl. Fahrten, Meldungen und Papiere bleiben erhalten und sind weiter abrufbar. Das Datum wieder leeren und
+    „Aktiv“ anhaken holt das Fahrzeug zurück.</li>
+  <li><strong>Papiere hinterlegen:</strong> In der Liste steht bei jedem Fahrzeug „hinterlegen“ oder „📄 2 hinterlegt“;
+    der Link führt direkt zu den Papieren, ebenso der Knopf „📄 Papiere“ oben auf der Seite des Fahrzeugs. Dort
+    hinterlegen Sie <strong>Fahrzeugschein</strong>, <strong>Fahrzeugbrief</strong> und Weiteres (z. B. Versicherung)
+    als Foto oder PDF und rufen sie mit einem Klick wieder auf. Die Dateien liegen verschlüsselt; sehen kann sie, wer
+    Touren plant oder das Fahrtenbuch führt, hinterlegen und entfernen nur, wer Touren plant. Entferntes liegt im
+    Papierkorb.</li>
   <li>Fahrten werden so lange aufbewahrt wie Lieferscheine (Einstellung „Lieferscheine aufbewahren“).</li>
 </ul>
-{% hilfe_bild "touren-fahrzeug" "① Angaben zum Fahrzeug, ② hinterlegte Papiere – ein Klick öffnet sie, ③ ein weiteres Papier hinterlegen." %}
+{% hilfe_bild "touren-fahrzeuge" "① Neues Fahrzeug anlegen, ② Papiere: hinterlegen oder ansehen, ③ ein Fahrzeug antippen, um es zu ändern, ④ verkaufte Fahrzeuge im Archiv." %}
+{% hilfe_bild "touren-fahrzeug" "① Angaben zum Fahrzeug ändern, ② hinterlegte Papiere – ein Klick öffnet sie, ③ ein weiteres Papier hinterlegen." %}
 {% hilfe_bild "touren-fahrtenbuch" "① Filter nach Fahrzeug und Zeitraum, ② Summe der Kilometer, ③ Kilometerstände einer Fahrt berichtigen." %}
 <h3>Meldungen zum Fahrzeug</h3>
 <ul>

@@ -1354,18 +1354,39 @@ def test_hilfe_bild_touren_fahrzeug(angemeldet, admin, muster):
             datei=privatdateien.ablegen(FahrzeugDokument.ORDNER, b"%PDF-1.4 erfunden"),
             hochgeladen_von_name="Clara Beispiel",
         )  # fmt: skip
-    seite = oeffnen(angemeldet, admin, reverse("touren:fahrzeug", args=[wagen.pk]))
-    seite.get_by_label("Art").select_option("sonstiges")
+    Fahrzeug.objects.create(name="Stromer", kennzeichen="MU-ST 7", typ="E-Vito", reihenfolge=2,
+                            kilometerstand=12870, erstzulassung=dt.date(2024, 3, 1))  # fmt: skip
+    Fahrzeug.objects.create(name="Alter Transporter", kennzeichen="MU-ST 3", typ="Koffer",
+                            reihenfolge=3, kilometerstand=231400,
+                            erstzulassung=dt.date(2011, 5, 2),
+                            verkauft_am=dt.date(2026, 9, 30))  # fmt: skip
+    seite = oeffnen(angemeldet, admin, reverse("touren:einrichten"))
+    seite.set_viewport_size({"width": 1000, "height": 900})
+    liste = seite.locator("#fahrzeuge")
+    liste.locator("#fahrzeuge-archiv summary").click()
+    aufnehmen(
+        seite,
+        "touren-fahrzeuge",
+        [liste],
+        Marke(liste.get_by_role("link", name="＋ Neues Fahrzeug"), art="rahmen", nummer=1),
+        Marke(liste.locator("tbody tr").first.locator("td").nth(5), art="rahmen", nummer=2),
+        Marke(liste.locator("tbody tr").first.locator("td").first, art="rahmen", nummer=3),
+        Marke(liste.locator("#fahrzeuge-archiv"), art="rahmen", nummer=4),
+        rand=8,
+    )
+    seite.goto(reverse("touren:fahrzeug", args=[wagen.pk]))
+    seite.locator("#id_art").select_option("sonstiges")
     seite.get_by_label("Bezeichnung").fill("Versicherung")
     aufnehmen(
         seite,
         "touren-fahrzeug",
         [seite.locator("section.karte").first, seite.locator("#papiere")],
-        Marke(seite.locator("dl.angaben"), art="rahmen", nummer=1),
+        Marke(seite.locator("section.karte form").first, art="rahmen", nummer=1),
         Marke(seite.locator("#papiere table"), art="rahmen", nummer=2),
         Marke(seite.locator("#papiere form").last, art="rahmen", nummer=3),
         rand=8,
     )
+    seite.set_viewport_size({"width": 1280, "height": 900})
 
 
 def test_hilfe_bild_touren_statistik(angemeldet, admin, muster):
