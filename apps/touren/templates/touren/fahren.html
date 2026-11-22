@@ -2,14 +2,14 @@
 {% load liste static %}
 {% block titel %}{{ tour.name }}{% endblock %}
 {% block inhalt %}
-<section class="karte">
+<section class="karte tour-kopf">
   <p><a href="{% url 'touren:heute' %}?tag={{ tag|date:'Y-m-d' }}">← Touren am {{ tag|date:"d.m." }}</a></p>
   <h1>{{ tour.name }}</h1>
   <p class="leise">{{ tag|date:"l, d.m.Y" }} · {{ halte|length }} Station{{ halte|length|pluralize:"en" }}{% if erledigt %} · <strong>{{ erledigt }} angefahren</strong>{% endif %}{% if not faehrt %} · <span class="marke-warnung">fährt an diesem Tag nicht</span>{% endif %}</p>
   {% if besetzung %}<p>{% for b in besetzung %}{% if b.offen %}<span class="marke-warnung">{{ b.rolle }} offen</span>{% else %}{% if b.rolle %}<small class="leise">{{ b.rolle }}</small> {% endif %}{{ b.name }}{% endif %}{% if not forloop.last %} · {% endif %}{% endfor %}</p>{% endif %}
   {% if gestartet %}<p class="leise"><span class="marke-ok">✓ Besetzung bestätigt</span> von {{ gestartet.bestaetigt_von }}, {{ gestartet.bestaetigt_am|date:"H:i" }} Uhr</p>
   {% elif gefragt %}<p class="hinweis"><span class="marke-warnung">Besetzung noch nicht bestätigt.</span> Das macht, wer auf der Tour eingetragen ist.</p>{% endif %}
-  {% if darf_besetzung and not fahrt.beendet_am %}<p><a class="knopf knopf-zweitrangig tour-knopf" href="{% url 'touren:start' tour.pk %}?aendern=1">👥 Besetzung ändern, Mitfahrer oder Gast eintragen</a></p>{% endif %}
+  {% if darf_besetzung %}<p><a class="knopf knopf-zweitrangig tour-knopf" href="{% url 'touren:start' tour.pk %}?aendern=1">👥 Besetzung ändern, Mitfahrer oder Gast eintragen</a></p>{% endif %}
   {% if fahrt %}<p class="leise">{% if fahrt.beendet_am %}<span class="marke-ok">✓ Fahrt beendet</span>{% if fahrt.km is not None %} · {{ fahrt.km }} km{% endif %}{% else %}<span class="marke-ok">Unterwegs</span> seit {{ fahrt.begonnen_am|date:"H:i" }} Uhr{% endif %}{% if fahrt.fahrzeug_name %} · {{ fahrt.fahrzeug_name }}{% endif %} · Abfahrt bei km {{ fahrt.km_start }}</p>{% endif %}
   {% if tour.hinweis %}<div class="notiz"><p class="notiz-text">{{ tour.hinweis|linebreaksbr }}</p></div>{% endif %}
   {% if routen %}

@@ -48,3 +48,10 @@ Mitfahrer oder Gast eintragen“ (vorher ein kleiner Link, und nur bei Touren au
 Es bleibt dabei: Ändern darf nur, wer auf der Tour eingetragen ist oder das Recht
 `touren.besetzung` hat, und niemand nimmt sich selbst heraus. Regelmäßige eigene Touren ohne
 Fahrerplan haben keine Besetzung je Tag; dort ändert weiter die Planung.
+
+## Nachtrag: nur vor der Abfahrt
+
+Der Knopf stand auch unterwegs zwischen den Angaben zur Fahrt und machte die Seite unübersichtlich.
+Die Mannschaft ändert ihre Besetzung deshalb nur noch, bis die Fahrt begonnen hat
+(`fahrten.heute()` liefert noch nichts). Danach fehlt der Knopf, und `views_touren.start` lehnt
+eine Änderung ab; das Büro ändert weiter in der Planung.
