@@ -175,6 +175,21 @@ class Tour(models.Model):
         help_text="Für eigene und kurzfristige Touren. Bei einer Tour aus dem Fahrerplan steht "
         "die Besetzung dort.",
     )  # fmt: skip
+    # Besetzung eigener und kurzfristiger Touren (ADR 0153): bis zu drei Personen und ein Gast.
+    # ``personen`` bleibt die Menge aller, die mitfahren (Mail, „Ihre Tour“).
+    fahrer = models.ForeignKey(
+        "adressen.Adresse", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+        verbose_name="Fahrer/in")  # fmt: skip
+    beifahrer = models.ForeignKey(
+        "adressen.Adresse", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+        verbose_name="Beifahrer/in")  # fmt: skip
+    beifahrer2 = models.ForeignKey(
+        "adressen.Adresse", null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+        verbose_name="2. Beifahrer/in")  # fmt: skip
+    gast = models.CharField(
+        "Gast", max_length=100, blank=True,
+        help_text="Mitfahrer ohne eigenes Konto, z. B. Freiwillige, die einen Tag mitfahren.",
+    )  # fmt: skip
     hinweis = models.TextField(
         "Für die Fahrer", blank=True,
         help_text="Steht oben auf der Tour, z. B. „Heute zuerst zum Lager“.",
@@ -369,6 +384,13 @@ class TourenEinstellungen(models.Model):
         "Lieferschein zur heutigen Abholung.\n\nMit freundlichen Grüßen",
         help_text="Darunter steht automatisch der Name der Tafel.",
     )  # fmt: skip
+    eco_plattform = models.BooleanField(
+        "Wir arbeiten (auch) mit der ECO-Plattform", default=False,
+        help_text="Dann steht bei den Touren ein Link zur ECO-Plattform. Touren, Stationen und "
+        "Lieferscheine in bintafeln bleiben nutzbar.",
+    )  # fmt: skip
+    eco_adresse = models.URLField(
+        "Adresse der ECO-Plattform", default="https://eco.tafel.de", blank=True)  # fmt: skip
     aufbewahrung_jahre = models.PositiveSmallIntegerField(
         "Lieferscheine aufbewahren (Jahre)", default=10,
         validators=[MinValueValidator(1), MaxValueValidator(30)],
@@ -389,6 +411,11 @@ class TourenEinstellungen(models.Model):
     def save(self, *args, **kwargs):
         self.pk = self.EINZIGE_ID
         super().save(*args, **kwargs)
+
+    @property
+    def eco_link(self) -> str:
+        """Adresse der ECO-Plattform, wenn die Tafel sie nutzt – sonst leer."""
+        return self.eco_adresse if self.eco_plattform else ""
 
     @classmethod
     def laden(cls) -> "TourenEinstellungen":

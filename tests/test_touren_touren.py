@@ -249,11 +249,15 @@ def test_buero_legt_kurzfristige_tour_an_und_schickt_sie(buero, django_user_mode
     seite = buero.get(reverse("touren:tour_neu") + "?kurz").content.decode()
     assert "Anna Probe" in seite and "Vera Probe" in seite and "Nils Probe" not in seite
     antwort = buero.post(reverse("touren:tour_neu") + "?kurz", {
-        "name": "Sonderfahrt", "datum": "2026-11-24", "personen": [anna.pk, fest.pk],
-        "hinweis": "", "aktiv": "on"})  # fmt: skip
+        "name": "Sonderfahrt", "datum": "2026-11-24", "fahrer": anna.pk, "beifahrer": fest.pk,
+        "gast": "Gerda Gast", "hinweis": "", "aktiv": "on"})  # fmt: skip
     t = Tour.objects.get(name="Sonderfahrt")
     assert antwort.url == reverse("touren:tour", args=[t.pk])
     assert t.datum == DIENSTAG and t.angelegt_von == "bernd" and t.personen.count() == 2
+    wer = ablauf.besetzung(t, DIENSTAG)  # Fahrer, Beifahrer und der Gast ohne Konto
+    assert [(b["rolle"], b["name"]) for b in wer] == [
+        ("Fahrer", "Anna Probe"), ("Beifahrer", "Vera Probe"), ("Gast", "Gerda Gast")]  # fmt: skip
+    assert "Gerda Gast" in buero.get(reverse("touren:touren")).content.decode()
     s1, s2 = station(1), station(2)
     for s in (s1, s2):
         buero.post(reverse("touren:halt_neu", args=[t.pk]), {"station": s.pk})
@@ -521,3 +525,197 @@ def test_lieferschein_gilt_als_angefahren(fahrer):
     seite = fahrer.get(reverse("touren:fahren", args=[t.pk])).content.decode()
     assert "1 angefahren" in seite and 'id="halt-2" data-tour-aktuell' in seite
     assert seite.count("✓ Hier waren wir</button>") == 1  # an der ersten steht der Lieferschein
+
+
+# --- Stationen suchen und kurzfristige Tour in einer Maske ---------------------------------------
+
+
+def test_stationssuche_ueber_alle_angaben():
+    from apps.touren import suche
+
+    a = station(1, name="Supermarkt Nord", kette="Beispielkette", telefon="01234 567890",
+                ansprechpartner="Frau Muster")  # fmt: skip
+    b = station(2, name="Bäckerei Probe", strasse="Hauptstraße", notiz="Hintereingang")
+    station(3, name="Geschlossen", aktiv=False, strasse="Hauptstraße")
+    assert suche.stationen("su") == []  # erst ab drei Zeichen
+    assert suche.stationen("super") == [a] and suche.stationen("beispielk") == [a]
+    assert suche.stationen("567890") == [a] and suche.stationen("01234 567") == [a]
+    assert suche.stationen("muster nord") == [a]  # jedes Wort muss vorkommen
+    assert suche.stationen("haupt") == [b] and suche.stationen("hintereingang") == [b]
+    assert suche.stationen("12345") == [b, a]  # PLZ, nur aktive, nach Name
+    t = Tour.objects.create(name="Tour 1")
+    ablauf.halt_anhaengen(t, a)
+    assert suche.stationen("musterstadt", ohne_tour=t) == [b]
+    assert len(suche.stationen("musterstadt", grenze=1)) == 1
+
+
+def test_suche_beim_anhaengen(buero):
+    a = station(1, name="Supermarkt Nord")
+    t = Tour.objects.create(name="Tour 1")
+    seite = buero.get(reverse("touren:tour", args=[t.pk])).content.decode()
+    assert "Station suchen und anhängen" in seite
+    assert f"{reverse('touren:stationen_suche')}?tour={t.pk}" in seite
+    adresse = reverse("touren:stationen_suche")
+    assert "mindestens 3 Zeichen" in buero.get(adresse, {"q": "su", "tour": t.pk}).content.decode()
+    treffer = buero.get(adresse, {"q": "super", "tour": t.pk}).content.decode()
+    assert "Supermarkt Nord" in treffer and reverse("touren:halt_neu", args=[t.pk]) in treffer
+    assert "Keine Station gefunden" in buero.get(adresse, {"q": "xyzxyz"}).content.decode()
+    buero.post(reverse("touren:halt_neu", args=[t.pk]), {"station": a.pk})
+    leer = buero.get(adresse, {"q": "super", "tour": t.pk}).content.decode()
+    assert "noch nicht auf der Tour" in leer  # steht schon darauf
+    wahl = buero.get(adresse, {"q": "super"}).content.decode()  # ohne Tour: zur Auswahl
+    assert f'data-station-waehlen="{a.pk}"' in wahl
+
+
+def test_suche_nur_mit_recht_planen(fahrer):
+    assert fahrer.get(reverse("touren:stationen_suche"), {"q": "super"}).status_code == 403
+
+
+def test_kurzfristige_tour_in_einer_maske(buero, django_user_model, mail_an):
+    a, b = station(1, name="Supermarkt Nord"), station(2, name="Bäckerei Probe")
+    fritz = person(django_user_model, "Fritz")
+    adresse = reverse("touren:tour_neu") + "?kurz"
+    seite = buero.get(adresse).content.decode()
+    assert "Laden oder Lieferadresse suchen" in seite and "noch nicht in der Liste" in seite
+    daten = {"name": "Sonderabholung", "datum": "24.11.2026", "fahrer": fritz.pk,
+             "hinweis": "", "aktiv": "on", "stationen": [b.pk, a.pk, b.pk], "senden": "1",
+             "neu-name": "Hofladen Beispiel", "neu-art": "sonstiges", "neu-strasse": "Feldweg",
+             "neu-hausnummer": "3", "neu-plz": "12345", "neu-ort": "Musterstadt"}  # fmt: skip
+    antwort = buero.post(adresse, daten)
+    t = Tour.objects.get(name="Sonderabholung")
+    assert antwort.status_code == 302 and antwort.url == reverse("touren:tour", args=[t.pk])
+    neu = Station.objects.get(name="Hofladen Beispiel")
+    assert neu.kennung.startswith("S-") and neu.geaendert_von == "bernd"
+    # Reihenfolge wie gewählt, jede Station nur einmal, die neue am Ende
+    assert [h.station for h in t.halte.all()] == [b, a, neu]
+    assert t.datum == dt.date(2026, 11, 24) and list(t.personen.all()) == [fritz]
+    assert len(mail.outbox) == 1 and "Bäckerei Probe" in mail.outbox[0].body  # gleich geschickt
+
+
+def test_kurzfristige_tour_fehler_behaelt_die_auswahl(buero):
+    a = station(1, name="Supermarkt Nord")
+    adresse = reverse("touren:tour_neu") + "?kurz"
+    # neue Adresse nur halb eingetragen: nichts wird angelegt, die Auswahl bleibt stehen
+    daten = {"name": "Sonderabholung", "datum": "24.11.2026", "aktiv": "on",
+             "stationen": [a.pk], "neu-name": "Hofladen", "neu-art": "sonstiges"}  # fmt: skip
+    antwort = buero.post(adresse, daten)
+    seite = antwort.content.decode()
+    assert antwort.status_code == 200 and not Tour.objects.exists()
+    assert f'name="stationen" value="{a.pk}"' in seite and "Supermarkt Nord" in seite
+    assert not Station.objects.filter(name="Hofladen").exists()
+    # ohne neue Adresse und ohne Senden
+    del daten["neu-name"]
+    buero.post(adresse, daten)
+    t = Tour.objects.get()
+    assert [h.station for h in t.halte.all()] == [a] and not mail.outbox
+    # die regelmäßige Tour bleibt beim alten Ablauf
+    assert "Laden oder Lieferadresse suchen" not in buero.get(
+        reverse("touren:tour_neu")).content.decode()  # fmt: skip
+
+
+# --- Drei Personen und Gast (ADR 0153), ECO-Plattform --------------------------------------------
+
+
+def test_eigene_tour_drei_personen_und_gast(buero, django_user_model):
+    a, b, c = (person(django_user_model, n) for n in ("Anna", "Bodo", "Cleo"))
+    t = Tour.objects.create(name="Eigene")
+    adresse = reverse("touren:tour", args=[t.pk])
+    daten = {"name": "Eigene", "fahrtage": [], "fahrer": a.pk, "beifahrer": b.pk,
+             "beifahrer2": c.pk, "gast": "", "hinweis": "", "aktiv": "on"}  # fmt: skip
+    assert buero.post(adresse, daten).status_code == 302
+    t.refresh_from_db()
+    assert (t.fahrer, t.beifahrer, t.beifahrer2) == (a, b, c)
+    assert set(t.personen.all()) == {a, b, c}  # alle fahren mit („Ihre Tour“, Mail)
+    assert [x["rolle"] for x in ablauf.besetzung(t, MONTAG)] == ["Fahrer", "Beifahrer",
+                                                                 "Beifahrer"]  # fmt: skip
+    assert ablauf.faehrt_mit(t, MONTAG, c)
+    # dieselbe Person auf zwei Plätzen geht nicht
+    antwort = buero.post(adresse, {**daten, "beifahrer2": a.pk})
+    assert "nur auf einem Platz" in antwort.content.decode()
+    # Platz wieder frei: fährt nicht mehr mit
+    buero.post(adresse, {**daten, "beifahrer2": ""})
+    assert set(Tour.objects.get(pk=t.pk).personen.all()) == {a, b}
+    # von Hand nur unter „personen“ eingetragene (ältere Touren) bleiben in der Besetzung
+    t.personen.add(c)
+    assert [x["name"] for x in ablauf.besetzung(t, MONTAG)][-1] == "Cleo Probe"
+
+
+def test_tourstart_gast_auf_dem_dritten_platz(client, anmelden, heute_tour):
+    from apps.fahrdienst.models import Ersatz
+
+    t, heute, start = heute_tour["tour"], heute_tour["heute"], heute_tour["start"]
+    ft = heute_tour["ft"]
+    ft.plaetze = 3
+    ft.save()
+    anmelden(client, heute_tour["fritz"].konto)
+    adresse = reverse("touren:start", args=[t.pk])
+    seite = client.get(adresse).content.decode()
+    assert 'name="gast_2"' in seite and 'name="gast_3"' in seite and 'name="gast_1"' not in seite
+    client.post(adresse, {"aendern": "1", "platz_1": "", "platz_2": "", "platz_3": "",
+                          "gast_3": "Gerda Gast"})  # fmt: skip
+    ersatz = Ersatz.objects.get(datum=heute, tour=ft, platz=3)
+    assert ersatz.gast == "Gerda Gast" and ersatz.person is None
+    assert [b["name"] for b in ablauf.besetzung(t, heute)] == [
+        "Fritz Probe", "Paula Probe", "Gerda Gast"]  # fmt: skip
+    assert start.frage(start.plaetze(t, heute)) == (
+        "Seid ihr Fritz Probe, Paula Probe und Gerda Gast?")  # fmt: skip
+    assert start.gestartet(t, heute).geaendert
+    # kein Gast auf dem Fahrerplatz; derselbe Gast noch einmal ändert nichts
+    with pytest.raises(start.StartFehler, match="Fahrerplatz"):
+        start.aendern(t, heute, heute_tour["fritz"].konto, gaeste={1: "Niemand"})
+    assert not start.aendern(t, heute, heute_tour["fritz"].konto, gaeste={3: "Gerda Gast"})
+    # ein Gast statt der eigenen Person: niemand nimmt sich selbst heraus
+    with pytest.raises(start.StartFehler, match="selbst"):
+        start.aendern(t, heute, heute_tour["paula"].konto, gaeste={2: "Jemand"})
+
+
+def test_planung_zeigt_und_aendert_besetzung_des_tages(buero, heute_tour):
+    from apps.fahrdienst.models import Ersatz
+
+    t, heute, ft = heute_tour["tour"], heute_tour["heute"], heute_tour["ft"]
+    adresse = reverse("touren:tour", args=[t.pk])
+    seite = buero.get(adresse).content.decode()
+    assert "Besetzung am" in seite and "Fritz Probe" in seite and "Paula Probe" in seite
+    assert "Für diesen Tag ändern" in seite
+    antwort = buero.post(reverse("touren:besetzung", args=[t.pk]), {
+        "tag": f"{heute:%Y-%m-%d}", "platz_1": "", "platz_2": heute_tour["berta"].pk})  # fmt: skip
+    assert antwort.url == f"{adresse}?tag={heute:%Y-%m-%d}"
+    assert Ersatz.objects.get(datum=heute, tour=ft, platz=2).person == heute_tour["berta"]
+    assert "Berta Probe" in buero.get(antwort.url).content.decode()
+    # unverändert abgeschickt und kaputtes Datum: nichts passiert
+    buero.post(reverse("touren:besetzung", args=[t.pk]), {"tag": "x"})
+    assert Ersatz.objects.count() == 1
+    # ein Tag, an dem die Tour nicht fährt
+    ft.fahrtage = "Mo"
+    ft.save()
+    kein_montag = heute if heute.weekday() != 0 else heute + dt.timedelta(days=1)
+    seite = buero.get(adresse, {"tag": f"{kein_montag:%Y-%m-%d}"}).content.decode()
+    assert "An diesem Tag fährt die Tour nicht" in seite
+    daten = {"tag": f"{kein_montag:%Y-%m-%d}", "gast_2": "Jemand"}
+    antwort = buero.post(reverse("touren:besetzung", args=[t.pk]), daten, follow=True)
+    assert "fährt an dem Tag nicht" in antwort.content.decode()
+    # ohne Tag in der Adresse: der nächste Fahrtag (Montag)
+    assert "Besetzung am Montag" in buero.get(adresse).content.decode()
+
+
+def test_besetzung_aendern_nur_mit_recht(client, anmelden, heute_tour):
+    anmelden(client, heute_tour["klaus"].konto)  # Fahrer ohne das Recht, Touren zu planen
+    adresse = reverse("touren:besetzung", args=[heute_tour["tour"].pk])
+    assert client.post(adresse, {}).status_code == 403
+
+
+def test_eco_plattform_link(buero, admin_client):
+    from apps.touren.models import TourenEinstellungen
+
+    assert "ECO-Plattform" not in buero.get(reverse("touren:heute")).content.decode()
+    admin_client.post(reverse("touren:einstellungen"), {
+        "einstellungen": "1", "lieferscheine": "on", "versand": "aus", "mail_text": "Hallo",
+        "aufbewahrung_jahre": "10", "eco_plattform": "on",
+        "eco_adresse": "https://eco.tafel.de"})  # fmt: skip
+    e = TourenEinstellungen.laden()
+    assert e.eco_plattform and e.eco_link == "https://eco.tafel.de"
+    for name in ("touren:heute", "touren:touren"):
+        seite = buero.get(reverse(name)).content.decode()
+        assert 'href="https://eco.tafel.de"' in seite and "ECO-Plattform" in seite
+    # Touren, Stationen und Lieferscheine bleiben nutzbar
+    assert buero.get(reverse("touren:stationen")).status_code == 200

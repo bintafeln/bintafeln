@@ -1,6 +1,6 @@
 from django import forms
+from django.utils import timezone
 
-from apps.core.forms import Mehrfachauswahl
 from apps.fahrdienst.forms import TageFeld
 from apps.konten.forms import DatumEingabe
 from apps.touren.models import Fahrzeug, Station, Tour, TourenEinstellungen, Warengruppe
@@ -53,7 +53,40 @@ class PersonenFeld(forms.ModelMultipleChoiceField):
         return obj.name
 
 
-class TourForm(forms.ModelForm):
+class PersonFeld(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        return obj.name
+
+
+class BesetzungMixin:
+    """Fahrer, Beifahrer, zweiter Beifahrer und Gast einer eigenen oder kurzfristigen Tour
+    (ADR 0153). ``Tour.personen`` folgt daraus: alle, die mitfahren."""
+
+    PLAETZE = ("fahrer", "beifahrer", "beifahrer2")
+
+    def besetzung_einrichten(self):
+        for name in self.PLAETZE:
+            self.fields[name].queryset = waehlbare_personen()
+            self.fields[name].empty_label = "– offen –"
+
+    def clean(self):
+        daten = super().clean()
+        gewaehlt = [daten.get(n) for n in self.PLAETZE if daten.get(n)]
+        if len({p.pk for p in gewaehlt}) != len(gewaehlt):
+            raise forms.ValidationError("Jede Person kann nur auf einem Platz fahren.")
+        return daten
+
+    def _save_m2m(self):
+        super()._save_m2m()
+        tour = self.instance
+        tour.personen.set([p for p in (tour.fahrer, tour.beifahrer, tour.beifahrer2) if p])
+
+
+def _platz(label, hilfe=""):
+    return PersonFeld(queryset=None, required=False, label=label, help_text=hilfe)
+
+
+class TourForm(BesetzungMixin, forms.ModelForm):
     """Regelmäßige Tour: aus dem Fahrerplan oder eigene mit Fahrtagen und Personen."""
 
     fahrtage = TageFeld(
@@ -62,20 +95,20 @@ class TourForm(forms.ModelForm):
         "Tag, an dem sie dort fährt – oder nur an den angehakten davon (z. B. die "
         "Montags-Reihenfolge).",
     )  # fmt: skip
-    personen = PersonenFeld(
-        queryset=None, required=False, label="Wer fährt",
-        widget=Mehrfachauswahl(leer="niemand gewählt"),
-        help_text="Nur für eigene Touren ohne Fahrerplan: Fahrer, Beifahrer und Angestellte.",
-    )  # fmt: skip
+    fahrer = _platz("Fahrer/in", "Nur für eigene Touren; bei einer Tour aus dem Fahrerplan "
+                    "steht die Besetzung dort.")  # fmt: skip
+    beifahrer = _platz("Beifahrer/in")
+    beifahrer2 = _platz("2. Beifahrer/in")
 
     class Meta:
         model = Tour
-        fields = ["name", "fahrdienst_tour", "fahrtage", "personen", "hinweis", "aktiv"]
+        fields = ["name", "fahrdienst_tour", "fahrtage", "fahrer", "beifahrer", "beifahrer2",
+                  "gast", "hinweis", "aktiv"]  # fmt: skip
         widgets = {"hinweis": forms.Textarea(attrs={"rows": 2})}
 
     def __init__(self, *args, fahrdienst=True, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["personen"].queryset = waehlbare_personen()
+        self.besetzung_einrichten()
         if fahrdienst:
             from apps.fahrdienst.models import Tour as FahrdienstTour
 
@@ -92,27 +125,61 @@ class TourForm(forms.ModelForm):
         return name
 
 
-class KurzfristigForm(forms.ModelForm):
-    """Kurzfristige Tour für einen Tag, mit eigenen Personen."""
+class KurzfristigForm(BesetzungMixin, forms.ModelForm):
+    """Kurzfristige Tour für einen Tag, mit eigener Besetzung."""
 
-    personen = PersonenFeld(
-        queryset=None, required=False, label="Wer fährt",
-        widget=Mehrfachauswahl(leer="niemand gewählt"),
-        help_text="Fahrer, Beifahrer und Angestellte. Sie bekommen die Tour mit „An die Fahrer "
-        "schicken“ per E-Mail.",
-    )  # fmt: skip
+    fahrer = _platz("Fahrer/in", "Wer mitfährt, bekommt die Tour mit „An die Fahrer schicken“ "
+                    "per E-Mail.")  # fmt: skip
+    beifahrer = _platz("Beifahrer/in")
+    beifahrer2 = _platz("2. Beifahrer/in")
 
     class Meta:
         model = Tour
-        fields = ["name", "datum", "personen", "hinweis", "aktiv"]
+        fields = ["name", "datum", "fahrer", "beifahrer", "beifahrer2", "gast", "hinweis",
+                  "aktiv"]  # fmt: skip
         widgets = {"hinweis": forms.Textarea(attrs={"rows": 2}), "datum": DatumEingabe()}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["personen"].queryset = waehlbare_personen()
+        self.besetzung_einrichten()
         self.fields["datum"].required = True
         self.fields["datum"].label = "Am"
         self.fields["datum"].help_text = ""
+
+
+class NeueStationForm(forms.ModelForm):
+    """Eine Station, die noch nicht in der Liste steht, gleich in der Maske der kurzfristigen
+    Tour eintragen. Leer gelassen = keine neue Station."""
+
+    # Die Felder stehen eingeklappt in der Maske der Tour und dürfen leer bleiben; der Browser
+    # darf das Absenden deshalb nicht an ihnen aufhalten. Geprüft wird im Server.
+    use_required_attribute = False
+
+    class Meta:
+        model = Station
+        fields = ["name", "art", "strasse", "hausnummer", "plz", "ort", "telefon",
+                  "ansprechpartner", "anfahrt"]  # fmt: skip
+        widgets = {"anfahrt": forms.Textarea(attrs={"rows": 2})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["art"].initial = Station.Art.SONSTIGES
+        for feld in self.fields.values():
+            feld.help_text = ""
+
+    def ausgefuellt(self) -> bool:
+        """Wurde überhaupt etwas eingetragen (außer der vorbelegten Art)?"""
+        return self.is_bound and any(
+            (self.data.get(self.add_prefix(name)) or "").strip()
+            for name in self.fields if name != "art"
+        )  # fmt: skip
+
+    def anlegen(self, von: str) -> Station:
+        station = self.save(commit=False)
+        station.kennung = neue_kennung()
+        station.geaendert_am, station.geaendert_von = timezone.now(), von
+        station.save()
+        return station
 
 
 class HaltForm(forms.Form):
@@ -126,9 +193,13 @@ class HaltForm(forms.Form):
 
 
 class EinstellungenForm(forms.ModelForm):
+    eco_adresse = forms.URLField(label="Adresse der ECO-Plattform", required=False,
+                                 assume_scheme="https")  # fmt: skip
+
     class Meta:
         model = TourenEinstellungen
-        fields = ["lieferscheine", "versand", "test_email", "mail_text", "aufbewahrung_jahre"]
+        fields = ["lieferscheine", "versand", "test_email", "mail_text", "aufbewahrung_jahre",
+                  "eco_plattform", "eco_adresse"]  # fmt: skip
         widgets = {
             "mail_text": forms.Textarea(attrs={"rows": 5}),
             "test_email": forms.EmailInput(attrs={"data-zeigen-bei": "versand=test"}),

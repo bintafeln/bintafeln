@@ -1,0 +1,9 @@
+{% for p in plaetze %}
+<div class="feld"><label for="platz_{{ p.nr }}">{{ p.rolle }}{% if p.nr > 1 %} {{ p.nr|add:"-1" }}{% endif %}</label>
+  <select name="platz_{{ p.nr }}" id="platz_{{ p.nr }}">
+    <option value="">{% if p.person %}{{ p.person.name }}{% elif p.gast %}{{ p.gast }} (Gast){% else %}– offen –{% endif %}</option>
+    {% for w in p.wahl %}<option value="{{ w.pk }}">{{ w.name }}</option>{% endfor %}
+  </select>
+  {% if p.nr > 1 %}<input type="text" name="gast_{{ p.nr }}" id="gast_{{ p.nr }}" maxlength="100" placeholder="oder Gast ohne Konto: Vor- und Nachname" aria-label="{{ p.rolle }} {{ p.nr|add:"-1" }}: Gast ohne Konto" autocomplete="off">{% endif %}
+</div>
+{% endfor %}

@@ -1170,6 +1170,31 @@ def test_hilfe_bild_touren_fahrt(angemeldet, admin, muster):
     )
 
 
+def test_hilfe_bild_touren_kurzfristig(angemeldet, admin, muster):
+    """Kurzfristige Tour in einer Maske: Stationen suchen und hinzufügen."""
+    from apps.core import demo_daten
+
+    _module("touren")
+    demo_daten.touren()
+    seite = oeffnen(angemeldet, admin, reverse("touren:tour_neu") + "?kurz")
+    seite.get_by_label("Name").first.fill("Sonderabholung Hofladen")
+    suche = seite.get_by_label("Laden oder Lieferadresse suchen")
+    suche.fill("markt")
+    seite.locator("#station-treffer button").first.click()
+    suche.fill("bäck")
+    expect(seite.locator("#station-treffer li").first).to_contain_text("äck")
+    aufnehmen(
+        seite,
+        "touren-kurzfristig",
+        [seite.locator("section.karte").first],
+        Marke(suche, art="rahmen", nummer=1),
+        Marke(seite.locator("#station-treffer"), art="rahmen", nummer=2),
+        Marke(seite.locator("[data-stationswahl-liste]"), art="rahmen", nummer=3),
+        Marke(seite.get_by_role("button", name="Tour anlegen"), art="rahmen", nummer=4),
+        rand=8,
+    )
+
+
 def test_hilfe_bild_touren_lieferschein(angemeldet, admin, muster):
     from apps.core import demo_daten
     from apps.touren.models import Station
