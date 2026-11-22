@@ -34,3 +34,17 @@ Daneben arbeiten manche Tafeln (auch) mit der ECO-Plattform und wollen von den T
   (wer verfügbar ist, wer ausfällt) zu umgehen.
 - Der Link zur ECO-Plattform ist bewusst nur ein Link: bintafeln bleibt unabhängig, und jede
   Tafel entscheidet selbst, was sie wo erledigt.
+
+## Nachtrag: Die Mannschaft ändert am Tag selbst
+
+Die Mannschaft muss kurzfristige Wechsel und Mitfahrer unterwegs selbst eintragen können, ohne
+das Büro. Am Tag der Tour steht deshalb oben in der Tour ein deutlicher Knopf „Besetzung ändern,
+Mitfahrer oder Gast eintragen“ (vorher ein kleiner Link, und nur bei Touren aus dem Fahrerplan):
+
+- Tour aus dem Fahrerplan: wie bisher über `start.aendern()` als Ersatz für den Tag.
+- Kurzfristige Tour von heute: `MannschaftForm` setzt Fahrer, Beifahrer, zweiten Beifahrer und
+  Gast direkt an der Tour.
+
+Es bleibt dabei: Ändern darf nur, wer auf der Tour eingetragen ist oder das Recht
+`touren.besetzung` hat, und niemand nimmt sich selbst heraus. Regelmäßige eigene Touren ohne
+Fahrerplan haben keine Besetzung je Tag; dort ändert weiter die Planung.

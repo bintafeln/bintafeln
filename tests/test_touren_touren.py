@@ -347,6 +347,11 @@ def test_tourstart_fragt_und_bestaetigt(client, anmelden, heute_tour):
     assert eintrag and not eintrag.geaendert and eintrag.bestaetigt_von
     seite = client.get(reverse("touren:fahren", args=[t.pk])).content.decode()
     assert "Besetzung bestätigt" in seite and "Navigation starten" in seite
+    # danach lässt sich die Besetzung über einen deutlichen Knopf weiter ändern
+    aendern = reverse("touren:start", args=[t.pk]) + "?aendern=1"
+    assert aendern in seite and "Besetzung ändern, Mitfahrer oder Gast" in seite
+    maske = client.get(aendern).content.decode()
+    assert '<details class="tour-aendern" open>' in maske and "Besetzung ändern" in maske
     # an einem anderen Tag wird nicht gefragt
     morgen = (heute_tour["heute"] + dt.timedelta(days=1)).isoformat()
     assert client.get(reverse("touren:fahren", args=[t.pk]), {"tag": morgen}).status_code == 200

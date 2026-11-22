@@ -147,6 +147,37 @@ class KurzfristigForm(BesetzungMixin, forms.ModelForm):
         self.fields["datum"].help_text = ""
 
 
+class MannschaftForm(BesetzungMixin, forms.ModelForm):
+    """Am Tag selbst, vom Handy: Wer fährt die kurzfristige Tour wirklich? Die Mannschaft ändert
+    oder ergänzt ihre Besetzung selbst (Mitfahrer, Gast)."""
+
+    fahrer = _platz("Fahrer/in")
+    beifahrer = _platz("Beifahrer/in")
+    beifahrer2 = _platz("2. Beifahrer/in")
+
+    class Meta:
+        model = Tour
+        fields = ["fahrer", "beifahrer", "beifahrer2", "gast"]
+
+    def __init__(self, *args, wer=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.wer = wer  # Adresse der Person, die ändert; None = darf jede Besetzung eintragen
+        self.besetzung_einrichten()
+        self.fields["gast"].label = "Gast ohne Konto"
+        self.fields[
+            "gast"
+        ].help_text = "Vor- und Nachname, wenn jemand ohne eigenes Konto mitfährt."
+
+    def clean(self):
+        daten = super().clean()
+        gewaehlt = {daten[n].pk for n in self.PLAETZE if daten.get(n)}
+        if self.wer is not None and self.wer.pk not in gewaehlt:
+            raise forms.ValidationError(
+                "Sie können sich nicht selbst aus der Tour nehmen. Bitte im Büro melden."
+            )
+        return daten
+
+
 class NeueStationForm(forms.ModelForm):
     """Eine Station, die noch nicht in der Liste steht, gleich in der Maske der kurzfristigen
     Tour eintragen. Leer gelassen = keine neue Station."""

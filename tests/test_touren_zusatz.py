@@ -213,3 +213,65 @@ def test_beifahrer_der_tour_sieht_den_lieferschein(lage, django_user_model):
     ls.tour = None  # Tour gelöscht: nur noch, wer ihn ausgefüllt hat
     assert not lieferscheine.darf_sehen(paula.konto, ls)
     assert lieferscheine.darf_sehen(lage["fritz"], ls)
+
+
+# --- Besetzung am Tag selbst ändern (Mannschaft, vom Handy) -------------------------------------
+
+
+def test_mannschaft_aendert_besetzung_der_kurzfristigen_tour(client, anmelden, lage,
+                                                            django_user_model):  # fmt: skip
+    nord, fritz = lage["nord"], lage["fritz"]
+    paula = person(django_user_model, "Paula", "Beifahrer")
+    anmelden(client, fritz)
+    seite = client.get(reverse("touren:fahren", args=[nord.pk])).content.decode()
+    start = reverse("touren:start", args=[nord.pk])
+    assert f"{start}?aendern=1" in seite and "Besetzung ändern, Mitfahrer oder Gast" in seite
+    maske = client.get(start).content.decode()
+    assert "Wer fährt heute mit?" in maske and "Paula Probe" in maske
+    ich = Adresse.objects.get(konto=fritz)
+    antwort = client.post(start, {"fahrer": ich.pk, "beifahrer": paula.pk, "gast": "Gerd Gast"})
+    assert antwort.status_code == 302
+    nord.refresh_from_db()
+    assert (nord.beifahrer, nord.gast) == (paula, "Gerd Gast")
+    assert set(nord.personen.all()) == {ich, paula}
+    namen_ = [b["name"] for b in ablauf.besetzung(nord, lage["heute"])]
+    assert namen_ == ["Fritz Probe", "Paula Probe", "Gerd Gast"]
+    # sich selbst herausnehmen geht nicht
+    antwort = client.post(start, {"fahrer": paula.pk})
+    assert antwort.status_code == 200 and "nicht selbst aus der Tour" in antwort.content.decode()
+    nord.refresh_from_db()
+    assert nord.fahrer == ich
+    # dieselbe Person auf zwei Plätzen auch nicht
+    antwort = client.post(start, {"fahrer": ich.pk, "beifahrer": ich.pk})
+    assert antwort.status_code == 200
+
+
+def test_fremde_aendern_die_besetzung_nicht_das_buero_schon(client, anmelden, lage):
+    nord, klaus = lage["nord"], lage["klaus"]
+    start = reverse("touren:start", args=[nord.pk])
+    anmelden(client, klaus)  # fährt die Südtour
+    seite = client.get(reverse("touren:fahren", args=[nord.pk])).content.decode()
+    assert "Besetzung ändern, Mitfahrer" not in seite
+    ich = Adresse.objects.get(konto=klaus)
+    assert client.post(start, {"fahrer": ich.pk}).status_code == 302
+    nord.refresh_from_db()
+    assert nord.fahrer != ich
+    # das Büro (Recht „Besetzung“) darf jede Besetzung eintragen, auch ohne selbst mitzufahren
+    anmelden(client, lage["buero"])
+    assert client.post(start, {"fahrer": ich.pk}).status_code == 302
+    nord.refresh_from_db()
+    assert nord.fahrer == ich
+
+
+def test_besetzung_aendern_nur_am_tag_der_tour(client, anmelden, lage):
+    nord, fritz = lage["nord"], lage["fritz"]
+    nord.datum = lage["heute"] + dt.timedelta(days=1)
+    nord.save()
+    anmelden(client, fritz)
+    morgen = f"?tag={nord.datum:%Y-%m-%d}"
+    seite = client.get(reverse("touren:fahren", args=[nord.pk]) + morgen).content.decode()
+    assert "Besetzung ändern, Mitfahrer" not in seite
+    antwort = client.post(reverse("touren:start", args=[nord.pk]), {"gast": "Gerd Gast"})
+    assert antwort.status_code == 302
+    nord.refresh_from_db()
+    assert nord.gast == ""
