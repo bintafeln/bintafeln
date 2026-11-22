@@ -28,3 +28,14 @@ Abends und in dunklen Räumen blenden die hellen Flächen. Es gab nur die helle 
 Eine Einstellung am Konto gilt auf jedem Gerät und braucht kein Cookie. Ein einziger CSS-Block mit
 Variablen hält den Nachtmodus neben der hellen Darstellung wartbar; wer eine neue helle Fläche
 anlegt, ergänzt dort das Gegenstück.
+
+## Nachtrag: zweiter Schritt
+
+- Farbige Schilder mit eigener dunkler Schrift auf hellem Grund (Status in Warteliste und Tickets,
+  Update-Hinweise, offene Plätze im Fahrerplan …) bekommen im Nachtmodus denselben Farbton auf
+  dunklem Grund mit heller Schrift.
+- Was Papier zeigt (Unterschriftsfeld, PDF-Seiten, Mail-, Bild- und Ausweisvorschauen), bleibt
+  hell, wird aber mit `filter: brightness()` abgedunkelt. Das ändert nur die Anzeige: Das Bild der
+  Unterschrift und die PDFs selbst bleiben unverändert.
+- Bewusst unverändert: Farben, die eine Bedeutung tragen (Farben der Kundengruppen, Altersgruppen,
+  Diagramme), QR-Codes, das Logo sowie die Seiten des Aufrufsystems und der Aushang-Monitore.

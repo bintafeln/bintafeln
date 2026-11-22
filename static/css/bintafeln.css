@@ -2481,3 +2481,40 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 /* Eingabefelder ohne eigene Farbe bekämen sonst das Grau des Browsers */
 :root[data-nacht] input:not([type=checkbox], [type=radio], [type=range], [type=file], [type=color], [type=submit], [type=button]),
 :root[data-nacht] textarea, :root[data-nacht] select { background-color: var(--flaeche-2); color: var(--text); }
+/* Schritt 2: farbige Schilder mit eigener dunkler Schrift – derselbe Farbton, dunkler Grund,
+   helle Schrift */
+:root[data-nacht] .sicherung-stand.sicherung-ok { background: color-mix(in srgb, #42df20 26%, var(--flaeche)); color: #b3f2a6; }
+:root[data-nacht] .sicherung-alt { background: color-mix(in srgb, #dfab20 26%, var(--flaeche)); color: #f2dea6; }
+:root[data-nacht] .update-wichtig { background: color-mix(in srgb, #dfab20 26%, var(--flaeche)); color: #f2dea6; }
+:root[data-nacht] .update-neu-hinweis { background: color-mix(in srgb, #2080df 26%, var(--flaeche)); color: #a6ccf2; }
+:root[data-nacht] .stufe-wichtig { background: color-mix(in srgb, #dfab20 26%, var(--flaeche)); color: #f2dea6; }
+:root[data-nacht] .stufe-neu { background: color-mix(in srgb, #2080df 26%, var(--flaeche)); color: #a6ccf2; }
+:root[data-nacht] .update-laeuft { background: color-mix(in srgb, #df2a20 26%, var(--flaeche)); color: #f2aaa6; }
+:root[data-nacht] .demo-hinweis { background: color-mix(in srgb, #dfae20 26%, var(--flaeche)); color: #f2dfa6; }
+:root[data-nacht] .aufruf-leiste { background: color-mix(in srgb, #208fdf 26%, var(--flaeche)); color: #a6d2f2; }
+:root[data-nacht] .status.wl-neu { background: var(--flaeche-2); color: var(--text); }
+:root[data-nacht] .status.wl-wartend, :root[data-nacht] .status.wl-eingeladen { background: color-mix(in srgb, #208bdf 26%, var(--flaeche)); color: #a6d1f2; }
+:root[data-nacht] .status.wl-wartezeit, :root[data-nacht] .status.wl-entschuldigt { background: color-mix(in srgb, #df9e20 26%, var(--flaeche)); color: #f2d8a6; }
+:root[data-nacht] .status.wl-wz_abgelaufen, :root[data-nacht] .status.wl-streichen_moeglich, :root[data-nacht] .status.wl-gestrichen { background: color-mix(in srgb, #df2a20 26%, var(--flaeche)); color: #f2aaa6; }
+:root[data-nacht] .status.wl-erschienen { background: color-mix(in srgb, #20df2f 26%, var(--flaeche)); color: #a6f2ac; }
+:root[data-nacht] .status.wl-aufgenommen { background: color-mix(in srgb, #7020df 26%, var(--flaeche)); color: #c6a6f2; }
+:root[data-nacht] .fd-offen, :root[data-nacht] .fd-unbesetzt { background: color-mix(in srgb, #dfc720 26%, var(--flaeche)); color: #f2e9a6; }
+:root[data-nacht] .fd-ersetzt .fd-weg { background: color-mix(in srgb, #dfc520 26%, var(--flaeche)); color: #f2e8a6; }
+:root[data-nacht] .ticket-in_arbeit { background: color-mix(in srgb, #dfac20 26%, var(--flaeche)); color: #f2dea6; }
+:root[data-nacht] .ticket-erledigt { background: color-mix(in srgb, #20df57 26%, var(--flaeche)); color: #a6f2bc; }
+:root[data-nacht] .status-fertig { background: color-mix(in srgb, #20df57 26%, var(--flaeche)); color: #a6f2bc; }
+:root[data-nacht] .status-offen { background: color-mix(in srgb, #dfae20 26%, var(--flaeche)); color: #f2dea6; }
+:root[data-nacht] .push-status { background: color-mix(in srgb, #20df57 26%, var(--flaeche)); color: #a6f2bc; }
+:root[data-nacht] .ruecknahme-beantragt { background: color-mix(in srgb, #dfae20 26%, var(--flaeche)); color: #f2dea6; }
+/* farbige Schrift, die für hellen Grund gedacht war */
+:root[data-nacht] .grund-rot { color: #f49e9a; }
+:root[data-nacht] .update-laeuft-titel small { color: #f49e9a; }
+:root[data-nacht] .aufruf-leiste-danach .nr-fehlt { color: #f49a9a; }
+:root[data-nacht] .aufruf-leiste-fehler { color: #f49e9a; }
+:root[data-nacht] .fd-unbesetzt strong { color: #f49a9a; }
+:root[data-nacht] .fd-offen strong, :root[data-nacht] .fd-offen-text { color: #f49a9a; }
+/* Was Papier zeigt (Vorschauen, Unterschriftsfeld, PDF-Seiten), bleibt hell, blendet aber weniger */
+:root[data-nacht] .mail-vorschau, :root[data-nacht] .ausweis-karte, :root[data-nacht] .bild-vorschau,
+:root[data-nacht] .grafik-wahl, :root[data-nacht] .brief-vorschau-knopf, :root[data-nacht] .unterschrift-vorschau,
+:root[data-nacht] .druck-seite, :root[data-nacht] .unterschrift-flaeche, :root[data-nacht] .ausweis-mini,
+:root[data-nacht] .bilder-galerie img { filter: brightness(.78); }
