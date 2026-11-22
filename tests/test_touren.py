@@ -322,7 +322,7 @@ def test_modul_aus_keine_seiten(buero):
     assert buero.get(reverse("touren:stationen")).status_code == 404
 
 
-# --- Marktliste und Lieferadressen im Exportformat der eco-platform (erfundene Daten) ----------
+# --- Marktliste und Lieferadressen im Exportformat der ECO-Plattform (erfundene Daten) ----------
 
 MARKTLISTE = (
     "\ufeffName;Handelskette;Externe Marktkennung;Adresse;Bemerkung;Empfänger der Lieferscheine;"

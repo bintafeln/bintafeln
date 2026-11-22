@@ -1,6 +1,6 @@
-"""Marktliste und Lieferadressen im Exportformat der eco-platform in ``stationen.csv`` umschreiben.
+"""Marktliste und Lieferadressen im Exportformat der ECO-Plattform in ``stationen.csv`` umschreiben.
 
-Die eco-platform exportiert die Märkte und die Lieferadressen einer Tafel in einem festen Format,
+Die ECO-Plattform exportiert die Märkte und die Lieferadressen einer Tafel in einem festen Format,
 das sich nicht anpassen lässt. Damit niemand die Dateien von Hand umbauen muss, erkennt der Import
 sie an ihren Spaltennamen und schreibt sie hier in das eigene Format um
 (docs/importformat-touren.md); danach läuft alles wie bei jeder ``stationen.csv`` (Prüfbericht,

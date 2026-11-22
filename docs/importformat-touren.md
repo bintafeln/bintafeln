@@ -65,9 +65,9 @@ Beispieldateien mit erfundenen Daten: [beispiele/touren/](beispiele/touren/)
 Die Navigation nutzt die Anschrift. `breite` und `laenge` sind nur nötig, wenn die Anschrift
 nicht zur richtigen Zufahrt führt; sind sie gesetzt, gelten sie.
 
-### Marktliste und Lieferadressen aus der eco-platform
+### Marktliste und Lieferadressen aus der ECO-Plattform
 
-Die eco-platform exportiert Märkte und Lieferadressen in einem festen Format. Der Import nimmt
+Die ECO-Plattform exportiert Märkte und Lieferadressen in einem festen Format. Der Import nimmt
 diese beiden Dateien
 auch so, wie sie sind (`apps/touren/listen_einlesen.py`). Erkannt werden sie an der Kopfzeile;
 bintafeln schreibt sie vor dem Prüfbericht in das Format oben um.
