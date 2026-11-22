@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load liste %}
+{% block titel %}Fahrtenbuch{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Fahrtenbuch</h1>
+  <p class="hinweis">Alle Fahrten der Touren mit Fahrzeug und Kilometerstand, neueste zuerst. <a href="{% url 'core:hilfe' %}#touren">So funktioniert es</a></p>
+  <form class="filter-kompakt" method="get">
+    <div class="filter-feld"><label for="fahrzeug">Fahrzeug</label>
+      <select name="fahrzeug" id="fahrzeug" onchange="this.form.submit()"><option value="">alle</option>{% for fz in fahrzeuge %}<option value="{{ fz.pk }}"{% if filter.fahrzeug == fz.pk|stringformat:"s" %} selected{% endif %}>{{ fz }}</option>{% endfor %}</select></div>
+    <div class="filter-feld"><label for="stand">Stand</label>
+      <select name="stand" id="stand" onchange="this.form.submit()"><option value="">alle</option><option value="offen"{% if filter.stand == "offen" %} selected{% endif %}>ohne Kilometerstand bei Ankunft</option></select></div>
+    <div class="filter-feld"><label for="von">Von</label><input type="date" name="von" id="von" value="{{ filter.von }}"></div>
+    <div class="filter-feld"><label for="bis">bis</label><input type="date" name="bis" id="bis" value="{{ filter.bis }}"></div>
+    <div class="filter-feld filter-suche"><label for="q">Suche</label>
+      <input type="search" name="q" id="q" value="{{ filter.q }}" placeholder="Tour, Fahrzeug, Name" {% live_suche %}></div>
+    <button type="submit" class="knopf">Suchen</button>
+    <button type="submit" name="export" value="csv" class="knopf knopf-zweitrangig">Als CSV</button>
+    {% filter_zuruecksetzen %}
+  </form>
+  <div id="ergebnis">
+  {% if offen %}<p class="hinweis"><span class="marke-warnung">{{ offen }} Fahrt{{ offen|pluralize:"en" }} aus früheren Tagen ohne Kilometerstand bei Ankunft.</span> <a href="?stand=offen">anzeigen</a></p>{% endif %}
+  <p class="hinweis">{{ seite.paginator.count }} Fahrt{{ seite.paginator.count|pluralize:"en" }} · zusammen <strong>{{ summe }} km</strong></p>
+  <div class="tabelle-rahmen">
+  <table class="tabelle" id="fahrten-tabelle">
+    <thead><tr><th>Datum</th><th>Tour</th><th>Fahrzeug</th><th>Besetzung</th><th class="zahl">km Abfahrt</th><th class="zahl">km Ankunft</th><th class="zahl">gefahren</th><th>Zeit</th><th></th></tr></thead>
+    <tbody>
+    {% for x in zeilen %}
+      <tr>
+        <td data-titel="Datum" class="ohne-umbruch">{{ x.datum|date:"D d.m.Y" }}</td>
+        <td data-titel="Tour">{{ x.tour_name }}</td>
+        <td data-titel="Fahrzeug">{{ x.fahrzeug_name|default:"–" }}</td>
+        <td data-titel="Besetzung">{{ x.besetzung|default:"–" }}</td>
+        <td data-titel="km Abfahrt" class="zahl">{{ x.km_start }}</td>
+        <td data-titel="km Ankunft" class="zahl">{% if x.km_ende is None %}{% if x.datum == heute %}<span class="leise">unterwegs</span>{% else %}<span class="marke-warnung">fehlt</span>{% endif %}{% else %}{{ x.km_ende }}{% endif %}</td>
+        <td data-titel="gefahren" class="zahl">{% if x.km is None %}–{% else %}{{ x.km }} km{% endif %}</td>
+        <td data-titel="Zeit" class="ohne-umbruch">{{ x.begonnen_am|date:"H:i" }}{% if x.beendet_am and x.beendet_von_name %}–{{ x.beendet_am|date:"H:i" }}{% endif %}{% if x.berichtigt_von %}<br><small class="leise">berichtigt von {{ x.berichtigt_von }}</small>{% endif %}</td>
+        <td data-titel="Aktionen"><a class="knopf knopf-zweitrangig knopf-klein" href="{% url 'touren:fahrt' x.pk %}">Berichtigen</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="9">Keine Fahrten gefunden.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% blaettern seite zusatz="Fahrten" %}
+  </div>
+</section>
+{% endblock %}

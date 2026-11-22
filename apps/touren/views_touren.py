@@ -14,7 +14,7 @@ from apps.adressen.forms import ImportForm
 from apps.ausgabe.ampel import WOCHENTAGE
 from apps.core import geheimnis, module, papierkorb
 from apps.konten import rollen
-from apps.touren import ablauf, importieren_touren, lieferscheine, suche
+from apps.touren import ablauf, fahrten, importieren_touren, lieferscheine, suche
 from apps.touren import start as tourstart
 from apps.touren.forms import HaltForm, KurzfristigForm, NeueStationForm, TourForm
 from apps.touren.models import Halt, Station, Tour
@@ -67,6 +67,9 @@ def fahren(request, pk):
     darf_start = gefragt and tourstart.darf(request.user, tour, tag)
     if darf_start and gestartet is None:
         return redirect(reverse("touren:start", args=[tour.pk]))  # erst: „Seid ihr …?“
+    fahrt = fahrten.heute(tour, tag)
+    fahrt_moeglich = (tag == timezone.localdate() and ablauf.faehrt_am(tour, tag)
+                      and tourstart.darf(request.user, tour, tag))  # fmt: skip
     halte = ablauf.halte(tour, tag)
     darf_schein = lieferscheine.an() and rollen.hat_recht(request.user, "touren.lieferschein")
     scheine = lieferscheine.am_tag(tag, [h.station_id for h in halte]) if darf_schein else {}
@@ -79,6 +82,9 @@ def fahren(request, pk):
         "routen": ablauf.routen([h.station for h in halte]),
         "darf_planen": rollen.hat_recht(request.user, "touren.planen"),
         "gefragt": gefragt, "gestartet": gestartet, "darf_start": darf_start,
+        "fahrt": fahrt, "fahrt_moeglich": fahrt_moeglich,
+        "fahrzeuge": fahrten.fahrzeuge() if fahrt_moeglich and fahrt is None else [],
+        "staende": fahrten.staende() if fahrt_moeglich and fahrt is None else {},
     })  # fmt: skip
 
 

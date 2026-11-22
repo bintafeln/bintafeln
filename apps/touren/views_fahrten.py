@@ -1,0 +1,121 @@
+"""Fahrten (ADR 0151): am Handy beginnen und beenden, im Büro das Fahrtenbuch."""
+
+import csv
+import datetime as dt
+import io
+
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.db.models import Q
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils import timezone
+from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_POST
+
+from apps.core import listenexport
+from apps.konten import rollen
+from apps.touren import fahrten
+from apps.touren.models import Fahrt, Fahrzeug, Tour
+
+fahren_recht = rollen.recht_erforderlich("touren.fahren")
+buch = rollen.recht_erforderlich("touren.fahrten")
+
+
+@require_POST
+@fahren_recht
+def beginnen(request, pk):
+    tour = get_object_or_404(Tour.objects.select_related("fahrdienst_tour"), pk=pk)
+    try:
+        fahrten.beginnen(tour, request.user, request.POST.get("km_start"),
+                         request.POST.get("fahrzeug"))  # fmt: skip
+    except fahrten.FahrtFehler as grund:
+        messages.error(request, str(grund))
+    else:
+        messages.success(request, "Fahrt begonnen. Gute Fahrt!")
+    return redirect(reverse("touren:fahren", args=[tour.pk]))
+
+
+@require_POST
+@fahren_recht
+def beenden(request, pk):
+    fahrt = get_object_or_404(Fahrt.objects.select_related("tour__fahrdienst_tour"), pk=pk)
+    try:
+        fahrten.beenden(fahrt, request.user, request.POST.get("km_ende"))
+    except fahrten.FahrtFehler as grund:
+        messages.error(request, str(grund))
+        ziel = reverse("touren:fahren", args=[fahrt.tour_id]) if fahrt.tour_id else None
+        return redirect(f"{ziel}#fahrt" if ziel else "touren:heute")
+    messages.success(request, f"Tour beendet: {fahrt.km} km gefahren. Danke!")
+    return redirect("touren:heute")
+
+
+def _gefiltert(request):
+    f = {"q": request.GET.get("q", "").strip(), "von": request.GET.get("von", ""),
+         "bis": request.GET.get("bis", ""), "fahrzeug": request.GET.get("fahrzeug", ""),
+         "stand": request.GET.get("stand", "")}  # fmt: skip
+    liste = Fahrt.objects.select_related("fahrzeug", "tour")
+    if f["q"]:
+        liste = liste.filter(Q(tour_name__icontains=f["q"]) | Q(besetzung__icontains=f["q"])
+                             | Q(fahrzeug_name__icontains=f["q"]))  # fmt: skip
+    for feld, suche in (("von", "datum__gte"), ("bis", "datum__lte")):
+        try:
+            liste = liste.filter(**{suche: dt.date.fromisoformat(f[feld])})
+        except ValueError:
+            f[feld] = ""
+    if f["fahrzeug"].isdigit():
+        liste = liste.filter(fahrzeug_id=int(f["fahrzeug"]))
+    else:
+        f["fahrzeug"] = ""
+    if f["stand"] == "offen":
+        liste = liste.filter(km_ende__isnull=True)
+    return f, liste
+
+
+@never_cache
+@buch
+def liste(request):
+    """Das Fahrtenbuch: alle Fahrten, neueste zuerst, mit Summe der Kilometer."""
+    f, fahrten_ = _gefiltert(request)
+    if request.GET.get("export") == "csv":
+        zeilen = [[x.datum.strftime("%d.%m.%Y"), x.tour_name, x.fahrzeug_name, x.besetzung,
+                   x.km_start, "" if x.km_ende is None else x.km_ende,
+                   "" if x.km is None else x.km,
+                   timezone.localtime(x.begonnen_am).strftime("%H:%M"),
+                   timezone.localtime(x.beendet_am).strftime("%H:%M") if x.beendet_am else ""]
+                  for x in fahrten_]  # fmt: skip
+        puffer = io.StringIO()
+        schreiber = csv.writer(puffer, delimiter=";")
+        schreiber.writerow(["Datum", "Tour", "Fahrzeug", "Besetzung", "km Abfahrt", "km Ankunft",
+                            "km gefahren", "Beginn", "Ende"])  # fmt: skip
+        schreiber.writerows(zeilen)
+        return listenexport.ausliefern(request, "Fahrtenbuch", "fahrten", puffer.getvalue(),
+                                       weiter=reverse("touren:fahrten"))  # fmt: skip
+    summe = sum(x.km or 0 for x in fahrten_)
+    seite = Paginator(fahrten_, 50).get_page(request.GET.get("seite"))
+    return render(request, "touren/fahrten.html", {
+        "seite": seite, "zeilen": seite.object_list, "filter": f, "summe": summe,
+        "fahrzeuge": Fahrzeug.objects.all(), "heute": timezone.localdate(),
+        "offen": Fahrt.objects.filter(km_ende__isnull=True,
+                                      datum__lt=timezone.localdate()).count(),
+    })  # fmt: skip
+
+
+@never_cache
+@buch
+def bearbeiten(request, pk):
+    fahrt = get_object_or_404(Fahrt.objects.select_related("fahrzeug"), pk=pk)
+    if request.method == "POST":
+        try:
+            p = request.POST
+            fahrten.berichtigen(fahrt, request.user, p.get("km_start"), p.get("km_ende"),
+                                p.get("fahrzeug"))  # fmt: skip
+        except fahrten.FahrtFehler as grund:
+            messages.error(request, str(grund))
+        else:
+            messages.success(request, "Fahrt berichtigt.")
+            return redirect("touren:fahrten")
+    return render(request, "touren/fahrt.html", {
+        "fahrt": fahrt,
+        "fahrzeuge": Fahrzeug.objects.filter(Q(aktiv=True) | Q(pk=fahrt.fahrzeug_id)),
+    })  # fmt: skip

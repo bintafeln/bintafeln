@@ -18,7 +18,7 @@ from apps.core import papierkorb
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.touren import lieferscheine
-from apps.touren.forms import EinstellungenForm, WarengruppenFormSet
+from apps.touren.forms import EinstellungenForm, FahrzeugFormSet, WarengruppenFormSet
 from apps.touren.models import Lieferschein, Position, Station, Tour, TourenEinstellungen
 
 ausfuellen_recht = rollen.recht_erforderlich("touren.lieferschein")
@@ -150,10 +150,14 @@ def einstellungen(request):
                              instance=TourenEinstellungen.laden())  # fmt: skip
     gruppen = WarengruppenFormSet(request.POST if "warengruppen" in request.POST else None,
                                   prefix="wg")  # fmt: skip
+    fahrzeuge = FahrzeugFormSet(request.POST if "fahrzeuge" in request.POST else None,
+                                prefix="fz")  # fmt: skip
     if request.method == "POST":
-        aktuell = form if "einstellungen" in request.POST else gruppen
+        aktuell = (form if "einstellungen" in request.POST
+                   else fahrzeuge if "fahrzeuge" in request.POST else gruppen)  # fmt: skip
         if aktuell.is_valid():
             aktuell.save()
             messages.success(request, "Gespeichert.")
             return redirect("touren:einstellungen")
-    return render(request, "touren/einstellungen.html", {"form": form, "gruppen": gruppen})
+    return render(request, "touren/einstellungen.html", {
+        "form": form, "gruppen": gruppen, "fahrzeuge": fahrzeuge})  # fmt: skip

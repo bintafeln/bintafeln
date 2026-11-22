@@ -34,6 +34,17 @@
     berichtigen. Eigene und kurzfristige Touren fragen nicht.</li>
 </ul>
 {% hilfe_bild "touren-start" "① die Frage mit den Namen aus dem Fahrerplan, ② bestätigen, ③ oder für heute berichtigen." %}
+<h3>Fahrt beginnen und Tour beenden</h3>
+<ul>
+  <li><strong>Vor der Abfahrt</strong> steht oben in der Tour „Fahrt beginnen“: das <strong>Fahrzeug</strong> wählen
+    und den <strong>Kilometerstand</strong> eintragen. bintafeln schlägt den letzten bekannten Stand des Fahrzeugs vor –
+    bitte mit dem Tacho vergleichen.</li>
+  <li><strong>Nach der Tour</strong>, wenn das Fahrzeug abgestellt ist, ganz unten „Tour beenden“: Kilometerstand bei
+    Ankunft eintragen. bintafeln rechnet die gefahrenen Kilometer aus. Einen Ort prüft das Programm nicht.</li>
+  <li>Beginnen und beenden kann, wer an dem Tag auf der Tour eingetragen ist (oder das Recht hat, die Besetzung jeder
+    Tour zu ändern). Vertippt? Das Büro berichtigt den Stand im Fahrtenbuch.</li>
+</ul>
+{% hilfe_bild "touren-fahrt" "① Fahrzeug wählen, ② Kilometerstand – der letzte bekannte Stand ist vorgeschlagen, ③ Fahrt beginnen." %}
 {% if "touren.lieferschein" in rechte %}
 <h3>Unterwegs: Lieferschein ausfüllen</h3>
 <ol>
@@ -54,6 +65,25 @@
   Büro Bescheid.</p>
 {% hilfe_bild "touren-lieferschein" "① Mengen je Warengruppe, Kisten oder kg, ② mit dem Finger unterschreiben, ③ abschicken." %}
 {% endif %}
+{% endif %}
+{% if "touren.fahrten" in rechte %}
+<h3>Fahrtenbuch</h3>
+<ul>
+  <li>Unter „Dienstpläne → Touren → Fahrtenbuch“ stehen alle Fahrten: Tag, Tour, Fahrzeug, Besetzung, Kilometerstand bei
+    Abfahrt und Ankunft, gefahrene Kilometer und die Zeit. Über der Liste steht die <strong>Summe der Kilometer</strong>
+    der gefilterten Fahrten.</li>
+  <li>Filter nach Fahrzeug, Zeitraum und „ohne Kilometerstand bei Ankunft“ (die Tour wurde nicht beendet). „Als CSV“
+    lädt die gefilterte Liste herunter, z. B. als Fahrtenbuch eines Fahrzeugs für einen Monat.</li>
+  <li><strong>„Berichtigen“</strong> ändert Fahrzeug und Kilometerstände einer Fahrt oder trägt den fehlenden Stand
+    nach. In der Liste steht dann, wer berichtigt hat.</li>
+  <li>Die <strong>Fahrzeuge</strong> legt der Admin unter „Einstellungen → Dienstpläne → Touren: Lieferscheine,
+    Warengruppen, Fahrzeuge“ an. Ohne Fahrzeuge wird beim Beginn nur der Kilometerstand gefragt.
+    Zu jedem Fahrzeug steht dort der <strong>Kilometerstand</strong>: Tragen Sie den Anfangsstand ein. bintafeln
+    schreibt ihn mit jeder Fahrt fort und schlägt ihn bei „Fahrt beginnen“ vor; wurde das Fahrzeug anderweitig gefahren,
+    ändern Sie ihn dort.</li>
+  <li>Fahrten werden so lange aufbewahrt wie Lieferscheine (Einstellung „Lieferscheine aufbewahren“).</li>
+</ul>
+{% hilfe_bild "touren-fahrtenbuch" "① Filter nach Fahrzeug und Zeitraum, ② Summe der Kilometer, ③ Kilometerstände einer Fahrt berichtigen." %}
 {% endif %}
 {% if "touren.planen" in rechte %}
 <h3>Touren planen</h3>

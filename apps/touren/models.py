@@ -10,6 +10,7 @@ sich einmalig ins Adressbuch übertragen; danach zeigt ``adresse`` auf den Eintr
 from urllib.parse import urlencode
 
 from auditlog.registry import auditlog
+from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
@@ -216,6 +217,79 @@ class Tourstart(models.Model):
         return f"{self.tour} am {self.datum:%d.%m.%Y}"
 
 
+class Fahrzeug(models.Model):
+    """Ein Fahrzeug der Tafel, zur Wahl beim Beginn einer Fahrt (ADR 0151)."""
+
+    name = models.CharField("Name", max_length=60, unique=True,
+                            help_text="z. B. „Kühlwagen“ oder „Transporter 2“")  # fmt: skip
+    kennzeichen = models.CharField("Kennzeichen", max_length=15, blank=True)
+    kilometerstand = models.PositiveIntegerField(
+        "Kilometerstand", null=True, blank=True, validators=[MaxValueValidator(9_999_999)],
+        help_text="Der aktuelle Stand. Er wird bei „Fahrt beginnen“ vorgeschlagen und mit jeder "
+        "Fahrt fortgeschrieben; hier ändern, wenn das Fahrzeug anderweitig gefahren wurde.",
+    )  # fmt: skip
+    reihenfolge = models.PositiveSmallIntegerField("Reihenfolge", default=0)
+    aktiv = models.BooleanField("Aktiv", default=True)
+
+    class Meta:
+        verbose_name = "Fahrzeug"
+        verbose_name_plural = "Fahrzeuge"
+        ordering = ["reihenfolge", "name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.kennzeichen})" if self.kennzeichen else self.name
+
+
+class Fahrt(models.Model):
+    """Eine gefahrene Tour an einem Tag: Beginn und Ende mit Kilometerstand (ADR 0151). Namen
+    stehen als Text dabei, damit die Fahrt lesbar bleibt, wenn Tour oder Fahrzeug verschwinden."""
+
+    tour = models.ForeignKey(Tour, null=True, blank=True, on_delete=models.SET_NULL,
+                             related_name="fahrten")  # fmt: skip
+    tour_name = models.CharField("Tour", max_length=80)
+    datum = models.DateField("Tag")
+    fahrzeug = models.ForeignKey(Fahrzeug, null=True, blank=True, on_delete=models.SET_NULL,
+                                 related_name="fahrten", verbose_name="Fahrzeug")  # fmt: skip
+    fahrzeug_name = models.CharField("Fahrzeug (Name)", max_length=80, blank=True)
+    besetzung = models.CharField("Besetzung", max_length=300, blank=True)
+    km_start = models.PositiveIntegerField(
+        "Kilometerstand bei Abfahrt", validators=[MaxValueValidator(9_999_999)])  # fmt: skip
+    km_ende = models.PositiveIntegerField(
+        "Kilometerstand bei Ankunft", null=True, blank=True,
+        validators=[MaxValueValidator(9_999_999)])  # fmt: skip
+    begonnen_am = models.DateTimeField("Begonnen am")
+    begonnen_von = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="+")  # fmt: skip
+    begonnen_von_name = models.CharField("Begonnen von", max_length=150, blank=True)
+    beendet_am = models.DateTimeField("Beendet am", null=True, blank=True)
+    beendet_von = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="+")  # fmt: skip
+    beendet_von_name = models.CharField("Beendet von", max_length=150, blank=True)
+    berichtigt_von = models.CharField("Berichtigt von", max_length=150, blank=True)
+
+    class Meta:
+        verbose_name = "Fahrt"
+        verbose_name_plural = "Fahrten"
+        ordering = ["-datum", "-begonnen_am"]
+        constraints = [
+            models.UniqueConstraint(fields=["tour", "datum"], name="touren_fahrt_je_tag")
+        ]
+
+    def __str__(self):
+        return f"{self.tour_name} am {self.datum:%d.%m.%Y}"
+
+    @property
+    def km(self) -> int | None:
+        """Gefahrene Kilometer – erst, wenn die Fahrt beendet ist."""
+        return None if self.km_ende is None else self.km_ende - self.km_start
+
+    @property
+    def dauer(self):
+        return self.beendet_am - self.begonnen_am if self.beendet_am else None
+
+
 class Halt(models.Model):
     """Eine Station auf einer Tour, an ihrer Stelle in der Fahrtreihenfolge."""
 
@@ -388,3 +462,5 @@ auditlog.register(Halt)
 auditlog.register(TourenEinstellungen)
 auditlog.register(Warengruppe)
 auditlog.register(Lieferschein)
+auditlog.register(Fahrzeug)
+auditlog.register(Fahrt)

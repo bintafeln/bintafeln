@@ -3,7 +3,7 @@
 {% block titel %}{{ s.name }}{% endblock %}
 {% block inhalt %}
 <section class="karte">
-  <p><a href="{% url 'touren:stationen' %}">← Stationen</a></p>
+  <p>{% if zur_tour %}<a href="{{ zur_tour.url }}">← zurück zur Tour „{{ zur_tour.name }}“</a>{% else %}<a href="{% url 'touren:stationen' %}">← Stationen</a>{% endif %}</p>
   <h1>{{ s.name }}</h1>
   <p><span class="marke-rolle">{{ s.get_art_display }}</span>{% if s.kette %} <small class="leise">{{ s.kette }}{% if s.filialnummer %} · Filiale {{ s.filialnummer }}{% endif %}</small>{% endif %}
     {% if not s.aktiv %} <span class="marke-warnung">wird nicht mehr angefahren</span>{% endif %}</p>
@@ -12,7 +12,7 @@
     <a class="knopf" href="{{ s.navigation }}" target="_blank" rel="noopener noreferrer">🧭 Navigation (Google Maps)</a>
     <a class="knopf knopf-zweitrangig" href="{{ s.karte }}" target="_blank" rel="noopener noreferrer">Auf der Karte</a>
   </div>
-  {% if s.lieferschein and "touren.lieferschein" in rechte and lieferscheine_an %}<div class="aktionsleiste"><a class="knopf knopf-zweitrangig" href="{% url 'touren:lieferschein' s.pk %}">📝 Lieferschein ausfüllen</a></div>{% endif %}
+  {% if s.lieferschein and "touren.lieferschein" in rechte and lieferscheine_an %}<div class="aktionsleiste"><a class="knopf knopf-zweitrangig" href="{% url 'touren:lieferschein' s.pk %}{{ zur_tour.anhang }}">📝 Lieferschein ausfüllen</a></div>{% endif %}
   {% if s.anfahrt %}<div class="notiz"><p class="notiz-text"><strong>Anfahrt:</strong> {{ s.anfahrt|linebreaksbr }}</p></div>{% endif %}
   <dl class="angaben">
     {% if s.abholtage %}<dt>Abholtage</dt><dd>{{ s.abholtage }}</dd>{% endif %}

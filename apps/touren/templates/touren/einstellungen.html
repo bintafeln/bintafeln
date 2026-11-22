@@ -2,7 +2,7 @@
 {% block titel %}Touren: Lieferscheine einstellen{% endblock %}
 {% block inhalt %}
 <section class="karte">
-  <h1>Touren: Lieferscheine</h1>
+  <h1>Touren: Lieferscheine, Warengruppen, Fahrzeuge</h1>
   <form method="post" data-autosave>
     {% csrf_token %}<input type="hidden" name="einstellungen" value="1">
     {% include "includes/formular.html" %}
@@ -28,6 +28,28 @@
     </table></div>
     <p class="hinweis">Die leeren Zeilen unten sind für neue Warengruppen.</p>
     <button type="submit" class="knopf">Warengruppen speichern</button>
+  </form>
+</section>
+<section class="karte" id="fahrzeuge">
+  <h2>Fahrzeuge</h2>
+  <p class="hinweis">Beim Beginn einer Fahrt wählen die Fahrer das Fahrzeug und tragen den Kilometerstand ein. Ohne Fahrzeuge hier wird nur der Kilometerstand gefragt. Der <strong>Kilometerstand</strong> wird bei „Fahrt beginnen“ vorgeschlagen und mit jeder Fahrt fortgeschrieben; tragen Sie hier den Anfangsstand ein und ändern Sie ihn, wenn das Fahrzeug anderweitig gefahren wurde. Nicht mehr gebrauchte Fahrzeuge ausschalten; im Fahrtenbuch bleiben sie stehen.</p>
+  <form method="post" action="#fahrzeuge">
+    {% csrf_token %}<input type="hidden" name="fahrzeuge" value="1">
+    {{ fahrzeuge.management_form }}
+    {% if fahrzeuge.non_form_errors %}<p class="fehler">{{ fahrzeuge.non_form_errors|join:" " }}</p>{% endif %}
+    <div class="tabelle-rahmen"><table class="tabelle" id="fahrzeuge-tabelle">
+      <thead><tr><th>Name</th><th>Kennzeichen</th><th>Kilometerstand</th><th>Reihenfolge</th><th>Aktiv</th></tr></thead>
+      <tbody>{% for f in fahrzeuge %}
+        <tr>{{ f.id }}
+          <td data-titel="Name">{{ f.name }}{% if f.name.errors %}<small class="fehler">{{ f.name.errors|join:" " }}</small>{% endif %}</td>
+          <td data-titel="Kennzeichen">{{ f.kennzeichen }}</td>
+          <td data-titel="Kilometerstand">{{ f.kilometerstand }}{% if f.kilometerstand.errors %}<small class="fehler">{{ f.kilometerstand.errors|join:" " }}</small>{% endif %}</td>
+          <td data-titel="Reihenfolge">{{ f.reihenfolge }}</td>
+          <td data-titel="Aktiv">{{ f.aktiv }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    <p class="hinweis">Die leeren Zeilen unten sind für neue Fahrzeuge.</p>
+    <button type="submit" class="knopf">Fahrzeuge speichern</button>
   </form>
 </section>
 {% endblock %}
