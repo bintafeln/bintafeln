@@ -117,7 +117,7 @@
   </details>
 </section>
 {% endif %}
-{% if darf_planen %}<p><a href="{% url 'touren:tour' tour.pk %}?tag={{ tag|date:'Y-m-d' }}">Tour bearbeiten</a> · <a href="{% url 'touren:tour' tour.pk %}?tag={{ tag|date:'Y-m-d' }}#besetzung">Besetzung für diesen Tag ändern (auch Gast)</a></p>{% endif %}
+{% if darf_planen %}<p class="tour-leiste"><a href="{% url 'touren:tour' tour.pk %}?tag={{ tag|date:'Y-m-d' }}">Tour bearbeiten</a> · <a href="{% url 'touren:tour' tour.pk %}?tag={{ tag|date:'Y-m-d' }}#besetzung">Besetzung für diesen Tag ändern (auch Gast)</a></p>{% endif %}
 {% if tourtag %}
 <details class="karte tour-zuruecksetzen" id="zuruecksetzen">
   <summary>Diesen Tourtag zurücksetzen (z. B. nach einer Testtour)</summary>

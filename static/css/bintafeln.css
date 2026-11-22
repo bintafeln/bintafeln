@@ -2295,6 +2295,10 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 .tour-angaben > summary { cursor: pointer; padding: .3rem 0; color: var(--leise); font-size: .95rem; }
 .tour-angaben p { margin: .4rem 0; }
 .tour-kopf > p { margin: .6rem 0 0; }
+/* Links zwischen den Karten stehen sonst direkt auf dem Hintergrundbild und sind kaum lesbar */
+details.tour-vorzeitig, .tour-leiste { max-width: 52rem; margin: 1rem 0; padding: .6rem 1rem;
+  border: 1px solid var(--rand); border-radius: var(--radius); background: var(--flaeche); }
+details.tour-vorzeitig[open] { padding: .75rem 1rem 1rem; }
 .tour-route { margin-top: .75rem; }
 .tour-route summary { cursor: pointer; font-weight: 600; padding: .4rem 0; }
 .tour-halte { list-style: none; padding: 0; margin: 0; }
