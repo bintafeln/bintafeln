@@ -492,6 +492,17 @@ class Halt(models.Model):
         return f"{self.tour}: {self.station}"
 
 
+# Text der Lieferschein-Mail an die Station, wie ihn die Märkte kennen (ADR 0149, Nachtrag)
+MAIL_TEXT = (
+    "Guten Tag!\n\nHiermit erhalten Sie den Digitalen Lieferschein der {tafel} für folgenden "
+    "Markt: {station}.\n\nViele Grüße\nIhre {tafel}"
+)
+MAIL_TEXT_ALT = (
+    "Guten Tag,\n\nvielen Dank für Ihre Spende. Im Anhang finden Sie den "
+    "Lieferschein zur heutigen Abholung.\n\nMit freundlichen Grüßen"
+)
+
+
 class TourenEinstellungen(models.Model):
     """Einstellungen des Moduls Touren (Singleton)."""
 
@@ -521,9 +532,10 @@ class TourenEinstellungen(models.Model):
     )  # fmt: skip
     mail_text = models.TextField(
         "Text der E-Mail an die Station",
-        default="Guten Tag,\n\nvielen Dank für Ihre Spende. Im Anhang finden Sie den "
-        "Lieferschein zur heutigen Abholung.\n\nMit freundlichen Grüßen",
-        help_text="Darunter steht automatisch der Name der Tafel.",
+        default=MAIL_TEXT,
+        help_text="{tafel} wird durch den Namen Ihrer Tafel ersetzt, {station} durch den Namen "
+        "der Station. Die erste Zeile steht in der Mail als Überschrift; darunter folgt "
+        "automatisch der Hinweis, warum die Station die Mail bekommt.",
     )  # fmt: skip
     eco_plattform = models.BooleanField(
         "Wir arbeiten (auch) mit der ECO-Plattform", default=False,

@@ -61,3 +61,16 @@ Station eine Wahl des Wegs; bis dahin gibt es nur die E-Mail aus bintafeln.
   gewogen.
 - Speichern geht vor Senden: Unterwegs darf ein fehlender Mailserver oder eine fehlende Adresse
   die Arbeit nicht aufhalten.
+
+## Nachtrag: Text der Mail an die Station
+
+Die Märkte kennen die Mail der digitalen Lieferscheine in einer festen Form. Die Vorgabe für
+`TourenEinstellungen.mail_text` ist deshalb dieser Wortlaut („Guten Tag! Hiermit erhalten Sie den
+Digitalen Lieferschein der {tafel} für folgenden Markt: {station}. Viele Grüße, Ihre {tafel}“),
+mit den Platzhaltern `{tafel}` und `{station}`. `lieferscheine.mail_inhalt()` setzt sie ein und
+liefert Text und eine schlichte gestaltete Fassung (erste Zeile als Überschrift, Werte maskiert).
+Darunter steht automatisch, warum die Station die Mail bekommt, und – mit Domain und hinterlegter
+Datenschutzerklärung – der Link dorthin. Kein fremdes Logo, keine Fußzeile eines Verbands.
+
+Wer den früheren Vorgabetext nie geändert hat, bekommt den neuen (Migration `touren/0021`); eigene
+Texte bleiben. Texte ohne `{tafel}` bekommen wie bisher den Namen der Tafel darunter.
