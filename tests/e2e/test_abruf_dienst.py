@@ -197,6 +197,18 @@ class Portal(BaseHTTPRequestHandler):
             self.send_response(302)
             self.send_header("Location", "/login")
             return self.end_headers()
+        if pfad in ("/export-woanders", "/export-einmal-woanders"):
+            # wie die Kontoseite des Anbieters: ein anderer Server (hier: anderer Name, derselbe
+            # Rechner) – einmalig oder jedes Mal
+            schon = type(self).gesehen.get("woanders", 0)
+            type(self).gesehen["woanders"] = schon + 1
+            if pfad == "/export-woanders" or not schon:
+                self.send_response(302)
+                self.send_header(
+                    "Location", f"http://localhost:{self.server.server_port}/mein-konto/?x=1"
+                )
+                return self.end_headers()
+            return self._html(ZEILEN % FERTIG)
         if pfad == "/liste":
             return self._html(LISTE)
         if pfad == "/liste.xlsx":
@@ -467,6 +479,32 @@ def test_unerwartete_seite_nennt_schritt_und_seite(dienst):
     schritt = "Beim Schritt „(2/2) Stelle den Zeitraum ein: 01.02.2026 bis 04.02.2026 …“"
     assert schritt in stand["fehler"]
     assert "/liste)" in stand["fehler"]
+
+
+def test_kontoseite_statt_finanzexport_wird_erklaert(dienst, capsys):
+    """Leitet das Portal statt zum Finanzexport auf einen anderen Server um (die Kontoseite des
+    Anbieters), steht das in der Meldung – samt dem, was man tun kann."""
+    dienst.rufen("/start", dienst.auftrag("/export-woanders", mit_liste=False, liste_url=""))
+    dienst.warten_auf("warte_auf_code")
+    dienst.rufen("/code", {"code": "123456"})
+    stand = dienst.warten_auf("fehler", "fertig")
+    assert stand["stand"] == "fehler", stand
+    assert "Statt des Finanzexports hat WISO MeinVerein die Seite „localhost:" in stand["fehler"]
+    assert "/mein-konto/“" in stand["fehler"] and "von Hand" in stand["fehler"]
+    assert "x=1" not in stand["fehler"]  # nichts, was hinter dem Fragezeichen steht
+    assert Portal.gesehen["woanders"] == 2  # einmal neu versucht
+    assert "statt 127.0.0.1" in capsys.readouterr().out
+
+
+def test_einmalige_umleitung_wird_ueberstanden(dienst):
+    """Kommt die fremde Seite nur einmal dazwischen, klappt der zweite Versuch."""
+    dienst.rufen("/start", dienst.auftrag("/export-einmal-woanders", mit_liste=False,
+                                          liste_url=""))  # fmt: skip
+    dienst.warten_auf("warte_auf_code")
+    dienst.rufen("/code", {"code": "123456"})
+    stand = dienst.warten_auf("fertig", "fehler")
+    assert stand["stand"] == "fertig", stand
+    assert Portal.gesehen["woanders"] == 2
 
 
 def test_ohne_code_laeuft_die_zeit_ab(dienst):

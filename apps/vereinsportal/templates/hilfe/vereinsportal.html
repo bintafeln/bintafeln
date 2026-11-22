@@ -111,6 +111,10 @@
   E-Mail und Passwort stimmen nicht – dann fragt WISO MeinVerein gar nicht erst nach dem 2FA-Code, und bintafeln
   sagt das nach etwa einer halben Minute. Wer den Server betreut, sieht den Verlauf mit
   <code>docker compose logs abruf</code>; Zugangsdaten stehen dort nie.</p>
+<p><strong>„Statt des Finanzexports hat WISO MeinVerein die Seite … gezeigt“:</strong> Nach der Anmeldung ist der
+  Abruf nicht bei WISO MeinVerein angekommen, sondern auf einer anderen Seite des Anbieters (etwa der Kontoseite).
+  bintafeln versucht es einmal neu. Bleibt es dabei, melden Sie sich einmal von Hand im Browser bei WISO MeinVerein
+  an – oft steht dort eine Zwischenseite, die bestätigt werden muss – und starten den Abruf danach neu.</p>
 <p>Der Abruf bedient die Seiten von WISO MeinVerein wie ein Mensch. Ändert WISO MeinVerein seine Seiten, kann er
   scheitern; die Meldung steht dann unter „Stand“. Laden Sie die Dateien in diesem Fall von Hand hoch und melden Sie
   den Fehler, damit der Abruf angepasst wird.</p>

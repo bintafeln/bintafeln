@@ -22,6 +22,7 @@ import zipfile
 from collections import Counter
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import urlsplit
 
 PORT = 8700
 NUR_HTTPS = True  # Tests gegen eine nachgebaute Seite schalten das ab
@@ -216,10 +217,32 @@ KNOEPFE_ZEIGEN = """() => { const alle = [...document.querySelectorAll('button')
                                          : '') || '-').join(' | '); }"""
 
 
+def _oeffnen(auftrag: Auftrag, seite, adresse: str, was: str, wartezeit: float) -> None:
+    """Öffnet eine Seite von WISO MeinVerein und prüft, dass der Browser auch dort ankommt.
+    Leitet das Portal auf einen anderen Server um (etwa auf die Kontoseite des Anbieters), wird
+    einmal neu versucht – das kann eine einmalige Zwischenseite sein. Danach gibt es eine
+    Erklärung statt einer Zeitüberschreitung beim nächsten Schritt."""
+    ziel = urlsplit(adresse).netloc
+    for versuch in (1, 2):
+        seite.goto(adresse, wait_until="domcontentloaded", timeout=30000)
+        _warten(auftrag, seite, wartezeit)
+        hier = urlsplit(seite.url)
+        if hier.netloc == ziel:
+            return
+        print(f"[abruf] {was}: statt {ziel} kam {hier.netloc}{hier.path} (Versuch {versuch}).",
+              flush=True)  # fmt: skip
+    raise Hinweis(
+        f"Statt {was} hat WISO MeinVerein die Seite „{hier.netloc}{hier.path}“ gezeigt – die "
+        "Anmeldung ist nicht bis zu WISO MeinVerein durchgegangen. Oft zeigt der Anbieter nach "
+        "der Anmeldung eine Zwischenseite, die erst bestätigt werden muss. Bitte einmal von "
+        "Hand im Browser bei WISO MeinVerein anmelden, die Seite bestätigen und den Abruf neu "
+        "starten."
+    )
+
+
 def _spenderliste(auftrag: Auftrag, seite, d: dict):
     auftrag.melden("(1/2) Öffne die Spenderliste …")
-    seite.goto(d["liste_url"], wait_until="domcontentloaded", timeout=30000)
-    _warten(auftrag, seite, ZEITEN["liste_laden"])
+    _oeffnen(auftrag, seite, d["liste_url"], "der Spenderliste", ZEITEN["liste_laden"])
     if "login" in seite.url:
         raise Hinweis("Die Anmeldung hat nicht geklappt. War der 2FA-Code richtig?")
     knoepfe = seite.query_selector_all(LISTEN_KNOEPFE)
@@ -591,8 +614,7 @@ def mit_versand(ziel: Path) -> bool:
 
 def _finanzexport(auftrag: Auftrag, kontext, seite, d: dict):
     auftrag.melden("(2/2) Öffne den Finanzexport …")
-    seite.goto(d["export_url"], wait_until="domcontentloaded", timeout=30000)
-    _warten(auftrag, seite, ZEITEN["export_laden"])
+    _oeffnen(auftrag, seite, d["export_url"], "des Finanzexports", ZEITEN["export_laden"])
     if "login" in seite.url:
         raise RuntimeError("Die Anmeldung ist abgelaufen oder hat nicht geklappt.")
     ziel = auftrag.datei("finanzexport")
@@ -606,8 +628,7 @@ def _finanzexport(auftrag: Auftrag, kontext, seite, d: dict):
             return
         # ohne die Spalten zum Versand neu erzeugen, sonst bliebe „versendet“ leer
         auftrag.melden("(2/2) Dem vorhandenen Export fehlen die Spalten zum Versand, erzeuge neu …")
-        seite.goto(d["export_url"], wait_until="domcontentloaded", timeout=30000)
-        _warten(auftrag, seite, ZEITEN["export_laden"])
+        _oeffnen(auftrag, seite, d["export_url"], "des Finanzexports", ZEITEN["export_laden"])
     _neu_erzeugen(auftrag, kontext, seite, d["von"], d["bis"], ziel)
     _inhalt_melden(ziel)
     if not mit_versand(ziel) and not any("ankreuzen" in h for h in auftrag.hinweise):
