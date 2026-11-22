@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load liste %}
+{% load liste static %}
 {% block titel %}{{ tour.name }}{% endblock %}
 {% block inhalt %}
 <section class="karte">
@@ -9,6 +9,7 @@
   {% if besetzung %}<p>{% for b in besetzung %}{% if b.offen %}<span class="marke-warnung">{{ b.rolle }} offen</span>{% else %}{% if b.rolle %}<small class="leise">{{ b.rolle }}</small> {% endif %}{{ b.name }}{% endif %}{% if not forloop.last %} · {% endif %}{% endfor %}</p>{% endif %}
   {% if gestartet %}<p class="leise"><span class="marke-ok">✓ Besetzung bestätigt</span> von {{ gestartet.bestaetigt_von }}, {{ gestartet.bestaetigt_am|date:"H:i" }} Uhr{% if darf_start %} · <a href="{% url 'touren:start' tour.pk %}">ändern</a>{% endif %}</p>
   {% elif gefragt %}<p class="hinweis"><span class="marke-warnung">Besetzung noch nicht bestätigt.</span> Das macht, wer auf der Tour eingetragen ist.</p>{% endif %}
+  {% if fahrt %}<p class="leise">{% if fahrt.beendet_am %}<span class="marke-ok">✓ Fahrt beendet</span>{% if fahrt.km is not None %} · {{ fahrt.km }} km{% endif %}{% else %}<span class="marke-ok">Unterwegs</span> seit {{ fahrt.begonnen_am|date:"H:i" }} Uhr{% endif %}{% if fahrt.fahrzeug_name %} · {{ fahrt.fahrzeug_name }}{% endif %} · Abfahrt bei km {{ fahrt.km_start }}</p>{% endif %}
   {% if tour.hinweis %}<div class="notiz"><p class="notiz-text">{{ tour.hinweis|linebreaksbr }}</p></div>{% endif %}
   {% if routen %}
   <details class="tour-route">
@@ -20,6 +21,22 @@
   </details>
   {% endif %}
 </section>
+{% if fahrt_moeglich and not fahrt %}
+<section class="karte tour-fahrt" id="fahrt">
+  <h2>Fahrt beginnen</h2>
+  <form method="post" action="{% url 'touren:fahrt_beginnen' tour.pk %}">{% csrf_token %}
+    {% if fahrzeuge %}<div class="feld"><label for="fahrzeug">Fahrzeug</label>
+      <select name="fahrzeug" id="fahrzeug" required data-km-ziel="km_start">
+        {% if fahrzeuge|length > 1 %}<option value="">– bitte wählen –</option>{% endif %}
+        {% for fz in fahrzeuge %}<option value="{{ fz.pk }}"{% for pk, stand in staende.items %}{% if pk == fz.pk %} data-km="{{ stand }}"{% endif %}{% endfor %}>{{ fz }}</option>{% endfor %}
+      </select></div>{% endif %}
+    <div class="feld"><label for="km_start">Kilometerstand bei Abfahrt</label>
+      <input type="text" inputmode="numeric" pattern="[0-9 .]*" name="km_start" id="km_start" required autocomplete="off">
+      <small class="hilfe" id="km-letzter" hidden></small></div>
+    <button type="submit" class="knopf tour-knopf">Fahrt beginnen</button>
+  </form>
+</section>
+{% endif %}
 <ol class="tour-halte">
   {% for h in halte %}{% with s=h.station %}
   <li class="karte tour-halt{% if h.schein %} tour-erledigt{% endif %}" id="halt-{{ forloop.counter }}">
@@ -38,5 +55,17 @@
   <li class="karte"><p class="hinweis">Für diesen Tag sind keine Stationen eingetragen.</p></li>
   {% endfor %}
 </ol>
+{% if fahrt and not fahrt.beendet_am and fahrt_moeglich %}
+<section class="karte tour-fahrt" id="fahrt">
+  <h2>Tour beenden</h2>
+  <p class="hinweis">Wenn das Fahrzeug abgestellt ist: Kilometerstand ablesen und die Tour beenden. Abfahrt war bei km {{ fahrt.km_start }}.</p>
+  <form method="post" action="{% url 'touren:fahrt_beenden' fahrt.pk %}">{% csrf_token %}
+    <div class="feld"><label for="km_ende">Kilometerstand bei Ankunft</label>
+      <input type="text" inputmode="numeric" pattern="[0-9 .]*" name="km_ende" id="km_ende" required autocomplete="off"></div>
+    <button type="submit" class="knopf tour-knopf">Tour beenden</button>
+  </form>
+</section>
+{% endif %}
 {% if darf_planen %}<p><a href="{% url 'touren:tour' tour.pk %}">Tour bearbeiten</a></p>{% endif %}
+{% if fahrt_moeglich and not fahrt %}<script src="{% static 'js/fahrt_km.js' %}" defer></script>{% endif %}
 {% endblock %}

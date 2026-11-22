@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block titel %}Fahrt berichtigen{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <p><a href="{% url 'touren:fahrten' %}">← Fahrtenbuch</a></p>
+  <h1>Fahrt berichtigen</h1>
+  <p><strong>{{ fahrt.tour_name }}</strong> · {{ fahrt.datum|date:"l, d.m.Y" }}<br>
+    <span class="leise">{{ fahrt.besetzung|default:"ohne Besetzung" }} · begonnen {{ fahrt.begonnen_am|date:"H:i" }} Uhr von {{ fahrt.begonnen_von_name }}{% if fahrt.beendet_von_name %} · beendet {{ fahrt.beendet_am|date:"H:i" }} Uhr von {{ fahrt.beendet_von_name }}{% endif %}</span></p>
+  <form method="post">{% csrf_token %}
+    <div class="feld"><label for="fahrzeug">Fahrzeug</label>
+      <select name="fahrzeug" id="fahrzeug"><option value="">– keins –</option>{% for fz in fahrzeuge %}<option value="{{ fz.pk }}"{% if fz.pk == fahrt.fahrzeug_id %} selected{% endif %}>{{ fz }}</option>{% endfor %}</select></div>
+    <div class="feld"><label for="km_start">Kilometerstand bei Abfahrt</label>
+      <input type="text" inputmode="numeric" name="km_start" id="km_start" value="{{ fahrt.km_start }}" required></div>
+    <div class="feld"><label for="km_ende">Kilometerstand bei Ankunft</label>
+      <input type="text" inputmode="numeric" name="km_ende" id="km_ende" value="{% if fahrt.km_ende is not None %}{{ fahrt.km_ende }}{% endif %}">
+      <small class="hilfe">Leer = noch nicht bekannt.</small></div>
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+{% endblock %}
