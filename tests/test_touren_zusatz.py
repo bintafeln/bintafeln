@@ -246,6 +246,26 @@ def test_mannschaft_aendert_besetzung_der_kurzfristigen_tour(client, anmelden, l
     assert antwort.status_code == 200
 
 
+def test_besetzung_aendern_nur_vor_der_abfahrt(client, anmelden, lage, django_user_model):
+    """Hat die Fahrt begonnen, ist der Knopf weg, und die Änderung wird abgelehnt."""
+    from apps.touren import fahrten
+    from apps.touren.models import Fahrzeug
+
+    nord, fritz = lage["nord"], lage["fritz"]
+    paula = person(django_user_model, "Paula", "Beifahrer")
+    wagen = Fahrzeug.objects.create(name="Kühlwagen", kennzeichen="MU-ST 1")
+    fahrten.beginnen(nord, fritz, "100", wagen.pk)
+    anmelden(client, fritz)
+    seite = client.get(reverse("touren:fahren", args=[nord.pk])).content.decode()
+    assert "Besetzung ändern, Mitfahrer" not in seite
+    start = reverse("touren:start", args=[nord.pk])
+    ich = Adresse.objects.get(konto=fritz)
+    antwort = client.post(start, {"fahrer": ich.pk, "beifahrer": paula.pk}, follow=True)
+    assert "Die Fahrt hat schon begonnen" in antwort.content.decode()
+    nord.refresh_from_db()
+    assert nord.beifahrer is None
+
+
 def test_fremde_aendern_die_besetzung_nicht_das_buero_schon(client, anmelden, lage):
     nord, klaus = lage["nord"], lage["klaus"]
     start = reverse("touren:start", args=[nord.pk])

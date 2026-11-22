@@ -92,12 +92,13 @@ def fahren(request, pk):
     darf_start = gefragt and tourstart.darf(request.user, tour, tag)
     # am Tag selbst ändert die Mannschaft ihre Besetzung auch selbst (Fahrerplan: als Ersatz für
     # den Tag; kurzfristige Tour: direkt an der Tour)
-    darf_besetzung = darf_start or (
-        tour.datum == tag == timezone.localdate() and tourstart.darf(request.user, tour, tag)
-    )
     if darf_start and gestartet is None:
         return redirect(reverse("touren:start", args=[tour.pk]))  # erst: „Seid ihr …?“
     fahrt = fahrten.heute(tour, tag)
+    # … aber nur, bis die Fahrt begonnen hat; danach ändert nur noch das Büro in der Planung
+    darf_besetzung = fahrt is None and (darf_start or (
+        tour.datum == tag == timezone.localdate() and tourstart.darf(request.user, tour, tag)
+    ))  # fmt: skip
     fahrt_moeglich = (tag == timezone.localdate() and ablauf.faehrt_am(tour, tag)
                       and tourstart.darf(request.user, tour, tag))  # fmt: skip
     halte = ablauf.halte(tour, tag)
@@ -273,6 +274,8 @@ def start(request, pk):
     if not tourstart.darf(request.user, tour, tag):
         messages.error(request, "Sie sind für diese Tour nicht eingetragen. Bitte im Büro melden.")
         return redirect(ziel)
+    if ("aendern" in request.GET or "aendern" in request.POST) and _unterwegs(request, tour, tag):
+        return redirect(ziel)
     if request.method == "POST":
         wahl, gaeste = _besetzung_aus(request) if "aendern" in request.POST else ({}, {})
         try:
@@ -291,10 +294,21 @@ def start(request, pk):
     })  # fmt: skip
 
 
+def _unterwegs(request, tour, tag) -> bool:
+    """Hat die Fahrt schon begonnen? Dann ändert die Mannschaft ihre Besetzung nicht mehr."""
+    if fahrten.heute(tour, tag) is None:
+        return False
+    messages.error(request, "Die Fahrt hat schon begonnen. Die Besetzung lässt sich nur vor der "
+                   "Abfahrt ändern; danach bitte im Büro melden.")  # fmt: skip
+    return True
+
+
 def _mannschaft(request, tour, ziel):
     """Kurzfristige Tour von heute: Die Mannschaft ändert oder ergänzt ihre Besetzung selbst."""
     if not tourstart.darf(request.user, tour, tour.datum):
         messages.error(request, "Sie sind für diese Tour nicht eingetragen. Bitte im Büro melden.")
+        return redirect(ziel)
+    if _unterwegs(request, tour, tour.datum):
         return redirect(ziel)
     wer = None if tourstart.darf_alle(request.user) else ablauf.person_von(request.user)
     form = MannschaftForm(request.POST or None, instance=tour, wer=wer)
