@@ -327,8 +327,24 @@ def menue(request) -> list[dict]:
     }  # fmt: skip
     for gruppe, eintraege in modul_einstellungen:
         gruppen_einstellungen.setdefault(gruppe, []).extend(eintraege)
+    # Dieselbe Reihenfolge wie im Menü darüber, damit man die Einstellungen eines Bereichs dort
+    # findet, wo man ihn erwartet: allgemeines zuerst („Tafel“), dann die Bereiche wie oben
+    # (Ausgabe, Dienstpläne, eigene Bereiche der Module, Kunden, Verein mit Team, Auswertungen),
+    # zuletzt, was kein Gegenstück im Menü hat (Monitore, Protokolle, Systemsteuerung).
+    wie_oben = [{"Ausgabestelle": "Ausgabe"}.get(name, name) for name in inhalt]
+    bisher = list(gruppen_einstellungen)
+
+    def rang(titel):
+        if titel == "Tafel":
+            return (0, 0)
+        if titel in wie_oben:
+            return (1, wie_oben.index(titel))
+        if titel == "Team" and "Verein" in wie_oben:
+            return (1, wie_oben.index("Verein") + 0.5)
+        return (2, bisher.index(titel))
+
     untergruppen = []
-    for titel, eintraege in gruppen_einstellungen.items():
+    for titel, eintraege in sorted(gruppen_einstellungen.items(), key=lambda g: rang(g[0])):
         sichtbar = [e for recht, e in eintraege if recht is None or recht in darf]
         if sichtbar:
             untergruppen.append({"titel": titel, "eintraege": sichtbar})
