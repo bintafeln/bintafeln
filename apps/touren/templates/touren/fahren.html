@@ -3,24 +3,34 @@
 {% block titel %}{{ tour.name }}{% endblock %}
 {% block inhalt %}
 <section class="karte tour-kopf">
-  <p><a href="{% url 'touren:heute' %}?tag={{ tag|date:'Y-m-d' }}">← Touren am {{ tag|date:"d.m." }}</a></p>
-  <h1>{{ tour.name }}</h1>
-  <p class="leise">{{ tag|date:"l, d.m.Y" }} · {{ halte|length }} Station{{ halte|length|pluralize:"en" }}{% if erledigt %} · <strong>{{ erledigt }} angefahren</strong>{% endif %}{% if not faehrt %} · <span class="marke-warnung">fährt an diesem Tag nicht</span>{% endif %}</p>
-  {% if besetzung %}<p>{% for b in besetzung %}{% if b.offen %}<span class="marke-warnung">{{ b.rolle }} offen</span>{% else %}{% if b.rolle %}<small class="leise">{{ b.rolle }}</small> {% endif %}{{ b.name }}{% endif %}{% if not forloop.last %} · {% endif %}{% endfor %}</p>{% endif %}
-  {% if gestartet %}<p class="leise"><span class="marke-ok">✓ Besetzung bestätigt</span> von {{ gestartet.bestaetigt_von }}, {{ gestartet.bestaetigt_am|date:"H:i" }} Uhr</p>
-  {% elif gefragt %}<p class="hinweis"><span class="marke-warnung">Besetzung noch nicht bestätigt.</span> Das macht, wer auf der Tour eingetragen ist.</p>{% endif %}
-  {% if darf_besetzung %}<p><a class="knopf knopf-zweitrangig tour-knopf" href="{% url 'touren:start' tour.pk %}?aendern=1">👥 Besetzung ändern, Mitfahrer oder Gast eintragen</a></p>{% endif %}
-  {% if fahrt %}<p class="leise">{% if fahrt.beendet_am %}<span class="marke-ok">✓ Fahrt beendet</span>{% if fahrt.km is not None %} · {{ fahrt.km }} km{% endif %}{% else %}<span class="marke-ok">Unterwegs</span> seit {{ fahrt.begonnen_am|date:"H:i" }} Uhr{% endif %}{% if fahrt.fahrzeug_name %} · {{ fahrt.fahrzeug_name }}{% endif %} · Abfahrt bei km {{ fahrt.km_start }}</p>{% endif %}
+  {# Schlank fürs Handy: Name und Fortschritt; was die Mannschaft ohnehin weiß, steht aufklappbar darunter #}
+  <div class="tour-kopf-zeile">
+    <a class="tour-zurueck" href="{% url 'touren:heute' %}?tag={{ tag|date:'Y-m-d' }}" aria-label="Zurück zu den Touren am {{ tag|date:'d.m.' }}">←</a>
+    <h1>{{ tour.name }}</h1>
+    {% if halte %}<span class="tour-stand" title="erledigte Stationen">{{ erledigt }}/{{ halte|length }}</span>{% endif %}
+  </div>
+  {% if halte %}<progress class="tour-balken" value="{{ erledigt }}" max="{{ halte|length }}" aria-label="{{ erledigt }} von {{ halte|length }} Stationen erledigt"></progress>{% endif %}
+  {% if not faehrt %}<p><span class="marke-warnung">fährt an diesem Tag nicht</span></p>{% endif %}
+  {% for b in besetzung %}{% if b.offen %}<p><span class="marke-warnung">{{ b.rolle }} offen</span></p>{% endif %}{% endfor %}
+  {% if gefragt and not gestartet %}<p class="hinweis"><span class="marke-warnung">Besetzung noch nicht bestätigt.</span> Das macht, wer auf der Tour eingetragen ist.</p>{% endif %}
   {% if tour.hinweis %}<div class="notiz"><p class="notiz-text">{{ tour.hinweis|linebreaksbr }}</p></div>{% endif %}
-  {% if routen %}
-  <details class="tour-route">
-    <summary>Ganze Tour in Google Maps</summary>
-    <div class="aktionsleiste">
-      {% for r in routen %}<a class="knopf knopf-zweitrangig" href="{{ r.url }}" target="_blank" rel="noopener noreferrer">{% if routen|length == 1 %}Alle Stationen als Route{% elif r.von > r.bis %}Zurück zur Zentrale{% else %}Stationen {{ r.von }}–{{ r.bis }}{% endif %}{% if r.zentrale and r.von <= r.bis %} und zurück zur Zentrale{% endif %}</a>{% endfor %}
-    </div>
-    <p class="hinweis">Start ist Ihr Standort. Ohne die Google-Maps-App zeigt der Browser am Handy nur die ersten Stationen; dann die Navigation je Station nehmen.</p>
+  {% if darf_besetzung %}<p><a class="knopf knopf-zweitrangig tour-knopf" href="{% url 'touren:start' tour.pk %}?aendern=1">👥 Besetzung ändern, Mitfahrer oder Gast eintragen</a></p>{% endif %}
+  <details class="tour-angaben"{% if not fahrt or fahrt.beendet_am %} open{% endif %}>
+    <summary>{% if fahrt and not fahrt.beendet_am %}<span class="marke-ok">Unterwegs</span> {% elif fahrt %}<span class="marke-ok">✓ Fahrt beendet</span> {% endif %}Angaben zur Tour</summary>
+    <p class="leise">{{ tag|date:"l, d.m.Y" }} · {{ halte|length }} Station{{ halte|length|pluralize:"en" }}{% if erledigt %} · <strong>{{ erledigt }} angefahren</strong>{% endif %}</p>
+    {% if besetzung %}<p>{% for b in besetzung %}{% if b.offen %}<span class="marke-warnung">{{ b.rolle }} offen</span>{% else %}{% if b.rolle %}<small class="leise">{{ b.rolle }}</small> {% endif %}{{ b.name }}{% endif %}{% if not forloop.last %} · {% endif %}{% endfor %}</p>{% endif %}
+    {% if gestartet %}<p class="leise"><span class="marke-ok">✓ Besetzung bestätigt</span> von {{ gestartet.bestaetigt_von }}, {{ gestartet.bestaetigt_am|date:"H:i" }} Uhr</p>{% endif %}
+    {% if fahrt %}<p class="leise">{% if fahrt.beendet_am %}Fahrt beendet{% if fahrt.km is not None %} · {{ fahrt.km }} km{% endif %}{% else %}Unterwegs seit {{ fahrt.begonnen_am|date:"H:i" }} Uhr{% endif %}{% if fahrt.fahrzeug_name %} · {{ fahrt.fahrzeug_name }}{% endif %} · Abfahrt bei km {{ fahrt.km_start }}</p>{% endif %}
+    {% if routen %}
+    <details class="tour-route">
+      <summary>Ganze Tour in Google Maps</summary>
+      <div class="aktionsleiste">
+        {% for r in routen %}<a class="knopf knopf-zweitrangig" href="{{ r.url }}" target="_blank" rel="noopener noreferrer">{% if routen|length == 1 %}Alle Stationen als Route{% elif r.von > r.bis %}Zurück zur Zentrale{% else %}Stationen {{ r.von }}–{{ r.bis }}{% endif %}{% if r.zentrale and r.von <= r.bis %} und zurück zur Zentrale{% endif %}</a>{% endfor %}
+      </div>
+      <p class="hinweis">Start ist Ihr Standort. Ohne die Google-Maps-App zeigt der Browser am Handy nur die ersten Stationen; dann die Navigation je Station nehmen.</p>
+    </details>
+    {% endif %}
   </details>
-  {% endif %}
 </section>
 {% if fahrt_moeglich and not fahrt %}
 <section class="karte tour-fahrt" id="fahrt">

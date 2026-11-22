@@ -2280,6 +2280,21 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
   .tour-tage .knopf { flex: 0 0 auto; }
   .tour-kopf, .tour-halte, .tour-fahrt, .tour-zuruecksetzen { max-width: 52rem; }
 }
+.tour-kopf-zeile { display: flex; align-items: center; gap: .6rem; }
+.tour-kopf-zeile h1 { flex: 1 1 auto; min-width: 0; margin: 0; font-size: 1.3rem; overflow-wrap: anywhere; }
+.tour-zurueck { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 2.4rem;
+  height: 2.4rem; border: 1px solid var(--rand); border-radius: 50%; text-decoration: none; font-size: 1.2rem; }
+.tour-stand { flex: 0 0 auto; padding: .15rem .6rem; border-radius: 999px; background: var(--erfolg);
+  font-weight: 700; font-variant-numeric: tabular-nums; }
+.tour-balken { display: block; width: 100%; height: .4rem; margin: .6rem 0 0; border: 0; border-radius: 999px;
+  overflow: hidden; background: var(--rand); accent-color: var(--erledigt, #2e7d32); appearance: none; -webkit-appearance: none; }
+.tour-balken::-webkit-progress-bar { background: var(--rand); }
+.tour-balken::-webkit-progress-value { background: #2e7d32; }
+.tour-balken::-moz-progress-bar { background: #2e7d32; }
+.tour-angaben { margin-top: .6rem; }
+.tour-angaben > summary { cursor: pointer; padding: .3rem 0; color: var(--leise); font-size: .95rem; }
+.tour-angaben p { margin: .4rem 0; }
+.tour-kopf > p { margin: .6rem 0 0; }
 .tour-route { margin-top: .75rem; }
 .tour-route summary { cursor: pointer; font-weight: 600; padding: .4rem 0; }
 .tour-halte { list-style: none; padding: 0; margin: 0; }
