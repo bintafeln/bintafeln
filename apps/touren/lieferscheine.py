@@ -7,8 +7,11 @@ import datetime as dt
 import io
 from decimal import Decimal, InvalidOperation
 
+from django.conf import settings
 from django.db import transaction
+from django.urls import reverse
 from django.utils import timezone
+from django.utils.html import escape
 from PIL import Image, UnidentifiedImageError
 
 from apps.core import mail, privatdateien
@@ -142,6 +145,39 @@ def dateiname(ls: Lieferschein) -> str:
     return f"Lieferschein-{ls.nummer}-{ls.datum:%Y-%m-%d}.pdf"
 
 
+def datenschutz_adresse(tafel) -> str:
+    """Öffentliche Seite mit der Datenschutzerklärung der Tafel, wenn es eine gibt und die
+    Installation unter einer Domain läuft; sonst leer."""
+    if not settings.DOMAIN or not tafel.datenschutz_text:
+        return ""
+    return f"https://{settings.DOMAIN}{reverse('antrag:rechtstext', args=['de', 'datenschutz'])}"
+
+
+def mail_inhalt(ls: Lieferschein, vorlage: str, tafel) -> tuple[str, str]:
+    """Text und gestaltete Fassung der Mail an die Station: der Text der Tafel mit eingesetztem
+    Namen der Tafel und der Station, darunter der Hinweis, warum die Station die Mail bekommt.
+    Die erste Zeile ist in der gestalteten Fassung die Überschrift."""
+    name = tafel.name or "Tafel"
+    text = (vorlage or "").strip().replace("{tafel}", name).replace("{station}", ls.station_name)
+    if "{tafel}" not in (vorlage or "") and tafel.name:  # ältere Texte: Name als Gruß darunter
+        text = f"{text}\n{tafel.name}"
+    grund = (f"Sie erhalten diese Nachricht, weil Ihre E-Mail-Adresse bei uns ({name}) als "
+             f"Empfängeradresse der Lieferscheine für {ls.station_name} eingetragen ist. Bei "
+             f"Fragen melden Sie sich bei Ihrer Tafel.")  # fmt: skip
+    datenschutz = datenschutz_adresse(tafel)
+    schluss = f"{grund} Informationen zum Datenschutz: {datenschutz}" if datenschutz else grund
+    absaetze = [a for a in text.split("\n\n") if a.strip()]
+    html = "".join(
+        f"<{'h2' if nr == 0 else 'p'}>{escape(a.strip()).replace(chr(10), '<br>')}"
+        f"</{'h2' if nr == 0 else 'p'}>"
+        for nr, a in enumerate(absaetze)
+    )
+    link = (f' Informationen zum Datenschutz finden Sie <a href="{escape(datenschutz)}">hier</a>.'
+            if datenschutz else "")  # fmt: skip
+    html += f'<hr><p style="font-size: 85%; color: #555;">{escape(grund)}{link}</p>'
+    return f"{text}\n\n{'_' * 40}\n{schluss}", html
+
+
 def senden(ls: Lieferschein) -> bool:
     """Schickt das PDF an die Station – je nach Einstellung gar nicht oder zum Test nur an die
     Test-Adresse (dann gilt der Lieferschein weiter als nicht verschickt und lässt sich später
@@ -164,17 +200,19 @@ def senden(ls: Lieferschein) -> bool:
         fehler = "Es ist kein Mailserver eingerichtet."
     else:
         tafel = TafelEinstellungen.laden()
-        text = f"{einstellungen.mail_text.strip()}\n{tafel.name}".strip()
+        text, html = mail_inhalt(ls, einstellungen.mail_text, tafel)
         betreff = f"Lieferschein Nr. {ls.nummer} vom {ls.datum:%d.%m.%Y} – {tafel.name}"
         if test:
             betreff = f"[Test] {betreff}"
-            text = (f"Testbetrieb: Diese Mail ginge sonst an {an_station or '(keine Adresse)'} "
-                    f"({ls.station_name}).\n\n{text}")  # fmt: skip
+            vorab = (f"Testbetrieb: Diese Mail ginge sonst an {an_station or '(keine Adresse)'} "
+                     f"({ls.station_name}).")  # fmt: skip
+            text = f"{vorab}\n\n{text}"
+            html = f"<p><em>{escape(vorab)}</em></p>{html}"
         try:
             mail.senden(
                 betreff.rstrip(" –"),
-                text, [ziel], anhaenge=[(dateiname(ls), inhalt, "application/pdf")],
-                art="lieferschein",
+                text, [ziel], html=html,
+                anhaenge=[(dateiname(ls), inhalt, "application/pdf")], art="lieferschein",
             )  # fmt: skip
         except mail.MailFehler as grund:
             fehler = str(grund)

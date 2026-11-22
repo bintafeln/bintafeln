@@ -460,7 +460,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `ablauf.routen(…, zentrale)` ebenfalls an der Zentrale.
   Lieferscheine (ADR 0149): Regeln nur in `apps/touren/lieferscheine.py`; das PDF ist der
   Lieferschein – einmal erzeugt, verschlüsselt in `Lieferschein.datei`, nie neu berechnet, die
-  Unterschrift (`static/js/unterschrift_feld.js`) wird nicht aufbewahrt; Versand nur an die
+  Unterschrift (`static/js/unterschrift_feld.js`) wird nicht aufbewahrt; Mailtext über
+  `lieferscheine.mail_inhalt()` (Platzhalter `{tafel}`, `{station}`, Text + HTML); Versand nur an die
   Station, Speichern geht vor Senden (`mail_fehler`), Versand je Tafel aus / zum Test nur an
   `test_email` / an (`TourenEinstellungen.versand`, Vorgabe aus); Aussehen wie der bekannte Vordruck, fest
   gezeichnet in `apps/touren/vordruck.py` (Logo der Tafel, keine Fußzeile).)

@@ -114,7 +114,17 @@ def test_erstellen_und_senden(admin, pdf_text):
     assert lieferscheine.senden(ls)
     m = mail.outbox[0]
     assert m.to == ["ls@example.org"] and "Lieferschein Nr. 41" in m.subject
-    assert "Tafel Musterstadt" in m.body
+    # der Text, wie ihn die Märkte kennen: Tafel und Station sind eingesetzt
+    assert m.body.startswith(
+        "Guten Tag!\n\nHiermit erhalten Sie den Digitalen Lieferschein der Tafel Musterstadt "
+        "für folgenden Markt: Beispielmarkt Mitte.\n\nViele Grüße\nIhre Tafel Musterstadt\n"
+    )
+    assert "Sie erhalten diese Nachricht, weil Ihre E-Mail-Adresse bei uns" in m.body
+    assert "Lieferscheine für Beispielmarkt Mitte eingetragen ist" in m.body
+    assert "Datenschutz" not in m.body  # keine Domain, keine Erklärung hinterlegt: kein Link
+    html = m.alternatives[0][0]
+    assert "<h2>Guten Tag!</h2>" in html and "Viele Grüße<br>Ihre Tafel Musterstadt" in html
+    assert "<hr>" in html and "eco" not in html.lower()
     assert m.attachments[0][0] == f"Lieferschein-41-{ls.datum:%Y-%m-%d}.pdf"
     ls.refresh_from_db()
     assert ls.gesendet_an == "ls@example.org" and ls.gesendet_am and not ls.mail_fehler
@@ -412,3 +422,62 @@ def test_einstellungen_testbetrieb_braucht_adresse(client, admin, anmelden):
     assert antwort.status_code == 302
     e = TourenEinstellungen.laden()
     assert (e.versand, e.test_email) == ("test", "p@example.org")
+
+
+def test_mail_eigener_text_und_datenschutz_link(admin, settings):
+    """Ein eigener Text ohne {tafel} bekommt wie bisher den Namen der Tafel darunter; mit Domain
+    und hinterlegter Datenschutzerklärung steht der Link dabei. Inhalte sind maskiert."""
+    s = station(name="Markt <b>Ecke</b>", email_lieferschein="ls@example.org")
+    ls = lieferscheine.erstellen(s, admin, [("Obst/Gemüse", Decimal("1"), "kisten")],
+                                 lieferscheine.unterschrift_lesen(unterschrift()))  # fmt: skip
+    tafel = TafelEinstellungen.laden()
+    text, html = lieferscheine.mail_inhalt(ls, "Hallo,\n\nanbei der Schein.\n\nGruß", tafel)
+    assert text.startswith("Hallo,\n\nanbei der Schein.\n\nGruß\nTafel Musterstadt\n")
+    assert "<h2>Hallo,</h2><p>anbei der Schein.</p>" in html
+    assert "&lt;b&gt;Ecke&lt;/b&gt;" in html and "<b>Ecke</b>" not in html
+    assert lieferscheine.datenschutz_adresse(tafel) == ""
+    settings.DOMAIN = "tafel.example.org"
+    tafel.datenschutz_text = "<p>Erfundene Erklärung</p>"
+    tafel.save()
+    adresse = "https://tafel.example.org/antrag/de/seite/datenschutz/"
+    assert lieferscheine.datenschutz_adresse(tafel) == adresse
+    text, html = lieferscheine.mail_inhalt(ls, "Hallo {station} von {tafel}", tafel)
+    assert text.startswith("Hallo Markt <b>Ecke</b> von Tafel Musterstadt\n")
+    assert f"Informationen zum Datenschutz: {adresse}" in text
+    assert f'<a href="{adresse}">hier</a>' in html
+
+
+def test_mail_im_testbetrieb_mit_hinweis(admin):
+    s = station(email_lieferschein="ls@example.org")
+    e = TourenEinstellungen.laden()
+    e.versand, e.test_email = TourenEinstellungen.Versand.TEST, "test@example.org"
+    e.save()
+    ls = lieferscheine.erstellen(s, admin, [("Obst/Gemüse", Decimal("1"), "kisten")],
+                                 lieferscheine.unterschrift_lesen(unterschrift()))  # fmt: skip
+    assert not lieferscheine.senden(ls)  # gilt weiter als nicht verschickt
+    m = mail.outbox[-1]
+    assert m.to == ["test@example.org"] and m.subject.startswith("[Test]")
+    assert m.body.startswith("Testbetrieb: Diese Mail ginge sonst an ls@example.org")
+    assert "<em>Testbetrieb: Diese Mail ginge sonst an ls@example.org" in m.alternatives[0][0]
+
+
+def test_alter_vorgabetext_wird_ersetzt_eigener_bleibt():
+    from importlib import import_module
+
+    from django.apps import apps as django_apps
+
+    from apps.touren.models import MAIL_TEXT, MAIL_TEXT_ALT
+
+    migration = import_module("apps.touren.migrations.0021_lieferschein_mail_text")
+    e = TourenEinstellungen.laden()
+    assert e.mail_text == MAIL_TEXT  # neue Installation
+    for vorher, nachher in (
+        (MAIL_TEXT_ALT, MAIL_TEXT),
+        ("Unser eigener Text", "Unser eigener Text"),
+    ):
+        TourenEinstellungen.objects.update(mail_text=vorher)
+        migration.neuer_text(django_apps, None)
+        assert TourenEinstellungen.laden().mail_text == nachher
+    TourenEinstellungen.objects.update(mail_text=MAIL_TEXT)
+    migration.alter_text(django_apps, None)
+    assert TourenEinstellungen.laden().mail_text == MAIL_TEXT_ALT
