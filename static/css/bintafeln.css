@@ -2241,9 +2241,10 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 .pdf-fenster:not([open]) { display: none; }
 .pdf-fenster::backdrop { background: rgba(0, 0, 0, .6); }
 .pdf-fenster-kopf { display: flex; align-items: center; justify-content: space-between; gap: .75rem;
-  padding: .6rem .8rem; border-bottom: 1px solid var(--rand); background: var(--flaeche); }
-.pdf-fenster-kopf strong { overflow-wrap: anywhere; }
-.pdf-fenster-kopf .knopf { flex: none; font-size: 1.05rem; padding: .55rem 1rem; }
+  flex: none; padding: .6rem .8rem; border-bottom: 1px solid var(--rand); background: var(--flaeche); }
+/* Am Handy sind Knöpfe sonst so breit wie die Seite: Der Name bekäme nur eine Buchstabenbreite. */
+.pdf-fenster-kopf strong { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.pdf-fenster-kopf .knopf { flex: none; width: auto; font-size: 1.05rem; padding: .55rem 1rem; }
 .pdf-fenster-inhalt { flex: 1; overflow: auto; padding: .8rem; background: var(--grund); }
 .pdf-fenster-knoepfe { display: flex; flex-wrap: wrap; gap: .5rem; align-items: flex-start; margin-bottom: .5rem; }
 .pdf-mail-ergebnis { flex-basis: 100%; }
