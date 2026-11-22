@@ -85,7 +85,8 @@ class _Blatt:
 
 
 def zeichnen(*, tafel, nummer, datum, station_name, station_anschrift, zeilen, anmerkung,
-             unterschrift: bytes, unterschrieben_von: str) -> bytes:  # fmt: skip
+             unterschrift: bytes, unterschrieben_von: str,
+             abgabe: bool = False) -> bytes:  # fmt: skip
     """``zeilen``: [(Mengentext oder "", Warengruppe)] in der Reihenfolge der Tabelle."""
     b = _Blatt(f"Lieferschein Nr. {nummer}", tafel.name or "bintafeln")
     # --- Kopf: Logo der Tafel (ersatzweise ihr Name) ------------------------------------------
@@ -105,6 +106,8 @@ def zeichnen(*, tafel, nummer, datum, station_name, station_anschrift, zeilen, a
     b.linie(LINKS, 246, 298)
     spender = ", ".join(t for t in (station_name, station_anschrift) if t)
     empfaenger = ", ".join(t for t in (tafel.name, tafel.anschrift) if t)
+    if abgabe:  # die Tafel gibt Ware ab: sie ist Spenderin, die Station empfängt
+        spender, empfaenger = empfaenger, spender
     b.absatz(f"<b>Spender/in:</b> {text(spender)}", LINKS + 3, 212, 235, 34)
     b.absatz(f"<b>Empfänger/in:</b> {text(empfaenger)}", LINKS + 3, 246, 235, 34)
     b.kasten(418, 212, RECHTS, 280)
@@ -138,7 +141,15 @@ def zeichnen(*, tafel, nummer, datum, station_name, station_anschrift, zeilen, a
     b.c.drawImage(bild, 340 + (199 - breite * faktor) / 2, b.y(strich) + 2,
                   width=breite * faktor, height=hoehe * faktor, mask="auto")  # fmt: skip
     b.linie(340, strich, RECHTS)
-    b.absatz("Unterschrift Empfänger/in", 340, strich + 6, 199, 14, MITTE, mittig=False)
+    b.absatz(
+        "Unterschrift Spender/in" if abgabe else "Unterschrift Empfänger/in",
+        340,
+        strich + 6,
+        199,
+        14,
+        MITTE,
+        mittig=False,
+    )
     if unterschrieben_von:
         b.absatz(text(unterschrieben_von), 340, strich + 20, 199, 12, KLEIN_MITTE, mittig=False)
     return b.fertig()

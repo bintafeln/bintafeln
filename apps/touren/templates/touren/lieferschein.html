@@ -15,6 +15,10 @@
     {% csrf_token %}
     <input type="hidden" name="tag" value="{{ tag|date:'Y-m-d' }}">
     {% if tour %}<input type="hidden" name="tour" value="{{ tour.pk }}">{% endif %}
+    <fieldset class="ls-art">
+      <legend>Was ist es?</legend>
+      {% for wert, name in arten %}<label><input type="radio" name="art" value="{{ wert }}"{% if wert == art %} checked{% endif %}> {{ name }}</label>{% endfor %}
+    </fieldset>
     <div class="ls-zeilen">
       {% for g in gruppen %}
       <div class="ls-zeile">

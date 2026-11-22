@@ -25,7 +25,7 @@
       <tr>
         <td data-titel="Nr." class="zahl"><a href="{% url 'touren:lieferschein_pdf' ls.pk %}" target="_blank" rel="noopener">{{ ls.nummer }}</a></td>
         <td data-titel="Datum" class="ohne-umbruch">{{ ls.datum|date:"d.m.Y" }}</td>
-        <td data-titel="Station">{% if ls.station %}<a href="{% url 'touren:station' ls.station.pk %}">{{ ls.station_name }}</a>{% else %}{{ ls.station_name }}{% endif %}{% if ls.tour_name %}<br><small class="leise">{{ ls.tour_name }}</small>{% endif %}</td>
+        <td data-titel="Station">{% if ls.station %}<a href="{% url 'touren:station' ls.station.pk %}">{{ ls.station_name }}</a>{% else %}{{ ls.station_name }}{% endif %}{% if ls.abgabe %} <span class="marke-warnung">Abgabe</span>{% endif %}{% if ls.tour_name %}<br><small class="leise">{{ ls.tour_name }}</small>{% endif %}</td>
         <td data-titel="Mengen">{% for p in ls.positionen.all %}{{ p.warengruppe }}: {{ p.menge_text }}{% if not forloop.last %}<br>{% endif %}{% endfor %}{% if ls.anmerkung %}<br><small class="leise">{{ ls.anmerkung }}</small>{% endif %}</td>
         <td data-titel="Unterschrieben von">{{ ls.unterschrieben_von }}</td>
         <td data-titel="Verschickt">{% if ls.gesendet_am %}{{ ls.gesendet_am|date:"d.m.Y H:i" }}<br><small class="leise">{{ ls.gesendet_an }}</small>{% else %}<span class="marke-warnung">nein</span>{% if ls.mail_fehler %}<br><small class="leise">{{ ls.mail_fehler }}</small>{% endif %}{% endif %}</td>

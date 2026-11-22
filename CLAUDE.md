@@ -464,7 +464,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Schlüssel (`karten_schluessel`, verschlüsselt) und erst nach Klick (`static/js/tour_karte.js`,
   Baustein `touren/_karte.html`), sonst nur Link; nie bei den Fahrern. Deren Route endet über
   `ablauf.routen(…, zentrale)` ebenfalls an der Zentrale.
-  Lieferscheine (ADR 0149): Regeln nur in `apps/touren/lieferscheine.py`; das PDF ist der
+  Lieferscheine (ADR 0149): Regeln nur in `apps/touren/lieferscheine.py`; an jeder Station
+  möglich, `Lieferschein.art` Abholung/Abgabe (Abgabe: Spender und Empfänger vertauscht, eigene
+  Zahlen in der Statistik, ADR 0165); das PDF ist der
   Lieferschein – einmal erzeugt, verschlüsselt in `Lieferschein.datei`, nie neu berechnet, die
   Unterschrift (`static/js/unterschrift_feld.js`) wird nicht aufbewahrt; Mailtext über
   `lieferscheine.mail_inhalt()` (Platzhalter `{tafel}`, `{station}`, Text + HTML); Versand nur an die

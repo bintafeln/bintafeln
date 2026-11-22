@@ -2397,6 +2397,9 @@ details.tour-vorzeitig[open] { padding: .75rem 1rem 1rem; }
 .tour-vorzeitig { margin: 1rem 0; max-width: 52rem; }
 .tour-vorzeitig > summary { cursor: pointer; color: var(--akzent-dunkel); text-decoration: underline; }
 .tour-vorzeitig[open] { padding: .75rem 1rem 1rem; border: 1px solid var(--rand); border-radius: var(--radius); background: var(--flaeche); }
+.ls-art { border: 0; padding: 0; margin: 0 0 .75rem; display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; }
+.ls-art legend { font-weight: 600; padding: 0; margin-bottom: .3rem; }
+.ls-art label { display: inline-flex; align-items: center; gap: .4rem; min-height: 2.4rem; }
 .tour-aendern { margin-top: 1.25rem; }
 .tour-aendern summary { cursor: pointer; padding: .5rem 0; }
 

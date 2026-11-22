@@ -101,8 +101,11 @@
 {% if "touren.lieferschein" in rechte %}
 <h3>Unterwegs: Lieferschein ausfüllen</h3>
 <ol>
-  <li>In der Tour bei der Station auf <strong>„📝 Lieferschein ausfüllen“</strong> tippen (den Knopf gibt es nur an
-    Stationen, bei denen ein Lieferschein vorgesehen ist).</li>
+  <li>In der Tour bei der Station auf <strong>„📝 Lieferschein ausfüllen“</strong> tippen. Den Knopf gibt es an
+    jeder Station – auch ohne Tour, auf der Seite der Station („Touren → Stationen“).</li>
+  <li><strong>Abholung oder Abgabe</strong> wählen. „Abholung“ ist vorgewählt: Die Tafel holt Ware ab. „Abgabe“
+    nehmen Sie, wenn die Tafel Ware abgibt, etwa an eine andere Tafel oder eine Einrichtung – auf dem Lieferschein
+    ist dann die Tafel die Spenderin und die Station die Empfängerin.</li>
   <li>Je Warengruppe die Menge eintragen und <strong>Kisten oder kg</strong> wählen. Leere Zeilen bleiben weg.</li>
   <li>Im Feld mit dem Finger <strong>unterschreiben</strong>. „Unterschrift löschen“ leert das Feld.</li>
   <li>„Unterschreiben und abschicken“: Der Lieferschein bekommt eine fortlaufende Nummer, wird als PDF gespeichert und
@@ -309,7 +312,11 @@
   <li><strong>ECO-Plattform:</strong> Arbeitet Ihre Tafel (auch) mit der ECO-Plattform, haken Sie das an. Dann steht
     bei „Touren heute“ und „Touren planen“ ein Link dorthin. Touren, Stationen und Lieferscheine in bintafeln bleiben
     nutzbar.</li>
-  <li>Je Station: „Lieferschein“ ja/nein und die „E-Mail für Lieferscheine“ stehen bei der Station.</li>
+  <li>Je Station: „Lieferschein“ ja/nein und die „E-Mail für Lieferscheine“ stehen bei der Station. „Lieferschein:
+    ja“ heißt, dass dort regelmäßig einer erwartet wird (die Statistik nennt solche Stationen, wenn im Jahr keiner
+    kam); ausfüllen lässt sich ein Lieferschein an jeder Station.</li>
+  <li>Abgaben stehen in der Liste der Lieferscheine mit dem Vermerk „Abgabe“ und in der Statistik in einem eigenen
+    Abschnitt „Abgaben“; sie zählen nicht als abgeholte Menge.</li>
 </ul>
 {% endif %}
 {% if "touren.stationen" in rechte %}
