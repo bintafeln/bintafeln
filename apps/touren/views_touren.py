@@ -24,7 +24,7 @@ from apps.touren import (
 )
 from apps.touren import start as tourstart
 from apps.touren.forms import HaltForm, KurzfristigForm, NeueStationForm, TourForm
-from apps.touren.models import Halt, Station, Tour
+from apps.touren.models import Halt, Station, Tour, TourenEinstellungen
 
 fahren_recht = rollen.recht_erforderlich("touren.fahren")
 planen = rollen.recht_erforderlich("touren.planen")
@@ -59,6 +59,7 @@ def heute(request):
     return render(request, "touren/heute.html", {
         "tag": tag, "ist_heute": tag == heute_, "zeilen": zeilen,
         "davor": tag - dt.timedelta(days=1), "danach": tag + dt.timedelta(days=1),
+        "eco": TourenEinstellungen.laden().eco_link,
         "darf_planen": rollen.hat_recht(request.user, "touren.planen"),
     })  # fmt: skip
 
@@ -118,6 +119,15 @@ def angefahren(request, pk, station_pk):
     return redirect(reverse("touren:fahren", args=[tour.pk]))
 
 
+def _besetzung_aus(request) -> tuple[dict[int, int], dict[int, str]]:
+    """Aus dem Formular: {Platz: pk der Person} und {Platz: Name des Gastes}."""
+    wahl = {int(k[6:]): int(v) for k, v in request.POST.items()
+            if k.startswith("platz_") and k[6:].isdigit() and v.isdigit()}  # fmt: skip
+    gaeste = {int(k[5:]): v.strip() for k, v in request.POST.items()
+              if k.startswith("gast_") and k[5:].isdigit() and v.strip()}  # fmt: skip
+    return wahl, gaeste
+
+
 @never_cache
 @fahren_recht
 def start(request, pk):
@@ -131,17 +141,15 @@ def start(request, pk):
         messages.error(request, "Sie sind für diese Tour nicht eingetragen. Bitte im Büro melden.")
         return redirect(ziel)
     if request.method == "POST":
-        wahl = {}
-        if "aendern" in request.POST:
-            wahl = {int(k[6:]): int(v) for k, v in request.POST.items()
-                    if k.startswith("platz_") and k[6:].isdigit() and v.isdigit()}  # fmt: skip
+        wahl, gaeste = _besetzung_aus(request) if "aendern" in request.POST else ({}, {})
         try:
-            tourstart.bestaetigen(tour, tag, request.user, wahl)
+            geaendert = tourstart.bestaetigen(tour, tag, request.user, wahl, gaeste).geaendert
         except tourstart.StartFehler as grund:
             messages.error(request, str(grund))
             return redirect(request.path)
         messages.success(request, "Besetzung geändert und im Fahrerplan eingetragen."
-                         if wahl else "Besetzung bestätigt. Gute Fahrt!")  # fmt: skip
+                         if (wahl or gaeste) and geaendert
+                         else "Besetzung bestätigt. Gute Fahrt!")  # fmt: skip
         return redirect(ziel)
     plaetze = tourstart.plaetze(tour, tag)
     return render(request, "touren/start.html", {
@@ -162,7 +170,7 @@ def touren(request):
         "regelmaessig": [t for t in alle if not t.datum],
         "kurzfristig": [t for t in alle if t.datum and t.datum >= heute_],
         "vergangen": [t for t in reversed(alle) if t.datum and t.datum < heute_][:20],
-        "heute": heute_,
+        "heute": heute_, "eco": TourenEinstellungen.laden().eco_link,
     })  # fmt: skip
 
 
@@ -239,13 +247,48 @@ def tour(request, pk):
         form.save()
         return redirect("touren:tour", pk=t.pk)
     tag = t.datum or timezone.localdate()
+    aus_plan = bool(t.fahrdienst_tour_id) and not t.datum and module.aktiv("fahrdienst")
+    if aus_plan:
+        tag = _tag(request) if "tag" in request.GET else _naechster_fahrtag(t)
+    aenderbar = aus_plan and tourstart.aenderbar(t, tag) and tourstart.darf(request.user, t, tag)
     return render(request, "touren/tour.html", {
+        "plaetze": tourstart.plaetze(t, tag) if aenderbar else [], "aenderbar": aenderbar,
         "form": form, "tour": t, "kurz": t.kurzfristig, "halte": ablauf.halte(t),
         "halt_form": HaltForm(tour=t), "wochentage": WOCHENTAGE,
         "besetzung": ablauf.besetzung(t, tag), "tag": tag,
-        "aus_fahrerplan": bool(t.fahrdienst_tour_id) and not t.datum
-        and module.aktiv("fahrdienst"),
+        "aus_fahrerplan": aus_plan, "faehrt": ablauf.faehrt_am(t, tag),
     })  # fmt: skip
+
+
+def _naechster_fahrtag(tour) -> dt.date:
+    """Heute, wenn die Tour heute fährt, sonst ihr nächster Fahrtag (binnen zwei Wochen)."""
+    heute_ = timezone.localdate()
+    for tage in range(15):
+        if ablauf.faehrt_am(tour, heute_ + dt.timedelta(days=tage)):
+            return heute_ + dt.timedelta(days=tage)
+    return heute_
+
+
+@require_POST
+@planen
+def besetzung_aendern(request, pk):
+    """Aus der Planung: die Besetzung einer Tour aus dem Fahrerplan für einen Tag ändern
+    (kurzfristiger Wechsel, Gast). Steht danach als Ersatz im Fahrerplan."""
+    t = get_object_or_404(Tour.objects.select_related("fahrdienst_tour"), pk=pk)
+    try:
+        tag = dt.date.fromisoformat(request.POST.get("tag", ""))
+    except ValueError:
+        tag = timezone.localdate()
+    wahl, gaeste = _besetzung_aus(request)
+    try:
+        if tourstart.aendern(t, tag, request.user, wahl, gaeste):
+            messages.success(request, f"Besetzung am {tag:%d.%m.%Y} geändert; sie steht so "
+                             "auch im Fahrerplan.")  # fmt: skip
+        else:
+            messages.info(request, "Nichts geändert.")
+    except tourstart.StartFehler as grund:
+        messages.error(request, str(grund))
+    return redirect(f"{reverse('touren:tour', args=[t.pk])}?tag={tag:%Y-%m-%d}")
 
 
 @require_POST
@@ -269,7 +312,7 @@ def tour_senden(request, pk):
         messages.warning(request, f"Ohne E-Mail-Adresse, bitte anders Bescheid geben: "
                          f"{', '.join(ohne)}.")  # fmt: skip
     if not mit and not ohne:
-        messages.error(request, "Niemand gewählt. Erst bei „Wer fährt“ Personen eintragen.")
+        messages.error(request, "Niemand gewählt. Erst Fahrer und Beifahrer eintragen.")
     return redirect("touren:tour", pk=t.pk)
 
 

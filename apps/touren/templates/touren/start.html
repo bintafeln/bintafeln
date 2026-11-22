@@ -13,14 +13,8 @@
     <summary>Nein, ändern</summary>
     <form method="post">{% csrf_token %}
       <input type="hidden" name="aendern" value="1">
-      {% for p in plaetze %}
-      <div class="feld"><label for="platz_{{ p.nr }}">{{ p.rolle }}</label>
-        <select name="platz_{{ p.nr }}" id="platz_{{ p.nr }}">
-          <option value="">{% if p.person %}{{ p.person.name }}{% elif p.gast %}{{ p.gast }} (Gast){% else %}– offen –{% endif %}</option>
-          {% for w in p.wahl %}<option value="{{ w.pk }}">{{ w.name }}</option>{% endfor %}
-        </select></div>
-      {% endfor %}
-      <p class="hinweis">Zur Wahl steht, wer an diesem Tag noch nicht eingeteilt ist und keinen Ausfall gemeldet hat. Die Änderung gilt nur für heute und steht dann auch im Fahrerplan.</p>
+      {% include "touren/_plaetze.html" %}
+      <p class="hinweis">Zur Wahl steht, wer an diesem Tag noch nicht eingeteilt ist und keinen Ausfall gemeldet hat. Fährt jemand ohne eigenes Konto mit, den Namen als Gast eintragen. Die Änderung gilt nur für heute und steht dann auch im Fahrerplan.</p>
       <button type="submit" class="knopf knopf-zweitrangig tour-knopf">So fahren wir heute</button>
     </form>
   </details>

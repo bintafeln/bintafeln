@@ -2318,6 +2318,9 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 .stationswahl { border: 1px solid var(--rand); border-radius: var(--radius); padding: .6rem .8rem; margin: 0 0 1rem; }
 .stationswahl legend { font-weight: 600; padding: 0 .3rem; }
 .stationswahl-neu summary { cursor: pointer; padding: .4rem 0; }
+.tour-besetzung { border: 1px solid var(--rand); border-radius: var(--radius); padding: .6rem .8rem; margin: 0 0 1rem; background: var(--grund); }
+.tour-besetzung h2 { margin: 0 0 .3rem; font-size: 1.1rem; }
+.tour-besetzung-namen { display: flex; flex-wrap: wrap; gap: .3rem 1.2rem; margin: 0 0 .4rem; font-size: 1.1rem; }
 .tour-frage { font-size: 1.35rem; font-weight: 600; margin: 1rem 0; }
 .tour-aendern { margin-top: 1.25rem; }
 .tour-aendern summary { cursor: pointer; padding: .5rem 0; }

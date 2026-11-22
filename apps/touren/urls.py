@@ -19,6 +19,7 @@ urlpatterns = [
     path("planen/importieren/", views_touren.touren_importieren, name="touren_importieren"),
     path("planen/<int:pk>/", views_touren.tour, name="tour"),
     path("planen/<int:pk>/loeschen/", views_touren.tour_loeschen, name="tour_loeschen"),
+    path("planen/<int:pk>/besetzung/", views_touren.besetzung_aendern, name="besetzung"),
     path("planen/<int:pk>/senden/", views_touren.tour_senden, name="tour_senden"),
     path("planen/<int:pk>/halt/", views_touren.halt_neu, name="halt_neu"),
     path("planen/halt/<int:pk>/", views_touren.halt_aendern, name="halt_aendern"),

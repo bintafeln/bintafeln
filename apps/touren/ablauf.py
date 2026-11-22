@@ -71,8 +71,20 @@ def besetzung(tour: Tour, datum: dt.date) -> list[dict]:
                     for p in plaetze if p.wer is not None or p.gast or p.fehlt
                 ]  # fmt: skip
         return []
-    return [{"person": p, "name": p.name, "rolle": "", "offen": False}
-            for p in tour.personen.order_by("nachname", "vorname")]  # fmt: skip
+    # eigene und kurzfristige Tour: Fahrer, bis zu zwei Beifahrer, dazu ein Gast ohne Konto
+    plaetze = [(tour.fahrer, "Fahrer"), (tour.beifahrer, "Beifahrer"),
+               (tour.beifahrer2, "Beifahrer")]  # fmt: skip
+    zeilen = [{"person": p, "name": p.name, "rolle": rolle, "offen": False}
+              for p, rolle in plaetze if p is not None]  # fmt: skip
+    dabei = {z["person"].pk for z in zeilen}
+    zeilen += [
+        {"person": p, "name": p.name, "rolle": "", "offen": False}
+        for p in tour.personen.order_by("nachname", "vorname")
+        if p.pk not in dabei
+    ]
+    if tour.gast:
+        zeilen.append({"person": None, "name": tour.gast, "rolle": "Gast", "offen": False})
+    return zeilen
 
 
 def faehrt_mit(tour: Tour, datum: dt.date, person) -> bool:
