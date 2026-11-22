@@ -313,6 +313,10 @@ class Fahrt(models.Model):
     km_ende = models.PositiveIntegerField(
         "Kilometerstand bei Ankunft", null=True, blank=True,
         validators=[MaxValueValidator(9_999_999)])  # fmt: skip
+    # Stand, den bintafeln bei der Abfahrt kannte, wenn der Fahrer einen höheren eingetragen hat:
+    # Dazwischen wurde gefahren, ohne dass es im Fahrtenbuch steht (ADR 0161).
+    km_vorher = models.PositiveIntegerField(
+        "Letzter bekannter Kilometerstand", null=True, blank=True, editable=False)  # fmt: skip
     begonnen_am = models.DateTimeField("Begonnen am")
     begonnen_von = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
@@ -340,6 +344,14 @@ class Fahrt(models.Model):
     def km(self) -> int | None:
         """Gefahrene Kilometer – erst, wenn die Fahrt beendet ist."""
         return None if self.km_ende is None else self.km_ende - self.km_start
+
+    @property
+    def km_unbekannt(self) -> int | None:
+        """Kilometer zwischen dem letzten bekannten Stand und der Abfahrt, zu denen es keine
+        Fahrt gibt (ADR 0161)."""
+        if self.km_vorher is None or self.km_start <= self.km_vorher:
+            return None
+        return self.km_start - self.km_vorher
 
     @property
     def dauer(self):

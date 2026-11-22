@@ -2366,3 +2366,6 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
   40% { transform: translateX(8px) rotate(1.5deg); } 60% { transform: translateX(-6px) rotate(-1deg); } 80% { transform: translateX(6px) rotate(1deg); } }
 @keyframes heuler-pochen { from { transform: scale(1); } to { transform: scale(1.12); } }
 @media (prefers-reduced-motion: reduce) { .heuler-dialog, .heuler-umschlag svg { animation: none; } }
+
+/* Fahrtenbuch: Kilometer ohne Eintrag (ADR 0161) */
+.fahrt-unbekannt td { background: var(--grund); font-style: italic; }

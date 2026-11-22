@@ -83,6 +83,7 @@ def beginnen(tour: Tour, benutzer, km_start, fahrzeug_pk=None) -> Fahrt:
     if zur_wahl and fahrzeug is None:
         raise FahrtFehler("Bitte das Fahrzeug wählen.")
     km = zahl(km_start)
+    bekannt = letzter_stand(fahrzeug)
     wer = ", ".join(b["name"] for b in ablauf.besetzung(tour, datum) if not b["offen"])
     try:
         with transaction.atomic():
@@ -90,6 +91,9 @@ def beginnen(tour: Tour, benutzer, km_start, fahrzeug_pk=None) -> Fahrt:
                 tour=tour, tour_name=tour.name, datum=datum, fahrzeug=fahrzeug,
                 fahrzeug_name=str(fahrzeug) if fahrzeug else "", besetzung=wer[:300],
                 km_start=km, begonnen_am=timezone.now(), begonnen_von=benutzer,
+                # höherer Stand als bekannt: Die Kilometer dazwischen stehen als „unbekannt“
+                # im Fahrtenbuch (ADR 0161)
+                km_vorher=bekannt if bekannt is not None and km > bekannt else None,
                 begonnen_von_name=_name(benutzer),
             )  # fmt: skip
     except IntegrityError:  # zwei Handys gleichzeitig

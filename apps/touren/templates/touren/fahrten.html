@@ -20,7 +20,7 @@
   </form>
   <div id="ergebnis">
   {% if offen %}<p class="hinweis"><span class="marke-warnung">{{ offen }} Fahrt{{ offen|pluralize:"en" }} aus früheren Tagen ohne Kilometerstand bei Ankunft.</span> <a href="?stand=offen">anzeigen</a></p>{% endif %}
-  <p class="hinweis">{{ seite.paginator.count }} Fahrt{{ seite.paginator.count|pluralize:"en" }} · zusammen <strong>{{ summe }} km</strong></p>
+  <p class="hinweis">{{ seite.paginator.count }} Fahrt{{ seite.paginator.count|pluralize:"en" }} · zusammen <strong>{{ summe }} km</strong>{% if unbekannt %} · dazu <span class="marke-warnung">{{ unbekannt }} km unbekannt</span> (gefahren ohne Eintrag){% endif %}</p>
   <div class="tabelle-rahmen">
   <table class="tabelle" id="fahrten-tabelle">
     <thead><tr><th>Datum</th><th>Tour</th><th>Fahrzeug</th><th>Besetzung</th><th class="zahl">km Abfahrt</th><th class="zahl">km Ankunft</th><th class="zahl">gefahren</th><th>Zeit</th><th></th></tr></thead>
@@ -37,6 +37,18 @@
         <td data-titel="Zeit" class="ohne-umbruch">{{ x.begonnen_am|date:"H:i" }}{% if x.beendet_am and x.beendet_von_name %}–{{ x.beendet_am|date:"H:i" }}{% endif %}{% if x.berichtigt_von %}<br><small class="leise">berichtigt von {{ x.berichtigt_von }}</small>{% endif %}</td>
         <td data-titel="Aktionen"><a class="knopf knopf-zweitrangig knopf-klein" href="{% url 'touren:fahrt' x.pk %}">Berichtigen</a></td>
       </tr>
+      {% if x.km_unbekannt %}{# davor gefahren, ohne Eintrag: Der Fahrer hat einen höheren Stand eingetragen als bekannt (ADR 0161) #}
+      <tr class="fahrt-unbekannt">
+        <td data-titel="Datum" class="ohne-umbruch"><small class="leise">vor {{ x.datum|date:"d.m.Y" }}</small></td>
+        <td data-titel="Tour"><span class="marke-warnung">unbekannt</span></td>
+        <td data-titel="Fahrzeug">{{ x.fahrzeug_name|default:"–" }}</td>
+        <td data-titel="Besetzung"><span class="leise">unbekannt</span></td>
+        <td data-titel="km Abfahrt" class="zahl">{{ x.km_vorher }}</td>
+        <td data-titel="km Ankunft" class="zahl">{{ x.km_start }}</td>
+        <td data-titel="gefahren" class="zahl">{{ x.km_unbekannt }} km</td>
+        <td data-titel="Zeit"><small class="leise">ohne Eintrag im Fahrtenbuch</small></td>
+        <td data-titel="Aktionen"></td>
+      </tr>{% endif %}
     {% empty %}
       <tr><td colspan="9">Keine Fahrten gefunden.</td></tr>
     {% endfor %}

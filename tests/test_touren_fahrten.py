@@ -71,6 +71,36 @@ def test_beginnen_und_beenden(lage):
     wagen.kilometerstand = 123900
     wagen.save()
     assert fahrten.staende() == {wagen.pk: 123900}
+    assert fahrt.km_vorher is None and fahrt.km_unbekannt is None  # erster Stand: keine Lücke
+
+
+def test_hoeherer_stand_als_bekannt_steht_als_unbekannt_im_fahrtenbuch(lage, admin_client):
+    tour, fritz, wagen = lage["tour"], lage["fritz"], lage["wagen"]
+    wagen.kilometerstand = 5000
+    wagen.save()
+    fahrt = fahrten.beginnen(tour, fritz, "5120", wagen.pk)  # 120 km ohne Eintrag gefahren
+    assert (fahrt.km_vorher, fahrt.km_unbekannt) == (5000, 120)
+    fahrten.beenden(fahrt, fritz, "5160")
+    seite = admin_client.get(reverse("touren:fahrten")).content.decode()
+    assert "fahrt-unbekannt" in seite and "120 km" in seite and "120 km unbekannt" in seite
+    assert "zusammen <strong>40 km</strong>" in seite  # die Summe zählt nur eingetragene Fahrten
+    csv_ = admin_client.get(reverse("touren:fahrten") + "?export=csv").content.decode("utf-8-sig")
+    assert ";unbekannt;Kühlwagen (MU-ST 1);unbekannt;5000;5120;120;;" in csv_
+    # das Büro berichtigt die Abfahrt auf den bekannten Stand: Die Lücke ist weg
+    fahrten.berichtigen(fahrt, fritz, "5000", "5160", wagen.pk)
+    assert fahrt.km_unbekannt is None
+    assert "fahrt-unbekannt" not in admin_client.get(reverse("touren:fahrten")).content.decode()
+
+
+def test_gleicher_oder_kleinerer_stand_ohne_luecke(lage):
+    tour, fritz, wagen = lage["tour"], lage["fritz"], lage["wagen"]
+    wagen.kilometerstand = 5000
+    wagen.save()
+    fahrt = fahrten.beginnen(tour, fritz, "5000", wagen.pk)
+    assert fahrt.km_vorher is None and fahrt.km_unbekannt is None
+    fahrt.delete()
+    fahrt = fahrten.beginnen(tour, fritz, "4990", wagen.pk)  # Stand am Fahrzeug war zu hoch
+    assert fahrt.km_vorher is None and fahrt.km_unbekannt is None
 
 
 def test_nur_wer_eingetragen_ist_oder_das_recht_hat(lage, recht_geben):
