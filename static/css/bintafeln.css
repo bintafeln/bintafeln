@@ -2278,6 +2278,7 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 .tour-nr { flex: 0 0 auto; width: 2.2rem; height: 2.2rem; border-radius: 50%; background: var(--akzent); color: var(--auf-akzent);
   display: flex; align-items: center; justify-content: center; font-weight: 700; }
 .tour-halt-fuss { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; margin: .6rem 0 0; }
+.tour-halt-fuss .tour-alle-angaben { margin-left: auto; }  /* immer rechts, auch ohne Telefonnummer */
 .tour-tagewahl { display: flex; flex-wrap: wrap; gap: .1rem .6rem; }
 .tour-tagewahl label { white-space: nowrap; }
 .tour-folge { display: flex; gap: .3rem; }
@@ -2285,11 +2286,22 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 .tour-erledigt { border-left: 6px solid var(--akzent); }
 .tour-schein { margin: .6rem 0 0; }
 .ls-zeilen { margin-bottom: 1rem; }
-.ls-zeile { display: grid; grid-template-columns: minmax(0, 1fr) 5.5rem 6.5rem; gap: .5rem; align-items: center;
-  padding: .35rem 0; border-bottom: 1px solid var(--rand); }
-.ls-zeile label { font-weight: 600; overflow-wrap: anywhere; hyphens: auto; }
-.ls-zeile input, .ls-zeile select { min-height: 2.8rem; font-size: 1.1rem; width: 100%; }
-.ls-zeile input { text-align: right; }
+/* Jede Warengruppe ein hinterlegtes Feld; der Name bricht nur zwischen Wörtern oder nach „/“ um
+   („Obst/“ + „Gemüse“), nie mitten im Wort. */
+.ls-zeile { display: grid; grid-template-columns: minmax(0, 1fr) 5rem 5.6rem; gap: .5rem; align-items: center;
+  padding: .5rem .6rem; margin-bottom: .45rem; background: var(--grund); border: 1px solid var(--rand);
+  border-radius: var(--radius); }
+.ls-zeile:focus-within { border-color: var(--akzent); }
+.ls-zeile label { font-weight: 600; overflow-wrap: break-word; hyphens: manual; }
+.ls-zeile input, .ls-zeile select { min-height: 2.8rem; font-size: 1.1rem; width: 100%; background: var(--flaeche);
+  border: 2px solid var(--rand); border-radius: 6px; padding: .2rem .45rem; }
+.ls-zeile input:focus, .ls-zeile select:focus { border-color: var(--akzent); }
+.ls-zeile input { text-align: right; font-weight: 600; }
+/* Am Handy steht der Name über den Feldern, damit er Platz hat und nicht mitten im Wort umbricht */
+@media (max-width: 30rem) {
+  .ls-zeile { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .3rem .5rem; }
+  .ls-zeile label { grid-column: 1 / -1; }
+}
 .unterschrift-flaeche { display: block; width: 100%; height: 11rem; border: 2px dashed var(--rand); border-radius: 8px;
   background: #fff; touch-action: none; margin-bottom: .4rem; }
 .unterschrift-flaeche.unterschrift-da { border-style: solid; border-color: var(--akzent); }
