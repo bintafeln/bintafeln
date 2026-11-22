@@ -134,11 +134,16 @@ def test_am_handy(client, anmelden, lage):
     adresse = reverse("touren:fahren", args=[tour.pk])
     seite = client.get(adresse).content.decode()
     assert "Fahrt beginnen" in seite and "Kühlwagen" in seite and "Tour beenden" not in seite
+    # schlanker Kopf: Name, Stand, Balken; die Angaben sind vor der Abfahrt aufgeklappt …
+    assert '<span class="tour-zaehler" title="erledigte Stationen">0/1</span>' in seite
+    assert '<progress class="tour-balken" value="0" max="1"' in seite
+    assert '<details class="tour-angaben" open>' in seite
     client.post(reverse("touren:fahrt_beginnen", args=[tour.pk]),
                 {"fahrzeug": wagen.pk, "km_start": "5000"})  # fmt: skip
     fahrt = Fahrt.objects.get()
     seite = client.get(adresse).content.decode()
     assert "Unterwegs" in seite and "Tour beenden" in seite and "Fahrt beginnen" not in seite
+    assert '<details class="tour-angaben">' in seite  # … und unterwegs zugeklappt
     # solange eine Station offen ist: nur der Link „Tour vorzeitig beenden“, kein großer Abschnitt
     assert (
         '<details class="tour-vorzeitig" id="fahrt">' in seite and "Noch 1 Station offen" in seite
