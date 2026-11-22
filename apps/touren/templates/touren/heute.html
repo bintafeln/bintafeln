@@ -10,8 +10,8 @@
   </nav>
   <div class="tour-liste">
   {% for z in zeilen %}
-  <article class="tour-karte{% if z.meine %} tour-meine{% endif %}">
-    <h2>{{ z.tour.name }}{% if z.meine %} <span class="marke-ok">Ihre Tour</span>{% endif %}{% if z.tour.kurzfristig %} <span class="marke-warnung">kurzfristig</span>{% endif %}</h2>
+  <article class="tour-karte{% if z.meine %} tour-meine{% endif %}{% if z.fertig %} tour-fertig{% endif %}">
+    <h2>{% if z.fertig %}<span class="tour-fertig-haken" aria-hidden="true">✓</span> {% endif %}{{ z.tour.name }}{% if z.fertig %} <span class="tour-fertig-marke">erledigt</span>{% endif %}{% if z.meine %} <span class="marke-ok">Ihre Tour</span>{% endif %}{% if z.tour.kurzfristig %} <span class="marke-warnung">kurzfristig</span>{% endif %}</h2>
     <p class="leise">{{ z.stationen }} Station{{ z.stationen|pluralize:"en" }}{% if z.besetzung %} · {% for b in z.besetzung %}{% if b.offen %}<span class="marke-warnung">{{ b.rolle }} offen</span>{% else %}{{ b.name }}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}</p>
     {% if z.stand.gesamt %}
     <div class="tour-stand" role="img" aria-label="{{ z.stand.erledigt }} von {{ z.stand.gesamt }} Stationen angefahren"><span style="width: {{ z.stand.prozent }}%"></span></div>
