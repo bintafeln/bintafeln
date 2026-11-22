@@ -79,6 +79,12 @@ def mitarbeiter_pdf(b) -> bytes:
                     [[g.bezeichnung, _wert(g.angelegt_am), _wert(g.gueltig_bis),
                       _wert(g.zuletzt_am)] for g in geraete])  # fmt: skip
 
+    push_geraete = b.push_abos.all()
+    if push_geraete:
+        doc.ueberschrift("Geräte mit eingeschalteten Nachrichten (Push)")
+        doc.tabelle(["Gerät", "Eingeschaltet am"],
+                    [[g.geraet or "–", _wert(g.angelegt_am)] for g in push_geraete])  # fmt: skip
+
     anmeldungen = b.anmeldungen.all()[:50]
     if anmeldungen:
         doc.ueberschrift("Anmeldungen und Abmeldungen (Sicherheitsprotokoll, letzte 50)")

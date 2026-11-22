@@ -12,7 +12,8 @@ from apps.antraege import sprachen
 from apps.aufruf import ablauf, handy, views_warten
 from apps.aufruf.models import AufrufEinstellungen, HandyCode, HandyEinstellungen, HandyZugang
 from apps.ausgabe.ampel import WOCHENTAGE
-from apps.core.models import TafelEinstellungen
+from apps.core import push as kern
+from apps.core.models import PushEinstellungen, TafelEinstellungen
 from apps.kunden.models import Abholung, Ausgabestelle, Haushalt, Kundengruppe, Person
 
 pytestmark = pytest.mark.django_db
@@ -344,14 +345,12 @@ def _browser():
     from cryptography.hazmat.primitives import serialization
     from cryptography.hazmat.primitives.asymmetric import ec
 
-    from apps.aufruf import push
-
     privat = ec.generate_private_key(ec.SECP256R1())
     oeffentlich = privat.public_key().public_bytes(
         serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint
     )
     auth = os.urandom(16)
-    return privat, push._b64(oeffentlich), push._b64(auth)
+    return privat, kern._b64(oeffentlich), kern._b64(auth)
 
 
 def _entschluesseln(daten, privat, p256dh, auth):
@@ -361,18 +360,16 @@ def _entschluesseln(daten, privat, p256dh, auth):
     from cryptography.hazmat.primitives.asymmetric import ec
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-    from apps.aufruf import push
-
     salz, rs, laenge = daten[:16], struct.unpack("!I", daten[16:20])[0], daten[20]
     absender = daten[21 : 21 + laenge]
     assert rs == 4096 and laenge == 65
     gemeinsam = privat.exchange(
         ec.ECDH(), ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), absender)
     )
-    browser = push._unb64(p256dh)
-    ikm = push._hkdf(push._unb64(auth), b"WebPush: info\x00" + browser + absender, 32, gemeinsam)
-    cek = push._hkdf(salz, b"Content-Encoding: aes128gcm\x00", 16, ikm)
-    nonce = push._hkdf(salz, b"Content-Encoding: nonce\x00", 12, ikm)
+    browser = kern._unb64(p256dh)
+    ikm = kern._hkdf(kern._unb64(auth), b"WebPush: info\x00" + browser + absender, 32, gemeinsam)
+    cek = kern._hkdf(salz, b"Content-Encoding: aes128gcm\x00", 16, ikm)
+    nonce = kern._hkdf(salz, b"Content-Encoding: nonce\x00", 12, ikm)
     klar = AESGCM(cek).decrypt(nonce, daten[21 + laenge :], None)
     assert klar.endswith(b"\x02")
     return klar[:-1]
@@ -389,20 +386,20 @@ def test_push_verschluesselt_und_unterschrieben(db):
     from apps.aufruf import push
 
     privat, p256dh, auth = _browser()
-    daten = push.verschluesseln(b'{"titel": "Hallo"}', p256dh, auth)
+    daten = kern.verschluesseln(b'{"titel": "Hallo"}', p256dh, auth)
     assert _entschluesseln(daten, privat, p256dh, auth) == b'{"titel": "Hallo"}'
     # VAPID: Unterschrift passt zum öffentlichen Schlüssel, der auch dem Browser gegeben wird
     schluessel = push.oeffentlicher_schluessel()
     assert schluessel == push.oeffentlicher_schluessel()  # einmal erzeugt, dann gespeichert
-    assert HandyEinstellungen.laden().push_schluessel.startswith("gAAAA")  # verschlüsselt
-    kopf = push.vapid_kopf("https://fcm.googleapis.com/fcm/send/abc")
+    assert PushEinstellungen.laden().schluessel.startswith("gAAAA")  # verschlüsselt
+    kopf = kern.vapid_kopf("https://fcm.googleapis.com/fcm/send/abc")
     token, k = kopf.removeprefix("vapid t=").split(", k=")
     assert k == schluessel
     a, b, c = token.split(".")
     inhalt = json.loads(base64.urlsafe_b64decode(b + "=="))
     assert inhalt["aud"] == "https://fcm.googleapis.com" and inhalt["sub"]
-    sig = push._unb64(c)
-    oeff = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), push._unb64(k))
+    sig = kern._unb64(c)
+    oeff = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), kern._unb64(k))
     oeff.verify(encode_dss_signature(int.from_bytes(sig[:32], "big"),
                                      int.from_bytes(sig[32:], "big")),
                 f"{a}.{b}".encode(), ec.ECDSA(hashes.SHA256()))  # fmt: skip
@@ -451,8 +448,8 @@ def test_push_bald_und_jetzt_je_einmal(
         gesendet.append((adresse, klar, kopf["Content-Encoding"], kopf["TTL"]))
         return 201
 
-    monkeypatch.setattr(push, "_senden", _senden)
-    monkeypatch.setattr(push, "_im_hintergrund", lambda fn: fn())
+    monkeypatch.setattr(kern, "_senden", _senden)
+    monkeypatch.setattr(kern, "_im_hintergrund", lambda fn: fn())
     e = HandyEinstellungen.laden()
     e.push_vorher = 2
     e.save()
@@ -477,7 +474,7 @@ def test_push_bald_und_jetzt_je_einmal(
     vorher = len(gesendet)
     assert push.benachrichtigen(mitte, heute()) == 0 and len(gesendet) == vorher
     # Push-Dienst sagt „gibt es nicht mehr“: Abo wird vergessen
-    monkeypatch.setattr(push, "_senden", lambda *a: 410)
+    monkeypatch.setattr(kern, "_senden", lambda *a: 410)
     z.refresh_from_db()
     assert not push.senden(z, "x", "y") and HandyZugang.objects.get().push_adresse == ""
 

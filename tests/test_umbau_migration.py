@@ -130,7 +130,8 @@ def test_mail_empfaenger_stand_bleibt():
 
 
 def _mail_empfaenger_stand_bleibt():
-    ziele_vor = _leaves_mit({"core": "0032_mail_niemand"})
+    # aufruf.0015 baut auf core.0035 auf (ADR 0158), deshalb mit zurück
+    ziele_vor = _leaves_mit({"core": "0032_mail_niemand", "aufruf": "0014_push_nachrichten"})
     _migriere(ziele_vor)
     apps = MigrationExecutor(connection).loader.project_state(ziele_vor).apps
     Benutzer = apps.get_model("konten", "Benutzer")
