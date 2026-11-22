@@ -7,17 +7,21 @@ from apps.core.module import Modul
 
 
 def menue(eintrag):
+    """Alles zu den Touren steht im eigenen Hauptbereich „Touren“ – auch das, was die
+    Fahrdienstleitung einrichtet. Unter „Einstellungen → Touren“ bleibt nur, was der Admin
+    entscheidet (Mailversand, Karte, Aufbewahrung)."""
     return [
-        ("Dienstpläne/Touren", [
+        ("Touren", [
             ("touren.fahren", eintrag("Touren heute", "touren:heute", genau=True)),
+            ("touren.planen", eintrag("Touren planen", "touren:touren")),
             ("touren.stationen", eintrag("Stationen", "touren:stationen")),
             ("touren.lieferscheine", eintrag("Lieferscheine", "touren:lieferscheine")),
             ("touren.fahrten", eintrag("Fahrtenbuch", "touren:fahrten")),
+            ("touren.planen", eintrag("Einrichten: Warengruppen, Fahrzeuge, Zentrale",
+                                      "touren:einrichten")),
         ]),
-        ("Einstellungen/Dienstpläne", [
-            ("touren.planen", eintrag("Touren: Stationsfolgen und kurzfristige Touren",
-                                      "touren:touren")),
-            ("einstellungen.touren", eintrag("Touren: Lieferscheine, Warengruppen, Fahrzeuge",
+        ("Einstellungen/Touren", [
+            ("einstellungen.touren", eintrag("Mailversand, Karte und Aufbewahrung",
                                              "touren:einstellungen")),
         ]),
     ]  # fmt: skip
@@ -158,8 +162,8 @@ MODUL = Modul(
         ("touren.lieferscheine", "Alle Lieferscheine ansehen, nachsenden und löschen", ""),
         ("touren.fahrten", "Fahrtenbuch ansehen und Kilometerstände berichtigen",
          "Alle Fahrten mit Fahrzeug, Besetzung und Kilometerstand."),
-        ("einstellungen.touren", "Touren einstellen: Lieferscheine, Warengruppen und Fahrzeuge",
-         ""),
+        ("einstellungen.touren", "Touren einstellen: Mailversand, Karte und Aufbewahrung",
+         "Warengruppen, Fahrzeuge und die Zentrale richtet ein, wer Touren plant."),
     ),
     vorgaben={"Büro": ("touren.fahren", "touren.besetzung", "touren.stationen", "touren.planen",
                        "touren.stationen_bearbeiten", "touren.lieferschein",
@@ -170,7 +174,7 @@ MODUL = Modul(
         Mail("Touren: Lieferschein",
              "Sobald unterwegs ein Lieferschein unterschrieben wird, oder beim Nachsenden.",
              "Die Station: ihre „E-Mail für Lieferscheine“, sonst ihre E-Mail. Sonst niemand.",
-             ("Touren: Lieferscheine, Warengruppen, Fahrzeuge", "touren:einstellungen",
+             ("Touren: Mailversand, Karte und Aufbewahrung", "touren:einstellungen",
               "einstellungen.touren")),
     ),
     kapitel=(("touren", "Touren: unterwegs, Stationen, Planung",

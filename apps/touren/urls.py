@@ -25,6 +25,7 @@ urlpatterns = [
     path("planen/<int:pk>/halt/", views_touren.halt_neu, name="halt_neu"),
     path("planen/halt/<int:pk>/", views_touren.halt_aendern, name="halt_aendern"),
     path("einstellungen/", views_lieferscheine.einstellungen, name="einstellungen"),
+    path("einrichten/", views_lieferscheine.einrichten, name="einrichten"),
     path("lieferscheine/", views_lieferscheine.liste, name="lieferscheine"),
     path("lieferscheine/<int:pk>.pdf", views_lieferscheine.pdf, name="lieferschein_pdf"),
     path(

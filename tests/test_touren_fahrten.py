@@ -166,7 +166,7 @@ def test_fahrtenbuch_und_berichtigen(client, anmelden, benutzer_mit_rolle, lage)
 
 
 def test_einstellungen_fahrzeuge(admin_client):
-    seite = admin_client.get(reverse("touren:einstellungen")).content.decode()
+    seite = admin_client.get(reverse("touren:einrichten")).content.decode()
     assert "Fahrzeuge" in seite
     daten = {"fahrzeuge": "1", "fz-TOTAL_FORMS": 2, "fz-INITIAL_FORMS": 0,
              "fz-MIN_NUM_FORMS": 0, "fz-MAX_NUM_FORMS": 1000,
@@ -174,7 +174,7 @@ def test_einstellungen_fahrzeuge(admin_client):
              "fz-0-kilometerstand": "45000",
              "fz-0-aktiv": "on", "fz-1-name": "", "fz-1-kennzeichen": "",
              "fz-1-reihenfolge": "0", "fz-1-aktiv": "on"}  # fmt: skip
-    assert admin_client.post(reverse("touren:einstellungen"), daten).status_code == 302
+    assert admin_client.post(reverse("touren:einrichten"), daten).status_code == 302
     wagen = Fahrzeug.objects.get()
     assert str(wagen) == "Transporter (MU-ST 2)" and wagen.kilometerstand == 45000
 

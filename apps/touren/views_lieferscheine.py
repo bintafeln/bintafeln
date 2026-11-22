@@ -18,7 +18,12 @@ from apps.core import papierkorb
 from apps.core.pdf import pdf_antwort
 from apps.konten import rollen
 from apps.touren import lieferscheine
-from apps.touren.forms import EinstellungenForm, FahrzeugFormSet, WarengruppenFormSet
+from apps.touren.forms import (
+    EinrichtenForm,
+    EinstellungenForm,
+    FahrzeugFormSet,
+    WarengruppenFormSet,
+)
 from apps.touren.models import Lieferschein, Position, Station, Tour, TourenEinstellungen
 
 ausfuellen_recht = rollen.recht_erforderlich("touren.lieferschein")
@@ -146,18 +151,35 @@ def loeschen(request, pk):
 @never_cache
 @einstellen
 def einstellungen(request):
-    form = EinstellungenForm(request.POST if "einstellungen" in request.POST else None,
-                             instance=TourenEinstellungen.laden())  # fmt: skip
-    gruppen = WarengruppenFormSet(request.POST if "warengruppen" in request.POST else None,
-                                  prefix="wg")  # fmt: skip
-    fahrzeuge = FahrzeugFormSet(request.POST if "fahrzeuge" in request.POST else None,
-                                prefix="fz")  # fmt: skip
-    if request.method == "POST":
-        aktuell = (form if "einstellungen" in request.POST
-                   else fahrzeuge if "fahrzeuge" in request.POST else gruppen)  # fmt: skip
-        if aktuell.is_valid():
-            aktuell.save()
-            messages.success(request, "Gespeichert.")
-            return redirect("touren:einstellungen")
-    return render(request, "touren/einstellungen.html", {
-        "form": form, "gruppen": gruppen, "fahrzeuge": fahrzeuge})  # fmt: skip
+    """Was nur der Admin entscheidet: Lieferscheine an/aus, Mailversand, Google-Schlüssel,
+    ECO-Plattform, Aufbewahrung. Alles Übrige steht unter „Touren → Einrichten“."""
+    form = EinstellungenForm(request.POST or None, instance=TourenEinstellungen.laden())
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Gespeichert.")
+        return redirect("touren:einstellungen")
+    return render(request, "touren/einstellungen.html", {"form": form})
+
+
+@never_cache
+@rollen.recht_erforderlich("touren.planen")
+def einrichten(request):
+    """Für die Fahrdienstleitung: Zentrale, Text der Lieferschein-Mail, Warengruppen und
+    Fahrzeuge – ohne Umweg über die Einstellungen."""
+    teile = {
+        "einrichten": lambda daten: EinrichtenForm(daten, instance=TourenEinstellungen.laden()),
+        "warengruppen": lambda daten: WarengruppenFormSet(daten, prefix="wg"),
+        "fahrzeuge": lambda daten: FahrzeugFormSet(daten, prefix="fz"),
+    }
+    welches = next((name for name in teile if name in request.POST), None)
+    formulare = {name: bauen(request.POST if name == welches else None)
+                 for name, bauen in teile.items()}  # fmt: skip
+    if request.method == "POST" and welches and formulare[welches].is_valid():
+        formulare[welches].save()
+        messages.success(request, "Gespeichert.")
+        return redirect("touren:einrichten")
+    return render(request, "touren/einrichten.html", {
+        "form": formulare["einrichten"], "gruppen": formulare["warengruppen"],
+        "fahrzeuge": formulare["fahrzeuge"],
+        "darf_einstellen": rollen.hat_recht(request.user, "einstellungen.touren"),
+    })  # fmt: skip

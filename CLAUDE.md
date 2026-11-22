@@ -253,6 +253,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Links in die Seiten zu setzen). Alles Einstellungsartige unter „Einstellungen“, jede Adresse
   nur einmal (`tests/test_menue.py`); auch das laufende Verwalten der Ausgabe (Sonderaktionen,
   Korrekturwünsche, Post an Ausgabestellen) steht unter „Einstellungen → Ausgabe“, nicht unter „Ausgabestelle“; Fahrdienst und Dienstplan unter „Dienstpläne“.
+  Ein Modul kann einen eigenen Hauptbereich mitbringen (er steht nach den Dienstplänen): „Touren“
+  mit allem zur Tourenplanung, auch „Einrichten“ (Warengruppen, Fahrzeuge, Zentrale – Recht
+  `touren.planen`, `views_lieferscheine.einrichten`); unter „Einstellungen → Touren“ steht nur, was
+  der Admin entscheidet (Mailversand, Kartenschlüssel, ECO, Aufbewahrung).
   Werkseinstellungen eines Kontos: `verwaltung.werkseinstellungen()`; `Benutzer.ansicht_stand`
   lässt den Browser gemerkte Ansichten (localStorage `bintafeln-*`) vergessen.
 - Adressnummern (ADR 0133): `Adresse.nummer` vergibt `Adresse.save()` über
