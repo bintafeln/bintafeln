@@ -138,6 +138,33 @@ def berichtigen(fahrt: Fahrt, benutzer, km_start, km_ende, fahrzeug_pk=None) -> 
     return fahrt
 
 
+def loeschen(fahrt: Fahrt, benutzer) -> None:
+    """Eine Fahrt ganz aus dem Fahrtenbuch nehmen (z. B. eine Testfahrt); sie kommt in den
+    Papierkorb. War es die letzte Fahrt des Fahrzeugs und steht dessen Kilometerstand noch auf
+    dem Stand dieser Fahrt, geht er auf den Stand davor zurück."""
+    from apps.core import papierkorb
+
+    fahrzeug = fahrt.fahrzeug
+    letzter = fahrt.km_ende if fahrt.km_ende is not None else fahrt.km_start
+    war_letzte = fahrzeug is not None and not Fahrt.objects.filter(
+        fahrzeug=fahrzeug, begonnen_am__gt=fahrt.begonnen_am
+    ).exists()  # fmt: skip
+    vorher = fahrt.km_vorher
+    if vorher is None and fahrzeug is not None:
+        davor = (Fahrt.objects.filter(fahrzeug=fahrzeug, begonnen_am__lt=fahrt.begonnen_am)
+                 .order_by("-begonnen_am").first())  # fmt: skip
+        if davor is not None:
+            vorher = davor.km_ende if davor.km_ende is not None else davor.km_start
+        else:
+            vorher = fahrt.km_start
+    papierkorb.loeschen(benutzer, "Fahrt", f"{fahrt.tour_name} am {fahrt.datum:%d.%m.%Y}", fahrt,
+                        recht="touren.fahrten")  # fmt: skip
+    if war_letzte:
+        fahrzeug.refresh_from_db()  # der Stand kann inzwischen von Hand geändert sein
+        if fahrzeug.kilometerstand == letzter:
+            _stand_merken(fahrzeug, vorher)
+
+
 def fristen_anwenden(heute_: dt.date | None = None) -> int:
     """Fahrten werden so lange aufbewahrt wie Lieferscheine (Einstellungen der Touren)."""
     heute_ = heute_ or timezone.localdate()

@@ -17,4 +17,11 @@
     <button type="submit" class="knopf">Speichern</button>
   </form>
 </section>
+<section class="karte">
+  <h2>Fahrt löschen</h2>
+  <p class="hinweis">Nimmt die Fahrt ganz aus dem Fahrtenbuch, z. B. eine Testfahrt. Sie kommt in den Papierkorb. War es die letzte Fahrt des Fahrzeugs, geht dessen Kilometerstand auf den Stand davor zurück. Lieferscheine der Tour bleiben.</p>
+  <form method="post" action="{% url 'touren:fahrt_loeschen' fahrt.pk %}" onsubmit="return confirm('Diese Fahrt wirklich löschen?')">{% csrf_token %}
+    <button type="submit" class="knopf knopf-gefahr">Fahrt löschen</button>
+  </form>
+</section>
 {% endblock %}

@@ -427,3 +427,54 @@ def test_papiere_nur_fuer_die_fahrdienstleitung(client, anmelden, lage, recht_ge
     assert [client.get(a).status_code for a in adressen] == [200, 404]
     assert "Papier hinterlegen" not in client.get(adressen[0]).content.decode()
     assert client.post(adressen[0], {"art": "schein"}).status_code == 403
+
+
+def test_fahrt_loeschen_stellt_kilometerstand_zurueck(lage, admin_client):
+    from apps.core.models import PapierkorbEintrag
+
+    tour, fritz, wagen = lage["tour"], lage["fritz"], lage["wagen"]
+    wagen.kilometerstand = 5000
+    wagen.save()
+    test = fahrten.beginnen(tour, fritz, "5010", wagen.pk)  # Testfahrt mit erfundenem Stand
+    fahrten.beenden(test, fritz, "5055")
+    seite = admin_client.get(reverse("touren:fahrt", args=[test.pk])).content.decode()
+    assert "Fahrt löschen" in seite
+    antwort = admin_client.post(reverse("touren:fahrt_loeschen", args=[test.pk]))
+    assert antwort.status_code == 302 and not Fahrt.objects.exists()
+    assert PapierkorbEintrag.objects.filter(art="Fahrt").exists()
+    wagen.refresh_from_db()
+    assert wagen.kilometerstand == 5000  # wie vor der Testfahrt
+
+
+def test_fahrt_loeschen_laesst_spaeteren_stand(lage):
+    tour, fritz, wagen = lage["tour"], lage["fritz"], lage["wagen"]
+    erste = fahrten.beginnen(tour, fritz, "100", wagen.pk)
+    fahrten.beenden(erste, fritz, "150")
+    # das Fahrzeug wurde danach anderweitig gefahren, der Stand in „Einrichten“ nachgetragen
+    wagen.kilometerstand = 400
+    wagen.save()
+    fahrten.loeschen(erste, fritz)
+    wagen.refresh_from_db()
+    assert wagen.kilometerstand == 400  # nicht angetastet
+    # ohne bekannten Stand davor: zurück auf den Stand bei der Abfahrt
+    zweite = fahrten.beginnen(tour, fritz, "400", wagen.pk)
+    fahrten.beenden(zweite, fritz, "430")
+    fahrten.loeschen(zweite, fritz)
+    wagen.refresh_from_db()
+    assert wagen.kilometerstand == 400
+
+
+def test_fahrt_loeschen_nur_mit_recht(client, anmelden, lage):
+    fahrt = fahrten.beginnen(lage["tour"], lage["fritz"], "100", lage["wagen"].pk)
+    anmelden(client, lage["fritz"])
+    assert client.post(reverse("touren:fahrt_loeschen", args=[fahrt.pk])).status_code == 403
+    assert Fahrt.objects.filter(pk=fahrt.pk).exists()
+
+
+def test_link_zur_besetzung_des_gewaehlten_tages(admin_client, lage):
+    morgen = timezone.localdate() + dt.timedelta(days=1)
+    seite = admin_client.get(
+        reverse("touren:fahren", args=[lage["tour"].pk]) + f"?tag={morgen:%Y-%m-%d}"
+    ).content.decode()
+    ziel = f"{reverse('touren:tour', args=[lage['tour'].pk])}?tag={morgen:%Y-%m-%d}#besetzung"
+    assert ziel in seite and "Besetzung für diesen Tag ändern" in seite
