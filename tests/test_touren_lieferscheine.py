@@ -301,13 +301,22 @@ def test_station_geloescht_lieferschein_bleibt(admin):
 
 
 def test_admin_stellt_ein(admin_client):
+    """Der Admin entscheidet über Versand und Aufbewahrung; Warengruppen, Fahrzeuge, Zentrale
+    und den Text der Mail richtet ein, wer Touren plant („Touren → Einrichten“)."""
     seite = admin_client.get(reverse("touren:einstellungen")).content.decode()
-    assert "Warengruppen" in seite and "Obst/Gemüse" in seite
+    assert "Mailversand, Karte und Aufbewahrung" in seite and "Warengruppen</h2>" not in seite
+    assert reverse("touren:einrichten") in seite
     admin_client.post(reverse("touren:einstellungen"), {
-        "einstellungen": "1", "versand": "aus", "mail_text": "Hallo",
-        "aufbewahrung_jahre": "6"})  # fmt: skip
+        "versand": "aus", "aufbewahrung_jahre": "6"})  # fmt: skip
     e = TourenEinstellungen.laden()
-    assert not e.lieferscheine and e.mail_text == "Hallo" and e.aufbewahrung_jahre == 6
+    assert not e.lieferscheine and e.aufbewahrung_jahre == 6
+    seite = admin_client.get(reverse("touren:einrichten")).content.decode()
+    assert "Warengruppen" in seite and "Obst/Gemüse" in seite and "Fahrzeuge" in seite
+    admin_client.post(reverse("touren:einrichten"), {
+        "einrichten": "1", "mail_text": "Hallo", "zentrale": "Zentralweg 1"})  # fmt: skip
+    e = TourenEinstellungen.laden()
+    assert e.mail_text == "Hallo" and e.zentrale == "Zentralweg 1"
+    assert e.aufbewahrung_jahre == 6  # die Admin-Angaben bleiben unberührt
     gruppen = list(Warengruppe.objects.all())
     daten = {
         "warengruppen": "1",
@@ -326,8 +335,23 @@ def test_admin_stellt_ein(admin_client):
               f"wg-{len(gruppen)}-aktiv": "on", f"wg-{len(gruppen) + 1}-name": "",
               f"wg-{len(gruppen) + 1}-reihenfolge": 0,
               f"wg-{len(gruppen) + 1}-aktiv": "on"}  # fmt: skip
-    admin_client.post(reverse("touren:einstellungen"), daten)
+    admin_client.post(reverse("touren:einrichten"), daten)
     assert [g.name for g in lieferscheine.warengruppen()] == ["Getränke"]
+
+
+def test_einrichten_fuer_die_fahrdienstleitung(buero):
+    """Wer Touren plant, richtet ein – ohne Admin zu sein; Fahrer nicht."""
+    seite = buero.get(reverse("touren:einrichten")).content.decode()
+    assert "Touren einrichten" in seite and "stellt der Admin ein" in seite
+    assert buero.post(reverse("touren:einrichten"), {
+        "einrichten": "1", "mail_text": "Guten Tag", "zentrale": "Lagerweg 2",
+        "zentrale_aus": ""}).status_code == 302  # fmt: skip
+    assert TourenEinstellungen.laden().zentrale == "Lagerweg 2"
+    assert buero.get(reverse("touren:einstellungen")).status_code == 403
+
+
+def test_einrichten_nicht_fuer_fahrer(fahrer):
+    assert fahrer.get(reverse("touren:einrichten")).status_code == 403
 
 
 def test_versand_ausgeschaltet_speichert_nur(admin):

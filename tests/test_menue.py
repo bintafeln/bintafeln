@@ -277,3 +277,40 @@ def test_meine_einsaetze_auf_einer_seite(admin, client, anmelden, benutzer_mit_r
     b = alle_bereiche(admin, [])
     assert "Dienstpläne" not in b
     assert "keinen Dienstplan" in anmelden(client, admin).get(url).content.decode()
+
+
+def menue_fuer(benutzer):
+    anfrage = RequestFactory().get("/")
+    anfrage.user = benutzer
+    return menue(anfrage)
+
+
+def test_touren_als_eigener_hauptbereich(admin, benutzer_mit_rolle):
+    """Das Modul Touren bringt den Hauptbereich „Touren“ mit (direkt nach den Dienstplänen):
+    Planung und Einrichten stehen dort; unter „Einstellungen → Touren“ nur, was der Admin
+    entscheidet. „Dienstpläne“ behält die Pläne."""
+    t = TafelEinstellungen.laden()
+    t.module = ["touren", "fahrdienst"]
+    t.save()
+    alle = menue_fuer(admin)
+    namen = [b["titel"] for b in alle]
+    assert namen.index("Touren") == namen.index("Dienstpläne") + 1
+    touren = [e["titel"] for e in next(b for b in alle if b["titel"] == "Touren")["eintraege"]]
+    assert touren == ["Touren heute", "Touren planen", "Stationen", "Lieferscheine",
+                      "Fahrtenbuch", "Einrichten: Warengruppen, Fahrzeuge, Zentrale"]  # fmt: skip
+    plaene = [e["titel"] for e in next(b for b in alle if b["titel"] == "Dienstpläne")["eintraege"]]
+    assert "Touren heute" not in plaene and "Fahrtenbuch" not in plaene
+    gruppen = titel(einstellungen(admin))
+    assert gruppen["Touren"] == ["Mailversand, Karte und Aufbewahrung"]
+    dienst = next(g for g in einstellungen(admin)["gruppen"] if g["titel"] == "Dienstpläne")
+    assert not any(e["url"].startswith("/touren/") for e in dienst["eintraege"])
+    # die Fahrdienstleitung (Büro) hat alles unter „Touren“ und nichts davon in den Einstellungen
+    bernd = benutzer_mit_rolle("bernd", "Büro")
+    buero = menue_fuer(bernd)
+    eigene = [e["titel"] for e in next(b for b in buero if b["titel"] == "Touren")["eintraege"]]
+    assert "Touren planen" in eigene and "Einrichten: Warengruppen, Fahrzeuge, Zentrale" in eigene
+    assert "Touren" not in titel(einstellungen(bernd) or {"gruppen": []})
+
+
+def test_ohne_modul_kein_bereich_touren(admin):
+    assert "Touren" not in [b["titel"] for b in menue_fuer(admin)]

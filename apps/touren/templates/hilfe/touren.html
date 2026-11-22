@@ -7,7 +7,7 @@
 <h3>Unterwegs: die Tour am Handy</h3>
 <ul>
   <li>Wer heute eine Tour fährt, findet sie gleich auf der <strong>Startseite</strong> („Ihre Tour heute“). Alle Touren
-    eines Tages stehen unter „Dienstpläne → Touren → Touren heute“; die eigene steht oben. Mit den Knöpfen darüber
+    eines Tages stehen unter „Touren → Touren heute“; die eigene steht oben. Mit den Knöpfen darüber
     geht es zum Vortag oder zum nächsten Tag.</li>
   <li>„Tour öffnen“ zeigt die Stationen der Reihe nach, je Station eine Karte mit Anschrift, Abholzeit, Anfahrt und
     Telefon (antippen zum Anrufen).</li>
@@ -76,15 +76,15 @@
 {% if "touren.fahrten" in rechte %}
 <h3>Fahrtenbuch</h3>
 <ul>
-  <li>Unter „Dienstpläne → Touren → Fahrtenbuch“ stehen alle Fahrten: Tag, Tour, Fahrzeug, Besetzung, Kilometerstand bei
+  <li>Unter „Touren → Fahrtenbuch“ stehen alle Fahrten: Tag, Tour, Fahrzeug, Besetzung, Kilometerstand bei
     Abfahrt und Ankunft, gefahrene Kilometer und die Zeit. Über der Liste steht die <strong>Summe der Kilometer</strong>
     der gefilterten Fahrten.</li>
   <li>Filter nach Fahrzeug, Zeitraum und „ohne Kilometerstand bei Ankunft“ (die Tour wurde nicht beendet). „Als CSV“
     lädt die gefilterte Liste herunter, z. B. als Fahrtenbuch eines Fahrzeugs für einen Monat.</li>
   <li><strong>„Berichtigen“</strong> ändert Fahrzeug und Kilometerstände einer Fahrt oder trägt den fehlenden Stand
     nach. In der Liste steht dann, wer berichtigt hat.</li>
-  <li>Die <strong>Fahrzeuge</strong> legt der Admin unter „Einstellungen → Dienstpläne → Touren: Lieferscheine,
-    Warengruppen, Fahrzeuge“ an. Ohne Fahrzeuge wird beim Beginn nur der Kilometerstand gefragt.
+  <li>Die <strong>Fahrzeuge</strong> legen Sie unter „Touren → Einrichten: Warengruppen, Fahrzeuge, Zentrale“ an
+    (wer Touren planen darf). Ohne Fahrzeuge wird beim Beginn nur der Kilometerstand gefragt.
     Zu jedem Fahrzeug steht dort der <strong>Kilometerstand</strong>: Tragen Sie den Anfangsstand ein. bintafeln
     schreibt ihn mit jeder Fahrt fort und schlägt ihn bei „Fahrt beginnen“ vor; wurde das Fahrzeug anderweitig gefahren,
     ändern Sie ihn dort.</li>
@@ -94,7 +94,7 @@
 {% endif %}
 {% if "touren.planen" in rechte %}
 <h3>Touren planen</h3>
-<p>Unter „Einstellungen → Dienstpläne → Touren: Stationsfolgen und kurzfristige Touren“. Es gibt drei Arten:</p>
+<p>Unter „Touren → Touren planen“. Es gibt drei Arten:</p>
 <ul>
   <li><strong>Tour aus dem Fahrerplan:</strong> bei „Tour im Fahrerplan“ die Tour des Fahrdienstes wählen. Fahrtage und
     Besetzung (mit Ersatz und Ausfällen) kommen dann von dort; hier legen Sie nur die Stationen fest.
@@ -152,29 +152,38 @@
 {% if "touren.lieferscheine" in rechte %}
 <h3>Lieferscheine im Büro</h3>
 <ul>
-  <li>„Dienstpläne → Touren → Lieferscheine“: alle Lieferscheine, neueste zuerst, mit Mengen, wer unterschrieben hat
+  <li>„Touren → Lieferscheine“: alle Lieferscheine, neueste zuerst, mit Mengen, wer unterschrieben hat
     und ob sie verschickt sind. Die Nummer öffnet das PDF.</li>
   <li>Filter „nicht verschickt“ zeigt, was noch offen ist. „Senden“ bzw. „Erneut senden“ schickt das PDF an die
     E-Mail-Adresse der Station (vorher dort eintragen, falls sie fehlte).</li>
   <li>Der Lieferschein geht nur an die Station; in bintafeln bleibt er gespeichert. 🗑 legt ihn in den Papierkorb.</li>
 </ul>
 {% endif %}
-{% if "einstellungen.touren" in rechte %}
-<h3>Lieferscheine einstellen</h3>
+{% if "touren.planen" in rechte %}
+<h3>Touren einrichten</h3>
+<p>„Touren → Einrichten: Warengruppen, Fahrzeuge, Zentrale“ – für alle, die Touren planen. Sie müssen dafür nicht in
+  die Einstellungen wechseln.</p>
 <ul>
-  <li>„Einstellungen → Dienstpläne → Touren: Lieferscheine und Warengruppen“: Lieferscheine ganz ein- oder
-    ausschalten, den Text der E-Mail an die Station und die Aufbewahrungszeit in Jahren (Vorgabe 10); danach werden
-    Lieferscheine automatisch gelöscht.</li>
+  <li><strong>Start und Ziel der Touren (Zentrale):</strong> die Anschrift, an der die Touren beginnen und enden. Leer =
+    die Anschrift der Tafel. Enden Ihre Touren nicht an der Zentrale, haken Sie das an.</li>
+  <li><strong>Text der E-Mail an die Station:</strong> steht in der Mail, mit der ein Lieferschein verschickt wird.</li>
   <li><strong>Warengruppen:</strong> Name, Reihenfolge und „Aktiv“. Ausgeschaltete erscheinen nicht mehr auf neuen
     Lieferscheinen.</li>
+  <li><strong>Fahrzeuge:</strong> Name, Kennzeichen, Kilometerstand, Reihenfolge und „Aktiv“.</li>
+</ul>
+{% endif %}
+{% if "einstellungen.touren" in rechte %}
+<h3>Einstellungen des Admins: Mailversand, Karte, Aufbewahrung</h3>
+<p>„Einstellungen → Touren → Mailversand, Karte und Aufbewahrung“. Hier steht nur, was der Admin entscheidet.</p>
+<ul>
+  <li>Lieferscheine ganz ein- oder ausschalten und die Aufbewahrungszeit in Jahren (Vorgabe 10); danach werden
+    Lieferscheine automatisch gelöscht.</li>
   <li><strong>Lieferscheine per E-Mail verschicken</strong>: „ausgeschaltet“ (Vorgabe) speichert die Lieferscheine nur.
     „Zum Test“ schickt jeden Lieferschein nur an die <strong>Test-Adresse</strong>, die Sie dort eintragen – keine
     Station bekommt Post; im Betreff steht „[Test]“ und im Text, an wen die Mail sonst gegangen wäre. „An die Station“
     verschickt richtig. Lieferscheine aus der Zeit davor stehen in der Liste als „nicht verschickt“ und lassen sich
     dort mit „Senden“ nachschicken.</li>
-<li><strong>Start und Ziel der Touren (Zentrale):</strong> die Anschrift, an der die Touren beginnen und enden. Leer =
-    die Anschrift der Tafel. Enden Ihre Touren nicht an der Zentrale, haken Sie das an.</li>
-  <li><strong>Google-Schlüssel für die Karte:</strong> In der Google-Cloud (console.cloud.google.com) ein Projekt
+<li><strong>Google-Schlüssel für die Karte:</strong> In der Google-Cloud (console.cloud.google.com) ein Projekt
     anlegen, die <em>Maps Embed API</em> einschalten und unter „Anmeldedaten“ einen API-Schlüssel erstellen. Den
     Schlüssel am besten auf die Adresse Ihrer bintafeln-Installation („HTTP-Verweis-URLs“) und auf die Maps Embed API
     beschränken. Die Maps Embed API ist bei Google kostenlos. Den Schlüssel hier eintragen; er wird verschlüsselt
@@ -188,7 +197,7 @@
 {% if "touren.stationen" in rechte %}
 <h3>Stationen finden und hinfahren</h3>
 <ul>
-  <li>Menü „Dienstpläne → Touren → Stationen“. Gefiltert wird nach Art und Stand (aktiv, nicht mehr angefahren,
+  <li>Menü „Touren → Stationen“. Gefiltert wird nach Art und Stand (aktiv, nicht mehr angefahren,
     alle); die Suche findet Name, Kette, Straße, Ort, Ortsteil und Kennung.</li>
   <li><strong>🧭 Navigation (Google Maps)</strong> öffnet Google Maps mit der Route zur Station – am Handy die App,
     am PC die Webseite. Die Anschrift geht erst beim Antippen an Google; bintafeln selbst schickt nichts dorthin.</li>

@@ -68,7 +68,17 @@ def menue(request) -> list[dict]:
 
     def dazu(ziel, eintraege, vorn=False):
         titel, _, abschnitt = ziel.partition("/")
-        liste = inhalt.setdefault(titel, {}).setdefault(abschnitt, [])
+        if titel not in inhalt:
+            # Ein Modul bringt einen eigenen Hauptbereich mit: Er steht nach den Dienstplänen
+            neu = {}
+            for name, abschnitte in inhalt.items():
+                neu[name] = abschnitte
+                if name == "Dienstpläne":
+                    neu[titel] = {}
+            neu.setdefault(titel, {})
+            inhalt.clear()
+            inhalt.update(neu)
+        liste = inhalt[titel].setdefault(abschnitt, [])
         if vorn:
             liste[:0] = eintraege
         else:

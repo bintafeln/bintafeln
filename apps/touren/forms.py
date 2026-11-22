@@ -210,12 +210,9 @@ class EinstellungenForm(forms.ModelForm):
 
     class Meta:
         model = TourenEinstellungen
-        fields = ["lieferscheine", "versand", "test_email", "mail_text", "aufbewahrung_jahre",
-                  "zentrale", "zentrale_aus", "eco_plattform", "eco_adresse"]  # fmt: skip
-        widgets = {
-            "mail_text": forms.Textarea(attrs={"rows": 5}),
-            "test_email": forms.EmailInput(attrs={"data-zeigen-bei": "versand=test"}),
-        }
+        fields = ["lieferscheine", "versand", "test_email", "aufbewahrung_jahre",
+                  "eco_plattform", "eco_adresse"]  # fmt: skip
+        widgets = {"test_email": forms.EmailInput(attrs={"data-zeigen-bei": "versand=test"})}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -245,6 +242,15 @@ class EinstellungenForm(forms.ModelForm):
         if daten.get("versand") == TourenEinstellungen.Versand.TEST and not daten.get("test_email"):
             self.add_error("test_email", "Für den Testbetrieb bitte eine Adresse eintragen.")
         return daten
+
+
+class EinrichtenForm(forms.ModelForm):
+    """Was die Fahrdienstleitung selbst einrichtet (Menü „Touren → Einrichten“)."""
+
+    class Meta:
+        model = TourenEinstellungen
+        fields = ["zentrale", "zentrale_aus", "mail_text"]
+        widgets = {"mail_text": forms.Textarea(attrs={"rows": 5})}
 
 
 FahrzeugFormSet = forms.modelformset_factory(

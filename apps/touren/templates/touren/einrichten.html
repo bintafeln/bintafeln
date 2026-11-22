@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block titel %}Touren einrichten{% endblock %}
+{% block inhalt %}
+<section class="karte">
+  <h1>Touren einrichten</h1>
+  <p class="hinweis">Zentrale, Warengruppen und Fahrzeuge.{% if darf_einstellen %} Mailversand, Karte und Aufbewahrung stehen unter <a href="{% url 'touren:einstellungen' %}">Einstellungen → Touren</a>.{% else %} Ob Lieferscheine per E-Mail verschickt werden, stellt der Admin ein.{% endif %}</p>
+  <form method="post" data-autosave>
+    {% csrf_token %}<input type="hidden" name="einrichten" value="1">
+    {% include "includes/formular.html" %}
+    <button type="submit" class="knopf">Speichern</button>
+  </form>
+</section>
+<section class="karte" id="warengruppen">
+  <h2>Warengruppen</h2>
+  <p class="hinweis">Die Zeilen des Lieferscheins, in dieser Reihenfolge (kleinste Zahl zuerst). Nicht mehr gebrauchte Warengruppen ausschalten; in schon ausgefüllten Lieferscheinen bleiben sie stehen.</p>
+  <form method="post" action="#warengruppen">
+    {% csrf_token %}<input type="hidden" name="warengruppen" value="1">
+    {{ gruppen.management_form }}
+    {% if gruppen.non_form_errors %}<p class="fehler">{{ gruppen.non_form_errors|join:" " }}</p>{% endif %}
+    <div class="tabelle-rahmen"><table class="tabelle" id="warengruppen-tabelle">
+      <thead><tr><th>Name</th><th>Reihenfolge</th><th>Aktiv</th></tr></thead>
+      <tbody>{% for f in gruppen %}
+        <tr>{{ f.id }}
+          <td data-titel="Name">{{ f.name }}{% if f.name.errors %}<small class="fehler">{{ f.name.errors|join:" " }}</small>{% endif %}</td>
+          <td data-titel="Reihenfolge">{{ f.reihenfolge }}</td>
+          <td data-titel="Aktiv">{{ f.aktiv }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    <p class="hinweis">Die leeren Zeilen unten sind für neue Warengruppen.</p>
+    <button type="submit" class="knopf">Warengruppen speichern</button>
+  </form>
+</section>
+<section class="karte" id="fahrzeuge">
+  <h2>Fahrzeuge</h2>
+  <p class="hinweis">Beim Beginn einer Fahrt wählen die Fahrer das Fahrzeug und tragen den Kilometerstand ein. Ohne Fahrzeuge hier wird nur der Kilometerstand gefragt. Der <strong>Kilometerstand</strong> wird bei „Fahrt beginnen“ vorgeschlagen und mit jeder Fahrt fortgeschrieben; tragen Sie hier den Anfangsstand ein und ändern Sie ihn, wenn das Fahrzeug anderweitig gefahren wurde. Nicht mehr gebrauchte Fahrzeuge ausschalten; im Fahrtenbuch bleiben sie stehen.</p>
+  <form method="post" action="#fahrzeuge">
+    {% csrf_token %}<input type="hidden" name="fahrzeuge" value="1">
+    {{ fahrzeuge.management_form }}
+    {% if fahrzeuge.non_form_errors %}<p class="fehler">{{ fahrzeuge.non_form_errors|join:" " }}</p>{% endif %}
+    <div class="tabelle-rahmen"><table class="tabelle" id="fahrzeuge-tabelle">
+      <thead><tr><th>Name</th><th>Kennzeichen</th><th>Kilometerstand</th><th>Reihenfolge</th><th>Aktiv</th></tr></thead>
+      <tbody>{% for f in fahrzeuge %}
+        <tr>{{ f.id }}
+          <td data-titel="Name">{{ f.name }}{% if f.name.errors %}<small class="fehler">{{ f.name.errors|join:" " }}</small>{% endif %}</td>
+          <td data-titel="Kennzeichen">{{ f.kennzeichen }}</td>
+          <td data-titel="Kilometerstand">{{ f.kilometerstand }}{% if f.kilometerstand.errors %}<small class="fehler">{{ f.kilometerstand.errors|join:" " }}</small>{% endif %}</td>
+          <td data-titel="Reihenfolge">{{ f.reihenfolge }}</td>
+          <td data-titel="Aktiv">{{ f.aktiv }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    <p class="hinweis">Die leeren Zeilen unten sind für neue Fahrzeuge.</p>
+    <button type="submit" class="knopf">Fahrzeuge speichern</button>
+  </form>
+</section>
+{% endblock %}
