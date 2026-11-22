@@ -64,8 +64,13 @@ def test_beginnen_und_beenden(lage):
     assert fahrt.km == 87 and fahrt.beendet_von == fritz and fahrt.dauer is not None
     with pytest.raises(fahrten.FahrtFehler, match="schon beendet"):
         fahrten.beenden(fahrt, fritz, "123500")
+    wagen.refresh_from_db()  # der Stand des Fahrzeugs wird mit jeder Fahrt fortgeschrieben
     assert fahrten.letzter_stand(wagen) == 123487 and fahrten.staende() == {wagen.pk: 123487}
     assert fahrten.letzter_stand(None) is None
+    # in den Einstellungen geändert (anderweitig gefahren): gilt als neuer Vorschlag
+    wagen.kilometerstand = 123900
+    wagen.save()
+    assert fahrten.staende() == {wagen.pk: 123900}
 
 
 def test_nur_wer_eingetragen_ist_oder_das_recht_hat(lage, recht_geben):
@@ -132,7 +137,8 @@ def test_fahrtenbuch_und_berichtigen(client, anmelden, benutzer_mit_rolle, lage)
     fahrten.beenden(fahrt, lage["fritz"], "160")
     gestern = timezone.localdate() - dt.timedelta(days=1)
     offen = Fahrt.objects.create(tour=None, tour_name="Alte Tour", datum=gestern, km_start=40,
-                                 begonnen_am=timezone.now(), begonnen_von_name="x")  # fmt: skip
+                                 begonnen_am=timezone.now() - dt.timedelta(days=1),
+                                 begonnen_von_name="x")  # fmt: skip
     anmelden(client, benutzer_mit_rolle("bernd", "Büro"))
     seite = client.get(reverse("touren:fahrten")).content.decode()
     assert "Südtour" in seite and "60 km" in seite and "zusammen <strong>60 km" in seite
@@ -151,6 +157,12 @@ def test_fahrtenbuch_und_berichtigen(client, anmelden, benutzer_mit_rolle, lage)
     offen.refresh_from_db()
     assert (offen.km, offen.fahrzeug, offen.berichtigt_von) == (55, wagen, "bernd")
     assert offen.beendet_am is not None
+    wagen.refresh_from_db()
+    assert wagen.kilometerstand == 160  # eine ältere Fahrt berichtigt: der Stand bleibt
+    client.post(reverse("touren:fahrt", args=[fahrt.pk]),
+                {"km_start": "100", "km_ende": "170", "fahrzeug": wagen.pk})  # fmt: skip
+    wagen.refresh_from_db()
+    assert wagen.kilometerstand == 170  # die letzte Fahrt bestimmt den Stand
 
 
 def test_einstellungen_fahrzeuge(admin_client):
@@ -159,10 +171,12 @@ def test_einstellungen_fahrzeuge(admin_client):
     daten = {"fahrzeuge": "1", "fz-TOTAL_FORMS": 2, "fz-INITIAL_FORMS": 0,
              "fz-MIN_NUM_FORMS": 0, "fz-MAX_NUM_FORMS": 1000,
              "fz-0-name": "Transporter", "fz-0-kennzeichen": "MU-ST 2", "fz-0-reihenfolge": "1",
+             "fz-0-kilometerstand": "45000",
              "fz-0-aktiv": "on", "fz-1-name": "", "fz-1-kennzeichen": "",
              "fz-1-reihenfolge": "0", "fz-1-aktiv": "on"}  # fmt: skip
     assert admin_client.post(reverse("touren:einstellungen"), daten).status_code == 302
-    assert str(Fahrzeug.objects.get()) == "Transporter (MU-ST 2)"
+    wagen = Fahrzeug.objects.get()
+    assert str(wagen) == "Transporter (MU-ST 2)" and wagen.kilometerstand == 45000
 
 
 def test_frist_und_auskunft(lage, pdf_text):

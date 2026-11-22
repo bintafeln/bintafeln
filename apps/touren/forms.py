@@ -142,7 +142,10 @@ class EinstellungenForm(forms.ModelForm):
 
 
 FahrzeugFormSet = forms.modelformset_factory(
-    Fahrzeug, fields=["name", "kennzeichen", "reihenfolge", "aktiv"], extra=2, can_delete=False
+    Fahrzeug,
+    fields=["name", "kennzeichen", "kilometerstand", "reihenfolge", "aktiv"],
+    extra=2,
+    can_delete=False,
 )
 WarengruppenFormSet = forms.modelformset_factory(
     Warengruppe, fields=["name", "reihenfolge", "aktiv"], extra=2, can_delete=False

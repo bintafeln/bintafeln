@@ -30,18 +30,20 @@ def heute(tour: Tour, datum: dt.date) -> Fahrt | None:
 
 
 def letzter_stand(fahrzeug: Fahrzeug | None) -> int | None:
-    """Der letzte bekannte Kilometerstand des Fahrzeugs – als Vorschlag für die Abfahrt."""
-    if fahrzeug is None:
-        return None
-    letzte = Fahrt.objects.filter(fahrzeug=fahrzeug).order_by("-begonnen_am").first()
-    if letzte is None:
-        return None
-    return letzte.km_ende if letzte.km_ende is not None else letzte.km_start
+    """Der aktuelle Kilometerstand des Fahrzeugs – als Vorschlag für die Abfahrt. Er steht am
+    Fahrzeug, wird mit jeder Fahrt fortgeschrieben und lässt sich in den Einstellungen ändern."""
+    return None if fahrzeug is None else fahrzeug.kilometerstand
 
 
 def staende() -> dict[int, int]:
-    """Letzter Kilometerstand je Fahrzeug (pk → Stand) für das Formular am Handy."""
-    return {f.pk: s for f in fahrzeuge() if (s := letzter_stand(f)) is not None}
+    """Kilometerstand je Fahrzeug (pk → Stand) für das Formular am Handy."""
+    return {f.pk: f.kilometerstand for f in fahrzeuge() if f.kilometerstand is not None}
+
+
+def _stand_merken(fahrzeug: Fahrzeug | None, km: int | None) -> None:
+    if fahrzeug is not None and km is not None and fahrzeug.kilometerstand != km:
+        fahrzeug.kilometerstand = km
+        fahrzeug.save(update_fields=["kilometerstand"])
 
 
 def zahl(wert) -> int:
@@ -84,7 +86,7 @@ def beginnen(tour: Tour, benutzer, km_start, fahrzeug_pk=None) -> Fahrt:
     wer = ", ".join(b["name"] for b in ablauf.besetzung(tour, datum) if not b["offen"])
     try:
         with transaction.atomic():
-            return Fahrt.objects.create(
+            fahrt = Fahrt.objects.create(
                 tour=tour, tour_name=tour.name, datum=datum, fahrzeug=fahrzeug,
                 fahrzeug_name=str(fahrzeug) if fahrzeug else "", besetzung=wer[:300],
                 km_start=km, begonnen_am=timezone.now(), begonnen_von=benutzer,
@@ -92,6 +94,8 @@ def beginnen(tour: Tour, benutzer, km_start, fahrzeug_pk=None) -> Fahrt:
             )  # fmt: skip
     except IntegrityError:  # zwei Handys gleichzeitig
         raise FahrtFehler("Die Fahrt ist schon begonnen.") from None
+    _stand_merken(fahrzeug, km)
+    return fahrt
 
 
 def beenden(fahrt: Fahrt, benutzer, km_ende) -> Fahrt:
@@ -104,6 +108,7 @@ def beenden(fahrt: Fahrt, benutzer, km_ende) -> Fahrt:
     fahrt.km_ende, fahrt.beendet_am = km, timezone.now()
     fahrt.beendet_von, fahrt.beendet_von_name = benutzer, _name(benutzer)
     fahrt.save()
+    _stand_merken(fahrt.fahrzeug, km)
     return fahrt
 
 
@@ -120,6 +125,12 @@ def berichtigen(fahrt: Fahrt, benutzer, km_start, km_ende, fahrzeug_pk=None) -> 
         fahrt.beendet_am = timezone.now()
     fahrt.berichtigt_von = _name(benutzer)
     fahrt.save()
+    if (
+        fahrzeug
+        and not Fahrt.objects.filter(fahrzeug=fahrzeug, begonnen_am__gt=fahrt.begonnen_am).exists()
+    ):
+        # die letzte Fahrt des Fahrzeugs bestimmt seinen Stand
+        _stand_merken(fahrzeug, ende_km if ende_km is not None else start_km)
     return fahrt
 
 

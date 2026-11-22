@@ -2187,17 +2187,15 @@ def test_fahrt_beginnen_und_beenden_am_handy(seite, angemeldet, admin):
                                      hausnummer="1", plz="12345", ort="Musterstadt")  # fmt: skip
     tour = Tour.objects.create(name="Tour 1")
     ablauf.halt_anhaengen(tour, station)
-    wagen = Fahrzeug.objects.create(name="Kühlwagen", kennzeichen="MU-ST 1")
+    wagen = Fahrzeug.objects.create(name="Kühlwagen", kennzeichen="MU-ST 1", kilometerstand=1000)
     Fahrzeug.objects.create(name="Transporter", reihenfolge=2)
-    Fahrt.objects.create(tour=None, tour_name="Gestern", datum=dt.date(2026, 1, 5), km_start=900,
-                         km_ende=1000, fahrzeug=wagen, begonnen_am=timezone.now())  # fmt: skip
     angemeldet(admin)
     seite.set_viewport_size({"width": 390, "height": 800})
     seite.goto(reverse("touren:fahren", args=[tour.pk]))
     stand = seite.get_by_label("Kilometerstand bei Abfahrt")
     expect(stand).to_have_value("")
     seite.get_by_label("Fahrzeug").select_option(label="Kühlwagen (MU-ST 1)")
-    expect(stand).to_have_value("1000")  # Vorschlag: letzter Stand dieses Fahrzeugs
+    expect(stand).to_have_value("1000")  # Vorschlag: der Stand dieses Fahrzeugs
     expect(seite.locator("#km-letzter")).to_contain_text("1000 km")
     seite.get_by_label("Fahrzeug").select_option(label="Transporter")
     expect(stand).to_have_value("")  # kein Stand bekannt, Vorschlag wieder weg
@@ -2210,6 +2208,8 @@ def test_fahrt_beginnen_und_beenden_am_handy(seite, angemeldet, admin):
     expect(seite.locator(".meldung").first).to_contain_text("46 km gefahren")
     fahrt = Fahrt.objects.get(tour=tour)
     assert (fahrt.km_start, fahrt.km_ende, fahrt.fahrzeug) == (1004, 1050, wagen)
+    wagen.refresh_from_db()
+    assert wagen.kilometerstand == 1050  # fortgeschrieben
 
 
 def test_lieferschein_am_handy_unterschreiben(seite, angemeldet, admin):

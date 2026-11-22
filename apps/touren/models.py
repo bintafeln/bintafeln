@@ -223,6 +223,11 @@ class Fahrzeug(models.Model):
     name = models.CharField("Name", max_length=60, unique=True,
                             help_text="z. B. „Kühlwagen“ oder „Transporter 2“")  # fmt: skip
     kennzeichen = models.CharField("Kennzeichen", max_length=15, blank=True)
+    kilometerstand = models.PositiveIntegerField(
+        "Kilometerstand", null=True, blank=True, validators=[MaxValueValidator(9_999_999)],
+        help_text="Der aktuelle Stand. Er wird bei „Fahrt beginnen“ vorgeschlagen und mit jeder "
+        "Fahrt fortgeschrieben; hier ändern, wenn das Fahrzeug anderweitig gefahren wurde.",
+    )  # fmt: skip
     reihenfolge = models.PositiveSmallIntegerField("Reihenfolge", default=0)
     aktiv = models.BooleanField("Aktiv", default=True)
 

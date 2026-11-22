@@ -15,8 +15,10 @@ Dauer) und für ein Fahrtenbuch je Fahrzeug fehlen die Daten.
   Differenz. bintafeln schlägt den letzten bekannten Stand des Fahrzeugs vor
   (`static/js/fahrt_km.js`) und weist offensichtliche Tippfehler zurück (Ankunft kleiner als
   Abfahrt, mehr als 1500 km an einem Tag).
-- **Fahrzeugliste** (`touren.Fahrzeug`, Name, Kennzeichen, aktiv) in den Einstellungen der
-  Touren. Gibt es aktive Fahrzeuge, ist die Wahl Pflicht; ohne Liste wird nur der
+- **Fahrzeugliste** (`touren.Fahrzeug`, Name, Kennzeichen, Kilometerstand, aktiv) in den
+  Einstellungen der Touren. Der Kilometerstand des Fahrzeugs ist der Vorschlag bei „Fahrt
+  beginnen“; er wird mit jeder Fahrt fortgeschrieben und lässt sich dort ändern (Anfangsstand,
+  oder wenn das Fahrzeug anderweitig gefahren wurde). Gibt es aktive Fahrzeuge, ist die Wahl Pflicht; ohne Liste wird nur der
   Kilometerstand gefragt.
 - **Kein Ort wird geprüft.** Beendet wird, wo das Fahrzeug stehen bleibt – bei vielen Tafeln an
   der Zentrale, bei anderen am Lager oder an einer Ausgabestelle.

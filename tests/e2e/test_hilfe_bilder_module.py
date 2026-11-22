@@ -1133,6 +1133,7 @@ def test_hilfe_bild_touren_fahrt(angemeldet, admin, muster):
     beispiel.anlegen(seed=1)
     demo_daten.touren()
     wagen, transporter = Fahrzeug.objects.order_by("reihenfolge")
+    Fahrzeug.objects.filter(pk=wagen.pk).update(kilometerstand=48272)
     tour = Tour.objects.create(name="Sonderfahrt Lager", datum=timezone.localdate())
     for nr, (name, km, weg, f) in enumerate(
         [("Nordtour", 48210, 62, wagen), ("Südtour", 91340, 47, transporter),
