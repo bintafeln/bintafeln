@@ -394,7 +394,7 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   `apps/dienstplan/plan.py`, `Helfer` mit oder ohne Konto). Telegram für beide: `apps/core/telegram.py`.
   `touren` (ADR 0147, Stationen der Abholtouren als eigene Liste `Station`, nicht das Adressbuch;
   Import nach `docs/importformat-touren.md` in `apps/touren/importieren.py` – Kennung entscheidet;
-  Marktliste/Lieferadressen im Exportformat der eco-platform schreibt `listen_einlesen.py` vorher um,
+  Marktliste/Lieferadressen im Exportformat der ECO-Plattform schreibt `listen_einlesen.py` vorher um,
   leere Zellen ändern nichts, nie löschen; einmaliges Übertragen ins Adressbuch in
   `apps/touren/adressbuch.py`; Navigation nur als Link zu Google Maps über `Station.navigation`,
   kein API-Schlüssel, keine Karte. Abholtouren (ADR 0148): `touren.Tour` = Stationsfolge über
