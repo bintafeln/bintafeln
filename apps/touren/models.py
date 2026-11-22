@@ -385,6 +385,11 @@ class Zusatzstopp(models.Model):
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
         related_name="+")  # fmt: skip
     angelegt_von_name = models.CharField("Eingetragen von", max_length=150, blank=True)
+    # Vom Büro eingefügt (nicht von der Mannschaft selbst): Die Mannschaft bekommt eine Nachricht
+    # und bestätigt, dass sie den Stopp gesehen hat (ADR 0159).
+    vom_buero = models.BooleanField("Vom Büro eingefügt", default=False)
+    gesehen_am = models.DateTimeField("Gesehen am", null=True, blank=True)
+    gesehen_von_name = models.CharField("Gesehen von", max_length=150, blank=True)
 
     class Meta:
         verbose_name = "Zusatzstopp"

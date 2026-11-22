@@ -2349,3 +2349,20 @@ h1 .eule, h2 .eule { width: 2.2rem; height: 2.2rem; margin-right: .25rem; }
 .tour-frage { font-size: 1.35rem; font-weight: 600; margin: 1rem 0; }
 .tour-aendern { margin-top: 1.25rem; }
 .tour-aendern summary { cursor: pointer; padding: .5rem 0; }
+
+/* Neuer Stopp vom Büro: roter Brief über der Seite (static/js/heuler.js, ADR 0159) */
+.heuler-dialog { width: min(30rem, 92vw); border: 4px solid var(--fehler); border-radius: .8rem; padding: 1.2rem;
+  text-align: center; animation: heuler-ruetteln .45s ease-in-out 3; }
+.heuler-dialog::backdrop { background: rgba(120, 0, 0, .6); }
+.heuler-dialog h2 { margin: .4rem 0 .6rem; color: var(--fehler); }
+.heuler-umschlag svg { animation: heuler-pochen .7s ease-in-out infinite alternate; }
+.heuler-papier { fill: #c62828; stroke: #7f1010; stroke-width: 2; }
+.heuler-klappe { fill: none; stroke: #7f1010; stroke-width: 2.5; stroke-linejoin: round; }
+.heuler-siegel { fill: #f6c445; stroke: #7f1010; stroke-width: 1.5; }
+.heuler-station { font-size: 1.2rem; margin: .4rem 0; }
+.heuler-hinweis { font-size: 1.1rem; font-weight: 600; background: var(--grund); border-radius: var(--radius); padding: .5rem .7rem; }
+.heuler-dialog .knopf { width: 100%; min-height: 3.2rem; font-size: 1.15rem; }
+@keyframes heuler-ruetteln { 0%, 100% { transform: translateX(0) rotate(0); } 20% { transform: translateX(-8px) rotate(-1.5deg); }
+  40% { transform: translateX(8px) rotate(1.5deg); } 60% { transform: translateX(-6px) rotate(-1deg); } 80% { transform: translateX(6px) rotate(1deg); } }
+@keyframes heuler-pochen { from { transform: scale(1); } to { transform: scale(1.12); } }
+@media (prefers-reduced-motion: reduce) { .heuler-dialog, .heuler-umschlag svg { animation: none; } }

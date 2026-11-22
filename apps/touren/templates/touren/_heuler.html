@@ -1,0 +1,11 @@
+<span id="tour-heuler" hidden hx-get="{% url 'touren:heuler' %}" hx-trigger="every 30s" hx-swap="outerHTML">{% if stopp %}
+<template class="heuler-brief" data-schluessel="{{ stopp.pk }}">
+  <div class="heuler-umschlag" aria-hidden="true"><svg viewBox="0 0 64 44" width="96" height="66"><rect x="2" y="2" width="60" height="40" rx="4" class="heuler-papier"/><path d="M2 6 32 26 62 6" class="heuler-klappe"/><circle cx="32" cy="27" r="6" class="heuler-siegel"/></svg></div>
+  <h2>Neuer Stopp für die Tour {{ stopp.tour.name }}</h2>
+  <p class="heuler-station"><strong>{{ stopp.station.name }}</strong><br>{{ stopp.station.strasse_hausnummer }}, {{ stopp.station.plz }} {{ stopp.station.ort }}</p>
+  {% if stopp.hinweis %}<p class="heuler-hinweis">{{ stopp.hinweis }}</p>{% endif %}
+  <p class="hinweis">eingefügt {{ stopp.angelegt_am|date:"H:i" }} Uhr von {{ stopp.angelegt_von_name }}{% if weitere %} · danach noch {{ weitere }} weitere{{ weitere|pluralize:"r," }}{% endif %}</p>
+  <form method="post" action="{% url 'touren:heuler_gesehen' stopp.pk %}">{% csrf_token %}
+    <button type="submit" class="knopf tour-knopf">✓ Gesehen – zur Tour</button>
+  </form>
+</template>{% endif %}</span>

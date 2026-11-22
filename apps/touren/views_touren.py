@@ -18,6 +18,7 @@ from apps.touren import (
     ablauf,
     anfahrten,
     fahrten,
+    heuler,
     importieren_touren,
     lieferscheine,
     suche,
@@ -170,6 +171,27 @@ def zusatzstopp_weg(request, pk):
                         recht="touren.planen")  # fmt: skip
     messages.success(request, f"Zusatzstopp „{stopp.station.name}“ entfernt.")
     return redirect(ziel)
+
+
+@never_cache
+@fahren_recht
+def heuler_stand(request):
+    """Für die Kopfzeile: der älteste neue Stopp vom Büro, den noch niemand bestätigt hat."""
+    offen = heuler.offene(request.user)
+    inhalt = {"stopp": offen[0] if offen else None, "weitere": max(len(offen) - 1, 0)}
+    return render(request, "touren/_heuler.html", inhalt)
+
+
+@require_POST
+@fahren_recht
+def heuler_gesehen(request, pk):
+    from apps.touren.models import Zusatzstopp
+
+    stopp = get_object_or_404(Zusatzstopp.objects.select_related("tour"), pk=pk)
+    if not heuler.gesehen(stopp, request.user):
+        messages.error(request, "Diesen Stopp kann nur die Mannschaft der Tour bestätigen.")
+        return redirect("touren:heute")
+    return redirect(f"{heuler.adresse(stopp)}#zusatz-{stopp.pk}")
 
 
 @require_POST

@@ -43,7 +43,7 @@
     <div class="tour-halt-kopf"><span class="tour-nr" aria-hidden="true">{% if h.angefahren %}✓{% else %}{{ forloop.counter }}{% endif %}</span>
       <div><h2>{{ s.name }}{% if h.zusatz %} <span class="marke-warnung">Zusatzstopp</span>{% endif %}</h2>
         <address>{{ s.strasse_hausnummer }}, {{ s.plz }} {{ s.ort }}{% if s.ortsteil %} ({{ s.ortsteil }}){% endif %}</address></div></div>
-    {% if h.zusatz %}<div class="notiz tour-zusatz"><p class="notiz-text">{% if h.zusatz.hinweis %}<strong>{{ h.zusatz.hinweis }}</strong><br>{% endif %}<small class="leise">eingefügt {{ h.zusatz.angelegt_am|date:"H:i" }} Uhr von {{ h.zusatz.angelegt_von_name }}</small></p>
+    {% if h.zusatz %}<div class="notiz tour-zusatz" id="zusatz-{{ h.zusatz.pk }}"><p class="notiz-text">{% if h.zusatz.hinweis %}<strong>{{ h.zusatz.hinweis }}</strong><br>{% endif %}<small class="leise">eingefügt {{ h.zusatz.angelegt_am|date:"H:i" }} Uhr von {{ h.zusatz.angelegt_von_name }}{% if h.zusatz.vom_buero %} · {% if h.zusatz.gesehen_am %}gesehen {{ h.zusatz.gesehen_am|date:"H:i" }} Uhr von {{ h.zusatz.gesehen_von_name }}{% else %}<span class="marke-warnung">von der Mannschaft noch nicht gesehen</span>{% endif %}{% endif %}</small></p>
       {% if darf_zusatz %}<form method="post" action="{% url 'touren:zusatzstopp_weg' h.zusatz.pk %}" onsubmit="return confirm('Zusatzstopp „{{ s.name|escapejs }}“ entfernen?')">{% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig knopf-klein">Zusatzstopp entfernen</button></form>{% endif %}</div>{% endif %}
     {% if s.abholzeit %}<p><strong>Abholzeit:</strong> {{ s.abholzeit }}</p>{% endif %}
     {% if s.anfahrt %}<div class="notiz"><p class="notiz-text"><strong>Anfahrt:</strong> {{ s.anfahrt|linebreaksbr }}</p></div>{% endif %}

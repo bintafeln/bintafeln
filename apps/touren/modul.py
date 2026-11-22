@@ -209,6 +209,7 @@ MODUL = Modul(
     suchen=suchen,
     datenimport=datenimport,
     startseite=startseite,
+    kopfzeile="touren/_heuler_platz.html",
     fristen=fristen,
     auskunft_mitarbeiter=auskunft_mitarbeiter,
     sicherung_bereich="mitarbeitende",

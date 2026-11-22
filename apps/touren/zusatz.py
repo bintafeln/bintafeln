@@ -9,7 +9,7 @@ import datetime as dt
 
 from django.utils import timezone
 
-from apps.touren import ablauf, anfahrten, start
+from apps.touren import ablauf, anfahrten, heuler, start
 from apps.touren.models import Station, Tour, Zusatzstopp
 
 
@@ -50,11 +50,14 @@ def einfuegen(tour: Tour, datum: dt.date, benutzer, station: Station, hinweis: s
     stelle = len(halte) if am_ende else naechste_stelle(tour, datum)
     # gezählt wird in festen Stationen, damit die Stelle stabil bleibt, wenn weitere dazukommen
     vorher = sum(1 for h in halte[:stelle] if h.zusatz is None)
-    return Zusatzstopp.objects.create(
+    stopp = Zusatzstopp.objects.create(
         tour=tour, datum=datum, station=station, nach=vorher,
         hinweis=" ".join((hinweis or "").split())[:300], angelegt_von=benutzer,
         angelegt_von_name=(benutzer.get_full_name() or benutzer.get_username())[:150],
+        vom_buero=not ablauf.faehrt_mit(tour, datum, ablauf.person_von(benutzer)),
     )  # fmt: skip
+    heuler.melden(stopp)
+    return stopp
 
 
 def fristen_anwenden(heute: dt.date | None = None) -> int:
