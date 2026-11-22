@@ -2209,6 +2209,9 @@ def test_fahrt_beginnen_und_beenden_am_handy(seite, angemeldet, admin):
     expect(stand).to_have_value("1004")
     seite.get_by_role("button", name="Fahrt beginnen").click()
     expect(seite.locator("section.karte").first).to_contain_text("Unterwegs")
+    # unterwegs nur ein Link; die Felder klappen auf
+    expect(seite.get_by_label("Kilometerstand bei Ankunft")).to_be_hidden()
+    seite.locator("summary", has_text="Tour vorzeitig beenden").click()
     seite.get_by_label("Kilometerstand bei Ankunft").fill("1050")
     seite.get_by_role("button", name="Tour beenden").click()
     expect(seite.locator(".meldung").first).to_contain_text("46 km gefahren")

@@ -1,0 +1,10 @@
+<form method="post" action="{% url 'touren:fahrt_beenden' fahrt.pk %}">{% csrf_token %}
+  <div class="feld"><label for="km_ende">Kilometerstand bei Ankunft</label>
+    <input type="text" inputmode="numeric" pattern="[0-9 .]*" name="km_ende" id="km_ende" required autocomplete="off"></div>
+  <details class="tour-aendern">
+    <summary>Etwas zum Fahrzeug melden (Defekt, getankt …)</summary>
+    {% include "touren/_meldung_felder.html" %}
+    <p class="hinweis">Geht mit „Tour beenden“ an die Fahrdienstleitung.</p>
+  </details>
+  <button type="submit" class="knopf tour-knopf">Tour beenden</button>
+</form>
