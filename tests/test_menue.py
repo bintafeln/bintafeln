@@ -47,13 +47,21 @@ def test_vertraege_und_zeiten_eigenstaendig_ohne_verwaltung(benutzer_mit_rolle):
 
 def test_admin_sieht_alle_untermenues(admin):
     gruppen = titel(einstellungen(admin))
-    assert list(gruppen) == ["Tafel", "Kunden", "Ausgabe", "Verein", "Team",
+    # dieselbe Reihenfolge wie die Bereiche des Menüs darüber (Ausgabestelle … Auswertungen)
+    assert list(gruppen) == ["Tafel", "Ausgabe", "Kunden", "Verein", "Team",
                              "Auswertungen", "Protokolle", "Systemsteuerung"]  # fmt: skip
     assert "Rollen und Rechte" in gruppen["Team"]
     assert "Statistik" in gruppen["Auswertungen"]
     assert gruppen["Protokolle"] == ["Änderungsprotokoll", "Anmeldeprotokoll"]
     assert "Kundengruppen" in gruppen["Kunden"] and "Sicherungen" in gruppen["Systemsteuerung"]
     assert "Monitore" not in gruppen  # Modul aus: die Gruppe erscheint gar nicht
+    # mit Modulen: Dienstpläne und Touren stehen wie im Menü zwischen Ausgabe und Kunden
+    t = TafelEinstellungen.laden()
+    t.module = ["touren", "fahrdienst", "aushang"]
+    t.save()
+    gruppen = list(titel(einstellungen(admin)))
+    assert gruppen[:5] == ["Tafel", "Ausgabe", "Dienstpläne", "Touren", "Kunden"]
+    assert gruppen[-3:] == ["Monitore", "Protokolle", "Systemsteuerung"]
 
 
 def test_modul_haengt_sich_ins_passende_untermenue(admin):
