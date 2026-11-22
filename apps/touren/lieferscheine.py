@@ -20,6 +20,8 @@ from apps.touren import vordruck
 from apps.touren.models import Lieferschein, Position, Station, TourenEinstellungen, Warengruppe
 
 MAX_UNTERSCHRIFT = 400_000  # Bytes der PNG-Datei aus dem Unterschriftsfeld
+MAX_KANTE = 6000  # Pixel; größere Bilder kommen nicht aus dem Unterschriftsfeld
+UNTERSCHRIFT_GROESSE = (2000, 1000)  # darauf wird ein größeres Bild verkleinert
 MAX_MENGE = Decimal("9999.9")
 
 
@@ -57,9 +59,12 @@ def unterschrift_lesen(wert: str) -> bytes:
         bild.load()
     except (UnidentifiedImageError, OSError, ValueError):
         raise LieferscheinFehler("Die Unterschrift konnte nicht gelesen werden.") from None
-    if bild.format != "PNG" or bild.width > 2000 or bild.height > 1000:
+    if bild.format != "PNG" or bild.width > MAX_KANTE or bild.height > MAX_KANTE:
         raise LieferscheinFehler("Die Unterschrift konnte nicht gelesen werden.")
     bild = bild.convert("RGBA")
+    # Große Bildschirme (ein großes Tablet quer) liefern ein breiteres Bild, als der Lieferschein
+    # braucht: verkleinern statt ablehnen
+    bild.thumbnail(UNTERSCHRIFT_GROESSE)
     if bild.getchannel("A").getextrema()[1] == 0:
         raise LieferscheinFehler("Bitte im Feld unterschreiben.")
     # auf Weiß legen und neu speichern: keine Metadaten, im PDF gut lesbar

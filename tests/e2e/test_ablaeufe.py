@@ -2397,6 +2397,13 @@ def test_lieferschein_am_handy_unterschreiben(seite, angemeldet, admin):
     # löschen leert das Feld, danach neu unterschreiben
     seite.get_by_role("button", name="Unterschrift löschen").click()
     expect(seite.locator("#unterschrift")).to_have_value("")
+    # auf einem sehr breiten Bildschirm wird das Bild nicht breiter als nötig
+    alt = seite.viewport_size
+    seite.set_viewport_size({"width": 2600, "height": alt["height"]})
+    expect(flaeche).to_have_js_property("width", 1600)
+    seite.set_viewport_size(alt)
+    flaeche.scroll_into_view_if_needed()
+    kasten = flaeche.bounding_box()
     seite.mouse.move(kasten["x"] + 30, kasten["y"] + 60)
     seite.mouse.down()
     seite.mouse.move(kasten["x"] + 200, kasten["y"] + 90, steps=8)

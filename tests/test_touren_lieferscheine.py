@@ -86,6 +86,19 @@ def test_positionen_lesen():
             lieferscheine.positionen_lesen(falsch)
 
 
+def test_unterschrift_vom_grossen_bildschirm_wird_verkleinert():
+    """Ein großes Tablet quer liefert ein Bild, das breiter als 2000 Pixel ist. Es wird
+    verkleinert und nicht abgelehnt."""
+    bild = Image.new("RGBA", (2040, 352), (0, 0, 0, 0))
+    ImageDraw.Draw(bild).line([(100, 100), (1900, 250)], fill=(17, 17, 17, 255), width=6)
+    puffer = io.BytesIO()
+    bild.save(puffer, "PNG")
+    wert = "data:image/png;base64," + base64.b64encode(puffer.getvalue()).decode()
+    fertig = Image.open(io.BytesIO(lieferscheine.unterschrift_lesen(wert)))
+    assert fertig.width == 2000
+    assert fertig.convert("L").getextrema()[0] < 200  # der Strich ist noch da
+
+
 def test_unterschrift_lesen():
     assert lieferscheine.unterschrift_lesen(unterschrift()).startswith(b"\x89PNG")
     for falsch in ("", unterschrift(leer=True), "data:image/png;base64,###",
