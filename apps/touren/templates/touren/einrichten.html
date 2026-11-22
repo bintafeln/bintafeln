@@ -12,17 +12,18 @@
 </section>
 <section class="karte" id="warengruppen">
   <h2>Warengruppen</h2>
-  <p class="hinweis">Die Zeilen des Lieferscheins, in dieser Reihenfolge (kleinste Zahl zuerst). Nicht mehr gebrauchte Warengruppen ausschalten; in schon ausgefüllten Lieferscheinen bleiben sie stehen.</p>
+  <p class="hinweis">Die Zeilen des Lieferscheins, in dieser Reihenfolge (kleinste Zahl zuerst). „kg je Kiste“ ist für die Statistik (leer = der allgemeine Wert oben). Nicht mehr gebrauchte Warengruppen ausschalten; in schon ausgefüllten Lieferscheinen bleiben sie stehen.</p>
   <form method="post" action="#warengruppen">
     {% csrf_token %}<input type="hidden" name="warengruppen" value="1">
     {{ gruppen.management_form }}
     {% if gruppen.non_form_errors %}<p class="fehler">{{ gruppen.non_form_errors|join:" " }}</p>{% endif %}
     <div class="tabelle-rahmen"><table class="tabelle" id="warengruppen-tabelle">
-      <thead><tr><th>Name</th><th>Reihenfolge</th><th>Aktiv</th></tr></thead>
+      <thead><tr><th>Name</th><th>Reihenfolge</th><th>kg je Kiste</th><th>Aktiv</th></tr></thead>
       <tbody>{% for f in gruppen %}
         <tr>{{ f.id }}
           <td data-titel="Name">{{ f.name }}{% if f.name.errors %}<small class="fehler">{{ f.name.errors|join:" " }}</small>{% endif %}</td>
           <td data-titel="Reihenfolge">{{ f.reihenfolge }}</td>
+          <td data-titel="kg je Kiste">{{ f.kiste_kg }}{% if f.kiste_kg.errors %}<small class="fehler">{{ f.kiste_kg.errors|join:" " }}</small>{% endif %}</td>
           <td data-titel="Aktiv">{{ f.aktiv }}</td></tr>
       {% endfor %}</tbody>
     </table></div>

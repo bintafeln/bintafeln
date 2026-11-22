@@ -1301,6 +1301,55 @@ def test_hilfe_bild_touren_zusatzstopp(angemeldet, admin, muster):
     seite.set_viewport_size({"width": 1280, "height": 900})
 
 
+def test_hilfe_bild_touren_statistik(angemeldet, admin, muster):
+    """Statistik der Touren mit erfundenen Lieferscheinen und Fahrten (ADR 0157)."""
+    import random
+    from decimal import Decimal
+
+    from apps.core import demo_daten
+    from apps.touren.models import Fahrt, Fahrzeug, Lieferschein, Position, Station, Tour
+
+    _module("touren")
+    demo_daten.touren()
+    zufall = random.Random(7)  # noqa: S311
+    jahr = timezone.localdate().year
+    stationen = list(Station.objects.order_by("kennung")[:6])
+    wagen = Fahrzeug.objects.order_by("reihenfolge").first() or Fahrzeug.objects.create(
+        name="Kühlwagen")  # fmt: skip
+    touren = [Tour.objects.create(name=n) for n in ("Nordtour", "Südtour")]
+    nummer = 0
+    for monat in range(1, timezone.localdate().month + 1):
+        for woche in range(4):
+            tag = dt.date(jahr, monat, 2 + woche * 6)
+            tour = touren[woche % 2]
+            beginn = timezone.make_aware(dt.datetime.combine(tag, dt.time(7, 30)))
+            km = zufall.randint(40, 75)
+            Fahrt.objects.create(
+                tour=None, tour_name=tour.name, datum=tag, fahrzeug=wagen,
+                fahrzeug_name=str(wagen), km_start=1000, km_ende=1000 + km, begonnen_am=beginn,
+                beendet_am=beginn + dt.timedelta(hours=3, minutes=zufall.randint(0, 50)),
+                beendet_von_name="Ina Kurz")  # fmt: skip
+            for s in zufall.sample(stationen, 3):
+                nummer += 1
+                ls = Lieferschein.objects.create(
+                    nummer=nummer, station=s, station_name=s.name, tour_name=tour.name, datum=tag,
+                    unterschrieben_von="Ina Kurz")  # fmt: skip
+                for gruppe in zufall.sample(["Obst/Gemüse", "Backwaren", "Molkereiprodukte"], 2):
+                    Position.objects.create(lieferschein=ls, warengruppe=gruppe,
+                                            menge=Decimal(zufall.randint(2, 14)),
+                                            einheit="kisten")  # fmt: skip
+    seite = oeffnen(angemeldet, admin, reverse("touren:statistik"))
+    aufnehmen(
+        seite,
+        "touren-statistik",
+        [seite.locator("section.karte").first, seite.locator(".statistik-abschnitt").nth(1)],
+        Marke(seite.locator("#jahr"), art="rahmen", nummer=1),
+        Marke(seite.locator("#touren-kennzahlen"), art="rahmen", nummer=2),
+        Marke(seite.locator(".statistik-abschnitt").first, art="rahmen", nummer=3),
+        rand=8,
+    )
+
+
 def test_hilfe_bild_touren_lieferschein(angemeldet, admin, muster):
     from apps.core import demo_daten
     from apps.touren.models import Station

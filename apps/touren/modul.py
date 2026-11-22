@@ -18,6 +18,7 @@ def menue(eintrag):
             ("touren.lieferscheine", eintrag("Lieferscheine", "touren:lieferscheine")),
             ("touren.fahrten", eintrag("Fahrtenbuch", "touren:fahrten", genau=True)),
             ("touren.fahrten", eintrag("Meldungen zum Fahrzeug", "touren:meldungen")),
+            ("touren.statistik", eintrag("Statistik", "touren:statistik")),
             ("touren.planen", eintrag("Einrichten: Warengruppen, Fahrzeuge, Zentrale",
                                       "touren:einrichten")),
         ]),
@@ -177,12 +178,14 @@ MODUL = Modul(
         ("touren.fahrten", "Fahrtenbuch und Meldungen zum Fahrzeug",
          "Alle Fahrten mit Fahrzeug, Besetzung und Kilometerstand ansehen und berichtigen; "
          "Meldungen der Fahrer zum Fahrzeug auf der Startseite sehen und abhaken."),
+        ("touren.statistik", "Statistik der Touren ansehen",
+         "Mengen, Fahrten und Kilometer je Monat, Tour, Station und Fahrzeug – nie je Person."),
         ("einstellungen.touren", "Touren einstellen: Mailversand, Karte und Aufbewahrung",
          "Warengruppen, Fahrzeuge und die Zentrale richtet ein, wer Touren plant."),
     ),
     vorgaben={"Büro": ("touren.fahren", "touren.besetzung", "touren.stationen", "touren.planen",
                        "touren.stationen_bearbeiten", "touren.lieferschein",
-                       "touren.lieferscheine", "touren.fahrten"),
+                       "touren.lieferscheine", "touren.fahrten", "touren.statistik"),
               "Fahrer": ("touren.fahren", "touren.stationen", "touren.lieferschein"),
               "Beifahrer": ("touren.fahren", "touren.stationen", "touren.lieferschein")},
     mails=(

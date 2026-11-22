@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load static %}
+{% block titel %}Statistik der Touren {{ jahr }}{% endblock %}
+{% block inhalt %}
+<section class="karte breit">
+  <h1>Statistik der Touren {{ jahr }}</h1>
+  <form class="filter" method="get">
+    <label for="jahr">Jahr</label>
+    <select name="jahr" id="jahr" onchange="this.form.submit()">{% for j in jahre %}<option value="{{ j }}"{% if j == jahr %} selected{% endif %}>{{ j }}</option>{% endfor %}</select>
+  </form>
+  <div class="kacheln" id="touren-kennzahlen">
+    <div class="kachel"><span class="kachel-titel">Abgeholt {{ jahr }}</span><span class="kachel-wert">{{ k.kg }} kg</span>
+      <span class="kachel-unter">{{ k.tonnen }} t{% if k.vergleich is not None %} · {% if k.vergleich >= 0 %}+{% endif %}{{ k.vergleich }} % gegenüber {{ jahr|add:"-1" }}{% endif %}</span></div>
+    <div class="kachel"><span class="kachel-titel">Lieferscheine</span><span class="kachel-wert">{{ k.scheine }}</span><span class="kachel-unter">an {{ k.stationen }} Station{{ k.stationen|pluralize:"en" }} · {{ k.kisten }} Kisten</span></div>
+    <div class="kachel"><span class="kachel-titel">Fahrten</span><span class="kachel-wert">{{ k.fahrten }}</span><span class="kachel-unter">{{ k.stunden }} Stunden unterwegs</span></div>
+    <div class="kachel"><span class="kachel-titel">Kilometer</span><span class="kachel-wert">{{ k.km }} km</span></div>
+  </div>
+  <p class="hinweis">Mengen aus den Lieferscheinen, Fahrten und Kilometer aus dem Fahrtenbuch. Kisten sind in Kilogramm
+    umgerechnet (allgemein {{ kiste_kg }} kg je Kiste; je Warengruppe unter „Touren → Einrichten“ einstellbar). Eine
+    Auswertung je Person gibt es bewusst nicht. Jede Grafik gibt es auch als Tabelle und als CSV; ein Klick zeigt sie groß.</p>
+</section>
+<div class="statistik-raster">
+{% for a in abschnitte %}{% include "statistik/_abschnitt.html" %}{% endfor %}
+</div>
+<dialog class="diagramm-gross" id="diagramm-gross" aria-labelledby="diagramm-gross-titel">
+  <div class="diagramm-gross-kopf">
+    <button type="button" class="knopf knopf-zweitrangig" data-zurueck>← Zurück</button>
+    <h2 id="diagramm-gross-titel"></h2>
+  </div>
+  <div class="diagramm-gross-inhalt"></div>
+</dialog>
+<script src="{% static 'js/diagramm_gross.js' %}" defer></script>
+{% endblock %}

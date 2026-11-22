@@ -423,6 +423,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   datum)` reiht sie als ungespeicherten `Halt` mit `h.zusatz` ein – nie `Halt` aus dieser Liste speichern.
   Fortschritt über `anfahrten.fortschritt()`. Lieferscheine sieht nur die Mannschaft der Tour
   (`lieferscheine.darf_sehen()`), das Büro alle.
+  Statistik der Touren (ADR 0157): `apps/touren/statistik.py` (`Daten(jahr)`, Abschnitte für
+  `statistik/_abschnitt.html`), Kisten → kg über `Gewichte` (`Warengruppe.kiste_kg`, sonst
+  `TourenEinstellungen.kiste_kg`); **nie eine Auswertung je Person**. Recht `touren.statistik`.
   Meldungen zum Fahrzeug (ADR 0155): `Fahrzeugmeldung` über `apps/touren/meldungen.py` (melden beim
   Beenden der Tour oder zwischendurch; offene über `Modul.startseite` bei allen mit `touren.fahrten`).
   „Hier waren wir“ (ADR 0152): `Anfahrt` je Tour, Station und Tag über `apps/touren/anfahrten.py`

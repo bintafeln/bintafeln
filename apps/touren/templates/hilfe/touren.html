@@ -187,6 +187,23 @@
   <li>Der Lieferschein geht nur an die Station; in bintafeln bleibt er gespeichert. 🗑 legt ihn in den Papierkorb.</li>
 </ul>
 {% endif %}
+{% if "touren.statistik" in rechte %}
+<h3>Statistik der Touren</h3>
+<ul>
+  <li>„Touren → Statistik“ zeigt für ein Jahr: abgeholte Menge in Kilogramm, Lieferscheine, Fahrten, Stunden unterwegs
+    und Kilometer – oben als Kennzahlen mit Vergleich zum Vorjahr, darunter je Monat, Warengruppe, Tour, Fahrzeug,
+    Station und Handelskette. Am Ende stehen die Stationen, zu denen es im Jahr keinen Lieferschein gibt.</li>
+  <li><strong>Kisten werden in Kilogramm umgerechnet</strong>, damit es eine Gesamtzahl gibt: mit „kg je Kiste“ der
+    Warengruppe, sonst mit dem allgemeinen Durchschnittsgewicht. Beides stellen Sie unter „Touren → Einrichten“ ein.
+    Die Tabellen zeigen daneben weiter die Kisten und die gewogenen Kilogramm.</li>
+  <li>Mengen kommen aus den Lieferscheinen, Fahrten und Kilometer aus dem Fahrtenbuch. Stunden zählen nur Fahrten, die
+    am Handy beendet wurden.</li>
+  <li><strong>Keine Auswertung je Person:</strong> Wer wie oft oder wie lange gefahren ist, wertet bintafeln bewusst
+    nicht aus.</li>
+  <li>Jede Grafik gibt es als Tabelle und als CSV; ein Klick zeigt sie groß.</li>
+</ul>
+{% hilfe_bild "touren-statistik" "① Jahr wählen, ② Kennzahlen mit Vergleich zum Vorjahr, ③ Grafik je Abschnitt, auch als Tabelle und CSV." %}
+{% endif %}
 {% if "touren.planen" in rechte %}
 <h3>Touren einrichten</h3>
 <p>„Touren → Einrichten: Warengruppen, Fahrzeuge, Zentrale“ – für alle, die Touren planen. Sie müssen dafür nicht in
@@ -194,6 +211,9 @@
 <ul>
   <li><strong>Start und Ziel der Touren (Zentrale):</strong> die Anschrift, an der die Touren beginnen und enden. Leer =
     die Anschrift der Tafel. Enden Ihre Touren nicht an der Zentrale, haken Sie das an.</li>
+  <li><strong>Durchschnittsgewicht einer Kiste:</strong> damit rechnet die Statistik Kisten in Kilogramm um
+    (Vorgabe 10 kg). Bei den Warengruppen darunter lässt sich je Gruppe ein eigener Wert eintragen, z. B. für
+    Backwaren ein kleinerer.</li>
   <li><strong>Text der E-Mail an die Station:</strong> steht in der Mail, mit der ein Lieferschein verschickt wird.</li>
   <li><strong>Warengruppen:</strong> Name, Reihenfolge und „Aktiv“. Ausgeschaltete erscheinen nicht mehr auf neuen
     Lieferscheinen.</li>
