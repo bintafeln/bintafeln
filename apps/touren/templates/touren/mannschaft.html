@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block titel %}{{ tour.name }} – Besetzung{% endblock %}
+{% block inhalt %}
+<section class="karte tour-start">
+  <p><a href="{{ zurueck }}">← {{ tour.name }}</a></p>
+  <h1>Wer fährt heute mit?</h1>
+  <p class="leise">{{ tour.name }} · {{ tour.datum|date:"l, d.m.Y" }}</p>
+  <form method="post">{% csrf_token %}
+    {% if form.non_field_errors %}<p class="fehler">{{ form.non_field_errors|join:" " }}</p>{% endif %}
+    {% for feld in form %}<div class="feld">{{ feld.label_tag }}{{ feld }}{% if feld.help_text %}<small class="hilfe">{{ feld.help_text }}</small>{% endif %}{% if feld.errors %}<small class="fehler">{{ feld.errors|join:" " }}</small>{% endif %}</div>{% endfor %}
+    <p class="hinweis">Tragen Sie ein, wer wirklich mitfährt – auch einen weiteren Beifahrer oder einen Gast. Sich selbst können Sie nicht herausnehmen; das macht das Büro.</p>
+    <button type="submit" class="knopf tour-knopf">So fahren wir heute</button>
+  </form>
+</section>
+{% endblock %}

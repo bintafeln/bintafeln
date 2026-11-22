@@ -9,8 +9,8 @@
   <form method="post">{% csrf_token %}
     <button type="submit" class="knopf tour-knopf">Ja, stimmt</button>
   </form>
-  <details class="tour-aendern">
-    <summary>Nein, ändern</summary>
+  <details class="tour-aendern"{% if offen %} open{% endif %}>
+    <summary>{% if offen %}Besetzung ändern{% else %}Nein, ändern{% endif %}</summary>
     <form method="post">{% csrf_token %}
       <input type="hidden" name="aendern" value="1">
       {% include "touren/_plaetze.html" %}

@@ -450,7 +450,8 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   Drei Personen und Gast (ADR 0153): eigene/kurzfristige Touren mit `Tour.fahrer`, `beifahrer`,
   `beifahrer2`, `gast` (`personen` folgt daraus, `BesetzungMixin`); Tour aus dem Fahrerplan: Tages-
   besetzung nur über `start.aendern()` (auch Gast auf Beifahrerplätzen, aus der Planung über
-  `views_touren.besetzung_aendern`). ECO-Plattform: `TourenEinstellungen.eco_link` (nur ein Link).
+  `views_touren.besetzung_aendern`). Am Tag selbst ändert die Mannschaft über den Knopf in der Tour
+  (`views_touren.start`; kurzfristige Tour: `MannschaftForm`), nie sich selbst heraus. ECO-Plattform: `TourenEinstellungen.eco_link` (nur ein Link).
   Routenvorschau in der Planung (ADR 0154, ergänzt ADR 0147): `ablauf.vorschau()` – Zentrale
   (`TourenEinstellungen.start_ziel`) → Stationen → Zentrale; eingebettete Google-Karte nur mit
   Schlüssel (`karten_schluessel`, verschlüsselt) und erst nach Klick (`static/js/tour_karte.js`,
