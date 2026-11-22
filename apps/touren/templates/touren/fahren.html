@@ -7,7 +7,7 @@
   <div class="tour-kopf-zeile">
     <a class="tour-zurueck" href="{% url 'touren:heute' %}?tag={{ tag|date:'Y-m-d' }}" aria-label="Zurück zu den Touren am {{ tag|date:'d.m.' }}">←</a>
     <h1>{{ tour.name }}</h1>
-    {% if halte %}<span class="tour-stand" title="erledigte Stationen">{{ erledigt }}/{{ halte|length }}</span>{% endif %}
+    {% if halte %}<span class="tour-zaehler" title="erledigte Stationen">{{ erledigt }}/{{ halte|length }}</span>{% endif %}
   </div>
   {% if halte %}<progress class="tour-balken" value="{{ erledigt }}" max="{{ halte|length }}" aria-label="{{ erledigt }} von {{ halte|length }} Stationen erledigt"></progress>{% endif %}
   {% if not faehrt %}<p><span class="marke-warnung">fährt an diesem Tag nicht</span></p>{% endif %}

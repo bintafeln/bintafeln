@@ -1079,7 +1079,7 @@ def test_hilfe_bild_touren_fahren(angemeldet, admin, muster):
         seite,
         "touren-fahren",
         [karten.first, karten.nth(2)],
-        Marke(seite.locator("section.karte p").nth(2), art="rahmen", nummer=1),
+        Marke(seite.locator(".tour-angaben > p").nth(1), art="rahmen", nummer=1),
         Marke(seite.locator(".tour-route .aktionsleiste"), art="rahmen", nummer=2),
         Marke(seite.get_by_role("link", name="🧭 Navigation starten").nth(1), art="rahmen",
               nummer=3),
