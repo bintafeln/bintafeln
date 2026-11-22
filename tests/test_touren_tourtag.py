@@ -49,7 +49,7 @@ def gefahren(lage):
 def test_inhalt_und_zuruecksetzen(gefahren, admin):
     nord, heute, wagen = gefahren["nord"], gefahren["heute"], gefahren["wagen"]
     assert dict(tourtag.inhalt(nord, heute)) == {
-        "Fahrt": 1, "Lieferschein": 1, "„Hier waren wir“": 1, "Zusatzstopp": 1,
+        "Fahrt": 1, "Lieferschein": 1, "Ohne Lieferschein abgehakt": 1, "Zusatzstopp": 1,
         "Meldung zum Fahrzeug": 1,
     }  # fmt: skip
     weg = tourtag.zuruecksetzen(nord, heute, admin)
