@@ -34,8 +34,10 @@ def an() -> bool:
 
 
 def moeglich(station: Station) -> bool:
-    """Wird an dieser Station ein Lieferschein ausgefüllt?"""
-    return station.lieferschein and an()
+    """Lässt sich an dieser Station ein Lieferschein ausfüllen? An jeder (ADR 0165), sobald
+    Lieferscheine eingeschaltet sind; ``Station.lieferschein`` sagt nur noch, ob dort
+    regelmäßig einer erwartet wird."""
+    return an()
 
 
 def warengruppen() -> list[Warengruppe]:
@@ -117,19 +119,26 @@ def _pdf(ls: Lieferschein, positionen, unterschrift: bytes) -> bytes:
         station_name=ls.station_name, station_anschrift=ls.station_anschrift,
         zeilen=[(mengen.get(g, ""), g) for g in gruppen], anmerkung=ls.anmerkung,
         unterschrift=unterschrift, unterschrieben_von=ls.unterschrieben_von,
+        abgabe=ls.abgabe,
     )  # fmt: skip
+
+
+def art_lesen(wert) -> str:
+    """„abholung“ oder „abgabe“ aus dem Formular; alles andere ist eine Abholung."""
+    return wert if wert in Lieferschein.Art.values else Lieferschein.Art.ABHOLUNG
 
 
 @transaction.atomic
 def erstellen(station: Station, benutzer, positionen, unterschrift: bytes, anmerkung: str = "",
-              tour=None, datum: dt.date | None = None) -> Lieferschein:  # fmt: skip
+              tour=None, datum: dt.date | None = None,
+              art: str = Lieferschein.Art.ABHOLUNG) -> Lieferschein:  # fmt: skip
     """Legt den Lieferschein mit fortlaufender Nummer und fertigem PDF an (ohne zu senden)."""
     e = TourenEinstellungen.objects.select_for_update().get(pk=TourenEinstellungen.laden().pk)
     ls = Lieferschein(
         nummer=e.naechste_nummer, station=station, station_name=station.name,
         station_anschrift=station.anschrift, tour=tour, tour_name=tour.name if tour else "",
         datum=datum or timezone.localdate(), anmerkung=anmerkung.strip()[:1000],
-        erstellt_von=benutzer, unterschrieben_von=_name(benutzer),
+        erstellt_von=benutzer, unterschrieben_von=_name(benutzer), art=art_lesen(art),
     )  # fmt: skip
     ls.datei = privatdateien.ablegen(Lieferschein.ORDNER, _pdf(ls, positionen, unterschrift))
     ls.save()

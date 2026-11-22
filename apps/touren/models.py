@@ -671,7 +671,13 @@ class Lieferschein(models.Model):
     ORDNER = "lieferscheine"
     PRIVATDATEI = (ORDNER, "datei")
 
+    class Art(models.TextChoices):
+        ABHOLUNG = "abholung", "Abholung – wir holen Ware ab"
+        ABGABE = "abgabe", "Abgabe – wir geben Ware ab"
+
     nummer = models.PositiveIntegerField("Nummer", unique=True)
+    # Abgabe (ADR 0165): Die Tafel gibt Ware ab; Spender und Empfänger sind dann vertauscht
+    art = models.CharField("Art", max_length=10, choices=Art.choices, default=Art.ABHOLUNG)
     station = models.ForeignKey(
         Station, null=True, blank=True, on_delete=models.SET_NULL, related_name="lieferscheine"
     )
@@ -700,6 +706,10 @@ class Lieferschein(models.Model):
 
     def __str__(self):
         return f"Lieferschein {self.nummer}"
+
+    @property
+    def abgabe(self) -> bool:
+        return self.art == self.Art.ABGABE
 
 
 class Position(models.Model):

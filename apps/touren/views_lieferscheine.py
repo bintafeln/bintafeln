@@ -71,7 +71,8 @@ def ausfuellen(request, pk):
             fehler = str(grund)
         else:
             ls = lieferscheine.erstellen(station, request.user, positionen, unterschrift,
-                                         request.POST.get("anmerkung", ""), tour, tag)  # fmt: skip
+                                         request.POST.get("anmerkung", ""), tour, tag,
+                                         request.POST.get("art"))  # fmt: skip
             if lieferscheine.senden(ls):
                 messages.success(request, f"Lieferschein Nr. {ls.nummer} gespeichert und an "
                                  f"{ls.gesendet_an} geschickt.")  # fmt: skip
@@ -88,6 +89,8 @@ def ausfuellen(request, pk):
         "station": station, "tour": tour, "tag": tag, "gruppen": gruppen, "fehler": fehler,
         "einheiten": Position.Einheit.choices, "anmerkung": request.POST.get("anmerkung", ""),
         "zurueck": _zurueck(tour, tag, station),
+        "arten": Lieferschein.Art.choices,
+        "art": lieferscheine.art_lesen(quelle.get("art")),
         "schon": Lieferschein.objects.filter(station=station, datum=tag).first(),
         "versand": TourenEinstellungen.laden().versand,
     })  # fmt: skip

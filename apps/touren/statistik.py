@@ -60,7 +60,9 @@ class Gewichte:
 
 
 def _positionen(jahr: int):
-    return (Position.objects.filter(lieferschein__datum__year=jahr)
+    """Positionen der Abholungen; Abgaben (ADR 0165) zählen nicht als abgeholte Menge."""
+    return (Position.objects.filter(lieferschein__datum__year=jahr,
+                                    lieferschein__art=Lieferschein.Art.ABHOLUNG)
             .select_related("lieferschein", "lieferschein__station"))  # fmt: skip
 
 
@@ -92,7 +94,20 @@ class Daten:
                     z["gewogen"] += p.menge
                 else:
                     z["kisten"] += p.menge
-        self.scheine = Lieferschein.objects.filter(datum__year=jahr).count()
+        self.scheine = Lieferschein.objects.filter(
+            datum__year=jahr, art=Lieferschein.Art.ABHOLUNG
+        ).count()
+        self.abgabe = defaultdict(leer)  # je Station: was die Tafel abgegeben hat
+        for p in (Position.objects.filter(lieferschein__datum__year=jahr,
+                                          lieferschein__art=Lieferschein.Art.ABGABE)
+                  .select_related("lieferschein")):  # fmt: skip
+            z = self.abgabe[p.lieferschein.station_name]
+            z["kg"] += gewichte.kg(p)
+            z["scheine"].add(p.lieferschein_id)
+            if p.einheit == Position.Einheit.KG:
+                z["gewogen"] += p.menge
+            else:
+                z["kisten"] += p.menge
         self.fahrten = list(Fahrt.objects.filter(datum__year=jahr))
         self.vorjahr_kg = defaultdict(Decimal)
         for p in _positionen(jahr - 1):
@@ -243,6 +258,19 @@ def abschnitt_ohne(d: Daten) -> dict:
     }  # fmt: skip
 
 
+def abschnitt_abgaben(d: Daten) -> dict:
+    """Was die Tafel abgegeben hat (Abgabe-Lieferscheine, ADR 0165), je Empfänger – getrennt von
+    der abgeholten Menge."""
+    reihe = _nach_kg(d.abgabe)
+    return {
+        "id": "abgaben", "titel": "Abgaben",
+        "text": "Ware, die die Tafel mit einem Abgabe-Lieferschein abgegeben hat. Sie zählt in "
+        "den übrigen Abschnitten nicht mit.",
+        "svg": "", "kopf": ["Empfänger", *MENGEN_KOPF],
+        "zeilen": [_mengen_zeile(n, z) for n, z in reihe],
+    }  # fmt: skip
+
+
 def abschnitt_umstaende(d: Daten) -> dict:
     """Stationen, die ohne Lieferschein abgehakt wurden: wie oft welcher Umstand, je Station
     (ADR 0163) – nie je Person."""
@@ -266,4 +294,5 @@ def abschnitt_umstaende(d: Daten) -> dict:
 def abschnitte(d: Daten) -> list[dict]:
     return [abschnitt_mengen(d), abschnitt_warengruppen(d), abschnitt_fahrten(d),
             abschnitt_touren(d), abschnitt_fahrzeuge(d), abschnitt_stationen(d),
-            abschnitt_ketten(d), abschnitt_umstaende(d), abschnitt_ohne(d)]  # fmt: skip
+            abschnitt_ketten(d), abschnitt_abgaben(d), abschnitt_umstaende(d),
+            abschnitt_ohne(d)]  # fmt: skip

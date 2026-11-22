@@ -113,7 +113,7 @@ def fahren(request, pk):
     aktuell = None  # die erste Station, an der noch niemand war
     for nr, h in enumerate(halte, start=1):
         h.schein = scheine.get(h.station_id)
-        h.schein_moeglich = darf_schein and h.station.lieferschein
+        h.schein_moeglich = darf_schein  # an jeder Station, auch wo keiner erwartet wird
         h.anfahrt = da.get(h.station_id)
         h.angefahren = h.anfahrt is not None or h.station_id in alle_scheine
         if aktuell is None and not h.angefahren:
