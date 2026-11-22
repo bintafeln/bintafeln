@@ -464,6 +464,65 @@ def test_alle_angaben_fuehrt_zurueck_zur_tour(fahrer):
     assert f'href="{reverse("touren:fahren", args=[t.pk])}"' in ohne_tag
 
 
+# --- „Hier waren wir“ (ADR 0152) ----------------------------------------------------------------
+
+
+def test_angefahren_markieren_und_zuruecknehmen(fahrer, django_user_model):
+    from apps.touren import anfahrten
+    from apps.touren.models import Anfahrt
+
+    heute = timezone.localdate()
+    t = tour_mit(3, name="Sonderfahrt", datum=heute)
+    t.personen.add(fahrer.person)
+    erste, zweite, _ = [h.station for h in t.halte.all()]
+    adresse = reverse("touren:fahren", args=[t.pk])
+    seite = fahrer.get(adresse).content.decode()
+    assert seite.count("✓ Hier waren wir</button>") == 3 and "data-tour-aktuell" not in seite
+    antwort = fahrer.post(reverse("touren:angefahren", args=[t.pk, erste.pk]))
+    assert antwort.status_code == 302 and antwort.url == adresse
+    seite = fahrer.get(adresse).content.decode()
+    # die Station bleibt stehen, ist aber gekennzeichnet; die nächste offene ist die aktuelle
+    assert erste.name in seite and "1 angefahren" in seite and "zurücknehmen" in seite
+    assert 'class="karte tour-halt tour-erledigt" id="halt-1"' in seite
+    assert 'id="halt-2" data-tour-aktuell' in seite
+    assert seite.count("✓ Hier waren wir</button>") == 2
+    fahrer.post(reverse("touren:angefahren", args=[t.pk, erste.pk]))  # doppelt schadet nicht
+    assert Anfahrt.objects.count() == 1
+    fahrer.post(reverse("touren:angefahren", args=[t.pk, erste.pk]), {"zurueck": "1"})
+    assert not Anfahrt.objects.exists()
+    # wer nicht eingetragen ist, kennzeichnet nichts; eine fremde Station auch nicht
+    klaus = person(django_user_model, "Klaus").konto
+    with pytest.raises(anfahrten.AnfahrtFehler, match="nicht eingetragen"):
+        anfahrten.markieren(t, erste, klaus)
+    fremd = station("fremd")
+    with pytest.raises(anfahrten.AnfahrtFehler, match="nicht auf der Tour"):
+        anfahrten.markieren(t, fremd, fahrer.person.konto)
+    fahrer.post(reverse("touren:angefahren", args=[t.pk, fremd.pk]))
+    assert not Anfahrt.objects.exists()
+    # Frist: nach 90 Tagen weg
+    alt = Anfahrt.objects.create(tour=t, station=zweite, datum=heute - dt.timedelta(days=91))
+    assert str(alt).startswith(zweite.name)
+    assert anfahrten.fristen_anwenden() == 1
+
+
+def test_lieferschein_gilt_als_angefahren(fahrer):
+    from decimal import Decimal
+
+    from apps.touren import lieferscheine
+    from tests.test_touren_lieferscheine import unterschrift
+
+    heute = timezone.localdate()
+    t = tour_mit(2, name="Sonderfahrt", datum=heute)
+    t.personen.add(fahrer.person)
+    erste = t.halte.first().station
+    zeichnung = lieferscheine.unterschrift_lesen(unterschrift())
+    lieferscheine.erstellen(erste, fahrer.person.konto, [("Backwaren", Decimal("1"), "kg")],
+                            zeichnung, "", t, heute)  # fmt: skip
+    seite = fahrer.get(reverse("touren:fahren", args=[t.pk])).content.decode()
+    assert "1 angefahren" in seite and 'id="halt-2" data-tour-aktuell' in seite
+    assert seite.count("✓ Hier waren wir</button>") == 1  # an der ersten steht der Lieferschein
+
+
 # --- Stationen suchen und kurzfristige Tour in einer Maske ---------------------------------------
 
 

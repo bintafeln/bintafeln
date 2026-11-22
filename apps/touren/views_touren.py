@@ -14,7 +14,14 @@ from apps.adressen.forms import ImportForm
 from apps.ausgabe.ampel import WOCHENTAGE
 from apps.core import geheimnis, module, papierkorb
 from apps.konten import rollen
-from apps.touren import ablauf, fahrten, importieren_touren, lieferscheine, suche
+from apps.touren import (
+    ablauf,
+    anfahrten,
+    fahrten,
+    importieren_touren,
+    lieferscheine,
+    suche,
+)
 from apps.touren import start as tourstart
 from apps.touren.forms import HaltForm, KurzfristigForm, NeueStationForm, TourForm
 from apps.touren.models import Halt, Station, Tour
@@ -73,9 +80,15 @@ def fahren(request, pk):
     halte = ablauf.halte(tour, tag)
     darf_schein = lieferscheine.an() and rollen.hat_recht(request.user, "touren.lieferschein")
     scheine = lieferscheine.am_tag(tag, [h.station_id for h in halte]) if darf_schein else {}
-    for h in halte:
+    da = anfahrten.am_tag(tour, tag)
+    aktuell = None  # die erste Station, an der noch niemand war
+    for nr, h in enumerate(halte, start=1):
         h.schein = scheine.get(h.station_id)
         h.schein_moeglich = darf_schein and h.station.lieferschein
+        h.anfahrt = da.get(h.station_id)
+        h.angefahren = h.anfahrt is not None or h.schein is not None
+        if aktuell is None and not h.angefahren:
+            aktuell = nr
     return render(request, "touren/fahren.html", {
         "tour": tour, "tag": tag, "halte": halte, "faehrt": ablauf.faehrt_am(tour, tag),
         "besetzung": ablauf.besetzung(tour, tag),
@@ -83,9 +96,26 @@ def fahren(request, pk):
         "darf_planen": rollen.hat_recht(request.user, "touren.planen"),
         "gefragt": gefragt, "gestartet": gestartet, "darf_start": darf_start,
         "fahrt": fahrt, "fahrt_moeglich": fahrt_moeglich,
+        "aktuell": aktuell, "erledigt": sum(1 for h in halte if h.angefahren),
         "fahrzeuge": fahrten.fahrzeuge() if fahrt_moeglich and fahrt is None else [],
         "staende": fahrten.staende() if fahrt_moeglich and fahrt is None else {},
     })  # fmt: skip
+
+
+@require_POST
+@fahren_recht
+def angefahren(request, pk, station_pk):
+    """„Hier waren wir“ setzen oder zurücknehmen; danach weiter zur nächsten offenen Station."""
+    tour = get_object_or_404(Tour.objects.select_related("fahrdienst_tour"), pk=pk)
+    station = get_object_or_404(Station, pk=station_pk)
+    try:
+        if "zurueck" in request.POST:
+            anfahrten.zuruecknehmen(tour, station, request.user)
+        else:
+            anfahrten.markieren(tour, station, request.user)
+    except anfahrten.AnfahrtFehler as grund:
+        messages.error(request, str(grund))
+    return redirect(reverse("touren:fahren", args=[tour.pk]))
 
 
 @never_cache

@@ -5,7 +5,7 @@
 <section class="karte">
   <p><a href="{% url 'touren:heute' %}?tag={{ tag|date:'Y-m-d' }}">← Touren am {{ tag|date:"d.m." }}</a></p>
   <h1>{{ tour.name }}</h1>
-  <p class="leise">{{ tag|date:"l, d.m.Y" }} · {{ halte|length }} Station{{ halte|length|pluralize:"en" }}{% if not faehrt %} · <span class="marke-warnung">fährt an diesem Tag nicht</span>{% endif %}</p>
+  <p class="leise">{{ tag|date:"l, d.m.Y" }} · {{ halte|length }} Station{{ halte|length|pluralize:"en" }}{% if erledigt %} · <strong>{{ erledigt }} angefahren</strong>{% endif %}{% if not faehrt %} · <span class="marke-warnung">fährt an diesem Tag nicht</span>{% endif %}</p>
   {% if besetzung %}<p>{% for b in besetzung %}{% if b.offen %}<span class="marke-warnung">{{ b.rolle }} offen</span>{% else %}{% if b.rolle %}<small class="leise">{{ b.rolle }}</small> {% endif %}{{ b.name }}{% endif %}{% if not forloop.last %} · {% endif %}{% endfor %}</p>{% endif %}
   {% if gestartet %}<p class="leise"><span class="marke-ok">✓ Besetzung bestätigt</span> von {{ gestartet.bestaetigt_von }}, {{ gestartet.bestaetigt_am|date:"H:i" }} Uhr{% if darf_start %} · <a href="{% url 'touren:start' tour.pk %}">ändern</a>{% endif %}</p>
   {% elif gefragt %}<p class="hinweis"><span class="marke-warnung">Besetzung noch nicht bestätigt.</span> Das macht, wer auf der Tour eingetragen ist.</p>{% endif %}
@@ -39,8 +39,8 @@
 {% endif %}
 <ol class="tour-halte">
   {% for h in halte %}{% with s=h.station %}
-  <li class="karte tour-halt{% if h.schein %} tour-erledigt{% endif %}" id="halt-{{ forloop.counter }}">
-    <div class="tour-halt-kopf"><span class="tour-nr" aria-hidden="true">{{ forloop.counter }}</span>
+  <li class="karte tour-halt{% if h.angefahren %} tour-erledigt{% endif %}{% if forloop.counter == aktuell %} tour-aktuell{% endif %}" id="halt-{{ forloop.counter }}"{% if forloop.counter == aktuell and erledigt %} data-tour-aktuell{% endif %}>
+    <div class="tour-halt-kopf"><span class="tour-nr" aria-hidden="true">{% if h.angefahren %}✓{% else %}{{ forloop.counter }}{% endif %}</span>
       <div><h2>{{ s.name }}</h2>
         <address>{{ s.strasse_hausnummer }}, {{ s.plz }} {{ s.ort }}{% if s.ortsteil %} ({{ s.ortsteil }}){% endif %}</address></div></div>
     {% if s.abholzeit %}<p><strong>Abholzeit:</strong> {{ s.abholzeit }}</p>{% endif %}
@@ -48,6 +48,12 @@
     <a class="knopf tour-knopf" href="{{ s.navigation }}" target="_blank" rel="noopener noreferrer">🧭 Navigation starten</a>
     {% if h.schein %}<p class="tour-schein"><span class="marke-ok">✓ Lieferschein Nr. {{ h.schein.nummer }}</span> <a href="{% url 'touren:lieferschein_pdf' h.schein.pk %}" target="_blank" rel="noopener">ansehen</a>{% if not h.schein.gesendet_am %} <span class="marke-warnung">nicht verschickt</span>{% endif %}</p>
     {% elif h.schein_moeglich %}<a class="knopf knopf-zweitrangig tour-knopf" href="{% url 'touren:lieferschein' s.pk %}?tour={{ tour.pk }}&amp;tag={{ tag|date:'Y-m-d' }}">📝 Lieferschein ausfüllen</a>{% endif %}
+    {% if fahrt_moeglich %}
+    <form method="post" action="{% url 'touren:angefahren' tour.pk s.pk %}">{% csrf_token %}
+      {% if h.anfahrt %}<p class="tour-schein"><span class="marke-ok">✓ Hier waren wir</span> <small class="leise">{{ h.anfahrt.am|date:"H:i" }} Uhr</small> <button type="submit" name="zurueck" value="1" class="knopf knopf-zweitrangig knopf-klein">zurücknehmen</button></p>
+      {% elif not h.schein %}<button type="submit" class="knopf knopf-zweitrangig tour-knopf">✓ Hier waren wir</button>{% endif %}
+    </form>
+    {% elif h.anfahrt %}<p class="tour-schein"><span class="marke-ok">✓ angefahren</span> <small class="leise">{{ h.anfahrt.am|date:"H:i" }} Uhr</small></p>{% endif %}
     <p class="tour-halt-fuss">{% if s.telefon %}<span>📞 {{ s.telefon|anrufen }}{% if s.ansprechpartner %} <small class="leise">{{ s.ansprechpartner }}</small>{% endif %}</span>{% endif %}
       {% if "touren.stationen" in rechte %}<a class="tour-alle-angaben" href="{% url 'touren:station' s.pk %}?tour={{ tour.pk }}&amp;tag={{ tag|date:'Y-m-d' }}&amp;halt={{ forloop.counter }}">Alle Angaben</a>{% endif %}</p>
   </li>
@@ -68,4 +74,5 @@
 {% endif %}
 {% if darf_planen %}<p><a href="{% url 'touren:tour' tour.pk %}">Tour bearbeiten</a></p>{% endif %}
 {% if fahrt_moeglich and not fahrt %}<script src="{% static 'js/fahrt_km.js' %}" defer></script>{% endif %}
+<script src="{% static 'js/tour_aktuell.js' %}" defer></script>
 {% endblock %}

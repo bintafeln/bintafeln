@@ -2212,6 +2212,37 @@ def test_fahrt_beginnen_und_beenden_am_handy(seite, angemeldet, admin):
     assert wagen.kilometerstand == 1050  # fortgeschrieben
 
 
+def test_tour_springt_zur_aktuellen_station(seite, angemeldet, admin):
+    """„Hier waren wir“ kennzeichnet eine Station; die Tour springt beim Öffnen zur nächsten
+    offenen (static/js/tour_aktuell.js, ADR 0152)."""
+    from apps.core.models import TafelEinstellungen
+    from apps.touren import ablauf
+    from apps.touren.models import Anfahrt, Station, Tour
+
+    t = TafelEinstellungen.laden()
+    t.module = ["touren"]
+    t.save()
+    tour = Tour.objects.create(name="Tour 1", datum=timezone.localdate())
+    for nr in range(1, 7):
+        ablauf.halt_anhaengen(tour, Station.objects.create(
+            kennung=f"M-{nr}", name=f"Markt {nr}", strasse="Musterweg", hausnummer=str(nr),
+            plz="12345", ort="Musterstadt", anfahrt="Hintereingang, bitte klingeln."))  # fmt: skip
+    angemeldet(admin)
+    seite.set_viewport_size({"width": 390, "height": 700})
+    seite.goto(reverse("touren:fahren", args=[tour.pk]))
+    assert seite.evaluate("window.scrollY") == 0  # noch nichts angefahren: oben bleiben
+    for nr in (1, 2, 3):
+        seite.locator(f"#halt-{nr}").get_by_role("button", name="✓ Hier waren wir").click()
+        expect(seite.locator(f"#halt-{nr}")).to_contain_text("zurücknehmen")
+    assert Anfahrt.objects.count() == 3
+    seite.goto(reverse("touren:fahren", args=[tour.pk]))
+    aktuell = seite.locator("#halt-4")
+    expect(aktuell).to_have_attribute("data-tour-aktuell", "")
+    expect(aktuell).to_be_in_viewport()
+    assert seite.evaluate("window.scrollY") > 300
+    expect(seite.locator("#halt-1")).to_have_class(re.compile("tour-erledigt"))  # bleibt stehen
+
+
 def test_kurzfristige_tour_in_einer_maske(seite, angemeldet, admin):
     """Kurzfristige Tour: Stationen beim Tippen suchen, hinzufügen, umsortieren und alles in
     einer Maske anlegen (static/js/stationswahl.js); danach die Suche beim Anhängen."""
