@@ -892,6 +892,67 @@ def test_karte_nur_mit_recht_planen(client, anmelden, heute_tour):
     assert client.get(reverse("touren:karte")).status_code == 403
 
 
+def test_touren_planen_nach_fahrtag_geordnet(buero, django_user_model):
+    """Die Übersicht ordnet die regelmäßigen Touren nach Fahrtag (Montag zuerst, nicht nach
+    Alphabet) und zeigt, wer fest fährt – ohne „aus dem Fahrerplan: … (Di)“ in jeder Zeile."""
+    nord = FahrdienstTour.objects.create(name="Nordtour", fahrtage="Mo, Di", plaetze=2)
+    fritz, paula = person(django_user_model, "Fritz"), person(django_user_model, "Paula")
+    Besetzung.objects.create(tour=nord, wochentag="Mo", platz=1, person=fritz)
+    Besetzung.objects.create(tour=nord, wochentag="Mo", platz=2, person=paula)
+    Tour.objects.create(name="Dienstag Nordtour", fahrdienst_tour=nord, fahrtage="Di")
+    Tour.objects.create(name="Montag Nordtour", fahrdienst_tour=nord, fahrtage="Mo")
+    Tour.objects.create(name="Lager", fahrdienst_tour=nord)  # an beiden Tagen des Fahrerplans
+    Tour.objects.create(name="Sonderfahrt", fahrtage="Mo", fahrer=paula, gast="Gerda Gast")
+    Tour.objects.create(name="Immer")  # eigene Tour, jeden Tag
+    antwort = buero.get(reverse("touren:touren"))
+    gruppen = antwort.context["gruppen"]
+    assert [g["titel"] for g in gruppen] == ["Montag", "Dienstag", "An mehreren Tagen"]
+    montag, dienstag, mehrere = (g["zeilen"] for g in gruppen)
+    assert [z["tour"].name for z in montag] == ["Montag Nordtour", "Sonderfahrt"]
+    assert montag[0]["wer"] == [("Fahrer", fritz.name), ("Beifahrer", paula.name)]
+    assert not montag[0]["eigen"] and montag[0]["plan"] == ""  # Name enthält „Nordtour“ schon
+    assert montag[1]["eigen"] and montag[1]["wer"] == [("Fahrer", paula.name),
+                                                       ("Gast", "Gerda Gast")]  # fmt: skip
+    assert dienstag[0]["wer"] == []  # am Dienstag ist im Fahrerplan niemand fest eingetragen
+    assert [z["tour"].name for z in mehrere] == ["Immer", "Lager"]
+    assert mehrere[1]["wer"] is None and mehrere[1]["plan"] == "Nordtour"
+    seite = antwort.content.decode()
+    assert "aus dem Fahrerplan:" not in seite and "niemand fest eingetragen" in seite
+    assert "je Tag nach dem Fahrerplan" in seite and "Fahrerplan: Nordtour" in seite
+    assert seite.index(">Montag<") < seite.index(">Dienstag<") < seite.index("An mehreren Tagen")
+    assert seite.count("eigene Tour") == 2
+    # Ohne Fahrdienst-Modul: alles eigene Touren, keine Abfrage des Fahrerplans
+    e = TafelEinstellungen.laden()
+    e.module = ["touren"]
+    e.save()
+    gruppen = buero.get(reverse("touren:touren")).context["gruppen"]
+    assert all(z["eigen"] for g in gruppen for z in g["zeilen"])
+
+
+def test_touren_planen_zeigt_uebliche_laenge(buero):
+    """Länge einer Tour = Schnitt der letzten beendeten Fahrten laut Fahrtenbuch."""
+    from apps.touren import fahrten
+    from apps.touren.models import Fahrt
+
+    t = Tour.objects.create(name="Nordtour", fahrtage="Mo")
+    ohne = Tour.objects.create(name="Neu", fahrtage="Mo")
+    jetzt = timezone.now()
+    for tag, start, ende in ((1, 1000, 1040), (2, 1040, 1085), (3, 1085, None)):
+        Fahrt.objects.create(tour=t, tour_name=t.name, datum=MONTAG + dt.timedelta(days=7 * tag),
+                             km_start=start, km_ende=ende, begonnen_am=jetzt)  # fmt: skip
+    assert fahrten.uebliche_laenge([t, ohne]) == {t.pk: (42, 2)}  # die laufende Fahrt zählt nicht
+    antwort = buero.get(reverse("touren:touren"))
+    zeilen = {z["tour"].name: z for g in antwort.context["gruppen"] for z in g["zeilen"]}
+    assert zeilen["Nordtour"]["laenge"] == (42, 2) and zeilen["Neu"]["laenge"] is None
+    seite = antwort.content.decode()
+    assert "ca. 42 km" in seite and "Schnitt aus 2 Fahrten" in seite
+    # nur die letzten zehn Fahrten zählen
+    for tag in range(4, 16):
+        Fahrt.objects.create(tour=t, tour_name=t.name, datum=MONTAG + dt.timedelta(days=7 * tag),
+                             km_start=0, km_ende=100, begonnen_am=jetzt)  # fmt: skip
+    assert fahrten.uebliche_laenge([t]) == {t.pk: (100, fahrten.LAENGE_AUS)}
+
+
 def test_maske_blendet_eigene_plaetze_bei_tour_aus_dem_fahrerplan_aus():
     """Bei einer Tour aus dem Fahrerplan steht die Besetzung oben; die leeren Felder für Fahrer,
     Beifahrer und Gast sähen aus, als fehlten die Fahrer – sie erscheinen nur bei eigenen Touren."""

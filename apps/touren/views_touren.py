@@ -13,7 +13,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
 from apps.adressen.forms import ImportForm
-from apps.ausgabe.ampel import WOCHENTAGE
+from apps.ausgabe.ampel import WOCHENTAGE, wochentage
 from apps.core import geheimnis, module, papierkorb
 from apps.konten import rollen
 from apps.touren import (
@@ -343,10 +343,66 @@ def touren(request):
     alle = list(Tour.objects.select_related("fahrdienst_tour").prefetch_related("halte"))
     return render(request, "touren/touren.html", {
         "regelmaessig": [t for t in alle if not t.datum],
+        "gruppen": _nach_fahrtag([t for t in alle if not t.datum]),
         "kurzfristig": [t for t in alle if t.datum and t.datum >= heute_],
         "vergangen": [t for t in reversed(alle) if t.datum and t.datum < heute_][:20],
         "heute": heute_,
     })  # fmt: skip
+
+
+TAGNAMEN = dict(zip(WOCHENTAGE, ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag",
+                                  "Samstag", "Sonntag"], strict=True))  # fmt: skip
+
+
+def _nach_fahrtag(touren_) -> list[dict]:
+    """Die regelmäßigen Touren für die Übersicht, geordnet nach Fahrtag (Montag bis Sonntag, dann
+    die Touren an mehreren oder allen Tagen): [{"titel", "zeilen"}]. Je Tour steht, wer fest
+    fährt – bei einer Tour aus dem Fahrerplan die feste Besetzung von dort für diesen Wochentag,
+    sonst die Personen der eigenen Tour."""
+    fahrdienst = module.aktiv("fahrdienst")
+    fest: dict = {}
+    if fahrdienst:
+        from apps.fahrdienst.models import Besetzung
+
+        besetzt = Besetzung.objects.filter(person__isnull=False).select_related("person")
+        for b in besetzt.order_by("platz"):
+            fest.setdefault((b.tour_id, b.wochentag), []).append(
+                ("Fahrer" if b.platz == 1 else "Beifahrer", b.person.name)
+            )
+    laenge = fahrten.uebliche_laenge(touren_)
+    je_tag: dict = {tag: [] for tag in WOCHENTAGE}
+    mehrere = []
+    for t in touren_:
+        ft = t.fahrdienst_tour if fahrdienst else None
+        tage = wochentage(t.fahrtage) or (wochentage(ft.fahrtage) if ft else [])
+        zeile = {
+            "tour": t,
+            "tage": tage,
+            "eigen": ft is None,
+            "wer": None,
+            "laenge": laenge.get(t.pk),  # (km im Schnitt, aus so vielen Fahrten) oder None
+            # nur nennen, wenn der Name der Tour die Tour im Fahrerplan nicht schon enthält
+            "plan": ft.name if ft and ft.name.lower() not in t.name.lower() else "",
+        }
+        if ft is None:
+            plaetze = [
+                ("Fahrer", t.fahrer),
+                ("Beifahrer", t.beifahrer),
+                ("Beifahrer", t.beifahrer2),
+            ]
+            zeile["wer"] = [(rolle, p.name) for rolle, p in plaetze if p] + (
+                [("Gast", t.gast)] if t.gast else []
+            )
+        elif len(tage) == 1:
+            zeile["wer"] = fest.get((ft.pk, tage[0]), [])
+        (je_tag[tage[0]] if len(tage) == 1 else mehrere).append(zeile)
+    gruppen = [{"titel": TAGNAMEN[tag], "zeilen": zeilen} for tag, zeilen in je_tag.items()
+               if zeilen]  # fmt: skip
+    if mehrere:
+        gruppen.append({"titel": "An mehreren Tagen" if gruppen else "", "zeilen": mehrere})
+    for g in gruppen:
+        g["zeilen"].sort(key=lambda z: (z["tour"].name.lower(), z["tour"].pk))
+    return gruppen
 
 
 def _form(request, tour, kurz):

@@ -188,3 +188,20 @@ def fristen_anwenden(heute_: dt.date | None = None) -> int:
     anzahl = alt.count()
     alt.delete()
     return anzahl
+
+
+LAENGE_AUS = 10  # so viele der letzten beendeten Fahrten zählen für die übliche Länge einer Tour
+
+
+def uebliche_laenge(touren_) -> dict[int, tuple[int, int]]:
+    """Wie lang eine Tour üblicherweise ist: {Tour-ID: (km im Schnitt, Anzahl Fahrten)} aus den
+    letzten ``LAENGE_AUS`` beendeten Fahrten des Fahrtenbuchs. Touren ohne beendete Fahrt fehlen.
+    bintafeln berechnet keine Route (kein Kartendienst); gefahren ist gefahren."""
+    je: dict[int, list[int]] = {}
+    fahrten = Fahrt.objects.filter(tour__in=touren_, km_ende__isnull=False).order_by(
+        "-datum", "-begonnen_am")  # fmt: skip
+    for tour_id, ab, ende in fahrten.values_list("tour_id", "km_start", "km_ende"):
+        liste = je.setdefault(tour_id, [])
+        if len(liste) < LAENGE_AUS and ende >= ab:
+            liste.append(ende - ab)
+    return {pk: (round(sum(km) / len(km)), len(km)) for pk, km in je.items() if km}
