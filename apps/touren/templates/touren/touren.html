@@ -26,14 +26,19 @@
   </table></div>
   {% endif %}
   <h2>Regelmäßige Touren</h2>
-  {% if regelmaessig %}
-  <div class="tabelle-rahmen"><table class="tabelle" id="touren-regel">
-    <thead><tr><th>Tour</th><th>Besetzung und Fahrtage</th><th class="zahl">Stationen</th></tr></thead>
-    <tbody>{% for t in regelmaessig %}
-      <tr><td data-titel="Tour"><a href="{% url 'touren:tour' t.pk %}">{{ t.name }}</a>{% if not t.aktiv %} <span class="marke-neutral">aus</span>{% endif %}</td>
-        <td data-titel="Besetzung und Fahrtage">{% if t.fahrdienst_tour %}aus dem Fahrerplan: {{ t.fahrdienst_tour.name }} ({{ t.fahrtage|default:t.fahrdienst_tour.fahrtage }}){% else %}eigene Tour · {{ t.fahrtage|default:"jeden Tag" }}{% endif %}</td>
+  {% if gruppen %}
+  <div class="tabelle-rahmen"><table class="tabelle touren-uebersicht" id="touren-regel">
+    <thead><tr><th>Tour</th><th>Wer fährt</th><th class="zahl">Stationen</th></tr></thead>
+    {% for g in gruppen %}
+    <tbody>
+      {% if g.titel %}<tr class="touren-tag"><th colspan="3" scope="colgroup">{{ g.titel }}</th></tr>{% endif %}
+      {% for z in g.zeilen %}{% with t=z.tour %}
+      <tr><td data-titel="Tour"><a href="{% url 'touren:tour' t.pk %}">{{ t.name }}</a>{% if not t.aktiv %} <span class="marke-neutral">aus</span>{% endif %}{% if z.eigen %} <span class="marke-neutral" title="Steht nicht im Fahrerplan; wer fährt, ist an der Tour selbst eingetragen">eigene Tour</span>{% endif %}{% if z.plan %} <small class="hinweis">Fahrerplan: {{ z.plan }}</small>{% endif %}{% if not g.titel or g.titel == "An mehreren Tagen" %} <small class="hinweis">{{ z.tage|join:", "|default:"jeden Tag" }}</small>{% endif %}</td>
+        <td data-titel="Wer fährt">{% if z.wer is None %}<span class="hinweis">je Tag nach dem Fahrerplan</span>{% else %}{% for rolle, name in z.wer %}<span class="touren-wer"><small class="hinweis">{{ rolle }}</small> {{ name }}</span>{% empty %}<span class="marke-warnung">niemand fest eingetragen</span>{% endfor %}{% endif %}</td>
         <td data-titel="Stationen" class="zahl">{{ t.halte.all|length }}</td></tr>
-    {% endfor %}</tbody>
+      {% endwith %}{% endfor %}
+    </tbody>
+    {% endfor %}
   </table></div>
   {% else %}<p class="hinweis">Noch keine Tour angelegt.</p>{% endif %}
   {% if vergangen %}
