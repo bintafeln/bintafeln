@@ -14,7 +14,10 @@ class StempelFehler(ValueError):
 def erfasst(benutzer) -> bool:
     """Ob für diese Person Arbeitszeit erfasst wird. Die Angabe bei der Person („stempelt“ oder
     „stempelt nicht“) geht vor; sonst gilt die Einstellung der Tafel: ausgeschaltet niemand,
-    eingeschaltet fest Angestellte immer und Ehrenamtliche nur, wenn es erlaubt ist."""
+    eingeschaltet fest Angestellte immer und Ehrenamtliche nur, wenn es erlaubt ist. Konten einer
+    Ausgabestelle (Einlass-Tablet, ADR 0059) sind keine Person und erfassen nie Arbeitszeit."""
+    if getattr(benutzer, "stelle_id", None):
+        return False
     if benutzer.zeiterfassung == benutzer.Zeiterfassung.AN:
         return True
     if benutzer.zeiterfassung == benutzer.Zeiterfassung.AUS:

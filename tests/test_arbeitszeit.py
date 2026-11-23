@@ -99,6 +99,24 @@ def test_darf_stempeln(fest, ehrenamt, client):
     assert not arbeitszeit.darf_stempeln(fest)
 
 
+def test_konto_der_ausgabestelle_erfasst_keine_arbeitszeit(benutzer_mit_rolle, client, anmelden):
+    """Das Einlass-Tablet ist keine Person: kein Stempeln, kein „Meine Arbeitszeit“ im Menü –
+    auch nicht, wenn die Tafel Ehrenamtliche stempeln lässt oder es von Hand eingeschaltet ist."""
+    from apps.kunden.models import Ausgabestelle
+
+    einstellen(aktiv=True, ehrenamtliche_stempeln=True)
+    konto = benutzer_mit_rolle("ausgabe-nord", rollen.AUSGABE)
+    konto.stelle = Ausgabestelle.objects.create(name="Nord")
+    konto.save()
+    assert not arbeitszeit.erfasst(konto) and not arbeitszeit.darf_stempeln(konto)
+    konto.zeiterfassung = konto.Zeiterfassung.AN
+    assert not arbeitszeit.erfasst(konto)
+    konto.zeiterfassung = ""
+    konto.save()
+    anmelden(client, konto)
+    assert "Meine Arbeitszeit" not in client.get(reverse("core:start")).content.decode()
+
+
 def test_kommen_und_gehen(fest):
     jetzt = zeit(TAG, "08:00")
     b = arbeitszeit.kommen(fest, jetzt)
