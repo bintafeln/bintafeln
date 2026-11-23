@@ -369,6 +369,7 @@ def _nach_fahrtag(touren_) -> list[dict]:
             fest.setdefault((b.tour_id, b.wochentag), []).append(
                 ("Fahrer" if b.platz == 1 else "Beifahrer", b.person.name)
             )
+    laenge = fahrten.uebliche_laenge(touren_)
     je_tag: dict = {tag: [] for tag in WOCHENTAGE}
     mehrere = []
     for t in touren_:
@@ -379,6 +380,7 @@ def _nach_fahrtag(touren_) -> list[dict]:
             "tage": tage,
             "eigen": ft is None,
             "wer": None,
+            "laenge": laenge.get(t.pk),  # (km im Schnitt, aus so vielen Fahrten) oder None
             # nur nennen, wenn der Name der Tour die Tour im Fahrerplan nicht schon enthält
             "plan": ft.name if ft and ft.name.lower() not in t.name.lower() else "",
         }

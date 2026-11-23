@@ -927,3 +927,27 @@ def test_touren_planen_nach_fahrtag_geordnet(buero, django_user_model):
     e.save()
     gruppen = buero.get(reverse("touren:touren")).context["gruppen"]
     assert all(z["eigen"] for g in gruppen for z in g["zeilen"])
+
+
+def test_touren_planen_zeigt_uebliche_laenge(buero):
+    """Länge einer Tour = Schnitt der letzten beendeten Fahrten laut Fahrtenbuch."""
+    from apps.touren import fahrten
+    from apps.touren.models import Fahrt
+
+    t = Tour.objects.create(name="Nordtour", fahrtage="Mo")
+    ohne = Tour.objects.create(name="Neu", fahrtage="Mo")
+    jetzt = timezone.now()
+    for tag, start, ende in ((1, 1000, 1040), (2, 1040, 1085), (3, 1085, None)):
+        Fahrt.objects.create(tour=t, tour_name=t.name, datum=MONTAG + dt.timedelta(days=7 * tag),
+                             km_start=start, km_ende=ende, begonnen_am=jetzt)  # fmt: skip
+    assert fahrten.uebliche_laenge([t, ohne]) == {t.pk: (42, 2)}  # die laufende Fahrt zählt nicht
+    antwort = buero.get(reverse("touren:touren"))
+    zeilen = {z["tour"].name: z for g in antwort.context["gruppen"] for z in g["zeilen"]}
+    assert zeilen["Nordtour"]["laenge"] == (42, 2) and zeilen["Neu"]["laenge"] is None
+    seite = antwort.content.decode()
+    assert "ca. 42 km" in seite and "Schnitt aus 2 Fahrten" in seite
+    # nur die letzten zehn Fahrten zählen
+    for tag in range(4, 16):
+        Fahrt.objects.create(tour=t, tour_name=t.name, datum=MONTAG + dt.timedelta(days=7 * tag),
+                             km_start=0, km_ende=100, begonnen_am=jetzt)  # fmt: skip
+    assert fahrten.uebliche_laenge([t]) == {t.pk: (100, fahrten.LAENGE_AUS)}
