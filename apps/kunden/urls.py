@@ -112,6 +112,11 @@ urlpatterns = [
     path("spalten/", views.spalten_waehlen, name="spalten"),
     path("nachricht/<str:kundennummer>/", views_nachrichten.schreiben, name="nachricht"),
     path("nachrichten/", views_nachrichten.liste, name="nachrichten"),
+    path(
+        "nachrichten/ausweisdruck/<int:pk>/<str:was>/",
+        views_nachrichten.ausweisdruck,
+        name="ausweisdruck",
+    ),
     path("an-die-verwaltung/", views_nachrichten.an_die_verwaltung, name="an_verwaltung"),
     path("post/schreiben/", views_post.schreiben, name="post_schreiben"),
     path("post/", views_post.postfach, name="postfach"),

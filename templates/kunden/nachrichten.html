@@ -11,6 +11,21 @@
       title="Ein PDF mit allen offenen Meldungen „Neuen Ausweis drucken“; die Ausgabestellen bekommen die Antwort, die Meldungen sind danach erledigt"
       onclick="setTimeout(() => location.reload(), 1500)">Alle gemeldeten Ausweise drucken ({{ ausweise_gemeldet }})</a>{% endif %}
   </div>{% endif %}
+  {% for d in ausweisdrucke %}
+  <div class="meldung update-wichtig ausweisdruck" role="status">
+    <p><strong>{{ d.kundennummern|length }} Ausweis{{ d.kundennummern|length|pluralize:"e" }} gedruckt</strong>
+      am {{ d.gedruckt_am|date:"d.m.Y" }} um {{ d.gedruckt_am|time:"H:i" }} Uhr{% if d.von %} von {{ d.von }}{% endif %}
+      – sind alle ordentlich aus dem Drucker gekommen?</p>
+    <p class="hinweis">Kundennummern: {{ d.kundennummern|join:", " }}</p>
+    <div class="aktionsleiste">
+      <form method="post" action="{% url 'kunden:ausweisdruck' d.pk 'bestaetigen' %}" class="inline">
+        {% csrf_token %}<button type="submit" class="knopf">Ja, alle gedruckt</button></form>
+      <form method="post" action="{% url 'kunden:ausweisdruck' d.pk 'zuruecknehmen' %}" class="inline"
+            onsubmit="return confirm('Den ganzen Druck zurücknehmen? Die Meldungen sind dann wieder offen, und die Notiz „Neuer Ausweis ist gedruckt“ verschwindet bei den Ausgabestellen.')">
+        {% csrf_token %}<button type="submit" class="knopf knopf-zweitrangig">Nein, zurücknehmen</button></form>
+    </div>
+  </div>
+  {% endfor %}
   <nav class="reiter nachrichten-reiter" aria-label="Anliegen">
     <a href="{% url 'kunden:nachrichten' %}"{% if not anliegen %} aria-current="page"{% endif %}>alle <span class="zahl">{{ offen_gesamt }}</span></a>
     {% for wert, name, zahl in anliegen_liste %}<a href="?anliegen={{ wert }}"{% if wert == anliegen %} aria-current="page"{% endif %}>{{ name }} <span class="zahl">{{ zahl }}</span></a>{% endfor %}

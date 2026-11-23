@@ -8,10 +8,11 @@ Einlass arbeiten, bis jemand „gelesen“ klickt; die Notiz selbst bleibt am Ha
 
 import datetime as dt
 
+from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from apps.kunden.models import Haushalt, Nachricht, Notiz, NotizVorlage
+from apps.kunden.models import Ausweisdruck, Haushalt, Nachricht, Notiz, NotizVorlage
 
 AUSWEIS = "ausweis"  # Anliegen „Neuen Ausweis drucken“ (apps/core/auswahl.py)
 
@@ -39,9 +40,10 @@ def ausweis_text(h: Haushalt) -> str:
     return "Neuer Ausweis ist gedruckt und wird zur Ausgabestelle geschickt."
 
 
-def ausweis_gedruckt(haushalte, benutzer) -> int:
+def ausweis_gedruckt(haushalte, benutzer, merken: bool = False) -> int:
     """Beim Ausweisdruck: Wer „Neuen Ausweis drucken“ gemeldet hat, bekommt die Antwort-Notiz;
-    die Meldung ist erledigt, die gemeldete Notiz (Vorlage mit diesem Anliegen) gestrichen."""
+    die Meldung ist erledigt, die gemeldete Notiz (Vorlage mit diesem Anliegen) gestrichen.
+    ``merken``: den Druck als ``Ausweisdruck`` festhalten, damit er sich zurücknehmen lässt."""
     nummern = {h.kundennummer: h for h in haushalte}
     offen = list(Nachricht.objects.filter(kundennummer__in=nummern, anliegen=AUSWEIS,
                                           erledigt_am__isnull=True))  # fmt: skip
@@ -50,20 +52,93 @@ def ausweis_gedruckt(haushalte, benutzer) -> int:
     jetzt = timezone.now()
     von = (benutzer.get_full_name() or benutzer.get_username())[:100]
     texte = list(NotizVorlage.objects.filter(melden=AUSWEIS).values_list("text", flat=True))
-    beantwortet = set()
+    beantwortet, antworten, gestrichen = set(), [], []
     for n in offen:
         if n.kundennummer not in beantwortet:
             beantwortet.add(n.kundennummer)
             h = nummern[n.kundennummer]
             seit = min(m.erstellt_am for m in offen if m.kundennummer == n.kundennummer)
             seit -= dt.timedelta(minutes=5)
-            Notiz.objects.filter(kundennummer=h.kundennummer, text__in=texte,
-                                 erstellt_am__gte=seit).delete()  # fmt: skip
-            Notiz.objects.create(kundennummer=h.kundennummer, text=ausweis_text(h),
-                                 verfasst_von=von, benutzer=benutzer, an_stelle=True)  # fmt: skip
+            alt = Notiz.objects.filter(kundennummer=h.kundennummer, text__in=texte,
+                                       erstellt_am__gte=seit)  # fmt: skip
+            gestrichen += [
+                {"kundennummer": a.kundennummer, "text": a.text, "verfasst_von": a.verfasst_von,
+                 "erstellt_am": a.erstellt_am.isoformat(), "benutzer": a.benutzer_id}
+                for a in alt
+            ]  # fmt: skip
+            alt.delete()
+            antwort = Notiz.objects.create(kundennummer=h.kundennummer, text=ausweis_text(h),
+                                           verfasst_von=von, benutzer=benutzer,
+                                           an_stelle=True)  # fmt: skip
+            antworten.append(antwort.pk)
     Nachricht.objects.filter(pk__in=[n.pk for n in offen]).update(
         erledigt_am=jetzt, erledigt_von=benutzer.get_username()[:150])  # fmt: skip
+    if merken:
+        Ausweisdruck.objects.create(
+            von=von,
+            benutzer=benutzer,
+            kundennummern=sorted(beantwortet),
+            nachrichten=[n.pk for n in offen],
+            antworten=antworten,
+            gestrichen=gestrichen,
+        )
     return len(beantwortet)
+
+
+class DruckFehler(ValueError):
+    pass
+
+
+def offene_drucke():
+    """Sammeldrucke, zu denen noch niemand gesagt hat, ob alles gedruckt wurde."""
+    return Ausweisdruck.objects.filter(bestaetigt_am__isnull=True,
+                                       zurueckgenommen_am__isnull=True)  # fmt: skip
+
+
+def _entscheiden(druck: Ausweisdruck, benutzer) -> Ausweisdruck:
+    druck = Ausweisdruck.objects.select_for_update().get(pk=druck.pk)
+    if not druck.offen:
+        raise DruckFehler("Zu diesem Druck wurde schon entschieden.")
+    druck.entschieden_von = (benutzer.get_full_name() or benutzer.get_username())[:150]
+    return druck
+
+
+@transaction.atomic
+def druck_bestaetigen(druck: Ausweisdruck, benutzer) -> None:
+    """Alle Ausweise sind ordentlich gedruckt: Der Druck ist abgeschlossen."""
+    druck = _entscheiden(druck, benutzer)
+    druck.bestaetigt_am = timezone.now()
+    druck.save()
+
+
+@transaction.atomic
+def druck_zuruecknehmen(druck: Ausweisdruck, benutzer) -> int:
+    """Der Drucker hat nichts (oder nicht alles) ausgegeben: Die Meldungen sind wieder offen,
+    die Notiz „Neuer Ausweis ist gedruckt …“ verschwindet bei den Ausgabestellen, die gestrichene
+    Notiz „Neuen Ausweis drucken“ steht wieder am Haushalt. Liefert die Zahl der Meldungen."""
+    from django.utils.dateparse import parse_datetime
+
+    druck = _entscheiden(druck, benutzer)
+    anzahl = Nachricht.objects.filter(pk__in=druck.nachrichten, anliegen=AUSWEIS).update(
+        erledigt_am=None, erledigt_von="")  # fmt: skip
+    Notiz.objects.filter(pk__in=druck.antworten).delete()
+    for g in druck.gestrichen:
+        Notiz.objects.create(
+            kundennummer=g["kundennummer"],
+            text=g["text"],
+            verfasst_von=g.get("verfasst_von", ""),
+            erstellt_am=parse_datetime(g.get("erstellt_am") or "") or timezone.now(),
+            benutzer_id=g.get("benutzer") if _konto_gibt_es(g.get("benutzer")) else None,
+        )
+    druck.zurueckgenommen_am = timezone.now()
+    druck.save()
+    return anzahl
+
+
+def _konto_gibt_es(pk) -> bool:
+    from django.contrib.auth import get_user_model
+
+    return bool(pk) and get_user_model().objects.filter(pk=pk).exists()
 
 
 def antworten(nachricht: Nachricht, text: str, benutzer) -> Notiz:

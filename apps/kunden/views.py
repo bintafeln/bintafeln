@@ -783,9 +783,11 @@ def ausweise_auswahl(request):
                                                 erledigt_am__isnull=True)
                        .values_list("kundennummer", flat=True))  # fmt: skip
         zurueck = "kunden:nachrichten"
+        merken = True  # der ganze Druck lässt sich zurücknehmen (ADR 0167)
     else:
         nummern = daten.getlist("nummer")
         zurueck = "kunden:verlaengern"
+        merken = False
     haushalte = list(
         zugang.filtern(Haushalt.objects.filter(kundennummer__in=nummern), request.user)
         .select_related("kundengruppe__ausgabestelle")
@@ -795,13 +797,13 @@ def ausweise_auswahl(request):
         messages.error(request, "Keine Haushalte ausgewählt." if not haushalte else
                        f"Mehr als {MAX_SAMMELDRUCK} Haushalte auf einmal.")  # fmt: skip
         return redirect(zurueck)
-    _ausweis_gedruckt(request, haushalte)
+    _ausweis_gedruckt(request, haushalte, merken=merken)
     return pdf_antwort(ausweise_pdf(haushalte), "kundenausweise.pdf")
 
 
-def _ausweis_gedruckt(request, haushalte) -> None:
+def _ausweis_gedruckt(request, haushalte, merken=False) -> None:
     """Gemeldetes „Neuen Ausweis drucken“ beantworten (Notiz an die Ausgabestelle)."""
-    if anzahl := an_stelle.ausweis_gedruckt(haushalte, request.user):
+    if anzahl := an_stelle.ausweis_gedruckt(haushalte, request.user, merken=merken):
         messages.success(request, f"{anzahl} Ausgabestelle{'n' if anzahl != 1 else ''} über den "
                          "neuen Ausweis benachrichtigt.")  # fmt: skip
 

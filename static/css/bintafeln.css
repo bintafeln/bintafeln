@@ -140,6 +140,8 @@ input::-webkit-date-and-time-value { text-align: left; margin: 0; }
   box-shadow: 0 4px 16px rgba(0, 0, 0, .2); }
 .meldung { padding: .75rem 1rem; border-radius: var(--radius); background: var(--erfolg); }
 .meldung.error { background: #f8e1e1; color: var(--fehler); }
+.ausweisdruck { margin: .75rem 0; }
+.ausweisdruck .aktionsleiste { margin-top: .5rem; }
 .meldung.update-neu { border-left: 6px solid var(--akzent); font-size: 1.1rem; }
 
 .marke-rolle {

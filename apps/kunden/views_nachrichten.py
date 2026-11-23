@@ -5,6 +5,7 @@ from collections import Counter
 
 from django import forms
 from django.contrib import messages
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -15,7 +16,7 @@ from django.views.decorators.http import require_POST
 from apps.core.auswahl import NACHRICHT_ANLIEGEN, NACHRICHT_ANLIEGEN_WAEHLBAR
 from apps.konten import rollen
 from apps.kunden import an_stelle, an_verwaltung
-from apps.kunden.models import Haushalt, Nachricht, StellenNachricht
+from apps.kunden.models import Ausweisdruck, Haushalt, Nachricht, StellenNachricht
 
 
 def _stelle(request):
@@ -151,7 +152,31 @@ def liste(request):
         "tage": Nachricht.AUFBEWAHREN_TAGE,
         "anliegen": anliegen, "anliegen_liste": reiter,
         "darf_verlaengern": rollen.hat_recht(request.user, "kunden.bearbeiten"),
+        "ausweisdrucke": list(an_stelle.offene_drucke())
+        if rollen.hat_recht(request.user, "kunden.ausweis") else [],
         "ausweise_gemeldet": rollen.hat_recht(request.user, "kunden.ausweis")
         and Nachricht.objects.filter(anliegen=an_stelle.AUSWEIS, erledigt_am__isnull=True)
         .values("kundennummer").distinct().count(),
     })  # fmt: skip
+
+
+@require_POST
+@rollen.recht_erforderlich("kunden.ausweis")
+def ausweisdruck(request, pk, was):
+    """Nach „Alle gemeldeten Ausweise drucken“: bestätigen, dass alles gedruckt ist, oder den
+    ganzen Druck zurücknehmen (ADR 0167)."""
+    druck = get_object_or_404(Ausweisdruck, pk=pk)
+    try:
+        if was == "bestaetigen":
+            an_stelle.druck_bestaetigen(druck, request.user)
+            messages.success(request, "Der Druck ist als erledigt vermerkt.")
+        elif was == "zuruecknehmen":
+            anzahl = an_stelle.druck_zuruecknehmen(druck, request.user)
+            messages.success(request, f"Der Druck ist zurückgenommen: {anzahl} "
+                             f"Meldung{'en' if anzahl != 1 else ''} wieder offen. „Alle "
+                             "gemeldeten Ausweise drucken“ druckt sie erneut.")  # fmt: skip
+        else:
+            raise Http404
+    except an_stelle.DruckFehler as fehler:
+        messages.error(request, str(fehler))
+    return redirect("kunden:nachrichten")
