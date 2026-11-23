@@ -406,6 +406,7 @@ def anlegen(request):
             request.user, daten, form.cleaned_data["rollen"], einladung=per_mail
         )
         ziel.ausgabestellen.set(form.cleaned_data["ausgabestellen"])
+        verwaltung.eintritt_vorbelegen(ziel)
         if not per_mail:
             return _startpasswort_zeigen(request, ziel, passwort, neu=True)
         try:

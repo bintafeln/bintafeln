@@ -2,6 +2,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.urls import reverse
+from django.utils import timezone
 from django_otp.plugins.otp_totp.models import TOTPDevice
 
 from apps.konten import rollen, verwaltung
@@ -398,6 +399,8 @@ def test_anlegen_zeigt_startpasswort_einmal(admin_client, client):
     assert max_.passwort_aendern and max_.beschaeftigung == "fest"
     assert rollen.rollen_von(max_) == {rollen.FAHRER, rollen.BEIFAHRER}
     assert max_.check_password(passwort)
+    # Eintritt: der Tag, an dem die Person angelegt wurde
+    assert max_.stammdaten.eintritt == timezone.localdate()
 
 
 def test_benutzername_doppelt(admin_client):
@@ -900,3 +903,18 @@ def test_entsperren_nimmt_die_kategorie_ehemalige_wieder_weg(admin_client, admin
         getattr(verwaltung, weg)(admin, ziel)
         assert ziel.username not in _namen(admin_client, "ehemalige")
         assert ziel.username in _namen(admin_client, "ehrenamtliche"), weg
+
+
+def test_eintritt_vorbelegen_laesst_vorhandenes_datum(admin):
+    """Ein schon eingetragener Eintritt bleibt; der Import belegt nichts vor."""
+    import datetime as dt
+
+    from apps.konten.models import Stammdaten
+
+    konto, _ = verwaltung.anlegen(admin, {"username": "alt", "first_name": "Alt"}, [rollen.AUSGABE])
+    sd = Stammdaten.objects.get(benutzer=konto)
+    assert sd.eintritt is None  # anlegen() allein (wie im Import) setzt kein Datum
+    sd.eintritt = dt.date(2019, 5, 1)
+    sd.save()
+    verwaltung.eintritt_vorbelegen(konto)
+    assert Stammdaten.objects.get(benutzer=konto).eintritt == dt.date(2019, 5, 1)
