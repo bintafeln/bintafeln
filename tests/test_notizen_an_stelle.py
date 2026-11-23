@@ -209,3 +209,79 @@ def test_ausweise_auswahl_nur_mit_recht_und_eigene_stelle(
     antwort = client.post(url, {"nummer": ["801"]})  # fremde Ausgabestelle
     assert antwort.status_code == 302 and antwort.url == reverse("kunden:verlaengern")
     assert client.post(url, {"nummer": ["801", "802"]})["Content-Type"] == "application/pdf"
+
+
+def test_sammeldruck_zuruecknehmen_oder_bestaetigen(admin_client, admin, ausgabe, mitte):
+    """„Alle gemeldeten Ausweise drucken“ merkt sich den Druck (ADR 0167): Hat der Drucker nichts
+    ausgegeben, nimmt „Nein, zurücknehmen“ alles zurück."""
+    from apps.kunden import an_stelle
+    from apps.kunden.models import Ausweisdruck
+
+    haushalt("801", mitte)
+    haushalt("802", mitte)
+    vorlage = NotizVorlage.objects.get(melden="ausweis")
+    ausgabe.post(reverse("ausgabe:notiz", args=["801"]), {"text": vorlage.text})
+    Nachricht.objects.create(kundennummer="802", anliegen="ausweis")
+    gemeldet = Notiz.objects.get(kundennummer="801")
+    url = reverse("kunden:nachrichten")
+    assert "ordentlich aus dem Drucker" not in admin_client.get(url).content.decode()
+    # Einzeldruck merkt sich nichts
+    Nachricht.objects.create(kundennummer="803", anliegen="ausweis")
+    haushalt("803", mitte)
+    admin_client.get(reverse("kunden:ausweis", args=["803"]))
+    assert not Ausweisdruck.objects.exists()
+    # Sammeldruck: Meldungen erledigt, Antwort bei der Ausgabestelle, gemeldete Notiz gestrichen
+    pdf = admin_client.get(reverse("kunden:ausweise_auswahl"), {"gemeldet": "1"})
+    assert pdf["Content-Type"] == "application/pdf"
+    druck = Ausweisdruck.objects.get()
+    assert druck.kundennummern == ["801", "802"] and druck.offen and len(druck.nachrichten) == 2
+    assert not Nachricht.objects.filter(erledigt_am__isnull=True).exists()
+    assert not Notiz.objects.filter(pk=gemeldet.pk).exists()
+    assert Notiz.objects.filter(an_stelle=True, kundennummer__in=["801", "802"]).count() == 2
+    seite = admin_client.get(url).content.decode()
+    assert "2 Ausweise gedruckt" in seite and "801, 802" in seite
+    # Ohne das Recht: kein Kasten, kein Zurücknehmen
+    zurueck = reverse("kunden:ausweisdruck", args=[druck.pk, "zuruecknehmen"])
+    assert ausgabe.post(zurueck).status_code == 403
+    assert admin_client.get(zurueck).status_code == 405
+    # Zurücknehmen: alles wie vor dem Druck
+    antwort = admin_client.post(zurueck, follow=True)
+    assert "2 Meldungen wieder offen" in antwort.content.decode()
+    assert Nachricht.objects.filter(erledigt_am__isnull=True, anliegen="ausweis").count() == 2
+    assert not Notiz.objects.filter(an_stelle=True, kundennummer__in=["801", "802"]).exists()
+    wieder = Notiz.objects.get(kundennummer="801")
+    assert wieder.text == vorlage.text and wieder.erstellt_am == gemeldet.erstellt_am
+    assert wieder.verfasst_von == gemeldet.verfasst_von
+    druck.refresh_from_db()
+    assert not druck.offen and druck.zurueckgenommen_am and druck.entschieden_von
+    assert "ordentlich aus dem Drucker" not in admin_client.get(url).content.decode()
+    # Ein zweites Mal geht nicht
+    antwort = admin_client.post(zurueck, follow=True)
+    assert "schon entschieden" in antwort.content.decode()
+    with pytest.raises(an_stelle.DruckFehler):
+        an_stelle.druck_bestaetigen(druck, admin)
+    # Erneut drucken und bestätigen: Der Kasten verschwindet, alles bleibt erledigt
+    admin_client.get(reverse("kunden:ausweise_auswahl"), {"gemeldet": "1"})
+    neu = Ausweisdruck.objects.exclude(pk=druck.pk).get()
+    assert neu.kundennummern == ["801", "802"]
+    antwort = admin_client.post(reverse("kunden:ausweisdruck", args=[neu.pk, "bestaetigen"]),
+                                follow=True)  # fmt: skip
+    assert "als erledigt vermerkt" in antwort.content.decode()
+    assert "ordentlich aus dem Drucker" not in antwort.content.decode()
+    assert not Nachricht.objects.filter(erledigt_am__isnull=True).exists()
+    assert admin_client.post(reverse("kunden:ausweisdruck", args=[neu.pk, "quatsch"])
+                             ).status_code == 404  # fmt: skip
+
+
+def test_alte_ausweisdrucke_werden_geloescht():
+    import datetime as dt
+
+    from django.utils import timezone
+
+    from apps.kunden.models import Ausweisdruck, alte_nachrichten_loeschen
+
+    alt = Ausweisdruck.objects.create(gedruckt_am=timezone.now() - dt.timedelta(days=91))
+    neu = Ausweisdruck.objects.create()
+    alte_nachrichten_loeschen()
+    assert not Ausweisdruck.objects.filter(pk=alt.pk).exists()
+    assert Ausweisdruck.objects.filter(pk=neu.pk).exists()

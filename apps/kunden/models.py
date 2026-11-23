@@ -849,6 +849,40 @@ class Nachricht(models.Model):
         return f"Nachricht zu {self.kundennummer}"
 
 
+class Ausweisdruck(models.Model):
+    """Ein Sammeldruck „Alle gemeldeten Ausweise drucken“ (ADR 0167). Hält fest, welche Meldungen
+    er erledigt und welche Notizen er geschrieben oder gestrichen hat – damit sich der ganze
+    Druck zurücknehmen lässt, wenn der Drucker nichts ausgegeben hat. Logik in
+    ``apps/kunden/an_stelle.py``; nach ``AUFBEWAHREN_TAGE`` gelöscht."""
+
+    AUFBEWAHREN_TAGE = 90
+
+    gedruckt_am = models.DateTimeField("Gedruckt am", default=timezone.now)
+    von = models.CharField("Gedruckt von", max_length=150, blank=True)
+    benutzer = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                 on_delete=models.SET_NULL, related_name="+")  # fmt: skip
+    kundennummern = models.JSONField("Kundennummern", default=list)
+    nachrichten = models.JSONField("Erledigte Meldungen", default=list)
+    antworten = models.JSONField("Notizen an die Ausgabestellen", default=list)
+    # Die beim Druck gestrichenen Notizen „Neuen Ausweis drucken“, zum Wiederherstellen
+    gestrichen = models.JSONField("Gestrichene Notizen", default=list)
+    bestaetigt_am = models.DateTimeField("Als gedruckt bestätigt am", null=True, blank=True)
+    zurueckgenommen_am = models.DateTimeField("Zurückgenommen am", null=True, blank=True)
+    entschieden_von = models.CharField("Entschieden von", max_length=150, blank=True)
+
+    class Meta:
+        verbose_name = "Ausweisdruck"
+        verbose_name_plural = "Ausweisdrucke"
+        ordering = ["-gedruckt_am"]
+
+    def __str__(self):
+        return f"Ausweisdruck {self.gedruckt_am:%d.%m.%Y %H:%M}"
+
+    @property
+    def offen(self) -> bool:
+        return self.bestaetigt_am is None and self.zurueckgenommen_am is None
+
+
 class StellenNachricht(models.Model):
     """Nachricht einer Ausgabestelle an die Verwaltung ohne Bezug zu einem Kunden (ADR 0140).
     Geht per Mail an die Tafel; die Verwaltung antwortet im Programm, die Antwort steht auf der
@@ -1338,6 +1372,8 @@ def alte_nachrichten_loeschen() -> int:
     weg = Nachricht.objects.filter(erledigt_am__lt=grenze).delete()[0]
     grenze = timezone.now() - dt.timedelta(days=StellenNachricht.AUFBEWAHREN_TAGE)
     weg += StellenNachricht.objects.filter(erledigt_am__lt=grenze).delete()[0]
+    grenze = timezone.now() - dt.timedelta(days=Ausweisdruck.AUFBEWAHREN_TAGE)
+    weg += Ausweisdruck.objects.filter(gedruckt_am__lt=grenze).delete()[0]
     # Post an Ausgabestellen: wenn alle gelesen haben und die Frist seit dem Schreiben um ist
     grenze = timezone.now() - dt.timedelta(days=Rundschreiben.AUFBEWAHREN_TAGE)
     alt = Rundschreiben.objects.filter(erstellt_am__lt=grenze).exclude(
@@ -1440,6 +1476,7 @@ for modell in (
 auditlog.register(Person, exclude_fields=["such_name"])  # such_name ist abgeleitet
 auditlog.register(HaushaltDokument, exclude_fields=["datei"])
 auditlog.register(Nachricht)
+auditlog.register(Ausweisdruck)
 auditlog.register(StellenNachricht)
 auditlog.register(Rundschreiben)
 auditlog.register(PostEmpfang)
