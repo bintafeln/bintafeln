@@ -277,6 +277,21 @@ def test_einstellungen_stelle_aufgaben_kopieren(team, admin_client):
         {"aktion": "besetzung", f"h_{kasse_nord.pk}": h["uwe"].pk}, follow=True)  # fmt: skip
     assert "an zwei Ausgabestellen" in antwort.content.decode()
     assert not Besetzung.objects.filter(aufgabe=kasse_nord).exists()
+    # Sofort-Speichern: Die Tabelle speichert jede Auswahl ohne Knopf; eine übergangene Person
+    # steht dann als Fehler in der Antwort (erscheint am Feld), sonst leitet die Ansicht weiter
+    assert "data-autosave" in seite.split('value="besetzung"')[0].rsplit("<form", 1)[1]
+    sofort = {"HTTP_X_REQUESTED_WITH": "XMLHttpRequest"}
+    antwort = admin_client.post(
+        reverse("dienstplan:stelle", args=[nord.ausgabestelle_id]) + "?tag=Fr",
+        {"aktion": "besetzung", f"h_{kasse_nord.pk}": h["uwe"].pk}, **sofort)  # fmt: skip
+    assert antwort.status_code == 200 and 'class="fehler"' in antwort.content.decode()
+    assert not Besetzung.objects.filter(aufgabe=kasse_nord).exists()
+    antwort = admin_client.post(
+        f"{url}?tag=Fr",
+        {"aktion": "besetzung", f"h_{a[1].pk}": h["uwe"].pk, f"h_{a[2].pk}": h["paul"].pk,
+         f"h_{a[3].pk}": h["uwe"].pk}, **sofort)  # fmt: skip
+    assert antwort.status_code == 302
+    assert Besetzung.objects.get(aufgabe=a[2]).helfer == h["paul"]
     # Einspringen: an der eigenen Ausgabestelle auch mit Aufgabe, an einer anderen nicht
     assert h["uwe"] not in plan.verfuegbar(FREITAG)
     assert h["uwe"] in plan.verfuegbar(FREITAG, ds)
