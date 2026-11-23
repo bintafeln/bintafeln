@@ -743,6 +743,13 @@ details.kapazitaet-karte:not([open]) > summary::before { content: "▸"; }
 .kunden-titel p { margin: 0 0 .25rem; }
 .aufgenommen-schnellwahl { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin: 0 0 1rem; }
 .aufgenommen-schnellwahl .aktiv { background: var(--akzent); color: var(--auf-akzent); }
+/* Touren heute: Nachricht der Fahrdienstleitung an die Mannschaft (ADR 0168) */
+.tour-nachrichten { margin-top: 1.5rem; padding-top: 1rem; border-top: 2px solid var(--rand); }
+.tour-nachrichten .tour-kurztexte { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0; }
+.tour-nachrichten form { display: flex; flex-direction: column; align-items: flex-start; gap: .6rem; }
+.tour-nachrichten .filter-feld { width: min(100%, 36rem); }
+.tour-nachrichten .filter-feld input, .tour-nachrichten .filter-feld select { width: 100%; }
+.heuler-text { font-size: 1.25rem; white-space: pre-line; }
 /* Touren planen: regelmäßige Touren nach Fahrtag, Zwischenüberschrift je Wochentag */
 .touren-uebersicht .touren-tag th { background: var(--flaeche-2); font-size: 1.05rem; padding-top: .6rem;
   border-top: 2px solid var(--rand); text-align: left; }

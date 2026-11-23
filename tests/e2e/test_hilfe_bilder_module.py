@@ -1470,3 +1470,57 @@ def test_hilfe_bild_touren_lieferschein(angemeldet, admin, muster):
         rand=8,
     )  # fmt: skip
     seite.set_viewport_size({"width": 1280, "height": 900})
+
+
+def test_hilfe_bild_touren_nachricht(angemeldet, admin, muster, benutzer_mit_rolle):
+    """Nachricht der Fahrdienstleitung an die Mannschaft (ADR 0168): schicken unter „Touren
+    heute“ (Kurztext antippen), roter Brief bei der Mannschaft, „Gelesen“, Stand beim Büro."""
+    from apps.adressen.models import Adresse
+    from apps.core import demo_daten
+    from apps.touren import ablauf
+    from apps.touren.models import Station, Tour, Tournachricht
+
+    _module("touren")
+    demo_daten.touren()
+    ich = Adresse.objects.filter(konto=admin).first() or Adresse.objects.create(
+        art=Adresse.Art.PERSON, vorname="Clara", nachname="Beispiel", konto=admin
+    )
+    tour = Tour.objects.create(name="Nordtour", datum=timezone.localdate(), fahrer=ich)
+    tour.personen.add(ich)
+    for kennung in ("S-1", "S-2"):
+        ablauf.halt_anhaengen(tour, Station.objects.get(kennung=kennung))
+    # Der Admin plant und fährt hier selbst mit: Er schickt und bekommt den Brief
+    seite = oeffnen(angemeldet, admin, reverse("touren:heute"))
+    bereich = seite.locator("#nachrichten")
+    bereich.get_by_role("button", name="Bitte im Büro anrufen").click()
+    expect(seite.locator("#nachricht-text")).to_have_value("Bitte im Büro anrufen")
+    seite.locator("#nachricht-tour").select_option(str(tour.pk))
+    aufnehmen(
+        seite,
+        "touren-nachricht",
+        [bereich],
+        Marke(seite.locator("#nachricht-tour"), art="rahmen", nummer=1),
+        Marke(bereich.locator(".tour-kurztexte"), art="rahmen", nummer=2),
+        Marke(bereich.get_by_role("button", name="Schicken"), art="rahmen", nummer=3),
+        rand=8,
+    )
+    bereich.get_by_role("button", name="Schicken").click()
+    expect(seite.locator("#nachrichten-tabelle")).to_contain_text("noch nicht bestätigt")
+    nachricht = Tournachricht.objects.get()
+    seite.set_viewport_size({"width": 400, "height": 900})
+    brief = seite.locator("dialog.heuler-dialog")
+    expect(brief).to_be_visible()
+    expect(brief).to_contain_text("Nachricht für die Tour Nordtour")
+    expect(brief).to_contain_text("Bitte im Büro anrufen")
+    seite.keyboard.press("Escape")  # lässt sich nicht wegdrücken
+    expect(brief).to_be_visible()
+    seite.wait_for_timeout(1600)  # Rütteln abwarten
+    aufnehmen(seite, "touren-nachricht-brief", [brief], rand=8)
+    brief.get_by_role("button", name="✓ Gelesen – zur Tour").click()
+    expect(seite).to_have_url(re.compile(rf"/tour/{tour.pk}/"))
+    expect(seite.locator("dialog.heuler-dialog")).to_have_count(0)
+    nachricht.refresh_from_db()
+    assert nachricht.gesehen_am is not None
+    seite.set_viewport_size({"width": 1280, "height": 900})
+    seite.goto(reverse("touren:heute"))
+    expect(seite.locator("#nachrichten-tabelle .marke-ok")).to_be_visible()

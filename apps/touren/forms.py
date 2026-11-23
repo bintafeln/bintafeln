@@ -6,6 +6,7 @@ from apps.konten.forms import DatumEingabe
 from apps.touren.models import (
     Fahrzeug,
     FahrzeugDokument,
+    Kurztext,
     Station,
     Tour,
     TourenEinstellungen,
@@ -334,6 +335,13 @@ class FahrzeugDokumentForm(forms.ModelForm):
 UmstaendeFormSet = forms.modelformset_factory(
     Umstand,
     fields=["name", "reihenfolge", "anmerkung_pflicht", "aktiv"],
+    extra=2,
+    can_delete=False,
+)
+
+KurztexteFormSet = forms.modelformset_factory(
+    Kurztext,
+    fields=["text", "reihenfolge", "aktiv"],
     extra=2,
     can_delete=False,
 )

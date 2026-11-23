@@ -21,6 +21,7 @@ from apps.touren import lieferscheine
 from apps.touren.forms import (
     EinrichtenForm,
     EinstellungenForm,
+    KurztexteFormSet,
     UmstaendeFormSet,
     WarengruppenFormSet,
 )
@@ -181,6 +182,7 @@ def einrichten(request):
         "einrichten": lambda daten: EinrichtenForm(daten, instance=TourenEinstellungen.laden()),
         "warengruppen": lambda daten: WarengruppenFormSet(daten, prefix="wg"),
         "umstaende": lambda daten: UmstaendeFormSet(daten, prefix="um"),
+        "kurztexte": lambda daten: KurztexteFormSet(daten, prefix="kt"),
     }
     welches = next((name for name in teile if name in request.POST), None)
     formulare = {name: bauen(request.POST if name == welches else None)
@@ -192,6 +194,7 @@ def einrichten(request):
     return render(request, "touren/einrichten.html", {
         "form": formulare["einrichten"], "gruppen": formulare["warengruppen"],
         "umstaende": formulare["umstaende"],
+        "kurztexte": formulare["kurztexte"],
         "fahrzeuge": Fahrzeug.objects.filter(verkauft_am=None).annotate(
             papiere=Count("dokumente")
         ),

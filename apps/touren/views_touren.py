@@ -23,6 +23,7 @@ from apps.touren import (
     heuler,
     importieren_touren,
     lieferscheine,
+    nachrichten,
     suche,
     tourtag,
     zusatz,
@@ -78,6 +79,10 @@ def heute(request):
         "tag": tag, "ist_heute": tag == heute_, "zeilen": zeilen,
         "davor": tag - dt.timedelta(days=1), "danach": tag + dt.timedelta(days=1),
         "darf_planen": rollen.hat_recht(request.user, "touren.planen"),
+        # Nachrichten an die Mannschaft (ADR 0168): schicken nur heute, sehen wer plant
+        "darf_senden": tag == heute_ and nachrichten.darf_senden(request.user) and zeilen,
+        "kurztexte": nachrichten.kurztexte(),
+        "nachrichten": nachrichten.am(tag) if nachrichten.darf_senden(request.user) else [],
     })  # fmt: skip
 
 
@@ -209,10 +214,52 @@ def zusatzstopp_weg(request, pk):
 @never_cache
 @fahren_recht
 def heuler_stand(request):
-    """Für die Kopfzeile: der älteste neue Stopp vom Büro, den noch niemand bestätigt hat."""
-    offen = heuler.offene(request.user)
-    inhalt = {"stopp": offen[0] if offen else None, "weitere": max(len(offen) - 1, 0)}
+    """Für die Kopfzeile: das Älteste, das noch niemand aus der Mannschaft bestätigt hat – ein
+    neuer Stopp vom Büro oder eine Nachricht der Fahrdienstleitung (ADR 0159, 0168)."""
+    offen = sorted(
+        [(x.angelegt_am, "stopp", x) for x in heuler.offene(request.user)]
+        + [(x.gesendet_am, "nachricht", x) for x in nachrichten.offene(request.user)],
+        key=lambda eintrag: eintrag[0],
+    )
+    inhalt = {"stopp": None, "nachricht": None, "weitere": max(len(offen) - 1, 0)}
+    if offen:
+        inhalt[offen[0][1]] = offen[0][2]
     return render(request, "touren/_heuler.html", inhalt)
+
+
+@require_POST
+@planen
+def nachricht_senden(request):
+    """Fahrdienstleitung: Nachricht an die Mannschaft einer Tour von heute oder an alle Touren
+    von heute (ADR 0168)."""
+    heute_ = timezone.localdate()
+    wahl = request.POST.get("tour", "")
+    alle = ablauf.touren_am(heute_)
+    touren_ = alle if wahl == "alle" else [t for t in alle if str(t.pk) == wahl]
+    try:
+        neu = nachrichten.senden(touren_, request.POST.get("text", ""), request.user)
+    except nachrichten.NachrichtFehler as fehler:
+        messages.error(request, str(fehler))
+    else:
+        ohne = [n.tour.name for n in neu if not heuler.mannschaft(n.tour, heute_)]
+        messages.success(request, f"Nachricht an {len(neu)} Tour{'en' if len(neu) != 1 else ''} "
+                         "geschickt. Unten sehen Sie, wer sie bestätigt hat.")  # fmt: skip
+        if ohne:
+            messages.warning(request, "Auf diesen Touren ist heute niemand mit Konto eingetragen, "
+                             "dort sieht sie niemand: " + ", ".join(ohne) + ".")  # fmt: skip
+    return redirect(f"{reverse('touren:heute')}#nachrichten")
+
+
+@require_POST
+@fahren_recht
+def nachricht_gesehen(request, pk):
+    from apps.touren.models import Tournachricht
+
+    n = get_object_or_404(Tournachricht.objects.select_related("tour"), pk=pk)
+    if not nachrichten.gesehen(n, request.user):
+        messages.error(request, "Diese Nachricht kann nur die Mannschaft der Tour bestätigen.")
+        return redirect("touren:heute")
+    return redirect(nachrichten.adresse(n))
 
 
 @require_POST

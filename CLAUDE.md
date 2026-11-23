@@ -449,6 +449,9 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   fährt nicht mit), Push an die Mannschaft über `apps.core.push`, roter Brief über jeder Seite
   (`Modul.kopfzeile`, `touren/_heuler.html`, `static/js/heuler.js`), bis jemand aus der Mannschaft
   bestätigt (`heuler.gesehen()`); nichts bei Stopps der Mannschaft selbst.
+  Nachricht der Fahrdienstleitung an die Mannschaft (ADR 0168): `Tournachricht` je Tour und Tag über
+  `apps/touren/nachrichten.py` (`senden()` nur heute, auch an alle Touren; derselbe rote Brief und
+  Push; `gesehen()`; fertige Texte `Kurztext` unter „Einrichten“); Stand je Nachricht unter „Touren heute“.
   Statistik der Touren (ADR 0157): `apps/touren/statistik.py` (`Daten(jahr)`, Abschnitte für
   `statistik/_abschnitt.html`), Kisten → kg über `Gewichte` (`Warengruppe.kiste_kg`, sonst
   `TourenEinstellungen.kiste_kg`); **nie eine Auswertung je Person**. Recht `touren.statistik`.
