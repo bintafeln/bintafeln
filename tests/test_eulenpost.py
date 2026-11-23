@@ -30,7 +30,10 @@ def stellen(admin, benutzer_mit_rolle, anmelden):
 def test_schreiben_eule_lesen(stellen, admin_client):
     c, mitte, nord = stellen
     seite = admin_client.get(SCHREIBEN).content.decode()
-    assert "Eule losschicken" in seite and "Alt" not in seite  # nur aktive Ausgabestellen
+    # nur aktive Ausgabestellen – am Auswahlfeld geprüft, nicht am bloßen Wort „Alt“: Das stand
+    # sonst zufällig auch einmal im Sicherheits-Token der Seite
+    assert "Eule losschicken" in seite and "> Mitte</label>" in seite
+    assert "> Alt</label>" not in seite
     # nichts angehakt = alle aktiven
     antwort = admin_client.post(SCHREIBEN, {"betreff": "Kühlware", "text": "Morgen keine Kühlware.",
                                             "wichtig": "on"})  # fmt: skip

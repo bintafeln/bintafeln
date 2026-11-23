@@ -26,6 +26,9 @@ from apps.kunden.namen import normal
 
 MIN_PUNKTE = 55
 MAX_TREFFER = 10
+# Ab dieser Übereinstimmung gilt ein Treffer als „bitte prüfen“: Vorgabe des Reglers auf der
+# Abgleich-Seite, und nur solche zählt die Zahl im Menü
+AB_PRUEFEN = 65
 
 # Feld, Bezeichnung, gehört zum Haushalt (sonst zur Hauptperson)
 FELDER = [
@@ -86,7 +89,7 @@ def einstufung(punkte: int) -> tuple[str, str]:
     und Klartext. Die Punkte stehen daneben nur noch als Detail."""
     if punkte >= 80:
         return "hoch", "sehr wahrscheinlich dieselbe Person"
-    if punkte >= 65:
+    if punkte >= AB_PRUEFEN:
         return "mittel", "möglich – bitte prüfen"
     return "niedrig", "eher nicht – nur bei Bedarf"
 

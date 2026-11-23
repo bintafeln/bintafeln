@@ -13,7 +13,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 
-from apps.antraege import sprachen
+from apps.antraege import aufnahme, sprachen
 from apps.antraege import uebersetzen as uebersetzen_ki
 from apps.antraege.models import Antrag
 from apps.core import listen, listenexport, papierkorb
@@ -526,7 +526,7 @@ def abgleich_ergebnis(request):
     return render(request, "warteliste/_abgleich_ergebnis.html",
                   {"ergebnis": gefiltert, "bereit": bereit, "weiter": weiter,
                    "aktualisiert": not frisch, "nachladen": nachladen,
-                   "ziel": "abgleich-ergebnis"})  # fmt: skip
+                   "ziel": "abgleich-ergebnis", "schwelle": aufnahme.AB_PRUEFEN})  # fmt: skip
 
 
 @require_POST
