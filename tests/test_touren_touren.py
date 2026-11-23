@@ -770,8 +770,8 @@ def test_eco_plattform_link(buero, admin_client):
     for name in ("touren:heute", "touren:touren"):
         seite = buero.get(reverse(name)).content.decode()
         assert seite.count("ECO-Plattform") == 1
-        eintrag = f'<a href="{reverse("touren:eco")}" target="_blank" rel="noopener">'
-        assert eintrag + "ECO-Plattform ↗" in seite
+        eintrag = f'<a href="{reverse("touren:eco")}" target="_blank" rel="noopener" data-extern>'
+        assert eintrag + "ECO-Plattform ↗<" in seite  # ein Pfeil, nicht zwei
     # Touren, Stationen und Lieferscheine bleiben nutzbar
     assert buero.get(reverse("touren:stationen")).status_code == 200
 
@@ -951,3 +951,15 @@ def test_touren_planen_zeigt_uebliche_laenge(buero):
         Fahrt.objects.create(tour=t, tour_name=t.name, datum=MONTAG + dt.timedelta(days=7 * tag),
                              km_start=0, km_ende=100, begonnen_am=jetzt)  # fmt: skip
     assert fahrten.uebliche_laenge([t]) == {t.pk: (100, fahrten.LAENGE_AUS)}
+
+
+def test_maske_blendet_eigene_plaetze_bei_tour_aus_dem_fahrerplan_aus():
+    """Bei einer Tour aus dem Fahrerplan steht die Besetzung oben; die leeren Felder für Fahrer,
+    Beifahrer und Gast sähen aus, als fehlten die Fahrer – sie erscheinen nur bei eigenen Touren."""
+    from apps.touren.forms import TourForm
+
+    mit = TourForm(fahrdienst=True)
+    for name in ("fahrer", "beifahrer", "beifahrer2", "gast"):
+        assert mit.fields[name].widget.attrs["data-zeigen-bei"] == "fahrdienst_tour="
+    ohne = TourForm(fahrdienst=False)  # Fahrdienst-Modul aus: nur eigene Touren, Felder immer da
+    assert "data-zeigen-bei" not in ohne.fields["fahrer"].widget.attrs

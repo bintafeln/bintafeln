@@ -12,8 +12,12 @@ def menue(eintrag):
     entscheidet (Mailversand, Karte, Aufbewahrung)."""
     from apps.touren.models import TourenEinstellungen
 
-    eco = ([("touren.fahren", eintrag("ECO-Plattform ↗", "touren:eco", extern=True))]
-           if TourenEinstellungen.laden().eco_link else [])  # fmt: skip
+    eco = []
+    if TourenEinstellungen.laden().eco_link:
+        # „fremd“: führt zu einer fremden Seite. Das PDF-Fenster der App (pdf_fenster.js) lässt
+        # solche Links in Ruhe, sonst versuchte es, die fremde Seite als PDF zu laden.
+        eco = [("touren.fahren", eintrag("ECO-Plattform", "touren:eco", extern=True) | {
+            "fremd": True})]  # fmt: skip
     return [
         ("Touren", [
             ("touren.fahren", eintrag("Touren heute", "touren:heute", genau=True)),

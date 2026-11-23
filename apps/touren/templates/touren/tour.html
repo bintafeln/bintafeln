@@ -66,7 +66,7 @@
     {% endif %}
   </div>
   {% if tour.gesendet_am %}<p class="hinweis">Zuletzt geschickt am {{ tour.gesendet_am|date:"d.m.Y H:i" }}.</p>{% endif %}
-  {% if aus_fahrerplan %}<p class="hinweis">Die Besetzung kommt aus dem Fahrerplan (oben). Fahrer, Beifahrer und Gast in dieser Maske gelten dann nicht; „Fahrtage“ grenzen nur ein, an welchen Tagen des Fahrerplans diese Reihenfolge gilt.</p>{% endif %}
+  {% if aus_fahrerplan %}<p class="hinweis">Die Besetzung kommt aus dem Fahrerplan und steht oben auf dieser Seite; deshalb gibt es hier keine Felder für Fahrer, Beifahrer und Gast. „Fahrtage“ grenzen nur ein, an welchen Tagen des Fahrerplans diese Reihenfolge gilt.</p>{% endif %}
   {% endif %}
 </section>
 {% if tour %}
