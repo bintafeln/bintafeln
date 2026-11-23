@@ -1962,6 +1962,31 @@ def test_pdf_fenster_kassenabschluss_am_tablet(angemeldet, admin, live_server, s
     assert seite.url.endswith(reverse("ausgabe:kasse"))
 
 
+def test_fremder_link_im_menue_oeffnet_kein_pdf_fenster(angemeldet, admin, live_server, settings):
+    """Der Menüpunkt „ECO-Plattform“ führt zu einer fremden Seite. In der App bzw. am Kiosk-Tablet
+    darf das PDF-Fenster ihn nicht abfangen (es meldete sonst „Das PDF konnte nicht geladen
+    werden“); er öffnet wie gewohnt ein neues Fenster."""
+    from apps.core.models import TafelEinstellungen
+    from apps.touren.models import TourenEinstellungen
+
+    t = TafelEinstellungen.laden()
+    t.module = [*t.module, "touren"]
+    t.save()
+    e = TourenEinstellungen.laden()
+    e.eco_plattform, e.eco_adresse = True, f"{live_server.url}/hilfe/"
+    e.save()
+    seite = angemeldet(admin)
+    _tablet(seite, live_server, settings)
+    seite.goto(reverse("touren:heute"))
+    link = seite.get_by_role("link", name=re.compile("ECO-Plattform"))
+    assert link.inner_text().count("↗") == 1
+    with seite.context.expect_page() as neu:
+        link.click()
+    assert "/hilfe/" in neu.value.url
+    expect(seite.locator("dialog.pdf-fenster")).to_have_count(0)
+    assert seite.url.endswith(reverse("touren:heute"))
+
+
 def test_druckansicht_als_seite(angemeldet, admin, live_server, settings):
     """Wird ein PDF direkt als Seite geöffnet (ADR 0141): Druckansicht mit Teilen-Menü; gedruckt
     werden nur die Seiten."""

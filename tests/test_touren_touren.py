@@ -770,8 +770,8 @@ def test_eco_plattform_link(buero, admin_client):
     for name in ("touren:heute", "touren:touren"):
         seite = buero.get(reverse(name)).content.decode()
         assert seite.count("ECO-Plattform") == 1
-        eintrag = f'<a href="{reverse("touren:eco")}" target="_blank" rel="noopener">'
-        assert eintrag + "ECO-Plattform ↗" in seite
+        eintrag = f'<a href="{reverse("touren:eco")}" target="_blank" rel="noopener" data-extern>'
+        assert eintrag + "ECO-Plattform ↗<" in seite  # ein Pfeil, nicht zwei
     # Touren, Stationen und Lieferscheine bleiben nutzbar
     assert buero.get(reverse("touren:stationen")).status_code == 200
 
