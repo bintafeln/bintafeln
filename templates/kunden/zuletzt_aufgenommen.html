@@ -1,10 +1,25 @@
 {% extends "base.html" %}
+{% load liste %}
 {% block titel %}Zuletzt aufgenommen{% endblock %}
 {% block inhalt %}
 <section class="karte breit">
   <h1>Zuletzt aufgenommene Kunden</h1>
-  <p class="hinweis">Die letzten {{ anzahl }} in bintafeln aufgenommenen Haushalte (über den Aufnahme-Assistenten
-    oder „Neuer Haushalt“), der jüngste zuerst.</p>
+  <form class="filter-kompakt" method="get">
+    <div class="filter-feld"><label for="von">Aufgenommen von</label>
+      <input type="date" name="von" id="von" value="{{ filter.von }}"></div>
+    <div class="filter-feld"><label for="bis">bis</label>
+      <input type="date" name="bis" id="bis" value="{{ filter.bis }}"></div>
+    <button type="submit" class="knopf">Anzeigen</button>
+    {% filter_zuruecksetzen %}
+  </form>
+  <p class="aufgenommen-schnellwahl">Schnellwahl:
+    {% for z in schnellwahl %}<a class="knopf knopf-zweitrangig knopf-klein{% if z.von == filter.von and z.bis == filter.bis %} aktiv{% endif %}" href="?von={{ z.von }}&amp;bis={{ z.bis }}"{% if z.von == filter.von and z.bis == filter.bis %} aria-current="true"{% endif %}>{{ z.name }}</a>{% endfor %}</p>
+  {% if zeitraum %}
+  <p><strong>{{ gesamt }} Haushalt{{ gesamt|pluralize:"e" }}</strong> aufgenommen{% if von and bis %} vom {{ von|date:"d.m.Y" }} bis {{ bis|date:"d.m.Y" }}{% elif von %} seit dem {{ von|date:"d.m.Y" }}{% else %} bis zum {{ bis|date:"d.m.Y" }}{% endif %}, der jüngste zuerst.</p>
+  {% else %}
+  <p class="hinweis">Ohne Zeitraum: die letzten {{ anzahl }} in bintafeln aufgenommenen Haushalte (über den
+    Aufnahme-Assistenten oder „Neuer Haushalt“), der jüngste zuerst. Für ältere oben einen Zeitraum wählen.</p>
+  {% endif %}
   <div class="tabelle-rahmen">
   <table class="tabelle">
     <thead><tr><th>Aufgenommen am</th><th>Kundennummer</th><th>Name</th><th>Personen</th><th>Kundengruppe</th><th>Ausweis gültig bis</th></tr></thead>
@@ -19,10 +34,11 @@
         <td data-titel="Ausweis gültig bis">{{ z.h.ausweis_gueltig_bis|date:"d.m.Y"|default:"–" }}</td>
       </tr>
     {% empty %}
-      <tr><td colspan="6">Noch niemand in bintafeln aufgenommen.</td></tr>
+      <tr><td colspan="6">{% if zeitraum %}In diesem Zeitraum wurde niemand aufgenommen.{% else %}Noch niemand in bintafeln aufgenommen.{% endif %}</td></tr>
     {% endfor %}
     </tbody>
   </table>
   </div>
+  {% if seite %}{% blaettern seite zusatz="Haushalte" %}{% endif %}
 </section>
 {% endblock %}

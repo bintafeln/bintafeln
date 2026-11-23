@@ -741,6 +741,8 @@ details.kapazitaet-karte:not([open]) > summary::before { content: "▸"; }
 .kunden-kopf { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 2rem; }
 .kunden-kopf h1 { margin: 0; }
 .kunden-titel p { margin: 0 0 .25rem; }
+.aufgenommen-schnellwahl { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin: 0 0 1rem; }
+.aufgenommen-schnellwahl .aktiv { background: var(--akzent); color: var(--auf-akzent); }
 /* Touren planen: regelmäßige Touren nach Fahrtag, Zwischenüberschrift je Wochentag */
 .touren-uebersicht .touren-tag th { background: var(--flaeche-2); font-size: 1.05rem; padding-top: .6rem;
   border-top: 2px solid var(--rand); text-align: left; }

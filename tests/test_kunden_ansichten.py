@@ -388,6 +388,46 @@ def test_zuletzt_aufgenommen(admin_client):
     assert reverse("kunden:zuletzt_aufgenommen") in admin_client.get("/").content.decode()  # Menü
 
 
+def test_zuletzt_aufgenommen_mit_zeitraum(admin_client):
+    """Ohne Angabe die letzten 50; mit Zeitraum alle aus dieser Zeit, seitenweise."""
+    from django.utils import timezone
+
+    from apps.kunden.models import Haushalt
+
+    url, jetzt = reverse("kunden:zuletzt_aufgenommen"), timezone.now()
+    heute = timezone.localdate()
+    Haushalt.objects.bulk_create(
+        Haushalt(kundennummer=f"8{nr:03d}", aufgenommen_am=jetzt - dt.timedelta(days=nr))
+        for nr in range(120)
+    )
+    ohne = admin_client.get(url)
+    assert len(ohne.context["zeilen"]) == 50 and ohne.context["seite"] is None
+    assert "die letzten 50" in ohne.content.decode() and 'type="date"' in ohne.content.decode()
+    # letzte 30 Tage: genau diese, mit Anzahl
+    von = f"{heute - dt.timedelta(days=29):%Y-%m-%d}"
+    antwort = admin_client.get(url, {"von": von, "bis": f"{heute:%Y-%m-%d}"})
+    assert antwort.context["gesamt"] == 30 and len(antwort.context["zeilen"]) == 30
+    assert "30 Haushalte" in antwort.content.decode()
+    assert f'href="?von={von}&amp;bis={heute:%Y-%m-%d}"' in antwort.content.decode()  # Schnellwahl
+    # nur „von“: alles seither, mehr als eine Seite
+    alt = f"{heute - dt.timedelta(days=99):%Y-%m-%d}"
+    antwort = admin_client.get(url, {"von": alt})
+    assert antwort.context["gesamt"] == 100 and len(antwort.context["zeilen"]) == 50
+    zweite = admin_client.get(url, {"von": alt, "seite": 2})
+    assert len(zweite.context["zeilen"]) == 50
+    assert {z["h"].pk for z in zweite.context["zeilen"]}.isdisjoint(
+        {z["h"].pk for z in antwort.context["zeilen"]}
+    )
+    # nur „bis“, vertauschte Angaben, Unsinn, leerer Zeitraum
+    bis = f"{heute - dt.timedelta(days=110):%Y-%m-%d}"
+    assert admin_client.get(url, {"bis": bis}).context["gesamt"] == 10
+    vertauscht = admin_client.get(url, {"von": f"{heute:%Y-%m-%d}", "bis": von})
+    assert vertauscht.context["gesamt"] == 30
+    assert admin_client.get(url, {"von": "quatsch"}).context["seite"] is None
+    leer = admin_client.get(url, {"von": "2001-01-01", "bis": "2001-12-31"}).content.decode()
+    assert "In diesem Zeitraum wurde niemand aufgenommen" in leer
+
+
 def test_filter_der_kundenliste_bleiben_erhalten(admin_client, admin, bestand, monkeypatch):
     """Status, Kundengruppe, Ausgabetag, Merkmal und Sortierung merkt sich das Konto: Der nächste
     Aufruf ohne Angaben führt wieder dorthin. Der Ausgabetag wird nur gemerkt, wenn er von der

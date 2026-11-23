@@ -332,23 +332,71 @@ def spalten_waehlen(request):
 ZULETZT_AUFGENOMMEN = 50
 
 
+def _tag_lesen(wert: str) -> dt.date | None:
+    try:
+        return dt.date.fromisoformat((wert or "").strip())
+    except ValueError:
+        return None
+
+
+def _zeitraeume(heute: dt.date) -> list[dict]:
+    """Schnellwahl für „Zuletzt aufgenommen“: Name, von, bis (als Text für die Adresse)."""
+    jahr = heute.year
+    monat = heute.replace(day=1)
+    vormonat = (monat - dt.timedelta(days=1)).replace(day=1)
+    wahl = [
+        ("letzte 30 Tage", heute - dt.timedelta(days=29), heute),
+        ("dieser Monat", monat, heute),
+        ("letzter Monat", vormonat, monat - dt.timedelta(days=1)),
+        (f"Jahr {jahr}", dt.date(jahr, 1, 1), heute),
+        (f"Jahr {jahr - 1}", dt.date(jahr - 1, 1, 1), dt.date(jahr - 1, 12, 31)),
+    ]
+    return [{"name": name, "von": f"{von:%Y-%m-%d}", "bis": f"{bis:%Y-%m-%d}"}
+            for name, von, bis in wahl]  # fmt: skip
+
+
 @rollen.recht_erforderlich("kunden.liste")
 def zuletzt_aufgenommen(request):
-    """Die zuletzt in bintafeln aufgenommenen Haushalte (Aufnahme-Assistent oder „Neuer
-    Haushalt“), der jüngste zuerst. Wer einer Ausgabestelle zugeordnet ist, sieht nur deren."""
+    """Die in bintafeln aufgenommenen Haushalte (Aufnahme-Assistent oder „Neuer Haushalt“), der
+    jüngste zuerst. Ohne Angabe die letzten 50; mit „von“ und/oder „bis“ alle aus dem Zeitraum,
+    seitenweise. Wer einer Ausgabestelle zugeordnet ist, sieht nur deren."""
     haushalte = (
         zugang.filtern(Haushalt.objects.filter(aufgenommen_am__isnull=False), request.user)
         .select_related("kundengruppe__ausgabestelle")
         .prefetch_related("personen", "sperren")
-        .order_by("-aufgenommen_am")[:ZULETZT_AUFGENOMMEN]
+        .order_by("-aufgenommen_am")
     )
+    von, bis = _tag_lesen(request.GET.get("von")), _tag_lesen(request.GET.get("bis"))
+    if von and bis and bis < von:
+        von, bis = bis, von
+    zone = timezone.get_current_timezone()
+    if von:
+        haushalte = haushalte.filter(
+            aufgenommen_am__gte=dt.datetime.combine(von, dt.time.min, tzinfo=zone)
+        )
+    if bis:
+        haushalte = haushalte.filter(
+            aufgenommen_am__lt=dt.datetime.combine(bis + dt.timedelta(days=1), dt.time.min,
+                                                   tzinfo=zone))  # fmt: skip
+    zeitraum = bool(von or bis)
+    gesamt = haushalte.count() if zeitraum else None
+    seite = None
+    if zeitraum:
+        seite = Paginator(haushalte, ZULETZT_AUFGENOMMEN).get_page(request.GET.get("seite"))
+        haushalte = seite.object_list
+    else:
+        haushalte = haushalte[:ZULETZT_AUFGENOMMEN]
     zeilen = [
         {"h": h, "hauptperson": next((p for p in h.personen.all() if p.ist_hauptperson), None),
          "personen": len(h.personen.all())}
         for h in haushalte
     ]  # fmt: skip
-    return render(request, "kunden/zuletzt_aufgenommen.html",
-                  {"zeilen": zeilen, "anzahl": ZULETZT_AUFGENOMMEN})  # fmt: skip
+    filter_ = {"von": f"{von:%Y-%m-%d}" if von else "", "bis": f"{bis:%Y-%m-%d}" if bis else ""}
+    return render(request, "kunden/zuletzt_aufgenommen.html", {
+        "zeilen": zeilen, "anzahl": ZULETZT_AUFGENOMMEN, "filter": filter_, "seite": seite,
+        "zeitraum": zeitraum, "gesamt": gesamt, "von": von, "bis": bis,
+        "schnellwahl": _zeitraeume(timezone.localdate()),
+    })  # fmt: skip
 
 
 # Filter der Kundenliste, die am Konto gemerkt werden (ohne Suchtext, Seite und Zeilenzahl)
