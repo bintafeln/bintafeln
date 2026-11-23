@@ -122,6 +122,11 @@ class TourForm(BesetzungMixin, forms.ModelForm):
 
             self.fields["fahrdienst_tour"].queryset = FahrdienstTour.objects.filter(aktiv=True)
             self.fields["fahrdienst_tour"].empty_label = "– eigene Tour, nicht im Fahrerplan –"
+            # Bei einer Tour aus dem Fahrerplan steht die Besetzung dort (oben auf der Seite). Die
+            # eigenen Plätze blieben leer stehen und sähen aus, als fehlten die Fahrer – deshalb
+            # nur zeigen, solange keine Tour im Fahrerplan gewählt ist (zeigen_bei.js).
+            for name in (*self.PLAETZE, "gast"):
+                self.fields[name].widget.attrs["data-zeigen-bei"] = "fahrdienst_tour="
         else:
             del self.fields["fahrdienst_tour"]
 

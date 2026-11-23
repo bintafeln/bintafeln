@@ -890,3 +890,15 @@ def test_karte_baustein_fuer_die_maske(buero):
 def test_karte_nur_mit_recht_planen(client, anmelden, heute_tour):
     anmelden(client, heute_tour["klaus"].konto)
     assert client.get(reverse("touren:karte")).status_code == 403
+
+
+def test_maske_blendet_eigene_plaetze_bei_tour_aus_dem_fahrerplan_aus():
+    """Bei einer Tour aus dem Fahrerplan steht die Besetzung oben; die leeren Felder für Fahrer,
+    Beifahrer und Gast sähen aus, als fehlten die Fahrer – sie erscheinen nur bei eigenen Touren."""
+    from apps.touren.forms import TourForm
+
+    mit = TourForm(fahrdienst=True)
+    for name in ("fahrer", "beifahrer", "beifahrer2", "gast"):
+        assert mit.fields[name].widget.attrs["data-zeigen-bei"] == "fahrdienst_tour="
+    ohne = TourForm(fahrdienst=False)  # Fahrdienst-Modul aus: nur eigene Touren, Felder immer da
+    assert "data-zeigen-bei" not in ohne.fields["fahrer"].widget.attrs
