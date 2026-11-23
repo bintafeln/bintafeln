@@ -144,7 +144,9 @@
   document.addEventListener("click", function (e) {
     if (e.defaultPrevented || !aktiv()) return;
     var link = e.target.closest && e.target.closest("a[target=_blank]");
-    if (!link || link.hasAttribute("download") || link.origin !== window.location.origin) return;
+    // data-extern: führt (über eine eigene Adresse) zu einer fremden Seite, kein PDF – wie gewohnt öffnen
+    if (!link || link.hasAttribute("download") || link.hasAttribute("data-extern") ||
+        link.origin !== window.location.origin) return;
     e.preventDefault();
     zeigen(link.href);
   });
