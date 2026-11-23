@@ -239,7 +239,9 @@
         '<div class="grafik-auswahl"><p class="hinweis">Antippen fügt die Grafik an der Schreibmarke ein.</p>' +
         '<ul class="grafik-liste"></ul>' +
         '<label class="knopf knopf-zweitrangig grafik-hochladen">Neue Grafik hochladen …' +
-        '<input type="file" accept="image/png,image/jpeg" hidden></label></div>' +
+        '<input type="file" accept="image/png,image/jpeg,application/pdf" hidden></label>' +
+        '<label class="grafik-freistellen"><input type="checkbox"> Hintergrund durchsichtig machen (Unterschrift, Stempel)</label>' +
+        '<p class="hinweis">PNG, JPG oder PDF (davon die erste Seite).</p></div>' +
         '<p class="fehler grafik-fehler" role="alert" hidden></p>' +
         '<div class="aktionsleiste"><button type="button" class="knopf knopf-gefahr grafik-entfernen">Grafik entfernen</button>' +
         '<button value="zu" class="knopf knopf-abbrechen">Schließen</button></div></form>';
@@ -316,6 +318,7 @@
         if (!datei.files.length) return;
         var daten = new FormData();
         daten.append("datei", datei.files[0]);
+        if (dialog.querySelector(".grafik-freistellen input").checked) daten.append("freistellen", "1");
         if (token) daten.append("csrfmiddlewaretoken", token.value);
         melden("");
         fetch(liste, {method: "POST", body: daten, credentials: "same-origin"})

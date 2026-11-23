@@ -548,6 +548,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   speichert ohne Metadaten neu, `aus_src()` nur eigene Adressen, `fuer_mail()` → `cid:`); im Text
   `<img src="…/grafiken/<pk>/" width="25%|50%|100%">`; Mails mit Bildern über
   `mail.senden(..., bilder=…)`; nie Bilder aus dem Internet abrufen.
+  Grafiken frei auf der Seite (ADR 0166, z. B. Unterschriften): `Vorlage.freie_grafiken` (mm ab
+  links oben, erste/letzte Seite), Prüfen, Zeichnen und Mail nur über `apps/serienbriefe/frei.py`;
+  verschieben in der Vorschau über `static/js/brief_frei.js` (die Live-Vorschau zeichnet sie nicht
+  selbst). `grafiken.speichern(..., freistellen=True)` macht Weiß durchsichtig; PDF → erste Seite.
 - Spenden: `Spende.fremdbeleg` (ADR 0128) kennzeichnet Spenden mit Beleg aus einem anderen
   Programm (von Hand an der Spende änderbar; `fremdbeleg_von_hand` schützt das vor dem Einlesen); „versendet“ bekommt nie eine Bestätigung aus bintafeln, „offene“ bestätigt bintafeln
   selbst (eine einzeln, mehrere im Jahr als Sammelbestätigung, dann ohne den fremden Beleg) – die

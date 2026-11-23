@@ -17,7 +17,7 @@ from reportlab.platypus import Flowable, PageBreak, Paragraph, SimpleDocTemplate
 from apps.core import zeichen
 from apps.core.models import TafelEinstellungen
 from apps.core.pdf import text
-from apps.serienbriefe import gestaltung
+from apps.serienbriefe import frei, gestaltung
 
 RAND_LINKS = 25 * mm
 RAND_RECHTS = 20 * mm
@@ -134,15 +134,22 @@ def briefe_pdf(briefe, vorlage=None) -> bytes:
     mit_kopf = vorlage.briefkopf if vorlage is not None else True
     logo = _logo(tafel) if mit_kopf else None
     fuss = _Fusszeile(vorlage.fusszeile if vorlage is not None else "")
+    # Frei gesetzte Grafiken (ADR 0166): feste Stelle auf der ersten bzw. letzten Seite je Brief
+    erste = frei.zeichnung(vorlage, frei.ERSTE) if vorlage is not None else None
+    letzte = frei.zeichnung(vorlage, frei.LETZTE) if vorlage is not None else None
     inhalt = []
     for nummer, (anschrift, betreff, brieftext) in enumerate(briefe):
         if nummer:
             inhalt.append(PageBreak())
         inhalt.append(Briefkopf(tafel, anschrift, datum, mit_kopf, logo))
+        if erste:
+            inhalt.append(erste)
         inhalt.append(Spacer(1, TEXT_BEGINN - OBEN))
         inhalt.append(Paragraph(text(betreff), BETREFF))
         inhalt.append(Spacer(1, 3 * mm))
         inhalt.extend(gestaltung.flowables(brieftext, BREITE))
+        if letzte:  # ohne Höhe: steht auf der Seite, auf der der Brief endet
+            inhalt.append(letzte)
     puffer = io.BytesIO()
     unten = UNTEN + fuss.hoehe if fuss.teile else UNTEN
     doc = SimpleDocTemplate(puffer, pagesize=A4, leftMargin=RAND_LINKS, rightMargin=RAND_RECHTS,

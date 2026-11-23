@@ -17,6 +17,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 
 MAX_MB = 8
 MAX_PIXEL = 2000  # längste Seite nach dem Verkleinern: reicht für A4 in guter Qualität
+PDF_DPI = 200  # erste Seite eines hochgeladenen PDFs in dieser Auflösung
 GROESSEN = {"klein": "25%", "mittel": "50%", "gross": "100%"}
 CID = "grafik-{pk}@bintafeln"
 
@@ -25,23 +26,63 @@ class GrafikFehler(ValueError):
     pass
 
 
-def speichern(datei, von: str = ""):
-    """Prüft und speichert eine hochgeladene Bilddatei als ``Grafik``: dreht nach EXIF, verkleinert
-    auf ``MAX_PIXEL`` und speichert neu (JPEG-Fotos als JPEG, alles andere als PNG) – ohne
-    Metadaten wie Aufnahmeort oder Kamera."""
+def _aus_pdf(datei) -> Image.Image:
+    """Die erste Seite eines PDFs als Bild (z. B. eine eingescannte Unterschrift)."""
+    import pypdfium2 as pdfium
+
+    try:
+        pdf = pdfium.PdfDocument(datei.read())
+    except pdfium.PdfiumError as fehler:
+        raise GrafikFehler("Das PDF lässt sich nicht lesen.") from fehler
+    try:
+        if not len(pdf):
+            raise GrafikFehler("Das PDF hat keine Seite.")
+        seite = pdf[0]
+        breite, hoehe = seite.get_size()
+        skala = min(PDF_DPI / 72, MAX_PIXEL / max(breite, hoehe, 1))
+        return seite.render(scale=skala).to_pil().convert("RGB")
+    finally:
+        pdf.close()
+
+
+def _zuschneiden(bild: Image.Image) -> Image.Image:
+    """Durchsichtigen Rand abschneiden, damit die Grafik nur so groß ist wie die Tinte."""
+    rahmen = bild.getchannel("A").point(lambda a: 255 if a > 8 else 0).getbbox()
+    if not rahmen:
+        raise GrafikFehler("Auf dem Bild ist nach dem Freistellen nichts mehr zu sehen.")
+    links, oben, rechts, unten = rahmen
+    rand = max(2, round(max(rechts - links, unten - oben) * 0.02))
+    return bild.crop((max(links - rand, 0), max(oben - rand, 0),
+                      min(rechts + rand, bild.width), min(unten + rand, bild.height)))  # fmt: skip
+
+
+def speichern(datei, von: str = "", freistellen: bool = False):
+    """Prüft und speichert eine hochgeladene Datei (Bild oder PDF, davon die erste Seite) als
+    ``Grafik``: dreht nach EXIF, verkleinert auf ``MAX_PIXEL`` und speichert neu (JPEG-Fotos als
+    JPEG, alles andere als PNG) – ohne Metadaten wie Aufnahmeort oder Kamera. ``freistellen``
+    macht weißes Papier durchsichtig und schneidet den leeren Rand ab (Unterschriften, ADR 0166)."""
     from apps.serienbriefe.models import Grafik
 
     if datei.size > MAX_MB * 1024 * 1024:
         raise GrafikFehler(f"Die Datei darf höchstens {MAX_MB} MB groß sein.")
-    try:
-        bild = Image.open(datei)
-        bild.load()
-    except (UnidentifiedImageError, OSError) as fehler:
-        raise GrafikFehler(
-            "Das ist kein Bild, das bintafeln lesen kann (PNG oder JPG)."
-        ) from fehler
-    foto = bild.format == "JPEG"
-    bild = ImageOps.exif_transpose(bild)
+    kopf = datei.read(5)
+    datei.seek(0)
+    if kopf == b"%PDF-":
+        bild, foto = _aus_pdf(datei), False
+    else:
+        try:
+            bild = Image.open(datei)
+            bild.load()
+        except (UnidentifiedImageError, OSError) as fehler:
+            raise GrafikFehler(
+                "Das ist kein Bild, das bintafeln lesen kann (PNG, JPG oder PDF)."
+            ) from fehler
+        foto = bild.format == "JPEG"
+        bild = ImageOps.exif_transpose(bild)
+    if freistellen:
+        from apps.spenden.unterschrift import freistellen as weiss_weg
+
+        bild, foto = _zuschneiden(weiss_weg(bild)), False  # PNG, damit es durchsichtig bleibt
     bild.thumbnail((MAX_PIXEL, MAX_PIXEL))
     puffer = io.BytesIO()
     if foto:  # Fotos bleiben JPEG (klein), Grafiken wie Logos PNG (scharfe Kanten, Transparenz)
