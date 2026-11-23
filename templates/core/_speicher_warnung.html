@@ -1,0 +1,7 @@
+{% comment %}Festplatte des Servers wird voll (ADR 0169), nur mit dem Recht für die Tafel-Einstellungen.{% endcomment %}
+<div class="sicherung update-warnung {% if p.stufe == "dringend" %}update-sicherheit{% else %}update-wichtig{% endif %}" role="{% if p.stufe == "dringend" %}alert{% else %}status{% endif %}">
+  <strong>{% if p.stufe == "dringend" %}Die Festplatte des Servers ist fast voll.{% else %}Die Festplatte des Servers wird voll.{% endif %}</strong>
+  Nur noch {{ p.frei|filesizeformat }} von {{ p.gesamt|filesizeformat }} frei ({{ p.prozent_frei }} %).
+  {% if p.stufe == "dringend" %}Ist sie voll, kann bintafeln nichts mehr speichern.{% endif %}
+  <a class="knopf" href="{% url 'core:speicher' %}">Speicher ansehen</a>
+</div>

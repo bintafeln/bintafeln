@@ -12,6 +12,26 @@
   </form>
 </section>
 
+<section class="karte" id="festplatte">
+  <h2>Festplatte des Servers</h2>
+  {% if platz %}
+  <div class="platte-balken{% if platz.stufe %} platte-{{ platz.stufe }}{% endif %}" role="img" aria-label="{{ platz.prozent_belegt }} Prozent belegt"><span style="width: {{ platz.prozent_belegt }}%"></span></div>
+  <p><strong>{{ platz.belegt|filesizeformat }} von {{ platz.gesamt|filesizeformat }} belegt</strong>,
+    {{ platz.frei|filesizeformat }} frei ({{ platz.prozent_frei }} %).
+    {% if platz.stufe == "dringend" %}<span class="marke-warnung">fast voll</span>{% elif platz.stufe == "knapp" %}<span class="marke-warnung">wird voll</span>{% endif %}</p>
+  {% else %}<p class="hinweis">Der freie Platz lässt sich auf diesem Server nicht auslesen.</p>{% endif %}
+  <p class="hinweis">Gemessen wird die Festplatte, auf der bintafeln seine Daten ablegt – alles darauf zählt mit, auch
+    Sicherungen, die auf dem Server liegen, und andere Programme. Sicherungen an einem anderen Ort (z. B. Online-Speicher)
+    sieht bintafeln nicht.</p>
+  <form method="post" data-autosave>
+    {% csrf_token %}
+    {% include "includes/formular.html" with form=warnung %}
+    <button type="submit" name="aktion" value="warnung" class="knopf">Grenzen speichern</button>
+  </form>
+  <p class="hinweis">Wer die Mail bekommt, wählen Sie unter <a href="{% url 'core:mail_empfaenger' %}">Einstellungen → Mail-Empfänger</a>
+    („Festplatte des Servers wird voll“).</p>
+</section>
+
 <section class="karte">
   <h2>Belegter Platz</h2>
   <table class="tabelle kompakt">

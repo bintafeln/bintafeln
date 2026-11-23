@@ -353,6 +353,10 @@ Django-Kenntnisse nachvollziehen kann: was wurde geändert, warum, wie testet ma
   (`apps/konten/anmeldesperre.py`, Fehlversuche je Benutzername und Dauer aus
   `AnmeldeEinstellungen`, Vorgabe 5 → 15 min; Admin hebt sie sofort auf, ADR 0120) und weitere Drosseln. In Tests
   LocMemCache (`settings_test.py`), der Datenbank-Cache ist mit einem eigenen Test abgedeckt.
+- Freier Platz auf der Festplatte des Servers (ADR 0169): `apps/core/speicherplatz.py` (`stand()`,
+  `melden()` – einmal je Stufe eine Mail über die Benachrichtigung `speicher_knapp`), Grenzen in
+  `SpeicherWarnung`, Balken auf „Speicher und Fotos“, Hinweis auf der Startseite. In Tests
+  `speicherplatz._platte` ersetzen.
 - Zwei-Faktor: Logik in `apps/konten/zwei_faktor.py`, Durchsetzung in
   `apps.konten.middleware.ZweiFaktorMiddleware`. In Tests Benutzer mit der Fixture `anmelden`
   anmelden (verifizierte Sitzung); ein bloßes `force_login` landet bei Pflicht-Rollen auf der

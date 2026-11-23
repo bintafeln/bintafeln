@@ -10,8 +10,13 @@ from django.template.defaultfilters import filesizeformat
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 
-from apps.core import privatdateien, sicherung
-from apps.core.models import FotoEinstellungen, Hintergrundbild, TafelEinstellungen
+from apps.core import privatdateien, sicherung, speicherplatz
+from apps.core.models import (
+    FotoEinstellungen,
+    Hintergrundbild,
+    SpeicherWarnung,
+    TafelEinstellungen,
+)
 from apps.konten import rollen
 from apps.konten.views import nicht_in_demo
 
@@ -23,6 +28,19 @@ class FotoForm(forms.ModelForm):
         model = FotoEinstellungen
         fields = ["kante", "qualitaet", "graustufen"]
         widgets = {"qualitaet": forms.NumberInput(attrs={"min": 40, "max": 95, "step": 5})}
+
+
+class WarnungForm(forms.ModelForm):
+    class Meta:
+        model = SpeicherWarnung
+        fields = ["warnen_unter", "dringend_unter"]
+
+    def clean(self):
+        daten = super().clean()
+        warnen, dringend = daten.get("warnen_unter"), daten.get("dringend_unter")
+        if warnen and dringend and dringend > warnen:
+            self.add_error("dringend_unter", "„Dringend“ muss unter der Warngrenze liegen.")
+        return daten
 
 
 def _datenbank_groesse() -> int | None:
@@ -68,8 +86,15 @@ def tafel_bilder() -> list[dict]:
 @never_cache
 @rollen.recht_erforderlich("einstellungen.tafel")
 def seite(request):
-    form = FotoForm(request.POST or None, instance=FotoEinstellungen.laden())
     aktion = request.POST.get("aktion")
+    form = FotoForm(request.POST if aktion == "speichern" else None,
+                    instance=FotoEinstellungen.laden())  # fmt: skip
+    warnung = WarnungForm(request.POST if aktion == "warnung" else None,
+                          instance=SpeicherWarnung.laden(), prefix="warnung")  # fmt: skip
+    if request.method == "POST" and aktion == "warnung" and warnung.is_valid():
+        warnung.save()
+        messages.success(request, "Gespeichert.")
+        return redirect("core:speicher")
     if request.method == "POST" and aktion == "speichern" and form.is_valid():
         form.save()
         messages.success(request, "Gespeichert. Neue Fotos werden ab jetzt so verkleinert.")
@@ -86,7 +111,7 @@ def seite(request):
         return _originale_loeschen(request)
     bestand = privatdateien.bestand()
     return render(request, "core/speicher.html", {
-        "form": form, "bestand": bestand,
+        "form": form, "bestand": bestand, "warnung": warnung, "platz": speicherplatz.stand(),
         "dateien": sum(z["bytes"] for z in bestand),
         "originale": sum(z["originale"] for z in bestand),
         "datenbank": _datenbank_groesse(),

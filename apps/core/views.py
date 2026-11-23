@@ -89,6 +89,13 @@ def start(request):
         bis = TafelEinstellungen.laden().update_hinweis_bis
         if warnung.art != "neu" or not bis or bis < timezone.localdate():
             kontext["update_warnung"] = warnung
+    # Wird die Festplatte des Servers voll (ADR 0169)? Die Mail geht auch hier raus
+    from apps.core import speicherplatz
+
+    platz = speicherplatz.stand()
+    speicherplatz.melden(platz)
+    if platz and platz.stufe and rollen.hat_recht(request.user, "einstellungen.tafel"):
+        kontext["speicher_warnung"] = platz
     if rollen.hat_recht(request.user, "mitarbeitende.geburtstage") and (
         TafelEinstellungen.laden().geburtstage_startseite
     ):
