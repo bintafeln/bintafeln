@@ -18,6 +18,7 @@ from apps.touren.models import (
     Fahrzeugmeldung,
     Lieferschein,
     Tour,
+    Tournachricht,
     Tourstart,
     Zusatzstopp,
 )
@@ -39,6 +40,7 @@ def _mengen(tour: Tour, datum: dt.date) -> dict:
         "Zusatzstopp": Zusatzstopp.objects.filter(tour=tour, datum=datum),
         MELDUNG: Fahrzeugmeldung.objects.filter(fahrt__in=eigene),
         "bestätigte Besetzung": Tourstart.objects.filter(tour=tour, datum=datum),
+        "Nachricht an die Mannschaft": Tournachricht.objects.filter(tour=tour, datum=datum),
     }
 
 

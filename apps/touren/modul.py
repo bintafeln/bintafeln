@@ -99,7 +99,16 @@ def startseite(request):
 
 
 def fristen():
-    from apps.touren import ablauf, anfahrten, fahrten, lieferscheine, meldungen, start, zusatz
+    from apps.touren import (
+        ablauf,
+        anfahrten,
+        fahrten,
+        lieferscheine,
+        meldungen,
+        nachrichten,
+        start,
+        zusatz,
+    )
 
     fahrten.fristen_anwenden()
     zusatz.fristen_anwenden()
@@ -108,6 +117,7 @@ def fristen():
     ablauf.fristen_anwenden()
     lieferscheine.fristen_anwenden()
     start.fristen_anwenden()
+    nachrichten.fristen_anwenden()
 
 
 def auskunft_mitarbeiter(benutzer, pdf):

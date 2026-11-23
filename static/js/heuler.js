@@ -1,5 +1,6 @@
-// Neuer Stopp vom Büro (ADR 0159): Die Kopfzeile fragt alle 30 Sekunden nach (#tour-heuler).
-// Gibt es einen Stopp, den noch niemand aus der Mannschaft bestätigt hat, öffnet sich ein roter
+// Neuer Stopp vom Büro (ADR 0159) oder Nachricht der Fahrdienstleitung (ADR 0168): Die Kopfzeile
+// fragt alle 30 Sekunden nach (#tour-heuler).
+// Gibt es etwas, das noch niemand aus der Mannschaft bestätigt hat, öffnet sich ein roter
 // Brief über der Seite – mit Rütteln, Ton und Vibration – und bleibt, bis jemand „Gesehen“ tippt.
 // Hat ein anderer aus der Mannschaft schon bestätigt, schließt er sich von selbst.
 (function () {
@@ -41,7 +42,7 @@
     var dialog = document.createElement("dialog");
     dialog.className = "heuler-dialog";
     dialog.dataset.schluessel = schluessel;
-    dialog.setAttribute("aria-label", "Neuer Stopp für Ihre Tour");
+    dialog.setAttribute("aria-label", vorlage.dataset.titel || "Neuer Stopp für Ihre Tour");
     dialog.appendChild(vorlage.content.cloneNode(true));
     // bleibt, bis „Gesehen“ getippt ist – Esc schließt ihn nicht
     dialog.addEventListener("cancel", function (e) { e.preventDefault(); });

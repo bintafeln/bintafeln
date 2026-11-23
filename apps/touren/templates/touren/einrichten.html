@@ -52,6 +52,26 @@
     <button type="submit" class="knopf">Liste speichern</button>
   </form>
 </section>
+<section class="karte" id="kurztexte">
+  <h2>Nachrichten an die Mannschaft: fertige Texte</h2>
+  <p class="hinweis">Unter „Touren heute“ schicken Sie der Mannschaft einer Tour eine Nachricht. Diese Texte stehen dort zum Antippen bereit (kleinste Zahl zuerst), z. B. „Bitte im Büro anrufen“. Nicht mehr gebrauchte ausschalten.</p>
+  <form method="post" action="#kurztexte">
+    {% csrf_token %}<input type="hidden" name="kurztexte" value="1">
+    {{ kurztexte.management_form }}
+    {% if kurztexte.non_form_errors %}<p class="fehler">{{ kurztexte.non_form_errors|join:" " }}</p>{% endif %}
+    <div class="tabelle-rahmen"><table class="tabelle" id="kurztexte-tabelle">
+      <thead><tr><th>Text</th><th>Reihenfolge</th><th>Aktiv</th></tr></thead>
+      <tbody>{% for f in kurztexte %}
+        <tr>{{ f.id }}
+          <td data-titel="Text">{{ f.text }}{% if f.text.errors %}<small class="fehler">{{ f.text.errors|join:" " }}</small>{% endif %}</td>
+          <td data-titel="Reihenfolge">{{ f.reihenfolge }}</td>
+          <td data-titel="Aktiv">{{ f.aktiv }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    <p class="hinweis">Die leeren Zeilen unten sind für neue Texte.</p>
+    <button type="submit" class="knopf">Texte speichern</button>
+  </form>
+</section>
 <section class="karte" id="fahrzeuge">
   <h2>Fahrzeuge</h2>
   <p class="hinweis">Beim Beginn einer Fahrt wählen die Fahrer das Fahrzeug und tragen den Kilometerstand ein; ohne Fahrzeuge hier wird nur der Kilometerstand gefragt. Ein Fahrzeug antippen, um es zu ändern und <strong>Papiere</strong> (Fahrzeugschein, Fahrzeugbrief …) zu hinterlegen.</p>
